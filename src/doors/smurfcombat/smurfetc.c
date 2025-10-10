@@ -59,6 +59,7 @@ givemoney(void)
 {
     int             ref[256], conflicted, listno;
     char            bbsin4[5], bbsin5[10];
+    listno = noplayers;
     od_clr_scr();
     rankuserlist(3);
     for (cyc = 0; cyc < noplayers; cyc++) {
@@ -230,7 +231,7 @@ void            buyitem(void){
 #else
 		    memset(smurfweap[thisuserno], 0, sizeof(smurfweap[thisuserno]));
 #endif
-		    sprintf(smurfweap[thisuserno], "%s\0", defweapon[numba]);
+		    sprintf(smurfweap[thisuserno], "%s", defweapon[numba]);
 		    return;
 		} od_printf("Nope\n\n\r");
 		return;
@@ -252,7 +253,7 @@ void            buyitem(void){
 #else
 		    memset(smurfarmr[thisuserno], 0, sizeof(smurfarmr[thisuserno]));
 #endif
-		    sprintf(smurfarmr[thisuserno], "%s\0", defarmor[numba]);
+		    sprintf(smurfarmr[thisuserno], "%s", defarmor[numba]);
 		    return;
 		} od_printf("Nope\n\n\r");
 		return;

@@ -64,7 +64,7 @@ killsmurf(int numba)
 #else
     memset(smurfname[numba], 0, sizeof(smurfname[numba]));
 #endif
-    sprintf(smurfname[numba], oldname);
+    strcpy(smurfname[numba], oldname);
     realnumb[numba] = 0;
     smurflevel[numba] = xp_random(26) + 5;
     lvl = smurflevel[numba];

@@ -177,14 +177,14 @@ __SET__main(void)
      /* Setup 1.00    */ window(1, 1, 80, 25);
     clrscr();
      /* Setup 1.00    */ chdir(path);
-     /* Setup 1.00    */ sprintf(pathname, "smurf.bat", path);
+     /* Setup 1.00    */ sprintf(pathname, "smurf.bat");
      /* Setup 1.00    */ stream = fopen(pathname, "w+");
      /* Setup 1.00    */ fprintf(stream, "@echo off\n\r");
-     /* Setup 1.00    */ fprintf(stream, "echo The Fossil Driver BNU is included with this program.\n\r", path2);
-     /* Setup 1.00    */ fprintf(stream, "echo The author of Smurf Combat encourages that you register\n\r", path2);
-     /* Setup 1.00    */ fprintf(stream, "echo BNU if you already havn't done so. This program will\n\r", path2);
-     /* Setup 1.00    */ fprintf(stream, "echo not function without a fossil driver such as BNU or X00.                             \n\r", path2);
-     /* Setup 1.00    */ fprintf(stream, "echo BNU is (C) 1989 by David Nugent & Unique Computing Ptd Ltd                           \n\r", path2);
+     /* Setup 1.00    */ fprintf(stream, "echo The Fossil Driver BNU is included with this program.\n\r");
+     /* Setup 1.00    */ fprintf(stream, "echo The author of Smurf Combat encourages that you register\n\r");
+     /* Setup 1.00    */ fprintf(stream, "echo BNU if you already havn't done so. This program will\n\r");
+     /* Setup 1.00    */ fprintf(stream, "echo not function without a fossil driver such as BNU or X00.                             \n\r");
+     /* Setup 1.00    */ fprintf(stream, "echo BNU is (C) 1989 by David Nugent & Unique Computing Ptd Ltd                           \n\r");
      /* Setup 1.00    */ fprintf(stream, "cd %s\n\r", path2);
      /* Setup 1.00    */ if (type == 1)
 	fprintf(stream, "copy %s\\CHAIN.TXT\n\r", path2);

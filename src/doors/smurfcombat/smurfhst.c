@@ -24,7 +24,7 @@ void
 hostagemenu(void)
 {
     int             quit = 0, tnumba, thishostcount, numba;
-    char            bbsin500[10], enform[20];
+    char            bbsin500[10];
     __mess(4);
     do {
 	od_clr_scr();
@@ -307,7 +307,6 @@ treathostage(int mere)
 void 
 phostage(void)
 {
-    char            logname[13];
     unsigned int    escape = 0, thishostno = 255, freecost = 10000;
     for (cyc = 0; cyc < hcount; cyc++)
 	if (hostage[cyc] == thisuserno)

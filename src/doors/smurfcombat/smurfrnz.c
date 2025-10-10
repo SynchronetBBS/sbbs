@@ -23,7 +23,7 @@
 void 
 __etteit(int a, int b, int c, unsigned long d)
 {
-    int             cost, outco_, gain, typo;
+    int             cost, gain, typo;
     cost = smurfettelevel[thisuserno];
     cost *= d;
     gain = xp_random(c) + b;
@@ -313,7 +313,7 @@ __incite(int x, int c, int y)
 		od_set_colour(L_GREEN, D_BLACK);
 		od_printf("Failure\n\rYou have been CAUGHT!!\n\r");
 		od_set_colour(D_GREEN, D_BLACK);
-		sprintf(tempenform, "\n\rSEXUAL HARASSMENT!!\n\r", smurfname[thisuserno], smurfname[inuser]);
+		sprintf(tempenform, "\n\rSEXUAL HARASSMENT!!\n\r");
 		newshit(tempenform);
 		sprintf(tempenform, "   In broad daylight, %s made relentless\n\r", smurfname[thisuserno]);
 		newshit(tempenform);
@@ -352,7 +352,7 @@ __incite(int x, int c, int y)
 	if (x == 4) {
 	    outco_ = xp_random(4);
 	    if (outco_ == 1) {
-		sprintf(tempenform, "%s tried to talk crap about you in the Times!\n\r");
+		sprintf(tempenform, "%s tried to talk crap about you in the Times!\n\r", smurfname[thisuserno]);
 		logshit(inuser, tempenform);
 		od_set_colour(L_GREEN, D_BLACK);
 		od_printf("Success\n\n\r");
@@ -388,7 +388,7 @@ __incite(int x, int c, int y)
 		od_set_colour(L_GREEN, D_BLACK);
 		od_printf("Failure\n\rYou have been CAUGHT!!\n\r");
 		od_set_colour(D_GREEN, D_BLACK);
-		sprintf(tempenform, "\n\rRAPE ATTEMPT*******\n\r", smurfname[thisuserno], smurfname[inuser]);
+		sprintf(tempenform, "\n\rRAPE ATTEMPT*******\n\r");
 		newshit(tempenform);
 		sprintf(tempenform, "   %s was arrested yesterday\n\r", smurfname[thisuserno]);
 		newshit(tempenform);
@@ -439,7 +439,6 @@ __incite(int x, int c, int y)
 void 
 inciterevolt(void)
 {
-    char            bbsin4[11];
     do {
 	od_clr_scr();
 	od_set_colour(L_RED, D_BLACK);

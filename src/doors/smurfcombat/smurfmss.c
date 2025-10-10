@@ -23,10 +23,9 @@
 void 
 __mess(int x)
 {
-    char            pch, logname[13], intext[5], in2[5];
-    time_t          t;
+    char            logname[13];
     struct date     d;
-    char            olddate[10], newdate[10];
+    char            newdate[10];
     strcpy(logname, "smurflog.000");
     getdate(&d);
     sprintf(newdate, "%02d%02d%04d", d.da_day, d.da_mon, d.da_year);

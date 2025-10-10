@@ -99,11 +99,10 @@ __DAY__checklevel(void)
 void 
 __DAY__main(void)
 {
-    char            proc, newdate[10], olddate[10];
+    char            newdate[10], olddate[10];
     int             turnsaday, defrounds, mod;
     struct date     d;
     char            intext[81];
-    char            stat[4][81];
     int             ef = 0, gf = 0;
     int             hostage[1000], holder[1000], hcount;
     getdate(&d);

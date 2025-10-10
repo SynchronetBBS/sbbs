@@ -39,7 +39,6 @@ void
 titlescreen(void)
 {
     char            spacing[81];
-    int             spacz;
 #ifdef TODO_WRAPPERS
     strset(spacing, 0);
 #else

@@ -62,45 +62,45 @@ char            dataref2[3][6] = {"Thing", "Guy", "Babe"};
 char            dataref3[3][4] = {"It", "He", "She"};
 
 char           *defenemie[10][10] = {
-    "Spittle Smurf", "Wimpy Smurf", "Baby Mouse Smurf",
-    "Baby Smurf", "Bump on a Log", "Slime Mold",
-    "Blind Smurf", "Enormous Mushroom", "Really Fungii", "Democrat Smurf",	/* Done */
+    {"Spittle Smurf", "Wimpy Smurf", "Baby Mouse Smurf",
+     "Baby Smurf", "Bump on a Log", "Slime Mold",
+     "Blind Smurf", "Enormous Mushroom", "Really Fungii", "Democrat Smurf"},	/* Done */
 
-    "Jack Rabbit", "Brother Smurf", "Math Smurf",
-    "Nerd Smurf", "Poor Smurf", "Minor Smurf",
-    "Grouchy Smurf", "Golfer Smurf", "Baby Sister Smurf", "Clumsy Smurf",	/* Done */
+    {"Jack Rabbit", "Brother Smurf", "Math Smurf",
+     "Nerd Smurf", "Poor Smurf", "Minor Smurf",
+     "Grouchy Smurf", "Golfer Smurf", "Baby Sister Smurf", "Clumsy Smurf"},	/* Done */
 
-    "Grounded Hog", "Shorty Smurf", "Mouse Smurf",
-    "Clown Smurf", "Drunk Smurf", "Teacher Smurf",
-    "Mouse", "Gymnastic Smurf", "Brainy Smurf", "Froggy",	/* Done */
+    {"Grounded Hog", "Shorty Smurf", "Mouse Smurf",
+     "Clown Smurf", "Drunk Smurf", "Teacher Smurf",
+     "Mouse", "Gymnastic Smurf", "Brainy Smurf", "Froggy"},	/* Done */
 
-    "Ugly Toad", "Stripper Smurf", "Doctor Smurf",
-    "Slugo Smurf", "Loser Smurf", "Professer Smurf",
-    "Mc Smurf", "Business Smurf", "Big Sister Smurf", "Warthog",	/* Done */
+    {"Ugly Toad", "Stripper Smurf", "Doctor Smurf",
+     "Slugo Smurf", "Loser Smurf", "Professer Smurf",
+     "Mc Smurf", "Business Smurf", "Big Sister Smurf", "Warthog"},	/* Done */
 
-    "Rapper Smurf", "Ninja Smurf", "Nazi Smurf",
-    "Mob Smurf", "Lady Smurf", "Really Big Brother Smurf",	/* Done? */
-    "Dancing Smurf", "Handy Smurf", "Hit Smurf", "Cat",
+    {"Rapper Smurf", "Ninja Smurf", "Nazi Smurf",
+     "Mob Smurf", "Lady Smurf", "Really Big Brother Smurf",	/* Done? */
+     "Dancing Smurf", "Handy Smurf", "Hit Smurf", "Cat"},
 
-    "Punk Smurf", "Assassin Smurf", "Drunk Smurf",
-    "Gestapo Smurf", "White Supremecy Smurf", "Boxer Smurf",
-    "Warrior Smurf", "Basketball Smurf", "Thief Smurf", "Gangmember Smurf",	/* Done? */
+    {"Punk Smurf", "Assassin Smurf", "Drunk Smurf",
+     "Gestapo Smurf", "White Supremecy Smurf", "Boxer Smurf",
+     "Warrior Smurf", "Basketball Smurf", "Thief Smurf", "Gangmember Smurf"},	/* Done? */
 
-    "Werewolf Smurf", "Dog", "Drugie Smurf",
-    "Model Smurf", "Gladiator Smurf", "Tag Football Smurf",
-    "Rocker Smurf", "Republican Smurf", "Police Smurf", "Sadist Smurf",	/* Done */
+    {"Werewolf Smurf", "Dog", "Drugie Smurf",
+     "Model Smurf", "Gladiator Smurf", "Tag Football Smurf",
+     "Rocker Smurf", "Republican Smurf", "Police Smurf", "Sadist Smurf"},	/* Done */
 
-    "Weresmurf", "Rich Smurf", "Jungle Smurf",
-    "Blue Supremecy Smurf", "Mafia Smurf", "Football Smurf",
-    "Smash Dance Smurf", "Water Smurf", "Guard Smurf", "Shock Smurf",	/* Done? */
+    {"Weresmurf", "Rich Smurf", "Jungle Smurf",
+     "Blue Supremecy Smurf", "Mafia Smurf", "Football Smurf",
+     "Smash Dance Smurf", "Water Smurf", "Guard Smurf", "Shock Smurf"},	/* Done? */
 
-    "Secret Service Smurf", "Weight Trainer Smurf", "Drug Dealer Smurf",
-    "Corporate Smurf", "NeoNazi Smurf", "Jr. Varsity Football Smurf",
-    "Ice-T Smurf", "Sniper Smurf", "Cyber Smurf", "Contruction Worker Smurf",	/* Done? */
+    {"Secret Service Smurf", "Weight Trainer Smurf", "Drug Dealer Smurf",
+     "Corporate Smurf", "NeoNazi Smurf", "Jr. Varsity Football Smurf",
+     "Ice-T Smurf", "Sniper Smurf", "Cyber Smurf", "Contruction Worker Smurf"},	/* Done? */
 
-    "Bodyguard Smurf", "REALLY Big Smurf", "Human",	/* Done? */
-    "Elite Smurf", "Spawn Smurf", "Commander Smurf",
-    "Terminator Smurf", "Big Black Smurf", "Varsity Football Smurf", "ProBasketball Smurf"
+    {"Bodyguard Smurf", "REALLY Big Smurf", "Human",	/* Done? */
+     "Elite Smurf", "Spawn Smurf", "Commander Smurf",
+     "Terminator Smurf", "Big Black Smurf", "Varsity Football Smurf", "ProBasketball Smurf"}
 };
 
 float           defcprices[11] = {0, 1000, 10000, 50000, 100000, 500000, 1000000, 2000000, 5000000, 10000000, 100000000};

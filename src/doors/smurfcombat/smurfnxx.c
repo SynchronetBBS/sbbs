@@ -44,7 +44,7 @@ __NEW__savegame(void)
     int             thp;
     stream = fopen("smurf.sdm", "w+");
     fprintf(stream, "%03i", __NEW__noplayers);
-    fprintf(stream, "%05.5s", __saveversion);
+    fprintf(stream, "%5.5s", __saveversion);
     for (cyc = 0; cyc < __NEW__noplayers; cyc++) {
 	if (__NEW__smurfturns[cyc] < 0)
 	    __NEW__smurfturns[cyc] = 0;
@@ -154,7 +154,7 @@ __NEW__main(void)
     mdel("SMURFDAT.D0E");
     /* system("DEL SMURF.S*"); */
     stream = fopen("smurf.sgm", "w+");
-    fprintf(stream, "%03i%05.5s", 0, __saveversion);
+    fprintf(stream, "%03i%5.5s", 0, __saveversion);
     fclose(stream);
     gotoxy(1, 12);
     textcolor(13);

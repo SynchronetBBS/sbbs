@@ -124,7 +124,7 @@ arena(void)
 	    case 's':
 		od_set_colour(L_CYAN, D_BLACK);
 		od_clr_scr();
-	deafult:nl();
+	default:nl();
 		nl();
 		break;
 		/*

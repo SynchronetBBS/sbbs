@@ -26,16 +26,19 @@
 void 
 __REG__main(void)
 {
+#if TODO_REGISTRATION
     char            code[40], name[80], cod;
+#endif
+    char            name[80];
     FILE           *stream;
     printf("\n\r");
 
 #if TODO_REGISTRATION
     printf("Enter Registration Code: ");
-    gets(code);
+    fgets(code, stdin);
 #endif
     printf("Enter Registration Name: ");
-    gets(name);
+    fgets(name, sizeof(name), stdin);
     /* printf("Enter Intermediate Code: "); cin >> name[0];cod=atoi(name[0]);
      * if(cod>0)for(cyc=0;cyc<cod;cyc++){ printf("Name %d:
      * ",cyc);scanf("%39s", name[cyc]);} fprintf(stream,"%s",name[0]);
@@ -97,8 +100,10 @@ void
 checkkey(void)
 {				       /* Main program function */
     FILE           *fp;		       /* File pointer for REGISTER.KEY file */
+#if TODO_REGISTRATION
     unsigned long   supplied_key;      /* Key supplied by user */
     unsigned long   correct_key;       /* Correct registration key */
+#endif
     if ((fp = fopen("smurfreg.nfo", "r")) != NULL) {	/* Try to open file *//* I
 							 * f successful */
 	fgets(registered_name, 200, fp);	/* read name from file */

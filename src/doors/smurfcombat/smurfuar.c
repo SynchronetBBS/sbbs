@@ -21,9 +21,9 @@
 void 
 userarena(void)
 {
-    int             ht = 0, tw = 0, ta = 0, erand, numba, ew, aw, round,
+    int             ht = 0, tw = 0, ta = 0, erand, numba, ew, aw,
                     run = 0, hit = 0, enemyhp, old, mod;
-    char            enemie[41], eweapon[41], earmor[41], bbsin[10], *enform;
+    char            enemie[41], eweapon[41], earmor[41], bbsin[10];
     float           gf, ef;
     if (smurffights[thisuserno] < 1) {
 	smurffights[thisuserno] = 0;

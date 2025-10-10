@@ -4,7 +4,7 @@ savegame(void)
     int             thp;
     stream = fopen("smurf.sgm", "w+");
     fprintf(stream, "%03i", noplayers);
-    fprintf(stream, "%05.5s", __saveversion);
+    fprintf(stream, "%5.5s", __saveversion);
     for (cyc = 0; cyc < noplayers; cyc++) {
 	if (smurfturns[cyc] < 0)
 	    smurfturns[cyc] = 0;
@@ -98,7 +98,7 @@ loadgame(void)
     stream = fopen("smurf.sgm", "r+");
     if(stream == NULL) {
 	stream = fopen("smurf.sgm", "w+");
-	fprintf(stream,"%03i%05.5s",0 , __saveversion);
+	fprintf(stream,"%03i%5.5s",0 , __saveversion);
 	fseek(stream, 0, SEEK_SET);
     }
     cyc = 0;
@@ -115,7 +115,7 @@ loadgame(void)
 	    strcat(outtext, revtext);
 	}
 	sprintf(realname[cyc], "%s", outtext);
-	sprintf(outtext, "\0");
+	outtext[0] = 0;
 	fscanf(stream, "%10s", intext);
 	realnumb[cyc] = atoi(intext);
 	for (cyc2 = 0; cyc2 < 40; cyc2++) {
@@ -125,7 +125,7 @@ loadgame(void)
 	    strcat(outtext, revtext);
 	}
 	sprintf(smurfname[cyc], "%s", outtext);
-	sprintf(outtext, "\0");
+	outtext[0] = 0;
 	for (cyc2 = 0; cyc2 < 80; cyc2++) {
 	    fscanf(stream, "%3s", intext);
 	    inputint = atoi(intext);
@@ -133,7 +133,7 @@ loadgame(void)
 	    strcat(outtext, revtext);
 	}
 	sprintf(smurftext[cyc], "%s", outtext);
-	sprintf(outtext, "\0");
+	outtext[0] = 0;
 	for (cyc2 = 0; cyc2 < 40; cyc2++) {
 	    fscanf(stream, "%3s", intext);
 	    inputint = atoi(intext);
@@ -141,7 +141,7 @@ loadgame(void)
 	    strcat(outtext, revtext);
 	}
 	sprintf(smurfweap[cyc], "%s", outtext);
-	sprintf(outtext, "\0");
+	outtext[0] = 0;
 	for (cyc2 = 0; cyc2 < 40; cyc2++) {
 	    fscanf(stream, "%3s", intext);
 	    inputint = atoi(intext);
@@ -149,7 +149,7 @@ loadgame(void)
 	    strcat(outtext, revtext);
 	}
 	sprintf(smurfarmr[cyc], "%s", outtext);
-	sprintf(outtext, "\0");
+	outtext[0] = 0;
 	for (cyc2 = 0; cyc2 < 40; cyc2++) {
 	    fscanf(stream, "%3s", intext);
 	    inputint = atoi(intext);
@@ -157,7 +157,7 @@ loadgame(void)
 	    strcat(outtext, revtext);
 	}
 	sprintf(smurfettename[cyc], "%s", outtext);
-	sprintf(outtext, "\0");
+	outtext[0] = 0;
 	fscanf(stream, "%10s", intext);
 	smurfettelevel[cyc] = atoi(intext);
 	fscanf(stream, "%10s", intext);
@@ -171,7 +171,7 @@ loadgame(void)
 	    strcat(outtext, revtext);
 	}
 	sprintf(smurfconf[cyc], "%s", outtext);
-	sprintf(outtext, "\0");
+	outtext[0] = 0;
 	fscanf(stream, "%10s", intext);
 	smurfconfno[cyc] = atoi(intext);
 	 /* 69b */ for (cyc3 = 0; cyc3 < 10; cyc3++) {
@@ -268,7 +268,7 @@ detectversion(void)
     stream = fopen("smurf.sgm", "r+");
     if(stream == NULL) {
 	stream = fopen("smurf.sgm", "w+");
-	fprintf(stream,"%03i%05.5s",0 , __saveversion);
+	fprintf(stream,"%03i%5.5s",0 , __saveversion);
 	fseek(stream, 0, SEEK_SET);
     }
     cyc = 0;

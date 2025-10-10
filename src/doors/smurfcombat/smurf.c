@@ -13,6 +13,7 @@
 /* */
 /***************************************************************************/
 
+#include"dirwrap.h"
 #include"sockwrap.h"
 #include"smurfdef.h"
 #include"smurfdat.h"
@@ -104,8 +105,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 int main(int argc, char *argv[])
 #endif
 {
-    int             stat;
-    char           *sp;
 #ifdef _WIN32
 int     argc;
 char*   argv[100];
@@ -150,7 +149,8 @@ char*   argv[100];
 		arg++;
 	}
 	if(argc > arg) {
-		int type,len,got;
+		socklen_t len;
+		int type,got;
 		SOCKET sock;
 #ifdef _WIN32
 		WSADATA crap;
@@ -206,8 +206,6 @@ char*   argv[100];
 void 
 getcommand(void)
 {
-    char            bbsin4[10];
-    int             numba;
     do {
 #ifdef TODO_LOCAL_DISPLAY
 	textcolor(7);
