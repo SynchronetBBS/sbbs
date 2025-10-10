@@ -121,7 +121,7 @@ checkday(void)
 	}
     }
     outfile = fopen("data/characte.lan", "wb");
-    fprintf(outfile, "%lu\n", i);
+    fprintf(outfile, "%" PRIu32 "\n", i);
     for (j = 0; j < i; j++) {
 	writenextuser(playerlist[j], outfile);
 	free(playerlist[j]);
