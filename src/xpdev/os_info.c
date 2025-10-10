@@ -1,16 +1,32 @@
-#include <stdlib.h>
+#include <string.h>     /* strlen() */
+#include <stdarg.h>     /* vsnprintf() */
+#include <stdlib.h>     /* RAND_MAX */
+#include <fcntl.h>      /* O_NOCTTY */
+#include <time.h>       /* clock() */
+#include <errno.h>      /* errno */
+#include <ctype.h>      /* toupper/tolower */
+#include <limits.h>     /* CHAR_BIT */
+#include <math.h>       /* fmod */
+
+#include "strwrap.h"        /* strdup */
+#include "ini_file.h"
 
 #if defined(__unix__)
-	#include <sys/utsname.h>
-	#include "ini_file.h"
-#endif
-#if defined(_WIN32)
-	#include <windows.h>
-#endif
+        #include <sys/ioctl.h>      /* ioctl() */
+        #include <signal.h>
+#elif defined(_WIN32)
+        #include <windows.h>
+        #include <lm.h>     /* NetWkstaGetInfo() */
+        #if WINVER >= 0x0600 // _WIN32_WINNT_VISTA
+                #define GetTickCount() GetTickCount64()
+        #endif
+#else
 
-#include "genwrap.h"
-#include "os_info.h"
-
+#endif
+        
+#include "genwrap.h"    /* Verify prototypes */
+#include "xpendian.h"   /* BYTE_SWAP */
+#include "os_info.h"   /* BYTE_SWAP */
 
 /****************************************************************************/
 /* Write the version details of the current operating system into str		*/
