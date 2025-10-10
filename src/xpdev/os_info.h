@@ -1,6 +1,8 @@
 #ifndef OS_INFO_H
 #define OS_INFO_H
 
+#include "genwrap.h"
+
 /* Command processor/shell environment variable name */
 #ifdef __unix__
 	#define OS_CMD_SHELL_ENV_VAR	"SHELL"
