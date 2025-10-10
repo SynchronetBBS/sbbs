@@ -818,7 +818,7 @@ spec:
   script:
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
-    - cd src/doors/dgnlance
+    - cd src/doors/dgnlance/src
     - touch depend
     - touch xpdev
     - touch odoors
