@@ -1034,7 +1034,7 @@ ODAPIDEF void ODCALL   od_set_statusline(INT nSetting);
 ODAPIDEF void ODCALL   od_sleep(tODMilliSec Milliseconds);
 ODAPIDEF BOOL ODCALL   od_spawn(const char *pszCommandLine);
 ODAPIDEF INT16 ODCALL  od_spawnvpe(INT16 nModeFlag, char *pszPath,
-                          const char *const papszArg[], const char *const papszEnv[]);
+                          char *const papszArg[], char *const papszEnv[]);
 ODAPIDEF void * ODCALL od_window_create(INT nLeft, INT nTop, INT nRight,
                           INT nBottom, char *pszTitle, BYTE btBorderCol,
                           BYTE btTitleCol, BYTE btInsideCol, INT nReserved);
