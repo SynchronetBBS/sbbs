@@ -147,7 +147,7 @@ static VECTOR vectab1[]=
 static VECTOR vectab2[(sizeof vectab1)/(sizeof vectab1[0])];
 
 /* Location function prototypes. */
-int _spawnvpe(int nModeFlag, char *pszPath, char *const papszArgs[],
+int _spawnvpe(int nModeFlag, char *const pszPath, const char *const papszArgs[],
    const char *const papszEnviron[]);
 int _spawnve(int nModeFlag, char *pszPath, char *papszArgs[],
    char * papszEnviron[]);
@@ -158,7 +158,7 @@ static void savevect(void);
 
 #ifdef ODPLAT_NIX
 /* Location function prototypes. */
-int _spawnvpe(int nModeFlag, char *pszPath, char *const papszArgs[],
+int _spawnvpe(int nModeFlag, char *const pszPath, const char *const papszArgs[],
    const char *const papszEnviron[]);
 #endif /* ODPLAT_NIX */
 
@@ -175,7 +175,7 @@ int _spawnvpe(int nModeFlag, char *pszPath, char *const papszArgs[],
 ODAPIDEF BOOL ODCALL od_spawn(const char *pszCommandLine)
 {
 #ifdef ODPLAT_DOS
-   char *apszArgs[4];
+   char *const apszArgs[4];
    INT16 nReturnCode;
 
    /* Log function entry if running in trace mode. */
@@ -226,7 +226,7 @@ ODAPIDEF BOOL ODCALL od_spawn(const char *pszCommandLine)
    }
 
    /* Now, call od_spawnvpe(). */
-   return(od_spawnvpe(P_WAIT, *apszArgs, apszArgs, NULL) != -1);
+   return(od_spawnvpe(P_WAIT, szProgName, apszArgs, NULL) != -1);
 #endif /* ODPLAT_WIN32 */
 
 #ifdef ODPLAT_NIX
@@ -273,8 +273,8 @@ ODAPIDEF BOOL ODCALL od_spawn(const char *pszCommandLine)
  *     Return: -1 on failure or the spawned-to program's return value on
  *             success.
  */
-ODAPIDEF INT16 ODCALL od_spawnvpe(INT16 nModeFlag, char *pszPath,
-   char *const papszArg[], char *const papszEnv[])
+ODAPIDEF INT16 ODCALL od_spawnvpe(INT16 nModeFlag, char *const pszPath,
+   const char *const papszArg[], const char *const papszEnv[])
 {
    INT16 nToReturn;
    time_t nStartUnixTime;
@@ -459,7 +459,7 @@ ODAPIDEF INT16 ODCALL od_spawnvpe(INT16 nModeFlag, char *pszPath,
  *     Return: -1 on failure or the spawned-to program's return value on
  *             success.
  */
-int _spawnvpe(int nModeFlag, char *pszPath, char *const papszArgs[],
+int _spawnvpe(int nModeFlag, char *const pszPath, const char *const papszArgs[],
    const char *const papszEnviron[])
 {
    char *e;
@@ -1059,7 +1059,7 @@ int _spawnve(int nModeFlag, char *pszPath, char *papszArgs[],
  *     Return: -1 on failure or the spawned-to program's return value on
  *             success.
  */
-int _spawnvpe(int nModeFlag, char *pszPath, char *const papszArgs[],
+int _spawnvpe(int nModeFlag, char *const pszPath, const char *const papszArgs[],
    const char *const papszEnviron[])
 {
    pid_t	child;
@@ -1086,7 +1086,7 @@ int _spawnvpe(int nModeFlag, char *pszPath, char *const papszArgs[],
 
    if(!child)  {
       /* Do the exec stuff here */
-	  execve(pszPath,papszArgs,papszEnviron);
+	  execve(pszPath,(char *const *)papszArgs,(char *const *)papszEnviron);
 	  exit(-1); /* this should never happen! */
    }
    if(nModeFlag == P_WAIT)  {
