@@ -860,12 +860,26 @@ menuit(void)
     od_send_file("text/menu");
 }
 
-int
-main(int argc, char **argv)
+#ifdef ODPLAT_WIN32
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+   LPSTR lpszCmdLine, int nCmdShow)
+#else
+int main(int argc, char *argv[])
+#endif
 {
     DWORD           i;
     FILE           *infile;
-    od_init();
+
+    /* Set program's name for use by OpenDoors. */
+    strcpy(od_control.od_prog_name, "Dragonlance");
+    strcpy(od_control.od_prog_version, "Version 3.00");
+    strcpy(od_control.od_prog_copyright, "Unknown");
+
+#ifdef ODPLAT_WIN32
+    od_parse_cmd_line(lpszCmdLine);
+#else
+    od_parse_cmd_line(argc, argv);
+#endif
     checkday();
     atexit(leave);
 
