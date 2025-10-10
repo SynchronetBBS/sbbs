@@ -76,6 +76,7 @@
 #  SOFILE			- Shared object (DLL) file extension (Includes .)		#
 #  LIBFILE			- Static library file extension (Include .)				#
 #  LIBPREFIX		- Prefix to library filename							#
+#  SHLIBPREFIX		- Prefix to shared library filename						#
 #  LIBS				- Library names	(Appropriate for dependencies)			#
 #  LIB_LDFLAGS		- Libraries appropriate for link command-line usage		#
 #  COMPILE_MSG		- Message saying a target is being compiled				#
@@ -340,8 +341,9 @@ else
 endif
 
 LIBPREFIX	:= lib
+SHLIBPREFIX	:= lib
 ifdef win
- LIBPREFIX	:=
+ SHLIBPREFIX	:=
 endif
 DIRSEP		:= /
 OFILE		:= .o

@@ -22,5 +22,5 @@ endif
 export LD_RUN_PATH
 
 $(SBBS):
-	$(MAKE) -C $(SBBS_SRC) $(LIBODIR)/$(LIBPREFIX)sbbs$(SOFILE)
+	$(MAKE) -C $(SBBS_SRC) $(LIBODIR)/$(SHLIBPREFIX)sbbs$(SOFILE)
 

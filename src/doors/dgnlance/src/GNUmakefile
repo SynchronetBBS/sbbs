@@ -25,7 +25,7 @@ ifdef STATIC
  LDFLAGS	+=	-static
 endif
 
-ifeq (($os),darwin)
+ifeq ($(os),darwin)
  LIB_RPATH := -Wl,$(RPATH),@executable_path
 else ifdef win
  LIB_RPATH :=
