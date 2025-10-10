@@ -52,8 +52,8 @@ char loadactions(void)
         }
 
     /* Prepare list #0 as the personal action list. */
-    strcpy(actfiles[0]->name, top_output(OUT_STRING,
-           getlang("PersActListDesc")));
+    strcpy((char*)actfiles[0]->name, (char*)top_output(OUT_STRING,
+           getlang((unsigned char*)"PersActListDesc")));
     // These next four should be configurable later.
     actfiles[0]->minsec = 0;
     actfiles[0]->maxsec = 0xFFFF;
@@ -65,10 +65,10 @@ char loadactions(void)
        TOP to count the actions in each file. */
     for (lad = 1; lad <= numactfiles; lad++)
         {
-        strcpy(outbuf, cfg.topactpath);
-        strcat(outbuf, cfg.actfilenames[lad]);
-        strcat(outbuf, ".tac");
-        actfil = sh_open(outbuf, O_RDWR | O_CREAT | O_BINARY,
+        strcpy((char*)outbuf, (char*)cfg.topactpath);
+        strcat((char*)outbuf, (char*)cfg.actfilenames[lad]);
+        strcat((char*)outbuf, ".tac");
+        actfil = sh_open((char*)outbuf, O_RDWR | O_CREAT | O_BINARY,
                          SH_DENYNO, S_IREAD | S_IWRITE);
         if (actfil == -1)
             {
@@ -109,10 +109,10 @@ char loadactions(void)
     for (lad = 1; lad <= numactfiles; lad++)
         {
         /* Open the file. */
-        strcpy(outbuf, cfg.topactpath);
-        strcat(outbuf, cfg.actfilenames[lad]);
-        strcat(outbuf, ".tac");
-        actfil = sh_open(outbuf, O_RDWR | O_CREAT | O_BINARY,
+        strcpy((char*)outbuf, (char*)cfg.topactpath);
+        strcat((char*)outbuf, (char*)cfg.actfilenames[lad]);
+        strcat((char*)outbuf, ".tac");
+        actfil = sh_open((char*)outbuf, O_RDWR | O_CREAT | O_BINARY,
                          SH_DENYNO, S_IREAD | S_IWRITE);
         if (!actfil)
             {
@@ -202,10 +202,10 @@ char action_check(XINT awords)
     /* Grab the first word and check to make sure the action prefix is
        present, if one is defined.  outbuf is used as a temporary storage
        buffer. */
-    strcpy(outbuf, get_word(0));
+    strcpy((char*)outbuf, (char*)get_word(0));
     if (cfg.actionprefix[0])
         {
-        if (strnicmp(outbuf, cfg.actionprefix, strlen(cfg.actionprefix)))
+        if (strnicmp((char*)outbuf, (char*)cfg.actionprefix, strlen((char*)cfg.actionprefix)))
             {
             return 0;
             }
@@ -216,8 +216,8 @@ char action_check(XINT awords)
         {
         for (ace = 0; ace < actfiles[acd]->numactions; ace++)
             {
-            if (!stricmp(&outbuf[strlen(cfg.actionprefix)],
-                         actptrs[acd][ace]->data.verb))
+            if (!stricmp((char*)&outbuf[strlen((char*)cfg.actionprefix)],
+                         (char*)actptrs[acd][ace]->data.verb))
                 {
                 if (user.security >= actfiles[acd]->minsec &&
                     user.security <= actfiles[acd]->maxsec &&
@@ -254,8 +254,8 @@ void action_do(unsigned XINT lnum, unsigned XINT anum,
     if (actptrs[lnum][anum]->data.type < 0 ||
         actptrs[lnum][anum]->data.type > 1)
         {
-        top_output(OUT_SCREEN, getlang("CantDoAction"));
-        od_log_write(top_output(OUT_STRING, getlang("LogCantDoAction"),
+        top_output(OUT_SCREEN, getlang((unsigned char*)"CantDoAction"));
+        od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char*)"LogCantDoAction"),
                                 get_word(0)));
         return;
         }
@@ -274,7 +274,7 @@ void action_do(unsigned XINT lnum, unsigned XINT anum,
                 useptr = actptrs[lnum][anum]->ptrs.singulartext;
                 msgtype = MSG_ACTIONSIN;
                 doecho = user.pref1 & PREF1_ECHOACTIONS;
-                strcpy(outbuf, useptr);
+                strcpy((char*)outbuf, (char*)useptr);
                 }
             else
                 {
@@ -282,7 +282,7 @@ void action_do(unsigned XINT lnum, unsigned XINT anum,
                 useptr = actptrs[lnum][anum]->ptrs.pluraltext;
                 msgtype = MSG_ACTIONPLU;
                 doecho = user.pref1 & PREF1_ECHOACTIONS;
-                if (checkcmdmatch(get_word(1), getlang("CmdsActionAll")))
+                if (checkcmdmatch(get_word(1), getlang((unsigned char*)"CmdsActionAll")))
                     {
                     /* Action was done to "all". */
                     sendto = -2;
@@ -294,25 +294,25 @@ void action_do(unsigned XINT lnum, unsigned XINT anum,
                                 dostr);
                     if (sendto == -1)
                         {
-                        top_output(OUT_SCREEN, getlang("NotLoggedIn"),
+                        top_output(OUT_SCREEN, getlang((unsigned char*)"NotLoggedIn"),
                                    tmphand);
                         return;
                         }
                     if (sendto == -2)
                         {
-                        top_output(OUT_SCREEN, getlang("NotSpecific"),
+                        top_output(OUT_SCREEN, getlang((unsigned char*)"NotSpecific"),
                                    tmphand);
                         return;
                         }
                     if (sendto == -3)
                         {
-                        top_output(OUT_SCREEN, getlang("HasForgotYou"),
+                        top_output(OUT_SCREEN, getlang((unsigned char*)"HasForgotYou"),
                                    handles[lastsendtonode].string);
                         return;
                         }
                     if (sendto == -4)
                         {
-                        top_output(OUT_SCREEN, getlang("NotInYourChannel"),
+                        top_output(OUT_SCREEN, getlang((unsigned char*)"NotInYourChannel"),
                                    handles[lastsendtonode].string);
                         return;
                         }
@@ -321,13 +321,13 @@ void action_do(unsigned XINT lnum, unsigned XINT anum,
                         user.security >= cfg.privmessagesec)
                         {
                         if (checkcmdmatch(&outbuf[1],
-                                          getlang("CmdsActionSecretly")) > 0)
+                                          getlang((unsigned char*)"CmdsActionSecretly")) > 0)
                             {
                             msgtype = MSG_ACTPLUSEC;
                             }
                         }
                     }
-                strcpy(outbuf, useptr);
+                strcpy((char*)outbuf, (char*)useptr);
                 }
             break;
         case ACT_TALKTYPE:
@@ -337,7 +337,7 @@ void action_do(unsigned XINT lnum, unsigned XINT anum,
                 useptr = actptrs[lnum][anum]->ptrs.singulartext;
                 msgtype = MSG_TLKTYPSIN;
                 doecho = user.pref1 & PREF1_ECHOTALKTYP;
-                strcpy(outbuf, useptr);
+                strcpy((char*)outbuf, (char*)useptr);
                 }
             else
                 {
@@ -345,10 +345,10 @@ void action_do(unsigned XINT lnum, unsigned XINT anum,
                 useptr = actptrs[lnum][anum]->ptrs.pluraltext;
                 msgtype = MSG_TLKTYPPLU;
                 doecho = user.pref1 & PREF1_ECHOTALKTYP;
-                outbuf = top_output(OUT_STRINGNF, getlang("TalkTypePrefix"),
+                outbuf = top_output(OUT_STRINGNF, getlang((unsigned char*)"TalkTypePrefix"),
                                     useptr, "\0");
-                msgextradata = strlen(outbuf);
-                outbuf = top_output(OUT_STRINGNF, getlang("TalkTypePrefix"),
+                msgextradata = strlen((char*)outbuf);
+                outbuf = top_output(OUT_STRINGNF, getlang((unsigned char*)"TalkTypePrefix"),
                                     useptr, &word_str[word_pos[1]]);
                 }
             break;
@@ -358,36 +358,36 @@ void action_do(unsigned XINT lnum, unsigned XINT anum,
         {
         /* If there is no text in the output string, assume the sysop
            specified "N/A" and issue an error. */
-        top_output(OUT_SCREEN, getlang("BadContext"),
+        top_output(OUT_SCREEN, getlang((unsigned char*)"BadContext"),
                    get_word(0),
                    !actptrs[lnum][anum]->data.type ?
-                   getlang("Action") : getlang("TalkType"));
+                   getlang((unsigned char*)"Action") : getlang((unsigned char*)"TalkType"));
         return;
         }
 
     /* Display the response text, if any. */
     if (actptrs[lnum][anum]->ptrs.responsetext[0] != '\0')
         {
-        top_output(OUT_SCREEN, getlang("ActionResponse"),
+        top_output(OUT_SCREEN, getlang((unsigned char*)"ActionResponse"),
                    actptrs[lnum][anum]->ptrs.responsetext);
         }
 
     /* Append "secretly" text if applicable. */
     if (msgtype == MSG_ACTPLUSEC)
         {
-        top_output(OUT_SCREEN, getlang("JustTo"), handles[sendto].string);
+        top_output(OUT_SCREEN, getlang((unsigned char*)"JustTo"), handles[sendto].string);
         secret = 1;
         }
-    top_output(OUT_SCREEN, getlang("ActionSuffix"));
+    top_output(OUT_SCREEN, getlang((unsigned char*)"ActionSuffix"));
 
     /* Display "message sent" notifications, if requested. */
     if (msgtype == MSG_TLKTYPSIN && (user.pref1 & PREF1_TALKMSGSENT))
         {
-        top_output(OUT_SCREEN, getlang("TalkTypeActionSent"));
+        top_output(OUT_SCREEN, getlang((unsigned char*)"TalkTypeActionSent"));
         }
     if (msgtype == MSG_TLKTYPPLU && (user.pref1 & PREF1_TALKMSGSENT))
         {
-        top_output(OUT_SCREEN, getlang("TalkTypeMsgSent"));
+        top_output(OUT_SCREEN, getlang((unsigned char*)"TalkTypeMsgSent"));
         }
 
     if (lnum == 0)
@@ -398,10 +398,10 @@ void action_do(unsigned XINT lnum, unsigned XINT anum,
            causing all sorts of problems.  This is a kludge fix; this should
            really be detected when the actions are edited. */
 		Tempfix:
-        ppp = strstr(outbuf, "%p");
+        ppp = strstr((char*)outbuf, "%p");
         if (ppp == NULL)
             {
-            ppp = strstr(outbuf, "%P");
+            ppp = strstr((char*)outbuf, "%P");
             }
         if (ppp != NULL)
             {
@@ -430,9 +430,9 @@ void action_list(XINT alwords)
         {
         /* If less than three words, assume user issued the list command by
            itself and show the "list of lists" to the user. */
-        top_output(OUT_SCREEN, getlang("ActFileListPrefix"));
-        top_output(OUT_SCREEN, getlang("ActFileListHdr"));
-        top_output(OUT_SCREEN, getlang("ActFileListSep"));
+        top_output(OUT_SCREEN, getlang((unsigned char*)"ActFileListPrefix"));
+        top_output(OUT_SCREEN, getlang((unsigned char*)"ActFileListHdr"));
+        top_output(OUT_SCREEN, getlang((unsigned char*)"ActFileListSep"));
         for (ald = 0; ald <= numactfiles; ald++)
             {
             if (user.security >= actfiles[ald]->minsec &&
@@ -440,18 +440,18 @@ void action_list(XINT alwords)
                 curchannel >= actfiles[ald]->minchannel &&
                 curchannel <= actfiles[ald]->maxchannel)
                 {
-                top_output(OUT_SCREEN, getlang("ActFileListItem"),
+                top_output(OUT_SCREEN, getlang((unsigned char*)"ActFileListItem"),
                            cfg.actfilenames[ald], actfiles[ald]->name);
                 }
             }
-        top_output(OUT_SCREEN, getlang("ActFileListSuffix"));
+        top_output(OUT_SCREEN, getlang((unsigned char*)"ActFileListSuffix"));
         }
     else
         {
         /* Compare the third word of the input to each list name. */
         for (ald = 0; ald <= numactfiles; ald++)
             {
-            if (!stricmp(get_word(2), cfg.actfilenames[ald]) &&
+            if (!stricmp((char*)get_word(2), (char*)cfg.actfilenames[ald]) &&
                 user.security >= actfiles[ald]->minsec &&
                 user.security <= actfiles[ald]->maxsec &&
                 curchannel >= actfiles[ald]->minchannel &&
@@ -463,7 +463,7 @@ void action_list(XINT alwords)
             }
 
         /* Test if all lists were requested. */
-        if (checkcmdmatch(get_word(2), getlang("CmdsActionListAll")))
+        if (checkcmdmatch(get_word(2), getlang((unsigned char*)"CmdsActionListAll")))
             {
             alll = 0;
             alist = numactfiles;
@@ -472,12 +472,12 @@ void action_list(XINT alwords)
         /* Fail if no list number has been determined. */
         if (alist < 0)
             {
-            top_output(OUT_SCREEN, getlang("BadListName"));
+            top_output(OUT_SCREEN, getlang((unsigned char*)"BadListName"));
             return;
             }
 
         /* Display the list to the user. */
-        top_output(OUT_SCREEN, getlang("ActListPrefix"));
+        top_output(OUT_SCREEN, getlang((unsigned char*)"ActListPrefix"));
         /* This loop only executes once unless we're in "show all lists"
            mode. */
         for (; alll <= alist; alll++)
@@ -487,30 +487,30 @@ void action_list(XINT alwords)
                 curchannel >= actfiles[alll]->minchannel &&
                 curchannel <= actfiles[alll]->maxchannel)
                 {
-                top_output(OUT_SCREEN, getlang("ActListHeader"),
+                top_output(OUT_SCREEN, getlang((unsigned char*)"ActListHeader"),
                            cfg.actfilenames[alll], actfiles[alll]->name);
-                top_output(OUT_SCREEN, getlang("ActListLegend"));
-                top_output(OUT_SCREEN, getlang("ActListSep"));
+                top_output(OUT_SCREEN, getlang((unsigned char*)"ActListLegend"));
+                top_output(OUT_SCREEN, getlang((unsigned char*)"ActListSep"));
                 for (ald = 0; ald < actfiles[alll]->numactions; ald++)
                     {
                     if (actptrs[alll][ald]->data.type == 0)
                         {
                         top_output(OUT_SCREEN,
-                                   getlang("ActListCharNormal"));
+                                   getlang((unsigned char*)"ActListCharNormal"));
                         }
                     if (actptrs[alll][ald]->data.type == 1)
                         {
                         top_output(OUT_SCREEN,
-                                   getlang("ActListCharTType"));
+                                   getlang((unsigned char*)"ActListCharTType"));
                         }
-                    top_output(OUT_SCREEN, getlang("ActListItem"),
-                               strlwr(actptrs[alll][ald]->data.verb));
-                    top_output(OUT_SCREEN, getlang("ActListItemSep"));
+                    top_output(OUT_SCREEN, getlang((unsigned char*)"ActListItem"),
+                               strlwr((char*)actptrs[alll][ald]->data.verb));
+                    top_output(OUT_SCREEN, getlang((unsigned char*)"ActListItemSep"));
                     /* Start a new line every six actions. */
                     if ((ald + 1) % 6 == 0 ||
                         ald == actfiles[alll]->numactions - 1)
                         {
-                        top_output(OUT_SCREEN, getlang("ActListLineEnd"));
+                        top_output(OUT_SCREEN, getlang((unsigned char*)"ActListLineEnd"));
                         alines++;
                         /* Show a more prompt every 20 lines. */
                         if (alines == 20 && !ans)
@@ -534,7 +534,7 @@ void action_list(XINT alwords)
                         break;
                         }
                     }
-                top_output(OUT_SCREEN, getlang("ActListSuffix"));
+                top_output(OUT_SCREEN, getlang((unsigned char*)"ActListSuffix"));
                 }
             }
         }
@@ -551,30 +551,30 @@ void action_proc(XINT awords)
     {
 
     /* List actions. */
-    if (checkcmdmatch(get_word(1), getlang("CmdsActionList")))
+    if (checkcmdmatch(get_word(1), getlang((unsigned char*)"CmdsActionList")))
         {
         action_list(awords);
         return;
         }
     /* Turn actions off. */
-    if (checkcmdmatch(get_word(1), getlang("CmdsActionOff")))
+    if (checkcmdmatch(get_word(1), getlang((unsigned char*)"CmdsActionOff")))
         {
         user.pref2 |= PREF2_ACTIONSOFF;
         save_user_data(user_rec_num, &user);
-        top_output(OUT_SCREEN, getlang("ActionsNowOff"));
+        top_output(OUT_SCREEN, getlang((unsigned char*)"ActionsNowOff"));
         return;
         }
     /* Turn actions on. */
-    if (checkcmdmatch(get_word(1), getlang("CmdsActionOn")))
+    if (checkcmdmatch(get_word(1), getlang((unsigned char*)"CmdsActionOn")))
         {
         user.pref2 &= (0xFF - PREF2_ACTIONSOFF);
         save_user_data(user_rec_num, &user);
-        top_output(OUT_SCREEN, getlang("ActionsNowOn"));
+        top_output(OUT_SCREEN, getlang((unsigned char*)"ActionsNowOn"));
         return;
         }
 
     /* Command not recognized, show help file instead. */
-    show_helpfile("helpact0");
+    show_helpfile((unsigned char*)"helpact0");
 
     }
 
@@ -593,13 +593,13 @@ char loadpersactions(void)
     for (lad = 0; lad < 4; lad++)
         {
         actptrs[0][lad]->data.type = user.persact[lad].type;
-        strcpy(actptrs[0][lad]->data.verb, user.persact[lad].verb);
+        strcpy((char*)actptrs[0][lad]->data.verb, (char*)user.persact[lad].verb);
         actptrs[0][lad]->data.responselen =
-            strlen(user.persact[lad].response);
+            strlen((char*)user.persact[lad].response);
         actptrs[0][lad]->data.singularlen =
-            strlen(user.persact[lad].singular);
+            strlen((char*)user.persact[lad].singular);
         actptrs[0][lad]->data.plurallen =
-            strlen(user.persact[lad].plural);
+            strlen((char*)user.persact[lad].plural);
 
         memchk = actptrs[0][lad]->ptrs.responsetext =
             malloc(actptrs[0][lad]->data.responselen + 1);
@@ -619,12 +619,12 @@ char loadpersactions(void)
             {
             return 0;
             }
-        strcpy(actptrs[0][lad]->ptrs.responsetext,
-               user.persact[lad].response);
-        strcpy(actptrs[0][lad]->ptrs.singulartext,
-               user.persact[lad].singular);
-        strcpy(actptrs[0][lad]->ptrs.pluraltext,
-               user.persact[lad].plural);
+        strcpy((char*)actptrs[0][lad]->ptrs.responsetext,
+               (char*)user.persact[lad].response);
+        strcpy((char*)actptrs[0][lad]->ptrs.singulartext,
+               (char*)user.persact[lad].singular);
+        strcpy((char*)actptrs[0][lad]->ptrs.pluraltext,
+               (char*)user.persact[lad].plural);
         }
 
     return 1;

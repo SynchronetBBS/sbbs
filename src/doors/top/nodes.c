@@ -21,6 +21,7 @@ functions to manage the two node indexes (NODEIDX.TCH and NODEIDX2.TCH) as
 well as more user-interactive functions that show who else is in TOP.
 ******************************************************************************/
 
+#include "strwrap.h"
 #include "top.h"
 
 /* whos_in_pub() - Displays a short summary of people in current channel.
@@ -54,7 +55,7 @@ if (ucount)
     XINT comma = 0; /* Flag for when to display a comma. */
 
     /* Show header. */
-    top_output(OUT_SCREEN, getlang("LookAround"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"LookAround"));
 
     /* Loop for each node. */
     for (d = 0; d < MAXNODES; d++)
@@ -65,8 +66,8 @@ if (ucount)
             /* Display the user's handle, followed by either a separator
                (usually a comma) or a prefix, depending on if this is
                the first node to be shown. */
-            top_output(OUT_SCREEN, getlang("LookAroundList"),
-                       getlang(comma ? "LookAroundSep" : "LookAroundFirst"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"LookAroundList"),
+                       getlang(comma ? (unsigned char *)"LookAroundSep" : (unsigned char *)"LookAroundFirst"),
                        handles[d].string);
             /* Flag that a node has been shown so the prefix isn't used
                again. */
@@ -77,10 +78,10 @@ if (ucount)
 else
 	{
     /* Nobody's here. */
-    top_output(OUT_SCREEN, getlang("LookAroundNobody"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"LookAroundNobody"));
     }
 /* Show footer. */
-top_output(OUT_SCREEN, getlang("LookAroundAfter"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"LookAroundAfter"));
 
 return;
 }
@@ -96,8 +97,8 @@ XINT sd; /* Counter. */
 unsigned char chnam[51]; /* Channel name buffer. */
 
 /* Show header. */
-top_output(OUT_SCREEN, getlang("ScanHeader"));
-top_output(OUT_SCREEN, getlang("ScanHeaderSep"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"ScanHeader"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"ScanHeaderSep"));
 
 /* The active node index (NODEIDX2.TCH) isn't used as a node's active status
    can be determined directly from the node data.  Using it may save some
@@ -127,28 +128,28 @@ for (sd = 0; sd < MAXNODES; sd++)
             {
             /* Don't display the channel if the user doesn't wish it or if
                the channel is marked unlisted in its definition. */
-            strcpy(chnam,
-                   top_output(OUT_STRINGNF, getlang("ScanUnlistedChan")));
+            strcpy((char*)chnam,
+                   (char*)top_output(OUT_STRINGNF, getlang((unsigned char *)"ScanUnlistedChan")));
             }
         else
             {
             /* Display the channel shortname. */
-            strcpy(chnam, channelname(nodeinfo.channel));
+            strcpy((char*)chnam, (char*)channelname(nodeinfo.channel));
             }
 
         /* Effectively 0-length outbuf so the string appends below will
            work properly. */
         outbuf[0] = '\0';
         /* Prepare task information. */
-        strcat(outbuf, top_output(OUT_STRINGNF,
+        strcat((char*)outbuf, (char*)top_output(OUT_STRINGNF,
                                   getlang((nodeinfo.task & TASK_EDITING) ?
-                                  "ScanEditing" : "ScanNotEditing")));
-        strcat(outbuf, top_output(OUT_STRINGNF,
+                                  (unsigned char *)"ScanEditing" : (unsigned char *)"ScanNotEditing")));
+        strcat((char*)outbuf, (char*)top_output(OUT_STRINGNF,
                            getlang((nodeinfo.task & TASK_PRIVATECHAT) ?
-                           "ScanPrivChat" : "ScanNotPrivChat")));
+                           (unsigned char *)"ScanPrivChat" : (unsigned char *)"ScanNotPrivChat")));
 
         /* Display the node and related information. */
-        top_output(OUT_SCREEN, getlang("ScanInfo"), nodeinfo.handle,
+        top_output(OUT_SCREEN, getlang((unsigned char *)"ScanInfo"), nodeinfo.handle,
                    chnam, outbuf);
         }
     }
@@ -174,7 +175,7 @@ chsize(nidx2fil, MAXNODES);
 res = lseek(nidx2fil, od_control.od_node, SEEK_SET);
 if (res == -1)
 	{
-    errorabort(ERR_CANTACCESS, top_output(OUT_STRING, "@1nodeidx2.top",
+    errorabort(ERR_CANTACCESS, top_output(OUT_STRING, (unsigned char *)"@1nodeidx2.top",
 			   cfg.topworkpath));
     }
 rec_locking(REC_LOCK, nidx2fil, od_control.od_node, 1L);
@@ -182,7 +183,7 @@ res = read(nidx2fil, &tstflg, 1L);
 rec_locking(REC_UNLOCK, nidx2fil, od_control.od_node, 1L);
 if (res == -1)
 	{
-    errorabort(ERR_CANTREAD, top_output(OUT_STRING, "@1nodeidx2.top",
+    errorabort(ERR_CANTREAD, top_output(OUT_STRING, (unsigned char *)"@1nodeidx2.top",
 			   cfg.topworkpath));
     }
 
@@ -192,10 +193,10 @@ if (tstflg && !nodecfg->solidnode)
 	{
     /* The node is in use and cannot be overrided, so inform the user
        and quit. */
-    itoa(od_control.od_node, outnum[0], 10);
-    top_output(OUT_SCREEN, getlang("NodeInUse"), outnum[0]);
-    top_output(OUT_SCREEN, getlang("NodeInUseContact"));
-    od_log_write(top_output(OUT_STRING, getlang("LogNodeInUse"), outnum[0]));
+    itoa(od_control.od_node, (char*)outnum[0], 10);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodeInUse"), outnum[0]);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodeInUseContact"));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogNodeInUse"), outnum[0]));
     quit_top();
     }
 
@@ -204,7 +205,7 @@ if (tstflg && !nodecfg->solidnode)
    of a potential problem. */
 if (tstflg && nodecfg->solidnode)
     {
-    od_log_write(top_output(OUT_STRING, getlang("LogPrevCrashDetect")));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogPrevCrashDetect")));
     }
 
 /* Superfluous NODEIDX2 size extension. */
@@ -218,7 +219,7 @@ if (filelength(nidx2fil) < MAXNODES)
 res = lseek(nidx2fil, od_control.od_node, SEEK_SET);
 if (res == -1)
 	{
-    errorabort(ERR_CANTACCESS, top_output(OUT_STRING, "@1nodeidx2.top",
+    errorabort(ERR_CANTACCESS, top_output(OUT_STRING, (unsigned char *)"@1nodeidx2.top",
 			   cfg.topworkpath));
     }
 rec_locking(REC_LOCK, nidx2fil, od_control.od_node, 1L);
@@ -227,7 +228,7 @@ res = write(nidx2fil, &tmp, 1L);
 rec_locking(REC_UNLOCK, nidx2fil, od_control.od_node, 1L);
 if (res == -1)
 	{
-    errorabort(ERR_CANTWRITE, top_output(OUT_STRING, "@1nodeidx2.top",
+    errorabort(ERR_CANTWRITE, top_output(OUT_STRING, (unsigned char *)"@1nodeidx2.top",
 			   cfg.topworkpath));
     }
 
@@ -241,7 +242,7 @@ memset(node, 0, sizeof(node_idx_typ));
 fixname(node->handle, user.handle);
 fixname(node->realname, user.realname);
 node->speed = od_control.baud;
-strcpy(node->location, od_control.user_location);
+strcpy((char*)node->location, od_control.user_location);
 node->gender = user.gender;
 node->channel = curchannel;
 node->channellisted = (user.pref2 & PREF2_CHANLISTED);
@@ -292,8 +293,8 @@ if (res != CMI_OKAY)
     if (res != CMI_OKAY)
         {
         /* If that doesn't work it's pretty much a hopeless situation. */
-        top_output(OUT_SCREEN, getlang("SevereJoinError"));
-        od_log_write(top_output(OUT_STRING, getlang("LogSevereJoinErr")));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"SevereJoinError"));
+        od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogSevereJoinErr")));
         od_exit(230, FALSE);
         }
     else
@@ -340,7 +341,7 @@ if (res == -1)
 	{
     if (errabort)
     	{
-	    errorabort(ERR_CANTACCESS, top_output(OUT_STRING, "@1nodeidx2.top",
+	    errorabort(ERR_CANTACCESS, top_output(OUT_STRING, (unsigned char *)"@1nodeidx2.top",
 				   cfg.topworkpath));
         }
     return;
@@ -353,7 +354,7 @@ if (res == -1)
 	{
     if (errabort)
     	{
-	    errorabort(ERR_CANTWRITE, top_output(OUT_STRING, "@1nodeidx2.top",
+	    errorabort(ERR_CANTWRITE, top_output(OUT_STRING, (unsigned char *)"@1nodeidx2.top",
 				   cfg.topworkpath));
         }
     return;
@@ -426,7 +427,7 @@ if (res == -1)
     {
     if (fatal)
         {
-	    errorabort(ERR_CANTREAD, top_output(OUT_STRING, "@1nodeidx2.top",
+	    errorabort(ERR_CANTREAD, top_output(OUT_STRING, (unsigned char *)"@1nodeidx2.top",
 				   cfg.topworkpath));
         }
     return;
@@ -527,7 +528,7 @@ nodebuf->structlength = sizeof(node_idx_typ);
 res = lseek(nidxfil, (long) recnum * (long) sizeof(node_idx_typ), SEEK_SET);
 if (res == -1)
 	{
-    errorabort(ERR_CANTACCESS, top_output(OUT_STRING, "@1NODEIDX.TOP",
+    errorabort(ERR_CANTACCESS, top_output(OUT_STRING, (unsigned char *)"@1NODEIDX.TOP",
 			   cfg.topworkpath));
     }
 rec_locking(REC_LOCK, nidxfil, (long) recnum * (long) sizeof(node_idx_typ),
@@ -537,7 +538,7 @@ rec_locking(REC_UNLOCK, nidxfil, (long) recnum * (long) sizeof(node_idx_typ),
             sizeof(node_idx_typ));
 if (res == -1)
 	{
-    errorabort(ERR_CANTWRITE, top_output(OUT_STRING, "@1NODEIDX.TOP",
+    errorabort(ERR_CANTWRITE, top_output(OUT_STRING, (unsigned char *)"@1NODEIDX.TOP",
 			   cfg.topworkpath));
     }
 

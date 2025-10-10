@@ -20,6 +20,7 @@ This module contains the NODES and PAGE commands, and functions which front-end
 the BBS-specific calls.
 ******************************************************************************/
 
+#include "strwrap.h"
 #include "top.h"
 
 /* bbs_useron() - Displays who is logged on to the BBS.  (NODES command.)
@@ -68,9 +69,9 @@ for (d = 0, count = 0; d < MAXNODES; d++)
 	        fixname(nodeinf.realname, nodedat.realname);
     	    nodeinf.node = d;
         	nodeinf.speed = nodedat.speed;
-	        strcpy(nodeinf.location, nodedat.location);
-            strcpy(nodeinf.statdesc,
-				   top_output(OUT_STRING, getlang("NodeStatus")));
+	        strcpy((char*)nodeinf.location, (char*)nodedat.location);
+            strcpy((char*)nodeinf.statdesc,
+				   (char*)top_output(OUT_STRING, getlang((unsigned char *)"NodeStatus")));
 	        nodeinf.quiet = nodedat.quiet;
     	    nodeinf.gender = nodedat.gender;
         	nodeinf.hidden = 0;
@@ -92,41 +93,41 @@ for (d = 0, count = 0; d < MAXNODES; d++)
     	{
         if (nodeinf.existbits & NEX_NODE)
         	{
-            itoa(nodeinf.node, outnum[0], 10);
-            top_output(OUT_SCREEN, getlang("NodesNodeDisp"), outnum[0]);
+            itoa(nodeinf.node, (char*)outnum[0], 10);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"NodesNodeDisp"), outnum[0]);
             }
         if ((nodeinf.existbits & NEX_HANDLE) && cfg.usehandles)
         	{
-            top_output(OUT_SCREEN, getlang("NodesHandleDisp"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"NodesHandleDisp"),
                        nodeinf.handle);
             }
         if ((nodeinf.existbits & NEX_REALNAME) && !cfg.usehandles)
             {
-            top_output(OUT_SCREEN, getlang("NodesRealNameDisp"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"NodesRealNameDisp"),
                        nodeinf.realname);
             }
         if (nodeinf.existbits & NEX_SPEED)
         	{
-            ltoa(nodeinf.speed, outnum[0], 10);
-            top_output(OUT_SCREEN, getlang("NodesSpeedDisp"), outnum[0]);
+            ltoa(nodeinf.speed, (char*)outnum[0], 10);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"NodesSpeedDisp"), outnum[0]);
             }
         if (nodeinf.existbits & NEX_LOCATION)
         	{
-            top_output(OUT_SCREEN, getlang("NodesLocationDisp"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"NodesLocationDisp"),
                        nodeinf.location);
             }
         if (nodeinf.existbits & NEX_STATUS)
         	{
-            top_output(OUT_SCREEN, getlang("NodesStatusDisp"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"NodesStatusDisp"),
                        nodeinf.statdesc);
             }
         if (nodeinf.existbits & NEX_PAGESTAT)
             {
-            top_output(OUT_SCREEN, getlang("NodesPageStatDisp"),
-                       nodeinf.quiet ? getlang("PageStatNo") :
-                       getlang("PageStatYes"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"NodesPageStatDisp"),
+                       nodeinf.quiet ? getlang((unsigned char *)"PageStatNo") :
+                       getlang((unsigned char *)"PageStatYes"));
             } // Also add GENDER and NUMCALLS!
-        top_output(OUT_SCREEN, getlang("NodesListEndLine"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"NodesListEndLine"));
         count++;
         }
     }
@@ -134,7 +135,7 @@ for (d = 0, count = 0; d < MAXNODES; d++)
 if (endpause)
 	{
     // Language-enabled press-a-key later.
-//    top_output(OUT_SCREEN, getlang("NodesListAfterKey"));
+//    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesListAfterKey"));
     }
 
 }
@@ -159,7 +160,7 @@ if (pagebuf == NULL)
     pagemsg = malloc(1601);
     if (!pagemsg)
         {
-        top_output(OUT_SCREEN, getlang("NoMemToPage"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"NoMemToPage"));
         return;
         }
     }
@@ -169,28 +170,28 @@ if (nodenum < 0)
     /* Prompt the user for a node number if none was passed. */
     do
         { // Need to change this back to the old way...
-        top_output(OUT_SCREEN, getlang("PageWho"));
-        od_input_str(pnode, 5, '0', '?');
+        top_output(OUT_SCREEN, getlang((unsigned char *)"PageWho"));
+        od_input_str((char*)pnode, 5, '0', '?');
         if (pnode[0] == '?')
             {
             bbs_useron(FALSE);
-            top_output(OUT_SCREEN, "@c");
+            top_output(OUT_SCREEN, (unsigned char *)"@c");
             }
         }
     while(pnode[0] == '?');
 
-    pagenode = atoi(pnode);
+    pagenode = atoi((char*)pnode);
     if (!pnode[0])
         {
-        top_output(OUT_SCREEN, getlang("PageAborted"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"PageAborted"));
         dofree(pagemsg);
         return;
         }
-    itoa(pagenode, pnode, 10);
+    itoa(pagenode, (char*)pnode, 10);
     if (pagenode < 1 || pagenode >= cfg.maxnodes)
         {
-        itoa(cfg.maxnodes - 1, outnum[0], 10);
-        top_output(OUT_SCREEN, getlang("InvalidNode"), outnum[0]);
+        itoa(cfg.maxnodes - 1, (char*)outnum[0], 10);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"InvalidNode"), outnum[0]);
         dofree(pagemsg);
         return;
         }
@@ -198,7 +199,7 @@ if (nodenum < 0)
 else
     {
     pagenode = nodenum;
-    itoa(nodenum, pnode, 10);
+    itoa(nodenum, (char*)pnode, 10);
     }
 
 pres = 0;
@@ -226,13 +227,13 @@ else
    mode. */
 if (pnodeinf.hidden)
 	{
-    top_output(OUT_SCREEN, getlang("NodeNotInUse"), pnode);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodeNotInUse"), pnode);
     dofree(pagemsg);
     return;
 	}
 if (pnodeinf.quiet)
 	{
-    top_output(OUT_SCREEN, getlang("NodeDND"), pnode);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodeDND"), pnode);
     dofree(pagemsg);
     return;
     }
@@ -253,15 +254,15 @@ if (bbs_call_page != NULL)
     {
     if ((*bbs_call_page)(pagenode, pagemsg))
         {
-        top_output(OUT_SCREEN, getlang("Paged"), pnode);
-        od_log_write(top_output(OUT_STRING, getlang("LogSentPage"),
+        top_output(OUT_SCREEN, getlang((unsigned char *)"Paged"), pnode);
+        od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogSentPage"),
                      pnode));
         }
     }
 else
     {
-    top_output(OUT_SCREEN, getlang("CantPage"), pnode);
-    od_log_write(top_output(OUT_STRING, getlang("LogCantPage"), pnode));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"CantPage"), pnode);
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogCantPage"), pnode));
     }
 
 // Possible else & case for errorcodes
@@ -284,71 +285,71 @@ if (pagebuf == NULL)
 void bbs_useronhdr(bbsnodedata_typ *ndata)
 {
 
-top_output(OUT_SCREEN, getlang("NodesHdrPrefix"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"NodesHdrPrefix"));
 
 /* Show only the desired fields. */
 if (ndata->existbits & NEX_NODE)
     {
-    top_output(OUT_SCREEN, getlang("NodesNodeHdr"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesNodeHdr"));
     }
 if ((ndata->existbits & NEX_HANDLE) && cfg.usehandles)
     {
-    top_output(OUT_SCREEN, getlang("NodesHandleHdr"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesHandleHdr"));
     }
 if ((ndata->existbits & NEX_REALNAME) && !cfg.usehandles)
     {
-    top_output(OUT_SCREEN, getlang("NodesRealNameHdr"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesRealNameHdr"));
     }
 if (ndata->existbits & NEX_SPEED)
     {
-    top_output(OUT_SCREEN, getlang("NodesSpeedHdr"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesSpeedHdr"));
     }
 if (ndata->existbits & NEX_LOCATION)
     {
-    top_output(OUT_SCREEN, getlang("NodesLocationHdr"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesLocationHdr"));
     }
 if (ndata->existbits & NEX_STATUS)
     {
-    top_output(OUT_SCREEN, getlang("NodesStatusHdr"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesStatusHdr"));
     }
 if (ndata->existbits & NEX_PAGESTAT)
     {
-    top_output(OUT_SCREEN, getlang("NodesPageStatHdr"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesPageStatHdr"));
     } // Also add GENDER and NUMCALLS!
 
-top_output(OUT_SCREEN, getlang("NodesHdrSuffix"));
-top_output(OUT_SCREEN, getlang("NodesSepPrefix"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"NodesHdrSuffix"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"NodesSepPrefix"));
 
 /* Show separators for the desired fields. */
 if (ndata->existbits & NEX_NODE)
     {
-    top_output(OUT_SCREEN, getlang("NodesNodeSep"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesNodeSep"));
     }
 if ((ndata->existbits & NEX_HANDLE) && cfg.usehandles)
     {
-    top_output(OUT_SCREEN, getlang("NodesHandleSep"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesHandleSep"));
     }
 if ((ndata->existbits & NEX_REALNAME) && !cfg.usehandles)
     {
-    top_output(OUT_SCREEN, getlang("NodesRealNameSep"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesRealNameSep"));
     }
 if (ndata->existbits & NEX_SPEED)
     {
-    top_output(OUT_SCREEN, getlang("NodesSpeedSep"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesSpeedSep"));
     }
 if (ndata->existbits & NEX_LOCATION)
     {
-    top_output(OUT_SCREEN, getlang("NodesLocationSep"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesLocationSep"));
     }
 if (ndata->existbits & NEX_STATUS)
     {
-    top_output(OUT_SCREEN, getlang("NodesStatusSep"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesStatusSep"));
     }
 if (ndata->existbits & NEX_PAGESTAT)
     {
-    top_output(OUT_SCREEN, getlang("NodesPageStatSep"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"NodesPageStatSep"));
     } // Also add GENDER and NUMCALLS!
 
-top_output(OUT_SCREEN, getlang("NodesSepSuffix"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"NodesSepSuffix"));
 
 }

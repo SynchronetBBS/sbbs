@@ -40,8 +40,8 @@ long chcount = -1; /* Number of channel definitions. */
 XINT cres; /* Result code. */
 
 /* Open the configuration file. */
-sprintf(outbuf, "%schannels.cfg", cfg.toppath);
-chanfil = fopen(outbuf, "rt");
+sprintf((char*)outbuf, "%schannels.cfg", cfg.toppath);
+chanfil = fopen((char*)outbuf, "rt");
 if (!chanfil)
     {
     return 0;
@@ -51,7 +51,7 @@ if (!chanfil)
 while (!feof(chanfil))
     {
     /* Read the next line. */
-    if (!fgets(loadstr, 256, chanfil))
+    if (!fgets((char*)loadstr, 256, chanfil))
         {
         /* Abort if an error occurs while reading.  Usually this means an
            EOF in the middle of a line. */
@@ -63,9 +63,9 @@ while (!feof(chanfil))
         continue;
         }
     /* Strip newline.  Not sure why I didn't use the stripcr() macro here. */
-    if (loadstr[strlen(loadstr) - 1] == '\n')
+    if (loadstr[strlen((char*)loadstr) - 1] == '\n')
         {
-        loadstr[strlen(loadstr) - 1] = 0;
+        loadstr[strlen((char*)loadstr) - 1] = 0;
         }
     /* Break the string into words. */
     cres = split_string(loadstr);
@@ -79,9 +79,9 @@ while (!feof(chanfil))
         opt = &word_str[word_pos[1]];
 
         /* Channel number or type. */
-        if (!stricmp(get_word(0), "Channel"))
+        if (!stricmp((char*)get_word(0), "Channel"))
             {
-            if (!stricmp(opt, "Conference"))
+            if (!stricmp((char*)opt, "Conference"))
                 {
                 /* Channel is a conference, use the next internal conference
                    number. */
@@ -90,7 +90,7 @@ while (!feof(chanfil))
             else
                 {
                 /* Get the channel number. */
-                curch = strtoul(opt, NULL, 10);
+                curch = strtoul((char*)opt, NULL, 10);
                 if (curch > 3999999999UL)
                     {
                     /* Unlike many other areas of TOP the maximum limit
@@ -103,38 +103,38 @@ while (!feof(chanfil))
             continue;
             }
         /* Fixed channel topic. */
-        if (!stricmp(get_word(0), "Topic"))
+        if (!stricmp((char*)get_word(0), "Topic"))
             {
             memset(chan[chcount].topic, 0, 71);
-            strncpy(chan[chcount].topic, opt, 70);
+            strncpy((char*)chan[chcount].topic, (char*)opt, 70);
             continue;
             }
         /* Alternate names for the channel or conference. */
-        if (!stricmp(get_word(0), "JoinAliases"))
+        if (!stricmp((char*)get_word(0), "JoinAliases"))
             {
             memset(chan[chcount].joinaliases, 0, 31);
-            strncpy(chan[chcount].joinaliases, opt, 30);
+            strncpy((char*)chan[chcount].joinaliases, (char*)opt, 30);
             continue;
             }
         /* Minimum security to join the channel. */
-        if (!stricmp(get_word(0), "MinSecurity"))
+        if (!stricmp((char*)get_word(0), "MinSecurity"))
             {
-            chan[chcount].minsec = atol(opt);
+            chan[chcount].minsec = atol((char*)opt);
             }
         /* Maximum security to join the channel. */
-        if (!stricmp(get_word(0), "MaxSecurity"))
+        if (!stricmp((char*)get_word(0), "MaxSecurity"))
             {
-            chan[chcount].maxsec = atol(opt);
+            chan[chcount].maxsec = atol((char*)opt);
             }
         /* Minimum security for automatic moderator status. */
-        if (!stricmp(get_word(0), "ModeratorSecurity"))
+        if (!stricmp((char*)get_word(0), "ModeratorSecurity"))
             {
-            chan[chcount].modsec = atol(opt);
+            chan[chcount].modsec = atol((char*)opt);
             }
         /* Show this channel in a SCAN? */
-        if (!stricmp(get_word(0), "Listed"))
+        if (!stricmp((char*)get_word(0), "Listed"))
             {
-            chan[chcount].listed = seektruth(opt);
+            chan[chcount].listed = seektruth((char*)opt);
             }
         }
     }
@@ -157,8 +157,8 @@ void list_channels(void)
 long chc; /* Counter. */
 
 /* Prepare the screen. */
-top_output(OUT_SCREEN, getlang("ChannelListHdr"));
-top_output(OUT_SCREEN, getlang("ChannelListSep"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"ChannelListHdr"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"ChannelListSep"));
 
 /* Display each definition. */
 for (chc = 0; chc < cfg.maxchandefs; chc++)
@@ -172,7 +172,7 @@ for (chc = 0; chc < cfg.maxchandefs; chc++)
         }
 
     /* Show the channel. */
-    top_output(OUT_SCREEN, getlang("ChannelListFormat"),
+    top_output(OUT_SCREEN, getlang((unsigned char *)"ChannelListFormat"),
                channelname(chan[chc].channel), chan[chc].topic);
     }
 
@@ -205,7 +205,7 @@ if (chnum > 4000999999UL && chnum < 0xFFFFFFFFUL)
        allow multi-word channels to be defined with underscores.
        Unfortunately, the current command processor does not support this. */
     for (cd = 0; chan[cdef].joinaliases[cd] != ' ' &&
-         cd < strlen(chan[cdef].joinaliases); cd++)
+         cd < strlen((char*)chan[cdef].joinaliases); cd++)
         {
         wordret[cd] = chan[cdef].joinaliases[cd];
         if (wordret[cd] == '_')
@@ -218,14 +218,14 @@ if (chnum > 4000999999UL && chnum < 0xFFFFFFFFUL)
 if (chnum >= 4000000000UL && chnum <= 4000999999UL)
     {
     /* The short name of a personal channel is simply the owner's handle. */
-    strcpy(wordret, top_output(OUT_STRINGNF, getlang("UserChanShortName"),
+    strcpy((char*)wordret, (char*)top_output(OUT_STRINGNF, getlang((unsigned char *)"UserChanShortName"),
            handles[(XINT) (chnum - 4000000000UL)].string));
     }
 /* Normal (numeric) channel. */
 if (chnum < 4000000000UL)
     {
     /* Simply returns the channel number as a string. */
-    ultoa(chnum, wordret, 10);
+    ultoa(chnum, (char*)wordret, 10);
     }
 
 return wordret;

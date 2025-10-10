@@ -1,8 +1,9 @@
-CPP	:= g++
+CPP	?= g++
 CC	?= gcc
 
 OS	:=	$(shell uname)
-CCFLAGS += -g -O2 -I../../odoors -L../../odoors/libs-$(OS) -I../../xpdev
+CCFLAGS += -g -O2 -I../../odoors -I../../xpdev
+LDFLAGS += -g -O2 -L../../odoors/libs-$(OS)
 
 ifeq ($(OS),NetBSD)
   CCFLAGS	+=	-D__unix__
@@ -41,10 +42,10 @@ $(OBJDIR)conwrap.o: $(OBJDIR) ../../xpdev/conwrap.c ../../xpdev/conwrap.h ../../
 	$(CC) $(CCFLAGS) -c ../../xpdev/conwrap.c -o $(OBJDIR)conwrap.o
 
 topact.$(OS) : topact.c $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o
-	$(CC) $(CCFLAGS) topact.c $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o -o topact.$(OS)
+	$(CC) $(LDFLAGS) $(CCFLAGS) topact.c $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o -lm -o topact.$(OS)
 
 topmaint.$(OS) : topmaint.c $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o $(OBJDIR)datewrap.o $(OBJDIR)conwrap.o
-	$(CC) $(CCFLAGS) topmaint.c $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o $(OBJDIR)datewrap.o $(OBJDIR)conwrap.o -o topmaint.$(OS)
+	$(CC) $(LDFLAGS) $(CCFLAGS) topmaint.c $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o $(OBJDIR)datewrap.o $(OBJDIR)conwrap.o -lm -o topmaint.$(OS)
 
 # Implicit C Compile Rule
 $(OBJDIR)%.o : %.c
@@ -100,4 +101,4 @@ OBJS := $(OBJDIR)actions.o \
 
 
 top.$(OS) : $(OBJS)
-	$(CC) $(CCFLAGS) -o $@ $^ -lODoors
+	$(CC) $(LDFLAGS) $(CCFLAGS) -o $@ $^ -lODoors -lm

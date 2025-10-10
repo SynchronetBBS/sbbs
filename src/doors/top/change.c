@@ -27,22 +27,22 @@ Processes the CHANGE command to change user settings.
 */
 void change_proc(void)
 {
-char tmpstr[256]; /* Temporary output buffer. */
+unsigned char tmpstr[256]; /* Temporary output buffer. */
 
 /* Change user handle. */
-if (checkcmdmatch(get_word(1), getlang("CmdsChangeHandle")) > 0)
+if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsChangeHandle")) > 0)
 	{
-    char thand[31]; /* Temporary handle buffer. */
+    unsigned char thand[31]; /* Temporary handle buffer. */
 
     if (!cfg.allowhandlechange)
         {
-        top_output(OUT_SCREEN, getlang("ChgHandNotAllowed"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"ChgHandNotAllowed"));
         return;
         }
 
     if (user.security < cfg.handlechgsec)
         {
-        top_output(OUT_SCREEN, getlang("NoAccChgHandle"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"NoAccChgHandle"));
         return;
         }
 
@@ -51,11 +51,11 @@ if (checkcmdmatch(get_word(1), getlang("CmdsChangeHandle")) > 0)
     /* Only continue processing if there's at least three words. */
     if (get_word_char(2, 0))
     	{
-	    strncpy(thand, &word_str[word_pos[2]], 30);
+	    strncpy((char*)thand, (char*)&word_str[word_pos[2]], 30);
 
         if (check_dupe_handles(thand))
            	{
-            top_output(OUT_SCREEN, getlang("HandleInUse"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"HandleInUse"));
             return;
 			}
 
@@ -72,61 +72,61 @@ if (checkcmdmatch(get_word(1), getlang("CmdsChangeHandle")) > 0)
         fixname(node->handle, thand);
         save_node_data(od_control.od_node, node);
 
-        top_output(OUT_SCREEN, getlang("ChangedHandle"), user.handle);
-        od_log_write(top_output(OUT_STRING, getlang("LogChangedHandle"),
+        top_output(OUT_SCREEN, getlang((unsigned char *)"ChangedHandle"), user.handle);
+        od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogChangedHandle"),
                      user.handle));
 
         return;
 	    }
-    top_output(OUT_SCREEN, getlang("HandleNotSpecified"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"HandleNotSpecified"));
     return;
 	}
 /* Change the user's gender. */
-if (checkcmdmatch(get_word(1), getlang("CmdsChangeSex")) > 0)
+if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsChangeSex")) > 0)
     {
     if (!cfg.allowsexchange)
         {
-        top_output(OUT_SCREEN, getlang("ChgSexNotAllowed"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"ChgSexNotAllowed"));
         return;
         }
 
     if (user.security < cfg.sexchangesec)
         {
-        top_output(OUT_SCREEN, getlang("NoAccChgSex"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"NoAccChgSex"));
         return;
         }
 
     /* Save new information to user file. */
     user.gender = !user.gender;
     save_user_data(user_rec_num, &user);
-    top_output(OUT_SCREEN, getlang("ChangedSex"),
-               getlang(user.gender ? "Female" : "Male"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"ChangedSex"),
+               getlang(user.gender ? (unsigned char *)"Female" : (unsigned char *)"Male"));
 
     /* Notify other users. */
     if (user.gender)
     {
-        strcpy(tmpstr, top_output(OUT_STRINGNF, getlang("Female")));
+        strcpy((char*)tmpstr, (char*)top_output(OUT_STRINGNF, getlang((unsigned char *)"Female")));
     }
     else
     {
-        strcpy(tmpstr, top_output(OUT_STRINGNF, getlang("Male")));
+        strcpy((char*)tmpstr, (char*)top_output(OUT_STRINGNF, getlang((unsigned char *)"Male")));
     }
     dispatch_message(MSG_SEXCHG, tmpstr, -1, 0, 0);
 
     return;
     }
 /* Change user's entry message. */
-if (checkcmdmatch(get_word(1), getlang("CmdsChangeEMessage")) > 0)
+if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsChangeEMessage")) > 0)
     {
     if (!cfg.allowexmessages)
         {
-        top_output(OUT_SCREEN, getlang("ChgEXMsgNotAllowed"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"ChgEXMsgNotAllowed"));
         return;
         }
 
     if (user.security < cfg.exmsgchangesec)
         {
-        top_output(OUT_SCREEN, getlang("NoAccChgEXMsg"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"NoAccChgEXMsg"));
         return;
         }
 
@@ -135,33 +135,33 @@ if (checkcmdmatch(get_word(1), getlang("CmdsChangeEMessage")) > 0)
         {
         memset(user.emessage, 0, 81);
         save_user_data(user_rec_num, &user);
-        top_output(OUT_SCREEN, getlang("EMessageCleared"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"EMessageCleared"));
         return;
         }
 
     /* Save new information to user file. */
     memset(user.emessage, 0, 81);
-    strncpy(user.emessage, &word_str[word_pos[2]], 80);
+    strncpy((char*)user.emessage, (char*)&word_str[word_pos[2]], 80);
     save_user_data(user_rec_num, &user);
-    top_output(OUT_SCREEN, getlang("ChangedEMessage"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"ChangedEMessage"));
 
     /* Notify other users. */
-    dispatch_message(MSG_EXMSGCHG, "\0", -1, 0, 0);
+    dispatch_message(MSG_EXMSGCHG, (unsigned char *)"", -1, 0, 0);
 
     return;
     }
 /* Change the user's exit message. */
-if (checkcmdmatch(get_word(1), getlang("CmdsChangeXMessage")) > 0)
+if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsChangeXMessage")) > 0)
     {
     if (!cfg.allowexmessages)
         {
-        top_output(OUT_SCREEN, getlang("ChgEXMsgNotAllowed"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"ChgEXMsgNotAllowed"));
         return;
         }
 
     if (user.security < cfg.exmsgchangesec)
         {
-        top_output(OUT_SCREEN, getlang("NoAccChgEXMsg"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"NoAccChgEXMsg"));
         return;
         }
 
@@ -170,28 +170,28 @@ if (checkcmdmatch(get_word(1), getlang("CmdsChangeXMessage")) > 0)
         {
         memset(user.xmessage, 0, 81);
         save_user_data(user_rec_num, &user);
-        top_output(OUT_SCREEN, getlang("XMessageCleared"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"XMessageCleared"));
         return;
         }
 
     /* Save new information to user file. */
     memset(user.xmessage, 0, 81);
-    strncpy(user.xmessage, &word_str[word_pos[2]], 80);
+    strncpy((char*)user.xmessage, (char*)&word_str[word_pos[2]], 80);
     save_user_data(user_rec_num, &user);
-    top_output(OUT_SCREEN, getlang("ChangedXMessage"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"ChangedXMessage"));
 
     /* Notify other users. */
-    dispatch_message(MSG_EXMSGCHG, "\0", -1, 0, 0);
+    dispatch_message(MSG_EXMSGCHG, (unsigned char *)"", -1, 0, 0);
     return;
     }
 /* Toggle dual-window chat mode. */
-if (checkcmdmatch(get_word(1), getlang("CmdsChangeChatMode")) > 0)
+if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsChangeChatMode")) > 0)
     {
     /* Dual Window chat mode currently only works with ANSI.  AVATAR
        support not implemented. */
     if (!od_control.user_ansi/* && !od_control.user_avatar*/)
         {
-        top_output(OUT_SCREEN, "DualWindowNoGfx");
+        top_output(OUT_SCREEN, (unsigned char *)"DualWindowNoGfx");
         return;
         }
     else
@@ -199,28 +199,28 @@ if (checkcmdmatch(get_word(1), getlang("CmdsChangeChatMode")) > 0)
         /* Save new information. */
         user.pref1 ^= PREF1_DUALWINDOW;
         save_user_data(user_rec_num, &user);
-        top_output(OUT_SCREEN, getlang("ChangedChatMode"),
+        top_output(OUT_SCREEN, getlang((unsigned char *)"ChangedChatMode"),
                    getlang(user.pref1 & PREF1_DUALWINDOW ?
-                           "DualWindowChatMode" : "NormalChatMode"));
+                           (unsigned char *)"DualWindowChatMode" : (unsigned char *)"NormalChatMode"));
         return;
         }
     }
 /* Toggle channel listed status. */
-if (checkcmdmatch(get_word(1), getlang("CmdsChangeListed")) > 0)
+if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsChangeListed")) > 0)
     {
     /* Save new information. */
     user.pref2 ^= PREF2_CHANLISTED;
     save_user_data(user_rec_num, &user);
     node->channellisted = (user.pref2 & PREF2_CHANLISTED);
     save_node_data(od_control.od_node, node);
-    top_output(OUT_SCREEN, getlang("ChangedListed"),
-               getlang(user.pref2 & PREF2_CHANLISTED ? "ChannelListed" :
-               "ChannelUnlisted"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"ChangedListed"),
+               getlang(user.pref2 & PREF2_CHANLISTED ? (unsigned char *)"ChannelListed" :
+               (unsigned char *)"ChannelUnlisted"));
     return;
     }
 
 /* Command not recognized, show help file instead. */
-show_helpfile("helpchg0");
+show_helpfile((unsigned char *)"helpchg0");
 
 return;
 }

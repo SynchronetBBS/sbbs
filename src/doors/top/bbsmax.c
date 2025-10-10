@@ -20,6 +20,7 @@ The module contains all of the functions for interfacing with Maximus v2.xx and
 v3.xx, excluding Maximus for OS/2 v3.0x.
 ******************************************************************************/
 
+#include "strwrap.h"
 #include "top.h"
 
 /* Blinking test used when displaying MECCA strings. */
@@ -78,7 +79,7 @@ close(ipcoutfil);
 userdata->quiet = !statbuf.avail;
 fixname(userdata->realname, statbuf.username);
 fixname(userdata->handle, statbuf.username);
-strcpy(userdata->statdesc, statbuf.status);
+strcpy((char*)userdata->statdesc, (char*)statbuf.status);
 userdata->node = nodenum;
 
 return 0;
@@ -98,9 +99,9 @@ char sist = 1; /* Flag indicating that there are messages in the IPC file. */
 
 /* Transfer the data from the generic BBS structure. */
 nodeinf.avail = !userdata->quiet;
-strcpy(nodeinf.username,
-       cfg.usehandles ? userdata->handle : userdata->realname);
-strcpy(nodeinf.status, userdata->statdesc);
+strcpy((char*)nodeinf.username,
+       cfg.usehandles ? (char*)userdata->handle : (char*)userdata->realname);
+strcpy((char*)nodeinf.status, (char*)userdata->statdesc);
 
 /* Open the file, creating it if it doesn't exist. */
 sprintf(winam, "%sipc%02X.bbs", cfg.bbsmultipath, nodenum);
@@ -150,7 +151,7 @@ XINT res, d; /* Result code, counter. */
 unsigned long bc; /* File position tracker. */
 struct file_stats_str ipctmp; /* File information buffer. */
 char pinam[256]; /* IPC file name. */
-char XFAR *msgdat = NULL; /* Buffer to hold incoming messages. */
+unsigned char XFAR *msgdat = NULL; /* Buffer to hold incoming messages. */
 struct _cstat statinf; /* Maximus node status buffer. */
 struct _cdat msginf; /* Maximus message information buffer. */
 
@@ -196,7 +197,7 @@ for (mc = 0; mc < statinf.msgs_waiting; mc++)
             {
             // Different for AVT when I find out what the store/recv codes are.
             od_disp_emu("\x1B" "[u", TRUE);
-            top_output(OUT_SCREEN, getlang("DWOutputPrefix"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"DWOutputPrefix"));
             }
         }
 
@@ -297,32 +298,32 @@ struct _cdat tmpmsg; /* Maximus message information buffer. */
    handle/real-name selection. */
 // filter_string(rpt, od_control.user_name);
 /* Prepare the page header. */
-itoa(od_control.od_node, outnum[0], 10);
-strcpy(tmp, top_output(OUT_STRINGNF, getlang("MaxPageHeader"),
+itoa(od_control.od_node, (char*)outnum[0], 10);
+strcpy((char*)tmp, (char*)top_output(OUT_STRINGNF, getlang((unsigned char *)"MaxPageHeader"),
                        cfg.usehandles ? user.handle : user.realname,
                        outnum[0]));
 /* Inserts the page header in front of the page text. */
-memmove(&pagebuf[strlen(tmp)], pagebuf, strlen(tmp));
-memcpy(pagebuf, tmp, strlen(tmp));
+memmove(&pagebuf[strlen((char*)tmp)], pagebuf, strlen((char*)tmp));
+memcpy(pagebuf, tmp, strlen((char*)tmp));
 /* Append the page footer. */
-strcat(pagebuf, top_output(OUT_STRINGNF, getlang("MaxPageFooter")));
+strcat((char*)pagebuf, (char*)top_output(OUT_STRINGNF, getlang((unsigned char *)"MaxPageFooter")));
 
 /* Set the message data. */
 tmpmsg.tid = od_control.od_node;
 tmpmsg.type = CMSG_HEY_DUDE;
-tmpmsg.len = strlen(pagebuf) + 1;
+tmpmsg.len = strlen((char*)pagebuf) + 1;
 
 /* Write the message to the IPC file. */
-itoa(nodenum, outnum[0], 10);
+itoa(nodenum, (char*)outnum[0], 10);
 res = max_writeipcmsg(nodenum, &tmpmsg, pagebuf);
 if (!res)
 	{
-    top_output(OUT_SCREEN, getlang("CantPage"), outnum[0]);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"CantPage"), outnum[0]);
     return 0;
     }
 else
 	{
-    top_output(OUT_SCREEN, getlang("Paged"), outnum[0]);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"Paged"), outnum[0]);
     }
 
 return 1;
@@ -334,7 +335,7 @@ return 1;
                 message - String containing the message text.
    Returns:  TRUE on success, FALSE on failure.
 */
-char max_writeipcmsg(XINT nodenum, struct _cdat *msginf, char *message)
+char max_writeipcmsg(XINT nodenum, struct _cdat *msginf, unsigned char *message)
 {
 XINT res; /* Result code. */
 char wimpath[256]; /* IPC file name. */
@@ -361,7 +362,7 @@ if (res == -1)
     }
 
 /* Maximus includes the null terminator in its length calculations. */
-msginf->len = strlen(message) + 1;
+msginf->len = strlen((char*)message) + 1;
 
 /* Extend the file size if it is too small.  This is done to make the record
    locking safer. */
@@ -472,7 +473,7 @@ if (!mres)
 /* Copy the user information into the generic BBS data buffer. */
 fixname(maxtemp.handle, user.handle);
 fixname(maxtemp.realname, user.realname);
-strcpy(maxtemp.statdesc, getlang("NodeStatus"));
+strcpy((char*)maxtemp.statdesc, (char*)getlang((unsigned char *)"NodeStatus"));
 maxtemp.node = od_control.od_node;
 maxtemp.speed = od_control.baud;
 
@@ -506,8 +507,8 @@ unsigned char mnam[MAX_PATH]; /* IPC file name. */
 XINT maxres = 0; /* Error counter. */
 
 /* The IPC file for this node is kept open while TOP is being run. */
-sprintf(mnam, "%sipc%02X.bbs", cfg.bbsmultipath, od_control.od_node);
-ipcinfil = sh_open(mnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+sprintf((char*)mnam, "%sipc%02X.bbs", cfg.bbsmultipath, od_control.od_node);
+ipcinfil = sh_open((char*)mnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
 				   S_IREAD | S_IWRITE);
 maxres += (ipcinfil == -1);
 
@@ -523,13 +524,13 @@ return maxres;
 char max_shortpageeditor(XINT nodenum, unsigned char *pagebuf)
     {
 
-    itoa(nodenum, outnum[0], 10);
+    itoa(nodenum, (char*)outnum[0], 10);
     /* TOP will retry if the input was censored. */
     do
         {
-        top_output(OUT_SCREEN, getlang("EnterPageLinPrompt"), outnum[0]);
-        od_input_str(pagebuf, 70, ' ', MAXASCII);
-        top_output(OUT_SCREEN, getlang("EnterPageLinSuffix"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"EnterPageLinPrompt"), outnum[0]);
+        od_input_str((char*)pagebuf, 70, ' ', MAXASCII);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"EnterPageLinSuffix"));
         }
     while(censorinput(pagebuf));
 
@@ -554,7 +555,7 @@ void max_showmeccastring(unsigned char *str)
 	blink = (od_control.od_cur_attrib & 0x80);
 
     /* Loop for each character in the string. */
-    for (d = 0; d < strlen(str); d++)
+    for (d = 0; d < strlen((char*)str); d++)
 	{
     unsigned XINT cccc; /* Colour code. */
 

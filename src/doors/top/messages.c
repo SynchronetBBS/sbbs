@@ -81,7 +81,7 @@ for (d = low; d <= high; d++)
         msgout.doneto = tonode;
         msgout.gender = user.gender;
         fixname(msgout.handle, user.handle);
-        strcpy(msgout.string, string);
+        strcpy((char*)msgout.string, (char*)string);
         /* The global override causes the message to be sent on channel 0
            (the global channel) instead of the current one. */
         msgout.channel = (msgsendglobal ? 0UL : curchannel);
@@ -111,7 +111,7 @@ return;
 */
 void write_message(XINT outnode, msg_typ *msgbuf)
 {
-char filnam[256], tstbit[2]; /* File name buffer, byte test buffer. */
+unsigned char filnam[256], tstbit[2]; /* File name buffer, byte test buffer. */
 XINT res, d; /* Result code, counter. */
 XINT mrecnum = -1; /* Message record number to use. */
 
@@ -120,8 +120,8 @@ XINT mrecnum = -1; /* Message record number to use. */
 msgbuf->structlength = sizeof(msg_typ);
 
 /* Open the message index file for the receiving node. */
-sprintf(filnam, "%smix%05i.tch", cfg.topworkpath, outnode);
-midxoutfil = sh_open(filnam, O_RDWR | O_CREAT | O_BINARY , SH_DENYNO,
+sprintf((char*)filnam, "%smix%05i.tch", cfg.topworkpath, outnode);
+midxoutfil = sh_open((char*)filnam, O_RDWR | O_CREAT | O_BINARY , SH_DENYNO,
 				     S_IREAD | S_IWRITE);
 if (midxoutfil == -1)
 	{
@@ -172,8 +172,8 @@ if (res == -1)
     }
 
 /* Open the message data file for the receiving node. */
-sprintf(filnam, "%smsg%05i.tch", cfg.topworkpath, outnode);
-msgoutfil = sh_open(filnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+sprintf((char*)filnam, "%smsg%05i.tch", cfg.topworkpath, outnode);
+msgoutfil = sh_open((char*)filnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
 				  S_IREAD | S_IWRITE);
 if (msgoutfil == -1)
 	{

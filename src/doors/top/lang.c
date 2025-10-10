@@ -36,8 +36,8 @@ XINT lres; /* Result code. */
 long linecount = 0, lld; /* Number of lines, counter. */
 
 /* Open the language file. */
-sprintf(outbuf, "%s%s", cfg.toppath, cfg.langfile);
-langfil = fopen(outbuf, "rt");
+sprintf((char*)outbuf, "%s%s", cfg.toppath, cfg.langfile);
+langfil = fopen((char*)outbuf, "rt");
 if (!langfil)
 	{
     errorabort(ERR_CANTOPEN, cfg.langfile);
@@ -46,7 +46,7 @@ if (!langfil)
 /* Count the number of usable lines (items) in the file. */
 while(!feof(langfil))
 	{
-    if (fgets(outbuf, 256, langfil))
+    if (fgets((char*)outbuf, 256, langfil))
     	{
         /* Only count non-comment lines. */
         if (outbuf[0] != ';')
@@ -100,7 +100,7 @@ rewind(langfil);
 for (lld = 0; lld < linecount; lld++)
 	{
     // Some kind of extra errcheck here.
-    fgets(outbuf, 256, langfil);
+    fgets((char*)outbuf, 256, langfil);
     if (outbuf[0] == ';')
     	{
         /* Skip comments. */
@@ -109,9 +109,9 @@ for (lld = 0; lld < linecount; lld++)
         }
     /* Remove trailing newline.  Not sure why the stripcr() macro wasn't
        used. */
-    if (outbuf[strlen(outbuf) - 1] == '\n')
+    if (outbuf[strlen((char*)outbuf) - 1] == '\n')
     	{
-        outbuf[strlen(outbuf) - 1] = 0;
+        outbuf[strlen((char*)outbuf) - 1] = 0;
         }
     /* Break the string to get the name and the rest of the text. */
     lres = split_string(outbuf);
@@ -119,9 +119,9 @@ for (lld = 0; lld < linecount; lld++)
     	{
         /* Copy the item name. */
         memset(langptrs[lld], 0, sizeof(lang_text_typ));
-        strncpy(langptrs[lld]->idtag, get_word(0), 30);
+        strncpy((char*)langptrs[lld]->idtag, (char*)get_word(0), 30);
         /* Get the length of the text, which starts at the second word. */
-        langptrs[lld]->length = strlen(&word_str[word_pos[1]]);
+        langptrs[lld]->length = strlen((char*)&word_str[word_pos[1]]);
         /* Allocate space for the text. */
         langptrs[lld]->string =
             malloc(langptrs[lld]->length + 1);
@@ -137,7 +137,7 @@ for (lld = 0; lld < linecount; lld++)
             return 0;
             }
         /* Copy the string text. */
-        strcpy(langptrs[lld]->string, &word_str[word_pos[1]]);
+        strcpy((char*)langptrs[lld]->string, (char*)&word_str[word_pos[1]]);
         }
     }
 
@@ -158,7 +158,7 @@ long gld; /* Counter. */
 for (gld = 0; gld < numlang; gld++)
 	{
     /* The ID tags have to match exactly, except for case. */
-    if (!stricmp(langname, langptrs[gld]->idtag))
+    if (!stricmp((char*)langname, (char*)langptrs[gld]->idtag))
     	{
         /* Return pointer to the language text. */
         return langptrs[gld]->string;
@@ -166,7 +166,7 @@ for (gld = 0; gld < numlang; gld++)
     }
 
 /* Return a blank string because the item wasn't found. */
-return "\0";
+return (unsigned char *)"";
 }
 
 /* getlangchar() - Gets a single character from a language item.
@@ -183,7 +183,7 @@ long gld; /* Counter. */
 for (gld = 0; gld < numlang; gld++)
 	{
     /* The ID tags have to match exactly, except for case. */
-    if (!stricmp(langname, langptrs[gld]->idtag))
+    if (!stricmp((char*)langname, (char*)langptrs[gld]->idtag))
     	{
         /* Return character in the specified position. */
         return langptrs[gld]->string[charnum];

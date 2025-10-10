@@ -22,6 +22,7 @@ multi-word commands) are handled by separate processors in other modules which
 are called from this module.
 ******************************************************************************/
 
+#include "strwrap.h"
 #include "top.h"
 
 /* This macro is used to determine where the name starts in a whisper or
@@ -59,11 +60,11 @@ if (user.pref1 & PREF1_DUALWINDOW)
 	{
 	// Different for AVT when I find out what the store/recv codes are.
 	od_disp_emu("\x1B" "[u", TRUE);
-	top_output(OUT_SCREEN, getlang("DWOutputPrefix"));
+	top_output(OUT_SCREEN, getlang((unsigned char *)"DWOutputPrefix"));
 	}
 else
 	{
-	top_output(OUT_SCREEN, getlang("ResponsePrefix"));
+	top_output(OUT_SCREEN, getlang((unsigned char *)"ResponsePrefix"));
 	}
 
 /* Set preference aliases. */
@@ -87,7 +88,7 @@ numwds = split_string(string);
    respond to the command in detail. */
 
 /* QUIT command (exit TOP). */
-if (checkcmdmatch(get_word(0), getlang("CmdsQuit")) > 0 &&
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsQuit")) > 0 &&
 	numwds == 1)
 	{
 	dispatch_message(MSG_EXIT, user.xmessage, -1, 0, 0);
@@ -96,51 +97,51 @@ if (checkcmdmatch(get_word(0), getlang("CmdsQuit")) > 0 &&
 	return;
 	}
 /* COMMANDS command (short list of all commands). */
-if (checkcmdmatch(get_word(0), getlang("CmdsCommands")) > 0 &&
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsCommands")) > 0 &&
 	numwds == 1)
 	{
 	minihelp();
 	return;
 	}
 /* HELP command. */
-if (checkcmdmatch(get_word(0), getlang("CmdsHelp")) > 0)
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsHelp")) > 0)
 	{
 	help_proc(numwds);
 	return;
 	}
 /* COLOURHELP command (PubColour code list). */
-if (checkcmdmatch(get_word(0), getlang("CmdsColourHelp")) > 0 &&
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsColourHelp")) > 0 &&
 	numwds == 1)
 	{
-	top_output(OUT_SCREEN, getlang("ColourHelpPrefix"));
+	top_output(OUT_SCREEN, getlang((unsigned char *)"ColourHelpPrefix"));
 	show_file("colhelp", SCRN_NONE);
 	return;
 	}
 /* ACTION multi-word command. */
-if (checkcmdmatch(get_word(0), getlang("CmdsAction")) > 0)
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsAction")) > 0)
 	{
 	if (!cfg.allowactions)
 		{
-		top_output(OUT_SCREEN, getlang("ActionsNotAllowed"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"ActionsNotAllowed"));
 		return;
 		}
 	if (user.security < cfg.actionusesec)
 		{
-		top_output(OUT_SCREEN, getlang("NoAccActUse"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"NoAccActUse"));
 		return;
 		}
 	action_proc(numwds);
 	return;
 	}
 /* TIME command. */
-if (checkcmdmatch(get_word(0), getlang("CmdsTime")) > 0 &&
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsTime")) > 0 &&
 	numwds == 1)
 	{
 	show_time();
 	return;
 	}
 /* SCAN or WHO command (show who's in each channel). */
-if (checkcmdmatch(get_word(0), getlang("CmdsWho")) > 0 &&
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsWho")) > 0 &&
 	numwds == 1)
 	{
 	scan_pub();
@@ -150,17 +151,17 @@ if (checkcmdmatch(get_word(0), getlang("CmdsWho")) > 0 &&
    for future upgradability.  It could also be used with BJ4TOP if BJ4TOP
    stored the cybercash in the TOP user file, as there is already space
    reserved in the file for a cybercash total. */
-if (checkcmdmatch(get_word(0), getlang("CmdsCDTotal")) > 0 &&
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsCDTotal")) > 0 &&
 	numwds == 1)
 	{
-	ultoa(user.cybercash, outnum[0], 10);
-	top_output(OUT_SCREEN, getlang("CDTotal"), outnum[0],
-			   user.cybercash == 1 ? getlang("CDSingular") :
-									 getlang("CDPlural"));
+	ultoa(user.cybercash, (char*)outnum[0], 10);
+	top_output(OUT_SCREEN, getlang((unsigned char *)"CDTotal"), outnum[0],
+			   user.cybercash == 1 ? getlang((unsigned char *)"CDSingular") :
+									 getlang((unsigned char *)"CDPlural"));
 	return;
 	}
 /* PROFILE command (enter the profile editor). */
-if (checkcmdmatch(get_word(0), getlang("CmdsProfile")) > 0 &&
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsProfile")) > 0 &&
 	numwds == 1)
 	{
 	node->task |= TASK_EDITING;
@@ -175,7 +176,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsProfile")) > 0 &&
 	return;
 	}
 /* BIO command (enter the biography editor). */
-if (checkcmdmatch(get_word(0), getlang("CmdsBio")) > 0 &&
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsBio")) > 0 &&
     numwds == 1)
 	{
 	node->task |= TASK_EDITING;
@@ -190,7 +191,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsBio")) > 0 &&
 	return;
 	}
 /* LOOKUP command (view a user's biography. */
-if (checkcmdmatch(get_word(0), getlang("CmdsLookUp")) > 0)
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsLookUp")) > 0)
 	{
 /* Old-style (pre-bio) lookup that showed all users. */
 /*    if (numwds == 1)
@@ -202,33 +203,33 @@ if (checkcmdmatch(get_word(0), getlang("CmdsLookUp")) > 0)
     /* LOOKUP needs a user name. */
     if (numwds == 1)
 		{
-		show_helpfile("helplkup");
+		show_helpfile((unsigned char *)"helplkup");
 		return;
 		}
 	if (displaybio(&word_str[word_pos[1]]))
 		{
-		top_output(OUT_SCREEN, getlang("LookUpSuffix"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"LookUpSuffix"));
 		}
 	return;
 	}
 /* USERLIST command (show list of all TOP users). */
-if (checkcmdmatch(get_word(0), getlang("CmdsUserList")) > 0)
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsUserList")) > 0)
 	{
 	userlist();
 	return;
 	}
 /* /LOGOFF command (quit TOP and hang up immediately). */
-if (checkcmdmatch(get_word(0), getlang("CmdsLogOff")) > 0 &&
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsLogOff")) > 0 &&
 	numwds == 1)
 	{
-	top_output(OUT_SCREEN, getlang("DirectLogOffMsg"));
+	top_output(OUT_SCREEN, getlang((unsigned char *)"DirectLogOffMsg"));
 	dispatch_message(MSG_EXIT, user.xmessage, -1, 0, 0);
 	unregister_node(FALSE);
 	od_exit(8, TRUE);
 	return;
 	}
 /* CHAT command (enter private chat mode). */
-if (checkcmdmatch(get_word(0), getlang("CmdsPrivChat")) > 0)
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsPrivChat")) > 0)
 	{
     /* CHAT needs a name. */
     if (numwds > 1)
@@ -239,15 +240,15 @@ if (checkcmdmatch(get_word(0), getlang("CmdsPrivChat")) > 0)
 
 		if (sendto == -1)
 			{
-			top_output(OUT_SCREEN, getlang("NotLoggedIn"), tmphand);
+			top_output(OUT_SCREEN, getlang((unsigned char *)"NotLoggedIn"), tmphand);
 			}
 		if (sendto == -2)
 			{
-			top_output(OUT_SCREEN, getlang("NotSpecific"), tmphand);
+			top_output(OUT_SCREEN, getlang((unsigned char *)"NotSpecific"), tmphand);
 			}
 		if (sendto == -3)
 			{
-			top_output(OUT_SCREEN, getlang("HasForgotYou"),
+			top_output(OUT_SCREEN, getlang((unsigned char *)"HasForgotYou"),
 					   handles[lastsendtonode].string);
 			}
         /* CHAT can be done across channels. */
@@ -258,7 +259,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsPrivChat")) > 0)
         /* Can't chat with yourself (it would be a nightmare technically). */
         if (sendto == od_control.od_node)
 			{
-			top_output(OUT_SCREEN, getlang("CantDoCmdToSelf"));
+			top_output(OUT_SCREEN, getlang((unsigned char *)"CantDoCmdToSelf"));
 			return;
 			}
 		if (sendto >= 0)
@@ -267,7 +268,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsPrivChat")) > 0)
 				{
                 /* If somebody else is waiting to chat with this node,
                    the user can't request a chat. */
-				top_output(OUT_SCREEN, getlang("PrivChatCantReq1"),
+				top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatCantReq1"),
 						   handles[privchatin].string);
 				return;
 				}
@@ -275,7 +276,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsPrivChat")) > 0)
 				{
                 /* If we've already requested to chat with somebody, we
                    can't request another chat. */
-				top_output(OUT_SCREEN, getlang("PrivChatCantReq2"),
+				top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatCantReq2"),
 						   handles[privchatout].string);
 				return;
 				}
@@ -307,7 +308,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsPrivChat")) > 0)
 				msgsendglobal = 1;
 				dispatch_message(MSG_WANTSPRIVCHAT, user.handle,
 								 sendto, 1, 0);
-				top_output(OUT_SCREEN, getlang("PrivChatReqOK"),
+				top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatReqOK"),
 						   handles[sendto].string);
 				privchatout = sendto;
 				}
@@ -316,7 +317,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsPrivChat")) > 0)
 		}
 	}
 /* DENYCHAT command (denies a user's private chat request. */
-if (checkcmdmatch(get_word(0), getlang("CmdsPrivDenyChat")) > 0 &&
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsPrivDenyChat")) > 0 &&
 	numwds == 1)
 	{
 	if (privchatin >= 0)
@@ -324,50 +325,50 @@ if (checkcmdmatch(get_word(0), getlang("CmdsPrivDenyChat")) > 0 &&
         /* Deny a request if we have one. */
         msgsendglobal = 1;
 		dispatch_message(MSG_DENYPRIVCHAT, user.handle, privchatin, 1, 0);
-		top_output(OUT_SCREEN, getlang("PrivChatDenyOK"),
+		top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatDenyOK"),
 				   handles[privchatin].string);
 		privchatin = -1;
 		}
 	else
 		{
         /* No request to deny. */
-		top_output(OUT_SCREEN, getlang("PrivChatCantDeny"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatCantDeny"));
 		}
 	return;
 	}
 /* NODES command (show who's on the entire BBS). */
-if (checkcmdmatch(get_word(0), getlang("CmdsNodes")) > 0 &&
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsNodes")) > 0 &&
 	numwds == 1)
 	{
     /* This command only works if BBS interfacing is on. */
     if (cfg.bbstype == BBS_UNKNOWN)
 		{
-		top_output(OUT_SCREEN, getlang("CmdNotAvail"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"CmdNotAvail"));
 		return;
 		}
 	bbs_useron(TRUE);
 	return;
 	}
 /* PAGE command (send a message to a user elsewhere on the BBS). */
-if (checkcmdmatch(get_word(0), getlang("CmdsPage")) > 0)
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsPage")) > 0)
 	{
     XINT pnode = -1; /* Node to page. */
-    char *pmsg = NULL; /* Text to page the node with. */
+    unsigned char *pmsg = NULL; /* Text to page the node with. */
 
     /* This command only works if BBS interfacing is on. */
 	if (cfg.bbstype == BBS_UNKNOWN)
 		{
-		top_output(OUT_SCREEN, getlang("CmdNotAvail"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"CmdNotAvail"));
 		return;
 		}
     /* The user specified the node number with the command. */
     if (numwds > 1)
         {
-        pnode = atoi(get_word(1));
+        pnode = atoi((char*)get_word(1));
         if (pnode < 1)
             {
-            itoa(cfg.maxnodes - 1, outnum[0], 10);
-            top_output(OUT_SCREEN, getlang("InvalidNode"), outnum[0]);
+            itoa(cfg.maxnodes - 1, (char*)outnum[0], 10);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"InvalidNode"), outnum[0]);
             return;
             }
         }
@@ -381,7 +382,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsPage")) > 0)
 	}
 /* FORGET command (ignores a user). */
 if (cfg.allowforgetting && user.security >= cfg.forgetsec &&
-	checkcmdmatch(get_word(0), getlang("CmdsForget")) > 0)
+	checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsForget")) > 0)
 	{
     /* FORGET needs a name. */
     if (numwds > 1)
@@ -401,32 +402,32 @@ if (cfg.allowforgetting && user.security >= cfg.forgetsec &&
 
 		if (sendto == -1)
 			{
-			top_output(OUT_SCREEN, getlang("NotLoggedIn"), tmphand);
+			top_output(OUT_SCREEN, getlang((unsigned char *)"NotLoggedIn"), tmphand);
 			}
 		if (sendto == -2)
 			{
-			top_output(OUT_SCREEN, getlang("NotSpecific"), tmphand);
+			top_output(OUT_SCREEN, getlang((unsigned char *)"NotSpecific"), tmphand);
 			}
         /* Forgetting yourself was causing too many technical problems
            so it is restricted to other users. */
         if (sendto == od_control.od_node)
 			{
-			top_output(OUT_SCREEN, getlang("CantDoCmdToSelf"));
+			top_output(OUT_SCREEN, getlang((unsigned char *)"CantDoCmdToSelf"));
 			return;
 			}
 		get_node_data(sendto, &fgtchk);
         /* Can't forget a user with sysop security. */
         if (fgtchk.security >= cfg.sysopsec)
 			{
-			top_output(OUT_SCREEN, getlang("CantDoCmdToSysop"));
+			top_output(OUT_SCREEN, getlang((unsigned char *)"CantDoCmdToSysop"));
 			return;
 			}
 		if (sendto >= 0)
 			{
 			forgetstatus[sendto] |= FGT_FORGOTTEN;
 			msgsendglobal = 1;
-			dispatch_message(MSG_FORGET, "\0", sendto, 1, 0);
-			top_output(OUT_SCREEN, getlang("Forgotten"),
+			dispatch_message(MSG_FORGET, (unsigned char *)"", sendto, 1, 0);
+			top_output(OUT_SCREEN, getlang((unsigned char *)"Forgotten"),
 					   handles[sendto].string);
 			}
 		return;
@@ -434,7 +435,7 @@ if (cfg.allowforgetting && user.security >= cfg.forgetsec &&
 	}
 /* REMEMBER command (undoes a FORGET command). */
 if (cfg.allowforgetting && user.security >= cfg.forgetsec &&
-	checkcmdmatch(get_word(0), getlang("CmdsRemember")) > 0)
+	checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsRemember")) > 0)
 	{
     /* Find node of user to forget. */
 	if (numwds > 1)
@@ -451,26 +452,26 @@ if (cfg.allowforgetting && user.security >= cfg.forgetsec &&
 
 		if (sendto == -1)
 			{
-			top_output(OUT_SCREEN, getlang("NotLoggedIn"), tmphand);
+			top_output(OUT_SCREEN, getlang((unsigned char *)"NotLoggedIn"), tmphand);
 			}
 		if (sendto == -2)
 			{
-			top_output(OUT_SCREEN, getlang("NotSpecific"), tmphand);
+			top_output(OUT_SCREEN, getlang((unsigned char *)"NotSpecific"), tmphand);
 			}
         /* Technically remembering yourself does not cause any problems
            (even though forgetting yourself does) but for consistency it is
            not allowed. */
         if (sendto == od_control.od_node)
 			{
-			top_output(OUT_SCREEN, getlang("CantDoCmdToSelf"));
+			top_output(OUT_SCREEN, getlang((unsigned char *)"CantDoCmdToSelf"));
 			return;
 			}
 		if (sendto >= 0)
 			{
 			forgetstatus[sendto] &= (255 - FGT_FORGOTTEN);
 			msgsendglobal = 1;
-			dispatch_message(MSG_REMEMBER, "\0", sendto, 1, 0);
-			top_output(OUT_SCREEN, getlang("Remembered"),
+			dispatch_message(MSG_REMEMBER, (unsigned char *)"", sendto, 1, 0);
+			top_output(OUT_SCREEN, getlang((unsigned char *)"Remembered"),
 					   handles[sendto].string);
 			}
 		return;
@@ -484,7 +485,7 @@ if (string[0] == 0 || numwds == 0)
 	return;
 	}
 /* JOIN command (changes the user's current channel. */
-if (checkcmdmatch(get_word(0), getlang("CmdsJoin")) > 0)
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsJoin")) > 0)
 	{
     unsigned long tchan; /* Channel to join. */
     long tch; /* Channel record number. */
@@ -505,7 +506,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsJoin")) > 0)
                 if (user.security < chan[tch].minsec ||
 					user.security > chan[tch].maxsec)
 					{
-					top_output(OUT_SCREEN, getlang("BadChannelSec"));
+					top_output(OUT_SCREEN, getlang((unsigned char *)"BadChannelSec"));
 					}
 				else
 					{
@@ -513,41 +514,41 @@ if (checkcmdmatch(get_word(0), getlang("CmdsJoin")) > 0)
                     res = cmi_unjoin(curchannel);
 					if (res != CMI_OKAY)
 						{
-						top_output(OUT_SCREEN, getlang("UnJoinError"));
+						top_output(OUT_SCREEN, getlang((unsigned char *)"UnJoinError"));
 						}
                     /* Join the new channel. */
                     res = cmi_join(tchan);
 					if (res == CMIERR_BANNED)
 						{
-						top_output(OUT_SCREEN, getlang("Banned"));
+						top_output(OUT_SCREEN, getlang((unsigned char *)"Banned"));
 						}
 					if (res == CMIERR_NOINV)
 						{
-						top_output(OUT_SCREEN, getlang("NotInvited"));
+						top_output(OUT_SCREEN, getlang((unsigned char *)"NotInvited"));
 						}
 					if (res != CMI_OKAY && res != CMIERR_BANNED &&
 						res != CMIERR_NOINV)
 						{
-						top_output(OUT_SCREEN, getlang("JoinError"));
+						top_output(OUT_SCREEN, getlang((unsigned char *)"JoinError"));
 						}
 					if (res == CMI_OKAY)
 						{
                         /* The join was successful. */
                         if (tchan > 0UL && tchan < 4000000000UL)
 							{
-							top_output(OUT_SCREEN, getlang("NowInChannel"),
+							top_output(OUT_SCREEN, getlang((unsigned char *)"NowInChannel"),
 									   channelname(tchan));
 							}
 						if (tchan >= 4001000000UL)
 							{
-							top_output(OUT_SCREEN, getlang("NowInConference"),
+							top_output(OUT_SCREEN, getlang((unsigned char *)"NowInConference"),
 									   channelname(tchan));
 							}
-						dispatch_message(MSG_OUTCHANNEL, "\0", -1, 0, 0);
+						dispatch_message(MSG_OUTCHANNEL, (unsigned char *)"", -1, 0, 0);
 						curchannel = tchan;
 						node->channel = curchannel;
 						save_node_data(od_control.od_node, node);
-						dispatch_message(MSG_INCHANNEL, "\0", -1, 0, 0);
+						dispatch_message(MSG_INCHANNEL, (unsigned char *)"", -1, 0, 0);
 						channelsummary();
 						}
 					else
@@ -557,7 +558,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsJoin")) > 0)
 						res = cmi_join(curchannel);
 						if (res != CMI_OKAY)
 							{
-							top_output(OUT_SCREEN, getlang("CantReJoin"));
+							top_output(OUT_SCREEN, getlang((unsigned char *)"CantReJoin"));
                             od_exit(230, FALSE);
 							}
 						}
@@ -573,41 +574,41 @@ if (checkcmdmatch(get_word(0), getlang("CmdsJoin")) > 0)
                 res = cmi_unjoin(curchannel);
 				if (res != CMI_OKAY)
 					{
-					top_output(OUT_SCREEN, getlang("UnJoinError"));
+					top_output(OUT_SCREEN, getlang((unsigned char *)"UnJoinError"));
 					}
                 /* Join the new channel. */
                 res = cmi_join(tchan);
 				if (res == CMIERR_BANNED)
 					{
-					top_output(OUT_SCREEN, getlang("Banned"));
+					top_output(OUT_SCREEN, getlang((unsigned char *)"Banned"));
 					}
 				if (res == CMIERR_NOINV)
 					{
-					top_output(OUT_SCREEN, getlang("NotInvited"));
+					top_output(OUT_SCREEN, getlang((unsigned char *)"NotInvited"));
 					}
 				if (res != CMI_OKAY && res != CMIERR_BANNED &&
 					res != CMIERR_NOINV)
 					{
-					top_output(OUT_SCREEN, getlang("JoinError"));
+					top_output(OUT_SCREEN, getlang((unsigned char *)"JoinError"));
 					}
 				if (res == CMI_OKAY)
 					{
                     /* The join was sucessful. */
 					if (tchan > 0UL && tchan < 4000000000UL)
 						{
-						top_output(OUT_SCREEN, getlang("NowInChannel"),
+						top_output(OUT_SCREEN, getlang((unsigned char *)"NowInChannel"),
 								   channelname(tchan));
 						}
 					if (tchan >= 4001000000UL)
 						{
-						top_output(OUT_SCREEN, getlang("NowInConference"),
+						top_output(OUT_SCREEN, getlang((unsigned char *)"NowInConference"),
 								   channelname(tchan));
 						}
-					dispatch_message(MSG_OUTCHANNEL, "\0", -1, 0, 0);
+					dispatch_message(MSG_OUTCHANNEL, (unsigned char *)"", -1, 0, 0);
 					curchannel = tchan;
 					node->channel = curchannel;
 					save_node_data(od_control.od_node, node);
-					dispatch_message(MSG_INCHANNEL, "\0", -1, 0, 0);
+					dispatch_message(MSG_INCHANNEL, (unsigned char *)"", -1, 0, 0);
 					channelsummary();
 					}
 				else
@@ -617,7 +618,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsJoin")) > 0)
                     res = cmi_join(curchannel);
 					if (res != CMI_OKAY)
 						{
-						top_output(OUT_SCREEN, getlang("CantReJoin"));
+						top_output(OUT_SCREEN, getlang((unsigned char *)"CantReJoin"));
                         od_exit(230, FALSE);
 						}
 					}
@@ -629,7 +630,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsJoin")) > 0)
 
             /* If the second word (the channel to join) is all digits, it
                is not considered a name. */
-            for (z = 0; z < strlen(&word_str[word_pos[1]]); z++)
+            for (z = 0; z < strlen((char*)&word_str[word_pos[1]]); z++)
 				{
 				if (!isdigit(word_str[word_pos[1] + z]))
 					{
@@ -639,7 +640,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsJoin")) > 0)
 				}
 
             /* Convert the string to a number. */
-            tchan = strtoul(&word_str[word_pos[1]], NULL, 10);
+            tchan = strtoul((char*)&word_str[word_pos[1]], NULL, 10);
 
             /* Join the channel by number. */
 			if (((tchan > 0 && tchan < 4000000000UL) ||
@@ -651,33 +652,33 @@ if (checkcmdmatch(get_word(0), getlang("CmdsJoin")) > 0)
                 res = cmi_unjoin(curchannel);
 				if (res != CMI_OKAY)
 					{
-					top_output(OUT_SCREEN, getlang("UnJoinError"));
+					top_output(OUT_SCREEN, getlang((unsigned char *)"UnJoinError"));
 					}
                 /* Join the new channel. */
                 res = cmi_join(tchan);
 				if (res == CMIERR_BANNED)
 					{
-					top_output(OUT_SCREEN, getlang("Banned"));
+					top_output(OUT_SCREEN, getlang((unsigned char *)"Banned"));
 					}
 				if (res == CMIERR_NOINV)
 					{
-					top_output(OUT_SCREEN, getlang("NotInvited"));
+					top_output(OUT_SCREEN, getlang((unsigned char *)"NotInvited"));
 					}
 				if (res != CMI_OKAY && res != CMIERR_BANNED &&
 					res != CMIERR_NOINV)
 					{
-					top_output(OUT_SCREEN, getlang("JoinError"));
+					top_output(OUT_SCREEN, getlang((unsigned char *)"JoinError"));
 					}
 				if (res == CMI_OKAY)
 					{
                     /* The join was successful. */
-					top_output(OUT_SCREEN, getlang("NowInChannel"),
+					top_output(OUT_SCREEN, getlang((unsigned char *)"NowInChannel"),
 							   channelname(tchan));
-					dispatch_message(MSG_OUTCHANNEL, "\0", -1, 0, 0);
+					dispatch_message(MSG_OUTCHANNEL, (unsigned char *)"", -1, 0, 0);
 					curchannel = tchan;
 					node->channel = curchannel;
 					save_node_data(od_control.od_node, node);
-					dispatch_message(MSG_INCHANNEL, "\0", -1, 0, 0);
+					dispatch_message(MSG_INCHANNEL, (unsigned char *)"", -1, 0, 0);
 					channelsummary();
 					}
 				else
@@ -687,7 +688,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsJoin")) > 0)
                     res = cmi_join(curchannel);
 					if (res != CMI_OKAY)
 						{
-						top_output(OUT_SCREEN, getlang("CantReJoin"));
+						top_output(OUT_SCREEN, getlang((unsigned char *)"CantReJoin"));
                         od_exit(230, FALSE);
 						}
 					}
@@ -714,33 +715,33 @@ if (checkcmdmatch(get_word(0), getlang("CmdsJoin")) > 0)
 					res = cmi_unjoin(curchannel);
 					if (res != CMI_OKAY)
 						{
-						top_output(OUT_SCREEN, getlang("UnJoinError"));
+						top_output(OUT_SCREEN, getlang((unsigned char *)"UnJoinError"));
 						}
                     /* Join the new one. */
                     res = cmi_join(tchan);
 					if (res == CMIERR_BANNED)
 						{
-						top_output(OUT_SCREEN, getlang("Banned"));
+						top_output(OUT_SCREEN, getlang((unsigned char *)"Banned"));
 						}
 					if (res == CMIERR_NOINV)
 						{
-						top_output(OUT_SCREEN, getlang("NotInvited"));
+						top_output(OUT_SCREEN, getlang((unsigned char *)"NotInvited"));
 						}
 					if (res != CMI_OKAY && res != CMIERR_BANNED &&
 						res != CMIERR_NOINV)
 						{
-						top_output(OUT_SCREEN, getlang("JoinError"));
+						top_output(OUT_SCREEN, getlang((unsigned char *)"JoinError"));
 						}
 					if (res == CMI_OKAY)
 						{
                         /* The join was sucessful. */
-                        top_output(OUT_SCREEN, getlang("NowInUserChannel"),
+                        top_output(OUT_SCREEN, getlang((unsigned char *)"NowInUserChannel"),
 								   channelname(tchan));
-						dispatch_message(MSG_OUTCHANNEL, "\0", -1, 0, 0);
+						dispatch_message(MSG_OUTCHANNEL, (unsigned char *)"", -1, 0, 0);
 						curchannel = tchan;
 						node->channel = curchannel;
 						save_node_data(od_control.od_node, node);
-						dispatch_message(MSG_INCHANNEL, "\0", -1, 0, 0);
+						dispatch_message(MSG_INCHANNEL, (unsigned char *)"", -1, 0, 0);
 						channelsummary();
 						}
 					else
@@ -750,7 +751,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsJoin")) > 0)
 						res = cmi_join(curchannel);
 						if (res != CMI_OKAY)
 							{
-							top_output(OUT_SCREEN, getlang("CantReJoin"));
+							top_output(OUT_SCREEN, getlang((unsigned char *)"CantReJoin"));
                             od_exit(230, FALSE);
 							}
 						}
@@ -758,7 +759,7 @@ if (checkcmdmatch(get_word(0), getlang("CmdsJoin")) > 0)
 				else
 					{
                     /* Invalid channel number/name. */
-					top_output(OUT_SCREEN, getlang("BadChannelName"));
+					top_output(OUT_SCREEN, getlang((unsigned char *)"BadChannelName"));
 					}
 				}
 			}
@@ -766,100 +767,100 @@ if (checkcmdmatch(get_word(0), getlang("CmdsJoin")) > 0)
 		}
 	}
 /* CONFLIST command (list conferences). */
-if (checkcmdmatch(get_word(0), getlang("CmdsConfList")) > 0 &&
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsConfList")) > 0 &&
 	numwds == 1)
 	{
 	list_channels();
 	return;
 	}
 /* MODERATOR multi-word command. */
-if (checkcmdmatch(get_word(0), getlang("CmdsModerator")) > 0)
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsModerator")) > 0)
 	{
 	mod_proc();
 	return;
 	}
 /* SYSOP multi-word command. */
-if (checkcmdmatch(get_word(0), getlang("CmdsSysop")) > 0 &&
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsSysop")) > 0 &&
 	user.security >= cfg.sysopsec)
 	{
 	sysop_proc();
 	return;
 	}
 /* CHANGE multi-word command. */
-if (checkcmdmatch(get_word(0), getlang("CmdsChange")) > 0)
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsChange")) > 0)
 	{
 	change_proc();
 	return;
 	}
 /* General action. */
 if (!(user.pref2 & PREF2_ACTIONSOFF) && cfg.allowgas &&
-	checkcmdmatch(get_word(0), getlang("CmdsGA")) > 0)
+	checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsGA")) > 0)
 	{
 	if (user.security < cfg.actionusesec)
 		{
-		top_output(OUT_SCREEN, getlang("NoAccActUse"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"NoAccActUse"));
 		return;
 		}
     /* GAs need text after the command. */
     if (numwds > 1)
 		{
-		top_output(OUT_SCREEN, getlang("GASentPrefix"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"GASentPrefix"));
 		dispatch_message(MSG_GA, &word_str[word_pos[1]], -1, 0, echoga);
 		if (msgsent)
 			{
-			top_output(OUT_SCREEN, getlang("GASent"));
+			top_output(OUT_SCREEN, getlang((unsigned char *)"GASent"));
 			}
 		return;
 		}
-	top_output(OUT_SCREEN, getlang("GANotSentPrefix"));
+	top_output(OUT_SCREEN, getlang((unsigned char *)"GANotSentPrefix"));
 	if (msgsent)
 		{
-		top_output(OUT_SCREEN, getlang("GANotSent"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"GANotSent"));
 		}
 	return;
 	}
 /* Posessive general action. */
 if (!(user.pref2 & PREF2_ACTIONSOFF) && cfg.allowgas &&
-	checkcmdmatch(get_word(0), getlang("CmdsGA2")) > 0)
+	checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsGA2")) > 0)
 	{
     /* This command is treated identically to a normal GA except for the
        message number sent to other nodes. */
 
 	if (user.security < cfg.actionusesec)
 		{
-		top_output(OUT_SCREEN, getlang("NoAccActUse"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"NoAccActUse"));
 		return;
 		}
 	if (numwds > 1)
 		{
-		top_output(OUT_SCREEN, getlang("GASentPrefix"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"GASentPrefix"));
 		dispatch_message(MSG_GA2, &word_str[word_pos[1]], -1, 0, echoga);
 		if (msgsent)
 			{
-			top_output(OUT_SCREEN, getlang("GASent"));
+			top_output(OUT_SCREEN, getlang((unsigned char *)"GASent"));
 			}
 		return;
 		}
-	top_output(OUT_SCREEN, getlang("GANotSentPrefix"));
+	top_output(OUT_SCREEN, getlang((unsigned char *)"GANotSentPrefix"));
 	if (msgsent)
 		{
-		top_output(OUT_SCREEN, getlang("GANotSent"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"GANotSent"));
 		}
 	return;
 	}
 
 /* Game multi-word commands, not used at this time. */
-if (checkcmdmatch(get_word(0), getlang("CmdsSlots")))
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsSlots")))
 	{
 	slots_game();
 	return;
 	}
-/*//|if (checkcmdmatch(get_word(0), getlang("CmdsPoker")))
+/*//|if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsPoker")))
 	{
 	poker_game(numwds);
 	return;
 	}*///|
-if (checkcmdmatch(get_word(0), getlang("CmdsMatch")))
+if (checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsMatch")))
 	{
 	matchgame();
 	return;
@@ -875,23 +876,23 @@ if (checkcmdmatch(get_word(0), getlang("CmdsMatch")))
 if (cfg.allowprivmsgs &&
     /* Check both words of the long form and the single character of the
        short form. */
-    ((checkcmdmatch(get_word(0), getlang("CmdsWhisperLong1")) &&
-	 checkcmdmatch(get_word(1), getlang("CmdsWhisperLong2"))) ||
-	 get_word_char(0, 0) == getlangchar("WhisperShortChar", 0)))
+    ((checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsWhisperLong1")) &&
+	 checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsWhisperLong2"))) ||
+	 get_word_char(0, 0) == getlangchar((unsigned char *)"WhisperShortChar", 0)))
 	{
 	if (user.security < cfg.privmessagesec)
 		{
-		top_output(OUT_SCREEN, getlang("NoAccPrivMsg"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"NoAccPrivMsg"));
 		return;
 		}
 
-	if (get_word_char(0, 0) == getlangchar("WhisperShortChar", 0))
+	if (get_word_char(0, 0) == getlangchar((unsigned char *)"WhisperShortChar", 0))
 		{
         /* Short form was used, so the length of the command is one (a
            single character). */
 		cmdlen = 1;
         /* Test if only the command letter was specified. */
-        if (strlen(get_word(0)) == 1)
+        if (strlen((char*)get_word(0)) == 1)
 			{
 			cmdlen = -1;
 			}
@@ -923,31 +924,31 @@ if (cfg.allowprivmsgs &&
 			{
 			if (sendto == -1)
 				{
-				top_output(OUT_SCREEN, getlang("NotLoggedIn"), tmphand);
+				top_output(OUT_SCREEN, getlang((unsigned char *)"NotLoggedIn"), tmphand);
 				}
 			if (sendto == -2)
 				{
-				top_output(OUT_SCREEN, getlang("NotSpecific"), tmphand);
+				top_output(OUT_SCREEN, getlang((unsigned char *)"NotSpecific"), tmphand);
 				}
 			if (sendto == -3)
 				{
-				top_output(OUT_SCREEN, getlang("HasForgotYou"),
+				top_output(OUT_SCREEN, getlang((unsigned char *)"HasForgotYou"),
 						   handles[lastsendtonode].string);
 				}
 			if (sendto == -4)
 				{
-				top_output(OUT_SCREEN, getlang("NotInYourChannel"),
+				top_output(OUT_SCREEN, getlang((unsigned char *)"NotInYourChannel"),
 						   handles[lastsendtonode].string);
 				}
 			if (sendto >= 0)
 				{
                 /* Send the whisper. */
-				top_output(OUT_SCREEN, getlang("WhisperSentPrefix"));
+				top_output(OUT_SCREEN, getlang((unsigned char *)"WhisperSentPrefix"));
 				dispatch_message(MSG_WHISPER, spacecheck(tmpstr), sendto,
 								 1, 0);
 				if (msgsent)
 					{
-					top_output(OUT_SCREEN, getlang("WhisperSent"),
+					top_output(OUT_SCREEN, getlang((unsigned char *)"WhisperSent"),
 							   handles[sendto].string);
 					}
 				}
@@ -956,26 +957,26 @@ if (cfg.allowprivmsgs &&
 		}
 
     /* Not enough information was specified. */
-    top_output(OUT_SCREEN, getlang("WhisperNotSentPref"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"WhisperNotSentPref"));
 	if (msgsent)
 		{
-		top_output(OUT_SCREEN, getlang("WhisperNotSent"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"WhisperNotSent"));
 		}
 	return;
 	}
 /* Directed messages. */
-if ( ((checkcmdmatch(get_word(0), getlang("CmdsDirectedLong1")) &&
-	 checkcmdmatch(get_word(1), getlang("CmdsDirectedLong2"))) ||
-	 get_word_char(0, 0) == getlangchar("DirectedShortChar", 0)))
+if ( ((checkcmdmatch(get_word(0), getlang((unsigned char *)"CmdsDirectedLong1")) &&
+	 checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsDirectedLong2"))) ||
+	 get_word_char(0, 0) == getlangchar((unsigned char *)"DirectedShortChar", 0)))
 	{
     /* Directed messages are handled identically to whispers except for the
        commands, the message sent to other nodes, and the language items
        used. */
 
-    if (get_word_char(0, 0) == getlangchar("DirectedShortChar", 0))
+    if (get_word_char(0, 0) == getlangchar((unsigned char *)"DirectedShortChar", 0))
 		{
 		cmdlen = 1;
-		if (strlen(get_word(0)) == 1)
+		if (strlen((char*)get_word(0)) == 1)
 			{
 			cmdlen = -1;
 			}
@@ -1001,40 +1002,40 @@ if ( ((checkcmdmatch(get_word(0), getlang("CmdsDirectedLong1")) &&
 			{
 			if (sendto == -1)
 				{
-				top_output(OUT_SCREEN, getlang("NotLoggedIn"), tmphand);
+				top_output(OUT_SCREEN, getlang((unsigned char *)"NotLoggedIn"), tmphand);
 				}
 			if (sendto == -2)
 				{
-				top_output(OUT_SCREEN, getlang("NotSpecific"), tmphand);
+				top_output(OUT_SCREEN, getlang((unsigned char *)"NotSpecific"), tmphand);
 				}
 			if (sendto == -3)
 				{
-				top_output(OUT_SCREEN, getlang("HasForgotYou"),
+				top_output(OUT_SCREEN, getlang((unsigned char *)"HasForgotYou"),
 						   handles[lastsendtonode].string);
 				}
 			if (sendto == -4)
 				{
-				top_output(OUT_SCREEN, getlang("NotInYourChannel"),
+				top_output(OUT_SCREEN, getlang((unsigned char *)"NotInYourChannel"),
 						   handles[lastsendtonode].string);
 				}
 			if (sendto >= 0)
 				{
-				top_output(OUT_SCREEN, getlang("DirectedSentPrefix"));
+				top_output(OUT_SCREEN, getlang((unsigned char *)"DirectedSentPrefix"));
 				dispatch_message(MSG_DIRECTED, spacecheck(tmpstr), sendto,
                                  0, user.pref2 & PREF2_ECHOOWNTEXT);
 				if (msgsent)
 					{
-					top_output(OUT_SCREEN, getlang("DirectedSent"),
+					top_output(OUT_SCREEN, getlang((unsigned char *)"DirectedSent"),
 							   handles[sendto].string);
 					}
 				}
 			return;
 			}
 		}
-	top_output(OUT_SCREEN, getlang("DirectNotSentPref"));
+	top_output(OUT_SCREEN, getlang((unsigned char *)"DirectNotSentPref"));
 	if (msgsent)
 		{
-		top_output(OUT_SCREEN, getlang("DirectedNotSent"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"DirectedNotSent"));
 		}
 	return;
 	}
@@ -1048,7 +1049,7 @@ for (z = 0; z < numactions && !auflg && !cfg.allowactions; z++)
 		{
 		process_action(z, numwds, string);
 		z = numactions;
-		top_output(OUT_SCREEN, getlang("ActionUseSuffix"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"ActionUseSuffix"));
 		auflg = 1;
 		}
 	}
@@ -1059,7 +1060,7 @@ for (z = 0; z < 4 && !auflg && cfg.allowactions; z++)
 		{
 		process_action(-(z + 1), numwds, string);
 		z = 1000;
-		top_output(OUT_SCREEN, getlang("ActionUseSuffix"));
+		top_output(OUT_SCREEN, getlang((unsigned char *)"ActionUseSuffix"));
 		auflg = 1;
 		}
 	}*/
@@ -1077,15 +1078,15 @@ if (cfg.allowactions && !(user.pref2 & PREF2_ACTIONSOFF) &&
 /* Normal text. */
 if (user.security < cfg.talksec)
 	{
-	top_output(OUT_SCREEN, getlang("NoAccTalk"));
+	top_output(OUT_SCREEN, getlang((unsigned char *)"NoAccTalk"));
 	return;
 	}
 dispatch_message(MSG_TEXT, string, priv, 0,
                  user.pref2 & PREF2_ECHOOWNTEXT);
-top_output(OUT_SCREEN, getlang("MsgSentPrefix"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"MsgSentPrefix"));
 if (msgsent)
 	{
-	top_output(OUT_SCREEN, getlang("MsgSent"));
+	top_output(OUT_SCREEN, getlang((unsigned char *)"MsgSent"));
 	}
 
 }

@@ -76,11 +76,11 @@ typedef struct date XDATE;
 
 #define oddnum(nnnn) ((nnnn % 2) == 1)
 #define evennum(nnnn) (((nnnn % 2) == 0) || (nnnn == 0))
-#define get_word_char(wordnum, charpos) (word_str[word_pos[wordnum] + charpos])
+#define get_word_char(wordnum, charpos) ((unsigned char)(word_str[word_pos[wordnum] + charpos]))
 
-#define verifypath(vpath) backslash(vpath)
+#define verifypath(vpath) backslash((char*)vpath)
 
-#define stripcr(vvvv) if (vvvv[strlen(vvvv) - 1] == 10) vvvv[strlen(vvvv) - 1] = 0
+#define stripcr(vvvv) if (((char*)vvvv)[strlen((char*)vvvv) - 1] == 10) ((char*)vvvv)[strlen((char*)vvvv) - 1] = 0
 
 #define MAXNODES       ((long) cfg.maxnodes)
 #define MAXSTRLEN      255L
@@ -257,7 +257,7 @@ typedef struct date XDATE;
 #define CMIERR_NOINV           2
 #define CMIERR_NOTFOUND        3
 #define CMIERR_FULL            4
-#define CMIERR_FILEIO        255
+#define CMIERR_FILEIO         -1
 
 #define BIORESP_NUMERIC		   0
 #define BIORESP_STRING		   1
@@ -540,7 +540,7 @@ typedef struct file_stats_str
 //|#include "toppoker.h"
 
 #ifndef __WIN32__
-extern int main(XINT ac, char *av[]);
+extern int main(int ac, char *av[]);
 #else
 extern int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                           LPSTR lpszCmdParam, int nCmdShow);
@@ -566,23 +566,23 @@ extern void check_nodes_used(char fatal);
 extern XINT process_messages(char delname);
 extern char get_node_data(XINT recnum, node_idx_typ *nodebuf);
 extern XINT split_string(unsigned char *line);
-extern XINT find_node_from_name(char *newstring, char *handle,
-							   char *oldstring);
+extern XINT find_node_from_name(unsigned char *newstring, unsigned char *handle,
+							   unsigned char *oldstring);
 /*extern XINT find_max_score(XINT *check, XINT *thescore);*/
 extern void show_time(void);
 extern void quit_top(void);
 extern void cmdline_help(void);
 extern void profile_editor(void);
 extern void save_node_data(XINT recnum, node_idx_typ *nodebuf);
-extern void lookup(char *string);
+extern void lookup(unsigned char *string);
 extern void _USERENTRY before_exit(void);
 extern void fixname(unsigned char *newname, unsigned char *oldname);
-extern char check_dupe_handles(char *string);
+extern char check_dupe_handles(unsigned char *string);
 extern unsigned char *top_output(char outmode, unsigned char *string, ...);
-extern void errorabort(XINT code, char *info);
-extern void filter_string(char *newstring, char *oldstring);
-extern void get_password(char *buffer, XINT len);
-extern void trim_string(char *newstring, char *oldstring,
+extern void errorabort(XINT code, unsigned char *info);
+extern void filter_string(unsigned char *newstring, unsigned char *oldstring);
+extern void get_password(unsigned char *buffer, XINT len);
+extern void trim_string(unsigned char *newstring, unsigned char *oldstring,
 						unsigned char nobits);
 extern char iswhite(unsigned char ch);
 extern void welcomescreen(void);
@@ -607,21 +607,21 @@ extern void userpack(void);
 extern void slots_game(void);
 extern void load_slots_stats(slots_stat_typ *slbuf);
 extern void save_slots_stats(slots_stat_typ *slbuf);
-extern char XFAR *get_word(XINT wordnum);
+extern unsigned char XFAR *get_word(XINT wordnum);
 extern void quit_top_screen(void);
 extern void sysop_proc(void);
 extern void change_proc(void);
 extern char loadlang(void);
-extern void outwordwrap(XINT omode, XINT *wwwc, char *www);
+extern void outwordwrap(XINT omode, XINT *wwwc, unsigned char *www);
 extern unsigned long outchecksuffix(unsigned char *strstart);
 extern char checkcmdmatch(unsigned char *instring, unsigned char *cmdstring);
 extern void matchgame(void);
 #ifdef __OS2__
-extern void LIBENTRY processcfg(char *keyword, char *options);
+extern void LIBENTRY processcfg(unsigned char *keyword, unsigned char *options);
 #else
 extern void processcfg(char *keyword, char *options);
 #endif
-extern char seektruth(unsigned char *seekstr);
+extern char seektruth(char *seekstr);
 extern XINT loadnodecfg(unsigned char *exepath);
 extern XINT splitnodecfgline(unsigned char *ncline);
 extern unsigned char *getlang(unsigned char *langname);
@@ -651,7 +651,7 @@ extern void action_list(XINT alwords);
 extern void action_proc(XINT awords);
 extern void help_proc(XINT helpwds);
 extern void privatechat(XINT pcnode);
-extern void get_extension(char *ename, char *ebuf);
+extern void get_extension(unsigned char *ename, unsigned char *ebuf);
 extern char loadpersactions(void);
 extern char cmi_join(unsigned long chnum);
 extern char cmi_unjoin(unsigned long chnum);
@@ -676,7 +676,7 @@ extern char cmi_unbusy(void);
 extern char validatekey(byte *vkstr, byte *vkcode, word seed1, word seed2);
 extern dword generatekey(byte *gkstr, word gks1, word gks2);
 extern char load_censor_words(void);
-extern char censorinput(char *str);
+extern char censorinput(unsigned char *str);
 extern char loadbioquestions(void);
 extern char displaybio(unsigned char *uname);
 extern char writebioresponse(XINT qnum, bio_resp_typ *br);
@@ -688,7 +688,7 @@ extern XINT find_user_from_name(unsigned char *uname, user_data_typ *ubuf,
                                 XINT nuse);
 extern void userlist(void);
 extern void sendtimemsgs(char *string);
-extern XINT sh_unlink(char *filnam);
+extern XINT sh_unlink(unsigned char *filnam);
 extern char biocheckalldone(void);
 
 #ifdef __OS2__
@@ -713,7 +713,7 @@ extern char max_saveipcstatus(XINT nodenum, bbsnodedata_typ *userdata);
 extern XINT max_processipcmsgs(void);
 extern char max_page(XINT nodenum, unsigned char *pagebuf);
 extern char max_writeipcmsg(XINT nodenum, struct _cdat *msginf,
-		                    char *message);
+		                    unsigned char *message);
 extern void max_setexistbits(bbsnodedata_typ *userdata);
 extern void max_login(void);
 extern void max_logout(void);
@@ -744,7 +744,7 @@ extern clock_t myclock(void);
 extern TOP_config_typ cfg;
 extern XINT user_rec_num;
 extern user_data_typ user;
-extern char XFAR *word_str;
+extern unsigned char XFAR *word_str;
 extern XINT XFAR *word_pos;
 extern XINT XFAR *word_len;
 extern stringarray2 XFAR *handles;

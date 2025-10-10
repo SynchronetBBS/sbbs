@@ -39,7 +39,7 @@ which is contained in WORDS.C.
 void fixname(unsigned char *newname, unsigned char *oldname)
 {
 XINT d, next; /* Counter, flag if next character should be a capital. */
-char fntmp[512]; /* Temporary buffer to hold the fixed name. */
+unsigned char fntmp[512]; /* Temporary buffer to hold the fixed name. */
 
 /* There was a configuration option to control name fixing until I found
    out that some fixing is built into the door kit, so overriding it
@@ -52,18 +52,18 @@ char fntmp[512]; /* Temporary buffer to hold the fixed name. */
     }*/
 
 /* Don't fix 0-length strings. */
-if (strlen(oldname) < 1)
+if (strlen((char*)oldname) < 1)
     {
     newname[0] = '\0';
     return;
     }
 
 /* Prepare the name for fixing. */
-strcpy(fntmp, oldname);
-strlwr(fntmp);
+strcpy((char*)fntmp, (char*)oldname);
+strlwr((char*)fntmp);
 
 /* Loop through each character. */
-for (d = 0, next = 1; d < strlen(fntmp); d++)
+for (d = 0, next = 1; d < strlen((char*)fntmp); d++)
     {
     /* Skip colour codes. */
     if (fntmp[d] == '^')
@@ -84,7 +84,7 @@ for (d = 0, next = 1; d < strlen(fntmp); d++)
         }
     }
 
-strcpy(newname, fntmp);
+strcpy((char*)newname, (char*)fntmp);
 
 return;
 }
@@ -95,13 +95,13 @@ return;
    Returns:  Nothing.
    Notes:  newstring and oldstring may point to the same place.
 */
-void filter_string(char *newstring, char *oldstring)
+void filter_string(unsigned char *newstring, unsigned char *oldstring)
 {
 XINT d, e; /* oldstring counter, newstring counter. */
-char sstmp[256]; /* Temporary filtered string holding buffer. */
+unsigned char sstmp[256]; /* Temporary filtered string holding buffer. */
 
 /* Don't filter 0-length strings. */
-if (strlen(oldstring) < 1)
+if (strlen((char*)oldstring) < 1)
     {
     newstring[0] = '\0';
     return;
@@ -112,7 +112,7 @@ if (strlen(oldstring) < 1)
 memset(sstmp, 0, MAXSTRLEN + 1);
 
 /* Loop for each character in oldstring. */
-for (d = 0, e = 0; d < strlen(oldstring); d++)
+for (d = 0, e = 0; d < strlen((char*)oldstring); d++)
     {
     /* Look for the colour code character (^). */
     if (oldstring[d] == '^')
@@ -131,7 +131,7 @@ for (d = 0, e = 0; d < strlen(oldstring); d++)
     sstmp[e++] = oldstring[d];
     }
 
-strcpy(newstring, sstmp);
+strcpy((char*)newstring, (char*)sstmp);
 
 return;
 }
@@ -141,7 +141,7 @@ return;
                 len - Maximum length of the password.
    Returns:  Nothing.
 */
-void get_password(char *buffer, XINT len)
+void get_password(unsigned char *buffer, XINT len)
 {
 XINT ps = 0, ky; /* Buffer position, keypress holder. */
 
@@ -154,7 +154,7 @@ for(;;)
     /* Backspace. */
     if (ky == 8 && ps > 0)
     	{
-        top_output(OUT_SCREEN, getlang("PWBackSpace"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"PWBackSpace"));
         buffer[--ps] = '\0';
         }
     /* ENTER ends the input. */
@@ -167,7 +167,7 @@ for(;;)
     	{
         /* An echo character (usually a *) is displayed instead of the
            character typed. */
-        top_output(OUT_SCREEN, getlang("PWEcho"));
+        top_output(OUT_SCREEN, getlang((unsigned char*)"PWEcho"));
         buffer[ps++] = ky;
         buffer[ps] = '\0';
         }
@@ -180,13 +180,13 @@ for(;;)
                 nobits - Action restrictions (NO_ bit constants).
    Returns:  Nothing.
 */
-void trim_string(char *newstring, char *oldstring, unsigned char nobits)
+void trim_string(unsigned char *newstring, unsigned char *oldstring, unsigned char nobits)
 {
 XINT f = 0; /* Counter. */
-char tstmp[512]; /* Temporary trimmed string holding buffer. */
+unsigned char tstmp[512]; /* Temporary trimmed string holding buffer. */
 
 /* Don't trim 0-length strings. */
-if (strlen(oldstring) < 1)
+if (strlen((char*)oldstring) < 1)
     {
     newstring[0] = '\0';
     return;
@@ -201,17 +201,17 @@ if (!(nobits & NO_LTRIM))
 	{
     /* Simply skip all characters until a nonwhitespace character is
        encountered. */
-    while(iswhite(oldstring[f]) && f < strlen(oldstring))
+    while(iswhite(oldstring[f]) && f < strlen((char*)oldstring))
 		{
         f++;
         }
     }
-strcpy(tstmp, &oldstring[f]);
+strcpy((char*)tstmp, (char*)&oldstring[f]);
 
 /* Trim space from right (back) of string. */
 if (!(nobits & NO_RTRIM))
 	{
-    f = strlen(tstmp) - 1;
+    f = strlen((char*)tstmp) - 1;
     /* Change whitespace characters to \0 from back to front until a
        nonwhitespace character is encountered. */
     while(iswhite(tstmp[f]) && f >= 0)
@@ -221,12 +221,12 @@ if (!(nobits & NO_RTRIM))
 	}
 
 /* Compensate for any unfinished PubColour codes. */
-if (!stricmp(tstmp, "^"))
+if (!stricmp((char*)tstmp, "^"))
     {
-    strset(tstmp, '\0');
+    strset((char*)tstmp, '\0');
     }
 
-strcpy(newstring, tstmp);
+strcpy((char*)newstring, (char*)tstmp);
 
 return;
 }
@@ -285,7 +285,7 @@ memmove(&buffer[0], &buffer[1], ut);
 /* Make the last byte the terminator. */
 buffer[ut] = '\0';
 
-return strlen(buffer);
+return strlen((char*)buffer);
 }
 
 /* build_pascal_string() - Changes a C string to a Pascal string.
@@ -299,7 +299,7 @@ XINT build_pascal_string(unsigned char *buffer)
 XINT tl; /* Temporary length holder. */
 
 /* Get the length. */
-tl = strlen(buffer);
+tl = strlen((char*)buffer);
 
 /* Do nothing if the length is 0. */
 if (tl == 0)
@@ -371,7 +371,7 @@ if (!instring[0] || !cmdstring[0])
     return 0;
     }
 
-tmpstore = malloc(strlen(word_str) + 1);
+tmpstore = malloc(strlen((char*)word_str) + 1);
 if (!tmpstore)
 	{
     return 0;
@@ -386,10 +386,10 @@ if (!inpstring)
 /* The state of the word splitter must be preserved because this function
    is usually called when processing individual words.  This is done by
    storing the current contents of the global variable word_str. */
-strcpy(tmpstore, word_str);
+strcpy((char*)tmpstore, (char*)word_str);
 /* The string being tested is copied in case it points to somewhere
    inside word_str. */
-strcpy(inpstring, instring);
+strcpy((char*)inpstring, (char*)instring);
 
 /* Split the command list into words. */
 nw = split_string(cmdstring);
@@ -398,14 +398,14 @@ nw = split_string(cmdstring);
 for (ccd = 0, retlen = 0; ccd < nw; ccd++)
 	{
     /* Commands are always case-insensitive. */
-    if (!stricmp(get_word(ccd), inpstring))
+    if (!stricmp((char*)get_word(ccd), (char*)inpstring))
         {
         /* Only consider a match if this command is longer than any
            previous matches. */
-        if (strlen(get_word(ccd)) > retlen)
+        if (strlen((char*)get_word(ccd)) > retlen)
             {
-            retlen = strlen(get_word(ccd));
-            strcpy(lastcmd, get_word(ccd));
+            retlen = strlen((char*)get_word(ccd));
+            strcpy((char*)lastcmd, (char*)get_word(ccd));
             }
         /* Processing continues even after a successful find because
            there may be longer commands that start with the same letters.

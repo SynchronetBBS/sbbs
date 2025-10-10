@@ -34,8 +34,8 @@ char load_censor_words(void)
     numcensorwords = 0;
 
     /* Open the file. */
-    sprintf(outbuf, "%scensor.cfg", cfg.toppath);
-    fil = fopen(outbuf, "rt");
+    sprintf((char*)outbuf, "%scensor.cfg", cfg.toppath);
+    fil = fopen((char*)outbuf, "rt");
     if (fil == NULL)
         {
         return 0;
@@ -133,13 +133,13 @@ char load_censor_words(void)
            the contents, it will return TRUE.  str must be at least
            MAXSTRLEN+1 characters long.
 */
-char censorinput(char *str)
+char censorinput(unsigned char *str)
     {
     /* Counter, current character, current newstring character, current
        unfiltered string character, word replacement flag. */
     XINT d, p = 0, np = 0, fp = 0, flg;
     /* New string, filtered string. */
-    char newstr[512], filtstr[512];
+    unsigned char newstr[512], filtstr[512];
 
     /* The censor uses three strings.  filtstr contains a colour-code
        filtered copy of the string and is used for word detection.  newstr
@@ -154,17 +154,17 @@ char censorinput(char *str)
     
     /* Loop for each character in the filtered string.  The censor tests
        for offensive text beginning at every position in the string. */
-    for (p = 0; p < strlen(filtstr); p++)
+    for (p = 0; p < strlen((char*)filtstr); p++)
         {
         /* Loop through known offensive text. */
         for (d = 0, flg = 0; d < numcensorwords; d++)
             {
             /* Only test if this text is not longer than the remainder of
                the string to be tested. */
-            if (strlen(&filtstr[p]) >= strlen(cwords[d].word))
+            if (strlen((char*)&filtstr[p]) >= strlen(cwords[d].word))
                 {
                 /* Look for the text starting at the current position. */
-                if (!strnicmp(&filtstr[p], cwords[d].word,
+                if (!strnicmp((char*)&filtstr[p], cwords[d].word,
                               strlen(cwords[d].word)))
                     {
                     if (cwords[d].wholeword)
@@ -196,7 +196,7 @@ char censorinput(char *str)
                         {
                         /* Level 1:  Immediate disconnection. */
                         case 1:
-                            top_output(OUT_SCREEN, getlang("CensorToss1"),
+                            top_output(OUT_SCREEN, getlang((unsigned char *)"CensorToss1"),
                                        cwords[d].word);
 /* od_sleep() uses seconds in OS/2, milliseconds in DOS/Win32. */
 #ifdef __OS2__
@@ -211,7 +211,7 @@ char censorinput(char *str)
                         /* Level 2 - Warn, toss if applicable, don't allow. */
                         case 2:
                             /* Warn the user. */
-                            top_output(OUT_SCREEN, getlang("CensorWarn2"),
+                            top_output(OUT_SCREEN, getlang((unsigned char *)"CensorWarn2"),
                                        cwords[d].word);
                             /* Reset the high warning counter and timer. */
                             censorwarningshigh++;
@@ -219,7 +219,7 @@ char censorinput(char *str)
                             /* Do a warning check, toss if too many. */
                             if (censorwarningshigh >= cfg.maxcensorwarnhigh)
                                 {
-                                top_output(OUT_SCREEN, getlang("CensorToss2"),
+                                top_output(OUT_SCREEN, getlang((unsigned char *)"CensorToss2"),
                                            cwords[d].word);
 #ifdef __OS2__
                                 od_sleep(1);
@@ -233,7 +233,7 @@ char censorinput(char *str)
                         /* Level 3 - Warn without tossing, don't allow. */
                         case 3:
                             /* Warn the user. */
-                            top_output(OUT_SCREEN, getlang("CensorWarn3"),
+                            top_output(OUT_SCREEN, getlang((unsigned char *)"CensorWarn3"),
                                        cwords[d].word);
                             /* Reset the high warning counter and timer. */
                             censorwarningshigh++;
@@ -243,7 +243,7 @@ char censorinput(char *str)
                         /* Level 4 - Warn, toss if applicable, allow. */
                         case 4:
                             /* Warn the user. */
-                            top_output(OUT_SCREEN, getlang("CensorWarn4"),
+                            top_output(OUT_SCREEN, getlang((unsigned char *)"CensorWarn4"),
                                        cwords[d].word);
                             /* Reset the low warning counter and timer. */
                             censorwarningslow++;
@@ -251,7 +251,7 @@ char censorinput(char *str)
                             /* Do a warning check, toss if too many. */
                             if (censorwarningslow >= cfg.maxcensorwarnlow)
                                 {
-                                top_output(OUT_SCREEN, getlang("CensorToss4"),
+                                top_output(OUT_SCREEN, getlang((unsigned char *)"CensorToss4"),
                                            cwords[d].word);
 #ifdef __OS2__
                                 od_sleep(1);
@@ -265,7 +265,7 @@ char censorinput(char *str)
                         /* Warn, don't toss, allow. */
                         case 5:
                             /* Warn the user. */
-                            top_output(OUT_SCREEN, getlang("CensorWarn5"),
+                            top_output(OUT_SCREEN, getlang((unsigned char *)"CensorWarn5"),
                                        cwords[d].word);
                             /* Reset the low warning counter and timer. */
                             censorwarningslow++;
@@ -295,8 +295,8 @@ char censorinput(char *str)
                             }
                         /* Append the replacement text and reset the
                            newstring pointer. */
-                        strcat(newstr, cwords[d].changeto);
-                        np = strlen(newstr);
+                        strcat((char*)newstr, (char*)cwords[d].changeto);
+                        np = strlen((char*)newstr);
                         /* Advance the copy pointer past the old text.  It
                            is assumed that the new text won't need to be
                            censored. */
@@ -308,7 +308,7 @@ char censorinput(char *str)
                             fp++;
                             }
                         /* Notify the user of the replacement. */
-                        top_output(OUT_SCREEN, getlang("CensorReplace"));
+                        top_output(OUT_SCREEN, getlang((unsigned char *)"CensorReplace"));
                         /* Break out of the word-check loop to begin
                            testing the next position. */
                         break;
@@ -339,7 +339,7 @@ char censorinput(char *str)
        if it is longer than MAXSTRLEN because TOP's message routines can't
        handle larger strings. */
     memset(str, 0, MAXSTRLEN + 1);
-    strncpy(str, newstr, MAXSTRLEN);
+    strncpy((char*)str, (char*)newstr, MAXSTRLEN);
 
     /* The string was permitted. */
     return 0;

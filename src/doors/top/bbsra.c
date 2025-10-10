@@ -20,6 +20,7 @@ The module contains all of the functions for interfacing with RA v2.xx.  It is
 also used for some SuperBBS operations that are almost identical to RA.
 ******************************************************************************/
 
+#include "strwrap.h"
 #include "top.h"
 
 /* ra_init() - Initialize pointers to RA functions.
@@ -89,22 +90,22 @@ unbuild_pascal_string(10, rauser.statdesc);
 /* Copy the information into the Generic BBS structure. */
 memset(userdata, 0, sizeof(bbsnodedata_typ) - 2);
 fixname(userdata->realname, rauser.name);
-strncpy(userdata->handle, rauser.handle, 30);
+strncpy((char*)userdata->handle, (char*)rauser.handle, 30);
 fixname(userdata->handle, userdata->handle);
 userdata->node = rauser.line;
 userdata->speed = rauser.baud;
-strcpy(userdata->location, rauser.city);
+strcpy((char*)userdata->location, (char*)rauser.city);
 /* 255 indicates a user defined status type. */
 if (rauser.status == 255)
 	{
-    strcpy(userdata->statdesc, rauser.statdesc);
+    strcpy((char*)userdata->statdesc, (char*)rauser.statdesc);
     }
 else
 	{
     /* Use the predefined status types from the language file. */
     if (rauser.status < 8)
         {
-        strcpy(userdata->statdesc, ra_statustypes[rauser.status]);
+        strcpy((char*)userdata->statdesc, (char*)ra_statustypes[rauser.status]);
         }
     else
         {
@@ -136,11 +137,11 @@ long n; /* 0-based node number. */
 
 /* Copy the data from the Generic BBS buffer to the USERON record. */
 memset(&rauser, 0, sizeof(RA_USERON_typ));
-strncpy(rauser.name, userdata->realname, 35);
-strcpy(rauser.handle, userdata->handle);
+strncpy((char*)rauser.name, (char*)userdata->realname, 35);
+strcpy((char*)rauser.handle, (char*)userdata->handle);
 rauser.line = userdata->node;
 rauser.baud = userdata->speed;
-strncpy(rauser.city, userdata->location, 25);
+strncpy((char*)rauser.city, (char*)userdata->location, 25);
 rauser.status = 255;
 rauser.attribute = userdata->attribs1;
 if (userdata->quiet)
@@ -151,7 +152,7 @@ else
 	{
     rauser.attribute &= (0xFF - RA_NODISTURB);
     }
-strncpy(rauser.statdesc, userdata->statdesc, 10);
+strncpy((char*)rauser.statdesc, (char*)userdata->statdesc, 10);
 rauser.numcalls = userdata->numcalls;
 
 /* Convert C strings to Pascal, which RA uses. */
@@ -241,9 +242,9 @@ if (user.pref1 & PREF1_DUALWINDOW)
     {
     // Different for AVT when I find out what the store/recv codes are.
     od_disp_emu("\x1B" "[u", TRUE);
-    top_output(OUT_SCREEN, getlang("DWOutputPrefix"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"DWOutputPrefix"));
     }
-top_output(OUT_SCREEN, getlang("RAPageRecvPrefix"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"RAPageRecvPrefix"));
 
 /* Loop until the whole file is processed. */
 do
@@ -285,7 +286,7 @@ do
                 eptr = strchr(&buffer[pos], ',');
                 memset(outbuf, 0, 61);
                 /* Grab the name of the sender. */
-                strncpy(outbuf, &buffer[pos], eptr - &buffer[pos]);
+                strncpy((char*)outbuf, &buffer[pos], eptr - &buffer[pos]);
                 pos += (eptr - &buffer[pos]) + 1;
                 /* Detemine where this line ends. */
                 eptr = strchr(&buffer[pos], '\r');
@@ -296,12 +297,12 @@ do
                     }
                 /* Get the node number. */
                 fromnode = atoi(&buffer[pos]);
-                itoa(fromnode, outnum[0], 10);
+                itoa(fromnode, (char*)outnum[0], 10);
                 /* Advance the position to the end of this line. */
                 pos += (eptr - &buffer[pos]) - 1;
                 /* Display the page header. */
-                top_output(OUT_SCREEN, "@c");
-                top_output(OUT_SCREEN, getlang("SBBSRecvPageHdr"),
+                top_output(OUT_SCREEN, (unsigned char *)"@c");
+                top_output(OUT_SCREEN, getlang((unsigned char *)"SBBSRecvPageHdr"),
                 		   outbuf, outnum[0]);
                 /* Now processing a SuperBBS message. */
                 sbbsmsgon = 1;
@@ -318,9 +319,9 @@ do
                 sbbsmsgon = 0;
                 pos += 4;
                 /* Prompt the user to continue. */
-                top_output(OUT_SCREEN, getlang("RAEnter"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"RAEnter"));
                 while(od_get_key(TRUE) != 13);
-                top_output(OUT_SCREEN, getlang("RAEnterSuffix"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"RAEnterSuffix"));
                 continue;
                 }
 			}
@@ -346,10 +347,10 @@ do
                    language editor for the number of each item. */
                 switch(tmp)
                 	{
-                    case 258: top_output(OUT_SCREEN, getlang("RAEnter")); break;
-                    case 496: top_output(OUT_SCREEN, getlang("RAOnNode")); break;
-                    case 497: top_output(OUT_SCREEN, getlang("RAMsgFrom")); break;
-                    case 628: top_output(OUT_SCREEN, getlang("RAJustPosted")); break;
+                    case 258: top_output(OUT_SCREEN, getlang((unsigned char *)"RAEnter")); break;
+                    case 496: top_output(OUT_SCREEN, getlang((unsigned char *)"RAOnNode")); break;
+                    case 497: top_output(OUT_SCREEN, getlang((unsigned char *)"RAMsgFrom")); break;
+                    case 628: top_output(OUT_SCREEN, getlang((unsigned char *)"RAJustPosted")); break;
                     }
                 continue;
                 }
@@ -403,7 +404,7 @@ while((long) xpos * 7900L < filelength(fileno(pnfil)));
 
 closefile(pnfil);
 
-top_output(OUT_SCREEN, getlang("RAPageRecvSuffix"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"RAPageRecvSuffix"));
 unlink(filnam);
 
 dofree(buffer);
@@ -424,15 +425,15 @@ unsigned char tmp[41]; /* Buffer to hold the filtered username. */
 
 /* Open the appropriate file. */
 // This all needs better errorchecking
-itoa(nodenum, outnum[0], 10);
+itoa(nodenum, (char*)outnum[0], 10);
 switch(cfg.bbstype)
 	{
     case BBS_RA2:
-    	rapgfil = openfile(top_output(OUT_STRING, "@1node@2.ra",
+    	rapgfil = openfile((char*)top_output(OUT_STRING, (unsigned char *)"@1node@2.ra",
 						   cfg.bbsmultipath, outnum[0]), "at", 0);
         break;
     case BBS_SBBS11:
-    	rapgfil = openfile(top_output(OUT_STRING, "@1toline@2",
+    	rapgfil = openfile((char*)top_output(OUT_STRING, (unsigned char *)"@1toline@2",
 						   cfg.bbsmultipath, outnum[0]), "at", 0);
         break;
     }
@@ -440,40 +441,40 @@ switch(cfg.bbstype)
 /* Abort if the file can't be opened. */
 if (!rapgfil)
 	{
-    top_output(OUT_SCREEN, getlang("CantPage"), outnum[0]);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"CantPage"), outnum[0]);
     return 0;
     }
 
 /* The filtered username is used because handes can contain PubColour
    codes. */
 filter_string(tmp, cfg.usehandles ? user.handle : user.realname);
-itoa(od_control.od_node, outnum[0], 10);
+itoa(od_control.od_node, (char*)outnum[0], 10);
 
 /* Write the appropriate page header. */
 switch(cfg.bbstype)
 	{
     case BBS_RA2:
-        strcpy(outbuf, top_output(OUT_STRING, getlang("RAPageHeader"),
+        strcpy((char*)outbuf, (char*)top_output(OUT_STRING, getlang((unsigned char *)"RAPageHeader"),
                tmp, outnum[0]));
         break;
     case BBS_SBBS11:
-        strcpy(outbuf, top_output(OUT_STRING, getlang("SBBSPageHeader"),
+        strcpy((char*)outbuf, (char*)top_output(OUT_STRING, getlang((unsigned char *)"SBBSPageHeader"),
                tmp, outnum[0]));
         break;
     }
-fputs(outbuf, rapgfil);
+fputs((char*)outbuf, rapgfil);
 
 /* Write the message text. */
-fputs(pagebuf, rapgfil);
+fputs((char*)pagebuf, rapgfil);
 
 /* Write the appropriate page footer. */
 switch(cfg.bbstype)
 	{
     case BBS_RA2:
-        fputs(top_output(OUT_STRING, getlang("RAPageFooter")), rapgfil);
+        fputs((char*)top_output(OUT_STRING, getlang((unsigned char *)"RAPageFooter")), rapgfil);
         break;
     case BBS_SBBS11:
-        fputs(top_output(OUT_STRING, getlang("SBBSPageFooter")), rapgfil);
+        fputs((char*)top_output(OUT_STRING, getlang((unsigned char *)"SBBSPageFooter")), rapgfil);
         break;
     }
 
@@ -529,8 +530,8 @@ fixname(rutmp.realname, user.realname);
 fixname(rutmp.handle, user.handle);
 rutmp.node = od_control.od_node;
 rutmp.speed = od_control.baud;
-strcpy(rutmp.location, od_control.user_location);
-strcpy(rutmp.statdesc, getlang("NodeStatus"));
+strcpy((char*)rutmp.location, od_control.user_location);
+strcpy((char*)rutmp.statdesc, (char*)getlang((unsigned char *)"NodeStatus"));
 rutmp.attribs1 = 0;
 
 /* Update the USERON file to show the user is now in TOP. */
@@ -542,8 +543,8 @@ if (!res)
     /* Create RABUSY semaphore.  RA provides these for batch operations. */
     if (cfg.bbstype == BBS_RA2)
     	{
-	    itoa(od_control.od_node, outnum[0], 10);
-    	rnfil = fopen(top_output(OUT_STRING, "@1rabusy.@2", cfg.bbsmultipath,
+	    itoa(od_control.od_node, (char*)outnum[0], 10);
+    	rnfil = fopen((char*)top_output(OUT_STRING, (unsigned char *)"@1rabusy.@2", cfg.bbsmultipath,
 				                 outnum[0]), "wb");
         fclose(rnfil);
         }
@@ -573,8 +574,8 @@ if (localmode || lanmode)
     if (cfg.bbstype == BBS_RA2)
     	{
         /* Remove the RABUSY semaphore. */
-        itoa(od_control.od_node, outnum[0], 10);
-		unlink(top_output(OUT_STRING, "@1rabusy.@2", cfg.bbsmultipath,
+        itoa(od_control.od_node, (char*)outnum[0], 10);
+		unlink((char*)top_output(OUT_STRING, (unsigned char*)"@1rabusy.@2", cfg.bbsmultipath,
 					      outnum[0]));
         }
     }
@@ -593,7 +594,7 @@ switch(cfg.bbstype)
 	{
     case BBS_RA2:
         /* TOP keeps the RA USERON file open while it is running. */
-        useronfil = sh_open(top_output(OUT_STRING, "@1useron.bbs",
+        useronfil = sh_open((char*)top_output(OUT_STRING, (unsigned char*)"@1useron.bbs",
 									   cfg.bbspath),
 							O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
 							S_IREAD | S_IWRITE);
@@ -642,9 +643,9 @@ char ra_longpageeditor(XINT nodenum, unsigned char *pagebuf)
 
         /* Prepare the screen. */
         od_clr_scr();
-        itoa(nodenum, outnum[0], 10);
-        top_output(OUT_SCREEN, getlang("EnterPageFS"), outnum[0]);
-        top_output(OUT_SCREEN, getlang("EnterPageFSSep"));
+        itoa(nodenum, (char*)outnum[0], 10);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"EnterPageFS"), outnum[0]);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"EnterPageFSSep"));
 
         /* Initialize the OpenDoors editor data. */
         edop.nAreaLeft = 1;
@@ -657,12 +658,12 @@ char ra_longpageeditor(XINT nodenum, unsigned char *pagebuf)
         edop.dwEditFlags = 0;
 
         /* Call the editor. */
-        if (od_multiline_edit(pagebuf, 1600, &edop) ==
+        if (od_multiline_edit((char*)pagebuf, 1600, &edop) ==
             OD_MULTIEDIT_SUCCESS)
             {
             /* The profanity censor can currently only handle strings of
                less than 256 characters. */
-            if (strlen(pagebuf) < 256)
+            if (strlen((char*)pagebuf) < 256)
                 {
                 if (censorinput(pagebuf))
                     {
@@ -684,9 +685,9 @@ char ra_longpageeditor(XINT nodenum, unsigned char *pagebuf)
         /* The line editor is also used if the user is in ASCII mode. */
 
         /* Prepare the screen. */
-        itoa(nodenum, outnum[0], 10);
-        top_output(OUT_SCREEN, getlang("EnterPage"), outnum[0]);
-        top_output(OUT_SCREEN, getlang("EnterPageSep"));
+        itoa(nodenum, (char*)outnum[0], 10);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"EnterPage"), outnum[0]);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"EnterPageSep"));
         /* Put something in the input buffer to engage the loop. */
         linebuf[0] = '.';
         /* Loop until the message is too long or the user just hits ENTER. */
@@ -697,15 +698,15 @@ char ra_longpageeditor(XINT nodenum, unsigned char *pagebuf)
                censored. */
             do
                 {
-                od_input_str(linebuf, 79, ' ',
+                od_input_str((char*)linebuf, 79, ' ',
                              MAXASCII);
                 }
             while(censorinput(linebuf));
             if (linebuf[0])
                 {
                 /* Copy the line to the page buffer. */
-                memcpy(&pagebuf[writecount], linebuf, strlen(linebuf));
-                writecount += strlen(linebuf);
+                memcpy(&pagebuf[writecount], linebuf, strlen((char*)linebuf));
+                writecount += strlen((char*)linebuf);
                 memcpy(&pagebuf[writecount], "\n", 2);
                 writecount++;
                 }

@@ -20,6 +20,7 @@ This module contains all functions that pertain to the Biography feature of
 TOP.
 ******************************************************************************/
 
+#include "strwrap.h"
 #include "top.h"
 
 /* loadbioquestions() - Load biography questions from BIOQUES.CFG.
@@ -32,8 +33,8 @@ char loadbioquestions(void)
     XINT qcount = 0; /* Question count. */
 
     /* Open configuration file. */
-    sprintf(outbuf, "%sbioques.cfg", cfg.toppath);
-    bfil = fopen(outbuf, "rt");
+    sprintf((char*)outbuf, "%sbioques.cfg", cfg.toppath);
+    bfil = fopen((char*)outbuf, "rt");
     if (bfil == NULL)
         {
         return 0;
@@ -42,7 +43,7 @@ char loadbioquestions(void)
     /* Read and process each line. */
     while (!feof(bfil))
         {
-        fgets(outbuf, 256, bfil);
+        fgets((char*)outbuf, 256, bfil);
         /* Ignore comments. */
         if (outbuf[0] == ';')
             {
@@ -51,16 +52,16 @@ char loadbioquestions(void)
         stripcr(outbuf);
         memset(&bioques[qcount], 0, sizeof(bio_ques_typ));
         /* Parse the line.  See BIOQUES.CFG notes for format description. */
-        bioques[qcount].number = atoi(&outbuf[0]);
-        strncpy(bioques[qcount].field, &outbuf[3], 30);
+        bioques[qcount].number = atoi((char*)&outbuf[0]);
+        strncpy((char*)bioques[qcount].field, (char*)&outbuf[3], 30);
         trim_string(bioques[qcount].field, bioques[qcount].field,
                     NO_LTRIM);
-        if (!strnicmp(&outbuf[34], "NUM", 3))
+        if (!strnicmp((char*)&outbuf[34], "NUM", 3))
             bioques[qcount].resptype = BIORESP_NUMERIC;
-        if (!strnicmp(&outbuf[34], "STR", 3))
+        if (!strnicmp((char*)&outbuf[34], "STR", 3))
             bioques[qcount].resptype = BIORESP_STRING;
-        bioques[qcount].minval = atol(&outbuf[38]);
-        bioques[qcount].maxval = atol(&outbuf[50]);
+        bioques[qcount].minval = atol((char*)&outbuf[38]);
+        bioques[qcount].maxval = atol((char*)&outbuf[50]);
         qcount++;
         }
 
@@ -90,13 +91,13 @@ char displaybio(unsigned char *uname)
     unum = find_user_from_name(uname, &ubuf, UFIND_USECFG);
     if (unum != user_rec_num && !ubuf.donebio)
         {
-        top_output(OUT_SCREEN, getlang("BioUserHasNone"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"BioUserHasNone"));
         return 0;
         }
     if (unum < 0)
         {
         fixname(uname, uname);
-        top_output(OUT_SCREEN, getlang("BioUserNotFound"), uname);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"BioUserNotFound"), uname);
         return 0;
         }
 
@@ -114,19 +115,19 @@ char displaybio(unsigned char *uname)
        response is present.  This loop converts the numbers to 0-based. */
     for (d = 0; d < MAXBIOQUES; d++, resploc[d]--);
 
-    top_output(OUT_SCREEN, getlang("BioDispPrefix"), ubuf.handle);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"BioDispPrefix"), ubuf.handle);
 
     for (d = 0; d < numbioques; d++)
         {
-        itoa(bioques[d].number, outnum[0], 10);
+        itoa(bioques[d].number, (char*)outnum[0], 10);
         if (unum == user_rec_num)
             {
             /* If we're displaying our own biography, show the question number
                as well because the function may have been called from the
                editor. */
-            top_output(OUT_SCREEN, getlang("BioQuesNumber"), outnum[0]);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"BioQuesNumber"), outnum[0]);
             }
-        top_output(OUT_SCREEN, getlang("BioRespPrefix"), bioques[d].field);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"BioRespPrefix"), bioques[d].field);
 
         if (resploc[bioques[d].number] >= 0)
             {
@@ -142,13 +143,13 @@ char displaybio(unsigned char *uname)
                         resploc[bioques[d].number] * sizeof(bio_resp_typ),
                         sizeof(bio_resp_typ));
 
-            top_output(OUT_SCREEN, getlang("BioResp"), rbuf.response);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"BioResp"), rbuf.response);
             }
         else
             {
-            top_output(OUT_SCREEN, getlang("BioNoResp"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"BioNoResp"));
             }
-        top_output(OUT_SCREEN, getlang("BioRespSuffix"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"BioRespSuffix"));
         /* Display more prompt every 23 lines. */
         if (d % 23 == 0 && d > 0 && !ns)
             {
@@ -160,7 +161,7 @@ char displaybio(unsigned char *uname)
             }
         }
 
-    top_output(OUT_SCREEN, getlang("BioDispSuffix"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"BioDispSuffix"));
 
     return 1;
     }
@@ -265,7 +266,7 @@ char readbioresponse(XINT qnum, bio_resp_typ *br)
 */
 char getbioresponse(XINT rec, bio_resp_typ *br)
     {
-    char tresp[256]; /* Input buffer. */
+    unsigned char tresp[256]; /* Input buffer. */
     long tnr; /* Response length holder. */
     char doneresp = 0, changed = 0; /* Loop abort flag, changed flag. */
 
@@ -275,25 +276,25 @@ char getbioresponse(XINT rec, bio_resp_typ *br)
         if (bioques[rec].resptype == BIORESP_NUMERIC)
             {
             /* Prompt the user. */
-            itoa(bioques[rec].number, outnum[0], 10);
-            top_output(OUT_SCREEN, getlang("BioNumRespPrompt"), outnum[0],
+            itoa(bioques[rec].number, (char*)outnum[0], 10);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"BioNumRespPrompt"), outnum[0],
                        bioques[rec].field);
 
 //            od_input_str(tresp,
 //                         numresplen(bioques[rec].minval, bioques[rec].maxval),
 //                         '-', '9');
             /* Get a string, restricting the user to numeric values only. */
-            od_input_str(tresp, 11, '-', '9');
-            tnr = strtol(tresp, NULL, 10);
+            od_input_str((char*)tresp, 11, '-', '9');
+            tnr = strtol((char*)tresp, NULL, 10);
             if (tnr < bioques[rec].minval ||
                 tnr > bioques[rec].maxval &&
                 tresp[0])
                 {
                 /* Abort if the value is too low or high, but only if
                    something was entered. */
-                ltoa(bioques[rec].minval, outnum[0], 10);
-                ltoa(bioques[rec].maxval, outnum[1], 10);
-                top_output(OUT_SCREEN, getlang("BioBadNumResp"), outnum[0],
+                ltoa(bioques[rec].minval, (char*)outnum[0], 10);
+                ltoa(bioques[rec].maxval, (char*)outnum[1], 10);
+                top_output(OUT_SCREEN, getlang((unsigned char *)"BioBadNumResp"), outnum[0],
                            outnum[1]);
                 }
             else
@@ -303,7 +304,7 @@ char getbioresponse(XINT rec, bio_resp_typ *br)
                     {
                     /* All responses are stored as strings, even for
                        numeric questions. */
-                    ltoa(tnr, br->response, 10);
+                    ltoa(tnr, (char*)br->response, 10);
                     changed = 1;
                     }
                 doneresp = 1;
@@ -314,27 +315,27 @@ char getbioresponse(XINT rec, bio_resp_typ *br)
             /* Loop until the censor accepts the input. */
             do
                 {
-                itoa(bioques[rec].number, outnum[0], 10);
-                top_output(OUT_SCREEN, getlang("BioStrRespPrompt"), outnum[0],
+                itoa(bioques[rec].number, (char*)outnum[0], 10);
+                top_output(OUT_SCREEN, getlang((unsigned char *)"BioStrRespPrompt"), outnum[0],
                            bioques[rec].field);
 
-                od_input_str(tresp, bioques[rec].maxval, ' ',
+                od_input_str((char*)tresp, bioques[rec].maxval, ' ',
                              MAXASCII);
                 }
             while(censorinput(tresp));
 
-            if (strlen(tresp) < bioques[rec].minval)
+            if (strlen((char*)tresp) < bioques[rec].minval)
                 {
                 /* Reject the response if it was too short. */
-                itoa(bioques[rec].minval, outnum[0], 10);
-                top_output(OUT_SCREEN, getlang("BioBadStrResp"), outnum[0]);
+                itoa(bioques[rec].minval, (char*)outnum[0], 10);
+                top_output(OUT_SCREEN, getlang((unsigned char *)"BioBadStrResp"), outnum[0]);
                 }
             else
                 {
                 /* If the user entered something, set the changed flag. */
                 if (tresp[0])
                     {
-                    strcpy(br->response, tresp);
+                    strcpy((char*)br->response, (char*)tresp);
                     changed = 1;
                     }
                 doneresp = 1;
@@ -343,7 +344,7 @@ char getbioresponse(XINT rec, bio_resp_typ *br)
         }
     while (!doneresp);
 
-    top_output(OUT_SCREEN, getlang("BioRespSuffix"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"BioRespSuffix"));
 
     return changed;
     }
@@ -360,7 +361,7 @@ char biogetall(void)
     char chg = 0; /* Flag indicating at least one new response. */
     char qc = 0; /* Question count. */
 
-    top_output(OUT_SCREEN, getlang("BioGetAllPrefix"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"BioGetAllPrefix"));
 
     for (d = 0; d < numbioques; d++)
         {
@@ -393,11 +394,11 @@ char biogetall(void)
     if (chg)
         {
         curchannel = cmiprevchan;
-        dispatch_message(MSG_BIOCHG, "\0", -1, 0, 0);
+        dispatch_message(MSG_BIOCHG, (unsigned char *)"", -1, 0, 0);
         curchannel = BUSYCHANNEL;
         }
 
-    top_output(OUT_SCREEN, getlang("BioGetAllSuffix"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"BioGetAllSuffix"));
 
     return qc;
     }
@@ -417,9 +418,9 @@ void bioeditor(void)
        user to fill out all questions. */
     if (!user.donebio)
         {
-        top_output(OUT_SCREEN, getlang("BioEditDoAllPrompt"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"BioEditDoAllPrompt"));
         d = toupper(od_get_key(TRUE));
-        top_output(OUT_SCREEN, getlang("BioEditDoAllSuffix"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"BioEditDoAllSuffix"));
         // This should use YesNoKeys...
         if (d != 'N')
             {
@@ -431,7 +432,7 @@ void bioeditor(void)
     for(;;)
         {
         /* Get the question number. */
-        top_output(OUT_SCREEN, getlang("BioEditPrompt"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"BioEditPrompt"));
         od_input_str(tbuf, 2, '0', 'z');
         strupr(tbuf);
         if (!tbuf[0])
@@ -439,28 +440,28 @@ void bioeditor(void)
             continue;
             }
         /* Quit editor. */
-        if (strchr(getlang("BioEditQuitKeys"), tbuf[0]))
+        if (strchr((char*)getlang((unsigned char *)"BioEditQuitKeys"), tbuf[0]))
             {
-            top_output(OUT_SCREEN, getlang("BioEditSuffix"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"BioEditSuffix"));
 
             /* Notify other users if the biography was changed. */
             if (chg)
                 {
                 curchannel = cmiprevchan;
-                dispatch_message(MSG_BIOCHG, "\0", -1, 0, 0);
+                dispatch_message(MSG_BIOCHG, (unsigned char *)"", -1, 0, 0);
                 curchannel = BUSYCHANNEL;
                 }
             /* Break out of the infinite loop. */
             return;
             }
         /* Redisplay biography. */
-        if (strchr(getlang("BioEditShowKeys"), tbuf[0]))
+        if (strchr((char*)getlang((unsigned char *)"BioEditShowKeys"), tbuf[0]))
             {
             displaybio(user.handle);
             continue;
             }
         /* Complete all unanswered questions. */
-        if (strchr(getlang("BioEditCompKeys"), tbuf[0]))
+        if (strchr((char*)getlang((unsigned char *)"BioEditCompKeys"), tbuf[0]))
             {
             biogetall();
             displaybio(user.handle);
@@ -488,7 +489,7 @@ void bioeditor(void)
             }
         if (nn < 0 || nn >= MAXBIOQUES)
             {
-            top_output(OUT_SCREEN, getlang("BioEditBadQNum"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"BioEditBadQNum"));
             }
         }
 
@@ -522,9 +523,9 @@ void userlist(void)
         }
 
     /* Prepare screen. */
-    top_output(OUT_SCREEN, getlang("UserListHeader"),
+    top_output(OUT_SCREEN, getlang((unsigned char *)"UserListHeader"),
                qrn > -1 ? bioques[qrn].field : (uchar *)"");
-    top_output(OUT_SCREEN, getlang("UserListSep"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"UserListSep"));
 
     numus = filelength(userfil) / sizeof(user_data_typ);
     for (d = 0; d < numus; d++)
@@ -571,7 +572,7 @@ void userlist(void)
             }
 
         /* Show the entry. */
-        top_output(OUT_SCREEN, getlang("UserListEntry"),
+        top_output(OUT_SCREEN, getlang((unsigned char *)"UserListEntry"),
                    ubuf.handle, sum.response);
         /* Show a more prompt every 20 users. */
         if (++x % 20 == 0 && x > 0 && !ns)
@@ -585,7 +586,7 @@ void userlist(void)
             }
         }
 
-    top_output(OUT_SCREEN, getlang("UserListSuffix"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"UserListSuffix"));
 
     }
 

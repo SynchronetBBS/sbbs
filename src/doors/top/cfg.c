@@ -52,7 +52,7 @@ if (chkkeyword("BBSType"))
     for (cd = 0; cd < BBSTYPES; cd++)
         {
         /* Compare options to a known BBS type name. */
-        if (!stricmp(options, bbsnames[cd]))
+        if (!stricmp(options, (char*)bbsnames[cd]))
             {
             cfg.bbstype = cd;
 #ifndef __OS2__
@@ -69,53 +69,53 @@ if (chkkeyword("BBSType"))
     }
 if (chkkeyword("BBSName"))
     {
-    strset(cfg.bbsname, 0);
-    strncpy(cfg.bbsname, options, 40);
+    strset((char*)cfg.bbsname, 0);
+    strncpy((char*)cfg.bbsname, options, 40);
     }
 if (chkkeyword("SysopName"))
     {
-    strset(cfg.sysopname, 0);
-    strncpy(cfg.sysopname, options, 40);
+    strset((char*)cfg.sysopname, 0);
+    strncpy((char*)cfg.sysopname, options, 40);
     }
 if (chkkeyword("TOPPath"))
 	{
-    strset(cfg.toppath, 0);
-    strncpy(cfg.toppath, options, 79);
+    strset((char*)cfg.toppath, 0);
+    strncpy((char*)cfg.toppath, options, 79);
     /* strupr(cfg.toppath); */
     verifypath(cfg.toppath);
     }
 if (chkkeyword("TOPWorkPath"))
 	{
-    strset(cfg.topworkpath, 0);
-    strncpy(cfg.topworkpath, options, 79);
+    strset((char*)cfg.topworkpath, 0);
+    strncpy((char*)cfg.topworkpath, options, 79);
     /* strupr(cfg.topworkpath); */
     verifypath(cfg.topworkpath);
     }
 if (chkkeyword("TOPANSIPath"))
 	{
-    strset(cfg.topansipath, 0);
-    strncpy(cfg.topansipath, options, 79);
+    strset((char*)cfg.topansipath, 0);
+    strncpy((char*)cfg.topansipath, options, 79);
     /* strupr(cfg.topansipath); */
     verifypath(cfg.topansipath);
     }
 if (chkkeyword("BBSPath"))
 	{
-    strset(cfg.bbspath, 0);
-    strncpy(cfg.bbspath, options, 79);
+    strset((char*)cfg.bbspath, 0);
+    strncpy((char*)cfg.bbspath, options, 79);
     /* strupr(cfg.bbspath); */
     verifypath(cfg.bbspath);
     }
 if (chkkeyword("BBSIPCPath"))
 	{
-    strset(cfg.bbsmultipath, 0);
-    strncpy(cfg.bbsmultipath, options, 79);
+    strset((char*)cfg.bbsmultipath, 0);
+    strncpy((char*)cfg.bbsmultipath, options, 79);
     /* strupr(cfg.bbsmultipath); */
     verifypath(cfg.bbsmultipath);
     }
 if (chkkeyword("TOPActionPath"))
 	{
-    strset(cfg.topactpath, 0);
-    strncpy(cfg.topactpath, options, 79);
+    strset((char*)cfg.topactpath, 0);
+    strncpy((char*)cfg.topactpath, options, 79);
     /* strupr(cfg.topactpath); */
     verifypath(cfg.topactpath);
     }
@@ -236,10 +236,10 @@ if (chkkeyword("LocalBeeping"))
     }
 if (chkkeyword("LangFile"))
 	{
-    strset(cfg.langfile, 0);
-    strncpy(cfg.langfile, options, 8);
+    strset((char*)cfg.langfile, 0);
+    strncpy((char*)cfg.langfile, options, 8);
     /* strupr(cfg.langfile); */
-    strcat(cfg.langfile, ".lng");
+    strcat((char*)cfg.langfile, ".lng");
 	}
 if (chkkeyword("PollDelay"))
 	{
@@ -268,7 +268,7 @@ if (chkkeyword("MaxPWTries"))
 if (chkkeyword("ActionFiles"))
 	{
     memset(cfg.actfilestr, 0, 256);
-    strncpy(cfg.actfilestr, options, 255);
+    strncpy((char*)cfg.actfilestr, options, 255);
     }
 if (chkkeyword("MaxChannelDefs"))
     {
@@ -345,7 +345,7 @@ if (chkkeyword("ActionPrefix"))
     else
         {
         memset(cfg.actionprefix, 0, 11);
-        strncpy(cfg.actionprefix, options, 10);
+        strncpy((char*)cfg.actionprefix, options, 10);
         }
     }
 if (chkkeyword("ForceBio"))
@@ -359,7 +359,7 @@ if (chkkeyword("ForceBio"))
    Parameters:  seekstr() - Options string to seek the truth from.
    Returns:  Setting of the boolean option (TRUE or FALSE).
 */
-char seektruth(unsigned char *seekstr)
+char seektruth(char *seekstr)
 {
 
 /* Compare option against known "true" words. */

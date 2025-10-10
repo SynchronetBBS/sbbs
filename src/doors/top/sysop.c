@@ -19,6 +19,7 @@ SYSOP.C      SYSOP command processor.
 This module processes all SYSOP commands.
 ******************************************************************************/
 
+#include "strwrap.h"
 #include "top.h"
 
 /* Command constants used internally by the sysop_proc() function.  The
@@ -48,33 +49,33 @@ char sused = 0, scom = -1, yessend = 1;
    command, setting a SYSOP_ constant if one is found.  Then a common
    processor acts. */
 
-if (checkcmdmatch(get_word(1), getlang("CmdsSysopToss")) > 0)
+if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsSysopToss")) > 0)
 	{
     scom = MSG_TOSSED;
     }
-if (checkcmdmatch(get_word(1), getlang("CmdsSysopZap")) > 0)
+if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsSysopZap")) > 0)
 	{
     scom = MSG_ZAPPED;
     }
-if (checkcmdmatch(get_word(1), getlang("CmdsSysopClear")) > 0)
+if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsSysopClear")) > 0)
 	{
     scom = MSG_CLEARNODE;
     yessend = 0;
     }
 /* CDxxxx commands are not used.  They are intended for use with games. */
-/*if (checkcmdmatch(get_word(1), getlang("CmdsSysopCDGive")) > 0)
+/*if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsSysopCDGive")) > 0)
 	{
     scom = MSG_SYSGIVECD;
     }
-if (checkcmdmatch(get_word(1), getlang("CmdsSysopCDTake")) > 0)
+if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsSysopCDTake")) > 0)
 	{
     scom = MSG_SYSTAKECD;
     }
-if (checkcmdmatch(get_word(1), getlang("CmdsSysopCDSet")) > 0)
+if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsSysopCDSet")) > 0)
 	{
     scom = MSG_SYSSETCD;
     }*/
-if (checkcmdmatch(get_word(1), getlang("CmdsSysopSetSec")) > 0)
+if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsSysopSetSec")) > 0)
 	{
     scom = MSG_SYSSETSEC;
     }
@@ -101,11 +102,11 @@ if (scom != -1)
 
     if (sendto == -1)
     	{
-        top_output(OUT_SCREEN, getlang("NotLoggedIn"), tmphand);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"NotLoggedIn"), tmphand);
         }
     if (sendto == -2)
 	   	{
-        top_output(OUT_SCREEN, getlang("NotSpecific"), tmphand);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"NotSpecific"), tmphand);
         }
     /* -3 (HasForgotYou) is not handled because sysops cannot be forgotten. */
     /* Sysop commands are channel-independent. */
@@ -129,16 +130,16 @@ if (scom != -1)
 
         /* Get the value of the rest of the string, not including the
            leading space mentioned above. */
-        cdc = strtoul(&tmpstr[1], NULL, 10);
+        cdc = strtoul((char*)&tmpstr[1], NULL, 10);
 
         /* SYSOP TOSS command. */
         if (scom == MSG_TOSSED)
             {
             msgsendglobal = 1;
 	        dispatch_message(scom, &tmpstr[1], sendto, 1, 0);
-            top_output(OUT_SCREEN, getlang("HasBeenTossed"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"HasBeenTossed"),
                        handles[sendto].string);
-            od_log_write(top_output(OUT_STRING, getlang("LogTossed"),
+            od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogTossed"),
                                     handles[sendto].string));
             }
         /* SYSOP ZAP command. */
@@ -146,9 +147,9 @@ if (scom != -1)
             {
             msgsendglobal = 1;
 	        dispatch_message(scom, &tmpstr[1], sendto, 1, 0);
-            top_output(OUT_SCREEN, getlang("HasBeenZapped"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"HasBeenZapped"),
                        handles[sendto].string);
-            od_log_write(top_output(OUT_STRING, getlang("LogZapped"),
+            od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogZapped"),
                                     handles[sendto].string));
             }
         /* SYSOP CLEAR command. */
@@ -157,13 +158,13 @@ if (scom != -1)
             char tmpbit = 0; /* Temporary NODEIDX2 byte. */
             XINT clnod; /* Node to clear. */
 
-            strcpy(tmpstr, &word_str[word_pos[2]]);
+            strcpy((char*)tmpstr, (char*)&word_str[word_pos[2]]);
 
-            clnod = atoi(tmpstr);
+            clnod = atoi((char*)tmpstr);
             if (clnod < 1 || clnod > MAXNODES)
             	{
-                itoa(MAXNODES, outnum[0], 10);
-                top_output(OUT_SCREEN, getlang("InvalidNode"), outnum[0]);
+                itoa(MAXNODES, (char*)outnum[0], 10);
+                top_output(OUT_SCREEN, getlang((unsigned char *)"InvalidNode"), outnum[0]);
                 }
             else
             	{
@@ -176,39 +177,39 @@ if (scom != -1)
                 msgsendglobal = 1;
                 dispatch_message(MSG_CLEARNODE, tmpstr, -1, 0, 1);
 				// Clear the who's online file!
-                itoa(clnod, outnum[0], 10);
-                top_output(OUT_SCREEN, getlang("NodeCleared"), outnum[0]);
-                od_log_write(top_output(OUT_STRING, getlang("LogClearedNode"),
+                itoa(clnod, (char*)outnum[0], 10);
+                top_output(OUT_SCREEN, getlang((unsigned char *)"NodeCleared"), outnum[0]);
+                od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogClearedNode"),
                                         outnum[0]));
                 }
         	}
         /* The remaining commands use numeric values. */
-        ultoa(cdc, outnum[0], 10);
+        ultoa(cdc, (char*)outnum[0], 10);
 /* Unused CyberCash commands. */
 /*        if (scom == MSG_SYSGIVECD)
         	{
-            top_output(OUT_SCREEN, getlang("CDHasBeenGiven"), outnum[0],
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CDHasBeenGiven"), outnum[0],
                        getlang (cdc == 1 ? "SingularHas" : "PluralHave"),
                        handles[sendto].string);
             dispatch_message(scom, &tmpstr[1], sendto, 1, 0);
             }
         if (scom == MSG_SYSTAKECD)
         	{
-            top_output(OUT_SCREEN, getlang("CDHasBeenTaken"), outnum[0],
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CDHasBeenTaken"), outnum[0],
                        getlang (cdc == 1 ? "SingularHas" : "PluralHave"),
                        handles[sendto].string);
             dispatch_message(scom, &tmpstr[1], sendto, 1, 0);
             }
         if (scom == MSG_SYSSETCD)
         	{
-            top_output(OUT_SCREEN, getlang("CDHasBeenSetAt"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CDHasBeenSetAt"),
                        handles[sendto].string, outnum[0]);
             dispatch_message(scom, &tmpstr[1], sendto, 1, 0);
             }*/
         /* SYSOP SETSEC command. */
         if (scom == MSG_SYSSETSEC)
             {
-            top_output(OUT_SCREEN, getlang("SecHasBeenSetAt"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"SecHasBeenSetAt"),
                        handles[sendto].string, outnum[0]);
             msgsendglobal = 1;
             dispatch_message(scom, &tmpstr[1], sendto, 1, 0);
@@ -218,7 +219,7 @@ if (scom != -1)
     }
 
 /* There was an online user editor at one point, but it was never finished. */
-/*if (checkcmdmatch(get_word(1), getlang("CmdsSysopEditUser")))
+/*if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsSysopEditUser")))
 	{
     // Check ANSI bigtime!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     sused = 1;
@@ -231,7 +232,7 @@ if (scom != -1)
 if (!sused) ///!!!!!!!!
 	{
     /* Command not recognized, show a help file instead. */
-    show_helpfile("helpsys0");
+    show_helpfile((unsigned char *)"helpsys0");
     }
 
 return;

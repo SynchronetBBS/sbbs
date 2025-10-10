@@ -38,210 +38,210 @@ void help_proc(XINT helpwds)
 
     /* Regular commands. */
     if (!hused && (helpwds < 2 ||
-                   checkcmdmatch(get_word(1), getlang("CmdsHelp"))))
+                   checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsHelp"))))
         {
         hused = 1;
-        helpfile = "help_hlp";
+        helpfile = (unsigned char *)"help_hlp";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsQuit")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsQuit")))
         {
         hused = 1;
-        helpfile = "helpquit";
+        helpfile = (unsigned char *)"helpquit";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsCommands")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsCommands")))
         {
         hused = 1;
-        helpfile = "helpcmds";
+        helpfile = (unsigned char *)"helpcmds";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsColourHelp")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsColourHelp")))
         {
         hused = 1;
-        helpfile = "helpchlp";
+        helpfile = (unsigned char *)"helpchlp";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsTime")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsTime")))
         {
         hused = 1;
-        helpfile = "helptime";
+        helpfile = (unsigned char *)"helptime";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsWho")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsWho")))
         {
         hused = 1;
-        helpfile = "help_who";
+        helpfile = (unsigned char *)"help_who";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsProfile")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsProfile")))
         {
         hused = 1;
-        helpfile = "helpprof";
+        helpfile = (unsigned char *)"helpprof";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsLookUp")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsLookUp")))
         {
         hused = 1;
-        helpfile = "helplkup";
+        helpfile = (unsigned char *)"helplkup";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsNodes")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsNodes")))
         {
         hused = 1;
-        helpfile = "helpnods";
+        helpfile = (unsigned char *)"helpnods";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsPage")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsPage")))
         {
         hused = 1;
-        helpfile = "helppage";
+        helpfile = (unsigned char *)"helppage";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsForget")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsForget")))
         {
         hused = 1;
-        helpfile = "help_fgt";
+        helpfile = (unsigned char *)"help_fgt";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsRemember")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsRemember")))
         {
         hused = 1;
-        helpfile = "helprmbr";
+        helpfile = (unsigned char *)"helprmbr";
         } // May need slight mods below
     /* Whispers have two command forms; each is checked. */
-    if (!hused && (checkcmdmatch(get_word(1), getlang("CmdsWhisperLong1")) ||
-                   checkcmdmatch(get_word(1), getlang("WhisperShortChar"))))
+    if (!hused && (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsWhisperLong1")) ||
+                   checkcmdmatch(get_word(1), getlang((unsigned char *)"WhisperShortChar"))))
         {
         hused = 1;
-        helpfile = "helpwhis";
+        helpfile = (unsigned char *)"helpwhis";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsGA")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsGA")))
         {
         hused = 1;
-        helpfile = "help_ga1";
+        helpfile = (unsigned char *)"help_ga1";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsGA2")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsGA2")))
         {
         hused = 1;
-        helpfile = "help_ga2";
+        helpfile = (unsigned char *)"help_ga2";
         } // May need slight mods below
     /* Directed messages have two command forms; each is checked. */
-    if (!hused && (checkcmdmatch(get_word(1), getlang("CmdsDirectedLong1")) ||
-                   checkcmdmatch(get_word(1), getlang("DirectedShortChar"))))
+    if (!hused && (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsDirectedLong1")) ||
+                   checkcmdmatch(get_word(1), getlang((unsigned char *)"DirectedShortChar"))))
         {
         hused = 1;
-        helpfile = "help_dir";
+        helpfile = (unsigned char *)"help_dir";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsJoin")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsJoin")))
         {
         hused = 1;
-        helpfile = "helpjoin";
+        helpfile = (unsigned char *)"helpjoin";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsPrivChat")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsPrivChat")))
         {
         hused = 1;
-        helpfile = "helpchat";
+        helpfile = (unsigned char *)"helpchat";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsPrivDenyChat")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsPrivDenyChat")))
         {
         hused = 1;
-        helpfile = "helpdeny";
+        helpfile = (unsigned char *)"helpdeny";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsLogOff")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsLogOff")))
         {
         hused = 1;
-        helpfile = "helplgof";
+        helpfile = (unsigned char *)"helplgof";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsConfList")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsConfList")))
         {
         hused = 1;
-        helpfile = "helpclst";
+        helpfile = (unsigned char *)"helpclst";
         }
 
     /* Multi-part commands.  If a valid secondary command is recognized
        then its specific help file will be shown, otherwise a general help
        file for the multi-part command will be shown. */
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsAction")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsAction")))
         {
         hused = 1;
-        helpfile = "helpact0";
+        helpfile = (unsigned char *)"helpact0";
         if (helpwds >= 2)
             {
-            if (checkcmdmatch(get_word(2), getlang("CmdsActionList")))
-                helpfile = "helpact1";
-            if (checkcmdmatch(get_word(2), getlang("CmdsActionOn")))
-                helpfile = "helpact2";
-            if (checkcmdmatch(get_word(2), getlang("CmdsActionOff")))
-                helpfile = "helpact3";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsActionList")))
+                helpfile = (unsigned char *)"helpact1";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsActionOn")))
+                helpfile = (unsigned char *)"helpact2";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsActionOff")))
+                helpfile = (unsigned char *)"helpact3";
             }
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsChange")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsChange")))
         {
         hused = 1;
-        helpfile = "helpchg0";
+        helpfile = (unsigned char *)"helpchg0";
         if (helpwds >= 2)
             {
-            if (checkcmdmatch(get_word(2), getlang("CmdsChangeHandle")))
-                helpfile = "helpchg1";
-            if (checkcmdmatch(get_word(2), getlang("CmdsChangeEMessage")))
-                helpfile = "helpchg2";
-            if (checkcmdmatch(get_word(2), getlang("CmdsChangeXMessage")))
-                helpfile = "helpchg3";
-            if (checkcmdmatch(get_word(2), getlang("CmdsChangeSex")))
-                helpfile = "helpchg4";
-            if (checkcmdmatch(get_word(2), getlang("CmdsChangeChatMode")))
-                helpfile = "helpchg5";
-            if (checkcmdmatch(get_word(2), getlang("CmdsChangeListed")))
-                helpfile = "helpchg6";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsChangeHandle")))
+                helpfile = (unsigned char *)"helpchg1";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsChangeEMessage")))
+                helpfile = (unsigned char *)"helpchg2";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsChangeXMessage")))
+                helpfile = (unsigned char *)"helpchg3";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsChangeSex")))
+                helpfile = (unsigned char *)"helpchg4";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsChangeChatMode")))
+                helpfile = (unsigned char *)"helpchg5";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsChangeListed")))
+                helpfile = (unsigned char *)"helpchg6";
             }
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsSysop")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsSysop")))
         {
         hused = 1;
-        helpfile = "helpsys0";
+        helpfile = (unsigned char *)"helpsys0";
         if (helpwds >= 2)
             {
-            if (checkcmdmatch(get_word(2), getlang("CmdsSysopClear")))
-                helpfile = "helpsys1";
-            if (checkcmdmatch(get_word(2), getlang("CmdsSysopToss")))
-                helpfile = "helpsys2";
-            if (checkcmdmatch(get_word(2), getlang("CmdsSysopZap")))
-                helpfile = "helpsys3";
-            if (checkcmdmatch(get_word(2), getlang("CmdsSysopSetSec")))
-                helpfile = "helpsys4";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsSysopClear")))
+                helpfile = (unsigned char *)"helpsys1";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsSysopToss")))
+                helpfile = (unsigned char *)"helpsys2";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsSysopZap")))
+                helpfile = (unsigned char *)"helpsys3";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsSysopSetSec")))
+                helpfile = (unsigned char *)"helpsys4";
             }
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsModerator")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsModerator")))
         {
         hused = 1;
-        helpfile = "helpmod0";
+        helpfile = (unsigned char *)"helpmod0";
         if (helpwds >= 2)
             {
-            if (checkcmdmatch(get_word(2), getlang("CmdsModTopicChg")))
-                helpfile = "helpmod1";
-            if (checkcmdmatch(get_word(2), getlang("CmdsModModChg")))
-                helpfile = "helpmod2";
-            if (checkcmdmatch(get_word(2), getlang("CmdsModBan")))
-                helpfile = "helpmod3";
-            if (checkcmdmatch(get_word(2), getlang("CmdsModUnBan")))
-                helpfile = "helpmod4";
-            if (checkcmdmatch(get_word(2), getlang("CmdsModInvite")))
-                helpfile = "helpmod5";
-            if (checkcmdmatch(get_word(2), getlang("CmdsModUnInvite")))
-                helpfile = "helpmod6";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsModTopicChg")))
+                helpfile = (unsigned char *)"helpmod1";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsModModChg")))
+                helpfile = (unsigned char *)"helpmod2";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsModBan")))
+                helpfile = (unsigned char *)"helpmod3";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsModUnBan")))
+                helpfile = (unsigned char *)"helpmod4";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsModInvite")))
+                helpfile = (unsigned char *)"helpmod5";
+            if (checkcmdmatch(get_word(2), getlang((unsigned char *)"CmdsModUnInvite")))
+                helpfile = (unsigned char *)"helpmod6";
             }
         }
 
     /* Non-command help topics. */
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsHelpTopics")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsHelpTopics")))
         {
         hused = 1;
-        helpfile = "help_top";
+        helpfile = (unsigned char *)"help_top";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsHelpGeneral")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsHelpGeneral")))
         {
         hused = 1;
-        helpfile = "help_gen";
+        helpfile = (unsigned char *)"help_gen";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsHelpActions")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsHelpActions")))
         {
         hused = 1;
-        helpfile = "helpacts";
+        helpfile = (unsigned char *)"helpacts";
         }
-    if (!hused && checkcmdmatch(get_word(1), getlang("CmdsHelpChannels")))
+    if (!hused && checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsHelpChannels")))
         {
         hused = 1;
-        helpfile = "helpchan";
+        helpfile = (unsigned char *)"helpchan";
         }
 
     if (hused)
@@ -252,7 +252,7 @@ void help_proc(XINT helpwds)
     else
         {
         /* Unknown command. */
-        top_output(OUT_SCREEN, getlang("NoHelpAvailable"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"NoHelpAvailable"));
         }
 
     }
@@ -266,8 +266,8 @@ void help_proc(XINT helpwds)
 void show_helpfile(unsigned char *hlpname)
     {
 
-    top_output(OUT_SCREEN, getlang("HelpPrefix"));
-    show_file(hlpname, SCRN_RESETCOL);
-    top_output(OUT_SCREEN, getlang("HelpSuffix"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"HelpPrefix"));
+    show_file((char *)hlpname, SCRN_RESETCOL);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"HelpSuffix"));
 
     }

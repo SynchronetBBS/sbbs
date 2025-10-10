@@ -20,6 +20,7 @@ This module contains miscellaneous technical functions and low-level file I/O
 functions.
 ******************************************************************************/
 
+#include "strwrap.h"
 #include "top.h"
 
 /* calc_days_ago() - Calculate number of days between a date and today.
@@ -146,9 +147,9 @@ count = calloc(MAXNODES, 2);
 if (!count)
     {
     dispatch_message(MSG_GENERIC, top_output(OUT_STRINGNF,
-                                             getlang("OutOfMemory")),
+                                             getlang((unsigned char *)"OutOfMemory")),
                      od_control.od_node, 0, 0);
-    od_log_write(top_output(OUT_STRING, getlang("LogOutOfMemory")));
+    od_log_write(top_output(OUT_STRING, getlang((unsigned char *)"LogOutOfMemory")));
     return -1;
     }
 memset(count, 0, MAXNODES * 2);
@@ -277,24 +278,24 @@ tmpc = myclock();
 mins = (tmpc / CLK_TCK) / 60L;
 
 /* top_output() needs all numeric values to be strings. */
-itoa(dat.da_mon, outnum[0], 10);
-itoa(dat.da_day, outnum[1], 10);
-itoa(dat.da_year, outnum[2], 10);
-itoa(tim.ti_hour, outnum[3], 10);
-itoa(tim.ti_min, outnum[4], 10);
-itoa(tim.ti_sec, outnum[5], 10);
+itoa(dat.da_mon, (char*)outnum[0], 10);
+itoa(dat.da_day, (char*)outnum[1], 10);
+itoa(dat.da_year, (char*)outnum[2], 10);
+itoa(tim.ti_hour, (char*)outnum[3], 10);
+itoa(tim.ti_min, (char*)outnum[4], 10);
+itoa(tim.ti_sec, (char*)outnum[5], 10);
 /* Show the current time and date. */
-top_output(OUT_SCREEN, getlang("DateTime"), outnum[0], outnum[1], outnum[2],
+top_output(OUT_SCREEN, getlang((unsigned char *)"DateTime"), outnum[0], outnum[1], outnum[2],
            outnum[3], outnum[4], outnum[5]);
 /* Show how long the user has been in TOP. */
-itoa(mins, outnum[0], 10);
-itoa(od_control.user_timelimit, outnum[1], 10);
-top_output(OUT_SCREEN, getlang("TimeIn"), outnum[0], outnum[1]);
+itoa(mins, (char*)outnum[0], 10);
+itoa(od_control.user_timelimit, (char*)outnum[1], 10);
+top_output(OUT_SCREEN, getlang((unsigned char *)"TimeIn"), outnum[0], outnum[1]);
 if (cfg.usecredits > 0)
     {
     /* Show number of credits left if the sysop is using RA credits. */
-    ltoa(od_control.user_credit, outnum[0], 10);
-    top_output(OUT_SCREEN, getlang("CreditDisplay"), outnum[0]);
+    ltoa(od_control.user_credit, (char*)outnum[0], 10);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"CreditDisplay"), outnum[0]);
     }
 
 return;
@@ -340,7 +341,7 @@ void quit_top(void)
     fixcredits();
 
     /* Exit normally. */
-    od_log_write(top_output(OUT_STRING, getlang("LogEnded"), ver));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogEnded"), ver));
     od_exit(0, FALSE);
 
     }
@@ -361,7 +362,7 @@ process_messages(TRUE);
 if (isregistered)
 	{
     unregister_node(1);
-    dispatch_message(MSG_TOSSOUT, "\0", -1, 0, 0);
+    dispatch_message(MSG_TOSSOUT, (unsigned char *)"", -1, 0, 0);
     }
 
 /* De-init. */
@@ -378,48 +379,48 @@ return;
    Notes:  This function should be called whenever a critical TOP file
            (such as USERS.TOP or NODEIDX.TCH) cannot be accessed.
 */
-void errorabort(XINT code, char *info)
+void errorabort(XINT code, unsigned char *info)
 {
-char logent[256]; /* Log entry buffer. */
+unsigned char logent[256]; /* Log entry buffer. */
 XINT d; /* Not used. */
 
-strcpy(outbuf, top_output(OUT_STRINGNF, getlang("FileErrorPrefix")));
+strcpy((char*)outbuf, (char*)top_output(OUT_STRINGNF, getlang((unsigned char *)"FileErrorPrefix")));
 
 /* Select proper message to show based on the error code. */
 switch(code)
 	{
     case ERR_CANTOPEN:
-        strcat(outbuf, top_output(OUT_STRINGNF, getlang("CantOpen"),
+        strcat((char*)outbuf, (char*)top_output(OUT_STRINGNF, getlang((unsigned char *)"CantOpen"),
                info));
         break;
     case ERR_CANTREAD:
-        strcat(outbuf, top_output(OUT_STRINGNF, getlang("CantRead"),
+        strcat((char*)outbuf, (char*)top_output(OUT_STRINGNF, getlang((unsigned char *)"CantRead"),
                info));
         break;
     case ERR_CANTWRITE:
-        strcat(outbuf, top_output(OUT_STRINGNF, getlang("CantWrite"),
+        strcat((char*)outbuf, (char*)top_output(OUT_STRINGNF, getlang((unsigned char *)"CantWrite"),
                info));
         break;
     case ERR_CANTACCESS:
-        strcat(outbuf, top_output(OUT_STRINGNF, getlang("CantAccess"),
+        strcat((char*)outbuf, (char*)top_output(OUT_STRINGNF, getlang((unsigned char *)"CantAccess"),
                info));
         break;
     case ERR_CANTCLOSE:
-        strcat(outbuf, top_output(OUT_STRINGNF, getlang("CantClose"),
+        strcat((char*)outbuf, (char*)top_output(OUT_STRINGNF, getlang((unsigned char *)"CantClose"),
                info));
         break;
 	}
 
 /* Log the error code. */
-strcpy(logent, getlang("LogAlert"));
-strcat(logent, &outbuf[4]);
+strcpy((char*)logent, (char*)getlang((unsigned char *)"LogAlert"));
+strcat((char*)logent, (char*)&outbuf[4]);
 filter_string(logent, logent);
-od_log_write(logent);
+od_log_write((char*)logent);
 
 /* Inform the user we have to exit. */
-strcat(outbuf, getlang("FileErrorMsgPrefix"));
-strcat(outbuf, getlang("InformSysop"));
-strcat(outbuf, getlang("FileErrorMsgSuffix"));
+strcat((char*)outbuf, (char*)getlang((unsigned char *)"FileErrorMsgPrefix"));
+strcat((char*)outbuf, (char*)getlang((unsigned char *)"InformSysop"));
+strcat((char*)outbuf, (char*)getlang((unsigned char *)"FileErrorMsgSuffix"));
 top_output(OUT_SCREEN, outbuf);
 
 od_exit(220 + code, FALSE);
@@ -478,8 +479,8 @@ for (d = 0, failed = 1; failed; d++)
        user of a problem. */
     if (d == MAXRETRIES)
 	    {
-        top_output(OUT_SCREEN, getlang("AccessProblem"));
-        top_output(OUT_SCREEN, getlang("AccessPrompt"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"AccessProblem"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"AccessPrompt"));
         past = 1;
     	}
     /* If we are passed the try limit, the user can abort back to the
@@ -491,7 +492,7 @@ for (d = 0, failed = 1; failed; d++)
         /* ESC aborts to the BBS. */
         if (key == 27)
         	{
-            top_output(OUT_SCREEN, getlang("AccessShutDown"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"AccessShutDown"));
             od_exit(250, FALSE);
             }
         }
@@ -515,7 +516,7 @@ XINT sh_open(char *nam, XINT acc, XINT sh, XINT mod)
 XINT d, rethand = -1; /* Try counter, file handle. */
 
 /* Loop until success or until the configured number of tries passes. */
-for (d = 0; d < MAXOPENRETRIES && rethand == -1; d++);
+for (d = 0; d < MAXOPENRETRIES && rethand == -1; d++)
     {
 	rethand = sopen(nam, acc, sh, mod);
     }
@@ -561,10 +562,10 @@ for (cl = 0; cl < MAXRETRIES && !tmpfil; cl++)
 if (!tmpfil && errabort && errno == EACCES)
 	{
     /* Abort on error, if requested. */
-    top_output(OUT_SCREEN, getlang("SharingVioError"), name);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"SharingVioError"), name);
     unregister_node(0);
-    od_log_write(top_output(OUT_STRING, getlang("LogSharingVioError")));
-    od_log_write(top_output(OUT_STRING, getlang("LogSharingVioFile"), name));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogSharingVioError")));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogSharingVioFile"), name));
     od_exit(251, FALSE);
     }
 
@@ -652,20 +653,20 @@ char moreprompt(void)
 
     /* All more prompts default to Yes. */
 
-    top_output(OUT_SCREEN, getlang("MorePrompt"));
-    key = od_get_answer(top_output(OUT_STRING, getlang("MoreKeys")));
-    top_output(OUT_SCREEN, getlang("MorePromptSuffix"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"MorePrompt"));
+    key = od_get_answer((char*)top_output(OUT_STRING, getlang((unsigned char *)"MoreKeys")));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"MorePromptSuffix"));
 
     /* The keys are held in the MoreKeys language item. */
 
     /* Abort (no more). */
-    if (key == getlangchar("MoreKeys", 1))
+    if (key == getlangchar((unsigned char*)"MoreKeys", 1))
         {
         nsmp = -1;
-        top_output(OUT_SCREEN, getlang("MoreAbortSuffix"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"MoreAbortSuffix"));
         }
     /* Nonstop mode. */
-    if (key == getlangchar("MoreKeys", 2))
+    if (key == getlangchar((unsigned char*)"MoreKeys", 2))
         {
         nsmp = 1;
         }
@@ -687,48 +688,48 @@ char moreprompt(void)
            a valid base file name in the ename parameter to properly test
            for nonexistent files.
 */
-void get_extension(char *ename, char *ebuf)
+void get_extension(unsigned char *ename, unsigned char *ebuf)
     {
-    char ework[256]; /* Working file name buffer. */
+    unsigned char ework[256]; /* Working file name buffer. */
 
     /* Test for RIP. */
-    strcpy(ework, ename);
+    strcpy((char*)ework, (char*)ename);
     if (od_control.user_rip)
         {
-        strcat(ework, ".rip");
-        if (!access(ework, 0))
+        strcat((char*)ework, ".rip");
+        if (!access((char*)ework, 0))
             {
-            strcpy(ebuf, ".rip");
+            strcpy((char*)ebuf, ".rip");
             return;
             }
         }
 
     /* Test for AVATAR. */
-    strcpy(ework, ename);
+    strcpy((char*)ework, (char*)ename);
     if (od_control.user_avatar)
         {
-        strcat(ework, ".avt");
-        if (!access(ework, 0))
+        strcat((char*)ework, ".avt");
+        if (!access((char*)ework, 0))
             {
-            strcpy(ebuf, ".avt");
+            strcpy((char*)ebuf, ".avt");
             return;
             }
         }
 
     /* Test for ANSI. */
-    strcpy(ework, ename);
+    strcpy((char*)ework, (char*)ename);
     if (od_control.user_ansi)
         {
-        strcat(ework, ".ans");
-        if (!access(ework, 0))
+        strcat((char*)ework, ".ans");
+        if (!access((char*)ework, 0))
             {
-            strcpy(ebuf, ".ans");
+            strcpy((char*)ebuf, ".ans");
             return;
             }
         }
 
     /* Default to ASCII. */
-    strcpy(ebuf, ".asc");
+    strcpy((char*)ebuf, ".asc");
 
     }
 
@@ -813,7 +814,7 @@ void fixcredits(void)
            function works by comparing "scores" for each node.  The scoring
            process is described inside the function body.
 */
-XINT find_node_from_name(char *newstring, char *handle, char *oldstring)
+XINT find_node_from_name(unsigned char *newstring, unsigned char *handle, unsigned char *oldstring)
     {
     /* Node counter, length of current handle, length of oldstring. */
     XINT x, lhan, lold;
@@ -823,14 +824,14 @@ XINT find_node_from_name(char *newstring, char *handle, char *oldstring)
 
     /* All matching is case-insensitive! */
 
-    lold = strlen(oldstring);
+    lold = strlen((char*)oldstring);
 
     check_nodes_used(TRUE);
 
     /* Test exact matches for each node. */
     for (x = 0; x < MAXNODES; x++)
         {
-        lhan = strlen(handles[x].string);
+        lhan = strlen((char*)handles[x].string);
         /* There can only be an exact match if oldstring is at least as
            long as the entire handle. */
         if (lhan >= lold)
@@ -839,7 +840,7 @@ XINT find_node_from_name(char *newstring, char *handle, char *oldstring)
                the characters of the handle being tested.  It may contain
                more characters after (for text or other purposes). */
             if (activenodes[x] &&
-                !strnicmp(oldstring, handles[x].string, lhan))
+                !strnicmp((char*)oldstring, (char*)handles[x].string, lhan))
                 {
                 /* The longest exact match is saved. */
                 if (lhan > maxs)
@@ -863,7 +864,7 @@ XINT find_node_from_name(char *newstring, char *handle, char *oldstring)
         for (x = 0; x < MAXNODES; x++)
             {
             cursco = 0;
-            lhan = strlen(handles[x].string);
+            lhan = strlen((char*)handles[x].string);
 
             /* The "score" for a node is simply how many consecutive
                characters match the start of oldstring.  For example, if
@@ -914,7 +915,7 @@ XINT find_node_from_name(char *newstring, char *handle, char *oldstring)
         if (tied)
             {
             memset(handle, 0, 31);
-            strncpy(handle, oldstring, 30);
+            strncpy((char*)handle, (char*)oldstring, 30);
             fixname(handle, handle);
             newstring[0] = '\0';
             return -2;
@@ -924,7 +925,7 @@ XINT find_node_from_name(char *newstring, char *handle, char *oldstring)
         if (maxs == 0)
             {
             memset(handle, 0, 31);
-            strncpy(handle, oldstring, 30);
+            strncpy((char*)handle, (char*)oldstring, 30);
             fixname(handle, handle);
             newstring[0] = '\0';
             return -1;
@@ -954,9 +955,9 @@ XINT find_node_from_name(char *newstring, char *handle, char *oldstring)
        the calling function to get the entire handle from the master handle
        index (using the returned node number from this function) if it is
        needed for display purposes. */
-    strncpy(handle, oldstring, maxs);
+    strncpy((char*)handle, (char*)oldstring, maxs);
 
-    if (maxs >= strlen(oldstring))
+    if (maxs >= strlen((char*)oldstring))
         {
         /* If oldstring only contained a name, newstring will contain
            nothing. */
@@ -975,7 +976,7 @@ XINT find_node_from_name(char *newstring, char *handle, char *oldstring)
             }
         /* Newstring contains everything after the text used for the
            match. */
-        strcpy(newstring, &oldstring[maxs]);
+        strcpy((char *)newstring, (char *)&oldstring[maxs]);
         }
 
     return highnode;
@@ -991,15 +992,15 @@ XINT find_node_from_name(char *newstring, char *handle, char *oldstring)
            an automatic BBS that may never even have a human on the
            premises where the system is located.
 */
-XINT sh_unlink(char *filnam)
+XINT sh_unlink(unsigned char *filnam)
     {
 
     /* Don't delete if we don't have full access to the file. */
-    if (access(filnam, 6))
+    if (access((char*)filnam, 6))
         {
         return -1;
         }
 
-    return (unlink(filnam));
+    return (unlink((char*)filnam));
     }
 

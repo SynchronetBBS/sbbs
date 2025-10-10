@@ -20,6 +20,7 @@ This module contains functions to display external screens.  It also contains
 many of TOP's large displays, such as the opening and closing credits.
 ******************************************************************************/
 
+#include "strwrap.h"
 #include "top.h"
 
 /* This macro should be defined during testing, when an internal revision
@@ -50,17 +51,17 @@ if (tasks & SCRN_CLS)
     }
 
 /* Display the file. */
-top_output(OUT_SCREEN, getlang("ShowFilePrefix"));
-sprintf(outbuf, "%s%s", cfg.topansipath, name);
-od_send_file(outbuf);
-top_output(OUT_SCREEN, getlang("ShowFileSuffix"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"ShowFilePrefix"));
+sprintf((char*)outbuf, "%s%s", cfg.topansipath, name);
+od_send_file((char*)outbuf);
+top_output(OUT_SCREEN, getlang((unsigned char *)"ShowFileSuffix"));
 
 /* Wait for keypress after displaying. */
 if (tasks & SCRN_WAITKEY)
     {
-    top_output(OUT_SCREEN, getlang("PressAnyKey"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"PressAnyKey"));
     od_get_key(TRUE);
-    top_output(OUT_SCREEN, getlang("PressAnyKeySuffix"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"PressAnyKeySuffix"));
     }
 
 return;
@@ -76,7 +77,7 @@ void minihelp(void)
 /* The command listing used to be hard coded, which is why this display has
    its own function.  Now, however, an external file is used. */
 
-top_output(OUT_SCREEN, getlang("CommandListPrefix"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"CommandListPrefix"));
 show_file("minihelp", SCRN_NONE);
 
 }
@@ -92,62 +93,62 @@ if (cfg.showopeningcred)
     {
     /* Long form. */
 
-    top_output(OUT_SCREEN, "^o@cWelcome to The Online Pub for ");
+    top_output(OUT_SCREEN, (unsigned char *)"^o@cWelcome to The Online Pub for ");
 #if defined(PLATFORM_DESC)
-    top_output(OUT_SCREEN, PLATFORM_DESC);
+    top_output(OUT_SCREEN, (unsigned char *)(PLATFORM_DESC));
 #elif defined(__OS2__)
-    top_output(OUT_SCREEN, "OS/2");
+    top_output(OUT_SCREEN, (unsigned char *)"OS/2");
 #elif defined(__WIN32__)
-    top_output(OUT_SCREEN, "Windows 95");
+    top_output(OUT_SCREEN, (unsigned char *)"Windows 95");
 #elif defined(__unix__)
-    top_output(OUT_SCREEN, "*nix");
+    top_output(OUT_SCREEN, (unsigned char *)"*nix");
 #else
-    top_output(OUT_SCREEN, "DOS");
+    top_output(OUT_SCREEN, (unsigned char *)"DOS");
 #endif
-    top_output(OUT_SCREEN, "^l v@1^o, by ^lPaul Sidorsky^o.@c", ver);
+    top_output(OUT_SCREEN, (unsigned char *)"^l v@1^o, by ^lPaul Sidorsky^o.@c", ver);
 #ifdef USE_REVISION
-    top_output(OUT_SCREEN, "^oInternal revision #^l@1^o.@c", rev);
+    top_output(OUT_SCREEN, (unsigned char *)"^oInternal revision #^l@1^o.@c", rev);
 #endif
-    top_output(OUT_SCREEN, "Copyright 1993 - 1998 ");
-    top_output(OUT_SCREEN, "^lISMWare(TM)^o, All Rights Reserved.@c");
-    top_output(OUT_SCREEN, "^oWritten using ^l");
+    top_output(OUT_SCREEN, (unsigned char *)"Copyright 1993 - 1998 ");
+    top_output(OUT_SCREEN, (unsigned char *)"^lISMWare(TM)^o, All Rights Reserved.@c");
+    top_output(OUT_SCREEN, (unsigned char *)"^oWritten using ^l");
 #ifdef __OS2__
-    top_output(OUT_SCREEN, "Doors/2 v5.00b3");
+    top_output(OUT_SCREEN, (unsigned char *)"Doors/2 v5.00b3");
 #else
-    top_output(OUT_SCREEN, "OpenDoors v6.00");
+    top_output(OUT_SCREEN, (unsigned char *)"OpenDoors v6.00");
 #endif
-    top_output(OUT_SCREEN, "^o by ^l");
+    top_output(OUT_SCREEN, (unsigned char *)"^o by ^l");
 #ifdef __OS2__
-    top_output(OUT_SCREEN, "Joel Downer & Brian Pirie");
+    top_output(OUT_SCREEN, (unsigned char *)"Joel Downer & Brian Pirie");
 #else
-    top_output(OUT_SCREEN, "Brian Pirie");
+    top_output(OUT_SCREEN, (unsigned char *)"Brian Pirie");
 #endif
-    top_output(OUT_SCREEN, "^o.@c");
-    top_output(OUT_SCREEN, getlang("BroughtToYouBy"), cfg.sysopname,
+    top_output(OUT_SCREEN, (unsigned char *)"^o.@c");
+    top_output(OUT_SCREEN, getlang((unsigned char *)"BroughtToYouBy"), cfg.sysopname,
                cfg.bbsname);
-    itoa(od_control.od_node, outnum[0], 10);
-    top_output(OUT_SCREEN, getlang("LoggedOnNode"), outnum[0]);
+    itoa(od_control.od_node, (char*)outnum[0], 10);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"LoggedOnNode"), outnum[0]);
     }
 else
     {
     /* Short form. */
 
-    top_output(OUT_SCREEN, "@c^oThe Online Pub for ");
+    top_output(OUT_SCREEN, (unsigned char *)"@c^oThe Online Pub for ");
 #if defined(PLATFORM_DESC)
-    top_output(OUT_SCREEN, PLATFORM_DESC);
+    top_output(OUT_SCREEN, (unsigned char *)(PLATFORM_DESC));
 #elif defined(__OS2__)
-    top_output(OUT_SCREEN, "OS/2");
+    top_output(OUT_SCREEN, (unsigned char *)"OS/2");
 #elif defined(__WIN32__)
-    top_output(OUT_SCREEN, "Windows 95");
+    top_output(OUT_SCREEN, (unsigned char *)"Windows 95");
 #elif defined(__unix__)
-    top_output(OUT_SCREEN, "*nix");
+    top_output(OUT_SCREEN, (unsigned char *)"*nix");
 #else
-    top_output(OUT_SCREEN, "DOS");
+    top_output(OUT_SCREEN, (unsigned char *)"DOS");
 #endif
-    top_output(OUT_SCREEN, " v@1@cCopyright 1993 - 1998 Paul Sidorsky, "
+    top_output(OUT_SCREEN, (unsigned char *)" v@1@cCopyright 1993 - 1998 Paul Sidorsky, "
                "All Rights Reserved.@c", ver);
 #ifdef USE_REVISION
-    top_output(OUT_SCREEN, "^oInternal revision #^l@1^o.@c", rev);
+    top_output(OUT_SCREEN, (unsigned char *)"^oInternal revision #^l@1^o.@c", rev);
 #endif
     }
 
@@ -183,23 +184,23 @@ if (!cfg.showclosingcred)
     return;
     }
 
-top_output(OUT_SCREEN, "@c@c^kThe Online Pub for ");
+top_output(OUT_SCREEN, (unsigned char *)"@c@c^kThe Online Pub for ");
 #if defined(PLATFORM_DESC)
-    top_output(OUT_SCREEN, PLATFORM_DESC);
+    top_output(OUT_SCREEN, (unsigned char *)(PLATFORM_DESC));
 #elif defined(__OS2__)
-    top_output(OUT_SCREEN, "OS/2");
+    top_output(OUT_SCREEN, (unsigned char *)"OS/2");
 #elif defined(__WIN32__)
-    top_output(OUT_SCREEN, "Windows 95");
+    top_output(OUT_SCREEN, (unsigned char *)"Windows 95");
 #elif defined(__unix__)
-    top_output(OUT_SCREEN, "*nix");
+    top_output(OUT_SCREEN, (unsigned char *)"*nix");
 #else
-    top_output(OUT_SCREEN, "DOS");
+    top_output(OUT_SCREEN, (unsigned char *)"DOS");
 #endif
-sprintf(outbuf, " v%s@c", ver);
+sprintf((char*)outbuf, " v%s@c", ver);
 top_output(OUT_SCREEN, outbuf);
-top_output(OUT_SCREEN, "Copyright 1993 - 1998 ISMWare(TM)@c@c");
-top_output(OUT_SCREEN, getlang("Goodbye"));
-top_output(OUT_SCREEN, getlang("ReturnToBBS"), cfg.bbsname);
+top_output(OUT_SCREEN, (unsigned char *)"Copyright 1993 - 1998 ISMWare(TM)@c@c");
+top_output(OUT_SCREEN, getlang((unsigned char *)"Goodbye"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"ReturnToBBS"), cfg.bbsname);
 
 return;
 }
@@ -215,7 +216,7 @@ void channelsummary(void)
 long xchan; /* No longer used. */
 char chtyp, yestop = 0; /* Channel type reference, flag if there is a topic. */
 
-top_output(OUT_SCREEN, getlang("ChanSummaryPrefix"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"ChanSummaryPrefix"));
 
 /* Determine the channel type.  The type numbers are internal to this
    function only. */
@@ -244,9 +245,9 @@ if (cmibuf.topic[0] != 0)
 /* Tell the user where he/she is. */
 switch (chtyp)
     {
-    case 0: strcpy(outbuf, "YoureInChannel"); break;
-    case 1: strcpy(outbuf, "YoureInUserChannel"); break;
-    case 2: strcpy(outbuf, "YoureInConference"); break;
+    case 0: strcpy((char*)outbuf, "YoureInChannel"); break;
+    case 1: strcpy((char*)outbuf, "YoureInUserChannel"); break;
+    case 2: strcpy((char*)outbuf, "YoureInConference"); break;
     }
 top_output(OUT_SCREEN, getlang(outbuf), channelname(curchannel));
 
@@ -255,9 +256,9 @@ if (yestop)
     {
     switch (chtyp)
         {
-        case 0: strcpy(outbuf, "ChannelTopic"); break;
-        case 1: strcpy(outbuf, "UserChannelTopic"); break;
-        case 2: strcpy(outbuf, "ConferenceTopic"); break;
+        case 0: strcpy((char*)outbuf, "ChannelTopic"); break;
+        case 1: strcpy((char*)outbuf, "UserChannelTopic"); break;
+        case 2: strcpy((char*)outbuf, "ConferenceTopic"); break;
         }
     top_output(OUT_SCREEN, getlang(outbuf), cmibuf.topic);
     }
@@ -266,8 +267,8 @@ if (yestop)
 whos_in_pub();
 
 /* Show a quick message on how to get help. */
-top_output(OUT_SCREEN, getlang("ShortHelp"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"ShortHelp"));
 
-top_output(OUT_SCREEN, getlang("OpeningSuffix"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"OpeningSuffix"));
 
 }

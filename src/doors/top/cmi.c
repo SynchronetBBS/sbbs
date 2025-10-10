@@ -281,7 +281,7 @@ char cmi_make(unsigned long chnum)
         {
         if (chan[res].topic[0] != '\0')
             {
-            strcpy(chantmp.topic, chan[res].topic);
+            strcpy((char*)chantmp.topic, (char*)chan[res].topic);
             }
         }
     /* Clear all special nodes. */

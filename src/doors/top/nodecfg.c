@@ -32,8 +32,8 @@ XINT loadnodecfg(unsigned char *exepath)
     FILE *fil = NULL; /* File stream for loading NODES.CFG. */
 
     /* Open the configuration file. */
-    strcat(exepath, "nodes.cfg");
-    fil = fopen(exepath, "rt");
+    strcat((char*)exepath, "nodes.cfg");
+    fil = fopen((char*)exepath, "rt");
     if (fil == NULL)
         {
         return 0;
@@ -45,7 +45,7 @@ XINT loadnodecfg(unsigned char *exepath)
     while(!feof(fil) && !flag)
         {
         /* Read a line and split it into keyword and options. */
-        fgets(loadstr, 256, fil);
+        fgets((char*)loadstr, 256, fil);
         stripcr(loadstr);
         code = splitnodecfgline(loadstr);
         /* Look for a "Node" line in the configuration file. */
@@ -53,7 +53,7 @@ XINT loadnodecfg(unsigned char *exepath)
             {
             /* If the line bears our node's number, we can start
                processing. */
-            if (atoi(loadstr) == od_control.od_node)
+            if (atoi((char*)loadstr) == od_control.od_node)
                 {
                 flag = 1;
                 }
@@ -75,7 +75,7 @@ XINT loadnodecfg(unsigned char *exepath)
     while(!feof(fil) && !flag)
         {
         /* Read a line and split it into keyword and options. */
-        fgets(loadstr, 256, fil);
+        fgets((char*)loadstr, 256, fil);
         stripcr(loadstr);
         code = splitnodecfgline(loadstr);
         /* React to each type of configuration line.  See the
@@ -84,56 +84,56 @@ XINT loadnodecfg(unsigned char *exepath)
         switch(code)
             {
             case NODECODE_TYPE:
-                strupr(loadstr);
-                if (strstr(loadstr, "REMOTE")) nodecfg->type = NODE_REMOTE;
-                if (strstr(loadstr, "LOCAL")) nodecfg->type = NODE_LOCAL;
-                if (strstr(loadstr, "LAN")) nodecfg->type = NODE_LAN;
+                strupr((char*)loadstr);
+                if (strstr((char*)loadstr, "REMOTE")) nodecfg->type = NODE_REMOTE;
+                if (strstr((char*)loadstr, "LOCAL")) nodecfg->type = NODE_LOCAL;
+                if (strstr((char*)loadstr, "LAN")) nodecfg->type = NODE_LAN;
                 break;
             case NODECODE_DROPFILE:
                 /* strupr(loadstr); */
-                strcpy(nodecfg->dropfilepath, loadstr);
+                strcpy((char*)nodecfg->dropfilepath, (char*)loadstr);
                 verifypath(nodecfg->dropfilepath);
                 break;
             case NODECODE_CFGFILE:
                 /* strupr(loadstr); */
-                strcpy(nodecfg->cfgfile, loadstr);
+                strcpy((char*)nodecfg->cfgfile, (char*)loadstr);
                 break;
             case NODECODE_LOGFILE:
                 /* strupr(loadstr); */
-                strcpy(nodecfg->logfile, loadstr);
+                strcpy((char*)nodecfg->logfile, (char*)loadstr);
                 break;
             case NODECODE_SOLID:
-                nodecfg->solidnode = seektruth(loadstr);
+                nodecfg->solidnode = seektruth((char*)loadstr);
                 break;
             case NODECODE_FOSSIL:
-                nodecfg->fossil = seektruth(loadstr);
+                nodecfg->fossil = seektruth((char*)loadstr);
                 break;
             case NODECODE_PORT:
-                nodecfg->port = atoi(loadstr);
+                nodecfg->port = atoi((char*)loadstr);
                 break;
             case NODECODE_SPEED:
-                nodecfg->speed = atoi(loadstr);
+                nodecfg->speed = atoi((char*)loadstr);
                 break;
             case NODECODE_ADDRESS:
-                nodecfg->portaddress = atoi(loadstr);
+                nodecfg->portaddress = atoi((char*)loadstr);
                 break;
             case NODECODE_IRQ:
-                nodecfg->portirq = atoi(loadstr);
+                nodecfg->portirq = atoi((char*)loadstr);
                 break;
             case NODECODE_FIFO:
-                nodecfg->usefifo = seektruth(loadstr);
+                nodecfg->usefifo = seektruth((char*)loadstr);
                 break;
             case NODECODE_FIFOTRIG:
-                nodecfg->fifotrigger = atoi(loadstr);
+                nodecfg->fifotrigger = atoi((char*)loadstr);
                 break;
             case NODECODE_RXBUF:
-                nodecfg->rxbufsize = atoi(loadstr);
+                nodecfg->rxbufsize = atoi((char*)loadstr);
                 break;
             case NODECODE_TXBUF:
-                nodecfg->txbufsize = atoi(loadstr);
+                nodecfg->txbufsize = atoi((char*)loadstr);
                 break;
             case NODECODE_RTSCTS:
-                nodecfg->usertscts = !(seektruth(loadstr)) + 1;
+                nodecfg->usertscts = !(seektruth((char*)loadstr)) + 1;
                 break;
             case NODECODE_END:
                 /* Flag so the loop will stop processing. */
@@ -168,7 +168,7 @@ XINT splitnodecfgline(unsigned char *ncline)
     if (wdcount > 1)
         {
         /* Grab everything after the first word from the word string. */
-        strcpy(ncline, &word_str[word_pos[1]]);
+        strcpy((char*)ncline, (char*)&word_str[word_pos[1]]);
         }
     else
         {
@@ -178,23 +178,23 @@ XINT splitnodecfgline(unsigned char *ncline)
 
     /* Set the node code based on the keyword type.  Again, see NODES.CFG
        comments for keyword descriptions. */
-    if (!stricmp(get_word(0), "Node")) nodecode = NODECODE_NUMBER;
-    if (!stricmp(get_word(0), "Type")) nodecode = NODECODE_TYPE;
-    if (!stricmp(get_word(0), "DropFilePath")) nodecode = NODECODE_DROPFILE;
-    if (!stricmp(get_word(0), "ConfigFile")) nodecode = NODECODE_CFGFILE;
-    if (!stricmp(get_word(0), "LogFile")) nodecode = NODECODE_LOGFILE;
-    if (!stricmp(get_word(0), "SolidNode")) nodecode = NODECODE_SOLID;
-    if (!stricmp(get_word(0), "FOSSIL")) nodecode = NODECODE_FOSSIL;
-    if (!stricmp(get_word(0), "Port")) nodecode = NODECODE_PORT;
-    if (!stricmp(get_word(0), "Speed")) nodecode = NODECODE_SPEED;
-    if (!stricmp(get_word(0), "PortAddress")) nodecode = NODECODE_ADDRESS;
-    if (!stricmp(get_word(0), "PortIRQ")) nodecode = NODECODE_IRQ;
-    if (!stricmp(get_word(0), "UseFIFO")) nodecode = NODECODE_FIFO;
-    if (!stricmp(get_word(0), "FIFOTrigger")) nodecode = NODECODE_FIFOTRIG;
-    if (!stricmp(get_word(0), "RxBufSize")) nodecode = NODECODE_RXBUF;
-    if (!stricmp(get_word(0), "TxBufSize")) nodecode = NODECODE_TXBUF;
-    if (!stricmp(get_word(0), "UseRTSCTS")) nodecode = NODECODE_RTSCTS;
-    if (!stricmp(get_word(0), "EndNode")) nodecode = NODECODE_END;
+    if (!stricmp((char*)get_word(0), "Node")) nodecode = NODECODE_NUMBER;
+    if (!stricmp((char*)get_word(0), "Type")) nodecode = NODECODE_TYPE;
+    if (!stricmp((char*)get_word(0), "DropFilePath")) nodecode = NODECODE_DROPFILE;
+    if (!stricmp((char*)get_word(0), "ConfigFile")) nodecode = NODECODE_CFGFILE;
+    if (!stricmp((char*)get_word(0), "LogFile")) nodecode = NODECODE_LOGFILE;
+    if (!stricmp((char*)get_word(0), "SolidNode")) nodecode = NODECODE_SOLID;
+    if (!stricmp((char*)get_word(0), "FOSSIL")) nodecode = NODECODE_FOSSIL;
+    if (!stricmp((char*)get_word(0), "Port")) nodecode = NODECODE_PORT;
+    if (!stricmp((char*)get_word(0), "Speed")) nodecode = NODECODE_SPEED;
+    if (!stricmp((char*)get_word(0), "PortAddress")) nodecode = NODECODE_ADDRESS;
+    if (!stricmp((char*)get_word(0), "PortIRQ")) nodecode = NODECODE_IRQ;
+    if (!stricmp((char*)get_word(0), "UseFIFO")) nodecode = NODECODE_FIFO;
+    if (!stricmp((char*)get_word(0), "FIFOTrigger")) nodecode = NODECODE_FIFOTRIG;
+    if (!stricmp((char*)get_word(0), "RxBufSize")) nodecode = NODECODE_RXBUF;
+    if (!stricmp((char*)get_word(0), "TxBufSize")) nodecode = NODECODE_TXBUF;
+    if (!stricmp((char*)get_word(0), "UseRTSCTS")) nodecode = NODECODE_RTSCTS;
+    if (!stricmp((char*)get_word(0), "EndNode")) nodecode = NODECODE_END;
 
     return nodecode;
     }

@@ -20,6 +20,7 @@ This module contains the custom kernel function for TOP as well as the handler
 for time warnings.
 ******************************************************************************/
 
+#include "strwrap.h"
 #include "top.h"
 
 /* top_kernel() - Custom kernel.
@@ -49,15 +50,15 @@ if (cfg.usecredits != 0)
     if (curtime >= lastkertime + 60)
         {
         /* Deduct the configured number of credits. */
-        tcred = (((curtime - lastkertime) / 60) * (long) abs(cfg.usecredits));
+        tcred = (((curtime - lastkertime) / 60) * (long) cfg.usecredits);
         /* The user is out of time if the value to be deducted exceeds
            the number of credits the user currently has. */
         if (tcred >= od_control.user_credit)
             {
             /* Evict the user. */
             od_control.user_credit = 0;
-            top_output(OUT_SCREEN, getlang("OutOfCredits"));
-            od_log_write(top_output(OUT_STRING, getlang("LogOutOfCredits")));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"OutOfCredits"));
+            od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogOutOfCredits")));
             od_exit(9, FALSE);
             }
         /* Decrease the user's credit count. */
@@ -108,11 +109,11 @@ if (cfg.crashprotdelay > 0 && isregistered)
                        nodes on this channel to recognize the node's
                        deactivation. */
                     // Should maybe be sent globally...
-                    itoa(kd, outnum[0], 10);
+                    itoa(kd, (char*)outnum[0], 10);
                     dispatch_message(MSG_KILLCRASH, outnum[0],
                                      -1, 0, 1);
-                    od_log_write(top_output(OUT_STRING,
-                                            getlang("LogFoundCrashed"),
+                    od_log_write((char*)top_output(OUT_STRING,
+                                            getlang((unsigned char *)"LogFoundCrashed"),
                                             outnum[0]));
                     }
                 }
@@ -165,7 +166,7 @@ void sendtimemsgs(char *instring)
 	char string[512];
 
     /* Strip any extra spaces. */
-    trim_string(string, instring, 0);
+    trim_string((unsigned char *)string, (unsigned char *)instring, 0);
 
     /* Time messages are blocked if TOP is in the process_messages()
        function.  Remember that since this function is called by the
@@ -174,14 +175,14 @@ void sendtimemsgs(char *instring)
         {
         /* Just display the message to the screen if blocking is on.  It
            may not look pretty but at least it will get through. */
-        top_output(OUT_SCREEN, getlang("TimeMsgForcePrefix"), string);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"TimeMsgForcePrefix"), string);
         return;
         }
 
     /* Send the message like a normal TOP message, which looks much
        cleaner. */
     dispatch_message(MSG_GENERIC,
-                     top_output(OUT_STRINGNF, getlang("TimeMsgPrefix"),
+                     top_output(OUT_STRINGNF, getlang((unsigned char *)"TimeMsgPrefix"),
                                 string),
                      od_control.od_node, 1, 0);
 

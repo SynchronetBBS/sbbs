@@ -37,10 +37,10 @@
 #define XINT int
 #endif
 
-#define crtest(vvvv) if (vvvv[strlen(vvvv) - 1] != 10)\
+#define crtest(vvvv) if (((char*)vvvv)[strlen((char*)vvvv) - 1] != 10)\
                          res = 1;
-#define stripcr(vvvv) if (vvvv[strlen(vvvv) - 1] == 10)\
-                          vvvv[strlen(vvvv) - 1] = 0
+#define stripcr(vvvv) if (((char*)vvvv)[strlen((char*)vvvv) - 1] == 10)\
+                          ((char*)vvvv)[strlen((char*)vvvv) - 1] = 0
 
 typedef struct
     {
@@ -71,13 +71,13 @@ typedef struct
     unsigned char *pluraltext;
     } action_ptr_typ;
 
-int main(XINT argc, char *argv[]);
+int main(int argc, char *argv[]);
 void actfile_compile(unsigned char *ifname, unsigned char *ofname);
 
 unsigned char loadbuf[513];
 unsigned char iname[256], oname[256];
 
-int main(XINT argc, char *argv[])
+int main(int argc, char *argv[])
     {
 
     printf("\nTOPACT - Action Compiler for TOP 2.00.\n\n");
@@ -96,27 +96,27 @@ int main(XINT argc, char *argv[])
         return(0);
         }
 
-    strcpy(iname, argv[1]);
-    if (!strchr(iname, '.'))
+    strcpy((char*)iname, argv[1]);
+    if (!strchr((char*)iname, '.'))
         {
-        strcat(iname, ".act");
+        strcat((char*)iname, ".act");
         }
 /*    strupr(iname); */
 
     if (argc == 2)
         {
-        strcpy(oname, iname);
-        if (strchr(oname, '.'))
+        strcpy((char*)oname, (char*)iname);
+        if (strchr((char*)oname, '.'))
             {
-            strcpy(strchr(oname, '.'), ".tac");
+            strcpy(strchr((char*)oname, '.'), ".tac");
             }
         }
     else
         {
-        strcpy(oname, argv[2]);
-        if (!strchr(oname, '.'))
+        strcpy((char*)oname, argv[2]);
+        if (!strchr((char*)oname, '.'))
             {
-            strcat(oname, ".tac");
+            strcat((char*)oname, ".tac");
             }
         }
 /*    strupr(oname); */
@@ -139,7 +139,7 @@ void actfile_compile(unsigned char *ifname, unsigned char *ofname)
     printf("--- BEGIN COMPILE ---\n");
     printf("Opening %s...", ifname);
 
-    ifil = fopen(ifname, "r+t");
+    ifil = fopen((char*)ifname, "r+t");
     if (!ifil)
         {
         printf("ERROR!\nCan't open %s!\n", ifname);
@@ -148,26 +148,26 @@ void actfile_compile(unsigned char *ifname, unsigned char *ofname)
 
     printf("Done!\nOpening %s...", ofname);
 
-    if (!access(ofname, 0))
+    if (!access((char*)ofname, 0))
         {
         printf("WARNING!\nFile already exists!  Making backup...");
-        strcpy(loadbuf, ofname);
-        if (strchr(loadbuf, '.'))
+        strcpy((char*)loadbuf, (char*)ofname);
+        if (strchr((char*)loadbuf, '.'))
             {
-            strcpy(strchr(loadbuf, '.'), ".bak");
+            strcpy(strchr((char*)loadbuf, '.'), ".bak");
             }
         else
             {
-            strcat(loadbuf, ".bak");
+            strcat((char*)loadbuf, ".bak");
             }
         /* strupr(loadbuf); */
-        unlink(loadbuf);
-        rename(ofname, loadbuf);
+        unlink((char*)loadbuf);
+        rename((char*)ofname, (char*)loadbuf);
         printf("Done!\nBacked up to %s.\nOpening %s...", loadbuf,
                ofname);
         }
 
-    ofil = sopen(ofname, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+    ofil = sopen((char*)ofname, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                  S_IREAD | S_IWRITE);
     if (ofil == -1)
         {
@@ -180,66 +180,66 @@ void actfile_compile(unsigned char *ifname, unsigned char *ofname)
     printf("Getting configuration information...");
 
     res = 0;
-    res += (fgets(loadbuf, 512, ifil) == NULL);
+    res += (fgets((char*)loadbuf, 512, ifil) == NULL);
     crtest(loadbuf);
     stripcr(loadbuf);
-    if (strlen(loadbuf) > 30)
+    if (strlen((char*)loadbuf) > 30)
         {
         printf("WARNING!\nList Name too long - truncated to 30 "
                "characters.\n");
         printf("Continuing to get configuration information...");
         }
-    strncpy(afile.name, loadbuf, 30);
-    afile.name[31] = '\0';
-    res += (fgets(loadbuf, 512, ifil) == NULL);
+    strncpy((char*)afile.name, (char*)loadbuf, 30);
+    afile.name[30] = '\0';
+    res += (fgets((char*)loadbuf, 512, ifil) == NULL);
     crtest(loadbuf);
-    afile.minsec = strtoul(loadbuf, NULL, 10);
-    if (!strnicmp(loadbuf, "MINSEC", 6))
+    afile.minsec = strtoul((char*)loadbuf, NULL, 10);
+    if (!strnicmp((char*)loadbuf, "MINSEC", 6))
         {
         afile.minsec = 0;
         }
-    res += (fgets(loadbuf, 512, ifil) == NULL);
+    res += (fgets((char*)loadbuf, 512, ifil) == NULL);
     crtest(loadbuf);
-    afile.maxsec = strtoul(loadbuf, NULL, 10);
-    if (!strnicmp(loadbuf, "MAXSEC", 6))
+    afile.maxsec = strtoul((char*)loadbuf, NULL, 10);
+    if (!strnicmp((char*)loadbuf, "MAXSEC", 6))
         {
         afile.maxsec = 65535;
         }
-    res += (fgets(loadbuf, 512, ifil) == NULL);
+    res += (fgets((char*)loadbuf, 512, ifil) == NULL);
     crtest(loadbuf);
-    afile.minchannel = strtoul(loadbuf, NULL, 10);
-    if (!strnicmp(loadbuf, "MINCHA", 6))
+    afile.minchannel = strtoul((char*)loadbuf, NULL, 10);
+    if (!strnicmp((char*)loadbuf, "MINCHA", 6))
         {
         afile.minchannel = 1UL;
         }
-    if (!strnicmp(loadbuf, "MINPUB", 6))
+    if (!strnicmp((char*)loadbuf, "MINPUB", 6))
         {
         afile.minchannel = 1UL;
         }
-    if (!strnicmp(loadbuf, "MINPER", 6))
+    if (!strnicmp((char*)loadbuf, "MINPER", 6))
         {
         afile.minchannel = 4000000000UL;
         }
-    if (!strnicmp(loadbuf, "MINCON", 6))
+    if (!strnicmp((char*)loadbuf, "MINCON", 6))
         {
         afile.minchannel = 4001000000UL;
         }
-    res += (fgets(loadbuf, 512, ifil) == NULL);
+    res += (fgets((char*)loadbuf, 512, ifil) == NULL);
     crtest(loadbuf);
-    afile.maxchannel = strtoul(loadbuf, NULL, 10);
-    if (!strnicmp(loadbuf, "MAXPUB", 6))
+    afile.maxchannel = strtoul((char*)loadbuf, NULL, 10);
+    if (!strnicmp((char*)loadbuf, "MAXPUB", 6))
         {
         afile.maxchannel = 3999999999UL;
         }
-    if (!strnicmp(loadbuf, "MAXPER", 6))
+    if (!strnicmp((char*)loadbuf, "MAXPER", 6))
         {
         afile.maxchannel = 4000999999UL;
         }
-    if (!strnicmp(loadbuf, "MAXCON", 6))
+    if (!strnicmp((char*)loadbuf, "MAXCON", 6))
         {
         afile.maxchannel = 0xFFFFFFFEUL;
         }
-    if (!strnicmp(loadbuf, "MAXCHA", 6))
+    if (!strnicmp((char*)loadbuf, "MAXCHA", 6))
         {
         afile.maxchannel = 0xFFFFFFFEUL;
         }
@@ -260,25 +260,25 @@ void actfile_compile(unsigned char *ifname, unsigned char *ofname)
 
     tloc = (long) sizeof(action_file_typ);
 
-    printf("Counting actions...%5i", count);
+    printf("Counting actions...%5lu", count);
 
     while(!feof(ifil))
         {
         res = 0;
-        res += (fgets(loadbuf, 512, ifil) == NULL);
+        res += (fgets((char*)loadbuf, 512, ifil) == NULL);
         crtest(loadbuf);
-        res += (fgets(loadbuf, 512, ifil) == NULL);
+        res += (fgets((char*)loadbuf, 512, ifil) == NULL);
         crtest(loadbuf);
-        res += (fgets(loadbuf, 512, ifil) == NULL);
+        res += (fgets((char*)loadbuf, 512, ifil) == NULL);
         crtest(loadbuf);
-        res += (fgets(loadbuf, 512, ifil) == NULL);
+        res += (fgets((char*)loadbuf, 512, ifil) == NULL);
         crtest(loadbuf);
-        res += (fgets(loadbuf, 512, ifil) == NULL);
+        res += (fgets((char*)loadbuf, 512, ifil) == NULL);
         crtest(loadbuf);
         if (!res)
             {
             tloc += (long) sizeof(action_data_typ);
-            printf("\b\b\b\b\b%5i", ++count);
+            printf("\b\b\b\b\b%5lu", ++count);
             }
         }
 
@@ -299,15 +299,15 @@ void actfile_compile(unsigned char *ifname, unsigned char *ofname)
     fseek(ifil, 0, SEEK_SET);
 
     res = 0;
-    res += (fgets(loadbuf, 512, ifil) == NULL);
+    res += (fgets((char*)loadbuf, 512, ifil) == NULL);
     crtest(loadbuf);
-    res += (fgets(loadbuf, 512, ifil) == NULL);
+    res += (fgets((char*)loadbuf, 512, ifil) == NULL);
     crtest(loadbuf);
-    res += (fgets(loadbuf, 512, ifil) == NULL);
+    res += (fgets((char*)loadbuf, 512, ifil) == NULL);
     crtest(loadbuf);
-    res += (fgets(loadbuf, 512, ifil) == NULL);
+    res += (fgets((char*)loadbuf, 512, ifil) == NULL);
     crtest(loadbuf);
-    res += (fgets(loadbuf, 512, ifil) == NULL);
+    res += (fgets((char*)loadbuf, 512, ifil) == NULL);
     crtest(loadbuf);
     if (res)
         {
@@ -318,129 +318,129 @@ void actfile_compile(unsigned char *ifname, unsigned char *ofname)
         }
 
     d = 0;
-    printf("Done!\nReading actions...%5i", d);
+    printf("Done!\nReading actions...%5lu", d);
 
     for (; d < afile.numactions; d++)
         {
         res = 0;
-        res = (fgets(loadbuf, 512, ifil) == NULL);
+        res = (fgets((char*)loadbuf, 512, ifil) == NULL);
         crtest(loadbuf);
         if (res)
             {
-            printf("...ERROR!\nCan't read type for action #%i!\n",
+            printf("...ERROR!\nCan't read type for action #%lu!\n",
                    d + 1);
-            printf("Continuing to compile actions...%5i", d + 1);
+            printf("Continuing to compile actions...%5lu", d + 1);
             continue;
             }
         tact.type = -1;
-        if (!strnicmp(loadbuf, "NOR", 3))
+        if (!strnicmp((char*)loadbuf, "NOR", 3))
             {
             tact.type = 0;
             }
-        if (!strnicmp(loadbuf, "TAL", 3))
+        if (!strnicmp((char*)loadbuf, "TAL", 3))
             {
             tact.type = 1;
             }
-        res = (fgets(loadbuf, 512, ifil) == NULL);
+        res = (fgets((char*)loadbuf, 512, ifil) == NULL);
         crtest(loadbuf);
         if (res)
             {
-            printf("...ERROR!\nCan't read verb for action #%i!\n",
+            printf("...ERROR!\nCan't read verb for action #%lu!\n",
                    d + 1);
-            printf("Continuing to compile actions...%5i", d + 1);
+            printf("Continuing to compile actions...%5lu", d + 1);
             continue;
             }
         stripcr(loadbuf);
-        if (strlen(loadbuf) > 10)
+        if (strlen((char*)loadbuf) > 10)
             {
             printf("...WARNING!\nVerb \"%s\" is too long.\n", loadbuf);
             printf("Truncated to 10 characters.\n");
-            printf("Continuing to compile actions...%5i", d);
+            printf("Continuing to compile actions...%5lu", d);
             }
-        strncpy(tact.verb, loadbuf, 10);
+        strncpy((char*)tact.verb, (char*)loadbuf, 10);
         tact.verb[10] = '\0';
         if (tact.type == -1)
             {
             printf("...WARNING!\nInvalid action type for \"%s\" action!\n",
                    tact.verb);
-            printf("Continuing to compile actions...%5i", d);
+            printf("Continuing to compile actions...%5lu", d);
             }
         tact.textofs = tloc;
-        res = (fgets(loadbuf, 512, ifil) == NULL);
+        res = (fgets((char*)loadbuf, 512, ifil) == NULL);
         crtest(loadbuf);
         if (res)
             {
-            printf("...ERROR!\nCan't read response text for action #%i!\n",
+            printf("...ERROR!\nCan't read response text for action #%lu!\n",
                    d + 1);
-            printf("Continuing to compile actions...%5i", d + 1);
+            printf("Continuing to compile actions...%5lu", d + 1);
             continue;
             }
         stripcr(loadbuf);
-        if (!stricmp(loadbuf, "N/A"))
+        if (!stricmp((char*)loadbuf, "N/A"))
             {
             loadbuf[0] = '\0';
             }
-        tact.responselen = strlen(loadbuf);
+        tact.responselen = strlen((char*)loadbuf);
         lseek(ofil, afile.txtstart + tloc, SEEK_SET);
         res = write(ofil, loadbuf, tact.responselen);
         if (res == -1)
             {
-            printf("ERROR!\nCan't write response text for action #%i!\n",
+            printf("ERROR!\nCan't write response text for action #%lu!\n",
                    d + 1);
-            printf("Continuing to compile actions...%5i", d + 1);
+            printf("Continuing to compile actions...%5lu", d + 1);
             continue;
             }
         tloc += (long) tact.responselen;
 
-        res = (fgets(loadbuf, 512, ifil) == NULL);
+        res = (fgets((char*)loadbuf, 512, ifil) == NULL);
         crtest(loadbuf);
         if (res)
             {
-            printf("...ERROR!\nCan't read singular text for action #%i!\n",
+            printf("...ERROR!\nCan't read singular text for action #%lu!\n",
                    d + 1);
-            printf("Continuing to compile actions...%5i", d + 1);
+            printf("Continuing to compile actions...%5lu", d + 1);
             continue;
             }
         stripcr(loadbuf);
-        if (!stricmp(loadbuf, "N/A"))
+        if (!stricmp((char*)loadbuf, "N/A"))
             {
             loadbuf[0] = '\0';
             }
-        tact.singularlen = strlen(loadbuf);
+        tact.singularlen = strlen((char*)loadbuf);
         lseek(ofil, afile.txtstart + tloc, SEEK_SET);
         res = write(ofil, loadbuf, tact.singularlen);
         if (res == -1)
             {
-            printf("ERROR!\nCan't write singular text for action #%i!\n",
+            printf("ERROR!\nCan't write singular text for action #%lu!\n",
                    d + 1);
-            printf("Continuing to compile actions...%5i", d + 1);
+            printf("Continuing to compile actions...%5lu", d + 1);
             continue;
             }
         tloc += (long) tact.singularlen;
 
-        res = (fgets(loadbuf, 512, ifil) == NULL);
+        res = (fgets((char*)loadbuf, 512, ifil) == NULL);
         crtest(loadbuf);
         if (res)
             {
-            printf("...ERROR!\nCan't read plural text for action #%i!\n",
+            printf("...ERROR!\nCan't read plural text for action #%lu!\n",
                    d + 1);
-            printf("Continuing to compile actions...%5i", d + 1);
+            printf("Continuing to compile actions...%5lu", d + 1);
             continue;
             }
         stripcr(loadbuf);
-        if (!stricmp(loadbuf, "N/A"))
+        if (!stricmp((char *)loadbuf, "N/A"))
             {
             loadbuf[0] = '\0';
             }
-        tact.plurallen = strlen(loadbuf);
+        tact.plurallen = strlen((char *)loadbuf);
         lseek(ofil, afile.txtstart + tloc, SEEK_SET);
         res = write(ofil, loadbuf, tact.plurallen);
         tloc += (long) tact.plurallen;
         if (res == -1)
             {
-            printf("ERROR!\nCan't write plural text for action #%i!\n",
+            printf("ERROR!\nCan't write plural text for action #%lu!\n",
                    d + 1);
-            printf("Continuing to compile actions...%5i", d + 1);
+            printf("Continuing to compile actions...%5lu", d + 1);
             continue;
             }
 
@@ -448,13 +448,13 @@ void actfile_compile(unsigned char *ifname, unsigned char *ofname)
         res = write(ofil, &tact, sizeof(action_data_typ));
         if (res == -1)
             {
-            printf("ERROR!\nCan't write action data for action #%i!\n",
+            printf("ERROR!\nCan't write action data for action #%lu!\n",
                    d + 1);
-            printf("Continuing to compile actions...%5i", d + 1);
+            printf("Continuing to compile actions...%5lu", d + 1);
             continue;
             }
         dloc += sizeof(action_data_typ);
-        printf("\b\b\b\b\b%5i", d + 1);
+        printf("\b\b\b\b\b%5lu", d + 1);
         }
 
     fclose(ifil);

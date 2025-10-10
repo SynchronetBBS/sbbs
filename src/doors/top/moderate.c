@@ -50,7 +50,7 @@ void mod_proc(void)
         (tmpcdef == -1L || user.security < chan[tmpcdef].modsec) &&
         user.security < cfg.sysopsec)
         {
-        top_output(OUT_SCREEN, getlang("NotModerator"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"NotModerator"));
         return;
         }
 
@@ -59,7 +59,7 @@ void mod_proc(void)
        channel or if a technical problem occurs. */
     if (curchannel == cfg.defaultchannel)
         {
-        top_output(OUT_SCREEN, getlang("CantModInMain"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"CantModInMain"));
         return;
         }
 
@@ -68,46 +68,46 @@ void mod_proc(void)
        new data, which unlocks it. */
 
     /* Change channel topic. */
-    if (checkcmdmatch(get_word(1), getlang("CmdsModTopicChg")))
+    if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsModTopicChg")))
         {
         res = cmi_load(curchannel);
         if (res != CMI_OKAY)
             {
-            top_output(OUT_SCREEN, getlang("CantDoModCmd"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CantDoModCmd"));
             return;
             }
         /* Copy the topic, which begins at the 3rd word of the input. */
         memset(cmibuf.topic, 0, 71);
-        strncpy(cmibuf.topic, &word_str[word_pos[2]], 70);
+        strncpy((char*)cmibuf.topic, (char*)&word_str[word_pos[2]], 70);
         res = cmi_save();
         if (res != CMI_OKAY)
             {
-            top_output(OUT_SCREEN, getlang("CantDoModCmd"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CantDoModCmd"));
             return;
             }
         dispatch_message(MSG_CHANTOPICCHG, cmibuf.topic, -1, 0, 0);
-        top_output(OUT_SCREEN, getlang("ChangedTopic"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"ChangedTopic"));
         return;
         }
     /* Change the moderator, or add a new one. */
-    if (checkcmdmatch(get_word(1), getlang("CmdsModModChg")))
+    if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsModModChg")))
         {
         /* Find the specified user. */
         sendto = find_node_from_name(tmpstr, tmphand,
                                      &word_str[word_pos[2]]);
         if (sendto == -1)
     		{
-            top_output(OUT_SCREEN, getlang("NotLoggedIn"), tmphand);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"NotLoggedIn"), tmphand);
             return;
     	    }
 	    if (sendto == -2)
 		   	{
-            top_output(OUT_SCREEN, getlang("NotSpecific"), tmphand);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"NotSpecific"), tmphand);
             return;
     	    }
         if (sendto == -3)
             {
-            top_output(OUT_SCREEN, getlang("HasForgotYou"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"HasForgotYou"),
                        handles[sendto].string);
             return;
             }
@@ -115,7 +115,7 @@ void mod_proc(void)
         res = cmi_load(curchannel);
         if (res != CMI_OKAY)
             {
-            top_output(OUT_SCREEN, getlang("CantDoModCmd"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CantDoModCmd"));
             return;
             }
         /* Assign the new moderator.  This can remove this user's moderator
@@ -125,12 +125,12 @@ void mod_proc(void)
         res = cmi_save();
         if (res != CMI_OKAY)
             {
-            top_output(OUT_SCREEN, getlang("CantDoModCmd"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CantDoModCmd"));
             return;
             }
         /* Notify everybody about the change. */
-        dispatch_message(MSG_CHANMODCHG, "\0", sendto, 0, 0);
-        top_output(OUT_SCREEN, getlang("ChangedMod"),
+        dispatch_message(MSG_CHANMODCHG, (unsigned char *)"", sendto, 0, 0);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"ChangedMod"),
                    handles[sendto].string);
         return;
         }
@@ -138,19 +138,19 @@ void mod_proc(void)
     /* Ban, unban, invite, or uninvite a user.  The commands are handled by
        the same code as they are so similar.  baninvflg is set to control
        which action to do.  The codes are only used in this function. */
-    if (checkcmdmatch(get_word(1), getlang("CmdsModBan")))
+    if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsModBan")))
         {
         baninvflg = 1;
         }
-    if (checkcmdmatch(get_word(1), getlang("CmdsModUnBan")))
+    if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsModUnBan")))
         {
         baninvflg = 2;
         }
-    if (checkcmdmatch(get_word(1), getlang("CmdsModInvite")))
+    if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsModInvite")))
         {
         baninvflg = 3;
         }
-    if (checkcmdmatch(get_word(1), getlang("CmdsModUnInvite")))
+    if (checkcmdmatch(get_word(1), getlang((unsigned char *)"CmdsModUnInvite")))
         {
         baninvflg = 4;
         }
@@ -161,7 +161,7 @@ void mod_proc(void)
     if (curchannel >= 4000000000UL && curchannel <= 4000999999UL &&
         baninvflg >= 1 && baninvflg <= 2)
         {
-        top_output(OUT_SCREEN, getlang("CantBanFromHere"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"CantBanFromHere"));
         return;
         }
     /* The user can't invite in normal channels or conferences.  Again
@@ -169,7 +169,7 @@ void mod_proc(void)
     if ((curchannel <= 3999999999UL || curchannel >= 4001000000UL) &&
         baninvflg >= 3 && baninvflg <= 4)
         {
-        top_output(OUT_SCREEN, getlang("CantInvFromHere"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"CantInvFromHere"));
         return;
         }
 
@@ -183,19 +183,19 @@ void mod_proc(void)
                                      &word_str[word_pos[2]]);
         if (sendto == -1)
     		{
-            top_output(OUT_SCREEN, getlang("NotLoggedIn"), tmphand);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"NotLoggedIn"), tmphand);
             return;
     	    }
 	    if (sendto == -2)
 		   	{
-            top_output(OUT_SCREEN, getlang("NotSpecific"), tmphand);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"NotSpecific"), tmphand);
             return;
     	    }
         /* Users cannot be unbanned or invited if they have forgotten
            this user. */
         if (sendto == -3 && (baninvflg == 2 || baninvflg == 3))
             {
-            top_output(OUT_SCREEN, getlang("HasForgotYou"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"HasForgotYou"),
                        handles[sendto].string);
             return;
             }
@@ -211,7 +211,7 @@ void mod_proc(void)
            absolutely have to. */
         if (sendto == od_control.od_node)
             {
-            top_output(OUT_SCREEN, getlang("CantDoCmdToSelf"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CantDoCmdToSelf"));
             return;
             }
 
@@ -222,14 +222,14 @@ void mod_proc(void)
         if (nmod.security >= cfg.sysopsec && (baninvflg == 1 ||
             baninvflg == 4))
             {
-            top_output(OUT_SCREEN, getlang("CantModToSysop"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CantModToSysop"));
             return;
             }
 
         res = cmi_load(curchannel);
         if (res != CMI_OKAY)
             {
-            top_output(OUT_SCREEN, getlang("CantDoModCmd"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CantDoModCmd"));
             return;
             }
         /* Ban and invite commands add the user to the special nodes
@@ -243,7 +243,7 @@ void mod_proc(void)
                 {
                 top_output(OUT_SCREEN,
                            getlang(baninvflg == 1 ?
-                                   "CantBan" : "CantInvite"),
+                                   (unsigned char *)"CantBan" : (unsigned char *)"CantInvite"),
                            handles[sendto].string);
                 cmi_save();
                 return;
@@ -258,7 +258,7 @@ void mod_proc(void)
                 {
                 top_output(OUT_SCREEN,
                            getlang(baninvflg == 2 ?
-                                   "WasntBanned" : "WasntInvited"),
+                                   (unsigned char *)"WasntBanned" : (unsigned char *)"WasntInvited"),
                            handles[sendto].string);
                 cmi_save();
                 return;
@@ -266,14 +266,14 @@ void mod_proc(void)
             }
         if (res != CMI_OKAY)
             {
-            top_output(OUT_SCREEN, getlang("CantDoModCmd"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CantDoModCmd"));
             cmi_save();
             return;
             }
         res = cmi_save();
         if (res != CMI_OKAY)
             {
-            top_output(OUT_SCREEN, getlang("CantDoModCmd"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CantDoModCmd"));
             return;
             }
 
@@ -286,20 +286,20 @@ void mod_proc(void)
             case 4: cmsgtyp = MSG_CHANUNINVITED; break;
             }
         /* Tell everybody in this channel what we just did. */
-        dispatch_message(cmsgtyp, "\0", sendto, 0, 0);
+        dispatch_message(cmsgtyp, (unsigned char *)"", sendto, 0, 0);
         /* Global messages store the current channel in the data1 field. */
         msgextradata = (long) curchannel;
         /* Send a global message to the user the action was done to, who
            could be anywhere in TOP. */
         msgsendglobal = 1;
-        dispatch_message(cmsgtyp, "\0", sendto, 1, 0);
+        dispatch_message(cmsgtyp, (unsigned char *)"", sendto, 1, 0);
         /* Set the appropriate language item name to display. */
         switch (baninvflg)
             {
-            case 1: strcpy(outbuf, "BannedUser"); break;
-            case 2: strcpy(outbuf, "UnBannedUser"); break;
-            case 3: strcpy(outbuf, "InvitedUser"); break;
-            case 4: strcpy(outbuf, "UnInvitedUser"); break;
+            case 1: strcpy((char*)outbuf, "BannedUser"); break;
+            case 2: strcpy((char*)outbuf, "UnBannedUser"); break;
+            case 3: strcpy((char*)outbuf, "InvitedUser"); break;
+            case 4: strcpy((char*)outbuf, "UnInvitedUser"); break;
             }
         /* Confirm the action by displaying a message. */
         top_output(OUT_SCREEN, getlang(outbuf), handles[sendto].string);
@@ -313,7 +313,7 @@ void mod_proc(void)
         }
 
     /* Command not recognized, show help file instead. */
-    show_helpfile("helpmod0");
+    show_helpfile((unsigned char *)"helpmod0");
 
     return;
     }

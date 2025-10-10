@@ -60,7 +60,7 @@ do
 		wc++;
         }
     }
-while(pc < strlen(lin));
+while(pc < strlen((char*)lin));
 
 /* The full text of the string is stored in the global variable
    word_str, which is later used by the get_word() function to actually
@@ -68,12 +68,12 @@ while(pc < strlen(lin));
    allowing direct access to all the text starting at a particular word,
    which is ideal for whispers, talktypes, and similar commands. */
 memset(word_str, 0, MAXSTRLEN + 1);
-strncpy(word_str, lin, MAXSTRLEN);
+strncpy((char*)word_str, (char*)lin, MAXSTRLEN);
 
 /* Zero out the lengths for unused words. */
 for (pc = wc; pc < MAXWORDS; pc++)
 	{
-    word_pos[pc] = strlen(lin);
+    word_pos[pc] = strlen((char*)lin);
     word_len[pc] = 0;
     }
 
@@ -85,11 +85,11 @@ return wc;
    Returns:  Pointer to the global variable wordret, which contains the
              retreived word.
 */
-char XFAR *get_word(XINT wordnum)
+unsigned char XFAR *get_word(XINT wordnum)
 {
 
 memset(wordret, 0, word_len[wordnum] + 1L);
-strncpy(wordret, &word_str[word_pos[wordnum]], word_len[wordnum]);
+strncpy((char*)wordret, (char*)&word_str[word_pos[wordnum]], word_len[wordnum]);
 
 return wordret;
 }

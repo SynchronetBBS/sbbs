@@ -37,7 +37,7 @@ in Win32) and the main input loop.
    Notes:  This function never returns.  exit() is always used to quit TOP.
 */
 #ifndef __WIN32__
-extern int main(XINT ac, char *av[])
+extern int main(int ac, char *av[])
 #else
 extern int pascal WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                           LPSTR lpszCmdParam, int nCmdShow)
@@ -77,11 +77,11 @@ if (cfg.shownews)
 /* Prepare the screen for dual window mode if the user has it turned on. */
 if (user.pref1 & PREF1_DUALWINDOW)
 	{
-    top_output(OUT_SCREEN, getlang("DWOutputPrepare"));
-    top_output(OUT_SCREEN, getlang("DWOutputSetCurPos"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"DWOutputPrepare"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"DWOutputSetCurPos"));
     }
 /* Show the welcome. */
-top_output(OUT_SCREEN, getlang("SitDown"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"SitDown"));
 /* Show who's in the channel and a basic help. */
 channelsummary();
 /* Let other users know we're here. */
@@ -138,7 +138,7 @@ for(;;)
     /* Clear the key input holder. */
     key = '\0';
     /* Set/clear the onflag if the user has started typing. */
-    if (strlen(input) > 0)
+    if (strlen((char*)input) > 0)
         {
         onflag = 1;
         }
@@ -152,7 +152,7 @@ for(;;)
         /* Clear/initalize the screen in dual window mode. */
         if (onflag && !(user.pref1 & PREF1_DUALWINDOW))
             {
-            top_output(OUT_SCREEN, getlang("InputPrefix"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"InputPrefix"));
             } // Also time, date, minleft to bottom
         /* More dual window mode preparation. */
         if (user.pref1 & PREF1_DUALWINDOW)
@@ -162,30 +162,30 @@ for(;;)
                 /* Prepare the screen when the user is typing. */
                 // Next four lines are here temporarily!
                 // These will get replaced when proper scrolling is done
-                top_output(OUT_SCREEN, getlang("DWPrepareInput"));
-                top_output(OUT_SCREEN, getlang("DWTopDisplay"));
-                top_output(OUT_SCREEN, getlang("DWMiddleDisplay"));
-                top_output(OUT_SCREEN, getlang("DWBottomDisplay"));
-                top_output(OUT_SCREEN, getlang("DWInputCurPos"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"DWPrepareInput"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"DWTopDisplay"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"DWMiddleDisplay"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"DWBottomDisplay"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"DWInputCurPos"));
                 /* Prepares the scren to "retype" what the user has already
                    input. */
-                top_output(OUT_SCREEN, getlang("DWRestoreInput"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"DWRestoreInput"));
                 }
             else
                 {
                 /* Prepare the scren when the user is idle. */
                 // Next four lines are here temporarily!
-                top_output(OUT_SCREEN, getlang("DWPrepareInput"));
-                top_output(OUT_SCREEN, getlang("DWTopDisplay"));
-                top_output(OUT_SCREEN, getlang("DWMiddleDisplay"));
-                top_output(OUT_SCREEN, getlang("DWBottomDisplay"));
-                top_output(OUT_SCREEN, getlang("DWInputCurPos"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"DWPrepareInput"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"DWTopDisplay"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"DWMiddleDisplay"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"DWBottomDisplay"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"DWInputCurPos"));
                 }
             }
         else
             {
             /* Show the prompt in normal mode. */
-            top_output(OUT_SCREEN, getlang("DefaultPrompt"), user.handle);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"DefaultPrompt"), user.handle);
             }
         /* Clear the position counter. */
         pos = 0;
@@ -193,7 +193,7 @@ for(;;)
             {
             /* If the user has typing, "retype" what the user has already
                input. */
-            pos = strlen(input);
+            pos = strlen((char*)input);
             /* We don't want codes to be processed when retyping. */
             outproclang = FALSE; outproccol = FALSE;
             top_output(OUT_SCREEN, input);
@@ -375,7 +375,7 @@ for(;;)
                 /* Redisplay the last word if it's not too long. */
                 if (wwc < 50)
                     {
-                    od_disp_str(ww);
+                    od_disp_str((char*)ww);
                     }
                 /* Clear the word wrap buffer and reset the counter. */
                 memset(ww, 0, 81);

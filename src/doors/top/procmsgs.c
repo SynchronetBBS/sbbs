@@ -22,6 +22,7 @@ accounts for its enormous size.  For a detailed list of the actual information
 needed by each message, see MESSAGES.TXT.
 ******************************************************************************/
 
+#include "strwrap.h"
 #include "top.h"
 
 /* process_messages() - Process all incoming TOP messages.
@@ -36,7 +37,7 @@ XINT d, proc = 0, mused = 0, isaction = 0, res, dn;
 msg_typ msgin; /* Incoming message buffer. */
 /* File name buffer, Temporary short string buffer (usually used for gender-
    specific data in actions), test byte holder. */
-char filnam[256], ttt[10], tstbit[2];
+unsigned char filnam[256], ttt[10], tstbit[2];
 unsigned char allowbits = 0; /* Action token allow bits. */
 /* Temporary long number holder.  It is named cdc because it was originally
    used for CyberDollar values with the games before they were removed. */
@@ -97,7 +98,7 @@ if (user.pref1 & PREF1_DUALWINDOW)
        lower (incoming messages) window. */
     // Different for AVT when I find out what the store/recv codes are.
     od_disp_emu("\x1B" "[u", TRUE);
-    top_output(OUT_SCREEN, getlang("DWOutputPrefix"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"DWOutputPrefix"));
     }
 
 /* Loop for each message indexed by the MIX file, processing if needed. */
@@ -174,7 +175,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
        mused++ increases the number of messages actually used, so it does
            not include ignored messages. */
 
-    if (!dn && lastmsgused && (!forgetstatus[msgin.from] & FGT_FORGOTTEN))
+    if (!dn && lastmsgused && (!(forgetstatus[msgin.from] & FGT_FORGOTTEN)))
     	{
         /* Essentially, if this is the first message to be shown and the
            user is using normal chat mode, a small string (usually ***) is
@@ -187,20 +188,20 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                of typing something (onflag == TRUE). */
             if (!nointerflg && onflag && !(user.pref1 & PREF1_BLKWHILETYP))
                 {
-                top_output(OUT_SCREEN, getlang("Interrupt"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"Interrupt"));
                 /* Don't send the interrupt string again. */
                 nointerflg = 1;
                 }
             }
         /* Send the message display prefix (usually just a newline). */
-        top_output(OUT_SCREEN, getlang("MsgDisplayPrefix"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"MsgDisplayPrefix"));
         }
 
     /* The name prompt only has to be deleted once. */
     dn = 0;
     /* Many message types use a numeric value so it is obtained before
        processing begins. */
-    cdc = strtoul(msgin.string, NULL, 10);
+    cdc = strtoul((char*)msgin.string, NULL, 10);
 
     /* The lastmsgused flag is figured from the mused total later on. */
     lastmsgused = mused;
@@ -215,7 +216,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (!(forgetstatus[msgin.from] & FGT_FORGOTTEN))
             	{
                 delprompt(delname);
-                top_output(OUT_SCREEN, getlang("MsgPrefix"), msgin.handle,
+                top_output(OUT_SCREEN, getlang((unsigned char *)"MsgPrefix"), msgin.handle,
                            msgin.string);
                 mused++;
                 }
@@ -229,13 +230,13 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                 if (cfg.allowexmessages && msgin.string[0])
                     {
                     /* Send the user's entry message if they have one. */
-                    top_output(OUT_SCREEN, getlang("EMsgPrefix"),
+                    top_output(OUT_SCREEN, getlang((unsigned char *)"EMsgPrefix"),
                                msgin.string);
                     }
                 else
                     {
                     /* Send the default entry message. */
-                    top_output(OUT_SCREEN, getlang("EMessage"), msgin.handle);
+                    top_output(OUT_SCREEN, getlang((unsigned char *)"EMessage"), msgin.handle);
                     }
                 mused++;
                 }
@@ -254,13 +255,13 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                 if (cfg.allowexmessages && msgin.string[0])
                     {
                     /* Send the user's exit message if they have one. */
-                    top_output(OUT_SCREEN, getlang("XMsgPrefix"),
+                    top_output(OUT_SCREEN, getlang((unsigned char *)"XMsgPrefix"),
                                msgin.string);
                     }
                 else
                     {
                     /* Send the default exit message. */
-                    top_output(OUT_SCREEN, getlang("XMessage"), msgin.handle);
+                    top_output(OUT_SCREEN, getlang((unsigned char *)"XMessage"), msgin.handle);
                     }
                 mused++;
                 }
@@ -275,7 +276,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (curchannel ==
                 ((unsigned long) msgin.from + 4000000000UL))
                 {
-                top_output(OUT_SCREEN, getlang("NoLongerOnSystem"),
+                top_output(OUT_SCREEN, getlang((unsigned char *)"NoLongerOnSystem"),
                            handles[msgin.from].string);
                 rettomain = 1;
                 }
@@ -286,7 +287,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (!(forgetstatus[msgin.from] & FGT_FORGOTTEN))
                 {
                 delprompt(delname);
-                top_output(OUT_SCREEN, getlang("InProf"), msgin.handle);
+                top_output(OUT_SCREEN, getlang((unsigned char *)"InProf"), msgin.handle);
                 mused++;
                 }
             /* Reset private chat variables if they involve the node that is
@@ -300,7 +301,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (!(forgetstatus[msgin.from] & FGT_FORGOTTEN))
                 {
                 delprompt(delname);
-                top_output(OUT_SCREEN, getlang("OutProf"), msgin.handle);
+                top_output(OUT_SCREEN, getlang((unsigned char *)"OutProf"), msgin.handle);
                 mused++;
                 }
             proc++;
@@ -310,7 +311,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (!(forgetstatus[msgin.from] & FGT_FORGOTTEN))
                 {
                 delprompt(delname);
-                top_output(OUT_SCREEN, getlang("WhisperPrefix"), msgin.handle,
+                top_output(OUT_SCREEN, getlang((unsigned char *)"WhisperPrefix"), msgin.handle,
                            msgin.string);
                 mused++;
                 }
@@ -322,7 +323,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                 !(user.pref2 & PREF2_ACTIONSOFF))
                 {
                 delprompt(delname);
-                top_output(OUT_SCREEN, getlang("GAPrefix"), msgin.handle,
+                top_output(OUT_SCREEN, getlang((unsigned char *)"GAPrefix"), msgin.handle,
                            msgin.string);
                 mused++;
                 }
@@ -334,7 +335,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                 !(user.pref2 & PREF2_ACTIONSOFF))
                 {
                 delprompt(delname);
-                top_output(OUT_SCREEN, getlang("GA2Prefix"), msgin.handle,
+                top_output(OUT_SCREEN, getlang((unsigned char *)"GA2Prefix"), msgin.handle,
                            msgin.string);
                 mused++;
                 }
@@ -384,14 +385,14 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                 delprompt(delname);
                 if (msgin.gender == 0)
                     {
-                    strcpy(ttt, getlang("His"));
+                    strcpy((char*)ttt, (char*)getlang((unsigned char *)"His"));
                     }
                 if (msgin.gender == 1)
                     {
-                    strcpy(ttt, getlang("Her"));
+                    strcpy((char*)ttt, (char*)getlang((unsigned char *)"Her"));
                     }
                 fixname(msgin.string, msgin.string);
-                top_output(OUT_SCREEN, getlang("HandleChangeMsg"),
+                top_output(OUT_SCREEN, getlang((unsigned char *)"HandleChangeMsg"),
                            handles[msgin.from].string, ttt, msgin.string);
                 mused++;
                 }
@@ -406,14 +407,14 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                 delprompt(delname);
                 if (msgin.gender == 0)
                     {
-                    strcpy(ttt, getlang("His"));
+                    strcpy((char*)ttt, (char*)getlang((unsigned char *)"His"));
                     }
                 if (msgin.gender == 1)
                     {
-                    strcpy(ttt, getlang("Her"));
+                    strcpy((char*)ttt, (char*)getlang((unsigned char *)"Her"));
                     }
                 mused++;
-                top_output(OUT_SCREEN, getlang("BioChangeMsg"), msgin.handle,
+                top_output(OUT_SCREEN, getlang((unsigned char *)"BioChangeMsg"), msgin.handle,
                            ttt);
                 }
             proc++;
@@ -423,7 +424,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (!(forgetstatus[msgin.from] & FGT_FORGOTTEN))
                 {
                 delprompt(delname);
-                top_output(OUT_SCREEN, getlang("SexChangeMsg"), msgin.handle,
+                top_output(OUT_SCREEN, getlang((unsigned char *)"SexChangeMsg"), msgin.handle,
                            msgin.string);
                 mused++;
                 }
@@ -436,13 +437,13 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                 delprompt(delname);
                 if (msgin.gender == 0)
                     {
-                    strcpy(ttt, getlang("His"));
+                    strcpy((char*)ttt, (char*)getlang((unsigned char *)"His"));
                     }
                 if (msgin.gender == 1)
                     {
-                    strcpy(ttt, getlang("Her"));
+                    strcpy((char*)ttt, (char*)getlang((unsigned char *)"Her"));
                     }
-                top_output(OUT_SCREEN, getlang("PersActChangeMsg"), msgin.handle, ttt);
+                top_output(OUT_SCREEN, getlang((unsigned char *)"PersActChangeMsg"), msgin.handle, ttt);
                 mused++;
                 }
             proc++;
@@ -452,7 +453,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (!(forgetstatus[msgin.from] & FGT_FORGOTTEN))
                 {
                 delprompt(delname);
-                top_output(OUT_SCREEN, getlang("TossOut"), msgin.handle);
+                top_output(OUT_SCREEN, getlang((unsigned char *)"TossOut"), msgin.handle);
                 mused++;
                 }
             /* The same post-processing is done as for a normal exit. */
@@ -461,7 +462,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (curchannel ==
                 ((unsigned long) msgin.from + 4000000000UL))
                 {
-                top_output(OUT_SCREEN, getlang("NoLongerOnSystem"),
+                top_output(OUT_SCREEN, getlang((unsigned char *)"NoLongerOnSystem"),
                            handles[msgin.from].string);
                 rettomain = 1;
                 }
@@ -494,23 +495,23 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
         /* A link has just been established to another BBS. */
         case MSG_LINKUP:
             delprompt(delname);
-            top_output(OUT_SCREEN, getlang("LinkOn"), msgin.handle, msgin.string);
-            strcpy(handles[msgin.from].string, msgin.string);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"LinkOn"), msgin.handle, msgin.string);
+            strcpy((char*)handles[msgin.from].string, (char*)msgin.string);
             mused++;
             proc++;
             break;
         /* Text received from a linked BBS. */
         case MSG_LINKTEXT:
             delprompt(delname);
-            top_output(OUT_SCREEN, getlang("LinkPrefix"), msgin.handle, msgin.string);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"LinkPrefix"), msgin.handle, msgin.string);
             mused++;
             proc++;
             break;
         /* The link to another BBS has been disconnected. */
         case MSG_UNLINK:
             delprompt(delname);
-            top_output(OUT_SCREEN, getlang("LinkOff"), msgin.handle);
-            strcpy(handles[msgin.from].string, msgin.string);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"LinkOff"), msgin.handle);
+            strcpy((char*)handles[msgin.from].string, (char*)msgin.string);
             activenodes[msgin.from] = 0;
             forgetstatus[msgin.from] = 0;
             mused++;
@@ -523,13 +524,13 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                 delprompt(delname);
                 if (msgin.gender == 0)
                     {
-                    strcpy(ttt, getlang("His"));
+                    strcpy((char*)ttt, (char*)getlang((unsigned char *)"His"));
                     }
                 if (msgin.gender == 1)
                     {
-                    strcpy(ttt, getlang("Her"));
+                    strcpy((char*)ttt, (char*)getlang((unsigned char *)"Her"));
                     }
-                top_output(OUT_SCREEN, getlang("EXMsgChange"), msgin.handle, ttt);
+                top_output(OUT_SCREEN, getlang((unsigned char *)"EXMsgChange"), msgin.handle, ttt);
                 mused++;
                 }
             proc++;
@@ -537,10 +538,10 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
         /* A sysop just tossed us back to the BBS. */
         case MSG_TOSSED:
             delprompt(delname);
-            top_output(OUT_SCREEN, getlang("HasTossed"), msgin.handle);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"HasTossed"), msgin.handle);
             if (msgin.string[0])
             	{
-                top_output(OUT_SCREEN, getlang("TossComment"), msgin.string);
+                top_output(OUT_SCREEN, getlang((unsigned char *)"TossComment"), msgin.string);
                 }
             tstbit[0] = 0;
 		    lseek(midxinfil, (long) d, SEEK_SET);
@@ -554,10 +555,10 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
         /* A sysop disconnected us from TOP and the BBS. */
         case MSG_ZAPPED:
             delprompt(delname);
-            top_output(OUT_SCREEN, getlang("HasZapped"), msgin.handle);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"HasZapped"), msgin.handle);
             if (msgin.string[0])
             	{
-                top_output(OUT_SCREEN, getlang("TossComment"), msgin.string);
+                top_output(OUT_SCREEN, getlang((unsigned char *)"TossComment"), msgin.string);
                 }
             tstbit[0] = 0;
 		    lseek(midxinfil, (long) d, SEEK_SET);
@@ -571,8 +572,8 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
         /* A sysop has reset a crashed node. */
         case MSG_CLEARNODE:
             delprompt(delname);
-            itoa(cdc, outnum[0], 10);
-            top_output(OUT_SCREEN, getlang("HasCleared"), outnum[0],
+            itoa(cdc, (char*)outnum[0], 10);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"HasCleared"), outnum[0],
                        handles[(XINT) cdc].string, msgin.handle);
         	check_nodes_used(FALSE);
             mused++;
@@ -582,9 +583,9 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
 /*        case MSG_SYSGIVECD:
         	delprompt(delname);
             ultoa(cdc, outnum[0], 10);
-            top_output(OUT_SCREEN, getlang("CDGive"), msgin.handle, outnum[0],
-                       cdc == 1 ? getlang("CDSingular") :
-                                  getlang("CDPlural"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CDGive"), msgin.handle, outnum[0],
+                       cdc == 1 ? getlang((unsigned char *)"CDSingular") :
+                                  getlang((unsigned char *)"CDPlural"));
             user.cybercash += cdc;
             save_user_data(user_rec_num, &user);
             mused++;
@@ -593,9 +594,9 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
         case MSG_SYSTAKECD:
         	delprompt(delname);
             ultoa(cdc, outnum[0], 10);
-            top_output(OUT_SCREEN, getlang("CDTake"), msgin.handle, outnum[0],
-                       cdc == 1 ? getlang("CDSingular") :
-                                  getlang("CDPlural"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CDTake"), msgin.handle, outnum[0],
+                       cdc == 1 ? getlang((unsigned char *)"CDSingular") :
+                                  getlang((unsigned char *)"CDPlural"));
             user.cybercash -= cdc;
             save_user_data(user_rec_num, &user);
             mused++;
@@ -604,7 +605,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
         case MSG_SYSSETCD:
         	delprompt(delname);
             ultoa(cdc, outnum[0], 10);
-            top_output(OUT_SCREEN, getlang("CDSet"), msgin.handle, outnum[0]);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CDSet"), msgin.handle, outnum[0]);
             user.cybercash = cdc;
             save_user_data(user_rec_num, &user);
             mused++;
@@ -639,7 +640,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (!(forgetstatus[msgin.from] & FGT_FORGOTTEN))
                 {
 	        	delprompt(delname);
-                top_output(OUT_SCREEN, getlang("ChannelIn"),
+                top_output(OUT_SCREEN, getlang((unsigned char *)"ChannelIn"),
                            msgin.handle);
         	    mused++;
                 }
@@ -650,7 +651,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (!(forgetstatus[msgin.from] & FGT_FORGOTTEN))
                 {
 	        	delprompt(delname);
-                top_output(OUT_SCREEN, getlang("ChannelOut"),
+                top_output(OUT_SCREEN, getlang((unsigned char *)"ChannelOut"),
                            msgin.handle);
     	        mused++;
                 }
@@ -658,9 +659,9 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             break;
         /* Crash protection has detected a stuck node. */
         case MSG_KILLCRASH:
-            res = atoi(msgin.string);
+            res = atoi((char*)msgin.string);
             delprompt(delname);
-            top_output(OUT_SCREEN, getlang("CrashToss"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"CrashToss"),
                        msgin.string);
             /* Clear the node's variables so it does not remain visible. */
             activenodes[res] = 0;
@@ -673,10 +674,10 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (!(forgetstatus[msgin.from] & FGT_FORGOTTEN))
                 {
 	        	delprompt(delname);
-                top_output(OUT_SCREEN, getlang("DirectedPrefix"),
+                top_output(OUT_SCREEN, getlang((unsigned char *)"DirectedPrefix"),
                 		   handles[msgin.from].string,
                            msgin.doneto == od_control.od_node ?
-						   getlang("You") : handles[msgin.doneto].string,
+						   getlang((unsigned char *)"You") : handles[msgin.doneto].string,
 						   msgin.string);
                 mused++;
                 }
@@ -685,7 +686,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
 /* The sysop has edited the user on this node.  Not used. */
 /*        case MSG_SYSUSEREDITED:
             delprompt(delname);
-            top_output(OUT_SCREEN, getlang("SysopUserEdited"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"SysopUserEdited"),
             		   msgin.string);
             load_user_data(user_rec_num, &user);
             mused++;
@@ -694,8 +695,8 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
         /* The sysop has changed our security level. */
         case MSG_SYSSETSEC:
         	delprompt(delname);
-            ultoa(cdc, outnum[0], 10);
-            top_output(OUT_SCREEN, getlang("SecChangeMsg"),
+            ultoa(cdc, (char*)outnum[0], 10);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"SecChangeMsg"),
                        msgin.handle, outnum[0]);
             /* Update that security level in the user and NODEIDX files. */
             user.security = cdc;
@@ -710,7 +711,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (!(forgetstatus[msgin.from] & FGT_FORGOTTEN))
                 {
 	        	delprompt(delname);
-                top_output(OUT_SCREEN, getlang("PrivChatIn"),
+                top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatIn"),
                            msgin.handle);
                 mused++;
                 }
@@ -721,7 +722,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (!(forgetstatus[msgin.from] & FGT_FORGOTTEN))
                 {
 	        	delprompt(delname);
-                top_output(OUT_SCREEN, getlang("PrivChatOut"),
+                top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatOut"),
                            msgin.handle);
                 mused++;
                 }
@@ -740,7 +741,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                 {
                 privchatin = msgin.from;
 	        	delprompt(delname);
-                top_output(OUT_SCREEN, getlang("PrivChatRequested"),
+                top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatRequested"),
                            msgin.handle);
                 }
             mused++;
@@ -751,7 +752,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (!(forgetstatus[msgin.from] & FGT_FORGOTTEN))
                 {
 	        	delprompt(delname);
-                top_output(OUT_SCREEN, getlang("PrivChatDenied"),
+                top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatDenied"),
                            msgin.handle);
                 privchatout = -1;
                 mused++;
@@ -761,9 +762,9 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
         /* A moderator has changed our current channel's topic. */
         case MSG_CHANTOPICCHG:
             delprompt(delname);
-            top_output(OUT_SCREEN, getlang("TopicChangeMsg"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"TopicChangeMsg"),
                        handles[msgin.from].string, msgin.string);
-            strcpy(cmibuf.topic, msgin.string);
+            strcpy((char*)cmibuf.topic, (char*)msgin.string);
             mused++;
             proc++;
             break;
@@ -782,10 +783,10 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
            of our current channel. */
         case MSG_CHANMODCHG:
             delprompt(delname);
-            top_output(OUT_SCREEN, getlang("ModChangeMsg"),
+            top_output(OUT_SCREEN, getlang((unsigned char *)"ModChangeMsg"),
                        handles[msgin.from].string,
                        msgin.doneto == od_control.od_node ?
-                           getlang("You") : handles[msgin.doneto].string);
+                           getlang((unsigned char *)"You") : handles[msgin.doneto].string);
             cmibuf.modnode = msgin.doneto;
             mused++;
             proc++;
@@ -801,7 +802,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (!(forgetstatus[msgin.from] & FGT_FORGOTTEN))
                 {
                 delprompt(delname);
-                top_output(OUT_SCREEN, getlang("InBioEditor"),
+                top_output(OUT_SCREEN, getlang((unsigned char *)"InBioEditor"),
                            msgin.handle);
                 mused++;
                 }
@@ -814,7 +815,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (!(forgetstatus[msgin.from] & FGT_FORGOTTEN))
                 {
                 delprompt(delname);
-                top_output(OUT_SCREEN, getlang("OutBioEditor"),
+                top_output(OUT_SCREEN, getlang((unsigned char *)"OutBioEditor"),
                            msgin.handle);
                 mused++;
                 }
@@ -829,7 +830,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
         /* Action text buffer, pictorial action buffer, pictorial action
            extension buffer, final action text pointer, temporary character
            exchange holder. */
-        char *tmp = NULL, *buf = NULL, texbuf[5], *str = NULL, xch;
+        unsigned char *tmp = NULL, *buf = NULL, texbuf[5], *str = NULL, xch;
         /* Counter, flag when a % is incountered, flag to process % tokens,
            flag if we're using a dynamic buffer, end of string marker. */
         XINT c, nxt = 0, proctokon = 1, dynam, tmark = 0;
@@ -837,7 +838,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
         dynam = 0;
         /* Immediately determine if this is a pictorial action.  Pictorial
            actions require a different setup because of their larger size. */
-        if (!strnicmp(msgin.string, "%P", 2))
+        if (!strnicmp((char*)msgin.string, "%P", 2))
             {
             FILE *fil = NULL; /* Pictorial action file stream. */
 
@@ -845,23 +846,23 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                specify a path along with a pictorial action file base name. */
             if (
 #ifndef __unix__
-				strchr(&msgin.string[2], ':') == NULL &&
+				strchr((char*)&msgin.string[2], ':') == NULL &&
 #endif
-                strchr(&msgin.string[2], PATH_DELIM) == NULL)
+                strchr((char*)&msgin.string[2], PATH_DELIM) == NULL)
                 {
                 /* No path characters found, so assume the TOP ANSI Path. */
-                sprintf(outbuf, "%s%s", cfg.topansipath, &msgin.string[2]);
+                sprintf((char*)outbuf, "%s%s", cfg.topansipath, &msgin.string[2]);
                 }
             else
                 {
                 /* Use the path as is. */
-                strcpy(outbuf, &msgin.string[2]);
+                strcpy((char*)outbuf, (char*)&msgin.string[2]);
                 }
             get_extension(outbuf, texbuf);
-            strcat(outbuf, texbuf);
+            strcat((char*)outbuf, (char*)texbuf);
 
             /* Open the pictorial action file. */
-            fil = fopen(outbuf, "rb");
+            fil = fopen((char*)outbuf, "rb");
             if (!fil)
                 {
                 // Err msg
@@ -887,12 +888,12 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             /* 1000 extra bytes are allocated to minimize chances of a
                buffer overrun due to excessive % tokens. */
             tmp = malloc(dynam ?
-                    (strlen(buf) + 1000) : (strlen(msgin.string) + 1000));
+                    (strlen((char*)buf) + 1000) : (strlen((char*)msgin.string) + 1000));
             }
         if (tmp != NULL)
             {
             memset(tmp, 0,
-                (dynam ? (strlen(buf) + 1000) : (strlen(msgin.string) + 1000)));
+                (dynam ? (strlen((char*)buf) + 1000) : (strlen((char*)msgin.string) + 1000)));
             delprompt(delname);
             mused++;
             /* Assign a common string pointer to whatever buffer we are
@@ -907,7 +908,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                 }
 
             /* Loop for each character in the buffer. */
-            for (c = 0; c < (dynam ? strlen(buf) : strlen(msgin.string));
+            for (c = 0; c < (dynam ? strlen((char*)buf) : strlen((char*)msgin.string));
                  c++)
                 {
                 if (msgin.type == MSG_TLKTYPPLU && c == msgin.data1)
@@ -930,129 +931,129 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                     if (toupper(str[c]) == 'M' &&
                         (allowbits & ALLOW_ME))
                         {
-                        tmark = strlen(tmp);
-                        strcat(tmp, top_output(OUT_STRINGNF,
-                                               getlang("ActionMe"),
+                        tmark = strlen((char*)tmp);
+                        strcat((char*)tmp, (char*)top_output(OUT_STRINGNF,
+                                               getlang((unsigned char *)"ActionMe"),
                                                msgin.handle));
                         /* Adjust the start of user text (normally used
                            in talktypes). */
                         msgin.data1 -= 2L;
-                        msgin.data1 += (long) strlen(tmp) - (long) tmark;
+                        msgin.data1 += (long) strlen((char*)tmp) - (long) tmark;
                         }
                     /* "You" token. */
                     if (toupper(str[c]) == 'Y' &&
                         (allowbits & ALLOW_YOU))
                         {
-                        tmark = strlen(tmp);
-                        strcat(tmp, top_output(OUT_STRINGNF,
-                                               getlang("ActionYouPrefix")));
+                        tmark = strlen((char*)tmp);
+                        strcat((char*)tmp, (char*)top_output(OUT_STRINGNF,
+                                               getlang((unsigned char *)"ActionYouPrefix")));
                         if (msgin.doneto == od_control.od_node)
                             {
-                            strcat(tmp, getlang("You"));
+                            strcat((char*)tmp, (char*)getlang((unsigned char *)"You"));
                             }
                         if (msgin.doneto == -2)
                             {
-                            strcat(tmp, getlang("All"));
+                            strcat((char*)tmp, (char*)getlang((unsigned char *)"All"));
                             }
                         if ((msgin.doneto >= 0) &&
                             (msgin.doneto != od_control.od_node))
                             {
-                            strcat(tmp, handles[msgin.doneto].string);
+                            strcat((char*)tmp, (char*)handles[msgin.doneto].string);
                             }
-                        strcat(tmp, top_output(OUT_STRINGNF,
-                                               getlang("ActionYouSuffix")));
+                        strcat((char*)tmp, (char*)top_output(OUT_STRINGNF,
+                                               getlang((unsigned char *)"ActionYouSuffix")));
                         /* Adjust the start of user text (normally used
                            in talktypes). */
                         msgin.data1 -= 2L;
-                        msgin.data1 += (long) strlen(tmp) - (long) tmark;
+                        msgin.data1 += (long) strlen((char*)tmp) - (long) tmark;
                         }
                     /* "His/Her" token. */
                     if (toupper(str[c]) == 'H' &&
                         (allowbits & ALLOW_SEX))
                         {
-                        tmark = strlen(tmp);
-                        strcat(tmp, top_output(OUT_STRINGNF,
-                                               getlang("ActionHisHerPrefix")));
+                        tmark = strlen((char*)tmp);
+                        strcat((char*)tmp, (char*)top_output(OUT_STRINGNF,
+                                               getlang((unsigned char *)"ActionHisHerPrefix")));
                         if (msgin.gender == 0)
                             {
-                            strcat(tmp, getlang("His"));
+                            strcat((char*)tmp, (char*)getlang((unsigned char *)"His"));
                             }
                         if (msgin.gender == 1)
                             {
-                            strcat(tmp, getlang("Her"));
+                            strcat((char*)tmp, (char*)getlang((unsigned char *)"Her"));
                             }
-                        strcat(tmp, top_output(OUT_STRINGNF,
-                                               getlang("ActionHisHerSuffix")));
+                        strcat((char*)tmp, (char*)top_output(OUT_STRINGNF,
+                                               getlang((unsigned char *)"ActionHisHerSuffix")));
                         /* Adjust the start of user text (normally used
                            in talktypes). */
                         msgin.data1 -= 2L;
-                        msgin.data1 += (long) strlen(tmp) - (long) tmark;
+                        msgin.data1 += (long) strlen((char*)tmp) - (long) tmark;
                         }
                     /* "He/She" token. */
                     if (toupper(str[c]) == 'E' &&
                         (allowbits & ALLOW_HESHE))
                         {
-                        tmark = strlen(tmp);
-                        strcat(tmp, top_output(OUT_STRINGNF,
-                                               getlang("ActionHeShePrefix")));
+                        tmark = strlen((char*)tmp);
+                        strcat((char*)tmp, (char*)top_output(OUT_STRINGNF,
+                                               getlang((unsigned char *)"ActionHeShePrefix")));
                         if (msgin.gender == 0)
                             {
-                            strcat(tmp, getlang("He"));
+                            strcat((char*)tmp, (char*)getlang((unsigned char *)"He"));
                             }
                         if (msgin.gender == 1)
                             {
-                            strcat(tmp, getlang("She"));
+                            strcat((char*)tmp, (char*)getlang((unsigned char *)"She"));
                             }
-                        strcat(tmp, top_output(OUT_STRINGNF,
-                                               getlang("ActionHeSheSuffix")));
+                        strcat((char*)tmp, (char*)top_output(OUT_STRINGNF,
+                                               getlang((unsigned char *)"ActionHeSheSuffix")));
                         /* Adjust the start of user text (normally used
                            in talktypes). */
                         msgin.data1 -= 2L;
-                        msgin.data1 += (long) strlen(tmp) - (long) tmark;
+                        msgin.data1 += (long) strlen((char*)tmp) - (long) tmark;
                         }
                     /* "Himself/Herself" token. */
                     if (toupper(str[c]) == 'F' &&
                         (allowbits & ALLOW_SLF))
                         {
-                        tmark = strlen(tmp);
-                        strcat(tmp, top_output(OUT_STRINGNF,
-                                               getlang("ActionSelfPrefix")));
+                        tmark = strlen((char*)tmp);
+                        strcat((char*)tmp, (char*)top_output(OUT_STRINGNF,
+                                               getlang((unsigned char *)"ActionSelfPrefix")));
                         if (msgin.gender == 0)
                             {
-                            strcat(tmp, getlang("Himself"));
+                            strcat((char*)tmp, (char*)getlang((unsigned char *)"Himself"));
                             }
                         if (msgin.gender == 1)
                             {
-                            strcat(tmp, getlang("Herself"));
+                            strcat((char*)tmp, (char*)getlang((unsigned char *)"Herself"));
                             }
-                        strcat(tmp, top_output(OUT_STRINGNF,
-                                               getlang("ActionSelfSuffix")));
+                        strcat((char*)tmp, (char*)top_output(OUT_STRINGNF,
+                                               getlang((unsigned char *)"ActionSelfSuffix")));
                         /* Adjust the start of user text (normally used
                            in talktypes). */
                         msgin.data1 -= 2L;
-                        msgin.data1 += (long) strlen(tmp) - (long) tmark;
+                        msgin.data1 += (long) strlen((char*)tmp) - (long) tmark;
                         }
                     /* Possessive token. */
                     if (toupper(str[c]) == 'S' &&
                         (allowbits & ALLOW_POS))
                         {
-                        tmark = strlen(tmp);
+                        tmark = strlen((char*)tmp);
                         if (msgin.doneto == od_control.od_node)
                             {
-                            strcat(tmp, top_output(OUT_STRINGNF,
-                                            getlang("ActionYour"),
-                                            getlang("YourSuffix")));
+                            strcat((char*)tmp, (char*)top_output(OUT_STRINGNF,
+                                            getlang((unsigned char *)"ActionYour"),
+                                            getlang((unsigned char *)"YourSuffix")));
                             }
                         else
                             {
-                            strcat(tmp, top_output(OUT_STRINGNF,
-                                            getlang("ActionPossessive"),
-                                            getlang("Pers3Suffix")));
+                            strcat((char*)tmp, (char*)top_output(OUT_STRINGNF,
+                                            getlang((unsigned char *)"ActionPossessive"),
+                                            getlang((unsigned char *)"Pers3Suffix")));
                             }
                         /* Adjust the start of user text (normally used
                            in talktypes). */
                         msgin.data1 -= 2L;
-                        msgin.data1 += (long) strlen(tmp) - (long) tmark;
+                        msgin.data1 += (long) strlen((char*)tmp) - (long) tmark;
                         }
                     }
                 if (nxt == 0)
@@ -1065,7 +1066,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                     else
                         {
                         /* Copy the character as is. */
-                        strncat(tmp, &str[c], 1);
+                        strncat((char*)tmp, (char*)&str[c], 1);
                         }
                     }
                 /* Reset the next flag if it was used on this loop. */
@@ -1086,7 +1087,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
                 /* Restore the user text and print it with language code
                    translation turned off. */
                 tmp[msgin.data1] = xch;
-                top_output(dynam ? OUT_EMULATE : OUT_SCREEN, "@1&L",
+                top_output(dynam ? OUT_EMULATE : OUT_SCREEN, (unsigned char *)"@1&L",
                            &tmp[msgin.data1]);
                 }
             else
@@ -1096,7 +1097,7 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             /* Secret action. */
             if (msgin.type == MSG_ACTPLUSEC)
                 {
-                top_output(OUT_SCREEN, getlang("Secretly"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"Secretly"));
                 }
             dofree(tmp);
             }
@@ -1120,15 +1121,15 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             /* Copy the right language item name based on the message. */
             switch (baninv)
                 {
-                case 1: strcpy(outbuf, "HasBeenBanned"); break;
-                case 2: strcpy(outbuf, "HasBeenUnBanned"); break;
-                case 3: strcpy(outbuf, "HasBeenInvited"); break;
-                case 4: strcpy(outbuf, "HasBeenUnInvited"); break;
+                case 1: strcpy((char*)outbuf, "HasBeenBanned"); break;
+                case 2: strcpy((char*)outbuf, "HasBeenUnBanned"); break;
+                case 3: strcpy((char*)outbuf, "HasBeenInvited"); break;
+                case 4: strcpy((char*)outbuf, "HasBeenUnInvited"); break;
                 }
             top_output(OUT_SCREEN, getlang(outbuf),
                        handles[msgin.from].string,
                        msgin.doneto == od_control.od_node ?
-                           getlang("You") : handles[msgin.doneto].string);
+                           getlang((unsigned char *)"You") : handles[msgin.doneto].string);
             /* BAN and INVITE add the node to the special nodes list. */
             if (baninv == 1 || baninv == 3)
                 {
@@ -1163,42 +1164,42 @@ for (d = 0, dn = delname; d < filelength(midxinfil); d++)
             if (baninv == 1)
                 {
                 if ((unsigned long) msgin.data1 <= 3999999999UL)
-                    strcpy(outbuf, "YouBannedChan");
+                    strcpy((char*)outbuf, "YouBannedChan");
                 if ((unsigned long) msgin.data1 >= 4000000000UL &&
                     (unsigned long) msgin.data1 <= 4000999999UL)
-                    strcpy(outbuf, "YouBannedUserChan");
+                    strcpy((char*)outbuf, "YouBannedUserChan");
                 if ((unsigned long) msgin.data1 >= 4001000000UL)
-                    strcpy(outbuf, "YouBannedConf");
+                    strcpy((char*)outbuf, "YouBannedConf");
                 }
             if (baninv == 2)
                 {
                 if ((unsigned long) msgin.data1 <= 3999999999UL)
-                    strcpy(outbuf, "YouUnBannedChan");
+                    strcpy((char*)outbuf, "YouUnBannedChan");
                 if ((unsigned long) msgin.data1 >= 4000000000UL &&
                     (unsigned long) msgin.data1 <= 4000999999UL)
-                    strcpy(outbuf, "YouUnBannedUsChan");
+                    strcpy((char*)outbuf, "YouUnBannedUsChan");
                 if ((unsigned long) msgin.data1 >= 4001000000UL)
-                    strcpy(outbuf, "YouUnBannedConf");
+                    strcpy((char*)outbuf, "YouUnBannedConf");
                 }
             if (baninv == 3)
                 {
                 if ((unsigned long) msgin.data1 <= 3999999999UL)
-                    strcpy(outbuf, "YouInvitedChan");
+                    strcpy((char*)outbuf, "YouInvitedChan");
                 if ((unsigned long) msgin.data1 >= 4000000000UL &&
                     (unsigned long) msgin.data1 <= 4000999999UL)
-                    strcpy(outbuf, "YouInvitedUsChan");
+                    strcpy((char*)outbuf, "YouInvitedUsChan");
                 if ((unsigned long) msgin.data1 >= 4001000000UL)
-                    strcpy(outbuf, "YouInvitedConf");
+                    strcpy((char*)outbuf, "YouInvitedConf");
                 }
             if (baninv == 4)
                 {
                 if ((unsigned long) msgin.data1 <= 3999999999UL)
-                    strcpy(outbuf, "YouUnInvitedChan");
+                    strcpy((char*)outbuf, "YouUnInvitedChan");
                 if ((unsigned long) msgin.data1 >= 4000000000UL &&
                     (unsigned long) msgin.data1 <= 4000999999UL)
-                    strcpy(outbuf, "YouUnInvitedUsCh");
+                    strcpy((char*)outbuf, "YouUnInvitedUsCh");
                 if ((unsigned long) msgin.data1 >= 4001000000UL)
-                    strcpy(outbuf, "YouUnInvitedConf");
+                    strcpy((char*)outbuf, "YouUnInvitedConf");
                 }
             top_output(OUT_SCREEN, getlang(outbuf),
                        channelname((unsigned long) msgin.data1));
@@ -1247,7 +1248,7 @@ if (privchatflag)
 /* Return to main channel if needed. */
 if (rettomain)
     {
-    top_output(OUT_SCREEN, getlang("ReturnToMain"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"ReturnToMain"));
     /* Leave the current channel.  Even though the user is likely being
        forced out, it is actually voluntary as to whether TOP complies
        with the request to remove the user.  Obviously, this should always
@@ -1256,7 +1257,7 @@ if (rettomain)
     res = cmi_unjoin(curchannel);
     if (res != CMI_OKAY)
         {
-        top_output(OUT_SCREEN, getlang("UnJoinError"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"UnJoinError"));
         }
     /* Join the main channel. */
     res = cmi_join(cfg.defaultchannel);
@@ -1267,7 +1268,7 @@ if (rettomain)
         res = cmi_join(4000000000UL + (unsigned long) od_control.od_node);
         if (res != CMI_OKAY)
             {
-            top_output(OUT_SCREEN, getlang("SevereJoinError"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"SevereJoinError"));
             od_exit(230, FALSE);
             }
         else
@@ -1277,13 +1278,13 @@ if (rettomain)
         }
     node->channel = curchannel = cfg.defaultchannel;
     save_node_data(od_control.od_node, node);
-    dispatch_message(MSG_INCHANNEL, "\0", -1, 0, 0);
+    dispatch_message(MSG_INCHANNEL, (unsigned char *)"", -1, 0, 0);
     channelsummary();
     }
 
 if (delname && mused > 0 && lastmsgused)
 	{
-    top_output(OUT_SCREEN, getlang("MessageTrailer"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"MessageTrailer"));
     }
 
 if (user.pref1 & PREF1_DUALWINDOW)
@@ -1291,7 +1292,7 @@ if (user.pref1 & PREF1_DUALWINDOW)
     /* "Reactivate" the upper window in dual window mode. */
     if (onflag)
         {
-        top_output(OUT_SCREEN, getlang("DWRestorePrefix"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"DWRestorePrefix"));
         }
     // Different for AVT when I find out what the store/recv codes are.
     od_disp_emu("\x1B" "[s", TRUE);
@@ -1331,19 +1332,19 @@ if (dname)
     if (user.pref1 & PREF1_DUALWINDOW)
         {
         /* At the moment, no action is taken under dual window mode. */
- //       top_output(OUT_SCREEN, getlang("DWClearInput"));
+ //       top_output(OUT_SCREEN, getlang((unsigned char *)"DWClearInput"));
         }
     else
         {
-        top_output(OUT_SCREEN, getlang("DelPromptPrefix"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"DelPromptPrefix"));
         /* Backspace out the name prompt. */
         for (dd = 0;
-             dd < strlen(top_output(OUT_STRING, getlang("DefaultPrompt"),
+             dd < strlen((char*)top_output(OUT_STRING, getlang((unsigned char *)"DefaultPrompt"),
                                     user.handle)); dd++)
             {
-            top_output(OUT_SCREEN, getlang("DelPrompt"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"DelPrompt"));
             }
-        top_output(OUT_SCREEN, getlang("DelPromptSuffix"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"DelPromptSuffix"));
         }
     }
 

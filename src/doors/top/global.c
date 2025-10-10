@@ -40,7 +40,7 @@ XINT user_rec_num = -1;
 /* User data. */
 user_data_typ user;
 /* String used by the word splitter. */
-char XFAR *word_str = NULL;
+unsigned char XFAR *word_str = NULL;
 /* Index of word starting positions, used by the word splitter. */
 XINT XFAR *word_pos = NULL;
 /* Index of word lengths, used by the word splitter. */
@@ -213,19 +213,19 @@ char (XFAR *bbs_call_pageedit)(XINT nodenum, unsigned char *pagebuf) = NULL;
 /* BBS configuration setting names used in TOP.CFG. */
 unsigned char *bbsnames[BBSTYPES] =
 	{
-    "UNKNOWN",
-    "RA2",
-    "MAX2",
-    "MAX3",
-    "SBBS11"
+    (unsigned char *)"UNKNOWN",
+    (unsigned char *)"RA2",
+    (unsigned char *)"MAX2",
+    (unsigned char *)"MAX3",
+    (unsigned char *)"SBBS11"
     };
 
 /* Node types used in NODES.CFG. */
 unsigned char *nodetypes[3] =
 	{
-    "Remote",
-    "Local",
-    "Network"
+    (unsigned char *)"Remote",
+    (unsigned char *)"Local",
+    (unsigned char *)"Network"
     };
 
 /* Maximus MCP pipe, used by TOP/2 only. */

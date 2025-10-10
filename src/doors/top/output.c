@@ -89,7 +89,7 @@ for (d = 0; d < 9; d++)
 
 /* This loop ascertains the highest number argument the output string
    requires. */
-for (d = 0, nargs = 0; d < strlen(string); d++)
+for (d = 0, nargs = 0; d < strlen((char*)string); d++)
 	{
     /* Look for @# codes that are higher than the current highest known
        code to exist. */
@@ -123,7 +123,7 @@ if (outmode == OUT_STRING)
     }
 
 /* Loop through and process the entire string. */
-for (d = 0, owwc = 0; d < strlen(string); d++)
+for (d = 0, owwc = 0; d < strlen((char*)string); d++)
 	{
     /* PubColour codes.  Only process if the global flag is on. */
     if (string[d] == '^' && outproccol)
@@ -131,7 +131,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
         /* Copy the ^ character in non-filtered mode. */
         if (outmode == OUT_STRING && stringnf)
         	{
-            strncat(outputstr, &string[d], 1);
+            strncat((char*)outputstr, (char*)&string[d], 1);
             }
         /* We're now working with the character after the ^. */
         d++;
@@ -158,7 +158,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
             /* Copy the code in non-filtered mode. */
             if (outmode == OUT_STRING && stringnf)
         		{
-    	        strncat(outputstr, &string[d], 1);
+    	        strncat((char*)outputstr, (char*)&string[d], 1);
 	            }
             continue;
             }
@@ -185,7 +185,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
             /* Copy the code in non-filtered mode. */
             if (outmode == OUT_STRING && stringnf)
         		{
-    	        strncat(outputstr, &string[d], 1);
+    	        strncat((char*)outputstr, (char*)&string[d], 1);
 	            }
             continue;
             }
@@ -217,7 +217,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
                 {
                 /* Process all following & codes which control code
                    processing during parameter display. */
-                while(string[d + 1] == '&' && d < strlen(string))
+                while(string[d + 1] == '&' && d < strlen((char*)string))
                     {
                     /* Jump to the character after the &. */
                     d += 2;
@@ -226,7 +226,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
                         {
                         char ttss[5];
                         sprintf(ttss, "%c%c", string[d - 1], string[d]);
-                        strcat(outputstr, ttss);
+                        strcat((char*)outputstr, ttss);
                         }
                     else
                         {
@@ -252,7 +252,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
                     /* Loop through the parameter string and count all of
                        the colour codes, adding 2 extra memory bytes for
                        each. */
-                    for (uu = 0; uu < strlen(argptrs[argnum]);
+                    for (uu = 0; uu < strlen((char*)argptrs[argnum]);
                          uu++)
                         {
                         if (argptrs[argnum][uu] == '^')
@@ -284,7 +284,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
                         if (lentmp & 0x00010000L)
                         	{
                             /* Left justification. */
-                            if (strlen(argptrs[argnum]) >
+                            if (strlen((char*)argptrs[argnum]) >
                                 lenwant)
                                 {
                                 /* Truncate the parameter string if it is
@@ -298,13 +298,13 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
                                    memcpy() is used because we don't want a
                                    \0 after the string is copied. */
                                 memcpy(lenbuf, argptrs[argnum],
-                                       strlen(argptrs[argnum]));
+                                       strlen((char*)argptrs[argnum]));
                                 }
                             }
                         else
                         	{
                             /* Right justification. */
-                            if (strlen(argptrs[argnum]) >
+                            if (strlen((char*)argptrs[argnum]) >
 /* 7 */                         lenwant)
                                 {
                                 /* Truncate the parameter string if it is
@@ -318,9 +318,9 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
                                 {
                                 /* Copy the entire string right justified. */
                                 memcpy(&lenbuf[lenwant -
-                                       strlen(argptrs[argnum])],
+                                       strlen((char*)argptrs[argnum])],
                                        argptrs[argnum],
-                                       strlen(argptrs[argnum]));
+                                       strlen((char*)argptrs[argnum]));
                                 }
                             }
                         /* Screen and local modes make a recursive call to
@@ -338,7 +338,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
                         /* String modes copy the parameter directly. */
                         if (outmode == OUT_STRING)
                         	{
-                            strcat(outputstr, lenbuf);
+                            strcat((char*)outputstr, (char*)lenbuf);
                             }
                         dofree(lenbuf);
                         }
@@ -368,7 +368,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
                     /* String modes copy the parameter directly. */
                     if (outmode == OUT_STRING)
                     	{
-                        strcat(outputstr, argptrs[argnum]);
+                        strcat((char*)outputstr, (char*)argptrs[argnum]);
                         }
                     /* Reactivate all code processing flags. */
                     outproccol = outproclang = outprocact = TRUE;
@@ -399,7 +399,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
                be properly handled later by whatever uses it. */
             if (outmode == OUT_STRING)
                 {
-                strcat(outputstr, "\b");
+                strcat((char*)outputstr, "\b");
                 }
             continue;
             }
@@ -443,7 +443,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
             /* String modes copy the beep directly. */
             if (outmode == OUT_STRING)
             	{
-                strcat(outputstr, "\a");
+                strcat((char*)outputstr, "\a");
                 }
             continue;
             }
@@ -453,17 +453,17 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
             /* All modes output or copy an ASCII 13 and 10 pair. */
             if (outmode == OUT_SCREEN)
             	{
-                top_output(OUT_SCREEN, "\r\n");
+                top_output(OUT_SCREEN, (unsigned char *)"\r\n");
                 }
 #ifndef __unix__
             if (outmode == OUT_LOCAL)
             	{
-                top_output(OUT_LOCAL, "\r\n");
+                top_output(OUT_LOCAL, (unsigned char *)"\r\n");
                 }
 #endif
             if (outmode == OUT_STRING)
             	{
-                strcat(outputstr, "\r\n");
+                strcat((char*)outputstr, "\r\n");
                 }
             continue;
             }
@@ -520,7 +520,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
                 }
             /* Must have a closing quote mark as well.  If it's found
                it is marked as the end for later use. */
-            if ((lnmend = strchr(&string[d + 2], '\"')) == NULL)
+            if ((lnmend = (unsigned char *)strchr((char*)&string[d + 2], '\"')) == NULL)
             	{
                 continue;
                 }
@@ -534,7 +534,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
             /* Clear the name buffer then copy the name, using pointer
                arithmetic. */
             memset(lnm, 0, (lnmend - &string[d + 1]));
-            strncpy(lnm, &string[d + 2], (lnmend - &string[d + 2]));
+            strncpy((char*)lnm, (char*)&string[d + 2], (lnmend - &string[d + 2]));
             /* Screen and local modes use a recursive call to top_output()
                to display the language item.  Note that there is no way
                to provide the display with any parameters that might be
@@ -552,7 +552,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
             /* String modes copy the item directly. */
             if (outmode == OUT_STRING)
             	{
-	            strcat(outputstr, getlang(lnm));
+	            strcat((char*)outputstr, (char*)getlang(lnm));
                 }
             /* Skip past the code and name. */
             d += (lnmend - &string[d]);
@@ -564,15 +564,15 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
            known. */
         if (toupper(string[d]) == 'P')
             {
-            char txxx[5] = "\0\0\0\0"; /* Temporary position holder. */
+            unsigned char txxx[5] = {0}; /* Temporary position holder. */
             XINT txx, txy; /* X position, Y position. */
 
             /* Copy the X position then convert it to an int. */
-            strncpy(txxx, &string[d + 1], 2);
-            txy = atoi(txxx);
+            strncpy((char*)txxx, (char*)&string[d + 1], 2);
+            txy = atoi((char*)txxx);
             /* Copy the Y position then convert it to an int. */
-            strncpy(txxx, &string[d + 3], 2);
-            txx = atoi(txxx); // Below also screen size checks
+            strncpy((char*)txxx, (char*)&string[d + 3], 2);
+            txx = atoi((char*)txxx); // Below also screen size checks
             if (txx < 1 || txy < 1 || txx > 80 || txy > 23)
                 {
                 /* Ignore invalid values. */
@@ -599,16 +599,16 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
         /* Repeat character. */
         if (toupper(string[d]) == 'R')
             {
-            char txxx[5] = "\0\0\0\0"; /* Temporary repeat value holder. */
+            unsigned char txxx[5] = {0}; /* Temporary repeat value holder. */
 
             /* Copy the repeat value, which is always 3 digits. */
-            strncpy(txxx, &string[d + 1], 3);
+            strncpy((char*)txxx, (char*)&string[d + 1], 3);
             /* Skip ahead to the character to repeat. */
             d += 4;
             /* Screen modes use the door kit to repeat. */
             if (outmode == OUT_SCREEN)
                 {
-                od_repeat(string[d], atoi(txxx));
+                od_repeat(string[d], atoi((char*)txxx));
                 }
             /* Local mode uses outputstr as a temporary holder for the
                repeated characters, then shows them directly. */
@@ -626,15 +626,15 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
                     {
                     /* Non-filtered mode copies the entire code for later
                        use. */
-                    strncat(outputstr, &string[d - 5], 5);
+                    strncat((char*)outputstr, (char*)&string[d - 5], 5);
                     }
                 else
                     {
                     /* Filtered mode appends the repeated characters to
                        outputstr. */
-                    uu = strlen(outputstr);
-                    memset(&outputstr[uu], string[d], atoi(txxx));
-                    outputstr[uu + atoi(txxx)] = '\0';
+                    uu = strlen((char*)outputstr);
+                    memset(&outputstr[uu], string[d], atoi((char*)txxx));
+                    outputstr[uu + atoi((char*)txxx)] = '\0';
                     }
                 }
             continue;
@@ -646,30 +646,30 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
             /* All modes simply show or copy a single space. */
             if (outmode == OUT_SCREEN)
             	{
-	            top_output(OUT_SCREEN, " ");
+	            top_output(OUT_SCREEN, (unsigned char*)" ");
                 }
 #ifndef __unix__
             if (outmode == OUT_LOCAL)
             	{
-	            top_output(OUT_LOCAL, " ");
+	            top_output(OUT_LOCAL, (unsigned char*)" ");
                 }
 #endif
             if (outmode == OUT_STRING)
             	{
-                strcat(outputstr, " ");
+                strcat((char*)outputstr, " ");
                 }
             continue;
             }
         /* Display any ASCII value. */
         if (toupper(string[d]) == 'X')
         	{
-            char xxxn[4] = "\0\0\0\0"; /* Temporary code holder. */
-            char xxxc[2] = "\0\0"; /* ASCII code number to display. */
+            unsigned char xxxn[4] = {0}; /* Temporary code holder. */
+            unsigned char xxxc[2] = {0}; /* ASCII code number to display. */
 
             /* Copy the string representation of the code. */
-            strncpy(xxxn, &string[d + 1], 3);
+            strncpy((char*)xxxn, (char*)&string[d + 1], 3);
             /* Store the actual character in a small string. */
-            xxxc[0] = atoi(xxxn);
+            xxxc[0] = atoi((char*)xxxn);
             /* All modes display or copy the character directly. */
             if (outmode == OUT_SCREEN)
             	{
@@ -683,7 +683,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
 #endif
             if (outmode == OUT_STRING)
             	{
-                strcat(outputstr, xxxc);
+                strcat((char*)outputstr, (char*)xxxc);
                 }
             /* Skip ahead to the code. */
             d += 3;
@@ -760,7 +760,7 @@ for (d = 0, owwc = 0; d < strlen(string); d++)
     /* Copy the character in string modes. */
     if (outmode == OUT_STRING)
     	{
-        strncat(outputstr, &string[d], 1);
+        strncat((char*)outputstr, (char*)&string[d], 1);
         }
 
     /* End of the ANSI newline fix described above. */
@@ -806,7 +806,7 @@ return outputstr;
                 www - Word wrap string.
    Returns:  Nothing.
 */
-void outwordwrap(XINT omode, XINT *wwwc, char *www)
+void outwordwrap(XINT omode, XINT *wwwc, unsigned char *www)
 {
 XINT e; /* Counter. */
 int xpos,ypos;
@@ -835,7 +835,7 @@ if (xpos == 80)
             }
         }
     /* Go to the next line. */
-    top_output(omode, "\r\n");
+    top_output(omode, (unsigned char *)"\r\n");
     /* Redisplay the word, only if it is short enough. */
     if (*wwwc < 50)
         {
@@ -919,7 +919,7 @@ while(isdigit(strstart[slen]))
 
 /* Grab the requested length from the string, starting at the appropriate
    character. */
-dlen = atoi(&strstart[numstart]);
+dlen = atoi((char*)&strstart[numstart]);
 
 if (slen == 0 || dlen == 0)
 	{

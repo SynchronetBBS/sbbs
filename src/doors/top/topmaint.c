@@ -16,7 +16,7 @@
 
 user_data_typ ubuf;
 
-int main(XINT argc, char *argv[]);
+int main(int argc, char *argv[]);
 void showcmdline(XINT cmd);
 void deleteuser(char *nam);
 void packusers(void);
@@ -24,7 +24,7 @@ void purgeusers(unsigned XINT sec, unsigned XINT days);
 XINT calc_days_ago(XDATE *lastdate);
 void setusersec(unsigned XINT sec, char *nam);
 
-int main(XINT argc, char *argv[])
+int main(int argc, char *argv[])
 {
     XINT d;
 
@@ -229,8 +229,8 @@ void deleteuser(char *nam)
     {
         fseek(fil, (long) d * sizeof(user_data_typ), SEEK_SET);
         fread(&ubuf, sizeof(user_data_typ), 1, fil);
-        strcpy(trn, ubuf.realname);
-        strcpy(tha, ubuf.handle);
+        strcpy(trn, (char*)ubuf.realname);
+        strcpy(tha, (char*)ubuf.handle);
         strupr(trn);
         strupr(tha);
         if (strstr(trn, nam) || strstr(tha, nam))
@@ -241,7 +241,7 @@ void deleteuser(char *nam)
             if (key == 'Y')
             {
                 printf("Yes\n");
-                strcpy(trn, ubuf.realname);
+                strcpy(trn, (char*)ubuf.realname);
                 memset(&ubuf, 0, sizeof(user_data_typ));
                 fseek(fil, (long) d * sizeof(user_data_typ), SEEK_SET);
                 fwrite(&ubuf, sizeof(user_data_typ), 1, fil);
@@ -405,8 +405,8 @@ void setusersec(unsigned XINT sec, char *nam)
     {
         fseek(fil, (long) d * sizeof(user_data_typ), SEEK_SET);
         fread(&ubuf, sizeof(user_data_typ), 1, fil);
-        strcpy(trn, ubuf.realname);
-        strcpy(tha, ubuf.handle);
+        strcpy(trn, (char*)ubuf.realname);
+        strcpy(tha, (char*)ubuf.handle);
         strupr(trn);
         strupr(tha);
         if (strstr(trn, nam) || strstr(tha, nam))

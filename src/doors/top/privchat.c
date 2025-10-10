@@ -52,7 +52,7 @@ void privatechat(XINT pcnode)
     XINT key, ttry; /* Keypress holder, file i/o attempt counter. */
 
     /* Private chats are logged for security purposes. */
-    od_log_write(top_output(OUT_STRING, getlang("LogEnterPrivChat"),
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogEnterPrivChat"),
                  handles[pcnode].string));
 
     /* Initialize variables and buffers. */
@@ -68,25 +68,25 @@ void privatechat(XINT pcnode)
         dofree(pcinam);
         dofree(pconam);
         dofree(pcobuf);
-        top_output(OUT_SCREEN, getlang("PrivChatNoMem"));
-        od_log_write(top_output(OUT_STRING, getlang("LogOutOfMemory")));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatNoMem"));
+        od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogOutOfMemory")));
         return;
         }
 
     /* Delete any existing exit semaphore files for this node and the
        other node. */
-    sprintf(pcinam, "%sepr%05i.tch", cfg.topworkpath, od_control.od_node);
-    sprintf(pconam, "%sepr%05i.tch", cfg.topworkpath, pcnode);
+    sprintf((char*)pcinam, "%sepr%05i.tch", cfg.topworkpath, od_control.od_node);
+    sprintf((char*)pconam, "%sepr%05i.tch", cfg.topworkpath, pcnode);
     sh_unlink(pcinam);
     sh_unlink(pconam);
 
     /* Open both the incoming chat file (this node) and the outgoing chat
        file (other node). */
-    sprintf(pcinam, "%sprv%05i.tch", cfg.topworkpath, od_control.od_node);
-    sprintf(pconam, "%sprv%05i.tch", cfg.topworkpath, pcnode);
-    ipchatfil = sh_open(pcinam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+    sprintf((char*)pcinam, "%sprv%05i.tch", cfg.topworkpath, od_control.od_node);
+    sprintf((char*)pconam, "%sprv%05i.tch", cfg.topworkpath, pcnode);
+    ipchatfil = sh_open((char*)pcinam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                         S_IREAD | S_IWRITE);
-    opchatfil = sh_open(pconam, O_RDWR | O_CREAT | O_BINARY | O_APPEND,
+    opchatfil = sh_open((char*)pconam, O_RDWR | O_CREAT | O_BINARY | O_APPEND,
                         SH_DENYNO, S_IREAD | S_IWRITE);
     chsize(opchatfil, 1);
     if (ipchatfil == -1 || opchatfil == -1)
@@ -96,18 +96,18 @@ void privatechat(XINT pcnode)
         dofree(pcinam);
         dofree(pconam);
         dofree(pcobuf);
-        top_output(OUT_SCREEN, getlang("PrivChatCantOpen"),
+        top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatCantOpen"),
                    ipchatfil == -1 ? pcinam : pconam);
-        od_log_write(top_output(OUT_STRING, getlang("LogPrivChatFileErr")));
+        od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogPrivChatFileErr")));
         return;
         }
 
     /* Prepare the screen for chat. */
-    top_output(OUT_SCREEN, getlang("PrivChatPrefix"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatPrefix"));
 
     /* Initialize variables. */
     pcobufpos = 0;
-    sprintf(exitfilenam, "%sepr%05i.tch", cfg.topworkpath,
+    sprintf((char*)exitfilenam, "%sepr%05i.tch", cfg.topworkpath,
             od_control.od_node);
 
     /* Main private chat loop. */
@@ -133,7 +133,7 @@ void privatechat(XINT pcnode)
             privlastpoll = myclock();
             /* Flush the private chat buffer if there is something in it and
                if the exit semaphore file is nonexistant. */
-            if (pcobufpos > 0 || !access(exitfilenam, 0))
+            if (pcobufpos > 0 || !access((char*)exitfilenam, 0))
                 {
                 privchatwritebuf();
                 }
@@ -185,22 +185,22 @@ void privatechat(XINT pcnode)
 
         /* Create a 0-length file to signal the other node that we wish to
            exit private chat. */
-        sprintf(outbuf, "%sepr%05i.tch", cfg.topworkpath, pcnode);
-        exitfil = _fsopen(outbuf, "wb", SH_DENYRW);
+        sprintf((char*)outbuf, "%sepr%05i.tch", cfg.topworkpath, pcnode);
+        exitfil = _fsopen((char*)outbuf, "wb", SH_DENYRW);
         fclose(exitfil);
         }
     /* The other node requested the exit. */
     if (exitflag == 2)
         {
         /* Inform the user of the exit. */
-        top_output(OUT_SCREEN, getlang("PrivChatSuffix2"),
+        top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatSuffix2"),
                    handles[pcnode].string);
 
         /* Wait until we have access to the exit semaphore file.  There is
            usually a very short period where this node becomes aware of the
            exit file before the other node has closed it. */
         ttry = 0;
-        while(access(exitfilenam, 6) && ttry < cfg.privchatmaxtries) ttry++;
+        while(access((char*)exitfilenam, 6) && ttry < cfg.privchatmaxtries) ttry++;
 
         /* Delete the file if time didn't elapse.  Deletion is not critical,
            but it does keep things cleaner. */
@@ -225,7 +225,7 @@ void privatechat(XINT pcnode)
     privchatout = -1;
 
     /* Log the end of the chat. */
-    od_log_write(top_output(OUT_STRING, getlang("LogEndPrivChat")));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogEndPrivChat")));
 
     }
 
@@ -240,7 +240,7 @@ XINT privchatreadbuf(void)
 
     /* Test if the exit semaphore exists, meaning the other node wants to
        exit private chat. */
-    if (!access(exitfilenam, 0))
+    if (!access((char*)exitfilenam, 0))
         {
         exitflag = 2;
         return 1;
@@ -274,7 +274,7 @@ XINT privchatreadbuf(void)
     if (readbuf == NULL)
         {
         /* Signal an immediate exit if the allocation fails. */
-        top_output(OUT_SCREEN, getlang("PrivChatNoMem"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatNoMem"));
         exitflag = 1;
         return 0;
         }
@@ -286,7 +286,7 @@ XINT privchatreadbuf(void)
     read(ipchatfil, readbuf, filelength(ipchatfil) - 1);
 
     /* Select the other person's text colour. */
-    top_output(OUT_SCREEN, getlang("PrivChatCol2"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatCol2"));
 
     /* Display the text, ignoring any codes that may happen to be in the
        text. */
@@ -325,7 +325,7 @@ void privchatputch(XINT pckey)
                buffer can be cleared.  This isn't such a bad effect because
                if the buffer is filling up then there are probably bigger
                problems anyhow. */
-            top_output(OUT_SCREEN, getlang("PrivChatBufProb"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatBufProb"));
             return;
             }
         }
@@ -335,7 +335,7 @@ void privchatputch(XINT pckey)
         {
         /* Backspaces are sent nondestructive. */
         pcobuf[pcobufpos++] = 8;
-        top_output(OUT_SCREEN, "\b");
+        top_output(OUT_SCREEN, (unsigned char *)"\b");
         }
     /* New line. */
     if (pckey == 13)
@@ -343,13 +343,13 @@ void privchatputch(XINT pckey)
         /* A complete CRLF pair is sent. */
         pcobuf[pcobufpos++] = 13;
         pcobuf[pcobufpos++] = 10;
-        top_output(OUT_SCREEN, getlang("PrivChatEndLine"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatEndLine"));
         }
     /* Escape (exit private chat). */
     if (pckey == 27)
         {
         exitflag = 1;
-        top_output(OUT_SCREEN, getlang("PrivChatSuffix"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatSuffix"));
         }
     /* Normal key. */
     if (pckey >= 32 && pckey < 255)
@@ -358,10 +358,10 @@ void privchatputch(XINT pckey)
         pcobuf[pcobufpos++] = pckey;
 
         /* Select our text colour. */
-        top_output(OUT_SCREEN, getlang("PrivChatCol1"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"PrivChatCol1"));
 
         /* top_output() needs a string. */
-        sprintf(outbuf, "%c", pckey);
+        sprintf((char*)outbuf, "%c", pckey);
 
         /* Output the string, ignoring any codes. */
         outproccol = FALSE; outproclang = FALSE;

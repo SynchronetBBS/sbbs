@@ -44,10 +44,10 @@ void init(XINT argc, char *argv[])
 /* Temporary node number, result code, task to perform. */
 XINT tnod = -1, res, todo = 0;
 unsigned char valcode[11]; /* Validation code for RegKey. */
-char drive[MAXDRIVE]; /* Drive where TOP.EXE is located. */
-char dir[MAX_PATH]; /* Directory where TOP.EXE is located. */
-char file[MAX_PATH]; /* Base file name of TOP executable (usually TOP). */
-char ext[MAXEXT]; /* Extension of TOP executable (usually .EXE) */
+unsigned char drive[MAXDRIVE]; /* Drive where TOP.EXE is located. */
+unsigned char dir[MAX_PATH]; /* Directory where TOP.EXE is located. */
+unsigned char file[MAX_PATH]; /* Base file name of TOP executable (usually TOP). */
+unsigned char ext[MAXEXT]; /* Extension of TOP executable (usually .EXE) */
 #if !defined(__OS2__) && !defined(__WIN32__) && !defined(__unix__)
 unsigned char shchk; /* Share check flag. */
 #endif
@@ -234,11 +234,11 @@ if (nodecfg == NULL || word_str == NULL || word_pos == NULL ||
 
 /* Find out where TOP.EXE is. */
 #ifdef __unix__
-_splitpath(argv[0], drive, dir, file, ext);
+_splitpath(argv[0], (char*)drive, (char*)dir, (char*)file, (char*)ext);
 #else
-fnsplit(argv[0], drive, dir, file, ext);
+fnsplit(argv[0], (char*)drive, (char*)dir, (char*)file, (char*)ext);
 #endif
-sprintf(word_str, "%s%s", drive, dir);
+sprintf((char*)word_str, "%s%s", drive, dir);
 verifypath(word_str);
 
 /* Load the node configuration.  This is done first because a lot of
@@ -275,7 +275,7 @@ if (localmode || lanmode)
    filename under OpenDoors specifications although it usually doesn't. */
 if (nodecfg->dropfilepath[0])
     {
-    strcpy(od_control.info_path, nodecfg->dropfilepath);
+    strcpy(od_control.info_path, (char*)nodecfg->dropfilepath);
     }
 
 /* Setup the configuration file processor.  Although the built-in OpenDoors
@@ -283,7 +283,7 @@ if (nodecfg->dropfilepath[0])
    place to handle the configuration information since the processing is
    built into OD. */
 od_control.od_config_file = INCLUDE_CONFIG_FILE;
-od_control.od_config_filename = nodecfg->cfgfile;
+od_control.od_config_filename = (char*)nodecfg->cfgfile;
 od_control.od_config_function = processcfg;
 
 /* Copy communication information from the node configuration to OD. */
@@ -315,7 +315,7 @@ if (localmode || lanmode)
     }
 
 /* Initlialize the log file.  OpenDoors' built-in logging is used. */
-strcpy(od_control.od_logfile_name, nodecfg->logfile);
+strcpy(od_control.od_logfile_name, (char*)nodecfg->logfile);
 od_log_open();
 
 wdl("OpenDoors init completed");
@@ -401,7 +401,7 @@ od_control.od_before_exit = before_exit;
 if (res)
     {
     printf("\nOut Of Memory!\n");
-    od_log_write(top_output(OUT_STRING, getlang("LogOutOfMemory")));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogOutOfMemory")));
     od_exit(200, FALSE);
     }
 
@@ -423,7 +423,7 @@ wdl("Memory init completed");
 if (!loadlang())
     {
     printf("\nNot enough memory to load language file!\n");
-    od_log_write(top_output(OUT_STRING, getlang("LogCantLoadLang")));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogCantLoadLang")));
     od_exit(203, FALSE);
     }
 
@@ -433,7 +433,7 @@ wdl("Language file loaded");
 if (!loadchan())
     {
     printf("\nCan't load channel definition list!\n");
-    od_log_write(top_output(OUT_STRING, getlang("LogCantLoadChan")));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogCantLoadChan")));
     od_exit(204, FALSE);
     }
 
@@ -464,9 +464,9 @@ if (lanmode)
     if (xz == -1)
         {
         /* Didn't find a free node. */
-        top_output(OUT_SCREEN, getlang("NoFreeNode"));
-        top_output(OUT_SCREEN, getlang("ContactSuper"));
-        od_log_write(top_output(OUT_STRING, getlang("LogNoFreeNode")));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"NoFreeNode"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"ContactSuper"));
+        od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogNoFreeNode")));
         od_exit(101, FALSE);
         }
     /* Reset the node and reopen any node-specific files. */
@@ -509,7 +509,7 @@ else
 
 /* Perform some final appearance work. */
 od_set_personality("RemoteAccess");
-trim_string(od_control.user_location, od_control.user_location, 0);
+trim_string((unsigned char *)od_control.user_location, (unsigned char *)od_control.user_location, 0);
 od_kernel();
 
 wdl("OD Log init completed");
@@ -526,15 +526,15 @@ memset(&midxfileinfo, 0, sizeof(struct file_stats_str));
 /* Log the node type. */
 if (localmode)
     {
-    od_log_write(top_output(OUT_STRING, getlang("LogLocal")));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogLocal")));
     }
 if (lanmode)
     {
-    od_log_write(top_output(OUT_STRING, getlang("LogLAN")));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogLAN")));
     }
 if (!localmode && !lanmode)
     {
-    od_log_write(top_output(OUT_STRING, getlang("LogDoor")));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogDoor")));
     }
 
 wdl("Secondary memory init completed");
@@ -543,14 +543,14 @@ wdl("Secondary memory init completed");
 if (todo > 0)
     {
 wdl("Init completed - initiating command-line-selected task");
-    od_log_write(top_output(OUT_STRING, getlang("LogOneRunMode")));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogOneRunMode")));
     switch(todo)
         {
         /* TOP EDIT. */
         case 1: useredit(); break;
         /* TOP PACK. */
-        case 2: if (argc > 3) strcpy(outbuf, argv[3]); else outbuf[0] = 0;
-                if (argc > 2) strcpy(word_str, argv[2]); else word_str[0] = 0;
+        case 2: if (argc > 3) strcpy((char*)outbuf, argv[3]); else outbuf[0] = 0;
+                if (argc > 2) strcpy((char*)word_str, argv[2]); else word_str[0] = 0;
                 userpack();
                 break;
         }
@@ -591,16 +591,16 @@ for (res = 0; res <= todo; res++)
         {
         /* List 0 is the personal action list, so copy the name from the
            language file. */
-        strcpy(cfg.actfilenames[res],
-               /* strupr(top_output(OUT_STRING, getlang("PersActListName")))); */
-			   top_output(OUT_STRING, getlang("PersActListName")));
+        strcpy((char*)cfg.actfilenames[res],
+               /* strupr(top_output(OUT_STRING, getlang((unsigned char *)"PersActListName")))); */
+			   (char*)top_output(OUT_STRING, getlang((unsigned char *)"PersActListName")));
         }
     else
         {
-        strncpy(cfg.actfilenames[res], get_word(res - 1), 8);
+        strncpy((char*)cfg.actfilenames[res], (char*)get_word(res - 1), 8);
         }
     /* strupr(cfg.actfilenames[res]); */
-	cfg.actfilenames[res];
+	//cfg.actfilenames[res];
     }
 
 wdl("Pre-action init completed");
@@ -610,7 +610,7 @@ wdl("Pre-action init completed");
    can occur if it fails. */
 if (!loadactions()) // Fix this check later.
     {
-    od_log_write(top_output(OUT_STRING, getlang("LogCantLoadActs")));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogCantLoadActs")));
     od_exit(205, FALSE);
     }
 
@@ -619,7 +619,7 @@ wdl("Actions loaded");
 /* Load CENSOR.CFG. */
 if (!load_censor_words())
     {
-    od_log_write(top_output(OUT_STRING, getlang("LogCantLoadCWords")));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogCantLoadCWords")));
     }
 
 wdl("Censor Words Loaded");
@@ -631,18 +631,18 @@ wdl("Censor Words Loaded");
 /* Load BIOQUES.CFG. */
 if (!loadbioquestions())
     {
-    od_log_write(top_output(OUT_STRING, getlang("LogCantLoadBioQues")));
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogCantLoadBioQues")));
     }
 
 /* Copy predefined BBS status types into a string array, which was how they
    were handled before the language file existed. */
 for (res = 0; res < 11; res++)
     {
-    sprintf(outbuf, "SBBSStatusType%i", res);
+    sprintf((char*)outbuf, "SBBSStatusType%i", res);
     sbbs_statustypes[res] = getlang(outbuf);
     if (res < 8)
         {
-        sprintf(outbuf, "RAStatusType%i", res);
+        sprintf((char*)outbuf, "RAStatusType%i", res);
         ra_statustypes[res] = getlang(outbuf);
         }
     }
@@ -668,15 +668,15 @@ XINT res = 0; /* Result code. */
 /* Open all files that TOP needs to keep open while it runs. */
 
 /* User file. */
-sprintf(tnam, "%susers.top", cfg.toppath);
-userfil = sh_open(tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+sprintf((char*)tnam, "%susers.top", cfg.toppath);
+userfil = sh_open((char*)tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                                   S_IREAD | S_IWRITE);
 /* res holds the number of errors that occurred, which is not used right
    now but could be reported for debugging purposes. */
 res += (userfil == -1);
 /* Node index. */
-sprintf(tnam, "%snodeidx.tch", cfg.topworkpath);
-nidxfil = sh_open(tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+sprintf((char*)tnam, "%snodeidx.tch", cfg.topworkpath);
+nidxfil = sh_open((char*)tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                                   S_IREAD | S_IWRITE);
 res += (nidxfil == -1);
 if (nidxfil != -1 && filelength(nidxfil) <
@@ -687,13 +687,13 @@ if (nidxfil != -1 && filelength(nidxfil) <
                    (long) sizeof(node_idx_typ));
     }
 /* Active node index. */
-sprintf(tnam, "%snodeidx2.tch", cfg.topworkpath);
-nidx2fil = sh_open(tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+sprintf((char*)tnam, "%snodeidx2.tch", cfg.topworkpath);
+nidx2fil = sh_open((char*)tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                                    S_IREAD | S_IWRITE);
 res += (nidx2fil == -1);
 /* Message file for this node.  (Incoming messages.) */
-sprintf(tnam, "%smsg%05i.tch", cfg.topworkpath, od_control.od_node);
-msginfil = sh_open(tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+sprintf((char*)tnam, "%smsg%05i.tch", cfg.topworkpath, od_control.od_node);
+msginfil = sh_open((char*)tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                                    S_IREAD | S_IWRITE);
 res += (msginfil == -1);
 /* Open BBS-specific files if needed. */
@@ -702,13 +702,13 @@ if (cfg.bbstype != BBS_UNKNOWN && bbs_call_openfiles)
     res += (*bbs_call_openfiles)();
     }
 /* Message index for this node.  (Incoming messages.) */
-sprintf(tnam, "%smix%05i.tch", cfg.topworkpath, od_control.od_node);
-midxinfil = sh_open(tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+sprintf((char*)tnam, "%smix%05i.tch", cfg.topworkpath, od_control.od_node);
+midxinfil = sh_open((char*)tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                                     S_IREAD | S_IWRITE);
 res += (midxinfil == -1);
 /* Message change index. */
-sprintf(tnam, "%schgidx.tch", cfg.topworkpath);
-chgfil = sh_open(tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+sprintf((char*)tnam, "%schgidx.tch", cfg.topworkpath);
+chgfil = sh_open((char*)tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                                  S_IREAD | S_IWRITE);
 res += (chgfil == -1);
 /* Adjust the size of the change index if it is too small. */
@@ -717,30 +717,30 @@ if (chgfil != -1)
     chsize(chgfil, MAXNODES);
     }
 /* Channel data (CMI) index. */
-sprintf(tnam, "%schanidx.tch", cfg.topworkpath);
-chidxfil = sh_open(tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+sprintf((char*)tnam, "%schanidx.tch", cfg.topworkpath);
+chidxfil = sh_open((char*)tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                                  S_IREAD | S_IWRITE);
 res += (chidxfil == -1);
 /* Games data files, not used as the games were removed. */
-sprintf(tnam, "%sslotstat.top", cfg.toppath);
-slotsfil = sh_open(tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+sprintf((char*)tnam, "%sslotstat.top", cfg.toppath);
+slotsfil = sh_open((char*)tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                                    S_IREAD | S_IWRITE);
 res += (slotsfil == -1);
 if (slotsfil != -1)
     {
     chsize(slotsfil, sizeof(slots_stat_typ));
     }
-sprintf(tnam, "%smatchstat.top", cfg.toppath);
-matchfil = sh_open(tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+sprintf((char*)tnam, "%smatchstat.top", cfg.toppath);
+matchfil = sh_open((char*)tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                                    S_IREAD | S_IWRITE);
 res += (slotsfil == -1);
-/*//|sprintf(tnam, "%spokerdat.tch", cfg.toppath);
-pokdatafil = sh_open(tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+/*//|sprintf((char*)tnam, "%spokerdat.tch", cfg.toppath);
+pokdatafil = sh_open((char*)tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                                      S_IREAD | S_IWRITE);
 res += (pokdatafil == -1);*///|
 /* Biography response index. */
-sprintf(tnam, "%sbigidx.top", cfg.toppath);
-bioidxfil = sh_open(tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+sprintf((char*)tnam, "%sbigidx.top", cfg.toppath);
+bioidxfil = sh_open((char*)tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                                    S_IREAD | S_IWRITE);
 res += (bioidxfil == -1);
 /* Adjust the size of the index if it is too small. */
@@ -752,15 +752,15 @@ if (bioidxfil != -1 &&
                        MAXBIOQUES * sizeof(long));
     }
 /* Biography responses. */
-sprintf(tnam, "%sbioresp.top", cfg.toppath);
-biorespfil = sh_open(tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
+sprintf((char*)tnam, "%sbioresp.top", cfg.toppath);
+biorespfil = sh_open((char*)tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                                     S_IREAD | S_IWRITE);
 res += (biorespfil == -1);
 
 /* Abort on error. */
 if (res)
     {
-    top_output(OUT_SCREEN, getlang("CantInitFiles"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"CantInitFiles"));
     od_exit(201, FALSE);
     }
 
@@ -792,8 +792,8 @@ if (filelength(nidxfil) <
     }
 
 /* Incoming messages. */
-sprintf(tnam, "%smsg%05i.tch", cfg.topworkpath, od_control.od_node);
-msginfil = sh_open(tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO, S_IREAD | S_IWRITE);
+sprintf((char*)tnam, "%smsg%05i.tch", cfg.topworkpath, od_control.od_node);
+msginfil = sh_open((char*)tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO, S_IREAD | S_IWRITE);
 res += (msginfil == -1);
 /* Reopen any BBS-specific files that need the node number. */
 if (cfg.bbstype != BBS_UNKNOWN && bbs_call_updateopenfiles)
@@ -801,14 +801,14 @@ if (cfg.bbstype != BBS_UNKNOWN && bbs_call_updateopenfiles)
     res += (*bbs_call_updateopenfiles)();
     }
 /* Incoming message index. */
-sprintf(tnam, "%smix%05i.tch", cfg.topworkpath, od_control.od_node);
-midxinfil = sh_open(tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO, S_IREAD | S_IWRITE);
+sprintf((char*)tnam, "%smix%05i.tch", cfg.topworkpath, od_control.od_node);
+midxinfil = sh_open((char*)tnam, O_RDWR | O_CREAT | O_BINARY, SH_DENYNO, S_IREAD | S_IWRITE);
 res += (midxinfil == -1);
 
 /* Abort on error. */
 if (res)
     {
-    top_output(OUT_SCREEN, getlang("CantInitFiles"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"CantInitFiles"));
     od_exit(201, FALSE);
     }
 

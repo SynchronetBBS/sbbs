@@ -55,7 +55,7 @@ long n; /* 0-based node number. */
 
 /* Open the SUSERON file, which TOP does not keep open due to apparent
    conflicts. */
-useronfil = sh_open(top_output(OUT_STRING, "@1suseron.bbs",
+useronfil = sh_open((char *)top_output(OUT_STRING, (unsigned char *)"@1suseron.bbs",
                                cfg.bbspath),
                     O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                     S_IREAD | S_IWRITE);
@@ -101,7 +101,7 @@ unbuild_pascal_string(25, sbbsuser.city);
 /* Copy the information into the Generic BBS structure. */
 memset(userdata, 0, sizeof(bbsnodedata_typ) - 2);
 fixname(userdata->realname, sbbsuser.name);
-strncpy(userdata->handle, sbbsuser.name, 30);
+strncpy((char *)userdata->handle, (char *)sbbsuser.name, 30);
 fixname(userdata->handle, userdata->handle);
 userdata->quiet = sbbsuser.attribute & SBBS_NODISTURB;
 userdata->hidden = (sbbsuser.attribute & SBBS_HIDDEN) ||
@@ -110,7 +110,7 @@ userdata->attribs1 = sbbsuser.attribute;
 if (sbbsuser.status < 11)
     {
     /* Use the predefined status types from the language file. */
-    strcpy(userdata->statdesc, sbbs_statustypes[sbbsuser.status]);
+    strcpy((char *)userdata->statdesc, (char *)sbbs_statustypes[sbbsuser.status]);
     }
 else
     {
@@ -119,7 +119,7 @@ else
     userdata->statdesc[0] = 0;
     }
 userdata->speed = sbbsuser.baud;
-strcpy(userdata->location, sbbsuser.city);
+strcpy((char *)userdata->location, (char *)sbbsuser.city);
 userdata->infobyte = sbbsuser.infobyte;
 userdata->node = nodenum;
 userdata->numcalls = 1;
@@ -142,7 +142,7 @@ long n; /* 0-based node number. */
 
 /* Open the SUSERON file, which TOP does not keep open due to apparent
    conflicts. */
-useronfil = sh_open(top_output(OUT_STRING, "@1suseron.bbs",
+useronfil = sh_open((char *)top_output(OUT_STRING, (unsigned char *)"@1suseron.bbs",
                                cfg.bbspath),
                     O_RDWR | O_CREAT | O_BINARY, SH_DENYNO,
                     S_IREAD | S_IWRITE);
@@ -153,7 +153,7 @@ if (useronfil == -1)
 
 /* Copy the data from the Generic BBS buffer to the SUSERON record. */
 memset(&sbbsuser, 0, sizeof(SBBS_USERON_typ));
-strncpy(sbbsuser.name, userdata->realname, 35);
+strncpy((char *)sbbsuser.name, (char *)userdata->realname, 35);
 sbbsuser.attribute = userdata->attribs1;
 if (userdata->quiet)
 	{
@@ -168,14 +168,14 @@ sbbsuser.status = 6;
 /* Asceratin the status number since SBBS doesn't support custom statuses. */
 for (res = 0; res < 11; res++)
 	{
-    if (!stricmp(userdata->statdesc, sbbs_statustypes[res]))
+    if (!stricmp((char *)userdata->statdesc, (char *)sbbs_statustypes[res]))
     	{
         sbbsuser.status = res;
         break;
         }
     }
 sbbsuser.baud = userdata->speed;
-strncpy(sbbsuser.city, userdata->location, 25);
+strncpy((char *)sbbsuser.city, (char *)userdata->location, 25);
 sbbsuser.infobyte = userdata->infobyte;
 
 /* Convert C strings to Pascal, which SBBS uses. */

@@ -20,6 +20,7 @@ This module contains functions that manipulate the user file.  It also contains
 functions like the user search function and the new user signup function.
 ******************************************************************************/
 
+#include "strwrap.h"
 #include "top.h"
 
 /* The user login procedure writes to the debug log. */
@@ -35,7 +36,7 @@ extern void wdl(char *msg);
 */
 void search_for_user(void)
 {
-char tmp[256]; /* Temporary input buffer. */
+unsigned char tmp[256]; /* Temporary input buffer. */
 #if defined(__OS2__) || defined(__WIN32__) || defined(__unix__)
 struct date mydate; /* 2-byte int date holder for 32 bit systems. */
 #endif
@@ -54,12 +55,12 @@ if (localmode || lanmode)
        be asked to enter a name. */
     do
     	{
-        top_output(OUT_SCREEN, getlang("EnterName"));
-        od_input_str(tmp, 30, ' ', MAXASCII);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"EnterName"));
+        od_input_str((char*)tmp, 30, ' ', MAXASCII);
         }
     while(!tmp[0] || censorinput(tmp));
     filter_string(tmp, tmp);
-    trim_string(od_control.user_name, tmp, 0);
+    trim_string((unsigned char *)od_control.user_name, tmp, 0);
     /* Local users are usually sysops so they are given the highest
        possible security to start.  If the user is later found in the
        user file, their normal security value will be used instead of
@@ -73,16 +74,16 @@ if (localmode || lanmode)
        TOP.CFG there is no need to temporarily preserve the value. */
     tfix = cfg.fixnames;
     cfg.fixnames = 1;
-    fixname(od_control.user_name, od_control.user_name);
+    fixname((unsigned char *)od_control.user_name, (unsigned char *)od_control.user_name);
     cfg.fixnames = tfix;
-    od_log_write(top_output(OUT_STRING, getlang("LogNameUsed"),
+    od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogNameUsed"),
                  od_control.user_name));
 wdl("Local name obtained from user");
     }
 else wdl("Local name not needed");
 
-fixname(od_control.user_name, od_control.user_name);
-top_output(OUT_SCREEN, getlang("Searching"), od_control.user_name);
+fixname((unsigned char*)od_control.user_name, (unsigned char*)od_control.user_name);
+top_output(OUT_SCREEN, getlang((unsigned char *)"Searching"), od_control.user_name);
 
 wdl("Pre-search completed");
 
@@ -90,7 +91,7 @@ wdl("Pre-search completed");
    previously done directly inside this function.  However, as TOP's
    development progressed the need arose for user name searching to occur
    elsewhere, so it was functionalized for efficiency. */
-user_rec_num = find_user_from_name(od_control.user_name, &user,
+user_rec_num = find_user_from_name((unsigned char *)od_control.user_name, &user,
                                    UFIND_REALNAME);
 
 wdl("User search completed");
@@ -115,20 +116,20 @@ wdl("Old user found");
    		{
 		do
     		{
-            top_output(OUT_SCREEN, getlang("EnterPW"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"EnterPW"));
             get_password(tmp, 15);
-            if (stricmp(user.password, tmp))
+            if (stricmp((char*)user.password, (char*)tmp))
             	{
-                top_output(OUT_SCREEN, getlang("InvalidPW"));
+                top_output(OUT_SCREEN, getlang((unsigned char *)"InvalidPW"));
                 tries++;
                 }
 	        }
-        while(stricmp(user.password, tmp) && tries < MAXPWTRIES);
+        while(stricmp((char*)user.password, (char*)tmp) && tries < MAXPWTRIES);
     	if (tries == MAXPWTRIES)
 	    	{
-            itoa(MAXPWTRIES, outnum[0], 10);
-            top_output(OUT_SCREEN, getlang("MaxPW"), outnum[0]);
-            od_log_write(top_output(OUT_STRING, getlang("LogMaxPW")));
+            itoa(MAXPWTRIES, (char*)outnum[0], 10);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"MaxPW"), outnum[0]);
+            od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogMaxPW")));
             quit_top();
         	}
 wdl("Password obtained from user");
@@ -136,11 +137,11 @@ wdl("Password obtained from user");
 else wdl("No password needed");
 
     fixname(user.handle, user.handle);
-    itoa(user_rec_num + 1, outnum[0], 10);
-    itoa(calc_days_ago(&user.last_use), outnum[1], 10);
-    top_output(OUT_SCREEN, getlang("Greeting"), user.handle,
+    itoa(user_rec_num + 1, (char*)outnum[0], 10);
+    itoa(calc_days_ago(&user.last_use), (char*)outnum[1], 10);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"Greeting"), user.handle,
                outnum[0], outnum[1]);
-    top_output(OUT_SCREEN, getlang("Setup"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"Setup"));
     }
 
 wdl("Greeting displayed - now setting up");
@@ -216,10 +217,10 @@ if (cfg.forcebio)
     {
     if (!biocheckalldone())
         {
-        top_output(OUT_SCREEN, getlang("BioForcePrefix"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"BioForcePrefix"));
         while(biogetall() != numbioques)
             {
-            top_output(OUT_SCREEN, getlang("BioForceAllNotDone"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"BioForceAllNotDone"));
             }
         }
     }
@@ -231,7 +232,7 @@ if (!loadpersactions())
     }
 register_node();
 wdl("Node registered and logged in");
-od_log_write(top_output(OUT_STRING, getlang("LogHandle"), user.handle));
+od_log_write((char*)top_output(OUT_STRING, getlang((unsigned char *)"LogHandle"), user.handle));
 
 wdl("Post-registry completed");
 
@@ -244,7 +245,7 @@ if (localmode || lanmode)
     /* Update the status line one last time to show the user's real name
        and location. */
     od_set_statusline(STATUS_NONE);
-    trim_string(od_control.user_location, od_control.user_location, 0);
+    trim_string((unsigned char *)od_control.user_location, (unsigned char *)od_control.user_location, 0);
     od_set_statusline(STATUS_NORMAL);
     od_kernel();
     od_control.od_status_on = FALSE;
@@ -330,16 +331,16 @@ return 1;
 void make_new_user(XINT recnum)
 {
 XINT res; /* Result code. */
-char mtmp[256]; /* Temporary input buffer. */
+unsigned char mtmp[256]; /* Temporary input buffer. */
 #if defined(__OS2__) || defined(__WIN32__) || defined(__unix__)
 struct date mydate; /* 2-byte int date holder for 32 bit systems. */
 #endif
 
 memset(&user, 0, sizeof(user_data_typ));
 
-top_output(OUT_SCREEN, getlang("NewUserScrnPrefix"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"NewUserScrnPrefix"));
 newuserscreen();
-od_log_write(top_output(OUT_STRING, getlang("LogStartSignOn")));
+od_log_write((char *)top_output(OUT_STRING, getlang((unsigned char *)"LogStartSignOn")));
 
 if (cfg.allownewhandles)
     {
@@ -350,8 +351,8 @@ if (cfg.allownewhandles)
         {
         do
             {
-            top_output(OUT_SCREEN, getlang("EnterHandle"));
-            od_input_str(user.handle, 30, ' ', MAXASCII);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"EnterHandle"));
+            od_input_str((char *)user.handle, 30, ' ', MAXASCII);
             }
         while(censorinput(user.handle));
 
@@ -360,7 +361,7 @@ if (cfg.allownewhandles)
         /* Abort if the user just hits ENTER. */
         if (user.handle[0] == '\0')
             {
-            od_log_write(top_output(OUT_STRING, getlang("LogAbortSignOn")));
+            od_log_write((char *)top_output(OUT_STRING, getlang((unsigned char *)"LogAbortSignOn")));
             quit_top();
             }
 
@@ -368,7 +369,7 @@ if (cfg.allownewhandles)
         res = check_dupe_handles(user.handle);
         if (res)
             {
-            top_output(OUT_SCREEN, getlang("HandleInUse"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"HandleInUse"));
             }
         }
     while(res);
@@ -379,11 +380,11 @@ else
        configured. */
     if (cfg.allowhandles && od_control.user_handle[0])
         {
-        fixname(user.handle, od_control.user_handle);
+        fixname(user.handle, (unsigned char *)od_control.user_handle);
         }
     else
         {
-        fixname(user.handle, od_control.user_name);
+        fixname(user.handle, (unsigned char *)od_control.user_name);
         }
     }
 
@@ -399,13 +400,13 @@ if (localmode || lanmode)
 
     do
     	{
-        top_output(OUT_SCREEN, getlang("EnterNewPW"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"EnterNewPW"));
         get_password(user.password, 15);
-        top_output(OUT_SCREEN, getlang("ConfirmPW"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"ConfirmPW"));
         get_password(mtmp, 15);
-        if (stricmp(user.password, mtmp))
+        if (stricmp((char*)user.password, (char*)mtmp))
         	{
-            top_output(OUT_SCREEN, getlang("PWNoMatch"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"PWNoMatch"));
             pwok = 0;
             }
         else
@@ -414,7 +415,7 @@ if (localmode || lanmode)
             }
         }
     while(!pwok);
-    top_output(OUT_SCREEN, getlang("LocalLANStartPref"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"LocalLANStartPref"));
     }
 
 user.gender = 0;
@@ -424,36 +425,36 @@ user.gender = 0;
 if (od_control.od_info_type != RA2EXITINFO &&
     od_control.od_info_type != CHAINTXT)
 	{
-    top_output(OUT_SCREEN, getlang("GenderPrompt"));
-    od_control.user_sex = od_get_answer(getlang("GenderKeys"));
-    if (od_control.user_sex == getlangchar("GenderKeys", 1))
+    top_output(OUT_SCREEN, getlang((unsigned char *)"GenderPrompt"));
+    od_control.user_sex = od_get_answer((char*)getlang((unsigned char *)"GenderKeys"));
+    if (od_control.user_sex == getlangchar((unsigned char *)"GenderKeys", 1))
     	{
-        top_output(OUT_SCREEN, getlang("Female"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"Female"));
         }
-    if (od_control.user_sex == getlangchar("GenderKeys", 0))
+    if (od_control.user_sex == getlangchar((unsigned char *)"GenderKeys", 0))
     	{
-        top_output(OUT_SCREEN, getlang("Male"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"Male"));
         }
-    top_output(OUT_SCREEN, getlang("GenderPromptSuffix"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"GenderPromptSuffix"));
     }
-if (od_control.user_sex == getlangchar("GenderKeys", 1))
+if (od_control.user_sex == getlangchar((unsigned char *)"GenderKeys", 1))
    	{
     user.gender = 1;
     }
-if (od_control.user_sex == getlangchar("GenderKeys", 0))
+if (od_control.user_sex == getlangchar((unsigned char *)"GenderKeys", 0))
    	{
     user.gender = 0;
     }
 
 /* User description is no longer used. */
-/*top_output(OUT_SCREEN, getlang("EnterDescPrompt"));
+/*top_output(OUT_SCREEN, getlang((unsigned char *)"EnterDescPrompt"));
 od_input_str(user.description, 60, ' ', MAXASCII);*/
 
-top_output(OUT_SCREEN, getlang("Creating"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"Creating"));
 
 /*trim_string(user.description, user.description, 0);*/
 // trim_string(user.realname, user.realname, 0);
-fixname(user.realname, od_control.user_name);
+fixname(user.realname, (unsigned char *)od_control.user_name);
 
 /* See search_for_user() for explanation of this section. */
 #if defined(__OS2__) || defined(__WIN32__) || defined(__unix__)
@@ -511,32 +512,32 @@ return;
 }*/
 
 /* Old pre-bio user lookup.  It is still used by a function in MAINT.C. */
-void lookup(char *string)
+void lookup(unsigned char *string)
 {
 user_data_typ udat;
-char tmp[256]; // Dynam with MAXSTRLEN!
+unsigned char tmp[256]; // Dynam with MAXSTRLEN!
 XINT d, u, ns = 0;
 long siz;
 struct file_stats_str udatdat;
 
 if (!string[0])
 	{
-    top_output(OUT_SCREEN, getlang("LookUpPrompt"));
+    top_output(OUT_SCREEN, getlang((unsigned char *)"LookUpPrompt"));
 
-    od_input_str(tmp, 30, ' ', MAXASCII);
+    od_input_str((char*)tmp, 30, ' ', MAXASCII);
     }
 else
 	{
-    strcpy(tmp, string);
-    top_output(OUT_SCREEN, getlang("LookUpPrefix"));
+    strcpy((char*)tmp, (char*)string);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"LookUpPrefix"));
     }
 
 filter_string(tmp, tmp);
 trim_string(tmp, tmp, 0);
 
 siz = 0L;
-sprintf(outbuf, "%susers.top", cfg.toppath);
-udatdat.fsize=flength(outbuf);
+sprintf((char*)outbuf, "%susers.top", cfg.toppath);
+udatdat.fsize=flength((char*)outbuf);
 if (!d)
 	{
     siz = udatdat.fsize;
@@ -544,7 +545,7 @@ if (!d)
 
 if (tmp[0])
 	{
-    top_output(OUT_SCREEN, getlang("LookUpSearching"), tmp);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"LookUpSearching"), tmp);
 	}
 
 d = 0; u = 0;
@@ -554,7 +555,7 @@ while((long) d * (long) sizeof(user_data_typ) < siz)
 
     load_user_data(d, &udat);
     filter_string(udat.handle, udat.handle);
-    if ((strstr(strupr(udat.handle), strupr(tmp)) || !tmp[0]) &&
+    if ((strstr(strupr((char*)udat.handle), strupr((char*)tmp)) || !tmp[0]) &&
 		udat.realname[0])
     	{
         if (udat.gender == 0)
@@ -566,7 +567,7 @@ while((long) d * (long) sizeof(user_data_typ) < siz)
             sex[0] = 'F';
             }
         sex[1] = '\0';
-        top_output(OUT_SCREEN, getlang("LookUpSep"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"LookUpSep"));
         if (cfg.usehandles)
             {
             filter_string(outbuf, udat.handle);
@@ -576,17 +577,17 @@ while((long) d * (long) sizeof(user_data_typ) < siz)
             {
             fixname(outbuf, udat.realname);
             }
-        itoa(d, outnum[0], 10);
-        top_output(OUT_SCREEN, getlang("LookUpDisplay1"), outnum[0],
-                   getlang(cfg.usehandles ? "LookUpHandle" :
-                           "LookUpRealName"), outbuf, sex);
-        itoa(udat.last_use.da_mon, outnum[0], 10);
-        itoa(udat.last_use.da_day, outnum[1], 10);
-        itoa(udat.last_use.da_year, outnum[2], 10);
-        top_output(OUT_SCREEN, getlang("LookUpDisplay2"), outnum[0],
+        itoa(d, (char *)outnum[0], 10);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"LookUpDisplay1"), outnum[0],
+                   getlang(cfg.usehandles ? (unsigned char *)"LookUpHandle" :
+                           (unsigned char *)"LookUpRealName"), outbuf, sex);
+        itoa(udat.last_use.da_mon, (char*)outnum[0], 10);
+        itoa(udat.last_use.da_day, (char*)outnum[1], 10);
+        itoa(udat.last_use.da_year, (char*)outnum[2], 10);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"LookUpDisplay2"), outnum[0],
                    outnum[1], outnum[2]);
 /*        filter_string(outbuf, udat.description);*/
-        top_output(OUT_SCREEN, getlang("LookUpDisplay3"), outbuf);
+        top_output(OUT_SCREEN, getlang((unsigned char *)"LookUpDisplay3"), outbuf);
         u++;
 		}
     d++;
@@ -595,7 +596,7 @@ while((long) d * (long) sizeof(user_data_typ) < siz)
         XINT key;
 
         u = 0;
-        top_output(OUT_SCREEN, getlang("LookUpSep"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"LookUpSep"));
         ns = moreprompt();
         if (ns == -1)
             {
@@ -604,11 +605,11 @@ while((long) d * (long) sizeof(user_data_typ) < siz)
         }
     }
 
-top_output(OUT_SCREEN, getlang("LookUpSep"));
-top_output(OUT_SCREEN, getlang("LookUpSuffix1"));
-top_output(OUT_SCREEN, getlang("PressAnyKey"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"LookUpSep"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"LookUpSuffix1"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"PressAnyKey"));
 od_get_key(TRUE);
-top_output(OUT_SCREEN, getlang("LookUpSuffix2"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"LookUpSuffix2"));
 
 return;
 }
@@ -618,16 +619,16 @@ return;
    Returns:  TRUE if a duplicate exists, FALSE if the specified handle
              is unique.
 */
-char check_dupe_handles(char *string)
+char check_dupe_handles(unsigned char *string)
 {
 XINT d, res; /* Counter, result code. */
 unsigned char thandstr[31]; /* Temporary handle holder. */
-char ctt[256]; /* Holds a filtered and trimmed version of string. */
+unsigned char ctt[256]; /* Holds a filtered and trimmed version of string. */
 
 filter_string(ctt, string);
 trim_string(ctt, ctt, 0);
-sprintf(outbuf, "%susers.top", cfg.toppath);
-if (access(outbuf, 0))
+sprintf((char*)outbuf, "%susers.top", cfg.toppath);
+if (access((char*)outbuf, 0))
 	{
     return 0;
     }
@@ -644,7 +645,7 @@ for (d = 0; d < (filelength(userfil) / (long) sizeof(user_data_typ)); d++)
                 SEEK_SET);
     if (res == -1)
     	{
-        errorabort(ERR_CANTACCESS, "users.top");
+        errorabort(ERR_CANTACCESS, (unsigned char *)"users.top");
         }
     rec_locking(REC_LOCK, userfil,
                 ((long) d * (long) sizeof(user_data_typ)) + 41L,
@@ -655,10 +656,10 @@ for (d = 0; d < (filelength(userfil) / (long) sizeof(user_data_typ)); d++)
                 sizeof(user_data_typ));
     if (res == -1)
     	{
-        errorabort(ERR_CANTREAD, "users.top");
+        errorabort(ERR_CANTREAD, (unsigned char *)"users.top");
         }
     filter_string(thandstr, thandstr);
-    if (!stricmp(thandstr, ctt))
+    if (!stricmp((char*)thandstr, (char*)ctt))
     	{
         return 1;
         }
@@ -696,8 +697,8 @@ XINT find_user_from_name(unsigned char *uname, user_data_typ *ubuf,
         read(userfil, ubuf, 72L);
         rec_locking(REC_UNLOCK, userfil, (long) d * sizeof(user_data_typ),
                     sizeof(user_data_typ));
-        if (!stricmp(uname,
-                     nuse == UFIND_HANDLE ? ubuf->handle : ubuf->realname))
+        if (!stricmp((char*)uname,
+                     nuse == UFIND_HANDLE ? (char*)ubuf->handle : (char*)ubuf->realname))
             {
             /* Match found, load the user data. */
             unum = d;

@@ -1,3 +1,4 @@
+#include "strwrap.h"
 #include "top.h"
 
 typedef struct  ////////////////!!!!!!!!!!!! Entire module
@@ -35,11 +36,11 @@ static char matcharr[20];
 static char matchpick[3];
 char wasused = 0, md, mdd, mx; //proc!
 
-if (!stricmp(get_word(1), "SHOW"))
+if (!stricmp((char*)get_word(1), "SHOW"))
     {
     if (matchprog < 1 || matchprog > 3)
         {
-        top_output(OUT_SCREEN, getlang("MatchGameNotOn"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"MatchGameNotOn"));
         }
 	else
 		{
@@ -47,15 +48,15 @@ if (!stricmp(get_word(1), "SHOW"))
     	wasused = 1;
     	}
 	}
-if (!stricmp(get_word(1), "START"))
+if (!stricmp((char*)get_word(1), "START"))
     {
     if (matchprog < 1 || matchprog > 3)
         {
         if (user.cybercash < 100000L)
             {
-            ultoa(100000L, outnum[0], 10);
-            ultoa(user.cybercash, outnum[1], 10);
-            top_output(OUT_SCREEN, getlang("MatchNotEnoughCash"), outnum[0],
+            ultoa(100000L, (char*)outnum[0], 10);
+            ultoa(user.cybercash, (char*)outnum[1], 10);
+            top_output(OUT_SCREEN, getlang((unsigned char *)"MatchNotEnoughCash"), outnum[0],
                        outnum[1]);
             return;
             }
@@ -77,28 +78,28 @@ if (!stricmp(get_word(1), "START"))
                 }
             }
         matchprog = 1;
-        top_output(OUT_SCREEN, getlang("MatchNewGame"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"MatchNewGame"));
         matchdisp(&matchprog, matcharr, matchpick);
         }
     else
         {
-        top_output(OUT_SCREEN, getlang("MatchGameAlreadyOn"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"MatchGameAlreadyOn"));
         }
     wasused = 1;
     }
 
-if (atoi(get_word(1)) >= 1 && atoi(get_word(1)) <= 20 && !wasused)
+if (atoi((char*)get_word(1)) >= 1 && atoi((char*)get_word(1)) <= 20 && !wasused)
     {
     if (matchprog < 1 || matchprog > 3)
         {
-        top_output(OUT_SCREEN, getlang("MatchGameNotOn"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"MatchGameNotOn"));
         }
     else
         {
-        if (atoi(get_word(1)) - 1 != matchpick[0] &&
-            atoi(get_word(1)) - 1 != matchpick[1])
+        if (atoi((char*)get_word(1)) - 1 != matchpick[0] &&
+            atoi((char*)get_word(1)) - 1 != matchpick[1])
             {
-            matchpick[matchprog - 1] = atoi(get_word(1)) - 1;
+            matchpick[matchprog - 1] = atoi((char*)get_word(1)) - 1;
             matchprog++;
             matchdisp(&matchprog, matcharr, matchpick);
             if (matchprog == 4)
@@ -108,7 +109,7 @@ if (atoi(get_word(1)) >= 1 && atoi(get_word(1)) <= 20 && !wasused)
             }
         else
             {
-            top_output(OUT_SCREEN, getlang("MatchAlreadyPicked"));
+            top_output(OUT_SCREEN, getlang((unsigned char *)"MatchAlreadyPicked"));
             }
         }
     wasused = 1;
@@ -116,13 +117,13 @@ if (atoi(get_word(1)) >= 1 && atoi(get_word(1)) <= 20 && !wasused)
 
 if (!wasused)
     { // To ANSI screen!
-    top_output(OUT_SCREEN, "\r\n\r\nMatchGame 3/20 Commands\r\n");
-    top_output(OUT_SCREEN, "-----------------------\r\n\r\n");
-    top_output(OUT_SCREEN, "SHOW  - Shows the board.\r\n");
-    top_output(OUT_SCREEN, "START - Starts a new MatchGame!\r\n");
-    top_output(OUT_SCREEN, "<##> - A number between 1 and 20 selects that number.\r\n");
-    top_output(OUT_SCREEN, "\r\nThe object of MatchGame 3/20 is to select three of the same prize values.\r\n");
-    top_output(OUT_SCREEN, "You only get three picks, so you will have to get lucky!\r\n\r\n");
+    top_output(OUT_SCREEN, (unsigned char *)"\r\n\r\nMatchGame 3/20 Commands\r\n");
+    top_output(OUT_SCREEN, (unsigned char *)"-----------------------\r\n\r\n");
+    top_output(OUT_SCREEN, (unsigned char *)"SHOW  - Shows the board.\r\n");
+    top_output(OUT_SCREEN, (unsigned char *)"START - Starts a new MatchGame!\r\n");
+    top_output(OUT_SCREEN, (unsigned char *)"<##> - A number between 1 and 20 selects that number.\r\n");
+    top_output(OUT_SCREEN, (unsigned char *)"\r\nThe object of MatchGame 3/20 is to select three of the same prize values.\r\n");
+    top_output(OUT_SCREEN, (unsigned char *)"You only get three picks, so you will have to get lucky!\r\n\r\n");
     wasused = 1;
     }
 
@@ -137,24 +138,24 @@ for (dd = 0; dd < 20; dd++)
     {
     if (dd % 5 == 0 || dd == 0)
         {
-        top_output(OUT_SCREEN, getlang("MatchDispSep"));
+        top_output(OUT_SCREEN, getlang((unsigned char *)"MatchDispSep"));
         od_sleep(0);
         }
     if (pick[0] == dd || pick[1] == dd || pick[2] == dd)
         {
-        itoa(matchprize[arr[dd]], outnum[0], 10);
-        strcpy(outbuf, top_output(OUT_STRING, getlang("MatchDispPicked"),
+        itoa(matchprize[arr[dd]], (char*)outnum[0], 10);
+        strcpy((char*)outbuf, (char*)top_output(OUT_STRING, getlang((unsigned char *)"MatchDispPicked"),
         						  matchcol[arr[dd]], outnum[0]));
         }
     else
         {
-        itoa(dd + 1, outnum[0], 10);
-        strcpy(outbuf, top_output(OUT_STRING, getlang("MatchDispUnPicked"),
+        itoa(dd + 1, (char*)outnum[0], 10);
+        strcpy((char*)outbuf, (char*)top_output(OUT_STRING, getlang((unsigned char *)"MatchDispUnPicked"),
         						  outnum[0]));
         }
     top_output(OUT_SCREEN, outbuf);
     }
-top_output(OUT_SCREEN, getlang("MatchDispBoardEnd"));
+top_output(OUT_SCREEN, getlang((unsigned char *)"MatchDispBoardEnd"));
 
 }
 
@@ -164,14 +165,14 @@ void matchdone(char *prg, char *arr, char *pick)
 
 if (arr[pick[0]] == arr[pick[1]] && arr[pick[1]] == arr[pick[2]])
     {
-    ultoa(100000L * (long) matchprize[arr[pick[0]]], outnum[0], 10);
-    top_output(OUT_SCREEN, getlang("MatchWin"), outnum[0]);
+    ultoa(100000L * (long) matchprize[arr[pick[0]]], (char*)outnum[0], 10);
+    top_output(OUT_SCREEN, getlang((unsigned char *)"MatchWin"), outnum[0]);
     user.cybercash += 100000L * (long) matchprize[arr[pick[0]]];
     save_user_data(user_rec_num, &user);
     }
 else
     { // Change to use cfg!
-    top_output(OUT_SCREEN, getlang("MatchLose"), "100000");
+    top_output(OUT_SCREEN, getlang((unsigned char *)"MatchLose"), (char*)"100000");
     }
 
 }
