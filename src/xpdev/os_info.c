@@ -10,7 +10,7 @@
 
 #if defined(_WIN32)
 	#include <windows.h>
-	#include <ntddk.h>
+	#include <wincrypt.h> // For NTSTATUS?
 #endif
 
 /****************************************************************************/
