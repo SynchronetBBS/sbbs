@@ -19,7 +19,7 @@ include ${SRC_ROOT}/build/Common.gmake
 
 # OpenDoors
 LDFLAGS	+=	-L$(SRC_ROOT)/odoors/libs-$(OS)
-CFLAGS	+=	-I$(SRC_ROOT)/odoors -Wall -pedantic -std=c99
+CFLAGS	+=	-I$(SRC_ROOT)/odoors -Wall -pedantic
 
 ifeq ($(os),darwin)
  LIB_RPATH := -Wl,$(RPATH),@executable_path
