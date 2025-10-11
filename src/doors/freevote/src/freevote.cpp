@@ -409,9 +409,34 @@ remove_arg(int full_argc, int *cnt, int *argc, char *argv[])
 	argv[full_argc - 1] = tmp;
 }
 
+#ifdef ODPLAT_WIN32
+static char *
+build_cmdline(int argc, char **argv)
+{
+	size_t sz = 0;
+	for (int i = 0; i < argc; i++)
+		sz += strlen(argv[i]) + 1;
+	char *ret = (char*)malloc(sz);
+	if (!ret)
+		return ret;
+	ret[0] = 0;
+	for (int i = 0; i < argc; i++) {
+		strcat(ret, argv[i]);
+		if ((i + 1) < argc)
+			strcat(ret, " ");
+	}
+	return ret;
+}
+#endif
+
 /* main() function - Program execution begins here. */
 #ifdef ODPLAT_WIN32
+#ifdef main
+extern "C"
+int main(int argc, char *argv[])
+#else
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int nCmdShow)
+#endif
 #else
 #ifdef main
 extern "C"
@@ -423,6 +448,16 @@ int main(int argc, char *argv[])
    char chMenuChoice;
    int cnt;
    char menufile[13];
+#if defined(ODPLAT_WIN32) && !defined(main)
+   int argc;
+   char **argv = od_split_cmd_line(lpszCmdLine, &argc);
+   if (argv == NULL) {
+      // TODO: Should be a pop-up or whatever maybe?
+      fputs("Failed to split command line\n", stderr);
+      return 1;
+   }
+   char *argv1 = argv[1];
+#endif
 
    /* Enable use of OpenDoors configuration file system. */
    od_control.od_config_file = INCLUDE_CONFIG_FILE;
@@ -452,9 +487,6 @@ int main(int argc, char *argv[])
    od_control.od_disable |= DIS_BPS_SETTING;
    od_control.od_disable |= DIS_NAME_PROMPT;
 
-#ifdef ODPLAT_WIN32
-  #warning TODO: Parse command-line for Windows!
-#else
   int orig_argc = argc;
   if(argc>1) {
     do {
@@ -590,31 +622,30 @@ int main(int argc, char *argv[])
       }
     } while ((++cnt)<argc);
   }
-#endif
 
 #ifdef ODPLAT_WIN32
   od_control.od_cmd_line_help = 
     "(Note that some options can be overriden by configuration or drop files.)\n"
     "\n"
-    //"-Cfname.cfg\t- Uses a different config file than freevote.cfg\n"
+    "-Cfname.cfg\t- Uses a different config file than freevote.cfg\n"
     "-L or -LOCAL\t- Causes door to operate in local mode, without requiring a drop file.\n"
-    //"-P/path/door.sys\t- Door information file directory and/or filename.\n"
-    //"-S##\t- Users security level, overrides the one in the information file\n"
-    //"-F\t- Forces the user to vote on all new questions then prompts to got to the menu or quit.\n"
-    //"-FA\t- Counts the questions the user has not answered and asks him if he wants to enter the door.\n"
-    //"-FNQ\t- Forces the user to vote on all new questions, can't skip or quit, then exits with no menu.\n"
-    //"-FQ\t- Same as -FNQ but quiet mode without enter prompts etc. just the questions, nothing else.\n"
-    //"-FC\t- Like -FA, but does not ask if the user wants to enter.\n"
-    //"-N##\t- Sets the node number to use.\n"
-    //"-LOG\t- Log into freevote.log.\n"
-    //"-RDBPS\t- Forces the game to read and use the locked port rate.\n"
-    //"-M\t- Run maintenance then exit.\n"
-    //"-NAD\t- Not autodetection of terminal emulation.\n"
-    "-C x or -CONFIG x\t- Specfies configuration filename.\n"
+    "-P/path/door.sys\t- Door information file directory and/or filename.\n"
+    "-S##\t- Users security level, overrides the one in the information file\n"
+    "-F\t- Forces the user to vote on all new questions then prompts to got to the menu or quit.\n"
+    "-FA\t- Counts the questions the user has not answered and asks him if he wants to enter the door.\n"
+    "-FNQ\t- Forces the user to vote on all new questions, can't skip or quit, then exits with no menu.\n"
+    "-FQ\t- Same as -FNQ but quiet mode without enter prompts etc. just the questions, nothing else.\n"
+    "-FC\t- Like -FA, but does not ask if the user wants to enter.\n"
+    "-N##\t- Sets the node number to use.\n"
+    "-LOG\t- Log into freevote.log.\n"
+    "-RDBPS\t- Forces the game to read and use the locked port rate.\n"
+    "-M\t- Run maintenance then exit.\n"
+    "-NAD\t- Not autodetection of terminal emulation.\n"
+    //"-C x or -CONFIG x\t- Specfies configuration filename.\n"
     "-D or -DROPFILE x\t- Door information file directory and/or filename.\n"
     "-N x or -NODE x\t- Sets the node number to use.\n"
     "-B x or -BPS x\t- Sets the serial port <---> modem bps (baud) rate to use.\n"
-    "-P x or -PORT x\t- Sets serial port to use. For COM1: use -P 0 or -P COM1, for COM2: use -P 1 or -P COM2, etc.\n"
+    //"-P x or -PORT x\t- Sets serial port to use. For COM1: use -P 0 or -P COM1, for COM2: use -P 1 or -P COM2, etc.\n"
     "-HANDLE x\t- Provides an already open serial port handle.\n"
     "-SOCKET x\t- Provides an already open TCP/IP socket descriptor.\n"
     "-SILENT\t\t- Operate in silent mode, with no local display.\n"
@@ -680,7 +711,15 @@ int main(int argc, char *argv[])
    strcpy(od_control.od_prog_name, "FrEevOtE");
 
 #ifdef ODPLAT_WIN32
-   od_parse_cmd_line(lpszCmdLine);
+   char *cl = build_cmdline(argc, argv);
+#ifndef main
+   argv[1] = argv1;
+   od_free_split_cmd_line(argv);
+#endif
+   if (cl) {
+      od_parse_cmd_line(cl);
+      free(cl);
+   }
 #else
    od_parse_cmd_line(argc, argv);
 #endif
