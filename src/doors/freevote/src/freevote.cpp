@@ -10,6 +10,8 @@
 /* Include the OpenDoors header file. This line must be done in any program */
 /* using OpenDoors.                                                         */
 #include "OpenDoor.h"
+#include <ciolib.h>
+#include <datewrap.h>
 #include <genwrap.h>
 #include <dirwrap.h>
 #include <filewrap.h>
@@ -50,13 +52,6 @@
 
 #define COLOR_DEF 0
 #define COLOR_TNW 1
-
-struct time {
-  unsigned char ti_min;
-  unsigned char ti_hour;
-  unsigned char ti_hund;
-  unsigned char ti_sec;
-};
 
 /* Structure of records stored in the EZVOTE.USR file */
 typedef struct
@@ -298,18 +293,6 @@ fwriteQuestionRecord(tQuestionRecord *q, FILE *f)
 	return(1);
 }
 
-void gettime(struct time *tim)  {
-  struct timeval ti;
-  struct tm *t;
-  
-  gettimeofday(&ti,NULL);
-  t=localtime((time_t *)&ti.tv_sec);
-  tim->ti_min=t->tm_min;
-  tim->ti_hour=t->tm_hour;
-  tim->ti_hund=ti.tv_usec/10000;
-  tim->ti_sec=t->tm_sec;
-}
-
 void
 CheckForBadUsers(char name[])
 {
@@ -427,13 +410,15 @@ remove_arg(int full_argc, int *cnt, int *argc, char *argv[])
 }
 
 /* main() function - Program execution begins here. */
-int
-main(int argc, char *argv[])
+#ifdef ODPLAT_WIN32
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int nCmdShow)
+#else
+int main(int argc, char *argv[])
+#endif
 {
    /* Variable to store user's choice from the menu */
    char chMenuChoice;
    int cnt;
-   int orig_argc = argc;
    char menufile[13];
 
    /* Enable use of OpenDoors configuration file system. */
@@ -464,7 +449,10 @@ main(int argc, char *argv[])
    od_control.od_disable |= DIS_BPS_SETTING;
    od_control.od_disable |= DIS_NAME_PROMPT;
 
-
+#ifdef ODPLAT_WIN32
+  #warning TODO: Parse command-line for Windows!
+#else
+  int orig_argc = argc;
   if(argc>1) {
     do {
       if (stricmp(argv[cnt],"-LOG")==0) {
@@ -480,30 +468,30 @@ main(int argc, char *argv[])
 	remove_arg(orig_argc, &cnt, &argc, argv);
       } else if (stricmp(argv[cnt],"-L")==0) {
 	remove_arg(orig_argc, &cnt, &argc, argv);
-#ifndef ODPLAT_NIX
 	clrscr();
 	textbackground(LIGHTCYAN);
 	textcolor(BLUE);
 	gotoxy(1,7);
 	cprintf("ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป");
 	gotoxy(1,8);
-	cprintf("บ FrEevOtE v3.2                                                               บ");
+	cprintf("\xba FrEevOtE v3.2                                                               \xba");
 	gotoxy(1,9);
-	cprintf("บ Starting in local mode input your name: ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ");
+	cprintf("\xba Starting in local mode input your name: \xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0 \xba");
 	gotoxy(1,10);
 	cprintf("ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ");
 	gotoxy(43,9);
 //      for(x=0;x<35;x++)
-//        putch('ฐ');
+//        putch('\xb0');
 
-//      cprintf(" บ\b\b");
+//      cprintf(" \xba\b\b");
 
 //      for(x=0;x<35;x++)
 //        putch('\b');
 
 
 	int cntv=0;
-	intval=TRUE;
+	BOOL intval=TRUE;
+	int key;
 	do {
 	  if(cntv>=35) {
 	    cntv=34;
@@ -517,7 +505,7 @@ main(int argc, char *argv[])
 
 	  if(key==27) {
 	    gotoxy(1,9);
-	    cprintf("บ Starting in local mode input your name: ฐ Canceled ... ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ");
+	    cprintf("\xba Starting in local mode input your name: \xb0 Canceled ... \xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0\xb0 \xba");
 	    gotoxy(1,12);
 	    exit(10);
 	  }
@@ -531,7 +519,7 @@ main(int argc, char *argv[])
 	      key+=32;
 	  }
 	  if(key==' ') {
-	    putch('ฐ');
+	    putch('\xb0');
 	    key=0;
 	    intval=TRUE;
 	  } else if(key=='\b') {
@@ -544,9 +532,9 @@ main(int argc, char *argv[])
 	      if(cntv>=0 && od_control.user_name[cntv]==' ')
 		intval=TRUE;
 	      if(cntv==32)
-		cprintf("\bฐฐ\b\b");
+		cprintf("\b\xb0\xb0\b\b");
 	      else
-		cprintf("\bฐ\b");
+		cprintf("\b\xb0\b");
 	      key=0;
 	    }
 	  }
@@ -563,7 +551,6 @@ main(int argc, char *argv[])
 
 /*      strlwr(od_control.user_name);
 	od_contro.user_name[0]-=32;*/
-#endif
       } else if (strnicmp(argv[cnt],"-P",2)==0) {
 	strzcpy(od_control.info_path,argv[cnt],2,59);
 	remove_arg(orig_argc, &cnt, &argc, argv);
@@ -600,30 +587,31 @@ main(int argc, char *argv[])
       }
     } while ((++cnt)<argc);
   }
+#endif
 
 #ifdef ODPLAT_WIN32
   od_control.od_cmd_line_help = 
     "(Note that some options can be overriden by configuration or drop files.)\n"
     "\n"
-    "-Cfname.cfg\t- Uses a different config file than freevote.cfg\n"
+    //"-Cfname.cfg\t- Uses a different config file than freevote.cfg\n"
     "-L or -LOCAL\t- Causes door to operate in local mode, without requiring a drop file.\n"
-    "-P/path/door.sys\t- Door information file directory and/or filename.\n"
-    "-S##\t- Users security level, overrides the one in the information file\n"
-    "-F\t- Forces the user to vote on all new questions then prompts to got to the menu or quit.\n"
-    "-FA\t- Counts the questions the user has not answered and asks him if he wants to enter the door.\n"
-    "-FNQ\t- Forces the user to vote on all new questions, can't skip or quit, then exits with no menu.\n"
-    "-FQ\t- Same as -FNQ but quiet mode without enter prompts etc. just the questions, nothing else.\n"
-    "-FC\t- Like -FA, but does not ask if the user wants to enter.\n"
-    "-N##\t- Sets the node number to use.\n"
-    "-LOG\t- Log into freevote.log.\n"
-    "-RDBPS\t- Forces the game to read and use the locked port rate.\n"
-    "-M\t- Run maintenance then exit.\n"
-    "-NAD\t- Not autodetection of terminal emulation.\n"
-    //"-C x or -CONFIG x\t- Specfies configuration filename.\n"
+    //"-P/path/door.sys\t- Door information file directory and/or filename.\n"
+    //"-S##\t- Users security level, overrides the one in the information file\n"
+    //"-F\t- Forces the user to vote on all new questions then prompts to got to the menu or quit.\n"
+    //"-FA\t- Counts the questions the user has not answered and asks him if he wants to enter the door.\n"
+    //"-FNQ\t- Forces the user to vote on all new questions, can't skip or quit, then exits with no menu.\n"
+    //"-FQ\t- Same as -FNQ but quiet mode without enter prompts etc. just the questions, nothing else.\n"
+    //"-FC\t- Like -FA, but does not ask if the user wants to enter.\n"
+    //"-N##\t- Sets the node number to use.\n"
+    //"-LOG\t- Log into freevote.log.\n"
+    //"-RDBPS\t- Forces the game to read and use the locked port rate.\n"
+    //"-M\t- Run maintenance then exit.\n"
+    //"-NAD\t- Not autodetection of terminal emulation.\n"
+    "-C x or -CONFIG x\t- Specfies configuration filename.\n"
     "-D or -DROPFILE x\t- Door information file directory and/or filename.\n"
     "-N x or -NODE x\t- Sets the node number to use.\n"
     "-B x or -BPS x\t- Sets the serial port <---> modem bps (baud) rate to use.\n"
-    //"-P x or -PORT x\t- Sets serial port to use. For COM1: use -P 0 or -P COM1, for COM2: use -P 1 or -P COM2, etc.\n"
+    "-P x or -PORT x\t- Sets serial port to use. For COM1: use -P 0 or -P COM1, for COM2: use -P 1 or -P COM2, etc.\n"
     "-HANDLE x\t- Provides an already open serial port handle.\n"
     "-SOCKET x\t- Provides an already open TCP/IP socket descriptor.\n"
     "-SILENT\t\t- Operate in silent mode, with no local display.\n"
@@ -688,7 +676,11 @@ main(int argc, char *argv[])
    /* Set program's name, to be written to the OpenDoors log file       */
    strcpy(od_control.od_prog_name, "FrEevOtE");
 
+#ifdef ODPLAT_WIN32
+   od_parse_cmd_line(lpszCmdLine);
+#else
    od_parse_cmd_line(argc, argv);
+#endif
 
    if(maint_run==TRUE) {
      od_init();
@@ -4412,7 +4404,6 @@ void WriteCurrentUser(void)
 }
 
 
-#ifdef ODPLAT_NIX
 FILE *fsopen(const char *pszFilename, const char *pszMode, int shmode)
 {
     int file;
@@ -4472,7 +4463,6 @@ FILE *fsopen(const char *pszFilename, const char *pszMode, int shmode)
         return(NULL);
     return(fdopen(file,pszMode));
 }
-#endif
 
 /* This function opens the specified file in the specified mode for         */
 /* exculsive access by this node; while the file is open, other nodes will  */

@@ -19,18 +19,18 @@ all:
 SRC_ROOT        = ../../..
 include ${SRC_ROOT}/build/Common.gmake
 
-# OpenDoors
-LDFLAGS	+=	-L$(SRC_ROOT)/odoors/libs-$(OS)
-CFLAGS	+=	-I$(SRC_ROOT)/odoors -Wall -pedantic $(XPDEV_CFLAGS)
-
-OBJS	:=	$(OBJODIR)$(DIRSEP)dirwrap$(OFILE) \
-		$(OBJODIR)$(DIRSEP)filewrap$(OFILE) \
-		$(OBJODIR)$(DIRSEP)freevote$(OFILE) \
-		$(OBJODIR)$(DIRSEP)genwrap$(OFILE)
-
 FREEVOTE :=	$(EXEODIR)$(DIRSEP)freevote$(EXEFILE)
 FREEVOTE_DST :=	..$(DIRSEP)freevote.$(machine)$(EXEFILE)
 ODOORS_LIB :=	$(SRC_ROOT)$(DIRSEP)odoors$(DIRSEP)libs-${OS}$(DIRSEP)$(LIBPREFIX)ODoors$(LIBFILE)
+
+LDFLAGS	+=	-L$(SRC_ROOT)/odoors/libs-$(OS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS) $(ENCODE_LDFLAGS) $(HASH_LDFLAGS)
+CFLAGS	+=	-DOD_WIN32_STATIC -I$(SRC_ROOT)/odoors -Wall -pedantic $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
+LIBS	+=	 $(ODOORS_LIB) $(CIOLIB-MT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS) $(XPDEV-MT_LIBS)
+ifdef win
+ LIBS	+=	-lcomctl32
+endif
+
+OBJS	:=	$(OBJODIR)$(DIRSEP)freevote$(OFILE)
 
 vpath %.c ../../../xpdev
 
@@ -40,9 +40,9 @@ ifdef RELEASE
 all: $(FREEVOTE_DST)
 endif
 
-$(FREEVOTE): $(OBJS) | $(EXEODIR)
+$(FREEVOTE): $(OBJS) $(XPDEV-MT_LIB) $(CIOLIB-MT) | $(EXEODIR)
 	@echo Linking $@
-	$(QUIET)$(CXX) $(LDFLAGS) $(OBJS) $(ODOORS_LIB) -o $@
+	$(QUIET)$(CXX) $(LDFLAGS) $(OBJS) $(LIBS) -o $@
 
 $(FREEVOTE_DST): $(FREEVOTE)
 	@echo Copying release $@
