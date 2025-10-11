@@ -415,7 +415,16 @@ NoDropFile(void)
   exit(10);
 }
 
-
+static void
+remove_arg(int full_argc, int *cnt, int *argc, char *argv[])
+{
+	char *tmp = argv[*cnt];
+	(*argc)--;
+	if ((*cnt) + 1 == full_argc)
+		return;
+	memmove(&argv[*cnt], &argv[(*cnt) + 1], full_argc - *cnt - 1);
+	argv[full_argc - 1] = tmp;
+}
 
 /* main() function - Program execution begins here. */
 int
@@ -423,8 +432,8 @@ main(int argc, char *argv[])
 {
    /* Variable to store user's choice from the menu */
    char chMenuChoice;
-   char chYesOrNo;
-   int cnt,intval;
+   int cnt;
+   int orig_argc = argc;
    char menufile[13];
 
    /* Enable use of OpenDoors configuration file system. */
@@ -445,7 +454,6 @@ main(int argc, char *argv[])
    strcpy(od_registered_to,"Your Name");
    od_registration_key=0L;
 
-   char key;
    char numstr[81];
 
    cnt=1;
@@ -459,16 +467,19 @@ main(int argc, char *argv[])
 
   if(argc>1) {
     do {
-      if (strnicmp(argv[cnt],"-LOG",4)==0) {
+      if (stricmp(argv[cnt],"-LOG")==0) {
 	od_control.od_logfile = INCLUDE_LOGFILE;
 	strcpy(od_control.od_logfile_name, "freevote.log");
 	od_control.od_logfile_disable=FALSE;
-      } else if (strnicmp(argv[cnt],"-NAD",4)==0) {
+	remove_arg(orig_argc, &cnt, &argc, argv);
+      } else if (stricmp(argv[cnt],"-NAD")==0) {
 	autodetect=FALSE;
-      } else if (strnicmp(argv[cnt],"-RDBPS",6)==0) {
+	remove_arg(orig_argc, &cnt, &argc, argv);
+      } else if (stricmp(argv[cnt],"-RDBPS")==0) {
 	od_control.od_disable &=~ DIS_BPS_SETTING;
-      } else if (strnicmp(argv[cnt],"-L",2)==0) {
-	od_control.od_force_local=TRUE;
+	remove_arg(orig_argc, &cnt, &argc, argv);
+      } else if (stricmp(argv[cnt],"-L")==0) {
+	remove_arg(orig_argc, &cnt, &argc, argv);
 #ifndef ODPLAT_NIX
 	clrscr();
 	textbackground(LIGHTCYAN);
@@ -555,32 +566,119 @@ main(int argc, char *argv[])
 #endif
       } else if (strnicmp(argv[cnt],"-P",2)==0) {
 	strzcpy(od_control.info_path,argv[cnt],2,59);
-      } else if (strnicmp(argv[cnt],"-N",2)==0) {
+	remove_arg(orig_argc, &cnt, &argc, argv);
+      } else if (strnicmp(argv[cnt],"-N",2)==0 && isdigit(argv[cnt][2])) {
 	strzcpy(numstr,argv[cnt],2,59);
-	sscanf(numstr,"%hd",&od_control.od_node);
-      } else if (strnicmp(argv[cnt],"-S",2)==0) {
+	remove_arg(orig_argc, &cnt, &argc, argv);
+      } else if (strnicmp(argv[cnt],"-S",2)==0 && isdigit(argv[cnt][2])) {
 	strzcpy(numstr,argv[cnt],2,59);
 	sscanf(numstr,"%d",&user_security);
-      } else if (strnicmp(argv[cnt],"-M",2)==0) {
+	remove_arg(orig_argc, &cnt, &argc, argv);
+      } else if (stricmp(argv[cnt],"-M")==0) {
 	od_control.od_force_local=TRUE;
 	maint_run=TRUE;
+	remove_arg(orig_argc, &cnt, &argc, argv);
       } else if (strnicmp(argv[cnt],"-C",2)==0) {
 	od_control.od_config_file = INCLUDE_CONFIG_FILE;
 	od_control.od_config_filename=argv[cnt]+2;
-      } else if (strnicmp(argv[cnt],"-FC",3)==0) {
+	remove_arg(orig_argc, &cnt, &argc, argv);
+      } else if (stricmp(argv[cnt],"-FC")==0) {
 	Forcevote=5;
-      } else if (strnicmp(argv[cnt],"-FNQ",4)==0) {
+	remove_arg(orig_argc, &cnt, &argc, argv);
+      } else if (stricmp(argv[cnt],"-FNQ")==0) {
 	Forcevote=2;
-      } else if (strnicmp(argv[cnt],"-FA",3)==0) {
+	remove_arg(orig_argc, &cnt, &argc, argv);
+      } else if (stricmp(argv[cnt],"-FA")==0) {
 	Forcevote=3;
-      } else if (strnicmp(argv[cnt],"-FQ",3)==0) {
+	remove_arg(orig_argc, &cnt, &argc, argv);
+      } else if (stricmp(argv[cnt],"-FQ")==0) {
 	Forcevote=4;
-      } else if (strnicmp(argv[cnt],"-F",2)==0) {
+	remove_arg(orig_argc, &cnt, &argc, argv);
+      } else if (stricmp(argv[cnt],"-F")==0) {
 	Forcevote=1;
+	remove_arg(orig_argc, &cnt, &argc, argv);
       }
     } while ((++cnt)<argc);
   }
 
+#ifdef ODPLAT_WIN32
+  od_control.od_cmd_line_help = 
+    "(Note that some options can be overriden by configuration or drop files.)\n"
+    "\n"
+    "-Cfname.cfg\t- Uses a different config file than freevote.cfg\n"
+    "-L or -LOCAL\t- Causes door to operate in local mode, without requiring a drop file.\n"
+    "-P/path/door.sys\t- Door information file directory and/or filename.\n"
+    "-S##\t- Users security level, overrides the one in the information file\n"
+    "-F\t- Forces the user to vote on all new questions then prompts to got to the menu or quit.\n"
+    "-FA\t- Counts the questions the user has not answered and asks him if he wants to enter the door.\n"
+    "-FNQ\t- Forces the user to vote on all new questions, can't skip or quit, then exits with no menu.\n"
+    "-FQ\t- Same as -FNQ but quiet mode without enter prompts etc. just the questions, nothing else.\n"
+    "-FC\t- Like -FA, but does not ask if the user wants to enter.\n"
+    "-N##\t- Sets the node number to use.\n"
+    "-LOG\t- Log into freevote.log.\n"
+    "-RDBPS\t- Forces the game to read and use the locked port rate.\n"
+    "-M\t- Run maintenance then exit.\n"
+    "-NAD\t- Not autodetection of terminal emulation.\n"
+    //"-C x or -CONFIG x\t- Specfies configuration filename.\n"
+    "-D or -DROPFILE x\t- Door information file directory and/or filename.\n"
+    "-N x or -NODE x\t- Sets the node number to use.\n"
+    "-B x or -BPS x\t- Sets the serial port <---> modem bps (baud) rate to use.\n"
+    //"-P x or -PORT x\t- Sets serial port to use. For COM1: use -P 0 or -P COM1, for COM2: use -P 1 or -P COM2, etc.\n"
+    "-HANDLE x\t- Provides an already open serial port handle.\n"
+    "-SOCKET x\t- Provides an already open TCP/IP socket descriptor.\n"
+    "-SILENT\t\t- Operate in silent mode, with no local display.\n"
+    "-MAXTIME x\t- Sets the maximum number of minutes that user will be permitted to access the door.\n"
+    "-G or -GRAPHICS\t- Unless followed by 0 or N, turns on ANSI display mode.\n"
+    "-BBSNAME x\t- Name of BBS.\n"
+    "-USERNAME x\t- Name of user who is currently online.\n"
+    "-TIMELEFT x\t- User's time remaining online.\n"
+    "-SECURITY x\t- User's security level.\n"
+    "-LOCATION x\t- Location from which user is calling.\n"
+    "-?, -H or -HELP\t- Displays command-line help and exits.";
+#else /* !ODPLAT_WIN32 */
+  od_control.od_cmd_line_help = 
+    "(Some can be overriden by config/drop file)\n"
+    " -Cfname.cfg      - Uses a different config file than freevote.cfg\n"
+    " -L or -LOCAL     - Causes door to operate in local mode, without requiring a\n"
+    "                    door information (drop) file.\n"
+    " -P/path/door.sys - Door information file directory and/or filename.\n"
+    " -S##             - Users security level, overrides the one in the\n"
+    "                    information file\n"
+    " -F               - Forces the user to vote on all new questions then\n"
+    "                    prompts to got to the menu or quit.\n"
+    " -FA              - Counts the questions the user has not answered and asks him\n"
+    "                    if he wants to enter the door.\n"
+    " -FNQ             - Forces the user to vote on all new questions, can't skip or\n"
+    "                    quit, then exits with no menu.\n"
+    " -FQ              - Same as -FNQ but quiet mode without enter prompts etc. just\n"
+    "                    the questions, nothing else.\n"
+    " -FC              - Like -FA, but does not ask if the user wants to enter.\n"
+    " -N##             - Sets the node number to use.\n"
+    " -LOG             - Log into freevote.log.\n"
+    " -RDBPS           - Forces the game to read and use the locked port rate.\n"
+    " -M               - Run maintenance then exit.\n"
+    " -NAD             - Not autodetection of terminal emulation.\n"
+    //" -C or -CONFIG    - Specfies configuration filename.\n"
+    " -D or -DROPFILE  - Door information file directory and/or filename.\n"
+    " -N x or -NODE x  - Sets the node number to use.\n"
+    " -B x or -BPS x   - Sets the serial port <---> modem bps (baud) rate to use.\n"
+    //" -P x or -PORT x  - Sets serial port to use. For COM1: use -P 0 or -P COM1, for\n"
+    "                    COM2: use -P 1 or -P COM2, etc.\n"
+    " -ADDRESS x       - Sets serial port address in HEXIDECIMAL (if no FOSSIL).\n"
+    " -IRQ x           - Sets the serial port IRQ line (if FOSSIL is not used).\n"
+    " -NOFOSSIL        - Disables use of FOSSIL driver, even if available.\n"
+    " -NOFIFO          - Disables use of 16550 FIFO buffers (only if no FOSSIL).\n"
+    " -MAXTIME x       - Sets the maximum number of minutes that any user will be\n"
+    "                    permitted to access the door, regardless of time left.\n"
+    " -SILENT          - Operate in silent mode, with no local display.\n"
+    " -G or -GRAPHICS  - Unless followed by 0 or N, turns on ANSI display mode.\n"
+    " -BBSNAME x       - Name of BBS.\n"
+    " -USERNAME x      - Name of user who is currently online.\n"
+    " -TIMELEFT x      - User's time remaining online.\n"
+    " -SECURITY x      - User's security level.\n"
+    " -LOCATION x      - Location from which user is calling.\n"
+    " -?, -H or -HELP  - Displays command-line help and exits.\n";
+#endif /* !ODPLAT_WIN32 */
 
    /* Include the OpenDoors multiple personality system, which allows    */
    /* the system operator to set the sysop statusline / function key set */
@@ -589,6 +687,8 @@ main(int argc, char *argv[])
 
    /* Set program's name, to be written to the OpenDoors log file       */
    strcpy(od_control.od_prog_name, "FrEevOtE");
+
+   od_parse_cmd_line(argc, argv);
 
    if(maint_run==TRUE) {
      od_init();
@@ -1341,7 +1441,6 @@ maint(void)
   int deleted_n=0;
   char bQuestionDeleted[MAX_QUESTIONS];
   int cnt,cnt2;
-  int nFileUser=0;
 
 
    nowtime=time(NULL);
@@ -1398,7 +1497,6 @@ maint(void)
      od_printf("\n\rUserFile Packing");
      fpUserFile=ExculsiveFileOpen(USER_FILENAME,"rb");
      fpPackFile=ExculsiveFileOpen("freevote.tmp","wb");
-     nFileUser=0;
      while(freadUserRecord(&UserRecord, fpUserFile) == 1)
      {
        deleted_n=0;
@@ -1430,7 +1528,6 @@ maint(void)
     //   WaitForEnter();
 
        /* Move to next user in file. */
-       ++nFileUser;
      }
      fclose(fpUserFile);
      fclose(fpPackFile);
@@ -1500,7 +1597,7 @@ QuestionEditor(void)
    char szNewAnswer2[ANSWER_STR_SIZE];
    char szQuestion[QUESTION_STR_SIZE];
    char szUserInput[3];
-   char key,skey;
+   char key;
    FILE *fpUserFile;
    int nFileUser;
    tUserRecord UserRecord;
@@ -3089,7 +3186,7 @@ void AddQuestion(void)
       }
 
       /* Reset count of votes for this answer to zero. */
-      QuestionRecord.auVotesForAnswer[QuestionRecord.nTotalAnswers] = 0;
+      QuestionRecord.auVotesForAnswer[(size_t)QuestionRecord.nTotalAnswers] = 0;
 
       if(!(QuestionRecord.bitflags & BF_15_BY_1_MODE))
 	cnt+=2;
@@ -3832,16 +3929,9 @@ int ChooseQuestion(unsigned int nFromWhichQuestions, const char *pszTitle, int *
 /* user has not voted on, or a list of all questions.                      */
 int FirstQuestion(unsigned int nFromWhichQuestions, int nFileQuestion)
 {
-   int nCurrent;
-//   int nFileQuestion = 0;
-//   int nPagedToQuestion = *nLocation;
-//   int nDisplayedQuestion = 0;
    unsigned int bVotedOnQuestion;
-//   char chCurrent;
    tQuestionRecord QuestionRecord;
    FILE *fpQuestionFile;
-//   static char szQuestionName[MAX_QUESTIONS][QUESTION_STR_SIZE];
-//   static int nQuestionNumber[MAX_QUESTIONS];
 
    /* Attempt to open question file. */
    fpQuestionFile = ExculsiveFileOpen(QUESTION_FILENAME, "r+b");
@@ -4327,7 +4417,6 @@ FILE *fsopen(const char *pszFilename, const char *pszMode, int shmode)
 {
     int file;
     int Mode=0;
-    char pszNewMode[3];
     const char *p;
     
     for(p=pszMode;*p;p++)  {
