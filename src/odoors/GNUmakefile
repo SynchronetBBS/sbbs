@@ -38,6 +38,8 @@
 #                   cl - For Microsoft compilers
 #
 CC	?=	gcc
+AR	?=	ar
+RANLIB	?=	ranlib
 #
 #------------------------------------------------------------------------------
 #
@@ -126,6 +128,7 @@ LIB_PREFIX	:=	lib
 SHLIB_PREFIX	:=	lib
 LIB_SUFFIX	:=	.6.2
 EXTRA_LIBS	:=
+EXE_SUFFIX	:=
 ifeq ($(os),darwin)
  SHLIB		?=	.dylib
 else
@@ -134,6 +137,7 @@ else
   EXTRA_LIBS += -lwsock32 -lgdi32 -lcomctl32 -Wl,--subsystem,windows
   SHLIB_PREFIX	:=
   LIB_SUFFIX	:=
+  EXE_SUFFIX	:= .exe
  else
   SHLIB		?=	.so
   SHFLAGS	+=	-Wl,-Bsymbolic
@@ -146,6 +150,10 @@ ifdef PROFILE
 	SHLIB	:=	_p${SHLIB}
 	STATICLIB	:=	_p.a
 endif
+
+ODOORS_SHLIB	:= ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+ODOORS_LIB	:= ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB}
+
 #
 ###############################################################################
 #
@@ -157,12 +165,12 @@ endif
 #
 # Define primary target.
 #
-all: ${OBJDIR} ${LIBDIR} $(EXEDIR) ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB} \
-    ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB} $(EXEDIR)ex_chat $(EXEDIR)ex_diag \
-    $(EXEDIR)ex_hello $(EXEDIR)ex_music $(EXEDIR)ex_vote
+all: ${OBJDIR} ${LIBDIR} $(EXEDIR) ${ODOORS_SHLIB}${LIB_SUFFIX} \
+    ${ODOORS_LIB} $(EXEDIR)ex_chat${EXE_SUFFIX} $(EXEDIR)ex_diag${EXE_SUFFIX} \
+    $(EXEDIR)ex_hello${EXE_SUFFIX} $(EXEDIR)ex_music${EXE_SUFFIX} $(EXEDIR)ex_vote${EXE_SUFFIX}
 
 ifdef XPDEV_LIB
-all: $(EXEDIR)ex_ski
+all: $(EXEDIR)ex_ski${EXE_SUFFIX}
 endif
 #
 #------------------------------------------------------------------------------
@@ -227,9 +235,6 @@ ifdef win
 	OBJECTS += ${OBJDIR}ODFrame${OBJFILE}
 endif
 
-ODOORS_SHLIB	:= ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
-ODOORS_LIB	:= ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB}
-
 ${OBJDIR}:
 	mkdir ${OBJDIR}
 
@@ -242,32 +247,32 @@ ${EXEDIR}:
 $(OBJDIR)%$(OBJFILE) : %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-${ODOORS_SHLIB} : ${OBJECTS}
-	$(CC) $(SHFLAGS) -o ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}${LIB_SUFFIX} ${OBJECTS} ${EXTRA_LIBS}
+${ODOORS_SHLIB}${LIB_SUFFIX} : ${OBJECTS} | ${LIBDIR}
+	$(CC) $(SHFLAGS) -o ${ODOORS_SHLIB}${LIB_SUFFIX} ${OBJECTS} ${EXTRA_LIBS}
 ifndef win
-	ln -fs ${SHLIB_PREFIX}ODoors${SHLIB}${LIB_SUFFIX} ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+	ln -fs ${SHLIB_PREFIX}ODoors${SHLIB}${LIB_SUFFIX} ${ODOORS_SHLIB}
 endif
 
-${ODOORS_LIB} : ${OBJECTS}
-	${AR} -r ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB} ${OBJECTS}
-	${RANLIB} ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB}
-	
-${EXEDIR}ex_chat: ex_chat.c ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+${ODOORS_LIB} : ${OBJECTS} | ${LIBDIR}
+	${AR} -cr ${ODOORS_LIB} ${OBJECTS}
+	${RANLIB} ${ODOORS_LIB}
+
+${EXEDIR}ex_chat${EXE_SUFFIX}: ex_chat.c ${ODOORS_SHLIB}
 	$(CC) $(LDFLAGS) $(CFLAGS) ex_chat.c -o $@ ${ODOORS_SHLIB}
 
-${EXEDIR}ex_diag: ex_diag.c ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+${EXEDIR}ex_diag${EXE_SUFFIX}: ex_diag.c ${ODOORS_SHLIB}
 	$(CC) $(LDFLAGS) $(CFLAGS) ex_diag.c -o $@ ${ODOORS_SHLIB}
 
-${EXEDIR}ex_hello: ex_hello.c ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+${EXEDIR}ex_hello${EXE_SUFFIX}: ex_hello.c ${ODOORS_SHLIB}
 	$(CC) $(LDFLAGS) $(CFLAGS) ex_hello.c -o $@ ${ODOORS_SHLIB}
 
-${EXEDIR}ex_music: ex_music.c ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+${EXEDIR}ex_music${EXE_SUFFIX}: ex_music.c ${ODOORS_SHLIB}
 	$(CC) $(LDFLAGS) $(CFLAGS) ex_music.c -o $@ ${ODOORS_SHLIB}
 
-${EXEDIR}ex_ski: ex_ski.c ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+${EXEDIR}ex_ski${EXE_SUFFIX}: ex_ski.c ${ODOORS_SHLIB}
 	$(CC) $(LDFLAGS) $(CFLAGS) $(LDFLAGS) ex_ski.c -o $@ ${ODOORS_SHLIB} -lxpdev
 
-${EXEDIR}ex_vote: ex_vote.c ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+${EXEDIR}ex_vote${EXE_SUFFIX}: ex_vote.c ${ODOORS_SHLIB}
 	$(CC) $(LDFLAGS) $(CFLAGS) ex_vote.c ../xpdev/filewrap.c -o $@ ${ODOORS_SHLIB} -DMULTINODE_AWARE
 
 #
