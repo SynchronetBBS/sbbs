@@ -265,11 +265,11 @@ dpkg: $(SYNCTERM) syncterm.1.gz dpkg-control dpkgdirs changelog.gz
 	${QUIET}${INSTALL_DATA} icons/syncterm.svg ${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps
 	${QUIET}${INSTALL_DATA} icons/syncterm-mini.svg ${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps
 	${QUIET}${INSTALL_DATA} syncterm.desktop dpkg${DESTDIR}${DESKTOPDIR}
-	${QUIET}${INSTALL_DATA} syncterm.1.gz dpkg${DESTDIR}${MANPREFIX}/share/man/man1
+	${QUIET}${INSTALL_DATA} syncterm.1.gz dpkg${DESTDIR}${MANPREFIX}/man/man1
 	${QUIET}${INSTALL_DATA} LICENCE dpkg${DESTDIR}${PREFIX}/share/doc/syncterm/copyright
 	${QUIET}${INSTALL_DATA} changelog.gz dpkg${DESTDIR}${PREFIX}/share/doc/syncterm
 	${QUIET}${INSTALL_DATA} dpkg-control dpkg/DEBIAN/control
-	${QUIET}dpkg-deb --root-owner-group -b dpkg syncterm_1.2a-${shell date -u +%Y%m%d}_${shell dpkg-architecture -q DEB_BUILD_ARCH}.deb
+	${QUIET}dpkg-deb --root-owner-group -b dpkg syncterm_1.8b-${shell date -u +%Y%m%d}_${shell dpkg-architecture -q DEB_BUILD_ARCH}.deb
 	${QUIET}rm -rf dpkg
 
 devel: tags cscope.out
