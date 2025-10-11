@@ -97,8 +97,10 @@ endofbattle(BOOL won)
 	tmpuser.attack = weapon[tmpuser.weapon].attack;
 	tmpuser.power = weapon[tmpuser.weapon].power;
 	outfile = fopen("data/record.lan", "ab");
-	fprintf(outfile, "%s attacked %s and %s was victorious!\r\n", user.pseudo, tmpuser.pseudo, loser->pseudo);
-	fclose(outfile);
+	if (outfile) {
+		fprintf(outfile, "%s attacked %s and %s was victorious!\r\n", user.pseudo, tmpuser.pseudo, loser->pseudo);
+		fclose(outfile);
+	}
     }
     opp.experience *= supplant();
     winner->experience += opp.experience;
@@ -261,6 +263,10 @@ searcher(char *filename)
     int             a;
     int             rd;
     infile = fopen(filename, "rb");
+    if (!infile) {
+	    perror(filename);
+	    exit(EXIT_FAILURE);
+    }
     user.fights--;
     rd = xp_random(readnumb(0, infile) - 1) + 1;
     endofline(infile);

@@ -68,6 +68,8 @@ loaduser(char *name, BOOL bbsname, struct playertype * plr)
     char            temp[81];
     FILE           *infile;
     infile = fopen("data/characte.lan", "rb");
+    if (!infile)
+	return FALSE;
     fgets(temp, sizeof(temp), infile);
     while (loadnextuser(plr, infile)) {
 	if (bbsname) {
@@ -119,6 +121,10 @@ saveuser(struct playertype * plr)
     struct playertype **ra;
     BOOL            saved = FALSE;
     infile = fopen("data/characte.lan", "rb");
+    if (!infile) {
+	    perror("data/characte.lan");
+	    exit(EXIT_FAILURE);
+    }
     fgets(temp, sizeof(temp), infile);
     i = 0;
     while (loadnextuser(&tmpuser, infile)) {
@@ -159,6 +165,10 @@ saveuser(struct playertype * plr)
 	}
     }
     outfile = fopen("data/characte.lan", "wb");
+    if (!infile) {
+	    perror("data/characte.lan");
+	    exit(EXIT_FAILURE);
+    }
     fprintf(outfile, "%" PRIu32 "\n", i);
     for (j = 0; j < i; j++) {
 	writenextuser(playerlist[j], outfile);

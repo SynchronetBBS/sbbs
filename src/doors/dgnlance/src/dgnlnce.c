@@ -74,6 +74,10 @@ checkday(void)
     struct playertype **playerlist = NULL;
     struct playertype **ra;
     infile = fopen("data/date.lan", "r+b");
+    if (!infile) {
+	    perror("data/date.lan");
+	    exit(EXIT_FAILURE);
+    }
     readline(oldy, sizeof(oldy), infile);
 
     if (strcmp(oldy, date())) {
@@ -87,6 +91,10 @@ checkday(void)
     fclose(infile);
 
     infile = fopen("data/characte.lan", "rb");
+    if (!infile) {
+	    perror("data/characte.lan");
+	    exit(EXIT_FAILURE);
+    }
     fgets(temp, sizeof(temp), infile);
     if (feof(infile))
 	return;
@@ -121,6 +129,10 @@ checkday(void)
 	}
     }
     outfile = fopen("data/characte.lan", "wb");
+    if (!infile) {
+	    perror("data/characte.lan");
+	    exit(EXIT_FAILURE);
+    }
     fprintf(outfile, "%" PRIu32 "\n", i);
     for (j = 0; j < i; j++) {
 	writenextuser(playerlist[j], outfile);
@@ -142,6 +154,10 @@ playerlist(void)
     od_disp_str("Hero Rankings:\r\n");
     od_disp_str("!!!!!!!!!!!!!!\r\n");
     infile = fopen("data/characte.lan", "rb");
+    if (!infile) {
+	    perror("data/characte.lan");
+	    exit(EXIT_FAILURE);
+    }
     fgets(temp, sizeof(temp), infile);
     i = 3;
     a = 1;
@@ -753,6 +769,10 @@ bulletin(void)
 	    od_disp_str("Yes\r\n");
 	    od_disp_str("Saving Bulletin...\r\n");
 	    messfile = fopen("text/bullet.lan", "ab");
+	    if (!messfile) {
+		    perror("text/bullet.lan");
+		    exit(EXIT_FAILURE);
+	    }
 	    fputs(blt[1], messfile);
 	    fputs("\n", messfile);
 	    fputs(blt[2], messfile);
@@ -923,6 +943,10 @@ int main(int argc, char *argv[])
     pausescr();
     od_clr_scr();
     infile = fopen("data/weapons.lan", "rb");
+    if (!infile) {
+	    perror("data/weapins.lan");
+	    exit(EXIT_FAILURE);
+    }
     od_set_color(L_BLUE, D_BLACK);
     for (i = 1; i <= 25; i++) {
 	readline(weapon[i].name, sizeof(weapon[i].name), infile);
@@ -932,11 +956,19 @@ int main(int argc, char *argv[])
     }
     fclose(infile);
     infile = fopen("data/armor.lan", "rb");
+    if (!infile) {
+	    perror("data/armor.lan");
+	    exit(EXIT_FAILURE);
+    }
     od_set_color(L_BLUE, D_BLACK);
     for (i = 1; i <= 25; i++)
 	readline(armour[i].name, sizeof(armour[i].name), infile);
     fclose(infile);
     infile = fopen("data/prices.lan", "rb");
+    if (!infile) {
+	    perror("data/prices.lan");
+	    exit(EXIT_FAILURE);
+    }
     for (i = 1; i <= 25; i++) {
 	weapon[i].cost = readnumb(100000000, infile);
 	armour[i].cost = weapon[i].cost;
@@ -946,6 +978,10 @@ int main(int argc, char *argv[])
     user.attack = weapon[user.weapon].attack;
     user.power = weapon[user.weapon].power;
     infile = fopen("data/experience.lan", "rb");
+    if (!infile) {
+	    perror("data/experience.lan");
+	    exit(EXIT_FAILURE);
+    }
     for (i = 1; i <= 28; i++) {
 	required[i] = readnumb(100000000, infile);
 	endofline(infile);
