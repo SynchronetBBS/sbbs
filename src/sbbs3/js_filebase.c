@@ -1830,7 +1830,7 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	memset(p, 0, sizeof(private_t));
 	p->smb.retry_time = scfg->smb_retry_time;
 
-	int argn = 0;
+	uintN argn = 0;
 	JSVALUE_TO_STRBUF(cx, argv[argn], base, sizeof base, NULL);
 	++argn;
 	if (JS_IsExceptionPending(cx)) {
