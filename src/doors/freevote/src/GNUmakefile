@@ -16,34 +16,41 @@ endif
 
 all:
 
-SRC_ROOT        = ../..
+SRC_ROOT        = ../../..
 include ${SRC_ROOT}/build/Common.gmake
 
 # OpenDoors
 LDFLAGS	+=	-L$(SRC_ROOT)/odoors/libs-$(OS)
 CFLAGS	+=	-I$(SRC_ROOT)/odoors -Wall -pedantic $(XPDEV_CFLAGS)
 
-ifeq ($(os),darwin)
- LIB_RPATH := -Wl,$(RPATH),@executable_path
-else ifdef win
- LIB_RPATH :=
-else
- LIB_RPATH += '-Wl,-rpath,$$ORIGIN/lib.$(machine),-z,origin,--enable-new-dtags'
-endif
-
 OBJS	:=	$(OBJODIR)$(DIRSEP)dirwrap$(OFILE) \
 		$(OBJODIR)$(DIRSEP)filewrap$(OFILE) \
 		$(OBJODIR)$(DIRSEP)freevote$(OFILE) \
-		$(OBJODIR)$(DIRSEP)genwrap$(OFILE) \
+		$(OBJODIR)$(DIRSEP)genwrap$(OFILE)
 
-vpath %.c ../../xpdev
+FREEVOTE :=	$(EXEODIR)$(DIRSEP)freevote$(EXEFILE)
+FREEVOTE_DST :=	..$(DIRSEP)freevote.$(machine)$(EXEFILE)
+ODOORS_LIB :=	$(SRC_ROOT)$(DIRSEP)odoors$(DIRSEP)libs-${OS}$(DIRSEP)$(LIBPREFIX)ODoors$(LIBFILE)
 
-all : freevote.$(machine)
+vpath %.c ../../../xpdev
 
-freevote.$(machine): $(OBJS)
-	$(CXX) $(LDFLAGS) $(OBJS) -lODoors $(LIB_RPATH) -o freevote.$(machine)
+all: $(FREEVOTE)
+
+ifdef RELEASE
+all: $(FREEVOTE_DST)
+endif
+
+$(FREEVOTE): $(OBJS) | $(EXEODIR)
+	@echo Linking $@
+	$(QUIET)$(CXX) $(LDFLAGS) $(OBJS) $(ODOORS_LIB) -o $@
+
+$(FREEVOTE_DST): $(FREEVOTE)
+	@echo Copying release $@
+	$(QUIET)cp -f $(FREEVOTE) $@
 
 fv-clean:
+ifdef RELEASE
 	rm -f freevote.$(machine)
+endif
 
 clean: fv-clean
