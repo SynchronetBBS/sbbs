@@ -455,7 +455,7 @@ else
       #CFLAGS	   += -D_POSIX_PTHREAD_SEMANTICS
      else
       ifdef win # Windows
-       CFLAGS		+= -U__STRICT_ANSI__ -D_WIN32 -D_WIN32_WINNT=${WINNT} -DWINVER=${WINVER} -D_WIN32_IE=${WIN32_IE} -DNTDDI_VERSION=${NTDDI}
+       CFLAGS		+= -D_WIN32 -D_WIN32_WINNT=${WINNT} -DWINVER=${WINVER} -D_WIN32_IE=${WIN32_IE} -DNTDDI_VERSION=${NTDDI}
        MT_CFLAGS	+= -D_WIN32
       else
        ifeq ($(os),emscripten)
