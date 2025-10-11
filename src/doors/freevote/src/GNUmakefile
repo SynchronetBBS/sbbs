@@ -16,6 +16,7 @@ endif
 
 all:
 
+WITHOUT_CRYPTLIB	:= please
 SRC_ROOT        = ../../..
 include ${SRC_ROOT}/build/Common.gmake
 
