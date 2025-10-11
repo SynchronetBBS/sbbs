@@ -1,42 +1,49 @@
-CPP	?= g++
-CC	?= gcc
-XPDEV	?=	../../xpdev
-
-OS	:=	$(shell uname)
-OS	:=	$(shell echo $(OS) | tr "[ A-Z]" "[\-a-z]")
-OS	:=	$(shell echo $(OS) | tr -d "/")
-CXXFLAGS += -g -O2 -I../../odoors -I$(XPDEV)
-LDFLAGS += -L../../odoors/libs-`uname`
-
-ifeq ($(OS),netbsd)
-  CXXFLAGS	+=	-D__unix__
+# Get OS name
+gcc_machine := $(findstring mingw32,$(shell ${CC} -dumpmachine))
+gcc_w64     := $(findstring w64,$(shell ${CC} -dumpmachine))
+gcc_x86_64  := $(findstring x86_64,$(shell ${CC} -dumpmachine))
+ifeq ($(gcc_machine),mingw32)
+ win	:= yes
+ CFLAGS +=      -DMSVCRT_VERSION=0x0800
+ ifeq ($(gcc_x86_64),x86_64)
+  OS            := Win64
+ else
+  OS            := Win32
+ endif
+else
+ OS      :=      $(shell uname)
 endif
 
-ifeq ($(shell if [ -f /usr/include/inttypes.h ] ; then echo YES ; fi),YES)
- CXXFLAGS	+=	-DHAS_INTTYPES_H
+all:
+
+SRC_ROOT        = ../..
+include ${SRC_ROOT}/build/Common.gmake
+
+# OpenDoors
+LDFLAGS	+=	-L$(SRC_ROOT)/odoors/libs-$(OS)
+CFLAGS	+=	-I$(SRC_ROOT)/odoors -Wall -pedantic $(XPDEV_CFLAGS)
+
+ifeq ($(os),darwin)
+ LIB_RPATH := -Wl,$(RPATH),@executable_path
+else ifdef win
+ LIB_RPATH :=
+else
+ LIB_RPATH += '-Wl,-rpath,$$ORIGIN/lib.$(machine),-z,origin,--enable-new-dtags'
 endif
 
-OBJDIR	:= obj.$(OS)/
+OBJS	:=	$(OBJODIR)$(DIRSEP)dirwrap$(OFILE) \
+		$(OBJODIR)$(DIRSEP)filewrap$(OFILE) \
+		$(OBJODIR)$(DIRSEP)freevote$(OFILE) \
+		$(OBJODIR)$(DIRSEP)genwrap$(OFILE) \
 
-all : freevote.$(OS)
+vpath %.c ../../xpdev
 
-$(OBJDIR):
-	mkdir $(OBJDIR)
+all : freevote.$(machine)
 
-$(OBJDIR)filewrap.o: $(XPDEV)/filewrap.c $(XPDEV)/filewrap.h $(XPDEV)/wrapdll.h | $(OBJDIR)
-	$(CC) $(CFLAGS) -c $(XPDEV)/filewrap.c -o $(OBJDIR)filewrap.o
-	
-$(OBJDIR)dirwrap.o: $(XPDEV)/dirwrap.c $(XPDEV)/dirwrap.h $(XPDEV)/genwrap.h $(XPDEV)/gen_defs.h $(XPDEV)/wrapdll.h | $(OBJDIR)
-	$(CC) $(CFLAGS) -c $(XPDEV)/dirwrap.c -o $(OBJDIR)dirwrap.o
-	
-$(OBJDIR)genwrap.o: $(XPDEV)/genwrap.c $(XPDEV)/genwrap.h $(XPDEV)/gen_defs.h $(XPDEV)/wrapdll.h | $(OBJDIR)
-	$(CC) $(CFLAGS) -c $(XPDEV)/genwrap.c -o $(OBJDIR)genwrap.o
+freevote.$(machine): $(OBJS)
+	$(CXX) $(LDFLAGS) $(OBJS) -lODoors $(LIB_RPATH) -o freevote.$(machine)
 
-$(OBJDIR)freevote.o: freevote.cpp | $(OBJDIR)
-	$(CC) $(CXXFLAGS) -c freevote.cpp -o $@
+fv-clean:
+	rm -f freevote.$(machine)
 
-freevote.$(OS) : $(OBJDIR)freevote.o $(OBJDIR)dirwrap.o $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o
-	$(CXX) $(LDFLAGS) $(OBJDIR)freevote.o $(OBJDIR)dirwrap.o $(OBJDIR)genwrap.o $(OBJDIR)filewrap.o -lODoors -o freevote.$(OS)
-
-clean:
-	rm -rf freevote.$(OS) $(OBJDIR)
+clean: fv-clean
