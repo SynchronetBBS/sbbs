@@ -21,10 +21,6 @@ include ${SRC_ROOT}/build/Common.gmake
 LDFLAGS	+=	-L$(SRC_ROOT)/odoors/libs-$(OS)
 CFLAGS	+=	-I$(SRC_ROOT)/odoors -Wall -pedantic -std=c99
 
-ifdef STATIC
- LDFLAGS	+=	-static
-endif
-
 ifeq ($(os),darwin)
  LIB_RPATH := -Wl,$(RPATH),@executable_path
 else ifdef win
@@ -34,30 +30,20 @@ else
 endif
 
 ifdef RELEASE
-all: $(DGNLNCE_DST) $(ODOORS_DST)
+all: $(DGNLNCE_DST)
 endif
 
 $(DGNLNCE): $(OBJS) $(ODOORS_LIB)
 	@echo Linking $@
-	${QUIET}$(CC) $(LDFLAGS) $(OBJS) -lODoors ${LIB_RPATH} -o $@
+	${QUIET}$(CC) $(LDFLAGS) $(OBJS) -l:libODoors${LIBFILE} ${LIB_RPATH} -o $@
 
 $(DGNLNCE_DST): $(DGNLNCE)
 	${QUIET}cp -f $(DGNLNCE) $(DGNLNCE_DST)
 
-$(ODOORS_LIB):
-	@echo Building $@
-	${QUIET}$(MAKE) -C $(SRC_ROOT)/odoors
-
-$(ODOORS_DST): $(ODOORS_LIB) | $(DST_LIBDIR)
-	@echo Copying $@
-	${QUIET}cp -f $(ODOORS_LIB) $(ODOORS_DST)
-
-$(DST_LIBDIR):
-	$(QUIET)$(IFNOTEXIST) mkdir $(DST_LIBDIR)
-
 .PHONY: dstclean
 dstclean:
+ifdef RELEASE
 	${DELETE} ${DGNLNCE_DST}
-	${QUIET}rm -rf ${DST_LIBDIR}/
+endif
 
 clean: dstclean

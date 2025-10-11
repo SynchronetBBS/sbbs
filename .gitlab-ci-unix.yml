@@ -834,7 +834,6 @@ spec:
     paths:
       - "src/doors/dgnlance/data"
       - "src/doors/dgnlance/dgnlnce*"
-      - "src/doors/dgnlance/lib.*"
       - "src/doors/dgnlance/text"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
