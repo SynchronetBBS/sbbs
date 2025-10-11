@@ -107,3 +107,7 @@ perl -pi -e "s/^(.*major = ).*$/\$1.'${MAJOR},'/e" haiku.rdef
 perl -pi -e "s/^(.*middle = ).*$/\$1.'${MINOR},'/e" haiku.rdef
 perl -pi -e "s/^(.*variety = ).*$/\$1.'${HAIKU_VAR},'/e" haiku.rdef
 perl -pi -e "s/^(.*internal = ).*$/\$1.'${HAIKU_INTERNAL},'/e" haiku.rdef
+
+# GNUmakefile
+echo Updating GNUmakefile
+perl -pi -e "s/_[0-9]\.[0-9](?:rc[0-9]+|a|b)?-\\\$/_${VERSTR}-\\\$/" GNUmakefile
