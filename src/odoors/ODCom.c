@@ -132,7 +132,7 @@
 
 /* terminal variables */
 #ifdef INCLUDE_STDIO_COM
-struct termios tio_default;				/* Initial term settings */
+struct termios sio_tio_default;				/* Initial term settings */
 #endif
 
 
@@ -1786,8 +1786,8 @@ no_fossil:
       pPortInfo->Method == kComMethodUnspecified)
    {
 		if (isatty(STDIN_FILENO))  {
-			tcgetattr(STDIN_FILENO,&tio_default);
-			tio_raw = tio_default;
+			tcgetattr(STDIN_FILENO,&sio_tio_default);
+			tio_raw = sio_tio_default;
 			cfmakeraw(&tio_raw);
 			tcsetattr(STDIN_FILENO,TCSANOW,&tio_raw);
 			setvbuf(stdout, NULL, _IONBF, 0);
@@ -1985,7 +1985,7 @@ tODResult ODComClose(tPortHandle hPort)
 #ifdef INCLUDE_STDIO_COM
 	  case kComMethodStdIO:
 	     if(isatty(STDIN_FILENO))
-		    tcsetattr(STDIN_FILENO,TCSANOW,&tio_default);
+		    tcsetattr(STDIN_FILENO,TCSANOW,&sio_tio_default);
 	     break;
 #endif
 
