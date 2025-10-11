@@ -127,7 +127,7 @@ static char szConfigFilename[CONFIG_FILENAME_SIZE];
  * 
  *     Return: char**
  */
-ODAPIDEF char **od_split_cmd_line(const char* pszCmdLine, INT *nArgCount)
+ODAPIDEF char ** ODCALL od_split_cmd_line(const char* pszCmdLine, INT *nArgCount)
 {
    char *pszCmdLineCopy;
    char *pchCurrent;
@@ -245,7 +245,7 @@ ODAPIDEF char **od_split_cmd_line(const char* pszCmdLine, INT *nArgCount)
  * 
  *     Return: void
  */
-ODAPIDEF void od_free_split_cmd_line(char **papszArguments)
+ODAPIDEF void ODCALL od_free_split_cmd_line(char **papszArguments)
 {
    if (papszArguments == NULL) {
       od_control.od_error = ERR_PARAMETER;
