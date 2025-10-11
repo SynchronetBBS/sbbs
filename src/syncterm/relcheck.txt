@@ -6,3 +6,4 @@ Add new version to Found in Version file on SourceForge in bug and support track
 Update latest release version on homepage
 Post in DoVe-Net Synchronet Announcements
 Post on reddit in r/syncterm and r/bbs
+Update IRC channel topic
