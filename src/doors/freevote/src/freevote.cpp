@@ -413,6 +413,9 @@ remove_arg(int full_argc, int *cnt, int *argc, char *argv[])
 #ifdef ODPLAT_WIN32
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdLine, int nCmdShow)
 #else
+#ifdef main
+extern "C"
+#endif
 int main(int argc, char *argv[])
 #endif
 {
