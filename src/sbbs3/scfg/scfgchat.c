@@ -20,6 +20,12 @@
 #include "scfg.h"
 #include "ciolib.h" // CIO_KEY_*
 
+extern char* native_help;
+extern char* native_opt;
+extern char* use_shell_opt;
+extern char* use_shell_prompt;
+extern char* use_shell_help;
+
 void page_cfg()
 {
 	static int    dflt, bar;
@@ -114,10 +120,10 @@ void page_cfg()
 			k = 0;
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Command Line", cfg.page[i]->cmd);
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Access Requirements", cfg.page[i]->arstr);
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "I/O Method", io_method(cfg.page[i]->misc));
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Native Executable"
+			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", native_opt
 			         , cfg.page[i]->misc & XTRN_NATIVE ? "Yes" : "No");
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Use Shell to Execute"
+			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "I/O Method", io_method(cfg.page[i]->misc));
+			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", use_shell_opt
 			         , cfg.page[i]->misc & XTRN_SH ? "Yes" : "No");
 			opt[k][0] = 0;
 			sprintf(str, "Sysop Chat Pager #%d", i + 1);
@@ -155,45 +161,13 @@ void page_cfg()
 					getar(str, cfg.page[i]->arstr);
 					break;
 				case 2:
-					choose_io_method(&cfg.page[i]->misc);
+					toggle_flag(native_opt, &cfg.page[i]->misc, XTRN_NATIVE, false, native_help);
 					break;
 				case 3:
-					k = (cfg.page[i]->misc & XTRN_NATIVE) ? 0:1;
-					uifc.helpbuf =
-						"`Native Executable:`\n"
-						"\n"
-						"If this online program is a native (e.g. non-DOS) executable,\n"
-						"set this option to `Yes`.\n"
-					;
-					k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, 0
-					              , "Native", uifcYesNoOpts);
-					if (!k && !(cfg.page[i]->misc & XTRN_NATIVE)) {
-						cfg.page[i]->misc |= XTRN_NATIVE;
-						uifc.changes = TRUE;
-					}
-					else if (k == 1 && (cfg.page[i]->misc & XTRN_NATIVE)) {
-						cfg.page[i]->misc &= ~XTRN_NATIVE;
-						uifc.changes = TRUE;
-					}
+					choose_io_method(&cfg.page[i]->misc);
 					break;
 				case 4:
-					k = (cfg.page[i]->misc & XTRN_SH) ? 0:1;
-					uifc.helpbuf =
-						"`Use Shell to Execute Command:`\n"
-						"\n"
-						"If this command-line requires the system command shell to execute, (Unix\n"
-						"shell script or DOS batch file), set this option to ~Yes~.\n"
-					;
-					k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, 0
-					              , "Use Shell", uifcYesNoOpts);
-					if (!k && !(cfg.page[i]->misc & XTRN_SH)) {
-						cfg.page[i]->misc |= XTRN_SH;
-						uifc.changes = TRUE;
-					}
-					else if (k == 1 && (cfg.page[i]->misc & XTRN_SH)) {
-						cfg.page[i]->misc &= ~XTRN_SH;
-						uifc.changes = TRUE;
-					}
+					toggle_flag(use_shell_prompt, &cfg.page[i]->misc, XTRN_SH, false, use_shell_help);
 					break;
 
 			}

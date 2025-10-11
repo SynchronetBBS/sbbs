@@ -23,8 +23,8 @@
 char *daystr(char days);
 static void hotkey_cfg(void);
 
-static char* use_shell_opt = "Use Shell or New Context";
-static char* use_shell_help =
+char* use_shell_opt = "Use Shell or New Context";
+char* use_shell_help =
 	"`Use System Shell or New JavaScript Context to Execute:`\n"
 	"\n"
 	"If this command line requires the system command shell to execute\n"
@@ -36,7 +36,7 @@ static char* use_shell_help =
 	"will enable the creation and initialization of a new JavaScript run-time\n"
 	"context for it to execute within, for every invocation."
 ;
-static char* use_shell_prompt = "Use System Shell or New JavaScript Context to Execute";
+char* use_shell_prompt = "Use System Shell or New JavaScript Context to Execute";
 char*        native_help =
 	"`Native Executable:`\n"
 	"\n"
@@ -1126,9 +1126,9 @@ void xtrn_cfg(int section)
 			         , cfg.xtrn[i]->run_arstr);
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Multiple Concurrent Users"
 			         , cfg.xtrn[i]->misc & MULTIUSER ? "Yes" : "No");
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "I/O Method", io_method(cfg.xtrn[i]->misc));
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", native_opt
 			         , cfg.xtrn[i]->misc & XTRN_NATIVE ? "Yes" : "No");
+			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "I/O Method", io_method(cfg.xtrn[i]->misc));
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", use_shell_opt
 			         , cfg.xtrn[i]->misc & XTRN_SH ? "Yes" : "No");
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Modify User Data"
@@ -1308,10 +1308,10 @@ void xtrn_cfg(int section)
 					            );
 					break;
 				case __COUNTER__:
-					choose_io_method(&cfg.xtrn[i]->misc);
+					toggle_flag(native_opt, &cfg.xtrn[i]->misc, XTRN_NATIVE, false, native_help);
 					break;
 				case __COUNTER__:
-					toggle_flag(native_opt, &cfg.xtrn[i]->misc, XTRN_NATIVE, false, native_help);
+					choose_io_method(&cfg.xtrn[i]->misc);
 					break;
 				case __COUNTER__:
 					toggle_flag(use_shell_prompt, &cfg.xtrn[i]->misc, XTRN_SH, false, use_shell_help);
@@ -1729,9 +1729,9 @@ void xedit_cfg()
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Internal Code", cfg.xedit[i]->code);
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Command Line", cfg.xedit[i]->rcmd);
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Access Requirements", cfg.xedit[i]->arstr);
-			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "I/O Method", io_method(cfg.xedit[i]->misc));
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s", native_opt
 			         , cfg.xedit[i]->misc & XTRN_NATIVE ? "Yes" : "No");
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "I/O Method", io_method(cfg.xedit[i]->misc));
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s", use_shell_opt
 			         , cfg.xedit[i]->misc & XTRN_SH ? "Yes" : "No");
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Record Terminal Width"
@@ -1865,10 +1865,10 @@ void xedit_cfg()
 					getar(str, cfg.xedit[i]->arstr);
 					break;
 				case 4:
-					choose_io_method(&cfg.xedit[i]->misc);
+					toggle_flag(native_opt, &cfg.xedit[i]->misc, XTRN_NATIVE, false, native_help);
 					break;
 				case 5:
-					toggle_flag(native_opt, &cfg.xedit[i]->misc, XTRN_NATIVE, false, native_help);
+					choose_io_method(&cfg.xedit[i]->misc);
 					break;
 				case 6:
 					toggle_flag(use_shell_prompt, &cfg.xedit[i]->misc, XTRN_SH, false, use_shell_help);
