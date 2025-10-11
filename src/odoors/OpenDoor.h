@@ -987,6 +987,7 @@ ODAPIDEF WORD ODCALL   od_edit_str(char *pszInput, char *pszFormat, INT nRow,
                           BYTE btHighlightColour, char chBlank,
                           WORD nFlags);
 ODAPIDEF void ODCALL   od_exit(INT nErrorLevel, BOOL bTermCall);
+ODAPIDEF void ODCALL   od_free_split_cmd_line(char **papszArguments);
 ODAPIDEF char ODCALL   od_get_answer(const char *pszOptions);
 ODAPIDEF void ODCALL   od_get_cursor(INT *pnRow, INT *pnColumn);
 ODAPIDEF BOOL ODCALL   od_get_input(tODInputEvent *pInputEvent,
@@ -1035,6 +1036,7 @@ ODAPIDEF void ODCALL   od_sleep(tODMilliSec Milliseconds);
 ODAPIDEF BOOL ODCALL   od_spawn(const char *pszCommandLine);
 ODAPIDEF INT16 ODCALL  od_spawnvpe(INT16 nModeFlag, char *const pszPath,
                           const char *const papszArg[], const char *const papszEnv[]);
+ODAPIDEF char ** ODCALL od_split_cmd_line(const char *pszCmdLine, INT *nArgCount);
 ODAPIDEF void * ODCALL od_window_create(INT nLeft, INT nTop, INT nRight,
                           INT nBottom, char *pszTitle, BYTE btBorderCol,
                           BYTE btTitleCol, BYTE btInsideCol, INT nReserved);
