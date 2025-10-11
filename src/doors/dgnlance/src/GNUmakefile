@@ -21,14 +21,6 @@ include ${SRC_ROOT}/build/Common.gmake
 LDFLAGS	+=	-L$(SRC_ROOT)/odoors/libs-$(OS)
 CFLAGS	+=	-I$(SRC_ROOT)/odoors -Wall -pedantic
 
-ifeq ($(os),darwin)
- LIB_RPATH := -Wl,$(RPATH),@executable_path
-else ifdef win
- LIB_RPATH :=
-else
- LIB_RPATH += '-Wl,-rpath,$$ORIGIN/lib.$(machine),-z,origin,--enable-new-dtags'
-endif
-
 ifdef RELEASE
 all: $(DGNLNCE_DST)
 endif
