@@ -123,6 +123,7 @@ endif
 #
 SHFLAGS		+=	-shared
 LIB_PREFIX	:=	lib
+SHLIB_PREFIX	:=	lib
 LIB_SUFFIX	:=	.6.2
 EXTRA_LIBS	:=
 ifeq ($(os),darwin)
@@ -131,7 +132,7 @@ else
  ifdef win
   SHLIB		?=	.dll
   EXTRA_LIBS += -lwsock32 -lgdi32 -lcomctl32 -Wl,--subsystem,windows
-  LIB_PREFIX	:=
+  SHLIB_PREFIX	:=
   LIB_SUFFIX	:=
  else
   SHLIB		?=	.so
@@ -156,7 +157,7 @@ endif
 #
 # Define primary target.
 #
-all: ${OBJDIR} ${LIBDIR} $(EXEDIR) ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB} \
+all: ${OBJDIR} ${LIBDIR} $(EXEDIR) ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB} \
     ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB} $(EXEDIR)ex_chat $(EXEDIR)ex_diag \
     $(EXEDIR)ex_hello $(EXEDIR)ex_music $(EXEDIR)ex_vote
 
@@ -226,6 +227,9 @@ ifdef win
 	OBJECTS += ${OBJDIR}ODFrame${OBJFILE}
 endif
 
+ODOORS_SHLIB	:= ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+ODOORS_LIB	:= ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB}
+
 ${OBJDIR}:
 	mkdir ${OBJDIR}
 
@@ -238,33 +242,33 @@ ${EXEDIR}:
 $(OBJDIR)%$(OBJFILE) : %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-${LIBDIR}${LIB_PREFIX}ODoors${SHLIB} : ${OBJECTS}
-	$(CC) $(SHFLAGS) -o ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}${LIB_SUFFIX} ${OBJECTS} ${EXTRA_LIBS}
+${ODOORS_SHLIB} : ${OBJECTS}
+	$(CC) $(SHFLAGS) -o ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}${LIB_SUFFIX} ${OBJECTS} ${EXTRA_LIBS}
 ifndef win
-	ln -fs ${LIB_PREFIX}ODoors${SHLIB}${LIB_SUFFIX} ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}
+	ln -fs ${SHLIB_PREFIX}ODoors${SHLIB}${LIB_SUFFIX} ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
 endif
 
-${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB} : ${OBJECTS}
-	ar -r ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB} ${OBJECTS}
-	ranlib ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB}
+${ODOORS_LIB} : ${OBJECTS}
+	${AR} -r ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB} ${OBJECTS}
+	${RANLIB} ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB}
 	
-${EXEDIR}ex_chat: ex_chat.c ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}
-	$(CC) $(LDFLAGS) $(CFLAGS) ex_chat.c -o $@ -lODoors
+${EXEDIR}ex_chat: ex_chat.c ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+	$(CC) $(LDFLAGS) $(CFLAGS) ex_chat.c -o $@ ${ODOORS_SHLIB}
 
-${EXEDIR}ex_diag: ex_diag.c ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}
-	$(CC) $(LDFLAGS) $(CFLAGS) ex_diag.c -o $@ -lODoors
+${EXEDIR}ex_diag: ex_diag.c ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+	$(CC) $(LDFLAGS) $(CFLAGS) ex_diag.c -o $@ ${ODOORS_SHLIB}
 
-${EXEDIR}ex_hello: ex_hello.c ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}
-	$(CC) $(LDFLAGS) $(CFLAGS) ex_hello.c -o $@ -lODoors
+${EXEDIR}ex_hello: ex_hello.c ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+	$(CC) $(LDFLAGS) $(CFLAGS) ex_hello.c -o $@ ${ODOORS_SHLIB}
 
-${EXEDIR}ex_music: ex_music.c ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}
-	$(CC) $(LDFLAGS) $(CFLAGS) ex_music.c -o $@ -lODoors
+${EXEDIR}ex_music: ex_music.c ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+	$(CC) $(LDFLAGS) $(CFLAGS) ex_music.c -o $@ ${ODOORS_SHLIB}
 
-${EXEDIR}ex_ski: ex_ski.c ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}
-	$(CC) $(LDFLAGS) $(CFLAGS) $(LDFLAGS) ex_ski.c -o $@ -lODoors -lxpdev
+${EXEDIR}ex_ski: ex_ski.c ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+	$(CC) $(LDFLAGS) $(CFLAGS) $(LDFLAGS) ex_ski.c -o $@ ${ODOORS_SHLIB} -lxpdev
 
-${EXEDIR}ex_vote: ex_vote.c ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}
-	$(CC) $(LDFLAGS) $(CFLAGS) ex_vote.c ../xpdev/filewrap.c -o $@ -lODoors -DMULTINODE_AWARE
+${EXEDIR}ex_vote: ex_vote.c ${LIBDIR}${SHLIB_PREFIX}ODoors${SHLIB}
+	$(CC) $(LDFLAGS) $(CFLAGS) ex_vote.c ../xpdev/filewrap.c -o $@ ${ODOORS_SHLIB} -DMULTINODE_AWARE
 
 #
 #------------------------------------------------------------------------------
