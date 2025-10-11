@@ -35,7 +35,7 @@ endif
 
 $(DGNLNCE): $(OBJS) $(ODOORS_LIB)
 	@echo Linking $@
-	${QUIET}$(CC) $(LDFLAGS) $(OBJS) -l:libODoors${LIBFILE} ${LIB_RPATH} -o $@
+	${QUIET}$(CC) $(LDFLAGS) $(OBJS) ${ODOORS_LIB} ${LIB_RPATH} -o $@
 
 $(DGNLNCE_DST): $(DGNLNCE)
 	${QUIET}cp -f $(DGNLNCE) $(DGNLNCE_DST)
