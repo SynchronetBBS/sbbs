@@ -843,7 +843,7 @@ typedef struct
    char *        od_time_left;
    char *        od_time_warning;
    char *        od_want_chat;
-   char *        od_cmd_line_help;
+   const char *  od_cmd_line_help;
 
    /* OpenDoors color customizations. */
    BYTE          od_chat_color1;
