@@ -77,7 +77,7 @@ EXT tMessageHeader MessageHeader;
 //#include <dir.h>
 #include <ctype.h>
 #include <stdio.h>
-#include <ciolib.h>
+//#include <ciolib.h>
 #include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
