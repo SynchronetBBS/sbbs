@@ -545,16 +545,23 @@ int main(int argc, char **argv)
 			node_num = atoi(argv[i]);
 		else {
 			node_num = onoff = value = 0;
-			if (!stricmp(argv[i], "-DEBUG"))
+			if (!stricmp(argv[i], "-DEBUG")) {
 				debug = 1;
-			else if (!stricmp(argv[i], "-LOOP"))
+				continue;
+			}
+			else if (!stricmp(argv[i], "-LOOP")) {
 				loop = 1;
-			else if (!stricmp(argv[i], "-PAUSE"))
+				continue;
+			}
+			else if (!stricmp(argv[i], "-PAUSE")) {
 				pause = 1;
+				continue;
+			}
 			else if (strncmp(argv[i], "-v", 2) == 0) {
 				verbose = true;
 				if (argv[i][2])
 					strListPush(&key_list, argv[i] + 2);
+				continue;
 			}
 			else if (!stricmp(argv[i], "LIST"))
 				mode = MODE_LIST;
