@@ -8,7 +8,7 @@ CFLAGS	+=	-I$(SRC_ROOT)/odoors -I../../gamesdk -I.
 LDFLAGS	+=	$(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS)
 LIBS :=		 $(XPDEV-MT_LIBS)
 ifdef win
- LIBS	+=	-lcomctl32
+ LIBS	+=	-lgdi32 -lcomctl32
 endif
 
 vpath %.c ../../gamesdk
