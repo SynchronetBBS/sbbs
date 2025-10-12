@@ -549,6 +549,13 @@ int main(int argc, char **argv)
 			node_num = atoi(argv[i]);
 		}
 		else {
+			if (mode >= 0) {
+				if (argv[i] == '-')
+					puts("Options must be before the action");
+				else
+					puts("Only one action per invocation");
+				usage();
+			}
 			node_num = onoff = value = 0;
 			if (!stricmp(argv[i], "-DEBUG")) {
 				debug = 1;
