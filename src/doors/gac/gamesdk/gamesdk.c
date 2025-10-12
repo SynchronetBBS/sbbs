@@ -21,6 +21,8 @@ int main(int argc, char *argv[])
 	char filename[128];
 	char temp[10];
 	int online;
+	char *dot = NULL;
+	char *ext = NULL;
 
 	// moved up to the top 1/97
 	#ifdef ODPLAT_WIN32
@@ -61,22 +63,57 @@ int main(int argc, char *argv[])
 	doorpath[1]=PATH_DELIM;
 	doorpath[2]=0;
 	#endif
-	
+	if (doorpath[0] && !isdir(doorpath)) {
+		size_t last = strlen(doorpath) - 1;
+
+		while (last > 0) {
+			last--;
+			if (IS_PATH_DELIM(doorpath[last]))
+				break;
+			doorpath[last] = 0;
+		}
+	}
+
 	// Set the config file name
 	#ifndef ODPLAT_WIN32
-	strcpy(configfile, "");
-	#ifdef ODPLAT_NIX
-	strncat(configfile, argv[0], (strlen(argv[0])) );
-	strcat(configfile, ".");
-	#else
-	strncat(configfile, argv[0], (strlen(argv[0]) - 3) );
+	 strcpy(configfile, "");
+	 #ifdef ODPLAT_NIX
+	  strncat(configfile, argv[0], (strlen(argv[0])) );
+	  strcat(configfile, ".");
+	 #else
+	  strncat(configfile, argv[0], (strlen(argv[0]) - 3) );
+	 #endif
+	 ext = strrchr(configfile, '.');
 	#endif
-	strcat(configfile, "cfg");
-	#else
-	strcpy(configfile, "");
-	strncat(configfile, executable, (strlen(executable) - 3) );
-	strcat(configfile, "CFG");
-	#endif
+	do {
+		#ifndef ODPLAT_WIN32
+		 if (ext == NULL) {
+			strcpy(configfile, "");
+			#ifdef ODPLAT_NIX
+			 strncat(configfile, argv[0], (strlen(argv[0])) );
+			 strcat(configfile, ".");
+			#else
+			 strncat(configfile, argv[0], (strlen(argv[0]) - 3) );
+			#endif
+			ext = strrchr(configfile, '.');
+		 }
+		 else {
+			 *ext = 0;
+			 dot = strrchr(configfile, '.');
+			 if (dot) {
+				 *dot = 0;
+			 }
+			 strcat(configfile, ".");
+			 ext = strrchr(configfile, '.');
+		 }
+		 strcat(configfile, "cfg");
+		#else
+#warning TODO: Us the new od_split_cmd_line() function with argv[0]
+		 strcpy(configfile, "");
+		 strncat(configfile, executable, (strlen(executable) - 3) );
+		 strcat(configfile, "CFG");
+		#endif
+	} while((dot && ext) && !fexist(configfile));
 
 	od_control.od_config_filename = configfile;
 
