@@ -121,7 +121,8 @@ void Config( void )
 	// disable the status line
 	od_set_statusline(STATUS_NONE);
 	od_control.od_status_on = FALSE;
-	window(1,1,25,80);
+#warning TODO: Did this work around an OpenDoors bug?
+	//window(1,1,25,80);
 	g_clr_scr();
 
 	od_control.od_help_text2 = (char *) "Copyright Vagabond Software  - [F1]=User Info [F10]=Disable Status Line";
