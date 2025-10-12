@@ -129,7 +129,7 @@ typedef struct
 		     8th - Forced Question.
    */
    char szCreatorName[36];
-   time_t lCreationTime;
+   int64_t lCreationTime;
 } tQuestionRecord;
 
 
@@ -229,18 +229,11 @@ freadQuestionRecord(tQuestionRecord *q, FILE *f)
 		return(0);
 	if(fread(q->szCreatorName, sizeof(q->szCreatorName), 1, f)!=1)
 		return(0);
-	switch(sizeof(time_t)) {
-		case 4:
-			if(fread(&q->lCreationTime, sizeof(q->lCreationTime), 1, f)!=1)
-				return(0);
-			q->lCreationTime=LE_LONG(q->lCreationTime);
-			if(fread(&i, sizeof(i), 1, f)!=1)
-				return(0);
-			break;
-		default:
-			fprintf(stderr, "Unhandled time_t size (%lu)\n", sizeof(time_t));
-			exit(1);
-	}
+	if(fread(&q->lCreationTime, sizeof(q->lCreationTime), 1, f)!=1)
+		return(0);
+	q->lCreationTime=LE_INT64(q->lCreationTime);
+	if(fread(&i, sizeof(i), 1, f)!=1)
+		return(0);
 	return(1);
 }
 
@@ -275,21 +268,14 @@ fwriteQuestionRecord(tQuestionRecord *q, FILE *f)
 		return(0);
 	if(fwrite(q->szCreatorName, sizeof(q->szCreatorName), 1, f)!=1)
 		return(0);
-	switch(sizeof(time_t)) {
-		case 4:
-			q->lCreationTime=LE_LONG(q->lCreationTime);
-			if(fwrite(&q->lCreationTime, sizeof(q->lCreationTime), 1, f)!=1) {
-				q->lCreationTime=LE_LONG(q->lCreationTime);
-				return(0);
-			}
-			q->lCreationTime=LE_LONG(q->lCreationTime);
-			if(fwrite(&i, sizeof(i), 1, f)!=1)
-				return(0);
-			break;
-		default:
-			fprintf(stderr, "Unhandled time_t size (%lu)\n", sizeof(time_t));
-			exit(1);
+	q->lCreationTime=LE_INT64(q->lCreationTime);
+	if(fwrite(&q->lCreationTime, sizeof(q->lCreationTime), 1, f)!=1) {
+		q->lCreationTime=LE_INT64(q->lCreationTime);
+		return(0);
 	}
+	q->lCreationTime=LE_INT64(q->lCreationTime);
+	if(fwrite(&i, sizeof(i), 1, f)!=1)
+		return(0);
 	return(1);
 }
 
@@ -322,10 +308,10 @@ void
 trim(char *numstr)
 {
   int x;
-  for(x=strlen(numstr)-1;numstr[x]==' ' && x>=0;x--) od_kernal;
+  for(x=strlen(numstr)-1;numstr[x]==' ' && x>=0;x--) od_kernal();
   numstr[x+1]=0;
   strrev(numstr);
-  for(x=strlen(numstr)-1;numstr[x]==' ' && x>=0;x--) od_kernal;
+  for(x=strlen(numstr)-1;numstr[x]==' ' && x>=0;x--) od_kernal();
   numstr[x+1]=0;
   strrev(numstr);
 }
@@ -413,14 +399,14 @@ remove_arg(int full_argc, int *cnt, int *argc, char *argv[])
 static char *
 build_cmdline(int argc, char **argv)
 {
-	size_t sz = 0;
-	for (int i = 0; i < argc; i++)
-		sz += strlen(argv[i]) + 1;
+	size_t sz = 1;
+	for (int i = 1; i < argc; i++)
+		sz += strlen(argv[i]);
 	char *ret = (char*)malloc(sz);
 	if (!ret)
 		return ret;
 	ret[0] = 0;
-	for (int i = 0; i < argc; i++) {
+	for (int i = 1; i < argc; i++) {
 		strcat(ret, argv[i]);
 		if ((i + 1) < argc)
 			strcat(ret, " ");
@@ -3567,7 +3553,7 @@ int CountQuestions()
 
       /* If this is the kind of question that the user is choosing from */
       /* right now.                                                     */
-      if(bVotedOnQuestion==answers[15] || bVotedOnQuestion==0)
+      if((int)bVotedOnQuestion==answers[15] || bVotedOnQuestion==0)
       {
 	 /* If question is not deleted. */
 	 if(!(QuestionRecord.bitflags & QUESTION_DELETED))
@@ -3630,7 +3616,7 @@ int CountQuestionsF()
 
       /* If this is the kind of question that the user is choosing from */
       /* right now.                                                     */
-      if(bVotedOnQuestion==answers[15] || bVotedOnQuestion==0)
+      if((int)bVotedOnQuestion==answers[15] || bVotedOnQuestion==0)
       {
 	 /* If question is not deleted. */
 	 if(!(QuestionRecord.bitflags & QUESTION_DELETED) && (QuestionRecord.bitflags & FORCED_QUESTION))
@@ -3709,8 +3695,8 @@ int ChooseQuestion(unsigned int nFromWhichQuestions, const char *pszTitle, int *
 
       /* If this is the kind of question that the user is choosing from */
       /* right now.                                                     */
-      if(((bVotedOnQuestion!=answers[15] && bVotedOnQuestion!=0) && (nFromWhichQuestions & QUESTIONS_VOTED_ON)) ||
-	 ((bVotedOnQuestion==answers[15] || bVotedOnQuestion==0) && (nFromWhichQuestions & QUESTIONS_NOT_VOTED_ON)) ||
+      if((((int)bVotedOnQuestion!=answers[15] && bVotedOnQuestion!=0) && (nFromWhichQuestions & QUESTIONS_VOTED_ON)) ||
+	 (((int)bVotedOnQuestion==answers[15] || bVotedOnQuestion==0) && (nFromWhichQuestions & QUESTIONS_NOT_VOTED_ON)) ||
 	 (strcmp(sz_user_name,QuestionRecord.szCreatorName)==0 &&
 	 (nFromWhichQuestions & CURRENT_USER_ONLY)))
       {
@@ -4001,8 +3987,8 @@ int FirstQuestion(unsigned int nFromWhichQuestions, int nFileQuestion)
 
       /* If this is the kind of question that the user is choosing from */
       /* right now.                                                     */
-      if(((bVotedOnQuestion!=answers[15] && bVotedOnQuestion!=0) && (nFromWhichQuestions & QUESTIONS_VOTED_ON)) ||
-	 ((bVotedOnQuestion==answers[15] || bVotedOnQuestion==0) && (nFromWhichQuestions & QUESTIONS_NOT_VOTED_ON)) ||
+      if((((int)bVotedOnQuestion!=answers[15] && bVotedOnQuestion!=0) && (nFromWhichQuestions & QUESTIONS_VOTED_ON)) ||
+	 (((int)bVotedOnQuestion==answers[15] || bVotedOnQuestion==0) && (nFromWhichQuestions & QUESTIONS_NOT_VOTED_ON)) ||
 	 (strcmp(sz_user_name,QuestionRecord.szCreatorName)==0 && (nFromWhichQuestions & CURRENT_USER_ONLY))) {
 	 /* If question is not deleted. */
 	 if(!(QuestionRecord.bitflags & QUESTION_DELETED)) {
@@ -4085,6 +4071,7 @@ int DisplayQuestionResult(tQuestionRecord *pQuestionRecord,int all)
    int uPercent;
    int maxpercent=0;
    int cnt;
+   time_t tt;
 
    /* Clear the screen. */
   // od_printf("\n\n\r");
@@ -4119,44 +4106,59 @@ int DisplayQuestionResult(tQuestionRecord *pQuestionRecord,int all)
    if(sysop_sec<=od_control.user_security || strcmp(od_control.sysop_name, od_control.user_name) == 0) {
     if((pQuestionRecord->bitflags & ANONYMOUS_QUESTION)==FALSE) {
        /* Display author's name. */
-       if(colorsch==COLOR_DEF)
+       if(colorsch==COLOR_DEF) {
+	 tt = pQuestionRecord->lCreationTime;
 	 od_printf("`red`Question created by %s on %s\n\r",
 	   pQuestionRecord->szCreatorName,
-	   ctime(&pQuestionRecord->lCreationTime));
-       else
+	   ctime(&tt));
+       }
+       else {
+	 tt = pQuestionRecord->lCreationTime;
 	 od_printf("`bright black`Question created by `white`%s`bright black` on `bright`%s\n\r",
 	   pQuestionRecord->szCreatorName,
-	   ctime(&pQuestionRecord->lCreationTime));
+	   ctime(&tt));
+       }
 
      } else {
-       if(colorsch==COLOR_DEF)
+       if(colorsch==COLOR_DEF) {
+	 tt = pQuestionRecord->lCreationTime;
 	 od_printf("`red`Question created `bright`Anonymously`red` by %s on %s\n\r",
 	   pQuestionRecord->szCreatorName,
-	   ctime(&pQuestionRecord->lCreationTime));
-       else
+	   ctime(&tt));
+       }
+       else {
+	 tt = pQuestionRecord->lCreationTime;
 	 od_printf("`bright black`Question created `bright`Anonymously`bright black` by `white`%s on `bright`%s\n\r",
 	   pQuestionRecord->szCreatorName,
-	   ctime(&pQuestionRecord->lCreationTime));
-
+	   ctime(&tt));
+       }
      }
    } else {
      if((pQuestionRecord->bitflags & ANONYMOUS_QUESTION)==FALSE) {
        /* Display author's name. */
-       if(colorsch==COLOR_DEF)
+       if(colorsch==COLOR_DEF) {
+	 tt = pQuestionRecord->lCreationTime;
 	 od_printf("`red`Question created by %s on %s\n\r",
 	   pQuestionRecord->szCreatorName,
-	   ctime(&pQuestionRecord->lCreationTime));
-       else
+	   ctime(&tt));
+       }
+       else {
+	 tt = pQuestionRecord->lCreationTime;
 	 od_printf("`bright black`Question created by `white`%s`bright black` on `bright`%s\n\r",
 	   pQuestionRecord->szCreatorName,
-	   ctime(&pQuestionRecord->lCreationTime));
+	   ctime(&tt));
+       }
      } else {
-       if(colorsch==COLOR_DEF)
+       if(colorsch==COLOR_DEF) {
+	 tt = pQuestionRecord->lCreationTime;
 	 od_printf("`red`Question created by Anonymous on %s\n\r",
-	   ctime(&pQuestionRecord->lCreationTime));
-       else
+	   ctime(&tt));
+       }
+       else {
+	 tt = pQuestionRecord->lCreationTime;
 	 od_printf("`bright black`Question created by `white`Anonymous`bright black` on `bright`%s\n\r",
-	   ctime(&pQuestionRecord->lCreationTime));
+	   ctime(&tt));
+       }
      }
    }
 
