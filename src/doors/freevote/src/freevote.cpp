@@ -389,9 +389,14 @@ remove_arg(int full_argc, int *cnt, int *argc, char *argv[])
 {
 	char *tmp = argv[*cnt];
 	(*argc)--;
-	if ((*cnt) + 1 == full_argc)
+	if ((*cnt) + 1 == full_argc) {
+		if (*cnt > 0)
+			(*cnt)--;
 		return;
-	memmove(&argv[*cnt], &argv[(*cnt) + 1], full_argc - *cnt - 1);
+	}
+	memmove(&argv[*cnt], &argv[(*cnt) + 1], (full_argc - *cnt - 1) * sizeof(*argv));
+	if (*cnt > 0)
+		(*cnt)--;
 	argv[full_argc - 1] = tmp;
 }
 
@@ -475,7 +480,7 @@ int main(int argc, char *argv[])
 
   int orig_argc = argc;
   if(argc>1) {
-    do {
+    for (cnt = 1; cnt < argc; cnt++) {
       if (stricmp(argv[cnt],"-LOG")==0) {
 	od_control.od_logfile = INCLUDE_LOGFILE;
 	strcpy(od_control.od_logfile_name, "freevote.log");
@@ -606,7 +611,7 @@ int main(int argc, char *argv[])
 	Forcevote=1;
 	remove_arg(orig_argc, &cnt, &argc, argv);
       }
-    } while ((++cnt)<argc);
+    }
   }
 
 #ifdef ODPLAT_WIN32
