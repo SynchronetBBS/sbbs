@@ -5,7 +5,7 @@
 #include "gac_bj.h"
 #undef EXTDRIVER
 
-extern char    ShoeStatus[];
+extern char    *ShoeStatus;
 // extern uchar   symbols;
 
 void SetProgVariables(void)
