@@ -182,26 +182,34 @@
 
 /* Portable types that are the same size across all platforms */
 #ifndef ODPLAT_WIN32
-#if (__STDC_VERSION__ >= 199901L) || (__cplusplus >= 201103L)
-typedef uint8_t            BYTE;                        /* Unsigned, 8 bits. */
-typedef uint16_t           WORD;                       /* Unsigned, 16 bits. */
-typedef uint32_t           DWORD;                      /* Unsigned, 32 bits. */
-#else
-#ifndef BYTE
-typedef unsigned char      BYTE;                        /* Unsigned, 8 bits. */
-#endif
-#ifndef WORD
-typedef unsigned short     WORD;                       /* Unsigned, 16 bits. */
-#endif
-#ifndef DWORD
-typedef unsigned long      DWORD;                      /* Unsigned, 32 bits. */
-#endif
-#ifndef CHAR
-typedef char               CHAR;         /* Native character representation. */
-#endif
-#endif
-#define DWORD_DEFINED
-#define WORD_DEFINED
+# if (__STDC_VERSION__ >= 199901L) || (__cplusplus >= 201103L)
+   typedef uint8_t            BYTE;                        /* Unsigned, 8 bits. */
+   typedef uint16_t           WORD;                       /* Unsigned, 16 bits. */
+   typedef uint32_t           DWORD;                      /* Unsigned, 32 bits. */
+   typedef uintptr_t          DWORD_PTR;
+# else
+#  ifndef BYTE
+    typedef unsigned char      BYTE;                        /* Unsigned, 8 bits. */
+#  endif
+#  ifndef WORD
+    typedef unsigned short     WORD;                       /* Unsigned, 16 bits. */
+#  endif
+#  ifndef DWORD
+    typedef unsigned long      DWORD;                      /* Unsigned, 32 bits. */
+#  endif
+#  ifndef DWORD_PTR
+/*
+ * We have no way of being right, but assume since it's an old compiler,
+ * that unsigned long is big enough for a pointer
+ */
+    typedef unsigned long      DWORD_PTR; /* Unsigned, big enough for a pointer. */
+#  endif
+#  ifndef CHAR
+    typedef char               CHAR;         /* Native character representation. */
+#  endif
+# endif
+# define DWORD_DEFINED
+# define WORD_DEFINED
 #endif /* !ODPLAT_WIN32 */
 
 #if (__STDC_VERSION__ >= 199901L) || (__cplusplus >= 201103L)
@@ -601,7 +609,7 @@ typedef struct
    BOOL          od_no_fossil;
    BOOL          od_use_socket;
    INT16         port;
-   DWORD         od_open_handle;
+   DWORD_PTR     od_open_handle;
 
    /* Caller and system information. */
    char          system_name[40];

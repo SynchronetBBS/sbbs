@@ -1825,7 +1825,7 @@ no_fossil:
  *     Return: kODRCSuccess on success, or an error code on failure.
  */
 tODResult ODComOpenFromExistingHandle(tPortHandle hPort,
-   DWORD dwExistingHandle)
+   DWORD_PTR dwExistingHandle)
 {
    tPortInfo *pPortInfo = ODHANDLE2PTR(hPort, tPortInfo);
 

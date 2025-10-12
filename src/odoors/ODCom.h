@@ -119,7 +119,7 @@ tODResult ODComSetPreferredMethod(tPortHandle hPort, tComMethod Method);
 tODResult ODComGetMethod(tPortHandle hPort, tComMethod *pMethod);
 tODResult ODComOpen(tPortHandle hPort);
 tODResult ODComOpenFromExistingHandle(tPortHandle hPort,
-   DWORD dwExistingHandle);
+   DWORD_PTR dwExistingHandle);
 tODResult ODComClose(tPortHandle hPort);
 tODResult ODComClearInbound(tPortHandle hPort);
 tODResult ODComClearOutbound(tPortHandle hPort);

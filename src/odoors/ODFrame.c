@@ -358,7 +358,7 @@ static HWND ODFrameCreateToolbar(HWND hwndParent, HANDLE hInstance,
       ToolInfo.uFlags = TTF_IDISHWND | TTF_CENTERTIP;
       ToolInfo.lpszText = "User's Time Remaining";
       ToolInfo.hwnd = hwndParent;
-      ToolInfo.uId = (UINT)hwndTimeEdit;
+      ToolInfo.uId = (UINT_PTR)hwndTimeEdit;
       ToolInfo.hinst = hInstance;
 
       /* Setup tooltips for the time edit box. */
@@ -378,7 +378,7 @@ static HWND ODFrameCreateToolbar(HWND hwndParent, HANDLE hInstance,
 
    /* Set the up-down control's buddy control to be the edit control that */
    /* we just created.                                                    */
-   SendMessage(hwndTimeUpDown, UDM_SETBUDDY, (LONG)hwndTimeEdit, 0L);
+   SendMessage(hwndTimeUpDown, UDM_SETBUDDY, (LPARAM)hwndTimeEdit, 0L);
 
    /* Set the valid range of values for the edit control. */
    SendMessage(hwndTimeUpDown, UDM_SETRANGE, 0L, MAKELONG(MAX_TIME, MIN_TIME));
