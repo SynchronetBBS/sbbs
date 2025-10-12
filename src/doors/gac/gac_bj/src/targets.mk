@@ -5,6 +5,6 @@ ENCRYPT_DST =	..$(DIRSEP)encrypt.$(machine)$(EXEFILE)
 
 all: xpdev-mt ciolib-mt $(MTOBJODIR) $(EXEODIR) $(GAC_BJ) release
 
-$(GAC_BJ):	$(XPDEV-MT_LIB) $(CIOLIB-MT)
+$(GAC_BJ):	$(XPDEV-MT_LIB)
 
 release: $(ENCRYPT)
