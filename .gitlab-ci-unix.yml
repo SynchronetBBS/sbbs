@@ -878,9 +878,11 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/doors/gac/gac_bj/src
+    - touch cl
     - touch depend
     - touch xpdev-mt
     - touch odoors
@@ -901,6 +903,7 @@ spec:
       - "src/doors/gac/gac_bj/encrypt"
       - "src/doors/gac/gac_bj/gac_bj"
   needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
   rules:
