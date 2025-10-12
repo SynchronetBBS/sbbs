@@ -353,6 +353,9 @@ tODResult ODInQueueGetNextEvent(tODInQueueHandle hInQueue,
             return(kODRCTimeout);
          }
 
+         if (Timeout == 0)
+            return(kODRCTimeout);
+
          /* Yield the processor to other tasks. */
          od_sleep(0);
 
