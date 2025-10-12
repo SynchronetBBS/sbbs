@@ -154,7 +154,7 @@
 #else /* !ODPLAT_WIN32 */
 #define ASSERT(x) if(!(x)) { puts(OD_VER_FULLNAME \
    " - Test condition failed:\n" __FILE__ ":" __STR(__LINE__) "\n" #x); \
-   exit(1); }
+   abort(); }
 #endif /* !ODPLAT_WIN32 */
 #else /* !OD_DEBUG */
 #define ASSERT(x)
