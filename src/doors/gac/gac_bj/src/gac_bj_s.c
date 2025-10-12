@@ -810,7 +810,7 @@ void Title( void )
 #else
 					od_printf("`bright cyan`FREEWARE `cyan`Thank you for playing `Bright cyan`Tournament Blackjack");
 #endif
-					 od_set_cursor(10,0);
+					 od_set_cursor(10,1);
 					 gac_pause();
 				}
 				else
