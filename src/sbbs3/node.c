@@ -550,7 +550,7 @@ int main(int argc, char **argv)
 		}
 		else {
 			if (mode >= 0) {
-				if (argv[i] == '-')
+				if (argv[i][0] == '-')
 					puts("Options must be before the action");
 				else
 					puts("Only one action per invocation");
