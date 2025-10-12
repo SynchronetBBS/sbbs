@@ -541,8 +541,13 @@ int main(int argc, char **argv)
 	}
 
 	for (i = 1; i < argc; i++) {
-		if (isdigit(argv[i][0]))
+		if (isdigit(argv[i][0])) {
+			if (mode < 0) {
+				puts("An action must be specified before node numbers");
+				usage();
+			}
 			node_num = atoi(argv[i]);
+		}
 		else {
 			node_num = onoff = value = 0;
 			if (!stricmp(argv[i], "-DEBUG")) {
@@ -617,11 +622,18 @@ int main(int argc, char **argv)
 				mode = MODE_EXTAUX;
 				value = strtoul(argv[i] + 7, NULL, 0);
 			}
-			else
+			else {
+				if (argv[i][0] == '-')
+					printf("Unhandled option \"%s\"\n", argv[i]);
+				else
+					printf("Unhandled action \"%s\"\n", argv[i]);
 				usage();
+			}
 		}
-		if (mode < 0)
+		if (mode < 0) {
+			puts("No action specified");
 			usage();
+		}
 		if (mode != MODE_LIST)
 			modify = 1;
 
@@ -743,6 +755,10 @@ int main(int argc, char **argv)
 			} /* while(1) */
 
 	} /* for i<argc */
+	if (mode < 0) {
+		puts("No action specified");
+		usage();
+	}
 
 	close(nodefile);
 	return 0;
