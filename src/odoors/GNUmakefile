@@ -85,6 +85,7 @@ LD	?=	gcc
 
 ifdef DEBUG
  CFLAGS	+=	-g -DOD_DEBUG
+ LDFLAGS +=	-g
  BUILDTYPE	:=	debug
 else
  BUILDTYPE	:=	release
