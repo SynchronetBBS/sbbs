@@ -2480,7 +2480,6 @@ static char *ODEditBufferGetCharacter(tEditInstance *pEditInstance,
    ASSERT(pEditInstance != NULL);
    ASSERT(unBufferLine < pEditInstance->unLinesInBuffer);
    ASSERT(pEditInstance->unLinesInBuffer <= pEditInstance->unLineArraySize);
-   ASSERT(unBufferColumn <= ODEditBufferGetLineLength(pEditInstance, unBufferLine));
 
    /* The position of this character is the position of this line, plus */
    /* the number of characters into the line.                           */

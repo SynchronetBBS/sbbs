@@ -173,6 +173,7 @@ ODAPIDEF INT ODCALL od_popup_menu(char *pszTitle, char *pszText, INT nLeft,
    BYTE btRemaining;
    BYTE btLineCount;
    INT16 nOriginalAttrib;
+   BOOL grabbedArrow = FALSE;
 
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_popup_menu()");
@@ -442,6 +443,7 @@ ODAPIDEF INT ODCALL od_popup_menu(char *pszTitle, char *pszText, INT nLeft,
 
    /* Claim exclusive use of arrow keys. */
    ODStatStartArrowUse();
+   grabbedArrow = TRUE;
 
    for(;;)
    {
@@ -494,7 +496,8 @@ destroy:
    od_set_attrib(nOriginalAttrib);
 
    /* Release exclusive use of arrow keys. */
-   ODStatEndArrowUse();
+   if (grabbedArrow)
+      ODStatEndArrowUse();
 
    OD_API_EXIT();
    return(nCommand);
