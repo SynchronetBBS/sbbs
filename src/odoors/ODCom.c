@@ -73,6 +73,9 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #endif
+#ifndef ODPLAT_WIN32
+#include <poll.h>
+#endif
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODPlat.h"
@@ -2092,6 +2095,7 @@ tODResult ODComCarrier(tPortHandle hPort, BOOL *pbIsCarrier)
 #ifdef INCLUDE_SOCKET_COM
       case kComMethodSocket:
 		{
+#ifdef ODPLAT_WIN32
 			int		i;
 			char		ch;
 			fd_set	socket_set;
@@ -2108,6 +2112,23 @@ tODResult ODComCarrier(tPortHandle hPort, BOOL *pbIsCarrier)
 				*pbIsCarrier = TRUE;
 			else
 				*pbIsCarrier = FALSE;
+#else
+			int i;
+			char		ch;
+
+			struct pollfd pfd = {0};
+			pfd.fd = pPortInfo->socket;
+			pfd.events = POLLIN | POLLHUP;
+			i = poll(&pfd, 1, 0);
+			if (i == 0)
+				*pbIsCarrier = TRUE;
+			else if (i == -1 || (pfd.revents & (POLLERR | POLLNVAL | POLLHUP)))
+				*pbIsCarrier = FALSE;
+			else if (recv(pPortInfo->socket,&ch,1,MSG_PEEK)==1)
+				*pbIsCarrier = TRUE;
+			else
+				*pbIsCarrier = FALSE;
+#endif
 			break;
 		}
 #endif
@@ -2789,9 +2810,11 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 #ifdef INCLUDE_SOCKET_COM
       case kComMethodSocket:
 		{
+			int recv_ret;
+#ifdef ODPLAT_WIN32
 			fd_set	socket_set;
 			struct	timeval tv;
-			int		select_ret, recv_ret;
+			int		select_ret;
 
 			FD_ZERO(&socket_set);
 			FD_SET(pPortInfo->socket,&socket_set);
@@ -2804,6 +2827,17 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 				return (kODRCGeneralFailure);
 			if (select_ret == 0)
 				return (kODRCNothingWaiting);
+#else
+			int i;
+			struct pollfd pfd = {0};
+			pfd.fd = pPortInfo->socket;
+			pfd.events = POLLIN | POLLHUP;
+			i = poll(&pfd, 1, 1);
+			if (i == 0)
+				return (kODRCNothingWaiting);
+			else if (i == -1 || (pfd.revents & (POLLERR | POLLNVAL | POLLHUP)))
+				return (kODRCGeneralFailure);
+#endif
 
 			do {
 				recv_ret = recv(pPortInfo->socket, pbtNext, 1, 0);
@@ -2981,9 +3015,10 @@ keep_going:
 #ifdef INCLUDE_SOCKET_COM
       case kComMethodSocket:
 		{
+			int		send_ret;
+#ifdef ODPLAT_WIN32
 			fd_set	socket_set;
 			struct	timeval tv;
-			int		send_ret;
 
 			FD_ZERO(&socket_set);
 			FD_SET(pPortInfo->socket,&socket_set);
@@ -2992,7 +3027,18 @@ keep_going:
 			tv.tv_usec=0;
 
 			if(select(pPortInfo->socket+1,NULL,&socket_set,NULL,&tv) != 1)
-	         return(kODRCGeneralFailure);
+				return(kODRCGeneralFailure);
+#else
+			int i;
+			struct pollfd pfd = {0};
+			pfd.fd = pPortInfo->socket;
+			pfd.events = POLLOUT | POLLHUP;
+			i = poll(&pfd, 1, 1000);
+			if (i == 0)
+				return (kODRCGeneralFailure);
+			else if (i == -1 || (pfd.revents & (POLLERR | POLLNVAL | POLLHUP)))
+				return (kODRCGeneralFailure);
+#endif
 
 			do {
 				send_ret = send(pPortInfo->socket, (char*)&btToSend, 1, 0);
@@ -3220,6 +3266,7 @@ tODResult ODComGetBuffer(tPortHandle hPort, BYTE *pbtBuffer, int nSize,
 #ifdef INCLUDE_SOCKET_COM
       case kComMethodSocket:
 		{
+#ifdef ODPLAT_WIN32
 			fd_set	socket_set;
 			struct	timeval tv;
 
@@ -3231,8 +3278,19 @@ tODResult ODComGetBuffer(tPortHandle hPort, BYTE *pbtBuffer, int nSize,
 
 			if(select(pPortInfo->socket+1,&socket_set,NULL,NULL,&tv) != 1) {
 				*pnBytesRead = 0;
-	         break;
+				break;
 			}
+#else
+			int i;
+			struct pollfd pfd = {0};
+			pfd.fd = pPortInfo->socket;
+			pfd.events = POLLIN | POLLHUP;
+			i = poll(&pfd, 1, 1);
+			if (i != 1 || !(pfd.revents & POLLIN)) {
+				*pnBytesRead = 0;
+				break;
+			}
+#endif
 
 			*pnBytesRead = recv(pPortInfo->socket,(char*)pbtBuffer,nSize,0);
 			break;
@@ -3471,9 +3529,10 @@ try_again:
 #ifdef INCLUDE_SOCKET_COM
       case kComMethodSocket:
 		{
+			int     send_ret;
+#ifdef ODPLAT_WIN32
 			fd_set	socket_set;
 			struct	timeval tv;
-			int     send_ret;
 
 			FD_ZERO(&socket_set);
 			FD_SET(pPortInfo->socket,&socket_set);
@@ -3482,7 +3541,16 @@ try_again:
 			tv.tv_usec=0;
 
 			if(select(pPortInfo->socket+1,NULL,&socket_set,NULL,&tv) != 1)
-	         return(kODRCGeneralFailure);
+				return(kODRCGeneralFailure);
+#else
+			int i;
+			struct pollfd pfd = {0};
+			pfd.fd = pPortInfo->socket;
+			pfd.events = POLLOUT | POLLHUP;
+			i = poll(&pfd, 1, 1000);
+			if (i != 1 || !(pfd.revents & POLLOUT))
+				return (kODRCGeneralFailure);
+#endif
 
 			do {
 				send_ret = send(pPortInfo->socket, (char*)pbtBuffer, nSize, 0);
@@ -3676,20 +3744,10 @@ tODResult ODComWaitEvent(tPortHandle hPort, tComEvent Event)
 		{
 			if(Event == kNoCarrier)
 			{
-  			/* Wait for socket disconnect */
-				fd_set	socket_set;
-				char		ch;
-				int recv_ret;
-
 				while(1) 
 				{
-
-					FD_ZERO(&socket_set);
-					FD_SET(pPortInfo->socket,&socket_set);
-					if(select(pPortInfo->socket+1,&socket_set,NULL,NULL,NULL)
-						==SOCKET_ERROR)
-						break;
-					recv_ret = recv(pPortInfo->socket, &ch, 1, MSG_PEEK);
+					char ch;
+					int recv_ret = recv(pPortInfo->socket, &ch, 1, MSG_PEEK);
 					if(recv_ret == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
 						continue;
 					if (recv_ret != 1)
