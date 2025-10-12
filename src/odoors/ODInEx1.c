@@ -319,6 +319,31 @@ WORD wPreSetInfo = 0;
 tODThreadHandle hFrameThread;
 #endif /* ODPLAT_WIN32 */
 
+static char *
+safe_strcpy(char *dst, const char *src, size_t sz)
+{
+	size_t len = strlen(src);
+	if (len >= sz)
+		len = sz - 1;
+	memcpy(dst, src, len);
+	dst[len] = 0;
+	return dst;
+}
+
+static char *
+safe_strcat(char *dst, const char *src, size_t sz)
+{
+	size_t olen = strlen(dst);
+	if (olen >= sz)
+		return dst;
+	size_t remain = sz - olen;
+	size_t len = strlen(src);
+	if (len >= remain)
+		len = remain - 1;
+	memcpy(&dst[olen], src, len);
+	dst[olen + len] = 0;
+	return dst;
+}
 
 /* ----------------------------------------------------------------------------
  * od_init()
@@ -340,9 +365,10 @@ ODAPIDEF void ODCALL od_init(void)
    char *pointer;
    INT nFound = FOUND_NONE;
 #ifdef _WIN32
-   float forcefloats;
+   char *fbuf[sizeof(float)];
+   volatile float *forcefloats = (void*)fbuf;
 
-   forcefloats=1.1;
+   *forcefloats=1.1;
 #endif
 
    /* Log function entry if running in trace mode. */
@@ -655,7 +681,7 @@ read_dorinfox:
           /* get sysop name from DORINFO1.DEF */
           if(fgets(szIFTemp, 255, pfDropFile) == NULL) goto DropFileFail;
           ODStringToName(szIFTemp);
-          strncpy(od_control.sysop_name, szIFTemp, 19);
+          safe_strcpy(od_control.sysop_name, szIFTemp, 19);
 
                                           /* get sysop's last name */
           if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
@@ -663,7 +689,7 @@ read_dorinfox:
           if(strlen(szIFTemp))
           {
              strcat(od_control.sysop_name," ");
-             strncat(od_control.sysop_name,szIFTemp,19);
+             safe_strcat(od_control.sysop_name,szIFTemp,19);
           }
                                    /* get com port that modem is connected to */
           if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
@@ -681,19 +707,19 @@ read_dorinfox:
                                           /* get user's first name */
           if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
           ODStringToName(szIFTemp);
-          strncpy(od_control.user_name,szIFTemp,17);
+          safe_strcpy(od_control.user_name,szIFTemp,17);
                                           /* get user's last name */
           if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
           ODStringToName(szIFTemp);
           if(strlen(szIFTemp))
           {
              strcat(od_control.user_name," ");
-             strncat(od_control.user_name,szIFTemp,17);
+             safe_strcat(od_control.user_name,szIFTemp,17);
           }
                                           /* get user's location */
           if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
           ODStringToName(szIFTemp);
-          strncpy(od_control.user_location,szIFTemp,25);
+          safe_strcpy(od_control.user_location,szIFTemp,25);
                                           /* get ANSI mode settings */
           if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
           if(szIFTemp[0]=='0') od_control.user_ansi=FALSE;
@@ -733,7 +759,7 @@ read_dorinfox:
           if(fgets((char *)apszDropFileInfo[1],80,pfDropFile)==NULL) goto DropFileFail;
 
           if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
-          strncpy(od_control.user_lastdate,szIFTemp,8);
+          safe_strcpy(od_control.user_lastdate,szIFTemp,8);
 
           if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
           od_control.user_screenwidth=atoi(szIFTemp);
@@ -1287,7 +1313,7 @@ finished:
           /* Read line 9: User's location. */
           if(fgets(szIFTemp, 255, pfDropFile) == NULL) goto DropFileFail;
           ODStringToName(szIFTemp);
-          strncpy(od_control.user_location, szIFTemp, 25);
+          safe_strcpy(od_control.user_location, szIFTemp, 25);
 
           /* Read line 10: User's birthday. */
           if(fgets(szIFTemp, 255, pfDropFile) == NULL) goto DropFileFail;

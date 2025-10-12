@@ -2777,7 +2777,7 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
          if(WaitForSingleObject((*pPortInfo->pfDoorGetAvailableEventHandle)(),
             bWait ? INFINITE : 0) == WAIT_OBJECT_0)
          {
-            (*pPortInfo->pfDoorRead)(pbtNext, 1);
+            (*pPortInfo->pfDoorRead)((unsigned char *)pbtNext, 1);
             break;
          }
 
@@ -2995,7 +2995,7 @@ keep_going:
 	         return(kODRCGeneralFailure);
 
 			do {
-				send_ret = send(pPortInfo->socket, &btToSend, 1, 0);
+				send_ret = send(pPortInfo->socket, (char*)&btToSend, 1, 0);
 				if (send_ret != 1)
 					od_sleep(50);
 			} while ((send_ret == SOCKET_ERROR) && (WSAGetLastError() == WSAEWOULDBLOCK));
@@ -3234,7 +3234,7 @@ tODResult ODComGetBuffer(tPortHandle hPort, BYTE *pbtBuffer, int nSize,
 	         break;
 			}
 
-			*pnBytesRead = recv(pPortInfo->socket,pbtBuffer,nSize,0);
+			*pnBytesRead = recv(pPortInfo->socket,(char*)pbtBuffer,nSize,0);
 			break;
 		}
 #endif /* INCLUDE_SOCKET_COM */
@@ -3485,7 +3485,7 @@ try_again:
 	         return(kODRCGeneralFailure);
 
 			do {
-				send_ret = send(pPortInfo->socket, pbtBuffer, nSize, 0);
+				send_ret = send(pPortInfo->socket, (char*)pbtBuffer, nSize, 0);
 				if (send_ret != SOCKET_ERROR)
 					break;
 				od_sleep(25);

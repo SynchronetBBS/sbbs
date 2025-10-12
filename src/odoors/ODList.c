@@ -493,9 +493,7 @@ static INT ODListFilenameSplit(const char *pszEntirePath, char *pszDrive,
       strncpy(pszName, pchStart, btSize);
       pszName[btSize] = '\0';
 
-      btSize = strlen(pchCurrentPos);
-      if(btSize > 4) btSize = 4;
-      strncpy(pszExtension, pchCurrentPos, btSize);
+      strncpy(pszExtension, pchCurrentPos, 4);
       pszExtension[btSize]='\0';
    }
 

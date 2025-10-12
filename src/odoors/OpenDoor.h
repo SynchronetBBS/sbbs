@@ -735,7 +735,7 @@ typedef struct
 
    /* OpenDoors customization settings. */
    char          od_box_chars[8];
-   char          od_cfg_text[48][33];
+   char          od_cfg_text[49][33];
    char          od_cfg_lines[25][33];
    OD_COMPONENT  *od_config_file;
    const char *  od_config_filename;

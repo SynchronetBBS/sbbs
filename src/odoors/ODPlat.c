@@ -320,7 +320,7 @@ tODResult ODThreadResume(tODThreadHandle hThread)
  *
  *             ThreadPriority - New priority to assign to the thread.
  *
- *     Return: kOCRCSuccess on success, or an error code on failure.
+ *     Return: kODRCSuccess on success, or an error code on failure.
  */
 tODResult ODThreadSetPriority(tODThreadHandle hThread,
    tODThreadPriority ThreadPriority)
@@ -350,6 +350,7 @@ tODResult ODThreadSetPriority(tODThreadHandle hThread,
          break;
       default:
          ASSERT(FALSE);
+         return kODRCInvalidCall;
    }
 
    /* Update the thread's priority. */
