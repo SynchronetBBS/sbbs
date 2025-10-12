@@ -3791,7 +3791,8 @@ INT16 SendArchive(char *file, INT16 type)
 void HelpDecrypt( char *line)
 {
 	char *curp;
-	
+	char tmp;
+
 	curp = &line[0];
 	while (curp[0] != '\0')
 	{
@@ -3804,9 +3805,24 @@ void HelpDecrypt( char *line)
 
 	}
 
-	swab(line, line, sizeof(line));
-	strcpy(line, strrev(line));
-			
+	/*
+	 * The swab() that was used did not work properly when src and dst
+	 * overlapped, only the first two pairs got swapped.
+	 */
+	if (line[0] && line[1]) {
+		tmp = line[0];
+		line[0] = line[1];
+		line[1] = tmp;
+	}
+	if (line[2] && line[3]) {
+		tmp = line[2];
+		line[2] = line[3];
+		line[3] = tmp;
+	}
+	//swab(line, line, sizeof(line));
+	//strcpy(line, strrev(line));
+	strrev(line);
+
 	// if there are blanks on the end remove them...
 
 	while (curp[strlen(curp)-1] == ' ')

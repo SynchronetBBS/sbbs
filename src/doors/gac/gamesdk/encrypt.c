@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
             strcat(line, " ");
 
         // look for a word from our prompt line and the starting @#
-        if (strnicmp(line, "@#", 2) == 0)
+        if (strncmp(line, "@#", 2) == 0)
         {
             p = &line[2];
             // encrypt the line
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
         }
         else
         {
-            
+            p = line;
             if(argc<4)
             	HelpEncrypt(p);
             else
@@ -121,42 +121,59 @@ int main(int argc, char *argv[])
     return(0);
 }
 
+static char
+hack(char ch)
+{
+	if (ch > 0)
+		return ch - 128;
+	return ch + 128;
+}
+
 void HelpEncrypt( char *line)
 {
-    char *curp;
-    
-    swab(strrev(line), line, sizeof(line));
+	char *curp;
+	char tmp;
 
-    curp = &line[0];
-    while (curp[0] != '\0')
-    {
-
-        if (curp[0] >  0 )
-            curp[0] -= 128;
-        else
-            curp[0] += 128;
-        curp++;
-    }
-
-    return;
+	for (curp = line; curp[0] && curp[1]; curp+= 2) {
+		curp[0] = hack(curp[0]);
+		curp[1] = hack(curp[1]);
+	}
+	/*
+	 * Emulate bug...
+	 * The swab() function lost it's shit when src and dst were the same
+	 * basically, it only worked for the first four bytes.
+	 */
+	if (line[0] && line[1]) {
+		tmp = line[0];
+		line[0] = line[1];
+		line[1] = tmp;
+	}
+	if (line[2] && line[3]) {
+		tmp = line[2];
+		line[2] = line[3];
+		line[3] = tmp;
+	}
+	strrev(line);
 }
+
 
 void HelpDecrypt( char *line)
 {
-	char *curp;
+	/*
+	 * Steps:
+	 * 1. Flip high bit
+	 * 2. swab() (Broken!)
+	 * 3. strrev()
+	 * 4. Strip spaces from end
+	 */
+	char *endp;
+	HelpEncrypt(line);
 
-	curp = &line[0];
-	while (curp[0] != '\0') {
-		if (curp[0] > 0 )
-			curp[0] -= 128;
+	// Remove spaces from end
+	for(endp = strchr(line, 0) - 1; endp >= line; endp--) {
+		if (*endp == ' ')
+			*endp = 0;
 		else
-			curp[0] += 128; //should be 127
-		curp++;
+			break;
 	}
-
-	swab(line, line, sizeof(line));
-	strcpy(line, strrev(line));
-
-	return;
 }
-
