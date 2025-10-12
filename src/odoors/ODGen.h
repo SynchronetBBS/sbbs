@@ -152,6 +152,8 @@
    __STR(__LINE__) "\n" #x,  OD_VER_FULLNAME " - Test condition failed", \
    MB_ICONSTOP | MB_OK); exit(1); }
 #else /* !ODPLAT_WIN32 */
+#include <stdio.h>
+#include <stdlib.h>
 #define ASSERT(x) if(!(x)) { puts(OD_VER_FULLNAME \
    " - Test condition failed:\n" __FILE__ ":" __STR(__LINE__) "\n" #x); \
    abort(); }
