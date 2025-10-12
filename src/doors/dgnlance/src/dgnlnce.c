@@ -133,7 +133,7 @@ checkday(void)
 	    perror("data/characte.lan");
 	    exit(EXIT_FAILURE);
     }
-    fprintf(outfile, "%" PRIu32 "\n", i);
+    fprintf(outfile, "%" PRIu32 "\n", (uint32_t)i);
     for (j = 0; j < i; j++) {
 	writenextuser(playerlist[j], outfile);
 	free(playerlist[j]);

@@ -96,7 +96,7 @@ writenextuser(struct playertype * plr, FILE * outfile)
     fprintf(outfile, "%c\n", plr->sex);
     fprintf(outfile, "%s\n", plr->gaspd);
     fprintf(outfile, "%s\n", plr->laston);
-    fprintf(outfile, "%" PRIu32 "\n", plr->status);
+    fprintf(outfile, "%" PRIu32 "\n", (uint32_t)plr->status);
     if (plr->status == DEAD)
 	fprintf(outfile, "%s\n", plr->killer);
     fprintf(outfile, "%u %u %u %u %u %u %" QWORDFORMAT " %u %u %u %u %" QWORDFORMAT " %u %" QWORDFORMAT " %" QWORDFORMAT " %" QWORDFORMAT " %u %u %u %1.4f\n",
@@ -169,7 +169,7 @@ saveuser(struct playertype * plr)
 	    perror("data/characte.lan");
 	    exit(EXIT_FAILURE);
     }
-    fprintf(outfile, "%" PRIu32 "\n", i);
+    fprintf(outfile, "%" PRIu32 "\n", (uint32_t)i);
     for (j = 0; j < i; j++) {
 	writenextuser(playerlist[j], outfile);
 	free(playerlist[j]);
