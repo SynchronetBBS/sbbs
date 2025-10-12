@@ -608,7 +608,8 @@ void InitGamePlay( void )
 	// test for a answer to ctrl-e ============================================
 	od_clear_keybuffer();
 
-	od_putch(5); // ctrl-e
+	od_disp_str("\x05\b \b"); // ctrl-e then erase it.
+	//od_putch(5); // ctrl-e
 	od_sleep(500);
 	if(od_get_key(0))
 	{
