@@ -57,6 +57,7 @@ main(int argc, char **argv)
 	int i;
 	int ret = 1;
 	char *p;
+	char *fname;
 
 	if (argc < 3)
 		usage(argv[0]);
@@ -79,11 +80,16 @@ main(int argc, char **argv)
 	for (i = 2; i < argc; i++) {
 		infile = fopen(argv[i], "rb");
 		if (infile == NULL) {
-			fprintf(stderr, "Error %d opening %s\n", errno, argv[1]);
+			fprintf(stderr, "Error %d opening %s\n", errno, argv[i]);
 			goto exit;
 		}
 		fputs("@#", outfile);
-		strlcpy(line, argv[i], sizeof(line));
+		fname = getfname(argv[i]);
+		if (!fname) {
+			fprintf(stderr, "Error getting file name from %s\n", argv[i]);
+			goto exit;
+		}
+		strlcpy(line, fname, sizeof(line));
 		p = strrchr(line, '.');
 		if (p)
 			*p = 0;
