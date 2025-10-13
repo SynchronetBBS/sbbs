@@ -926,6 +926,7 @@ spec:
     - touch xpdev-mt
     - touch odoors
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+    - cd ../../../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gamesdk.tgz" src/doors/gac/gamesdk/*.exe.release*
   variables:
     GIT_STRATEGY: fetch
