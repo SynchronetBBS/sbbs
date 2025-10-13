@@ -3721,8 +3721,9 @@ INT16 SendArchive(char *file, INT16 type)
 		//if (type == ASC_FILE) od_printf("\r\n");
 
 		// display one line at a time until done
-		while (fscanf( arcfile, "%[^\r\n]\r\n", line) == 1 && done == FALSE)
+		while (fgets(line, sizeof(line), arcfile) && done == FALSE)
 		{
+			truncnl(line);
 			// look for the end
 			if (strnicmp(line, "@#", 2) == 0) 
 				done = TRUE;

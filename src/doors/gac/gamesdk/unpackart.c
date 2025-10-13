@@ -105,7 +105,8 @@ main(int argc, char **argv)
 		ext = ".out";
 	}
 
-	while (fscanf(infile, "%[^\r\n]\r\r", line) == 1) {
+	while (fgets(line, sizeof(line), infile)) {
+		truncnl(line);
 		if (line[0] == '@' && line[1] == '#') {
 			int skip = 0;
 

@@ -97,7 +97,8 @@ main(int argc, char **argv)
 		HelpEncrypt();
 		fputs(line, outfile);
 		fputs("\r\n", outfile);
-		while (fscanf(infile, "%[^\r\n]\r\n", line) == 1) {
+		while (fgets(line, sizeof(line), infile)) {
+			truncnl(line);
 			HelpEncrypt();
 			fputs(line, outfile);
 			fputs("\r\n", outfile);
