@@ -25,7 +25,7 @@ ifdef RELEASE
 all: $(GAC_BJ_DST)
 endif
 
-$(GAC_BJ): $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
+$(GAC_BJ): $(OBJS) $(BUILD_DEPENDS) | $(EXEODIR)
 	@echo Linking $@
 	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(XPDEV-MT_LIBS) $(ODOORS_LIB) $(LIBS)
 
