@@ -13,8 +13,16 @@ endif
 
 vpath %.c ../../gamesdk
 
+ANSI_FILES := $(wildcard ../art/*.ans)
+ANSART := ..$(DIRSEP)gac_ans.art
+ASCII_FILES := $(wildcard ../art/*.asc)
+ASCART := ..$(DIRSEP)gac_asc.art
+RIP_FILES := $(wildcard ../art/*.rip)
+RIPART := ..$(DIRSEP)gac_rip.art
+
+all: $(ANSART) $(ASCART) $(RIPART)
 ifdef RELEASE
-all: $(GAC_BJ_DST) $(ENCRYPT_DST)
+all: $(GAC_BJ_DST)
 endif
 
 $(GAC_BJ): $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
@@ -25,6 +33,17 @@ $(GAC_BJ_DST): $(GAC_BJ)
 	@echo Copying release $@
 	$(QUIET)cp -f $(GAC_BJ) $@
 
-$(ENCRYPT_DST): $(ENCRYPT)
-	@echo Copying release $@
-	$(QUIET)cp -f $(ENCRYPT) $@
+$(ANSART): $(ANSI_FILES) $(PACKART)
+	@echo Packing $@
+	$(QUIET)rm -f $(ANSART)
+	$(QUIET)$(PACKART) $(ANSART) $(ANSI_FILES)
+
+$(ASCART): $(ASCII_FILES) $(PACKART)
+	@echo Packing $@
+	$(QUIET)rm -f $(ASCART)
+	$(QUIET)$(PACKART) $(ASCART) $(ASCII_FILES)
+
+$(RIPART): $(RIP_FILES) $(PACKART)
+	@echo Packing $@
+	$(QUIET)rm -f $(RIPART)
+	$(QUIET)$(PACKART) $(RIPART) $(RIP_FILES)
