@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
 	int online;
 	char *dot = NULL;
 	char *ext = NULL;
+	char tmpname[36];
 
 	// moved up to the top 1/97
 	#ifdef ODPLAT_WIN32
@@ -393,7 +394,8 @@ int main(int argc, char *argv[])
 	if (access(filename, 00) == 0) remove(filename);
 	online = nopen(filename, O_RDWR|O_CREAT);
 	lseek(online,0L,SEEK_SET);
-	write(online,player.names,36);
+	strncpy(tmpname, player.names, sizeof(tmpname));
+	write(online,player.names,sizeof(tmpname));
 	close(online);
 
 	// Check to see if the user has any mail waiting.
@@ -2637,7 +2639,7 @@ void g_clr_scr(void)
 // It will then create a box to prompt the user for the required info...
 // If you pass "ANY" as the third parameter, then the user can hit any key
 // if bottom == TRUE, the box is at the bottom of the screen
-char PromptBox( char prompt1[200], char prompt2[200], char responses[20], INT16 bottom )
+char PromptBox( const char *prompt1, const char *prompt2, const char *responses, INT16 bottom )
 {
 
 	void *instruct_win;   // pop up window
@@ -3306,6 +3308,7 @@ INT16 CheckPlayerName( char *input)
 char *g_strstr(char *name, char *input)
 {
 	char newname[21], newinput[21];
+	char *p;
 	INT16 i = 0;
 
 	strcpy(newname, name);
@@ -3323,7 +3326,10 @@ char *g_strstr(char *name, char *input)
 		i++;
 	}
 
-	return( strstr(newname, newinput) );
+	p = strstr(newname, newinput);
+	if (p == NULL)
+		return NULL;
+	return name + (p - newname);
 }
 
 
