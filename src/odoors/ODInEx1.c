@@ -1979,7 +1979,7 @@ static void ODInitPartTwo(void)
    od_control.od_sysop_next = "[SN] ";
    od_control.od_no_keyboard = "[Keyboard]";
    od_control.od_want_chat = "[Want-Chat]";
-   od_control.od_no_time = "\n\rSorry, you have used up of your time for this session.\n\r\n\r";
+   od_control.od_no_time = "\n\rSorry, you have used up all of your time for this session.\n\r\n\r";
    od_control.od_no_sysop = "\n\rSorry, the system operator is not available at this time.\n\r";
    od_control.od_press_key = "Press [Enter] to continue";
    od_control.od_chat_reason = "               Why would you like to chat? (Blank line to cancel)\n\r";
