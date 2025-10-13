@@ -110,9 +110,6 @@ int main(int argc, char *argv[])
 		od_parse_cmd_line(argc, argv);
 	#endif
 	
-	// Set the name of the log file
-	snprintf(od_control.od_logfile_name, sizeof(od_control.od_logfile_name), "gac%d.log", od_control.od_node);
-
 	// check for and create in directory
 	strcpy(filename, doorpath);
 	strcat(filename, "IN");
@@ -151,6 +148,8 @@ int main(int argc, char *argv[])
 		binkley = TRUE;
 	else binkley = FALSE;
 
+	// Set the name of the log file
+	snprintf(od_control.od_logfile_name, sizeof(od_control.od_logfile_name), "gac%d.log", od_control.od_node);
 
 	// Check for argv[1] as config
 	#ifndef ODPLAT_WIN32
