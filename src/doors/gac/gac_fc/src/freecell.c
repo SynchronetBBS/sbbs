@@ -159,7 +159,7 @@ INT16 PlayFreeCell( void )
 			// display the instructions
 			od_save_screen(screen);
 			g_clr_scr();
-			g_send_file(ibbsgametitle);
+			g_send_file_pause(ibbsgametitle);
 			gac_pause();
 			// DealFreeCell();
 			od_restore_screen(screen);
@@ -768,7 +768,7 @@ INT16 FreeCellInit( void )
 	else if (choice == 'Y')
 	{
 		// display the instructions
-		g_send_file(ibbsgametitle);
+		g_send_file_pause(ibbsgametitle);
 		gac_pause();
 	}
 

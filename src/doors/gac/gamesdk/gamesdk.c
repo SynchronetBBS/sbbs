@@ -3588,6 +3588,81 @@ void UpdateTime( void )
 	return;
 }
 
+static INT16 WriteArchiveLine(FILE *arcfile, INT16 encrypted)
+{
+	char line[261];
+
+	if (arcfile == NULL)
+		return FALSE;
+	if (fgets(line, sizeof(line), arcfile)) {
+		truncnl(line);
+		// look for the end
+		if (strnicmp(line, "@#", 2) == 0) {
+			fclose(arcfile);
+			return FALSE;
+		}
+		// display the line
+		if(encrypted)
+			HelpDecrypt(line);
+		od_disp_emu(line, TRUE);
+		od_printf("\r\n");
+	}
+	else {
+		fclose(arcfile);
+		return FALSE;
+	}
+	return TRUE;
+}
+
+static FILE *FindArchive(char *file, INT16 type, INT16 *encrypted)
+{
+	char archive[128], line[261], keyword[15];
+	FILE *arcfile;
+	char *p;
+
+	if (type == RIP_FILE)
+		sprintf(archive, "%s%4.4srip.art", doorpath, executable);
+	else if (type == ANS_FILE)
+		sprintf(archive, "%s%4.4sans.art", doorpath, executable);
+	else if (type == ASC_FILE)
+		sprintf(archive, "%s%4.4sasc.art", doorpath, executable);
+
+	// open the file and search for the string #@file then display everything
+	// until we get to #@ again
+
+	if (access(archive, 00) != 0) return(NULL);
+
+	arcfile = myopen(archive, "rb", SH_DENYWR);
+	if (arcfile == NULL) return(NULL);
+
+	fseek(arcfile, 0, SEEK_SET);
+	// read one line at a time
+	// NEW Encrypted way...
+	strlcpy(keyword, file, sizeof(keyword));
+	for (;;) {
+		if (fscanf( arcfile, "%[^\r\n]\r\n", line) != 1)
+			break;
+		// look for a word from our prompt line and the starting @#
+		p = &line[2];
+		if (strnicmp(line, "@#", 2) == 0)
+		{
+			if (strnicmp(p, keyword, strlen(keyword)) == 0) {
+				*encrypted = FALSE;
+				return arcfile;
+			}
+			HelpDecrypt(p);
+
+			if (stricmp(p , keyword) == 0 ) {
+				*encrypted = TRUE;
+				return arcfile;
+			}
+			
+		}
+	}
+	fclose(arcfile);
+	return FALSE;
+}
+
 // This function allows me to send a file simply
 // it will send the individual file if available, otherwise it will send
 // the one in the archive xxxxANSI.ART, xxxxASC.ART, or xxxxRIP.ART files
@@ -3597,13 +3672,11 @@ INT16 g_send_file( char *filename)
 	char sendfile[128];
 	INT16 sent=FALSE;
 
-
 	#ifdef GAC_DEBUG
 	gac_debug = fopen(gac_debugfile, "a");
 	fprintf(gac_debug, "  g_send_file()\n");
 	fclose(gac_debug);
 	#endif
-
 
 	if (od_control.user_rip)
 	{
@@ -3635,22 +3708,87 @@ INT16 g_send_file( char *filename)
 		}
 	}
 
-//  sprintf(sendfile, "%s%s", doorpath, filename);
-//  sent = od_send_file(sendfile);
+	return( sent);
 
-	// pause slightly and ignore keyboard to stop ctrl-e
-	// answerbacks to the ANSIs...
-/*
-	if (answered == TRUE)
+
+}
+
+// As above, but does not do RIP and pauses every od_control.user_screen_length lines
+INT16 g_send_file_pause( char *filename)
+{
+	char line[261];
+	char sendfile[128];
+	INT16 sent=FALSE;
+	INT16 archive = FALSE;
+	INT16 encrypted = FALSE;
+	FILE *ifile;
+	size_t count = 0;
+	const size_t tgt = od_control.user_screen_length - 1;
+
+	#ifdef GAC_DEBUG
+	gac_debug = fopen(gac_debugfile, "a");
+	fprintf(gac_debug, "  g_send_file_pause()\n");
+	fclose(gac_debug);
+	#endif
+
+	if (od_control.user_rip)
 	{
-		od_sleep(500);
-		if(od_get_key(FALSE) != '\0')
+		sprintf(sendfile, "%s%s.rip", doorpath, filename);
+		if ((ifile = fopen(sendfile, "rb")) == NULL)
 		{
-			while(od_get_key(FALSE) != '\0');
+			// attempt to send one from our archive
+			ifile = FindArchive(filename, RIP_FILE, &encrypted);
+			if (ifile)
+				archive = true;
 		}
 	}
-*/
-	return( sent);
+
+	if (od_control.user_ansi && ifile == NULL)
+	{
+		if ((ifile = fopen(sendfile, "rb")) == NULL)
+		{
+			// attempt to send one from our archive
+			ifile = FindArchive(filename, ANS_FILE, &encrypted);
+			if (ifile)
+				archive = true;
+		}
+	}
+
+	if (ifile == NULL)
+	{
+		if ((ifile = fopen(sendfile, "rb")) == NULL)
+		{
+			// attempt to send one from our archive
+			ifile = FindArchive(filename, ASC_FILE, &encrypted);
+			if (ifile)
+				archive = true;
+		}
+	}
+
+	if (ifile == NULL)
+		return FALSE;
+
+	for (;;) {
+		if (archive) {
+			if (!WriteArchiveLine(ifile, encrypted))
+				break;
+		}
+		else {
+			if (!fgets(line, sizeof(line), ifile))
+				break;
+			truncnl(line);
+		}
+		if (++count >= tgt) {
+			INT16 oldattr = od_control.od_cur_attrib;
+			gac_pause();
+			od_disp_str("\r");
+			od_set_attrib(oldattr);
+			od_clr_line();
+			count = 0;
+		}
+	}
+
+	return( TRUE);
 
 
 }
@@ -3659,11 +3797,9 @@ INT16 g_send_file( char *filename)
 // returns TRUE if sent successfully
 INT16 SendArchive(char *file, INT16 type)
 {
-
-		char archive[128], line[261], keyword[15];
+	char archive[128];
 	FILE *arcfile;
-	INT16 found=FALSE, done=FALSE, encrypted=FALSE;
-	char *p;
+	INT16 done=FALSE, encrypted=FALSE;
 
 	if (type == RIP_FILE)
 		sprintf(archive, "%s%4.4srip.art", doorpath, executable);
@@ -3672,84 +3808,19 @@ INT16 SendArchive(char *file, INT16 type)
 	else if (type == ASC_FILE)
 		sprintf(archive, "%s%4.4sasc.art", doorpath, executable);
 
-//od_printf("%s\n\r", archive);
-//od_get_key(TRUE);
-
-
 	// open the file and search for the string #@file then display everything
 	// until we get to #@ again
 
 	if (access(archive, 00) != 0) return(FALSE);
 
-	arcfile = myopen(archive, "rb", SH_DENYWR);
+	arcfile = FindArchive(file, type, &encrypted);
 	if (arcfile == NULL) return(FALSE);
 
-	fseek(arcfile, 0, SEEK_SET);
-	// read one line at a time
-	found=FALSE;
-	done = FALSE;
-	// NEW Encrypted way...
-	sprintf(keyword, "%s", file);
-	while (found == FALSE)
-	{
-		if (fscanf( arcfile, "%[^\r\n]\r\n", line) != 1)
-			break;
-		// look for a word from our prompt line and the starting @#
-		p = &line[2];
-		if (strnicmp(line, "@#", 2) == 0)
-		{
-			if (strnicmp(p, keyword, strlen(keyword)) == 0) {
-				found = TRUE;
-				break;
-			}
-			HelpDecrypt(p);
+	while (!done && WriteArchiveLine(arcfile, encrypted))
+		if (od_get_key(FALSE) != 0)
+			done = TRUE;
 
-			if (p[0] == '\0')
-				found = FALSE;
-			else if (stricmp(p , keyword) == 0 ) {
-				found = TRUE;
-				encrypted = TRUE;
-			}
-			
-		}
-	}
-
-	// display the file...
-	if (found == TRUE)
-	{
-		//od_disp_emu(line, TRUE);
-		//if (type == ASC_FILE) od_printf("\r\n");
-
-		// display one line at a time until done
-		while (fgets(line, sizeof(line), arcfile) && done == FALSE)
-		{
-			truncnl(line);
-			// look for the end
-			if (strnicmp(line, "@#", 2) == 0) 
-				done = TRUE;
-			else
-			{
-				// display the line
-				// od_disp_emu(line, TRUE);
-				if(encrypted)
-					HelpDecrypt(line);
-				od_disp_emu(line, TRUE);
-				//if (type == ASC_FILE)
-					od_printf("\r\n");
-
-				//allow user to exit out early
-				if (od_get_key(FALSE) != 0)
-					done = TRUE;
-//od_printf("%s\n\r", line);
-//od_get_key(TRUE);
-			}
-		}
-//    od_printf("\n\r");
-	}
-
-	fclose(arcfile);
-
-	return(found);
+	return(TRUE);
 }
 
 

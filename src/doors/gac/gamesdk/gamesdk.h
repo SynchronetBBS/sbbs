@@ -210,6 +210,7 @@ void UpdateTime( void );
 #define ANS_FILE -4
 #define ASC_FILE -5
 INT16 g_send_file( char *filename);
+INT16 g_send_file_pause( char *filename);
 INT16 SendArchive(char *file, INT16 type);
 void HelpDecrypt( char *line);
 void ListBBSs( void ); // Lists the BBS in the Tournament League
