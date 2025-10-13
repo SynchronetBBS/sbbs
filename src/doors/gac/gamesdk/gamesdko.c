@@ -21,13 +21,7 @@ void Maintain( void )
 	fclose(gac_debug);
 	#endif
 
-//printf("In Maintain\n");
-//getch();
-
 	Inbound(TRUE);
-//printf("Inbound\n");
-//getch();
-
 
 	// Update the current day
 	sprintf(file, "%scurrent.day", doorpath);
@@ -282,22 +276,18 @@ void SendIBBSData(char inbound, INT16 frombbs)
 	fprintf(fromfile, "%s\r\n", ThisBBSAddress);
 	fclose(fromfile);
 
-//  sprintf(filename, "%sOUTBOUND%cTEMPFILE.ZIP", doorpath, PATH_DELIM);
 	sprintf(filename, "OUTBOUND%ctempfile.zip", PATH_DELIM);
 	if (inbound == FALSE)
 	{
 		sprintf(commandline,"OUT%c*.*",PATH_DELIM);
 		if(fexist(commandline)) {
 			od_printf("`Cyan`     - Zipping outbound data files...\n\r");
-//  if (inbound == TRUE)    sprintf(commandline, "PKZIP.EXE -ex -m %s IN%c*.* >NUL", filename, PATH_DELIM);
 			#ifdef ODPLAT_NIX
 			sprintf(commandline, "zip -9 -m %s OUT%c*.* > /dev/null", filename, PATH_DELIM);
 			#else
 			sprintf(commandline, "PKZIP.EXE -ex -m %s OUT%c*.* >NUL", filename, PATH_DELIM);
 			#endif
 			if (od_spawn(commandline) == FALSE)
-//      sprintf(commandline, "%sOUT%c*.*", doorpath, PATH_DELIM);
-//      if (spawnlp(P_WAIT,"PKZIP.EXE", "-ex", "-m", filename, commandline, ">NUL", NULL) == -1)
 			{
 				#ifdef ODPLAT_NIX
 				od_printf("`bright red`ERROR: zip execution error.\n\r");
@@ -339,7 +329,7 @@ void SendIBBSData(char inbound, INT16 frombbs)
 		if (access(MessageHeader.szSubject, 00) == 0)
 		{
 			od_printf("`Cyan`     - Updating outbound data file for routing...\n\r");
-		 // 1/97 changed filename to MessageHeader.szSubject
+			// 1/97 changed filename to MessageHeader.szSubject
 			#ifdef ODPLAT_NIX
 			sprintf(commandline, "zip -9 -u %s frombbs.dat > /dev/null", MessageHeader.szSubject);
 			#else
@@ -401,9 +391,9 @@ void SendIBBSData(char inbound, INT16 frombbs)
 				// 12/96 Modified to have to BBS in filename
 				// sprintf(sendname, "%sOUTBOUND%c%2.2s%02d%02d%02d.%s", doorpath, PATH_DELIM, ibbsid, t.ti_min, t.ti_sec, t.ti_hund, league);
 				sprintf(sendname, "%sOUTBOUND%c%2.2s%02d%02d%02d.%s", doorpath, PATH_DELIM, ibbsid, InterBBSInfo.paOtherSystem[system].szNumber, t.ti_sec, t.ti_hund, league);
-			#ifdef ODPLAT_DOS
-			delay(100); // slow down 100th of a second
-			#endif
+				#ifdef ODPLAT_DOS
+				delay(100); // slow down 100th of a second
+				#endif
 				// copy the temp filename to this filename
 				if (access(filename, 00) == 0)
 					copyfile(filename, sendname);
@@ -411,14 +401,6 @@ void SendIBBSData(char inbound, INT16 frombbs)
 				// 12/96 modified to have to BBS in filename
 				if (binkley == TRUE) sprintf(sendname, "^%sOUTBOUND%c%2.2s%02d%02d%02d.%s", doorpath, PATH_DELIM, ibbsid, InterBBSInfo.paOtherSystem[system].szNumber, t.ti_sec, t.ti_hund, league);
 
-/*
-				if (copyfile(filename, sendmail)==-1)
-				{
-					od_printf("`bright red`ERROR: Copying file.\n\r");
-					od_log_write("ERROR: Copying File.");
-					od_exit(-1, FALSE);
-				}
-*/
 				// set the subject to this file...delete on send, and toggel file mode
 				strcpy(InterBBSInfo.szSubject,sendname);
 				InterBBSInfo.bFileAttach = TRUE;
@@ -457,14 +439,6 @@ void SendIBBSData(char inbound, INT16 frombbs)
 	  #endif
 		if (access(filename, 00) == 0)
 			copyfile(filename, sendname);
-/*
-		if (copyfile(filename, sendname)==-1)
-		{
-			od_printf("`bright red`ERROR: Copying file.\n\r");
-			od_log_write("ERROR: Copying File.");
-			od_exit(-1, FALSE);
-		}
-*/
 		// 12/96 Modified to have to BBS in filename and use ibbs id
 		if (binkley == TRUE) sprintf(sendname, "^%sOUTBOUND%c%2.2s%02d%02d%02d.%s", doorpath, PATH_DELIM, ibbsid, InterBBSInfo.paOtherSystem[0].szNumber, t.ti_sec, t.ti_hund, league);
 
@@ -498,14 +472,11 @@ void SendIBBSData(char inbound, INT16 frombbs)
 
 void MakeRouteReport( void )
 {
-
-//  char filename[128];
 	FILE *warfile;
 	INT16 i, iCurrentSystem;
 	char blankbuf[ROUTEINFOSIZE+1];
 	FILE *bbsAns, *bbsAsc;
 	char bbsAnsfile[128], bbsAscfile[128];
-//  struct s_bbs_list *currbbs;
 	// 12/96
 	INT16 current_bbs;
 	
@@ -563,7 +534,6 @@ void MakeRouteReport( void )
 	if (access(bbsAscfile, 00 ) == 0) remove(bbsAscfile);
 
 	// Develop the bbs list.
-//  MakeTopBBS(FALSE);
 
 	od_printf("`Cyan`Opening new bulletins ...\n\r");
 
@@ -581,16 +551,13 @@ void MakeRouteReport( void )
 
 	od_printf("`Cyan`Writing new bulletins ..");
 
-//  fputs( szBbslstANS, bbsAns);
         fprintf(bbsAns, "\r\n\r\n                \x1B[0;1;37m*** \x1B[0;1;36mRouting Times for %s \x1B[0;1;37m***\r\n\r\n", od_control.od_prog_name);
 
 	// 12/96
         fprintf(bbsAsc, "\r\n\r\n                *** Routing Times for %s ***\r\n\r\n", od_control.od_prog_name);
 
 
-//      fprintf(bbsAns, "\r\n  \x1B[0;1;37m%-5s %-25s %-15s %-10s %-15s\r\n", "Rank", "BBS Name",  "Total Players",  "Ave Kills", "Ave Experience");
 	fprintf(bbsAns, "\r\n \x1B[0;1;37m%-3s %-25s %-23s     %s\r\n", " #", "BBS Name", "Route Time (Packet Date)", "Version");
-//      fprintf(bbsAsc, "  %-5s %-25s %-15s %-10s %-15s\r\n", "Rank", "BBS Name",  "Total Players",  "Ave Kills", "Ave Experience");
 	fprintf(bbsAsc, " %-3s %-25s %-23s     %s\r\n", " #", "BBS Name",  "Route Time (Packet Date)", "Version");
 
 	fprintf(bbsAns, "\x1B[0;36m");
@@ -603,16 +570,10 @@ void MakeRouteReport( void )
 	fprintf(bbsAns, "\r\n");
 	fprintf(bbsAsc, "\r\n");
 
-	// set the start of the list of top BBSs
-//  currbbs = s_bbslist;
-
 	// loop for each BBS and create a line of information
-//  while ((currbbs != NULL))
-//  {
 	for(iCurrentSystem = 0; iCurrentSystem < InterBBSInfo.nTotalSystems; ++iCurrentSystem)
 	{
 		// read in information for the current bbs...
-//      routing.from_bbs = currbbs->bbs;
 		current_bbs = (int) InterBBSInfo.paOtherSystem[iCurrentSystem].szNumber;
 
 		// Set SEEK to start of file
@@ -687,14 +648,8 @@ void MakeRouteReport( void )
 			 routing.version, "Free");
 #endif
 		}
-//      od_printf("\n\r`Cyan`     - Origin `bright cyan`%s`cyan`      Routing time `bright cyan`%2.2ld:%2.2ld`cyan` (hours:min)\n\r", getbbsname(routing.from_bbs), routing.routetime/3600, (routing.routetime%3600)/60);
-//      od_printf("`cyan`       Packet created on `bright cyan`%s`cyan` at `bright cyan`%s`cyan`\n\r",routing.datebuf,routing.timebuf);
-//      od_printf("`cyan`       Remote Version `bright cyan`%s`cyan` (`bright cyan`%s`cyan`)\n\r", routing.remoteversion, (msg.gems)?"Registered" : "UNREGISTERED");
 
 		od_printf("`Cyan`.");
-		// Increase the current pointer by one
-//      currbbs = currbbs->next;
-
 	}
 	od_printf("`Cyan`\n\r");
 
@@ -721,8 +676,6 @@ INT16 copyfile(char *fromfile, char *tofile)
 	fprintf(gac_debug, "  CopyFile()\n");
 	fclose(gac_debug);
 	#endif
-
-//  char buffer[5000];
 
 	if ((buffer = (char *) malloc(BUF_SIZE)) == NULL)
 	{
@@ -776,7 +729,7 @@ void SendAll( void )
 	#endif
 	// InitIBBS();
 	tODEditOptions myEditOptions;
-   char choice='\0';
+	char choice='\0';
 	
 	#ifdef GAC_DEBUG
 	gac_debug = fopen(gac_debugfile, "a");
@@ -847,18 +800,6 @@ void SendAll( void )
 	 return;
 	}
 
-/*
-   // allow user to enter message using internal editor
-	od_printf("\n\r`bright cyan`Use [ESC] or [CTRL]-[Z] to Save, [CTRL]-[C] to Abort`cyan`\n\r");
-	if (gac_lined(75, 45) == 0)
-	{
-	 g_clr_scr();
-	 od_printf("\n\r\n\r`bright red`Aborted!\n\r\n\r");
-	 gac_pause();
-	 return;
-	}
-*/
-
 	g_clr_scr();
 	od_printf("`cyan`Sending the message to ALL league members\n\r");
 	od_log_write("Sending Message to all League Members");
@@ -912,8 +853,6 @@ void FAR16 InitIBBS( void )
 	char found=FALSE;
 	char templine[81];
 	int i;
-//  char ibbsconfig[128];
-
 
 	#ifdef GAC_DEBUG
 	gac_debug = fopen(gac_debugfile, "a");

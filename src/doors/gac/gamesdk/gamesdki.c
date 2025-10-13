@@ -12,9 +12,7 @@ void OutProcess( void )
 	#ifndef GSDK_OVERLAY
 	static tIBResult returned;
 	#endif
-//  static char buffer[16000];
 	char filename[128];
-//  unsigned int bufsize = 16000;
 
 	#ifdef GAC_DEBUG
 	gac_debug = fopen(gac_debugfile, "a");
@@ -55,88 +53,6 @@ void OutProcess( void )
 	}
 
 	return;
-// Send the created file to all the other systems
-// OutBound();
-
-/*
-	sprintf(InterBBSInfo.szProgName, "%s League %s", ibbsgametitle, league);
-	// Make the name of the file...
-	// sprintf(filename, "%sPLAYER.OUT", doorpath);
-	sprintf(filename, "%sOUT%c%s_p.dat", doorpath, PATH_DELIM, ibbsgametitle);
-	// open the file
-	if ( access( filename, 00) != 0)
-	{
-	 od_printf("No player information to send\n\r");
-	}
-	else
-	{
-		od_printf("\n\r`cyan`Sending OUT%c%s_p.dat file to all systems\n\r", PATH_DELIM, ibbsgametitle);
-		if( (file=nopen(filename,O_RDONLY))==-1)
-		{
-			// couldn't open the file
-			od_printf("`bright red`ERROR: Couldn't open the OUT%c%s_p.dat file\n\r", PATH_DELIM, ibbsgametitle);
-			od_log_write("ERROR: Couldn't open the OUT/game_p.dat file\n\r");
-			return;
-		}
-		lseek(file, 0L, SEEK_SET);
-		// Send the PLAYER.OUT file to all systems
-		// Send the OUT\%s_P.DAT
-		while ( (nbytesread = read( file, buffer,  bufsize)) != 0 )
-		{
-			returned = IBSendAll(&InterBBSInfo, &buffer, nbytesread, thisbbs, TRUE, FALSE );
-			// quit early if there was a problem
-			if (returned != eSuccess)
-			{
-			 ErrorDetect(returned);
-			 close(file);
-			 break;
-			}
-		}
-		close(file);
-		remove(filename);
-		ErrorDetect(returned);
-	}
-
-	// *** Check for and send any message files to all of the other systems.
-
-	od_printf("\n\r`Bright cyan`Checking for Outbound Inter-BBS Message Files\n\r");
-	// Send the created file to all the other systems
-	sprintf(InterBBSInfo.szProgName, "%s League %s MSG", ibbsgametitle, league);
-	for (i=0;i<InterBBSInfo.nTotalSystems; i++)
-	{
-		// Make the name of the file...
-		// sprintf(filename, "%sOUT_MSGS.%d", doorpath, InterBBSInfo.paOtherSystem[i].szNumber);
-		sprintf(filename, "%sOUT%c%s_M.%d", doorpath, PATH_DELIM, ibbsgametitle, InterBBSInfo.paOtherSystem[i].szNumber);
-		if (access(filename, 00) != 0) continue;
-
-		od_printf("`cyan`Sending `bright cyan`OUT%c%s_M.%d`cyan` file to `bright cyan`%s\n\r", PATH_DELIM, ibbsgametitle, InterBBSInfo.paOtherSystem[i].szNumber, InterBBSInfo.paOtherSystem[i].szSystemName);
-		// open the file
-		if( (file=nopen(filename,O_RDONLY))==-1)
-		{
-			// couldn't open the file
-			od_printf("`bright red`ERROR: Couldn't open the OUT%c%s_M.%d file\n\r", PATH_DELIM, ibbsgametitle, i);
-			od_log_write("ERROR: Couldn't open an OUT/GAME_M.# file\n\r");
-			return;
-		}
-		lseek(file, 0L, SEEK_SET);
-		// Send the file to that system
-		while ( (nbytesread = read( file, buffer,  bufsize)) != 0 )
-		{
-			returned = IBSend(&InterBBSInfo, InterBBSInfo.paOtherSystem[i].szAddress, &buffer, nbytesread, TRUE, FALSE );
-			// quit early if there was a problem
-			if (returned != eSuccess)
-			{
-			 ErrorDetect(returned);
-			 close(file);
-			 break;
-			}
-		}
-		close(file);
-		remove(filename);
-		ErrorDetect(returned);
-	}
-*/
-//  return;
 }
 
 
@@ -302,7 +218,6 @@ void InProcess( void )
 				read(file, realname, 51L);
 				read(file, &bbs, 2L);
 				bbs=LE_SHORT(bbs);
-//              read(file, buffer, USER_MSG_LEN);
 				read(file, &msg_length, 2L);
 				msg_length=LE_SHORT(msg_length);
 				read(file, msg_text, msg_length);
@@ -311,7 +226,6 @@ void InProcess( void )
 				bbs=LE_SHORT(bbs);
 				write(playerfile, &bbs, 2L);
 				bbs=LE_SHORT(bbs);
-//              write(playerfile, buffer, USER_MSG_LEN);
 				msg_length=LE_SHORT(msg_length);
 				write(playerfile, &msg_length, 2L);
 				msg_length=LE_SHORT(msg_length);
@@ -402,7 +316,6 @@ void ProcessRoute( void )
 void UpdateRouteFile( void )
 {
 
-//  char filename[128];
 	FILE *warfile;
 	INT16 i;
 	char blankbuf[ROUTEINFOSIZE+1];
@@ -433,9 +346,6 @@ void UpdateRouteFile( void )
 
 		memset(blankbuf, '0', ROUTEINFOSIZE);
 		blankbuf[ROUTEINFOSIZE]=0;
-		//setmem(blankbuf, ROUTEINFOSIZE, '0');
-//od_printf("Blankbuf - %s\n\r", blankbuf);
-//od_get_key(TRUE);
 		// write enough zeros for 256 BBSs
 		for (i=0; i<=256; i++)
 		{
@@ -499,12 +409,9 @@ void FAR16 Inbound( INT16 night )
 	static tIBResult returned;
 	#endif
 	FILE *config, *fromfile;
-//  unsigned attrib;
 	char zipfile[15];
 	INT16 i,j;
 	INT16 value1, value2, value3;
-
-//	INT16 done=-1;
 
 	char filename[256];
 
@@ -515,9 +422,6 @@ void FAR16 Inbound( INT16 night )
 	fprintf(gac_debug, "  Inbound()\n");
 	fclose(gac_debug);
 	#endif
-
-//printf("In Inbound\n");
-//getch();
 
 	chdir(doorpath);
 
@@ -548,24 +452,9 @@ void FAR16 Inbound( INT16 night )
 	sprintf(InterBBSInfo.szProgName, "%-.20s League %-.3s", ibbsgametitle, league);
 
 	// check to see if this is cleanup processing and if there are files to find
-//    if (night == CLEANUP)
-//    {
 	 od_printf("`bright cyan`     - Finding First Inbound File\n\r");
 	 sprintf(filename, "%s%2.2s*.%.3s", inbounddir, ibbsid, league);
 	 /*done = */glob(filename, 0, NULL, &ffblk);
-//    }
-
-	// new PKUNZIP routines
-	/*
-	while (
-		((returned = IBGet(&InterBBSInfo, msg_text, MSG_LENGTH-1 ) ) == eSuccess
-		&& night != CLEANUP) ||
-		(!done)
-		)
-	*/
-
-//printf("Before While\n");
-//getch();
 
 	for(j=0; j<ffblk.gl_pathc; j++)
 	{
@@ -614,8 +503,6 @@ void FAR16 Inbound( INT16 night )
 			foundFromBBS = TRUE;
 		}
 
-	//if (night != CLEANUP)
-	//{
 		// build a net/node string and search to determine which BBS number
 		// the file came from.
 		// Removed on 10/96
@@ -635,20 +522,8 @@ void FAR16 Inbound( INT16 night )
 
 		// Unzip the incoming file
 		od_printf("`bright cyan`     Processing inbound data from `bright cyan`%s\n\r", getbbsname(tempbbs));
-	/*
-	}
-	else
-	{
-		od_printf("`bright cyan`     Processing orphaned inbound data\n\r");
-		strcpy(MessageHeader.szSubject, ffblk.gl_pathv[j]);
-	}
-	*/
-
 		od_printf("`bright cyan`     - Unzipping data\n\r");
 		// unzip it into the door directory (forces overwriting)
-
-//      sprintf(filename, "-o %s >NUL", MessageHeader.szSubject);
-//      if (spawnlp(P_WAIT,"PKUNZIP.EXE", filename, NULL) == -1)
 
 		// had to add a check to make sure the file exists, if not then add
 		// the inbound path to the file and make it work that way...
@@ -660,10 +535,8 @@ void FAR16 Inbound( INT16 night )
 				// GAC 10/96 Modified this to concant the correct filename to the end
 				// of the inbound path.
 				zipfile[i] = MessageHeader.szSubject[strlen(MessageHeader.szSubject) - 9 - strlen(league) + i];
-//                zipfile[i] = MessageHeader.szSubject[i];
 				//exit early if we find the end of the string
 				if (MessageHeader.szSubject[strlen(MessageHeader.szSubject) - 9 - strlen(league)  + i] == '\0')
-//                if (MessageHeader.szSubject[i] == '\0')
 					i = 13;
 			}
 			zipfile[12] = '\0';
@@ -749,25 +622,6 @@ void FAR16 Inbound( INT16 night )
 
 		}
 
-		// copy the file to OUTBOUND\TEMPFILE.ZIP
-/*
-		od_printf("`bright cyan`     - Copying file for routing\n\r");
-		sprintf(filename, "%sOUTBOUND%ctempfile.zip", doorpath, PATH_DELIM);
-		if (access(MessageHeader.szSubject, 00) == 0)
-			copyfile(MessageHeader.szSubject, filename);
-*/
-//      remove(MessageHeader.szSubject);
-/*
-		sprintf(filename, "OUTBOUND%ctempfile.zip", PATH_DELIM);
-		if (copyfile(MessageHeader.szSubject, filename)==-1)
-		{
-			od_printf("`bright red`ERROR: Copying file for routing.\n\r");
-			od_log_write("ERROR: Copying file for routing.");
-			remove(MessageHeader.szSubject);
-			od_exit(-1, FALSE);
-		}
-*/
-
 		/////// process the information for this bbs
 		InProcess();
 
@@ -788,7 +642,6 @@ void FAR16 Inbound( INT16 night )
 		// if (night == CLEANUP)
 
 	}
-//	done = TRUE;
 
 	// check for a reset file
 	sprintf(filename, "%sIN%c%s_n.dat", doorpath, PATH_DELIM, ibbsgametitle);
@@ -869,7 +722,6 @@ void FAR16 ResetIBBS( void )
 		// open and create a file called RESET.DAT in the OUT directory
 		sprintf(filename, "%sOUT%c%s_n.dat", doorpath, PATH_DELIM, ibbsgametitle);
 		config = fopen(filename, "wb");
-//      fprintf(config, "041872");
 		value = LE_SHORT(4);
 		fwrite(&value, 2, 1, config);
 		value = LE_SHORT(18);
