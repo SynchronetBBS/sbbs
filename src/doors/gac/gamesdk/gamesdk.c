@@ -19,7 +19,6 @@ int main(int argc, char *argv[])
 //void main(int argc, char **argv)
 {
 	char filename[128];
-	char temp[10];
 	int online;
 	char *dot = NULL;
 	char *ext = NULL;
@@ -57,8 +56,7 @@ int main(int argc, char *argv[])
 	
 	// Set a variable to the doors path
 	#ifndef ODPLAT_WIN32
-	strcpy(doorpath, "");
-	strncat(doorpath, argv[0], sizeof(doorpath));
+	strlcpy(doorpath, argv[0], sizeof(doorpath));
 	#else
 	doorpath[0]=0;
 	doorpath[1]=PATH_DELIM;
@@ -76,44 +74,28 @@ int main(int argc, char *argv[])
 	}
 
 	// Set the config file name
-	#ifndef ODPLAT_WIN32
-	 strcpy(configfile, "");
-	 #ifdef ODPLAT_NIX
-	  strncat(configfile, argv[0], sizeof(configfile));
-	  strcat(configfile, ".");
-	 #else
-	  strncat(configfile, argv[0], sizeof(configfile));
-	 #endif
-	 ext = strrchr(configfile, '.');
-	#endif
 	do {
-		#ifndef ODPLAT_WIN32
-		 if (ext == NULL) {
-			strcpy(configfile, "");
-			#ifdef ODPLAT_NIX
-			 strncat(configfile, argv[0], (strlen(argv[0])) );
-			 strcat(configfile, ".");
+		if (!ext) {
+			#ifndef ODPLAT_WIN32
+			 strlcpy(configfile, argv[0], sizeof(configfile));
+			 #ifdef ODPLAT_NIX
+			  strlcat(configfile, ".", sizeof(configfile));
+			 #endif
 			#else
-			 strncat(configfile, argv[0], (strlen(argv[0]) - 3) );
+#warning TODO: Us the new od_split_cmd_line() function with argv[0]
+			 strlcpy(configfile, executable, sizeof(configfile));
 			#endif
 			ext = strrchr(configfile, '.');
-		 }
-		 else {
-			 *ext = 0;
-			 dot = strrchr(configfile, '.');
-			 if (dot) {
-				 *dot = 0;
-			 }
-			 strcat(configfile, ".");
-			 ext = strrchr(configfile, '.');
-		 }
-		 strcat(configfile, "cfg");
-		#else
-#warning TODO: Us the new od_split_cmd_line() function with argv[0]
-		 strcpy(configfile, "");
-		 strncat(configfile, executable, (strlen(executable) - 3) );
-		 strcat(configfile, "CFG");
-		#endif
+		}
+		if (ext) {
+			*ext = 0;
+			dot = strrchr(configfile, '.');
+			if (dot) {
+				*dot = 0;
+			}
+			strcat(configfile, ".");
+		}
+		strlcat(configfile, "cfg", sizeof(configfile));
 	} while((dot && ext) && !fexist(configfile));
 
 	od_control.od_config_filename = configfile;
@@ -126,20 +108,7 @@ int main(int argc, char *argv[])
 	#endif
 	
 	// Set the name of the log file
-	#ifndef ODPLAT_WIN32
-	strcpy(od_control.od_logfile_name, "");
-	//strncat(od_control.od_logfile_name, argv[0], (strlen(argv[0]) - 7) );
-	strcat(od_control.od_logfile_name, "gac" );
-	sprintf(temp, "%d", od_control.od_node);
-	strcat(od_control.od_logfile_name, temp);
-	strcat(od_control.od_logfile_name, ".log");
-	#else
-	strcpy(od_control.od_logfile_name, "");
-	strncat(od_control.od_logfile_name, executable, (strlen(executable) - 7) );
-	sprintf(temp, "%d", od_control.od_node);
-	strcat(od_control.od_logfile_name, temp);
-	strcat(od_control.od_logfile_name, ".log");
-	#endif
+	snprintf(od_control.od_logfile_name, sizeof(od_control.od_logfile_name), "gac%d.log", od_control.od_node);
 
 	// check for and create in directory
 	strcpy(filename, doorpath);
@@ -394,7 +363,7 @@ int main(int argc, char *argv[])
 	if (access(filename, 00) == 0) remove(filename);
 	online = nopen(filename, O_RDWR|O_CREAT);
 	lseek(online,0L,SEEK_SET);
-	strncpy(tmpname, player.names, sizeof(tmpname));
+	strlcpy(tmpname, player.names, sizeof(tmpname));
 	write(online,tmpname,sizeof(tmpname));
 	close(online);
 
@@ -3714,14 +3683,6 @@ INT16 SendArchive(char *file, INT16 type)
 	// read one line at a time
 	found=FALSE;
 	done = FALSE;
-/*  OLD UNENCRYPTED WAY  
-	sprintf(keyword, "@#%s", file);
-	while (fscanf( arcfile, "%[^\n\r]\r\n", line) == 1 && found == FALSE)
-	{
-		// look for our keyword...  2+(strlen(file)
-		if (strnicmp(line, keyword, 2+strlen(file)) == 0) found = TRUE;
-	}
-*/
 	// NEW Encrypted way...
 	sprintf(keyword, "%s", file);
 	while (found == FALSE)
@@ -3738,13 +3699,6 @@ INT16 SendArchive(char *file, INT16 type)
 			}
 			HelpDecrypt(p);
 
-			// if there are blanks on the end remove them...
-/*
-			while (p[strlen(p)-1] == ' ')
-			{
-				p[strlen(p)-1] = '\0';
-			}
-*/
 			if (p[0] == '\0')
 				found = FALSE;
 			else if (stricmp(p , keyword) == 0 ) {
@@ -3838,82 +3792,6 @@ void HelpDecrypt( char *line)
 
 	return;
 }
-
-/*
-
-// will attempt to open a ART archive and send the file requested.
-// returns TRUE if sent successfully
-INT16 SendArchive(char *file, INT16 type)
-{
-
-	char archive[128], line[260], keyword[15];
-	FILE *arcfile;
-	INT16 found=FALSE, done=FALSE;
-
-	if (type == RIP_FILE)
-		sprintf(archive, "%s%4.4srip.art", doorpath, executable);
-	else if (type == ANS_FILE)
-		sprintf(archive, "%s%4.4sans.art", doorpath, executable);
-	else if (type == ASC_FILE)
-		sprintf(archive, "%s%4.4sasc.art", doorpath, executable);
-
-//od_printf("%s\n\r", archive);
-//od_get_key(TRUE);
-
-
-	// open the file and search for the string #@file then display everything
-	// until we get to #@ again
-
-	if (access(archive, 00) != 0) return(FALSE);
-
-	arcfile = fopen(archive, "rb");
-	if (arcfile == NULL) return(FALSE);
-
-	fseek(arcfile, 0, SEEK_SET);
-	// read one line at a time
-	found=FALSE;
-	done = FALSE;
-	sprintf(keyword, "@#%s", file);
-//od_printf("%s\n\r", keyword);
-//od_get_key(TRUE);
-	while (fscanf( arcfile, "%[^\r\n]\r\n", line) == 1 && found == FALSE)
-	{
-		// look for our keyword...  2+(strlen(file)
-		if (strnicmp(line, keyword, 2+strlen(file)) == 0) found = TRUE;
-//od_printf("%s\n\r", line);
-//od_get_key(TRUE);
-
-	}
-
-	// display first line already read in
-	if (found == TRUE)
-	{
-		od_disp_emu(line, TRUE);
-		if (type == ASC_FILE) od_printf("\r\n");
-
-		// display one line at a time until done
-		while (fscanf( arcfile, "%[^\r\n]\r\n", line) == 1 && done == FALSE)
-		{
-			// look for our keyword...
-			if (strnicmp(line, "@#", 2) == 0) done = TRUE;
-			else
-			{
-				// display the line
-				od_disp_emu(line, TRUE);
-				if (type == ASC_FILE) od_printf("\r\n");
-//od_printf("%s\n\r", line);
-//od_get_key(TRUE);
-			}
-		}
-//    od_printf("\n\r");
-	}
-
-	fclose(arcfile);
-
-	return(found);
-}
-*/
-
 
 // ===========================================================================
 // Simply outputs the list of Participating BBSs to the screen
