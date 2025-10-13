@@ -31,7 +31,7 @@ void SetProgVariables(void)
 // Configuration for parameters unique to this game
 void PrivateConfig(char *keyword, char *options)
 {
-	if(stricmp(keyword, "MAX_GAMES") == 0)
+	if(stricmp(keyword, "MAXGAMES") == 0)
 	{
 		maxGames=atoi(options);
 	}
@@ -116,7 +116,8 @@ void Config( void )
 	// disable the status line
 	od_set_statusline(STATUS_NONE);
 	od_control.od_status_on = FALSE;
-	window(1,1,25,80);
+#warning TODO: Did this work around an OpenDoors bug?
+	//window(1,1,25,80);
 	od_clr_scr();
 
 	od_control.od_help_text2 = (char *) "Copyright GAC/Vagabond Software - [F1]=User Info [F10]=Disable Status Line";
@@ -519,7 +520,7 @@ void Title( void )
 						case 'L':
 							od_clr_scr();
 							od_printf("`Bright Cyan`");
-							od_send_file(ibbsgametitle);
+							g_send_file_pause(ibbsgametitle);
 							gac_pause();
 							break;
 						case 'R':
@@ -625,7 +626,7 @@ void InitGamePlay( void )
 	// test for a answer to ctrl-e ============================================
 	od_clear_keybuffer();
 
-	od_putch(5); // ctrl-e
+	od_disp_str("\x05\b \b"); // ctrl-e then erase it
 	od_sleep(500);
 	if(od_get_key(0))
 	{
@@ -652,7 +653,7 @@ void InitGamePlay( void )
 
 char *apszPrivateKeyWord[PRIVATE_NUM_KEYWORDS] = {
 					// These can be changed for each application
-					"Max_Games",
+					"MaxGames",
 					 "Length",
 				   };
 

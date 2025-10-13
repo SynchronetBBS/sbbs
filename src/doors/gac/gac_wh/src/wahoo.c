@@ -1234,7 +1234,7 @@ INT16 WaHooInit( void )
 	else if (choice == 'Y')
 	{
 		// display the instructions
-		g_send_file(ibbsgametitle);
+		g_send_file_pause(ibbsgametitle);
 		gac_pause();
 	}
 
