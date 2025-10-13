@@ -31,3 +31,7 @@ $(PACKART): $(PACKART_OBJS) $(BUILD_DEPENDS) $(XPDEV_LIB) |  $(EXEODIR)
 $(UNPACKART): $(UNPACKART_OBJS) $(BUILD_DEPENDS) $(XPDEV_LIB) | $(EXEODIR)
 	@echo Linking $@
 	${QUIET}$(CC) $(LDFLAGS) $(UNPACKART_OBJS) -o $@ $(XPDEV_LIBS)
+
+.PHONY: packart-path
+packart-path:
+	@echo PACKART PATH: $(PACKART)

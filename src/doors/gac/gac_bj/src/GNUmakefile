@@ -19,6 +19,8 @@ ASCII_FILES := $(wildcard ../art/*.asc)
 ASCART := ..$(DIRSEP)gac_asc.art
 RIP_FILES := $(wildcard ../art/*.rip)
 RIPART := ..$(DIRSEP)gac_rip.art
+PACKART_PATH := ..$(DIRSEP)..$(DIRSEP)gamesdk$(DIRSEP)$(shell env - PATH="$(PATH)" $(MAKE) -C ../../gamesdk RELEASE=1 packart-path | awk '/^PACKART PATH:/ {print $$3}')
+DEBUG := $(shell echo $(PACKART_PATH))
 
 all: $(ANSART) $(ASCART) $(RIPART)
 ifdef RELEASE
@@ -33,20 +35,24 @@ $(GAC_BJ_DST): $(GAC_BJ)
 	@echo Copying release $@
 	$(QUIET)cp -f $(GAC_BJ) $@
 
-$(ANSART): $(ANSI_FILES) $(PACKART)
+.PHONY: $(PACKART_PATH)
+$(PACKART_PATH):
+	env - PATH="$(PATH)" $(MAKE) -C ../../gamesdk RELEASE=1
+
+$(ANSART): $(ANSI_FILES) $(PACKART_PATH)
 	@echo Packing $@
 	$(QUIET)rm -f $(ANSART)
-	$(QUIET)$(PACKART) $(ANSART) $(ANSI_FILES)
+	$(QUIET)$(PACKART_PATH) $(ANSART) $(ANSI_FILES)
 
-$(ASCART): $(ASCII_FILES) $(PACKART)
+$(ASCART): $(ASCII_FILES) $(PACKART_PATH)
 	@echo Packing $@
 	$(QUIET)rm -f $(ASCART)
-	$(QUIET)$(PACKART) $(ASCART) $(ASCII_FILES)
+	$(QUIET)$(PACKART_PATH) $(ASCART) $(ASCII_FILES)
 
-$(RIPART): $(RIP_FILES) $(PACKART)
+$(RIPART): $(RIP_FILES) $(PACKART_PATH)
 	@echo Packing $@
 	$(QUIET)rm -f $(RIPART)
-	$(QUIET)$(PACKART) $(RIPART) $(RIP_FILES)
+	$(QUIET)$(PACKART_PATH) $(RIPART) $(RIP_FILES)
 
 .PHONY: relclean
 relclean:
