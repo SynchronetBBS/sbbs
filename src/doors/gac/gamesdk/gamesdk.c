@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 	// Set a variable to the doors path
 	#ifndef ODPLAT_WIN32
 	strcpy(doorpath, "");
-	strncat(doorpath, argv[0], (strlen(argv[0]) - strlen(executable)) );
+	strncat(doorpath, argv[0], sizeof(doorpath));
 	#else
 	doorpath[0]=0;
 	doorpath[1]=PATH_DELIM;
@@ -79,10 +79,10 @@ int main(int argc, char *argv[])
 	#ifndef ODPLAT_WIN32
 	 strcpy(configfile, "");
 	 #ifdef ODPLAT_NIX
-	  strncat(configfile, argv[0], (strlen(argv[0])) );
+	  strncat(configfile, argv[0], sizeof(configfile));
 	  strcat(configfile, ".");
 	 #else
-	  strncat(configfile, argv[0], (strlen(argv[0]) - 3) );
+	  strncat(configfile, argv[0], sizeof(configfile));
 	 #endif
 	 ext = strrchr(configfile, '.');
 	#endif
@@ -395,7 +395,7 @@ int main(int argc, char *argv[])
 	online = nopen(filename, O_RDWR|O_CREAT);
 	lseek(online,0L,SEEK_SET);
 	strncpy(tmpname, player.names, sizeof(tmpname));
-	write(online,player.names,sizeof(tmpname));
+	write(online,tmpname,sizeof(tmpname));
 	close(online);
 
 	// Check to see if the user has any mail waiting.
