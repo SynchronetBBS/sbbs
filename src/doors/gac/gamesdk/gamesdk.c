@@ -796,7 +796,7 @@ void CheckPlayer( void )
 		// display the rules...
 		od_clr_scr();
 		od_printf("`Bright Cyan`");
-		g_send_file(ibbsgametitle); // 12/96
+		g_send_file_pause(ibbsgametitle); // 12/96
 		gac_pause();
 	}
 
