@@ -47,3 +47,9 @@ $(RIPART): $(RIP_FILES) $(PACKART)
 	@echo Packing $@
 	$(QUIET)rm -f $(RIPART)
 	$(QUIET)$(PACKART) $(RIPART) $(RIP_FILES)
+
+.PHONY: relclean
+relclean:
+	rm -f $(ANSART) $(ASCART) $(RIPART) $(GAC_BJ_DST)
+
+clean: relclean
