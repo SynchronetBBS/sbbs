@@ -20,6 +20,7 @@ int main(int argc, char *argv[])
 {
 	char filename[128];
 	int online;
+	char *fname = NULL;
 	char *dot = NULL;
 	char *ext = NULL;
 	char tmpname[36];
@@ -74,29 +75,31 @@ int main(int argc, char *argv[])
 	}
 
 	// Set the config file name
+	#ifdef ODPLAT_WIN32
+	 // Assumed to end in .EXE
+	 strlcpy(configfile, executable, sizeof(configfile));
+	#else
+	 strlcpy(configfile, argv[0], sizeof(configfile));
+#warning TODO: Use the new od_split_cmd_line() function with argv[0]
+	 strlcat(configfile, ".", sizeof(configfile));
+	#endif
+	fname = getfname(configfile);
 	do {
-		if (!ext) {
-			#ifndef ODPLAT_WIN32
-			 strlcpy(configfile, argv[0], sizeof(configfile));
-			 #ifdef ODPLAT_NIX
-			  strlcat(configfile, ".", sizeof(configfile));
-			 #endif
-			#else
-#warning TODO: Us the new od_split_cmd_line() function with argv[0]
-			 strlcpy(configfile, executable, sizeof(configfile));
-			#endif
+		if (dot) {
 			ext = strrchr(configfile, '.');
+			if (ext && ext < fname)
+				ext = NULL;
+			if (ext)
+				*ext = 0;
 		}
-		if (ext) {
-			*ext = 0;
-			dot = strrchr(configfile, '.');
-			if (dot) {
-				*dot = 0;
-			}
-			strcat(configfile, ".");
+		dot = strrchr(configfile, '.');
+		if (dot && dot < fname)
+			dot = NULL;
+		if (dot) {
+			*dot = 0;
 		}
-		strlcat(configfile, "cfg", sizeof(configfile));
-	} while((dot && ext) && !fexist(configfile));
+		strlcat(configfile, ".cfg", sizeof(configfile));
+	} while((dot) && !fexist(configfile));
 
 	od_control.od_config_filename = configfile;
 
@@ -2368,6 +2371,8 @@ void    MakeTopBBS( INT16 average )
 	fclose(gac_debug);
 	#endif
 
+	if (InterBBSInfo.nTotalSystems == 0)
+		return;
 
 	// Deallocate the memory for the previous list (if any
 	// Since we allocated mem, we need to free it
