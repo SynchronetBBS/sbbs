@@ -77,12 +77,6 @@
 #include "ODFrame.h"
 #endif /* ODPLAT_WIN32 */
 
-#if defined(ODPLAT_WIN32) && defined(_MSC_VER)
-#undef P_WAIT
-#undef P_NOWAIT
-#include <process.h>
-#endif /* ODPLAT_WIN32 && _MSC_VER */
-
 #ifdef ODPLAT_DOS
 
 /* Local and global variables for memory swapping spawn routines. */

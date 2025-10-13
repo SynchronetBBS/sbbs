@@ -350,8 +350,12 @@ typedef struct
 #define MAYBE 2
 
 /* od_spawnvpe() flags. */
+#ifdef ODPLAT_WIN32
+#include <process.h>
+#else
 #define P_WAIT                  0
 #define P_NOWAIT                1
+#endif
 #define CURRENT                 0
 #define IRET                    1
 
