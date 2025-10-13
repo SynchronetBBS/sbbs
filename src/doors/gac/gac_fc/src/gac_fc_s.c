@@ -33,7 +33,7 @@ void SetProgVariables(void)
 // Configuration for parameters unique to this game
 void PrivateConfig(char *keyword, char *options)
 {
-	if(stricmp(keyword, "MAX_GAMES") == 0)
+	if(stricmp(keyword, "MAXGAMES") == 0)
 	{
 		maxGames=atoi(options);
 	}
@@ -643,7 +643,7 @@ void Title( void )
 
 char *apszPrivateKeyWord[PRIVATE_NUM_KEYWORDS] = {
 					// These can be changed for each application
-					"Max_Games",
+					"MaxGames",
 					 "Length",
 				   };
 
