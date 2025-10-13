@@ -552,7 +552,7 @@ void Title( void )
 						case 'L':
 							od_clr_scr();
 							od_printf("`Bright Cyan`");
-							od_send_file(ibbsgametitle);
+							g_send_file(ibbsgametitle);
 							gac_pause();
 							break;
 						case 'R':
