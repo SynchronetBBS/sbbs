@@ -86,7 +86,7 @@ main(int argc, char **argv)
 			*ext = 0;
 			ext = strrchr(p, '_');
 			if (ext) {
-				ext++;
+				*ext = '.';
 			}
 			else {
 				FREE_AND_NULL(dupfname);
@@ -107,19 +107,27 @@ main(int argc, char **argv)
 
 	while (fscanf(infile, "%[^\r\n]\r\r", line) == 1) {
 		if (line[0] == '@' && line[1] == '#') {
+			int skip = 0;
+
 			if (outfile)
 				fclose(outfile);
 			HelpDecrypt(&line[2]);
 			strlcat(line, ext, sizeof(line));
-			if (strlen(line) < 2)
-				fprintf(stderr, "Skipping: %02x, %02x (%s)\n", line[0], line[1], line);
-			if (fexist(line)) {
-				fprintf(stderr, "%s already exists, skipping\n", line);
+			for (p = line; *p; p++) {
+				if (*p < 32 || *p > 126) {
+					skip = 1;
+					break;
+				}
 			}
-			else {
-				outfile = fopen(line, "wb");
-				if (outfile == NULL) {
-					fprintf(stderr, "Error %d opening %s\n", errno, line);
+			if (!skip) {
+				if (fexist(line)) {
+					fprintf(stderr, "%s already exists, skipping\n", line);
+				}
+				else {
+					outfile = fopen(&line[2], "wb");
+					if (outfile == NULL) {
+						fprintf(stderr, "Error %d opening %s\n", errno, line);
+					}
 				}
 			}
 		}
