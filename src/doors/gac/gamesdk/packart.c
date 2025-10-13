@@ -59,7 +59,7 @@ main(int argc, char **argv)
 	char *p;
 	char *fname;
 
-	if (argc < 3)
+	if (argc < 2)
 		usage(argv[0]);
 	if (fexist(argv[1])) {
 		fprintf(stderr, "%s already exists\n", argv[1]);
