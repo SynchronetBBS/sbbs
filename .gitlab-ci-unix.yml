@@ -899,6 +899,7 @@ spec:
       - "src/doors/gac/gac_bj/*.doc"
       - "src/doors/gac/gac_bj/*.sh"
       - "src/doors/gac/gac_bj/gac_bj"
+      - "src/doors/gac/gac_fc/gac_bj.*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [gamesdk]"
@@ -934,6 +935,7 @@ spec:
       - "src/doors/gac/gac_fc/*.doc"
       - "src/doors/gac/gac_fc/*.sh"
       - "src/doors/gac/gac_fc/gac_fc"
+      - "src/doors/gac/gac_fc/gac_fc.*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [gamesdk]"
