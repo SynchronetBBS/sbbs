@@ -39,8 +39,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "parsing.h"
 #include "k_clansi.h"
 
-struct IniFile IniFile = { FALSE };
-extern __BOOL Verbose;
+struct IniFile IniFile = { false };
+extern bool Verbose;
 
 void DisplayStr(char *);
 
@@ -60,7 +60,7 @@ void ClansIni_Init(void)
 	}
 
 
-	IniFile.Initialized = FALSE;
+	IniFile.Initialized = false;
 
 	for (iTemp = 0; iTemp < MAX_NPCFILES; iTemp++)
 		IniFile.pszNPCFileName[iTemp] = NULL;
@@ -194,7 +194,7 @@ void ClansIni_Close(void)
 {
 	int iTemp;
 
-	if (IniFile.Initialized == FALSE) return;
+	if (IniFile.Initialized == false) return;
 
 	if (IniFile.pszLanguage)
 		free(IniFile.pszLanguage);
@@ -225,5 +225,5 @@ void ClansIni_Close(void)
 		if (IniFile.pszVillages[iTemp])
 			free(IniFile.pszVillages[iTemp]);
 
-	IniFile.Initialized = FALSE;
+	IniFile.Initialized = false;
 }

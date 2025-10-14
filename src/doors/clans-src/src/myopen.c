@@ -47,7 +47,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
  */
 {
 	FILE *fp;
-	BOOL FoundFile = FALSE;
+	bool FoundFile = false;
 	char szPakFileName[50], szModFileName[50], *pc;
 
 	strcpy(szModFileName, szFileName);
@@ -93,7 +93,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 			// od_printf("read in %s\n\r", FileHeader->szFileName);
 
 			if (stricmp(FileHeader->szFileName, szModFileName) == 0) {
-				FoundFile = TRUE;
+				FoundFile = true;
 				break;
 			}
 			else  // go onto next file
@@ -141,7 +141,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 	}
 }
 
-void EncryptWrite(void *Data, long DataSize, FILE *fp, char XorValue)
+void EncryptWrite(void *Data, int32_t DataSize, FILE *fp, char XorValue)
 {
 	char *EncryptedData;
 
@@ -149,23 +149,23 @@ void EncryptWrite(void *Data, long DataSize, FILE *fp, char XorValue)
 		System_Error("EncryptWrite() called with 0 bytes\n");
 	}
 
-	//printf("EncryptWrite(): Data size is %d\n", (_INT16)DataSize);
-	EncryptedData = malloc((_INT16)DataSize);
+	//printf("EncryptWrite(): Data size is %d\n", (int16_t)DataSize);
+	EncryptedData = malloc((int16_t)DataSize);
 	CheckMem(EncryptedData);
 
 	/*  -- Removed the original Encrypt() function for simplicity
 	    Encrypt(EncryptedData, (char *)Data, DataSize, XorValue);*/
 	cipher(EncryptedData, Data, DataSize, (unsigned char)XorValue);
 
-	fwrite(EncryptedData, (_INT16)DataSize, 1, fp);
+	fwrite(EncryptedData, (int16_t)DataSize, 1, fp);
 
 	free(EncryptedData);
 }
 
-_INT16 EncryptRead(void *Data, long DataSize, FILE *fp, char XorValue)
+int16_t EncryptRead(void *Data, int32_t DataSize, FILE *fp, char XorValue)
 {
 	char *EncryptedData;
-	_INT16 Result;
+	int16_t Result;
 
 	if (DataSize == 0) {
 		System_Error("EncryptRead() called with 0 bytes\n");

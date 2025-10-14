@@ -3,17 +3,17 @@ void Empire_Stats(struct empire *Empire);
 
 void Empire_Maint(struct empire *Empire);
 
-void Empire_Create(struct empire *Empire, BOOL UserEmpire);
+void Empire_Create(struct empire *Empire, bool UserEmpire);
 
 void Empire_Manage(struct empire *Empire);
 
 void DonateToEmpire(struct empire *Empire);
 
 
-_INT16 ArmySpeed(struct Army *Army);
-long ArmyOffense(struct Army *Army);
-long ArmyDefense(struct Army *Army);
-long ArmyVitality(struct Army *Army);
+int16_t ArmySpeed(struct Army *Army);
+int32_t ArmyOffense(struct Army *Army);
+int32_t ArmyDefense(struct Army *Army);
+int32_t ArmyVitality(struct Army *Army);
 
 void ProcessAttackResult(struct AttackResult *AttackResult);
 void ProcessAttackPacket(struct AttackPacket *AttackPacket);

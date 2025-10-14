@@ -76,10 +76,10 @@ extern struct Language *Language;
 extern struct IniFile IniFile;
 extern struct ibbs IBBS;
 extern struct game Game;
-BOOL Verbose = FALSE;
+bool Verbose = false;
 
 // ------------------------------------------------------------------------- //
-BOOL System_LockedOut(void)
+bool System_LockedOut(void)
 {
 	FILE *fp;
 	char szLine[128], *pcCurrentPos;
@@ -87,7 +87,7 @@ BOOL System_LockedOut(void)
 	// read in file
 	fp = fopen("lockout.txt", "r");
 	if (!fp)
-		return FALSE;
+		return false;
 
 	// while not end of file
 	for (;;) {
@@ -106,10 +106,10 @@ BOOL System_LockedOut(void)
 		// else, compare names
 		if (stricmp(pcCurrentPos, od_control.user_name) == 0) {
 			fclose(fp);
-			return TRUE;
+			return true;
 		}
 	}
-	return FALSE;
+	return false;
 }
 
 // ------------------------------------------------------------------------- //
@@ -151,7 +151,7 @@ void Config_Init(void)
 	char szConfigName[40], szConfigLine[255];
 	char *pcCurrentPos;
 	char szToken[MAX_TOKEN_CHARS + 1];
-	_INT16 iKeyWord, iCurrentNode = 1;
+	int16_t iKeyWord, iCurrentNode = 1;
 
 	if (Verbose) {
 		DisplayStr("> Config_Init()\n");
@@ -170,8 +170,8 @@ void Config_Init(void)
 	Config->szRegcode[0] = 0;
 	Config->BBSID = 0;
 
-	System.InterBBS = FALSE;
-	Config->InterBBS = FALSE;
+	System.InterBBS = false;
+	Config->InterBBS = false;
 
 	fpConfigFile = _fsopen(szConfigName, "rt", SH_DENYWR);
 	if (!fpConfigFile) {
@@ -229,7 +229,7 @@ void Config_Init(void)
 						if (System.Node == iCurrentNode) {
 							if (stricmp(pcCurrentPos, "No") == 0) {
 								/* do not use fossil */
-								od_control.od_no_fossil = TRUE;
+								od_control.od_no_fossil = true;
 							}
 						}
 						break;
@@ -268,8 +268,8 @@ void Config_Init(void)
 							Config->MailerType = MAIL_OTHER;
 						break;
 					case 14 : /* in a league? */
-						System.InterBBS = TRUE;
-						Config->InterBBS = TRUE;
+						System.InterBBS = true;
+						Config->InterBBS = true;
 						break;
 					case 15 : /* regcode */
 						if (*pcCurrentPos)
@@ -362,8 +362,8 @@ void PrimitiveCommandLine(void)
  * game being loaded yet).
  */
 {
-	_INT16 cTemp, iKeyWord;
-	BOOL FoundMatch;
+	int16_t cTemp, iKeyWord;
+	bool FoundMatch;
 	char *szHelp = "|02Invalid parameter -- |07type |10CLANS /? |07for help\n";
 
 	/* This function will parse the command line by looking for the  */
@@ -371,14 +371,14 @@ void PrimitiveCommandLine(void)
 
 	for (cTemp = 1; cTemp < _argc; cTemp++) {
 		if (_argv[cTemp][0] == '-' || _argv[cTemp][0] == '/') {
-			FoundMatch = FALSE;
+			FoundMatch = false;
 
 			/* Loop through list of keywords */
 			for (iKeyWord = 0; iKeyWord < MAX_COMLINE_WORDS; ++iKeyWord) {
 				/* If keyword matches */
 				if (stricmp(&_argv[cTemp][1], papszComLineKeyWords[iKeyWord]) == 0 ||
 						(_argv[cTemp][1] == 'D' && papszComLineKeyWords[iKeyWord][0] == 'D')) {
-					FoundMatch = TRUE;
+					FoundMatch = true;
 
 					/* Process token */
 					switch (iKeyWord) {
@@ -390,7 +390,7 @@ void PrimitiveCommandLine(void)
 							/*                System_Close(); */
 							break;
 						case 7 :  /* LIBBS */
-							System.LocalIBBS = TRUE;
+							System.LocalIBBS = true;
 							break;
 						case 11 : /* Recon */
 							cTemp++;
@@ -403,7 +403,7 @@ void PrimitiveCommandLine(void)
 							break;
 						case 14 : /* Verbose */
 							DisplayStr("|07Verbose |14ON\n");
-							Verbose = TRUE;
+							Verbose = true;
 							break;
 						case 15 :  /* D */
 							strcpy(od_control.info_path, &_argv[cTemp][2]);
@@ -412,7 +412,7 @@ void PrimitiveCommandLine(void)
 					}
 				}
 			}
-			if (FoundMatch == FALSE) {
+			if (FoundMatch == false) {
 				if (toupper(_argv[cTemp][1]) - 'A' == 18 && stricmp(&_argv[cTemp][2], "lop") == 0) {
 					Register();
 					System_Close();
@@ -456,7 +456,7 @@ void ParseCommands(void)
  * initialized.
  */
 {
-	_INT16 cTemp, iKeyWord;
+	int16_t cTemp, iKeyWord;
 	char szString[128];
 
 	/* This function will parse the command line by looking for the  */
@@ -472,14 +472,14 @@ void ParseCommands(void)
 					switch (iKeyWord) {
 						case 0  : /* L */
 						case 1  : /* Local */
-							System.Local = TRUE;
+							System.Local = true;
 							break;
 						case 2  : /* M */
 							Maintenance();
 							System_Close();
 							break;
 						case 7 :  /* LIBBS */
-							if (Game.Data->InterBBS == FALSE)
+							if (Game.Data->InterBBS == false)
 								System_Error(ST_IBBSONLY);
 							break;
 						case 8 :  /* Users */
@@ -502,7 +502,7 @@ void ParseCommands(void)
 							// read in packets waiting
 							IBBS_PacketIn();
 
-							if (Game.Data->InterBBS == FALSE)
+							if (Game.Data->InterBBS == false)
 								System_Error(ST_IBBSONLY);
 							else
 								System_Close();
@@ -579,7 +579,7 @@ void System_Close(void)
 {
 	if (System.Initialized) {
 		// This simply ensures this function is run ONLY ONCE!
-		System.Initialized = FALSE;
+		System.Initialized = false;
 
 //#ifdef _DEBUG
 //# define TRACEX(x) MessageBox (NULL, (x), TEXT("DEBUG"), MB_OK)
@@ -588,7 +588,7 @@ void System_Close(void)
 //#endif
 
 		TRACEX("DisplayScores");
-		DisplayScores(TRUE);
+		DisplayScores(true);
 
 		TRACEX("Items_Close()");
 		Items_Close();
@@ -634,7 +634,7 @@ void System_Close(void)
 
 		TRACEX("Door_Initialized()");
 		if (Door_Initialized()) {
-			od_exit(0, FALSE);
+			od_exit(0, false);
 		}
 		else {
 			exit(0);
@@ -652,13 +652,13 @@ void System_Init(void)
 #else
 	SYSTEMTIME system_time;
 #endif
-	_INT16 iTemp;
+	int16_t iTemp;
 #ifdef __unix__
 	char *pszResolvedPath;
 #endif
 
-	System.Initialized = TRUE;
-	System.LocalIBBS = FALSE;
+	System.Initialized = true;
+	System.LocalIBBS = false;
 
 	// Get directory from commandline
 	strcpy(System.szMainDir, _argv[0]);
@@ -711,7 +711,7 @@ void System_Init(void)
 	Config_Init();
 
 	// init stuff
-	System.Local = FALSE;
+	System.Local = false;
 
 	// Game Specific data (village, game.dat)
 	Game_Init();
@@ -736,7 +736,7 @@ void System_Init(void)
 
 	if (System_LockedOut()) {
 		rputs("Sorry, you have been locked out of this door.\n%P");
-		od_exit(0, FALSE);
+		od_exit(0, false);
 	}
 
 

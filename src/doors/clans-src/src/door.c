@@ -73,26 +73,26 @@ extern char Spells_szCastSource[25];
 extern int Spells_CastValue;
 extern struct village Village;
 extern struct game Game;
-extern BOOL Verbose;
+extern bool Verbose;
 
 struct {
-	BOOL Initialized;
-	BOOL AllowScreenPause;
+	bool Initialized;
+	bool AllowScreenPause;
 
 	char ColorScheme[50];
 
-	BOOL UserBooted;            // True if a user was online already
-} Door = { FALSE, TRUE,
+	bool UserBooted;            // True if a user was online already
+} Door = { false, true,
 		   { 1, 9, 3, 1, 11, 7, 3, 2, 10, 2, 5, 3, 9, 5, 13, 1, 9, 15, 7, 0, 0, 8, 4,
 			 1, 1, 1 },
-		   FALSE
+		   false
 		 };
 
 // ------------------------------------------------------------------------- //
 
-__BOOL Door_Initialized(void)
+bool Door_Initialized(void)
 /*
- * Returns TRUE if od_init was already called.
+ * Returns true if od_init was already called.
  */
 {
 	return Door.Initialized;
@@ -105,7 +105,7 @@ void CreateSemaphor(void)
 	FILE *fp;
 
 	fp = _fsopen("online.flg", "wb", SH_DENYRW);
-	fwrite(&System.Node, sizeof(_INT16), 1, fp);
+	fwrite(&System.Node, sizeof(int16_t), 1, fp);
 	fclose(fp);
 }
 
@@ -114,28 +114,28 @@ void RemoveSemaphor(void)
 	unlink("online.flg");
 }
 
-BOOL SomeoneOnline(void)
+bool SomeoneOnline(void)
 /*
  * Function will check if a user is online by seeing if a semaphor file
  * exists.
  */
 {
 	FILE *fp;
-	_INT16 WhichNode;
+	int16_t WhichNode;
 
 	fp = _fsopen("online.flg", "rb", SH_DENYWR);
 	if (fp) {
-		fread(&WhichNode, sizeof(_INT16), 1, fp);
+		fread(&WhichNode, sizeof(int16_t), 1, fp);
 		fclose(fp);
 
 		// if node is same as current node, disregard this file
 		if (WhichNode == System.Node)
-			return FALSE;
+			return false;
 		else
-			return TRUE;
+			return true;
 	}
 	else
-		return FALSE;
+		return false;
 }
 
 // ------------------------------------------------------------------------- //
@@ -145,7 +145,7 @@ void Door_SetColorScheme(char *ColorScheme)
  * This function will set the color scheme.
  */
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	for (iTemp = 0; iTemp < 50; iTemp++)
 		Door.ColorScheme[iTemp] = ColorScheme[iTemp];
@@ -165,7 +165,7 @@ void LocalLoad(void)
 	// Todo create local login screen
 #else
 	char name[80], szString[128];
-	_INT16 i;
+	int16_t i;
 
 	/* display box */
 	clrscr();
@@ -216,10 +216,10 @@ void LocalLoad(void)
 	strcpy(od_control.user_location, Config->szBBSName);
 	od_control.user_timelimit = 30;
 	od_control.od_info_type = CUSTOM;
-	od_control.user_ansi = TRUE;
+	od_control.user_ansi = true;
 	od_control.user_screen_length = 25;
 
-	System.Local = TRUE;
+	System.Local = true;
 #endif
 }
 
@@ -257,7 +257,7 @@ void NoDoorFileHandler(void)
 }
 
 // ------------------------------------------------------------------------- //
-BOOL StatusOn = TRUE;
+bool StatusOn = true;
 
 void NoStatus(void)
 /*
@@ -267,10 +267,10 @@ void NoStatus(void)
 #ifndef __unix__
 	if (StatusOn) {
 		od_set_statusline(STATUS_NONE);
-		StatusOn = FALSE;
+		StatusOn = false;
 	}
 	else {
-		StatusOn = TRUE;
+		StatusOn = true;
 		od_set_statusline(STATUS_NORMAL);
 
 		if (Video_VideoType() == MONO) {
@@ -371,12 +371,12 @@ void Door_ToggleScreenPause(void)
 	Door.AllowScreenPause = !Door.AllowScreenPause;
 }
 
-void Door_SetScreenPause(__BOOL State)
+void Door_SetScreenPause(bool State)
 {
 	Door.AllowScreenPause = State;
 }
 
-__BOOL Door_AllowScreenPause(void)
+bool Door_AllowScreenPause(void)
 {
 	return Door.AllowScreenPause;
 }
@@ -394,7 +394,7 @@ void door_pause(void)
 	rputs(ST_PAUSE);
 
 	/* wait for user to hit key */
-	while (od_get_key(TRUE) == FALSE)
+	while (od_get_key(true) == false)
 		od_sleep(0);
 
 	od_putch('\r');
@@ -414,12 +414,12 @@ void rputs(char *string)
  * Outputs the pipe or ` encoded string.
  */
 {
-	_INT16 i;
+	int16_t i;
 	char number[3]; // two digit number!
 	char *pCurChar,*pStrChar;
-	_INT16 attr;  // color
-	static _INT16 o_fg = 7, o_bg = 0;
-	static _INT16 old_fg = 7, old_bg = 0;
+	int16_t attr;  // color
+	static int16_t o_fg = 7, o_bg = 0;
+	static int16_t old_fg = 7, old_bg = 0;
 	char szString[128],
 	*szQuality[4] = { "Average", "Good", "Very Good", "Excellent" };
 
@@ -430,7 +430,7 @@ void rputs(char *string)
 
 	while (*pCurChar) {
 		for (pStrChar=pCurChar; *pStrChar!='|'&&*pStrChar!=0&&*pStrChar!=SPECIAL_CODE&&*pStrChar!='\n'&&*pStrChar!='`'&&*pStrChar!=SPECIAL_CODE; pStrChar++);
-		od_disp(pCurChar, pStrChar-pCurChar, FALSE);
+		od_disp(pCurChar, pStrChar-pCurChar, false);
 		pCurChar=pStrChar;
 		if (!(*pCurChar))break;
 
@@ -651,9 +651,9 @@ void Display(char *FileName)
 	/* if file ends in .ANS, assume it is ANSI */
 	/* if ends in something else, assume pipe codes */
 
-	_INT16 FileType; /* 0 == ASCII, 1 == ANSI */
-	_INT16 CurLine = 0, NumLines, cTemp;
-	long MaxBytes;
+	int16_t FileType; /* 0 == ASCII, 1 == ANSI */
+	int16_t CurLine = 0, NumLines, cTemp;
+	int32_t MaxBytes;
 	char *Lines[30];
 	struct FileHeader FileHeader;
 
@@ -691,17 +691,17 @@ void Display(char *FileName)
 				break;
 			}
 
-			if (!fgets(Lines[cTemp], (_INT16) MaxBytes, FileHeader.fp))
+			if (!fgets(Lines[cTemp], (int16_t) MaxBytes, FileHeader.fp))
 				break;
 
-			Lines[cTemp][(_INT16)(MaxBytes - EXTRABYTES + 1)] = 0;
+			Lines[cTemp][(int16_t)(MaxBytes - EXTRABYTES + 1)] = 0;
 		}
 		NumLines = cTemp;
 
 		/* display them all */
 		for (CurLine = 0; CurLine < NumLines; CurLine++) {
 			if (FileType == ANSIFILE)
-				od_disp_emu(Lines[CurLine], TRUE);
+				od_disp_emu(Lines[CurLine], true);
 			else  /* assume ASCII pipe codes */
 				rputs(Lines[CurLine]);
 		}
@@ -710,7 +710,7 @@ void Display(char *FileName)
 		if (CurLine == (od_control.user_screen_length-3) && Door.AllowScreenPause) {
 			rputs(ST_MORE);
 			od_sleep(0);
-			if (toupper(od_get_key(TRUE)) == 'N') {
+			if (toupper(od_get_key(true)) == 'N') {
 				rputs("\r                       \r");
 				break;
 			}
@@ -718,7 +718,7 @@ void Display(char *FileName)
 
 			CurLine = 0;
 		}
-		else if (Door.AllowScreenPause == FALSE)
+		else if (Door.AllowScreenPause == false)
 			CurLine = 0;
 
 		/* see if end of file, if so, exit */
@@ -726,7 +726,7 @@ void Display(char *FileName)
 			break;
 
 		/* see if key hit */
-		if (od_get_key(FALSE)) break;
+		if (od_get_key(false)) break;
 	}
 
 	fclose(FileHeader.fp);
@@ -738,7 +738,7 @@ void Display(char *FileName)
 
 // ------------------------------------------------------------------------- //
 
-_INT16 YesNo(char *Query)
+int16_t YesNo(char *Query)
 {
 	/* show query */
 	DisplayStr(Query);
@@ -759,7 +759,7 @@ _INT16 YesNo(char *Query)
 	}
 }
 
-_INT16 NoYes(char *Query)
+int16_t NoYes(char *Query)
 {
 	/* show query */
 	DisplayStr(Query);
@@ -785,18 +785,18 @@ void Door_ShowTitle(void)
 {
 	char szFileName[20];
 
-	sprintf(szFileName, "Title %d", (_INT16) RANDOM(3));
+	sprintf(szFileName, "Title %d", (int16_t) RANDOM(3));
 
-	Door_SetScreenPause(FALSE);
+	Door_SetScreenPause(false);
 	Help(szFileName, ST_MENUSHLP);
-	Door_SetScreenPause(TRUE);
+	Door_SetScreenPause(true);
 	rputs("|16|07");
-	od_get_key(TRUE);
+	od_get_key(true);
 	od_clr_scr();
 }
 // ------------------------------------------------------------------------- //
 
-void Door_Init(__BOOL Local)
+void Door_Init(bool Local)
 /*
  * Called to initialize OpenDoors specific info (od_init namely) and
  * load the dropfile or prompt the user for local login.
@@ -808,7 +808,7 @@ void Door_Init(__BOOL Local)
 	}
 
 	/* force opendoors to NOT show copyright message */
-	od_control.od_nocopyright = TRUE;
+	od_control.od_nocopyright = true;
 	od_control.od_node = System.Node;
 	od_control.od_before_exit = System_Close;
 	//    od_registration_key = YOUR_KEY;
@@ -816,9 +816,9 @@ void Door_Init(__BOOL Local)
 	/* If local, intialize user data before od_init is run */
 	if (Local) {
 		od_control.od_info_type = NO_DOOR_FILE;
-		od_control.od_force_local = TRUE;
-		od_control.user_ansi = TRUE;
-		od_control.od_always_clear = TRUE;
+		od_control.od_force_local = true;
+		od_control.user_ansi = true;
+		od_control.od_always_clear = true;
 		od_control.od_disable |= DIS_NAME_PROMPT;
 		od_control.baud = 0;
 
@@ -852,21 +852,21 @@ void Door_Init(__BOOL Local)
 #endif
 
 
-	Door.Initialized = TRUE;
+	Door.Initialized = true;
 
 	od_control.od_before_chat = "";
 	od_control.od_after_chat = "";
 
 	/* see if local using dropfile */
-	if (System.Local == FALSE) {
-		if (od_carrier() == FALSE) {
-			System.Local = TRUE;
+	if (System.Local == false) {
+		if (od_carrier() == false) {
+			System.Local = true;
 		}
 	}
 
 	if (SomeoneOnline()) {
 		//  rputs("\nSomeone is currently playing the game on another node.\nPlease return in a few minutes.\n%P");
-		Door.UserBooted = TRUE;
+		Door.UserBooted = true;
 		rputs(ST_MAIN4);
 		System_Close();
 	}
@@ -882,6 +882,6 @@ void Door_Close(void)
  * Called to destroy anything created by Door_Init.
  */
 {
-	if (Door.UserBooted == FALSE)
+	if (Door.UserBooted == false)
 		RemoveSemaphor();
 }

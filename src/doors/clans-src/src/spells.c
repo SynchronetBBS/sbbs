@@ -38,7 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "user.h"
 #include "video.h"
 
-BOOL SpellsInitialized = FALSE;
+bool SpellsInitialized = false;
 struct Spell *Spells[MAX_SPELLS];
 extern struct IniFile IniFile;
 extern struct clan *PClan;
@@ -48,7 +48,7 @@ extern struct village Village;
 char Spells_szCastDestination[25];
 char Spells_szCastSource[25];
 int Spells_CastValue;
-extern BOOL Verbose;
+extern bool Verbose;
 
 
 // ------------------------------------------------------------------------- //
@@ -58,9 +58,9 @@ extern BOOL Verbose;
 */
 char * get_spell(char **dest, FILE *fp)
 {
-	_INT16 StringLength = 0;
+	int16_t StringLength = 0;
 
-	if (!fread(&StringLength, sizeof(_INT16), 1, fp))
+	if (!fread(&StringLength, sizeof(int16_t), 1, fp))
 		System_Error("fread failed in get_spell() [StringLength]");
 	else if (StringLength) {
 		*dest = (char *) malloc(StringLength);
@@ -76,8 +76,8 @@ void Spells_Init(void)
  * This function loads spells from file.
  */
 {
-	_INT16 iTemp, NumSpells;
-	_INT16 CurFile, CurSpell = 0;
+	int16_t iTemp, NumSpells;
+	int16_t CurFile, CurSpell = 0;
 	struct FileHeader SpellFile;
 
 	if (Verbose) {
@@ -85,7 +85,7 @@ void Spells_Init(void)
 		delay(500);
 	}
 
-	SpellsInitialized = TRUE;
+	SpellsInitialized = true;
 
 	// for each file, read in the data
 	for (CurFile = 0; CurFile < MAX_SPELLFILES; CurFile++) {
@@ -100,7 +100,7 @@ void Spells_Init(void)
 		// read in data
 
 		/* get num spells */
-		fread(&NumSpells, sizeof(_INT16), 1, SpellFile.fp);
+		fread(&NumSpells, sizeof(int16_t), 1, SpellFile.fp);
 
 		/* read them in */
 		for (iTemp = 0; iTemp < NumSpells; iTemp++) {
@@ -147,9 +147,9 @@ void Spells_Close(void)
  * This function frees any mem initialized by Spells_Init.
  */
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 
-	if (SpellsInitialized == FALSE) return;
+	if (SpellsInitialized == false) return;
 
 	for (iTemp = 0; iTemp < MAX_SPELLS; iTemp++) {
 		if (Spells[iTemp]) {
@@ -174,14 +174,14 @@ void Spells_Close(void)
 		}
 	}
 
-	SpellsInitialized = FALSE;
+	SpellsInitialized = false;
 }
 
 
 // ------------------------------------------------------------------------- //
 void Spells_UpdatePCSpells(struct pc *PC)
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	/* set up %SD so it shows this dude */
 	strcpy(Spells_szCastDestination, PC->szName);
@@ -196,12 +196,12 @@ void Spells_UpdatePCSpells(struct pc *PC)
 		PC->SpellsInEffect[iTemp].Energy -= 10;
 
 		/* if strength can reduce this, reduce it */
-		if (Spells[ PC->SpellsInEffect[iTemp].SpellNum ]->Friendly == FALSE &&
+		if (Spells[ PC->SpellsInEffect[iTemp].SpellNum ]->Friendly == false &&
 				Spells[ PC->SpellsInEffect[iTemp].SpellNum ]->StrengthCanReduce) {
 			PC->SpellsInEffect[iTemp].Energy -= (GetStat(PC, ATTR_STRENGTH)/2);
 		}
 		/* if wisdom can reduce this, reduce it */
-		if (Spells[ PC->SpellsInEffect[iTemp].SpellNum ]->Friendly == FALSE &&
+		if (Spells[ PC->SpellsInEffect[iTemp].SpellNum ]->Friendly == false &&
 				Spells[ PC->SpellsInEffect[iTemp].SpellNum ]->WisdomCanReduce) {
 			PC->SpellsInEffect[iTemp].Energy -= (GetStat(PC, ATTR_WISDOM)/2);
 		}
@@ -223,7 +223,7 @@ void Spells_UpdatePCSpells(struct pc *PC)
 
 void Spells_ClearSpells(struct clan *Clan)
 {
-	_INT16 CurMember, iTemp;
+	int16_t CurMember, iTemp;
 
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
 		if (Clan->Member[CurMember])
@@ -233,15 +233,15 @@ void Spells_ClearSpells(struct clan *Clan)
 }
 
 
-void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, _INT16 Target, _INT16 SpellNum)
+void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int16_t SpellNum)
 {
-	BOOL Test = FALSE;
-	_INT16 Damage, Value, HPIncrease, OldHP, Level;
+	bool Test = false;
+	int16_t Damage, Value, HPIncrease, OldHP, Level;
 	char szString[128];
 	struct pc *TargetPC;
-	long XPGained, GoldGained, TaxedGold;
-	_INT16 iTemp, NumUndead, NumUndeadToRemove, CurSlot, iTemp2/*, PercentGold*/;
-	_INT16 NumUndeadRemoved;
+	int32_t XPGained, GoldGained, TaxedGold;
+	int16_t iTemp, NumUndead, NumUndeadToRemove, CurSlot, iTemp2/*, PercentGold*/;
+	int16_t NumUndeadRemoved;
 
 	/* see if spell cast was successful, if not, return */
 
@@ -251,7 +251,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, _INT16 Target, _INT
 	/* set up global vars */
 	strcpy(Spells_szCastSource, PC->szName);
 
-	if (Spells[SpellNum]->Friendly == FALSE) {
+	if (Spells[SpellNum]->Friendly == false) {
 		if (Spells[SpellNum]->Target)
 			strcpy(Spells_szCastDestination, EnemyClan->Member[Target]->szName);
 		else
@@ -272,7 +272,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, _INT16 Target, _INT
 		if (Test)
 			printf("\aError!\n");
 		else
-			Test = TRUE;
+			Test = true;
 		/* see if spell is successful */
 		if ((PC->Level + 3 + Spells[SpellNum]->TypeFlag + GetStat(PC, ATTR_WISDOM) +
 				RANDOM(5)) < RANDOM(15)) {
@@ -347,7 +347,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, _INT16 Target, _INT
 		if (Test)
 			printf("\aError!\n");
 		else
-			Test = TRUE;
+			Test = true;
 		/* see if spell is successful */
 		if ((PC->Level + Spells[SpellNum]->Level + GetStat(PC, ATTR_WISDOM) + RANDOM(6)) <
 				RANDOM(15)) {
@@ -390,7 +390,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, _INT16 Target, _INT
 			CheckMem(PC->MyClan->Member[CurSlot]);
 
 			strcpy(PC->MyClan->Member[CurSlot]->szName, Spells[SpellNum]->pszUndeadName);
-			PC->MyClan->Member[CurSlot]->Undead = TRUE;
+			PC->MyClan->Member[CurSlot]->Undead = true;
 			PC->MyClan->Member[CurSlot]->Status = Here;
 
 			PC->MyClan->Member[CurSlot]->MaxHP =
@@ -445,7 +445,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, _INT16 Target, _INT
 		if (Test)
 			printf("\aError!\n");
 		else
-			Test = TRUE;
+			Test = true;
 		/* heal him */
 
 		OldHP = PC->MyClan->Member[Target]->HP;
@@ -481,7 +481,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, _INT16 Target, _INT
 		if (Test)
 			printf("\aError!\n");
 		else
-			Test = TRUE;
+			Test = true;
 		/* see if spell is successful */
 		if (Spells[SpellNum]->Friendly) {
 			if ((PC->Level + Spells[SpellNum]->Level + GetStat(PC, ATTR_WISDOM) +
@@ -547,7 +547,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, _INT16 Target, _INT
 		if (Test)
 			printf("\aError!\n");
 		else
-			Test = TRUE;
+			Test = true;
 		// if is multiaffect spell, go through each guy
 
 		// if multiaffect, start from first enemy
@@ -583,7 +583,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, _INT16 Target, _INT
 				rputs(szString);
 
 				// if this ain't a multihit spell, break from for loop now
-				if (Spells[SpellNum]->MultiAffect == FALSE)
+				if (Spells[SpellNum]->MultiAffect == false)
 					break;
 				else
 					continue;
@@ -665,13 +665,13 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, _INT16 Target, _INT
 				/* give gold to clan */
 				if (PC->MyClan == PClan) {
 					if (EnemyClan->Member[Target]->Difficulty != -1) {
-						GoldGained = EnemyClan->Member[Target]->Difficulty*((long)RANDOM(10) + 20L) + 50L + (long)RANDOM(20);
+						GoldGained = EnemyClan->Member[Target]->Difficulty*((int32_t)RANDOM(10) + 20L) + 50L + (int32_t)RANDOM(20);
 						sprintf(szString, ST_FIGHTGETGOLD, GoldGained);
 						rputs(szString);
 
 						/* take some away due to taxes */
 						if (GoldGained > 0) {
-							TaxedGold = (long)(GoldGained * Village.Data->TaxRate)/100L;
+							TaxedGold = (int32_t)(GoldGained * Village.Data->TaxRate)/100L;
 							if (TaxedGold) {
 								sprintf(szString, ST_FIGHTTAXEDGOLD, TaxedGold);
 								rputs(szString);
@@ -692,7 +692,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, _INT16 Target, _INT
 			}
 
 			// if this ain't a multihit spell, break from for loop now
-			if (Spells[SpellNum]->MultiAffect == FALSE)
+			if (Spells[SpellNum]->MultiAffect == false)
 				break;
 		}   // end of for()
 

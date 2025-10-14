@@ -3,7 +3,7 @@
 
 void Jumble(char *szString);
 
-_INT16 IsRegged(char *szSysopName, char *szBBSName, char *szRegCode);
+int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode);
 
 void UnregMessage(void);
 

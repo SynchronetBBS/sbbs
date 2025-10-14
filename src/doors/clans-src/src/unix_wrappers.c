@@ -12,7 +12,7 @@ void srandomdev(void)
 {
 	/*  int f;
 	    unsigned int r;
-	    f=open("/dev/random",O_RDONLY);
+	    f = open("/dev/random",O_RDONLY);
 	    read(f,&r,sizeof(r));
 	    close(f);*/
 	srand(time(0));
@@ -197,11 +197,11 @@ unlock(int file, off_t offset, off_t length)
 	return fcntl(file,F_SETLKW,mylock);
 }
 
-long
-unix_random(long maxnum)
+int32_t
+unix_random(int32_t maxnum)
 {
 	if (maxnum == 0) return 0;
-	return (long)random()%maxnum;
+	return (int32_t)random()%maxnum;
 }
 
 FILE *

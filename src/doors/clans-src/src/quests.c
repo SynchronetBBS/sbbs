@@ -55,12 +55,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define CD_OR                   1
 #define CD_AND                  2
 
-struct PACKED EventHeader {
-	char szName[30];
-	long EventSize;
-	__BOOL Event;           // 1 = Event, 0 = Result
-} PACKED;
-
 struct Quest Quests[MAX_QUESTS];
 
 extern struct village Village;
@@ -68,20 +62,20 @@ char Quests_TFlags[8];          // temp. flags
 extern struct config *Config;
 extern struct clan *PClan;
 extern struct Language *Language;
-BOOL QuestsInitialized = FALSE;
-extern __BOOL Verbose;
+bool QuestsInitialized = false;
+extern bool Verbose;
 
 // ------------------------------------------------------------------------- //
 
 void Quests_Init(void)
 {
 	/* read in quests file and allocate memory for quest names */
-	_INT16 iTemp, CurQuest;
+	int16_t iTemp, CurQuest;
 	FILE *fp;
 	char szLine[128], *pcCurrentPos;
 	char szToken[MAX_TOKEN_CHARS + 1];
-	WORD uCount;
-	_INT16 iKeyWord;
+	uint16_t uCount;
+	int16_t iKeyWord;
 
 	if (Verbose) {
 		DisplayStr("> Quests_Init()\n");
@@ -91,11 +85,11 @@ void Quests_Init(void)
 
 	// init quest names
 	for (iTemp = 0; iTemp < MAX_QUESTS; iTemp++) {
-		Quests[iTemp].Active = FALSE;
+		Quests[iTemp].Active = false;
 		Quests[iTemp].pszQuestName = NULL;
 		Quests[iTemp].pszQuestIndex = NULL;
 		Quests[iTemp].pszQuestFile = NULL;
-		Quests[iTemp].Known = FALSE;
+		Quests[iTemp].Known = false;
 	}
 
 	fp = fopen("quests.ini", "r");
@@ -145,8 +139,8 @@ void Quests_Init(void)
 
 						CurQuest++;
 
-						Quests[CurQuest].Active = TRUE;
-						Quests[CurQuest].Known  = FALSE;
+						Quests[CurQuest].Active = true;
+						Quests[CurQuest].Known  = false;
 
 						Quests[ CurQuest ].pszQuestName =
 							malloc(strlen(pcCurrentPos) + 1);
@@ -168,7 +162,7 @@ void Quests_Init(void)
 						strcpy(Quests[ CurQuest ].pszQuestFile, pcCurrentPos);
 						break;
 					case 3 :  /* known */
-						Quests[CurQuest].Known = TRUE;
+						Quests[CurQuest].Known = true;
 						break;
 				}
 			}
@@ -177,13 +171,13 @@ void Quests_Init(void)
 
 	fclose(fp);
 
-	QuestsInitialized = TRUE;
+	QuestsInitialized = true;
 	(void)uCount;
 }
 
 void Quests_Close(void)
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	if (!QuestsInitialized) return;
 
@@ -211,49 +205,49 @@ void Quests_Close(void)
 
 void ClearFlags(char *Flags)
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	for (iTemp = 0; iTemp < 8; iTemp++)
 		Flags[iTemp] = 0;
 }
 
-void SetFlag(char *Flags, _INT16 WhichFlag)
+void SetFlag(char *Flags, int16_t WhichFlag)
 {
 	Flags[ WhichFlag/8 ] |= (1 << (WhichFlag % 8));
 }
 
-void ClearFlag(char *Flags, _INT16 WhichFlag)
+void ClearFlag(char *Flags, int16_t WhichFlag)
 {
 	if (Flags[ WhichFlag/8 ]  & (1 << (WhichFlag % 8)))
 		Flags[ WhichFlag/8 ] ^= (1 << (WhichFlag % 8));
 }
 
-BOOL FlagSet(char *Flags, _INT16 WhichFlag)
+bool FlagSet(char *Flags, int16_t WhichFlag)
 {
 	if (Flags[ WhichFlag/8 ] & (1 << (WhichFlag % 8)))
-		return TRUE;
+		return true;
 	else
-		return FALSE;
+		return false;
 }
 
-BOOL legal(char *pszAcs, _INT16 *iCharsRead)
+bool legal(char *pszAcs, int16_t *iCharsRead)
 {
-	BOOL bCurrent = TRUE;   // flag as to whether last pszAcs's were TRUE
-	BOOL UseCurrent = TRUE;
-	BOOL bSoFar = TRUE;
-	BOOL UseNot = FALSE;    // needed to check if we need to switch/NOT
+	bool bCurrent = true;   // flag as to whether last pszAcs's were true
+	bool UseCurrent = true;
+	bool bSoFar = true;
+	bool UseNot = false;    // needed to check if we need to switch/NOT
 	// next ACS flag
-	_INT16 iCharsSkipped;  /* number of characters skipped when calling legal()
+	int16_t iCharsSkipped;  /* number of characters skipped when calling legal()
                  from within this function */
-	_INT16 iTemp;
-	_INT16 LastCondition = CD_AND;
+	int16_t iTemp;
+	int16_t LastCondition = CD_AND;
 	char szIndex[20];
 	unsigned char c;
 	char *pcCurrentPos;
 	char *pszString;
-	_INT16 iFirstValue, iSecondValue;
+	int16_t iFirstValue, iSecondValue;
 	char pszAcsCopy[50];
-	long GoldAmount;
+	int32_t GoldAmount;
 
 	strcpy(pszAcsCopy, pszAcs);
 
@@ -268,36 +262,36 @@ BOOL legal(char *pszAcs, _INT16 *iCharsRead)
 			case '(' :  /* start a new set of conditions */
 				pcCurrentPos++;
 				bCurrent = legal(pcCurrentPos, &iCharsSkipped);
-				UseCurrent = TRUE;
+				UseCurrent = true;
 				pcCurrentPos += iCharsSkipped;
 				break;
 			case ' ' :
 				pcCurrentPos++;
-				UseCurrent = FALSE;
+				UseCurrent = false;
 				break;
 			case '&' :
 				LastCondition = CD_AND;
 				pcCurrentPos++;
-				UseCurrent = FALSE;
+				UseCurrent = false;
 				break;
 			case '|' :
 				LastCondition = CD_OR;
 				pcCurrentPos++;
-				UseCurrent = FALSE;
+				UseCurrent = false;
 				break;
 			case '^' :
-				bCurrent = TRUE;
-				UseCurrent = TRUE;
+				bCurrent = true;
+				UseCurrent = true;
 				pcCurrentPos++;
 				break;
 			case '%' :
-				bCurrent = FALSE;
-				UseCurrent = TRUE;
+				bCurrent = false;
+				UseCurrent = true;
 				pcCurrentPos++;
 				break;
 			case '!' :
-				UseNot = TRUE;
-				UseCurrent = FALSE;
+				UseNot = true;
+				UseCurrent = false;
 				pcCurrentPos++;
 				break;
 			case 'Q' :  // quest done?
@@ -308,14 +302,14 @@ BOOL legal(char *pszAcs, _INT16 *iCharsRead)
 					szIndex[iTemp++] = *(pcCurrentPos++);
 				szIndex[iTemp] = 0;
 
-				UseCurrent = TRUE;
+				UseCurrent = true;
 				iTemp = atoi(szIndex) - 1;
 
 				// if this quest done, it's true
 				if (PClan->QuestsDone[ iTemp/8 ] & (char)(1 << (iTemp%8)))
-					bCurrent = TRUE;
+					bCurrent = true;
 				else
-					bCurrent = FALSE;
+					bCurrent = false;
 				break;
 			case '$' :  // have this much gold?
 				// get flag num
@@ -325,13 +319,13 @@ BOOL legal(char *pszAcs, _INT16 *iCharsRead)
 					szIndex[iTemp++] = *(pcCurrentPos++);
 				szIndex[iTemp] = 0;
 
-				UseCurrent = TRUE;
+				UseCurrent = true;
 				GoldAmount = atol(szIndex);
 
 				if (PClan->Empire.VaultGold >= GoldAmount)
-					bCurrent = TRUE;
+					bCurrent = true;
 				else
-					bCurrent = FALSE;
+					bCurrent = false;
 				break;
 			case 'L' :  // level
 				pcCurrentPos++;
@@ -340,13 +334,13 @@ BOOL legal(char *pszAcs, _INT16 *iCharsRead)
 					szIndex[iTemp++] = *(pcCurrentPos++);
 				szIndex[iTemp] = 0;
 
-				UseCurrent = TRUE;
+				UseCurrent = true;
 				iTemp = atoi(szIndex);
 
 				if (PClan->MineLevel == iTemp)
-					bCurrent = TRUE;
+					bCurrent = true;
 				else
-					bCurrent = FALSE;
+					bCurrent = false;
 				break;
 			case 'K' :  // level must be at least this
 				pcCurrentPos++;
@@ -355,13 +349,13 @@ BOOL legal(char *pszAcs, _INT16 *iCharsRead)
 					szIndex[iTemp++] = *(pcCurrentPos++);
 				szIndex[iTemp] = 0;
 
-				UseCurrent = TRUE;
+				UseCurrent = true;
 				iTemp = atoi(szIndex);
 
 				if (PClan->MineLevel >= iTemp)
-					bCurrent = TRUE;
+					bCurrent = true;
 				else
-					bCurrent = FALSE;
+					bCurrent = false;
 				break;
 			case 'R' :  // random
 				// get random value which is highest
@@ -371,13 +365,13 @@ BOOL legal(char *pszAcs, _INT16 *iCharsRead)
 					szIndex[iTemp++] = *(pcCurrentPos++);
 				szIndex[iTemp] = 0;
 
-				UseCurrent = TRUE;
+				UseCurrent = true;
 				iTemp = atoi(szIndex);
 
 				if (RANDOM(100) >= (100-iTemp))
-					bCurrent = TRUE;
+					bCurrent = true;
 				else
-					bCurrent = FALSE;
+					bCurrent = false;
 				break;
 			case 'T' :  // TFlag
 				// get tflag num
@@ -387,12 +381,12 @@ BOOL legal(char *pszAcs, _INT16 *iCharsRead)
 					szIndex[iTemp++] = *(pcCurrentPos++);
 				szIndex[iTemp] = 0;
 
-				UseCurrent = TRUE;
+				UseCurrent = true;
 
 				if (FlagSet(Quests_TFlags, atoi(szIndex)))
-					bCurrent = TRUE;
+					bCurrent = true;
 				else
-					bCurrent = FALSE;
+					bCurrent = false;
 
 				// od_printf("T%d is %s\n\r", atoi(szIndex), bCurrent ? "true" : "false");
 				break;
@@ -404,12 +398,12 @@ BOOL legal(char *pszAcs, _INT16 *iCharsRead)
 					szIndex[iTemp++] = *(pcCurrentPos++);
 				szIndex[iTemp] = 0;
 
-				UseCurrent = TRUE;
+				UseCurrent = true;
 
 				if (FlagSet(PClan->PFlags, atoi(szIndex)))
-					bCurrent = TRUE;
+					bCurrent = true;
 				else
-					bCurrent = FALSE;
+					bCurrent = false;
 				break;
 			case 'G' :  // GFlag
 				// get flag num
@@ -419,12 +413,12 @@ BOOL legal(char *pszAcs, _INT16 *iCharsRead)
 					szIndex[iTemp++] = *(pcCurrentPos++);
 				szIndex[iTemp] = 0;
 
-				UseCurrent = TRUE;
+				UseCurrent = true;
 
 				if (FlagSet(Village.Data->GFlags, atoi(szIndex)))
-					bCurrent = TRUE;
+					bCurrent = true;
 				else
-					bCurrent = FALSE;
+					bCurrent = false;
 				break;
 			case 'D' :  // DFlag
 				// get flag num
@@ -434,12 +428,12 @@ BOOL legal(char *pszAcs, _INT16 *iCharsRead)
 					szIndex[iTemp++] = *(pcCurrentPos++);
 				szIndex[iTemp] = 0;
 
-				UseCurrent = TRUE;
+				UseCurrent = true;
 
 				if (FlagSet(PClan->DFlags, atoi(szIndex)))
-					bCurrent = TRUE;
+					bCurrent = true;
 				else
-					bCurrent = FALSE;
+					bCurrent = false;
 				break;
 			case 'H' :  // HFlag
 				// get flag num
@@ -449,12 +443,12 @@ BOOL legal(char *pszAcs, _INT16 *iCharsRead)
 					szIndex[iTemp++] = *(pcCurrentPos++);
 				szIndex[iTemp] = 0;
 
-				UseCurrent = TRUE;
+				UseCurrent = true;
 
 				if (FlagSet(Village.Data->HFlags, atoi(szIndex)))
-					bCurrent = TRUE;
+					bCurrent = true;
 				else
-					bCurrent = FALSE;
+					bCurrent = false;
 				break;
 			default:
 				pcCurrentPos++;
@@ -462,21 +456,21 @@ BOOL legal(char *pszAcs, _INT16 *iCharsRead)
 
 		if (UseCurrent) {
 			if (UseNot) {
-				UseNot = FALSE;
+				UseNot = false;
 				bCurrent = !bCurrent;
 			}
 
 			if (LastCondition == CD_OR) {
-				if ((bCurrent == TRUE) || (bSoFar == TRUE))
-					bSoFar = TRUE;
+				if ((bCurrent == true) || (bSoFar == true))
+					bSoFar = true;
 				else
-					bSoFar = FALSE;
+					bSoFar = false;
 			}
 			else if (LastCondition == CD_AND) {
-				if ((bCurrent==TRUE) && (bSoFar==TRUE))
-					bSoFar = TRUE;
+				if ((bCurrent==true) && (bSoFar==true))
+					bSoFar = true;
 				else
-					bSoFar = FALSE;
+					bSoFar = false;
 			}
 		}
 	}
@@ -505,7 +499,7 @@ void JumpToEvent(char *szLabel, struct FileHeader *FileHeader)
 		// if past end of file or at it, break
 		if (ftell(FileHeader->fp) >= FileHeader->lEnd) {
 			printf("Couldn't find event!\n");
-			od_exit(0, FALSE);
+			od_exit(0, false);
 		}
 
 		// find event to run first
@@ -523,7 +517,7 @@ void JumpToEvent(char *szLabel, struct FileHeader *FileHeader)
 // ------------------------------------------------------------------------- //
 void TellQuest(char *pszQuestIndex)
 {
-	_INT16 QuestNum, CurQuest, iTemp;
+	int16_t QuestNum, CurQuest, iTemp;
 	char szString[80];
 
 	// scan for quest in questlist
@@ -559,7 +553,7 @@ void TellQuest(char *pszQuestIndex)
 
 // ------------------------------------------------------------------------- //
 
-BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
+bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 			  struct NPCInfo *NPCInfo, char *szNPCIndex)
 {
 	char *szString, *pcBrace, *szLegal, *szLabel;
@@ -572,19 +566,19 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 	char *pszOptionNames[MAX_OPTIONS];
 	char szKeys[MAX_OPTIONS+1], Key;      // extra space for '\0'
 	char *Buffer;               // not same as ecomp.c's buffer
-	BOOL Done;
-	_INT16 iTemp, CurOption, WhichEnemy, EventsFound, CurEvent, ChosenEvent,
+	bool Done;
+	int16_t iTemp, CurOption, WhichEnemy, EventsFound, CurEvent, ChosenEvent,
 	NumOptions, WhichOption;
-	long OldOffset = 0;
-	BOOL QuestDone = FALSE, FoundEvent;
+	int32_t OldOffset = 0;
+	bool QuestDone = false, FoundEvent;
 	struct clan *EnemyClan;
-	BOOL EndedChat = FALSE;
-	_INT16 CurMember, PercentGold, FightResult, EmptySlot;
-	long GoldAmount, XPAmount;
+	bool EndedChat = false;
+	int16_t CurMember, PercentGold, FightResult, EmptySlot;
+	int32_t GoldAmount, XPAmount;
 	struct NPCNdx NPCNdx;
 
 	// reset temp flags
-	if (QuoteToggle == FALSE) // clear flags for event files but not quotes
+	if (QuoteToggle == false) // clear flags for event files but not quotes
 		ClearFlags(Quests_TFlags);
 
 	rputs("|0C");
@@ -615,7 +609,7 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 		free(szLabel2);
 		free(szLabel3);
 
-		return FALSE;
+		return false;
 	}
 
 	if (*szEventName) {
@@ -678,7 +672,7 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 	EnemyClan = MallocClan();
 	NPC_ResetNPCClan(EnemyClan);
 
-	Done = FALSE;
+	Done = false;
 	while (!Done) {
 		if (ftell(FileHeader.fp) >= FileHeader.lEnd) {
 			DisplayStr("K-Error\n%P");
@@ -694,7 +688,7 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 		fread(szLegal, DataLength, 1, FileHeader.fp);
 
 		// if not legal, skip
-		if (szLegal[0] && legal(szLegal, NULL) == FALSE) {
+		if (szLegal[0] && legal(szLegal, NULL) == false) {
 			// skip it
 			fread(&DataLength, sizeof(char), 1, FileHeader.fp);
 			fseek(FileHeader.fp, DataLength, SEEK_CUR);
@@ -848,13 +842,13 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 						break;
 					case 28 : // TellTopic
 						for (iTemp = 0; iTemp < MAX_TOPICS; iTemp++) {
-							if (NPCInfo->Topics[iTemp].Active == FALSE)
+							if (NPCInfo->Topics[iTemp].Active == false)
 								continue;
 
 							if (stricmp(NPCInfo->Topics[iTemp].szFileName,
 										szText) == 0) {
 								// found quote, set it to known
-								NPCInfo->Topics[iTemp].Known = TRUE;
+								NPCInfo->Topics[iTemp].Known = true;
 								break;
 							}
 						}
@@ -908,7 +902,7 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 					fread(szLegal, DataLength, 1, FileHeader.fp);
 
 					// if szLegal do legal() thing later
-					if (szLegal[0] && legal(szLegal, NULL) == FALSE) {
+					if (szLegal[0] && legal(szLegal, NULL) == false) {
 						// skip it
 						fread(&DataLength, sizeof(char), 1, FileHeader.fp);
 						fseek(FileHeader.fp, DataLength, SEEK_CUR);
@@ -959,7 +953,7 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 
 				/* if that option has "STOP" to "jump" to, stop */
 				else if (stricmp(pszOptionNames[CurOption], "Stop") == 0) {
-					Done = TRUE;
+					Done = true;
 					break;
 				}
 
@@ -982,9 +976,9 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 				fread(szLabel3, DataLength, 1, FileHeader.fp);
 
 				if (stricmp(szLabel3, "NoRun") == 0)
-					FightResult = Fight_Fight(PClan, EnemyClan, FALSE, FALSE, FALSE);
+					FightResult = Fight_Fight(PClan, EnemyClan, false, false, false);
 				else  // can run
-					FightResult = Fight_Fight(PClan, EnemyClan, FALSE, TRUE, FALSE);
+					FightResult = Fight_Fight(PClan, EnemyClan, false, true, false);
 
 				/* set all spells to 0 */
 				for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
@@ -1034,7 +1028,7 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 					break;
 				// if label is "stop", end scrpt
 				else if (stricmp(szString, "Stop") == 0) {
-					Done = TRUE;
+					Done = true;
 					break;
 				}
 				else
@@ -1049,11 +1043,11 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 				fread(&DataLength, sizeof(char), 1, FileHeader.fp);
 
 				if (CommandType == 4)
-					Done = TRUE;
+					Done = true;
 				else if (CommandType == 9) {
 					rputs("\n|14Quest successfully completed!\n");
-					Done = TRUE;
-					QuestDone = TRUE;
+					Done = true;
+					QuestDone = true;
 				}
 				else if (CommandType == 22) {
 					door_pause();
@@ -1073,9 +1067,9 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 						}
 						else {
 							// add it on as a new topic
-							NPCInfo->Topics[ NPCInfo->KnownTopics ].Active = TRUE;
-							NPCInfo->Topics[ NPCInfo->KnownTopics ].Known = TRUE;
-							NPCInfo->Topics[ NPCInfo->KnownTopics ].ClanInfo = TRUE;
+							NPCInfo->Topics[ NPCInfo->KnownTopics ].Active = true;
+							NPCInfo->Topics[ NPCInfo->KnownTopics ].Known = true;
+							NPCInfo->Topics[ NPCInfo->KnownTopics ].ClanInfo = true;
 
 							GetClanNameID(szClanName, NPCNdx.ClanID);
 							strcpy(NPCInfo->Topics[ NPCInfo->KnownTopics ].szName,
@@ -1086,7 +1080,7 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 						}
 					}
 					else {
-						if (NumMembers(PClan, FALSE) == 6) {
+						if (NumMembers(PClan, false) == 6) {
 							rputs("Your clan already has the max. amount of members in it.\n\n");
 							break;
 						}
@@ -1094,7 +1088,7 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 						// set NPC.DAT file so it says he is in a clan
 						// right now and set which clan (this one)
 
-						NPCNdx.InClan = TRUE;
+						NPCNdx.InClan = true;
 						NPCNdx.ClanID[0] = PClan->ClanID[0];
 						NPCNdx.ClanID[1] = PClan->ClanID[1];
 
@@ -1108,8 +1102,8 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 					}
 				}
 				else if (CommandType == 30) {
-					Done = TRUE;
-					EndedChat = TRUE;
+					Done = true;
+					EndedChat = true;
 				}
 				break;
 			case 11 : // AddEnemy
@@ -1182,7 +1176,7 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 					fread(szLegal, DataLength, 1, FileHeader.fp);
 
 					// see if legal, if not, skip
-					if (szLegal[0] && legal(szLegal, NULL) == FALSE) {
+					if (szLegal[0] && legal(szLegal, NULL) == false) {
 						// skip it
 						fread(&DataLength, sizeof(char), 1, FileHeader.fp);
 						fseek(FileHeader.fp, DataLength, SEEK_CUR);
@@ -1214,7 +1208,7 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 
 				// get input from user
 				GetStringChoice(pszOptionNames, NumOptions, "|0GChoose one\n|0E> |07", &WhichOption,
-								TRUE, DT_LONG, FALSE);
+								true, DT_LONG, false);
 
 				/* if that option has nextline to "jump" to, keep
 				   going in same block of data */
@@ -1225,7 +1219,7 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 
 				/* if that option has "STOP" to "jump" to, stop */
 				else if (stricmp(apszLabels[WhichOption], "Stop") == 0) {
-					Done = TRUE;
+					Done = true;
 					break;
 				}
 
@@ -1239,7 +1233,7 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 				break;
 			case 26 : // EndQ
 				// no data, just end
-				Done = TRUE;
+				Done = true;
 				break;
 		}
 	}
@@ -1296,10 +1290,10 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 	if (QuoteToggle) {
 		if (EndedChat) {
 			door_pause();
-			return TRUE;
+			return true;
 		}
 		else
-			return FALSE;
+			return false;
 	}
 	else
 		return (QuestDone);
@@ -1313,8 +1307,8 @@ BOOL RunEvent(BOOL QuoteToggle, char *szEventFile, char *szEventName,
 
 void Quests_GoQuest(void)
 {
-	_INT16 iTemp, TotalQuests = 0, WhichQuest, NumQuestsDone, QuestIndex[64];
-	BOOL QuestDone, QuestKnown;
+	int16_t iTemp, TotalQuests = 0, WhichQuest, NumQuestsDone, QuestIndex[64];
+	bool QuestDone, QuestKnown;
 	char KnownBitSet, DoneBitSet;
 	char szString[50], cInput;
 
@@ -1358,7 +1352,7 @@ void Quests_GoQuest(void)
 		rputs(" |0GWhich quest? (Enter=abort)|0E> |0F");
 		/* get choice from user on which quest to complete */
 		for (;;) {
-			cInput = toupper(od_get_key(TRUE));
+			cInput = toupper(od_get_key(true));
 
 			if (cInput == '\r' || cInput == '\n') {
 				rputs(ST_ABORTED);
@@ -1383,7 +1377,7 @@ void Quests_GoQuest(void)
 
 		//od_printf("Comparing with %d\n", (1 << (QuestIndex[WhichQuest]%8)));
 
-		if (QuestKnown == FALSE || QuestDone || !Quests[QuestIndex[WhichQuest]].pszQuestName) {
+		if (QuestKnown == false || QuestDone || !Quests[QuestIndex[WhichQuest]].pszQuestName) {
 			rputs("\n|12Quest not found.\n%P");
 			return;
 		}
@@ -1400,10 +1394,10 @@ void Quests_GoQuest(void)
 		rputs("\n");
 	}
 
-	PClan->QuestToday = TRUE;
+	PClan->QuestToday = true;
 
-	/* if successful (returns TRUE), set that quest bit to done */
-	if (RunEvent(FALSE,
+	/* if successful (returns true), set that quest bit to done */
+	if (RunEvent(false,
 				 Quests[QuestIndex[WhichQuest]].pszQuestFile, Quests[QuestIndex[WhichQuest]].pszQuestIndex,
 				 NULL, NULL)) {
 		// set bit since quest completed

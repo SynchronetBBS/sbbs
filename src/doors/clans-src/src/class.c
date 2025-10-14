@@ -38,24 +38,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "language.h"
 #include "video.h"
 
-__BOOL ClassesInitialized = FALSE;
+bool ClassesInitialized = false;
 
 extern struct IniFile IniFile;
 struct PClass *PClasses[MAX_PCLASSES], *Races[MAX_PCLASSES];
-extern __BOOL Verbose;
+extern bool Verbose;
 
 
 // ------------------------------------------------------------------------- //
 
-void Load_PClasses(struct PClass *PClass[MAX_PCLASSES], __BOOL GetPClasses)
+void Load_PClasses(struct PClass *PClass[MAX_PCLASSES], bool GetPClasses)
 /*
  * This function will load classes from file into PClass[].
  *
- * PRE: GetPClasses = TRUE if we're get classes, FALSE if getting races.
+ * PRE: GetPClasses = true if we're get classes, false if getting races.
  */
 {
 	int iTemp, CurFile, CurClass = 0, MaxFiles;
-	_INT16 NumClasses;
+	int16_t NumClasses;
 	struct FileHeader ClassFile;
 
 	if (GetPClasses)
@@ -130,10 +130,10 @@ void PClass_Init(void)
 		delay(500);
 	}
 
-	Load_PClasses(Races, FALSE);
-	Load_PClasses(PClasses, TRUE);
+	Load_PClasses(Races, false);
+	Load_PClasses(PClasses, true);
 
-	ClassesInitialized = TRUE;
+	ClassesInitialized = true;
 }
 
 void PClass_Close(void)
@@ -142,10 +142,10 @@ void PClass_Close(void)
  *
  */
 {
-	if (ClassesInitialized == FALSE) return;
+	if (ClassesInitialized == false) return;
 
 	Free_PClasses(PClasses);
 	Free_PClasses(Races);
 
-	ClassesInitialized = FALSE;
+	ClassesInitialized = false;
 }

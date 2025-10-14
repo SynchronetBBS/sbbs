@@ -61,27 +61,27 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern struct Language *Language;
 extern struct clan *PClan;
-struct village Village = { FALSE, NULL };
+struct village Village = { false, NULL };
 extern struct config *Config;
 extern struct ibbs IBBS;
 extern struct game Game;
-extern BOOL Verbose;
+extern bool Verbose;
 
-struct  PACKED Scheme {
+struct  Scheme {
 	char szName[20];
 
 	char ColorScheme[23];
-} PACKED;
+};
 
 // ------------------------------------------------------------------------- //
 
-_INT16 OutsiderTownHallMenu(void)
+int16_t OutsiderTownHallMenu(void)
 {
 	char *szTheOptions[11];
 	char szString[128];
-	_INT16 iTemp, ClanId[2];
-	long lTemp;
-	BOOL IsRuler;
+	int16_t iTemp, ClanId[2];
+	int32_t lTemp;
+	bool IsRuler;
 
 	LoadStrings(380, 10, szTheOptions);
 	szTheOptions[10] = "View Village Empire Stats";
@@ -130,7 +130,7 @@ _INT16 OutsiderTownHallMenu(void)
 		      rputs(szString);
 		*/
 
-		switch (GetChoice("Town2", ST_ENTEROPTION, szTheOptions, "DWBVPH?Q/ES", 'Q', TRUE)) {
+		switch (GetChoice("Town2", ST_ENTEROPTION, szTheOptions, "DWBVPH?Q/ES", 'Q', true)) {
 			case 'S' :  // village empire stats
 				/*
 				        IsRuler = PClan->ClanID[0] == Village.Data->RulingClanId[0] &&
@@ -140,8 +140,8 @@ _INT16 OutsiderTownHallMenu(void)
 				          Village.Data->ShowEmpireStats && Village.Data->Empire.OwnerType == EO_VILLAGE) ||
 				          (Village.Data->Empire.OwnerType == EO_VILLAGE && IsRuler) )
 				          EmpireStats(&Village.Data->Empire);
-				        else if (Village.Data->Empire.OwnerType == EO_VILLAGE && IsRuler == FALSE &&
-				          Village.Data->ShowEmpireStats == FALSE)
+				        else if (Village.Data->Empire.OwnerType == EO_VILLAGE && IsRuler == false &&
+				          Village.Data->ShowEmpireStats == false)
 				          rputs("|07Empire stats made unavailable by ruler.\n%P");
 				*/
 
@@ -183,13 +183,13 @@ _INT16 OutsiderTownHallMenu(void)
 				}
 				ClanId[0] = Village.Data->RulingClanId[0];
 				ClanId[1] = Village.Data->RulingClanId[1];
-				MyWriteMessage2(ClanId, FALSE, FALSE, -1, "", FALSE, -1);
+				MyWriteMessage2(ClanId, false, false, -1, "", false, -1);
 				break;
 			case 'H' :  /* citizen help */
 				GeneralHelp(ST_CITIZENHLP);
 				break;
 			case 'V' :  /* view clan stats */
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 			case 'Q' :      /* return to previous menu */
 				return 0;
@@ -209,11 +209,11 @@ _INT16 OutsiderTownHallMenu(void)
 
 void ChangeFlagScheme(void)
 {
-	BOOL Quit = FALSE;
+	bool Quit = false;
 	char cInput;
-	_INT16 iTemp, WhichColour;
-	_INT16 OldFlag[3];
-	BOOL ChangesMade = FALSE;
+	int16_t iTemp, WhichColour;
+	int16_t OldFlag[3];
+	bool ChangesMade = false;
 	char szString[255];
 
 	/* save current flag */
@@ -245,7 +245,7 @@ void ChangeFlagScheme(void)
 				sprintf(szString, "%c\n\n", cInput);
 				rputs(szString);
 
-				ChangesMade = TRUE;
+				ChangesMade = true;
 
 				WhichColour = (cInput - '1') + 23;
 
@@ -258,7 +258,7 @@ void ChangeFlagScheme(void)
 			case '\n' :
 			case '\r' :
 				rputs("Quit\n\n");
-				Quit = TRUE;
+				Quit = true;
 				break;
 		}
 
@@ -281,9 +281,9 @@ void ChangeFlagScheme(void)
 
 // ------------------------------------------------------------------------- //
 
-void GetNums(char *Array, _INT16 NumVars, char *string)
+void GetNums(char *Array, int16_t NumVars, char *string)
 {
-	_INT16 iTemp, CurChar = 0;
+	int16_t iTemp, CurChar = 0;
 
 	// get next number
 	while ((string[CurChar] == ',' || string[CurChar] == ' ') && string[CurChar])
@@ -306,7 +306,7 @@ void GetNums(char *Array, _INT16 NumVars, char *string)
 
 void LoadSchemes(struct Scheme *Scheme[128])
 {
-	_INT16 iTemp, CurScheme;
+	int16_t iTemp, CurScheme;
 	char szLine[128], *pcCurrentPos, szName[20];
 	struct FileHeader FileHeader;
 
@@ -345,7 +345,7 @@ void LoadSchemes(struct Scheme *Scheme[128])
 void AddScheme(void)
 {
 	FILE *fp;
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	fp = fopen("schemes.txt", "a");
 
@@ -361,11 +361,11 @@ void AddScheme(void)
 
 void ChangeColourScheme(void)
 {
-	BOOL Quit = FALSE;
+	bool Quit = false;
 	char cInput, szKeys[26], szString[128];
-	_INT16 iTemp, WhichColour, Choice;
+	int16_t iTemp, WhichColour, Choice;
 	struct Scheme *Scheme[128];
-	_INT16 TableColor[128];
+	int16_t TableColor[128];
 
 
 	/* set up tables which "point" to which color */
@@ -460,7 +460,7 @@ void ChangeColourScheme(void)
 			case '\r':
 			case '\n':
 				rputs("Quit\n\n");
-				Quit = TRUE;
+				Quit = true;
 				break;
 			default :
 
@@ -476,7 +476,7 @@ void ChangeColourScheme(void)
 
 				Help("Individual Colours", ST_CLANSHLP);
 
-				iTemp = GetLong("|0SPlease enter the colour to use (1 to 15) ", (long)Village.Data->ColorScheme[ WhichColour ], 15);
+				iTemp = GetLong("|0SPlease enter the colour to use (1 to 15) ", (int32_t)Village.Data->ColorScheme[ WhichColour ], 15);
 
 				if (iTemp)
 					Village.Data->ColorScheme[ WhichColour ] = iTemp;
@@ -498,19 +498,19 @@ void BuildMenu(void)
 {
 	char *szTheOptions[9];
 	char szString[255];
-	_INT16 iTemp;
-	long THallBuildCosts[MAX_THALLLEVEL] = { 15500L, 50000L, 100000L, 250000L };
-	long ChurchBuildCosts[MAX_CHURCHLEVEL] = { 8000L, 25000L, 30000L, 50000L, 70000L };
-	long PawnBuildCosts[MAX_PAWNLEVEL] = { 10000L, 25000L, 30000L, 50000L, 70000L };
-	long WizardBuildCosts[MAX_WIZARDLEVEL] = { 10000L, 25000L, 35000L, 40000L, 70000L };
-	long lTemp, TotalCost;
-	long PerCost;
-	_INT16 LimitingVariable, NumToBuild;
+	int16_t iTemp;
+	int32_t THallBuildCosts[MAX_THALLLEVEL] = { 15500L, 50000L, 100000L, 250000L };
+	int32_t ChurchBuildCosts[MAX_CHURCHLEVEL] = { 8000L, 25000L, 30000L, 50000L, 70000L };
+	int32_t PawnBuildCosts[MAX_PAWNLEVEL] = { 10000L, 25000L, 30000L, 50000L, 70000L };
+	int32_t WizardBuildCosts[MAX_WIZARDLEVEL] = { 10000L, 25000L, 35000L, 40000L, 70000L };
+	int32_t lTemp, TotalCost;
+	int32_t PerCost;
+	int16_t LimitingVariable, NumToBuild;
 
 	LoadStrings(350, 9, szTheOptions);
 
 	if (!PClan->TownHallHelp) {
-		PClan->TownHallHelp = TRUE;
+		PClan->TownHallHelp = true;
 		Help("Town Hall", ST_NEWBIEHLP);
 	}
 
@@ -591,7 +591,7 @@ void BuildMenu(void)
 		rputs(ST_BMENU10);
 		rputs(ST_LONGLINE);
 
-		switch (GetChoice("", ST_ENTEROPTION, szTheOptions, "PZFCTH?QS", 'Q', TRUE)) {
+		switch (GetChoice("", ST_ENTEROPTION, szTheOptions, "PZFCTH?QS", 'Q', true)) {
 			case 'P' :  // pawn shop
 				Help("Pawn Shop", ST_RULERHLP);
 
@@ -844,7 +844,7 @@ void BuildMenu(void)
 				          }
 				*/
 
-				TotalCost = ((long)(Village.Data->MarketLevel+1)*(Village.Data->MarketLevel+1)*1250L) + 15000L;
+				TotalCost = ((int32_t)(Village.Data->MarketLevel+1)*(Village.Data->MarketLevel+1)*1250L) + 15000L;
 
 				sprintf(szString, ST_TOWN3, TotalCost, Village.Data->MarketLevel+1, Village.Data->Empire.VaultGold);
 				rputs(szString);
@@ -882,13 +882,13 @@ void EconomicsMenu(void)
 {
 	char *szTheOptions[7];
 	char szString[128];
-	_INT16 iTemp, OldTax;
-	long lTemp;
+	int16_t iTemp, OldTax;
+	int32_t lTemp;
 
 	LoadStrings(390, 7, szTheOptions);
 
 	if (!PClan->TownHallHelp) {
-		PClan->TownHallHelp = TRUE;
+		PClan->TownHallHelp = true;
 		Help("Town Hall", ST_NEWBIEHLP);
 	}
 
@@ -920,7 +920,7 @@ void EconomicsMenu(void)
 		rputs(ST_EMENU9);
 		rputs(ST_LONGLINE);
 
-		switch (GetChoice("", ST_ENTEROPTION, szTheOptions, "TGWDH?Q", 'Q', TRUE)) {
+		switch (GetChoice("", ST_ENTEROPTION, szTheOptions, "TGWDH?Q", 'Q', true)) {
 			case 'T' :  /* Tax rate */
 				Help("Tax Rate", ST_RULERHLP);
 
@@ -929,13 +929,13 @@ void EconomicsMenu(void)
 					rputs(ST_EMENU10);  // tell him he can't set it more than once per day
 				else {
 					/* figure out lowest tax rate and highest tax rate */
-					iTemp = (_INT16)GetLong(ST_EMENU11, Village.Data->TaxRate, 50);
+					iTemp = (int16_t)GetLong(ST_EMENU11, Village.Data->TaxRate, 50);
 
 					/* if no change, do nothing */
 					if (iTemp == Village.Data->TaxRate)
 						break;
 
-					Village.Data->SetTaxToday = TRUE;
+					Village.Data->SetTaxToday = true;
 
 					/* increasing the tax rate decreases/increases public approval */
 
@@ -959,13 +959,13 @@ void EconomicsMenu(void)
 				if (Village.Data->SetGSTToday)
 					rputs(ST_EMENU15);
 				else {
-					iTemp = (_INT16)GetLong(ST_EMENU16, Village.Data->GST, 50);
+					iTemp = (int16_t)GetLong(ST_EMENU16, Village.Data->GST, 50);
 
 					/* if no change, do nothing */
 					if (iTemp == Village.Data->GST)
 						break;
 
-					Village.Data->SetGSTToday = TRUE;
+					Village.Data->SetGSTToday = true;
 
 					/* increasing the tax rate decreases/increases public approval */
 
@@ -1035,13 +1035,13 @@ void EconomicsMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-_INT16 TownHallMenu(void)
+int16_t TownHallMenu(void)
 {
 	char *szTheOptions[17];
 	char szString[255], szSpeech[128];
-	_INT16 iTemp, OldRate;
-	_INT16 LimitingVariable, NumToTrain;
-	long GuardCost;
+	int16_t iTemp, OldRate;
+	int16_t LimitingVariable, NumToTrain;
+	int32_t GuardCost;
 
 	LoadStrings(335, 15, szTheOptions);
 	szTheOptions[15] = "Conscription Rate";
@@ -1076,7 +1076,7 @@ _INT16 TownHallMenu(void)
 
 		rputs(ST_LONGLINE);
 
-		switch (GetChoice("Town1", ST_ENTEROPTION, szTheOptions, "SECLHMD!V?Q/BGPRT", 'Q', TRUE)) {
+		switch (GetChoice("Town1", ST_ENTEROPTION, szTheOptions, "SECLHMD!V?Q/BGPRT", 'Q', true)) {
 				/*      case 'T' :
 				          ToggleEmpireStats();
 				          break;
@@ -1090,13 +1090,13 @@ _INT16 TownHallMenu(void)
 					rputs(ST_TMENU19);  // tell him he can't set it more than once per day
 				else {
 					/* figure out lowest rate rate and highest rate */
-					iTemp = (_INT16)GetLong(ST_TMENU20, Village.Data->ConscriptionRate, 20);
+					iTemp = (int16_t)GetLong(ST_TMENU20, Village.Data->ConscriptionRate, 20);
 
 					/* if no change, do nothing */
 					if (iTemp == Village.Data->ConscriptionRate)
 						break;
 
-					Village.Data->SetConToday = TRUE;
+					Village.Data->SetConToday = true;
 
 					OldRate = Village.Data->ConscriptionRate;
 					Village.Data->ConscriptionRate = iTemp;
@@ -1130,7 +1130,7 @@ _INT16 TownHallMenu(void)
 				EconomicsMenu();
 				break;
 			case 'V' :  /* view clan stats */
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 			case 'L' :    /* flag scheme */
 				ChangeFlagScheme();
@@ -1142,7 +1142,7 @@ _INT16 TownHallMenu(void)
 				/* enter announcement */
 				rputs(ST_TMENU11);
 				szSpeech[0] = 0;
-				GetStr(szSpeech, 70, FALSE);
+				GetStr(szSpeech, 70, false);
 
 				if (szSpeech[0] == 0) {
 					rputs(ST_ABORTED);
@@ -1170,7 +1170,7 @@ _INT16 TownHallMenu(void)
 
 					/* reduce score */
 					/* reset user stats */
-					PClan->WasRulerToday = TRUE;
+					PClan->WasRulerToday = true;
 					PClan->Points -= 100;
 
 					sprintf(szString, ST_NEWSABDICATED, PClan->szName);
@@ -1240,10 +1240,10 @@ void Village_Destroy(void)
  */
 {
 	free(Village.Data);
-	Village.Initialized = FALSE;
+	Village.Initialized = false;
 }
 
-BOOL Village_Read(void)
+bool Village_Read(void)
 /*
  * This function reads in the village.dat data and places it in Village.
  *
@@ -1252,11 +1252,11 @@ BOOL Village_Read(void)
 	FILE *fp;
 
 	fp = _fsopen(ST_VILLAGEDATFILE, "rb", SH_DENYWR);
-	if (!fp)  return FALSE;
+	if (!fp)  return false;
 
-	EncryptRead(Village.Data, (long)sizeof(struct village_data), fp, XOR_VILLAGE);
+	EncryptRead(Village.Data, (int32_t)sizeof(struct village_data), fp, XOR_VILLAGE);
 	fclose(fp);
-	return TRUE;
+	return true;
 }
 
 void Village_Write(void)
@@ -1267,12 +1267,12 @@ void Village_Write(void)
 {
 	FILE *fp;
 
-	if (Village.Initialized == FALSE) {
+	if (Village.Initialized == false) {
 		Village_Destroy();
 		System_Error("Village not initialized!\n");
 	}
 
-	Village.Data->CRC = CRCValue(Village.Data, sizeof(struct village_data) - sizeof(long));
+	Village.Data->CRC = CRCValue(Village.Data, sizeof(struct village_data) - sizeof(int32_t));
 
 	fp = _fsopen(ST_VILLAGEDATFILE, "wb", SH_DENYRW);
 	if (fp) {
@@ -1308,22 +1308,22 @@ void Village_Reset(void)
 	Village.Data->PawnLevel = 0;
 	Village.Data->WizardLevel = 0;
 
-	Village.Data->SetTaxToday = FALSE;
-	Village.Data->SetInterestToday = FALSE;
-	Village.Data->SetGSTToday = FALSE;
-	Village.Data->SetConToday = FALSE;
+	Village.Data->SetTaxToday = false;
+	Village.Data->SetInterestToday = false;
+	Village.Data->SetGSTToday = false;
+	Village.Data->SetConToday = false;
 
-	Village.Data->UpMarketToday = FALSE;
-	Village.Data->UpTHallToday = FALSE;
-	Village.Data->UpChurchToday = FALSE;
-	Village.Data->UpPawnToday = FALSE;
-	Village.Data->UpWizToday = FALSE;
-	Village.Data->ShowEmpireStats = FALSE;
+	Village.Data->UpMarketToday = false;
+	Village.Data->UpTHallToday = false;
+	Village.Data->UpChurchToday = false;
+	Village.Data->UpPawnToday = false;
+	Village.Data->UpWizToday = false;
+	Village.Data->ShowEmpireStats = false;
 
 	ClearFlags(Village.Data->HFlags);
 	ClearFlags(Village.Data->GFlags);
 
-	Empire_Create(&Village.Data->Empire, FALSE);
+	Empire_Create(&Village.Data->Empire, false);
 	strcpy(Village.Data->Empire.szName, Village.Data->szName);
 	Village.Data->Empire.Land = 500;      // village starts off with this
 	Village.Data->Empire.Buildings[B_BARRACKS] = 10;
@@ -1337,14 +1337,14 @@ void Village_Reset(void)
 	Village.Data->CostFluctuation = 5 - RANDOM(11);
 	Village.Data->MarketQuality = MQ_AVERAGE;
 
-	Village.Data->CRC = CRCValue(&Village.Data, sizeof(struct village_data) - sizeof(long));
+	Village.Data->CRC = CRCValue(&Village.Data, sizeof(struct village_data) - sizeof(int32_t));
 }
 
 // ------------------------------------------------------------------------- //
 
 void Village_Maint(void)
 {
-	_INT16 MarketIndex;
+	int16_t MarketIndex;
 	char *szQuality[4] = { "Average", "Good", "Very Good", "Excellent" },
 						 szString[255];
 
@@ -1353,16 +1353,16 @@ void Village_Maint(void)
 	if (Village.Data->Empire.VaultGold < 0)
 		Village.Data->Empire.VaultGold = 0;
 
-	Village.Data->SetTaxToday       = FALSE;
-	Village.Data->SetInterestToday  = FALSE;
-	Village.Data->SetGSTToday       = FALSE;
-	Village.Data->SetConToday       = FALSE;
+	Village.Data->SetTaxToday       = false;
+	Village.Data->SetInterestToday  = false;
+	Village.Data->SetGSTToday       = false;
+	Village.Data->SetConToday       = false;
 
-	Village.Data->UpMarketToday     = FALSE;
-	Village.Data->UpTHallToday      = FALSE;
-	Village.Data->UpChurchToday     = FALSE;
-	Village.Data->UpPawnToday       = FALSE;
-	Village.Data->UpWizToday        = FALSE;
+	Village.Data->UpMarketToday     = false;
+	Village.Data->UpTHallToday      = false;
+	Village.Data->UpChurchToday     = false;
+	Village.Data->UpPawnToday       = false;
+	Village.Data->UpWizToday        = false;
 
 	if (Village.Data->ConscriptionRate > 20)
 		Village.Data->ConscriptionRate = 20;
@@ -1420,7 +1420,7 @@ void Village_Init(void)
 
 	Village.Data = malloc(sizeof(struct village_data));
 	CheckMem(Village.Data);
-	Village.Initialized = TRUE;
+	Village.Initialized = true;
 
 	if (!Village_Read()) {
 		Village_Destroy();
@@ -1428,7 +1428,7 @@ void Village_Init(void)
 	}
 
 	// ensure CRC is correct
-	if (CheckCRC(Village.Data, sizeof(struct village_data) - sizeof(long), Village.Data->CRC) == FALSE) {
+	if (CheckCRC(Village.Data, sizeof(struct village_data) - sizeof(int32_t), Village.Data->CRC) == false) {
 		Village_Destroy();
 		System_Error("Village data corrupt!\n");
 	}
@@ -1450,7 +1450,7 @@ void Village_Close(void)
  *
  */
 {
-	if (Village.Initialized == FALSE) return;
+	if (Village.Initialized == false) return;
 
 	Village_Write();
 	Village_Destroy();

@@ -25,14 +25,14 @@ void RemovePipes(char *pszSrc, char *pszDest);
  *
  */
 
-void PadString(char *szString, _INT16 PadLength);
+void PadString(char *szString, int16_t PadLength);
 /*
  * This takes the string and pads it with spaces.
  */
 
-__BOOL iscodechar(char c);
+bool iscodechar(char c);
 /*
- * Returns TRUE if the character is a digit or within 'A' and 'F'
+ * Returns true if the character is a digit or within 'A' and 'F'
  * (Used mainly to see if it is a valid char for `xx codes.
  *
  */

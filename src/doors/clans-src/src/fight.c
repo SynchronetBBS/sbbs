@@ -58,18 +58,18 @@ extern struct clan *PClan;
 extern struct village Village;
 
 struct move {
-	_INT16 Action, Target, SpellNum, ScrollNum;
+	int16_t Action, Target, SpellNum, ScrollNum;
 };
 
 struct order {
-	_INT16 TeamNum, MemberNum;
+	int16_t TeamNum, MemberNum;
 };
 
 // ------------------------------------------------------------------------- //
 
 void Fight_Heal(struct clan *Clan)
 {
-	_INT16 CurMember;
+	int16_t CurMember;
 
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
 		if (Clan->Member[CurMember] && Clan->Member[CurMember]->Status == Here)
@@ -80,18 +80,18 @@ void Fight_Heal(struct clan *Clan)
 void Fight_GetBattleOrder(struct order *BattleOrder, struct clan *Team[2])
 {
 	struct {
-		_INT16 WhichTeam;
-		_INT16 WhichPlayer;
-		_INT16 WhichSortData;
-		_INT16 AgiValue;
+		int16_t WhichTeam;
+		int16_t WhichPlayer;
+		int16_t WhichSortData;
+		int16_t AgiValue;
 	} CurHighest;
 	struct {
-		_INT16 WhichTeam;
-		_INT16 WhichPlayer;
-		_INT16 AgiValue;                   // his "agility+energy" ranking
-		_INT16 InList;                     // set if already in sort list
+		int16_t WhichTeam;
+		int16_t WhichPlayer;
+		int16_t AgiValue;                   // his "agility+energy" ranking
+		int16_t InList;                     // set if already in sort list
 	} SortData[MAX_MEMBERS * 2];
-	_INT16 CurSortMember, CurMember, CurTeam, CurOrder, TotalMembers;
+	int16_t CurSortMember, CurMember, CurTeam, CurOrder, TotalMembers;
 	struct pc *TempPC;
 
 
@@ -106,14 +106,14 @@ void Fight_GetBattleOrder(struct order *BattleOrder, struct clan *Team[2])
 					GetStat(TempPC, stAgility) + (TempPC->HP*10)/TempPC->MaxHP + RANDOM(2);
 				SortData[CurSortMember].WhichTeam = CurTeam;
 				SortData[CurSortMember].WhichPlayer = CurMember;
-				SortData[CurSortMember].InList = FALSE;
+				SortData[CurSortMember].InList = false;
 
 				CurSortMember++;
 			}
 		}
 
 	// now sort them
-	TotalMembers = NumMembers(Team[0], TRUE) + NumMembers(Team[1], TRUE);
+	TotalMembers = NumMembers(Team[0], true) + NumMembers(Team[1], true);
 
 	if (TotalMembers != CurSortMember)
 		DisplayStr(">>> TotalMembers != CurSortMember!\n%P");
@@ -128,7 +128,7 @@ void Fight_GetBattleOrder(struct order *BattleOrder, struct clan *Team[2])
 		for (CurSortMember = 0; CurSortMember < TotalMembers; CurSortMember++) {
 			// see who is the highest in value
 			if (SortData[CurSortMember].AgiValue > CurHighest.AgiValue &&
-					SortData[CurSortMember].InList == FALSE) {
+					SortData[CurSortMember].InList == false) {
 				// Found a higher one
 				CurHighest.WhichTeam =      SortData[CurSortMember].WhichTeam;
 				CurHighest.WhichPlayer =    SortData[CurSortMember].WhichPlayer;
@@ -144,7 +144,7 @@ void Fight_GetBattleOrder(struct order *BattleOrder, struct clan *Team[2])
 			// record that turn
 			BattleOrder[CurOrder].TeamNum = CurHighest.WhichTeam;
 			BattleOrder[CurOrder].MemberNum = CurHighest.WhichPlayer;
-			SortData[ CurHighest.WhichSortData ].InList = TRUE;
+			SortData[ CurHighest.WhichSortData ].InList = true;
 
 			// od_printf("Using %s\n\r", Team[ Turn[CurOrder].WhichTeam ]->Member[ Turn[CurOrder].WhichPlayer ]->szName);
 		}
@@ -166,12 +166,12 @@ void Fight_ManaRegenerate(struct pc *PC)
 		PC->SP = PC->MaxSP;
 }
 
-BOOL Fight_IsIncapacitated(struct pc *PC)
+bool Fight_IsIncapacitated(struct pc *PC)
 {
-	/* return TRUE if dude is incapacitated */
+	/* return true if dude is incapacitated */
 
-	_INT16 iTemp;
-	BOOL Result = FALSE;
+	int16_t iTemp;
+	bool Result = false;
 
 	/* scan spellsineffect */
 
@@ -179,9 +179,9 @@ BOOL Fight_IsIncapacitated(struct pc *PC)
 		if (PC->SpellsInEffect[iTemp].SpellNum == -1)
 			continue;
 
-		/* see if this is incapacitate spell, if so return TRUE and tell dudes */
+		/* see if this is incapacitate spell, if so return true and tell dudes */
 		if (Spells[ PC->SpellsInEffect[iTemp].SpellNum ]->TypeFlag & SF_INCAPACITATE) {
-			Result = TRUE;
+			Result = true;
 
 			/* tell dudes */
 			rputs(Spells[ PC->SpellsInEffect[iTemp].SpellNum ]->pszStatusStr);
@@ -194,12 +194,12 @@ BOOL Fight_IsIncapacitated(struct pc *PC)
 	return Result;
 }
 
-_INT16 Fight_ChooseVictim(struct clan *EnemyClan)
+int16_t Fight_ChooseVictim(struct clan *EnemyClan)
 {
-	_INT16 LowestEnergy, TempEnergyPercentage, EnemyTarget = 0;
-	_INT16 NumPCs, CurPC;
-	_INT16 iTemp, Target;
-	BOOL FoundTarget = FALSE;
+	int16_t LowestEnergy, TempEnergyPercentage, EnemyTarget = 0;
+	int16_t NumPCs, CurPC;
+	int16_t iTemp, Target;
+	bool FoundTarget = false;
 
 	if (RANDOM(100) < 60) {
 		/* attack guy with lowest HP percentage */
@@ -216,14 +216,14 @@ _INT16 Fight_ChooseVictim(struct clan *EnemyClan)
 				if (TempEnergyPercentage < LowestEnergy) {
 					EnemyTarget = iTemp;
 					LowestEnergy = TempEnergyPercentage;
-					FoundTarget = TRUE;
+					FoundTarget = true;
 				}
 			}
 		}
 		/* found who to attack */
 		Target = EnemyTarget;
 
-		if (FoundTarget == FALSE) {
+		if (FoundTarget == false) {
 			rputs("Bug #1A\n%P");
 		}
 	}
@@ -232,7 +232,7 @@ _INT16 Fight_ChooseVictim(struct clan *EnemyClan)
 		//od_printf("Choosing guy at random\n\r");
 
 		/* find how many PCs in enemy clan */
-		NumPCs = NumMembers(EnemyClan, TRUE);
+		NumPCs = NumMembers(EnemyClan, true);
 
 		/* choose one at random */
 		EnemyTarget = RANDOM(NumPCs);
@@ -246,13 +246,13 @@ _INT16 Fight_ChooseVictim(struct clan *EnemyClan)
 				CurPC++;
 
 			if (CurPC == EnemyTarget) {
-				FoundTarget = TRUE;
+				FoundTarget = true;
 				break;
 			}
 		}
 		Target = iTemp;
 
-		if (FoundTarget == FALSE) {
+		if (FoundTarget == false) {
 			rputs("Bug #1B\n%P");
 		}
 	}
@@ -261,10 +261,10 @@ _INT16 Fight_ChooseVictim(struct clan *EnemyClan)
 	return Target;
 }
 
-_INT16 NumUndeadMembers(struct clan *Clan)
+int16_t NumUndeadMembers(struct clan *Clan)
 {
-	_INT16 iTemp;
-	_INT16 NumUndead = 0;
+	int16_t iTemp;
+	int16_t NumUndead = 0;
 
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (Clan->Member[iTemp] && Clan->Member[iTemp]->Undead &&
@@ -278,14 +278,14 @@ _INT16 NumUndeadMembers(struct clan *Clan)
 
 void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct move *Move)
 {
-	_INT16 iTemp, NumSpellsTried, TotalSpells;
-	_INT16 LowestEnergy, TempEnergyPercentage;
-	BOOL SomeoneNeedsHeal, FoundHealSpell, FoundSpell;
-	_INT16 WhoNeedsHeal = 0, HealSpellNum = 0, WhichSpell = 0;
+	int16_t iTemp, NumSpellsTried, TotalSpells;
+	int16_t LowestEnergy, TempEnergyPercentage;
+	bool SomeoneNeedsHeal, FoundHealSpell, FoundSpell;
+	int16_t WhoNeedsHeal = 0, HealSpellNum = 0, WhichSpell = 0;
 
 
 	/* see if anyone needs healing in the clan, skip undead! */
-	SomeoneNeedsHeal = FALSE;
+	SomeoneNeedsHeal = false;
 	LowestEnergy = 60;
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (NPC->MyClan->Member[iTemp] == NULL)
@@ -297,7 +297,7 @@ void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct move *Mov
 
 			if (TempEnergyPercentage < 50) {
 				/* this guy needs healing */
-				SomeoneNeedsHeal = TRUE;
+				SomeoneNeedsHeal = true;
 
 				if (TempEnergyPercentage < LowestEnergy) {
 					WhoNeedsHeal = iTemp;
@@ -316,7 +316,7 @@ void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct move *Mov
 		/* Yes, knows at least one spell */
 
 		/* see if any heal spells and can cast 'em */
-		FoundHealSpell = FALSE;
+		FoundHealSpell = false;
 		for (iTemp = 0; iTemp < MAX_SPELLS; iTemp++) {
 			if (NPC->SpellsKnown[iTemp] == 0)
 				break;  /* no more spells to check */
@@ -324,14 +324,14 @@ void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct move *Mov
 			if (Spells[ NPC->SpellsKnown[iTemp] - 1 ]->TypeFlag & SF_HEAL) {
 				/* see if can cast it */
 				if (NPC->SP >= Spells[ NPC->SpellsKnown[iTemp] - 1]->SP) {
-					FoundHealSpell = TRUE;
+					FoundHealSpell = true;
 					HealSpellNum = NPC->SpellsKnown[iTemp] - 1;
 					break;
 				}
 			}
 		}
 
-		/* if FoundHealSpell is TRUE, that means a heal spell was found
+		/* if FoundHealSpell is true, that means a heal spell was found
 		   and it CAN be cast.  Decide now whether to cast or not using
 		   randomness */
 		if (FoundHealSpell && SomeoneNeedsHeal && RANDOM(100) < 55) {
@@ -359,7 +359,7 @@ void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct move *Mov
 			TotalSpells = iTemp;
 
 			NumSpellsTried = 0;
-			FoundSpell = FALSE;
+			FoundSpell = false;
 			while (NumSpellsTried < TotalSpells) {
 				/* choose spell at random*/
 				WhichSpell = RANDOM(TotalSpells);
@@ -368,7 +368,7 @@ void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct move *Mov
 				if (NPC->SP >= Spells[ NPC->SpellsKnown[WhichSpell] - 1]->SP &&
 						!(Spells[ NPC->SpellsKnown[WhichSpell] - 1]->TypeFlag & SF_HEAL)) {
 					/* if so, set FoundSpell to true and break from loop */
-					FoundSpell = TRUE;
+					FoundSpell = true;
 					break;
 				}
 
@@ -464,7 +464,7 @@ void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct move *Mov
 
 void Fight_Stats(struct clan *PlayerClan, struct clan *MobClan, struct pc *WhichPC)
 {
-	_INT16 CurMember, MembersShown;
+	int16_t CurMember, MembersShown;
 	char szString[128];
 
 	rputs("\n");
@@ -528,9 +528,9 @@ void Fight_Stats(struct clan *PlayerClan, struct clan *MobClan, struct pc *Which
 	rputs("\n\n");
 }
 
-_INT16 FirstAvailable(struct clan *Clan)
+int16_t FirstAvailable(struct clan *Clan)
 {
-	_INT16 CurMember;
+	int16_t CurMember;
 
 	/* see if that guy is available to attack, if not, attack somebody else */
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++)
@@ -545,11 +545,11 @@ _INT16 FirstAvailable(struct clan *Clan)
 }
 
 
-_INT16 Fight_GetTarget(struct clan *MobClan, _INT16 Default)
+int16_t Fight_GetTarget(struct clan *MobClan, int16_t Default)
 {
-	_INT16 CurMember, MemberNumber, CurIndex;
-	_INT16 Index[MAX_MEMBERS];             // indexes who's around to fight
-	_INT16 TotalMembers;
+	int16_t CurMember, MemberNumber, CurIndex;
+	int16_t Index[MAX_MEMBERS];             // indexes who's around to fight
+	int16_t TotalMembers;
 	char cInput, szString[128];
 
 	// get list of those who are alive
@@ -571,7 +571,7 @@ _INT16 Fight_GetTarget(struct clan *MobClan, _INT16 Default)
 		MemberNumber = Index[Default-1];
 	else
 		for (;;) {
-			cInput = toupper(od_get_key(TRUE));
+			cInput = toupper(od_get_key(true));
 
 			if (cInput == '?') {
 				rputs("List\n");
@@ -611,31 +611,31 @@ _INT16 Fight_GetTarget(struct clan *MobClan, _INT16 Default)
 
 // ------------------------------------------------------------------------- //
 
-BOOL CanRun(struct clan *RunningClan, struct clan *StayingClan)
+bool CanRun(struct clan *RunningClan, struct clan *StayingClan)
 {
-	/* returns TRUE if RunningClan can run away */
-	_INT16 RunningVariable, StayingVariable;
-	_INT16 AllAgilities, AllDexterities, AvgWisdom, iTemp, TotalWisdom;
-	_INT16 TotalMembers;
+	/* returns true if RunningClan can run away */
+	int16_t RunningVariable, StayingVariable;
+	int16_t AllAgilities, AllDexterities, AvgWisdom, iTemp, TotalWisdom;
+	int16_t TotalMembers;
 
-	TotalMembers = NumMembers(RunningClan, TRUE);
+	TotalMembers = NumMembers(RunningClan, true);
 
 	AllAgilities = 0;
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (RunningClan->Member[iTemp] != NULL &&
-				RunningClan->Member[iTemp]->Undead == FALSE)
+				RunningClan->Member[iTemp]->Undead == false)
 			AllAgilities += GetStat(RunningClan->Member[iTemp], ATTR_AGILITY);
 	}
 	AllDexterities = 0;
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (RunningClan->Member[iTemp] != NULL &&
-				RunningClan->Member[iTemp]->Undead == FALSE)
+				RunningClan->Member[iTemp]->Undead == false)
 			AllDexterities += GetStat(RunningClan->Member[iTemp], ATTR_DEXTERITY);
 	}
 	TotalWisdom = 0;
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (RunningClan->Member[iTemp] != NULL &&
-				RunningClan->Member[iTemp]->Undead == FALSE)
+				RunningClan->Member[iTemp]->Undead == false)
 			TotalWisdom += GetStat(RunningClan->Member[iTemp], ATTR_WISDOM);
 	}
 	AvgWisdom = TotalWisdom / TotalMembers;
@@ -644,24 +644,24 @@ BOOL CanRun(struct clan *RunningClan, struct clan *StayingClan)
 					  + RANDOM(15);
 
 
-	TotalMembers = NumMembers(StayingClan, TRUE);
+	TotalMembers = NumMembers(StayingClan, true);
 
 	AllAgilities = 0;
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (StayingClan->Member[iTemp] != NULL &&
-				StayingClan->Member[iTemp]->Undead == FALSE)
+				StayingClan->Member[iTemp]->Undead == false)
 			AllAgilities += GetStat(StayingClan->Member[iTemp], ATTR_AGILITY);
 	}
 	AllDexterities = 0;
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (StayingClan->Member[iTemp] != NULL &&
-				StayingClan->Member[iTemp]->Undead == FALSE)
+				StayingClan->Member[iTemp]->Undead == false)
 			AllDexterities += GetStat(StayingClan->Member[iTemp], ATTR_DEXTERITY);
 	}
 	TotalWisdom = 0;
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (StayingClan->Member[iTemp] != NULL &&
-				StayingClan->Member[iTemp]->Undead == FALSE)
+				StayingClan->Member[iTemp]->Undead == false)
 			TotalWisdom += GetStat(StayingClan->Member[iTemp], ATTR_WISDOM);
 	}
 	AvgWisdom = TotalWisdom / TotalMembers;
@@ -670,41 +670,41 @@ BOOL CanRun(struct clan *RunningClan, struct clan *StayingClan)
 					  + RANDOM(15);
 
 	if (RunningVariable > StayingVariable)
-		return TRUE;
+		return true;
 	else
-		return FALSE;
+		return false;
 }
 
 
-BOOL Fight_Dead(struct clan *Clan)
+bool Fight_Dead(struct clan *Clan)
 {
-	BOOL FoundLiving = FALSE;
-	_INT16 CurMember;
+	bool FoundLiving = false;
+	int16_t CurMember;
 
 	// See if player clan dead or has no living members
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++)
 		if (Clan->Member[CurMember] &&
-				Clan->Member[CurMember]->Undead == FALSE &&
+				Clan->Member[CurMember]->Undead == false &&
 				Clan->Member[CurMember]->Status == Here) {
-			FoundLiving = TRUE;
+			FoundLiving = true;
 			break;
 		}
 
-	if (NumMembers(Clan, TRUE) == 0 || FoundLiving == FALSE) {
+	if (NumMembers(Clan, true) == 0 || FoundLiving == false) {
 		rputs(ST_FIGHTDEFEAT);
-		return TRUE;
+		return true;
 	}
 	else {
-		return FALSE;
+		return false;
 	}
 }
 
-void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, _INT16 Who,
-						BOOL SkipOutput)
+void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int16_t Who,
+						bool SkipOutput)
 {
-	_INT16 CurMember, Damage, PercentGold;
+	int16_t CurMember, Damage, PercentGold;
 	char szString[128];
-	long XPGained, GoldGained, TaxedGold;
+	int32_t XPGained, GoldGained, TaxedGold;
 
 	if (Attacker->MyClan == PClan)
 		rputs(ST_FIGHTYOURCOLOR);
@@ -726,7 +726,7 @@ void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, _INT16 Who
 	/* Figure out if attack lands on other victim */
 	if ((GetStat(Attacker, stDexterity) + RANDOM(4) + RANDOM(4) + 2) <
 			(GetStat(VictimClan->Member[Who], stAgility) + RANDOM(4))) {
-		if (SkipOutput == FALSE) {
+		if (SkipOutput == false) {
 			sprintf(szString, ST_FIGHTMISS, Attacker->szName);
 			rputs(szString);
 		}
@@ -738,7 +738,7 @@ void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, _INT16 Who
 		if (Damage <= 0)
 			Damage = 1;
 
-		if (SkipOutput == FALSE) {
+		if (SkipOutput == false) {
 			sprintf(szString, ST_FIGHTATTACK, Attacker->szName, VictimClan->Member[Who]->szName, Damage);
 			rputs(szString);
 		}
@@ -746,7 +746,7 @@ void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, _INT16 Who
 		/* experience goes here */
 		XPGained = Damage/3 + 1;
 
-		if (SkipOutput == FALSE) {
+		if (SkipOutput == false) {
 			sprintf(szString, ST_FIGHTXP, XPGained);
 			rputs(szString);
 		}
@@ -804,12 +804,12 @@ void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, _INT16 Who
 		/* give gold to clan */
 		if (Attacker->MyClan == PClan) {
 			if (VictimClan->Member[Who]->Difficulty != -1) {
-				GoldGained = VictimClan->Member[Who]->Difficulty*((long)RANDOM(10) + 20L) + 50L + (long)RANDOM(20);
+				GoldGained = VictimClan->Member[Who]->Difficulty*((int32_t)RANDOM(10) + 20L) + 50L + (int32_t)RANDOM(20);
 				sprintf(szString, ST_FIGHTGETGOLD, GoldGained);
 				rputs(szString);
 
 				/* take some away due to taxes */
-				TaxedGold = (long)(GoldGained * Village.Data->TaxRate)/100L;
+				TaxedGold = (int32_t)(GoldGained * Village.Data->TaxRate)/100L;
 				if (TaxedGold) {
 					sprintf(szString, ST_FIGHTTAXEDGOLD, TaxedGold);
 					rputs(szString);
@@ -834,10 +834,10 @@ void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, _INT16 Who
 }
 
 
-BOOL Fight_DoMove(struct pc *AttackerPC, struct move Move, struct clan *Defender,
-				  BOOL FightToDeath, _INT16 CurRound)
+bool Fight_DoMove(struct pc *AttackerPC, struct move Move, struct clan *Defender,
+				  bool FightToDeath, int16_t CurRound)
 /*
- * returns TRUE if user ran away
+ * returns true if user ran away
  *
  */
 {
@@ -862,7 +862,7 @@ BOOL Fight_DoMove(struct pc *AttackerPC, struct move Move, struct clan *Defender
 		if (CanRun(AttackerPC->MyClan, Defender) ||
 				(FightToDeath && CurRound >= MAX_ROUNDS)) {
 			rputs(ST_FIGHTRUNAWAY);
-			return TRUE;
+			return true;
 		}
 		else {
 			// cannot run away
@@ -870,14 +870,14 @@ BOOL Fight_DoMove(struct pc *AttackerPC, struct move Move, struct clan *Defender
 		}
 	}
 
-	return FALSE;
+	return false;
 }
 
-_INT16 GetTarget2(struct clan *Clan, _INT16 Default)
+int16_t GetTarget2(struct clan *Clan, int16_t Default)
 {
-	_INT16 CurMember, MemberNumber, CurIndex;
-	_INT16 Index[MAX_MEMBERS];             // indexes who's around to fight
-	_INT16 TotalMembers;
+	int16_t CurMember, MemberNumber, CurIndex;
+	int16_t Index[MAX_MEMBERS];             // indexes who's around to fight
+	int16_t TotalMembers;
 	char cInput, szString[50];
 
 	// get list of those who are alive
@@ -907,7 +907,7 @@ _INT16 GetTarget2(struct clan *Clan, _INT16 Default)
 	rputs("|0SUse on whom? (|0B?=List|0S): |0F");
 
 	for (;;) {
-		cInput = toupper(od_get_key(TRUE));
+		cInput = toupper(od_get_key(true));
 
 		if (cInput == '?') {
 			rputs("List\n");
@@ -949,15 +949,15 @@ _INT16 GetTarget2(struct clan *Clan, _INT16 Default)
 }
 
 
-BOOL Fight_ReadyScroll(struct pc *PC, struct clan *TargetClan, struct move *Move)
+bool Fight_ReadyScroll(struct pc *PC, struct clan *TargetClan, struct move *Move)
 {
-	_INT16 ItemIndex, SpellChosen;
+	int16_t ItemIndex, SpellChosen;
 
 	// list items
 	ListItems(PC->MyClan);
 
 	// choose one
-	ItemIndex = (_INT16)GetLong("|0SWhich scroll to read?", 0, MAX_ITEMS_HELD);
+	ItemIndex = (int16_t)GetLong("|0SWhich scroll to read?", 0, MAX_ITEMS_HELD);
 
 	// if not chosen properly, return 0
 	if (ItemIndex == 0) {
@@ -967,7 +967,7 @@ BOOL Fight_ReadyScroll(struct pc *PC, struct clan *TargetClan, struct move *Move
 
 	ItemIndex--;
 
-	if (PC->MyClan->Items[ItemIndex].Available == FALSE ||
+	if (PC->MyClan->Items[ItemIndex].Available == false ||
 			PC->MyClan->Items[ItemIndex].cType != I_SCROLL) {
 		rputs(ST_INVALIDITEM);
 		return 0;
@@ -997,7 +997,7 @@ BOOL Fight_ReadyScroll(struct pc *PC, struct clan *TargetClan, struct move *Move
 		if (Move->Target == -1) {
 			rputs(ST_ABORTED);
 			rputs("\n");
-			return FALSE;
+			return false;
 		}
 	}
 	else
@@ -1006,11 +1006,11 @@ BOOL Fight_ReadyScroll(struct pc *PC, struct clan *TargetClan, struct move *Move
 	return 1;   // sucess
 }
 
-BOOL Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct move *Move)
+bool Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct move *Move)
 {
-	_INT16 iTemp, SpellChosen;
+	int16_t iTemp, SpellChosen;
 	char szKeys[MAX_SPELLS + 5], szString[80], Choice;
-	_INT16 NumSpellsKnown;
+	int16_t NumSpellsKnown;
 
 	/* so we have szKeys[] = "?QABCDEFGHI..." */
 	szKeys[0] = '?';
@@ -1036,7 +1036,7 @@ BOOL Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct move *Move
 
 	if (NumSpellsKnown == 0) {
 		rputs(ST_CSPELL0);
-		return FALSE;
+		return false;
 	}
 
 
@@ -1076,7 +1076,7 @@ BOOL Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct move *Move
 		else if (Choice == 'Q' || Choice == '\r' || Choice == '\n') {
 			rputs(ST_ABORTED);
 			rputs("\n");
-			return FALSE;
+			return false;
 		}
 		else {
 			SpellChosen = PC->SpellsKnown[ Choice - 'A' ] - 1;
@@ -1091,7 +1091,7 @@ BOOL Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct move *Move
 			if (PC->SP < Spells[SpellChosen]->SP) {
 				// can't cast spell, not enough SP
 				rputs(ST_CSPELL4);
-				return FALSE;
+				return false;
 			}
 
 			// ask if they really want to cast it for sure
@@ -1117,7 +1117,7 @@ BOOL Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct move *Move
 		if (Move->Target == -1) {
 			rputs(ST_ABORTED);
 			rputs("\n");
-			return FALSE;
+			return false;
 		}
 	}
 	else
@@ -1127,14 +1127,14 @@ BOOL Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct move *Move
 	PC->SP -= Spells[SpellChosen]->SP;
 
 	/* if successful spell choice */
-	return TRUE;
+	return true;
 }
 
 
-_INT16 Fight_Fight(struct clan *Attacker, struct clan *Defender,
-				   BOOL HumanEnemy, BOOL CanRun, BOOL AutoFight)
+int16_t Fight_Fight(struct clan *Attacker, struct clan *Defender,
+				   bool HumanEnemy, bool CanRun, bool AutoFight)
 /*
- * Returns TRUE if Attacker won.
+ * Returns true if Attacker won.
  *
  */
 {
@@ -1142,14 +1142,14 @@ _INT16 Fight_Fight(struct clan *Attacker, struct clan *Defender,
 	char *Options[20], szString[255];
 	struct order BattleOrder[MAX_MEMBERS*2];
 	struct move Move;
-	_INT16 TotalMembers, CurMember, Choice, CurRound = 0;
-	BOOL FightToDeath = FALSE, DoneMove;
+	int16_t TotalMembers, CurMember, Choice, CurRound = 0;
+	bool FightToDeath = false, DoneMove;
 
 	Team[0] = Attacker;
 	Team[1] = Defender;
 
 	if (AutoFight)
-		FightToDeath = TRUE;
+		FightToDeath = true;
 
 	LoadStrings(1000, 20, Options);
 
@@ -1166,7 +1166,7 @@ _INT16 Fight_Fight(struct clan *Attacker, struct clan *Defender,
 
 	// main loop
 	for (;; CurRound++) {
-		TotalMembers = NumMembers(Attacker, TRUE) + NumMembers(Defender, TRUE);
+		TotalMembers = NumMembers(Attacker, true) + NumMembers(Defender, true);
 
 		// figure out order of battle
 		Fight_GetBattleOrder(BattleOrder, Team);
@@ -1199,7 +1199,7 @@ _INT16 Fight_Fight(struct clan *Attacker, struct clan *Defender,
 			else {
 				// it's a human and fight to death off
 
-				DoneMove = FALSE;
+				DoneMove = false;
 
 				while (!DoneMove) {
 					// show stats
@@ -1213,7 +1213,7 @@ _INT16 Fight_Fight(struct clan *Attacker, struct clan *Defender,
 					rputs(szString);
 
 					// show options
-					switch (Choice = GetChoice("", "|0E> |0F", Options, "SAR123456789IPK?F#ED", 'D', FALSE)) {
+					switch (Choice = GetChoice("", "|0E> |0F", Options, "SAR123456789IPK?F#ED", 'D', false)) {
 						case 'S' :  // specific move
 						case '1' :
 						case '2' :
@@ -1231,7 +1231,7 @@ _INT16 Fight_Fight(struct clan *Attacker, struct clan *Defender,
 
 							/* ask who to attack */
 							if ((Move.Target = Fight_GetTarget(Team[ !BattleOrder[CurMember].TeamNum ], Choice)) != -1) {
-								DoneMove = TRUE;
+								DoneMove = true;
 								Move.Action = acAttack;
 							}
 							break;
@@ -1239,28 +1239,28 @@ _INT16 Fight_Fight(struct clan *Attacker, struct clan *Defender,
 							/* ask who to attack */
 							Move.Target = 0;
 							Move.Action = acAttack;
-							DoneMove = TRUE;
+							DoneMove = true;
 							break;
 						case 'R' :  // run away
 							if (HumanEnemy) {
 								rputs(ST_FIGHTNORUN2);
 								break;
 							}
-							else if (CanRun == FALSE) {
+							else if (CanRun == false) {
 								rputs("|12** |14You cannot run in this battle.\n");
 								break;
 							}
 							else {
 								Move.Action = acRun;
-								DoneMove = TRUE;
+								DoneMove = true;
 							}
 							break;
 						case 'I' :  // parry blow
 							Move.Action = acSkip;
-							DoneMove = TRUE;
+							DoneMove = true;
 							break;
 						case 'P' :
-							ShowPlayerStats(Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ], FALSE);
+							ShowPlayerStats(Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ], false);
 							door_pause();
 							break;
 						case 'K' :
@@ -1268,7 +1268,7 @@ _INT16 Fight_Fight(struct clan *Attacker, struct clan *Defender,
 							if (Fight_ChooseSpell(Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ],
 												  Team[ !BattleOrder[CurMember].TeamNum ], &Move)) {
 								Move.Action = acCast;
-								DoneMove = TRUE;
+								DoneMove = true;
 							}
 							break;
 						case '?' :
@@ -1277,8 +1277,8 @@ _INT16 Fight_Fight(struct clan *Attacker, struct clan *Defender,
 						case 'F' :
 							Move.Action = acAttack;
 							Move.Target = 0;
-							FightToDeath = TRUE;
-							DoneMove = TRUE;
+							FightToDeath = true;
+							DoneMove = true;
 							break;
 						case '#' :
 							rputs("\n|07Please enter the number of the enemy to attack.\n%P\n");
@@ -1286,7 +1286,7 @@ _INT16 Fight_Fight(struct clan *Attacker, struct clan *Defender,
 						case 'E' :
 							if (Fight_ReadyScroll(Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ], Team[ !BattleOrder[CurMember].TeamNum ], &Move)) {
 								Move.Action = acRead;
-								DoneMove = TRUE;
+								DoneMove = true;
 							}
 							break;
 						case 'D' :  // default action
@@ -1300,19 +1300,19 @@ _INT16 Fight_Fight(struct clan *Attacker, struct clan *Defender,
 									if (Fight_ChooseSpell(Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ],
 														  Team[ !BattleOrder[CurMember].TeamNum ], &Move)) {
 										Move.Action = acCast;
-										DoneMove = TRUE;
+										DoneMove = true;
 									}
 								}
 								else {  // do regular attack
 									Move.Target = 0;
 									Move.Action = acAttack;
-									DoneMove = TRUE;
+									DoneMove = true;
 								}
 							}
 							else {  // do regular attack
 								Move.Target = 0;
 								Move.Action = acAttack;
-								DoneMove = TRUE;
+								DoneMove = true;
 							}
 							break;
 					}
@@ -1326,7 +1326,7 @@ _INT16 Fight_Fight(struct clan *Attacker, struct clan *Defender,
 			// attacker is considered dead if no more living members EXCLUDING undead
 			if (Fight_Dead(Attacker))
 				return FT_LOST;
-			else if (NumMembers(Defender, TRUE) == 0)
+			else if (NumMembers(Defender, true) == 0)
 				return FT_WON;
 
 			// otherwise, keep fighting
@@ -1340,17 +1340,17 @@ void Fight_CheckLevelUp(void)
 	/* sees if any clansmen need to raise a level.  if so, grant them
 	   a training point each */
 	char szString[128];
-	_INT16 CurMember;
-	long XPRequired[MAX_LEVELS];
-	_INT16 iTemp, Level, Points;
-	BOOL LevelUpFound = FALSE, FirstTime = TRUE;
+	int16_t CurMember;
+	int32_t XPRequired[MAX_LEVELS];
+	int16_t iTemp, Level, Points;
+	bool LevelUpFound = false, FirstTime = true;
 
 	/* figure XP required per level */
 	for (Level = 1; Level < MAX_LEVELS; Level++) {
 		XPRequired[Level] = 50L;
 
 		for (iTemp = 1; iTemp <= Level; iTemp++)
-			XPRequired[Level] += ((long)(iTemp-1)*75L);
+			XPRequired[Level] += ((int32_t)(iTemp-1)*75L);
 	}
 
 	/* for each member, see if xp is higher than the xp required for the
@@ -1368,7 +1368,7 @@ void Fight_CheckLevelUp(void)
 				if (FirstTime)
 					rputs("\n");
 
-				FirstTime = FALSE;
+				FirstTime = false;
 
 				/* Enough XP, raise level and give training point */
 				Points = RANDOM(4) + 10;
@@ -1381,13 +1381,13 @@ void Fight_CheckLevelUp(void)
 						PClan->Member[CurMember]->Level, Points);
 				rputs(szString);
 
-				LevelUpFound = TRUE;
+				LevelUpFound = true;
 			}
 		}
 	}
 	if (LevelUpFound && !PClan->TrainHelp) {
 		rputs("\n\n");
-		PClan->TrainHelp = TRUE;
+		PClan->TrainHelp = true;
 		Help("Level Raise", ST_NEWBIEHLP);
 	}
 
@@ -1398,9 +1398,9 @@ void Fight_CheckLevelUp(void)
 
 // ------------------------------------------------------------------------- //
 
-_INT16 GetDifficulty(_INT16 Level)
+int16_t GetDifficulty(int16_t Level)
 {
-	_INT16 Difficulty = 0;
+	int16_t Difficulty = 0;
 
 	if (Level <= 2)
 		Difficulty = 5 + RANDOM(3);
@@ -1420,7 +1420,7 @@ _INT16 GetDifficulty(_INT16 Level)
 
 struct clan *MallocClan(void) {
 	struct clan *Clan;
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	Clan = malloc(sizeof(struct clan));
 	CheckMem(Clan);
@@ -1430,19 +1430,19 @@ struct clan *MallocClan(void) {
 		Clan->Member[iTemp] = NULL;
 
 	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++)
-		Clan->Items[iTemp].Available = FALSE;
+		Clan->Items[iTemp].Available = false;
 
 	Clan->szName[0] = 0;
 
 	return Clan;
 }
 
-_INT16 Fight_GetMonster(struct pc *Monster, _INT16 MinDifficulty, _INT16 MaxDifficulty,
+int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16_t MaxDifficulty,
 						char *szFileName)
 {
-	_INT16 *MonIndex;
-	_INT16 iTemp, ValidMonsters;
-	_INT16 *ValidMonIndex, MonsterChosen;
+	int16_t *MonIndex;
+	int16_t iTemp, ValidMonsters;
+	int16_t *ValidMonIndex, MonsterChosen;
 	struct FileHeader FileHeader;
 	char szString[128];
 
@@ -1451,16 +1451,16 @@ _INT16 Fight_GetMonster(struct pc *Monster, _INT16 MinDifficulty, _INT16 MaxDiff
 	if (!FileHeader.fp) {
 		sprintf(szString, "Error:  couldn't open %s!\n", szFileName);
 		rputs(szString);
-		od_exit(0, FALSE);
+		od_exit(0, false);
 	}
 
-	MonIndex =      malloc(sizeof(_INT16) * MAX_MONSTERS);
-	ValidMonIndex = malloc(sizeof(_INT16) * MAX_MONSTERS);
+	MonIndex =      malloc(sizeof(int16_t) * MAX_MONSTERS);
+	ValidMonIndex = malloc(sizeof(int16_t) * MAX_MONSTERS);
 	CheckMem(MonIndex);
 	CheckMem(ValidMonIndex);
 
 	/* read index */
-	fread(MonIndex, sizeof(_INT16) * MAX_MONSTERS, 1, FileHeader.fp);
+	fread(MonIndex, sizeof(int16_t) * MAX_MONSTERS, 1, FileHeader.fp);
 
 	/* calculate how many guys there are that are within range */
 	ValidMonsters = 0;
@@ -1490,10 +1490,10 @@ _INT16 Fight_GetMonster(struct pc *Monster, _INT16 MinDifficulty, _INT16 MaxDiff
 	//od_printf("Using #%d in the file.\n\r", MonsterChosen);
 
 	/* fseek there and read it in */
-	//   fseek(FileHeader.fp, (long)MonsterChosen * sizeof(struct pc), SEEK_CUR);
+	//   fseek(FileHeader.fp, (int32_t)MonsterChosen * sizeof(struct pc), SEEK_CUR);
 
 	fseek(FileHeader.fp,
-		  ((long)sizeof(_INT16) * MAX_MONSTERS + ((long)MonsterChosen * sizeof(struct pc)) + FileHeader.lStart),
+		  ((int32_t)sizeof(int16_t) * MAX_MONSTERS + ((int32_t)MonsterChosen * sizeof(struct pc)) + FileHeader.lStart),
 		  SEEK_SET);
 	fread(Monster, sizeof(struct pc), 1, FileHeader.fp);
 
@@ -1514,9 +1514,9 @@ _INT16 Fight_GetMonster(struct pc *Monster, _INT16 MinDifficulty, _INT16 MaxDiff
 
 
 
-void Fight_LoadMonsters(struct clan *Clan, _INT16 Level, char *szFileName)
+void Fight_LoadMonsters(struct clan *Clan, int16_t Level, char *szFileName)
 {
-	_INT16 MinDifficulty, MaxDifficulty, Difficulty, CurDiff, iTemp,
+	int16_t MinDifficulty, MaxDifficulty, Difficulty, CurDiff, iTemp,
 	CurMonster;
 
 	// figure out difficulty value
@@ -1556,7 +1556,7 @@ void Fight_LoadMonsters(struct clan *Clan, _INT16 Level, char *szFileName)
 
 void RemoveUndead(struct clan *Clan)
 {
-	_INT16 CurMember;
+	int16_t CurMember;
 
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
 		if (Clan->Member[CurMember] && Clan->Member[CurMember]->Undead) {
@@ -1568,7 +1568,7 @@ void RemoveUndead(struct clan *Clan)
 
 void FreeClan(struct clan *Clan)
 {
-	_INT16 CurMember;
+	int16_t CurMember;
 
 	// free members first
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
@@ -1582,9 +1582,9 @@ void FreeClan(struct clan *Clan)
 	Clan = NULL;
 }
 
-long MineFollowersGained(_INT16 Level)
+int32_t MineFollowersGained(int16_t Level)
 {
-	long NumFollowers = 0;
+	int32_t NumFollowers = 0;
 
 	if (Level <= 5)
 		NumFollowers = 4 + RANDOM(3);
@@ -1599,9 +1599,9 @@ long MineFollowersGained(_INT16 Level)
 }
 
 
-void Fight_GiveFollowers(_INT16 Level)
+void Fight_GiveFollowers(int16_t Level)
 {
-	long NumConscripted, NumFollowers;
+	int32_t NumConscripted, NumFollowers;
 	char szString[128];
 
 	NumFollowers = MineFollowersGained(Level);
@@ -1621,15 +1621,15 @@ void Fight_GiveFollowers(_INT16 Level)
 
 }
 
-_INT16 GetOpenItemSlot(struct clan *Clan)
+int16_t GetOpenItemSlot(struct clan *Clan)
 {
 	// return -1 if no more open slots
 
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	// see if he has room to carry it
 	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-		if (Clan->Items[iTemp].Available == FALSE)
+		if (Clan->Items[iTemp].Available == false)
 			break;
 	}
 	if (iTemp == MAX_ITEMS_HELD) {
@@ -1642,10 +1642,10 @@ _INT16 GetOpenItemSlot(struct clan *Clan)
 
 void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 {
-	_INT16 ItemIndex, OneItemFound, EmptySlot;
-	_INT16 DefaultItemIndex, iTemp, WhoEquip, ItemsTaken = 0;
+	int16_t ItemIndex, OneItemFound, EmptySlot;
+	int16_t DefaultItemIndex, iTemp, WhoEquip, ItemsTaken = 0;
 	char szString[100];
-	BOOL SomethingTaken = FALSE;
+	bool SomethingTaken = false;
 
 	sprintf(szString, "You may take %d items from that clan.\n\r", MAX_ITEMSTAKEN);
 	rputs(szString);
@@ -1679,12 +1679,12 @@ void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 					break;
 				}
 
-				ItemIndex = (_INT16) GetLong("|0STake which item?", 0, MAX_ITEMS_HELD);
+				ItemIndex = (int16_t) GetLong("|0STake which item?", 0, MAX_ITEMS_HELD);
 				if (ItemIndex == 0)
 					break;
 				ItemIndex--;
 
-				if (Clan->Items[ItemIndex].Available == FALSE) {
+				if (Clan->Items[ItemIndex].Available == false) {
 					rputs(ST_INVALIDITEM);
 					break;
 				}
@@ -1709,7 +1709,7 @@ void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 				PClan->Items[EmptySlot] = Clan->Items[ItemIndex];
 
 				// get rid of it in theirs
-				Clan->Items[ItemIndex].Available = FALSE;
+				Clan->Items[ItemIndex].Available = false;
 
 				// increment counter
 				ItemsTaken++;
@@ -1718,13 +1718,13 @@ void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 				rputs(szString);
 
 				// add onto szMsg
-				if (SomethingTaken == FALSE) {
+				if (SomethingTaken == false) {
 					// nothing was taken before this item, means there is no
 					// header yet for szMsg
 					strcat(szMsg, "\n\n The following items were taken:\n\n");
 				}
 
-				SomethingTaken = TRUE;
+				SomethingTaken = true;
 				sprintf(szString, " %s\n", Clan->Items[ItemIndex].szName);
 				strcat(szMsg, szString);
 				break;
@@ -1752,13 +1752,13 @@ void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 				else
 					DefaultItemIndex = iTemp+1;
 
-				ItemIndex = (_INT16) GetLong(ST_ISTATS3, DefaultItemIndex, MAX_ITEMS_HELD);
+				ItemIndex = (int16_t) GetLong(ST_ISTATS3, DefaultItemIndex, MAX_ITEMS_HELD);
 				if (ItemIndex == 0)
 					break;
 				ItemIndex--;
 
 				/* if that item is non-existant, tell him */
-				if (Clan->Items[ItemIndex].Available == FALSE) {
+				if (Clan->Items[ItemIndex].Available == false) {
 					rputs(ST_ISTATS4);
 					break;
 				}
@@ -1779,18 +1779,18 @@ void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 void Fight_Clan(void)
 {
 	struct clan *EnemyClan;
-	_INT16 ClanID[2], FightResult;
-	_INT16 iTemp, CurMember;
+	int16_t ClanID[2], FightResult;
+	int16_t iTemp, CurMember;
 	char szString[128], *szMessage;
 
 	/* if all guys dead, tell guy can't fight */
-	if (NumMembers(PClan, TRUE) == 0) {
+	if (NumMembers(PClan, true) == 0) {
 		rputs(ST_FIGHT0);
 		return;
 	}
 
 	rputs("|07Clans with Living Members:\n");
-	if (GetClanID(ClanID, TRUE, FALSE, -1, FALSE) == FALSE) {
+	if (GetClanID(ClanID, true, false, -1, false) == false) {
 		return;
 	}
 
@@ -1815,7 +1815,7 @@ void Fight_Clan(void)
 	}
 
 	// if enemy clan is all "dead", don't fight
-	if (NumMembers(EnemyClan, TRUE) == 0) {
+	if (NumMembers(EnemyClan, true) == 0) {
 		rputs("|07That clan currently has no living members.  You cannot fight them.\n%P");
 		FreeClan(EnemyClan);
 		return;
@@ -1837,7 +1837,7 @@ void Fight_Clan(void)
 	Spells_ClearSpells(EnemyClan);
 
 	/* fight 'em here using the function for fighting */
-	FightResult = Fight_Fight(PClan, EnemyClan, TRUE, FALSE, FALSE);
+	FightResult = Fight_Fight(PClan, EnemyClan, true, false, false);
 
 	/* set all spells to 0 */
 	Spells_ClearSpells(PClan);
@@ -1865,7 +1865,7 @@ void Fight_Clan(void)
 		// allow user to take an item
 		TakeItemsFromClan(EnemyClan, szMessage);
 
-		GenericMessage(szMessage, EnemyClan->ClanID, PClan->ClanID, PClan->szName, FALSE);
+		GenericMessage(szMessage, EnemyClan->ClanID, PClan->ClanID, PClan->szName, false);
 		free(szMessage);
 
 		/* give points for win in battle */
@@ -1879,7 +1879,7 @@ void Fight_Clan(void)
 		/* tell that guy about loss */
 		szMessage = MakeStr(500);
 		sprintf(szMessage, ST_NEWSFIGHT4, PClan->szName);
-		GenericMessage(szMessage, EnemyClan->ClanID, PClan->ClanID, PClan->szName, FALSE);
+		GenericMessage(szMessage, EnemyClan->ClanID, PClan->ClanID, PClan->szName, false);
 		free(szMessage);
 
 		PClan->Points -= 15;
@@ -1892,7 +1892,7 @@ void Fight_Clan(void)
 
 		/* tell that guy about loss */
 		sprintf(szString, ST_NEWSFIGHT6, PClan->szName);
-		GenericMessage(szString, EnemyClan->ClanID, PClan->ClanID, PClan->szName, FALSE);
+		GenericMessage(szString, EnemyClan->ClanID, PClan->ClanID, PClan->szName, false);
 
 		PClan->Points -= 20;
 	}
@@ -1912,14 +1912,14 @@ void Fight_Clan(void)
 	door_pause();
 }
 
-void Fight_Monster(_INT16 Level, char *szFileName)
+void Fight_Monster(int16_t Level, char *szFileName)
 /*
  * Fights monster in the mines
  *
  */
 {
-	unsigned long MemBefore;
-	_INT16 CurMember, FightResult;
+	uint32_t MemBefore;
+	int16_t CurMember, FightResult;
 	struct clan *EnemyClan;
 
 
@@ -1936,7 +1936,7 @@ void Fight_Monster(_INT16 Level, char *szFileName)
 #endif
 
 	if (!PClan->CombatHelp) {
-		PClan->CombatHelp = TRUE;
+		PClan->CombatHelp = true;
 		Help("Combat", ST_NEWBIEHLP);
 	}
 
@@ -1950,7 +1950,7 @@ void Fight_Monster(_INT16 Level, char *szFileName)
 
 
 	od_clr_scr();
-	FightResult = Fight_Fight(PClan, EnemyClan, FALSE, TRUE, FALSE);
+	FightResult = Fight_Fight(PClan, EnemyClan, false, true, false);
 
 	Fight_Heal(PClan);
 	Spells_ClearSpells(PClan);

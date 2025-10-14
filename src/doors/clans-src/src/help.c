@@ -48,9 +48,9 @@ void Help(char *Topic, char *File)
  */
 {
 	char *Lines[22], *string;
-	_INT16 cTemp, Found = FALSE, CurLine, NumLines;
-	long MaxBytes;
-	BOOL EndOfTopic = FALSE, Pause = FALSE;
+	int16_t cTemp, Found = false, CurLine, NumLines;
+	int32_t MaxBytes;
+	bool EndOfTopic = false, Pause = false;
 	struct FileHeader FileHeader;
 
 
@@ -74,7 +74,7 @@ void Help(char *Topic, char *File)
 		if (MaxBytes > 254)
 			MaxBytes = 254;
 
-		if (fgets(string, (_INT16) MaxBytes, FileHeader.fp) == NULL) {
+		if (fgets(string, (int16_t) MaxBytes, FileHeader.fp) == NULL) {
 			fclose(FileHeader.fp);
 			rputs(ST_NOHELP);
 			rputs("\n");
@@ -95,12 +95,12 @@ void Help(char *Topic, char *File)
 			/* see if topic is correct */
 			// if (strspn(&string[1], Topic) == strlen(Topic))
 			if (stricmp(&string[1], Topic) == 0) {
-				Found = TRUE;
+				Found = true;
 			}
 		}
 	}
 
-	while (EndOfTopic == FALSE) {
+	while (EndOfTopic == false) {
 		/* read in up to 22 lines */
 		for (CurLine = 0; CurLine < 22; CurLine++) {
 			MaxBytes = FileHeader.lEnd - ftell(FileHeader.fp) + EXTRABYTES;
@@ -111,7 +111,7 @@ void Help(char *Topic, char *File)
 			if (MaxBytes == 1)
 				break;
 
-			fgets(Lines[CurLine], (_INT16)MaxBytes, FileHeader.fp);
+			fgets(Lines[CurLine], (int16_t)MaxBytes, FileHeader.fp);
 
 			// Lines[CurLine][ MaxBytes - EXTRABYTES + 1] = 0;
 
@@ -123,11 +123,11 @@ void Help(char *Topic, char *File)
 					Lines[CurLine][ strlen(Lines[CurLine]) - 1] = 0;
 
 				if (stricmp(&Lines[CurLine][1], ST_HELPEND) == 0) {
-					EndOfTopic = TRUE;
+					EndOfTopic = true;
 					break;
 				}
 				else if (stricmp(&Lines[CurLine][1], ST_HELPPAUSE) == 0) {
-					Pause = TRUE;
+					Pause = true;
 					break;
 				}
 			}
@@ -137,7 +137,7 @@ void Help(char *Topic, char *File)
 		/* display it */
 		for (CurLine = 0; CurLine < NumLines; CurLine++) {
 			// break on input
-			if (od_get_key(FALSE)) {
+			if (od_get_key(false)) {
 				rputs(ST_ABORTED);
 				break;
 			}
@@ -147,13 +147,13 @@ void Help(char *Topic, char *File)
 
 		if (Pause) {
 			door_pause();
-			Pause = FALSE;
+			Pause = false;
 		}
 		/* else pause normally if 22 lines */
 		else if (CurLine == 22 && Door_AllowScreenPause()) {
 			rputs(ST_MORE);
 			od_sleep(0);
-			if (toupper(od_get_key(TRUE)) == 'N') {
+			if (toupper(od_get_key(true)) == 'N') {
 				rputs("\r                       \r");
 				break;
 			}
@@ -180,10 +180,10 @@ void GeneralHelp(char *pszFileName)
  */
 {
 	char *Topics[50], *Line;
-	_INT16 NumTopics, cTemp, WhichTopic, iTemp;
-	long MaxBytes;
+	int16_t NumTopics, cTemp, WhichTopic, iTemp;
+	int32_t MaxBytes;
 	struct FileHeader HelpFile;
-	__BOOL ShowInitially;
+	bool ShowInitially;
 
 	/* read the topics in */
 	// fpHelpFile = fopen(pszFileName, "rt");
@@ -216,7 +216,7 @@ void GeneralHelp(char *pszFileName)
 			break;
 		}
 
-		if (fgets(Line, (_INT16) MaxBytes, HelpFile.fp) == NULL) {
+		if (fgets(Line, (int16_t) MaxBytes, HelpFile.fp) == NULL) {
 			break;
 		}
 
@@ -241,11 +241,11 @@ void GeneralHelp(char *pszFileName)
 
 	fclose(HelpFile.fp);
 
-	ShowInitially = TRUE;
+	ShowInitially = true;
 	for (;;) {
 		// choose which topic
-		GetStringChoice(Topics, NumTopics, ST_HELPHINT, &WhichTopic, ShowInitially, DT_WIDE, TRUE);
-		ShowInitially = FALSE;
+		GetStringChoice(Topics, NumTopics, ST_HELPHINT, &WhichTopic, ShowInitially, DT_WIDE, true);
+		ShowInitially = false;
 
 		if (WhichTopic == -1)
 			break;
@@ -282,7 +282,7 @@ void MainHelp(void)
 		"Redisplay Menu"
 	};
 	char *szFiles[7];
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	szFiles[0] = ST_ITEMHLP;
 	szFiles[1] = ST_RACESHLP;
@@ -294,7 +294,7 @@ void MainHelp(void)
 
 	/* choose main topic */
 	for (;;)
-		switch (iTemp = GetChoice("Help Menu", "|0GChoose Help Topic|0E> |0F", szAvailableTopics, "1234567Q?", 'Q', TRUE)) {
+		switch (iTemp = GetChoice("Help Menu", "|0GChoose Help Topic|0E> |0F", szAvailableTopics, "1234567Q?", 'Q', true)) {
 			case '1' :
 			case '2' :
 			case '3' :

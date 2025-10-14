@@ -63,13 +63,13 @@ static int default_cursor_size = 1;
 // ------------------------------------------------------------------------- //
 
 struct {
-	long VideoType;
-	long y_lookup[25];
+	int32_t VideoType;
+	int32_t y_lookup[25];
 	char FAR *VideoMem;
 } Video;
 
 // ------------------------------------------------------------------------- //
-long Video_VideoType(void)
+int32_t Video_VideoType(void)
 {
 	return Video.VideoType;
 }
@@ -80,7 +80,7 @@ char FAR *vid_address(void)
 {
 // As usual, block off the local stuff
 #if !defined(__unix__) && !defined(_WIN32)
-	_INT16 tmp1, tmp2;
+	int16_t tmp1, tmp2;
 
 	asm {
 		mov bx,0040h
@@ -158,11 +158,11 @@ void ScrollUp(void)
 void put_character(char ch, short attrib, int x, int y)
 {
 #ifdef __MSDOS__
-	Video.VideoMem[(long)(Video.y_lookup[(long) y]+ (long)(x<<1))] = ch;
-	Video.VideoMem[(long)(Video.y_lookup[(long) y]+ (long)(x<<1) + 1L)] = (char)(attrib & 0xff);
+	Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1))] = ch;
+	Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1) + 1L)] = (char)(attrib & 0xff);
 #elif defined(_WIN32)
 	COORD cursor_pos;
-	DWORD bytes_written;
+	uint32_t bytes_written;
 	HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
 	cursor_pos.X = x;
@@ -172,7 +172,7 @@ void put_character(char ch, short attrib, int x, int y)
 		stdout_handle, cursor_pos);
 	SetConsoleTextAttribute(
 		stdout_handle,
-		(WORD)attrib);
+		(uint16_t)attrib);
 	WriteConsole(
 		stdout_handle,
 		&ch,
@@ -202,9 +202,9 @@ void zputs(char *string)
 	}
 #else
 	char number[3];
-	_INT16 cur_char, attr;
+	int16_t cur_char, attr;
 	char foreground, background, cur_attr;
-	_INT16 i, j,  x,y;
+	int16_t i, j,  x,y;
 #ifndef _WIN32
 	struct text_info TextInfo;
 #else
@@ -320,7 +320,7 @@ void zputs(char *string)
 #endif
 }
 
-void SetCurs(_INT16 CursType)
+void SetCurs(int16_t CursType)
 {
 // As usual, block off the local stuff
 #if !defined(__unix__) && !defined(_WIN32)
@@ -338,7 +338,7 @@ void SetCurs(_INT16 CursType)
 	}
 #elif defined(_WIN32)
 	CONSOLE_CURSOR_INFO cursor_info;
-	cursor_info.bVisible = TRUE;
+	cursor_info.bVisible = true;
 	switch (CursType) {
 		case CURS_NORMAL:
 			cursor_info.dwSize = default_cursor_size;
@@ -355,7 +355,7 @@ void SetCurs(_INT16 CursType)
 #endif
 }
 
-void qputs(char *string, _INT16 x, _INT16 y)
+void qputs(char *string, int16_t x, int16_t y)
 {
 // As usual, block off the local stuff
 #if defined(_WIN32) && !defined(__unix__)
@@ -364,10 +364,10 @@ void qputs(char *string, _INT16 x, _INT16 y)
 #elif defined(__unix__)
 #else
 	char number[3];
-	_INT16 cur_char, attr;
+	int16_t cur_char, attr;
 	char foreground, background, cur_attr;
 	static o_fg = 7, o_bg = 0;
-	_INT16 i, j;
+	int16_t i, j;
 
 	cur_attr = o_fg | o_bg;
 	cur_char=0;
@@ -399,8 +399,8 @@ void qputs(char *string, _INT16 x, _INT16 y)
 				cur_char += 3;
 			}
 			else  {
-				Video.VideoMem[(long)(Video.y_lookup[(long) y]+ (long)(x<<1))] = string[cur_char];
-				Video.VideoMem[(long)(Video.y_lookup[(long) y]+ (long)(x<<1) + 1L)] = cur_attr;
+				Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1))] = string[cur_char];
+				Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1) + 1L)] = cur_attr;
 
 				cur_char++;
 				x++;
@@ -433,15 +433,15 @@ void qputs(char *string, _INT16 x, _INT16 y)
 }
 
 
-void sdisplay(char *string, _INT16 x, _INT16 y, char color, _INT16 length, _INT16 input_length)
+void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t length, int16_t input_length)
 {
 #ifdef __unix__
 	fprintf(stderr,"%s\r\n",string);
 #elif defined(_WIN32)
 	COORD cursor_pos, current_cursor_pos;
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
-	WORD current_attr, i;
-	DWORD bytes_written;
+	uint16_t current_attr, i;
+	uint32_t bytes_written;
 	TCHAR padding_char = (TCHAR)PADDING;
 
 	/* Save Current Color Attribute */
@@ -466,7 +466,7 @@ void sdisplay(char *string, _INT16 x, _INT16 y, char color, _INT16 length, _INT1
 	/* Set new color */
 	SetConsoleTextAttribute(
 		GetStdHandle(STD_OUTPUT_HANDLE),
-		(WORD) color);
+		(uint16_t) color);
 
 	/* Output Text */
 	WriteConsole(
@@ -479,7 +479,7 @@ void sdisplay(char *string, _INT16 x, _INT16 y, char color, _INT16 length, _INT1
 	/* Set color for padding */
 	SetConsoleTextAttribute(
 		GetStdHandle(STD_OUTPUT_HANDLE),
-		(WORD) 8);
+		(uint16_t) 8);
 
 	/* Display Padding */
 	for (i = length; i < input_length; i++) {
@@ -496,7 +496,7 @@ void sdisplay(char *string, _INT16 x, _INT16 y, char color, _INT16 length, _INT1
 		GetStdHandle(STD_OUTPUT_HANDLE),
 		current_attr);
 #else
-	_INT16 i, offset;
+	int16_t i, offset;
 	char *pString;
 
 	pString = string;
@@ -518,19 +518,19 @@ void sdisplay(char *string, _INT16 x, _INT16 y, char color, _INT16 length, _INT1
 }
 
 
-_INT16 LongInput(char *string, _INT16 x, _INT16 y, _INT16 input_length, char attr,
-				 _INT16 low_char, _INT16 high_char)
+int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char attr,
+				 int16_t low_char, int16_t high_char)
 {
 // As usual, block off the local stuff
 #if !defined(__unix__)
-	_INT16 length = strlen(string);  // length of string
-	_INT16 i,
-	insert = FALSE,
+	int16_t length = strlen(string);  // length of string
+	int16_t i,
+	insert = false,
 			 key,        // key inputted
 			 cur_letter = length; // letter we're editing right now
 	char tmp_str[255];
-	char first_time = TRUE; // flags if this is the first time to input
-	// if TRUE, it will clear the line and input
+	char first_time = true; // flags if this is the first time to input
+	// if true, it will clear the line and input
 	char old_fg4, old_bg4;
 
 	// initialize the string here
@@ -541,7 +541,7 @@ _INT16 LongInput(char *string, _INT16 x, _INT16 y, _INT16 input_length, char att
 #else
 	SetConsoleTextAttribute(
 		GetStdHandle(STD_OUTPUT_HANDLE),
-		(WORD)attr);
+		(uint16_t)attr);
 #endif
 
 	o_fg4 = attr&0x00FF;
@@ -664,7 +664,7 @@ _INT16 LongInput(char *string, _INT16 x, _INT16 y, _INT16 input_length, char att
 				}
 				break;
 		} // end of while loop
-		first_time = FALSE;
+		first_time = false;
 
 	}
 #else
@@ -672,11 +672,11 @@ _INT16 LongInput(char *string, _INT16 x, _INT16 y, _INT16 input_length, char att
 #endif
 }
 
-void Input(char *string, _INT16 length)
+void Input(char *string, int16_t length)
 {
 // As usual, block off the local stuff
 #if !defined(__unix__)
-	_INT16 cur_x, cur_y;
+	int16_t cur_x, cur_y;
 
 #ifdef __MSDOS__
 	cur_x = wherex()-1;
@@ -724,7 +724,7 @@ void ClearArea(char x1, char y1,  char x2, char y2, char attr)
 #endif
 }
 
-void xputs(char *string, _INT16 x, _INT16 y)
+void xputs(char *string, int16_t x, int16_t y)
 {
 // As usual, block off the local stuff
 #if !defined(__unix__) && !defined(_WIN32)
@@ -741,7 +741,7 @@ void xputs(char *string, _INT16 x, _INT16 y)
 	}
 #elif defined(_WIN32)
 	COORD cursor_pos;
-	DWORD bytes_written;
+	uint32_t bytes_written;
 
 	cursor_pos.X = x;
 	cursor_pos.Y = y;
@@ -807,7 +807,7 @@ void Video_Init(void)
 	}
 	default_cursor_size = cursor_info.dwSize;
 #else
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	Video.VideoMem = vid_address();
 	for (iTemp = 0; iTemp < 25;  iTemp++)
@@ -833,7 +833,7 @@ void clrscr(void)
 	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	COORD top_left = { 0, 0 };
-	DWORD cells_written;
+	uint32_t cells_written;
 
 	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
 
@@ -846,7 +846,7 @@ void clrscr(void)
 
 	FillConsoleOutputAttribute(
 		std_handle,
-		(WORD)7,
+		(uint16_t)7,
 		screen_buffer.dwSize.X * screen_buffer.dwSize.Y,
 		top_left,
 		&cells_written);

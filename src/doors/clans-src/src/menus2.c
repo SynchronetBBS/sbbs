@@ -45,10 +45,10 @@ extern struct clan *PClan;
 extern struct game Game;
 extern struct config *Config;
 
-void ResurrectDead(BOOL Unconscious)
+void ResurrectDead(bool Unconscious)
 {
-	_INT16 NumDead = 0, iTemp, WhichOne, MaxRes;
-	long Cost;
+	int16_t NumDead = 0, iTemp, WhichOne, MaxRes;
+	int32_t Cost;
 	char szString[128], cInput;
 
 	// if reached max..
@@ -71,16 +71,16 @@ void ResurrectDead(BOOL Unconscious)
 	/* if nobody dead in party, tell him */
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (PClan->Member[iTemp]) {
-			if (Unconscious == FALSE &&
+			if (Unconscious == false &&
 					PClan->Member[iTemp]->Status == Dead)
 				NumDead++;
-			else if (Unconscious == TRUE &&
+			else if (Unconscious == true &&
 					 PClan->Member[iTemp]->Status == Unconscious)
 				NumDead++;
 		}
 	}
 	if (NumDead == 0) {
-		if (Unconscious == FALSE)
+		if (Unconscious == false)
 			rputs("\n|07No members of your party need resurrection from the dead.\n%P");
 		else
 			rputs("\n|07No members of your party are unconscious.\n%P");
@@ -91,12 +91,12 @@ void ResurrectDead(BOOL Unconscious)
 	rputs(ST_LONGLINE);
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (PClan->Member[iTemp] &&
-				PClan->Member[iTemp]->Status == Dead && Unconscious == FALSE) {
+				PClan->Member[iTemp]->Status == Dead && Unconscious == false) {
 			sprintf(szString, " |0A(|0B%c|0A) |0C%s\n", iTemp + 'A', PClan->Member[iTemp]->szName);
 			rputs(szString);
 		}
 		else if (PClan->Member[iTemp] &&
-				 PClan->Member[iTemp]->Status == Unconscious && Unconscious == TRUE) {
+				 PClan->Member[iTemp]->Status == Unconscious && Unconscious == true) {
 			sprintf(szString, " |0A(|0B%c|0A) |0C%s\n", iTemp + 'A', PClan->Member[iTemp]->szName);
 			rputs(szString);
 		}
@@ -105,7 +105,7 @@ void ResurrectDead(BOOL Unconscious)
 
 	rputs(ST_LONGLINE);
 	rputs(" |0AWhich to resurrect? [|0BEnter=Abort|0A] : |15");
-	cInput = toupper(od_get_key(TRUE));
+	cInput = toupper(od_get_key(true));
 
 	if (cInput == 'Q' || cInput == '\r' || cInput == '\n') {
 		rputs(ST_ABORTED);
@@ -134,12 +134,12 @@ void ResurrectDead(BOOL Unconscious)
 	}
 
 	/* else tell them how much it costs */
-	if (Unconscious == FALSE)
-		Cost = ((long)PClan->Member[ WhichOne ]->Level + 1L) * 750L;
+	if (Unconscious == false)
+		Cost = ((int32_t)PClan->Member[ WhichOne ]->Level + 1L) * 750L;
 	else
-		Cost = ((long)PClan->Member[ WhichOne ]->Level + 1L) * 300L;
+		Cost = ((int32_t)PClan->Member[ WhichOne ]->Level + 1L) * 300L;
 
-	sprintf(szString, "\n|0CIt will cost you %ld gold.\n", Cost);
+	sprintf(szString, "\n|0CIt will cost you %" PRId32 " gold.\n", Cost);
 	rputs(szString);
 
 	/* if not enough dough, say go away */
@@ -161,7 +161,7 @@ void ResurrectDead(BOOL Unconscious)
 
 		PClan->Empire.VaultGold -= Cost;
 
-		if (Unconscious == FALSE)
+		if (Unconscious == false)
 			sprintf(szString, "%s has been resurrected from the dead!\n%%P",
 					PClan->Member[ WhichOne ]->szName);
 		else
@@ -183,8 +183,8 @@ void ReleaseMember(void)
 	/* see which one he wants */
 	/* confirm release of member */
 
-	_INT16 iTemp, WhichOne, Choice;
-	long Cost;
+	int16_t iTemp, WhichOne, Choice;
+	int32_t Cost;
 	char szString[128], cInput;
 
 	rputs(ST_LONGLINE);
@@ -209,7 +209,7 @@ void ReleaseMember(void)
 	rputs(" |0AWhich to release? [|0BEnter=abort|0A] : |0F");
 
 	for (;;) {
-		cInput = toupper(od_get_key(TRUE));
+		cInput = toupper(od_get_key(true));
 
 		if (cInput == 'Q' || cInput == '\r' || cInput == '\n') {
 			rputs(ST_ABORTED);
@@ -261,12 +261,12 @@ void ReleaseMember(void)
 void AddMember(void)
 {
 	struct pc *TmpPC;
-	_INT16 EmptySlot, iTemp, NumMembers;
+	int16_t EmptySlot, iTemp, NumMembers;
 
 	NumMembers = 0;
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (PClan->Member[iTemp] && iTemp < Game.Data->MaxPermanentMembers &&
-				PClan->Member[iTemp]->Undead == FALSE)
+				PClan->Member[iTemp]->Undead == false)
 			NumMembers++;
 	}
 
@@ -290,9 +290,9 @@ void AddMember(void)
 	CheckMem(TmpPC);
 
 	if (iTemp == 0)
-		PC_Create(TmpPC, TRUE);
+		PC_Create(TmpPC, true);
 	else
-		PC_Create(TmpPC, FALSE);
+		PC_Create(TmpPC, false);
 
 	PClan->Member[EmptySlot] = malloc(sizeof(struct pc));
 	CheckMem(PClan->Member[EmptySlot]);
@@ -308,15 +308,15 @@ void TrainMember(void)
 	/* if not, boot him */
 	/* else, give listing of attributes which can be "trained" */
 
-	_INT16 iTemp, WhichOne = 0, Choice;
-	long Cost;
+	int16_t iTemp, WhichOne = 0, Choice;
+	int32_t Cost;
 	char szString[128], cInput;
-	BOOL Done = FALSE, DoneTraining = FALSE;
+	bool Done = false, DoneTraining = false;
 	char *szTheOptions[11];
 
 	/* cost to upgrade stat */
-	_INT16 TCost[8] = { 10, 10, 20, 10, 30, 40, 10, 10 };
-	_INT16 IncreaseAmount;
+	int16_t TCost[8] = { 10, 10, 20, 10, 30, 40, 10, 10 };
+	int16_t IncreaseAmount;
 
 	for (iTemp = 0; iTemp < 8; iTemp++) {
 		TCost[iTemp] -= Village.Data->TrainingHallLevel;
@@ -350,10 +350,10 @@ void TrainMember(void)
 		rputs(" |0SWho to train? [|0BEnter=Return|0A] : |0F");
 
 		for (;;) {
-			cInput = toupper(od_get_key(TRUE));
+			cInput = toupper(od_get_key(true));
 
 			if (cInput == 'Q' || cInput == '\r' || cInput == '\n') {
-				DoneTraining = TRUE;
+				DoneTraining = true;
 				break;
 			}
 
@@ -390,7 +390,7 @@ void TrainMember(void)
 		      }
 		*/
 
-		Done = FALSE;
+		Done = false;
 		while (!Done) {
 			sprintf(szString, "\n\n |0BTraining %s\n",
 					PClan->Member[WhichOne]->szName);
@@ -412,7 +412,7 @@ void TrainMember(void)
 			rputs(szString);
 			rputs(ST_LONGLINE);
 
-			switch (Choice = GetChoice("", ST_ENTEROPTION, szTheOptions, "12345678V?Q", 'Q', TRUE)) {
+			switch (Choice = GetChoice("", ST_ENTEROPTION, szTheOptions, "12345678V?Q", 'Q', true)) {
 				case '1' :  /* agility */
 				case '2' :  /* dexterity */
 				case '3' :  /* strength */
@@ -461,10 +461,10 @@ void TrainMember(void)
 					door_pause();
 					break;
 				case 'Q' :  /* quit */
-					Done = TRUE;
+					Done = true;
 					break;
 				case 'V' :  /* view stats */
-					ShowPlayerStats(PClan->Member[WhichOne], FALSE);
+					ShowPlayerStats(PClan->Member[WhichOne], false);
 					door_pause();
 					break;
 				case '?' :  /* help file */

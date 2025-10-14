@@ -1,12 +1,12 @@
 
 void User_Maint(void);
 
-__BOOL User_Init(void);
+bool User_Init(void);
 /*
  * The current user online is initialized.  His stats are read in from
  * the .PC file.  If not found, a new clan is created.
  *
- * Returns FALSE if user is new and didn't want to join the game.
+ * Returns false if user is new and didn't want to join the game.
  */
 
 void User_FirstTimeToday(void);
@@ -22,33 +22,33 @@ void User_Close(void);
  * if they chose to delete themselves).
  */
 
-_INT16 NumMembers(struct clan *Clan, __BOOL OnlyOnesHere);
+int16_t NumMembers(struct clan *Clan, bool OnlyOnesHere);
 /*
  * Returns the number of members in the clan.
  *
- * PRE: OnlyOnesHere is TRUE if only the alive members are to be checked.
+ * PRE: OnlyOnesHere is true if only the alive members are to be checked.
  */
 
-void ClanStats(struct clan *Clan, __BOOL AllowModify);
+void ClanStats(struct clan *Clan, bool AllowModify);
 /*
  * Shows stats for given Clan with option to modify values.
  */
 
-__BOOL GetClanID(_INT16 ID[2], __BOOL OnlyLiving, __BOOL IncludeSelf,
-				 _INT16 WhichAlliance, __BOOL InAllianceOnly);
+bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
+				 int16_t WhichAlliance, bool InAllianceOnly);
 
-void ShowPlayerStats(struct pc *PC, __BOOL AllowModify);
+void ShowPlayerStats(struct pc *PC, bool AllowModify);
 char GetStat(struct pc *PC, char Stat);
 
 void ListItems(struct clan *Clan);
 
-__BOOL GetClanNameID(char *szName, _INT16 ID[2]);
+bool GetClanNameID(char *szName, int16_t ID[2]);
 
-__BOOL GetClan(_INT16 ClanID[2], struct clan *TmpClan);
+bool GetClan(int16_t ClanID[2], struct clan *TmpClan);
 
-__BOOL ClanExists(_INT16 ClanID[2]);
+bool ClanExists(int16_t ClanID[2]);
 
-void PC_Create(struct pc *PC, __BOOL ClanLeader);
+void PC_Create(struct pc *PC, bool ClanLeader);
 
 void Clan_Update(struct clan *Clan);
 
@@ -58,10 +58,10 @@ void User_List(void);
 
 void AddToDisband(void);
 
-void DeleteClan(_INT16 ClanID[2], char *szClanName, __BOOL Eliminate);
+void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate);
 
 void User_Destroy(void);
 
-__BOOL Disbanded(void);
+bool Disbanded(void);
 
 void User_Write(void);

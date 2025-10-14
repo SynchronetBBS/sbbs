@@ -2,13 +2,14 @@
  * MyOpen ADT
  */
 
+#include <stdio.h>
 #include "defines.h"
 
-struct PACKED FileHeader {
+struct FileHeader {
 	FILE *fp;     // used only when reading the file in
 	char szFileName[30];
-	long lStart, lEnd, lFileSize;
-} PACKED;
+	int32_t lStart, lEnd, lFileSize;
+};
 
 void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader);
 /*
@@ -16,8 +17,8 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader);
  * file or a regular DOS file.
  */
 
-void EncryptWrite(void *Data, long DataSize, FILE *fp, char XorValue);
-_INT16 EncryptRead(void *Data, long DataSize, FILE *fp, char XorValue);
+void EncryptWrite(void *Data, int32_t DataSize, FILE *fp, char XorValue);
+int16_t EncryptRead(void *Data, int32_t DataSize, FILE *fp, char XorValue);
 
 
 #define EXTRABYTES      10L

@@ -76,17 +76,17 @@ extern struct game Game;
 
 #define ALL_VILLAGES    -1
 
-_INT16 InputStr(char *String, char *NextString, char *JustLen, _INT16 CurLine);
-void SendMsj(struct Message *Message, _INT16 WhichVillage);
+int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t CurLine);
+void SendMsj(struct Message *Message, int16_t WhichVillage);
 
 // ------------------------------------------------------------------------- //
 
-void GetUserNames(char *apszUserNames[50], _INT16 WhichVillage, _INT16 *NumUsers,
-				  _INT16 ClanIDs[50][2])
+void GetUserNames(char *apszUserNames[50], int16_t WhichVillage, int16_t *NumUsers,
+				  int16_t ClanIDs[50][2])
 {
 	FILE *fpUList;
 	struct UserInfo User;
-	_INT16 CurUser;
+	int16_t CurUser;
 
 	// set all to NULLs
 	for (CurUser = 0; CurUser < 50; CurUser++)
@@ -125,11 +125,11 @@ void GetUserNames(char *apszUserNames[50], _INT16 WhichVillage, _INT16 *NumUsers
 
 // ------------------------------------------------------------------------- //
 
-void GenericReply(struct Message *Reply, char *szReply, BOOL AllowReply)
+void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 {
 	struct Message Message;
 	FILE *fp;
-	_INT16 player_num, result, i, FirstLine, LastLine;
+	int16_t player_num, result, i, FirstLine, LastLine;
 	char filename[50], key;
 
 	// malloc msg
@@ -155,7 +155,7 @@ void GenericReply(struct Message *Reply, char *szReply, BOOL AllowReply)
 	}
 	strcpy(Message.szDate, System.szTodaysDate);
 
-	if (AllowReply == FALSE)
+	if (AllowReply == false)
 		Message.Flags = MF_NOFROM;
 
 	Message.PublicMsgIndex = 0;
@@ -191,12 +191,12 @@ void GenericReply(struct Message *Reply, char *szReply, BOOL AllowReply)
 
 
 // ------------------------------------------------------------------------- //
-void GenericMessage(char *szString, _INT16 ToClanID[2], _INT16 FromClanID[2], char *szFrom, BOOL AllowReply)
+void GenericMessage(char *szString, int16_t ToClanID[2], int16_t FromClanID[2], char *szFrom, bool AllowReply)
 {
 	struct Message Message;
 
 	// if clan doesn't exist, return
-	if (ClanExists(ToClanID) == FALSE)  return;
+	if (ClanExists(ToClanID) == false)  return;
 
 	/* write generic message -- set it up as a "reply" */
 	Message.ToClanID[0] = FromClanID[0];
@@ -216,18 +216,18 @@ void GenericMessage(char *szString, _INT16 ToClanID[2], _INT16 FromClanID[2], ch
 
 
 // ------------------------------------------------------------------------- //
-void MyWriteMessage2(_INT16 ClanID[2], BOOL ToAll,
-					 BOOL AllyReq, _INT16 AllianceID, char *szAllyName,
-					 BOOL GlobalPost, _INT16 WhichVillage)
+void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
+					 bool AllyReq, int16_t AllianceID, char *szAllyName,
+					 bool GlobalPost, int16_t WhichVillage)
 {
 	struct Message Message;
 	FILE *fp;
-	_INT16 result, NumLines = 0, CurChar = 0, i;
+	int16_t result, NumLines = 0, CurChar = 0, i;
 	char string[128], JustLen = 78;
 	char Line1[128], Line2[128], OldLine[128];
 
-	if (ToAll == FALSE && ClanID[0] == -1) {
-		if (GetClanID(ClanID, FALSE, FALSE, -1, FALSE) == FALSE) {
+	if (ToAll == false && ClanID[0] == -1) {
+		if (GetClanID(ClanID, false, false, -1, false) == false) {
 			return;
 		}
 	}
@@ -381,7 +381,7 @@ void MyWriteMessage2(_INT16 ClanID[2], BOOL ToAll,
 	// save message
 
 	// if local post OR globalpost to ALL villages, do this
-	if ((GlobalPost && WhichVillage == -1) || GlobalPost == FALSE) {
+	if ((GlobalPost && WhichVillage == -1) || GlobalPost == false) {
 		fp = _fsopen(ST_MSJFILE, "ab", SH_DENYRW);
 		if (!fp) {
 			rputs(ST_NOMSJFILE);
@@ -402,10 +402,10 @@ void MyWriteMessage2(_INT16 ClanID[2], BOOL ToAll,
 
 
 // ------------------------------------------------------------------------- //
-_INT16 QInputStr(char *String, char *NextString, char *JustLen, struct Message *Reply,
-				 _INT16 CurLine)
+int16_t QInputStr(char *String, char *NextString, char *JustLen, struct Message *Reply,
+				 int16_t CurLine)
 {
-	_INT16 cur_char = 0, i, FirstLine, LastLine;
+	int16_t cur_char = 0, i, FirstLine, LastLine;
 	unsigned char ch, key;
 	char string[128];
 
@@ -442,7 +442,7 @@ _INT16 QInputStr(char *String, char *NextString, char *JustLen, struct Message *
 			}
 		}
 
-		ch = od_get_key(TRUE);
+		ch = od_get_key(true);
 		if (ch == '\b') {
 			if (cur_char>0) {
 				cur_char--;
@@ -615,12 +615,12 @@ void Reply_Message(struct Message *Reply)
 	struct Message Message;
 	FILE *fp;
 
-	_INT16 player_num, result, NumLines = 0, CurChar = 0, i, FirstLine, LastLine;
-	_INT16 Quoted = FALSE;
+	int16_t player_num, result, NumLines = 0, CurChar = 0, i, FirstLine, LastLine;
+	int16_t Quoted = false;
 	char string[128], JustLen = 78;
 	char Line1[128], Line2[128], key, OldLine[128];
-	BOOL MakePublic, GlobalPost = FALSE;
-	_INT16 WhichVillage = 0;
+	bool MakePublic, GlobalPost = false;
+	int16_t WhichVillage = 0;
 
 	// malloc msg
 	Message.Data.MsgTxt = malloc(4000);
@@ -649,7 +649,7 @@ void Reply_Message(struct Message *Reply)
 
 	if (Reply->Flags & MF_GLOBAL) {
 		// global message
-		GlobalPost = TRUE;
+		GlobalPost = true;
 		WhichVillage = Reply->BBSIDFrom;
 
 		Message.Flags |= MF_GLOBAL;
@@ -666,7 +666,7 @@ void Reply_Message(struct Message *Reply)
 
 		FirstLine = atoi(string);
 
-		if ((FirstLine < 1 || FirstLine > Reply->Data.NumLines) == FALSE || FirstLine == 0) {
+		if ((FirstLine < 1 || FirstLine > Reply->Data.NumLines) == false || FirstLine == 0) {
 			if (FirstLine == 0) {
 				rputs(ST_RMAILQUOTEALL);
 				FirstLine = 1;
@@ -681,7 +681,7 @@ void Reply_Message(struct Message *Reply)
 					LastLine = Reply->Data.NumLines;
 			}
 
-			if ((LastLine < 1 || LastLine > Reply->Data.NumLines || LastLine < FirstLine) == FALSE) {
+			if ((LastLine < 1 || LastLine > Reply->Data.NumLines || LastLine < FirstLine) == false) {
 				if (FirstLine != LastLine) {
 					for (i = FirstLine;  i <= LastLine; i++) {
 						Message.Data.Offsets[NumLines] = CurChar;
@@ -710,7 +710,7 @@ void Reply_Message(struct Message *Reply)
 
 					NumLines++;
 				}
-				Quoted = TRUE;
+				Quoted = true;
 			}
 		}
 	}
@@ -764,7 +764,7 @@ void Reply_Message(struct Message *Reply)
 				}
 
 				// make public but limit it depending on original message
-				if (GlobalPost && (Reply->Flags & MF_ONEVILLONLY) == FALSE)
+				if (GlobalPost && (Reply->Flags & MF_ONEVILLONLY) == false)
 					WhichVillage = -1;
 			}
 			else {
@@ -844,7 +844,7 @@ void Reply_Message(struct Message *Reply)
 	Message.Data.NumLines = NumLines;
 
 	// save message
-	if ((GlobalPost && WhichVillage == -1) || GlobalPost == FALSE) {
+	if ((GlobalPost && WhichVillage == -1) || GlobalPost == false) {
 		fp = _fsopen(ST_MSJFILE, "a+b", SH_DENYRW);
 		if (!fp) {
 			rputs(ST_NOMSJFILE);
@@ -866,13 +866,13 @@ void Reply_Message(struct Message *Reply)
 
 
 // ------------------------------------------------------------------------- //
-BOOL Mail_Read(void)
+bool Mail_Read(void)
 {
 	FILE *fp;
-	long CurOffset, CurMsgOffset;
-	_INT16 iTemp, CurLine;
+	int32_t CurOffset, CurMsgOffset;
+	int16_t iTemp, CurLine;
 	struct Message Message;
-	BOOL AllianceFound, NewMail = FALSE, ReplyingToAlly = FALSE, WillAlly;
+	bool AllianceFound, NewMail = false, ReplyingToAlly = false, WillAlly;
 	char szString[128], key = 0;
 
 	rputs(ST_RMAILCHECKING);
@@ -881,7 +881,7 @@ BOOL Mail_Read(void)
 
 	for (;;) {
 		fp = _fsopen(ST_MSJFILE, "r+b", SH_DENYWR);
-		if (!fp) return FALSE;
+		if (!fp) return false;
 
 		fseek(fp, CurOffset, SEEK_SET);
 
@@ -905,14 +905,14 @@ BOOL Mail_Read(void)
 
 		// if an alliesonly msg, see if user is in that alliance, if not, skip
 		if (Message.MessageType == MT_ALLIANCE) {
-			AllianceFound = FALSE;
+			AllianceFound = false;
 			for (iTemp = 0; !AllianceFound && (iTemp < MAX_ALLIES); iTemp++) {
 				if (PClan->Alliances[iTemp] == Message.AllianceID)
-					AllianceFound = TRUE;
+					AllianceFound = true;
 			}
 
 			// if alliance not found, skip message
-			if (AllianceFound == FALSE) {
+			if (AllianceFound == false) {
 				fclose(fp);
 				CurOffset += Message.Data.Length;
 				continue;
@@ -927,7 +927,7 @@ BOOL Mail_Read(void)
 		if (PClan->PublicMsgIndex < Message.PublicMsgIndex)
 			PClan->PublicMsgIndex = Message.PublicMsgIndex;
 
-		NewMail = TRUE;
+		NewMail = true;
 
 		// Display Msg header
 		rputs(ST_LONGDIVIDER);
@@ -974,7 +974,7 @@ BOOL Mail_Read(void)
 			if (CurLine == 17) {
 				rputs(ST_MORE);
 				od_sleep(0);
-				if (toupper(od_get_key(TRUE)) == 'N') {
+				if (toupper(od_get_key(true)) == 'N') {
 					rputs(ST_RETURNSPACES);
 					break;
 				}
@@ -1011,11 +1011,11 @@ BOOL Mail_Read(void)
 			ReplyingToAlly = YesNo(ST_RMAILREPLYQ);
 
 			/* make generic message saying he said no */
-			if (WillAlly == FALSE)
+			if (WillAlly == false)
 				sprintf(szString, ST_RMAILREJECTALLY, PClan->szName);
 			else
 				sprintf(szString, ST_RMAILAGREEALLY, PClan->szName);
-			GenericReply(&Message, szString, FALSE);
+			GenericReply(&Message, szString, false);
 		}
 		else {
 			/* regular message */
@@ -1028,7 +1028,7 @@ BOOL Mail_Read(void)
 		// Act on user input
 		if ((!(Message.Flags & MF_ALLYREQ) && key == 'R') ||
 				((Message.Flags & MF_ALLYREQ) && ReplyingToAlly == YES)) {
-			if ((Message.Flags & MF_ALLYREQ) == FALSE)
+			if ((Message.Flags & MF_ALLYREQ) == false)
 				rputs(ST_RMAILREPLY);
 
 			// reply to message here
@@ -1041,7 +1041,7 @@ BOOL Mail_Read(void)
 			}
 
 			// ask if you want to delete it
-			if ((Message.Flags & MF_ALLYREQ) == FALSE && YesNo(ST_RMAILDELETEQ) == NO) {
+			if ((Message.Flags & MF_ALLYREQ) == false && YesNo(ST_RMAILDELETEQ) == NO) {
 				// doesn't want to
 				free(Message.Data.MsgTxt);
 				continue;
@@ -1062,7 +1062,7 @@ BOOL Mail_Read(void)
 			fclose(fp);
 		}
 		if (key == 'D' || key == '\r' || key == '\n' || (Message.Flags & MF_ALLYREQ) || (Message.Flags & MF_NOFROM)) {
-			if ((Message.Flags & MF_ALLYREQ) == FALSE && (Message.Flags & MF_NOFROM) == FALSE)
+			if ((Message.Flags & MF_ALLYREQ) == false && (Message.Flags & MF_NOFROM) == false)
 				rputs(ST_RMAILDELETE);
 			else
 				rputs(ST_RMAILDELETING);
@@ -1098,9 +1098,9 @@ BOOL Mail_Read(void)
 	return NewMail;
 
 }
-_INT16 InputStr(char *String, char *NextString, char *JustLen, _INT16 CurLine)
+int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t CurLine)
 {
-	_INT16 cur_char = 0, i;
+	int16_t cur_char = 0, i;
 	unsigned char ch, key;
 
 	rputs(ST_MAILENTERCOLOR);
@@ -1136,7 +1136,7 @@ _INT16 InputStr(char *String, char *NextString, char *JustLen, _INT16 CurLine)
 			}
 		}
 
-		ch = od_get_key(FALSE);
+		ch = od_get_key(false);
 		if (ch=='\b') {
 			if (cur_char>0) {
 				cur_char--;
@@ -1258,32 +1258,32 @@ _INT16 InputStr(char *String, char *NextString, char *JustLen, _INT16 CurLine)
 }
 
 
-void Msg_Create(_INT16 ToClanID[2], BOOL MessageType, BOOL AllyReq, _INT16 AllianceID,
-				char *szAllyName, BOOL GlobalPost, _INT16 WhichVillage)
+void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, int16_t AllianceID,
+				char *szAllyName, bool GlobalPost, int16_t WhichVillage)
 /*
  * Allows user to enter a message.
  *
  * PRE: ToClanID is the ClanID who will receive the message if it is
  *        a private message.  Otherwise it is ignored
  *      MessageType determines what type of message this is.
- *      AllyReq is TRUE if this is an alliance request.
+ *      AllyReq is true if this is an alliance request.
  *      AllianceID is the alliance which is sending this message if it
  *        is an MT_ALLIANCE type of message OR it is an AllyReq
  *      szAllyName is the name of the alliance sending the message if it
  *        is an AllyReq or MT_ALLIANCE type.
- *      GlobalPost is TRUE if it is an IBBS message.
+ *      GlobalPost is true if it is an IBBS message.
  *      WhichVillage is the village to receive the message if it is a
  *        GlobalPost.  Set to ALL_VILLAGES if none specific.
  */
 {
 	struct Message Message;
 	FILE *fp;
-	_INT16 result, NumLines = 0, CurChar = 0, i;
+	int16_t result, NumLines = 0, CurChar = 0, i;
 	char string[128], JustLen = 78;
 	char Line1[128], Line2[128], OldLine[128];
 
 	if (MessageType == MT_PRIVATE) {
-		if (GetClanID(ToClanID, FALSE, FALSE, -1, FALSE) == FALSE) {
+		if (GetClanID(ToClanID, false, false, -1, false) == false) {
 			return;
 		}
 	}
@@ -1431,7 +1431,7 @@ void Msg_Create(_INT16 ToClanID[2], BOOL MessageType, BOOL AllyReq, _INT16 Allia
 
 
 	// if local post OR globalpost to ALL villages, do this
-	if ((GlobalPost && WhichVillage == ALL_VILLAGES) || GlobalPost == FALSE) {
+	if ((GlobalPost && WhichVillage == ALL_VILLAGES) || GlobalPost == false) {
 		fp = _fsopen(ST_MSJFILE, "ab", SH_DENYRW);
 		if (!fp) {
 			rputs(ST_NOMSJFILE);
@@ -1449,14 +1449,14 @@ void Msg_Create(_INT16 ToClanID[2], BOOL MessageType, BOOL AllyReq, _INT16 Allia
 }
 
 
-void Mail_Write(_INT16 MessageType)
+void Mail_Write(int16_t MessageType)
 {
-	_INT16 DummyID[2];
+	int16_t DummyID[2];
 
 	DummyID[0] = -1;
 	DummyID[1] = -1;
 
-	Msg_Create(DummyID, MessageType, FALSE, -1, NULL, FALSE, -1);
+	Msg_Create(DummyID, MessageType, false, -1, NULL, false, -1);
 }
 
 
@@ -1514,8 +1514,8 @@ void Mail_Maint(void)
 
 void Mail_RequestAlliance(struct Alliance *Alliance)
 {
-	_INT16 iTemp, NumAlliances = 0;
-	_INT16 ClanId[2], CurClan;
+	int16_t iTemp, NumAlliances = 0;
+	int16_t ClanId[2], CurClan;
 	char szToName[25], szFileName[40];
 	FILE *fpPlayerFile;
 	struct clan *TmpClan;
@@ -1531,7 +1531,7 @@ void Mail_RequestAlliance(struct Alliance *Alliance)
 	}
 
 	/* find player as you would if writing mail. */
-	if (GetClanID(ClanId, FALSE, FALSE, Alliance->ID, FALSE) == FALSE) {
+	if (GetClanID(ClanId, false, false, Alliance->ID, false) == false) {
 		rputs("\n\n");
 		return;
 	}
@@ -1571,7 +1571,7 @@ void Mail_RequestAlliance(struct Alliance *Alliance)
 
 	/* if so, set up message but with ALLY flag */
 	rputs(ST_ALLIANCELETTER);
-	MyWriteMessage2(ClanId, FALSE, TRUE, Alliance->ID, Alliance->szName, FALSE, -1);
+	MyWriteMessage2(ClanId, false, true, Alliance->ID, Alliance->szName, false, -1);
 
 	FreeClan(TmpClan);
 	(void)szFileName;
@@ -1582,27 +1582,27 @@ void Mail_RequestAlliance(struct Alliance *Alliance)
 
 void Mail_WriteToAllies(struct Alliance *Alliance)
 {
-	_INT16 ClanId[2];
+	int16_t ClanId[2];
 
 	ClanId[0] = -1;
 	ClanId[1] = -1;
-	MyWriteMessage2(ClanId, TRUE, FALSE, Alliance->ID, Alliance->szName, FALSE, -1);
+	MyWriteMessage2(ClanId, true, false, Alliance->ID, Alliance->szName, false, -1);
 }
 
 
 
 
 
-void SendMsj(struct Message *Message, _INT16 WhichVillage)
+void SendMsj(struct Message *Message, int16_t WhichVillage)
 {
 	// if WhichVillage == -1, do a for loop and send packet to all BBSes
 
 	struct Packet Packet;
-	_INT16 ClanID[2], CurBBS;
+	int16_t ClanID[2], CurBBS;
 	FILE *fp;
 
 
-	Packet.Active = TRUE;
+	Packet.Active = true;
 	Packet.BBSIDFrom = IBBS.Data->BBSID;
 	Packet.PacketType = PT_MSJ;
 	strcpy(Packet.szDate, System.szTodaysDate);
@@ -1631,7 +1631,7 @@ void SendMsj(struct Message *Message, _INT16 WhichVillage)
 		// go through ALL BBSes and send this to them all
 
 		for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-			if (IBBS.Data->Nodes[CurBBS].Active == FALSE ||
+			if (IBBS.Data->Nodes[CurBBS].Active == false ||
 					CurBBS+1 == IBBS.Data->BBSID)
 				continue;
 
@@ -1687,12 +1687,12 @@ void GlobalMsgPost(void)
 
 	char cKey, *apszVillageNames[MAX_IBBSNODES], *apszUserNames[50],
 	*pszChoices[2] = { "1. Public", "2. Private" };
-	_INT16 iTemp, NumVillages, WhichVillage, NumClans;
-	_INT16 ClanIDs[50][2], WhichClan, ClanID[2], PostType;
+	int16_t iTemp, NumVillages, WhichVillage, NumClans;
+	int16_t ClanIDs[50][2], WhichClan, ClanID[2], PostType;
 	unsigned char VillageIndex[MAX_IBBSNODES];
 
 	GetStringChoice(pszChoices, 2, "|0SWhat type of post?\n|0E> |0F",
-					&PostType, TRUE, DT_LONG, TRUE);
+					&PostType, true, DT_LONG, true);
 
 	if (PostType == -1)
 		return;
@@ -1719,7 +1719,7 @@ void GlobalMsgPost(void)
 			// specific village, choose one
 			GetStringChoice(apszVillageNames, NumVillages,
 							"|0SEnter the name of the village\n|0G> |0F",
-							&WhichVillage, TRUE, DT_LONG, TRUE);
+							&WhichVillage, true, DT_LONG, true);
 
 			if (WhichVillage == -1) {
 				rputs(ST_ABORTED);
@@ -1735,7 +1735,7 @@ void GlobalMsgPost(void)
 		ClanID[0] = -1;
 		ClanID[1] = -1;
 
-		MyWriteMessage2(ClanID, TRUE, FALSE, -1, "", TRUE, WhichVillage);
+		MyWriteMessage2(ClanID, true, false, -1, "", true, WhichVillage);
 	}
 	else {
 		// private
@@ -1743,7 +1743,7 @@ void GlobalMsgPost(void)
 		// specific village, choose one
 		GetStringChoice(apszVillageNames, NumVillages,
 						"|0SEnter the name of the village\n|0G> |0F",
-						&WhichVillage, TRUE, DT_LONG, TRUE);
+						&WhichVillage, true, DT_LONG, true);
 
 		if (WhichVillage == -1) {
 			rputs(ST_ABORTED);
@@ -1757,7 +1757,7 @@ void GlobalMsgPost(void)
 		// choose one
 		GetStringChoice(apszUserNames, NumClans,
 						"|0SEnter the name of the clan to write to\n|0G> |0F",
-						&WhichClan, TRUE, DT_WIDE, TRUE);
+						&WhichClan, true, DT_WIDE, true);
 
 		if (WhichClan == -1) {
 			rputs(ST_ABORTED);
@@ -1776,7 +1776,7 @@ void GlobalMsgPost(void)
 				free(apszUserNames[iTemp]);
 		}
 
-		MyWriteMessage2(ClanID, FALSE, FALSE, -1, "", TRUE, WhichVillage);
+		MyWriteMessage2(ClanID, false, false, -1, "", true, WhichVillage);
 	}
 	(void)cKey;
 }

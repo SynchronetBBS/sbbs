@@ -111,17 +111,17 @@ struct BuildingType BuildingType[NUM_BUILDINGTYPES] = {
 
 extern struct ibbs IBBS;
 
-void DestroyBuildings(_INT16 NumBuildings[MAX_BUILDINGS],
-					  _INT16 NumDestroyed[MAX_BUILDINGS], _INT16 Percent, _INT16 *LandGained);
+void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
+					  int16_t NumDestroyed[MAX_BUILDINGS], int16_t Percent, int16_t *LandGained);
 
 void EmpireAttack(struct empire *AttackingEmpire, struct Army *AttackingArmy,
 				  struct empire *DefendingEmpire, struct AttackResult *Result,
-				  _INT16 Goal, _INT16 ExtentOfAttack);
+				  int16_t Goal, int16_t ExtentOfAttack);
 
 void ProcessAttackResult(struct AttackResult *AttackResult);
 
 // ------------------------------------------------------------------------- //
-void SendResultPacket(struct AttackResult *Result, _INT16 DestID)
+void SendResultPacket(struct AttackResult *Result, int16_t DestID)
 {
 	Result->ResultIndex = IBBS.Data->Nodes[DestID-1].Attack.SendIndex+1;
 	IBBS.Data->Nodes[DestID-1].Attack.SendIndex++;
@@ -134,14 +134,14 @@ void SendResultPacket(struct AttackResult *Result, _INT16 DestID)
 void ProcessAttackPacket(struct AttackPacket *AttackPacket)
 {
 	struct AttackResult *Result;
-	_INT16 LandGained, iTemp;
+	int16_t LandGained, iTemp;
 
 	// initialize result beforehand
 	Result = malloc(sizeof(struct AttackResult));
 	CheckMem(Result);
-	Result->Success = FALSE;
-	Result->NoTarget= FALSE;
-	Result->InterBBS = TRUE;
+	Result->Success = false;
+	Result->NoTarget= false;
+	Result->InterBBS = true;
 	Result->AttackerType = AttackPacket->AttackingEmpire.OwnerType;
 	Result->AttackerID[0] = AttackPacket->AttackOriginatorID[0];
 	Result->AttackerID[1] = AttackPacket->AttackOriginatorID[1];
@@ -188,11 +188,11 @@ void ProcessAttackPacket(struct AttackPacket *AttackPacket)
 	// if no ruler, skip this
 	if ((Village.Data->RulingClanId[0] == -1 && AttackPacket->TargetType == EO_VILLAGE
 			&& AttackPacket->Goal == G_OUSTRULER)
-			|| (ClanExists(Result->DefenderID) == FALSE && AttackPacket->TargetType == EO_CLAN)) {
-		Result->NoTarget = TRUE;
+			|| (ClanExists(Result->DefenderID) == false && AttackPacket->TargetType == EO_CLAN)) {
+		Result->NoTarget = true;
 
 		// set everything to 0
-		Result->Success = FALSE;
+		Result->Success = false;
 		Result->OrigAttackArmy = AttackPacket->AttackingArmy;
 	}
 	else {
@@ -245,9 +245,9 @@ void ProcessResultPacket(struct AttackResult *Result)
 	struct clan *TmpClan;
 	char szNews[255], szAttackerName[35], szDefenderName[40], *szMessage,
 	szGoal[40], szOutcome[30], *szString, *cpBuffer;
-	_INT16 WhichBBS, iTemp, Junk[2] = {-1, -1};
-	BOOL ShowedOne;
-	long AfterOffset, BeforeOffset;
+	int16_t WhichBBS, iTemp, Junk[2] = {-1, -1};
+	bool ShowedOne;
+	int32_t AfterOffset, BeforeOffset;
 	FILE *fpBackup;
 
 
@@ -427,7 +427,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 			break;
 	}
 
-	ShowedOne = FALSE;
+	ShowedOne = false;
 	for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
 		if (Result->BuildingsDestroyed[iTemp] == 0)
 			continue;
@@ -435,14 +435,14 @@ void ProcessResultPacket(struct AttackResult *Result)
 		if (!ShowedOne) {
 			// strcat(szMessage, "The following buildings were destroyed:\n");
 			strcat(szMessage, ST_PAR2);
-			ShowedOne = TRUE;
+			ShowedOne = true;
 		}
 		sprintf(szString, ST_WRESULTS10, Result->BuildingsDestroyed[iTemp],
 				BuildingType[iTemp].szName);
 		strcat(szMessage, szString);
 	}
 
-	GenericMessage(szMessage, Result->AttackerID, Junk, "", FALSE);
+	GenericMessage(szMessage, Result->AttackerID, Junk, "", false);
 
 	free(szMessage);
 	free(szString);
@@ -471,7 +471,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 
 				// if same AttackIndex, mark it off
 				if (AttackPacket->AttackIndex == Result->AttackIndex) {
-					Packet.Active = FALSE;
+					Packet.Active = false;
 
 					fseek(fpBackup, BeforeOffset, SEEK_SET);
 
@@ -498,9 +498,9 @@ void ProcessResultPacket(struct AttackResult *Result)
 
 // ------------------------------------------------------------------------- //
 
-void Empire_Create(struct empire *Empire, BOOL UserEmpire)
+void Empire_Create(struct empire *Empire, bool UserEmpire)
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	if (UserEmpire && Game.Data->ClanEmpires) {
 		Empire->Land = 100;
@@ -538,8 +538,8 @@ void Empire_Maint(struct empire *Empire)
 {
 	// run "maintenance" on empire
 	char szNews[128];
-	long GoldMade;
-	_INT16 iTemp, Rating;
+	int32_t GoldMade;
+	int16_t iTemp, Rating;
 
 	Empire->WorkerEnergy = 100;
 	Empire->LandDevelopedToday = 0;
@@ -573,9 +573,9 @@ void Empire_Maint(struct empire *Empire)
 
 // ------------------------------------------------------------------------- //
 
-_INT16 ArmySpeed(struct Army *Army)
+int16_t ArmySpeed(struct Army *Army)
 {
-	_INT16 Speed, NumTroops;
+	int16_t Speed, NumTroops;
 
 	NumTroops = Army->Footmen + Army->Axemen + Army->Knights;
 
@@ -589,9 +589,9 @@ _INT16 ArmySpeed(struct Army *Army)
 }
 
 
-long ArmyOffense(struct Army *Army)
+int32_t ArmyOffense(struct Army *Army)
 {
-	long Offense, NumTroops;
+	int32_t Offense, NumTroops;
 
 	Offense = Army->Footmen*OFF_FOOTMEN + Army->Axemen*OFF_AXEMEN
 			  + Army->Knights*OFF_KNIGHTS;
@@ -601,9 +601,9 @@ long ArmyOffense(struct Army *Army)
 }
 
 
-long ArmyDefense(struct Army *Army)
+int32_t ArmyDefense(struct Army *Army)
 {
-	long Defense, NumTroops;
+	int32_t Defense, NumTroops;
 
 	Defense = Army->Footmen*DEF_FOOTMEN + Army->Axemen*DEF_AXEMEN
 			  + Army->Knights*DEF_KNIGHTS;
@@ -612,9 +612,9 @@ long ArmyDefense(struct Army *Army)
 	return Defense;
 }
 
-long ArmyVitality(struct Army *Army)
+int32_t ArmyVitality(struct Army *Army)
 {
-	long Vitality, NumTroops;
+	int32_t Vitality, NumTroops;
 
 	Vitality = (Army->Footmen*VIT_FOOTMEN + Army->Axemen*VIT_AXEMEN
 				+ Army->Knights*VIT_KNIGHTS) * 2;
@@ -627,8 +627,8 @@ long ArmyVitality(struct Army *Army)
 void Empire_Stats(struct empire *Empire)
 {
 	char szString[128];
-	_INT16 iTemp;
-	BOOL ShowedOne;
+	int16_t iTemp;
+	bool ShowedOne;
 
 	od_clr_scr();
 
@@ -666,10 +666,10 @@ void Empire_Stats(struct empire *Empire)
 	rputs(szString);
 
 	rputs(ST_ESTATS13);
-	ShowedOne = FALSE;
+	ShowedOne = false;
 	for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
 		if (Empire->Buildings[iTemp]) {
-			ShowedOne = TRUE;
+			ShowedOne = true;
 			sprintf(szString, "  %d %s\n", Empire->Buildings[iTemp],
 					BuildingType[iTemp].szName);
 			rputs(szString);
@@ -686,19 +686,19 @@ void Empire_Stats(struct empire *Empire)
 
 void DevelopLand(struct empire *Empire)
 {
-	long LimitingVariable, CostToDevelop;
-	_INT16 LandToDevelop;
+	int32_t LimitingVariable, CostToDevelop;
+	int16_t LandToDevelop;
 	char szString[128];
 
 	// show help for developing land
 	if (!PClan->DevelopHelp) {
-		PClan->DevelopHelp = TRUE;
+		PClan->DevelopHelp = true;
 		Help("Development Help", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
 
 	// each unit of land costs this much to develop
-	CostToDevelop = (long)(100L - Empire->Buildings[B_DEVELOPERS]*5L);
+	CostToDevelop = (int32_t)(100L - Empire->Buildings[B_DEVELOPERS]*5L);
 	if (CostToDevelop < 20)
 		CostToDevelop = 20;
 	// FIXME: in future have X developments as max per day?!
@@ -732,7 +732,7 @@ void DonateToEmpire(struct empire *Empire)
 {
 	char *szTheOptions[15];
 	char szString[128], szFileName[30];
-	long LimitingVariable, NumToDonate;
+	int32_t LimitingVariable, NumToDonate;
 
 	LoadStrings(1450, 15, szTheOptions);
 
@@ -763,7 +763,7 @@ void DonateToEmpire(struct empire *Empire)
 			rputs(szString);
 		}
 
-		switch (GetChoice(szFileName, ST_ENTEROPTION, szTheOptions, "12346789Q?V50AB", 'Q', TRUE)) {
+		switch (GetChoice(szFileName, ST_ENTEROPTION, szTheOptions, "12346789Q?V50AB", 'Q', true)) {
 			case '1' :      /* followers */
 				LimitingVariable = PClan->Empire.Army.Followers;
 
@@ -1028,7 +1028,7 @@ void DonateToEmpire(struct empire *Empire)
 			case '?' :      /* redisplay options */
 				break;
 			case 'V' :      /* stats */
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 		}
 	}
@@ -1038,7 +1038,7 @@ void Destroy_Menu(struct empire *Empire)
 {
 	// allow user to build new structures
 
-	_INT16 iTemp, WhichBuilding;
+	int16_t iTemp, WhichBuilding;
 	char *szTheOptions[13], cKey, szString[128];
 
 	LoadStrings(1270, 12, szTheOptions);
@@ -1065,7 +1065,7 @@ void Destroy_Menu(struct empire *Empire)
 		rputs(ST_MEMPIRE27);
 		rputs(ST_LONGLINE);
 
-		switch (cKey = GetChoice("", ST_ENTEROPTION, szTheOptions, "Q?0123456789V", 'Q', TRUE)) {
+		switch (cKey = GetChoice("", ST_ENTEROPTION, szTheOptions, "Q?0123456789V", 'Q', true)) {
 				// user chooses type to build here using 123456789
 			case '0' :
 			case '1' :
@@ -1112,7 +1112,7 @@ void Destroy_Menu(struct empire *Empire)
 				rputs(szString);
 				break;
 			case 'V' :      // clan stats
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 			case 'Q' :      /* return to previous menu */
 				return;
@@ -1126,7 +1126,7 @@ void StructureMenu(struct empire *Empire)
 {
 	// allow user to build new structures
 
-	_INT16 iTemp, WhichBuilding;
+	int16_t iTemp, WhichBuilding;
 	char *szTheOptions[14], cKey, szString[128];
 
 	LoadStrings(1270, 14, szTheOptions);
@@ -1156,7 +1156,7 @@ void StructureMenu(struct empire *Empire)
 		rputs(ST_MEMPIRE14);
 		rputs(ST_LONGLINE);
 
-		switch (cKey = GetChoice("", ST_ENTEROPTION, szTheOptions, "Q?012345678*9V", 'Q', TRUE)) {
+		switch (cKey = GetChoice("", ST_ENTEROPTION, szTheOptions, "Q?012345678*9V", 'Q', true)) {
 				// user chooses type to build here using 123456789
 			case '0' :
 			case '1' :
@@ -1207,7 +1207,7 @@ void StructureMenu(struct empire *Empire)
 				}
 
 				// show stats
-				sprintf(szString, "|0CYou have |0B%ld |0Cgold, |0B%d |0Cland, |0B%d%% |0Cworker Energy\n",
+				sprintf(szString, "|0CYou have |0B%" PRId32 " |0Cgold, |0B%d |0Cland, |0B%d%% |0Cworker Energy\n",
 						Empire->VaultGold, Empire->Land, Empire->WorkerEnergy);
 				rputs(szString);
 
@@ -1230,7 +1230,7 @@ void StructureMenu(struct empire *Empire)
 			case 'Q' :      /* return to previous menu */
 				return;
 			case 'V' :      // clan stats
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 			case '?' :      /* redisplay options */
 				break;
@@ -1243,7 +1243,7 @@ void ManageArmy(struct empire *Empire)
 {
 	char *szTheOptions[6];
 	char szString[128];
-	long LimitingVariable, NumToTrain;
+	int32_t LimitingVariable, NumToTrain;
 
 	LoadStrings(360, 6, szTheOptions);
 
@@ -1287,7 +1287,7 @@ void ManageArmy(struct empire *Empire)
 
 		rputs(ST_LONGLINE);
 
-		switch (GetChoice("", ST_ENTEROPTION, szTheOptions, "123?QH", 'Q', TRUE)) {
+		switch (GetChoice("", ST_ENTEROPTION, szTheOptions, "123?QH", 'Q', true)) {
 			case 'H' :  // general help
 				GeneralHelp(ST_ARMYHLP);
 				break;
@@ -1418,18 +1418,18 @@ void ManageArmy(struct empire *Empire)
 void ArmyAttack(struct Army *Attacker, struct Army *Defender,
 				struct AttackResult *Result)
 {
-	_INT16 NumRounds, CurRound;
+	int16_t NumRounds, CurRound;
 	struct Army OrigAttacker, OrigDefender;
-	_INT16 AttackerSpeed, DefenderSpeed;
-	long AttackerOffense, DefenderOffense;
-	long AttackerDefense, DefenderDefense;
-	long AttackerVitality, DefenderVitality;
-	long Damage, Percent;
-	_INT16 Intensity, AttackerLoss, DefenderLoss;
+	int16_t AttackerSpeed, DefenderSpeed;
+	int32_t AttackerOffense, DefenderOffense;
+	int32_t AttackerDefense, DefenderDefense;
+	int32_t AttackerVitality, DefenderVitality;
+	int32_t Damage, Percent;
+	int16_t Intensity, AttackerLoss, DefenderLoss;
 
 	// Initialize result now
-	Result->Success = FALSE;
-	Result->NoTarget = FALSE;
+	Result->Success = false;
+	Result->NoTarget = false;
 	Result->PercentDamage = 0;
 
 	NumRounds = (Attacker->Strategy.AttackLength +
@@ -1477,7 +1477,7 @@ void ArmyAttack(struct Army *Attacker, struct Army *Defender,
 	if (DefenderVitality == 0) {
 		//DisplayStr("Enemy has no energy\n");
 		Result->PercentDamage = 100;
-		Result->Success = TRUE;
+		Result->Success = true;
 		return;
 	}
 
@@ -1556,26 +1556,26 @@ void ArmyAttack(struct Army *Attacker, struct Army *Defender,
 	// if attacker's loss < defender's loss and defender's loss >= 50%,
 	// attacker won!
 	if (AttackerLoss < DefenderLoss && DefenderLoss >= 30)
-		Result->Success = TRUE;
+		Result->Success = true;
 	else
-		Result->Success = FALSE;
+		Result->Success = false;
 }
 
 // ------------------------------------------------------------------------- //
 
 void EmpireAttack(struct empire *AttackingEmpire, struct Army *AttackingArmy,
 				  struct empire *DefendingEmpire, struct AttackResult *Result,
-				  _INT16 Goal, _INT16 ExtentOfAttack)
+				  int16_t Goal, int16_t ExtentOfAttack)
 {
 	struct Army DefendingArmy = {0}, ArmyKilledByTowers = {0}, ArmyStoppedByWalls = {0};
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	// ExtentOfAttack is used for stealing land, gold, and destroying
 	// it is the percentage of the attack (10-30% usually)
 
 	// intialize result
-	Result->Success = FALSE;
-	Result->NoTarget= FALSE;
+	Result->Success = false;
+	Result->NoTarget= false;
 
 	Result->ReturningArmy = *AttackingArmy;
 	Result->AttackerType = AttackingEmpire->OwnerType;
@@ -1719,18 +1719,18 @@ void ProcessAttackResult(struct AttackResult *AttackResult)
 {
 	char szNews[128], *szMessage, szString[255],
 	szDefenderType[40], szAttacker[40], szDefender[40];
-	_INT16 WhichBBS = 0, iTemp, Junk[2] = {-1, -1};  // <<-- Junk[] is used as dummy
-	_INT16 Percent, WhichAlliance, LandGained;
+	int16_t WhichBBS = 0, iTemp, Junk[2] = {-1, -1};  // <<-- Junk[] is used as dummy
+	int16_t Percent, WhichAlliance, LandGained;
 	struct clan *TmpClan;
 	struct Alliance *Alliances[MAX_ALLIANCES];
-	BOOL ShowedOne;
+	bool ShowedOne;
 
 	// function will update defender's empire but NOT the attacker's
 
 
 	if (Game.Data->InterBBS)
 		for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-			if (IBBS.Data->Nodes[iTemp].Active == FALSE) continue;
+			if (IBBS.Data->Nodes[iTemp].Active == false) continue;
 
 			if (iTemp+1 == AttackResult->BBSIDFrom) {
 				WhichBBS = iTemp+1;
@@ -1896,7 +1896,7 @@ void ProcessAttackResult(struct AttackResult *AttackResult)
 								free(Alliances[iTemp]);
 						break;
 				}
-				ShowedOne = FALSE;
+				ShowedOne = false;
 				for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
 					if (AttackResult->BuildingsDestroyed[iTemp] == 0)
 						continue;
@@ -1904,7 +1904,7 @@ void ProcessAttackResult(struct AttackResult *AttackResult)
 					if (!ShowedOne) {
 						// strcat(szMessage, "The following buildings were destroyed:\n");
 						strcat(szMessage, ST_PAR2);
-						ShowedOne = TRUE;
+						ShowedOne = true;
 					}
 					sprintf(szString, ST_WRESULTS10, AttackResult->BuildingsDestroyed[iTemp],
 							BuildingType[iTemp].szName);
@@ -1920,14 +1920,14 @@ void ProcessAttackResult(struct AttackResult *AttackResult)
 				switch (AttackResult->DefenderType) {
 					case EO_VILLAGE :
 						AttackResult->GoldStolen =
-							((Village.Data->Empire.VaultGold/100L) * ((long)AttackResult->PercentDamage * (long)AttackResult->ExtentOfAttack)/100L);
+							((Village.Data->Empire.VaultGold/100L) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack)/100L);
 						break;
 					case EO_CLAN :
 						TmpClan = malloc(sizeof(struct clan));
 						CheckMem(TmpClan);
 						GetClan(AttackResult->DefenderID, TmpClan);
 						AttackResult->GoldStolen =
-							((TmpClan->Empire.VaultGold/100L) * ((long)AttackResult->PercentDamage * (long)AttackResult->ExtentOfAttack)/100L);
+							((TmpClan->Empire.VaultGold/100L) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack)/100L);
 						FreeClan(TmpClan);
 						break;
 					case EO_ALLIANCE :
@@ -1941,7 +1941,7 @@ void ProcessAttackResult(struct AttackResult *AttackResult)
 						WhichAlliance = iTemp;
 
 						AttackResult->GoldStolen =
-							((Alliances[WhichAlliance]->Empire.VaultGold/100L) * ((long)AttackResult->PercentDamage * (long)AttackResult->ExtentOfAttack)/100L);
+							((Alliances[WhichAlliance]->Empire.VaultGold/100L) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack)/100L);
 
 						// free up mem used by alliances
 						for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
@@ -1993,7 +1993,7 @@ void ProcessAttackResult(struct AttackResult *AttackResult)
 				}
 				// tell what they lost
 				// what destroyed
-				ShowedOne = FALSE;
+				ShowedOne = false;
 				for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
 					if (AttackResult->BuildingsDestroyed[iTemp] == 0)
 						continue;
@@ -2001,7 +2001,7 @@ void ProcessAttackResult(struct AttackResult *AttackResult)
 					if (!ShowedOne) {
 						//              strcat(szMessage, "The following buildings were destroyed:\n");
 						strcat(szMessage, ST_PAR2);
-						ShowedOne = TRUE;
+						ShowedOne = true;
 					}
 					sprintf(szString, ST_WRESULTS10, AttackResult->BuildingsDestroyed[iTemp],
 							BuildingType[iTemp].szName);
@@ -2011,22 +2011,22 @@ void ProcessAttackResult(struct AttackResult *AttackResult)
 		}
 	}
 
-	GenericMessage(szMessage, AttackResult->DefenderID, Junk, AttackResult->szAttackerName, FALSE);
+	GenericMessage(szMessage, AttackResult->DefenderID, Junk, AttackResult->szAttackerName, false);
 	News_AddNews(szNews);
 	News_AddNews("\n");
 
 	free(szMessage);
 }
 
-void DestroyBuildings(_INT16 NumBuildings[MAX_BUILDINGS],
-					  _INT16 NumDestroyed[MAX_BUILDINGS], _INT16 Percent, _INT16 *LandGained)
+void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
+					  int16_t NumDestroyed[MAX_BUILDINGS], int16_t Percent, int16_t *LandGained)
 {
-	_INT16 LandUsed[MAX_BUILDINGS];
-	_INT16 NumRemaining[MAX_BUILDINGS];
+	int16_t LandUsed[MAX_BUILDINGS];
+	int16_t NumRemaining[MAX_BUILDINGS];
 	char *WarZone;
-	_INT16 CurChar, CurType, CurBuilding, Start, End, DidHit, TotalEnergy,
+	int16_t CurChar, CurType, CurBuilding, Start, End, DidHit, TotalEnergy,
 	CurHit, WhichToHit, NumFound, TypeToHit, iTemp;
-	long NumHits;
+	int32_t NumHits;
 
 	//    od_printf("\r\nBefore:  %d towers\r\n %d barracks\r\n %d walls\r\n",
 	//      NumBuildings[0], NumBuildings[1], NumBuildings[2]);
@@ -2129,8 +2129,8 @@ void DestroyBuildings(_INT16 NumBuildings[MAX_BUILDINGS],
 
 void ShowResults(struct AttackResult *Result)
 {
-	_INT16 iTemp;
-	BOOL ShowedOne;
+	int16_t iTemp;
+	bool ShowedOne;
 	char szString[128];
 
 	// reduce both armies
@@ -2190,7 +2190,7 @@ void ShowResults(struct AttackResult *Result)
 				rputs(szString);
 
 				// what destroyed
-				ShowedOne = FALSE;
+				ShowedOne = false;
 				for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
 					if (Result->BuildingsDestroyed[iTemp] == 0)
 						continue;
@@ -2198,7 +2198,7 @@ void ShowResults(struct AttackResult *Result)
 					if (!ShowedOne) {
 						// rputs("You destroyed the following buildings:\n");
 						rputs(ST_WRESULTS9);
-						ShowedOne = TRUE;
+						ShowedOne = true;
 					}
 					// sprintf(szString, "%2d %s\n\r", Result->BuildingsDestroyed[iTemp],
 					sprintf(szString, ST_WRESULTS10, Result->BuildingsDestroyed[iTemp],
@@ -2210,7 +2210,7 @@ void ShowResults(struct AttackResult *Result)
 				break;
 			case G_DESTROY :
 				// what destroyed
-				ShowedOne = FALSE;
+				ShowedOne = false;
 				for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
 					if (Result->BuildingsDestroyed[iTemp] == 0)
 						continue;
@@ -2218,7 +2218,7 @@ void ShowResults(struct AttackResult *Result)
 					if (!ShowedOne) {
 						// rputs("You destroyed the following buildings:\n");
 						rputs(ST_WRESULTS11);
-						ShowedOne = TRUE;
+						ShowedOne = true;
 					}
 					// sprintf(szString, "%2d %s\n\r", Result->BuildingsDestroyed[iTemp],
 					sprintf(szString, ST_WRESULTS12, Result->BuildingsDestroyed[iTemp],
@@ -2341,19 +2341,19 @@ void StartEmpireWar(struct empire *Empire)
 																								 *pszDestroy =   "3 Destroy Buildings";
 	char *pszWhoToAttack[3], *aszVillageNames[MAX_IBBSNODES],
 	*aszAllianceNames[MAX_ALLIANCES], *apszGoals[4], szNews[128];
-	_INT16 TypeOfDefender, NumOfTypes, iTemp, NumBBSes, BBSIndex[MAX_IBBSNODES];
-	_INT16 WhichVillage, NumAlliances, WhichAlliance, NumGoals, Goal, ExtentOfAttack = 0;
-	_INT16 ClanID[2], LandGained, Decrease;
+	int16_t TypeOfDefender, NumOfTypes, iTemp, NumBBSes, BBSIndex[MAX_IBBSNODES];
+	int16_t WhichVillage, NumAlliances, WhichAlliance, NumGoals, Goal, ExtentOfAttack = 0;
+	int16_t ClanID[2], LandGained, Decrease;
 
 	if (!PClan->WarHelp) {
-		PClan->WarHelp = TRUE;
+		PClan->WarHelp = true;
 		Help("War Help", ST_WARHLP);
 		rputs("\n%P");
 	}
 
 	// choose who to attack:
 
-	if (Game.Data->ClanEmpires == FALSE) {
+	if (Game.Data->ClanEmpires == false) {
 		pszWhoToAttack[0] = pszVillage;
 		pszWhoToAttack[1] = pszAlliance;
 		NumOfTypes = 2;
@@ -2366,7 +2366,7 @@ void StartEmpireWar(struct empire *Empire)
 	}
 
 	GetStringChoice(pszWhoToAttack, NumOfTypes, ST_WEMPIRE0,
-					&TypeOfDefender, TRUE, DT_LONG, TRUE);
+					&TypeOfDefender, true, DT_LONG, true);
 
 	if (TypeOfDefender == -1) {
 		rputs(ST_ABORTED);
@@ -2388,7 +2388,7 @@ void StartEmpireWar(struct empire *Empire)
 
 			if (Game.Data->InterBBS)
 				for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-					if (IBBS.Data->Nodes[iTemp].Active == FALSE)
+					if (IBBS.Data->Nodes[iTemp].Active == false)
 						continue;
 
 					if (iTemp+1 == IBBS.Data->BBSID)
@@ -2404,7 +2404,7 @@ void StartEmpireWar(struct empire *Empire)
 
 		if (Game.Data->InterBBS)
 			for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-				if (IBBS.Data->Nodes[iTemp].Active == FALSE)
+				if (IBBS.Data->Nodes[iTemp].Active == false)
 					continue;
 
 				if (iTemp+1 == IBBS.Data->BBSID)
@@ -2418,7 +2418,7 @@ void StartEmpireWar(struct empire *Empire)
 		// choose a village
 
 		GetStringChoice(aszVillageNames, NumBBSes, ST_WEMPIRE1,
-						&WhichVillage, TRUE, DT_WIDE, TRUE);
+						&WhichVillage, true, DT_WIDE, true);
 
 		if (WhichVillage == -1) {
 			rputs(ST_ABORTED);
@@ -2446,7 +2446,7 @@ void StartEmpireWar(struct empire *Empire)
 		// choose one, ask user if sure
 		for (;;) {
 			GetStringChoice(apszGoals, NumGoals, ST_WEMPIRE2,
-							&Goal, TRUE, DT_LONG, TRUE);
+							&Goal, true, DT_LONG, true);
 
 			if (Goal == -1) {
 				// choose against it, so quit
@@ -2487,7 +2487,7 @@ void StartEmpireWar(struct empire *Empire)
 
 		// if OUR village, proceed normally in attack
 		if ((Game.Data->InterBBS && BBSIndex[WhichVillage] == IBBS.Data->BBSID)
-				|| (Game.Data->InterBBS == FALSE && WhichVillage == 0)) {
+				|| (Game.Data->InterBBS == false && WhichVillage == 0)) {
 			// amass village's troops corresponding to type of attack
 			// do attack now, tell user result, write changes
 
@@ -2501,7 +2501,7 @@ void StartEmpireWar(struct empire *Empire)
 			}
 
 			// initialize result beforehand
-			Result.InterBBS = FALSE;
+			Result.InterBBS = false;
 			Result.DefenderType = EO_VILLAGE;
 			Result.BBSIDFrom = IBBS.Data->BBSID;
 			Result.BBSIDTo = IBBS.Data->BBSID;
@@ -2592,7 +2592,7 @@ void StartEmpireWar(struct empire *Empire)
 		}
 
 		GetStringChoice(aszAllianceNames, NumAlliances, ST_WEMPIRE6,
-						&WhichAlliance, TRUE, DT_WIDE, TRUE);
+						&WhichAlliance, true, DT_WIDE, true);
 
 		if (WhichAlliance == -1) {
 			rputs(ST_ABORTED);
@@ -2641,7 +2641,7 @@ void StartEmpireWar(struct empire *Empire)
 		// choose one, ask user if sure
 		for (;;) {
 			GetStringChoice(apszGoals, NumGoals, ST_WEMPIRE2,
-							&Goal, TRUE, DT_LONG, TRUE);
+							&Goal, true, DT_LONG, true);
 
 			if (Goal == -1) {
 				// choose against it, so quit
@@ -2700,7 +2700,7 @@ void StartEmpireWar(struct empire *Empire)
 		}
 
 		// initialize result beforehand
-		Result.InterBBS = FALSE;
+		Result.InterBBS = false;
 		Result.DefenderType = EO_ALLIANCE;
 		Result.BBSIDFrom = Config->BBSID;
 		Result.BBSIDTo = Config->BBSID;
@@ -2765,7 +2765,7 @@ void StartEmpireWar(struct empire *Empire)
 
 		// attack...
 
-		if (GetClanID(ClanID, FALSE, FALSE, -1, -1) == FALSE) {
+		if (GetClanID(ClanID, false, false, -1, -1) == false) {
 			return;
 		}
 
@@ -2801,7 +2801,7 @@ void StartEmpireWar(struct empire *Empire)
 		// choose one, ask user if sure
 		for (;;) {
 			GetStringChoice(apszGoals, NumGoals, ST_WEMPIRE2,
-							&Goal, TRUE, DT_LONG, TRUE);
+							&Goal, true, DT_LONG, true);
 
 			if (Goal == -1) {
 				// choose against it, so quit
@@ -2846,7 +2846,7 @@ void StartEmpireWar(struct empire *Empire)
 		}
 
 		// initialize result beforehand
-		Result.InterBBS = FALSE;
+		Result.InterBBS = false;
 		Result.DefenderType = EO_CLAN;
 		Result.BBSIDFrom = Config->BBSID;
 		Result.BBSIDTo = Config->BBSID;
@@ -2948,13 +2948,13 @@ void SpyMenu(struct empire *Empire)
 												 *aszVillageNames[MAX_IBBSNODES],
 												 *pszWhoToSpy[3],
 												 *aszAllianceNames[MAX_ALLIANCES], szSpierName[40], szMessage[128];
-	_INT16 NumOfTypes, iTemp, NumBBSes, BBSIndex[MAX_IBBSNODES];
-	_INT16 WhichVillage, NumAlliances, WhichAlliance, TypeToSpyOn;
+	int16_t NumOfTypes, iTemp, NumBBSes, BBSIndex[MAX_IBBSNODES];
+	int16_t WhichVillage, NumAlliances, WhichAlliance, TypeToSpyOn;
 	char szString[255];
-	_INT16 ClanID[2], Junk[2] = {-1, -1};
+	int16_t ClanID[2], Junk[2] = {-1, -1};
 
 	if (!PClan->SpyHelp) {
-		PClan->SpyHelp = TRUE;
+		PClan->SpyHelp = true;
 		Help("Spy Help", ST_EMPIREHLP);
 		rputs("\n%P");
 	}
@@ -2973,7 +2973,7 @@ void SpyMenu(struct empire *Empire)
 		sprintf(szSpierName, "the alliance of %s", Empire->szName);
 
 	// choose who to spy on:
-	if (Game.Data->ClanEmpires == FALSE) {
+	if (Game.Data->ClanEmpires == false) {
 		pszWhoToSpy[0] = pszVillage;
 		pszWhoToSpy[1] = pszAlliance;
 		NumOfTypes = 2;
@@ -2986,7 +2986,7 @@ void SpyMenu(struct empire *Empire)
 	}
 
 	GetStringChoice(pszWhoToSpy, NumOfTypes, ST_WEMPIRE0,
-					&TypeToSpyOn, TRUE, DT_LONG, TRUE);
+					&TypeToSpyOn, true, DT_LONG, true);
 
 	if (TypeToSpyOn == -1) {
 		rputs(ST_ABORTED);
@@ -3008,7 +3008,7 @@ void SpyMenu(struct empire *Empire)
 
 			if (Game.Data->InterBBS)
 				for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-					if (IBBS.Data->Nodes[iTemp].Active == FALSE)
+					if (IBBS.Data->Nodes[iTemp].Active == false)
 						continue;
 
 					if (iTemp+1 == IBBS.Data->BBSID)
@@ -3024,7 +3024,7 @@ void SpyMenu(struct empire *Empire)
 
 		if (Game.Data->InterBBS)
 			for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-				if (IBBS.Data->Nodes[iTemp].Active == FALSE)
+				if (IBBS.Data->Nodes[iTemp].Active == false)
 					continue;
 
 				if (iTemp+1 == IBBS.Data->BBSID)
@@ -3038,7 +3038,7 @@ void SpyMenu(struct empire *Empire)
 		// choose a village
 
 		GetStringChoice(aszVillageNames, NumBBSes, ST_WEMPIRE1,
-						&WhichVillage, TRUE, DT_WIDE, TRUE);
+						&WhichVillage, true, DT_WIDE, true);
 
 		if (WhichVillage == -1) {
 			rputs(ST_ABORTED);
@@ -3057,7 +3057,7 @@ void SpyMenu(struct empire *Empire)
 			Empire->VaultGold -= SPY_COST;
 
 		if ((Game.Data->InterBBS && BBSIndex[WhichVillage] == IBBS.Data->BBSID)
-				|| (Game.Data->InterBBS == FALSE && WhichVillage == 0)) {
+				|| (Game.Data->InterBBS == false && WhichVillage == 0)) {
 			// see if we can spy, if so, spy on 'em now using EmpireStats
 			// increment spies per day in future
 			if ((Empire->Buildings[B_AGENCY]+RANDOM(5)) >
@@ -3075,7 +3075,7 @@ void SpyMenu(struct empire *Empire)
 					// sprintf(szMessage, " You caught a spy attempting to gain info on the village's empire.\n The spy was from %s.\n",
 					sprintf(szMessage, ST_SPY4,
 							szSpierName);
-					GenericMessage(szMessage, Village.Data->RulingClanId, Junk, "", FALSE);
+					GenericMessage(szMessage, Village.Data->RulingClanId, Junk, "", false);
 				}
 			}
 		}
@@ -3109,7 +3109,7 @@ void SpyMenu(struct empire *Empire)
 		}
 
 		GetStringChoice(aszAllianceNames, NumAlliances, ST_WEMPIRE6,
-						&WhichAlliance, TRUE, DT_WIDE, TRUE);
+						&WhichAlliance, true, DT_WIDE, true);
 
 		if (WhichAlliance == -1) {
 			rputs(ST_ABORTED);
@@ -3158,7 +3158,7 @@ void SpyMenu(struct empire *Empire)
 
 			sprintf(szMessage, ST_SPY5,
 					Alliances[WhichAlliance]->szName, szSpierName);
-			GenericMessage(szMessage, Alliances[WhichAlliance]->CreatorID, Junk, "", FALSE);
+			GenericMessage(szMessage, Alliances[WhichAlliance]->CreatorID, Junk, "", false);
 		}
 
 		// free up mem used by alliances
@@ -3169,7 +3169,7 @@ void SpyMenu(struct empire *Empire)
 	else if (TypeToSpyOn == EO_CLAN) {
 		// choose clan using GetClanID()
 
-		if (GetClanID(ClanID, FALSE, FALSE, -1, -1) == FALSE) {
+		if (GetClanID(ClanID, false, false, -1, -1) == false) {
 			return;
 		}
 
@@ -3202,7 +3202,7 @@ void SpyMenu(struct empire *Empire)
 			rputs(ST_SPY3);
 
 			sprintf(szMessage, ST_SPY6, szSpierName);
-			GenericMessage(szMessage, TmpClan->ClanID, Junk, "", FALSE);
+			GenericMessage(szMessage, TmpClan->ClanID, Junk, "", false);
 		}
 
 		FreeClan(TmpClan);
@@ -3218,7 +3218,7 @@ void Empire_Manage(struct empire *Empire)
 	LoadStrings(1260, 9, szTheOptions);
 
 	if (!PClan->EmpireHelp) {
-		PClan->EmpireHelp = TRUE;
+		PClan->EmpireHelp = true;
 		Help("Empire Help", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -3245,7 +3245,7 @@ void Empire_Manage(struct empire *Empire)
 		sprintf(szString, ST_MEMPIRE10,Empire->Buildings[B_DEVELOPERS]);
 		rputs(szString);
 
-		switch (GetChoice("Empire Menu", ST_ENTEROPTION, szTheOptions, "BMAQ?SDLH", 'Q', TRUE)) {
+		switch (GetChoice("Empire Menu", ST_ENTEROPTION, szTheOptions, "BMAQ?SDLH", 'Q', true)) {
 			case 'H' :  // help
 				GeneralHelp(ST_EMPIREHLP);
 				break;

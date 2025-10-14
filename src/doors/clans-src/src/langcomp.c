@@ -27,20 +27,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 void Convert(char *Dest, char *From);
 
-struct PACKED LanguageHeader {
+struct LanguageHeader {
 	char Signature[30];         // "The Clans Language File v1.0"
 
-	WORD StrOffsets[2000];  // offsets for up to 500 strings
-	WORD NumBytes;          // how big is the bigstring!?
+	uint16_t StrOffsets[2000];  // offsets for up to 500 strings
+	uint16_t NumBytes;          // how big is the bigstring!?
 
 	char *BigString;        // All 500 strings jumbled together into
 	// one
-} PACKED Language;
+} Language;
 
 int main(int argc, char *argv[])
 {
 	FILE *fFrom, *fTo;
-	_INT16 iTemp, CurString;
+	int16_t iTemp, CurString;
 	char TempString[800], String[800], FromFile[30], ToFile[30];
 
 	printf("The Clans Language File Compiler v.1.0 (c) copyright 1997 Allen Ussher\n\n");
@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
     {
         char Signature[30];         // "X-Engine Language File v1.0"
 
-        long StrOffsets[2000];       // offsets for up to 500 strings
+        uint16_t StrOffsets[2000];       // offsets for up to 500 strings
 
         char far *BigString;        // All 500 strings jumbled together into
                                     // one
@@ -166,7 +166,7 @@ int main(int argc, char *argv[])
 
 void Convert(char *Dest, char *From)
 {
-	_INT16 dCurChar = 0, fCurChar = 0;
+	int16_t dCurChar = 0, fCurChar = 0;
 
 	Dest[dCurChar] = 0;    // make it 0 length
 

@@ -49,14 +49,14 @@ extern struct clan *PClan;
 extern struct Language *Language;
 extern struct village Village;
 
-_INT16 GetVotes(_INT16 TopCandidates[50][2], _INT16 TopVotes[50], BOOL UserOnline)
+int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool UserOnline)
 {
 	FILE *fpPlayerFile;
 	char szFileName[50];
-	_INT16 CurClan, iTemp, CurVote, NumVotes, NumUndecided = 0,
+	int16_t CurClan, iTemp, CurVote, NumVotes, NumUndecided = 0,
 			ClanID[2];
 	struct clan *TmpClan;
-	long Offset;
+	int32_t Offset;
 
 	strcpy(szFileName, ST_CLANSPCFILE);
 
@@ -82,7 +82,7 @@ _INT16 GetVotes(_INT16 TopCandidates[50][2], _INT16 TopVotes[50], BOOL UserOnlin
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
 
-		Offset = (long)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
+		Offset = (int32_t)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
 		if (fseek(fpPlayerFile, Offset, SEEK_SET)) {
 			break;  /* couldn't fseek, so exit */
 		}
@@ -177,14 +177,14 @@ _INT16 GetVotes(_INT16 TopCandidates[50][2], _INT16 TopVotes[50], BOOL UserOnlin
 
 void VotingBooth(void)
 {
-	_INT16 TopCandidates[50][2];
-	_INT16 TopVotes[50], ClanID[2], iTemp, Undecided;
+	int16_t TopCandidates[50][2];
+	int16_t TopVotes[50], ClanID[2], iTemp, Undecided;
 	char szName[25], szString[128];
 	char *szTheOptions[4], *szTop10Names[10];
-	BOOL Done = FALSE;
+	bool Done = false;
 
 	if (!PClan->VoteHelp) {
-		PClan->VoteHelp = TRUE;
+		PClan->VoteHelp = true;
 		Help("Voting Booth", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -196,7 +196,7 @@ void VotingBooth(void)
 		szTop10Names[iTemp] = MakeStr(25);
 
 	while (!Done) {
-		Undecided = GetVotes(TopCandidates, TopVotes, TRUE);
+		Undecided = GetVotes(TopCandidates, TopVotes, true);
 
 		// get top 10 names
 		for (iTemp = 0; iTemp < 10; iTemp++) {
@@ -231,18 +231,18 @@ void VotingBooth(void)
 		sprintf(szString, "\n |0CYour Vote: |0B%s\n", szName);
 		rputs(szString);
 
-		switch (GetChoice("Voting Booth", ST_ENTEROPTION, szTheOptions, "Q?VC", 'Q', TRUE)) {
+		switch (GetChoice("Voting Booth", ST_ENTEROPTION, szTheOptions, "Q?VC", 'Q', true)) {
 			case 'Q' :    /* Quit */
-				Done = TRUE;
+				Done = true;
 				break;
 			case '?' :    /* redisplay options */
 				break;
 			case 'V' :    /* stats */
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 			case 'C' :    /* change vote */
 				rputs("|0CEnter a blank line to become undecided\n");
-				if (GetClanID(ClanID, FALSE, FALSE, -1, -1) == FALSE) {
+				if (GetClanID(ClanID, false, false, -1, -1) == false) {
 					rputs("You are now undecided.\n");
 					PClan->ClanRulerVote[0] = -1;
 					PClan->ClanRulerVote[1] = -1;
@@ -262,9 +262,9 @@ void VotingBooth(void)
 
 void ChooseNewLeader(void)
 {
-	_INT16 TopCandidates[50][2];
-	_INT16 TopVotes[50], /*ClanID[2],*/ iTemp, MostVotes, NumTied;
-	_INT16 NewRulerID[2];
+	int16_t TopCandidates[50][2];
+	int16_t TopVotes[50], /*ClanID[2],*/ iTemp, MostVotes, NumTied;
+	int16_t NewRulerID[2];
 	char szName[25], szString[128];
 
 	// if voting not allowed, just write in news that the dictatorship
@@ -282,7 +282,7 @@ void ChooseNewLeader(void)
 	*/
 
 	// get sorted votes
-	GetVotes(TopCandidates, TopVotes, FALSE);
+	GetVotes(TopCandidates, TopVotes, false);
 
 	// if no votes, do nothing
 	if (TopCandidates[0][0] == -1)

@@ -54,15 +54,15 @@ extern struct village Village;
 extern struct system System;
 
 
-_INT16 PS_GetOpenItemSlot(struct clan *Clan)
+int16_t PS_GetOpenItemSlot(struct clan *Clan)
 {
 	// return -1 if no more open slots
 
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	// see if he has room to carry it
 	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-		if (Clan->Items[iTemp].Available == FALSE)
+		if (Clan->Items[iTemp].Available == false)
 			break;
 	}
 	if (iTemp == MAX_ITEMS_HELD) {
@@ -75,7 +75,7 @@ _INT16 PS_GetOpenItemSlot(struct clan *Clan)
 
 void PS_Init(struct item_data **PS_Items)
 {
-	_INT16 iTemp, CurItem;
+	int16_t iTemp, CurItem;
 	FILE *fp;
 
 	for (iTemp = 0; iTemp < MAX_PSITEMS; iTemp++) {
@@ -104,7 +104,7 @@ void PS_Init(struct item_data **PS_Items)
 void PS_Close(struct item_data **PS_Items)
 {
 	FILE *fp;
-	_INT16 CurItem;
+	int16_t CurItem;
 
 	// write to PAWN.DAT only those items which exist
 	fp = _fsopen("pawn.dat", "wb", SH_DENYWR);
@@ -125,11 +125,11 @@ void PS_Close(struct item_data **PS_Items)
 	}
 }
 
-void PS_List(struct item_data *PS_Items[MAX_PSITEMS], _INT16 ItemType)
+void PS_List(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 {
 	// list items of a specified type -- in future use type
 
-	_INT16 CurItem, ItemsShown = 0;
+	int16_t CurItem, ItemsShown = 0;
 	char szString[128];
 
 	for (CurItem = 0; CurItem < MAX_PSITEMS; CurItem++) {
@@ -157,22 +157,22 @@ void PS_List(struct item_data *PS_Items[MAX_PSITEMS], _INT16 ItemType)
 }
 
 
-void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS], _INT16 ItemType)
+void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 {
-	BOOL Done;
+	bool Done;
 	char cKey;
-	_INT16 ItemIndex;
-	long lCost;
+	int16_t ItemIndex;
+	int32_t lCost;
 	char *szTheOptions[5], szString[50];
-	_INT16 iTemp, EmptySlot;
+	int16_t iTemp, EmptySlot;
 
 	LoadStrings(1190, 5, szTheOptions);
 
-	Done = FALSE;
+	Done = false;
 	while (!Done) {
-		switch (GetChoice("", ST_PAWN0, szTheOptions, "LQBX?", 'Q', FALSE)) {
+		switch (GetChoice("", ST_PAWN0, szTheOptions, "LQBX?", 'Q', false)) {
 			case 'Q' :
-				Done = TRUE;
+				Done = true;
 				break;
 
 			case 'L' :  // list items
@@ -270,10 +270,10 @@ void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 	//   remove from user's item list, make Item->Date = Today;
 
 
-	BOOL Done;
+	bool Done;
 	char cKey;
-	_INT16 ItemIndex, iTemp, ItemSlot, CurItem;
-	long lCost;
+	int16_t ItemIndex, iTemp, ItemSlot, CurItem;
+	int32_t lCost;
 	char *szTheOptions[6], szString[128];
 
 	LoadStrings(1195, 5, szTheOptions);
@@ -283,11 +283,11 @@ void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 			20*Village.Data->PawnLevel);
 	rputs(szString);
 
-	Done = FALSE;
+	Done = false;
 	while (!Done) {
-		switch (GetChoice("", ST_PAWN7, szTheOptions, "LQSX?A", 'Q', FALSE)) {
+		switch (GetChoice("", ST_PAWN7, szTheOptions, "LQSX?A", 'Q', false)) {
 			case 'Q' :
-				Done = TRUE;
+				Done = true;
 				break;
 
 			case 'L' :  // list items
@@ -301,7 +301,7 @@ void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 
 				ItemIndex--;
 
-				if (PClan->Items[ItemIndex].Available == FALSE) {
+				if (PClan->Items[ItemIndex].Available == false) {
 					rputs(ST_INVALIDITEM);
 					break;
 				}
@@ -329,7 +329,7 @@ void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 
 				ItemIndex--;
 
-				if (PClan->Items[ItemIndex].Available == FALSE) {
+				if (PClan->Items[ItemIndex].Available == false) {
 					rputs(ST_INVALIDITEM);
 					break;
 				}
@@ -344,7 +344,7 @@ void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 				}
 
 				lCost = (PClan->Items[ItemIndex].lCost*3L)/4L +
-						(PClan->Items[ItemIndex].lCost*(long)RANDOM(15))/100L;
+						(PClan->Items[ItemIndex].lCost*(int32_t)RANDOM(15))/100L;
 
 				sprintf(szString, ST_PAWN12, lCost);
 
@@ -362,12 +362,12 @@ void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 				PS_Items[ItemSlot]->ItemDate = DaysSince1970(System.szTodaysDate);
 
 				// remove from user's item list
-				PClan->Items[ItemIndex].Available = FALSE;
+				PClan->Items[ItemIndex].Available = false;
 				break;
 			case 'A' :  // sell all
 				for (ItemIndex = 0; ItemIndex < MAX_ITEMS_HELD; ItemIndex++) {
 					// skip this item if not available or in use
-					if (PClan->Items[ItemIndex].Available == FALSE ||
+					if (PClan->Items[ItemIndex].Available == false ||
 							PClan->Items[ItemIndex].UsedBy) {
 						continue;
 					}
@@ -388,7 +388,7 @@ void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 					ShowItemStats(&PClan->Items[ItemIndex], PClan);
 
 					lCost = (PClan->Items[ItemIndex].lCost*3L)/4L +
-							(PClan->Items[ItemIndex].lCost*(long)RANDOM(15))/100L;
+							(PClan->Items[ItemIndex].lCost*(int32_t)RANDOM(15))/100L;
 
 					sprintf(szString, ST_PAWN12, lCost);
 
@@ -406,7 +406,7 @@ void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 					PS_Items[ItemSlot]->ItemDate = DaysSince1970(System.szTodaysDate);
 
 					// remove from user's item list
-					PClan->Items[ItemIndex].Available = FALSE;
+					PClan->Items[ItemIndex].Available = false;
 				}
 				break;
 		}
@@ -418,7 +418,7 @@ void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 void PS_Maint(void)
 {
 	struct item_data *PS_Items[MAX_PSITEMS];
-	_INT16 CurItem;
+	int16_t CurItem;
 
 	DisplayStr("* PS_Maint()\n");
 
@@ -443,12 +443,12 @@ void PawnShop(void)
 {
 	struct item_data *PS_Items[MAX_PSITEMS];
 	char *szTheOptions[5];
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	LoadStrings(1180, 5, szTheOptions);
 
 	if (!PClan->PawnHelp) {
-		PClan->PawnHelp = TRUE;
+		PClan->PawnHelp = true;
 		Help("Pawn Shop", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -465,7 +465,7 @@ void PawnShop(void)
 	/* get a choice */
 	for (;;) {
 		rputs("\n\n");
-		switch (GetChoice("Pawn Menu", ST_ENTEROPTION, szTheOptions, "BSVQ?", 'Q', TRUE)) {
+		switch (GetChoice("Pawn Menu", ST_ENTEROPTION, szTheOptions, "BSVQ?", 'Q', true)) {
 			case 'B' :    /* buy */
 				PS_Buy(PS_Items, 0);
 				break;
@@ -478,7 +478,7 @@ void PawnShop(void)
 			case '?' :    /* redisplay options */
 				break;
 			case 'V' :    /* stats */
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 		}
 	}

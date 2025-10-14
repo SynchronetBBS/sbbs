@@ -61,7 +61,7 @@ void NPC_GetNPCNdx(struct NPCInfo *NPCInfo, struct NPCNdx *NPCNdx)
 
 	char *NPXFile = "clans.npx";
 	FILE *fpNPX;
-	BOOL Found = FALSE;
+	bool Found = false;
 
 	fpNPX = fopen(NPXFile, "rb");
 	if (fpNPX) {
@@ -71,7 +71,7 @@ void NPC_GetNPCNdx(struct NPCInfo *NPCInfo, struct NPCNdx *NPCNdx)
 
 			// found it!
 			if (stricmp(NPCNdx->szIndex, NPCInfo->szIndex) == 0) {
-				Found = TRUE;
+				Found = true;
 				break;
 			}
 		}
@@ -83,7 +83,7 @@ void NPC_GetNPCNdx(struct NPCInfo *NPCInfo, struct NPCNdx *NPCNdx)
 		// couldn't find NDX in the NPX for that particular NPC
 
 		strcpy(NPCNdx->szIndex, NPCInfo->szIndex);
-		NPCNdx->InClan = FALSE;
+		NPCNdx->InClan = false;
 		NPCNdx->ClanID[0] = -1;
 		NPCNdx->ClanID[1] = -1;
 		NPCNdx->Status = NPCS_NOTHERE;
@@ -96,7 +96,7 @@ void NPC_UpdateNPCNdx(char *szIndex, struct NPCNdx *NPCNdx)
 	/* Function to update status of an NPC to .NPX file */
 	char *NPXFile = "clans.npx";
 	FILE *fpNPX;
-	long Offset;
+	int32_t Offset;
 	struct NPCNdx TmpNdx;
 
 	fpNPX = fopen(NPXFile, "r+b");
@@ -123,12 +123,12 @@ void NPC_UpdateNPCNdx(char *szIndex, struct NPCNdx *NPCNdx)
 void NPC_Maint(void)
 {
 	FILE *fpNPX;
-	_INT16 CurNPCFile;
+	int16_t CurNPCFile;
 	struct FileHeader FileHeader;
 	struct NPCInfo *NPCInfo;
 	struct NPCNdx NPCNdx;
 	char *szClansNPX = "clans.npx";
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	DisplayStr("* NPC Maint\n");
 
@@ -163,7 +163,7 @@ void NPC_Maint(void)
 			// prepare to write to NPX file
 			strcpy(NPCNdx.szIndex, NPCInfo->szIndex);
 			NPCNdx.WhereWander = NPCInfo->WhereWander;
-			NPCNdx.InClan = FALSE;
+			NPCNdx.InClan = false;
 			NPCNdx.ClanID[0] = -1;
 			NPCNdx.ClanID[1] = -1;
 			NPCNdx.Status = NPCS_NOTHERE;
@@ -201,15 +201,15 @@ void NPC_ChatNPC(char *szIndex)
 
 	/* for now, just use the knight as the NPC to chat with */
 	struct NPCInfo *NPCInfo;
-	_INT16 iTemp, NumTopicsKnown, WhichTopic, QuoteIndex[MAX_TOPICS],
+	int16_t iTemp, NumTopicsKnown, WhichTopic, QuoteIndex[MAX_TOPICS],
 	CurFile, CurNPC, UserInput;
 	char *szString, szKeys[26 + 3], *pszTopics[MAX_TOPICS],
 	szPrompt[128];
 	struct clan *EnemyClan;
 	struct FileHeader FileHeader;
 	struct NPCNdx NPCNdx;
-	long Offset;
-	BOOL FoundNPC;
+	int32_t Offset;
+	bool FoundNPC;
 
 	szString = MakeStr(255);
 
@@ -218,7 +218,7 @@ void NPC_ChatNPC(char *szIndex)
 	NPCInfo = malloc(sizeof(struct NPCInfo));
 	CheckMem(NPCInfo);
 
-	FoundNPC = FALSE;
+	FoundNPC = false;
 	for (CurFile = 0; CurFile < MAX_NPCS; CurFile++) {
 		// if out of files, break
 		if (IniFile.pszNPCFileName[CurFile] == NULL)
@@ -230,7 +230,7 @@ void NPC_ChatNPC(char *szIndex)
 
 		/* find him in the file */
 		for (CurNPC = 0;; CurNPC++) {
-			Offset = (long)CurNPC * (long)sizeof(struct NPCInfo) + FileHeader.lStart;
+			Offset = (int32_t)CurNPC * (int32_t)sizeof(struct NPCInfo) + FileHeader.lStart;
 
 			// reach end
 			if (Offset >= FileHeader.lEnd)
@@ -245,7 +245,7 @@ void NPC_ChatNPC(char *szIndex)
 			// one we want?
 			if (stricmp(NPCInfo->szIndex, szIndex) == 0) {
 				// yes
-				FoundNPC = TRUE;
+				FoundNPC = true;
 				break;
 			}
 		}
@@ -254,7 +254,7 @@ void NPC_ChatNPC(char *szIndex)
 		if (FoundNPC)  break;
 	}
 
-	if (FoundNPC == FALSE) {
+	if (FoundNPC == false) {
 		rputs("NPC not found\n\r");
 		free(szString);
 		free(NPCInfo);
@@ -266,8 +266,8 @@ void NPC_ChatNPC(char *szIndex)
 
 	// run intro topic
 	if (NPCInfo->IntroTopic.Active) {
-		if (RunEvent(TRUE, NPCInfo->szQuoteFile,
-					 NPCInfo->IntroTopic.szFileName, NPCInfo, szIndex) == TRUE) {
+		if (RunEvent(true, NPCInfo->szQuoteFile,
+					 NPCInfo->IntroTopic.szFileName, NPCInfo, szIndex) == true) {
 			free(NPCInfo);
 			free(szString);
 			return;
@@ -302,7 +302,7 @@ void NPC_ChatNPC(char *szIndex)
 
 		// chose one
 		GetStringChoice(pszTopics, NumTopicsKnown, szPrompt, &UserInput,
-						TRUE, DT_LONG, TRUE);
+						true, DT_LONG, true);
 
 		if (UserInput == -1)
 			break;
@@ -325,15 +325,15 @@ void NPC_ChatNPC(char *szIndex)
 			GetClan(NPCNdx.ClanID, EnemyClan);
 
 			// Clan_Extract(EnemyClan, NPCNdx.ClanID);
-			ClanStats(EnemyClan, FALSE);
+			ClanStats(EnemyClan, false);
 			FreeClan(EnemyClan);
 
 			continue;
 		}
 
 		// otherwise, "run" that quote in the NPCQUOTE.Q file
-		if (RunEvent(TRUE, NPCInfo->szQuoteFile,
-					 NPCInfo->Topics[WhichTopic].szFileName, NPCInfo, szIndex) == TRUE) {
+		if (RunEvent(true, NPCInfo->szQuoteFile,
+					 NPCInfo->Topics[WhichTopic].szFileName, NPCInfo, szIndex) == true) {
 			// player killed while fighting, quit
 			break;
 		}
@@ -350,18 +350,18 @@ void NPC_ChatNPC(char *szIndex)
 	(void)szKeys;
 }
 
-void ChatVillagers(_INT16 WhichMenu)
+void ChatVillagers(int16_t WhichMenu)
 {
 	struct NPCInfo *NPCInfo;
 	char *pszNPCIndex[MAX_NPCS], szString[80];
 	char *pszNPCNames[MAX_NPCS], cInput, szKeys[MAX_NPCS + 4];
-	_INT16 CurNPC, NPCsFound = 0, CurFile;
-	long Offset;
+	int16_t CurNPC, NPCsFound = 0, CurFile;
+	int32_t Offset;
 	struct FileHeader FileHeader;
 	struct NPCNdx NPCNdx;
 
 	/* if all guys dead, tell guy can't fight */
-	if (NumMembers(PClan, TRUE) == 0) {
+	if (NumMembers(PClan, true) == 0) {
 		rputs(ST_FIGHT0);
 		return;
 	}
@@ -388,7 +388,7 @@ void ChatVillagers(_INT16 WhichMenu)
 		if (!FileHeader.fp)  break;      // couldn't open file, break
 
 		for (CurNPC = 0;; CurNPC++) {
-			Offset = (long)CurNPC*sizeof(struct NPCInfo) + FileHeader.lStart;
+			Offset = (int32_t)CurNPC*sizeof(struct NPCInfo) + FileHeader.lStart;
 
 			if (Offset >= FileHeader.lEnd)
 				break;
@@ -484,7 +484,7 @@ void ChatVillagers(_INT16 WhichMenu)
 
 void NPC_ResetNPCClan(struct clan *NPCClan)
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	// free up enemies found
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
@@ -498,12 +498,12 @@ void NPC_ResetNPCClan(struct clan *NPCClan)
 		NPCClan->Member[iTemp] = NULL;
 
 	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++)
-		NPCClan->Items[iTemp].Available = FALSE;
+		NPCClan->Items[iTemp].Available = false;
 }
 
-void NPC_GetNPC(struct pc *NPC, char *szFileName, _INT16 WhichNPC)
+void NPC_GetNPC(struct pc *NPC, char *szFileName, int16_t WhichNPC)
 {
-	long Offset;
+	int32_t Offset;
 	struct FileHeader FileHeader;
 
 	MyOpen(szFileName, "rb", &FileHeader);
@@ -511,7 +511,7 @@ void NPC_GetNPC(struct pc *NPC, char *szFileName, _INT16 WhichNPC)
 		DisplayStr("Error finding NPC file.\n");
 		return;
 	}
-	Offset = (long)WhichNPC * (long)sizeof(struct pc) + (long)sizeof(_INT16)*MAX_MONSTERS +
+	Offset = (int32_t)WhichNPC * (int32_t)sizeof(struct pc) + (int32_t)sizeof(int16_t)*MAX_MONSTERS +
 			 FileHeader.lStart;
 	fseek(FileHeader.fp, Offset, SEEK_SET);
 	fread(NPC, sizeof(struct pc), 1, FileHeader.fp);
@@ -524,10 +524,10 @@ void NPC_AddNPCMember(char *szIndex)
 	struct pc *TmpPC;
 	struct NPCInfo *NPCInfo;
 	struct NPCNdx NPCNdx;
-	_INT16 EmptySlot, CurFile, CurNPC, iTemp, WhichNPC;
-	BOOL FoundNPC = FALSE;
+	int16_t EmptySlot, CurFile, CurNPC, iTemp, WhichNPC;
+	bool FoundNPC = false;
 	FILE *fpNPCDat, *fpNPCNdx;
-	long SeekOffset;
+	int32_t SeekOffset;
 	struct FileHeader FileHeader, PCFile;
 
 	// This function ASSUMES the user has an empty slot already!!
@@ -555,7 +555,7 @@ void NPC_AddNPCMember(char *szIndex)
 
 		/* find him in the file */
 		for (CurNPC = 0; ; CurNPC++) {
-			SeekOffset = (long)CurNPC * (long)sizeof(struct NPCInfo) +
+			SeekOffset = (int32_t)CurNPC * (int32_t)sizeof(struct NPCInfo) +
 						 FileHeader.lStart;
 
 			if (SeekOffset >= FileHeader.lEnd)
@@ -569,7 +569,7 @@ void NPC_AddNPCMember(char *szIndex)
 			// one we want?
 			if (stricmp(NPCInfo->szIndex, szIndex) == 0) {
 				// yes
-				FoundNPC = TRUE;
+				FoundNPC = true;
 				break;
 			}
 		}
@@ -578,7 +578,7 @@ void NPC_AddNPCMember(char *szIndex)
 		if (FoundNPC)  break;
 	}
 
-	if (FoundNPC == FALSE) {
+	if (FoundNPC == false) {
 		rputs("NPC not found\n");
 		free(NPCInfo);
 		return;
@@ -586,7 +586,7 @@ void NPC_AddNPCMember(char *szIndex)
 
 	NPC_GetNPCNdx(NPCInfo, &NPCNdx);
 
-	NPCNdx.InClan = TRUE;
+	NPCNdx.InClan = true;
 	NPCNdx.ClanID[0] = PClan->ClanID[0];
 	NPCNdx.ClanID[1] = PClan->ClanID[1];
 
@@ -602,7 +602,7 @@ void NPC_AddNPCMember(char *szIndex)
 	CheckMem(TmpPC);
 
 	// seek to it but make sure you skip the monster index at start of pc file
-	SeekOffset = (long)NPCInfo->NPCPCIndex * (long)sizeof(struct pc) + (long)sizeof(_INT16)*MAX_MONSTERS
+	SeekOffset = (int32_t)NPCInfo->NPCPCIndex * (int32_t)sizeof(struct pc) + (int32_t)sizeof(int16_t)*MAX_MONSTERS
 				 + PCFile.lStart;
 	fseek(PCFile.fp, SeekOffset, SEEK_SET);
 

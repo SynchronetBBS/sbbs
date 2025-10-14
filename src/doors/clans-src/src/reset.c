@@ -85,25 +85,25 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 char get_answer(char *szAllowableChars);
-void qputs(char *string, _INT16 x, _INT16 y);
-void xputs(char *string, _INT16 x, _INT16 y);
+void qputs(char *string, int16_t x, int16_t y);
+void xputs(char *string, int16_t x, int16_t y);
 
 #ifndef USE_STDIO
 void Video_Init(void);
 #endif
 
-void ResetMenu(BOOL InterBBSGame);
+void ResetMenu(bool InterBBSGame);
 void zputs(char *string);
 
-_INT16 NoYes(char *Query);
-_INT16 YesNo(char *Query);
+int16_t NoYes(char *Query);
+int16_t YesNo(char *Query);
 
-void EditOption(_INT16 WhichOption);
+void EditOption(int16_t WhichOption);
 void DosHelp(char *Topic, char *File);
 
 #ifndef USE_STDIO
-long DosGetLong(char *Prompt, long DefaultVal, long Maximum);
-void DosGetStr(char *InputStr, _INT16 MaxChars);
+int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum);
+void DosGetStr(char *InputStr, int16_t MaxChars);
 #endif
 
 #ifdef __unix__
@@ -111,8 +111,8 @@ void set_attrs(unsigned short int attribute);
 short curses_color(short color);
 #endif
 
-void ColorArea(_INT16 xPos1, _INT16 yPos1, _INT16 xPos2, _INT16 yPos2, char Color);
-void GoReset(struct ResetData *ResetData, _INT16 Option);
+void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color);
+void GoReset(struct ResetData *ResetData, int16_t Option);
 
 void Config_Init(void);
 void Config_Close(void);
@@ -128,15 +128,15 @@ void System_Error(char *szErrorMsg);
 void UpdateOption(char Option);
 
 struct {
-	long VideoType;
-	long y_lookup[25];
+	int32_t VideoType;
+	int32_t y_lookup[25];
 	char FAR *VideoMem;
 } Video;
 
 struct ResetData ResetData;
 
 struct config *Config;
-struct game Game = { FALSE, NULL };
+struct game Game = { false, NULL };
 
 char szTodaysDate[11];
 
@@ -145,7 +145,7 @@ char szTodaysDate[11];
 #if defined(_WIN32)
 void gotoxy(int x, int y);
 void clrscr(void);
-void settextattr(WORD);
+void settextattr(uint16_t);
 void * save_screen(void);
 void restore_screen(void *);
 
@@ -154,7 +154,7 @@ typedef void * SCREENSTATE;
 WINDOW *savedwin;
 void gotoxy(int x, int y);
 void clrscr(void);
-void settextattr(WORD);
+void settextattr(uint16_t);
 void save_screen(void);
 void restore_screen(void);
 
@@ -202,7 +202,7 @@ int main(void)
 #ifdef _WIN32
 	SetConsoleTextAttribute(
 		GetStdHandle(STD_OUTPUT_HANDLE),
-		(WORD)7);
+		(uint16_t)7);
 #endif
 #ifdef __unix__
 	curs_set(1);
@@ -210,19 +210,19 @@ int main(void)
 	return (0);
 }
 
-char *StrYesNo(BOOL value)
+char *StrYesNo(bool value)
 {
-	if (value == TRUE)
+	if (value == true)
 		return "Yes";
 	return "No";
 }
 
-void ResetMenu(BOOL InterBBSGame)
+void ResetMenu(bool InterBBSGame)
 {
 #ifdef USE_STDIO
 	char szString[50];
-	BOOL Quit = FALSE, DidReset = FALSE, InterBBS = FALSE;
-	_INT16 iTemp, CurOption;
+	bool Quit = false, DidReset = false, InterBBS = false;
+	int16_t iTemp, CurOption;
 
 	/* show options */
 
@@ -231,12 +231,12 @@ void ResetMenu(BOOL InterBBSGame)
 	strcpy(ResetData.szLastJoinDate,  "12/16/2199");
 	strcpy(ResetData.szVillageName,  "The Village");
 	ResetData.InterBBSGame = Config->InterBBS;
-	ResetData.LeagueWide = FALSE;
-	ResetData.InProgress = FALSE;
-	ResetData.EliminationMode = FALSE;
-	ResetData.ClanTravel = TRUE;
+	ResetData.LeagueWide = false;
+	ResetData.InProgress = false;
+	ResetData.EliminationMode = false;
+	ResetData.ClanTravel = true;
 	ResetData.LostDays = 3;
-	ResetData.ClanEmpires = TRUE;
+	ResetData.ClanEmpires = true;
 	ResetData.MineFights = FIGHTSPERDAY;
 	ResetData.ClanFights = CLANCOMBATADAY;
 	ResetData.DaysOfProtection = 4;
@@ -281,8 +281,8 @@ void ResetMenu(BOOL InterBBSGame)
 		}
 
 		if (CurOption == MAX_OPTION) {
-			Quit = TRUE;
-			DidReset = FALSE;
+			Quit = true;
+			DidReset = false;
 		}
 		else if (CurOption == (MAX_OPTION-3)) {
 			// can't reset locally here
@@ -296,8 +296,8 @@ void ResetMenu(BOOL InterBBSGame)
 			}
 
 			GoReset(&ResetData, RESET_LOCAL);
-			Quit = TRUE;
-			DidReset = TRUE;
+			Quit = true;
+			DidReset = true;
 		}
 		else if (CurOption == (MAX_OPTION-2)) {
 			// ask one last time, are you sure?
@@ -306,12 +306,12 @@ void ResetMenu(BOOL InterBBSGame)
 				break;
 			}
 			/* join league NOT in progress */
-			ResetData.LeagueWide = TRUE;
-			ResetData.InProgress = FALSE;
+			ResetData.LeagueWide = true;
+			ResetData.InProgress = false;
 			GoReset(&ResetData, RESET_JOINIBBS);
-			Quit = TRUE;
-			DidReset = TRUE;
-			InterBBS = TRUE;
+			Quit = true;
+			DidReset = true;
+			InterBBS = true;
 		}
 		else if (CurOption == (MAX_OPTION-1)) {
 			// ask one last time, are you sure?
@@ -320,11 +320,11 @@ void ResetMenu(BOOL InterBBSGame)
 				break;
 			}
 			/* leaguewide reset now */
-			ResetData.LeagueWide = TRUE;
+			ResetData.LeagueWide = true;
 			GoReset(&ResetData, RESET_LC);
-			Quit = TRUE;
-			DidReset = TRUE;
-			InterBBS = TRUE;
+			Quit = true;
+			DidReset = true;
+			InterBBS = true;
 		}
 		else
 			EditOption(CurOption);
@@ -344,8 +344,8 @@ void ResetMenu(BOOL InterBBSGame)
 	char CurOption = 0;
 	GETCH_TYPE  cInput;
 	char OldOption = -1;
-	BOOL Quit = FALSE, DidReset = FALSE, InterBBS = FALSE;
-//  _INT16 iTemp;
+	bool Quit = false, DidReset = false, InterBBS = false;
+//  int16_t iTemp;
 
 	/* clear all */
 	clrscr();
@@ -380,12 +380,12 @@ void ResetMenu(BOOL InterBBSGame)
 	strcpy(ResetData.szLastJoinDate,  "12/16/2199");
 	strcpy(ResetData.szVillageName,  "The Village");
 	ResetData.InterBBSGame = Config->InterBBS;
-	ResetData.LeagueWide = FALSE;
-	ResetData.InProgress = FALSE;
-	ResetData.EliminationMode = FALSE;
-	ResetData.ClanTravel = TRUE;
+	ResetData.LeagueWide = false;
+	ResetData.InProgress = false;
+	ResetData.EliminationMode = false;
+	ResetData.ClanTravel = true;
 	ResetData.LostDays = 3;
-	ResetData.ClanEmpires = TRUE;
+	ResetData.ClanEmpires = true;
 	ResetData.MineFights = FIGHTSPERDAY;
 	ResetData.ClanFights = CLANCOMBATADAY;
 	ResetData.DaysOfProtection = 4;
@@ -417,7 +417,7 @@ void ResetMenu(BOOL InterBBSGame)
 	}
 
 #if defined(_WIN32) || defined (__unix__)
-	settextattr((WORD)15);
+	settextattr((uint16_t)15);
 #endif
 	/* show data */
 	UpdateOption(0);
@@ -435,10 +435,10 @@ void ResetMenu(BOOL InterBBSGame)
 	while (!Quit) {
 		if (OldOption != CurOption) {
 			if (OldOption != -1)
-				ColorArea(0, (_INT16)(OldOption+2), 39, (_INT16)(OldOption+2), 7);
+				ColorArea(0, (int16_t)(OldOption+2), 39, (int16_t)(OldOption+2), 7);
 			OldOption = CurOption;
 			/* show which is highlighted */
-			ColorArea(0, (_INT16)(CurOption+2), 39, (_INT16)(CurOption+2), HILIGHT);
+			ColorArea(0, (int16_t)(CurOption+2), 39, (int16_t)(CurOption+2), HILIGHT);
 			/* Unhighlight old option */
 		}
 
@@ -463,7 +463,7 @@ void ResetMenu(BOOL InterBBSGame)
 						CurOption--;
 					if ((CurOption == (MAX_OPTION-1)) && (Config->BBSID != 1))
 						CurOption--;
-					if ((CurOption == (MAX_OPTION-2)) && ((Config->InterBBS == FALSE) || (Config->BBSID == 1)))
+					if ((CurOption == (MAX_OPTION-2)) && ((Config->InterBBS == false) || (Config->BBSID == 1)))
 						CurOption--;
 					if ((CurOption == (MAX_OPTION-3)) && Config->InterBBS)
 						CurOption--;
@@ -476,7 +476,7 @@ void ResetMenu(BOOL InterBBSGame)
 						CurOption++;
 					if ((CurOption == (MAX_OPTION-3)) && Config->InterBBS)
 						CurOption++;
-					if ((CurOption == (MAX_OPTION-2)) && ((Config->InterBBS == FALSE) || (Config->BBSID == 1)))
+					if ((CurOption == (MAX_OPTION-2)) && ((Config->InterBBS == false) || (Config->BBSID == 1)))
 						CurOption++;
 					if ((CurOption == (MAX_OPTION-1)) && (Config->BBSID != 1))
 						CurOption++;
@@ -492,9 +492,9 @@ void ResetMenu(BOOL InterBBSGame)
 			}
 		}
 		else if (cInput == 0x1B)
-			Quit = TRUE;
+			Quit = true;
 		else if (cInput == 13) {
-			if (Config->InterBBS == FALSE && CurOption >= (MAX_OPTION-2) &&
+			if (Config->InterBBS == false && CurOption >= (MAX_OPTION-2) &&
 					CurOption < MAX_OPTION)
 				continue;
 			else if (Config->BBSID == 1 && Config->InterBBS && CurOption == (MAX_OPTION-2))
@@ -504,8 +504,8 @@ void ResetMenu(BOOL InterBBSGame)
 			}
 
 			if (CurOption == MAX_OPTION) {
-				Quit = TRUE;
-				DidReset = FALSE;
+				Quit = true;
+				DidReset = false;
 			}
 			else if (CurOption == (MAX_OPTION-3)) {
 #if defined(_WIN32)
@@ -534,8 +534,8 @@ void ResetMenu(BOOL InterBBSGame)
 				}
 
 				GoReset(&ResetData, RESET_LOCAL);
-				Quit = TRUE;
-				DidReset = TRUE;
+				Quit = true;
+				DidReset = true;
 #if defined(_WIN32)
 				restore_screen(screen_state);
 				break;
@@ -563,12 +563,12 @@ void ResetMenu(BOOL InterBBSGame)
 					break;
 				}
 				/* join league NOT in progress */
-				ResetData.LeagueWide = TRUE;
-				ResetData.InProgress = FALSE;
+				ResetData.LeagueWide = true;
+				ResetData.InProgress = false;
 				GoReset(&ResetData, RESET_JOINIBBS);
-				Quit = TRUE;
-				DidReset = TRUE;
-				InterBBS = TRUE;
+				Quit = true;
+				DidReset = true;
+				InterBBS = true;
 #if defined(_WIN32)
 				restore_screen(screen_state);
 #elif defined(__unix__)
@@ -593,11 +593,11 @@ void ResetMenu(BOOL InterBBSGame)
 					break;
 				}
 				/* leaguewide reset now */
-				ResetData.LeagueWide = TRUE;
+				ResetData.LeagueWide = true;
 				GoReset(&ResetData, RESET_LC);
-				Quit = TRUE;
-				DidReset = TRUE;
-				InterBBS = TRUE;
+				Quit = true;
+				DidReset = true;
+				InterBBS = true;
 #if defined(_WIN32)
 				restore_screen(screen_state);
 #elif defined(__unix__)
@@ -643,14 +643,14 @@ void CheckMem(void *Test)
 // ------------------------------------------------------------------------- //
 
 #ifndef USE_STDIO
-void qputs(char *string, _INT16 x, _INT16 y)
+void qputs(char *string, int16_t x, int16_t y)
 {
 #if defined(__MSDOS__)
 	char number[3];
-	_INT16 cur_char, attr;
+	int16_t cur_char, attr;
 	char foreground, background, cur_attr;
 	static o_fg = 7, o_bg = 0;
-	_INT16 i, j;
+	int16_t i, j;
 
 	cur_attr = o_fg | o_bg;
 	cur_char=0;
@@ -682,8 +682,8 @@ void qputs(char *string, _INT16 x, _INT16 y)
 				cur_char += 3;
 			}
 			else  {
-				Video.VideoMem[(long)(Video.y_lookup[(long) y]+ (long)(x<<1))] = string[cur_char];
-				Video.VideoMem[(long)(Video.y_lookup[(long) y]+ (long)(x<<1) + 1L)] = cur_attr;
+				Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1))] = string[cur_char];
+				Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1) + 1L)] = cur_attr;
 
 				cur_char++;
 				x++;
@@ -721,7 +721,7 @@ void qputs(char *string, _INT16 x, _INT16 y)
 
 
 // ------------------------------------------------------------------------- //
-long Video_VideoType(void)
+int32_t Video_VideoType(void)
 {
 	return Video.VideoType;
 }
@@ -731,7 +731,7 @@ long Video_VideoType(void)
 char FAR *vid_address(void)
 {
 #ifdef __MSDOS__
-	_INT16 tmp1, tmp2;
+	int16_t tmp1, tmp2;
 	asm {
 		mov bx,0040h
 		mov es,bx
@@ -776,7 +776,7 @@ void ScrollUp(void)
 		mov dl, 79  // ending column
 		mov bh, 7   // color
 		mov ah, 6
-		_INT16 10h     // do the scroll
+		int16_t 10h     // do the scroll
 	}
 #elif defined(_WIN32)
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
@@ -803,9 +803,9 @@ void ScrollUp(void)
 		top_left,
 		&char_info);
 #elif defined(__unix__)
-	scrollok(stdscr,TRUE);
+	scrollok(stdscr,true);
 	scrl(1);
-	scrollok(stdscr,FALSE);
+	scrollok(stdscr,false);
 #endif
 }
 
@@ -814,7 +814,7 @@ void ScrollUp(void)
 void Video_Init(void)
 {
 #ifdef __MSDOS__
-	_INT16 iTemp;
+	int16_t iTemp;
 	Video.VideoMem = vid_address();
 	for (iTemp = 0; iTemp < 25;  iTemp++)
 		Video.y_lookup[ iTemp ] = iTemp * 160;
@@ -828,9 +828,9 @@ void Video_Init(void)
 	cbreak();
 	noecho();
 	nonl();
-//      intrflush(stdscr, FALSE);
-	keypad(stdscr, TRUE);
-	scrollok(stdscr,FALSE);
+//      intrflush(stdscr, false);
+	keypad(stdscr, true);
+	scrollok(stdscr,false);
 	start_color();
 	curs_set(0);
 	clear();
@@ -887,7 +887,7 @@ short curses_color(short color)
 }
 #endif
 
-void xputs(char *string, _INT16 x, _INT16 y)
+void xputs(char *string, int16_t x, int16_t y)
 {
 #ifdef __MSDOS__
 	char FAR *VidPtr;
@@ -915,7 +915,7 @@ void xputs(char *string, _INT16 x, _INT16 y)
 }
 #endif
 
-_INT16 YesNo(char *Query)
+int16_t YesNo(char *Query)
 {
 #ifdef USE_STDIO
 	char answer[129];
@@ -947,7 +947,7 @@ _INT16 YesNo(char *Query)
 #endif
 }
 
-_INT16 NoYes(char *Query)
+int16_t NoYes(char *Query)
 {
 #ifdef USE_STDIO
 	char answer[129];
@@ -983,17 +983,17 @@ void zputs(char *string)
 {
 #ifndef USE_STDIO
 	char number[3];
-	_INT16 cur_char, attr;
+	int16_t cur_char, attr;
 	char foreground, background, cur_attr;
-	_INT16 i, j,  x,y;
-	_INT16 scr_lines = 25, scr_width = 80;
+	int16_t i, j,  x,y;
+	int16_t scr_lines = 25, scr_width = 80;
 #ifdef __MSDOS__
 	struct text_info TextInfo;
 #elif defined(_WIN32)
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	COORD cursor_pos;
 	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	DWORD bytes_written;
+	uint32_t bytes_written;
 	TCHAR space_char = (TCHAR)' ';
 #endif
 	static char o_fg = 7, o_bg = 0;
@@ -1076,10 +1076,10 @@ void zputs(char *string)
 			}
 			else {
 #ifdef __MSDOS__
-				Video.VideoMem[(long)(Video.y_lookup[(long) y]+ (long)(x<<1))] = string[cur_char];
-				Video.VideoMem[(long)(Video.y_lookup[(long) y]+ (long)(x<<1) + 1L)] = cur_attr;
+				Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1))] = string[cur_char];
+				Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1) + 1L)] = cur_attr;
 #elif defined(_WIN32)
-				SetConsoleTextAttribute(std_handle, (WORD)cur_attr);
+				SetConsoleTextAttribute(std_handle, (uint16_t)cur_attr);
 				WriteConsole(std_handle, &string[cur_char], 1, &bytes_written, NULL);
 #elif defined(__unix__)
 				set_attrs(cur_attr);
@@ -1109,7 +1109,7 @@ void zputs(char *string)
 				Video.VideoMem[ Video.y_lookup[y]+(j<<1)] = ' ';
 				Video.VideoMem[ Video.y_lookup[y]+(j<<1) + 1] = cur_attr;
 #elif defined(_WIN32)
-				SetConsoleTextAttribute(std_handle, (WORD)cur_attr);
+				SetConsoleTextAttribute(std_handle, (uint16_t)cur_attr);
 				WriteConsole(std_handle, &space_char, 1, &bytes_written, NULL);
 #elif defined(__unix__)
 				set_attrs(cur_attr);
@@ -1123,7 +1123,7 @@ void zputs(char *string)
 			Video.VideoMem[ Video.y_lookup[y]+(x<<1)] = string[cur_char];
 			Video.VideoMem[ Video.y_lookup[y]+(x<<1) + 1] = cur_attr;
 #elif defined(_WIN32)
-			SetConsoleTextAttribute(std_handle, (WORD)cur_attr);
+			SetConsoleTextAttribute(std_handle, (uint16_t)cur_attr);
 			WriteConsole(std_handle, &string[cur_char], 1, &bytes_written, NULL);
 #elif defined(__unix__)
 			set_attrs(cur_attr);
@@ -1163,7 +1163,7 @@ void set_attrs(unsigned short int attribute)
 char get_answer(char *szAllowableChars)
 {
 	GETCH_TYPE cKey;
-	WORD iTemp;
+	uint16_t iTemp;
 
 	for (;;) {
 		cKey = getch();
@@ -1184,7 +1184,7 @@ char get_answer(char *szAllowableChars)
 }
 #endif
 
-void EditOption(_INT16 WhichOption)
+void EditOption(int16_t WhichOption)
 {
 #ifdef USE_STDIO
 	char *aszHelp[11] = {
@@ -1200,7 +1200,7 @@ void EditOption(_INT16 WhichOption)
 		"Max Permanent Members",
 		"Days Of Protection"
 	};
-	_INT16 Month, Day, Year;
+	int16_t Month, Day, Year;
 
 	printf("\n\n");
 
@@ -1240,18 +1240,18 @@ void EditOption(_INT16 WhichOption)
 		case 3 :    /* elimination mode? */
 			printf("\n");
 			if (YesNo("Setup elimination mode?") == YES) {
-				ResetData.EliminationMode = TRUE;
+				ResetData.EliminationMode = true;
 			}
 			else
-				ResetData.EliminationMode = FALSE;
+				ResetData.EliminationMode = false;
 			break;
 		case 4 :    /* clan travel? */
 			printf("\n");
 			if (YesNo("Allow clans to travel?") == YES) {
-				ResetData.ClanTravel = TRUE;
+				ResetData.ClanTravel = true;
 			}
 			else
-				ResetData.ClanTravel = FALSE;
+				ResetData.ClanTravel = false;
 			break;
 		case 5 :    /* days before lost troops return */
 			printf("\n");
@@ -1261,10 +1261,10 @@ void EditOption(_INT16 WhichOption)
 		case 6 :    /* clan empires? */
 			printf("\n");
 			if (YesNo("Allow clans to create empires?") == YES) {
-				ResetData.ClanEmpires = TRUE;
+				ResetData.ClanEmpires = true;
 			}
 			else
-				ResetData.ClanEmpires = FALSE;
+				ResetData.ClanEmpires = false;
 			break;
 		case 7 :    /* mine fights */
 			printf("\n");
@@ -1303,7 +1303,7 @@ void EditOption(_INT16 WhichOption)
 		"Max Permanent Members",
 		"Days Of Protection"
 	};
-	_INT16 Month, Day, Year;
+	int16_t Month, Day, Year;
 
 	/* save screen */
 #ifdef __MSDOS__
@@ -1328,17 +1328,17 @@ void EditOption(_INT16 WhichOption)
 	switch (WhichOption) {
 		case 0 :    /* dategame started */
 			gotoxy(1,15);
-			Month = (_INT16)DosGetLong("|07Enter Month", atoi(ResetData.szDateGameStart), 12);
-			Day = (_INT16)DosGetLong("|07Enter Day", atoi(&ResetData.szDateGameStart[3]), 31);
-			Year = (_INT16)DosGetLong("|07Enter Year", atoi(&ResetData.szDateGameStart[6]), 2500);
+			Month = (int16_t)DosGetLong("|07Enter Month", atoi(ResetData.szDateGameStart), 12);
+			Day = (int16_t)DosGetLong("|07Enter Day", atoi(&ResetData.szDateGameStart[3]), 31);
+			Year = (int16_t)DosGetLong("|07Enter Year", atoi(&ResetData.szDateGameStart[6]), 2500);
 
 			sprintf(ResetData.szDateGameStart, "%02d/%02d/%4d", Month, Day, Year);
 			break;
 		case 1 :    /* last join date */
 			gotoxy(1,15);
-			Month = (_INT16)DosGetLong("|07Enter Month", atoi(ResetData.szLastJoinDate), 12);
-			Day = (_INT16)DosGetLong("|07Enter Day", atoi(&ResetData.szLastJoinDate[3]), 31);
-			Year = (_INT16)DosGetLong("|07Enter Year", atoi(&ResetData.szLastJoinDate[6]), 2500);
+			Month = (int16_t)DosGetLong("|07Enter Month", atoi(ResetData.szLastJoinDate), 12);
+			Day = (int16_t)DosGetLong("|07Enter Day", atoi(&ResetData.szLastJoinDate[3]), 31);
+			Year = (int16_t)DosGetLong("|07Enter Year", atoi(&ResetData.szLastJoinDate[6]), 2500);
 
 			sprintf(ResetData.szLastJoinDate, "%02d/%02d/%4d", Month, Day, Year);
 			break;
@@ -1350,48 +1350,48 @@ void EditOption(_INT16 WhichOption)
 		case 3 :    /* elimination mode? */
 			gotoxy(1,15);
 			if (YesNo("|07Setup elimination mode?") == YES) {
-				ResetData.EliminationMode = TRUE;
+				ResetData.EliminationMode = true;
 			}
 			else
-				ResetData.EliminationMode = FALSE;
+				ResetData.EliminationMode = false;
 			break;
 		case 4 :    /* clan travel? */
 			gotoxy(1,15);
 			if (YesNo("|07Allow clans to travel?") == YES) {
-				ResetData.ClanTravel = TRUE;
+				ResetData.ClanTravel = true;
 			}
 			else
-				ResetData.ClanTravel = FALSE;
+				ResetData.ClanTravel = false;
 			break;
 		case 5 :    /* days before lost troops return */
 			gotoxy(1,15);
-			ResetData.LostDays = (_INT16)DosGetLong("|07Days before lost troops/clans returned?", ResetData.LostDays, 14);
+			ResetData.LostDays = (int16_t)DosGetLong("|07Days before lost troops/clans returned?", ResetData.LostDays, 14);
 			break;
 		case 6 :    /* clan empires? */
 			gotoxy(1,15);
 			if (YesNo("|07Allow clans to create empires?") == YES) {
-				ResetData.ClanEmpires = TRUE;
+				ResetData.ClanEmpires = true;
 			}
 			else
-				ResetData.ClanEmpires = FALSE;
+				ResetData.ClanEmpires = false;
 			break;
 		case 7 :    /* mine fights */
 			gotoxy(1,15);
-			ResetData.MineFights = (_INT16)DosGetLong("|07How many mine fights per day?", ResetData.MineFights, 50);
+			ResetData.MineFights = (int16_t)DosGetLong("|07How many mine fights per day?", ResetData.MineFights, 50);
 			break;
 		case 8 :    /* clan combat */
 			gotoxy(1,15);
-			ResetData.ClanFights = (_INT16)DosGetLong("|07How many clan fights per day?", ResetData.ClanFights, MAX_CLANCOMBAT);
+			ResetData.ClanFights = (int16_t)DosGetLong("|07How many clan fights per day?", ResetData.ClanFights, MAX_CLANCOMBAT);
 			break;
 		case 9 :    /* max permanent clan members */
 			gotoxy(1,15);
-			ResetData.MaxPermanentMembers = (_INT16)DosGetLong("|07How many members?", ResetData.MaxPermanentMembers, 6);
+			ResetData.MaxPermanentMembers = (int16_t)DosGetLong("|07How many members?", ResetData.MaxPermanentMembers, 6);
 			if (ResetData.MaxPermanentMembers == 0)
 				ResetData.MaxPermanentMembers = 1;
 			break;
 		case 10:    /* days of protection */
 			gotoxy(1,15);
-			ResetData.DaysOfProtection = (_INT16)DosGetLong("|07How many days?", ResetData.DaysOfProtection, 16);
+			ResetData.DaysOfProtection = (int16_t)DosGetLong("|07How many days?", ResetData.DaysOfProtection, 16);
 			break;
 	}
 
@@ -1413,9 +1413,9 @@ void DosHelp(char *Topic, char *File)
 {
 #ifdef USE_STDIO
 	char *Lines[22], string[155];
-	_INT16 cTemp, Found = FALSE, CurLine, NumLines;
+	int16_t cTemp, Found = false, CurLine, NumLines;
 	FILE *fp;
-	BOOL EndOfTopic = FALSE;
+	bool EndOfTopic = false;
 
 	printf("\n");
 	printf("%s\n",Topic);
@@ -1443,19 +1443,19 @@ void DosHelp(char *Topic, char *File)
 		if (string[0] == '^') {
 			/* see if topic is correct */
 			if (strspn(&string[1], Topic) == strlen(Topic)) {
-				Found = TRUE;
+				Found = true;
 			}
 		}
 	}
 
-	while (EndOfTopic == FALSE) {
+	while (EndOfTopic == false) {
 		/* read in up to 22 lines */
 		for (CurLine = 0; CurLine < 22; CurLine++) {
 			fgets(Lines[CurLine], 355, fp);
 
 			if (Lines[CurLine][0] == '^') {
 				if (strspn(&Lines[CurLine][1], "END") == 3) {
-					EndOfTopic = TRUE;
+					EndOfTopic = true;
 					break;
 				}
 			}
@@ -1475,9 +1475,9 @@ void DosHelp(char *Topic, char *File)
 		free(Lines[cTemp]);
 #else
 	char *Lines[22], string[155];
-	_INT16 cTemp, Found = FALSE, CurLine, NumLines;
+	int16_t cTemp, Found = false, CurLine, NumLines;
 	FILE *fp;
-	BOOL EndOfTopic = FALSE;
+	bool EndOfTopic = false;
 
 	qputs("|15", 0, 0);
 	qputs(Topic, 1, 0);
@@ -1507,19 +1507,19 @@ void DosHelp(char *Topic, char *File)
 		if (string[0] == '^') {
 			/* see if topic is correct */
 			if (strspn(&string[1], Topic) == strlen(Topic)) {
-				Found = TRUE;
+				Found = true;
 			}
 		}
 	}
 
-	while (EndOfTopic == FALSE) {
+	while (EndOfTopic == false) {
 		/* read in up to 22 lines */
 		for (CurLine = 0; CurLine < 22; CurLine++) {
 			fgets(Lines[CurLine], 355, fp);
 
 			if (Lines[CurLine][0] == '^') {
 				if (strspn(&Lines[CurLine][1], "END") == 3) {
-					EndOfTopic = TRUE;
+					EndOfTopic = true;
 					break;
 				}
 			}
@@ -1528,7 +1528,7 @@ void DosHelp(char *Topic, char *File)
 
 		/* display it */
 		for (CurLine = 0; CurLine < NumLines; CurLine++) {
-			qputs(Lines[CurLine], 0, (_INT16)(CurLine+2));
+			qputs(Lines[CurLine], 0, (int16_t)(CurLine+2));
 		}
 	}
 
@@ -1541,18 +1541,18 @@ void DosHelp(char *Topic, char *File)
 }
 
 #ifndef USE_STDIO
-long DosGetLong(char *Prompt, long DefaultVal, long Maximum)
+int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 {
 	char string[255], NumString[13], DefMax[40];
 	GETCH_TYPE InputChar;
-	_INT16 NumDigits, CurDigit = 0, cTemp;
-	long TenPower;
+	int16_t NumDigits, CurDigit = 0, cTemp;
+	int32_t TenPower;
 
 	/* init screen */
 	zputs(" ");
 	zputs(Prompt);
 
-	sprintf(DefMax, " |01(|15%ld|07; %ld|01) |11", DefaultVal, Maximum);
+	sprintf(DefMax, " |01(|15%" PRId32 "|07; %" PRId32 "|01) |11", DefaultVal, Maximum);
 	zputs(DefMax);
 
 	/* NumDigits contains amount of digits allowed using max. value input */
@@ -1594,7 +1594,7 @@ long DosGetLong(char *Prompt, long DefaultVal, long Maximum)
 			for (cTemp = 0; cTemp < CurDigit; cTemp++)
 				zputs("\b \b");
 
-			sprintf(string, "%-ld", Maximum);
+			sprintf(string, "%-" PRId32, Maximum);
 			string[NumDigits] = 0;
 			zputs(string);
 
@@ -1613,7 +1613,7 @@ long DosGetLong(char *Prompt, long DefaultVal, long Maximum)
 		}
 		else if (InputChar == '\r' || InputChar == '\n') {
 			if (CurDigit == 0) {
-				sprintf(string, "%-ld", DefaultVal);
+				sprintf(string, "%-" PRId32, DefaultVal);
 				string[NumDigits] = 0;
 				zputs(string);
 
@@ -1629,7 +1629,7 @@ long DosGetLong(char *Prompt, long DefaultVal, long Maximum)
 				for (cTemp = 0; cTemp < CurDigit; cTemp++)
 					zputs("\b \b");
 
-				sprintf(string, "%-ld", Maximum);
+				sprintf(string, "%-" PRId32, Maximum);
 				string[NumDigits] = 0;
 				zputs(string);
 
@@ -1647,9 +1647,9 @@ long DosGetLong(char *Prompt, long DefaultVal, long Maximum)
 }
 
 
-void DosGetStr(char *InputStr, _INT16 MaxChars)
+void DosGetStr(char *InputStr, int16_t MaxChars)
 {
-	_INT16 CurChar;
+	int16_t CurChar;
 	GETCH_TYPE InputCh;
 	char Spaces[85] = "                                                                                     ";
 	char BackSpaces[85] = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
@@ -1711,14 +1711,14 @@ void DosGetStr(char *InputStr, _INT16 MaxChars)
 	}
 }
 
-void ColorArea(_INT16 xPos1, _INT16 yPos1, _INT16 xPos2, _INT16 yPos2, char Color)
+void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color)
 {
-	_INT16 x, y;
+	int16_t x, y;
 #ifdef _WIN32
 	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	COORD cursor_pos;
-	DWORD cells_written;
-	WORD line_len;
+	uint32_t cells_written;
+	uint16_t line_len;
 #elif defined(__unix__)
 	chtype this;
 	short attrs = 0;
@@ -1737,7 +1737,7 @@ void ColorArea(_INT16 xPos1, _INT16 yPos1, _INT16 xPos2, _INT16 yPos2, char Colo
 				cursor_pos.Y = y;
 				FillConsoleOutputAttribute(
 					std_handle,
-					(WORD)Color,
+					(uint16_t)Color,
 					line_len,
 					cursor_pos,
 					&cells_written);
@@ -1771,8 +1771,8 @@ void Config_Init(void)
 	char szConfigName[40], szConfigLine[255];
 	char *pcCurrentPos;
 	char szToken[MAX_TOKEN_CHARS + 1];
-	_INT16 iKeyWord;
-//  _INT16 iCurrentNode = 1;
+	int16_t iKeyWord;
+//  int16_t iCurrentNode = 1;
 
 	Config = malloc(sizeof(struct config));
 
@@ -1784,7 +1784,7 @@ void Config_Init(void)
 	strcpy(Config->szScoreFile[1], "scores.ans");
 	Config->szRegcode[0] = 0;
 
-	Config->InterBBS = FALSE;
+	Config->InterBBS = false;
 
 
 	fpConfigFile = _fsopen(szConfigName, "rt", SH_DENYWR);
@@ -1846,7 +1846,7 @@ void Config_Init(void)
 							Config->MailerType = MAIL_OTHER;
 						break;
 					case 14 : /* in a league? */
-						Config->InterBBS = TRUE;
+						Config->InterBBS = true;
 						break;
 				}
 			}
@@ -1867,7 +1867,7 @@ void Config_Close(void)
 }
 
 
-void GoReset(struct ResetData *ResetData, _INT16 Option)
+void GoReset(struct ResetData *ResetData, int16_t Option)
 {
 	FILE *fp;
 	struct game_data Game_Data;
@@ -1905,7 +1905,7 @@ void GoReset(struct ResetData *ResetData, _INT16 Option)
 
 		// create new game.dat file
 		Game_Data.GameState = 1;
-		Game_Data.InterBBS = FALSE;
+		Game_Data.InterBBS = false;
 
 		strcpy(Game_Data.szTodaysDate, szTodaysDate);
 		strcpy(Game_Data.szDateGameStart, ResetData->szDateGameStart);
@@ -1921,7 +1921,7 @@ void GoReset(struct ResetData *ResetData, _INT16 Option)
 		Game_Data.DaysOfProtection = ResetData->DaysOfProtection;
 
 
-		Game_Data.CRC = CRCValue(&Game_Data, sizeof(struct game_data) - sizeof(long));
+		Game_Data.CRC = CRCValue(&Game_Data, sizeof(struct game_data) - sizeof(int32_t));
 
 		fp = fopen("game.dat", "wb");
 		// fwrite(&Game_Data, sizeof(struct game_data), 1, fp);
@@ -1937,7 +1937,7 @@ void GoReset(struct ResetData *ResetData, _INT16 Option)
 	else if (Option == RESET_JOINIBBS) {
 		// create new game.dat file
 		Game_Data.GameState = 2;
-		Game_Data.InterBBS = TRUE;
+		Game_Data.InterBBS = true;
 
 		/* find out date and time for GameId */
 		// initialize date
@@ -1965,7 +1965,7 @@ void GoReset(struct ResetData *ResetData, _INT16 Option)
 		Game_Data.DaysOfProtection = ResetData->DaysOfProtection;
 
 
-		Game_Data.CRC = CRCValue(&Game_Data, sizeof(struct game_data) - sizeof(long));
+		Game_Data.CRC = CRCValue(&Game_Data, sizeof(struct game_data) - sizeof(int32_t));
 
 		fp = fopen("game.dat", "wb");
 		EncryptWrite(&Game_Data, sizeof(struct game_data), fp, XOR_GAME);
@@ -1985,7 +1985,7 @@ void GoReset(struct ResetData *ResetData, _INT16 Option)
 
 		// create game.dat file
 		Game_Data.GameState = 1;
-		Game_Data.InterBBS = TRUE;
+		Game_Data.InterBBS = true;
 
 		/* find out date and time for GameId */
 #ifndef _WIN32
@@ -2012,7 +2012,7 @@ void GoReset(struct ResetData *ResetData, _INT16 Option)
 		Game_Data.DaysOfProtection = ResetData->DaysOfProtection;
 
 
-		Game_Data.CRC = CRCValue(&Game_Data, sizeof(struct game_data) - sizeof(long));
+		Game_Data.CRC = CRCValue(&Game_Data, sizeof(struct game_data) - sizeof(int32_t));
 
 		fp = fopen("game.dat", "wb");
 		EncryptWrite(&Game_Data, sizeof(struct game_data), fp, XOR_GAME);
@@ -2059,15 +2059,15 @@ void News_AddNews(char *szString)
 
 void ClearFlags(char *Flags)
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	for (iTemp = 0; iTemp < 8; iTemp++)
 		Flags[iTemp] = 0;
 }
 
-void InitEmpire(struct empire *Empire, _INT16 UserEmpire)
+void InitEmpire(struct empire *Empire, int16_t UserEmpire)
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	if (UserEmpire)
 		Empire->Land = 100;
@@ -2133,22 +2133,22 @@ void CreateVillageDat(struct ResetData *ResetData)
 	Village_Data.PawnLevel = 0;
 	Village_Data.WizardLevel = 0;
 
-	Village_Data.SetTaxToday = FALSE;
-	Village_Data.SetInterestToday = FALSE;
-	Village_Data.SetGSTToday = FALSE;
-	Village_Data.SetConToday = FALSE;
+	Village_Data.SetTaxToday = false;
+	Village_Data.SetInterestToday = false;
+	Village_Data.SetGSTToday = false;
+	Village_Data.SetConToday = false;
 
-	Village_Data.UpMarketToday = FALSE;
-	Village_Data.UpTHallToday = FALSE;
-	Village_Data.UpChurchToday = FALSE;
-	Village_Data.UpPawnToday = FALSE;
-	Village_Data.UpWizToday = FALSE;
-	Village_Data.ShowEmpireStats = FALSE;
+	Village_Data.UpMarketToday = false;
+	Village_Data.UpTHallToday = false;
+	Village_Data.UpChurchToday = false;
+	Village_Data.UpPawnToday = false;
+	Village_Data.UpWizToday = false;
+	Village_Data.ShowEmpireStats = false;
 
 	ClearFlags(Village_Data.HFlags);
 	ClearFlags(Village_Data.GFlags);
 
-	InitEmpire(&Village_Data.Empire, FALSE);
+	InitEmpire(&Village_Data.Empire, false);
 	strcpy(Village_Data.Empire.szName, Village_Data.szName);
 	Village_Data.Empire.Land = 500;      // village starts off with this
 	Village_Data.Empire.Buildings[B_BARRACKS] = 10;
@@ -2162,7 +2162,7 @@ void CreateVillageDat(struct ResetData *ResetData)
 	Village_Data.CostFluctuation = 5 - RANDOM(11);
 	Village_Data.MarketQuality = MQ_AVERAGE;
 
-	Village_Data.CRC = CRCValue(&Village_Data, sizeof(struct village_data) - sizeof(long));
+	Village_Data.CRC = CRCValue(&Village_Data, sizeof(struct village_data) - sizeof(int32_t));
 
 	fp = fopen("village.dat", "wb");
 	// fwrite(&Village_Data, sizeof(struct village_data), 1, fp);
@@ -2175,7 +2175,7 @@ void CreateVillageDat(struct ResetData *ResetData)
 void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 {
 	FILE *fp;
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	// init alliances as NULLs
 	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
@@ -2202,7 +2202,7 @@ void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 {
 	FILE *fp;
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	fp = fopen("ally.dat", "wb");
 	if (fp) {
@@ -2221,7 +2221,7 @@ void KillAlliances(void)
 {
 	struct Alliance *Alliances[MAX_ALLIANCES];
 	char szFileName[13];
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	GetAlliances(Alliances);
 
@@ -2245,7 +2245,7 @@ void KillAlliances(void)
 	unlink("ally.dat");
 }
 
-char *MakeStr(_INT16 length)
+char *MakeStr(int16_t length)
 /*
  * This returns a pointer to a malloc'd string of length length.
  */
@@ -2354,7 +2354,7 @@ void clrscr(void)
 	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	COORD top_left = { 0, 0 };
-	DWORD cells_written;
+	uint32_t cells_written;
 
 	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
 
@@ -2367,7 +2367,7 @@ void clrscr(void)
 
 	FillConsoleOutputAttribute(
 		std_handle,
-		(WORD)7,
+		(uint16_t)7,
 		screen_buffer.dwSize.X * screen_buffer.dwSize.Y,
 		top_left,
 		&cells_written);
@@ -2377,7 +2377,7 @@ void clrscr(void)
 		top_left);
 }
 
-void settextattr(WORD attribute)
+void settextattr(uint16_t attribute)
 {
 	SetConsoleTextAttribute(
 		GetStdHandle(STD_OUTPUT_HANDLE),
@@ -2387,7 +2387,7 @@ void settextattr(WORD attribute)
 void * save_screen(void)
 {
 	CHAR_INFO *char_info_buffer;
-	DWORD buffer_len;
+	uint32_t buffer_len;
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	COORD top_left = { 0, 0 };
@@ -2460,7 +2460,7 @@ void clrscr(void)
 	refresh();
 }
 
-void settextattr(WORD attribute)
+void settextattr(uint16_t attribute)
 {
 	set_attrs(attribute);
 }

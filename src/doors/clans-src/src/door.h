@@ -2,7 +2,7 @@
  * Door-specific ADT
  */
 
-void Door_Init(__BOOL Local);
+void Door_Init(bool Local);
 /*
  * Called to initialize OpenDoors specific info (od_init namely) and
  * load the dropfile or prompt the user for local login.
@@ -13,9 +13,9 @@ void Door_Close(void);
  * Called to destroy anything created by Door_Init.
  */
 
-__BOOL Door_Initialized(void);
+bool Door_Initialized(void);
 /*
- * Returns TRUE if od_init was already called.
+ * Returns true if od_init was already called.
  */
 
 
@@ -39,11 +39,11 @@ void Display(char *FileName);
  * Displays the file given.
  */
 
-_INT16 YesNo(char *Query);
-_INT16 NoYes(char *Query);
+int16_t YesNo(char *Query);
+int16_t NoYes(char *Query);
 
 void Door_ToggleScreenPause(void);
-void Door_SetScreenPause(__BOOL State);
-__BOOL Door_AllowScreenPause(void);
+void Door_SetScreenPause(bool State);
+bool Door_AllowScreenPause(void);
 
 void Door_ShowTitle(void);

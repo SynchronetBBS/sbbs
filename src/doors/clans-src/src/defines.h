@@ -20,9 +20,6 @@
 #define MAX_SPELLS              40
 #define NUM_ATTRIBUTES          6
 
-#define TRUE                    1
-#define FALSE                   0
-
 #define MAIL_OTHER              0           // type of mailers
 #define MAIL_BINKLEY            1
 
@@ -178,15 +175,21 @@
 #define MQ_VERYGOOD     2
 #define MQ_EXCELLENT    3
 
+#if __STDC_VERSION__ >= 199901L
+#include <inttypes.h>
+#include <stdbool.h>
+#else
+typedef char bool;
+#define true 1
+#define false 0
+#endif
+
 // uncomment for Turbo C++
-// typedef char BOOL;
+// typedef char bool;
 #ifdef __unix__
-# define BOOL char          // Stops OpenDoor.h from re-defining it.
+# define BOOL bool          // Stops OpenDoor.h from re-defining it.
 # define FAR
-# define _INT16 int16_t
-# define WORD uint16_t
 #elif defined(_MSC_VER)
-# define _INT16 short int
 # ifndef FAR
 #  define FAR
 # endif
@@ -194,28 +197,10 @@
 # ifndef FAR
 #  define FAR
 # endif
-# define _INT16 short int
-# define BOOL char          // Stops OpenDoor.h from re-defining it.
+# define BOOL bool          // Stops OpenDoor.h from re-defining it.
 #else
 # define FAR far
-# define _INT16 int
-# define BOOL char          // Stops OpenDoor.h from re-defining it.
-# define WORD unsigned int
-#endif
-
-typedef char __BOOL;
-
-#ifdef __GNUC__
-# define PACKED __attribute__ ((packed))
-#elif defined(_MSC_VER)
-# define PACKED
-// # pragma warning(disable:4103)  // Not sure what this does...
-
-# pragma pack(1)
-#endif
-
-#ifndef PACKED
-# define PACKED
+# define BOOL bool          // Stops OpenDoor.h from re-defining it.
 #endif
 
 #ifdef _WIN32
@@ -229,7 +214,7 @@ typedef char __BOOL;
 enum Status { Dead, Unconscious, RanAway, Here };
 enum PlayerStats { stAgility, stDexterity, stStrength, stWisdom, stArmorStr };
 enum action { acAttack, acRun, acCast, acRead, acSkip, acNone };
-typedef _INT16 action;
+typedef int16_t action;
 
 extern int  _argc;
 extern char **_argv;

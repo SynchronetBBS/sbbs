@@ -49,12 +49,12 @@ void CheckMem(void *Test);
 void RejectTrade(struct TradeData *TradeData);
 void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
 void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
-void RemoveFromIPScores(const _INT16 ClanID[2]);
-BOOL ClanIDInList(const _INT16 ClanID[2]);
-void RemoveFromUList(const _INT16 ClanID[2]);
+void RemoveFromIPScores(const int16_t ClanID[2]);
+bool ClanIDInList(const int16_t ClanID[2]);
+void RemoveFromUList(const int16_t ClanID[2]);
 void FreeClan(struct clan *Clan);
-BOOL GetClan(_INT16 ID[2], struct clan *TmpClan);
-void DeleteClan(_INT16 ID[2]);
+bool GetClan(int16_t ID[2], struct clan *TmpClan);
+void DeleteClan(int16_t ID[2]);
 void UpdateClan(struct clan *Clan);
 void InitGame(void);
 #ifdef __unix__
@@ -62,7 +62,7 @@ char getch(void);
 #endif
 
 
-#define TRUE_ENTRY_SIZE(x) \
+#define true_ENTRY_SIZE(x) \
     (sizeof(struct clan) + ((x) * sizeof(struct pc)))
 
 #define GAME_DATAFILE "game.dat"
@@ -80,8 +80,8 @@ char getch(void);
 int main(void)
 {
 	FILE *fpPC;
-	long FileSize;
-	_INT16 NumClans, CurClan;
+	int32_t FileSize;
+	int16_t NumClans, CurClan;
 	char cKey;
 	struct clan Clan;
 
@@ -122,7 +122,7 @@ int main(void)
 	// open Game Data
 	InitGame();
 
-	entry_size = TRUE_ENTRY_SIZE(Game.Data->MaxPermanentMembers);
+	entry_size = true_ENTRY_SIZE(Game.Data->MaxPermanentMembers);
 
 	// otherwise, open file, get filesize
 	fseek(fpPC, 0L, SEEK_END);
@@ -239,17 +239,17 @@ int main(void)
 	return 0;
 }
 
-void DeleteClan(_INT16 ClanID[2])
+void DeleteClan(int16_t ClanID[2])
 {
 	FILE *fpOldPC, *fpNewPC, *OldMessage, *NewMessage;
 	FILE *fpTradeFile;
-	long OldOffset;
+	int32_t OldOffset;
 	char szFileName[40]/*, szString[128]*/;
-	_INT16 CurTradeData, iTemp, CurAlliance, CurMember;
+	int16_t CurTradeData, iTemp, CurAlliance, CurMember;
 	struct TradeData TradeData;
 	struct clan *TmpClan;
 	struct Message Message;
-	BOOL FoundNewCreator;
+	bool FoundNewCreator;
 	struct Alliance *Alliances[MAX_ALLIANCES];
 
 	// if this is the ruler of town, remove him
@@ -382,7 +382,7 @@ void DeleteClan(_INT16 ClanID[2])
 
 	if (fpTradeFile) {
 		for (CurTradeData = 0;; CurTradeData++) {
-			if (fseek(fpTradeFile, (long)(CurTradeData * sizeof(struct TradeData)), SEEK_SET))
+			if (fseek(fpTradeFile, (int32_t)(CurTradeData * sizeof(struct TradeData)), SEEK_SET))
 				break;
 
 			OldOffset = ftell(fpTradeFile);
@@ -391,7 +391,7 @@ void DeleteClan(_INT16 ClanID[2])
 				break;
 
 			/* see if active */
-			if (TradeData.Active == FALSE)
+			if (TradeData.Active == false)
 				continue;
 
 			if (TradeData.ToClanID[0] == ClanID[0] &&
@@ -406,7 +406,7 @@ void DeleteClan(_INT16 ClanID[2])
 			else if (TradeData.FromClanID[0] == ClanID[0] &&
 					 TradeData.FromClanID[1] == ClanID[1]) {
 				// trade is coming from this player, remove it
-				TradeData.Active = FALSE;
+				TradeData.Active = false;
 				fseek(fpTradeFile, OldOffset, SEEK_SET);
 				EncryptWrite(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE);
 			}
@@ -425,7 +425,7 @@ void DeleteClan(_INT16 ClanID[2])
 				Alliances[CurAlliance]->CreatorID[0] == ClanID[0] &&
 				Alliances[CurAlliance]->CreatorID[1] == ClanID[1]) {
 			// find a new "leader"
-			FoundNewCreator = FALSE;
+			FoundNewCreator = false;
 			for (CurMember = 0; CurMember < MAX_ALLIANCEMEMBERS; CurMember++) {
 				// if this is an actual member AND it's not the deleted clan,
 				// see if
@@ -433,7 +433,7 @@ void DeleteClan(_INT16 ClanID[2])
 						Alliances[CurAlliance]->Member[CurMember][1] != -1) &&
 						!(Alliances[CurAlliance]->Member[CurMember][0] == ClanID[0] &&
 						  Alliances[CurAlliance]->Member[CurMember][1] == ClanID[1])) {
-					FoundNewCreator = TRUE;
+					FoundNewCreator = true;
 					Alliances[CurAlliance]->CreatorID[0] = Alliances[CurAlliance]->Member[CurMember][0];
 					Alliances[CurAlliance]->CreatorID[1] = Alliances[CurAlliance]->Member[CurMember][1];
 
@@ -441,7 +441,7 @@ void DeleteClan(_INT16 ClanID[2])
 				}
 			}
 
-			if (FoundNewCreator == FALSE) {
+			if (FoundNewCreator == false) {
 				// delete this alliance since no new ruler
 				free(Alliances[CurAlliance]);
 				Alliances[CurAlliance] = NULL;
@@ -484,7 +484,7 @@ void InitVillage(void)
 	            6,14, 7, 5, 13,7, 5, 8, 3, 8,     5, 14,6, 4, 12,   4,12,3,
 	            6,0,0,  1, 9};
 	    char FlagScheme[3] = { 12, 15, 9 }; */
-	/*  _INT16 iTemp;*/
+	/*  int16_t iTemp;*/
 
 	Village.Data = (struct village_data *) malloc(sizeof(struct village_data));
 	CheckMem(Village.Data);
@@ -496,7 +496,7 @@ void InitVillage(void)
 		exit(0);
 	}
 	else
-		EncryptRead(Village.Data, (long)sizeof(struct village_data), fpVillage, XOR_VILLAGE);
+		EncryptRead(Village.Data, (int32_t)sizeof(struct village_data), fpVillage, XOR_VILLAGE);
 
 	fclose(fpVillage);
 }
@@ -517,7 +517,7 @@ void UpdateVillage(void)
 		exit(0);
 	}
 
-	EncryptWrite(Village.Data, (long)sizeof(struct village_data), fpVillage, XOR_VILLAGE);
+	EncryptWrite(Village.Data, (int32_t)sizeof(struct village_data), fpVillage, XOR_VILLAGE);
 
 	fclose(fpVillage);
 }
@@ -534,7 +534,7 @@ void RejectTrade(struct TradeData *TradeData)
 {
 	struct clan *TmpClan;
 
-	TradeData->Active = FALSE;
+	TradeData->Active = false;
 
 	TmpClan = malloc(sizeof(struct clan));
 	CheckMem(TmpClan);
@@ -563,7 +563,7 @@ void RejectTrade(struct TradeData *TradeData)
 void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 {
 	FILE *fp;
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	// init alliances as NULLs
 	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
@@ -589,7 +589,7 @@ void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 {
 	FILE *fp;
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	fp = fopen(ALLIANCE_DATAFILE, "wb");
 	if (fp) {
@@ -603,7 +603,7 @@ void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 	}
 }
 
-void RemoveFromUList(const _INT16 ClanID[2])
+void RemoveFromUList(const int16_t ClanID[2])
 {
 	// open file for r+b
 	// scan file for ClanID
@@ -614,7 +614,7 @@ void RemoveFromUList(const _INT16 ClanID[2])
 	struct UserInfo User;
 
 	// if this guy is NOT in our list, then we don't need to do this
-	if (ClanIDInList(ClanID) == FALSE)
+	if (ClanIDInList(ClanID) == false)
 		return;
 
 	// open user file
@@ -651,16 +651,16 @@ void RemoveFromUList(const _INT16 ClanID[2])
 	rename(TEMP_FILENAME, USERLIST_DATAFILE);
 }
 
-BOOL ClanIDInList(const _INT16 ClanID[2])
+bool ClanIDInList(const int16_t ClanID[2])
 {
 	FILE *fpUList;
-	BOOL Found = FALSE;
+	bool Found = false;
 	struct UserInfo User;
 
 	fpUList = fopen(USERLIST_DATAFILE, "rb");
 	if (!fpUList) {
 		// no user list found, assume not in list then
-		return FALSE;
+		return false;
 	}
 
 	// scan through file until end
@@ -671,7 +671,7 @@ BOOL ClanIDInList(const _INT16 ClanID[2])
 		// see if this user's name is same as one we're looking for
 		if (User.ClanID[0] == ClanID[0] &&
 				User.ClanID[1] == ClanID[1]) {
-			Found = TRUE;
+			Found = true;
 			break;
 		}
 	}
@@ -681,10 +681,10 @@ BOOL ClanIDInList(const _INT16 ClanID[2])
 	return Found;
 }
 
-void RemoveFromIPScores(const _INT16 ClanID[2])
+void RemoveFromIPScores(const int16_t ClanID[2])
 {
 	struct UserScore **ScoreList;
-	_INT16 iTemp;
+	int16_t iTemp;
 	char ScoreDate[11];
 	FILE *fp;
 
@@ -741,7 +741,7 @@ void RemoveFromIPScores(const _INT16 ClanID[2])
 
 void FreeClan(struct clan *Clan)
 {
-	_INT16 CurMember;
+	int16_t CurMember;
 
 	// free members first
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
@@ -755,10 +755,10 @@ void FreeClan(struct clan *Clan)
 	Clan = NULL;
 }
 
-BOOL GetClan(_INT16 ClanID[2], struct clan *TmpClan)
+bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 {
 	FILE *fpPlayerFile;
-	_INT16 ClanNum, iTemp;
+	int16_t ClanNum, iTemp;
 	char szFileName[50];
 
 	// make them all NULLs for safety
@@ -770,18 +770,18 @@ BOOL GetClan(_INT16 ClanID[2], struct clan *TmpClan)
 	/* find guy in file */
 	fpPlayerFile = fopen(szFileName, "rb");
 	if (!fpPlayerFile) {
-		return FALSE;     /* means failed to find clan */
+		return false;     /* means failed to find clan */
 	}
 
 	for (ClanNum = 0;; ClanNum++) {
-		if (fseek(fpPlayerFile, (long)ClanNum *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET)) {
+		if (fseek(fpPlayerFile, (int32_t)ClanNum *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET)) {
 			// couldn't find clan in file
 			fclose(fpPlayerFile);
-			return FALSE;
+			return false;
 		}
 		if (!EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_PC)) {
 			fclose(fpPlayerFile);
-			return FALSE;
+			return false;
 		}
 
 		// make them all NULLs for safety
@@ -810,15 +810,15 @@ BOOL GetClan(_INT16 ClanID[2], struct clan *TmpClan)
 	}
 	fclose(fpPlayerFile);
 
-	return TRUE;
+	return true;
 }
 
 void UpdateClan(struct clan *Clan)
 {
 	FILE *fpPlayerFile;
 	/*    char szFileName[50];*/
-	_INT16 CurClan, iTemp;
-	long OldOffset, Offset;
+	int16_t CurClan, iTemp;
+	int32_t OldOffset, Offset;
 	struct clan *TmpClan;
 	struct pc *TmpPC;
 
@@ -838,7 +838,7 @@ void UpdateClan(struct clan *Clan)
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
 
-		Offset = (long)CurClan * (sizeof(struct clan) + Game.Data->MaxPermanentMembers*sizeof(struct pc));
+		Offset = (int32_t)CurClan * (sizeof(struct clan) + Game.Data->MaxPermanentMembers*sizeof(struct pc));
 		if (fseek(fpPlayerFile, Offset, SEEK_SET)) {
 			break;  /* couldn't fseek, so exit */
 		}
@@ -861,7 +861,7 @@ void UpdateClan(struct clan *Clan)
 			// fwrite players
 			TmpPC->szName[0] = 0;
 			for (iTemp = 0; iTemp < 6; iTemp++) {
-				if (Clan->Member[iTemp] && Clan->Member[iTemp]->Undead == FALSE)
+				if (Clan->Member[iTemp] && Clan->Member[iTemp]->Undead == false)
 					EncryptWrite(Clan->Member[iTemp], sizeof(struct pc), fpPlayerFile, XOR_PC);
 				else
 					EncryptWrite(TmpPC, sizeof(struct pc), fpPlayerFile, XOR_PC);
@@ -894,7 +894,7 @@ void InitGame(void)
 	Game.Data = (struct game_data *) malloc(sizeof(struct game_data));
 	CheckMem(Game.Data);
 
-	if (!EncryptRead(Game.Data, (long)sizeof(struct game_data), fpGame, XOR_GAME)) {
+	if (!EncryptRead(Game.Data, (int32_t)sizeof(struct game_data), fpGame, XOR_GAME)) {
 		System_Error("Unable to read the " GAME_DATAFILE " information!");
 	}
 

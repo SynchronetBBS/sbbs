@@ -10,7 +10,7 @@ void Language_Close(void);
  * The language file is freed from memory.
  */
 
-void LoadStrings(_INT16 StartIndex, _INT16 NumStrings, char *szStrings[]);
+void LoadStrings(int16_t StartIndex, int16_t NumStrings, char *szStrings[]);
 /*
  * This function loads NumStrings of strings from the language file.
  * starting with string StartIndex.
@@ -20,7 +20,7 @@ void LoadStrings(_INT16 StartIndex, _INT16 NumStrings, char *szStrings[]);
  *
  */
 
-char *MakeStr(_INT16 length);
+char *MakeStr(int16_t length);
 /*
  * This returns a pointer to a malloc'd string of length length.
  */

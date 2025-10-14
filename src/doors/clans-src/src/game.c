@@ -48,26 +48,26 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "door.h"
 #include "video.h"
 
-struct game Game = { FALSE, NULL };
+struct game Game = { false, NULL };
 extern struct system System;
 extern struct Language *Language;
-extern __BOOL Verbose;
+extern bool Verbose;
 
 // ------------------------------------------------------------------------- //
 
-__BOOL Game_Read(void)
+bool Game_Read(void)
 /*
- * Reads in the GAME.DAT file.  If not found, returns FALSE.
+ * Reads in the GAME.DAT file.  If not found, returns false.
  */
 {
 	FILE *fp;
 
 	fp = _fsopen("game.dat", "rb", SH_DENYWR);
-	if (!fp)  return FALSE;
+	if (!fp)  return false;
 
 	EncryptRead(Game.Data, sizeof(struct game_data), fp, XOR_GAME);
 	fclose(fp);
-	return TRUE;
+	return true;
 }
 
 void Game_Write(void)
@@ -77,7 +77,7 @@ void Game_Write(void)
 {
 	FILE *fp;
 
-	Game.Data->CRC = CRCValue(Game.Data, sizeof(struct game_data) - sizeof(long));
+	Game.Data->CRC = CRCValue(Game.Data, sizeof(struct game_data) - sizeof(int32_t));
 
 	fp = _fsopen("game.dat", "wb", SH_DENYRW);
 	if (fp) {
@@ -92,7 +92,7 @@ void Game_Destroy(void)
  */
 {
 	free(Game.Data);
-	Game.Initialized = FALSE;
+	Game.Initialized = false;
 }
 
 // ------------------------------------------------------------------------- //
@@ -159,7 +159,7 @@ void Game_Init(void)
 
 	Game.Data = malloc(sizeof(struct game_data));
 	CheckMem(Game.Data);
-	Game.Initialized = TRUE;
+	Game.Initialized = true;
 
 	if (!Game_Read()) {
 		Game_Destroy();
@@ -167,7 +167,7 @@ void Game_Init(void)
 	}
 
 	// ensure CRC is correct
-	if (CheckCRC(Game.Data, sizeof(struct game_data) - sizeof(long), Game.Data->CRC) == FALSE) {
+	if (CheckCRC(Game.Data, sizeof(struct game_data) - sizeof(int32_t), Game.Data->CRC) == false) {
 		Game_Destroy();
 		System_Error("Game data corrupt!\n");
 	}
@@ -187,7 +187,7 @@ void Game_Close(void)
  * Deinitializes Game.
  */
 {
-	if (Game.Initialized == FALSE) return;
+	if (Game.Initialized == false) return;
 
 	Game_Write();
 	Game_Destroy();

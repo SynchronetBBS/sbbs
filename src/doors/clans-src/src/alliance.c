@@ -60,11 +60,11 @@ extern struct clan *PClan;
 void RemoveFromAlliance(struct Alliance *Alliance)
 {
 	int     iTemp, WhichMember = 0;
-	_INT16  ClanID[2];
+	int16_t  ClanID[2];
 	char szName[40], /*cKey,*/ szString[128];
 	struct clan *TmpClan;
 
-	if (GetClanID(ClanID, FALSE, FALSE, Alliance->ID, TRUE) == FALSE) {
+	if (GetClanID(ClanID, false, false, Alliance->ID, true) == false) {
 		return;
 	}
 
@@ -119,7 +119,7 @@ void RemoveFromAlliance(struct Alliance *Alliance)
 	// send message to that player
 	sprintf(szString, "%s ousted you from %s!", PClan->szName,
 			Alliance->szName);
-	GenericMessage(szString, ClanID, PClan->ClanID, PClan->szName, FALSE);
+	GenericMessage(szString, ClanID, PClan->ClanID, PClan->szName, false);
 }
 
 
@@ -127,12 +127,12 @@ void RemoveFromAlliance(struct Alliance *Alliance)
 
 void SeeMemberStats(struct Alliance *Alliance)
 {
-	_INT16      ClanID[2];
+	int16_t      ClanID[2];
 	int         iTemp;
 	struct clan *TmpClan;
 
 	// ask for member name
-	if (GetClanID(ClanID, FALSE, FALSE, Alliance->ID, TRUE) == FALSE) {
+	if (GetClanID(ClanID, false, false, Alliance->ID, true) == false) {
 		return;
 	}
 
@@ -154,14 +154,14 @@ void SeeMemberStats(struct Alliance *Alliance)
 		return;
 	}
 
-	ClanStats(TmpClan, FALSE);
+	ClanStats(TmpClan, false);
 
 	FreeClan(TmpClan);
 }
 
 void ShowAllianceItems(struct Alliance *Alliance)
 {
-	int     iTemp, iTemp2, Length, LastItem = 0, FoundItem = FALSE;
+	int     iTemp, iTemp2, Length, LastItem = 0, FoundItem = false;
 	int     CurItem;
 	char    szString[100];
 
@@ -173,7 +173,7 @@ void ShowAllianceItems(struct Alliance *Alliance)
 	/* show all the items here */
 	for (iTemp = 0, CurItem = 0; iTemp < MAX_ALLIANCEITEMS; iTemp++) {
 		if (Alliance->Items[iTemp].Available) {
-			FoundItem = TRUE;
+			FoundItem = true;
 
 			sprintf(szString, "|0L%2d |0M%-20s", iTemp+1, Alliance->Items[iTemp].szName);
 
@@ -198,7 +198,7 @@ void ShowAllianceItems(struct Alliance *Alliance)
 			LastItem = iTemp;
 		}
 	}
-	if (FoundItem == FALSE)
+	if (FoundItem == false)
 		rputs(" |04No items.");
 
 	if (LastItem%2 == 0)
@@ -233,7 +233,7 @@ void DonationRoom(struct Alliance *Alliance)
 		switch (od_get_answer("?XDTLQ\r\n I*V")) {
 			case 'V' :  // clan stats
 				rputs("View Stats\n");
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 			case 'I' :  // show room items
 				rputs("List room items\n\n");
@@ -278,7 +278,7 @@ void DonationRoom(struct Alliance *Alliance)
 				ItemIndex--;
 
 				/* if that item is non-existant, tell him */
-				if (Alliance->Items[ItemIndex].Available == FALSE) {
+				if (Alliance->Items[ItemIndex].Available == false) {
 					rputs(ST_ISTATS4);
 					break;
 				}
@@ -291,7 +291,7 @@ void DonationRoom(struct Alliance *Alliance)
 			case 'D' :  /* drop item */
 				// see if room in room to drop item
 				for (iTemp = 0; iTemp < MAX_ALLIANCEITEMS; iTemp++) {
-					if (Alliance->Items[iTemp].Available == FALSE)
+					if (Alliance->Items[iTemp].Available == false)
 						break;
 				}
 				if (iTemp == MAX_ALLIANCEITEMS) {
@@ -321,7 +321,7 @@ void DonationRoom(struct Alliance *Alliance)
 				ItemIndex--;
 
 				/* if that item is non-existant, tell him */
-				if (PClan->Items[ItemIndex].Available == FALSE) {
+				if (PClan->Items[ItemIndex].Available == false) {
 					rputs(ST_ISTATS4);
 					break;
 				}
@@ -345,7 +345,7 @@ void DonationRoom(struct Alliance *Alliance)
 
 					// remove from user's stats
 					PClan->Items[ItemIndex].szName[0] = 0;
-					PClan->Items[ItemIndex].Available = FALSE;
+					PClan->Items[ItemIndex].Available = false;
 				}
 				break;
 			case '*' :  /* destroy item */
@@ -372,7 +372,7 @@ void DonationRoom(struct Alliance *Alliance)
 				ItemIndex--;
 
 				/* if that item is non-existant, tell him */
-				if (Alliance->Items[ItemIndex].Available == FALSE) {
+				if (Alliance->Items[ItemIndex].Available == false) {
 					rputs(ST_ISTATS4);
 					break;
 				}
@@ -388,7 +388,7 @@ void DonationRoom(struct Alliance *Alliance)
 					rputs(szString);
 
 					Alliance->Items[ItemIndex].szName[0] = 0;
-					Alliance->Items[ItemIndex].Available = FALSE;
+					Alliance->Items[ItemIndex].Available = false;
 
 				}
 				break;
@@ -397,7 +397,7 @@ void DonationRoom(struct Alliance *Alliance)
 
 				// see if inventory full
 				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan->Items[iTemp].Available == FALSE)
+					if (PClan->Items[iTemp].Available == false)
 						break;
 				}
 				if (iTemp == MAX_ITEMS_HELD) {
@@ -429,7 +429,7 @@ void DonationRoom(struct Alliance *Alliance)
 				ItemIndex--;
 
 				/* if that item is non-existant, tell him */
-				if (Alliance->Items[ItemIndex].Available == FALSE) {
+				if (Alliance->Items[ItemIndex].Available == false) {
 					rputs(ST_ISTATS4);
 					break;
 				}
@@ -441,7 +441,7 @@ void DonationRoom(struct Alliance *Alliance)
 				PClan->Items[EmptySlot] = Alliance->Items[ItemIndex];
 
 				Alliance->Items[ItemIndex].szName[0] = 0;
-				Alliance->Items[ItemIndex].Available = FALSE;
+				Alliance->Items[ItemIndex].Available = false;
 				break;
 		}
 	}
@@ -497,7 +497,7 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 {
 	int iTemp;
 	char szName[30], szString[128];
-	BOOL AllianceNameInUse;
+	bool AllianceNameInUse;
 
 	// get NextID
 	Alliance->ID = Game.Data->NextAllianceID++;
@@ -508,7 +508,7 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 	// rputs("Enter a name for this alliance.\n");
 	while (! szName[0]) {
 		rputs(ST_AMENU4);
-		GetStr(szName, 29, TRUE);
+		GetStr(szName, 29, true);
 		RemovePipes(szName, szString);
 		strcpy(szName, szString);
 
@@ -519,13 +519,13 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 			szName[0] = '!';
 
 		// see if in use, if so, nullify name
-		AllianceNameInUse = FALSE;
+		AllianceNameInUse = false;
 		for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
 			if (Alliances[iTemp] == NULL)
 				continue;
 
 			if (stricmp(szName, Alliances[iTemp]->szName) == 0) {
-				AllianceNameInUse = TRUE;
+				AllianceNameInUse = true;
 				break;
 			}
 		}
@@ -552,7 +552,7 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 	Alliance->Member[0][0] = PClan->ClanID[0];
 	Alliance->Member[0][1] = PClan->ClanID[1];
 
-	Empire_Create(&Alliance->Empire, FALSE);
+	Empire_Create(&Alliance->Empire, false);
 	Alliance->Empire.VaultGold = 0;
 	strcpy(Alliance->Empire.szName, Alliance->szName);
 	Alliance->Empire.OwnerType = EO_ALLIANCE;
@@ -560,7 +560,7 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 
 	// initialize items
 	for (iTemp = 0; iTemp < MAX_ALLIANCEITEMS; iTemp++)
-		Alliance->Items[iTemp].Available = FALSE;
+		Alliance->Items[iTemp].Available = false;
 
 	// make user a part of alliance
 	for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
@@ -611,7 +611,7 @@ void ShowAlliances(struct clan *Clan)
 			free(Alliances[iTemp]);
 }
 
-BOOL EnterAlliance(struct Alliance *Alliance)
+bool EnterAlliance(struct Alliance *Alliance)
 {
 	char *szTheOptions[13], *szString, szName[25];
 	char szFileName[13];
@@ -630,7 +630,7 @@ BOOL EnterAlliance(struct Alliance *Alliance)
 		sprintf(szString, "\n |0BAlliance Menu:  |0C%s\n", Alliance->szName);
 		rputs(szString);
 
-		switch (GetChoice("Alliance", ST_ENTEROPTION, szTheOptions, "LIRSCDP*VQ?W!", 'Q', TRUE)) {
+		switch (GetChoice("Alliance", ST_ENTEROPTION, szTheOptions, "LIRSCDP*VQ?W!", 'Q', true)) {
 			case 'S' :  // see member's stats
 				SeeMemberStats(Alliance);
 				break;
@@ -667,11 +667,11 @@ BOOL EnterAlliance(struct Alliance *Alliance)
 						PClan->szName, Alliance->szName);
 
 				GenericMessage(szString, Alliance->CreatorID,
-							   PClan->ClanID, PClan->szName, FALSE);
+							   PClan->ClanID, PClan->szName, false);
 
 				// done
 				free(szString);
-				return FALSE;
+				return false;
 			case 'W' :  // write to all allies
 				Mail_WriteToAllies(Alliance);
 				break;
@@ -692,7 +692,7 @@ BOOL EnterAlliance(struct Alliance *Alliance)
 				RemoveFromAlliance(Alliance);
 				break;
 			case 'V' :  // clan stats
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 			case 'D' :    /* donation room */
 				DonationRoom(Alliance);
@@ -708,7 +708,7 @@ BOOL EnterAlliance(struct Alliance *Alliance)
 				if (Alliance->CreatorID[0] != PClan->ClanID[0] ||
 						Alliance->CreatorID[1] != PClan->ClanID[1]) {
 					rputs("|0SOnly the creator may change destroy this alliance.\n");
-					if (ClanExists(Alliance->CreatorID) == FALSE) {
+					if (ClanExists(Alliance->CreatorID) == false) {
 						rputs("|0SAlliance creator was not found, however.  You will be the new creator.\n");
 						Alliance->CreatorID[0] = PClan->ClanID[0];
 						Alliance->CreatorID[1] = PClan->ClanID[1];
@@ -720,12 +720,12 @@ BOOL EnterAlliance(struct Alliance *Alliance)
 				}
 				if (NoYes("|0SDestroy this alliance? |08(All will be lost!) |0S:") == YES) {
 					free(szString);
-					return TRUE;
+					return true;
 				}
 				break;
 			case 'Q' :
 				free(szString);
-				return FALSE;
+				return false;
 		}
 	}
 }
@@ -740,7 +740,7 @@ void KillAlliance(int AllianceID)
 	struct clan *TmpClan;
 	FILE *fpPlayerFile;
 	int CurClan, CurAlliance;
-	long Offset;
+	int32_t Offset;
 
 	TmpClan = malloc(sizeof(struct clan));
 	CheckMem(TmpClan);
@@ -754,7 +754,7 @@ void KillAlliance(int AllianceID)
 
 	// get list of all clan names from file, write to
 	for (CurClan = 0;; CurClan++) {
-		Offset = (long)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
+		Offset = (int32_t)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
 		if (fseek(fpPlayerFile, Offset, SEEK_SET)) {
 			fclose(fpPlayerFile);
 			break;  /* couldn't fseek, so exit */
@@ -782,7 +782,7 @@ void KillAlliance(int AllianceID)
 		// in alliance, update his info and write to file
 		TmpClan->Alliances[CurAlliance] = -1;
 
-		Offset = (long)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
+		Offset = (int32_t)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
 		fseek(fpPlayerFile, Offset, SEEK_SET);
 		EncryptWrite(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_USER);
 	}

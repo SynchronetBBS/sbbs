@@ -30,8 +30,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //#include <OpenDoor.h>
 #include "structs.h"
 
-#define TRUE                1
-#define FALSE               0
+#define true                1
+#define false               0
 #define MAX_SPELLS          40
 #define MAX_MEMBERS         20
 #define MAX_ITEMS_HELD      30
@@ -66,13 +66,13 @@ int main(int argc, char *argv[])
 //  char szString[255];
 	char szToken[MAX_TOKEN_CHARS + 1];
 //  char *pcAt;
-	WORD uCount;
-	_INT16 iKeyWord;
-	_INT16 iTemp;
-//  _INT16 OrigMonIn;
-	_INT16 MonIndex[MAX_MONSTERS];  /* difficulties of all monsters,
+	uint16_t uCount;
+	int16_t iKeyWord;
+	int16_t iTemp;
+//  int16_t OrigMonIn;
+	int16_t MonIndex[MAX_MONSTERS];  /* difficulties of all monsters,
                                     0 means no monster */
-	_INT16 CurMonster = -1, LastSpellSlot = 0;
+	int16_t CurMonster = -1, LastSpellSlot = 0;
 
 	if (argc != 3) {
 		printf("Format:  mcomp <monster.txt> <output.mon>\n\n");
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
 
 						TmpMonster.Difficulty = 0;
 						TmpMonster.Level = 0;
-						TmpMonster.Undead = FALSE;
+						TmpMonster.Undead = false;
 
 						for (iTemp = 0; iTemp < MAX_SPELLS; iTemp++)
 							TmpMonster.SpellsKnown[iTemp] = 0;
@@ -240,7 +240,7 @@ int main(int argc, char *argv[])
 						LastSpellSlot++;
 						break;
 					case 13 :   // undead
-						TmpMonster.Undead = TRUE;
+						TmpMonster.Undead = true;
 						break;
 
 
@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
 	/* since they started at -1 and not 0 */
 	CurMonster++;
 
-	printf("%d Monster found.\n%ld bytes used", CurMonster, (long) CurMonster*sizeof(struct pc));
+	printf("%d Monster found.\n%ld bytes used", CurMonster, (int32_t) CurMonster*sizeof(struct pc));
 
 	fclose(fpMonIn);
 	fclose(fpMonOut);

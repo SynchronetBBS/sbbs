@@ -43,8 +43,8 @@ extern struct Quest Quests[MAX_QUESTS];
 
 void GoQuest(void)
 {
-	_INT16 iTemp, TotalQuests = 0, WhichQuest, NumQuestsDone, QuestIndex[64];
-	BOOL QuestDone, QuestKnown;
+	int16_t iTemp, TotalQuests = 0, WhichQuest, NumQuestsDone, QuestIndex[64];
+	bool QuestDone, QuestKnown;
 	char KnownBitSet, DoneBitSet;
 	char szString[50], cInput;
 
@@ -88,7 +88,7 @@ void GoQuest(void)
 		rputs(" |0GWhich quest? (Enter=abort)|0E> |0F");
 		/* get choice from user on which quest to complete */
 		for (;;) {
-			cInput = toupper(od_get_key(TRUE));
+			cInput = toupper(od_get_key(true));
 
 			if (cInput == '\r' || cInput == '\n') {
 				rputs(ST_ABORTED);
@@ -113,7 +113,7 @@ void GoQuest(void)
 
 		//od_printf("Comparing with %d\n", (1 << (QuestIndex[WhichQuest]%8)));
 
-		if (QuestKnown == FALSE || QuestDone || !Quests[QuestIndex[WhichQuest]].pszQuestName) {
+		if (QuestKnown == false || QuestDone || !Quests[QuestIndex[WhichQuest]].pszQuestName) {
 			rputs("\n|12Quest not found.\n%P");
 			return;
 		}
@@ -130,10 +130,10 @@ void GoQuest(void)
 		rputs("\n");
 	}
 
-	PClan->QuestToday = TRUE;
+	PClan->QuestToday = true;
 
-	/* if successful (returns TRUE), set that quest bit to done */
-	if (RunEvent(FALSE,
+	/* if successful (returns true), set that quest bit to done */
+	if (RunEvent(false,
 				 Quests[QuestIndex[WhichQuest]].pszQuestFile, Quests[QuestIndex[WhichQuest]].pszQuestIndex,
 				 NULL, NULL)) {
 		// set bit since quest completed

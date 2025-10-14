@@ -52,9 +52,9 @@ void News_AddNews(char *szString)
 	fclose(fpNewsFile);
 }
 
-void News_ReadNews(BOOL Today)
+void News_ReadNews(bool Today)
 {
-	_INT16 CurLine = 0, NumLines, cTemp;
+	int16_t CurLine = 0, NumLines, cTemp;
 	FILE *fp;
 	char *Lines[30];
 
@@ -92,7 +92,7 @@ void News_ReadNews(BOOL Today)
 		if (CurLine == (od_control.user_screen_length-4) && Door_AllowScreenPause()) {
 			rputs(ST_MORE);
 			od_sleep(0);
-			if (toupper(od_get_key(TRUE)) == 'N') {
+			if (toupper(od_get_key(true)) == 'N') {
 				rputs("\r                       \r");
 				break;
 			}
@@ -100,7 +100,7 @@ void News_ReadNews(BOOL Today)
 
 			CurLine = 0;
 		}
-		else if (Door_AllowScreenPause() == FALSE)
+		else if (Door_AllowScreenPause() == false)
 			CurLine = 0;
 
 		/* see if end of file, if so, exit */
@@ -108,7 +108,7 @@ void News_ReadNews(BOOL Today)
 			break;
 
 		/* see if key hit */
-		if (od_get_key(FALSE)) break;
+		if (od_get_key(false)) break;
 	}
 
 	/* de-init mem */

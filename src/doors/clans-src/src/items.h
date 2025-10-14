@@ -10,10 +10,10 @@ void Items_Close(void);
  */
 
 
-__BOOL ItemPenalty(struct pc *PC, struct item_data *Item);
+bool ItemPenalty(struct pc *PC, struct item_data *Item);
 /*
  * This function will check to see if PC has the required attributes to
- * use the item.  If he does, FALSE is returned, otherwise, TRUE.
+ * use the item.  If he does, false is returned, otherwise, true.
  */
 
 void Items_GiveItem(char *szItemName);
@@ -22,9 +22,9 @@ void Items_GiveItem(char *szItemName);
  * PClan.
  */
 
-void Items_ReadScroll(struct pc *PC, struct clan *TargetClan, _INT16 Target, _INT16 ScrollNum);
+void Items_ReadScroll(struct pc *PC, struct clan *TargetClan, int16_t Target, int16_t ScrollNum);
 
-void Item_BuyItem(_INT16 ItemType);
+void Item_BuyItem(int16_t ItemType);
 
 void ShowItemStats(struct item_data *Item, struct clan *Clan);
 

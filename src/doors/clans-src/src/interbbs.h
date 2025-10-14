@@ -28,13 +28,7 @@
 /*                                Data Types                                  */
 /******************************************************************************/
 #ifndef tBool
-typedef _INT16 tBool;
-#endif
-#ifndef FALSE
-#define FALSE 0
-#endif
-#ifndef TRUE
-#define TRUE 1
+typedef int16_t tBool;
 #endif
 
 typedef enum {
@@ -47,13 +41,13 @@ typedef enum {
 	eFileOpenError
 } tIBResult;
 
-typedef struct PACKED {
+typedef struct {
 	char szAddress[NODE_ADDRESS_CHARS + 1];
 	char szSystemName[SYSTEM_NAME_CHARS + 1];
 	char szLocation[LOCATION_CHARS + 1];
-} PACKED tOtherNode;
+} tOtherNode;
 
-typedef struct PACKED {
+typedef struct {
 	char szThisNodeAddress[NODE_ADDRESS_CHARS + 1];
 	char szProgName[PROG_NAME_CHARS + 1];
 	char szNetmailDir[PATH_CHARS + 1];
@@ -61,43 +55,43 @@ typedef struct PACKED {
 	tBool bHold;
 	tBool bEraseOnSend;
 	tBool bEraseOnReceive;
-	_INT16 nTotalSystems;
+	int16_t nTotalSystems;
 	tOtherNode *paOtherSystem;
-}  PACKED tIBInfo;
+}  tIBInfo;
 
 
 /******************************************************************************/
 /*                         InterBBS API Functions                             */
 /******************************************************************************/
 tIBResult IBSend(tIBInfo *pInfo, char *pszDestNode, void *pBuffer,
-				 _INT16 nBufferSize);
-tIBResult IBSendAll(tIBInfo *pInfo, void *pBuffer, _INT16 nBufferSize);
-tIBResult IBGet(tIBInfo *pInfo, void *pBuffer, _INT16 nMaxBufferSize);
+				 int16_t nBufferSize);
+tIBResult IBSendAll(tIBInfo *pInfo, void *pBuffer, int16_t nBufferSize);
+tIBResult IBGet(tIBInfo *pInfo, void *pBuffer, int16_t nMaxBufferSize);
 tIBResult IBReadConfig(tIBInfo *pInfo, char *pszConfigFile);
 
 
 /******************************************************************************/
 /*                           Private Declarations                             */
 /******************************************************************************/
-typedef struct PACKED {
+typedef struct MessageHeader {
 	char szFromUserName[36];
 	char szToUserName[36];
 	char szSubject[72];
 	char szDateTime[20];         /* "DD Mon YY  HH:MM:SS" */
-	WORD wTimesRead;
-	WORD wDestNode;
-	WORD wOrigNode;
-	WORD wCost;                  /* Lowest unit of originator's currency */
-	WORD wOrigNet;
-	WORD wDestNet;
-	WORD wDestZone;
-	WORD wOrigZone;
-	WORD wDestPoint;
-	WORD wOrigPoint;
-	WORD wReplyTo;
-	WORD wAttribute;
-	WORD wNextReply;
-}  PACKED tMessageHeader;
+	uint16_t wTimesRead;
+	uint16_t wDestNode;
+	uint16_t wOrigNode;
+	uint16_t wCost;                  /* Lowest unit of originator's currency */
+	uint16_t wOrigNet;
+	uint16_t wDestNet;
+	uint16_t wDestZone;
+	uint16_t wOrigZone;
+	uint16_t wDestPoint;
+	uint16_t wOrigPoint;
+	uint16_t wReplyTo;
+	uint16_t wAttribute;
+	uint16_t wNextReply;
+}  tMessageHeader;
 
 #define ATTRIB_PRIVATE      0x0001
 #define ATTRIB_CRASH        0x0002
@@ -115,12 +109,12 @@ typedef struct PACKED {
 #define ATTRIB_AUDIT_REQ    0x4000
 #define ATTRIB_FILE_UPDATE  0x8000
 
-typedef struct PACKED {
-	WORD wZone;
-	WORD wNet;
-	WORD wNode;
-	WORD wPoint;
-} PACKED tFidoNode;
+typedef struct {
+	uint16_t wZone;
+	uint16_t wNet;
+	uint16_t wNode;
+	uint16_t wPoint;
+} tFidoNode;
 
 
 tBool DirExists(const char *pszDirName);
@@ -128,21 +122,21 @@ void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut);
 tIBResult ValidateInfoStruct(tIBInfo *pInfo);
 tBool CreateMessage(char *pszMessageDir, tMessageHeader *pHeader,
 					char *pszText);
-DWORD GetFirstUnusedMsgNum(char *pszMessageDir);
-void GetMessageFilename(char *pszMessageDir, DWORD lwMessageNum,
+uint32_t GetFirstUnusedMsgNum(char *pszMessageDir);
+void GetMessageFilename(char *pszMessageDir, uint32_t lwMessageNum,
 						char *pszOut);
-tBool WriteMessage(char *pszMessageDir, DWORD lwMessageNum,
+tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 				   tMessageHeader *pHeader, char *pszText);
-tBool ReadMessage(char *pszMessageDir, DWORD lwMessageNum,
+tBool ReadMessage(char *pszMessageDir, uint32_t lwMessageNum,
 				  tMessageHeader *pHeader, char **ppszText);
-DWORD GetNextMSGID(void);
-_INT16 GetMaximumEncodedLength(_INT16 nUnEncodedLength);
-void EncodeBuffer(char *pszDest, const void *pBuffer, _INT16 nBufferSize);
-void DecodeBuffer(const char *pszSource, void *pDestBuffer, _INT16 nBufferSize);
+uint32_t GetNextMSGID(void);
+int16_t GetMaximumEncodedLength(int16_t nUnEncodedLength);
+void EncodeBuffer(char *pszDest, const void *pBuffer, int16_t nBufferSize);
+void DecodeBuffer(const char *pszSource, void *pDestBuffer, int16_t nBufferSize);
 void ConvertAddressToString(char *pszDest, const tFidoNode *pNode);
 void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource);
-tBool ProcessConfigFile(char *pszFileName, _INT16 nKeyWords, char **papszKeyWord,
+tBool ProcessConfigFile(char *pszFileName, int16_t nKeyWords, char **papszKeyWord,
 						void (*pfCallBack)(int, char *, void *), void *pCallBackData);
-void ProcessConfigLine(_INT16 nKeyword, char *pszParameter, void *pCallbackData);
+void ProcessConfigLine(int16_t nKeyword, char *pszParameter, void *pCallbackData);
 tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName);
 #endif

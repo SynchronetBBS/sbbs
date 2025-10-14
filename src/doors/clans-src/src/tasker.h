@@ -9,9 +9,9 @@
 #ifndef DG_TASKER
 #define DG_TASKER
 
-struct PACKED ts_os_ver {
-	_INT16 maj;
-	_INT16 min;
+struct ts_os_ver {
+	int16_t maj;
+	int16_t min;
 };
 
 #define TOT_OS  5
@@ -30,17 +30,17 @@ struct PACKED ts_os_ver {
 #define is_WIN3 0x10    /* b'00010000' */
 
 
-extern _INT16 t_os_type;
-extern _INT16 t_os;
+extern int16_t t_os_type;
+extern int16_t t_os;
 
 extern const char *t_os_name[TOT_OS];
 
-extern struct PACKED ts_os_ver t_os_ver[TOT_OS];
+extern struct ts_os_ver t_os_ver[TOT_OS];
 
 
 /* Function prototypes */
 
-_INT16 get_os(void);
+int16_t get_os(void);
 void t_slice(void);
 
 #endif /* DG_TASKER */

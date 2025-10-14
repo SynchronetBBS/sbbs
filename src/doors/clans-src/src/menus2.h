@@ -1,5 +1,5 @@
 
-void ResurrectDead(BOOL Unconscious);
+void ResurrectDead(bool Unconscious);
 
 void ReleaseMember(void);
 void AddMember(void);

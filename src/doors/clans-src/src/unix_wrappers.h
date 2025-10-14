@@ -26,11 +26,11 @@
 // ToDo This is totally arbitrary.
 #define MAX_STRING_LEN  1024
 
-struct __attribute__((packed)) date {
+struct date {
 	short da_year;
 	short da_mon;
 	short da_day;
-} PACKED;
+};
 
 // ToDo needs some kind of REAL randomisation.
 #define randomize   srandomdev
@@ -75,7 +75,7 @@ int getdate(struct date *getme);
 int strset(char *str, char ch);
 int lock(int file, off_t offset, off_t length);
 int unlock(int file, off_t offset, off_t length);
-long unix_random(long maxnum);
+int32_t unix_random(int32_t maxnum);
 int gettime(struct tm *getme);
 #ifdef NEED_GETCH
 char getch(void);

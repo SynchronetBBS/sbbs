@@ -44,15 +44,15 @@ extern struct clan *PClan;
 extern struct Language *Language;
 
 
-void GetTradeList(struct TradeList *TradeList, BOOL GivingList, char *szTitle)
+void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szTitle)
 {
 	/* enter choices */
 	/* keep looping till chooses "Done" */
 
-	_INT16 /*iTemp, WhichOne,*/ Choice;
-	long MaxInput;
+	int16_t /*iTemp, WhichOne,*/ Choice;
+	int32_t MaxInput;
 	char szString[128];
-	BOOL Done = FALSE;
+	bool Done = false;
 	char *szTheOptions[7] = {"Gold",
 							 "Followers",
 							 "Footmen",
@@ -67,22 +67,22 @@ void GetTradeList(struct TradeList *TradeList, BOOL GivingList, char *szTitle)
 		rputs(ST_LONGLINE);
 
 		/* list 'em */
-		sprintf(szString, " |0A(|0B1|0A) |0CGold         |15%ld\n", TradeList->Gold);
+		sprintf(szString, " |0A(|0B1|0A) |0CGold         |15%" PRId32 "\n", TradeList->Gold);
 		rputs(szString);
-		sprintf(szString, " |0A(|0B2|0A) |0CFollowers    |15%ld\n", TradeList->Followers);
+		sprintf(szString, " |0A(|0B2|0A) |0CFollowers    |15%" PRId32 "\n", TradeList->Followers);
 		rputs(szString);
-		sprintf(szString, " |0A(|0B3|0A) |0CFootmen      |15%ld\n", TradeList->Footmen);
+		sprintf(szString, " |0A(|0B3|0A) |0CFootmen      |15%" PRId32 "\n", TradeList->Footmen);
 		rputs(szString);
-		sprintf(szString, " |0A(|0B4|0A) |0CAxemen       |15%ld\n", TradeList->Axemen);
+		sprintf(szString, " |0A(|0B4|0A) |0CAxemen       |15%" PRId32 "\n", TradeList->Axemen);
 		rputs(szString);
-		sprintf(szString, " |0A(|0B5|0A) |0CKnights      |15%ld\n", TradeList->Knights);
+		sprintf(szString, " |0A(|0B5|0A) |0CKnights      |15%" PRId32 "\n", TradeList->Knights);
 		rputs(szString);
 
 		rputs(" |0A(|0BV|0A) |0CView Stats\n");
 		rputs(" |0A(|0B0|0A) |0CDone\n");
 		rputs(ST_LONGLINE);
 
-		switch (Choice = GetChoice("", ST_ENTEROPTION, szTheOptions, "12345V0", '0', TRUE)) {
+		switch (Choice = GetChoice("", ST_ENTEROPTION, szTheOptions, "12345V0", '0', true)) {
 			case '1' :  /* gold */
 				if (GivingList)
 					MaxInput = PClan->Empire.VaultGold;
@@ -124,10 +124,10 @@ void GetTradeList(struct TradeList *TradeList, BOOL GivingList, char *szTitle)
 				TradeList->Knights = GetLong("|0SHow many knights?", TradeList->Knights, MaxInput);
 				break;
 			case '0' :  /* done */
-				Done = TRUE;
+				Done = true;
 				break;
 			case 'V' :  /* view stats */
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 		}
 	}
@@ -138,7 +138,7 @@ void RejectTrade(struct TradeData *TradeData)
 	struct clan *TmpClan;
 	char *szString;
 
-	TradeData->Active = FALSE;
+	TradeData->Active = false;
 
 	TmpClan = malloc(sizeof(struct clan));
 	CheckMem(TmpClan);
@@ -161,7 +161,7 @@ void RejectTrade(struct TradeData *TradeData)
 	TradeData->Giving.Catapults = 0L;
 
 	sprintf(szString, "%s rejected your trade offer.", PClan->szName);
-	GenericMessage(szString, TradeData->FromClanID, PClan->ClanID, PClan->szName, FALSE);
+	GenericMessage(szString, TradeData->FromClanID, PClan->ClanID, PClan->szName, false);
 
 	Clan_Update(TmpClan);
 
@@ -173,9 +173,9 @@ void RejectTrade(struct TradeData *TradeData)
 void Trades_CheckTrades(void)
 {
 	FILE *fpTradeFile;
-	long OldOffset;
+	int32_t OldOffset;
 	struct clan *TmpClan;
-	_INT16 CurTradeData;
+	int16_t CurTradeData;
 	struct TradeData TradeData;
 	char szString[255];
 
@@ -185,7 +185,7 @@ void Trades_CheckTrades(void)
 		return;
 
 	for (CurTradeData = 0;; CurTradeData++) {
-		if (fseek(fpTradeFile, (long)(CurTradeData * sizeof(struct TradeData)), SEEK_SET))
+		if (fseek(fpTradeFile, (int32_t)(CurTradeData * sizeof(struct TradeData)), SEEK_SET))
 			break;
 
 		OldOffset = ftell(fpTradeFile);
@@ -194,7 +194,7 @@ void Trades_CheckTrades(void)
 			break;
 
 		/* see if active */
-		if (TradeData.Active == FALSE)
+		if (TradeData.Active == false)
 			continue;
 
 		/* if so, see if for this dude */
@@ -210,27 +210,27 @@ void Trades_CheckTrades(void)
 		rputs(szString);
 
 		if (TradeData.Giving.Gold) {
-			sprintf(szString, "  %ld gold\n", TradeData.Giving.Gold);
+			sprintf(szString, "  %" PRId32 " gold\n", TradeData.Giving.Gold);
 			rputs(szString);
 		}
 		if (TradeData.Giving.Followers) {
-			sprintf(szString, "  %ld followers\n", TradeData.Giving.Followers);
+			sprintf(szString, "  %" PRId32 " followers\n", TradeData.Giving.Followers);
 			rputs(szString);
 		}
 		if (TradeData.Giving.Footmen) {
-			sprintf(szString, "  %ld footmen\n", TradeData.Giving.Footmen);
+			sprintf(szString, "  %" PRId32 " footmen\n", TradeData.Giving.Footmen);
 			rputs(szString);
 		}
 		if (TradeData.Giving.Axemen) {
-			sprintf(szString, "  %ld axemen\n", TradeData.Giving.Axemen);
+			sprintf(szString, "  %" PRId32 " axemen\n", TradeData.Giving.Axemen);
 			rputs(szString);
 		}
 		if (TradeData.Giving.Knights) {
-			sprintf(szString, "  %ld knights\n", TradeData.Giving.Knights);
+			sprintf(szString, "  %" PRId32 " knights\n", TradeData.Giving.Knights);
 			rputs(szString);
 		}
 		if (TradeData.Giving.Catapults) {
-			sprintf(szString, "  %ld catapults\n", TradeData.Giving.Catapults);
+			sprintf(szString, "  %" PRId32 " catapults\n", TradeData.Giving.Catapults);
 			rputs(szString);
 		}
 		if (TradeData.Giving.Gold == 0 &&
@@ -245,27 +245,27 @@ void Trades_CheckTrades(void)
 		rputs("\n|0BAnd they would like the following in return:\n|0C");
 
 		if (TradeData.Asking.Gold) {
-			sprintf(szString, "  %ld gold\n", TradeData.Asking.Gold);
+			sprintf(szString, "  %" PRId32 " gold\n", TradeData.Asking.Gold);
 			rputs(szString);
 		}
 		if (TradeData.Asking.Followers) {
-			sprintf(szString, "  %ld followers\n", TradeData.Asking.Followers);
+			sprintf(szString, "  %" PRId32 " followers\n", TradeData.Asking.Followers);
 			rputs(szString);
 		}
 		if (TradeData.Asking.Footmen) {
-			sprintf(szString, "  %ld footmen\n", TradeData.Asking.Footmen);
+			sprintf(szString, "  %" PRId32 " footmen\n", TradeData.Asking.Footmen);
 			rputs(szString);
 		}
 		if (TradeData.Asking.Axemen) {
-			sprintf(szString, "  %ld archers\n", TradeData.Asking.Axemen);
+			sprintf(szString, "  %" PRId32 " archers\n", TradeData.Asking.Axemen);
 			rputs(szString);
 		}
 		if (TradeData.Asking.Knights) {
-			sprintf(szString, "  %ld knights\n", TradeData.Asking.Knights);
+			sprintf(szString, "  %" PRId32 " knights\n", TradeData.Asking.Knights);
 			rputs(szString);
 		}
 		if (TradeData.Asking.Catapults) {
-			sprintf(szString, "  %ld catapults\n", TradeData.Asking.Catapults);
+			sprintf(szString, "  %" PRId32 " catapults\n", TradeData.Asking.Catapults);
 			rputs(szString);
 		}
 		if (TradeData.Asking.Gold == 0 &&
@@ -324,14 +324,14 @@ void Trades_CheckTrades(void)
 				TmpClan->Empire.Army.Knights += TradeData.Asking.Knights;
 
 				sprintf(szString, "%s accepted your trade.  You received the following:\n\n\
- %ld Gold\n %ld Followers\n %ld Footmen\n %ld Axemen\n %ld Knights\n %ld Catapults\n",
+ %" PRId32 " Gold\n %" PRId32 " Followers\n %" PRId32 " Footmen\n %" PRId32 " Axemen\n %" PRId32 " Knights\n %" PRId32 " Catapults\n",
 						PClan->szName, TradeData.Asking.Gold,
 						TradeData.Asking.Followers, TradeData.Asking.Footmen,
 						TradeData.Asking.Axemen, TradeData.Asking.Knights,
 						TradeData.Asking.Catapults);
 
 				GenericMessage(szString, TradeData.FromClanID,
-							   PClan->ClanID, PClan->szName, FALSE);
+							   PClan->ClanID, PClan->szName, false);
 
 				/* update this data */
 				Clan_Update(TmpClan);
@@ -353,7 +353,7 @@ void Trades_CheckTrades(void)
 				PClan->Empire.Army.Knights -= TradeData.Asking.Knights;
 
 				/* now delete it */
-				TradeData.Active = FALSE;
+				TradeData.Active = false;
 
 				fseek(fpTradeFile, OldOffset, SEEK_SET);
 				EncryptWrite(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE);
@@ -379,11 +379,11 @@ void Trades_MakeTrade(void)
 {
 	struct TradeData TradeData;
 	FILE *fpTradeFile;
-	_INT16 ClanID[2];
+	int16_t ClanID[2];
 	char szString[255];
 
 	/* ask for who to trade with */
-	if (GetClanID(ClanID, FALSE, FALSE, -1, -1) == FALSE) {
+	if (GetClanID(ClanID, false, false, -1, -1) == false) {
 		return;
 	}
 
@@ -394,7 +394,7 @@ void Trades_MakeTrade(void)
 	TradeData.Giving.Axemen = 0;
 	TradeData.Giving.Knights = 0;
 	TradeData.Giving.Catapults = 0;
-	GetTradeList(&TradeData.Giving, TRUE, "\n |0BPlease enter the equipment/troops that you will offer.\n");
+	GetTradeList(&TradeData.Giving, true, "\n |0BPlease enter the equipment/troops that you will offer.\n");
 
 	/* see what user wants in return */
 	TradeData.Asking.Gold = 0;
@@ -403,7 +403,7 @@ void Trades_MakeTrade(void)
 	TradeData.Asking.Axemen = 0;
 	TradeData.Asking.Knights = 0;
 	TradeData.Asking.Catapults = 0;
-	GetTradeList(&TradeData.Asking, FALSE, "\n |0BPlease enter the equipment/troops that you would like in return.\n");
+	GetTradeList(&TradeData.Asking, false, "\n |0BPlease enter the equipment/troops that you would like in return.\n");
 
 	/* if all zeros, abort */
 	if ((TradeData.Asking.Gold == 0 &&
@@ -426,27 +426,27 @@ void Trades_MakeTrade(void)
 	rputs("|0BYou are offering the following:\n|0C");
 
 	if (TradeData.Giving.Gold) {
-		sprintf(szString, "  %ld gold\n", TradeData.Giving.Gold);
+		sprintf(szString, "  %" PRId32 " gold\n", TradeData.Giving.Gold);
 		rputs(szString);
 	}
 	if (TradeData.Giving.Followers) {
-		sprintf(szString, "  %ld followers\n", TradeData.Giving.Followers);
+		sprintf(szString, "  %" PRId32 " followers\n", TradeData.Giving.Followers);
 		rputs(szString);
 	}
 	if (TradeData.Giving.Footmen) {
-		sprintf(szString, "  %ld footmen\n", TradeData.Giving.Footmen);
+		sprintf(szString, "  %" PRId32 " footmen\n", TradeData.Giving.Footmen);
 		rputs(szString);
 	}
 	if (TradeData.Giving.Axemen) {
-		sprintf(szString, "  %ld archers\n", TradeData.Giving.Axemen);
+		sprintf(szString, "  %" PRId32 " archers\n", TradeData.Giving.Axemen);
 		rputs(szString);
 	}
 	if (TradeData.Giving.Knights) {
-		sprintf(szString, "  %ld knights\n", TradeData.Giving.Knights);
+		sprintf(szString, "  %" PRId32 " knights\n", TradeData.Giving.Knights);
 		rputs(szString);
 	}
 	if (TradeData.Giving.Catapults) {
-		sprintf(szString, "  %ld catapults\n", TradeData.Giving.Catapults);
+		sprintf(szString, "  %" PRId32 " catapults\n", TradeData.Giving.Catapults);
 		rputs(szString);
 	}
 	if (TradeData.Giving.Gold == 0 &&
@@ -460,27 +460,27 @@ void Trades_MakeTrade(void)
 	rputs("\n|0BIn return for the following:\n|0C");
 
 	if (TradeData.Asking.Gold) {
-		sprintf(szString, "  %ld gold\n", TradeData.Asking.Gold);
+		sprintf(szString, "  %" PRId32 " gold\n", TradeData.Asking.Gold);
 		rputs(szString);
 	}
 	if (TradeData.Asking.Followers) {
-		sprintf(szString, "  %ld followers\n", TradeData.Asking.Followers);
+		sprintf(szString, "  %" PRId32 " followers\n", TradeData.Asking.Followers);
 		rputs(szString);
 	}
 	if (TradeData.Asking.Footmen) {
-		sprintf(szString, "  %ld footmen\n", TradeData.Asking.Footmen);
+		sprintf(szString, "  %" PRId32 " footmen\n", TradeData.Asking.Footmen);
 		rputs(szString);
 	}
 	if (TradeData.Asking.Axemen) {
-		sprintf(szString, "  %ld archers\n", TradeData.Asking.Axemen);
+		sprintf(szString, "  %" PRId32 " archers\n", TradeData.Asking.Axemen);
 		rputs(szString);
 	}
 	if (TradeData.Asking.Knights) {
-		sprintf(szString, "  %ld knights\n", TradeData.Asking.Knights);
+		sprintf(szString, "  %" PRId32 " knights\n", TradeData.Asking.Knights);
 		rputs(szString);
 	}
 	if (TradeData.Asking.Catapults) {
-		sprintf(szString, "  %ld catapults\n", TradeData.Asking.Catapults);
+		sprintf(szString, "  %" PRId32 " catapults\n", TradeData.Asking.Catapults);
 		rputs(szString);
 	}
 	if (TradeData.Asking.Gold == 0 &&
@@ -506,7 +506,7 @@ void Trades_MakeTrade(void)
 	PClan->Empire.Army.Axemen -= TradeData.Giving.Axemen;
 	PClan->Empire.Army.Knights -= TradeData.Giving.Knights;
 
-	TradeData.Active = TRUE;
+	TradeData.Active = true;
 	TradeData.ToClanID[0] = ClanID[0];
 	TradeData.ToClanID[1] = ClanID[1];
 	TradeData.FromClanID[0] = PClan->ClanID[0];
@@ -538,7 +538,7 @@ void Trades_Maint(void)
 				break;
 
 			/* see if active */
-			if (TradeData.Active == FALSE)
+			if (TradeData.Active == false)
 				continue;
 
 			// it's active, write it to new file

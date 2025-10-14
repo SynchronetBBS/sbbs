@@ -84,7 +84,7 @@ struct ffblk {
 	char ff_attrib;
 	unsigned short ff_ftime;
 	unsigned short ff_fdate;
-	long ff_fsize;
+	int32_t ff_fsize;
 	char ff_name[13];
 	HANDLE ff_findhandle; /* Added for Win32's API */
 	char   ff_findattribute; /* Added for attribute matching on Win32 */
@@ -92,8 +92,8 @@ struct ffblk {
 
 int findfirst(const char *pathname, struct ffblk *ffblk, int attribute);
 int findnext(struct ffblk *);
-void convert_attribute(char *, DWORD);
-int search_and_construct_ffblk(WIN32_FIND_DATA *, struct ffblk *, BOOL);
+void convert_attribute(char *, uint32_t);
+int search_and_construct_ffblk(WIN32_FIND_DATA *, struct ffblk *, bool);
 
 #ifndef _A_VOLID
 # define _A_VOLID 0x08 /* not normally used in Win32 */
@@ -116,15 +116,15 @@ extern struct game Game;
 extern struct system System;
 extern struct village Village;
 extern struct BuildingType BuildingType[NUM_BUILDINGTYPES];
-extern BOOL Verbose;
+extern bool Verbose;
 
-struct ibbs IBBS = { FALSE, NULL };
-BOOL NoMSG[MAX_IBBSNODES];
+struct ibbs IBBS = { false, NULL };
+bool NoMSG[MAX_IBBSNODES];
 
-void IBBS_SendPacketFile(_INT16 DestID, char *pszSendFile);
-void IBBS_AddToGame(struct clan *Clan, BOOL WasLost);
-void IBBS_SendPacket(_INT16 PacketType, long PacketLength, void *PacketData,
-					 _INT16 DestID);
+void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile);
+void IBBS_AddToGame(struct clan *Clan, bool WasLost);
+void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
+					 int16_t DestID);
 int file_copy(char *from, char *to);
 int file_append(char *from, char *to);
 
@@ -133,14 +133,14 @@ int file_append(char *from, char *to);
    Open file specified, copy entire contents and send as data in packet with
    the type specified in 'PacketType' to 'DestID'
 */
-void IBBS_SendFileInPacket(_INT16 DestID, _INT16 PacketType, char *szFileName)
+void IBBS_SendFileInPacket(int16_t DestID, int16_t PacketType, char *szFileName)
 {
 	FILE *fp;
 	char *cpBuffer;
-	_INT16 CurBBS;
-	long lFileSize;
+	int16_t CurBBS;
+	int32_t lFileSize;
 
-	if (IBBS.Initialized == FALSE) {
+	if (IBBS.Initialized == false) {
 		System_Error("IBBS not initialized for call.\n");
 	}
 
@@ -172,7 +172,7 @@ void IBBS_SendFileInPacket(_INT16 DestID, _INT16 PacketType, char *szFileName)
 /* Function Procedure:
    Make sure destination ID is valid, send userlist.dat to that BBS
 */
-void IBBS_SendUserList(_INT16 DestID)
+void IBBS_SendUserList(int16_t DestID)
 {
 	//printf("Sending userlist to %d\n", DestID);
 	if (IBBS.Data->Nodes[DestID-1].Active)
@@ -189,8 +189,8 @@ void IBBS_DistributeNDX(void)
 {
 	FILE *fpNDX;
 	char *cpBuffer;
-	_INT16 CurBBS;
-	long lFileSize;
+	int16_t CurBBS;
+	int32_t lFileSize;
 
 	DisplayStr("Distributing new NDX file, please wait...\n");
 
@@ -215,7 +215,7 @@ void IBBS_DistributeNDX(void)
 	fclose(fpNDX);
 
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active == FALSE)
+		if (IBBS.Data->Nodes[CurBBS].Active == false)
 			continue;
 
 		// skip if it's your own BBS
@@ -240,12 +240,12 @@ void LeagueKillUser(struct UserInfo *User)
 {
 	// create packet for all BBSes saying "this user just committed suicide
 	// on my board so remove him from your userlist"
-	_INT16 CurBBS;
+	int16_t CurBBS;
 
 	// for each BBS in the list, send him a packet
 	// must skip BBS #1 since that's this BBS (main BBS)
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active == FALSE)
+		if (IBBS.Data->Nodes[CurBBS].Active == false)
 			continue;
 
 		// skip if it's your own BBS
@@ -271,7 +271,7 @@ void LeagueKillUser(struct UserInfo *User)
    level, if it's greater then set success and copy empire data.  Otherwise:
      If target was Village, send a message to ruler that a spy was caught.
      If target was clan, send a message to the clan that a spy was caught.
-     Set the result packet success as FALSE.
+     Set the result packet success as false.
    Send an InterBBS packet as PT_SPYRESULT, SpyResultPacket as the data.
 */
 void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
@@ -280,9 +280,9 @@ void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
 	struct Packet Packet;
 	struct empire *Empire = NULL;
 	struct clan *TmpClan;
-	BOOL NoTarget = FALSE;
+	bool NoTarget = false;
 	char *szMessage;
-	_INT16 Junk[2];
+	int16_t Junk[2];
 	FILE *fp;
 
 	szMessage = MakeStr(600);
@@ -297,8 +297,8 @@ void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
 		case EO_CLAN :
 			TmpClan = malloc(sizeof(struct clan));
 			CheckMem(TmpClan);
-			if (GetClan(Spy->ClanID, TmpClan) == FALSE) {
-				NoTarget = TRUE;
+			if (GetClan(Spy->ClanID, TmpClan) == false) {
+				NoTarget = true;
 				strcpy(SpyResult.szTargetName, "-No longer exists-");
 			}
 			else
@@ -313,25 +313,25 @@ void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
 	SpyResult.BBSFromID = Spy->BBSFromID;
 	SpyResult.BBSToID = Spy->BBSToID;
 
-	if (NoTarget == FALSE && (Spy->IntelligenceLevel+RANDOM(5)) >
+	if (NoTarget == false && (Spy->IntelligenceLevel+RANDOM(5)) >
 			(Empire->Buildings[B_SECURITY]+RANDOM(3))) {
 		// success
-		SpyResult.Success = TRUE;
+		SpyResult.Success = true;
 		SpyResult.Empire = *Empire;
 	}
 	else {
 		// failure if no target OR otherwise
-		SpyResult.Success = FALSE;
+		SpyResult.Success = false;
 
 		if (Spy->TargetType == EO_VILLAGE) {
 			// sprintf(szMessage, " You caught a spy attempting to gain info on the village's empire.\n The spy was from %s.\n",
 			sprintf(szMessage, ST_SPY4, Spy->szSpierName);
-			GenericMessage(szMessage, Village.Data->RulingClanId, Junk, "", FALSE);
+			GenericMessage(szMessage, Village.Data->RulingClanId, Junk, "", false);
 		}
-		else if (Spy->TargetType == EO_CLAN && NoTarget == FALSE) {
+		else if (Spy->TargetType == EO_CLAN && NoTarget == false) {
 			// sprintf(szMessage, " You caught a spy attempting to gain info on the village's empire.\n The spy was from %s.\n",
 			sprintf(szMessage, ST_SPY6, Spy->szSpierName);
-			GenericMessage(szMessage, TmpClan->ClanID, Junk, "", FALSE);
+			GenericMessage(szMessage, TmpClan->ClanID, Junk, "", false);
 		}
 	}
 
@@ -360,7 +360,7 @@ void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
 void IBBS_ProcessSpyResult(struct SpyResultPacket *SpyResult)
 {
 	char *szMessage, szString[128];
-	_INT16 Junk[2], iTemp;
+	int16_t Junk[2], iTemp;
 
 	szMessage = MakeStr(600);
 
@@ -387,12 +387,12 @@ void IBBS_ProcessSpyResult(struct SpyResultPacket *SpyResult)
 			strcat(szMessage, szString);
 		}
 
-		GenericMessage(szMessage, SpyResult->MasterID, Junk, "", FALSE);
+		GenericMessage(szMessage, SpyResult->MasterID, Junk, "", false);
 	}
 	else {
 		sprintf(szMessage, "Your spy attempt on %s failed.\n", SpyResult->szTargetName);
 
-		GenericMessage(szMessage, SpyResult->MasterID, Junk, "", FALSE);
+		GenericMessage(szMessage, SpyResult->MasterID, Junk, "", false);
 	}
 
 	free(szMessage);
@@ -404,7 +404,7 @@ void IBBS_ProcessSpyResult(struct SpyResultPacket *SpyResult)
    PT_DELUSER with UserInfo structure attached.  This tells the recipient BBS
    to remove the user with the ID specified.
 */
-void IBBS_SendDelUser(_INT16 BBSID, struct UserInfo *User)
+void IBBS_SendDelUser(int16_t BBSID, struct UserInfo *User)
 {
 	// run ONLY by main bbs
 	// this will send a packet to a given bbs, telling the bbs to delete
@@ -417,18 +417,18 @@ void IBBS_SendDelUser(_INT16 BBSID, struct UserInfo *User)
 
 // ------------------------------------------------------------------------- //
 /* Function Procedure:
-   Scan USERLIST.DAT for the specified ClanID, if found return TRUE, else FALSE
+   Scan USERLIST.DAT for the specified ClanID, if found return true, else false
 */
-BOOL ClanIDInList(const _INT16 ClanID[2])
+bool ClanIDInList(const int16_t ClanID[2])
 {
 	FILE *fpUList;
-	BOOL Found = FALSE;
+	bool Found = false;
 	struct UserInfo User;
 
 	fpUList = _fsopen("userlist.dat", "rb", SH_DENYWR);
 	if (!fpUList) {
 		// no user list found, assume not in list then
-		return FALSE;
+		return false;
 	}
 
 	// scan through file until end
@@ -438,7 +438,7 @@ BOOL ClanIDInList(const _INT16 ClanID[2])
 
 		// see if this user's name is same as one we're looking for
 		if (User.ClanID[0] == ClanID[0] && User.ClanID[1] == ClanID[1]) {
-			Found = TRUE;
+			Found = true;
 			break;
 		}
 	}
@@ -451,7 +451,7 @@ BOOL ClanIDInList(const _INT16 ClanID[2])
   Verify the ClanID is on this system, otherwise ignore call
   Read all the users in USERLIST.DAT; find and remove the specified Clan.
 */
-void RemoveFromUList(const _INT16 ClanID[2])
+void RemoveFromUList(const int16_t ClanID[2])
 {
 	// open file for r+b
 	// scan file for ClanID
@@ -462,7 +462,7 @@ void RemoveFromUList(const _INT16 ClanID[2])
 	struct UserInfo User;
 
 	// if this guy is NOT in our list, then we don't need to do this
-	if (ClanIDInList(ClanID) == FALSE)
+	if (ClanIDInList(ClanID) == false)
 		return;
 
 	// open user file
@@ -533,12 +533,12 @@ void UpdateNodesOnNewUser(struct UserInfo *User)
 	// create packet for all BBSes saying "Here's a new user, add him to your
 	// userlist"
 	FILE *fp;
-	_INT16 CurBBS;
+	int16_t CurBBS;
 
 	// for each BBS in the list, send him a packet
 	// must skip BBS #1 since that's this BBS (main BBS)
 	for (CurBBS = 1; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active == FALSE)
+		if (IBBS.Data->Nodes[CurBBS].Active == false)
 			continue;
 
 		IBBS_SendPacket(PT_ADDUSER, sizeof(struct UserInfo), User, CurBBS+1);
@@ -584,31 +584,31 @@ void IBBS_LeagueNewUser(struct UserInfo *User)
 // ------------------------------------------------------------------------- //
 /* Function Procedure:
    Check USERLIST.DAT for either ClanName or UserName that matches szName
-   If found, return TRUE else FALSE
+   If found, return true else false
 */
-BOOL IBBS_InList(char *szName, BOOL ClanName)
+bool IBBS_InList(char *szName, bool ClanName)
 {
 	// this and the other functions are ONLY used in InterBBS games.
 	// they are NOT used in local games since they are redundant
 
-	// returns TRUE if user (either clan name or username) is already in
+	// returns true if user (either clan name or username) is already in
 	// the list
 
 	// if you have a user who's data isn't in this BBS's .PC file, run this
-	// and if it returns TRUE, it must mean the user is already playing on
+	// and if it returns true, it must mean the user is already playing on
 	// another BBS
 
 	// use this for new users who choose clan name, if already in use, tell
-	// him after return TRUE
+	// him after return true
 
 	FILE *fpUList;
-	BOOL Found = FALSE;
+	bool Found = false;
 	struct UserInfo User;
 
 	fpUList = _fsopen("userlist.dat", "rb", SH_DENYWR);
 	if (!fpUList) {
 		// no user list found, assume not in list then
-		return FALSE;
+		return false;
 	}
 
 	// scan through file until end
@@ -619,14 +619,14 @@ BOOL IBBS_InList(char *szName, BOOL ClanName)
 		// see if this user's name is same as one we're looking for
 		if (ClanName) {
 			if (stricmp(User.szName, szName) == 0) {
-				Found = TRUE;
+				Found = true;
 				break;
 			}
 		}
 		else {
 			// compare with player's name
 			if (stricmp(User.szMasterName, szName) == 0) {
-				Found = TRUE;
+				Found = true;
 				break;
 			}
 		}
@@ -645,19 +645,19 @@ BOOL IBBS_InList(char *szName, BOOL ClanName)
    sent from this bbs.  The packet is from an Active BBS, specifying today's
    date and this game's id.
 */
-void IBBS_SendComeBack(_INT16 BBSIdTo, struct clan *Clan)
+void IBBS_SendComeBack(int16_t BBSIdTo, struct clan *Clan)
 {
 	// write packet
 	struct Packet Packet;
 	FILE *fp;
 
 	/* create packet header */
-	Packet.Active = TRUE;
+	Packet.Active = true;
 	Packet.BBSIDFrom = IBBS.Data->BBSID;
 	Packet.BBSIDTo = BBSIdTo;
 	Packet.PacketType = PT_COMEBACK;
 	strcpy(Packet.szDate, System.szTodaysDate);
-	Packet.PacketLength = sizeof(_INT16)*3;
+	Packet.PacketLength = sizeof(int16_t)*3;
 	strcpy(Packet.GameID, Game.Data->GameID);
 
 	fp = _fsopen("tmp.$$$", "wb", SH_DENYWR);
@@ -667,8 +667,8 @@ void IBBS_SendComeBack(_INT16 BBSIdTo, struct clan *Clan)
 	EncryptWrite(&Packet, sizeof(struct Packet), fp, XOR_PACKET);
 
 	// write info
-	EncryptWrite(Clan->ClanID, 2*sizeof(_INT16), fp, XOR_PACKET);
-	EncryptWrite(&IBBS.Data->BBSID, sizeof(_INT16), fp, XOR_PACKET);
+	EncryptWrite(Clan->ClanID, 2*sizeof(int16_t), fp, XOR_PACKET);
+	EncryptWrite(&IBBS.Data->BBSID, sizeof(int16_t), fp, XOR_PACKET);
 
 	fclose(fp);
 
@@ -695,7 +695,7 @@ void ReturnLostAttack(struct AttackPacket *AttackPacket)
 {
 	struct clan *TmpClan;
 	char *szMessage, szAttackerName[20];
-	_INT16 WhichBBS, iTemp, Junk[2];
+	int16_t WhichBBS, iTemp, Junk[2];
 
 	switch (AttackPacket->AttackingEmpire.OwnerType) {
 		case EO_VILLAGE :
@@ -725,12 +725,12 @@ void ReturnLostAttack(struct AttackPacket *AttackPacket)
 	// figure out which village it was
 	WhichBBS = AttackPacket->BBSToID-1;
 
-	sprintf(szMessage, "%s's attack on the village of %s was lost but returned.\nYou had sent the following: %ld footmen, %ld axemen, %ld knights.",
+	sprintf(szMessage, "%s's attack on the village of %s was lost but returned.\nYou had sent the following: %" PRId32 " footmen, %" PRId32 " axemen, %" PRId32 " knights.",
 			szAttackerName, IBBS.Data->Nodes[WhichBBS].Info.pszVillageName,
 			AttackPacket->AttackingArmy.Footmen, AttackPacket->AttackingArmy.Axemen,
 			AttackPacket->AttackingArmy.Knights);
 	Junk[0] = Junk[1] = -1;
-	GenericMessage(szMessage, AttackPacket->AttackOriginatorID, Junk, "", FALSE);
+	GenericMessage(szMessage, AttackPacket->AttackOriginatorID, Junk, "", false);
 	free(szMessage);
 	(void)iTemp;
 }
@@ -756,7 +756,7 @@ void IBBS_BackupMaint(void)
 	FILE *fpNew;
 	struct Packet Packet;
 	char *cpBuffer;
-	_INT16 iTemp;
+	int16_t iTemp;
 	struct clan *TmpClan;
 	struct AttackPacket AttackPacket;
 
@@ -798,7 +798,7 @@ void IBBS_BackupMaint(void)
 						EncryptRead(TmpClan->Member[iTemp], sizeof(struct pc), fpOld, XOR_PACKET);
 					}
 
-					IBBS_AddToGame(TmpClan, TRUE);
+					IBBS_AddToGame(TmpClan, true);
 
 					// tell other board to comeback in case of problems
 					// --> NO!!  SendComeBack(TmpClan->DestinationBBS, TmpClan);
@@ -862,7 +862,7 @@ void AbortTrip(void)
 {
 	struct LeavingData LeavingData;
 	FILE *fpLeavingDat;
-	_INT16 CurEntry = -1;
+	int16_t CurEntry = -1;
 
 	/* open LEAVING.DAT */
 	fpLeavingDat = _fsopen("leaving.dat", "r+b", SH_DENYRW);
@@ -879,16 +879,16 @@ void AbortTrip(void)
 			break;
 		}
 
-		if (LeavingData.Active == FALSE)    /* skip if inactive */
+		if (LeavingData.Active == false)    /* skip if inactive */
 			continue;
 
 		/* see if that's the one */
 		if (LeavingData.ClanID[0] == PClan->ClanID[0] &&
 				LeavingData.ClanID[1] == PClan->ClanID[1]) {
 			/* found it! */
-			fseek(fpLeavingDat, (long)CurEntry * sizeof(struct LeavingData), SEEK_SET);
+			fseek(fpLeavingDat, (int32_t)CurEntry * sizeof(struct LeavingData), SEEK_SET);
 
-			LeavingData.Active = FALSE;
+			LeavingData.Active = false;
 
 			EncryptWrite(&LeavingData, sizeof(LeavingData), fpLeavingDat, XOR_TRAVEL);
 			break;
@@ -939,7 +939,7 @@ void IBBS_CurrentTravelInfo(void)
 void IBBS_UpdateLeavingClan(struct clan *Clan, struct LeavingData LeavingData)
 {
 	char szString[128];
-	long Gold;
+	int32_t Gold;
 
 	/* update news */
 	sprintf(szString, ST_NEWSCLANEXIT, Clan->szName);
@@ -984,7 +984,7 @@ void IBBS_TravelMaint(void)
 	FILE *fpLeavingDat, *fpOutboundDat, *fpOld;
 	struct clan *TmpClan;
 	struct pc *TmpPC;
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	// DisplayStr("IBBS_TravelMaint()\n");
 
@@ -1008,11 +1008,11 @@ void IBBS_TravelMaint(void)
 			break;
 		}
 
-		if (LeavingData.Active == FALSE)  /* skip inactive ones */
+		if (LeavingData.Active == false)  /* skip inactive ones */
 			continue;
 
 		/* get Clan struct from .PC file */
-		if (GetClan(LeavingData.ClanID, TmpClan) == FALSE) {
+		if (GetClan(LeavingData.ClanID, TmpClan) == false) {
 			continue;
 		}
 
@@ -1062,7 +1062,7 @@ void IBBS_TravelMaint(void)
 		*/
 
 		/* create packet header */
-		Packet.Active = TRUE;
+		Packet.Active = true;
 		Packet.BBSIDFrom = IBBS.Data->BBSID;
 		Packet.BBSIDTo = LeavingData.DestID;
 		Packet.PacketType = PT_CLANMOVE;
@@ -1129,13 +1129,13 @@ void GetTroopsTraveling(struct LeavingData *LeavingData)
 		rputs(ST_LONGLINE);
 
 		// show troops currently going
-		sprintf(szString, " |0A(|0BA|0A) |0CFollowers        |14%ld\n", LeavingData->Followers);
+		sprintf(szString, " |0A(|0BA|0A) |0CFollowers        |14%" PRId32 "\n", LeavingData->Followers);
 		rputs(szString);
-		sprintf(szString, " |0A(|0BB|0A) |0CFootmen          |14%ld\n", LeavingData->Footmen);
+		sprintf(szString, " |0A(|0BB|0A) |0CFootmen          |14%" PRId32 "\n", LeavingData->Footmen);
 		rputs(szString);
-		sprintf(szString, " |0A(|0BC|0A) |0CAxemen           |14%ld\n", LeavingData->Axemen);
+		sprintf(szString, " |0A(|0BC|0A) |0CAxemen           |14%" PRId32 "\n", LeavingData->Axemen);
 		rputs(szString);
-		sprintf(szString, " |0A(|0BD|0A) |0CKnights          |14%ld\n", LeavingData->Knights);
+		sprintf(szString, " |0A(|0BD|0A) |0CKnights          |14%" PRId32 "\n", LeavingData->Knights);
 		rputs(szString);
 		rputs(" |0A(|0B0|0A) |0CDone\n");
 		rputs(ST_LONGLINE);
@@ -1177,7 +1177,7 @@ void GetTroopsTraveling(struct LeavingData *LeavingData)
 	rputs("Done\n\n");
 }
 
-BOOL IBBS_TravelToBBS(_INT16 DestID)
+bool IBBS_TravelToBBS(int16_t DestID)
 {
 	char szString[128];
 	struct LeavingData LeavingData;
@@ -1186,7 +1186,7 @@ BOOL IBBS_TravelToBBS(_INT16 DestID)
 	/* see if it's this BBS */
 	if (IBBS.Data->BBSID == DestID) {
 		rputs("You're already here!\n");
-		return FALSE;
+		return false;
 	}
 
 	/* if no recon yet */
@@ -1196,7 +1196,7 @@ BOOL IBBS_TravelToBBS(_INT16 DestID)
 		// if days since last recon is >= 10 days, don't allow travel
 
 		rputs("|12The path to that BBS is currently hazy.  Try again later.\n\n");
-		return FALSE;
+		return false;
 	}
 
 	/* see if travelling already */
@@ -1209,7 +1209,7 @@ BOOL IBBS_TravelToBBS(_INT16 DestID)
 			AbortTrip();
 		}
 		else
-			return FALSE;
+			return false;
 	}
 
 	Help("Traveling", ST_VILLHLP);
@@ -1220,7 +1220,7 @@ BOOL IBBS_TravelToBBS(_INT16 DestID)
 	if (YesNo(szString) == YES) {
 		/* append LEAVING.DAT file */
 		LeavingData.DestID = DestID;
-		LeavingData.Active = TRUE;
+		LeavingData.Active = true;
 		LeavingData.ClanID[0] = PClan->ClanID[0];
 		LeavingData.ClanID[1] = PClan->ClanID[1];
 
@@ -1235,7 +1235,7 @@ BOOL IBBS_TravelToBBS(_INT16 DestID)
 		fpLeavingDat = _fsopen("leaving.dat", "ab", SH_DENYRW);
 		if (!fpLeavingDat) {
 			//rputs("|04Couldn't open LEAVING.DAT file\n");
-			return FALSE;
+			return false;
 		}
 		EncryptWrite(&LeavingData, sizeof(LeavingData), fpLeavingDat, XOR_TRAVEL);
 		fclose(fpLeavingDat);
@@ -1249,14 +1249,14 @@ BOOL IBBS_TravelToBBS(_INT16 DestID)
 	}
 	else {
 		rputs("|04Trip aborted.\n");
-		return FALSE;
+		return false;
 	}
 
 	rputs("|14Trip set!\n");
-	return TRUE;
+	return true;
 }
 
-void IBBS_SeeVillages(BOOL Travel)
+void IBBS_SeeVillages(bool Travel)
 {
 	/* view other villages and their info */
 	/* allow user to choose village as he would a help file */
@@ -1264,15 +1264,15 @@ void IBBS_SeeVillages(BOOL Travel)
 	/* display last stats for that village -- ruler, tax rate, etc. */
 	/* if user enters blank line, quit */
 
-	_INT16 iTemp, NumBBSes, WhichBBS;
+	int16_t iTemp, NumBBSes, WhichBBS;
 	char *pszBBSNames[MAX_IBBSNODES], szString[128], BBSIndex[MAX_IBBSNODES];
-	__BOOL ShowInitially;
+	bool ShowInitially;
 
 	NumBBSes = 0;
 	for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 		pszBBSNames[iTemp] = NULL;
 
-		if (IBBS.Data->Nodes[iTemp].Active == FALSE)
+		if (IBBS.Data->Nodes[iTemp].Active == false)
 			continue;
 
 		pszBBSNames [ NumBBSes ] = IBBS.Data->Nodes[iTemp].Info.pszVillageName;
@@ -1280,14 +1280,14 @@ void IBBS_SeeVillages(BOOL Travel)
 		NumBBSes++;
 	}
 
-	ShowInitially = TRUE;
+	ShowInitially = true;
 
 	for (;;) {
 		// choose which BBS
 		GetStringChoice(pszBBSNames, NumBBSes, "|0SChoose which village.\n|0E> |0F",
-						&WhichBBS, ShowInitially, DT_WIDE, TRUE);
+						&WhichBBS, ShowInitially, DT_WIDE, true);
 
-		ShowInitially = FALSE;
+		ShowInitially = false;
 
 		if (WhichBBS == -1)
 			return;
@@ -1330,7 +1330,7 @@ void IBBS_AddLCLog(char *szString)
 
 void IBBS_Destroy(void)
 {
-	_INT16 CurBBS;
+	int16_t CurBBS;
 
 	if (!IBBS.Initialized)
 		return;
@@ -1348,7 +1348,7 @@ void IBBS_Destroy(void)
 
 	free(IBBS.Data);
 
-	IBBS.Initialized = FALSE;
+	IBBS.Initialized = false;
 }
 
 // ------------------------------------------------------------------------- //
@@ -1369,11 +1369,11 @@ void IBBS_LoginStats(void)
 
 void IBBS_Create(void)
 {
-	_INT16 CurBBS;
+	int16_t CurBBS;
 
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
 		if (IBBS.Data->Nodes[CurBBS].Active) {
-			IBBS.Data->Nodes[CurBBS].Reset.Received = FALSE;
+			IBBS.Data->Nodes[CurBBS].Reset.Received = false;
 			IBBS.Data->Nodes[CurBBS].Reset.LastSent = 0;
 
 			IBBS.Data->Nodes[CurBBS].Recon.LastReceived = 0;
@@ -1389,7 +1389,7 @@ void IBBS_Create(void)
 void IBBS_Read(void)
 {
 	FILE *fp;
-	_INT16 CurBBS;
+	int16_t CurBBS;
 
 	fp = _fsopen("ibbs.dat", "rb", SH_DENYWR);
 	if (!fp) {
@@ -1414,7 +1414,7 @@ void IBBS_Read(void)
 		if (IBBS.Data->Nodes[CurBBS].Active) {
 			if (!EncryptRead(&IBBS.Data->Nodes[CurBBS].Reset, sizeof(struct ibbs_node_reset),
 							 fp, XOR_IBBS)) {
-				IBBS.Data->Nodes[CurBBS].Reset.Received = FALSE;
+				IBBS.Data->Nodes[CurBBS].Reset.Received = false;
 				IBBS.Data->Nodes[CurBBS].Reset.LastSent = 0;
 			}
 		}
@@ -1429,7 +1429,7 @@ void IBBS_Read(void)
 void IBBS_Write(void)
 {
 	FILE *fp;
-	_INT16 CurBBS;
+	int16_t CurBBS;
 	struct ibbs_node_attack DummyAttack;
 	struct ibbs_node_recon DummyRecon;
 	struct ibbs_node_reset DummyReset;
@@ -1439,7 +1439,7 @@ void IBBS_Write(void)
 		return;
 	}
 
-	DummyReset.Received = FALSE;
+	DummyReset.Received = false;
 	DummyReset.LastSent = 0;
 
 	DummyRecon.LastReceived = 0;
@@ -1481,18 +1481,18 @@ void IBBS_Write(void)
 
 // ------------------------------------------------------------------------- //
 
-_INT16 FoundPoint = FALSE;
-_INT16 Level = 0;
-_INT16 StartingPoint;
-struct  PACKED Point {
+int16_t FoundPoint = false;
+int16_t Level = 0;
+int16_t StartingPoint;
+struct Point {
 	char BackLink;
 	char ForwardLinks[MAX_IBBSNODES];
 } *Points[MAX_IBBSNODES];
 
 
-void FindPoint(_INT16 Destination, _INT16 Source, _INT16 BasePoint)
+void FindPoint(int16_t Destination, int16_t Source, int16_t BasePoint)
 {
-	_INT16 CurLink;
+	int16_t CurLink;
 
 	Level++;
 
@@ -1502,7 +1502,7 @@ void FindPoint(_INT16 Destination, _INT16 Source, _INT16 BasePoint)
 			StartingPoint = Source;
 
 		//printf("Found %d.  Starting point was %d\n", Source+1, StartingPoint+1);
-		FoundPoint = TRUE;
+		FoundPoint = true;
 		Level--;
 		return;
 	}
@@ -1559,17 +1559,17 @@ void IBBS_LoadNDX(void)
 	FILE *fpWorld;
 	char szLine[400], *pcCurrentPos, szString[400];
 	char szToken[MAX_TOKEN_CHARS + 1], *pcAt;
-	WORD uCount;
-	_INT16 iKeyWord;
-	_INT16 CurBBS = 0;
-	_INT16 iTemp, OrigWorlds, CurSlot;
+	uint16_t uCount;
+	int16_t iKeyWord;
+	int16_t CurBBS = 0;
+	int16_t iTemp, OrigWorlds, CurSlot;
 	char TypeOfStat;
-	BOOL UseHost = FALSE;           // set if using host method of routing
-	BOOL InDescription = FALSE;
+	bool UseHost = false;           // set if using host method of routing
+	bool InDescription = false;
 
 	/* make all bbs NULL pointers */
 	for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++)
-		IBBS.Data->Nodes[iTemp].Active = FALSE;
+		IBBS.Data->Nodes[iTemp].Active = false;
 
 	/* read in .NDX file */
 	fpWorld = _fsopen("world.ndx", "r", SH_DENYWR);
@@ -1631,7 +1631,7 @@ void IBBS_LoadNDX(void)
 
 						/* activate this BBS */
 
-						IBBS.Data->Nodes[CurBBS].Active = TRUE;
+						IBBS.Data->Nodes[CurBBS].Active = true;
 						IBBS.Data->Nodes[CurBBS].Info.pszBBSName = NULL;
 						IBBS.Data->Nodes[CurBBS].Info.pszVillageName = NULL;
 						IBBS.Data->Nodes[CurBBS].Info.pszAddress = NULL;
@@ -1668,7 +1668,7 @@ void IBBS_LoadNDX(void)
 						break;
 					case 9 :        /* Host */
 						/* get tokens till no more */
-						UseHost = TRUE;
+						UseHost = true;
 
 						for (;;) {
 							GetToken(pcCurrentPos, szString);
@@ -1710,7 +1710,7 @@ void IBBS_LoadNDX(void)
 						}
 						break;
 					case 10 : /* NoMSG */
-						NoMSG[CurBBS] = TRUE;
+						NoMSG[CurBBS] = true;
 						break;
 				}
 				break;
@@ -1722,11 +1722,11 @@ void IBBS_LoadNDX(void)
 	// is used, so figure out routing
 	if (UseHost)
 		for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-			if (IBBS.Data->Nodes[iTemp].Active == FALSE)
+			if (IBBS.Data->Nodes[iTemp].Active == false)
 				continue;
 
 			//printf("searching for %d\n", iTemp+1);
-			FoundPoint = FALSE;
+			FoundPoint = false;
 			StartingPoint = -1;
 			FindPoint(iTemp, IBBS.Data->BBSID-1, IBBS.Data->BBSID-1);
 
@@ -1755,9 +1755,9 @@ void IBBS_ProcessRouteConfig(void)
 	FILE *fpRouteConfigFile;
 	char szRouteConfigName[40], szRouteConfigLine[255];
 	char *pcCurrentPos;
-	WORD uCount;
+	uint16_t uCount;
 	char szToken[MAX_TOKEN_CHARS + 1], szFirstToken[20], szSecondToken[20];
-	_INT16 iKeyWord, iTemp;
+	int16_t iKeyWord, iTemp;
 
 	fpRouteConfigFile = _fsopen("route.cfg", "rt", SH_DENYWR);
 	if (!fpRouteConfigFile) {
@@ -1795,7 +1795,7 @@ void IBBS_ProcessRouteConfig(void)
 							//printf("all mail being routed through %d\n", atoi(szSecondToken));
 							/* route all through somewhere else */
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-								if (IBBS.Data->Nodes[iTemp].Active == FALSE)
+								if (IBBS.Data->Nodes[iTemp].Active == false)
 									continue;
 
 								IBBS.Data->Nodes[iTemp].Info.RouteThrough = atoi(szSecondToken);
@@ -1813,7 +1813,7 @@ void IBBS_ProcessRouteConfig(void)
 						if (stricmp(szFirstToken, "ALL") == 0) {
 							//printf("all mail being crashed\n");
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-								if (IBBS.Data->Nodes[iTemp].Active == FALSE)
+								if (IBBS.Data->Nodes[iTemp].Active == false)
 									continue;
 
 								IBBS.Data->Nodes[iTemp].Info.MailType = MT_CRASH;
@@ -1831,7 +1831,7 @@ void IBBS_ProcessRouteConfig(void)
 						if (stricmp(szFirstToken, "ALL") == 0) {
 							//printf("all mail being held\n");
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-								if (IBBS.Data->Nodes[iTemp].Active == FALSE)
+								if (IBBS.Data->Nodes[iTemp].Active == false)
 									continue;
 
 								IBBS.Data->Nodes[iTemp].Info.MailType = MT_HOLD;
@@ -1849,7 +1849,7 @@ void IBBS_ProcessRouteConfig(void)
 						if (stricmp(szFirstToken, "ALL") == 0) {
 							//printf("all mail set to normal\n");
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-								if (IBBS.Data->Nodes[iTemp].Active == FALSE)
+								if (IBBS.Data->Nodes[iTemp].Active == false)
 									continue;
 
 								IBBS.Data->Nodes[iTemp].Info.MailType = MT_NORMAL;
@@ -1872,20 +1872,20 @@ void IBBS_ProcessRouteConfig(void)
 
 // ------------------------------------------------------------------------- //
 
-void IBBS_SendPacketFile(_INT16 DestID, char *pszSendFile)
+void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 {
 	char szFullFileName[500], szPacketName[13]; /* 12345678.123 */
 	char PacketIndex[MAX_IBBSNODES], LastCounter, szString[580];
 	FILE *fp;
 	tIBInfo InterBBSInfo;
 
-	if (IBBS.Initialized == FALSE) {
+	if (IBBS.Initialized == false) {
 		System_Error("IBBS not initialized for call.\n");
 	}
 
 
 	if (DestID <= 0 || DestID > MAX_IBBSNODES ||
-			IBBS.Data->Nodes[DestID-1].Active == FALSE) {
+			IBBS.Data->Nodes[DestID-1].Active == false) {
 		DisplayStr("IBBS_SendPacketFile() aborted:  Invalid ID\n");
 		return;
 	}
@@ -1908,16 +1908,16 @@ void IBBS_SendPacketFile(_INT16 DestID, char *pszSendFile)
 	strncpy(InterBBSInfo.szNetmailDir, Config->szNetmailDir, PATH_CHARS);
 	InterBBSInfo.szNetmailDir[PATH_CHARS] = '\0';
 
-	InterBBSInfo.bHold = FALSE;
-	InterBBSInfo.bCrash = FALSE;
+	InterBBSInfo.bHold = false;
+	InterBBSInfo.bCrash = false;
 
 	if (IBBS.Data->Nodes[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ].Info.MailType == MT_CRASH)
-		InterBBSInfo.bCrash = TRUE;
+		InterBBSInfo.bCrash = true;
 	else if (IBBS.Data->Nodes[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ].Info.MailType == MT_HOLD)
-		InterBBSInfo.bHold = TRUE;
+		InterBBSInfo.bHold = true;
 
-	InterBBSInfo.bEraseOnSend = TRUE;
-	InterBBSInfo.bEraseOnReceive = TRUE;
+	InterBBSInfo.bEraseOnSend = true;
+	InterBBSInfo.bEraseOnReceive = true;
 	InterBBSInfo.nTotalSystems = 0;
 	InterBBSInfo.paOtherSystem = NULL;
 
@@ -2014,7 +2014,7 @@ void IBBS_SendPacketFile(_INT16 DestID, char *pszSendFile)
 
 
 // ------------------------------------------------------------------------- //
-void IBBS_SendSpy(struct empire *Empire, _INT16 DestID)
+void IBBS_SendSpy(struct empire *Empire, int16_t DestID)
 {
 	struct SpyAttemptPacket Spy;
 	struct Packet Packet;
@@ -2042,7 +2042,7 @@ void IBBS_SendSpy(struct empire *Empire, _INT16 DestID)
 	Spy.TargetType = EO_VILLAGE;
 
 	/* create packet header */
-	Packet.Active = TRUE;
+	Packet.Active = true;
 	Packet.BBSIDTo = DestID;
 	Packet.BBSIDFrom = IBBS.Data->BBSID;
 	Packet.PacketType = PT_SPY;
@@ -2070,7 +2070,7 @@ void IBBS_SendSpy(struct empire *Empire, _INT16 DestID)
 // ------------------------------------------------------------------------- //
 
 void IBBS_SendAttackPacket(struct empire *AttackingEmpire, struct Army *AttackingArmy,
-						   _INT16 Goal, _INT16 ExtentOfAttack, _INT16 TargetType, _INT16 ClanID[2], _INT16 DestID)
+						   int16_t Goal, int16_t ExtentOfAttack, int16_t TargetType, int16_t ClanID[2], int16_t DestID)
 {
 	struct AttackPacket AttackPacket;
 
@@ -2137,19 +2137,19 @@ void IBBS_ShowLeagueAscii(void)
 
 // ------------------------------------------------------------------------- //
 
-void IBBS_SendPacket(_INT16 PacketType, long PacketLength, void *PacketData,
-					 _INT16 DestID)
+void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
+					 int16_t DestID)
 {
 	struct Packet Packet;
 	FILE *fpOutboundDat, *fpBackupDat;
 
 	if (DestID <= 0 || DestID > MAX_IBBSNODES ||
-			IBBS.Data->Nodes[ DestID - 1].Active == FALSE) {
+			IBBS.Data->Nodes[ DestID - 1].Active == false) {
 		DisplayStr("IBBS_SendPacket() aborted:  Invalid ID\n");
 		return;
 	}
 
-	Packet.Active = TRUE;
+	Packet.Active = true;
 
 	strcpy(Packet.GameID, Game.Data->GameID);
 	strcpy(Packet.szDate, System.szTodaysDate);
@@ -2196,13 +2196,13 @@ void IBBS_SendPacket(_INT16 PacketType, long PacketLength, void *PacketData,
 
 // ------------------------------------------------------------------------- //
 
-void IBBS_SendRecon(_INT16 DestID)
+void IBBS_SendRecon(int16_t DestID)
 {
 	if (IBBS.Data->Nodes[ DestID - 1].Active)
 		IBBS_SendPacket(PT_RECON, 0, 0, DestID);
 }
 
-void IBBS_SendReset(_INT16 DestID)
+void IBBS_SendReset(int16_t DestID)
 {
 	if (IBBS.Data->Nodes[ DestID - 1].Active)
 		IBBS_SendPacket(PT_RESET, sizeof(struct game_data), Game.Data, DestID);
@@ -2211,7 +2211,7 @@ void IBBS_SendReset(_INT16 DestID)
 
 void IBBS_UpdateRecon(void)
 {
-	_INT16 CurBBS;
+	int16_t CurBBS;
 
 	// go through all Nodes,
 	// if Node is active AND last recon sent is 0, send recon and update
@@ -2242,7 +2242,7 @@ void IBBS_UpdateRecon(void)
 
 void IBBS_UpdateReset(void)
 {
-	_INT16 CurBBS;
+	int16_t CurBBS;
 
 	// go through all Nodes,
 	// if Node hasn't yet received a reset AND a reset hasn't been sent yet
@@ -2251,7 +2251,7 @@ void IBBS_UpdateReset(void)
 	// can ONLY be run by LC!!!
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
 		if (IBBS.Data->Nodes[CurBBS].Active && (CurBBS+1) != IBBS.Data->BBSID) {
-			if (IBBS.Data->Nodes[CurBBS].Reset.Received == FALSE &&
+			if (IBBS.Data->Nodes[CurBBS].Reset.Received == false &&
 					IBBS.Data->Nodes[CurBBS].Reset.LastSent < DaysSince1970(System.szTodaysDate)) {
 				//printf("Sending reset to BBS #%d\n", CurBBS+1);
 				IBBS_SendReset(CurBBS+1);
@@ -2265,7 +2265,7 @@ void IBBS_UpdateReset(void)
 void IBBS_LeagueInfo(void)
 {
 	char szString[128];
-	_INT16 CurBBS, NumBBSes;
+	int16_t CurBBS, NumBBSes;
 
 	rputs("\n\n|14League Info|06\n\n");
 
@@ -2278,7 +2278,7 @@ void IBBS_LeagueInfo(void)
 
 	if (Game.Data->GameState == 0) {
 		rputs("A game is currently in progress.\n");
-		sprintf(szString, "Days in progress |07%ld|06\n", DaysBetween(Game.Data->szDateGameStart, System.szTodaysDate));
+		sprintf(szString, "Days in progress |07%" PRId32 "|06\n", DaysBetween(Game.Data->szDateGameStart, System.szTodaysDate));
 		rputs(szString);
 		/*
 		            sprintf(szString, "Elimination mode is |14%s|06\n",
@@ -2302,7 +2302,7 @@ void IBBS_LeagueInfo(void)
 	for (CurBBS = 0, NumBBSes = 1; CurBBS < MAX_IBBSNODES; CurBBS++) {
 		if (IBBS.Data->Nodes[CurBBS].Active) {
 			if (CurBBS+1 != IBBS.Data->BBSID) {
-				sprintf(szString, "|06%-2d |14%-20s |06%-20s |07%-10s (%2ld/%2ld)\n",
+				sprintf(szString, "|06%-2d |14%-20s |06%-20s |07%-10s (%2" PRId32 "/%2" PRId32 ")\n",
 						CurBBS+1, IBBS.Data->Nodes[CurBBS].Info.pszBBSName,
 						IBBS.Data->Nodes[CurBBS].Info.pszVillageName, IBBS.Data->Nodes[CurBBS].Info.pszAddress,
 						DaysSince1970(System.szTodaysDate) - IBBS.Data->Nodes[CurBBS].Recon.LastReceived,
@@ -2331,7 +2331,7 @@ void KillAlliances(void)
 {
 	struct Alliance *Alliances[MAX_ALLIANCES];
 	char szFileName[13];
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	GetAlliances(Alliances);
 
@@ -2423,13 +2423,13 @@ void IBBS_Reset(struct game_data *GameData)
 
 // ------------------------------------------------------------------------- //
 // This removes a ClanMOVE packet from backup.dat and only that type!
-void IBBS_RemoveFromBackup(_INT16 ID[2])
+void IBBS_RemoveFromBackup(int16_t ID[2])
 {
 	FILE *fpBackupDat;
 	struct Packet Packet;
 	struct clan *TmpClan;
-	long OldFileOffset; /* records start of packet so we can seek back to it */
-	_INT16 ClanID[2];
+	int32_t OldFileOffset; /* records start of packet so we can seek back to it */
+	int16_t ClanID[2];
 
 	/* find leaving packet in Backup.dat and set as inactive */
 
@@ -2458,7 +2458,7 @@ void IBBS_RemoveFromBackup(_INT16 ID[2])
 				break;
 
 			if (TmpClan->ClanID[0] == ID[0] && TmpClan->ClanID[1] == ID[1])
-				Packet.Active = FALSE;
+				Packet.Active = false;
 		}
 		/* if packet doesn't have same ID OR is not clanmove type, skip */
 		else {
@@ -2486,12 +2486,12 @@ void IBBS_RemoveFromBackup(_INT16 ID[2])
 
 
 // ------------------------------------------------------------------------- //
-void IBBS_AddToGame(struct clan *Clan, BOOL WasLost)
+void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 {
 	char szString[128];
 	FILE *fpPC;
-	_INT16 iTemp, CurClan;
-	BOOL FoundMatch = FALSE;
+	int16_t iTemp, CurClan;
+	bool FoundMatch = false;
 	struct clan *TmpClan;
 
 	/* update news */
@@ -2513,7 +2513,7 @@ void IBBS_AddToGame(struct clan *Clan, BOOL WasLost)
 		for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
 			Clan->Alliances[iTemp] = -1;
 		Clan->PublicMsgIndex = 0;
-		Clan->MadeAlliance = FALSE;
+		Clan->MadeAlliance = false;
 
 		// make it so no quests known or done
 		for (iTemp = 0; iTemp < MAX_QUESTS/8; iTemp++) {
@@ -2538,7 +2538,7 @@ void IBBS_AddToGame(struct clan *Clan, BOOL WasLost)
 	CurClan = 0;
 	for (;;) {
 		/* seek to current clan */
-		fseek(fpPC, (long)CurClan *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET);
+		fseek(fpPC, (int32_t)CurClan *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET);
 
 		/* read in tmp clan */
 		if (EncryptRead(TmpClan, sizeof(struct clan), fpPC, XOR_USER) == 0)
@@ -2559,7 +2559,7 @@ void IBBS_AddToGame(struct clan *Clan, BOOL WasLost)
 			Clan->Empire.Army.Knights   += TmpClan->Empire.Army.Knights;
 			Clan->PublicMsgIndex         = TmpClan->PublicMsgIndex;
 			Clan->MadeAlliance           = TmpClan->MadeAlliance;
-			Clan->Eliminated             = FALSE;
+			Clan->Eliminated             = false;
 
 			// make it so no quests known are same
 			for (iTemp = 0; iTemp < MAX_QUESTS/8; iTemp++) {
@@ -2568,7 +2568,7 @@ void IBBS_AddToGame(struct clan *Clan, BOOL WasLost)
 			}
 
 			/* seek to that spot and write the merged info to file */
-			fseek(fpPC, (long)CurClan *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET);
+			fseek(fpPC, (int32_t)CurClan *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET);
 
 			EncryptWrite(Clan, sizeof(struct clan), fpPC, XOR_USER);
 
@@ -2576,7 +2576,7 @@ void IBBS_AddToGame(struct clan *Clan, BOOL WasLost)
 			for (iTemp = 0; iTemp < 6; iTemp++)
 				EncryptWrite(Clan->Member[iTemp], sizeof(struct pc), fpPC, XOR_USER);
 
-			FoundMatch = TRUE;
+			FoundMatch = true;
 			break;
 		}
 		CurClan++;
@@ -2588,12 +2588,12 @@ void IBBS_AddToGame(struct clan *Clan, BOOL WasLost)
 	   will be written */
 
 	/* if not there, close file, open for ab and then append on end */
-	if (FoundMatch == FALSE) {
+	if (FoundMatch == false) {
 		// fix alliances since they are not the same on each BBS
 		for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
 			Clan->Alliances[iTemp] = -1;
 		Clan->PublicMsgIndex = 0;
-		Clan->MadeAlliance = FALSE;
+		Clan->MadeAlliance = false;
 
 		fpPC = _fsopen(ST_CLANSPCFILE, "ab", SH_DENYRW);
 		EncryptWrite(Clan, sizeof(struct clan), fpPC, XOR_USER);
@@ -2608,7 +2608,7 @@ void IBBS_AddToGame(struct clan *Clan, BOOL WasLost)
 	/* done */
 }
 
-void ComeBack(_INT16 ClanID[2], _INT16 BBSID)
+void ComeBack(int16_t ClanID[2], int16_t BBSID)
 {
 	struct LeavingData LeavingData;
 	FILE *fpLeavingDat;
@@ -2619,7 +2619,7 @@ void ComeBack(_INT16 ClanID[2], _INT16 BBSID)
 	CheckMem(TmpClan);
 
 	// get Clan from file
-	if (GetClan(ClanID, TmpClan) == FALSE) {
+	if (GetClan(ClanID, TmpClan) == false) {
 		FreeClan(TmpClan);
 		return; // not even here!
 	}
@@ -2632,7 +2632,7 @@ void ComeBack(_INT16 ClanID[2], _INT16 BBSID)
 
 	/* append leaving.dat file */
 	LeavingData.DestID = BBSID;
-	LeavingData.Active = TRUE;
+	LeavingData.Active = true;
 	LeavingData.ClanID[0] = TmpClan->ClanID[0];
 	LeavingData.ClanID[1] = TmpClan->ClanID[1];
 
@@ -2658,17 +2658,17 @@ void ComeBack(_INT16 ClanID[2], _INT16 BBSID)
 }
 
 
-_INT16 IBBS_ProcessPacket(char *szFileName)
+int16_t IBBS_ProcessPacket(char *szFileName)
 {
 	struct SpyResultPacket SpyResult;
 	struct SpyAttemptPacket Spy;
 	FILE *fp, *fpNewFile, *fpScores, *fpWorldNDX, *fpUserList;
 	struct Packet Packet;
 	struct clan *TmpClan;
-	_INT16 iTemp, OwnerType, NumScores;
+	int16_t iTemp, OwnerType, NumScores;
 	char *pcBuffer, szString[128], GameID[16], GameDate[16], szName[25],
 	ScoreDate[11];
-	_INT16 ClanID[2], BBSID;
+	int16_t ClanID[2], BBSID;
 	struct game_data GameData;
 	struct Message Message;
 	struct UserScore **UserScores;
@@ -2768,7 +2768,7 @@ _INT16 IBBS_ProcessPacket(char *szFileName)
 
 			DisplayStr(szString);
 
-			IBBS.Data->Nodes[ Packet.BBSIDFrom - 1].Reset.Received = TRUE;
+			IBBS.Data->Nodes[ Packet.BBSIDFrom - 1].Reset.Received = true;
 		}
 		else if (Packet.PacketType == PT_RECON) {
 			// send back a GOTRECON
@@ -2801,7 +2801,7 @@ _INT16 IBBS_ProcessPacket(char *szFileName)
 		else if (Packet.PacketType == PT_SCOREDATA) {
 			DisplayStr("|08- |07score data\n");
 
-			EncryptRead(&NumScores, sizeof(_INT16), fp, XOR_PACKET);
+			EncryptRead(&NumScores, sizeof(int16_t), fp, XOR_PACKET);
 
 			// read the scores in
 			UserScores = malloc(sizeof(struct UserScore *) * MAX_USERS);
@@ -2828,7 +2828,7 @@ _INT16 IBBS_ProcessPacket(char *szFileName)
 		else if (Packet.PacketType == PT_SCORELIST) {
 			DisplayStr("|08- |07score list\n");
 
-			EncryptRead(&NumScores, sizeof(_INT16), fp, XOR_PACKET);
+			EncryptRead(&NumScores, sizeof(int16_t), fp, XOR_PACKET);
 
 			// read in date
 			EncryptRead(ScoreDate, 11, fp, XOR_PACKET);
@@ -2888,8 +2888,8 @@ _INT16 IBBS_ProcessPacket(char *szFileName)
 			/* update .PC file with this guys stats */
 			// only do if in a game already
 			if (Game.Data->GameState == 0) {
-				IBBS_AddToGame(TmpClan, FALSE);
-				IBBS_SendPacket(PT_DATAOK, sizeof(_INT16)*2, TmpClan->ClanID, Packet.BBSIDFrom);
+				IBBS_AddToGame(TmpClan, false);
+				IBBS_SendPacket(PT_DATAOK, sizeof(int16_t)*2, TmpClan->ClanID, Packet.BBSIDFrom);
 			}
 
 			FreeClan(TmpClan);
@@ -2901,7 +2901,7 @@ _INT16 IBBS_ProcessPacket(char *szFileName)
 			/* data ok for specific char */
 			DisplayStr("|08- |07Received DataOk\n");
 
-			EncryptRead(ClanID, sizeof(_INT16)*2, fp, XOR_PACKET);
+			EncryptRead(ClanID, sizeof(int16_t)*2, fp, XOR_PACKET);
 
 			IBBS_RemoveFromBackup(ClanID);
 		}
@@ -2910,8 +2910,8 @@ _INT16 IBBS_ProcessPacket(char *szFileName)
 			DisplayStr("|08- |07comeback found\n");
 
 			// read in clanID + BBSId of destination
-			EncryptRead(ClanID, 2*sizeof(_INT16), fp, XOR_PACKET);
-			EncryptRead(&BBSID, sizeof(_INT16), fp, XOR_PACKET);
+			EncryptRead(ClanID, 2*sizeof(int16_t), fp, XOR_PACKET);
+			EncryptRead(&BBSID, sizeof(int16_t), fp, XOR_PACKET);
 
 			ComeBack(ClanID, BBSID);
 		}
@@ -2924,7 +2924,7 @@ _INT16 IBBS_ProcessPacket(char *szFileName)
 			EncryptRead(&User, sizeof(struct UserInfo), fp, XOR_PACKET);
 
 			// see if user is already in list
-			if (IBBS_InList(User.szMasterName, FALSE)) {
+			if (IBBS_InList(User.szMasterName, false)) {
 				// if so, return packet saying "Delete that guy!"
 				IBBS_SendDelUser(Packet.BBSIDFrom, &User);
 			}
@@ -2959,7 +2959,7 @@ _INT16 IBBS_ProcessPacket(char *szFileName)
 			sprintf(szString, "deleting %s\n", User.szName);
 			DisplayStr(szString);
 
-			DeleteClan(User.ClanID, User.szName, FALSE);
+			DeleteClan(User.ClanID, User.szName, false);
 		}
 		else if (Packet.PacketType == PT_SUBUSER) {
 			// user is being deleted from all boards
@@ -2972,7 +2972,7 @@ _INT16 IBBS_ProcessPacket(char *szFileName)
 			DisplayStr(szString);
 
 			// remove him from clan data AND userlist (done in DeleteClan)
-			DeleteClan(User.ClanID, User.szName, FALSE);
+			DeleteClan(User.ClanID, User.szName, false);
 		}
 		else if (Packet.PacketType == PT_ATTACK) {
 			DisplayStr("|08- |07attack found\n");
@@ -3074,12 +3074,12 @@ _INT16 IBBS_ProcessPacket(char *szFileName)
 
 // ------------------------------------------------------------------------- //
 
-// returns TRUE (I think) if no more files
-BOOL GetNextFile(char *szWildcard, char *szFileName)
+// returns true (I think) if no more files
+bool GetNextFile(char *szWildcard, char *szFileName)
 {
 	struct ffblk ffblks;
-	WORD date = 65534, time = 65534;
-	BOOL Done, NoMoreFiles = TRUE;
+	uint16_t date = 65534, time = 65534;
+	bool Done, NoMoreFiles = true;
 
 	Done = findfirst(szWildcard, &ffblks, 0);
 
@@ -3098,7 +3098,7 @@ BOOL GetNextFile(char *szWildcard, char *szFileName)
 				date = ffblks.ff_fdate;
 				time = ffblks.ff_ftime;
 				strcpy(szFileName, ffblks.ff_name);
-				NoMoreFiles = FALSE;
+				NoMoreFiles = false;
 			}
 		}
 		Done = findnext(&ffblks);
@@ -3112,10 +3112,10 @@ void IBBS_PacketIn(void)
 	tIBInfo InterBBSInfo;
 	/*      struct ffblk ffblk;*/
 	char szFileName[500], szPacketName[500], szString[580], szFileName2[500];
-	BOOL Done;
+	bool Done;
 	FILE *fp;
 
-	if (Game.Data->InterBBS == FALSE) {
+	if (Game.Data->InterBBS == false) {
 		DisplayStr("|12* This game is not set up for InterBBS!\n");
 		return;
 	}
@@ -3132,10 +3132,10 @@ void IBBS_PacketIn(void)
 	strncpy(InterBBSInfo.szNetmailDir, Config->szNetmailDir, PATH_CHARS);
 	InterBBSInfo.szNetmailDir[PATH_CHARS] = '\0';
 
-	InterBBSInfo.bHold = FALSE;
-	InterBBSInfo.bCrash = FALSE;
-	InterBBSInfo.bEraseOnSend = TRUE;
-	InterBBSInfo.bEraseOnReceive = TRUE;
+	InterBBSInfo.bHold = false;
+	InterBBSInfo.bCrash = false;
+	InterBBSInfo.bEraseOnSend = true;
+	InterBBSInfo.bEraseOnReceive = true;
 	InterBBSInfo.nTotalSystems = 0;
 	InterBBSInfo.paOtherSystem = NULL;
 
@@ -3168,7 +3168,7 @@ void IBBS_PacketIn(void)
 	while (!Done) {
 		/* process file */
 
-		if (System.LocalIBBS == FALSE) {
+		if (System.LocalIBBS == false) {
 			strcpy(szFileName, Config->szInboundDir);
 			//strcat(szFileName, ffblk.ff_name);
 			strcat(szFileName, szFileName2);
@@ -3199,7 +3199,7 @@ void IBBS_PacketIn(void)
 	// look for new nodelist
 	// look for world.ndx first
 	// if not found, go for WORLD.ID
-	if (System.LocalIBBS == FALSE) {
+	if (System.LocalIBBS == false) {
 		// try world.ID
 #ifdef __unix__
 		sprintf(szFileName2, "[Ww][Oo][Rr][Ll][Dd].%-2s", Game.Data->LeagueID);
@@ -3243,7 +3243,7 @@ void IBBS_Init(void)
 
 	IBBS.Data = malloc(sizeof(struct ibbs_data));
 	CheckMem(IBBS.Data);
-	IBBS.Initialized = TRUE;
+	IBBS.Initialized = true;
 
 	IBBS.Data->BBSID = Config->BBSID;
 
@@ -3274,9 +3274,9 @@ void IBBS_Close(void)
 
 void IBBS_Maint(void)
 {
-	_INT16 CurBBS;
+	int16_t CurBBS;
 
-	if (Game.Data->InterBBS == FALSE)
+	if (Game.Data->InterBBS == false)
 		return;
 
 	DisplayStr("* IBBS_Maint()\n");
@@ -3294,9 +3294,9 @@ void IBBS_Maint(void)
 
 	// scores for the league
 	if (IBBS.Data->BBSID != 1)
-		CreateScoreData(TRUE);
+		CreateScoreData(true);
 
-	CreateScoreData(FALSE);
+	CreateScoreData(false);
 
 	if (IBBS.Data->BBSID == 1)
 		SendScoreList();
@@ -3339,7 +3339,7 @@ int findfirst(const char *pathname, struct ffblk *ffblks, int attribute)
 	ffblks->ff_findattribute = attribute;
 	convert_attribute(&ffblks->ff_attrib, w32_finddata.dwFileAttributes);
 	/* Search for matching attribute */
-	return (search_and_construct_ffblk(&w32_finddata, ffblks, TRUE));
+	return (search_and_construct_ffblk(&w32_finddata, ffblks, true));
 }
 
 int findnext(struct ffblk *ffblks)
@@ -3351,15 +3351,15 @@ int findnext(struct ffblk *ffblks)
 		return -1;
 	}
 
-	return (search_and_construct_ffblk(&w32_finddata, ffblks, FALSE));
+	return (search_and_construct_ffblk(&w32_finddata, ffblks, false));
 }
 
-int search_and_construct_ffblk(WIN32_FIND_DATA *w32_finddata, struct ffblk *ffblks, BOOL bhave_file)
+int search_and_construct_ffblk(WIN32_FIND_DATA *w32_finddata, struct ffblk *ffblks, bool bhave_file)
 {
 	SYSTEMTIME system_time;
 
-	if ((bhave_file == TRUE && !(ffblks->ff_attrib & ffblks->ff_findattribute)) ||
-			(bhave_file == FALSE)) {
+	if ((bhave_file == true && !(ffblks->ff_attrib & ffblks->ff_findattribute)) ||
+			(bhave_file == false)) {
 		do {
 			/* Check for FA_NORMAL and FA_ARCH  */
 			/* Make sure these IFs only run AFTER a file has been found for FindNextFile */
@@ -3370,7 +3370,7 @@ int search_and_construct_ffblk(WIN32_FIND_DATA *w32_finddata, struct ffblk *ffbl
 					break;
 			}
 			else
-				bhave_file = TRUE;
+				bhave_file = true;
 			if (!FindNextFile(ffblks->ff_findhandle, w32_finddata)) {
 				FindClose(ffblks->ff_findhandle);
 				errno = ENOENT;
@@ -3389,7 +3389,7 @@ int search_and_construct_ffblk(WIN32_FIND_DATA *w32_finddata, struct ffblk *ffbl
 
 	FileTimeToSystemTime(&w32_finddata->ftLastWriteTime, &system_time);
 
-	ffblks->ff_fsize = (long)w32_finddata->nFileSizeLow;
+	ffblks->ff_fsize = (int32_t)w32_finddata->nFileSizeLow;
 	/* Packed Date Format:
 	   Year [7 bits/0xFE00]
 	   Month [4 bits/0x01E0]
@@ -3408,7 +3408,7 @@ int search_and_construct_ffblk(WIN32_FIND_DATA *w32_finddata, struct ffblk *ffbl
 	return 0;
 }
 
-void convert_attribute(char *attrib_out, DWORD attrib_in)
+void convert_attribute(char *attrib_out, uint32_t attrib_in)
 {
 	*attrib_out = FA_NORMAL;
 	if (attrib_in & FILE_ATTRIBUTE_READONLY)

@@ -64,10 +64,10 @@ void Maintenance(void)
 
 	// if IBBS game AND maintenance already run, don't run it again
 	// otherwise, run it again
-	// REP: remove FALSE so cheating not allowed
+	// REP: remove false so cheating not allowed
 	if ((DaysBetween(Game.Data->szTodaysDate, System.szTodaysDate) <= 0) &&
 #ifdef PRELAB
-			Game.Data->InterBBS && FALSE)
+			Game.Data->InterBBS && false)
 #else
 			Game.Data->InterBBS)
 #endif

@@ -47,14 +47,14 @@ extern struct Language *Language;
 
 // ------------------------------------------------------------------------- //
 
-_INT16 Similar(char *string, char *word)
+int16_t Similar(char *string, char *word)
 /*
- * Returns TRUE if the first N chars of string match the first N chars of
+ * Returns true if the first N chars of string match the first N chars of
  * word.  N being the strlen of word.
  */
 {
-	_INT16 NumLetters = strlen(word);
-	_INT16 CurLetter;
+	int16_t NumLetters = strlen(word);
+	int16_t CurLetter;
 
 	for (CurLetter = 0; CurLetter < NumLetters; CurLetter++) {
 		if (string[CurLetter] == 0)
@@ -65,52 +65,52 @@ _INT16 Similar(char *string, char *word)
 	}
 
 	if (CurLetter != NumLetters)
-		return FALSE;
+		return false;
 	else
-		return TRUE;
+		return true;
 }
 
 
-_INT16 InsideStr(char *SubString, char *FullString, _INT16 AtStart)
+int16_t InsideStr(char *SubString, char *FullString, int16_t AtStart)
 /*
- * Returns TRUE if SubString appears within FullString.
+ * Returns true if SubString appears within FullString.
  *
- * PRE: AtStart is TRUE if you only want to check the start of the string.
+ * PRE: AtStart is true if you only want to check the start of the string.
  */
 {
-	_INT16 NumLetters = strlen(FullString);
-	_INT16 CurLetter = 0;
+	int16_t NumLetters = strlen(FullString);
+	int16_t CurLetter = 0;
 
 	if (*SubString == 0)
-		return FALSE;
+		return false;
 
-	if (AtStart == FALSE) {
+	if (AtStart == false) {
 		/* if AtStart set, only checks start of string for match */
 		for (CurLetter = 0; CurLetter < NumLetters; CurLetter++) {
 			//od_printf("Comparing letter #%d:  ", CurLetter);
 			if (Similar(&FullString[CurLetter], SubString))
-				return TRUE;
+				return true;
 		}
 	}
 	else {
 		if (Similar(&FullString[CurLetter], SubString))
-			return TRUE;
+			return true;
 	}
 
-	//rputs("Returning FALSE.");
+	//rputs("Returning false.");
 
-	return FALSE;
+	return false;
 }
 
 
-void ListChoices(char **apszChoices, _INT16 NumChoices, _INT16 DisplayType)
+void ListChoices(char **apszChoices, int16_t NumChoices, int16_t DisplayType)
 /*
  * This lists the choices used by GetStringChoice.
  *
  * PRE: DisplayType determines how the choices are listed, wide or long.
  */
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 	char szString[128];
 
 	if (DisplayType == DT_WIDE) {
@@ -148,8 +148,8 @@ void ListChoices(char **apszChoices, _INT16 NumChoices, _INT16 DisplayType)
 }
 
 
-void GetStringChoice(char **apszChoices, _INT16 NumChoices, char *szPrompt,
-					 _INT16 *UserChoice, BOOL ShowChoicesInitially, _INT16 DisplayType, BOOL AllowBlank)
+void GetStringChoice(char **apszChoices, int16_t NumChoices, char *szPrompt,
+					 int16_t *UserChoice, bool ShowChoicesInitially, int16_t DisplayType, bool AllowBlank)
 /*
  * This will choose a string from a listing and return which was chosen in
  * UserChoice.
@@ -157,23 +157,23 @@ void GetStringChoice(char **apszChoices, _INT16 NumChoices, char *szPrompt,
  * PRE:   apszChoices is an array of the choices (strings)
  *        NumChoices contains how many total choices (strings) there are
  *        szPrompt contains the string to prompt user with.
- *        ShowChoicesInitially = TRUE if you wish to list the choices
+ *        ShowChoicesInitially = true if you wish to list the choices
  *          when this is called.
  *        DisplayType determines how the choices are listed.
- *        AllowBlank = TRUE if you wish to allow the user to choose nothing
- *          (i.e. press enter) or = FALSE if you want the user to choose
+ *        AllowBlank = true if you wish to allow the user to choose nothing
+ *          (i.e. press enter) or = false if you want the user to choose
  *          one of the options.
  */
 {
 	char szUserInput[40], Key, *szString;
-	BOOL ShowedTopic, WantsHelp, BackSpace, Inside;
-	_INT16 iTemp, LastTopicFound = -1, CurChar = 0, TimesInStr = 0, TopicFound = 0;
+	bool ShowedTopic, WantsHelp, BackSpace, Inside;
+	int16_t iTemp, LastTopicFound = -1, CurChar = 0, TimesInStr = 0, TopicFound = 0;
 
 	/* init stuff */
 	szUserInput[0] = 0;
 
-	ShowedTopic = FALSE;
-	WantsHelp = FALSE;
+	ShowedTopic = false;
+	WantsHelp = false;
 
 	/* show all topics */
 
@@ -193,11 +193,11 @@ void GetStringChoice(char **apszChoices, _INT16 NumChoices, char *szPrompt,
 			/* enter a char */
 			/* and update szString */
 			od_sleep(0);
-			Key = od_get_key(TRUE);
+			Key = od_get_key(true);
 
 			if (Key == '?' && CurChar == 0) {
 				rputs(ST_DISPLAYTOPICS);
-				WantsHelp = TRUE;
+				WantsHelp = true;
 				break;
 			}
 
@@ -217,14 +217,14 @@ void GetStringChoice(char **apszChoices, _INT16 NumChoices, char *szPrompt,
 
 				szUserInput[0] = 0;
 				CurChar = 0;
-				ShowedTopic = FALSE;
+				ShowedTopic = false;
 
 				continue;
 			}
 
 			/* if backspace */
 			else if (Key == '\b' || Key == 127) {
-				BackSpace = TRUE;
+				BackSpace = true;
 				if (CurChar != 0) {
 					if (!ShowedTopic)
 						rputs("\b \b");
@@ -242,7 +242,7 @@ void GetStringChoice(char **apszChoices, _INT16 NumChoices, char *szPrompt,
 
 			/* else, make next letter equal to key */
 			else {
-				BackSpace = FALSE;
+				BackSpace = false;
 				szUserInput[CurChar++] = Key;
 				szUserInput[CurChar] = 0;
 			}
@@ -256,7 +256,7 @@ void GetStringChoice(char **apszChoices, _INT16 NumChoices, char *szPrompt,
 					break;
 				}
 
-				Inside = InsideStr(szUserInput, apszChoices[iTemp], FALSE);
+				Inside = InsideStr(szUserInput, apszChoices[iTemp], false);
 
 				if (Inside) {
 					TopicFound = iTemp;
@@ -281,7 +281,7 @@ void GetStringChoice(char **apszChoices, _INT16 NumChoices, char *szPrompt,
 					rputs("\b \b");
 				}
 				rputs(apszChoices[TopicFound]);
-				ShowedTopic = TRUE;
+				ShowedTopic = true;
 			}
 			/* if typing changes from showtopic to user topic, show user topic */
 			else if (ShowedTopic && TimesInStr != 1) {
@@ -289,10 +289,10 @@ void GetStringChoice(char **apszChoices, _INT16 NumChoices, char *szPrompt,
 					rputs("\b \b");
 				}
 				rputs(szUserInput);
-				ShowedTopic = FALSE;
+				ShowedTopic = false;
 			}
 			/* if typing changes from user topic to showtopic, show topic */
-			else if (ShowedTopic == FALSE && TimesInStr == 1) {
+			else if (ShowedTopic == false && TimesInStr == 1) {
 				/* erase old szString */
 				if (!BackSpace)
 					for (iTemp = 0; iTemp < CurChar-1; iTemp++) {
@@ -305,7 +305,7 @@ void GetStringChoice(char **apszChoices, _INT16 NumChoices, char *szPrompt,
 
 				/* show new one */
 				rputs(apszChoices[TopicFound]);
-				ShowedTopic = TRUE;
+				ShowedTopic = true;
 			}
 			/* else show char */
 			else if (!BackSpace)
@@ -317,10 +317,10 @@ void GetStringChoice(char **apszChoices, _INT16 NumChoices, char *szPrompt,
 		if (WantsHelp) {
 			ListChoices(apszChoices, NumChoices, DisplayType);
 
-			WantsHelp = FALSE;
+			WantsHelp = false;
 			szUserInput[0] = 0;
 			CurChar = 0;
-			ShowedTopic = FALSE;
+			ShowedTopic = false;
 
 			continue;
 		}
@@ -340,7 +340,7 @@ void GetStringChoice(char **apszChoices, _INT16 NumChoices, char *szPrompt,
 
 		szUserInput[0] = 0;
 		CurChar = 0;
-		ShowedTopic = FALSE;
+		ShowedTopic = false;
 	}
 
 	free(szString);
@@ -351,7 +351,7 @@ void GetStringChoice(char **apszChoices, _INT16 NumChoices, char *szPrompt,
 
 // ------------------------------------------------------------------------- //
 
-void GetStr(char *InputStr, _INT16 MaxChars, BOOL HiBit)
+void GetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 /*
  * This function allows the user to input a string of MaxChars length and
  * place it in InputStr.
@@ -360,7 +360,7 @@ void GetStr(char *InputStr, _INT16 MaxChars, BOOL HiBit)
  *      can be used to toggle whether the user can enter hibit ascii.
  */
 {
-	_INT16 CurChar;
+	int16_t CurChar;
 	unsigned char InputCh;
 	char Spaces[85] = "                                                                                     ";
 	char BackSpaces[85] = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
@@ -377,7 +377,7 @@ void GetStr(char *InputStr, _INT16 MaxChars, BOOL HiBit)
 
 	for (;;) {
 		od_sleep(0);
-		InputCh = od_get_key(TRUE);
+		InputCh = od_get_key(true);
 
 		if (InputCh == '\b' || InputCh == 127) {
 			if (CurChar>0) {
@@ -401,11 +401,11 @@ void GetStr(char *InputStr, _INT16 MaxChars, BOOL HiBit)
 			rputs(BackSpaces);
 			CurChar = 0;
 		}
-		else if (InputCh >= '' && HiBit == FALSE)
+		else if (InputCh >= '' && HiBit == false)
 			continue;
 		else if (InputCh == 0)
 			continue;
-		//      else if (iscntrl(InputCh) && InputCh < 30 || HiBit == FALSE)
+		//      else if (iscntrl(InputCh) && InputCh < 30 || HiBit == false)
 		else if (iscntrl(InputCh) && InputCh < 30)
 			continue;
 		else if (isalpha(InputCh) && CurChar && InputStr[CurChar-1] == SPECIAL_CODE)
@@ -421,7 +421,7 @@ void GetStr(char *InputStr, _INT16 MaxChars, BOOL HiBit)
 
 // ------------------------------------------------------------------------- //
 
-_INT16 GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, char DefChar, BOOL ShowTime)
+int16_t GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, char DefChar, bool ShowTime)
 /*
  * This function allows the user to choose an option from the options
  * listed.  Works much like FE's input system.
@@ -432,13 +432,13 @@ _INT16 GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, c
  *      Keys contains the corresponding keys to input to choose options.
  *      DefChar MUST contain the default character the user will choose if he
  *        presses Enter.
- *      ShowTime is set to TRUE if the time is to be displayed in prompt.
+ *      ShowTime is set to true if the time is to be displayed in prompt.
  */
 {
-	_INT16 cTemp, DefChoice;
+	int16_t cTemp, DefChoice;
 	char KeysAndEnter[50], Choice, Spaces[] = "                      \b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
 	char TimeStr[40];
-	_INT16 HoursLeft, MinutesLeft;
+	int16_t HoursLeft, MinutesLeft;
 
 	HoursLeft = (od_control.user_timelimit - od_control.user_time_used)/60;
 	MinutesLeft = (od_control.user_timelimit - od_control.user_time_used)%60;
@@ -516,20 +516,20 @@ _INT16 GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, c
 
 // ------------------------------------------------------------------------- //
 
-long GetLong(char *Prompt, long DefaultVal, long Maximum)
+int32_t GetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 /*
  * This allows the user to input a long integer.
  *
  */
 {
 	char string[155], NumString[13], InputChar, DefMax[40];
-	_INT16 NumDigits, CurDigit = 0, cTemp;
-	long TenPower;
+	int16_t NumDigits, CurDigit = 0, cTemp;
+	int32_t TenPower;
 
 	/* init screen */
 	rputs(Prompt);
 
-	sprintf(DefMax, " |08(|15%ld|07; %ld|08) |15", DefaultVal, Maximum);
+	sprintf(DefMax, " |08(|15%" PRId32 "|07; %" PRId32 "|08) |15", DefaultVal, Maximum);
 	rputs(DefMax);
 
 	/* NumDigits contains amount of digits allowed using max. value input */
@@ -568,7 +568,7 @@ long GetLong(char *Prompt, long DefaultVal, long Maximum)
 			for (cTemp = 0; cTemp < CurDigit; cTemp++)
 				rputs("\b \b");
 
-			sprintf(string, "%-ld", Maximum);
+			sprintf(string, "%-" PRId32, Maximum);
 			string[NumDigits] = 0;
 			rputs(string);
 
@@ -587,7 +587,7 @@ long GetLong(char *Prompt, long DefaultVal, long Maximum)
 		}
 		else if (InputChar == '\r' || InputChar == '\n') {
 			if (CurDigit == 0) {
-				sprintf(string, "%-ld", DefaultVal);
+				sprintf(string, "%-" PRId32, DefaultVal);
 				string[NumDigits] = 0;
 				rputs(string);
 
@@ -603,7 +603,7 @@ long GetLong(char *Prompt, long DefaultVal, long Maximum)
 				for (cTemp = 0; cTemp < CurDigit; cTemp++)
 					rputs("\b \b");
 
-				sprintf(string, "%-ld", Maximum);
+				sprintf(string, "%-" PRId32, Maximum);
 				string[NumDigits] = 0;
 				rputs(string);
 

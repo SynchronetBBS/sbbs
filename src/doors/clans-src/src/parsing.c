@@ -70,7 +70,7 @@ void ParseLine(char *szString)
  */
 {
 	char *pcCurrentPos;
-	BOOL MetQuote = FALSE;
+	bool MetQuote = false;
 
 	pcCurrentPos = szString;
 
@@ -80,7 +80,7 @@ void ParseLine(char *szString)
 
 		if (*pcCurrentPos=='\n' || *pcCurrentPos=='\r' || *pcCurrentPos==';'
 				|| *pcCurrentPos == '#') {
-			if (MetQuote == FALSE) {
+			if (MetQuote == false) {
 				*pcCurrentPos='\0';
 				break;
 			}
@@ -106,7 +106,7 @@ void GetToken(char *szString, char *szToken)
  */
 {
 	char *pcCurrentPos;
-	WORD uCount;
+	uint16_t uCount;
 
 	/* Ignore all of line after comments or CR/LF char */
 	pcCurrentPos=(char *)szString;
@@ -160,17 +160,17 @@ void GetToken(char *szString, char *szToken)
 
 // ------------------------------------------------------------------------- //
 
-BOOL iscodechar(char c)
+bool iscodechar(char c)
 /*
- * Returns TRUE if the character is a digit or within 'A' and 'F'
+ * Returns true if the character is a digit or within 'A' and 'F'
  * (Used mainly to see if it is a valid char for `xx codes.
  *
  */
 {
 	if ((c <= 'F' && c >= 'A')  || (isdigit(c) && isascii(c)))
-		return TRUE;
+		return true;
 	else
-		return FALSE;
+		return false;
 }
 
 
@@ -198,12 +198,12 @@ void RemovePipes(char *pszSrc, char *pszDest)
 
 // ------------------------------------------------------------------------- //
 
-void PadString(char *szString, _INT16 PadLength)
+void PadString(char *szString, int16_t PadLength)
 /*
  * This takes the string and pads it with spaces.
  */
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 	char szTemp[255], *pc;
 
 	RemovePipes(szString, szTemp);

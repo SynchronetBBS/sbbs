@@ -45,11 +45,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 struct {
-	BOOL Initialized;
-	_INT16 NumItems;
+	bool Initialized;
+	int16_t NumItems;
 
 	struct item_data *Data[MAX_ITEMS];
-} Items = { FALSE, 0 };
+} Items = { false, 0 };
 
 extern struct IniFile IniFile;
 extern struct Language *Language;
@@ -64,7 +64,7 @@ extern struct Spell *Spells[MAX_SPELLS];
 void Items_FindTreasureChest(void)
 {
 	char *RandomTable, szString[128], szItemName[25];
-	_INT16 CurItem, CurLevel, RandIndex, ChosenItem;
+	int16_t CurItem, CurLevel, RandIndex, ChosenItem;
 
 	Items_Init();
 
@@ -98,7 +98,7 @@ void Items_FindTreasureChest(void)
 // ------------------------------------------------------------------------- //
 void ReadBook(void)
 {
-	_INT16 DefaultItemIndex, iTemp, ItemIndex, WhichMember;
+	int16_t DefaultItemIndex, iTemp, ItemIndex, WhichMember;
 	char cKey, szString[128];
 
 	// which book?
@@ -126,13 +126,13 @@ void ReadBook(void)
 	else
 		DefaultItemIndex = iTemp+1;
 
-	ItemIndex = (_INT16) GetLong(ST_ISTATS3, DefaultItemIndex, MAX_ITEMS_HELD);
+	ItemIndex = (int16_t) GetLong(ST_ISTATS3, DefaultItemIndex, MAX_ITEMS_HELD);
 	if (ItemIndex == 0)
 		return;
 	ItemIndex--;
 
 	/* if that item is non-existant, tell him */
-	if (PClan->Items[ItemIndex].Available == FALSE ||
+	if (PClan->Items[ItemIndex].Available == false ||
 			PClan->Items[ItemIndex].cType != I_BOOK) {
 		rputs(ST_INVALIDITEM);
 		return;
@@ -151,7 +151,7 @@ void ReadBook(void)
 	rputs("|0SWho will read it? |04[Enter=abort] |0F");
 
 	for (;;) {
-		cKey = toupper(od_get_key(TRUE));
+		cKey = toupper(od_get_key(true));
 
 		if (cKey == '\r' || cKey == '\n') {
 			rputs(ST_ABORTED);
@@ -243,25 +243,25 @@ void ReadBook(void)
 	}
 
 	// get rid of item
-	PClan->Items[ ItemIndex ].Available = FALSE;
+	PClan->Items[ ItemIndex ].Available = false;
 
 }
 
 
 // ------------------------------------------------------------------------- //
-__BOOL ItemPenalty(struct pc *PC, struct item_data *Item)
+bool ItemPenalty(struct pc *PC, struct item_data *Item)
 /*
  * This function will check to see if PC has the required attributes to
- * use the item.  If he does, FALSE is returned, otherwise, TRUE.
+ * use the item.  If he does, false is returned, otherwise, true.
  */
 {
-	_INT16 iTemp;
-	BOOL Penalty = FALSE;
+	int16_t iTemp;
+	bool Penalty = false;
 
 	for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++)
 		if (PC->Attributes[iTemp] < Item->ReqAttributes[iTemp]
 				&& Item->ReqAttributes[iTemp])
-			Penalty = TRUE;
+			Penalty = true;
 
 	return Penalty;
 }
@@ -274,15 +274,15 @@ void ItemUseableBy(struct item_data *Item)
  *
  */
 {
-	_INT16 CurMember/*, iTemp*/;
+	int16_t CurMember/*, iTemp*/;
 	char szString[128];
 	struct pc *PC;
-	BOOL ShownOne;
+	bool ShownOne;
 
 	rputs("\n|0CThe following members may use this item:\n|0B");
 
 	// go through each member
-	ShownOne = FALSE;    // haven't shown at least one member yet
+	ShownOne = false;    // haven't shown at least one member yet
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
 		if (PClan->Member[CurMember] == NULL)
 			continue;
@@ -290,14 +290,14 @@ void ItemUseableBy(struct item_data *Item)
 		// if he meets the requirements, display him
 		PC = PClan->Member[CurMember];
 
-		if (ItemPenalty(PC, Item) == FALSE) {
+		if (ItemPenalty(PC, Item) == false) {
 			if (ShownOne)
 				rputs(", ");
 
 			sprintf(szString, "%s", PC->szName);
 			rputs(szString);
 
-			ShownOne = TRUE;
+			ShownOne = true;
 		}
 	}
 	if (ShownOne)
@@ -314,9 +314,9 @@ void ShowItemStats(struct item_data *Item, struct clan *Clan)
  */
 {
 	char *szAttributeNames[NUM_ATTRIBUTES];
-	_INT16 iTemp/*, AttributesShown*/;
+	int16_t iTemp/*, AttributesShown*/;
 	char szString[128]/*, szFullString[128]*/;
-	_INT16 CurBonus, CurReq, CurLine;
+	int16_t CurBonus, CurReq, CurLine;
 	char *szAttr[NUM_ATTRIBUTES] = {
 		"AGI",
 		"DEX",
@@ -453,7 +453,7 @@ void ShowItemStats(struct item_data *Item, struct clan *Clan)
 
 void Items_Read(void)
 {
-	_INT16 iTemp, NumItems, CurFile, CurItem;
+	int16_t iTemp, NumItems, CurFile, CurItem;
 	struct FileHeader ItemFile;
 
 	for (CurItem = 0; CurItem < MAX_ITEMS; CurItem++)
@@ -469,7 +469,7 @@ void Items_Read(void)
 		if (ItemFile.fp == NULL) continue;
 
 		// get num items in file
-		fread(&NumItems, sizeof(_INT16), 1, ItemFile.fp);
+		fread(&NumItems, sizeof(int16_t), 1, ItemFile.fp);
 
 		// read each item in file
 		for (iTemp = 0; iTemp < NumItems; iTemp++) {
@@ -493,7 +493,7 @@ void Items_Read(void)
 
 void Items_Destroy(void)
 {
-	_INT16 CurItem;
+	int16_t CurItem;
 
 	for (CurItem = 0; CurItem < MAX_ITEMS; CurItem++)
 		if (Items.Data[CurItem]) {
@@ -511,11 +511,11 @@ void Items_GiveItem(char *szItemName)
  * PClan.
  */
 {
-	_INT16 iTemp, EmptySlot/*, ItemIndex*/;
+	int16_t iTemp, EmptySlot/*, ItemIndex*/;
 
 	// see if he has room to carry it
 	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-		if (PClan->Items[iTemp].Available == FALSE)
+		if (PClan->Items[iTemp].Available == false)
 			break;
 	}
 	if (iTemp == MAX_ITEMS_HELD) {
@@ -542,7 +542,7 @@ void Items_GiveItem(char *szItemName)
 
 	PClan->Items[EmptySlot] = *Items.Data[iTemp];
 	PClan->Items[EmptySlot].UsedBy = 0;
-	PClan->Items[EmptySlot].Available = TRUE;
+	PClan->Items[EmptySlot].Available = true;
 
 	Items_Close();
 }
@@ -559,7 +559,7 @@ void Items_Init(void)
 	// items already loaded
 	if (Items.Initialized) return;
 
-	Items.Initialized = TRUE;
+	Items.Initialized = true;
 
 	Items_Read();
 }
@@ -574,12 +574,12 @@ void Items_Close(void)
 	if (!Items.Initialized) return;
 
 	Items_Destroy();
-	Items.Initialized = FALSE;
+	Items.Initialized = false;
 }
 
 
 /* read scroll */
-void Items_ReadScroll(struct pc *PC, struct clan *TargetClan, _INT16 Target, _INT16 ScrollNum)
+void Items_ReadScroll(struct pc *PC, struct clan *TargetClan, int16_t Target, int16_t ScrollNum)
 {
 	char szString[128];
 
@@ -595,21 +595,21 @@ void Items_ReadScroll(struct pc *PC, struct clan *TargetClan, _INT16 Target, _IN
 	if (PC->MyClan->Items[ ScrollNum ].Energy == 0) {
 		sprintf(szString, "\xaf\xaf\xaf |07%s vanishes\n", PC->MyClan->Items[ ScrollNum ].szName);
 		rputs(szString);
-		PC->MyClan->Items[ ScrollNum ].Available = FALSE;
+		PC->MyClan->Items[ ScrollNum ].Available = false;
 	}
 
 	Spells_CastSpell(PC, TargetClan, Target, PC->MyClan->Items[ScrollNum].SpellNum);
 }
 
-void Item_BuyItem(_INT16 ItemType)
+void Item_BuyItem(int16_t ItemType)
 {
-	_INT16 ItemIndex[MAX_ITEMS];
-	_INT16 iTemp, TotalItems;
+	int16_t ItemIndex[MAX_ITEMS];
+	int16_t iTemp, TotalItems;
 	char szString[255];
 	char szKeys[MAX_ITEMS + 5], Choice;
-	long ItemCosts[MAX_ITEMS], /*NewCost,*/ ItemGst[MAX_ITEMS];
+	int32_t ItemCosts[MAX_ITEMS], /*NewCost,*/ ItemGst[MAX_ITEMS];
 	char MaterialChoice = 0;
-	_INT16 EmptySlot;
+	int16_t EmptySlot;
 	struct item_data Item;
 
 	Items_Init();
@@ -629,7 +629,7 @@ void Item_BuyItem(_INT16 ItemType)
 		// make sure item is even allowed to be bought from here
 		// FIXME: use WizardLevel for books+scrolls?
 		if (Items.Data[iTemp] &&
-				Items.Data[iTemp]->cType == ItemType && Items.Data[iTemp]->Special == FALSE
+				Items.Data[iTemp]->cType == ItemType && Items.Data[iTemp]->Special == false
 				&&
 				((Items.Data[iTemp]->MarketLevel <= Village.Data->MarketLevel &&
 				  (ItemType == I_WEAPON || ItemType == I_ARMOR || ItemType == I_SHIELD))
@@ -645,7 +645,7 @@ void Item_BuyItem(_INT16 ItemType)
 			// cost fluctuation... FIXME: in future, have different ones for
 			// spells+books??
 			ItemCosts[TotalItems] = Items.Data[  ItemIndex[TotalItems] ]->lCost
-									+ ((long)Village.Data->CostFluctuation*Items.Data[ItemIndex[TotalItems] ]->lCost)/100L;
+									+ ((int32_t)Village.Data->CostFluctuation*Items.Data[ItemIndex[TotalItems] ]->lCost)/100L;
 
 			ItemGst[TotalItems] = ((ItemCosts[TotalItems] * Village.Data->GST)/100L);
 
@@ -718,7 +718,7 @@ void Item_BuyItem(_INT16 ItemType)
 				/* bought.  see if user has room for item and can afford */
 				/* if can't, kick him out */
 				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan->Items[iTemp].Available == FALSE)
+					if (PClan->Items[iTemp].Available == false)
 						break;
 				}
 				if (iTemp == MAX_ITEMS_HELD) {
@@ -815,7 +815,7 @@ void Item_BuyItem(_INT16 ItemType)
 				Item = *Items.Data[ ItemIndex[Choice - 'A'] ];
 
 				Item.UsedBy = 0;
-				Item.Available = TRUE;
+				Item.Available = true;
 				Item.cType = ItemType;
 
 				/* set stats */

@@ -40,9 +40,9 @@ int file_append(char *from, char *to)
 	/* Open R/W by owner, R by everyone else        */
 
 #ifdef __unix__
-	fdto=open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+	fdto = open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 #else
-	fdto=open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IREAD|S_IWRITE);
+	fdto = open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IREAD|S_IWRITE);
 #endif
 	if (fdto < 0)
 		goto err;
@@ -92,9 +92,9 @@ int file_copy(char *from, char *to)
 	/* Open R/W by owner, R by everyone else        */
 
 #ifdef __unix__
-	fdto=open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
+	fdto = open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
 #else
-	fdto=open(to,O_BINARY|O_CREAT|O_TRUNC|O_RDWR,S_IREAD|S_IWRITE);
+	fdto = open(to,O_BINARY|O_CREAT|O_TRUNC|O_RDWR,S_IREAD|S_IWRITE);
 #endif
 	if (fdto < 0)
 		goto err;

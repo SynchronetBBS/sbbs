@@ -38,7 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define CLANS_PCFILE_BACKUP "CLANS.PC.OLD"
 
 struct old_clan {
-	_INT16 ClanID[2];
+	int16_t ClanID[2];
 	char szUserName[30];
 	char szName[25];
 	char Symbol[21];
@@ -48,26 +48,26 @@ struct old_clan {
 	char PFlags[8], DFlags[8];
 	char ChatsToday, TradesToday;
 
-	_INT16 ClanRulerVote[2];        // who are you voting for as the ruler?
+	int16_t ClanRulerVote[2];        // who are you voting for as the ruler?
 
-	_INT16 Alliances[MAX_ALLIES];       // alliances change from BBS to BBS, -1
+	int16_t Alliances[MAX_ALLIES];       // alliances change from BBS to BBS, -1
 	// means no alliance, 0 = first one, ID
 	// that is...
 
-	long Points;
+	int32_t Points;
 	char szDateOfLastGame[11];
 
-	_INT16 FightsLeft, ClanFights,
+	int16_t FightsLeft, ClanFights,
 	MineLevel;
 
-	_INT16 WorldStatus, DestinationBBS;
+	int16_t WorldStatus, DestinationBBS;
 
 	char VaultWithdrawals;
 
-	_INT16 PublicMsgIndex;
+	int16_t PublicMsgIndex;
 
-	_INT16 ClanCombatToday[MAX_CLANCOMBAT][2];
-	_INT16 ClanWars;
+	int16_t ClanCombatToday[MAX_CLANCOMBAT][2];
+	int16_t ClanWars;
 
 	struct pc *Member[MAX_MEMBERS];
 	struct item_data Items[MAX_ITEMS_HELD];
@@ -108,8 +108,8 @@ struct old_clan {
 	GotBlessing   : 1,
 	Prayed        : 1;
 
-	long CRC;
-} PACKED;
+	int32_t CRC;
+};
 
 void display_error(const char *, ...);
 void check_pointer(void *);

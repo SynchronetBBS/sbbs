@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 struct Language *Language;
-extern __BOOL Verbose;
+extern bool Verbose;
 
 // ------------------------------------------------------------------------- //
 
@@ -52,7 +52,7 @@ void CheckMem(void *Test)
 
 // ------------------------------------------------------------------------- //
 
-void LoadStrings(_INT16 StartIndex, _INT16 NumStrings, char *szStrings[])
+void LoadStrings(int16_t StartIndex, int16_t NumStrings, char *szStrings[])
 /*
  * This function loads NumStrings of strings from the language file.
  * starting with string StartIndex.
@@ -62,7 +62,7 @@ void LoadStrings(_INT16 StartIndex, _INT16 NumStrings, char *szStrings[])
  *
  */
 {
-	_INT16 CurString;
+	int16_t CurString;
 
 	for (CurString = 0; CurString < NumStrings; CurString++) {
 		szStrings[CurString] = &Language->BigString[Language->StrOffsets[StartIndex + CurString]];
@@ -71,7 +71,7 @@ void LoadStrings(_INT16 StartIndex, _INT16 NumStrings, char *szStrings[])
 
 // ------------------------------------------------------------------------- //
 
-char *MakeStr(_INT16 length)
+char *MakeStr(int16_t length)
 /*
  * This returns a pointer to a malloc'd string of length length.
  */
@@ -92,7 +92,7 @@ void Language_Init(char *szLangFile)
  * down.
  */
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 	char szString[50];
 	struct FileHeader FileHeader;
 

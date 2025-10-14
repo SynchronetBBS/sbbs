@@ -50,8 +50,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define HEXSEED         0x7290F683              // used by "Jumble"
 
 extern struct {
-	long VideoType;
-	long y_lookup[25];
+	int32_t VideoType;
+	int32_t y_lookup[25];
 	char FAR *VideoMem;
 } Video;
 extern struct config *Config;
@@ -94,15 +94,15 @@ void Jumble(char *szString)
 }
 
 
-_INT16 IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
+int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 {
-	unsigned long chksum = 0L;
-	unsigned long chksum2 = 0L;
+	uint32_t chksum = 0L;
+	uint32_t chksum2 = 0L;
 	char szRealCode[40];
 	char szUserCode[40];
 	char *pc, *pc2, szString[155];
-	WORD c;
-	WORD c2;
+	uint16_t c;
+	uint16_t c2;
 
 	// jumble user code once so a memory scan does nothing
 	Jumble(szUserCode);
@@ -127,21 +127,21 @@ _INT16 IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 	pc = szString;
 	while (*pc) {
 		c = *pc;
-		chksum += (unsigned long)c;
+		chksum += (uint32_t)c;
 		pc++;
 	}
 
 	pc = szString;
 	while (*pc) {
 		c = *pc;
-		chksum += ((unsigned long)((double)c*(PI)));
+		chksum += ((uint32_t)((double)c*(PI)));
 		pc++;
 	}
 
 	pc = szString;
 	while (*pc) {
 		c = *pc;
-		chksum += ((unsigned long)c&HEXSEED);
+		chksum += ((uint32_t)c&HEXSEED);
 		pc++;
 	}
 
@@ -156,26 +156,26 @@ _INT16 IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 	pc = szString;
 	while (*pc) {
 		c2 = *pc;
-		chksum2 += (unsigned long)c2;
+		chksum2 += (uint32_t)c2;
 		pc++;
 	}
 
 	pc = szString;
 	while (*pc) {
 		c2 = *pc;
-		chksum2 += ((unsigned long)((double)c2*(PI)));
+		chksum2 += ((uint32_t)((double)c2*(PI)));
 		pc++;
 	}
 
 	pc = szString;
 	while (*pc) {
 		c2 = *pc;
-		chksum2 += ((unsigned long)c2&HEXSEED);
+		chksum2 += ((uint32_t)c2&HEXSEED);
 		pc++;
 	}
 
 
-	sprintf(szRealCode, "%lx%lx", chksum, chksum2);
+	sprintf(szRealCode, "%" PRIx32 "%" PRIx32, chksum, chksum2);
 
 	// finally, jumble it all up 11 times ;)
 	Jumble(szRealCode);
@@ -203,7 +203,7 @@ void Register(void)
 {
 #if !defined(__unix__) && !defined(_WIN32)
 	char szString[255], *pc, cKey;
-	BOOL InputCode;
+	bool InputCode;
 
 	clrscr();
 	dputs("‰ÄÀáÕö™”›†Õç’œ†‡”œš›");
@@ -262,7 +262,7 @@ void Register(void)
 	Input(szString, 27);
 
 	if (stricmp(Config->szRegcode, szString) != 0)
-		InputCode = TRUE;
+		InputCode = true;
 
 	if (IsRegged(Config->szSysopName, Config->szBBSName, szString) == NTRUE) {
 		/* add it to the .cfg file */
@@ -289,13 +289,13 @@ void dputs(char *string)
 #if !defined(__unix__) && !defined(_WIN32)
 //No Local for *nix
 	char block[80][2], number[3];
-	_INT16 attr;
+	int16_t attr;
 	char foreground, background, cur_attr;
 	char cDecrypted;
 	char cDigit1;
 	char cDigit2;
 	char *pcFrom;
-	_INT16 i, j,  x,y;
+	int16_t i, j,  x,y;
 	struct text_info TextInfo;
 	static char o_fg = 7, o_bg = 0;
 
@@ -362,8 +362,8 @@ void dputs(char *string)
 				pcFrom += 3;
 			}
 			else {
-				Video.VideoMem[(long)(Video.y_lookup[(long) y]+ (long)(x<<1))] = cDecrypted;
-				Video.VideoMem[(long)(Video.y_lookup[(long) y]+ (long)(x<<1) + 1L)] = cur_attr;
+				Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1))] = cDecrypted;
+				Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1) + 1L)] = cur_attr;
 
 				pcFrom++;
 			}
@@ -445,7 +445,7 @@ void UnregMessage(void)
 		rputs(szString);
 
 		od_clear_keybuffer();
-		while (toupper(od_get_key(TRUE)) != cKeyToPress)
+		while (toupper(od_get_key(true)) != cKeyToPress)
 		  ;
 		od_clr_scr();
 

@@ -18,40 +18,40 @@ void IBBS_LoginStats(void);
 void IBBS_Maint(void);
 
 void IBBS_SendAttackPacket(struct empire *AttackingEmpire, struct Army *AttackingArmy,
-						   _INT16 Goal, _INT16 ExtentOfAttack, _INT16 TargetType, _INT16 ClanID[2], _INT16 DestID);
+						   int16_t Goal, int16_t ExtentOfAttack, int16_t TargetType, int16_t ClanID[2], int16_t DestID);
 
-void IBBS_SendSpy(struct empire *Empire, _INT16 DestID);
+void IBBS_SendSpy(struct empire *Empire, int16_t DestID);
 
 void IBBS_ShowLeagueAscii(void);
 void IBBS_LeagueInfo(void);
 
-void IBBS_SendPacket(_INT16 PacketType, long PacketLength, void *PacketData,
-					 _INT16 DestID);
+void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
+					 int16_t DestID);
 
 void IBBS_UpdateReset(void);
 
 void IBBS_UpdateRecon(void);
 
-void IBBS_SendPacketFile(_INT16 DestID, char *pszSendFile);
+void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile);
 
 
-void IBBS_SeeVillages(BOOL Travel);
+void IBBS_SeeVillages(bool Travel);
 
 void IBBS_TravelMaint(void);
 
 void IBBS_CurrentTravelInfo(void);
 void IBBS_BackupMaint(void);
 
-void IBBS_SendComeBack(_INT16 BBSIdTo, struct clan *Clan);
+void IBBS_SendComeBack(int16_t BBSIdTo, struct clan *Clan);
 
-BOOL IBBS_InList(char *szName, BOOL ClanName);
+bool IBBS_InList(char *szName, bool ClanName);
 
-void RemoveFromUList(const _INT16 ClanID[2]);
+void RemoveFromUList(const int16_t ClanID[2]);
 
 void IBBS_DistributeNDX(void);
 
-void IBBS_SendReset(_INT16 DestID);
-void IBBS_SendRecon(_INT16 DestID);
+void IBBS_SendReset(int16_t DestID);
+void IBBS_SendRecon(int16_t DestID);
 
 void LeagueKillUser(struct UserInfo *User);
 

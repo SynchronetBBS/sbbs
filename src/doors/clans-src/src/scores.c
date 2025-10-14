@@ -50,9 +50,9 @@ extern struct village Village;
 extern struct ibbs IBBS;
 extern struct game Game;
 
-void GetColourString(char *szColourString, _INT16 Colour, BOOL Clear)
+void GetColourString(char *szColourString, int16_t Colour, bool Clear)
 {
-	_INT16 TempColour;
+	int16_t TempColour;
 	char *szFgColours[8] = {
 		"30m",
 		"34m",
@@ -136,7 +136,7 @@ void PipeToAnsi(char *szOut, char *szIn)
 
 			// must add this to use GetColourString properly
 			Bg += 16;
-			GetColourString(szColourString, Bg, TRUE);
+			GetColourString(szColourString, Bg, true);
 			strcat(pcOut, szColourString);
 			pcOut = strchr(szOut, 0);
 
@@ -147,7 +147,7 @@ void PipeToAnsi(char *szOut, char *szIn)
 				Fg = *pcIn - '0';
 			else
 				Fg = *pcIn - 'A' + 10;
-			GetColourString(szColourString, Fg, FALSE);
+			GetColourString(szColourString, Fg, false);
 			strcat(pcOut, szColourString);
 			pcOut = strchr(szOut, 0);
 
@@ -160,7 +160,7 @@ void PipeToAnsi(char *szOut, char *szIn)
 
 			Colour = atoi(szDigits);
 
-			GetColourString(szColourString, Colour, TRUE);
+			GetColourString(szColourString, Colour, true);
 
 			strcat(pcOut, szColourString);
 
@@ -182,28 +182,28 @@ void PipeToAnsi(char *szOut, char *szIn)
 
 
 
-void DisplayScores(BOOL MakeFile)
+void DisplayScores(bool MakeFile)
 {
 	FILE *fpPCFile, *fpScoreFile[2] = {NULL, NULL};
 	char szFileName[50], szString[255], szPadding[21];
 	struct clan *TmpClan;
 	struct SortData {
 		char szName[25];
-		long Points;
-		BOOL IsRuler;
+		int32_t Points;
+		bool IsRuler;
 		char Symbol[21], PlainSymbol[21];
-		_INT16 WorldStatus;
-		BOOL UsedInList;
-		BOOL Eliminated;
-		_INT16 VillageID;
-		BOOL Living;
+		int16_t WorldStatus;
+		bool UsedInList;
+		bool Eliminated;
+		int16_t VillageID;
+		bool Living;
 	} *SortData[128];
 	char AnsiSymbol[190];
-	_INT16 SortList[128];
-	_INT16 CurClan = 0, iTemp, NumClans, CurMember;
-	long MostPoints, Offset;
-	_INT16 CurHigh, Padding;
-	BOOL NoPlayers = TRUE;
+	int16_t SortList[128];
+	int16_t CurClan = 0, iTemp, NumClans, CurMember;
+	int32_t MostPoints, Offset;
+	int16_t CurHigh, Padding;
+	bool NoPlayers = true;
 
 	/* initialize sortdata */
 	for (iTemp = 0; iTemp < 128; iTemp++)
@@ -237,7 +237,7 @@ void DisplayScores(BOOL MakeFile)
 
 	fpPCFile = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYWR);
 	if (!fpPCFile) {
-		NoPlayers = TRUE;
+		NoPlayers = true;
 	}
 	else {
 		TmpClan = malloc(sizeof(struct clan));
@@ -263,42 +263,42 @@ void DisplayScores(BOOL MakeFile)
 			}
 
 			// since we could read in a player, means at least one exists
-			NoPlayers = FALSE;
+			NoPlayers = false;
 
 			/* allocate mem for this clan in the list */
 			SortData[CurClan] = malloc(sizeof(struct SortData));
 			CheckMem(SortData[CurClan]);
 
 			/* this sets it so it hasn't been used yet in the sort list */
-			SortData[CurClan]->UsedInList = FALSE;
+			SortData[CurClan]->UsedInList = false;
 
 			strcpy(SortData[CurClan]->szName, TmpClan->szName);
 			SortData[CurClan]->Points = TmpClan->Points;
 			SortData[CurClan]->VillageID = TmpClan->ClanID[0];
 
 
-			SortData[CurClan]->IsRuler = FALSE;
+			SortData[CurClan]->IsRuler = false;
 
 			if (TmpClan->ClanID[0] == Village.Data->RulingClanId[0] &&
 					TmpClan->ClanID[1] == Village.Data->RulingClanId[1])
-				SortData[CurClan]->IsRuler = TRUE;
+				SortData[CurClan]->IsRuler = true;
 			else
-				SortData[CurClan]->IsRuler = FALSE;
+				SortData[CurClan]->IsRuler = false;
 
 			if (TmpClan->Eliminated)
-				SortData[CurClan]->Eliminated = TRUE;
+				SortData[CurClan]->Eliminated = true;
 			else
-				SortData[CurClan]->Eliminated = FALSE;
+				SortData[CurClan]->Eliminated = false;
 
 			strcpy(SortData[CurClan]->Symbol, TmpClan->Symbol);
 			RemovePipes(TmpClan->Symbol, SortData[CurClan]->PlainSymbol);
 
 			SortData[CurClan]->WorldStatus = TmpClan->WorldStatus;
 
-			if (NumMembers(TmpClan, TRUE) == 0)
-				SortData[CurClan]->Living = FALSE;
+			if (NumMembers(TmpClan, true) == 0)
+				SortData[CurClan]->Living = false;
 			else
-				SortData[CurClan]->Living = TRUE;
+				SortData[CurClan]->Living = true;
 
 			for (CurMember = 0; CurMember < 6; CurMember++) {
 				free(TmpClan->Member[CurMember]);
@@ -349,7 +349,7 @@ void DisplayScores(BOOL MakeFile)
 		}
 
 		/* found highest out of list */
-		SortData[CurHigh]->UsedInList = TRUE;
+		SortData[CurHigh]->UsedInList = true;
 		SortList[iTemp] = CurHigh;
 	}
 
@@ -380,7 +380,7 @@ void DisplayScores(BOOL MakeFile)
 				strcat(szString, ST_SCORE3ASCII);
 			}
 			else {
-				if (SortData[ SortList[CurClan] ]->Living == FALSE)
+				if (SortData[ SortList[CurClan] ]->Living == false)
 					strcat(szString, "Dead");
 				else if (SortData[ SortList[CurClan] ]->VillageID != Config->BBSID
 						 && Game.Data->InterBBS)
@@ -412,7 +412,7 @@ void DisplayScores(BOOL MakeFile)
 				strcat(szString, ST_SCORE3ANSI);
 			}
 			else {
-				if (SortData[ SortList[CurClan] ]->Living == FALSE)
+				if (SortData[ SortList[CurClan] ]->Living == false)
 					strcat(szString, "\x1B[0;31mDead");
 				else if (SortData[ SortList[CurClan] ]->VillageID != Config->BBSID
 						 && Game.Data->InterBBS)
@@ -437,7 +437,7 @@ void DisplayScores(BOOL MakeFile)
 			for (iTemp = 0; iTemp < Padding; iTemp++)
 				strcat(szPadding, " ");
 
-			sprintf(szString, " |0C%-30s %s%s`07  |15%-6ld  ",
+			sprintf(szString, " |0C%-30s %s%s`07  |15%-6" PRId32 "  ",
 					SortData[ SortList[CurClan] ]->szName,
 					szPadding, SortData[ SortList[CurClan] ]->Symbol,
 					SortData[ SortList[CurClan] ]->Points);
@@ -447,7 +447,7 @@ void DisplayScores(BOOL MakeFile)
 			else if (SortData[ SortList[CurClan] ]->WorldStatus == WS_GONE)
 				strcat(szString, "|0BAway");
 			else {
-				if (SortData[ SortList[CurClan] ]->Living == FALSE)
+				if (SortData[ SortList[CurClan] ]->Living == false)
 					strcat(szString, "|04Dead");
 				else if (SortData[ SortList[CurClan] ]->VillageID != Config->BBSID
 						 && Game.Data->InterBBS)
@@ -492,7 +492,7 @@ void DisplayScores(BOOL MakeFile)
 
 void SendScoreData(struct UserScore **UserScores)
 {
-	_INT16 iTemp, NumScores;
+	int16_t iTemp, NumScores;
 	struct Packet Packet;
 	FILE *fp;
 
@@ -503,12 +503,12 @@ void SendScoreData(struct UserScore **UserScores)
 			NumScores++;
 
 	/* create packet header */
-	Packet.Active = TRUE;
+	Packet.Active = true;
 	Packet.BBSIDTo = 1;         // Main BBS
 	Packet.BBSIDFrom = IBBS.Data->BBSID;
 	Packet.PacketType = PT_SCOREDATA;
 	strcpy(Packet.szDate, System.szTodaysDate);
-	Packet.PacketLength = NumScores*sizeof(struct UserScore) + sizeof(_INT16);
+	Packet.PacketLength = NumScores*sizeof(struct UserScore) + sizeof(int16_t);
 	strcpy(Packet.GameID, Game.Data->GameID);
 
 	fp = _fsopen("tmp.$$$", "wb", SH_DENYRW);
@@ -518,7 +518,7 @@ void SendScoreData(struct UserScore **UserScores)
 	EncryptWrite(&Packet, sizeof(struct Packet), fp, XOR_PACKET);
 
 	// write how many scores
-	EncryptWrite(&NumScores, sizeof(_INT16), fp, XOR_PACKET);
+	EncryptWrite(&NumScores, sizeof(int16_t), fp, XOR_PACKET);
 
 	// write scores
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
@@ -537,9 +537,9 @@ void ProcessScoreData(struct UserScore **UserScores)
 	struct UserScore **OldList;
 	struct UserScore *HighestFound;
 	FILE *fpOld, *fpNew;
-	BOOL FromOld = FALSE;
-	_INT16 iTemp, CurUser, CurScore, WhichOne = 0;
-	long HighestPoints;
+	bool FromOld = false;
+	int16_t iTemp, CurUser, CurScore, WhichOne = 0;
+	int32_t HighestPoints;
 
 	// initialize lists
 	NewList = malloc(sizeof(struct UserScore *) * MAX_USERS);
@@ -594,7 +594,7 @@ void ProcessScoreData(struct UserScore **UserScores)
 					OldList[iTemp]->Points >= HighestPoints) {
 				HighestFound = OldList[iTemp];
 				HighestPoints = HighestFound->Points;
-				FromOld = TRUE;
+				FromOld = true;
 				WhichOne = iTemp;
 			}
 		}
@@ -605,7 +605,7 @@ void ProcessScoreData(struct UserScore **UserScores)
 					UserScores[iTemp]->Points >= HighestPoints) {
 				HighestFound = UserScores[iTemp];
 				HighestPoints = HighestFound->Points;
-				FromOld = FALSE;
+				FromOld = false;
 
 				WhichOne = iTemp;
 			}
@@ -657,7 +657,7 @@ void ProcessScoreData(struct UserScore **UserScores)
 void LeagueScores(void)
 {
 	struct UserScore **ScoreList;
-	_INT16 iTemp, UsersFound, /*CurID,*/ iTemp2, Padding;
+	int16_t iTemp, UsersFound, /*CurID,*/ iTemp2, Padding;
 	char ScoreDate[11], szString[128], szPadding[21];
 	FILE *fp;
 
@@ -730,10 +730,10 @@ void LeagueScores(void)
 	fclose(fp);
 }
 
-void RemoveFromIPScores(const _INT16 ClanID[2])
+void RemoveFromIPScores(const int16_t ClanID[2])
 {
 	struct UserScore **ScoreList;
-	_INT16 iTemp;
+	int16_t iTemp;
 	char ScoreDate[11];
 	FILE *fp;
 
@@ -792,7 +792,7 @@ void SendScoreList(void)
 {
 	struct UserScore **ScoreList;
 	struct Packet Packet;
-	_INT16 iTemp, NumScores, CurBBS;
+	int16_t iTemp, NumScores, CurBBS;
 	char ScoreDate[11];
 	FILE *fp;
 
@@ -833,17 +833,17 @@ void SendScoreList(void)
 	fclose(fp);
 
 	/* create packet header */
-	Packet.Active = TRUE;
+	Packet.Active = true;
 	Packet.BBSIDFrom = IBBS.Data->BBSID;
 	Packet.PacketType = PT_SCORELIST;
 	strcpy(Packet.szDate, System.szTodaysDate);
-	Packet.PacketLength = NumScores*sizeof(struct UserScore) + sizeof(_INT16) +
+	Packet.PacketLength = NumScores*sizeof(struct UserScore) + sizeof(int16_t) +
 						  sizeof(char)*11;
 	strcpy(Packet.GameID, Game.Data->GameID);
 
 	// send it to all bbses except this one in the league
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active == FALSE || CurBBS+1 == IBBS.Data->BBSID)
+		if (IBBS.Data->Nodes[CurBBS].Active == false || CurBBS+1 == IBBS.Data->BBSID)
 			continue;
 
 		Packet.BBSIDTo = CurBBS+1;
@@ -855,7 +855,7 @@ void SendScoreList(void)
 		EncryptWrite(&Packet, sizeof(struct Packet), fp, XOR_PACKET);
 
 		// write how many scores
-		EncryptWrite(&NumScores, sizeof(_INT16), fp, XOR_PACKET);
+		EncryptWrite(&NumScores, sizeof(int16_t), fp, XOR_PACKET);
 
 		// write date
 		EncryptWrite(ScoreDate, 11, fp, XOR_PACKET);
@@ -880,12 +880,12 @@ void SendScoreList(void)
 	free(ScoreList);
 }
 
-void CreateScoreData(BOOL LocalOnly)
+void CreateScoreData(bool LocalOnly)
 {
 	struct UserScore **UserScores;
 	struct clan *TmpClan;
 	FILE *fpPlayerFile;
-	_INT16 ClanNum, iTemp, NumClans;
+	int16_t ClanNum, iTemp, NumClans;
 
 	UserScores = malloc(sizeof(struct UserScore *) * MAX_USERS);
 	CheckMem(UserScores);
@@ -911,7 +911,7 @@ void CreateScoreData(BOOL LocalOnly)
 
 	NumClans = 0;
 	for (ClanNum = 0;; ClanNum++) {
-		if (fseek(fpPlayerFile, (long)ClanNum *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET))
+		if (fseek(fpPlayerFile, (int32_t)ClanNum *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET))
 			break;
 
 		if (!EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_USER))
@@ -937,7 +937,7 @@ void CreateScoreData(BOOL LocalOnly)
 	//printf("%d clans found.\n", NumClans);
 
 	// if not main BBS, write this data to file and send the packet
-	if (IBBS.Data->BBSID != 1 && LocalOnly == FALSE) {
+	if (IBBS.Data->BBSID != 1 && LocalOnly == false) {
 		SendScoreData(UserScores);
 	}
 	else {

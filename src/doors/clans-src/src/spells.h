@@ -11,4 +11,4 @@ void Spells_Close(void);
 
 void Spells_UpdatePCSpells(struct pc *PC);
 void Spells_ClearSpells(struct clan *Clan);
-void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, _INT16 Target, _INT16 SpellNum);
+void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int16_t SpellNum);

@@ -59,9 +59,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 struct user {
-	BOOL Initialized;     // TRUE if user clan malloc'd
-	BOOL UpdateUser;      // TRUE if user data should be written to file
-} User = { FALSE, FALSE };
+	bool Initialized;     // true if user clan malloc'd
+	bool UpdateUser;      // true if user data should be written to file
+} User = { false, false };
 
 struct clan *PClan=NULL;
 extern struct Language *Language;
@@ -75,22 +75,22 @@ extern struct ibbs IBBS;
 
 
 // ------------------------------------------------------------------------- //
-BOOL Disbanded(void)
+bool Disbanded(void)
 {
 	// returns true if the user is in DISBAND.DAT
 	char szUserName[36];
 	FILE *fp;
-	BOOL Found = FALSE;
+	bool Found = false;
 
 	fp = _fsopen("disband.dat", "rb", SH_DENYWR);
 
-	if (!fp)  return FALSE;
+	if (!fp)  return false;
 
 	for (;;) {
 		if (!EncryptRead(szUserName, 36, fp, XOR_DISBAND)) break;
 
 		if (stricmp(szUserName, od_control.user_name) == 0) {
-			Found = TRUE;
+			Found = true;
 			break;
 		}
 	}
@@ -116,18 +116,18 @@ void AddToDisband(void)
 
 
 // ------------------------------------------------------------------------- //
-void DeleteClan(_INT16 ClanID[2], char *szClanName, BOOL Eliminate)
+void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 {
 	FILE *fpOldPC, *fpNewPC, *OldMessage, *NewMessage;
 	FILE *fpTradeFile;
-	long OldOffset;
+	int32_t OldOffset;
 	char /*szFileName[40],*/ szString[128];
-	_INT16 CurTradeData, iTemp, CurAlliance, CurMember;
+	int16_t CurTradeData, iTemp, CurAlliance, CurMember;
 	struct TradeData TradeData;
 	struct clan *TmpClan;
 	struct Message Message;
-	BOOL FoundInPCFile = FALSE;   // set to true if he was ever on this board
-	BOOL FoundNewCreator;
+	bool FoundInPCFile = false;   // set to true if he was ever on this board
+	bool FoundNewCreator;
 	struct Alliance *Alliances[MAX_ALLIANCES];
 
 
@@ -172,9 +172,9 @@ void DeleteClan(_INT16 ClanID[2], char *szClanName, BOOL Eliminate)
 
 			/* if this is him */
 			if (TmpClan->ClanID[0] == ClanID[0] && TmpClan->ClanID[1] == ClanID[1]) {
-				FoundInPCFile = TRUE;
+				FoundInPCFile = true;
 
-				if (Eliminate == FALSE) {
+				if (Eliminate == false) {
 					// skip the guy since we're deleting him
 					// skip 6 members
 					fseek(fpOldPC, 6L*sizeof(struct pc), SEEK_CUR);
@@ -278,7 +278,7 @@ void DeleteClan(_INT16 ClanID[2], char *szClanName, BOOL Eliminate)
 
 	if (fpTradeFile) {
 		for (CurTradeData = 0;; CurTradeData++) {
-			if (fseek(fpTradeFile, (long)(CurTradeData * sizeof(struct TradeData)), SEEK_SET))
+			if (fseek(fpTradeFile, (int32_t)(CurTradeData * sizeof(struct TradeData)), SEEK_SET))
 				break;
 
 			OldOffset = ftell(fpTradeFile);
@@ -287,7 +287,7 @@ void DeleteClan(_INT16 ClanID[2], char *szClanName, BOOL Eliminate)
 				break;
 
 			/* see if active */
-			if (TradeData.Active == FALSE)
+			if (TradeData.Active == false)
 				continue;
 
 			if (TradeData.ToClanID[0] == ClanID[0] && TradeData.ToClanID[1] == ClanID[1]) {
@@ -304,7 +304,7 @@ void DeleteClan(_INT16 ClanID[2], char *szClanName, BOOL Eliminate)
 					 TradeData.FromClanID[1] == ClanID[1]) {
 				rputs(".");
 				// trade is coming from this player, remove it
-				TradeData.Active = FALSE;
+				TradeData.Active = false;
 				fseek(fpTradeFile, OldOffset, SEEK_SET);
 				EncryptWrite(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE);
 			}
@@ -315,8 +315,8 @@ void DeleteClan(_INT16 ClanID[2], char *szClanName, BOOL Eliminate)
 
 
 	// add message to news
-	if (*szClanName && FoundInPCFile && Eliminate == FALSE &&
-			PClan->Eliminated == FALSE) {
+	if (*szClanName && FoundInPCFile && Eliminate == false &&
+			PClan->Eliminated == false) {
 		sprintf(szString, "|0A \xaf\xaf\xaf |0CThe clan of |0D%s |0Chas disbanded!\n\n",
 				szClanName);
 		News_AddNews(szString);
@@ -337,7 +337,7 @@ void DeleteClan(_INT16 ClanID[2], char *szClanName, BOOL Eliminate)
 				Alliances[CurAlliance]->CreatorID[0] == ClanID[0] &&
 				Alliances[CurAlliance]->CreatorID[1] == ClanID[1]) {
 			// find a new "leader"
-			FoundNewCreator = FALSE;
+			FoundNewCreator = false;
 			for (CurMember = 0; CurMember < MAX_ALLIANCEMEMBERS; CurMember++) {
 				// if this is an actual member AND it's not the deleted clan,
 				// see if
@@ -345,7 +345,7 @@ void DeleteClan(_INT16 ClanID[2], char *szClanName, BOOL Eliminate)
 						Alliances[CurAlliance]->Member[CurMember][1] != -1) &&
 						!(Alliances[CurAlliance]->Member[CurMember][0] == ClanID[0] &&
 						  Alliances[CurAlliance]->Member[CurMember][1] == ClanID[1])) {
-					FoundNewCreator = TRUE;
+					FoundNewCreator = true;
 					Alliances[CurAlliance]->CreatorID[0] = Alliances[CurAlliance]->Member[CurMember][0];
 					Alliances[CurAlliance]->CreatorID[1] = Alliances[CurAlliance]->Member[CurMember][1];
 
@@ -353,7 +353,7 @@ void DeleteClan(_INT16 ClanID[2], char *szClanName, BOOL Eliminate)
 				}
 			}
 
-			if (FoundNewCreator == FALSE) {
+			if (FoundNewCreator == false) {
 				// delete this alliance since no new ruler
 				free(Alliances[CurAlliance]);
 				Alliances[CurAlliance] = NULL;
@@ -384,13 +384,13 @@ void DeleteClan(_INT16 ClanID[2], char *szClanName, BOOL Eliminate)
 
 // ------------------------------------------------------------------------- //
 
-BOOL ClanExists(_INT16 ClanID[2])
+bool ClanExists(int16_t ClanID[2])
 {
 	FILE *fpPlayerFile;
-	_INT16 CurClan/*, iTemp*/;
-	long /*OldOffset,*/ Offset;
+	int16_t CurClan/*, iTemp*/;
+	int32_t /*OldOffset,*/ Offset;
 	struct clan *TmpClan;
-	BOOL FoundClan = FALSE;
+	bool FoundClan = false;
 
 	TmpClan = malloc(sizeof(struct clan));
 	CheckMem(TmpClan);
@@ -398,13 +398,13 @@ BOOL ClanExists(_INT16 ClanID[2])
 	fpPlayerFile = fopen(ST_CLANSPCFILE, "rb");
 	if (!fpPlayerFile) {
 		free(TmpClan);
-		return FALSE;  /* failed to find clan */
+		return false;  /* failed to find clan */
 	}
 
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
 
-		Offset = (long)CurClan * ((long)sizeof(struct clan) + 6L*sizeof(struct pc));
+		Offset = (int32_t)CurClan * ((int32_t)sizeof(struct clan) + 6L*sizeof(struct pc));
 		if (fseek(fpPlayerFile, Offset, SEEK_SET))
 			break;  /* couldn't fseek, so exit */
 
@@ -417,7 +417,7 @@ BOOL ClanExists(_INT16 ClanID[2])
 
 		/* if same Ids, found clan! */
 		if (TmpClan->ClanID[0] == ClanID[0] && TmpClan->ClanID[1] == ClanID[1]) {
-			FoundClan = TRUE;
+			FoundClan = true;
 			break;
 		}
 	}
@@ -439,7 +439,7 @@ char GetStat(struct pc *PC, char Stat)
  */
 {
 	char StatValue;
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	/* soon to contain other modifiers! */
 
@@ -473,7 +473,7 @@ void ShowBaseStats(struct PClass *PClass)
 {
 	char szFullString[128], szString[128];
 	char *szAttributeNames[NUM_ATTRIBUTES];
-	_INT16 SpellStrLength = 0;
+	int16_t SpellStrLength = 0;
 	/* = {
 	  "Agility",
 	  "Dexterity",
@@ -482,8 +482,8 @@ void ShowBaseStats(struct PClass *PClass)
 	  "Armor Strength",
 	  "Charisma"};
 	*/
-	_INT16 iTemp, NumSpellsKnown;
-	BOOL AtLeastOneSpell = FALSE;
+	int16_t iTemp, NumSpellsKnown;
+	bool AtLeastOneSpell = false;
 
 	// Load attribute names
 	LoadStrings(10, 6, szAttributeNames);
@@ -560,12 +560,12 @@ void ShowBaseStats(struct PClass *PClass)
 			SpellStrLength += strlen(szString);
 			NumSpellsKnown++;
 
-			AtLeastOneSpell = TRUE;
+			AtLeastOneSpell = true;
 
 			if (SpellStrLength > 60) {
 				rputs("\n");
 				SpellStrLength = 0;
-				AtLeastOneSpell = FALSE;
+				AtLeastOneSpell = false;
 			}
 		}
 	}
@@ -576,12 +576,12 @@ void ShowBaseStats(struct PClass *PClass)
 	rputs("\n\n\n");
 }
 
-_INT16 GetClass(struct PClass *PClass[MAX_PCLASSES], char *szHelp)
+int16_t GetClass(struct PClass *PClass[MAX_PCLASSES], char *szHelp)
 /*
  * Returns a class as chosen by the user.  Used for creating new PCs.
  */
 {
-	_INT16 ClassChosen, iTemp;
+	int16_t ClassChosen, iTemp;
 	char szKeys[MAX_PCLASSES + 2], szString[128], Choice;
 
 	/* so we have szKeys[] = "?ABCDEFGHI..." */
@@ -641,10 +641,10 @@ void ChooseDefaultAction(struct pc *PC)
  */
 {
 	char *pszOptions[MAX_SPELLS + 1];       // add 1 for "Attack" command
-	_INT16 iTemp, NumOptions, WhichOption;
+	int16_t iTemp, NumOptions, WhichOption;
 
 	if (!PClan->DefActionHelp) {
-		PClan->DefActionHelp = TRUE;
+		PClan->DefActionHelp = true;
 		Help("Default Action", ST_NEWBIEHLP);
 	}
 
@@ -664,7 +664,7 @@ void ChooseDefaultAction(struct pc *PC)
 
 	// choose one
 	GetStringChoice(pszOptions, NumOptions, ST_DEFACTION2, &WhichOption,
-					TRUE, DT_LONG, FALSE);
+					true, DT_LONG, false);
 
 	if (WhichOption == 0)
 		PC->DefaultAction = 0;
@@ -673,17 +673,17 @@ void ChooseDefaultAction(struct pc *PC)
 }
 
 
-void ShowPlayerStats(struct pc *PC, BOOL AllowModify)
+void ShowPlayerStats(struct pc *PC, bool AllowModify)
 /*
  * Shows statistics for the given PC.
  */
 {
-	_INT16 iTemp, NumSpellsKnown, SpellNum;
-	BOOL AtLeastOneSpell, Done;
-	_INT16 SpellStrLength = 0, CurAttr, CurSpell;
+	int16_t iTemp, NumSpellsKnown, SpellNum;
+	bool AtLeastOneSpell, Done;
+	int16_t SpellStrLength = 0, CurAttr, CurSpell;
 	char szString[255], cInput;
-	long XPRequired[MAX_LEVELS];
-	_INT16 Level;
+	int32_t XPRequired[MAX_LEVELS];
+	int16_t Level;
 	char *szAttrNames[NUM_ATTRIBUTES];
 
 	// load attribute names
@@ -697,14 +697,14 @@ void ShowPlayerStats(struct pc *PC, BOOL AllowModify)
 			XPRequired[Level] += ((iTemp-1)*75);
 	}
 
-	if (AllowModify == FALSE)
-		Done = TRUE;
+	if (AllowModify == false)
+		Done = true;
 	else
-		Done = FALSE;
+		Done = false;
 
 	do {
 		SpellStrLength = 0;
-		AtLeastOneSpell = FALSE;
+		AtLeastOneSpell = false;
 		od_clr_scr();
 
 		sprintf(szString, ST_P2STATS0, PC->szName);
@@ -792,7 +792,7 @@ void ShowPlayerStats(struct pc *PC, BOOL AllowModify)
 				rputs("None\n");
 
 			else {
-				AtLeastOneSpell = FALSE;
+				AtLeastOneSpell = false;
 				SpellStrLength = 0;
 
 				while (CurSpell < MAX_SPELLS) {
@@ -807,7 +807,7 @@ void ShowPlayerStats(struct pc *PC, BOOL AllowModify)
 							rputs(", ");
 							SpellStrLength += 2;
 						}
-						AtLeastOneSpell = TRUE;
+						AtLeastOneSpell = true;
 
 
 						sprintf(szString, "%s", Spells[ PC->SpellsKnown[CurSpell] - 1]->szName);
@@ -842,7 +842,7 @@ void ShowPlayerStats(struct pc *PC, BOOL AllowModify)
 		if (AllowModify) {
 			rputs(ST_P2STATS13);
 
-			cInput = toupper(od_get_key(TRUE));
+			cInput = toupper(od_get_key(true));
 
 			if (cInput == 'C') {
 				rputs("Change Default Acton\n\n");
@@ -862,8 +862,8 @@ void ListItems(struct clan *Clan)
  * Lists Items for the given clan.
  */
 {
-	_INT16 iTemp, iTemp2, Length, LastItem = 0, FoundItem = FALSE;
-	_INT16 CurItem;
+	int16_t iTemp, iTemp2, Length, LastItem = 0, FoundItem = false;
+	int16_t CurItem;
 	char szString[100], szOwner[30];
 
 	// rputs("|0LNumber |0MItemName       |0N(Used by)\n\n");
@@ -876,7 +876,7 @@ void ListItems(struct clan *Clan)
 	/* show all the items here */
 	for (iTemp = 0, CurItem = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
 		if (Clan->Items[iTemp].Available) {
-			FoundItem = TRUE;
+			FoundItem = true;
 			/* see if owned */
 			if (Clan->Items[iTemp].UsedBy) {
 				strcpy(szOwner, Clan->Member[ Clan->Items[iTemp].UsedBy - 1]->szName);
@@ -909,7 +909,7 @@ void ListItems(struct clan *Clan)
 			LastItem = iTemp;
 		}
 	}
-	if (FoundItem == FALSE)
+	if (FoundItem == false)
 		rputs(" |04No items in inventory.");
 
 	if (LastItem%2 == 0)
@@ -919,7 +919,7 @@ void ListItems(struct clan *Clan)
 }
 
 
-void ItemEquipResults(struct pc *PC, struct item_data *Item, BOOL Equipping)
+void ItemEquipResults(struct pc *PC, struct item_data *Item, bool Equipping)
 /*
  * This functions outputs results of equipping an item.
  */
@@ -927,7 +927,7 @@ void ItemEquipResults(struct pc *PC, struct item_data *Item, BOOL Equipping)
 	char *szVerb;
 	char *szString, Gain,
 	*szAttrNames[NUM_ATTRIBUTES];
-	_INT16 CurStat;
+	int16_t CurStat;
 
 	szString = MakeStr(128);
 	LoadStrings(10, 6, szAttrNames);
@@ -936,7 +936,7 @@ void ItemEquipResults(struct pc *PC, struct item_data *Item, BOOL Equipping)
 	for (CurStat = 0; CurStat < NUM_ATTRIBUTES; CurStat++) {
 		Gain = Item->Attributes[CurStat];
 
-		if (Equipping == FALSE)
+		if (Equipping == false)
 			Gain = -Gain;
 
 		if (Gain < 0)
@@ -964,10 +964,10 @@ void ItemStats(void)
  */
 {
 	/* modify item stats, assume it's the player */
-	_INT16 ItemIndex, OneItemFound;
-	_INT16 DefaultItemIndex, iTemp, WhoEquip;
+	int16_t ItemIndex, OneItemFound;
+	int16_t DefaultItemIndex, iTemp, WhoEquip;
 	char szKeys[11], szString[100], /*szTemp[60],*/ szItemName[25];
-	BOOL DoneEquipping;
+	bool DoneEquipping;
 
 	for (;;) {
 		rputs(ST_ISTATS0);
@@ -1010,13 +1010,13 @@ void ItemStats(void)
 				else
 					DefaultItemIndex = iTemp+1;
 
-				ItemIndex = (_INT16) GetLong(ST_ISTATS3, DefaultItemIndex, MAX_ITEMS_HELD);
+				ItemIndex = (int16_t) GetLong(ST_ISTATS3, DefaultItemIndex, MAX_ITEMS_HELD);
 				if (ItemIndex == 0)
 					break;
 				ItemIndex--;
 
 				/* if that item is non-existant, tell him */
-				if (PClan->Items[ItemIndex].Available == FALSE) {
+				if (PClan->Items[ItemIndex].Available == false) {
 					rputs(ST_ISTATS4);
 					break;
 				}
@@ -1051,13 +1051,13 @@ void ItemStats(void)
 				else
 					DefaultItemIndex = iTemp+1;
 
-				ItemIndex = (_INT16) GetLong(ST_ISTATS7, DefaultItemIndex, MAX_ITEMS_HELD);
+				ItemIndex = (int16_t) GetLong(ST_ISTATS7, DefaultItemIndex, MAX_ITEMS_HELD);
 				if (ItemIndex == 0)
 					break;
 				ItemIndex--;
 
 				/* if that item is non-existant, tell him */
-				if (PClan->Items[ItemIndex].Available == FALSE) {
+				if (PClan->Items[ItemIndex].Available == false) {
 					rputs(ST_ISTATS4);
 					break;
 				}
@@ -1076,19 +1076,19 @@ void ItemStats(void)
 					rputs(szString);
 
 					PClan->Items[ItemIndex].szName[0] = 0;
-					PClan->Items[ItemIndex].Available = FALSE;
+					PClan->Items[ItemIndex].Available = false;
 				}
 				break;
 			case 'S' :
 				rputs(ST_ISTATS11);
 
 				/* find first item which is equipped */
-				OneItemFound = FALSE;
+				OneItemFound = false;
 				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
 					if (PClan->Items[iTemp].Available &&
 							PClan->Items[iTemp].cType != I_SCROLL &&
 							PClan->Items[iTemp].cType != I_BOOK)
-						OneItemFound = TRUE;
+						OneItemFound = true;
 
 					if (PClan->Items[iTemp].Available &&
 							PClan->Items[iTemp].UsedBy != 0 &&
@@ -1096,24 +1096,24 @@ void ItemStats(void)
 							PClan->Items[iTemp].cType != I_BOOK)
 						break;
 				}
-				if (iTemp == MAX_ITEMS_HELD && OneItemFound == TRUE) {
+				if (iTemp == MAX_ITEMS_HELD && OneItemFound == true) {
 					rputs(ST_ISTATS12);
 					break;
 				}
-				else if (OneItemFound == FALSE) {
+				else if (OneItemFound == false) {
 					rputs(ST_ISTATS2);
 					break;
 				}
 
 				DefaultItemIndex = iTemp+1;
 
-				ItemIndex = (_INT16) GetLong(ST_ISTATS13, DefaultItemIndex, MAX_ITEMS_HELD);
+				ItemIndex = (int16_t) GetLong(ST_ISTATS13, DefaultItemIndex, MAX_ITEMS_HELD);
 				if (ItemIndex == 0)
 					break;
 				ItemIndex--;
 
 				/* if that item is non-existant, tell him */
-				if (PClan->Items[ItemIndex].Available == FALSE) {
+				if (PClan->Items[ItemIndex].Available == false) {
 					rputs(ST_ISTATS4);
 					break;
 				}
@@ -1131,7 +1131,7 @@ void ItemStats(void)
 								PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->szName, PClan->Items[ItemIndex].szName);
 						rputs(szString);
 
-						ItemEquipResults(PClan->Member[PClan->Items[ItemIndex].UsedBy-1], &PClan->Items[ItemIndex], FALSE);
+						ItemEquipResults(PClan->Member[PClan->Items[ItemIndex].UsedBy-1], &PClan->Items[ItemIndex], false);
 
 						PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->Weapon = 0;
 						PClan->Items[ItemIndex].UsedBy = 0;
@@ -1141,7 +1141,7 @@ void ItemStats(void)
 								PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->szName, PClan->Items[ItemIndex].szName);
 						rputs(szString);
 
-						ItemEquipResults(PClan->Member[PClan->Items[ItemIndex].UsedBy-1], &PClan->Items[ItemIndex], FALSE);
+						ItemEquipResults(PClan->Member[PClan->Items[ItemIndex].UsedBy-1], &PClan->Items[ItemIndex], false);
 
 						PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->Armor = 0;
 						PClan->Items[ItemIndex].UsedBy = 0;
@@ -1151,7 +1151,7 @@ void ItemStats(void)
 								PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->szName, PClan->Items[ItemIndex].szName);
 						rputs(szString);
 
-						ItemEquipResults(PClan->Member[PClan->Items[ItemIndex].UsedBy-1], &PClan->Items[ItemIndex], FALSE);
+						ItemEquipResults(PClan->Member[PClan->Items[ItemIndex].UsedBy-1], &PClan->Items[ItemIndex], false);
 
 						PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->Shield = 0;
 						PClan->Items[ItemIndex].UsedBy = 0;
@@ -1161,12 +1161,12 @@ void ItemStats(void)
 			case 'E' :
 				rputs(ST_ISTATS18);
 				/* find first item which is not equipped yet */
-				OneItemFound = FALSE;
+				OneItemFound = false;
 				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
 					if (PClan->Items[iTemp].Available &&
 							PClan->Items[iTemp].cType != I_SCROLL &&
 							PClan->Items[iTemp].cType != I_BOOK)
-						OneItemFound = TRUE;
+						OneItemFound = true;
 
 					if (PClan->Items[iTemp].Available &&
 							PClan->Items[iTemp].UsedBy == 0 &&
@@ -1174,23 +1174,23 @@ void ItemStats(void)
 							PClan->Items[iTemp].cType != I_BOOK)
 						break;
 				}
-				if (iTemp == MAX_ITEMS_HELD && OneItemFound == TRUE) {
+				if (iTemp == MAX_ITEMS_HELD && OneItemFound == true) {
 					rputs(ST_ISTATS19);
 					break;
 				}
-				else if (OneItemFound == FALSE) {
+				else if (OneItemFound == false) {
 					rputs(ST_ISTATS2);
 					break;
 				}
 				DefaultItemIndex = iTemp+1;
 
-				ItemIndex = (_INT16) GetLong(ST_ISTATS20, DefaultItemIndex, MAX_ITEMS_HELD);
+				ItemIndex = (int16_t) GetLong(ST_ISTATS20, DefaultItemIndex, MAX_ITEMS_HELD);
 				if (ItemIndex == 0)
 					break;
 				ItemIndex--;
 
 				/* if that item is non-existant, tell him */
-				if (PClan->Items[ItemIndex].Available == FALSE) {
+				if (PClan->Items[ItemIndex].Available == false) {
 					rputs(ST_ISTATS4);
 					break;
 				}
@@ -1208,7 +1208,7 @@ void ItemStats(void)
 					break;
 				}
 
-				DoneEquipping = FALSE;
+				DoneEquipping = false;
 				while (!DoneEquipping) {
 					/* if not, ask who to equip it on */
 					szKeys[0] = '\r';
@@ -1305,11 +1305,11 @@ void ItemStats(void)
 											PClan->Member[WhoEquip]->szName, PClan->Items[iTemp].szName);
 									rputs(szString);
 
-									ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[iTemp], FALSE);
+									ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[iTemp], false);
 
 									PClan->Member[WhoEquip]->Weapon = 0;
 									PClan->Items[iTemp].UsedBy = 0;
-									DoneEquipping = TRUE;
+									DoneEquipping = true;
 								}
 								else {
 									rputs(ST_ABORTED);
@@ -1323,8 +1323,8 @@ void ItemStats(void)
 							PClan->Member[WhoEquip]->Weapon = ItemIndex + 1;
 							PClan->Items[ItemIndex].UsedBy = WhoEquip + 1;
 							// tell them what happened to his stats
-							ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[ItemIndex], TRUE);
-							DoneEquipping = TRUE;
+							ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[ItemIndex], true);
+							DoneEquipping = true;
 							break;
 						case I_ARMOR :
 							if (PClan->Member[WhoEquip]->Armor) {
@@ -1336,11 +1336,11 @@ void ItemStats(void)
 											PClan->Member[WhoEquip]->szName, PClan->Items[iTemp].szName);
 									rputs(szString);
 
-									ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[iTemp], FALSE);
+									ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[iTemp], false);
 
 									PClan->Member[WhoEquip]->Armor = 0;
 									PClan->Items[iTemp].UsedBy = 0;
-									DoneEquipping = TRUE;
+									DoneEquipping = true;
 								}
 								else {
 									rputs(ST_ABORTED);
@@ -1353,8 +1353,8 @@ void ItemStats(void)
 							PClan->Member[WhoEquip]->Armor = ItemIndex + 1;
 							PClan->Items[ItemIndex].UsedBy = WhoEquip + 1;
 							// tell them what happened to his stats
-							ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[ItemIndex], TRUE);
-							DoneEquipping = TRUE;
+							ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[ItemIndex], true);
+							DoneEquipping = true;
 							break;
 						case I_SHIELD :
 							if (PClan->Member[WhoEquip]->Shield) {
@@ -1366,11 +1366,11 @@ void ItemStats(void)
 											PClan->Member[WhoEquip]->szName, PClan->Items[iTemp].szName);
 									rputs(szString);
 
-									ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[iTemp], FALSE);
+									ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[iTemp], false);
 
 									PClan->Member[WhoEquip]->Shield = 0;
 									PClan->Items[iTemp].UsedBy = 0;
-									DoneEquipping = TRUE;
+									DoneEquipping = true;
 								}
 								else {
 									rputs(ST_ABORTED);
@@ -1383,8 +1383,8 @@ void ItemStats(void)
 							PClan->Member[WhoEquip]->Shield = ItemIndex + 1;
 							PClan->Items[ItemIndex].UsedBy = WhoEquip + 1;
 							// tell them what happened to his stats
-							ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[ItemIndex], TRUE);
-							DoneEquipping = TRUE;
+							ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[ItemIndex], true);
+							DoneEquipping = true;
 							break;
 					}
 				}
@@ -1393,11 +1393,11 @@ void ItemStats(void)
 	}
 }
 
-_INT16 NumClansInVillage(void)
+int16_t NumClansInVillage(void)
 {
 	FILE *fp;
 	struct clan *TmpClan;
-	_INT16 NumClans;
+	int16_t NumClans;
 
 	fp = fopen(ST_CLANSPCFILE, "rb");
 	if (!fp)
@@ -1485,19 +1485,19 @@ void ShowVillageStats(void)
 }
 
 
-void ClanStats(struct clan *Clan, BOOL AllowModify)
+void ClanStats(struct clan *Clan, bool AllowModify)
 /*
  * Shows stats for given Clan with option to modify values.
  */
 {
-	_INT16 iTemp, TotalItems, ItemsShown, Length, iTemp2;
+	int16_t iTemp, TotalItems, ItemsShown, Length, iTemp2;
 	char szString[160], szStats[160];
-	BOOL DoneLooking = FALSE;
+	bool DoneLooking = false;
 	char szShortName[25], cKey;
 
 	/* show stats for clan */
 
-	while (DoneLooking == FALSE) {
+	while (DoneLooking == false) {
 		od_clr_scr();
 
 		// sprintf(szString, ST_CSTATS0, Clan->szName, Clan->ClanID[0], Clan->ClanID[1]);
@@ -1618,13 +1618,13 @@ void ClanStats(struct clan *Clan, BOOL AllowModify)
 				if (Clan->Member[ cKey - '1' ] == NULL)
 					break;
 				ShowPlayerStats(Clan->Member[ cKey - '1'], AllowModify);
-				if (AllowModify == FALSE)
+				if (AllowModify == false)
 					door_pause();
 				break;
 			case 'E' :  // empire stats
 				rputs("Empire\n\n");
-				if (Game.Data->ClanEmpires == TRUE) {
-					if (AllowModify == FALSE)
+				if (Game.Data->ClanEmpires == true) {
+					if (AllowModify == false)
 						rputs("You are unable to find any info on that.\n%P");
 					else
 						Empire_Stats(&Clan->Empire);
@@ -1636,7 +1636,7 @@ void ClanStats(struct clan *Clan, BOOL AllowModify)
 			case 'Q' :
 			case '\n' :
 			case '\r' :
-				DoneLooking = TRUE;
+				DoneLooking = true;
 				break;
 			case 'I' :
 				rputs("Inventory\n\n");
@@ -1655,7 +1655,7 @@ void ClanStats(struct clan *Clan, BOOL AllowModify)
 			case 'S' :  /* change symbol */
 				rputs("Symbol\n\n");
 
-				if (AllowModify == FALSE) {
+				if (AllowModify == false) {
 					sprintf(szString, "|0GClan's current symbol is %s\n\n", Clan->Symbol);
 					rputs(szString);
 					door_pause();
@@ -1675,7 +1675,7 @@ void ClanStats(struct clan *Clan, BOOL AllowModify)
 				}
 
 				rputs("|0SPlease type your new symbol or press enter to keep it the same\n|0E> |0F");
-				GetStr(Clan->Symbol, 20, TRUE);
+				GetStr(Clan->Symbol, 20, true);
 
 				sprintf(szString, "|0SYour clan symbol is now %s\n\n", Clan->Symbol);
 				rputs(szString);
@@ -1690,13 +1690,13 @@ void ClanStats(struct clan *Clan, BOOL AllowModify)
 }
 
 
-void PC_Create(struct pc *PC, BOOL ClanLeader)
+void PC_Create(struct pc *PC, bool ClanLeader)
 /*
  * Used to create a new PC.
  */
 {
 	char szString[128];
-	_INT16 iTemp, LastSpellSlot;
+	int16_t iTemp, LastSpellSlot;
 
 	for (;;) {
 		// rputs("|11Please choose a race for this character.\n");
@@ -1775,7 +1775,7 @@ void PC_Create(struct pc *PC, BOOL ClanLeader)
 		for (iTemp = 0; iTemp < 10; iTemp++)
 			PC->SpellsInEffect[iTemp].SpellNum = -1;
 
-		ShowPlayerStats(PC, FALSE);
+		ShowPlayerStats(PC, false);
 
 		/* are these ok? */
 		if (YesNo("|03Use these stats?") == YES)
@@ -1788,7 +1788,7 @@ void PC_Create(struct pc *PC, BOOL ClanLeader)
 		rputs(ST_STUFF9);
 
 		szString[0] = 0;
-		GetStr(szString, 12, FALSE);
+		GetStr(szString, 12, false);
 
 		RemovePipes(szString, PC->szName);
 		Strip(PC->szName);
@@ -1800,7 +1800,7 @@ void PC_Create(struct pc *PC, BOOL ClanLeader)
 	}
 
 	PC->MyClan = PClan;
-	PC->Undead = FALSE;
+	PC->Undead = false;
 	PC->DefaultAction = 0;
 
 	// sprintf(szString, |10%s joins the clan.\n%%P, PC->szName);
@@ -1809,15 +1809,15 @@ void PC_Create(struct pc *PC, BOOL ClanLeader)
 }
 
 
-BOOL NameInUse(char *szName)
+bool NameInUse(char *szName)
 /*
  * Returns true if the given Clan name is already in use.
  */
 {
 	FILE *fpPCFile;
 	struct clan *TmpClan;
-	_INT16 CurClan = 0;
-	long Offset;
+	int16_t CurClan = 0;
+	int32_t Offset;
 
 	fpPCFile = fopen(ST_CLANSPCFILE, "rb");
 	if (fpPCFile) {
@@ -1826,7 +1826,7 @@ BOOL NameInUse(char *szName)
 
 		/* go through list */
 		for (CurClan = 0;; CurClan++) {
-			Offset = (long) CurClan * ((long)sizeof(struct clan) + 6L*sizeof(struct pc));
+			Offset = (int32_t) CurClan * ((int32_t)sizeof(struct clan) + 6L*sizeof(struct pc));
 			if (fseek(fpPCFile, Offset, SEEK_SET))
 				break;  /* couldn't fseek, so exit */
 
@@ -1839,7 +1839,7 @@ BOOL NameInUse(char *szName)
 				/* are the same, found another player with name, close file */
 				fclose(fpPCFile);
 				free(TmpClan);
-				return TRUE;
+				return true;
 			}
 		}
 
@@ -1850,16 +1850,16 @@ BOOL NameInUse(char *szName)
 	}
 
 	// look through names list to see if that name is in use
-	if (Game.Data->InterBBS && IBBS_InList(szName, TRUE)) {
+	if (Game.Data->InterBBS && IBBS_InList(szName, true)) {
 		// found this clanname in the list of clannames of the league
 		// don't allow him to use it
-		return TRUE;
+		return true;
 	}
 
-	return FALSE;
+	return false;
 }
 
-BOOL ChooseClanName(char *szName)
+bool ChooseClanName(char *szName)
 /*
  * Allows user to choose a clan name.
  */
@@ -1870,14 +1870,14 @@ BOOL ChooseClanName(char *szName)
 		// rputs("\n|02What will you call your clan?\n|10> |07");
 		rputs(ST_STUFF3);
 		szString[0] = 0;
-		GetStr(szString, 24, FALSE);
+		GetStr(szString, 24, false);
 
 		RemovePipes(szString, szName);
 		Strip(szName);
 
 		if (szName[0] == 0) {
 			rputs(ST_ABORTED);
-			return FALSE;
+			return false;
 		}
 
 		if (szName[0] == '?') {
@@ -1885,11 +1885,11 @@ BOOL ChooseClanName(char *szName)
 		}
 
 		/* see if that name is in use */
-		else if (NameInUse(szName) == FALSE) {
+		else if (NameInUse(szName) == false) {
 			rputs("|0F");
 			rputs(szName);
 			if (YesNo("|16|0E : |0SUse this name?") == YES) {
-				return TRUE;
+				return true;
 			}
 			rputs("\n");
 		}
@@ -1905,20 +1905,20 @@ void User_ResetHelp(void)
  * Resets help database for clan
  */
 {
-	PClan->DefActionHelp = FALSE;
-	PClan->CommHelp      = FALSE;
-	PClan->MineHelp      = FALSE;
-	PClan->MineLevelHelp = FALSE;
-	PClan->CombatHelp    = FALSE;
-	PClan->TrainHelp     = FALSE;
-	PClan->MarketHelp    = FALSE;
-	PClan->PawnHelp      = FALSE;
-	PClan->WizardHelp    = FALSE;
-	PClan->EmpireHelp    = FALSE;
-	PClan->DevelopHelp   = FALSE;
+	PClan->DefActionHelp = false;
+	PClan->CommHelp      = false;
+	PClan->MineHelp      = false;
+	PClan->MineLevelHelp = false;
+	PClan->CombatHelp    = false;
+	PClan->TrainHelp     = false;
+	PClan->MarketHelp    = false;
+	PClan->PawnHelp      = false;
+	PClan->WizardHelp    = false;
+	PClan->EmpireHelp    = false;
+	PClan->DevelopHelp   = false;
 }
 
-BOOL User_Create(void)
+bool User_Create(void)
 /*
  * Creates a new clan for the player.
  */
@@ -1926,7 +1926,7 @@ BOOL User_Create(void)
 	FILE *fpPlayerFile;
 	struct pc *TmpPC;
 	struct UserInfo User;
-	_INT16 iTemp;
+	int16_t iTemp;
 	char szString[128];
 
 	strcpy(PClan->szUserName, od_control.user_name);
@@ -1936,11 +1936,11 @@ BOOL User_Create(void)
 	// (YesNo("|0SDo you wish to join this game of clans?") == NO)
 	if (YesNo(ST_STUFF1) == NO) {
 		rputs(ST_ABORTED);
-		return FALSE;
+		return false;
 	}
 
 	if (!ChooseClanName(PClan->szName))
-		return FALSE;
+		return false;
 
 
 	TmpPC = malloc(sizeof(struct pc));
@@ -1964,14 +1964,14 @@ BOOL User_Create(void)
 	// Reset help database for him
 	User_ResetHelp();
 
-	PClan->QuestToday = FALSE;
+	PClan->QuestToday = false;
 	PClan->VaultWithdrawals = 0;
-	PClan->AttendedMass = FALSE;
-	PClan->GotBlessing = FALSE;
-	PClan->Prayed = FALSE;
+	PClan->AttendedMass = false;
+	PClan->GotBlessing = false;
+	PClan->Prayed = false;
 	PClan->FightsLeft = Game.Data->MineFights;
 	PClan->ClanFights = Game.Data->ClanFights;
-	PClan->WasRulerToday = FALSE;
+	PClan->WasRulerToday = false;
 	PClan->ClanWars = 0;
 	PClan->ChatsToday = 0;
 	ClearFlags(PClan->PFlags);
@@ -1980,10 +1980,10 @@ BOOL User_Create(void)
 	PClan->ResDeadToday = 0;
 	PClan->MineLevel = 1;
 	PClan->PublicMsgIndex = 0;
-	PClan->MadeAlliance = FALSE;
-	PClan->Eliminated = FALSE;
-	PClan->WasRulerToday = FALSE;
-	PClan->FirstDay = TRUE;
+	PClan->MadeAlliance = false;
+	PClan->Eliminated = false;
+	PClan->WasRulerToday = false;
+	PClan->FirstDay = true;
 	PClan->Protection = Game.Data->DaysOfProtection;
 
 	PClan->Empire.VaultGold = 0;
@@ -2002,7 +2002,7 @@ BOOL User_Create(void)
 		PClan->Member[iTemp] = NULL;
 
 	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++)
-		PClan->Items[iTemp].Available = FALSE;
+		PClan->Items[iTemp].Available = false;
 
 
 	// Figure out ID
@@ -2011,7 +2011,7 @@ BOOL User_Create(void)
 	Game.Data->NextClanID++;
 
 	// init empire
-	Empire_Create(&PClan->Empire, TRUE);
+	Empire_Create(&PClan->Empire, true);
 	strcpy(PClan->Empire.szName, PClan->szName);
 	PClan->Empire.OwnerType = EO_CLAN;
 	PClan->Empire.AllianceID = -1;
@@ -2031,9 +2031,9 @@ BOOL User_Create(void)
 		}
 
 		if (iTemp == 0)
-			PC_Create(TmpPC, TRUE);
+			PC_Create(TmpPC, true);
 		else
-			PC_Create(TmpPC, FALSE);
+			PC_Create(TmpPC, false);
 
 
 		PClan->Member[iTemp] = malloc(sizeof(struct pc));
@@ -2056,7 +2056,7 @@ BOOL User_Create(void)
 			rputs("!! Chkpt 1\n");
 			rputs(ST_ERRORPC);
 			free(TmpPC);
-			return FALSE;
+			return false;
 		}
 	}
 	else {
@@ -2066,12 +2066,12 @@ BOOL User_Create(void)
 	}
 
 	// figure out CRC first
-	PClan->CRC = CRCValue(PClan, sizeof(struct clan) - sizeof(long));
+	PClan->CRC = CRCValue(PClan, sizeof(struct clan) - sizeof(int32_t));
 
 	/* write it to file */
 	EncryptWrite(PClan, sizeof(struct clan), fpPlayerFile, XOR_USER);
 	for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
-		PClan->Member[iTemp]->CRC = CRCValue(PClan->Member[iTemp], sizeof(struct pc) - sizeof(long));
+		PClan->Member[iTemp]->CRC = CRCValue(PClan->Member[iTemp], sizeof(struct pc) - sizeof(int32_t));
 
 		EncryptWrite(PClan->Member[iTemp], sizeof(struct pc), fpPlayerFile, XOR_PC);
 	}
@@ -2080,7 +2080,7 @@ BOOL User_Create(void)
 	TmpPC->szName[0] = 0;
 	TmpPC->Status = Dead;
 	for (iTemp = Game.Data->MaxPermanentMembers; iTemp < 6; iTemp++) {
-		TmpPC->CRC = CRCValue(TmpPC, sizeof(struct pc) - sizeof(long));
+		TmpPC->CRC = CRCValue(TmpPC, sizeof(struct pc) - sizeof(int32_t));
 
 		EncryptWrite(TmpPC, sizeof(struct pc), fpPlayerFile, XOR_PC);
 	}
@@ -2103,13 +2103,13 @@ BOOL User_Create(void)
 		User.ClanID[1] = PClan->ClanID[1];
 		strcpy(User.szMasterName, PClan->szUserName);
 		strcpy(User.szName, PClan->szName);
-		User.Deleted = FALSE;
+		User.Deleted = false;
 		IBBS_LeagueNewUser(&User);
 	}
 
 
 
-	return TRUE;
+	return true;
 }
 
 
@@ -2120,21 +2120,21 @@ void User_Destroy(void)
  * Destroys the clan in memory.
  */
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
 		if (PClan->Member[iTemp])
 			free(PClan->Member[iTemp]);
 
 	free(PClan);
-	User.Initialized = FALSE;
+	User.Initialized = false;
 }
 
 // ------------------------------------------------------------------------- //
 
 void CopyPC(struct pc *PCDest, struct pc *PCSrc)
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	strcpy(PCDest->szName, PCSrc->szName);
 	PCDest->HP = PCSrc->HP;
@@ -2169,10 +2169,10 @@ void CopyPC(struct pc *PCDest, struct pc *PCSrc)
 		PCDest->SpellsInEffect[iTemp] = PCSrc->SpellsInEffect[iTemp];
 }
 
-BOOL User_Read(void)
+bool User_Read(void)
 /*
  * Reads the PClan from file which corresponds to the user online.
- * Returns FALSE if clan was not found (i.e. not in game yet)
+ * Returns false if clan was not found (i.e. not in game yet)
  */
 {
 	// search for user which matches current user logged in
@@ -2180,13 +2180,13 @@ BOOL User_Read(void)
 	FILE *fpPlayerFile;
 	struct clan *TmpClan;
 	struct pc *TmpPC;
-	_INT16 CurClan, CurMember, iTemp;
-	long Offset;
+	int16_t CurClan, CurMember, iTemp;
+	int32_t Offset;
 
 	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYRW);
 	if (!fpPlayerFile) {
 		/* file not found, so clan not found! */
-		return FALSE;
+		return false;
 	}
 
 	TmpClan = malloc(sizeof(struct clan));
@@ -2196,7 +2196,7 @@ BOOL User_Read(void)
 
 	for (CurClan = 0;; CurClan++) {
 		/* seek to the current player */
-		Offset = (long) CurClan * ((long)sizeof(struct clan) + 6L*sizeof(struct pc));
+		Offset = (int32_t) CurClan * ((int32_t)sizeof(struct clan) + 6L*sizeof(struct pc));
 
 		if (fseek(fpPlayerFile, Offset, SEEK_SET))
 			break;  /* couldn't fseek, so exit */
@@ -2211,7 +2211,7 @@ BOOL User_Read(void)
 		/* see if this player has same name as user online */
 		if (stricmp(od_control.user_name, TmpClan->szUserName) == 0) {
 
-			/* are the same, found player, copy it, return TRUE */
+			/* are the same, found player, copy it, return true */
 			*PClan = *TmpClan;
 
 			/* read in the other guys, members, etc. */
@@ -2241,18 +2241,18 @@ BOOL User_Read(void)
 			fclose(fpPlayerFile);
 			free(TmpClan);
 			free(TmpPC);
-			return TRUE;
+			return true;
 		}
 
 	}
 
-	/* was not found, so return FALSE) */
+	/* was not found, so return false) */
 	fclose(fpPlayerFile);
 
 	free(TmpClan);
 	free(TmpPC);
 
-	return FALSE;
+	return false;
 }
 
 // ------------------------------------------------------------------------- //
@@ -2265,8 +2265,8 @@ void Clan_Update(struct clan *Clan)
  */
 {
 	FILE *fpPlayerFile;
-	_INT16 CurClan, iTemp;
-	long OldOffset, Offset;
+	int16_t CurClan, iTemp;
+	int32_t OldOffset, Offset;
 	struct clan *TmpClan;
 	struct pc *TmpPC;
 
@@ -2288,7 +2288,7 @@ void Clan_Update(struct clan *Clan)
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
 
-		Offset = (long)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
+		Offset = (int32_t)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
 		if (fseek(fpPlayerFile, Offset, SEEK_SET))
 			break;  /* couldn't fseek, so exit */
 
@@ -2306,7 +2306,7 @@ void Clan_Update(struct clan *Clan)
 				TmpClan->ClanID[1] == Clan->ClanID[1]) {
 			fseek(fpPlayerFile, OldOffset, SEEK_SET);
 
-			Clan->CRC = CRCValue(Clan, sizeof(struct clan) - sizeof(long));
+			Clan->CRC = CRCValue(Clan, sizeof(struct clan) - sizeof(int32_t));
 			EncryptWrite(Clan, sizeof(struct clan), fpPlayerFile, XOR_USER);
 
 			// fwrite(Clan, sizeof(struct clan), 1, fpPlayerFile);
@@ -2314,10 +2314,10 @@ void Clan_Update(struct clan *Clan)
 			// fwrite players
 			TmpPC->szName[0] = 0;
 			TmpPC->Status = Dead;
-			TmpPC->CRC = CRCValue(TmpPC, sizeof(struct pc) - sizeof(long));
+			TmpPC->CRC = CRCValue(TmpPC, sizeof(struct pc) - sizeof(int32_t));
 			for (iTemp = 0; iTemp < 6; iTemp++) {
-				if (Clan->Member[iTemp] && Clan->Member[iTemp]->Undead == FALSE) {
-					Clan->Member[iTemp]->CRC = CRCValue(Clan->Member[iTemp], sizeof(struct pc) - sizeof(long));
+				if (Clan->Member[iTemp] && Clan->Member[iTemp]->Undead == false) {
+					Clan->Member[iTemp]->CRC = CRCValue(Clan->Member[iTemp], sizeof(struct pc) - sizeof(int32_t));
 					EncryptWrite(Clan->Member[iTemp], sizeof(struct pc), fpPlayerFile, XOR_PC);
 
 					// fwrite(Clan->Member[iTemp], sizeof(struct pc), 1, fpPlayerFile);
@@ -2359,7 +2359,7 @@ void User_FirstTimeToday(void)
  *
  */
 {
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	PClan->Points += 25;
 
@@ -2378,15 +2378,15 @@ void User_FirstTimeToday(void)
 
 // ------------------------------------------------------------------------- //
 
-_INT16 NumMembers(struct clan *Clan, BOOL OnlyOnesHere)
+int16_t NumMembers(struct clan *Clan, bool OnlyOnesHere)
 /*
  * Returns the number of members in the clan.
  *
- * PRE: OnlyOnesHere is TRUE if only the alive members are to be checked.
+ * PRE: OnlyOnesHere is true if only the alive members are to be checked.
  */
 {
-	_INT16 iTemp;
-	_INT16 Members = 0;
+	int16_t iTemp;
+	int16_t Members = 0;
 
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (Clan->Member[iTemp]) {
@@ -2402,17 +2402,17 @@ _INT16 NumMembers(struct clan *Clan, BOOL OnlyOnesHere)
 
 // ------------------------------------------------------------------------- //
 
-BOOL GetClanID(_INT16 ID[2], BOOL OnlyLiving, BOOL IncludeSelf,
-			   _INT16 WhichAlliance, BOOL InAllianceOnly)
+bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
+			   int16_t WhichAlliance, bool InAllianceOnly)
 {
 	FILE *fpPlayerFile;
 	/*char szFragName[30], szString[128];*/
 	char *apszClanNames[50];
-	_INT16 CurClan, ClanIDs[50][2], WhichClan, NumClans, *ClanIndex, iTemp;
-	BOOL AllianceFound;
+	int16_t CurClan, ClanIDs[50][2], WhichClan, NumClans, *ClanIndex, iTemp;
+	bool AllianceFound;
 	struct clan *TmpClan;
 	struct pc *TmpPC;
-	BOOL FoundClan = FALSE, AtLeastOneLiving = FALSE;
+	bool FoundClan = false, AtLeastOneLiving = false;
 
 	TmpClan = malloc(sizeof(struct clan));
 	CheckMem(TmpClan);
@@ -2420,7 +2420,7 @@ BOOL GetClanID(_INT16 ID[2], BOOL OnlyLiving, BOOL IncludeSelf,
 	for (CurClan = 0; CurClan < 50; CurClan++)
 		apszClanNames[CurClan] = NULL;
 
-	ClanIndex = malloc(sizeof(_INT16)*50);
+	ClanIndex = malloc(sizeof(int16_t)*50);
 	CheckMem(ClanIndex);
 
 	// get list of all clan names from file, write to
@@ -2433,7 +2433,7 @@ BOOL GetClanID(_INT16 ID[2], BOOL OnlyLiving, BOOL IncludeSelf,
 			rputs(ST_ERRORPC);
 			break;
 		}
-		if (fseek(fpPlayerFile, (long)CurClan *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET)) {
+		if (fseek(fpPlayerFile, (int32_t)CurClan *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET)) {
 			fclose(fpPlayerFile);
 			break;  /* couldn't fseek, so exit */
 		}
@@ -2448,12 +2448,12 @@ BOOL GetClanID(_INT16 ID[2], BOOL OnlyLiving, BOOL IncludeSelf,
 			TmpPC = malloc(sizeof(struct pc));
 			CheckMem(TmpPC);
 
-			AtLeastOneLiving = FALSE;
+			AtLeastOneLiving = false;
 			for (iTemp = 0; iTemp < 6; iTemp++) {
 				EncryptRead(TmpPC, sizeof(struct pc), fpPlayerFile, XOR_PC);
 
 				if (TmpPC->szName[0] && TmpPC->Status == Here) {
-					AtLeastOneLiving = TRUE;
+					AtLeastOneLiving = true;
 					break;
 				}
 			}
@@ -2467,17 +2467,17 @@ BOOL GetClanID(_INT16 ID[2], BOOL OnlyLiving, BOOL IncludeSelf,
 			continue;
 
 		/* skip if your clan */
-		if (IncludeSelf == FALSE &&
+		if (IncludeSelf == false &&
 				TmpClan->ClanID[0] == PClan->ClanID[0] &&
 				TmpClan->ClanID[1] == PClan->ClanID[1])
 			continue;
 
 		/* skip if not in alliance and alliance used */
 		if (WhichAlliance != -1) {
-			AllianceFound = FALSE;
+			AllianceFound = false;
 			for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++) {
 				if (TmpClan->Alliances[iTemp] == WhichAlliance) {
-					AllianceFound = TRUE;
+					AllianceFound = true;
 					break;
 				}
 			}
@@ -2491,7 +2491,7 @@ BOOL GetClanID(_INT16 ID[2], BOOL OnlyLiving, BOOL IncludeSelf,
 		}
 
 		// skip if no one alive
-		if (AtLeastOneLiving == FALSE && OnlyLiving)
+		if (AtLeastOneLiving == false && OnlyLiving)
 			continue;
 
 		apszClanNames[NumClans] = malloc(strlen(TmpClan->szName) + 1);
@@ -2508,18 +2508,18 @@ BOOL GetClanID(_INT16 ID[2], BOOL OnlyLiving, BOOL IncludeSelf,
 	if (NumClans != 0)
 		GetStringChoice(apszClanNames, NumClans,
 						"|0SEnter the name of the clan\n|0E> |0F",
-						&WhichClan, TRUE, DT_WIDE, TRUE);
+						&WhichClan, true, DT_WIDE, true);
 	else {
 		rputs("No clans found!\n");
 		WhichClan = -1;
 	}
 
 	if (WhichClan == -1) {
-		FoundClan = FALSE;
+		FoundClan = false;
 		rputs(ST_ABORTED);
 	}
 	else {
-		FoundClan = TRUE;
+		FoundClan = true;
 		ID[0] = ClanIDs[ WhichClan ][0];
 		ID[1] = ClanIDs[ WhichClan ][1];
 	}
@@ -2538,12 +2538,12 @@ BOOL GetClanID(_INT16 ID[2], BOOL OnlyLiving, BOOL IncludeSelf,
 
 // ------------------------------------------------------------------------- //
 
-BOOL GetClanNameID(char *szName, _INT16 ID[2])
+bool GetClanNameID(char *szName, int16_t ID[2])
 {
 	FILE *fpPlayerFile;
 	/*    char szString[255];*/
-	_INT16 CurClan = 0;
-	BOOL FoundClan = FALSE;
+	int16_t CurClan = 0;
+	bool FoundClan = false;
 	struct clan *TmpClan;
 
 	szName[0] = 0;
@@ -2557,9 +2557,9 @@ BOOL GetClanNameID(char *szName, _INT16 ID[2])
 		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYRW);
 		if (!fpPlayerFile) {
 			free(TmpClan);
-			return FALSE;  /* means failed to find clan */
+			return false;  /* means failed to find clan */
 		}
-		if (fseek(fpPlayerFile, (long)CurClan *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET)) {
+		if (fseek(fpPlayerFile, (int32_t)CurClan *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET)) {
 			fclose(fpPlayerFile);
 			break;  /* couldn't fseek, so exit */
 		}
@@ -2575,7 +2575,7 @@ BOOL GetClanNameID(char *szName, _INT16 ID[2])
 		if (TmpClan->ClanID[0] == ID[0] && TmpClan->ClanID[1] == ID[1]) {
 			/* found it! */
 			strcpy(szName, TmpClan->szName);
-			FoundClan = TRUE;
+			FoundClan = true;
 			break;
 		}
 
@@ -2589,12 +2589,12 @@ BOOL GetClanNameID(char *szName, _INT16 ID[2])
 
 
 // ------------------------------------------------------------------------- //
-BOOL GetClan(_INT16 ClanID[2], struct clan *TmpClan)
+bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 {
 	FILE *fpPlayerFile;
-	_INT16 ClanNum, iTemp;
+	int16_t ClanNum, iTemp;
 	char szFileName[50];
-	BOOL FoundClan = FALSE;
+	bool FoundClan = false;
 
 	// make them all NULLs for safety
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
@@ -2605,21 +2605,21 @@ BOOL GetClan(_INT16 ClanID[2], struct clan *TmpClan)
 	/* find guy in file */
 	fpPlayerFile = fopen(szFileName, "rb");
 	if (!fpPlayerFile) {
-		return FALSE;     /* means failed to find clan */
+		return false;     /* means failed to find clan */
 	}
 
 	for (ClanNum = 0;; ClanNum++) {
-		if (fseek(fpPlayerFile, (long)ClanNum *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET)) {
+		if (fseek(fpPlayerFile, (int32_t)ClanNum *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET)) {
 			// couldn't find clan in file
 			fclose(fpPlayerFile);
-			return FALSE;
+			return false;
 		}
 
 		if (!EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_USER)) {
 			fclose(fpPlayerFile);
 			for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
 				TmpClan->Member[iTemp] = NULL;
-			return FALSE;
+			return false;
 		}
 
 		// if CRCs don't match, warn for now
@@ -2632,7 +2632,7 @@ BOOL GetClan(_INT16 ClanID[2], struct clan *TmpClan)
 
 		if (TmpClan->ClanID[0] == ClanID[0] && TmpClan->ClanID[1] == ClanID[1]) {
 			/* found it */
-			FoundClan = TRUE;
+			FoundClan = true;
 
 			/* read in PCs */
 			for (iTemp = 0; iTemp < 6; iTemp++) {
@@ -2654,10 +2654,10 @@ BOOL GetClan(_INT16 ClanID[2], struct clan *TmpClan)
 	fclose(fpPlayerFile);
 
 	if (FoundClan)
-		return TRUE;
+		return true;
 	else {
 		// DisplayStr("Bug #2\n%P");
-		return FALSE;
+		return false;
 	}
 }
 
@@ -2669,13 +2669,13 @@ void User_List(void)
 
 	FILE *fpPlayerFile, *fpUserList;
 	struct clan *TmpClan;
-	_INT16 CurClan/*, CurMember, iTemp*/;
+	int16_t CurClan/*, CurMember, iTemp*/;
 	struct UserInfo User;
-	long Offset;
+	int32_t Offset;
 
 	fputs(ST_USERLISTH, stdout);
 
-	if (Game.Data->InterBBS == FALSE) {
+	if (Game.Data->InterBBS == false) {
 		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYWR);
 		if (!fpPlayerFile) {
 			/* file not found, so clan not found! */
@@ -2690,7 +2690,7 @@ void User_List(void)
 		// list local players
 		for (CurClan = 0;; CurClan++) {
 			/* seek to the current player */
-			Offset = (long)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
+			Offset = (int32_t)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
 			if (fseek(fpPlayerFile, Offset, SEEK_SET))
 				break;  /* couldn't fseek, so exit */
 
@@ -2702,7 +2702,7 @@ void User_List(void)
 				   TmpClan->szUserName, TmpClan->szName);
 		}
 
-		/* was not found, so return FALSE) */
+		/* was not found, so return false) */
 		fclose(fpPlayerFile);
 
 		free(TmpClan);
@@ -2736,8 +2736,8 @@ void User_Maint(void)
 {
 	FILE *fpOldPC, *fpNewPC;
 	struct clan *TmpClan;
-	_INT16 iTemp, iTemp2, CurItem, Level;
-	long XPRequired[MAX_LEVELS];
+	int16_t iTemp, iTemp2, CurItem, Level;
+	int32_t XPRequired[MAX_LEVELS];
 
 	DisplayStr("* User_Maint()\n");
 
@@ -2746,7 +2746,7 @@ void User_Maint(void)
 		XPRequired[Level] = 50L;
 
 		for (iTemp = 1; iTemp <= Level; iTemp++)
-			XPRequired[Level] += ((long)(iTemp-1)*75L);
+			XPRequired[Level] += ((int32_t)(iTemp-1)*75L);
 	}
 
 
@@ -2775,19 +2775,19 @@ void User_Maint(void)
 			// add to "list" of users who are going to be deleted
 
 			/* update stats needed */
-			TmpClan->FirstDay = FALSE;
+			TmpClan->FirstDay = false;
 
 			// fix bugs
 			if (TmpClan->Empire.VaultGold < 0)  TmpClan->Empire.VaultGold = 0;
 
-			TmpClan->QuestToday = FALSE;
+			TmpClan->QuestToday = false;
 			TmpClan->VaultWithdrawals = 0;
-			TmpClan->AttendedMass = FALSE;
-			TmpClan->GotBlessing = FALSE;
-			TmpClan->Prayed = FALSE;
+			TmpClan->AttendedMass = false;
+			TmpClan->GotBlessing = false;
+			TmpClan->Prayed = false;
 			TmpClan->FightsLeft = Game.Data->MineFights;
 			TmpClan->ClanFights = Game.Data->ClanFights;
-			TmpClan->WasRulerToday = FALSE;
+			TmpClan->WasRulerToday = false;
 			TmpClan->ClanWars = 0;
 			TmpClan->ChatsToday = 0;
 			ClearFlags(TmpClan->DFlags);
@@ -2816,7 +2816,7 @@ void User_Maint(void)
 			if (OustedRuler && OldRulerId[0] == TmpClan->ClanID[0] &&
 			  OldRulerId[1] == TmpClan->ClanID[1])
 			{
-			  TmpClan->WasRulerToday = TRUE;
+			  TmpClan->WasRulerToday = true;
 			  TmpClan->Points -= 100;
 			}
 			*/
@@ -2886,15 +2886,15 @@ void User_Maint(void)
 			for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
 				if (TmpClan->Member[iTemp]->szName[0]) {
 					if (TmpClan->Member[iTemp]->Weapon &&
-							TmpClan->Items[ TmpClan->Member[iTemp]->Weapon-1 ].Available == FALSE) {
+							TmpClan->Items[ TmpClan->Member[iTemp]->Weapon-1 ].Available == false) {
 						TmpClan->Member[iTemp]->Weapon = 0;
 					}
 					if (TmpClan->Member[iTemp]->Armor &&
-							TmpClan->Items[ TmpClan->Member[iTemp]->Armor-1 ].Available == FALSE) {
+							TmpClan->Items[ TmpClan->Member[iTemp]->Armor-1 ].Available == false) {
 						TmpClan->Member[iTemp]->Armor = 0;
 					}
 					if (TmpClan->Member[iTemp]->Shield &&
-							TmpClan->Items[ TmpClan->Member[iTemp]->Shield-1 ].Available == FALSE) {
+							TmpClan->Items[ TmpClan->Member[iTemp]->Shield-1 ].Available == false) {
 						TmpClan->Member[iTemp]->Shield = 0;
 					}
 				}
@@ -2925,19 +2925,19 @@ void User_Maint(void)
 
 // ------------------------------------------------------------------------- //
 
-BOOL User_Init(void)
+bool User_Init(void)
 /*
  * The current user online is initialized.  His stats are read in from
  * the .PC file.  If not found, a new clan is created.
  *
- * Returns FALSE if user is new and didn't want to join the game.
+ * Returns false if user is new and didn't want to join the game.
  */
 {
-	// Returns TRUE if user was created/loaded successfully, otherwise,
-	// returns FALSE
-	_INT16 iTemp;
+	// Returns true if user was created/loaded successfully, otherwise,
+	// returns false
+	int16_t iTemp;
 
-	User.Initialized = TRUE;
+	User.Initialized = true;
 	PClan = malloc(sizeof(struct clan));
 	CheckMem(PClan);
 
@@ -2947,24 +2947,24 @@ BOOL User_Init(void)
 	if (!User_Read()) {
 		// see if in league already but he's just not on this
 		// BBS
-		if (IBBS_InList(od_control.user_name, FALSE)) {
+		if (IBBS_InList(od_control.user_name, false)) {
 			// YES, he is IN the list already but he's not on
 			// this BBS, so tell him that
 
 			rputs("You're already logged as a user on another BBS.\n%P");
 			User_Destroy();
-			return FALSE;
+			return false;
 		}
 
 		if (!User_Create()) {
 			User_Destroy();
-			return FALSE;
+			return false;
 		}
 	}
 
 	/*
 	  // ensure CRC is correct
-	  if (CheckCRC(PClan, sizeof(struct clan) - sizeof(long), PClan->CRC) == FALSE)
+	  if (CheckCRC(PClan, sizeof(struct clan) - sizeof(int32_t), PClan->CRC) == false)
 	  {
 	    User_Destroy();
 	    System_Error("CLANS.PC data corrupt! [u]\n");
@@ -2972,7 +2972,7 @@ BOOL User_Init(void)
 
 	  // ensure CRC is correct
 	  for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
-	    if (PClan->Member[iTemp] && CheckCRC(PClan->Member[iTemp], sizeof(struct pc) - sizeof(long), PClan->Member[iTemp]->CRC) == FALSE)
+	    if (PClan->Member[iTemp] && CheckCRC(PClan->Member[iTemp], sizeof(struct pc) - sizeof(int32_t), PClan->Member[iTemp]->CRC) == false)
 	    {
 	      User_Destroy();
 	      System_Error("CLANS.PC data corrupt [m]!\n");
@@ -2980,8 +2980,8 @@ BOOL User_Init(void)
 	*/
 
 
-	User.UpdateUser = TRUE;
-	return TRUE;
+	User.UpdateUser = true;
+	return true;
 }
 
 // ------------------------------------------------------------------------- //
@@ -2994,7 +2994,7 @@ void User_Close(void)
  */
 {
 	// closes down current user logged in
-	if (User.Initialized == FALSE) return;
+	if (User.Initialized == false) return;
 
 	if (User.UpdateUser)
 		User_Write();

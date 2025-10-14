@@ -1,4 +1,4 @@
 
-long CRCValue(void *Data, int DataSize);
+int32_t CRCValue(void *Data, int DataSize);
 
-int CheckCRC(void *Data, int Size, long CRC);
+int CheckCRC(void *Data, int Size, int32_t CRC);

@@ -71,9 +71,9 @@ tBool DirExists(const char *pszDirName)
 #else
 	if (stat(szDirFileName, &file_stats) == 0)
 		if (file_stats.st_mode & S_IFDIR)
-			return TRUE;
+			return true;
 
-	return FALSE;
+	return false;
 #endif
 }
 
@@ -99,9 +99,9 @@ void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut)
 	strcat(pszOut, pszFilename);
 }
 
-_INT16 GetMaximumEncodedLength(_INT16 nUnEncodedLength)
+int16_t GetMaximumEncodedLength(int16_t nUnEncodedLength)
 {
-	_INT16 nEncodedLength;
+	int16_t nEncodedLength;
 
 	/* The current encoding algorithm uses two characters to represent   */
 	/* each byte of data, plus 1 byte per MAX_LINE_LENGTH characters for */
@@ -113,7 +113,7 @@ _INT16 GetMaximumEncodedLength(_INT16 nUnEncodedLength)
 }
 
 
-DWORD GetNextMSGID(void)
+uint32_t GetNextMSGID(void)
 {
 	/* MSGID should be unique for every message, for as long as possible.   */
 	/* This technique adds the current time, in seconds since midnight on   */
@@ -121,14 +121,14 @@ DWORD GetNextMSGID(void)
 	/* is not seeded, as the application may have already seeded it for its */
 	/* own purposes. Even if not seeded, the inclusion of the current time  */
 	/* will cause the MSGID to almost always be different.                  */
-	return((DWORD)time(NULL) + (DWORD)rand());
+	return((uint32_t)time(NULL) + (uint32_t)rand());
 }
 
 
 tBool CreateMessage(char *pszMessageDir, tMessageHeader *pHeader,
 					char *pszText)
 {
-	DWORD lwNewMsgNum;
+	uint32_t lwNewMsgNum;
 
 	/* Get new message number */
 	lwNewMsgNum = GetFirstUnusedMsgNum(pszMessageDir);
@@ -138,7 +138,7 @@ tBool CreateMessage(char *pszMessageDir, tMessageHeader *pHeader,
 }
 
 
-void GetMessageFilename(char *pszMessageDir, DWORD lwMessageNum,
+void GetMessageFilename(char *pszMessageDir, uint32_t lwMessageNum,
 						char *pszOut)
 {
 	char szFileName[FILENAME_CHARS + 1];
@@ -148,11 +148,11 @@ void GetMessageFilename(char *pszMessageDir, DWORD lwMessageNum,
 }
 
 
-tBool WriteMessage(char *pszMessageDir, DWORD lwMessageNum,
+tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 				   tMessageHeader *pHeader, char *pszText)
 {
 	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
-	_INT16 hFile;
+	int16_t hFile;
 	size_t nTextSize;
 
 	/* Get fully qualified filename of message to write */
@@ -170,15 +170,15 @@ tBool WriteMessage(char *pszMessageDir, DWORD lwMessageNum,
 				 S_IREAD|S_IWRITE);
 #endif
 
-	/* If open failed, return FALSE */
-	if (hFile == -1) return(FALSE);
+	/* If open failed, return false */
+	if (hFile == -1) return(false);
 
 	/* Attempt to write header */
 	if (write(hFile, pHeader, sizeof(tMessageHeader)) != sizeof(tMessageHeader)) {
-		/* On failure, close file, erase file, and return FALSE */
+		/* On failure, close file, erase file, and return false */
 		close(hFile);
 		unlink(szFileName);
-		return(FALSE);
+		return(false);
 	}
 
 	/* Determine size of message text, including string terminator */
@@ -187,25 +187,25 @@ tBool WriteMessage(char *pszMessageDir, DWORD lwMessageNum,
 
 	/* Attempt to write message text */
 	if ((unsigned)write(hFile, pszText, nTextSize) != nTextSize) {
-		/* On failure, close file, erase file, and return FALSE */
+		/* On failure, close file, erase file, and return false */
 		close(hFile);
 		unlink(szFileName);
-		return(FALSE);
+		return(false);
 	}
 
 	/* Close message file */
 	close(hFile);
 
 	/* Return with success */
-	return(TRUE);
+	return(true);
 }
 
 
-tBool ReadMessage(char *pszMessageDir, DWORD lwMessageNum,
+tBool ReadMessage(char *pszMessageDir, uint32_t lwMessageNum,
 				  tMessageHeader *pHeader, char **ppszText)
 {
 	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
-	_INT16 hFile;
+	int16_t hFile;
 	size_t nTextSize;
 
 	/* Get fully qualified filename of message to read */
@@ -224,8 +224,8 @@ tBool ReadMessage(char *pszMessageDir, DWORD lwMessageNum,
 	hFile = open(szFileName, O_RDONLY|O_BINARY|O_DENYWRITE);
 #endif
 
-	/* If open failed, return FALSE */
-	if (hFile == -1) return(FALSE);
+	/* If open failed, return false */
+	if (hFile == -1) return(false);
 
 	/* Determine size of message body */
 	nTextSize = (size_t)filelength(hFile) - sizeof(tMessageHeader);
@@ -233,25 +233,25 @@ tBool ReadMessage(char *pszMessageDir, DWORD lwMessageNum,
 	/* Attempt to allocate space for message body, plus character for added */
 	/* string terminator.                                                   */
 	if ((*ppszText = malloc(nTextSize + 1)) == NULL) {
-		/* On failure, close file and return FALSE */
+		/* On failure, close file and return false */
 		close(hFile);
-		return(FALSE);
+		return(false);
 	}
 
 	/* Attempt to read header */
 	if (read(hFile, pHeader, sizeof(tMessageHeader)) != sizeof(tMessageHeader)) {
-		/* On failure, close file, deallocate message buffer and return FALSE */
+		/* On failure, close file, deallocate message buffer and return false */
 		close(hFile);
 		free(*ppszText);
-		return(FALSE);
+		return(false);
 	}
 
 	/* Attempt to read message text */
 	if ((unsigned)read(hFile, *ppszText, nTextSize) != nTextSize) {
-		/* On failure, close file, deallocate message buffer and return FALSE */
+		/* On failure, close file, deallocate message buffer and return false */
 		close(hFile);
 		free(*ppszText);
-		return(FALSE);
+		return(false);
 	}
 
 	/* Ensure that message buffer is NULL-terminated */
@@ -261,19 +261,19 @@ tBool ReadMessage(char *pszMessageDir, DWORD lwMessageNum,
 	close(hFile);
 
 	/* Return with success */
-	return(TRUE);
+	return(true);
 }
 
 
-DWORD GetFirstUnusedMsgNum(char *pszMessageDir)
+uint32_t GetFirstUnusedMsgNum(char *pszMessageDir)
 {
-	DWORD lwHighestMsgNum = 0;
-	DWORD lwCurrentMsgNum;
+	uint32_t lwHighestMsgNum = 0;
+	uint32_t lwCurrentMsgNum;
 #ifndef _WIN32
 	struct ffblk DirEntry;
 #else
 	struct _finddata_t find_data;
-	long find_handle;
+	int32_t find_handle;
 #endif
 	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
 
@@ -320,7 +320,7 @@ tIBResult ValidateInfoStruct(tIBInfo *pInfo)
 
 void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource)
 {
-	WORD zone = 0, net = 0, node = 0, pt = 0;
+	uint16_t zone = 0, net = 0, node = 0, pt = 0;
 
 	sscanf(pszSource, "%hu:%hu/%hu.%hu", &zone, &net
 		,&node, &pt);
@@ -354,8 +354,8 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 	char szFMPT[13];
 	char szINTL[43];
 	char szMSGID[42];
-	_INT16 nKludgeSize;
-	_INT16 nTextSize, iTemp;
+	int16_t nKludgeSize;
+	int16_t nTextSize, iTemp;
 	char *pszMessageText;
 	tFidoNode DestNode;
 	tFidoNode OrigNode;
@@ -451,7 +451,7 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 
 	/* Create INTL kludge line if origin and destination zone addresses differ */
 	// FIXME: always use intl?
-	if (DestNode.wZone != OrigNode.wZone || TRUE) {
+	if (DestNode.wZone != OrigNode.wZone || true) {
 		sprintf(szINTL, "\1INTL %u:%u/%u %u:%u/%u\r",
 				DestNode.wZone,
 				DestNode.wNet,
@@ -543,9 +543,9 @@ tIBResult IBGetFile(tIBInfo *pInfo, char *szAttachFile)
 	struct ffblk DirEntry;
 #else
 	struct _finddata_t find_data;
-	long find_handle;
+	int32_t find_handle;
 #endif
-	DWORD lwCurrentMsgNum;
+	uint32_t lwCurrentMsgNum;
 	tMessageHeader MessageHeader;
 	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
 	char *pszText;
@@ -670,7 +670,7 @@ tIBResult IBGetFile(tIBInfo *pInfo, char *szAttachFile)
 
 void RidPath(char *pszFileName, char  *pszFileNameNoPath)
 {
-	_INT16 CurChar;
+	int16_t CurChar;
 
 	for (CurChar = strlen(pszFileName); CurChar > 0; CurChar--) {
 		/* is this a '\' char?  If so, break; */

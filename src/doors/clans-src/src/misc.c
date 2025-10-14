@@ -29,11 +29,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define TOTAL_MONTHS    12
 
-long DaysSinceJan1(char szTheDate[])
+int32_t DaysSinceJan1(char szTheDate[])
 {
-	long CurMonth, Days = 0, ThisMonth, ThisYear, ThisDay;
-	BOOL LeapYear;
-	_INT16 NumDaysPerMonth[2][TOTAL_MONTHS] = {
+	int32_t CurMonth, Days = 0, ThisMonth, ThisYear, ThisDay;
+	bool LeapYear;
+	int16_t NumDaysPerMonth[2][TOTAL_MONTHS] = {
 		{ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
 		{ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
 	};
@@ -45,7 +45,7 @@ long DaysSinceJan1(char szTheDate[])
 	for (CurMonth = 1; CurMonth < ThisMonth; CurMonth++) {
 		LeapYear = (ThisYear % 4) == 0;
 
-		Days += (long) NumDaysPerMonth[LeapYear + 0][CurMonth - 1];
+		Days += (int32_t) NumDaysPerMonth[LeapYear + 0][CurMonth - 1];
 	}
 
 	Days += ThisDay;
@@ -54,10 +54,10 @@ long DaysSinceJan1(char szTheDate[])
 
 }
 
-long DaysSince1970(char szTheDate[])
+int32_t DaysSince1970(char szTheDate[])
 {
-	long Days = 0, ThisYear, CurYear;
-	BOOL LeapYear;
+	int32_t Days = 0, ThisYear, CurYear;
+	bool LeapYear;
 
 	ThisYear = atoi(&szTheDate[6]);
 
@@ -75,7 +75,7 @@ long DaysSince1970(char szTheDate[])
 	return (Days);
 }
 
-long DaysBetween(char szFirstDate[], char szLastDate[])
+int32_t DaysBetween(char szFirstDate[], char szLastDate[])
 /*
  * This function returns the number of days between the first date and
  * last date.
@@ -87,7 +87,7 @@ long DaysBetween(char szFirstDate[], char szLastDate[])
  * LastDate is MOST recent date.
  */
 {
-	long Days;
+	int32_t Days;
 
 	Days = DaysSince1970(szLastDate) - DaysSince1970(szFirstDate);
 

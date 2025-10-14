@@ -1,5 +1,5 @@
 
-long DaysBetween(char szFirstDate[], char szLastDate[]);
+int32_t DaysBetween(char szFirstDate[], char szLastDate[]);
 /*
  * This function returns the number of days between the first date and
  * last date.
@@ -11,4 +11,4 @@ long DaysBetween(char szFirstDate[], char szLastDate[]);
  * LastDate is MOST recent date.
  */
 
-long DaysSince1970(char szTheDate[]);
+int32_t DaysSince1970(char szTheDate[]);

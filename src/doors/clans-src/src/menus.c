@@ -65,20 +65,20 @@ extern struct Language *Language;
 extern struct village Village;
 extern struct clan *PClan;
 extern struct game Game;
-BOOL FirstTimeInMain = FALSE;
+bool FirstTimeInMain = false;
 extern struct config *Config;
 
 // ------------------------------------------------------------------------- //
-_INT16 WorldMenu(void)
+int16_t WorldMenu(void)
 {
 	char *szTheOptions[7];
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	LoadStrings(990, 7, szTheOptions);
 
 
 	if (!PClan->TravelHelp) {
-		PClan->TravelHelp = TRUE;
+		PClan->TravelHelp = true;
 		Help("World Travel", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -87,15 +87,15 @@ _INT16 WorldMenu(void)
 	for (;;) {
 		rputs("\n\n");
 
-		switch (GetChoice("Travel Menu", ST_ENTEROPTION, szTheOptions, "OQ?VTHS", 'Q', TRUE)) {
+		switch (GetChoice("Travel Menu", ST_ENTEROPTION, szTheOptions, "OQ?VTHS", 'Q', true)) {
 			case 'O' :    /* other villages */
-				IBBS_SeeVillages(FALSE);
+				IBBS_SeeVillages(false);
 				break;
 			case 'T' :    /* travel to other town */
 				// FIXME: This may cause problems in the future:  what if a
 				// user calls and plays around 11:50pm and then calls back
 				// at 12:05, he'll be able to travel!?
-				if (Game.Data->ClanTravel == FALSE) {
+				if (Game.Data->ClanTravel == false) {
 					rputs("\n|07Clan travel has been disabled in this league.\n%P");
 					return 0;
 				}
@@ -103,14 +103,14 @@ _INT16 WorldMenu(void)
 				if (PClan->FirstDay)
 					rputs("|07You may not travel to another BBS until tomorrow\n%P");
 				else
-					IBBS_SeeVillages(TRUE);
+					IBBS_SeeVillages(true);
 				break;
 			case 'Q' :    /* return to previous menu */
 				return 0;
 			case '?' :    /* redisplay options */
 				break;
 			case 'V' :    /* stats */
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 			case 'H' :  /* help */
 				GeneralHelp(ST_VILLHLP);
@@ -128,7 +128,7 @@ _INT16 WorldMenu(void)
 void AddChatFile(char *szString, char *pszFileName)
 {
 	FILE *fpChatFile;
-	_INT16 LinesRead, iTemp;
+	int16_t LinesRead, iTemp;
 	char *szOldLines[42];
 	char *szNewLines[42];
 
@@ -203,14 +203,14 @@ void Menus_ChatRoom(char *pszFileName)
 {
 	char szLine[128];
 	char szString[128];
-	_INT16 LinesInput;
-	BOOL FirstTime;
+	int16_t LinesInput;
+	bool FirstTime;
 
 	/* display file */
 	od_clr_scr();
-	//    GameInfo.NoPause = TRUE;
+	//    GameInfo.NoPause = true;
 	Display(pszFileName);
-	//    GameInfo.NoPause = FALSE;
+	//    GameInfo.NoPause = false;
 
 	/* ask if user wants to add some words */
 	if (NoYes(ST_CHATADDQ) == NO) {
@@ -221,12 +221,12 @@ void Menus_ChatRoom(char *pszFileName)
 
 	rputs(ST_CHATENTERCOMMENT);
 	// loop until blank line or 3 lines input
-	FirstTime = TRUE;
+	FirstTime = true;
 	for (LinesInput = 0; LinesInput < 3; LinesInput++) {
 		// get his input
 		szString[0] = 0;
 		rputs("|0A> |0F");
-		GetStr(szString, 77, TRUE);
+		GetStr(szString, 77, true);
 
 		if (strlen(szString) < 2) {
 			// rputs(ST_ABORTED);
@@ -240,7 +240,7 @@ void Menus_ChatRoom(char *pszFileName)
 			strcat(szLine, "\n");
 			AddChatFile(szLine, pszFileName);
 
-			FirstTime = FALSE;
+			FirstTime = false;
 		}
 
 		// write quote to file
@@ -257,12 +257,12 @@ void Menus_ChatRoom(char *pszFileName)
 
 
 // ------------------------------------------------------------------------- //
-_INT16 MainMenu(void)
+int16_t MainMenu(void)
 {
 	char *szTheOptions[20], DefaultAction, szMainMenu[20],
 	*szSecret = "/e/Secret";
 	struct UserInfo User;
-	_INT16 iTemp, BannerShown;
+	int16_t iTemp, BannerShown;
 
 	BannerShown = RANDOM(5) + 1;
 
@@ -275,18 +275,18 @@ _INT16 MainMenu(void)
 
 		if (!FirstTimeInMain) {
 			Help("Main Title", ST_MENUSHLP);
-			FirstTimeInMain = TRUE;
+			FirstTimeInMain = true;
 		}
 
-		if (PClan->FightsLeft == 0 || NumMembers(PClan, TRUE) == 0)
+		if (PClan->FightsLeft == 0 || NumMembers(PClan, true) == 0)
 			DefaultAction = 'Q';
 		else
 			DefaultAction = 'E';
 
-		switch (GetChoice(szMainMenu, ST_ENTEROPTION, szTheOptions, "EQ?VMWCTPUH/N!1A2345", DefaultAction, TRUE)) {
+		switch (GetChoice(szMainMenu, ST_ENTEROPTION, szTheOptions, "EQ?VMWCTPUH/N!1A2345", DefaultAction, true)) {
 			case '!' :    /* delete clan */
 				if (NoYes("|0SAre you sure you wish to delete your clan?!") == YES) {
-					DeleteClan(PClan->ClanID, PClan->szName, FALSE);
+					DeleteClan(PClan->ClanID, PClan->szName, false);
 
 					// if interbbs, send packet to main BBS saying this guy
 					// was deleted and that he should be removed from the userlist
@@ -297,7 +297,7 @@ _INT16 MainMenu(void)
 						User.ClanID[0] = PClan->ClanID[0];
 						User.ClanID[1] = PClan->ClanID[1];
 
-						User.Deleted = FALSE; // don't care
+						User.Deleted = false; // don't care
 
 						strcpy(User.szMasterName, PClan->szUserName);
 						strcpy(User.szName, PClan->szName);
@@ -316,7 +316,7 @@ _INT16 MainMenu(void)
 			case '?' :    /* redisplay options */
 				break;
 			case 'V' :    /* stats */
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 			case 'M' :    /* market */
 				return 2;
@@ -354,7 +354,7 @@ _INT16 MainMenu(void)
 				PClan->Empire.VaultGold += 320000;
 				PClan->Empire.Land += 10;
 				PClan->FightsLeft = 20;
-				PClan->QuestToday = FALSE;
+				PClan->QuestToday = false;
 				for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 					if (PClan->Member[iTemp]) {
 						PClan->Member[iTemp]->Status = Here;
@@ -379,19 +379,19 @@ _INT16 MainMenu(void)
 				if (BannerShown != 2)
 					rputs(ST_SECRET2);
 				else
-					RunEvent(FALSE, szSecret, "2", NULL, NULL);
+					RunEvent(false, szSecret, "2", NULL, NULL);
 				break;
 			case '3' :  // secret #3
-				RunEvent(FALSE, szSecret, "3", NULL, NULL);
+				RunEvent(false, szSecret, "3", NULL, NULL);
 				break;
 			case '4' :  // secret #4
-				RunEvent(FALSE, szSecret, "4", NULL, NULL);
+				RunEvent(false, szSecret, "4", NULL, NULL);
 				break;
 			case '5' :  // secret #5
 				if (BannerShown != 5)
 					rputs(ST_SECRET5);
 				else
-					RunEvent(FALSE, szSecret, "5", NULL, NULL);
+					RunEvent(false, szSecret, "5", NULL, NULL);
 				break;
 		}
 	}
@@ -401,16 +401,16 @@ _INT16 MainMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-_INT16 MineMenu(void)
+int16_t MineMenu(void)
 {
 	char *szTheOptions[9];
-	_INT16 iTemp;
+	int16_t iTemp;
 	char DefaultAction;
 
 	LoadStrings(930, 9, szTheOptions);
 
 	if (!PClan->MineHelp) {
-		PClan->MineHelp = TRUE;
+		PClan->MineHelp = true;
 		Help("Mine Help", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -419,22 +419,22 @@ _INT16 MineMenu(void)
 
 	/* get a choice */
 	for (;;) {
-		if (PClan->FightsLeft == 0 || NumMembers(PClan, TRUE) == 0)
+		if (PClan->FightsLeft == 0 || NumMembers(PClan, true) == 0)
 			DefaultAction = 'Q';
 		else
 			DefaultAction = 'L';
 
-		switch (GetChoice("Mine Menu", ST_ENTEROPTION, szTheOptions, "LFQ?VCG/W", DefaultAction, TRUE)) {
+		switch (GetChoice("Mine Menu", ST_ENTEROPTION, szTheOptions, "LFQ?VCG/W", DefaultAction, true)) {
 			case 'W' :  // who's here?
-				DisplayScores(FALSE);
+				DisplayScores(false);
 				break;
 			case 'G' :  /* Quest */
 				/* if all guys dead, tell guy can't fight */
-				if (NumMembers(PClan, TRUE) == 0) {
+				if (NumMembers(PClan, true) == 0) {
 					rputs(ST_FIGHT0);
 					break;
 				}
-				// if (PClan->QuestToday && Debug == FALSE)
+				// if (PClan->QuestToday && Debug == false)
 				if (PClan->QuestToday) {
 					rputs("\n|15You have already gone on a quest today.  Please try again tomorrow!\n%P");
 					break;
@@ -447,7 +447,7 @@ _INT16 MineMenu(void)
 					rputs("|07You have no more fights left for today.\n%P");
 				else {
 					/* if all guys dead, tell guy can't fight */
-					if (NumMembers(PClan, TRUE) == 0) {
+					if (NumMembers(PClan, true) == 0) {
 						/* tell him all members are dead, come again tomorrow */
 						rputs(ST_FIGHT0);
 						break;
@@ -462,19 +462,19 @@ _INT16 MineMenu(void)
 						// run random event using file corresponding to
 						// level groupings
 						if (PClan->MineLevel == 0)
-							RunEvent(FALSE, "/e/Eva", "", NULL, NULL);
+							RunEvent(false, "/e/Eva", "", NULL, NULL);
 						else if (PClan->MineLevel == 1)
-							RunEvent(FALSE, "/e/Eva", "", NULL, NULL);
+							RunEvent(false, "/e/Eva", "", NULL, NULL);
 						else if (PClan->MineLevel == 2)
-							RunEvent(FALSE, "/e/Eva", "", NULL, NULL);
+							RunEvent(false, "/e/Eva", "", NULL, NULL);
 						else if (PClan->MineLevel == 3)
-							RunEvent(FALSE, "/e/Eva", "", NULL, NULL);
+							RunEvent(false, "/e/Eva", "", NULL, NULL);
 						else if (PClan->MineLevel == 4)
-							RunEvent(FALSE, "/e/Eva", "", NULL, NULL);
+							RunEvent(false, "/e/Eva", "", NULL, NULL);
 						else if (PClan->MineLevel <= 10)
-							RunEvent(FALSE, "/e/Eva", "", NULL, NULL);
+							RunEvent(false, "/e/Eva", "", NULL, NULL);
 						else
-							RunEvent(FALSE, "/e/Eva", "", NULL, NULL);
+							RunEvent(false, "/e/Eva", "", NULL, NULL);
 						door_pause();
 					}
 					else {
@@ -493,11 +493,11 @@ _INT16 MineMenu(void)
 				break;
 			case 'C' :    /* change level */
 				if (!PClan->MineLevelHelp) {
-					PClan->MineLevelHelp = TRUE;
+					PClan->MineLevelHelp = true;
 					Help("Mine Level", ST_NEWBIEHLP);
 				}
 
-				iTemp = (_INT16) GetLong("|0SEnter level of mine to change to.", PClan->MineLevel, 20);
+				iTemp = (int16_t) GetLong("|0SEnter level of mine to change to.", PClan->MineLevel, 20);
 				/* NO MORE REG!
 				if (iTemp >= 5 &&
 				  IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) == NFALSE)
@@ -514,7 +514,7 @@ _INT16 MineMenu(void)
 			case '?' :    /* redisplay options */
 				break;
 			case 'V' :    /* stats */
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 			case '/' :  //chat villagers
 				ChatVillagers(WN_MINE);
@@ -527,16 +527,16 @@ _INT16 MineMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-_INT16 CommunicationsMenu(void)
+int16_t CommunicationsMenu(void)
 {
 	char *szTheOptions[8];
 	char szString[128];
-	_INT16 iTemp, ClanId[2];
+	int16_t iTemp, ClanId[2];
 
 	LoadStrings(205, 8, szTheOptions);
 
 	if (!PClan->CommHelp) {
-		PClan->CommHelp = TRUE;
+		PClan->CommHelp = true;
 		Help("Communications", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -544,9 +544,9 @@ _INT16 CommunicationsMenu(void)
 	for (;;) {
 		rputs("\n\n");
 
-		switch (GetChoice("Mail Menu", ST_ENTEROPTION, szTheOptions, "CWPUQV?G", 'Q', TRUE)) {
+		switch (GetChoice("Mail Menu", ST_ENTEROPTION, szTheOptions, "CWPUQV?G", 'Q', true)) {
 			case 'C' :      /* check mail */
-				if (Mail_Read() == FALSE)
+				if (Mail_Read() == false)
 					rputs("|15Sorry, no mail found.\n%P");
 				break;
 			case 'W' :      /* write mail */
@@ -563,12 +563,12 @@ _INT16 CommunicationsMenu(void)
 			case 'Q' :      /* return */
 				return 0;
 			case 'V' :      /* stats */
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 			case '?' :      /* redisplay options */
 				break;
 			case 'G' :
-				if (Game.Data->InterBBS == FALSE)
+				if (Game.Data->InterBBS == false)
 					rputs("Option available only in IBBS!\n");
 				else
 					GlobalMsgPost();
@@ -584,13 +584,13 @@ _INT16 CommunicationsMenu(void)
 void WizardShop(void)
 {
 	char *szTheOptions[6], szString[128];
-	_INT16 iTemp, ItemIndex;
-	long ExamineCost;
+	int16_t iTemp, ItemIndex;
+	int32_t ExamineCost;
 
 	LoadStrings(1320, 6, szTheOptions);
 
 	if (!PClan->WizardHelp) {
-		PClan->WizardHelp = TRUE;
+		PClan->WizardHelp = true;
 		Help("Wizard", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -604,7 +604,7 @@ void WizardShop(void)
 	/* get a choice */
 	for (;;) {
 		rputs("\n\n");
-		switch (GetChoice("Wizard Menu", ST_ENTEROPTION, szTheOptions, "SBXQ?V", 'Q', TRUE)) {
+		switch (GetChoice("Wizard Menu", ST_ENTEROPTION, szTheOptions, "SBXQ?V", 'Q', true)) {
 			case 'Q' :  // quit
 				return;
 			case 'S' :  /* scrolls */
@@ -632,7 +632,7 @@ void WizardShop(void)
 
 				ItemIndex--;
 
-				if (PClan->Items[ItemIndex].Available == FALSE) {
+				if (PClan->Items[ItemIndex].Available == false) {
 					rputs(ST_INVALIDITEM);
 					break;
 				}
@@ -662,23 +662,23 @@ void WizardShop(void)
 				}
 				break;
 			case 'V' :  // clan stats
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 		}
 	}
 	(void)iTemp;
 }
 
-_INT16 MarketMenu(void)
+int16_t MarketMenu(void)
 {
 	char *szTheOptions[10];
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	LoadStrings(231, 9, szTheOptions);
 	szTheOptions[9] = "Wizard's Shop";
 
 	if (!PClan->MarketHelp) {
-		PClan->MarketHelp = TRUE;
+		PClan->MarketHelp = true;
 		Help("Market", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -686,7 +686,7 @@ _INT16 MarketMenu(void)
 	/* get a choice */
 	for (;;) {
 		rputs("\n\n");
-		switch (GetChoice("Market Menu", ST_ENTEROPTION, szTheOptions, "WQ?VAST/PZ", 'Q', TRUE)) {
+		switch (GetChoice("Market Menu", ST_ENTEROPTION, szTheOptions, "WQ?VAST/PZ", 'Q', true)) {
 			case 'W' :    /* buy weapon */
 				Item_BuyItem(I_WEAPON);
 				break;
@@ -713,7 +713,7 @@ _INT16 MarketMenu(void)
 			case '?' :    /* redisplay options */
 				break;
 			case 'V' :    /* stats */
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 			case '/' :  //chat villagers
 				ChatVillagers(WN_MARKET);
@@ -726,15 +726,15 @@ _INT16 MarketMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-_INT16 AlliancesMenu(void)
+int16_t AlliancesMenu(void)
 {
 	struct Alliance *Alliances[MAX_ALLIANCES];
-	_INT16 iTemp, NumAlliances, WhichAlliance, NumUserAlliances;
+	int16_t iTemp, NumAlliances, WhichAlliance, NumUserAlliances;
 	char cKey, szChoices[MAX_ALLIANCES + 5], szFileName[13];
 	char *szString;
 
 	if (!PClan->AllyHelp) {
-		PClan->AllyHelp = TRUE;
+		PClan->AllyHelp = true;
 		Help("Alliances", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -800,7 +800,7 @@ _INT16 AlliancesMenu(void)
 
 					CreateAlliance(Alliances[ NumAlliances ], Alliances);
 					UpdateAlliances(Alliances);
-					PClan->MadeAlliance = TRUE;
+					PClan->MadeAlliance = true;
 					if (EnterAlliance(Alliances[ NumAlliances ])) {
 						// remove chatfile first
 						sprintf(szFileName, "hall%02d.txt", Alliances[NumAlliances]->ID);
@@ -814,7 +814,7 @@ _INT16 AlliancesMenu(void)
 						// only if he is the ORIGINAL creator will he have flag set
 						if (Alliances[NumAlliances]->OriginalCreatorID[0] == PClan->ClanID[0] &&
 								Alliances[NumAlliances]->OriginalCreatorID[1] == PClan->ClanID[1]) {
-							PClan->MadeAlliance = FALSE;
+							PClan->MadeAlliance = false;
 						}
 
 						KillAlliance(Alliances[NumAlliances]->ID);
@@ -851,7 +851,7 @@ _INT16 AlliancesMenu(void)
 				// only if he is the ORIGINAL creator will he have flag set
 				if (Alliances[WhichAlliance]->OriginalCreatorID[0] == PClan->ClanID[0] &&
 						Alliances[WhichAlliance]->OriginalCreatorID[1] == PClan->ClanID[1]) {
-					PClan->MadeAlliance = FALSE;
+					PClan->MadeAlliance = false;
 				}
 
 				// remove from user's alliance list
@@ -871,7 +871,7 @@ _INT16 AlliancesMenu(void)
 			// not in alliance
 			rputs("\n |0CYou are not in that alliance.\n");
 			if (YesNo(" |0SWrite a message to the alliance's creator?") == YES) {
-				MyWriteMessage2(Alliances[WhichAlliance]->CreatorID, FALSE, FALSE, -1, "", FALSE, -1);
+				MyWriteMessage2(Alliances[WhichAlliance]->CreatorID, false, false, -1, "", false, -1);
 			}
 		}
 	}
@@ -898,17 +898,17 @@ _INT16 AlliancesMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-_INT16 ChurchMenu(void)
+int16_t ChurchMenu(void)
 {
 	char *szTheOptions[9];
 	char szString[80];
-	_INT16 iTemp, Event;
+	int16_t iTemp, Event;
 
 	// ST_CHURCHOP0
 	LoadStrings(890, 9, szTheOptions);
 
 	if (!PClan->ChurchHelp) {
-		PClan->ChurchHelp = TRUE;
+		PClan->ChurchHelp = true;
 		Help("Church Menu", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -928,15 +928,15 @@ _INT16 ChurchMenu(void)
 		sprintf(szString, " |0CLevel of Church: |0M%d\n", Village.Data->ChurchLevel);
 		rputs(szString);
 
-		switch (GetChoice("Church Menu", ST_ENTEROPTION, szTheOptions, "MBPDQ?VU/", 'Q', TRUE)) {
+		switch (GetChoice("Church Menu", ST_ENTEROPTION, szTheOptions, "MBPDQ?VU/", 'Q', true)) {
 			case 'M' :      /* attend mass */
 				if (PClan->AttendedMass) {
 					rputs("|07You've already attended today's mass.\n%P");
 					break;
 				}
-				PClan->AttendedMass = TRUE;
+				PClan->AttendedMass = true;
 
-				RunEvent(FALSE, "/e/Church", "", NULL, NULL);
+				RunEvent(false, "/e/Church", "", NULL, NULL);
 				door_pause();
 				break;
 			case 'P' :      /* pray */
@@ -944,9 +944,9 @@ _INT16 ChurchMenu(void)
 					rputs("|07You've already prayed today.\n%P");
 					break;
 				}
-				PClan->Prayed = TRUE;
+				PClan->Prayed = true;
 
-				RunEvent(FALSE, "/e/Pray", "", NULL, NULL);
+				RunEvent(false, "/e/Pray", "", NULL, NULL);
 				door_pause();
 				break;
 			case 'B' :      /* ask for blessing */
@@ -960,7 +960,7 @@ _INT16 ChurchMenu(void)
 					rputs("|07You've already gotten a blessing today.\n%P");
 					break;
 				}
-				PClan->GotBlessing = TRUE;
+				PClan->GotBlessing = true;
 
 				rputs("\n|06A priest blesses your clan.\n\n");
 
@@ -977,21 +977,21 @@ _INT16 ChurchMenu(void)
 					rputs("|07This church isn't capable of that at its current level.\n%P");
 					break;
 				}
-				ResurrectDead(FALSE);
+				ResurrectDead(false);
 				break;
 			case 'U' :      /* revive unconscious */
 				if (Village.Data->ChurchLevel < 2) {
 					rputs("|07This church isn't capable of that at its current level.\n%P");
 					break;
 				}
-				ResurrectDead(TRUE);
+				ResurrectDead(true);
 				break;
 			case 'Q' :      /* return to previous menu */
 				return 0;
 			case '?' :      /* redisplay options */
 				break;
 			case 'V' :      /* stats */
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 			case '/' :  //chat villagers
 				ChatVillagers(WN_CHURCH);
@@ -1004,16 +1004,16 @@ _INT16 ChurchMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-_INT16 THallMenu(void)
+int16_t THallMenu(void)
 {
 	char *szTheOptions[7];
 	char szString[80];
-	_INT16 iTemp;
+	int16_t iTemp;
 
 	LoadStrings(655, 7, szTheOptions);
 
 	if (!PClan->THallHelp) {
-		PClan->THallHelp = TRUE;
+		PClan->THallHelp = true;
 		Help("Training Hall Menu", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -1033,7 +1033,7 @@ _INT16 THallMenu(void)
 		sprintf(szString, " |0CLevel of Hall  : |0M%d\n", Village.Data->TrainingHallLevel);
 		rputs(szString);
 
-		switch (GetChoice("Training Hall", ST_ENTEROPTION, szTheOptions, "TALQ?V/", 'Q', TRUE)) {
+		switch (GetChoice("Training Hall", ST_ENTEROPTION, szTheOptions, "TALQ?V/", 'Q', true)) {
 			case 'T' :      /* train member */
 				TrainMember();
 				break;
@@ -1052,7 +1052,7 @@ _INT16 THallMenu(void)
 			case '?' :      /* redisplay options */
 				break;
 			case 'V' :      /* stats */
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, true);
 				break;
 			case '/' :  //chat villagers
 				ChatVillagers(WN_THALL);
@@ -1069,8 +1069,8 @@ _INT16 THallMenu(void)
 
 void GameLoop(void)
 {
-	_INT16 MenuNum = 0;
-	BOOL Quit = FALSE;
+	int16_t MenuNum = 0;
+	bool Quit = false;
 	char szString[80];
 
 	while (!Quit) {
@@ -1107,7 +1107,7 @@ void GameLoop(void)
 				rputs(ST_4RETURNS);
 
 				if (!PClan->TownHallHelp) {
-					PClan->TownHallHelp = TRUE;
+					PClan->TownHallHelp = true;
 					Help("Town Hall", ST_NEWBIEHLP);
 					rputs("\n%P");
 				}
@@ -1154,7 +1154,7 @@ void GameLoop(void)
 				MenuNum = AlliancesMenu();
 				break;
 			case -1 : /* quit */
-				Quit = TRUE;
+				Quit = true;
 				break;
 		}
 	}

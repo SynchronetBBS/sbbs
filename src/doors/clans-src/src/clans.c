@@ -85,7 +85,7 @@ extern struct ibbs IBBS;
 
 void MainGame(void)
 {
-	BOOL Quit = FALSE, EnteredGame = FALSE;
+	bool Quit = false, EnteredGame = false;
 	char *szTheOptions[12], DefaultAction, szString[128];
 
 	LoadStrings(950, 12, szTheOptions);
@@ -115,9 +115,9 @@ void MainGame(void)
 		else
 			DefaultAction = 'E';
 
-		switch (GetChoice("Clan Title", ST_ENTEROPTION, szTheOptions, "ESTYHIQ?BVGL", DefaultAction, TRUE)) {
+		switch (GetChoice("Clan Title", ST_ENTEROPTION, szTheOptions, "ESTYHIQ?BVGL", DefaultAction, false)) {
 			case 'E' :  // Enter game
-				EnteredGame = TRUE;
+				EnteredGame = false;
 
 				if (Disbanded()) {
 					Help("Disbanded", ST_MENUSHLP);
@@ -163,9 +163,9 @@ void MainGame(void)
 				if (stricmp(PClan->szDateOfLastGame, System.szTodaysDate) != 0)
 					User_FirstTimeToday();
 
-				News_ReadNews(TRUE);
+				News_ReadNews(false);
 
-				ClanStats(PClan, TRUE);
+				ClanStats(PClan, false);
 
 				Mail_Read();
 				Trades_CheckTrades();
@@ -187,16 +187,16 @@ void MainGame(void)
 				door_pause();
 				break;
 			case 'T' :  /* Today's News */
-				News_ReadNews(TRUE);
+				News_ReadNews(false);
 				break;
 			case 'Y' :  /* Yesterday's News */
-				News_ReadNews(FALSE);
+				News_ReadNews(false);
 				break;
 			case 'S' :  // See scores
-				DisplayScores(FALSE);
+				DisplayScores(false);
 				break;
 			case 'Q' :  /* Quit */
-				Quit = TRUE;
+				Quit = false;
 				break;
 			case 'H' :  // Help
 				MainHelp();
@@ -209,7 +209,7 @@ void MainGame(void)
 					IBBS_LeagueInfo();
 				break;
 			case 'L' :  // league scores
-				if (Game.Data->InterBBS == FALSE)
+				if (Game.Data->InterBBS == false)
 					rputs("|07Not in a league\n%P");
 				else
 					LeagueScores();
@@ -235,7 +235,7 @@ int main(int argc, char *argv[])
 	if (!commandline_create(lpCmdLine, &argv, &argc)) {
 		MessageBox(NULL, TEXT("failed to parse commandline"),
 				   TEXT("Error"), MB_OK | MB_ICONERROR);
-		return FALSE;
+		return false;
 	}
 #endif
 
