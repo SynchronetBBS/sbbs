@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
 	/* since they started at -1 and not 0 */
 	CurMonster++;
 
-	printf("%d Monster found.\n%ld bytes used", CurMonster, (int32_t) CurMonster*sizeof(struct pc));
+	printf("%d Monster found.\n%ld bytes used", CurMonster, (long)CurMonster * BUF_SIZE_pc);
 
 	fclose(fpMonIn);
 	fclose(fpMonOut);

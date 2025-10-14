@@ -97,16 +97,16 @@ clans$(EXEFILE):      $(OBJS) unix_wrappers.o
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-langcomp$(EXEFILE):      langcomp.c serialize.o
-	$(CC) $(CFLAGS) $(LDFLAGS) langcomp.c serialize.o -o langcomp$(EXEFILE)
+langcomp$(EXEFILE):      langcomp.c serialize.o crc.o
+	$(CC) $(CFLAGS) $(LDFLAGS) langcomp.c serialize.o crc.o -o langcomp$(EXEFILE)
 
 reset$(EXEFILE): reset.c myopen.h parsing.h crc.h structs.h k_config.h unix_wrappers.o serialize.o deserialize.o
 	$(CC) $(CFLAGS) $(LDFLAGS) reset.c myopen.o parsing.o crc.o unix_wrappers.o serialize.o deserialize.o -o reset$(EXEFILE) $(CONSOLE_LIBS)
 
 
-mcomp$(EXEFILE):      mcomp.c serialize.o
-	$(CC) $(CFLAGS) $(LDFLAGS) mcomp.c serialize.o -o mcomp$(EXEFILE)
+mcomp$(EXEFILE):      mcomp.c serialize.o crc.o
+	$(CC) $(CFLAGS) $(LDFLAGS) mcomp.c serialize.o crc.o -o mcomp$(EXEFILE)
 
-pcedit$(EXEFILE):      pcedit.c myopen.o unix_wrappers.o myopen.h unix_wrappers.h serialize.o deserialize.o
-	$(CC) $(CFLAGS) $(LDFLAGS) pcedit.c myopen.o unix_wrappers.o serialize.o deserialize.o -o pcedit$(EXEFILE)
+pcedit$(EXEFILE):      pcedit.c myopen.o unix_wrappers.o myopen.h unix_wrappers.h serialize.o deserialize.o crc.o
+	$(CC) $(CFLAGS) $(LDFLAGS) pcedit.c myopen.o unix_wrappers.o serialize.o deserialize.o crc.o -o pcedit$(EXEFILE)
 

@@ -1272,8 +1272,6 @@ void Village_Write(void)
 		System_Error("Village not initialized!\n");
 	}
 
-	Village.Data->CRC = CRCValue(Village.Data, sizeof(struct village_data) - sizeof(int32_t));
-
 	fp = _fsopen(ST_VILLAGEDATFILE, "wb", SH_DENYRW);
 	if (fp) {
 		EncryptWrite_s(village_data, Village.Data, fp, XOR_VILLAGE);
@@ -1336,8 +1334,6 @@ void Village_Reset(void)
 
 	Village.Data->CostFluctuation = 5 - RANDOM(11);
 	Village.Data->MarketQuality = MQ_AVERAGE;
-
-	Village.Data->CRC = CRCValue(&Village.Data, sizeof(struct village_data) - sizeof(int32_t));
 }
 
 // ------------------------------------------------------------------------- //
@@ -1428,7 +1424,7 @@ void Village_Init(void)
 	}
 
 	// ensure CRC is correct
-	if (CheckCRC(Village.Data, sizeof(struct village_data) - sizeof(int32_t), Village.Data->CRC) == false) {
+	if (!Village.Data->CRC) {
 		Village_Destroy();
 		System_Error("Village data corrupt!\n");
 	}

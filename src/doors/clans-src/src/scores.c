@@ -509,7 +509,7 @@ void SendScoreData(struct UserScore **UserScores)
 	Packet.BBSIDFrom = IBBS.Data->BBSID;
 	Packet.PacketType = PT_SCOREDATA;
 	strcpy(Packet.szDate, System.szTodaysDate);
-	Packet.PacketLength = NumScores*sizeof(struct UserScore) + sizeof(int16_t);
+	Packet.PacketLength = NumScores * BUF_SIZE_UserScore + sizeof(int16_t);
 	strcpy(Packet.GameID, Game.Data->GameID);
 
 	fp = _fsopen("tmp.$$$", "wb", SH_DENYRW);
@@ -838,7 +838,7 @@ void SendScoreList(void)
 	Packet.BBSIDFrom = IBBS.Data->BBSID;
 	Packet.PacketType = PT_SCORELIST;
 	strcpy(Packet.szDate, System.szTodaysDate);
-	Packet.PacketLength = NumScores*sizeof(struct UserScore) + sizeof(int16_t) +
+	Packet.PacketLength = NumScores * BUF_SIZE_UserScore + sizeof(int16_t) +
 						  sizeof(char)*11;
 	strcpy(Packet.GameID, Game.Data->GameID);
 

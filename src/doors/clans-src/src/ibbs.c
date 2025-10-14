@@ -351,7 +351,7 @@ void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
 	assert(res == sizeof(pktBuf));
 	if (res != sizeof(pktBuf))
 		return;
-	IBBS_SendPacket(PT_SPYRESULT, sizeof(struct SpyResultPacket), pktBuf,
+	IBBS_SendPacket(PT_SPYRESULT, sizeof(pktBuf), pktBuf,
 					Spy->BBSFromID);
 	(void)Packet;
 	(void)fp;
@@ -1099,7 +1099,7 @@ void IBBS_TravelMaint(void)
 		Packet.BBSIDTo = LeavingData.DestID;
 		Packet.PacketType = PT_CLANMOVE;
 		strcpy(Packet.szDate, System.szTodaysDate);
-		Packet.PacketLength = sizeof(struct clan) + 6*sizeof(struct pc);
+		Packet.PacketLength = BUF_SIZE_clan + 6 * BUF_SIZE_pc;
 		strcpy(Packet.GameID, Game.Data->GameID);
 
 		/* write packet */
@@ -2071,7 +2071,7 @@ void IBBS_SendSpy(struct empire *Empire, int16_t DestID)
 	Packet.PacketType = PT_SPY;
 	strcpy(Packet.GameID, Game.Data->GameID);
 	strcpy(Packet.szDate, System.szTodaysDate);
-	Packet.PacketLength = sizeof(struct SpyAttemptPacket);
+	Packet.PacketLength = BUF_SIZE_SpyAttemptPacket;
 
 	fp = _fsopen(ST_OUTBOUNDFILE, "wb", SH_DENYWR);
 	if (!fp)    return;

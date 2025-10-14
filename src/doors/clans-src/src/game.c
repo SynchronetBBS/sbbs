@@ -77,8 +77,6 @@ void Game_Write(void)
 {
 	FILE *fp;
 
-	Game.Data->CRC = CRCValue(Game.Data, sizeof(struct game_data) - sizeof(int32_t));
-
 	fp = _fsopen("game.dat", "wb", SH_DENYRW);
 	if (fp) {
 		EncryptWrite_s(game_data, Game.Data, fp, XOR_GAME);
@@ -167,7 +165,7 @@ void Game_Init(void)
 	}
 
 	// ensure CRC is correct
-	if (CheckCRC(Game.Data, sizeof(struct game_data) - sizeof(int32_t), Game.Data->CRC) == false) {
+	if (!Game.Data->CRC) {
 		Game_Destroy();
 		System_Error("Game data corrupt!\n");
 	}

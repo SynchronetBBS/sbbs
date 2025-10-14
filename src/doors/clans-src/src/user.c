@@ -2065,14 +2065,9 @@ bool User_Create(void)
 		fseek(fpPlayerFile, 0L, SEEK_END);
 	}
 
-	// figure out CRC first
-	PClan->CRC = CRCValue(PClan, sizeof(struct clan) - sizeof(int32_t));
-
 	/* write it to file */
 	EncryptWrite_s(clan, PClan, fpPlayerFile, XOR_USER);
 	for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
-		PClan->Member[iTemp]->CRC = CRCValue(PClan->Member[iTemp], sizeof(struct pc) - sizeof(int32_t));
-
 		EncryptWrite_s(pc, PClan->Member[iTemp], fpPlayerFile, XOR_PC);
 	}
 
@@ -2080,8 +2075,6 @@ bool User_Create(void)
 	TmpPC->szName[0] = 0;
 	TmpPC->Status = Dead;
 	for (iTemp = Game.Data->MaxPermanentMembers; iTemp < 6; iTemp++) {
-		TmpPC->CRC = CRCValue(TmpPC, sizeof(struct pc) - sizeof(int32_t));
-
 		EncryptWrite_s(pc, TmpPC, fpPlayerFile, XOR_PC);
 	}
 
@@ -2306,16 +2299,13 @@ void Clan_Update(struct clan *Clan)
 				TmpClan->ClanID[1] == Clan->ClanID[1]) {
 			fseek(fpPlayerFile, OldOffset, SEEK_SET);
 
-			Clan->CRC = CRCValue(Clan, sizeof(struct clan) - sizeof(int32_t));
 			EncryptWrite_s(clan, Clan, fpPlayerFile, XOR_USER);
 
 			// fwrite players
 			TmpPC->szName[0] = 0;
 			TmpPC->Status = Dead;
-			TmpPC->CRC = CRCValue(TmpPC, sizeof(struct pc) - sizeof(int32_t));
 			for (iTemp = 0; iTemp < 6; iTemp++) {
 				if (Clan->Member[iTemp] && Clan->Member[iTemp]->Undead == false) {
-					Clan->Member[iTemp]->CRC = CRCValue(Clan->Member[iTemp], sizeof(struct pc) - sizeof(int32_t));
 					EncryptWrite_s(pc, Clan->Member[iTemp], fpPlayerFile, XOR_PC);
 				}
 				else

@@ -1606,7 +1606,7 @@ void SendMsj(struct Message *Message, int16_t WhichVillage)
 	Packet.BBSIDFrom = IBBS.Data->BBSID;
 	Packet.PacketType = PT_MSJ;
 	strcpy(Packet.szDate, System.szTodaysDate);
-	Packet.PacketLength = sizeof(struct Message) + Message->Data.Length;
+	Packet.PacketLength = BUF_SIZE_Message + Message->Data.Length;
 	strcpy(Packet.GameID, Game.Data->GameID);
 
 	if (WhichVillage != -1) {

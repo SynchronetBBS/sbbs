@@ -1920,9 +1920,6 @@ void GoReset(struct ResetData *ResetData, int16_t Option)
 		Game_Data.ClanFights = ResetData->ClanFights;
 		Game_Data.DaysOfProtection = ResetData->DaysOfProtection;
 
-
-		Game_Data.CRC = CRCValue(&Game_Data, sizeof(struct game_data) - sizeof(int32_t));
-
 		fp = fopen("game.dat", "wb");
 		EncryptWrite_s(game_data, &Game_Data, fp, XOR_GAME);
 		fclose(fp);
@@ -1962,9 +1959,6 @@ void GoReset(struct ResetData *ResetData, int16_t Option)
 		Game_Data.MineFights = ResetData->MineFights;
 		Game_Data.ClanFights = ResetData->ClanFights;
 		Game_Data.DaysOfProtection = ResetData->DaysOfProtection;
-
-
-		Game_Data.CRC = CRCValue(&Game_Data, sizeof(struct game_data) - sizeof(int32_t));
 
 		fp = fopen("game.dat", "wb");
 		EncryptWrite_s(game_data, &Game_Data, fp, XOR_GAME);
@@ -2009,9 +2003,6 @@ void GoReset(struct ResetData *ResetData, int16_t Option)
 		Game_Data.MineFights = ResetData->MineFights;
 		Game_Data.ClanFights = ResetData->ClanFights;
 		Game_Data.DaysOfProtection = ResetData->DaysOfProtection;
-
-
-		Game_Data.CRC = CRCValue(&Game_Data, sizeof(struct game_data) - sizeof(int32_t));
 
 		fp = fopen("game.dat", "wb");
 		EncryptWrite_s(game_data, &Game_Data, fp, XOR_GAME);
@@ -2160,8 +2151,6 @@ void CreateVillageDat(struct ResetData *ResetData)
 
 	Village_Data.CostFluctuation = 5 - RANDOM(11);
 	Village_Data.MarketQuality = MQ_AVERAGE;
-
-	Village_Data.CRC = CRCValue(&Village_Data, sizeof(struct village_data) - sizeof(int32_t));
 
 	fp = fopen("village.dat", "wb");
 	EncryptWrite_s(village_data, &Village_Data, fp, XOR_VILLAGE);

@@ -1,4 +1,10 @@
+#include "defines.h"
 
-int32_t CRCValue(void *Data, int DataSize);
+#ifndef CRC_H
+#define CRC_H
 
-int CheckCRC(void *Data, int Size, int32_t CRC);
+int32_t CRCValue(const void *Data, int DataSize);
+
+int CheckCRC(const void *Data, int Size, int32_t CRC);
+
+#endif

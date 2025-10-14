@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "crc.h"
+#include "defines.h"
 #include "deserialize.h"
 
 #define unpack_char(x) do {      \
@@ -442,6 +444,10 @@ s_pc_d(const void *bufptr, size_t bufsz, struct pc *s)
 	s->Undead = tmp >> 7;
 	s->DefaultAction = tmp & 0x7F;
 	unpack_int32_t(s->CRC);
+	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
+		s->CRC = 1;
+	else
+		s->CRC = 0;
 
 	return (src - (uint8_t *)bufptr);
 }
@@ -559,6 +565,10 @@ s_game_data_d(const void *bufptr, size_t bufsz, struct game_data *s)
 	unpack_int16_t(s->ClanFights);
 	unpack_int16_t(s->DaysOfProtection);
 	unpack_int32_t(s->CRC);
+	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
+		s->CRC = 1;
+	else
+		s->CRC = 0;
 
 	return (src - (uint8_t *)bufptr);
 }
@@ -611,6 +621,10 @@ s_village_data_d(const void *bufptr, size_t bufsz, struct village_data *s)
 	unpack_int16_t(s->MarketQuality);
 	unpack_struct(&s->Empire, empire);
 	unpack_int32_t(s->CRC);
+	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
+		s->CRC = 1;
+	else
+		s->CRC = 0;
 
 	return (src - (uint8_t *)bufptr);
 }
@@ -657,6 +671,10 @@ s_Army_d(const void *bufptr, size_t bufsz, struct Army *s)
 	unpack_char(s->Level);
 	unpack_struct(&s->Strategy, Strategy);
 	unpack_int32_t(s->CRC);
+	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
+		s->CRC = 1;
+	else
+		s->CRC = 0;
 
 	return (src - (uint8_t *)bufptr);
 }
@@ -693,6 +711,10 @@ s_AttackPacket_d(const void *bufptr, size_t bufsz, struct AttackPacket *s)
 	unpack_int16_tArr(s->AttackOriginatorID);
 	unpack_int16_t(s->AttackIndex);
 	unpack_int32_t(s->CRC);
+	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
+		s->CRC = 1;
+	else
+		s->CRC = 0;
 
 	return (src - (uint8_t *)bufptr);
 }
@@ -728,6 +750,10 @@ s_AttackResult_d(const void *bufptr, size_t bufsz, struct AttackResult *s)
 	unpack_int16_t(s->ResultIndex);
 	unpack_int16_t(s->AttackIndex);
 	unpack_int32_t(s->CRC);
+	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
+		s->CRC = 1;
+	else
+		s->CRC = 0;
 
 	return (src - (uint8_t *)bufptr);
 }
@@ -777,6 +803,11 @@ s_empire_d(const void *bufptr, size_t bufsz, struct empire *s)
 	unpack_int32_t(s->Points);
 	unpack_int16_tArr(s->Junk);
 	unpack_int32_t(s->CRC);
+	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
+		s->CRC = 1;
+	else
+		s->CRC = 0;
+
 	return (src - (uint8_t *)bufptr);
 }
 
@@ -860,6 +891,10 @@ s_clan_d(const void *bufptr, size_t bufsz, struct clan *s)
 	remain--;
 
 	unpack_int32_t(s->CRC);
+	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
+		s->CRC = 1;
+	else
+		s->CRC = 0;
 	return (src - (uint8_t *)bufptr);
 }
 
