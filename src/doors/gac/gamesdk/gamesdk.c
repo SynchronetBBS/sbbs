@@ -2627,29 +2627,35 @@ char PromptBox( const char *prompt1, const char *prompt2, const char *responses,
 	// for ANSI users
 	if (od_control.user_ansi || od_control.user_rip)
 	{
-			if (bottom == FALSE) instruct_win = od_window_create(5,10,75,13,"Make your choice",0x09,0x0b,0x00,0);
-			else instruct_win = od_window_create(5,20,75,23,"Make your choice",0x09,0x0b,0x00,0);
-			od_set_attrib(0x03);
-			if (bottom == FALSE) od_set_cursor(11,7);
-			else od_set_cursor(21,7);
-			od_printf(prompt1);
-			od_set_attrib(0x03);
-			if (bottom == FALSE) od_set_cursor(12,7);
-			else od_set_cursor(22,7);
-			od_printf(prompt2);
-			// response = od_get_answer(responses);
-			// want the players to still be notified when they are deciding and to loop until they pick a correct choice
-			response = '~';  // use a bogus character to start with (the '\0' character could be found)
-			if (stricmp(responses, "ANY") != 0)
-			{
-				while (strchr(responses, response) == NULL)
-					response = GetMenuChoice();
-			}
-			else
-			{
+		if (bottom == FALSE)
+			instruct_win = od_window_create(5,10,75,13,"Make your choice",0x09,0x0b,0x00,0);
+		else
+			instruct_win = od_window_create(5,20,75,23,"Make your choice",0x09,0x0b,0x00,0);
+		od_set_attrib(0x03);
+		if (bottom == FALSE)
+			od_set_cursor(11,7);
+		else
+			od_set_cursor(21,7);
+		od_printf(prompt1);
+		od_set_attrib(0x03);
+		if (bottom == FALSE)
+			od_set_cursor(12,7);
+		else
+			od_set_cursor(22,7);
+		od_printf(prompt2);
+		// response = od_get_answer(responses);
+		// want the players to still be notified when they are deciding and to loop until they pick a correct choice
+		response = '~';  // use a bogus character to start with (the '\0' character could be found)
+		if (stricmp(responses, "ANY") != 0)
+		{
+			while (strchr(responses, response) == NULL)
 				response = GetMenuChoice();
-			}
-			od_window_remove(instruct_win);
+		}
+		else
+		{
+			response = GetMenuChoice();
+		}
+		od_window_remove(instruct_win);
 	}
 	else
 	{
@@ -3720,7 +3726,7 @@ INT16 g_send_file_pause( char *filename)
 	INT16 sent=FALSE;
 	INT16 archive = FALSE;
 	INT16 encrypted = FALSE;
-	FILE *ifile;
+	FILE *ifile = NULL;
 	size_t count = 0;
 	const size_t tgt = od_control.user_screen_length - 1;
 

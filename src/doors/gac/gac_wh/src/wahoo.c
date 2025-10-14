@@ -46,8 +46,6 @@ void WaHoo( void )
   
   InitWaHooBoard();   // Initialize the x and y positions of the board
 
-//PromptBox("After InitWaHooBoard", "", "ANY", TRUE);
-
   response = 'Y';
   while (response != 'N')
   {              
@@ -67,11 +65,9 @@ void WaHoo( void )
 	}
 	g_clr_scr();
 	SetupWaHooBoard();   // start the game out
-//PromptBox("After SetupWaHooBoard", "", "ANY", TRUE);
 	
 	// let the user play the game
 	gameOver = PlayWaHoo();
-//PromptBox("After PlayWaHoo", "", "ANY", TRUE);
 
 	if( gameOver == WON)
 	{
@@ -97,9 +93,6 @@ void WaHoo( void )
 		player.savedGame = FALSE;
 		response = PromptBox(prompt, "Do you wish to play another game (`bright cyan`Y`cyan`/`bright cyan`n`cyan`)?", "YN\n\r", FALSE);
 	}
-
-	// need to write the players information...
-//    WritePlayerInfo(&player, player.account);
   }
 	return;
 }
@@ -251,7 +244,7 @@ INT16 PlayWaHoo( void )
 					finished = TRUE;
 			
 			}
-		}        
+		}
 		// process each of the computer opponents...    
 		else
 		{
