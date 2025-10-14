@@ -123,10 +123,17 @@ void ProcessAttackResult(struct AttackResult *AttackResult);
 // ------------------------------------------------------------------------- //
 void SendResultPacket(struct AttackResult *Result, int16_t DestID)
 {
+	uint8_t pktBuf[BUF_SIZE_AttackResult];
+	size_t res;
+
 	Result->ResultIndex = IBBS.Data->Nodes[DestID-1].Attack.SendIndex+1;
 	IBBS.Data->Nodes[DestID-1].Attack.SendIndex++;
 
-	IBBS_SendPacket(PT_ATTACKRESULT, sizeof(struct AttackResult), Result,
+	res = s_AttackResult_s(Result, pktBuf, sizeof(pktBuf));
+	assert(res == sizeof(pktBuf));
+	if (res != sizeof(pktBuf))
+		return;
+	IBBS_SendPacket(PT_ATTACKRESULT, sizeof(pktBuf), pktBuf,
 					DestID);
 }
 

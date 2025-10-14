@@ -241,6 +241,11 @@ void LeagueKillUser(struct UserInfo *User)
 	// create packet for all BBSes saying "this user just committed suicide
 	// on my board so remove him from your userlist"
 	int16_t CurBBS;
+	uint8_t pktBuf[BUF_SIZE_UserInfo];
+	size_t ret = s_UserInfo_s(User, pktBuf, sizeof(pktBuf));
+	assert(ret == sizeof(pktBuf));
+	if (ret != sizeof(pktBuf))
+		return;
 
 	// for each BBS in the list, send him a packet
 	// must skip BBS #1 since that's this BBS (main BBS)
@@ -252,7 +257,7 @@ void LeagueKillUser(struct UserInfo *User)
 		if (CurBBS+1 == IBBS.Data->BBSID)
 			continue;
 
-		IBBS_SendPacket(PT_SUBUSER, sizeof(struct UserInfo), User, CurBBS+1);
+		IBBS_SendPacket(PT_SUBUSER, sizeof(pktBuf), pktBuf, CurBBS+1);
 	}
 }
 
@@ -284,6 +289,8 @@ void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
 	char *szMessage;
 	int16_t Junk[2];
 	FILE *fp;
+	uint8_t pktBuf[BUF_SIZE_SpyResultPacket];
+	size_t res;
 
 	szMessage = MakeStr(600);
 	TmpClan = NULL;
@@ -340,7 +347,11 @@ void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
 
 	free(szMessage);
 
-	IBBS_SendPacket(PT_SPYRESULT, sizeof(struct SpyResultPacket), &SpyResult,
+	res = s_SpyResultPacket_s(&SpyResult, pktBuf, sizeof(pktBuf));
+	assert(res == sizeof(pktBuf));
+	if (res != sizeof(pktBuf))
+		return;
+	IBBS_SendPacket(PT_SPYRESULT, sizeof(struct SpyResultPacket), pktBuf,
 					Spy->BBSFromID);
 	(void)Packet;
 	(void)fp;
@@ -406,12 +417,18 @@ void IBBS_ProcessSpyResult(struct SpyResultPacket *SpyResult)
 */
 void IBBS_SendDelUser(int16_t BBSID, struct UserInfo *User)
 {
+	uint8_t pktBuf[BUF_SIZE_UserInfo];
+	size_t res;
 	// run ONLY by main bbs
 	// this will send a packet to a given bbs, telling the bbs to delete
 	// the user with the clanid supplied
 
+	res = s_UserInfo_s(User, pktBuf, sizeof(pktBuf));
+	assert(res == sizeof(pktBuf));
+	if (res != sizeof(pktBuf))
+		return;
 	if (IBBS.Data->Nodes[BBSID-1].Active)
-		IBBS_SendPacket(PT_DELUSER, sizeof(struct UserInfo), User, BBSID);
+		IBBS_SendPacket(PT_DELUSER, sizeof(pktBuf), pktBuf, BBSID);
 }
 
 
@@ -534,6 +551,13 @@ void UpdateNodesOnNewUser(struct UserInfo *User)
 	// userlist"
 	FILE *fp;
 	int16_t CurBBS;
+	uint8_t pktBuf[BUF_SIZE_UserInfo];
+	size_t res;
+
+	res = s_UserInfo_s(User, pktBuf, sizeof(pktBuf));
+	assert(res == sizeof(pktBuf));
+	if (res != sizeof(pktBuf))
+		return;
 
 	// for each BBS in the list, send him a packet
 	// must skip BBS #1 since that's this BBS (main BBS)
@@ -541,7 +565,7 @@ void UpdateNodesOnNewUser(struct UserInfo *User)
 		if (IBBS.Data->Nodes[CurBBS].Active == false)
 			continue;
 
-		IBBS_SendPacket(PT_ADDUSER, sizeof(struct UserInfo), User, CurBBS+1);
+		IBBS_SendPacket(PT_ADDUSER, sizeof(pktBuf), pktBuf, CurBBS+1);
 	}
 	(void)fp;
 }
@@ -556,13 +580,20 @@ void IBBS_LeagueNewUser(struct UserInfo *User)
 {
 	struct Packet Packet;
 	FILE *fp;
+	uint8_t pktBuf[BUF_SIZE_UserInfo];
+	size_t res;
 
 	// add this user to THIS bbs's user list now
 	AddToUList(User);
 
+	res = s_UserInfo_s(User, pktBuf, sizeof(pktBuf));
+	assert(res == sizeof(pktBuf));
+	if (res != sizeof(pktBuf))
+		return;
+
 	// if this is a node only
 	if (IBBS.Data->BBSID != 1) {
-		IBBS_SendPacket(PT_NEWUSER, sizeof(struct UserInfo), User, 1);
+		IBBS_SendPacket(PT_NEWUSER, sizeof(pktBuf), pktBuf, 1);
 	}
 	else {
 		// if this is the main BBS, we DO NOT need to process him as the other
@@ -2065,7 +2096,8 @@ void IBBS_SendAttackPacket(struct empire *AttackingEmpire, struct Army *Attackin
 						   int16_t Goal, int16_t ExtentOfAttack, int16_t TargetType, int16_t ClanID[2], int16_t DestID)
 {
 	struct AttackPacket AttackPacket;
-
+	uint8_t pktBuf[BUF_SIZE_AttackPacket];
+	size_t res;
 
 	// write packet data
 	AttackPacket.BBSFromID = IBBS.Data->BBSID;
@@ -2084,7 +2116,12 @@ void IBBS_SendAttackPacket(struct empire *AttackingEmpire, struct Army *Attackin
 	AttackPacket.AttackIndex = IBBS.Data->Nodes[DestID-1].Attack.SendIndex+1;
 	IBBS.Data->Nodes[DestID-1].Attack.SendIndex++;
 
-	IBBS_SendPacket(PT_ATTACK, sizeof(struct AttackPacket), &AttackPacket,
+	res = s_AttackPacket_s(&AttackPacket, pktBuf, sizeof(pktBuf));
+	assert(res == sizeof(pktBuf));
+	if (res != sizeof(pktBuf))
+		return;
+
+	IBBS_SendPacket(PT_ATTACK, sizeof(pktBuf), pktBuf,
 					DestID);
 }
 
@@ -2160,7 +2197,6 @@ void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
 	/* write packet */
 	EncryptWrite_s(Packet, &Packet, fpOutboundDat, XOR_PACKET);
 
-#warning TODO: This is broken now...
 	if (PacketLength)
 		EncryptWrite(PacketData, PacketLength, fpOutboundDat, XOR_PACKET);
 
@@ -2180,7 +2216,6 @@ void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
 		// write to backup packet
 		EncryptWrite_s(Packet, &Packet, fpBackupDat, XOR_PACKET);
 
-#warning TODO: This is broken now...
 		if (PacketLength)
 			EncryptWrite(PacketData, PacketLength, fpOutboundDat, XOR_PACKET);
 
@@ -2198,8 +2233,15 @@ void IBBS_SendRecon(int16_t DestID)
 
 void IBBS_SendReset(int16_t DestID)
 {
+	uint8_t pktBuf[BUF_SIZE_game_data];
+	size_t res;
+
+	res = s_game_data_s(Game.Data, pktBuf, sizeof(pktBuf));
+	assert(res == sizeof(pktBuf));
+	if (res != sizeof(pktBuf))
+		return;
 	if (IBBS.Data->Nodes[ DestID - 1].Active)
-		IBBS_SendPacket(PT_RESET, sizeof(struct game_data), Game.Data, DestID);
+		IBBS_SendPacket(PT_RESET, sizeof(pktBuf), pktBuf, DestID);
 }
 // ------------------------------------------------------------------------- //
 
@@ -2715,7 +2757,6 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			if (Packet.PacketLength) {
 				pcBuffer = malloc(Packet.PacketLength);
 				CheckMem(pcBuffer);
-#warning This is broken now
 				EncryptRead(pcBuffer, Packet.PacketLength, fp, XOR_PACKET);
 			}
 			else
@@ -2732,7 +2773,6 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			}
 			EncryptWrite_s(Packet, &Packet, fpNewFile, XOR_PACKET);
 			if (Packet.PacketLength)
-#warning This is broken now
 				EncryptWrite(pcBuffer, Packet.PacketLength, fpNewFile, XOR_PACKET);
 
 			fclose(fpNewFile);
@@ -2885,7 +2925,11 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			// only do if in a game already
 			if (Game.Data->GameState == 0) {
 				IBBS_AddToGame(TmpClan, false);
+				TmpClan->ClanID[0] = SWAP16(TmpClan->ClanID[0]);
+				TmpClan->ClanID[1] = SWAP16(TmpClan->ClanID[1]);
 				IBBS_SendPacket(PT_DATAOK, sizeof(int16_t)*2, TmpClan->ClanID, Packet.BBSIDFrom);
+				TmpClan->ClanID[0] = SWAP16(TmpClan->ClanID[0]);
+				TmpClan->ClanID[1] = SWAP16(TmpClan->ClanID[1]);
 			}
 
 			FreeClan(TmpClan);
@@ -3020,7 +3064,6 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			CheckMem(pcBuffer);
 
 			// load world.ndx
-#warning This is broken now
 			EncryptRead(pcBuffer, Packet.PacketLength, fp, XOR_PACKET);
 
 			// write to file
@@ -3041,7 +3084,6 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			CheckMem(pcBuffer);
 
 			// load file in
-#warning This is broken now
 			EncryptRead(pcBuffer, Packet.PacketLength, fp, XOR_PACKET);
 
 			// write to file
