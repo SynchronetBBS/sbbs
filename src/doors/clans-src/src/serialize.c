@@ -19,7 +19,7 @@
 		return SIZE_MAX;    \
 	*(dst++) = x;                \
 	remain--;                     \
-} while(0);
+} while(0)
 
 #define pack_bool(x) do {        \
 	assert(remain);           \
@@ -27,28 +27,28 @@
 		return SIZE_MAX;    \
 	*(dst++) = x;                \
 	remain--;                     \
-} while(0);
+} while(0)
 
-#define pack_int16_t(x) do {        \
-	int16_t tmp = x;             \
+#define pack_int16_t(x) do {         \
+	int16_t tmp = x;              \
 	assert(remain >= sizeof(tmp)); \
-	if (remain < sizeof(tmp))      \
-		return SIZE_MAX;        \
-	tmp = SWAP16(tmp);               \
-	memcpy(dst, &tmp, sizeof(tmp));   \
-	dst += sizeof(tmp);                \
-	remain -= sizeof(tmp);              \
+	if (remain < sizeof(tmp))       \
+		return SIZE_MAX;         \
+	tmp = SWAP16(tmp);                \
+	memcpy(dst, &tmp, sizeof(tmp));    \
+	dst += sizeof(tmp);                 \
+	remain -= sizeof(tmp);               \
 } while(0)
 
 #define pack_uint16_t(x) do {        \
 	uint16_t tmp = x;             \
 	assert(remain >= sizeof(tmp)); \
-	if (remain < sizeof(tmp))      \
-		return SIZE_MAX;        \
-	tmp = SWAP16(tmp);               \
-	memcpy(dst, &tmp, sizeof(tmp));   \
-	dst += sizeof(tmp);                \
-	remain -= sizeof(tmp);              \
+	if (remain < sizeof(tmp))       \
+		return SIZE_MAX;         \
+	tmp = SWAP16(tmp);                \
+	memcpy(dst, &tmp, sizeof(tmp));    \
+	dst += sizeof(tmp);                 \
+	remain -= sizeof(tmp);               \
 } while(0)
 
 #define pack_int32_t(x) do {         \
@@ -92,10 +92,9 @@
 } while(0)
 
 // Setting these to zero... hopefully they don't round-trip. :(
-#define pack_ptrArr(x) do {                                       \
-	int32_t dummy = 0;                                         \
+#define pack_ptrArr(x) do {                                        \
 	for (size_t ctr = 0; ctr < sizeof(x) / sizeof(*(x)); ctr++) \
-		pack_int32_t(dummy);                                 \
+		pack_int32_t(0);                                     \
 } while(0)
 
 #define pack_struct(x, s) do {                        \
@@ -108,26 +107,26 @@
 
 #define pack_structArr(x, s) do {                                  \
 	for (size_t ctr = 0; ctr < sizeof(x) / sizeof(*(x)); ctr++) \
-		pack_struct(&x[ctr], s);                              \
+		pack_struct(&x[ctr], s);                             \
 } while(0)
 
 size_t
-s_ibbs_node_attack_s(struct ibbs_node_attack *s, void *bufptr, size_t bufsz)
+s_ibbs_node_attack_s(const struct ibbs_node_attack *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int16_t(s->ReceiveIndex);
 	pack_int16_t(s->SendIndex);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_MessageHeader_s(struct MessageHeader *s, void *bufptr, size_t bufsz)
+s_MessageHeader_s(const struct MessageHeader *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_charArr(s->szFromUserName);
 	pack_charArr(s->szToUserName);
@@ -147,53 +146,53 @@ s_MessageHeader_s(struct MessageHeader *s, void *bufptr, size_t bufsz)
 	pack_uint16_t(s->wAttribute);
 	pack_uint16_t(s->wNextReply);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_ibbs_node_reset_s(struct ibbs_node_reset *s, void *bufptr, size_t bufsz)
+s_ibbs_node_reset_s(const struct ibbs_node_reset *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int16_t(s->Received);
 	pack_int32_t(s->LastSent);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_ibbs_node_recon_s(struct ibbs_node_recon *s, void *bufptr, size_t bufsz)
+s_ibbs_node_recon_s(const struct ibbs_node_recon *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int32_t(s->LastReceived);
 	pack_int32_t(s->LastSent);
 	pack_char(s->PacketIndex);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_Msg_Txt_s(struct Msg_Txt *s, void *bufptr, size_t bufsz)
+s_Msg_Txt_s(const struct Msg_Txt *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int16_tArr(s->Offsets);
 	pack_int16_t(s->Length);
 	pack_int16_t(s->NumLines);
 	pack_ptr(s->MsgTxt);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_Message_s(struct Message *s, void *bufptr, size_t bufsz)
+s_Message_s(const struct Message *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int16_tArr(s->ToClanID);
 	pack_int16_tArr(s->FromClanID);
@@ -209,14 +208,14 @@ s_Message_s(struct Message *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->PublicMsgIndex);
 	pack_struct(&s->Data, Msg_Txt);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_Topic_s(struct Topic *s, void *bufptr, size_t bufsz)
+s_Topic_s(const struct Topic *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_bool(s->Known);
 	pack_bool(s->Active);
@@ -224,14 +223,14 @@ s_Topic_s(struct Topic *s, void *bufptr, size_t bufsz)
 	pack_charArr(s->szName);
 	pack_charArr(s->szFileName);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_LeavingData_s(struct LeavingData *s, void *bufptr, size_t bufsz)
+s_LeavingData_s(const struct LeavingData *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_bool(s->Active);
 	pack_int16_t(s->DestID);
@@ -242,14 +241,14 @@ s_LeavingData_s(struct LeavingData *s, void *bufptr, size_t bufsz)
 	pack_int32_t(s->Knights);
 	pack_int32_t(s->Catapults);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_PClass_s(struct PClass *s, void *bufptr, size_t bufsz)
+s_PClass_s(const struct PClass *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_charArr(s->szName);
 	pack_charArr(s->Attributes);
@@ -259,26 +258,26 @@ s_PClass_s(struct PClass *s, void *bufptr, size_t bufsz)
 	pack_charArr(s->SpellsKnown);
 	pack_int16_t(s->VillageType);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_SpellsInEffect_s(struct SpellsInEffect *s, void *bufptr, size_t bufsz)
+s_SpellsInEffect_s(const struct SpellsInEffect *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int16_t(s->SpellNum);
 	pack_int16_t(s->Energy);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_SpyAttemptPacket_s(struct SpyAttemptPacket *s, void *bufptr, size_t bufsz)
+s_SpyAttemptPacket_s(const struct SpyAttemptPacket *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_charArr(s->szSpierName);
 	pack_int16_t(s->IntelligenceLevel);
@@ -288,14 +287,14 @@ s_SpyAttemptPacket_s(struct SpyAttemptPacket *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->BBSFromID);
 	pack_int16_t(s->BBSToID);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_SpyResultPacket_s(struct SpyResultPacket *s, void *bufptr, size_t bufsz)
+s_SpyResultPacket_s(const struct SpyResultPacket *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int16_t(s->BBSFromID);
 	pack_int16_t(s->BBSToID);
@@ -305,14 +304,14 @@ s_SpyResultPacket_s(struct SpyResultPacket *s, void *bufptr, size_t bufsz)
 	pack_struct(&s->Empire, empire);
 	pack_charArr(s->szTheDate);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_TradeData_s(struct TradeData *s, void *bufptr, size_t bufsz)
+s_TradeData_s(const struct TradeData *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_struct(&s->Giving, TradeList);
 	pack_struct(&s->Asking, TradeList);
@@ -322,14 +321,14 @@ s_TradeData_s(struct TradeData *s, void *bufptr, size_t bufsz)
 	pack_charArr(s->szFromClan);
 	pack_int32_t(s->Code);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_TradeList_s(struct TradeList *s, void *bufptr, size_t bufsz)
+s_TradeList_s(const struct TradeList *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int32_t(s->Gold);
 	pack_int32_t(s->Followers);
@@ -338,28 +337,28 @@ s_TradeList_s(struct TradeList *s, void *bufptr, size_t bufsz)
 	pack_int32_t(s->Knights);
 	pack_int32_t(s->Catapults);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_UserInfo_s(struct UserInfo *s, void *bufptr, size_t bufsz)
+s_UserInfo_s(const struct UserInfo *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int16_tArr(s->ClanID);
 	pack_bool(s->Deleted);
 	pack_charArr(s->szMasterName);
 	pack_charArr(s->szName);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_UserScore_s(struct UserScore *s, void *bufptr, size_t bufsz)
+s_UserScore_s(const struct UserScore *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int16_tArr(s->ClanID);
 	pack_charArr(s->Symbol);
@@ -367,14 +366,14 @@ s_UserScore_s(struct UserScore *s, void *bufptr, size_t bufsz)
 	pack_int32_t(s->Points);
 	pack_int16_t(s->BBSID);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_Spell_s(struct Spell *s, void *bufptr, size_t bufsz)
+s_Spell_s(const struct Spell *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_charArr(s->szName);
 	pack_int16_t(s->TypeFlag);
@@ -396,14 +395,14 @@ s_Spell_s(struct Spell *s, void *bufptr, size_t bufsz)
 	pack_bool(s->WisdomCanReduce);
 	pack_char((s->MultiAffect << 7) | s->Garbage);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_pc_s(struct pc *s, void *bufptr, size_t bufsz)
+s_pc_s(const struct pc *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_charArr(s->szName);
 	pack_int16_t(s->HP);
@@ -427,14 +426,14 @@ s_pc_s(struct pc *s, void *bufptr, size_t bufsz)
 	pack_char((s->Undead << 7) | s->DefaultAction);
 	pack_int32_t(s->CRC);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_Packet_s(struct Packet *s, void *bufptr, size_t bufsz)
+s_Packet_s(const struct Packet *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_charArr(s->GameID);
 	pack_charArr(s->szDate);
@@ -443,14 +442,14 @@ s_Packet_s(struct Packet *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->PacketType);
 	pack_int32_t(s->PacketLength);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_NPCInfo_s(struct NPCInfo *s, void *bufptr, size_t bufsz)
+s_NPCInfo_s(const struct NPCInfo *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_charArr(s->szName);
 	pack_structArr(s->Topics, Topic);
@@ -471,14 +470,14 @@ s_NPCInfo_s(struct NPCInfo *s, void *bufptr, size_t bufsz)
 	pack_charArr(s->szIndex);
 	pack_int16_t(s->VillageType);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_NPCNdx_s(struct NPCNdx *s, void *bufptr, size_t bufsz)
+s_NPCNdx_s(const struct NPCNdx *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_charArr(s->szIndex);
 	pack_bool(s->InClan);
@@ -486,28 +485,28 @@ s_NPCNdx_s(struct NPCNdx *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->WhereWander);
 	pack_int16_t(s->Status);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_Language_s(struct Language *s, void *bufptr, size_t bufsz)
+s_Language_s(const struct Language *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_charArr(s->Signature);
 	pack_uint16_tArr(s->StrOffsets);
 	pack_uint16_t(s->NumBytes);
 	pack_ptr(s->BigString);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_Alliance_s(struct Alliance *s, void *bufptr, size_t bufsz)
+s_Alliance_s(const struct Alliance *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int16_t(s->ID);
 	pack_charArr(s->szName);
@@ -516,14 +515,14 @@ s_Alliance_s(struct Alliance *s, void *bufptr, size_t bufsz)
 	pack_int16_tArr2(s->Member, MAX_ALLIANCEMEMBERS, 2);
 	pack_struct(&s->Empire, empire);
 	pack_structArr(s->Items, item_data);
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_game_data_s(struct game_data *s, void *bufptr, size_t bufsz)
+s_game_data_s(const struct game_data *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int16_t(s->GameState);
 	pack_bool(s->InterBBS);
@@ -544,14 +543,14 @@ s_game_data_s(struct game_data *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->DaysOfProtection);
 	pack_int32_t(s->CRC);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_village_data_s(struct village_data *s, void *bufptr, size_t bufsz)
+s_village_data_s(const struct village_data *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_charArr(s->ColorScheme);
 	pack_charArr(s->szName);
@@ -599,27 +598,27 @@ s_village_data_s(struct village_data *s, void *bufptr, size_t bufsz)
 	pack_struct(&s->Empire, empire);
 	pack_int32_t(s->CRC);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_EventHeader_s(struct EventHeader *s, void *bufptr, size_t bufsz)
+s_EventHeader_s(const struct EventHeader *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_charArr(s->szName);
 	pack_int32_t(s->EventSize);
 	pack_bool(s->Event);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_FileHeader_s(struct FileHeader *s, void *bufptr, size_t bufsz)
+s_FileHeader_s(const struct FileHeader *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_ptr(s->fp);
 	pack_charArr(s->szFileName);
@@ -627,14 +626,14 @@ s_FileHeader_s(struct FileHeader *s, void *bufptr, size_t bufsz)
 	pack_int32_t(s->lEnd);
 	pack_int32_t(s->lFileSize);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_Army_s(struct Army *s, void *bufptr, size_t bufsz)
+s_Army_s(const struct Army *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int32_t(s->Footmen);
 	pack_int32_t(s->Axemen);
@@ -645,14 +644,14 @@ s_Army_s(struct Army *s, void *bufptr, size_t bufsz)
 	pack_struct(&s->Strategy, Strategy);
 	pack_int32_t(s->CRC);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_Strategy_s(struct Strategy *s, void *bufptr, size_t bufsz)
+s_Strategy_s(const struct Strategy *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_char(s->AttackLength);
 	pack_char(s->AttackIntensity);
@@ -660,14 +659,14 @@ s_Strategy_s(struct Strategy *s, void *bufptr, size_t bufsz)
 	pack_char(s->DefendLength);
 	pack_char(s->DefendIntensity);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_AttackPacket_s(struct AttackPacket *s, void *bufptr, size_t bufsz)
+s_AttackPacket_s(const struct AttackPacket *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int16_t(s->BBSFromID);
 	pack_int16_t(s->BBSToID);
@@ -681,14 +680,14 @@ s_AttackPacket_s(struct AttackPacket *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->AttackIndex);
 	pack_int32_t(s->CRC);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_AttackResult_s(struct AttackResult *s, void *bufptr, size_t bufsz)
+s_AttackResult_s(const struct AttackResult *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_bool(s->Success);
 	pack_bool(s->NoTarget);
@@ -716,14 +715,14 @@ s_AttackResult_s(struct AttackResult *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->AttackIndex);
 	pack_int32_t(s->CRC);
 
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_item_data_s(struct item_data *s, void *bufptr, size_t bufsz)
+s_item_data_s(const struct item_data *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_bool(s->Available);
 	pack_int16_t(s->UsedBy);
@@ -742,14 +741,14 @@ s_item_data_s(struct item_data *s, void *bufptr, size_t bufsz)
 	pack_char(s->RandLevel);
 	pack_char(s->HPAdd);
 	pack_char(s->SPAdd);
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_empire_s(struct empire *s, void *bufptr, size_t bufsz)
+s_empire_s(const struct empire *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_charArr(s->szName);
 	pack_int16_t(s->OwnerType);
@@ -764,14 +763,14 @@ s_empire_s(struct empire *s, void *bufptr, size_t bufsz)
 	pack_int32_t(s->Points);
 	pack_int16_tArr(s->Junk);
 	pack_int32_t(s->CRC);
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 size_t
-s_clan_s(struct clan *s, void *bufptr, size_t bufsz)
+s_clan_s(const struct clan *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
-	unsigned char *dst = bufptr;
+	uint8_t *dst = bufptr;
 
 	pack_int16_tArr(s->ClanID);
 	pack_charArr(s->szUserName);
@@ -854,7 +853,7 @@ s_clan_s(struct clan *s, void *bufptr, size_t bufsz)
 	remain--;
 
 	pack_int32_t(s->CRC);
-	return (dst - (unsigned char *)bufptr);
+	return (dst - (uint8_t *)bufptr);
 }
 
 #if 0
