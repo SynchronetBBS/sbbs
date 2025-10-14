@@ -60,8 +60,13 @@
 #endif /* ODPLAT_WIN32 */
 
 /* Text mode specific definitions. */
-#if defined(ODPLAT_DOS) || defined(ODPLAT_NIX)
+#if defined(ODPLAT_DOS)
 #define OD_TEXTMODE
+#endif /* ODPLAT_DOS */
+
+/* Headless mode specific definitions. */
+#if defined(ODPLAT_NIX)
+#define OD_HEADLESS
 #endif /* ODPLAT_DOS */
 
 /* DOS specific definitions. */

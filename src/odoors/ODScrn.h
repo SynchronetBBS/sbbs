@@ -91,7 +91,7 @@ void *ODScrnShowMessage(char *pszText, int nFlags);
 void ODScrnRemoveMessage(void *pMessageInfo);
 
 /* Additional local output functions for text mode based versions. */
-#ifdef OD_TEXTMODE
+#if defined(OD_TEXTMODE) || defined(OD_HEADLESS)
 void *ODScrnCreateWindow(BYTE btLeft, BYTE btTop, BYTE btRight,
    BYTE btBottom, BYTE btAttribute, char *pszTitle, BYTE btTitleAttribute);
 void ODScrnDestroyWindow(void *pWindow);

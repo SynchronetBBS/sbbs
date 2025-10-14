@@ -2212,7 +2212,7 @@ void ODScrnClearToEndOfLine(void)
  *
  *     Return: void
  */
-#ifdef OD_TEXTMODE
+#if defined(OD_TEXTMODE) || defined (OD_HEADLESS)
 void *ODScrnCreateWindow(BYTE btLeft, BYTE btTop, BYTE btRight,
    BYTE btBottom, BYTE btAttribute, char *pszTitle, BYTE btTitleAttribute)
 {
@@ -2309,7 +2309,7 @@ void *ODScrnCreateWindow(BYTE btLeft, BYTE btTop, BYTE btRight,
  *
  *     Return: void
  */
-#ifdef OD_TEXTMODE
+#if defined(OD_TEXTMODE) || defined(OD_HEADLESS)
 void ODScrnDestroyWindow(void *pWindow)
 {
    BYTE btLeft;
