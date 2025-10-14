@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #ifdef __unix__
 #include <inttypes.h>
 #endif
@@ -179,9 +181,26 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #else
-typedef char bool;
+typedef unsigned char bool;
 #define true 1
 #define false 0
+#define STATIC_ASSERT
+#endif
+
+#if __STDC_VERSION__ >= 201112L
+#define STATIC_ASSERT(x,y)		_Static_assert(x,y)
+#define STATIC_ASSERT_GLOBAL(x,y)	_Static_assert(x,y);
+#else
+#define STATIC_ASSERT(x,y)	assert(x)
+#define STATIC_ASSERT_GLOBAL(x,y)
+#endif
+
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+#define SWAP16(x) (x)
+#define SWAP32(x) (x)
+#else
+#define SWAP16(x) ((((uint16_t)(x) & 0xff00) >> 8) | (((uint16_t)(x) & 0x00ff) << 8))
+#define SWAP32(x) ((((uint32_t)(x) & 0xff000000) >> 24) | (((uint32_t)(x) & 0x00ff0000) >> 8) | (((uint32_t)(x) & 0x0000ff00) << 8) | (((uint32_t)(x) & 0x000000ff) << 24))
 #endif
 
 // uncomment for Turbo C++

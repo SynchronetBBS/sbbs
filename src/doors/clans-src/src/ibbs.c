@@ -433,7 +433,7 @@ bool ClanIDInList(const int16_t ClanID[2])
 
 	// scan through file until end
 	for (;;) {
-		if (EncryptRead(&User, sizeof(struct UserInfo), fpUList, XOR_ULIST) == 0)
+		notEncryptRead_s(UserInfo, &User, fpUList, XOR_ULIST)
 			break;
 
 		// see if this user's name is same as one we're looking for
@@ -474,7 +474,7 @@ void RemoveFromUList(const int16_t ClanID[2])
 	// FIXME: assume file is opened
 
 	for (;;) {
-		if (EncryptRead(&User, sizeof(struct UserInfo), fpOldUList, XOR_ULIST) == 0)
+		notEncryptRead_s(UserInfo, &User, fpOldUList, XOR_ULIST)
 			break;
 
 //    printf("Read in %s\n", User.szName);
@@ -487,7 +487,7 @@ void RemoveFromUList(const int16_t ClanID[2])
 		}
 
 		// otherwise, don't skip him, write him to new file
-		EncryptWrite(&User, sizeof(struct UserInfo), fpNewUList, XOR_ULIST);
+		EncryptWrite_s(UserInfo, &User, fpNewUList, XOR_ULIST);
 	}
 
 	// close file
@@ -518,7 +518,7 @@ void AddToUList(struct UserInfo *User)
 		return;
 
 	// append to file
-	EncryptWrite(User, sizeof(struct UserInfo), fpUList, XOR_ULIST);
+	EncryptWrite_s(UserInfo, User, fpUList, XOR_ULIST);
 
 	// close file
 	fclose(fpUList);
@@ -613,7 +613,7 @@ bool IBBS_InList(char *szName, bool ClanName)
 
 	// scan through file until end
 	for (;;) {
-		if (EncryptRead(&User, sizeof(struct UserInfo), fpUList, XOR_ULIST) == 0)
+		notEncryptRead_s(UserInfo, &User, fpUList, XOR_ULIST)
 			break;
 
 		// see if this user's name is same as one we're looking for
@@ -664,11 +664,12 @@ void IBBS_SendComeBack(int16_t BBSIdTo, struct clan *Clan)
 	if (!fp) return;
 
 	/* write packet */
-	EncryptWrite(&Packet, sizeof(struct Packet), fp, XOR_PACKET);
+	EncryptWrite_s(Packet, &Packet, fp, XOR_PACKET);
 
 	// write info
-	EncryptWrite(Clan->ClanID, 2*sizeof(int16_t), fp, XOR_PACKET);
-	EncryptWrite(&IBBS.Data->BBSID, sizeof(int16_t), fp, XOR_PACKET);
+	EncryptWrite16(&Clan->ClanID[0], fp, XOR_PACKET);
+	EncryptWrite16(&Clan->ClanID[1], fp, XOR_PACKET);
+	EncryptWrite16(&IBBS.Data->BBSID, fp, XOR_PACKET);
 
 	fclose(fp);
 
@@ -773,7 +774,7 @@ void IBBS_BackupMaint(void)
 	}
 
 	for (;;) {
-		if (EncryptRead(&Packet, sizeof(struct Packet), fpOld, XOR_PACKET) == 0)
+		notEncryptRead_s(Packet, &Packet, fpOld, XOR_PACKET)
 			break;
 
 		if (Packet.Active) {
@@ -786,7 +787,7 @@ void IBBS_BackupMaint(void)
 
 					TmpClan = malloc(sizeof(struct clan));
 					CheckMem(TmpClan);
-					EncryptRead(TmpClan, sizeof(struct clan), fpOld, XOR_PACKET);
+					EncryptRead_s(clan, TmpClan, fpOld, XOR_PACKET);
 
 					for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
 						TmpClan->Member[iTemp] = NULL;
@@ -795,7 +796,7 @@ void IBBS_BackupMaint(void)
 					for (iTemp = 0; iTemp < 6; iTemp++) {
 						TmpClan->Member[iTemp] = malloc(sizeof(struct pc));
 						CheckMem(TmpClan->Member[iTemp]);
-						EncryptRead(TmpClan->Member[iTemp], sizeof(struct pc), fpOld, XOR_PACKET);
+						EncryptRead_s(pc, TmpClan->Member[iTemp], fpOld, XOR_PACKET);
 					}
 
 					IBBS_AddToGame(TmpClan, true);
@@ -810,7 +811,7 @@ void IBBS_BackupMaint(void)
 					// an empire attack
 
 					// get attackpacket
-					EncryptRead(&AttackPacket, sizeof(struct AttackPacket), fpOld, XOR_PACKET);
+					EncryptRead_s(AttackPacket, &AttackPacket, fpOld, XOR_PACKET);
 
 					// find clan who was doing the attacking
 					// write him a message telling of the lost troops
@@ -824,7 +825,7 @@ void IBBS_BackupMaint(void)
 			//printf("Packet type is %d\n", Packet.PacketType);
 
 			/* write it to file */
-			EncryptWrite(&Packet, sizeof(struct Packet), fpNew, XOR_PACKET);
+			EncryptWrite_s(Packet, &Packet, fpNew, XOR_PACKET);
 
 			/* write buffer if any */
 			if (Packet.PacketLength) {
@@ -874,7 +875,7 @@ void AbortTrip(void)
 
 	for (;;) {
 		CurEntry++;
-		if (EncryptRead(&LeavingData, sizeof(LeavingData), fpLeavingDat, XOR_TRAVEL) == 0) {
+		notEncryptRead_s(LeavingData, &LeavingData, fpLeavingDat, XOR_TRAVEL) {
 			//rputs("|04Couldn't find data in LEAVING.DAT file\n");
 			break;
 		}
@@ -890,7 +891,7 @@ void AbortTrip(void)
 
 			LeavingData.Active = false;
 
-			EncryptWrite(&LeavingData, sizeof(LeavingData), fpLeavingDat, XOR_TRAVEL);
+			EncryptWrite_s(LeavingData, &LeavingData, fpLeavingDat, XOR_TRAVEL);
 			break;
 		}
 	}
@@ -1003,7 +1004,7 @@ void IBBS_TravelMaint(void)
 
 	for (;;) {
 		/* reading leavingdata structure */
-		if (EncryptRead(&LeavingData, sizeof(LeavingData), fpLeavingDat, XOR_TRAVEL) == 0) {
+		notEncryptRead_s(LeavingData, &LeavingData, fpLeavingDat, XOR_TRAVEL) {
 			/* no more to read */
 			break;
 		}
@@ -1071,26 +1072,26 @@ void IBBS_TravelMaint(void)
 		strcpy(Packet.GameID, Game.Data->GameID);
 
 		/* write packet */
-		EncryptWrite(&Packet, sizeof(struct Packet), fpOutboundDat, XOR_PACKET);
-		EncryptWrite(&Packet, sizeof(struct Packet), fpOld, XOR_PACKET);
+		EncryptWrite_s(Packet, &Packet, fpOutboundDat, XOR_PACKET);
+		EncryptWrite_s(Packet, &Packet, fpOld, XOR_PACKET);
 
-		EncryptWrite(TmpClan, sizeof(struct clan), fpOutboundDat, XOR_PACKET);
-		EncryptWrite(TmpClan, sizeof(struct clan), fpOld, XOR_PACKET);
+		EncryptWrite_s(clan, TmpClan, fpOutboundDat, XOR_PACKET);
+		EncryptWrite_s(clan, TmpClan, fpOld, XOR_PACKET);
 
 		/* write members to file */
 		TmpPC->szName[0] = 0;
 		TmpPC->Status = Dead;
 		for (iTemp = 0; iTemp < 6; iTemp++) {
 			if (TmpClan->Member[iTemp]) {
-				EncryptWrite(TmpClan->Member[iTemp], sizeof(struct pc), fpOutboundDat, XOR_PACKET);
-				EncryptWrite(TmpClan->Member[iTemp], sizeof(struct pc), fpOld, XOR_PACKET);
+				EncryptWrite_s(pc, TmpClan->Member[iTemp], fpOutboundDat, XOR_PACKET);
+				EncryptWrite_s(pc, TmpClan->Member[iTemp], fpOld, XOR_PACKET);
 
 				free(TmpClan->Member[iTemp]);
 				TmpClan->Member[iTemp] = NULL;
 			}
 			else {
-				EncryptWrite(TmpPC, sizeof(struct pc), fpOutboundDat, XOR_PACKET);
-				EncryptWrite(TmpPC, sizeof(struct pc), fpOld, XOR_PACKET);
+				EncryptWrite_s(pc, TmpPC, fpOutboundDat, XOR_PACKET);
+				EncryptWrite_s(pc, TmpPC, fpOld, XOR_PACKET);
 			}
 		}
 
@@ -1237,7 +1238,7 @@ bool IBBS_TravelToBBS(int16_t DestID)
 			//rputs("|04Couldn't open LEAVING.DAT file\n");
 			return false;
 		}
-		EncryptWrite(&LeavingData, sizeof(LeavingData), fpLeavingDat, XOR_TRAVEL);
+		EncryptWrite_s(LeavingData, &LeavingData, fpLeavingDat, XOR_TRAVEL);
 		fclose(fpLeavingDat);
 
 		PClan->WorldStatus = WS_LEAVING;
@@ -1399,10 +1400,8 @@ void IBBS_Read(void)
 
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
 		if (IBBS.Data->Nodes[CurBBS].Active) {
-			EncryptRead(&IBBS.Data->Nodes[CurBBS].Recon, sizeof(struct ibbs_node_recon),
-						fp, XOR_IBBS);
-			EncryptRead(&IBBS.Data->Nodes[CurBBS].Attack, sizeof(struct ibbs_node_attack),
-						fp, XOR_IBBS);
+			EncryptRead_s(ibbs_node_recon, &IBBS.Data->Nodes[CurBBS].Recon, fp, XOR_IBBS);
+			EncryptRead_s(ibbs_node_attack, &IBBS.Data->Nodes[CurBBS].Attack, fp, XOR_IBBS);
 		}
 		else {
 			fseek(fp, sizeof(struct ibbs_node_attack) + sizeof(struct ibbs_node_recon), SEEK_CUR);
@@ -1412,8 +1411,7 @@ void IBBS_Read(void)
 	// now read in reset data
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
 		if (IBBS.Data->Nodes[CurBBS].Active) {
-			if (!EncryptRead(&IBBS.Data->Nodes[CurBBS].Reset, sizeof(struct ibbs_node_reset),
-							 fp, XOR_IBBS)) {
+			notEncryptRead_s(ibbs_node_reset, &IBBS.Data->Nodes[CurBBS].Reset, fp, XOR_IBBS) {
 				IBBS.Data->Nodes[CurBBS].Reset.Received = false;
 				IBBS.Data->Nodes[CurBBS].Reset.LastSent = 0;
 			}
@@ -1451,28 +1449,22 @@ void IBBS_Write(void)
 
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
 		if (IBBS.Data->Nodes[CurBBS].Active) {
-			EncryptWrite(&IBBS.Data->Nodes[CurBBS].Recon, sizeof(struct ibbs_node_recon),
-						 fp, XOR_IBBS);
-			EncryptWrite(&IBBS.Data->Nodes[CurBBS].Attack, sizeof(struct ibbs_node_attack),
-						 fp, XOR_IBBS);
+			EncryptWrite_s(ibbs_node_recon, &IBBS.Data->Nodes[CurBBS].Recon, fp, XOR_IBBS);
+			EncryptWrite_s(ibbs_node_attack, &IBBS.Data->Nodes[CurBBS].Attack, fp, XOR_IBBS);
 		}
 		else {
-			EncryptWrite(&DummyRecon, sizeof(struct ibbs_node_recon),
-						 fp, XOR_IBBS);
-			EncryptWrite(&DummyAttack, sizeof(struct ibbs_node_attack),
-						 fp, XOR_IBBS);
+			EncryptWrite_s(ibbs_node_recon, &DummyRecon, fp, XOR_IBBS);
+			EncryptWrite_s(ibbs_node_attack, &DummyAttack, fp, XOR_IBBS);
 		}
 	}
 
 	// now write reset data
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
 		if (IBBS.Data->Nodes[CurBBS].Active) {
-			EncryptWrite(&IBBS.Data->Nodes[CurBBS].Reset, sizeof(struct ibbs_node_reset),
-						 fp, XOR_IBBS);
+			EncryptWrite_s(ibbs_node_reset, &IBBS.Data->Nodes[CurBBS].Reset, fp, XOR_IBBS);
 		}
 		else {
-			EncryptWrite(&DummyReset, sizeof(struct ibbs_node_reset),
-						 fp, XOR_IBBS);
+			EncryptWrite_s(ibbs_node_reset, &DummyReset, fp, XOR_IBBS);
 		}
 	}
 
@@ -2054,9 +2046,9 @@ void IBBS_SendSpy(struct empire *Empire, int16_t DestID)
 	if (!fp)    return;
 
 	// write packet header
-	EncryptWrite(&Packet, sizeof(struct Packet), fp, XOR_PACKET);
+	EncryptWrite_s(Packet, &Packet, fp, XOR_PACKET);
 
-	EncryptWrite(&Spy, sizeof(struct SpyAttemptPacket), fp, XOR_PACKET);
+	EncryptWrite_s(SpyAttemptPacket, &Spy, fp, XOR_PACKET);
 
 	fclose(fp);
 
@@ -2166,8 +2158,9 @@ void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
 	}
 
 	/* write packet */
-	EncryptWrite(&Packet, sizeof(struct Packet), fpOutboundDat, XOR_PACKET);
+	EncryptWrite_s(Packet, &Packet, fpOutboundDat, XOR_PACKET);
 
+#warning TODO: This is broken now...
 	if (PacketLength)
 		EncryptWrite(PacketData, PacketLength, fpOutboundDat, XOR_PACKET);
 
@@ -2185,8 +2178,9 @@ void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
 		if (!fpBackupDat)  return;
 
 		// write to backup packet
-		EncryptWrite(&Packet, sizeof(struct Packet), fpBackupDat, XOR_PACKET);
+		EncryptWrite_s(Packet, &Packet, fpBackupDat, XOR_PACKET);
 
+#warning TODO: This is broken now...
 		if (PacketLength)
 			EncryptWrite(PacketData, PacketLength, fpOutboundDat, XOR_PACKET);
 
@@ -2449,12 +2443,12 @@ void IBBS_RemoveFromBackup(int16_t ID[2])
 		OldFileOffset = ftell(fpBackupDat);
 
 		/* read packet */
-		if (EncryptRead(&Packet, sizeof(struct Packet), fpBackupDat, XOR_PACKET) == 0)
+		notEncryptRead_s(Packet, &Packet, fpBackupDat, XOR_PACKET)
 			break;
 
 		/* if packet has ID of this dude, mark it as inactive */
 		if (Packet.PacketType == PT_CLANMOVE && Packet.Active) {
-			if (EncryptRead(TmpClan, sizeof(struct clan), fpBackupDat, XOR_PACKET) == 0)
+			notEncryptRead_s(clan, TmpClan, fpBackupDat, XOR_PACKET)
 				break;
 
 			if (TmpClan->ClanID[0] == ID[0] && TmpClan->ClanID[1] == ID[1])
@@ -2471,7 +2465,7 @@ void IBBS_RemoveFromBackup(int16_t ID[2])
 		fseek(fpBackupDat, OldFileOffset, SEEK_SET);
 
 		/* write updated packet to file */
-		EncryptWrite(&Packet, sizeof(struct Packet), fpBackupDat, XOR_PACKET);
+		EncryptWrite_s(Packet, &Packet, fpBackupDat, XOR_PACKET);
 
 		if (Packet.PacketLength)
 			fseek(fpBackupDat, Packet.PacketLength, SEEK_CUR);
@@ -2521,11 +2515,11 @@ void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 			Clan->QuestsKnown[iTemp] = 0;
 		}
 
-		EncryptWrite(Clan, sizeof(struct clan), fpPC, XOR_USER);
+		EncryptWrite_s(clan, Clan, fpPC, XOR_USER);
 
 		/* write members */
 		for (iTemp = 0; iTemp < 6; iTemp++)
-			EncryptWrite(Clan->Member[iTemp], sizeof(struct pc), fpPC, XOR_PC);
+			EncryptWrite_s(pc, Clan->Member[iTemp], fpPC, XOR_PC);
 
 		fclose(fpPC);
 
@@ -2541,7 +2535,7 @@ void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 		fseek(fpPC, (int32_t)CurClan *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET);
 
 		/* read in tmp clan */
-		if (EncryptRead(TmpClan, sizeof(struct clan), fpPC, XOR_USER) == 0)
+		notEncryptRead_s(clan, TmpClan, fpPC, XOR_USER)
 			break;
 
 		/* see if ID matches */
@@ -2570,11 +2564,11 @@ void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 			/* seek to that spot and write the merged info to file */
 			fseek(fpPC, (int32_t)CurClan *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET);
 
-			EncryptWrite(Clan, sizeof(struct clan), fpPC, XOR_USER);
+			EncryptWrite_s(clan, Clan, fpPC, XOR_USER);
 
 			/* write members */
 			for (iTemp = 0; iTemp < 6; iTemp++)
-				EncryptWrite(Clan->Member[iTemp], sizeof(struct pc), fpPC, XOR_USER);
+				EncryptWrite_s(pc, Clan->Member[iTemp], fpPC, XOR_USER);
 
 			FoundMatch = true;
 			break;
@@ -2596,11 +2590,11 @@ void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 		Clan->MadeAlliance = false;
 
 		fpPC = _fsopen(ST_CLANSPCFILE, "ab", SH_DENYRW);
-		EncryptWrite(Clan, sizeof(struct clan), fpPC, XOR_USER);
+		EncryptWrite_s(clan, Clan, fpPC, XOR_USER);
 
 		/* write members */
 		for (iTemp = 0; iTemp < 6; iTemp++)
-			EncryptWrite(Clan->Member[iTemp], sizeof(struct pc), fpPC, XOR_PC);
+			EncryptWrite_s(pc, Clan->Member[iTemp], fpPC, XOR_PC);
 
 		fclose(fpPC);
 	}
@@ -2647,7 +2641,7 @@ void ComeBack(int16_t ClanID[2], int16_t BBSID)
 		FreeClan(TmpClan);
 		return;
 	}
-	EncryptWrite(&LeavingData, sizeof(LeavingData), fpLeavingDat, XOR_TRAVEL);
+	EncryptWrite_s(LeavingData, &LeavingData, fpLeavingDat, XOR_TRAVEL);
 	fclose(fpLeavingDat);
 
 	TmpClan->WorldStatus = WS_LEAVING;
@@ -2690,7 +2684,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 
 	/* read it in until end of file */
 	for (;;) {
-		if (EncryptRead(&Packet, sizeof(struct Packet), fp, XOR_PACKET) == 0)
+		notEncryptRead_s(Packet, &Packet, fp, XOR_PACKET)
 			break;
 
 		// if packet is old, ignore it
@@ -2721,6 +2715,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			if (Packet.PacketLength) {
 				pcBuffer = malloc(Packet.PacketLength);
 				CheckMem(pcBuffer);
+#warning This is broken now
 				EncryptRead(pcBuffer, Packet.PacketLength, fp, XOR_PACKET);
 			}
 			else
@@ -2735,8 +2730,9 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 				DisplayStr("Can't write outbound.tmp\n");
 				return 0;
 			}
-			EncryptWrite(&Packet, sizeof(struct Packet), fpNewFile, XOR_PACKET);
+			EncryptWrite_s(Packet, &Packet, fpNewFile, XOR_PACKET);
 			if (Packet.PacketLength)
+#warning This is broken now
 				EncryptWrite(pcBuffer, Packet.PacketLength, fpNewFile, XOR_PACKET);
 
 			fclose(fpNewFile);
@@ -2754,7 +2750,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			/* data ok for specific char */
 			DisplayStr("|08- |07received reset\n");
 
-			EncryptRead(&GameData, sizeof(struct game_data), fp, XOR_PACKET);
+			EncryptRead_s(game_data, &GameData, fp, XOR_PACKET);
 
 			IBBS_Reset(&GameData);
 
@@ -2783,7 +2779,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			DisplayStr("|08- |07msj found\n");
 
 			// read in message from file
-			EncryptRead(&Message, sizeof(struct Message), fp, XOR_PACKET);
+			EncryptRead_s(Message, &Message, fp, XOR_PACKET);
 
 			// allocate mem for text
 			Message.Data.MsgTxt = malloc(Message.Data.Length);
@@ -2801,7 +2797,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 		else if (Packet.PacketType == PT_SCOREDATA) {
 			DisplayStr("|08- |07score data\n");
 
-			EncryptRead(&NumScores, sizeof(int16_t), fp, XOR_PACKET);
+			EncryptRead16(&NumScores, fp, XOR_PACKET);
 
 			// read the scores in
 			UserScores = malloc(sizeof(struct UserScore *) * MAX_USERS);
@@ -2812,7 +2808,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			for (iTemp = 0; iTemp < NumScores; iTemp++) {
 				UserScores[iTemp] = malloc(sizeof(struct UserScore));
 				CheckMem(UserScores[iTemp]);
-				EncryptRead(UserScores[iTemp], sizeof(struct UserScore), fp, XOR_PACKET);
+				EncryptRead_s(UserScore, UserScores[iTemp], fp, XOR_PACKET);
 			}
 
 			// process it
@@ -2828,7 +2824,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 		else if (Packet.PacketType == PT_SCORELIST) {
 			DisplayStr("|08- |07score list\n");
 
-			EncryptRead(&NumScores, sizeof(int16_t), fp, XOR_PACKET);
+			EncryptRead16(&NumScores, fp, XOR_PACKET);
 
 			// read in date
 			EncryptRead(ScoreDate, 11, fp, XOR_PACKET);
@@ -2842,7 +2838,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			for (iTemp = 0; iTemp < NumScores; iTemp++) {
 				UserScores[iTemp] = malloc(sizeof(struct UserScore));
 				CheckMem(UserScores[iTemp]);
-				EncryptRead(UserScores[iTemp], sizeof(struct UserScore), fp, XOR_PACKET);
+				EncryptRead_s(UserScore, UserScores[iTemp], fp, XOR_PACKET);
 			}
 
 			// write it all to the IPSCORES.DAT file
@@ -2851,7 +2847,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 				EncryptWrite(ScoreDate, 11, fpScores, XOR_IPS);
 
 				for (iTemp = 0; iTemp < NumScores; iTemp++) {
-					EncryptWrite(UserScores[iTemp], sizeof(struct UserScore), fpScores, XOR_IPS);
+					EncryptWrite_s(UserScore, UserScores[iTemp], fpScores, XOR_IPS);
 				}
 
 				fclose(fpScores);
@@ -2867,7 +2863,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 		else if (Packet.PacketType == PT_CLANMOVE) {
 			TmpClan = malloc(sizeof(struct clan));
 			CheckMem(TmpClan);
-			EncryptRead(TmpClan, sizeof(struct clan), fp, XOR_PACKET);
+			EncryptRead_s(clan, TmpClan, fp, XOR_PACKET);
 
 			for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
 				TmpClan->Member[iTemp] = NULL;
@@ -2882,7 +2878,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			for (iTemp = 0; iTemp < 6; iTemp++) {
 				TmpClan->Member[iTemp] = malloc(sizeof(struct pc));
 				CheckMem(TmpClan->Member[iTemp]);
-				EncryptRead(TmpClan->Member[iTemp], sizeof(struct pc), fp, XOR_PACKET);
+				EncryptRead_s(pc, TmpClan->Member[iTemp], fp, XOR_PACKET);
 			}
 
 			/* update .PC file with this guys stats */
@@ -2901,7 +2897,8 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			/* data ok for specific char */
 			DisplayStr("|08- |07Received DataOk\n");
 
-			EncryptRead(ClanID, sizeof(int16_t)*2, fp, XOR_PACKET);
+			EncryptRead16(&ClanID[0], fp, XOR_PACKET);
+			EncryptRead16(&ClanID[1], fp, XOR_PACKET);
 
 			IBBS_RemoveFromBackup(ClanID);
 		}
@@ -2910,8 +2907,9 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			DisplayStr("|08- |07comeback found\n");
 
 			// read in clanID + BBSId of destination
-			EncryptRead(ClanID, 2*sizeof(int16_t), fp, XOR_PACKET);
-			EncryptRead(&BBSID, sizeof(int16_t), fp, XOR_PACKET);
+			EncryptRead16(&ClanID[0], fp, XOR_PACKET);
+			EncryptRead16(&ClanID[1], fp, XOR_PACKET);
+			EncryptRead16(&BBSID, fp, XOR_PACKET);
 
 			ComeBack(ClanID, BBSID);
 		}
@@ -2921,7 +2919,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			// now see if he is a dupe user or a valid one
 
 			// read in user from file
-			EncryptRead(&User, sizeof(struct UserInfo), fp, XOR_PACKET);
+			EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
 
 			// see if user is already in list
 			if (IBBS_InList(User.szMasterName, false)) {
@@ -2944,7 +2942,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			DisplayStr("|08- |07adduser found\n");
 
 			// read in user from file
-			EncryptRead(&User, sizeof(struct UserInfo), fp, XOR_PACKET);
+			EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
 
 			// add to THIS bbs's list
 			AddToUList(&User);
@@ -2954,7 +2952,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 
 			// he is a dupe user
 			// got word from head BBS to delete a certain user, do it then :)
-			EncryptRead(&User, sizeof(struct UserInfo), fp, XOR_PACKET);
+			EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
 
 			sprintf(szString, "deleting %s\n", User.szName);
 			DisplayStr(szString);
@@ -2966,7 +2964,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			DisplayStr("|08- |07subuser found\n");
 
 			// read in user from file
-			EncryptRead(&User, sizeof(struct UserInfo), fp, XOR_PACKET);
+			EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
 
 			sprintf(szString, "deleting %s\n", User.szName);
 			DisplayStr(szString);
@@ -2980,7 +2978,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			// read attack packet
 			AttackPacket = malloc(sizeof(struct AttackPacket));
 			CheckMem(AttackPacket);
-			EncryptRead(AttackPacket, sizeof(struct AttackPacket), fp, XOR_PACKET);
+			EncryptRead_s(AttackPacket, AttackPacket, fp, XOR_PACKET);
 
 			// process attack packet
 			ProcessAttackPacket(AttackPacket);
@@ -2992,7 +2990,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			// read attack packet
 			AttackResult = malloc(sizeof(struct AttackResult));
 			CheckMem(AttackResult);
-			EncryptRead(AttackResult, sizeof(struct AttackResult), fp, XOR_PACKET);
+			EncryptRead_s(AttackResult, AttackResult, fp, XOR_PACKET);
 
 			// process attack packet
 			ProcessResultPacket(AttackResult);
@@ -3001,7 +2999,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 		else if (Packet.PacketType == PT_SPY) {
 			DisplayStr("|08- |07spy\n");
 
-			EncryptRead(&Spy, sizeof(struct SpyAttemptPacket), fp, XOR_PACKET);
+			EncryptRead_s(SpyAttemptPacket, &Spy, fp, XOR_PACKET);
 
 			// process attack packet
 			IBBS_ProcessSpy(&Spy);
@@ -3009,7 +3007,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 		else if (Packet.PacketType == PT_SPYRESULT) {
 			DisplayStr("|08- |07spy result\n");
 
-			EncryptRead(&SpyResult, sizeof(struct SpyResultPacket), fp, XOR_PACKET);
+			EncryptRead_s(SpyResultPacket, &SpyResult, fp, XOR_PACKET);
 
 			// process attack packet
 			IBBS_ProcessSpyResult(&SpyResult);
@@ -3022,6 +3020,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			CheckMem(pcBuffer);
 
 			// load world.ndx
+#warning This is broken now
 			EncryptRead(pcBuffer, Packet.PacketLength, fp, XOR_PACKET);
 
 			// write to file
@@ -3042,6 +3041,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 			CheckMem(pcBuffer);
 
 			// load file in
+#warning This is broken now
 			EncryptRead(pcBuffer, Packet.PacketLength, fp, XOR_PACKET);
 
 			// write to file

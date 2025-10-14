@@ -1925,7 +1925,7 @@ void GoReset(struct ResetData *ResetData, int16_t Option)
 
 		fp = fopen("game.dat", "wb");
 		// fwrite(&Game_Data, sizeof(struct game_data), 1, fp);
-		EncryptWrite(&Game_Data, sizeof(struct game_data), fp, XOR_GAME);
+		EncryptWrite_s(game_data, &Game_Data, fp, XOR_GAME);
 		fclose(fp);
 
 		// update news
@@ -1968,7 +1968,7 @@ void GoReset(struct ResetData *ResetData, int16_t Option)
 		Game_Data.CRC = CRCValue(&Game_Data, sizeof(struct game_data) - sizeof(int32_t));
 
 		fp = fopen("game.dat", "wb");
-		EncryptWrite(&Game_Data, sizeof(struct game_data), fp, XOR_GAME);
+		EncryptWrite_s(game_data, &Game_Data, fp, XOR_GAME);
 		fclose(fp);
 
 		// update news
@@ -2015,7 +2015,7 @@ void GoReset(struct ResetData *ResetData, int16_t Option)
 		Game_Data.CRC = CRCValue(&Game_Data, sizeof(struct game_data) - sizeof(int32_t));
 
 		fp = fopen("game.dat", "wb");
-		EncryptWrite(&Game_Data, sizeof(struct game_data), fp, XOR_GAME);
+		EncryptWrite_s(game_data, &Game_Data, fp, XOR_GAME);
 		fclose(fp);
 
 		// update news
@@ -2166,7 +2166,7 @@ void CreateVillageDat(struct ResetData *ResetData)
 
 	fp = fopen("village.dat", "wb");
 	// fwrite(&Village_Data, sizeof(struct village_data), 1, fp);
-	EncryptWrite(&Village_Data, sizeof(struct village_data), fp, XOR_VILLAGE);
+	EncryptWrite_s(village_data, &Village_Data, fp, XOR_VILLAGE);
 	fclose(fp);
 }
 
@@ -2187,7 +2187,7 @@ void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 			Alliances[iTemp] = malloc(sizeof(struct Alliance));
 			CheckMem(Alliances[iTemp]);
 
-			if (EncryptRead(Alliances[iTemp], sizeof(struct Alliance), fp, XOR_ALLIES) == 0) {
+			notEncryptRead_s(Alliance, Alliances[iTemp], fp, XOR_ALLIES) {
 				// no more alliances to read in
 				free(Alliances[iTemp]);
 				Alliances[iTemp] = NULL;
@@ -2210,7 +2210,7 @@ void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 			if (Alliances[iTemp] == NULL)
 				continue;
 
-			EncryptWrite(Alliances[iTemp], sizeof(struct Alliance), fp, XOR_ALLIES);
+			EncryptWrite_s(Alliance, Alliances[iTemp], fp, XOR_ALLIES);
 		}
 		fclose(fp);
 	}

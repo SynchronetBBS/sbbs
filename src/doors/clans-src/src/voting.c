@@ -87,7 +87,7 @@ int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool UserOn
 			break;  /* couldn't fseek, so exit */
 		}
 
-		if (EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_USER) == 0)
+		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER)
 			break;  /* stop reading if no more players found */
 
 		/* skip if deleted clan */

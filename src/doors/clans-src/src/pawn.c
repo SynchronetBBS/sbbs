@@ -91,7 +91,7 @@ void PS_Init(struct item_data **PS_Items)
 		PS_Items[CurItem] = malloc(sizeof(struct item_data));
 		CheckMem(PS_Items[CurItem]);
 
-		if (!EncryptRead(PS_Items[CurItem], sizeof(struct item_data), fp, XOR_ITEMS)) {
+		notEncryptRead_s(item_data, PS_Items[CurItem], fp, XOR_ITEMS) {
 			free(PS_Items[CurItem]);
 			PS_Items[CurItem] = NULL;
 			break;
@@ -112,7 +112,7 @@ void PS_Close(struct item_data **PS_Items)
 	if (fp) {
 		for (CurItem = 0; CurItem < MAX_PSITEMS; CurItem++) {
 			if (PS_Items[CurItem])
-				EncryptWrite(PS_Items[CurItem], sizeof(struct item_data), fp, XOR_ITEMS);
+				EncryptWrite_s(item_data, PS_Items[CurItem], fp, XOR_ITEMS);
 		}
 		fclose(fp);
 	}

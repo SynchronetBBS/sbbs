@@ -38,6 +38,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "language.h"
 #include "system.h"
 
+uint8_t serBuf[4096];
+int16_t erRet;
+
 void cipher(void *, void *, size_t, unsigned char);
 
 void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)

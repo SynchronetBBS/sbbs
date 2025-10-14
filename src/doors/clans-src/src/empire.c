@@ -457,7 +457,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 	for (;;) {
 		BeforeOffset = ftell(fpBackup);
 
-		if (EncryptRead(&Packet, sizeof(struct Packet), fpBackup, XOR_PACKET) == 0)
+		notEncryptRead_s(Packet, &Packet, fpBackup, XOR_PACKET)
 			break;
 
 		AfterOffset = ftell(fpBackup);
@@ -467,7 +467,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 				// get attackpacket
 				AttackPacket = malloc(sizeof(struct AttackPacket));
 				CheckMem(AttackPacket);
-				EncryptRead(AttackPacket, sizeof(struct AttackPacket), fpBackup, XOR_PACKET);
+				EncryptRead_s(AttackPacket, AttackPacket, fpBackup, XOR_PACKET);
 
 				// if same AttackIndex, mark it off
 				if (AttackPacket->AttackIndex == Result->AttackIndex) {
@@ -476,7 +476,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 					fseek(fpBackup, BeforeOffset, SEEK_SET);
 
 					/* write it to file */
-					EncryptWrite(&Packet, sizeof(struct Packet), fpBackup, XOR_PACKET);
+					EncryptWrite_s(Packet, &Packet, fpBackup, XOR_PACKET);
 				}
 				free(AttackPacket);
 			}

@@ -167,7 +167,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 			/* go through each clan and write his info to new file and
 			   skip the clan in question if he is found */
 
-			if (EncryptRead(TmpClan, sizeof(struct clan), fpOldPC, XOR_USER) == 0)
+			notEncryptRead_s(clan, TmpClan, fpOldPC, XOR_USER)
 				break;
 
 			/* if this is him */
@@ -193,7 +193,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 			for (iTemp = 0; iTemp < 6; iTemp++) {
 				TmpClan->Member[iTemp] = malloc(sizeof(struct pc));
 				CheckMem(TmpClan->Member[iTemp]);
-				EncryptRead(TmpClan->Member[iTemp], sizeof(struct pc), fpOldPC, XOR_PC);
+				EncryptRead_s(pc, TmpClan->Member[iTemp], fpOldPC, XOR_PC);
 			}
 
 			//=== modifications go here
@@ -210,10 +210,10 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 			//===
 
 			/* write new stuff to new file */
-			EncryptWrite(TmpClan, sizeof(struct clan), fpNewPC, XOR_USER);
+			EncryptWrite_s(clan, TmpClan, fpNewPC, XOR_USER);
 
 			for (iTemp = 0; iTemp < 6; iTemp++) {
-				EncryptWrite(TmpClan->Member[iTemp], sizeof(struct pc), fpNewPC, XOR_PC);
+				EncryptWrite_s(pc, TmpClan->Member[iTemp], fpNewPC, XOR_PC);
 				free(TmpClan->Member[iTemp]);
 			}
 		}
@@ -239,7 +239,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 		}
 
 		for (;;) {
-			if (!EncryptRead(&Message, sizeof(struct Message), OldMessage, XOR_MSG))
+			notEncryptRead_s(Message, &Message, OldMessage, XOR_MSG)
 				break;
 
 			if ((Message.FromClanID[0] == ClanID[0] &&
@@ -256,7 +256,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 				// write it to new file
 				EncryptRead(Message.Data.MsgTxt, Message.Data.Length, OldMessage, XOR_MSG);
 
-				EncryptWrite(&Message, sizeof(Message), NewMessage, XOR_MSG);
+				EncryptWrite_s(Message, &Message, NewMessage, XOR_MSG);
 				EncryptWrite(Message.Data.MsgTxt, Message.Data.Length, NewMessage, XOR_MSG);
 
 				free(Message.Data.MsgTxt);
@@ -283,7 +283,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 
 			OldOffset = ftell(fpTradeFile);
 
-			if (EncryptRead(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE) == 0)
+			notEncryptRead_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE)
 				break;
 
 			/* see if active */
@@ -298,7 +298,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 
 				// write it to file
 				fseek(fpTradeFile, OldOffset, SEEK_SET);
-				EncryptWrite(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE);
+				EncryptWrite_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE);
 			}
 			else if (TradeData.FromClanID[0] == ClanID[0] &&
 					 TradeData.FromClanID[1] == ClanID[1]) {
@@ -306,7 +306,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 				// trade is coming from this player, remove it
 				TradeData.Active = false;
 				fseek(fpTradeFile, OldOffset, SEEK_SET);
-				EncryptWrite(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE);
+				EncryptWrite_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE);
 			}
 		}
 
@@ -408,7 +408,7 @@ bool ClanExists(int16_t ClanID[2])
 		if (fseek(fpPlayerFile, Offset, SEEK_SET))
 			break;  /* couldn't fseek, so exit */
 
-		if (EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_USER) == 0)
+		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER)
 			break;  /* stop reading if no more players found */
 
 		/* skip if deleted clan */
@@ -1407,7 +1407,7 @@ int16_t NumClansInVillage(void)
 	CheckMem(TmpClan);
 
 	for (NumClans = 0;;) {
-		if (EncryptRead(TmpClan, sizeof(struct clan), fp, XOR_USER) == 0)
+		notEncryptRead_s(clan, TmpClan, fp, XOR_USER)
 			break;
 
 		if (TmpClan->ClanID[0] != -1)  /* means is active */
@@ -1830,7 +1830,7 @@ bool NameInUse(char *szName)
 			if (fseek(fpPCFile, Offset, SEEK_SET))
 				break;  /* couldn't fseek, so exit */
 
-			if (EncryptRead(TmpClan, sizeof(struct clan), fpPCFile, XOR_USER) == 0)
+			notEncryptRead_s(clan, TmpClan, fpPCFile, XOR_USER)
 				break;  /* stop reading if no more players found */
 
 			/* see if this player has same name as user online */
@@ -2069,11 +2069,11 @@ bool User_Create(void)
 	PClan->CRC = CRCValue(PClan, sizeof(struct clan) - sizeof(int32_t));
 
 	/* write it to file */
-	EncryptWrite(PClan, sizeof(struct clan), fpPlayerFile, XOR_USER);
+	EncryptWrite_s(clan, PClan, fpPlayerFile, XOR_USER);
 	for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
 		PClan->Member[iTemp]->CRC = CRCValue(PClan->Member[iTemp], sizeof(struct pc) - sizeof(int32_t));
 
-		EncryptWrite(PClan->Member[iTemp], sizeof(struct pc), fpPlayerFile, XOR_PC);
+		EncryptWrite_s(pc, PClan->Member[iTemp], fpPlayerFile, XOR_PC);
 	}
 
 	/* write null players to complete it */
@@ -2082,7 +2082,7 @@ bool User_Create(void)
 	for (iTemp = Game.Data->MaxPermanentMembers; iTemp < 6; iTemp++) {
 		TmpPC->CRC = CRCValue(TmpPC, sizeof(struct pc) - sizeof(int32_t));
 
-		EncryptWrite(TmpPC, sizeof(struct pc), fpPlayerFile, XOR_PC);
+		EncryptWrite_s(pc, TmpPC, fpPlayerFile, XOR_PC);
 	}
 
 	fclose(fpPlayerFile);
@@ -2201,7 +2201,7 @@ bool User_Read(void)
 		if (fseek(fpPlayerFile, Offset, SEEK_SET))
 			break;  /* couldn't fseek, so exit */
 
-		if (EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_USER) == 0)
+		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER)
 			break;  /* stop reading if no more players found */
 
 		// !!!
@@ -2220,7 +2220,7 @@ bool User_Read(void)
 
 			for (CurMember = 0; CurMember < 6; CurMember++) {
 				/* read 'em in */
-				EncryptRead(TmpPC, sizeof(struct pc), fpPlayerFile, XOR_PC);
+				EncryptRead_s(pc, TmpPC, fpPlayerFile, XOR_PC);
 
 				// [0] != 0 if member exists
 				if (TmpPC->szName[0]) {
@@ -2294,7 +2294,7 @@ void Clan_Update(struct clan *Clan)
 
 		OldOffset = ftell(fpPlayerFile);
 
-		if (EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_USER) == 0)
+		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER)
 			break;  /* stop reading if no more players found */
 
 		/* skip if deleted clan */
@@ -2307,7 +2307,7 @@ void Clan_Update(struct clan *Clan)
 			fseek(fpPlayerFile, OldOffset, SEEK_SET);
 
 			Clan->CRC = CRCValue(Clan, sizeof(struct clan) - sizeof(int32_t));
-			EncryptWrite(Clan, sizeof(struct clan), fpPlayerFile, XOR_USER);
+			EncryptWrite_s(clan, Clan, fpPlayerFile, XOR_USER);
 
 			// fwrite(Clan, sizeof(struct clan), 1, fpPlayerFile);
 
@@ -2318,12 +2318,12 @@ void Clan_Update(struct clan *Clan)
 			for (iTemp = 0; iTemp < 6; iTemp++) {
 				if (Clan->Member[iTemp] && Clan->Member[iTemp]->Undead == false) {
 					Clan->Member[iTemp]->CRC = CRCValue(Clan->Member[iTemp], sizeof(struct pc) - sizeof(int32_t));
-					EncryptWrite(Clan->Member[iTemp], sizeof(struct pc), fpPlayerFile, XOR_PC);
+					EncryptWrite_s(pc, Clan->Member[iTemp], fpPlayerFile, XOR_PC);
 
 					// fwrite(Clan->Member[iTemp], sizeof(struct pc), 1, fpPlayerFile);
 				}
 				else
-					EncryptWrite(TmpPC, sizeof(struct pc), fpPlayerFile, XOR_PC);
+					EncryptWrite_s(pc, TmpPC, fpPlayerFile, XOR_PC);
 				// fwrite(TmpPC, sizeof(struct pc), 1, fpPlayerFile);
 			}
 			break;
@@ -2438,7 +2438,7 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 			break;  /* couldn't fseek, so exit */
 		}
 
-		if (EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_USER) == 0) {
+		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER) {
 			fclose(fpPlayerFile);
 			break;  /* stop reading if no more players found */
 		}
@@ -2450,7 +2450,7 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 
 			AtLeastOneLiving = false;
 			for (iTemp = 0; iTemp < 6; iTemp++) {
-				EncryptRead(TmpPC, sizeof(struct pc), fpPlayerFile, XOR_PC);
+				EncryptRead_s(pc, TmpPC, fpPlayerFile, XOR_PC);
 
 				if (TmpPC->szName[0] && TmpPC->Status == Here) {
 					AtLeastOneLiving = true;
@@ -2564,7 +2564,7 @@ bool GetClanNameID(char *szName, int16_t ID[2])
 			break;  /* couldn't fseek, so exit */
 		}
 
-		if (EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_USER) == 0) {
+		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER) {
 			fclose(fpPlayerFile);
 			break;  /* stop reading if no more players found */
 		}
@@ -2615,7 +2615,7 @@ bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 			return false;
 		}
 
-		if (!EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_USER)) {
+		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER) {
 			fclose(fpPlayerFile);
 			for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
 				TmpClan->Member[iTemp] = NULL;
@@ -2638,7 +2638,7 @@ bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 			for (iTemp = 0; iTemp < 6; iTemp++) {
 				TmpClan->Member[iTemp] = malloc(sizeof(struct pc));
 				CheckMem(TmpClan->Member[iTemp]);
-				EncryptRead(TmpClan->Member[iTemp], sizeof(struct pc), fpPlayerFile, XOR_PC);
+				EncryptRead_s(pc, TmpClan->Member[iTemp], fpPlayerFile, XOR_PC);
 
 				/* skip those members which are non-existant */
 				if (TmpClan->Member[iTemp]->szName[0] == 0) {
@@ -2694,7 +2694,7 @@ void User_List(void)
 			if (fseek(fpPlayerFile, Offset, SEEK_SET))
 				break;  /* couldn't fseek, so exit */
 
-			if (EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_USER) == 0)
+			notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER)
 				break;  /* stop reading if no more players found */
 
 			// print out name etc.
@@ -2713,7 +2713,7 @@ void User_List(void)
 		fpUserList = _fsopen("userlist.dat", "rb", SH_DENYWR);
 		if (fpUserList) {
 			for (;;) {
-				if (EncryptRead(&User, sizeof(struct UserInfo), fpUserList, XOR_ULIST) == 0)
+				notEncryptRead_s(UserInfo, &User, fpUserList, XOR_ULIST)
 					break;
 
 				printf("%2d|%2d %-20s  %-20s\n", User.ClanID[0], User.ClanID[1],
@@ -2764,7 +2764,7 @@ void User_Maint(void)
 		for (;;) {
 			/* go through each clan and write his updated info to new file */
 
-			if (EncryptRead(TmpClan, sizeof(struct clan), fpOldPC, XOR_USER) == 0)
+			notEncryptRead_s(clan, TmpClan, fpOldPC, XOR_USER)
 				break;
 
 			/* skip if deleted */
@@ -2831,7 +2831,7 @@ void User_Maint(void)
 			for (iTemp = 0; iTemp < 6; iTemp++) {
 				TmpClan->Member[iTemp] = malloc(sizeof(struct pc));
 				CheckMem(TmpClan->Member[iTemp]);
-				EncryptRead(TmpClan->Member[iTemp], sizeof(struct pc), fpOldPC, XOR_PC);
+				EncryptRead_s(pc, TmpClan->Member[iTemp], fpOldPC, XOR_PC);
 			}
 
 			/* set HP to max */
@@ -2901,10 +2901,10 @@ void User_Maint(void)
 			}
 
 			/* write new stuff to new file */
-			EncryptWrite(TmpClan, sizeof(struct clan), fpNewPC, XOR_USER);
+			EncryptWrite_s(clan, TmpClan, fpNewPC, XOR_USER);
 
 			for (iTemp = 0; iTemp < 6; iTemp++) {
-				EncryptWrite(TmpClan->Member[iTemp], sizeof(struct pc), fpNewPC, XOR_USER);
+				EncryptWrite_s(pc, TmpClan->Member[iTemp], fpNewPC, XOR_USER);
 				free(TmpClan->Member[iTemp]);
 				TmpClan->Member[iTemp] = NULL;
 			}

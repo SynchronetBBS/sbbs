@@ -190,7 +190,7 @@ void Trades_CheckTrades(void)
 
 		OldOffset = ftell(fpTradeFile);
 
-		if (EncryptRead(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE) == 0)
+		notEncryptRead_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE)
 			break;
 
 		/* see if active */
@@ -289,7 +289,7 @@ void Trades_CheckTrades(void)
 			RejectTrade(&TradeData);
 
 			fseek(fpTradeFile, OldOffset, SEEK_SET);
-			EncryptWrite(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE);
+			EncryptWrite_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE);
 		}
 		else if (((PClan->Empire.Army.Footmen+TradeData.Giving.Footmen) >
 				  PClan->Empire.Buildings[B_BARRACKS]*20) ||
@@ -305,7 +305,7 @@ void Trades_CheckTrades(void)
 			RejectTrade(&TradeData);
 
 			fseek(fpTradeFile, OldOffset, SEEK_SET);
-			EncryptWrite(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE);
+			EncryptWrite_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE);
 		}
 		else {
 			/* CAN trade */
@@ -356,7 +356,7 @@ void Trades_CheckTrades(void)
 				TradeData.Active = false;
 
 				fseek(fpTradeFile, OldOffset, SEEK_SET);
-				EncryptWrite(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE);
+				EncryptWrite_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE);
 			}
 			else if (YesNo("\n|0SDo you wish to ignore this trade for now and decide on it later?") == YES) {
 				/* skip it */
@@ -367,7 +367,7 @@ void Trades_CheckTrades(void)
 				RejectTrade(&TradeData);
 
 				fseek(fpTradeFile, OldOffset, SEEK_SET);
-				EncryptWrite(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE);
+				EncryptWrite_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE);
 			}
 		}
 	}
@@ -516,7 +516,7 @@ void Trades_MakeTrade(void)
 	fpTradeFile = fopen("trades.dat", "ab");
 
 	/* append it */
-	EncryptWrite(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE);
+	EncryptWrite_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE);
 	fclose(fpTradeFile);
 
 	rputs("\n|13Trade has been requested.\n\n");
@@ -534,7 +534,7 @@ void Trades_Maint(void)
 			return;
 
 		for (;;) {
-			if (EncryptRead(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE) == 0)
+			notEncryptRead_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE)
 				break;
 
 			/* see if active */
@@ -542,7 +542,7 @@ void Trades_Maint(void)
 				continue;
 
 			// it's active, write it to new file
-			EncryptWrite(&TradeData, sizeof(struct TradeData), fpNewTradeFile, XOR_TRADE);
+			EncryptWrite_s(TradeData, &TradeData, fpNewTradeFile, XOR_TRADE);
 		}
 
 		fclose(fpTradeFile);

@@ -5,14 +5,6 @@
 
 #include "deserialize.h"
 
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-#define SWAP16(x) (x)
-#define SWAP32(x) (x)
-#else
-#define SWAP16(x) ((((uint16_t)(x) & 0xff00) >> 8) | (((uint16_t)(x) & 0x00ff) << 8))
-#define SWAP32(x) ((((uint32_t)(x) & 0xff000000) >> 24) | (((uint32_t)(x) & 0x00ff0000) >> 8) | (((uint32_t)(x) & 0x0000ff00) << 8) | (((uint32_t)(x) & 0x000000ff) << 24))
-#endif
-
 #define unpack_char(x) do {      \
 	assert(remain);           \
 	if (remain < sizeof(char)) \
@@ -592,7 +584,6 @@ s_village_data_d(const void *bufptr, size_t bufsz, struct village_data *s)
 	unpack_int16_t(s->ChurchLevel);	
 	unpack_int16_t(s->PawnLevel);	
 	unpack_int16_t(s->WizardLevel);	
-	remain--;
 	assert(remain);
 	if (!remain)
 		return SIZE_MAX;
@@ -915,40 +906,40 @@ main(int argc, char **argv)
 	struct Message m = {0};
 	struct MessageHeader mh = {0};
 
-	printf("struct clan: %zu (%zu)\n", s_clan_d(buf, sizeof(buf), &c), sizeof(c));
-	printf("struct empire: %zu (%zu)\n", s_empire_d(buf, sizeof(buf), &e), sizeof(e));
-	printf("struct item_data: %zu (%zu)\n", s_item_data_d(buf, sizeof(buf), &i), sizeof(i));
-	printf("struct Alliance: %zu (%zu)\n", s_Alliance_d(buf, sizeof(buf), &a), sizeof(a));
-	printf("struct Army: %zu (%zu)\n", s_Army_d(buf, sizeof(buf), &ar), sizeof(ar));
-	printf("struct Strategy: %zu (%zu)\n", s_Strategy_d(buf, sizeof(buf), &s), sizeof(s));
-	printf("struct AttackPacket: %zu (%zu)\n", s_AttackPacket_d(buf, sizeof(buf), &ap), sizeof(ap));
-	printf("struct AttackResult: %zu (%zu)\n", s_AttackResult_d(buf, sizeof(buf), &at), sizeof(at));
-	printf("struct EventHeader: %zu (%zu)\n", s_EventHeader_d(buf, sizeof(buf), &eh), sizeof(eh));
-	printf("struct FileHeader: %zu (%zu)\n", s_FileHeader_d(buf, sizeof(buf), &fh), sizeof(fh));
-	printf("struct game_data: %zu (%zu)\n", s_game_data_d(buf, sizeof(buf), &gd), sizeof(gd));
-	printf("struct ibbs_node_attack: %zu (%zu)\n", s_ibbs_node_attack_d(buf, sizeof(buf), &ina), sizeof(ina));
-	printf("struct ibbs_node_reset: %zu (%zu)\n", s_ibbs_node_reset_d(buf, sizeof(buf), &inr), sizeof(inr));
-	printf("struct ibbs_node_recon: %zu (%zu)\n", s_ibbs_node_recon_d(buf, sizeof(buf), &inre), sizeof(inre));
-	printf("struct Language: %zu (%zu)\n", s_Language_d(buf, sizeof(buf), &l), sizeof(l));
-	printf("struct Topic: %zu (%zu)\n", s_Topic_d(buf, sizeof(buf), &t), sizeof(t));
-	printf("struct NPCInfo: %zu (%zu)\n", s_NPCInfo_d(buf, sizeof(buf), &npci), sizeof(npci));
-	printf("struct NPCNdx: %zu (%zu)\n", s_NPCNdx_d(buf, sizeof(buf), &npcn), sizeof(npcn));
-	printf("struct Packet: %zu (%zu)\n", s_Packet_d(buf, sizeof(buf), &p), sizeof(p));
-	printf("struct SpellsInEffect: %zu (%zu)\n", s_SpellsInEffect_d(buf, sizeof(buf), &sie), sizeof(sie));
-	printf("struct pc: %zu (%zu)\n", s_pc_d(buf, sizeof(buf), &pc), sizeof(pc));
-	printf("struct PClass: %zu (%zu)\n", s_PClass_d(buf, sizeof(buf), &pcl), sizeof(pcl));
-	printf("struct Spell: %zu (%zu)\n", s_Spell_d(buf, sizeof(buf), &sp), sizeof(sp));
-	printf("struct SpyAttemptPacket: %zu (%zu)\n", s_SpyAttemptPacket_d(buf, sizeof(buf), &sap), sizeof(sap));
-	printf("struct SpyResultPacket: %zu (%zu)\n", s_SpyResultPacket_d(buf, sizeof(buf), &srp), sizeof(srp));
-	printf("struct TradeData: %zu (%zu)\n", s_TradeData_d(buf, sizeof(buf), &td), sizeof(td));
-	printf("struct TradeList: %zu (%zu)\n", s_TradeList_d(buf, sizeof(buf), &tl), sizeof(tl));
-	printf("struct UserInfo: %zu (%zu)\n", s_UserInfo_d(buf, sizeof(buf), &ui), sizeof(ui));
-	printf("struct UserScore: %zu (%zu)\n", s_UserScore_d(buf, sizeof(buf), &us), sizeof(us));
-	printf("struct village_data: %zu (%zu)\n", s_village_data_d(buf, sizeof(buf), &vd), sizeof(vd));
-	printf("struct LeavingData: %zu (%zu)\n", s_LeavingData_d(buf, sizeof(buf), &ld), sizeof(ld));
-	printf("struct Msg_Txt: %zu (%zu)\n", s_Msg_Txt_d(buf, sizeof(buf), &mt), sizeof(mt));
-	printf("struct Message: %zu (%zu)\n", s_Message_d(buf, sizeof(buf), &m), sizeof(m));
-	printf("struct MessageHeader: %zu (%zu)\n", s_MessageHeader_d(buf, sizeof(buf), &mh), sizeof(mh));
+	printf("#define BUF_SIZE_clan %zuU\n#define STRUCT_SIZE_clan %zuU\n\n", s_clan_d(buf, sizeof(buf), &c), sizeof(c));
+	printf("#define BUF_SIZE_empire %zuU\n#define STRUCT_SIZE_empire %zuU\n\n", s_empire_d(buf, sizeof(buf), &e), sizeof(e));
+	printf("#define BUF_SIZE_item_data %zuU\n#define STRUCT_SIZE_item_data %zuU\n\n", s_item_data_d(buf, sizeof(buf), &i), sizeof(i));
+	printf("#define BUF_SIZE_Alliance %zuU\n#define STRUCT_SIZE_Alliance %zuU\n\n", s_Alliance_d(buf, sizeof(buf), &a), sizeof(a));
+	printf("#define BUF_SIZE_Army %zuU\n#define STRUCT_SIZE_Army %zuU\n\n", s_Army_d(buf, sizeof(buf), &ar), sizeof(ar));
+	printf("#define BUF_SIZE_Strategy %zuU\n#define STRUCT_SIZE_Strategy %zuU\n\n", s_Strategy_d(buf, sizeof(buf), &s), sizeof(s));
+	printf("#define BUF_SIZE_AttackPacket %zuU\n#define STRUCT_SIZE_AttackPacket %zuU\n\n", s_AttackPacket_d(buf, sizeof(buf), &ap), sizeof(ap));
+	printf("#define BUF_SIZE_AttackResult %zuU\n#define STRUCT_SIZE_AttackResult %zuU\n\n", s_AttackResult_d(buf, sizeof(buf), &at), sizeof(at));
+	printf("#define BUF_SIZE_EventHeader %zuU\n#define STRUCT_SIZE_EventHeader %zuU\n\n", s_EventHeader_d(buf, sizeof(buf), &eh), sizeof(eh));
+	printf("#define BUF_SIZE_FileHeader %zuU\n#define STRUCT_SIZE_FileHeader %zuU\n\n", s_FileHeader_d(buf, sizeof(buf), &fh), sizeof(fh));
+	printf("#define BUF_SIZE_game_data %zuU\n#define STRUCT_SIZE_game_data %zuU\n\n", s_game_data_d(buf, sizeof(buf), &gd), sizeof(gd));
+	printf("#define BUF_SIZE_ibbs_node_attack %zuU\n#define STRUCT_SIZE_ibbs_node_attack %zuU\n\n", s_ibbs_node_attack_d(buf, sizeof(buf), &ina), sizeof(ina));
+	printf("#define BUF_SIZE_ibbs_node_reset %zuU\n#define STRUCT_SIZE_ibbs_node_reset %zuU\n\n", s_ibbs_node_reset_d(buf, sizeof(buf), &inr), sizeof(inr));
+	printf("#define BUF_SIZE_ibbs_node_recon %zuU\n#define STRUCT_SIZE_ibbs_node_recon %zuU\n\n", s_ibbs_node_recon_d(buf, sizeof(buf), &inre), sizeof(inre));
+	printf("#define BUF_SIZE_Language %zuU\n#define STRUCT_SIZE_Language %zuU\n\n", s_Language_d(buf, sizeof(buf), &l), sizeof(l));
+	printf("#define BUF_SIZE_Topic %zuU\n#define STRUCT_SIZE_Topic %zuU\n\n", s_Topic_d(buf, sizeof(buf), &t), sizeof(t));
+	printf("#define BUF_SIZE_NPCInfo %zuU\n#define STRUCT_SIZE_NPCInfo %zuU\n\n", s_NPCInfo_d(buf, sizeof(buf), &npci), sizeof(npci));
+	printf("#define BUF_SIZE_NPCNdx %zuU\n#define STRUCT_SIZE_NPCNdx %zuU\n\n", s_NPCNdx_d(buf, sizeof(buf), &npcn), sizeof(npcn));
+	printf("#define BUF_SIZE_Packet %zuU\n#define STRUCT_SIZE_Packet %zuU\n\n", s_Packet_d(buf, sizeof(buf), &p), sizeof(p));
+	printf("#define BUF_SIZE_SpellsInEffect %zuU\n#define STRUCT_SIZE_SpellsInEffect %zuU\n\n", s_SpellsInEffect_d(buf, sizeof(buf), &sie), sizeof(sie));
+	printf("#define BUF_SIZE_pc %zuU\n#define STRUCT_SIZE_pc %zuU\n\n", s_pc_d(buf, sizeof(buf), &pc), sizeof(pc));
+	printf("#define BUF_SIZE_PClass %zuU\n#define STRUCT_SIZE_PClass %zuU\n\n", s_PClass_d(buf, sizeof(buf), &pcl), sizeof(pcl));
+	printf("#define BUF_SIZE_Spell %zuU\n#define STRUCT_SIZE_Spell %zuU\n\n", s_Spell_d(buf, sizeof(buf), &sp), sizeof(sp));
+	printf("#define BUF_SIZE_SpyAttemptPacket %zuU\n#define STRUCT_SIZE_SpyAttemptPacket %zuU\n\n", s_SpyAttemptPacket_d(buf, sizeof(buf), &sap), sizeof(sap));
+	printf("#define BUF_SIZE_SpyResultPacket %zuU\n#define STRUCT_SIZE_SpyResultPacket %zuU\n\n", s_SpyResultPacket_d(buf, sizeof(buf), &srp), sizeof(srp));
+	printf("#define BUF_SIZE_TradeData %zuU\n#define STRUCT_SIZE_TradeData %zuU\n\n", s_TradeData_d(buf, sizeof(buf), &td), sizeof(td));
+	printf("#define BUF_SIZE_TradeList %zuU\n#define STRUCT_SIZE_TradeList %zuU\n\n", s_TradeList_d(buf, sizeof(buf), &tl), sizeof(tl));
+	printf("#define BUF_SIZE_UserInfo %zuU\n#define STRUCT_SIZE_UserInfo %zuU\n\n", s_UserInfo_d(buf, sizeof(buf), &ui), sizeof(ui));
+	printf("#define BUF_SIZE_UserScore %zuU\n#define STRUCT_SIZE_UserScore %zuU\n\n", s_UserScore_d(buf, sizeof(buf), &us), sizeof(us));
+	printf("#define BUF_SIZE_village_data %zuU\n#define STRUCT_SIZE_village_data %zuU\n\n", s_village_data_d(buf, sizeof(buf), &vd), sizeof(vd));
+	printf("#define BUF_SIZE_LeavingData %zuU\n#define STRUCT_SIZE_LeavingData %zuU\n\n", s_LeavingData_d(buf, sizeof(buf), &ld), sizeof(ld));
+	printf("#define BUF_SIZE_Msg_Txt %zuU\n#define STRUCT_SIZE_Msg_Txt %zuU\n\n", s_Msg_Txt_d(buf, sizeof(buf), &mt), sizeof(mt));
+	printf("#define BUF_SIZE_Message %zuU\n#define STRUCT_SIZE_Message %zuU\n\n", s_Message_d(buf, sizeof(buf), &m), sizeof(m));
+	printf("#define BUF_SIZE_MessageHeader %zuU\n#define STRUCT_SIZE_MessageHeader %zuU\n\n", s_MessageHeader_d(buf, sizeof(buf), &mh), sizeof(mh));
 
 	return 0;
 }

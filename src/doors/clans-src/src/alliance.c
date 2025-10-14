@@ -464,7 +464,7 @@ void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 			Alliances[iTemp] = malloc(sizeof(struct Alliance));
 			CheckMem(Alliances[iTemp]);
 
-			if (EncryptRead(Alliances[iTemp], sizeof(struct Alliance), fp, XOR_ALLIES) == 0) {
+			notEncryptRead_s(Alliance, Alliances[iTemp], fp, XOR_ALLIES) {
 				// no more alliances to read in
 				free(Alliances[iTemp]);
 				Alliances[iTemp] = NULL;
@@ -487,7 +487,7 @@ void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 			if (Alliances[iTemp] == NULL)
 				continue;
 
-			EncryptWrite(Alliances[iTemp], sizeof(struct Alliance), fp, XOR_ALLIES);
+			EncryptWrite_s(Alliance, Alliances[iTemp], fp, XOR_ALLIES);
 		}
 		fclose(fp);
 	}
@@ -760,7 +760,7 @@ void KillAlliance(int AllianceID)
 			break;  /* couldn't fseek, so exit */
 		}
 
-		if (EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_USER) == 0) {
+		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER) {
 			fclose(fpPlayerFile);
 			break;  /* stop reading if no more players found */
 		}
@@ -784,7 +784,7 @@ void KillAlliance(int AllianceID)
 
 		Offset = (int32_t)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
 		fseek(fpPlayerFile, Offset, SEEK_SET);
-		EncryptWrite(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_USER);
+		EncryptWrite_s(clan, TmpClan, fpPlayerFile, XOR_USER);
 	}
 
 	fclose(fpPlayerFile);

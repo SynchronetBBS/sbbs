@@ -249,7 +249,7 @@ void DisplayScores(bool MakeFile)
 				break;  /* couldn't fseek, so exit */
 			}
 
-			if (EncryptRead(TmpClan, sizeof(struct clan), fpPCFile, XOR_USER) == 0) {
+			notEncryptRead_s(clan, TmpClan, fpPCFile, XOR_USER) {
 				break;  /* stop reading if no more players found */
 			}
 
@@ -259,7 +259,7 @@ void DisplayScores(bool MakeFile)
 			for (CurMember = 0; CurMember < 6; CurMember++) {
 				TmpClan->Member[CurMember] = malloc(sizeof(struct pc));
 				CheckMem(TmpClan->Member[CurMember]);
-				EncryptRead(TmpClan->Member[CurMember], sizeof(struct pc), fpPCFile, XOR_PC);
+				EncryptRead_s(pc, TmpClan->Member[CurMember], fpPCFile, XOR_PC);
 			}
 
 			// since we could read in a player, means at least one exists
@@ -515,15 +515,15 @@ void SendScoreData(struct UserScore **UserScores)
 	if (!fp)  return;
 
 	// write packet header
-	EncryptWrite(&Packet, sizeof(struct Packet), fp, XOR_PACKET);
+	EncryptWrite_s(Packet, &Packet, fp, XOR_PACKET);
 
 	// write how many scores
-	EncryptWrite(&NumScores, sizeof(int16_t), fp, XOR_PACKET);
+	EncryptWrite16(&NumScores, fp, XOR_PACKET);
 
 	// write scores
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
 		if (UserScores[iTemp])
-			EncryptWrite(UserScores[iTemp], sizeof(struct UserScore), fp, XOR_PACKET);
+			EncryptWrite_s(UserScore, UserScores[iTemp], fp, XOR_PACKET);
 
 	fclose(fp);
 
@@ -557,7 +557,7 @@ void ProcessScoreData(struct UserScore **UserScores)
 		for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
 			OldList[iTemp] = malloc(sizeof(struct UserScore));
 			CheckMem(OldList[iTemp]);
-			if (!EncryptRead(OldList[iTemp], sizeof(struct UserScore), fpOld, XOR_IPS)) {
+			notEncryptRead_s(UserScore, OldList[iTemp], fpOld, XOR_IPS) {
 				free(OldList[iTemp]);
 				OldList[iTemp] = NULL;
 				break;
@@ -638,7 +638,7 @@ void ProcessScoreData(struct UserScore **UserScores)
 
 		for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
 			if (NewList[iTemp])
-				EncryptWrite(NewList[iTemp], sizeof(struct UserScore), fpNew, XOR_IPS);
+				EncryptWrite_s(UserScore, NewList[iTemp], fpNew, XOR_IPS);
 
 		fclose(fpNew);
 	}
@@ -680,7 +680,7 @@ void LeagueScores(void)
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
 		ScoreList[iTemp] = malloc(sizeof(struct UserScore));
 		CheckMem(ScoreList[iTemp]);
-		if (!EncryptRead(ScoreList[iTemp], sizeof(struct UserScore), fp, XOR_IPS)) {
+		notEncryptRead_s(UserScore, ScoreList[iTemp], fp, XOR_IPS) {
 			free(ScoreList[iTemp]);
 			ScoreList[iTemp] = NULL;
 			break;
@@ -756,7 +756,7 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
 		ScoreList[iTemp] = malloc(sizeof(struct UserScore));
 		CheckMem(ScoreList[iTemp]);
-		if (!EncryptRead(ScoreList[iTemp], sizeof(struct UserScore), fp, XOR_IPS)) {
+		notEncryptRead_s(UserScore, ScoreList[iTemp], fp, XOR_IPS) {
 			free(ScoreList[iTemp]);
 			ScoreList[iTemp] = NULL;
 			break;
@@ -779,7 +779,7 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 	// write them to file now and free them at the same time
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
 		if (ScoreList[iTemp]) {
-			EncryptWrite(ScoreList[iTemp], sizeof(struct UserScore), fp, XOR_IPS);
+			EncryptWrite_s(UserScore, ScoreList[iTemp], fp, XOR_IPS);
 			free(ScoreList[iTemp]);
 		}
 
@@ -815,7 +815,7 @@ void SendScoreList(void)
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
 		ScoreList[iTemp] = malloc(sizeof(struct UserScore));
 		CheckMem(ScoreList[iTemp]);
-		if (!EncryptRead(ScoreList[iTemp], sizeof(struct UserScore), fp, XOR_IPS)) {
+		notEncryptRead_s(UserScore, ScoreList[iTemp], fp, XOR_IPS) {
 			free(ScoreList[iTemp]);
 			ScoreList[iTemp] = NULL;
 			break;
@@ -852,10 +852,10 @@ void SendScoreList(void)
 		if (!fp)    return;
 
 		// write packet header
-		EncryptWrite(&Packet, sizeof(struct Packet), fp, XOR_PACKET);
+		EncryptWrite_s(Packet, &Packet, fp, XOR_PACKET);
 
 		// write how many scores
-		EncryptWrite(&NumScores, sizeof(int16_t), fp, XOR_PACKET);
+		EncryptWrite16(&NumScores, fp, XOR_PACKET);
 
 		// write date
 		EncryptWrite(ScoreDate, 11, fp, XOR_PACKET);
@@ -863,7 +863,7 @@ void SendScoreList(void)
 		// write scores
 		for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
 			if (ScoreList[iTemp])
-				EncryptWrite(ScoreList[iTemp], sizeof(struct UserScore), fp, XOR_PACKET);
+				EncryptWrite_s(UserScore, ScoreList[iTemp], fp, XOR_PACKET);
 
 		fclose(fp);
 
@@ -914,7 +914,7 @@ void CreateScoreData(bool LocalOnly)
 		if (fseek(fpPlayerFile, (int32_t)ClanNum *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET))
 			break;
 
-		if (!EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_USER))
+		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER)
 			break;
 
 		// skip if deleted

@@ -37,7 +37,7 @@ endif
 # Somebody make this compile under gcc. :-)  I'll get you started:
 CC ?= gcc
 ODOORS ?= ../../../odoors
-CFLAGS += -O2 -Wall -pedantic -I$(ODOORS) -DOD_WIN32_STATIC
+CFLAGS += -std=c99 -O2 -Wall -pedantic -I$(ODOORS) -DOD_WIN32_STATIC
 ifdef PROFILE
 LIBS += $(ODOORS)/libs-$(OS)/libODoors_p.a
 else
@@ -67,13 +67,14 @@ endif
 #
 # See convert.txt for more suggestions.
 
-OBJS = clans.o video.o system.o\
-	parsing.o ibbs.o myopen.o language.o\
-	door.o village.o input.o help.o game.o user.o\
-	misc.o maint.o spells.o clansini.o class.o menus.o\
-	crc.o items.o mail.o fight.o scores.o pawn.o reg.o\
-	npc.o quests.o news.o empire.o alliance.o menus2.o\
-	voting.o trades.o myibbs.o wb_fapnd.o
+OBJS = alliance.o clans.o clansini.o class.o crc.o \
+	deserialize.o door.o empire.o fight.o game.o \
+	help.o ibbs.o input.o items.o language.o \
+	mail.o maint.o menus.o menus2.o misc.o \
+	myibbs.o myopen.o news.o npc.o parsing.o \
+	pawn.o quests.o reg.o scores.o serialize.o \
+	spells.o system.o trades.o user.o video.o \
+	village.o voting.o wb_fapnd.o
 
 ifdef WIN
  OBJS	+=	cmdline.o
@@ -99,13 +100,13 @@ clans$(EXEFILE):      $(OBJS) unix_wrappers.o
 langcomp$(EXEFILE):      langcomp.c
 	$(CC) $(CFLAGS) $(LDFLAGS) langcomp.c -o langcomp$(EXEFILE)
 
-reset$(EXEFILE): reset.c myopen.h parsing.h crc.h structs.h k_config.h unix_wrappers.o 
-	$(CC) $(CFLAGS) $(LDFLAGS) reset.c myopen.o parsing.o crc.o unix_wrappers.o -o reset$(EXEFILE) $(CONSOLE_LIBS)
+reset$(EXEFILE): reset.c myopen.h parsing.h crc.h structs.h k_config.h unix_wrappers.o serialize.o deserialize.o
+	$(CC) $(CFLAGS) $(LDFLAGS) reset.c myopen.o parsing.o crc.o unix_wrappers.o serialize.o deserialize.o -o reset$(EXEFILE) $(CONSOLE_LIBS)
 
 
 mcomp$(EXEFILE):      mcomp.c
 	$(CC) $(CFLAGS) $(LDFLAGS) mcomp.c -o mcomp$(EXEFILE)
 
-pcedit$(EXEFILE):      pcedit.c myopen.o unix_wrappers.o myopen.h unix_wrappers.h
-	$(CC) $(CFLAGS) $(LDFLAGS) pcedit.c myopen.o unix_wrappers.o -o pcedit$(EXEFILE)
+pcedit$(EXEFILE):      pcedit.c myopen.o unix_wrappers.o myopen.h unix_wrappers.h serialize.o deserialize.o
+	$(CC) $(CFLAGS) $(LDFLAGS) pcedit.c myopen.o unix_wrappers.o serialize.o deserialize.o -o pcedit$(EXEFILE)
 

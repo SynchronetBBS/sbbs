@@ -65,7 +65,7 @@ bool Game_Read(void)
 	fp = _fsopen("game.dat", "rb", SH_DENYWR);
 	if (!fp)  return false;
 
-	EncryptRead(Game.Data, sizeof(struct game_data), fp, XOR_GAME);
+	EncryptRead_s(game_data, Game.Data, fp, XOR_GAME);
 	fclose(fp);
 	return true;
 }
@@ -81,7 +81,7 @@ void Game_Write(void)
 
 	fp = _fsopen("game.dat", "wb", SH_DENYRW);
 	if (fp) {
-		EncryptWrite(Game.Data, sizeof(struct game_data), fp, XOR_GAME);
+		EncryptWrite_s(game_data, Game.Data, fp, XOR_GAME);
 		fclose(fp);
 	}
 }

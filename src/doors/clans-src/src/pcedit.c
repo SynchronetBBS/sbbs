@@ -138,7 +138,7 @@ int main(void)
 		}
 
 		// get curuser from file
-		if (!EncryptRead(&Clan, sizeof(struct clan), fpPC, XOR_PC)) {
+		notEncryptRead_s(clan, &Clan, fpPC, XOR_PC) {
 			printf("Couldn't read any players\n");
 			break;
 		}
@@ -282,7 +282,7 @@ void DeleteClan(int16_t ClanID[2])
 			/* go through each clan and write his info to new file and
 			   skip the clan in question if he is found */
 
-			if (EncryptRead(TmpClan, sizeof(struct clan), fpOldPC, XOR_PC) == 0)
+			notEncryptRead_s(clan, TmpClan, fpOldPC, XOR_PC)
 				break;
 
 			/* if this is him */
@@ -295,7 +295,7 @@ void DeleteClan(int16_t ClanID[2])
 			// read in 6 members
 			for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
 				TmpClan->Member[iTemp] = malloc(sizeof(struct pc));
-				EncryptRead(TmpClan->Member[iTemp], sizeof(struct pc), fpOldPC, XOR_PC);
+				EncryptRead_s(pc, TmpClan->Member[iTemp], fpOldPC, XOR_PC);
 			}
 
 			//=== modifications go here
@@ -312,10 +312,10 @@ void DeleteClan(int16_t ClanID[2])
 			//===
 
 			/* write new stuff to new file */
-			EncryptWrite(TmpClan, sizeof(struct clan), fpNewPC, XOR_PC);
+			EncryptWrite_s(clan, TmpClan, fpNewPC, XOR_PC);
 
 			for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
-				EncryptWrite(TmpClan->Member[iTemp], sizeof(struct pc), fpNewPC, XOR_PC);
+				EncryptWrite_s(pc, TmpClan->Member[iTemp], fpNewPC, XOR_PC);
 				free(TmpClan->Member[iTemp]);
 			}
 		}
@@ -343,7 +343,7 @@ void DeleteClan(int16_t ClanID[2])
 		}
 
 		for (;;) {
-			if (!EncryptRead(&Message, sizeof(struct Message), OldMessage, XOR_MSG))
+			notEncryptRead_s(Message, &Message, OldMessage, XOR_MSG)
 				break;
 
 			if ((Message.FromClanID[0] == ClanID[0] &&
@@ -360,7 +360,7 @@ void DeleteClan(int16_t ClanID[2])
 				// write it to new file
 				EncryptRead(Message.Data.MsgTxt, Message.Data.Length, OldMessage, XOR_MSG);
 
-				EncryptWrite(&Message, sizeof(Message), NewMessage, XOR_MSG);
+				EncryptWrite_s(Message, &Message, NewMessage, XOR_MSG);
 				EncryptWrite(Message.Data.MsgTxt, Message.Data.Length, NewMessage, XOR_MSG);
 
 				free(Message.Data.MsgTxt);
@@ -387,7 +387,7 @@ void DeleteClan(int16_t ClanID[2])
 
 			OldOffset = ftell(fpTradeFile);
 
-			if (EncryptRead(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE) == 0)
+			notEncryptRead_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE)
 				break;
 
 			/* see if active */
@@ -401,14 +401,14 @@ void DeleteClan(int16_t ClanID[2])
 
 				// write it to file
 				fseek(fpTradeFile, OldOffset, SEEK_SET);
-				EncryptWrite(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE);
+				EncryptWrite_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE);
 			}
 			else if (TradeData.FromClanID[0] == ClanID[0] &&
 					 TradeData.FromClanID[1] == ClanID[1]) {
 				// trade is coming from this player, remove it
 				TradeData.Active = false;
 				fseek(fpTradeFile, OldOffset, SEEK_SET);
-				EncryptWrite(&TradeData, sizeof(struct TradeData), fpTradeFile, XOR_TRADE);
+				EncryptWrite_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE);
 			}
 		}
 
@@ -496,7 +496,7 @@ void InitVillage(void)
 		exit(0);
 	}
 	else
-		EncryptRead(Village.Data, (int32_t)sizeof(struct village_data), fpVillage, XOR_VILLAGE);
+		EncryptRead_s(village_data, Village.Data, fpVillage, XOR_VILLAGE);
 
 	fclose(fpVillage);
 }
@@ -517,7 +517,7 @@ void UpdateVillage(void)
 		exit(0);
 	}
 
-	EncryptWrite(Village.Data, (int32_t)sizeof(struct village_data), fpVillage, XOR_VILLAGE);
+	EncryptWrite_s(village_data, Village.Data, fpVillage, XOR_VILLAGE);
 
 	fclose(fpVillage);
 }
@@ -575,7 +575,7 @@ void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 			Alliances[iTemp] = malloc(sizeof(struct Alliance));
 			CheckMem(Alliances[iTemp]);
 
-			if (EncryptRead(Alliances[iTemp], sizeof(struct Alliance), fp, XOR_ALLIES) == 0) {
+			notEncryptRead_s(Alliance, Alliances[iTemp], fp, XOR_ALLIES) {
 				// no more alliances to read in
 				free(Alliances[iTemp]);
 				Alliances[iTemp] = NULL;
@@ -597,7 +597,7 @@ void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 			if (Alliances[iTemp] == NULL)
 				continue;
 
-			EncryptWrite(Alliances[iTemp], sizeof(struct Alliance), fp, XOR_ALLIES);
+			EncryptWrite_s(Alliance, Alliances[iTemp], fp, XOR_ALLIES);
 		}
 		fclose(fp);
 	}
@@ -626,7 +626,7 @@ void RemoveFromUList(const int16_t ClanID[2])
 	// FIXME: assume file is opened
 
 	for (;;) {
-		if (EncryptRead(&User, sizeof(struct UserInfo), fpOldUList, XOR_USER) == 0)
+		notEncryptRead_s(UserInfo, &User, fpOldUList, XOR_USER)
 			break;
 
 //        printf("Read in %s\n", User.szName);
@@ -639,7 +639,7 @@ void RemoveFromUList(const int16_t ClanID[2])
 		}
 
 		// otherwise, don't skip him, write him to new file
-		EncryptWrite(&User, sizeof(struct UserInfo), fpNewUList, XOR_USER);
+		EncryptWrite_s(UserInfo, &User, fpNewUList, XOR_USER);
 	}
 
 	// close file
@@ -665,7 +665,7 @@ bool ClanIDInList(const int16_t ClanID[2])
 
 	// scan through file until end
 	for (;;) {
-		if (EncryptRead(&User, sizeof(struct UserInfo), fpUList, XOR_USER) == 0)
+		notEncryptRead_s(UserInfo, &User, fpUList, XOR_USER)
 			break;
 
 		// see if this user's name is same as one we're looking for
@@ -707,7 +707,7 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
 		ScoreList[iTemp] = malloc(sizeof(struct UserScore));
 		CheckMem(ScoreList[iTemp]);
-		if (!EncryptRead(ScoreList[iTemp], sizeof(struct UserScore), fp, XOR_IPS)) {
+		notEncryptRead_s(UserScore, ScoreList[iTemp], fp, XOR_IPS) {
 			free(ScoreList[iTemp]);
 			ScoreList[iTemp] = NULL;
 			break;
@@ -730,7 +730,7 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 	// write them to file now and free them at the same time
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
 		if (ScoreList[iTemp]) {
-			EncryptWrite(ScoreList[iTemp], sizeof(struct UserScore), fp, XOR_IPS);
+			EncryptWrite_s(UserScore, ScoreList[iTemp], fp, XOR_IPS);
 			free(ScoreList[iTemp]);
 		}
 
@@ -779,7 +779,7 @@ bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 			fclose(fpPlayerFile);
 			return false;
 		}
-		if (!EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_PC)) {
+		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_PC) {
 			fclose(fpPlayerFile);
 			return false;
 		}
@@ -795,7 +795,7 @@ bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 			for (iTemp = 0; iTemp < 6; iTemp++) {
 				TmpClan->Member[iTemp] = malloc(sizeof(struct pc));
 				CheckMem(TmpClan->Member[iTemp]);
-				EncryptRead(TmpClan->Member[iTemp], sizeof(struct pc), fpPlayerFile, XOR_PC);
+				EncryptRead_s(pc, TmpClan->Member[iTemp], fpPlayerFile, XOR_PC);
 
 				/* skip those members which are non-existant */
 				if (TmpClan->Member[iTemp]->szName[0] == 0) {
@@ -845,7 +845,7 @@ void UpdateClan(struct clan *Clan)
 
 		OldOffset = ftell(fpPlayerFile);
 
-		if (EncryptRead(TmpClan, sizeof(struct clan), fpPlayerFile, XOR_PC) == 0)
+		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_PC)
 			break;  /* stop reading if no more players found */
 
 		/* skip if deleted clan */
@@ -856,15 +856,15 @@ void UpdateClan(struct clan *Clan)
 		if (TmpClan->ClanID[0] == Clan->ClanID[0] &&
 				TmpClan->ClanID[1] == Clan->ClanID[1]) {
 			fseek(fpPlayerFile, OldOffset, SEEK_SET);
-			EncryptWrite(Clan, sizeof(struct clan), fpPlayerFile, XOR_PC);
+			EncryptWrite_s(clan, Clan, fpPlayerFile, XOR_PC);
 
 			// fwrite players
 			TmpPC->szName[0] = 0;
 			for (iTemp = 0; iTemp < 6; iTemp++) {
 				if (Clan->Member[iTemp] && Clan->Member[iTemp]->Undead == false)
-					EncryptWrite(Clan->Member[iTemp], sizeof(struct pc), fpPlayerFile, XOR_PC);
+					EncryptWrite_s(pc, Clan->Member[iTemp], fpPlayerFile, XOR_PC);
 				else
-					EncryptWrite(TmpPC, sizeof(struct pc), fpPlayerFile, XOR_PC);
+					EncryptWrite_s(pc, TmpPC, fpPlayerFile, XOR_PC);
 			}
 		}
 	}
@@ -894,7 +894,7 @@ void InitGame(void)
 	Game.Data = (struct game_data *) malloc(sizeof(struct game_data));
 	CheckMem(Game.Data);
 
-	if (!EncryptRead(Game.Data, (int32_t)sizeof(struct game_data), fpGame, XOR_GAME)) {
+	notEncryptRead_s(game_data, Game.Data, fpGame, XOR_GAME) {
 		System_Error("Unable to read the " GAME_DATAFILE " information!");
 	}
 

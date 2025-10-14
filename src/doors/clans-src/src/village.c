@@ -1254,7 +1254,7 @@ bool Village_Read(void)
 	fp = _fsopen(ST_VILLAGEDATFILE, "rb", SH_DENYWR);
 	if (!fp)  return false;
 
-	EncryptRead(Village.Data, (int32_t)sizeof(struct village_data), fp, XOR_VILLAGE);
+	EncryptRead_s(village_data, Village.Data, fp, XOR_VILLAGE);
 	fclose(fp);
 	return true;
 }
@@ -1276,7 +1276,7 @@ void Village_Write(void)
 
 	fp = _fsopen(ST_VILLAGEDATFILE, "wb", SH_DENYRW);
 	if (fp) {
-		EncryptWrite(Village.Data, sizeof(struct village_data), fp, XOR_VILLAGE);
+		EncryptWrite_s(village_data, Village.Data, fp, XOR_VILLAGE);
 		fclose(fp);
 	}
 }
