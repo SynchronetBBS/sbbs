@@ -740,7 +740,7 @@ void KillAlliance(int AllianceID)
 	struct clan *TmpClan;
 	FILE *fpPlayerFile;
 	int CurClan, CurAlliance;
-	int32_t Offset;
+	long Offset;
 
 	TmpClan = malloc(sizeof(struct clan));
 	CheckMem(TmpClan);
@@ -754,7 +754,7 @@ void KillAlliance(int AllianceID)
 
 	// get list of all clan names from file, write to
 	for (CurClan = 0;; CurClan++) {
-		Offset = (int32_t)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
+		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
 		if (fseek(fpPlayerFile, Offset, SEEK_SET)) {
 			fclose(fpPlayerFile);
 			break;  /* couldn't fseek, so exit */
@@ -782,7 +782,7 @@ void KillAlliance(int AllianceID)
 		// in alliance, update his info and write to file
 		TmpClan->Alliances[CurAlliance] = -1;
 
-		Offset = (int32_t)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
+		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
 		fseek(fpPlayerFile, Offset, SEEK_SET);
 		EncryptWrite_s(clan, TmpClan, fpPlayerFile, XOR_USER);
 	}

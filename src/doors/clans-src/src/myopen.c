@@ -52,6 +52,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 	FILE *fp;
 	bool FoundFile = false;
 	char szPakFileName[50], szModFileName[50], *pc;
+	uint8_t fhBuf[BUF_SIZE_FileHeader];
 
 	strcpy(szModFileName, szFileName);
 
@@ -90,8 +91,9 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 		}
 
 		for (;;) {
-			if (fread(FileHeader, sizeof(struct FileHeader), 1, fp) == 0)
+			if (fread(fhBuf, sizeof(fhBuf), 1, fp) == 0)
 				break;
+			s_FileHeader_d(fhBuf, sizeof(fhBuf), FileHeader);
 
 			// od_printf("read in %s\n\r", FileHeader->szFileName);
 
@@ -160,7 +162,7 @@ void EncryptWrite(void *Data, int32_t DataSize, FILE *fp, char XorValue)
 	    Encrypt(EncryptedData, (char *)Data, DataSize, XorValue);*/
 	cipher(EncryptedData, Data, DataSize, (unsigned char)XorValue);
 
-	fwrite(EncryptedData, (int16_t)DataSize, 1, fp);
+	fwrite(EncryptedData, DataSize, 1, fp);
 
 	free(EncryptedData);
 }

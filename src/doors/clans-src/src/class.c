@@ -82,13 +82,16 @@ void Load_PClasses(struct PClass *PClass[MAX_PCLASSES], bool GetPClasses)
 
 		/* get num classes */
 		fread(&NumClasses, sizeof(NumClasses), 1, ClassFile.fp);
+		NumClasses = SWAP16(NumClasses);
 
 		/* read them in */
 		for (iTemp = 0; iTemp < NumClasses; iTemp++) {
+			uint8_t sBuf[BUF_SIZE_PClass];
 			PClass[CurClass] = malloc(sizeof(struct PClass));
 			CheckMem(PClass[CurClass]);
 
-			fread(PClass[CurClass], sizeof(struct PClass), 1, ClassFile.fp);
+			fread(sBuf, sizeof(sBuf), 1, ClassFile.fp);
+			s_PClass_d(sBuf, sizeof(sBuf), PClass[CurClass]);
 
 			//printf("%s\n\r", PClass[CurClass]->szName);
 

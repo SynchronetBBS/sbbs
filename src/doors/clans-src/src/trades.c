@@ -173,7 +173,7 @@ void RejectTrade(struct TradeData *TradeData)
 void Trades_CheckTrades(void)
 {
 	FILE *fpTradeFile;
-	int32_t OldOffset;
+	long OldOffset;
 	struct clan *TmpClan;
 	int16_t CurTradeData;
 	struct TradeData TradeData;
@@ -185,7 +185,7 @@ void Trades_CheckTrades(void)
 		return;
 
 	for (CurTradeData = 0;; CurTradeData++) {
-		if (fseek(fpTradeFile, (int32_t)(CurTradeData * sizeof(struct TradeData)), SEEK_SET))
+		if (fseek(fpTradeFile, (long)CurTradeData * BUF_SIZE_TradeData, SEEK_SET))
 			break;
 
 		OldOffset = ftell(fpTradeFile);

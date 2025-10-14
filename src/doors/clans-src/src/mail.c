@@ -869,7 +869,7 @@ void Reply_Message(struct Message *Reply)
 bool Mail_Read(void)
 {
 	FILE *fp;
-	int32_t CurOffset, CurMsgOffset;
+	long CurOffset, CurMsgOffset;
 	int16_t iTemp, CurLine;
 	struct Message Message;
 	bool AllianceFound, NewMail = false, ReplyingToAlly = false, WillAlly;

@@ -492,6 +492,7 @@ bool legal(char *pszAcs, int16_t *iCharsRead)
 void JumpToEvent(char *szLabel, struct FileHeader *FileHeader)
 {
 	struct EventHeader EventHeader;
+	uint8_t hBuf[BUF_SIZE_EventHeader];
 
 	fseek(FileHeader->fp, FileHeader->lStart, SEEK_SET);
 
@@ -503,7 +504,8 @@ void JumpToEvent(char *szLabel, struct FileHeader *FileHeader)
 		}
 
 		// find event to run first
-		fread(&EventHeader, sizeof(struct EventHeader), 1, FileHeader->fp);
+		fread(hBuf, sizeof(hBuf), 1, FileHeader->fp);
+		s_EventHeader_d(hBuf, sizeof(hBuf), &EventHeader);
 
 		if (stricmp(EventHeader.szName, szLabel) == 0)
 			break;
@@ -569,13 +571,14 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 	bool Done;
 	int16_t iTemp, CurOption, WhichEnemy, EventsFound, CurEvent, ChosenEvent,
 	NumOptions, WhichOption;
-	int32_t OldOffset = 0;
+	long OldOffset = 0;
 	bool QuestDone = false, FoundEvent;
 	struct clan *EnemyClan;
 	bool EndedChat = false;
 	int16_t CurMember, PercentGold, FightResult, EmptySlot;
 	int32_t GoldAmount, XPAmount;
 	struct NPCNdx NPCNdx;
+	uint8_t hBuf[BUF_SIZE_EventHeader];
 
 	// reset temp flags
 	if (QuoteToggle == false) // clear flags for event files but not quotes
@@ -624,8 +627,9 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 			if (ftell(FileHeader.fp) >= FileHeader.lEnd)
 				break;
 
-			if (fread(&EventHeader, sizeof(struct EventHeader), 1, FileHeader.fp) == 0)
+			if (fread(hBuf, sizeof(hBuf), 1, FileHeader.fp) == 0)
 				break;
+			s_EventHeader_d(hBuf, sizeof(hBuf), &EventHeader);
 
 			if (EventHeader.Event)
 				EventsFound++;
@@ -646,8 +650,9 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 			if (ftell(FileHeader.fp) >= FileHeader.lEnd)
 				break;
 
-			if (fread(&EventHeader, sizeof(struct EventHeader), 1, FileHeader.fp) == 0)
+			if (fread(hBuf, sizeof(hBuf), 1, FileHeader.fp) == 0)
 				break;
+			s_EventHeader_d(hBuf, sizeof(hBuf), &EventHeader);
 
 			if (EventHeader.Event && EventsFound == ChosenEvent)
 				break;

@@ -1445,6 +1445,7 @@ int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16_t MaxD
 	int16_t *ValidMonIndex, MonsterChosen;
 	struct FileHeader FileHeader;
 	char szString[128];
+	uint8_t sBuf[BUF_SIZE_pc];
 
 	MyOpen(szFileName, "rb", &FileHeader);
 
@@ -1468,6 +1469,7 @@ int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16_t MaxD
 		if (MonIndex[iTemp] == 0)   /* done looking */
 			break;
 
+		MonIndex[iTemp] = SWAP16(MonIndex[iTemp]);
 		if (MonIndex[iTemp] >= MinDifficulty && MonIndex[iTemp] <= MaxDifficulty) {
 			ValidMonIndex[ValidMonsters] = iTemp;
 			ValidMonsters++;
@@ -1490,12 +1492,11 @@ int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16_t MaxD
 	//od_printf("Using #%d in the file.\n\r", MonsterChosen);
 
 	/* fseek there and read it in */
-	//   fseek(FileHeader.fp, (int32_t)MonsterChosen * sizeof(struct pc), SEEK_CUR);
-
 	fseek(FileHeader.fp,
-		  ((int32_t)sizeof(int16_t) * MAX_MONSTERS + ((int32_t)MonsterChosen * sizeof(struct pc)) + FileHeader.lStart),
+		  ((long)sizeof(int16_t) * MAX_MONSTERS + ((long)MonsterChosen * BUF_SIZE_pc) + FileHeader.lStart),
 		  SEEK_SET);
-	fread(Monster, sizeof(struct pc), 1, FileHeader.fp);
+	fread(sBuf, sizeof(sBuf), 1, FileHeader.fp);
+	s_pc_d(sBuf, sizeof(sBuf), Monster);
 
 	fclose(FileHeader.fp);
 

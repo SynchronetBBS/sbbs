@@ -1924,7 +1924,6 @@ void GoReset(struct ResetData *ResetData, int16_t Option)
 		Game_Data.CRC = CRCValue(&Game_Data, sizeof(struct game_data) - sizeof(int32_t));
 
 		fp = fopen("game.dat", "wb");
-		// fwrite(&Game_Data, sizeof(struct game_data), 1, fp);
 		EncryptWrite_s(game_data, &Game_Data, fp, XOR_GAME);
 		fclose(fp);
 
@@ -2165,7 +2164,6 @@ void CreateVillageDat(struct ResetData *ResetData)
 	Village_Data.CRC = CRCValue(&Village_Data, sizeof(struct village_data) - sizeof(int32_t));
 
 	fp = fopen("village.dat", "wb");
-	// fwrite(&Village_Data, sizeof(struct village_data), 1, fp);
 	EncryptWrite_s(village_data, &Village_Data, fp, XOR_VILLAGE);
 	fclose(fp);
 }

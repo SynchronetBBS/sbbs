@@ -918,7 +918,7 @@ void AbortTrip(void)
 		if (LeavingData.ClanID[0] == PClan->ClanID[0] &&
 				LeavingData.ClanID[1] == PClan->ClanID[1]) {
 			/* found it! */
-			fseek(fpLeavingDat, (int32_t)CurEntry * sizeof(struct LeavingData), SEEK_SET);
+			fseek(fpLeavingDat, (long)CurEntry * BUF_SIZE_LeavingData, SEEK_SET);
 
 			LeavingData.Active = false;
 
@@ -1435,7 +1435,7 @@ void IBBS_Read(void)
 			EncryptRead_s(ibbs_node_attack, &IBBS.Data->Nodes[CurBBS].Attack, fp, XOR_IBBS);
 		}
 		else {
-			fseek(fp, sizeof(struct ibbs_node_attack) + sizeof(struct ibbs_node_recon), SEEK_CUR);
+			fseek(fp, BUF_SIZE_ibbs_node_attack + BUF_SIZE_ibbs_node_recon, SEEK_CUR);
 		}
 	}
 
@@ -1448,7 +1448,7 @@ void IBBS_Read(void)
 			}
 		}
 		else {
-			fseek(fp, sizeof(struct ibbs_node_reset), SEEK_CUR);
+			fseek(fp, BUF_SIZE_ibbs_node_reset, SEEK_CUR);
 		}
 	}
 
@@ -2464,7 +2464,7 @@ void IBBS_RemoveFromBackup(int16_t ID[2])
 	FILE *fpBackupDat;
 	struct Packet Packet;
 	struct clan *TmpClan;
-	int32_t OldFileOffset; /* records start of packet so we can seek back to it */
+	long OldFileOffset; /* records start of packet so we can seek back to it */
 	int16_t ClanID[2];
 
 	/* find leaving packet in Backup.dat and set as inactive */
@@ -2574,7 +2574,7 @@ void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 	CurClan = 0;
 	for (;;) {
 		/* seek to current clan */
-		fseek(fpPC, (int32_t)CurClan *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET);
+		fseek(fpPC, (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET);
 
 		/* read in tmp clan */
 		notEncryptRead_s(clan, TmpClan, fpPC, XOR_USER)
@@ -2604,7 +2604,7 @@ void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 			}
 
 			/* seek to that spot and write the merged info to file */
-			fseek(fpPC, (int32_t)CurClan *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET);
+			fseek(fpPC, (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET);
 
 			EncryptWrite_s(clan, Clan, fpPC, XOR_USER);
 

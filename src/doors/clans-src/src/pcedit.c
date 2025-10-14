@@ -63,7 +63,7 @@ char getch(void);
 
 
 #define true_ENTRY_SIZE(x) \
-    (sizeof(struct clan) + ((x) * sizeof(struct pc)))
+    (BUF_SIZE_clan + ((x) * BUF_SIZE_pc))
 
 #define GAME_DATAFILE "game.dat"
 #define VILLAGE_DATAFILE "village.dat"
@@ -80,7 +80,7 @@ char getch(void);
 int main(void)
 {
 	FILE *fpPC;
-	int32_t FileSize;
+	long FileSize;
 	int16_t NumClans, CurClan;
 	char cKey;
 	struct clan Clan;
@@ -243,7 +243,7 @@ void DeleteClan(int16_t ClanID[2])
 {
 	FILE *fpOldPC, *fpNewPC, *OldMessage, *NewMessage;
 	FILE *fpTradeFile;
-	int32_t OldOffset;
+	long OldOffset;
 	char szFileName[40]/*, szString[128]*/;
 	int16_t CurTradeData, iTemp, CurAlliance, CurMember;
 	struct TradeData TradeData;
@@ -288,7 +288,7 @@ void DeleteClan(int16_t ClanID[2])
 			/* if this is him */
 			if (TmpClan->ClanID[0] == ClanID[0] &&
 					TmpClan->ClanID[1] == ClanID[1]) {
-				fseek(fpOldPC, Game.Data->MaxPermanentMembers*sizeof(struct pc), SEEK_CUR);
+				fseek(fpOldPC, Game.Data->MaxPermanentMembers * BUF_SIZE_pc, SEEK_CUR);
 				continue;
 			}
 
@@ -382,7 +382,7 @@ void DeleteClan(int16_t ClanID[2])
 
 	if (fpTradeFile) {
 		for (CurTradeData = 0;; CurTradeData++) {
-			if (fseek(fpTradeFile, (int32_t)(CurTradeData * sizeof(struct TradeData)), SEEK_SET))
+			if (fseek(fpTradeFile, (long)CurTradeData * BUF_SIZE_TradeData, SEEK_SET))
 				break;
 
 			OldOffset = ftell(fpTradeFile);
@@ -774,7 +774,7 @@ bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 	}
 
 	for (ClanNum = 0;; ClanNum++) {
-		if (fseek(fpPlayerFile, (int32_t)ClanNum *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET)) {
+		if (fseek(fpPlayerFile, (long)ClanNum * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET)) {
 			// couldn't find clan in file
 			fclose(fpPlayerFile);
 			return false;
@@ -818,7 +818,7 @@ void UpdateClan(struct clan *Clan)
 	FILE *fpPlayerFile;
 	/*    char szFileName[50];*/
 	int16_t CurClan, iTemp;
-	int32_t OldOffset, Offset;
+	long OldOffset, Offset;
 	struct clan *TmpClan;
 	struct pc *TmpPC;
 
@@ -838,7 +838,7 @@ void UpdateClan(struct clan *Clan)
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
 
-		Offset = (int32_t)CurClan * (sizeof(struct clan) + Game.Data->MaxPermanentMembers*sizeof(struct pc));
+		Offset = (long)CurClan * (BUF_SIZE_clan + Game.Data->MaxPermanentMembers * BUF_SIZE_pc);
 		if (fseek(fpPlayerFile, Offset, SEEK_SET)) {
 			break;  /* couldn't fseek, so exit */
 		}

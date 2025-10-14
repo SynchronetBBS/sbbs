@@ -254,7 +254,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 	szGoal[40], szOutcome[30], *szString, *cpBuffer;
 	int16_t WhichBBS, iTemp, Junk[2] = {-1, -1};
 	bool ShowedOne;
-	int32_t AfterOffset, BeforeOffset;
+	long AfterOffset, BeforeOffset;
 	FILE *fpBackup;
 
 

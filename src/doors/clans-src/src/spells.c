@@ -63,6 +63,7 @@ char * get_spell(char **dest, FILE *fp)
 	if (!fread(&StringLength, sizeof(int16_t), 1, fp))
 		System_Error("fread failed in get_spell() [StringLength]");
 	else if (StringLength) {
+		StringLength = SWAP16(StringLength);
 		*dest = (char *) malloc(StringLength);
 		CheckMem(*dest);
 		if (!fread(*dest, StringLength, 1, fp))
@@ -79,6 +80,7 @@ void Spells_Init(void)
 	int16_t iTemp, NumSpells;
 	int16_t CurFile, CurSpell = 0;
 	struct FileHeader SpellFile;
+	uint8_t sBuf[BUF_SIZE_Spell];
 
 	if (Verbose) {
 		DisplayStr("> Spells_Init()\n");
@@ -101,13 +103,15 @@ void Spells_Init(void)
 
 		/* get num spells */
 		fread(&NumSpells, sizeof(int16_t), 1, SpellFile.fp);
+		NumSpells = SWAP16(NumSpells);
 
 		/* read them in */
 		for (iTemp = 0; iTemp < NumSpells; iTemp++) {
 			Spells[CurSpell] = malloc(sizeof(struct Spell));
 			CheckMem(Spells[CurSpell]);
 
-			fread(Spells[CurSpell], sizeof(struct Spell), 1, SpellFile.fp);
+			fread(sBuf, sizeof(sBuf), 1, SpellFile.fp);
+			s_Spell_d(sBuf, sizeof(sBuf), Spells[CurSpell]);
 
 			Spells[CurSpell]->pszHealStr = NULL;
 			Spells[CurSpell]->pszUndeadName = NULL;

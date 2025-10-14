@@ -455,6 +455,7 @@ void Items_Read(void)
 {
 	int16_t iTemp, NumItems, CurFile, CurItem;
 	struct FileHeader ItemFile;
+	uint8_t sBuf[BUF_SIZE_item_data];
 
 	for (CurItem = 0; CurItem < MAX_ITEMS; CurItem++)
 		Items.Data[CurItem] = NULL;
@@ -470,13 +471,15 @@ void Items_Read(void)
 
 		// get num items in file
 		fread(&NumItems, sizeof(int16_t), 1, ItemFile.fp);
+		NumItems = SWAP16(NumItems);
 
 		// read each item in file
 		for (iTemp = 0; iTemp < NumItems; iTemp++) {
 			Items.Data[CurItem] = malloc(sizeof(struct item_data));
 			CheckMem(Items.Data[CurItem]);
 
-			fread(Items.Data[CurItem], sizeof(struct item_data), 1, ItemFile.fp);
+			fread(sBuf, sizeof(sBuf), 1, ItemFile.fp);
+			s_item_data_d(sBuf, sizeof(sBuf), Items.Data[CurItem]);
 
 			CurItem++;
 			if (CurItem == MAX_ITEMS) break;

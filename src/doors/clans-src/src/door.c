@@ -103,9 +103,10 @@ bool Door_Initialized(void)
 void CreateSemaphor(void)
 {
 	FILE *fp;
+	uint16_t node = SWAP16(System.Node);
 
 	fp = _fsopen("online.flg", "wb", SH_DENYRW);
-	fwrite(&System.Node, sizeof(int16_t), 1, fp);
+	fwrite(&node, sizeof(node), 1, fp);
 	fclose(fp);
 }
 
@@ -129,7 +130,7 @@ bool SomeoneOnline(void)
 		fclose(fp);
 
 		// if node is same as current node, disregard this file
-		if (WhichNode == System.Node)
+		if (SWAP16(WhichNode) == System.Node)
 			return false;
 		else
 			return true;

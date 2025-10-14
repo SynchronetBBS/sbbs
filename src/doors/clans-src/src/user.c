@@ -120,7 +120,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 {
 	FILE *fpOldPC, *fpNewPC, *OldMessage, *NewMessage;
 	FILE *fpTradeFile;
-	int32_t OldOffset;
+	long OldOffset;
 	char /*szFileName[40],*/ szString[128];
 	int16_t CurTradeData, iTemp, CurAlliance, CurMember;
 	struct TradeData TradeData;
@@ -177,7 +177,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 				if (Eliminate == false) {
 					// skip the guy since we're deleting him
 					// skip 6 members
-					fseek(fpOldPC, 6L*sizeof(struct pc), SEEK_CUR);
+					fseek(fpOldPC, 6L * BUF_SIZE_pc, SEEK_CUR);
 					continue;
 				}
 				else {
@@ -278,7 +278,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 
 	if (fpTradeFile) {
 		for (CurTradeData = 0;; CurTradeData++) {
-			if (fseek(fpTradeFile, (int32_t)(CurTradeData * sizeof(struct TradeData)), SEEK_SET))
+			if (fseek(fpTradeFile, (long)CurTradeData * BUF_SIZE_TradeData, SEEK_SET))
 				break;
 
 			OldOffset = ftell(fpTradeFile);
@@ -388,7 +388,7 @@ bool ClanExists(int16_t ClanID[2])
 {
 	FILE *fpPlayerFile;
 	int16_t CurClan/*, iTemp*/;
-	int32_t /*OldOffset,*/ Offset;
+	long Offset;
 	struct clan *TmpClan;
 	bool FoundClan = false;
 
@@ -404,7 +404,7 @@ bool ClanExists(int16_t ClanID[2])
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
 
-		Offset = (int32_t)CurClan * ((int32_t)sizeof(struct clan) + 6L*sizeof(struct pc));
+		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
 		if (fseek(fpPlayerFile, Offset, SEEK_SET))
 			break;  /* couldn't fseek, so exit */
 
@@ -1414,7 +1414,7 @@ int16_t NumClansInVillage(void)
 			NumClans++;
 
 		/* skip his 6 PCs */
-		fseek(fp, 6*sizeof(struct pc), SEEK_CUR);
+		fseek(fp, 6 * BUF_SIZE_pc, SEEK_CUR);
 	}
 
 
@@ -1817,7 +1817,7 @@ bool NameInUse(char *szName)
 	FILE *fpPCFile;
 	struct clan *TmpClan;
 	int16_t CurClan = 0;
-	int32_t Offset;
+	long Offset;
 
 	fpPCFile = fopen(ST_CLANSPCFILE, "rb");
 	if (fpPCFile) {
@@ -1826,7 +1826,7 @@ bool NameInUse(char *szName)
 
 		/* go through list */
 		for (CurClan = 0;; CurClan++) {
-			Offset = (int32_t) CurClan * ((int32_t)sizeof(struct clan) + 6L*sizeof(struct pc));
+			Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
 			if (fseek(fpPCFile, Offset, SEEK_SET))
 				break;  /* couldn't fseek, so exit */
 
@@ -2181,7 +2181,7 @@ bool User_Read(void)
 	struct clan *TmpClan;
 	struct pc *TmpPC;
 	int16_t CurClan, CurMember, iTemp;
-	int32_t Offset;
+	long Offset;
 
 	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYRW);
 	if (!fpPlayerFile) {
@@ -2196,7 +2196,7 @@ bool User_Read(void)
 
 	for (CurClan = 0;; CurClan++) {
 		/* seek to the current player */
-		Offset = (int32_t) CurClan * ((int32_t)sizeof(struct clan) + 6L*sizeof(struct pc));
+		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
 
 		if (fseek(fpPlayerFile, Offset, SEEK_SET))
 			break;  /* couldn't fseek, so exit */
@@ -2266,7 +2266,7 @@ void Clan_Update(struct clan *Clan)
 {
 	FILE *fpPlayerFile;
 	int16_t CurClan, iTemp;
-	int32_t OldOffset, Offset;
+	long OldOffset, Offset;
 	struct clan *TmpClan;
 	struct pc *TmpPC;
 
@@ -2288,7 +2288,7 @@ void Clan_Update(struct clan *Clan)
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
 
-		Offset = (int32_t)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
+		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
 		if (fseek(fpPlayerFile, Offset, SEEK_SET))
 			break;  /* couldn't fseek, so exit */
 
@@ -2309,8 +2309,6 @@ void Clan_Update(struct clan *Clan)
 			Clan->CRC = CRCValue(Clan, sizeof(struct clan) - sizeof(int32_t));
 			EncryptWrite_s(clan, Clan, fpPlayerFile, XOR_USER);
 
-			// fwrite(Clan, sizeof(struct clan), 1, fpPlayerFile);
-
 			// fwrite players
 			TmpPC->szName[0] = 0;
 			TmpPC->Status = Dead;
@@ -2319,12 +2317,9 @@ void Clan_Update(struct clan *Clan)
 				if (Clan->Member[iTemp] && Clan->Member[iTemp]->Undead == false) {
 					Clan->Member[iTemp]->CRC = CRCValue(Clan->Member[iTemp], sizeof(struct pc) - sizeof(int32_t));
 					EncryptWrite_s(pc, Clan->Member[iTemp], fpPlayerFile, XOR_PC);
-
-					// fwrite(Clan->Member[iTemp], sizeof(struct pc), 1, fpPlayerFile);
 				}
 				else
 					EncryptWrite_s(pc, TmpPC, fpPlayerFile, XOR_PC);
-				// fwrite(TmpPC, sizeof(struct pc), 1, fpPlayerFile);
 			}
 			break;
 		}
@@ -2433,7 +2428,7 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 			rputs(ST_ERRORPC);
 			break;
 		}
-		if (fseek(fpPlayerFile, (int32_t)CurClan *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET)) {
+		if (fseek(fpPlayerFile, (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET)) {
 			fclose(fpPlayerFile);
 			break;  /* couldn't fseek, so exit */
 		}
@@ -2559,7 +2554,7 @@ bool GetClanNameID(char *szName, int16_t ID[2])
 			free(TmpClan);
 			return false;  /* means failed to find clan */
 		}
-		if (fseek(fpPlayerFile, (int32_t)CurClan *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET)) {
+		if (fseek(fpPlayerFile, (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET)) {
 			fclose(fpPlayerFile);
 			break;  /* couldn't fseek, so exit */
 		}
@@ -2609,7 +2604,7 @@ bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 	}
 
 	for (ClanNum = 0;; ClanNum++) {
-		if (fseek(fpPlayerFile, (int32_t)ClanNum *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET)) {
+		if (fseek(fpPlayerFile, (long)ClanNum * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET)) {
 			// couldn't find clan in file
 			fclose(fpPlayerFile);
 			return false;
@@ -2671,7 +2666,7 @@ void User_List(void)
 	struct clan *TmpClan;
 	int16_t CurClan/*, CurMember, iTemp*/;
 	struct UserInfo User;
-	int32_t Offset;
+	long Offset;
 
 	fputs(ST_USERLISTH, stdout);
 
@@ -2690,7 +2685,7 @@ void User_List(void)
 		// list local players
 		for (CurClan = 0;; CurClan++) {
 			/* seek to the current player */
-			Offset = (int32_t)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
+			Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
 			if (fseek(fpPlayerFile, Offset, SEEK_SET))
 				break;  /* couldn't fseek, so exit */
 

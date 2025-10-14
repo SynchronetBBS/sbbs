@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 //#include <OpenDoor.h>
 #include "structs.h"
+#include "serialize.h"
 
 #define true                1
 #define false               0
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
 	int16_t MonIndex[MAX_MONSTERS];  /* difficulties of all monsters,
                                     0 means no monster */
 	int16_t CurMonster = -1, LastSpellSlot = 0;
+	uint8_t mBuf[BUF_SIZE_pc];
 
 	if (argc != 3) {
 		printf("Format:  mcomp <monster.txt> <output.mon>\n\n");
@@ -158,7 +160,8 @@ int main(int argc, char *argv[])
 					case 0 :    /* NAME of monster */
 						/* write previous monster to file then */
 						if (CurMonster != -1) {
-							fwrite(&TmpMonster, sizeof(struct pc), 1, fpMonOut);
+							s_pc_s(&TmpMonster, mBuf, sizeof(mBuf));
+							fwrite(mBuf, sizeof(mBuf), 1, fpMonOut);
 						}
 
 						/* see if out of items memory yet */
@@ -230,6 +233,7 @@ int main(int argc, char *argv[])
 						TmpMonster.Level = TmpMonster.Difficulty;
 
 						printf("    - dif: %d\n", MonIndex[CurMonster]);
+						MonIndex[CurMonster] = SWAP16(MonIndex[CurMonster]);
 						break;
 					case 11 :    /* SP */
 						printf("    - sp  : %d\n", atoi(pcCurrentPos));
@@ -251,7 +255,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* write last monster */
-	fwrite(&TmpMonster, sizeof(struct pc), 1, fpMonOut);
+	s_pc_s(&TmpMonster, mBuf, sizeof(mBuf));
+	fwrite(mBuf, sizeof(mBuf), 1, fpMonOut);
 
 	/* rewrite index */
 	fseek(fpMonOut, 0L, SEEK_SET);

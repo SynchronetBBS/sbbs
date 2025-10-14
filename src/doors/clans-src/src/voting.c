@@ -56,7 +56,7 @@ int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool UserOn
 	int16_t CurClan, iTemp, CurVote, NumVotes, NumUndecided = 0,
 			ClanID[2];
 	struct clan *TmpClan;
-	int32_t Offset;
+	long Offset;
 
 	strcpy(szFileName, ST_CLANSPCFILE);
 
@@ -82,7 +82,7 @@ int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool UserOn
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
 
-		Offset = (int32_t)CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
+		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
 		if (fseek(fpPlayerFile, Offset, SEEK_SET)) {
 			break;  /* couldn't fseek, so exit */
 		}

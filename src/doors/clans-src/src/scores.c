@@ -201,7 +201,8 @@ void DisplayScores(bool MakeFile)
 	char AnsiSymbol[190];
 	int16_t SortList[128];
 	int16_t CurClan = 0, iTemp, NumClans, CurMember;
-	int32_t MostPoints, Offset;
+	long Offset;
+	int32_t MostPoints;
 	int16_t CurHigh, Padding;
 	bool NoPlayers = true;
 
@@ -244,7 +245,7 @@ void DisplayScores(bool MakeFile)
 		CheckMem(TmpClan);
 		/* read 'em in */
 		for (CurClan = 0;; CurClan++) {
-			Offset = CurClan * (sizeof(struct clan) + 6L*sizeof(struct pc));
+			Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
 			if (fseek(fpPCFile, Offset, SEEK_SET)) {
 				break;  /* couldn't fseek, so exit */
 			}
@@ -553,7 +554,7 @@ void ProcessScoreData(struct UserScore **UserScores)
 	fpOld = _fsopen("ipscores.dat", "rb", SH_DENYRW);
 	if (fpOld) {
 		// skip date
-		fseek(fpOld, 11*sizeof(char), SEEK_SET);
+		fseek(fpOld, 11 * sizeof(char), SEEK_SET);
 		for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
 			OldList[iTemp] = malloc(sizeof(struct UserScore));
 			CheckMem(OldList[iTemp]);
@@ -911,7 +912,7 @@ void CreateScoreData(bool LocalOnly)
 
 	NumClans = 0;
 	for (ClanNum = 0;; ClanNum++) {
-		if (fseek(fpPlayerFile, (int32_t)ClanNum *(sizeof(struct clan) + 6L*sizeof(struct pc)), SEEK_SET))
+		if (fseek(fpPlayerFile, (long)ClanNum * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET))
 			break;
 
 		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER)

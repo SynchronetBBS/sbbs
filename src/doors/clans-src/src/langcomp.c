@@ -24,18 +24,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include "defines.h"
 #include <string.h>
+#include "serialize.h"
 
 void Convert(char *Dest, char *From);
 
-struct LanguageHeader {
-	char Signature[30];         // "The Clans Language File v1.0"
+struct Language Language;
 
-	uint16_t StrOffsets[2000];  // offsets for up to 500 strings
-	uint16_t NumBytes;          // how big is the bigstring!?
-
-	char *BigString;        // All 500 strings jumbled together into
-	// one
-} Language;
+uint8_t serBuf[4096];
 
 int main(int argc, char *argv[])
 {
@@ -139,7 +134,8 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 
-	fwrite(&Language, sizeof(Language), 1, fTo);
+	s_Language_s(&Language, serBuf, sizeof(serBuf));
+	fwrite(serBuf, BUF_SIZE_Language, 1, fTo);
 	fwrite(Language.BigString, Language.NumBytes, 1, fTo);
 
 	fclose(fTo);
