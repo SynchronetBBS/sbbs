@@ -556,6 +556,7 @@ void Title( void )
 							od_printf("`Cyan`\r\n          Tournament Length : `Bright Cyan`%d days",tourneylength);
 							od_printf("`Cyan`\r\n          Current Day       : `Bright Cyan`%d", currentday);
 							od_printf("`Cyan`\r\n          Maximum Games/Day : `Bright Cyan`%d",maxGames);
+							od_printf("\r\n\r\n");
 							gac_pause();
 							break;
 						/*
