@@ -7,7 +7,7 @@
 #ifndef THE_CLANS__DEFINES___H
 #define THE_CLANS__DEFINES___H 1
 
-#define VERSION                 "v0.96b2"
+#define VERSION                 "v0.97b1"
 
 #define NTRUE           581                     // "True" used for reg info
 #define NFALSE          0
