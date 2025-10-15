@@ -153,6 +153,7 @@
 #define WN_MARKET       3
 #define WN_TOWNHALL 5
 #define WN_THALL        6
+#define WN_REBEL	7	/* Was only in DevKit */
 #define WN_MINE         8
 
 #define MAX_NPCS        16

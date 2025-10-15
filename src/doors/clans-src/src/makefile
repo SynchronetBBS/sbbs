@@ -84,13 +84,22 @@ ifdef WIN
 endif
 
 #all: clans.exe reset.exe pcedit.exe langcomp.exe mcomp.exe
-all: clans$(EXEFILE) langcomp$(EXEFILE) mcomp$(EXEFILE) reset$(EXEFILE) pcedit$(EXEFILE)
+all: chew$(EXEFILE) clans$(EXEFILE) ecomp$(EXEFILE) install$(EXEFILE) langcomp$(EXEFILE) makenpc$(EXEFILE) makepak$(EXEFILE) mcomp$(EXEFILE) mclass$(EXEFILE) \
+	mitems$(EXEFILE) mspells$(EXEFILE) reset$(EXEFILE) pcedit$(EXEFILE)
 
 clean:
 	$(DELETE) *.o
+	$(DELETE) chew$(EXEFILE)
+	$(DELETE) ecomp$(EXEFILE)
 	$(DELETE) clans$(EXEFILE)
+	$(DELETE) install$(EXEFILE)
 	$(DELETE) langcomp$(EXEFILE)
+	$(DELETE) makenpc$(EXEFILE)
+	$(DELETE) makepak$(EXEFILE)
 	$(DELETE) mcomp$(EXEFILE)
+	$(DELETE) mclass$(EXEFILE)
+	$(DELETE) mitems$(EXEFILE)
+	$(DELETE) mspells$(EXEFILE)
 	$(DELETE) reset$(EXEFILE)
 	$(DELETE) pcedit$(EXEFILE)
 
@@ -100,16 +109,39 @@ clans$(EXEFILE):      $(OBJS) unix_wrappers.o
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
+chew$(EXEFILE):      chew.c
+	$(CC) $(CFLAGS) $(LDFLAGS) chew.c -o $@
+
+ecomp$(EXEFILE):      ecomp.c serialize.o crc.o
+	$(CC) $(CFLAGS) $(LDFLAGS) ecomp.c serialize.o crc.o -o $@
+
+install$(EXEFILE):      install.c
+	$(CC) $(CFLAGS) $(LDFLAGS) install.c -o $@ $(CONSOLE_LIBS)
+
 langcomp$(EXEFILE):      langcomp.c serialize.o crc.o
-	$(CC) $(CFLAGS) $(LDFLAGS) langcomp.c serialize.o crc.o -o langcomp$(EXEFILE)
+	$(CC) $(CFLAGS) $(LDFLAGS) langcomp.c serialize.o crc.o -o $@
 
 reset$(EXEFILE): reset.c myopen.h parsing.h crc.h structs.h k_config.h unix_wrappers.o serialize.o deserialize.o
-	$(CC) $(CFLAGS) $(LDFLAGS) reset.c myopen.o parsing.o crc.o unix_wrappers.o serialize.o deserialize.o -o reset$(EXEFILE) $(CONSOLE_LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) reset.c myopen.o parsing.o crc.o unix_wrappers.o serialize.o deserialize.o -o $@ $(CONSOLE_LIBS)
 
+makenpc$(EXEFILE):      makenpc.c serialize.o crc.o
+	$(CC) $(CFLAGS) $(LDFLAGS) makenpc.c serialize.o crc.o -o $@
+
+makepak$(EXEFILE):      makepak.c serialize.o crc.o
+	$(CC) $(CFLAGS) $(LDFLAGS) makepak.c serialize.o crc.o -o $@
 
 mcomp$(EXEFILE):      mcomp.c serialize.o crc.o
-	$(CC) $(CFLAGS) $(LDFLAGS) mcomp.c serialize.o crc.o -o mcomp$(EXEFILE)
+	$(CC) $(CFLAGS) $(LDFLAGS) mcomp.c serialize.o crc.o -o $@
+
+mclass$(EXEFILE):      mclass.c serialize.o crc.o
+	$(CC) $(CFLAGS) $(LDFLAGS) mclass.c serialize.o crc.o -o $@
+
+mitems$(EXEFILE):      mitems.c serialize.o crc.o
+	$(CC) $(CFLAGS) $(LDFLAGS) mitems.c serialize.o crc.o -o $@
+
+mspells$(EXEFILE):      mspells.c serialize.o crc.o
+	$(CC) $(CFLAGS) $(LDFLAGS) mspells.c serialize.o crc.o -o $@
 
 pcedit$(EXEFILE):      pcedit.c myopen.o unix_wrappers.o myopen.h unix_wrappers.h serialize.o deserialize.o crc.o
-	$(CC) $(CFLAGS) $(LDFLAGS) pcedit.c myopen.o unix_wrappers.o serialize.o deserialize.o crc.o -o pcedit$(EXEFILE)
+	$(CC) $(CFLAGS) $(LDFLAGS) pcedit.c myopen.o unix_wrappers.o serialize.o deserialize.o crc.o -o $@
 
