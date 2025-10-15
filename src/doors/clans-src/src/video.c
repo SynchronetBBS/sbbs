@@ -162,7 +162,7 @@ void put_character(char ch, short attrib, int x, int y)
 	Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1) + 1L)] = (char)(attrib & 0xff);
 #elif defined(_WIN32)
 	COORD cursor_pos;
-	uint32_t bytes_written;
+	DWORD bytes_written;
 	HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
 	cursor_pos.X = x;
@@ -209,8 +209,6 @@ void zputs(char *string)
 	struct text_info TextInfo;
 #else
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
-	int bytes_written;
-	COORD cursor_pos;
 	/*  TCHAR space_char = (TCHAR)' ';*/
 #endif
 	static char o_fg = 7, o_bg = 0;
@@ -438,10 +436,10 @@ void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t length, in
 #ifdef __unix__
 	fprintf(stderr,"%s\r\n",string);
 #elif defined(_WIN32)
-	COORD cursor_pos, current_cursor_pos;
+	COORD cursor_pos;
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	uint16_t current_attr, i;
-	uint32_t bytes_written;
+	DWORD bytes_written;
 	TCHAR padding_char = (TCHAR)PADDING;
 
 	/* Save Current Color Attribute */
@@ -450,10 +448,6 @@ void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t length, in
 		&screen_buffer);
 
 	current_attr = screen_buffer.wAttributes;
-
-	/* Save Current Cursor Position */
-	current_cursor_pos.X = screen_buffer.dwCursorPosition.X;
-	current_cursor_pos.Y = screen_buffer.dwCursorPosition.Y;
 
 	/* Set New Cursor Position (based on x, y) */
 	cursor_pos.X = x;
@@ -531,7 +525,7 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 	char tmp_str[255];
 	char first_time = true; // flags if this is the first time to input
 	// if true, it will clear the line and input
-	char old_fg4, old_bg4;
+	char old_fg4;
 
 	// initialize the string here
 
@@ -545,7 +539,7 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 #endif
 
 	o_fg4 = attr&0x00FF;
-	o_bg4 = attr&0xFF00;
+	o_bg4 = (attr&0xFF00) >> 8;
 	qputs(string, x, y);
 	gotoxy(x+length+1, y+1);
 
@@ -741,7 +735,7 @@ void xputs(char *string, int16_t x, int16_t y)
 	}
 #elif defined(_WIN32)
 	COORD cursor_pos;
-	uint32_t bytes_written;
+	DWORD bytes_written;
 
 	cursor_pos.X = x;
 	cursor_pos.Y = y;
@@ -833,7 +827,7 @@ void clrscr(void)
 	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	COORD top_left = { 0, 0 };
-	uint32_t cells_written;
+	DWORD cells_written;
 
 	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
 

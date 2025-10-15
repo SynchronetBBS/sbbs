@@ -993,7 +993,7 @@ void zputs(char *string)
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	COORD cursor_pos;
 	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	uint32_t bytes_written;
+	DWORD bytes_written;
 	TCHAR space_char = (TCHAR)' ';
 #endif
 	static char o_fg = 7, o_bg = 0;
@@ -1717,7 +1717,7 @@ void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char 
 #ifdef _WIN32
 	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	COORD cursor_pos;
-	uint32_t cells_written;
+	DWORD cells_written;
 	uint16_t line_len;
 #elif defined(__unix__)
 	chtype this;
@@ -2341,7 +2341,7 @@ void clrscr(void)
 	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	COORD top_left = { 0, 0 };
-	uint32_t cells_written;
+	DWORD cells_written;
 
 	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
 

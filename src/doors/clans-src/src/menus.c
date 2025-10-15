@@ -164,13 +164,18 @@ void AddChatFile(char *szString, char *pszFileName)
 
 	/* if there were 42 lines, delete first line */
 	if (LinesRead == 42) {
-		for (iTemp = 0; iTemp < 42; iTemp++)
+		/*
+		 * NOTE: The bounds here and below used to be 42, which
+		 * would result in it copying garbage into the last line
+		 * and adding it to the chat
+		 */
+		for (iTemp = 0; iTemp < 41; iTemp++)
 			strcpy(szNewLines[iTemp], szOldLines[iTemp + 1]);
 
 		/* first line deleted, now write them to file */
 		fpChatFile = fopen(pszFileName, "w");
 		if (fpChatFile) {
-			for (iTemp = 0; iTemp < 42; iTemp++) {
+			for (iTemp = 0; iTemp < 41; iTemp++) {
 				fputs(szNewLines[iTemp], fpChatFile);
 			}
 

@@ -608,7 +608,7 @@ void Item_BuyItem(int16_t ItemType)
 	int16_t ItemIndex[MAX_ITEMS];
 	int16_t iTemp, TotalItems;
 	char szString[255];
-	char szKeys[MAX_ITEMS + 5], Choice;
+	char szKeys[MAX_ITEMS + 6], Choice;
 	int32_t ItemCosts[MAX_ITEMS], /*NewCost,*/ ItemGst[MAX_ITEMS];
 	char MaterialChoice = 0;
 	int16_t EmptySlot;

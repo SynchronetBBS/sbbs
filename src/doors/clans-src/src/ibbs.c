@@ -3424,9 +3424,9 @@ int search_and_construct_ffblk(WIN32_FIND_DATA *w32_finddata, struct ffblk *ffbl
 	}
 
 	if (strlen(w32_finddata->cAlternateFileName))
-		strncpy(ffblks->ff_name, w32_finddata->cAlternateFileName, 13);
+		strncpy(ffblks->ff_name, w32_finddata->cAlternateFileName, sizeof(ffblks->ff_name));
 	else
-		strncpy(ffblks->ff_name, w32_finddata->cFileName, 13);
+		strncpy(ffblks->ff_name, w32_finddata->cFileName, sizeof(ffblks->ff_name));
 
 	FileTimeToSystemTime(&w32_finddata->ftLastWriteTime, &system_time);
 

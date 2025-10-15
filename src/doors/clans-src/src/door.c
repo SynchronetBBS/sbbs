@@ -165,7 +165,6 @@ void LocalLoad(void)
 	// Todo create local login screen
 #else
 	char name[80], szString[128];
-	int16_t i;
 
 	/* display box */
 	clrscr();
@@ -332,7 +331,7 @@ void TwoLiner(unsigned char which)
 		case PEROP_DISPLAY1 :
 			if (!StatusOn)  NoStatus();
 
-			sprintf(Status[0], "%s of %-010s                     ", od_control.user_name, od_control.user_location);
+			sprintf(Status[0], "%s of %-10s                     ", od_control.user_name, od_control.user_location);
 			xputs(Status[0], 0, 23);
 			sprintf(Status[1], " Baud: %5ld Time: %2d      %s    Node: %3d ", od_control.baud, od_control.user_timelimit - od_control.user_time_used, (od_control.user_ansi) ? "[ANSI] " : "[ASCII]", System.Node);
 			xputs(Status[1], 31, 23);
