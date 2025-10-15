@@ -70,7 +70,7 @@ tBool DirExists(const char *pszDirName)
 		   (DirEntry.ff_attrib & FA_DIREC));
 #else
 	if (stat(szDirFileName, &file_stats) == 0)
-		if (file_stats.st_mode & S_IFDIR)
+		if (S_ISDIR(file_stats.st_mode))
 			return true;
 
 	return false;

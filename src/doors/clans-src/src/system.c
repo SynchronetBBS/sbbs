@@ -329,7 +329,7 @@ char * fullpath(char *target, const char *path, size_t size)
 
 	/*  if(stat(target,&sb))
 	        return(NULL);
-	    if(sb.st_mode&S_IFDIR)
+	    if(S_ISDIR(sb.st_mode))
 	        strcat(target,"/"); */
 
 	for (; *out; out++)  {
