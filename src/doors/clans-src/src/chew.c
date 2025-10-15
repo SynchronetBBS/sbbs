@@ -709,12 +709,14 @@ void GetToken(char *szString, char *szToken)
 	while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
 
 	/* Trim trailing spaces from setting string */
-	for (uCount=strlen(pcCurrentPos)-1; uCount>0; --uCount) {
-		if (isspace(pcCurrentPos[uCount])) {
-			pcCurrentPos[uCount]='\0';
-		}
-		else {
-			break;
+	if (*pcCurrentPos) {
+		for (uCount=strlen(pcCurrentPos)-1; uCount>0; --uCount) {
+			if (isspace(pcCurrentPos[uCount])) {
+				pcCurrentPos[uCount]='\0';
+			}
+			else {
+				break;
+			}
 		}
 	}
 }

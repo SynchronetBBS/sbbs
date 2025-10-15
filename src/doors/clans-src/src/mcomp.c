@@ -139,12 +139,14 @@ int main(int argc, char *argv[])
 		while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
 
 		/* Trim trailing spaces from setting string */
-		for (uCount=strlen(pcCurrentPos)-1; uCount>0; --uCount) {
-			if (isspace(pcCurrentPos[uCount])) {
-				pcCurrentPos[uCount]='\0';
-			}
-			else {
-				break;
+		if (*pcCurrentPos) {
+			for (uCount=strlen(pcCurrentPos)-1; uCount>0; --uCount) {
+				if (isspace(pcCurrentPos[uCount])) {
+					pcCurrentPos[uCount]='\0';
+				}
+				else {
+					break;
+				}
 			}
 		}
 
