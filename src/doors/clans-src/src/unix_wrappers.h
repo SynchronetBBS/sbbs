@@ -20,6 +20,9 @@
 
 #ifdef __unix__
 
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
 #define MAXDIR  PATH_MAX
 #define MAXPATH PATH_MAX
 
