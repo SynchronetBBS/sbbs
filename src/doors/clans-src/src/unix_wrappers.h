@@ -1,3 +1,5 @@
+#ifdef __unix__
+
 #include <signal.h>
 #include <stdlib.h>
 
@@ -18,8 +20,6 @@
 
 #ifndef UNIX_WRAPPERS_H
 #define UNIX_WRAPPERS_H
-
-#ifdef __unix__
 
 #ifndef PATH_MAX
 #define PATH_MAX 1024
