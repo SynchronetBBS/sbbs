@@ -816,6 +816,28 @@ spec:
 # Doors #
 #########
 
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [clans]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
+    - cd src/doors/clans-src/src
+    - touch depend
+    - touch odoors
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  variables:
+    GIT_STRATEGY: fetch
+  artifacts:
+    name: "clans-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/clans-src/src/*.*.*"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
+  rules:
+    - if: '"$[[ inputs.build_doors ]]" == "no"'
+      when: never
+    - !reference [.rules, rules]
+
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [dgnlance]":
   extends:
     - .$[[ inputs.os ]]-build
