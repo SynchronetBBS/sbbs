@@ -58,7 +58,7 @@ int16_t EncryptRead(void *Data, int32_t DataSize, FILE *fp, char XorValue);
 
 #define notEncryptRead_s(s, d, fp, xv)                                    \
 	STATIC_ASSERT(sizeof(*d) == STRUCT_SIZE_ ## s, "mismatched size"); \
-	erRet = EncryptRead(d, BUF_SIZE_ ## s, fp, xv);                     \
+	erRet = EncryptRead(serBuf, BUF_SIZE_ ## s, fp, xv);                     \
 	if (erRet) {                                                         \
 		if (s_ ## s ## _d(serBuf, BUF_SIZE_ ## s, d) == SIZE_MAX)     \
 			erRet = 0;                                             \
