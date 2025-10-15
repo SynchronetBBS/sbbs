@@ -638,10 +638,8 @@ s_EventHeader_d(const void *bufptr, size_t bufsz, struct EventHeader *s)
 	const uint8_t *src = bufptr;
 
 	unpack_charArr(s->szName);
-	unpack_charArr(s->Pad1);
 	unpack_int32_t(s->EventSize);
 	unpack_bool(s->Event);
-	unpack_charArr(s->Pad2);
 
 	return (src - (uint8_t *)bufptr);
 }

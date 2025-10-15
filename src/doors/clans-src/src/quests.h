@@ -14,10 +14,8 @@ struct Quest {
 
 struct EventHeader {
 	char szName[30];
-	char Pad1[2];
 	int32_t EventSize;
 	bool Event;           // 1 = Event, 0 = Result
-	char Pad2[3];
 };
 
 void ClearFlags(char *Flags);
