@@ -153,7 +153,7 @@ STATIC_ASSERT_GLOBAL(BUF_SIZE_Language <= sizeof(serBuf), "Shared buffer too sma
 #define BUF_SIZE_UserScore 61U
 #define STRUCT_SIZE_UserScore 64U
 
-#define BUF_SIZE_village_data 258U
+#define BUF_SIZE_village_data 285U
 #define STRUCT_SIZE_village_data 316U
 
 #define BUF_SIZE_LeavingData 27U

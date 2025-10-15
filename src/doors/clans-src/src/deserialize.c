@@ -581,19 +581,21 @@ s_village_data_d(const void *bufptr, size_t bufsz, struct village_data *s)
 
 	unpack_charArr(s->ColorScheme);
 	unpack_charArr(s->szName);
-	unpack_int16_t(s->TownType);	
-	unpack_int16_t(s->InterestRate);	
+	unpack_int16_t(s->TownType);
+	unpack_int16_t(s->TaxRate);
+	unpack_int16_t(s->InterestRate);
 	unpack_int16_t(s->GST);	
-	unpack_int16_t(s->ConscriptionRate);	
-	unpack_int16_tArr(s->RulingClanId);	
-	unpack_int16_t(s->GovtSystem);	
-	unpack_int16_t(s->RulingDays);	
-	unpack_uint16_t(s->PublicMsgIndex);	
-	unpack_int16_t(s->MarketLevel);	
-	unpack_int16_t(s->TrainingHallLevel);	
-	unpack_int16_t(s->ChurchLevel);	
-	unpack_int16_t(s->PawnLevel);	
-	unpack_int16_t(s->WizardLevel);	
+	unpack_int16_t(s->ConscriptionRate);
+	unpack_int16_tArr(s->RulingClanId);
+	unpack_charArr(s->szRulingClan);
+	unpack_int16_t(s->GovtSystem);
+	unpack_int16_t(s->RulingDays);
+	unpack_uint16_t(s->PublicMsgIndex);
+	unpack_int16_t(s->MarketLevel);
+	unpack_int16_t(s->TrainingHallLevel);
+	unpack_int16_t(s->ChurchLevel);
+	unpack_int16_t(s->PawnLevel);
+	unpack_int16_t(s->WizardLevel);
 	assert(remain);
 	if (!remain)
 		return SIZE_MAX;
