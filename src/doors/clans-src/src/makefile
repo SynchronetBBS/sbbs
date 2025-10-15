@@ -83,9 +83,16 @@ ifdef WIN
  OBJS	+=	cmdline.o
 endif
 
+DATA_DIR	?=	../data
+
 #all: clans.exe reset.exe pcedit.exe langcomp.exe mcomp.exe
-all: chew$(EXEFILE) clans$(EXEFILE) ecomp$(EXEFILE) install$(EXEFILE) langcomp$(EXEFILE) makenpc$(EXEFILE) makepak$(EXEFILE) mcomp$(EXEFILE) mclass$(EXEFILE) \
-	mitems$(EXEFILE) mspells$(EXEFILE) reset$(EXEFILE) pcedit$(EXEFILE)
+all: clans$(EXEFILE) pcedit$(EXEFILE) reset$(EXEFILE)
+
+.PHONY: devkit
+devkit: chew$(EXEFILE) ecomp$(EXEFILE) install$(EXEFILE) langcomp$(EXEFILE) makenpc$(EXEFILE) makepak$(EXEFILE) mcomp$(EXEFILE) mclass$(EXEFILE) mitems$(EXEFILE) mspells$(EXEFILE)
+
+.PHONY: data
+data: $(DATA_DIR)/clans.pak
 
 clean:
 	$(DELETE) *.o
@@ -102,9 +109,34 @@ clean:
 	$(DELETE) mspells$(EXEFILE)
 	$(DELETE) reset$(EXEFILE)
 	$(DELETE) pcedit$(EXEFILE)
+	$(DELETE) $(DATA_DIR)/church.e
+	$(DELETE) $(DATA_DIR)/clans.npc
+	$(DELETE) $(DATA_DIR)/clans.pak
+	$(DELETE) $(DATA_DIR)/classes.dat
+	$(DELETE) $(DATA_DIR)/eva.e
+	$(DELETE) $(DATA_DIR)/event.mon
+	$(DELETE) $(DATA_DIR)/items.dat
+	$(DELETE) $(DATA_DIR)/npc.mon
+	$(DELETE) $(DATA_DIR)/npcquote.q
+	$(DELETE) $(DATA_DIR)/output.mon
+	$(DELETE) $(DATA_DIR)/pray.e
+	$(DELETE) $(DATA_DIR)/quests.e
+	$(DELETE) $(DATA_DIR)/races.dat
+	$(DELETE) $(DATA_DIR)/secret.e
+	$(DELETE) $(DATA_DIR)/spells.dat
+	$(DELETE) $(DATA_DIR)/strings.xl
 
 clans$(EXEFILE):      $(OBJS) unix_wrappers.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) unix_wrappers.o -o clans$(EXEFILE) $(LIBS)
+
+%.e: %.evt ecomp$(EXEFILE)
+	./ecomp$(EXEFILE) $< $@
+
+%.q: %.txt ecomp$(EXEFILE)
+	./ecomp$(EXEFILE) $< $@
+
+%.xl: %.txt langcomp$(EXEFILE)
+	./langcomp$(EXEFILE) $<
 
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -145,3 +177,46 @@ mspells$(EXEFILE):      mspells.c serialize.o crc.o
 pcedit$(EXEFILE):      pcedit.c myopen.o unix_wrappers.o myopen.h unix_wrappers.h serialize.o deserialize.o crc.o
 	$(CC) $(CFLAGS) $(LDFLAGS) pcedit.c myopen.o unix_wrappers.o serialize.o deserialize.o crc.o -o $@
 
+$(DATA_DIR)/event.mon: $(DATA_DIR)/eventmon.txt mcomp$(EXEFILE)
+	./mcomp$(EXEFILE) $(DATA_DIR)/eventmon.txt $@
+
+$(DATA_DIR)/output.mon: $(DATA_DIR)/monsters.txt mcomp$(EXEFILE)
+	./mcomp$(EXEFILE) $(DATA_DIR)/monsters.txt $@
+
+$(DATA_DIR)/npc.mon: $(DATA_DIR)/npc-pc.txt mcomp$(EXEFILE)
+	./mcomp$(EXEFILE) $(DATA_DIR)/npc-pc.txt $@
+
+$(DATA_DIR)/spells.dat: $(DATA_DIR)/spells.txt mspells$(EXEFILE)
+	./mspells$(EXEFILE) $(DATA_DIR)/spells.txt $@
+
+$(DATA_DIR)/items.dat: $(DATA_DIR)/items.txt mitems$(EXEFILE)
+	./mitems$(EXEFILE) $(DATA_DIR)/items.txt $@
+
+$(DATA_DIR)/classes.dat: $(DATA_DIR)/races.dat
+
+$(DATA_DIR)/races.dat: $(DATA_DIR)/classes.txt $(DATA_DIR)/races.txt mclass$(EXEFILE)
+	cd $(DATA_DIR) && ../src/mclass$(EXEFILE)
+
+$(DATA_DIR)/clans.npc: $(DATA_DIR)/npcs.txt makenpc$(EXEFILE)
+	./makenpc$(EXEFILE) $(DATA_DIR)/npcs.txt $@
+
+$(DATA_DIR)/clans.pak: $(DATA_DIR)/menus.hlp $(DATA_DIR)/bulletin.hlp \
+		$(DATA_DIR)/citizen.hlp $(DATA_DIR)/clans.hlp \
+		$(DATA_DIR)/combat.hlp $(DATA_DIR)/empire.hlp \
+		$(DATA_DIR)/army.hlp $(DATA_DIR)/items.hlp \
+		$(DATA_DIR)/newbie.hlp $(DATA_DIR)/races.hlp \
+		$(DATA_DIR)/ruler.hlp $(DATA_DIR)/spells.hlp \
+		$(DATA_DIR)/stats.hlp $(DATA_DIR)/strategy.hlp \
+		$(DATA_DIR)/village.hlp $(DATA_DIR)/war.hlp \
+		$(DATA_DIR)/wizard.hlp $(DATA_DIR)/quests.e \
+		$(DATA_DIR)/eva.e $(DATA_DIR)/church.e \
+		$(DATA_DIR)/pray.e $(DATA_DIR)/npcquote.q \
+		$(DATA_DIR)/event.mon $(DATA_DIR)/output.mon \
+		$(DATA_DIR)/npc.mon $(DATA_DIR)/secret.e \
+		$(DATA_DIR)/clans.npc $(DATA_DIR)/items.dat \
+		$(DATA_DIR)/spells.dat $(DATA_DIR)/races.dat \
+		$(DATA_DIR)/classes.dat $(DATA_DIR)/schemes.txt \
+		$(DATA_DIR)/strings.xl $(DATA_DIR)/list.asc \
+		$(DATA_DIR)/pxtit.asc $(DATA_DIR)/pg.asc \
+		$(DATA_DIR)/pxnews.asc makepak$(EXEFILE)
+	cd $(DATA_DIR) && ../src/makepak$(EXEFILE) clans.pak pak.lst
