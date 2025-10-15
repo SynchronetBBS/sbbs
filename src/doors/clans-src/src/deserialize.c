@@ -110,12 +110,12 @@
 	}                                                                    \
 } while(0)
 
-#define unpack_struct(x, s) do {                      \
-	size_t res = s_ ## s ## _d(bufptr, remain, x); \
-	if (res == SIZE_MAX)                            \
-		return SIZE_MAX;                         \
-	src += res;                                       \
-	remain -= res;                                     \
+#define unpack_struct(x, s) do {                   \
+	size_t res = s_ ## s ## _d(src, remain, x); \
+	if (res == SIZE_MAX)                         \
+		return SIZE_MAX;                      \
+	src += res;                                    \
+	remain -= res;                                  \
 } while(0)
 
 #define unpack_structArr(x, s) do {                                \
