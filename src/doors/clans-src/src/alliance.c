@@ -697,7 +697,7 @@ bool EnterAlliance(struct Alliance *Alliance)
 				DonationRoom(Alliance);
 				break;
 			case 'C' :    /* chat room */
-				sprintf(szFileName, "HALL%02d.TXT", Alliance->ID);
+				sprintf(szFileName, "hall%02d.txt", Alliance->ID);
 				Menus_ChatRoom(szFileName);
 				break;
 			case 'P' :    /* manage empire */
