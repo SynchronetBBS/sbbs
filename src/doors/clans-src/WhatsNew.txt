@@ -1,3 +1,8 @@
+What's new since v0.96v2
+------------------------
+- Overhauled file reading and writing
+- Cleaned up the code a bit
+
 What's new since v0.96b1
 ------------------------
 - More Win32/FreeBSD fixes... should now actually work.

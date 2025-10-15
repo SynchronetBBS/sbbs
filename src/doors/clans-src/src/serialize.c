@@ -609,7 +609,6 @@ s_EventHeader_s(const struct EventHeader *s, void *bufptr, size_t bufsz)
 
 	pack_charArr(s->szName);
 	pack_int32_t(s->EventSize);
-	pack_charArr(s->Pad2);
 
 	return (dst - (uint8_t *)bufptr);
 }
