@@ -138,7 +138,7 @@ int main(void)
 		}
 
 		// get curuser from file
-		notEncryptRead_s(clan, &Clan, fpPC, XOR_PC) {
+		notEncryptRead_s(clan, &Clan, fpPC, XOR_USER) {
 			printf("Couldn't read any players\n");
 			break;
 		}
@@ -282,7 +282,7 @@ void DeleteClan(int16_t ClanID[2])
 			/* go through each clan and write his info to new file and
 			   skip the clan in question if he is found */
 
-			notEncryptRead_s(clan, TmpClan, fpOldPC, XOR_PC)
+			notEncryptRead_s(clan, TmpClan, fpOldPC, XOR_USER)
 				break;
 
 			/* if this is him */
@@ -312,7 +312,7 @@ void DeleteClan(int16_t ClanID[2])
 			//===
 
 			/* write new stuff to new file */
-			EncryptWrite_s(clan, TmpClan, fpNewPC, XOR_PC);
+			EncryptWrite_s(clan, TmpClan, fpNewPC, XOR_USER);
 
 			for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
 				EncryptWrite_s(pc, TmpClan->Member[iTemp], fpNewPC, XOR_PC);
@@ -779,7 +779,7 @@ bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 			fclose(fpPlayerFile);
 			return false;
 		}
-		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_PC) {
+		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER) {
 			fclose(fpPlayerFile);
 			return false;
 		}
@@ -845,7 +845,7 @@ void UpdateClan(struct clan *Clan)
 
 		OldOffset = ftell(fpPlayerFile);
 
-		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_PC)
+		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER)
 			break;  /* stop reading if no more players found */
 
 		/* skip if deleted clan */
@@ -856,7 +856,7 @@ void UpdateClan(struct clan *Clan)
 		if (TmpClan->ClanID[0] == Clan->ClanID[0] &&
 				TmpClan->ClanID[1] == Clan->ClanID[1]) {
 			fseek(fpPlayerFile, OldOffset, SEEK_SET);
-			EncryptWrite_s(clan, Clan, fpPlayerFile, XOR_PC);
+			EncryptWrite_s(clan, Clan, fpPlayerFile, XOR_USER);
 
 			// fwrite players
 			TmpPC->szName[0] = 0;
