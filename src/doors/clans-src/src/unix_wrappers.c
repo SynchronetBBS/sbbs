@@ -123,7 +123,8 @@ findnext(struct ffblk *fblk)
 			(*fblk).ff_fdate=0;
 			(*fblk).ff_fsize=file_stat.st_size;
 
-			if (file_stat.st_mode&S_IFDIR)(*fblk).ff_attrib=FA_DIREC;
+			if (S_ISDIR(file_stat.st_mode))
+				(*fblk).ff_attrib=FA_DIREC;
 			if (strrchr(dp->d_name,'/')!=NULL)
 				strcpy((*fblk).ff_name,strrchr(dp->d_name,'/')+1);
 			else
