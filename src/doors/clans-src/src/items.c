@@ -52,7 +52,6 @@ struct {
 } Items = { false, 0 };
 
 extern struct IniFile IniFile;
-extern struct Language *Language;
 extern struct game Game;
 extern struct clan *PClan;
 extern struct village Village;

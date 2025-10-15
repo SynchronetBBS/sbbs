@@ -116,7 +116,7 @@ void Language_Init(char *szLangFile)
 		zputs(szString);
 		System_Close();
 	}
-	fread(serBuf, sizeof(serBuf), 1, FileHeader.fp);
+	fread(serBuf, BUF_SIZE_Language, 1, FileHeader.fp);
 	s_Language_d(serBuf, sizeof(serBuf), Language);
 
 	Language->BigString = malloc(Language->NumBytes);

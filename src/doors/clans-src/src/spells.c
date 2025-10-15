@@ -42,7 +42,6 @@ bool SpellsInitialized = false;
 struct Spell *Spells[MAX_SPELLS];
 extern struct IniFile IniFile;
 extern struct clan *PClan;
-extern struct Language *Language;
 extern struct village Village;
 
 char Spells_szCastDestination[25];

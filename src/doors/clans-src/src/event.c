@@ -38,7 +38,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 extern struct clan *PClan;
-extern struct Language *Language;
 extern struct Quest Quests[MAX_QUESTS];
 
 void GoQuest(void)

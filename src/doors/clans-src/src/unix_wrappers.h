@@ -15,6 +15,9 @@
 
 #include "defines.h"
 
+#ifndef UNIX_WRAPPERS_H
+#define UNIX_WRAPPERS_H
+
 #ifdef __unix__
 
 #define MAXDIR  PATH_MAX
@@ -88,5 +91,7 @@ char getch(void);
 FILE * _fsopen(char *pathname, char *mode, int flags);
 
 void delay(unsigned msec);
+
+#endif
 
 #endif

@@ -59,7 +59,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "user.h"
 #include "mail.h"
 
-extern struct Language *Language;
 extern struct clan *PClan;
 struct village Village = { false, NULL };
 extern struct config *Config;

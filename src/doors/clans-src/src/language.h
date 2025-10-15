@@ -1,3 +1,10 @@
+#include "defines.h"
+#include "structs.h"
+
+#ifndef LANGUAGE_H_
+#define LANGUAGE_H_
+
+extern struct Language *Language;
 
 void Language_Init(char *szLangFile);
 /*
@@ -30,3 +37,4 @@ void CheckMem(void *Test);
  * Gives system error if the pointer is NULL.
  */
 
+#endif

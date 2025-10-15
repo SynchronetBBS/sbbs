@@ -48,7 +48,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_PSITEMS     100
 #define MAX_PSITEMAGE   2
 
-extern struct Language *Language;
 extern struct clan *PClan;
 extern struct village Village;
 extern struct system System;

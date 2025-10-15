@@ -61,7 +61,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MT_PRIVATE      1
 #define MT_ALLIANCE     2
 
-extern struct Language *Language;
 extern struct village Village;
 extern struct clan *PClan;
 extern struct game Game;

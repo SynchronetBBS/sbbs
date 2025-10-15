@@ -64,7 +64,6 @@ struct user {
 } User = { false, false };
 
 struct clan *PClan=NULL;
-extern struct Language *Language;
 extern struct config *Config;
 extern struct game Game;
 extern struct system System;

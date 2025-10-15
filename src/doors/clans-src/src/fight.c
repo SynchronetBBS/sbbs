@@ -52,7 +52,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define PLAYERTEAM          0
 
 
-extern struct Language *Language;
 extern struct Spell *Spells[MAX_SPELLS];
 extern struct clan *PClan;
 extern struct village Village;

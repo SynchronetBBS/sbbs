@@ -46,7 +46,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "help.h"
 
 extern struct clan *PClan;
-extern struct Language *Language;
 extern struct village Village;
 
 int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool UserOnline)

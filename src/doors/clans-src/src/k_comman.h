@@ -1,4 +1,4 @@
-#define MAX_COMLINE_WORDS    16
+#define MAX_COMLINE_WORDS    17
 
 char *papszComLineKeyWords[MAX_COMLINE_WORDS] = {
 	"L",
@@ -16,5 +16,6 @@ char *papszComLineKeyWords[MAX_COMLINE_WORDS] = {
 	"SendReset",
 	"Reset",
 	"Verbose",
-	"D"
+	"D",
+	"S",
 };

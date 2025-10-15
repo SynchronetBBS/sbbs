@@ -66,7 +66,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern struct system System;
 extern struct config *Config;
-extern struct Language *Language;
 extern struct clan *PClan;
 extern char Spells_szCastDestination[25];
 extern char Spells_szCastSource[25];

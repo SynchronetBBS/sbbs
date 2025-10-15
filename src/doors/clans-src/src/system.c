@@ -72,7 +72,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 struct config *Config;
 struct system System;
-extern struct Language *Language;
 extern struct IniFile IniFile;
 extern struct ibbs IBBS;
 extern struct game Game;
@@ -377,6 +376,7 @@ void PrimitiveCommandLine(void)
 			for (iKeyWord = 0; iKeyWord < MAX_COMLINE_WORDS; ++iKeyWord) {
 				/* If keyword matches */
 				if (stricmp(&_argv[cTemp][1], papszComLineKeyWords[iKeyWord]) == 0 ||
+						(_argv[cTemp][1] == 'S' && papszComLineKeyWords[iKeyWord][0] == 'S' && papszComLineKeyWords[iKeyWord][1] == 0) ||
 						(_argv[cTemp][1] == 'D' && papszComLineKeyWords[iKeyWord][0] == 'D')) {
 					FoundMatch = true;
 
@@ -408,7 +408,10 @@ void PrimitiveCommandLine(void)
 						case 15 :  /* D */
 							strcpy(od_control.info_path, &_argv[cTemp][2]);
 							break;
-
+						case 16: /* S */
+							od_control.od_use_socket = TRUE;
+							od_control.od_open_handle = atoi(&_argv[cTemp][2]);
+							break;
 					}
 				}
 			}
@@ -670,7 +673,10 @@ void System_Init(void)
 	System.szMainDir[iTemp] = 0;
 #ifdef __unix__
 	pszResolvedPath=fullpath(NULL,System.szMainDir,sizeof(System.szMainDir));
-	strcpy(System.szMainDir,pszResolvedPath);
+	if (pszResolvedPath)
+		strcpy(System.szMainDir,pszResolvedPath);
+	else
+		System.szMainDir[0] = 0;
 	free(pszResolvedPath);
 #endif
 

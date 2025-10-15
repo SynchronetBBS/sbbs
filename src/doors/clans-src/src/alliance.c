@@ -53,7 +53,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "parsing.h"
 #include "fight.h"
 
-extern struct Language *Language;
 extern struct game Game;
 extern struct clan *PClan;
 

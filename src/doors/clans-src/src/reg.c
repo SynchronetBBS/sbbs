@@ -55,7 +55,6 @@ extern struct {
 	char FAR *VideoMem;
 } Video;
 extern struct config *Config;
-extern struct Language *Language;
 
 void dputs(char *string);
 void AddRegToCfg(char *szString);

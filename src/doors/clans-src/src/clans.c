@@ -72,7 +72,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  * Global variables
  */
 
-extern struct Language *Language;
 extern struct game Game;
 extern struct system System;
 extern struct clan *PClan;
@@ -115,9 +114,9 @@ void MainGame(void)
 		else
 			DefaultAction = 'E';
 
-		switch (GetChoice("Clan Title", ST_ENTEROPTION, szTheOptions, "ESTYHIQ?BVGL", DefaultAction, false)) {
+		switch (GetChoice("Clan Title", ST_ENTEROPTION, szTheOptions, "ESTYHIQ?BVGL", DefaultAction, true)) {
 			case 'E' :  // Enter game
-				EnteredGame = false;
+				EnteredGame = true;
 
 				if (Disbanded()) {
 					Help("Disbanded", ST_MENUSHLP);
@@ -163,9 +162,9 @@ void MainGame(void)
 				if (stricmp(PClan->szDateOfLastGame, System.szTodaysDate) != 0)
 					User_FirstTimeToday();
 
-				News_ReadNews(false);
+				News_ReadNews(true);
 
-				ClanStats(PClan, false);
+				ClanStats(PClan, true);
 
 				Mail_Read();
 				Trades_CheckTrades();
@@ -187,7 +186,7 @@ void MainGame(void)
 				door_pause();
 				break;
 			case 'T' :  /* Today's News */
-				News_ReadNews(false);
+				News_ReadNews(true);
 				break;
 			case 'Y' :  /* Yesterday's News */
 				News_ReadNews(false);
@@ -196,7 +195,7 @@ void MainGame(void)
 				DisplayScores(false);
 				break;
 			case 'Q' :  /* Quit */
-				Quit = false;
+				Quit = true;
 				break;
 			case 'H' :  // Help
 				MainHelp();

@@ -61,7 +61,6 @@ extern struct village Village;
 char Quests_TFlags[8];          // temp. flags
 extern struct config *Config;
 extern struct clan *PClan;
-extern struct Language *Language;
 bool QuestsInitialized = false;
 extern bool Verbose;
 

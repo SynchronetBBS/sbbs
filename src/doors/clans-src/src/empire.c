@@ -91,7 +91,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern struct config *Config;
 extern struct game Game;
-extern struct Language *Language;
 extern struct clan *PClan;
 extern struct village Village;
 

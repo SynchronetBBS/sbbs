@@ -34,7 +34,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "language.h"
 #include "mstrings.h"
 
-extern struct Language *Language;
 extern struct system System;
 
 void News_AddNews(char *szString)

@@ -111,7 +111,6 @@ int search_and_construct_ffblk(WIN32_FIND_DATA *, struct ffblk *, bool);
 
 extern struct clan *PClan;
 extern struct config *Config;
-extern struct Language *Language;
 extern struct game Game;
 extern struct system System;
 extern struct village Village;

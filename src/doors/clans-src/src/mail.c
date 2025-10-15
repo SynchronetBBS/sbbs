@@ -54,7 +54,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "input.h"
 
 extern struct clan *PClan;
-extern struct Language *Language;
 extern struct config *Config;
 extern struct system System;
 extern struct village Village;
