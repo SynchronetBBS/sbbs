@@ -1340,6 +1340,7 @@ void install(void)
 	FILE *fpAttr;
 	mode_t  tMode;
 	char szFileName[MAX_FILENAME_LEN];
+	unsigned tmp;
 #endif
 	char cInput;
 
@@ -1370,7 +1371,8 @@ void install(void)
 #ifdef __unix__
 	fpAttr = fopen("UnixAttr.DAT", "r");
 	if (fpAttr) {
-		while (fscanf(fpAttr, "%ho %s\n", &tMode, szFileName) != EOF) {
+		while (fscanf(fpAttr, "%u %s\n", &tmp, szFileName) != EOF) {
+			tMode = tmp;
 			chmod(szFileName, tMode);
 		}
 		fclose(fpAttr);
@@ -1390,6 +1392,7 @@ void upgrade(void)
 	FILE *fpAttr;
 	mode_t  tMode;
 	char szFileName[MAX_FILENAME_LEN];
+	unsigned tmp;
 #endif
 	char cInput;
 
@@ -1419,7 +1422,8 @@ void upgrade(void)
 #ifdef __unix__
 	fpAttr = fopen("UnixAttr.DAT", "r");
 	if (fpAttr) {
-		while (fscanf(fpAttr, "%ho %s\n", &tMode, szFileName) != EOF) {
+		while (fscanf(fpAttr, "%u %s\n", &tmp, szFileName) != EOF) {
+			tMode = tmp;
 			chmod(szFileName, tMode);
 		}
 		fclose(fpAttr);
