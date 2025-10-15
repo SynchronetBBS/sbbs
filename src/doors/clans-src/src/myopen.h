@@ -89,7 +89,7 @@ int16_t EncryptRead(void *Data, int32_t DataSize, FILE *fp, char XorValue);
 #define BUF_SIZE_AttackResult 263U
 #define STRUCT_SIZE_AttackResult 272U
 
-#define BUF_SIZE_EventHeader 35U
+#define BUF_SIZE_EventHeader 40U
 #define STRUCT_SIZE_EventHeader 40U
 
 #define BUF_SIZE_FileHeader 46U
