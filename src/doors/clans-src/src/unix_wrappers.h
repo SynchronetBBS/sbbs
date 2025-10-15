@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <math.h>
 #include <string.h>
+#include <strings.h>
 #include <dirent.h>
 #include <stdio.h>
 #include <time.h>
