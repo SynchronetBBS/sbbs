@@ -1,0 +1,613 @@
+# -----------------------------------------------------------------------------
+Event Event1
+Text "%C
+Text "|02You are wandering along when you come upon a fisherman!  You see a pool of
+Text "muddy water and what looks like a senile old man with a fishing rod.  He turns
+Text "and smiles.
+Text
+Text " (|05L|02)eave him be
+Text " (|05A|02)ttack Him
+Text " (|05C|02)hat with him
+Text
+Prompt "What do you wish to do? [|12LAC|02]: |13
+Option L STOP
+Option A Event1.Attack
+Option C Event1.Chat
+End
+
+        Result Event1.Attack
+        Text
+        Text "|02You catch the fisherman unawares and you can see that he is not a fighter.
+        pause
+        AddEnemy /m/NPC 1
+        Fight Event1.Win Event1.Lose NEXTLINE
+
+        # user ran, so do this
+        Text
+        Text "|02The fisherman, still shocked by your attack, stands perfectly still
+        Text "as you walk away.
+        End
+
+        Result Event1.Chat
+        Chat _Fisherman
+        End
+
+        Result Event1.Win
+        Text "|02You look at the dead body of the poor fisherman and wonder to yourself why
+        Text "you felt the need to murder such a peaceful fellow.
+        End
+
+        Result Event1.Lose
+        Text "|02You feel humiliated that your clan lost to such a weak fighter.  You become
+        Text "unconscious.
+        End
+
+
+
+# -----------------------------------------------------------------------------
+Event OldMan
+Text "%C
+Text "|02You see an unsuspecting old man walking quietly on his own.  He is
+Text "carrying what looks to be a large sack of gold.  What do you wish to do?
+Text
+Text " (|05R|02)ob him
+Text " (|05T|02)alk to him
+Text " (|05L|02)eave
+Text
+Prompt "[|12RTL|02]: |13
+Option R OldMan.R
+Option T NextLine
+Option L Stop
+Chat _OldMan
+End
+
+        Result OldMan.R
+        Text
+        Text "|02You grab his sack of gold and run off with it in hand.
+        pause
+        Text
+        Text "|02You open the sack and find |10250 gold pieces|02!  |12For doing a dirty deed,
+        Text "you lose 20 points!
+        GiveGold 250
+        GivePoints -20
+        End
+
+# -----------------------------------------------------------------------------
+Event Gold
+Text "%C
+Text "|02You find a sack of gold containing |10500 gold|02!
+GiveGold 500
+End
+
+# -----------------------------------------------------------------------------
+Event BeatUp1
+# you find some guys beating up somebody else (DO NOT say old man)
+#
+# help him?
+
+Text "%C
+Text "|02You see two men beating up another man up ahead.  What do you do?
+Text
+Text " (|05H|02) Help the man
+Text " (|05L|02) Leave
+Text
+Prompt "[|12HL|02]: |13
+Option L STOP
+Option H NextLine
+Text
+Text "|02You run to help the man.  All three turn and attack!
+pause
+AddEnemy /m/Eva 19
+AddEnemy /m/Eva 19
+AddEnemy /m/Eva 20
+Fight NextLine STOP STOP
+Text
+Text "|02You defeat all three and realize that it was all a trick to try and rob you.
+End
+
+Event BeatUp2
+# you find some guys beating up an OLD man
+Text "%C
+Text "|02You see two men beating up an old man up ahead.  What do you do?
+Text
+Text " (|05H|02) Help the old man
+Text " (|05L|02) Leave
+Text
+Prompt "[|12HL|02]: |13
+Option L STOP
+Option H NextLine
+Text
+Text "|02You run to help the old man.
+pause
+AddEnemy /m/Eva 20
+AddEnemy /m/Eva 20
+Fight NextLine STOP STOP
+Text
+Text "|02After the battle, the old man thanks you.  His kindness makes you feel good
+Text "inside.  |03(You gain 10 points.)
+GivePoints 10
+End
+
+
+
+# -----------------------------------------------------------------------------
+Event GhostHorses
+Text "%C
+Text "|02You hear the sound of galloping horses coming from up ahead!  You listen
+Text "intently on the noise and focus on the darkness ahead.  Soon, a faint light
+Text "can be seen, but you cannot make out what it is.  What will you do?
+Text
+Text " (|05R|02)eady yourself for battle
+Text " (|05D|02)o nothing and stand still
+Text " (|05L|02)eave this area now!
+Text
+Prompt "[|12RDL|02]: |13
+Option R GhostHorses.Ready
+Option D GhostHorses.Nothing
+Option L NextLine
+Text
+Text "|02Your clan flees as quickly as possible to avoid any confrontation!
+End
+
+        Result GhostHorses.Ready
+        Text
+        Text "|02You wait with weapons drawn for the beings to come closer.  Soon, they are
+        Text "visible.  You see a few knights on horseback.  However, they are spirits and
+        Text "not of the living!
+        pause
+        Text
+        Text "The knights jump off their horses.  The horses vanish quickly as the knights
+        Text "near.  They draw their swords and the battle begins!
+        pause
+        Jump GhostHorses.Fight
+        End
+
+        Result GhostHorses.Fight
+        AddEnemy /m/Eva 11
+        AddEnemy /m/Eva 12
+        {R60}AddEnemy /m/Eva 11
+        {R40}AddEnemy /m/Eva 12
+        {R20}AddEnemy /m/Eva 11
+        {R10}AddEnemy /m/Eva 12
+        Fight NextLine STOP NoRun
+        Text
+        Text "|02The knights vanish after being defeated.  Soon, the mines are as they were
+        Text "before.
+        End
+
+        Result GhostHorses.Nothing
+        Text
+        Text "|02Trusting your instincts, the clan stands perfectly still and waits for
+        Text "whatever is making the galloping noises to come closer . . .
+        pause
+        Text
+        Text "You wait patiently.
+        pause
+        Text
+        Text "It nears . . .
+        pause
+        Text
+        Text "You see a group of ghost knights on horseback!  Their white glow lightens up
+        Text "the dark mine.  What do you wish to do?
+        Text
+        Text " (|05C|02)ontinue doing nothing
+        Text " (|05A|02)ttempt to attack them
+        Text " (|05R|02)un away
+        Text
+        Prompt "[|12CAR|02]: |13
+        Option C GhostHorses.Nothing2
+        Option A GhostHorses.Attack
+        Option R GhostHorses.Run
+        End
+
+        Result GhostHorses.Attack
+        Text
+        Text "|02Feeling a desire to fight, you command the clan to attack.  The knights
+        Text "notice you immediately.  They force their horses to stop.  Soon, they have
+        Text "drawn their weapons and are nearing you.  The two parties attack each
+        Text "other . . .
+        pause
+        Jump GhostHorses.Fight
+        End
+
+        Result GhostHorses.Nothing2
+        Text
+        Text "|02The clan continues to stand perfectly still.  Doing so seems to make you
+        Text "somewhat invisible to the spirits as they pass right through you without
+        Text "hesitation.  You breathe a sigh of relief after they have passed.  For
+        Text "outsmarting the knights, each |10clansman gains 6 experience.
+        GiveXP 6
+        End
+
+        Result GhostHorses.Run
+        Text
+        Text "|02You tell the rest of your clan to run and soon you are blazing down the
+        Text "mine.  After a 20 feet of running, you realize that running is futile since
+        Text "the knights have horses.
+        pause
+        Text
+        Text "You turn and fight.
+        pause
+        Jump GhostHorses.Fight
+        End
+
+# -----------------------------------------------------------------------------
+Event BedOfRoses
+Text "%C
+Text "|10Bed of Roses|02
+Text "
+Text "You are surprised to an area of the dungeon where a flowers are
+Text "growing.
+Text
+Text " (|05P|02) Pick flowers
+Text " (|05L|02) Leave
+Text
+Prompt "What do you wish to do? [|12PL|02]: |13
+Option P BedOfRoses.Pick
+Option L NEXTLINE
+Text "|02You |10leave |02the flowers alone and they |10leave |02you alone.
+Text "%P
+End
+
+        Result BedOfRoses.Pick
+        Text
+        Text "|02You bend down to pick a flower but as soon as you grab ahold of one, you hear
+        Text "a man screaming.  |10You turn to see a crazed man with a pair of shears heading
+        Text "your way!
+        pause
+        AddEnemy /m/Eva 3
+        Fight BedOfRoses.Win STOP STOP
+        End
+
+        Result BedOfRoses.Win
+        Text
+        Text "|02You watch as the mad gardener stumbles and falls into his bed of flowers.
+        Text "Soon, the flowers turn a shade of blood red . . .
+        pause
+        End
+
+# -----------------------------------------------------------------------------
+Event Cemetery
+Text "%C
+Text "|02Within the mines, you notice a strange sight.  A cemetery has been built within
+Text "the mine itself.  You are even more shocked to see that the cemetery
+Text "stretches down many corridors and many of the dead are resting here.
+Text
+Text "You are angered to see a man who seems to be desecrating the graves.  He is
+Text "digging up bodies and piling them into a wheelbarrow.
+Text
+Prompt "Do you wish to attack him? [|12Y/N|02]: |13
+Option N NEXTLINE
+Option Y Cemetery.Attack
+Prompt "|02Do you wish to watch him for a while? [|12Y/N|02]: |13
+Option N STOP
+Option Y NEXTLINE
+Text
+Text "|02You watch for a minute or so and it doesn't seem that the man notices you.
+Text "Then, all of a sudden, the man turns and sees you.  A smile crosses his face.
+Text "Before you know it, several ghouls have surrounded you!
+pause
+AddEnemy /m/Eva 0
+AddEnemy /m/Eva 0
+AddEnemy /m/Eva 0
+AddEnemy /m/Eva 0
+AddEnemy /m/Eva 1
+AddEnemy /m/Eva 1
+AddEnemy /m/Eva 1
+AddEnemy /m/Eva 1
+Fight NEXTLINE Cemetery.Lose Cemetery.Ran
+Text
+Text "|02After defeating the madman's minions, you focus on him . . .
+pause
+AddEnemy /m/Eva 2
+Fight NEXTLINE Cemetery.Lose Cemetery.Ran
+Jump Cemetery.End
+End
+
+        Result Cemetery.Attack
+        AddEnemy /m/Eva 2
+        Fight Cemetery.End Cemetery.Lose Cemetery.Ran
+        End
+
+        Result Cemetery.Ran
+        Text "|02The clan runs feverishly away to safety . . .
+        End
+
+        Result Cemetery.End
+        Text "|02You feel glad that you did something that was good.  Each member of
+        Text "the clan gains |105 |02experience.
+        GiveXP 5
+        End
+
+        Result Cemetery.Lose
+        Text "|06The last thing you feel before becoming unconscious is being dragged
+        Text "across the mine floor . . .
+        End
+
+# -----------------------------------------------------------------------------
+Event LoneWolf
+Text "%C
+Text "|02You encounter a lone wolf sniffing around some carcuses.  They look to be of
+Text "old miners that were among the living yesterday.
+Text
+Text " (|05A|02) Attack the Wolf
+Text " (|05P|02) Pet the Wolf
+Text " (|05L|02) Leave
+Text
+Prompt "What do you do? [|12APL|02]: |13
+Option A LoneWolf.Attack
+Option P LoneWolf.Pet
+Option L STOP
+End
+
+        Result LoneWolf.Pet
+        Text
+        Text "|02You pet the wolf and it seems to be gentle.  It has a strange magical
+        Text "aura as well since each member of the clan feels his skill points being
+        Text "replenished . . .
+        Heal SP
+        End
+
+        Result LoneWolf.Attack
+        Text
+        Text "|02As you approach with weapons ready, the wolf begins to howl . . .
+        pause
+        Text
+        Text "|10Soon its master appears.  |02Its master is a tall, thin man wearing
+        Text "a tunic with hood drawn over his head.  You cannot see his face at all.
+        Text "He readies his staff for the attack . . .
+        pause
+        AddEnemy /m/Eva 6
+        AddEnemy /m/Eva 7
+        Fight NextLine STOP STOP
+        Text
+        Text "|02You look over the two dead beings and continue on your way with a feeling of
+        Text "remorse overhanging you . . .
+        End
+
+# --------
+
+Event Sack
+Text "%C
+Text "|02You are walking when suddenly you trip on an object and fall down onto the
+Text "the ground.  You turn around to see a small sack.  It seems to be moving.
+pause
+Text
+Text "You look at a label on the sack.  It says "DO NOT OPEN."  You can hear a
+Text "muffled voice coming from inside the sack.
+Text
+Text " (|05O|02)pen the sack
+Text " (|05L|02)eave
+Text
+Prompt "What do you do? [|12OL|02]: |13
+Option O Sack.Open
+Option L NextLine
+Text
+Text "|02You heed the words on the sack and continue on your way . . .
+pause
+End
+
+        Result Sack.Open
+        Text
+        Text "|02You open the sack to reveal a little gnome ... gagged at the mouth.
+        pause
+        Text
+        Text "You undo the gag.
+        pause
+        Text
+        Text "|10"Thank you, friend.  A few drunk orcs saw me and tied me up like this for
+        Text "some reason.  As a reward, I'll take you to some gold that they found!"
+        pause
+        Text
+        Text "|02Something about the little guy seems suspicious.  Do you wish to let him
+        Prompt "take you to the gold? [|12Y/N|02]: |13
+        Option N NextLine
+        Option Y Sack.GetGold
+        Text
+        Text "|02You tell him you have no time for his little games and continue on . . .
+        pause
+        End
+
+        Result Sack.GetGold
+        Text
+        Text "|02The little gnome takes you through several twists and turns in the mines and
+        Text "eventually to a small dark room.
+        pause
+        Text
+        Text "As soon as a torch is lit, you see |10several orcs |02surrounding you and the
+        Text "little gnome gone.
+        pause
+        AddEnemy /m/Eva 4
+        AddEnemy /m/Eva 4
+        AddEnemy /m/Eva 4
+        AddEnemy /m/Eva 4
+        AddEnemy /m/Eva 4
+        AddEnemy /m/Eva 4
+        AddEnemy /m/Eva 4
+        AddEnemy /m/Eva 4
+        AddEnemy /m/Eva 4
+        Fight NextLine STOP STOP
+        Text
+        Text "|02After killing off the orcs, you see the little gnome in the corner.
+        Text "|10"I did not know they would be back so soon!  I swear!" |02he pleads.
+        Text "|10"I can still show you the gold, however."|02
+        Text
+        Text " (|05A|02)ttack him
+        Text " (|05G|02) Let him show you the gold
+        Text " (|05L|02)eave
+        Text
+        Prompt "What do you wish to do? [|12AGL|02]: |13
+        Option A Sack.AttackHim
+        Option L STOP
+        Option G NextLine
+        Text
+        Text "|02You follow him once more but this time he does lead you to some gold, albeit
+        Text "very little.  You pick a few gold coins.  The total you find is only 700 gold
+        Text "pieces.  You curse the gnome before heading off on another path . . .
+        GiveGold 700
+        pause
+        End
+
+        Result Sack.AttackHim
+        AddEnemy /m/Eva 5
+        Fight NextLine STOP STOP
+        Text
+        Text "|02You search the gnomes pockets and find |10250 more gold pieces!
+        GiveGold 250
+        pause
+        End
+
+# -----------------------------------------------------------------------------
+Event GoldTrail
+Text "%C
+Text "|02A shimmer of light catches your eye.  You turn to see some gold coins
+Text "totalling |1040 |02gold pieces.  You grab them quickly and look ahead to find
+Text "even more coins trailing ahead.
+GiveGold 40
+Text
+Prompt "Do you wish to follow the trail of gold? [|12Y/N|02]: |13
+Option Y GoldTrail.2
+Option N NextLine
+Text
+Text "|02You leave the rest of the gold for others to take . . .
+End
+        Result GoldTrail.2
+        # 30% chance of encountering thieves
+        {R30}Jump GoldTrail.Fight
+        Text
+        Text "|02You find |1050 |02more gold pieces on the trail.
+        GiveGold 50
+        Prompt "Do you wish to continue following the trail of gold? [|12Y/N|02]: |13
+        Option Y GoldTrail.2
+        Option N NextLine
+        Text
+        Text "|02You leave the rest of the gold for others to take . . .
+        End
+
+        Result GoldTrail.Fight
+        Text
+        Text "|02You pick up a few more gold pieces and look up to see several thieves
+        Text "with leaking sacks.  They look angered and poised to fight.  You ready your
+        Text "weapons . . .
+        pause
+        # make it random amount of thieves each time
+        AddEnemy /m/Eva 8
+        AddEnemy /m/Eva 8
+        AddEnemy /m/Eva 9
+        {R60}AddEnemy /m/Eva 8
+        {R50}AddEnemy /m/Eva 8
+        {R40}AddEnemy /m/Eva 9
+        {R30}AddEnemy /m/Eva 9
+        {R20}AddEnemy /m/Eva 10
+        {R10}AddEnemy /m/Eva 10
+        Fight NextLine STOP STOP
+        Text
+        Text "|02After defeating the thieves, you pick up their sacks and find |10500 gold
+        Text "pieces!
+        pause
+        GiveGold 500
+        End
+
+$
+# -----------------------------------------------------------------------------
+Event GoldenGoblet
+End
+
+# -----------------------------------------------------------------------------
+Event CrazyMan
+End
+
+
+# -----------------------------------------------------------------------------
+Event Alcove
+End
+
+# -----------------------------------------------------------------------------
+Event SmallMan
+End
+
+Event Howling
+End
+
+# -----------------------------------------------------------------------------
+Event Random
+Text "%C
+Text "|02You are walking along when you suddenly trip on something.
+pause
+Text
+Text "You look down and see a small boy carrying a heavy sack.
+Text
+Text " "(|05W|02)atch where you're going you little brat!"
+Text " "(|05E|02)xcuse me, but could you watch where *I* am going next time!?"
+Text " "(|05H|02)ey, what do you have in that sack young man?"
+Text "  (|05I|02)gnore him and walk away.
+Text
+Prompt "What do you say? [|12WEHI|02]: |13
+Option W Random/W
+Option E Random/E
+Option H Random/H
+Option I STOP
+End
+
+        Result Random/W
+        Text
+        Text "|10For your information I'm not a little brat!  I am the heir to the throne in
+        Text "of another kingdom! |02he says with pride.
+        Text
+        Text " "(|05T|02)hen what in Nuul are you doing in the mines!?"
+        Text " "(|05E|02)xcuse me your majesty!" (sarcastically)
+        Text " "(|05E|02)xcuse me your majesty!" (literally)
+        Text "  (|05I|02)gnore him and walk away
+        Text
+        Prompt "
+        End
+
+
+Event Salesman3
+Text "%C
+Text "|02You encounter a man in the mines.  He offers a |10Lion's Shield |02for |10700|02
+Prompt "gold.  Buy it? [|12Y/N|02]: |13
+Option Y Salesman3.Y
+Option N STOP
+End
+
+        Result Salesman3.Y
+        Text
+        {!$700}Text "|02Unfortunately, you couldn't afford it.
+        {$700}Text "|02He takes your gold and gives you the merchandise.
+        {$700}GiveItem Lion's Shield
+        {$700}TakeGold 700
+        End
+
+Event Salesman2
+Text "%C
+Text "|02You encounter a man in the mines.  He offers a |10Silver Mace |02for |101300|02
+Prompt "gold.  Buy it? [|12Y/N|02]: |13
+Option Y Salesman2.Y
+Option N STOP
+End
+
+        Result Salesman2.Y
+        Text
+        {!$1300}Text "|02Unfortunately, you couldn't afford it.
+        {$1300}Text "|02He takes your gold and gives you the merchandise.
+        {$1300}GiveItem Silver Mace
+        {$1300}TakeGold 1300
+        End
+
+Event Salesman1
+Text "%C
+Text "|02You encounter a man in the mines.  He offers |10Platemail Armor |02for |10900|02
+Prompt "gold.  Buy it? [|12Y/N|02]: |13
+Option Y Salesman1.Y
+Option N STOP
+End
+
+        Result Salesman1.Y
+        Text
+        {!$900}Text "|02Unfortunately, you couldn't afford it.
+        {$900}Text "|02He takes your gold and gives you the merchandise.
+        {$900}GiveItem Platemail Armor
+        {$900}TakeGold 900
+        End
+
