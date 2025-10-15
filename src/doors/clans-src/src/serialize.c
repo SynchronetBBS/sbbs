@@ -90,12 +90,12 @@
 		pack_int32_t(0);                                     \
 } while(0)
 
-#define pack_struct(x, s) do {                        \
-	size_t res = s_ ## s ## _s(x, bufptr, remain); \
-	if (res == SIZE_MAX)                            \
-		return SIZE_MAX;                         \
-	dst += res;                                       \
-	remain -= res;                                     \
+#define pack_struct(x, s) do {                     \
+	size_t res = s_ ## s ## _s(x, dst, remain); \
+	if (res == SIZE_MAX)                         \
+		return SIZE_MAX;                      \
+	dst += res;                                    \
+	remain -= res;                                  \
 } while(0)
 
 #define pack_structArr(x, s) do {                                  \
@@ -396,6 +396,7 @@ s_pc_s(const struct pc *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
+	int32_t crc;
 
 	pack_charArr(s->szName);
 	pack_int16_t(s->HP);
@@ -417,7 +418,8 @@ s_pc_s(const struct pc *s, void *bufptr, size_t bufsz)
 	pack_structArr(s->SpellsInEffect, SpellsInEffect);
 	pack_int16_t(s->Difficulty);
 	pack_char((s->Undead << 7) | s->DefaultAction);
-	pack_int32_t(CRCValue(bufptr, dst - (uint8_t*)bufptr));
+	crc = CRCValue(bufptr, dst - (uint8_t*)bufptr);
+	pack_int32_t(crc);
 
 	return (dst - (uint8_t *)bufptr);
 }
@@ -516,6 +518,7 @@ s_game_data_s(const struct game_data *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
+	int32_t crc;
 
 	pack_int16_t(s->GameState);
 	pack_bool(s->InterBBS);
@@ -534,7 +537,8 @@ s_game_data_s(const struct game_data *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->MineFights);
 	pack_int16_t(s->ClanFights);
 	pack_int16_t(s->DaysOfProtection);
-	pack_int32_t(CRCValue(bufptr, dst - (uint8_t*)bufptr));
+	crc = CRCValue(bufptr, dst - (uint8_t*)bufptr);
+	pack_int32_t(crc);
 
 	return (dst - (uint8_t *)bufptr);
 }
@@ -544,10 +548,11 @@ s_village_data_s(const struct village_data *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
+	int32_t crc;
 
 	pack_charArr(s->ColorScheme);
 	pack_charArr(s->szName);
-	pack_int16_t(s->TownType);	
+	pack_int16_t(s->TownType);
 	pack_int16_t(s->InterestRate);	
 	pack_int16_t(s->GST);	
 	pack_int16_t(s->ConscriptionRate);	
@@ -588,7 +593,8 @@ s_village_data_s(const struct village_data *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->CostFluctuation);
 	pack_int16_t(s->MarketQuality);
 	pack_struct(&s->Empire, empire);
-	pack_int32_t(CRCValue(bufptr, dst - (uint8_t*)bufptr));
+	crc = CRCValue(bufptr, dst - (uint8_t*)bufptr);
+	pack_int32_t(crc);
 
 	return (dst - (uint8_t *)bufptr);
 }
@@ -626,6 +632,7 @@ s_Army_s(const struct Army *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
+	int32_t crc;
 
 	pack_int32_t(s->Footmen);
 	pack_int32_t(s->Axemen);
@@ -634,7 +641,8 @@ s_Army_s(const struct Army *s, void *bufptr, size_t bufsz)
 	pack_char(s->Rating);
 	pack_char(s->Level);
 	pack_struct(&s->Strategy, Strategy);
-	pack_int32_t(CRCValue(bufptr, dst - (uint8_t*)bufptr));
+	crc = CRCValue(bufptr, dst - (uint8_t*)bufptr);
+	pack_int32_t(crc);
 
 	return (dst - (uint8_t *)bufptr);
 }
@@ -659,6 +667,7 @@ s_AttackPacket_s(const struct AttackPacket *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
+	int32_t crc;
 
 	pack_int16_t(s->BBSFromID);
 	pack_int16_t(s->BBSToID);
@@ -670,7 +679,8 @@ s_AttackPacket_s(const struct AttackPacket *s, void *bufptr, size_t bufsz)
 	pack_int16_tArr(s->ClanID);
 	pack_int16_tArr(s->AttackOriginatorID);
 	pack_int16_t(s->AttackIndex);
-	pack_int32_t(CRCValue(bufptr, dst - (uint8_t*)bufptr));
+	crc = CRCValue(bufptr, dst - (uint8_t*)bufptr);
+	pack_int32_t(crc);
 
 	return (dst - (uint8_t *)bufptr);
 }
@@ -680,6 +690,7 @@ s_AttackResult_s(const struct AttackResult *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
+	int32_t crc;
 
 	pack_bool(s->Success);
 	pack_bool(s->NoTarget);
@@ -705,7 +716,8 @@ s_AttackResult_s(const struct AttackResult *s, void *bufptr, size_t bufsz)
 	pack_struct(&s->ReturningArmy, Army);
 	pack_int16_t(s->ResultIndex);
 	pack_int16_t(s->AttackIndex);
-	pack_int32_t(CRCValue(bufptr, dst - (uint8_t*)bufptr));
+	crc = CRCValue(bufptr, dst - (uint8_t*)bufptr);
+	pack_int32_t(crc);
 
 	return (dst - (uint8_t *)bufptr);
 }
@@ -741,6 +753,7 @@ s_empire_s(const struct empire *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
+	int32_t crc;
 
 	pack_charArr(s->szName);
 	pack_int16_t(s->OwnerType);
@@ -754,7 +767,8 @@ s_empire_s(const struct empire *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->AttacksToday);
 	pack_int32_t(s->Points);
 	pack_int16_tArr(s->Junk);
-	pack_int32_t(CRCValue(bufptr, dst - (uint8_t*)bufptr));
+	crc = CRCValue(bufptr, dst - (uint8_t*)bufptr);
+	pack_int32_t(crc);
 	return (dst - (uint8_t *)bufptr);
 }
 
@@ -763,6 +777,7 @@ s_clan_s(const struct clan *s, void *bufptr, size_t bufsz)
 {
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
+	int32_t crc;
 
 	pack_int16_tArr(s->ClanID);
 	pack_charArr(s->szUserName);
@@ -843,8 +858,8 @@ s_clan_s(const struct clan *s, void *bufptr, size_t bufsz)
 	*dst |= (s->GotBlessing << 1);
 	*(dst++) |= (s->Prayed << 0);
 	remain--;
-
-	pack_int32_t(CRCValue(bufptr, dst - (uint8_t*)bufptr));
+	crc = CRCValue(bufptr, dst - (uint8_t*)bufptr);
+	pack_int32_t(crc);
 	return (dst - (uint8_t *)bufptr);
 }
 
