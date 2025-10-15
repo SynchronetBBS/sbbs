@@ -31,11 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #else
 #include <share.h>
 #endif
-#ifdef __FreeBSD__
 #include <stdlib.h>
-#else
-#include <malloc.h>
-#endif
 
 #include "system.h"
 #include "structs.h"

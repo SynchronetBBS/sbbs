@@ -187,7 +187,7 @@ int main(void)
 
 	// initialize date
 #ifndef _WIN32
-	getdate(&thedate);
+	clans_getdate(&thedate);
 	sprintf(szTodaysDate, "%02d/%02d/%4d", thedate.da_mon, thedate.da_day, thedate.da_year);
 #else
 	GetSystemTime(&system_time);

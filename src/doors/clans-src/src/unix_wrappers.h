@@ -78,7 +78,7 @@ int strlwr(char *str);
 int strupr(char *str);
 int findfirst(char *pathname, struct ffblk *fblk, int attrib);
 int findnext(struct ffblk *fblk);
-int getdate(struct date *getme);
+int clans_getdate(struct date *getme);
 int strset(char *str, char ch);
 int lock(int file, off_t offset, off_t length);
 int unlock(int file, off_t offset, off_t length);

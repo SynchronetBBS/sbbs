@@ -34,6 +34,9 @@ os	:=	$(shell echo $(OS)| tr "[A-Z ]" "[a-z_]")
 ifeq ($(os),netbsd)
 CFLAGS	+=	-D__unix__
 endif
+ifeq ($(os),darwin)
+CFLAGS	+=	-D__unix__
+endif
 # Somebody make this compile under gcc. :-)  I'll get you started:
 CC ?= gcc
 ODOORS ?= ../../../odoors

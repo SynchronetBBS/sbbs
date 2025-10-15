@@ -135,7 +135,7 @@ findnext(struct ffblk *fblk)
 }
 
 int
-getdate(struct date *getme)
+clans_getdate(struct date *getme)
 {
 	time_t    currtime;
 	struct tm     *thetime;

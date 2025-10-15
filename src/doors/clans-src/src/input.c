@@ -27,9 +27,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#ifndef __FreeBSD__
-#include <malloc.h>
-#endif
 #ifdef __unix__
 #include "unix_wrappers.h"
 #endif

@@ -32,8 +32,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef _WIN32
 # include <alloc.h>
 # include <dos.h>
-#else
-# include <malloc.h>
 #endif
 #include <share.h>
 #endif
@@ -690,7 +688,7 @@ void System_Init(void)
 
 	// initialize date
 #ifndef _WIN32
-	getdate(&date);
+	clans_getdate(&date);
 	sprintf(System.szTodaysDate, "%02d/%02d/%4d", date.da_mon, date.da_day, date.da_year);
 #else
 	GetSystemTime(&system_time);
