@@ -1237,7 +1237,7 @@ void command_line( void )
 	// Check fo the proper number of command line parameters.
 		printf( "The required command line parameters are:\n\n");
 		printf( "  1 - Node Number (-N x), CONFIG, INBOUND, MAINTAIN, ROUTE\n");
-		printf( "           SENDALL, RESET or BULLETINS\n");
+		printf( "           OUTBOUND, SENDALL, RESET or BULLETINS\n");
 		//printf( "  2 - LOCAL or Path to drop file if different from %s.cfg path (optional)\n", ibbsgametitle);
 		//printf( "    - May also be BINKLEY  (e.g. %s OUTBOUND BINKLEY)\n\n", executable);
 		printf( "  2 - Must be BINKLEY if you are using Binkley\n");
