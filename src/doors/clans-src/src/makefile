@@ -95,7 +95,9 @@ devkit: chew$(EXEFILE) ecomp$(EXEFILE) install$(EXEFILE) \
 	mspells$(EXEFILE)
 
 .PHONY: data
+ifndef WIN
 data: $(DATA_DIR)/clans.pak
+endif
 
 clean:
 	$(DELETE) *.o
