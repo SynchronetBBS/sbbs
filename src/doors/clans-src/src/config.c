@@ -103,6 +103,7 @@ static short curses_color(short color);
 #endif
 #ifdef _WIN32
 DWORD origCursorSize;
+HANDLE std_handle;
 #endif
 
 static void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color);
@@ -169,7 +170,7 @@ int main(void)
 
 #ifdef _WIN32
 	SetConsoleTextAttribute(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		(uint16_t)7);
 #endif
 	showCursor(true);
@@ -480,7 +481,7 @@ static void ScrollUp(void)
 	CHAR_INFO char_info;
 
 	GetConsoleScreenBufferInfo(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		&screen_buffer);
 
 	scroll.Top = 1;
@@ -492,7 +493,7 @@ static void ScrollUp(void)
 	char_info.Attributes = screen_buffer.wAttributes;
 
 	ScrollConsoleScreenBuffer(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		&scroll,
 		NULL,
 		top_left,
@@ -510,7 +511,7 @@ static void Video_Init(void)
 {
 #ifdef _WIN32
 	CONSOLE_CURSOR_INFO ci;
-	GetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &ci);
+	GetConsoleCursorInfo(std_handle, &ci);
 	origCursorSize = ci.dwSize;
 #endif
 
@@ -607,9 +608,6 @@ static void zputs(char *string)
 #if defined(_WIN32)
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	COORD cursor_pos;
-	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	DWORD bytes_written;
-	TCHAR space_char = (TCHAR)' ';
 #endif
 	static char o_fg = 7, o_bg = 0;
 
@@ -1028,7 +1026,6 @@ static void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2
 {
 	int16_t x, y;
 #ifdef _WIN32
-	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	COORD cursor_pos;
 	DWORD cells_written;
 	uint16_t line_len;
@@ -1336,7 +1333,6 @@ static void UpdateNodeOption(char Option)
 #ifdef _WIN32
 static void gotoxy(int x, int y)
 {
-	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	COORD cursor_pos;
 
 	cursor_pos.X = x;
@@ -1347,7 +1343,6 @@ static void gotoxy(int x, int y)
 
 static void clrscr(void)
 {
-	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	COORD top_left = { 0, 0 };
 	DWORD cells_written;
@@ -1375,9 +1370,7 @@ static void clrscr(void)
 
 static void settextattr(uint16_t attribute)
 {
-	SetConsoleTextAttribute(
-		GetStdHandle(STD_OUTPUT_HANDLE),
-		attribute);
+	SetConsoleTextAttribute(std_handle, attribute);
 }
 
 static void * save_screen(void)
@@ -1385,7 +1378,6 @@ static void * save_screen(void)
 	CHAR_INFO *char_info_buffer;
 	uint32_t buffer_len;
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
-	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	COORD top_left = { 0, 0 };
 	SMALL_RECT rect_rw;
 
@@ -1420,7 +1412,6 @@ static void restore_screen(void *state)
 	COORD top_left = { 0, 0 };
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	SMALL_RECT rect_write;
-	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
 	if (!char_info_buffer)
 		return;
@@ -1445,14 +1436,14 @@ static void restore_screen(void *state)
 static void writeChar(char ch)
 {
 	DWORD bytes_written;
-	
+
 	WriteConsole(std_handle, &ch, 1, &bytes_written, NULL);
 }
 
 static void showCursor(bool sh)
 {
 	CONSOLE_CURSOR_INFO ci = {origCursorSize, sh};
-	SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &ci);
+	SetConsoleCursorInfo(std_handle, &ci);
 }
 #elif defined(__unix__)
 static void gotoxy(int x, int y)
