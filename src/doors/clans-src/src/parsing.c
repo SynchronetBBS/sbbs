@@ -91,7 +91,7 @@ void ParseLine(char *szString)
 	pcCurrentPos = szString;
 	while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
 
-	strcpy(szString, pcCurrentPos);
+	memmove(szString, pcCurrentPos, strlen(pcCurrentPos) + 1);
 
 	// parse second time to get rid of comment's end
 	Strip(szString);
@@ -155,7 +155,7 @@ void GetToken(char *szString, char *szToken)
 		}
 	}
 
-	strcpy(szString, pcCurrentPos);
+	memmove(szString, pcCurrentPos, strlen(pcCurrentPos) + 1);
 }
 
 // ------------------------------------------------------------------------- //
