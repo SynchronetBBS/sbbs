@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 
 		GetToken(szLine, szFileName);
 
-		if (szLine[0] == 0 || szLine[0] == '#')
+		if (szFileName[0] == 0 || szFileName[0] == '#')
 			continue;
 
 		if (szFileName[0] == '/') {
