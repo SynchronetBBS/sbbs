@@ -120,6 +120,7 @@ installer: $(DOOR_BINARIES) data native-chew$(NATIVEEXEFILE) install$(EXEFILE)
 	cp $(DOOR_BINARIES) ../stage/gum
 	cd ../stage/gum && ls -1 > ../files.lst
 	cd ../stage/gum && ../../src/native-chew$(NATIVEEXEFILE) ../clans.gum ../files.lst
+	echo /Outbound > ../files.lst
 	rm -rf ../stage/gum
 	rm -f ../stage/files.lst
 	cp ../installer/* ../stage
