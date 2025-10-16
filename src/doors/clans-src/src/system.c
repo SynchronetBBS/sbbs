@@ -72,7 +72,6 @@ struct config *Config;
 struct system System;
 extern struct IniFile IniFile;
 extern struct ibbs IBBS;
-extern struct game Game;
 bool Verbose = false;
 
 // ------------------------------------------------------------------------- //

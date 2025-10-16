@@ -22,7 +22,7 @@
 # include <time.h>
 # include <errno.h>
 
-unsigned _dos_getftime(int, uint16_t *, uint16_t *);
+static unsigned _dos_getftime(int, uint16_t *, uint16_t *);
 #endif /* __MSDOS__ */
 
 #ifdef __unix__
@@ -40,8 +40,8 @@ unsigned _dos_getftime(int, uint16_t *, uint16_t *);
 
 #define MAX_FILENAME_LEN 13
 
-void AddGUM(FILE *fpGUM, char *pszFileName);
-void AddDir(FILE *fpGUM, char *pszDirName);
+static void AddGUM(FILE *fpGUM, char *pszFileName);
+static void AddDir(FILE *fpGUM, char *pszDirName);
 
 long TotalBytes = 0;
 
@@ -130,7 +130,7 @@ int main(int argc, char **argv)
 	return(0);
 }
 
-void AddGUM(FILE *fpGUM, char *pszFileName)
+static void AddGUM(FILE *fpGUM, char *pszFileName)
 {
 	char szKey[80];
 	/*    char acChunk[1024];
@@ -226,7 +226,7 @@ void AddGUM(FILE *fpGUM, char *pszFileName)
 
 }
 
-void AddDir(FILE *fpGUM, char *pszDirName)
+static void AddDir(FILE *fpGUM, char *pszDirName)
 {
 	char szKey[80];
 	char szEncryptedName[MAX_FILENAME_LEN];
@@ -265,7 +265,7 @@ void AddDir(FILE *fpGUM, char *pszDirName)
 }
 
 #ifndef __MSDOS__
-unsigned _dos_getftime(int handle, uint16_t *datep, uint16_t *timep)
+static unsigned _dos_getftime(int handle, uint16_t *datep, uint16_t *timep)
 {
 	struct stat file_stats;
 	struct tm *file_datetime;

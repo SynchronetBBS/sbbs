@@ -22,20 +22,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#ifdef __unix__
 #include "unix_wrappers.h"
-#endif
 
-#include "structs.h"
+#include <OpenDoor.h>
+
+#include "door.h"
+#include "game.h"
+#include "help.h"
+#include "input.h"
+#include "items.h"
 #include "language.h"
 #include "mstrings.h"
 #include "myopen.h"
-#include "items.h"
 #include "spells.h"
-#include "door.h"
-#include <OpenDoor.h>
-#include "help.h"
-#include "input.h"
+#include "structs.h"
 
 #define MT_POLYMETRAL   1
 #define MT_LACONIA      2
@@ -49,7 +49,6 @@ struct {
 } Items = { false, 0 };
 
 extern struct IniFile IniFile;
-extern struct game Game;
 extern struct clan *PClan;
 extern struct village Village;
 extern struct Spell *Spells[MAX_SPELLS];

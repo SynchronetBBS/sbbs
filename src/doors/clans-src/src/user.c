@@ -62,7 +62,6 @@ struct user {
 
 struct clan *PClan=NULL;
 extern struct config *Config;
-extern struct game Game;
 extern struct system System;
 extern struct Spell *Spells[MAX_SPELLS];
 extern struct PClass *PClasses[MAX_PCLASSES], *Races[MAX_PCLASSES];

@@ -1,3 +1,8 @@
+#include "defines.h"
+#include "structs.h"
+
+#ifndef ALLIANCE_H
+#define ALLIANCE_H
 
 void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
 void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
@@ -8,3 +13,5 @@ void KillAlliance(int AllianceID);
 void Alliance_Maint(void);
 
 void FormAlliance(int AllyID);
+
+#endif

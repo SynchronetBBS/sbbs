@@ -69,17 +69,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  * Global variables
  */
 
-extern struct game Game;
 extern struct system System;
 extern struct clan *PClan;
 extern struct ibbs IBBS;
-
 
 //extern unsigned _stklen = 8U*(1024U);
 
 /* ----------------------------------------------------------------------- */
 
-void MainGame(void)
+static void MainGame(void)
 {
 	bool Quit = false, EnteredGame = false;
 	char *szTheOptions[12], DefaultAction, szString[128];

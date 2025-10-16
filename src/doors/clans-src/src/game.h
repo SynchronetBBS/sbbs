@@ -1,3 +1,7 @@
+#ifndef GAME_H
+#define GAME_H
+
+extern struct game Game;
 
 void Game_Init(void);
 /*
@@ -18,3 +22,5 @@ void Game_Write(void);
 /*
  * Writes out the game data.
  */
+
+#endif

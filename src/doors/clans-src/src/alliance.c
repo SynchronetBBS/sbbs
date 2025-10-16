@@ -18,45 +18,40 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-
 /*
  * Alliances
  *
  */
 
-
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
-#ifdef __unix__
-#include "unix_wrappers.h"
-#else
+#ifndef __unix__
 #include <dos.h>
 #include <share.h>
 #endif
-#include <errno.h>
-#include <string.h>
+#include "unix_wrappers.h"
 
 #include <OpenDoor.h>
-#include "structs.h"
+
 #include "door.h"
-#include "mstrings.h"
-#include "language.h"
-#include "user.h"
 #include "empire.h"
-#include "menus.h"
-#include "mail.h"
+#include "fight.h"
+#include "game.h"
+#include "help.h"
 #include "input.h"
 #include "items.h"
-#include "help.h"
-#include "myopen.h"
+#include "mail.h"
+#include "menus.h"
 #include "parsing.h"
-#include "fight.h"
+#include "language.h"
+#include "mstrings.h"
+#include "myopen.h"
+#include "user.h"
 
-extern struct game Game;
-extern struct clan *PClan;
-
-void RemoveFromAlliance(struct Alliance *Alliance)
+static void RemoveFromAlliance(struct Alliance *Alliance)
 {
 	int     iTemp, WhichMember = 0;
 	int16_t  ClanID[2];
@@ -121,10 +116,7 @@ void RemoveFromAlliance(struct Alliance *Alliance)
 	GenericMessage(szString, ClanID, PClan->ClanID, PClan->szName, false);
 }
 
-
-
-
-void SeeMemberStats(struct Alliance *Alliance)
+static void SeeMemberStats(struct Alliance *Alliance)
 {
 	int16_t      ClanID[2];
 	int         iTemp;
@@ -158,7 +150,7 @@ void SeeMemberStats(struct Alliance *Alliance)
 	FreeClan(TmpClan);
 }
 
-void ShowAllianceItems(struct Alliance *Alliance)
+static void ShowAllianceItems(struct Alliance *Alliance)
 {
 	int     iTemp, iTemp2, Length, LastItem = 0, FoundItem = false;
 	int     CurItem;
@@ -206,9 +198,7 @@ void ShowAllianceItems(struct Alliance *Alliance)
 	rputs("\n");
 }
 
-
-
-void DonationRoom(struct Alliance *Alliance)
+static void DonationRoom(struct Alliance *Alliance)
 {
 	/* modify item stats, assume it's the player */
 	int     ItemIndex, RoomItemIndex, EmptySlot;
@@ -446,8 +436,6 @@ void DonationRoom(struct Alliance *Alliance)
 	}
 }
 
-
-
 void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 {
 	FILE    *fp;
@@ -473,7 +461,6 @@ void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 		fclose(fp);
 	}
 }
-
 
 void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 {

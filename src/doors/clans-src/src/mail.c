@@ -29,33 +29,33 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#ifdef __unix__
-#include "unix_wrappers.h"
-#else
+#ifndef __unix__
 #include <share.h>
 #include <dos.h>
 #endif
+#include "unix_wrappers.h"
 
 #include <OpenDoor.h>
-#include "structs.h"
+
+#include "alliance.h"
+#include "door.h"
+#include "fight.h"
+#include "game.h"
+#include "ibbs.h"
+#include "input.h"
 #include "language.h"
 #include "mstrings.h"
 #include "myopen.h"
-#include "user.h"
-#include "door.h"
-#include "alliance.h"
-#include "fight.h"
-#include "video.h"
 #include "packet.h"
-#include "ibbs.h"
-#include "input.h"
+#include "structs.h"
+#include "user.h"
+#include "video.h"
 
 extern struct clan *PClan;
 extern struct config *Config;
 extern struct system System;
 extern struct village Village;
 extern struct ibbs IBBS;
-extern struct game Game;
 
 // Message Types:
 #define MT_PUBLIC       0

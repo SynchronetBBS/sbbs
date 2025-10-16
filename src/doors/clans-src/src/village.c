@@ -24,43 +24,42 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
 #include <stdio.h>
-
-#ifdef __unix__
-#include "unix_wrappers.h"
-#else
+#ifndef __unix__
 #include <share.h>
 #endif
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include "unix_wrappers.h"
 
 #include <OpenDoor.h>
-#include "structs.h"
-#include "system.h"
-#include "language.h"
-#include "mstrings.h"
-#include "door.h"
+
 #include "crc.h"
-#include "myopen.h"
-#include "quests.h"
-#include "news.h"
-#include "input.h"
-#include "menus.h"
-#include "voting.h"
+#include "door.h"
 #include "empire.h"
-#include "reg.h"
+#include "game.h"
 #include "help.h"
-#include "video.h"
+#include "input.h"
+#include "language.h"
+#include "mail.h"
+#include "menus.h"
+#include "mstrings.h"
+#include "myopen.h"
+#include "news.h"
 #include "npc.h"
 #include "parsing.h"
+#include "quests.h"
+#include "reg.h"
+#include "structs.h"
+#include "system.h"
 #include "user.h"
-#include "mail.h"
+#include "video.h"
+#include "voting.h"
 
 extern struct clan *PClan;
 struct village Village = { false, NULL };
 extern struct config *Config;
 extern struct ibbs IBBS;
-extern struct game Game;
 extern bool Verbose;
 
 struct  Scheme {

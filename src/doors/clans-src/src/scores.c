@@ -21,30 +21,28 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef __unix__
-#include "unix_wrappers.h"
-#else
+#ifndef __unix__
 #include <share.h>
 #endif
 #include <ctype.h>
+#include "unix_wrappers.h"
 
-#include "structs.h"
+#include "door.h"
+#include "game.h"
+#include "ibbs.h"
 #include "language.h"
 #include "mstrings.h"
-#include "door.h"
 #include "myopen.h"
-#include "parsing.h"
-#include "user.h"
 #include "packet.h"
-#include "ibbs.h"
-
+#include "parsing.h"
+#include "structs.h"
+#include "user.h"
 
 extern struct clan *PClan;
 extern struct config *Config;
 extern struct system System;
 extern struct village Village;
 extern struct ibbs IBBS;
-extern struct game Game;
 
 void GetColourString(char *szColourString, int16_t Colour, bool Clear)
 {

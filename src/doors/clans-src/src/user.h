@@ -1,3 +1,7 @@
+#ifndef USER_H
+#define USER_H
+
+extern struct clan *PClan;
 
 void User_Maint(void);
 
@@ -65,3 +69,5 @@ void User_Destroy(void);
 bool Disbanded(void);
 
 void User_Write(void);
+
+#endif

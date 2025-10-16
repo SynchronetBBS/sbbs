@@ -28,25 +28,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #include <string.h>
-#ifdef __unix__
-#include "unix_wrappers.h"
-#endif
-
-#include "structs.h"
-#include "language.h"
-#include "mstrings.h"
-#include "help.h"
-#include "input.h"
-#include "door.h"
-#include "news.h"
 #include <OpenDoor.h>
-#include "user.h"
-#include "fight.h"
+
 #include "alliance.h"
-#include "mail.h"
-#include "packet.h"
+#include "door.h"
+#include "fight.h"
+#include "game.h"
+#include "help.h"
 #include "ibbs.h"
+#include "input.h"
+#include "language.h"
+#include "mail.h"
+#include "mstrings.h"
 #include "myopen.h"
+#include "news.h"
+#include "packet.h"
+#include "structs.h"
+#include "unix_wrappers.h"
+#include "user.h"
 
 // empire owner types
 #define EO_VILLAGE    0
@@ -87,7 +86,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 extern struct config *Config;
-extern struct game Game;
 extern struct clan *PClan;
 extern struct village Village;
 

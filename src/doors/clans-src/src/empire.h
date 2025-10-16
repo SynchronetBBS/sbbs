@@ -1,3 +1,7 @@
+#include "structs.h"
+
+#ifndef EMPIRE_H
+#define EMPIRE_H
 
 void Empire_Stats(struct empire *Empire);
 
@@ -18,3 +22,5 @@ int32_t ArmyVitality(struct Army *Army);
 void ProcessAttackResult(struct AttackResult *AttackResult);
 void ProcessAttackPacket(struct AttackPacket *AttackPacket);
 void ProcessResultPacket(struct AttackResult *Result);
+
+#endif

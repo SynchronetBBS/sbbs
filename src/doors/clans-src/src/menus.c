@@ -21,38 +21,33 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef __unix__
 #include "unix_wrappers.h"
-#endif
 
 #include <OpenDoor.h>
-#include "structs.h"
-#include "language.h"
-#include "mstrings.h"
-#include "user.h"
+
+#include "alliance.h"
 #include "door.h"
-#include "input.h"
-#include "help.h"
+#include "empire.h"
 #include "fight.h"
-#include "mail.h"
-#include "scores.h"
+#include "game.h"
+#include "help.h"
+#include "ibbs.h"
+#include "input.h"
 #include "items.h"
+#include "language.h"
+#include "mail.h"
+#include "menus2.h"
+#include "mstrings.h"
+#include "npc.h"
 #include "pawn.h"
 #include "quests.h"
-#include "alliance.h"
-#include "npc.h"
-#include "village.h"
-#include "trades.h"
-#include "menus2.h"
-#include "fight.h"
-#include "village.h"
-#include "empire.h"
-#include "mail.h"
-#include "ibbs.h"
 #include "reg.h"
+#include "scores.h"
+#include "structs.h"
 #include "system.h"
+#include "trades.h"
 #include "user.h"
-
+#include "village.h"
 
 #define MT_PUBLIC       0
 #define MT_PRIVATE      1
@@ -60,7 +55,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern struct village Village;
 extern struct clan *PClan;
-extern struct game Game;
 bool FirstTimeInMain = false;
 extern struct config *Config;
 

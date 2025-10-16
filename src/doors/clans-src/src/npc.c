@@ -28,29 +28,26 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#ifdef __unix__
 #include "unix_wrappers.h"
-#endif
-
 
 #include <OpenDoor.h>
-#include "structs.h"
-#include "quests.h"
-#include "myopen.h"
-#include "video.h"
+
+#include "door.h"
+#include "fight.h"
+#include "game.h"
+#include "input.h"
 #include "language.h"
 #include "mstrings.h"
-#include "door.h"
+#include "myopen.h"
 #include "news.h"
-#include "input.h"
+#include "quests.h"
+#include "structs.h"
 #include "user.h"
-#include "fight.h"
-
+#include "video.h"
 
 extern char Quests_TFlags[8];
 extern struct IniFile IniFile;
 extern struct clan *PClan;
-extern struct game Game;
 
 // ------------------------------------------------------------------------- //
 

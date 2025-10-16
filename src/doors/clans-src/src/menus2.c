@@ -22,23 +22,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#ifdef __unix__
 #include "unix_wrappers.h"
-#endif
 
 #include <OpenDoor.h>
-#include "structs.h"
+
+#include "door.h"
+#include "game.h"
+#include "help.h"
+#include "input.h"
 #include "language.h"
 #include "mstrings.h"
-#include "user.h"
-#include "help.h"
-#include "door.h"
-#include "input.h"
 #include "reg.h"
+#include "structs.h"
+#include "user.h"
 
 extern struct village Village;
 extern struct clan *PClan;
-extern struct game Game;
 extern struct config *Config;
 
 void ResurrectDead(bool Unconscious)

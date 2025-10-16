@@ -1,3 +1,8 @@
+#include "structs.h"
+
+#ifndef DOOR_H
+#define DOOR_H
+
 /*
  * Door-specific ADT
  */
@@ -47,3 +52,5 @@ void Door_SetScreenPause(bool State);
 bool Door_AllowScreenPause(void);
 
 void Door_ShowTitle(void);
+
+#endif
