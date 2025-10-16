@@ -833,6 +833,7 @@ spec:
     name: "clans-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/doors/clans-src/src/*.*.*"
+      - "src/doors/clans-src/data/clans.pak"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
   rules:
