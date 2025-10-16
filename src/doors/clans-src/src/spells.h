@@ -1,3 +1,9 @@
+#ifndef THE_CLANS__SPELLS___H
+#define THE_CLANS__SPELLS___H
+
+extern char Spells_szCastDestination[25];
+extern char Spells_szCastSource[25];
+extern int Spells_CastValue;
 
 void Spells_Init(void);
 /*
@@ -12,3 +18,5 @@ void Spells_Close(void);
 void Spells_UpdatePCSpells(struct pc *PC);
 void Spells_ClearSpells(struct clan *Clan);
 void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int16_t SpellNum);
+
+#endif

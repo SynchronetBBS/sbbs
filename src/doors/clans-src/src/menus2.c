@@ -34,10 +34,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "mstrings.h"
 #include "reg.h"
 #include "structs.h"
+#include "system.h"
 #include "user.h"
-
-extern struct village Village;
-extern struct config *Config;
+#include "village.h"
 
 void ResurrectDead(bool Unconscious)
 {

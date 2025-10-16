@@ -2,8 +2,8 @@
 **  Header file for portable file functions
 */
 
-#ifndef SNIPFILE__H
-#define SNIPFILE__H
+#ifndef THE_CLANS__SNIPFILE___H
+#define THE_CLANS__SNIPFILE___H
 
 #include <stdio.h>
 
@@ -19,4 +19,4 @@ void   show_text_file(char *txt);                     /* Textmod.C      */
 int    file_copy(char *from, char *to);               /* Wb_Fcopy.C     */
 int    file_append(char *from, char *to);             /* Wb_Fapnd.C     */
 
-#endif /* SNIPFILE__H */
+#endif /* THE_CLANS__SNIPFILE___H */

@@ -1,11 +1,8 @@
-#include <assert.h>
-
-#ifdef __unix__
-#include <inttypes.h>
-#endif
-
 #ifndef THE_CLANS__DEFINES___H
 #define THE_CLANS__DEFINES___H 1
+
+#include <assert.h>
+#include <inttypes.h>
 
 #define VERSION                 "v0.97b1"
 

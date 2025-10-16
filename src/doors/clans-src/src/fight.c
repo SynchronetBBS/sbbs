@@ -39,6 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "structs.h"
 #include "user.h"
 #include "video.h"
+#include "village.h"
 
 #define ATTACKER            0
 #define DEFENDER            1
@@ -48,7 +49,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define PLAYERTEAM          0
 
 extern struct Spell *Spells[MAX_SPELLS];
-extern struct village Village;
 
 struct move {
 	int16_t Action, Target, SpellNum, ScrollNum;

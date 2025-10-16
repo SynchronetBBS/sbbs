@@ -4,6 +4,10 @@
  *
  */
 
+#ifndef THE_CLANS__MAIL___H
+#define THE_CLANS__MAIL___H
+
+#include "structs.h"
 
 int16_t Mail_Read(void);
 
@@ -26,3 +30,5 @@ void PostMsj(struct Message *Message);
 void Mail_Maint(void);
 
 void GlobalMsgPost(void);
+
+#endif

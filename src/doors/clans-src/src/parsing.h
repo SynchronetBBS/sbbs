@@ -1,3 +1,7 @@
+#ifndef THE_CLANS__PARSING___H
+#define THE_CLANS__PARSING___H
+
+#include "defines.h"
 
 void Strip(char *szString);
 /*
@@ -36,3 +40,5 @@ bool iscodechar(char c);
  * (Used mainly to see if it is a valid char for `xx codes.
  *
  */
+
+#endif

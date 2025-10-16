@@ -19,8 +19,6 @@
 #include <time.h>
 #ifdef __MSDOS__
 # include <alloc.h>        /* Use <malloc.c> for Power C */
-#else /* !__MSDOS__ */
-static unsigned _dos_getftime(int, uint16_t *, uint16_t *);
 #endif /* __MSDOS__ */
 #include "unix_wrappers.h"
 
@@ -34,6 +32,9 @@ static unsigned _dos_getftime(int, uint16_t *, uint16_t *);
 
 #define MAX_FILENAME_LEN 13
 
+#ifndef __MSDOS__
+static unsigned _dos_getftime(int, uint16_t *, uint16_t *);
+#endif
 static void AddGUM(FILE *fpGUM, char *pszFileName);
 static void AddDir(FILE *fpGUM, char *pszDirName);
 
@@ -266,6 +267,8 @@ static unsigned _dos_getftime(int handle, uint16_t *datep, uint16_t *timep)
 	struct tm file_dt;
 
 	if (fstat(handle, &file_stats) != 0) {
+		*datep = (1 << 5) | 1;
+		*timep = 0;
 		return EBADF;
 		fputs("fstat failed", stderr);
 		fflush(stderr);

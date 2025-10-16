@@ -41,11 +41,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "system.h"
 #include "user.h"
 #include "video.h"
+#include "village.h"
 
 #define MAX_PSITEMS     100
 #define MAX_PSITEMAGE   2
-
-extern struct village Village;
 
 int16_t PS_GetOpenItemSlot(struct clan *Clan)
 {

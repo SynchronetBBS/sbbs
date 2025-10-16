@@ -38,9 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "structs.h"
 #include "system.h"
 #include "user.h"
-
-extern struct config *Config;
-extern struct village Village;
+#include "village.h"
 
 void GetColourString(char *szColourString, int16_t Colour, bool Clear)
 {

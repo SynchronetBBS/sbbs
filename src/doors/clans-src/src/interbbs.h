@@ -2,11 +2,10 @@
  * Code taken from the OpenDoors sample IBBS code.
  */
 
+#ifndef THE_CLANS__INTERBBS___H
+#define THE_CLANS__INTERBBS___H
+
 #include "defines.h"
-
-#ifndef INTERBBS_H
-#define INTERBBS_H
-
 
 /******************************************************************************/
 /*                         Configuration Constants                            */

@@ -1,5 +1,5 @@
-#ifndef K_CLASSES_H
-#define K_CLASSES_H
+#ifndef THE_CLANS__K_CLASSES___H
+#define THE_CLANS__K_CLASSES___H
 
 #define MAX_PCLASS_WORDS    11
 

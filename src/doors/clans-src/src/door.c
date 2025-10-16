@@ -33,21 +33,23 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #ifndef __unix__
-#include <conio.h>
-#include <dos.h>
-#include <share.h>
+# include <conio.h>
+# include <dos.h>
+# include <share.h>
 #endif
 #include "unix_wrappers.h"
 
 #include <OpenDoor.h>
 
 #include "door.h"
+#include "game.h"
 #include "help.h"
 #include "ibbs.h"
 #include "language.h"
 #include "mstrings.h"
 #include "myopen.h"
 #include "parsing.h"
+#include "spells.h"
 #include "structs.h"
 #include "system.h"
 #include "user.h"
@@ -60,14 +62,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define COLOR   0xB800
 #define MONO    0xB000
 
-extern struct config *Config;
-extern char Spells_szCastDestination[25];
-extern char Spells_szCastSource[25];
-extern int Spells_CastValue;
-extern struct village Village;
-extern bool Verbose;
-
-struct {
+static struct {
 	bool Initialized;
 	bool AllowScreenPause;
 
@@ -92,7 +87,7 @@ bool Door_Initialized(void)
 
 // ------------------------------------------------------------------------- //
 
-void CreateSemaphor(void)
+static void CreateSemaphor(void)
 {
 	FILE *fp;
 	uint16_t node = SWAP16(System.Node);
@@ -102,12 +97,12 @@ void CreateSemaphor(void)
 	fclose(fp);
 }
 
-void RemoveSemaphor(void)
+static void RemoveSemaphor(void)
 {
 	unlink("online.flg");
 }
 
-bool SomeoneOnline(void)
+static bool SomeoneOnline(void)
 /*
  * Function will check if a user is online by seeing if a semaphor file
  * exists.
@@ -146,7 +141,7 @@ void Door_SetColorScheme(char *ColorScheme)
 
 // ------------------------------------------------------------------------- //
 
-void LocalLoad(void)
+static void LocalLoad(void)
 /*
  * This function will read in the local user's login name.
  *
@@ -222,19 +217,19 @@ void LocalLoad(void)
  *
  */
 
-void BeforeChat(void)
+static void BeforeChat(void)
 {
 	rputs(ST_BEFORECHAT);
 }
 
-void AfterChat(void)
+static void AfterChat(void)
 {
 	rputs(ST_AFTERCHAT);
 }
 
 // ------------------------------------------------------------------------- //
 
-void NoDoorFileHandler(void)
+static void NoDoorFileHandler(void)
 /*
  * If no dropfile was found, this function is run.
  */
@@ -249,14 +244,14 @@ void NoDoorFileHandler(void)
 }
 
 // ------------------------------------------------------------------------- //
-bool StatusOn = true;
+#ifndef __unix__
+static bool StatusOn = true;
 
-void NoStatus(void)
+static void NoStatus(void)
 /*
  * If no status line is chosen, this is run?
  */
 {
-#ifndef __unix__
 	if (StatusOn) {
 		od_set_statusline(STATUS_NONE);
 		StatusOn = false;
@@ -274,10 +269,10 @@ void NoStatus(void)
 			qputs("|15|17The C l a n s   |00" VERSION " |03copyright 1998 Allen Ussher    |00F1-F3 toggles status bar  |16", 0, 24);
 		}
 	}
-#endif
 }
+#endif
 
-void TwoLiner(unsigned char which)
+static void TwoLiner(unsigned char which)
 /*
  * Two line status line function.
  */
@@ -358,12 +353,12 @@ void TwoLiner(unsigned char which)
 
 // ------------------------------------------------------------------------- //
 
-void Door_ToggleScreenPause(void)
+static void Door_ToggleScreenPause(void)
 {
 	Door.AllowScreenPause = !Door.AllowScreenPause;
 }
 
-void Door_SetScreenPause(bool State)
+static void Door_SetScreenPause(bool State)
 {
 	Door.AllowScreenPause = State;
 }
@@ -372,7 +367,6 @@ bool Door_AllowScreenPause(void)
 {
 	return Door.AllowScreenPause;
 }
-
 
 // ------------------------------------------------------------------------- //
 

@@ -47,19 +47,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quests.h"
 #include "reg.h"
 #include "structs.h"
+#include "system.h"
 #include "user.h"
 #include "video.h"
+#include "village.h"
 
 #define CD_OR                   1
 #define CD_AND                  2
 
 struct Quest Quests[MAX_QUESTS];
 
-extern struct village Village;
 char Quests_TFlags[8];          // temp. flags
-extern struct config *Config;
 bool QuestsInitialized = false;
-extern bool Verbose;
 
 // ------------------------------------------------------------------------- //
 

@@ -31,7 +31,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 #include "unix_wrappers.h"
 
-#include "crc.h"
 #include "door.h"
 #include "language.h"
 #include "misc.h"
@@ -43,7 +42,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "video.h"
 
 struct game Game = { false, NULL };
-extern bool Verbose;
 
 // ------------------------------------------------------------------------- //
 

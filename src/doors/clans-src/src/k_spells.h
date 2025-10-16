@@ -1,5 +1,5 @@
-#ifndef K_SPELLS_H
-#define K_SPELLS_H
+#ifndef THE_CLANS__K_SPELLS___H
+#define THE_CLANS__K_SPELLS___H
 
 #define MAX_SPELL_WORDS     24
 

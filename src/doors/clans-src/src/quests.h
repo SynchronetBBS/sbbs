@@ -1,8 +1,8 @@
+#ifndef THE_CLANS__QUESTS___H
+#define THE_CLANS__QUESTS___H
+
 #include "defines.h"
 #include "structs.h"
-
-#ifndef QUESTS_H
-#define QUESTS_H
 
 struct Quest {
 	bool Active;

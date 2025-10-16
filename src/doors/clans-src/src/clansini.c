@@ -36,11 +36,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "system.h"
 #include "parsing.h"
 #include "k_clansi.h"
+#include "video.h"
 
 struct IniFile IniFile = { false };
-extern bool Verbose;
-
-void DisplayStr(char *);
 
 void ClansIni_Init(void)
 {

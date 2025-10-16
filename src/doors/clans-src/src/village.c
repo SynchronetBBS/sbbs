@@ -34,7 +34,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <OpenDoor.h>
 
-#include "crc.h"
 #include "door.h"
 #include "empire.h"
 #include "game.h"
@@ -58,8 +57,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "voting.h"
 
 struct village Village = { false, NULL };
-extern struct config *Config;
-extern bool Verbose;
 
 struct  Scheme {
 	char szName[20];

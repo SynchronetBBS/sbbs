@@ -1,8 +1,8 @@
+#ifndef THE_CLANS__ALLIANCE___H
+#define THE_CLANS__ALLIANCE___H
+
 #include "defines.h"
 #include "structs.h"
-
-#ifndef ALLIANCE_H
-#define ALLIANCE_H
 
 void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
 void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);

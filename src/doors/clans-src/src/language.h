@@ -1,8 +1,8 @@
+#ifndef THE_CLANS__LANGUAGE___H
+#define THE_CLANS__LANGUAGE___H
+
 #include "defines.h"
 #include "structs.h"
-
-#ifndef LANGUAGE_H_
-#define LANGUAGE_H_
 
 extern struct Language *Language;
 

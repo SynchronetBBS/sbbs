@@ -2,13 +2,15 @@
  * MyOpen ADT
  */
 
+#ifndef THE_CLANS__MYOPEN___H
+#define THE_CLANS__MYOPEN___H
+
 #include <stdio.h>
 #include "defines.h"
+
+struct FileHeader;
 #include "serialize.h"
 #include "deserialize.h"
-
-#ifndef MYOPEN_H
-#define MYOPEN_H
 
 extern uint8_t serBuf[4096];
 extern int16_t erRet;

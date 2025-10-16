@@ -1,5 +1,5 @@
-#ifndef DESERIALIZE_H
-#define DESERIALIZE_H
+#ifndef THE_CLANS__DESERIALIZE___H
+#define THE_CLANS__DESERIALIZE___H
 
 #include "interbbs.h"
 #include "myopen.h"

@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <OpenDoor.h>
 
 #include "alliance.h"
-#include "crc.h"
+#include "class.h"
 #include "door.h"
 #include "empire.h"
 #include "game.h"
@@ -51,6 +51,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "system.h"
 #include "trades.h"
 #include "video.h"
+#include "village.h"
 
 struct user {
 	bool Initialized;     // true if user clan malloc'd
@@ -58,10 +59,7 @@ struct user {
 } User = { false, false };
 
 struct clan *PClan=NULL;
-extern struct config *Config;
 extern struct Spell *Spells[MAX_SPELLS];
-extern struct PClass *PClasses[MAX_PCLASSES], *Races[MAX_PCLASSES];
-extern struct village Village;
 
 // ------------------------------------------------------------------------- //
 bool Disbanded(void)
@@ -2597,7 +2595,7 @@ bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 		}
 
 		// if CRCs don't match, warn for now
-//    if (TmpClan->CRC != CRCValue(TmpClan, sizeof(TmpClan)) )
+//    if (!TmpClan->CRC)
 //      DisplayStr("|12-> CRCs don't match!!\n");
 
 		// make them all NULLs for safety
@@ -2938,7 +2936,7 @@ bool User_Init(void)
 
 	/*
 	  // ensure CRC is correct
-	  if (CheckCRC(PClan, sizeof(struct clan) - sizeof(int32_t), PClan->CRC) == false)
+	  if (!PClan->CRC)
 	  {
 	    User_Destroy();
 	    System_Error("CLANS.PC data corrupt! [u]\n");
@@ -2946,7 +2944,7 @@ bool User_Init(void)
 
 	  // ensure CRC is correct
 	  for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
-	    if (PClan->Member[iTemp] && CheckCRC(PClan->Member[iTemp], sizeof(struct pc) - sizeof(int32_t), PClan->Member[iTemp]->CRC) == false)
+	    if (!PClan->Member[iTemp]->CRC)
 	    {
 	      User_Destroy();
 	      System_Error("CLANS.PC data corrupt [m]!\n");

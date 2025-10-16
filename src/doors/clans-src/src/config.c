@@ -18,28 +18,28 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef __unix__
-#include <curses.h>
-#include "unix_wrappers.h"
-#include <time.h>
+# include <curses.h>
+# include <time.h>
 #else
-#include <conio.h>
-#include <dos.h>
-#include <share.h>
+# include <conio.h>
+# include <dos.h>
+# include <share.h>
 # ifndef _WIN32
 #  include <mem.h>
 # else
 #  include <windows.h>
 # endif
 #endif
-#include <ctype.h>
+#include "unix_wrappers.h"
 
-#include "structs.h"
-#include "parsing.h"
 #include "k_config.h"
+#include "parsing.h"
+#include "structs.h"
 
 #define MAX_OPTION      12
 
@@ -102,8 +102,8 @@ static void set_attrs(unsigned short int attribute);
 static short curses_color(short color);
 #endif
 #ifdef _WIN32
-DWORD origCursorSize;
-HANDLE std_handle;
+static DWORD origCursorSize;
+static HANDLE std_handle;
 #endif
 
 static void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color);
@@ -116,12 +116,6 @@ static void System_Error(char *szErrorMsg);
 static void UpdateOption(char Option);
 static void UpdateNodeOption(char Option);
 
-struct {
-	int32_t VideoType;
-	int32_t y_lookup[25];
-	char FAR *VideoMem;
-} Video;
-
 struct NodeData {
 	int number;
 	char dropDir[1024];
@@ -133,11 +127,7 @@ struct NodeData {
 struct NodeData *nodes;
 struct NodeData *currNode;
 struct config Config;
-bool ConfigUseLog;
-
-char szTodaysDate[11];
-
-//extern unsigned _stklen = 32U*(1024U);
+static bool ConfigUseLog;
 
 static void gotoxy(int x, int y);
 static void clrscr(void);

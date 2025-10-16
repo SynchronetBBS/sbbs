@@ -24,25 +24,25 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#ifdef __unix__
-#include "unix_wrappers.h"
-#else
-#include <dos.h>
-#include <conio.h>
+#ifndef __unix__
+# include <dos.h>
+# include <conio.h>
 #endif
-#include <ctype.h>
+#include "unix_wrappers.h"
 
-#include "structs.h"
-#include "reg.h"
-#include "system.h"
 #include <OpenDoor.h>
+
 #include "door.h"
 #include "language.h"
 #include "mstrings.h"
+#include "reg.h"
+#include "structs.h"
+#include "system.h"
 #include "video.h"
 
 #define PI        3.1415926
@@ -54,7 +54,6 @@ extern struct {
 	int32_t y_lookup[25];
 	char FAR *VideoMem;
 } Video;
-extern struct config *Config;
 
 void dputs(char *string);
 void AddRegToCfg(char *szString);

@@ -29,15 +29,11 @@
 
 #include "interbbs.h"
 #include "structs.h"
+#include "system.h"
 #include "video.h"
 
 #define MAIL_OTHER      0
 #define MAIL_BINKLEY    1
-
-
-extern struct config *Config;
-
-
 
 char aszShortMonthName[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
 								 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"

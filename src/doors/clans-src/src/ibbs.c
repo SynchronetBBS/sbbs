@@ -105,10 +105,7 @@ int search_and_construct_ffblk(WIN32_FIND_DATA *, struct ffblk *, bool);
 #define FA_ARCH   _A_ARCH   /* 0x20 */
 #endif
 
-extern struct config *Config;
-extern struct village Village;
 extern struct BuildingType BuildingType[NUM_BUILDINGTYPES];
-extern bool Verbose;
 
 struct ibbs IBBS = { false, NULL };
 bool NoMSG[MAX_IBBSNODES];

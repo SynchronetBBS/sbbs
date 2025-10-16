@@ -4,10 +4,10 @@
 **  public domain by David Gibbs
 */
 
-#include "defines.h"
-
 #ifndef DG_TASKER
 #define DG_TASKER
+
+#include "defines.h"
 
 struct ts_os_ver {
 	int16_t maj;

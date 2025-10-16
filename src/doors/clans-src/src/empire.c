@@ -44,8 +44,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "news.h"
 #include "packet.h"
 #include "structs.h"
+#include "system.h"
 #include "unix_wrappers.h"
 #include "user.h"
+#include "village.h"
 
 // empire owner types
 #define EO_VILLAGE    0
@@ -83,9 +85,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define VIT_FOOTMEN     8
 #define VIT_AXEMEN      7
 #define VIT_KNIGHTS     6
-
-extern struct config *Config;
-extern struct village Village;
 
 struct BuildingType BuildingType[NUM_BUILDINGTYPES] = {
 	{"Barracks",            5, 15,  30,  2500 },

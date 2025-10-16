@@ -18,8 +18,3 @@ int32_t CRCValue(const void *Data, int DataSize)
 
 	return CRC;
 }
-
-int CheckCRC(const void *Data, int Size, int32_t CRC)
-{
-	return (CRCValue(Data, Size) == CRC);
-}

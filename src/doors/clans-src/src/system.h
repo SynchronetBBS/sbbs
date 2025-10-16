@@ -1,7 +1,11 @@
-#ifndef SYSTEM_H
-#define SYSTEM_H
+#ifndef THE_CLANS__SYSTEM___H
+#define THE_CLANS__SYSTEM___H
 
+#include "defines.h"
+
+extern struct config *Config;
 extern struct system System;
+extern bool Verbose;
 
 /*
  * System functions

@@ -1,5 +1,5 @@
-#ifndef IBBS_H
-#define IBBS_H
+#ifndef THE_CLANS__IBBS___H
+#define THE_CLANS__IBBS___H
 
 extern struct ibbs IBBS;
 

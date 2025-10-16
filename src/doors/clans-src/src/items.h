@@ -1,3 +1,7 @@
+#ifndef THE_CLANS__ITEMS___H
+#define THE_CLANS__ITEMS___H
+
+#include "structs.h"
 
 void Items_Init(void);
 /*
@@ -31,3 +35,5 @@ void ShowItemStats(struct item_data *Item, struct clan *Clan);
 void Items_FindTreasureChest(void);
 
 void ReadBook(void);
+
+#endif

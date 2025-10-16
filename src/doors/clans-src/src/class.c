@@ -22,28 +22,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  * Classes/Races ADT
  */
 
-#ifdef __unix__
-#include "unix_wrappers.h"
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
+#include "unix_wrappers.h"
 
-#include "structs.h"
-#include "myopen.h"
+#include "clansini.h"
 #include "language.h"
+#include "myopen.h"
+#include "structs.h"
+#include "system.h"
 #include "video.h"
 
-bool ClassesInitialized = false;
+static bool ClassesInitialized = false;
 
-extern struct IniFile IniFile;
 struct PClass *PClasses[MAX_PCLASSES], *Races[MAX_PCLASSES];
-extern bool Verbose;
-
 
 // ------------------------------------------------------------------------- //
 
-void Load_PClasses(struct PClass *PClass[MAX_PCLASSES], bool GetPClasses)
+static void Load_PClasses(struct PClass *PClass[MAX_PCLASSES], bool GetPClasses)
 /*
  * This function will load classes from file into PClass[].
  *
@@ -100,7 +96,7 @@ void Load_PClasses(struct PClass *PClass[MAX_PCLASSES], bool GetPClasses)
 	}
 }
 
-void Free_PClasses(struct PClass *PClass[MAX_PCLASSES])
+static void Free_PClasses(struct PClass *PClass[MAX_PCLASSES])
 /*
  * This function will free the classes loaded by Load_PClasses
  */

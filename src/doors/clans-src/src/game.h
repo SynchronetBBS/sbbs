@@ -1,5 +1,5 @@
-#ifndef GAME_H
-#define GAME_H
+#ifndef THE_CLANS__GAME___H
+#define THE_CLANS__GAME___H
 
 extern struct game Game;
 

@@ -1,7 +1,7 @@
-#include "defines.h"
+#ifndef THE_CLANS__STRUCTS___H
+#define THE_CLANS__STRUCTS___H
 
-#ifndef STRUCTS_H
-#define STRUCTS_H
+#include "defines.h"
 
 struct IniFile {
 	bool Initialized;

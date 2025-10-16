@@ -1,3 +1,5 @@
+#ifndef THE_CLANS__MISC___H
+#define THE_CLANS__MISC___H
 
 int32_t DaysBetween(char szFirstDate[], char szLastDate[]);
 /*
@@ -12,3 +14,5 @@ int32_t DaysBetween(char szFirstDate[], char szLastDate[]);
  */
 
 int32_t DaysSince1970(char szTheDate[]);
+
+#endif

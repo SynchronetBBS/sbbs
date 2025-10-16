@@ -1,5 +1,7 @@
-#ifndef USER_H
-#define USER_H
+#ifndef THE_CLANS__USER___H
+#define THE_CLANS__USER___H
+
+#include "structs.h"
 
 extern struct clan *PClan;
 

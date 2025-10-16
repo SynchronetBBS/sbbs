@@ -1,7 +1,7 @@
-#include "structs.h"
+#ifndef THE_CLANS__EMPIRE___H
+#define THE_CLANS__EMPIRE___H
 
-#ifndef EMPIRE_H
-#define EMPIRE_H
+#include "structs.h"
 
 void Empire_Stats(struct empire *Empire);
 

@@ -1,5 +1,5 @@
-#ifndef K_ITEMS_H
-#define K_ITEMS_H
+#ifndef THE_CLANS__K_ITEMS___H
+#define THE_CLANS__K_ITEMS___H
 
 #define MAX_IM_WORDS    22
 

@@ -51,9 +51,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "system.h"
 #include "user.h"
 #include "video.h"
-
-extern struct config *Config;
-extern struct village Village;
+#include "village.h"
 
 // Message Types:
 #define MT_PUBLIC       0

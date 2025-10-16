@@ -1,5 +1,5 @@
-#ifndef SERIALIZE_H
-#define SERIALIZE_H
+#ifndef THE_CLANS__SERIALIZE___H
+#define THE_CLANS__SERIALIZE___H
 
 #include "interbbs.h"
 #include "myopen.h"

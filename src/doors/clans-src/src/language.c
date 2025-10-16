@@ -25,10 +25,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "structs.h"
-#include "myopen.h"
-#include "system.h"
 #include "language.h"
+#include "myopen.h"
+#include "structs.h"
+#include "system.h"
 #include "video.h"
 
 #ifdef __unix__
@@ -36,7 +36,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 struct Language *Language;
-extern bool Verbose;
 
 // ------------------------------------------------------------------------- //
 

@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string.h>
 #include "unix_wrappers.h"
 
+#include "clansini.h"
 #include "door.h"
 #include "language.h"
 #include "mstrings.h"
@@ -32,17 +33,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "system.h"
 #include "user.h"
 #include "video.h"
+#include "village.h"
 
 bool SpellsInitialized = false;
 struct Spell *Spells[MAX_SPELLS];
-extern struct IniFile IniFile;
-extern struct village Village;
 
 char Spells_szCastDestination[25];
 char Spells_szCastSource[25];
 int Spells_CastValue;
-extern bool Verbose;
-
 
 // ------------------------------------------------------------------------- //
 

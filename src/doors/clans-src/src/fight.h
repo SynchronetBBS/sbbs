@@ -1,3 +1,7 @@
+#ifndef THE_CLANS__FIGHT___H
+#define THE_CLANS__FIGHT___H
+
+#include "structs.h"
 
 void Fight_Monster(int16_t Level, char *szFileName);
 
@@ -12,3 +16,5 @@ int16_t Fight_Fight(struct clan *Attacker, struct clan *Defender,
 void Fight_Clan(void);
 
 void Fight_Heal(struct clan *Clan);
+
+#endif

@@ -1,5 +1,8 @@
 #ifdef __unix__
 
+#ifndef THE_CLANS__UNIX_WRAPPERS___H
+#define THE_CLANS__UNIX_WRAPPERS___H
+
 #include <signal.h>
 #include <stdlib.h>
 
@@ -17,9 +20,6 @@
 #include <time.h>
 
 #include "defines.h"
-
-#ifndef UNIX_WRAPPERS_H
-#define UNIX_WRAPPERS_H
 
 #ifndef PATH_MAX
 #define PATH_MAX 1024

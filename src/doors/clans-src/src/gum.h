@@ -1,5 +1,5 @@
-#ifndef GUM_H
-#define GUM_H
+#ifndef THE_CLANS__GUM___H
+#define THE_CLANS__GUM___H
 
 extern long bytes_in, bytes_out;
 

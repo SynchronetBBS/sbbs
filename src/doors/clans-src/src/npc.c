@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <OpenDoor.h>
 
+#include "clansini.h"
 #include "door.h"
 #include "fight.h"
 #include "game.h"
@@ -46,7 +47,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "video.h"
 
 extern char Quests_TFlags[8];
-extern struct IniFile IniFile;
 
 // ------------------------------------------------------------------------- //
 

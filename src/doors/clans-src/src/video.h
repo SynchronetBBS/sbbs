@@ -2,6 +2,11 @@
  * Video ADT
  */
 
+#ifndef THE_CLANS__VIDEO___H
+#define THE_CLANS__VIDEO___H
+
+#include "defines.h"
+
 #ifdef __MINGW32__
 #define FAR
 #endif
@@ -30,4 +35,6 @@ void ScrollUp(void);
 #ifdef _WIN32
 void clrscr(void);
 void gotoxy(int, int);
+#endif
+
 #endif

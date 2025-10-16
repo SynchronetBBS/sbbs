@@ -1,7 +1,7 @@
-#include "structs.h"
+#ifndef THE_CLANS__DOOR___H
+#define THE_CLANS__DOOR___H
 
-#ifndef DOOR_H
-#define DOOR_H
+#include "structs.h"
 
 /*
  * Door-specific ADT
@@ -47,8 +47,6 @@ void Display(char *FileName);
 int16_t YesNo(char *Query);
 int16_t NoYes(char *Query);
 
-void Door_ToggleScreenPause(void);
-void Door_SetScreenPause(bool State);
 bool Door_AllowScreenPause(void);
 
 void Door_ShowTitle(void);
