@@ -114,8 +114,7 @@ data: $(DATA_DIR)/clans.pak
 
 .PHONY: installer
 installer: $(DOOR_BINARIES) data native-chew$(NATIVEEXEFILE) install$(EXEFILE)
-	mkdir ../stage
-	mkdir ../stage/gum
+	mkdir -p ../stage/gum
 	cp ../release/* ../stage/gum
 	cp $(DATA_DIR)/clans.pak ../stage/gum
 	cp $(DOOR_BINARIES) ../stage/gum
