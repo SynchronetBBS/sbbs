@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 			// use this legal string later
 
 			// make "{xxx}yyy" into "yyy"
-			strcpy(pcCurrentPos, (pcBrace+1));
+			memmove(pcCurrentPos, pcBrace+1, strlen(pcBrace + 1) + 1);
 
 			//printf("legal is %s\nstring is %s\n", szLegal, pcCurrentPos);
 			// printf("%3d: {} used: %s\n", CurLine, szLegal);
@@ -383,6 +383,8 @@ int main(int argc, char *argv[])
 							s_EventHeader_s(&EventHeader, ehbuf, sizeof(ehbuf));
 							fwrite(&ehbuf, sizeof(ehbuf), 1, fpOut);
 							fwrite(Buffer, BufferPtr, 1, fpOut);
+
+							BufferPtr = 0;
 						}
 						break;
 					case 31 :   // Input
@@ -475,7 +477,7 @@ void ParseLine(char *szString)
 	pcCurrentPos = szString;
 	while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
 
-	strcpy(szString, pcCurrentPos);
+	memmove(szString, pcCurrentPos, strlen(pcCurrentPos) + 1);
 
 	// parse second time to get rid of comment's end
 	Strip(szString);
@@ -533,7 +535,7 @@ void GetToken(char *szString, char *szToken)
 		}
 	}
 
-	strcpy(szString, pcCurrentPos);
+	memmove(szString, pcCurrentPos, strlen(pcCurrentPos) + 1);
 }
 
 void Strip(char *szString)

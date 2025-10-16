@@ -326,5 +326,5 @@ void GetToken(char *szString, char *szToken)
 		}
 	}
 
-	strcpy(szString, pcCurrentPos);
+	memmove(szString, pcCurrentPos, strlen(pcCurrentPos));
 }

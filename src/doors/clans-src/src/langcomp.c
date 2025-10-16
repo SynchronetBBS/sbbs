@@ -95,14 +95,18 @@ int main(int argc, char *argv[])
 
 		// break down string
 		// get rid of \n and \r
-		while (TempString[ strlen(TempString) - 1] == '\n' || TempString[ strlen(TempString) - 1] == '\r')
-			TempString[ strlen(TempString) - 1] = 0;
+		if (TempString[0]) {
+			while (TempString[0] && (TempString[ strlen(TempString) - 1] == '\n' || TempString[ strlen(TempString) - 1] == '\r'))
+				TempString[ strlen(TempString) - 1] = 0;
+		}
 
 		// convert @@ at end to \n
-		if (TempString[ strlen(TempString) - 2] == '@' &&
-				TempString[ strlen(TempString) - 1] == '@') {
-			TempString[ strlen(TempString) - 2] = 0;
-			strcat(TempString, "\n");
+		if (TempString[0] && TempString[1]) {
+			if (TempString[ strlen(TempString) - 2] == '@' &&
+					TempString[ strlen(TempString) - 1] == '@') {
+				TempString[ strlen(TempString) - 2] = 0;
+				strcat(TempString, "\n");
+			}
 		}
 
 		CurString = atoi(TempString);
