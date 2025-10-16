@@ -122,7 +122,6 @@ installer: $(DOOR_BINARIES) data native-chew$(NATIVEEXEFILE) install$(EXEFILE)
 	cd ../stage/gum && ../../src/native-chew$(NATIVEEXEFILE) ../clans.gum ../files.lst
 	rm -rf ../stage/gum
 	rm -f ../stage/files.lst
-	rm -f ../stage/UnixAttr.DAT
 	cp ../installer/* ../stage
 	cp install$(EXEFILE) ../stage
 	zip -j Clans-$(os)-$(MACH)-0_97b1.zip ../stage/*
