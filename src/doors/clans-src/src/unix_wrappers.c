@@ -249,4 +249,20 @@ getch()
 }
 #endif
 
+void
+GetSystemTime(SYSTEMTIME *t)
+{
+	time_t    currtime;
+	struct tm *gottime;
+
+	currtime=time(NULL);
+	gottime=localtime(&currtime);
+	t->wSecond = gottime->tm_sec;
+	t->wMinute = gottime->tm_min;
+	t->wHour = gottime->tm_hour;
+	t->wDay = gottime->tm_mday;
+	t->wMonth = gottime->tm_mon + 1;
+	t->wYear = gottime->tm_year + 1900;
+}
+
 #endif

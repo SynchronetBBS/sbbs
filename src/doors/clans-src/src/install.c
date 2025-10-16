@@ -683,10 +683,10 @@ void put_character(int x, int y, char ch, unsigned short int attribute)
 		&bytes_written,
 		NULL);
 #elif defined(__unix__)
-	short fg;
+	short fg, bg;
 	int   attrs=A_NORMAL;
 
-	pair_content(attribute,&fg,NULL);
+	pair_content(attribute,&fg,&bg);
 	if (attribute & 8)  {
 		attrs |= A_BOLD;
 	}

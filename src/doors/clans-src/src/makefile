@@ -86,16 +86,20 @@ endif
 DATA_DIR	?=	../data
 
 #all: clans.exe reset.exe pcedit.exe langcomp.exe mcomp.exe
-all: clans$(EXEFILE) pcedit$(EXEFILE) reset$(EXEFILE)
+all: clans$(EXEFILE) config$(EXEFILE) pcedit$(EXEFILE) reset$(EXEFILE)
 
 .PHONY: devkit
-devkit: chew$(EXEFILE) ecomp$(EXEFILE) install$(EXEFILE) langcomp$(EXEFILE) makenpc$(EXEFILE) makepak$(EXEFILE) mcomp$(EXEFILE) mclass$(EXEFILE) mitems$(EXEFILE) mspells$(EXEFILE)
+devkit: chew$(EXEFILE) ecomp$(EXEFILE) install$(EXEFILE) \
+	langcomp$(EXEFILE) makenpc$(EXEFILE) makepak$(EXEFILE) \
+	mcomp$(EXEFILE) mclass$(EXEFILE) mitems$(EXEFILE) \
+	mspells$(EXEFILE)
 
 .PHONY: data
 data: $(DATA_DIR)/clans.pak
 
 clean:
 	$(DELETE) *.o
+	$(DELETE) config$(EXEFILE)
 	$(DELETE) chew$(EXEFILE)
 	$(DELETE) ecomp$(EXEFILE)
 	$(DELETE) clans$(EXEFILE)
@@ -143,6 +147,9 @@ clans$(EXEFILE):      $(OBJS) unix_wrappers.o
 
 chew$(EXEFILE):      chew.c
 	$(CC) $(CFLAGS) $(LDFLAGS) chew.c -o $@
+
+config$(EXEFILE):      config.c parsing.o unix_wrappers.o
+	$(CC) $(CFLAGS) $(LDFLAGS) config.c parsing.o unix_wrappers.o -o $@ $(CONSOLE_LIBS)
 
 ecomp$(EXEFILE):      ecomp.c serialize.o crc.o
 	$(CC) $(CFLAGS) $(LDFLAGS) ecomp.c serialize.o crc.o -o $@

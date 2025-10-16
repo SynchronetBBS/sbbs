@@ -39,6 +39,15 @@ struct date {
 	short da_day;
 };
 
+typedef struct {
+	short wSecond;
+	short wMinute;
+	short wHour;
+	short wMonth;
+	short wDay;
+	short wYear;
+} SYSTEMTIME;
+
 // ToDo needs some kind of REAL randomisation.
 #define randomize   srandomdev
 #define RANDOM      unix_random
@@ -95,6 +104,7 @@ char getch(void);
 FILE * _fsopen(char *pathname, char *mode, int flags);
 
 void delay(unsigned msec);
+void GetSystemTime(SYSTEMTIME *t);
 
 #endif
 
