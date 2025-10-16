@@ -25,23 +25,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef __unix__
-#include "unix_wrappers.h"
-#else
-#include <share.h>
-#include <dos.h>
+#ifndef __unix__
+# include <share.h>
+# include <dos.h>
 #endif
+#include "unix_wrappers.h"
 
 #include "defines.h"
-#include "myopen.h"
-#include "video.h"
 #include "language.h"
+#include "myopen.h"
 #include "system.h"
+#include "video.h"
 
 uint8_t serBuf[4096];
 int16_t erRet;
 
-void cipher(void *, void *, size_t, unsigned char);
+static void cipher(void *, void *, size_t, unsigned char);
 
 void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 /*
@@ -192,7 +191,7 @@ int16_t EncryptRead(void *Data, int32_t DataSize, FILE *fp, char XorValue)
 }
 
 /* -- Replacement Encrypt/Decrypt function, reduces redundant code */
-void cipher(void *dest, void *src, size_t len, unsigned char xor_val)
+static void cipher(void *dest, void *src, size_t len, unsigned char xor_val)
 {
 	if (!dest || !src || !len || !xor_val)
 		System_Error("Invalid Parameters to cipher");

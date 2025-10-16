@@ -19,12 +19,12 @@
 #define NPCS_NOTHERE    0   // status of NPC, not here -- i.e. not in town
 #define NPCS_HERE       1
 
-struct item_data *Items[MAX_ITEMS];
+static struct item_data *Items[MAX_ITEMS];
 
-int16_t TotalItems, TotalRaces, TotalClasses, TotalSpells;
+static int16_t TotalItems;
 
-void Init_Items(char *szFileName);
-void Deinit_Items(void);
+static void Init_Items(char *szFileName);
+static void Deinit_Items(void);
 
 
 // 04/03/2002 [au]
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 	return(0);
 }
 
-void Deinit_Items(void)
+static void Deinit_Items(void)
 {
 	int iTemp;
 
@@ -74,7 +74,7 @@ void Deinit_Items(void)
 	}
 }
 
-void Init_Items(char *szFileName)
+static void Init_Items(char *szFileName)
 {
 	FILE *fpItems;
 	char szLine[255], *pcCurrentPos;

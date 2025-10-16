@@ -18,24 +18,25 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #ifdef __unix__
-#include "unix_wrappers.h"
 #include <sys/mman.h>
 #include <termios.h>
 #endif
-
+#include "unix_wrappers.h"
 
 #include <OpenDoor.h>
-#include "structs.h"
+
+#include "door.h"
+#include "help.h"
+#include "input.h"
 #include "language.h"
 #include "mstrings.h"
-#include "input.h"
 #include "myopen.h"
-#include "door.h"
+#include "structs.h"
 
 // ------------------------------------------------------------------------- //
 

@@ -4,6 +4,7 @@
 extern char Spells_szCastDestination[25];
 extern char Spells_szCastSource[25];
 extern int Spells_CastValue;
+extern struct Spell *Spells[MAX_SPELLS];
 
 void Spells_Init(void);
 /*

@@ -23,26 +23,27 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #ifdef __unix__
 #include "unix_wrappers.h"
 #endif
 
-
-#include "structs.h"
 #include <OpenDoor.h>
+
+#include "door.h"
+#include "help.h"
+#include "input.h"
 #include "language.h"
 #include "mstrings.h"
 #include "myopen.h"
-#include "door.h"
-#include "help.h"
+#include "structs.h"
 
 // ------------------------------------------------------------------------- //
 
-int16_t Similar(char *string, char *word)
+static int16_t Similar(char *string, char *word)
 /*
  * Returns true if the first N chars of string match the first N chars of
  * word.  N being the strlen of word.
@@ -66,7 +67,7 @@ int16_t Similar(char *string, char *word)
 }
 
 
-int16_t InsideStr(char *SubString, char *FullString, int16_t AtStart)
+static int16_t InsideStr(char *SubString, char *FullString, int16_t AtStart)
 /*
  * Returns true if SubString appears within FullString.
  *
@@ -98,7 +99,7 @@ int16_t InsideStr(char *SubString, char *FullString, int16_t AtStart)
 }
 
 
-void ListChoices(char **apszChoices, int16_t NumChoices, int16_t DisplayType)
+static void ListChoices(char **apszChoices, int16_t NumChoices, int16_t DisplayType)
 /*
  * This lists the choices used by GetStringChoice.
  *

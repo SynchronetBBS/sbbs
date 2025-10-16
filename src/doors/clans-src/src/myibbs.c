@@ -13,21 +13,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#ifdef __unix__
 #include "unix_wrappers.h"
-#else
-#if defined(_MSC_VER) || defined(__MINGW32__)
-# include <share.h>
-#else
-# include <dir.h>
-#endif
-#include <dos.h>
-#include <io.h>
+#ifndef __unix__
+# if defined(_MSC_VER) || defined(__MINGW32__)
+#  include <share.h>
+# else
+#  include <dir.h>
+# endif
+# include <dos.h>
+# include <io.h>
 #endif
 
 #include <OpenDoor.h>
 
 #include "interbbs.h"
+#include "myibbs.h"
 #include "structs.h"
 #include "system.h"
 #include "video.h"
@@ -35,13 +35,27 @@
 #define MAIL_OTHER      0
 #define MAIL_BINKLEY    1
 
-char aszShortMonthName[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+static char aszShortMonthName[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
 								 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 								};
 
-void RidPath(char *pszFileName, char  *pszFileNameNoPath);
+static tBool DirExists(const char *pszDirName);
+static void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut);
+static tIBResult ValidateInfoStruct(tIBInfo *pInfo);
+static tBool CreateMessage(char *pszMessageDir, tMessageHeader *pHeader,
+					char *pszText);
+static uint32_t GetFirstUnusedMsgNum(char *pszMessageDir);
+static void GetMessageFilename(char *pszMessageDir, uint32_t lwMessageNum,
+						char *pszOut);
+static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
+				   tMessageHeader *pHeader, char *pszText);
+static tBool ReadMessage(char *pszMessageDir, uint32_t lwMessageNum,
+				  tMessageHeader *pHeader, char **ppszText);
+static uint32_t GetNextMSGID(void);
+static void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource);
+static void RidPath(char *pszFileName, char  *pszFileNameNoPath);
 
-tBool DirExists(const char *pszDirName)
+static tBool DirExists(const char *pszDirName)
 {
 	char szDirFileName[PATH_CHARS + 1];
 #if !defined(_WIN32) & !defined(__unix__)
@@ -74,7 +88,7 @@ tBool DirExists(const char *pszDirName)
 }
 
 
-void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut)
+static void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut)
 {
 	/* Validate parameters in debug mode */
 	assert(pszPath != NULL);
@@ -95,21 +109,7 @@ void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut)
 	strcat(pszOut, pszFilename);
 }
 
-int16_t GetMaximumEncodedLength(int16_t nUnEncodedLength)
-{
-	int16_t nEncodedLength;
-
-	/* The current encoding algorithm uses two characters to represent   */
-	/* each byte of data, plus 1 byte per MAX_LINE_LENGTH characters for */
-	/* the carriage return character.                                    */
-
-	nEncodedLength = nUnEncodedLength * 2;
-
-	return(nEncodedLength + (nEncodedLength / MAX_LINE_LENGTH - 1) + 1);
-}
-
-
-uint32_t GetNextMSGID(void)
+static uint32_t GetNextMSGID(void)
 {
 	/* MSGID should be unique for every message, for as long as possible.   */
 	/* This technique adds the current time, in seconds since midnight on   */
@@ -121,7 +121,7 @@ uint32_t GetNextMSGID(void)
 }
 
 
-tBool CreateMessage(char *pszMessageDir, tMessageHeader *pHeader,
+static tBool CreateMessage(char *pszMessageDir, tMessageHeader *pHeader,
 					char *pszText)
 {
 	uint32_t lwNewMsgNum;
@@ -134,7 +134,7 @@ tBool CreateMessage(char *pszMessageDir, tMessageHeader *pHeader,
 }
 
 
-void GetMessageFilename(char *pszMessageDir, uint32_t lwMessageNum,
+static void GetMessageFilename(char *pszMessageDir, uint32_t lwMessageNum,
 						char *pszOut)
 {
 	char szFileName[FILENAME_CHARS + 1];
@@ -144,7 +144,7 @@ void GetMessageFilename(char *pszMessageDir, uint32_t lwMessageNum,
 }
 
 
-tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
+static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 				   tMessageHeader *pHeader, char *pszText)
 {
 	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
@@ -197,7 +197,7 @@ tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 }
 
 
-tBool ReadMessage(char *pszMessageDir, uint32_t lwMessageNum,
+static tBool ReadMessage(char *pszMessageDir, uint32_t lwMessageNum,
 				  tMessageHeader *pHeader, char **ppszText)
 {
 	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
@@ -261,7 +261,7 @@ tBool ReadMessage(char *pszMessageDir, uint32_t lwMessageNum,
 }
 
 
-uint32_t GetFirstUnusedMsgNum(char *pszMessageDir)
+static uint32_t GetFirstUnusedMsgNum(char *pszMessageDir)
 {
 	uint32_t lwHighestMsgNum = 0;
 	uint32_t lwCurrentMsgNum;
@@ -303,7 +303,7 @@ uint32_t GetFirstUnusedMsgNum(char *pszMessageDir)
 }
 
 
-tIBResult ValidateInfoStruct(tIBInfo *pInfo)
+static tIBResult ValidateInfoStruct(tIBInfo *pInfo)
 {
 	if (pInfo == NULL) return(eBadParameter);
 
@@ -314,7 +314,7 @@ tIBResult ValidateInfoStruct(tIBInfo *pInfo)
 	return(eSuccess);
 }
 
-void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource)
+static void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource)
 {
 	uint16_t zone = 0, net = 0, node = 0, pt = 0;
 
@@ -664,7 +664,7 @@ tIBResult IBGetFile(tIBInfo *pInfo, char *szAttachFile)
 	return(eNoMoreMessages);
 }
 
-void RidPath(char *pszFileName, char  *pszFileNameNoPath)
+static void RidPath(char *pszFileName, char  *pszFileNameNoPath)
 {
 	int16_t CurChar;
 

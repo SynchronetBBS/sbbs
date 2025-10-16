@@ -1,13 +1,13 @@
 // MakeNPC
 
+#include <ctype.h>
 #include <stdio.h>
-#include <time.h>
-#ifdef __MSDOS__
-#include <malloc.h>
-#endif
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
+#include <time.h>
+#ifdef __MSDOS__
+# include <malloc.h>
+#endif
 
 #include "defines.h"
 #include "k_npcs.h"
@@ -17,9 +17,7 @@
 #include "structs.h"
 #include "unix_wrappers.h"
 
-int16_t TotalItems, TotalRaces, TotalClasses, TotalSpells;
-
-void Init_NPCs(char *szInfile, char *szOutfile);
+static void Init_NPCs(char *szInfile, char *szOutfile);
 
 #if defined(__BORLANDC__) && defined(__MSDOS__)
 extern unsigned _stklen = 32000U;
@@ -38,7 +36,7 @@ int main(int argc, char **argv)
 	return(0);
 }
 
-void Init_NPCs(char *szInfile, char *szOutfile)
+static void Init_NPCs(char *szInfile, char *szOutfile)
 {
 	struct NPCInfo *NPCInfo;
 	FILE *fpNPC, *fpNPCDat;

@@ -49,6 +49,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "fight.h"
 #include "game.h"
 #include "help.h"
+#include "ibbs.h"
 #include "input.h"
 #include "interbbs.h"
 #include "k_ibbs.h"
@@ -62,6 +63,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "packet.h"
 #include "parsing.h"
 #include "scores.h"
+#include "snipfile.h"
 #include "structs.h"
 #include "system.h"
 #include "user.h"
@@ -88,8 +90,8 @@ struct ffblk {
 
 int findfirst(const char *pathname, struct ffblk *ffblk, int attribute);
 int findnext(struct ffblk *);
-void convert_attribute(char *, uint32_t);
-int search_and_construct_ffblk(WIN32_FIND_DATA *, struct ffblk *, bool);
+static void convert_attribute(char *, uint32_t);
+static int search_and_construct_ffblk(WIN32_FIND_DATA *, struct ffblk *, bool);
 
 #ifndef _A_VOLID
 # define _A_VOLID 0x08 /* not normally used in Win32 */
@@ -105,24 +107,18 @@ int search_and_construct_ffblk(WIN32_FIND_DATA *, struct ffblk *, bool);
 #define FA_ARCH   _A_ARCH   /* 0x20 */
 #endif
 
-extern struct BuildingType BuildingType[NUM_BUILDINGTYPES];
-
 struct ibbs IBBS = { false, NULL };
-bool NoMSG[MAX_IBBSNODES];
 
-void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile);
-void IBBS_AddToGame(struct clan *Clan, bool WasLost);
-void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
-					 int16_t DestID);
-int file_copy(char *from, char *to);
-int file_append(char *from, char *to);
+static bool NoMSG[MAX_IBBSNODES];
+
+static void IBBS_AddToGame(struct clan *Clan, bool WasLost);
 
 // ------------------------------------------------------------------------- //
 /* Function Procedure:
    Open file specified, copy entire contents and send as data in packet with
    the type specified in 'PacketType' to 'DestID'
 */
-void IBBS_SendFileInPacket(int16_t DestID, int16_t PacketType, char *szFileName)
+static void IBBS_SendFileInPacket(int16_t DestID, int16_t PacketType, char *szFileName)
 {
 	FILE *fp;
 	char *cpBuffer;
@@ -161,7 +157,7 @@ void IBBS_SendFileInPacket(int16_t DestID, int16_t PacketType, char *szFileName)
 /* Function Procedure:
    Make sure destination ID is valid, send userlist.dat to that BBS
 */
-void IBBS_SendUserList(int16_t DestID)
+static void IBBS_SendUserList(int16_t DestID)
 {
 	//printf("Sending userlist to %d\n", DestID);
 	if (IBBS.Data->Nodes[DestID-1].Active)
@@ -268,7 +264,7 @@ void LeagueKillUser(struct UserInfo *User)
      Set the result packet success as false.
    Send an InterBBS packet as PT_SPYRESULT, SpyResultPacket as the data.
 */
-void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
+static void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
 {
 	struct SpyResultPacket SpyResult;
 	struct Packet Packet;
@@ -357,7 +353,7 @@ void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
    else
      Send failure message to spier
 */
-void IBBS_ProcessSpyResult(struct SpyResultPacket *SpyResult)
+static void IBBS_ProcessSpyResult(struct SpyResultPacket *SpyResult)
 {
 	char *szMessage, szString[128];
 	int16_t Junk[2], iTemp;
@@ -404,7 +400,7 @@ void IBBS_ProcessSpyResult(struct SpyResultPacket *SpyResult)
    PT_DELUSER with UserInfo structure attached.  This tells the recipient BBS
    to remove the user with the ID specified.
 */
-void IBBS_SendDelUser(int16_t BBSID, struct UserInfo *User)
+static void IBBS_SendDelUser(int16_t BBSID, struct UserInfo *User)
 {
 	uint8_t pktBuf[BUF_SIZE_UserInfo];
 	size_t res;
@@ -425,7 +421,7 @@ void IBBS_SendDelUser(int16_t BBSID, struct UserInfo *User)
 /* Function Procedure:
    Scan USERLIST.DAT for the specified ClanID, if found return true, else false
 */
-bool ClanIDInList(const int16_t ClanID[2])
+static bool ClanIDInList(const int16_t ClanID[2])
 {
 	FILE *fpUList;
 	bool Found = false;
@@ -508,7 +504,7 @@ void RemoveFromUList(const int16_t ClanID[2])
    If the user is not already in the userlist, open USERLIST.DAT.
    Append the User to the end of the userlist.
 */
-void AddToUList(struct UserInfo *User)
+static void AddToUList(struct UserInfo *User)
 {
 	FILE *fpUList;
 
@@ -533,7 +529,7 @@ void AddToUList(struct UserInfo *User)
    Cycle the BBS list, send the specified user to all active nodes with the
    packet type: PT_ADDUSER
 */
-void UpdateNodesOnNewUser(struct UserInfo *User)
+static void UpdateNodesOnNewUser(struct UserInfo *User)
 {
 	// run ONLY by main bbs
 	// create packet for all BBSes saying "Here's a new user, add him to your
@@ -712,7 +708,7 @@ void IBBS_SendComeBack(int16_t BBSIdTo, struct clan *Clan)
       If Clan found in database, increase Footmen, Axemen, and Knights of clan.
    Write message to attacker that their army has lost but returned.
 */
-void ReturnLostAttack(struct AttackPacket *AttackPacket)
+static void ReturnLostAttack(struct AttackPacket *AttackPacket)
 {
 	struct clan *TmpClan;
 	char *szMessage, szAttackerName[20];
@@ -768,7 +764,7 @@ void ReturnLostAttack(struct AttackPacket *AttackPacket)
    If packet is not marked as active, ignore it.
 */
 
-void IBBS_BackupMaint(void)
+static void IBBS_BackupMaint(void)
 {
 	/* read in old BACKUP.DAT, write only those which are Active */
 	/* if packet which is older than 7 days is found, deal with it */
@@ -879,7 +875,7 @@ void IBBS_BackupMaint(void)
    Reset the clan's WorldStatus to WS_STAYING and the DestinationBBS as -1
 */
 
-void AbortTrip(void)
+static void AbortTrip(void)
 {
 	struct LeavingData LeavingData;
 	FILE *fpLeavingDat;
@@ -957,7 +953,7 @@ void IBBS_CurrentTravelInfo(void)
    Update the clan's entry with these new values
    Set the clan to their leaving values (transfer all vault gold to the leaving group)
 */
-void IBBS_UpdateLeavingClan(struct clan *Clan, struct LeavingData LeavingData)
+static void IBBS_UpdateLeavingClan(struct clan *Clan, struct LeavingData LeavingData)
 {
 	char szString[128];
 	int32_t Gold;
@@ -998,7 +994,7 @@ void IBBS_UpdateLeavingClan(struct clan *Clan, struct LeavingData LeavingData)
 }
 
 
-void IBBS_TravelMaint(void)
+static void IBBS_TravelMaint(void)
 {
 	struct LeavingData LeavingData;
 	struct Packet Packet;
@@ -1139,7 +1135,7 @@ void IBBS_TravelMaint(void)
 
 
 // ------------------------------------------------------------------------- //
-void GetTroopsTraveling(struct LeavingData *LeavingData)
+static void GetTroopsTraveling(struct LeavingData *LeavingData)
 {
 	char szString[128], cInput;
 
@@ -1198,7 +1194,7 @@ void GetTroopsTraveling(struct LeavingData *LeavingData)
 	rputs("Done\n\n");
 }
 
-bool IBBS_TravelToBBS(int16_t DestID)
+static bool IBBS_TravelToBBS(int16_t DestID)
 {
 	char szString[128];
 	struct LeavingData LeavingData;
@@ -1332,7 +1328,7 @@ void IBBS_SeeVillages(bool Travel)
 
 
 // ------------------------------------------------------------------------- //
-void IBBS_AddLCLog(char *szString)
+static void IBBS_AddLCLog(char *szString)
 {
 	FILE *fpLCLogFile;
 
@@ -1349,7 +1345,7 @@ void IBBS_AddLCLog(char *szString)
 
 // ------------------------------------------------------------------------- //
 
-void IBBS_Destroy(void)
+static void IBBS_Destroy(void)
 {
 	int16_t CurBBS;
 
@@ -1388,7 +1384,7 @@ void IBBS_LoginStats(void)
 
 // ------------------------------------------------------------------------- //
 
-void IBBS_Create(void)
+static void IBBS_Create(void)
 {
 	int16_t CurBBS;
 
@@ -1407,7 +1403,7 @@ void IBBS_Create(void)
 	}
 }
 
-void IBBS_Read(void)
+static void IBBS_Read(void)
 {
 	FILE *fp;
 	int16_t CurBBS;
@@ -1444,7 +1440,7 @@ void IBBS_Read(void)
 	fclose(fp);
 }
 
-void IBBS_Write(void)
+static void IBBS_Write(void)
 {
 	FILE *fp;
 	int16_t CurBBS;
@@ -1493,16 +1489,16 @@ void IBBS_Write(void)
 
 // ------------------------------------------------------------------------- //
 
-int16_t FoundPoint = false;
-int16_t Level = 0;
-int16_t StartingPoint;
-struct Point {
+static int16_t FoundPoint = false;
+static int16_t Level = 0;
+static int16_t StartingPoint;
+static struct Point {
 	char BackLink;
 	char ForwardLinks[MAX_IBBSNODES];
 } *Points[MAX_IBBSNODES];
 
 
-void FindPoint(int16_t Destination, int16_t Source, int16_t BasePoint)
+static void FindPoint(int16_t Destination, int16_t Source, int16_t BasePoint)
 {
 	int16_t CurLink;
 
@@ -1563,7 +1559,7 @@ void FindPoint(int16_t Destination, int16_t Source, int16_t BasePoint)
 }
 
 
-void IBBS_LoadNDX(void)
+static void IBBS_LoadNDX(void)
 /*
  * Loads up world.ndx file
  */
@@ -1762,7 +1758,7 @@ void IBBS_LoadNDX(void)
 
 // ------------------------------------------------------------------------- //
 
-void IBBS_ProcessRouteConfig(void)
+static void IBBS_ProcessRouteConfig(void)
 {
 	FILE *fpRouteConfigFile;
 	char szRouteConfigName[40], szRouteConfigLine[255];
@@ -2380,7 +2376,7 @@ void KillAlliances(void)
 	unlink("ally.dat");
 }
 
-void Reset(void)
+static void Reset(void)
 {
 	// Delete unwanted files here
 	unlink("clans.msj");
@@ -2417,7 +2413,7 @@ void Reset(void)
 
 }
 
-void IBBS_Reset(struct game_data *GameData)
+static void IBBS_Reset(struct game_data *GameData)
 /*
  * Run if a reset packet was received.
  *
@@ -2448,7 +2444,7 @@ void IBBS_Reset(struct game_data *GameData)
 
 // ------------------------------------------------------------------------- //
 // This removes a ClanMOVE packet from backup.dat and only that type!
-void IBBS_RemoveFromBackup(int16_t ID[2])
+static void IBBS_RemoveFromBackup(int16_t ID[2])
 {
 	FILE *fpBackupDat;
 	struct Packet Packet;
@@ -2511,7 +2507,7 @@ void IBBS_RemoveFromBackup(int16_t ID[2])
 
 
 // ------------------------------------------------------------------------- //
-void IBBS_AddToGame(struct clan *Clan, bool WasLost)
+static void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 {
 	char szString[128];
 	FILE *fpPC;
@@ -2633,7 +2629,7 @@ void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 	/* done */
 }
 
-void ComeBack(int16_t ClanID[2], int16_t BBSID)
+static void ComeBack(int16_t ClanID[2], int16_t BBSID)
 {
 	struct LeavingData LeavingData;
 	FILE *fpLeavingDat;
@@ -2683,7 +2679,7 @@ void ComeBack(int16_t ClanID[2], int16_t BBSID)
 }
 
 
-int16_t IBBS_ProcessPacket(char *szFileName)
+static int16_t IBBS_ProcessPacket(char *szFileName)
 {
 	struct SpyResultPacket SpyResult;
 	struct SpyAttemptPacket Spy;
@@ -3106,7 +3102,7 @@ int16_t IBBS_ProcessPacket(char *szFileName)
 // ------------------------------------------------------------------------- //
 
 // returns true (I think) if no more files
-bool GetNextFile(char *szWildcard, char *szFileName)
+static bool GetNextFile(char *szWildcard, char *szFileName)
 {
 	struct ffblk ffblks;
 	uint16_t date = 65534, time = 65534;
@@ -3385,7 +3381,7 @@ int findnext(struct ffblk *ffblks)
 	return (search_and_construct_ffblk(&w32_finddata, ffblks, false));
 }
 
-int search_and_construct_ffblk(WIN32_FIND_DATA *w32_finddata, struct ffblk *ffblks, bool bhave_file)
+static int search_and_construct_ffblk(WIN32_FIND_DATA *w32_finddata, struct ffblk *ffblks, bool bhave_file)
 {
 	SYSTEMTIME system_time;
 
@@ -3439,7 +3435,7 @@ int search_and_construct_ffblk(WIN32_FIND_DATA *w32_finddata, struct ffblk *ffbl
 	return 0;
 }
 
-void convert_attribute(char *attrib_out, uint32_t attrib_in)
+static void convert_attribute(char *attrib_out, uint32_t attrib_in)
 {
 	*attrib_out = FA_NORMAL;
 	if (attrib_in & FILE_ATTRIBUTE_READONLY)

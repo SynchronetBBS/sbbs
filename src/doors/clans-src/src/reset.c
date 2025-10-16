@@ -18,29 +18,29 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef __unix__
-#include <curses.h>
-#include "unix_wrappers.h"
-#include <time.h>
+# include <curses.h>
+# include <time.h>
 #else
-#include <conio.h>
-#include <dos.h>
-#include <share.h>
+# include <conio.h>
+# include <dos.h>
+# include <share.h>
 # ifndef _WIN32
 #  include <mem.h>
 # else
 #  include <windows.h>
 # endif
 #endif
-#include <ctype.h>
+#include "unix_wrappers.h"
 
-#include "structs.h"
-#include "parsing.h"
 #include "k_config.h"
 #include "myopen.h"
+#include "parsing.h"
+#include "structs.h"
 
 #define MAX_OPTION      14
 
@@ -83,85 +83,84 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define CLANCOMBATADAY  5
 
 
-char get_answer(char *szAllowableChars);
-void qputs(char *string, int16_t x, int16_t y);
-void xputs(char *string, int16_t x, int16_t y);
+static char get_answer(char *szAllowableChars);
+static void qputs(char *string, int16_t x, int16_t y);
+static void xputs(char *string, int16_t x, int16_t y);
 
 #ifndef USE_STDIO
-void Video_Init(void);
+static void Video_Init(void);
 #endif
 
-void ResetMenu(bool InterBBSGame);
-void zputs(char *string);
+static void ResetMenu(bool InterBBSGame);
+static void zputs(char *string);
 
-int16_t NoYes(char *Query);
-int16_t YesNo(char *Query);
+static int16_t YesNo(char *Query);
 
-void EditOption(int16_t WhichOption);
-void DosHelp(char *Topic, char *File);
+static void EditOption(int16_t WhichOption);
+static void DosHelp(char *Topic, char *File);
 
 #ifndef USE_STDIO
-int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum);
-void DosGetStr(char *InputStr, int16_t MaxChars);
+static int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum);
+static void DosGetStr(char *InputStr, int16_t MaxChars);
 #endif
 
 #ifdef __unix__
-void set_attrs(unsigned short int attribute);
-short curses_color(short color);
+static void set_attrs(unsigned short int attribute);
+static short curses_color(short color);
 #endif
 
-void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color);
-void GoReset(struct ResetData *ResetData, int16_t Option);
+static void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color);
+static void GoReset(struct ResetData *ResetData, int16_t Option);
 
-void Config_Init(void);
-void Config_Close(void);
+static void Config_Init(void);
 
-void News_AddNews(char *szString);
-void News_CreateTodayNews(void);
+static void News_AddNews(char *szString);
+static void News_CreateTodayNews(void);
 
-void CreateVillageDat(struct ResetData *ResetData);
-void KillAlliances(void);
+static void CreateVillageDat(struct ResetData *ResetData);
+static void KillAlliances(void);
 
 void System_Error(char *szErrorMsg);
 
-void UpdateOption(char Option);
+static void UpdateOption(char Option);
 
-struct {
+#if defined(__MSDOS__)
+static struct {
 	int32_t VideoType;
 	int32_t y_lookup[25];
 	char FAR *VideoMem;
 } Video;
+#endif
 
-struct ResetData ResetData;
+static struct ResetData ResetData;
 
-struct config *Config;
-struct game Game = { false, NULL };
+static struct config *Config;
 
-char szTodaysDate[11];
+static char szTodaysDate[11];
 
 //extern unsigned _stklen = 32U*(1024U);
 
 #if defined(_WIN32)
-void gotoxy(int x, int y);
-void clrscr(void);
-void settextattr(uint16_t);
-void * save_screen(void);
-void restore_screen(void *);
+static void gotoxy(int x, int y);
+static void clrscr(void);
+static void settextattr(uint16_t);
+static void * save_screen(void);
+static void restore_screen(void *);
 
 typedef void * SCREENSTATE;
 #elif defined(__unix__)
 WINDOW *savedwin;
-void gotoxy(int x, int y);
-void clrscr(void);
-void settextattr(uint16_t);
-void save_screen(void);
-void restore_screen(void);
+static void gotoxy(int x, int y);
+static void clrscr(void);
+static void settextattr(uint16_t);
+static void save_screen(void);
+static void restore_screen(void);
 
 typedef void * SCREENSTATE;
 #endif
 
 #ifdef __unix__
-void do_endwin(void)
+static void do_endwin(void)
 {
 	endwin();
 }
@@ -209,14 +208,16 @@ int main(void)
 	return (0);
 }
 
-char *StrYesNo(bool value)
+#ifdef USE_STDIO
+static char *StrYesNo(bool value)
 {
 	if (value == true)
 		return "Yes";
 	return "No";
 }
+#endif
 
-void ResetMenu(bool InterBBSGame)
+static void ResetMenu(bool InterBBSGame)
 {
 #ifdef USE_STDIO
 	char szString[50];
@@ -642,7 +643,7 @@ void CheckMem(void *Test)
 // ------------------------------------------------------------------------- //
 
 #ifndef USE_STDIO
-void qputs(char *string, int16_t x, int16_t y)
+static void qputs(char *string, int16_t x, int16_t y)
 {
 #if defined(__MSDOS__)
 	char number[3];
@@ -720,14 +721,9 @@ void qputs(char *string, int16_t x, int16_t y)
 
 
 // ------------------------------------------------------------------------- //
-int32_t Video_VideoType(void)
-{
-	return Video.VideoType;
-}
 
-// ------------------------------------------------------------------------- //
-
-char FAR *vid_address(void)
+#ifdef __MSDOS__
+static char FAR *vid_address(void)
 {
 #ifdef __MSDOS__
 	int16_t tmp1, tmp2;
@@ -763,8 +759,9 @@ FC1:
 #else
 #endif
 }
+#endif
 
-void ScrollUp(void)
+static void ScrollUp(void)
 {
 #ifdef __MSDOS__
 	asm {
@@ -810,7 +807,7 @@ void ScrollUp(void)
 
 // ------------------------------------------------------------------------- //
 
-void Video_Init(void)
+static void Video_Init(void)
 {
 #ifdef __MSDOS__
 	int16_t iTemp;
@@ -846,7 +843,7 @@ void Video_Init(void)
 }
 
 #ifdef __unix__
-short curses_color(short color)
+static short curses_color(short color)
 {
 	switch (color) {
 		case 0 :
@@ -886,7 +883,7 @@ short curses_color(short color)
 }
 #endif
 
-void xputs(char *string, int16_t x, int16_t y)
+static void xputs(char *string, int16_t x, int16_t y)
 {
 #ifdef __MSDOS__
 	char FAR *VidPtr;
@@ -914,7 +911,7 @@ void xputs(char *string, int16_t x, int16_t y)
 }
 #endif
 
-int16_t YesNo(char *Query)
+static int16_t YesNo(char *Query)
 {
 #ifdef USE_STDIO
 	char answer[129];
@@ -946,39 +943,7 @@ int16_t YesNo(char *Query)
 #endif
 }
 
-int16_t NoYes(char *Query)
-{
-#ifdef USE_STDIO
-	char answer[129];
-	printf("%s (Yes/[No])\n",Query);
-	fpurge(stdin);
-	fflush(stdout);
-	fgets(answer,128,stdin);
-	answer[strlen(answer)-1]=0;
-	if (answer[0]=='Y' || answer[0]=='y')
-		return (YES);
-	return (NO);
-#else
-	/* show query */
-	zputs(Query);
-
-	zputs(" |01(|07yes/|15No|01) |11");
-
-	/* get user input */
-	if (get_answer("YN\r\n") == 'Y') {
-		/* user says YES */
-		zputs("Yes\n");
-		return (YES);
-	}
-	else {  /* user says NO */
-		zputs("No\n");
-		return (NO);
-	}
-#endif
-}
-
-
-void zputs(char *string)
+static void zputs(char *string)
 {
 #ifndef USE_STDIO
 	char number[3];
@@ -1146,7 +1111,7 @@ void zputs(char *string)
 }
 
 #ifdef __unix__
-void set_attrs(unsigned short int attribute)
+static void set_attrs(unsigned short int attribute)
 {
 	int   attrs=A_NORMAL;
 
@@ -1159,7 +1124,7 @@ void set_attrs(unsigned short int attribute)
 }
 #endif
 #ifndef USE_STDIO
-char get_answer(char *szAllowableChars)
+static char get_answer(char *szAllowableChars)
 {
 	GETCH_TYPE cKey;
 	uint16_t iTemp;
@@ -1183,7 +1148,7 @@ char get_answer(char *szAllowableChars)
 }
 #endif
 
-void EditOption(int16_t WhichOption)
+static void EditOption(int16_t WhichOption)
 {
 #ifdef USE_STDIO
 	char *aszHelp[11] = {
@@ -1408,7 +1373,7 @@ void EditOption(int16_t WhichOption)
 #endif
 }
 
-void DosHelp(char *Topic, char *File)
+static void DosHelp(char *Topic, char *File)
 {
 #ifdef USE_STDIO
 	char *Lines[22], string[155];
@@ -1540,7 +1505,7 @@ void DosHelp(char *Topic, char *File)
 }
 
 #ifndef USE_STDIO
-int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
+static int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 {
 	char string[255], NumString[13], DefMax[40];
 	GETCH_TYPE InputChar;
@@ -1646,7 +1611,7 @@ int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 }
 
 
-void DosGetStr(char *InputStr, int16_t MaxChars)
+static void DosGetStr(char *InputStr, int16_t MaxChars)
 {
 	int16_t CurChar;
 	GETCH_TYPE InputCh;
@@ -1710,7 +1675,7 @@ void DosGetStr(char *InputStr, int16_t MaxChars)
 	}
 }
 
-void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color)
+static void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color)
 {
 	int16_t x, y;
 #ifdef _WIN32
@@ -1760,7 +1725,7 @@ void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char 
 
 #endif
 
-void Config_Init(void)
+static void Config_Init(void)
 /*
  * Loads data from .CFG file into Config->
  *
@@ -1856,17 +1821,7 @@ void Config_Init(void)
 
 }
 
-void Config_Close(void)
-/*
- * Shuts down config's mem.
- *
- */
-{
-	free(Config);
-}
-
-
-void GoReset(struct ResetData *ResetData, int16_t Option)
+static void GoReset(struct ResetData *ResetData, int16_t Option)
 {
 	FILE *fp;
 	struct game_data Game_Data;
@@ -2019,7 +1974,7 @@ void GoReset(struct ResetData *ResetData, int16_t Option)
 }
 
 
-void News_CreateTodayNews(void)
+static void News_CreateTodayNews(void)
 {
 	/* this initializes the TODAY.ASC file */
 
@@ -2031,7 +1986,7 @@ void News_CreateTodayNews(void)
 	/* give other info like increase in cost of etc. */
 }
 
-void News_AddNews(char *szString)
+static void News_AddNews(char *szString)
 {
 	FILE *fpNewsFile;
 
@@ -2054,7 +2009,7 @@ void ClearFlags(char *Flags)
 		Flags[iTemp] = 0;
 }
 
-void InitEmpire(struct empire *Empire, int16_t UserEmpire)
+static void InitEmpire(struct empire *Empire, int16_t UserEmpire)
 {
 	int16_t iTemp;
 
@@ -2089,7 +2044,7 @@ void InitEmpire(struct empire *Empire, int16_t UserEmpire)
 
 
 
-void CreateVillageDat(struct ResetData *ResetData)
+static void CreateVillageDat(struct ResetData *ResetData)
 {
 	FILE *fp;
 	struct village_data Village_Data = {
@@ -2158,7 +2113,7 @@ void CreateVillageDat(struct ResetData *ResetData)
 
 
 
-void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
+static void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 {
 	FILE *fp;
 	int16_t iTemp;
@@ -2185,25 +2140,7 @@ void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 }
 
 
-void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
-{
-	FILE *fp;
-	int16_t iTemp;
-
-	fp = fopen("ally.dat", "wb");
-	if (fp) {
-		for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
-			if (Alliances[iTemp] == NULL)
-				continue;
-
-			EncryptWrite_s(Alliance, Alliances[iTemp], fp, XOR_ALLIES);
-		}
-		fclose(fp);
-	}
-}
-
-
-void KillAlliances(void)
+static void KillAlliances(void)
 {
 	struct Alliance *Alliances[MAX_ALLIANCES];
 	char szFileName[13];
@@ -2231,19 +2168,6 @@ void KillAlliances(void)
 	unlink("ally.dat");
 }
 
-char *MakeStr(int16_t length)
-/*
- * This returns a pointer to a malloc'd string of length length.
- */
-{
-	char *pc;
-
-	pc = malloc(sizeof(char)*length);
-	CheckMem(pc);
-
-	return pc;
-}
-
 void System_Error(char *szErrorMsg)
 /*
  * purpose  To output an error message and close down the system.
@@ -2267,7 +2191,7 @@ void System_Error(char *szErrorMsg)
 }
 
 #ifndef USE_STDIO
-void UpdateOption(char Option)
+static void UpdateOption(char Option)
 {
 	char szString[50];
 	switch (Option) {
@@ -2324,7 +2248,7 @@ void UpdateOption(char Option)
 #endif
 
 #ifdef _WIN32
-void gotoxy(int x, int y)
+static void gotoxy(int x, int y)
 {
 	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	COORD cursor_pos;
@@ -2335,7 +2259,7 @@ void gotoxy(int x, int y)
 	SetConsoleCursorPosition(std_handle, cursor_pos);
 }
 
-void clrscr(void)
+static void clrscr(void)
 {
 	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
@@ -2363,14 +2287,14 @@ void clrscr(void)
 		top_left);
 }
 
-void settextattr(uint16_t attribute)
+static void settextattr(uint16_t attribute)
 {
 	SetConsoleTextAttribute(
 		GetStdHandle(STD_OUTPUT_HANDLE),
 		attribute);
 }
 
-void * save_screen(void)
+static void * save_screen(void)
 {
 	CHAR_INFO *char_info_buffer;
 	uint32_t buffer_len;
@@ -2407,7 +2331,7 @@ void * save_screen(void)
 	return (void *)char_info_buffer;
 }
 
-void restore_screen(void *state)
+static void restore_screen(void *state)
 {
 	CHAR_INFO *char_info_buffer = (CHAR_INFO *)state;
 	COORD top_left = { 0, 0 };
@@ -2435,28 +2359,28 @@ void restore_screen(void *state)
 	free(char_info_buffer);
 }
 #elif defined(__unix__)
-void gotoxy(int x, int y)
+static void gotoxy(int x, int y)
 {
 	move(y, x);
 }
 
-void clrscr(void)
+static void clrscr(void)
 {
 	clear();
 	refresh();
 }
 
-void settextattr(uint16_t attribute)
+static void settextattr(uint16_t attribute)
 {
 	set_attrs(attribute);
 }
 
-void save_screen(void)
+static void save_screen(void)
 {
 	savedwin=dupwin(stdscr);
 }
 
-void restore_screen(void)
+static void restore_screen(void)
 {
 	overwrite(savedwin,stdscr);
 	refresh();

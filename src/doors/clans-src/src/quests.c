@@ -58,7 +58,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 struct Quest Quests[MAX_QUESTS];
 
 char Quests_TFlags[8];          // temp. flags
-bool QuestsInitialized = false;
+
+static bool QuestsInitialized = false;
 
 // ------------------------------------------------------------------------- //
 
@@ -206,18 +207,18 @@ void ClearFlags(char *Flags)
 		Flags[iTemp] = 0;
 }
 
-void SetFlag(char *Flags, int16_t WhichFlag)
+static void SetFlag(char *Flags, int16_t WhichFlag)
 {
 	Flags[ WhichFlag/8 ] |= (1 << (WhichFlag % 8));
 }
 
-void ClearFlag(char *Flags, int16_t WhichFlag)
+static void ClearFlag(char *Flags, int16_t WhichFlag)
 {
 	if (Flags[ WhichFlag/8 ]  & (1 << (WhichFlag % 8)))
 		Flags[ WhichFlag/8 ] ^= (1 << (WhichFlag % 8));
 }
 
-bool FlagSet(char *Flags, int16_t WhichFlag)
+static bool FlagSet(char *Flags, int16_t WhichFlag)
 {
 	if (Flags[ WhichFlag/8 ] & (1 << (WhichFlag % 8)))
 		return true;
@@ -225,7 +226,7 @@ bool FlagSet(char *Flags, int16_t WhichFlag)
 		return false;
 }
 
-bool legal(char *pszAcs, int16_t *iCharsRead)
+static bool legal(char *pszAcs, int16_t *iCharsRead)
 {
 	bool bCurrent = true;   // flag as to whether last pszAcs's were true
 	bool UseCurrent = true;
@@ -484,7 +485,7 @@ bool legal(char *pszAcs, int16_t *iCharsRead)
 
 // ------------------------------------------------------------------------- //
 
-void JumpToEvent(char *szLabel, struct FileHeader *FileHeader)
+static void JumpToEvent(char *szLabel, struct FileHeader *FileHeader)
 {
 	struct EventHeader EventHeader;
 	uint8_t hBuf[BUF_SIZE_EventHeader];
@@ -512,7 +513,7 @@ void JumpToEvent(char *szLabel, struct FileHeader *FileHeader)
 }
 
 // ------------------------------------------------------------------------- //
-void TellQuest(char *pszQuestIndex)
+static void TellQuest(char *pszQuestIndex)
 {
 	int16_t QuestNum, CurQuest, iTemp;
 	char szString[80];

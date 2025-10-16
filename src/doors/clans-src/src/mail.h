@@ -9,15 +9,13 @@
 
 #include "structs.h"
 
-int16_t Mail_Read(void);
+bool Mail_Read(void);
 
 void Mail_Write(int16_t MessageType);
 
 void Mail_RequestAlliance(struct Alliance *Alliance);
 
 void Mail_WriteToAllies(struct Alliance *Alliance);
-
-void GenericReply(struct Message *Reply, char *szReply, bool AllowReply);
 
 void GenericMessage(char *szString, int16_t ToClanID[2], int16_t FromClanID[2], char *szFrom, bool AllowReply);
 

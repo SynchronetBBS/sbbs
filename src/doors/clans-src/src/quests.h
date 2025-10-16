@@ -18,13 +18,15 @@ struct EventHeader {
 	bool Event;           // 1 = Event, 0 = Result
 };
 
+extern struct Quest Quests[MAX_QUESTS];
+extern char Quests_TFlags[8];
+
 void ClearFlags(char *Flags);
 
 bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 			  struct NPCInfo *NPCInfo, char *szNPCIndex);
 
 void Quests_GoQuest(void);
-
 
 void Quests_Init(void);
 void Quests_Close(void);

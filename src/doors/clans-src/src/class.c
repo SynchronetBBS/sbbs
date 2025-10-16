@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "unix_wrappers.h"
 
 #include "clansini.h"
+#include "class.h"
 #include "language.h"
 #include "myopen.h"
 #include "structs.h"

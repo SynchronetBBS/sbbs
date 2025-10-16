@@ -1,5 +1,6 @@
 // MakePak -- creates .PAK file using PAK.LST file
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,20 +8,19 @@
 # include <alloc.h>
 # include <malloc.h>
 #endif /* __MSDOS__ */
-#include <ctype.h>
 
 #include "defines.h"
 #include "myopen.h"
+#include "parsing.h"
 #include "structs.h"
 
 #define MAX_TOKEN_CHARS 32
 
 // Functions
-void GetToken(char *szString, char *szToken);
-void AddToPak(char *pszFileName, char *pszFileAlias, FILE *fpPakFile);
+static void AddToPak(char *pszFileName, char *pszFileAlias, FILE *fpPakFile);
 
 // Global Data
-int32_t lPakSize;
+static int32_t lPakSize;
 
 int main(int argc, char *argv[])
 {
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 	return(0);
 }
 
-void AddToPak(char *pszFileName, char *pszFileAlias, FILE *fpPakFile)
+static void AddToPak(char *pszFileName, char *pszFileAlias, FILE *fpPakFile)
 {
 	struct FileHeader FileHeader;
 	FILE *fpInput;
@@ -148,58 +148,4 @@ void AddToPak(char *pszFileName, char *pszFileAlias, FILE *fpPakFile)
 	fclose(fpInput);
 
 	free(Chunk);
-}
-
-void GetToken(char *szString, char *szToken)
-{
-	char *pcCurrentPos;
-	unsigned int uCount;
-
-	/* Ignore all of line after comments or CR/LF char */
-	pcCurrentPos=(char *)szString;
-	while (*pcCurrentPos) {
-		if (*pcCurrentPos=='\n' || *pcCurrentPos=='\r') {
-			*pcCurrentPos='\0';
-			break;
-		}
-		++pcCurrentPos;
-	}
-
-	/* Search for beginning of first token on line */
-	pcCurrentPos = (char *)szString;
-	while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
-
-	/* If no token was found, proceed to process the next line */
-	if (!*pcCurrentPos) {
-		szToken[0] = 0;
-		szString[0] = 0;
-		return;
-	}
-
-	/* Get first token from line */
-	uCount=0;
-	while (*pcCurrentPos && !isspace(*pcCurrentPos)) {
-		if (uCount<MAX_TOKEN_CHARS) szToken[uCount++]=*pcCurrentPos;
-		++pcCurrentPos;
-	}
-	if (uCount<=MAX_TOKEN_CHARS)
-		szToken[uCount]='\0';
-	else
-		szToken[MAX_TOKEN_CHARS]='\0';
-
-	/* Find beginning of configuration option parameters */
-	while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
-
-	/* Trim trailing spaces from setting string */
-	if (*pcCurrentPos) {
-		for (uCount=strlen(pcCurrentPos)-1; uCount>0; --uCount) {
-			if (isspace(pcCurrentPos[uCount])) {
-				pcCurrentPos[uCount]='\0';
-			}
-			else {
-				break;
-			}
-		}
-	}
-	memmove(szString, pcCurrentPos, strlen(pcCurrentPos) + 1);
 }

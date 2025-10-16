@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "misc.h"
 #include "mstrings.h"
 #include "myopen.h"
+#include "pawn.h"
 #include "structs.h"
 #include "system.h"
 #include "user.h"
@@ -46,7 +47,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_PSITEMS     100
 #define MAX_PSITEMAGE   2
 
-int16_t PS_GetOpenItemSlot(struct clan *Clan)
+static int16_t PS_GetOpenItemSlot(struct clan *Clan)
 {
 	// return -1 if no more open slots
 
@@ -65,7 +66,7 @@ int16_t PS_GetOpenItemSlot(struct clan *Clan)
 		return iTemp;
 }
 
-void PS_Init(struct item_data **PS_Items)
+static void PS_Init(struct item_data **PS_Items)
 {
 	int16_t iTemp, CurItem;
 	FILE *fp;
@@ -93,7 +94,7 @@ void PS_Init(struct item_data **PS_Items)
 	fclose(fp);
 }
 
-void PS_Close(struct item_data **PS_Items)
+static void PS_Close(struct item_data **PS_Items)
 {
 	FILE *fp;
 	int16_t CurItem;
@@ -117,7 +118,7 @@ void PS_Close(struct item_data **PS_Items)
 	}
 }
 
-void PS_List(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
+static void PS_List(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 {
 	// list items of a specified type -- in future use type
 
@@ -149,7 +150,7 @@ void PS_List(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 }
 
 
-void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
+static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 {
 	bool Done;
 	char cKey;
@@ -246,7 +247,7 @@ void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 	(void)iTemp;
 }
 
-void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
+static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 {
 	// allow user to sell an item he owns
 

@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "unix_wrappers.h"
 
 #include "door.h"
+#include "game.h"
 #include "language.h"
 #include "misc.h"
 #include "mstrings.h"
@@ -45,7 +46,7 @@ struct game Game = { false, NULL };
 
 // ------------------------------------------------------------------------- //
 
-bool Game_Read(void)
+static bool Game_Read(void)
 /*
  * Reads in the GAME.DAT file.  If not found, returns false.
  */
@@ -74,7 +75,7 @@ void Game_Write(void)
 	}
 }
 
-void Game_Destroy(void)
+static void Game_Destroy(void)
 /*
  * Frees mem held by Game
  */

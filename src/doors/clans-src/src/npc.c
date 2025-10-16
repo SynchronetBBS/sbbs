@@ -41,12 +41,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "mstrings.h"
 #include "myopen.h"
 #include "news.h"
+#include "npc.h"
 #include "quests.h"
 #include "structs.h"
 #include "user.h"
 #include "video.h"
-
-extern char Quests_TFlags[8];
 
 // ------------------------------------------------------------------------- //
 

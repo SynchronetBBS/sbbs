@@ -3,11 +3,6 @@
 
 #include "structs.h"
 
-void Items_Init(void);
-/*
- * Loads item data into memory.
- */
-
 void Items_Close(void);
 /*
  * Unloads items.

@@ -254,12 +254,12 @@ else
 	env - PATH="$(PATH)" $(MAKE) NATIVE=1 RELEASE=1 $@
 endif
 
-makepak$(EXEFILE):      makepak.c serialize.o crc.o
-	$(CC) $(CFLAGS) $(LDFLAGS) makepak.c serialize.o crc.o -o $@
+makepak$(EXEFILE):      makepak.c parsing.o serialize.o crc.o
+	$(CC) $(CFLAGS) $(LDFLAGS) makepak.c parsing.o serialize.o crc.o -o $@
 
-native-makepak$(NATIVEEXEFILE):      makepak.c serialize.c crc.c
+native-makepak$(NATIVEEXEFILE):      makepak.c parsing.c serialize.c crc.c
 ifdef NATIVE
-	$(CC) $(CFLAGS) $(LDFLAGS) makepak.c serialize.c crc.c -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) makepak.c parsing.c serialize.c crc.c -o $@
 else
 	env - PATH="$(PATH)" $(MAKE) NATIVE=1 RELEASE=1 $@
 endif

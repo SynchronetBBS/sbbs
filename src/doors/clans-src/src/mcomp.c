@@ -20,19 +20,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 /* Monster Compiler */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <ctype.h>
-#ifdef __unix__
 #include "unix_wrappers.h"
-#endif
-//#include <OpenDoor.h>
-#include "structs.h"
-#include "serialize.h"
 
-#define true                1
-#define false               0
+#include "defines.h"
+#include "serialize.h"
+#include "structs.h"
+
 #define MAX_SPELLS          40
 #define MAX_MEMBERS         20
 #define MAX_ITEMS_HELD      30
@@ -41,7 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_TOKEN_CHARS     32
 #define NUM_ATTRIBUTES      6
 
-char *papszMonKeyWords[MAX_MON_WORDS] = {
+static char *papszMonKeyWords[MAX_MON_WORDS] = {
 	"Name",
 	"HP",
 	"Agility",
@@ -58,7 +55,7 @@ char *papszMonKeyWords[MAX_MON_WORDS] = {
 	"Undead"
 };
 
-struct pc TmpMonster;
+static struct pc TmpMonster;
 
 int main(int argc, char *argv[])
 {

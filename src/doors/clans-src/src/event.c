@@ -31,14 +31,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <OpenDoor.h>
 
 #include "door.h"
+#include "event.h"
 #include "help.h"
 #include "language.h"
 #include "mstrings.h"
 #include "quests.h"
 #include "structs.h"
 #include "user.h"
-
-extern struct Quest Quests[MAX_QUESTS];
 
 void GoQuest(void)
 {

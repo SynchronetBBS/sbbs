@@ -1,12 +1,12 @@
 // MClass -- makes classes.dat (and races.dat)
 
-#include <stdio.h>
-#include <time.h>
-#include <string.h>
-#include <stdlib.h>
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #ifdef __MSDOS__
-#include <malloc.h>
+# include <malloc.h>
 #endif /* __MSDOS__ */
 
 #include "defines.h"
@@ -16,12 +16,12 @@
 #include "structs.h"
 #include "unix_wrappers.h"
 
-struct PClass *PClasses[MAX_PCLASSES], *Races[MAX_PCLASSES];
+static struct PClass *PClasses[MAX_PCLASSES], *Races[MAX_PCLASSES];
 
-int16_t TotalItems, TotalRaces = 0, TotalClasses = 0, TotalSpells;
+static int16_t TotalRaces = 0, TotalClasses = 0;
 
-void Deinit_PClasses(struct PClass *PClass[MAX_PCLASSES]);
-int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileName);
+static void Deinit_PClasses(struct PClass *PClass[MAX_PCLASSES]);
+static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileName);
 
 int main(void)
 {
@@ -66,7 +66,7 @@ int main(void)
 	return(0);
 }
 
-void Deinit_PClasses(struct PClass *PClass[MAX_PCLASSES])
+static void Deinit_PClasses(struct PClass *PClass[MAX_PCLASSES])
 {
 	int iTemp;
 
@@ -76,7 +76,7 @@ void Deinit_PClasses(struct PClass *PClass[MAX_PCLASSES])
 	}
 }
 
-int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileName)
+static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileName)
 {
 	FILE *fpPClass;
 	char szLine[255], *pcCurrentPos/*, szString[255]*/;

@@ -44,14 +44,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MT_LACONIA      2
 
 
-struct {
+static struct {
 	bool Initialized;
 	int16_t NumItems;
 
 	struct item_data *Data[MAX_ITEMS];
 } Items = { false, 0 };
-
-extern struct Spell *Spells[MAX_SPELLS];
+static void Items_Init(void);
 
 // ------------------------------------------------------------------------- //
 void Items_FindTreasureChest(void)
@@ -261,7 +260,7 @@ bool ItemPenalty(struct pc *PC, struct item_data *Item)
 
 // ------------------------------------------------------------------------- //
 
-void ItemUseableBy(struct item_data *Item)
+static void ItemUseableBy(struct item_data *Item)
 /*
  * This function outputs who in PClan may use the item.
  *
@@ -444,7 +443,7 @@ void ShowItemStats(struct item_data *Item, struct clan *Clan)
 
 // ------------------------------------------------------------------------- //
 
-void Items_Read(void)
+static void Items_Read(void)
 {
 	int16_t iTemp, NumItems, CurFile, CurItem;
 	struct FileHeader ItemFile;
@@ -487,7 +486,7 @@ void Items_Read(void)
 
 // ------------------------------------------------------------------------- //
 
-void Items_Destroy(void)
+static void Items_Destroy(void)
 {
 	int16_t CurItem;
 
@@ -547,7 +546,7 @@ void Items_GiveItem(char *szItemName)
 
 // ------------------------------------------------------------------------- //
 
-void Items_Init(void)
+static void Items_Init(void)
 /*
  * Loads item data into memory.
  */

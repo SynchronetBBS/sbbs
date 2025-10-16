@@ -41,10 +41,7 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile);
 
 void IBBS_SeeVillages(bool Travel);
 
-void IBBS_TravelMaint(void);
-
 void IBBS_CurrentTravelInfo(void);
-void IBBS_BackupMaint(void);
 
 void IBBS_SendComeBack(int16_t BBSIdTo, struct clan *Clan);
 
@@ -61,5 +58,7 @@ void LeagueKillUser(struct UserInfo *User);
 
 void IBBS_PacketIn(void);
 void IBBS_LeagueNewUser(struct UserInfo *User);
+
+void KillAlliances(void);
 
 #endif

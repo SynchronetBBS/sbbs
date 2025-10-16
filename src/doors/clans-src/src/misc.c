@@ -26,10 +26,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 
 #include "defines.h"
+#include "misc.h"
 
 #define TOTAL_MONTHS    12
 
-int32_t DaysSinceJan1(char szTheDate[])
+static int32_t DaysSinceJan1(char szTheDate[])
 {
 	int32_t CurMonth, Days = 0, ThisMonth, ThisYear, ThisDay;
 	bool LeapYear;

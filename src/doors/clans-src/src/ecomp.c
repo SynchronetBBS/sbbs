@@ -18,8 +18,7 @@
 #define MAX_TOKEN_CHARS     32
 #define MAX_EVA_WORDS       34
 
-
-char *papszEvaKeyWords[MAX_EVA_WORDS] = {
+static char *papszEvaKeyWords[MAX_EVA_WORDS] = {
 	"Event",
 	"Result",
 	"Text",

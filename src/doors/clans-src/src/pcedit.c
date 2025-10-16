@@ -36,26 +36,27 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "structs.h"
 #include "myopen.h"
 
-struct village Village;
-struct game Game;
-size_t entry_size = 0;
+static struct village Village;
+static struct game Game;
+static size_t entry_size = 0;
 
-void InitVillage(void);
-void UpdateVillage(void);
 void CheckMem(void *Test);
-void RejectTrade(struct TradeData *TradeData);
-void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
-void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
-void RemoveFromIPScores(const int16_t ClanID[2]);
-bool ClanIDInList(const int16_t ClanID[2]);
-void RemoveFromUList(const int16_t ClanID[2]);
-void FreeClan(struct clan *Clan);
-bool GetClan(int16_t ID[2], struct clan *TmpClan);
-void DeleteClan(int16_t ID[2]);
-void UpdateClan(struct clan *Clan);
-void InitGame(void);
+
+static void InitVillage(void);
+static void UpdateVillage(void);
+static void RejectTrade(struct TradeData *TradeData);
+static void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
+static void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
+static void RemoveFromIPScores(const int16_t ClanID[2]);
+static bool ClanIDInList(const int16_t ClanID[2]);
+static void RemoveFromUList(const int16_t ClanID[2]);
+static void FreeClan(struct clan *Clan);
+static bool GetClan(int16_t ID[2], struct clan *TmpClan);
+static void DeleteClan(int16_t ID[2]);
+static void UpdateClan(struct clan *Clan);
+static void InitGame(void);
 #ifdef __unix__
-char getch(void);
+static char getch(void);
 #endif
 
 
@@ -236,7 +237,7 @@ int main(void)
 	return 0;
 }
 
-void DeleteClan(int16_t ClanID[2])
+static void DeleteClan(int16_t ClanID[2])
 {
 	FILE *fpOldPC, *fpNewPC, *OldMessage, *NewMessage;
 	FILE *fpTradeFile;
@@ -474,7 +475,7 @@ void DeleteClan(int16_t ClanID[2])
 	RemoveFromIPScores(ClanID);
 }
 
-void InitVillage(void)
+static void InitVillage(void)
 {
 	FILE *fpVillage;
 	/*    char ColorScheme[23] = {
@@ -498,7 +499,7 @@ void InitVillage(void)
 	fclose(fpVillage);
 }
 
-void UpdateVillage(void)
+static void UpdateVillage(void)
 {
 	FILE *fpVillage;
 
@@ -527,7 +528,7 @@ void CheckMem(void *Test)
 	}
 }
 
-void RejectTrade(struct TradeData *TradeData)
+static void RejectTrade(struct TradeData *TradeData)
 {
 	struct clan *TmpClan;
 
@@ -557,7 +558,7 @@ void RejectTrade(struct TradeData *TradeData)
 	FreeClan(TmpClan);
 }
 
-void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
+static void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 {
 	FILE *fp;
 	int16_t iTemp;
@@ -583,7 +584,7 @@ void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 	}
 }
 
-void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
+static void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 {
 	FILE *fp;
 	int16_t iTemp;
@@ -600,7 +601,7 @@ void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 	}
 }
 
-void RemoveFromUList(const int16_t ClanID[2])
+static void RemoveFromUList(const int16_t ClanID[2])
 {
 	// open file for r+b
 	// scan file for ClanID
@@ -648,7 +649,7 @@ void RemoveFromUList(const int16_t ClanID[2])
 	rename(TEMP_FILENAME, USERLIST_DATAFILE);
 }
 
-bool ClanIDInList(const int16_t ClanID[2])
+static bool ClanIDInList(const int16_t ClanID[2])
 {
 	FILE *fpUList;
 	bool Found = false;
@@ -678,7 +679,7 @@ bool ClanIDInList(const int16_t ClanID[2])
 	return Found;
 }
 
-void RemoveFromIPScores(const int16_t ClanID[2])
+static void RemoveFromIPScores(const int16_t ClanID[2])
 {
 	struct UserScore **ScoreList;
 	int16_t iTemp;
@@ -736,7 +737,7 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 	fclose(fp);
 }
 
-void FreeClan(struct clan *Clan)
+static void FreeClan(struct clan *Clan)
 {
 	int16_t CurMember;
 
@@ -752,7 +753,7 @@ void FreeClan(struct clan *Clan)
 	Clan = NULL;
 }
 
-bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
+static bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 {
 	FILE *fpPlayerFile;
 	int16_t ClanNum, iTemp;
@@ -810,7 +811,7 @@ bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 	return true;
 }
 
-void UpdateClan(struct clan *Clan)
+static void UpdateClan(struct clan *Clan)
 {
 	FILE *fpPlayerFile;
 	/*    char szFileName[50];*/
@@ -878,7 +879,7 @@ void System_Error(char *szErrorMsg)
 	exit(1);
 }
 
-void InitGame(void)
+static void InitGame(void)
 {
 	FILE *fpGame;
 
@@ -899,7 +900,7 @@ void InitGame(void)
 }
 
 #ifdef __unix__
-char
+static char
 getch(void)
 {
 	fd_set fds;

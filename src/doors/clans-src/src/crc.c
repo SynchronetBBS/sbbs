@@ -2,6 +2,7 @@
  * CRC code. :)
  */
 
+#include "crc.h"
 #include "defines.h"
 
 int32_t CRCValue(const void *Data, int DataSize)

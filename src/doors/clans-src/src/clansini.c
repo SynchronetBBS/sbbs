@@ -24,15 +24,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef __unix__
-#include "unix_wrappers.h"
-#else
-#include <share.h>
-#endif
 #include <string.h>
+#ifndef __unix__
+# include <share.h>
+#endif
+#include "unix_wrappers.h"
 
-#include "structs.h"
+#include "clansini.h"
 #include "language.h"
+#include "structs.h"
 #include "system.h"
 #include "parsing.h"
 #include "k_clansi.h"

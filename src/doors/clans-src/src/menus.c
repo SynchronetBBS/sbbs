@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "items.h"
 #include "language.h"
 #include "mail.h"
+#include "menus.h"
 #include "menus2.h"
 #include "mstrings.h"
 #include "npc.h"
@@ -53,10 +54,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MT_PRIVATE      1
 #define MT_ALLIANCE     2
 
-bool FirstTimeInMain = false;
+static bool FirstTimeInMain = false;
 
 // ------------------------------------------------------------------------- //
-int16_t WorldMenu(void)
+static int16_t WorldMenu(void)
 {
 	char *szTheOptions[7];
 	int16_t iTemp;
@@ -112,7 +113,7 @@ int16_t WorldMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-void AddChatFile(char *szString, char *pszFileName)
+static void AddChatFile(char *szString, char *pszFileName)
 {
 	FILE *fpChatFile;
 	int16_t LinesRead, iTemp;
@@ -249,7 +250,7 @@ void Menus_ChatRoom(char *pszFileName)
 
 
 // ------------------------------------------------------------------------- //
-int16_t MainMenu(void)
+static int16_t MainMenu(void)
 {
 	char *szTheOptions[20], DefaultAction, szMainMenu[20],
 	*szSecret = "/e/Secret";
@@ -393,7 +394,7 @@ int16_t MainMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-int16_t MineMenu(void)
+static int16_t MineMenu(void)
 {
 	char *szTheOptions[9];
 	int16_t iTemp;
@@ -519,7 +520,7 @@ int16_t MineMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-int16_t CommunicationsMenu(void)
+static int16_t CommunicationsMenu(void)
 {
 	char *szTheOptions[8];
 	char szString[128];
@@ -573,7 +574,7 @@ int16_t CommunicationsMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-void WizardShop(void)
+static void WizardShop(void)
 {
 	char *szTheOptions[6], szString[128];
 	int16_t iTemp, ItemIndex;
@@ -661,7 +662,7 @@ void WizardShop(void)
 	(void)iTemp;
 }
 
-int16_t MarketMenu(void)
+static int16_t MarketMenu(void)
 {
 	char *szTheOptions[10];
 	int16_t iTemp;
@@ -718,7 +719,7 @@ int16_t MarketMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-int16_t AlliancesMenu(void)
+static int16_t AlliancesMenu(void)
 {
 	struct Alliance *Alliances[MAX_ALLIANCES];
 	int16_t iTemp, NumAlliances, WhichAlliance, NumUserAlliances;
@@ -890,7 +891,7 @@ int16_t AlliancesMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-int16_t ChurchMenu(void)
+static int16_t ChurchMenu(void)
 {
 	char *szTheOptions[9];
 	char szString[80];
@@ -996,7 +997,7 @@ int16_t ChurchMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-int16_t THallMenu(void)
+static int16_t THallMenu(void)
 {
 	char *szTheOptions[7];
 	char szString[80];

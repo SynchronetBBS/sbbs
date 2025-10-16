@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "alliance.h"
 #include "door.h"
+#include "empire.h"
 #include "fight.h"
 #include "game.h"
 #include "help.h"
@@ -99,17 +100,17 @@ struct BuildingType BuildingType[NUM_BUILDINGTYPES] = {
 	{"Shops",               8, 20,  30,  5000 }
 };
 
-void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
+static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 					  int16_t NumDestroyed[MAX_BUILDINGS], int16_t Percent, int16_t *LandGained);
 
-void EmpireAttack(struct empire *AttackingEmpire, struct Army *AttackingArmy,
+static void EmpireAttack(struct empire *AttackingEmpire, struct Army *AttackingArmy,
 				  struct empire *DefendingEmpire, struct AttackResult *Result,
 				  int16_t Goal, int16_t ExtentOfAttack);
 
-void ProcessAttackResult(struct AttackResult *AttackResult);
+static void ProcessAttackResult(struct AttackResult *AttackResult);
 
 // ------------------------------------------------------------------------- //
-void SendResultPacket(struct AttackResult *Result, int16_t DestID)
+static void SendResultPacket(struct AttackResult *Result, int16_t DestID)
 {
 	uint8_t pktBuf[BUF_SIZE_AttackResult];
 	size_t res;
@@ -124,7 +125,6 @@ void SendResultPacket(struct AttackResult *Result, int16_t DestID)
 	IBBS_SendPacket(PT_ATTACKRESULT, sizeof(pktBuf), pktBuf,
 					DestID);
 }
-
 
 void ProcessAttackPacket(struct AttackPacket *AttackPacket)
 {
@@ -679,7 +679,7 @@ void Empire_Stats(struct empire *Empire)
 
 // ------------------------------------------------------------------------- //
 
-void DevelopLand(struct empire *Empire)
+static void DevelopLand(struct empire *Empire)
 {
 	int32_t LimitingVariable, CostToDevelop;
 	int16_t LandToDevelop;
@@ -1029,7 +1029,7 @@ void DonateToEmpire(struct empire *Empire)
 	}
 }
 
-void Destroy_Menu(struct empire *Empire)
+static void Destroy_Menu(struct empire *Empire)
 {
 	// allow user to build new structures
 
@@ -1117,7 +1117,7 @@ void Destroy_Menu(struct empire *Empire)
 	}
 }
 
-void StructureMenu(struct empire *Empire)
+static void StructureMenu(struct empire *Empire)
 {
 	// allow user to build new structures
 
@@ -1234,7 +1234,7 @@ void StructureMenu(struct empire *Empire)
 }
 
 
-void ManageArmy(struct empire *Empire)
+static void ManageArmy(struct empire *Empire)
 {
 	char *szTheOptions[6];
 	char szString[128];
@@ -1410,7 +1410,7 @@ void ManageArmy(struct empire *Empire)
 }
 
 // ------------------------------------------------------------------------- //
-void ArmyAttack(struct Army *Attacker, struct Army *Defender,
+static void ArmyAttack(struct Army *Attacker, struct Army *Defender,
 				struct AttackResult *Result)
 {
 	int16_t NumRounds, CurRound;
@@ -1558,7 +1558,7 @@ void ArmyAttack(struct Army *Attacker, struct Army *Defender,
 
 // ------------------------------------------------------------------------- //
 
-void EmpireAttack(struct empire *AttackingEmpire, struct Army *AttackingArmy,
+static void EmpireAttack(struct empire *AttackingEmpire, struct Army *AttackingArmy,
 				  struct empire *DefendingEmpire, struct AttackResult *Result,
 				  int16_t Goal, int16_t ExtentOfAttack)
 {
@@ -1710,7 +1710,7 @@ void EmpireAttack(struct empire *AttackingEmpire, struct Army *AttackingArmy,
 
 
 // according to result, do something
-void ProcessAttackResult(struct AttackResult *AttackResult)
+static void ProcessAttackResult(struct AttackResult *AttackResult)
 {
 	char szNews[128], *szMessage, szString[255],
 	szDefenderType[40], szAttacker[40], szDefender[40];
@@ -2013,7 +2013,7 @@ void ProcessAttackResult(struct AttackResult *AttackResult)
 	free(szMessage);
 }
 
-void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
+static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 					  int16_t NumDestroyed[MAX_BUILDINGS], int16_t Percent, int16_t *LandGained)
 {
 	int16_t LandUsed[MAX_BUILDINGS];
@@ -2122,7 +2122,7 @@ void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 	(void)NumFound;
 }
 
-void ShowResults(struct AttackResult *Result)
+static void ShowResults(struct AttackResult *Result)
 {
 	int16_t iTemp;
 	bool ShowedOne;
@@ -2235,7 +2235,7 @@ void ShowResults(struct AttackResult *Result)
 
 // ------------------------------------------------------------------------- //
 
-void GetNumTroops(struct Army *OriginalArmy, struct Army *AttackingArmy)
+static void GetNumTroops(struct Army *OriginalArmy, struct Army *AttackingArmy)
 {
 	char szString[128], cInput;
 
@@ -2321,7 +2321,7 @@ void GetNumTroops(struct Army *OriginalArmy, struct Army *AttackingArmy)
 	AttackingArmy->Strategy = OriginalArmy->Strategy;
 }
 
-void StartEmpireWar(struct empire *Empire)
+static void StartEmpireWar(struct empire *Empire)
 {
 	struct Army AttackingArmy, DefendingArmy;
 	struct Alliance *Alliances[MAX_ALLIANCES];
@@ -2933,7 +2933,7 @@ void StartEmpireWar(struct empire *Empire)
 
 
 // ------------------------------------------------------------------------- //
-void SpyMenu(struct empire *Empire)
+static void SpyMenu(struct empire *Empire)
 {
 	struct Alliance *Alliances[MAX_ALLIANCES];
 	struct clan *TmpClan;

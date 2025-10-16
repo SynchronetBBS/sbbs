@@ -24,14 +24,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
 
-
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 #ifndef __unix__
-#include <share.h>
-#include <dos.h>
+# include <share.h>
+# include <dos.h>
 #endif
 #include "unix_wrappers.h"
 
@@ -44,6 +43,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "ibbs.h"
 #include "input.h"
 #include "language.h"
+#include "mail.h"
 #include "mstrings.h"
 #include "myopen.h"
 #include "packet.h"
@@ -68,12 +68,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define ALL_VILLAGES    -1
 
-int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t CurLine);
-void SendMsj(struct Message *Message, int16_t WhichVillage);
+static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t CurLine);
+static void SendMsj(struct Message *Message, int16_t WhichVillage);
 
 // ------------------------------------------------------------------------- //
 
-void GetUserNames(char *apszUserNames[50], int16_t WhichVillage, int16_t *NumUsers,
+static void GetUserNames(char *apszUserNames[50], int16_t WhichVillage, int16_t *NumUsers,
 				  int16_t ClanIDs[50][2])
 {
 	FILE *fpUList;
@@ -117,7 +117,7 @@ void GetUserNames(char *apszUserNames[50], int16_t WhichVillage, int16_t *NumUse
 
 // ------------------------------------------------------------------------- //
 
-void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
+static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 {
 	struct Message Message;
 	FILE *fp;
@@ -394,7 +394,7 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 
 
 // ------------------------------------------------------------------------- //
-int16_t QInputStr(char *String, char *NextString, char *JustLen, struct Message *Reply,
+static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct Message *Reply,
 				 int16_t CurLine)
 {
 	int16_t cur_char = 0, i, FirstLine, LastLine;
@@ -602,7 +602,7 @@ int16_t QInputStr(char *String, char *NextString, char *JustLen, struct Message 
 }
 
 
-void Reply_Message(struct Message *Reply)
+static void Reply_Message(struct Message *Reply)
 {
 	struct Message Message;
 	FILE *fp;
@@ -1090,7 +1090,8 @@ bool Mail_Read(void)
 	return NewMail;
 
 }
-int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t CurLine)
+
+static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t CurLine)
 {
 	int16_t cur_char = 0, i;
 	unsigned char ch, key;
@@ -1250,7 +1251,7 @@ int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t CurLine)
 }
 
 
-void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, int16_t AllianceID,
+static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, int16_t AllianceID,
 				char *szAllyName, bool GlobalPost, int16_t WhichVillage)
 /*
  * Allows user to enter a message.
@@ -1585,7 +1586,7 @@ void Mail_WriteToAllies(struct Alliance *Alliance)
 
 
 
-void SendMsj(struct Message *Message, int16_t WhichVillage)
+static void SendMsj(struct Message *Message, int16_t WhichVillage)
 {
 	// if WhichVillage == -1, do a for loop and send packet to all BBSes
 

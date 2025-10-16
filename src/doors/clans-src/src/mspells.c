@@ -16,12 +16,12 @@
 #include "structs.h"
 #include "unix_wrappers.h"
 
-struct Spell *Spells[MAX_SPELLS];
+static struct Spell *Spells[MAX_SPELLS];
 
-int TotalSpells;
+static int TotalSpells;
 
-void Deinit_Spells(struct Spell *Spells[MAX_SPELLS]);
-void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName);
+static void Deinit_Spells(struct Spell *Spells[MAX_SPELLS]);
+static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName);
 
 int main(int argc, char *argv[])
 {
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 	return(0);
 }
 
-void Deinit_Spells(struct Spell *Spells[MAX_SPELLS])
+static void Deinit_Spells(struct Spell *Spells[MAX_SPELLS])
 {
 	int iTemp;
 
@@ -156,7 +156,7 @@ void Deinit_Spells(struct Spell *Spells[MAX_SPELLS])
 	}
 }
 
-void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName)
+static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName)
 {
 	FILE *fpSpell;
 	char szLine[255], *pcCurrentPos;

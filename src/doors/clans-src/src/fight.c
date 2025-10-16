@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <OpenDoor.h>
 
 #include "door.h"
+#include "fight.h"
 #include "help.h"
 #include "input.h"
 #include "items.h"
@@ -48,8 +49,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define PLAYERTEAM          0
 
-extern struct Spell *Spells[MAX_SPELLS];
-
 struct move {
 	int16_t Action, Target, SpellNum, ScrollNum;
 };
@@ -70,7 +69,7 @@ void Fight_Heal(struct clan *Clan)
 	}
 }
 
-void Fight_GetBattleOrder(struct order *BattleOrder, struct clan *Team[2])
+static void Fight_GetBattleOrder(struct order *BattleOrder, struct clan *Team[2])
 {
 	struct {
 		int16_t WhichTeam;
@@ -146,7 +145,7 @@ void Fight_GetBattleOrder(struct order *BattleOrder, struct clan *Team[2])
 }
 
 
-void Fight_ManaRegenerate(struct pc *PC)
+static void Fight_ManaRegenerate(struct pc *PC)
 {
 	/* if at max, return */
 	if (PC->SP == PC->MaxSP)
@@ -159,7 +158,7 @@ void Fight_ManaRegenerate(struct pc *PC)
 		PC->SP = PC->MaxSP;
 }
 
-bool Fight_IsIncapacitated(struct pc *PC)
+static bool Fight_IsIncapacitated(struct pc *PC)
 {
 	/* return true if dude is incapacitated */
 
@@ -187,7 +186,7 @@ bool Fight_IsIncapacitated(struct pc *PC)
 	return Result;
 }
 
-int16_t Fight_ChooseVictim(struct clan *EnemyClan)
+static int16_t Fight_ChooseVictim(struct clan *EnemyClan)
 {
 	int16_t LowestEnergy, TempEnergyPercentage, EnemyTarget = 0;
 	int16_t NumPCs, CurPC;
@@ -254,7 +253,7 @@ int16_t Fight_ChooseVictim(struct clan *EnemyClan)
 	return Target;
 }
 
-int16_t NumUndeadMembers(struct clan *Clan)
+static int16_t NumUndeadMembers(struct clan *Clan)
 {
 	int16_t iTemp;
 	int16_t NumUndead = 0;
@@ -269,7 +268,7 @@ int16_t NumUndeadMembers(struct clan *Clan)
 }
 
 
-void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct move *Move)
+static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct move *Move)
 {
 	int16_t iTemp, NumSpellsTried, TotalSpells;
 	int16_t LowestEnergy, TempEnergyPercentage;
@@ -455,7 +454,7 @@ void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct move *Mov
 	// od_printf("Gonna attack %s\n\r", EnemyClan->Member[*Target]->szName);
 }
 
-void Fight_Stats(struct clan *PlayerClan, struct clan *MobClan, struct pc *WhichPC)
+static void Fight_Stats(struct clan *PlayerClan, struct clan *MobClan, struct pc *WhichPC)
 {
 	int16_t CurMember, MembersShown;
 	char szString[128];
@@ -521,7 +520,7 @@ void Fight_Stats(struct clan *PlayerClan, struct clan *MobClan, struct pc *Which
 	rputs("\n\n");
 }
 
-int16_t FirstAvailable(struct clan *Clan)
+static int16_t FirstAvailable(struct clan *Clan)
 {
 	int16_t CurMember;
 
@@ -538,7 +537,7 @@ int16_t FirstAvailable(struct clan *Clan)
 }
 
 
-int16_t Fight_GetTarget(struct clan *MobClan, int16_t Default)
+static int16_t Fight_GetTarget(struct clan *MobClan, int16_t Default)
 {
 	int16_t CurMember, MemberNumber, CurIndex;
 	int16_t Index[MAX_MEMBERS];             // indexes who's around to fight
@@ -604,7 +603,7 @@ int16_t Fight_GetTarget(struct clan *MobClan, int16_t Default)
 
 // ------------------------------------------------------------------------- //
 
-bool CanRun(struct clan *RunningClan, struct clan *StayingClan)
+static bool CanRun(struct clan *RunningClan, struct clan *StayingClan)
 {
 	/* returns true if RunningClan can run away */
 	int16_t RunningVariable, StayingVariable;
@@ -669,7 +668,7 @@ bool CanRun(struct clan *RunningClan, struct clan *StayingClan)
 }
 
 
-bool Fight_Dead(struct clan *Clan)
+static bool Fight_Dead(struct clan *Clan)
 {
 	bool FoundLiving = false;
 	int16_t CurMember;
@@ -692,7 +691,7 @@ bool Fight_Dead(struct clan *Clan)
 	}
 }
 
-void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int16_t Who,
+static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int16_t Who,
 						bool SkipOutput)
 {
 	int16_t CurMember, Damage, PercentGold;
@@ -827,7 +826,7 @@ void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int16_t Wh
 }
 
 
-bool Fight_DoMove(struct pc *AttackerPC, struct move Move, struct clan *Defender,
+static bool Fight_DoMove(struct pc *AttackerPC, struct move Move, struct clan *Defender,
 				  bool FightToDeath, int16_t CurRound)
 /*
  * returns true if user ran away
@@ -866,7 +865,7 @@ bool Fight_DoMove(struct pc *AttackerPC, struct move Move, struct clan *Defender
 	return false;
 }
 
-int16_t GetTarget2(struct clan *Clan, int16_t Default)
+static int16_t GetTarget2(struct clan *Clan, int16_t Default)
 {
 	int16_t CurMember, MemberNumber, CurIndex;
 	int16_t Index[MAX_MEMBERS];             // indexes who's around to fight
@@ -942,7 +941,7 @@ int16_t GetTarget2(struct clan *Clan, int16_t Default)
 }
 
 
-bool Fight_ReadyScroll(struct pc *PC, struct clan *TargetClan, struct move *Move)
+static bool Fight_ReadyScroll(struct pc *PC, struct clan *TargetClan, struct move *Move)
 {
 	int16_t ItemIndex, SpellChosen;
 
@@ -999,7 +998,7 @@ bool Fight_ReadyScroll(struct pc *PC, struct clan *TargetClan, struct move *Move
 	return 1;   // sucess
 }
 
-bool Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct move *Move)
+static bool Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct move *Move)
 {
 	int16_t iTemp, SpellChosen;
 	char szKeys[MAX_SPELLS + 5], szString[80], Choice;
@@ -1391,7 +1390,7 @@ void Fight_CheckLevelUp(void)
 
 // ------------------------------------------------------------------------- //
 
-int16_t GetDifficulty(int16_t Level)
+static int16_t GetDifficulty(int16_t Level)
 {
 	int16_t Difficulty = 0;
 
@@ -1430,7 +1429,7 @@ struct clan *MallocClan(void) {
 	return Clan;
 }
 
-int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16_t MaxDifficulty,
+static int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16_t MaxDifficulty,
 						char *szFileName)
 {
 	int16_t *MonIndex;
@@ -1508,7 +1507,7 @@ int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16_t MaxD
 
 
 
-void Fight_LoadMonsters(struct clan *Clan, int16_t Level, char *szFileName)
+static void Fight_LoadMonsters(struct clan *Clan, int16_t Level, char *szFileName)
 {
 	int16_t MinDifficulty, MaxDifficulty, Difficulty, CurDiff, iTemp,
 	CurMonster;
@@ -1548,7 +1547,7 @@ void Fight_LoadMonsters(struct clan *Clan, int16_t Level, char *szFileName)
 	}
 }
 
-void RemoveUndead(struct clan *Clan)
+static void RemoveUndead(struct clan *Clan)
 {
 	int16_t CurMember;
 
@@ -1576,7 +1575,7 @@ void FreeClan(struct clan *Clan)
 	Clan = NULL;
 }
 
-int32_t MineFollowersGained(int16_t Level)
+static int32_t MineFollowersGained(int16_t Level)
 {
 	int32_t NumFollowers = 0;
 
@@ -1593,7 +1592,7 @@ int32_t MineFollowersGained(int16_t Level)
 }
 
 
-void Fight_GiveFollowers(int16_t Level)
+static void Fight_GiveFollowers(int16_t Level)
 {
 	int32_t NumConscripted, NumFollowers;
 	char szString[128];
@@ -1634,7 +1633,7 @@ int16_t GetOpenItemSlot(struct clan *Clan)
 		return iTemp;
 }
 
-void TakeItemsFromClan(struct clan *Clan, char *szMsg)
+static void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 {
 	int16_t ItemIndex, OneItemFound, EmptySlot;
 	int16_t DefaultItemIndex, iTemp, WhoEquip, ItemsTaken = 0;

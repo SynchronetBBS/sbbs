@@ -47,6 +47,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "parsing.h"
 #include "quests.h"
 #include "scores.h"
+#include "spells.h"
 #include "structs.h"
 #include "system.h"
 #include "trades.h"
@@ -59,7 +60,6 @@ struct user {
 } User = { false, false };
 
 struct clan *PClan=NULL;
-extern struct Spell *Spells[MAX_SPELLS];
 
 // ------------------------------------------------------------------------- //
 bool Disbanded(void)

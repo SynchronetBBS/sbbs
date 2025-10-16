@@ -115,27 +115,6 @@ typedef struct {
 	uint16_t wPoint;
 } tFidoNode;
 
-
-tBool DirExists(const char *pszDirName);
-void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut);
-tIBResult ValidateInfoStruct(tIBInfo *pInfo);
-tBool CreateMessage(char *pszMessageDir, tMessageHeader *pHeader,
-					char *pszText);
-uint32_t GetFirstUnusedMsgNum(char *pszMessageDir);
-void GetMessageFilename(char *pszMessageDir, uint32_t lwMessageNum,
-						char *pszOut);
-tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
-				   tMessageHeader *pHeader, char *pszText);
-tBool ReadMessage(char *pszMessageDir, uint32_t lwMessageNum,
-				  tMessageHeader *pHeader, char **ppszText);
-uint32_t GetNextMSGID(void);
-int16_t GetMaximumEncodedLength(int16_t nUnEncodedLength);
-void EncodeBuffer(char *pszDest, const void *pBuffer, int16_t nBufferSize);
-void DecodeBuffer(const char *pszSource, void *pDestBuffer, int16_t nBufferSize);
-void ConvertAddressToString(char *pszDest, const tFidoNode *pNode);
-void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource);
-tBool ProcessConfigFile(char *pszFileName, int16_t nKeyWords, char **papszKeyWord,
-						void (*pfCallBack)(int, char *, void *), void *pCallBackData);
-void ProcessConfigLine(int16_t nKeyword, char *pszParameter, void *pCallbackData);
 tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName);
+
 #endif

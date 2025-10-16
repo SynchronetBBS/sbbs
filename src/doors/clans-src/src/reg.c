@@ -55,10 +55,12 @@ extern struct {
 	char FAR *VideoMem;
 } Video;
 
-void dputs(char *string);
-void AddRegToCfg(char *szString);
+#if !defined(__unix__) && !defined(_WIN32)
+static void dputs(char *string);
+static void AddRegToCfg(char *szString);
+#endif
 
-void Jumble(char *szString)
+static void Jumble(char *szString)
 {
 	char CurChar, MidChar, StrLength;
 	char *pcCurrentPos, szJumbled[MAX_CHARS+1];
@@ -281,10 +283,10 @@ void Register(void)
 #endif
 }
 
-/* decrypt string and put it on screen exactly like zputs */
-void dputs(char *string)
-{
 #if !defined(__unix__) && !defined(_WIN32)
+/* decrypt string and put it on screen exactly like zputs */
+static void dputs(char *string)
+{
 //No Local for *nix
 	char block[80][2], number[3];
 	int16_t attr;
@@ -397,10 +399,9 @@ void dputs(char *string)
 	}
 
 	gotoxy(x+1,y+1);
-#endif
 }
 
-void AddRegToCfg(char *szString)
+static void AddRegToCfg(char *szString)
 {
 	FILE *fp;
 	unsigned char szDude[] = "x!.g\xfa\xf9\xf8ng\x7fl\xe3ng  ";
@@ -421,6 +422,7 @@ void AddRegToCfg(char *szString)
 		fclose(fp);
 	}
 }
+#endif
 
 void UnregMessage(void)
 {

@@ -3,6 +3,8 @@
 
 #include "structs.h"
 
+extern struct BuildingType BuildingType[NUM_BUILDINGTYPES];
+
 void Empire_Stats(struct empire *Empire);
 
 void Empire_Maint(struct empire *Empire);
@@ -19,7 +21,6 @@ int32_t ArmyOffense(struct Army *Army);
 int32_t ArmyDefense(struct Army *Army);
 int32_t ArmyVitality(struct Army *Army);
 
-void ProcessAttackResult(struct AttackResult *AttackResult);
 void ProcessAttackPacket(struct AttackPacket *AttackPacket);
 void ProcessResultPacket(struct AttackResult *Result);
 
