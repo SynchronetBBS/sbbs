@@ -825,6 +825,8 @@ spec:
     - touch depend
     - touch odoors
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS devkit
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS data
   variables:
     GIT_STRATEGY: fetch
   artifacts:
