@@ -38,26 +38,35 @@ void Strip(char *szString)
  * string.
  */
 {
-	char NewString[400], *pcCh;
+	char *start = szString;
+	char *end;
+	size_t len;
 
-	pcCh = szString;
+	// Set start to first non-space character
+	while(isspace(*start))
+		start++;
 
-	/* get rid of spacing */
-	while (isspace(*pcCh))
-		pcCh++;
+	// Set end to the string terminator
+	end = strchr(start, 0);
 
-	strcpy(NewString, pcCh);
+	/*
+	 * Set end to last non-space character
+	 * if there are no non-space characters, end ends up as start-1
+	 */
+	end--;
+	while (end >= start && isspace(*end))
+		end--;
 
-	/* get rid of trailing spaces */
-	pcCh = &NewString[ strlen(NewString) - 1];
+	// Early return if it's all whitespace
+	if (end < start) {
+		*szString = 0;
+		return;
+	}
 
-	while (isspace(*pcCh))
-		pcCh--;
-
-	pcCh++;
-	*pcCh = 0;
-
-	strcpy(szString, NewString);
+	// Set len to the number of non-whitespace characters
+	len = end - start + 1;
+	memmove(szString, start, len);
+	szString[len] = 0;
 }
 
 // ------------------------------------------------------------------------- //
@@ -80,7 +89,7 @@ void ParseLine(char *szString)
 
 		if (*pcCurrentPos=='\n' || *pcCurrentPos=='\r' || *pcCurrentPos==';'
 				|| *pcCurrentPos == '#') {
-			if (MetQuote == false) {
+			if (!MetQuote) {
 				*pcCurrentPos='\0';
 				break;
 			}
@@ -123,7 +132,7 @@ void GetToken(char *szString, char *szToken)
 	while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
 
 	/* If no token was found, proceed to process the next line */
-	if (!*pcCurrentPos) {
+	if (!(*pcCurrentPos)) {
 		szToken[0] = 0;
 		szString[0] = 0;
 		return;
@@ -144,7 +153,7 @@ void GetToken(char *szString, char *szToken)
 	while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
 
 	/* Trim trailing spaces from setting string */
-	if (strlen(pcCurrentPos)>0)  {
+	if (*pcCurrentPos) {
 		for (uCount=strlen(pcCurrentPos)-1; uCount>0; --uCount) {
 			if (isspace(pcCurrentPos[uCount])) {
 				pcCurrentPos[uCount]='\0';

@@ -10,6 +10,7 @@
 
 #include "defines.h"
 #include "myopen.h"
+#include "parsing.h"
 #include "serialize.h"
 #include "structs.h"
 #include "unix_wrappers.h"
@@ -54,10 +55,6 @@ char *papszEvaKeyWords[MAX_EVA_WORDS] = {
 	"Display",
 	"GetKey"
 };
-
-void ParseLine(char *szString);
-void GetToken(char *szString, char *szToken);
-void Strip(char *szString);
 
 int main(int argc, char *argv[])
 {
@@ -451,116 +448,4 @@ int main(int argc, char *argv[])
 
 	printf("Done!\n\n%d error(s)\n\n", Errors);
 	return(0);
-}
-
-void ParseLine(char *szString)
-{
-	char *pcCurrentPos;
-	bool MetQuote = false;
-
-	pcCurrentPos = szString;
-
-	while (*pcCurrentPos) {
-		if (*pcCurrentPos == '"')
-			MetQuote = !MetQuote;
-
-		if (*pcCurrentPos=='\n' || *pcCurrentPos=='\r' || *pcCurrentPos==';'
-				|| *pcCurrentPos == '#') {
-			if (!MetQuote) {
-				*pcCurrentPos='\0';
-				break;
-			}
-		}
-		++pcCurrentPos;
-	}
-
-	pcCurrentPos = szString;
-	while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
-
-	memmove(szString, pcCurrentPos, strlen(pcCurrentPos) + 1);
-
-	// parse second time to get rid of comment's end
-	Strip(szString);
-}
-
-void GetToken(char *szString, char *szToken)
-{
-	char *pcCurrentPos;
-	unsigned int uCount;
-
-	/* Ignore all of line after comments or CR/LF char */
-	pcCurrentPos=(char *)szString;
-	while (*pcCurrentPos) {
-		if (*pcCurrentPos=='\n' || *pcCurrentPos=='\r') {
-			*pcCurrentPos='\0';
-			break;
-		}
-		++pcCurrentPos;
-	}
-
-	/* Search for beginning of first token on line */
-	pcCurrentPos = (char *)szString;
-	while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
-
-	/* If no token was found, proceed to process the next line */
-	if (!*pcCurrentPos) {
-		szToken[0] = 0;
-		szString[0] = 0;
-		return;
-	}
-
-	/* Get first token from line */
-	uCount=0;
-	while (*pcCurrentPos && !isspace(*pcCurrentPos)) {
-		if (uCount<MAX_TOKEN_CHARS) szToken[uCount++]=*pcCurrentPos;
-		++pcCurrentPos;
-	}
-	if (uCount<=MAX_TOKEN_CHARS)
-		szToken[uCount]='\0';
-	else
-		szToken[MAX_TOKEN_CHARS]='\0';
-
-	/* Find beginning of configuration option parameters */
-	while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
-
-	/* Trim trailing spaces from setting string */
-	if (*pcCurrentPos) {
-		for (uCount=strlen(pcCurrentPos)-1; uCount>0; --uCount) {
-			if (isspace(pcCurrentPos[uCount])) {
-				pcCurrentPos[uCount]='\0';
-			}
-			else {
-				break;
-			}
-		}
-	}
-
-	memmove(szString, pcCurrentPos, strlen(pcCurrentPos) + 1);
-}
-
-void Strip(char *szString)
-{
-	char NewString[255], *pcCh;
-
-	pcCh = szString;
-
-	/* get rid of spacing */
-	while (isspace(*pcCh))
-		pcCh++;
-
-	strcpy(NewString, pcCh);
-
-	if (*NewString) {
-		/* get rid of trailing spaces */
-		pcCh = &NewString[ strlen(NewString) - 1];
-
-		while (isspace(*pcCh))
-			pcCh--;
-
-		pcCh++;
-		*pcCh = 0;
-	}
-
-	strcpy(szString, NewString);
-
 }

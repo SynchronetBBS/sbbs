@@ -31,6 +31,7 @@ unsigned _dos_getftime(int, uint16_t *, uint16_t *);
 #endif
 
 #include "defines.h"
+#include "parsing.h"
 
 #define MAX_TOKEN_CHARS 32
 #define CODE1           0x7D
@@ -40,7 +41,6 @@ unsigned _dos_getftime(int, uint16_t *, uint16_t *);
 
 void ClearAll(void);
 void AddGUM(FILE *fpGUM, char *pszFileName);
-void GetToken(char *szString, char *szToken);
 void AddDir(FILE *fpGUM, char *pszDirName);
 
 #define TEXTSEARCH 1000   /* Max strings to search in text file */
@@ -666,59 +666,6 @@ void AddGUM(FILE *fpGUM, char *pszFileName)
 	fclose(fpFromFile);
 	printf("Done.\n");
 
-}
-
-void GetToken(char *szString, char *szToken)
-{
-	char *pcCurrentPos;
-	unsigned int uCount;
-
-	/* Ignore all of line after comments or CR/LF char */
-	pcCurrentPos=(char *)szString;
-	while (*pcCurrentPos) {
-		if (*pcCurrentPos=='\n' || *pcCurrentPos=='\r') {
-			*pcCurrentPos='\0';
-			break;
-		}
-		++pcCurrentPos;
-	}
-
-	/* Search for beginning of first token on line */
-	pcCurrentPos = (char *)szString;
-	while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
-
-	/* If no token was found, proceed to process the next line */
-	if (!*pcCurrentPos) {
-		szToken[0] = 0;
-		szString[0] = 0;
-		return;
-	}
-
-	/* Get first token from line */
-	uCount=0;
-	while (*pcCurrentPos && !isspace(*pcCurrentPos)) {
-		if (uCount<MAX_TOKEN_CHARS) szToken[uCount++]=*pcCurrentPos;
-		++pcCurrentPos;
-	}
-	if (uCount<=MAX_TOKEN_CHARS)
-		szToken[uCount]='\0';
-	else
-		szToken[MAX_TOKEN_CHARS]='\0';
-
-	/* Find beginning of configuration option parameters */
-	while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
-
-	/* Trim trailing spaces from setting string */
-	if (*pcCurrentPos) {
-		for (uCount=strlen(pcCurrentPos)-1; uCount>0; --uCount) {
-			if (isspace(pcCurrentPos[uCount])) {
-				pcCurrentPos[uCount]='\0';
-			}
-			else {
-				break;
-			}
-		}
-	}
 }
 
 void ClearAll(void)

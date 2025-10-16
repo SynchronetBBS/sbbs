@@ -201,12 +201,12 @@ clans$(EXEFILE):      $(OBJS) unix_wrappers.o
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-chew$(EXEFILE):      chew.c
-	$(CC) $(CFLAGS) $(LDFLAGS) chew.c -o $@
+chew$(EXEFILE):      chew.c parsing.o
+	$(CC) $(CFLAGS) $(LDFLAGS) chew.c parsing.o -o $@
 
-native-chew$(NATIVEEXEFILE):      chew.c
+native-chew$(NATIVEEXEFILE):      chew.c parsing.c
 ifdef NATIVE
-	$(CC) $(CFLAGS) $(LDFLAGS) chew.c -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) chew.c parsing.c -o $@
 else
 	env - PATH="$(PATH)" $(MAKE) NATIVE=1 RELEASE=1 $@
 endif
@@ -218,18 +218,18 @@ native-exefile:
 config$(EXEFILE):      config.c parsing.o unix_wrappers.o
 	$(CC) $(CFLAGS) $(LDFLAGS) config.c parsing.o unix_wrappers.o -o $@ $(CONSOLE_LIBS)
 
-ecomp$(EXEFILE):      ecomp.c serialize.o crc.o
-	$(CC) $(CFLAGS) $(LDFLAGS) ecomp.c serialize.o crc.o -o $@
+ecomp$(EXEFILE):      ecomp.c parsing.o serialize.o crc.o
+	$(CC) $(CFLAGS) $(LDFLAGS) ecomp.c parsing.o serialize.o crc.o -o $@
 
-native-ecomp$(NATIVEEXEFILE):      ecomp.c serialize.c crc.c
+native-ecomp$(NATIVEEXEFILE):      ecomp.c parsing.c serialize.c crc.c
 ifdef NATIVE
-	$(CC) $(CFLAGS) $(LDFLAGS) ecomp.c serialize.c crc.c -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) ecomp.c parsing.c serialize.c crc.c -o $@
 else
 	env - PATH="$(PATH)" $(MAKE) NATIVE=1 RELEASE=1 $@
 endif
 
-install$(EXEFILE):      install.c
-	$(CC) $(CFLAGS) $(LDFLAGS) install.c -o $@ $(CONSOLE_LIBS)
+install$(EXEFILE):      install.c parsing.o
+	$(CC) $(CFLAGS) $(LDFLAGS) install.c parsing.o -o $@ $(CONSOLE_LIBS)
 
 langcomp$(EXEFILE):      langcomp.c serialize.o crc.o
 	$(CC) $(CFLAGS) $(LDFLAGS) langcomp.c serialize.o crc.o -o $@
@@ -244,12 +244,12 @@ endif
 reset$(EXEFILE): reset.c myopen.h parsing.h crc.h structs.h k_config.h unix_wrappers.o serialize.o deserialize.o
 	$(CC) $(CFLAGS) $(LDFLAGS) reset.c myopen.o parsing.o crc.o unix_wrappers.o serialize.o deserialize.o -o $@ $(CONSOLE_LIBS)
 
-makenpc$(EXEFILE):      makenpc.c serialize.o crc.o
-	$(CC) $(CFLAGS) $(LDFLAGS) makenpc.c serialize.o crc.o -o $@
+makenpc$(EXEFILE):      makenpc.c parsing.o serialize.o crc.o
+	$(CC) $(CFLAGS) $(LDFLAGS) makenpc.c parsing.o serialize.o crc.o -o $@
 
-native-makenpc$(NATIVEEXEFILE):      makenpc.c serialize.c crc.c
+native-makenpc$(NATIVEEXEFILE):      makenpc.c parsing.c serialize.c crc.c
 ifdef NATIVE
-	$(CC) $(CFLAGS) $(LDFLAGS) makenpc.c serialize.c crc.c -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) makenpc.c parsing.c serialize.c crc.c -o $@
 else
 	env - PATH="$(PATH)" $(MAKE) NATIVE=1 RELEASE=1 $@
 endif
