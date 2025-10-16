@@ -54,13 +54,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "system.h"
 #include "user.h"
 #include "video.h"
+#include "village.h"
 #include "voting.h"
 
 struct village Village = { false, NULL };
 
 struct  Scheme {
 	char szName[20];
-
 	char ColorScheme[23];
 };
 
@@ -198,7 +198,7 @@ int16_t OutsiderTownHallMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-void ChangeFlagScheme(void)
+static void ChangeFlagScheme(void)
 {
 	bool Quit = false;
 	char cInput;
@@ -272,7 +272,7 @@ void ChangeFlagScheme(void)
 
 // ------------------------------------------------------------------------- //
 
-void GetNums(char *Array, int16_t NumVars, char *string)
+static void GetNums(char *Array, int16_t NumVars, char *string)
 {
 	int16_t iTemp, CurChar = 0;
 
@@ -295,7 +295,7 @@ void GetNums(char *Array, int16_t NumVars, char *string)
 	}
 }
 
-void LoadSchemes(struct Scheme *Scheme[128])
+static void LoadSchemes(struct Scheme *Scheme[128])
 {
 	int16_t iTemp, CurScheme;
 	char szLine[128], *pcCurrentPos, szName[20];
@@ -333,7 +333,7 @@ void LoadSchemes(struct Scheme *Scheme[128])
 	fclose(FileHeader.fp);
 }
 
-void AddScheme(void)
+static void AddScheme(void)
 {
 	FILE *fp;
 	int16_t iTemp;
@@ -350,7 +350,7 @@ void AddScheme(void)
 
 // ------------------------------------------------------------------------- //
 
-void ChangeColourScheme(void)
+static void ChangeColourScheme(void)
 {
 	bool Quit = false;
 	char cInput, szKeys[26], szString[128];
@@ -485,7 +485,7 @@ void ChangeColourScheme(void)
 
 
 // ------------------------------------------------------------------------- //
-void BuildMenu(void)
+static void BuildMenu(void)
 {
 	char *szTheOptions[9];
 	char szString[255];
@@ -869,7 +869,7 @@ void BuildMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-void EconomicsMenu(void)
+static void EconomicsMenu(void)
 {
 	char *szTheOptions[7];
 	char szString[128];
@@ -1224,7 +1224,7 @@ void Village_NewRuler(void)
 
 // ------------------------------------------------------------------------- //
 
-void Village_Destroy(void)
+static void Village_Destroy(void)
 /*
  * This function frees up mem used by Village.
  *
@@ -1234,7 +1234,7 @@ void Village_Destroy(void)
 	Village.Initialized = false;
 }
 
-bool Village_Read(void)
+static bool Village_Read(void)
 /*
  * This function reads in the village.dat data and places it in Village.
  *
@@ -1250,7 +1250,7 @@ bool Village_Read(void)
 	return true;
 }
 
-void Village_Write(void)
+static void Village_Write(void)
 /*
  * This function writes the Village data to village.dat.
  *

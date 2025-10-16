@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # endif
 # include <share.h>
 #endif
-# include "unix_wrappers.h"
+#include "unix_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -69,7 +69,7 @@ struct system System;
 bool Verbose = false;
 
 // ------------------------------------------------------------------------- //
-bool System_LockedOut(void)
+static bool System_LockedOut(void)
 {
 	FILE *fp;
 	char szLine[128], *pcCurrentPos;
@@ -274,7 +274,7 @@ void Config_Init(void)
 
 }
 
-void Config_Close(void)
+static void Config_Close(void)
 /*
  * Shuts down config's mem.
  *
@@ -285,7 +285,7 @@ void Config_Close(void)
 
 // ------------------------------------------------------------------------- //
 
-void ShowHelp(void)
+static void ShowHelp(void)
 /*
  * Shows help screen for /? and /Help
  *
@@ -296,7 +296,7 @@ void ShowHelp(void)
 }
 
 #if defined(__unix__)
-char * fullpath(char *target, const char *path, size_t size)
+static char * fullpath(char *target, const char *path, size_t size)
 {
 	char    *out;
 	char    *p;
@@ -346,7 +346,7 @@ char * fullpath(char *target, const char *path, size_t size)
 }
 #endif
 
-void PrimitiveCommandLine(void)
+static void PrimitiveCommandLine(void)
 /*
  * Deals with basic command lines (i.e. those which do not depend on the
  * game being loaded yet).
@@ -444,7 +444,7 @@ void PrimitiveCommandLine(void)
 
 
 /* Parses commands used to load game */
-void ParseCommands(void)
+static void ParseCommands(void)
 /*
  * Deals with Command-Line Parms which DO require game to be loaded and
  * initialized.

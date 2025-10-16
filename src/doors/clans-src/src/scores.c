@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #ifndef __unix__
-#include <share.h>
+# include <share.h>
 #endif
 #include "unix_wrappers.h"
 
@@ -35,12 +35,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "myopen.h"
 #include "packet.h"
 #include "parsing.h"
+#include "scores.h"
 #include "structs.h"
 #include "system.h"
 #include "user.h"
 #include "village.h"
 
-void GetColourString(char *szColourString, int16_t Colour, bool Clear)
+static void GetColourString(char *szColourString, int16_t Colour, bool Clear)
 {
 	int16_t TempColour;
 	char *szFgColours[8] = {
@@ -102,7 +103,7 @@ void GetColourString(char *szColourString, int16_t Colour, bool Clear)
 	}
 }
 
-void PipeToAnsi(char *szOut, char *szIn)
+static void PipeToAnsi(char *szOut, char *szIn)
 {
 	char *pcOut, *pcIn;
 	char Colour, Bg, Fg, szDigits[3],
@@ -481,7 +482,7 @@ void DisplayScores(bool MakeFile)
 
 /// ------------------------------------------------------------------------- //
 
-void SendScoreData(struct UserScore **UserScores)
+static void SendScoreData(struct UserScore **UserScores)
 {
 	int16_t iTemp, NumScores;
 	struct Packet Packet;

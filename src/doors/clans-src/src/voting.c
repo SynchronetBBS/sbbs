@@ -29,10 +29,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "unix_wrappers.h"
 #ifndef __unix__
-#include <dos.h>
+# include <dos.h>
 #endif
+#include "unix_wrappers.h"
 
 #include "door.h"
 #include "help.h"
@@ -45,7 +45,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "user.h"
 #include "village.h"
 
-int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool UserOnline)
+static int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool UserOnline)
 {
 	FILE *fpPlayerFile;
 	char szFileName[50];

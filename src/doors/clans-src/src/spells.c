@@ -35,19 +35,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "video.h"
 #include "village.h"
 
-bool SpellsInitialized = false;
 struct Spell *Spells[MAX_SPELLS];
-
 char Spells_szCastDestination[25];
 char Spells_szCastSource[25];
 int Spells_CastValue;
+
+static bool SpellsInitialized = false;
 
 // ------------------------------------------------------------------------- //
 
 /* Simple and more protective function to handle string loading in
    Spells_Init()
 */
-char * get_spell(char **dest, FILE *fp)
+static char * get_spell(char **dest, FILE *fp)
 {
 	int16_t StringLength = 0;
 

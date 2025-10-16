@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #ifndef __unix__
-#include <share.h>
+# include <share.h>
 #endif
 #include "unix_wrappers.h"
 
@@ -51,10 +51,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "structs.h"
 #include "system.h"
 #include "trades.h"
+#include "user.h"
 #include "video.h"
 #include "village.h"
 
-struct user {
+static struct user {
 	bool Initialized;     // true if user clan malloc'd
 	bool UpdateUser;      // true if user data should be written to file
 } User = { false, false };
@@ -89,7 +90,7 @@ bool Disbanded(void)
 
 
 // ------------------------------------------------------------------------- //
-void AddToDisband(void)
+static void AddToDisband(void)
 {
 	// append user name to disband.dat
 	FILE *fp;
@@ -453,7 +454,7 @@ char GetStat(struct pc *PC, char Stat)
 	return StatValue;
 }
 
-void ShowBaseStats(struct PClass *PClass)
+static void ShowBaseStats(struct PClass *PClass)
 /*
  * Shows base stats for a given class.  Used for creating new PCs.
  */
@@ -563,7 +564,7 @@ void ShowBaseStats(struct PClass *PClass)
 	rputs("\n\n\n");
 }
 
-int16_t GetClass(struct PClass *PClass[MAX_PCLASSES], char *szHelp)
+static int16_t GetClass(struct PClass *PClass[MAX_PCLASSES], char *szHelp)
 /*
  * Returns a class as chosen by the user.  Used for creating new PCs.
  */
@@ -622,7 +623,7 @@ int16_t GetClass(struct PClass *PClass[MAX_PCLASSES], char *szHelp)
 	return ClassChosen;
 }
 
-void ChooseDefaultAction(struct pc *PC)
+static void ChooseDefaultAction(struct pc *PC)
 /*
  * This allows the user to choose a default action for the PC specified.
  */
@@ -906,7 +907,7 @@ void ListItems(struct clan *Clan)
 }
 
 
-void ItemEquipResults(struct pc *PC, struct item_data *Item, bool Equipping)
+static void ItemEquipResults(struct pc *PC, struct item_data *Item, bool Equipping)
 /*
  * This functions outputs results of equipping an item.
  */
@@ -1380,7 +1381,7 @@ void ItemStats(void)
 	}
 }
 
-int16_t NumClansInVillage(void)
+static int16_t NumClansInVillage(void)
 {
 	FILE *fp;
 	struct clan *TmpClan;
@@ -1846,7 +1847,7 @@ bool NameInUse(char *szName)
 	return false;
 }
 
-bool ChooseClanName(char *szName)
+static bool ChooseClanName(char *szName)
 /*
  * Allows user to choose a clan name.
  */
@@ -1887,7 +1888,7 @@ bool ChooseClanName(char *szName)
 }
 
 
-void User_ResetHelp(void)
+static void User_ResetHelp(void)
 /*
  * Resets help database for clan
  */
@@ -1905,7 +1906,7 @@ void User_ResetHelp(void)
 	PClan->DevelopHelp   = false;
 }
 
-bool User_Create(void)
+static bool User_Create(void)
 /*
  * Creates a new clan for the player.
  */
@@ -2149,7 +2150,7 @@ void CopyPC(struct pc *PCDest, struct pc *PCSrc)
 		PCDest->SpellsInEffect[iTemp] = PCSrc->SpellsInEffect[iTemp];
 }
 
-bool User_Read(void)
+static bool User_Read(void)
 /*
  * Reads the PClan from file which corresponds to the user online.
  * Returns false if clan was not found (i.e. not in game yet)

@@ -28,19 +28,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <windows.h>
 #endif
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#ifndef __unix__
-#include <conio.h>
-#endif
-
-#ifdef _WIN32
-#include "cmdline.h" // defines display_win32_error ()
-#endif
-
-#include <ctype.h>
 #include <string.h>
+#ifndef __unix__
+# include <conio.h>
+#endif
+#ifdef _WIN32
+# include "cmdline.h" // defines display_win32_error ()
+#endif
 
 #include "defines.h"
 #include "door.h"
@@ -54,7 +51,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define PADDING         '°'
 #define SPECIAL_CODE    '%'
 
-char o_fg4 = 7, o_bg4 = 0;
+#if !defined(__unix__)
+static char o_fg4 = 7, o_bg4 = 0;
+#endif
 
 #ifdef _WIN32
 static int default_cursor_size = 1;
@@ -62,7 +61,7 @@ static int default_cursor_size = 1;
 
 // ------------------------------------------------------------------------- //
 
-struct {
+static struct {
 	int32_t VideoType;
 	int32_t y_lookup[25];
 	char FAR *VideoMem;

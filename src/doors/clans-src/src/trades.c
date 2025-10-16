@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #ifdef __unix__
-#include <unistd.h>
+# include <unistd.h>
 #endif
 
 #include "door.h"
@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "structs.h"
 #include "user.h"
 
-void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szTitle)
+static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szTitle)
 {
 	/* enter choices */
 	/* keep looping till chooses "Done" */

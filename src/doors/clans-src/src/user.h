@@ -62,8 +62,6 @@ void ShowVillageStats(void);
 
 void User_List(void);
 
-void AddToDisband(void);
-
 void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate);
 
 void User_Destroy(void);

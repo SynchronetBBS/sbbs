@@ -5,13 +5,13 @@
 #include "defines.h"
 #include "tasker.h"
 
-struct {
+static struct {
 	int16_t Poll;
 	bool UseSlicer;
 	bool CurSlice;
 } TSlicer = { 0, false, 0 };
 
-void t_slice(void)
+static void t_slice(void)
 {
 #warning Do something here...
 }
