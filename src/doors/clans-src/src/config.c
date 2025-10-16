@@ -817,7 +817,7 @@ static void EditNodeOption(int16_t WhichOption)
 	switch (WhichOption) {
 		case 0 :    /* dropfile directory */
 			gotoxy(40, 2);
-			DosGetStr(currNode->dropDir, sizeof(currNode->dropDir) - 1);
+			DosGetStr(currNode->dropDir, 39);
 			break;
 		case 1 :    /* use fossil */
 			currNode->fossil = !currNode->fossil;
