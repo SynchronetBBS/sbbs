@@ -22,23 +22,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef __unix__
 #include "unix_wrappers.h"
-#endif
 
-#include "system.h"
-#include "structs.h"
 #include "door.h"
-#include "myopen.h"
 #include "language.h"
 #include "mstrings.h"
+#include "myopen.h"
+#include "structs.h"
+#include "system.h"
 #include "user.h"
 #include "video.h"
 
 bool SpellsInitialized = false;
 struct Spell *Spells[MAX_SPELLS];
 extern struct IniFile IniFile;
-extern struct clan *PClan;
 extern struct village Village;
 
 char Spells_szCastDestination[25];

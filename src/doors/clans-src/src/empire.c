@@ -84,11 +84,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define VIT_AXEMEN      7
 #define VIT_KNIGHTS     6
 
-
 extern struct config *Config;
-extern struct clan *PClan;
 extern struct village Village;
-
 
 struct BuildingType BuildingType[NUM_BUILDINGTYPES] = {
 	{"Barracks",            5, 15,  30,  2500 },
@@ -102,8 +99,6 @@ struct BuildingType BuildingType[NUM_BUILDINGTYPES] = {
 	{"Developer's Halls",   7, 10,  15,  3000 },
 	{"Shops",               8, 20,  30,  5000 }
 };
-
-extern struct ibbs IBBS;
 
 void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 					  int16_t NumDestroyed[MAX_BUILDINGS], int16_t Percent, int16_t *LandGained);

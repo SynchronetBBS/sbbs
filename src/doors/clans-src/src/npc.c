@@ -47,7 +47,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern char Quests_TFlags[8];
 extern struct IniFile IniFile;
-extern struct clan *PClan;
 
 // ------------------------------------------------------------------------- //
 

@@ -54,7 +54,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MT_ALLIANCE     2
 
 extern struct village Village;
-extern struct clan *PClan;
 bool FirstTimeInMain = false;
 extern struct config *Config;
 

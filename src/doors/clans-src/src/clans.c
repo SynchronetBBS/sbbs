@@ -24,56 +24,41 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  * Main module
  */
 
-#include <stdio.h>
 #include <ctype.h>
-
-#ifdef __unix__
-#include "unix_wrappers.h"
-#else
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#ifndef __unix__
 #include <conio.h>
 #include <dos.h>
 #endif
+#include "unix_wrappers.h"
 
-#include <stdlib.h>
-#include <string.h>
-// #include <alloc.h>
-#include <time.h>
-#include <errno.h>
-
-#include "structs.h"
-#include "tasker.h"
-
-// Modules
-#include "clans.h"                // functions for this module
-#include "door.h"
 #include <OpenDoor.h>            // opendoors functions
-#include "system.h"
-#include "language.h"
-#include "mstrings.h"
-#include "input.h"
-#include "help.h"
-#include "menus.h"
-#include "maint.h"
-#include "user.h"
-#include "game.h"
-#include "misc.h"
-#include "mail.h"
-#include "news.h"
-#include "trades.h"
-#include "scores.h"
-#include "ibbs.h"
-#include "reg.h"
+
+#include "clans.h"                // functions for this module
 #include "cmdline.h" /* Win32 only */
-
-/*
- * Global variables
- */
-
-extern struct system System;
-extern struct clan *PClan;
-extern struct ibbs IBBS;
-
-//extern unsigned _stklen = 8U*(1024U);
+#include "door.h"
+#include "game.h"
+#include "help.h"
+#include "ibbs.h"
+#include "input.h"
+#include "language.h"
+#include "mail.h"
+#include "maint.h"
+#include "menus.h"
+#include "misc.h"
+#include "mstrings.h"
+#include "news.h"
+#include "reg.h"
+#include "scores.h"
+#include "structs.h"
+#include "system.h"
+#include "tasker.h"
+#include "trades.h"
+#include "user.h"
 
 /* ----------------------------------------------------------------------- */
 

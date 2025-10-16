@@ -28,32 +28,31 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  * DoorInit MUST be called before all other functions.
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-
-#ifdef __unix__
-#include "unix_wrappers.h"
-#else
+#ifndef __unix__
+#include <conio.h>
 #include <dos.h>
 #include <share.h>
-#include <conio.h>
 #endif
+#include "unix_wrappers.h"
 
 #include <OpenDoor.h>
-#include "structs.h"
+
+#include "door.h"
+#include "help.h"
 #include "ibbs.h"
 #include "language.h"
 #include "mstrings.h"
-#include "system.h"
-// #include "tslicer.h"
-#include "video.h"
-#include "door.h"
-#include "village.h"
 #include "myopen.h"
 #include "parsing.h"
-#include "help.h"
+#include "structs.h"
+#include "system.h"
+#include "user.h"
+#include "video.h"
+#include "village.h"
 
 #define ASCIIFILE   0
 #define ANSIFILE  1
@@ -61,9 +60,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define COLOR   0xB800
 #define MONO    0xB000
 
-extern struct system System;
 extern struct config *Config;
-extern struct clan *PClan;
 extern char Spells_szCastDestination[25];
 extern char Spells_szCastSource[25];
 extern int Spells_CastValue;

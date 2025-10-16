@@ -22,56 +22,51 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  * System functions
  */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#ifdef __unix__
-#include "unix_wrappers.h"
-#include <sys/param.h>
-#else
-#ifndef _WIN32
-# include <alloc.h>
-# include <dos.h>
-#endif
-#include <share.h>
-#endif
-
-#include <time.h>
 #include <string.h>
-#include <ctype.h>
-
-#include "structs.h"
-#include "k_config.h"
-#include "k_comman.h"
-// #include "tasker.h"
+#include <time.h>
+#ifdef __unix__
+# include <sys/param.h>
+#else
+# ifndef _WIN32
+#  include <alloc.h>
+#  include <dos.h>
+# endif
+# include <share.h>
+#endif
+# include "unix_wrappers.h"
 
 #include <OpenDoor.h>
-#include "parsing.h"
-#include "ibbs.h"
-#include "system.h"
-// #include "tslicer.h"
-#include "language.h"
-#include "door.h"
-#include "mstrings.h"
-#include "maint.h"
-#include "video.h"
-#include "spells.h"
-#include "village.h"
-#include "class.h"
-#include "game.h"
+
 #include "clansini.h"
-#include "tasker.h"
+#include "class.h"
+#include "door.h"
+#include "game.h"
+#include "ibbs.h"
 #include "items.h"
-#include "quests.h"
+#include "k_comman.h"
+#include "k_config.h"
+#include "language.h"
+#include "maint.h"
+#include "mstrings.h"
 #include "news.h"
-#include "user.h"
+#include "parsing.h"
+#include "quests.h"
 #include "reg.h"
 #include "scores.h"
+#include "spells.h"
+#include "structs.h"
+#include "system.h"
+#include "tasker.h"
+#include "user.h"
+#include "video.h"
+#include "village.h"
 
 struct config *Config;
 struct system System;
 extern struct IniFile IniFile;
-extern struct ibbs IBBS;
 bool Verbose = false;
 
 // ------------------------------------------------------------------------- //

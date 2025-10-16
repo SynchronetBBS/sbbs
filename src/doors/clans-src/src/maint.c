@@ -22,31 +22,28 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  * Maintenance ADT -- all maintenance functions should go here.
  *
  */
-#ifdef __unix__
-#include <unistd.h>
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef __unix__
+#include <unistd.h>
+#endif
 
-#include "structs.h"
-#include "misc.h"
-#include "maint.h"
-#include "video.h"
-#include "system.h"
-#include "user.h"
-#include "ibbs.h"
 #include "alliance.h"
-#include "trades.h"
-#include "village.h"
-#include "pawn.h"
-#include "npc.h"
-#include "mail.h"
 #include "game.h"
-
-extern struct system System;
-extern struct ibbs IBBS;
+#include "ibbs.h"
+#include "mail.h"
+#include "maint.h"
+#include "misc.h"
+#include "npc.h"
+#include "pawn.h"
+#include "structs.h"
+#include "system.h"
+#include "trades.h"
+#include "user.h"
+#include "video.h"
+#include "village.h"
 
 void Maintenance(void)
 /*

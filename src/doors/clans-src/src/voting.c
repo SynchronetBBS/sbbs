@@ -24,28 +24,26 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
-#ifdef __unix__
 #include "unix_wrappers.h"
-#else
+#ifndef __unix__
 #include <dos.h>
 #endif
-#include <errno.h>
-#include <string.h>
 
-#include "structs.h"
+#include "door.h"
+#include "help.h"
+#include "input.h"
 #include "language.h"
 #include "mstrings.h"
-#include "door.h"
-#include "input.h"
-#include "news.h"
 #include "myopen.h"
+#include "news.h"
+#include "structs.h"
 #include "user.h"
-#include "help.h"
 
-extern struct clan *PClan;
 extern struct village Village;
 
 int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool UserOnline)

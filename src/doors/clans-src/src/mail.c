@@ -48,14 +48,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "myopen.h"
 #include "packet.h"
 #include "structs.h"
+#include "system.h"
 #include "user.h"
 #include "video.h"
 
-extern struct clan *PClan;
 extern struct config *Config;
-extern struct system System;
 extern struct village Village;
-extern struct ibbs IBBS;
 
 // Message Types:
 #define MT_PUBLIC       0

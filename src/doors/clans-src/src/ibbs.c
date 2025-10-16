@@ -26,48 +26,47 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-
-#ifdef __unix__
+#ifndef __unix__
+# include <dos.h>
+# include <share.h>
+# ifndef _WIN32
+#  include <dir.h>
+# else
+#  include <io.h>
+# endif
+#endif
 #include "unix_wrappers.h"
-#else
-#include <dos.h>
-#include <share.h>
-#ifndef _WIN32
-# include <dir.h>
-#else
-# include <io.h>
-#endif
-#endif
 
 #include <OpenDoor.h>
-#include "structs.h"
-#include "language.h"
-#include "mstrings.h"
-#include "video.h"
-#include "k_ibbs.h"
-#include "parsing.h"
-#include "system.h"
-#include "myopen.h"
-#include "packet.h"
-#include "interbbs.h"
-#include "misc.h"
-#include "door.h"
-#include "news.h"
-#include "mail.h"
-#include "scores.h"
-#include "game.h"
-#include "fight.h"
-#include "user.h"
-#include "empire.h"
-#include "input.h"
-#include "help.h"
-#include "village.h"
+
 #include "alliance.h"
+#include "door.h"
+#include "empire.h"
+#include "fight.h"
+#include "game.h"
+#include "help.h"
+#include "input.h"
+#include "interbbs.h"
+#include "k_ibbs.h"
+#include "language.h"
+#include "mail.h"
+#include "misc.h"
+#include "mstrings.h"
 #include "myibbs.h"
+#include "myopen.h"
+#include "news.h"
+#include "packet.h"
+#include "parsing.h"
+#include "scores.h"
+#include "structs.h"
+#include "system.h"
+#include "user.h"
+#include "video.h"
+#include "village.h"
 
 #define MT_NORMAL       0
 #define MT_CRASH        1
@@ -106,9 +105,7 @@ int search_and_construct_ffblk(WIN32_FIND_DATA *, struct ffblk *, bool);
 #define FA_ARCH   _A_ARCH   /* 0x20 */
 #endif
 
-extern struct clan *PClan;
 extern struct config *Config;
-extern struct system System;
 extern struct village Village;
 extern struct BuildingType BuildingType[NUM_BUILDINGTYPES];
 extern bool Verbose;

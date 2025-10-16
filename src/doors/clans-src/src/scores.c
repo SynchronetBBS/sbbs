@@ -18,13 +18,13 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifndef __unix__
 #include <share.h>
 #endif
-#include <ctype.h>
 #include "unix_wrappers.h"
 
 #include "door.h"
@@ -36,13 +36,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "packet.h"
 #include "parsing.h"
 #include "structs.h"
+#include "system.h"
 #include "user.h"
 
-extern struct clan *PClan;
 extern struct config *Config;
-extern struct system System;
 extern struct village Village;
-extern struct ibbs IBBS;
 
 void GetColourString(char *szColourString, int16_t Colour, bool Clear)
 {

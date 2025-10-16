@@ -9,26 +9,20 @@
  *
  */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #ifdef __MSDOS__
-#include <alloc.h>        /* Use <malloc.c> for Power C */
+# include <alloc.h>        /* Use <malloc.c> for Power C */
 #else /* !__MSDOS__ */
-# include <memory.h>
-# include "defines.h"
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <time.h>
-# include <errno.h>
-
 static unsigned _dos_getftime(int, uint16_t *, uint16_t *);
 #endif /* __MSDOS__ */
-
-#ifdef __unix__
-#include <ctype.h>
-#include <unistd.h>
-#endif
+#include "unix_wrappers.h"
 
 #include "defines.h"
 #include "gum.h"
@@ -43,7 +37,7 @@ static unsigned _dos_getftime(int, uint16_t *, uint16_t *);
 static void AddGUM(FILE *fpGUM, char *pszFileName);
 static void AddDir(FILE *fpGUM, char *pszDirName);
 
-long TotalBytes = 0;
+static long TotalBytes = 0;
 
 int main(int argc, char **argv)
 {

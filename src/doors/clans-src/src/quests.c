@@ -24,33 +24,31 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
 
-
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#ifdef __unix__
 #include "unix_wrappers.h"
-#endif
 
 #include <OpenDoor.h>
-#include "structs.h"
-#include "language.h"
-#include "mstrings.h"
-#include "parsing.h"
-#include "help.h"
-#include "reg.h"
+
 #include "door.h"
-#include "video.h"
-#include "myopen.h"
 #include "fight.h"
+#include "help.h"
 #include "input.h"
 #include "items.h"
-#include "user.h"
+#include "k_quests.h"
+#include "language.h"
+#include "mstrings.h"
+#include "myopen.h"
 #include "news.h"
 #include "npc.h"
-#include "k_quests.h"
+#include "parsing.h"
 #include "quests.h"
+#include "reg.h"
+#include "structs.h"
+#include "user.h"
+#include "video.h"
 
 #define CD_OR                   1
 #define CD_AND                  2
@@ -60,7 +58,6 @@ struct Quest Quests[MAX_QUESTS];
 extern struct village Village;
 char Quests_TFlags[8];          // temp. flags
 extern struct config *Config;
-extern struct clan *PClan;
 bool QuestsInitialized = false;
 extern bool Verbose;
 

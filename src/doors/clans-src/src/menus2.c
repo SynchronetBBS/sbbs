@@ -37,7 +37,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "user.h"
 
 extern struct village Village;
-extern struct clan *PClan;
 extern struct config *Config;
 
 void ResurrectDead(bool Unconscious)

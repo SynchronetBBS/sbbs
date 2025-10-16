@@ -23,13 +23,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
 
+#include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #ifndef __unix__
 #include <share.h>
 #endif
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
 #include "unix_wrappers.h"
 
 #include <OpenDoor.h>
@@ -39,6 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "empire.h"
 #include "game.h"
 #include "help.h"
+#include "ibbs.h"
 #include "input.h"
 #include "language.h"
 #include "mail.h"
@@ -56,10 +57,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "video.h"
 #include "voting.h"
 
-extern struct clan *PClan;
 struct village Village = { false, NULL };
 extern struct config *Config;
-extern struct ibbs IBBS;
 extern bool Verbose;
 
 struct  Scheme {

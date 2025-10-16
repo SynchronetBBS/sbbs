@@ -25,27 +25,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 #include <stdio.h>
-
-#ifdef __unix__
-#include "unix_wrappers.h"
-#else
+#include <stdlib.h>
+#ifndef __unix__
 #include <share.h>
 #endif
-#include <stdlib.h>
+#include "unix_wrappers.h"
 
-#include "system.h"
-#include "structs.h"
-#include "language.h"
-#include "mstrings.h"
-#include "misc.h"
 #include "crc.h"
+#include "door.h"
+#include "language.h"
+#include "misc.h"
+#include "mstrings.h"
 #include "myopen.h"
 #include "news.h"
-#include "door.h"
+#include "structs.h"
+#include "system.h"
 #include "video.h"
 
 struct game Game = { false, NULL };
-extern struct system System;
 extern bool Verbose;
 
 // ------------------------------------------------------------------------- //

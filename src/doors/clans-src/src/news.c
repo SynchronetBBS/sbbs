@@ -18,23 +18,22 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <stdio.h>
-#ifdef __unix__
-#include "unix_wrappers.h"
-#else
-#include <share.h>
-#endif
-#include <string.h>
-#include <stdlib.h>
 #include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#ifndef __unix__
+# include <share.h>
+#endif
+#include "unix_wrappers.h"
 
 #include <OpenDoor.h>
-#include "structs.h"
+
 #include "door.h"
 #include "language.h"
 #include "mstrings.h"
-
-extern struct system System;
+#include "structs.h"
+#include "system.h"
 
 void News_AddNews(char *szString)
 {

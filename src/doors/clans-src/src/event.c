@@ -29,15 +29,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 
 #include <OpenDoor.h>
-#include "structs.h"
-#include "language.h"
-#include "mstrings.h"
+
 #include "door.h"
 #include "help.h"
+#include "language.h"
+#include "mstrings.h"
 #include "quests.h"
+#include "structs.h"
+#include "user.h"
 
-
-extern struct clan *PClan;
 extern struct Quest Quests[MAX_QUESTS];
 
 void GoQuest(void)

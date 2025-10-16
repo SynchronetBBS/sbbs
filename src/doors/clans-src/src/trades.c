@@ -18,26 +18,22 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #ifdef __unix__
 #include <unistd.h>
 #endif
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-
-#include "structs.h"
+#include "door.h"
+#include "fight.h"
+#include "input.h"
 #include "language.h"
+#include "mail.h"
 #include "mstrings.h"
 #include "myopen.h"
+#include "structs.h"
 #include "user.h"
-#include "door.h"
-#include "input.h"
-#include "mail.h"
-#include "fight.h"
-
-extern struct clan *PClan;
 
 void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szTitle)
 {

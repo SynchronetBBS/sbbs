@@ -1,3 +1,8 @@
+#ifndef SYSTEM_H
+#define SYSTEM_H
+
+extern struct system System;
+
 /*
  * System functions
  */
@@ -23,3 +28,5 @@ void System_Error(char *szErrorMsg);
 void System_Maint(void);
 
 void Config_Init(void);
+
+#endif

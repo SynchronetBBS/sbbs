@@ -24,31 +24,28 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef __unix__
-#include "unix_wrappers.h"
-#else
-#include <share.h>
+#ifndef __unix__
+# include <share.h>
 #endif
+#include "unix_wrappers.h"
 
-#include "structs.h"
-#include "input.h"
 #include "door.h"
-#include "language.h"
-#include "mstrings.h"
-#include "misc.h"
 #include "help.h"
-#include "myopen.h"
+#include "input.h"
 #include "items.h"
+#include "language.h"
+#include "misc.h"
+#include "mstrings.h"
+#include "myopen.h"
+#include "structs.h"
+#include "system.h"
 #include "user.h"
 #include "video.h"
 
 #define MAX_PSITEMS     100
 #define MAX_PSITEMAGE   2
 
-extern struct clan *PClan;
 extern struct village Village;
-extern struct system System;
-
 
 int16_t PS_GetOpenItemSlot(struct clan *Clan)
 {

@@ -1,3 +1,7 @@
+#ifndef IBBS_H
+#define IBBS_H
+
+extern struct ibbs IBBS;
 
 void IBBS_Init(void);
 /*
@@ -57,3 +61,5 @@ void LeagueKillUser(struct UserInfo *User);
 
 void IBBS_PacketIn(void);
 void IBBS_LeagueNewUser(struct UserInfo *User);
+
+#endif

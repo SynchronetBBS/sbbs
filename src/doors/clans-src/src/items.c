@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "myopen.h"
 #include "spells.h"
 #include "structs.h"
+#include "user.h"
 
 #define MT_POLYMETRAL   1
 #define MT_LACONIA      2
@@ -49,11 +50,8 @@ struct {
 } Items = { false, 0 };
 
 extern struct IniFile IniFile;
-extern struct clan *PClan;
 extern struct village Village;
 extern struct Spell *Spells[MAX_SPELLS];
-
-
 
 // ------------------------------------------------------------------------- //
 void Items_FindTreasureChest(void)

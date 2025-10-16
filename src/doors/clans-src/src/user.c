@@ -18,42 +18,39 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <ctype.h>
 #include <stdio.h>
-
-#ifdef __unix__
-#include "unix_wrappers.h"
-#else
-#include <share.h>
-#endif
-
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
+#ifndef __unix__
+#include <share.h>
+#endif
+#include "unix_wrappers.h"
 
 #include <OpenDoor.h>
-#include "structs.h"
-#include "language.h"
-#include "mstrings.h"
-#include "door.h"
-#include "parsing.h"
-#include "help.h"
-#include "input.h"
-#include "game.h"
-#include "crc.h"
-#include "myopen.h"
-#include "items.h"
-#include "mail.h"
-#include "empire.h"
-#include "system.h"
-#include "quests.h"
-#include "alliance.h"
-#include "misc.h"
-#include "video.h"
-#include "news.h"
-#include "ibbs.h"
-#include "scores.h"
-#include "trades.h"
 
+#include "alliance.h"
+#include "crc.h"
+#include "door.h"
+#include "empire.h"
+#include "game.h"
+#include "help.h"
+#include "ibbs.h"
+#include "items.h"
+#include "input.h"
+#include "language.h"
+#include "mail.h"
+#include "misc.h"
+#include "mstrings.h"
+#include "myopen.h"
+#include "news.h"
+#include "parsing.h"
+#include "quests.h"
+#include "scores.h"
+#include "structs.h"
+#include "system.h"
+#include "trades.h"
+#include "video.h"
 
 struct user {
 	bool Initialized;     // true if user clan malloc'd
@@ -62,12 +59,9 @@ struct user {
 
 struct clan *PClan=NULL;
 extern struct config *Config;
-extern struct system System;
 extern struct Spell *Spells[MAX_SPELLS];
 extern struct PClass *PClasses[MAX_PCLASSES], *Races[MAX_PCLASSES];
 extern struct village Village;
-extern struct ibbs IBBS;
-
 
 // ------------------------------------------------------------------------- //
 bool Disbanded(void)

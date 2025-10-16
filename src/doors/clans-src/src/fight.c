@@ -18,31 +18,27 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
-
-#ifdef __unix__
-#include "unix_wrappers.h"
-#endif
-
 #include <string.h>
+#include "unix_wrappers.h"
 
-#include "structs.h"
-#include "mstrings.h"
-#include "door.h"
-#include "user.h"
-#include "help.h"
-#include "language.h"
-#include "input.h"
-#include "spells.h"
 #include <OpenDoor.h>
-#include "myopen.h"
-#include "items.h"
-#include "news.h"
-#include "mail.h"
-#include "video.h"
 
+#include "door.h"
+#include "help.h"
+#include "input.h"
+#include "items.h"
+#include "language.h"
+#include "mail.h"
+#include "mstrings.h"
+#include "myopen.h"
+#include "news.h"
+#include "spells.h"
+#include "structs.h"
+#include "user.h"
+#include "video.h"
 
 #define ATTACKER            0
 #define DEFENDER            1
@@ -51,9 +47,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define PLAYERTEAM          0
 
-
 extern struct Spell *Spells[MAX_SPELLS];
-extern struct clan *PClan;
 extern struct village Village;
 
 struct move {
