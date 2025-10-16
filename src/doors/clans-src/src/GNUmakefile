@@ -201,12 +201,12 @@ clans$(EXEFILE):      $(OBJS) unix_wrappers.o
 %.o: %.c %.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
-chew$(EXEFILE):      chew.c parsing.o
-	$(CC) $(CFLAGS) $(LDFLAGS) chew.c parsing.o -o $@
+chew$(EXEFILE):      chew.c gum.o parsing.o
+	$(CC) $(CFLAGS) $(LDFLAGS) chew.c gum.o parsing.o -o $@
 
-native-chew$(NATIVEEXEFILE):      chew.c parsing.c
+native-chew$(NATIVEEXEFILE):      chew.c gum.c parsing.c
 ifdef NATIVE
-	$(CC) $(CFLAGS) $(LDFLAGS) chew.c parsing.c -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) chew.c gum.c parsing.c -o $@
 else
 	env - PATH="$(PATH)" $(MAKE) NATIVE=1 RELEASE=1 $@
 endif
@@ -228,8 +228,8 @@ else
 	env - PATH="$(PATH)" $(MAKE) NATIVE=1 RELEASE=1 $@
 endif
 
-install$(EXEFILE):      install.c parsing.o
-	$(CC) $(CFLAGS) $(LDFLAGS) install.c parsing.o -o $@ $(CONSOLE_LIBS)
+install$(EXEFILE):      install.c gum.o parsing.o
+	$(CC) $(CFLAGS) $(LDFLAGS) install.c gum.o parsing.o -o $@ $(CONSOLE_LIBS)
 
 langcomp$(EXEFILE):      langcomp.c serialize.o crc.o
 	$(CC) $(CFLAGS) $(LDFLAGS) langcomp.c serialize.o crc.o -o $@
