@@ -128,6 +128,26 @@ installer: $(DOOR_BINARIES) data native-chew$(NATIVEEXEFILE) install$(EXEFILE)
 	cp install$(EXEFILE) ../stage
 	zip -j Clans-$(os)-$(MACH)-0_97b1.zip ../stage/*
 
+.PHONY: devkit-installer
+devkit-installer: $(DEVKIT_BINARIES) native-chew$(NATIVEEXEFILE) install$(EXEFILE)
+	mkdir ../stagedk
+	mkdir ../stagedk/gum
+	cp ../devkit/* ../stagedk/gum
+	cp $(DEVKIT_BINARIES) ../stagedk/gum
+	rm ../stagedk/gum/install$(EXEFILE)
+	cp $(DATA_DIR)/monsters.txt ../stagedk/gum
+	cp $(DATA_DIR)/npc-pc.txt ../stagedk/gum/npc-mon.txt
+	cp $(DATA_DIR)/npcquote.txt ../stagedk/gum
+	cp $(DATA_DIR)/npcs.txt ../stagedk/gum
+	cd ../stagedk/gum && ls -1 > ../files.lst
+	cd ../stagedk/gum && ../../src/native-chew$(NATIVEEXEFILE) ../clandev.gum ../files.lst
+	rm -rf ../stagedk/gum
+	rm -f ../stagedk/files.lst
+	rm -f ../stagedk/UnixAttr.DAT
+	cp ../installerdk/* ../stagedk
+	cp install$(EXEFILE) ../stagedk
+	zip -j ClansDevKit-$(os)-$(MACH)-0_12.zip ../stagedk/*
+
 clean:
 	$(DELETE) *.o
 	$(DELETE) config$(EXEFILE)
@@ -162,7 +182,9 @@ clean:
 	$(DELETE) $(DATA_DIR)/spells.dat
 	$(DELETE) $(DATA_DIR)/strings.xl
 	$(DELETEDIR) ../stage
+	$(DELETEDIR) ../stagedk
 	$(DELETE) Clans-*.zip
+	$(DELETE) ClansDevKit-*.zip
 
 clans$(EXEFILE):      $(OBJS) unix_wrappers.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) unix_wrappers.o -o clans$(EXEFILE) $(LIBS)

@@ -859,6 +859,7 @@ spec:
     - touch odoors
     - echo -e "\e[0Ksection_end:`date +%s`:extract_depends\r\e[0K"
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS installer
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS devkit-installer
   variables:
     GIT_STRATEGY: fetch
   artifacts:
