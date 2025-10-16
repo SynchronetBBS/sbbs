@@ -1,0 +1,32 @@
+>>
+
+ Example Event File No.4
+
+ The >> are used for long multi-line comments.  Place whatever you want
+ between them and they will be ignored by the system...
+
+>>
+
+
+Event FightExample
+  Text "You will now experience a battle!  You will be allowed to flee if you
+  Text "wish.
+  Pause
+
+  AddEnemy /m/Output 1
+  AddEnemy /m/Output 1
+  AddEnemy /m/Output 1
+  AddEnemy /m/Output 1
+  Fight YouWin YouLose NextLine
+
+  Text "aw, you ran away!
+End
+
+Result YouWin
+  Text "Good job, you won!
+  DoneQuest
+End
+
+Result YouLose
+  Text "You suck!  How could you lose!?  Run maintenance and try again!
+End

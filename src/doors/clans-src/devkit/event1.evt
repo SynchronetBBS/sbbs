@@ -1,0 +1,6 @@
+# Example Event File No.1
+#
+
+Event SimpleEvent
+  Text "Hello World!
+End

@@ -1,0 +1,26 @@
+Okay, here's the source for the devkit.  A couple of notes:
+
+mcomp.c may or may not work. :-)  i think it should since the structs
+didn't change much.  also, you'll notice that the structs.h and defines.h
+are redefined here. they are EXACTLY the same as the ones in the regular
+source code.  i was too lazy to put them in the proper directories, but
+you can, easily.
+
+See genall.bat for a batch file I used to generate all the data files and
+then compiled them...
+
+For more details on all of this, see clandev.txt.
+
+About the data files:
+
+strings.txt -- standard language file
+eventmon.txt -- monsters for random events
+monsters.txt -- all monsters you fight in the mines (standard fights)
+spells.txt -- all spells available to players
+items.txt -- all items
+npcs.txt -- all non-player characters you meet on the street or in events
+pray.evt -- all prayer events
+eva.txt -- all mine events (note that this ends in .txt, but is just like all the .evt events)
+quests.evt -- all quests
+church.evt -- church events
+secret.evt -- a neat little, secret event :-)

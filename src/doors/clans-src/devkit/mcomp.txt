@@ -1,0 +1,2 @@
+This compiles monster data files.  See the sample monsters.txt file.  Just run
+it to see the command-line format.  Pretty simple.

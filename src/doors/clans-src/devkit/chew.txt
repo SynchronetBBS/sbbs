@@ -1,0 +1,69 @@
+
+About Chew
+----------
+I wrote this little app to generate so-called .gum files which are basically
+like any file archive such as .ZIP or .ARJ or whatever.  Why did I do this?
+Well, 'cause it seemed cool at the time to create an installation program
+that would use an archived file.  You have to admit that back in the MS-DOS
+days, it was pretty cool to down a file and only have a data file and an
+install app.  Archiving everything beforehand also worked to protect the
+data somewhat, meaning that when you installed, all the data was pretty
+much guaranteed to be the original data.
+
+Do you need it?
+---------------
+Probably not, but I left it in here for completeness.  If you want to use
+the install program, you'll definitely need to use Chew to create the
+proper GUM files for it to decompress.
+
+How to use it
+-------------
+To use chew, just run it like this:
+
+	chew [[destination.gum] [file archive list]]
+
+The destination.gum is the name of the archive to create, such as CLANS.GUM.
+For the most part, you'll want CLANS.GUM created if you're going to be using
+the install program.  The file archive list is *another file*, not an
+actual list of files, unlike, say, PKZIP.  The file is a regular text file
+that contains a filename on each line.  It's going to be case-sensitive
+for unix, so make sure you get it right.  Here's a sample archive list
+that I actually used.
+
+    files.lst
+    ---------
+    clans.exe
+    clans.exe
+    config.exe
+    reset.exe
+    clans.pak
+    clans.ini
+    quests.ini
+    quests.hlp
+    reset.hlp
+    clanad.ans
+    clans.cfj
+    news.txt
+    /Outbound
+    route.smp
+    worldndx.smp
+    upgrade.doc
+    clans.doc
+    whatsnew.095
+    runclans.bat
+    lockout.txt
+
+Like I said, each line is just a filename.  I believe it only works with files in the
+current directory, but it might work elsewhere as well.  I've never tried.  You might
+wonder what the /Outbound means.  It's not actually a file but a way of saying
+that when the archive is expanded (by the install app), a directory called Outbound
+must be created.
+
+Finally, if you leave out both the parameters above, the defaults of "archive.gum" and
+"files.lst" will be used.  You must either use both parameters or none, you can't 
+leave only one out.  Change the code if you don't like this. :-)
+
+Credit
+------
+As it says in the code, the compression technique was lifted off sixpack.c
+by Philp G. Gage.
