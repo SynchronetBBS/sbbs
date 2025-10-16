@@ -1,0 +1,25 @@
+The Clans v0.95b7:  Upgrading
+-----------------------------
+
+All this fixes is the clans.pak file (i.e. NPC not found error message is
+no longer encountered in mines)
+
+IMPORTANT:
+
+
+If you are using a version BELOW v0.95b4:
+
+* You must reset after upgrading.
+
+* If you are in a league, get everybody to upgrade then have everybody reset
+  and choose the Join a league option while you (the LC) reset the whole
+  league.
+
+* If you have any packets lying around from previous league games, delete them
+  all before upgrading!  They're easy to spot, just look for files of the
+  form CLxxxyyy.* in your inbound directory
+
+If you are using v0.95b4 or higher and upgrading, no reset is required.
+
+------------------------------------------------------------------------------
+Email me with bug reports please:  ussher@gpu.srv.ualberta.ca

@@ -858,16 +858,13 @@ spec:
     - touch depend
     - touch odoors
     - echo -e "\e[0Ksection_end:`date +%s`:extract_depends\r\e[0K"
-    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
-    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS devkit
-    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS data
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS installer
   variables:
     GIT_STRATEGY: fetch
   artifacts:
     name: "clans-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
-      - "src/doors/clans-src/src/*.*.*"
-      - "src/doors/clans-src/data/clans.pak"
+      - "src/doors/clans-src/src/Clans-*.zip"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
   rules:
