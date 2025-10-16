@@ -56,7 +56,7 @@ int main(void)
 	fwrite(&tmp16, sizeof(tmp16), 1, fpData);
 	for (iTemp = 0; iTemp < TotalClasses; iTemp++) {
 		s_PClass_s(PClasses[iTemp], pcbuf, sizeof(pcbuf));
-		fwrite(PClasses[iTemp], sizeof(struct PClass), 1, fpData);
+		fwrite(pcbuf, sizeof(pcbuf), 1, fpData);
 	}
 
 	fclose(fpData);
@@ -114,15 +114,18 @@ static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileNa
 
 		/* Search for beginning of first token on line */
 		pcCurrentPos=(char *)szLine;
-		while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
+		while (*pcCurrentPos && isspace(*pcCurrentPos))
+			++pcCurrentPos;
 
 		/* If no token was found, proceed to process the next line */
-		if (!*pcCurrentPos) continue;
+		if (!*pcCurrentPos)
+			continue;
 
 		/* Get first token from line */
 		uCount=0;
 		while (*pcCurrentPos && !isspace(*pcCurrentPos)) {
-			if (uCount<MAX_TOKEN_CHARS) szToken[uCount++]=*pcCurrentPos;
+			if (uCount<MAX_TOKEN_CHARS)
+				szToken[uCount++]=*pcCurrentPos;
 			++pcCurrentPos;
 		}
 		if (uCount<=MAX_TOKEN_CHARS)
@@ -131,7 +134,8 @@ static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileNa
 			szToken[MAX_TOKEN_CHARS]='\0';
 
 		/* Find beginning of keyword parameter */
-		while (*pcCurrentPos && isspace(*pcCurrentPos)) ++pcCurrentPos;
+		while (*pcCurrentPos && isspace(*pcCurrentPos))
+			++pcCurrentPos;
 
 		/* Trim trailing spaces from setting string */
 		if (*pcCurrentPos) {
