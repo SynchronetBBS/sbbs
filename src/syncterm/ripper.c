@@ -16174,6 +16174,13 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 						continue;
 
 	                                // (TODO: Incorrectly?) Interpreted as a parameter byte (or whatever)
+	                                case RIP_STATE_CMD:
+						// This hack is for NY2008 sending \n\r instead of \r\n :(
+						if (rip_start <= maxlen) {
+							handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_BOL);
+							rip.lchars = 0;
+							break;
+						}
 					default:
 						break;
 				}
