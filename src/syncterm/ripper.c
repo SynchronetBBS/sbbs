@@ -15744,8 +15744,16 @@ handle_rip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, uns
 		return false;
 	}
 	if (*pos > 0) {
-		remove = *pos - *rip_start + 1;
-		remainder = *blen - *pos - 1;
+		if (*rip_start <= *pos) {
+			remove = *pos - *rip_start + 1;
+		}
+		else {
+			remove = 0;
+		}
+		if (*blen > *pos)
+			remainder = *blen - *pos - 1;
+		else
+			remainder = 0;
 	}
 	else {
 		if ((*blen > 0) && (rip.state == RIP_STATE_CR) && (buf[0] == '\n'))
@@ -16174,13 +16182,6 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 						continue;
 
 	                                // (TODO: Incorrectly?) Interpreted as a parameter byte (or whatever)
-	                                case RIP_STATE_CMD:
-						// This hack is for NY2008 sending \n\r instead of \r\n :(
-						if (rip_start <= maxlen) {
-							handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_BOL);
-							rip.lchars = 0;
-							break;
-						}
 					default:
 						break;
 				}
