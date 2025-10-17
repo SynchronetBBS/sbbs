@@ -107,13 +107,13 @@ get_line(char beg[],char line[], char ovr[],INT16 wrap) {
 					line[0]='/';
 					line[1]='S';
 					line[2]=0;
-					od_printf("\n\r");
+					od_printf("\r\n");
 					return;
 				} else if (key=='A') {
 					line[0]='/';
 					line[1]='A';
 					line[2]=0;
-					od_printf("\n\r");
+					od_printf("\r\n");
 					return;
 				} else {
 					cnt=0;
@@ -130,7 +130,7 @@ get_line(char beg[],char line[], char ovr[],INT16 wrap) {
 					od_putch('\b');
 				}
 			} else {
-				od_printf("\n\r");
+				od_printf("\r\n");
 				line[cnt]=0;
 				cnt=0;
 			}
@@ -153,7 +153,7 @@ get_line(char beg[],char line[], char ovr[],INT16 wrap) {
 			cnt++;
 			od_clr_line();
 		}
-		od_printf("\n\r");
+		od_printf("\r\n");
 		while (cnt<78) {
 			ovr[cnt2]=line[cnt];
 			line[cnt]=0;
@@ -189,9 +189,9 @@ askifuser(char handle[25]) {
 
 	key=ny_get_answer("YN");
 	if(!rip)
-		od_printf("%c\n\r",key);
+		od_printf("%c\r\n",key);
 	else
-		od_disp_str("\n\r");
+		od_disp_str("\r\n");
 	if (key=='Y')
 		return TRUE;
 	return FALSE;
@@ -224,17 +224,17 @@ newz_ops(void) {
 	}
 
 	if(rip==TRUE && oneframe==FALSE) {
-		od_disp_str("\n\r");
+		od_disp_str("\r\n");
 		od_send_file("frame.rip");
 	}
 
 	do {
 
 		if(rip) {
-			od_disp_str("\n\r!|e|#|#|#\n\r");
+			od_disp_str("\r\n!|e|#|#|#\r\n");
 			od_send_file("frame3.rip");
 		} else {
-			od_printf("\n\r\n");
+			od_printf("\r\n\r\n");
 			ny_clr_scr();
 		}
 
@@ -267,58 +267,58 @@ newz_ops(void) {
 			while (justfile != NULL && ny_fread(&newzfile,sizeof(newzfile),1,justfile)==1) {
 				cnt+=2;
 				if (newzfile.flag==0) {
-					ny_disp_emu("\n\r`@");
+					ny_disp_emu("\r\n`@");
 					ny_disp_emu(newzfile.tagline);
-					od_printf("\n\r");
+					od_printf("\r\n");
 				} else if (newzfile.flag==1) {
-					ny_disp_emu("\n\r`2");
+					ny_disp_emu("\r\n`2");
 					ny_disp_emu(newzfile.tagline);
-					ny_disp_emu("\n\r`0                                                     ");
+					ny_disp_emu("\r\n`0                                                     ");
 					ny_disp_emu(newzfile.name);
-					od_printf("\n\r");
+					od_printf("\r\n");
 					cnt++;
 				} else if (newzfile.flag==6) {
-					ny_disp_emu("\n\r`2");
+					ny_disp_emu("\r\n`2");
 					ny_disp_emu(newzfile.tagline);
-					ny_disp_emu("\n\r`0            ");
+					ny_disp_emu("\r\n`0            ");
 					ny_disp_emu(newzfile.name);
 					ny_disp_emu(" `2from `0");
 					ny_disp_emu(newzfile.name2);
-					od_printf("\n\r");
+					od_printf("\r\n");
 					cnt++;
 				} else if (newzfile.flag==2) {
-					ny_disp_emu("\n\r`0");
+					ny_disp_emu("\r\n`0");
 					ny_disp_emu(newzfile.name);
 					ny_disp_emu("`4 got `@BUSTED`4 today for `@");
 					ny_disp_emu(newzfile.tagline);
-					od_printf("\n\r");
+					od_printf("\r\n");
 				} else if (newzfile.flag==3) {
-					ny_disp_emu("\n\r`0");
+					ny_disp_emu("\r\n`0");
 					ny_disp_emu(newzfile.name);
 					ny_disp_emu("`4 ");
 					ny_disp_emu(newzfile.tagline);
-					od_printf("\n\r");
+					od_printf("\r\n");
 				} else if (newzfile.flag==4) {
-					ny_disp_emu("\n\r`0");
+					ny_disp_emu("\r\n`0");
 					ny_disp_emu(newzfile.name);
 					ny_disp_emu("`9 beat up `0");
 					ny_disp_emu(newzfile.name2);
-					ny_disp_emu("\n\r`3\"");
+					ny_disp_emu("\r\n`3\"");
 					ny_disp_emu(newzfile.tagline);
 					ny_disp_emu("`3\" `@S`4creams `0");
 					ny_disp_emu(newzfile.name);
-					od_printf("\n\r");
+					od_printf("\r\n");
 					cnt++;
 				} else if (newzfile.flag==5) {
-					ny_disp_emu("\n\r`0");
+					ny_disp_emu("\r\n`0");
 					ny_disp_emu(newzfile.name);
 					ny_disp_emu("`9 was beat up by `0");
 					ny_disp_emu(newzfile.name2);
-					ny_disp_emu("\n\r`3\"");
+					ny_disp_emu("\r\n`3\"");
 					ny_disp_emu(newzfile.tagline);
 					ny_disp_emu("`3\" `@W`4hispers `0");
 					ny_disp_emu(newzfile.name);
-					ny_disp_emu(" `@I`4n `@P`4ain\n\r");
+					ny_disp_emu(" `@I`4n `@P`4ain\r\n");
 					cnt++;
 				}
 
@@ -327,7 +327,7 @@ newz_ops(void) {
 					filepos=ftell(justfile);
 					fclose(justfile);
 					ny_disp_emu("`%More (Y/n/=)");
-					key_s=ny_get_answer("YN=\n\r");
+					key_s=ny_get_answer("YN=\r\n");
 					od_printf("\r            \r");
 					//if(key_s=='\n' || key_s=='\r') key_s='Y';
 					//od_putch(key_s);
@@ -339,7 +339,7 @@ newz_ops(void) {
 					//	        WaitForEnter();
 
 
-					//od_printf("\n\r");
+					//od_printf("\r\n");
 					if (key=='T')
 						justfile=ShareFileOpen(TODNEWS_FILENAME,"rb");
 					else
@@ -357,7 +357,7 @@ newz_ops(void) {
 		ny_line(65,1,0);
 		//T - Todays Newz Y - Yesterdays Newz [Q] - Quit
 
-		key=ny_get_answer("TYQ\n\r");
+		key=ny_get_answer("TYQ\r\n");
 		if (key=='\n' || key=='\r')
 			key='Q';
 		od_putch(key);
@@ -398,10 +398,10 @@ guns_ops(void) {
 	weapon choice;
 
 	do {
-		key = callmenu("BSYLQ?\n\r",ARMS,345,FALSE);
+		key = callmenu("BSYLQ?\r\n",ARMS,345,FALSE);
 		while (expert>0 && key=='?') {
 			expert+=10;
-			key=callmenu("BSYLQ?\n\r",ARMS,345,FALSE);
+			key=callmenu("BSYLQ?\r\n",ARMS,345,FALSE);
 			expert-=10;
 		}
 
@@ -432,12 +432,12 @@ guns_ops(void) {
 			ny_line(334,0,0);
 			//to spend. (A-W, Enter=[Q]=Quit)
 
-			s_key=ny_get_answer("ABCDEFGHIJKLMNOPRSTUVWQ\n\r");
+			s_key=ny_get_answer("ABCDEFGHIJKLMNOPRSTUVWQ\r\n");
 			if (s_key=='\n' || s_key=='\r')
 				s_key='Q';
 			od_putch(s_key);
 			if(!registered && s_key!='Q' && s_key>'J') {
-				ny_disp_emu("`%\n\r\nUNREGISTERED!!!\n\r\nCannot do this!!!\n\r");
+				ny_disp_emu("`%\r\n\r\nUNREGISTERED!!!\r\n\nCannot do this!!!\r\n");
 				WaitForEnter();
 				s_key='Q';
 			}
@@ -491,7 +491,7 @@ guns_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 						goto not_old_enuf;
 					}
 
@@ -524,7 +524,7 @@ guns_ops(void) {
 						ny_line(71,2,0);
 						//Sold
 						if(rip)
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 
 						ny_kernel();
 
@@ -539,7 +539,7 @@ guns_ops(void) {
 					if(!rip)
 						WaitForEnter();
 					else
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 				} else if (choice!=HANDS) {
 
 					ny_line(73,2,0);
@@ -568,7 +568,7 @@ guns_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 
 					}
 				}
@@ -586,7 +586,7 @@ not_old_enuf:
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			} else {
 
 				ny_line(77,2,0);
@@ -610,7 +610,7 @@ not_old_enuf:
 					if(!rip)
 						WaitForEnter();
 					else
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 				}
 			}
 		}
@@ -627,19 +627,19 @@ take_drug(void) {
 		if(!rip)
 			WaitForEnter();
 		else
-			od_get_answer("\n\r");
+			od_get_answer("\r\n");
 	} else if (cur_user.drug_high==100) {
 		ny_line(81,2,1);
 		//Yer already 100% stoned!
 		if(!rip)
 			WaitForEnter();
 		else
-			od_get_answer("\n\r");
+			od_get_answer("\r\n");
 	} else { // ok to take a drug
 		ny_line(82,2,1);
 		//You take a hit of yer favorite drug...
 		if(rip)
-			od_get_answer("\n\r");
+			od_get_answer("\r\n");
 		cur_user.drug_hits--;       //decrease user hits
 		points_raise((DWORD)(12*(cur_user.drug+1))); //raise points for taking drugs
 		cur_user.drug_high+=25;   //25% more high
@@ -650,7 +650,7 @@ take_drug(void) {
 		od_printf("%d",(INT16)cur_user.drug_high,37);
 		ny_line(84,0,1);
 		if(rip)
-			od_get_answer("\n\r");
+			od_get_answer("\r\n");
 		//% high
 		wrt_sts();
 		if (cur_user.drug>=COKE) {
@@ -664,7 +664,7 @@ take_drug(void) {
 			ny_line(85,0,1);
 			//Yer drug addiction went up by 10%
 			if(rip)
-				od_get_answer("\n\r");
+				od_get_answer("\r\n");
 		}
 		if(!rip)
 			WaitForEnter();
@@ -689,10 +689,10 @@ healing_ops(void) {
 	//int drug_rehab_price[LEVELS] ={80,110,150,270,360,420,530,620,750,890,950,1100,1410,1730,2050,2600,3700,4800,6310,8130,10000};
 
 	do {
-		key = callmenu("HDCYQ?\n\r",HEALING,346,FALSE);
+		key = callmenu("HDCYQ?\r\n",HEALING,346,FALSE);
 		while (expert>0 && key=='?') {
 			expert+=10;
-			key=callmenu("HDCYQ?\n\r",HEALING,346,FALSE);
+			key=callmenu("HDCYQ?\r\n",HEALING,346,FALSE);
 			expert-=10;
 		}
 
@@ -713,7 +713,7 @@ healing_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else {
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 					no_rip_m=1;
 				}
 			} else {
@@ -726,7 +726,7 @@ healing_ops(void) {
 				ny_line(88,0,0);
 				// to cure 1%
 				if(rip)
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 
 				ny_line(89,1,0);
 				//You can heal
@@ -735,8 +735,8 @@ healing_ops(void) {
 				//% for
 				od_printf(D_Num(std_diff*intval));
 				if(rip) {
-					od_disp_str("::^M@OK))|#|#|#\n\r");
-					od_get_answer("\n\r");
+					od_disp_str("::^M@OK))|#|#|#\r\n");
+					od_get_answer("\r\n");
 				}
 
 				if ((std_diff*intval)>cur_user.money) {
@@ -745,8 +745,8 @@ healing_ops(void) {
 					//You can only afford to cure
 					od_printf("%s`red`%c!",D_Num(std_diff),37);
 					if(rip) {
-						od_disp_str("::^M@OK))|#|#|#\n\r");
-						od_get_answer("\n\r");
+						od_disp_str("::^M@OK))|#|#|#\r\n");
+						od_get_answer("\r\n");
 					}
 				}
 				if(rip) {
@@ -765,9 +765,9 @@ healing_ops(void) {
 				cur_user.std_percent-=howmuch;
 				money_minus(howmuch * (cur_user.level+1) * cur_user.std);
 				if(!rip) {
-					ny_disp_emu("\n\r`@");
+					ny_disp_emu("\r\n`@");
 				} else {
-					ny_disp_emu("\n\r!|10000");
+					ny_disp_emu("\r\n!|10000");
 				}
 				od_printf(D_Num(howmuch));
 
@@ -779,7 +779,7 @@ healing_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			}
 		}
 		else if (key=='D') {
@@ -793,7 +793,7 @@ healing_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			} else {
 
 				ny_line(96,2,0);
@@ -813,7 +813,7 @@ healing_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					} else {
 						money_minus(500*pow(1.9,cur_user.level));
 						cur_user.drug_addiction=cur_user.drug_addiction*2/3;
@@ -826,7 +826,7 @@ healing_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					}
 				}
 			}
@@ -847,7 +847,7 @@ heal_wounds() {
 		if(!rip)
 			WaitForEnter();
 		else {
-			od_get_answer("\n\r");
+			od_get_answer("\r\n");
 			no_rip_m=1;
 		}
 		return;
@@ -862,7 +862,7 @@ heal_wounds() {
 	od_printf(D_Num(hit_diff*(INT32)(cur_user.level/2.0 + 1)));
 	if(rip) {
 		od_disp_str("::^M@OK))|#|#|#\n\t");
-		od_get_answer("\n\r");
+		od_get_answer("\r\n");
 	}
 
 	if ((INT32)(hit_diff * (INT16)(cur_user.level/2.0 + 1))>cur_user.money) {
@@ -872,7 +872,7 @@ heal_wounds() {
 		od_printf(D_Num(hit_diff));
 		ny_line(103,0,0);
 		if(rip)
-			od_get_answer("\n\r");
+			od_get_answer("\r\n");
 		//`red` hitpoints!
 	}
 	if(rip) {
@@ -892,9 +892,9 @@ heal_wounds() {
 	money_minus(howmuch * (INT16)(cur_user.level/2.0 + 1));
 
 	if(!rip)
-		ny_disp_emu("\n\r`@");
+		ny_disp_emu("\r\n`@");
 	else
-		od_disp_str("\n\r!|10000((*");
+		od_disp_str("\r\n!|10000((*");
 	od_printf(D_Num(howmuch));
 	ny_line(105,0,1);
 	//   H`red`itpoints were healed!\n\r",D_Num(howmuch));
@@ -903,7 +903,7 @@ heal_wounds() {
 	if(!rip)
 		WaitForEnter();
 	else
-		od_get_answer("\n\r");
+		od_get_answer("\r\n");
 
 }
 
@@ -916,10 +916,10 @@ food_ops(void) {
 	INT16 chance;
 
 	do {
-		key=callmenu("GESYQ?\n\r",FOOD,347,FALSE);
+		key=callmenu("GESYQ?\r\n",FOOD,347,FALSE);
 		while (expert>0 && key=='?') {
 			expert+=10;
-			key=callmenu("GESYQ?\n\r",FOOD,347,FALSE);
+			key=callmenu("GESYQ?\r\n",FOOD,347,FALSE);
 			expert-=10;
 		}
 
@@ -938,7 +938,7 @@ food_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			} else {
 				intval=80 + (50*pow(1.4,(double)cur_user.level));
 
@@ -960,7 +960,7 @@ food_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					} else {
 						money_minus(intval);
 						cur_user.hitpoints=cur_user.maxhitpoints;
@@ -974,7 +974,7 @@ food_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					}
 				}
 			}
@@ -987,11 +987,11 @@ food_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			} else {
 				ny_line(111,2,1);
 				if(rip)
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 				ny_line(112,0,1);
 				//od_printf("\n\r\n`bright red`T`red`hough not feeling that hungry anymore, you feel a bit worse and\n\rloose 1/3 of yer hitpoints...\n\r");
 				cur_user.hitpoints=cur_user.hitpoints*2/3;
@@ -1004,7 +1004,7 @@ food_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			}
 		} else if (key=='S') {
 			if(rip)
@@ -1017,7 +1017,7 @@ food_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			} else {
 
 				ny_line(114,2,1);
@@ -1026,11 +1026,11 @@ food_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 				chance=xp_random(100);
 				if (chance<=busted_ch_food) {
 
-					od_printf("\n\r\n");
+					od_printf("\r\n\r\n");
 					ny_send_menu(BUSTED,"");
 
 					//		      od_printf("\n\r\n`bright`BUSTED!!!! .... well the police beat the hell out of you .....\n\rWhy don't you try again tomorrow...\n\r");
@@ -1041,7 +1041,7 @@ food_ops(void) {
 					if(!rip)
 						WaitForEnter();
 					else
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 					od_exit(10,FALSE);
 				} else {
 					chance=xp_random(100);
@@ -1057,18 +1057,18 @@ food_ops(void) {
 						cur_user.hunger-=intval;
 						points_raise((INT32)25*cur_user.level);
 						if(!rip) {
-							od_disp_str("...\n\r");
+							od_disp_str("...\r\n");
 							WaitForEnter();
 						} else {
-							od_disp_str("::^M@OK))|#|#|#\n\r");
-							od_get_answer("\n\r");
+							od_disp_str("::^M@OK))|#|#|#\r\n");
+							od_get_answer("\r\n");
 						}
 					} else {
 						intval=2 * cur_user.level * DrgPtsCoef();
 
 						ny_line(116,2,1);
 						if(rip)
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 
 						ny_line(117,0,0);
 						//		        od_printf("\n\r\n`bright red`Y`red`ou did not manage to steal anything but did not get busted...\n\r`bright red`Y`red`our points went up by %s\n\r",D_Num(intval));
@@ -1076,11 +1076,11 @@ food_ops(void) {
 
 						points_raise((INT32)13*cur_user.level);
 						if(!rip) {
-							od_disp_str("\n\r");
+							od_disp_str("\r\n");
 							WaitForEnter();
 						} else {
-							od_disp_str("::^M@OK))|#|#|#\n\r");
-							od_get_answer("\n\r");
+							od_disp_str("::^M@OK))|#|#|#\r\n");
+							od_get_answer("\r\n");
 						}
 					}
 				}
@@ -1108,10 +1108,10 @@ get_laid_ops(void) {
 
 
 	do {
-		key=callmenu("GSBYRPMQ?\n\r",SEX,348,FALSE);
+		key=callmenu("GSBYRPMQ?\r\n",SEX,348,FALSE);
 		while (expert>0 && key=='?') {
 			expert+=10;
-			key=callmenu("GSBYRPMQ?\n\r",SEX,348,FALSE);
+			key=callmenu("GSBYRPMQ?\r\n",SEX,348,FALSE);
 			expert-=10;
 		}
 
@@ -1130,7 +1130,7 @@ get_laid_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			} else {
 
 				ny_line(119,2,1);
@@ -1139,11 +1139,11 @@ get_laid_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 				chance=xp_random(100);
 				if (chance<=busted_ch_rape) {
 
-					od_printf("\n\r\n");
+					od_printf("\r\n\r\n");
 					ny_send_menu(BUSTED,"");
 					//od_printf("\n\r\n`bright`BUSTED!!!! .... well the police beat the hell out of you .....\n\rWhy don't you try again tomorrow...\n\r");
 					//od_printf("Ya lost 2%c of yer points!\n\r",37);
@@ -1154,7 +1154,7 @@ get_laid_ops(void) {
 					if(!rip)
 						WaitForEnter();
 					else
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 					od_exit(10,FALSE);
 				} else {
 					chance=xp_random(100);
@@ -1172,7 +1172,7 @@ get_laid_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					} else {
 
 						ny_line(122,2,1);
@@ -1183,7 +1183,7 @@ get_laid_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					}
 				}
 			}
@@ -1198,7 +1198,7 @@ get_laid_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			} else {
 				chance=xp_random(22);
 				if (chance<=cur_user.level) {
@@ -1215,14 +1215,14 @@ get_laid_ops(void) {
 					if(!rip)
 						WaitForEnter();
 					else
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 
 				} else {
 
 					ny_line(125,2,1);
 					//		      od_printf("\n\r\n`bright red`Y`red`ou couldn't find anybody who'd like you...\n\r");
 					if(rip)
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 
 					ny_line(126,0,1);
 					//		      od_printf("`bright red`T`red`he sex turns went down anyway...\n\r");
@@ -1232,7 +1232,7 @@ get_laid_ops(void) {
 					if(!rip)
 						WaitForEnter();
 					else
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 				}
 			}
 		}
@@ -1247,7 +1247,7 @@ get_laid_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 
 			} else {
 				intval=75+(50*cur_user.level);
@@ -1260,9 +1260,9 @@ get_laid_ops(void) {
 
 				key=ny_get_answer("YN");
 				if(!rip)
-					od_printf("%c\n\r\n",key);
+					od_printf("%c\r\n\r\n",key);
 				else
-					od_disp_str("\n\r");
+					od_disp_str("\r\n");
 				if (key=='Y') {
 					if(intval>cur_user.money) {
 
@@ -1272,7 +1272,7 @@ get_laid_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					} else {
 
 						ny_line(129,0,1);
@@ -1286,7 +1286,7 @@ get_laid_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					}
 				}
 			}
@@ -1299,7 +1299,7 @@ get_laid_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else {
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 					no_rip_m=1;
 				}
 
@@ -1312,15 +1312,15 @@ get_laid_ops(void) {
 
 				key=ny_get_answer("YN");
 				if(!rip)
-					od_printf("%c\n\r",key);
+					od_printf("%c\r\n",key);
 				else
-					od_disp_str("\n\r  \b\b");
+					od_disp_str("\r\n  \b\b");
 				if (key=='Y') {
 					if (cur_user.sex==MALE)
 						ListPlayersS(FEMALE);
 					else
 						ListPlayersS(MALE);
-					od_printf("\n\r");
+					od_printf("\r\n");
 				}
 				if(rip)
 					od_send_file("tframe3.rip");
@@ -1352,7 +1352,7 @@ get_laid_ops(void) {
 
 					ny_line(133,1,1);
 					if(rip)
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 
 					//od_printf("\n\r`bright red`G`red`ot no idea who you mean ...");
 
@@ -1440,11 +1440,11 @@ get_laid_ops(void) {
 							}
 						}
 						if(rip)
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					} else {
 						ny_line(136,0,1);
 						if(rip)
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 
 						//od_printf("\b\b`bright red`A`red`borted...\n\r");
 						//sprintf(numstr,"del u%07d.tmg");
@@ -1459,7 +1459,7 @@ get_laid_ops(void) {
 		}
 		else if (key=='M') {
 			if(registered==FALSE) {
-				ny_disp_emu("`%\n\r\nUNREGISTERED!!!\n\r\nCannot do this!!!\n\r");
+				ny_disp_emu("`%\r\n\r\nUNREGISTERED!!!\r\n\r\nCannot do this!!!\r\n");
 				WaitForEnter();
 			} else if (cur_user.sex_today<=0) {
 				if(rip)
@@ -1471,7 +1471,7 @@ get_laid_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 
 			} else {
 				if(rip)
@@ -1479,7 +1479,7 @@ get_laid_ops(void) {
 
 				ny_line(137,2,1);
 				if(rip)
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 				//		    od_printf("\n\r\n`bright red`W`red`ell it aint the real thing, but at least you don't feel\n\r");
 				ny_line(138,0,1);
 				//		    od_printf("that you didn't have REAL sex in such a long time, and you can't get sick\n\rlike this.\n\r");
@@ -1490,11 +1490,11 @@ get_laid_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			}
 		} else if (key=='B') {
 			if(registered==FALSE) {
-				ny_disp_emu("`%\n\r\nUNREGISTERED!!!\n\r\nCannot do this!!!\n\r");
+				ny_disp_emu("`%\r\n\r\nUNREGISTERED!!!\r\n\r\nCannot do this!!!\r\n");
 				WaitForEnter();
 			} else {
 
@@ -1504,7 +1504,7 @@ get_laid_ops(void) {
 				ny_line(140,0,2);
 				//		    `green` condoms.\n\r\n
 				if(rip)
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 
 				if(rip) {
 					od_send_file("input.rip");
@@ -1531,7 +1531,7 @@ get_laid_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			}
 		}
 
@@ -1544,7 +1544,7 @@ disp_fig_stats(void) {
 	od_printf("`cyan`Hitpoints: `bright green`%s  ",D_Num(cur_user.hitpoints));
 	od_printf("`cyan`Fights Left: `bright green`%d  ",(INT16)cur_user.turns);
 	od_printf("`cyan`Points: `bright green`%s  ",D_Num(cur_user.points));
-	od_printf("`cyan`Money: `bright green`%s\n\r",D_Num(cur_user.money));
+	od_printf("`cyan`Money: `bright green`%s\r\n",D_Num(cur_user.money));
 }
 
 
@@ -1568,7 +1568,7 @@ illness(void)  // std's and stuff
 			//      od_printf("\n\r`bright red`Y`red`ou used a condom and got only 1/2 infected...\n\r");
 
 			if(rip)
-				od_get_answer("\n\r");
+				od_get_answer("\r\n");
 			cur_user.condoms--;
 			cur_user.std_percent+=ill*2;
 		} else {
@@ -1583,10 +1583,10 @@ illness(void)  // std's and stuff
 		print_disease(ill);
 		wrt_sts();
 		if(rip) {
-			od_disp_str("::^M@OK))|#|#|#\n\r");
-			od_get_answer("\n\r");
+			od_disp_str("::^M@OK))|#|#|#\r\n");
+			od_get_answer("\r\n");
 		} else
-			od_printf("\n\r");
+			od_printf("\r\n");
 
 
 		if (cur_user.std_percent>=100) {
@@ -1621,7 +1621,7 @@ illness(desease ill, INT16 inf, INT16 rape)  // std's and stuff from players
 			//      od_printf("\n\r`bright red`Y`red`ou used a condom and got only 1/2 infected...\n\r");
 
 			if(rip)
-				od_get_answer("\n\r");
+				od_get_answer("\r\n");
 			cur_user.condoms--;
 			cur_user.std_percent+=inf/4;
 		} else {
@@ -1638,10 +1638,10 @@ illness(desease ill, INT16 inf, INT16 rape)  // std's and stuff from players
 		print_disease(ill);
 		wrt_sts();
 		if(rip) {
-			od_disp_str("::^M@OK))|#|#|#\n\r");
-			od_get_answer("\n\r");
+			od_disp_str("::^M@OK))|#|#|#\r\n");
+			od_get_answer("\r\n");
 		} else
-			od_printf("\n\r");
+			od_printf("\r\n");
 
 
 		if (cur_user.std_percent>=100) {
@@ -1673,10 +1673,10 @@ money_ops(void) {
 
 
 	do {
-		key=callmenu("DWGSYQ?\n\r",BANK,349,FALSE);
+		key=callmenu("DWGSYQ?\r\n",BANK,349,FALSE);
 		while (expert>0 && key=='?') {
 			expert+=10;
-			key=callmenu("DWGSYQ?\n\r",BANK,349,FALSE);
+			key=callmenu("DWGSYQ?\r\n",BANK,349,FALSE);
 			expert-=10;
 		}
 
@@ -1708,7 +1708,7 @@ money_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			} else if (hand[0]!=0) {
 				ch_game_d();
 				justfile=ShareFileOpen(USER_FILENAME,"rb");
@@ -1768,7 +1768,7 @@ money_ops(void) {
 					if(!rip)
 						WaitForEnter();
 					else
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 				}
 			}
 		} else if (key == 'D') { //deposit in bank
@@ -1803,7 +1803,7 @@ money_ops(void) {
 			if(!rip)
 				WaitForEnter();
 			else
-				od_get_answer("\n\r");
+				od_get_answer("\r\n");
 		} else if (key=='W') { ///widthraw from bank
 
 			med=ULONG_MAX-cur_user.bank;
@@ -1834,7 +1834,7 @@ money_ops(void) {
 			if(!rip)
 				WaitForEnter();
 			else
-				od_get_answer("\n\r");
+				od_get_answer("\r\n");
 		} else if (key=='Y') {   //display stats
 			DisplayStats();
 			WaitForEnter();
@@ -1849,7 +1849,7 @@ money_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			} else {
 
 				ny_line(152,2,1);
@@ -1858,11 +1858,11 @@ money_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 				chance=xp_random(100);
 				if (chance<=busted_ch_bank) {
 
-					od_printf("\n\r\n");
+					od_printf("\r\n\r\n");
 					ny_send_menu(BUSTED,"");
 					//od_printf("\n\r\n`bright`BUSTED!!!! .... well the police beat the hell out of you .....\n\rWhy don't you try again tomorrow...\n\r");
 					//od_printf("Ya lost 2%c of yer points!\n\r",37);
@@ -1873,7 +1873,7 @@ money_ops(void) {
 					if(!rip)
 						WaitForEnter();
 					else
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 					od_exit(10,FALSE);
 				} else {
 					chance=xp_random(100);
@@ -1891,22 +1891,22 @@ money_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					} else {
 						intval=5*cur_user.level*DrgPtsCoef();
 
 						ny_line(155,2,1);
 						if(rip)
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 						//od_printf("\n\r\n`bright red`Y`red`ou did not manage to steal anything but did not get busted...\n\r`bright red`Y`red`our points went up by
 						ny_line(117,0,0);
-						od_printf("%s\n\r",D_Num(intval));
+						od_printf("%s\r\n",D_Num(intval));
 
 						points_raise((INT32)20*cur_user.level);
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					}
 				}
 			}
@@ -1923,10 +1923,10 @@ drug_ops(void) {
 	quant;
 
 	do {
-		s_key=callmenu("BSUYCQ?\n\r",DRUGS,350,FALSE);
+		s_key=callmenu("BSUYCQ?\r\n",DRUGS,350,FALSE);
 		while (expert>0 && s_key=='?') {
 			expert+=10;
-			s_key=callmenu("BSUYCQ?\n\r",DRUGS,350,FALSE);
+			s_key=callmenu("BSUYCQ?\r\n",DRUGS,350,FALSE);
 			expert-=10;
 		}
 
@@ -1939,8 +1939,8 @@ drug_ops(void) {
 			//od_printf("\n\r\n`bright green`Y`green`er drug of choice is: `bright green`");
 			print_drug(cur_user.drug);
 			if(rip) {
-				od_disp_str("::^M@OK))|#|#|#\n\r");
-				od_get_answer("\n\r");
+				od_disp_str("::^M@OK))|#|#|#\r\n");
+				od_get_answer("\r\n");
 			}
 
 
@@ -1948,10 +1948,10 @@ drug_ops(void) {
 			//od_printf("\n\r\n`bright green`T`green`he price is `bright green`
 			od_printf("%s",D_Num((INT32)(drug_price[cur_user.drug]*(cur_user.level+1))));
 			if(!rip)
-				od_printf("\n\r\n");
+				od_printf("\r\n\r\n");
 			else {
-				od_disp_str("::^M@OK))|#|#|#\n\r");
-				od_get_answer("\n\r");
+				od_disp_str("::^M@OK))|#|#|#\r\n");
+				od_get_answer("\r\n");
 			}
 			max=cur_user.money/(drug_price[cur_user.drug]*(cur_user.level+1));
 			if ((max+cur_user.drug_hits)>INT_MAX)
@@ -1982,7 +1982,7 @@ drug_ops(void) {
 			if(!rip)
 				WaitForEnter();
 			else
-				od_get_answer("\n\r");
+				od_get_answer("\r\n");
 		} else if (s_key=='S') {   // Sell drugs
 
 			ny_line(156,2,0);
@@ -1990,18 +1990,18 @@ drug_ops(void) {
 			print_drug(cur_user.drug);
 
 			if(rip) {
-				od_disp_str("::^M@OK))|#|#|#\n\r");
-				od_get_answer("\n\r");
+				od_disp_str("::^M@OK))|#|#|#\r\n");
+				od_get_answer("\r\n");
 			}
 
 			ny_line(161,2,0);
 			//od_printf("\n\r\n`bright green`Y`green`a can sell it for `bright green`
 			od_printf("%s",D_Num((INT32)(drug_price[cur_user.drug]*(cur_user.level+1))/2));
 			if(!rip)
-				od_printf("\n\r\n");
+				od_printf("\r\n\r\n");
 			else {
-				od_disp_str("::^M@OK))|#|#|#\n\r");
-				od_get_answer("\n\r");
+				od_disp_str("::^M@OK))|#|#|#\r\n");
+				od_get_answer("\r\n");
 			}
 
 			max=cur_user.drug_hits;
@@ -2031,7 +2031,7 @@ drug_ops(void) {
 			if(!rip)
 				WaitForEnter();
 			else
-				od_get_answer("\n\r");
+				od_get_answer("\r\n");
 		} else if (s_key=='C') {      //change drug
 			if(rip)
 				no_rip_m=1;
@@ -2043,13 +2043,13 @@ drug_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			} else if (cur_user.drug_high>0) {
 				ny_line(415,2,1);
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			} else {
 
 				//if(rip) ny_clr_scr();
@@ -2069,7 +2069,7 @@ drug_ops(void) {
 				//od_printf("`bright red`S`red`o....(`bright green`[0]`red`=quit):");
 
 				no_kernel=TRUE;
-				t_key=ny_get_answer("0123456\n\r");
+				t_key=ny_get_answer("0123456\r\n");
 				no_kernel=FALSE;
 				if (t_key=='\n' || t_key=='\r')
 					t_key='0';
@@ -2109,11 +2109,11 @@ drug_ops(void) {
 
 						wrt_sts();
 						if(!rip) {
-							od_printf("\n\r");
+							od_printf("\r\n");
 							WaitForEnter();
 						} else {
-							od_disp_str("::^M@OK))|#|#|#\n\r");
-							od_get_answer("\n\r");
+							od_disp_str("::^M@OK))|#|#|#\r\n");
+							od_get_answer("\r\n");
 						}
 						/*	} else {
 						od_printf("\n\r");
@@ -2224,19 +2224,19 @@ game_events(void) {
 	if(!rip)
 		scr_save();
 
-	od_printf("\n\r\n\r");
+	od_printf("\r\n\r\n");
 	if(!rip)
 		ny_clr_scr();
 
 	intval=xp_random(4)+1;
 	ny_line(183,0,2);
 	if(rip)
-		od_get_answer("\n\r");
+		od_get_answer("\r\n");
 
 	if(intval==1) {
 		if(rip) {
-			od_disp_str("\n\r!|10000((*Ya hear a voice ...::^M@OK))|#|#|#\n\r");
-			od_get_answer("\n\r");
+			od_disp_str("\r\n!|10000((*Ya hear a voice ...::^M@OK))|#|#|#\r\n");
+			od_get_answer("\r\n");
 		}
 		if(registered==FALSE) {
 			ny_line(421,0,1);
@@ -2247,21 +2247,21 @@ game_events(void) {
 		if(!rip)
 			WaitForEnter();
 		else
-			od_get_answer("\n\r");
+			od_get_answer("\r\n");
 	} else if(intval==2) {
 		ny_line(184,0,1);
 		//    od_printf("`bright red`Y`red`a find a rich new car ...\n\r");
 		if(rip)
-			od_get_answer("\n\r");
+			od_get_answer("\r\n");
 		ny_line(185,0,0);
 		//    od_printf("`bright red`S`red`mash it? (`bright red`Y`red`/`bright red`N`red`)");
 
 		key=ny_get_answer("YN");
 
 		if(!rip)
-			od_printf("%c\n\r\n",key);
+			od_printf("%c\r\n\r\n",key);
 		else
-			od_disp_str("\n\r");
+			od_disp_str("\r\n");
 		if (key=='N') {
 			ny_line(189,0,1);
 			//      od_printf("`bright red`Y`red`a consider the risks and decide it ain't a good idea\n\r");
@@ -2269,7 +2269,7 @@ game_events(void) {
 			if(!rip)
 				WaitForEnter();
 			else
-				od_get_answer("\n\r");
+				od_get_answer("\r\n");
 			goto donewith;
 		}
 
@@ -2288,7 +2288,7 @@ game_events(void) {
 			if(!rip)
 				WaitForEnter();
 			else
-				od_get_answer("\n\r");
+				od_get_answer("\r\n");
 			od_exit(10,FALSE);
 		} else {
 			intval=xp_random(100);
@@ -2297,17 +2297,17 @@ game_events(void) {
 				ny_line(192,0,1);
 				//od_printf("\n\r\n`bright red`Y`red`ou totally smashed that car .... a very nice job...\n\r");
 				if(rip)
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 				ny_line(117,0,0);
 				od_printf("%s",D_Num((INT32)(25*cur_user.level+25) * (INT32)DrgPtsCoef()));
 
 				points_raise((INT32)25 * cur_user.level+25);
 				if(!rip) {
-					od_disp_str("\n\r");
+					od_disp_str("\r\n");
 					WaitForEnter();
 				} else {
-					od_disp_str("::^M@OK))|#|#|#\n\r");
-					od_get_answer("\n\r");
+					od_disp_str("::^M@OK))|#|#|#\r\n");
+					od_get_answer("\r\n");
 				}
 				goto donewith;
 			} else {
@@ -2317,7 +2317,7 @@ game_events(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 				goto donewith;
 			}
 		}
@@ -2325,9 +2325,9 @@ game_events(void) {
 		ny_line(425,0,0);
 		key=ny_get_answer("YN");
 		if(!rip)
-			od_printf("%c\n\r\n",key);
+			od_printf("%c\r\n\r\n",key);
 		else
-			od_disp_str("\n\r");
+			od_disp_str("\r\n");
 		if(key=='Y') {
 			intval=xp_random(2)+1;
 			if(intval==1) {
@@ -2337,22 +2337,22 @@ game_events(void) {
 				ny_line(427,0,0);
 				key=ny_get_answer("YN");
 				if(!rip)
-					od_printf("%c\n\r\n",key);
+					od_printf("%c\r\n\r\n",key);
 				else
-					od_disp_str("\n\r");
+					od_disp_str("\r\n");
 				if (key=='N') {
 					ny_line(189,0,1);
 					if(!rip)
 						WaitForEnter();
 					else
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 					goto donewith;
 				}
 				intval=xp_random(3);
 				if (intval==0) {
 					ny_line(430,0,1);
 					if(rip)
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 					ny_line(431,0,1);
 					money_minus(cur_user.money);
 					cur_user.hitpoints=1;
@@ -2360,7 +2360,7 @@ game_events(void) {
 					if(!rip)
 						WaitForEnter();
 					else
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 					goto donewith;
 				}
 				ny_line(429,0,1);
@@ -2369,27 +2369,27 @@ game_events(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			} else {
 				ny_line(428,0,0);
 				key=ny_get_answer("YN");
 				if(!rip)
-					od_printf("%c\n\r\n",key);
+					od_printf("%c\r\n\r\n",key);
 				else
-					od_disp_str("\n\r");
+					od_disp_str("\r\n");
 				if (key=='N') {
 					ny_line(189,0,1);
 					if(!rip)
 						WaitForEnter();
 					else
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 					goto donewith;
 				}
 				intval=xp_random(5);
 				if (intval==0) {
 					ny_line(430,0,1);
 					if(rip)
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 					ny_line(431,0,1);
 					money_minus(cur_user.money);
 					cur_user.hitpoints=1;
@@ -2397,7 +2397,7 @@ game_events(void) {
 					if(!rip)
 						WaitForEnter();
 					else
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 					goto donewith;
 				}
 				ny_line(429,0,1);
@@ -2407,7 +2407,7 @@ game_events(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			}
 		}
 	} else {
@@ -2417,7 +2417,7 @@ game_events(void) {
 		if(!rip)
 			WaitForEnter();
 		else
-			od_get_answer("\n\r");
+			od_get_answer("\r\n");
 	}
 donewith:
 	if(!rip)
@@ -2435,12 +2435,12 @@ uplneZnova:
 	;
 	sprintf(input_s,"%29.29s","");
 	//	strset(input_s,' ');
-	input_s[0]= od_get_answer("0123456789M>\n\r");
+	input_s[0]= od_get_answer("0123456789M>\r\n");
 	if (input_s[0]=='M' || input_s[0]=='>') {
-		od_printf("%lu\n\r",max);
+		od_printf("%lu\r\n",max);
 		return max;
 	} else if (input_s[0]=='\n' || input_s[0]=='\r') {
-		od_printf("%lu\n\r",def);
+		od_printf("%lu\r\n",def);
 		return def;
 	}
 	od_printf("%c",input_s[0]);
@@ -2451,7 +2451,7 @@ uplneZnova:
 			cnt++;
 		else
 			od_printf("\b");
-		input_s[cnt]=od_get_answer("0123456789>\n\r\b");
+		input_s[cnt]=od_get_answer("0123456789>\r\n\b");
 		if(input_s[cnt]=='>') {
 			return max;
 		} else if (input_s[cnt]=='\n' || input_s[cnt]=='\r') {
@@ -2465,7 +2465,7 @@ uplneZnova:
 				intval=max;
 				od_printf("%lu",max);
 			}
-			od_printf("\n\r");
+			od_printf("\r\n");
 			break;
 		}
 		od_printf("%c",input_s[cnt]);
@@ -2506,7 +2506,7 @@ CheckForHandle(char handle[25]) {
 
 			if(rip)
 				ny_clr_scr();
-			od_printf("\n\r\nUnable to access the user files ... Exitting ...");
+			od_printf("\r\n\r\nUnable to access the user files ... Exitting ...");
 			//
 			od_exit(12,FALSE);
 		}
@@ -2521,7 +2521,7 @@ CheckForHandle(char handle[25]) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 				/* and exit the loop. */
 				break;
 			}
@@ -2541,7 +2541,7 @@ CheckForHandle(char handle[25]) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 				/* and exit the loop. */
 				break;
 			}
@@ -2615,7 +2615,7 @@ INT16 ReadOrAddCurrentUser(void) {
 	/* If the user was not found in the file, attempt to add them as a */
 	/* new user if the user file is not already full.                  */
 	if(!bGotUser && nCurrentUserNumber < MAX_USERS) {
-		od_printf("\n\r\n");
+		od_printf("\r\n\r\n");
 		ny_clr_scr();
 		//
 		ny_send_menu(NEW,"");
@@ -2653,7 +2653,7 @@ AskAgain:
 
 		do {
 
-			od_printf("\n\r\n");
+			od_printf("\r\n\r\n");
 			ny_clr_scr();
 			if(rip)
 				od_send_file("texti.rip");
@@ -2688,9 +2688,9 @@ AskAgain:
 		key=od_get_answer("MF");
 		//
 		if(!rip)
-			od_printf("%c\n\r\n",key);
+			od_printf("%c\r\n\r\n",key);
 		else
-			od_disp_str("\n\r");
+			od_disp_str("\r\n");
 		//
 
 		if (key=='M')
@@ -2712,9 +2712,9 @@ AskAgain:
 		key=od_get_answer("12345");
 		//
 		if(!rip)
-			od_printf("%c\n\r\n",key);
+			od_printf("%c\r\n\r\n",key);
 		else
-			od_disp_str("\n\r\n");
+			od_disp_str("\r\n\r\n");
 		//
 
 		switch(key) {
@@ -2740,7 +2740,7 @@ AskAgain:
 		//|--------------------------------------|
 		od_input_str(cur_user.say_win,40,' ',255);
 
-		od_printf("\n\r\n");
+		od_printf("\r\n\r\n");
 		ny_send_menu(NEW_LOOSE,"");
 		//What do you say when you get yer ass kicked:
 		//|--------------------------------------|
@@ -2880,7 +2880,7 @@ void WriteCurrentUser(void) {
 	if(fpUserFile == NULL) {
 		if(rip)
 			ny_clr_scr();
-		od_printf("Unable to access the user file.\n\r");
+		od_printf("Unable to access the user file.\r\n");
 		WaitForEnter();
 		return;
 	}
@@ -2895,7 +2895,7 @@ void WriteCurrentUser(void) {
 		fclose(fpUserFile);
 		if(rip)
 			ny_clr_scr();
-		od_printf("Unable to update your user record file.\n\r");
+		od_printf("Unable to update your user record file.\r\n");
 		WaitForEnter();
 		return;
 	}
@@ -3084,7 +3084,7 @@ WaitForEnter(void) {
 
 
 	/* Wait for a Carriage Return or Line Feed character from the user. */
-	ny_get_answer("\n\r");
+	ny_get_answer("\r\n");
 
 	//debug
 	//   od_printf("%d\n\r",nCurrentUserNumber);
@@ -3678,7 +3678,7 @@ void
 scr_save(void) {
 	if(savelevel==0) {
 		if(rip) {
-			od_disp_str("\n\r!|10000$SAVEALL$|#|#|#\n\r");
+			od_disp_str("\r\n!|10000$SAVEALL$|#|#|#\r\n");
 		} else {
 			t_buffer=(char *)malloc(4004);
 			if(t_buffer!=NULL)
@@ -3687,7 +3687,7 @@ scr_save(void) {
 		savelevel=1;
 	} else if(savelevel==1) {
 		if(rip) {
-			od_disp_str("\n\r!|10000$SAVE0$|#|#|#\n\r");
+			od_disp_str("\r\n!|10000$SAVE0$|#|#|#\r\n");
 		} else {
 			t_buffer1=(char *)malloc(4004);
 			if(t_buffer1!=NULL)
@@ -3703,7 +3703,7 @@ void
 scr_res(void) {
 	if(savelevel==1) {
 		if(rip) {
-			od_disp_str("\n\r!|10000$RESTOREALL$|#|#|#\n\r  \b\b");
+			od_disp_str("\r\n!|10000$RESTOREALL$|#|#|#\r\n  \b\b");
 		} else {
 			if(t_buffer!=NULL) {
 				od_restore_screen(t_buffer);
@@ -3713,7 +3713,7 @@ scr_res(void) {
 		savelevel=0;
 	} else if(savelevel==2) {
 		if(rip) {
-			od_disp_str("\n\r!|10000$RESTORE0$|#|#|#\n\r  \b\b");
+			od_disp_str("\r\n!|10000$RESTORE0$|#|#|#\r\n  \b\b");
 		} else {
 			if(t_buffer1!=NULL) {
 				od_restore_screen(t_buffer1);
@@ -3755,7 +3755,7 @@ void
 ny_clr_scr(void) {
 	if(rip) {
 		od_control.user_rip=FALSE;
-		od_disp_str("\n\r!|*|#|#|#\n\r");
+		od_disp_str("\r\n!|*|#|#|#\r\n");
 		od_clr_scr();
 		od_control.user_rip=TRUE;
 		od_printf("\r\r");
@@ -3779,7 +3779,7 @@ ibbs_bbs_list(void) {
 		od_send_file("frame.rip");
 		od_send_file("frame3.rip");
 	} else {
-		od_disp_str("\n\r\n\r");
+		od_disp_str("\r\n\r\n");
 		ny_clr_scr();
 	}
 
@@ -3790,11 +3790,11 @@ ibbs_bbs_list(void) {
 		if(strcmp(IBBSInfo.szThisNodeAddress,IBBSInfo.paOtherSystem[cnt].szAddress)==0) {
 			mine=cnt;
 		} else {
-			od_printf("`bright`%d - `bright green`%s `dark green`%.32s\n\r",cnt,IBBSInfo.paOtherSystem[cnt].szSystemName,IBBSInfo.paOtherSystem[cnt].szLocation);
+			od_printf("`bright`%d - `bright green`%s `dark green`%.32s\r\n",cnt,IBBSInfo.paOtherSystem[cnt].szSystemName,IBBSInfo.paOtherSystem[cnt].szLocation);
 			cnt2++;
 			if (nonstop==FALSE && cnt2%od_control.user_screen_length==0) {
 				ny_disp_emu("`%More (Y/n/=)");
-				key=ny_get_answer("YN=\n\r");
+				key=ny_get_answer("YN=\r\n");
 				od_printf("\r            \r");
 				cnt2=2;
 				if(key=='N')
@@ -3814,7 +3814,7 @@ ibbs_bbs_list(void) {
 		if(numstr[0]==0)
 			return -1;
 		sscanf(numstr,"%" SCNd16,&cnt);
-		od_disp_str("\n\r");
+		od_disp_str("\r\n");
 	} while(cnt>=IBBSInfo.nTotalSystems || cnt==mine);
 
 	return cnt;
@@ -3845,7 +3845,7 @@ ibbs_bbs_scores(void) {
 		od_send_file("frame.rip");
 		od_send_file("frame3.rip");
 	} else {
-		od_disp_str("\n\r\n\r");
+		od_disp_str("\r\n\r\n");
 		ny_clr_scr();
 	}
 
@@ -3862,9 +3862,9 @@ ibbs_bbs_scores(void) {
 						ny_fread(&srec,sizeof(scr_rec),1,jfile);
 						fclose(jfile);
 					}
-					od_printf("`bright green`%-40s `dark green`%s\n\r",IBBSInfo.paOtherSystem[cnt].szSystemName,D_Num(srec.points));
+					od_printf("`bright green`%-40s `dark green`%s\r\n",IBBSInfo.paOtherSystem[cnt].szSystemName,D_Num(srec.points));
 				} else {
-					od_printf("`bright green`%-40s `dark green`%s\n\r",IBBSInfo.paOtherSystem[cnt].szSystemName,D_Num(bbs_spy_rec.hi_points));
+					od_printf("`bright green`%-40s `dark green`%s\r\n",IBBSInfo.paOtherSystem[cnt].szSystemName,D_Num(bbs_spy_rec.hi_points));
 					break;
 				}
 			}
@@ -3874,7 +3874,7 @@ ibbs_bbs_scores(void) {
 			filepos=ftell(justfile);
 			fclose(justfile);
 			ny_disp_emu("`%More (Y/n/=)");
-			key=ny_get_answer("YN=\n\r");
+			key=ny_get_answer("YN=\r\n");
 			od_printf("\r            \r");
 			cnt2=1;
 			justfile=ShareFileOpen(IBBSSPY_FILENAME,"rb");
@@ -3923,7 +3923,7 @@ ibbs_bbs_name(INT16 bbs,INT16 sex,INT16 nochoice,char nameI[],INT16 *dbn,INT16 *
 		od_send_file("frame.rip");
 		od_send_file("frame3.rip");
 	} else {
-		od_disp_str("\n\r\n\r");
+		od_disp_str("\r\n\r\n");
 		ny_clr_scr();
 	}
 
@@ -3965,7 +3965,7 @@ ibbs_bbs_name(INT16 bbs,INT16 sex,INT16 nochoice,char nameI[],INT16 *dbn,INT16 *
 			if(nochoice==FALSE) {
 				od_printf("`bright`%d - `bright red`",cnt);
 				ny_disp_emu(ibscr_rec.name);
-				od_disp_str("\n\r");
+				od_disp_str("\r\n");
 			} else {
 				if(ibscr_rec.level>=0) {
 					od_set_attrib(0x0a);
@@ -4000,14 +4000,14 @@ ibbs_bbs_name(INT16 bbs,INT16 sex,INT16 nochoice,char nameI[],INT16 *dbn,INT16 *
 					ny_disp_emu(ibscr_rec.name,25);
 					ny_disp_emu(" `%No Spy Info Available");
 				}
-				od_disp_str("\n\r");
+				od_disp_str("\r\n");
 			}
 			cnt2++;
 			if (nonstop==FALSE && cnt2%od_control.user_screen_length==0) {
 				filepos=ftell(justfile);
 				fclose(justfile);
 				ny_disp_emu("`%More (Y/n/=)");
-				key=ny_get_answer("YN=\n\r");
+				key=ny_get_answer("YN=\r\n");
 				od_printf("\r            \r");
 				cnt2=2;
 				justfile=ShareFileOpen(numstr,"rb");
@@ -4036,7 +4036,7 @@ ibbs_bbs_name(INT16 bbs,INT16 sex,INT16 nochoice,char nameI[],INT16 *dbn,INT16 *
 			if(numstr[0]==0)
 				return;
 			sscanf(numstr,"%" SCNd16,&cnt);
-			od_disp_str("\n\r");
+			od_disp_str("\r\n");
 			if(sex>0 && cnt<bbs_spy_rec.players) {
 				justfile=ShareFileOpen(numstr,"rb");
 				if(justfile==NULL) {
@@ -4093,10 +4093,10 @@ ibbs_ops(void) {
 	line[0]=0;
 
 	do {
-		key=callmenu("LSMBHIPDXAYQ?\n\r",IBBS_MENU,454,FALSE);
+		key=callmenu("LSMBHIPDXAYQ?\r\n",IBBS_MENU,454,FALSE);
 		while (expert>0 && key=='?') {
 			expert+=10;
-			key=callmenu("LSMBHIPDXAYQ?\n\r",IBBS_MENU,454,FALSE);
+			key=callmenu("LSMBHIPDXAYQ?\r\n",IBBS_MENU,454,FALSE);
 			expert-=10;
 		}
 
@@ -4104,7 +4104,7 @@ ibbs_ops(void) {
 			if(cur_user.InterBBSMoves<=0) {
 				ny_line(455,2,1);
 				if(rip) {
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 					no_rip_m=1;
 				} else
 					WaitForEnter();
@@ -4131,7 +4131,7 @@ ibbs_ops(void) {
 						IBSend(&IBBSInfo,IBBSInfo.paOtherSystem[intval].szAddress,(char *)&act_rec,sizeof(ibbs_act_rec));
 						ny_line(456,0,1);
 						if(rip)
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 						else
 							WaitForEnter();
 					}
@@ -4169,9 +4169,9 @@ ibbs_ops(void) {
 
 						key=ny_get_answer("YN");
 						if(!rip)
-							od_printf("%c\n\r",key);
+							od_printf("%c\r\n",key);
 						else
-							od_disp_str("\n\r");
+							od_disp_str("\r\n");
 						if (key=='Y') {
 							if (cur_user.sex_today<=0) {
 
@@ -4179,7 +4179,7 @@ ibbs_ops(void) {
 								//od_printf("\n\r\n\r`bright`You already used up all your sex turns today ...\n\r");
 
 								WaitForEnter();
-								od_printf("\n\r");
+								od_printf("\r\n");
 							} else {
 								ibmail.flirt=1;
 								cur_user.sex_today--;
@@ -4250,7 +4250,7 @@ ibbs_ops(void) {
 					if(!rip)
 						WaitForEnter();
 					else
-						od_get_answer("\n\r");
+						od_get_answer("\r\n");
 				}
 			}
 		} else if (key=='X') {
@@ -4319,14 +4319,14 @@ ibbs_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					} else if (cur_user.sex_today<=0) {
 
 						ny_line(118,1,1);
 						//od_printf("\n\r\n\r`bright`You already used up all your sex turns today ...\n\r");
 
 						WaitForEnter();
-						od_printf("\n\r");
+						od_printf("\r\n");
 					}
 				}
 			}
@@ -4334,7 +4334,7 @@ ibbs_ops(void) {
 			if(cur_user.InterBBSMoves<=0) {
 				ny_line(455,2,1);
 				if(rip) {
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 					no_rip_m=1;
 				} else
 					WaitForEnter();
@@ -4357,7 +4357,7 @@ ibbs_ops(void) {
 
 						if(rip) {
 							od_send_file("input.rip");
-							od_disp_str("\n\r");
+							od_disp_str("\r\n");
 						}
 						ny_line(417,0,0);
 						od_printf(D_Num(cur_user.money));
@@ -4391,7 +4391,7 @@ ibbs_ops(void) {
 							if(!rip)
 								WaitForEnter();
 							else
-								od_get_answer("\n\r");
+								od_get_answer("\r\n");
 						} else {
 							cur_user.InterBBSMoves++;
 						}
@@ -4424,13 +4424,13 @@ ibbs_ops(void) {
 				if(!rip)
 					WaitForEnter();
 				else
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 			}
 		} else if (key=='B') {
 			if(cur_user.InterBBSMoves<=0) {
 				ny_line(455,2,1);
 				if(rip) {
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 					no_rip_m=1;
 				} else
 					WaitForEnter();
@@ -4446,7 +4446,7 @@ ibbs_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					} else {
 						intval=ibbs_bbs_list();
 						if(intval>-1) {
@@ -4488,7 +4488,7 @@ ibbs_ops(void) {
 								if(!rip)
 									WaitForEnter();
 								else
-									od_get_answer("\n\r");
+									od_get_answer("\r\n");
 							}
 						}
 					}
@@ -4498,13 +4498,13 @@ ibbs_ops(void) {
 			if(cur_user.InterBBSMoves<=0) {
 				ny_line(455,2,1);
 				if(rip) {
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 					no_rip_m=1;
 				} else
 					WaitForEnter();
 			} else {
 
-				od_disp_str("\n\n\r");
+				od_disp_str("\r\n\r\n");
 
 				if(!rip)
 					ny_send_menu(HITMEN,"");
@@ -4528,7 +4528,7 @@ ibbs_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					} else {
 						*(INT16 *)ibmail.lines[0]=intval-1;
 						if(intval==1)
@@ -4583,7 +4583,7 @@ ibbs_ops(void) {
 								if(!rip)
 									WaitForEnter();
 								else
-									od_get_answer("\n\r");
+									od_get_answer("\r\n");
 							}
 						}
 					}
@@ -4593,7 +4593,7 @@ ibbs_ops(void) {
 			if(cur_user.InterBBSMoves<=0) {
 				ny_line(455,2,1);
 				if(rip) {
-					od_get_answer("\n\r");
+					od_get_answer("\r\n");
 					no_rip_m=1;
 				} else
 					WaitForEnter();
@@ -4609,7 +4609,7 @@ ibbs_ops(void) {
 						if(!rip)
 							WaitForEnter();
 						else
-							od_get_answer("\n\r");
+							od_get_answer("\r\n");
 					} else {
 						intval=ibbs_bbs_list();
 						if(intval>-1) {
@@ -4651,7 +4651,7 @@ ibbs_ops(void) {
 								if(!rip)
 									WaitForEnter();
 								else
-									od_get_answer("\n\r");
+									od_get_answer("\r\n");
 							}
 						}
 					}

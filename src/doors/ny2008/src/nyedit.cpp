@@ -178,7 +178,7 @@ extern "C" int main (int argc,char *argv[]) {
 		} while ((++cnt)<argc);
 	}
 
-	od_printf("`bright`New York 2008 Player Editor Copyright 1995, George Lebl - All rights Reserved\n\r");
+	od_printf("`bright`New York 2008 Player Editor Copyright 1995, George Lebl - All rights Reserved\r\n");
 	if(!od_control.od_force_local)
 		od_control.od_clear_on_exit=FALSE;
 	od_control.od_disable |= DIS_INFOFILE;
@@ -197,7 +197,7 @@ extern "C" int main (int argc,char *argv[]) {
 	od_control.od_help_text2=(char *)"  New York 2008 Player Editor (c) Copyright 1995 George Lebl                  ";
 	ch_flag_d();
 	if (fexist(MAINTFLAG_FILENAME)) {
-		od_printf("\n\r\n\r`bright red`W`red`ell the mantanace is running on some other node so please come");
+		od_printf("\r\n\r\n`bright red`W`red`ell the mantanace is running on some other node so please come");
 		od_printf("back later, or if this is a single node bbs, notify the sysop because");
 		od_printf("then he should delete the MAINT.RUN flag file....");
 		WaitForEnter();
@@ -206,7 +206,7 @@ extern "C" int main (int argc,char *argv[]) {
 
 	ch_game_d();
 	if (!fexist(USER_FILENAME)) {
-		od_printf("\n\r`bright`NO user File!!!!\n\r");
+		od_printf("\r\n`bright`NO user File!!!!\r\n");
 		od_exit(10,FALSE);
 	}
 
@@ -241,7 +241,7 @@ extern "C" int main (int argc,char *argv[]) {
 		/* If unable to access the user file, display an error message and */
 		/* return.                                                         */
 		if(justfile == NULL) {
-			od_printf("Unable to access the user file.\n\r");
+			od_printf("Unable to access the user file.\r\n");
 			WaitForEnter();
 			od_exit(10,FALSE);
 		}
@@ -281,35 +281,35 @@ extern "C" int main (int argc,char *argv[]) {
 				break;
 
 			case '5':
-				od_printf("\n\n\r`bright`Display Level/Minimum Points Table? (Y/N):");
+				od_printf("\r\n\r\n`bright`Display Level/Minimum Points Table? (Y/N):");
 				s_key=od_get_answer("YN");
-				od_printf("%c\n\r",s_key);
+				od_printf("%c\r\n",s_key);
 				if(s_key=='Y') {
-					od_printf("\n\n\r`bright`Level:               Min Points:`cyan`\n\r");
-					od_printf("0                    0\n\r");
-					od_printf("1                    500           `bright red`This table shows the minimum\n\r`cyan`");
-					od_printf("2                    1020          `bright red`points required to get into\n\r`cyan`");
-					od_printf("3                    2100          `bright red`a level. This editor will\n\r`cyan`");
-					od_printf("4                    3700          `bright red`calculate the minimum level\n\r`cyan`");
-					od_printf("5                    6100          `bright red`for the points entered.`cyan`\n\r");
-					od_printf("6                    9100\n\r");
-					od_printf("7                    12820\n\r");
-					od_printf("8                    17300\n\r");
-					od_printf("9                    22580\n\r");
-					od_printf("10                   28700\n\r");
-					od_printf("11                   35700\n\r");
-					od_printf("12                   43620\n\r");
-					od_printf("13                   52500\n\r");
-					od_printf("14                   62380\n\r");
-					od_printf("15                   73300\n\r");
-					od_printf("16                   85300\n\r");
-					od_printf("17                   98420\n\r");
-					od_printf("18                   112700\n\r");
-					od_printf("19                   128180\n\r");
+					od_printf("\n\r\n`bright`Level:               Min Points:`cyan`\r\n");
+					od_printf("0                    0\r\n");
+					od_printf("1                    500           `bright red`This table shows the minimum\r\n`cyan`");
+					od_printf("2                    1020          `bright red`points required to get into\r\n`cyan`");
+					od_printf("3                    2100          `bright red`a level. This editor will\r\n`cyan`");
+					od_printf("4                    3700          `bright red`calculate the minimum level\r\n`cyan`");
+					od_printf("5                    6100          `bright red`for the points entered.`cyan`\r\n");
+					od_printf("6                    9100\r\n");
+					od_printf("7                    12820\r\n");
+					od_printf("8                    17300\r\n");
+					od_printf("9                    22580\r\n");
+					od_printf("10                   28700\r\n");
+					od_printf("11                   35700\r\n");
+					od_printf("12                   43620\r\n");
+					od_printf("13                   52500\r\n");
+					od_printf("14                   62380\r\n");
+					od_printf("15                   73300\r\n");
+					od_printf("16                   85300\r\n");
+					od_printf("17                   98420\r\n");
+					od_printf("18                   112700\r\n");
+					od_printf("19                   128180\r\n");
 					od_printf("20                   144900");
 				}
 
-				od_printf("\n\r`bright`Enter amount of points, ENTER to abort:");
+				od_printf("\r\n`bright`Enter amount of points, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					sscanf(numstr,"%" SCNu32,&points);
@@ -327,7 +327,7 @@ extern "C" int main (int argc,char *argv[]) {
 
 
 			case 'M':
-				od_printf("\n\r\n\r`bright`Enter amount of money at hand, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter amount of money at hand, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					uint32_t n;
@@ -338,7 +338,7 @@ extern "C" int main (int argc,char *argv[]) {
 				break;
 
 			case 'N':
-				od_printf("\n\r\n\r`bright`Enter amount of money in bank, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter amount of money in bank, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					uint32_t n;
@@ -350,16 +350,16 @@ extern "C" int main (int argc,char *argv[]) {
 
 			case '1':
 				//        od_control.od_ker_exec=NULL;
-				od_printf("\n\r\n\r`bright`Enter the new identity:\n\r\n\r");
-				od_printf("`bright green`1`green`. `bright green`H`green`eadbanger\n\r");
-				od_printf("`bright green`2`green`. `bright green`H`green`ippie\n\r");
-				od_printf("`bright green`3`green`. `bright green`B`green`ig `bright green`F`green`at `bright green`D`green`ude\n\r");
-				od_printf("`bright green`4`green`. `bright green`C`green`rack `bright green`A`green`ddict\n\r");
-				od_printf("`bright green`5`green`. `bright green`P`green`unk\n\r\n\r");
+				od_printf("\r\n\r\n`bright`Enter the new identity:\r\n\r\n");
+				od_printf("`bright green`1`green`. `bright green`H`green`eadbanger\r\n");
+				od_printf("`bright green`2`green`. `bright green`H`green`ippie\r\n");
+				od_printf("`bright green`3`green`. `bright green`B`green`ig `bright green`F`green`at `bright green`D`green`ude\r\n");
+				od_printf("`bright green`4`green`. `bright green`C`green`rack `bright green`A`green`ddict\r\n");
+				od_printf("`bright green`5`green`. `bright green`P`green`unk\r\n\r\n");
 				od_printf("`bright`ENTER to cancel:");
 				//        od_control.od_ker_exec=ny_kernel;
-				s_key=od_get_answer("12345\n\r");
-				od_printf("%c\n\r\n\r",key);
+				s_key=od_get_answer("12345\r\n");
+				od_printf("%c\r\n\r\n",key);
 
 				if (s_key=='1')
 					cur_user.nation = HEADBANGER;
@@ -380,7 +380,7 @@ extern "C" int main (int argc,char *argv[]) {
 
 			case '6':
 				//      od_control.od_ker_exec=NULL;
-				od_printf("\n\r\n\r`bright`Enter fights left, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter fights left, ENTER to abort:");
 				//      od_control.od_ker_exec=ny_kernel;
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
@@ -390,7 +390,7 @@ extern "C" int main (int argc,char *argv[]) {
 				break;
 
 			case '7':
-				od_printf("\n\r\n\r`bright`Enter hitpoints, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter hitpoints, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					int32_t n;
@@ -398,7 +398,7 @@ extern "C" int main (int argc,char *argv[]) {
 					cur_user.hitpoints = n;
 
 				}
-				od_printf("\n\r\n\r`bright`Enter maximum hitpoints, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter maximum hitpoints, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					int32_t n;
@@ -416,7 +416,7 @@ extern "C" int main (int argc,char *argv[]) {
 
 
 			case 'H':
-				od_printf("\n\r\n\r`bright`Enter the drug high, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter the drug high, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					sscanf(numstr,"%" SCNd16,&intval);
@@ -430,7 +430,7 @@ extern "C" int main (int argc,char *argv[]) {
 				break;
 
 			case 'O':
-				od_printf("\n\r\n\r`bright`Enter hunger, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter hunger, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					sscanf(numstr,"%" SCNd16,&intval);
@@ -445,7 +445,7 @@ extern "C" int main (int argc,char *argv[]) {
 
 			case 'R':
 				if (cur_user.std!=NONE) {
-					od_printf("\n\r\n\r`bright`Enter the infection, ENTER to abort:");
+					od_printf("\r\n\r\n`bright`Enter the infection, ENTER to abort:");
 					od_input_str(numstr,25,'0','9');
 					if (numstr[0]!=0) {
 						sscanf(numstr,"%" SCNd16,&intval);
@@ -457,7 +457,7 @@ extern "C" int main (int argc,char *argv[]) {
 						WriteCurrentUser(user_num);
 					}
 				} else {
-					od_printf("\n\r\n\r`bright`Player is healthy!");
+					od_printf("\r\n\r\n`bright`Player is healthy!");
 					WaitForEnter();
 				}
 				break;
@@ -467,35 +467,35 @@ extern "C" int main (int argc,char *argv[]) {
 			case '8':
 				//          od_control.od_ker_exec=NULL;
 
-				od_printf("\n\r\n\r`bright`Which weapon:\n\r\n\r");
-				ny_disp_emu("`%X`2. `0H`2ands\n\r");
-				ny_disp_emu("`%A`2. `0P`2epper `0S`2pray\n\r");
-				ny_disp_emu("`%B`2. `0S`2harp `0S`2tick\n\r");
-				ny_disp_emu("`%C`2. `0S`2crewdriver\n\r");
-				ny_disp_emu("`%D`2. `0K`2nife\n\r");
-				ny_disp_emu("`%E`2. `0H`2ammer\n\r");
-				ny_disp_emu("`%F`2. `0C`2hain\n\r");
-				ny_disp_emu("`%G`2. `0L`2ead `0P`2ipe\n\r");
-				ny_disp_emu("`%H`2. `0G`2un\n\r");
-				ny_disp_emu("`%I`2. `0C`2olt\n\r");
-				ny_disp_emu("`%J`2. `0R`2ifle\n\r");
-				ny_disp_emu("`%K`2. `0E`2lephant `0G`2un\n\r");
-				ny_disp_emu("`%L`2. `0L`2aser `0G`2un\n\r");
-				ny_disp_emu("`%M`2. `0N`2ail `0G`2un\n\r");
-				ny_disp_emu("`%N`2. `0S`2hotgun\n\r");
-				ny_disp_emu("`%O`2. `0A`2ssault Rifle\n\r");
-				ny_disp_emu("`%P`2. `0M`2achine `0G`2un\n\r");
-				ny_disp_emu("`%Q`2. `0P`2roton `0G`2un\n\r");
-				ny_disp_emu("`%R`2. `0G`2ranade `0L`2auncher\n\r");
+				od_printf("\r\n\r\n`bright`Which weapon:\r\n\r\n");
+				ny_disp_emu("`%X`2. `0H`2ands\r\n");
+				ny_disp_emu("`%A`2. `0P`2epper `0S`2pray\r\n");
+				ny_disp_emu("`%B`2. `0S`2harp `0S`2tick\r\n");
+				ny_disp_emu("`%C`2. `0S`2crewdriver\r\n");
+				ny_disp_emu("`%D`2. `0K`2nife\r\n");
+				ny_disp_emu("`%E`2. `0H`2ammer\r\n");
+				ny_disp_emu("`%F`2. `0C`2hain\r\n");
+				ny_disp_emu("`%G`2. `0L`2ead `0P`2ipe\r\n");
+				ny_disp_emu("`%H`2. `0G`2un\r\n");
+				ny_disp_emu("`%I`2. `0C`2olt\r\n");
+				ny_disp_emu("`%J`2. `0R`2ifle\r\n");
+				ny_disp_emu("`%K`2. `0E`2lephant `0G`2un\r\n");
+				ny_disp_emu("`%L`2. `0L`2aser `0G`2un\r\n");
+				ny_disp_emu("`%M`2. `0N`2ail `0G`2un\r\n");
+				ny_disp_emu("`%N`2. `0S`2hotgun\r\n");
+				ny_disp_emu("`%O`2. `0A`2ssault Rifle\r\n");
+				ny_disp_emu("`%P`2. `0M`2achine `0G`2un\r\n");
+				ny_disp_emu("`%Q`2. `0P`2roton `0G`2un\r\n");
+				ny_disp_emu("`%R`2. `0G`2ranade `0L`2auncher\r\n");
 				WaitForEnter();
-				ny_disp_emu("\n\r\n`%S`2. `0N`2eutron `0P`2haser\n\r");
-				ny_disp_emu("`%T`2. `0B`2laster\n\r");
-				ny_disp_emu("`%U`2. `0U`2ltrasound `0G`2un\n\r");
-				ny_disp_emu("`%V`2. `0A`2tomic `0B`2omb\n\r");
+				ny_disp_emu("\r\n`%S`2. `0N`2eutron `0P`2haser\r\n");
+				ny_disp_emu("`%T`2. `0B`2laster\r\n");
+				ny_disp_emu("`%U`2. `0U`2ltrasound `0G`2un\r\n");
+				ny_disp_emu("`%V`2. `0A`2tomic `0B`2omb\r\n");
 
-				od_printf("\n\r`bright`Which one? ENTER to abort:");
+				od_printf("\r\n`bright`Which one? ENTER to abort:");
 				//          od_control.od_ker_exec=ny_kernel;
-				s_key=od_get_answer("XABCDEFGHIJKLMNOPQRSTUV\n\r");
+				s_key=od_get_answer("XABCDEFGHIJKLMNOPQRSTUV\r\n");
 				od_printf("%c",s_key);
 
 				if (s_key=='A')
@@ -551,7 +551,7 @@ extern "C" int main (int argc,char *argv[]) {
 
 			case 'I':
 				if (cur_user.drug>=COKE) {
-					od_printf("\n\r\n\r`bright`Enter the drug addiction, ENTER to abort:");
+					od_printf("\r\n\r\n`bright`Enter the drug addiction, ENTER to abort:");
 					od_input_str(numstr,25,'0','9');
 					if (numstr[0]!=0) {
 						sscanf(numstr,"%" SCNd16,&intval);
@@ -563,14 +563,14 @@ extern "C" int main (int argc,char *argv[]) {
 						WriteCurrentUser(user_num);
 					}
 				} else {
-					od_printf("\n\r\n\r`bright`Player not using addictive drug!");
+					od_printf("\r\n\r\n`bright`Player not using addictive drug!");
 					WaitForEnter();
 				}
 				break;
 
 			case 'J':
 				if (cur_user.drug>=COKE) {
-					od_printf("\n\r\n\r`bright`Enter the days since last hit, ENTER to abort:");
+					od_printf("\r\n\r\n`bright`Enter the days since last hit, ENTER to abort:");
 					od_input_str(numstr,25,'0','9');
 					if (numstr[0]!=0) {
 						sscanf(numstr,"%" SCNd16,&intval);
@@ -580,14 +580,14 @@ extern "C" int main (int argc,char *argv[]) {
 						WriteCurrentUser(user_num);
 					}
 				} else {
-					od_printf("\n\r\n\r`bright`Player not using addictive drug!");
+					od_printf("\r\n\r\n`bright`Player not using addictive drug!");
 					WaitForEnter();
 				}
 				break;
 
 
 			case 'A':
-				od_printf("\n\r\n\r`bright`Enter days since laid, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter days since laid, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					int16_t n;
@@ -600,7 +600,7 @@ extern "C" int main (int argc,char *argv[]) {
 				break;
 
 			case 'B':
-				od_printf("\n\r\n\r`bright`Enter sex turns left, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter sex turns left, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					sscanf(numstr,"%" SCNd16,&intval);
@@ -614,7 +614,7 @@ extern "C" int main (int argc,char *argv[]) {
 				break;
 
 			case 'C':
-				od_printf("\n\r\n\r`bright`Enter # of condoms, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter # of condoms, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					int16_t n;
@@ -627,7 +627,7 @@ extern "C" int main (int argc,char *argv[]) {
 				break;
 
 			case 'D':
-				od_printf("\n\r\n\r`bright`Enter # of rocks, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter # of rocks, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					sscanf(numstr,"%hhd",&cur_user.rocks);
@@ -637,7 +637,7 @@ extern "C" int main (int argc,char *argv[]) {
 				break;
 
 			case 'E':
-				od_printf("\n\r\n\r`bright`Enter the Throwing Ability (0-100), ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter the Throwing Ability (0-100), ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					sscanf(numstr,"%" SCNd16,&intval);
@@ -647,7 +647,7 @@ extern "C" int main (int argc,char *argv[]) {
 						cur_user.throwing_ability=100;
 					WriteCurrentUser(user_num);
 				}
-				od_printf("\n\r\n\r`bright`Enter the Kicking Ability (0-100), ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter the Kicking Ability (0-100), ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					sscanf(numstr,"%" SCNd16,&intval);
@@ -657,7 +657,7 @@ extern "C" int main (int argc,char *argv[]) {
 						cur_user.kick_ability=100;
 					WriteCurrentUser(user_num);
 				}
-				od_printf("\n\r\n\r`bright`Enter the Punching Ability (0-100), ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter the Punching Ability (0-100), ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					sscanf(numstr,"%" SCNd16,&intval);
@@ -673,7 +673,7 @@ extern "C" int main (int argc,char *argv[]) {
 
 
 			case 'G':
-				od_printf("\n\r\n\r`bright`Enter # of drug hits, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Enter # of drug hits, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
 					uint16_t n;
@@ -689,7 +689,7 @@ extern "C" int main (int argc,char *argv[]) {
 
 
 			case '3':
-				od_printf("\n\r\n\r`bright`Input the new USER BBS name, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Input the new USER BBS name, ENTER to abort:");
 				cntv=0;
 				intval=TRUE;
 				do {
@@ -740,7 +740,7 @@ extern "C" int main (int argc,char *argv[]) {
 				break;
 
 			case '2':
-				od_printf("\n\r\n\r`bright`Input the new name, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`Input the new name, ENTER to abort:");
 				od_input_str(numstr,25,' ',255);
 				if (numstr[0]!=0) {
 					strcpy(cur_user.name,numstr);
@@ -749,7 +749,7 @@ extern "C" int main (int argc,char *argv[]) {
 				break;
 			case '9':
 				//      od_control.od_ker_exec=NULL;
-				od_printf("\n\r`bright red`W`red`hat does the player say when he wins:\n\r|--------------------------------------|\n\r`bright green`");
+				od_printf("\r\n`bright red`W`red`hat does the player say when he wins:\r\n|--------------------------------------|\r\n`bright green`");
 				//      od_control.od_ker_exec=ny_kernel;
 				od_input_str(numstr,40,' ',255);
 				if (numstr[0]!=0) {
@@ -760,7 +760,7 @@ extern "C" int main (int argc,char *argv[]) {
 
 			case '0':
 				//      od_control.od_ker_exec=NULL;
-				od_printf("\n\r`bright red`W`red`hat does the player say when he looses:\n\r|--------------------------------------|\n\r`bright green`");
+				od_printf("\r\n`bright red`W`red`hat does the player say when he looses:\r\n|--------------------------------------|\r\n`bright green`");
 				//      od_control.od_ker_exec=ny_kernel;
 				od_input_str(numstr,40,' ',255);
 				if (numstr[0]!=0) {
@@ -771,14 +771,14 @@ extern "C" int main (int argc,char *argv[]) {
 
 			case 'P':
 				//      od_control.od_ker_exec=NULL;
-				od_printf("\n\r\n\r`bright`1. `bright green`H`green`ealthy\n\r");
-				od_printf("`bright`2. `bright green`C`green`raps\n\r");
-				od_printf("`bright`3. `bright green`H`green`erpes\n\r");
-				od_printf("`bright`4. `bright green`S`green`yphilis\n\r");
-				od_printf("`bright`5. `bright green`A`green`IDS\n\r\n\r");
+				od_printf("\r\n\r\n`bright`1. `bright green`H`green`ealthy\r\n");
+				od_printf("`bright`2. `bright green`C`green`raps\r\n");
+				od_printf("`bright`3. `bright green`H`green`erpes\r\n");
+				od_printf("`bright`4. `bright green`S`green`yphilis\r\n");
+				od_printf("`bright`5. `bright green`A`green`IDS\r\n\r\n");
 				od_printf("`bright`Enter the disease, ENTER to abort:");
 				//      od_control.od_ker_exec=ny_kernel;
-				s_key=od_get_answer("12345\n\r");
+				s_key=od_get_answer("12345\r\n");
 				od_putch(s_key);
 				if (s_key=='1')
 					cur_user.std=NONE;
@@ -798,13 +798,13 @@ extern "C" int main (int argc,char *argv[]) {
 
 			case 'K':
 				//      od_control.od_ker_exec=NULL;
-				od_printf("\n\r\n\r`bright`1. `bright green`N`green`owhere\n\r");
-				od_printf("`bright`2. `bright green`C`green`heap `bright green`M`green`otel\n\r");
-				od_printf("`bright`3. `bright green`R`green`egular `bright green`H`green`otel\n\r");
-				od_printf("`bright`4. `bright green`E`green`xpensive `bright green`H`green`otel\n\r\n\r");
+				od_printf("\r\n\r\n`bright`1. `bright green`N`green`owhere\r\n");
+				od_printf("`bright`2. `bright green`C`green`heap `bright green`M`green`otel\r\n");
+				od_printf("`bright`3. `bright green`R`green`egular `bright green`H`green`otel\r\n");
+				od_printf("`bright`4. `bright green`E`green`xpensive `bright green`H`green`otel\r\n\r\n");
 				od_printf("`bright`Where is the user staying, ENTER to abort:");
 				//      od_control.od_ker_exec=ny_kernel;
-				s_key=od_get_answer("1234\n\r");
+				s_key=od_get_answer("1234\r\n");
 				od_putch(s_key);
 				if (s_key=='1')
 					cur_user.rest_where=NOWHERE;
@@ -819,7 +819,7 @@ extern "C" int main (int argc,char *argv[]) {
 				if(cur_user.rest_where==NOWHERE) {
 					cur_user.hotel_paid_fer=0;
 				} else {
-					od_printf("\n\r\n\r`bright`How long is it paid for, ENTER to abort:");
+					od_printf("\r\n\r\n`bright`How long is it paid for, ENTER to abort:");
 					od_input_str(numstr,25,'0','9');
 					if (numstr[0]!=0) {
 						sscanf(numstr,"%" SCNd16,&intval);
@@ -834,15 +834,15 @@ extern "C" int main (int argc,char *argv[]) {
 				break;
 			case 'F':
 				//      od_control.od_ker_exec=NULL;
-				od_printf("\n\r\n\r`bright`1. `bright green`P`green`ot\n\r");
-				od_printf("`bright`2. `bright green`H`green`ash\n\r");
-				od_printf("`bright`3. `bright green`L`green`SD\n\r");
-				od_printf("`bright`4. `bright green`C`green`oke\n\r");
-				od_printf("`bright`5. `bright green`P`green`CP\n\r");
-				od_printf("`bright`6. `bright green`H`green`eroin\n\r");
-				od_printf("\n\r`bright`Select drug, ENTER to abort:");
+				od_printf("\r\n\r\n`bright`1. `bright green`P`green`ot\r\n");
+				od_printf("`bright`2. `bright green`H`green`ash\r\n");
+				od_printf("`bright`3. `bright green`L`green`SD\r\n");
+				od_printf("`bright`4. `bright green`C`green`oke\r\n");
+				od_printf("`bright`5. `bright green`P`green`CP\r\n");
+				od_printf("`bright`6. `bright green`H`green`eroin\r\n");
+				od_printf("\r\n`bright`Select drug, ENTER to abort:");
 				//      od_control.od_ker_exec=ny_kernel;
-				s_key=od_get_answer("123456\n\r");
+				s_key=od_get_answer("123456\r\n");
 				od_putch(s_key);
 				if (s_key=='1')
 					cur_user.drug=POT;
@@ -894,7 +894,7 @@ extern "C" int main (int argc,char *argv[]) {
 				break;
 
 			case '*':
-				od_printf("\n\r\n\r`bright`New day for Player?(Y/N):");
+				od_printf("\r\n\r\n`bright`New day for Player?(Y/N):");
 				key=od_get_answer("YN");
 				if (key=='Y') {
 					cur_user.days_not_on=1;
@@ -903,7 +903,7 @@ extern "C" int main (int argc,char *argv[]) {
 				break;
 
 			case 'X':
-				od_printf("\n\r\n\r`bright`KILL Player?(Y/N):");
+				od_printf("\r\n\r\n`bright`KILL Player?(Y/N):");
 				key=od_get_answer("YN");
 				if (key=='Y') {
 					cur_user.alive=DEAD;
@@ -1075,12 +1075,12 @@ ny_kernel(void) {
 		fcloseall();
 #endif
 		//    od_control.od_disable|=DIS_CARRIERDETECT;
-		od_printf("\n\r\n\r`bright`Please wait while maintanance runs on another node....");
+		od_printf("\r\n\r\n`bright`Please wait while maintanance runs on another node....");
 
 		while (fexist(MAINTFLAG_FILENAME))
 			;
 
-		od_printf("\n\rThanks For Waiting....\n\r");
+		od_printf("\r\nThanks For Waiting....\r\n");
 
 		//    od_control.od_disable&=~DIS_CARRIERDETECT;
 	}
@@ -1104,12 +1104,12 @@ char entry_menu(void) {
 	sprintf(numstr,"u%07d.on",user_num);
 	//   od_control.od_ker_exec=NULL;
 	if(fexist(numstr)) {
-		od_printf("`bright`]`red`/`bright`[`red` - Next/Previous  `bright`Q`red` - Quit\n\r");
+		od_printf("`bright`]`red`/`bright`[`red` - Next/Previous  `bright`Q`red` - Quit\r\n");
 		od_printf("`bright`This user is online and cannot be editted!");
 		key= od_get_answer("[]Q");
 		//     od_control.od_ker_exec=ny_kernel;
 	} else {
-		od_printf("`bright`]`red`/`bright`[`red` - Next/Previous `bright`X`red` - Delete `bright`*`red` - New Day `bright``red` `bright`Q`red` - Quit\n\r");
+		od_printf("`bright`]`red`/`bright`[`red` - Next/Previous `bright`X`red` - Delete `bright`*`red` - New Day `bright``red` `bright`Q`red` - Quit\r\n");
 		od_printf("`bright red`P`red`ress the number/letter corresponding to what you want to change: ");
 		//od_printf("`bright`R`red` - Revive Player `bright`D`red` - Delete`bright`
 		// Q - Quit:");
@@ -1126,7 +1126,7 @@ DisplayStats(void) {
 
 	ny_kernel();
 	//  od_control.od_ker_exec=NULL;
-	od_printf("\n\r\n\r");
+	od_printf("\r\n\r\n");
 	od_clr_scr();
 	od_printf("`bright`S`cyan`t`bright blue`ats `bright`F`cyan`o`bright blue`r `bright`L`cyan`e`bright blue`vel `white`%d `bright`1. ",(INT16)cur_user.level);
 	if (cur_user.nation==HEADBANGER)
@@ -1141,7 +1141,7 @@ DisplayStats(void) {
 		od_printf("`bright green`P`green`unk");
 	od_printf(" `bright`2. `bright red`");
 	ny_disp_emu(cur_user.name);
-	od_printf("\n\r`bright`3. `white`User name:`bright`%s\n\r",cur_user.bbsname);
+	od_printf("\r\n`bright`3. `white`User name:`bright`%s\r\n",cur_user.bbsname);
 	//  od_printf("`blue`-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n\r");
 	if (cur_user.sex==MALE)
 		od_printf("`bright`4. `bright red`S`red`ex: `bright green`M`green`ale  ");
@@ -1149,48 +1149,48 @@ DisplayStats(void) {
 		od_printf("`bright`4. `bright red`S`red`ex: `bright green`F`green`emale");
 	od_repeat(' ',29);
 	if (cur_user.alive==ALIVE)
-		od_printf("`bright`L. `bright red`S`red`tatus: `bright green`A`green`live\n\r");
+		od_printf("`bright`L. `bright red`S`red`tatus: `bright green`A`green`live\r\n");
 	else if (cur_user.alive==DEAD)
-		od_printf("`bright`L. `bright red`S`red`tatus: `bright red`DEAD\n\r");
+		od_printf("`bright`L. `bright red`S`red`tatus: `bright red`DEAD\r\n");
 	else
-		od_printf("`bright`L. `bright red`S`red`tatus: `bright red`UNCONSIOUS\n\r");
+		od_printf("`bright`L. `bright red`S`red`tatus: `bright red`UNCONSIOUS\r\n");
 	od_printf("`bright`5. `bright red`P`red`oints: `bright green`%-16s",D_Num(cur_user.points));
 	od_repeat(' ',16);
-	od_printf("`bright`M. `bright red`M`red`oney `bright red`I`red`n `bright red`H`red`and: `bright green`%s\n\r",D_Num(cur_user.money));
+	od_printf("`bright`M. `bright red`M`red`oney `bright red`I`red`n `bright red`H`red`and: `bright green`%s\r\n",D_Num(cur_user.money));
 	od_printf("`bright`6. `bright red`F`red`ights: `bright green`%-3d", (INT16)cur_user.turns);
 	od_repeat(' ',29);
-	od_printf("`bright`N. `bright red`M`red`oney `bright red`I`red`n `bright red`B`red`ank: `bright green`%s\n\r",D_Num(cur_user.bank));
+	od_printf("`bright`N. `bright red`M`red`oney `bright red`I`red`n `bright red`B`red`ank: `bright green`%s\r\n",D_Num(cur_user.bank));
 	od_printf("`bright`7. `bright red`H`red`it `bright red`P`red`oints: `bright green`%s ",D_Num(cur_user.hitpoints));
 	intval=strlen(str);
 	od_printf("`bright red`o`red`f `bright green`%-9s", D_Num(cur_user.maxhitpoints));
 	od_repeat(' ',40-intval-25);
-	od_printf("`bright`O. `bright red`H`red`ungry: `bright green`%d%c\n\r", (INT16)cur_user.hunger,37);
+	od_printf("`bright`O. `bright red`H`red`ungry: `bright green`%d%c\r\n", (INT16)cur_user.hunger,37);
 	od_printf("`bright`8. `bright red`A`red`rm: ");
 	print_arm(cur_user.arm);
-	od_printf("\n\r`bright`9. `bright red`W`red`inning `bright red`S`red`entence: `bright green`");
+	od_printf("\r\n`bright`9. `bright red`W`red`inning `bright red`S`red`entence: `bright green`");
 	ny_disp_emu(cur_user.say_win);
-	od_printf("\n\r");
+	od_printf("\r\n");
 	od_printf("`bright`0. `bright red`L`red`oosing `bright red`S`red`entence: `bright green`");
 	ny_disp_emu(cur_user.say_loose);
-	od_printf("\n\r");
+	od_printf("\r\n");
 	od_printf("`bright`A. `bright red`D`red`ays `bright red`S`red`ince `bright red`G`red`ot `bright red`L`red`aid: `bright green`%-4d", cur_user.since_got_laid);
 	od_repeat(' ',15);
 	od_printf("`bright`P. `bright red`S`red`TD: `bright green`");
 	print_disease(cur_user.std);
-	od_printf("\n\r`bright`B. `bright red`S`red`ex `bright red`T`red`urns `bright red`L`red`eft: `bright green`%-4d",(INT16) cur_user.sex_today);
+	od_printf("\r\n`bright`B. `bright red`S`red`ex `bright red`T`red`urns `bright red`L`red`eft: `bright green`%-4d",(INT16) cur_user.sex_today);
 	od_repeat(' ',20);
-	od_printf("`bright`R. `bright red`I`red`nfected: `bright green`%d%c\n\r",(INT16) cur_user.std_percent,37);
-	od_printf("`bright`C. `bright red`C`red`ondoms: `bright green`%d\n\r", cur_user.condoms);
-	od_printf("`bright`D. `bright red`R`red`ocks: `bright green`%d\n\r", (INT16)cur_user.rocks);
+	od_printf("`bright`R. `bright red`I`red`nfected: `bright green`%d%c\r\n",(INT16) cur_user.std_percent,37);
+	od_printf("`bright`C. `bright red`C`red`ondoms: `bright green`%d\r\n", cur_user.condoms);
+	od_printf("`bright`D. `bright red`R`red`ocks: `bright green`%d\r\n", (INT16)cur_user.rocks);
 	od_printf("`bright`E. `bright red`A`red`bilities: `bright red`T`red`hrowing:`bright green`%d ", (INT16)cur_user.throwing_ability);
 	od_printf("`bright red`K`red`icking: `bright green`%d ", (INT16)cur_user.kick_ability);
-	od_printf("`bright red`P`red`unching: `bright green`%d\n\r", (INT16)cur_user.punch_ability);
+	od_printf("`bright red`P`red`unching: `bright green`%d\r\n", (INT16)cur_user.punch_ability);
 	od_printf("`bright`F. `bright red`D`red`rug: `bright green`");
 	print_drug(cur_user.drug);
-	od_printf("\n\r`bright`G. `bright red`H`red`its: `bright green`%-6d\n\r",cur_user.drug_hits);
-	od_printf("`bright`H. `bright red`H`red`igh: `bright green`%d%c\n\r",(INT16)cur_user.drug_high,37);
-	od_printf("`bright`I. `bright red`A`red`ddicted: `bright green`%d%c\n\r",(INT16)cur_user.drug_addiction,37);
-	od_printf("`bright`J. `bright red`D`red`ays `bright red`S`red`ince `bright red`L`red`ast `bright red`H`red`it: `bright green`%d\n\r",cur_user.drug_days_since);
+	od_printf("\r\n`bright`G. `bright red`H`red`its: `bright green`%-6d\r\n",cur_user.drug_hits);
+	od_printf("`bright`H. `bright red`H`red`igh: `bright green`%d%c\r\n",(INT16)cur_user.drug_high,37);
+	od_printf("`bright`I. `bright red`A`red`ddicted: `bright green`%d%c\r\n",(INT16)cur_user.drug_addiction,37);
+	od_printf("`bright`J. `bright red`D`red`ays `bright red`S`red`ince `bright red`L`red`ast `bright red`H`red`it: `bright green`%d\r\n",cur_user.drug_days_since);
 	if (cur_user.rest_where==NOWHERE)
 		od_printf("`bright`K. `bright red`S`red`taying `bright red`a`red`t: `bright green`N`green`owhere");
 	else if (cur_user.rest_where==MOTEL)
@@ -1199,8 +1199,8 @@ DisplayStats(void) {
 		od_printf("`bright`K. `bright red`S`red`taying `bright red`a`red`t: `bright green`R`green`egular `bright green`H`green`otel");
 	else if (cur_user.rest_where==EXP_HOTEL)
 		od_printf("`bright`K. `bright red`S`red`taying `bright red`a`red`t: `bright green`E`green`xpensive `bright green`H`green`otel");
-	od_printf(" `bright red`F`red`or `bright green`%d`bright red` D`red`ays\n\r",(INT16)cur_user.hotel_paid_fer);
-	od_printf("`blue`-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n\r");
+	od_printf(" `bright red`F`red`or `bright green`%d`bright red` D`red`ays\r\n",(INT16)cur_user.hotel_paid_fer);
+	od_printf("`blue`-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\r\n");
 	//  od_control.od_ker_exec=ny_kernel;
 	// WaitForEnter();
 }
@@ -1561,7 +1561,7 @@ void WriteCurrentUser(INT16 user_num) {
 	/* If unable to access the user file, display an error message and */
 	/* return.                                                         */
 	if(fpUserFile == NULL) {
-		od_printf("Unable to access the user file.\n\r");
+		od_printf("Unable to access the user file.\r\n");
 		WaitForEnter();
 		return;
 	}
@@ -1574,7 +1574,7 @@ void WriteCurrentUser(INT16 user_num) {
 	if(ny_fwrite(&cur_user, sizeof(user_rec), 1, fpUserFile) == 0) {
 		/* If unable to write the record, display an error message. */
 		fclose(fpUserFile);
-		od_printf("Unable to update user record file.\n\r");
+		od_printf("Unable to update user record file.\r\n");
 		WaitForEnter();
 		return;
 	}
@@ -1618,10 +1618,10 @@ void WriteCurrentUser(INT16 user_num) {
 
 void WaitForEnter(void) {
 	/* Display prompt. */
-	od_printf("\n\r`bright red`Smack [ENTER] to go on.");
+	od_printf("\r\n`bright red`Smack [ENTER] to go on.");
 
 	/* Wait for a Carriage Return or Line Feed character from the user. */
-	od_get_answer("\n\r");
+	od_get_answer("\r\n");
 }
 
 

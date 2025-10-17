@@ -263,7 +263,7 @@ all_over_igm:
         ;
         //od_control.od_ker_exec=NULL;
         od_clear_keybuffer();
-        od_printf("\n\r\n");
+        od_printf("\r\n\r\n");
         if (expert!=2 && expert!=3)
                 ny_clr_scr();
 
@@ -320,16 +320,16 @@ list_igm:
                                         ny_disp_emu(temp,30);
                                         od_printf("  ");
                                         if ((INT16)(x/2) * 2 == x )
-                                                od_printf("\n\r");
+                                                od_printf("\r\n");
                                 }
                                 x++;
                         }
                         maxnum=x-1;
                         if ((INT16)(x/2) * 2 == x )
-                                od_printf("\n\r");
+                                od_printf("\r\n");
                         if (x==1)
                                 ny_line(178,0,1);
-                        od_printf("\n\r");
+                        od_printf("\r\n");
                         if(where>0)
                                 ny_line(409,0,0);
                         ok=0;
@@ -340,7 +340,7 @@ list_igm:
                         ny_line(179,0,2);
                 } else {
                         maxnum=filelength(fileno(menuthing))/(INT32)282;
-                        od_printf("\n\r");
+                        od_printf("\r\n");
                 }
                 fclose(menuthing);
 
@@ -353,9 +353,9 @@ list_igm:
         x1=0;
         do {
                 if(x1==0)
-                        numstr[0]=ny_get_answer("0123456789QPN?\b\n\r");
+                        numstr[0]=ny_get_answer("0123456789QPN?\b\r\n");
                 else
-                        numstr[x1]=ny_get_answer("0123456789\b\n\r");
+                        numstr[x1]=ny_get_answer("0123456789\b\r\n");
                 x1++;
                 if(numstr[x1-1]=='\b') {
                         if(x1>1) {
@@ -390,7 +390,7 @@ list_igm:
                 return;
         }
         if (numstr[0]=='?') {
-                od_printf("\n\r\n");
+                od_printf("\r\n\r\n");
                 ny_clr_scr();
                 goto list_igm;
         }
@@ -452,7 +452,7 @@ forrest_IGM() {
         //od_control.od_ker_exec=NULL;
         no_rip_m=0;
         od_clear_keybuffer();
-        od_printf("\n\r\n");
+        od_printf("\r\n\r\n");
         ny_clr_scr();
         ch_flag_d();
         sprintf(numstr,"fev%d.dat",od_control.od_node);
@@ -473,15 +473,15 @@ forrest_IGM() {
         } else {
                 ny_line(411,1,0);
                 od_disp_str(ny_un_emu(temp));
-                od_disp_str("::^M@OK))|#|#|#\n\r");
-                od_get_answer("\n\r");
+                od_disp_str("::^M@OK))|#|#|#\r\n");
+                od_get_answer("\r\n");
         }
         ny_line(412,2,0);
         key=ny_get_answer("YN");
         if(rip==FALSE)
-                od_printf("%c\n\r\n",key);
+                od_printf("%c\r\n\r\n",key);
         else
-                od_disp_str("\n\r\n");
+                od_disp_str("\r\n\r\n");
 
 
         if(key=='Y')

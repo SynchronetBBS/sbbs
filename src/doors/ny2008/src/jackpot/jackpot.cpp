@@ -50,7 +50,7 @@ int main(int argc,char *argv[]) {
 
 	//there was not enough arguments passed
 	if(argc<4) {
-		printf("\n\r\n\rJACKPOT:Not enough arguments\n\r\n\r");
+		printf("\r\n\r\nJACKPOT:Not enough arguments\r\n\r\n");
 		exit(12);
 	}
 
@@ -114,7 +114,7 @@ int main(int argc,char *argv[]) {
 
 	//if one or both are not found exit
 	if(!fexist(dfile1) && !fexist(dfile2)) {
-		printf("\n\r\n\rJACKPOT:Game drop file(s) not found!\n\r\n\r");
+		printf("\r\n\r\nJACKPOT:Game drop file(s) not found!\r\n\r\n");
 		exit(12);
 	}
 
@@ -240,7 +240,7 @@ int main(int argc,char *argv[]) {
 	strcpy(od_control.user_name,tmp_str_1);
 
 	//display the copyright message (it won't really show but it will be there)
-	od_printf("`bright`New York 2008 Jackpot IGM, FREEWARE!\n\r(c) Copyright 1995, George Lebl - All rights Reserved\n\r");
+	od_printf("`bright`New York 2008 Jackpot IGM, FREEWARE!\r\n(c) Copyright 1995, George Lebl - All rights Reserved\r\n");
 
 	//se the ansi and avatar values
 	od_control.user_ansi=ans_t;
@@ -253,8 +253,8 @@ int main(int argc,char *argv[]) {
 
 		//if it is exit
 	} else {
-		od_printf("\n\r`bright red`T`red`he IGM is used by another node!\n\r`bright red`T`red`his IGM is not multinode capable!\n\r`bright red`C`red`ome back later!\n\r\n\r`bright red`Smack [Enter] to countinue:");
-		od_get_answer("\n\r");
+		od_printf("\r\n`bright red`T`red`he IGM is used by another node!\r\n`bright red`T`red`his IGM is not multinode capable!\r\n`bright red`C`red`ome back later!\r\n\r\n`bright red`Smack [Enter] to countinue:");
+		od_get_answer("\r\n");
 		od_exit(10,FALSE);
 	}
 
@@ -277,16 +277,16 @@ int main(int argc,char *argv[]) {
 main_menu:
 
 	//if the user would not have clear clearing it will push the menu a bit down
-	od_printf("\n\r\n\r");
+	od_printf("\r\n\r\n");
 
 	//clear screen
 	od_clr_scr();
 
 	//display the menu
-	od_printf("`bright red`J`red`ackpot IGM for `bright green`NY2008`red`!\n\r\n\r");
-	od_printf("`bright white`The jackpot is: `flashing bright red`%lu\n\r\n\r",jackpot);
-	od_printf("`bright red`B `red`- `bright red`B`red`et\n\r");
-	od_printf("`bright red`Q `red`- `bright red`Q`red`uit\n\r\n\r");
+	od_printf("`bright red`J`red`ackpot IGM for `bright green`NY2008`red`!\r\n\r\n");
+	od_printf("`bright white`The jackpot is: `flashing bright red`%lu\r\n\r\n",jackpot);
+	od_printf("`bright red`B `red`- `bright red`B`red`et\r\n");
+	od_printf("`bright red`Q `red`- `bright red`Q`red`uit\r\n\r\n");
 	od_printf("`bright blue`E`blue`nter `bright blue`Y`blue`er `bright blue`C`blue`ommand (`bright blue`%d `blue`mins)`bright blue`>`bright`",od_control.caller_timelimit);
 
 	//get the user response
@@ -297,7 +297,7 @@ main_menu:
 
 	//if user chose to quit .. quit
 	if(key=='Q') {
-		od_printf("\n\r\n\r`bright red`L`red`eaving the `flashing bright red`JACKPOT\n\r\n\r");
+		od_printf("\r\n\r\n`bright red`L`red`eaving the `flashing bright red`JACKPOT\r\n\r\n");
 
 		//the game is not used anymore
 		remove
@@ -309,7 +309,7 @@ main_menu:
 
 		//warn about no money
 		if(urec.money==0)
-			od_printf("\n\r\n\r`bright red`Y`red`a ain't got no money on hand!");
+			od_printf("\r\n\r\n`bright red`Y`red`a ain't got no money on hand!");
 
 		//because the highest bet is half the average jackpot win size
 		//make it that unless the user's got less money
@@ -319,7 +319,7 @@ main_menu:
 			chance=urec.money;
 
 		//display prompt
-		od_printf("\n\r\n\r`bright green`H`green`ow much`green` (`bright blue`Enter`green`=`bright green`[0]`green`, `bright blue`M`green`=max `bright green`%u`green`):",chance);
+		od_printf("\r\n\r\n`bright green`H`green`ow much`green` (`bright blue`Enter`green`=`bright green`[0]`green`, `bright blue`M`green`=max `bright green`%u`green`):",chance);
 
 		//use the ny value entering system to get the value
 		money=get_val(0,chance);
@@ -338,7 +338,7 @@ main_menu:
 #endif
 
 		//make it look like there's something going on
-		od_printf("\n\r\n\r`bright red`I`red`t's turning - `bright`");
+		od_printf("\r\n\r\n`bright red`I`red`t's turning - `bright`");
 
 		//turn around 3 digit numbers for a while
 		for(x=0;x<20;x++) {
@@ -366,7 +366,7 @@ main_menu:
 			jackpot=(jackpot*90)/100;
 
 			//display that user had won
-			od_printf("\n\r\n\r`bright red`Y`red`ou have won %lu!\n\r`bright red`Y`red`ou had to pay 10\% tax though!",jackpot);
+			od_printf("\r\n\r\n`bright red`Y`red`ou have won %lu!\r\n`bright red`Y`red`ou had to pay 10\% tax though!",jackpot);
 
 			/*****this routine adds money but checks for overflow*****/
 			/**/    DWORD med;                                     /**/
@@ -379,10 +379,10 @@ main_menu:
 			/*********************************************************/
 
 			//display the enter prompt
-			od_printf("\n\r\n\r`bright red`Smack [Enter] to continue:");
+			od_printf("\r\n\r\n`bright red`Smack [Enter] to continue:");
 
 			//wait for enter
-			od_get_answer("\n\r");
+			od_get_answer("\r\n");
 
 			//open the jackpot dat file
 			file_handle=fopen("jackpot.dat","wt");
@@ -394,7 +394,7 @@ main_menu:
 			fclose(file_handle);
 
 			//display leaving message
-			od_printf("\n\r\n\r`bright red`L`red`eaving the `flashing bright red`JACKPOT\n\r\n\r");
+			od_printf("\r\n\r\n`bright red`L`red`eaving the `flashing bright red`JACKPOT\r\n\r\n");
 
 			//others can use the igm
 			remove
@@ -415,11 +415,11 @@ main_menu:
 			od_printf("LOST");
 
 			//display message
-			od_printf("\n\r\n\r`bright red`Y`red`ou have `bright`LOST!");
-			od_printf("\n\r\n\r`bright red`Smack [Enter] to continue:");
+			od_printf("\r\n\r\n`bright red`Y`red`ou have `bright`LOST!");
+			od_printf("\r\n\r\n`bright red`Smack [Enter] to continue:");
 
 			//wait for enter
-			od_get_answer("\n\r");
+			od_get_answer("\r\n");
 
 			//write the jackpot into the data file
 			file_handle=fopen("jackpot.dat","wt");
@@ -427,7 +427,7 @@ main_menu:
 			fclose(file_handle);
 
 			//exitting message
-			od_printf("\n\r\n\r`bright red`L`red`eaving the `flashing bright red`JACKPOT\n\r\n\r");
+			od_printf("\r\n\r\n`bright red`L`red`eaving the `flashing bright red`JACKPOT\r\n\r\n");
 
 			//others can use the igm
 			remove
@@ -462,17 +462,17 @@ Again:                    //do again if neccesary
 	memset(input_s,' ',strlen(input_s));
 
 	//get first digit
-	input_s[0]= od_get_answer("0123456789M\n\r");
+	input_s[0]= od_get_answer("0123456789M\r\n");
 
 	//user wants maximum
 	if (input_s[0]=='M') {
-		od_printf("%lu\n\r",max);
+		od_printf("%lu\r\n",max);
 		return(max);
 	}
 
 	//user wants default
 	else if (input_s[0]=='\n' || input_s[0]=='\r') {
-		od_printf("%lu\n\r",def);
+		od_printf("%lu\r\n",def);
 		return(def);
 	}
 
@@ -489,7 +489,7 @@ Again:                    //do again if neccesary
 			od_printf("\b");
 
 		//get a digit
-		input_s[cnt]=od_get_answer("0123456789\n\r\b");
+		input_s[cnt]=od_get_answer("0123456789\r\n\b");
 
 		//if enter that is the value we want
 		if (input_s[cnt]=='\n' || input_s[cnt]=='\r') {
@@ -507,7 +507,7 @@ Again:                    //do again if neccesary
 			}
 
 			//print an enter
-			od_printf("\n\r");
+			od_printf("\r\n");
 
 			//get out of the loop
 			break;
