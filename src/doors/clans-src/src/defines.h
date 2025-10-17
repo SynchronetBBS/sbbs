@@ -204,7 +204,6 @@ typedef unsigned char bool;
 // uncomment for Turbo C++
 // typedef char bool;
 #ifdef __unix__
-# define BOOL bool          // Stops OpenDoor.h from re-defining it.
 # define FAR
 #elif defined(_MSC_VER)
 # ifndef FAR
@@ -214,10 +213,8 @@ typedef unsigned char bool;
 # ifndef FAR
 #  define FAR
 # endif
-# define BOOL bool          // Stops OpenDoor.h from re-defining it.
 #else
 # define FAR far
-# define BOOL bool          // Stops OpenDoor.h from re-defining it.
 #endif
 
 #ifdef _WIN32
