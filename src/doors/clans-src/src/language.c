@@ -134,6 +134,7 @@ void Language_Close(void)
  * The language file is freed from memory.
  */
 {
-	free(Language->BigString);
+	if (Language)
+		free(Language->BigString);
 	free(Language);
 }
