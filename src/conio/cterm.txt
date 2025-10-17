@@ -1179,7 +1179,7 @@ CSI Ps n (DSR)
 	6	- Request active cursor position
 		  CTerm will reply with CSI y ; x R where y is the current line
 		  and x is
-		  the current row.
+		  the current column.
 	255	- NON-STANDARD EXTENSION (BCDSR)
 		  Replies as though a CSI 6 n was received with the cursor in
 		  the bottom right corner.  i.e.: Returns the terminal size as
