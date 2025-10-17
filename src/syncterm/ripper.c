@@ -9975,6 +9975,10 @@ do_popup(const char * const str)
 	rip.color = 0;
 	rip.x = x + 1;
 	rip.y = y + 1;
+	int oldfont = rip.font.num;
+	int oldsize = rip.font.size;
+	rip.font.num = 0;
+	rip.font.size = 1;
 	write_text(question);
 	rip.color = 14;
 	rip.x = x;
@@ -10006,6 +10010,8 @@ do_popup(const char * const str)
 		}
 	}
 	invert_rect(x1 + 13, y1 + 27, x2 - 13, y1 + 39);
+	rip.font.num = oldfont;
+	rip.font.size = oldsize;
 
         // TODO: Update time in status bar...
 	curr = 0;
@@ -15735,7 +15741,7 @@ handle_rip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, uns
 	size_t           remove;
 	struct text_info ti;
 
-	if (*rip_start) {
+	if (*rip_start && *rip_start <= maxlen) {
 		rip.newstate = ns;
 		buffer_rip(&buf[*rip_start], *pos - *rip_start + 1);
 		buffer_data(&buf[*pos + 1], *blen - *pos - 1);
@@ -16274,6 +16280,14 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 					rip.state = RIP_STATE_CMD;
 					break;
 				case RIP_STATE_CMD:
+					if (pos > 1) {
+						if (buf[pos - 1] == '#' && buf[pos - 2] == '|') {
+							handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_CMD);
+							rip.lchars = 0;
+							rip_start = pos;
+							break;
+						}
+					}
 					if (buf[pos] == '\\') {
 						rip.state = RIP_STATE_BACKSLASH_CMD;
 						break;
