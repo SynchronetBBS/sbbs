@@ -756,6 +756,7 @@ typedef struct
    char          od_color_delimiter;
    char          od_color_names[12][33];
    BOOL          od_clear_on_exit;
+   BOOL          (*od_cmd_line_flag_handler)(const char *pszKeyword);
    void          (*od_cmd_line_handler)(char *pszKeyword, char *pszOptions);
    void          (*od_cmd_line_help_func)(void);
    void          (*od_default_personality)(BYTE operation);

@@ -527,6 +527,13 @@ ODAPIDEF void ODCALL od_parse_cmd_line(INT nArgCount, char *papszArguments[])
             break;
 
          case kParamUnknown:
+            /* If the client application provided a custom command line */
+            /* flag function, then pass this unrecognized command-line  */
+            /* parameter callback function.                             */
+            if(od_control.od_cmd_line_flag_handler != NULL) {
+               if (od_control.od_cmd_line_flag_handler(pszCurrentArg))
+                  break;
+            }
             /* If the client application provided a custom command line   */
             /* handler function, then pass this unrecognized command-line */
             /* parameter and any options to that callback function.       */
