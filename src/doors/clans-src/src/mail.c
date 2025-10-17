@@ -1303,7 +1303,10 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 
 	if (MessageType == MT_ALLIANCE) {
 		Message.AllianceID = AllianceID;
-		strcpy(Message.szAllyName, szAllyName);
+		if (szAllyName == NULL)
+			Message.szAllyName[0] = 0;
+		else
+			strcpy(Message.szAllyName, szAllyName);
 	}
 
 	if (AllyReq) {
