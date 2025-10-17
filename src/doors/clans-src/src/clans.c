@@ -199,6 +199,7 @@ static void MainGame(void)
 
 int _argc;
 char **_argv;
+char **_lpCmdLine;
 
 /* ----------------------------------------------------------------------- */
 #ifdef ODPLAT_WIN32
@@ -208,18 +209,11 @@ int main(int argc, char *argv[])
 #endif
 {
 #ifdef ODPLAT_WIN32
-	char **argv;
-	int argc;
-
-	if (!commandline_create(lpCmdLine, &argv, &argc)) {
-		MessageBox(NULL, TEXT("failed to parse commandline"),
-				   TEXT("Error"), MB_OK | MB_ICONERROR);
-		return false;
-	}
-#endif
-
+	_lpCmdLine = lpCmdLine;
+#else
 	_argc=argc;
 	_argv=argv;
+#endif
 
 	System_Init();
 	// run maintenance if need be
@@ -242,8 +236,6 @@ int main(int argc, char *argv[])
 	System_Close();
 
 #ifdef ODPLAT_WIN32
-	commandline_destroy(&argv, argc);
-
 	/* Unused Variables */
 	(void)hInst;
 	(void)hPrevInst;

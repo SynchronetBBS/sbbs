@@ -346,208 +346,175 @@ static char * fullpath(char *target, const char *path, size_t size)
 }
 #endif
 
-static void PrimitiveCommandLine(void)
-/*
- * Deals with basic command lines (i.e. those which do not depend on the
- * game being loaded yet).
- */
+void ODCmdLineHandler(char *flag, char *val)
 {
-	int16_t cTemp, iKeyWord;
-	bool FoundMatch;
-	char *szHelp = "|02Invalid parameter -- |07type |10CLANS /? |07for help\n";
+	char szString[128];
 
-	/* This function will parse the command line by looking for the  */
-	/* flags and stuff!                        */
-
-	for (cTemp = 1; cTemp < _argc; cTemp++) {
-		if (_argv[cTemp][0] == '-' || _argv[cTemp][0] == '/') {
-			FoundMatch = false;
-
-			/* Loop through list of keywords */
-			for (iKeyWord = 0; iKeyWord < MAX_COMLINE_WORDS; ++iKeyWord) {
-				/* If keyword matches */
-				if (stricmp(&_argv[cTemp][1], papszComLineKeyWords[iKeyWord]) == 0 ||
-						(_argv[cTemp][1] == 'S' && papszComLineKeyWords[iKeyWord][0] == 'S' && papszComLineKeyWords[iKeyWord][1] == 0) ||
-						(_argv[cTemp][1] == 'D' && papszComLineKeyWords[iKeyWord][0] == 'D')) {
-					FoundMatch = true;
-
-					/* Process token */
-					switch (iKeyWord) {
-						case 3 : /* ? */
-						case 4 : /* Help */
-							ShowHelp();
-							delay(3000);
-							exit(0);
-							/*                System_Close(); */
-							break;
-						case 7 :  /* LIBBS */
-							System.LocalIBBS = true;
-							break;
-						case 11 : /* Recon */
-							cTemp++;
-							break;
-						case 12 : /* SendReset */
-							cTemp++;
-							break;
-						case 13 : /* Reset */
-							System_Error("To reset the game, please run RESET.EXE.\n");
-							break;
-						case 14 : /* Verbose */
-							DisplayStr("|07Verbose |14ON\n");
-							Verbose = true;
-							break;
-						case 15 :  /* D */
-							strcpy(od_control.info_path, &_argv[cTemp][2]);
-							break;
-						case 16: /* S */
-							od_control.od_use_socket = TRUE;
-							od_control.od_open_handle = atoi(&_argv[cTemp][2]);
-							break;
+	bool primitive = Config == NULL;
+	if (flag[0] == '-' || flag[0] == '/') {
+		if (stricmp(&flag[1], "Recon") == 0) {
+			if (!primitive) {
+				if (Game.Data->InterBBS) {
+					if (IBBS.Data->BBSID != atoi(val) &&
+							(atoi(val) > 0 && atoi(val) < MAX_IBBSNODES)) {
+						sprintf(szString, "Sending recon to %d\n", atoi(val));
+						DisplayStr(szString);
+						IBBS_SendRecon(atoi(val));
 					}
-				}
-			}
-			if (FoundMatch == false) {
-				if (toupper(_argv[cTemp][1]) - 'A' == 18 && stricmp(&_argv[cTemp][2], "lop") == 0) {
-					Register();
 					System_Close();
 				}
-				else if (toupper(_argv[cTemp][1]) == 'N' || toupper(_argv[cTemp][1]) == 'D')
-					System.Node = atoi(&_argv[cTemp][2]);
-
-				// 12/23/2001 [au] dropped time-slicer code
-				/*
-				    else if (toupper(_argv[cTemp][1]) == 'T')
-				    {
-				      TSlicer_Init();
-
-				      if (_argv[cTemp][2])
-				        TSlicer_SetPoll(atoi(&_argv[cTemp][2]));
-				    }
-				*/
-
-				else {
-					zputs(szHelp);
-					System_Close();
-				}
+				else
+					System_Error(ST_IBBSONLY);
 			}
+			return;
 		}
-		else {
-			zputs(szHelp);
+		else if (stricmp(&flag[1], "SendReset") == 0) {
+			if (!primitive) {
+				if (Game.Data->InterBBS) {
+					if (IBBS.Data->BBSID != 1) {
+						System_Error("Only the League Coordinator can send a reset.\n");
+					}
+
+					/* sprintf(szString, "trying to send reset to %d\n", atoi(val));
+					DisplayStr(szString);
+					*/
+
+					if (IBBS.Data->BBSID != atoi(val) &&
+							(atoi(val) > 0 && atoi(val) < MAX_IBBSNODES)) {
+						sprintf(szString, "Sending reset to %d\n", atoi(val));
+						DisplayStr(szString);
+						IBBS_SendReset(atoi(val));
+					}
+					System_Close();
+				}
+				else
+					System_Error(ST_IBBSONLY);
+			}
+			return;
+		}
+	}
+	zputs("|06Invalid parameter -- |07type |14CLANS /? |07for help\n");
+	System_Close();
+}
+
+BOOL ODCmdLineFlagHandler(const char *flag)
+{
+	bool primitive = Config == NULL;
+
+	if (flag[0] == '-' || flag[0] == '/') {
+		if (stricmp(&flag[1], "L") == 0 || stricmp(&flag[1], "Local") == 0) {
+			if (!primitive)
+				System.Local = true;
+			return TRUE;
+		}
+		else if (stricmp(&flag[1], "M") == 0) {
+			if (!primitive) {
+				Maintenance();
+				System_Close();
+			}
+			return TRUE;
+		}
+		else if (stricmp(&flag[1], "?") == 0 || stricmp(&flag[1], "Help") == 0) {
+			ShowHelp();
 			delay(3000);
 			exit(0);
 		}
-	}
-
-}
-
-// ------------------------------------------------------------------------- //
-
-
-/* Parses commands used to load game */
-static void ParseCommands(void)
-/*
- * Deals with Command-Line Parms which DO require game to be loaded and
- * initialized.
- */
-{
-	int16_t cTemp, iKeyWord;
-	char szString[128];
-
-	/* This function will parse the command line by looking for the  */
-	/* flags and stuff!                        */
-
-	for (cTemp = 1; cTemp < _argc; cTemp++) {
-		if (_argv[cTemp][0] == '-' || _argv[cTemp][0] == '/') {
-			/* Loop through list of keywords */
-			for (iKeyWord = 0; iKeyWord < MAX_COMLINE_WORDS; ++iKeyWord) {
-				/* If keyword matches */
-				if (stricmp(&_argv[cTemp][1], papszComLineKeyWords[iKeyWord]) == 0) {
-					/* Process token */
-					switch (iKeyWord) {
-						case 0  : /* L */
-						case 1  : /* Local */
-							System.Local = true;
-							break;
-						case 2  : /* M */
-							Maintenance();
-							System_Close();
-							break;
-						case 7 :  /* LIBBS */
-							if (Game.Data->InterBBS == false)
-								System_Error(ST_IBBSONLY);
-							break;
-						case 8 :  /* Users */
-							User_List();
-							System_Close();
-							break;
-						case 9 :  /* NewNDX */
-							if (Game.Data->InterBBS) {
-								if (IBBS.Data->BBSID != 1) {
-									System_Error("Only the League Coordinator can update the world.ndx file.\n");
-								}
-
-								IBBS_DistributeNDX();
-								System_Close();
-							}
-							else
-								System_Error(ST_IBBSONLY);
-							break;
-						case 10 : /* I */
-							// read in packets waiting
-							IBBS_PacketIn();
-
-							if (Game.Data->InterBBS == false)
-								System_Error(ST_IBBSONLY);
-							else
-								System_Close();
-							break;
-						case 11 : /* Recon */
-							cTemp++;
-							if (Game.Data->InterBBS) {
-								if (IBBS.Data->BBSID != atoi(_argv[cTemp]) &&
-										(atoi(_argv[cTemp]) > 0 && atoi(_argv[cTemp]) < MAX_IBBSNODES)) {
-									sprintf(szString, "Sending recon to %d\n", atoi(_argv[cTemp]));
-									DisplayStr(szString);
-									IBBS_SendRecon(atoi(_argv[cTemp]));
-								}
-								System_Close();
-							}
-							else
-								System_Error(ST_IBBSONLY);
-							break;
-						case 12 : /* SendReset */
-							cTemp++;
-							if (Game.Data->InterBBS) {
-								if (IBBS.Data->BBSID != 1) {
-									System_Error("Only the League Coordinator can send a reset.\n");
-								}
-
-								/* sprintf(szString, "trying to send reset to %d\n", atoi(_argv[cTemp]));
-								DisplayStr(szString);
-								*/
-
-								if (IBBS.Data->BBSID != atoi(_argv[cTemp]) &&
-										(atoi(_argv[cTemp]) > 0 && atoi(_argv[cTemp]) < MAX_IBBSNODES)) {
-									sprintf(szString, "Sending reset to %d\n", atoi(_argv[cTemp]));
-									DisplayStr(szString);
-									IBBS_SendReset(atoi(_argv[cTemp]));
-								}
-								System_Close();
-							}
-							else
-								System_Error(ST_IBBSONLY);
-							break;
-					}
-				}
+		else if (stricmp(&flag[1], "T") == 0) {
+			// No longer available, backward compatibility.
+			return TRUE;
+		}
+		else if (stricmp(&flag[1], "LIBBS") == 0) {
+			if (primitive)
+				System.LocalIBBS = true;
+			else {
+				if (Game.Data->InterBBS == false)
+					System_Error(ST_IBBSONLY);
 			}
+			return TRUE;
 		}
-		else {
-			zputs("|06Invalid parameter -- |07type |14CLANS /? |07for help\n");
-			System_Close();
+		else if (stricmp(&flag[1], "Users") == 0) {
+			if (!primitive) {
+				User_List();
+				System_Close();
+			}
+			return TRUE;
+		}
+		else if (stricmp(&flag[1], "NewNDX") == 0) {
+			if (!primitive) {
+				if (Game.Data->InterBBS) {
+					if (IBBS.Data->BBSID != 1) {
+						System_Error("Only the League Coordinator can update the world.ndx file.\n");
+					}
+
+					IBBS_DistributeNDX();
+					System_Close();
+				}
+				else
+					System_Error(ST_IBBSONLY);
+			}
+			return TRUE;
+		}
+		else if (stricmp(&flag[1], "I") == 0) {
+			if (!primitive) {
+				// read in packets waiting
+				IBBS_PacketIn();
+
+				if (Game.Data->InterBBS == false)
+					System_Error(ST_IBBSONLY);
+				else
+					System_Close();
+			}
+			return TRUE;
+		}
+		else if (stricmp(&flag[1], "Recon") == 0) {
+			// Requires an argument
+			return FALSE;
+		}
+		else if (stricmp(&flag[1], "SendReset") == 0) {
+			// Requires an argument
+			return FALSE;
+		}
+		else if (stricmp(&flag[1], "Reset") == 0) {
+			if (primitive)
+				System_Error("To reset the game, please run RESET.EXE.\n");
+			return TRUE;
+		}
+		else if (stricmp(&flag[1], "Verbose") == 0) {
+			if (primitive) {
+				DisplayStr("|07Verbose |14ON\n");
+				Verbose = true;
+			}
+			return TRUE;
+		}
+		else if (stricmp(&flag[1], "D") == 0) {
+			if (primitive)
+				strcpy(od_control.info_path, &flag[2]);
+			return TRUE;
+		}
+		else if (stricmp(&flag[1], "Slop") == 0) {
+			if (primitive) {
+				Register();
+				System_Close();
+			}
+			return TRUE;
+		}
+		else if (stricmp(&flag[1], "S") == 0) {
+			if (primitive) {
+				od_control.od_use_socket = TRUE;
+				od_control.od_open_handle = atoi(&flag[2]);
+			}
+			return TRUE;
+		}
+		else if (flag[1] == 'N') {
+			if (primitive)
+				System.Node = atoi(&flag[2]);
+			return TRUE;
 		}
 	}
+	zputs("|02Invalid parameter -- |07type |10CLANS /? |07for help\n");
+	delay(3000);
+	exit(0);
 }
-
 
 // ------------------------------------------------------------------------- //
 
@@ -703,7 +670,15 @@ void System_Init(void)
 
 	Language_Init(IniFile.pszLanguage);
 
-	PrimitiveCommandLine();
+	od_control.od_cmd_line_flag_handler = ODCmdLineFlagHandler;
+	od_control.od_cmd_line_handler = ODCmdLineHandler;
+#ifdef ODPLAT_WIN32
+	od_parse_cmd_line(_lpCmdLine);
+#else
+	od_parse_cmd_line(_argc, _argv);
+#endif
+	if (System.Node == 0 && od_control.od_node)
+		System.Node = od_control.od_node;
 
 	Config_Init();
 
@@ -726,8 +701,11 @@ void System_Init(void)
 	}
 
 	// parse command line here
-	if (_argc > 1)
-		ParseCommands();
+#ifdef ODPLAT_WIN32
+	od_parse_cmd_line(_lpCmdLine);
+#else
+	od_parse_cmd_line(_argc, _argv);
+#endif
 
 	Door_Init(System.Local);
 
