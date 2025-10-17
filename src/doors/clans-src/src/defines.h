@@ -235,5 +235,6 @@ typedef int16_t action;
 
 extern int  _argc;
 extern char **_argv;
+extern char *_lpCmdLine;
 
 #endif /* THE_CLANS__DEFINES___H */

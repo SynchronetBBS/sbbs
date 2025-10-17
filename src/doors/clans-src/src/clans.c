@@ -199,7 +199,7 @@ static void MainGame(void)
 
 int _argc;
 char **_argv;
-char **_lpCmdLine;
+char *_lpCmdLine;
 
 /* ----------------------------------------------------------------------- */
 #ifdef ODPLAT_WIN32
