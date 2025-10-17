@@ -516,6 +516,12 @@ main(int argc,char *argv[]) {
 
 	nCurrentUserNumber=MAX_USERS+1;
 
+#ifdef ODPLAT_WIN32
+	od_parse_cmd_line(lpszCmdLine);
+#else
+	od_parse_cmd_line(argc, argv);
+#endif
+
 	od_init();
 	if(!od_control.od_force_local)
 		od_control.od_clear_on_exit=FALSE;
