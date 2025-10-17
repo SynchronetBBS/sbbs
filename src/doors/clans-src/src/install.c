@@ -45,8 +45,8 @@
 #define QUERY       2           // ask user if he wishes to overwrite
 
 #define ALWAYS  2
-#define TRUE    1
-#define FALSE   0
+#define true    1
+#define false   0
 #define MAX_TOKEN_CHARS 32
 
 void GetGumName(void);
@@ -55,7 +55,7 @@ void kputs(char *szString);
 int GetGUM(FILE *fpGUM);
 void install(void);
 char get_answer(char *szAllowableChars);
-BOOL FileExists(char *szFileName);
+bool FileExists(char *szFileName);
 void InitFiles(char *szFileName);
 int WriteType(char *szFileName);
 void Extract(char *szExtractFile, char *szNewName);
@@ -67,7 +67,7 @@ void gotoxy(int x, int y);
 char far *VideoMem;
 long y_lookup[25];
 #endif /* __MSDOS__ */
-int Overwrite = FALSE;
+int Overwrite = false;
 char szGumName[25], szIniName[25];
 
 struct FileInfo {
@@ -104,7 +104,7 @@ void Display(char *szFileName)
 {
 	FILE *fpInput;
 	char szString[300];
-	BOOL FileFound = FALSE, Done = FALSE;
+	bool FileFound = false, Done = false;
 	int CurLine;
 
 	fpInput = fopen(szIniName, "r");
@@ -120,12 +120,12 @@ void Display(char *szFileName)
 			szString[ strlen(szString) - 1] = 0;
 
 		if (szString[0] == ':' && stricmp(szFileName, &szString[1]) == 0) {
-			FileFound = TRUE;
+			FileFound = true;
 			break;
 		}
 	}
 
-	if (FileFound == FALSE) {
+	if (FileFound == false) {
 		fclose(fpInput);
 
 		// search dos for file
@@ -151,7 +151,7 @@ void Display(char *szFileName)
 			CurLine = 0;
 			kputs("[more]");
 			if (toupper(getch()) == 'Q')
-				Done = TRUE;
+				Done = true;
 			kputs("\r       \r");
 		}
 	}
@@ -230,7 +230,7 @@ void ScrollUp(void)
 			mvaddch(y,x,this);
 		}
 	}
-	scrollok(stdscr,FALSE);
+	scrollok(stdscr,false);
 	gotoxy(0, sizey-1);
 	clrtobot();
 	refresh();
@@ -657,9 +657,9 @@ void SystemInit(void)
 	cbreak();
 	noecho();
 	nonl();
-//  intrflush(stdscr, FALSE);
-	keypad(stdscr, TRUE);
-	scrollok(stdscr,FALSE);
+//  intrflush(stdscr, false);
+	keypad(stdscr, true);
+	scrollok(stdscr,false);
 	start_color();
 	clear();
 	refresh();
@@ -798,7 +798,7 @@ int GetGUM(FILE *fpGUM)
 
 	/* read in filename */
 	if (!fread(&szEncryptedName, sizeof(szEncryptedName), sizeof(char), fpGUM))
-		return FALSE;
+		return false;
 
 	/* then decrypt it */
 	pcFrom = szEncryptedName;
@@ -830,7 +830,7 @@ int GetGUM(FILE *fpGUM)
 		MKDIR(&szFileName[1]
 
 			 );
-		return TRUE;
+		return true;
 	}
 
 	/* get filesize from psi file */
@@ -883,7 +883,7 @@ int GetGUM(FILE *fpGUM)
 	if (!fpToFile) {
 		sprintf(szString, "|04Couldn't open %s\n", szFileName);
 		kputs(szString);
-		return FALSE;
+		return false;
 	}
 
 	// === decode here
@@ -901,7 +901,7 @@ int GetGUM(FILE *fpGUM)
 	kputs(szString);
 	kputs("|15done.\n");
 
-	return TRUE;
+	return true;
 }
 
 void install(void)
@@ -927,7 +927,7 @@ void install(void)
 	}
 
 	InitFiles("INSTALL.FILES");
-	Overwrite = FALSE;
+	Overwrite = false;
 
 	fpGUM = fopen(szGumName, "rb");
 	if (!fpGUM) {
@@ -979,7 +979,7 @@ void upgrade(void)
 	}
 
 	InitFiles("UPGRADE.FILES");
-	Overwrite = FALSE;
+	Overwrite = false;
 
 	fpGUM = fopen(szGumName, "rb");
 	if (!fpGUM) {
@@ -1030,17 +1030,17 @@ char get_answer(char *szAllowableChars)
 	return (toupper(cKey));
 }
 
-BOOL FileExists(char *szFileName)
+bool FileExists(char *szFileName)
 {
 	FILE *fp;
 
 	fp = fopen(szFileName, "r");
 	if (!fp) {
-		return FALSE;
+		return false;
 	}
 
 	fclose(fp);
-	return TRUE;
+	return true;
 }
 
 void InitFiles(char *szFileName)
@@ -1049,7 +1049,7 @@ void InitFiles(char *szFileName)
 
 	FILE *fpInput;
 	char szString[128];
-	BOOL FileFound = FALSE, Done = FALSE;
+	bool FileFound = false, Done = false;
 	int CurFile;
 
 	for (CurFile = 0; CurFile < MAX_FILES; CurFile++)
@@ -1073,12 +1073,12 @@ void InitFiles(char *szFileName)
 			szString[ strlen(szString) - 1] = 0;
 
 		if (szString[0] == ':' && stricmp(szFileName, &szString[1]) == 0) {
-			FileFound = TRUE;
+			FileFound = true;
 			break;
 		}
 	}
 
-	if (FileFound == FALSE) {
+	if (FileFound == false) {
 		fclose(fpInput);
 		return;
 	}
@@ -1273,7 +1273,7 @@ void ListFiles(void)
 	int32_t lFileSize, TotalBytes = 0, lCompressSize;
 	int FilesFound = 0;
 	uint16_t date, time;
-	BOOL Done = FALSE;
+	bool Done = false;
 
 	fpGUM = fopen(szGumName, "rb");
 	if (!fpGUM) {
@@ -1346,7 +1346,7 @@ void ListFiles(void)
 		if (FilesFound % (2*(25-STARTROW)-4) == 0 && FilesFound) {
 			kputs("[more]");
 			if (toupper(getch()) == 'Q')
-				Done = TRUE;
+				Done = true;
 			kputs("\r       \r");
 		}
 
