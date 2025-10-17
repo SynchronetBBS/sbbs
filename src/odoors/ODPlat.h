@@ -51,6 +51,13 @@
 
 #ifdef ODPLAT_NIX
 #include <sys/time.h>
+#ifdef OD_MULTITHREADED
+#include <semaphore.h>
+#include <pthread.h>
+#ifdef __FreeBSD__
+#include <pthread_np.h>
+#endif
+#endif
 #endif
 
 #ifdef ODPLAT_WIN32
@@ -97,6 +104,9 @@ tODMilliSec ODTimerLeft(tODTimer *pTimer);
 #ifdef ODPLAT_WIN32
 typedef HANDLE tODThreadHandle;
 #endif /* ODPLAT_WIN32 */
+#ifdef ODPLAT_NIX
+typedef pthread_t tODThreadHandle;
+#endif
 
 /* Thread priority enumeration. */
 typedef enum
@@ -109,10 +119,13 @@ typedef enum
 } tODThreadPriority;
 
 /* Thread start proceedure type. */
-#define OD_THREAD_FUNC WINAPI
 #ifdef ODPLAT_WIN32
+#define OD_THREAD_FUNC WINAPI
+#else
+#define OD_THREAD_FUNC
+#endif
+// This was in ODPLAT_WIN32, but let's not do that garbage...
 typedef DWORD (OD_THREAD_FUNC ptODThreadProc)(void *);
-#endif /* ODPLAT_WIN32 */
 
 /* Thread creation, temination and suspension. */
 tODResult ODThreadCreate(tODThreadHandle *phThread,
@@ -130,6 +143,11 @@ tODThreadHandle ODThreadGetCurrent(void);
 /* Semaphore handle data type. */
 #ifdef ODPLAT_WIN32
 typedef HANDLE tODSemaphoreHandle;
+#endif /* ODPLAT_WIN32 */
+
+#ifdef ODPLAT_NIX
+// Ugh.
+typedef sem_t * tODSemaphoreHandle;
 #endif /* ODPLAT_WIN32 */
 
 /* Semaphore manipulation functions. */

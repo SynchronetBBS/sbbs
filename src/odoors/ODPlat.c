@@ -60,9 +60,10 @@
 #include "OpenDoor.h"
 #ifdef ODPLAT_NIX
 #include <sys/time.h>
-#include <glob.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <errno.h>
+#include <glob.h>
 #include <unistd.h>
 #endif
 #include "ODGen.h"
@@ -182,6 +183,19 @@ static void ODPlatYield(void)
 
 #ifdef OD_MULTITHREADED
 
+#ifdef ODPLAT_NIX
+struct odthread_args {
+   ptODThreadProc *func;
+   void *arg;
+};
+
+void *odthread_wrapper(void *args) {
+   struct odthread_args cp = *(struct odthread_args *)args;
+   free(args);
+   return (void*)(uintptr_t)cp.func(cp.arg);
+}
+#endif
+
 /* ----------------------------------------------------------------------------
  * ODThreadCreate()
  *
@@ -201,13 +215,13 @@ static void ODPlatYield(void)
 tODResult ODThreadCreate(tODThreadHandle *phThread,
    ptODThreadProc *pfThreadProc, void *pThreadParam)
 {
+   ASSERT(phThread != NULL);
+   ASSERT(pfThreadProc != NULL);
+   
 #ifdef ODPLAT_WIN32
    DWORD dwThreadID;
    HANDLE hNewThread;
 
-   ASSERT(phThread != NULL);
-   ASSERT(pfThreadProc != NULL);
-   
    /* Attempt to create the new thread. */
    hNewThread = CreateThread(NULL, 0, pfThreadProc, pThreadParam,
       0, &dwThreadID);
@@ -224,6 +238,22 @@ tODResult ODThreadCreate(tODThreadHandle *phThread,
    /* Return with success. */
    return(kODRCSuccess);
 #endif /* ODPLAT_WIN32 */
+
+#ifdef ODPLAT_NIX
+   pthread_t threadID;
+   struct odthread_args *pa = malloc(sizeof(struct odthread_args));
+   if (pa == NULL)
+      return kODRCGeneralFailure;
+   pa->func = pfThreadProc;
+   pa->arg = pThreadParam;
+
+   if (pthread_create(&threadID, NULL, odthread_wrapper, pa)) {
+      free(pa);
+      return kODRCGeneralFailure;
+   }
+   *phThread = threadID;
+   return(kODRCSuccess);
+#endif
 }
 
 
@@ -241,6 +271,10 @@ void ODThreadExit()
 #ifdef ODPLAT_WIN32
    ExitThread(0);
 #endif /* ODPLAT_WIN32 */
+
+#ifdef ODPLAT_NIX
+   pthread_exit(NULL);
+#endif
 
    /* We should never get here. */
    ASSERT(FALSE);
@@ -263,6 +297,15 @@ tODResult ODThreadTerminate(tODThreadHandle hThread)
 #ifdef ODPLAT_WIN32
    return(TerminateThread(hThread, 0) ? kODRCSuccess : kODRCGeneralFailure);
 #endif /* ODPLAT_WIN32 */
+
+#ifdef ODPLAT_NIX
+   // Try to do this nicely...
+   if (pthread_cancel(hThread))
+      return kODRCGeneralFailure;
+   if (pthread_join(hThread, NULL))
+      return kODRCGeneralFailure;
+   return kODRCSuccess;
+#endif
 }
 
 
@@ -284,6 +327,11 @@ tODResult ODThreadSuspend(tODThreadHandle hThread)
    return(SuspendThread(hThread) == 0xFFFFFFFF ? kODRCGeneralFailure
       : kODRCSuccess);
 #endif /* ODPLAT_WIN32 */
+
+#ifdef ODPLAT_NIX
+   // This is some garbage tier design right here...
+   return pthread_suspend_np(hThread) ? kODRCGeneralFailure : kODRCSuccess;
+#endif
 }
 
 
@@ -305,6 +353,11 @@ tODResult ODThreadResume(tODThreadHandle hThread)
    return(ResumeThread(hThread) == 0xFFFFFFFF ? kODRCGeneralFailure
       : kODRCSuccess);
 #endif /* ODPLAT_WIN32 */
+
+#ifdef ODPLAT_NIX
+   // This is some garbage tier design right here...
+   return pthread_resume_np(hThread) ? kODRCGeneralFailure : kODRCSuccess;
+#endif
 }
 
 
@@ -358,6 +411,35 @@ tODResult ODThreadSetPriority(tODThreadHandle hThread,
       ? kODRCSuccess : kODRCGeneralFailure);
 
 #endif /* ODPLAT_WIN32 */
+
+#ifdef ODPLAT_NIX
+   int min = sched_get_priority_min(SCHED_OTHER);
+   int max = sched_get_priority_max(SCHED_OTHER);
+   struct sched_param sp = {0};
+
+   switch(ThreadPriority) {
+      case OD_PRIORITY_LOWEST:
+         sp.sched_priority = min;
+         break;
+      case OD_PRIORITY_BELOW_NORMAL:
+         sp.sched_priority = min + (max - min + 1) / 4;
+         break;
+      case OD_PRIORITY_NORMAL:
+         sp.sched_priority = (min + max) / 2;
+         break;
+      case OD_PRIORITY_ABOVE_NORMAL:
+         sp.sched_priority = max - (max - min + 1) / 4;
+         break;
+      case OD_PRIORITY_HIGHEST:
+         sp.sched_priority = max;
+         break;
+      default:
+         ASSERT(FALSE);
+         return kODRCInvalidCall;
+   }
+
+   return pthread_setschedparam(hThread, SCHED_OTHER, &sp) ? kODRCGeneralFailure : kODRCSuccess;
+#endif
 }
 
 
@@ -375,6 +457,10 @@ void ODThreadWaitForExit(tODThreadHandle hThread)
 #ifdef ODPLAT_WIN32
    WaitForSingleObject(hThread, INFINITE);
 #endif /* ODPLAT_WIN32 */
+
+#ifdef ODPLAT_NIX
+   pthread_join(hThread, NULL);
+#endif
 }
 
 
@@ -398,6 +484,10 @@ tODThreadHandle ODThreadGetCurrent(void)
    }
    return(hDuplicate);
 #endif /* ODPLAT_WIN32 */
+
+#ifdef ODPLAT_NIX
+   return pthread_self();
+#endif
 }
 
 
@@ -429,6 +519,14 @@ tODResult ODSemaphoreAlloc(tODSemaphoreHandle *phSemaphore, INT nInitialCount,
 
    return(*phSemaphore == NULL ? kODRCGeneralFailure : kODRCSuccess);
 #endif /* ODPLAT_WIN32 */
+
+#ifdef ODPLAT_NIX
+   // ffs
+   *phSemaphore = malloc(sizeof(sem_t));
+   if (*phSemaphore == NULL)
+      return kODRCNoMemory;
+   return sem_init(*phSemaphore, 0, nInitialCount) ? kODRCGeneralFailure : kODRCSuccess;
+#endif
 }
 
 
@@ -448,6 +546,11 @@ void ODSemaphoreFree(tODSemaphoreHandle hSemaphore)
 #ifdef ODPLAT_WIN32
    DeleteObject(hSemaphore);
 #endif /* ODPLAT_WIN32 */
+
+#ifdef ODPLAT_NIX
+   sem_destroy(hSemaphore);
+   free(hSemaphore);
+#endif
 }
 
 
@@ -470,6 +573,11 @@ void ODSemaphoreUp(tODSemaphoreHandle hSemaphore, INT nIncrementBy)
 #ifdef ODPLAT_WIN32
    ReleaseSemaphore(hSemaphore, nIncrementBy, NULL);
 #endif /* ODPLAT_WIN32 */
+
+#ifdef ODPLAT_NIX
+   for (int i = 0; i < nIncrementBy; i++)
+      sem_post(hSemaphore);
+#endif
 }
 
 
@@ -501,6 +609,40 @@ tODResult ODSemaphoreDown(tODSemaphoreHandle hSemaphore, tODMilliSec Timeout)
       return(kODRCTimeout);
    }
 #endif /* ODPLAT_WIN32 */
+
+#ifdef ODPLAT_NIX
+   int ret;
+   struct timespec ts;
+   tODMilliSec remain = Timeout;
+
+   if (Timeout != OD_NO_TIMEOUT) {
+      clock_gettime(CLOCK_REALTIME, &ts);
+      // First, add on full seconds...
+      if (remain > 1000) {
+         ts.tv_sec += Timeout / 1000;
+         remain %= 1000;
+      }
+      ts.tv_nsec += remain * 1000000;
+      // This nad better not loop more than once. :D
+      while (ts.tv_nsec >= 1000000000) {
+         ts.tv_sec += 1;
+         ts.tv_nsec -= 1000000000;
+      }
+   }
+
+   do {
+      if (Timeout == OD_NO_TIMEOUT)
+         ret = sem_wait(hSemaphore);
+      else
+         ret = sem_timedwait(hSemaphore, &ts);
+   } while (ret && errno == EINTR);
+   if (ret) {
+      if (errno == ETIMEDOUT || errno == EAGAIN)
+         return kODRCTimeout;
+      return kODRCGeneralFailure;
+   }
+
+#endif
 
    /* Return with success. */
    return(kODRCSuccess);
