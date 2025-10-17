@@ -221,11 +221,6 @@ int main(int argc, char *argv[])
 	_argc=argc;
 	_argv=argv;
 
-#ifdef __unix__
-// FIXME this only has to be here for me... it SHOULD use the current umask.
-	umask(0);
-#endif
-
 	System_Init();
 	// run maintenance if need be
 	if (DaysBetween(Game.Data->szTodaysDate, System.szTodaysDate) > 0)
