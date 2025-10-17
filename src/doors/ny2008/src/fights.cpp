@@ -5038,7 +5038,7 @@ void
 ny_get_index(void) {
 	char line[124];
 	FILE *phile;
-	char numstr[26];
+	char numstr[124];
 
 	ch_game_d();
 
