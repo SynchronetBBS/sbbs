@@ -1322,7 +1322,7 @@ void qhub_edit(int num)
 				}
 				break;
 			case __COUNTER__:
-				i = 1;
+				i = (cfg.qhub[num]->freq != 0);
 				uifc.helpbuf =
 					"`Perform Call-out at a Specific Time:`\n"
 					"\n"
@@ -1346,9 +1346,12 @@ void qhub_edit(int num)
 					               , "Time to Perform Call-out (HH:MM)"
 					               , str, 5, K_UPPER | K_EDIT) > 0) {
 						cfg.qhub[num]->freq = 0;
+						if ((p = strchr(str, ':')) == NULL) {
+							uifc.msg("Incorrect time format");
+							break;
+						}
 						cfg.qhub[num]->time = atoi(str) * 60;
-						if ((p = strchr(str, ':')) != NULL)
-							cfg.qhub[num]->time += atoi(p + 1);
+						cfg.qhub[num]->time += atoi(p + 1);
 					}
 				}
 				else if (i == 1) {

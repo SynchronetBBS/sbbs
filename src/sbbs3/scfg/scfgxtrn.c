@@ -762,9 +762,12 @@ void tevents_cfg()
 						               , "Time to Execute Event (HH:MM)"
 						               , str, 5, K_UPPER | K_EDIT) > 0) {
 							cfg.event[i]->freq = 0;
+							if ((p = strchr(str, ':')) == NULL) {
+								uifc.msg("Incorrect time format");
+								break;
+							}
 							cfg.event[i]->time = atoi(str) * 60;
-							if ((p = strchr(str, ':')) != NULL)
-								cfg.event[i]->time += atoi(p + 1);
+							cfg.event[i]->time += atoi(p + 1);
 						}
 					}
 					else if (k == 1) {
