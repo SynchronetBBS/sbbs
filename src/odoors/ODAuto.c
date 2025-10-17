@@ -52,6 +52,7 @@
 
 /* Private function prototypes. */
 static char ODWaitNoCase(char *pszWaitFor, tODMilliSec WaitTime);
+static void ODWaitDiscard(int bytes, tODMilliSec time);
 
 
 /* Number of attempts and timeout values for testing each terminal emulation */
@@ -66,6 +67,7 @@ static char ODWaitNoCase(char *pszWaitFor, tODMilliSec WaitTime);
 #define ANSI_RESPONSE   "\x1b["
 #define RIP_QUERY       "\r\x1b[!\r   \r"
 #define RIP_RESPONSE    "RIP"
+#define RIP_DISCARD     11
 
 /* Maximum number of characters to match with _waitnocase(). */
 #define MATCH_LEN       3
@@ -148,9 +150,10 @@ ODAPIDEF void ODCALL od_autodetect(INT nFlags)
          /* Wait for response expected from a RIP terminal. */
          if(ODWaitNoCase(RIP_RESPONSE, RIP_WAIT))
          {
-            /* If expected sequence was received, turn on RIP mode and */
-            /* exit the loop. */
+            /* If expected sequence was received, turn on RIP mode */
             od_control.user_rip = TRUE;
+            /* Discard the rest of the RIP ID */
+            ODWaitDiscard(RIP_DISCARD, RIP_WAIT);
             break;
          }
       }
@@ -177,7 +180,6 @@ static char ODWaitNoCase(char *pszWaitFor, tODMilliSec WaitTime)
 {
    tODTimer Timer;
    char szReceived[MATCH_LEN + 1];
-   int nCount;
    char chReceived;
    int nMatchChars = MIN(MATCH_LEN, strlen(pszWaitFor));
 
@@ -187,19 +189,13 @@ static char ODWaitNoCase(char *pszWaitFor, tODMilliSec WaitTime)
 
    ODTimerStart(&Timer, WaitTime);
 
-   for(nCount = 0; nCount <= MATCH_LEN; ++nCount)
-   {
-      szReceived[nCount] = '\0';
-   }
+   memset(szReceived, 0, sizeof(szReceived));
 
    do
    {
       if((chReceived = od_get_key(FALSE)) != 0)
       {
-         for(nCount = 0; nCount < MATCH_LEN - 1; ++ nCount)
-         {
-            szReceived[nCount] = szReceived[nCount + 1];
-         }
+         memmove(szReceived, szReceived + 1, sizeof(szReceived) - 1);
          szReceived[MATCH_LEN - 1] = chReceived;
 
          if(strnicmp(szReceived + (MATCH_LEN - nMatchChars), pszWaitFor,
@@ -211,4 +207,20 @@ static char ODWaitNoCase(char *pszWaitFor, tODMilliSec WaitTime)
    } while(!ODTimerElapsed(&Timer));
 
    return(FALSE);
+}
+
+static void ODWaitDiscard(int bytes, tODMilliSec time)
+{
+   tODTimer Timer;
+   tODInputEvent e;
+
+   ASSERT(bytes > 0);
+   ASSERT(time >= 0);
+
+   ODTimerStart(&Timer, time);
+   while (od_get_input(&e, ODTimerLeft(&Timer), GETIN_RAW)) {
+      bytes--;
+      if (bytes == 0)
+         return;
+   }
 }
