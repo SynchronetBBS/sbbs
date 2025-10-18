@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 #ifdef __MSDOS__
 # include <alloc.h>        /* Use <malloc.c> for Power C */
 #endif /* __MSDOS__ */
