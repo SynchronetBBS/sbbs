@@ -80,8 +80,8 @@ else
   CONSOLE_LIBS := -lcurses
  else ifeq ($(os),linux)
   ifeq ($(shell pkg-config ncursesw --exists && echo YES), YES)
-   CIOLIB-MT_LIBS += $(shell pkg-config ncursesw --libs)
-   CIOLIB-MT_CFLAGS += $(shell pkg-config ncursesw --cflags)
+   CONSOLE_LIBS += $(shell pkg-config ncursesw --libs)
+   CFLAGS += $(shell pkg-config ncursesw --cflags)
   else
    # This probobly won't work
    CONSOLE_LIBS := -lncursesw
