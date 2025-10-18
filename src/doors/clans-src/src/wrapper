@@ -1,0 +1,31 @@
+#!/bin/sh
+
+name=`basename $0`
+dir=`dirname $0`
+os=$(uname | tr '[A-Z ]' '[a-z_]')
+machine=$(uname -m | tr '[A-Z ]' '[a-z_]')
+if [ -z "${machine}" ]
+then
+	if [ "${os}" = "darwin" ]
+	then
+		if [ "$(sysctl hw.optional.x86_64)" = "x86_64" ]
+		then
+			machine="x86_64"
+		fi
+	fi
+fi
+
+if [ -z "${CLANS_DEBUG}" ]
+then
+	platform="${os}.${machine}.debug"
+else
+	platform="${os}.${machine}.opt"
+fi
+
+if [ -x "${dir}/${name}.${platform}" ]
+then
+	exec "${dir}/${name}.${platform}" "$@"
+fi
+
+echo "Unable to find binary for ${platform}" >&2
+exit 1

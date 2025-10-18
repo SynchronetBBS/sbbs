@@ -20,6 +20,7 @@ ifdef WIN
  # We won't be using the DLL
  CFLAGS	+=	-DOD_WIN32_STATIC
  CLANS_LIBS +=	-lws2_32 -lgdi32 -lcomctl32
+ WRAPEXT :=	.cmd
 else
  # Oh, the things we put up with to use curses...
  ifeq ($(os),darwin)
@@ -35,6 +36,7 @@ else
  else
   CONSOLE_LIBS := -lcursesw
  endif
+ WRAPEXT :=
 endif
 
 # Build types, debug and opt
@@ -111,7 +113,11 @@ PCEDIT_OBJS :=	$(OBJDIR)pcedit.o $(OBJDIR)myopen.o \
 DOOR_BINARIES	:=	$(BINDIR)clans$(EXEFILE) \
 			$(BINDIR)config$(EXEFILE) \
 			$(BINDIR)pcedit$(EXEFILE) \
-			$(BINDIR)reset$(EXEFILE)
+			$(BINDIR)reset$(EXEFILE) \
+			$(BINDIR)clans$(WRAPEXT) \
+			$(BINDIR)config$(WRAPEXT) \
+			$(BINDIR)pcedit$(WRAPEXT) \
+			$(BINDIR)reset$(WRAPEXT)
 
 DEVKIT_BINARIES	:=	$(BINDIR)chew$(EXEFILE) $(BINDIR)ecomp$(EXEFILE) \
 			$(BINDIR)install$(EXEFILE) \
@@ -121,7 +127,16 @@ DEVKIT_BINARIES	:=	$(BINDIR)chew$(EXEFILE) $(BINDIR)ecomp$(EXEFILE) \
 			$(BINDIR)mcomp$(EXEFILE) \
 			$(BINDIR)mclass$(EXEFILE) \
 			$(BINDIR)mitems$(EXEFILE) \
-			$(BINDIR)mspells$(EXEFILE)
+			$(BINDIR)mspells$(EXEFILE) \
+			$(BINDIR)chew$(WRAPEXT) $(BINDIR)ecomp$(WRAPEXT) \
+			$(BINDIR)install$(WRAPEXT) \
+			$(BINDIR)langcomp$(WRAPEXT) \
+			$(BINDIR)makenpc$(WRAPEXT) \
+			$(BINDIR)makepak$(WRAPEXT) \
+			$(BINDIR)mcomp$(WRAPEXT) \
+			$(BINDIR)mclass$(WRAPEXT) \
+			$(BINDIR)mitems$(WRAPEXT) \
+			$(BINDIR)mspells$(WRAPEXT)
 
 # Default target
 default: $(DOOR_BINARIES)
@@ -161,41 +176,83 @@ $(BINDIR):
 $(BINDIR)clans$(EXEFILE): $(CLANS_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(CLANS_OBJS) -o $@ $(CLANS_LIBS)
 
+$(BINDIR)clans$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)clans$(EXEFILE)
+	cp $^ $@
+
 $(BINDIR)chew$(EXEFILE): $(CHEW_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+
+$(BINDIR)chew$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)chew$(EXEFILE)
+	cp $^ $@
 
 $(BINDIR)config$(EXEFILE): $(CONFIG_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(CONSOLE_LIBS)
 
+$(BINDIR)config$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)config$(EXEFILE)
+	cp $^ $@
+
 $(BINDIR)ecomp$(EXEFILE): $(ECOMP_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+
+$(BINDIR)ecomp$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)ecomp$(EXEFILE)
+	cp $^ $@
 
 $(BINDIR)install$(EXEFILE): $(INSTALL_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(CONSOLE_LIBS)
 
+$(BINDIR)install$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)install$(EXEFILE)
+	cp $^ $@
+
 $(BINDIR)langcomp$(EXEFILE): $(LANGCOMP_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+
+$(BINDIR)langcomp$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)langcomp$(EXEFILE)
+	cp $^ $@
 
 $(BINDIR)reset$(EXEFILE): $(RESET_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(CONSOLE_LIBS)
 
+$(BINDIR)reset$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)reset$(EXEFILE)
+	cp $^ $@
+
 $(BINDIR)makenpc$(EXEFILE): $(MAKENPC_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+
+$(BINDIR)makenpc$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)makenpc$(EXEFILE)
+	cp $^ $@
 
 $(BINDIR)makepak$(EXEFILE): $(MAKEPAK_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
+$(BINDIR)makepak$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)makepak$(EXEFILE)
+	cp $^ $@
+
 $(BINDIR)mcomp$(EXEFILE): $(MCOMP_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+
+$(BINDIR)mcomp$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)mcomp$(EXEFILE)
+	cp $^ $@
 
 $(BINDIR)mclass$(EXEFILE): $(MCLASS_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
+$(BINDIR)mclass$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)mclass$(EXEFILE)
+	cp $^ $@
+
 $(BINDIR)mitems$(EXEFILE): $(MITEMS_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+
+$(BINDIR)mitems$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)mitems$(EXEFILE)
+	cp $^ $@
 
 $(BINDIR)mspells$(EXEFILE): $(MSPELLS_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
+$(BINDIR)mspells$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)mspells$(EXEFILE)
+	cp $^ $@
+
 $(BINDIR)pcedit$(EXEFILE): $(PCEDIT_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+
+$(BINDIR)pcedit$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)pcedit$(EXEFILE)
+	cp $^ $@
