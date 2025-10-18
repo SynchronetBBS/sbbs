@@ -33,8 +33,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #ifdef __unix__
-# include <locale.h>
-# include <curses.h>
+# include <sys/select.h>
+# include <termios.h>
+# include <unistd.h>
 #else
 # include <conio.h>
 #endif
@@ -64,9 +65,11 @@ static HANDLE std_handle;
 #ifdef __unix__
 static void set_attrs(uint8_t attrib);
 static void putch(unsigned char ch);
-static short curses_color(short color);
-attr_t cur_attr = 0;
-short cur_pair = 8;
+static void getxy(int *x, int*y);
+static int getch(void);
+static short ansi_colours(short color);
+uint8_t cur_attr;
+struct termios orig_tio;
 #endif
 
 // ------------------------------------------------------------------------- //
@@ -156,9 +159,7 @@ void ScrollUp(void)
 		exit(0);
 	}
 #elif defined(__unix__)
-	scrollok(stdscr,true);
-	scrl(1);
-	scrollok(stdscr,false);
+	fputs("\x1b[S", stdout);
 #else
 //# pragma message("ScrollUp() Nullified by no defines")
 #endif
@@ -191,7 +192,7 @@ void put_character(char ch, short attrib, int x, int y)
 		&bytes_written,
 		NULL);
 #elif defined(__unix__)
-	move(y, x);
+	gotoxy(x + 1, y + 1);
 	set_attrs(attrib);
 	putch(ch);
 #endif
@@ -222,7 +223,7 @@ void zputs(char *string)
 	scr_lines = screen_buffer.dwSize.Y;
 	scr_width = screen_buffer.dwSize.X;
 #elif defined(__unix__)
-	getyx(stdscr, y, x);
+	getxy(&x, &y);
 #else
 	gettextinfo(&TextInfo);
 	x = TextInfo.curx-1;
@@ -241,7 +242,7 @@ void zputs(char *string)
 		SetConsoleCursorPosition(std_handle, cursor_pos);
 #elif defined(__unix__)
 		/* Resync with x/y position */
-		move(y, x);
+		gotoxy(x + 1, y + 1);
 #endif
 		if (y == scr_lines) {
 			/* scroll line up */
@@ -326,9 +327,6 @@ void zputs(char *string)
 		}
 	}
 	gotoxy(x+1,y+1);
-#ifdef __unix__
-	refresh();
-#endif
 }
 
 void SetCurs(int16_t CursType)
@@ -364,13 +362,7 @@ void SetCurs(int16_t CursType)
 		std_handle,
 		&cursor_info);
 #elif defined(__unix__)
-	switch (CursType) {
-		case CURS_FAT:
-			curs_set(2);
-			break;
-		default:
-			curs_set(1);
-	}
+	// TODO: No way to set the cursor between the three sizes?
 #endif
 }
 
@@ -454,20 +446,16 @@ void qputs(char *string, int16_t x, int16_t y)
 static void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t length, int16_t input_length)
 {
 #ifdef __unix__
-	attr_t orig_attr = cur_attr;
-	short orig_pair = cur_pair;
+	uint8_t orig_attr = cur_attr;
 
-	move(y, x);
+	gotoxy(x+1, y+1);
 	set_attrs(color);
 	for (char *i = string; *i; i++)
 		putch(*i);
 	set_attrs(8);
 	for (int i = length; i < input_length; i++)
 		putch(PADDING);
-	attr_set(orig_attr, orig_pair, NULL);
-	cur_attr = orig_attr;
-	cur_pair = orig_pair;
-	refresh();
+	set_attrs(orig_attr);
 #elif defined(_WIN32)
 	COORD cursor_pos;
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
@@ -557,6 +545,7 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 	char first_time = true; // flags if this is the first time to input
 	// if true, it will clear the line and input
 	char old_fg4;
+	bool update = true;
 
 	// initialize the string here
 
@@ -587,9 +576,11 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 	// now edit it
 
 	for (;;) {
-		sdisplay(string, x, y, attr, length, input_length);
-
-		gotoxy(x+ 1 + cur_letter, y+1);
+		if (update) {
+			sdisplay(string, x, y, attr, length, input_length);
+			gotoxy(x+ 1 + cur_letter, y+1);
+			update = false;
+		}
 
 		key = getch();
 
@@ -602,22 +593,27 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 						break;
 					case 79 : // end
 						cur_letter = length;
+						update = true;
 						break;
 					case 77 :   // right
 						if (cur_letter < length)
 							cur_letter++;
+						update = true;
 						break;
 					case 75 :   // left
 						if (cur_letter)
 							cur_letter--;
+						update = true;
 						break;
 					case 71 : // home
 						cur_letter = 0;
+						update = true;
 						break;
 					case 82 : // insert
 						insert = !insert;
 						SetCurs(insert);
 						// change cursor here
+						update = true;
 						break;
 					case 83 :   // delete
 						if (length && cur_letter < length) {
@@ -630,6 +626,7 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 
 							length--;
 						}
+						update = true;
 						break;
 				}
 				break;
@@ -641,6 +638,7 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 				string[0] = 0;
 				length = 0;
 				cur_letter = 0;
+				update = true;
 				break;
 			case '\b' : // backspace
 				if (cur_letter > 0)   {
@@ -655,6 +653,7 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 					length--;
 					cur_letter--;
 				}
+				update = true;
 				break;
 			case 0x1B : // esc
 				break;
@@ -665,6 +664,7 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 					cur_letter = 0;
 				}
 				if ((char)key < low_char || (char)key > high_char)  break;
+				update = true;
 				if (insert && length < input_length)  {
 
 					strcpy(tmp_str, &string[cur_letter]);
@@ -704,7 +704,7 @@ void Input(char *string, int16_t length)
 	cur_x = wherex()-1;
 	cur_y = wherey()-1;
 #elif defined(__unix__)
-	getyx(stdscr, cur_y, cur_x);
+	getxy(&cur_x, &cur_y);
 #elif defined(_WIN32)
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	GetConsoleScreenBufferInfo(
@@ -748,8 +748,8 @@ void ClearArea(char x1, char y1,  char x2, char y2, char attr)
 	if (x2 == 79) {
 		set_attrs(attr);
 		for (int y = y1; y <= y2; y++) {
-			move(y, x1);
-			clrtoeol();
+			gotoxy(x1 + 1, y + 1);
+			fputs("\x1b[K", stdout);
 		}
 	}
 #endif
@@ -771,7 +771,7 @@ void xputs(char *string, int16_t x, int16_t y)
 		string++;
 	}
 #elif defined(__unix__)
-	move(y, x);
+	gotoxy(x + 1, y + 1);
 	for (char *i = string; *i; i++)
 		putch(*i);
 #elif defined(_WIN32)
@@ -833,28 +833,13 @@ void Video_Init(void)
 	}
 	default_cursor_size = cursor_info.dwSize;
 #elif defined(__unix__)
-	short fg;
-	short bg;
-	short pair=0;
+	struct termios raw;
 
-	// Initialize Curses lib.
-	setlocale(LC_ALL, "");
-	initscr();
-	cbreak();
-	noecho();
-	nonl();
-	keypad(stdscr, true);
-	scrollok(stdscr,false);
-	start_color();
-	clear();
-	refresh();
-
-	// Set up color pairs
-	for (bg=0; bg<8; bg++)  {
-		for (fg=0; fg<16; fg++) {
-			init_pair(++pair,curses_color(fg),curses_color(bg));
-		}
-	}
+	tcgetattr(STDIN_FILENO, &orig_tio);
+	raw = orig_tio;
+	cfmakeraw(&raw);
+	tcsetattr(STDIN_FILENO, TCSANOW, &raw);
+	setvbuf(stdout, NULL, _IONBF, 0);
 #else
 	int16_t iTemp;
 
@@ -871,7 +856,7 @@ void Video_Close(void)
 #elif defined(__unix__)
 	set_attrs(8);
 	SetCurs(CURS_NORMAL);
-	endwin();
+	tcsetattr(STDIN_FILENO, TCSANOW, &orig_tio);
 #endif
 }
 
@@ -917,94 +902,142 @@ void clrscr(void)
 #elif defined(__unix__)
 void gotoxy(int x, int y)
 {
-	move(y - 1, x - 1);
+	printf("\x1b[%d;%dH", y, x);
 }
 
 void clrscr(void)
 {
-	clear();
-	refresh();
+	fputs("\x1b[H\x1b[J", stdout);
 }
 
 static void set_attrs(uint8_t attrib)
 {
-	cur_attr = A_NORMAL;
-	if (attrib & 128)
-		cur_attr |= A_BLINK;
-	cur_pair = (attrib & 0x7F) + 1;
-	attr_set(cur_attr, cur_pair, NULL);
+	char seq[16];
+	sprintf(seq, "\x1b[0;%d;%d", ansi_colours(attrib & 0x07), ansi_colours((attrib >> 4) & 0x07) + 10);
+	if (attrib & 0x08)
+		strcat(seq, ";1");
+	if (attrib & (0x80))
+		strcat(seq, ";5");
+	strcat(seq, "m");
+	fputs(seq, stdout);
 }
 
-const static uint32_t cp437_unicode_table[128] = {
-	0x00C7, 0x00FC, 0x00E9, 0x00E2, 0x00E4, 0x00E0, 0x00E5, 0x00E7,
-	0x00EA, 0x00EB, 0x00E8, 0x00EF, 0x00EE, 0x00EC, 0x00C4, 0x00C5,
-	0x00C9, 0x00E6, 0x00C6, 0x00F4, 0x00F6, 0x00F2, 0x00FB, 0x00F9,
-	0x00FF, 0x00D6, 0x00DC, 0x00A2, 0x00A3, 0x00A5, 0x20A7, 0x0192,
-	0x00E1, 0x00ED, 0x00F3, 0x00FA, 0x00F1, 0x00D1, 0x00AA, 0x00BA,
-	0x00BF, 0x2310, 0x00AC, 0x00BD, 0x00BC, 0x00A1, 0x00AB, 0x00BB,
-	0x2591, 0x2592, 0x2593, 0x2502, 0x2524, 0x2561, 0x2562, 0x2556,
-	0x2555, 0x2563, 0x2551, 0x2557, 0x255D, 0x255C, 0x255B, 0x2510,
-	0x2514, 0x2534, 0x252C, 0x251C, 0x2500, 0x253C, 0x255E, 0x255F,
-	0x255A, 0x2554, 0x2569, 0x2566, 0x2560, 0x2550, 0x256C, 0x2567,
-	0x2568, 0x2564, 0x2565, 0x2559, 0x2558, 0x2552, 0x2553, 0x256B,
-	0x256A, 0x2518, 0x250C, 0x2588, 0x2584, 0x258C, 0x2590, 0x2580,
-	0x03B1, 0x00DF, 0x0393, 0x03C0, 0x03A3, 0x03C3, 0x00B5, 0x03C4,
-	0x03A6, 0x0398, 0x03A9, 0x03B4, 0x221E, 0x03C6, 0x03B5, 0x2229,
-	0x2261, 0x00B1, 0x2265, 0x2264, 0x2320, 0x2321, 0x00F7, 0x2248,
-	0x00B0, 0x2219, 0x00B7, 0x221A, 0x207F, 0x00B2, 0x25A0, 0x00A0
+const static char *cp437_unicode_table[128] = {
+	"\xc3\x87", "\xc3\xbc", "\xc3\xa9", "\xc3\xa2", "\xc3\xa4", "\xc3\xa0", "\xc3\xa5", "\xc3\xa7",
+	"\xc3\xaa", "\xc3\xab", "\xc3\xa8", "\xc3\xaf", "\xc3\xae", "\xc3\xac", "\xc3\x84", "\xc3\x85",
+	"\xc3\x89", "\xc3\xa6", "\xc3\x86", "\xc3\xb4", "\xc3\xb6", "\xc3\xb2", "\xc3\xbb", "\xc3\xb9",
+	"\xc3\xbf", "\xc3\x96", "\xc3\x9c", "\xc2\xa2", "\xc2\xa3", "\xc2\xa5", "\xe2\x82\xa7", "\xc6\x92",
+	"\xc3\xa1", "\xc3\xad", "\xc3\xb3", "\xc3\xba", "\xc3\xb1", "\xc3\x91", "\xc2\xaa", "\xc2\xba",
+	"\xc2\xbf", "\xe2\x8c\x90", "\xc2\xac", "\xc2\xbd", "\xc2\xbc", "\xc2\xa1", "\xc2\xab", "\xc2\xbb",
+	"\xe2\x96\x91", "\xe2\x96\x92", "\xe2\x96\x93", "\xe2\x94\x82", "\xe2\x94\xa4", "\xe2\x95\xa1", "\xe2\x95\xa2", "\xe2\x95\x96",
+	"\xe2\x95\x95", "\xe2\x95\xa3", "\xe2\x95\x91", "\xe2\x95\x97", "\xe2\x95\x9d", "\xe2\x95\x9c", "\xe2\x95\x9b", "\xe2\x94\x90",
+	"\xe2\x94\x94", "\xe2\x94\xb4", "\xe2\x94\xac", "\xe2\x94\x9c", "\xe2\x94\x80", "\xe2\x94\xbc", "\xe2\x95\x9e", "\xe2\x95\x9f",
+	"\xe2\x95\x9a", "\xe2\x95\x94", "\xe2\x95\xa9", "\xe2\x95\xa6", "\xe2\x95\xa0", "\xe2\x95\x90", "\xe2\x95\xac", "\xe2\x95\xa7",
+	"\xe2\x95\xa8", "\xe2\x95\xa4", "\xe2\x95\xa5", "\xe2\x95\x99", "\xe2\x95\x98", "\xe2\x95\x92", "\xe2\x95\x93", "\xe2\x95\xab",
+	"\xe2\x95\xaa", "\xe2\x94\x98", "\xe2\x94\x8c", "\xe2\x96\x88", "\xe2\x96\x84", "\xe2\x96\x8c", "\xe2\x96\x90", "\xe2\x96\x80",
+	"\xce\xb1", "\xc3\x9f", "\xce\x93", "\xcf\x80", "\xce\xa3", "\xcf\x83", "\xc2\xb5", "\xcf\x84",
+	"\xce\xa6", "\xce\x98", "\xce\xa9", "\xce\xb4", "\xe2\x88\x9e", "\xcf\x86", "\xce\xb5", "\xe2\x88\xa9",
+	"\xe2\x89\xa1", "\xc2\xb1", "\xe2\x89\xa5", "\xe2\x89\xa4", "\xe2\x8c\xa0", "\xe2\x8c\xa1", "\xc3\xb7", "\xe2\x89\x88"
+	"\xc2\xb0", "\xe2\x88\x99", "\xc2\xb7", "\xe2\x88\x9a", "\xe2\x81\xbf", "\xc2\xb2", "\xe2\x96\xa0", "\xc2\xa0"
 };
 
 static void putch(unsigned char ch)
 {
-	cchar_t wch;
-	wchar_t wc[2] = {0, 0};
-
 	if (ch > 127)
-		wc[0] = cp437_unicode_table[ch - 128];
+		fputs(cp437_unicode_table[ch - 128], stdout);
 	else if (ch < 32)
-		wc[0] = ' ';
+		fputc(' ', stdout);
 	else
-		wc[0] = ch;
-	setcchar(&wch, wc, cur_attr, cur_pair, NULL);
-	add_wch(&wch);
+		fputc(ch, stdout);
 }
 
-static short curses_color(short color)
+static short ansi_colours(short color)
 {
 	switch (color) {
 		case 0 :
-			return(COLOR_BLACK);
+			return(30);
 		case 1 :
-			return(COLOR_BLUE);
+			return(34);
 		case 2 :
-			return(COLOR_GREEN);
+			return(32);
 		case 3 :
-			return(COLOR_CYAN);
+			return(36);
 		case 4 :
-			return(COLOR_RED);
+			return(31);
 		case 5 :
-			return(COLOR_MAGENTA);
+			return(35);
 		case 6 :
-			return(COLOR_YELLOW);
+			return(33);
 		case 7 :
-			return(COLOR_WHITE);
-		case 8 :
-			return(COLOR_BLACK + 8);
-		case 9 :
-			return(COLOR_BLUE + 8);
-		case 10 :
-			return(COLOR_GREEN + 8);
-		case 11 :
-			return(COLOR_CYAN + 8);
-		case 12 :
-			return(COLOR_RED + 8);
-		case 13 :
-			return(COLOR_MAGENTA + 8);
-		case 14 :
-			return(COLOR_YELLOW + 8);
-		case 15 :
-			return(COLOR_WHITE + 8);
+			return(37);
 	}
 	return(0);
+}
+
+static int getch(void)
+{
+	struct timeval tv = {
+		.tv_sec = 0,
+		.tv_usec = 500000,
+	};
+	fd_set rfd;
+
+	FD_ZERO(&rfd);
+	FD_SET(STDIN_FILENO, &rfd);
+	if (select(STDIN_FILENO + 1, &rfd, NULL, NULL, &tv) == 1) {
+		uint8_t ch;
+		if (read(STDIN_FILENO, &ch, 1) == 1) {
+			return ch;
+		}
+	}
+	return -1;
+}
+
+static void getxy(int *x, int*y)
+{
+	char seqbuf[16];
+	size_t sbp = 0;
+	int ch;
+	int state = 0;
+
+	fputs("\x1b[6n", stdout);
+	while ((ch = getch()) != -1) {
+		if (ch == '\x1b')
+			state = 0;
+		switch (state) {
+			case 0:
+				if (ch == '\x1b') {
+					state++;
+					sbp = 0;
+				}
+				break;
+			case 1:
+				if (ch == '[')
+					state++;
+				else
+					state = 0;
+				break;
+			case 2:
+				if ((ch >= '0' && ch <= '9') || ch == ';') {
+					seqbuf[sbp++] = ch;
+				}
+				else if (ch == 'R') {
+					unsigned nx, ny;
+
+					seqbuf[sbp++] = ch;
+					seqbuf[sbp++] = 0;
+					if (sscanf(seqbuf, "%u;%uR", &ny, &nx) == 2) {
+						*x = nx - 1;
+						*y = ny - 1;
+						return;
+					}
+				}
+				break;
+		}
+	}
+assert(0);
+	*x = 1;
+	*y = 1;
+	return;
 }
 #endif

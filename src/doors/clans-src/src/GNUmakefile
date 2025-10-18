@@ -203,7 +203,7 @@ clean:
 	$(DELETE) ClansDevKit-*.zip
 
 clans$(EXEFILE):      $(OBJS) unix_wrappers.o
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) unix_wrappers.o -o clans$(EXEFILE) $(LIBS) $(CONSOLE_LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) unix_wrappers.o -o clans$(EXEFILE) $(LIBS)
 
 %.e: %.evt native-ecomp$(NATIVEEXEFILE)
 	./native-ecomp$(NATIVEEXEFILE) $< $@
