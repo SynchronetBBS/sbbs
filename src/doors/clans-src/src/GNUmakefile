@@ -33,6 +33,10 @@ else
    # This probobly won't work
    CONSOLE_LIBS := -lncursesw
   endif
+ else ifeq ($(os),openbsd)
+  CONSOLE_LIBS := -lncursesw
+ else ifeq ($(os),netbsd)
+  CONSOLE_LIBS := -lcurses
  else
   CONSOLE_LIBS := -lcursesw
  endif
@@ -54,7 +58,7 @@ endif
 CFLAGS	+=	-std=c11 -MMD -MP
 
 EXEFILE ?=	.$(os).$(mach).$(FLAVOUR)$(EXE_EXT)
-OBJPREFIX ?=	../obj.
+OBJPREFIX ?=	../obj/
 OBJDIR	?=	$(OBJPREFIX)$(os).$(mach).$(FLAVOUR)/
 BINDIR	?=	../bin/
 
