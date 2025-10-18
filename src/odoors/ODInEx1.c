@@ -79,11 +79,12 @@
 
 #define BUILDING_OPENDOORS
 
+#include <ctype.h>
+#include <locale.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
-#include <ctype.h>
 #include <time.h>
 
 #include "OpenDoor.h"
@@ -543,6 +544,8 @@ malloc_error:
 force_local:
       /* No door information file is being used. */
       od_control.od_info_type = NO_DOOR_FILE;
+      if (strstr(setlocale(LC_ALL, ""), "UTF-8"))
+	od_control.od_cp437_to_utf8_out = TRUE;
 
       /* Operate in local mode. */
 #ifdef ODPLAT_NIX
