@@ -84,7 +84,7 @@ BEGIN
     LTEXT           "",IDC_VERSION,32,14,123,7
     LTEXT           "",IDC_COPYRIGHT,32,23,119,8
     LTEXT           "Written using:",-1,31,48,69,8
-    LTEXT           "OpenDoors 6.24, Win32 Edition",-1,31,57,127,8
+    LTEXT           "OpenDoors 6.30, Win32 Edition",-1,31,57,127,8
     LTEXT           "Copyright \251 1991-1997 by Brian Pirie.",-1,31,
                     66,139,8,SS_NOPREFIX
     LTEXT           "All Rights Reserved.",-1,31,75,90,8

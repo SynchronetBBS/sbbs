@@ -127,7 +127,7 @@ endif
 SHFLAGS		+=	-shared
 LIB_PREFIX	:=	lib
 SHLIB_PREFIX	:=	lib
-LIB_SUFFIX	:=	.6.2
+LIB_SUFFIX	:=	.6.3
 EXTRA_LIBS	:=
 EXE_SUFFIX	:=
 ifeq ($(os),darwin)
