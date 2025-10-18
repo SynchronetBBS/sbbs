@@ -3,6 +3,8 @@
 # DELETE = del
 # EXEFILE = .exe
 
+CFLAGS	+=	-MMD -MP
+
 gcc_machine := $(findstring mingw32,$(shell ${CC} -dumpmachine))
 gcc_w64     := $(findstring w64,$(shell ${CC} -dumpmachine))
 gcc_x86_64  := $(findstring x86_64,$(shell ${CC} -dumpmachine))
@@ -122,8 +124,9 @@ else
 NATIVEEXEFILE	:=	$(shell env - PATH="$(PATH)" $(MAKE) NATIVE=1 native-exefile$(NATIVEEXEFILE) | awk '/^NATIVE EXEFILE: / {print $$3}')
 endif
 
-#all: clans.exe reset.exe pcedit.exe langcomp.exe mcomp.exe
 all: $(DOOR_BINARIES)
+
+-include *.d
 
 .PHONY: devkit
 devkit: $(DEVKIT_BINARIES)
@@ -167,6 +170,7 @@ devkit-installer: $(DEVKIT_BINARIES) native-chew$(NATIVEEXEFILE) install$(EXEFIL
 	zip -j ClansDevKit-$(os)-$(MACH)-0_12.zip ../stagedk/*
 
 clean:
+	$(DELETE) *.d
 	$(DELETE) *.o
 	$(DELETE) config$(EXEFILE)
 	$(DELETE) chew$(EXEFILE)
