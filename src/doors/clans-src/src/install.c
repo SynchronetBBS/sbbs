@@ -1406,7 +1406,7 @@ unsigned short _dos_setftime(int handle, unsigned short date, unsigned short tim
 #ifdef _WIN32
 	struct _utimbuf tm_buf;
 #elif defined(__unix__)
-	struct timeval tmv_buf;
+	struct timeval tmv_buf[2];
 #endif
 
 	memset(&dos_dt, 0, sizeof(struct tm));
@@ -1423,9 +1423,11 @@ unsigned short _dos_setftime(int handle, unsigned short date, unsigned short tim
 	tm_buf.actime = tm_buf.modtime = file_dt;
 	return (_futime(handle, &tm_buf));
 #elif defined(__unix__)
-	tmv_buf.tv_sec = file_dt;
-	tmv_buf.tv_usec = file_dt * 1000;
-	return (futimes(handle, &tmv_buf));
+	tmv_buf[0].tv_sec = file_dt;
+	tmv_buf[0].tv_usec = file_dt * 1000;
+	tmv_buf[1].tv_sec = file_dt;
+	tmv_buf[1].tv_usec = file_dt * 1000;
+	return (futimes(handle, tmv_buf));
 #else
 #error "_dos_setftime needs a setting function, compilation aborted"
 #endif
