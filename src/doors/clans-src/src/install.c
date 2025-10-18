@@ -313,9 +313,6 @@ void put_character(int x, int y, char ch, unsigned short int attribute)
 	int   attrs=A_NORMAL;
 
 	pair_content(attribute,&fg,&bg);
-	if (attribute & 8)  {
-		attrs |= A_BOLD;
-	}
 	if (attribute & 128)
 		attrs |= A_BLINK;
 	attrset(attrs);

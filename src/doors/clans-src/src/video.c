@@ -929,8 +929,6 @@ void clrscr(void)
 static void set_attrs(uint8_t attrib)
 {
 	cur_attr = A_NORMAL;
-	if (attrib & 8)
-		cur_attr |= A_BOLD;
 	if (attrib & 128)
 		cur_attr |= A_BLINK;
 	cur_pair = (attrib & 0x7F) + 1;

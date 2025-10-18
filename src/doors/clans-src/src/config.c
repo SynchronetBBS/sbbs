@@ -719,9 +719,6 @@ static void set_attrs(unsigned short int attribute)
 {
 	int   attrs=A_NORMAL;
 
-	if (attribute & 8)  {
-		attrs |= A_BOLD;
-	}
 	if (attribute & 128)
 		attrs |= A_BLINK;
 	attrset(COLOR_PAIR(attribute+1)|attrs);
@@ -1043,8 +1040,6 @@ static void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2
 #elif defined(__unix__)
 			this=mvinch(y, x);
 			this &= 255;
-			if (Color & 8)
-				attrs |= A_BOLD;
 			if (Color & 128)
 				attrs |= A_BLINK;
 			this |= attrs|COLOR_PAIR(Color+1);
