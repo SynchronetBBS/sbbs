@@ -38,7 +38,7 @@ struct system {
 	bool Initialized;
 
 	char szTodaysDate[11];
-	char szMainDir[40];
+	char szMainDir[256];
 
 	int16_t Node;
 	bool InterBBS;
