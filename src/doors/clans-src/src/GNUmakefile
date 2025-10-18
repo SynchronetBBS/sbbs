@@ -61,6 +61,8 @@ CFLAGS	+=	-pg
 endif
 ifdef DEBUG
 CFLAGS	+=	-g
+else
+CFLAGS	+=	-DNDEBUG
 endif
 # CFLAGS = -O -Wall
 DELETE = rm -f
