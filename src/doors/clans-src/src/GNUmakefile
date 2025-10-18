@@ -43,10 +43,13 @@ endif
 ifeq ($(os),darwin)
 CFLAGS	+=	-D__unix__
 endif
+ifdef win
+CFLAGS += -DOD_WIN32_STATIC
+endif
 # Somebody make this compile under gcc. :-)  I'll get you started:
 CC ?= gcc
 ODOORS ?= ../../../odoors
-CFLAGS += -std=c99 -O2 -Wall -pedantic -I$(ODOORS) -DOD_WIN32_STATIC
+CFLAGS += -std=c99 -O2 -Wall -pedantic -I$(ODOORS)
 ifdef PROFILE
 LIBS += $(ODOORS)/libs-$(OS)/libODoors_p.a
 else
@@ -67,11 +70,6 @@ ifdef WIN
  EXEFILE :=	.exe
  LIBS	+=	-lws2_32 -lgdi32 -lcomctl32
 else
- ifeq ($(os),darwin)
-  LIBS	+=	-lcurses
- else
-  LIBS	+=	-lcursesw
- endif
  CFLAGS	+=	-DNCURSES_WIDECHAR
 endif
 
@@ -205,7 +203,7 @@ clean:
 	$(DELETE) ClansDevKit-*.zip
 
 clans$(EXEFILE):      $(OBJS) unix_wrappers.o
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) unix_wrappers.o -o clans$(EXEFILE) $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) unix_wrappers.o -o clans$(EXEFILE) $(LIBS) $(CONSOLE_LIBS)
 
 %.e: %.evt native-ecomp$(NATIVEEXEFILE)
 	./native-ecomp$(NATIVEEXEFILE) $< $@
