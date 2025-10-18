@@ -80,7 +80,7 @@ ifdef WIN
 else
  ifeq ($(os),darwin)
   CONSOLE_LIBS := -lcurses
- elifeq ($(os),linux)
+ else ifeq ($(os),linux)
   ifeq ($(shell pkg-config ncursesw --exists && echo YES), YES)
    CIOLIB-MT_LIBS += $(shell pkg-config ncursesw --libs)
    CIOLIB-MT_CFLAGS += $(shell pkg-config ncursesw --cflags)
