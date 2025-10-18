@@ -43,7 +43,7 @@ endif
 ifeq ($(os),darwin)
 CFLAGS	+=	-D__unix__
 endif
-ifdef win
+ifdef WIN
 CFLAGS += -DOD_WIN32_STATIC
 endif
 # Somebody make this compile under gcc. :-)  I'll get you started:
