@@ -63,6 +63,7 @@ include:
       tagname: "alpine-linux"
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1 NO_ABSOLUTE_RPATH=1'
       has_javascript: 'no'
+      build_doors: "yes"
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'mingw-w64'
