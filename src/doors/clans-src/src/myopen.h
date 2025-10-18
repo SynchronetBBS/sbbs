@@ -34,7 +34,7 @@ int16_t EncryptRead(void *Data, int32_t DataSize, FILE *fp, char XorValue);
 
 #define EncryptWrite_s(s, d, fp, xv) do {                    \
 	size_t bs = s_ ## s ## _s(d, serBuf, BUF_SIZE_ ## s); \
-	STATIC_ASSERT(bs = BUF_SIZE_ ## s, "mismatched size"); \
+	assert(bs == BUF_SIZE_ ## s);                          \
 	if (bs != SIZE_MAX)                                     \
 		EncryptWrite(serBuf, bs, fp, xv);                \
 } while(0)

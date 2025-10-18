@@ -1,0 +1,44 @@
+# This sets up platform-specific defines
+#
+# EXE_EXT	File extension binaries must have
+# OS		Defined as the proper-cased OS name potentially with spaces
+# os		Lower-case OS name with underscores
+# MACH		Proper-cased hardware platform, possibly with spaces
+# mach		Lower-case MACH name with underscores
+# WIN		Only defined for Windows
+# UNIXY		Only defined for UNIX-ish systems (ie: not Windows)
+# NATIVE	Defined if $(CC) can build binaries that run on this system
+#
+# May add to LDFLAGS and CFLAGS where necessary
+
+gcc_machine := $(findstring mingw32,$(shell ${CC} -dumpmachine))
+gcc_w64     := $(findstring w64,$(shell ${CC} -dumpmachine))
+gcc_x86_64  := $(findstring x86_64,$(shell ${CC} -dumpmachine))
+ifeq ($(gcc_machine),mingw32)
+ ifeq ($(gcc_x86_64),x86_64)
+  OS            ?= Win64
+  WIN           ?= 64
+  CFLAGS        += -m64
+  LDFLAGS       += -m64
+  MACH		?= amd64
+ else
+  OS            ?= Win32
+  WIN		?= 32
+  CFLAGS        += -m32
+  LDFLAGS       += -m32
+  MACH		?= x86
+ endif
+ EXE_EXT	?= .exe
+else
+ OS	:=	$(shell uname)
+ MACH	:=	$(shell uname -m)
+endif
+os	:=	$(shell echo $(OS)| tr "[A-Z ]" "[a-z_]")
+mach	:=	$(shell echo $(MACH)| tr "[A-Z ]" "[a-z_]")
+
+ifeq ($(OS),$(shell uname))
+ ifeq ($(MACH),$(shell uname -m | tr "[A-Z ]" "[a-z_]"))
+  NATIVE	?= 1
+ endif
+ UNIXY		?= 1
+endif

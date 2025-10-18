@@ -26,7 +26,7 @@
 
 #include "defines.h"
 #include <sys/stat.h>
-#include "snipfile.h"
+#include "wb_fapnd.h"
 
 int file_append(char *from, char *to)
 {

@@ -193,7 +193,7 @@ static void MainGame(void)
 
 int _argc;
 char **_argv;
-#ifdef ODPLAT_WIN32
+#ifdef _WIN32
 char *_lpCmdLine;
 #endif
 

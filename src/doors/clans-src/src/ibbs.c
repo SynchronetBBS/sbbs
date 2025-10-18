@@ -63,12 +63,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "packet.h"
 #include "parsing.h"
 #include "scores.h"
-#include "snipfile.h"
 #include "structs.h"
 #include "system.h"
 #include "user.h"
 #include "video.h"
 #include "village.h"
+#include "wb_fapnd.h"
 
 #define MT_NORMAL       0
 #define MT_CRASH        1
