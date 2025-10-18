@@ -82,15 +82,9 @@ struct ffblk {
 void srandomdev(void);
 #endif
 off_t filelength(int file);
-int strrev(char *str);
-int strlwr(char *str);
-int strupr(char *str);
 int findfirst(char *pathname, struct ffblk *fblk, int attrib);
 int findnext(struct ffblk *fblk);
 int clans_getdate(struct date *getme);
-int strset(char *str, char ch);
-int lock(int file, off_t offset, off_t length);
-int unlock(int file, off_t offset, off_t length);
 int32_t unix_random(int32_t maxnum);
 int gettime(struct tm *getme);
 #ifdef NEED_GETCH

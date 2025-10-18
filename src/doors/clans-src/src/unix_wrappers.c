@@ -28,40 +28,6 @@ filelength(int file)
 }
 
 int
-strrev(char *str)
-{
-	char str2[MAX_STRING_LEN];
-	size_t i,j;
-	j=0;
-	for (i=strlen(str)-1; i>-1; i--) {
-		str2[j++]=str[i];
-	}
-	str2[strlen(str)]=0;
-	strcpy(str,str2);
-	return 0;
-}
-
-int
-strlwr(char *str)
-{
-	size_t i;
-	for (i=0; i<strlen(str); i++) {
-		if (str[i]>64 && str[i]<=91) str[i]=str[i]|32;
-	}
-	return 0;
-}
-
-int
-strupr(char *str)
-{
-	size_t i;
-	for (i=0; i<strlen(str); i++) {
-		if (str[i]>96 && str[i]<123) str[i] &= 223;
-	}
-	return 0;
-}
-
-int
 findfirst(char *pathname, struct ffblk *fblk, int attrib)
 {
 	char  path[MAXPATH+3];
@@ -162,41 +128,6 @@ gettime(struct tm *getme)
 	(*getme).tm_min=(*gottime).tm_min;
 	(*getme).tm_hour=(*gottime).tm_hour;
 	return 0;
-}
-
-int
-strset(char *str, char ch)
-{
-	int x;
-	for (x=0; x<sizeof(str); x++) {
-		str[x]=ch;
-	}
-	str[sizeof(str)]=0;
-	return 0;
-}
-
-int
-lock(int file, off_t offset, off_t length)
-{
-	struct flock mylock;
-	mylock.l_start=offset;
-	mylock.l_len=length;
-	mylock.l_pid=0;
-	mylock.l_type=F_WRLCK;
-	mylock.l_whence=SEEK_SET;
-	return fcntl(file,F_SETLKW,mylock);
-}
-
-int
-unlock(int file, off_t offset, off_t length)
-{
-	struct flock mylock;
-	mylock.l_start=offset;
-	mylock.l_len=length;
-	mylock.l_pid=0;
-	mylock.l_type=F_UNLCK;
-	mylock.l_whence=SEEK_SET;
-	return fcntl(file,F_SETLKW,mylock);
 }
 
 int32_t

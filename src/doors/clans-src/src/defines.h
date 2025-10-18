@@ -232,6 +232,8 @@ typedef int16_t action;
 
 extern int  _argc;
 extern char **_argv;
+#ifdef ODPLAT_WIN32
 extern char *_lpCmdLine;
+#endif
 
 #endif /* THE_CLANS__DEFINES___H */

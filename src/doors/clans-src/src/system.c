@@ -46,7 +46,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "game.h"
 #include "ibbs.h"
 #include "items.h"
-#include "k_comman.h"
 #include "k_config.h"
 #include "language.h"
 #include "maint.h"
