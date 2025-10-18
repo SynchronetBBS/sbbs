@@ -61,6 +61,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <limits.h>
 
 #include "OpenDoor.h"
 #ifdef ODPLAT_NIX
@@ -2898,6 +2899,86 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
    return(0);
 }
 
+const static DWORD cp437_unicode_table[128] = {
+	0x00C7, 0x00FC, 0x00E9, 0x00E2, 0x00E4, 0x00E0, 0x00E5, 0x00E7,
+	0x00EA, 0x00EB, 0x00E8, 0x00EF, 0x00EE, 0x00EC, 0x00C4, 0x00C5,
+	0x00C9, 0x00E6, 0x00C6, 0x00F4, 0x00F6, 0x00F2, 0x00FB, 0x00F9,
+	0x00FF, 0x00D6, 0x00DC, 0x00A2, 0x00A3, 0x00A5, 0x20A7, 0x0192,
+	0x00E1, 0x00ED, 0x00F3, 0x00FA, 0x00F1, 0x00D1, 0x00AA, 0x00BA,
+	0x00BF, 0x2310, 0x00AC, 0x00BD, 0x00BC, 0x00A1, 0x00AB, 0x00BB,
+	0x2591, 0x2592, 0x2593, 0x2502, 0x2524, 0x2561, 0x2562, 0x2556,
+	0x2555, 0x2563, 0x2551, 0x2557, 0x255D, 0x255C, 0x255B, 0x2510,
+	0x2514, 0x2534, 0x252C, 0x251C, 0x2500, 0x253C, 0x255E, 0x255F,
+	0x255A, 0x2554, 0x2569, 0x2566, 0x2560, 0x2550, 0x256C, 0x2567,
+	0x2568, 0x2564, 0x2565, 0x2559, 0x2558, 0x2552, 0x2553, 0x256B,
+	0x256A, 0x2518, 0x250C, 0x2588, 0x2584, 0x258C, 0x2590, 0x2580,
+	0x03B1, 0x00DF, 0x0393, 0x03C0, 0x03A3, 0x03C3, 0x00B5, 0x03C4,
+	0x03A6, 0x0398, 0x03A9, 0x03B4, 0x221E, 0x03C6, 0x03B5, 0x2229,
+	0x2261, 0x00B1, 0x2265, 0x2264, 0x2320, 0x2321, 0x00F7, 0x2248,
+	0x00B0, 0x2219, 0x00B7, 0x221A, 0x207F, 0x00B2, 0x25A0, 0x00A0
+};
+
+size_t ODComCP437ToUnicodeLen(void *buf, int sz)
+{
+   BYTE *bb = buf;
+   size_t pos;
+   size_t ret = 0;
+
+   for (pos = 0; pos < sz; pos++) {
+      if (bb[pos] < 128)
+         ret++;
+      else {
+         DWORD val = cp437_unicode_table[bb[pos] - 128];
+         if (val < 0x800)
+            ret += 2;
+         else if (val < 0x10000)
+            ret += 3;
+         else
+            ret += 4;
+      }
+   }
+   return ret;
+}
+
+BYTE *ODComCP437ToUnicode(BYTE *buf, int *sz)
+{
+   size_t need = ODComCP437ToUnicodeLen(buf, *sz);
+   if (need > INT_MAX) {
+      od_control.od_error = ERR_LIMIT;
+      return NULL;
+   }
+   BYTE *ret = malloc(need);
+   size_t outpos = 0;
+   *sz = need;
+
+   if (ret == NULL) {
+      od_control.od_error = ERR_MEMORY;
+      return NULL;
+   }
+   for (size_t pos = 0; pos < *sz; pos++) {
+      DWORD ch = buf[pos];
+      if (ch >= 128)
+         ch = cp437_unicode_table[ch - 128];
+      if (ch < 128)
+         ret[outpos++] = buf[pos];
+      else if (ch < 0x800) {
+         ret[outpos++] = (ch >> 6 & 0x1f) | 0xc0;
+         ret[outpos++] = (ch & 0x3f) | 0x80;
+      }
+      else if (ch < 0x10000) {
+         ret[outpos++] = (ch >> 12 & 0x0f) | 0xe0;
+         ret[outpos++] = (ch >> 6 & 0x3f) | 0x80;
+         ret[outpos++] = (ch & 0x3f) | 0x80;
+      }
+      else {
+         ret[outpos++] = (ch >> 18 & 0x07) | 0xf0;
+         ret[outpos++] = (ch >> 12 & 0x3f) | 0x80;
+         ret[outpos++] = (ch >> 6 & 0x3f) | 0x80;
+         ret[outpos++] = (ch & 0x3f) | 0x80;
+      }
+   }
+   return ret;
+}
 
 /* ----------------------------------------------------------------------------
  * ODComSendByte()
@@ -2917,6 +2998,18 @@ tODResult ODComSendByte(tPortHandle hPort, BYTE btToSend)
    VERIFY_CALL(pPortInfo != NULL);
 
    VERIFY_CALL(pPortInfo->bIsOpen);
+
+   if (od_control.od_cp437_to_utf8_out) {
+      int len = 1;
+      BYTE *uc = ODComCP437ToUnicode(&btToSend, &len);
+      if (uc == NULL)
+         return kODRCGeneralFailure;
+      else {
+         tODResult res = ODComSendBuffer(hPort, uc, len);
+         free(uc);
+         return res;
+      }
+   }
 
    switch(pPortInfo->Method)
    {
@@ -3334,6 +3427,7 @@ tODResult ODComGetBuffer(tPortHandle hPort, BYTE *pbtBuffer, int nSize,
 tODResult ODComSendBuffer(tPortHandle hPort, BYTE *pbtBuffer, int nSize)
 {
    tPortInfo *pPortInfo = ODHANDLE2PTR(hPort, tPortInfo);
+   BYTE *buf = pbtBuffer;
 
    VERIFY_CALL(pPortInfo != NULL);
    VERIFY_CALL(pbtBuffer != NULL);
@@ -3346,6 +3440,12 @@ tODResult ODComSendBuffer(tPortHandle hPort, BYTE *pbtBuffer, int nSize)
    if(nSize == 0)
    {
       return(kODRCSuccess);
+   }
+
+   if (od_control.od_cp437_to_utf8_out) {
+      buf = ODComCP437ToUnicode(pbtBuffer, &nSize);
+      if (buf == NULL)
+         return kODRCGeneralFailure;
    }
 
    switch(pPortInfo->Method)
@@ -3365,11 +3465,11 @@ try_again:
 
 
 #ifdef LARGEDATA
-         ASM    les di, pbtBuffer
+         ASM    les di, buf
 #else
          ASM    mov ax, ds
          ASM    mov es, ax
-         ASM    mov di, pbtBuffer
+         ASM    mov di, buf
 #endif
 
          ASM    mov ah, 0x19
@@ -3386,7 +3486,7 @@ try_again:
             }
 
             nSize-=nCount;
-            pbtBuffer+=nCount;
+            buf+=nCount;
             goto try_again;
          }
          break;
@@ -3435,7 +3535,7 @@ try_again:
             pbtDest = pbtTXQueue + nTXInIndex;
             while(nFirstHalfSize--)
             {
-               *pbtDest++ = *pbtBuffer++;
+               *pbtDest++ = *buf++;
             }
 
             /* If there is a second half to transfer. */
@@ -3450,7 +3550,7 @@ try_again:
                /* Perform second half of transfer. */
                while(nSecondHalfSize--)
                {
-                  *pbtDest++ = *pbtBuffer++;
+                  *pbtDest++ = *buf++;
                }
             }
 
@@ -3505,10 +3605,11 @@ try_again:
          DWORD dwBytesWritten;
 
          /* Attempt to perform write operation. */
-         if(!WriteFile(pPortInfo->hCommDev, pbtBuffer, nSize, &dwBytesWritten,
+         if(!WriteFile(pPortInfo->hCommDev, buf, nSize, &dwBytesWritten,
             NULL) || dwBytesWritten != (DWORD)nSize)
          {
             ClearCommError(pPortInfo->hCommDev, &dwErrors, NULL);
+            if (od_control.od_cp437_to_utf8_out) free(buf);
             return(kODRCGeneralFailure);
          }
          break;
@@ -3518,11 +3619,13 @@ try_again:
 #ifdef INCLUDE_DOOR32_COM
       case kComMethodDoor32:
          ASSERT(pPortInfo->pfDoorWrite != NULL);
-         if(!(*pPortInfo->pfDoorWrite)(pbtBuffer, nSize))
+         if(!(*pPortInfo->pfDoorWrite)(buf, nSize))
          {
+            if (od_control.od_cp437_to_utf8_out) free(buf);
             return(kODRCGeneralFailure);
          }
          break;
+         if (od_control.od_cp437_to_utf8_out) free(buf);
          return(kODRCUnsupported);
 #endif /* INCLUDE_DOOR32_COM */
 
@@ -3540,27 +3643,33 @@ try_again:
 			tv.tv_sec=1;
 			tv.tv_usec=0;
 
-			if(select(pPortInfo->socket+1,NULL,&socket_set,NULL,&tv) != 1)
+			if(select(pPortInfo->socket+1,NULL,&socket_set,NULL,&tv) != 1) {
+            if (od_control.od_cp437_to_utf8_out) free(buf);
 				return(kODRCGeneralFailure);
+         }
 #else
 			int i;
 			struct pollfd pfd = {0};
 			pfd.fd = pPortInfo->socket;
 			pfd.events = POLLOUT | POLLHUP;
 			i = poll(&pfd, 1, 1000);
-			if (i != 1 || !(pfd.revents & POLLOUT))
+			if (i != 1 || !(pfd.revents & POLLOUT)) {
+            if (od_control.od_cp437_to_utf8_out) free(buf);
 				return (kODRCGeneralFailure);
+         }
 #endif
 
 			do {
-				send_ret = send(pPortInfo->socket, (char*)pbtBuffer, nSize, 0);
+				send_ret = send(pPortInfo->socket, (char*)buf, nSize, 0);
 				if (send_ret != SOCKET_ERROR)
 					break;
 				od_sleep(25);
 			} while (WSAGetLastError() == WSAEWOULDBLOCK);
 
-			if (send_ret != nSize)
+			if (send_ret != nSize) {
+            if (od_control.od_cp437_to_utf8_out) free(buf);
 				return (kODRCGeneralFailure);
+         }
       break;
 		}
 #endif /* INCLUDE_SOCKET_COM */
@@ -3584,16 +3693,19 @@ try_again:
 				retval=select(STDOUT_FILENO+1,NULL,&fdset,NULL,&tv);
 				if(retval!=1) {
 					if(retval==0) {
-						if(++loopcount>10)
+						if(++loopcount>10) {
+                     if (od_control.od_cp437_to_utf8_out) free(buf);
 							return(kODRCGeneralFailure);
+                  }
 						continue;
 					}
 					if(retval==-1 && errno==EINTR)
 						continue;
+               if (od_control.od_cp437_to_utf8_out) free(buf);
 					return(kODRCGeneralFailure);
 				}
 
-				retval=fwrite(pbtBuffer+pos,1,nSize-pos,stdout);
+				retval=fwrite(buf+pos,1,nSize-pos,stdout);
 				if(retval!=nSize-pos) {
 					od_sleep(1);
 				}
@@ -3611,6 +3723,7 @@ try_again:
    }
 
    /* Return with success. */
+   if (od_control.od_cp437_to_utf8_out) free(buf);
    return(kODRCSuccess);
 }
 

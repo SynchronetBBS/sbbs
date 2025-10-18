@@ -97,6 +97,7 @@ typedef enum
    kParamSocketDescriptor,
    kParamSilentMode,
    kParamOption,
+   kParamCP436UTF8,
    kParamUnknown
 } tCommandLineParameter;
 
@@ -550,6 +551,9 @@ ODAPIDEF void ODCALL od_parse_cmd_line(INT nArgCount, char *papszArguments[])
          case kParamOption:
             // Ignore by OpenDoors
             break;
+         case kParamCP436UTF8:
+            od_control.od_cp437_to_utf8_out = TRUE;
+            break;
       }
    }
 
@@ -779,6 +783,10 @@ static tCommandLineParameter ODGetCommandLineParameter(char *pszArgument)
    else if(stricmp(pszArgument, "SILENT") == 0)
    {
       return(kParamSilentMode);
+   }
+   else if(stricmp(pszArgument, "CP437UTF8") == 0)
+   {
+      return(kParamCP436UTF8);
    }
    else
    {

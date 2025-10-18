@@ -614,6 +614,7 @@ typedef struct
    BOOL          od_use_socket;
    INT16         port;
    DWORD_PTR     od_open_handle;
+   BOOL          od_cp437_to_utf8_out;
 
    /* Caller and system information. */
    char          system_name[40];
