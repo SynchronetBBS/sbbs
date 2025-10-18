@@ -66,12 +66,23 @@ EXEFILE :=
 ifdef WIN
  EXEFILE :=	.exe
  LIBS	+=	-lws2_32 -lgdi32 -lcomctl32
+else
+ ifeq ($(os),darwin)
+  LIBS	+=	-lcurses
+ else
+  LIBS	+=	-lcursesw
+ endif
+ CFLAGS	+=	-DNCURSES_WIDECHAR
 endif
 
 ifdef WIN
  CONSOLE_LIBS :=
 else
- CONSOLE_LIBS := -lcurses
+ ifeq ($(os),darwin)
+  CONSOLE_LIBS := -lcurses
+ else
+  CONSOLE_LIBS := -lcursesw
+ endif
 endif
 
 #

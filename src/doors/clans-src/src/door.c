@@ -147,11 +147,6 @@ static void LocalLoad(void)
  *
  */
 {
-#ifdef __unix__
-
-//#elif defined(ODPLAT_WIN32)
-	// Todo create local login screen
-#else
 	char name[80], szString[128];
 
 	/* display box */
@@ -207,7 +202,6 @@ static void LocalLoad(void)
 	od_control.user_screen_length = 25;
 
 	System.Local = true;
-#endif
 }
 
 // ------------------------------------------------------------------------- //
@@ -830,13 +824,10 @@ void Door_Init(bool Local)
 
 	od_control.od_no_file_func = NoDoorFileHandler;
 
-	od_init();
-
-#ifdef _WIN32
 	/* All need for the console has passed */
-	FreeConsole();
-#endif
+	Video_Close();
 
+	od_init();
 
 	Door.Initialized = true;
 

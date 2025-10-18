@@ -32,7 +32,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef __unix__
+#ifdef __unix__
+# include <locale.h>
+# include <curses.h>
+#else
 # include <conio.h>
 #endif
 #ifdef _WIN32
@@ -48,15 +51,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define CURS_NORMAL     0
 #define CURS_FAT        1
-#define PADDING         '°'
+#define PADDING         '\xb0'
 #define SPECIAL_CODE    '%'
 
-#if !defined(__unix__)
 static char o_fg4 = 7, o_bg4 = 0;
-#endif
 
 #ifdef _WIN32
 static int default_cursor_size = 1;
+static HANDLE std_handle;
+#endif
+
+#ifdef __unix__
+static void set_attrs(uint8_t attrib);
+static void putch(unsigned char ch);
+static short curses_color(short color);
+attr_t cur_attr = 0;
+short cur_pair = 8;
 #endif
 
 // ------------------------------------------------------------------------- //
@@ -126,13 +136,12 @@ void ScrollUp(void)
 		int 10h     // do the scroll
 	}
 #elif defined(_WIN32)
-	HANDLE handle_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	SMALL_RECT scroll_rect;
 	COORD top_left = { 0, 0 };
 	CHAR_INFO char_info;
 
-	GetConsoleScreenBufferInfo(handle_stdout, &screen_buffer);
+	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
 	scroll_rect.Top = 1;
 	scroll_rect.Left = 0;
 	scroll_rect.Bottom = screen_buffer.dwSize.Y;
@@ -141,11 +150,15 @@ void ScrollUp(void)
 	char_info.Attributes = screen_buffer.wAttributes;
 	char_info.Char.UnicodeChar = (TCHAR)' ';
 
-	if (!ScrollConsoleScreenBuffer(handle_stdout,
+	if (!ScrollConsoleScreenBuffer(std_handle,
 								   &scroll_rect, NULL, top_left, &char_info)) {
 		display_win32_error();
 		exit(0);
 	}
+#elif defined(__unix__)
+	scrollok(stdscr,true);
+	scrl(1);
+	scrollok(stdscr,false);
 #else
 //# pragma message("ScrollUp() Nullified by no defines")
 #endif
@@ -162,75 +175,74 @@ void put_character(char ch, short attrib, int x, int y)
 #elif defined(_WIN32)
 	COORD cursor_pos;
 	DWORD bytes_written;
-	HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
 	cursor_pos.X = x;
 	cursor_pos.Y = y;
 
 	SetConsoleCursorPosition(
-		stdout_handle, cursor_pos);
+		std_handle, cursor_pos);
 	SetConsoleTextAttribute(
-		stdout_handle,
+		std_handle,
 		(uint16_t)attrib);
 	WriteConsole(
-		stdout_handle,
+		std_handle,
 		&ch,
 		1,
 		&bytes_written,
 		NULL);
+#elif defined(__unix__)
+	move(y, x);
+	set_attrs(attrib);
+	putch(ch);
 #endif
-
 }
 
 void zputs(char *string)
 {
-#ifdef __unix__
-	int i;
-	int len;
-
-	len = strlen(string);
-	if (!Door_Initialized())  {
-		for (i=0; i<len; i++)  {
-			if (string[i] == '|' && ((i + 1) < len && (i + 2) < len) && isdigit(string[i+1]) && isdigit(string[i+2]))  {
-				i+=2;
-			}
-			else  {
-				putchar(string[i]);
-			}
-		}
-	}
-#else
 	char number[3];
 	int16_t cur_char, attr;
-	char foreground, background, cur_attr;
-	int16_t i, j,  x,y;
-#ifndef _WIN32
+	char foreground, background, cur_attrs;
+	int16_t i, j;
+	int x, y;
+#ifdef __MSDOS__
 	struct text_info TextInfo;
-#else
+#elif defined(_WIN32)
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	/*  TCHAR space_char = (TCHAR)' ';*/
 #endif
 	static char o_fg = 7, o_bg = 0;
 	int scr_lines = 25, scr_width = 80;
 
-#ifndef _WIN32
-	gettextinfo(&TextInfo);
-	x = TextInfo.curx-1;
-	y = TextInfo.cury-1;
-#else
+#ifdef _WIN32
 	GetConsoleScreenBufferInfo(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		&screen_buffer);
 	x = screen_buffer.dwCursorPosition.X;
 	y = screen_buffer.dwCursorPosition.Y;
 	scr_lines = screen_buffer.dwSize.Y;
 	scr_width = screen_buffer.dwSize.X;
+#elif defined(__unix__)
+	getyx(stdscr, y, x);
+#else
+	gettextinfo(&TextInfo);
+	x = TextInfo.curx-1;
+	y = TextInfo.cury-1;
 #endif
 
-	cur_attr = o_fg | o_bg;
+	cur_attrs = o_fg | o_bg;
 	cur_char = 0;
 
 	for (;;) {
+#ifdef _WIN32
+		COORD cursor_pos;
+		/* Resync with x/y position */
+		cursor_pos.X = x;
+		cursor_pos.Y = y;
+		SetConsoleCursorPosition(std_handle, cursor_pos);
+#elif defined(__unix__)
+		/* Resync with x/y position */
+		move(y, x);
+#endif
 		if (y == scr_lines) {
 			/* scroll line up */
 			ScrollUp();
@@ -270,18 +282,18 @@ void zputs(char *string)
 					background=attr-16;
 					o_bg = background << 4;
 					attr = o_bg | o_fg;
-					cur_attr = attr;
+					cur_attrs = attr;
 				}
 				else {
 					foreground=attr;
 					o_fg=foreground;
 					attr = o_fg | o_bg;
-					cur_attr = attr;
+					cur_attrs = attr;
 				}
 				cur_char += 3;
 			}
 			else {
-				put_character(string[cur_char], cur_attr, x, y);
+				put_character(string[cur_char], cur_attrs, x, y);
 
 				cur_char++;
 			}
@@ -302,18 +314,20 @@ void zputs(char *string)
 			for (i=0; i<8; i++) {
 				j = i + x;
 				if (j > scr_width) break;
-				put_character(' ', cur_attr, j, y);
+				put_character(' ', cur_attrs, j, y);
 			}
 			x += 8;
 		}
 		else {
-			put_character(string[cur_char], cur_attr, x, y);
+			put_character(string[cur_char], cur_attrs, x, y);
 
 			cur_char++;
 			x++;
 		}
 	}
 	gotoxy(x+1,y+1);
+#ifdef __unix__
+	refresh();
 #endif
 }
 
@@ -347,26 +361,33 @@ void SetCurs(int16_t CursType)
 			cursor_info.dwSize = default_cursor_size;
 	}
 	SetConsoleCursorInfo(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		&cursor_info);
+#elif defined(__unix__)
+	switch (CursType) {
+		case CURS_FAT:
+			curs_set(2);
+			break;
+		default:
+			curs_set(1);
+	}
 #endif
 }
 
 void qputs(char *string, int16_t x, int16_t y)
 {
 // As usual, block off the local stuff
-#if defined(_WIN32) && !defined(__unix__)
+#if defined(_WIN32) || defined(__unix__)
 	gotoxy(x+1, y+1);
 	zputs(string);
-#elif defined(__unix__)
 #else
 	char number[3];
 	int16_t cur_char, attr;
-	char foreground, background, cur_attr;
+	char foreground, background, cur_attrs;
 	static o_fg = 7, o_bg = 0;
 	int16_t i, j;
 
-	cur_attr = o_fg | o_bg;
+	cur_attrs = o_fg | o_bg;
 	cur_char=0;
 
 	while (1) {
@@ -385,19 +406,19 @@ void qputs(char *string, int16_t x, int16_t y)
 					background=attr-16;
 					o_bg = background << 4;
 					attr = o_bg | o_fg;
-					cur_attr = attr;
+					cur_attrs = attr;
 				}
 				else  {
 					foreground=attr;
 					o_fg=foreground;
 					attr = o_fg | o_bg;
-					cur_attr = attr;
+					cur_attrs = attr;
 				}
 				cur_char += 3;
 			}
 			else  {
 				Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1))] = string[cur_char];
-				Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1) + 1L)] = cur_attr;
+				Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1) + 1L)] = cur_attrs;
 
 				cur_char++;
 				x++;
@@ -414,13 +435,13 @@ void qputs(char *string, int16_t x, int16_t y)
 				j = i+x;
 				if (j > 80) break;
 				Video.VideoMem[ Video.y_lookup[y]+(j<<1)] = ' ';
-				Video.VideoMem[ Video.y_lookup[y]+(j<<1) + 1] = cur_attr;
+				Video.VideoMem[ Video.y_lookup[y]+(j<<1) + 1] = cur_attrs;
 			}
 			x += 8;
 		}
 		else  {
 			Video.VideoMem[ Video.y_lookup[y]+(x<<1)] = string[cur_char];
-			Video.VideoMem[ Video.y_lookup[y]+(x<<1) + 1] = cur_attr;
+			Video.VideoMem[ Video.y_lookup[y]+(x<<1) + 1] = cur_attrs;
 
 			cur_char++;
 			x++;
@@ -430,10 +451,23 @@ void qputs(char *string, int16_t x, int16_t y)
 }
 
 
-void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t length, int16_t input_length)
+static void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t length, int16_t input_length)
 {
 #ifdef __unix__
-	fprintf(stderr,"%s\r\n",string);
+	attr_t orig_attr = cur_attr;
+	short orig_pair = cur_pair;
+
+	move(y, x);
+	set_attrs(color);
+	for (char *i = string; *i; i++)
+		putch(*i);
+	set_attrs(8);
+	for (int i = length; i < input_length; i++)
+		putch(PADDING);
+	attr_set(orig_attr, orig_pair, NULL);
+	cur_attr = orig_attr;
+	cur_pair = orig_pair;
+	refresh();
 #elif defined(_WIN32)
 	COORD cursor_pos;
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
@@ -443,7 +477,7 @@ void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t length, in
 
 	/* Save Current Color Attribute */
 	GetConsoleScreenBufferInfo(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		&screen_buffer);
 
 	current_attr = screen_buffer.wAttributes;
@@ -453,17 +487,17 @@ void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t length, in
 	cursor_pos.Y = y;
 
 	SetConsoleCursorPosition(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		cursor_pos);
 
 	/* Set new color */
 	SetConsoleTextAttribute(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		(uint16_t) color);
 
 	/* Output Text */
 	WriteConsole(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		string,
 		strlen(string),
 		&bytes_written,
@@ -471,13 +505,13 @@ void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t length, in
 
 	/* Set color for padding */
 	SetConsoleTextAttribute(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		(uint16_t) 8);
 
 	/* Display Padding */
 	for (i = length; i < input_length; i++) {
 		WriteConsole(
-			GetStdHandle(STD_OUTPUT_HANDLE),
+			std_handle,
 			&padding_char,
 			1,
 			&bytes_written,
@@ -486,7 +520,7 @@ void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t length, in
 
 	/* Reset color */
 	SetConsoleTextAttribute(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		current_attr);
 #else
 	int16_t i, offset;
@@ -514,8 +548,6 @@ void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t length, in
 int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char attr,
 				 int16_t low_char, int16_t high_char)
 {
-// As usual, block off the local stuff
-#if !defined(__unix__)
 	int16_t length = strlen(string);  // length of string
 	int16_t i,
 	insert = false,
@@ -531,9 +563,11 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 	SetCurs(insert);
 #ifdef __MSDOS__
 	textattr(attr);
-#else
+#elif defined(__unix__)
+	set_attrs(attr);
+#elif defined(_WIN32)
 	SetConsoleTextAttribute(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		(uint16_t)attr);
 #endif
 
@@ -660,24 +694,21 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 		first_time = false;
 
 	}
-#else
-	return 0;
-#endif
 }
 
 void Input(char *string, int16_t length)
 {
-// As usual, block off the local stuff
-#if !defined(__unix__)
-	int16_t cur_x, cur_y;
+	int cur_x, cur_y;
 
 #ifdef __MSDOS__
 	cur_x = wherex()-1;
 	cur_y = wherey()-1;
-#else
+#elif defined(__unix__)
+	getyx(stdscr, cur_y, cur_x);
+#elif defined(_WIN32)
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	GetConsoleScreenBufferInfo(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		&screen_buffer);
 	cur_x = screen_buffer.dwCursorPosition.X;
 	cur_y = screen_buffer.dwCursorPosition.Y;
@@ -687,7 +718,6 @@ void Input(char *string, int16_t length)
 	zputs("\n");
 
 	SetCurs(CURS_NORMAL);
-#endif
 }
 
 
@@ -714,6 +744,14 @@ void ClearArea(char x1, char y1,  char x2, char y2, char attr)
 		pop bx
 		pop ax
 	}
+#elif defined(__unix__)
+	if (x2 == 79) {
+		set_attrs(attr);
+		for (int y = y1; y <= y2; y++) {
+			move(y, x1);
+			clrtoeol();
+		}
+	}
 #endif
 }
 
@@ -732,6 +770,10 @@ void xputs(char *string, int16_t x, int16_t y)
 		x++;
 		string++;
 	}
+#elif defined(__unix__)
+	move(y, x);
+	for (char *i = string; *i; i++)
+		putch(*i);
 #elif defined(_WIN32)
 	COORD cursor_pos;
 	DWORD bytes_written;
@@ -740,11 +782,11 @@ void xputs(char *string, int16_t x, int16_t y)
 	cursor_pos.Y = y;
 
 	SetConsoleCursorPosition(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		cursor_pos);
 
 	WriteConsole(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		string,
 		strlen(string),
 		&bytes_written,
@@ -754,27 +796,17 @@ void xputs(char *string, int16_t x, int16_t y)
 
 void DisplayStr(char *szString)
 {
-// As usual, block off the local stuff
-#ifdef __unix__
 	if (Door_Initialized())
 		rputs(szString);
 	else
 		zputs(szString);
-#else
-	if (Door_Initialized())
-		rputs(szString);
-	else
-		zputs(szString);
-#endif
 }
 
 // ------------------------------------------------------------------------- //
 
 void Video_Init(void)
 {
-// As usual, block off the local stuff
-#if defined(__unix__) && !defined(_WIN32)
-#elif defined(_WIN32)
+#if defined(_WIN32)
 	CONSOLE_CURSOR_INFO cursor_info;
 
 	if (!AllocConsole()) {
@@ -792,19 +824,54 @@ void Video_Init(void)
 		exit(0);
 	}
 
+	std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	if (!GetConsoleCursorInfo(
-				GetStdHandle(STD_OUTPUT_HANDLE),
+				std_handle,
 				&cursor_info)) {
 		display_win32_error();
 		exit(0);
 	}
 	default_cursor_size = cursor_info.dwSize;
+#elif defined(__unix__)
+	short fg;
+	short bg;
+	short pair=0;
+
+	// Initialize Curses lib.
+	setlocale(LC_ALL, "");
+	initscr();
+	cbreak();
+	noecho();
+	nonl();
+	keypad(stdscr, true);
+	scrollok(stdscr,false);
+	start_color();
+	clear();
+	refresh();
+
+	// Set up color pairs
+	for (bg=0; bg<8; bg++)  {
+		for (fg=0; fg<16; fg++) {
+			init_pair(++pair,curses_color(fg),curses_color(bg));
+		}
+	}
 #else
 	int16_t iTemp;
 
 	Video.VideoMem = vid_address();
 	for (iTemp = 0; iTemp < 25;  iTemp++)
 		Video.y_lookup[ iTemp ] = iTemp * 160;
+#endif
+}
+
+void Video_Close(void)
+{
+#ifdef _WIN32
+	FreeConsole();
+#elif defined(__unix__)
+	set_attrs(8);
+	SetCurs(CURS_NORMAL);
+	endwin();
 #endif
 }
 
@@ -817,13 +884,12 @@ void gotoxy(int x, int y)
 	cursor_pos.Y = y - 1;
 
 	SetConsoleCursorPosition(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		std_handle,
 		cursor_pos);
 }
 
 void clrscr(void)
 {
-	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	COORD top_left = { 0, 0 };
 	DWORD cells_written;
@@ -847,5 +913,100 @@ void clrscr(void)
 	SetConsoleCursorPosition(
 		std_handle,
 		top_left);
+}
+#elif defined(__unix__)
+void gotoxy(int x, int y)
+{
+	move(y - 1, x - 1);
+}
+
+void clrscr(void)
+{
+	clear();
+	refresh();
+}
+
+static void set_attrs(uint8_t attrib)
+{
+	cur_attr = A_NORMAL;
+	if (attrib & 8)
+		cur_attr |= A_BOLD;
+	if (attrib & 128)
+		cur_attr |= A_BLINK;
+	cur_pair = (attrib & 0x7F) + 1;
+	attr_set(cur_attr, cur_pair, NULL);
+}
+
+const static uint32_t cp437_unicode_table[128] = {
+	0x00C7, 0x00FC, 0x00E9, 0x00E2, 0x00E4, 0x00E0, 0x00E5, 0x00E7,
+	0x00EA, 0x00EB, 0x00E8, 0x00EF, 0x00EE, 0x00EC, 0x00C4, 0x00C5,
+	0x00C9, 0x00E6, 0x00C6, 0x00F4, 0x00F6, 0x00F2, 0x00FB, 0x00F9,
+	0x00FF, 0x00D6, 0x00DC, 0x00A2, 0x00A3, 0x00A5, 0x20A7, 0x0192,
+	0x00E1, 0x00ED, 0x00F3, 0x00FA, 0x00F1, 0x00D1, 0x00AA, 0x00BA,
+	0x00BF, 0x2310, 0x00AC, 0x00BD, 0x00BC, 0x00A1, 0x00AB, 0x00BB,
+	0x2591, 0x2592, 0x2593, 0x2502, 0x2524, 0x2561, 0x2562, 0x2556,
+	0x2555, 0x2563, 0x2551, 0x2557, 0x255D, 0x255C, 0x255B, 0x2510,
+	0x2514, 0x2534, 0x252C, 0x251C, 0x2500, 0x253C, 0x255E, 0x255F,
+	0x255A, 0x2554, 0x2569, 0x2566, 0x2560, 0x2550, 0x256C, 0x2567,
+	0x2568, 0x2564, 0x2565, 0x2559, 0x2558, 0x2552, 0x2553, 0x256B,
+	0x256A, 0x2518, 0x250C, 0x2588, 0x2584, 0x258C, 0x2590, 0x2580,
+	0x03B1, 0x00DF, 0x0393, 0x03C0, 0x03A3, 0x03C3, 0x00B5, 0x03C4,
+	0x03A6, 0x0398, 0x03A9, 0x03B4, 0x221E, 0x03C6, 0x03B5, 0x2229,
+	0x2261, 0x00B1, 0x2265, 0x2264, 0x2320, 0x2321, 0x00F7, 0x2248,
+	0x00B0, 0x2219, 0x00B7, 0x221A, 0x207F, 0x00B2, 0x25A0, 0x00A0
+};
+
+static void putch(unsigned char ch)
+{
+	cchar_t wch;
+	wchar_t wc[2] = {0, 0};
+
+	if (ch > 127)
+		wc[0] = cp437_unicode_table[ch - 128];
+	else if (ch < 32)
+		wc[0] = ' ';
+	else
+		wc[0] = ch;
+	setcchar(&wch, wc, cur_attr, cur_pair, NULL);
+	add_wch(&wch);
+}
+
+static short curses_color(short color)
+{
+	switch (color) {
+		case 0 :
+			return(COLOR_BLACK);
+		case 1 :
+			return(COLOR_BLUE);
+		case 2 :
+			return(COLOR_GREEN);
+		case 3 :
+			return(COLOR_CYAN);
+		case 4 :
+			return(COLOR_RED);
+		case 5 :
+			return(COLOR_MAGENTA);
+		case 6 :
+			return(COLOR_YELLOW);
+		case 7 :
+			return(COLOR_WHITE);
+		case 8 :
+			return(COLOR_BLACK + 8);
+		case 9 :
+			return(COLOR_BLUE + 8);
+		case 10 :
+			return(COLOR_GREEN + 8);
+		case 11 :
+			return(COLOR_CYAN + 8);
+		case 12 :
+			return(COLOR_RED + 8);
+		case 13 :
+			return(COLOR_MAGENTA + 8);
+		case 14 :
+			return(COLOR_YELLOW + 8);
+		case 15 :
+			return(COLOR_WHITE + 8);
+	}
+	return(0);
 }
 #endif

@@ -18,6 +18,7 @@ void Video_Init(void);
  * purpose  Initializes video system.
  * post     video mem, y-lookup initialized,
  */
+void Video_Close(void);
 
 void Input(char *string, int16_t length);
 
@@ -32,7 +33,7 @@ void zputs(char *string);
 void qputs(char *string, int16_t x, int16_t y);
 
 void ScrollUp(void);
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__unix__)
 void clrscr(void);
 void gotoxy(int, int);
 #endif

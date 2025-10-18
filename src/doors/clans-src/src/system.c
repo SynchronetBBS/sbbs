@@ -65,7 +65,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "village.h"
 
 struct config *Config;
-struct system System;
+struct system System = {0};
 bool Verbose = false;
 
 // ------------------------------------------------------------------------- //
@@ -148,7 +148,7 @@ void Config_Init(void)
 		delay(500);
 	}
 
-	Config = malloc(sizeof(struct config));
+	Config = calloc(1, sizeof(struct config));
 	CheckMem(Config);
 
 	// --- Set defaults
@@ -706,6 +706,8 @@ void System_Init(void)
 #else
 	od_parse_cmd_line(_argc, _argv);
 #endif
+	if (od_control.od_force_local)
+		System.Local = true;
 
 	Door_Init(System.Local);
 
