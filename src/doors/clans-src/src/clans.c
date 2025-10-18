@@ -24,22 +24,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  * Main module
  */
 
-#include <ctype.h>
-#include <errno.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 #ifndef __unix__
 #include <conio.h>
 #include <dos.h>
 #endif
 #include "unix_wrappers.h"
 
-#include <OpenDoor.h>            // opendoors functions
-
 #include "clans.h"                // functions for this module
+#ifdef _WIN32
 #include "cmdline.h" /* Win32 only */
+#endif
 #include "door.h"
 #include "game.h"
 #include "help.h"
@@ -56,7 +51,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "scores.h"
 #include "structs.h"
 #include "system.h"
-#include "tasker.h"
 #include "trades.h"
 #include "user.h"
 

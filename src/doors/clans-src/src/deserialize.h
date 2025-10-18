@@ -2,9 +2,10 @@
 #define THE_CLANS__DESERIALIZE___H
 
 #include "interbbs.h"
-#include "myopen.h"
 #include "quests.h"
 #include "structs.h"
+
+struct FileHeader;
 
 size_t s_Alliance_d(const void *bufptr, size_t bufsz, struct Alliance *s);
 size_t s_Army_d(const void *bufptr, size_t bufsz, struct Army *s);

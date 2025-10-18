@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "clansini.h"
 #include "class.h"
+#include "deserialize.h"
 #include "language.h"
 #include "myopen.h"
 #include "structs.h"

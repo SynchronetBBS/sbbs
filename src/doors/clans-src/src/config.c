@@ -24,7 +24,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string.h>
 #ifdef __unix__
 # include <curses.h>
-# include <time.h>
 #else
 # include <conio.h>
 # include <dos.h>
@@ -37,6 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 #include "unix_wrappers.h"
 
+#include "defines.h"
 #include "k_config.h"
 #include "parsing.h"
 #include "structs.h"

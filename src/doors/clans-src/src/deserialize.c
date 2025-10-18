@@ -1,11 +1,10 @@
 #include <assert.h>
-#include <limits.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "crc.h"
 #include "defines.h"
 #include "deserialize.h"
+#include "myopen.h"
 
 #define unpack_char(x) do {      \
 	assert(remain);           \

@@ -31,8 +31,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "unix_wrappers.h"
 
 #include "clansini.h"
+#include "defines.h"
 #include "language.h"
-#include "structs.h"
 #include "system.h"
 #include "parsing.h"
 #include "k_clansi.h"

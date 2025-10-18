@@ -11,7 +11,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +19,6 @@
 #ifdef __MSDOS__
 # include <alloc.h>        /* Use <malloc.c> for Power C */
 #endif /* __MSDOS__ */
-#include "unix_wrappers.h"
 
 #include "defines.h"
 #include "gum.h"

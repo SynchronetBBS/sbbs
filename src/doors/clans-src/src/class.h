@@ -2,7 +2,6 @@
 #define THE_CLANS__CLASS___H
 
 #include "defines.h"
-#include "structs.h"
 
 extern struct PClass *PClasses[MAX_PCLASSES], *Races[MAX_PCLASSES];
 
