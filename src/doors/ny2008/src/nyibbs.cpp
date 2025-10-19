@@ -633,13 +633,7 @@ int             main(int argc, char *argv[]) {
 	// strcpy(od_registered_to, "Your Name");
 	//od_registration_key = 00000000000000L;
 
-#ifdef __unix__
-
-	srandomdev();
-#else
-
-	randomize();
-#endif
+	xp_randomize();
 
 	//od_control.od_disable = DIS_NAME_PROMPT;
 

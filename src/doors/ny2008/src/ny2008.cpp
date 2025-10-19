@@ -295,13 +295,7 @@ main(int argc,char *argv[]) {
 	strcpy(od_registered_to,"Your Name");
 	od_registration_key=00000000;
 
-#ifdef __unix__
-
-	srandomdev();
-#else
-
-	randomize();
-#endif
+	xp_randomize();
 
 	od_control.od_no_file_func=NoDropFile;
 	od_control.od_disable = DIS_BPS_SETTING | DIS_NAME_PROMPT;
