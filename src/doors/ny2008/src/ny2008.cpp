@@ -203,11 +203,11 @@ void
 trim(char *numstr) {
 	INT16 x;
 	for(x=strlen(numstr)-1;numstr[x]==' ' && x>=0;x--)
-		od_kernal;
+		od_kernal();
 	numstr[x+1]=0;
 	strrev(numstr);
 	for(x=strlen(numstr)-1;numstr[x]==' ' && x>=0;x--)
-		od_kernal;
+		od_kernal();
 	numstr[x+1]=0;
 	strrev(numstr);
 }
@@ -258,7 +258,11 @@ loadbadwords(void) {
 	fclose(fp);
 }
 
+#ifdef ODPLAT_WIN32
+static BOOL /* BOOL is char in OpenDoors */
+#else
 static char /* BOOL is char in OpenDoors */
+#endif
 ODCmdLineFlagHandler(const char *flag)
 {
 	char key;
