@@ -2297,11 +2297,10 @@ malloc_error:
    /* mode.                                                                 */
    if(!od_control.od_silent_mode)
    {
-#ifdef OD_DLL
-      ODFrameStart(GetModuleHandle(OD_DLL_NAME), &hFrameThread);
-#else /* !OD_DLL */
-      ODFrameStart(GetModuleHandle(NULL), &hFrameThread);
-#endif /* !OD_DLL */
+      HANDLE h = GetModuleHandle(OD_DLL_NAME);
+      if (h == NULL)
+         h = GetModuleHandle(NULL);
+      ODFrameStart(h, &hFrameThread);
    }
 #endif /* ODPLAT_WIN32 */
 

@@ -48,11 +48,9 @@
 /* PLATFORM-SPECIFIC DEFINITIONS. */
 
 /* DLL specific defintions. */
-#ifdef OD_DLL
 #ifdef ODPLAT_WIN32
 #define OD_DLL_NAME "ODOORS63"
 #endif /* ODPLAT_WIN32 */
-#endif /* OD_DLL */
 
 /* Mutlithreading specific definitions. */
 #ifdef ODPLAT_WIN32
