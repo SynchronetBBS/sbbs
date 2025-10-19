@@ -20,6 +20,7 @@ ifdef WIN
  # We won't be using the DLL
  CFLAGS	+=	-DOD_WIN32_STATIC
  CLANS_LIBS +=	-lws2_32 -lgdi32 -lcomctl32
+ CLANS_LDFLAGS+=-mwindows $(ODOORS)/libs-$(OS)/ODRes.res
  WRAPEXT :=	.cmd
 else
  # Oh, the things we put up with to use curses...
@@ -79,6 +80,9 @@ CLANS_OBJS :=	$(OBJDIR)alliance.o $(OBJDIR)clans.o $(OBJDIR)clansini.o \
 		$(OBJDIR)trades.o $(OBJDIR)unix_wrappers.o \
 		$(OBJDIR)user.o $(OBJDIR)video.o $(OBJDIR)village.o \
 		$(OBJDIR)voting.o $(OBJDIR)wb_fapnd.o
+ifdef WIN
+#CLANS_OBJS +=	$(ODOORS)/objs-$(OS)/ODRes.o
+endif
 
 CHEW_OBJS :=	$(OBJDIR)chew.o $(OBJDIR)gum.o $(OBJDIR)parsing.o
 
@@ -178,7 +182,7 @@ $(BINDIR):
 	mkdir -p $@
 
 $(BINDIR)clans$(EXEFILE): $(CLANS_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(CLANS_OBJS) -o $@ $(CLANS_LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(CLANS_LDFLAGS) $(CLANS_OBJS) -o $@ $(CLANS_LIBS)
 
 $(BINDIR)clans$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)clans$(EXEFILE)
 	cp $^ $@
