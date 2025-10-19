@@ -11,6 +11,10 @@ ifdef win
  LIBS	+=	-lgdi32 -lcomctl32
 endif
 
+ifdef win
+ OBJS	+=	$(SRC_ROOT)/odoors/libs-$(OS)/ODoor.res
+endif
+
 vpath %.c ../../gamesdk
 
 ANSI_FILES := $(wildcard ../art/*.ans)

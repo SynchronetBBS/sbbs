@@ -3,6 +3,10 @@ CXX	?= g++
 SRC_ROOT	:=	../../..
 include ${SRC_ROOT}/build/Common.gmake
 
+ifdef win
+ OBJS  +=      $(SRC_ROOT)/odoors/libs-$(OS)/ODoor.res
+endif
+
 ODOORS_SRC	:= $(SRC_ROOT)/odoors
 CFLAGS += $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
 CFLAGS += -I$(ODOORS_SRC) -DOD_WIN32_STATIC

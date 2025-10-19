@@ -32,6 +32,9 @@ ifdef win
 endif
 
 OBJS	:=	$(OBJODIR)$(DIRSEP)freevote$(OFILE)
+ifdef win
+ OBJS  +=      $(SRC_ROOT)/odoors/libs-$(OS)/ODoor.res
+endif
 
 vpath %.c ../../../xpdev
 

@@ -25,6 +25,10 @@ ifdef RELEASE
 all: $(DGNLNCE_DST)
 endif
 
+ifdef win
+OBJS += $(SRC_ROOT)/odoors/libs-$(OS)/ODoor.res
+endif
+
 $(DGNLNCE): $(OBJS) $(ODOORS_LIB)
 	@echo Linking $@
 	${QUIET}$(CC) $(LDFLAGS) $(OBJS) ${ODOORS_LIB} ${LIB_RPATH} -o $@
