@@ -1080,6 +1080,40 @@ spec:
       when: never
     - !reference [.rules, rules]
 
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [ny2008]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - cd src/doors/ny2008/src
+    - touch ciolib-mt
+    - touch cl
+    - touch depend
+    - touch xpdev-mt
+    - touch odoors
+    - echo -e "\e[0Ksection_end:`date +%s`:extract_depends\r\e[0K"
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  variables:
+    GIT_STRATEGY: fetch
+  artifacts:
+    name: "freevote-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/ny2008/*.*"
+      - "src/doors/ny2008/src/*.*.exe.*/*"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+  rules:
+    - if: '"$[[ inputs.build_doors ]]" == "no"'
+      when: never
+    - !reference [.rules, rules]
+
 #########
 # Tests #
 #########
