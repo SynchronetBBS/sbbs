@@ -130,30 +130,6 @@ glob_t fff;
 glob_t ff;
 char	**fname;
 
-/*
- * Date Stuff for *nix
- */
-#ifdef __unix__
-#include <time.h>
-struct date {
-	INT16 da_year;
-	char  da_day;
-	char  da_mon;
-};
-
-void getdate(struct date *nyd)  {
-	time_t tim;
-	struct tm *dte;
-
-	tim=time(NULL);
-	dte=localtime(&tim);
-	nyd->da_year=dte->tm_year+1900;
-	nyd->da_day=dte->tm_mday;
-	nyd->da_mon=dte->tm_mon+1;
-}
-#endif
-
-
 void
 time_slice(void) {
 #if 0	/* ToDo */
@@ -282,7 +258,7 @@ loadbadwords(void) {
 	fclose(fp);
 }
 
-static BOOL
+static char /* BOOL is char in OpenDoors */
 ODCmdLineFlagHandler(const char *flag)
 {
 	char key;
