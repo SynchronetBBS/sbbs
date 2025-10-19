@@ -220,8 +220,6 @@ int main(int argc, char *argv[])
 
 	UnregMessage();
 
-	rputs("\033(U");
-
 	Door_ShowTitle();
 
 	Display("news.txt");
