@@ -501,6 +501,7 @@ static void Video_Init(void)
 {
 #ifdef _WIN32
 	CONSOLE_CURSOR_INFO ci;
+	std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	GetConsoleCursorInfo(std_handle, &ci);
 	origCursorSize = ci.dwSize;
 #endif
