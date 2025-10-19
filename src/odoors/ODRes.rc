@@ -33,7 +33,7 @@ IDR_FRAME_MENU MENU DISCARDABLE
 BEGIN
     POPUP "&Door"
     BEGIN
-        MENUITEM "C&onfigure..."                ID_DOOR_CONFIG
+        MENUITEM "C&onfigure...",              ID_DOOR_CONFIG
         MENUITEM "&Chat Mode\tAlt+C",          ID_DOOR_CHATMODE
         MENUITEM SEPARATOR
         MENUITEM "User &Keyboard Off\tAlt+K",  ID_DOOR_USERKEYBOARDOFF
@@ -64,7 +64,7 @@ BEGIN
     END
     POPUP "&Help"
     BEGIN
-        MENUITEM "&Contents\tF1"                ID_HELP_CONTENTS
+        MENUITEM "&Contents\tF1",               ID_HELP_CONTENTS
         MENUITEM "&About...",                   ID_HELP_ABOUT
     END
 END
@@ -121,15 +121,15 @@ END
 /* Icons.                                                                    */
 /* ========================================================================= */
 
-IDI_OPENDOORS           ICON    DISCARDABLE     "odapp.ico"
-IDI_MESSAGE_INFO        ICON    DISCARDABLE     "odinfo.ico"
+IDI_OPENDOORS           ICON    DISCARDABLE     "ODApp.ico"
+IDI_MESSAGE_INFO        ICON    DISCARDABLE     "ODInfo.ico"
 
 
 /* ========================================================================= */
 /* Bitmaps.                                                                  */
 /* ========================================================================= */
 
-IDB_TOOLBAR             BITMAP  DISCARDABLE     "toolbar.bmp"
+IDB_TOOLBAR             BITMAP  DISCARDABLE     "Toolbar.bmp"
 
 
 /* ========================================================================= */
