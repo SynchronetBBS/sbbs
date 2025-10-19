@@ -179,7 +179,7 @@ ODAPIDEF char ** ODCALL od_split_cmd_line(const char* pszCmdLine, INT *nArgCount
       }
       else {
          size_t argStrLen = pchCurrent - pszFullCmdLine;
-         papszArguments[(*nArgCount)++] = malloc(argStrLen);
+         papszArguments[(*nArgCount)] = malloc(argStrLen);
          if (papszArguments[(*nArgCount)++] == NULL) {
             od_control.od_error = ERR_MEMORY;
             *nArgCount = 0;
