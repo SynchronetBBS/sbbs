@@ -60,6 +60,7 @@ static char o_fg4 = 7, o_bg4 = 0;
 #ifdef _WIN32
 static int default_cursor_size = 1;
 static HANDLE std_handle;
+static HANDLE buf_handle;
 #endif
 
 #ifdef __unix__
@@ -809,22 +810,26 @@ void Video_Init(void)
 #if defined(_WIN32)
 	CONSOLE_CURSOR_INFO cursor_info;
 
-	if (!AllocConsole()) {
-		display_win32_error();
-		exit(0);
+	std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (std_handle == NULL) {
+		if (!AllocConsole()) {
+			display_win32_error();
+			exit(0);
+		}
+		std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	}
 
-	if (!CreateConsoleScreenBuffer(
+	buf_handle = CreateConsoleScreenBuffer(
 				GENERIC_READ | GENERIC_WRITE,
 				FILE_SHARE_READ | FILE_SHARE_WRITE,
 				NULL,
 				CONSOLE_TEXTMODE_BUFFER,
-				NULL)) {
+				NULL);
+	if (!buf_handle) {
 		display_win32_error();
 		exit(0);
 	}
 
-	std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	if (!GetConsoleCursorInfo(
 				std_handle,
 				&cursor_info)) {
@@ -853,6 +858,8 @@ void Video_Close(void)
 {
 #ifdef _WIN32
 	FreeConsole();
+	if (buf_handle)
+		CloseHandle(buf_handle);
 #elif defined(__unix__)
 	set_attrs(8);
 	SetCurs(CURS_NORMAL);
