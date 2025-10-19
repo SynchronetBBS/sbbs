@@ -857,9 +857,9 @@ void Video_Init(void)
 void Video_Close(void)
 {
 #ifdef _WIN32
-	FreeConsole();
 	if (buf_handle)
 		CloseHandle(buf_handle);
+	FreeConsole();
 #elif defined(__unix__)
 	set_attrs(8);
 	SetCurs(CURS_NORMAL);
