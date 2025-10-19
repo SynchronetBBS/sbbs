@@ -621,9 +621,13 @@ void System_Init(void)
 	System.LocalIBBS = false;
 
 	// Get directory from commandline
+#ifdef _WIN32
+	GetModuleFileName(NULL, System.szMainDir, sizeof(System.szMainDir));
+#else
 	strcpy(System.szMainDir, _argv[0]);
-	for (iTemp = strlen(_argv[0]); iTemp > 0; iTemp--) {
-		if (_argv[0][iTemp] == '\\' || _argv[0][iTemp] == '/')
+#endif
+	for (iTemp = strlen(System.szMainDir); iTemp > 0; iTemp--) {
+		if (System.szMainDir[iTemp] == '\\' || System.szMainDir[iTemp] == '/')
 			break;
 	}
 	++iTemp;
