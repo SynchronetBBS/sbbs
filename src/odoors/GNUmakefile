@@ -232,7 +232,7 @@ OBJECTS := ${OBJDIR}ODAuto${OBJFILE}\
 #         ${OBJDIR}odsys${OBJFILE}\	this file is missing
 
 ifdef win
-	OBJECTS += ${OBJDIR}ODFrame${OBJFILE} ${LIBDIR}ODRes.res
+	OBJECTS += ${OBJDIR}ODFrame${OBJFILE} ${LIBDIR}ODoor.res
 endif
 
 ${OBJDIR}:
@@ -247,7 +247,7 @@ ${EXEDIR}:
 $(OBJDIR)%$(OBJFILE) : %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(LIBDIR)%.res : %.rc
+$(LIBDIR)ODoor.res : ODRes.rc
 	$(WINDRES) -O coff -i $< -o $@
 
 ${ODOORS_SHLIB}${LIB_SUFFIX} : ${OBJECTS} | ${LIBDIR}

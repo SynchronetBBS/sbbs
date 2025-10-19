@@ -20,7 +20,7 @@ ifdef WIN
  # We won't be using the DLL
  CFLAGS	+=	-DOD_WIN32_STATIC
  CLANS_LIBS +=	-lws2_32 -lgdi32 -lcomctl32
- CLANS_LDFLAGS+=-mwindows $(ODOORS)/libs-$(OS)/ODRes.res
+ CLANS_LDFLAGS+=-mwindows $(ODOORS)/libs-$(OS)/ODoor.res
  WRAPEXT :=	.cmd
 else
  # Oh, the things we put up with to use curses...
