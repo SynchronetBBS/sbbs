@@ -1564,7 +1564,7 @@ online_fight_a(INT16 *user_num, user_rec *user_on, INT16 enm_num) {
 		//    sprintf(numstr2,"u%07d.on",enm_num);
 		//    sprintf(numstr,"u%07d.chl",enm_num);
 		od_kernal();
-		sleep(0);
+		od_sleep(0);
 	}
 
 	if (!fexist(numstr2)) {

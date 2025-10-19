@@ -48,6 +48,7 @@
 #include <ciolib.h>
 #include <io.h>
 #else
+#include <datewrap.h>
 #include <dirwrap.h>
 #include <genwrap.h>
 #include <filewrap.h>

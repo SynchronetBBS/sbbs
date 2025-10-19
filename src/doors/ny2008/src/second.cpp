@@ -3729,7 +3729,7 @@ scr_res(void) {
 void
 ch_game_d(void) {
 	if(c_dir_g==1) {
-#ifndef __unix__
+#ifdef ODPLAT_DOS
 		setdisk(gamedisk);
 #endif
 
@@ -3741,7 +3741,7 @@ ch_game_d(void) {
 void
 ch_flag_d(void) {
 	if(c_dir_g==0) {
-#ifndef __unix__
+#ifdef ODPLAT_DOS
 		setdisk(flagdisk);
 #endif
 

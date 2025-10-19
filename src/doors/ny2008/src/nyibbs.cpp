@@ -811,7 +811,7 @@ int             main(int argc, char *argv[]) {
 			memcpy(OutGoing + 1, (char *)IBBSInfo.paOtherSystem, sizeof(tOtherNode) * IBBSInfo.nTotalSystems);
 			if (IBSendAll(&IBBSInfo, OutGoing, sizeof(tOtherNode) * IBBSInfo.nTotalSystems + 1) != eSuccess) {
 				printf("\n\nINTERBBS ERROR:Can't send the NODELIST!!!\n\n");
-				sleep(4);
+				SLEEP(4000);
 			}
 
 			free(OutGoing);
@@ -830,7 +830,7 @@ int             main(int argc, char *argv[]) {
 				InComing = (char *)malloc(sizeof(tOtherNode) * 258);
 				if (InComing == NULL) {
 					printf("\n\nINTERBBS ERROR:Not Enough Memory to process!\n");
-					sleep(4);
+					SLEEP(4000);
 					exit(12);
 				}
 				while (IBGet(&IBBSInfo, InComing, sizeof(tOtherNode) * 258) == eSuccess) {
@@ -1309,7 +1309,7 @@ int             main(int argc, char *argv[]) {
 
 			if (IBSendAll(&IBBSInfo, (char *)&bbs_rec, sizeof(ibbs_bbs_rec)) != eSuccess) {
 				printf("\n\nINTERBBS ERROR:Can't send the BBSINFO!!!\n\n");
-				sleep(4);
+				SLEEP(4000);
 			}
 
 			if (!fexist(SENTLIST_FILENAME)) {
@@ -1371,7 +1371,7 @@ int             main(int argc, char *argv[]) {
 					*OutGoing = (char)x;
 					if (IBSendAll(&IBBSInfo, OutGoing, NODE_ADDRESS_CHARS + 2 + (10 * sizeof(best_rec))) != eSuccess) {
 						printf("\n\nINTERBBS ERROR:Can't send the TEN BEST LIST!!!\n\n");
-						sleep(4);
+						SLEEP(4000);
 					}
 					free(OutGoing);
 					justfile = ShareFileOpen(SENTBESTTEN_FILENAME, "wb");

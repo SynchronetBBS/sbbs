@@ -10,6 +10,7 @@
 
 // include the header
 #include "ny2008.h"
+#include "ciolib.h"
 
 // include prototypes for fights
 #include "fights.h"
@@ -281,8 +282,200 @@ loadbadwords(void) {
 	fclose(fp);
 }
 
+static BOOL
+ODCmdLineFlagHandler(const char *flag)
+{
+	char key;
+	INT16 intval;
+	char numstr[26];
+
+	if (strnicmp(flag,"RESET",5)==0) {
+		od_control.od_force_local=TRUE;
+		reset=TRUE;
+		return TRUE;
+	} else if (strnicmp(flag,"-IBBSM",6)==0) {
+		ibbs_i_mail=TRUE;
+		od_control.od_force_local=TRUE;
+		return TRUE;
+	} else if (strnicmp(flag,"-RIP",4)==0) {
+		rip=166;
+		return TRUE;
+	} else if (strnicmp(flag,"-L",2)==0) {
+		od_control.od_force_local=TRUE;
+		clrscr();
+		textbackground(LIGHTCYAN);
+		textcolor(BLUE);
+		gotoxy(1,7);
+		cprintf("ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป");
+		gotoxy(1,8);
+		cprintf("บ New York 2008 v%-5s %-20s                                   บ",ver,verinfo);
+		gotoxy(1,9);
+		cprintf("บ Starting in local mode input your name: ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ");
+		gotoxy(1,10);
+		cprintf("ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ");
+		gotoxy(43,9);
+
+		INT16 cntv=0;
+		intval=TRUE;
+		do {
+			if(cntv>=35) {
+				cntv=34;
+				putch('\b');
+				key=getch();
+				if(key=='\n' || key=='\r')
+					cntv=35;
+			} else {
+				key=getch();
+			}
+
+			if(key==27) {
+				gotoxy(1,9);
+				cprintf("บ Starting in local mode input your name: ฐ Canceled ... ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ");
+				gotoxy(1,12);
+				exit(10);
+			}
+
+			if(intval==TRUE) {
+				if (key>='a' && key<='z')
+					key-=32;
+				intval=FALSE;
+			} else if(intval==FALSE) {
+				if (key>='A' && key<='Z')
+					key+=32;
+			}
+			if(key==' ') {
+				putch('ฐ');
+				key=0;
+				intval=TRUE;
+			} else if(key=='\b') {
+				if(cntv==0) {
+					intval=TRUE;
+					key=0;
+					cntv--;
+				} else {
+					cntv-=2;
+					if(cntv>=0 && od_control.user_name[cntv]==' ')
+						intval=TRUE;
+					if(cntv==32)
+						cprintf("\bฐฐ\b\b");
+					else
+						cprintf("\bฐ\b");
+					key=0;
+				}
+			}
+
+			if(key!=0) {
+				od_control.user_name[cntv]=key;
+				putch(key);
+			}
+			cntv++;
+		} while (key!='\n' && key!='\r');
+		od_control.user_name[cntv-1]=0;
+
+		trim(od_control.user_name);
+		return TRUE;
+	} else if (strnicmp(flag,"-NAD",4)==0) {
+		autodetect=FALSE;
+		return TRUE;
+	} else if (strnicmp(flag,"-P",2)==0) {
+		strzcpy(od_control.info_path,flag,2,61);
+		return TRUE;
+	} else if (strnicmp(flag,"-RDBPS",6)==0) {
+		od_control.od_disable &=~ DIS_BPS_SETTING;
+		return TRUE;
+	} else if (strnicmp(flag,"-CL",3)==0) {
+		clean_mode=TRUE;
+		/*      } else if (strnicmp(flag,"-DV",3)==0) {
+			directvideo=1; */
+		return TRUE;
+	} else if (strnicmp(flag,"-NM",3)==0) {
+		do_maint=FALSE;
+		return TRUE;
+	} else if (strnicmp(flag,"-CR",3)==0) {
+		od_control.od_force_local=TRUE;
+		od_init();
+		od_control.od_status_on=FALSE;
+		od_set_statusline(STATUS_NONE);
+		getcwd(gamedir,MAX_PATH);
+		gamedisk=gamedir[0] - 'A';
+		strzcpy(gamedir,gamedir,2,MAX_PATH);
+		if(flagdisk==-1) {
+			flagdisk=gamedisk;
+			strcpy(flagdir,gamedir);
+		}
+		ch_game_d();
+		registered=TRUE;
+		/*        if (fexist(KEY_FILENAME)) {
+		strcpy(numstr,od_control.system_name);
+		get_bbsname(numstr);
+		registered=seereg(numstr);
+		}*/
+		ny_line(-1,0,0);
+		CrashRecovery();
+		od_exit(10,FALSE);
+		return TRUE;
+	} else if (strnicmp(flag,"-MM",3)==0) {
+		od_control.od_force_local=TRUE;
+		od_init();
+		od_control.od_status_on=FALSE;
+		od_set_statusline(STATUS_NONE);
+		getcwd(gamedir,MAX_PATH);
+		gamedisk=gamedir[0] - 'A';
+		strzcpy(gamedir,gamedir,2,MAX_PATH);
+		if(flagdisk==-1) {
+			flagdisk=gamedisk;
+			strcpy(flagdir,gamedir);
+		}
+		ch_game_d();
+		registered=TRUE;
+		/*      if (fexist(KEY_FILENAME)) {
+			  strcpy(numstr,od_control.system_name);
+			  get_bbsname(numstr);
+			  registered=seereg(numstr);
+			}*/
+		ny_line(-1,0,0);
+		forced_maint=TRUE;
+		Maintanance();
+		od_exit(10,FALSE);
+		return TRUE;
+	} else if (strnicmp(flag,"-M",2)==0) {
+		od_control.od_force_local=TRUE;
+		od_init();
+		od_control.od_status_on=FALSE;
+		od_set_statusline(STATUS_NONE);
+		getcwd(gamedir,MAX_PATH);
+		gamedisk=gamedir[0] - 'A';
+		strzcpy(gamedir,gamedir,2,MAX_PATH);
+		if(flagdisk==-1) {
+			flagdisk=gamedisk;
+			strcpy(flagdir,gamedir);
+		}
+		ch_game_d();
+		registered=TRUE;
+		/*      if (fexist(KEY_FILENAME)) {
+			  strcpy(numstr,od_control.system_name);
+			  get_bbsname(numstr);
+			  registered=seereg(numstr);
+			}*/
+		ny_line(-1,0,0);
+		Maintanance();
+		od_exit(10,FALSE);
+		return TRUE;
+	} else if (strnicmp(flag,"-N",2)==0) {
+		strzcpy(numstr,flag,2,59);
+		sscanf(numstr,"%" SCNd16,&intval);
+		od_control.od_node=intval;
+		return TRUE;
+	} else if (strnicmp(flag,"-C",2)==0) {
+		od_control.od_config_filename=flag+2;
+		od_control.od_config_file = INCLUDE_CONFIG_FILE;
+		return TRUE;
+	}
+}
+
 extern "C" int
-main(int argc,char *argv[]) {
+main(int argc,char *argv[])
+{
 	FILE *justfile;
 	char key;
 	char numstr[26];
@@ -330,188 +523,12 @@ main(int argc,char *argv[]) {
 	od_control.od_cbefore_chat=ny_chat;
 	od_control.od_cbefore_shell=scr_save;
 	od_control.od_cafter_shell=scr_res;
-
-
-	cnt=1;
-	if(argc>1) {
-		do {
-			if (strnicmp(argv[cnt],"RESET",5)==0) {
-				od_control.od_force_local=TRUE;
-				reset=TRUE;
-			} else if (strnicmp(argv[cnt],"-IBBSM",6)==0) {
-				ibbs_i_mail=TRUE;
-				od_control.od_force_local=TRUE;
-			} else if (strnicmp(argv[cnt],"-RIP",4)==0) {
-				rip=166;
-			} else if (strnicmp(argv[cnt],"-L",2)==0) {
-				od_control.od_force_local=TRUE;
-				clrscr();
-				textbackground(LIGHTCYAN);
-				textcolor(BLUE);
-				gotoxy(1,7);
-				cprintf("ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป");
-				gotoxy(1,8);
-				cprintf("บ New York 2008 v%-5s %-20s                                   บ",ver,verinfo);
-				gotoxy(1,9);
-				cprintf("บ Starting in local mode input your name: ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ");
-				gotoxy(1,10);
-				cprintf("ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ");
-				gotoxy(43,9);
-
-				INT16 cntv=0;
-				intval=TRUE;
-				do {
-					if(cntv>=35) {
-						cntv=34;
-						putch('\b');
-						key=getch();
-						if(key=='\n' || key=='\r')
-							cntv=35;
-					} else {
-						key=getch();
-					}
-
-					if(key==27) {
-						gotoxy(1,9);
-						cprintf("บ Starting in local mode input your name: ฐ Canceled ... ฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐฐ บ");
-						gotoxy(1,12);
-						exit(10);
-					}
-
-					if(intval==TRUE) {
-						if (key>='a' && key<='z')
-							key-=32;
-						intval=FALSE;
-					} else if(intval==FALSE) {
-						if (key>='A' && key<='Z')
-							key+=32;
-					}
-					if(key==' ') {
-						putch('ฐ');
-						key=0;
-						intval=TRUE;
-					} else if(key=='\b') {
-						if(cntv==0) {
-							intval=TRUE;
-							key=0;
-							cntv--;
-						} else {
-							cntv-=2;
-							if(cntv>=0 && od_control.user_name[cntv]==' ')
-								intval=TRUE;
-							if(cntv==32)
-								cprintf("\bฐฐ\b\b");
-							else
-								cprintf("\bฐ\b");
-							key=0;
-						}
-					}
-
-					if(key!=0) {
-						od_control.user_name[cntv]=key;
-						putch(key);
-					}
-					cntv++;
-				} while (key!='\n' && key!='\r');
-				od_control.user_name[cntv-1]=0;
-
-				trim(od_control.user_name);
-
-			} else if (strnicmp(argv[cnt],"-NAD",4)==0) {
-				autodetect=FALSE;
-			} else if (strnicmp(argv[cnt],"-P",2)==0) {
-				strzcpy(od_control.info_path,argv[cnt],2,61);
-			} else if (strnicmp(argv[cnt],"-RDBPS",6)==0) {
-				od_control.od_disable &=~ DIS_BPS_SETTING;
-			} else if (strnicmp(argv[cnt],"-CL",3)==0) {
-				clean_mode=TRUE;
-				/*      } else if (strnicmp(argv[cnt],"-DV",3)==0) {
-					directvideo=1; */
-			} else if (strnicmp(argv[cnt],"-NM",3)==0) {
-				do_maint=FALSE;
-			} else if (strnicmp(argv[cnt],"-CR",3)==0) {
-				od_control.od_force_local=TRUE;
-				od_init();
-				od_control.od_status_on=FALSE;
-				od_set_statusline(STATUS_NONE);
-				getcwd(gamedir,MAX_PATH);
-				gamedisk=gamedir[0] - 'A';
-				strzcpy(gamedir,gamedir,2,MAX_PATH);
-				if(flagdisk==-1) {
-					flagdisk=gamedisk;
-					strcpy(flagdir,gamedir);
-				}
-				ch_game_d();
-				registered=TRUE;
-				/*        if (fexist(KEY_FILENAME)) {
-				strcpy(numstr,od_control.system_name);
-				get_bbsname(numstr);
-				registered=seereg(numstr);
-				}*/
-				ny_line(-1,0,0);
-				CrashRecovery();
-				od_exit(10,FALSE);
-			} else if (strnicmp(argv[cnt],"-MM",3)==0) {
-				od_control.od_force_local=TRUE;
-				od_init();
-				od_control.od_status_on=FALSE;
-				od_set_statusline(STATUS_NONE);
-				getcwd(gamedir,MAX_PATH);
-				gamedisk=gamedir[0] - 'A';
-				strzcpy(gamedir,gamedir,2,MAX_PATH);
-				if(flagdisk==-1) {
-					flagdisk=gamedisk;
-					strcpy(flagdir,gamedir);
-				}
-				ch_game_d();
-				registered=TRUE;
-				/*      if (fexist(KEY_FILENAME)) {
-					  strcpy(numstr,od_control.system_name);
-					  get_bbsname(numstr);
-					  registered=seereg(numstr);
-					}*/
-				ny_line(-1,0,0);
-				forced_maint=TRUE;
-				Maintanance();
-				od_exit(10,FALSE);
-
-			} else if (strnicmp(argv[cnt],"-M",2)==0) {
-				od_control.od_force_local=TRUE;
-				od_init();
-				od_control.od_status_on=FALSE;
-				od_set_statusline(STATUS_NONE);
-				getcwd(gamedir,MAX_PATH);
-				gamedisk=gamedir[0] - 'A';
-				strzcpy(gamedir,gamedir,2,MAX_PATH);
-				if(flagdisk==-1) {
-					flagdisk=gamedisk;
-					strcpy(flagdir,gamedir);
-				}
-				ch_game_d();
-				registered=TRUE;
-				/*      if (fexist(KEY_FILENAME)) {
-					  strcpy(numstr,od_control.system_name);
-					  get_bbsname(numstr);
-					  registered=seereg(numstr);
-					}*/
-				ny_line(-1,0,0);
-				Maintanance();
-				od_exit(10,FALSE);
-			} else if (strnicmp(argv[cnt],"-N",2)==0) {
-				strzcpy(numstr,argv[cnt],2,59);
-				sscanf(numstr,"%" SCNd16,&intval);
-				od_control.od_node=intval;
-			} else if (strnicmp(argv[cnt],"-C",2)==0) {
-				od_control.od_config_filename=argv[cnt]+2;
-				od_control.od_config_file = INCLUDE_CONFIG_FILE;
-			}
-		} while ((++cnt)<argc);
-	}
+	od_control.od_cmd_line_flag_handler = ODCmdLineFlagHandler;
 
 	nCurrentUserNumber=MAX_USERS+1;
 
 #ifdef ODPLAT_WIN32
-	od_parse_cmd_line(lpszCmdLine);
+	od_parse_cmd_line(GetCommandLine());
 #else
 	od_parse_cmd_line(argc, argv);
 #endif
@@ -1615,8 +1632,7 @@ ny_kernel(void) {
 
 		//if(0) {
 		/* This is terrible - ToDo */
-#ifndef ODPLAT_NIX
-
+#ifdef ODPLAT_DOS
 		fcloseall();
 #endif
 
@@ -2748,9 +2764,9 @@ SortScrFile(INT16 usr,INT16 max) // pebble sorting of scorefile
 					fseek(scr_file, (INT32)cnt * sizeof(scr_rec), SEEK_SET);
 					if (ny_fread(&rec[1], sizeof(scr_rec), 1, scr_file)!=1) {
 						/* This is terrible - ToDo */
-	#ifndef ODPLAT_NIX
+#ifdef ODPLAT_DOS
 						fcloseall();
-	#endif
+#endif
 
 						return;
 					}
@@ -3137,20 +3153,20 @@ char entry_menu(void) {
 			if(unreg_sign==TRUE) {
 				ny_disp_emu("`%UNREGISTERED!\r\nPausing For 5 Seconds `#.");
 				unreg_sign=FALSE;
-				sleep(1);
+				od_sleep(1000);
 				ny_kernel();
 				od_printf(".");
-				sleep(1);
+				od_sleep(1000);
 				ny_kernel();
 				od_printf(".");
-				sleep(1);
+				od_sleep(1000);
 				ny_kernel();
 				od_printf(".");
-				sleep(1);
+				od_sleep(1000);
 				ny_kernel();
 				od_printf(".");
 				ny_kernel();
-				sleep(1);
+				od_sleep(1000);
 				od_printf("\r");
 			} else {
 				ny_disp_emu("`%UNREGISTERED!\r\n");

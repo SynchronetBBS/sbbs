@@ -1071,7 +1071,7 @@ ny_kernel(void) {
 	ch_flag_d();
 	if (fexist(MAINTFLAG_FILENAME)) {
 		/* This is ugly - ToDo */
-#ifndef ODPLAT_NIX
+#ifdef ODPLAT_DOS
 		fcloseall();
 #endif
 		//    od_control.od_disable|=DIS_CARRIERDETECT;
@@ -1846,7 +1846,7 @@ FILE *ShareFileOpen(const char *pszFileName, const char *pszMode) {
 void
 ch_game_d(void) {
 	if(c_dir_g==1) {
-#ifndef __unix__
+#ifdef ODPLAT_DOS
 		setdisk(gamedisk);
 #endif
 
@@ -1858,7 +1858,7 @@ ch_game_d(void) {
 void
 ch_flag_d(void) {
 	if(c_dir_g==0) {
-#ifndef __unix__
+#ifdef ODPLAT_DOS
 		setdisk(flagdisk);
 #endif
 

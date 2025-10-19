@@ -703,7 +703,7 @@ call_IGM(char exenam[]) {
                         exenam2[x]=0;
 
                 if(exenam2[0]!=0) {
-#if !defined(__unix__) && !defined(__WATCOMC__)
+#ifdef ODPLAT_DOS
                         if(exenam2[0]>='a' && exenam2[0]<='z')
                                 setdisk(exenam2[0] - 'a');
                         else
