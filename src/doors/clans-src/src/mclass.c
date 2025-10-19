@@ -16,45 +16,38 @@
 #include "structs.h"
 #include "unix_wrappers.h"
 
-static struct PClass *PClasses[MAX_PCLASSES], *Races[MAX_PCLASSES];
+static struct PClass *PClasses[MAX_PCLASSES];
 
-static int16_t TotalRaces = 0, TotalClasses = 0;
+static int16_t Total = 0;
 
 static void Deinit_PClasses(struct PClass *PClass[MAX_PCLASSES]);
 static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileName);
 
-int main(void)
+int main(int argc, char **argv)
 {
 	FILE *fpData;
 	int iTemp;
 	int16_t tmp16;
 	uint8_t pcbuf[BUF_SIZE_PClass];
 
-	TotalRaces = Init_PClasses(Races, "races.txt");
-	TotalClasses = Init_PClasses(PClasses, "classes.txt");
-
-	fpData = fopen("races.dat", "wb");
-
-	/* fwrite num of races */
-	printf("Writing %d races.\n", TotalRaces);
-	tmp16 = SWAP16(TotalRaces);
-	fwrite(&tmp16, sizeof(tmp16), 1, fpData);
-	for (iTemp = 0; iTemp < TotalRaces; iTemp++) {
-		s_PClass_s(Races[iTemp], pcbuf, sizeof(pcbuf));
-		fwrite(pcbuf, sizeof(pcbuf), 1, fpData);
+	if (argc != 3) {
+		printf("usage:\nmclass class.txt class.cls\n");
+		exit(1);
 	}
 
-	fclose(fpData);
+	Total = Init_PClasses(PClasses, argv[1]);
 
-	fpData = fopen("classes.dat", "wb");
-	if (!fpData)
-		printf("DOH\n");
+	fpData = fopen(argv[2], "wb");
+	if (!fpData) {
+		printf("Error opening class output file");
+		exit(1);
+	}
 
-	/* fwrite num of classes */
-	printf("Writing %d classes.\n", TotalClasses);
-	tmp16 = SWAP16(TotalClasses);
+	/* fwrite num of races */
+	printf("Writing %d classes.\n", Total);
+	tmp16 = SWAP16(Total);
 	fwrite(&tmp16, sizeof(tmp16), 1, fpData);
-	for (iTemp = 0; iTemp < TotalClasses; iTemp++) {
+	for (iTemp = 0; iTemp < Total; iTemp++) {
 		s_PClass_s(PClasses[iTemp], pcbuf, sizeof(pcbuf));
 		fwrite(pcbuf, sizeof(pcbuf), 1, fpData);
 	}
@@ -62,7 +55,6 @@ int main(void)
 	fclose(fpData);
 
 	Deinit_PClasses(PClasses);
-	Deinit_PClasses(Races);
 	return(0);
 }
 
@@ -89,7 +81,7 @@ static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileNa
 	fpPClass = fopen(szFileName, "r");
 	if (!fpPClass) {
 		printf("Error opening classes file.\n");
-		exit(0);
+		exit(1);
 	}
 
 	/* make all classes NULL pointers */

@@ -4,5 +4,4 @@ two files:
 
 races.txt and classes.txt
 
-These are included.  To compile them, just run mclass directly and
-it'll open the files and write races.dat and classes.dat, respectively.
+These are included.  To compile them, run mclass with the in and out names
