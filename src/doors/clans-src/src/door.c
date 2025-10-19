@@ -410,7 +410,7 @@ void rputs(char *string)
 
 	while (*pCurChar) {
 		for (pStrChar=pCurChar; *pStrChar!='|'&&*pStrChar!=0&&*pStrChar!=SPECIAL_CODE&&*pStrChar!='\n'&&*pStrChar!='`'&&*pStrChar!=SPECIAL_CODE; pStrChar++);
-		od_disp(pCurChar, pStrChar-pCurChar, false);
+		od_disp(pCurChar, pStrChar-pCurChar, System.Local);
 		pCurChar=pStrChar;
 		if (!(*pCurChar))break;
 
