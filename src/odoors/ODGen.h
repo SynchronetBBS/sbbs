@@ -50,7 +50,7 @@
 /* DLL specific defintions. */
 #ifdef OD_DLL
 #ifdef ODPLAT_WIN32
-#define OD_DLL_NAME "ODOORS62"
+#define OD_DLL_NAME "ODOORS63"
 #endif /* ODPLAT_WIN32 */
 #endif /* OD_DLL */
 
