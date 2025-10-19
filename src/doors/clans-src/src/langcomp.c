@@ -40,27 +40,30 @@ int main(int argc, char *argv[])
 
 	printf("The Clans Language File Compiler v.1.0 (c) copyright 1997 Allen Ussher\n\n");
 
-	if (argc != 2) {
-		printf("Format:  Langcomp <Language>\n");
+	if (argc < 2 || argc > 3) {
+		printf("Format:  Langcomp <Language.txt> [Language.xl]\n");
 		exit(0);
 	}
 
 	strcpy(FromFile, argv[1]);
-
-	for (iTemp = strlen(FromFile); iTemp>0; iTemp--)
-		if (FromFile[iTemp] == '.')
-			break;
-
-	if (iTemp == 0) {
-		strcpy(ToFile, FromFile);
-		strcat(ToFile, ".xl");
-		strcat(FromFile, ".txt");
-	}
+	if (argc == 3)
+		strcpy(ToFile, argv[2]);
 	else {
-		FromFile[iTemp] = 0;
-		strcpy(ToFile, FromFile);
-		strcat(ToFile, ".xl");
-		FromFile[iTemp] = '.';
+		for (iTemp = strlen(FromFile); iTemp>0; iTemp--)
+			if (FromFile[iTemp] == '.')
+				break;
+
+		if (iTemp == 0) {
+			strcpy(ToFile, FromFile);
+			strcat(ToFile, ".xl");
+			strcat(FromFile, ".txt");
+		}
+		else {
+			FromFile[iTemp] = 0;
+			strcpy(ToFile, FromFile);
+			strcat(ToFile, ".xl");
+			FromFile[iTemp] = '.';
+		}
 	}
 
 	fFrom = fopen(FromFile, "r");
