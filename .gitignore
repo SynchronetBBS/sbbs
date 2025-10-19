@@ -22,7 +22,7 @@ src/sbbs3/ctrl/sbbsctrl.mak
 src/cscope.files
 3rdp/src
 localdefs.mk
-data
+/data
 node2
 node3
 node4
