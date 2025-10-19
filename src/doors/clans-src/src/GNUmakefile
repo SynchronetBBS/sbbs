@@ -172,10 +172,10 @@ clean:
 	rm -f $(DEVKIT_BINARIES)
 
 $(OBJDIR):
-	mkdir -p $(OBJDIR)
+	mkdir -p $@
 
 $(BINDIR):
-	mkdir -p $(BINDIR)
+	mkdir -p $@
 
 $(BINDIR)clans$(EXEFILE): $(CLANS_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(CLANS_OBJS) -o $@ $(CLANS_LIBS)
