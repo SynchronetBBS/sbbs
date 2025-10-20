@@ -796,6 +796,7 @@ s_empire_d(const void *bufptr, size_t bufsz, struct empire *s)
 	unpack_int16_t(s->AttacksToday);
 	unpack_int32_t(s->Points);
 	unpack_int16_tArr(s->Junk);
+	unpack_struct(&s->Army, Army);
 	unpack_int32_t(s->CRC);
 	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
 		s->CRC = 1;

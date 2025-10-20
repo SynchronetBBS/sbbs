@@ -767,6 +767,7 @@ s_empire_s(const struct empire *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->AttacksToday);
 	pack_int32_t(s->Points);
 	pack_int16_tArr(s->Junk);
+	pack_struct(&s->Army, Army);
 	crc = CRCValue(bufptr, dst - (uint8_t*)bufptr);
 	pack_int32_t(crc);
 	return (dst - (uint8_t *)bufptr);
