@@ -195,6 +195,7 @@ void get_default_echocfg(sbbsecho_cfg_t* cfg)
 	cfg->maxbdlsize                 = DFLT_BDL_SIZE;
 	cfg->badecho                    = -1;
 	cfg->log_level                  = LOG_INFO;
+	cfg->flo_mailer                 = true;
 	cfg->check_path                 = true;
 	cfg->zone_blind                 = false;
 	cfg->zone_blind_threshold       = 0xffff;
