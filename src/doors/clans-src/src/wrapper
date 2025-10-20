@@ -17,9 +17,9 @@ fi
 
 if [ -z "${CLANS_DEBUG}" ]
 then
-	platform="${os}.${machine}.debug"
-else
 	platform="${os}.${machine}.opt"
+else
+	platform="${os}.${machine}.debug"
 fi
 
 if [ -x "${dir}/${name}.${platform}" ]
