@@ -388,12 +388,14 @@ void ODCmdLineHandler(char *flag, char *val)
 			return;
 		}
 	}
-	zputs("|06Invalid parameter -- |07type |14CLANS /? |07for help\n");
+	snprintf(szString, sizeof(szString), "|06Invalid parameter \"%s\" |07type |14CLANS /? |07for help\n", flag);
+	zputs(szString);
 	System_Close();
 }
 
 BOOL ODCmdLineFlagHandler(const char *flag)
 {
+	char szString[128];
 	bool primitive = Config == NULL;
 
 	if (flag[0] == '-' || flag[0] == '/') {
@@ -481,11 +483,6 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 			}
 			return TRUE;
 		}
-		else if (stricmp(&flag[1], "D") == 0) {
-			if (primitive)
-				strlcpy(od_control.info_path, &flag[2], sizeof(od_control.info_path));
-			return TRUE;
-		}
 		else if (stricmp(&flag[1], "Slop") == 0) {
 			if (primitive) {
 				Register();
@@ -493,11 +490,16 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 			}
 			return TRUE;
 		}
-		else if (stricmp(&flag[1], "S") == 0) {
+		else if (flag[1] == 'S') {
 			if (primitive) {
 				od_control.od_use_socket = TRUE;
 				od_control.od_open_handle = atoi(&flag[2]);
 			}
+			return TRUE;
+		}
+		else if (flag[1] == 'D') {
+			if (primitive)
+				strlcpy(od_control.info_path, &flag[2], sizeof(od_control.info_path));
 			return TRUE;
 		}
 		else if (flag[1] == 'N') {
@@ -506,7 +508,8 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 			return TRUE;
 		}
 	}
-	zputs("|02Invalid parameter -- |07type |10CLANS /? |07for help\n");
+	snprintf(szString, sizeof(szString), "|06Invalid parameter \"%s\" |07type |14CLANS /? |07for help\n", flag);
+	zputs(szString);
 	delay(3000);
 	exit(0);
 }
