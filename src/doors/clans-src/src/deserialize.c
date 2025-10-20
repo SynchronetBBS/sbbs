@@ -93,20 +93,13 @@
 	if (remain < 4)         \
 		return SIZE_MAX; \
 	x = NULL;                 \
-	src += 4;                  \
-	remain -= 4;                \
 } while(0)
 
 // Setting these to zero... hopefully they don't round-trip. :(
 #define unpack_ptrArr(x) do {                                        \
 	for (size_t ctr = 0; ctr < sizeof(x) / sizeof(*(x)); ctr++) { \
-		assert(remain >= 4);                                   \
-		if (remain < 4)                                         \
-			return SIZE_MAX;                                 \
-		x[ctr] = NULL;                                            \
-		src += 4;                                                  \
-		remain -= 4;                                                \
-	}                                                                    \
+		x[ctr] = NULL;                                         \
+	}                                                               \
 } while(0)
 
 #define unpack_struct(x, s) do {                   \

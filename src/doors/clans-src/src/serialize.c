@@ -81,13 +81,11 @@
 } while(0)
 
 #define pack_ptr(x) do { \
-	pack_int32_t(0);  \
 } while(0)
 
 // Setting these to zero... hopefully they don't round-trip. :(
-#define pack_ptrArr(x) do {                                        \
-	for (size_t ctr = 0; ctr < sizeof(x) / sizeof(*(x)); ctr++) \
-		pack_int32_t(0);                                     \
+#define pack_ptrArr(x) do {                                         \
+	for (size_t ctr = 0; ctr < sizeof(x) / sizeof(*(x)); ctr++); \
 } while(0)
 
 #define pack_struct(x, s) do {                     \
