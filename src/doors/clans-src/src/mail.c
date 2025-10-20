@@ -69,6 +69,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define ALL_VILLAGES    -1
 
+#define MSGTXT_SZ	4000
+
 static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t CurLine);
 static void SendMsj(struct Message *Message, int16_t WhichVillage);
 
@@ -122,7 +124,7 @@ static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 	FILE *fp;
 
 	// malloc msg
-	Message.Data.MsgTxt = malloc(4000);
+	Message.Data.MsgTxt = malloc(MSGTXT_SZ);
 	CheckMem(Message.Data.MsgTxt);
 
 	Message.Data.MsgTxt[0] = 0;
@@ -215,7 +217,7 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 	}
 
 	/* malloc msg */
-	Message.Data.MsgTxt = malloc(4000);
+	Message.Data.MsgTxt = malloc(MSGTXT_SZ);
 	CheckMem(Message.Data.MsgTxt);
 
 	Message.Data.MsgTxt[0] = 0;
@@ -344,7 +346,7 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 
 		// else continue
 		Message.Data.Offsets[NumLines] = CurChar;
-		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, sizeof(&Message.Data.MsgTxt[CurChar]));
+		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, MSGTXT_SZ - CurChar);
 		CurChar += (strlen(Line1) + 1);
 
 		strlcpy(OldLine, Line1, sizeof(OldLine));
@@ -604,7 +606,7 @@ static void Reply_Message(struct Message *Reply)
 	int16_t WhichVillage = 0;
 
 	// malloc msg
-	Message.Data.MsgTxt = malloc(4000);
+	Message.Data.MsgTxt = malloc(MSGTXT_SZ);
 	CheckMem(Message.Data.MsgTxt);
 	Message.Data.MsgTxt[0] = 0;
 
@@ -666,11 +668,11 @@ static void Reply_Message(struct Message *Reply)
 				if (FirstLine != LastLine) {
 					for (i = FirstLine;  i <= LastLine; i++) {
 						Message.Data.Offsets[NumLines] = CurChar;
-						strlcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET, sizeof(&Message.Data.MsgTxt[CurChar]));
-						strlcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[i-1]], sizeof(&Message.Data.MsgTxt[CurChar]));
+						strlcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET, MSGTXT_SZ - CurChar);
+						strlcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[i-1]], MSGTXT_SZ - CurChar);
 						Message.Data.MsgTxt[CurChar+78] = 0;
 
-						if (CurChar >= 4000)
+						if (CurChar >= MSGTXT_SZ)
 							rputs("Mem error in mail\n%P");
 
 						CurChar += (strlen(&Message.Data.MsgTxt[CurChar]) + 1);
@@ -680,13 +682,13 @@ static void Reply_Message(struct Message *Reply)
 				}
 				else {
 					Message.Data.Offsets[NumLines] = CurChar;
-					strlcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET, sizeof(&Message.Data.MsgTxt[CurChar]));
-					strlcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[FirstLine-1]], sizeof(&Message.Data.MsgTxt[CurChar]));
+					strlcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET, MSGTXT_SZ - CurChar);
+					strlcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[FirstLine-1]], MSGTXT_SZ - CurChar);
 					Message.Data.MsgTxt[CurChar+78] = 0;
 
 					CurChar += (strlen(&Message.Data.MsgTxt[CurChar]) + 1);
 
-					if (CurChar >= 4000)
+					if (CurChar >= MSGTXT_SZ)
 						rputs("Mem error in mail\n");
 
 					NumLines++;
@@ -809,7 +811,7 @@ static void Reply_Message(struct Message *Reply)
 
 		// else continue
 		Message.Data.Offsets[NumLines] = CurChar;
-		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, sizeof(&Message.Data.MsgTxt[CurChar]));
+		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, MSGTXT_SZ - CurChar);
 		CurChar += (strlen(Line1) + 1);
 
 		strlcpy(OldLine, Line1, sizeof(OldLine));
@@ -1137,7 +1139,7 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 		}
 		else if (ch == '\t' && cur_char < 73) {
 			rputs("     ");
-			strlcat(&String[cur_char], "     ", sizeof(&String[cur_char]));
+			strlcat(&String[cur_char], "     ", MSGTXT_SZ - cur_char);
 			cur_char += 5;
 			continue;
 		}
@@ -1269,7 +1271,7 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 	}
 
 	/* malloc msg */
-	Message.Data.MsgTxt = malloc(4000);
+	Message.Data.MsgTxt = malloc(MSGTXT_SZ);
 	CheckMem(Message.Data.MsgTxt);
 	Message.Data.MsgTxt[0] = 0;
 
@@ -1397,7 +1399,7 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 
 		// else continue
 		Message.Data.Offsets[NumLines] = CurChar;
-		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, sizeof(&Message.Data.MsgTxt[CurChar]));
+		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, MSGTXT_SZ - CurChar);
 		CurChar += (strlen(Line1) + 1);
 
 		strlcpy(OldLine, Line1, sizeof(OldLine));

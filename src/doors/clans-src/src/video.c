@@ -548,6 +548,7 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 	// if true, it will clear the line and input
 	char old_fg4;
 	bool update = true;
+	int16_t slength = length;
 
 	// initialize the string here
 
@@ -670,7 +671,7 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 				if (insert && length < input_length)  {
 
 					strlcpy(tmp_str, &string[cur_letter], sizeof(tmp_str));
-					strlcpy(&string[cur_letter+1], tmp_str, sizeof(&string[cur_letter+1]));
+					strlcpy(&string[cur_letter+1], tmp_str, slength - cur_letter+1);
 
 					string[cur_letter] = key;
 

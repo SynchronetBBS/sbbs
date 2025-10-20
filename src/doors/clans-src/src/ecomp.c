@@ -53,6 +53,7 @@ static char *papszEvaKeyWords[MAX_EVA_WORDS] = {
 	"GetKey"
 };
 
+#define MALLOC_SZ	64000
 int main(int argc, char *argv[])
 {
 	FILE *fpEvent, *fpOut;
@@ -86,7 +87,7 @@ int main(int argc, char *argv[])
 	}
 
 	// allocate memory for our huge buffer
-	Buffer = calloc(1, 32000);
+	Buffer = calloc(1, MALLOC_SZ);
 	if (!Buffer) {
 		printf("Error allocating mem\n");
 		exit(0);
@@ -219,7 +220,7 @@ int main(int argc, char *argv[])
 						// put szLegal in buffer
 						Buffer[ BufferPtr ] = strlen(szLegal) + 1;
 						BufferPtr++;
-						strlcpy(&Buffer[BufferPtr], szLegal, sizeof(&Buffer[BufferPtr]));
+						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
 
 						if (*pcCurrentPos == 0) {
@@ -233,7 +234,7 @@ int main(int argc, char *argv[])
 							DataLength = strlen(&pcCurrentPos[1]) + 1;
 
 							Buffer[ BufferPtr++ ] = DataLength;
-							strlcpy(&Buffer[ BufferPtr ], &pcCurrentPos[1], sizeof(&Buffer[ BufferPtr ]));
+							strlcpy(&Buffer[ BufferPtr ], &pcCurrentPos[1], MALLOC_SZ - BufferPtr);
 							BufferPtr += (strlen(&pcCurrentPos[1]) + 1);
 						}
 						break;
@@ -245,7 +246,7 @@ int main(int argc, char *argv[])
 						// put szLegal in buffer
 						Buffer[ BufferPtr ] = strlen(szLegal) + 1;
 						BufferPtr++;
-						strlcpy(&Buffer[BufferPtr], szLegal, sizeof(&Buffer[BufferPtr]));
+						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
 
 						if (pcCurrentPos[0] == '~')
@@ -259,7 +260,7 @@ int main(int argc, char *argv[])
 
 						Buffer[ BufferPtr++ ] = DataLength;
 						Buffer[ BufferPtr++ ] = cKey;
-						strlcpy(&Buffer[ BufferPtr ], szLabel, sizeof(&Buffer[ BufferPtr ]));
+						strlcpy(&Buffer[ BufferPtr ], szLabel, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLabel) + sizeof(char));
 
 						//printf("%3d:  option:  %c - %s\n", CurLine, cKey, szLabel);
@@ -271,7 +272,7 @@ int main(int argc, char *argv[])
 						// put szLegal in buffer
 						Buffer[ BufferPtr ] = strlen(szLegal) + 1;
 						BufferPtr++;
-						strlcpy(&Buffer[BufferPtr], szLegal, sizeof(&Buffer[BufferPtr]));
+						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
 
 
@@ -285,15 +286,15 @@ int main(int argc, char *argv[])
 
 						// write to file the 3 labels
 						Buffer[ BufferPtr++ ] = strlen(szLabel1) + 1;
-						strlcpy(&Buffer[ BufferPtr ], szLabel1, sizeof(&Buffer[ BufferPtr ]));
+						strlcpy(&Buffer[ BufferPtr ], szLabel1, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLabel1) + 1);
 
 						Buffer[ BufferPtr++ ] = strlen(szLabel2) + 1;
-						strlcpy(&Buffer[ BufferPtr ], szLabel2, sizeof(&Buffer[ BufferPtr ]));
+						strlcpy(&Buffer[ BufferPtr ], szLabel2, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLabel2) + 1);
 
 						Buffer[ BufferPtr++ ] = strlen(szLabel3) + 1;
-						strlcpy(&Buffer[ BufferPtr ], szLabel3, sizeof(&Buffer[ BufferPtr ]));
+						strlcpy(&Buffer[ BufferPtr ], szLabel3, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLabel3) + 1);
 						break;
 					case 8  :   // TellQuest
@@ -316,13 +317,13 @@ int main(int argc, char *argv[])
 						// put szLegal in buffer
 						Buffer[ BufferPtr ] = strlen(szLegal) + 1;
 						BufferPtr++;
-						strlcpy(&Buffer[BufferPtr], szLegal, sizeof(&Buffer[BufferPtr]));
+						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
 
 						DataLength = strlen(pcCurrentPos) + 1;
 
 						Buffer[ BufferPtr++ ] = DataLength;
-						strlcpy(&Buffer[ BufferPtr ], pcCurrentPos, sizeof(&Buffer[ BufferPtr ]));
+						strlcpy(&Buffer[ BufferPtr ], pcCurrentPos, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(pcCurrentPos) + 1);
 						break;
 					case 4  :   // End
@@ -335,7 +336,7 @@ int main(int argc, char *argv[])
 						// put szLegal in buffer
 						Buffer[ BufferPtr ] = strlen(szLegal) + 1;
 						BufferPtr++;
-						strlcpy(&Buffer[BufferPtr], szLegal, sizeof(&Buffer[BufferPtr]));
+						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
 
 						// no datalength, so put 0
@@ -348,7 +349,7 @@ int main(int argc, char *argv[])
 						// put szLegal in buffer
 						Buffer[ BufferPtr ] = strlen(szLegal) + 1;
 						BufferPtr++;
-						strlcpy(&Buffer[BufferPtr], szLegal, sizeof(&Buffer[BufferPtr]));
+						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
 
 						// get monster filename
@@ -359,7 +360,7 @@ int main(int argc, char *argv[])
 						DataLength = strlen(szLabel) + 2;
 
 						Buffer[ BufferPtr++ ] = DataLength;
-						strlcpy(&Buffer[ BufferPtr ], szLabel, sizeof(&Buffer[ BufferPtr ]));
+						strlcpy(&Buffer[ BufferPtr ], szLabel, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLabel) + 1);
 						Buffer[ BufferPtr++ ] = cTemp;
 						break;
@@ -388,7 +389,7 @@ int main(int argc, char *argv[])
 						// put szLegal in buffer
 						Buffer[ BufferPtr ] = strlen(szLegal) + 1;
 						BufferPtr++;
-						strlcpy(&Buffer[BufferPtr], szLegal, sizeof(&Buffer[BufferPtr]));
+						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
 
 						GetToken(pcCurrentPos, szLabel);
@@ -402,12 +403,12 @@ int main(int argc, char *argv[])
 						Buffer[ BufferPtr++ ] = strlen(szLabel) + sizeof(char);
 
 						// write label
-						strlcpy(&Buffer[ BufferPtr ], szLabel, sizeof(&Buffer[ BufferPtr ]));
+						strlcpy(&Buffer[ BufferPtr ], szLabel, MALLOC_SZ - BufferPtr);
 						// increment pointer
 						BufferPtr += (strlen(szLabel) + sizeof(char));
 
 						Buffer[ BufferPtr++ ] = strlen(szString) + sizeof(char);
-						strlcpy(&Buffer[ BufferPtr ], szString, sizeof(&Buffer[ BufferPtr ]));
+						strlcpy(&Buffer[ BufferPtr ], szString, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szString) + sizeof(char));
 
 						//printf("%3d:  option:  %c - %s\n", CurLine, cKey, szLabel);

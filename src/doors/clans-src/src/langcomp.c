@@ -35,6 +35,7 @@ struct Language Language;
 
 uint8_t serBuf[4096];
 
+#define MALLOC_SZ	64000
 int main(int argc, char *argv[])
 {
 	FILE *fFrom, *fTo;
@@ -81,7 +82,7 @@ int main(int argc, char *argv[])
 		Language.StrOffsets[iTemp] = 0;
 	Language.NumBytes = 0;
 
-	Language.BigString = malloc(64000);
+	Language.BigString = malloc(MALLOC_SZ);
 	if (!Language.BigString) {
 		printf("Couldn't allocate enough memory to run!");
 		fclose(fFrom);
@@ -122,7 +123,7 @@ int main(int argc, char *argv[])
 		Convert(String, &TempString[5]);
 
 		Language.StrOffsets[CurString] = Language.NumBytes;
-		strlcpy(&Language.BigString[ Language.NumBytes ], String, sizeof(&Language.BigString[ Language.NumBytes ]));
+		strlcpy(&Language.BigString[ Language.NumBytes ], String, MALLOC_SZ - Language.NumBytes);
 		Language.NumBytes += (strlen(String)+1); // must also include zero byte
 	}
 
