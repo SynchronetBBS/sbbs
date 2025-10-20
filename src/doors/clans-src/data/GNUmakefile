@@ -3,6 +3,9 @@ PAKFILES :=	$(shell awk '{print $$1}' pak.lst)
 
 pak: clans.pak
 
+.PHONY: all
+all: pak
+
 .PHONY: native-devkit
 native-devkit:
 	env - PATH="$(PATH)" $(MAKE) -C ../src devkit
