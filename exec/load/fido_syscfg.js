@@ -1,4 +1,3 @@
-// $Id: fido_syscfg.js,v 1.24 2020/05/16 20:10:19 rswindell Exp $
 /*
  * Parse as much as needed from the SBBSecho configuration.
  * v3+ uses sbbsecho.ini by default, other filenames are supported.
@@ -49,7 +48,7 @@ function SBBSEchoCfg (fname)
 	if (this.secure_inbound !== null)
 		this.inb.push(this.secure_inbound);
 	this.outbound = ecfg.iniGetValue(null, "Outbound", "../fido/outbound");
-	this.is_flo = ecfg.iniGetValue(null, "BinkleyStyleOutbound", false);
+	this.is_flo = ecfg.iniGetValue(null, "BinkleyStyleOutbound", true);
 	ecfg.iniGetSections('node:').forEach(function(section) {
 		this.pktpass[section.replace(/^node:/,'')] = ecfg.iniGetValue(section, 'PacketPwd', '');
 	}, this);
