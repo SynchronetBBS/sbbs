@@ -3,6 +3,8 @@
 
 #include "defines.h"
 
+#define PATH_SIZE 256
+
 struct IniFile {
 	bool Initialized;
 
@@ -21,7 +23,7 @@ struct config {
 	char szSysopName[40];
 	char szBBSName[40];
 
-	char szScoreFile[2][40];        // 0 == ascii, 1 == ansi
+	char szScoreFile[2][PATH_SIZE];        // 0 == ascii, 1 == ansi
 	char szRegcode[25];
 
 	/*
@@ -29,8 +31,8 @@ struct config {
 	 */
 	int16_t BBSID;
 	bool InterBBS;
-	char szNetmailDir[30];
-	char szInboundDir[30];
+	char szNetmailDir[PATH_SIZE];
+	char szInboundDir[PATH_SIZE];
 	int16_t MailerType;
 };
 
