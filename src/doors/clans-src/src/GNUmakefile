@@ -9,6 +9,10 @@ CLANS_LIBS +=	$(ODOORS)/libs-$(OS)/libODoors.a
 
 LDFLAGS	+=	-L$(ODOORS)/libs-$(OS)
 
+ifeq ($(os),linux)
+ WRAPPER_LIBS += -lbsd
+endif
+
 # Some platform-specific things...
 ifdef UNIXY
  # NetBSD and Darwin don't define this themselves
@@ -196,85 +200,85 @@ $(BINDIR):
 	mkdir -p $@
 
 $(BINDIR)clans$(EXEFILE): $(CLANS_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(CLANS_LDFLAGS) $(CLANS_OBJS) -o $@ $(CLANS_LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(CLANS_LDFLAGS) $(CLANS_OBJS) -o $@ $(CLANS_LIBS) $(WRAPPER_LIBS)
 
 $(BINDIR)clans$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)clans$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)chew$(EXEFILE): $(CHEW_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)chew$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)chew$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)config$(EXEFILE): $(CONFIG_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(CONSOLE_LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(CONSOLE_LIBS) $(WRAPPER_LIBS)
 
 $(BINDIR)config$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)config$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)ecomp$(EXEFILE): $(ECOMP_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)ecomp$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)ecomp$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)install$(EXEFILE): $(INSTALL_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(CONSOLE_LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(CONSOLE_LIBS) $(WRAPPER_LIBS)
 
 $(BINDIR)install$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)install$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)langcomp$(EXEFILE): $(LANGCOMP_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)langcomp$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)langcomp$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)reset$(EXEFILE): $(RESET_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(CONSOLE_LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(CONSOLE_LIBS) $(WRAPPER_LIBS)
 
 $(BINDIR)reset$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)reset$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)makenpc$(EXEFILE): $(MAKENPC_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)makenpc$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)makenpc$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)makepak$(EXEFILE): $(MAKEPAK_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)makepak$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)makepak$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)mcomp$(EXEFILE): $(MCOMP_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)mcomp$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)mcomp$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)mclass$(EXEFILE): $(MCLASS_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)mclass$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)mclass$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)mitems$(EXEFILE): $(MITEMS_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)mitems$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)mitems$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)mspells$(EXEFILE): $(MSPELLS_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)mspells$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)mspells$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)pcedit$(EXEFILE): $(PCEDIT_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)pcedit$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)pcedit$(EXEFILE)
 	cp $^ $@
