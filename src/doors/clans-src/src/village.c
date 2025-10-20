@@ -1229,7 +1229,8 @@ static bool Village_Read(void)
 	fp = _fsopen(ST_VILLAGEDATFILE, "rb", SH_DENYWR);
 	if (!fp)  return false;
 
-	EncryptRead_s(village_data, Village.Data, fp, XOR_VILLAGE);
+	notEncryptRead_s(village_data, Village.Data, fp, XOR_VILLAGE)
+		return false;
 	fclose(fp);
 	return true;
 }
@@ -1395,7 +1396,7 @@ void Village_Init(void)
 
 	if (!Village_Read()) {
 		Village_Destroy();
-		System_Error("Village.Dat not found!\n");
+		System_Error("village.dat not found!\n");
 	}
 
 	// ensure CRC is correct
