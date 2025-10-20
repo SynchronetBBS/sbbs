@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string.h>
 #include <ctype.h>
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -78,7 +79,7 @@ void NPC_GetNPCNdx(struct NPCInfo *NPCInfo, struct NPCNdx *NPCNdx)
 	if (!Found) {
 		// couldn't find NDX in the NPX for that particular NPC
 
-		strcpy(NPCNdx->szIndex, NPCInfo->szIndex);
+		strlcpy(NPCNdx->szIndex, NPCInfo->szIndex, sizeof(NPCNdx->szIndex));
 		NPCNdx->InClan = false;
 		NPCNdx->ClanID[0] = -1;
 		NPCNdx->ClanID[1] = -1;
@@ -122,7 +123,6 @@ void NPC_UpdateNPCNdx(char *szIndex, struct NPCNdx *NPCNdx)
 void NPC_Maint(void)
 {
 	FILE *fpNPX;
-	int16_t CurNPCFile;
 	struct FileHeader FileHeader;
 	struct NPCInfo *NPCInfo;
 	struct NPCNdx NPCNdx;
@@ -130,7 +130,6 @@ void NPC_Maint(void)
 	int16_t iTemp;
 	uint8_t nfoBuf[BUF_SIZE_NPCInfo];
 	uint8_t idxBuf[BUF_SIZE_NPCNdx];
-	
 
 	DisplayStr("* NPC Maint\n");
 
@@ -164,7 +163,7 @@ void NPC_Maint(void)
 			// printf("Testing %s\n", NPCInfo->szName);
 
 			// prepare to write to NPX file
-			strcpy(NPCNdx.szIndex, NPCInfo->szIndex);
+			strlcpy(NPCNdx.szIndex, NPCInfo->szIndex, sizeof(NPCNdx.szIndex));
 			NPCNdx.WhereWander = NPCInfo->WhereWander;
 			NPCNdx.InClan = false;
 			NPCNdx.ClanID[0] = -1;
@@ -196,7 +195,6 @@ void NPC_Maint(void)
 	fclose(fpNPX);
 
 	free(NPCInfo);
-	(void)CurNPCFile;
 }
 
 void NPC_ChatNPC(char *szIndex)
@@ -207,7 +205,7 @@ void NPC_ChatNPC(char *szIndex)
 	struct NPCInfo *NPCInfo;
 	int16_t iTemp, NumTopicsKnown, WhichTopic, QuoteIndex[MAX_TOPICS],
 	CurFile, CurNPC, UserInput;
-	char *szString, szKeys[26 + 3], *pszTopics[MAX_TOPICS],
+	char szString[256], *pszTopics[MAX_TOPICS],
 	szPrompt[128];
 	struct clan *EnemyClan;
 	struct FileHeader FileHeader;
@@ -215,8 +213,6 @@ void NPC_ChatNPC(char *szIndex)
 	long Offset;
 	bool FoundNPC;
 	uint8_t nBuf[BUF_SIZE_NPCInfo];
-
-	szString = MakeStr(255);
 
 	EnemyClan = NULL;
 
@@ -262,7 +258,6 @@ void NPC_ChatNPC(char *szIndex)
 
 	if (FoundNPC == false) {
 		rputs("NPC not found\n\r");
-		free(szString);
 		free(NPCInfo);
 		return;
 	}
@@ -275,7 +270,6 @@ void NPC_ChatNPC(char *szIndex)
 		if (RunEvent(true, NPCInfo->szQuoteFile,
 					 NPCInfo->IntroTopic.szFileName, NPCInfo, szIndex) == true) {
 			free(NPCInfo);
-			free(szString);
 			return;
 		}
 		door_pause();
@@ -284,7 +278,7 @@ void NPC_ChatNPC(char *szIndex)
 	/* now the topic stuff */
 
 	for (;;) {
-		sprintf(szString, "\n |0AYou are chatting with |0B%s\n", NPCInfo->szName);
+		snprintf(szString, sizeof(szString), "\n |0AYou are chatting with |0B%s\n", NPCInfo->szName);
 		rputs(szString);
 
 		// get topics known
@@ -299,12 +293,12 @@ void NPC_ChatNPC(char *szIndex)
 
 		// see how many quotes left
 		if (NPCInfo->MaxTopics != -1) {
-			sprintf(szPrompt, "|0A You may discuss |0B%d |0Atopics.  ",
+			snprintf(szPrompt, sizeof(szPrompt), "|0A You may discuss |0B%d |0Atopics.  ",
 					NPCInfo->MaxTopics);
 		}
 		else szPrompt[0] = 0;
 
-		strcat(szPrompt, "|0GEnter a Topic or press enter to quit\n|0E> |07");
+		strlcat(szPrompt, "|0GEnter a Topic or press enter to quit\n|0E> |07", sizeof(szPrompt));
 
 		// chose one
 		GetStringChoice(pszTopics, NumTopicsKnown, szPrompt, &UserInput,
@@ -352,8 +346,6 @@ void NPC_ChatNPC(char *szIndex)
 	}
 
 	free(NPCInfo);
-	free(szString);
-	(void)szKeys;
 }
 
 void ChatVillagers(int16_t WhichMenu)
@@ -417,10 +409,8 @@ void ChatVillagers(int16_t WhichMenu)
 			// in future -- is this town same town as the NPC?
 
 			// yes, he is in this menu, add to index
-			pszNPCIndex[ NPCsFound ] = MakeStr(strlen(NPCInfo->szIndex) + 1);
-			strcpy(pszNPCIndex[ NPCsFound ], NPCInfo->szIndex);
-			pszNPCNames[ NPCsFound ] = MakeStr(strlen(NPCInfo->szName) + 1);
-			strcpy(pszNPCNames[ NPCsFound ], NPCInfo->szName);
+			pszNPCIndex[ NPCsFound ] = DupeStr(NPCInfo->szIndex);
+			pszNPCNames[ NPCsFound ] = DupeStr(NPCInfo->szName);
 			NPCsFound++;
 		}
 		fclose(FileHeader.fp);
@@ -440,7 +430,7 @@ void ChatVillagers(int16_t WhichMenu)
 		rputs("\n |0BYou scan the area for villagers . . .\n");
 		rputs(ST_LONGDIVIDER);
 		for (CurNPC = 0; CurNPC < NPCsFound; CurNPC++) {
-			sprintf(szString, " |0A(|0B%c|0A) |0C%s\n", CurNPC + 'A', pszNPCNames[ CurNPC ]);
+			snprintf(szString, sizeof(szString), " |0A(|0B%c|0A) |0C%s\n", CurNPC + 'A', pszNPCNames[ CurNPC ]);
 			rputs(szString);
 			szKeys[CurNPC] = CurNPC + 'A';
 		}
@@ -450,7 +440,7 @@ void ChatVillagers(int16_t WhichMenu)
 		szKeys[CurNPC + 3] = 0;
 
 		rputs(" |0A(|0BQ|0A) |0CQuit\n\n");
-		sprintf(szString, " |0B%d |0Achat(s) left\n", MAX_CHATSPERDAY - PClan->ChatsToday);
+		snprintf(szString, sizeof(szString), " |0B%d |0Achat(s) left\n", MAX_CHATSPERDAY - PClan->ChatsToday);
 		rputs(szString);
 		rputs(ST_LONGDIVIDER);
 		rputs(" |0GChoose one|0E> |0FQuit");
@@ -464,7 +454,7 @@ void ChatVillagers(int16_t WhichMenu)
 			break;  // done
 		}
 
-		sprintf(szString, "\b\b\b\b    \b\b\b\b%s\n\n", pszNPCNames[ cInput - 'A']);
+		snprintf(szString, sizeof(szString), "\b\b\b\b    \b\b\b\b%s\n\n", pszNPCNames[ cInput - 'A']);
 		rputs(szString);
 
 		// if not enough chats, don't let him chat
@@ -534,9 +524,8 @@ void NPC_AddNPCMember(char *szIndex)
 	struct pc *TmpPC;
 	struct NPCInfo *NPCInfo;
 	struct NPCNdx NPCNdx;
-	int16_t EmptySlot, CurFile, CurNPC, iTemp, WhichNPC;
+	int16_t EmptySlot, CurFile, CurNPC, iTemp;
 	bool FoundNPC = false;
-	FILE *fpNPCDat, *fpNPCNdx;
 	long SeekOffset;
 	struct FileHeader FileHeader, PCFile;
 	uint8_t nBuf[BUF_SIZE_NPCInfo];
@@ -629,8 +618,5 @@ void NPC_AddNPCMember(char *szIndex)
 	PClan->Member[EmptySlot]->MyClan = PClan;
 	free(TmpPC);
 	free(NPCInfo);
-	(void)WhichNPC;
-	(void)fpNPCDat;
-	(void)fpNPCNdx;
 }
 

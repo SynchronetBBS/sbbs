@@ -13,7 +13,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "unix_wrappers.h"
 #ifndef __unix__
 # if defined(_MSC_VER) || defined(__MINGW32__)
 #  include <share.h>
@@ -23,6 +22,8 @@
 # include <dos.h>
 # include <io.h>
 #endif
+#include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -40,20 +41,20 @@ static char aszShortMonthName[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun"
 								};
 
 static tBool DirExists(const char *pszDirName);
-static void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut);
+static void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut, size_t sz);
 static tIBResult ValidateInfoStruct(tIBInfo *pInfo);
 static tBool CreateMessage(char *pszMessageDir, tMessageHeader *pHeader,
 					char *pszText);
 static uint32_t GetFirstUnusedMsgNum(char *pszMessageDir);
 static void GetMessageFilename(char *pszMessageDir, uint32_t lwMessageNum,
-						char *pszOut);
+						char *pszOut, size_t sz);
 static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 				   tMessageHeader *pHeader, char *pszText);
 static tBool ReadMessage(char *pszMessageDir, uint32_t lwMessageNum,
 				  tMessageHeader *pHeader, char **ppszText);
 static uint32_t GetNextMSGID(void);
 static void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource);
-static void RidPath(char *pszFileName, char  *pszFileNameNoPath);
+static void RidPath(char *pszFileName, char  *pszFileNameNoPath, size_t sz);
 
 static tBool DirExists(const char *pszDirName)
 {
@@ -67,7 +68,7 @@ static tBool DirExists(const char *pszDirName)
 	assert(pszDirName != NULL);
 	assert(strlen(pszDirName) <= PATH_CHARS);
 
-	strcpy(szDirFileName, pszDirName);
+	strlcpy(szDirFileName, pszDirName, sizeof(szDirFileName));
 
 	/* Remove any trailing backslash from directory name */
 	if (szDirFileName[strlen(szDirFileName) - 1] == '/' || szDirFileName[strlen(szDirFileName) - 1] == '\\') {
@@ -88,7 +89,7 @@ static tBool DirExists(const char *pszDirName)
 }
 
 
-static void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut)
+static void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut, size_t sz)
 {
 	/* Validate parameters in debug mode */
 	assert(pszPath != NULL);
@@ -98,15 +99,15 @@ static void MakeFilename(const char *pszPath, const char *pszFilename, char *psz
 	assert(pszFilename != pszOut);
 
 	/* Copy path to output filename */
-	strcpy(pszOut, pszPath);
+	strlcpy(pszOut, pszPath, sz);
 
 	/* Ensure there is a trailing backslash */
 	if (pszOut[strlen(pszOut) - 1] != '\\' && pszOut[strlen(pszOut) - 1] != '/') {
-		strcat(pszOut, "/");
+		strlcat(pszOut, "/", sz);
 	}
 
 	/* Append base filename */
-	strcat(pszOut, pszFilename);
+	strlcat(pszOut, pszFilename, sz);
 }
 
 static uint32_t GetNextMSGID(void)
@@ -135,12 +136,12 @@ static tBool CreateMessage(char *pszMessageDir, tMessageHeader *pHeader,
 
 
 static void GetMessageFilename(char *pszMessageDir, uint32_t lwMessageNum,
-						char *pszOut)
+						char *pszOut, size_t sz)
 {
 	char szFileName[FILENAME_CHARS + 1];
 
-	sprintf(szFileName, "%" PRId32 ".msg", (uint32_t)lwMessageNum);
-	MakeFilename(pszMessageDir, szFileName, pszOut);
+	snprintf(szFileName, sizeof(szFileName), "%" PRId32 ".msg", (uint32_t)lwMessageNum);
+	MakeFilename(pszMessageDir, szFileName, pszOut, sz);
 }
 
 
@@ -152,7 +153,7 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 	size_t nTextSize;
 
 	/* Get fully qualified filename of message to write */
-	GetMessageFilename(pszMessageDir, lwMessageNum, szFileName);
+	GetMessageFilename(pszMessageDir, lwMessageNum, szFileName, sizeof(szFileName));
 
 	/* Open message file */
 #ifdef __unix__
@@ -205,7 +206,7 @@ static tBool ReadMessage(char *pszMessageDir, uint32_t lwMessageNum,
 	size_t nTextSize;
 
 	/* Get fully qualified filename of message to read */
-	GetMessageFilename(pszMessageDir, lwMessageNum, szFileName);
+	GetMessageFilename(pszMessageDir, lwMessageNum, szFileName, sizeof(szFileName));
 
 	DisplayStr("> ");
 	DisplayStr(szFileName);
@@ -273,7 +274,7 @@ static uint32_t GetFirstUnusedMsgNum(char *pszMessageDir)
 #endif
 	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
 
-	MakeFilename(pszMessageDir, "*.msg", szFileName);
+	MakeFilename(pszMessageDir, "*.msg", szFileName, sizeof(szFileName));
 
 #ifndef _WIN32
 	if (findfirst(szFileName, &DirEntry, FA_ARCH) == 0) {
@@ -372,28 +373,28 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 
 	/* Construct message header */
 	/* Construct to, from and subject information */
-	strncpy(MessageHeader.szFromUserName, pInfo->szProgName, 36);
-	strncpy(MessageHeader.szToUserName, pInfo->szProgName, 36);
-	// strcpy(MessageHeader.szSubject, MESSAGE_SUBJECT);
+	strlcpy(MessageHeader.szFromUserName, pInfo->szProgName, sizeof(MessageHeader.szFromUserName));
+	strlcpy(MessageHeader.szToUserName, pInfo->szProgName, sizeof(MessageHeader.szToUserName));
+	// strlcpy(MessageHeader.szSubject, MESSAGE_SUBJECT, sizeof(MessageHeader.szSubject));
 
 	/* file attach addition */
 
 	/* figure out filename if no path in it */
 	// FIXME: In future remove this code
 //   RidPath(pszFileName, szFileNameNoPath);
-	strcpy(szFileNameNoPath, pszFileName);
+	strlcpy(szFileNameNoPath, pszFileName, sizeof(szFileNameNoPath));
 
 	if (Config->MailerType == MAIL_BINKLEY) {
 		MessageHeader.szSubject[0] = '^';    /* delete file when sent */
-		strncpy(&MessageHeader.szSubject[1], szFileNameNoPath, sizeof(MessageHeader.szSubject) - 1);
+		strlcpy(&MessageHeader.szSubject[1], szFileNameNoPath, sizeof(MessageHeader.szSubject) - 1);
 	}
 	else
-		strncpy(MessageHeader.szSubject, szFileNameNoPath, sizeof(MessageHeader.szSubject));
+		strlcpy(MessageHeader.szSubject, szFileNameNoPath, sizeof(MessageHeader.szSubject));
 
 	/* Construct date and time information */
 	lnSecondsSince1970 = time(NULL);
 	pTimeInfo = localtime(&lnSecondsSince1970);
-	sprintf(MessageHeader.szDateTime, "%2.2d %s %2.2d  %2.2d:%2.2d:%2.2d",
+	snprintf(MessageHeader.szDateTime, sizeof(MessageHeader.szDateTime), "%2.2d %s %2.2d  %2.2d:%2.2d:%2.2d",
 			pTimeInfo->tm_mday,
 			aszShortMonthName[pTimeInfo->tm_mon],
 			pTimeInfo->tm_year,
@@ -431,24 +432,24 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 	/* Create message control (kludge) lines */
 	/* Create TOPT kludge line if destination point is non-zero */
 	if (DestNode.wPoint != 0) {
-		sprintf(szTOPT, "\1TOPT %u\r", DestNode.wPoint);
+		snprintf(szTOPT, sizeof(szTOPT), "\1TOPT %u\r", DestNode.wPoint);
 	}
 	else {
-		strcpy(szTOPT, "");
+		strlcpy(szTOPT, "", sizeof(szTOPT));
 	}
 
 	/* Create FMPT kludge line if origin point is non-zero */
 	if (OrigNode.wPoint != 0) {
-		sprintf(szFMPT, "\1FMPT %u\r", OrigNode.wPoint);
+		snprintf(szFMPT, sizeof(szFMPT), "\1FMPT %u\r", OrigNode.wPoint);
 	}
 	else {
-		strcpy(szFMPT, "");
+		strlcpy(szFMPT, "", sizeof(szFMPT));
 	}
 
 	/* Create INTL kludge line if origin and destination zone addresses differ */
 	// FIXME: always use intl?
 	if (DestNode.wZone != OrigNode.wZone || true) {
-		sprintf(szINTL, "\1INTL %u:%u/%u %u:%u/%u\r",
+		snprintf(szINTL, sizeof(szINTL), "\1INTL %u:%u/%u %u:%u/%u\r",
 				DestNode.wZone,
 				DestNode.wNet,
 				DestNode.wNode,
@@ -457,12 +458,12 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 				OrigNode.wNode);
 	}
 	else {
-		strcpy(szINTL, "");
+		strlcpy(szINTL, "", sizeof(szINTL));
 	}
 
 	/* Create MSGID kludge line, including point if non-zero */
 	if (OrigNode.wPoint != 0) {
-		sprintf(szMSGID, "\1MSGID: %u:%u/%u.%u %" PRIx32 "\r",
+		snprintf(szMSGID, sizeof(szMSGID), "\1MSGID: %u:%u/%u.%u %" PRIx32 "\r",
 				OrigNode.wZone,
 				OrigNode.wNet,
 				OrigNode.wNode,
@@ -470,7 +471,7 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 				(uint32_t)GetNextMSGID());
 	}
 	else {
-		sprintf(szMSGID, "\1MSGID: %u:%u/%u %" PRIx32 "\r",
+		snprintf(szMSGID, sizeof(szMSGID), "\1MSGID: %u:%u/%u %" PRIx32 "\r",
 				OrigNode.wZone,
 				OrigNode.wNet,
 				OrigNode.wNode,
@@ -496,14 +497,14 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 	}
 
 	/* Construct message text */
-	strcpy(pszMessageText, szTOPT);
-	strcat(pszMessageText, szFMPT);
-	strcat(pszMessageText, szINTL);
-	strcat(pszMessageText, szMSGID);
-	strcat(pszMessageText, MESSAGE_PID);
+	strlcpy(pszMessageText, szTOPT, nTextSize);
+	strlcat(pszMessageText, szFMPT, nTextSize);
+	strlcat(pszMessageText, szINTL, nTextSize);
+	strlcat(pszMessageText, szMSGID, nTextSize);
+	strlcat(pszMessageText, MESSAGE_PID, nTextSize);
 	if (Config->MailerType != MAIL_BINKLEY) {
 		iTemp = strlen(pszMessageText);
-		strcpy(pszMessageText+iTemp, "FLAGS KFS");
+		strlcpy(pszMessageText+iTemp, "FLAGS KFS", nTextSize - iTemp);
 		/*      pszMessageText[ iTemp ] = '';
 		      pszMessageText[ iTemp+1 ] = 'F';
 		      pszMessageText[ iTemp+2 ] = 'L';
@@ -555,7 +556,7 @@ tIBResult IBGetFile(tIBInfo *pInfo, char *szAttachFile)
 	/* Get this node's address from string */
 	ConvertStringToAddress(&ThisNode, pInfo->szThisNodeAddress);
 
-	MakeFilename(pInfo->szNetmailDir, "*.msg", szFileName);
+	MakeFilename(pInfo->szNetmailDir, "*.msg", szFileName, sizeof(szFileName));
 
 	/* Seach through each message file in the netmail directory, in no */
 	/* particular order.                                               */
@@ -587,7 +588,7 @@ tIBResult IBGetFile(tIBInfo *pInfo, char *szAttachFile)
 					/* strcpy inbounddir to filename */
 					/* strcat the subject of message -- actual filename */
 					// FIXME: problems later on?!
-					strcpy(szAttachFile, Config->szInboundDir);
+					strlcpy(szAttachFile, Config->szInboundDir, sizeof(szAttachFile));
 
 					// remove the ^ and path if it is first char
 
@@ -599,16 +600,16 @@ tIBResult IBGetFile(tIBInfo *pInfo, char *szAttachFile)
 
 					// remove ^ char
 					if (MessageHeader.szSubject[0] == '^')
-						strcat(szTemp, &MessageHeader.szSubject[1]);
+						strlcat(szTemp, &MessageHeader.szSubject[1], sizeof(szTemp));
 					else
-						strcpy(szTemp, MessageHeader.szSubject);
+						strlcpy(szTemp, MessageHeader.szSubject, sizeof(szTemp));
 
 					// dude: remove path if it exists -- local leagues only
-					RidPath(MessageHeader.szSubject, szFileNameNoPath);
+					RidPath(MessageHeader.szSubject, szFileNameNoPath, sizeof(szFileNameNoPath));
 
 					//printf("headersubject: %s\n", szTemp);
 					//printf("filename nopath: %s\n", szFileNameNoPath);
-					strcat(szAttachFile, szFileNameNoPath);
+					strlcat(szAttachFile, szFileNameNoPath, sizeof(szAttachFile));
 
 					//printf("inbound File found:  %s\n", szAttachFile);
 
@@ -616,7 +617,7 @@ tIBResult IBGetFile(tIBInfo *pInfo, char *szAttachFile)
 					if (pInfo->bEraseOnReceive) {
 						/* Determine filename of message to erase */
 						GetMessageFilename(pInfo->szNetmailDir, lwCurrentMsgNum,
-										   szFileName);
+										   szFileName, sizeof(szFileName));
 
 						/* Attempt to erase file */
 						if (unlink(szFileName) == -1) {
@@ -664,7 +665,7 @@ tIBResult IBGetFile(tIBInfo *pInfo, char *szAttachFile)
 	return(eNoMoreMessages);
 }
 
-static void RidPath(char *pszFileName, char  *pszFileNameNoPath)
+static void RidPath(char *pszFileName, char  *pszFileNameNoPath, size_t sz)
 {
 	int16_t CurChar;
 
@@ -675,5 +676,5 @@ static void RidPath(char *pszFileName, char  *pszFileNameNoPath)
 			break;
 		}
 	}
-	strcpy(pszFileNameNoPath, &pszFileName[CurChar]);
+	strlcpy(pszFileNameNoPath, &pszFileName[CurChar], sizeof(pszFileNameNoPath));
 }

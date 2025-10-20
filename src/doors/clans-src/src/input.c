@@ -27,9 +27,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef __unix__
 #include "unix_wrappers.h"
-#endif
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -116,7 +115,7 @@ static void ListChoices(char **apszChoices, int16_t NumChoices, int16_t DisplayT
 			if (iTemp%3 == 0)
 				rputs(" ");
 
-			sprintf(szString, "%-25s ", apszChoices[iTemp]);
+			snprintf(szString, sizeof(szString), "%-25s ", apszChoices[iTemp]);
 			rputs(szString);
 
 			if ((iTemp+1)%3 == 0)
@@ -134,7 +133,7 @@ static void ListChoices(char **apszChoices, int16_t NumChoices, int16_t DisplayT
 		rputs("|07");
 
 		for (iTemp = 0; iTemp < NumChoices; iTemp++) {
-			sprintf(szString, " %-s\n", apszChoices[iTemp]);
+			snprintf(szString, sizeof(szString), " %-s\n", apszChoices[iTemp]);
 			rputs(szString);
 		}
 
@@ -161,7 +160,7 @@ void GetStringChoice(char **apszChoices, int16_t NumChoices, char *szPrompt,
  *          one of the options.
  */
 {
-	char szUserInput[40], Key, *szString;
+	char szUserInput[40], Key;
 	bool ShowedTopic, WantsHelp, BackSpace, Inside;
 	int16_t iTemp, LastTopicFound = -1, CurChar = 0, TimesInStr = 0, TopicFound = 0;
 
@@ -172,8 +171,6 @@ void GetStringChoice(char **apszChoices, int16_t NumChoices, char *szPrompt,
 	WantsHelp = false;
 
 	/* show all topics */
-
-	szString = MakeStr(128);
 
 	if (ShowChoicesInitially) {
 		/* show all choices */
@@ -328,7 +325,6 @@ void GetStringChoice(char **apszChoices, int16_t NumChoices, char *szPrompt,
 		if (TimesInStr == 1) {
 			rputs("\n");
 			*UserChoice = TopicFound;
-			free(szString);
 			return;
 		}
 		else
@@ -338,8 +334,6 @@ void GetStringChoice(char **apszChoices, int16_t NumChoices, char *szPrompt,
 		CurChar = 0;
 		ShowedTopic = false;
 	}
-
-	free(szString);
 
 	// none found
 	*UserChoice = -1;
@@ -388,7 +382,7 @@ void GetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 		}
 		else if (InputCh== '' || InputCh == '\x1B') { // ctrl-y
 			InputStr [0] = 0;
-			strcpy(TempStr, BackSpaces);
+			strlcpy(TempStr, BackSpaces, sizeof(TempStr));
 			TempStr[ CurChar ] = 0;
 			rputs(TempStr);
 			Spaces[MaxChars] = 0;
@@ -442,7 +436,7 @@ int16_t GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, 
 	if (MinutesLeft < 0)
 		MinutesLeft = 0;
 
-	sprintf(TimeStr, " |0H[|0I%02d:%02d|0H] ", HoursLeft, MinutesLeft);
+	snprintf(TimeStr, sizeof(TimeStr), " |0H[|0I%02d:%02d|0H] ", HoursLeft, MinutesLeft);
 
 	/* figure out default char */
 	for (cTemp = 0; cTemp < (signed)strlen(Keys); cTemp++) {
@@ -452,8 +446,8 @@ int16_t GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, 
 	DefChoice = cTemp;
 
 	/* KeysAndEnter is just Keys[] + "\r" */
-	strcpy(KeysAndEnter, Keys);
-	strcat(KeysAndEnter, "\r\n ");
+	strlcpy(KeysAndEnter, Keys, sizeof(KeysAndEnter));
+	strlcat(KeysAndEnter, "\r\n ", sizeof(KeysAndEnter));
 
 	cTemp = strlen(KeysAndEnter);
 
@@ -494,7 +488,7 @@ int16_t GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, 
 
 	HoursLeft = (od_control.user_timelimit - od_control.user_time_used)/60;
 	MinutesLeft = (od_control.user_timelimit - od_control.user_time_used)%60;
-	sprintf(TimeStr, " |0H[|0J%02d:%02d|0H] ", HoursLeft, MinutesLeft);
+	snprintf(TimeStr, sizeof(TimeStr), " |0H[|0J%02d:%02d|0H] ", HoursLeft, MinutesLeft);
 
 	if (ShowTime)
 		rputs(TimeStr);
@@ -525,7 +519,7 @@ int32_t GetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 	/* init screen */
 	rputs(Prompt);
 
-	sprintf(DefMax, " |08(|15%" PRId32 "|07; %" PRId32 "|08) |15", DefaultVal, Maximum);
+	snprintf(DefMax, sizeof(DefMax), " |08(|15%" PRId32 "|07; %" PRId32 "|08) |15", DefaultVal, Maximum);
 	rputs(DefMax);
 
 	/* NumDigits contains amount of digits allowed using max. value input */
@@ -564,11 +558,11 @@ int32_t GetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 			for (cTemp = 0; cTemp < CurDigit; cTemp++)
 				rputs("\b \b");
 
-			sprintf(string, "%-" PRId32, Maximum);
+			snprintf(string, sizeof(string), "%-" PRId32, Maximum);
 			string[NumDigits] = 0;
 			rputs(string);
 
-			strcpy(NumString, string);
+			strlcpy(NumString, string, sizeof(NumString));
 			CurDigit = NumDigits;
 		}
 		else if (InputChar == '<' || InputChar == ',' || InputChar == 25) {
@@ -579,15 +573,15 @@ int32_t GetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 			CurDigit = 0;
 			string[CurDigit] = 0;
 
-			strcpy(NumString, string);
+			strlcpy(NumString, string, sizeof(NumString));
 		}
 		else if (InputChar == '\r' || InputChar == '\n') {
 			if (CurDigit == 0) {
-				sprintf(string, "%-" PRId32, DefaultVal);
+				snprintf(string, sizeof(string), "%-" PRId32, DefaultVal);
 				string[NumDigits] = 0;
 				rputs(string);
 
-				strcpy(NumString, string);
+				strlcpy(NumString, string, sizeof(NumString));
 				CurDigit = NumDigits;
 
 				rputs("\n");
@@ -599,11 +593,11 @@ int32_t GetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 				for (cTemp = 0; cTemp < CurDigit; cTemp++)
 					rputs("\b \b");
 
-				sprintf(string, "%-" PRId32, Maximum);
+				snprintf(string, sizeof(string), "%-" PRId32, Maximum);
 				string[NumDigits] = 0;
 				rputs(string);
 
-				strcpy(NumString, string);
+				strlcpy(NumString, string, sizeof(NumString));
 				CurDigit = NumDigits;
 			}
 			else { /* is a valid value */

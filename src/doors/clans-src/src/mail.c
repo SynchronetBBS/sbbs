@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # include <dos.h>
 #endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -100,9 +101,7 @@ static void GetUserNames(char *apszUserNames[50], int16_t WhichVillage, int16_t 
 		// user from that village?
 		if (User.ClanID[0] == WhichVillage) {
 			// found one from there
-			apszUserNames[CurUser] = malloc(strlen(User.szName) + 1);
-			CheckMem(apszUserNames[CurUser]);
-			strcpy(apszUserNames[CurUser], User.szName);
+			apszUserNames[CurUser] = DupeStr(User.szName);
 			ClanIDs[CurUser][0] = User.ClanID[0];
 			ClanIDs[CurUser][1] = User.ClanID[1];
 			CurUser++;
@@ -121,8 +120,6 @@ static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 {
 	struct Message Message;
 	FILE *fp;
-	int16_t player_num, result, i, FirstLine, LastLine;
-	char filename[50], key;
 
 	// malloc msg
 	Message.Data.MsgTxt = malloc(4000);
@@ -130,10 +127,10 @@ static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 
 	Message.Data.MsgTxt[0] = 0;
 
-	// strcpy(Message.szFromName, GlobalPlayerClan->szName);
+	// strlcpy(Message.szFromName, GlobalPlayerClan->szName, sizeof(Message.szFromName));
 	// fromname not used in generic msgs
-	strcpy(Message.szFromName, Reply->szFromName);
-	strcpy(Message.szFromVillageName, Village.Data->szName);
+	strlcpy(Message.szFromName, Reply->szFromName, sizeof(Message.szFromName));
+	strlcpy(Message.szFromVillageName, Village.Data->szName, sizeof(Message.szFromVillageName));
 	Message.ToClanID[0] = Reply->FromClanID[0];
 	Message.ToClanID[1] = Reply->FromClanID[1];
 
@@ -145,7 +142,7 @@ static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 		Message.FromClanID[0] =  PClan->ClanID[0];
 		Message.FromClanID[1] =  PClan->ClanID[1];
 	}
-	strcpy(Message.szDate, System.szTodaysDate);
+	strlcpy(Message.szDate, System.szTodaysDate, sizeof(Message.szDate));
 
 	if (AllowReply == false)
 		Message.Flags = MF_NOFROM;
@@ -153,7 +150,7 @@ static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 	Message.PublicMsgIndex = 0;
 	Message.MessageType = MT_PRIVATE;
 
-	strcpy(Message.Data.MsgTxt, szReply);
+	strlcpy(Message.Data.MsgTxt, szReply, sizeof(Message.Data.MsgTxt));
 
 	Message.Data.Length = strlen(szReply) + 1;
 	Message.Data.NumLines = 1;
@@ -172,13 +169,6 @@ static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 	fclose(fp);
 
 	free(Message.Data.MsgTxt);
-	(void)result;
-	(void)LastLine;
-	(void)filename;
-	(void)key;
-	(void)FirstLine;
-	(void)i;
-	(void)player_num;
 }
 
 
@@ -197,9 +187,9 @@ void GenericMessage(char *szString, int16_t ToClanID[2], int16_t FromClanID[2], 
 	Message.FromClanID[0] = ToClanID[0];
 	Message.FromClanID[1] = ToClanID[1];
 
-	strcpy(Message.szFromName, szFrom);
-	strcpy(Message.szDate, System.szTodaysDate);
-	strcpy(Message.szFromVillageName, Village.Data->szName);
+	strlcpy(Message.szFromName, szFrom, sizeof(Message.szFromName));
+	strlcpy(Message.szDate, System.szTodaysDate, sizeof(Message.szDate));
+	strlcpy(Message.szFromVillageName, Village.Data->szName, sizeof(Message.szFromVillageName));
 	Message.Flags = 0;
 	Message.MessageType = MT_PRIVATE;
 
@@ -232,26 +222,26 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 
 	Message.ToClanID[0] = ClanID[0];
 	Message.ToClanID[1] = ClanID[1];
-	strcpy(Message.szFromName, PClan->szName);
-	strcpy(Message.szFromVillageName, Village.Data->szName);
+	strlcpy(Message.szFromName, PClan->szName, sizeof(Message.szFromName));
+	strlcpy(Message.szFromVillageName, Village.Data->szName, sizeof(Message.szFromVillageName));
 	Message.FromClanID[0] = PClan->ClanID[0];
 	Message.FromClanID[1] = PClan->ClanID[1];
 
 	Message.BBSIDFrom = Config->BBSID;
 
-	strcpy(Message.szDate, System.szTodaysDate);
+	strlcpy(Message.szDate, System.szTodaysDate, sizeof(Message.szDate));
 	Message.Flags = 0;
 	Message.MessageType = MT_PRIVATE;
 
 	if (AllyReq) {
 		Message.Flags |= MF_ALLYREQ;
-		strcpy(Message.szAllyName, szAllyName);
+		strlcpy(Message.szAllyName, szAllyName, sizeof(Message.szAllyName));
 		Message.AllianceID = AllianceID;
 	}
 	else if (AllianceID != -1) {
 		// not an alliance, but AllyID exists, so make this an alliance-only MSG
 		Message.AllianceID = AllianceID;
-		strcpy(Message.szAllyName, szAllyName);
+		strlcpy(Message.szAllyName, szAllyName, sizeof(Message.szAllyName));
 		Message.MessageType = MT_ALLIANCE;
 	}
 
@@ -321,10 +311,10 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 				continue;
 			}
 			for (i = 0; i < NumLines; i++) {
-				sprintf(string, ST_MAILLIST, i+1, &Message.Data.MsgTxt[ Message.Data.Offsets[i] ]);
+				snprintf(string, sizeof(string), ST_MAILLIST, i+1, &Message.Data.MsgTxt[ Message.Data.Offsets[i] ]);
 				string[84] = 0;
-				strcat(string, "\n");
-				strcat(string, ST_MAILENTERCOLOR);
+				strlcat(string, "\n", sizeof(string));
+				strlcat(string, ST_MAILENTERCOLOR, sizeof(string));
 				rputs(string);
 			}
 			continue;
@@ -340,12 +330,12 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 			NumLines--;
 			CurChar -= (strlen(OldLine) + 1);
 
-			strcpy(Line1, OldLine);
+			strlcpy(Line1, OldLine, sizeof(Line1));
 
 			if (NumLines == 0)
 				OldLine[0] = 0;
 			else
-				strcpy(OldLine, &Message.Data.MsgTxt[Message.Data.Offsets[NumLines-1]]);
+				strlcpy(OldLine, &Message.Data.MsgTxt[Message.Data.Offsets[NumLines-1]], sizeof(OldLine));
 
 			Line2[0] = 0;
 			continue;
@@ -354,11 +344,11 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 
 		// else continue
 		Message.Data.Offsets[NumLines] = CurChar;
-		strcpy(&Message.Data.MsgTxt[CurChar], Line1);
+		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, sizeof(&Message.Data.MsgTxt[CurChar]));
 		CurChar += (strlen(Line1) + 1);
 
-		strcpy(OldLine, Line1);
-		strcpy(Line1, Line2);
+		strlcpy(OldLine, Line1, sizeof(OldLine));
+		strlcpy(Line1, Line2, sizeof(Line1));
 		NumLines++;
 
 		if (NumLines == 40) {
@@ -397,7 +387,7 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct Message *Reply,
 				 int16_t CurLine)
 {
-	int16_t cur_char = 0, i, FirstLine, LastLine;
+	int16_t cur_char = 0, i, FirstLine;
 	unsigned char ch, key;
 	char string[128];
 
@@ -418,7 +408,7 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 			}
 
 			if (i > ((*JustLen)/2)) {
-				strcpy(NextString, &String[i]);
+				strlcpy(NextString, &String[i], sizeof(NextString));
 				String[i] = 0;
 
 				for (; i < cur_char; i++)
@@ -555,7 +545,7 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 
 				// show old message
 				for (i = 0; i < Reply->Data.NumLines; i++) {
-					sprintf(string, ST_RMAILQUOTELIST , i+1, &Reply->Data.MsgTxt[  Reply->Data.Offsets[i]  ]);
+					snprintf(string, sizeof(string), ST_RMAILQUOTELIST , i+1, &Reply->Data.MsgTxt[  Reply->Data.Offsets[i]  ]);
 					string[84] = 0;
 					rputs(string);
 				}
@@ -566,12 +556,12 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 					continue;
 				}
 
-				strcpy(String, &Reply->Data.MsgTxt[ Reply->Data.Offsets[ FirstLine-1 ] ]);
+				strlcpy(String, &Reply->Data.MsgTxt[ Reply->Data.Offsets[ FirstLine-1 ] ], sizeof(String));
 
-				strcpy(string, ST_RMAILQUOTEBRACKET);
-				strcat(string, &Reply->Data.MsgTxt[ Reply->Data.Offsets[ FirstLine-1 ]]);
+				strlcpy(string, ST_RMAILQUOTEBRACKET, sizeof(string));
+				strlcat(string, &Reply->Data.MsgTxt[ Reply->Data.Offsets[ FirstLine-1 ]], sizeof(string));
 				string[78] = 0;
-				strcpy(String, string);
+				strlcpy(String, string, sizeof(String));
 
 				rputs(ST_LONGSPACES);
 				rputs("|09");
@@ -597,7 +587,6 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 		}
 	}
 
-	(void)LastLine;
 	return 0;
 }
 
@@ -607,10 +596,10 @@ static void Reply_Message(struct Message *Reply)
 	struct Message Message;
 	FILE *fp;
 
-	int16_t player_num, result, NumLines = 0, CurChar = 0, i, FirstLine, LastLine;
+	int16_t result, NumLines = 0, CurChar = 0, i, FirstLine, LastLine;
 	int16_t Quoted = false;
 	char string[128], JustLen = 78;
-	char Line1[128], Line2[128], key, OldLine[128];
+	char Line1[128], Line2[128], OldLine[128];
 	bool MakePublic, GlobalPost = false;
 	int16_t WhichVillage = 0;
 
@@ -624,9 +613,9 @@ static void Reply_Message(struct Message *Reply)
 	Message.ToClanID[1] = Reply->FromClanID[1];
 	Message.FromClanID[0] =  PClan->ClanID[0];
 	Message.FromClanID[1] =  PClan->ClanID[1];
-	strcpy(Message.szFromName, PClan->szName);
-	strcpy(Message.szDate, System.szTodaysDate);
-	strcpy(Message.szFromVillageName, Village.Data->szName);
+	strlcpy(Message.szFromName, PClan->szName, sizeof(Message.szFromName));
+	strlcpy(Message.szDate, System.szTodaysDate, sizeof(Message.szDate));
+	strlcpy(Message.szFromVillageName, Village.Data->szName, sizeof(Message.szFromVillageName));
 
 	Message.BBSIDFrom = Config->BBSID;
 
@@ -636,7 +625,7 @@ static void Reply_Message(struct Message *Reply)
 
 	if (Reply->MessageType == MT_ALLIANCE) {
 		Message.AllianceID = Reply->AllianceID;
-		strcpy(Message.szAllyName, Reply->szAllyName);
+		strlcpy(Message.szAllyName, Reply->szAllyName, sizeof(Message.szAllyName));
 	}
 
 	if (Reply->Flags & MF_GLOBAL) {
@@ -677,8 +666,8 @@ static void Reply_Message(struct Message *Reply)
 				if (FirstLine != LastLine) {
 					for (i = FirstLine;  i <= LastLine; i++) {
 						Message.Data.Offsets[NumLines] = CurChar;
-						strcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET);
-						strcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[i-1]]);
+						strlcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET, sizeof(&Message.Data.MsgTxt[CurChar]));
+						strlcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[i-1]], sizeof(&Message.Data.MsgTxt[CurChar]));
 						Message.Data.MsgTxt[CurChar+78] = 0;
 
 						if (CurChar >= 4000)
@@ -691,8 +680,8 @@ static void Reply_Message(struct Message *Reply)
 				}
 				else {
 					Message.Data.Offsets[NumLines] = CurChar;
-					strcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET);
-					strcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[FirstLine-1]]);
+					strlcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET, sizeof(&Message.Data.MsgTxt[CurChar]));
+					strlcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[FirstLine-1]], sizeof(&Message.Data.MsgTxt[CurChar]));
 					Message.Data.MsgTxt[CurChar+78] = 0;
 
 					CurChar += (strlen(&Message.Data.MsgTxt[CurChar]) + 1);
@@ -713,7 +702,7 @@ static void Reply_Message(struct Message *Reply)
 	rputs(ST_RMAILHEADER);
 	rputs(ST_LONGDIVIDER);
 
-	strcpy(OldLine, "");
+	strlcpy(OldLine, "", sizeof(OldLine));
 
 	if (Quoted) {
 		rputs(ST_MAILENTERCOLOR);
@@ -722,7 +711,7 @@ static void Reply_Message(struct Message *Reply)
 			rputs(ST_MAILENTERCOLOR);
 			rputs("\n");
 
-			strcpy(OldLine, &Message.Data.MsgTxt[ Message.Data.Offsets[i] ]);
+			strlcpy(OldLine, &Message.Data.MsgTxt[ Message.Data.Offsets[i] ], sizeof(OldLine));
 		}
 	}
 
@@ -788,10 +777,10 @@ static void Reply_Message(struct Message *Reply)
 				continue;
 			}
 			for (i = 0; i < NumLines; i++) {
-				sprintf(string, ST_MAILLIST, i+1, &Message.Data.MsgTxt[ Message.Data.Offsets[i] ]);
+				snprintf(string, sizeof(string), ST_MAILLIST, i+1, &Message.Data.MsgTxt[ Message.Data.Offsets[i] ]);
 				string[84] = 0;
-				strcat(string, "\n");
-				strcat(string, ST_MAILENTERCOLOR);
+				strlcat(string, "\n", sizeof(string));
+				strlcat(string, ST_MAILENTERCOLOR, sizeof(string));
 				rputs(string);
 			}
 			continue;
@@ -807,12 +796,12 @@ static void Reply_Message(struct Message *Reply)
 			NumLines--;
 			CurChar -= (strlen(OldLine) + 1);
 
-			strcpy(Line1, OldLine);
+			strlcpy(Line1, OldLine, sizeof(Line1));
 
 			if (NumLines == 0)
 				OldLine[0] = 0;
 			else
-				strcpy(OldLine, &Message.Data.MsgTxt[Message.Data.Offsets[NumLines-1]]);
+				strlcpy(OldLine, &Message.Data.MsgTxt[Message.Data.Offsets[NumLines-1]], sizeof(OldLine));
 
 			Line2[0] = 0;
 			continue;
@@ -820,11 +809,11 @@ static void Reply_Message(struct Message *Reply)
 
 		// else continue
 		Message.Data.Offsets[NumLines] = CurChar;
-		strcpy(&Message.Data.MsgTxt[CurChar], Line1);
+		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, sizeof(&Message.Data.MsgTxt[CurChar]));
 		CurChar += (strlen(Line1) + 1);
 
-		strcpy(OldLine, Line1);
-		strcpy(Line1, Line2);
+		strlcpy(OldLine, Line1, sizeof(OldLine));
+		strlcpy(Line1, Line2, sizeof(Line1));
 		NumLines++;
 
 		if (NumLines == 40) {
@@ -852,8 +841,6 @@ static void Reply_Message(struct Message *Reply)
 		SendMsj(&Message, WhichVillage);
 
 	free(Message.Data.MsgTxt);
-	(void)key;
-	(void)player_num;
 }
 
 
@@ -925,28 +912,28 @@ bool Mail_Read(void)
 		rputs(ST_LONGDIVIDER);
 
 		if (Message.Flags & MF_NOFROM)
-			sprintf(szString, ST_RMAILHEADER2,  Message.szDate);
+			snprintf(szString, sizeof(szString), ST_RMAILHEADER2,  Message.szDate);
 		else
-			sprintf(szString, ST_RMAILHEADER1,  Message.szFromName,  Message.szDate);
+			snprintf(szString, sizeof(szString), ST_RMAILHEADER1,  Message.szFromName,  Message.szDate);
 		rputs(szString);
 
 		if (Message.MessageType == MT_PUBLIC) {
-			sprintf(szString, ST_RMAILPUBLICPOST, Message.PublicMsgIndex);
+			snprintf(szString, sizeof(szString), ST_RMAILPUBLICPOST, Message.PublicMsgIndex);
 			rputs(szString);
 		}
 		rputs("\n");
 
 		if (Message.Flags == MF_ALLYREQ) {
-			sprintf(szString, ST_RMAILSUBJALLY,  Message.szFromName, Message.szAllyName);
+			snprintf(szString, sizeof(szString), ST_RMAILSUBJALLY,  Message.szFromName, Message.szAllyName);
 			rputs(szString);
 		}
 		if (Message.MessageType == MT_ALLIANCE) {
-			sprintf(szString, "|0L Alliance: |0M%s.\n" , Message.szAllyName);
+			snprintf(szString, sizeof(szString), "|0L Alliance: |0M%s.\n" , Message.szAllyName);
 			rputs(szString);
 		}
 
 		if (Message.BBSIDFrom != Config->BBSID) {
-			sprintf(szString, "|0L Origin  : |0M%s\n\r", Message.szFromVillageName);
+			snprintf(szString, sizeof(szString), "|0L Origin  : |0M%s\n\r", Message.szFromVillageName);
 			rputs(szString);
 		}
 
@@ -1004,9 +991,9 @@ bool Mail_Read(void)
 
 			/* make generic message saying he said no */
 			if (WillAlly == false)
-				sprintf(szString, ST_RMAILREJECTALLY, PClan->szName);
+				snprintf(szString, sizeof(szString), ST_RMAILREJECTALLY, PClan->szName);
 			else
-				sprintf(szString, ST_RMAILAGREEALLY, PClan->szName);
+				snprintf(szString, sizeof(szString), ST_RMAILAGREEALLY, PClan->szName);
 			GenericReply(&Message, szString, false);
 		}
 		else {
@@ -1113,7 +1100,7 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 			}
 
 			if (i > ((*JustLen)/2)) {
-				strcpy(NextString, &String[i]);
+				strlcpy(NextString, &String[i], sizeof(NextString));
 				String[i] = 0;
 
 				for (; i < cur_char; i++)
@@ -1150,7 +1137,7 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 		}
 		else if (ch == '\t' && cur_char < 73) {
 			rputs("     ");
-			strcat(&String[cur_char], "     ");
+			strlcat(&String[cur_char], "     ", sizeof(&String[cur_char]));
 			cur_char += 5;
 			continue;
 		}
@@ -1291,9 +1278,9 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 	Message.ToClanID[1] = ToClanID[1];
 	Message.FromClanID[0] = PClan->ClanID[0];
 	Message.FromClanID[1] = PClan->ClanID[1];
-	strcpy(Message.szFromName, PClan->szName);
-	strcpy(Message.szDate, System.szTodaysDate);
-	strcpy(Message.szFromVillageName, Village.Data->szName);
+	strlcpy(Message.szFromName, PClan->szName, sizeof(Message.szFromName));
+	strlcpy(Message.szDate, System.szTodaysDate, sizeof(Message.szDate));
+	strlcpy(Message.szFromVillageName, Village.Data->szName, sizeof(Message.szFromVillageName));
 
 	Message.BBSIDFrom = Config->BBSID;
 
@@ -1306,12 +1293,12 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 		if (szAllyName == NULL)
 			Message.szAllyName[0] = 0;
 		else
-			strcpy(Message.szAllyName, szAllyName);
+			strlcpy(Message.szAllyName, szAllyName, sizeof(Message.szAllyName));
 	}
 
 	if (AllyReq) {
 		Message.Flags |= MF_ALLYREQ;
-		strcpy(Message.szAllyName, szAllyName);
+		strlcpy(Message.szAllyName, szAllyName, sizeof(Message.szAllyName));
 		Message.AllianceID = AllianceID;
 	}
 
@@ -1377,10 +1364,10 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 				continue;
 			}
 			for (i = 0; i < NumLines; i++) {
-				sprintf(string, ST_MAILLIST, i+1, &Message.Data.MsgTxt[ Message.Data.Offsets[i] ]);
+				snprintf(string, sizeof(string), ST_MAILLIST, i+1, &Message.Data.MsgTxt[ Message.Data.Offsets[i] ]);
 				string[84] = 0;
-				strcat(string, "\n");
-				strcat(string, ST_MAILENTERCOLOR);
+				strlcat(string, "\n", sizeof(string));
+				strlcat(string, ST_MAILENTERCOLOR, sizeof(string));
 				rputs(string);
 			}
 			continue;
@@ -1396,12 +1383,12 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 			NumLines--;
 			CurChar -= (strlen(OldLine) + 1);
 
-			strcpy(Line1, OldLine);
+			strlcpy(Line1, OldLine, sizeof(Line1));
 
 			if (NumLines == 0)
 				OldLine[0] = 0;
 			else
-				strcpy(OldLine, &Message.Data.MsgTxt[Message.Data.Offsets[NumLines-1]]);
+				strlcpy(OldLine, &Message.Data.MsgTxt[Message.Data.Offsets[NumLines-1]], sizeof(OldLine));
 
 			Line2[0] = 0;
 			continue;
@@ -1410,11 +1397,11 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 
 		// else continue
 		Message.Data.Offsets[NumLines] = CurChar;
-		strcpy(&Message.Data.MsgTxt[CurChar], Line1);
+		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, sizeof(&Message.Data.MsgTxt[CurChar]));
 		CurChar += (strlen(Line1) + 1);
 
-		strcpy(OldLine, Line1);
-		strcpy(Line1, Line2);
+		strlcpy(OldLine, Line1, sizeof(OldLine));
+		strlcpy(Line1, Line2, sizeof(Line1));
 		NumLines++;
 
 		if (NumLines == 40) {
@@ -1511,10 +1498,8 @@ void Mail_Maint(void)
 void Mail_RequestAlliance(struct Alliance *Alliance)
 {
 	int16_t iTemp, NumAlliances = 0;
-	int16_t ClanId[2], CurClan;
-	char szToName[25], szFileName[40];
-	FILE *fpPlayerFile;
-	struct clan *TmpClan;
+	int16_t ClanId[2];
+	struct clan TmpClan = {0};
 
 	// see if this alliance has too many members
 	for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
@@ -1538,30 +1523,28 @@ void Mail_RequestAlliance(struct Alliance *Alliance)
 		return;
 	}
 
-	TmpClan = malloc(sizeof(struct clan));
-	CheckMem(TmpClan);
-	GetClan(ClanId, TmpClan);
+	GetClan(ClanId, &TmpClan);
 
 	// see if in this alliance already
 	for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
-		if (TmpClan->Alliances[iTemp] == Alliance->ID)
+		if (TmpClan.Alliances[iTemp] == Alliance->ID)
 			break;
 
 	if (iTemp != MAX_ALLIES) {
 		rputs(ST_ALLIANCEALREADY);
-		FreeClan(TmpClan);
+		FreeClanMembers(&TmpClan);
 		return;
 	}
 
 	/* see if he has too many allies */
 	NumAlliances = 0;
 	for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
-		if (TmpClan->Alliances[iTemp] != -1)
+		if (TmpClan.Alliances[iTemp] != -1)
 			NumAlliances++;
 
 	if (NumAlliances == MAX_ALLIES) {
 		rputs(ST_ALLIANCEOTHERMAX);
-		FreeClan(TmpClan);
+		FreeClanMembers(&TmpClan);
 		return;
 	}
 
@@ -1569,11 +1552,7 @@ void Mail_RequestAlliance(struct Alliance *Alliance)
 	rputs(ST_ALLIANCELETTER);
 	MyWriteMessage2(ClanId, false, true, Alliance->ID, Alliance->szName, false, -1);
 
-	FreeClan(TmpClan);
-	(void)szFileName;
-	(void)fpPlayerFile;
-	(void)CurClan;
-	(void)szToName;
+	FreeClanMembers(&TmpClan);
 }
 
 void Mail_WriteToAllies(struct Alliance *Alliance)
@@ -1594,16 +1573,16 @@ static void SendMsj(struct Message *Message, int16_t WhichVillage)
 	// if WhichVillage == -1, do a for loop and send packet to all BBSes
 
 	struct Packet Packet;
-	int16_t ClanID[2], CurBBS;
+	int16_t CurBBS;
 	FILE *fp;
 
 
 	Packet.Active = true;
 	Packet.BBSIDFrom = IBBS.Data->BBSID;
 	Packet.PacketType = PT_MSJ;
-	strcpy(Packet.szDate, System.szTodaysDate);
+	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 	Packet.PacketLength = BUF_SIZE_Message + Message->Data.Length;
-	strcpy(Packet.GameID, Game.Data->GameID);
+	strlcpy(Packet.GameID, Game.Data->GameID, sizeof(Packet.GameID));
 
 	if (WhichVillage != -1) {
 		Packet.BBSIDTo = WhichVillage;
@@ -1649,7 +1628,6 @@ static void SendMsj(struct Message *Message, int16_t WhichVillage)
 			unlink("tmp.$$$");
 		}
 	}
-	(void)ClanID;
 }
 
 void PostMsj(struct Message *Message)
@@ -1681,7 +1659,7 @@ void GlobalMsgPost(void)
 	//  public (everyone sees)
 	//  private (direct)
 
-	char cKey, *apszVillageNames[MAX_IBBSNODES], *apszUserNames[50],
+	char *apszVillageNames[MAX_IBBSNODES], *apszUserNames[50],
 	*pszChoices[2] = { "1. Public", "2. Private" };
 	int16_t iTemp, NumVillages, WhichVillage, NumClans;
 	int16_t ClanIDs[50][2], WhichClan, ClanID[2], PostType;
@@ -1774,5 +1752,4 @@ void GlobalMsgPost(void)
 
 		MyWriteMessage2(ClanID, false, false, -1, "", true, WhichVillage);
 	}
-	(void)cKey;
 }

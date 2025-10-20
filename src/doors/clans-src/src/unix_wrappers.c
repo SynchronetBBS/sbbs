@@ -34,7 +34,7 @@ findfirst(char *pathname, struct ffblk *fblk, int attrib)
 	struct dirent *dp;
 	struct stat   file_stat;
 
-	strcpy(&path[2],pathname);
+	strlcpy(&path[2], pathname, sizeof(path) - 2);
 	if (path[2] != '/' && path[2] != '~')  {
 		path[0]='.';
 		path[1]='/';
@@ -44,7 +44,7 @@ findfirst(char *pathname, struct ffblk *fblk, int attrib)
 	}
 	*(strrchr(path,'/')+1)=0;
 	fblk->dir_handle = opendir(path);
-	strcpy(fblk->pathname,strrchr(pathname,'/')+1);
+	strlcpy(fblk->pathname, strrchr(pathname,'/')+1, sizeof(fblk->pathname));
 
 	while ((dp = readdir(fblk->dir_handle)) != NULL)
 		if (!fnmatch(fblk->pathname,dp->d_name,0)) {
@@ -61,9 +61,9 @@ findfirst(char *pathname, struct ffblk *fblk, int attrib)
 			if (S_ISDIR(file_stat.st_mode))
 				(*fblk).ff_attrib=FA_DIREC;
 			if (strrchr(dp->d_name,'/') != NULL)
-				strcpy((*fblk).ff_name,strrchr(dp->d_name,'/')+1);
+				strlcpy((*fblk).ff_name, strrchr(dp->d_name,'/')+1, sizeof((*fblk).ff_name));
 			else
-				strcpy((*fblk).ff_name,dp->d_name);
+				strlcpy((*fblk).ff_name, dp->d_name, sizeof((*fblk).ff_name));
 			return(0);
 		}
 
@@ -92,9 +92,9 @@ findnext(struct ffblk *fblk)
 			if (S_ISDIR(file_stat.st_mode))
 				(*fblk).ff_attrib=FA_DIREC;
 			if (strrchr(dp->d_name,'/')!=NULL)
-				strcpy((*fblk).ff_name,strrchr(dp->d_name,'/')+1);
+				strlcpy((*fblk).ff_name, strrchr(dp->d_name,'/')+1, sizeof((*fblk).ff_name));
 			else
-				strcpy((*fblk).ff_name,dp->d_name);
+				strlcpy((*fblk).ff_name,dp->d_name, sizeof((*fblk).ff_name));
 			return(0);
 		}
 

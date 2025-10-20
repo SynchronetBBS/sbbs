@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # endif
 #endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include "k_config.h"
 #include "myopen.h"
@@ -186,10 +187,10 @@ int main(void)
 	// initialize date
 #ifndef _WIN32
 	clans_getdate(&thedate);
-	sprintf(szTodaysDate, "%02d/%02d/%4d", thedate.da_mon, thedate.da_day, thedate.da_year);
+	snprintf(szTodaysDate, sizeof(szTodaysDate), "%02d/%02d/%4d", thedate.da_mon, thedate.da_day, thedate.da_year);
 #else
 	GetSystemTime(&system_time);
-	sprintf(szTodaysDate, "%02d/%02d/%4d", system_time.wMonth, system_time.wDay,
+	snprintf(szTodaysDate, sizeof(szTodaysDate), "%02d/%02d/%4d", system_time.wMonth, system_time.wDay,
 			system_time.wYear);
 #endif
 
@@ -227,9 +228,9 @@ static void ResetMenu(bool InterBBSGame)
 	/* show options */
 
 	/* init defaults */
-	strcpy(ResetData.szDateGameStart, szTodaysDate);
-	strcpy(ResetData.szLastJoinDate,  "12/16/2199");
-	strcpy(ResetData.szVillageName,  "The Village");
+	strlcpy(ResetData.szDateGameStart, szTodaysDate, sizeof(ResetData.szDateGameStart));
+	strlcpy(ResetData.szLastJoinDate, "12/16/2199", sizeof(ResetData.szLastJoinDate));
+	strlcpy(ResetData.szVillageName, "The Village", sizeof(ResetData.szVillageName));
 	ResetData.InterBBSGame = Config->InterBBS;
 	ResetData.LeagueWide = false;
 	ResetData.InProgress = false;
@@ -376,9 +377,9 @@ static void ResetMenu(bool InterBBSGame)
 	qputs("|09 Press the up and down keys to navigate.", 0, 18);
 
 	/* init defaults */
-	strcpy(ResetData.szDateGameStart, szTodaysDate);
-	strcpy(ResetData.szLastJoinDate,  "12/16/2199");
-	strcpy(ResetData.szVillageName,  "The Village");
+	strlcpy(ResetData.szDateGameStart, szTodaysDate, sizeof(ResetData.szDateGameStart));
+	strlcpy(ResetData.szLastJoinDate, "12/16/2199", sizeof(ResetData.szLastJoinDate));
+	strlcpy(ResetData.szVillageName, "The Village", sizeof(ResetData.szVillageName));
 	ResetData.InterBBSGame = Config->InterBBS;
 	ResetData.LeagueWide = false;
 	ResetData.InProgress = false;
@@ -1178,7 +1179,7 @@ static void EditOption(int16_t WhichOption)
 			scanf("%2d",&Day);
 			printf("Enter Year: ");
 			scanf("%4d",&Year);
-			sprintf(ResetData.szDateGameStart, "%02d/%02d/%4d", Month, Day, Year);
+			snprintf(ResetData.szDateGameStart, sizeof(ResetData.szDateGameStart), "%02d/%02d/%4d", Month, Day, Year);
 			break;
 		case 1 :    /* last join date */
 			printf("\n");
@@ -1188,7 +1189,7 @@ static void EditOption(int16_t WhichOption)
 			scanf("%2d",&Day);
 			printf("Enter Year: ");
 			scanf("%4d",&Year);
-			sprintf(ResetData.szLastJoinDate, "%02d/%02d/%4d", Month, Day, Year);
+			snprintf(ResetData.szLastJoinDate, sizeof(ResetData.szLastJoinDate), "%02d/%02d/%4d", Month, Day, Year);
 			break;
 		case 2 :    /* village name */
 			printf("\n");
@@ -1293,7 +1294,7 @@ static void EditOption(int16_t WhichOption)
 			Day = (int16_t)DosGetLong("|07Enter Day", atoi(&ResetData.szDateGameStart[3]), 31);
 			Year = (int16_t)DosGetLong("|07Enter Year", atoi(&ResetData.szDateGameStart[6]), 2500);
 
-			sprintf(ResetData.szDateGameStart, "%02d/%02d/%4d", Month, Day, Year);
+			snprintf(ResetData.szDateGameStart, sizeof(ResetData.szDateGameStart), "%02d/%02d/%4d", Month, Day, Year);
 			break;
 		case 1 :    /* last join date */
 			gotoxy(1,15);
@@ -1301,7 +1302,7 @@ static void EditOption(int16_t WhichOption)
 			Day = (int16_t)DosGetLong("|07Enter Day", atoi(&ResetData.szLastJoinDate[3]), 31);
 			Year = (int16_t)DosGetLong("|07Enter Year", atoi(&ResetData.szLastJoinDate[6]), 2500);
 
-			sprintf(ResetData.szLastJoinDate, "%02d/%02d/%4d", Month, Day, Year);
+			snprintf(ResetData.szLastJoinDate, sizeof(ResetData.szLastJoinDate), "%02d/%02d/%4d", Month, Day, Year);
 			break;
 		case 2 :    /* village name */
 			gotoxy(1,15);
@@ -1513,7 +1514,7 @@ static int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 	zputs(" ");
 	zputs(Prompt);
 
-	sprintf(DefMax, " |01(|15%" PRId32 "|07; %" PRId32 "|01) |11", DefaultVal, Maximum);
+	snprintf(DefMax, sizeof(DefMax), " |01(|15%" PRId32 "|07; %" PRId32 "|01) |11", DefaultVal, Maximum);
 	zputs(DefMax);
 
 	/* NumDigits contains amount of digits allowed using max. value input */
@@ -1534,7 +1535,7 @@ static int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 			if (CurDigit < NumDigits) {
 				NumString[CurDigit++] = InputChar;
 				NumString[CurDigit] = 0;
-				sprintf(string, "%c", InputChar);
+				snprintf(string, sizeof(string), "%c", InputChar);
 				zputs(string);
 			}
 
@@ -1555,11 +1556,11 @@ static int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 			for (cTemp = 0; cTemp < CurDigit; cTemp++)
 				zputs("\b \b");
 
-			sprintf(string, "%-" PRId32, Maximum);
+			snprintf(string, sizeof(string), "%-" PRId32, Maximum);
 			string[NumDigits] = 0;
 			zputs(string);
 
-			strcpy(NumString, string);
+			strlcpy(NumString, string, sizeof(NumString));
 			CurDigit = NumDigits;
 		}
 		else if (InputChar == '<' || InputChar == ',' || InputChar == 25) {
@@ -1570,15 +1571,15 @@ static int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 			CurDigit = 0;
 			string[CurDigit] = 0;
 
-			strcpy(NumString, string);
+			strlcpy(NumString, string, sizeof(NumString));
 		}
 		else if (InputChar == '\r' || InputChar == '\n') {
 			if (CurDigit == 0) {
-				sprintf(string, "%-" PRId32, DefaultVal);
+				snprintf(string, sizeof(string), "%-" PRId32, DefaultVal);
 				string[NumDigits] = 0;
 				zputs(string);
 
-				strcpy(NumString, string);
+				strlcpy(NumString, string, sizeof(NumString));
 				CurDigit = NumDigits;
 
 				zputs("\n");
@@ -1590,11 +1591,11 @@ static int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 				for (cTemp = 0; cTemp < CurDigit; cTemp++)
 					zputs("\b \b");
 
-				sprintf(string, "%-" PRId32, Maximum);
+				snprintf(string, sizeof(string), "%-" PRId32, Maximum);
 				string[NumDigits] = 0;
 				zputs(string);
 
-				strcpy(NumString, string);
+				strlcpy(NumString, string, sizeof(NumString));
 				CurDigit = NumDigits;
 			}
 			else {  /* is a valid value */
@@ -1645,7 +1646,7 @@ static void DosGetStr(char *InputStr, int16_t MaxChars)
 		}
 		else if (InputCh== '' || InputCh == '\x1B') { // ctrl-y
 			InputStr [0] = 0;
-			strcpy(TempStr, BackSpaces);
+			strlcpy(TempStr, BackSpaces, sizeof(TempStr));
 			TempStr[ CurChar ] = 0;
 			zputs(TempStr);
 			Spaces[MaxChars] = 0;
@@ -1666,7 +1667,7 @@ static void DosGetStr(char *InputStr, int16_t MaxChars)
 			if (CurChar==MaxChars)   continue;
 			InputStr[CurChar++]=InputCh;
 			InputStr[CurChar] = 0;
-			sprintf(szString, "%c", InputCh);
+			snprintf(szString, sizeof(szString), "%c", InputCh);
 			zputs(szString);
 		}
 	}
@@ -1736,11 +1737,11 @@ static void Config_Init(void)
 	Config = malloc(sizeof(struct config));
 
 	// --- Set defaults
-	strcpy(szConfigName, "clans.cfg");
+	strlcpy(szConfigName, "clans.cfg", sizeof(szConfigName));
 	Config->szSysopName[0] = 0;
 	Config->szBBSName[0] = 0;
-	strcpy(Config->szScoreFile[0], "scores.asc");
-	strcpy(Config->szScoreFile[1], "scores.ans");
+	strlcpy(Config->szScoreFile[0], "scores.asc", sizeof(Config->szScoreFile[0]));
+	strlcpy(Config->szScoreFile[1], "scores.ans", sizeof(Config->szScoreFile[1]));
 	Config->szRegcode[0] = 0;
 
 	Config->InterBBS = false;
@@ -1776,27 +1777,27 @@ static void Config_Init(void)
 				/* Process config token */
 				switch (iKeyWord) {
 					case 0 :  /* sysopname */
-						strcpy(Config->szSysopName, pcCurrentPos);
+						strlcpy(Config->szSysopName, pcCurrentPos, sizeof(Config->szSysopName));
 						break;
 					case 1 :  /* bbsname */
-						strcpy(Config->szBBSName, pcCurrentPos);
+						strlcpy(Config->szBBSName, pcCurrentPos, sizeof(Config->szBBSName));
 						break;
 					case 10 : /* BBS Id */
 						Config->BBSID = atoi(pcCurrentPos);
 						break;
 					case 11 : /* netmail dir */
-						strcpy(Config->szNetmailDir, pcCurrentPos);
+						strlcpy(Config->szNetmailDir, pcCurrentPos, sizeof(Config->szNetmailDir));
 
 						/* remove '\' if last char is it */
 						if (Config->szNetmailDir [ strlen(Config->szNetmailDir) - 1] == '\\' || Config->szNetmailDir [strlen(Config->szNetmailDir) - 1] == '/')
 							Config->szNetmailDir [ strlen(Config->szNetmailDir) - 1] = 0;
 						break;
 					case 12 : /* inbound dir */
-						strcpy(Config->szInboundDir, pcCurrentPos);
+						strlcpy(Config->szInboundDir, pcCurrentPos, sizeof(Config->szInboundDir));
 
 						/* add '\' if last char is not it */
 						if (Config->szInboundDir [ strlen(Config->szInboundDir) - 1] != '\\' &&  Config->szInboundDir [strlen(Config->szInboundDir) - 1] != '/')
-							strcat(Config->szInboundDir, "/");
+							strlcat(Config->szInboundDir, "/", sizeof(Config->szInboundDir));
 						break;
 					case 13 : /* mailer type */
 						if (stricmp(pcCurrentPos, "BINKLEY") == 0)
@@ -1856,9 +1857,9 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 		Game_Data.GameState = 1;
 		Game_Data.InterBBS = false;
 
-		strcpy(Game_Data.szTodaysDate, szTodaysDate);
-		strcpy(Game_Data.szDateGameStart, ResetData->szDateGameStart);
-		strcpy(Game_Data.szLastJoinDate, ResetData->szLastJoinDate);
+		strlcpy(Game_Data.szTodaysDate, szTodaysDate, sizeof(Game_Data.szTodaysDate));
+		strlcpy(Game_Data.szDateGameStart, ResetData->szDateGameStart, sizeof(Game_Data.szDateGameStart));
+		strlcpy(Game_Data.szLastJoinDate, ResetData->szLastJoinDate, sizeof(Game_Data.szLastJoinDate));
 
 		Game_Data.NextClanID = 0;
 		Game_Data.NextAllianceID = 0;
@@ -1888,17 +1889,17 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 		// initialize date
 #ifndef _WIN32
 		gettime(&t);
-		sprintf(szString, "%02d:%02d:%02d.%02d", t.tm_hour, t.tm_min, t.tm_sec, 0);
+		snprintf(szString, sizeof(szString), "%02d:%02d:%02d.%02d", t.tm_hour, t.tm_min, t.tm_sec, 0);
 #else
 		GetSystemTime(&system_time);
-		sprintf(szString, "%02d:%02d:%02d.%02d", system_time.wHour,
+		snprintf(szString, sizeof(szString), "%02d:%02d:%02d.%02d", system_time.wHour,
 				system_time.wMinute, system_time.wSecond, 0);
 #endif
-		strcpy(Game_Data.GameID, szString);
+		strlcpy(Game_Data.GameID, szString, sizeof(Game_Data.GameID));
 
-		strcpy(Game_Data.szTodaysDate, szTodaysDate);
-		strcpy(Game_Data.szDateGameStart, ResetData->szDateGameStart);
-		strcpy(Game_Data.szLastJoinDate, ResetData->szLastJoinDate);
+		strlcpy(Game_Data.szTodaysDate, szTodaysDate, sizeof(Game_Data.szTodaysDate));
+		strlcpy(Game_Data.szDateGameStart, ResetData->szDateGameStart, sizeof(Game_Data.szDateGameStart));
+		strlcpy(Game_Data.szLastJoinDate, ResetData->szLastJoinDate, sizeof(Game_Data.szLastJoinDate));
 
 		Game_Data.NextClanID = 0;
 		Game_Data.NextAllianceID = 0;
@@ -1932,17 +1933,17 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 		/* find out date and time for GameId */
 #ifndef _WIN32
 		gettime(&t);
-		sprintf(szString, "%02d:%02d:%02d.%02d", t.tm_hour, t.tm_min, t.tm_sec, 0);
+		snprintf(szString, sizeof(szString), "%02d:%02d:%02d.%02d", t.tm_hour, t.tm_min, t.tm_sec, 0);
 #else
 		GetSystemTime(&system_time);
-		sprintf(szString, "%02d:%02d:%02d.%02d", system_time.wHour,
+		snprintf(szString, sizeof(szString), "%02d:%02d:%02d.%02d", system_time.wHour,
 				system_time.wMinute, system_time.wSecond, 0);
 #endif
-		strcpy(Game_Data.GameID, szString);
+		strlcpy(Game_Data.GameID, szString, sizeof(Game_Data.GameID));
 
-		strcpy(Game_Data.szTodaysDate, szTodaysDate);
-		strcpy(Game_Data.szDateGameStart, ResetData->szDateGameStart);
-		strcpy(Game_Data.szLastJoinDate, ResetData->szLastJoinDate);
+		strlcpy(Game_Data.szTodaysDate, szTodaysDate, sizeof(Game_Data.szTodaysDate));
+		strlcpy(Game_Data.szDateGameStart, ResetData->szDateGameStart, sizeof(Game_Data.szDateGameStart));
+		strlcpy(Game_Data.szLastJoinDate, ResetData->szLastJoinDate, sizeof(Game_Data.szLastJoinDate));
 
 		Game_Data.NextClanID = 0;
 		Game_Data.NextAllianceID = 0;
@@ -1975,7 +1976,7 @@ static void News_CreateTodayNews(void)
 
 	char szString[128];
 
-	sprintf(szString, "|0CNews for |0B%s\n\n", szTodaysDate);
+	snprintf(szString, sizeof(szString), "|0CNews for |0B%s\n\n", szTodaysDate);
 	News_AddNews(szString);
 
 	/* give other info like increase in cost of etc. */
@@ -2049,7 +2050,7 @@ static void CreateVillageDat(struct ResetData *ResetData)
 	};
 
 	Village_Data.PublicMsgIndex = 1;
-	strcpy(Village_Data.szName, ResetData->szVillageName);
+	strlcpy(Village_Data.szName, ResetData->szVillageName, sizeof(Village_Data.szName));
 
 	Village_Data.TownType = -1;      /* unknown for now */
 	Village_Data.TaxRate = 0;      /* no taxes */
@@ -2088,7 +2089,7 @@ static void CreateVillageDat(struct ResetData *ResetData)
 	ClearFlags(Village_Data.GFlags);
 
 	InitEmpire(&Village_Data.Empire, false);
-	strcpy(Village_Data.Empire.szName, Village_Data.szName);
+	strlcpy(Village_Data.Empire.szName, Village_Data.szName, sizeof(Village_Data.Empire.szName));
 	Village_Data.Empire.Land = 500;      // village starts off with this
 	Village_Data.Empire.Buildings[B_BARRACKS] = 10;
 	Village_Data.Empire.Buildings[B_WALL] = 10;
@@ -2147,7 +2148,7 @@ static void KillAlliances(void)
 	// free up mem used by alliances
 	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
 		if (Alliances[iTemp]) {
-			sprintf(szFileName, "hall%02d.txt", Alliances[iTemp]->ID);
+			snprintf(szFileName, sizeof(szFileName), "hall%02d.txt", Alliances[iTemp]->ID);
 			unlink(szFileName);
 
 			free(Alliances[iTemp]);
@@ -2213,7 +2214,7 @@ static void UpdateOption(char Option)
 				xputs("No ", 40, 6);
 			break;
 		case 5:
-			sprintf(szString, "%-2d ", ResetData.LostDays);
+			snprintf(szString, sizeof(szString), "%-2d ", ResetData.LostDays);
 			xputs(szString, 40, 7);
 			break;
 		case 6:
@@ -2223,19 +2224,19 @@ static void UpdateOption(char Option)
 				xputs("No ", 40, 8);
 			break;
 		case 7:
-			sprintf(szString, "%-2d ", ResetData.MineFights);
+			snprintf(szString, sizeof(szString), "%-2d ", ResetData.MineFights);
 			xputs(szString, 40, 9);
 			break;
 		case 8:
-			sprintf(szString, "%-2d ", ResetData.ClanFights);
+			snprintf(szString, sizeof(szString), "%-2d ", ResetData.ClanFights);
 			xputs(szString, 40, 10);
 			break;
 		case 9:
-			sprintf(szString, "%-2d ", ResetData.MaxPermanentMembers);
+			snprintf(szString, sizeof(szString), "%-2d ", ResetData.MaxPermanentMembers);
 			xputs(szString, 40, 11);
 			break;
 		case 10:
-			sprintf(szString, "%-2d ", ResetData.DaysOfProtection);
+			snprintf(szString, sizeof(szString), "%-2d ", ResetData.DaysOfProtection);
 			xputs(szString, 40, 12);
 			break;
 	}

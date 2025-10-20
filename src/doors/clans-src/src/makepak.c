@@ -8,6 +8,8 @@
 # include <alloc.h>
 # include <malloc.h>
 #endif /* __MSDOS__ */
+#include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include "defines.h"
 #include "myopen.h"
@@ -25,8 +27,8 @@ static int32_t lPakSize;
 int main(int argc, char *argv[])
 {
 	FILE *fpPakFile, *fpList;
-	char szFileName[30], szFileAlias[30];       // filealias = filename in .pak
-	char szLine[255], szPakName[30], szPakList[30];
+	char szFileName[PATH_MAX], szFileAlias[30];       // filealias = filename in .pak
+	char szLine[255], szPakName[PATH_MAX], szPakList[PATH_MAX];
 
 	printf("MAKEPAK utility by Allen Ussher\n\n");
 
@@ -37,12 +39,12 @@ int main(int argc, char *argv[])
 
 
 	if (argc == 3) {
-		strcpy(szPakName, argv[1]);
-		strcpy(szPakList, argv[2]);
+		strlcpy(szPakName, argv[1], sizeof(szPakName));
+		strlcpy(szPakList, argv[2], sizeof(szPakList));
 	}
 	else {
-		strcpy(szPakName, "mypak.pak");
-		strcpy(szPakList, "pak.lst");
+		strlcpy(szPakName, "mypak.pak", sizeof(szPakName));
+		strlcpy(szPakList, "pak.lst", sizeof(szPakList));
 	}
 
 	fpPakFile = fopen(szPakName, "wb");
@@ -109,7 +111,7 @@ static void AddToPak(char *pszFileName, char *pszFileAlias, FILE *fpPakFile)
 	fseek(fpInput, 0L, SEEK_SET);
 
 	// get header info
-	strcpy(FileHeader.szFileName, pszFileAlias);
+	strlcpy(FileHeader.szFileName, pszFileAlias, sizeof(FileHeader.szFileName));
 	FileHeader.lStart = lPakSize;
 	FileHeader.lEnd = lPakSize + FileHeader.lFileSize;
 	lPakSize += FileHeader.lFileSize;

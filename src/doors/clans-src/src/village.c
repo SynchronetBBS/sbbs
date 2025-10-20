@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <share.h>
 #endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -70,9 +71,8 @@ int16_t OutsiderTownHallMenu(void)
 {
 	char *szTheOptions[11];
 	char szString[128];
-	int16_t iTemp, ClanId[2];
+	int16_t ClanId[2];
 	int32_t lTemp;
-	bool IsRuler;
 
 	LoadStrings(380, 10, szTheOptions);
 	szTheOptions[10] = "View Village Empire Stats";
@@ -83,9 +83,9 @@ int16_t OutsiderTownHallMenu(void)
 
 		/* show 'menu' */
 		if (Game.Data->InterBBS)
-			sprintf(szString, ST_VSTATHEADER, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName);
+			snprintf(szString, sizeof(szString), ST_VSTATHEADER, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName);
 		else
-			sprintf(szString, ST_VSTATHEADER, Village.Data->szName);
+			snprintf(szString, sizeof(szString), ST_VSTATHEADER, Village.Data->szName);
 		rputs(szString);
 
 		rputs(ST_LONGLINE);
@@ -93,30 +93,30 @@ int16_t OutsiderTownHallMenu(void)
 		if (Village.Data->RulingClanId[0] == -1)
 			rputs(ST_T2MENUSTAT0);
 		else {
-			sprintf(szString, ST_T2MENUSTAT1, Village.Data->szRulingClan, Village.Data->RulingDays);
+			snprintf(szString, sizeof(szString), ST_T2MENUSTAT1, Village.Data->szRulingClan, Village.Data->RulingDays);
 			rputs(szString);
 		}
 
-		sprintf(szString, ST_T2MENUSTAT2, Village.Data->TaxRate);
+		snprintf(szString, sizeof(szString), ST_T2MENUSTAT2, Village.Data->TaxRate);
 		rputs(szString);
 
-		sprintf(szString, ST_T2MENUSTAT3, Village.Data->InterestRate);
+		snprintf(szString, sizeof(szString), ST_T2MENUSTAT3, Village.Data->InterestRate);
 		rputs(szString);
 
-		sprintf(szString, ST_T2MENUSTAT4, Village.Data->GST);
+		snprintf(szString, sizeof(szString), ST_T2MENUSTAT4, Village.Data->GST);
 		rputs(szString);
 
-		sprintf(szString, ST_T2MENUSTAT6, Village.Data->Empire.VaultGold);
+		snprintf(szString, sizeof(szString), ST_T2MENUSTAT6, Village.Data->Empire.VaultGold);
 		rputs(szString);
 
-		sprintf(szString, ST_TMENUSTAT8, Village.Data->ConscriptionRate);
+		snprintf(szString, sizeof(szString), ST_TMENUSTAT8, Village.Data->ConscriptionRate);
 		rputs(szString);
 		/*
-		      sprintf(szString, ST_TMENUSTAT9, Village.Data->GovtSystem == GS_DEMOCRACY ?
+		      snprintf(szString, sizeof(szString), ST_TMENUSTAT9, Village.Data->GovtSystem == GS_DEMOCRACY ?
 		        "Democracy" : "Dictatorship");
 		      rputs(szString);
 
-		      sprintf(szString, ST_TMENUSTAT10, Village.Data->ShowEmpireStats ?
+		      snprintf(szString, sizeof(szString), ST_TMENUSTAT10, Village.Data->ShowEmpireStats ?
 		        "Available" : "Unavailable");
 		      rputs(szString);
 		*/
@@ -159,7 +159,7 @@ int16_t OutsiderTownHallMenu(void)
 					Village.Data->Empire.VaultGold += lTemp;
 					PClan->Empire.VaultGold -= lTemp;
 
-					sprintf(szString, ST_T2MENU1, lTemp);
+					snprintf(szString, sizeof(szString), ST_T2MENU1, lTemp);
 					rputs(szString);
 				}
 				break;
@@ -191,8 +191,6 @@ int16_t OutsiderTownHallMenu(void)
 				break;
 		}
 	}
-	(void)IsRuler;
-	(void)iTemp;
 }
 
 
@@ -202,7 +200,7 @@ static void ChangeFlagScheme(void)
 {
 	bool Quit = false;
 	char cInput;
-	int16_t iTemp, WhichColour;
+	int16_t WhichColour;
 	int16_t OldFlag[3];
 	bool ChangesMade = false;
 	char szString[255];
@@ -233,7 +231,7 @@ static void ChangeFlagScheme(void)
 			case '1' :
 			case '2' :
 			case '3' :
-				sprintf(szString, "%c\n\n", cInput);
+				snprintf(szString, sizeof(szString), "%c\n\n", cInput);
 				rputs(szString);
 
 				ChangesMade = true;
@@ -264,10 +262,9 @@ static void ChangeFlagScheme(void)
 	else if (ChangesMade) {
 		rputs("|15Flag changes have been saved.\n\n");
 
-		sprintf(szString, ST_NEWSNEWFLAG, Village.Data->szRulingClan, Village.Data->ColorScheme[23], Village.Data->ColorScheme[24], Village.Data->ColorScheme[25]);
+		snprintf(szString, sizeof(szString), ST_NEWSNEWFLAG, Village.Data->szRulingClan, Village.Data->ColorScheme[23], Village.Data->ColorScheme[24], Village.Data->ColorScheme[25]);
 		News_AddNews(szString);
 	}
-	(void)iTemp;
 }
 
 // ------------------------------------------------------------------------- //
@@ -322,7 +319,7 @@ static void LoadSchemes(struct Scheme *Scheme[128])
 
 		/* get name */
 		GetToken(pcCurrentPos, szName);
-		strcpy(Scheme[CurScheme]->szName, szName);
+		strlcpy(Scheme[CurScheme]->szName, szName, sizeof(Scheme[CurScheme]->szName));
 
 		/* get colors */
 		GetNums(Scheme[CurScheme]->ColorScheme, 23, pcCurrentPos);
@@ -411,16 +408,16 @@ static void ChangeColourScheme(void)
 			case 'Z' :  /* choose scheme */
 				rputs("Choose scheme\n\n");
 
-				strcpy(szKeys, "ABCDEFGHIJKLMNOP");
+				strlcpy(szKeys, "ABCDEFGHIJKLMNOP", sizeof(szKeys));
 				for (iTemp = 0; iTemp < 128; iTemp++) {
 					if (Scheme[iTemp] == NULL)
 						break;
 
-					sprintf(szString, "|01(|09%c|01) |07%s\n", iTemp + 'A', Scheme[iTemp]->szName);
+					snprintf(szString, sizeof(szString), "|01(|09%c|01) |07%s\n", iTemp + 'A', Scheme[iTemp]->szName);
 					rputs(szString);
 				}
 				szKeys[iTemp] = 0;
-				strcat(szKeys, "Q\r\n");
+				strlcat(szKeys, "Q\r\n", sizeof(szKeys));
 				rputs("|01(|09Q|01) |07Quit\n\n|07Choose one|03> |11");
 				cInput = od_get_answer(szKeys);
 
@@ -429,7 +426,7 @@ static void ChangeColourScheme(void)
 					break;
 				}
 				else
-					sprintf(szString, "%s\n", Scheme[cInput - 'A']->szName);
+					snprintf(szString, sizeof(szString), "%s\n", Scheme[cInput - 'A']->szName);
 				rputs(szString);
 
 				Choice = cInput - 'A';
@@ -440,7 +437,7 @@ static void ChangeColourScheme(void)
 				break;
 			case '!' :
 				for (iTemp = 0; iTemp < 26; iTemp++) {
-					sprintf(szString, "%d ", Village.Data->ColorScheme[iTemp]);
+					snprintf(szString, sizeof(szString), "%d ", Village.Data->ColorScheme[iTemp]);
 					rputs(szString);
 				}
 				rputs("\n");
@@ -455,7 +452,7 @@ static void ChangeColourScheme(void)
 				break;
 			default :
 
-				sprintf(szString, "%c\n\n", cInput);
+				snprintf(szString, sizeof(szString), "%c\n\n", cInput);
 				rputs(szString);
 
 				cInput = TableColor[(cInput + 0)];
@@ -489,14 +486,11 @@ static void BuildMenu(void)
 {
 	char *szTheOptions[9];
 	char szString[255];
-	int16_t iTemp;
 	int32_t THallBuildCosts[MAX_THALLLEVEL] = { 15500L, 50000L, 100000L, 250000L };
 	int32_t ChurchBuildCosts[MAX_CHURCHLEVEL] = { 8000L, 25000L, 30000L, 50000L, 70000L };
 	int32_t PawnBuildCosts[MAX_PAWNLEVEL] = { 10000L, 25000L, 30000L, 50000L, 70000L };
 	int32_t WizardBuildCosts[MAX_WIZARDLEVEL] = { 10000L, 25000L, 35000L, 40000L, 70000L };
-	int32_t lTemp, TotalCost;
-	int32_t PerCost;
-	int16_t LimitingVariable, NumToBuild;
+	int32_t TotalCost;
 
 	LoadStrings(350, 9, szTheOptions);
 
@@ -511,14 +505,14 @@ static void BuildMenu(void)
 
 		/* show 'menu' */
 		if (Game.Data->InterBBS)
-			sprintf(szString, ST_VSTATHEADER, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName);
+			snprintf(szString, sizeof(szString), ST_VSTATHEADER, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName);
 		else
-			sprintf(szString, ST_VSTATHEADER, Village.Data->szName);
+			snprintf(szString, sizeof(szString), ST_VSTATHEADER, Village.Data->szName);
 		rputs(szString);
 
 		rputs(ST_LONGLINE);
 
-		sprintf(szString, ST_TMENUSTAT5, Village.Data->Empire.VaultGold);
+		snprintf(szString, sizeof(szString), ST_TMENUSTAT5, Village.Data->Empire.VaultGold);
 		rputs(szString);
 
 		/* church,
@@ -528,52 +522,52 @@ static void BuildMenu(void)
 		if (Village.Data->ChurchLevel == 0)
 			rputs(ST_BMENU3);
 		else if (Village.Data->ChurchLevel < MAX_CHURCHLEVEL) {
-			sprintf(szString, ST_BMENU4, Village.Data->ChurchLevel+1);
+			snprintf(szString, sizeof(szString), ST_BMENU4, Village.Data->ChurchLevel+1);
 			rputs(szString);
 		}
 		else {
-			sprintf(szString, ST_BMENU5, MAX_CHURCHLEVEL);
+			snprintf(szString, sizeof(szString), ST_BMENU5, MAX_CHURCHLEVEL);
 			rputs(szString);
 		}
 
 		if (Village.Data->TrainingHallLevel == 0)
 			rputs(ST_BMENU6);
 		else if (Village.Data->TrainingHallLevel < MAX_THALLLEVEL) {
-			sprintf(szString, ST_BMENU7, Village.Data->TrainingHallLevel+1);
+			snprintf(szString, sizeof(szString), ST_BMENU7, Village.Data->TrainingHallLevel+1);
 			rputs(szString);
 		}
 		else {
-			sprintf(szString, ST_BMENU8, MAX_THALLLEVEL);
+			snprintf(szString, sizeof(szString), ST_BMENU8, MAX_THALLLEVEL);
 			rputs(szString);
 		}
 
 		if (Village.Data->PawnLevel == 0)
 			rputs(ST_BMENU30);
 		else if (Village.Data->PawnLevel < MAX_PAWNLEVEL) {
-			sprintf(szString, ST_BMENU31, Village.Data->PawnLevel+1);
+			snprintf(szString, sizeof(szString), ST_BMENU31, Village.Data->PawnLevel+1);
 			rputs(szString);
 		}
 		else {
-			sprintf(szString, ST_BMENU32, MAX_PAWNLEVEL);
+			snprintf(szString, sizeof(szString), ST_BMENU32, MAX_PAWNLEVEL);
 			rputs(szString);
 		}
 		if (Village.Data->WizardLevel == 0)
 			rputs(ST_BMENU33);
 		else if (Village.Data->WizardLevel < MAX_WIZARDLEVEL) {
-			sprintf(szString, ST_BMENU34, Village.Data->WizardLevel+1);
+			snprintf(szString, sizeof(szString), ST_BMENU34, Village.Data->WizardLevel+1);
 			rputs(szString);
 		}
 		else {
-			sprintf(szString, ST_BMENU35, MAX_WIZARDLEVEL);
+			snprintf(szString, sizeof(szString), ST_BMENU35, MAX_WIZARDLEVEL);
 			rputs(szString);
 		}
 
 		if (Village.Data->MarketLevel < MAX_MARKETLEVEL) {
-			sprintf(szString, ST_BMENU36, Village.Data->MarketLevel+1);
+			snprintf(szString, sizeof(szString), ST_BMENU36, Village.Data->MarketLevel+1);
 			rputs(szString);
 		}
 		else {
-			sprintf(szString, "     |0CSmithy Level                |0B%d\n", Village.Data->MarketLevel);
+			snprintf(szString, sizeof(szString), "     |0CSmithy Level                |0B%d\n", Village.Data->MarketLevel);
 			rputs(szString);
 		}
 
@@ -591,7 +585,7 @@ static void BuildMenu(void)
 					break;
 				}
 				if (Village.Data->PawnLevel == 0) {
-					sprintf(szString, ST_BMENU38,
+					snprintf(szString, sizeof(szString), ST_BMENU38,
 							PawnBuildCosts[0], Village.Data->Empire.VaultGold);
 					rputs(szString);
 
@@ -605,7 +599,7 @@ static void BuildMenu(void)
 						Village.Data->PawnLevel = 1;
 
 						rputs(ST_BMENU40);
-						sprintf(szString, ST_BMENU41, Village.Data->szRulingClan);
+						snprintf(szString, sizeof(szString), ST_BMENU41, Village.Data->szRulingClan);
 						News_AddNews(szString);
 						break;
 					}
@@ -618,7 +612,7 @@ static void BuildMenu(void)
 				          }
 				*/
 				else if (Village.Data->PawnLevel < MAX_PAWNLEVEL) {
-					sprintf(szString, ST_BMENU42,
+					snprintf(szString, sizeof(szString), ST_BMENU42,
 							PawnBuildCosts[Village.Data->PawnLevel], Village.Data->PawnLevel+1, Village.Data->Empire.VaultGold);
 					rputs(szString);
 
@@ -631,10 +625,10 @@ static void BuildMenu(void)
 						Village.Data->Empire.VaultGold -= PawnBuildCosts[ Village.Data->PawnLevel ];
 						Village.Data->PawnLevel++;
 
-						sprintf(szString, ST_BMENU44, Village.Data->PawnLevel);
+						snprintf(szString, sizeof(szString), ST_BMENU44, Village.Data->PawnLevel);
 						rputs(szString);
 
-						sprintf(szString, ST_BMENU45,
+						snprintf(szString, sizeof(szString), ST_BMENU45,
 								Village.Data->szRulingClan, Village.Data->PawnLevel);
 						News_AddNews(szString);
 						break;
@@ -649,7 +643,7 @@ static void BuildMenu(void)
 					break;
 				}
 				if (Village.Data->WizardLevel == 0) {
-					sprintf(szString, ST_BMENU47,
+					snprintf(szString, sizeof(szString), ST_BMENU47,
 							WizardBuildCosts[0], Village.Data->Empire.VaultGold);
 					rputs(szString);
 
@@ -663,7 +657,7 @@ static void BuildMenu(void)
 						Village.Data->WizardLevel = 1;
 
 						rputs(ST_BMENU49);
-						sprintf(szString,
+						snprintf(szString, sizeof(szString),
 								ST_BMENU50, Village.Data->szRulingClan);
 						News_AddNews(szString);
 						break;
@@ -677,7 +671,7 @@ static void BuildMenu(void)
 				          }
 				*/
 				else if (Village.Data->WizardLevel < MAX_WIZARDLEVEL) {
-					sprintf(szString, ST_BMENU51,
+					snprintf(szString, sizeof(szString), ST_BMENU51,
 							WizardBuildCosts[Village.Data->WizardLevel], Village.Data->WizardLevel+1, Village.Data->Empire.VaultGold);
 					rputs(szString);
 
@@ -690,10 +684,10 @@ static void BuildMenu(void)
 						Village.Data->Empire.VaultGold -= WizardBuildCosts[ Village.Data->WizardLevel ];
 						Village.Data->WizardLevel++;
 
-						sprintf(szString, ST_BMENU53, Village.Data->WizardLevel);
+						snprintf(szString, sizeof(szString), ST_BMENU53, Village.Data->WizardLevel);
 						rputs(szString);
 
-						sprintf(szString, ST_BMENU54,
+						snprintf(szString, sizeof(szString), ST_BMENU54,
 								Village.Data->szRulingClan, Village.Data->WizardLevel);
 						News_AddNews(szString);
 						break;
@@ -709,7 +703,7 @@ static void BuildMenu(void)
 				}
 				if (Village.Data->ChurchLevel == 0) {
 					// what will it cost
-					sprintf(szString, ST_BMENU12,
+					snprintf(szString, sizeof(szString), ST_BMENU12,
 							ChurchBuildCosts[0], Village.Data->Empire.VaultGold);
 					rputs(szString);
 
@@ -723,7 +717,7 @@ static void BuildMenu(void)
 						Village.Data->ChurchLevel = 1;
 
 						rputs(ST_BMENU14);
-						sprintf(szString, ST_NEWSNEWCHURCH, Village.Data->szRulingClan);
+						snprintf(szString, sizeof(szString), ST_NEWSNEWCHURCH, Village.Data->szRulingClan);
 						News_AddNews(szString);
 						break;
 					}
@@ -736,7 +730,7 @@ static void BuildMenu(void)
 				          }
 				*/
 				else if (Village.Data->ChurchLevel < MAX_CHURCHLEVEL) {
-					sprintf(szString, ST_BMENU15, ChurchBuildCosts[Village.Data->ChurchLevel], Village.Data->ChurchLevel+1, Village.Data->Empire.VaultGold);
+					snprintf(szString, sizeof(szString), ST_BMENU15, ChurchBuildCosts[Village.Data->ChurchLevel], Village.Data->ChurchLevel+1, Village.Data->Empire.VaultGold);
 					rputs(szString);
 
 					if (Village.Data->Empire.VaultGold < ChurchBuildCosts[ Village.Data->ChurchLevel ]) {
@@ -748,10 +742,10 @@ static void BuildMenu(void)
 						Village.Data->Empire.VaultGold -= ChurchBuildCosts[ Village.Data->ChurchLevel ];
 						Village.Data->ChurchLevel++;
 
-						sprintf(szString, ST_BMENU17, Village.Data->ChurchLevel);
+						snprintf(szString, sizeof(szString), ST_BMENU17, Village.Data->ChurchLevel);
 						rputs(szString);
 
-						sprintf(szString, ST_NEWSUPGRADECHURCH, Village.Data->szRulingClan, Village.Data->ChurchLevel);
+						snprintf(szString, sizeof(szString), ST_NEWSUPGRADECHURCH, Village.Data->szRulingClan, Village.Data->ChurchLevel);
 						News_AddNews(szString);
 						break;
 					}
@@ -765,7 +759,7 @@ static void BuildMenu(void)
 					break;
 				}
 				if (Village.Data->TrainingHallLevel == 0) {
-					sprintf(szString, ST_BMENU19, THallBuildCosts[0], Village.Data->Empire.VaultGold);
+					snprintf(szString, sizeof(szString), ST_BMENU19, THallBuildCosts[0], Village.Data->Empire.VaultGold);
 					rputs(szString);
 
 					if (Village.Data->Empire.VaultGold < THallBuildCosts[0]) {
@@ -778,7 +772,7 @@ static void BuildMenu(void)
 						Village.Data->TrainingHallLevel = 1;
 
 						rputs(ST_BMENU21);
-						sprintf(szString, ST_NEWSNEWTHALL, Village.Data->szRulingClan);
+						snprintf(szString, sizeof(szString), ST_NEWSNEWTHALL, Village.Data->szRulingClan);
 						News_AddNews(szString);
 						break;
 					}
@@ -791,7 +785,7 @@ static void BuildMenu(void)
 				          }
 				*/
 				else if (Village.Data->TrainingHallLevel < MAX_THALLLEVEL) {
-					sprintf(szString, ST_BMENU22, THallBuildCosts[Village.Data->TrainingHallLevel], Village.Data->TrainingHallLevel+1, Village.Data->Empire.VaultGold);
+					snprintf(szString, sizeof(szString), ST_BMENU22, THallBuildCosts[Village.Data->TrainingHallLevel], Village.Data->TrainingHallLevel+1, Village.Data->Empire.VaultGold);
 					rputs(szString);
 
 					if (Village.Data->Empire.VaultGold < THallBuildCosts[ Village.Data->TrainingHallLevel ]) {
@@ -803,10 +797,10 @@ static void BuildMenu(void)
 						Village.Data->Empire.VaultGold -= THallBuildCosts[ Village.Data->TrainingHallLevel ];
 						Village.Data->TrainingHallLevel++;
 
-						sprintf(szString, ST_BMENU24, Village.Data->TrainingHallLevel);
+						snprintf(szString, sizeof(szString), ST_BMENU24, Village.Data->TrainingHallLevel);
 						rputs(szString);
 
-						sprintf(szString, ST_NEWSUPGRADETHALL, Village.Data->szRulingClan, Village.Data->TrainingHallLevel);
+						snprintf(szString, sizeof(szString), ST_NEWSUPGRADETHALL, Village.Data->szRulingClan, Village.Data->TrainingHallLevel);
 						News_AddNews(szString);
 						break;
 					}
@@ -837,7 +831,7 @@ static void BuildMenu(void)
 
 				TotalCost = ((int32_t)(Village.Data->MarketLevel+1)*(Village.Data->MarketLevel+1)*1250L) + 15000L;
 
-				sprintf(szString, ST_TOWN3, TotalCost, Village.Data->MarketLevel+1, Village.Data->Empire.VaultGold);
+				snprintf(szString, sizeof(szString), ST_TOWN3, TotalCost, Village.Data->MarketLevel+1, Village.Data->Empire.VaultGold);
 				rputs(szString);
 
 				if (Village.Data->Empire.VaultGold < TotalCost) {
@@ -849,20 +843,15 @@ static void BuildMenu(void)
 					Village.Data->Empire.VaultGold -= TotalCost;
 					Village.Data->MarketLevel++;
 
-					sprintf(szString, ST_TOWN5, Village.Data->MarketLevel);
+					snprintf(szString, sizeof(szString), ST_TOWN5, Village.Data->MarketLevel);
 					rputs(szString);
 
-					sprintf(szString, ST_NEWSSMITHY, Village.Data->szRulingClan, Village.Data->MarketLevel);
+					snprintf(szString, sizeof(szString), ST_NEWSSMITHY, Village.Data->szRulingClan, Village.Data->MarketLevel);
 					News_AddNews(szString);
 				}
 				break;
 		}
 	}
-	(void)LimitingVariable;
-	(void)lTemp;
-	(void)NumToBuild;
-	(void)PerCost;
-	(void)iTemp;
 }
 
 
@@ -889,20 +878,20 @@ static void EconomicsMenu(void)
 
 		/* show 'menu' */
 		if (Game.Data->InterBBS)
-			sprintf(szString, ST_VSTATHEADER, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName);
+			snprintf(szString, sizeof(szString), ST_VSTATHEADER, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName);
 		else
-			sprintf(szString, ST_VSTATHEADER, Village.Data->szName);
+			snprintf(szString, sizeof(szString), ST_VSTATHEADER, Village.Data->szName);
 		rputs(szString);
 
 		rputs(ST_LONGLINE);
 
-		sprintf(szString, ST_TMENUSTAT5, Village.Data->Empire.VaultGold);
+		snprintf(szString, sizeof(szString), ST_TMENUSTAT5, Village.Data->Empire.VaultGold);
 		rputs(szString);
 
-		sprintf(szString, ST_EMENU1, Village.Data->TaxRate);
+		snprintf(szString, sizeof(szString), ST_EMENU1, Village.Data->TaxRate);
 		rputs(szString);
 
-		sprintf(szString, ST_EMENU3, Village.Data->GST);
+		snprintf(szString, sizeof(szString), ST_EMENU3, Village.Data->GST);
 		rputs(szString);
 
 		rputs(ST_EMENU7);
@@ -937,7 +926,7 @@ static void EconomicsMenu(void)
 					OldTax = Village.Data->TaxRate;
 					Village.Data->TaxRate = iTemp;
 
-					sprintf(szString, ST_NEWSTAX1,
+					snprintf(szString, sizeof(szString), ST_NEWSTAX1,
 							Village.Data->szRulingClan, Village.Data->TaxRate > OldTax ? "raised" : "lowered",
 							OldTax, Village.Data->TaxRate);
 					News_AddNews(szString);
@@ -967,7 +956,7 @@ static void EconomicsMenu(void)
 					OldTax = Village.Data->GST;
 					Village.Data->GST = iTemp;
 
-					sprintf(szString, ST_NEWSTAX3,
+					snprintf(szString, sizeof(szString), ST_NEWSTAX3,
 							Village.Data->szRulingClan,
 							Village.Data->GST > OldTax ? "raised" : "lowered",
 							OldTax, Village.Data->GST);
@@ -982,10 +971,10 @@ static void EconomicsMenu(void)
 					Village.Data->Empire.VaultGold += lTemp;
 					PClan->Empire.VaultGold -= lTemp;
 
-					sprintf(szString, ST_EMENU27, lTemp);
+					snprintf(szString, sizeof(szString), ST_EMENU27, lTemp);
 					rputs(szString);
 
-					sprintf(szString, ST_NEWSDONATED, PClan->szName, lTemp);
+					snprintf(szString, sizeof(szString), ST_NEWSDONATED, PClan->szName, lTemp);
 					News_AddNews(szString);
 				}
 				break;
@@ -1005,10 +994,10 @@ static void EconomicsMenu(void)
 					Village.Data->Empire.VaultGold -= lTemp;
 					PClan->Empire.VaultGold += lTemp;
 
-					sprintf(szString, ST_EMENU30, lTemp);
+					snprintf(szString, sizeof(szString), ST_EMENU30, lTemp);
 					rputs(szString);
 
-					sprintf(szString, ST_NEWSEMBEZZLE, PClan->szName, lTemp);
+					snprintf(szString, sizeof(szString), ST_NEWSEMBEZZLE, PClan->szName, lTemp);
 					News_AddNews(szString);
 				}
 				break;
@@ -1031,8 +1020,6 @@ int16_t TownHallMenu(void)
 	char *szTheOptions[17];
 	char szString[255], szSpeech[128];
 	int16_t iTemp, OldRate;
-	int16_t LimitingVariable, NumToTrain;
-	int32_t GuardCost;
 
 	LoadStrings(335, 15, szTheOptions);
 	szTheOptions[15] = "Conscription Rate";
@@ -1044,23 +1031,23 @@ int16_t TownHallMenu(void)
 
 		/* show 'menu' */
 		if (Game.Data->InterBBS)
-			sprintf(szString, ST_VSTATHEADER, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName);
+			snprintf(szString, sizeof(szString), ST_VSTATHEADER, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName);
 		else
-			sprintf(szString, ST_VSTATHEADER, Village.Data->szName);
+			snprintf(szString, sizeof(szString), ST_VSTATHEADER, Village.Data->szName);
 		rputs(szString);
 
 		rputs(ST_LONGLINE);
-		sprintf(szString, ST_TMENUSTAT0, Village.Data->RulingDays);
+		snprintf(szString, sizeof(szString), ST_TMENUSTAT0, Village.Data->RulingDays);
 		rputs(szString);
-		sprintf(szString, ST_TMENUSTAT7, Village.Data->Empire.VaultGold);
+		snprintf(szString, sizeof(szString), ST_TMENUSTAT7, Village.Data->Empire.VaultGold);
 		rputs(szString);
-		sprintf(szString, ST_TMENUSTAT8, Village.Data->ConscriptionRate);
+		snprintf(szString, sizeof(szString), ST_TMENUSTAT8, Village.Data->ConscriptionRate);
 		rputs(szString);
-		/*    sprintf(szString, ST_TMENUSTAT9, Village.Data->GovtSystem == GS_DEMOCRACY ?
+		/*    snprintf(szString, sizeof(szString), ST_TMENUSTAT9, Village.Data->GovtSystem == GS_DEMOCRACY ?
 		        "Democracy" : "Dictatorship");
 		      rputs(szString);
 
-		      sprintf(szString, ST_TMENUSTAT10, Village.Data->ShowEmpireStats ?
+		      snprintf(szString, sizeof(szString), ST_TMENUSTAT10, Village.Data->ShowEmpireStats ?
 		        "Available" : "Unavailable");
 		      rputs(szString);
 		*/
@@ -1092,8 +1079,8 @@ int16_t TownHallMenu(void)
 					OldRate = Village.Data->ConscriptionRate;
 					Village.Data->ConscriptionRate = iTemp;
 
-					// sprintf(szString, ">> %s %s the conscription rate from %d to %d\n\n",
-					sprintf(szString, ST_NEWS4,
+					// snprintf(szString, sizeof(szString), ">> %s %s the conscription rate from %d to %d\n\n",
+					snprintf(szString, sizeof(szString), ST_NEWS4,
 							Village.Data->szRulingClan, Village.Data->ConscriptionRate > OldRate ? "raised" : "lowered",
 							OldRate, Village.Data->ConscriptionRate);
 					News_AddNews(szString);
@@ -1140,7 +1127,7 @@ int16_t TownHallMenu(void)
 					break;
 				}
 
-				sprintf(szString, ST_NEWSRULERSPEECH, Village.Data->szRulingClan);
+				snprintf(szString, sizeof(szString), ST_NEWSRULERSPEECH, Village.Data->szRulingClan);
 				News_AddNews(szString);
 				News_AddNews(szSpeech);
 				News_AddNews("|16\n\n");
@@ -1164,7 +1151,7 @@ int16_t TownHallMenu(void)
 					PClan->WasRulerToday = true;
 					PClan->Points -= 100;
 
-					sprintf(szString, ST_NEWSABDICATED, PClan->szName);
+					snprintf(szString, sizeof(szString), ST_NEWSABDICATED, PClan->szName);
 					News_AddNews(szString);
 
 					return 0;
@@ -1185,9 +1172,6 @@ int16_t TownHallMenu(void)
 				break;
 		}
 	}
-	(void)LimitingVariable;
-	(void)NumToTrain;
-	(void)GuardCost;
 }
 
 
@@ -1209,9 +1193,9 @@ void Village_NewRuler(void)
 	Village.Data->RulingClanId[1] = PClan->ClanID[1];
 	Village.Data->RulingDays = 0;
 
-	strcpy(Village.Data->szRulingClan, PClan->szName);
+	strlcpy(Village.Data->szRulingClan, PClan->szName, sizeof(Village.Data->szRulingClan));
 
-	sprintf(szString, ST_NEWSNEWRULER, Village.Data->szRulingClan);
+	snprintf(szString, sizeof(szString), ST_NEWSNEWRULER, Village.Data->szRulingClan);
 	News_AddNews(szString);
 
 	/* give him points for becoming ruler */
@@ -1313,7 +1297,7 @@ void Village_Reset(void)
 	ClearFlags(Village.Data->GFlags);
 
 	Empire_Create(&Village.Data->Empire, false);
-	strcpy(Village.Data->Empire.szName, Village.Data->szName);
+	strlcpy(Village.Data->Empire.szName, Village.Data->szName, sizeof(Village.Data->Empire.szName));
 	Village.Data->Empire.Land = 500;      // village starts off with this
 	Village.Data->Empire.Buildings[B_BARRACKS] = 10;
 	Village.Data->Empire.Buildings[B_WALL] = 10;
@@ -1382,7 +1366,7 @@ void Village_Maint(void)
 		Village.Data->MarketQuality = MQ_EXCELLENT;
 	}
 
-	sprintf(szString, "|0A \xaf\xaf\xaf |0CWeapon quality today is |0B%s\n\n",
+	snprintf(szString, sizeof(szString), "|0A \xaf\xaf\xaf |0CWeapon quality today is |0B%s\n\n",
 			szQuality[Village.Data->MarketQuality]);
 	News_AddNews(szString);
 

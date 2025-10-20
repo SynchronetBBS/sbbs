@@ -53,7 +53,7 @@ void GoQuest(void)
 	}
 
 	for (;;) {
-		sprintf(szString, " |0CQuests Completed:  |0B%d\n", NumQuestsDone);
+		snprintf(szString, sizeof(szString), " |0CQuests Completed:  |0B%d\n", NumQuestsDone);
 		rputs(szString);
 		rputs(ST_LONGLINE);
 
@@ -69,7 +69,7 @@ void GoQuest(void)
 			// quest known? AND not complete?
 			if (KnownBitSet && !DoneBitSet && Quests[iTemp].pszQuestName) {
 				// show quest then
-				sprintf(szString, " |0A(|0B%c|0A) |0C%s\n", TotalQuests + 'A',
+				snprintf(szString, sizeof(szString), " |0A(|0B%c|0A) |0C%s\n", TotalQuests + 'A',
 						Quests[iTemp].pszQuestName);
 				rputs(szString);
 				QuestIndex[TotalQuests] = iTemp;

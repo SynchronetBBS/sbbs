@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # include <dos.h>
 #endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include "defines.h"
 #include "language.h"
@@ -50,14 +51,14 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 {
 	FILE *fp;
 	bool FoundFile = false;
-	char szPakFileName[50], szModFileName[50], *pc;
+	char szPakFileName[PATH_SIZE], szModFileName[PATH_SIZE], *pc;
 	uint8_t fhBuf[BUF_SIZE_FileHeader];
 
-	strcpy(szModFileName, szFileName);
+	strlcpy(szModFileName, szFileName, sizeof(szModFileName));
 
 	if (szFileName[0] == '@') {
 		// different .PAK file
-		strcpy(szPakFileName, &szFileName[1]);
+		strlcpy(szPakFileName, &szFileName[1], sizeof(szPakFileName));
 
 		// find the '/' char and put a null there
 
@@ -65,7 +66,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 
 		while (*pc) {
 			if (*pc == '/') {
-				strcpy(szModFileName, pc);
+				strlcpy(szModFileName, pc, sizeof(szModFileName));
 
 				*pc = 0;
 				break;
@@ -75,7 +76,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 
 	}
 	else {
-		strcpy(szPakFileName, "clans.pak");
+		strlcpy(szPakFileName, "clans.pak", sizeof(szPakFileName));
 	}
 
 	// if file starts with / then it is in pakfile

@@ -20,19 +20,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // Player Editor for The Clans -- no promises that this works! 01/09/2002 au
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #if defined(_WIN32) || defined(DOS)
 # include <conio.h> /* Defines getch */
 #endif
 #ifdef __unix__
-#include "unix_wrappers.h"
-#include <unistd.h>
+# include <unistd.h>
 #endif
-#include <time.h>
 #include <string.h>
-#include <ctype.h>
-/*#include <OpenDoor.h>*/
+#include "unix_wrappers.h"
+#include "win_wrappers.h"
+
 #include "structs.h"
 #include "myopen.h"
 
@@ -242,7 +243,7 @@ static void DeleteClan(int16_t ClanID[2])
 	FILE *fpOldPC, *fpNewPC, *OldMessage, *NewMessage;
 	FILE *fpTradeFile;
 	long OldOffset;
-	char szFileName[40]/*, szString[128]*/;
+	char szFileName[PATH_SIZE];
 	int16_t CurTradeData, iTemp, CurAlliance, CurMember;
 	struct TradeData TradeData;
 	struct clan *TmpClan;
@@ -331,7 +332,7 @@ static void DeleteClan(int16_t ClanID[2])
 
 	// go through msg file, set all his mail (to/from him) as deleted
 
-	strcpy(szFileName, MESSAGE_DATAFILE);
+	strlcpy(szFileName, MESSAGE_DATAFILE, sizeof(szFileName));
 
 	OldMessage = fopen(szFileName, "rb");
 	if (OldMessage) {       // MSJ file exists, so go on
@@ -757,13 +758,13 @@ static bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 {
 	FILE *fpPlayerFile;
 	int16_t ClanNum, iTemp;
-	char szFileName[50];
+	char szFileName[PATH_SIZE];
 
 	// make them all NULLs for safety
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
 		TmpClan->Member[iTemp] = NULL;
 
-	strcpy(szFileName, PLAYER_DATAFILE);
+	strlcpy(szFileName, PLAYER_DATAFILE, sizeof(szFileName));
 
 	/* find guy in file */
 	fpPlayerFile = fopen(szFileName, "rb");
@@ -814,7 +815,7 @@ static bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 static void UpdateClan(struct clan *Clan)
 {
 	FILE *fpPlayerFile;
-	/*    char szFileName[50];*/
+	/*    char szFileName[PATH_SIZE];*/
 	int16_t CurClan, iTemp;
 	long OldOffset, Offset;
 	struct clan *TmpClan;

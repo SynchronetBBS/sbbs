@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # include <share.h>
 #endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -109,10 +110,10 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 	FILE *fpOldPC, *fpNewPC, *OldMessage, *NewMessage;
 	FILE *fpTradeFile;
 	long OldOffset;
-	char /*szFileName[40],*/ szString[128];
+	char szString[128];
 	int16_t CurTradeData, iTemp, CurAlliance, CurMember;
 	struct TradeData TradeData;
-	struct clan *TmpClan;
+	struct clan TmpClan = {0};
 	struct Message Message;
 	bool FoundInPCFile = false;   // set to true if he was ever on this board
 	bool FoundNewCreator;
@@ -147,19 +148,15 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 			System_Error("Can't write to new.pc\n");
 		}
 
-		/* allocate memory */
-		TmpClan = (struct clan *) malloc(sizeof(struct clan));
-		CheckMem(TmpClan);
-
 		for (;;) {
 			/* go through each clan and write his info to new file and
 			   skip the clan in question if he is found */
 
-			notEncryptRead_s(clan, TmpClan, fpOldPC, XOR_USER)
+			notEncryptRead_s(clan, &TmpClan, fpOldPC, XOR_USER)
 				break;
 
 			/* if this is him */
-			if (TmpClan->ClanID[0] == ClanID[0] && TmpClan->ClanID[1] == ClanID[1]) {
+			if (TmpClan.ClanID[0] == ClanID[0] && TmpClan.ClanID[1] == ClanID[1]) {
 				FoundInPCFile = true;
 
 				if (Eliminate == false) {
@@ -173,22 +170,22 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 					// to clean things up
 					// see if this clan is allied with him, if so, remove from allies list
 					for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
-						TmpClan->Alliances[iTemp] = -1;
+						TmpClan.Alliances[iTemp] = -1;
 				}
 			}
 
 			// read in 6 members
 			for (iTemp = 0; iTemp < 6; iTemp++) {
-				TmpClan->Member[iTemp] = malloc(sizeof(struct pc));
-				CheckMem(TmpClan->Member[iTemp]);
-				EncryptRead_s(pc, TmpClan->Member[iTemp], fpOldPC, XOR_PC);
+				TmpClan.Member[iTemp] = malloc(sizeof(struct pc));
+				CheckMem(TmpClan.Member[iTemp]);
+				EncryptRead_s(pc, TmpClan.Member[iTemp], fpOldPC, XOR_PC);
 			}
 
 			//=== modifications go here
 			// make it so that he is NOT voted for
-			if (TmpClan->ClanRulerVote[0] == ClanID[0] &&
-					TmpClan->ClanRulerVote[1] == ClanID[1]) {
-				TmpClan->ClanRulerVote[0] = TmpClan->ClanRulerVote[1] = -1;
+			if (TmpClan.ClanRulerVote[0] == ClanID[0] &&
+					TmpClan.ClanRulerVote[1] == ClanID[1]) {
+				TmpClan.ClanRulerVote[0] = TmpClan.ClanRulerVote[1] = -1;
 			}
 
 
@@ -198,16 +195,14 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 			//===
 
 			/* write new stuff to new file */
-			EncryptWrite_s(clan, TmpClan, fpNewPC, XOR_USER);
+			EncryptWrite_s(clan, &TmpClan, fpNewPC, XOR_USER);
 
 			for (iTemp = 0; iTemp < 6; iTemp++) {
-				EncryptWrite_s(pc, TmpClan->Member[iTemp], fpNewPC, XOR_PC);
-				free(TmpClan->Member[iTemp]);
+				EncryptWrite_s(pc, TmpClan.Member[iTemp], fpNewPC, XOR_PC);
+				free(TmpClan.Member[iTemp]);
+				TmpClan.Member[iTemp] = NULL;
 			}
 		}
-
-		/* deallocate memory for PCs */
-		free(TmpClan);
 
 		fclose(fpOldPC);
 		fclose(fpNewPC);
@@ -305,12 +300,12 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 	// add message to news
 	if (*szClanName && FoundInPCFile && Eliminate == false &&
 			PClan->Eliminated == false) {
-		sprintf(szString, "|0A \xaf\xaf\xaf |0CThe clan of |0D%s |0Chas disbanded!\n\n",
+		snprintf(szString, sizeof(szString), "|0A \xaf\xaf\xaf |0CThe clan of |0D%s |0Chas disbanded!\n\n",
 				szClanName);
 		News_AddNews(szString);
 	}
 	else if (*szClanName && FoundInPCFile && Eliminate) {
-		sprintf(szString, "|0A \xaf\xaf\xaf |0CThe clan of |0D%s |0Chas been eliminated!\n\n",
+		snprintf(szString, sizeof(szString), "|0A \xaf\xaf\xaf |0CThe clan of |0D%s |0Chas been eliminated!\n\n",
 				szClanName);
 		News_AddNews(szString);
 	}
@@ -377,17 +372,12 @@ bool ClanExists(int16_t ClanID[2])
 	FILE *fpPlayerFile;
 	int16_t CurClan/*, iTemp*/;
 	long Offset;
-	struct clan *TmpClan;
+	struct clan TmpClan = {0};
 	bool FoundClan = false;
 
-	TmpClan = malloc(sizeof(struct clan));
-	CheckMem(TmpClan);
-
 	fpPlayerFile = fopen(ST_CLANSPCFILE, "rb");
-	if (!fpPlayerFile) {
-		free(TmpClan);
+	if (!fpPlayerFile)
 		return false;  /* failed to find clan */
-	}
 
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
@@ -396,22 +386,20 @@ bool ClanExists(int16_t ClanID[2])
 		if (fseek(fpPlayerFile, Offset, SEEK_SET))
 			break;  /* couldn't fseek, so exit */
 
-		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER)
+		notEncryptRead_s(clan, &TmpClan, fpPlayerFile, XOR_USER)
 			break;  /* stop reading if no more players found */
 
 		/* skip if deleted clan */
-		if (TmpClan->ClanID[0] == -1)
+		if (TmpClan.ClanID[0] == -1)
 			continue;
 
 		/* if same Ids, found clan! */
-		if (TmpClan->ClanID[0] == ClanID[0] && TmpClan->ClanID[1] == ClanID[1]) {
+		if (TmpClan.ClanID[0] == ClanID[0] && TmpClan.ClanID[1] == ClanID[1]) {
 			FoundClan = true;
 			break;
 		}
 	}
 	fclose(fpPlayerFile);
-
-	free(TmpClan);
 
 	return FoundClan;
 }
@@ -480,54 +468,54 @@ static void ShowBaseStats(struct PClass *PClass)
 
 	for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++) {
 		/* go through each one, listing it */
-		sprintf(szFullString, "|0C%-20s ", szAttributeNames[iTemp]);
+		snprintf(szFullString, sizeof(szFullString), "|0C%-20s ", szAttributeNames[iTemp]);
 
 		if (PClass->Attributes[iTemp] < 0)
-			strcat(szFullString, "|04");
+			strlcat(szFullString, "|04", sizeof(szFullString));
 		else if (PClass->Attributes[iTemp] == 0)
-			strcat(szFullString, "|0C");
+			strlcat(szFullString, "|0C", sizeof(szFullString));
 		else
-			strcat(szFullString, "|15");
+			strlcat(szFullString, "|15", sizeof(szFullString));
 
-		sprintf(szString, "%-2d      ", PClass->Attributes[iTemp]);
-		strcat(szFullString, szString);
+		snprintf(szString, sizeof(szString), "%-2d      ", PClass->Attributes[iTemp]);
+		strlcat(szFullString, szString, sizeof(szFullString));
 		rputs(szFullString);
 
 		if ((iTemp+1)%2 == 0)
 			rputs("\n");
 	}
 
-	strcpy(szFullString, "|0CHitpoints            ");
+	strlcpy(szFullString, "|0CHitpoints            ", sizeof(szFullString));
 	if (PClass->MaxHP < 0)
-		strcat(szFullString, "|04");
+		strlcat(szFullString, "|04", sizeof(szFullString));
 	else if (PClass->MaxHP == 0)
-		strcat(szFullString, "|0C");
+		strlcat(szFullString, "|0C", sizeof(szFullString));
 	else
-		strcat(szFullString, "|15");
-	sprintf(szString, "%-3d     ", PClass->MaxHP);
-	strcat(szFullString, szString);
+		strlcat(szFullString, "|15", sizeof(szFullString));
+	snprintf(szString, sizeof(szString), "%-3d     ", PClass->MaxHP);
+	strlcat(szFullString, szString, sizeof(szFullString));
 	rputs(szFullString);
 
-	strcpy(szFullString, "|0CSkill Points         ");
+	strlcpy(szFullString, "|0CSkill Points         ", sizeof(szFullString));
 	if (PClass->MaxSP < 0)
-		strcat(szFullString, "|04");
+		strlcat(szFullString, "|04", sizeof(szFullString));
 	else if (PClass->MaxSP == 0)
-		strcat(szFullString, "|0C");
+		strlcat(szFullString, "|0C", sizeof(szFullString));
 	else
-		strcat(szFullString, "|15");
-	sprintf(szString, "%-3d\n", PClass->MaxSP);
-	strcat(szFullString, szString);
+		strlcat(szFullString, "|15", sizeof(szFullString));
+	snprintf(szString, sizeof(szString), "%-3d\n", PClass->MaxSP);
+	strlcat(szFullString, szString, sizeof(szFullString));
 	rputs(szFullString);
 
-	strcpy(szFullString, "|0CGold                 ");
+	strlcpy(szFullString, "|0CGold                 ", sizeof(szFullString));
 	if (PClass->Gold < 0)
-		strcat(szFullString, "|04");
+		strlcat(szFullString, "|04", sizeof(szFullString));
 	else if (PClass->Gold == 0)
-		strcat(szFullString, "|0C");
+		strlcat(szFullString, "|0C", sizeof(szFullString));
 	else
-		strcat(szFullString, "|15");
-	sprintf(szString, "%-3d\n", PClass->Gold);
-	strcat(szFullString, szString);
+		strlcat(szFullString, "|15", sizeof(szFullString));
+	snprintf(szString, sizeof(szString), "%-3d\n", PClass->Gold);
+	strlcat(szFullString, szString, sizeof(szFullString));
 	rputs(szFullString);
 
 	rputs("\n");
@@ -543,7 +531,7 @@ static void ShowBaseStats(struct PClass *PClass)
 				SpellStrLength += 2;
 			}
 
-			sprintf(szString, "%s", Spells[ PClass->SpellsKnown[iTemp] - 1]->szName);
+			snprintf(szString, sizeof(szString), "%s", Spells[ PClass->SpellsKnown[iTemp] - 1]->szName);
 			rputs(szString);
 			SpellStrLength += strlen(szString);
 			NumSpellsKnown++;
@@ -588,7 +576,7 @@ static int16_t GetClass(struct PClass *PClass[MAX_PCLASSES], char *szHelp)
 				break;
 			}
 
-			sprintf(szString, ST_GETCLASS0, szKeys[iTemp + 1], PClass[iTemp]->szName);
+			snprintf(szString, sizeof(szString), ST_GETCLASS0, szKeys[iTemp + 1], PClass[iTemp]->szName);
 			rputs(szString);
 		}
 		/* help [?] option */
@@ -695,69 +683,69 @@ void ShowPlayerStats(struct pc *PC, bool AllowModify)
 		AtLeastOneSpell = false;
 		od_clr_scr();
 
-		sprintf(szString, ST_P2STATS0, PC->szName);
+		snprintf(szString, sizeof(szString), ST_P2STATS0, PC->szName);
 
 		switch (PC->Status) {
 			case Dead :
-				strcat(szString, "|04(Dead)");
+				strlcat(szString, "|04(Dead)", sizeof(szString));
 				break;
 			case Unconscious :
-				strcat(szString, "|04(Unconscious)");
+				strlcat(szString, "|04(Unconscious)", sizeof(szString));
 				break;
 			case Here :
-				strcat(szString, "|0M(Alive)");
+				strlcat(szString, "|0M(Alive)", sizeof(szString));
 				break;
 		}
 
 		PadString(szString, 43);
-		strcat(szString, ST_P2STATS1);
+		strlcat(szString, ST_P2STATS1, sizeof(szString));
 		rputs(szString);
 
-		sprintf(szString, ST_P2STATS2, PC->Level);
+		snprintf(szString, sizeof(szString), ST_P2STATS2, PC->Level);
 		PadString(szString, 43);
 		rputs(szString);
 
 		if (PC->Weapon)
-			sprintf(szString, ST_P2STATS3, PC->MyClan->Items[ PC->Weapon-1 ].szName);
+			snprintf(szString, sizeof(szString), ST_P2STATS3, PC->MyClan->Items[ PC->Weapon-1 ].szName);
 		else
-			sprintf(szString, ST_P2STATS3, "Nothing");
+			snprintf(szString, sizeof(szString), ST_P2STATS3, "Nothing");
 		rputs(szString);
 
 
-		sprintf(szString, ST_P2STATS4, PC->Experience, XPRequired[ PC->Level + 1 ]-PC->Experience,
+		snprintf(szString, sizeof(szString), ST_P2STATS4, PC->Experience, XPRequired[ PC->Level + 1 ]-PC->Experience,
 				PC->TrainingPoints);
 		PadString(szString, 43);
 		rputs(szString);
 
 		if (PC->Armor)
-			sprintf(szString, ST_P2STATS5, PC->MyClan->Items[ PC->Armor-1 ].szName);
+			snprintf(szString, sizeof(szString), ST_P2STATS5, PC->MyClan->Items[ PC->Armor-1 ].szName);
 		else
-			sprintf(szString, ST_P2STATS5, "Nothing");
+			snprintf(szString, sizeof(szString), ST_P2STATS5, "Nothing");
 		rputs(szString);
 
 
 		if (PC->WhichRace != -1) {
-			sprintf(szString, ST_P2STATS6, Races[ PC->WhichRace ]->szName,
+			snprintf(szString, sizeof(szString), ST_P2STATS6, Races[ PC->WhichRace ]->szName,
 					PClasses[ PC->WhichClass ]->szName);
 		}
 		else {
-			sprintf(szString, ST_P2STATS6, "Unknown", "Unknown");
+			snprintf(szString, sizeof(szString), ST_P2STATS6, "Unknown", "Unknown");
 		}
 		PadString(szString, 43);
 		rputs(szString);
 
 		// shield
 		if (PC->Shield)
-			sprintf(szString, ST_P2STATS7, PC->MyClan->Items[ PC->Shield-1 ].szName);
+			snprintf(szString, sizeof(szString), ST_P2STATS7, PC->MyClan->Items[ PC->Shield-1 ].szName);
 		else
-			sprintf(szString, ST_P2STATS7, "Nothing");
+			snprintf(szString, sizeof(szString), ST_P2STATS7, "Nothing");
 		rputs(szString);
 
-		sprintf(szString, ST_P2STATS8, PC->HP, PC->MaxHP);
+		snprintf(szString, sizeof(szString), ST_P2STATS8, PC->HP, PC->MaxHP);
 		rputs(szString);
-		sprintf(szString, ST_P2STATS9, PC->SP, PC->MaxSP);
+		snprintf(szString, sizeof(szString), ST_P2STATS9, PC->SP, PC->MaxSP);
 		rputs(szString);
-		sprintf(szString, ST_P2STATS14, PC->TrainingPoints);
+		snprintf(szString, sizeof(szString), ST_P2STATS14, PC->TrainingPoints);
 		rputs(szString);
 
 		rputs(ST_P2STATS10);
@@ -769,7 +757,7 @@ void ShowPlayerStats(struct pc *PC, bool AllowModify)
 		}
 
 		for (CurAttr = 0, CurSpell = 0; CurAttr < NUM_ATTRIBUTES; CurAttr++) {
-			sprintf(szString, "|0L %-19s |0M(%-2d) |0N%-2d",
+			snprintf(szString, sizeof(szString), "|0L %-19s |0M(%-2d) |0N%-2d",
 					szAttrNames[CurAttr], PC->Attributes[CurAttr], GetStat(PC, (char)CurAttr));
 
 			PadString(szString, 43);
@@ -798,7 +786,7 @@ void ShowPlayerStats(struct pc *PC, bool AllowModify)
 						AtLeastOneSpell = true;
 
 
-						sprintf(szString, "%s", Spells[ PC->SpellsKnown[CurSpell] - 1]->szName);
+						snprintf(szString, sizeof(szString), "%s", Spells[ PC->SpellsKnown[CurSpell] - 1]->szName);
 						rputs(szString);
 						SpellStrLength += strlen(szString);
 
@@ -821,7 +809,7 @@ void ShowPlayerStats(struct pc *PC, bool AllowModify)
 		else if (PC->DefaultAction >= 1) {
 			SpellNum = PC->SpellsKnown[PC->DefaultAction - 10] - 1;
 
-			sprintf(szString, "%s\n", Spells[SpellNum]->szName);
+			snprintf(szString, sizeof(szString), "%s\n", Spells[SpellNum]->szName);
 			rputs(szString);
 		}
 
@@ -867,14 +855,14 @@ void ListItems(struct clan *Clan)
 			FoundItem = true;
 			/* see if owned */
 			if (Clan->Items[iTemp].UsedBy) {
-				strcpy(szOwner, Clan->Member[ Clan->Items[iTemp].UsedBy - 1]->szName);
+				strlcpy(szOwner, Clan->Member[ Clan->Items[iTemp].UsedBy - 1]->szName, sizeof(szOwner));
 				szOwner[10] = 0;
 
-				sprintf(szString, "|0L%2d |0M%-20s |0N%s", iTemp+1, Clan->Items[iTemp].szName,
+				snprintf(szString, sizeof(szString), "|0L%2d |0M%-20s |0N%s", iTemp+1, Clan->Items[iTemp].szName,
 						szOwner);
 			}
 			else
-				sprintf(szString, "|0L%2d |0M%-20s |0N", iTemp+1, Clan->Items[iTemp].szName);
+				snprintf(szString, sizeof(szString), "|0L%2d |0M%-20s |0N", iTemp+1, Clan->Items[iTemp].szName);
 
 #define LEN (37+9)    // add 9 for the | codes!
 
@@ -913,11 +901,10 @@ static void ItemEquipResults(struct pc *PC, struct item_data *Item, bool Equippi
  */
 {
 	char *szVerb;
-	char *szString, Gain,
+	char szString[128], Gain,
 	*szAttrNames[NUM_ATTRIBUTES];
 	int16_t CurStat;
 
-	szString = MakeStr(128);
 	LoadStrings(10, 6, szAttrNames);
 
 	// go through each stat, say if gained or lost
@@ -939,11 +926,9 @@ static void ItemEquipResults(struct pc *PC, struct item_data *Item, bool Equippi
 		if (Gain < 0)
 			Gain = -Gain;
 
-		sprintf(szString, "|03%s %s by %d\n", szAttrNames[ CurStat], szVerb, Gain);
+		snprintf(szString, sizeof(szString), "|03%s %s by %d\n", szAttrNames[ CurStat], szVerb, Gain);
 		rputs(szString);
 	}
-
-	free(szString);
 }
 
 void ItemStats(void)
@@ -1056,11 +1041,11 @@ void ItemStats(void)
 				}
 
 				/* still wanna drop it? */
-				sprintf(szString, ST_ISTATS9, PClan->Items[ItemIndex].szName);
+				snprintf(szString, sizeof(szString), ST_ISTATS9, PClan->Items[ItemIndex].szName);
 
 				if (NoYes(szString) == YES) {
 					/* drop it */
-					sprintf(szString, ST_ISTATS10, PClan->Items[ItemIndex].szName);
+					snprintf(szString, sizeof(szString), ST_ISTATS10, PClan->Items[ItemIndex].szName);
 					rputs(szString);
 
 					PClan->Items[ItemIndex].szName[0] = 0;
@@ -1115,7 +1100,7 @@ void ItemStats(void)
 				/* if equipped, take it away from whoever using it */
 				switch (PClan->Items[ ItemIndex ].cType) {
 					case I_WEAPON :
-						sprintf(szString, ST_ISTATS15,
+						snprintf(szString, sizeof(szString), ST_ISTATS15,
 								PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->szName, PClan->Items[ItemIndex].szName);
 						rputs(szString);
 
@@ -1125,7 +1110,7 @@ void ItemStats(void)
 						PClan->Items[ItemIndex].UsedBy = 0;
 						break;
 					case I_ARMOR :
-						sprintf(szString, ST_ISTATS16,
+						snprintf(szString, sizeof(szString), ST_ISTATS16,
 								PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->szName, PClan->Items[ItemIndex].szName);
 						rputs(szString);
 
@@ -1135,7 +1120,7 @@ void ItemStats(void)
 						PClan->Items[ItemIndex].UsedBy = 0;
 						break;
 					case I_SHIELD :
-						sprintf(szString, ST_ISTATS17,
+						snprintf(szString, sizeof(szString), ST_ISTATS17,
 								PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->szName, PClan->Items[ItemIndex].szName);
 						rputs(szString);
 
@@ -1205,31 +1190,28 @@ void ItemStats(void)
 					rputs("\n");
 					for (iTemp = 0; iTemp < 6; iTemp++) {
 						if (PClan->Member[iTemp]) {
-							strcpy(szItemName, "Nothing");
+							strlcpy(szItemName, "Nothing", sizeof(szItemName));
 
 							// see if equipped already
 							switch (PClan->Items[ ItemIndex ].cType) {
 								case I_WEAPON :
 									if (PClan->Member[iTemp]->Weapon) {
-										strcpy(szItemName,
-											   PClan->Items[PClan->Member[iTemp]->Weapon-1].szName);
+										strlcpy(szItemName, PClan->Items[PClan->Member[iTemp]->Weapon-1].szName, sizeof(szItemName));
 									}
 									break;
 								case I_ARMOR :
 									if (PClan->Member[iTemp]->Armor) {
-										strcpy(szItemName,
-											   PClan->Items[PClan->Member[iTemp]->Armor-1].szName);
+										strlcpy(szItemName, PClan->Items[PClan->Member[iTemp]->Armor-1].szName, sizeof(szItemName));
 									}
 									break;
 								case I_SHIELD :
 									if (PClan->Member[iTemp]->Shield) {
-										strcpy(szItemName,
-											   PClan->Items[PClan->Member[iTemp]->Shield-1].szName);
+										strlcpy(szItemName, PClan->Items[PClan->Member[iTemp]->Shield-1].szName, sizeof(szItemName));
 									}
 									break;
 							}
 
-							sprintf(szString, ST_ISTATS22,
+							snprintf(szString, sizeof(szString), ST_ISTATS22,
 									iTemp+'A',
 									ItemPenalty(PClan->Member[iTemp], &PClan->Items[ItemIndex]) ? "|08" : "|0C",
 									PClan->Member[iTemp]->szName,
@@ -1239,12 +1221,12 @@ void ItemStats(void)
 							/* show race/class */
 							/*
 							              if (PClan->Member[iTemp]->WhichRace != -1)
-							                sprintf(szTemp, "%s/%s\n",
+							                snprintf(szTemp, sizeof(szTemp), "%s/%s\n",
 							                  Races[PClan->Member[iTemp]->WhichRace]->szName,
 							                  PClasses[PClan->Member[iTemp]->WhichClass]->szName);
 							              else
-							                strcpy(szTemp, "[unknown]\n");
-							              strcat(szString, szTemp);
+							                strlcpy(szTemp, "[unknown]\n", sizeof(szTemp));
+							              strlcat(szString, szTemp, sizeof(szString));
 							*/
 
 							rputs(szString);
@@ -1252,11 +1234,11 @@ void ItemStats(void)
 							szKeys[ strlen(szKeys)] = iTemp + 'A';
 						}
 					}
-					strcat(szKeys, "Q");
+					strlcat(szKeys, "Q", sizeof(szKeys));
 					rputs(ST_ISTATS23);
 
 
-					sprintf(szString, ST_ISTATS24, PClan->Items[ItemIndex].szName);
+					snprintf(szString, sizeof(szString), ST_ISTATS24, PClan->Items[ItemIndex].szName);
 					rputs(szString);
 
 					WhoEquip = od_get_answer(szKeys);
@@ -1272,7 +1254,7 @@ void ItemStats(void)
 					   can't equip him */
 
 					/* see if he has access to use that weapon, probably does :) */
-					sprintf(szString, "|15%s\n\n", PClan->Member[WhoEquip]->szName);
+					snprintf(szString, sizeof(szString), "|15%s\n\n", PClan->Member[WhoEquip]->szName);
 					rputs(szString);
 
 					if (ItemPenalty(PClan->Member[WhoEquip], &PClan->Items[ ItemIndex ])) {
@@ -1285,11 +1267,11 @@ void ItemStats(void)
 					switch (PClan->Items[ ItemIndex ].cType) {
 						case I_WEAPON :
 							if (PClan->Member[WhoEquip]->Weapon) {
-								sprintf(szString, ST_ISTATS25,
+								snprintf(szString, sizeof(szString), ST_ISTATS25,
 										PClan->Items[ PClan->Member[WhoEquip]->Weapon-1].szName);
 								if (YesNo(szString) == YES) {
 									iTemp = PClan->Member[WhoEquip]->Weapon-1;
-									sprintf(szString, ST_ISTATS15,
+									snprintf(szString, sizeof(szString), ST_ISTATS15,
 											PClan->Member[WhoEquip]->szName, PClan->Items[iTemp].szName);
 									rputs(szString);
 
@@ -1305,7 +1287,7 @@ void ItemStats(void)
 								}
 							}
 
-							sprintf(szString, ST_ISTATS26, PClan->Member[WhoEquip]->szName, PClan->Items[ItemIndex].szName);
+							snprintf(szString, sizeof(szString), ST_ISTATS26, PClan->Member[WhoEquip]->szName, PClan->Items[ItemIndex].szName);
 							rputs(szString);
 
 							PClan->Member[WhoEquip]->Weapon = ItemIndex + 1;
@@ -1316,11 +1298,11 @@ void ItemStats(void)
 							break;
 						case I_ARMOR :
 							if (PClan->Member[WhoEquip]->Armor) {
-								sprintf(szString, ST_ISTATS27,
+								snprintf(szString, sizeof(szString), ST_ISTATS27,
 										PClan->Items[ PClan->Member[WhoEquip]->Armor-1].szName);
 								if (YesNo(szString) == YES) {
 									iTemp = PClan->Member[WhoEquip]->Armor-1;
-									sprintf(szString, ST_ISTATS15,
+									snprintf(szString, sizeof(szString), ST_ISTATS15,
 											PClan->Member[WhoEquip]->szName, PClan->Items[iTemp].szName);
 									rputs(szString);
 
@@ -1335,7 +1317,7 @@ void ItemStats(void)
 									break;
 								}
 							}
-							sprintf(szString, ST_ISTATS28, PClan->Member[WhoEquip]->szName, PClan->Items[ItemIndex].szName);
+							snprintf(szString, sizeof(szString), ST_ISTATS28, PClan->Member[WhoEquip]->szName, PClan->Items[ItemIndex].szName);
 							rputs(szString);
 
 							PClan->Member[WhoEquip]->Armor = ItemIndex + 1;
@@ -1346,11 +1328,11 @@ void ItemStats(void)
 							break;
 						case I_SHIELD :
 							if (PClan->Member[WhoEquip]->Shield) {
-								sprintf(szString, ST_ISTATS29,
+								snprintf(szString, sizeof(szString), ST_ISTATS29,
 										PClan->Items[ PClan->Member[WhoEquip]->Shield-1].szName);
 								if (YesNo(szString) == YES) {
 									iTemp = PClan->Member[WhoEquip]->Shield-1;
-									sprintf(szString, ST_ISTATS15,
+									snprintf(szString, sizeof(szString), ST_ISTATS15,
 											PClan->Member[WhoEquip]->szName, PClan->Items[iTemp].szName);
 									rputs(szString);
 
@@ -1365,7 +1347,7 @@ void ItemStats(void)
 									break;
 								}
 							}
-							sprintf(szString, ST_ISTATS30, PClan->Member[WhoEquip]->szName, PClan->Items[ItemIndex].szName);
+							snprintf(szString, sizeof(szString), ST_ISTATS30, PClan->Member[WhoEquip]->szName, PClan->Items[ItemIndex].szName);
 							rputs(szString);
 
 							PClan->Member[WhoEquip]->Shield = ItemIndex + 1;
@@ -1384,21 +1366,18 @@ void ItemStats(void)
 static int16_t NumClansInVillage(void)
 {
 	FILE *fp;
-	struct clan *TmpClan;
+	struct clan TmpClan = {0};
 	int16_t NumClans;
 
 	fp = fopen(ST_CLANSPCFILE, "rb");
 	if (!fp)
 		return 0;
 
-	TmpClan = malloc(sizeof(struct clan));
-	CheckMem(TmpClan);
-
 	for (NumClans = 0;;) {
-		notEncryptRead_s(clan, TmpClan, fp, XOR_USER)
+		notEncryptRead_s(clan, &TmpClan, fp, XOR_USER)
 			break;
 
-		if (TmpClan->ClanID[0] != -1)  /* means is active */
+		if (TmpClan.ClanID[0] != -1)  /* means is active */
 			NumClans++;
 
 		/* skip his 6 PCs */
@@ -1408,7 +1387,6 @@ static int16_t NumClansInVillage(void)
 
 	fclose(fp);
 
-	free(TmpClan);
 	return (NumClans);
 }
 
@@ -1418,50 +1396,50 @@ void ShowVillageStats(void)
 
 	od_clr_scr();
 	if (Game.Data->InterBBS)
-		sprintf(szString, ST_VSTATHEADER, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName);
+		snprintf(szString, sizeof(szString), ST_VSTATHEADER, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName);
 	else
-		sprintf(szString, ST_VSTATHEADER, Village.Data->szName);
+		snprintf(szString, sizeof(szString), ST_VSTATHEADER, Village.Data->szName);
 	rputs(szString);
 
 	rputs(ST_LONGDIVIDER);
 
 	if (Village.Data->szRulingClan[0] == 0)
-		strcpy(szRuler, "None");
+		strlcpy(szRuler, "None", sizeof(szRuler));
 	else
-		strcpy(szRuler, Village.Data->szRulingClan);
+		strlcpy(szRuler, Village.Data->szRulingClan, sizeof(szRuler));
 
-	sprintf(szString, ST_VSTATS1, NumClansInVillage(), szRuler);
+	snprintf(szString, sizeof(szString), ST_VSTATS1, NumClansInVillage(), szRuler);
 	rputs(szString);
 
-	sprintf(szString, ST_VSTATS2, Village.Data->TaxRate);
+	snprintf(szString, sizeof(szString), ST_VSTATS2, Village.Data->TaxRate);
 	rputs(szString);
 
-	sprintf(szString, ST_VSTATS4, Village.Data->GST);
+	snprintf(szString, sizeof(szString), ST_VSTATS4, Village.Data->GST);
 	rputs(szString);
 
-	sprintf(szString, ST_VSTATS7, Village.Data->Empire.VaultGold);
+	snprintf(szString, sizeof(szString), ST_VSTATS7, Village.Data->Empire.VaultGold);
 	rputs(szString);
 
-	sprintf(szString, ST_TMENUSTAT8, Village.Data->ConscriptionRate);
+	snprintf(szString, sizeof(szString), ST_TMENUSTAT8, Village.Data->ConscriptionRate);
 	rputs(szString);
-	/*    sprintf(szString, ST_TMENUSTAT9, Village.Data->GovtSystem == GS_DEMOCRACY ?
+	/*    snprintf(szString, sizeof(szString), ST_TMENUSTAT9, Village.Data->GovtSystem == GS_DEMOCRACY ?
 	        "Democracy" : "Dictatorship");
 	      rputs(szString);
 
-	      sprintf(szString, ST_TMENUSTAT10, Village.Data->ShowEmpireStats ?
+	      snprintf(szString, sizeof(szString), ST_TMENUSTAT10, Village.Data->ShowEmpireStats ?
 	        "Available" : "Unavailable");
 	      rputs(szString);
 	*/
 
 	// == 0 means game in progress
 	if (Game.Data->GameState == 0) {
-		sprintf(szString, ST_VSTATS8, DaysBetween(Game.Data->szDateGameStart, System.szTodaysDate),
+		snprintf(szString, sizeof(szString), ST_VSTATS8, DaysBetween(Game.Data->szDateGameStart, System.szTodaysDate),
 				Game.Data->szDateGameStart, "Disabled");
 		rputs(szString);
 	}
 	else if (Game.Data->GameState == 1) {
 		if (Game.Data->szDateGameStart[0] != 0) {
-			sprintf(szString, ST_VSTATS9, Game.Data->szDateGameStart);
+			snprintf(szString, sizeof(szString), ST_VSTATS9, Game.Data->szDateGameStart);
 			rputs(szString);
 		}
 		else
@@ -1488,34 +1466,34 @@ void ClanStats(struct clan *Clan, bool AllowModify)
 	while (DoneLooking == false) {
 		od_clr_scr();
 
-		// sprintf(szString, ST_CSTATS0, Clan->szName, Clan->ClanID[0], Clan->ClanID[1]);
-		// using color sprintf(szString, ST_CSTATS0, Clan->szName, Clan->Color, Clan->Symbol);
-		sprintf(szString, ST_CSTATS0, Clan->szName, Clan->Symbol);
+		// snprintf(szString, sizeof(szString), ST_CSTATS0, Clan->szName, Clan->ClanID[0], Clan->ClanID[1]);
+		// using color snprintf(szString, sizeof(szString), ST_CSTATS0, Clan->szName, Clan->Color, Clan->Symbol);
+		snprintf(szString, sizeof(szString), ST_CSTATS0, Clan->szName, Clan->Symbol);
 		rputs(szString);
 
 		rputs(ST_LONGDIVIDER);
-		sprintf(szString, ST_CSTATS1, Clan->szDateOfLastGame);
+		snprintf(szString, sizeof(szString), ST_CSTATS1, Clan->szDateOfLastGame);
 		rputs(szString);
 
-		sprintf(szString, ST_CSTATS2, Clan->Empire.VaultGold);
+		snprintf(szString, sizeof(szString), ST_CSTATS2, Clan->Empire.VaultGold);
 		rputs(szString);
 
-		sprintf(szString, ST_CSTATS3, Clan->MineLevel);
+		snprintf(szString, sizeof(szString), ST_CSTATS3, Clan->MineLevel);
 		rputs(szString);
 
 		/* members */
 		for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 			if (Clan->Member[iTemp]) {
-				strcpy(szShortName, Clan->Member[iTemp]->szName);
+				strlcpy(szShortName, Clan->Member[iTemp]->szName, sizeof(szShortName));
 				szShortName[8] = 0;
-				sprintf(szString, " |0P(|0Q%d|0P) |0L%-8s |0M%3d /%3d HP   ", iTemp+1, szShortName, Clan->Member[iTemp]->HP, Clan->Member[iTemp]->MaxHP);
+				snprintf(szString, sizeof(szString), " |0P(|0Q%d|0P) |0L%-8s |0M%3d /%3d HP   ", iTemp+1, szShortName, Clan->Member[iTemp]->HP, Clan->Member[iTemp]->MaxHP);
 				rputs(szString);
 
 				/* show race/class */
 				if (Clan->Member[iTemp]->WhichRace != -1)
-					sprintf(szString, "|0N%s/%s  ", Races[Clan->Member[iTemp]->WhichRace]->szName, PClasses[Clan->Member[iTemp]->WhichClass]->szName);
+					snprintf(szString, sizeof(szString), "|0N%s/%s  ", Races[Clan->Member[iTemp]->WhichRace]->szName, PClasses[Clan->Member[iTemp]->WhichClass]->szName);
 				else
-					strcpy(szString, "|0N[unknown]  ");
+					strlcpy(szString, "|0N[unknown]  ", sizeof(szString));
 
 				/* add or remove spaces to filler it */
 				if (strlen(szString) > 20) {
@@ -1540,40 +1518,40 @@ void ClanStats(struct clan *Clan, bool AllowModify)
 					TotalItems++;
 
 				if (TotalItems > 0) {
-					strcpy(szStats, "|0O(");  /* begin stats */
+					strlcpy(szStats, "|0O(", sizeof(szStats));  /* begin stats */
 
 					ItemsShown = 0;
 
 					/* show first item */
 					if (Clan->Member[iTemp]->Weapon) {
-						sprintf(szString, "%s", Clan->Items[ Clan->Member[iTemp]->Weapon - 1].szName);
-						strcat(szStats, szString);
+						snprintf(szString, sizeof(szString), "%s", Clan->Items[ Clan->Member[iTemp]->Weapon - 1].szName);
+						strlcat(szStats, szString, sizeof(szStats));
 
 						ItemsShown++;
 
 						if (TotalItems > ItemsShown)
-							strcat(szStats, ", ");
+							strlcat(szStats, ", ", sizeof(szStats));
 					}
 
 					if (Clan->Member[iTemp]->Armor) {
-						sprintf(szString, "%s", Clan->Items[ Clan->Member[iTemp]->Armor - 1].szName);
-						strcat(szStats, szString);
+						snprintf(szString, sizeof(szString), "%s", Clan->Items[ Clan->Member[iTemp]->Armor - 1].szName);
+						strlcat(szStats, szString, sizeof(szStats));
 
 						ItemsShown++;
 
 						if (TotalItems > ItemsShown)
-							strcat(szStats, ", ");
+							strlcat(szStats, ", ", sizeof(szStats));
 					}
 
 					if (Clan->Member[iTemp]->Shield) {
-						sprintf(szString, "%s", Clan->Items[ Clan->Member[iTemp]->Shield - 1].szName);
-						strcat(szStats, szString);
+						snprintf(szString, sizeof(szString), "%s", Clan->Items[ Clan->Member[iTemp]->Shield - 1].szName);
+						strlcat(szStats, szString, sizeof(szStats));
 
 						ItemsShown++;
 					}
 					/* truncate it */
 					szStats[36] = 0;
-					strcat(szStats, ")\n");
+					strlcat(szStats, ")\n", sizeof(szStats));
 
 					rputs(szStats);
 				}
@@ -1585,11 +1563,11 @@ void ClanStats(struct clan *Clan, bool AllowModify)
 		rputs("\n");
 
 		/* show army stats */
-		sprintf(szString, ST_CSTATS5, Clan->Empire.Army.Followers);
+		snprintf(szString, sizeof(szString), ST_CSTATS5, Clan->Empire.Army.Followers);
 		rputs(szString);
 
 		if (Clan->Protection) {
-			sprintf(szString, "|0L This clan will remain in protection for %d more day(s)\n", Clan->Protection);
+			snprintf(szString, sizeof(szString), "|0L This clan will remain in protection for %d more day(s)\n", Clan->Protection);
 			rputs(szString);
 		}
 
@@ -1644,7 +1622,7 @@ void ClanStats(struct clan *Clan, bool AllowModify)
 				rputs("Symbol\n\n");
 
 				if (AllowModify == false) {
-					sprintf(szString, "|0GClan's current symbol is %s\n\n", Clan->Symbol);
+					snprintf(szString, sizeof(szString), "|0GClan's current symbol is %s\n\n", Clan->Symbol);
 					rputs(szString);
 					door_pause();
 					break;
@@ -1657,15 +1635,15 @@ void ClanStats(struct clan *Clan, bool AllowModify)
 				}
 				else {
 					rputs("Clan Symbol\n\n");
-					// sprintf(szString, "|0SYour current symbol is |%02d%s\n\n", Clan->Color, Clan->Symbol);
-					sprintf(szString, "|0SYour current symbol is %s\n\n", Clan->Symbol);
+					// snprintf(szString, sizeof(szString), "|0SYour current symbol is |%02d%s\n\n", Clan->Color, Clan->Symbol);
+					snprintf(szString, sizeof(szString), "|0SYour current symbol is %s\n\n", Clan->Symbol);
 					rputs(szString);
 				}
 
 				rputs("|0SPlease type your new symbol or press enter to keep it the same\n|0E> |0F");
 				GetStr(Clan->Symbol, 20, true);
 
-				sprintf(szString, "|0SYour clan symbol is now %s\n\n", Clan->Symbol);
+				snprintf(szString, sizeof(szString), "|0SYour clan symbol is now %s\n\n", Clan->Symbol);
 				rputs(szString);
 				door_pause();
 				break;
@@ -1757,7 +1735,7 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 		// rputs("|13Stats generated for this player\n");
 		rputs(ST_STUFF8);
 
-		strcpy(PC->szName, "New Player");
+		strlcpy(PC->szName, "New Player", sizeof(PC->szName));
 
 		/* set all spells to 0 */
 		for (iTemp = 0; iTemp < 10; iTemp++)
@@ -1791,8 +1769,8 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 	PC->Undead = false;
 	PC->DefaultAction = 0;
 
-	// sprintf(szString, |10%s joins the clan.\n%%P, PC->szName);
-	sprintf(szString, ST_STUFF10, PC->szName);
+	// snprintf(szString, sizeof(szString), |10%s joins the clan.\n%%P, PC->szName);
+	snprintf(szString, sizeof(szString), ST_STUFF10, PC->szName);
 	rputs(szString);
 }
 
@@ -1803,38 +1781,32 @@ bool NameInUse(char *szName)
  */
 {
 	FILE *fpPCFile;
-	struct clan *TmpClan;
+	struct clan TmpClan = {0};
 	int16_t CurClan = 0;
 	long Offset;
 
 	fpPCFile = fopen(ST_CLANSPCFILE, "rb");
 	if (fpPCFile) {
-		TmpClan = malloc(sizeof(struct clan));
-		CheckMem(TmpClan);
-
 		/* go through list */
 		for (CurClan = 0;; CurClan++) {
 			Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
 			if (fseek(fpPCFile, Offset, SEEK_SET))
 				break;  /* couldn't fseek, so exit */
 
-			notEncryptRead_s(clan, TmpClan, fpPCFile, XOR_USER)
+			notEncryptRead_s(clan, &TmpClan, fpPCFile, XOR_USER)
 				break;  /* stop reading if no more players found */
 
 			/* see if this player has same name as user online */
 			/* strip names */
-			if (stricmp(szName, TmpClan->szName) == 0) {
+			if (stricmp(szName, TmpClan.szName) == 0) {
 				/* are the same, found another player with name, close file */
 				fclose(fpPCFile);
-				free(TmpClan);
 				return true;
 			}
 		}
 
 		/* no players found with same name */
 		fclose(fpPCFile);
-
-		free(TmpClan);
 	}
 
 	// look through names list to see if that name is in use
@@ -1912,12 +1884,12 @@ static bool User_Create(void)
  */
 {
 	FILE *fpPlayerFile;
-	struct pc *TmpPC;
+	struct pc TmpPC = {0};
 	struct UserInfo User;
 	int16_t iTemp;
 	char szString[128];
 
-	strcpy(PClan->szUserName, od_control.user_name);
+	strlcpy(PClan->szUserName, od_control.user_name, sizeof(PClan->szUserName));
 
 	Help("Welcome", ST_CLANSHLP);
 
@@ -1929,10 +1901,6 @@ static bool User_Create(void)
 
 	if (!ChooseClanName(PClan->szName))
 		return false;
-
-
-	TmpPC = malloc(sizeof(struct pc));
-	CheckMem(TmpPC);
 
 
 	// initialize clan data
@@ -1947,7 +1915,7 @@ static bool User_Create(void)
 	PClan->DestinationBBS = -1;
 
 	PClan->Points = 0;
-	strcpy(PClan->szDateOfLastGame, System.szTodaysDate);
+	strlcpy(PClan->szDateOfLastGame, System.szTodaysDate, sizeof(PClan->szDateOfLastGame));
 
 	// Reset help database for him
 	User_ResetHelp();
@@ -2000,7 +1968,7 @@ static bool User_Create(void)
 
 	// init empire
 	Empire_Create(&PClan->Empire, true);
-	strcpy(PClan->Empire.szName, PClan->szName);
+	strlcpy(PClan->Empire.szName, PClan->szName, sizeof(PClan->Empire.szName));
 	PClan->Empire.OwnerType = EO_CLAN;
 	PClan->Empire.AllianceID = -1;
 
@@ -2009,7 +1977,7 @@ static bool User_Create(void)
 		od_clr_scr();
 
 		// creating clansmen x of
-		sprintf(szString, ST_STUFF5, iTemp + 1, Game.Data->MaxPermanentMembers);
+		snprintf(szString, sizeof(szString), ST_STUFF5, iTemp + 1, Game.Data->MaxPermanentMembers);
 		rputs(szString);
 
 		if (iTemp == 0) {
@@ -2019,18 +1987,18 @@ static bool User_Create(void)
 		}
 
 		if (iTemp == 0)
-			PC_Create(TmpPC, true);
+			PC_Create(&TmpPC, true);
 		else
-			PC_Create(TmpPC, false);
+			PC_Create(&TmpPC, false);
 
 
 		PClan->Member[iTemp] = malloc(sizeof(struct pc));
 		CheckMem(PClan->Member[iTemp]);
-		*PClan->Member[iTemp] = *TmpPC;
+		*PClan->Member[iTemp] = TmpPC;
 
 		// give 'em gold dude
-		PClan->Empire.VaultGold  += PClasses[ TmpPC->WhichClass ]->Gold;
-		PClan->Empire.VaultGold += Races[ TmpPC->WhichRace ]->Gold;
+		PClan->Empire.VaultGold  += PClasses[ TmpPC.WhichClass ]->Gold;
+		PClan->Empire.VaultGold += Races[ TmpPC.WhichRace ]->Gold;
 	}
 
 	/* open player file for append */
@@ -2043,7 +2011,6 @@ static bool User_Create(void)
 			/* !!! */
 			rputs("!! Chkpt 1\n");
 			rputs(ST_ERRORPC);
-			free(TmpPC);
 			return false;
 		}
 	}
@@ -2060,21 +2027,16 @@ static bool User_Create(void)
 	}
 
 	/* write null players to complete it */
-	TmpPC->szName[0] = 0;
-	TmpPC->Status = Dead;
+	TmpPC.szName[0] = 0;
+	TmpPC.Status = Dead;
 	for (iTemp = Game.Data->MaxPermanentMembers; iTemp < 6; iTemp++) {
-		EncryptWrite_s(pc, TmpPC, fpPlayerFile, XOR_PC);
+		EncryptWrite_s(pc, &TmpPC, fpPlayerFile, XOR_PC);
 	}
 
 	fclose(fpPlayerFile);
 
-	// !!!
-	// DisplayStr("User_Create: done writing to file\n%P");
-
-	free(TmpPC);
-
 	/* write news */
-	sprintf(szString, ST_NEWSNEWCLAN, PClan->szName);
+	snprintf(szString, sizeof(szString), ST_NEWSNEWCLAN, PClan->szName);
 	News_AddNews(szString);
 
 
@@ -2082,8 +2044,8 @@ static bool User_Create(void)
 	if (Game.Data->InterBBS) {
 		User.ClanID[0] = PClan->ClanID[0];
 		User.ClanID[1] = PClan->ClanID[1];
-		strcpy(User.szMasterName, PClan->szUserName);
-		strcpy(User.szName, PClan->szName);
+		strlcpy(User.szMasterName, PClan->szUserName, sizeof(User.szMasterName));
+		strlcpy(User.szName, PClan->szName, sizeof(User.szName));
 		User.Deleted = false;
 		IBBS_LeagueNewUser(&User);
 	}
@@ -2117,7 +2079,7 @@ void CopyPC(struct pc *PCDest, struct pc *PCSrc)
 {
 	int16_t iTemp;
 
-	strcpy(PCDest->szName, PCSrc->szName);
+	strlcpy(PCDest->szName, PCSrc->szName, sizeof(PCDest->szName));
 	PCDest->HP = PCSrc->HP;
 	PCDest->SP = PCSrc->SP;
 	PCDest->MaxHP = PCSrc->MaxHP;
@@ -2159,8 +2121,8 @@ static bool User_Read(void)
 	// search for user which matches current user logged in
 
 	FILE *fpPlayerFile;
-	struct clan *TmpClan;
-	struct pc *TmpPC;
+	struct clan TmpClan = {0};
+	struct pc TmpPC = {0};
 	int16_t CurClan, CurMember, iTemp;
 	long Offset;
 
@@ -2170,11 +2132,6 @@ static bool User_Read(void)
 		return false;
 	}
 
-	TmpClan = malloc(sizeof(struct clan));
-	CheckMem(TmpClan);
-	TmpPC = malloc(sizeof(struct pc));
-	CheckMem(TmpPC);
-
 	for (CurClan = 0;; CurClan++) {
 		/* seek to the current player */
 		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
@@ -2182,18 +2139,14 @@ static bool User_Read(void)
 		if (fseek(fpPlayerFile, Offset, SEEK_SET))
 			break;  /* couldn't fseek, so exit */
 
-		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER)
+		notEncryptRead_s(clan, &TmpClan, fpPlayerFile, XOR_USER)
 			break;  /* stop reading if no more players found */
 
-		// !!!
-		// DisplayStr("Read in "); DisplayStr(TmpClan->szUserName); DisplayStr("\n");
-		// getch();
-
 		/* see if this player has same name as user online */
-		if (stricmp(od_control.user_name, TmpClan->szUserName) == 0) {
+		if (stricmp(od_control.user_name, TmpClan.szUserName) == 0) {
 
 			/* are the same, found player, copy it, return true */
-			*PClan = *TmpClan;
+			*PClan = TmpClan;
 
 			/* read in the other guys, members, etc. */
 			for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++)
@@ -2201,15 +2154,14 @@ static bool User_Read(void)
 
 			for (CurMember = 0; CurMember < 6; CurMember++) {
 				/* read 'em in */
-				EncryptRead_s(pc, TmpPC, fpPlayerFile, XOR_PC);
+				EncryptRead_s(pc, &TmpPC, fpPlayerFile, XOR_PC);
 
 				// [0] != 0 if member exists
-				if (TmpPC->szName[0]) {
+				if (TmpPC.szName[0]) {
 					PClan->Member[CurMember] = malloc(sizeof(struct pc));
 					CheckMem(PClan->Member[CurMember]);
 
-					// CopyPC(PClan->Member[CurMember], TmpPC);
-					*PClan->Member[CurMember] = *TmpPC;
+					*PClan->Member[CurMember] = TmpPC;
 					PClan->Member[CurMember]->MyClan = PClan;
 
 					/* set all spells to 0 */
@@ -2220,8 +2172,6 @@ static bool User_Read(void)
 			}
 
 			fclose(fpPlayerFile);
-			free(TmpClan);
-			free(TmpPC);
 			return true;
 		}
 
@@ -2229,9 +2179,6 @@ static bool User_Read(void)
 
 	/* was not found, so return false) */
 	fclose(fpPlayerFile);
-
-	free(TmpClan);
-	free(TmpPC);
 
 	return false;
 }
@@ -2248,21 +2195,14 @@ void Clan_Update(struct clan *Clan)
 	FILE *fpPlayerFile;
 	int16_t CurClan, iTemp;
 	long OldOffset, Offset;
-	struct clan *TmpClan;
-	struct pc *TmpPC;
-
-	TmpClan = malloc(sizeof(struct clan));
-	CheckMem(TmpClan);
-	TmpPC = malloc(sizeof(struct pc));
-	CheckMem(TmpPC);
+	struct clan TmpClan = {0};
+	struct pc TmpPC = {0};
 
 	fpPlayerFile = fopen(ST_CLANSPCFILE, "r+b");
 	if (!fpPlayerFile) {
 		/* !! */
 		rputs("!! Chkpt 2\n");
 		rputs(ST_ERRORPC);
-		free(TmpClan);
-		free(TmpPC);
 		return;  /* failed to find clan */
 	}
 
@@ -2275,38 +2215,34 @@ void Clan_Update(struct clan *Clan)
 
 		OldOffset = ftell(fpPlayerFile);
 
-		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER)
+		notEncryptRead_s(clan, &TmpClan, fpPlayerFile, XOR_USER)
 			break;  /* stop reading if no more players found */
 
 		/* skip if deleted clan */
-		if (TmpClan->ClanID[0] == -1)
+		if (TmpClan.ClanID[0] == -1)
 			continue;
 
 		/* if same Ids, seek back and write to file */
-		if (TmpClan->ClanID[0] == Clan->ClanID[0] &&
-				TmpClan->ClanID[1] == Clan->ClanID[1]) {
+		if (TmpClan.ClanID[0] == Clan->ClanID[0] &&
+				TmpClan.ClanID[1] == Clan->ClanID[1]) {
 			fseek(fpPlayerFile, OldOffset, SEEK_SET);
 
 			EncryptWrite_s(clan, Clan, fpPlayerFile, XOR_USER);
 
 			// fwrite players
-			TmpPC->szName[0] = 0;
-			TmpPC->Status = Dead;
+			TmpPC.szName[0] = 0;
+			TmpPC.Status = Dead;
 			for (iTemp = 0; iTemp < 6; iTemp++) {
 				if (Clan->Member[iTemp] && Clan->Member[iTemp]->Undead == false) {
 					EncryptWrite_s(pc, Clan->Member[iTemp], fpPlayerFile, XOR_PC);
 				}
 				else
-					EncryptWrite_s(pc, TmpPC, fpPlayerFile, XOR_PC);
+					EncryptWrite_s(pc, &TmpPC, fpPlayerFile, XOR_PC);
 			}
 			break;
 		}
 	}
 	fclose(fpPlayerFile);
-
-	free(TmpPC);
-	free(TmpClan);
-
 }
 
 
@@ -2346,7 +2282,7 @@ void User_FirstTimeToday(void)
 		}
 	}
 
-	strcpy(PClan->szDateOfLastGame, System.szTodaysDate);
+	strlcpy(PClan->szDateOfLastGame, System.szTodaysDate, sizeof(PClan->szDateOfLastGame));
 }
 
 // ------------------------------------------------------------------------- //
@@ -2379,22 +2315,15 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 			   int16_t WhichAlliance, bool InAllianceOnly)
 {
 	FILE *fpPlayerFile;
-	/*char szFragName[30], szString[128];*/
 	char *apszClanNames[50];
-	int16_t CurClan, ClanIDs[50][2], WhichClan, NumClans, *ClanIndex, iTemp;
+	int16_t CurClan, ClanIDs[50][2], WhichClan, NumClans, iTemp;
 	bool AllianceFound;
-	struct clan *TmpClan;
-	struct pc *TmpPC;
+	struct clan TmpClan = {0};
+	struct pc TmpPC = {0};
 	bool FoundClan = false, AtLeastOneLiving = false;
-
-	TmpClan = malloc(sizeof(struct clan));
-	CheckMem(TmpClan);
 
 	for (CurClan = 0; CurClan < 50; CurClan++)
 		apszClanNames[CurClan] = NULL;
-
-	ClanIndex = malloc(sizeof(int16_t)*50);
-	CheckMem(ClanIndex);
 
 	// get list of all clan names from file, write to
 	NumClans = 0;
@@ -2411,45 +2340,41 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 			break;  /* couldn't fseek, so exit */
 		}
 
-		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER) {
+		notEncryptRead_s(clan, &TmpClan, fpPlayerFile, XOR_USER) {
 			fclose(fpPlayerFile);
 			break;  /* stop reading if no more players found */
 		}
 
 		// see if any of the members are alive
 		if (OnlyLiving) {
-			TmpPC = malloc(sizeof(struct pc));
-			CheckMem(TmpPC);
-
 			AtLeastOneLiving = false;
 			for (iTemp = 0; iTemp < 6; iTemp++) {
-				EncryptRead_s(pc, TmpPC, fpPlayerFile, XOR_PC);
+				EncryptRead_s(pc, &TmpPC, fpPlayerFile, XOR_PC);
 
-				if (TmpPC->szName[0] && TmpPC->Status == Here) {
+				if (TmpPC.szName[0] && TmpPC.Status == Here) {
 					AtLeastOneLiving = true;
 					break;
 				}
 			}
-			free(TmpPC);
 		}
 
 		fclose(fpPlayerFile);
 
 		/* skip if deleted clan or eliminated */
-		if (TmpClan->ClanID[0] == -1)
+		if (TmpClan.ClanID[0] == -1)
 			continue;
 
 		/* skip if your clan */
 		if (IncludeSelf == false &&
-				TmpClan->ClanID[0] == PClan->ClanID[0] &&
-				TmpClan->ClanID[1] == PClan->ClanID[1])
+				TmpClan.ClanID[0] == PClan->ClanID[0] &&
+				TmpClan.ClanID[1] == PClan->ClanID[1])
 			continue;
 
 		/* skip if not in alliance and alliance used */
 		if (WhichAlliance != -1) {
 			AllianceFound = false;
 			for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++) {
-				if (TmpClan->Alliances[iTemp] == WhichAlliance) {
+				if (TmpClan.Alliances[iTemp] == WhichAlliance) {
 					AllianceFound = true;
 					break;
 				}
@@ -2467,13 +2392,11 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 		if (AtLeastOneLiving == false && OnlyLiving)
 			continue;
 
-		apszClanNames[NumClans] = malloc(strlen(TmpClan->szName) + 1);
-		CheckMem(apszClanNames[NumClans]);
-		strcpy(apszClanNames[NumClans], TmpClan->szName);
+		apszClanNames[NumClans] = DupeStr(TmpClan.szName);
 
 		// add to our list
-		ClanIDs[NumClans][0] = TmpClan->ClanID[0];
-		ClanIDs[NumClans][1] = TmpClan->ClanID[1];
+		ClanIDs[NumClans][0] = TmpClan.ClanID[0];
+		ClanIDs[NumClans][1] = TmpClan.ClanID[1];
 
 		NumClans++;
 	}
@@ -2503,9 +2426,6 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 			free(apszClanNames[CurClan]);
 	}
 
-	free(TmpClan);
-	free(ClanIndex);
-
 	return FoundClan;
 }
 
@@ -2517,19 +2437,15 @@ bool GetClanNameID(char *szName, int16_t ID[2])
 	/*    char szString[255];*/
 	int16_t CurClan = 0;
 	bool FoundClan = false;
-	struct clan *TmpClan;
+	struct clan TmpClan = {0};
 
 	szName[0] = 0;
-
-	TmpClan = malloc(sizeof(struct clan));
-	CheckMem(TmpClan);
 
 	for (;;) {
 		/* go through file till you find clan he wants */
 
 		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYRW);
 		if (!fpPlayerFile) {
-			free(TmpClan);
 			return false;  /* means failed to find clan */
 		}
 		if (fseek(fpPlayerFile, (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET)) {
@@ -2537,7 +2453,7 @@ bool GetClanNameID(char *szName, int16_t ID[2])
 			break;  /* couldn't fseek, so exit */
 		}
 
-		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER) {
+		notEncryptRead_s(clan, &TmpClan, fpPlayerFile, XOR_USER) {
 			fclose(fpPlayerFile);
 			break;  /* stop reading if no more players found */
 		}
@@ -2545,9 +2461,9 @@ bool GetClanNameID(char *szName, int16_t ID[2])
 		fclose(fpPlayerFile);
 
 		/* see if name is the one */
-		if (TmpClan->ClanID[0] == ID[0] && TmpClan->ClanID[1] == ID[1]) {
+		if (TmpClan.ClanID[0] == ID[0] && TmpClan.ClanID[1] == ID[1]) {
 			/* found it! */
-			strcpy(szName, TmpClan->szName);
+			strlcpy(szName, TmpClan.szName, sizeof(szName));
 			FoundClan = true;
 			break;
 		}
@@ -2555,7 +2471,6 @@ bool GetClanNameID(char *szName, int16_t ID[2])
 		CurClan++;
 	}
 
-	free(TmpClan);
 	return FoundClan;
 }
 
@@ -2566,14 +2481,14 @@ bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 {
 	FILE *fpPlayerFile;
 	int16_t ClanNum, iTemp;
-	char szFileName[50];
+	char szFileName[PATH_SIZE];
 	bool FoundClan = false;
 
 	// make them all NULLs for safety
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
 		TmpClan->Member[iTemp] = NULL;
 
-	strcpy(szFileName, ST_CLANSPCFILE);
+	strlcpy(szFileName, ST_CLANSPCFILE, sizeof(szFileName));
 
 	/* find guy in file */
 	fpPlayerFile = fopen(szFileName, "rb");
@@ -2641,7 +2556,7 @@ void User_List(void)
 	/* /USER parameter -- displays user list */
 
 	FILE *fpPlayerFile, *fpUserList;
-	struct clan *TmpClan;
+	struct clan TmpClan = {0};
 	int16_t CurClan/*, CurMember, iTemp*/;
 	struct UserInfo User;
 	long Offset;
@@ -2655,9 +2570,6 @@ void User_List(void)
 			return;
 		}
 
-		TmpClan = malloc(sizeof(struct clan));
-		CheckMem(TmpClan);
-
 		/* else, file opened properly, so look for player */
 
 		// list local players
@@ -2667,19 +2579,16 @@ void User_List(void)
 			if (fseek(fpPlayerFile, Offset, SEEK_SET))
 				break;  /* couldn't fseek, so exit */
 
-			notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER)
+			notEncryptRead_s(clan, &TmpClan, fpPlayerFile, XOR_USER)
 				break;  /* stop reading if no more players found */
 
 			// print out name etc.
-			printf("%2d|%2d %-20s  %-20s\n", TmpClan->ClanID[0], TmpClan->ClanID[1],
-				   TmpClan->szUserName, TmpClan->szName);
+			printf("%2d|%2d %-20s  %-20s\n", TmpClan.ClanID[0], TmpClan.ClanID[1],
+				   TmpClan.szUserName, TmpClan.szName);
 		}
 
 		/* was not found, so return false) */
 		fclose(fpPlayerFile);
-
-		free(TmpClan);
-		TmpClan = NULL;
 	}
 	else {
 		// list interbbs users using USERLIST.DAT
@@ -2708,7 +2617,7 @@ void User_Maint(void)
  */
 {
 	FILE *fpOldPC, *fpNewPC;
-	struct clan *TmpClan;
+	struct clan TmpClan = {0};
 	int16_t iTemp, iTemp2, CurItem, Level;
 	int32_t XPRequired[MAX_LEVELS];
 
@@ -2730,161 +2639,154 @@ void User_Maint(void)
 			System_Error("New.PC unopenable");
 		}
 
-		/* allocate memory */
-		TmpClan = (struct clan *) malloc(sizeof(struct clan));
-		CheckMem(TmpClan);
-
 		for (;;) {
 			/* go through each clan and write his updated info to new file */
 
-			notEncryptRead_s(clan, TmpClan, fpOldPC, XOR_USER)
+			notEncryptRead_s(clan, &TmpClan, fpOldPC, XOR_USER)
 				break;
 
 			/* skip if deleted */
-			if (TmpClan->ClanID[0] == -1)
+			if (TmpClan.ClanID[0] == -1)
 				continue;
 
 			/* FIXME: if over 14 days old, delete */
 			// add to "list" of users who are going to be deleted
 
 			/* update stats needed */
-			TmpClan->FirstDay = false;
+			TmpClan.FirstDay = false;
 
 			// fix bugs
-			if (TmpClan->Empire.VaultGold < 0)  TmpClan->Empire.VaultGold = 0;
+			if (TmpClan.Empire.VaultGold < 0)  TmpClan.Empire.VaultGold = 0;
 
-			TmpClan->QuestToday = false;
-			TmpClan->VaultWithdrawals = 0;
-			TmpClan->AttendedMass = false;
-			TmpClan->GotBlessing = false;
-			TmpClan->Prayed = false;
-			TmpClan->FightsLeft = Game.Data->MineFights;
-			TmpClan->ClanFights = Game.Data->ClanFights;
-			TmpClan->WasRulerToday = false;
-			TmpClan->ClanWars = 0;
-			TmpClan->ChatsToday = 0;
-			ClearFlags(TmpClan->DFlags);
-			TmpClan->ResUncToday = 0;
-			TmpClan->ResDeadToday = 0;
+			TmpClan.QuestToday = false;
+			TmpClan.VaultWithdrawals = 0;
+			TmpClan.AttendedMass = false;
+			TmpClan.GotBlessing = false;
+			TmpClan.Prayed = false;
+			TmpClan.FightsLeft = Game.Data->MineFights;
+			TmpClan.ClanFights = Game.Data->ClanFights;
+			TmpClan.WasRulerToday = false;
+			TmpClan.ClanWars = 0;
+			TmpClan.ChatsToday = 0;
+			ClearFlags(TmpClan.DFlags);
+			TmpClan.ResUncToday = 0;
+			TmpClan.ResDeadToday = 0;
 
 			// reduce days of protection
-			if (TmpClan->Protection > 0)
-				TmpClan->Protection--;
+			if (TmpClan.Protection > 0)
+				TmpClan.Protection--;
 			else
-				TmpClan->Protection = 0;
-			TmpClan->TradesToday = 0;
+				TmpClan.Protection = 0;
+			TmpClan.TradesToday = 0;
 
-			Empire_Maint(&TmpClan->Empire);
+			Empire_Maint(&TmpClan.Empire);
 
 			for (iTemp = 0; iTemp < MAX_CLANCOMBAT; iTemp++) {
-				TmpClan->ClanCombatToday[iTemp][0] = -1;
-				TmpClan->ClanCombatToday[iTemp][1] = -1;
+				TmpClan.ClanCombatToday[iTemp][0] = -1;
+				TmpClan.ClanCombatToday[iTemp][1] = -1;
 			}
 
-			if (TmpClan->Empire.VaultGold < 0)
-				TmpClan->Empire.VaultGold = 0;
+			if (TmpClan.Empire.VaultGold < 0)
+				TmpClan.Empire.VaultGold = 0;
 
 			/* WAS this the ruler and WAS he ousted? */
 			/* REP:
-			if (OustedRuler && OldRulerId[0] == TmpClan->ClanID[0] &&
-			  OldRulerId[1] == TmpClan->ClanID[1])
+			if (OustedRuler && OldRulerId[0] == TmpClan.ClanID[0] &&
+			  OldRulerId[1] == TmpClan.ClanID[1])
 			{
-			  TmpClan->WasRulerToday = true;
-			  TmpClan->Points -= 100;
+			  TmpClan.WasRulerToday = true;
+			  TmpClan.Points -= 100;
 			}
 			*/
 
 			/* is this the current ruler?  If so, give daily points */
-			if (TmpClan->ClanID[0] == Village.Data->RulingClanId[0] &&
-					TmpClan->ClanID[1] == Village.Data->RulingClanId[1]) {
-				TmpClan->Points += 25;
+			if (TmpClan.ClanID[0] == Village.Data->RulingClanId[0] &&
+					TmpClan.ClanID[1] == Village.Data->RulingClanId[1]) {
+				TmpClan.Points += 25;
 			}
 
 			// read in 6 members
 			for (iTemp = 0; iTemp < 6; iTemp++) {
-				TmpClan->Member[iTemp] = malloc(sizeof(struct pc));
-				CheckMem(TmpClan->Member[iTemp]);
-				EncryptRead_s(pc, TmpClan->Member[iTemp], fpOldPC, XOR_PC);
+				TmpClan.Member[iTemp] = malloc(sizeof(struct pc));
+				CheckMem(TmpClan.Member[iTemp]);
+				EncryptRead_s(pc, TmpClan.Member[iTemp], fpOldPC, XOR_PC);
 			}
 
 			/* set HP to max */
 			for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
 				/* if player is unconscious, revive him */
-				if (TmpClan->Member[iTemp]->Status == Unconscious ||
-						TmpClan->Member[iTemp]->Status == Here) {
-					TmpClan->Member[iTemp]->Status = Here;
-					TmpClan->Member[iTemp]->HP = TmpClan->Member[iTemp]->MaxHP;
-					TmpClan->Member[iTemp]->SP = TmpClan->Member[iTemp]->MaxSP;
+				if (TmpClan.Member[iTemp]->Status == Unconscious ||
+						TmpClan.Member[iTemp]->Status == Here) {
+					TmpClan.Member[iTemp]->Status = Here;
+					TmpClan.Member[iTemp]->HP = TmpClan.Member[iTemp]->MaxHP;
+					TmpClan.Member[iTemp]->SP = TmpClan.Member[iTemp]->MaxSP;
 				}
 				// if XP < 0, set it to what it should be
-				if (TmpClan->Member[iTemp]->Experience <= 0) {
-					TmpClan->Member[iTemp]->Experience =
-						XPRequired[TmpClan->Member[iTemp]->Level];
+				if (TmpClan.Member[iTemp]->Experience <= 0) {
+					TmpClan.Member[iTemp]->Experience =
+						XPRequired[TmpClan.Member[iTemp]->Level];
 				}
-				if (TmpClan->Member[iTemp]->Experience >
-						XPRequired[TmpClan->Member[iTemp]->Level+1]) {
-					TmpClan->Member[iTemp]->Experience =
-						XPRequired[TmpClan->Member[iTemp]->Level+1];
+				if (TmpClan.Member[iTemp]->Experience >
+						XPRequired[TmpClan.Member[iTemp]->Level+1]) {
+					TmpClan.Member[iTemp]->Experience =
+						XPRequired[TmpClan.Member[iTemp]->Level+1];
 				}
 			}
 
 			// "release" NPC members
 			for (iTemp = Game.Data->MaxPermanentMembers; iTemp < 6; iTemp++)
-				if (TmpClan->Member[iTemp]->szName[0]) {
+				if (TmpClan.Member[iTemp]->szName[0]) {
 					// is a npc-player
-					//printf("releasing %s\n", TmpClan->Member[iTemp]->szName);
+					//printf("releasing %s\n", TmpClan.Member[iTemp]->szName);
 
 					for (iTemp2 = 0; iTemp2 < MAX_ITEMS_HELD; iTemp2++) {
 						/* if held by deleted char, remove link */
-						if (TmpClan->Items[iTemp2].Available &&
-								TmpClan->Items[iTemp2].UsedBy == iTemp+1) {
-							TmpClan->Items[iTemp2].UsedBy = 0;
+						if (TmpClan.Items[iTemp2].Available &&
+								TmpClan.Items[iTemp2].UsedBy == iTemp+1) {
+							TmpClan.Items[iTemp2].UsedBy = 0;
 						}
 					}
 
 					// delete him now
-					TmpClan->Member[iTemp]->szName[0] = 0;
+					TmpClan.Member[iTemp]->szName[0] = 0;
 				}
 
 			// fix up screwed up items, make them owned by no one
 			for (CurItem = 0; CurItem < MAX_ITEMS_HELD; CurItem++) {
 				/* if held by deleted char, remove link */
-				if (TmpClan->Items[CurItem].UsedBy < 0 ||
-						TmpClan->Items[CurItem].UsedBy > Game.Data->MaxPermanentMembers) {
-					TmpClan->Items[CurItem].UsedBy = 0;
+				if (TmpClan.Items[CurItem].UsedBy < 0 ||
+						TmpClan.Items[CurItem].UsedBy > Game.Data->MaxPermanentMembers) {
+					TmpClan.Items[CurItem].UsedBy = 0;
 				}
 			}
 
 			/* make it so they stop using invalid items */
 			for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
-				if (TmpClan->Member[iTemp]->szName[0]) {
-					if (TmpClan->Member[iTemp]->Weapon &&
-							TmpClan->Items[ TmpClan->Member[iTemp]->Weapon-1 ].Available == false) {
-						TmpClan->Member[iTemp]->Weapon = 0;
+				if (TmpClan.Member[iTemp]->szName[0]) {
+					if (TmpClan.Member[iTemp]->Weapon &&
+							TmpClan.Items[ TmpClan.Member[iTemp]->Weapon-1 ].Available == false) {
+						TmpClan.Member[iTemp]->Weapon = 0;
 					}
-					if (TmpClan->Member[iTemp]->Armor &&
-							TmpClan->Items[ TmpClan->Member[iTemp]->Armor-1 ].Available == false) {
-						TmpClan->Member[iTemp]->Armor = 0;
+					if (TmpClan.Member[iTemp]->Armor &&
+							TmpClan.Items[ TmpClan.Member[iTemp]->Armor-1 ].Available == false) {
+						TmpClan.Member[iTemp]->Armor = 0;
 					}
-					if (TmpClan->Member[iTemp]->Shield &&
-							TmpClan->Items[ TmpClan->Member[iTemp]->Shield-1 ].Available == false) {
-						TmpClan->Member[iTemp]->Shield = 0;
+					if (TmpClan.Member[iTemp]->Shield &&
+							TmpClan.Items[ TmpClan.Member[iTemp]->Shield-1 ].Available == false) {
+						TmpClan.Member[iTemp]->Shield = 0;
 					}
 				}
 			}
 
 			/* write new stuff to new file */
-			EncryptWrite_s(clan, TmpClan, fpNewPC, XOR_USER);
+			EncryptWrite_s(clan, &TmpClan, fpNewPC, XOR_USER);
 
 			for (iTemp = 0; iTemp < 6; iTemp++) {
-				EncryptWrite_s(pc, TmpClan->Member[iTemp], fpNewPC, XOR_USER);
-				free(TmpClan->Member[iTemp]);
-				TmpClan->Member[iTemp] = NULL;
+				EncryptWrite_s(pc, TmpClan.Member[iTemp], fpNewPC, XOR_USER);
+				free(TmpClan.Member[iTemp]);
+				TmpClan.Member[iTemp] = NULL;
 			}
 		}
-
-		/* deallocate memory for PCs */
-		free(TmpClan);
 
 		fclose(fpOldPC);
 		fclose(fpNewPC);
@@ -2974,4 +2876,3 @@ void User_Close(void)
 
 	User_Destroy();
 }
-

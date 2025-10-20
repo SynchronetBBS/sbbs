@@ -5,16 +5,15 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#ifdef __MSDOS__
-#include <malloc.h>
-#endif /* __MSDOS__ */
+#include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include "defines.h"
 #include "k_spells.h"
+#include "language.h"
 #include "myopen.h"
 #include "serialize.h"
 #include "structs.h"
-#include "unix_wrappers.h"
 
 static struct Spell *Spells[MAX_SPELLS];
 
@@ -277,7 +276,7 @@ static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName)
 						Spells[CurSpell]->MultiAffect = false;
 						Spells[CurSpell]->Garbage = false;
 
-						strcpy(Spells[CurSpell]->szName, pcCurrentPos);
+						strlcpy(Spells[CurSpell]->szName, pcCurrentPos, sizeof(Spells[CurSpell]->szName));
 						Spells[CurSpell]->TypeFlag = 0;
 
 						//od_printf("SPELL: %s\n\r", Spells[CurSpell]->szName);
@@ -326,16 +325,13 @@ static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName)
 						break;
 					case 9 :    /* HealStr */
 						//od_printf("HealStr = %s\n\r", pcCurrentPos);
-						Spells[CurSpell]->pszHealStr = calloc(1, strlen(pcCurrentPos) + 1);
-						strcpy(Spells[CurSpell]->pszHealStr, pcCurrentPos);
+						Spells[CurSpell]->pszHealStr = strdup(pcCurrentPos);
 						break;
 					case 10 :    /* DamageStr */
-						Spells[CurSpell]->pszDamageStr = calloc(1, strlen(pcCurrentPos) + 1);
-						strcpy(Spells[CurSpell]->pszDamageStr, pcCurrentPos);
+						Spells[CurSpell]->pszDamageStr = strdup(pcCurrentPos);
 						break;
 					case 11 :    /* ModifyStr */
-						Spells[CurSpell]->pszModifyStr = calloc(1, strlen(pcCurrentPos) + 1);
-						strcpy(Spells[CurSpell]->pszModifyStr, pcCurrentPos);
+						Spells[CurSpell]->pszModifyStr = strdup(pcCurrentPos);
 						break;
 					case 12 :    /* SP */
 						Spells[CurSpell]->SP = atoi(pcCurrentPos);
@@ -350,23 +346,19 @@ static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName)
 						Spells[CurSpell]->Level = atoi(pcCurrentPos);
 						break;
 					case 16 :    /* WearoffStr */
-						Spells[CurSpell]->pszWearoffStr = calloc(1, strlen(pcCurrentPos) + 1);
-						strcpy(Spells[CurSpell]->pszWearoffStr, pcCurrentPos);
+						Spells[CurSpell]->pszWearoffStr = strdup(pcCurrentPos);
 						break;
 					case 17 :    /* energy */
 						Spells[CurSpell]->Energy = atoi(pcCurrentPos);
 						break;
 					case 18 :    /* StatusStr */
-						Spells[CurSpell]->pszStatusStr = calloc(1, strlen(pcCurrentPos) + 1);
-						strcpy(Spells[CurSpell]->pszStatusStr, pcCurrentPos);
+						Spells[CurSpell]->pszStatusStr = strdup(pcCurrentPos);
 						break;
 					case 19 :    /* OtherStr */
-						Spells[CurSpell]->pszOtherStr = calloc(1, strlen(pcCurrentPos) + 1);
-						strcpy(Spells[CurSpell]->pszOtherStr, pcCurrentPos);
+						Spells[CurSpell]->pszOtherStr = strdup(pcCurrentPos);
 						break;
 					case 20 :    /* UndeadName */
-						Spells[CurSpell]->pszUndeadName = calloc(1, strlen(pcCurrentPos) + 1);
-						strcpy(Spells[CurSpell]->pszUndeadName, pcCurrentPos);
+						Spells[CurSpell]->pszUndeadName = strdup(pcCurrentPos);
 						break;
 					case 21 :   /* strengthcanreduce */
 						Spells[CurSpell]->StrengthCanReduce = false;

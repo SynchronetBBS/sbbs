@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -70,7 +71,6 @@ void Quests_Init(void)
 	FILE *fp;
 	char szLine[128], *pcCurrentPos;
 	char szToken[MAX_TOKEN_CHARS + 1];
-	uint16_t uCount;
 	int16_t iKeyWord;
 
 	if (Verbose) {
@@ -138,24 +138,15 @@ void Quests_Init(void)
 						Quests[CurQuest].Active = true;
 						Quests[CurQuest].Known  = false;
 
-						Quests[ CurQuest ].pszQuestName =
-							malloc(strlen(pcCurrentPos) + 1);
-						CheckMem(Quests[ CurQuest ].pszQuestName);
-						strcpy(Quests[ CurQuest ].pszQuestName, pcCurrentPos);
+						Quests[ CurQuest ].pszQuestName = DupeStr(pcCurrentPos);
 						break;
 					case 1 :  /* index of quest */
 						/* make room for questname in mem */
-						Quests[ CurQuest ].pszQuestIndex =
-							malloc(strlen(pcCurrentPos) + 1);
-						CheckMem(Quests[ CurQuest ].pszQuestIndex);
-						strcpy(Quests[ CurQuest ].pszQuestIndex, pcCurrentPos);
+						Quests[ CurQuest ].pszQuestIndex = DupeStr(pcCurrentPos);
 						break;
 					case 2 :  /* filename to use */
 						/* make room for questname in mem */
-						Quests[ CurQuest ].pszQuestFile =
-							malloc(strlen(pcCurrentPos) + 1);
-						CheckMem(Quests[ CurQuest ].pszQuestFile);
-						strcpy(Quests[ CurQuest ].pszQuestFile, pcCurrentPos);
+						Quests[ CurQuest ].pszQuestFile = DupeStr(pcCurrentPos);
 						break;
 					case 3 :  /* known */
 						Quests[CurQuest].Known = true;
@@ -168,7 +159,6 @@ void Quests_Init(void)
 	fclose(fp);
 
 	QuestsInitialized = true;
-	(void)uCount;
 }
 
 void Quests_Close(void)
@@ -238,14 +228,11 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 	int16_t iTemp;
 	int16_t LastCondition = CD_AND;
 	char szIndex[20];
-	unsigned char c;
 	char *pcCurrentPos;
-	char *pszString;
-	int16_t iFirstValue, iSecondValue;
 	char pszAcsCopy[50];
 	int32_t GoldAmount;
 
-	strcpy(pszAcsCopy, pszAcs);
+	strlcpy(pszAcsCopy, pszAcs, sizeof(pszAcsCopy));
 
 	pcCurrentPos = pszAcsCopy;
 
@@ -474,10 +461,6 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 	if (iCharsRead)
 		*iCharsRead = pcCurrentPos - pszAcs;
 
-	(void)iFirstValue;
-	(void)c;
-	(void)pszString;
-	(void)iSecondValue;
 	return bSoFar;
 }
 
@@ -515,7 +498,7 @@ static void JumpToEvent(char *szLabel, struct FileHeader *FileHeader)
 // ------------------------------------------------------------------------- //
 static void TellQuest(char *pszQuestIndex)
 {
-	int16_t QuestNum, CurQuest, iTemp;
+	int16_t QuestNum, CurQuest;
 	char szString[80];
 
 	// scan for quest in questlist
@@ -529,7 +512,7 @@ static void TellQuest(char *pszQuestIndex)
 		}
 	}
 	if (QuestNum == -1) {
-		sprintf(szString, "Couldn't find quest %s\n\r", pszQuestIndex);
+		snprintf(szString, sizeof(szString), "Couldn't find quest %s\n\r", pszQuestIndex);
 		rputs(szString);
 		return;
 	}
@@ -542,10 +525,9 @@ static void TellQuest(char *pszQuestIndex)
 	PClan->QuestsKnown[ QuestNum/8 ] |= (1<<(QuestNum%8));
 
 	// tell user
-	sprintf(szString, "\n|0CYour clan now knows of |0B%s|0C.\n",
+	snprintf(szString, sizeof(szString), "\n|0CYour clan now knows of |0B%s|0C.\n",
 			Quests[QuestNum].pszQuestName);
 	rputs(szString);
-	(void)iTemp;
 }
 
 
@@ -554,22 +536,22 @@ static void TellQuest(char *pszQuestIndex)
 bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 			  struct NPCInfo *NPCInfo, char *szNPCIndex)
 {
-	char *szString, *pcBrace, *szLegal, *szLabel;
-	char *szLabel1, *szLabel2, *szLabel3, szClanName[25];
+	char szString[256], szLegal[155], szLabel[32];
+	char szLabel1[32], szLabel2[32], szLabel3[32], szClanName[25];
 	struct EventHeader EventHeader;
 	struct FileHeader FileHeader;
 	char szNPCFileName[25], *apszLabels[MAX_OPTIONS];
 	char szText[255];
 	char CommandType, OldCommType = 0, DataLength, cInput, *pcCurrentPos;
 	char *pszOptionNames[MAX_OPTIONS];
-	char szKeys[MAX_OPTIONS+1], Key;      // extra space for '\0'
-	char *Buffer;               // not same as ecomp.c's buffer
+	char szKeys[MAX_OPTIONS+1];      // extra space for '\0'
+	char Buffer[256];               // not same as ecomp.c's buffer
 	bool Done;
-	int16_t iTemp, CurOption, WhichEnemy, EventsFound, CurEvent, ChosenEvent,
+	int16_t iTemp, CurOption, WhichEnemy, EventsFound, ChosenEvent,
 	NumOptions, WhichOption;
 	long OldOffset = 0;
-	bool QuestDone = false, FoundEvent;
-	struct clan *EnemyClan;
+	bool QuestDone = false;
+	struct clan EnemyClan = {0};
 	bool EndedChat = false;
 	int16_t CurMember, PercentGold, FightResult, EmptySlot;
 	int32_t GoldAmount, XPAmount;
@@ -583,30 +565,12 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 	rputs("|0C");
 
 
-	// make strings
-	szString  = MakeStr(255);
-	szLegal   = MakeStr(155);
-	Buffer    = MakeStr(255);
-	szLabel   = MakeStr(31);
-	szLabel1  = MakeStr(31);
-	szLabel2  = MakeStr(31);
-	szLabel3  = MakeStr(31);
-
 	/* initialize file */
 	MyOpen(szEventFile, "rb", &FileHeader);
 	if (FileHeader.fp == NULL) {
-		sprintf(szString, "-> %s\n", szEventFile);
+		snprintf(szString, sizeof(szString), "-> %s\n", szEventFile);
 		rputs(szString);
 		rputs("Error opening event file.\n%P");
-
-		// free strings
-		free(szString);
-		free(szLegal);
-		free(Buffer);
-		free(szLabel);
-		free(szLabel1);
-		free(szLabel2);
-		free(szLabel3);
 
 		return false;
 	}
@@ -670,8 +634,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 	}
 
 	/* initialize enemyclan to fight */
-	EnemyClan = MallocClan();
-	NPC_ResetNPCClan(EnemyClan);
+	NPC_ResetNPCClan(&EnemyClan);
 
 	Done = false;
 	while (!Done) {
@@ -876,11 +839,9 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 				// get first key allowed
 				fread(&DataLength, sizeof(char), 1, FileHeader.fp);
 				fread(Buffer, DataLength, 1, FileHeader.fp);
-				strcpy(szLabel, &Buffer[1]);
+				strlcpy(szLabel, &Buffer[1], sizeof(szLabel));
 
-				pszOptionNames[0] = malloc(strlen(szLabel) + 1);
-				CheckMem(pszOptionNames[0]);
-				strcpy(pszOptionNames[0], szLabel);
+				pszOptionNames[0] = DupeStr(szLabel);
 
 				szKeys[0] = Buffer[0];
 
@@ -915,13 +876,11 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 						// get key and label
 						fread(&DataLength, sizeof(char), 1, FileHeader.fp);
 						fread(Buffer, DataLength, 1, FileHeader.fp);
-						strcpy(szLabel, &Buffer[1]);
+						strlcpy(szLabel, &Buffer[1], sizeof(szLabel));
 						szKeys[CurOption] = Buffer[0];
 
 						/* get this optionname */
-						pszOptionNames[CurOption] = malloc(strlen(szLabel) + 1);
-						CheckMem(pszOptionNames[CurOption]);
-						strcpy(pszOptionNames[CurOption], szLabel);
+						pszOptionNames[CurOption] = DupeStr(szLabel);
 					}
 
 					CurOption++;
@@ -933,7 +892,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 				cInput = toupper(od_get_answer(szKeys));
 
 				if (OldCommType != 33) {
-					sprintf(szString, "%c\n\r", cInput);
+					snprintf(szString, sizeof(szString), "%c\n\r", cInput);
 					rputs(szString);
 				}
 
@@ -977,9 +936,9 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 				fread(szLabel3, DataLength, 1, FileHeader.fp);
 
 				if (stricmp(szLabel3, "NoRun") == 0)
-					FightResult = Fight_Fight(PClan, EnemyClan, false, false, false);
+					FightResult = Fight_Fight(PClan, &EnemyClan, false, false, false);
 				else  // can run
-					FightResult = Fight_Fight(PClan, EnemyClan, false, true, false);
+					FightResult = Fight_Fight(PClan, &EnemyClan, false, true, false);
 
 				/* set all spells to 0 */
 				for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
@@ -1001,19 +960,15 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 				}
 
 				// free up enemies found
-				for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
-					if (EnemyClan->Member[iTemp]) {
-						free(EnemyClan->Member[iTemp]);
-						EnemyClan->Member[iTemp] = NULL;
-					}
+				FreeClanMembers(&EnemyClan);
 
 				if (FightResult == FT_WON) {
 					// won
-					strcpy(szString, szLabel1);
+					strlcpy(szString, szLabel1, sizeof(szString));
 				}
 				else if (FightResult == FT_LOST) {
 					// lost
-					strcpy(szString, szLabel2);
+					strlcpy(szString, szLabel2, sizeof(szString));
 				}
 				else if (FightResult == FT_RAN) {
 					// ran away
@@ -1021,7 +976,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 					if (stricmp(szLabel3, "NoRun") == 0)
 						break;
 					else
-						strcpy(szString, szLabel3);
+						strlcpy(szString, szLabel3, sizeof(szString));
 				}
 
 				// if label is "nextline", stay here
@@ -1073,10 +1028,9 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 							NPCInfo->Topics[ NPCInfo->KnownTopics ].ClanInfo = true;
 
 							GetClanNameID(szClanName, NPCNdx.ClanID);
-							strcpy(NPCInfo->Topics[ NPCInfo->KnownTopics ].szName,
-								   szClanName);
+							strlcpy(NPCInfo->Topics[ NPCInfo->KnownTopics ].szName, szClanName, sizeof(NPCInfo->Topics[ NPCInfo->KnownTopics ].szName));
 
-							sprintf(szString, "I'm already in a clan called %s.\n\n", szClanName);
+							snprintf(szString, sizeof(szString), "I'm already in a clan called %s.\n\n", szClanName);
 							rputs(szString);
 						}
 					}
@@ -1095,7 +1049,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 
 						NPC_AddNPCMember(szNPCIndex);
 
-						sprintf(szString, "|0B%s |0Cjoins your clan!\n",
+						snprintf(szString, sizeof(szString), "|0B%s |0Cjoins your clan!\n",
 								NPCInfo->szName);
 						rputs(szString);
 
@@ -1115,17 +1069,17 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 
 				// find slot in enemy clan
 				for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
-					if (EnemyClan->Member[iTemp] == NULL) break;
+					if (EnemyClan.Member[iTemp] == NULL) break;
 
 				EmptySlot = iTemp;
 
-				EnemyClan->Member[EmptySlot] = malloc(sizeof(struct pc));
-				CheckMem(EnemyClan);
+				EnemyClan.Member[EmptySlot] = malloc(sizeof(struct pc));
+				CheckMem(EnemyClan.Member[EmptySlot]);
 
-				strcpy(szNPCFileName, Buffer);
+				strlcpy(szNPCFileName, Buffer, sizeof(szNPCFileName));
 
-				NPC_GetNPC(EnemyClan->Member[EmptySlot], szNPCFileName, WhichEnemy);
-				EnemyClan->Member[EmptySlot]->MyClan = EnemyClan;
+				NPC_GetNPC(EnemyClan.Member[EmptySlot], szNPCFileName, WhichEnemy);
+				EnemyClan.Member[EmptySlot]->MyClan = &EnemyClan;
 				break;
 			case 31 :  // Input keyword
 
@@ -1255,27 +1209,8 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 
 	fclose(FileHeader.fp);
 
-	// free strings
-	free(szString);
-	free(szLegal);
-	free(Buffer);
-	free(szLabel);
-	free(szLabel1);
-	free(szLabel2);
-	free(szLabel3);
-
 	// free up enemies found
-	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
-		if (EnemyClan->Member[iTemp]) {
-			free(EnemyClan->Member[iTemp]);
-			EnemyClan->Member[iTemp] = NULL;
-		}
-
-	if (EnemyClan) {
-		free(EnemyClan);
-		EnemyClan = NULL;
-	}
-
+	FreeClanMembers(&EnemyClan);
 
 	// reset health
 
@@ -1298,10 +1233,6 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 	}
 	else
 		return (QuestDone);
-	(void)CurEvent;
-	(void)pcBrace;
-	(void)Key;
-	(void)FoundEvent;
 }
 
 // ------------------------------------------------------------------------- //
@@ -1320,7 +1251,7 @@ void Quests_GoQuest(void)
 	}
 
 	for (;;) {
-		sprintf(szString, " |0CQuests Completed:  |0B%d\n", NumQuestsDone);
+		snprintf(szString, sizeof(szString), " |0CQuests Completed:  |0B%d\n", NumQuestsDone);
 		rputs(szString);
 		rputs(ST_LONGLINE);
 
@@ -1336,7 +1267,7 @@ void Quests_GoQuest(void)
 			// quest known? AND not complete?
 			if (KnownBitSet && !DoneBitSet && Quests[iTemp].pszQuestName) {
 				// show quest then
-				sprintf(szString, " |0A(|0B%c|0A) |0C%s\n", TotalQuests + 'A',
+				snprintf(szString, sizeof(szString), " |0A(|0B%c|0A) |0C%s\n", TotalQuests + 'A',
 						Quests[iTemp].pszQuestName);
 				rputs(szString);
 				QuestIndex[TotalQuests] = iTemp;

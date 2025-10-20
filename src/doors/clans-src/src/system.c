@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # include <share.h>
 #endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -151,11 +152,11 @@ void Config_Init(void)
 	CheckMem(Config);
 
 	// --- Set defaults
-	strcpy(szConfigName, "clans.cfg");
+	strlcpy(szConfigName, "clans.cfg", sizeof(szConfigName));
 	Config->szSysopName[0] = 0;
 	Config->szBBSName[0] = 0;
-	strcpy(Config->szScoreFile[0], "scores.asc");
-	strcpy(Config->szScoreFile[1], "scores.ans");
+	strlcpy(Config->szScoreFile[0], "scores.asc", sizeof(Config->szScoreFile[0]));
+	strlcpy(Config->szScoreFile[1], "scores.ans", sizeof(Config->szScoreFile[1]));
 	Config->szRegcode[0] = 0;
 	Config->BBSID = 0;
 
@@ -188,30 +189,30 @@ void Config_Init(void)
 				/* Process config token */
 				switch (iKeyWord) {
 					case 0 :  /* sysopname */
-						strcpy(Config->szSysopName, pcCurrentPos);
+						strlcpy(Config->szSysopName, pcCurrentPos, sizeof(Config->szSysopName));
 						break;
 					case 1 :  /* bbsname */
-						strcpy(Config->szBBSName, pcCurrentPos);
+						strlcpy(Config->szBBSName, pcCurrentPos, sizeof(Config->szBBSName));
 						break;
 					case 2 :  /* use log? */
 						if (stricmp(pcCurrentPos, "Yes") == 0) {
 							/* use log */
 							od_control.od_logfile = INCLUDE_LOGFILE;
-							sprintf(od_control.od_logfile_name, "clans%d.log", System.Node);
+							snprintf(od_control.od_logfile_name, sizeof(od_control.od_logfile_name), "clans%d.log", System.Node);
 						}
 						break;
 					case 3 :  /* ansi file */
-						strcpy(Config->szScoreFile[1], pcCurrentPos);
+						strlcpy(Config->szScoreFile[1], pcCurrentPos, sizeof(Config->szScoreFile[1]));
 						break;
 					case 4 :  /* ascii file */
-						strcpy(Config->szScoreFile[0], pcCurrentPos);
+						strlcpy(Config->szScoreFile[0], pcCurrentPos, sizeof(Config->szScoreFile[0]));
 						break;
 					case 5 :  /* node = ? */
 						iCurrentNode = atoi(pcCurrentPos);
 						break;
 					case 6 :  /* dropdirectory = ? */
 						if (System.Node == iCurrentNode) {
-							strcpy(od_control.info_path, pcCurrentPos);
+							strlcpy(od_control.info_path, pcCurrentPos, sizeof(od_control.info_path));
 						}
 						break;
 					case 7 :  /* usefossil */
@@ -237,18 +238,18 @@ void Config_Init(void)
 						Config->BBSID = atoi(pcCurrentPos);
 						break;
 					case 11 : /* netmail dir */
-						strcpy(Config->szNetmailDir, pcCurrentPos);
+						strlcpy(Config->szNetmailDir, pcCurrentPos, sizeof(Config->szNetmailDir));
 
 						/* remove '\' if last char is it */
 						if (Config->szNetmailDir [ strlen(Config->szNetmailDir) - 1] == '\\' || Config->szNetmailDir [strlen(Config->szNetmailDir) - 1] == '/')
 							Config->szNetmailDir [ strlen(Config->szNetmailDir) - 1] = 0;
 						break;
 					case 12 : /* inbound dir */
-						strcpy(Config->szInboundDir, pcCurrentPos);
+						strlcpy(Config->szInboundDir, pcCurrentPos, sizeof(Config->szInboundDir));
 
 						/* add '\' if last char is not it */
 						if (Config->szInboundDir [ strlen(Config->szInboundDir) - 1] != '\\' &&  Config->szInboundDir [strlen(Config->szInboundDir) - 1] != '/')
-							strcat(Config->szInboundDir, "/");
+							strlcat(Config->szInboundDir, "/", sizeof(Config->szInboundDir));
 						break;
 					case 13 : /* mailer type */
 						if (stricmp(pcCurrentPos, "BINKLEY") == 0)
@@ -262,7 +263,7 @@ void Config_Init(void)
 						break;
 					case 15 : /* regcode */
 						if (*pcCurrentPos)
-							strcpy(Config->szRegcode, pcCurrentPos);
+							strlcpy(Config->szRegcode, pcCurrentPos, sizeof(Config->szRegcode));
 						break;
 				}
 			}
@@ -317,12 +318,7 @@ static char * fullpath(char *target, const char *path, size_t size)
 		*out=0;
 		out--;
 	}
-	strncat(target,path,size-1);
-
-	/*  if(stat(target,&sb))
-	        return(NULL);
-	    if(S_ISDIR(sb.st_mode))
-	        strcat(target,"/"); */
+	strlcat(target, path, size);
 
 	for (; *out; out++)  {
 		while (*out=='/')  {
@@ -356,7 +352,7 @@ void ODCmdLineHandler(char *flag, char *val)
 				if (Game.Data->InterBBS) {
 					if (IBBS.Data->BBSID != atoi(val) &&
 							(atoi(val) > 0 && atoi(val) < MAX_IBBSNODES)) {
-						sprintf(szString, "Sending recon to %d\n", atoi(val));
+						snprintf(szString, sizeof(szString), "Sending recon to %d\n", atoi(val));
 						DisplayStr(szString);
 						IBBS_SendRecon(atoi(val));
 					}
@@ -374,13 +370,13 @@ void ODCmdLineHandler(char *flag, char *val)
 						System_Error("Only the League Coordinator can send a reset.\n");
 					}
 
-					/* sprintf(szString, "trying to send reset to %d\n", atoi(val));
+					/* snprintf(szString, sizeof(szString), "trying to send reset to %d\n", atoi(val));
 					DisplayStr(szString);
 					*/
 
 					if (IBBS.Data->BBSID != atoi(val) &&
 							(atoi(val) > 0 && atoi(val) < MAX_IBBSNODES)) {
-						sprintf(szString, "Sending reset to %d\n", atoi(val));
+						snprintf(szString, sizeof(szString), "Sending reset to %d\n", atoi(val));
 						DisplayStr(szString);
 						IBBS_SendReset(atoi(val));
 					}
@@ -487,7 +483,7 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 		}
 		else if (stricmp(&flag[1], "D") == 0) {
 			if (primitive)
-				strcpy(od_control.info_path, &flag[2]);
+				strlcpy(od_control.info_path, &flag[2], sizeof(od_control.info_path));
 			return TRUE;
 		}
 		else if (stricmp(&flag[1], "Slop") == 0) {
@@ -624,7 +620,7 @@ void System_Init(void)
 #ifdef _WIN32
 	GetModuleFileName(NULL, System.szMainDir, sizeof(System.szMainDir));
 #else
-	strcpy(System.szMainDir, _argv[0]);
+	strlcpy(System.szMainDir, _argv[0], sizeof(System.szMainDir));
 #endif
 	for (iTemp = strlen(System.szMainDir); iTemp > 0; iTemp--) {
 		if (System.szMainDir[iTemp] == '\\' || System.szMainDir[iTemp] == '/')
@@ -635,7 +631,7 @@ void System_Init(void)
 #ifdef __unix__
 	pszResolvedPath=fullpath(NULL,System.szMainDir,sizeof(System.szMainDir));
 	if (pszResolvedPath)
-		strcpy(System.szMainDir,pszResolvedPath);
+		strlcpy(System.szMainDir, pszResolvedPath, sizeof(System.szMainDir));
 	else
 		System.szMainDir[0] = 0;
 	free(pszResolvedPath);
@@ -652,10 +648,10 @@ void System_Init(void)
 	// initialize date
 #ifndef _WIN32
 	clans_getdate(&date);
-	sprintf(System.szTodaysDate, "%02d/%02d/%4d", date.da_mon, date.da_day, date.da_year);
+	snprintf(System.szTodaysDate, sizeof(System.szTodaysDate), "%02d/%02d/%4d", date.da_mon, date.da_day, date.da_year);
 #else
 	GetSystemTime(&system_time);
-	sprintf(System.szTodaysDate, "%02d/%02d/%4d", system_time.wMonth, system_time.wDay, system_time.wYear);
+	snprintf(System.szTodaysDate, sizeof(System.szTodaysDate), "%02d/%02d/%4d", system_time.wMonth, system_time.wDay, system_time.wYear);
 #endif
 
 #ifndef _WIN32

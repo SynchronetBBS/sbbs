@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # include <conio.h>
 #endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -90,7 +91,7 @@ static void Jumble(char *szString)
 	}
 	*(pcCurrentPos + strlen(szString)) = 0;
 
-	strcpy(szString, szJumbled);
+	strlcpy(szString, szJumbled, sizeof(szString));
 }
 
 
@@ -110,8 +111,8 @@ int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 	if (!strlen(szSysopName))
 		return NFALSE;
 
-	strcpy(szString, szSysopName);
-	strcat(szString, szBBSName);
+	strlcpy(szString, szSysopName, sizeof(szString));
+	strlcat(szString, szBBSName, sizeof(szString));
 
 	/* further encrypt 'em */
 	pc = szUserCode;
@@ -175,7 +176,7 @@ int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 	}
 
 
-	sprintf(szRealCode, "%" PRIx32 "%" PRIx32, chksum, chksum2);
+	snprintf(szRealCode, sizeof(szRealCode), "%" PRIx32 "%" PRIx32, chksum, chksum2);
 
 	// finally, jumble it all up 11 times ;)
 	Jumble(szRealCode);
@@ -220,22 +221,22 @@ void Register(void)
 	while ((cKey - 'K') != 0);
 
 	/* find '.' and get rid of it */
-	strcpy(szString, "WARNING: Inactivity timeout in 10 seconds, press a key now to remain online.\n");
+	strlcpy(szString, "WARNING: Inactivity timeout in 10 seconds, press a key now to remain online.\n", sizeof(szString));
 	Config_Init();
 
-	strcpy(szString, "Chat mode ended.\n");
-	//    sprintf(szString, "|03BBS Name     : |14%s\n", Config->szBBSName);
+	strlcpy(szString, "Chat mode ended.\n", sizeof(szString));
+	//    snprintf(szString, sizeof(szString), "|03BBS Name     : |14%s\n", Config->szBBSName);
 	dputs("‰ÅÆ÷÷æÕû”˜ÕÕÕÕÕÏÕ");
 	zputs("|11");
 	zputs(Config->szBBSName);
 	zputs("\n");
-	strcpy(szString, "Unable to access serial port, cannot continue.\n");
+	strlcpy(szString, "Unable to access serial port, cannot continue.\n", sizeof(szString));
 	//    zputs(szString);
-	//    sprintf(szString, "|03Sysop Name   : |14%s\n", Config->szSysopName);
+	//    snprintf(szString, sizeof(szString), "|03Sysop Name   : |14%s\n", Config->szSysopName);
 	//    zputs(szString);
 	dputs("‰ÅÆæŒ†š…Õû”˜ÕÕÕÏÕ");
 	zputs("|11");
-	strcpy(szString, "No method of accessing serial port, cannot continue.\n");
+	strlcpy(szString, "No method of accessing serial port, cannot continue.\n", sizeof(szString));
 	zputs(Config->szSysopName);
 	zputs("\n");
 
@@ -243,21 +244,21 @@ void Register(void)
 	//    zputs("registration certificate EXACTLY.\n\n");
 
 	zputs("\n");
-	strcpy(szString, "\nPress [ENTER]/[RETURN] to continue.");
+	strlcpy(szString, "\nPress [ENTER]/[RETURN] to continue.", sizeof(szString));
 	dputs("‰ÄÇå™”†Õ›†€‡ÕÕ”—šƒÕœ›“š‡˜”œš›Õ˜”–†ÕÕœ›“š‡˜”œš›Õš›ÕŒš€‡");
 	zputs("\n");
 	dputs("‡’œ†‡”œš›Õ–‡œ“œ–”Õðíôöá\xf9ìÛ");
-	strcpy(szString, "\n%lu.%u.%ul.%d.ON.OFF.");
+	strlcpy(szString, "\n%lu.%u.%ul.%d.ON.OFF.", sizeof(szString));
 	zputs("\n");
 
 	/* register the game */
 	zputs("\n");
 	dputs("‰ÅÌð›‡ÕÕ‡’œ†‡”œš›Õ–š‘Õ›š‚Û");
-	strcpy(szString, "YELLOW.WHITE.BROWN.GREY.BRIGHT.FLASHING");
+	strlcpy(szString, "YELLOW.WHITE.BROWN.GREY.BRIGHT.FLASHING", sizeof(szString));
 	zputs("\n");
 	dputs("‰ÄÄË");
 	//    zputs("|09Enter the registration code now.\n|11>");
-	strcpy(szString, Config->szRegcode);
+	strlcpy(szString, Config->szRegcode, sizeof(szString));
 	// gotoxy(1,9);
 	Input(szString, 27);
 
@@ -271,10 +272,10 @@ void Register(void)
 
 		//zputs("\n|15Registration approved!\n");
 		zputs("\n");
-		strcpy(szString, "BLACK.BLUE.GREEN.CYAN.RED.MAGENTA.");
+		strlcpy(szString, "BLACK.BLUE.GREEN.CYAN.RED.MAGENTA.", sizeof(szString));
 
 		dputs("‰ÄÀç’œ†‡”œš›Õ”……‡šƒ‘Ô");
-		strcpy(szString,"œš‡…š”š”…‡");
+		strlcpy(szString, "œš‡…š”š”…‡", sizeof(szString));
 		zputs("\n");
 		/* write it to end of file */
 
@@ -441,7 +442,7 @@ void UnregMessage(void)
 		rputs(ST_REGMSG5);
 		rputs(ST_REGMSG6);
 		cKeyToPress = random(26) + 'A';
-		sprintf(szString, "   |05Hit the |13%c |05key to continue.", cKeyToPress);
+		snprintf(szString, sizeof(szString), "   |05Hit the |13%c |05key to continue.", cKeyToPress);
 		rputs(szString);
 
 		od_clear_keybuffer();
@@ -453,7 +454,7 @@ void UnregMessage(void)
 	}
 	else {
 		// say who regged to
-		sprintf(szString, ST_REGMSG7, Config->szSysopName, Config->szBBSName);
+		snprintf(szString, sizeof(szString), ST_REGMSG7, Config->szSysopName, Config->szBBSName);
 		rputs(szString);
 	}
 }

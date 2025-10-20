@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -60,7 +61,6 @@ static bool FirstTimeInMain = false;
 static int16_t WorldMenu(void)
 {
 	char *szTheOptions[7];
-	int16_t iTemp;
 
 	LoadStrings(990, 7, szTheOptions);
 
@@ -108,7 +108,6 @@ static int16_t WorldMenu(void)
 				break;
 		}
 	}
-	(void)iTemp;
 }
 
 // ------------------------------------------------------------------------- //
@@ -117,8 +116,8 @@ static void AddChatFile(char *szString, char *pszFileName)
 {
 	FILE *fpChatFile;
 	int16_t LinesRead, iTemp;
-	char *szOldLines[42];
-	char *szNewLines[42];
+	char szOldLines[42][90];
+	char szNewLines[42][90];
 
 	fpChatFile = fopen(pszFileName, "r");
 
@@ -129,13 +128,6 @@ static void AddChatFile(char *szString, char *pszFileName)
 		fputs(szString, fpChatFile);
 		fclose(fpChatFile);
 		return;
-	}
-
-	for (iTemp = 0; iTemp < 42; iTemp++) {
-		szOldLines[iTemp] = malloc(90);
-		CheckMem(szOldLines[iTemp]);
-		szNewLines[iTemp] = malloc(90);
-		CheckMem(szNewLines[iTemp]);
 	}
 
 	/* found file, read in lines */
@@ -159,7 +151,7 @@ static void AddChatFile(char *szString, char *pszFileName)
 		 * and adding it to the chat
 		 */
 		for (iTemp = 0; iTemp < 41; iTemp++)
-			strcpy(szNewLines[iTemp], szOldLines[iTemp + 1]);
+			strlcpy(szNewLines[iTemp], szOldLines[iTemp + 1], sizeof(szNewLines[iTemp]));
 
 		/* first line deleted, now write them to file */
 		fpChatFile = fopen(pszFileName, "w");
@@ -184,11 +176,6 @@ static void AddChatFile(char *szString, char *pszFileName)
 			fputs(szString, fpChatFile);
 			fclose(fpChatFile);
 		}
-	}
-
-	for (iTemp = 0; iTemp < 42; iTemp++) {
-		free(szOldLines[iTemp]);
-		free(szNewLines[iTemp]);
 	}
 }
 
@@ -228,18 +215,18 @@ void Menus_ChatRoom(char *pszFileName)
 
 		if (FirstTime) {
 			/* first write clan name on one line */
-			strcpy(szLine, "|0B");
-			strcat(szLine, PClan->szName);
-			strcat(szLine, "\n");
+			strlcpy(szLine, "|0B", sizeof(szLine));
+			strlcat(szLine, PClan->szName, sizeof(szLine));
+			strlcat(szLine, "\n", sizeof(szLine));
 			AddChatFile(szLine, pszFileName);
 
 			FirstTime = false;
 		}
 
 		// write quote to file
-		strcpy(szLine, "|0B> |0C");
-		strcat(szLine, szString);
-		strcat(szLine, "\n");
+		strlcpy(szLine, "|0B> |0C", sizeof(szLine));
+		strlcat(szLine, szString, sizeof(szLine));
+		strlcat(szLine, "\n", sizeof(szLine));
 
 		/* add it on */
 		AddChatFile(szLine, pszFileName);
@@ -255,12 +242,12 @@ static int16_t MainMenu(void)
 	char *szTheOptions[20], DefaultAction, szMainMenu[20],
 	*szSecret = "/e/Secret";
 	struct UserInfo User;
-	int16_t iTemp, BannerShown;
+	int16_t BannerShown;
 
 	BannerShown = RANDOM(5) + 1;
 
 	LoadStrings(970, 20, szTheOptions);
-	sprintf(szMainMenu, "Main Menu%d", BannerShown);
+	snprintf(szMainMenu, sizeof(szMainMenu), "Main Menu%d", BannerShown);
 
 	/* get a choice */
 	for (;;) {
@@ -292,8 +279,8 @@ static int16_t MainMenu(void)
 
 						User.Deleted = false; // don't care
 
-						strcpy(User.szMasterName, PClan->szUserName);
-						strcpy(User.szName, PClan->szName);
+						strlcpy(User.szMasterName, PClan->szUserName, sizeof(User.szMasterName));
+						strlcpy(User.szName, PClan->szName, sizeof(User.szName));
 
 						LeagueKillUser(&User);
 					}
@@ -388,7 +375,6 @@ static int16_t MainMenu(void)
 				break;
 		}
 	}
-	(void)iTemp;
 }
 
 
@@ -524,7 +510,6 @@ static int16_t CommunicationsMenu(void)
 {
 	char *szTheOptions[8];
 	char szString[128];
-	int16_t iTemp, ClanId[2];
 
 	LoadStrings(205, 8, szTheOptions);
 
@@ -549,7 +534,7 @@ static int16_t CommunicationsMenu(void)
 				Mail_Write(MT_PUBLIC);
 				break;
 			case 'U' :      /* update lastread pointer */
-				sprintf(szString, "|03The last message you read was #%d.\nSet to which message? ",
+				snprintf(szString, sizeof(szString), "|03The last message you read was #%d.\nSet to which message? ",
 						PClan->PublicMsgIndex);
 				PClan->PublicMsgIndex = GetLong(szString, PClan->PublicMsgIndex, Village.Data->PublicMsgIndex-1);
 				break;
@@ -568,8 +553,6 @@ static int16_t CommunicationsMenu(void)
 				break;
 		}
 	}
-	(void)ClanId;
-	(void)iTemp;
 }
 
 // ------------------------------------------------------------------------- //
@@ -577,7 +560,7 @@ static int16_t CommunicationsMenu(void)
 static void WizardShop(void)
 {
 	char *szTheOptions[6], szString[128];
-	int16_t iTemp, ItemIndex;
+	int16_t ItemIndex;
 	int32_t ExamineCost;
 
 	LoadStrings(1320, 6, szTheOptions);
@@ -641,7 +624,7 @@ static void WizardShop(void)
 
 				ExamineCost = PClan->Items[ItemIndex].lCost/4;
 
-				sprintf(szString, ST_WIZ3, ExamineCost, PClan->Empire.VaultGold);
+				snprintf(szString, sizeof(szString), ST_WIZ3, ExamineCost, PClan->Empire.VaultGold);
 
 				rputs(szString);
 				if (PClan->Empire.VaultGold < ExamineCost) {
@@ -659,13 +642,11 @@ static void WizardShop(void)
 				break;
 		}
 	}
-	(void)iTemp;
 }
 
 static int16_t MarketMenu(void)
 {
 	char *szTheOptions[10];
-	int16_t iTemp;
 
 	LoadStrings(231, 9, szTheOptions);
 	szTheOptions[9] = "Wizard's Shop";
@@ -713,7 +694,6 @@ static int16_t MarketMenu(void)
 				break;
 		}
 	}
-	(void)iTemp;
 }
 
 
@@ -724,7 +704,7 @@ static int16_t AlliancesMenu(void)
 	struct Alliance *Alliances[MAX_ALLIANCES];
 	int16_t iTemp, NumAlliances, WhichAlliance, NumUserAlliances;
 	char cKey, szChoices[MAX_ALLIANCES + 5], szFileName[13];
-	char *szString;
+	char szString[128];
 
 	if (!PClan->AllyHelp) {
 		PClan->AllyHelp = true;
@@ -734,8 +714,6 @@ static int16_t AlliancesMenu(void)
 
 	GetAlliances(Alliances);
 
-	szString = MakeStr(128);
-
 	// display them, if any
 	rputs(ST_AMENU0);    // show title
 	rputs(ST_LONGLINE);
@@ -743,7 +721,7 @@ static int16_t AlliancesMenu(void)
 		if (Alliances[iTemp] == NULL) break;
 
 		// od_printf("(%c) %s\n\r", iTemp+'A', Alliances[iTemp]->szName);
-		sprintf(szString, ST_AMENU1, iTemp+'A', Alliances[iTemp]->szName);
+		snprintf(szString, sizeof(szString), ST_AMENU1, iTemp+'A', Alliances[iTemp]->szName);
 		rputs(szString);
 
 		szChoices[iTemp] = iTemp + 'A';
@@ -796,7 +774,7 @@ static int16_t AlliancesMenu(void)
 					PClan->MadeAlliance = true;
 					if (EnterAlliance(Alliances[ NumAlliances ])) {
 						// remove chatfile first
-						sprintf(szFileName, "hall%02d.txt", Alliances[NumAlliances]->ID);
+						snprintf(szFileName, sizeof(szFileName), "hall%02d.txt", Alliances[NumAlliances]->ID);
 						unlink(szFileName);
 
 						// remove from user's alliance list
@@ -824,7 +802,7 @@ static int16_t AlliancesMenu(void)
 	else if (cKey != 'Q' && cKey != '\r' && cKey != '\n') {
 		WhichAlliance = cKey - 'A';
 
-		sprintf(szString, "%s\n", Alliances[ WhichAlliance ]->szName);
+		snprintf(szString, sizeof(szString), "%s\n", Alliances[ WhichAlliance ]->szName);
 		rputs(szString);
 
 		// see if in that alliance
@@ -838,7 +816,7 @@ static int16_t AlliancesMenu(void)
 
 			if (EnterAlliance(Alliances[ WhichAlliance ])) {
 				// remove chatfile first
-				sprintf(szFileName, "hall%02d.txt", Alliances[WhichAlliance]->ID);
+				snprintf(szFileName, sizeof(szFileName), "hall%02d.txt", Alliances[WhichAlliance]->ID);
 				unlink(szFileName);
 
 				// only if he is the ORIGINAL creator will he have flag set
@@ -881,8 +859,6 @@ static int16_t AlliancesMenu(void)
 			Alliances[iTemp] = NULL;
 		}
 
-	free(szString);
-
 	return 0;
 }
 
@@ -895,7 +871,7 @@ static int16_t ChurchMenu(void)
 {
 	char *szTheOptions[9];
 	char szString[80];
-	int16_t iTemp, Event;
+	int16_t iTemp;
 
 	// ST_CHURCHOP0
 	LoadStrings(890, 9, szTheOptions);
@@ -918,7 +894,7 @@ static int16_t ChurchMenu(void)
 		rputs("\n\n");
 		rputs(ST_LONGLINE);
 
-		sprintf(szString, " |0CLevel of Church: |0M%d\n", Village.Data->ChurchLevel);
+		snprintf(szString, sizeof(szString), " |0CLevel of Church: |0M%d\n", Village.Data->ChurchLevel);
 		rputs(szString);
 
 		switch (GetChoice("Church Menu", ST_ENTEROPTION, szTheOptions, "MBPDQ?VU/", 'Q', true)) {
@@ -991,7 +967,6 @@ static int16_t ChurchMenu(void)
 				break;
 		}
 	}
-	(void)Event;
 }
 
 
@@ -1001,7 +976,6 @@ static int16_t THallMenu(void)
 {
 	char *szTheOptions[7];
 	char szString[80];
-	int16_t iTemp;
 
 	LoadStrings(655, 7, szTheOptions);
 
@@ -1023,7 +997,7 @@ static int16_t THallMenu(void)
 		rputs("\n\n");
 		rputs(ST_LONGLINE);
 
-		sprintf(szString, " |0CLevel of Hall  : |0M%d\n", Village.Data->TrainingHallLevel);
+		snprintf(szString, sizeof(szString), " |0CLevel of Hall  : |0M%d\n", Village.Data->TrainingHallLevel);
 		rputs(szString);
 
 		switch (GetChoice("Training Hall", ST_ENTEROPTION, szTheOptions, "TALQ?V/", 'Q', true)) {
@@ -1052,7 +1026,6 @@ static int16_t THallMenu(void)
 				break;
 		}
 	}
-	(void)iTemp;
 }
 
 
@@ -1109,7 +1082,7 @@ void GameLoop(void)
 				if (Village.Data->RulingClanId[0] == -1) {
 					/* no ruler yet, ask if he wants to rule */
 					// currently no ruler
-					sprintf(szString, ST_MAIN6, Village.Data->szName);
+					snprintf(szString, sizeof(szString), ST_MAIN6, Village.Data->szName);
 					rputs(szString);
 
 					if (YesNo("|0SDoes your clan wish to rule the village?") == YES) {

@@ -62,90 +62,11 @@ void display_win32_error(void)
 	LocalFree(message);
 }
 
-int commandline_create(char *cmd_line, char ***argv, int *argc)
-{
-	char *option;
-	int i = 0, len;
-	TCHAR *program_path;
-	*argv = NULL;
-	*argc = 0;
-
-	option = (char *) calloc(1, strlen(cmd_line) + 5);
-	if (!option) {
-		display_win32_error();
-		return 0;
-	}
-
-	/* Initialize *argv[] with the program's name as first entry */
-	program_path = (char *) calloc(1, _MAX_PATH);
-	GetModuleFileName(NULL, program_path, _MAX_PATH);
-	program_path = (char *) realloc(program_path, strlen(program_path) + 1);
-	(*argv) = (char **) malloc(strlen(program_path) + 1);
-	(*argv)[(*argc)++] = program_path;
-
-	while (i < (signed)strlen(cmd_line)) {
-		/* Skip over excess whitespace */
-		while (isspace(cmd_line[i]))
-			++i;
-		/* Check for quoted strings */
-		if (cmd_line[i] == '\"') {
-			char *p_cur_quote = &cmd_line[i+1];
-			char *p_next_quote = strchr((p_cur_quote + 1), '\"');
-			if (p_next_quote) {
-				strncpy(option, p_cur_quote, (p_next_quote - p_cur_quote));
-				++i;
-			}
-			else
-				strcpy(option, p_cur_quote);
-		}
-		else {
-			/* Get non-quoted value */
-			char *p_cur = &cmd_line[i];
-			char *p_next = strchr(p_cur, ' ');
-			if (p_next)
-				strncpy(option, p_cur, (p_next - p_cur));
-			else
-				strcpy(option, p_cur);
-		}
-		/* Assign new value */
-		len = strlen(option);
-		i += (len + 1);
-		(*argv) = (char **) realloc((*argv), i + strlen(program_path));
-		(*argv)[(*argc)] = (char *) calloc(1, (len + 1));
-		strcpy((*argv)[(*argc)++], option);
-		/* Memory cleanup */
-		memset((void *) option, 0, len);
-	}
-
-	free(option);
-	return 1;
-}
-
-int commandline_destroy(char ***argv, int argc)
-{
-	int i;
-
-	for (i = 0; i < argc; i++)
-		free((*argv)[i]);
-
-	free((*argv));
-
-	return 1;
-}
-
 #else /* !_WIN32 */
+
 /* Dummy Functions for non-Win32 platforms */
 void display_win32_error(void)
 {
 }
 
-int commandline_create(char *cmd_line, char ***argv, int *argc)
-{
-	return 0;
-}
-
-int commandline_destroy(char ***argv, int argc)
-{
-	return 0;
-}
 #endif /* _WIN32 */

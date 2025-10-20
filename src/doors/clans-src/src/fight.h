@@ -6,7 +6,8 @@
 void Fight_Monster(int16_t Level, char *szFileName);
 
 void FreeClan(struct clan *Clan);
-struct clan *MallocClan(void);
+void FreeClanMembers(struct clan *Clan);
+void InitClan(struct clan *Clan);
 
 void Fight_CheckLevelUp(void);
 

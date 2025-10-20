@@ -80,9 +80,6 @@ CLANS_OBJS :=	$(OBJDIR)alliance.o $(OBJDIR)clans.o $(OBJDIR)clansini.o \
 		$(OBJDIR)trades.o $(OBJDIR)unix_wrappers.o \
 		$(OBJDIR)user.o $(OBJDIR)video.o $(OBJDIR)village.o \
 		$(OBJDIR)voting.o $(OBJDIR)wb_fapnd.o
-ifdef WIN
-#CLANS_OBJS +=	$(ODOORS)/objs-$(OS)/ODRes.o
-endif
 
 CHEW_OBJS :=	$(OBJDIR)chew.o $(OBJDIR)gum.o $(OBJDIR)parsing.o
 
@@ -96,19 +93,15 @@ INSTALL_OBJS :=	$(OBJDIR)install.o $(OBJDIR)gum.o $(OBJDIR)parsing.o
 
 LANGCOMP_OBJS := $(OBJDIR)langcomp.o $(OBJDIR)serialize.o $(OBJDIR)crc.o
 
-RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)unix_wrappers.o \
-		$(OBJDIR)serialize.o $(OBJDIR)deserialize.o \
-		$(OBJDIR)crc.o $(OBJDIR)parsing.o $(OBJDIR)myopen.o
-
 MAKENPC_OBJS :=	$(OBJDIR)makenpc.o $(OBJDIR)parsing.o \
 		$(OBJDIR)serialize.o $(OBJDIR)crc.o
 
 MAKEPAK_OBJS :=	$(OBJDIR)makepak.o $(OBJDIR)parsing.o \
 		$(OBJDIR)serialize.o $(OBJDIR)crc.o
 
-MCOMP_OBJS :=	$(OBJDIR)mcomp.o $(OBJDIR)serialize.o $(OBJDIR)crc.o
-
 MCLASS_OBJS :=	$(OBJDIR)mclass.o $(OBJDIR)serialize.o $(OBJDIR)crc.o
+
+MCOMP_OBJS :=	$(OBJDIR)mcomp.o $(OBJDIR)serialize.o $(OBJDIR)crc.o
 
 MITEMS_OBJS :=	$(OBJDIR)mitems.o $(OBJDIR)serialize.o $(OBJDIR)crc.o
 
@@ -117,6 +110,27 @@ MSPELLS_OBJS :=	$(OBJDIR)mspells.o $(OBJDIR)serialize.o $(OBJDIR)crc.o
 PCEDIT_OBJS :=	$(OBJDIR)pcedit.o $(OBJDIR)myopen.o \
 		$(OBJDIR)unix_wrappers.o $(OBJDIR)serialize.o \
 		$(OBJDIR)deserialize.o $(OBJDIR)crc.o
+
+RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)unix_wrappers.o \
+		$(OBJDIR)serialize.o $(OBJDIR)deserialize.o \
+		$(OBJDIR)crc.o $(OBJDIR)parsing.o $(OBJDIR)myopen.o
+
+ifdef WIN
+ CLANS_OBJS +=	$(OBJDIR)win_wrappers.o
+ CHEW_OBJS +=	$(OBJDIR)win_wrappers.o
+ CONFIG_OBJS +=	$(OBJDIR)win_wrappers.o
+ ECOMP_OBJS +=	$(OBJDIR)win_wrappers.o
+ INSTALL_OBJS += $(OBJDIR)win_wrappers.o
+ LANGCOMP_OBJS += $(OBJDIR)win_wrappers.o
+ MAKENPC_OBJS += $(OBJDIR)win_wrappers.o
+ MAKEPAK_OBJS += $(OBJDIR)win_wrappers.o
+ MCLASS_OBJS +=	$(OBJDIR)win_wrappers.o
+ MCOMP_OBJS +=	$(OBJDIR)win_wrappers.o
+ MITEMS_OBJS +=	$(OBJDIR)win_wrappers.o
+ MSPELLS_OBJS += $(OBJDIR)win_wrappers.o
+ PCEDIT_OBJS +=	$(OBJDIR)win_wrappers.o
+ RESET_OBJS +=	$(OBJDIR)win_wrappers.o
+endif
 
 DOOR_BINARIES	:=	$(BINDIR)clans$(EXEFILE) \
 			$(BINDIR)config$(EXEFILE) \

@@ -8,6 +8,8 @@
 #ifdef __MSDOS__
 # include <malloc.h>
 #endif
+#include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include "defines.h"
 #include "k_npcs.h"
@@ -15,7 +17,6 @@
 #include "parsing.h"
 #include "serialize.h"
 #include "structs.h"
-#include "unix_wrappers.h"
 
 static void Init_NPCs(char *szInfile, char *szOutfile);
 
@@ -132,7 +133,7 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 
 						/* initialize NPC */
 						memset(NPCInfo, 0, sizeof(struct NPCInfo));
-						strcpy(NPCInfo->szIndex, pcCurrentPos);
+						strlcpy(NPCInfo->szIndex, pcCurrentPos, sizeof(NPCInfo->szIndex));
 
 						// no topics known just yet
 						NPCInfo->IntroTopic.Active = false;
@@ -146,7 +147,7 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 						NPCInfo->MaxTopics = -1;     // no maximum
 						NPCInfo->OddsOfSeeing = 0;
 						NPCInfo->szHereNews[0] = 0;
-						strcpy(NPCInfo->szQuoteFile, "/q/NpcQuote");
+						strlcpy(NPCInfo->szQuoteFile, "/q/NpcQuote", sizeof(NPCInfo->szQuoteFile));
 						NPCInfo->szMonFile[0] = 0;
 
 						TopicsKnown = 0;
@@ -163,12 +164,10 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 						printf("KnownTopic = %s\n", pcCurrentPos);
 
 						// topic as it appears in the quote file
-						strcpy(NPCInfo->Topics[TopicsKnown].szFileName,
-							   szString);
+						strlcpy(NPCInfo->Topics[TopicsKnown].szFileName, szString, sizeof(NPCInfo->Topics[TopicsKnown].szFileName));
 
 						// topic name as it appears to user
-						strcpy(NPCInfo->Topics[TopicsKnown].szName,
-							   pcCurrentPos);
+						strlcpy(NPCInfo->Topics[TopicsKnown].szName, pcCurrentPos, sizeof(NPCInfo->Topics[TopicsKnown].szName));
 
 						TopicsKnown++;
 						break;
@@ -181,12 +180,10 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 						printf("Topic = %s\n", pcCurrentPos);
 
 						// topic as it appears in the quote file
-						strcpy(NPCInfo->Topics[TopicsKnown].szFileName,
-							   szString);
+						strlcpy(NPCInfo->Topics[TopicsKnown].szFileName, szString, sizeof(NPCInfo->Topics[TopicsKnown].szFileName));
 
 						// topic name as it appears to user
-						strcpy(NPCInfo->Topics[TopicsKnown].szName,
-							   pcCurrentPos);
+						strlcpy(NPCInfo->Topics[TopicsKnown].szName, pcCurrentPos, sizeof(NPCInfo->Topics[TopicsKnown].szName));
 
 						TopicsKnown++;
 						break;
@@ -232,22 +229,22 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 						NPCInfo->IntroTopic.ClanInfo = false;
 
 						// topic name as it appears to user
-						strcpy(NPCInfo->IntroTopic.szFileName, pcCurrentPos);
+						strlcpy(NPCInfo->IntroTopic.szFileName, pcCurrentPos, sizeof(NPCInfo->IntroTopic.szFileName));
 						printf("Intro topic = %s\n", pcCurrentPos);
 						break;
 					case 9 :    // here news
 						if (strlen(pcCurrentPos) > 69)
 							pcCurrentPos[69] = 0;
-						strcpy(NPCInfo->szHereNews, pcCurrentPos);
+						strlcpy(NPCInfo->szHereNews, pcCurrentPos, sizeof(NPCInfo->szHereNews));
 						break;
 					case 0 :    // name of NPC
-						strcpy(NPCInfo->szName, pcCurrentPos);
+						strlcpy(NPCInfo->szName, pcCurrentPos, sizeof(NPCInfo->szName));
 						break;
 					case 10 :   // quotefile to use
-						strcpy(NPCInfo->szQuoteFile, pcCurrentPos);
+						strlcpy(NPCInfo->szQuoteFile, pcCurrentPos, sizeof(NPCInfo->szQuoteFile));
 						break;
 					case 11 :   // .mon file to use
-						strcpy(NPCInfo->szMonFile, pcCurrentPos);
+						strlcpy(NPCInfo->szMonFile, pcCurrentPos, sizeof(NPCInfo->szMonFile));
 						break;
 				}
 				break;

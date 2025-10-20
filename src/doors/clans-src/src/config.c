@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # endif
 #endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include "defines.h"
 #include "k_config.h"
@@ -366,7 +367,7 @@ static void NodeMenu(void)
 	clrscr();
 
 	/* show options */
-	sprintf(str, " |03Node %d Config for The Clans " VERSION, currNode->number);
+	snprintf(str, sizeof(str), " |03Node %d Config for The Clans " VERSION, currNode->number);
 	qputs(str, 0,0);
 	qputs("|09- |01---------------------------------------------------------------------------",0,1);
 	xputs(" Dropfile Directory", 0, 2);
@@ -823,9 +824,9 @@ static void EditNodeOption(int16_t WhichOption)
 		case 2 :    /* Address */
 			gotoxy(40, 4);
 			if (currNode->addr != UINTPTR_MAX)
-				sprintf(addrstr, "0x%" PRIXPTR, currNode->addr);
+				snprintf(addrstr, sizeof(addrstr), "0x%" PRIXPTR, currNode->addr);
 			else
-				strcpy(addrstr, "Default");
+				strlcpy(addrstr, "Default", sizeof(addrstr));
 			DosGetStr(addrstr, sizeof(addrstr) - 1);
 			currNode->addr = strtoull(addrstr, NULL, 0);
 			break;
@@ -847,7 +848,7 @@ static int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 	zputs(" ");
 	zputs(Prompt);
 
-	sprintf(DefMax, " |01(|15%" PRId32 "|07; %" PRId32 "|01) |11", DefaultVal, Maximum);
+	snprintf(DefMax, sizeof(DefMax), " |01(|15%" PRId32 "|07; %" PRId32 "|01) |11", DefaultVal, Maximum);
 	zputs(DefMax);
 
 	/* NumDigits contains amount of digits allowed using max. value input */
@@ -869,7 +870,7 @@ static int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 			if (CurDigit < NumDigits) {
 				NumString[CurDigit++] = InputChar;
 				NumString[CurDigit] = 0;
-				sprintf(string, "%c", InputChar);
+				snprintf(string, sizeof(string), "%c", InputChar);
 				zputs(string);
 			}
 
@@ -890,11 +891,11 @@ static int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 			for (cTemp = 0; cTemp < CurDigit; cTemp++)
 				zputs("\b \b");
 
-			sprintf(string, "%-" PRId32, Maximum);
+			snprintf(string, sizeof(string), "%-" PRId32, Maximum);
 			string[NumDigits] = 0;
 			zputs(string);
 
-			strcpy(NumString, string);
+			strlcpy(NumString, string, sizeof(NumString));
 			CurDigit = NumDigits;
 		}
 		else if (InputChar == '<' || InputChar == ',' || InputChar == 25) {
@@ -905,15 +906,15 @@ static int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 			CurDigit = 0;
 			string[CurDigit] = 0;
 
-			strcpy(NumString, string);
+			strlcpy(NumString, string, sizeof(NumString));
 		}
 		else if (InputChar == '\r' || InputChar == '\n') {
 			if (CurDigit == 0) {
-				sprintf(string, "%-" PRId32, DefaultVal);
+				snprintf(string, sizeof(string), "%-" PRId32, DefaultVal);
 				string[NumDigits] = 0;
 				zputs(string);
 
-				strcpy(NumString, string);
+				strlcpy(NumString, string, sizeof(NumString));
 				CurDigit = NumDigits;
 
 				zputs("\n");
@@ -925,11 +926,11 @@ static int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 				for (cTemp = 0; cTemp < CurDigit; cTemp++)
 					zputs("\b \b");
 
-				sprintf(string, "%-" PRId32, Maximum);
+				snprintf(string, sizeof(string), "%-" PRId32, Maximum);
 				string[NumDigits] = 0;
 				zputs(string);
 
-				strcpy(NumString, string);
+				strlcpy(NumString, string, sizeof(NumString));
 				CurDigit = NumDigits;
 			}
 			else {  /* is a valid value */
@@ -982,7 +983,7 @@ static void DosGetStr(char *InputStr, int16_t MaxChars)
 		}
 		else if (InputCh== '' || InputCh == '\x1B') { // ctrl-y
 			InputStr [0] = 0;
-			strcpy(TempStr, BackSpaces);
+			strlcpy(TempStr, BackSpaces, sizeof(TempStr));
 			TempStr[ CurChar ] = 0;
 			zputs(TempStr);
 			Spaces[MaxChars] = 0;
@@ -1003,7 +1004,7 @@ static void DosGetStr(char *InputStr, int16_t MaxChars)
 			if (CurChar==MaxChars)   continue;
 			InputStr[CurChar++]=InputCh;
 			InputStr[CurChar] = 0;
-			sprintf(szString, "%c", InputCh);
+			snprintf(szString, sizeof(szString), "%c", InputCh);
 			zputs(szString);
 		}
 	}
@@ -1098,12 +1099,12 @@ static void Config_Init(void)
 //  int16_t iCurrentNode = 1;
 
 	// --- Set defaults
-	strcpy(szConfigName, "clans.cfg");
-	strcpy(Config.szScoreFile[0], "scores.asc");
-	strcpy(Config.szScoreFile[1], "scores.ans");
+	strlcpy(szConfigName, "clans.cfg", sizeof(szConfigName));
+	strlcpy(Config.szScoreFile[0], "scores.asc", sizeof(Config.szScoreFile[0]));
+	strlcpy(Config.szScoreFile[1], "scores.ans", sizeof(Config.szScoreFile[1]));
 	Config.BBSID = 1;
-	strcpy(Config.szNetmailDir, "/bbs/outbound");
-	strcpy(Config.szInboundDir, "/bbs/inbound");
+	strlcpy(Config.szNetmailDir, "/bbs/outbound", sizeof(Config.szNetmailDir));
+	strlcpy(Config.szInboundDir, "/bbs/inbound", sizeof(Config.szInboundDir));
 	Config.MailerType = MAIL_BINKLEY;
 	Config.InterBBS = false;
 
@@ -1132,10 +1133,10 @@ static void Config_Init(void)
 				/* Process config token */
 				switch (iKeyWord) {
 					case 0 :  /* sysopname */
-						strcpy(Config.szSysopName, pcCurrentPos);
+						strlcpy(Config.szSysopName, pcCurrentPos, sizeof(Config.szSysopName));
 						break;
 					case 1 :  /* bbsname */
-						strcpy(Config.szBBSName, pcCurrentPos);
+						strlcpy(Config.szBBSName, pcCurrentPos, sizeof(Config.szBBSName));
 						break;
 					case 2 :  /* use log */
 						if (stricmp(pcCurrentPos, "Yes") == 0)
@@ -1144,10 +1145,10 @@ static void Config_Init(void)
 							ConfigUseLog = false;
 						break;
 					case 3 :  /* ANSI score file */
-						strcpy(Config.szScoreFile[1], pcCurrentPos);
+						strlcpy(Config.szScoreFile[1], pcCurrentPos, sizeof(Config.szScoreFile[1]));
 						break;
 					case 4 :  /* ASCII score file */
-						strcpy(Config.szScoreFile[0], pcCurrentPos);
+						strlcpy(Config.szScoreFile[0], pcCurrentPos, sizeof(Config.szScoreFile[0]));
 						break;
 
 
@@ -1158,7 +1159,7 @@ static void Config_Init(void)
 						break;
 					case 6 :  /* Drop Directory */
 						if (currNode)
-							strcpy(currNode->dropDir, pcCurrentPos);
+							strlcpy(currNode->dropDir, pcCurrentPos, sizeof(currNode->dropDir));
 						break;
 					case 7 :  /* Use FOSSIL */
 						if (currNode) {
@@ -1180,18 +1181,18 @@ static void Config_Init(void)
 						Config.BBSID = atoi(pcCurrentPos);
 						break;
 					case 11 : /* netmail dir */
-						strcpy(Config.szNetmailDir, pcCurrentPos);
+						strlcpy(Config.szNetmailDir, pcCurrentPos, sizeof(Config.szNetmailDir));
 
 						/* remove '\' if last char is it */
 						if (Config.szNetmailDir [ strlen(Config.szNetmailDir) - 1] == '\\' || Config.szNetmailDir [strlen(Config.szNetmailDir) - 1] == '/')
 							Config.szNetmailDir [ strlen(Config.szNetmailDir) - 1] = 0;
 						break;
 					case 12 : /* inbound dir */
-						strcpy(Config.szInboundDir, pcCurrentPos);
+						strlcpy(Config.szInboundDir, pcCurrentPos, sizeof(Config.szInboundDir));
 
 						/* add '\' if last char is not it */
 						if (Config.szInboundDir [ strlen(Config.szInboundDir) - 1] != '\\' &&  Config.szInboundDir [strlen(Config.szInboundDir) - 1] != '/')
-							strcat(Config.szInboundDir, "/");
+							strlcat(Config.szInboundDir, "/", sizeof(Config.szInboundDir));
 						break;
 					case 13 : /* mailer type */
 						if (stricmp(pcCurrentPos, "BINKLEY") == 0)
@@ -1259,7 +1260,7 @@ static void UpdateOption(char Option)
 			ColorArea(0, 8, 76, 11,  Config.InterBBS ? 7 : 8);
 			break;
 		case 6:
-			sprintf(szString, "%d\n", Config.BBSID);
+			snprintf(szString, sizeof(szString), "%d\n", Config.BBSID);
 			settextattr(Config.InterBBS ? 15 : 8);
 			xputs("                                        ", 40, 8);
 			xputs(szString, 40, 8);
@@ -1299,18 +1300,18 @@ static void UpdateNodeOption(char Option)
 			settextattr(15);
 			xputs("                                        ", 40, 4);
 			if (currNode->addr == UINTPTR_MAX)
-				strcpy(szString, "Default");
+				strlcpy(szString, "Default", sizeof(szString));
 			else
-				sprintf(szString, "0x%" PRIXPTR, currNode->addr);
+				snprintf(szString, sizeof(szString), "0x%" PRIXPTR, currNode->addr);
 			xputs(szString, 40, 4);
 			break;
 		case 3:
 			settextattr(15);
 			xputs("                                        ", 40, 5);
 			if (currNode->irq < 0)
-				strcpy(szString, "Default");
+				strlcpy(szString, "Default", sizeof(szString));
 			else
-				sprintf(szString, "%d", currNode->irq);
+				snprintf(szString, sizeof(szString), "%d", currNode->irq);
 			xputs(szString, 40, 5);
 			break;
 	}

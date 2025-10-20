@@ -127,7 +127,7 @@ static void PS_List(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 
 	for (CurItem = 0; CurItem < MAX_PSITEMS; CurItem++) {
 		if (PS_Items[CurItem]) {
-			sprintf(szString, ST_PAWN6,
+			snprintf(szString, sizeof(szString), ST_PAWN6,
 					CurItem+1, PS_Items[CurItem]->szName);
 			rputs(szString);
 
@@ -153,11 +153,10 @@ static void PS_List(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 {
 	bool Done;
-	char cKey;
 	int16_t ItemIndex;
 	int32_t lCost;
 	char *szTheOptions[5], szString[50];
-	int16_t iTemp, EmptySlot;
+	int16_t EmptySlot;
 
 	LoadStrings(1190, 5, szTheOptions);
 
@@ -214,7 +213,7 @@ static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 						(PS_Items[ItemIndex]->lCost*10)/100L +
 						(PS_Items[ItemIndex]->lCost*RANDOM(10))/100L;
 
-				sprintf(szString, ST_PAWN4, lCost);
+				snprintf(szString, sizeof(szString), ST_PAWN4, lCost);
 
 				if (YesNo(szString) == NO)  break;
 
@@ -243,8 +242,6 @@ static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 	// ask if user wants to buy for sure
 	// if so, add item to user's inventory
 	//   remove from PS_Items[] by freeing up that memory
-	(void)cKey;
-	(void)iTemp;
 }
 
 static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
@@ -264,15 +261,14 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 
 
 	bool Done;
-	char cKey;
-	int16_t ItemIndex, iTemp, ItemSlot, CurItem;
+	int16_t ItemIndex, ItemSlot, CurItem;
 	int32_t lCost;
 	char *szTheOptions[6], szString[128];
 
 	LoadStrings(1195, 5, szTheOptions);
 	szTheOptions[5] = "Sell All";
 
-	sprintf(szString, "|0CAt its current level, this shop can take in up to |0B%d |0Citems.\n\n",
+	snprintf(szString, sizeof(szString), "|0CAt its current level, this shop can take in up to |0B%d |0Citems.\n\n",
 			20*Village.Data->PawnLevel);
 	rputs(szString);
 
@@ -310,7 +306,7 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 				}
 
 				if (CurItem == 20*Village.Data->PawnLevel) {
-					//sprintf(szString, "I'm sorry, we cannot accept any more items.\n\r");
+					//snprintf(szString, sizeof(szString), "I'm sorry, we cannot accept any more items.\n\r");
 					rputs(ST_PAWN9);
 					break;
 				}
@@ -339,7 +335,7 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 				lCost = (PClan->Items[ItemIndex].lCost*3L)/4L +
 						(PClan->Items[ItemIndex].lCost*(int32_t)RANDOM(15))/100L;
 
-				sprintf(szString, ST_PAWN12, lCost);
+				snprintf(szString, sizeof(szString), ST_PAWN12, lCost);
 
 				if (YesNo(szString) == NO) break;
 
@@ -383,7 +379,7 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 					lCost = (PClan->Items[ItemIndex].lCost*3L)/4L +
 							(PClan->Items[ItemIndex].lCost*(int32_t)RANDOM(15))/100L;
 
-					sprintf(szString, ST_PAWN12, lCost);
+					snprintf(szString, sizeof(szString), ST_PAWN12, lCost);
 
 					if (YesNo(szString) == NO) continue;
 
@@ -404,8 +400,6 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 				break;
 		}
 	}
-	(void)cKey;
-	(void)iTemp;
 }
 
 void PS_Maint(void)
@@ -436,7 +430,6 @@ void PawnShop(void)
 {
 	struct item_data *PS_Items[MAX_PSITEMS];
 	char *szTheOptions[5];
-	int16_t iTemp;
 
 	LoadStrings(1180, 5, szTheOptions);
 
@@ -475,5 +468,4 @@ void PawnShop(void)
 				break;
 		}
 	}
-	(void)iTemp;
 }

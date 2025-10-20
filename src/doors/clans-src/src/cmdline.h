@@ -33,8 +33,6 @@
 #ifdef _WIN32
 
 void display_win32_error();
-int commandline_create(char *, char ***, int *);
-int commandline_destroy(char ***, int);
 
 #endif /* _WIN32 */
 

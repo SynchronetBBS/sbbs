@@ -3,7 +3,7 @@
 
 #include "defines.h"
 
-#define PATH_SIZE 256
+#define PATH_SIZE 512
 
 struct IniFile {
 	bool Initialized;
@@ -40,7 +40,7 @@ struct system {
 	bool Initialized;
 
 	char szTodaysDate[11];
-	char szMainDir[256];
+	char szMainDir[PATH_SIZE];
 
 	int16_t Node;
 	bool InterBBS;

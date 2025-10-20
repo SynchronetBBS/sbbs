@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifdef __unix__
 #include <unistd.h>
 #endif
+#include "win_wrappers.h"
 
 #include "alliance.h"
 #include "game.h"
@@ -72,7 +73,7 @@ void Maintenance(void)
 	}
 
 	// update today's date
-	strcpy(Game.Data->szTodaysDate, System.szTodaysDate);
+	strlcpy(Game.Data->szTodaysDate, System.szTodaysDate, sizeof(Game.Data->szTodaysDate));
 
 
 	// if the game has not yet begun, skip reset of maintenance

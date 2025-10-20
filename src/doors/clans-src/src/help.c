@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <termios.h>
 #endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -46,8 +47,8 @@ void Help(char *Topic, char *File)
  * Given the Topic and File, the help is shown.
  */
 {
-	char *Lines[22], *string;
-	int16_t cTemp, Found = false, CurLine, NumLines;
+	char Lines[22][256], string[256];
+	int16_t Found = false, CurLine, NumLines;
 	int32_t MaxBytes;
 	bool EndOfTopic = false, Pause = false;
 	struct FileHeader FileHeader;
@@ -60,13 +61,6 @@ void Help(char *Topic, char *File)
 		return;
 	}
 
-	for (cTemp = 0; cTemp < 22; cTemp++) {
-		Lines[cTemp] = malloc(255);
-		CheckMem(Lines[cTemp]);
-	}
-
-	string = MakeStr(255);
-
 	/* search for topic */
 	while (!Found) {
 		MaxBytes = FileHeader.lEnd - ftell(FileHeader.fp) + EXTRABYTES;
@@ -78,9 +72,6 @@ void Help(char *Topic, char *File)
 			rputs(ST_NOHELP);
 			rputs("\n");
 
-			for (cTemp = 0; cTemp < 22; cTemp++)
-				free(Lines[cTemp]);
-			free(string);
 			return;
 		}
 
@@ -163,10 +154,6 @@ void Help(char *Topic, char *File)
 	}
 
 	fclose(FileHeader.fp);
-
-	for (cTemp = 0; cTemp < 22; cTemp++)
-		free(Lines[cTemp]);
-	free(string);
 }
 
 
@@ -178,7 +165,7 @@ void GeneralHelp(char *pszFileName)
  * and read them.
  */
 {
-	char *Topics[50], *Line;
+	char *Topics[50], Line[256];
 	int16_t NumTopics, cTemp, WhichTopic, iTemp;
 	int32_t MaxBytes;
 	struct FileHeader HelpFile;
@@ -191,8 +178,6 @@ void GeneralHelp(char *pszFileName)
 		rputs(ST_NOHELPFILE);
 		return;
 	}
-
-	Line = MakeStr(255);
 
 	for (iTemp = 0; iTemp < 50; iTemp++)
 		Topics[iTemp] = NULL;
@@ -231,8 +216,7 @@ void GeneralHelp(char *pszFileName)
 			if (stricmp(&Line[1], ST_HELPPAUSE) == 0)
 				continue; /* skip it, it's a pause */
 			else if (stricmp(&Line[1], ST_HELPEND) != 0) {
-				Topics[NumTopics] = MakeStr(strlen(&Line[1]) + 1);
-				strcpy(Topics[NumTopics], &Line[1]);
+				Topics[NumTopics] = DupeStr(&Line[1]);
 				NumTopics++;
 			}
 		}
@@ -258,7 +242,6 @@ void GeneralHelp(char *pszFileName)
 		if (Topics[cTemp])
 			free(Topics[cTemp]);
 	}
-	free(Line);
 }
 
 // ------------------------------------------------------------------------- //

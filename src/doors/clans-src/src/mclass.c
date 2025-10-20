@@ -8,13 +8,14 @@
 #ifdef __MSDOS__
 # include <malloc.h>
 #endif /* __MSDOS__ */
+#include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include "defines.h"
 #include "k_classes.h"
 #include "myopen.h"
 #include "serialize.h"
 #include "structs.h"
-#include "unix_wrappers.h"
 
 static struct PClass *PClasses[MAX_PCLASSES];
 
@@ -169,7 +170,7 @@ static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileNa
 						PClass[CurPClass]->MaxSP = 10;
 						PClass[CurPClass]->Gold = 0;
 
-						strcpy(PClass[CurPClass]->szName, pcCurrentPos);
+						strlcpy(PClass[CurPClass]->szName, pcCurrentPos, sizeof(PClass[CurPClass]->szName));
 
 						/* set known spells to none */
 						for (iTemp = 0; iTemp < MAX_SPELLS; iTemp++)

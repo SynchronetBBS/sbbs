@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # include <share.h>
 #endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -171,9 +172,9 @@ static void LocalLoad(void)
 
 	qputs(" |09The Clans |07" VERSION, 0, 16);
 
-	sprintf(szString, " |07Enter login name.  Press [|09Enter|07] for |14%s", Config->szSysopName);
+	snprintf(szString, sizeof(szString), " |07Enter login name.  Press [|09Enter|07] for |14%s", Config->szSysopName);
 	qputs(szString, 0, 18);
-	sprintf(szString, " |07Node |09%03d  |15> ", System.Node);
+	snprintf(szString, sizeof(szString), " |07Node |09%03d  |15> ", System.Node);
 	qputs(szString, 0, 19);
 
 	name[0] = 0;
@@ -182,20 +183,20 @@ static void LocalLoad(void)
 	Input(szString, 27);
 
 	if (strlen(szString))
-		strcpy(name, szString);
+		strlcpy(name, szString, sizeof(name));
 	else {
 		if (strlen(Config->szSysopName))
-			strcpy(name, Config->szSysopName);
+			strlcpy(name, Config->szSysopName, sizeof(name));
 		else
-			strcpy(name, "Sysop");
+			strlcpy(name, "Sysop", sizeof(name));
 	}
 
 	zputs("|16");
 
-	strcpy(od_control.user_name, name);
+	strlcpy(od_control.user_name, name, sizeof(od_control.user_name));
 	/*    for (i = 0; i < (signed)strlen(name); i++)
 	      name[i] = toupper(name[i]); */
-	strcpy(od_control.user_location, Config->szBBSName);
+	strlcpy(od_control.user_location, Config->szBBSName, sizeof(od_control.user_location));
 	od_control.user_timelimit = 30;
 	od_control.od_info_type = CUSTOM;
 	od_control.user_ansi = true;
@@ -313,9 +314,9 @@ static void TwoLiner(unsigned char which)
 		case PEROP_DISPLAY1 :
 			if (!StatusOn)  NoStatus();
 
-			sprintf(Status[0], "%s of %-10s                     ", od_control.user_name, od_control.user_location);
+			snprintf(Status[0], sizeof(Status[0]), "%s of %-10s                     ", od_control.user_name, od_control.user_location);
 			xputs(Status[0], 0, 23);
-			sprintf(Status[1], " Baud: %5ld Time: %2d      %s    Node: %3d ", od_control.baud, od_control.user_timelimit - od_control.user_time_used, (od_control.user_ansi) ? "[ANSI] " : "[ASCII]", System.Node);
+			snprintf(Status[1], sizeof(Status[1]), " Baud: %5ld Time: %2d      %s    Node: %3d ", od_control.baud, od_control.user_timelimit - od_control.user_time_used, (od_control.user_ansi) ? "[ANSI] " : "[ASCII]", System.Node);
 			xputs(Status[1], 31, 23);
 			break;
 		case PEROP_UPDATE1 :
@@ -323,7 +324,7 @@ static void TwoLiner(unsigned char which)
 
 			xputs(Status[0], 0, 23);
 
-			sprintf(szString, "%-3d", od_control.user_timelimit - od_control.user_time_used);
+			snprintf(szString, sizeof(szString), "%-3d", od_control.user_timelimit - od_control.user_time_used);
 
 			Status[1][19] = szString[0];
 			Status[1][20] = szString[1];
@@ -523,13 +524,13 @@ void rputs(char *string)
 			}
 			else if (*(pCurChar+1) == 'F') {
 				/* fights remaining */
-				sprintf(szString, "%d", PClan->FightsLeft);
+				snprintf(szString, sizeof(szString), "%d", PClan->FightsLeft);
 				rputs(szString);
 				pCurChar += 2;
 			}
 			else if (*(pCurChar+1) == 'M') {
 				/* mine level */
-				sprintf(szString, "%d", PClan->MineLevel);
+				snprintf(szString, sizeof(szString), "%d", PClan->MineLevel);
 				rputs(szString);
 				pCurChar += 2;
 			}
@@ -545,7 +546,7 @@ void rputs(char *string)
 						pCurChar += 3;
 						break;
 					case 'V' : /* value of cast */
-						sprintf(szString, "%d", Spells_CastValue);
+						snprintf(szString, sizeof(szString), "%d", Spells_CastValue);
 						rputs(szString);
 						pCurChar += 3;
 						break;
@@ -556,26 +557,26 @@ void rputs(char *string)
 			}
 			else if (*(pCurChar+1) == '1') {
 				/* pawn level */
-				sprintf(szString, "%d", Village.Data->PawnLevel);
+				snprintf(szString, sizeof(szString), "%d", Village.Data->PawnLevel);
 				rputs(szString);
 				pCurChar += 2;
 			}
 			else if (*(pCurChar+1) == '2') {
 				/* wiz shop level */
-				sprintf(szString, "%d", Village.Data->WizardLevel);
+				snprintf(szString, sizeof(szString), "%d", Village.Data->WizardLevel);
 				rputs(szString);
 				pCurChar += 2;
 			}
 			else if (*(pCurChar+1) == 'X') {
 				/* mine level */
-				sprintf(szString, "%d", Village.Data->MarketLevel);
+				snprintf(szString, sizeof(szString), "%d", Village.Data->MarketLevel);
 				rputs(szString);
 				pCurChar += 2;
 			}
 			else if (*(pCurChar+1) == 'Q') {
 				/* market quality level */
 
-				sprintf(szString, "%s", szQuality[Village.Data->MarketQuality]);
+				snprintf(szString, sizeof(szString), "%s", szQuality[Village.Data->MarketQuality]);
 				rputs(szString);
 				pCurChar += 2;
 			}
@@ -634,7 +635,7 @@ void Display(char *FileName)
 	int16_t FileType; /* 0 == ASCII, 1 == ANSI */
 	int16_t CurLine = 0, NumLines, cTemp;
 	int32_t MaxBytes;
-	char *Lines[30];
+	char Lines[30][256];
 	struct FileHeader FileHeader;
 
 	if ((toupper(FileName[ strlen(FileName) - 3 ]) == 'A') &&
@@ -651,12 +652,6 @@ void Display(char *FileName)
 	if (!FileHeader.fp) {
 		/* rputs("Display: File not found!\n"); */
 		return;
-	}
-
-	/* init mem */
-	for (cTemp = 0; cTemp < 30; cTemp++) {
-		Lines[cTemp] = malloc(255);
-		CheckMem(Lines[cTemp]);
 	}
 
 	for (;;) {
@@ -710,10 +705,6 @@ void Display(char *FileName)
 	}
 
 	fclose(FileHeader.fp);
-
-	/* de-init mem */
-	for (cTemp = 0; cTemp < 30; cTemp++)
-		free(Lines[cTemp]);
 }
 
 // ------------------------------------------------------------------------- //
@@ -765,7 +756,7 @@ void Door_ShowTitle(void)
 {
 	char szFileName[20];
 
-	sprintf(szFileName, "Title %d", (int16_t) RANDOM(3));
+	snprintf(szFileName, sizeof(szFileName), "Title %d", (int16_t) RANDOM(3));
 
 	Door_SetScreenPause(false);
 	Help(szFileName, ST_MENUSHLP);
@@ -808,7 +799,7 @@ void Door_Init(bool Local)
 	/* initialize opendoors ------------------------------------------------*/
 	od_control.od_mps = INCLUDE_MPS;
 
-	strcpy(od_registered_to, "Your Name");
+	strlcpy(od_registered_to, "Your Name", sizeof(od_registered_to));
 
 	od_add_personality("TWOLINER", 1, 23, TwoLiner);
 	od_control.od_default_personality = TwoLiner;

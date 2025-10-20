@@ -5,16 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#ifdef __MSDOS__
-#include <malloc.h>
-#endif /* __MSDOS__ */
+#include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include "defines.h"
 #include "k_items.h"
 #include "myopen.h"
 #include "serialize.h"
 #include "structs.h"
-#include "unix_wrappers.h"
 
 #define NPCS_NOTHERE    0   // status of NPC, not here -- i.e. not in town
 #define NPCS_HERE       1
@@ -187,7 +185,7 @@ static void Init_Items(char *szFileName)
 						Items[CurItem]->SPAdd = 0;
 						Items[CurItem]->SpellNum = -1;  // no spell
 
-						strcpy(Items[CurItem]->szName, pcCurrentPos);
+						strlcpy(Items[CurItem]->szName, pcCurrentPos, sizeof(Items[CurItem]->szName));
 
 						printf("%2d: %s\n", CurItem, Items[CurItem]->szName);
 

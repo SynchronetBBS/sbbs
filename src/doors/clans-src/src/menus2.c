@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string.h>
 #include <ctype.h>
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -31,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "help.h"
 #include "input.h"
 #include "language.h"
+#include "menus2.h"
 #include "mstrings.h"
 #include "reg.h"
 #include "structs.h"
@@ -85,12 +87,12 @@ void ResurrectDead(bool Unconscious)
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (PClan->Member[iTemp] &&
 				PClan->Member[iTemp]->Status == Dead && Unconscious == false) {
-			sprintf(szString, " |0A(|0B%c|0A) |0C%s\n", iTemp + 'A', PClan->Member[iTemp]->szName);
+			snprintf(szString, sizeof(szString), " |0A(|0B%c|0A) |0C%s\n", iTemp + 'A', PClan->Member[iTemp]->szName);
 			rputs(szString);
 		}
 		else if (PClan->Member[iTemp] &&
 				 PClan->Member[iTemp]->Status == Unconscious && Unconscious == true) {
-			sprintf(szString, " |0A(|0B%c|0A) |0C%s\n", iTemp + 'A', PClan->Member[iTemp]->szName);
+			snprintf(szString, sizeof(szString), " |0A(|0B%c|0A) |0C%s\n", iTemp + 'A', PClan->Member[iTemp]->szName);
 			rputs(szString);
 		}
 	}
@@ -107,7 +109,7 @@ void ResurrectDead(bool Unconscious)
 
 	WhichOne = cInput - 'A';
 
-	sprintf(szString, "%c\n", cInput);
+	snprintf(szString, sizeof(szString), "%c\n", cInput);
 	rputs(szString);
 
 	/* if that dude is alive, tell them */
@@ -132,7 +134,7 @@ void ResurrectDead(bool Unconscious)
 	else
 		Cost = ((int32_t)PClan->Member[ WhichOne ]->Level + 1L) * 300L;
 
-	sprintf(szString, "\n|0CIt will cost you %" PRId32 " gold.\n", Cost);
+	snprintf(szString, sizeof(szString), "\n|0CIt will cost you %" PRId32 " gold.\n", Cost);
 	rputs(szString);
 
 	/* if not enough dough, say go away */
@@ -142,7 +144,7 @@ void ResurrectDead(bool Unconscious)
 	}
 
 	/* if enough, ask NoYes if wish to revive */
-	sprintf(szString, "|0CAre you sure you wish to resurrect |0B%s|0C?",
+	snprintf(szString, sizeof(szString), "|0CAre you sure you wish to resurrect |0B%s|0C?",
 			PClan->Member[WhichOne]->szName);
 
 	if (NoYes(szString) == YES) {
@@ -155,10 +157,10 @@ void ResurrectDead(bool Unconscious)
 		PClan->Empire.VaultGold -= Cost;
 
 		if (Unconscious == false)
-			sprintf(szString, "%s has been resurrected from the dead!\n%%P",
+			snprintf(szString, sizeof(szString), "%s has been resurrected from the dead!\n%%P",
 					PClan->Member[ WhichOne ]->szName);
 		else
-			sprintf(szString, "%s has been revived!\n%%P",
+			snprintf(szString, sizeof(szString), "%s has been revived!\n%%P",
 					PClan->Member[ WhichOne ]->szName);
 		rputs(szString);
 
@@ -176,22 +178,21 @@ void ReleaseMember(void)
 	/* see which one he wants */
 	/* confirm release of member */
 
-	int16_t iTemp, WhichOne, Choice;
-	int32_t Cost;
+	int16_t iTemp, WhichOne;
 	char szString[128], cInput;
 
 	rputs(ST_LONGLINE);
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (PClan->Member[iTemp]) {
-			sprintf(szString, " |0A(|0B%c|0A) |0C%-15s ",
+			snprintf(szString, sizeof(szString), " |0A(|0B%c|0A) |0C%-15s ",
 					iTemp + 'A', PClan->Member[iTemp]->szName);
 
 			if (PClan->Member[iTemp]->Status == Here)
-				strcat(szString, "|14(alive)\n");
+				strlcat(szString, "|14(alive)\n", sizeof(szString));
 			else if (PClan->Member[iTemp]->Status == Unconscious)
-				strcat(szString, "|12(unconscious)\n");
+				strlcat(szString, "|12(unconscious)\n", sizeof(szString));
 			else if (PClan->Member[iTemp]->Status == Dead)
-				strcat(szString, "|04(dead)\n");
+				strlcat(szString, "|04(dead)\n", sizeof(szString));
 
 			rputs(szString);
 		}
@@ -215,7 +216,7 @@ void ReleaseMember(void)
 				PClan->Member[WhichOne])
 			break;
 	}
-	sprintf(szString, "%s\n", PClan->Member[WhichOne]->szName);
+	snprintf(szString, sizeof(szString), "%s\n", PClan->Member[WhichOne]->szName);
 	rputs(szString);
 
 	// if he is not a perm. member, tell user
@@ -225,11 +226,11 @@ void ReleaseMember(void)
 	}
 
 	/* confirm it */
-	//sprintf(szString, "|0SAre you sure you wish to remove %s from the clan?",
-	sprintf(szString, ST_REMOVEMEM, PClan->Member[ WhichOne ]->szName);
+	//snprintf(szString, sizeof(szString), "|0SAre you sure you wish to remove %s from the clan?",
+	snprintf(szString, sizeof(szString), ST_REMOVEMEM, PClan->Member[ WhichOne ]->szName);
 	if (NoYes(szString) == YES) {
 		// %s removed from clan
-		sprintf(szString, ST_REMOVED,
+		snprintf(szString, sizeof(szString), ST_REMOVED,
 				PClan->Member[ WhichOne ]->szName);
 		rputs(szString);
 
@@ -247,8 +248,6 @@ void ReleaseMember(void)
 		free(PClan->Member[ WhichOne ]);
 		PClan->Member[ WhichOne ] = NULL;
 	}
-	(void)Choice;
-	(void)Cost;
 }
 
 void AddMember(void)
@@ -302,7 +301,6 @@ void TrainMember(void)
 	/* else, give listing of attributes which can be "trained" */
 
 	int16_t iTemp, WhichOne = 0, Choice;
-	int32_t Cost;
 	char szString[128], cInput;
 	bool Done = false, DoneTraining = false;
 	char *szTheOptions[11];
@@ -332,7 +330,7 @@ void TrainMember(void)
 		for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
 			if (PClan->Member[iTemp] &&
 					PClan->Member[iTemp]->Status == Here) {
-				sprintf(szString, " |0A(|0B%c|0A) |0C%-15s |03(%d tpoints)\n", iTemp + 'A', PClan->Member[iTemp]->szName,
+				snprintf(szString, sizeof(szString), " |0A(|0B%c|0A) |0C%-15s |03(%d tpoints)\n", iTemp + 'A', PClan->Member[iTemp]->szName,
 						PClan->Member[iTemp]->TrainingPoints);
 				rputs(szString);
 			}
@@ -359,7 +357,7 @@ void TrainMember(void)
 		if (DoneTraining)
 			break;
 
-		sprintf(szString, "%s\n\r", PClan->Member[WhichOne]->szName);
+		snprintf(szString, sizeof(szString), "%s\n\r", PClan->Member[WhichOne]->szName);
 		rputs(szString);
 
 		/* if that dude is alive, tell them */
@@ -385,13 +383,13 @@ void TrainMember(void)
 
 		Done = false;
 		while (!Done) {
-			sprintf(szString, "\n\n |0BTraining %s\n",
+			snprintf(szString, sizeof(szString), "\n\n |0BTraining %s\n",
 					PClan->Member[WhichOne]->szName);
 			rputs(szString);
 			rputs(ST_LONGLINE);
 			/* list attributes */
 			for (iTemp = 0; iTemp < 8; iTemp++) {
-				sprintf(szString, " |0A(|0B%d|0A) |0C%-20s |06(%2d tpoints)\n",
+				snprintf(szString, sizeof(szString), " |0A(|0B%d|0A) |0C%-20s |06(%2d tpoints)\n",
 						iTemp+1, szTheOptions[iTemp], TCost[iTemp]);
 				rputs(szString);
 			}
@@ -399,7 +397,7 @@ void TrainMember(void)
 			rputs(" |0A(|0B?|0A) |0CHelp on Stats\n");
 			rputs(" |0A(|0BQ|0A) |0CAbort\n\n");
 			rputs(" |0CPlease choose an attribute to upgrade.\n");
-			sprintf(szString, " |0B%s |0Chas |0B%d |0Ctraining point(s) to use.\n",
+			snprintf(szString, sizeof(szString), " |0B%s |0Chas |0B%d |0Ctraining point(s) to use.\n",
 					PClan->Member[WhichOne]->szName,
 					PClan->Member[WhichOne]->TrainingPoints);
 			rputs(szString);
@@ -428,7 +426,7 @@ void TrainMember(void)
 					if (Choice >= '1' && Choice <= '6') {
 						PClan->Member[WhichOne]->Attributes[Choice-'1']++;
 
-						sprintf(szString, "|03%s's %s increases by |141|03.\n",
+						snprintf(szString, sizeof(szString), "|03%s's %s increases by |141|03.\n",
 								PClan->Member[WhichOne]->szName,
 								szTheOptions[Choice -'1']);
 						rputs(szString);
@@ -438,7 +436,7 @@ void TrainMember(void)
 						IncreaseAmount = (3 + RANDOM(5) + RANDOM(5));
 						PClan->Member[WhichOne]->MaxHP += IncreaseAmount;
 
-						sprintf(szString, "|03%s's max HP increases by |14%d|03.\n",
+						snprintf(szString, sizeof(szString), "|03%s's max HP increases by |14%d|03.\n",
 								PClan->Member[WhichOne]->szName, IncreaseAmount);
 						rputs(szString);
 					}
@@ -447,7 +445,7 @@ void TrainMember(void)
 						IncreaseAmount = (2 + RANDOM(3) + RANDOM(3));
 						PClan->Member[WhichOne]->MaxSP += IncreaseAmount;
 
-						sprintf(szString, "|03%s's max SP increases by |14%d|03.\n",
+						snprintf(szString, sizeof(szString), "|03%s's max SP increases by |14%d|03.\n",
 								PClan->Member[WhichOne]->szName, IncreaseAmount);
 						rputs(szString);
 					}
@@ -466,8 +464,5 @@ void TrainMember(void)
 			}
 		}
 	}
-
-	// return
-	(void)Cost;
 }
 

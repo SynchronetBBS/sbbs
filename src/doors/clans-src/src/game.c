@@ -90,28 +90,28 @@ void Game_Settings(void)
 {
 	char szString[128];
 
-	sprintf(szString, ST_GSETTINGS0, Game.Data->szDateGameStart);
+	snprintf(szString, sizeof(szString), ST_GSETTINGS0, Game.Data->szDateGameStart);
 	rputs(szString);
 	/* REP:
-	sprintf(szString, ST_GSETTINGS1, Game.Data->EliminationMode ? "On" : "Off");
+	snprintf(szString, sizeof(szString), ST_GSETTINGS1, Game.Data->EliminationMode ? "On" : "Off");
 	rputs(szString);
 	*/
-	sprintf(szString, ST_GSETTINGS2, Game.Data->MaxPermanentMembers);
+	snprintf(szString, sizeof(szString), ST_GSETTINGS2, Game.Data->MaxPermanentMembers);
 	rputs(szString);
 
 	if (Game.Data->InterBBS) {
-		sprintf(szString, ST_GSETTINGS3, Game.Data->ClanTravel ? "allowed" : "disabled");
+		snprintf(szString, sizeof(szString), ST_GSETTINGS3, Game.Data->ClanTravel ? "allowed" : "disabled");
 		rputs(szString);
 	}
 
-	sprintf(szString, ST_GSETTINGS4, Game.Data->ClanEmpires ? "allowed" : "disabled");
+	snprintf(szString, sizeof(szString), ST_GSETTINGS4, Game.Data->ClanEmpires ? "allowed" : "disabled");
 	rputs(szString);
 
-	sprintf(szString, ST_GSETTINGS5, Game.Data->MineFights);
+	snprintf(szString, sizeof(szString), ST_GSETTINGS5, Game.Data->MineFights);
 	rputs(szString);
-	sprintf(szString, ST_GSETTINGS6, Game.Data->ClanFights);
+	snprintf(szString, sizeof(szString), ST_GSETTINGS6, Game.Data->ClanFights);
 	rputs(szString);
-	sprintf(szString, ST_GSETTINGS7, Game.Data->DaysOfProtection);
+	snprintf(szString, sizeof(szString), ST_GSETTINGS7, Game.Data->DaysOfProtection);
 	rputs(szString);
 	door_pause();
 }

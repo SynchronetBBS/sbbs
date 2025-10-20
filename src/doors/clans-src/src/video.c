@@ -42,6 +42,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifdef _WIN32
 # include "cmdline.h" // defines display_win32_error ()
 #endif
+#include "win_wrappers.h"
 
 #include "defines.h"
 #include "door.h"
@@ -668,8 +669,8 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 				update = true;
 				if (insert && length < input_length)  {
 
-					strcpy(tmp_str, &string[cur_letter]);
-					strcpy(&string[cur_letter+1], tmp_str);
+					strlcpy(tmp_str, &string[cur_letter], sizeof(tmp_str));
+					strlcpy(&string[cur_letter+1], tmp_str, sizeof(&string[cur_letter+1]));
 
 					string[cur_letter] = key;
 
@@ -920,12 +921,12 @@ void clrscr(void)
 static void set_attrs(uint8_t attrib)
 {
 	char seq[16];
-	sprintf(seq, "\x1b[0;%d;%d", ansi_colours(attrib & 0x07), ansi_colours((attrib >> 4) & 0x07) + 10);
+	snprintf(seq, sizeof(seq), "\x1b[0;%d;%d", ansi_colours(attrib & 0x07), ansi_colours((attrib >> 4) & 0x07) + 10);
 	if (attrib & 0x08)
-		strcat(seq, ";1");
+		strlcat(seq, ";1", sizeof(seq));
 	if (attrib & (0x80))
-		strcat(seq, ";5");
-	strcat(seq, "m");
+		strlcat(seq, ";5", sizeof(seq));
+	strlcat(seq, "m", sizeof(seq));
 	fputs(seq, stdout);
 }
 

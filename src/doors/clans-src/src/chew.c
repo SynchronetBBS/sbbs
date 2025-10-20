@@ -17,13 +17,12 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#ifdef __MSDOS__
-# include <alloc.h>        /* Use <malloc.c> for Power C */
-#endif /* __MSDOS__ */
+#include "win_wrappers.h"
 
 #include "defines.h"
 #include "gum.h"
 #include "parsing.h"
+#include "structs.h"
 
 #define MAX_TOKEN_CHARS 32
 #define CODE1           0x7D
@@ -47,15 +46,15 @@ int main(int argc, char **argv)
 	FILE *fpAttr;
 	struct stat tStat;
 #endif
-	char szLine[255], szFileName[128], szGumName[128], szFileList[128];
+	char szLine[255], szFileName[PATH_SIZE], szGumName[PATH_SIZE], szFileList[PATH_SIZE];
 
 	if (argc == 3) {
-		strcpy(szGumName, argv[1]);
-		strcpy(szFileList, argv[2]);
+		strlcpy(szGumName, argv[1], sizeof(szGumName));
+		strlcpy(szFileList, argv[2], sizeof(szFileList));
 	}
 	else {
-		strcpy(szGumName, "archive.gum");
-		strcpy(szFileList, "files.lst");
+		strlcpy(szGumName, "archive.gum", sizeof(szGumName));
+		strlcpy(szFileList, "files.lst", sizeof(szFileList));
 	}
 
 	//initialize();
@@ -159,7 +158,7 @@ static void AddGUM(FILE *fpGUM, char *pszFileName)
 	//printf("Encrypted name = %s\n", szEncryptedName);
 
 	/* make key using filename */
-	sprintf(szKey, "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
+	snprintf(szKey, sizeof(szKey), "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
 	//printf("key = '%s%x%x'\n", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
 
 	pcTo = szKey;
@@ -245,7 +244,7 @@ static void AddDir(FILE *fpGUM, char *pszDirName)
 	//printf("Encrypted name = %s\n", szEncryptedName);
 
 	/* make key using filename */
-	sprintf(szKey, "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
+	snprintf(szKey, sizeof(szKey), "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
 	//printf("key = '%s%x%x'\n", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
 
 	pcTo = szKey;

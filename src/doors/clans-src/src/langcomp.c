@@ -24,6 +24,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include "defines.h"
 #include <string.h>
+#include "unix_wrappers.h"
+#include "win_wrappers.h"
+
 #include "serialize.h"
 
 void Convert(char *Dest, char *From);
@@ -36,7 +39,7 @@ int main(int argc, char *argv[])
 {
 	FILE *fFrom, *fTo;
 	int16_t iTemp, CurString;
-	char TempString[800], String[800], FromFile[30], ToFile[30];
+	char TempString[800], String[800], FromFile[PATH_MAX], ToFile[PATH_MAX];
 
 	printf("The Clans Language File Compiler v.1.0 (c) copyright 1997 Allen Ussher\n\n");
 
@@ -45,23 +48,23 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 
-	strcpy(FromFile, argv[1]);
+	strlcpy(FromFile, argv[1], sizeof(FromFile));
 	if (argc == 3)
-		strcpy(ToFile, argv[2]);
+		strlcpy(ToFile, argv[2], sizeof(ToFile));
 	else {
 		for (iTemp = strlen(FromFile); iTemp>0; iTemp--)
 			if (FromFile[iTemp] == '.')
 				break;
 
 		if (iTemp == 0) {
-			strcpy(ToFile, FromFile);
-			strcat(ToFile, ".xl");
-			strcat(FromFile, ".txt");
+			strlcpy(ToFile, FromFile, sizeof(ToFile));
+			strlcat(ToFile, ".xl", sizeof(ToFile));
+			strlcat(FromFile, ".txt", sizeof(FromFile));
 		}
 		else {
 			FromFile[iTemp] = 0;
-			strcpy(ToFile, FromFile);
-			strcat(ToFile, ".xl");
+			strlcpy(ToFile, FromFile, sizeof(ToFile));
+			strlcat(ToFile, ".xl", sizeof(ToFile));
 			FromFile[iTemp] = '.';
 		}
 	}
@@ -73,7 +76,7 @@ int main(int argc, char *argv[])
 	}
 
 	// initialize the big string
-	strcpy(Language.Signature, "The Clans Language File v1.0\x1A");
+	strlcpy(Language.Signature, "The Clans Language File v1.0\x1A", sizeof(Language.Signature));
 	for (iTemp = 0;  iTemp < 2000; iTemp++)
 		Language.StrOffsets[iTemp] = 0;
 	Language.NumBytes = 0;
@@ -108,7 +111,7 @@ int main(int argc, char *argv[])
 			if (TempString[ strlen(TempString) - 2] == '@' &&
 					TempString[ strlen(TempString) - 1] == '@') {
 				TempString[ strlen(TempString) - 2] = 0;
-				strcat(TempString, "\n");
+				strlcat(TempString, "\n", sizeof(TempString));
 			}
 		}
 
@@ -117,18 +120,10 @@ int main(int argc, char *argv[])
 
 		// convert string's special language codes
 		Convert(String, &TempString[5]);
-		// strcpy(String, &TempString[5]);
 
 		Language.StrOffsets[CurString] = Language.NumBytes;
-		strcpy(&Language.BigString[ Language.NumBytes ], String);
+		strlcpy(&Language.BigString[ Language.NumBytes ], String, sizeof(&Language.BigString[ Language.NumBytes ]));
 		Language.NumBytes += (strlen(String)+1); // must also include zero byte
-		//Language.BigString[ Language.NumBytes ] = 0;
-		//Language.NumBytes++;
-
-		//sprintf(String, "%04d %s", CurString, &Language.BigString[ Language.StrOffsets[CurString] ]);
-		//String[50] = 0;
-		//strcat(String, "\r");
-		//puts(String);
 	}
 
 	fclose(fFrom);
@@ -211,22 +206,6 @@ void Convert(char *Dest, char *From)
 				fCurChar++;
 			}
 		}
-		/*
-		else if (From[fCurChar] == '&' && (isalnum(From[fCurChar+1]) || From[fCurChar+1] == '-') )
-		{
-		    // &s turns to %s
-		    Dest[dCurChar] = '%';
-		    dCurChar++;
-		    fCurChar++;
-		}
-		else if (From[fCurChar] == '%' && (isalpha(From[fCurChar+1]) || From[fCurChar+1] == '!') )
-		{
-		    // % codes turn to &
-		    Dest[dCurChar] = '&';
-		    dCurChar++;
-		    fCurChar++;
-		}
-		*/
 		else {
 			Dest[dCurChar] = From[fCurChar];
 

@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <ctype.h>
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -74,10 +75,10 @@ void Items_FindTreasureChest(void)
 	ChosenItem = RandomTable[ RANDOM(RandIndex)];
 
 	// give him that item
-	// sprintf(szString, "|07You find |15%s|07. |0STake it?", Items[ ChosenItem ]->szName);
-	sprintf(szString, ST_TREASURE0, Items.Data[ ChosenItem ]->szName);
+	// snprintf(szString, sizeof(szString), "|07You find |15%s|07. |0STake it?", Items[ ChosenItem ]->szName);
+	snprintf(szString, sizeof(szString), ST_TREASURE0, Items.Data[ ChosenItem ]->szName);
 
-	strcpy(szItemName, Items.Data[ ChosenItem ]->szName);
+	strlcpy(szItemName, Items.Data[ ChosenItem ]->szName, sizeof(szItemName));
 	free(RandomTable);
 	Items_Close();
 
@@ -135,7 +136,7 @@ void ReadBook(void)
 	rputs("\n");
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (PClan->Member[iTemp] && iTemp < Game.Data->MaxPermanentMembers) {
-			sprintf(szString, "|0A(|0B%c|0A) |0C%s\n",
+			snprintf(szString, sizeof(szString), "|0A(|0B%c|0A) |0C%s\n",
 					iTemp + 'A', PClan->Member[iTemp]->szName);
 			rputs(szString);
 		}
@@ -163,7 +164,7 @@ void ReadBook(void)
 
 	// see what can read
 	if (ItemPenalty(PClan->Member[ WhichMember], &PClan->Items[ItemIndex])) {
-		sprintf(szString, "%s cannot read that book!\n",
+		snprintf(szString, sizeof(szString), "%s cannot read that book!\n",
 				PClan->Member[ WhichMember]->szName);
 		rputs(szString);
 		return;
@@ -191,12 +192,12 @@ void ReadBook(void)
 	// list who can read it
 
 	// make him read it NOW
-	sprintf(szString, "|0B%s |0Creads the book...\n",
+	snprintf(szString, sizeof(szString), "|0B%s |0Creads the book...\n",
 			PClan->Member[ WhichMember ]->szName);
 	rputs(szString);
 
 	if (PClan->Items[ ItemIndex ].SpellNum != -1) {
-		sprintf(szString, "|0C%s learns the |0B%s |0Cspell.\n",
+		snprintf(szString, sizeof(szString), "|0C%s learns the |0B%s |0Cspell.\n",
 				PClan->Member[ WhichMember ]->szName,
 				Spells[ PClan->Items[ ItemIndex ].SpellNum ]->szName);
 		rputs(szString);
@@ -208,7 +209,7 @@ void ReadBook(void)
 
 	// if HPadd
 	if (PClan->Items[ ItemIndex ].HPAdd) {
-		sprintf(szString, "|0C%s gains |0B%d HP\n",
+		snprintf(szString, sizeof(szString), "|0C%s gains |0B%d HP\n",
 				PClan->Member[ WhichMember ]->szName,
 				PClan->Items[ ItemIndex ].HPAdd);
 		rputs(szString);
@@ -222,7 +223,7 @@ void ReadBook(void)
 
 	// if SPadd
 	if (PClan->Items[ ItemIndex ].SPAdd) {
-		sprintf(szString, "|0C%s gains |0B%d SP\n",
+		snprintf(szString, sizeof(szString), "|0C%s gains |0B%d SP\n",
 				PClan->Member[ WhichMember ]->szName,
 				PClan->Items[ ItemIndex ].SPAdd);
 		rputs(szString);
@@ -286,7 +287,7 @@ static void ItemUseableBy(struct item_data *Item)
 			if (ShownOne)
 				rputs(", ");
 
-			sprintf(szString, "%s", PC->szName);
+			snprintf(szString, sizeof(szString), "%s", PC->szName);
 			rputs(szString);
 
 			ShownOne = true;
@@ -348,7 +349,7 @@ void ShowItemStats(struct item_data *Item, struct clan *Clan)
 
 	// show first lines here
 	rputs("\n");
-	sprintf(szString, "|0B %s\n", Item->szName);
+	snprintf(szString, sizeof(szString), "|0B %s\n", Item->szName);
 	rputs(szIcon[0]);
 	rputs(szString);
 	rputs(szIcon[1]);
@@ -360,7 +361,7 @@ void ShowItemStats(struct item_data *Item, struct clan *Clan)
 		rputs("|15 Modifiers        |12Requirements\n");
 
 		for (CurLine = 0; CurLine < 3; CurLine++) {
-			strcpy(szLine, " ");
+			strlcpy(szLine, " ", sizeof(szLine));
 
 			for (iTemp = 0; iTemp < 2; iTemp++) {
 				// find stat modified
@@ -371,20 +372,20 @@ void ShowItemStats(struct item_data *Item, struct clan *Clan)
 
 				if (CurBonus != NUM_ATTRIBUTES) {
 					if (Item->Attributes[CurBonus] < 0)
-						sprintf(szString, "|04%2d %s ",
+						snprintf(szString, sizeof(szString), "|04%2d %s ",
 								Item->Attributes[CurBonus], szAttr[CurBonus]);
 					else if (Item->Attributes[CurBonus] > 0)
-						sprintf(szString, "|0C%2d %s ",
+						snprintf(szString, sizeof(szString), "|0C%2d %s ",
 								Item->Attributes[CurBonus], szAttr[CurBonus]);
 
 					CurBonus++;
 				}
-				else strcpy(szString, "       ");
+				else strlcpy(szString, "       ", sizeof(szString));
 
-				strcat(szLine, szString);
+				strlcat(szLine, szString, sizeof(szLine));
 			}
 
-			strcat(szLine, "   ");
+			strlcat(szLine, "   ", sizeof(szLine));
 
 			for (iTemp = 0; iTemp < 2; iTemp++) {
 				// find next requirement
@@ -394,12 +395,12 @@ void ShowItemStats(struct item_data *Item, struct clan *Clan)
 				}
 
 				if (CurReq != NUM_ATTRIBUTES) {
-					sprintf(szString, "|0C%2d %s ", Item->ReqAttributes[CurReq], szAttr[CurReq]);
+					snprintf(szString, sizeof(szString), "|0C%2d %s ", Item->ReqAttributes[CurReq], szAttr[CurReq]);
 					CurReq++;
 				}
 				else szString[0] = 0;
 
-				strcat(szLine, szString);
+				strlcat(szLine, szString, sizeof(szLine));
 			}
 
 			// display line now
@@ -409,7 +410,7 @@ void ShowItemStats(struct item_data *Item, struct clan *Clan)
 		}
 	}
 	else if (Item->cType == I_SCROLL) {
-		sprintf(szString, " |0B%d Use(s) Left\n", Item->Energy);
+		snprintf(szString, sizeof(szString), " |0B%d Use(s) Left\n", Item->Energy);
 		rputs(szString);
 
 		for (CurLine = 3; CurLine < 6; CurLine++) {
@@ -432,7 +433,7 @@ void ShowItemStats(struct item_data *Item, struct clan *Clan)
 
 	// show who's using it right now
 	if (Item->UsedBy && Clan) {
-		sprintf(szString, "\n|0CUsed by:  |0B%s\n", Clan->Member[Item->UsedBy - 1]->szName);
+		snprintf(szString, sizeof(szString), "\n|0CUsed by:  |0B%s\n", Clan->Member[Item->UsedBy - 1]->szName);
 		rputs(szString);
 	}
 
@@ -579,7 +580,7 @@ void Items_ReadScroll(struct pc *PC, struct clan *TargetClan, int16_t Target, in
 	char szString[128];
 
 	// use up scroll
-	sprintf(szString, "\xaf\xaf\xaf |14%s |07reads |12%s\n",
+	snprintf(szString, sizeof(szString), "\xaf\xaf\xaf |14%s |07reads |12%s\n",
 			PC->szName, PC->MyClan->Items[ ScrollNum ].szName);
 	rputs(szString);
 
@@ -588,7 +589,7 @@ void Items_ReadScroll(struct pc *PC, struct clan *TargetClan, int16_t Target, in
 
 	// if depleted
 	if (PC->MyClan->Items[ ScrollNum ].Energy == 0) {
-		sprintf(szString, "\xaf\xaf\xaf |07%s vanishes\n", PC->MyClan->Items[ ScrollNum ].szName);
+		snprintf(szString, sizeof(szString), "\xaf\xaf\xaf |07%s vanishes\n", PC->MyClan->Items[ ScrollNum ].szName);
 		rputs(szString);
 		PC->MyClan->Items[ ScrollNum ].Available = false;
 	}
@@ -667,12 +668,12 @@ void Item_BuyItem(int16_t ItemType)
 		rputs(ST_ITEMHEADER);
 		/* list which ones to buy */
 		for (iTemp = 0; iTemp < TotalItems; iTemp++) {
-			sprintf(szString, ST_ITEMLINE, 'A' + iTemp,
+			snprintf(szString, sizeof(szString), ST_ITEMLINE, 'A' + iTemp,
 					PClan->Empire.VaultGold >= Items.Data[ ItemIndex[iTemp] ]->lCost ? "|0C" : "|08",
 					Items.Data[ ItemIndex[iTemp] ]->szName, ItemCosts[iTemp]);
 			rputs(szString);
 		}
-		sprintf(szString, ST_ITEMOPTIONS, PClan->Empire.VaultGold);
+		snprintf(szString, sizeof(szString), ST_ITEMOPTIONS, PClan->Empire.VaultGold);
 		rputs(szString);
 		rputs(ST_LONGLINE);
 		rputs(ST_ITEMPROMPT);
@@ -703,7 +704,7 @@ void Item_BuyItem(int16_t ItemType)
 					Items.Data[ ItemIndex[Choice - 'A'] ]->cType != I_OTHER)
 				Help(Items.Data[ ItemIndex[Choice - 'A'] ]->szName, ST_ITEMHLP);
 
-			sprintf(szString, ST_ITEMCOSTIS, ItemCosts[ Choice - 'A'], PClan->Empire.VaultGold);
+			snprintf(szString, sizeof(szString), ST_ITEMCOSTIS, ItemCosts[ Choice - 'A'], PClan->Empire.VaultGold);
 			rputs(szString);
 
 			/* ask if he still wants to buy it */
@@ -806,7 +807,7 @@ void Item_BuyItem(int16_t ItemType)
 				Village.Data->Empire.VaultGold += ItemGst[Choice - 'A'];
 
 				/* make stats here -------- */
-				strcpy(Item.szName, Items.Data[ ItemIndex[Choice - 'A'] ]->szName);
+				strlcpy(Item.szName, Items.Data[ ItemIndex[Choice - 'A'] ]->szName, sizeof(Item.szName));
 				Item = *Items.Data[ ItemIndex[Choice - 'A'] ];
 
 				Item.UsedBy = 0;
@@ -867,7 +868,7 @@ void Item_BuyItem(int16_t ItemType)
 					Item.lCost = 2*ItemCosts[Choice - 'A'];
 
 					rputs("Blacksmith creates a super item!!\n");
-					strcat(Item.szName, "+");
+					strlcat(Item.szName, "+", sizeof(Item.szName));
 				}
 				else    // regular cost
 					Item.lCost = ItemCosts[Choice - 'A'];

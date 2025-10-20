@@ -16,11 +16,12 @@
 # include <curses.h>
 # include <sys/time.h>
 # include <unistd.h>
-# include "unix_wrappers.h"
 #endif /* __MSDOS__ */
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include "defines.h"
 #include "gum.h"
@@ -573,7 +574,7 @@ void GetLine(char *InputStr, int MaxChars)
 		}
 		else if (InputCh== '' || InputCh == '\x1B') { // ctrl-y
 			InputStr [0] = 0;
-			strcpy(TempStr, BackSpaces);
+			strlcpy(TempStr, BackSpaces, sizeof(TempStr));
 			TempStr[ CurChar ] = 0;
 			kputs(TempStr);
 			Spaces[MaxChars] = 0;
@@ -594,7 +595,7 @@ void GetLine(char *InputStr, int MaxChars)
 
 			InputStr[CurChar++]=InputCh;
 			InputStr[CurChar] = 0;
-			sprintf(szString, "%c", InputCh);
+			snprintf(szString, sizeof(szString), "%c", InputCh);
 			kputs(szString);
 		}
 	}
@@ -718,13 +719,13 @@ int main(int argc, char **argv)
 	char szInput[46], szToken[46], szString[128], szToken2[20];
 
 	if (argc != 2) {
-		strcpy(szIniName, "install.ini");
+		strlcpy(szIniName, "install.ini", sizeof(szIniName));
 	}
 	else {
-		strcpy(szIniName, argv[1]);
+		strlcpy(szIniName, argv[1], sizeof(szIniName));
 
 		if (!strchr(szIniName, '.'))
-			strcat(szIniName, ".ini");
+			strlcat(szIniName, ".ini", sizeof(szIniName));
 	}
 
 	SystemInit();
@@ -771,7 +772,7 @@ int main(int argc, char **argv)
 		else if (szToken[0] == '?' || stricmp(szToken, "help") == 0)
 			Display("Help");
 		else {
-			sprintf(szString, "|04%s not a valid command!\n", szToken);
+			snprintf(szString, sizeof(szString), "|04%s not a valid command!\n", szToken);
 			kputs(szString);
 		}
 	}
@@ -806,11 +807,11 @@ int GetGUM(FILE *fpGUM)
 		pcTo++;
 	}
 	*pcTo = 0;
-	sprintf(szString, "|14%-*s |06", MAX_FILENAME_LEN, szFileName);
+	snprintf(szString, sizeof(szString), "|14%-*s |06", MAX_FILENAME_LEN, szFileName);
 	kputs(szString);
 
 	/* make key using filename */
-	sprintf(szKey, "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
+	snprintf(szKey, sizeof(szKey), "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
 	// printf("key = '%s%x%x'\n", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
 
 	pcTo = szKey;
@@ -821,7 +822,7 @@ int GetGUM(FILE *fpGUM)
 
 	// if dirname, makedir
 	if (szFileName[0] == '/') {
-		sprintf(szString, "dir |14%-*s\n", MAX_FILENAME_LEN, szFileName);
+		snprintf(szString, sizeof(szString), "dir |14%-*s\n", MAX_FILENAME_LEN, szFileName);
 		kputs(szString);
 
 		MKDIR(&szFileName[1]
@@ -878,7 +879,7 @@ int GetGUM(FILE *fpGUM)
 	/* open file to write to */
 	fpToFile = fopen(szFileName, "wb");
 	if (!fpToFile) {
-		sprintf(szString, "|04Couldn't open %s\n", szFileName);
+		snprintf(szString, sizeof(szString), "|04Couldn't open %s\n", szFileName);
 		kputs(szString);
 		return false;
 	}
@@ -894,7 +895,7 @@ int GetGUM(FILE *fpGUM)
 
 
 
-	sprintf(szString, "%" PRId32 "b ", lFileSize);
+	snprintf(szString, sizeof(szString), "%" PRId32 "b ", lFileSize);
 	kputs(szString);
 	kputs("|15done.\n");
 
@@ -1021,7 +1022,7 @@ char get_answer(char *szAllowableChars)
 		if (iTemp < strlen(szAllowableChars))
 			break;  /* found allowable key */
 	}
-	sprintf(szString, "%c\n", cKey);
+	snprintf(szString, sizeof(szString), "%c\n", cKey);
 	kputs(szString);
 
 	return (toupper(cKey));
@@ -1096,7 +1097,7 @@ void InitFiles(char *szFileName)
 		// found another filename, copy it over
 		// x filename
 		// 0123456789...
-		strcpy(FileInfo[CurFile].szFileName, &szString[2]);
+		strlcpy(FileInfo[CurFile].szFileName, &szString[2], sizeof(FileInfo[CurFile].szFileName));
 		FileInfo[CurFile].WriteType = QUERY;
 
 		if (szString[0] == 'o')
@@ -1162,7 +1163,7 @@ void Extract(char *szExtractFile, char *szNewName)
 		*pcTo = 0;
 
 		/* make key using filename */
-		sprintf(szKey, "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
+		snprintf(szKey, sizeof(szKey), "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
 		// printf("key = '%s%x%x'\n", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
 
 		pcTo = szKey;
@@ -1203,11 +1204,11 @@ void Extract(char *szExtractFile, char *szNewName)
 	}
 
 	if (*szNewName != 0)
-		strcpy(szFileName, szNewName);
+		strlcpy(szFileName, szNewName, sizeof(szFileName));
 
 	// if dirname, makedir
 	if (szFileName[0] == '/') {
-		sprintf(szString, "|14%-*s\n", MAX_FILENAME_LEN, szFileName);
+		snprintf(szString, sizeof(szString), "|14%-*s\n", MAX_FILENAME_LEN, szFileName);
 		kputs(szString);
 
 		MKDIR(&szFileName[1]);
@@ -1238,12 +1239,12 @@ void Extract(char *szExtractFile, char *szNewName)
 	/* open file to write to */
 	fpToFile = fopen(szFileName, "wb");
 	if (!fpToFile) {
-		sprintf(szString, "|04Couldn't write to %s\n", szFileName);
+		snprintf(szString, sizeof(szString), "|04Couldn't write to %s\n", szFileName);
 		kputs(szString);
 		return;
 	}
 
-	sprintf(szString, "|06Extracting %s\n", szFileName);
+	snprintf(szString, sizeof(szString), "|06Extracting %s\n", szFileName);
 	kputs(szString);
 
 	//== decode it here
@@ -1256,7 +1257,7 @@ void Extract(char *szExtractFile, char *szNewName)
 	_dos_setftime(fileno(fpToFile), date, time);
 	fclose(fpToFile);
 
-	sprintf(szString, "(%" PRId32 " bytes) ", lFileSize);
+	snprintf(szString, sizeof(szString), "(%" PRId32 " bytes) ", lFileSize);
 	kputs(szString);
 	kputs("|15Done.\n");
 }
@@ -1283,7 +1284,7 @@ void ListFiles(void)
 		if (!fread(&szEncryptedName, sizeof(szEncryptedName), sizeof(char), fpGUM)) {
 			// done
 			fclose(fpGUM);
-			sprintf(szString, "\n|14%" PRId32 " total bytes\n\n", TotalBytes);
+			snprintf(szString, sizeof(szString), "\n|14%" PRId32 " total bytes\n\n", TotalBytes);
 			kputs(szString);
 			break;
 		}
@@ -1299,7 +1300,7 @@ void ListFiles(void)
 		*pcTo = 0;
 
 		/* make key using filename */
-		sprintf(szKey, "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
+		snprintf(szKey, sizeof(szKey), "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
 		// printf("key = '%s%x%x'\n", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
 
 		pcTo = szKey;
@@ -1309,7 +1310,7 @@ void ListFiles(void)
 		}
 
 		if (szFileName[0] == '/') {
-			sprintf(szString, "|15%14s  |06-- |07      directory  ",
+			snprintf(szString, sizeof(szString), "|15%14s  |06-- |07      directory  ",
 					szFileName);
 			kputs(szString);
 
@@ -1331,7 +1332,7 @@ void ListFiles(void)
 			time = SWAP16(time);
 
 			// show dir like DOS :)
-			sprintf(szString, "|15%14s  |06-- |07%9" PRId32 " bytes  ",
+			snprintf(szString, sizeof(szString), "|15%14s  |06-- |07%9" PRId32 " bytes  ",
 					szFileName, lFileSize);
 			kputs(szString);
 		}
@@ -1390,7 +1391,7 @@ void GetGumName(void)
 			szString[ strlen(szString) - 1] = 0;
 
 		if (szString[0] == '!') {
-			strcpy(szGumName, &szString[1]);
+			strlcpy(szGumName, &szString[1], sizeof(szGumName));
 			break;
 		}
 	}

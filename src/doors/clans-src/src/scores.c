@@ -26,8 +26,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # include <share.h>
 #endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include "door.h"
+#include "fight.h"
 #include "game.h"
 #include "ibbs.h"
 #include "language.h"
@@ -65,10 +67,10 @@ static void GetColourString(char *szColourString, int16_t Colour, bool Clear)
 		"47m"
 	};
 
-	strcpy(szColourString, "\x1B[");
+	strlcpy(szColourString, "\x1B[", sizeof(szColourString));
 
 	if (Clear)
-		strcat(szColourString, "0;");
+		strlcat(szColourString, "0;", sizeof(szColourString));
 
 	if (Colour >= 24) {
 		// background flashing
@@ -78,28 +80,28 @@ static void GetColourString(char *szColourString, int16_t Colour, bool Clear)
 		if (TempColour >= 8)
 			TempColour = 0;
 
-		strcat(szColourString, "5;");
-		strcat(szColourString, szBgColours[ TempColour ]);
+		strlcat(szColourString, "5;", sizeof(szColourString));
+		strlcat(szColourString, szBgColours[ TempColour ], sizeof(szColourString));
 	}
 	else if (Colour >= 16) {
 		// background
 
 		TempColour = Colour - 16;
 
-		strcat(szColourString, szBgColours[ TempColour ]);
+		strlcat(szColourString, szBgColours[ TempColour ], sizeof(szColourString));
 	}
 	else if (Colour >= 8) {
 		// foreground bright
 		TempColour = Colour - 8;
 
-		strcat(szColourString, "1;");
-		strcat(szColourString, szFgColours[ TempColour ]);
+		strlcat(szColourString, "1;", sizeof(szColourString));
+		strlcat(szColourString, szFgColours[ TempColour ], sizeof(szColourString));
 	}
 	else {
 		// regular colour
 		TempColour = Colour;
 
-		strcat(szColourString, szFgColours[ TempColour ]);
+		strlcat(szColourString, szFgColours[ TempColour ], sizeof(szColourString));
 	}
 }
 
@@ -128,7 +130,7 @@ static void PipeToAnsi(char *szOut, char *szIn)
 			// must add this to use GetColourString properly
 			Bg += 16;
 			GetColourString(szColourString, Bg, true);
-			strcat(pcOut, szColourString);
+			strlcat(pcOut, szColourString, sizeof(pcOut));
 			pcOut = strchr(szOut, 0);
 
 			pcIn++;
@@ -139,7 +141,7 @@ static void PipeToAnsi(char *szOut, char *szIn)
 			else
 				Fg = *pcIn - 'A' + 10;
 			GetColourString(szColourString, Fg, false);
-			strcat(pcOut, szColourString);
+			strlcat(pcOut, szColourString, sizeof(pcOut));
 			pcOut = strchr(szOut, 0);
 
 			pcIn++;
@@ -153,7 +155,7 @@ static void PipeToAnsi(char *szOut, char *szIn)
 
 			GetColourString(szColourString, Colour, true);
 
-			strcat(pcOut, szColourString);
+			strlcat(pcOut, szColourString, sizeof(pcOut));
 
 			pcOut = strchr(szOut, 0);
 
@@ -176,8 +178,8 @@ static void PipeToAnsi(char *szOut, char *szIn)
 void DisplayScores(bool MakeFile)
 {
 	FILE *fpPCFile, *fpScoreFile[2] = {NULL, NULL};
-	char szFileName[50], szString[255], szPadding[21];
-	struct clan *TmpClan;
+	char szFileName[PATH_SIZE], szString[255], szPadding[21];
+	struct clan TmpClan = {0};
 	struct SortData {
 		char szName[25];
 		int32_t Points;
@@ -209,7 +211,7 @@ void DisplayScores(bool MakeFile)
 	   SortList[1] points to 2nd top clan
 	   etc.
 	 */
-	strcpy(szFileName, ST_CLANSPCFILE);
+	strlcpy(szFileName, ST_CLANSPCFILE, sizeof(szFileName));
 
 	if (MakeFile) {
 		fpScoreFile[0] = fopen(Config->szScoreFile[0], "w");
@@ -232,8 +234,6 @@ void DisplayScores(bool MakeFile)
 		NoPlayers = true;
 	}
 	else {
-		TmpClan = malloc(sizeof(struct clan));
-		CheckMem(TmpClan);
 		/* read 'em in */
 		for (CurClan = 0;; CurClan++) {
 			Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
@@ -241,17 +241,14 @@ void DisplayScores(bool MakeFile)
 				break;  /* couldn't fseek, so exit */
 			}
 
-			notEncryptRead_s(clan, TmpClan, fpPCFile, XOR_USER) {
+			notEncryptRead_s(clan, &TmpClan, fpPCFile, XOR_USER) {
 				break;  /* stop reading if no more players found */
 			}
 
-			for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++)
-				TmpClan->Member[CurMember] = NULL;
-
 			for (CurMember = 0; CurMember < 6; CurMember++) {
-				TmpClan->Member[CurMember] = malloc(sizeof(struct pc));
-				CheckMem(TmpClan->Member[CurMember]);
-				EncryptRead_s(pc, TmpClan->Member[CurMember], fpPCFile, XOR_PC);
+				TmpClan.Member[CurMember] = malloc(sizeof(struct pc));
+				CheckMem(TmpClan.Member[CurMember]);
+				EncryptRead_s(pc, TmpClan.Member[CurMember], fpPCFile, XOR_PC);
 			}
 
 			// since we could read in a player, means at least one exists
@@ -264,42 +261,37 @@ void DisplayScores(bool MakeFile)
 			/* this sets it so it hasn't been used yet in the sort list */
 			SortData[CurClan]->UsedInList = false;
 
-			strcpy(SortData[CurClan]->szName, TmpClan->szName);
-			SortData[CurClan]->Points = TmpClan->Points;
-			SortData[CurClan]->VillageID = TmpClan->ClanID[0];
+			strlcpy(SortData[CurClan]->szName, TmpClan.szName, sizeof(SortData[CurClan]->szName));
+			SortData[CurClan]->Points = TmpClan.Points;
+			SortData[CurClan]->VillageID = TmpClan.ClanID[0];
 
 
 			SortData[CurClan]->IsRuler = false;
 
-			if (TmpClan->ClanID[0] == Village.Data->RulingClanId[0] &&
-					TmpClan->ClanID[1] == Village.Data->RulingClanId[1])
+			if (TmpClan.ClanID[0] == Village.Data->RulingClanId[0] &&
+					TmpClan.ClanID[1] == Village.Data->RulingClanId[1])
 				SortData[CurClan]->IsRuler = true;
 			else
 				SortData[CurClan]->IsRuler = false;
 
-			if (TmpClan->Eliminated)
+			if (TmpClan.Eliminated)
 				SortData[CurClan]->Eliminated = true;
 			else
 				SortData[CurClan]->Eliminated = false;
 
-			strcpy(SortData[CurClan]->Symbol, TmpClan->Symbol);
-			RemovePipes(TmpClan->Symbol, SortData[CurClan]->PlainSymbol);
+			strlcpy(SortData[CurClan]->Symbol, TmpClan.Symbol, sizeof(SortData[CurClan]->Symbol));
+			RemovePipes(TmpClan.Symbol, SortData[CurClan]->PlainSymbol);
 
-			SortData[CurClan]->WorldStatus = TmpClan->WorldStatus;
+			SortData[CurClan]->WorldStatus = TmpClan.WorldStatus;
 
-			if (NumMembers(TmpClan, true) == 0)
+			if (NumMembers(&TmpClan, true) == 0)
 				SortData[CurClan]->Living = false;
 			else
 				SortData[CurClan]->Living = true;
 
-			for (CurMember = 0; CurMember < 6; CurMember++) {
-				free(TmpClan->Member[CurMember]);
-				TmpClan->Member[CurMember] = NULL;
-			}
+			FreeClanMembers(&TmpClan);
 		}
 
-		free(TmpClan);
-		TmpClan = NULL;
 		NumClans = CurClan;
 		fclose(fpPCFile);
 	}
@@ -354,37 +346,37 @@ void DisplayScores(bool MakeFile)
 	/* go through list */
 	for (CurClan = 0; CurClan < NumClans; CurClan++) {
 		if (MakeFile) {
-			strcpy(szString, SortData[ SortList[CurClan] ]->Symbol);
+			strlcpy(szString, SortData[ SortList[CurClan] ]->Symbol, sizeof(szString));
 			RemovePipes(SortData[ SortList[CurClan] ]->Symbol, szString);
 			Padding = 20 - strlen(szString);
 			szPadding[0] = 0;
 			for (iTemp = 0; iTemp < Padding; iTemp++)
-				strcat(szPadding, " ");
+				strlcat(szPadding, " ", sizeof(szPadding));
 
-			sprintf(szString, ST_SCORE2ASCII,
+			snprintf(szString, sizeof(szString), ST_SCORE2ASCII,
 					SortData[ SortList[CurClan] ]->szName,
 					szPadding, SortData[ SortList[CurClan] ]->PlainSymbol,
 					SortData[ SortList[CurClan] ]->Points);
 
 			if (SortData[ SortList[CurClan] ]->Eliminated)
-				strcat(szString, ST_SCORE6ASCII);
+				strlcat(szString, ST_SCORE6ASCII, sizeof(szString));
 			else if (SortData[ SortList[CurClan] ]->WorldStatus == WS_GONE) {
-				strcat(szString, ST_SCORE3ASCII);
+				strlcat(szString, ST_SCORE3ASCII, sizeof(szString));
 			}
 			else {
 				if (SortData[ SortList[CurClan] ]->Living == false)
-					strcat(szString, "Dead");
+					strlcat(szString, "Dead", sizeof(szString));
 				else if (SortData[ SortList[CurClan] ]->VillageID != Config->BBSID
 						 && Game.Data->InterBBS)
-					strcat(szString, "Visiting");
+					strlcat(szString, "Visiting", sizeof(szString));
 				else
-					strcat(szString, ST_SCORE4ASCII);
+					strlcat(szString, ST_SCORE4ASCII, sizeof(szString));
 			}
 
 			if (SortData[ SortList[CurClan] ]->IsRuler)
-				strcat(szString, ST_SCORE5ASCII);
+				strlcat(szString, ST_SCORE5ASCII, sizeof(szString));
 			else
-				strcat(szString, "\n");
+				strlcat(szString, "\n", sizeof(szString));
 
 			// for ASCII
 			fputs(szString, fpScoreFile[0]);
@@ -393,65 +385,65 @@ void DisplayScores(bool MakeFile)
 
 			PipeToAnsi(AnsiSymbol, SortData[ SortList[CurClan] ]->Symbol);
 
-			sprintf(szString, ST_SCORE2ANSI,
+			snprintf(szString, sizeof(szString), ST_SCORE2ANSI,
 					SortData[ SortList[CurClan] ]->szName,
 					szPadding, AnsiSymbol,
 					SortData[ SortList[CurClan] ]->Points);
 
 			if (SortData[ SortList[CurClan] ]->Eliminated)
-				strcat(szString, ST_SCORE6ANSI);
+				strlcat(szString, ST_SCORE6ANSI, sizeof(szString));
 			else if (SortData[ SortList[CurClan] ]->WorldStatus == WS_GONE) {
-				strcat(szString, ST_SCORE3ANSI);
+				strlcat(szString, ST_SCORE3ANSI, sizeof(szString));
 			}
 			else {
 				if (SortData[ SortList[CurClan] ]->Living == false)
-					strcat(szString, "\x1B[0;31mDead");
+					strlcat(szString, "\x1B[0;31mDead", sizeof(szString));
 				else if (SortData[ SortList[CurClan] ]->VillageID != Config->BBSID
 						 && Game.Data->InterBBS)
-					strcat(szString, "Visiting");
+					strlcat(szString, "Visiting", sizeof(szString));
 				else
-					strcat(szString, ST_SCORE4ANSI);
+					strlcat(szString, ST_SCORE4ANSI, sizeof(szString));
 			}
 
 			if (SortData[ SortList[CurClan] ]->IsRuler)
-				strcat(szString, ST_SCORE5ANSI);
+				strlcat(szString, ST_SCORE5ANSI, sizeof(szString));
 			else
-				strcat(szString, "\n");
+				strlcat(szString, "\n", sizeof(szString));
 
 			fputs(szString, fpScoreFile[1]);
 		}
 		else {
-			// sprintf(szString, " |%02d%3s |02%-30s |15%6ld  ", SortData[ SortList[CurClan] ]->Color, SortData[ SortList[CurClan] ]->Symbol, SortData[ SortList[CurClan] ]->szName, SortData[ SortList[CurClan] ]->Points);
+			// snprintf(szString, sizeof(szString), " |%02d%3s |02%-30s |15%6ld  ", SortData[ SortList[CurClan] ]->Color, SortData[ SortList[CurClan] ]->Symbol, SortData[ SortList[CurClan] ]->szName, SortData[ SortList[CurClan] ]->Points);
 			// figure out clanid length without pipes
 			RemovePipes(SortData[ SortList[CurClan] ]->Symbol, szString);
 			Padding = 20 - strlen(szString);
 			szPadding[0] = 0;
 			for (iTemp = 0; iTemp < Padding; iTemp++)
-				strcat(szPadding, " ");
+				strlcat(szPadding, " ", sizeof(szPadding));
 
-			sprintf(szString, " |0C%-30s %s%s`07  |15%-6" PRId32 "  ",
+			snprintf(szString, sizeof(szString), " |0C%-30s %s%s`07  |15%-6" PRId32 "  ",
 					SortData[ SortList[CurClan] ]->szName,
 					szPadding, SortData[ SortList[CurClan] ]->Symbol,
 					SortData[ SortList[CurClan] ]->Points);
 
 			if (SortData[ SortList[CurClan] ]->Eliminated)
-				strcat(szString, "|04Eliminated");
+				strlcat(szString, "|04Eliminated", sizeof(szString));
 			else if (SortData[ SortList[CurClan] ]->WorldStatus == WS_GONE)
-				strcat(szString, "|0BAway");
+				strlcat(szString, "|0BAway", sizeof(szString));
 			else {
 				if (SortData[ SortList[CurClan] ]->Living == false)
-					strcat(szString, "|04Dead");
+					strlcat(szString, "|04Dead", sizeof(szString));
 				else if (SortData[ SortList[CurClan] ]->VillageID != Config->BBSID
 						 && Game.Data->InterBBS)
-					strcat(szString, "|0BVisiting");
+					strlcat(szString, "|0BVisiting", sizeof(szString));
 				else
-					strcat(szString, "|0BHere");
+					strlcat(szString, "|0BHere", sizeof(szString));
 			}
 
 			if (SortData[ SortList[CurClan] ]->IsRuler)
-				strcat(szString, "  |0A(Ruler)\n");
+				strlcat(szString, "  |0A(Ruler)\n", sizeof(szString));
 			else
-				strcat(szString, "\n");
+				strlcat(szString, "\n", sizeof(szString));
 
 			if (CurClan%20 == 0 && CurClan)
 				door_pause();
@@ -499,9 +491,9 @@ static void SendScoreData(struct UserScore **UserScores)
 	Packet.BBSIDTo = 1;         // Main BBS
 	Packet.BBSIDFrom = IBBS.Data->BBSID;
 	Packet.PacketType = PT_SCOREDATA;
-	strcpy(Packet.szDate, System.szTodaysDate);
+	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 	Packet.PacketLength = NumScores * BUF_SIZE_UserScore + sizeof(int16_t);
-	strcpy(Packet.GameID, Game.Data->GameID);
+	strlcpy(Packet.GameID, Game.Data->GameID, sizeof(Packet.GameID));
 
 	fp = _fsopen("tmp.$$$", "wb", SH_DENYRW);
 	if (!fp)  return;
@@ -680,7 +672,7 @@ void LeagueScores(void)
 	}
 	UsersFound = iTemp;
 
-	sprintf(szString, ST_LSCORES2, ScoreDate);
+	snprintf(szString, sizeof(szString), ST_LSCORES2, ScoreDate);
 	rputs(szString);
 
 	rputs(ST_LSCORES1);
@@ -695,9 +687,9 @@ void LeagueScores(void)
 		Padding = 20 - strlen(szString);
 		szPadding[0] = 0;
 		for (iTemp2 = 0; iTemp2 < Padding; iTemp2++)
-			strcat(szPadding, " ");
+			strlcat(szPadding, " ", sizeof(szPadding));
 
-		sprintf(szString, ST_LSCORES3,
+		snprintf(szString, sizeof(szString), ST_LSCORES3,
 				ScoreList[iTemp]->szName,
 				szPadding,
 				ScoreList[iTemp]->Symbol,
@@ -828,10 +820,10 @@ void SendScoreList(void)
 	Packet.Active = true;
 	Packet.BBSIDFrom = IBBS.Data->BBSID;
 	Packet.PacketType = PT_SCORELIST;
-	strcpy(Packet.szDate, System.szTodaysDate);
+	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 	Packet.PacketLength = NumScores * BUF_SIZE_UserScore + sizeof(int16_t) +
 						  sizeof(char)*11;
-	strcpy(Packet.GameID, Game.Data->GameID);
+	strlcpy(Packet.GameID, Game.Data->GameID, sizeof(Packet.GameID));
 
 	// send it to all bbses except this one in the league
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
@@ -875,7 +867,7 @@ void SendScoreList(void)
 void CreateScoreData(bool LocalOnly)
 {
 	struct UserScore **UserScores;
-	struct clan *TmpClan;
+	struct clan TmpClan = {0};
 	FILE *fpPlayerFile;
 	int16_t ClanNum, iTemp, NumClans;
 
@@ -886,42 +878,34 @@ void CreateScoreData(bool LocalOnly)
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
 		UserScores[iTemp] = NULL;
 
-	TmpClan = malloc(sizeof(struct clan));
-	CheckMem(TmpClan);
-
 	/* find guy in file */
 	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYRW);
 	if (!fpPlayerFile) {
 		free(UserScores);
-		free(TmpClan);
 		return;
 	}
-
-	// set all members to NULLs for now
-	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
-		TmpClan->Member[iTemp] = NULL;
 
 	NumClans = 0;
 	for (ClanNum = 0;; ClanNum++) {
 		if (fseek(fpPlayerFile, (long)ClanNum * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET))
 			break;
 
-		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER)
+		notEncryptRead_s(clan, &TmpClan, fpPlayerFile, XOR_USER)
 			break;
 
 		// skip if deleted
-		if (TmpClan->ClanID[0] == -1)
+		if (TmpClan.ClanID[0] == -1)
 			continue;
 
 		// else, add to list
 		UserScores[NumClans] = malloc(sizeof(struct UserScore));
 		CheckMem(UserScores[NumClans]);
-		strcpy(UserScores[NumClans]->szName, TmpClan->szName);
-		UserScores[NumClans]->Points = TmpClan->Points;
+		strlcpy(UserScores[NumClans]->szName, TmpClan.szName, sizeof(UserScores[NumClans]->szName));
+		UserScores[NumClans]->Points = TmpClan.Points;
 		UserScores[NumClans]->BBSID = IBBS.Data->BBSID;
-		UserScores[NumClans]->ClanID[0] = TmpClan->ClanID[0];
-		UserScores[NumClans]->ClanID[1] = TmpClan->ClanID[1];
-		strcpy(UserScores[NumClans]->Symbol, TmpClan->Symbol);
+		UserScores[NumClans]->ClanID[0] = TmpClan.ClanID[0];
+		UserScores[NumClans]->ClanID[1] = TmpClan.ClanID[1];
+		strlcpy(UserScores[NumClans]->Symbol, TmpClan.Symbol, sizeof(UserScores[NumClans]->Symbol));
 		NumClans++;
 	}
 	fclose(fpPlayerFile);
@@ -943,7 +927,6 @@ void CreateScoreData(bool LocalOnly)
 			UserScores[iTemp] = NULL;
 		}
 
-	free(TmpClan);
 	free(UserScores);
 }
 

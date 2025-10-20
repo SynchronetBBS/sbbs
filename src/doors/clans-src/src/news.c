@@ -55,7 +55,7 @@ void News_ReadNews(bool Today)
 {
 	int16_t CurLine = 0, NumLines, cTemp;
 	FILE *fp;
-	char *Lines[30];
+	char Lines[30][256];
 
 	/* now display it according to the type of file it is */
 
@@ -66,12 +66,6 @@ void News_ReadNews(bool Today)
 	if (!fp) {
 		rputs("No news to report.\n\n%P");
 		return;
-	}
-
-	/* init mem */
-	for (cTemp = 0; cTemp < 30; cTemp++) {
-		Lines[cTemp] = malloc(255);
-		CheckMem(Lines[cTemp]);
 	}
 
 	for (;;) {
@@ -110,12 +104,6 @@ void News_ReadNews(bool Today)
 		if (od_get_key(false)) break;
 	}
 
-	/* de-init mem */
-	for (cTemp = 0; cTemp < 30; cTemp++) {
-		free(Lines[cTemp]);
-		Lines[cTemp] = NULL;
-	}
-
 	fclose(fp);
 
 	door_pause();
@@ -128,9 +116,8 @@ void News_CreateTodayNews(void)
 
 	char szString[128];
 
-	sprintf(szString, ST_NEWSFOR, System.szTodaysDate);
+	snprintf(szString, sizeof(szString), ST_NEWSFOR, System.szTodaysDate);
 	News_AddNews(szString);
 
 	/* give other info like increase in cost of etc. */
 }
-

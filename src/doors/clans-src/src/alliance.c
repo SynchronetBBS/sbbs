@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <share.h>
 #endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -55,7 +56,7 @@ static void RemoveFromAlliance(struct Alliance *Alliance)
 	int     iTemp, WhichMember = 0;
 	int16_t  ClanID[2];
 	char szName[40], /*cKey,*/ szString[128];
-	struct clan *TmpClan;
+	struct clan TmpClan = {0};
 
 	if (GetClanID(ClanID, false, false, Alliance->ID, true) == false) {
 		return;
@@ -88,13 +89,10 @@ static void RemoveFromAlliance(struct Alliance *Alliance)
 	Alliance->Member[ WhichMember ][1] = -1;
 
 	// remove from .PC file
-	TmpClan = malloc(sizeof(struct clan));
-	CheckMem(TmpClan);
-
-	GetClan(ClanID, TmpClan);
+	GetClan(ClanID, &TmpClan);
 
 	for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
-		if (TmpClan->Alliances[iTemp] == Alliance->ID)
+		if (TmpClan.Alliances[iTemp] == Alliance->ID)
 			break;
 
 	if (iTemp == MAX_ALLIES) {
@@ -102,15 +100,15 @@ static void RemoveFromAlliance(struct Alliance *Alliance)
 	}
 	else {
 		// found link!
-		TmpClan->Alliances[ iTemp ] = -1;
+		TmpClan.Alliances[ iTemp ] = -1;
 
-		Clan_Update(TmpClan);
+		Clan_Update(&TmpClan);
 	}
 
-	FreeClan(TmpClan);
+	FreeClanMembers(&TmpClan);
 
 	// send message to that player
-	sprintf(szString, "%s ousted you from %s!", PClan->szName,
+	snprintf(szString, sizeof(szString), "%s ousted you from %s!", PClan->szName,
 			Alliance->szName);
 	GenericMessage(szString, ClanID, PClan->ClanID, PClan->szName, false);
 }
@@ -119,7 +117,7 @@ static void SeeMemberStats(struct Alliance *Alliance)
 {
 	int16_t      ClanID[2];
 	int         iTemp;
-	struct clan *TmpClan;
+	struct clan TmpClan = {0};
 
 	// ask for member name
 	if (GetClanID(ClanID, false, false, Alliance->ID, true) == false) {
@@ -127,26 +125,23 @@ static void SeeMemberStats(struct Alliance *Alliance)
 	}
 
 	// get TmpClan
-	TmpClan = malloc(sizeof(struct clan));
-	CheckMem(TmpClan);
-
-	GetClan(ClanID, TmpClan);
+	GetClan(ClanID, &TmpClan);
 
 	// see if in this alliance
 	for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
-		if (TmpClan->Alliances[iTemp] == Alliance->ID)
+		if (TmpClan.Alliances[iTemp] == Alliance->ID)
 			break;
 
 	// if so, show stats, else boot him
 	if (iTemp == MAX_ALLIES) {
 		rputs("Clan is not in this alliance!  Can't view stats.\n");
-		FreeClan(TmpClan);
+		FreeClanMembers(&TmpClan);
 		return;
 	}
 
-	ClanStats(TmpClan, false);
+	ClanStats(&TmpClan, false);
 
-	FreeClan(TmpClan);
+	FreeClanMembers(&TmpClan);
 }
 
 static void ShowAllianceItems(struct Alliance *Alliance)
@@ -165,7 +160,7 @@ static void ShowAllianceItems(struct Alliance *Alliance)
 		if (Alliance->Items[iTemp].Available) {
 			FoundItem = true;
 
-			sprintf(szString, "|0L%2d |0M%-20s", iTemp+1, Alliance->Items[iTemp].szName);
+			snprintf(szString, sizeof(szString), "|0L%2d |0M%-20s", iTemp+1, Alliance->Items[iTemp].szName);
 
 #define LEN (26+9)      // add 9 for the | codes!
 
@@ -320,11 +315,11 @@ static void DonationRoom(struct Alliance *Alliance)
 				}
 
 				/* still wanna drop it? */
-				sprintf(szString, ST_ISTATS9, PClan->Items[ItemIndex].szName);
+				snprintf(szString, sizeof(szString), ST_ISTATS9, PClan->Items[ItemIndex].szName);
 
 				if (NoYes(szString) == YES) {
 					/* drop it */
-					sprintf(szString, ST_ISTATS10, PClan->Items[ItemIndex].szName);
+					snprintf(szString, sizeof(szString), ST_ISTATS10, PClan->Items[ItemIndex].szName);
 					rputs(szString);
 
 					// add it to room
@@ -366,12 +361,12 @@ static void DonationRoom(struct Alliance *Alliance)
 				}
 
 				/* still wanna drop it? */
-				sprintf(szString, "|0SAre you sure you wish to destroy %s?",
+				snprintf(szString, sizeof(szString), "|0SAre you sure you wish to destroy %s?",
 						Alliance->Items[ItemIndex].szName);
 
 				if (NoYes(szString) == YES) {
 					/* destroy it */
-					sprintf(szString, "%s destroyed!\n\n",
+					snprintf(szString, sizeof(szString), "%s destroyed!\n\n",
 							Alliance->Items[ItemIndex].szName);
 					rputs(szString);
 
@@ -423,7 +418,7 @@ static void DonationRoom(struct Alliance *Alliance)
 				}
 
 				/* take it */
-				sprintf(szString, "%s taken!\n\n", Alliance->Items[ItemIndex].szName);
+				snprintf(szString, sizeof(szString), "%s taken!\n\n", Alliance->Items[ItemIndex].szName);
 				rputs(szString);
 
 				PClan->Items[EmptySlot] = Alliance->Items[ItemIndex];
@@ -495,7 +490,7 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 		rputs(ST_AMENU4);
 		GetStr(szName, 29, true);
 		RemovePipes(szName, szString);
-		strcpy(szName, szString);
+		strlcpy(szName, szString, sizeof(szName));
 
 		if (szName[0] == 0)
 			continue;
@@ -521,7 +516,7 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 		}
 	}
 
-	strcpy(Alliance->szName, szName);
+	strlcpy(Alliance->szName, szName, sizeof(Alliance->szName));
 
 	Alliance->CreatorID[0] = PClan->ClanID[0];
 	Alliance->CreatorID[1] = PClan->ClanID[1];
@@ -539,7 +534,7 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 
 	Empire_Create(&Alliance->Empire, false);
 	Alliance->Empire.VaultGold = 0;
-	strcpy(Alliance->Empire.szName, Alliance->szName);
+	strlcpy(Alliance->Empire.szName, Alliance->szName, sizeof(Alliance->Empire.szName));
 	Alliance->Empire.OwnerType = EO_ALLIANCE;
 	Alliance->Empire.AllianceID = Alliance->ID;
 
@@ -583,7 +578,7 @@ void ShowAlliances(struct clan *Clan)
 		if (Clan->Alliances[iTemp] != -1) {
 			for (CurAlliance = 0; CurAlliance < MAX_ALLIANCES; CurAlliance++)
 				if (Alliances[CurAlliance] != NULL && Alliances[CurAlliance]->ID == Clan->Alliances[iTemp]) {
-					sprintf(szString, "|06* |14%s\n", Alliances[ CurAlliance ]->szName);
+					snprintf(szString, sizeof(szString), "|06* |14%s\n", Alliances[ CurAlliance ]->szName);
 					rputs(szString);
 				}
 		}
@@ -598,7 +593,7 @@ void ShowAlliances(struct clan *Clan)
 
 bool EnterAlliance(struct Alliance *Alliance)
 {
-	char *szTheOptions[13], *szString, szName[25];
+	char *szTheOptions[13], szString[128], szName[25];
 	char szFileName[13];
 	int iTemp;
 
@@ -606,13 +601,11 @@ bool EnterAlliance(struct Alliance *Alliance)
 
 	// show help if user needs it
 
-	szString = MakeStr(128);
-
 	LoadStrings(1290, 13, szTheOptions);
 
 	/* get a choice */
 	for (;;) {
-		sprintf(szString, "\n |0BAlliance Menu:  |0C%s\n", Alliance->szName);
+		snprintf(szString, sizeof(szString), "\n |0BAlliance Menu:  |0C%s\n", Alliance->szName);
 		rputs(szString);
 
 		switch (GetChoice("Alliance", ST_ENTEROPTION, szTheOptions, "LIRSCDP*VQ?W!", 'Q', true)) {
@@ -648,14 +641,13 @@ bool EnterAlliance(struct Alliance *Alliance)
 					}
 
 				// write message to creator
-				sprintf(szString, "%s left the alliance of %s",
+				snprintf(szString, sizeof(szString), "%s left the alliance of %s",
 						PClan->szName, Alliance->szName);
 
 				GenericMessage(szString, Alliance->CreatorID,
 							   PClan->ClanID, PClan->szName, false);
 
 				// done
-				free(szString);
 				return false;
 			case 'W' :  // write to all allies
 				Mail_WriteToAllies(Alliance);
@@ -664,7 +656,7 @@ bool EnterAlliance(struct Alliance *Alliance)
 				for (iTemp = 0; iTemp < MAX_ALLIANCEMEMBERS; iTemp++) {
 					if (Alliance->Member[iTemp][0] != -1) {
 						GetClanNameID(szName, Alliance->Member[iTemp]);
-						sprintf(szString, "|0A* |0B%s\n", szName);
+						snprintf(szString, sizeof(szString), "|0A* |0B%s\n", szName);
 						rputs(szString);
 					}
 				}
@@ -683,7 +675,7 @@ bool EnterAlliance(struct Alliance *Alliance)
 				DonationRoom(Alliance);
 				break;
 			case 'C' :    /* chat room */
-				sprintf(szFileName, "hall%02d.txt", Alliance->ID);
+				snprintf(szFileName, sizeof(szFileName), "hall%02d.txt", Alliance->ID);
 				Menus_ChatRoom(szFileName);
 				break;
 			case 'P' :    /* manage empire */
@@ -704,12 +696,10 @@ bool EnterAlliance(struct Alliance *Alliance)
 					}
 				}
 				if (NoYes("|0SDestroy this alliance? |08(All will be lost!) |0S:") == YES) {
-					free(szString);
 					return true;
 				}
 				break;
 			case 'Q' :
-				free(szString);
 				return false;
 		}
 	}
@@ -722,18 +712,14 @@ void KillAlliance(int AllianceID)
 	// if Alliance is same as one given, make it -1
 	// write to file
 
-	struct clan *TmpClan;
+	struct clan TmpClan = {0};
 	FILE *fpPlayerFile;
 	int CurClan, CurAlliance;
 	long Offset;
 
-	TmpClan = malloc(sizeof(struct clan));
-	CheckMem(TmpClan);
-
 	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "r+b", SH_DENYRW);
 	if (!fpPlayerFile) {
 		rputs(ST_ERRORPC);
-		free(TmpClan);
 		return;
 	}
 
@@ -745,19 +731,19 @@ void KillAlliance(int AllianceID)
 			break;  /* couldn't fseek, so exit */
 		}
 
-		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER) {
+		notEncryptRead_s(clan, &TmpClan, fpPlayerFile, XOR_USER) {
 			fclose(fpPlayerFile);
 			break;  /* stop reading if no more players found */
 		}
 
 		// skip if user is online
-		if (TmpClan->ClanID[0] == PClan->ClanID[0] &&
-				TmpClan->ClanID[1] == PClan->ClanID[1])
+		if (TmpClan.ClanID[0] == PClan->ClanID[0] &&
+				TmpClan.ClanID[1] == PClan->ClanID[1])
 			continue;
 
 		// see if in alliance
 		for (CurAlliance = 0; CurAlliance < MAX_ALLIES; CurAlliance++)
-			if (TmpClan->Alliances[CurAlliance] == AllianceID)
+			if (TmpClan.Alliances[CurAlliance] == AllianceID)
 				break;
 
 		// not in alliance, skip
@@ -765,15 +751,14 @@ void KillAlliance(int AllianceID)
 			continue;
 
 		// in alliance, update his info and write to file
-		TmpClan->Alliances[CurAlliance] = -1;
+		TmpClan.Alliances[CurAlliance] = -1;
 
 		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
 		fseek(fpPlayerFile, Offset, SEEK_SET);
-		EncryptWrite_s(clan, TmpClan, fpPlayerFile, XOR_USER);
+		EncryptWrite_s(clan, &TmpClan, fpPlayerFile, XOR_USER);
 	}
 
 	fclose(fpPlayerFile);
-	free(TmpClan);
 }
 
 void Alliance_Maint(void)

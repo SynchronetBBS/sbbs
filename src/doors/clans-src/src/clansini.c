@@ -114,17 +114,16 @@ void ClansIni_Init(void)
 						CurNPCFile++;
 
 						IniFile.pszNPCFileName[ CurNPCFile ] =
-							MakeStr(strlen(pcCurrentPos) + 1);
-						strcpy(IniFile.pszNPCFileName[ CurNPCFile ], pcCurrentPos);
+							DupeStr(pcCurrentPos);
 						break;
 					case 1 :  /* Language */
 						if (IniFile.pszLanguage) {
 							free(IniFile.pszLanguage);
 							IniFile.pszLanguage = NULL;
 						}
+
 						IniFile.pszLanguage =
-							MakeStr(strlen(pcCurrentPos) + 1);
-						strcpy(IniFile.pszLanguage, pcCurrentPos);
+							DupeStr(pcCurrentPos);
 						break;
 					case 2 :  // item files
 						if (CurItemFile == MAX_ITEMFILES)
@@ -133,8 +132,7 @@ void ClansIni_Init(void)
 						CurItemFile++;
 
 						IniFile.pszItems[ CurItemFile ] =
-							MakeStr(strlen(pcCurrentPos) + 1);
-						strcpy(IniFile.pszItems[ CurItemFile ], pcCurrentPos);
+							DupeStr(pcCurrentPos);
 
 						// printf("itemfile = %d. %s\n", CurItemFile,
 						//    IniFile.pszItems[ CurItemFile ]);
@@ -146,8 +144,7 @@ void ClansIni_Init(void)
 						CurRaceFile++;
 
 						IniFile.pszRaces[ CurRaceFile ] =
-							MakeStr(strlen(pcCurrentPos) + 1);
-						strcpy(IniFile.pszRaces[ CurRaceFile ], pcCurrentPos);
+							DupeStr(pcCurrentPos);
 
 						// printf("race = %d. %s\n", CurRaceFile,
 						//     IniFile.pszRaces[ CurRaceFile ]);
@@ -159,8 +156,7 @@ void ClansIni_Init(void)
 						CurClassFile++;
 
 						IniFile.pszClasses[ CurClassFile ] =
-							MakeStr(strlen(pcCurrentPos) + 1);
-						strcpy(IniFile.pszClasses[ CurClassFile ], pcCurrentPos);
+							DupeStr(pcCurrentPos);
 
 						// printf("class = %d. %s\n", CurClassFile,
 						//     IniFile.pszClasses[ CurClassFile ]);
@@ -172,8 +168,7 @@ void ClansIni_Init(void)
 						CurSpellFile++;
 
 						IniFile.pszSpells[ CurSpellFile ] =
-							MakeStr(strlen(pcCurrentPos) + 1);
-						strcpy(IniFile.pszSpells[ CurSpellFile ], pcCurrentPos);
+							DupeStr(pcCurrentPos);
 
 						// printf("spellfile = %d. %s\n", CurSpellFile,
 						//     IniFile.pszSpells[ CurSpellFile ]);

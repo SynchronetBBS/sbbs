@@ -67,14 +67,12 @@ void LoadStrings(int16_t StartIndex, int16_t NumStrings, char *szStrings[])
 
 // ------------------------------------------------------------------------- //
 
-char *MakeStr(int16_t length)
+char *DupeStr(const char *str)
 /*
  * This returns a pointer to a malloc'd string of length length.
  */
 {
-	char *pc;
-
-	pc = malloc(sizeof(char)*length);
+	char *pc = strdup(str);
 	CheckMem(pc);
 
 	return pc;
@@ -108,7 +106,7 @@ void Language_Init(char *szLangFile)
 	MyOpen(szLangFile, "rb", &FileHeader);
 
 	if (!FileHeader.fp) {
-		sprintf(szString, "File not found: %s\n", szLangFile);
+		snprintf(szString, sizeof(szString), "File not found: %s\n", szLangFile);
 		zputs(szString);
 		System_Close();
 	}

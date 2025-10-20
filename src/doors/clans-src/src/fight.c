@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -481,7 +482,7 @@ static void Fight_Stats(struct clan *PlayerClan, struct clan *MobClan, struct pc
 			else
 				rputs("|07");
 
-			sprintf(szString, " %s %d/%d ", PlayerClan->Member[CurMember]->szName,
+			snprintf(szString, sizeof(szString), " %s %d/%d ", PlayerClan->Member[CurMember]->szName,
 					PlayerClan->Member[CurMember]->HP,
 					PlayerClan->Member[CurMember]->MaxHP);
 			rputs(szString);
@@ -513,7 +514,7 @@ static void Fight_Stats(struct clan *PlayerClan, struct clan *MobClan, struct pc
 			else
 				rputs("|13");
 
-			sprintf(szString, " %s ", MobClan->Member[CurMember]->szName);
+			snprintf(szString, sizeof(szString), " %s ", MobClan->Member[CurMember]->szName);
 			rputs(szString);
 			MembersShown++;
 		}
@@ -570,7 +571,7 @@ static int16_t Fight_GetTarget(struct clan *MobClan, int16_t Default)
 
 				// list who's here
 				for (CurIndex = 0; CurIndex < TotalMembers; CurIndex++) {
-					sprintf(szString, "(%c) %s\n",
+					snprintf(szString, sizeof(szString), "(%c) %s\n",
 							CurIndex+'A', MobClan->Member[ Index[CurIndex] ]->szName);
 					rputs(szString);
 				}
@@ -594,7 +595,7 @@ static int16_t Fight_GetTarget(struct clan *MobClan, int16_t Default)
 			}
 		}
 
-	sprintf(szString, "%s\n\n", MobClan->Member[ MemberNumber ]->szName);
+	snprintf(szString, sizeof(szString), "%s\n\n", MobClan->Member[ MemberNumber ]->szName);
 	rputs(szString);
 	return MemberNumber;
 }
@@ -694,7 +695,7 @@ static bool Fight_Dead(struct clan *Clan)
 static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int16_t Who,
 						bool SkipOutput)
 {
-	int16_t CurMember, Damage, PercentGold;
+	int16_t CurMember, Damage;
 	char szString[128];
 	int32_t XPGained, GoldGained, TaxedGold;
 
@@ -719,7 +720,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 	if ((GetStat(Attacker, stDexterity) + RANDOM(4) + RANDOM(4) + 2) <
 			(GetStat(VictimClan->Member[Who], stAgility) + RANDOM(4))) {
 		if (SkipOutput == false) {
-			sprintf(szString, ST_FIGHTMISS, Attacker->szName);
+			snprintf(szString, sizeof(szString), ST_FIGHTMISS, Attacker->szName);
 			rputs(szString);
 		}
 	}
@@ -731,7 +732,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 			Damage = 1;
 
 		if (SkipOutput == false) {
-			sprintf(szString, ST_FIGHTATTACK, Attacker->szName, VictimClan->Member[Who]->szName, Damage);
+			snprintf(szString, sizeof(szString), ST_FIGHTATTACK, Attacker->szName, VictimClan->Member[Who]->szName, Damage);
 			rputs(szString);
 		}
 
@@ -739,7 +740,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		XPGained = Damage/3 + 1;
 
 		if (SkipOutput == false) {
-			sprintf(szString, ST_FIGHTXP, XPGained);
+			snprintf(szString, sizeof(szString), ST_FIGHTXP, XPGained);
 			rputs(szString);
 		}
 
@@ -757,7 +758,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		/* according to how bad the hit was, figure out status */
 		if (VictimClan->szName[0] == 0) {
 			VictimClan->Member[Who]->Status = Dead;
-			sprintf(szString, ST_FIGHTKILLED, VictimClan->Member[Who]->szName,
+			snprintf(szString, sizeof(szString), ST_FIGHTKILLED, VictimClan->Member[Who]->szName,
 					VictimClan->Member[Who]->Difficulty);
 
 			/* give xp because of death */
@@ -765,7 +766,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		}
 		else if (VictimClan->Member[Who]->HP < -15) {
 			VictimClan->Member[Who]->Status = Dead;
-			sprintf(szString, ST_FIGHTKILLED, VictimClan->Member[Who]->szName,
+			snprintf(szString, sizeof(szString), ST_FIGHTKILLED, VictimClan->Member[Who]->szName,
 					VictimClan->Member[Who]->Level*2);
 
 			/* loses percentage of MaxHP */
@@ -776,7 +777,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		}
 		else if (VictimClan->Member[Who]->HP < -5) {
 			VictimClan->Member[Who]->Status = Unconscious;
-			sprintf(szString, ST_FIGHTMORTALWOUND, VictimClan->Member[Who]->szName,
+			snprintf(szString, sizeof(szString), ST_FIGHTMORTALWOUND, VictimClan->Member[Who]->szName,
 					VictimClan->Member[Who]->Level);
 
 			/* loses percentage of MaxHP */
@@ -786,7 +787,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		}
 		else {
 			VictimClan->Member[Who]->Status = Unconscious;
-			sprintf(szString, ST_FIGHTKNOCKEDOUT, VictimClan->Member[Who]->szName,
+			snprintf(szString, sizeof(szString), ST_FIGHTKNOCKEDOUT, VictimClan->Member[Who]->szName,
 					VictimClan->Member[Who]->Level);
 
 			Attacker->Experience += VictimClan->Member[Who]->Level;
@@ -797,13 +798,13 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		if (Attacker->MyClan == PClan) {
 			if (VictimClan->Member[Who]->Difficulty != -1) {
 				GoldGained = VictimClan->Member[Who]->Difficulty*((int32_t)RANDOM(10) + 20L) + 50L + (int32_t)RANDOM(20);
-				sprintf(szString, ST_FIGHTGETGOLD, GoldGained);
+				snprintf(szString, sizeof(szString), ST_FIGHTGETGOLD, GoldGained);
 				rputs(szString);
 
 				/* take some away due to taxes */
 				TaxedGold = (int32_t)(GoldGained * Village.Data->TaxRate)/100L;
 				if (TaxedGold) {
-					sprintf(szString, ST_FIGHTTAXEDGOLD, TaxedGold);
+					snprintf(szString, sizeof(szString), ST_FIGHTTAXEDGOLD, TaxedGold);
 					rputs(szString);
 				}
 
@@ -822,7 +823,6 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		}
 
 	}
-	(void)PercentGold;
 }
 
 
@@ -888,10 +888,10 @@ static int16_t GetTarget2(struct clan *Clan, int16_t Default)
 	// list who's here
 	for (CurIndex = 0; CurIndex < TotalMembers; CurIndex++) {
 		if (Clan == PClan)
-			sprintf(szString, ST_FIGHTTARGETLIST1, CurIndex+'A', Clan->Member[Index[CurIndex]]->szName,
+			snprintf(szString, sizeof(szString), ST_FIGHTTARGETLIST1, CurIndex+'A', Clan->Member[Index[CurIndex]]->szName,
 					Clan->Member[Index[CurIndex]]->HP, Clan->Member[Index[CurIndex]]->MaxHP);
 		else
-			sprintf(szString, ST_FIGHTTARGETLIST2, CurIndex+'A', Clan->Member[Index[CurIndex]]->szName);
+			snprintf(szString, sizeof(szString), ST_FIGHTTARGETLIST2, CurIndex+'A', Clan->Member[Index[CurIndex]]->szName);
 
 		rputs(szString);
 	}
@@ -907,10 +907,10 @@ static int16_t GetTarget2(struct clan *Clan, int16_t Default)
 			// list who's here
 			for (CurIndex = 0; CurIndex < TotalMembers; CurIndex++) {
 				if (Clan == PClan)
-					sprintf(szString, ST_FIGHTTARGETLIST1, CurIndex+'A', Clan->Member[Index[CurIndex]]->szName,
+					snprintf(szString, sizeof(szString), ST_FIGHTTARGETLIST1, CurIndex+'A', Clan->Member[Index[CurIndex]]->szName,
 							Clan->Member[Index[CurIndex]]->HP, Clan->Member[Index[CurIndex]]->MaxHP);
 				else
-					sprintf(szString, ST_FIGHTTARGETLIST2, CurIndex+'A', Clan->Member[Index[CurIndex]]->szName);
+					snprintf(szString, sizeof(szString), ST_FIGHTTARGETLIST2, CurIndex+'A', Clan->Member[Index[CurIndex]]->szName);
 
 				rputs(szString);
 			}
@@ -935,7 +935,7 @@ static int16_t GetTarget2(struct clan *Clan, int16_t Default)
 		}
 	}
 
-	sprintf(szString, "%s\n\n", Clan->Member[ MemberNumber ]->szName);
+	snprintf(szString, sizeof(szString), "%s\n\n", Clan->Member[ MemberNumber ]->szName);
 	rputs(szString);
 	return MemberNumber;
 }
@@ -1040,7 +1040,7 @@ static bool Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct mov
 				break;
 			}
 
-			sprintf(szString, ST_CSPELL1, iTemp+'A',
+			snprintf(szString, sizeof(szString), ST_CSPELL1, iTemp+'A',
 					PC->SP >= Spells[ PC->SpellsKnown[iTemp]-1 ]->SP ? "|0C" : "|08",
 					Spells[ PC->SpellsKnown[iTemp]-1 ]->szName,
 					Spells[ PC->SpellsKnown[iTemp]-1 ]->SP);
@@ -1152,7 +1152,7 @@ int16_t Fight_Fight(struct clan *Attacker, struct clan *Defender,
 
 	// header stuff goes here
 	if (HumanEnemy) {
-		sprintf(szString, ST_FIGHTVSHEADER, Attacker->szName, Defender->szName);
+		snprintf(szString, sizeof(szString), ST_FIGHTVSHEADER, Attacker->szName, Defender->szName);
 		rputs(szString);
 	}
 
@@ -1199,7 +1199,7 @@ int16_t Fight_Fight(struct clan *Attacker, struct clan *Defender,
 
 					rputs(ST_FIGHTOPTIONS);
 
-					sprintf(szString, ST_FIGHTPSTATS, Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->szName,
+					snprintf(szString, sizeof(szString), ST_FIGHTPSTATS, Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->szName,
 							Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->HP, Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->MaxHP,
 							Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->SP, Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->MaxSP);
 					rputs(szString);
@@ -1368,8 +1368,8 @@ void Fight_CheckLevelUp(void)
 				PClan->Member[CurMember]->Level++;
 				PClan->Member[CurMember]->TrainingPoints += Points;
 
-				// sprintf(szString, "|10>> |15%s |02raises to level |14%d |02and gains %d training points!\n",
-				sprintf(szString, ST_LEVELUP, PClan->Member[CurMember]->szName,
+				// snprintf(szString, sizeof(szString), "|10>> |15%s |02raises to level |14%d |02and gains %d training points!\n",
+				snprintf(szString, sizeof(szString), ST_LEVELUP, PClan->Member[CurMember]->szName,
 						PClan->Member[CurMember]->Level, Points);
 				rputs(szString);
 
@@ -1410,31 +1410,17 @@ static int16_t GetDifficulty(int16_t Level)
 	return Difficulty;
 }
 
-struct clan *MallocClan(void) {
-	struct clan *Clan;
-	int16_t iTemp;
-
-	Clan = malloc(sizeof(struct clan));
-	CheckMem(Clan);
-
+void InitClan(struct clan *Clan) {
 	/* NULL-pointer each member of clan for now */
-	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
-		Clan->Member[iTemp] = NULL;
-
-	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++)
-		Clan->Items[iTemp].Available = false;
-
-	Clan->szName[0] = 0;
-
-	return Clan;
+	memset(Clan, 0, sizeof(*Clan));
 }
 
 static int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16_t MaxDifficulty,
 						char *szFileName)
 {
-	int16_t *MonIndex;
+	int16_t MonIndex[MAX_MONSTERS];
 	int16_t iTemp, ValidMonsters;
-	int16_t *ValidMonIndex, MonsterChosen;
+	int16_t ValidMonIndex[MAX_MONSTERS], MonsterChosen;
 	struct FileHeader FileHeader;
 	char szString[128];
 	uint8_t sBuf[BUF_SIZE_pc];
@@ -1442,15 +1428,10 @@ static int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16
 	MyOpen(szFileName, "rb", &FileHeader);
 
 	if (!FileHeader.fp) {
-		sprintf(szString, "Error:  couldn't open %s!\n", szFileName);
+		snprintf(szString, sizeof(szString), "Error:  couldn't open %s!\n", szFileName);
 		rputs(szString);
 		od_exit(0, false);
 	}
-
-	MonIndex =      malloc(sizeof(int16_t) * MAX_MONSTERS);
-	ValidMonIndex = malloc(sizeof(int16_t) * MAX_MONSTERS);
-	CheckMem(MonIndex);
-	CheckMem(ValidMonIndex);
 
 	/* read index */
 	fread(MonIndex, sizeof(int16_t) * MAX_MONSTERS, 1, FileHeader.fp);
@@ -1470,8 +1451,6 @@ static int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16
 
 	if (ValidMonsters == 0) {
 		rputs("Error:  No valid monsters!!\n%P");
-		free(MonIndex);
-		free(ValidMonIndex);
 		fclose(FileHeader.fp);
 		return -1;
 	}
@@ -1498,9 +1477,6 @@ static int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16
 	}
 	Monster->HP = (Monster->HP* (RANDOM(30)+80))/100;
 	Monster->MaxHP = Monster->HP;
-
-	free(MonIndex);
-	free(ValidMonIndex);
 
 	return 0;
 }
@@ -1559,20 +1535,23 @@ static void RemoveUndead(struct clan *Clan)
 	}
 }
 
-void FreeClan(struct clan *Clan)
+void FreeClanMembers(struct clan *Clan)
 {
 	int16_t CurMember;
 
-	// free members first
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
 		if (Clan->Member[CurMember]) {
 			free(Clan->Member[CurMember]);
 			Clan->Member[CurMember] = NULL;
 		}
 	}
+}
 
+void FreeClan(struct clan *Clan)
+{
+	// free members first
+	FreeClanMembers(Clan);
 	free(Clan);
-	Clan = NULL;
 }
 
 static int32_t MineFollowersGained(int16_t Level)
@@ -1601,7 +1580,7 @@ static void Fight_GiveFollowers(int16_t Level)
 	NumConscripted = (NumFollowers*Village.Data->ConscriptionRate)/100L;
 
 	if (NumFollowers || NumConscripted) {
-		sprintf(szString, ST_FIGHTOVER1, NumFollowers, NumConscripted);
+		snprintf(szString, sizeof(szString), ST_FIGHTOVER1, NumFollowers, NumConscripted);
 		rputs(szString);
 	}
 
@@ -1635,12 +1614,12 @@ int16_t GetOpenItemSlot(struct clan *Clan)
 
 static void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 {
-	int16_t ItemIndex, OneItemFound, EmptySlot;
-	int16_t DefaultItemIndex, iTemp, WhoEquip, ItemsTaken = 0;
+	int16_t ItemIndex, EmptySlot;
+	int16_t DefaultItemIndex, iTemp, ItemsTaken = 0;
 	char szString[100];
 	bool SomethingTaken = false;
 
-	sprintf(szString, "You may take %d items from that clan.\n\r", MAX_ITEMSTAKEN);
+	snprintf(szString, sizeof(szString), "You may take %d items from that clan.\n\r", MAX_ITEMSTAKEN);
 	rputs(szString);
 
 	for (;;) {
@@ -1707,19 +1686,19 @@ static void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 				// increment counter
 				ItemsTaken++;
 
-				sprintf(szString, "%s taken!\n\r", Clan->Items[ItemIndex].szName);
+				snprintf(szString, sizeof(szString), "%s taken!\n\r", Clan->Items[ItemIndex].szName);
 				rputs(szString);
 
 				// add onto szMsg
 				if (SomethingTaken == false) {
 					// nothing was taken before this item, means there is no
 					// header yet for szMsg
-					strcat(szMsg, "\n\n The following items were taken:\n\n");
+					strlcat(szMsg, "\n\n The following items were taken:\n\n", sizeof(szMsg));
 				}
 
 				SomethingTaken = true;
-				sprintf(szString, " %s\n", Clan->Items[ItemIndex].szName);
-				strcat(szMsg, szString);
+				snprintf(szString, sizeof(szString), " %s\n", Clan->Items[ItemIndex].szName);
+				strlcat(szMsg, szString, sizeof(szMsg));
 				break;
 			case 'X' :  /* examine item */
 				rputs(ST_ISTATS1);
@@ -1763,18 +1742,16 @@ static void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 				break;
 		}
 	}
-	(void)WhoEquip;
-	(void)OneItemFound;
 }
 
 
 
 void Fight_Clan(void)
 {
-	struct clan *EnemyClan;
+	struct clan EnemyClan = {0};
 	int16_t ClanID[2], FightResult;
 	int16_t iTemp, CurMember;
-	char szString[128], *szMessage;
+	char szString[128], szMessage[500];
 
 	/* if all guys dead, tell guy can't fight */
 	if (NumMembers(PClan, true) == 0) {
@@ -1796,21 +1773,19 @@ void Fight_Clan(void)
 		}
 	}
 
-	EnemyClan = MallocClan();
-
-	GetClan(ClanID, EnemyClan);
+	GetClan(ClanID, &EnemyClan);
 
 	// if enemy clan is "away", don't fight
-	if (EnemyClan->WorldStatus == WS_GONE) {
+	if (EnemyClan.WorldStatus == WS_GONE) {
 		rputs("|07That clan is currently not in town.\n%P");
-		FreeClan(EnemyClan);
+		FreeClanMembers(&EnemyClan);
 		return;
 	}
 
 	// if enemy clan is all "dead", don't fight
-	if (NumMembers(EnemyClan, true) == 0) {
+	if (NumMembers(&EnemyClan, true) == 0) {
 		rputs("|07That clan currently has no living members.  You cannot fight them.\n%P");
-		FreeClan(EnemyClan);
+		FreeClanMembers(&EnemyClan);
 		return;
 	}
 
@@ -1827,73 +1802,69 @@ void Fight_Clan(void)
 
 	/* set all spells to 0 */
 	Spells_ClearSpells(PClan);
-	Spells_ClearSpells(EnemyClan);
+	Spells_ClearSpells(&EnemyClan);
 
 	/* fight 'em here using the function for fighting */
-	FightResult = Fight_Fight(PClan, EnemyClan, true, false, false);
+	FightResult = Fight_Fight(PClan, &EnemyClan, true, false, false);
 
 	/* set all spells to 0 */
 	Spells_ClearSpells(PClan);
-	Spells_ClearSpells(EnemyClan);
+	Spells_ClearSpells(&EnemyClan);
 
 	// reset their HPs if they are alive
 	Fight_Heal(PClan);
-	Fight_Heal(EnemyClan);
+	Fight_Heal(&EnemyClan);
 
 	RemoveUndead(PClan);
-	RemoveUndead(EnemyClan);
+	RemoveUndead(&EnemyClan);
 
 	/* do stuff because of win/loss */
 
 	/* figure out number of followers from Difficulty of battle */
 	if (FightResult == FT_WON) {
 		/* put in news you won */
-		sprintf(szString, ST_NEWSFIGHT1, EnemyClan->szName, PClan->szName);
+		snprintf(szString, sizeof(szString), ST_NEWSFIGHT1, EnemyClan.szName, PClan->szName);
 		News_AddNews(szString);
 
 		/* tell that guy about loss */
-		szMessage = MakeStr(500);
-		sprintf(szMessage, ST_NEWSFIGHT2, PClan->szName);
+		snprintf(szMessage, sizeof(szMessage), ST_NEWSFIGHT2, PClan->szName);
 
 		// allow user to take an item
-		TakeItemsFromClan(EnemyClan, szMessage);
+		TakeItemsFromClan(&EnemyClan, szMessage);
 
-		GenericMessage(szMessage, EnemyClan->ClanID, PClan->ClanID, PClan->szName, false);
-		free(szMessage);
+		GenericMessage(szMessage, EnemyClan.ClanID, PClan->ClanID, PClan->szName, false);
 
 		/* give points for win in battle */
 		PClan->Points += 20;
 	}
 	else if (FightResult == FT_LOST) {
 		/* put in news you lost */
-		sprintf(szString, ST_NEWSFIGHT3, PClan->szName, EnemyClan->szName);
+		snprintf(szString, sizeof(szString), ST_NEWSFIGHT3, PClan->szName, EnemyClan.szName);
 		News_AddNews(szString);
 
 		/* tell that guy about loss */
-		szMessage = MakeStr(500);
-		sprintf(szMessage, ST_NEWSFIGHT4, PClan->szName);
-		GenericMessage(szMessage, EnemyClan->ClanID, PClan->ClanID, PClan->szName, false);
-		free(szMessage);
+		snprintf(szMessage, sizeof(szMessage), ST_NEWSFIGHT4, PClan->szName);
+		GenericMessage(szMessage, EnemyClan.ClanID, PClan->ClanID, PClan->szName, false);
 
 		PClan->Points -= 15;
 	}
 	else {
 		// ran away
 		/* put in news you lost */
-		sprintf(szString, ST_NEWSFIGHT5, PClan->szName, EnemyClan->szName);
+		snprintf(szString, sizeof(szString), ST_NEWSFIGHT5, PClan->szName, EnemyClan.szName);
 		News_AddNews(szString);
 
 		/* tell that guy about loss */
-		sprintf(szString, ST_NEWSFIGHT6, PClan->szName);
-		GenericMessage(szString, EnemyClan->ClanID, PClan->ClanID, PClan->szName, false);
+		snprintf(szString, sizeof(szString), ST_NEWSFIGHT6, PClan->szName);
+		GenericMessage(szString, EnemyClan.ClanID, PClan->ClanID, PClan->szName, false);
 
 		PClan->Points -= 20;
 	}
 
-	Clan_Update(EnemyClan);
+	Clan_Update(&EnemyClan);
 
 	/* get result of fight and do stuff */
-	FreeClan(EnemyClan);
+	FreeClanMembers(&EnemyClan);
 
 	/* fix it so they didn't run away */
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
@@ -1911,9 +1882,8 @@ void Fight_Monster(int16_t Level, char *szFileName)
  *
  */
 {
-	uint32_t MemBefore;
 	int16_t CurMember, FightResult;
-	struct clan *EnemyClan;
+	struct clan EnemyClan = {0};
 
 
 #ifdef PRELAB
@@ -1938,19 +1908,18 @@ void Fight_Monster(int16_t Level, char *szFileName)
 
 	// load monsters into enemy clan
 
-	EnemyClan = MallocClan();
-	Fight_LoadMonsters(EnemyClan, Level, szFileName);
+	Fight_LoadMonsters(&EnemyClan, Level, szFileName);
 
 
 	od_clr_scr();
-	FightResult = Fight_Fight(PClan, EnemyClan, false, true, false);
+	FightResult = Fight_Fight(PClan, &EnemyClan, false, true, false);
 
 	Fight_Heal(PClan);
 	Spells_ClearSpells(PClan);
 
 	RemoveUndead(PClan);
 
-	FreeClan(EnemyClan);
+	FreeClanMembers(&EnemyClan);
 
 	if (FightResult == FT_WON) {
 		Fight_GiveFollowers(Level);
@@ -1975,5 +1944,4 @@ void Fight_Monster(int16_t Level, char *szFileName)
 #ifdef PRELAB
 	od_printf("@@Mem: %lu, %lu\n\r", MemBefore, farcoreleft());
 #endif
-	(void)MemBefore;
 }

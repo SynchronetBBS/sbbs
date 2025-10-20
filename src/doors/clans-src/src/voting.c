@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # include <dos.h>
 #endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include "door.h"
 #include "help.h"
@@ -48,22 +49,18 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 static int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool UserOnline)
 {
 	FILE *fpPlayerFile;
-	char szFileName[50];
+	char szFileName[PATH_SIZE];
 	int16_t CurClan, iTemp, CurVote, NumVotes, NumUndecided = 0,
 			ClanID[2];
-	struct clan *TmpClan;
+	struct clan TmpClan = {0};
 	long Offset;
 
-	strcpy(szFileName, ST_CLANSPCFILE);
-
-	TmpClan = malloc(sizeof(struct clan));
-	CheckMem(TmpClan);
+	strlcpy(szFileName, ST_CLANSPCFILE, sizeof(szFileName));
 
 	fpPlayerFile = fopen(szFileName, "r+b");
 	if (!fpPlayerFile) {
 		TopCandidates[0][0] = -1;
 		TopCandidates[0][1] = -1;
-		free(TmpClan);
 		return 0;  /* failed to find clan */
 	}
 
@@ -83,29 +80,29 @@ static int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool
 			break;  /* couldn't fseek, so exit */
 		}
 
-		notEncryptRead_s(clan, TmpClan, fpPlayerFile, XOR_USER)
+		notEncryptRead_s(clan, &TmpClan, fpPlayerFile, XOR_USER)
 			break;  /* stop reading if no more players found */
 
 		/* skip if deleted clan */
-		if (TmpClan->ClanID[0] == -1)
+		if (TmpClan.ClanID[0] == -1)
 			continue;
 
 		// skip if it's this user and he's online
 		if (UserOnline &&
-				TmpClan->ClanID[0] == PClan->ClanID[0] &&
-				TmpClan->ClanID[1] == PClan->ClanID[1])
+				TmpClan.ClanID[0] == PClan->ClanID[0] &&
+				TmpClan.ClanID[1] == PClan->ClanID[1])
 			continue;
 
 		// skip vote if undecided
-		if (TmpClan->ClanRulerVote[0] == -1) {
+		if (TmpClan.ClanRulerVote[0] == -1) {
 			NumUndecided++;
 			continue;
 		}
 
 		// see if who he voted for is in list, if not, add to it
 		for (CurVote = 0; CurVote < 50; CurVote++) {
-			if (TopCandidates[CurVote][0] == TmpClan->ClanRulerVote[0] &&
-					TopCandidates[CurVote][1] == TmpClan->ClanRulerVote[1]) {
+			if (TopCandidates[CurVote][0] == TmpClan.ClanRulerVote[0] &&
+					TopCandidates[CurVote][1] == TmpClan.ClanRulerVote[1]) {
 				// found match, increment this vote
 				TopVotes[CurVote]++;
 				break;
@@ -113,17 +110,14 @@ static int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool
 
 			// if -1, set this vote as our user's choice and increment votes
 			if (TopCandidates[CurVote][0] == -1) {
-				TopCandidates[CurVote][0] = TmpClan->ClanRulerVote[0];
-				TopCandidates[CurVote][1] = TmpClan->ClanRulerVote[1];
+				TopCandidates[CurVote][0] = TmpClan.ClanRulerVote[0];
+				TopCandidates[CurVote][1] = TmpClan.ClanRulerVote[1];
 				TopVotes[CurVote] = 1;
 				break;
 			}
 		}
 	}
 	fclose(fpPlayerFile);
-
-	free(TmpClan);
-	TmpClan = NULL;
 
 	// now add on the current user's stats
 
@@ -176,7 +170,7 @@ void VotingBooth(void)
 	int16_t TopCandidates[50][2];
 	int16_t TopVotes[50], ClanID[2], iTemp, Undecided;
 	char szName[25], szString[128];
-	char *szTheOptions[4], *szTop10Names[10];
+	char *szTheOptions[4], szTop10Names[10][25];
 	bool Done = false;
 
 	if (!PClan->VoteHelp) {
@@ -186,10 +180,6 @@ void VotingBooth(void)
 	}
 
 	LoadStrings(1310, 4, szTheOptions);
-
-	// allocate mem for top 10 names
-	for (iTemp = 0; iTemp < 10; iTemp++)
-		szTop10Names[iTemp] = MakeStr(25);
 
 	while (!Done) {
 		Undecided = GetVotes(TopCandidates, TopVotes, true);
@@ -211,20 +201,20 @@ void VotingBooth(void)
 			if (TopCandidates[iTemp][0] == -1)
 				break;
 
-			sprintf(szString, "|0B%3d.  |0C%-20s %d\n", iTemp+1,
+			snprintf(szString, sizeof(szString), "|0B%3d.  |0C%-20s %d\n", iTemp+1,
 					szTop10Names[iTemp], TopVotes[iTemp]);
 			rputs(szString);
 		}
-		sprintf(szString, "      |0C%-20s %d\n", "Undecided", Undecided);
+		snprintf(szString, sizeof(szString), "      |0C%-20s %d\n", "Undecided", Undecided);
 		rputs(szString);
 
 		if (PClan->ClanRulerVote[0] != -1) {
 			GetClanNameID(szName, ClanID);
 		}
 		else
-			strcpy(szName, "Undecided");
+			strlcpy(szName, "Undecided", sizeof(szName));
 
-		sprintf(szString, "\n |0CYour Vote: |0B%s\n", szName);
+		snprintf(szString, sizeof(szString), "\n |0CYour Vote: |0B%s\n", szName);
 		rputs(szString);
 
 		switch (GetChoice("Voting Booth", ST_ENTEROPTION, szTheOptions, "Q?VC", 'Q', true)) {
@@ -251,9 +241,6 @@ void VotingBooth(void)
 				break;
 		}
 	}
-
-	for (iTemp = 0; iTemp < 10; iTemp++)
-		free(szTop10Names[iTemp]);
 }
 
 void ChooseNewLeader(void)
@@ -270,8 +257,8 @@ void ChooseNewLeader(void)
 	    {
 	      GetClanNameID(szName, Village.RulingClanId);
 
-	      // sprintf(szString, ">> %s's reign as dictator continues.\n\n",
-	      sprintf(szString, ST_NEWS0, szName);
+	      // snprintf(szString, sizeof(szString), ">> %s's reign as dictator continues.\n\n",
+	      snprintf(szString, sizeof(szString), ST_NEWS0, szName);
 	      AddNews(szString);
 	      return;
 	    }
@@ -317,19 +304,19 @@ void ChooseNewLeader(void)
 	// if same as yesterday's ruler, just tell people he was re-elected
 	if (NewRulerID[0] == Village.Data->RulingClanId[0] &&
 			NewRulerID[1] == Village.Data->RulingClanId[1]) {
-		// sprintf(szString, ">> %s is re-elected as the leader of town!\n\n",
-		sprintf(szString, ST_NEWS1, szName);
+		// snprintf(szString, sizeof(szString), ">> %s is re-elected as the leader of town!\n\n",
+		snprintf(szString, sizeof(szString), ST_NEWS1, szName);
 		News_AddNews(szString);
 	}
 	else {
-		// sprintf(szString, ">> %s is elected as the new leader of town!\n\n",
-		sprintf(szString, ST_NEWS2, szName);
+		// snprintf(szString, sizeof(szString), ">> %s is elected as the new leader of town!\n\n",
+		snprintf(szString, sizeof(szString), ST_NEWS2, szName);
 		News_AddNews(szString);
 
 		// make him the new ruler
 		Village.Data->RulingClanId[0] = NewRulerID[0];
 		Village.Data->RulingClanId[1] = NewRulerID[1];
-		strcpy(Village.Data->szRulingClan, szName);
+		strlcpy(Village.Data->szRulingClan, szName, sizeof(Village.Data->szRulingClan));
 		Village.Data->RulingDays = 0;
 
 		// make sure voting is allowed for the new ruler
