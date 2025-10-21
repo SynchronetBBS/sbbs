@@ -192,6 +192,9 @@ typedef struct
 #ifdef INCLUDE_SOCKET_COM
 	SOCKET	socket;
 	int	old_delay;
+#ifdef OD_MULTITHREADED
+   tODSemaphoreHandle hCarrierLostSemaphore;
+#endif
 #endif
 } tPortInfo;
 
@@ -1838,19 +1841,25 @@ tODResult ODComOpenFromExistingHandle(tPortHandle hPort,
    VERIFY_CALL(!pPortInfo->bIsOpen);
 
 #ifdef INCLUDE_SOCKET_COM
-	if(pPortInfo->Method == kComMethodSocket) {
-		socklen_t delay=FALSE;
+   if(pPortInfo->Method == kComMethodSocket) {
+      socklen_t delay=FALSE;
+#ifdef OD_MULTITHREADED
+      tODResult res = kODRCSuccess;
 
-		pPortInfo->socket = dwExistingHandle;
+      res = ODSemaphoreAlloc(&pPortInfo->hCarrierLostSemaphore, 0, 1);
+      if (res != kODRCSuccess)
+         return res;
+#endif
+      pPortInfo->socket = dwExistingHandle;
 
-		getsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, (void*)&(pPortInfo->old_delay), &delay);
-		delay=FALSE;
-		setsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, (void*)&delay, sizeof(delay));
+      getsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, (void*)&(pPortInfo->old_delay), &delay);
+      delay=FALSE;
+      setsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, (void*)&delay, sizeof(delay));
 
-        pPortInfo->bIsOpen = TRUE;
+      pPortInfo->bIsOpen = TRUE;
 
-		return(kODRCSuccess);
-	}
+      return(kODRCSuccess);
+   }
 #endif /* INCLUDE_SOCKET_COM */
 
 #ifdef INCLUDE_WIN32_COM
@@ -2810,50 +2819,63 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 
 #ifdef INCLUDE_SOCKET_COM
       case kComMethodSocket:
-		{
-			int recv_ret;
+      {
+         int recv_ret;
 #ifdef ODPLAT_WIN32
-			fd_set	socket_set;
-			struct	timeval tv;
-			int		select_ret;
+         fd_set   socket_set;
+         struct   timeval tv;
+         int      select_ret;
 
-			FD_ZERO(&socket_set);
-			FD_SET(pPortInfo->socket,&socket_set);
+         FD_ZERO(&socket_set);
+         FD_SET(pPortInfo->socket,&socket_set);
 
-			tv.tv_sec=0;
-			tv.tv_usec=100;
+         tv.tv_sec=0;
+         tv.tv_usec=100;
 
-			select_ret = select(pPortInfo->socket+1, &socket_set, NULL, NULL, bWait ? NULL : &tv);
-			if (select_ret == SOCKET_ERROR)
-				return (kODRCGeneralFailure);
-			if (select_ret == 0)
-				return (kODRCNothingWaiting);
+         select_ret = select(pPortInfo->socket+1, &socket_set, NULL, NULL, bWait ? NULL : &tv);
+         if (select_ret == SOCKET_ERROR) {
+#ifdef OD_MULTITHREADED
+            ODSemaphoreUp(pPortInfo->hCarrierLostSemaphore, 1);
+#endif
+            return (kODRCGeneralFailure);
+         }
+         if (select_ret == 0)
+            return (kODRCNothingWaiting);
 #else
-			int i;
-			struct pollfd pfd = {0};
-			pfd.fd = pPortInfo->socket;
-			pfd.events = POLLIN | POLLHUP;
-			i = poll(&pfd, 1, bWait ? INFTIM : 1);
-			if (i == 0)
-				return (kODRCNothingWaiting);
-			else if (i == -1 || !(pfd.revents & POLLIN))
-				return (kODRCGeneralFailure);
+         int i;
+         struct pollfd pfd = {0};
+         pfd.fd = pPortInfo->socket;
+         pfd.events = POLLIN | POLLHUP;
+         i = poll(&pfd, 1, bWait ? INFTIM : 1);
+         if (i == 0)
+            return (kODRCNothingWaiting);
+         else if (i == -1 || !(pfd.revents & POLLIN)) {
+#ifdef OD_MULTITHREADED
+            if (i == -1 || pfd.revents & (POLLERR | POLLHUP | POLLRDHUP | POLLINVAL))
+               ODSemaphoreUp(pPortInfo->hCarrierLostSemaphore, 1);
+#endif
+            return (kODRCGeneralFailure);
+         }
 #endif
 
-			do {
-				recv_ret = recv(pPortInfo->socket, pbtNext, 1, 0);
-				if(recv_ret != SOCKET_ERROR)
-					break;
-				if(WSAGetLastError() != WSAEWOULDBLOCK)
-					return (kODRCGeneralFailure);
-				od_sleep(50);
-			} while (bWait);
+         do {
+            recv_ret = recv(pPortInfo->socket, pbtNext, 1, 0);
+            if(recv_ret != SOCKET_ERROR)
+               break;
+            if (WSAGetLastError() != WSAEWOULDBLOCK) {
+#ifdef OD_MULTITHREADED
+               ODSemaphoreUp(pPortInfo->hCarrierLostSemaphore, 1);
+#endif
+               return (kODRCGeneralFailure);
+            }
+            od_sleep(50);
+         } while (bWait);
 
-			if (recv_ret == 0)
-				 return (kODRCNothingWaiting);
+         if (recv_ret == 0)
+             return (kODRCNothingWaiting);
 
-			break;
-		}
+         break;
+      }
 #endif /* INCLUDE_SOCKET_COM */
 
 #ifdef INCLUDE_STDIO_COM
@@ -3857,15 +3879,22 @@ tODResult ODComWaitEvent(tPortHandle hPort, tComEvent Event)
 		{
 			if(Event == kNoCarrier)
 			{
-				while(1) 
-				{
-					char ch;
-					int recv_ret = recv(pPortInfo->socket, &ch, 1, MSG_PEEK);
-					if(recv_ret == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
-						continue;
-					if (recv_ret != 1)
-						break;
-				}
+#ifdef OD_MULTITHREADED
+            while (ODSemaphoreDown(pPortInfo->hCarrierLostSemaphore, OD_NO_TIMEOUT) != kODRCSuccess)
+               ;
+            // Re-post the semaphore in case someone else waits...
+            ODSemaphoreUp(pPortInfo->hCarrierLostSemaphore, 1);
+#else
+            while(1) 
+            {
+               char ch;
+               int recv_ret = recv(pPortInfo->socket, &ch, 1, MSG_PEEK);
+               if(recv_ret == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
+                  continue;
+               if (recv_ret != 1)
+                  break;
+            }
+#endif
 			}
 			else
 			{
