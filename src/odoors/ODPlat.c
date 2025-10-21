@@ -181,6 +181,46 @@ static void ODPlatYield(void)
 /* Multithreading and synchronization support.                               */
 /* ========================================================================= */
 
+/*
+ * NOTE: ODThreadTerminate() and ODThreadSuspend() are just plain bad
+ *       ideas.
+ * 
+ * ODThreadTerminate() is inherently dangerous, and appears to have been
+ * used just to avoid a proper termination signaling method.
+ * 
+ * ODThreadSuspend() is used to prevent internal calls to OpenDoors API
+ * functions from allowing the client thread to run when
+ * bHaveExclusiveControl is TRUE. This is a blunt hammer approach to
+ * what is basically just a mutual exclusion issue. This one is also the
+ * only reason ODThreadResume() and ODThreadGetCurrent() are
+ * implemented.
+ * 
+ * ODThreadExit() is not used and could be removed, but it would be the
+ * better way to handle the chat thread.
+ * 
+ * So basically, what we should need:
+ * ODThreadCreate() - Should take a priority.
+ * ODThreadExit()
+ * ODThreadWaitForExit()
+ * ODSemaphoreAlloc()
+ * ODSemaphoreFree()
+ * ODSemaphoreUp()
+ * ODSemaphoreDown()
+ * 
+ * The current threads:
+ * ODFrameThreadProc()        Handles the local window - Windows only
+ * ODKrnlRemoteInputThread()  Sits in ODComGetByte() which has no way
+ *                            to abort. But at least it blocks.
+ *                            Well, it loops for UART...
+ * ODKrnlNoCarrierThread()    Sits in ODComWaitEvent(hSerialPort, kNoCarrier)
+ *                            This can end up polling.
+ * ODKrnlTimeUpdateThread()   od_sleep()s for three seconds then calls
+ *                            ODKrnlTimeUpdate(), not abortable.
+ * ODKrnlChatThread()         Started when chat is initiated terminated at end
+ * ODScrnThreadProc()         Prompts for local username, then handles the window.
+ *                            Not ODPLAT_WIN32 only, but should be
+ */
+
 #ifdef OD_MULTITHREADED
 
 #ifdef ODPLAT_NIX
