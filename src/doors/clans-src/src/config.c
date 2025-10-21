@@ -183,7 +183,6 @@ WriteCfg(void)
 	fprintf(f, "UseLog          %s\n", ConfigUseLog ? "Yes" : "No");
 	fprintf(f, "ScoreANSI       %s\n", Config.szScoreFile[1]);
 	fprintf(f, "ScoreASCII      %s\n", Config.szScoreFile[0]);
-	fprintf(f, "ScoreASCII      %s\n", Config.szScoreFile[0]);
 	fputs("\n", f);
 	fputs("# [InterBBSData] ------------------------------------------------------------\n", f);
 	fprintf(f, "%sInterBBS\n", Config.InterBBS ? "" : "#");
@@ -786,11 +785,11 @@ static void EditOption(int16_t WhichOption)
 			break;
 		case 7 :    /* Netmail Dir */
 			gotoxy(40, 9);
-			DosGetStr(Config.szNetmailDir, sizeof(Config.szNetmailDir) - 1);
+			DosGetStr(Config.szNetmailDir, 39);
 			break;
 		case 8 :    /* Inbound Dir */
 			gotoxy(40, 10);
-			DosGetStr(Config.szNetmailDir, sizeof(Config.szNetmailDir) - 1);
+			DosGetStr(Config.szInboundDir, 39);
 			break;
 		case 9 :    /* Mailer type */
 			if (Config.MailerType == MAIL_BINKLEY)
