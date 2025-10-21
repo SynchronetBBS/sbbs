@@ -875,10 +875,7 @@ tODMilliSec ODTimerLeft(tODTimer *pTimer)
 ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
 {
 #ifdef ODPLAT_NIX
-   struct timeval tv;
-   struct timeval start;
-   time_t started;
-   time_t left
+   struct timespec ts;
 #endif
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_sleep()");
@@ -910,30 +907,24 @@ ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
 #endif /* ODPLAT_WIN32 */
 
 #ifdef ODPLAT_NIX
+   clock_gettime(CLOCK_REALTIME, &ts);
+
    if(Milliseconds==0)  {
-      /* Prevent 100% CPU *only* no delay is actually required here */
-      tv.tv_sec=0;
-      tv.tv_usec=1000;
-      select(0,NULL,NULL,NULL,&tv);
+      ts.tv_nsec += 100000;
    }
    else  {
-      gettimeofday(&start,NULL);
-	  started=start.tv_sec*1000+(start.tv_usec/1000);
-
-      while(1)  {
-	     /* This is timing sensitive and *MUST* wait for at least Milliseconds regardless of 100% CPU or signals */
-         gettimeofday(&tv,NULL);
-		 left=tv.tv_sec*1000+(tv.tv_usec/1000);
-		 left-=started;
-		 left=Milliseconds-left;
-         tv.tv_sec = left/1000;
-         tv.tv_usec = (left*1000)%1000000;
-         if(tv.tv_sec<0 || tv.tv_usec<0)
-            break;
-         if(!select(0,NULL,NULL,NULL,&tv))
-            break;
+      while (Milliseconds > 1000) {
+         Milliseconds -= 1000;
+         ts.tv_sec++;
       }
+      ts.tv_nsec += (long)Milliseconds * 1000000L;
    }
+   if (ts.tv_nsec >= 1000000000) {
+      ts.tv_nsec -= 1000000000;
+      ts.tv_sec++;
+   }
+   while (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &ts, NULL) == EINTR)
+      ;
 #endif
 
    OD_API_EXIT();
