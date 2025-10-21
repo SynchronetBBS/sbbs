@@ -675,12 +675,8 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	CloseHandle(process_info.hThread);
 
 	/* Disable Ctrl-C checking */
-	int sys_status_sav = sys_status;
-	if (!(mode & EX_OFFLINE)) {
+	if (!(mode & EX_OFFLINE))
 		rio_abortable = false;
-		sys_status |= SS_PAUSEOFF;
-		sys_status &= ~SS_PAUSEON;
-	}
 
 	// Executing app in foreground?, monitor
 	retval = STILL_ACTIVE;
@@ -929,9 +925,6 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		attr(LIGHTGRAY);    // Force to "normal"
 
 		rio_abortable = rio_abortable_save;   // Restore abortable state
-		// Restore SS_PAUSEOFF
-		sys_status &= ~(SS_PAUSEOFF | SS_PAUSEON);
-		sys_status |= sys_status_sav & (SS_PAUSEOFF | SS_PAUSEON);
 	}
 
 //	lprintf("%s returned %d",realcmdline, retval);
@@ -1861,13 +1854,9 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	if (strcmp(cmdline, fullcmdline) != 0)
 		lprintf(LOG_DEBUG, "Executing cmd-line: %s", fullcmdline);
 
-	/* Disable Ctrl-C checking and pause */
-	int sys_status_sav = sys_status = sys_status;
-	if (!(mode & EX_OFFLINE)) {
+	/* Disable Ctrl-C checking */
+	if (!(mode & EX_OFFLINE))
 		rio_abortable = false;
-		sys_status |= SS_PAUSEOFF;
-		sys_status &= ~SS_PAUSEON;
-	}
 
 	if (!(mode & EX_NOLOG))
 		close(err_pipe[1]); /* close write-end of pipe */
@@ -2091,9 +2080,6 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		attr(LIGHTGRAY);    // Force to "normal"
 
 		rio_abortable = rio_abortable_save;   // Restore abortable state
-		// Restore SS_PAUSEOFF
-		sys_status &= ~(SS_PAUSEOFF | SS_PAUSEON);
-		sys_status |= sys_status_sav & (SS_PAUSEOFF | SS_PAUSEON);
 	}
 
 	if (!(mode & EX_NOLOG))
