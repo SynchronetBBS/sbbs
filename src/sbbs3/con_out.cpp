@@ -394,9 +394,9 @@ size_t sbbs_t::cp437_out(int ich)
 			return 1;
 		case '\t':	// TAB
 			if (term->column < (term->cols - 1)) {
-                                outchar(' ');
+                                term_out(' ');
                                 while ((term->column < (term->cols - 1)) && (term->column % term->tabstop))
-                                        outchar(' ');
+                                        term_out(' ');
                         }
                         return 1;
 
