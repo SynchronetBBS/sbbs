@@ -918,7 +918,7 @@ ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
       Milliseconds %= 1000;
       ts.tv_nsec = (long)Milliseconds * 1000000L;
    }
-   while (clock_nanosleep(CLOCK_REALTIME, 0, &ts, &ts) == EINTR)
+   while (nanosleep(&ts, &ts) == EINTR)
       ;
 #endif
 
