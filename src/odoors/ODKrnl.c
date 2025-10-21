@@ -1026,11 +1026,12 @@ DWORD OD_THREAD_FUNC ODKrnlRemoteInputThread(void *pParam)
    {
       /* Get next character from the modem, blocking if no character */
       /* is waiting.                                                 */
-      ODComGetByte(hSerialPort, &chReceived, TRUE);
+      if (ODComGetByte(hSerialPort, &chReceived, TRUE) == kODRCSuccess) {
 
-      /* Handle this received character, adding it to the local/remote */
-      /* common input queue, if appropriate.                           */
-      ODKrnlHandleReceivedChar(chReceived, TRUE);
+         /* Handle this received character, adding it to the local/remote */
+         /* common input queue, if appropriate.                           */
+         ODKrnlHandleReceivedChar(chReceived, TRUE);
+      }
    }
 
    return(0);
