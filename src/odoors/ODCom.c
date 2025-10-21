@@ -2833,7 +2833,7 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 			struct pollfd pfd = {0};
 			pfd.fd = pPortInfo->socket;
 			pfd.events = POLLIN | POLLHUP;
-			i = poll(&pfd, 1, 1);
+			i = poll(&pfd, 1, bWait ? INFTIM : 1);
 			if (i == 0)
 				return (kODRCNothingWaiting);
 			else if (i == -1 || !(pfd.revents & POLLIN))
