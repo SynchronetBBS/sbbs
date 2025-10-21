@@ -248,7 +248,7 @@ $(OBJDIR)%$(OBJFILE) : %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 $(LIBDIR)ODoor.res : ODRes.rc
-	$(WINDRES) -O coff -i $< -o $@
+	$(WINDRES) $(WINDRESFLAGS) -O coff -i $< -o $@
 
 ${ODOORS_SHLIB}${LIB_SUFFIX} : ${OBJECTS} | ${LIBDIR}
 	$(CC) $(SHFLAGS) -o ${ODOORS_SHLIB}${LIB_SUFFIX} ${OBJECTS} ${EXTRA_LIBS}
