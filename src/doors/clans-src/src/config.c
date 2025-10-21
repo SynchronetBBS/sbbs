@@ -186,6 +186,7 @@ WriteCfg(void)
 	fputs("\n", f);
 	fputs("# [InterBBSData] ------------------------------------------------------------\n", f);
 	fprintf(f, "%sInterBBS\n", Config.InterBBS ? "" : "#");
+	fprintf(f, "%sBBSID           %d\n", Config.InterBBS ? "" : "#", Config.BBSID);
 	fprintf(f, "%sNetmailDir      %s\n", Config.InterBBS ? "" : "#", Config.szNetmailDir);
 	fprintf(f, "%sInboundDir      %s\n", Config.InterBBS ? "" : "#", Config.szInboundDir);
 	fprintf(f, "%sMailerType      %s\n", Config.InterBBS ? "" : "#", Config.MailerType == MAIL_BINKLEY ? "Binkley" : "Not Binkly");
