@@ -910,20 +910,15 @@ ODAPIDEF void ODCALL od_sleep(tODMilliSec Milliseconds)
    clock_gettime(CLOCK_REALTIME, &ts);
 
    if(Milliseconds==0)  {
-      ts.tv_nsec += 100000;
+      ts.tv_sec = 0;
+      ts.tv_nsec = 100000;
    }
    else  {
-      while (Milliseconds > 1000) {
-         Milliseconds -= 1000;
-         ts.tv_sec++;
-      }
-      ts.tv_nsec += (long)Milliseconds * 1000000L;
+      ts.tv_sec = Milliseconds / 1000;
+      Milliseconds %= 1000;
+      ts.tv_nsec = (long)Milliseconds * 1000000L;
    }
-   if (ts.tv_nsec >= 1000000000) {
-      ts.tv_nsec -= 1000000000;
-      ts.tv_sec++;
-   }
-   while (clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &ts, NULL) == EINTR)
+   while (clock_nanosleep(CLOCK_REALTIME, 0, &ts, &ts) == EINTR)
       ;
 #endif
 
