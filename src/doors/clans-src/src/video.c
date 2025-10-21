@@ -1044,7 +1044,7 @@ static void getxy(int *x, int*y)
 				break;
 		}
 	}
-assert(0);
+
 	*x = 1;
 	*y = 1;
 	return;

@@ -2123,7 +2123,7 @@ tODResult ODComCarrier(tPortHandle hPort, BOOL *pbIsCarrier)
 			i = poll(&pfd, 1, 0);
 			if (i == 0)
 				*pbIsCarrier = TRUE;
-			else if (i == -1 || (pfd.revents & (POLLERR | POLLNVAL | POLLHUP)))
+			else if (i == -1 || !(pfd.revents & POLLIN))
 				*pbIsCarrier = FALSE;
 			else if (recv(pPortInfo->socket,&ch,1,MSG_PEEK)==1)
 				*pbIsCarrier = TRUE;
@@ -2836,7 +2836,7 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 			i = poll(&pfd, 1, 1);
 			if (i == 0)
 				return (kODRCNothingWaiting);
-			else if (i == -1 || (pfd.revents & (POLLERR | POLLNVAL | POLLHUP)))
+			else if (i == -1 || !(pfd.revents & POLLIN))
 				return (kODRCGeneralFailure);
 #endif
 
@@ -3129,7 +3129,7 @@ keep_going:
 			i = poll(&pfd, 1, 1000);
 			if (i == 0)
 				return (kODRCGeneralFailure);
-			else if (i == -1 || (pfd.revents & (POLLERR | POLLNVAL | POLLHUP)))
+			else if (i == -1 || !(pfd.revents & POLLOUT))
 				return (kODRCGeneralFailure);
 #endif
 
