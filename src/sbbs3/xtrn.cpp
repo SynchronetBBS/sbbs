@@ -1121,7 +1121,6 @@ xtrn_waitpid(pid_t wpid, int *status, int options)
 
 	do {
 		ret = waitpid(wpid, status, options);
-		lprintf(LOG_DEBUG, "waitpid(%u, %p, %d) returned %d (%d)", (unsigned)wpid, status, options, ret == -1 ? errno : 0);
 	} while(ret == -1 && errno != EINTR);
 
 	return ret;
