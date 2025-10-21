@@ -675,8 +675,12 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	CloseHandle(process_info.hThread);
 
 	/* Disable Ctrl-C checking */
-	if (!(mode & EX_OFFLINE))
+	int sys_status_sav = sys_status;
+	if (!(mode & EX_OFFLINE)) {
 		rio_abortable = false;
+		sys_status |= SS_PAUSEOFF;
+		sys_status &= ~SS_PAUSEON;
+	}
 
 	// Executing app in foreground?, monitor
 	retval = STILL_ACTIVE;
@@ -925,6 +929,9 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		attr(LIGHTGRAY);    // Force to "normal"
 
 		rio_abortable = rio_abortable_save;   // Restore abortable state
+		// Restore SS_PAUSEOFF
+		sys_status &= ~(SS_PAUSEOFF | SS_PAUSEON);
+		sys_status |= sys_status_sav & (SS_PAUSEOFF | SS_PAUSEON);
 	}
 
 //	lprintf("%s returned %d",realcmdline, retval);
@@ -1106,6 +1113,19 @@ static int forkpty(int *amaster, char *name, termios *termp, winsize *winp)
 	return pid;
 }
 #endif /* NEED_FORKPTY */
+
+static int
+xtrn_waitpid(pid_t wpid, int *status, int options)
+{
+	int ret;
+
+	do {
+		ret = waitpid(wpid, status, options);
+		lprintf(LOG_DEBUG, "waitpid(%u, %p, %d) returned %d (%d)", (unsigned)wpid, status, options, ret == -1 ? errno : 0);
+	} while(ret == -1 && errno != EINTR);
+
+	return ret;
+}
 
 /****************************************************************************/
 /* Runs an external program (on *nix) 										*/
@@ -1842,9 +1862,13 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	if (strcmp(cmdline, fullcmdline) != 0)
 		lprintf(LOG_DEBUG, "Executing cmd-line: %s", fullcmdline);
 
-	/* Disable Ctrl-C checking */
-	if (!(mode & EX_OFFLINE))
+	/* Disable Ctrl-C checking and pause */
+	int sys_status_sav = sys_status = sys_status;
+	if (!(mode & EX_OFFLINE)) {
 		rio_abortable = false;
+		sys_status |= SS_PAUSEOFF;
+		sys_status &= ~SS_PAUSEON;
+	}
 
 	if (!(mode & EX_NOLOG))
 		close(err_pipe[1]); /* close write-end of pipe */
@@ -1860,7 +1884,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		}
 		time_t lastnodechk = 0;
 		while (!terminated) {
-			if (waitpid(pid, &i, WNOHANG) != 0)    /* child exited */
+			if (xtrn_waitpid(pid, &i, WNOHANG) != 0)    /* child exited */
 				break;
 
 			if (mode & EX_CHKTIME)
@@ -1992,23 +2016,23 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 
 		}
 
-		if (waitpid(pid, &i, WNOHANG) == 0)  {     // Child still running?
+		if (xtrn_waitpid(pid, &i, WNOHANG) == 0)  {     // Child still running?
 			kill(pid, SIGHUP);                  // Tell child user has hung up
 			time_t start = time(NULL);            // Wait up to 5 seconds
 			while (time(NULL) - start < 5) {        // for child to terminate
-				if (waitpid(pid, &i, WNOHANG) != 0)
+				if (xtrn_waitpid(pid, &i, WNOHANG) != 0)
 					break;
 				mswait(500);
 			}
-			if (waitpid(pid, &i, WNOHANG) == 0) {  // Child still running?
+			if (xtrn_waitpid(pid, &i, WNOHANG) == 0) {  // Child still running?
 				kill(pid, SIGTERM);             // terminate child process (gracefully)
 				start = time(NULL);               // Wait up to 5 (more) seconds
 				while (time(NULL) - start < 5) {    // for child to terminate
-					if (waitpid(pid, &i, WNOHANG) != 0)
+					if (xtrn_waitpid(pid, &i, WNOHANG) != 0)
 						break;
 					mswait(500);
 				}
-				if (waitpid(pid, &i, WNOHANG) == 0) // Child still running?
+				if (xtrn_waitpid(pid, &i, WNOHANG) == 0) // Child still running?
 					kill(pid, SIGKILL);         // terminate child process (ungracefully)
 			}
 		}
@@ -2018,9 +2042,9 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		close(out_pipe[0]);
 	}
 	if (mode & EX_NOLOG)
-		waitpid(pid, &i, 0);
+		xtrn_waitpid(pid, &i, 0);
 	else {
-		while (waitpid(pid, &i, WNOHANG) == 0)  {
+		while (xtrn_waitpid(pid, &i, WNOHANG) == 0)  {
 			bp = buf;
 			i = 0;
 			while (socket_readable(err_pipe[0], 1000) && (i < XTRN_IO_BUF_LEN - 1))  {
@@ -2068,6 +2092,9 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		attr(LIGHTGRAY);    // Force to "normal"
 
 		rio_abortable = rio_abortable_save;   // Restore abortable state
+		// Restore SS_PAUSEOFF
+		sys_status &= ~(SS_PAUSEOFF | SS_PAUSEON);
+		sys_status |= sys_status_sav & (SS_PAUSEOFF | SS_PAUSEON);
 	}
 
 	if (!(mode & EX_NOLOG))
