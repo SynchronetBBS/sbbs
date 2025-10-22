@@ -357,7 +357,7 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 	char *pszMessageText;
 	tFidoNode DestNode;
 	tFidoNode OrigNode;
-	char szFileNameNoPath[50];
+	char szFileNameNoPath[72];
 
 	if (pszDestNode == NULL) return(eBadParameter);
 	if (pszFileName == NULL) return(eBadParameter);
@@ -548,7 +548,7 @@ tIBResult IBGetFile(tIBInfo *pInfo, char *szAttachFile)
 	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
 	char *pszText;
 	tFidoNode ThisNode;
-	char szFileNameNoPath[50], szTemp[50];
+	char szFileNameNoPath[72], szTemp[72];
 
 	/* If there's no inbounds, we can't succeed */
 	if (Config.NumInboundDirs < 1)
