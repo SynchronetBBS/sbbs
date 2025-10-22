@@ -54,7 +54,7 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 static tBool ReadMessage(char *pszMessageDir, uint32_t lwMessageNum,
 				  tMessageHeader *pHeader, char **ppszText);
 static uint32_t GetNextMSGID(void);
-static void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource);
+void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource);
 static void RidPath(char *pszFileName, char  *pszFileNameNoPath, size_t sz);
 
 static tBool DirExists(const char *pszDirName)
@@ -316,7 +316,7 @@ static tIBResult ValidateInfoStruct(tIBInfo *pInfo)
 	return(eSuccess);
 }
 
-static void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource)
+void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource)
 {
 	uint16_t zone = 0, net = 0, node = 0, pt = 0;
 

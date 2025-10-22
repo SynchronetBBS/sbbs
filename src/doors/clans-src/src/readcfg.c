@@ -1,7 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef __unix__
+# include <share.h>
+#endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include "k_config.h"
 #include "parsing.h"

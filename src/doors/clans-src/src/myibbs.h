@@ -3,6 +3,7 @@
 
 #include "interbbs.h"
 
+void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource);
 tIBResult IBGetFile(tIBInfo *pInfo, char *szAttachFile);
 
 #endif
