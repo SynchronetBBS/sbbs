@@ -58,15 +58,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 static char o_fg4 = 7, o_bg4 = 0;
 
+#ifdef __MSDOS__
+static void set_attrs(uint8_t attrib);
+static void getxy(int *x, int*y);
+#endif
+
 #ifdef _WIN32
 static int default_cursor_size = 1;
 static HANDLE std_handle;
 static HANDLE buf_handle;
+static void set_attrs(uint8_t attrib);
+static void clans_putch(unsigned char ch);
+uint8_t cur_attr;
+static void getxy(int *x, int*y);
 #endif
 
 #ifdef __unix__
 static void set_attrs(uint8_t attrib);
-static void putch(unsigned char ch);
+static void clans_putch(unsigned char ch);
 static void getxy(int *x, int*y);
 static int getch(void);
 static short ansi_colours(short color);
@@ -175,28 +184,10 @@ void put_character(char ch, short attrib, int x, int y)
 #ifdef __MSDOS__
 	Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1))] = ch;
 	Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1) + 1L)] = (char)(attrib & 0xff);
-#elif defined(_WIN32)
-	COORD cursor_pos;
-	DWORD bytes_written;
-
-	cursor_pos.X = x;
-	cursor_pos.Y = y;
-
-	SetConsoleCursorPosition(
-		std_handle, cursor_pos);
-	SetConsoleTextAttribute(
-		std_handle,
-		(uint16_t)attrib);
-	WriteConsole(
-		std_handle,
-		&ch,
-		1,
-		&bytes_written,
-		NULL);
-#elif defined(__unix__)
+#else
 	gotoxy(x + 1, y + 1);
 	set_attrs(attrib);
-	putch(ch);
+	clans_putch(ch);
 #endif
 }
 
@@ -228,11 +219,15 @@ void zputs(char *string)
 	getxy(&x, &y);
 	fputs("\x1b[255B\x1b[255C", stdout);
 	getxy(&scr_width, &scr_lines);
+	scr_width++;
+	scr_lines++;
 	gotoxy(x, y);
 #else
 	gettextinfo(&TextInfo);
 	x = TextInfo.curx-1;
 	y = TextInfo.cury-1;
+	scr_lines = TextInfo.screenheight;
+	scr_lines = TextInfo.screenwidth;
 #endif
 
 	cur_attrs = o_fg | o_bg;
@@ -240,14 +235,7 @@ void zputs(char *string)
 
 	for (;;) {
 #ifdef _WIN32
-		COORD cursor_pos;
-		/* Resync with x/y position */
-		cursor_pos.X = x;
-		cursor_pos.Y = y;
-		SetConsoleCursorPosition(std_handle, cursor_pos);
-#elif defined(__unix__)
-		/* Resync with x/y position */
-		gotoxy(x + 1, y + 1);
+		gotoxy(x, y);
 #endif
 		if (y >= scr_lines) {
 			/* scroll line up */
@@ -257,13 +245,15 @@ void zputs(char *string)
 		if (string[cur_char] == 0)
 			break;
 		if (string[cur_char] == '\b') {
-			x--;
+			if (x)
+				x--;
 			cur_char++;
 			continue;
 		}
 		if (string[cur_char] == '\r') {
 			x = 0;
 			cur_char++;
+			gotoxy(x + 1, y + 1);
 			continue;
 		}
 		if (x == scr_width) {
@@ -354,12 +344,10 @@ void SetCurs(int16_t CursType)
 	CONSOLE_CURSOR_INFO cursor_info;
 	cursor_info.bVisible = true;
 	switch (CursType) {
-		case CURS_NORMAL:
-			cursor_info.dwSize = default_cursor_size;
-			break;
 		case CURS_FAT:
 			cursor_info.dwSize = 75;
 			break;
+		case CURS_NORMAL:
 		default:
 			cursor_info.dwSize = default_cursor_size;
 	}
@@ -367,13 +355,20 @@ void SetCurs(int16_t CursType)
 		std_handle,
 		&cursor_info);
 #elif defined(__unix__)
-	// TODO: No way to set the cursor between the three sizes?
+	switch (CursType) {
+		case CURS_FAT:
+			fputs("\x1b[0 q", stdout);
+			break;
+		case CURS_NORMAL:
+		default:
+			fputs("\x1b[3 q", stdout);
+			break;
+	}
 #endif
 }
 
 void qputs(char *string, int16_t x, int16_t y)
 {
-// As usual, block off the local stuff
 #if defined(_WIN32) || defined(__unix__)
 	gotoxy(x+1, y+1);
 	zputs(string);
@@ -450,72 +445,7 @@ void qputs(char *string, int16_t x, int16_t y)
 
 static void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t length, int16_t input_length)
 {
-#ifdef __unix__
-	uint8_t orig_attr = cur_attr;
-
-	gotoxy(x+1, y+1);
-	set_attrs(color);
-	for (char *i = string; *i; i++)
-		putch(*i);
-	set_attrs(8);
-	for (int i = length; i < input_length; i++)
-		putch(PADDING);
-	set_attrs(orig_attr);
-#elif defined(_WIN32)
-	COORD cursor_pos;
-	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
-	uint16_t current_attr, i;
-	DWORD bytes_written;
-	TCHAR padding_char = (TCHAR)PADDING;
-
-	/* Save Current Color Attribute */
-	GetConsoleScreenBufferInfo(
-		std_handle,
-		&screen_buffer);
-
-	current_attr = screen_buffer.wAttributes;
-
-	/* Set New Cursor Position (based on x, y) */
-	cursor_pos.X = x;
-	cursor_pos.Y = y;
-
-	SetConsoleCursorPosition(
-		std_handle,
-		cursor_pos);
-
-	/* Set new color */
-	SetConsoleTextAttribute(
-		std_handle,
-		(uint16_t) color);
-
-	/* Output Text */
-	WriteConsole(
-		std_handle,
-		string,
-		strlen(string),
-		&bytes_written,
-		NULL);
-
-	/* Set color for padding */
-	SetConsoleTextAttribute(
-		std_handle,
-		(uint16_t) 8);
-
-	/* Display Padding */
-	for (i = length; i < input_length; i++) {
-		WriteConsole(
-			std_handle,
-			&padding_char,
-			1,
-			&bytes_written,
-			NULL);
-	}
-
-	/* Reset color */
-	SetConsoleTextAttribute(
-		std_handle,
-		current_attr);
-#else
+#ifdef __MSDOS__
 	int16_t i, offset;
 	char *pString;
 
@@ -534,6 +464,17 @@ static void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t len
 		Video.VideoMem[ offset+1 ] = 8;
 		offset+=2;
 	}
+#else
+	uint8_t orig_attr = cur_attr;
+
+	gotoxy(x+1, y+1);
+	set_attrs(color);
+	for (char *i = string; *i; i++)
+		clans_putch(*i);
+	set_attrs(8);
+	for (int i = length; i < input_length; i++)
+		clans_putch(PADDING);
+	set_attrs(orig_attr);
 #endif
 }
 
@@ -556,15 +497,7 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 	// initialize the string here
 
 	SetCurs(insert);
-#ifdef __MSDOS__
-	textattr(attr);
-#elif defined(__unix__)
 	set_attrs(attr);
-#elif defined(_WIN32)
-	SetConsoleTextAttribute(
-		std_handle,
-		(uint16_t)attr);
-#endif
 
 	o_fg4 = attr&0x00FF;
 	o_bg4 = (attr&0xFF00) >> 8;
@@ -575,7 +508,7 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 	o_fg4 = 8;
 
 	for (i = length; i < input_length; i++)
-		putch(PADDING);
+		clans_putch(PADDING);
 
 	o_fg4 = old_fg4;
 
@@ -706,19 +639,7 @@ void Input(char *string, int16_t length)
 {
 	int cur_x, cur_y;
 
-#ifdef __MSDOS__
-	cur_x = wherex()-1;
-	cur_y = wherey()-1;
-#elif defined(__unix__)
 	getxy(&cur_x, &cur_y);
-#elif defined(_WIN32)
-	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
-	GetConsoleScreenBufferInfo(
-		std_handle,
-		&screen_buffer);
-	cur_x = screen_buffer.dwCursorPosition.X;
-	cur_y = screen_buffer.dwCursorPosition.Y;
-#endif
 
 	LongInput(string, cur_x, cur_y, length, 15, 2, 255);
 	zputs("\n");
@@ -727,7 +648,7 @@ void Input(char *string, int16_t length)
 }
 
 
-void ClearArea(char x1, char y1,  char x2, char y2, char attr)
+void ClearArea(int x1, int y1,  int x2, int y2, int attr)
 {
 #if !defined(__unix__) && !defined(_WIN32)
 	asm {
@@ -758,6 +679,17 @@ void ClearArea(char x1, char y1,  char x2, char y2, char attr)
 			fputs("\x1b[K", stdout);
 		}
 	}
+#elif defined(_WIN32)
+	int len = x2 - x1 + 1;
+	DWORD written = 0;
+	COORD pos = {
+		.X = x1,
+	};
+
+	for (; y1 <= y2; y1++) {
+		FillConsoleOutputCharacter(std_handle, ' ', len, pos, &written);
+		FillConsoleOutputAttribute(std_handle, attr, len, pos, &written);
+	}
 #endif
 }
 
@@ -776,27 +708,10 @@ void xputs(char *string, int16_t x, int16_t y)
 		x++;
 		string++;
 	}
-#elif defined(__unix__)
+#else
 	gotoxy(x + 1, y + 1);
 	for (char *i = string; *i; i++)
-		putch(*i);
-#elif defined(_WIN32)
-	COORD cursor_pos;
-	DWORD bytes_written;
-
-	cursor_pos.X = x;
-	cursor_pos.Y = y;
-
-	SetConsoleCursorPosition(
-		std_handle,
-		cursor_pos);
-
-	WriteConsole(
-		std_handle,
-		string,
-		strlen(string),
-		&bytes_written,
-		NULL);
+		clans_putch(*i);
 #endif
 }
 
@@ -872,7 +787,20 @@ void Video_Close(void)
 #endif
 }
 
-#ifdef _WIN32
+#ifdef __MSDOS__
+static void set_attrs(uint8_t attrib)
+{
+	textattr(attrib);
+}
+
+static void getxy(int *x, int*y)
+{
+	if (x)
+		*x = wherex()-1;
+	if (y)
+		*y = wherey()-1;
+}
+#elif defined(_WIN32)
 void gotoxy(int x, int y)
 {
 	COORD cursor_pos;
@@ -907,9 +835,36 @@ void clrscr(void)
 		top_left,
 		&cells_written);
 
-	SetConsoleCursorPosition(
+	gotoxy(0, 0);
+}
+
+static void set_attrs(uint8_t attrib)
+{
+	SetConsoleTextAttribute(std_handle, (uint16_t)attrib);
+}
+
+static void clans_putch(unsigned char ch)
+{
+	DWORD bytes_written;
+
+	WriteConsole(
 		std_handle,
-		top_left);
+		&ch,
+		1,
+		&bytes_written,
+		NULL);
+}
+
+static void getxy(int *x, int*y)
+{
+	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
+	GetConsoleScreenBufferInfo(
+		std_handle,
+		&screen_buffer);
+	if (x)
+		*x = screen_buffer.dwCursorPosition.X;
+	if (y)
+		*y = screen_buffer.dwCursorPosition.Y;
 }
 #elif defined(__unix__)
 void gotoxy(int x, int y)
@@ -953,7 +908,7 @@ const static char *cp437_unicode_table[128] = {
 	"\xc2\xb0", "\xe2\x88\x99", "\xc2\xb7", "\xe2\x88\x9a", "\xe2\x81\xbf", "\xc2\xb2", "\xe2\x96\xa0", "\xc2\xa0"
 };
 
-static void putch(unsigned char ch)
+static void clans_putch(unsigned char ch)
 {
 	if (ch > 127)
 		fputs(cp437_unicode_table[ch - 128], stdout);
