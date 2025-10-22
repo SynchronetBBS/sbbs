@@ -1721,12 +1721,6 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 {
 	FILE *fp;
 	struct game_data Game_Data;
-#ifndef _WIN32
-	struct tm t;
-#else
-	SYSTEMTIME system_time;
-#endif
-	char szString[128];
 
 	// Delete unwanted files here
 	unlink("clans.msj");
