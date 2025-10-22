@@ -15,7 +15,6 @@ void System_Error(char *szErrorMsg);
 
 void AddInboundDir(const char *dir)
 {
-	int16_t add = Config.NumInboundDirs;
 	char **new = realloc(Config.szInboundDirs, sizeof(Config.szInboundDirs[0]) * (Config.NumInboundDirs + 1));
 	size_t dirlen = strlen(dir);
 	bool addSlash = false;
@@ -29,6 +28,7 @@ void AddInboundDir(const char *dir)
 	if (addSlash)
 		Config.szInboundDirs[Config.NumInboundDirs][dirlen++] = '/';
 	Config.szInboundDirs[Config.NumInboundDirs][dirlen] = 0;
+	Config.NumInboundDirs++;
 }
 
 bool Config_Init(int16_t Node, struct NodeData *(*getNodeData)(int))
