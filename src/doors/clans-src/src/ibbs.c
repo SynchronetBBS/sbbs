@@ -232,7 +232,6 @@ void LeagueKillUser(struct UserInfo *User)
 		return;
 
 	// for each BBS in the list, send him a packet
-	// must skip BBS #1 since that's this BBS (main BBS)
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
 		if (IBBS.Data->Nodes[CurBBS].Active == false)
 			continue;
