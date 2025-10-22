@@ -226,6 +226,9 @@ void zputs(char *string)
 	scr_width = screen_buffer.dwSize.X;
 #elif defined(__unix__)
 	getxy(&x, &y);
+	fputs("\x1b[255B\x1b[255C", stdout);
+	getxy(&scr_width, &scr_lines);
+	gotoxy(x, y);
 #else
 	gettextinfo(&TextInfo);
 	x = TextInfo.curx-1;
@@ -246,7 +249,7 @@ void zputs(char *string)
 		/* Resync with x/y position */
 		gotoxy(x + 1, y + 1);
 #endif
-		if (y == scr_lines) {
+		if (y >= scr_lines) {
 			/* scroll line up */
 			ScrollUp();
 			y = scr_lines - 1;
@@ -267,7 +270,7 @@ void zputs(char *string)
 			x = 0;
 			y++;
 
-			if (y == scr_lines) {
+			if (y >= scr_lines) {
 				/* scroll line up */
 				ScrollUp();
 				y = scr_lines - 1;
@@ -303,7 +306,7 @@ void zputs(char *string)
 		}
 		else if (string[cur_char] == '\n')  {
 			y++;
-			if (y == scr_lines) {
+			if (y >= scr_lines) {
 				/* scroll line up */
 				ScrollUp();
 				y = scr_lines - 1;
