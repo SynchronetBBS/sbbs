@@ -148,7 +148,7 @@ NNTPClient.prototype.GetNewsgroups = function(pTimeoutOverride)
 		succeeded: false,
 		responseLine: "",
 		newsgroupArray: []
-	}
+	};
 
 	var LINE_FEED = "\x0a";
 	//var numBytesSent = this.socket.send("LIST" + LINE_FEED);
@@ -220,7 +220,7 @@ NNTPClient.prototype.GetNewNewsgroups = function(pDate, pTime, pIsGMT, pTimeoutO
 		succeeded: false,
 		responseLine: "",
 		newsgroupArray: []
-	}
+	};
 
 	const isGMT = (typeof(pIsGMT) === "boolean" ? pIsGMT : false);
 
@@ -342,7 +342,7 @@ NNTPClient.prototype.SelectNewsgroup = function(pNewsgroupName)
 		estNumArticles: 0,
 		firstArticleNum: -1,
 		lastArticleNum: -1
-	}
+	};
 
 	if (this.socket.sendline("GROUP " + pNewsgroupName))
 	{
@@ -758,7 +758,7 @@ NNTPClient.prototype.Help = function(pTimeoutOverride)
 		succeeded: false,
 		responseLine: "",
 		helpLines: []
-	}
+	};
 
 	var LINE_FEED = "\x0a";
 	//var numBytesSent = this.socket.send("LIST" + LINE_FEED);
