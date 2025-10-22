@@ -606,11 +606,7 @@ void System_Init(void)
  * Initializes whole system.
  */
 {
-#ifndef _WIN32
-	struct date date;
-#else
 	SYSTEMTIME system_time;
-#endif
 	int16_t iTemp;
 #ifdef __unix__
 	char *pszResolvedPath;
@@ -649,13 +645,8 @@ void System_Init(void)
 	// get_os();
 
 	// initialize date
-#ifndef _WIN32
-	clans_getdate(&date);
-	snprintf(System.szTodaysDate, sizeof(System.szTodaysDate), "%02d/%02d/%4d", date.da_mon, date.da_day, date.da_year);
-#else
 	GetSystemTime(&system_time);
 	snprintf(System.szTodaysDate, sizeof(System.szTodaysDate), "%02d/%02d/%4d", system_time.wMonth, system_time.wDay, system_time.wYear);
-#endif
 
 #ifndef _WIN32
 	randomize();

@@ -169,11 +169,7 @@ static void do_endwin(void)
 
 int main(void)
 {
-#ifndef _WIN32
-	struct date thedate;
-#else
 	SYSTEMTIME system_time;
-#endif
 
 #ifndef USE_STDIO
 	Video_Init();
@@ -185,14 +181,9 @@ int main(void)
 #endif
 
 	// initialize date
-#ifndef _WIN32
-	clans_getdate(&thedate);
-	snprintf(szTodaysDate, sizeof(szTodaysDate), "%02d/%02d/%4d", thedate.da_mon, thedate.da_day, thedate.da_year);
-#else
 	GetSystemTime(&system_time);
 	snprintf(szTodaysDate, sizeof(szTodaysDate), "%02d/%02d/%4d", system_time.wMonth, system_time.wDay,
 			system_time.wYear);
-#endif
 
 	// load up config
 
@@ -1817,6 +1808,15 @@ static void Config_Init(void)
 
 }
 
+static void
+GenerateGameID(char *ptr, size_t sz)
+{
+	SYSTEMTIME st;
+
+	GetSystemTime(&st);
+	snprintf(ptr, sz, "%04d%02d%02d%02d%02d%02d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+}
+
 static void GoReset(struct ResetData *ResetData, int16_t Option)
 {
 	FILE *fp;
@@ -1885,17 +1885,7 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 		Game_Data.GameState = 2;
 		Game_Data.InterBBS = true;
 
-		/* find out date and time for GameId */
-		// initialize date
-#ifndef _WIN32
-		gettime(&t);
-		snprintf(szString, sizeof(szString), "%02d:%02d:%02d.%02d", t.tm_hour, t.tm_min, t.tm_sec, 0);
-#else
-		GetSystemTime(&system_time);
-		snprintf(szString, sizeof(szString), "%02d:%02d:%02d.%02d", system_time.wHour,
-				system_time.wMinute, system_time.wSecond, 0);
-#endif
-		strlcpy(Game_Data.GameID, szString, sizeof(Game_Data.GameID));
+		GenerateGameID(Game_Data.GameID, sizeof(Game_Data.GameID));
 
 		strlcpy(Game_Data.szTodaysDate, szTodaysDate, sizeof(Game_Data.szTodaysDate));
 		strlcpy(Game_Data.szDateGameStart, ResetData->szDateGameStart, sizeof(Game_Data.szDateGameStart));
@@ -1930,16 +1920,7 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 		Game_Data.GameState = 1;
 		Game_Data.InterBBS = true;
 
-		/* find out date and time for GameId */
-#ifndef _WIN32
-		gettime(&t);
-		snprintf(szString, sizeof(szString), "%02d:%02d:%02d.%02d", t.tm_hour, t.tm_min, t.tm_sec, 0);
-#else
-		GetSystemTime(&system_time);
-		snprintf(szString, sizeof(szString), "%02d:%02d:%02d.%02d", system_time.wHour,
-				system_time.wMinute, system_time.wSecond, 0);
-#endif
-		strlcpy(Game_Data.GameID, szString, sizeof(Game_Data.GameID));
+		GenerateGameID(Game_Data.GameID, sizeof(Game_Data.GameID));
 
 		strlcpy(Game_Data.szTodaysDate, szTodaysDate, sizeof(Game_Data.szTodaysDate));
 		strlcpy(Game_Data.szDateGameStart, ResetData->szDateGameStart, sizeof(Game_Data.szDateGameStart));
