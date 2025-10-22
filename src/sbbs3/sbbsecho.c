@@ -804,7 +804,7 @@ int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_out
 	if (IS_ALPHA(infile[0]) && infile[1] == ':') // Ignore "C:" prefix
 		infile += 2;
 #endif
-	SAFECOPY(attachment, infile + strlen(prefix));
+	SAFECOPY(attachment, infile);
 	REPLACE_CHARS(attachment, '\\', '/', p);
 	if (!fexistcase(attachment)) { /* just in-case it's the wrong case for a Unix file system */
 		lprintf(LOG_ERR, "ERROR line %u, attachment file not found: %s", __LINE__, attachment);
