@@ -773,25 +773,44 @@ int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_out
 	if (flo_filename == NULL)
 		return -2;
 
-	if (*infile == '^')  /* work-around for BRE/FE inter-BBS attachment bug */
-		infile++;
+	const char* prefix = "";
+	switch (*infile) {
+		case '#':
+			prefix = "#";
+			break;
+
+		case '^':
+		case '-':
+			prefix = "^";
+			break;
+
+		case '~':
+		case '!':
+			prefix = "~";
+			break;
+
+		default:
+		case '@':
+			break;
+	}
 
 #ifdef __unix__
 	if (IS_ALPHA(infile[0]) && infile[1] == ':') // Ignore "C:" prefix
 		infile += 2;
 #endif
-	SAFECOPY(attachment, infile);
+	SAFECOPY(attachment, infile + strlen(prefix));
 	REPLACE_CHARS(attachment, '\\', '/', p);
 	if (!fexistcase(attachment)) { /* just in-case it's the wrong case for a Unix file system */
 		lprintf(LOG_ERR, "ERROR line %u, attachment file not found: %s", __LINE__, attachment);
 		return -1;
 	}
-	char* prefix = "";
-	if (bundle) {
-		prefix = (cfg.trunc_bundles) ? "#" : "^";
-	} else {
-		if (del_file)
-			prefix = "^";
+	if (prefix[0] == 0) {
+		if (bundle) {
+			prefix = (cfg.trunc_bundles) ? "#" : "^";
+		} else {
+			if (del_file)
+				prefix = "^";
+		}
 	}
 	SAFEPRINTF2(searchstr, "%s%s", prefix, attachment);
 	if (findstr(searchstr, flo_filename)) /* file already in FLO file */
