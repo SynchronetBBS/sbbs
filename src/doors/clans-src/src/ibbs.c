@@ -3038,6 +3038,68 @@ static bool GetNextFile(char *szWildcard, char *szFileName, size_t sz)
 	return NoMoreFiles;
 }
 
+static void DeleteMessageWithFile(const char *pszFileName, tIBInfo *InterBBSInfo)
+{
+	char wildcard[PATH_SIZE];
+	struct ffblk ffblks;
+	bool Done;
+	tFidoNode ThisNode;
+
+	ConvertStringToAddress(&ThisNode, InterBBSInfo->szThisNodeAddress);
+
+	// Go through all *.msg files in the netmail directory.
+	snprintf(wildcard, sizeof(wildcard), "%s/*.msg", InterBBSInfo->szNetmailDir);
+
+	Done = findfirst(wildcard, &ffblks, 0);
+	while (!Done) {
+		char fname[PATH_SIZE];
+		char hdrbuf[BUF_SIZE_MessageHeader];
+		FILE *f;
+		bool KillFile = false;
+
+		snprintf(fname, sizeof(fname), "%s/%s", InterBBSInfo->szNetmailDir, ffblks.ff_name);
+		f = fopen(fname, "rb");
+
+		if (f) {
+			if (fread(hdrbuf, sizeof(hdrbuf), 1, f) == 1) {
+				// Check if it's to us
+				struct MessageHeader hdr;
+
+				s_MessageHeader_d(hdrbuf, sizeof(hdrbuf), &hdr);
+				if (ThisNode.wZone == hdr.wDestZone
+				    && ThisNode.wNet == hdr.wDestNet
+				    && ThisNode.wNode == hdr.wDestNode
+				    && ThisNode.wPoint == hdr.wDestPoint
+				    && strcmp(InterBBSInfo->szProgName, hdr.szToUserName) == 0) {
+					// Then see if the file is attached
+					const char *pktfname = hdr.szSubject;
+					switch (*pktfname) {
+						case '#':
+						case '^':
+						case '-':
+						case '~':
+						case '!':
+						case '@':
+							pktfname++;
+					}
+					// If so, delete the *.msg file
+					if (strcmp(pktfname, pszFileName) == 0)
+						KillFile = true;
+				}
+			}
+			fclose(f);
+			if (KillFile) {
+				char msg[256];
+				snprintf(msg, sizeof(msg), "|08* |07Deleting %s from netmail directory", ffblks.ff_name);
+				DisplayStr(msg);
+				unlink(fname);
+			}
+		}
+
+		Done = findnext(&ffblks);
+	}
+}
+
 void IBBS_PacketIn(void)
 {
 	tIBInfo InterBBSInfo;
@@ -3116,6 +3178,8 @@ void IBBS_PacketIn(void)
 			else {
 				/* delete it */
 				unlink(szFileName);
+				/* And try to delete *.msg files that had it attached */
+				DeleteMessageWithFile(szFileName, &InterBBSInfo);
 			}
 
 			if (System.LocalIBBS) {
