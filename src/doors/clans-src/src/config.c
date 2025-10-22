@@ -181,7 +181,7 @@ WriteCfg(void)
 	fprintf(f, "%sBBSID           %d\n", Config.InterBBS ? "" : "#", Config.BBSID);
 	fprintf(f, "%sNetmailDir      %s\n", Config.InterBBS ? "" : "#", Config.szNetmailDir);
 	fprintf(f, "%sInboundDir      %s\n", Config.InterBBS ? "" : "#", Config.szInboundDirs[0]);
-	fprintf(f, "%sMailerType      %s\n", Config.InterBBS ? "" : "#", Config.MailerType == MAIL_BINKLEY ? "Binkley" : "Not Binkly");
+	fprintf(f, "%sMailerType      %s\n", Config.InterBBS ? "" : "#", Config.MailerType == MAIL_BINKLEY ? "Binkley" : "Not Binkley");
 	for (struct NodeData *nd = nodes; nd && nd->number > 0; nd++) {
 		fputs("\n", f);
 		fputs("# [NodeData] ----------------------------------------------------------------\n", f);
