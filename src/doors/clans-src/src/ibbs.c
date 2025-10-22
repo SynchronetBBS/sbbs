@@ -3006,7 +3006,7 @@ static int16_t IBBS_ProcessPacket(char *szFileName)
 // ------------------------------------------------------------------------- //
 
 // returns true (I think) if no more files
-static bool GetNextFile(char *szWildcard, char *szFileName)
+static bool GetNextFile(char *szWildcard, char *szFileName, size_t sz)
 {
 	struct ffblk ffblks;
 	uint16_t date = 65534, time = 65534;
@@ -3028,7 +3028,7 @@ static bool GetNextFile(char *szWildcard, char *szFileName)
 				//printf("found file %s\n", ffblks.ff_name);
 				date = ffblks.ff_fdate;
 				time = ffblks.ff_ftime;
-				strlcpy(szFileName, ffblks.ff_name, sizeof(szFileName));
+				strlcpy(szFileName, ffblks.ff_name, sz);
 				NoMoreFiles = false;
 			}
 		}
@@ -3094,7 +3094,7 @@ void IBBS_PacketIn(void)
 		}
 		else {
 			//Done = findfirst(szPacketName, &ffblk, 0);
-			Done = GetNextFile(szPacketName, szFileName2);
+			Done = GetNextFile(szPacketName, szFileName2, sizeof(szFileName2));
 		}
 
 		/* keep calling till no more messages to read */
@@ -3124,7 +3124,7 @@ void IBBS_PacketIn(void)
 			}
 			else
 				// Done = findnext(&ffblk);
-				Done = GetNextFile(szPacketName, szFileName2);
+				Done = GetNextFile(szPacketName, szFileName2, sizeof(szFileName2));
 		}
 	}
 
@@ -3145,7 +3145,7 @@ void IBBS_PacketIn(void)
 			strlcpy(szFileName, Config.szInboundDirs[nInbound], sizeof(szFileName));
 			strlcat(szFileName, szFileName2, sizeof(szFileName));
 
-			while (!GetNextFile(szFileName,szFileName2))  {
+			while (!GetNextFile(szFileName,szFileName2, sizeof(szFileName2)))  {
 				fp = _fsopen(szFileName, "r", SH_DENYWR);
 				if (fp) {
 					DisplayStr("|08- |07new world.ndx found.\n");
