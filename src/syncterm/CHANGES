@@ -5,6 +5,7 @@ Support web-based main dialing directory
 Allow specifying terminal type for each entry
 Fix RIP popups using current font
 Have |# flush RIP immediately
+Add support for DECSCUSR
 
 Version 1.7
 --------------

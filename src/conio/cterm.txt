@@ -1249,6 +1249,17 @@ CSI ? Ps [ ; Pn ] n (DECDSR)
 
 	SOURCE: VT420
 
+CSI Ps SP q (DECSCUSR)
+	Set cursor style
+	Defaults: 1
+
+	When Ps is 2, sets steady block
+	When Ps is 3, sets blinking underline
+	When Ps is 4, sets steady underline
+	When Ps is anything else, sets blinking block
+
+	SOURCE: VT520
+
 CSI Pn1 ; Pn2 r (DECSTBM)
 	NON-STANDARD EXTENSION.
 	Set Top and Bottom Margins

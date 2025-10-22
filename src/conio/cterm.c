@@ -3527,6 +3527,55 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					 * END OF STANDARD CONTROL FUNCTIONS
 					 * AFTER THIS IS ALL PRIVATE EXTENSIONS
 					 */
+					else if (strcmp(seq->ctrl_func, " q") == 0) {
+						int s, e, r, b, v;
+						seq_default(seq, 0, 1);
+						switch (seq->param_int[0]) {
+							case 0:	// Blinking block
+							case 1:	// Blinking block
+							default:
+								cterm->cursor = _SOLIDCURSOR;
+								_setcursortype(_SOLIDCURSOR);
+								if (cio_api.options & CONIO_OPT_CUSTOM_CURSOR) {
+									getcustomcursor(&s, &e, &r, &b, &v);
+									b = true;
+									v = true;
+									setcustomcursor(s, e, r, b, v);
+								}
+								break;
+							case 2: // Steady block
+								cterm->cursor = _SOLIDCURSOR;
+								_setcursortype(_SOLIDCURSOR);
+								if (cio_api.options & CONIO_OPT_CUSTOM_CURSOR) {
+									getcustomcursor(&s, &e, &r, &b, &v);
+									b = false;
+									v = true;
+									setcustomcursor(s, e, r, b, v);
+								}
+								break;
+							case 3: // Blinking underline
+								cterm->cursor = _NORMALCURSOR;
+								_setcursortype(_NORMALCURSOR);
+								if (cio_api.options & CONIO_OPT_CUSTOM_CURSOR) {
+									getcustomcursor(&s, &e, &r, &b, &v);
+									b = true;
+									v = true;
+									setcustomcursor(s, e, r, b, v);
+								}
+								break;
+							case 4: // Steady underline
+								cterm->cursor = _NORMALCURSOR;
+								_setcursortype(_NORMALCURSOR);
+								if (cio_api.options & CONIO_OPT_CUSTOM_CURSOR) {
+									getcustomcursor(&s, &e, &r, &b, &v);
+									b = false;
+									v = true;
+									setcustomcursor(s, e, r, b, v);
+								}
+								break;
+							// Note XTerm has 5 and 6 as extensions.
+						}
+					}
 					// Tab report
 					else if (strcmp(seq->ctrl_func, "$w") == 0) {
 						seq_default(seq, 0, 0);
@@ -4767,7 +4816,7 @@ cterm_reset(struct cterminal *cterm)
 
 struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
 {
-	char	*revision="$Revision: 1.323 $";
+	char	*revision="$Revision: 1.324 $";
 	char *in;
 	char	*out;
 	struct cterminal *cterm;

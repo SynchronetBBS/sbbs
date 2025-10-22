@@ -22,7 +22,7 @@ void Video_Close(void);
 
 void Input(char *string, int16_t length);
 
-void ClearArea(char x1, char y1,  char x2, char y2, char attr);
+void ClearArea(int x1, int y1,  int x2, int y2, int attr);
 void xputs(char *string, int16_t x, int16_t y);
 
 int32_t Video_VideoType(void);

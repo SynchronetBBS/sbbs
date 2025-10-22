@@ -1634,6 +1634,33 @@ Where xxxx is the hex checksum.
 
 SOURCE: <<VT420>>
 
+=== `CSI Ps SP q` Set Cursor Style (`DECSCUSR`)
+Defaults: `Ps` = 1
+Sets the cursor style
+
+[%autowidth]
+|===
+|Ps|Result
+
+|0
+|Blinking block
+
+|1
+|Blinking block
+
+|2
+|Steady block
+
+|3
+|Blinking underline
+
+|4
+|Steady underline
+
+|===
+
+SOURCE: <<VT520>>
+
 === `CSI Pn1 ; Pn2 r` Set Top and Bottom Margins (`DECSTBM`)
 Defaults: `Pn1` = 1  `Pn2` = last line on screen +
 Selects top and bottom margins, defining the scrolling region. `Pn1` is
@@ -2606,3 +2633,4 @@ for people who want to maintain compatibility.
 * [[VT420]]https://vt100.net/docs/vt420-uu/[[VT420\]] Digital. Installing and Using the VT420 Video Terminal. June 1990.
 * [[ANSISYS]]https://en.wikipedia.org/wiki/ANSI.SYS[[ANSISYS\]] Wikipedia. ANSI.SYS.
 * [[ECMA-35]]https://ecma-international.org/wp-content/uploads/ECMA-35_6th_edition_december_1994.pdf[[ECMA-35\]] ECMA. Character Code Structure and Extension Techniques. December 1994
+* [[VT520]]https://vt100.net/dec/ek-vt520-rm.pdf[[VT520\]] Digital. VT520/VT525 Video Terminal Programmer Information. July 1994.
