@@ -777,20 +777,26 @@ int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_out
 	switch (*infile) {
 		case '#':
 			prefix = "#";
+			infile++;
 			break;
 
 		case '^':
 		case '-':
 			prefix = "^";
+			infile++;
 			break;
 
 		case '~':
 		case '!':
 			prefix = "~";
+			infile++;
+			break;
+
+		case '@':
+			infile++;
 			break;
 
 		default:
-		case '@':
 			break;
 	}
 
