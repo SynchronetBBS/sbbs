@@ -1917,7 +1917,7 @@ void bitmap_setcustomcursor(int s, int e, int r, int b, int v)
 
 	assert_rwlock_wrlock(&vstatlock);
 	if(r==0)
-		ratio=0;
+		ratio=1;
 	else
 		ratio=vstat.charheight/r;
 	if(s>=0)
