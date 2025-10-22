@@ -29,6 +29,7 @@
 
 #include "interbbs.h"
 #include "myibbs.h"
+#include "readcfg.h"
 #include "structs.h"
 #include "system.h"
 #include "video.h"
@@ -384,7 +385,7 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 //   RidPath(pszFileName, szFileNameNoPath);
 	strlcpy(szFileNameNoPath, pszFileName, sizeof(szFileNameNoPath));
 
-	if (Config->MailerType == MAIL_BINKLEY) {
+	if (Config.MailerType == MAIL_BINKLEY) {
 		MessageHeader.szSubject[0] = '^';    /* delete file when sent */
 		strlcpy(&MessageHeader.szSubject[1], szFileNameNoPath, sizeof(MessageHeader.szSubject) - 1);
 	}
@@ -488,7 +489,7 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 	/* Determine total size of message text */
 	nTextSize = nKludgeSize + 1;
 
-	if (Config->MailerType != MAIL_BINKLEY)
+	if (Config.MailerType != MAIL_BINKLEY)
 		nTextSize += (strlen("FLAGS KFS")+1);
 
 	/* Attempt to allocate space for message text */
@@ -502,7 +503,7 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 	strlcat(pszMessageText, szINTL, nTextSize);
 	strlcat(pszMessageText, szMSGID, nTextSize);
 	strlcat(pszMessageText, MESSAGE_PID, nTextSize);
-	if (Config->MailerType != MAIL_BINKLEY) {
+	if (Config.MailerType != MAIL_BINKLEY) {
 		iTemp = strlen(pszMessageText);
 		strlcpy(pszMessageText+iTemp, "FLAGS KFS", nTextSize - iTemp);
 		/*      pszMessageText[ iTemp ] = '';
@@ -549,6 +550,10 @@ tIBResult IBGetFile(tIBInfo *pInfo, char *szAttachFile)
 	tFidoNode ThisNode;
 	char szFileNameNoPath[50], szTemp[50];
 
+	/* If there's no inbounds, we can't succeed */
+	if (Config.NumInboundDirs < 1)
+		return eMissingDir;
+
 	/* Validate information structure */
 	ToReturn = ValidateInfoStruct(pInfo);
 	if (ToReturn != eSuccess) return(ToReturn);
@@ -588,7 +593,7 @@ tIBResult IBGetFile(tIBInfo *pInfo, char *szAttachFile)
 					/* strcpy inbounddir to filename */
 					/* strcat the subject of message -- actual filename */
 					// FIXME: problems later on?!
-					strlcpy(szAttachFile, Config->szInboundDir, sizeof(szAttachFile));
+					strlcpy(szAttachFile, Config.szInboundDirs[0], sizeof(szAttachFile));
 
 					// remove the ^ and path if it is first char
 

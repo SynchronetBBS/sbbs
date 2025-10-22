@@ -47,6 +47,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "news.h"
 #include "parsing.h"
 #include "quests.h"
+#include "readcfg.h"
 #include "scores.h"
 #include "spells.h"
 #include "structs.h"
@@ -1962,7 +1963,7 @@ static bool User_Create(void)
 
 
 	// Figure out ID
-	PClan->ClanID[0] = Config->BBSID;
+	PClan->ClanID[0] = Config.BBSID;
 	PClan->ClanID[1] = Game.Data->NextClanID;
 	Game.Data->NextClanID++;
 

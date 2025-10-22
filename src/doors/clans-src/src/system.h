@@ -3,7 +3,6 @@
 
 #include "defines.h"
 
-extern struct config *Config;
 extern struct system System;
 extern bool Verbose;
 
@@ -30,7 +29,5 @@ void System_Error(char *szErrorMsg);
  */
 
 void System_Maint(void);
-
-void Config_Init(void);
 
 #endif

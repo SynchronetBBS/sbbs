@@ -479,7 +479,7 @@ static int16_t MineMenu(void)
 				iTemp = (int16_t) GetLong("|0SEnter level of mine to change to.", PClan->MineLevel, 20);
 				/* NO MORE REG!
 				if (iTemp >= 5 &&
-				  IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) == NFALSE)
+				  IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) == NFALSE)
 				{
 				  rputs("\n|12Sorry, you may only play up to the 4th level of the mines in the unregistered\nversion.  Please encourage your sysop to register.\n%P");
 				  break;

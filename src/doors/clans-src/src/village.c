@@ -605,8 +605,8 @@ static void BuildMenu(void)
 					}
 				}
 				/* NO MORE REG
-				          else if (Village.Data->PawnLevel == 3 && (IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) == NFALSE ||
-				            IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) != NTRUE))
+				          else if (Village.Data->PawnLevel == 3 && (IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) == NFALSE ||
+				            IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) != NTRUE))
 				          {
 				            rputs(ST_NEEDREGISTER);
 				          }
@@ -664,8 +664,8 @@ static void BuildMenu(void)
 					}
 				}
 				/* NO MORE REG
-				          else if (Village.Data->WizardLevel == 3 && (IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) == NFALSE ||
-				            IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) != NTRUE))
+				          else if (Village.Data->WizardLevel == 3 && (IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) == NFALSE ||
+				            IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) != NTRUE))
 				          {
 				            rputs(ST_NEEDREGISTER);
 				          }
@@ -723,8 +723,8 @@ static void BuildMenu(void)
 					}
 				}
 				/* NO MORE REG
-				          else if (Village.Data->ChurchLevel == 3 && (IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) == NFALSE ||
-				            IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) != NTRUE))
+				          else if (Village.Data->ChurchLevel == 3 && (IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) == NFALSE ||
+				            IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) != NTRUE))
 				          {
 				            rputs(ST_NEEDREGISTER);
 				          }
@@ -778,8 +778,8 @@ static void BuildMenu(void)
 					}
 				}
 				/* NO MORE REG
-				          else if (Village.Data->TrainingHallLevel == 3 && (IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) == NFALSE ||
-				            IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) != NTRUE))
+				          else if (Village.Data->TrainingHallLevel == 3 && (IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) == NFALSE ||
+				            IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) != NTRUE))
 				          {
 				            rputs(ST_NEEDREGISTER);
 				          }
@@ -821,8 +821,8 @@ static void BuildMenu(void)
 					break;
 				}
 				/* NO MORE REG
-				          else if (Village.Data->MarketLevel == 3 && (IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) == NFALSE ||
-				            IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) != NTRUE))
+				          else if (Village.Data->MarketLevel == 3 && (IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) == NFALSE ||
+				            IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) != NTRUE))
 				          {
 				            rputs(ST_NEEDREGISTER);
 				            break;

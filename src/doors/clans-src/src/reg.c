@@ -41,6 +41,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "door.h"
 #include "language.h"
 #include "mstrings.h"
+#include "readcfg.h"
 #include "reg.h"
 #include "structs.h"
 #include "system.h"
@@ -225,19 +226,19 @@ void Register(void)
 	Config_Init();
 
 	strlcpy(szString, "Chat mode ended.\n", sizeof(szString));
-	//    snprintf(szString, sizeof(szString), "|03BBS Name     : |14%s\n", Config->szBBSName);
+	//    snprintf(szString, sizeof(szString), "|03BBS Name     : |14%s\n", Config.szBBSName);
 	dputs("‰ÅÆ÷÷æÕû”˜ÕÕÕÕÕÏÕ");
 	zputs("|11");
-	zputs(Config->szBBSName);
+	zputs(Config.szBBSName);
 	zputs("\n");
 	strlcpy(szString, "Unable to access serial port, cannot continue.\n", sizeof(szString));
 	//    zputs(szString);
-	//    snprintf(szString, sizeof(szString), "|03Sysop Name   : |14%s\n", Config->szSysopName);
+	//    snprintf(szString, sizeof(szString), "|03Sysop Name   : |14%s\n", Config.szSysopName);
 	//    zputs(szString);
 	dputs("‰ÅÆæŒ†š…Õû”˜ÕÕÕÏÕ");
 	zputs("|11");
 	strlcpy(szString, "No method of accessing serial port, cannot continue.\n", sizeof(szString));
-	zputs(Config->szSysopName);
+	zputs(Config.szSysopName);
 	zputs("\n");
 
 	//    zputs("\n|12Please ensure the above information matches the information on your\n");
@@ -258,14 +259,14 @@ void Register(void)
 	zputs("\n");
 	dputs("‰ÄÄË");
 	//    zputs("|09Enter the registration code now.\n|11>");
-	strlcpy(szString, Config->szRegcode, sizeof(szString));
+	strlcpy(szString, Config.szRegcode, sizeof(szString));
 	// gotoxy(1,9);
 	Input(szString, 27);
 
-	if (stricmp(Config->szRegcode, szString) != 0)
+	if (stricmp(Config.szRegcode, szString) != 0)
 		InputCode = true;
 
-	if (IsRegged(Config->szSysopName, Config->szBBSName, szString) == NTRUE) {
+	if (IsRegged(Config.szSysopName, Config.szBBSName, szString) == NTRUE) {
 		/* add it to the .cfg file */
 		if (InputCode)
 			AddRegToCfg(szString);
@@ -429,8 +430,8 @@ void UnregMessage(void)
 {
 	char /*cKeyToPress,*/ szString[100];
 
-	if (IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) == NFALSE ||
-			IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) != NTRUE) {
+	if (IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) == NFALSE ||
+			IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) != NTRUE) {
 		rputs("`0EFreeware version.\n\n");
 		/*
 		od_clr_scr();
@@ -454,7 +455,7 @@ void UnregMessage(void)
 	}
 	else {
 		// say who regged to
-		snprintf(szString, sizeof(szString), ST_REGMSG7, Config->szSysopName, Config->szBBSName);
+		snprintf(szString, sizeof(szString), ST_REGMSG7, Config.szSysopName, Config.szBBSName);
 		rputs(szString);
 	}
 }

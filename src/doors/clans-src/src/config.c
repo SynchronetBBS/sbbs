@@ -38,8 +38,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "win_wrappers.h"
 
 #include "defines.h"
-#include "k_config.h"
 #include "parsing.h"
+#include "readcfg.h"
 #include "structs.h"
 
 #define MAX_OPTION      12
@@ -109,25 +109,15 @@ static HANDLE std_handle;
 
 static void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color);
 
-static bool setCurrentNode(int node);
-static void Config_Init(void);
+static struct NodeData *setCurrentNode(int node);
 
-static void System_Error(char *szErrorMsg);
+void System_Error(char *szErrorMsg);
 
 static void UpdateOption(char Option);
 static void UpdateNodeOption(char Option);
 
-struct NodeData {
-	int number;
-	char dropDir[1024];
-	bool fossil;
-	uintptr_t addr;
-	int irq;
-};
-
 struct NodeData *nodes;
 struct NodeData *currNode;
-struct config Config;
 static bool ConfigUseLog;
 
 static void gotoxy(int x, int y);
@@ -150,7 +140,9 @@ static void do_endwin(void)
 int main(void)
 {
 	Video_Init();
-	Config_Init();
+	Config_Init(0, setCurrentNode);
+	if (!Config.NumInboundDirs)
+		AddInboundDir("/bbs/inbound");
 
 #ifdef __unix__
 	atexit(do_endwin);
@@ -188,7 +180,7 @@ WriteCfg(void)
 	fprintf(f, "%sInterBBS\n", Config.InterBBS ? "" : "#");
 	fprintf(f, "%sBBSID           %d\n", Config.InterBBS ? "" : "#", Config.BBSID);
 	fprintf(f, "%sNetmailDir      %s\n", Config.InterBBS ? "" : "#", Config.szNetmailDir);
-	fprintf(f, "%sInboundDir      %s\n", Config.InterBBS ? "" : "#", Config.szInboundDir);
+	fprintf(f, "%sInboundDir      %s\n", Config.InterBBS ? "" : "#", Config.szInboundDirs[0]);
 	fprintf(f, "%sMailerType      %s\n", Config.InterBBS ? "" : "#", Config.MailerType == MAIL_BINKLEY ? "Binkley" : "Not Binkly");
 	for (struct NodeData *nd = nodes; nd && nd->number > 0; nd++) {
 		fputs("\n", f);
@@ -790,7 +782,7 @@ static void EditOption(int16_t WhichOption)
 			break;
 		case 8 :    /* Inbound Dir */
 			gotoxy(40, 10);
-			DosGetStr(Config.szInboundDir, 39);
+			DosGetStr(Config.szInboundDirs[0], 39);
 			break;
 		case 9 :    /* Mailer type */
 			if (Config.MailerType == MAIL_BINKLEY)
@@ -1054,18 +1046,19 @@ static void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2
 #endif
 }
 
-static bool
+static struct NodeData *
 setCurrentNode(int node)
 {
-	if (node < 1)
-		return false;
 	size_t nodeCount = 0;
+
 	currNode = NULL;
+	if (node < 1)
+		return NULL;
 	for (struct NodeData *nd = nodes; nd && nd->number > 0; nd++) {
 		nodeCount++;
 		if (nd->number == node) {
 			currNode = nd;
-			return true;
+			return currNode;
 		}
 	}
 	struct NodeData *nnd = realloc(nodes, sizeof(struct NodeData) * (nodeCount + 2));
@@ -1081,138 +1074,10 @@ setCurrentNode(int node)
 	currNode->fossil = false;
 	currNode->addr = -1;
 	currNode->irq = -1;
-	return true;
+	return currNode;
 }
 
-static void Config_Init(void)
-/*
- * Loads data from .CFG file into Config.
- *
- */
-{
-	FILE *fpConfigFile;
-	char szConfigName[40], szConfigLine[255];
-	char *pcCurrentPos;
-	char szToken[MAX_TOKEN_CHARS + 1];
-	int16_t iKeyWord;
-	int i;
-//  int16_t iCurrentNode = 1;
-
-	// --- Set defaults
-	strlcpy(szConfigName, "clans.cfg", sizeof(szConfigName));
-	strlcpy(Config.szScoreFile[0], "scores.asc", sizeof(Config.szScoreFile[0]));
-	strlcpy(Config.szScoreFile[1], "scores.ans", sizeof(Config.szScoreFile[1]));
-	Config.BBSID = 1;
-	strlcpy(Config.szNetmailDir, "/bbs/outbound", sizeof(Config.szNetmailDir));
-	strlcpy(Config.szInboundDir, "/bbs/inbound", sizeof(Config.szInboundDir));
-	Config.MailerType = MAIL_BINKLEY;
-	Config.InterBBS = false;
-
-	fpConfigFile = _fsopen(szConfigName, "rt", SH_DENYWR);
-	if (!fpConfigFile) {
-		return;
-	}
-
-	for (;;) {
-		/* read in a line */
-		if (fgets(szConfigLine, 255, fpConfigFile) == NULL) break;
-
-		/* Ignore all of line after comments or CR/LF char */
-		pcCurrentPos=(char *)szConfigLine;
-		ParseLine(pcCurrentPos);
-
-		/* If no token was found, proceed to process the next line */
-		if (!*pcCurrentPos) continue;
-
-		GetToken(pcCurrentPos, szToken);
-
-		/* Loop through list of keywords */
-		for (iKeyWord = 0; iKeyWord < MAX_CONFIG_WORDS; ++iKeyWord) {
-			/* If keyword matches */
-			if (stricmp(szToken, papszConfigKeyWords[iKeyWord]) == 0) {
-				/* Process config token */
-				switch (iKeyWord) {
-					case 0 :  /* sysopname */
-						strlcpy(Config.szSysopName, pcCurrentPos, sizeof(Config.szSysopName));
-						break;
-					case 1 :  /* bbsname */
-						strlcpy(Config.szBBSName, pcCurrentPos, sizeof(Config.szBBSName));
-						break;
-					case 2 :  /* use log */
-						if (stricmp(pcCurrentPos, "Yes") == 0)
-							ConfigUseLog = true;
-						else
-							ConfigUseLog = false;
-						break;
-					case 3 :  /* ANSI score file */
-						strlcpy(Config.szScoreFile[1], pcCurrentPos, sizeof(Config.szScoreFile[1]));
-						break;
-					case 4 :  /* ASCII score file */
-						strlcpy(Config.szScoreFile[0], pcCurrentPos, sizeof(Config.szScoreFile[0]));
-						break;
-
-
-					case 5 :  /* Node */
-						i = atoi(pcCurrentPos);
-						if (i > 0)
-							setCurrentNode(i);
-						break;
-					case 6 :  /* Drop Directory */
-						if (currNode)
-							strlcpy(currNode->dropDir, pcCurrentPos, sizeof(currNode->dropDir));
-						break;
-					case 7 :  /* Use FOSSIL */
-						if (currNode) {
-							if (stricmp(pcCurrentPos, "No") == 0)
-								currNode->fossil = false;
-							else
-								currNode->fossil = true;
-						}
-						break;
-					case 8 :  /* Serial port address */
-						if (currNode)
-							currNode->addr = atoi(pcCurrentPos);
-						break;
-					case 9 :  /* Serial port IRQ */
-						if (currNode)
-							currNode->irq = atoi(pcCurrentPos);
-						break;
-					case 10 : /* BBS Id */
-						Config.BBSID = atoi(pcCurrentPos);
-						break;
-					case 11 : /* netmail dir */
-						strlcpy(Config.szNetmailDir, pcCurrentPos, sizeof(Config.szNetmailDir));
-
-						/* remove '\' if last char is it */
-						if (Config.szNetmailDir [ strlen(Config.szNetmailDir) - 1] == '\\' || Config.szNetmailDir [strlen(Config.szNetmailDir) - 1] == '/')
-							Config.szNetmailDir [ strlen(Config.szNetmailDir) - 1] = 0;
-						break;
-					case 12 : /* inbound dir */
-						strlcpy(Config.szInboundDir, pcCurrentPos, sizeof(Config.szInboundDir));
-
-						/* add '\' if last char is not it */
-						if (Config.szInboundDir [ strlen(Config.szInboundDir) - 1] != '\\' &&  Config.szInboundDir [strlen(Config.szInboundDir) - 1] != '/')
-							strlcat(Config.szInboundDir, "/", sizeof(Config.szInboundDir));
-						break;
-					case 13 : /* mailer type */
-						if (stricmp(pcCurrentPos, "BINKLEY") == 0)
-							Config.MailerType = MAIL_BINKLEY;
-						else
-							Config.MailerType = MAIL_OTHER;
-						break;
-					case 14 : /* in a league? */
-						Config.InterBBS = true;
-						break;
-				}
-			}
-		}
-	}
-
-	fclose(fpConfigFile);
-
-}
-
-static void System_Error(char *szErrorMsg)
+void System_Error(char *szErrorMsg)
 /*
  * purpose  To output an error message and close down the system.
  *          This SHOULD be run from anywhere and NOT fail.  It should
@@ -1224,6 +1089,16 @@ static void System_Error(char *szErrorMsg)
 	delay(1000);
 	showCursor(true);
 	exit(0);
+}
+
+void CheckMem(void *Test)
+/*
+ * Gives system error if the pointer is NULL.
+ */
+{
+	if (Test == NULL) {
+		System_Error("Checkmem Failed.  Please send a copy of this screen to\nthe author to help debug the game.\n");
+	}
 }
 
 static void UpdateOption(char Option)
@@ -1273,7 +1148,7 @@ static void UpdateOption(char Option)
 		case 8:
 			settextattr(Config.InterBBS ? 15 : 8);
 			xputs("                                        ", 40, 10);
-			xputs(Config.szInboundDir, 40, 10);
+			xputs(Config.szInboundDirs[0], 40, 10);
 			break;
 		case 9:
 			settextattr(Config.InterBBS ? 15 : 8);

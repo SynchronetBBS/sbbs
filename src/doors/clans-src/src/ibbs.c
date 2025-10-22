@@ -63,6 +63,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "news.h"
 #include "packet.h"
 #include "parsing.h"
+#include "readcfg.h"
 #include "scores.h"
 #include "structs.h"
 #include "system.h"
@@ -1838,7 +1839,7 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 	strlcpy(InterBBSInfo.szProgName, szString, sizeof(InterBBSInfo.szProgName));
 	InterBBSInfo.szProgName[PROG_NAME_CHARS] = '\0';
 
-	strlcpy(InterBBSInfo.szNetmailDir, Config->szNetmailDir, sizeof(InterBBSInfo.szNetmailDir));
+	strlcpy(InterBBSInfo.szNetmailDir, Config.szNetmailDir, sizeof(InterBBSInfo.szNetmailDir));
 	InterBBSInfo.szNetmailDir[PATH_CHARS] = '\0';
 
 	InterBBSInfo.bHold = false;
@@ -1858,8 +1859,10 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 	// strlcpy(szFullFileName, "C:\\PROG\\THECLANS\\OUTBOUND\\", sizeof(szFullFileName));
 	// FIXME: ?!    Use outbound directory or don't care?
 
-	if (System.LocalIBBS)
-		strlcpy(szFullFileName, Config->szInboundDir, sizeof(szFullFileName));
+	if (System.LocalIBBS) {
+		if (Config.NumInboundDirs)
+			strlcpy(szFullFileName, Config.szInboundDirs[0], sizeof(szFullFileName));
+	}
 	else {
 		strlcpy(szFullFileName, System.szMainDir, sizeof(szFullFileName));
 		strlcat(szFullFileName, "outbound/", sizeof(szFullFileName));
@@ -1883,15 +1886,6 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 	strlcat(szFullFileName, szPacketName, sizeof(szFullFileName));
 
 
-	/*
-	    snprintf(szString, sizeof(szString), "filename: %s\n", szPacketName);
-	        DisplayStr(szString);
-
-	    snprintf(szString, sizeof(szString), "trying to sendfile is called %s\n", szFullFileName);
-	    DisplayStr(szString);
-	*/
-
-
 	/* see if can open that file */
 	fp = _fsopen(szFullFileName, "rb", SH_DENYWR);
 	if (fp) {
@@ -1908,8 +1902,10 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 
 		LastCounter = IBBS.Data->Nodes[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex;
 
-		if (System.LocalIBBS)
-			strlcpy(szFullFileName, Config->szInboundDir, sizeof(szFullFileName));
+		if (System.LocalIBBS) {
+			if (Config.NumInboundDirs)
+				strlcpy(szFullFileName, Config.szInboundDirs[0], sizeof(szFullFileName));
+		}
 		else {
 			strlcpy(szFullFileName, System.szMainDir, sizeof(szFullFileName));
 			strlcat(szFullFileName, "outbound/", sizeof(szFullFileName));
@@ -3049,6 +3045,7 @@ void IBBS_PacketIn(void)
 	char szFileName[PATH_SIZE], szPacketName[PATH_SIZE], szString[580], szFileName2[PATH_SIZE];
 	bool Done;
 	FILE *fp;
+	int16_t nInbound;
 
 	if (Game.Data->InterBBS == false) {
 		DisplayStr("|12* This game is not set up for InterBBS!\n");
@@ -3064,7 +3061,7 @@ void IBBS_PacketIn(void)
 	strlcpy(InterBBSInfo.szProgName, szString, sizeof(InterBBSInfo.szProgName));
 	InterBBSInfo.szProgName[PROG_NAME_CHARS] = '\0';
 
-	strlcpy(InterBBSInfo.szNetmailDir, Config->szNetmailDir, sizeof(InterBBSInfo.szNetmailDir));
+	strlcpy(InterBBSInfo.szNetmailDir, Config.szNetmailDir, sizeof(InterBBSInfo.szNetmailDir));
 	InterBBSInfo.szNetmailDir[PATH_CHARS] = '\0';
 
 	InterBBSInfo.bHold = false;
@@ -3078,55 +3075,57 @@ void IBBS_PacketIn(void)
 	//
 	// xxx is THIS BBS's Id.
 
-	// create filename to search for
+	for (nInbound = 0; nInbound < Config.NumInboundDirs; nInbound++) {
+		// create filename to search for
 #ifdef __unix__
-	strlcpy(szPacketName, Config->szInboundDir, sizeof(szPacketName));
-	snprintf(szFileName, sizeof(szFileName),"[Cc][Ll]???%03d.%-2s?",IBBS.Data->BBSID,Game.Data->LeagueID);
+		strlcpy(szPacketName, Config.szInboundDirs[nInbound], sizeof(szPacketName));
+		snprintf(szFileName, sizeof(szFileName),"[Cc][Ll]???%03d.%-2s?",IBBS.Data->BBSID,Game.Data->LeagueID);
 #else
-	snprintf(szFileName, sizeof(szFileName),"CL???%03d.%-2s?",IBBS.Data->BBSID,Game.Data->LeagueID);
+		snprintf(szFileName, sizeof(szFileName),"CL???%03d.%-2s?",IBBS.Data->BBSID,Game.Data->LeagueID);
 #endif
-	// now copy over to the full filename
-	strlcat(szPacketName, szFileName, sizeof(szPacketName));
+		// now copy over to the full filename
+		strlcat(szPacketName, szFileName, sizeof(szPacketName));
 
-	// printf("Filespec to search is %s\n", szPacketName);
-
-	if (System.LocalIBBS) {
-		// set true if IBGetFile was a success
-		Done = IBGetFile(&InterBBSInfo, szFileName) != eSuccess;
-	}
-	else {
-		//Done = findfirst(szPacketName, &ffblk, 0);
-		Done = GetNextFile(szPacketName, szFileName2);
-	}
-
-	/* keep calling till no more messages to read */
-	while (!Done) {
-		/* process file */
-
-		if (System.LocalIBBS == false) {
-			strlcpy(szFileName, Config->szInboundDir, sizeof(szFileName));
-			//strlcat(szFileName, ffblk.ff_name, sizeof(szFileName));
-			strlcat(szFileName, szFileName2, sizeof(szFileName));
-		}
-		// for LocalInterBBS, we assume szFilename already contains the
-		// filename
-
-		if (IBBS_ProcessPacket(szFileName) == 0) {
-			snprintf(szString, sizeof(szString), "Error dealing with packet %s\n", szFileName);
-			DisplayStr(szString);
-		}
-		else {
-			/* delete it */
-			unlink(szFileName);
-		}
+		// printf("Filespec to search is %s\n", szPacketName);
 
 		if (System.LocalIBBS) {
 			// set true if IBGetFile was a success
 			Done = IBGetFile(&InterBBSInfo, szFileName) != eSuccess;
 		}
-		else
-			// Done = findnext(&ffblk);
+		else {
+			//Done = findfirst(szPacketName, &ffblk, 0);
 			Done = GetNextFile(szPacketName, szFileName2);
+		}
+
+		/* keep calling till no more messages to read */
+		while (!Done) {
+			/* process file */
+
+			if (System.LocalIBBS == false) {
+				strlcpy(szFileName, Config.szInboundDirs[nInbound], sizeof(szFileName));
+				//strlcat(szFileName, ffblk.ff_name, sizeof(szFileName));
+				strlcat(szFileName, szFileName2, sizeof(szFileName));
+			}
+			// for LocalInterBBS, we assume szFilename already contains the
+			// filename
+
+			if (IBBS_ProcessPacket(szFileName) == 0) {
+				snprintf(szString, sizeof(szString), "Error dealing with packet %s\n", szFileName);
+				DisplayStr(szString);
+			}
+			else {
+				/* delete it */
+				unlink(szFileName);
+			}
+
+			if (System.LocalIBBS) {
+				// set true if IBGetFile was a success
+				Done = IBGetFile(&InterBBSInfo, szFileName) != eSuccess;
+			}
+			else
+				// Done = findnext(&ffblk);
+				Done = GetNextFile(szPacketName, szFileName2);
+		}
 	}
 
 	DisplayStr("\n");
@@ -3135,24 +3134,26 @@ void IBBS_PacketIn(void)
 	// look for world.ndx first
 	// if not found, go for WORLD.ID
 	if (System.LocalIBBS == false) {
-		// try world.ID
+		for (nInbound = 0; nInbound < Config.NumInboundDirs; nInbound++) {
+			// try world.ID
 #ifdef __unix__
-		snprintf(szFileName2, sizeof(szFileName2), "[Ww][Oo][Rr][Ll][Dd].%-2s", Game.Data->LeagueID);
+			snprintf(szFileName2, sizeof(szFileName2), "[Ww][Oo][Rr][Ll][Dd].%-2s", Game.Data->LeagueID);
 #else
-		snprintf(szFileName2, sizeof(szFileName2), "WORLD.%-2s", Game.Data->LeagueID);
+			snprintf(szFileName2, sizeof(szFileName2), "WORLD.%-2s", Game.Data->LeagueID);
 #endif
 
-		strlcpy(szFileName, Config->szInboundDir, sizeof(szFileName));
-		strlcat(szFileName, szFileName2, sizeof(szFileName));
+			strlcpy(szFileName, Config.szInboundDirs[nInbound], sizeof(szFileName));
+			strlcat(szFileName, szFileName2, sizeof(szFileName));
 
-		while (!GetNextFile(szFileName,szFileName2))  {
-			fp = _fsopen(szFileName, "r", SH_DENYWR);
-			if (fp) {
-				DisplayStr("|08- |07new world.ndx found.\n");
-				// found it
-				fclose(fp);
-				file_copy(szFileName2, "world.ndx");
-				unlink(szFileName2);
+			while (!GetNextFile(szFileName,szFileName2))  {
+				fp = _fsopen(szFileName, "r", SH_DENYWR);
+				if (fp) {
+					DisplayStr("|08- |07new world.ndx found.\n");
+					// found it
+					fclose(fp);
+					file_copy(szFileName2, "world.ndx");
+					unlink(szFileName2);
+				}
 			}
 		}
 	}
@@ -3180,7 +3181,7 @@ void IBBS_Init(void)
 	CheckMem(IBBS.Data);
 	IBBS.Initialized = true;
 
-	IBBS.Data->BBSID = Config->BBSID;
+	IBBS.Data->BBSID = Config.BBSID;
 
 	IBBS_LoadNDX();
 	IBBS_ProcessRouteConfig();

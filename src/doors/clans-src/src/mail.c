@@ -48,6 +48,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "mstrings.h"
 #include "myopen.h"
 #include "packet.h"
+#include "readcfg.h"
 #include "structs.h"
 #include "system.h"
 #include "user.h"
@@ -229,7 +230,7 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 	Message.FromClanID[0] = PClan->ClanID[0];
 	Message.FromClanID[1] = PClan->ClanID[1];
 
-	Message.BBSIDFrom = Config->BBSID;
+	Message.BBSIDFrom = Config.BBSID;
 
 	strlcpy(Message.szDate, System.szTodaysDate, sizeof(Message.szDate));
 	Message.Flags = 0;
@@ -619,7 +620,7 @@ static void Reply_Message(struct Message *Reply)
 	strlcpy(Message.szDate, System.szTodaysDate, sizeof(Message.szDate));
 	strlcpy(Message.szFromVillageName, Village.Data->szName, sizeof(Message.szFromVillageName));
 
-	Message.BBSIDFrom = Config->BBSID;
+	Message.BBSIDFrom = Config.BBSID;
 
 	Message.Flags = 0;
 
@@ -934,7 +935,7 @@ bool Mail_Read(void)
 			rputs(szString);
 		}
 
-		if (Message.BBSIDFrom != Config->BBSID) {
+		if (Message.BBSIDFrom != Config.BBSID) {
 			snprintf(szString, sizeof(szString), "|0L Origin  : |0M%s\n\r", Message.szFromVillageName);
 			rputs(szString);
 		}
@@ -1284,7 +1285,7 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 	strlcpy(Message.szDate, System.szTodaysDate, sizeof(Message.szDate));
 	strlcpy(Message.szFromVillageName, Village.Data->szName, sizeof(Message.szFromVillageName));
 
-	Message.BBSIDFrom = Config->BBSID;
+	Message.BBSIDFrom = Config.BBSID;
 
 	Message.Flags = 0;
 

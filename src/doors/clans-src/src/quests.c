@@ -125,8 +125,8 @@ void Quests_Init(void)
 
 						/* NO MORE REG
 						              if (CurQuest == 10 &&
-						                (IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) == NFALSE ||
-						                IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) != NTRUE))
+						                (IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) == NFALSE ||
+						                IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) != NTRUE))
 						              {
 						                // can't load more than 10 in unreg
 						                break;

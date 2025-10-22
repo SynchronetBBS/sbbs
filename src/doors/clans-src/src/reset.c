@@ -38,9 +38,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
 
-#include "k_config.h"
 #include "myopen.h"
 #include "parsing.h"
+#include "readcfg.h"
 #include "structs.h"
 
 #define MAX_OPTION      14
@@ -113,8 +113,6 @@ static short curses_color(short color);
 static void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color);
 static void GoReset(struct ResetData *ResetData, int16_t Option);
 
-static void Config_Init(void);
-
 static void News_AddNews(char *szString);
 static void News_CreateTodayNews(void);
 
@@ -134,8 +132,6 @@ static struct {
 #endif
 
 static struct ResetData ResetData;
-
-static struct config *Config;
 
 static char szTodaysDate[11];
 
@@ -174,7 +170,7 @@ int main(void)
 #ifndef USE_STDIO
 	Video_Init();
 #endif
-	Config_Init();
+	Config_Init(0, NULL);
 
 #ifdef __unix__
 	atexit(do_endwin);
@@ -187,7 +183,7 @@ int main(void)
 
 	// load up config
 
-	ResetMenu(Config->InterBBS);
+	ResetMenu(Config.InterBBS);
 
 #ifdef _WIN32
 	SetConsoleTextAttribute(
@@ -222,7 +218,7 @@ static void ResetMenu(bool InterBBSGame)
 	strlcpy(ResetData.szDateGameStart, szTodaysDate, sizeof(ResetData.szDateGameStart));
 	strlcpy(ResetData.szLastJoinDate, "12/16/2199", sizeof(ResetData.szLastJoinDate));
 	strlcpy(ResetData.szVillageName, "The Village", sizeof(ResetData.szVillageName));
-	ResetData.InterBBSGame = Config->InterBBS;
+	ResetData.InterBBSGame = Config.InterBBS;
 	ResetData.LeagueWide = false;
 	ResetData.InProgress = false;
 	ResetData.EliminationMode = false;
@@ -249,9 +245,9 @@ static void ResetMenu(bool InterBBSGame)
 		printf("9)  Clan fights per day %d\n",ResetData.ClanFights);
 		printf("10) Max. Permanent Clan Members %d\n",ResetData.MaxPermanentMembers);
 		printf("11) Days of Protection for new users %d\n",ResetData.DaysOfProtection);
-		if (Config->InterBBS) {
+		if (Config.InterBBS) {
 			printf("13) Join a league\n");
-			if (Config->BBSID == 1)
+			if (Config.BBSID == 1)
 				printf("14) Leaguewide reset with these settings\n");
 		}
 		else {
@@ -263,12 +259,12 @@ static void ResetMenu(bool InterBBSGame)
 		printf("\nChoose: ");
 		scanf("%d",&CurOption);
 		--CurOption;
-		if (!Config->InterBBS && CurOption >= (MAX_OPTION-2) &&
+		if (!Config.InterBBS && CurOption >= (MAX_OPTION-2) &&
 				CurOption < MAX_OPTION)
 			continue;
-		else if (Config->BBSID == 1 && Config->InterBBS && CurOption == (MAX_OPTION-2))
+		else if (Config.BBSID == 1 && Config.InterBBS && CurOption == (MAX_OPTION-2))
 			continue;
-		else if (Config->BBSID != 1 && CurOption == (MAX_OPTION-1)) {
+		else if (Config.BBSID != 1 && CurOption == (MAX_OPTION-1)) {
 			continue;
 		}
 
@@ -278,7 +274,7 @@ static void ResetMenu(bool InterBBSGame)
 		}
 		else if (CurOption == (MAX_OPTION-3)) {
 			// can't reset locally here
-			if (Config->InterBBS)
+			if (Config.InterBBS)
 				continue;
 
 			/* reset local now */
@@ -371,7 +367,7 @@ static void ResetMenu(bool InterBBSGame)
 	strlcpy(ResetData.szDateGameStart, szTodaysDate, sizeof(ResetData.szDateGameStart));
 	strlcpy(ResetData.szLastJoinDate, "12/16/2199", sizeof(ResetData.szLastJoinDate));
 	strlcpy(ResetData.szVillageName, "The Village", sizeof(ResetData.szVillageName));
-	ResetData.InterBBSGame = Config->InterBBS;
+	ResetData.InterBBSGame = Config.InterBBS;
 	ResetData.LeagueWide = false;
 	ResetData.InProgress = false;
 	ResetData.EliminationMode = false;
@@ -392,11 +388,11 @@ static void ResetMenu(bool InterBBSGame)
 	ColorArea(0, 2, 39, MAX_OPTION+2, 7);
 
 	/* dehilight options which can't be activated */
-	if (!Config->InterBBS) {
+	if (!Config.InterBBS) {
 		/*          ColorArea(0,2, 39, 13, 7); */
 		ColorArea(0,14, 76, 15,  8);
 	}
-	else if (Config->BBSID != 1) {
+	else if (Config.BBSID != 1) {
 		// not LC, can't use leaguewide reset option
 		/*          ColorArea(0,2, 39, 16, 7); */
 		ColorArea(0,15, 76, 15, 8);
@@ -453,11 +449,11 @@ static void ResetMenu(bool InterBBSGame)
 						CurOption = MAX_OPTION;
 					else
 						CurOption--;
-					if ((CurOption == (MAX_OPTION-1)) && (Config->BBSID != 1))
+					if ((CurOption == (MAX_OPTION-1)) && (Config.BBSID != 1))
 						CurOption--;
-					if ((CurOption == (MAX_OPTION-2)) && ((Config->InterBBS == false) || (Config->BBSID == 1)))
+					if ((CurOption == (MAX_OPTION-2)) && ((Config.InterBBS == false) || (Config.BBSID == 1)))
 						CurOption--;
-					if ((CurOption == (MAX_OPTION-3)) && Config->InterBBS)
+					if ((CurOption == (MAX_OPTION-3)) && Config.InterBBS)
 						CurOption--;
 					break;
 				case K_DOWN :
@@ -466,11 +462,11 @@ static void ResetMenu(bool InterBBSGame)
 						CurOption = 0;
 					else
 						CurOption++;
-					if ((CurOption == (MAX_OPTION-3)) && Config->InterBBS)
+					if ((CurOption == (MAX_OPTION-3)) && Config.InterBBS)
 						CurOption++;
-					if ((CurOption == (MAX_OPTION-2)) && ((Config->InterBBS == false) || (Config->BBSID == 1)))
+					if ((CurOption == (MAX_OPTION-2)) && ((Config.InterBBS == false) || (Config.BBSID == 1)))
 						CurOption++;
-					if ((CurOption == (MAX_OPTION-1)) && (Config->BBSID != 1))
+					if ((CurOption == (MAX_OPTION-1)) && (Config.BBSID != 1))
 						CurOption++;
 					break;
 				case K_HOME :
@@ -486,12 +482,12 @@ static void ResetMenu(bool InterBBSGame)
 		else if (cInput == 0x1B)
 			Quit = true;
 		else if (cInput == 13) {
-			if (Config->InterBBS == false && CurOption >= (MAX_OPTION-2) &&
+			if (Config.InterBBS == false && CurOption >= (MAX_OPTION-2) &&
 					CurOption < MAX_OPTION)
 				continue;
-			else if (Config->BBSID == 1 && Config->InterBBS && CurOption == (MAX_OPTION-2))
+			else if (Config.BBSID == 1 && Config.InterBBS && CurOption == (MAX_OPTION-2))
 				continue;
-			else if (Config->BBSID != 1 && CurOption == (MAX_OPTION-1)) {
+			else if (Config.BBSID != 1 && CurOption == (MAX_OPTION-1)) {
 				continue;
 			}
 
@@ -504,7 +500,7 @@ static void ResetMenu(bool InterBBSGame)
 				SCREENSTATE screen_state;
 #endif
 				// can't reset locally here
-				if (Config->InterBBS)
+				if (Config.InterBBS)
 					continue;
 
 				/* reset local now */
@@ -1711,102 +1707,6 @@ static void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2
 }
 
 #endif
-
-static void Config_Init(void)
-/*
- * Loads data from .CFG file into Config->
- *
- */
-{
-	FILE *fpConfigFile;
-	char szConfigName[40], szConfigLine[255];
-	char *pcCurrentPos;
-	char szToken[MAX_TOKEN_CHARS + 1];
-	int16_t iKeyWord;
-//  int16_t iCurrentNode = 1;
-
-	Config = malloc(sizeof(struct config));
-
-	// --- Set defaults
-	strlcpy(szConfigName, "clans.cfg", sizeof(szConfigName));
-	Config->szSysopName[0] = 0;
-	Config->szBBSName[0] = 0;
-	strlcpy(Config->szScoreFile[0], "scores.asc", sizeof(Config->szScoreFile[0]));
-	strlcpy(Config->szScoreFile[1], "scores.ans", sizeof(Config->szScoreFile[1]));
-	Config->szRegcode[0] = 0;
-
-	Config->InterBBS = false;
-
-
-	fpConfigFile = _fsopen(szConfigName, "rt", SH_DENYWR);
-	if (!fpConfigFile) {
-		/* file not found! error */
-		printf("Config file not found.  Please run CONFIG.EXE first before resetting.\n");
-#ifdef __unix__
-		curs_set(1);
-#endif
-		exit(0);
-	}
-
-	for (;;) {
-		/* read in a line */
-		if (fgets(szConfigLine, 255, fpConfigFile) == NULL) break;
-
-		/* Ignore all of line after comments or CR/LF char */
-		pcCurrentPos=(char *)szConfigLine;
-		ParseLine(pcCurrentPos);
-
-		/* If no token was found, proceed to process the next line */
-		if (!*pcCurrentPos) continue;
-
-		GetToken(pcCurrentPos, szToken);
-
-		/* Loop through list of keywords */
-		for (iKeyWord = 0; iKeyWord < MAX_CONFIG_WORDS; ++iKeyWord) {
-			/* If keyword matches */
-			if (stricmp(szToken, papszConfigKeyWords[iKeyWord]) == 0) {
-				/* Process config token */
-				switch (iKeyWord) {
-					case 0 :  /* sysopname */
-						strlcpy(Config->szSysopName, pcCurrentPos, sizeof(Config->szSysopName));
-						break;
-					case 1 :  /* bbsname */
-						strlcpy(Config->szBBSName, pcCurrentPos, sizeof(Config->szBBSName));
-						break;
-					case 10 : /* BBS Id */
-						Config->BBSID = atoi(pcCurrentPos);
-						break;
-					case 11 : /* netmail dir */
-						strlcpy(Config->szNetmailDir, pcCurrentPos, sizeof(Config->szNetmailDir));
-
-						/* remove '\' if last char is it */
-						if (Config->szNetmailDir [ strlen(Config->szNetmailDir) - 1] == '\\' || Config->szNetmailDir [strlen(Config->szNetmailDir) - 1] == '/')
-							Config->szNetmailDir [ strlen(Config->szNetmailDir) - 1] = 0;
-						break;
-					case 12 : /* inbound dir */
-						strlcpy(Config->szInboundDir, pcCurrentPos, sizeof(Config->szInboundDir));
-
-						/* add '\' if last char is not it */
-						if (Config->szInboundDir [ strlen(Config->szInboundDir) - 1] != '\\' &&  Config->szInboundDir [strlen(Config->szInboundDir) - 1] != '/')
-							strlcat(Config->szInboundDir, "/", sizeof(Config->szInboundDir));
-						break;
-					case 13 : /* mailer type */
-						if (stricmp(pcCurrentPos, "BINKLEY") == 0)
-							Config->MailerType = MAIL_BINKLEY;
-						else
-							Config->MailerType = MAIL_OTHER;
-						break;
-					case 14 : /* in a league? */
-						Config->InterBBS = true;
-						break;
-				}
-			}
-		}
-	}
-
-	fclose(fpConfigFile);
-
-}
 
 static void
 GenerateGameID(char *ptr, size_t sz)

@@ -374,7 +374,7 @@ void TrainMember(void)
 		/* if that dude is alive, tell them */
 		/* NO MORE REG
 		      if (PClan->Member[ WhichOne ]->Level > 5 &&
-		        IsRegged(Config->szSysopName, Config->szBBSName, Config->szRegcode) == NFALSE)
+		        IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) == NFALSE)
 		      {
 		        rputs("\n|12Members cannot be trained beyond level 5 in the unregistered version.\n%P");
 		        continue;

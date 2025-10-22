@@ -47,13 +47,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "game.h"
 #include "ibbs.h"
 #include "items.h"
-#include "k_config.h"
 #include "language.h"
 #include "maint.h"
 #include "mstrings.h"
 #include "news.h"
 #include "parsing.h"
 #include "quests.h"
+#include "readcfg.h"
 #include "reg.h"
 #include "scores.h"
 #include "spells.h"
@@ -64,7 +64,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "video.h"
 #include "village.h"
 
-struct config *Config;
 struct system System = {0};
 bool Verbose = false;
 
@@ -131,160 +130,6 @@ void System_Error(char *szErrorMsg)
 
 // ------------------------------------------------------------------------- //
 
-void Config_Init(void)
-/*
- * Loads data from .CFG file into Config->
- *
- */
-{
-	FILE *fpConfigFile;
-	char szConfigName[40], szConfigLine[255];
-	char *pcCurrentPos;
-	char szToken[MAX_TOKEN_CHARS + 1];
-	int16_t iKeyWord, iCurrentNode = 1;
-
-	if (Verbose) {
-		DisplayStr("> Config_Init()\n");
-		delay(500);
-	}
-
-	Config = calloc(1, sizeof(struct config));
-	CheckMem(Config);
-
-	// --- Set defaults
-	strlcpy(szConfigName, "clans.cfg", sizeof(szConfigName));
-	Config->szSysopName[0] = 0;
-	Config->szBBSName[0] = 0;
-	strlcpy(Config->szScoreFile[0], "scores.asc", sizeof(Config->szScoreFile[0]));
-	strlcpy(Config->szScoreFile[1], "scores.ans", sizeof(Config->szScoreFile[1]));
-	Config->szRegcode[0] = 0;
-	Config->BBSID = 0;
-
-	System.InterBBS = false;
-	Config->InterBBS = false;
-
-	fpConfigFile = _fsopen(szConfigName, "rt", SH_DENYWR);
-	if (!fpConfigFile) {
-		/* file not found! error */
-		System_Error("Config file not found\n");
-	}
-
-	for (;;) {
-		/* read in a line */
-		if (fgets(szConfigLine, 255, fpConfigFile) == NULL) break;
-
-		/* Ignore all of line after comments or CR/LF char */
-		pcCurrentPos=(char *)szConfigLine;
-		ParseLine(pcCurrentPos);
-
-		/* If no token was found, proceed to process the next line */
-		if (!*pcCurrentPos) continue;
-
-		GetToken(pcCurrentPos, szToken);
-
-		/* Loop through list of keywords */
-		for (iKeyWord = 0; iKeyWord < MAX_CONFIG_WORDS; ++iKeyWord) {
-			/* If keyword matches */
-			if (stricmp(szToken, papszConfigKeyWords[iKeyWord]) == 0) {
-				/* Process config token */
-				switch (iKeyWord) {
-					case 0 :  /* sysopname */
-						strlcpy(Config->szSysopName, pcCurrentPos, sizeof(Config->szSysopName));
-						break;
-					case 1 :  /* bbsname */
-						strlcpy(Config->szBBSName, pcCurrentPos, sizeof(Config->szBBSName));
-						break;
-					case 2 :  /* use log? */
-						if (stricmp(pcCurrentPos, "Yes") == 0) {
-							/* use log */
-							od_control.od_logfile = INCLUDE_LOGFILE;
-							snprintf(od_control.od_logfile_name, sizeof(od_control.od_logfile_name), "clans%d.log", System.Node);
-						}
-						break;
-					case 3 :  /* ansi file */
-						strlcpy(Config->szScoreFile[1], pcCurrentPos, sizeof(Config->szScoreFile[1]));
-						break;
-					case 4 :  /* ascii file */
-						strlcpy(Config->szScoreFile[0], pcCurrentPos, sizeof(Config->szScoreFile[0]));
-						break;
-					case 5 :  /* node = ? */
-						iCurrentNode = atoi(pcCurrentPos);
-						break;
-					case 6 :  /* dropdirectory = ? */
-						if (System.Node == iCurrentNode) {
-							strlcpy(od_control.info_path, pcCurrentPos, sizeof(od_control.info_path));
-						}
-						break;
-					case 7 :  /* usefossil */
-						if (System.Node == iCurrentNode) {
-							if (stricmp(pcCurrentPos, "No") == 0) {
-								/* do not use fossil */
-								od_control.od_no_fossil = true;
-							}
-						}
-						break;
-					case 8 :  /* serial port addr */
-						if (System.Node == iCurrentNode) {
-							//printf("Not yet used\n");
-						}
-						break;
-					case 9 :  /* serial port irq */
-						if (System.Node == iCurrentNode) {
-							if (stricmp(pcCurrentPos, "Default") != 0)
-								od_control.od_com_irq = atoi(pcCurrentPos);
-						}
-						break;
-					case 10 : /* BBS Id */
-						Config->BBSID = atoi(pcCurrentPos);
-						break;
-					case 11 : /* netmail dir */
-						strlcpy(Config->szNetmailDir, pcCurrentPos, sizeof(Config->szNetmailDir));
-
-						/* remove '\' if last char is it */
-						if (Config->szNetmailDir [ strlen(Config->szNetmailDir) - 1] == '\\' || Config->szNetmailDir [strlen(Config->szNetmailDir) - 1] == '/')
-							Config->szNetmailDir [ strlen(Config->szNetmailDir) - 1] = 0;
-						break;
-					case 12 : /* inbound dir */
-						strlcpy(Config->szInboundDir, pcCurrentPos, sizeof(Config->szInboundDir));
-
-						/* add '\' if last char is not it */
-						if (Config->szInboundDir [ strlen(Config->szInboundDir) - 1] != '\\' &&  Config->szInboundDir [strlen(Config->szInboundDir) - 1] != '/')
-							strlcat(Config->szInboundDir, "/", sizeof(Config->szInboundDir));
-						break;
-					case 13 : /* mailer type */
-						if (stricmp(pcCurrentPos, "BINKLEY") == 0)
-							Config->MailerType = MAIL_BINKLEY;
-						else
-							Config->MailerType = MAIL_OTHER;
-						break;
-					case 14 : /* in a league? */
-						System.InterBBS = true;
-						Config->InterBBS = true;
-						break;
-					case 15 : /* regcode */
-						if (*pcCurrentPos)
-							strlcpy(Config->szRegcode, pcCurrentPos, sizeof(Config->szRegcode));
-						break;
-				}
-			}
-		}
-	}
-
-	fclose(fpConfigFile);
-
-}
-
-static void Config_Close(void)
-/*
- * Shuts down config's mem.
- *
- */
-{
-	free(Config);
-}
-
-// ------------------------------------------------------------------------- //
-
 static void ShowHelp(void)
 /*
  * Shows help screen for /? and /Help
@@ -345,7 +190,7 @@ void ODCmdLineHandler(char *flag, char *val)
 {
 	char szString[128];
 
-	bool primitive = Config == NULL;
+	bool primitive = !Config.Initialized;
 	if (flag[0] == '-' || flag[0] == '/') {
 		if (stricmp(&flag[1], "Recon") == 0) {
 			if (!primitive) {
@@ -396,7 +241,7 @@ void ODCmdLineHandler(char *flag, char *val)
 BOOL ODCmdLineFlagHandler(const char *flag)
 {
 	char szString[128];
-	bool primitive = Config == NULL;
+	bool primitive = !Config.Initialized;
 
 	if (flag[0] == '-' || flag[0] == '/') {
 		if (stricmp(&flag[1], "L") == 0 || stricmp(&flag[1], "Local") == 0) {
@@ -575,7 +420,7 @@ void System_Close(void)
 		Game_Close();
 
 		TRACEX("IBBS_Close()");
-		if (System.InterBBS)
+		if (Config.InterBBS)
 			IBBS_Close();
 
 		TRACEX("Config_Close()");
@@ -673,7 +518,23 @@ void System_Init(void)
 	if (System.Node == 0 && od_control.od_node)
 		System.Node = od_control.od_node;
 
-	Config_Init();
+	if (Verbose) {
+		DisplayStr("> Config_Init()\n");
+		delay(500);
+	}
+
+	if (!Config_Init(System.Node, NULL))
+		System_Error("Config file not found\n");
+
+	/* use log */
+	if (Config.UseLog) {
+		od_control.od_logfile = INCLUDE_LOGFILE;
+		snprintf(od_control.od_logfile_name, sizeof(od_control.od_logfile_name), "clans%d.log", System.Node);
+	}
+	if (Config.pszInfoPath)
+		strlcpy(od_control.info_path, Config.pszInfoPath, sizeof(od_control.info_path));
+	od_control.od_no_fossil = Config.NoFossil;
+	od_control.od_com_irq = Config.ComIRQ;
 
 	// init stuff
 	System.Local = false;
@@ -721,6 +582,6 @@ void System_Init(void)
 	Quests_Init();
 
 	// read in packets waiting
-	if (System.InterBBS)
+	if (Config.InterBBS)
 		IBBS_PacketIn();
 }

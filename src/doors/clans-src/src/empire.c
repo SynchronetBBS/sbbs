@@ -46,6 +46,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "myopen.h"
 #include "news.h"
 #include "packet.h"
+#include "readcfg.h"
 #include "structs.h"
 #include "system.h"
 #include "user.h"
@@ -2647,8 +2648,8 @@ static void StartEmpireWar(struct empire *Empire)
 		// initialize result beforehand
 		Result.InterBBS = false;
 		Result.DefenderType = EO_ALLIANCE;
-		Result.BBSIDFrom = Config->BBSID;
-		Result.BBSIDTo = Config->BBSID;
+		Result.BBSIDFrom = Config.BBSID;
+		Result.BBSIDTo = Config.BBSID;
 		Result.AttackerID[0] = PClan->ClanID[0];
 		Result.AttackerID[1] = PClan->ClanID[1];
 		Result.DefenderID[0] = Alliances[WhichAlliance]->CreatorID[0];
@@ -2791,8 +2792,8 @@ static void StartEmpireWar(struct empire *Empire)
 		// initialize result beforehand
 		Result.InterBBS = false;
 		Result.DefenderType = EO_CLAN;
-		Result.BBSIDFrom = Config->BBSID;
-		Result.BBSIDTo = Config->BBSID;
+		Result.BBSIDFrom = Config.BBSID;
+		Result.BBSIDTo = Config.BBSID;
 		Result.AttackerID[0] = PClan->ClanID[0];
 		Result.AttackerID[1] = PClan->ClanID[1];
 		Result.DefenderID[0] = ClanID[0];

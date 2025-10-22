@@ -50,6 +50,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "mstrings.h"
 #include "myopen.h"
 #include "parsing.h"
+#include "readcfg.h"
 #include "spells.h"
 #include "structs.h"
 #include "system.h"
@@ -172,7 +173,7 @@ static void LocalLoad(void)
 
 	qputs(" |09The Clans |07" VERSION, 0, 16);
 
-	snprintf(szString, sizeof(szString), " |07Enter login name.  Press [|09Enter|07] for |14%s", Config->szSysopName);
+	snprintf(szString, sizeof(szString), " |07Enter login name.  Press [|09Enter|07] for |14%s", Config.szSysopName);
 	qputs(szString, 0, 18);
 	snprintf(szString, sizeof(szString), " |07Node |09%03d  |15> ", System.Node);
 	qputs(szString, 0, 19);
@@ -185,8 +186,8 @@ static void LocalLoad(void)
 	if (strlen(szString))
 		strlcpy(name, szString, sizeof(name));
 	else {
-		if (strlen(Config->szSysopName))
-			strlcpy(name, Config->szSysopName, sizeof(name));
+		if (strlen(Config.szSysopName))
+			strlcpy(name, Config.szSysopName, sizeof(name));
 		else
 			strlcpy(name, "Sysop", sizeof(name));
 	}
@@ -196,7 +197,7 @@ static void LocalLoad(void)
 	strlcpy(od_control.user_name, name, sizeof(od_control.user_name));
 	/*    for (i = 0; i < (signed)strlen(name); i++)
 	      name[i] = toupper(name[i]); */
-	strlcpy(od_control.user_location, Config->szBBSName, sizeof(od_control.user_location));
+	strlcpy(od_control.user_location, Config.szBBSName, sizeof(od_control.user_location));
 	od_control.user_timelimit = 30;
 	od_control.od_info_type = CUSTOM;
 	od_control.user_ansi = true;

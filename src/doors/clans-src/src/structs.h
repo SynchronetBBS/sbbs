@@ -18,10 +18,23 @@ struct IniFile {
 };
 
 
-struct config {
+struct NodeData {
+	int number;
+	char dropDir[1024];
+	bool fossil;
+	uintptr_t addr;
+	int irq;
+};
 
+
+struct config {
+	char *pszInfoPath;
 	char szSysopName[40];
 	char szBBSName[40];
+	bool UseLog;
+	bool NoFossil;
+	bool Initialized;
+	uint8_t ComIRQ;
 
 	char szScoreFile[2][PATH_SIZE];        // 0 == ascii, 1 == ansi
 	char szRegcode[25];
@@ -32,7 +45,8 @@ struct config {
 	int16_t BBSID;
 	bool InterBBS;
 	char szNetmailDir[PATH_SIZE];
-	char szInboundDir[PATH_SIZE];
+	char **szInboundDirs;
+	int16_t NumInboundDirs;
 	int16_t MailerType;
 };
 
@@ -43,7 +57,6 @@ struct system {
 	char szMainDir[PATH_SIZE];
 
 	int16_t Node;
-	bool InterBBS;
 	bool Local;
 	bool LocalIBBS;
 };

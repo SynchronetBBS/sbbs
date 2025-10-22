@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "myopen.h"
 #include "packet.h"
 #include "parsing.h"
+#include "readcfg.h"
 #include "scores.h"
 #include "structs.h"
 #include "system.h"
@@ -214,11 +215,11 @@ void DisplayScores(bool MakeFile)
 	strlcpy(szFileName, ST_CLANSPCFILE, sizeof(szFileName));
 
 	if (MakeFile) {
-		fpScoreFile[0] = fopen(Config->szScoreFile[0], "w");
+		fpScoreFile[0] = fopen(Config.szScoreFile[0], "w");
 		if (!fpScoreFile[0])
 			return;
 
-		fpScoreFile[1] = fopen(Config->szScoreFile[1], "w");
+		fpScoreFile[1] = fopen(Config.szScoreFile[1], "w");
 		if (!fpScoreFile[1]) {
 			fclose(fpScoreFile[0]);
 			return;
@@ -366,7 +367,7 @@ void DisplayScores(bool MakeFile)
 			else {
 				if (SortData[ SortList[CurClan] ]->Living == false)
 					strlcat(szString, "Dead", sizeof(szString));
-				else if (SortData[ SortList[CurClan] ]->VillageID != Config->BBSID
+				else if (SortData[ SortList[CurClan] ]->VillageID != Config.BBSID
 						 && Game.Data->InterBBS)
 					strlcat(szString, "Visiting", sizeof(szString));
 				else
@@ -398,7 +399,7 @@ void DisplayScores(bool MakeFile)
 			else {
 				if (SortData[ SortList[CurClan] ]->Living == false)
 					strlcat(szString, "\x1B[0;31mDead", sizeof(szString));
-				else if (SortData[ SortList[CurClan] ]->VillageID != Config->BBSID
+				else if (SortData[ SortList[CurClan] ]->VillageID != Config.BBSID
 						 && Game.Data->InterBBS)
 					strlcat(szString, "Visiting", sizeof(szString));
 				else
@@ -433,7 +434,7 @@ void DisplayScores(bool MakeFile)
 			else {
 				if (SortData[ SortList[CurClan] ]->Living == false)
 					strlcat(szString, "|04Dead", sizeof(szString));
-				else if (SortData[ SortList[CurClan] ]->VillageID != Config->BBSID
+				else if (SortData[ SortList[CurClan] ]->VillageID != Config.BBSID
 						 && Game.Data->InterBBS)
 					strlcat(szString, "|0BVisiting", sizeof(szString));
 				else

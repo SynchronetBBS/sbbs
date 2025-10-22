@@ -1,0 +1,119 @@
+Breaking down all the different IBBS stuff... remember that direct is
+the default.
+
+There's a BACKUP.DAT file that keeps track of "active" packets.
+If packets in there get "too old", specific action is taken.
+- PT_CLANMOVE - Clan gets re-added to the game
+	Via IBBS_AddToGame()
+- PT_ATTACK - Troops come back
+	Via ReturnLostAttack()
+
+Each packet strats with a struct Packet
+
+The packet has a Game ID, which must match except for PT_RESET packets,
+which start a new game with the specified struct game_data.
+This appears to be the time reset was ran in HH:MM:SS:00 format.
+The field is 16 bytes long, so allowing for a NUL, gives if 15 chars to
+play with... YYYYMMDDHHMMSS fits
+
+The packet file has a sequence ID as the last character of the
+extension, so we can process in order from the same BBS
+
+Processing in global order would require reading the struct Packet
+
+PT_CLANMOVE		0
+	- Generated from leaving.data
+	- Contains a struct clan followed by six struct pc
+	- Sent to destination BBS
+	- Copy stored in backup
+	- On receipt, generates a PT_DATAOK packet
+
+PT_DATAOK       1
+	- Generated in response to a PT_CLANMOVE
+	- Contains just the ClanID if the received clan
+	- When received, removes the PT_CLANMOVE from the backup via IBBS_RemoveFromBackup()
+
+PT_RESET        2
+	- Contains a struct game_data
+	- IBBS_Reset
+	- On receipt, a PT_GOTRESET is generated
+
+PT_GOTRESET     3
+	- Updates the node reset received flag
+	- No data after the header
+
+PT_RECON        4
+	- No data after the header
+	- On receipt, PT_GOTRECON is returned
+
+PT_GOTRECON     5
+	- No data after the header
+
+PT_NEWUSER      6
+	- Contains a struct UserInfo
+	- Generated from BBSIDs other than 1
+	- Only addressed to BBSID 1
+	- On receipt checks if the user already exists... if they do, sends back a PT_DELUSER for the new user
+		- "The User" in this case is the local user name on the BBS!!!
+	- Sends PT_ADDUSER to every BBS
+	- Adds to local user list
+
+PT_DELUSER      7
+	- Contains a struct UserInfo
+	- On receipt, the clan is deleted
+
+PT_ADDUSER      8
+	- Contains a struct UserInfo
+	- On receipt, added to user list
+	
+PT_SUBUSER      9           // subtract user, opposite of add user :)
+	- Sent to all systems when a clan commits suicide
+	- On receipt, user is deleted
+	
+PT_COMEBACK     10          // come back option
+	- Contains the Clan ID and the originating BBS ID
+	- On receipt, if the Clan is there, that clan and its army goes into the LeavingData
+
+PT_MSJ          11          // message posted
+	- Contains a struct Message followed by message text
+	- On receipt, posts message
+
+PT_ATTACK       12          // InterBBS attack -- yeah!
+	- Contains a struct AttackPacket
+	- Goes into backup.dat
+	- On receipt, battle is performed on the target and a PT_ATTACKRESULT is sent back
+
+PT_ATTACKRESULT 13
+	- Contains a struct AttackResult
+	- Processed and news generated etc.
+
+PT_SPY          14
+	- Contains a struct SpyAttemptPacket
+	- Generates a PT_SPYRESULT
+
+PT_SPYRESULT    15
+	- Contains a struct SpyResultPacket
+
+PT_SCOREDATA    16
+	- Has an int16_t count of scores, followed by that many struct UserScore
+	- Sent only to BBS 1
+	- Not send from BBS 1 (obviously)
+	- Processed by ProcessScoreData
+	- Merged with current ipscores.dat
+
+PT_SCORELIST    17
+	- Has an int16_t count of scores
+		- Then an 11 character score data
+		- Then a series of struct UserScore
+	- Gets written to ipscores.dat
+	- Sent by BBS ID 1 only to all other BBSs
+
+PT_NEWNDX       18
+	- Contains a new world.ndx file
+	- Written as "world.ndx" so the world.id file would get ignored
+	- TODO: Write as the same filename as the source
+		- Not much point until the game is multinode though
+
+PT_ULIST        19
+	- Contains a complete userlist.data
+	- Overwrites in place... likely clobbering new users that haven't made it to BBS 1 yet
