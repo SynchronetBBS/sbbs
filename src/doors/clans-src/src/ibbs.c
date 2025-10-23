@@ -3078,7 +3078,8 @@ static void DeleteMessageWithFile(const char *pszFileName, tIBInfo *InterBBSInfo
 				    && ThisNode.wNet == hdr.wDestNet
 				    && ThisNode.wNode == hdr.wDestNode
 				    && ThisNode.wPoint == hdr.wDestPoint
-				    && strcmp(InterBBSInfo->szProgName, hdr.szToUserName) == 0) {
+				    && (strcmp(InterBBSInfo->szProgName, hdr.szToUserName) == 0)
+				    && (strcmp(InterBBSInfo->szProgName, hdr.szFromUserName) == 0)) {
 					// Then see if the file is attached
 					const char *pktfname = hdr.szSubject;
 					switch (*pktfname) {
