@@ -19,8 +19,9 @@
 #define MAX_SPELLS              40
 #define NUM_ATTRIBUTES          6
 
-#define MAIL_OTHER              0           // type of mailers
-#define MAIL_BINKLEY            1
+#define MAIL_BINKLEY            0           // type of mailers
+#define MAIL_OTHER              1           // type of mailers
+#define MAIL_NONE               2
 
 #define MAX_TOKEN_CHARS         32
 #define MAX_MEMBERS             20

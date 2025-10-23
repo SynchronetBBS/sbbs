@@ -27,6 +27,7 @@
 
 #include <OpenDoor.h>
 
+#include "defines.h"
 #include "interbbs.h"
 #include "myibbs.h"
 #include "myopen.h"
@@ -34,9 +35,6 @@
 #include "structs.h"
 #include "system.h"
 #include "video.h"
-
-#define MAIL_OTHER      0
-#define MAIL_BINKLEY    1
 
 static char aszShortMonthName[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
 								 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
