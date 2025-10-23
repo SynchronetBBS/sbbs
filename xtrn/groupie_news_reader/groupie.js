@@ -25,6 +25,8 @@
  *                              newsgroup cache file for a server, then also request
  *                              a list of new newsgroups since the cached file's
  *                              timestamp
+ * 2025-09-30 Eric Oulashin     Version 1.04
+ *                              Mechanism to subscribe to newsgroups
  */
 
 "use strict";
@@ -60,8 +62,8 @@ var hexdump = load('hexdump_lib.js');
 
 // Program and version information
 var PROGRAM_NAME = "Groupie";
-var PROGRAM_VERSION = "1.03";
-var PROGRAM_DATE = "2025-09-30";
+var PROGRAM_VERSION = "1.04";
+var PROGRAM_DATE = "2025-10-22";
 
 
 ///////////////////////////////////
@@ -177,8 +179,11 @@ var articleListHdrFilename = findANSOrASCVersionOfFile(gSettings.articleListHdrF
 var gNewsgroupListHdrLines = loadAnsOrAscFileIntoArray(newsgrpHdrFilename, gSettings.newsgroupListHdrMaxNumLines);
 var gArticleListHdrLines = loadAnsOrAscFileIntoArray(articleListHdrFilename, gSettings.articleListHdrMaxNumLines);
 
-// Read the user's settings.  If the user settings file didn't exist, then prompt the user for settings.
+// User settings filename (and store whether the user's settings file existed; if not, this is the
+// first time the user has run this reader)
 var gUserSettingsFilename = system.data_dir + "user/" + gPaddedUserNum + ".groupie.ini";
+var gUserSettingsFileExistedOnStart = file_exists(gUserSettingsFilename);
+// Read the user's settings.  If the user settings file didn't exist, then prompt the user for settings.
 var gUserSettings = ReadUserSettings(gUserSettingsFilename, gSettings.server);
 // If configured to append the BBS's domain to the user's username,
 // then append it as @domain
@@ -188,7 +193,7 @@ if (gSettings.appendBBSDomainToUsernames)
 // default server settings and try to read them again.
 if (!gUserSettings.successfullyRead)
 {
-	if (SaveUserSettings(gUserSettingsFilename))
+	if (SaveUserSettings(gUserSettingsFilename, true))
 		gUserSettings = ReadUserSettings(gUserSettingsFilename, gSettings.server);
 }
 /*
@@ -212,6 +217,9 @@ if (!gUserSettings.successfullyRead)
 	}
 }
 */
+
+// TODO
+//gUserSettings.subscribedNewsgroups
 
 // Create the news reader client object and connect.
 // This is in a loop in case connection/authentication fails and the user has
@@ -290,25 +298,40 @@ while (continueConnectLoop)
 	}
 }
 
+
+// If the user's settings file didn't exist on startup, then this is the first
+// time the user has run this reader, so show an initial welcome/help screen.
+if (!gUserSettingsFileExistedOnStart)
+{
+	console.line_counter = 0;
+	console.clear("N");
+	DisplayFirstTimeUsageHelp();
+}
+
 // Get the list of newsgroups & create the newsgroup menu
 // Filename for the newsgroup list cache for the server
 //var gNewsgroupListFilename = js.exec_dir + gSettings.server.hostname + ".grpListCache";
 var gNewsgroupListFilename = js.exec_dir + gUserSettings.NNTPSettings.hostname + ".grpListCache";
-console.print("Getting list of newsgroups...\r\n");
+// If the user has subscribed to some newsgroups, ask if they want to see only
+// their subscribed newsgroups or all newsgroups
+var gShowOnlySubscribedNewsgroups = false;
+if (gUserSettings.subscribedNewsgroups.length > 0)
+{
+	var promptTextColor = "\x01n\x01c";
+	//var promptParenColor = "\x01g\x01h";
+	//var promptInsideParenTextColor = "\x01c"; // Will have high from previous color
+	//var promptInsideParenEqualsColor = "\x01y"; // Will have high from previous color
+	var promptInsideParenTextColor = "\x01n\x01c"
+	var promptParenColor = "\x01g\x01h";
+	var promptInsideParenEqualsColor = "\x01h\x01y";
+	var promptText = format("%sShow only subscribed groups %s(%sno%s=%sshow all%s)%s", promptTextColor, promptParenColor, promptInsideParenTextColor,
+	                         promptInsideParenEqualsColor, promptInsideParenTextColor, promptParenColor, promptTextColor);
+	gShowOnlySubscribedNewsgroups = console.yesno(promptText);
+}
+else
+	console.print("Getting list of newsgroups...\r\n");
 // Create the newsgroup menu, with the newsgroups
-var gCreateNewsgrpMenuRetObj = CreateNewsgroupMenu(nntpClient);
-if (gCreateNewsgrpMenuRetObj.errorMsg.length > 0)
-{
-	nntpClient.Disconnect();
-	printf("Error getting newsgroup list: %s\n", gCreateNewsgrpMenuRetObj.errorMsg);
-	exit(2);
-}
-else if (gCreateNewsgrpMenuRetObj.numNewsgroups == 0)
-{
-	console.print("\x01nThere are no newsgroups.\r\n\x01p");
-	exit(0);
-}
-
+var gCreateNewsgrpMenuRetObj = CreateNewsgroupMenu_ExitOnError(nntpClient, gUserSettings.subscribedNewsgroups, gShowOnlySubscribedNewsgroups);
 
 
 // The main program logic is here:
@@ -338,7 +361,7 @@ while (gCurrentState != STATE_EXIT)
 
 			// Let the user start by choosing a newsgroup. From there, the user can choose an
 			// article and then read it.
-			gCurrentActionRetObj = ChooseNewsgroup(gCreateNewsgrpMenuRetObj.newsgrpMenu, gCreateNewsgrpMenuRetObj.newsgroupItemFormatStr, gCreateNewsgrpMenuRetObj.hdrFormatStr);
+			gCurrentActionRetObj = ChooseNewsgroup(gCreateNewsgrpMenuRetObj.newsgrpMenu, gCreateNewsgrpMenuRetObj.newsgroupItemFormatStr, gCreateNewsgrpMenuRetObj.hdrFormatStr, gShowOnlySubscribedNewsgroups);
 			gCurrentState = gCurrentActionRetObj.nextState;
 			gChosenNewsgroupName = gCurrentActionRetObj.chosenNewsgroup;
 			gSelectNGRetObj = gCurrentActionRetObj.selectNGRetObj;
@@ -585,7 +608,8 @@ function ReadUserSettings(pUserSettingsFilename, pDefaultNNTPConnectOptions)
 {
 	var retObj = {
 		successfullyRead: false,
-		NNTPSettings: new NNTPConnectOptions()
+		NNTPSettings: new NNTPConnectOptions(),
+		subscribedNewsgroups: []
 	};
 
 	// Copy the default NNTP server credentials to the user credentials object
@@ -597,6 +621,7 @@ function ReadUserSettings(pUserSettingsFilename, pDefaultNNTPConnectOptions)
 	if (settingsFile.open("r"))
 	{
 		var userSettings = settingsFile.iniGetObject("NNTPSettings");
+		var subscribedNewsgroups = settingsFile.iniGetValue("SUBSCRIBED_NEWSGROUPS", "newsgroups_list", "");
 		settingsFile.close();
 		retObj.successfullyRead = true;
 		for (var prop in retObj.NNTPSettings)
@@ -612,29 +637,36 @@ function ReadUserSettings(pUserSettingsFilename, pDefaultNNTPConnectOptions)
 					retObj.NNTPSettings[prop] = userSettings[prop];
 			}
 		}
+		if (subscribedNewsgroups.length > 0)
+			retObj.subscribedNewsgroups = subscribedNewsgroups.split(",");
 	}
 
 	return retObj;
 }
 
 // Saves the user's settings
-function SaveUserSettings(pUserSettingsFilename)
+function SaveUserSettings(pUserSettingsFilename, pSaveNNTPSettings)
 {
 	var succeeded = false;
 	var settingsFile = new File(pUserSettingsFilename);
 	if (settingsFile.open(settingsFile.exists ? "r+" : "w+"))
 	{
 		succeeded = true;
-		for (var prop in gUserSettings.NNTPSettings)
+		if (pSaveNNTPSettings)
 		{
-			var value = gUserSettings.NNTPSettings[prop];
-			// Base64-encode the user's password so that it isn't just
-			// stored as plaintext
-			if (prop == "password")
-				value = base64_encode(gUserSettings.NNTPSettings[prop]);
-			if (!settingsFile.iniSetValue("NNTPSettings", prop, value))
-				succeeded = false;
+			for (var prop in gUserSettings.NNTPSettings)
+			{
+				var value = gUserSettings.NNTPSettings[prop];
+				// Base64-encode the user's password so that it isn't just
+				// stored as plaintext
+				if (prop == "password")
+					value = base64_encode(gUserSettings.NNTPSettings[prop]);
+				if (!settingsFile.iniSetValue("NNTPSettings", prop, value))
+					succeeded = false;
+			}
 		}
+		if (!settingsFile.iniSetValue("SUBSCRIBED_NEWSGROUPS", "newsgroups_list", gUserSettings.subscribedNewsgroups.join(",")))
+			succeeded = false;
 		//settingsFile.flush();
 		settingsFile.close();
 	}
@@ -738,10 +770,10 @@ function LetUserUpdateSettings(pUserSettingsFilename)
 	gUserSettings.NNTPSettings.username = console.getstr(gUserSettings.NNTPSettings.username, console.screen_columns - 10, K_EDIT | K_LINE | K_TRIM | K_NOSPIN);
 	console.print("\x01cPassword\x01g\x01h: \x01n");
 	gUserSettings.NNTPSettings.password = console.getstr(console.screen_columns - 10, K_LINE | K_TRIM | K_NOSPIN | K_NOECHO);
-	if (!SaveUserSettings(pUserSettingsFilename))
+	if (!SaveUserSettings(pUserSettingsFilename, true))
 	{
 		log(LOG_ERR, format("* %s: Failed to save user settings to file!", PROGRAM_NAME));
-		console.print("\x01n\x01y\x01hFailed to save user settings to file!\x01n\r\n\x01p");
+		console.print("\x01n\x01y\x01hFailed to save your settings!\x01n\r\n\x01p");
 	}
 }
 
@@ -811,13 +843,16 @@ function attrCodeStr(pAttrCodeCharStr)
 //
 // Parameters:
 //  pNNTPClient: The NNTPClient object to communicate with the news server
+//  pSubscribedNewsgroups: An array of names of subscribed newsgroups
+//  pShowOnlySubscribedNewsgroups: Boolean - Whether or not to show only the subscribed
+//                                 newsgroups (if there are any)
 //
 // Return value: An object with the following properties:
 //               newsgrpMenu: The DDLightbarMenu object representing the menu. Will be null on error or if there are no newsgroups.
 //               newsgroupItemFormatStr: printf format string for newsgroups & newsgroup menu header
 //               errorMsg: An empty string on success, or will contain an error string on failure
 //               numNewsgroups: The number of newsgroups retrieved
-function CreateNewsgroupMenu(pNNTPClient)
+function CreateNewsgroupMenu(pNNTPClient, pSubscribedNewsgroups, pShowOnlySubscribedNewsgroups)
 {
 	var newsgroupNameWidth = Math.floor(console.screen_columns / 2) - 1;
 	var newsgroupDescWidth = console.screen_columns - newsgroupNameWidth - 1;
@@ -830,127 +865,150 @@ function CreateNewsgroupMenu(pNNTPClient)
 		numNewsgroups: 0
 	};
 
-	var timeoutOverride = 15;
+	var usingSubscribedNewsgroups = (pShowOnlySubscribedNewsgroups && pSubscribedNewsgroups.length > 0);
+	// If we are to only show subscribed newsgroups (and there are some), then
+	// just use those.  Otherwise, request the full list of newsgroups from
+	// the server.
 	var getNewsgrpsRetObj = null;
-	if (!file_exists(gNewsgroupListFilename))
+	if (usingSubscribedNewsgroups)
 	{
-		getNewsgrpsRetObj = pNNTPClient.GetNewsgroups(timeoutOverride);
-		if (getNewsgrpsRetObj.succeeded)
-		{
-			retObj.numNewsgroups = getNewsgrpsRetObj.newsgroupArray.length;
-			if (getNewsgrpsRetObj.newsgroupArray.length > 0)
-			{
-				// Write the newsgroup list to gNewsgroupListFilename
-				var outFile = new File(gNewsgroupListFilename);
-				if (outFile.open("w"))
-				{
-					for (var i = 0; i < getNewsgrpsRetObj.newsgroupArray.length; ++i)
-					{
-						outFile.writeln(getNewsgrpsRetObj.newsgroupArray[i].name);
-						outFile.writeln(getNewsgrpsRetObj.newsgroupArray[i].desc);
-						outFile.writeln("");
-					}
-					outFile.close();
-				}
-			}
-			else // There are no newsgroups
-				return retObj;
-		}
-		else
-		{
-			retObj.errorMsg = pNNTPClient.GetLastError();
-			if (retObj.errorMsg.length == 0)
-				retObj.errorMsg = "Failed to retrieve newsgroups";
-			return retObj;
-		}
-	}
-	else
-	{
-		// gNewsgroupListFilename exists
-		// Set up getNewsgrpsRetObj like it is from GetNewsgroups()
 		getNewsgrpsRetObj = {
-			succeeded: false,
+			succeeded: true,
 			responseLine: "",
 			newsgroupArray: []
 		};
-
-		var count = 1; // 1: Newsgroup name; 2: Newsgroup description
-		var newsgrpName = "";
-		var inFile = new File(gNewsgroupListFilename);
-		var grpCacheFileTimestamp = inFile.date;
-		if (inFile.open("r"))
+		for (var i = 0; i < pSubscribedNewsgroups.length; ++i)
 		{
-			while (!inFile.eof)
+			getNewsgrpsRetObj.newsgroupArray.push({
+				name: pSubscribedNewsgroups[i],
+				desc: pSubscribedNewsgroups[i]
+			});
+		}
+		retObj.numNewsgroups = getNewsgrpsRetObj.newsgroupArray.length;
+	}
+	else
+	{
+		var timeoutOverride = 15;
+		if (!file_exists(gNewsgroupListFilename))
+		{
+			getNewsgrpsRetObj = pNNTPClient.GetNewsgroups(timeoutOverride);
+			if (getNewsgrpsRetObj.succeeded)
 			{
-				var fileLine = inFile.readln(4096);
-				// fileLine should be a string, but I've seen some cases
-				// where for some reason it isn't.  If it's not a string,
-				// then continue onto the next line.
-				if (typeof(fileLine) !== "string")
-					continue;
-
-				switch (count)
+				retObj.numNewsgroups = getNewsgrpsRetObj.newsgroupArray.length;
+				if (getNewsgrpsRetObj.newsgroupArray.length > 0)
 				{
-					case 0: // Ignore the line (blank line expected here)
-						count = 1;
-						break;
-					case 1: // Newsgroup name
-						newsgrpName = fileLine;
-						count = 2;
-						break;
-					case 2: // Newsgroup description
-						if (newsgrpName != "")
-						{
-							getNewsgrpsRetObj.newsgroupArray.push({
-								name: newsgrpName,
-								desc: fileLine
-							});
-						}
-						count = 0; // Ignore the next line
-						break;
-				}
-			}
-			inFile.close();
-
-			// Also, get any new newsgroups since the cache file was written
-			var ngRet = pNNTPClient.GetNewNewsgroupsSinceLocalTimestamp(grpCacheFileTimestamp, timeoutOverride);
-			if (ngRet.succeeded)
-			{
-				if (ngRet.newsgroupArray.length > 0)
-				{
-					for (var i = 0; i < ngRet.newsgroupArray.length; ++i)
-					{
-						getNewsgrpsRetObj.newsgroupArray.push({
-							name: ngRet.newsgroupArray[i].name,
-							desc: ngRet.newsgroupArray[i].name
-						});
-					}
-
-					// Add the new newsgroups to the newsgroup cache file
+					// Write the newsgroup list to gNewsgroupListFilename
 					var outFile = new File(gNewsgroupListFilename);
-					if (outFile.open("a"))
+					if (outFile.open("w"))
 					{
-						for (var i = 0; i < ngRet.newsgroupArray.length; ++i)
+						for (var i = 0; i < getNewsgrpsRetObj.newsgroupArray.length; ++i)
 						{
-							outFile.writeln(ngRet.newsgroupArray[i].name);
-							outFile.writeln(ngRet.newsgroupArray[i].name);
+							outFile.writeln(getNewsgrpsRetObj.newsgroupArray[i].name);
+							outFile.writeln(getNewsgrpsRetObj.newsgroupArray[i].desc);
 							outFile.writeln("");
 						}
 						outFile.close();
 					}
 				}
+				else // There are no newsgroups
+					return retObj;
 			}
 			else
 			{
-				var fileTimestampStr = strftime("%Y-%m-%d %H:%M:%S", grpCacheFileTimestamp);
-				if (ngRet.responseLine.length > 0)
-					retObj.errorMsg = format("Failed to retrieve new newsgroups since %s: %s", fileTimestampStr, ngRet.responseLine);
-				else
-					retObj.errorMsg = format("Failed to retrieve new newsgroups since %s", fileTimestampStr);
+				retObj.errorMsg = pNNTPClient.GetLastError();
+				if (retObj.errorMsg.length == 0)
+					retObj.errorMsg = "Failed to retrieve newsgroups";
 				return retObj;
 			}
+		}
+		else
+		{
+			// gNewsgroupListFilename exists
+			// Set up getNewsgrpsRetObj like it is from GetNewsgroups()
+			getNewsgrpsRetObj = {
+				succeeded: false,
+				responseLine: "",
+				newsgroupArray: []
+			};
 
-			retObj.numNewsgroups = getNewsgrpsRetObj.newsgroupArray.length;
+			var count = 1; // 1: Newsgroup name; 2: Newsgroup description
+			var newsgrpName = "";
+			var inFile = new File(gNewsgroupListFilename);
+			var grpCacheFileTimestamp = inFile.date;
+			if (inFile.open("r"))
+			{
+				while (!inFile.eof)
+				{
+					var fileLine = inFile.readln(4096);
+					// fileLine should be a string, but I've seen some cases
+					// where for some reason it isn't.  If it's not a string,
+					// then continue onto the next line.
+					if (typeof(fileLine) !== "string")
+						continue;
+
+					switch (count)
+					{
+						case 0: // Ignore the line (blank line expected here)
+							count = 1;
+							break;
+						case 1: // Newsgroup name
+							newsgrpName = fileLine;
+							count = 2;
+							break;
+						case 2: // Newsgroup description
+							if (newsgrpName != "")
+							{
+								getNewsgrpsRetObj.newsgroupArray.push({
+									name: newsgrpName,
+									desc: fileLine
+								});
+							}
+							count = 0; // Ignore the next line
+							break;
+					}
+				}
+				inFile.close();
+
+				// Also, get any new newsgroups since the cache file was written
+				var ngRet = pNNTPClient.GetNewNewsgroupsSinceLocalTimestamp(grpCacheFileTimestamp, timeoutOverride);
+				if (ngRet.succeeded)
+				{
+					if (ngRet.newsgroupArray.length > 0)
+					{
+						for (var i = 0; i < ngRet.newsgroupArray.length; ++i)
+						{
+							getNewsgrpsRetObj.newsgroupArray.push({
+								name: ngRet.newsgroupArray[i].name,
+								desc: ngRet.newsgroupArray[i].name
+							});
+						}
+
+						// Add the new newsgroups to the newsgroup cache file
+						var outFile = new File(gNewsgroupListFilename);
+						if (outFile.open("a"))
+						{
+							for (var i = 0; i < ngRet.newsgroupArray.length; ++i)
+							{
+								outFile.writeln(ngRet.newsgroupArray[i].name);
+								outFile.writeln(ngRet.newsgroupArray[i].name);
+								outFile.writeln("");
+							}
+							outFile.close();
+						}
+					}
+				}
+				else
+				{
+					var fileTimestampStr = strftime("%Y-%m-%d %H:%M:%S", grpCacheFileTimestamp);
+					if (ngRet.responseLine.length > 0)
+						retObj.errorMsg = format("Failed to retrieve new newsgroups since %s: %s", fileTimestampStr, ngRet.responseLine);
+					else
+						retObj.errorMsg = format("Failed to retrieve new newsgroups since %s", fileTimestampStr);
+					return retObj;
+				}
+
+				retObj.numNewsgroups = getNewsgrpsRetObj.newsgroupArray.length;
+			}
 		}
 	}
 
@@ -966,6 +1024,12 @@ function CreateNewsgroupMenu(pNNTPClient)
 
 	// Sort the newsgroups array
 	getNewsgrpsRetObj.newsgroupArray.sort(function(pA, pB) {
+		/*
+		// Temporary
+		for (var prop in pA)
+			console.print(prop + ": " + pA[prop] + "\r\n");
+		// End Temporary
+		*/
 		var nameA = pA.name.toUpperCase();
 		var nameB = pB.name.toUpperCase();
 		if (nameA < nameB)
@@ -1003,10 +1067,13 @@ function CreateNewsgroupMenu(pNNTPClient)
 
 	retObj.newsgrpMenu.allowANSI = LightbarIsSupported();
 	retObj.newsgrpMenu.colors.itemNumColor = gSettings.colors.articleNumColor; // For numbered mode
-	retObj.newsgrpMenu.multiSelect = false;
+	//retObj.newsgrpMenu.multiSelect = false;
+	retObj.newsgrpMenu.multiSelect = true;
 	retObj.newsgrpMenu.ampersandHotkeysInItems = false;
 
 	var additionalQuitKeys = "Qq/nN?" + CTRL_Q;
+	if (usingSubscribedNewsgroups)
+		additionalQuitKeys += KEY_DEL;
 	retObj.newsgrpMenu.AddAdditionalQuitKeys(additionalQuitKeys);
 
 
@@ -1020,6 +1087,24 @@ function CreateNewsgroupMenu(pNNTPClient)
 	}
 
 	return retObj;
+}
+
+// UI facilitator: Creates the newsgroup menu and exits if there's an error
+function CreateNewsgroupMenu_ExitOnError(pNNTPClient, pSubscribedNewsgroups, pShowOnlySubscribedNewsgroups)
+{
+	var createNewsgrpMenuRetObj = CreateNewsgroupMenu(pNNTPClient, pSubscribedNewsgroups, pShowOnlySubscribedNewsgroups);
+	if (createNewsgrpMenuRetObj.errorMsg.length > 0)
+	{
+		nntpClient.Disconnect();
+		printf("Error getting newsgroup list: %s\n", createNewsgrpMenuRetObj.errorMsg);
+		exit(2);
+	}
+	else if (createNewsgrpMenuRetObj.numNewsgroups == 0)
+	{
+		console.print("\x01nThere are no newsgroups.\r\n\x01p");
+		exit(0);
+	}
+	return createNewsgrpMenuRetObj;
 }
 
 // Generates an object with the newsgroup heirarchy. Newsgroup names are split on dots and
@@ -1384,7 +1469,20 @@ function shortMonthNameToNum(pMonthName)
 
 // Lets the user choose a newsgroup (with a newsgroup menu that's already created),
 // then choose an article & potentially read it
-function ChooseNewsgroup(pNewsgroupMenu, pNewsgroupFormatStr, pListHdrFormatStr)
+//
+// Parameters:
+//  pNewsgroupMenu: The newsgroup menu object (a DDLightbarMenu)
+//  pNewsgroupFormatStr: The format string for displaying newsgroups
+//  pListHdrFormatStr: The format string for the list header
+//  pShowingOnlySubscribedNewsgroups: Boolean - Whether or not the user is seeing
+//                                    only subscribed newsgroups
+//
+// Return value: An object with the following properties:
+//               nextState: The next state that the reader should be in
+//               selectNGRetObj: An object returned from the user selecting a newsgroup.
+//                               If none selected, this will be null.
+//               chosenNewsgroup: The name of the chosen newsgroup (if the user chose one)
+function ChooseNewsgroup(pNewsgroupMenu, pNewsgroupFormatStr, pListHdrFormatStr, pShowingOnlySubscribedNewsgroups)
 {
 	var retObj = {
 		nextState: STATE_CHOOSING_NEWSGROUP,
@@ -1392,9 +1490,8 @@ function ChooseNewsgroup(pNewsgroupMenu, pNewsgroupFormatStr, pListHdrFormatStr)
 		chosenNewsgroup: "",
 	};
 
-	// Create the key help line if it hasn't been created yet
-	if (ChooseNewsgroup.keyHelpLine === undefined)
-		ChooseNewsgroup.keyHelpLine = CreateNewsgrpListHelpLine();
+	// Create the key help line
+	ChooseNewsgroup.keyHelpLine = CreateNewsgrpListHelpLine(pShowingOnlySubscribedNewsgroups);
 
 	console.line_counter = 0; // To prevent a pause before the message list comes up
 	console.clear("N");
@@ -1447,117 +1544,370 @@ function ChooseNewsgroup(pNewsgroupMenu, pNewsgroupFormatStr, pListHdrFormatStr)
 		drawMenu = true;
 		console.attributes = "N";
 		console.print("\r");
-		// Quit totally out of Groupie
-		if (pNewsgroupMenu.lastUserInput == CTRL_Q)
+		if (pNewsgroupMenu.multiSelect)
 		{
-			retObj.nextState = STATE_EXIT;
-			continueOn = false;
-		}
-		// / key: Search; N: Next (if search text has already been entered
-		else if (pNewsgroupMenu.lastUserInput == "/" || lastUserKeyUpper == "N")
-		{
-			if (pNewsgroupMenu.lastUserInput == "/")
+			// Multi-select is enabled in the menu
+
+			// If the GetVal() return value (selectedNG) is null, then that means
+			// the user didn't multi-select any newsgroups. In that case, if the
+			// user pressed Enter, we'll want to get the newsgroup at the current
+			// menu item. Or if the user pressed one of the quit keys, then we'll
+			// want to quit.
+			if (selectedNG == null)
 			{
-				if (LightbarIsSupported())
+				//console.print("Last keypress enter? - " + (pNewsgroupMenu.lastUserInput == KEY_ENTER) + "\r\n");
+				if (pNewsgroupMenu.lastUserInput == KEY_ENTER)
 				{
-					console.gotoxy(1, console.screen_rows);
-					console.cleartoeol("N");
-					console.gotoxy(1, console.screen_rows);
-				}
-				else
-					console.print("\x01n\r\n");
-				var promptText = "Search: ";
-				console.print(promptText);
-				searchText = console.getstr(console.screen_columns - promptText.length - 1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
-			}
-			// If the user entered text, then do the search, and if found,
-			// found, go to the page and select the item indicated by the
-			// search.
-			if (searchText.length > 0)
-			{
-				var foundItem = false;
-				var searchTextUpper = searchText.toUpperCase();
-				var numItems = pNewsgroupMenu.NumItems();
-				for (var i = itemSearchStartIdx; i < numItems; ++i)
-				{
-					var menuItem = pNewsgroupMenu.GetItem(i);
-					if (menuItem != null)
+					//printf("Selected item idx: %d\r\n", pNewsgroupMenu.selectedItemIdx);
+					var currentMenuItem = pNewsgroupMenu.GetItem(pNewsgroupMenu.selectedItemIdx);
+					if (currentMenuItem != null)
 					{
-						// In the item, retval is the newsgroup name
-						var newsgroupNameUpper = menuItem.retval.toUpperCase();
-						var newsgroupDescUpper = pNewsgroupMenu.fullDescs[i].toUpperCase();
-						if (newsgroupNameUpper.indexOf(searchTextUpper) > -1 || newsgroupDescUpper.indexOf(searchTextUpper) > -1)
+						// Newsgroup name:
+						/*
+						if (LightbarIsSupported())
+							console.gotoxy(1, pNewsgroupMenu.pos.y + pNewsgroupMenu.size.height + 1);
+						else
+							console.crlf();
+						*/
+						if (LightbarIsSupported())
+							console.gotoxy(1, pNewsgroupMenu.pos.y + pNewsgroupMenu.size.height + 1);
+						//console.crlf();
+						// TODO
+						var selectNGRetObj = nntpClient.SelectNewsgroup(currentMenuItem.retval);
+						if (selectNGRetObj.succeeded)
 						{
-							pNewsgroupMenu.SetSelectedItemIdx(i);
-							foundItem = true;
-							itemSearchStartIdx = i + 1;
-							if (itemSearchStartIdx >= pNewsgroupMenu.NumItems())
-								itemSearchStartIdx = 0;
-							break;
+							/*
+							console.print("Newsgroup selection succeeded\r\n");
+							console.print("Estimated # articles: " + selectNGRetObj.estNumArticles + "\r\n");
+							console.print("First article #: " + selectNGRetObj.firstArticleNum + "\r\n");
+							console.print("Last article #: " + selectNGRetObj.lastArticleNum + "\r\n");
+							*/
+
+							// Next state: Let the user list articles in the newsgroup
+							retObj.nextState = STATE_LISTING_ARTICLES_IN_NEWSGROUP;
+							retObj.chosenNewsgroup = currentMenuItem.retval;
+							retObj.selectNGRetObj = selectNGRetObj;
+							continueOn = false;
+						}
+						else
+							console.print("* Newsgroup selection failed!\r\n\x01p");
+					}
+				}
+				else if (pNewsgroupMenu.lastUserInput == CTRL_Q || pNewsgroupMenu.lastUserInput == KEY_ESC || lastUserKeyUpper == "Q")
+				{
+					//console.crlf();
+					//console.print("Aborted\r\n");
+					retObj.nextState = STATE_EXIT;
+					retObj.chosenNewsgroup = "";
+					retObj.selectNGRetObj = null;
+					continueOn = false;
+				}
+				// / key: Search; N: Next (if search text has already been entered
+				else if (pNewsgroupMenu.lastUserInput == "/" || lastUserKeyUpper == "N")
+				{
+					if (pNewsgroupMenu.lastUserInput == "/")
+					{
+						if (LightbarIsSupported())
+						{
+							console.gotoxy(1, console.screen_rows);
+							console.cleartoeol("N");
+							console.gotoxy(1, console.screen_rows);
+						}
+						else
+							console.print("\x01n\r\n");
+						var promptText = "Search: ";
+						console.print(promptText);
+						searchText = console.getstr(console.screen_columns - promptText.length - 1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
+					}
+					// If the user entered text, then do the search, and if found,
+					// found, go to the page and select the item indicated by the
+					// search.
+					if (searchText.length > 0)
+					{
+						var foundItem = false;
+						var searchTextUpper = searchText.toUpperCase();
+						var numItems = pNewsgroupMenu.NumItems();
+						for (var i = itemSearchStartIdx; i < numItems; ++i)
+						{
+							var menuItem = pNewsgroupMenu.GetItem(i);
+							if (menuItem != null)
+							{
+								// In the item, retval is the newsgroup name
+								var newsgroupNameUpper = menuItem.retval.toUpperCase();
+								var newsgroupDescUpper = pNewsgroupMenu.fullDescs[i].toUpperCase();
+								if (newsgroupNameUpper.indexOf(searchTextUpper) > -1 || newsgroupDescUpper.indexOf(searchTextUpper) > -1)
+								{
+									pNewsgroupMenu.SetSelectedItemIdx(i);
+									foundItem = true;
+									itemSearchStartIdx = i + 1;
+									if (itemSearchStartIdx >= pNewsgroupMenu.NumItems())
+										itemSearchStartIdx = 0;
+									break;
+								}
+							}
+						}
+						drawMenu = foundItem;
+						if (!foundItem)
+							displayErrorMsgAtBottomScreenRow("No result(s) found", false);
+					}
+					else
+					{
+						itemSearchStartIdx = 0;
+						drawMenu = false;
+					}
+					writeKeyHelpLine = true;
+				}
+				else if (pNewsgroupMenu.lastUserInput == "?")
+				{
+					console.line_counter = 0; // To prevent a pause before the message list comes up
+					console.clear("N");
+					DisplayChooseNewsgroupHelp();
+					drawMenu = true;
+					writeTopHdrs = true;
+					writeKeyHelpLine = true;
+					console.line_counter = 0; // To prevent a pause before the message list comes up
+					console.clear("N");
+				}
+				// DEL: Clear subscribed newsgroups
+				else if (pNewsgroupMenu.lastUserInput == KEY_DEL)
+				{
+					if (pShowingOnlySubscribedNewsgroups)
+					{
+						if (LightbarIsSupported())
+						{
+							console.gotoxy(1, console.screen_rows);
+							console.cleartoeol("N");
+							console.gotoxy(1, console.screen_rows);
+						}
+						else
+							console.print("\x01n\r\n");
+						if (!console.noyes("Clear subscribed newsgroups"))
+						{
+							gCreateNewsgrpMenuRetObj = CreateNewsgroupMenu_ExitOnError(nntpClient, gUserSettings.subscribedNewsgroups, false);
+							gUserSettings.subscribedNewsgroups = [];
+							if (SaveUserSettings(gUserSettingsFilename, false))
+							{
+								console.print("Your subscribed newsgroups have been cleared.\r\n\x01p");
+							}
+							else
+							{
+								log(LOG_ERR, format("* %s: Failed to save user's subscribed newsgroups!", PROGRAM_NAME));
+								console.print("\x01n\x01y\x01hFailed to save your subscribed newsgroups!\x01n\r\n\x01p");
+							}
+							gShowOnlySubscribedNewsgroups = false;
+							retObj.nextState = STATE_CHOOSING_NEWSGROUP;
+							continueOn = false;
+							drawMenu = false;
+							writeTopHdrs = false;
+							writeKeyHelpLine = false;
+						}
+						else
+						{
+							drawMenu = true;
+							writeTopHdrs = true;
+							writeKeyHelpLine = true;
+							console.line_counter = 0; // To prevent a pause before the message list comes up
+							console.clear("N");
 						}
 					}
 				}
-				drawMenu = foundItem;
-				if (!foundItem)
-					displayErrorMsgAtBottomScreenRow("No result(s) found", false);
 			}
-			else
+			else if (Array.isArray(selectedNG))
 			{
-				itemSearchStartIdx = 0;
-				drawMenu = false;
+				/*
+				console.clear("N");
+				console.print("Subscribing to the following newsgroups:\r\n");
+				for (var i = 0; i < selectedNG.length; ++i)
+				{
+					printf("%s\r\n", selectedNG[i]);
+				}
+				console.pause();
+				*/
+				// Open the user's settings file and add the newsgroups to the SUBSCRIBED_NEWSGROUPS section
+				var settingsFile = new File(gUserSettingsFilename);
+				var openMode = (file_exists(gUserSettingsFilename) ? "r+" : "w");
+				if (settingsFile.open(openMode))
+				{
+					/*
+					var subscribedNewsgroups = settingsFile.iniGetObject("SUBSCRIBED_NEWSGROUPS");
+					if (subscribedNewsgroups != null)
+					{
+						//retObj.sortOption = userSettingsFile.iniGetValue("BEHAVIOR", "areaChangeSorting", SUB_BOARD_SORT_NONE);
+						
+					}
+					else
+					{
+					}
+					*/
+					var settingsSectionName = "SUBSCRIBED_NEWSGROUPS";
+					var settingName = "newsgroups_list";
+					var subscribedNewsgroupsList = settingsFile.iniGetValue(settingsSectionName, settingName, "");
+					for (var i = 0; i < selectedNG.length; ++i)
+					{
+						if (subscribedNewsgroupsList.indexOf(selectedNG[i]) > -1)
+							continue;
+						if (subscribedNewsgroupsList.length > 0)
+							subscribedNewsgroupsList += ",";
+						subscribedNewsgroupsList += selectedNG[i];
+					}
+					settingsFile.iniSetValue(settingsSectionName, settingName, subscribedNewsgroupsList);
+					settingsFile.close();
+
+					// Display to the user that their subscribed newsgroups have been updated
+					var statusMsg = "Updated your subscribed newsgroups";
+					if (LightbarIsSupported())
+					{
+						displayStatusMsgAtBottomScreenRow(statusMsg, "GH", false);
+						writeTopHdrs = false;
+						drawMenu = false;
+						writeKeyHelpLine = true;
+					}
+					else
+					{
+						printf("\x01n\r\n\x01g\x01h%s\x01n\r\n\x01p", statusMsg);
+						console.aborted = false;
+						writeTopHdrs = true;
+						drawMenu = true;
+						writeKeyHelpLine = true;
+					}
+				}
+				else
+				{
+					var errorMsg = "Failed to update your subscribed newsgroups!";
+					if (LightbarIsSupported())
+					{
+						displayErrorMsgAtBottomScreenRow(errorMsg, false);
+						writeTopHdrs = false;
+						drawMenu = false;
+						writeKeyHelpLine = false;
+					}
+					else
+					{
+						printf("\x01n\r\n\x01y\x01h%s\x01n\r\n\x01p", errorMsg);
+						console.aborted = false;
+						writeTopHdrs = true;
+						drawMenu = true;
+						writeKeyHelpLine = true;
+					}
+				}
 			}
-			writeKeyHelpLine = true;
-		}
-		else if (pNewsgroupMenu.lastUserInput == "?")
-		{
-			console.line_counter = 0; // To prevent a pause before the message list comes up
-			console.clear("N");
-			DisplayChooseNewsgroupHelp();
-			drawMenu = true;
-			writeTopHdrs = true;
-			writeKeyHelpLine = true;
-			console.line_counter = 0; // To prevent a pause before the message list comes up
-			console.clear("N");
-		}
-		else if (selectedNG == null) // The user didn't choose a newsgroup
-		{
-			//console.crlf();
-			//console.print("Aborted\r\n");
-			retObj.nextState = STATE_EXIT;
-			retObj.chosenNewsgroup = "";
-			retObj.selectNGRetObj = null;
-			continueOn = false;
 		}
 		else
 		{
-			/*
-			if (LightbarIsSupported())
-				console.gotoxy(1, pNewsgroupMenu.pos.y + pNewsgroupMenu.size.height + 1);
-			else
-				console.crlf();
-			*/
-			if (LightbarIsSupported())
-				console.gotoxy(1, pNewsgroupMenu.pos.y + pNewsgroupMenu.size.height + 1);
-			//console.crlf();
-			// TODO
-			var selectNGRetObj = nntpClient.SelectNewsgroup(selectedNG);
-			if (selectNGRetObj.succeeded)
-			{
-				/*
-				console.print("Newsgroup selection succeeded\r\n");
-				console.print("Estimated # articles: " + selectNGRetObj.estNumArticles + "\r\n");
-				console.print("First article #: " + selectNGRetObj.firstArticleNum + "\r\n");
-				console.print("Last article #: " + selectNGRetObj.lastArticleNum + "\r\n");
-				*/
+			// Multi-select is disabled in the menu
 
-				// Next state: Let the user list articles in the newsgroup
-				retObj.nextState = STATE_LISTING_ARTICLES_IN_NEWSGROUP;
-				retObj.chosenNewsgroup = selectedNG;
-				retObj.selectNGRetObj = selectNGRetObj;
+			// Quit totally out of Groupie
+			if (pNewsgroupMenu.lastUserInput == CTRL_Q)
+			{
+				retObj.nextState = STATE_EXIT;
+				continueOn = false;
+			}
+			// / key: Search; N: Next (if search text has already been entered
+			else if (pNewsgroupMenu.lastUserInput == "/" || lastUserKeyUpper == "N")
+			{
+				if (pNewsgroupMenu.lastUserInput == "/")
+				{
+					if (LightbarIsSupported())
+					{
+						console.gotoxy(1, console.screen_rows);
+						console.cleartoeol("N");
+						console.gotoxy(1, console.screen_rows);
+					}
+					else
+						console.print("\x01n\r\n");
+					var promptText = "Search: ";
+					console.print(promptText);
+					searchText = console.getstr(console.screen_columns - promptText.length - 1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
+				}
+				// If the user entered text, then do the search, and if found,
+				// found, go to the page and select the item indicated by the
+				// search.
+				if (searchText.length > 0)
+				{
+					var foundItem = false;
+					var searchTextUpper = searchText.toUpperCase();
+					var numItems = pNewsgroupMenu.NumItems();
+					for (var i = itemSearchStartIdx; i < numItems; ++i)
+					{
+						var menuItem = pNewsgroupMenu.GetItem(i);
+						if (menuItem != null)
+						{
+							// In the item, retval is the newsgroup name
+							var newsgroupNameUpper = menuItem.retval.toUpperCase();
+							var newsgroupDescUpper = pNewsgroupMenu.fullDescs[i].toUpperCase();
+							if (newsgroupNameUpper.indexOf(searchTextUpper) > -1 || newsgroupDescUpper.indexOf(searchTextUpper) > -1)
+							{
+								pNewsgroupMenu.SetSelectedItemIdx(i);
+								foundItem = true;
+								itemSearchStartIdx = i + 1;
+								if (itemSearchStartIdx >= pNewsgroupMenu.NumItems())
+									itemSearchStartIdx = 0;
+								break;
+							}
+						}
+					}
+					drawMenu = foundItem;
+					if (!foundItem)
+						displayErrorMsgAtBottomScreenRow("No result(s) found", false);
+				}
+				else
+				{
+					itemSearchStartIdx = 0;
+					drawMenu = false;
+				}
+				writeKeyHelpLine = true;
+			}
+			else if (pNewsgroupMenu.lastUserInput == "?")
+			{
+				console.line_counter = 0; // To prevent a pause before the message list comes up
+				console.clear("N");
+				DisplayChooseNewsgroupHelp();
+				drawMenu = true;
+				writeTopHdrs = true;
+				writeKeyHelpLine = true;
+				console.line_counter = 0; // To prevent a pause before the message list comes up
+				console.clear("N");
+			}
+			else if (selectedNG == null) // The user didn't choose a newsgroup
+			{
+				//console.crlf();
+				//console.print("Aborted\r\n");
+				retObj.nextState = STATE_EXIT;
+				retObj.chosenNewsgroup = "";
+				retObj.selectNGRetObj = null;
 				continueOn = false;
 			}
 			else
-				console.print("* Newsgroup selection failed!\r\n\x01p");
+			{
+				/*
+				if (LightbarIsSupported())
+					console.gotoxy(1, pNewsgroupMenu.pos.y + pNewsgroupMenu.size.height + 1);
+				else
+					console.crlf();
+				*/
+				if (LightbarIsSupported())
+					console.gotoxy(1, pNewsgroupMenu.pos.y + pNewsgroupMenu.size.height + 1);
+				//console.crlf();
+				// TODO
+				var selectNGRetObj = nntpClient.SelectNewsgroup(selectedNG);
+				if (selectNGRetObj.succeeded)
+				{
+					/*
+					console.print("Newsgroup selection succeeded\r\n");
+					console.print("Estimated # articles: " + selectNGRetObj.estNumArticles + "\r\n");
+					console.print("First article #: " + selectNGRetObj.firstArticleNum + "\r\n");
+					console.print("Last article #: " + selectNGRetObj.lastArticleNum + "\r\n");
+					*/
+
+					// Next state: Let the user list articles in the newsgroup
+					retObj.nextState = STATE_LISTING_ARTICLES_IN_NEWSGROUP;
+					retObj.chosenNewsgroup = selectedNG;
+					retObj.selectNGRetObj = selectNGRetObj;
+					continueOn = false;
+				}
+				else
+					console.print("* Newsgroup selection failed!\r\n\x01p");
+			}
 		}
 	}
 
@@ -3423,7 +3773,13 @@ function replaceAtCodesInStr(pStr)
 }
 
 // Creates the (string) key help line to show at the bottom of the screen for the newsgroup list
-function CreateNewsgrpListHelpLine()
+//
+// Parameters:
+//  pShowingOnlySubscribedNewsgroups: Boolean - Whether or not the user is seeing
+//                                    only subscribed newsgroups
+//
+// Return value: The key help line for showing the newsgroup list
+function CreateNewsgrpListHelpLine(pShowingOnlySubscribedNewsgroups)
 {
 	var newsgrpListLightbarModeHelpLine = gSettings.colors.lightbarNewsgroupListHelpLineHotkeyColor + "@CLEAR_HOT@@`Up`" + KEY_UP + "@"
 	                           + gSettings.colors.lightbarNewsgroupListHelpLineGeneralColor + "/"
@@ -3447,6 +3803,14 @@ function CreateNewsgrpListHelpLine()
 	                             + gSettings.colors.lightbarNewsgroupListHelpLineHotkeyColor + "@`/`/@"
 	                             + gSettings.colors.lightbarNewsgroupListHelpLineGeneralColor + ", ";
 	helpLineLen += 6; // TODO: Should be 5?
+	// If the user is seeing only subscribed newsgroups, then add DEL to allow them to clear their
+	// subscribed newsgroups
+	if (pShowingOnlySubscribedNewsgroups)
+	{
+		newsgrpListLightbarModeHelpLine += gSettings.colors.lightbarNewsgroupListHelpLineHotkeyColor + "@`DEL`" + KEY_DEL + "@"
+		                           + gSettings.colors.lightbarNewsgroupListHelpLineGeneralColor + ", ";
+		helpLineLen += 5;
+	}
 	newsgrpListLightbarModeHelpLine += gSettings.colors.lightbarNewsgroupListHelpLineHotkeyColor + "@`Q`Q@"
 	                             + gSettings.colors.lightbarNewsgroupListHelpLineParenColor + ")"
 	                             + gSettings.colors.lightbarNewsgroupListHelpLineGeneralColor + "uit, "
@@ -4090,6 +4454,10 @@ function DisplayProgramInfo()
 	displayTextWithLineBelow(PROGRAM_NAME, true, "\x01n\x01c\x01h", "\x01k\x01h")
 	console.center("\x01n\x01cVersion \x01g" + PROGRAM_VERSION + " \x01w\x01h(\x01b" + PROGRAM_DATE + "\x01w)");
 	console.crlf();
+
+	console.pause();
+
+	console.aborted = false;
 }
 
 // Displays help for reading a message
@@ -4468,6 +4836,33 @@ function ForwardMessage(pMsgHdr, pMsgBody, pNewsgroupName)
 	return retStr;
 }
 
+// Displays a status message at the bottom row of the screen, pauses a moment, and then
+// erases the status message.
+//
+// Parameters:
+//  pStatusMsg: The status message to display
+//  pAttributes: The Synchronet attribute codes (without SOH character(s))
+//  pClearRowAfterward: Optional boolean - Whether to clear the row afterward.  Defaults to true.
+function displayStatusMsgAtBottomScreenRow(pStatusMsg, pAttributes, pClearRowAfterward)
+{
+	console.gotoxy(1, console.screen_rows);
+	console.cleartoeol("N");
+	console.gotoxy(1, console.screen_rows);
+	if (typeof(pAttributes) === "string")
+		console.attributes = pAttributes;
+	console.print(pStatusMsg);
+	mswait(ERROR_PAUSE_WAIT_MS);
+	var clearRowAfterward = (typeof(pClearRowAfterward) === "boolean" ? pClearRowAfterward : true);
+	if (clearRowAfterward)
+	{
+		console.gotoxy(1, console.screen_rows);
+		console.cleartoeol("N");
+		console.gotoxy(1, console.screen_rows);
+	}
+	else
+		console.attributes = "N";
+}
+
 // Displays an error message at the bottom row of the screen, pauses a moment, and then
 // erases the error message.
 //
@@ -4513,6 +4908,31 @@ function DisplayProgramInfo()
 	console.crlf();
 }
 
+// Displays initial welcome/help screen for first-time usage
+function DisplayFirstTimeUsageHelp()
+{
+	DisplayProgramInfo();
+	console.crlf();
+	var helpText = format("Welcome to %s.  This is a news reader that connects directly to a news server.", PROGRAM_NAME);
+	helpText += "At the screen to choose a newsgroup, you can press enter on a newsgroup to select it and read ";
+	helpText += "articles in the newsgroup.  Also, on the screen to choose a newsgroup, you can select multiple ";
+	helpText += "multiple newsgroups to subscribe to ";
+	if (LightbarIsSupported())
+		helpText += "by pressing the spacebar on each newsgroup, then pressing Enter to add/update your subscribed newsgroups.";
+	else
+		helpText += "by choosing more than one newsgroup.";
+	helpText += "\r\n";
+	helpText += "If you have newsgroups you have subscribed to, then the next time you run this reader, you ";
+	helpText += "will be asked if you want to only see your subscribed newsgroups.  When viewing only your ";
+	helpText += "subscribed newsgroups, you can press DEL to clear your list of subscribed newsgroups.";
+	console.attributes = "C";
+	console.print(lfexpand(word_wrap(helpText, console.screen_columns-1, false)));
+	console.attributes = "N";
+	console.pause();
+	if (console.aborted)
+		console.aborted = false; // To prevent issues that may arise from console.aborted being true
+}
+
 // Displays help for choosing a newsgroup
 function DisplayChooseNewsgroupHelp()
 {
@@ -4520,8 +4940,13 @@ function DisplayChooseNewsgroupHelp()
 	helpText += "\r\n";
 	helpText += "\r\n";
 	helpText += "\x01n" + gSettings.colors.helpText;
-	helpText += "On this screen, you can choose a newsgroup. You can choose a newsgroup from ";
-	helpText += "the list or press Q or ESC to quit.\r\n";
+	helpText += "On this screen, you can choose a newsgroup. You can choose one newsgroup from ";
+	helpText += "the list to read articles or subscribe to newsgroups ";
+	if (LightbarIsSupported())
+		helpText += "by pressing the spacebar on each newsgroup, then pressing Enter to add/update your subscribed newsgroups.  ";
+	else
+		helpText += "by choosing more than one newsgroup.  ";
+	helpText += "You can press Q or ESC to quit.\r\n";
 	helpText += "\r\n";
 	//helpText += "Hotkeys\r\n";
 	helpText += "\x01n\x01w\x01hHotkeys:\x01n\r\n";
@@ -4534,6 +4959,7 @@ function DisplayChooseNewsgroupHelp()
 		helpText += format(formatStr, "PageDown", "Move down one page");
 		helpText += format(formatStr, "Home", "Go to the top of the list");
 		helpText += format(formatStr, "End", "Go to the end of the list");
+		helpText += format(formatStr, "Spacebar", "Select newsgroup (and press Enter when done to subscribe)");
 	}
 	helpText += format(formatStr, "/", "Search for newsgroup");
 	helpText += format(formatStr, "ESC, Q, or Ctrl-Q", "Quit");
