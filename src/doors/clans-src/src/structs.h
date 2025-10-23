@@ -44,6 +44,7 @@ struct config {
 	 */
 	int16_t BBSID;
 	bool InterBBS;
+	bool StrictMsgFile;
 	char szNetmailDir[PATH_SIZE];
 	char szOutputSem[PATH_SIZE];
 	char **szInboundDirs;

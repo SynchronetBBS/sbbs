@@ -3040,7 +3040,15 @@ static bool GetNextFile(char *szWildcard, char *szFileName, size_t sz)
 	return NoMoreFiles;
 }
 
-static void DeleteMessageWithFile(const char *pszFileName, tIBInfo *InterBBSInfo)
+
+/*
+ * Iterates over the message files, calling skip() to see if one can
+ * be skipped and calling process() for each match
+ */
+static void
+MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo,
+    bool(*skip)(void *),
+    void(*process)(const char *, const char *, void *), void *cbdata)
 {
 	char wildcard[PATH_SIZE];
 	struct ffblk ffblks;
@@ -3060,53 +3068,90 @@ static void DeleteMessageWithFile(const char *pszFileName, tIBInfo *InterBBSInfo
 
 	Done = findfirst(wildcard, &ffblks, 0);
 	while (!Done) {
-		char fname[PATH_SIZE];
 		char hdrbuf[BUF_SIZE_MessageHeader];
 		FILE *f;
-		bool KillFile = false;
 
-		snprintf(fname, sizeof(fname), "%s/%s", InterBBSInfo->szNetmailDir, ffblks.ff_name);
-		f = fopen(fname, "rb");
+		// We need to get to the last iteration or we'll leak resources
+		if (!skip(cbdata)) {
+			bool Found = false;
+			char fname[PATH_SIZE];
 
-		if (f) {
-			if (fread(hdrbuf, sizeof(hdrbuf), 1, f) == 1) {
-				// Check if it's to us
-				struct MessageHeader hdr;
+			snprintf(fname, sizeof(fname), "%s/%s", InterBBSInfo->szNetmailDir, ffblks.ff_name);
+			f = fopen(fname, "rb");
 
-				s_MessageHeader_d(hdrbuf, sizeof(hdrbuf), &hdr);
-				if (ThisNode.wZone == hdr.wDestZone
-				    && ThisNode.wNet == hdr.wDestNet
-				    && ThisNode.wNode == hdr.wDestNode
-				    && ThisNode.wPoint == hdr.wDestPoint
-				    && (strcmp(InterBBSInfo->szProgName, hdr.szToUserName) == 0)
-				    && (strcmp(InterBBSInfo->szProgName, hdr.szFromUserName) == 0)) {
-					// Then see if the file is attached
-					const char *pktfname = hdr.szSubject;
-					switch (*pktfname) {
-						case '#':
-						case '^':
-						case '-':
-						case '~':
-						case '!':
-						case '@':
-							pktfname++;
+			if (f) {
+				if (fread(hdrbuf, sizeof(hdrbuf), 1, f) == 1) {
+					struct MessageHeader hdr;
+					// Check if it's to us and from us
+					s_MessageHeader_d(hdrbuf, sizeof(hdrbuf), &hdr);
+					if (ThisNode.wZone == hdr.wDestZone
+					    && ThisNode.wNet == hdr.wDestNet
+					    && ThisNode.wNode == hdr.wDestNode
+					    && ThisNode.wPoint == hdr.wDestPoint
+					    && (strcmp(InterBBSInfo->szProgName, hdr.szToUserName) == 0)
+					    && (strcmp(InterBBSInfo->szProgName, hdr.szFromUserName) == 0)) {
+						// Then see if the file is attached
+						const char *pktfname = hdr.szSubject;
+						switch (*pktfname) {
+							case '#':
+							case '^':
+							case '-':
+							case '~':
+							case '!':
+							case '@':
+								pktfname++;
+						}
+						if (strcmp(pktfname, pszFileName) == 0)
+							Found = true;
 					}
-					// If so, delete the *.msg file
-					if (strcmp(pktfname, pszFileName) == 0)
-						KillFile = true;
 				}
+				fclose(f);
 			}
-			fclose(f);
-			if (KillFile) {
-				char msg[256];
-				snprintf(msg, sizeof(msg), "|08* |07Deleting %s from netmail directory", ffblks.ff_name);
-				DisplayStr(msg);
-				unlink(fname);
-			}
+			if (Found)
+				process(fname, ffblks.ff_name, cbdata);
 		}
 
 		Done = findnext(&ffblks);
 	}
+	return;
+}
+
+static bool SkipAfterFound(void *cbdata)
+{
+	bool ret = *(bool *)cbdata;
+	return ret;
+}
+
+static void SetSkip(const char *fname, const char *sname, void *cbdata)
+{
+	bool *skip = cbdata;
+	*skip = true;
+}
+
+static bool CheckMessageFile(const char *pszFileName, tIBInfo *InterBBSInfo)
+{
+	bool Found = false;
+
+	MessageFileIterate(pszFileName, InterBBSInfo, SkipAfterFound, SetSkip, &Found);
+	return Found;
+}
+
+static bool NeverSkip(void *cbdata)
+{
+	return false;
+}
+
+static void DeleteFound(const char *fname, const char *sname, void *cbdata)
+{
+	char msg[256];
+	snprintf(msg, sizeof(msg), "|08* |07Deleting %s from netmail directory", sname);
+	DisplayStr(msg);
+	unlink(fname);
+}
+
+static void DeleteMessageWithFile(const char *pszFileName, tIBInfo *InterBBSInfo)
+{
+	MessageFileIterate(pszFileName, InterBBSInfo, NeverSkip, DeleteFound, NULL);
 }
 
 void IBBS_PacketIn(void)
@@ -3164,21 +3209,28 @@ void IBBS_PacketIn(void)
 
 		/* keep calling till no more messages to read */
 		while (!Done) {
-			/* process file */
+			szFileName[0] = 0;
 
 			strlcpy(szFileName, Config.szInboundDirs[nInbound], sizeof(szFileName));
 			//strlcat(szFileName, ffblk.ff_name, sizeof(szFileName));
 			strlcat(szFileName, szFileName2, sizeof(szFileName));
 
-			if (IBBS_ProcessPacket(szFileName) == 0) {
-				snprintf(szString, sizeof(szString), "Error dealing with packet %s\n", szFileName);
+			/* process file */
+			if (Config.StrictMsgFile && !CheckMessageFile(szFileName, &InterBBSInfo)) {
+				snprintf(szString, sizeof(szString), "No valid msg file for packet %s\n", szFileName);
 				DisplayStr(szString);
 			}
 			else {
-				/* delete it */
-				unlink(szFileName);
-				/* And try to delete *.msg files that had it attached */
-				DeleteMessageWithFile(szFileName, &InterBBSInfo);
+				if (IBBS_ProcessPacket(szFileName) == 0) {
+					snprintf(szString, sizeof(szString), "Error dealing with packet %s\n", szFileName);
+					DisplayStr(szString);
+				}
+				else {
+					/* delete it */
+					unlink(szFileName);
+					/* And try to delete *.msg files that had it attached */
+					DeleteMessageWithFile(szFileName, &InterBBSInfo);
+				}
 			}
 
 			// Done = findnext(&ffblk);
@@ -3204,13 +3256,19 @@ void IBBS_PacketIn(void)
 			strlcat(szFileName, szFileName2, sizeof(szFileName));
 
 			while (!GetNextFile(szFileName,szFileName2, sizeof(szFileName2)))  {
-				fp = _fsopen(szFileName, "r", SH_DENYWR);
-				if (fp) {
-					DisplayStr("|08- |07new world.ndx found.\n");
-					// found it
-					fclose(fp);
-					file_copy(szFileName2, "world.ndx");
-					unlink(szFileName2);
+				if (Config.StrictMsgFile && !CheckMessageFile(szFileName2, &InterBBSInfo)) {
+					snprintf(szString, sizeof(szString), "No valid msg file for packet %s\n", szFileName2);
+					DisplayStr(szString);
+				}
+				else {
+					fp = _fsopen(szFileName2, "r", SH_DENYWR);
+					if (fp) {
+						DisplayStr("|08- |07new world.ndx found.\n");
+						// found it
+						fclose(fp);
+						file_copy(szFileName2, "world.ndx");
+						unlink(szFileName2);
+					}
 				}
 			}
 		}

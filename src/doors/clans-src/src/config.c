@@ -42,7 +42,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "readcfg.h"
 #include "structs.h"
 
-#define MAX_OPTION      14
+#define MAX_OPTION      15
 
 #ifdef __unix__
 #define K_UP        KEY_UP
@@ -204,6 +204,7 @@ WriteCfg(void)
 			fprintf(f, "%sInboundDir      %s\n", Config.InterBBS ? "" : "#", Config.szInboundDirs[i]);
 	}
 	fprintf(f, "%sMailerType      %s\n", Config.InterBBS ? "" : "#", MailerTypeName(Config.MailerType));
+	fprintf(f, "%sStrictMsgFile\n", (Config.InterBBS && Config.MailerType != MAIL_NONE && Config.StrictMsgFile) ? "" : "#");
 	fprintf(f, "%sOutputSemaphore %s\n", Config.InterBBS ? "" : "#", Config.szOutputSem);
 	for (struct NodeData *nd = nodes; nd && nd->number > 0; nd++) {
 		fputs("\n", f);
@@ -247,13 +248,14 @@ static void ConfigMenu(void)
 	xputs(" Inbound Directory", 0, 10);
 	xputs(" Alternative Inbound Directory", 0, 11);
 	xputs(" Mailer Type", 0, 12);
-	xputs(" Output Semaphore Filename", 0, 13);
-	xputs(" Configure Node", 0, 14);
-	xputs(" Save Config", 0, 15);
-	xputs(" Abort Config", 0, 16);
-	qputs("|01--------------------------------------------------------------------------- |09-",0,17);
+	xputs(" Strict FTN Message Checks", 0, 13);
+	xputs(" Output Semaphore Filename", 0, 14);
+	xputs(" Configure Node", 0, 15);
+	xputs(" Save Config", 0, 16);
+	xputs(" Abort Config", 0, 17);
+	qputs("|01--------------------------------------------------------------------------- |09-",0,18);
 
-	qputs("|09 Press the up and down keys to navigate.", 0, 18);
+	qputs("|09 Press the up and down keys to navigate.", 0, 19);
 
 	/* init defaults */
 
@@ -261,13 +263,13 @@ static void ConfigMenu(void)
 	gotoxy(2, CurOption+3);
 
 	/* dehilight all options */
-	ColorArea(39, 2, 76, 16, 15);    // choices on the right side
+	ColorArea(39, 2, 76, 17, 15);    // choices on the right side
 
 	ColorArea(0, 2, 39, MAX_OPTION+2, 7);
 
 	/* dehilight options which can't be activated */
 	if (!Config.InterBBS) {
-		ColorArea(0, 8, 76, 13,  8);
+		ColorArea(0, 8, 76, 14,  8);
 	}
 
 	settextattr((uint16_t)15);
@@ -284,6 +286,7 @@ static void ConfigMenu(void)
 	UpdateOption(9);
 	UpdateOption(10);
 	UpdateOption(11);
+	UpdateOption(12);
 
 	while (!Quit) {
 		if (OldOption != CurOption) {
@@ -313,7 +316,7 @@ static void ConfigMenu(void)
 					else
 						CurOption--;
 					if ((CurOption == (MAX_OPTION-3)) && (!Config.InterBBS))
-						CurOption -= 6;
+						CurOption -= 7;
 					break;
 				case K_DOWN :
 				case K_RIGHT:
@@ -321,8 +324,8 @@ static void ConfigMenu(void)
 						CurOption = 0;
 					else
 						CurOption++;
-					if ((CurOption == (MAX_OPTION-8)) && (!Config.InterBBS))
-						CurOption += 6;
+					if ((CurOption == (MAX_OPTION-9)) && (!Config.InterBBS))
+						CurOption += 7;
 					break;
 				case K_HOME :
 				case K_PGUP :
@@ -337,7 +340,7 @@ static void ConfigMenu(void)
 		else if (cInput == 0x1B)
 			Quit = true;
 		else if (cInput == 13) {
-			if (Config.InterBBS == false && CurOption >= (MAX_OPTION-6) &&
+			if (Config.InterBBS == false && CurOption >= (MAX_OPTION-9) &&
 					CurOption < (MAX_OPTION - 2))
 				continue;
 
@@ -829,12 +832,15 @@ static void EditOption(int16_t WhichOption)
 					break;
 			}
 			break;
-		case 11 :   /* Outbound Semaphore */
-			gotoxy(40, 13);
+		case 11 :   /* Strict message */
+			Config.StrictMsgFile = !Config.StrictMsgFile;
+			break;
+		case 12 :   /* Outbound Semaphore */
+			gotoxy(40, 14);
 			DosGetStr(Config.szOutputSem, 39);
 			break;
-		case 12:    /* Configure node */
-			gotoxy(40, 14);
+		case 13:    /* Configure node */
+			gotoxy(40, 15);
 			if (setCurrentNode(DosGetLong("Node Number to Edit", 1, 32767)))
 				NodeMenu();
 			break;
@@ -1175,7 +1181,7 @@ static void UpdateOption(char Option)
 		case 5:
 			settextattr(15);
 			xputs(Config.InterBBS ? "Yes" : "No ", 40, 7);
-			ColorArea(0, 8, 76, 13,  Config.InterBBS ? 7 : 8);
+			ColorArea(0, 8, 76, 14,  Config.InterBBS ? 7 : 8);
 			break;
 		case 6:
 			snprintf(szString, sizeof(szString), "%d\n", Config.BBSID);
@@ -1206,7 +1212,12 @@ static void UpdateOption(char Option)
 		case 11:
 			settextattr(Config.InterBBS ? 15 : 8);
 			xputs("                                        ", 40, 13);
-			xputs(Config.szOutputSem, 40, 13);
+			xputs(Config.StrictMsgFile ? "Yes" : "No", 40, 13);
+			break;
+		case 12:
+			settextattr(Config.InterBBS ? 15 : 8);
+			xputs("                                        ", 40, 14);
+			xputs(Config.szOutputSem, 40, 14);
 			break;
 	}
 }

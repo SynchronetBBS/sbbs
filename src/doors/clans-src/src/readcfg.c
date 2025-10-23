@@ -16,7 +16,7 @@ struct config Config;
 void CheckMem(void *Test);
 void System_Error(char *szErrorMsg);
 
-#define MAX_CONFIG_WORDS          17
+#define MAX_CONFIG_WORDS          18
 
 char *papszConfigKeyWords[MAX_CONFIG_WORDS] = {
 	"SysopName",
@@ -35,7 +35,8 @@ char *papszConfigKeyWords[MAX_CONFIG_WORDS] = {
 	"MailerType",
 	"InterBBS",
 	"bangshangalang\xff\xff",
-	"OutputSemaphore"
+	"OutputSemaphore",
+	"StrictMsgFile",
 };
 
 void AddInboundDir(const char *dir)
@@ -186,6 +187,9 @@ bool Config_Init(int16_t Node, struct NodeData *(*getNodeData)(int))
 						break;
 					case 16 : /* IBBS output semaphore */
 						strlcpy(Config.szOutputSem, pcCurrentPos, sizeof(Config.szOutputSem));
+						break;
+					case 17 : /* Strict Message File */
+						Config.StrictMsgFile = true;
 						break;
 				}
 			}
