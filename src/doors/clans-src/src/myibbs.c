@@ -29,6 +29,7 @@
 
 #include "interbbs.h"
 #include "myibbs.h"
+#include "myopen.h"
 #include "readcfg.h"
 #include "structs.h"
 #include "system.h"
@@ -152,6 +153,7 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
 	int16_t hFile;
 	size_t nTextSize;
+	char hbuf[BUF_SIZE_MessageHeader];
 
 	/* Get fully qualified filename of message to write */
 	GetMessageFilename(pszMessageDir, lwMessageNum, szFileName, sizeof(szFileName));
@@ -172,7 +174,8 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 	if (hFile == -1) return(false);
 
 	/* Attempt to write header */
-	if (write(hFile, pHeader, sizeof(tMessageHeader)) != sizeof(tMessageHeader)) {
+	s_MessageHeader_s(pHeader, hbuf, sizeof(hbuf));
+	if (write(hFile, hbuf, sizeof(hbuf)) != sizeof(hbuf)) {
 		/* On failure, close file, erase file, and return false */
 		close(hFile);
 		unlink(szFileName);
@@ -205,6 +208,7 @@ static tBool ReadMessage(char *pszMessageDir, uint32_t lwMessageNum,
 	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
 	int16_t hFile;
 	size_t nTextSize;
+	char hbuf[BUF_SIZE_MessageHeader];
 
 	/* Get fully qualified filename of message to read */
 	GetMessageFilename(pszMessageDir, lwMessageNum, szFileName, sizeof(szFileName));
@@ -237,12 +241,13 @@ static tBool ReadMessage(char *pszMessageDir, uint32_t lwMessageNum,
 	}
 
 	/* Attempt to read header */
-	if (read(hFile, pHeader, sizeof(tMessageHeader)) != sizeof(tMessageHeader)) {
+	if (read(hFile, hbuf, sizeof(hbuf)) != sizeof(hbuf)) {
 		/* On failure, close file, deallocate message buffer and return false */
 		close(hFile);
 		free(*ppszText);
 		return(false);
 	}
+	s_MessageHeader_d(hbuf, sizeof(hbuf), pHeader);
 
 	/* Attempt to read message text */
 	if ((unsigned)read(hFile, *ppszText, nTextSize) != nTextSize) {
