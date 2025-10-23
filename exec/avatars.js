@@ -292,7 +292,7 @@ function import_from_msgbase(msgbase, import_ptr, limit, all)
 			// Shared avatars
 			success = import_shared_file(hdr, body);
 		}
-		printf("%s\r\n", success ? "success" : "FAILED");
+		printf(" %s\r\n", success ? "success" : "FAILED");
 		if(success)
 			count++;
 		if(limit && count >= limit)
