@@ -912,9 +912,13 @@ function todone_getfiles(lib, dir)
 
 function mouse_enable(enable)
 {
-	if(console.term_supports(USER_ANSI)) {
-		ansiterm.send('mouse', enable ? 'set' : 'clear', 'x10_compatible');
-		ansiterm.send('mouse', enable ? 'set' : 'clear', 'extended_coord');
+	if (enable) {
+		console.mouse_mode = MOUSE_MODE_X10 | MOUSE_MODE_EXT;
+		console.status |= (CON_MOUSE_CLK_PASSTHRU | CON_MOUSE_REL_PASSTHRU);
+	}
+	else {
+		console.mouse_mode = MOUSE_MODE_OFF;
+		console.status &= ~(CON_MOUSE_CLK_PASSTHRU | CON_MOUSE_REL_PASSTHRU);
 	}
 }
 
