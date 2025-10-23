@@ -170,10 +170,12 @@ bool Config_Init(int16_t Node, struct NodeData *(*getNodeData)(int))
 						AddInboundDir(pcCurrentPos);
 						break;
 					case 13 : /* mailer type */
-						if (stricmp(pcCurrentPos, "BINKLEY") == 0)
-							Config.MailerType = MAIL_BINKLEY;
-						else
+						if (stricmp(pcCurrentPos, "None") == 0)
+							Config.MailerType = MAIL_NONE;
+						else if (stricmp(pcCurrentPos, "Attach") == 0)
 							Config.MailerType = MAIL_OTHER;
+						else
+							Config.MailerType = MAIL_BINKLEY;
 						break;
 					case 14 : /* in a league? */
 						Config.InterBBS = true;

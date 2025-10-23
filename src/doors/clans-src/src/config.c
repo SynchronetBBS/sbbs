@@ -42,7 +42,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "readcfg.h"
 #include "structs.h"
 
-#define MAX_OPTION      12
+#define MAX_OPTION      14
 
 #ifdef __unix__
 #define K_UP        KEY_UP
@@ -84,13 +84,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 
 static char get_answer(char *szAllowableChars);
-static void qputs(char *string, int16_t x, int16_t y);
-static void xputs(char *string, int16_t x, int16_t y);
+static void qputs(const char *string, int16_t x, int16_t y);
+static void xputs(const char *string, int16_t x, int16_t y);
 
 static void Video_Init(void);
 
 static void ConfigMenu(void);
-static void zputs(char *string);
+static void zputs(const char *string);
 
 static void EditOption(int16_t WhichOption);
 static void EditNodeOption(int16_t WhichOption);
@@ -140,9 +140,14 @@ static void do_endwin(void)
 int main(void)
 {
 	Video_Init();
-	Config_Init(0, setCurrentNode);
+	if (!Config_Init(0, setCurrentNode)) {
+		strcpy(Config.szNetmailDir, "/bbs/netmail/");
+		Config.BBSID = 1;
+	}
 	if (!Config.NumInboundDirs)
 		AddInboundDir("/bbs/inbound");
+	if (Config.NumInboundDirs < 2)
+		AddInboundDir("");
 
 #ifdef __unix__
 	atexit(do_endwin);
@@ -158,6 +163,20 @@ int main(void)
 #endif
 	showCursor(true);
 	return (0);
+}
+
+static const char *
+MailerTypeName(int16_t t)
+{
+	switch (t) {
+		case MAIL_BINKLEY:
+			return "Binkley";
+		case MAIL_OTHER:
+			return "Attach";
+		case MAIL_NONE:
+			return "None";
+	}
+	return "Unknown";
 }
 
 static void
@@ -180,8 +199,12 @@ WriteCfg(void)
 	fprintf(f, "%sInterBBS\n", Config.InterBBS ? "" : "#");
 	fprintf(f, "%sBBSID           %d\n", Config.InterBBS ? "" : "#", Config.BBSID);
 	fprintf(f, "%sNetmailDir      %s\n", Config.InterBBS ? "" : "#", Config.szNetmailDir);
-	fprintf(f, "%sInboundDir      %s\n", Config.InterBBS ? "" : "#", Config.szInboundDirs[0]);
-	fprintf(f, "%sMailerType      %s\n", Config.InterBBS ? "" : "#", Config.MailerType == MAIL_BINKLEY ? "Binkley" : "Not Binkley");
+	for (int i = 0; i < Config.NumInboundDirs; i++) {
+		if (Config.szInboundDirs[i][0])
+			fprintf(f, "%sInboundDir      %s\n", Config.InterBBS ? "" : "#", Config.szInboundDirs[i]);
+	}
+	fprintf(f, "%sMailerType      %s\n", Config.InterBBS ? "" : "#", MailerTypeName(Config.MailerType));
+	fprintf(f, "%sOutputSemaphore %s\n", Config.InterBBS ? "" : "#", Config.szOutputSem);
 	for (struct NodeData *nd = nodes; nd && nd->number > 0; nd++) {
 		fputs("\n", f);
 		fputs("# [NodeData] ----------------------------------------------------------------\n", f);
@@ -222,13 +245,15 @@ static void ConfigMenu(void)
 	xputs(" BBS ID", 0, 8);
 	xputs(" Netmail Directory", 0, 9);
 	xputs(" Inbound Directory", 0, 10);
-	xputs(" Mailer Type", 0, 11);
-	xputs(" Configure Node", 0, 12);
-	xputs(" Save Config", 0, 13);
-	xputs(" Abort Config", 0, 14);
-	qputs("|01--------------------------------------------------------------------------- |09-",0,15);
+	xputs(" Alternative Inbound Directory", 0, 11);
+	xputs(" Mailer Type", 0, 12);
+	xputs(" Output Semaphore Filename", 0, 13);
+	xputs(" Configure Node", 0, 14);
+	xputs(" Save Config", 0, 15);
+	xputs(" Abort Config", 0, 16);
+	qputs("|01--------------------------------------------------------------------------- |09-",0,17);
 
-	qputs("|09 Press the up and down keys to navigate.", 0, 16);
+	qputs("|09 Press the up and down keys to navigate.", 0, 18);
 
 	/* init defaults */
 
@@ -236,13 +261,13 @@ static void ConfigMenu(void)
 	gotoxy(2, CurOption+3);
 
 	/* dehilight all options */
-	ColorArea(39,2, 76, 16, 15);    // choices on the right side
+	ColorArea(39, 2, 76, 16, 15);    // choices on the right side
 
 	ColorArea(0, 2, 39, MAX_OPTION+2, 7);
 
 	/* dehilight options which can't be activated */
 	if (!Config.InterBBS) {
-		ColorArea(0, 8, 76, 11,  8);
+		ColorArea(0, 8, 76, 13,  8);
 	}
 
 	settextattr((uint16_t)15);
@@ -257,6 +282,8 @@ static void ConfigMenu(void)
 	UpdateOption(7);
 	UpdateOption(8);
 	UpdateOption(9);
+	UpdateOption(10);
+	UpdateOption(11);
 
 	while (!Quit) {
 		if (OldOption != CurOption) {
@@ -286,7 +313,7 @@ static void ConfigMenu(void)
 					else
 						CurOption--;
 					if ((CurOption == (MAX_OPTION-3)) && (!Config.InterBBS))
-						CurOption -= 4;
+						CurOption -= 6;
 					break;
 				case K_DOWN :
 				case K_RIGHT:
@@ -294,8 +321,8 @@ static void ConfigMenu(void)
 						CurOption = 0;
 					else
 						CurOption++;
-					if ((CurOption == (MAX_OPTION-6)) && (!Config.InterBBS))
-						CurOption += 4;
+					if ((CurOption == (MAX_OPTION-8)) && (!Config.InterBBS))
+						CurOption += 6;
 					break;
 				case K_HOME :
 				case K_PGUP :
@@ -449,7 +476,7 @@ static void NodeMenu(void)
 
 // ------------------------------------------------------------------------- //
 
-static void qputs(char *string, int16_t x, int16_t y)
+static void qputs(const char *string, int16_t x, int16_t y)
 {
 	gotoxy(x, y);
 	zputs(string);
@@ -568,7 +595,7 @@ static short curses_color(short color)
 }
 #endif
 
-static void xputs(char *string, int16_t x, int16_t y)
+static void xputs(const char *string, int16_t x, int16_t y)
 {
 	gotoxy(x, y);
 	while (x < 80 && *string) {
@@ -582,7 +609,7 @@ static void xputs(char *string, int16_t x, int16_t y)
 	}
 }
 
-static void zputs(char *string)
+static void zputs(const char *string)
 {
 	char number[3];
 	int16_t cur_char, attr;
@@ -763,11 +790,11 @@ static void EditOption(int16_t WhichOption)
 			break;
 		case 3 :    /* ANSI Score File */
 			gotoxy(40, 5);
-			DosGetStr(Config.szScoreFile[1], sizeof(Config.szScoreFile[1]) - 1);
+			DosGetStr(Config.szScoreFile[1], 39);
 			break;
 		case 4 :    /* ASCII Score File */
 			gotoxy(40, 6);
-			DosGetStr(Config.szScoreFile[0], sizeof(Config.szScoreFile[0]) - 1);
+			DosGetStr(Config.szScoreFile[0], 39);
 			break;
 		case 5 :    /* InterBBS Enable */
 			Config.InterBBS = !Config.InterBBS;
@@ -784,14 +811,30 @@ static void EditOption(int16_t WhichOption)
 			gotoxy(40, 10);
 			DosGetStr(Config.szInboundDirs[0], 39);
 			break;
-		case 9 :    /* Mailer type */
-			if (Config.MailerType == MAIL_BINKLEY)
-				Config.MailerType = MAIL_OTHER;
-			else
-				Config.MailerType = MAIL_BINKLEY;
+		case 9 :    /* Alt. Inbound Dir */
+			gotoxy(40, 11);
+			DosGetStr(Config.szInboundDirs[1], 39);
 			break;
-		case 10:    /* Configure node */
-			gotoxy(40, 12);
+		case 10 :    /* Mailer type */
+			switch (Config.MailerType) {
+				case MAIL_BINKLEY:
+					Config.MailerType = MAIL_OTHER;
+					break;
+				case MAIL_OTHER:
+					Config.MailerType = MAIL_NONE;
+					break;
+				case MAIL_NONE:
+				default:
+					Config.MailerType = MAIL_BINKLEY;
+					break;
+			}
+			break;
+		case 11 :   /* Outbound Semaphore */
+			gotoxy(40, 13);
+			DosGetStr(Config.szOutputSem, 39);
+			break;
+		case 12:    /* Configure node */
+			gotoxy(40, 14);
 			if (setCurrentNode(DosGetLong("Node Number to Edit", 1, 32767)))
 				NodeMenu();
 			break;
@@ -1132,7 +1175,7 @@ static void UpdateOption(char Option)
 		case 5:
 			settextattr(15);
 			xputs(Config.InterBBS ? "Yes" : "No ", 40, 7);
-			ColorArea(0, 8, 76, 11,  Config.InterBBS ? 7 : 8);
+			ColorArea(0, 8, 76, 13,  Config.InterBBS ? 7 : 8);
 			break;
 		case 6:
 			snprintf(szString, sizeof(szString), "%d\n", Config.BBSID);
@@ -1153,7 +1196,17 @@ static void UpdateOption(char Option)
 		case 9:
 			settextattr(Config.InterBBS ? 15 : 8);
 			xputs("                                        ", 40, 11);
-			xputs(Config.MailerType == MAIL_BINKLEY ? "Binkley    " : "Not Binkley", 40, 11);
+			xputs(Config.szInboundDirs[1], 40, 11);
+			break;
+		case 10:
+			settextattr(Config.InterBBS ? 15 : 8);
+			xputs("                                        ", 40, 12);
+			xputs(MailerTypeName(Config.MailerType), 40, 12);
+			break;
+		case 11:
+			settextattr(Config.InterBBS ? 15 : 8);
+			xputs("                                        ", 40, 13);
+			xputs(Config.szOutputSem, 40, 13);
 			break;
 	}
 }
