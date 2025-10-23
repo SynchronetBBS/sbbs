@@ -7,7 +7,6 @@
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
 
-#include "k_config.h"
 #include "parsing.h"
 #include "readcfg.h"
 
@@ -16,6 +15,28 @@ struct config Config;
 // Someone else needs to provide these...
 void CheckMem(void *Test);
 void System_Error(char *szErrorMsg);
+
+#define MAX_CONFIG_WORDS          17
+
+char *papszConfigKeyWords[MAX_CONFIG_WORDS] = {
+	"SysopName",
+	"BBSName",
+	"UseLog",
+	"ScoreANSI",
+	"ScoreASCII",
+	"Node",
+	"DropDirectory",
+	"UseFOSSIL",
+	"SerialPortAddr",
+	"SerialPortIRQ",
+	"BBSId",
+	"NetmailDir",
+	"InboundDir",
+	"MailerType",
+	"InterBBS",
+	"bangshangalang\xff\xff",
+	"OutputSemaphore"
+};
 
 void AddInboundDir(const char *dir)
 {
@@ -160,6 +181,9 @@ bool Config_Init(int16_t Node, struct NodeData *(*getNodeData)(int))
 					case 15 : /* regcode */
 						if (*pcCurrentPos)
 							strlcpy(Config.szRegcode, pcCurrentPos, sizeof(Config.szRegcode));
+						break;
+					case 16 : /* IBBS output semaphore */
+						strlcpy(Config.szOutputSem, pcCurrentPos, sizeof(Config.szOutputSem));
 						break;
 				}
 			}

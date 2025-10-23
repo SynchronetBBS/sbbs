@@ -45,6 +45,7 @@ struct config {
 	int16_t BBSID;
 	bool InterBBS;
 	char szNetmailDir[PATH_SIZE];
+	char szOutputSem[PATH_SIZE];
 	char **szInboundDirs;
 	int16_t NumInboundDirs;
 	int16_t MailerType;
@@ -636,6 +637,8 @@ struct ibbs {
 			} Attack;
 
 		} Nodes[MAX_IBBSNODES];
+
+		bool PacketSent;
 
 	} *Data;
 };

@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <utime.h>
 #ifndef __unix__
 # include <dos.h>
 # include <share.h>
@@ -1938,6 +1939,7 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 		if (!NoMSG[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ])
 			IBSendFileAttach(&InterBBSInfo, IBBS.Data->Nodes[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ].Info.pszAddress, szFullFileName);
 	}
+	IBBS.Data->PacketSent = true;
 }
 
 
@@ -3232,7 +3234,7 @@ void IBBS_Init(void)
 	printf("IBBS Initializing. -- %lu\n", farcoreleft());
 #endif
 
-	IBBS.Data = malloc(sizeof(struct ibbs_data));
+	IBBS.Data = calloc(1, sizeof(struct ibbs_data));
 	CheckMem(IBBS.Data);
 	IBBS.Initialized = true;
 
@@ -3259,6 +3261,15 @@ void IBBS_Close(void)
 
 	IBBS_Write();
 	IBBS_Destroy();
+	if (Config.szOutputSem[0]) {
+		// Touch the semaphore
+		FILE *f;
+
+		if (utime(Config.szOutputSem, NULL)) {
+			if ((f = fopen(Config.szOutputSem, "ab")))
+				fclose(f);
+		}
+	}
 }
 
 // ------------------------------------------------------------------------- //
