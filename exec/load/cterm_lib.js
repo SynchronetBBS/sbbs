@@ -201,6 +201,20 @@ function query_fontdim()
 	return false;
 }
 
+function query_fontdims()
+{
+	if(console.cterm_version < cterm_version_supports_fontdim_query)
+		return false;
+
+	var response = query("\x1b[=3n");
+	if(!response)
+		return null;
+	var m = response.match(/\x1b\[=3;([0-9]+);([0-9]+)n/);
+	if (m == null)
+		return null;
+	return {height: parseInt(m[1], 10), width: parseInt(m[2], 10)};
+}
+
 function query_graphicsdim()
 {
 	if(console.cterm_version < cterm_version_supports_xtsrga)
@@ -208,8 +222,8 @@ function query_graphicsdim()
 	var response = query("\x1b[?2;1S");
 	if (!response)
 		return null;
-	var m = response.match(/\x1b\?2;0;([0-9]+);([0-9]+)S/);
-	if (m == null)
+	var m = response.match(/\x1b\[\?2;0;([0-9]+);([0-9]+)S/);
+	if (m === null)
 		return null;
 	return {width: parseInt(m[1], 10), height: parseInt(m[2], 10)};
 }
