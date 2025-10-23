@@ -271,6 +271,8 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 			else {
 				if (Game.Data->InterBBS == false)
 					System_Error(ST_IBBSONLY);
+				if (Config.MailerType != MAIL_NONE)
+					System_Error("Local IBBS with mailer type set");
 			}
 			return TRUE;
 		}
@@ -535,6 +537,8 @@ void System_Init(void)
 		strlcpy(od_control.info_path, Config.pszInfoPath, sizeof(od_control.info_path));
 	od_control.od_no_fossil = Config.NoFossil;
 	od_control.od_com_irq = Config.ComIRQ;
+	if (System.LocalIBBS)
+		Config.MailerType = MAIL_NONE;
 
 	// init stuff
 	System.Local = false;

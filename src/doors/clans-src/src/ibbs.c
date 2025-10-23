@@ -3045,10 +3045,16 @@ static void DeleteMessageWithFile(const char *pszFileName, tIBInfo *InterBBSInfo
 	bool Done;
 	tFidoNode ThisNode;
 
+	if (Config.MailerType == MAIL_NONE)
+		return;
 	ConvertStringToAddress(&ThisNode, InterBBSInfo->szThisNodeAddress);
 
 	// Go through all *.msg files in the netmail directory.
+#ifdef __unix__
+	snprintf(wildcard, sizeof(wildcard), "%s/*.[Mm][Ss][Gg]", InterBBSInfo->szNetmailDir);
+#else
 	snprintf(wildcard, sizeof(wildcard), "%s/*.msg", InterBBSInfo->szNetmailDir);
+#endif
 
 	Done = findfirst(wildcard, &ffblks, 0);
 	while (!Done) {
@@ -3150,26 +3156,16 @@ void IBBS_PacketIn(void)
 
 		// printf("Filespec to search is %s\n", szPacketName);
 
-		if (System.LocalIBBS) {
-			// set true if IBGetFile was a success
-			Done = IBGetFile(&InterBBSInfo, szFileName) != eSuccess;
-		}
-		else {
-			//Done = findfirst(szPacketName, &ffblk, 0);
-			Done = GetNextFile(szPacketName, szFileName2, sizeof(szFileName2));
-		}
+		//Done = findfirst(szPacketName, &ffblk, 0);
+		Done = GetNextFile(szPacketName, szFileName2, sizeof(szFileName2));
 
 		/* keep calling till no more messages to read */
 		while (!Done) {
 			/* process file */
 
-			if (System.LocalIBBS == false) {
-				strlcpy(szFileName, Config.szInboundDirs[nInbound], sizeof(szFileName));
-				//strlcat(szFileName, ffblk.ff_name, sizeof(szFileName));
-				strlcat(szFileName, szFileName2, sizeof(szFileName));
-			}
-			// for LocalInterBBS, we assume szFilename already contains the
-			// filename
+			strlcpy(szFileName, Config.szInboundDirs[nInbound], sizeof(szFileName));
+			//strlcat(szFileName, ffblk.ff_name, sizeof(szFileName));
+			strlcat(szFileName, szFileName2, sizeof(szFileName));
 
 			if (IBBS_ProcessPacket(szFileName) == 0) {
 				snprintf(szString, sizeof(szString), "Error dealing with packet %s\n", szFileName);
@@ -3182,13 +3178,8 @@ void IBBS_PacketIn(void)
 				DeleteMessageWithFile(szFileName, &InterBBSInfo);
 			}
 
-			if (System.LocalIBBS) {
-				// set true if IBGetFile was a success
-				Done = IBGetFile(&InterBBSInfo, szFileName) != eSuccess;
-			}
-			else
-				// Done = findnext(&ffblk);
-				Done = GetNextFile(szPacketName, szFileName2, sizeof(szFileName2));
+			// Done = findnext(&ffblk);
+			Done = GetNextFile(szPacketName, szFileName2, sizeof(szFileName2));
 		}
 	}
 

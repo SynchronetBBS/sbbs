@@ -1,3 +1,12 @@
+File names are clFFFTTT.DDI
+FFF - Is the BBS ID from world.ndx of the creator of the file
+TTT - Is the BBS ID from world.ndx of the destination of the file
+DD  - Is the League ID from world.ndx
+I   - Is the index... it starts as 'a' and is incremented for each file
+      (Note, each file per node or something... TODO)
+
+TTT is of the next hop, not necessarily the final destination
+
 Breaking down all the different IBBS stuff... remember that direct is
 the default.
 

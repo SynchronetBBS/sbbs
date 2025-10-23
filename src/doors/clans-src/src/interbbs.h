@@ -61,16 +61,6 @@ typedef struct {
 
 
 /******************************************************************************/
-/*                         InterBBS API Functions                             */
-/******************************************************************************/
-tIBResult IBSend(tIBInfo *pInfo, char *pszDestNode, void *pBuffer,
-				 int16_t nBufferSize);
-tIBResult IBSendAll(tIBInfo *pInfo, void *pBuffer, int16_t nBufferSize);
-tIBResult IBGet(tIBInfo *pInfo, void *pBuffer, int16_t nMaxBufferSize);
-tIBResult IBReadConfig(tIBInfo *pInfo, char *pszConfigFile);
-
-
-/******************************************************************************/
 /*                           Private Declarations                             */
 /******************************************************************************/
 typedef struct MessageHeader {
@@ -115,7 +105,5 @@ typedef struct {
 	uint16_t wNode;
 	uint16_t wPoint;
 } tFidoNode;
-
-tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName);
 
 #endif

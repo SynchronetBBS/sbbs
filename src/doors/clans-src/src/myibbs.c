@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <assert.h>
 #include <ctype.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -50,11 +51,8 @@ static void GetMessageFilename(char *pszMessageDir, uint32_t lwMessageNum,
 						char *pszOut, size_t sz);
 static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 				   tMessageHeader *pHeader, char *pszText);
-static tBool ReadMessage(char *pszMessageDir, uint32_t lwMessageNum,
-				  tMessageHeader *pHeader, char **ppszText);
 static uint32_t GetNextMSGID(void);
 void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource);
-static void RidPath(char *pszFileName, char  *pszFileNameNoPath, size_t sz);
 
 static tBool DirExists(const char *pszDirName)
 {
@@ -153,23 +151,30 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 	size_t nTextSize;
 	char hbuf[BUF_SIZE_MessageHeader];
 
-	/* Get fully qualified filename of message to write */
-	GetMessageFilename(pszMessageDir, lwMessageNum, szFileName, sizeof(szFileName));
+	do {
+		/* Get fully qualified filename of message to write */
+		GetMessageFilename(pszMessageDir, lwMessageNum, szFileName, sizeof(szFileName));
 
-	/* Open message file */
-#ifdef __unix__
-	hFile = open(szFileName, O_WRONLY|O_BINARY|O_CREAT,
-				 S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
-#elif defined(_WIN32)
-	hFile = sopen(szFileName, O_WRONLY|O_BINARY|O_CREAT,SH_DENYRW,
-				  S_IREAD|S_IWRITE);
-#else
-	hFile = open(szFileName, O_WRONLY|O_BINARY|O_CREAT|O_DENYALL,
-				 S_IREAD|S_IWRITE);
-#endif
+		/* Open message file */
+	#ifdef __unix__
+		hFile = open(szFileName, O_WRONLY | O_BINARY | O_CREAT | O_EXCL,
+					 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+	#elif defined(_WIN32)
+		hFile = _sopen(szFileName, _O_WRONLY | _O_BINARY | _O_CREAT | _O_EXCL, _SH_DENYRW,
+					  _S_IREAD | _S_IWRITE);
+	#else
+		hFile = open(szFileName, O_WRONLY|O_BINARY|O_CREAT|O_DENYALL|O_EXCL,
+					 S_IREAD|S_IWRITE);
+	#endif
 
-	/* If open failed, return false */
-	if (hFile == -1) return(false);
+		/* If open failed, return false */
+		if (hFile == -1) {
+			if (errno == EEXIST)
+				lwMessageNum++;
+			else
+				return(false);
+		}
+	} while (hFile == -1);
 
 	/* Attempt to write header */
 	s_MessageHeader_s(pHeader, hbuf, sizeof(hbuf));
@@ -200,72 +205,6 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 }
 
 
-static tBool ReadMessage(char *pszMessageDir, uint32_t lwMessageNum,
-				  tMessageHeader *pHeader, char **ppszText)
-{
-	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
-	int16_t hFile;
-	size_t nTextSize;
-	char hbuf[BUF_SIZE_MessageHeader];
-
-	/* Get fully qualified filename of message to read */
-	GetMessageFilename(pszMessageDir, lwMessageNum, szFileName, sizeof(szFileName));
-
-	DisplayStr("> ");
-	DisplayStr(szFileName);
-	DisplayStr("     \r");
-
-	/* Open message file */
-#ifdef __unix__
-	hFile = open(szFileName, O_RDONLY|O_BINARY);
-#elif defined(_WIN32)
-	hFile = sopen(szFileName, O_RDONLY|O_BINARY,SH_DENYWR);
-#else
-	hFile = open(szFileName, O_RDONLY|O_BINARY|O_DENYWRITE);
-#endif
-
-	/* If open failed, return false */
-	if (hFile == -1) return(false);
-
-	/* Determine size of message body */
-	nTextSize = (size_t)filelength(hFile) - sizeof(tMessageHeader);
-
-	/* Attempt to allocate space for message body, plus character for added */
-	/* string terminator.                                                   */
-	if ((*ppszText = malloc(nTextSize + 1)) == NULL) {
-		/* On failure, close file and return false */
-		close(hFile);
-		return(false);
-	}
-
-	/* Attempt to read header */
-	if (read(hFile, hbuf, sizeof(hbuf)) != sizeof(hbuf)) {
-		/* On failure, close file, deallocate message buffer and return false */
-		close(hFile);
-		free(*ppszText);
-		return(false);
-	}
-	s_MessageHeader_d(hbuf, sizeof(hbuf), pHeader);
-
-	/* Attempt to read message text */
-	if ((unsigned)read(hFile, *ppszText, nTextSize) != nTextSize) {
-		/* On failure, close file, deallocate message buffer and return false */
-		close(hFile);
-		free(*ppszText);
-		return(false);
-	}
-
-	/* Ensure that message buffer is NULL-terminated */
-	(*ppszText)[nTextSize + 1] = '\0';
-
-	/* Close message file */
-	close(hFile);
-
-	/* Return with success */
-	return(true);
-}
-
-
 static uint32_t GetFirstUnusedMsgNum(char *pszMessageDir)
 {
 	uint32_t lwHighestMsgNum = 0;
@@ -278,7 +217,11 @@ static uint32_t GetFirstUnusedMsgNum(char *pszMessageDir)
 #endif
 	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
 
+#ifdef __unix__
+	MakeFilename(pszMessageDir, "*.[Mm][Ss][Gg]", szFileName, sizeof(szFileName));
+#else
 	MakeFilename(pszMessageDir, "*.msg", szFileName, sizeof(szFileName));
+#endif
 
 #ifndef _WIN32
 	if (findfirst(szFileName, &DirEntry, FA_ARCH) == 0) {
@@ -362,6 +305,8 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 	tFidoNode OrigNode;
 	char szFileNameNoPath[72];
 
+	if (Config.MailerType == MAIL_NONE)
+		return eSuccess;
 	if (pszDestNode == NULL) return(eBadParameter);
 	if (pszFileName == NULL) return(eBadParameter);
 
@@ -535,154 +480,4 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 
 	/* Return appropriate value */
 	return(ToReturn);
-}
-
-tIBResult IBGetFile(tIBInfo *pInfo, char *szAttachFile)
-{
-	tIBResult ToReturn;
-#ifndef _WIN32
-	struct ffblk DirEntry;
-#else
-	struct _finddata_t find_data;
-	int32_t find_handle;
-#endif
-	uint32_t lwCurrentMsgNum;
-	tMessageHeader MessageHeader;
-	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
-	char *pszText;
-	tFidoNode ThisNode;
-	char szFileNameNoPath[72], szTemp[72];
-
-	/* If there's no inbounds, we can't succeed */
-	if (Config.NumInboundDirs < 1)
-		return eMissingDir;
-
-	/* Validate information structure */
-	ToReturn = ValidateInfoStruct(pInfo);
-	if (ToReturn != eSuccess) return(ToReturn);
-
-	/* Get this node's address from string */
-	ConvertStringToAddress(&ThisNode, pInfo->szThisNodeAddress);
-
-	MakeFilename(pInfo->szNetmailDir, "*.msg", szFileName, sizeof(szFileName));
-
-	/* Seach through each message file in the netmail directory, in no */
-	/* particular order.                                               */
-#ifndef _WIN32
-	if (findfirst(szFileName, &DirEntry, FA_ARCH) == 0)
-#else
-	find_handle = _findfirst(szFileName, &find_data);
-	if (find_handle)
-#endif
-	{
-		do {
-#ifndef _WIN32
-			lwCurrentMsgNum = atol(DirEntry.ff_name);
-#else
-			lwCurrentMsgNum = atol(find_data.name);
-#endif
-
-			/* If able to read message */
-			if (ReadMessage(pInfo->szNetmailDir, lwCurrentMsgNum, &MessageHeader,
-							&pszText)) {
-				/* If message is for us, and hasn't be read yet */
-				if (strcmp(MessageHeader.szToUserName, pInfo->szProgName) == 0
-						&& ThisNode.wZone == MessageHeader.wDestZone
-						&& ThisNode.wNet == MessageHeader.wDestNet
-						&& ThisNode.wNode == MessageHeader.wDestNode
-						&& ThisNode.wPoint == MessageHeader.wDestPoint
-						&& !(MessageHeader.wAttribute & ATTRIB_RECEIVED)) {
-
-					/* strcpy inbounddir to filename */
-					/* strcat the subject of message -- actual filename */
-					// FIXME: problems later on?!
-					strlcpy(szAttachFile, Config.szInboundDirs[0], sizeof(szAttachFile));
-
-					// remove the ^ and path if it is first char
-
-					// problem here since in local league, we don't need the ^
-					// char and since we "send" each other packets and receive them
-					// with the same filename as we got them, in real life, a packet
-					// would be sent and received with no path to open it, so we
-					// assume we use the inbound path and open the file from that
-
-					// remove ^ char
-					if (MessageHeader.szSubject[0] == '^')
-						strlcat(szTemp, &MessageHeader.szSubject[1], sizeof(szTemp));
-					else
-						strlcpy(szTemp, MessageHeader.szSubject, sizeof(szTemp));
-
-					// dude: remove path if it exists -- local leagues only
-					RidPath(MessageHeader.szSubject, szFileNameNoPath, sizeof(szFileNameNoPath));
-
-					//printf("headersubject: %s\n", szTemp);
-					//printf("filename nopath: %s\n", szFileNameNoPath);
-					strlcat(szAttachFile, szFileNameNoPath, sizeof(szAttachFile));
-
-					//printf("inbound File found:  %s\n", szAttachFile);
-
-					/* If received messages should be deleted */
-					if (pInfo->bEraseOnReceive) {
-						/* Determine filename of message to erase */
-						GetMessageFilename(pInfo->szNetmailDir, lwCurrentMsgNum,
-										   szFileName, sizeof(szFileName));
-
-						/* Attempt to erase file */
-						if (unlink(szFileName) == -1) {
-							ToReturn = eGeneralFailure;
-						}
-						else {
-							ToReturn = eSuccess;
-						}
-					}
-
-					/* If received messages should not be deleted */
-					else { /* if(!pInfo->bEraseOnReceive) */
-						/* Mark message as read */
-						MessageHeader.wAttribute |= ATTRIB_RECEIVED;
-						++MessageHeader.wTimesRead;
-
-						/* Attempt to rewrite message */
-						if (!WriteMessage(pInfo->szNetmailDir, lwCurrentMsgNum,
-										  &MessageHeader, pszText)) {
-							ToReturn = eGeneralFailure;
-						}
-						else {
-							ToReturn = eSuccess;
-						}
-					}
-
-					/* Deallocate message text buffer */
-					free(pszText);
-
-					/* Return appropriate value */
-					return(ToReturn);
-				}
-				free(pszText);
-			}
-#ifndef _WIN32
-		}
-		while (findnext(&DirEntry) == 0);
-#else
-		} while (_findnext(find_handle, &find_data) == 0);
-		_findclose(find_handle);
-#endif
-	}
-
-	/* If no new messages were found */
-	return(eNoMoreMessages);
-}
-
-static void RidPath(char *pszFileName, char  *pszFileNameNoPath, size_t sz)
-{
-	int16_t CurChar;
-
-	for (CurChar = strlen(pszFileName); CurChar > 0; CurChar--) {
-		/* is this a '\' char?  If so, break; */
-		if (pszFileName[CurChar] == '\\' || pszFileName[CurChar] == '/') {
-			CurChar++;  // skip the \ char
-			break;
-		}
-	}
-	strlcpy(pszFileNameNoPath, &pszFileName[CurChar], sizeof(pszFileNameNoPath));
 }
