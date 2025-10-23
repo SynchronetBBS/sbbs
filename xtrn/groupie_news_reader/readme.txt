@@ -1,6 +1,6 @@
                           Groupie (newsgroup reader)
-                                Version 1.03
-                           Release date: 2025-09-30
+                                Version 1.04
+                           Release date: 2025-10-22
 
                             Initially developed by:
                                 Eric Oulashin
@@ -109,6 +109,13 @@ a user later connects to the newsgroup server.  The file will be in the same
 directory as groupie.js and will be called <hostname>.grpListCache,
 where <hostname> will be the hostname of the NNTP server. You can force it to
 refresh the newsgroup list cache by deleting this file.
+
+Users can subscribe to newsgroups. When using the lightbar interface, users can
+press the spacebar to select each newsgroup and then press Enter to subscribe to
+the selected newsgroups. The next time the user runs Groupie, they will be asked
+whether they want to see only their subscribed newsgroups, and when viewing only
+their subscribed newsgroups, the user can press DEL to clear their subscribed
+newsgroups.
 
 
 3. Files included

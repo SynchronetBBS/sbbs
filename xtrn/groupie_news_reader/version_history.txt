@@ -4,6 +4,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.04     2025-10-22   Added a mechanism to allow users to subscribe to
+                      newsgroups and read only those newsgroups.
 1.03     2025-09-30   When getting the list of newsgroups, if using the
                       newsgroup cache file for a server, then also request a
                       list of new newsgroups since the cached file's timestamp
