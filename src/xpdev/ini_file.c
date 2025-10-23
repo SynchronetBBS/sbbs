@@ -3859,6 +3859,9 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 	}
 	if (bufferPos) {
 		if (streamCipher) {
+			int status = cryptEncrypt(ctx, buffer, bufferPos);
+			if (cryptStatusError(status))
+				goto done;
 			if (fwrite(buffer, 1, bufferPos, fp) != bufferPos)
 				goto done;
 		}
