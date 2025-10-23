@@ -20,13 +20,15 @@ const MessageWindow_Attr=7;
 const MessageTimeout=50;		/* 100ths of a second */
 
 
-load("sbbsdefs.js");
-load("nodedefs.js");
-load("lightbar.js");
-load("graphic.js");
+require("sbbsdefs.js", "SYS_CLOSED");
+require("nodedefs.js", "NODE_WFC");
+require("lightbar.js", "Lightbar");
+require("graphic.js", "Graphic");
 bbs.command_str='';	// Clear STR (Contains the EXEC for default.js)
-load("text.js");
-load("str_cmds.js");
+require("text.js", "MsgSubj");
+require("str_cmds.js", "str_cmds");
+require("cterm_lib.js", "supports_jpegxl");
+require('syncterm_cache.js', 'SyncTERMCache');
 var ansiterm = bbs.mods.ansiterm_lib;
 if(!ansiterm)
 	ansiterm = bbs.mods.ansiterm_lib = load({}, "ansiterm_lib.js");
@@ -41,6 +43,54 @@ var bg_names;
 bg_names=directory(system.text_dir+"/backgrounds/*.bin");
 if(bg_names.length>0) {
 	bg_filename=bg_names[random(bg_names.length)];
+}
+var jxl_bg_filename;
+jxl_bg_names = directory(system.text_dir+"/backgrounds/*.jxl");
+var use_jxl = false;
+var cache;
+var screen_dims;
+var font_dims;
+
+function recreate_jxl_buffer()
+{
+	if (use_jxl) {
+		// hardcoded dimensions for now...
+		var sw = 640;
+		var sh = 400;
+		var sx = 0;
+		var sy = 0;
+		if (screen_dims.width < sw) {
+			sx = (sw - screen_dims.width) / 2;
+			sw = screen_dims.width;
+		}
+		if (screen_dims.height < sh) {
+			sy = (sh - screen_dims.height) / 2;
+			sh = screen_dims.height;
+		}
+		var dx = (screen_dims.width - sw) / 2;
+		var dy = (screen_dims.height - sh) / 2;
+		console.write('\x1b_SyncTERM:C;LoadJXL;B=0;'+file_getname(jxl_bg_filename)+'\x1b\\');
+		console.write('\x1b_SyncTERM:P;Paste;SX='+sx+';SY='+sy+';SW='+sw+';SH='+sh+';DX='+dx+';DY='+dy+';B=0\x1b\\');
+		console.write('\x1b_SyncTERM:P;Copy\x1b\\');
+	}
+}
+
+if (jxl_bg_names.length > 0) {
+	cache = new(SyncTERMCache);
+	if (cache.supported) {
+		screen_dims = query_graphicsdim();
+		if (screen_dims !== null && screen_dims !== undefined) {
+			font_dims = query_fontdims();
+			if (font_dims) {
+				if (supports_jpegxl()) {
+					jxl_bg_filename = jxl_bg_names[random(jxl_bg_names.length)];
+					if (cache.upload(jxl_bg_filename, file_getname(jxl_bg_filename))) {
+						use_jxl = true;
+					}
+				}
+			}
+		}
+	}
 }
 var use_bg=BackGround.load(bg_filename);
 var MessageWindow=new Graphic(80,console.screen_rows,MessageWindow_Attr,' ');
@@ -906,6 +956,7 @@ function draw_main(topline)
 	if(topline) {
 		console.line_counter=0;
 		console.clear();
+		recreate_jxl_buffer();
 		cleararea(1,1,console.screen_columns,console.screen_rows,true);
 	}
 	else
@@ -2438,6 +2489,24 @@ function cleararea(xpos,ypos,width,height,eol_allowed)
 	var x;
 	var y;
 
+	if (use_jxl) {
+		/* Redraw main menu line if asked */
+		if(ypos==1) {
+			console.gotoxy(1,1);
+			console.attributes=0x17;
+			console.cleartoeol();
+			mainbar.draw();
+			ypos++;
+			height--;
+		}
+
+		var sx = (xpos - 1) * font_dims.width;
+		var sw = width * font_dims.width;
+		var sy = (ypos - 1) * font_dims.height;
+		var sh = height * font_dims.height;
+		console.write('\x1b_SyncTERM:P;Paste;SX='+sx+';SY='+sy+';SW='+sw+'SH='+sh+';DX='+sx+';DY='+sy+';B=0\x1b\\');
+		return;
+	}
 	if(use_bg) {
 		var bgx;
 		var bgy;
