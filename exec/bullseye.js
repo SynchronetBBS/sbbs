@@ -14,17 +14,9 @@ require("sbbsdefs.js", "P_NOERROR");
 
 var i=0;
 var b=0;
-var html=user.settings&USER_HTML;
 
-if(html) {
-	if(!file_exists(system.text_dir+"bullseye.html"))
-		html=0;
-}
-
-if(!html) {
-	writeln("");
-	writeln("Synchronet BullsEye! Version 3.00 by Rob Swindell");
-}
+writeln("");
+writeln("Synchronet BullsEye! Version 3.00 by Rob Swindell");
 
 console.line_counter=0;
 var file=new File(system.text_dir+"bullseye.cfg");
