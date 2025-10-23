@@ -53,7 +53,6 @@ function mouse_getkey(mode, timeout, enabled)
 			mouse_enable(false);
 
 		if (key === '' || key === undefined || key === null) {
-			ansi += key;
 			restuff();
 			return {key:'', mouse:null};
 		}
