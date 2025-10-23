@@ -2235,12 +2235,12 @@ main(int argc, char **argv)
 		}
 		bbs_alloc = true;
 		memset(bbs, 0, sizeof(struct bbslist));
-		if ((listfile = fopen(settings.list_path, "r")) == NULL) {
+		if ((listfile = fopen(settings.list_path, "rb")) == NULL) {
 			parse_url(url, bbs, conn_type, true);
 		}
 		else {
 			str_list_t inilines;
-			inilines = iniReadFile(listfile);
+			inilines = iniReadBBSList(listfile, true);
 			fclose(listfile);
 			ini_fp_list_t *nlines = iniFastParseSections(inilines, false);
 			read_item(nlines, bbs, NULL, 0, USER_BBSLIST);
@@ -2297,7 +2297,7 @@ main(int argc, char **argv)
 					bbs->type = USER_BBSLIST;
 					add_bbs(settings.list_path, bbs, false);
 				}
-				if ((listfile = fopen(settings.list_path, "r+")) != NULL) {
+				if ((listfile = fopen(settings.list_path, "r+b")) != NULL) {
 					inifile = iniReadBBSList(listfile, true);
 					iniSetDateTime(&inifile,
 					    bbs->name,

@@ -910,7 +910,7 @@ list_name_check(struct bbslist **list, char *bbsname, int *pos, int useronly)
 		FILE *listfile;
 		str_list_t inifile;
 
-		if ((listfile = fopen(settings.list_path, "r")) != NULL) {
+		if ((listfile = fopen(settings.list_path, "rb")) != NULL) {
 			inifile = iniReadBBSList(listfile, true);
 			i = iniSectionExists(inifile, bbsname);
 			strListFree(&inifile);
@@ -985,7 +985,7 @@ read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *
 	str_list_t inilines;
 	ini_fp_list_t *nlines;
 
-	if ((listfile = fopen(listpath, "r")) != NULL) {
+	if ((listfile = fopen(listpath, "rb")) != NULL) {
 		inilines = iniReadBBSList(listfile, type == USER_BBSLIST);
 		fclose(listfile);
 		nlines = iniFastParseSections(inilines, false);
@@ -1920,7 +1920,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		item->type = USER_BBSLIST;
 		add_bbs(listpath, item, true);
 	}
-	if ((listfile = fopen(listpath, "r")) != NULL) {
+	if ((listfile = fopen(listpath, "rb")) != NULL) {
 		inifile = iniReadBBSList(listfile, true);
 		fclose(listfile);
 	}
@@ -1979,7 +1979,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 					return 0;
 				}
 				if (!safe_mode) {
-					if ((listfile = fopen(listpath, "w")) != NULL) {
+					if ((listfile = fopen(listpath, "wb")) != NULL) {
 						iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
 						fclose(listfile);
 					}
@@ -2478,7 +2478,7 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 
 	if (safe_mode)
 		return;
-	if ((listfile = fopen(listpath, "r")) != NULL) {
+	if ((listfile = fopen(listpath, "rb")) != NULL) {
 		inifile = iniReadBBSList(listfile, true);
 		fclose(listfile);
 	}
@@ -2540,7 +2540,7 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 	static_assert(sizeof(int) == sizeof(uint32_t), "int must be four bytes");
 	if (bbs->palette_size > 0)
 		iniSetIntList(&inifile, bbs->name, "Palette", ",", (int*)bbs->palette, bbs->palette_size, &ini_style);
-	if ((listfile = fopen(listpath, "w")) != NULL) {
+	if ((listfile = fopen(listpath, "wb")) != NULL) {
 		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
 		fclose(listfile);
 	}
@@ -2555,11 +2555,11 @@ del_bbs(char *listpath, struct bbslist *bbs)
 
 	if (safe_mode)
 		return;
-	if ((listfile = fopen(listpath, "r")) != NULL) {
+	if ((listfile = fopen(listpath, "rb")) != NULL) {
 		inifile = iniReadBBSList(listfile, bbs->type == USER_BBSLIST);
 		fclose(listfile);
 		iniRemoveSection(&inifile, bbs->name);
-		if ((listfile = fopen(listpath, "w")) != NULL) {
+		if ((listfile = fopen(listpath, "wb")) != NULL) {
 			iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
 			fclose(listfile);
 		}
@@ -3095,7 +3095,7 @@ change_settings(int connected)
 						if (nval > 0) {
 							FILE *listfile;
 
-							if ((listfile = fopen(settings.list_path, "r+")) != NULL) {
+							if ((listfile = fopen(settings.list_path, "r+b")) != NULL) {
 								str_list_t inifile = iniReadBBSList(listfile, true);
 								settings.keyDerivationIterations = nval;
 								iniSetInteger(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
@@ -3403,7 +3403,7 @@ edit_comment(struct bbslist *list, char *listpath)
 		goto done;
 
 	// Open with write permissions so it fails if you can't edit.
-	if ((listfile = fopen(listpath, "r+")) != NULL) {
+	if ((listfile = fopen(listpath, "r+b")) != NULL) {
 		inifile = iniReadBBSList(listfile, true);
 		fclose(listfile);
 	}
@@ -3453,7 +3453,7 @@ edit_comment(struct bbslist *list, char *listpath)
 done:
 	free(old);
 	if (inifile != NULL) {
-		if ((listfile = fopen(listpath, "w")) != NULL) {
+		if ((listfile = fopen(listpath, "wb")) != NULL) {
 			iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
 			fclose(listfile);
 		}
@@ -3624,7 +3624,7 @@ changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize, const char
 		if (!prompt_password(NULL, NULL, NULL))
 			return;
 	}
-	if ((listfile = fopen(listpath, "r+")) != NULL) {
+	if ((listfile = fopen(listpath, "r+b")) != NULL) {
 		str_list_t inifile = iniReadBBSList(listfile, true);
 		if (algo == INI_CRYPT_ALGO_NONE)
 			iniRemoveKey(&inifile, NULL, "DecryptionCheck");
