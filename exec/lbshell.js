@@ -69,10 +69,30 @@ function recreate_jxl_buffer()
 		}
 		var dx = (screen_dims.width - sw) / 2;
 		var dy = (screen_dims.height - sh) / 2;
-		console.write('\x1b_SyncTERM:C;LoadJXL;B=0;'+file_getname(jxl_bg_filename)+'\x1b\\');
+		var fname = jxl_bg_names[random(jxl_bg_names.length)];
+		console.write('\x1b_SyncTERM:C;LoadJXL;B=0;'+file_getname(fname)+'\x1b\\');
 		console.write('\x1b_SyncTERM:P;Paste;SX='+sx+';SY='+sy+';SW='+sw+';SH='+sh+';DX='+dx+';DY='+dy+';B=0\x1b\\');
 		console.write('\x1b_SyncTERM:P;Copy\x1b\\');
 	}
+}
+
+function update_jxl_cache()
+{
+	var i;
+	var ret = false;
+	var fname;
+	var newlist = [];
+
+	for (i = 0; i < jxl_bg_names.length; i++) {
+		jxl_bg_names[i];
+		if (cache.upload(jxl_bg_names[i], file_getname(jxl_bg_names[i]))) {
+			ret = true;
+			newlist.push(jxl_bg_names[i]);
+		}
+	}
+
+	jxl_bg_names = newlist;
+	return ret;
 }
 
 if (jxl_bg_names.length > 0) {
@@ -83,10 +103,8 @@ if (jxl_bg_names.length > 0) {
 			font_dims = query_fontdims();
 			if (font_dims) {
 				if (supports_jpegxl()) {
-					jxl_bg_filename = jxl_bg_names[random(jxl_bg_names.length)];
-					if (cache.upload(jxl_bg_filename, file_getname(jxl_bg_filename))) {
+					if (update_jxl_cache())
 						use_jxl = true;
-					}
 				}
 			}
 		}
