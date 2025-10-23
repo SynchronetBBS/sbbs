@@ -438,6 +438,9 @@ void System_Close(void)
 		printf("Clans End   -- mem left = %lu\n", farcoreleft());
 #endif
 
+		TRACEX("Video_Close()");
+		Video_Close();
+
 		TRACEX("Door_Initialized()");
 		if (Door_Initialized()) {
 			od_exit(0, false);
