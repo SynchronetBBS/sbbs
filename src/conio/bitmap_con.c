@@ -2052,6 +2052,11 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	if (sx > ex || sy > ey)
 		return 0;
 
+	if (y_off > pixels->height)
+		return 0;
+	if (x_off > pixels->width)
+		return 0;
+
 	width = ex - sx + 1;
 	height = ey - sy + 1;
 
@@ -2062,6 +2067,10 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		return 0;
 
 	if (mask != NULL) {
+		if (mx_off > mask->width)
+			return 0;
+		if (my_off > mask->height)
+			return 0;
 		if (width + mx_off > mask->width)
 			return 0;
 		if (height + my_off > mask->height)
