@@ -6,14 +6,16 @@ load('sbbsdefs.js');
 var xbin = load({}, 'xbin_defs.js');
 var ansiterm = load({}, 'ansiterm_lib.js');
 
-const cterm_version_supports_b64_fonts = 1213;
 const cterm_version_supports_fonts = 1155;
-const cterm_version_supports_fontstate_query = 1161;
 const cterm_version_supports_mode_query = 1160;
+const cterm_version_supports_fontstate_query = 1161;
 const cterm_version_supports_palettes = 1167;
 const cterm_version_supports_sixel = 1189;
 const cterm_version_supports_fontdim_query = 1198;
+const cterm_version_supports_xtsrga = 1208;
+const cterm_version_supports_b64_fonts = 1213;
 const cterm_version_supports_copy_buffers = 1316;
+const cterm_version_supports_jpegxl = 1318;
 var font_slot_first = 43;
 const font_slot_last = 255;
 const font_styles = { normal:0, high:1, blink:2, highblink:3 };
@@ -104,20 +106,16 @@ function query_fb(request, fb)
 	var oldctrl = console.ctrlkey_passthru;
 	console.ctrlkey_passthru=-1;
 
+	// Clean out the input buffer...
+	console.clearkeybuffer()
 	console.write(request);
-	if (fb != 'R') {
+	if (fb.slice(-1) != 'R') {
 		console.write('\x1b[6n');
-		re = new RegExp('^(.*)(\x1b\[[0-?]*'+fb+')?\x1b\[[0-?]*R');
+		re = new RegExp('^(.*?)(\\x1b\\[[0-?]*'+fb+')?\\x1b\\[[0-?]*R');
 	}
 	else {
 		console.write('\x1b[5n');
-		re = new RegExp('^(.*)(\x1b\[[0-?]*'+fb+')?\x1b\[[0-?]*n');
-	}
-	// Clean out the input buffer...
-	//console.clearkeybuffer()
-	while(1) {
-		ch=console.inkey(0, 0);
-		log(LOG_DEBUG, "CTerm Discarding: " + format("'%c' (%02X)", m[1].substr(i, 1), ascii(m[1].substr(i, 1))));
+		re = new RegExp('^(.*?)(\\x1b\\[[0-?]*'+fb+')?\\x1b\\[[0-?]*n');
 	}
 	while(1) {
 		ch=console.inkey(0, 3000);
@@ -203,6 +201,19 @@ function query_fontdim()
 	return false;
 }
 
+function query_graphicsdim()
+{
+	if(console.cterm_version < cterm_version_supports_xtsrga)
+		return null;
+	var response = query("\x1b[?2;1S");
+	if (!response)
+		return null;
+	var m = response.match(/\x1b\?2;0;([0-9]+);([0-9]+)S/);
+	if (m == null)
+		return null;
+	return {width: parseInt(m[1], 10), height: parseInt(m[2], 10)};
+}
+
 function query_ctda(which)
 {
 	var response = query("\x1b[<c");
@@ -286,6 +297,16 @@ function supports_sixel()
 	if(console.cterm_version == undefined || console.cterm_version < cterm_version_supports_sixel)
 		return false;
 	return query_ctda(cterm_device_attributes.pixelops_supported);
+}
+
+function supports_jpegxl()
+{
+	if(console.cterm_version == undefined || console.cterm_version < cterm_version_supports_jpegxl)
+		return false;
+	var res = query_fb('\x1b_SyncTERM:Q;JXL\x1b\\', '-n');
+	if (res.indexOf('\x1b[=1;1-n') !== -1)
+		return true;
+	return false;
 }
 
 // Returns:
