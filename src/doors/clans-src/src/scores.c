@@ -490,7 +490,7 @@ static void SendScoreData(struct UserScore **UserScores)
 	/* create packet header */
 	Packet.Active = true;
 	Packet.BBSIDTo = 1;         // Main BBS
-	Packet.BBSIDFrom = IBBS.Data->BBSID;
+	Packet.BBSIDFrom = IBBS.Data.BBSID;
 	Packet.PacketType = PT_SCOREDATA;
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 	Packet.PacketLength = NumScores * BUF_SIZE_UserScore + sizeof(int16_t);
@@ -695,7 +695,7 @@ void LeagueScores(void)
 				szPadding,
 				ScoreList[iTemp]->Symbol,
 				ScoreList[iTemp]->Points,
-				IBBS.Data->Nodes[ ScoreList[iTemp]->ClanID[0]-1 ].Info.pszVillageName);
+				IBBS.Data.Nodes[ ScoreList[iTemp]->ClanID[0]-1 ].Info.pszVillageName);
 		rputs(szString);
 	}
 
@@ -819,7 +819,7 @@ void SendScoreList(void)
 
 	/* create packet header */
 	Packet.Active = true;
-	Packet.BBSIDFrom = IBBS.Data->BBSID;
+	Packet.BBSIDFrom = IBBS.Data.BBSID;
 	Packet.PacketType = PT_SCORELIST;
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 	Packet.PacketLength = NumScores * BUF_SIZE_UserScore + sizeof(int16_t) +
@@ -828,7 +828,7 @@ void SendScoreList(void)
 
 	// send it to all bbses except this one in the league
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active == false || CurBBS+1 == IBBS.Data->BBSID)
+		if (IBBS.Data.Nodes[CurBBS].Active == false || CurBBS+1 == IBBS.Data.BBSID)
 			continue;
 
 		Packet.BBSIDTo = CurBBS+1;
@@ -903,7 +903,7 @@ void CreateScoreData(bool LocalOnly)
 		CheckMem(UserScores[NumClans]);
 		strlcpy(UserScores[NumClans]->szName, TmpClan.szName, sizeof(UserScores[NumClans]->szName));
 		UserScores[NumClans]->Points = TmpClan.Points;
-		UserScores[NumClans]->BBSID = IBBS.Data->BBSID;
+		UserScores[NumClans]->BBSID = IBBS.Data.BBSID;
 		UserScores[NumClans]->ClanID[0] = TmpClan.ClanID[0];
 		UserScores[NumClans]->ClanID[1] = TmpClan.ClanID[1];
 		strlcpy(UserScores[NumClans]->Symbol, TmpClan.Symbol, sizeof(UserScores[NumClans]->Symbol));
@@ -914,7 +914,7 @@ void CreateScoreData(bool LocalOnly)
 	//printf("%d clans found.\n", NumClans);
 
 	// if not main BBS, write this data to file and send the packet
-	if (IBBS.Data->BBSID != 1 && LocalOnly == false) {
+	if (IBBS.Data.BBSID != 1 && LocalOnly == false) {
 		SendScoreData(UserScores);
 	}
 	else {

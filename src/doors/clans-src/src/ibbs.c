@@ -110,7 +110,7 @@ static int search_and_construct_ffblk(WIN32_FIND_DATA *, struct ffblk *, bool);
 #define FA_ARCH   _A_ARCH   /* 0x20 */
 #endif
 
-struct ibbs IBBS = { false, NULL };
+struct ibbs IBBS;
 
 static bool NoMSG[MAX_IBBSNODES];
 
@@ -161,7 +161,7 @@ static void IBBS_SendFileInPacket(int16_t DestID, int16_t PacketType, char *szFi
 static void IBBS_SendUserList(int16_t DestID)
 {
 	//printf("Sending userlist to %d\n", DestID);
-	if (IBBS.Data->Nodes[DestID-1].Active)
+	if (IBBS.Data.Nodes[DestID-1].Active)
 		IBBS_SendFileInPacket(DestID, PT_ULIST, "userlist.dat");
 }
 
@@ -201,11 +201,11 @@ void IBBS_DistributeNDX(void)
 	fclose(fpNDX);
 
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active == false)
+		if (IBBS.Data.Nodes[CurBBS].Active == false)
 			continue;
 
 		// skip if it's your own BBS
-		if (CurBBS+1 == IBBS.Data->BBSID)
+		if (CurBBS+1 == IBBS.Data.BBSID)
 			continue;
 
 		IBBS_SendPacket(PT_NEWNDX, lFileSize, cpBuffer, CurBBS+1);
@@ -235,11 +235,11 @@ void LeagueKillUser(struct UserInfo *User)
 
 	// for each BBS in the list, send him a packet
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active == false)
+		if (IBBS.Data.Nodes[CurBBS].Active == false)
 			continue;
 
 		// skip if it's your own BBS
-		if (CurBBS+1 == IBBS.Data->BBSID)
+		if (CurBBS+1 == IBBS.Data.BBSID)
 			continue;
 
 		IBBS_SendPacket(PT_SUBUSER, sizeof(pktBuf), pktBuf, CurBBS+1);
@@ -395,7 +395,7 @@ static void IBBS_SendDelUser(int16_t BBSID, struct UserInfo *User)
 	assert(res == sizeof(pktBuf));
 	if (res != sizeof(pktBuf))
 		return;
-	if (IBBS.Data->Nodes[BBSID-1].Active)
+	if (IBBS.Data.Nodes[BBSID-1].Active)
 		IBBS_SendPacket(PT_DELUSER, sizeof(pktBuf), pktBuf, BBSID);
 }
 
@@ -529,7 +529,7 @@ static void UpdateNodesOnNewUser(struct UserInfo *User)
 	// for each BBS in the list, send him a packet
 	// must skip BBS #1 since that's this BBS (main BBS)
 	for (CurBBS = 1; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active == false)
+		if (IBBS.Data.Nodes[CurBBS].Active == false)
 			continue;
 
 		IBBS_SendPacket(PT_ADDUSER, sizeof(pktBuf), pktBuf, CurBBS+1);
@@ -556,7 +556,7 @@ void IBBS_LeagueNewUser(struct UserInfo *User)
 		return;
 
 	// if this is a node only
-	if (IBBS.Data->BBSID != 1) {
+	if (IBBS.Data.BBSID != 1) {
 		IBBS_SendPacket(PT_NEWUSER, sizeof(pktBuf), pktBuf, 1);
 	}
 	else {
@@ -646,7 +646,7 @@ void IBBS_SendComeBack(int16_t BBSIdTo, struct clan *Clan)
 
 	/* create packet header */
 	Packet.Active = true;
-	Packet.BBSIDFrom = IBBS.Data->BBSID;
+	Packet.BBSIDFrom = IBBS.Data.BBSID;
 	Packet.BBSIDTo = BBSIdTo;
 	Packet.PacketType = PT_COMEBACK;
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
@@ -662,7 +662,7 @@ void IBBS_SendComeBack(int16_t BBSIdTo, struct clan *Clan)
 	// write info
 	EncryptWrite16(&Clan->ClanID[0], fp, XOR_PACKET);
 	EncryptWrite16(&Clan->ClanID[1], fp, XOR_PACKET);
-	EncryptWrite16(&IBBS.Data->BBSID, fp, XOR_PACKET);
+	EncryptWrite16(&IBBS.Data.BBSID, fp, XOR_PACKET);
 
 	fclose(fp);
 
@@ -715,7 +715,7 @@ static void ReturnLostAttack(struct AttackPacket *AttackPacket)
 	WhichBBS = AttackPacket->BBSToID-1;
 
 	snprintf(szMessage, sizeof(szMessage), "%s's attack on the village of %s was lost but returned.\nYou had sent the following: %" PRId32 " footmen, %" PRId32 " axemen, %" PRId32 " knights.",
-			szAttackerName, IBBS.Data->Nodes[WhichBBS].Info.pszVillageName,
+			szAttackerName, IBBS.Data.Nodes[WhichBBS].Info.pszVillageName,
 			AttackPacket->AttackingArmy.Footmen, AttackPacket->AttackingArmy.Axemen,
 			AttackPacket->AttackingArmy.Knights);
 	Junk[0] = Junk[1] = -1;
@@ -897,7 +897,7 @@ void IBBS_CurrentTravelInfo(void)
 	/* see if travelling already */
 	if (PClan->WorldStatus == WS_LEAVING) {
 		snprintf(szString, sizeof(szString), "|0SYou are set to leave for %s.\n",
-				IBBS.Data->Nodes[ PClan->DestinationBBS-1 ].Info.pszVillageName);
+				IBBS.Data.Nodes[ PClan->DestinationBBS-1 ].Info.pszVillageName);
 		rputs(szString);
 
 		if (YesNo("|0SDo you wish to abort the trip?") == YES) {
@@ -1031,7 +1031,7 @@ static void IBBS_TravelMaint(void)
 
 		/* create packet header */
 		Packet.Active = true;
-		Packet.BBSIDFrom = IBBS.Data->BBSID;
+		Packet.BBSIDFrom = IBBS.Data.BBSID;
 		Packet.BBSIDTo = LeavingData.DestID;
 		Packet.PacketType = PT_CLANMOVE;
 		strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
@@ -1143,14 +1143,14 @@ static bool IBBS_TravelToBBS(int16_t DestID)
 	FILE *fpLeavingDat;
 
 	/* see if it's this BBS */
-	if (IBBS.Data->BBSID == DestID) {
+	if (IBBS.Data.BBSID == DestID) {
 		rputs("You're already here!\n");
 		return false;
 	}
 
 	/* if no recon yet */
-	if (IBBS.Data->Nodes[DestID-1].Recon.LastReceived == 0 ||
-			(DaysSince1970(System.szTodaysDate) - IBBS.Data->Nodes[DestID-1].Recon.LastReceived) >= 10) {
+	if (IBBS.Data.Nodes[DestID-1].Recon.LastReceived == 0 ||
+			(DaysSince1970(System.szTodaysDate) - IBBS.Data.Nodes[DestID-1].Recon.LastReceived) >= 10) {
 		// if no recon yet don't allow travel
 		// if days since last recon is >= 10 days, don't allow travel
 
@@ -1161,7 +1161,7 @@ static bool IBBS_TravelToBBS(int16_t DestID)
 	/* see if travelling already */
 	if (PClan->WorldStatus == WS_LEAVING) {
 		snprintf(szString, sizeof(szString), "|0SYou are already set to leave for %s!\n",
-				IBBS.Data->Nodes[ PClan->DestinationBBS-1 ].Info.pszVillageName);
+				IBBS.Data.Nodes[ PClan->DestinationBBS-1 ].Info.pszVillageName);
 		rputs(szString);
 
 		if (YesNo("|0SDo you wish to abort the trip?") == YES) {
@@ -1174,7 +1174,7 @@ static bool IBBS_TravelToBBS(int16_t DestID)
 	Help("Traveling", ST_VILLHLP);
 
 	snprintf(szString, sizeof(szString), "|0SAre you sure you wish to travel to %s?",
-			IBBS.Data->Nodes[ DestID-1 ].Info.pszVillageName);
+			IBBS.Data.Nodes[ DestID-1 ].Info.pszVillageName);
 
 	if (YesNo(szString) == YES) {
 		/* append LEAVING.DAT file */
@@ -1231,10 +1231,10 @@ void IBBS_SeeVillages(bool Travel)
 	for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 		pszBBSNames[iTemp] = NULL;
 
-		if (IBBS.Data->Nodes[iTemp].Active == false)
+		if (IBBS.Data.Nodes[iTemp].Active == false)
 			continue;
 
-		pszBBSNames [ NumBBSes ] = IBBS.Data->Nodes[iTemp].Info.pszVillageName;
+		pszBBSNames [ NumBBSes ] = IBBS.Data.Nodes[iTemp].Info.pszVillageName;
 		BBSIndex[NumBBSes] = iTemp;
 		NumBBSes++;
 	}
@@ -1252,7 +1252,7 @@ void IBBS_SeeVillages(bool Travel)
 			return;
 
 		rputs("\n");
-		Help(IBBS.Data->Nodes[0+(BBSIndex[WhichBBS])].Info.pszVillageName, "world.ndx");
+		Help(IBBS.Data.Nodes[0+(BBSIndex[WhichBBS])].Info.pszVillageName, "world.ndx");
 		rputs("\n");
 
 		if (Travel) {
@@ -1295,17 +1295,15 @@ static void IBBS_Destroy(void)
 		return;
 
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active) {
-			if (IBBS.Data->Nodes[CurBBS].Info.pszBBSName)
-				free(IBBS.Data->Nodes[CurBBS].Info.pszBBSName);
-			if (IBBS.Data->Nodes[CurBBS].Info.pszVillageName)
-				free(IBBS.Data->Nodes[CurBBS].Info.pszVillageName);
-			if (IBBS.Data->Nodes[CurBBS].Info.pszAddress)
-				free(IBBS.Data->Nodes[CurBBS].Info.pszAddress);
+		if (IBBS.Data.Nodes[CurBBS].Active) {
+			if (IBBS.Data.Nodes[CurBBS].Info.pszBBSName)
+				free(IBBS.Data.Nodes[CurBBS].Info.pszBBSName);
+			if (IBBS.Data.Nodes[CurBBS].Info.pszVillageName)
+				free(IBBS.Data.Nodes[CurBBS].Info.pszVillageName);
+			if (IBBS.Data.Nodes[CurBBS].Info.pszAddress)
+				free(IBBS.Data.Nodes[CurBBS].Info.pszAddress);
 		}
 	}
-
-	free(IBBS.Data);
 
 	IBBS.Initialized = false;
 }
@@ -1331,16 +1329,16 @@ static void IBBS_Create(void)
 	int16_t CurBBS;
 
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active) {
-			IBBS.Data->Nodes[CurBBS].Reset.Received = false;
-			IBBS.Data->Nodes[CurBBS].Reset.LastSent = 0;
+		if (IBBS.Data.Nodes[CurBBS].Active) {
+			IBBS.Data.Nodes[CurBBS].Reset.Received = false;
+			IBBS.Data.Nodes[CurBBS].Reset.LastSent = 0;
 
-			IBBS.Data->Nodes[CurBBS].Recon.LastReceived = 0;
-			IBBS.Data->Nodes[CurBBS].Recon.LastSent = 0;
-			IBBS.Data->Nodes[CurBBS].Recon.PacketIndex = 'a';
+			IBBS.Data.Nodes[CurBBS].Recon.LastReceived = 0;
+			IBBS.Data.Nodes[CurBBS].Recon.LastSent = 0;
+			IBBS.Data.Nodes[CurBBS].Recon.PacketIndex = 'a';
 
-			IBBS.Data->Nodes[CurBBS].Attack.ReceiveIndex = 0;
-			IBBS.Data->Nodes[CurBBS].Attack.SendIndex = 0;
+			IBBS.Data.Nodes[CurBBS].Attack.ReceiveIndex = 0;
+			IBBS.Data.Nodes[CurBBS].Attack.SendIndex = 0;
 		}
 	}
 }
@@ -1357,9 +1355,9 @@ static void IBBS_Read(void)
 	}
 
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active) {
-			EncryptRead_s(ibbs_node_recon, &IBBS.Data->Nodes[CurBBS].Recon, fp, XOR_IBBS);
-			EncryptRead_s(ibbs_node_attack, &IBBS.Data->Nodes[CurBBS].Attack, fp, XOR_IBBS);
+		if (IBBS.Data.Nodes[CurBBS].Active) {
+			EncryptRead_s(ibbs_node_recon, &IBBS.Data.Nodes[CurBBS].Recon, fp, XOR_IBBS);
+			EncryptRead_s(ibbs_node_attack, &IBBS.Data.Nodes[CurBBS].Attack, fp, XOR_IBBS);
 		}
 		else {
 			fseek(fp, BUF_SIZE_ibbs_node_attack + BUF_SIZE_ibbs_node_recon, SEEK_CUR);
@@ -1368,10 +1366,10 @@ static void IBBS_Read(void)
 
 	// now read in reset data
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active) {
-			notEncryptRead_s(ibbs_node_reset, &IBBS.Data->Nodes[CurBBS].Reset, fp, XOR_IBBS) {
-				IBBS.Data->Nodes[CurBBS].Reset.Received = false;
-				IBBS.Data->Nodes[CurBBS].Reset.LastSent = 0;
+		if (IBBS.Data.Nodes[CurBBS].Active) {
+			notEncryptRead_s(ibbs_node_reset, &IBBS.Data.Nodes[CurBBS].Reset, fp, XOR_IBBS) {
+				IBBS.Data.Nodes[CurBBS].Reset.Received = false;
+				IBBS.Data.Nodes[CurBBS].Reset.LastSent = 0;
 			}
 		}
 		else {
@@ -1406,9 +1404,9 @@ static void IBBS_Write(void)
 	DummyAttack.SendIndex = 0;
 
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active) {
-			EncryptWrite_s(ibbs_node_recon, &IBBS.Data->Nodes[CurBBS].Recon, fp, XOR_IBBS);
-			EncryptWrite_s(ibbs_node_attack, &IBBS.Data->Nodes[CurBBS].Attack, fp, XOR_IBBS);
+		if (IBBS.Data.Nodes[CurBBS].Active) {
+			EncryptWrite_s(ibbs_node_recon, &IBBS.Data.Nodes[CurBBS].Recon, fp, XOR_IBBS);
+			EncryptWrite_s(ibbs_node_attack, &IBBS.Data.Nodes[CurBBS].Attack, fp, XOR_IBBS);
 		}
 		else {
 			EncryptWrite_s(ibbs_node_recon, &DummyRecon, fp, XOR_IBBS);
@@ -1418,8 +1416,8 @@ static void IBBS_Write(void)
 
 	// now write reset data
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active) {
-			EncryptWrite_s(ibbs_node_reset, &IBBS.Data->Nodes[CurBBS].Reset, fp, XOR_IBBS);
+		if (IBBS.Data.Nodes[CurBBS].Active) {
+			EncryptWrite_s(ibbs_node_reset, &IBBS.Data.Nodes[CurBBS].Reset, fp, XOR_IBBS);
 		}
 		else {
 			EncryptWrite_s(ibbs_node_reset, &DummyReset, fp, XOR_IBBS);
@@ -1517,7 +1515,7 @@ static void IBBS_LoadNDX(void)
 
 	/* make all bbs NULL pointers */
 	for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++)
-		IBBS.Data->Nodes[iTemp].Active = false;
+		IBBS.Data.Nodes[iTemp].Active = false;
 
 	/* read in .NDX file */
 	fpWorld = _fsopen("world.ndx", "r", SH_DENYWR);
@@ -1579,24 +1577,24 @@ static void IBBS_LoadNDX(void)
 
 						/* activate this BBS */
 
-						IBBS.Data->Nodes[CurBBS].Active = true;
-						IBBS.Data->Nodes[CurBBS].Info.pszBBSName = NULL;
-						IBBS.Data->Nodes[CurBBS].Info.pszVillageName = NULL;
-						IBBS.Data->Nodes[CurBBS].Info.pszAddress = NULL;
-						IBBS.Data->Nodes[CurBBS].Info.RouteThrough = CurBBS+1;
-						IBBS.Data->Nodes[CurBBS].Info.MailType = MT_NORMAL;
+						IBBS.Data.Nodes[CurBBS].Active = true;
+						IBBS.Data.Nodes[CurBBS].Info.pszBBSName = NULL;
+						IBBS.Data.Nodes[CurBBS].Info.pszVillageName = NULL;
+						IBBS.Data.Nodes[CurBBS].Info.pszAddress = NULL;
+						IBBS.Data.Nodes[CurBBS].Info.RouteThrough = CurBBS+1;
+						IBBS.Data.Nodes[CurBBS].Info.MailType = MT_NORMAL;
 
-						IBBS.Data->Nodes[CurBBS].Attack.SendIndex = 0;
-						IBBS.Data->Nodes[CurBBS].Attack.ReceiveIndex = 0;
+						IBBS.Data.Nodes[CurBBS].Attack.SendIndex = 0;
+						IBBS.Data.Nodes[CurBBS].Attack.ReceiveIndex = 0;
 						break;
 					case 1 :    /* village name */
-						IBBS.Data->Nodes[CurBBS].Info.pszVillageName = DupeStr(pcCurrentPos);
+						IBBS.Data.Nodes[CurBBS].Info.pszVillageName = DupeStr(pcCurrentPos);
 						break;
 					case 2 :    /* Address */
-						IBBS.Data->Nodes[CurBBS].Info.pszAddress = DupeStr(pcCurrentPos);
+						IBBS.Data.Nodes[CurBBS].Info.pszAddress = DupeStr(pcCurrentPos);
 						break;
 					case 0 :    /* BBS name */
-						IBBS.Data->Nodes[CurBBS].Info.pszBBSName = DupeStr(pcCurrentPos);
+						IBBS.Data.Nodes[CurBBS].Info.pszBBSName = DupeStr(pcCurrentPos);
 						break;
 					case 6 :    /* Status */
 						//printf("status: currently unused\n");
@@ -1664,16 +1662,16 @@ static void IBBS_LoadNDX(void)
 	// is used, so figure out routing
 	if (UseHost)
 		for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-			if (IBBS.Data->Nodes[iTemp].Active == false)
+			if (IBBS.Data.Nodes[iTemp].Active == false)
 				continue;
 
 			//printf("searching for %d\n", iTemp+1);
 			FoundPoint = false;
 			StartingPoint = -1;
-			FindPoint(iTemp, IBBS.Data->BBSID-1, IBBS.Data->BBSID-1);
+			FindPoint(iTemp, IBBS.Data.BBSID-1, IBBS.Data.BBSID-1);
 
-			IBBS.Data->Nodes[iTemp].Info.RouteThrough = StartingPoint+1;
-			//printf("%d routed through %d\n", iTemp+1, IBBS.Data->Nodes[iTemp].Info.RouteThrough);
+			IBBS.Data.Nodes[iTemp].Info.RouteThrough = StartingPoint+1;
+			//printf("%d routed through %d\n", iTemp+1, IBBS.Data.Nodes[iTemp].Info.RouteThrough);
 		}
 
 	/* get rid of Point memory */
@@ -1732,14 +1730,14 @@ static void IBBS_ProcessRouteConfig(void)
 							//printf("all mail being routed through %d\n", atoi(szSecondToken));
 							/* route all through somewhere else */
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-								if (IBBS.Data->Nodes[iTemp].Active == false)
+								if (IBBS.Data.Nodes[iTemp].Active == false)
 									continue;
 
-								IBBS.Data->Nodes[iTemp].Info.RouteThrough = atoi(szSecondToken);
+								IBBS.Data.Nodes[iTemp].Info.RouteThrough = atoi(szSecondToken);
 							}
 						}
 						else {
-							IBBS.Data->Nodes[ atoi(szFirstToken)-1 ].Info.RouteThrough = atoi(szSecondToken);
+							IBBS.Data.Nodes[ atoi(szFirstToken)-1 ].Info.RouteThrough = atoi(szSecondToken);
 							//printf("Mail to %d being routed through %d\n", atoi(szFirstToken), atoi(szSecondToken));
 						}
 						break;
@@ -1750,14 +1748,14 @@ static void IBBS_ProcessRouteConfig(void)
 						if (stricmp(szFirstToken, "ALL") == 0) {
 							//printf("all mail being crashed\n");
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-								if (IBBS.Data->Nodes[iTemp].Active == false)
+								if (IBBS.Data.Nodes[iTemp].Active == false)
 									continue;
 
-								IBBS.Data->Nodes[iTemp].Info.MailType = MT_CRASH;
+								IBBS.Data.Nodes[iTemp].Info.MailType = MT_CRASH;
 							}
 						}
 						else {
-							IBBS.Data->Nodes[ atoi(szFirstToken)-1 ].Info.MailType = MT_CRASH;
+							IBBS.Data.Nodes[ atoi(szFirstToken)-1 ].Info.MailType = MT_CRASH;
 							//printf("Mail to %d being crashed\n", atoi(szFirstToken));
 						}
 						break;
@@ -1768,14 +1766,14 @@ static void IBBS_ProcessRouteConfig(void)
 						if (stricmp(szFirstToken, "ALL") == 0) {
 							//printf("all mail being held\n");
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-								if (IBBS.Data->Nodes[iTemp].Active == false)
+								if (IBBS.Data.Nodes[iTemp].Active == false)
 									continue;
 
-								IBBS.Data->Nodes[iTemp].Info.MailType = MT_HOLD;
+								IBBS.Data.Nodes[iTemp].Info.MailType = MT_HOLD;
 							}
 						}
 						else {
-							IBBS.Data->Nodes[ atoi(szFirstToken)-1 ].Info.MailType = MT_HOLD;
+							IBBS.Data.Nodes[ atoi(szFirstToken)-1 ].Info.MailType = MT_HOLD;
 							//printf("Mail to %d being held\n", atoi(szFirstToken));
 						}
 						break;
@@ -1786,14 +1784,14 @@ static void IBBS_ProcessRouteConfig(void)
 						if (stricmp(szFirstToken, "ALL") == 0) {
 							//printf("all mail set to normal\n");
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-								if (IBBS.Data->Nodes[iTemp].Active == false)
+								if (IBBS.Data.Nodes[iTemp].Active == false)
 									continue;
 
-								IBBS.Data->Nodes[iTemp].Info.MailType = MT_NORMAL;
+								IBBS.Data.Nodes[iTemp].Info.MailType = MT_NORMAL;
 							}
 						}
 						else {
-							IBBS.Data->Nodes[ atoi(szFirstToken)-1 ].Info.MailType = MT_NORMAL;
+							IBBS.Data.Nodes[ atoi(szFirstToken)-1 ].Info.MailType = MT_NORMAL;
 							//printf("Mail to %d set to normal\n", atoi(szFirstToken));
 						}
 						break;
@@ -1820,20 +1818,20 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 
 
 	if (DestID <= 0 || DestID > MAX_IBBSNODES ||
-			IBBS.Data->Nodes[DestID-1].Active == false) {
+			IBBS.Data.Nodes[DestID-1].Active == false) {
 		DisplayStr("IBBS_SendPacketFile() aborted:  Invalid ID\n");
 		return;
 	}
 
 
-	IBBS.Data->Nodes[DestID-1].Recon.LastSent = DaysSince1970(System.szTodaysDate);
+	IBBS.Data.Nodes[DestID-1].Recon.LastSent = DaysSince1970(System.szTodaysDate);
 
 //      snprintf(szString, sizeof(szString), "|03Sending Packet:  %s to %d\n", pszSendFile, DestinationId);
 //      DisplayStr(szString);
 
 
 	/* set up interbbsinfo */
-	strlcpy(InterBBSInfo.szThisNodeAddress, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszAddress, sizeof(InterBBSInfo.szThisNodeAddress));
+	strlcpy(InterBBSInfo.szThisNodeAddress, IBBS.Data.Nodes[IBBS.Data.BBSID-1].Info.pszAddress, sizeof(InterBBSInfo.szThisNodeAddress));
 	InterBBSInfo.szThisNodeAddress[NODE_ADDRESS_CHARS] = '\0';
 
 	snprintf(szString, sizeof(szString), "The Clans League %s", Game.Data.LeagueID);
@@ -1846,9 +1844,9 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 	InterBBSInfo.bHold = false;
 	InterBBSInfo.bCrash = false;
 
-	if (IBBS.Data->Nodes[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ].Info.MailType == MT_CRASH)
+	if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Info.MailType == MT_CRASH)
 		InterBBSInfo.bCrash = true;
-	else if (IBBS.Data->Nodes[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ].Info.MailType == MT_HOLD)
+	else if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Info.MailType == MT_HOLD)
 		InterBBSInfo.bHold = true;
 
 	InterBBSInfo.bEraseOnSend = true;
@@ -1876,13 +1874,13 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 	     c = counter for that node */
 
 	/* init the lastcounter */
-	if (IBBS.Data->Nodes[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex == 'a')
+	if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex == 'a')
 		LastCounter = 'z';
 	else
-		LastCounter = IBBS.Data->Nodes[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex - 1;
+		LastCounter = IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex - 1;
 
-	snprintf(szPacketName, sizeof(szPacketName),"cl%03d%03d.%-2s", IBBS.Data->BBSID,
-			IBBS.Data->Nodes[DestID-1].Info.RouteThrough, Game.Data.LeagueID);
+	snprintf(szPacketName, sizeof(szPacketName),"cl%03d%03d.%-2s", IBBS.Data.BBSID,
+			IBBS.Data.Nodes[DestID-1].Info.RouteThrough, Game.Data.LeagueID);
 
 	strlcat(szFullFileName, szPacketName, sizeof(szFullFileName));
 
@@ -1901,7 +1899,7 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 	else {
 		// couldn't open file
 
-		LastCounter = IBBS.Data->Nodes[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex;
+		LastCounter = IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex;
 
 		if (System.LocalIBBS) {
 			if (Config.NumInboundDirs)
@@ -1920,9 +1918,9 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 		// DisplayStr("Making new packet.\n");
 
 		/* increment for next time */
-		IBBS.Data->Nodes[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex++;
-		if (IBBS.Data->Nodes[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex == 'z' + 1)
-			IBBS.Data->Nodes[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex = 'a';
+		IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex++;
+		if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex == 'z' + 1)
+			IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex = 'a';
 
 		/* copy file to outbound dir */
 		//printf("Copying %s to %s\n", pszSendFile, szFullFileName);
@@ -1936,10 +1934,10 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 //      DisplayStr(szString);
 
 		//snprintf("Filenameis %s\n", sizeof("Filenameis %s\n"), szFullFileName);
-		if (!NoMSG[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ])
-			IBSendFileAttach(&InterBBSInfo, IBBS.Data->Nodes[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ].Info.pszAddress, szFullFileName);
+		if (!NoMSG[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ])
+			IBSendFileAttach(&InterBBSInfo, IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Info.pszAddress, szFullFileName);
 	}
-	IBBS.Data->PacketSent = true;
+	IBBS.Data.PacketSent = true;
 }
 
 
@@ -1961,7 +1959,7 @@ void IBBS_SendSpy(struct empire *Empire, int16_t DestID)
 
 	Spy.IntelligenceLevel = Empire->Buildings[B_AGENCY];
 
-	Spy.BBSFromID = IBBS.Data->BBSID;
+	Spy.BBSFromID = IBBS.Data.BBSID;
 	Spy.BBSToID     = DestID;
 
 	// for now
@@ -1974,7 +1972,7 @@ void IBBS_SendSpy(struct empire *Empire, int16_t DestID)
 	/* create packet header */
 	Packet.Active = true;
 	Packet.BBSIDTo = DestID;
-	Packet.BBSIDFrom = IBBS.Data->BBSID;
+	Packet.BBSIDFrom = IBBS.Data.BBSID;
 	Packet.PacketType = PT_SPY;
 	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
@@ -2007,7 +2005,7 @@ void IBBS_SendAttackPacket(struct empire *AttackingEmpire, struct Army *Attackin
 	size_t res;
 
 	// write packet data
-	AttackPacket.BBSFromID = IBBS.Data->BBSID;
+	AttackPacket.BBSFromID = IBBS.Data.BBSID;
 	AttackPacket.BBSToID = DestID;
 	AttackPacket.AttackingEmpire = *AttackingEmpire;
 	AttackPacket.AttackingArmy = *AttackingArmy;
@@ -2020,8 +2018,8 @@ void IBBS_SendAttackPacket(struct empire *AttackingEmpire, struct Army *Attackin
 	AttackPacket.AttackOriginatorID[0] = PClan->ClanID[0];
 	AttackPacket.AttackOriginatorID[1] = PClan->ClanID[1];
 
-	AttackPacket.AttackIndex = IBBS.Data->Nodes[DestID-1].Attack.SendIndex+1;
-	IBBS.Data->Nodes[DestID-1].Attack.SendIndex++;
+	AttackPacket.AttackIndex = IBBS.Data.Nodes[DestID-1].Attack.SendIndex+1;
+	IBBS.Data.Nodes[DestID-1].Attack.SendIndex++;
 
 	res = s_AttackPacket_s(&AttackPacket, pktBuf, sizeof(pktBuf));
 	assert(res == sizeof(pktBuf));
@@ -2067,7 +2065,7 @@ void IBBS_ShowLeagueAscii(void)
 
 	// snprintf(szString, sizeof(szString), "|02You are entering the village of |10%s |02in the world of |14%s|02.\n",
 	snprintf(szString, sizeof(szString), ST_MAIN2,
-			IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName, Game.Data.szWorldName);
+			IBBS.Data.Nodes[IBBS.Data.BBSID-1].Info.pszVillageName, Game.Data.szWorldName);
 	rputs(szString);
 }
 
@@ -2080,7 +2078,7 @@ void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
 	FILE *fpOutboundDat, *fpBackupDat;
 
 	if (DestID <= 0 || DestID > MAX_IBBSNODES ||
-			IBBS.Data->Nodes[ DestID - 1].Active == false) {
+			IBBS.Data.Nodes[ DestID - 1].Active == false) {
 		DisplayStr("IBBS_SendPacket() aborted:  Invalid ID\n");
 		return;
 	}
@@ -2089,7 +2087,7 @@ void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
 
 	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
-	Packet.BBSIDFrom = IBBS.Data->BBSID;
+	Packet.BBSIDFrom = IBBS.Data.BBSID;
 	Packet.BBSIDTo = DestID;
 
 	Packet.PacketType = PacketType;
@@ -2134,7 +2132,7 @@ void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
 
 void IBBS_SendRecon(int16_t DestID)
 {
-	if (IBBS.Data->Nodes[ DestID - 1].Active)
+	if (IBBS.Data.Nodes[ DestID - 1].Active)
 		IBBS_SendPacket(PT_RECON, 0, 0, DestID);
 }
 
@@ -2147,7 +2145,7 @@ void IBBS_SendReset(int16_t DestID)
 	assert(res == sizeof(pktBuf));
 	if (res != sizeof(pktBuf))
 		return;
-	if (IBBS.Data->Nodes[ DestID - 1].Active)
+	if (IBBS.Data.Nodes[ DestID - 1].Active)
 		IBBS_SendPacket(PT_RESET, sizeof(pktBuf), pktBuf, DestID);
 }
 // ------------------------------------------------------------------------- //
@@ -2161,23 +2159,23 @@ void IBBS_UpdateRecon(void)
 	// lastreconsent
 
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active && (CurBBS+1) != IBBS.Data->BBSID) {
-			if (IBBS.Data->Nodes[CurBBS].Recon.LastSent == 0 &&
-					IBBS.Data->Nodes[CurBBS].Recon.LastReceived == 0) {
+		if (IBBS.Data.Nodes[CurBBS].Active && (CurBBS+1) != IBBS.Data.BBSID) {
+			if (IBBS.Data.Nodes[CurBBS].Recon.LastSent == 0 &&
+					IBBS.Data.Nodes[CurBBS].Recon.LastReceived == 0) {
 				IBBS_SendRecon(CurBBS+1);
-				IBBS.Data->Nodes[CurBBS].Recon.LastSent = DaysSince1970(System.szTodaysDate);
+				IBBS.Data.Nodes[CurBBS].Recon.LastSent = DaysSince1970(System.szTodaysDate);
 
 				// REP: add new BBS to news?
-				if (IBBS.Data->BBSID == 1)
+				if (IBBS.Data.BBSID == 1)
 					IBBS_SendUserList(CurBBS+1);
 			}
 			else if (((DaysSince1970(System.szTodaysDate) -
-					   IBBS.Data->Nodes[CurBBS].Recon.LastReceived) >= RECONDAYS) &&
+					   IBBS.Data.Nodes[CurBBS].Recon.LastReceived) >= RECONDAYS) &&
 					 ((DaysSince1970(System.szTodaysDate) -
-					   IBBS.Data->Nodes[CurBBS].Recon.LastSent) != 0)) {
+					   IBBS.Data.Nodes[CurBBS].Recon.LastSent) != 0)) {
 				// send a recon there
 				IBBS_SendRecon(CurBBS+1);
-				IBBS.Data->Nodes[CurBBS].Recon.LastSent = DaysSince1970(System.szTodaysDate);
+				IBBS.Data.Nodes[CurBBS].Recon.LastSent = DaysSince1970(System.szTodaysDate);
 			}
 		}
 	}
@@ -2193,12 +2191,12 @@ void IBBS_UpdateReset(void)
 
 	// can ONLY be run by LC!!!
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active && (CurBBS+1) != IBBS.Data->BBSID) {
-			if (IBBS.Data->Nodes[CurBBS].Reset.Received == false &&
-					IBBS.Data->Nodes[CurBBS].Reset.LastSent < DaysSince1970(System.szTodaysDate)) {
+		if (IBBS.Data.Nodes[CurBBS].Active && (CurBBS+1) != IBBS.Data.BBSID) {
+			if (IBBS.Data.Nodes[CurBBS].Reset.Received == false &&
+					IBBS.Data.Nodes[CurBBS].Reset.LastSent < DaysSince1970(System.szTodaysDate)) {
 				//printf("Sending reset to BBS #%d\n", CurBBS+1);
 				IBBS_SendReset(CurBBS+1);
-				IBBS.Data->Nodes[CurBBS].Reset.LastSent = DaysSince1970(System.szTodaysDate);
+				IBBS.Data.Nodes[CurBBS].Reset.LastSent = DaysSince1970(System.szTodaysDate);
 			}
 		}
 	}
@@ -2243,18 +2241,18 @@ void IBBS_LeagueInfo(void)
 	rputs("|07Id BBS Name             Village Name         Address    Recon\n");
 	rputs("|08-- -------------------- -------------------- ---------- -------\n");
 	for (CurBBS = 0, NumBBSes = 1; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active) {
-			if (CurBBS+1 != IBBS.Data->BBSID) {
+		if (IBBS.Data.Nodes[CurBBS].Active) {
+			if (CurBBS+1 != IBBS.Data.BBSID) {
 				snprintf(szString, sizeof(szString), "|06%-2d |14%-20s |06%-20s |07%-10s (%2" PRId32 "/%2" PRId32 ")\n",
-						CurBBS+1, IBBS.Data->Nodes[CurBBS].Info.pszBBSName,
-						IBBS.Data->Nodes[CurBBS].Info.pszVillageName, IBBS.Data->Nodes[CurBBS].Info.pszAddress,
-						DaysSince1970(System.szTodaysDate) - IBBS.Data->Nodes[CurBBS].Recon.LastReceived,
-						DaysSince1970(System.szTodaysDate) - IBBS.Data->Nodes[CurBBS].Recon.LastSent);
+						CurBBS+1, IBBS.Data.Nodes[CurBBS].Info.pszBBSName,
+						IBBS.Data.Nodes[CurBBS].Info.pszVillageName, IBBS.Data.Nodes[CurBBS].Info.pszAddress,
+						DaysSince1970(System.szTodaysDate) - IBBS.Data.Nodes[CurBBS].Recon.LastReceived,
+						DaysSince1970(System.szTodaysDate) - IBBS.Data.Nodes[CurBBS].Recon.LastSent);
 			}
 			else {
 				snprintf(szString, sizeof(szString), "|06%-2d |14%-20s |06%-20s |07%-10s ( N/A )\n",
-						CurBBS+1, IBBS.Data->Nodes[CurBBS].Info.pszBBSName,
-						IBBS.Data->Nodes[CurBBS].Info.pszVillageName, IBBS.Data->Nodes[CurBBS].Info.pszAddress);
+						CurBBS+1, IBBS.Data.Nodes[CurBBS].Info.pszBBSName,
+						IBBS.Data.Nodes[CurBBS].Info.pszVillageName, IBBS.Data.Nodes[CurBBS].Info.pszAddress);
 			}
 
 			rputs(szString);
@@ -2630,7 +2628,7 @@ static int16_t IBBS_ProcessPacket(char *szFileName)
 
 		// if gameId is of the current game, update recon stuff
 		if (stricmp(Packet.GameID, Game.Data.GameID) == 0) {
-			IBBS.Data->Nodes[ Packet.BBSIDFrom - 1 ].Recon.LastReceived =
+			IBBS.Data.Nodes[ Packet.BBSIDFrom - 1 ].Recon.LastReceived =
 				DaysSince1970(Game.Data.szTodaysDate);
 		}
 		else {
@@ -2645,7 +2643,7 @@ static int16_t IBBS_ProcessPacket(char *szFileName)
 		/* see if this packet is for you.  if not, reroute it to where it
 		    belongs */
 
-		if (Packet.BBSIDTo != IBBS.Data->BBSID) {
+		if (Packet.BBSIDTo != IBBS.Data.BBSID) {
 			/* get packet info and write it to file */
 			if (Packet.PacketLength) {
 				pcBuffer = malloc(Packet.PacketLength);
@@ -2694,12 +2692,12 @@ static int16_t IBBS_ProcessPacket(char *szFileName)
 		}
 		else if (Packet.PacketType == PT_GOTRESET) {
 			snprintf(szString, sizeof(szString), "%s - Received GotReset from %s\n\n",
-					System.szTodaysDate, IBBS.Data->Nodes[ Packet.BBSIDFrom - 1 ].Info.pszBBSName);
+					System.szTodaysDate, IBBS.Data.Nodes[ Packet.BBSIDFrom - 1 ].Info.pszBBSName);
 			IBBS_AddLCLog(szString);
 
 			DisplayStr(szString);
 
-			IBBS.Data->Nodes[ Packet.BBSIDFrom - 1].Reset.Received = true;
+			IBBS.Data.Nodes[ Packet.BBSIDFrom - 1].Reset.Received = true;
 		}
 		else if (Packet.PacketType == PT_RECON) {
 			// send back a GOTRECON
@@ -3171,7 +3169,7 @@ void IBBS_PacketIn(void)
 	DisplayStr("|09* IBBS_PacketIn()\n");
 
 	/* set up interbbsinfo */
-	strlcpy(InterBBSInfo.szThisNodeAddress, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszAddress, sizeof(InterBBSInfo.szThisNodeAddress));
+	strlcpy(InterBBSInfo.szThisNodeAddress, IBBS.Data.Nodes[IBBS.Data.BBSID-1].Info.pszAddress, sizeof(InterBBSInfo.szThisNodeAddress));
 	InterBBSInfo.szThisNodeAddress[NODE_ADDRESS_CHARS] = '\0';
 
 	snprintf(szString, sizeof(szString), "The Clans League %s", Game.Data.LeagueID);
@@ -3196,9 +3194,9 @@ void IBBS_PacketIn(void)
 		// create filename to search for
 #ifdef __unix__
 		strlcpy(szPacketName, Config.szInboundDirs[nInbound], sizeof(szPacketName));
-		snprintf(szFileName, sizeof(szFileName),"[Cc][Ll]???%03d.%-2s?",IBBS.Data->BBSID,Game.Data.LeagueID);
+		snprintf(szFileName, sizeof(szFileName),"[Cc][Ll]???%03d.%-2s?",IBBS.Data.BBSID,Game.Data.LeagueID);
 #else
-		snprintf(szFileName, sizeof(szFileName),"CL???%03d.%-2s?",IBBS.Data->BBSID,Game.Data.LeagueID);
+		snprintf(szFileName, sizeof(szFileName),"CL???%03d.%-2s?",IBBS.Data.BBSID,Game.Data.LeagueID);
 #endif
 		// now copy over to the full filename
 		strlcat(szPacketName, szFileName, sizeof(szPacketName));
@@ -3294,11 +3292,9 @@ void IBBS_Init(void)
 	printf("IBBS Initializing. -- %lu\n", farcoreleft());
 #endif
 
-	IBBS.Data = calloc(1, sizeof(struct ibbs_data));
-	CheckMem(IBBS.Data);
 	IBBS.Initialized = true;
 
-	IBBS.Data->BBSID = Config.BBSID;
+	IBBS.Data.BBSID = Config.BBSID;
 
 	IBBS_LoadNDX();
 	IBBS_ProcessRouteConfig();
@@ -3346,28 +3342,28 @@ void IBBS_Maint(void)
 	IBBS_PacketIn();
 
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-		if (IBBS.Data->Nodes[CurBBS].Active) {
-			if (IBBS.Data->Nodes[CurBBS].Recon.PacketIndex < 'z')
-				IBBS.Data->Nodes[CurBBS].Recon.PacketIndex++;
+		if (IBBS.Data.Nodes[CurBBS].Active) {
+			if (IBBS.Data.Nodes[CurBBS].Recon.PacketIndex < 'z')
+				IBBS.Data.Nodes[CurBBS].Recon.PacketIndex++;
 			else
-				IBBS.Data->Nodes[CurBBS].Recon.PacketIndex = 'a';
+				IBBS.Data.Nodes[CurBBS].Recon.PacketIndex = 'a';
 		}
 	}
 
 	// scores for the league
-	if (IBBS.Data->BBSID != 1)
+	if (IBBS.Data.BBSID != 1)
 		CreateScoreData(true);
 
 	CreateScoreData(false);
 
-	if (IBBS.Data->BBSID == 1)
+	if (IBBS.Data.BBSID == 1)
 		SendScoreList();
 
-	if (IBBS.Data->BBSID == 1) {
+	if (IBBS.Data.BBSID == 1) {
 		/* send userlist to every BBS */
 		if ((DaysSince1970(System.szTodaysDate) % 4) == 0) {
 			for (CurBBS = 1; CurBBS < MAX_IBBSNODES; CurBBS++) {
-				if (IBBS.Data->Nodes[CurBBS].Active) {
+				if (IBBS.Data.Nodes[CurBBS].Active) {
 					IBBS_SendUserList(CurBBS+1);
 				}
 			}

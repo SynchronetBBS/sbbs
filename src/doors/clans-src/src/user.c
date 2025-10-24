@@ -1397,7 +1397,7 @@ void ShowVillageStats(void)
 
 	od_clr_scr();
 	if (Game.Data.InterBBS)
-		snprintf(szString, sizeof(szString), ST_VSTATHEADER, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName);
+		snprintf(szString, sizeof(szString), ST_VSTATHEADER, IBBS.Data.Nodes[IBBS.Data.BBSID-1].Info.pszVillageName);
 	else
 		snprintf(szString, sizeof(szString), ST_VSTATHEADER, Village.Data.szName);
 	rputs(szString);

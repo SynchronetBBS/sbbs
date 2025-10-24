@@ -641,7 +641,7 @@ struct ibbs {
 
 		bool PacketSent;
 
-	} *Data;
+	} Data;
 };
 
 struct ResetData {

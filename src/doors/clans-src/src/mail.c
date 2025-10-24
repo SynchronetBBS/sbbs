@@ -1581,7 +1581,7 @@ static void SendMsj(struct Message *Message, int16_t WhichVillage)
 
 
 	Packet.Active = true;
-	Packet.BBSIDFrom = IBBS.Data->BBSID;
+	Packet.BBSIDFrom = IBBS.Data.BBSID;
 	Packet.PacketType = PT_MSJ;
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 	Packet.PacketLength = BUF_SIZE_Message + Message->Data.Length;
@@ -1609,8 +1609,8 @@ static void SendMsj(struct Message *Message, int16_t WhichVillage)
 		// go through ALL BBSes and send this to them all
 
 		for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
-			if (IBBS.Data->Nodes[CurBBS].Active == false ||
-					CurBBS+1 == IBBS.Data->BBSID)
+			if (IBBS.Data.Nodes[CurBBS].Active == false ||
+					CurBBS+1 == IBBS.Data.BBSID)
 				continue;
 
 			Packet.BBSIDTo = CurBBS+1;
@@ -1680,11 +1680,11 @@ void GlobalMsgPost(void)
 		apszVillageNames[iTemp] = NULL;
 
 		// skip if our village
-		if (iTemp+1 == IBBS.Data->BBSID)
+		if (iTemp+1 == IBBS.Data.BBSID)
 			continue;
 
-		if (IBBS.Data->Nodes[iTemp].Active) {
-			apszVillageNames[NumVillages] = IBBS.Data->Nodes[iTemp].Info.pszVillageName;
+		if (IBBS.Data.Nodes[iTemp].Active) {
+			apszVillageNames[NumVillages] = IBBS.Data.Nodes[iTemp].Info.pszVillageName;
 			VillageIndex[NumVillages] = iTemp+1;
 			NumVillages++;
 		}

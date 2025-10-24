@@ -195,7 +195,7 @@ void ODCmdLineHandler(char *flag, char *val)
 		if (stricmp(&flag[1], "Recon") == 0) {
 			if (!primitive) {
 				if (Game.Data.InterBBS) {
-					if (IBBS.Data->BBSID != atoi(val) &&
+					if (IBBS.Data.BBSID != atoi(val) &&
 							(atoi(val) > 0 && atoi(val) < MAX_IBBSNODES)) {
 						snprintf(szString, sizeof(szString), "Sending recon to %d\n", atoi(val));
 						DisplayStr(szString);
@@ -211,7 +211,7 @@ void ODCmdLineHandler(char *flag, char *val)
 		else if (stricmp(&flag[1], "SendReset") == 0) {
 			if (!primitive) {
 				if (Game.Data.InterBBS) {
-					if (IBBS.Data->BBSID != 1) {
+					if (IBBS.Data.BBSID != 1) {
 						System_Error("Only the League Coordinator can send a reset.\n");
 					}
 
@@ -219,7 +219,7 @@ void ODCmdLineHandler(char *flag, char *val)
 					DisplayStr(szString);
 					*/
 
-					if (IBBS.Data->BBSID != atoi(val) &&
+					if (IBBS.Data.BBSID != atoi(val) &&
 							(atoi(val) > 0 && atoi(val) < MAX_IBBSNODES)) {
 						snprintf(szString, sizeof(szString), "Sending reset to %d\n", atoi(val));
 						DisplayStr(szString);
@@ -286,7 +286,7 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 		else if (stricmp(&flag[1], "NewNDX") == 0) {
 			if (!primitive) {
 				if (Game.Data.InterBBS) {
-					if (IBBS.Data->BBSID != 1) {
+					if (IBBS.Data.BBSID != 1) {
 						System_Error("Only the League Coordinator can update the world.ndx file.\n");
 					}
 
@@ -557,7 +557,7 @@ void System_Init(void)
 		// update recons + resets
 		IBBS_UpdateRecon();
 
-		if (IBBS.Data->BBSID == 1)
+		if (IBBS.Data.BBSID == 1)
 			IBBS_UpdateReset();
 	}
 

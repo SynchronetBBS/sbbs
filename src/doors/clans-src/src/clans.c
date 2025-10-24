@@ -123,8 +123,8 @@ static void MainGame(void)
 					// tell him
 					// snprintf(szString, sizeof(szString), "|02Your clan was last seen headed for |14%s |02(%s)!\nPlease call that BBS instead.\n\n",
 					snprintf(szString, sizeof(szString), ST_MAIN1,
-							IBBS.Data->Nodes[ PClan->DestinationBBS - 1].Info.pszVillageName,
-							IBBS.Data->Nodes[ PClan->DestinationBBS - 1].Info.pszBBSName);
+							IBBS.Data.Nodes[ PClan->DestinationBBS - 1].Info.pszVillageName,
+							IBBS.Data.Nodes[ PClan->DestinationBBS - 1].Info.pszBBSName);
 					rputs(szString);
 
 					rputs("\nIf you had trouble connecting to that BBS, you can call back your clan.\n");

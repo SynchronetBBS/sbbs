@@ -117,8 +117,8 @@ static void SendResultPacket(struct AttackResult *Result, int16_t DestID)
 	uint8_t pktBuf[BUF_SIZE_AttackResult];
 	size_t res;
 
-	Result->ResultIndex = IBBS.Data->Nodes[DestID-1].Attack.SendIndex+1;
-	IBBS.Data->Nodes[DestID-1].Attack.SendIndex++;
+	Result->ResultIndex = IBBS.Data.Nodes[DestID-1].Attack.SendIndex+1;
+	IBBS.Data.Nodes[DestID-1].Attack.SendIndex++;
 
 	res = s_AttackResult_s(Result, pktBuf, sizeof(pktBuf));
 	assert(res == sizeof(pktBuf));
@@ -155,7 +155,7 @@ void ProcessAttackPacket(struct AttackPacket *AttackPacket)
 	}
 
 	Result.BBSIDFrom = AttackPacket->BBSFromID;
-	Result.BBSIDTo   = IBBS.Data->BBSID;
+	Result.BBSIDTo   = IBBS.Data.BBSID;
 
 	Result.Goal = AttackPacket->Goal;
 	Result.ExtentOfAttack = AttackPacket->ExtentOfAttack;
@@ -274,7 +274,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 	if (Result->NoTarget && Result->Goal == G_OUSTRULER) {
 		// snprintf(szNews, sizeof(szNews), ">> %s's army returns after finding no ruler to oust in %s\n",
 		snprintf(szNews, sizeof(szNews), ST_WNEWS5,
-				szAttackerName, IBBS.Data->Nodes[WhichBBS].Info.pszVillageName);
+				szAttackerName, IBBS.Data.Nodes[WhichBBS].Info.pszVillageName);
 		News_AddNews(szNews);
 
 		// strlcpy(szOutcome, "but found no ruler to oust!\n", sizeof(szOutcome));
@@ -296,14 +296,14 @@ void ProcessResultPacket(struct AttackResult *Result)
 			case G_OUSTRULER :
 				// snprintf(szNews, sizeof(szNews), ">> %s's army returns after successfully ousting the ruler of %s\n\n",
 				snprintf(szNews, sizeof(szNews), ST_WNEWS10,
-						szAttackerName, IBBS.Data->Nodes[WhichBBS].Info.pszVillageName);
+						szAttackerName, IBBS.Data.Nodes[WhichBBS].Info.pszVillageName);
 				News_AddNews(szNews);
 				break;
 			case G_STEALLAND :
 				// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s looting %d land from %s.\n\n",
 				snprintf(szNews, sizeof(szNews), ST_WNEWS11,
 						szAttackerName,
-						IBBS.Data->Nodes[WhichBBS].Info.pszVillageName,
+						IBBS.Data.Nodes[WhichBBS].Info.pszVillageName,
 						Result->LandStolen, szDefenderName);
 				News_AddNews(szNews);
 				break;
@@ -311,7 +311,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 				// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s looting %d gold from %s.\n\n",
 				snprintf(szNews, sizeof(szNews), ST_WNEWS12,
 						szAttackerName,
-						IBBS.Data->Nodes[WhichBBS].Info.pszVillageName,
+						IBBS.Data.Nodes[WhichBBS].Info.pszVillageName,
 						Result->GoldStolen, szDefenderName);
 				News_AddNews(szNews);
 				break;
@@ -319,7 +319,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 				// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s destroying %s's buildings.\n\n",
 				snprintf(szNews, sizeof(szNews), ST_WNEWS13,
 						szAttackerName,
-						IBBS.Data->Nodes[WhichBBS].Info.pszVillageName, szDefenderName);
+						IBBS.Data.Nodes[WhichBBS].Info.pszVillageName, szDefenderName);
 				News_AddNews(szNews);
 				break;
 		}
@@ -330,7 +330,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 		// snprintf(szNews, sizeof(szNews), ">> %s's army returns unsuccessfully from %s after attacking %s.\n\n",
 		snprintf(szNews, sizeof(szNews), ST_WNEWS15,
 				szAttackerName,
-				IBBS.Data->Nodes[WhichBBS].Info.pszVillageName, szDefenderName);
+				IBBS.Data.Nodes[WhichBBS].Info.pszVillageName, szDefenderName);
 		News_AddNews(szNews);
 	}
 
@@ -1688,7 +1688,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 
 	if (Game.Data.InterBBS)
 		for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-			if (IBBS.Data->Nodes[iTemp].Active == false) continue;
+			if (IBBS.Data.Nodes[iTemp].Active == false) continue;
 
 			if (iTemp+1 == AttackResult->BBSIDFrom) {
 				WhichBBS = iTemp+1;
@@ -1710,7 +1710,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 			snprintf(szAttacker, sizeof(szAttacker), "The village of %s", AttackResult->szAttackerName);
 		else if (AttackResult->AttackerType == EO_CLAN)
 			snprintf(szAttacker, sizeof(szAttacker), "The clan of %s from %s", AttackResult->szAttackerName,
-					IBBS.Data->Nodes[WhichBBS-1].Info.pszVillageName);
+					IBBS.Data.Nodes[WhichBBS-1].Info.pszVillageName);
 	}
 	else {
 		if (AttackResult->AttackerType == EO_VILLAGE)
@@ -2334,10 +2334,10 @@ static void StartEmpireWar(struct empire *Empire)
 
 			if (Game.Data.InterBBS)
 				for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-					if (IBBS.Data->Nodes[iTemp].Active == false)
+					if (IBBS.Data.Nodes[iTemp].Active == false)
 						continue;
 
-					if (iTemp+1 == IBBS.Data->BBSID)
+					if (iTemp+1 == IBBS.Data.BBSID)
 						break;
 				}
 			else
@@ -2350,13 +2350,13 @@ static void StartEmpireWar(struct empire *Empire)
 
 		if (Game.Data.InterBBS)
 			for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-				if (IBBS.Data->Nodes[iTemp].Active == false)
+				if (IBBS.Data.Nodes[iTemp].Active == false)
 					continue;
 
-				if (iTemp+1 == IBBS.Data->BBSID)
+				if (iTemp+1 == IBBS.Data.BBSID)
 					continue;
 
-				aszVillageNames[NumBBSes] = IBBS.Data->Nodes[iTemp].Info.pszVillageName;
+				aszVillageNames[NumBBSes] = IBBS.Data.Nodes[iTemp].Info.pszVillageName;
 				BBSIndex[NumBBSes] = iTemp+1;
 				NumBBSes++;
 			}
@@ -2432,7 +2432,7 @@ static void StartEmpireWar(struct empire *Empire)
 		}
 
 		// if OUR village, proceed normally in attack
-		if ((Game.Data.InterBBS && BBSIndex[WhichVillage] == IBBS.Data->BBSID)
+		if ((Game.Data.InterBBS && BBSIndex[WhichVillage] == IBBS.Data.BBSID)
 				|| (Game.Data.InterBBS == false && WhichVillage == 0)) {
 			// amass village's troops corresponding to type of attack
 			// do attack now, tell user result, write changes
@@ -2449,8 +2449,8 @@ static void StartEmpireWar(struct empire *Empire)
 			// initialize result beforehand
 			Result.InterBBS = false;
 			Result.DefenderType = EO_VILLAGE;
-			Result.BBSIDFrom = IBBS.Data->BBSID;
-			Result.BBSIDTo = IBBS.Data->BBSID;
+			Result.BBSIDFrom = IBBS.Data.BBSID;
+			Result.BBSIDTo = IBBS.Data.BBSID;
 			Result.AttackerID[0] = PClan->ClanID[0];
 			Result.AttackerID[1] = PClan->ClanID[1];
 			Result.DefenderID[0] = Village.Data.RulingClanId[0];
@@ -2949,10 +2949,10 @@ static void SpyMenu(struct empire *Empire)
 
 			if (Game.Data.InterBBS)
 				for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-					if (IBBS.Data->Nodes[iTemp].Active == false)
+					if (IBBS.Data.Nodes[iTemp].Active == false)
 						continue;
 
-					if (iTemp+1 == IBBS.Data->BBSID)
+					if (iTemp+1 == IBBS.Data.BBSID)
 						break;
 				}
 			else
@@ -2965,13 +2965,13 @@ static void SpyMenu(struct empire *Empire)
 
 		if (Game.Data.InterBBS)
 			for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-				if (IBBS.Data->Nodes[iTemp].Active == false)
+				if (IBBS.Data.Nodes[iTemp].Active == false)
 					continue;
 
-				if (iTemp+1 == IBBS.Data->BBSID)
+				if (iTemp+1 == IBBS.Data.BBSID)
 					continue;
 
-				aszVillageNames[NumBBSes] = IBBS.Data->Nodes[iTemp].Info.pszVillageName;
+				aszVillageNames[NumBBSes] = IBBS.Data.Nodes[iTemp].Info.pszVillageName;
 				BBSIndex[NumBBSes] = iTemp+1;
 				NumBBSes++;
 			}
@@ -2997,7 +2997,7 @@ static void SpyMenu(struct empire *Empire)
 		else
 			Empire->VaultGold -= SPY_COST;
 
-		if ((Game.Data.InterBBS && BBSIndex[WhichVillage] == IBBS.Data->BBSID)
+		if ((Game.Data.InterBBS && BBSIndex[WhichVillage] == IBBS.Data.BBSID)
 				|| (Game.Data.InterBBS == false && WhichVillage == 0)) {
 			// see if we can spy, if so, spy on 'em now using EmpireStats
 			// increment spies per day in future
