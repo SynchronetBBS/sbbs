@@ -65,6 +65,8 @@ if(options.level_before_validation === undefined)
 	options.level_before_validation = 50;
 if(options.level_after_validation === undefined)
 	options.level_after_validation = 60;
+if (typeof options.valid_chars === 'number')
+	options.valid_chars = load("modopts.js", "emailval", "valid_chars", 'ACDEFHJKLMNPQRTUVWXY23456789!@#$%&*');
 
 //other constants, shouldn't need changing.
 var cValChars = options.valid_chars !== undefined ? options.valid_chars :
