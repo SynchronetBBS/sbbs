@@ -1650,7 +1650,18 @@ static void IBBS_LoadNDX(void)
 						}
 						break;
 					case 10 : /* NoMSG */
+						if (IBBS.Data.StrictMsgFile)
+							System_Error("NoMSG used with StrictMsgFile");
 						NoMSG[CurBBS] = true;
+						break;
+					case 11 : /* StrictMsgFile */
+						if (Config.MailerType == MAIL_NONE)
+							System_Error("StrictMsgFile used without a mailer");
+						for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
+							if (IBBS.Data.Nodes[iTemp].Active && NoMSG[iTemp])
+								System_Error("NoMSG used with StrictMsgFile");
+						}
+						IBBS.Data.StrictMsgFile = true;
 						break;
 				}
 				break;
@@ -3187,7 +3198,7 @@ void IBBS_PacketIn(void)
 			strlcat(szFileName, szFileName2, sizeof(szFileName));
 
 			/* process file */
-			if (Config.StrictMsgFile && !CheckMessageFile(szFileName, &InterBBSInfo)) {
+			if (IBBS.Data.StrictMsgFile && !CheckMessageFile(szFileName, &InterBBSInfo)) {
 				snprintf(szString, sizeof(szString), "No valid msg file for packet %s\n", szFileName);
 				DisplayStr(szString);
 			}
@@ -3227,7 +3238,7 @@ void IBBS_PacketIn(void)
 			strlcat(szFileName, szFileName2, sizeof(szFileName));
 
 			while (!GetNextFile(szFileName,szFileName2, sizeof(szFileName2)))  {
-				if (Config.StrictMsgFile && !CheckMessageFile(szFileName2, &InterBBSInfo)) {
+				if (IBBS.Data.StrictMsgFile && !CheckMessageFile(szFileName2, &InterBBSInfo)) {
 					snprintf(szString, sizeof(szString), "No valid msg file for packet %s\n", szFileName2);
 					DisplayStr(szString);
 				}

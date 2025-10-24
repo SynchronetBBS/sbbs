@@ -1,4 +1,4 @@
-#define MAX_NDX_WORDS   11
+#define MAX_NDX_WORDS   12
 
 char *papszNdxKeyWords[MAX_NDX_WORDS] = {
 	"BBSName",
@@ -11,7 +11,8 @@ char *papszNdxKeyWords[MAX_NDX_WORDS] = {
 	"WorldName",
 	"LeagueId",
 	"Host",
-	"NoMSG"
+	"NoMSG",
+	"StrictMsgFile"
 };
 
 #define MAX_RT_WORDS    4

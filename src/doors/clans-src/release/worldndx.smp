@@ -8,6 +8,8 @@
 WorldName       Magnamund
 LeagueId        MG
 
+# StrictMsgFile <- optional, require .MSG file to exist and be correct
+
 # The following is a listing of all BBSes in the league.
 # ----------------------------------------------------------------------------
 # BBSId must ALWAYS come first followed by the other information (which can be

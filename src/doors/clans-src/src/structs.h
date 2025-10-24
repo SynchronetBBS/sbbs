@@ -44,7 +44,6 @@ struct config {
 	 */
 	int16_t BBSID;
 	bool InterBBS;
-	bool StrictMsgFile;
 	char szNetmailDir[PATH_SIZE];
 	char szOutputSem[PATH_SIZE];
 	char **szInboundDirs;
@@ -606,8 +605,9 @@ struct ibbs {
 
 	struct ibbs_data {
 		int16_t BBSID;
-
 		int16_t NumNodes;
+		bool StrictMsgFile;
+		bool PacketSent;
 
 		// Note, use IBBS.Nodes[x] where x corresponds to the BBSID
 		struct ibbs_node {
@@ -638,8 +638,6 @@ struct ibbs {
 			} Attack;
 
 		} Nodes[MAX_IBBSNODES];
-
-		bool PacketSent;
 
 	} Data;
 };
