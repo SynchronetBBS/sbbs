@@ -601,6 +601,7 @@ bool sbbs_t::answer()
 			        "\x1b[0c"   /* Request CTerm version */
 			        "\x1b[255B" /* locate cursor as far down as possible */
 			        "\x1b[255C" /* locate cursor as far right as possible */
+			        "\x1b[30;40m" // black on black
 			        "\b_"       /* need a printable char at this location to actually move cursor */
 			        "\x1b[6n"   /* Get cursor position */
 			        "\x1b[u"    /* restore cursor position */
@@ -608,7 +609,7 @@ bool sbbs_t::answer()
 			        "\r"        /* Move cursor left */
 			        "\xef\xbb\xbf"  // UTF-8 Zero-width non-breaking space
 			        "\x1b[6n"   /* Get cursor position (again) */
-			        "\x1b[0m_"  /* "Normal" colors */
+			        "\x1b[0m"   /* "Normal" colors */
 			        "\x1b[2J"   /* clear screen */
 			        "\x1b[H"    /* home cursor */
 			        "\xC"       /* clear screen (in case not ANSI) */
