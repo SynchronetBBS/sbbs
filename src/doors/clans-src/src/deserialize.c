@@ -6,6 +6,8 @@
 #include "deserialize.h"
 #include "myopen.h"
 
+void System_Error(char *szErrorMsg);
+
 #define unpack_char(x) do {      \
 	assert(remain);           \
 	if (remain < sizeof(char)) \
@@ -439,7 +441,7 @@ s_pc_d(const void *bufptr, size_t bufsz, struct pc *s)
 	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
 		s->CRC = 1;
 	else
-		s->CRC = 0;
+		System_Error("CRC Value is WRONG!");
 
 	return (src - (uint8_t *)bufptr);
 }
@@ -560,7 +562,7 @@ s_game_data_d(const void *bufptr, size_t bufsz, struct game_data *s)
 	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
 		s->CRC = 1;
 	else
-		s->CRC = 0;
+		System_Error("CRC Value is WRONG!");
 
 	return (src - (uint8_t *)bufptr);
 }
@@ -618,7 +620,7 @@ s_village_data_d(const void *bufptr, size_t bufsz, struct village_data *s)
 	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
 		s->CRC = 1;
 	else
-		s->CRC = 0;
+		System_Error("CRC Value is WRONG!");
 
 	return (src - (uint8_t *)bufptr);
 }
@@ -668,7 +670,7 @@ s_Army_d(const void *bufptr, size_t bufsz, struct Army *s)
 	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
 		s->CRC = 1;
 	else
-		s->CRC = 0;
+		System_Error("CRC Value is WRONG!");
 
 	return (src - (uint8_t *)bufptr);
 }
@@ -708,7 +710,7 @@ s_AttackPacket_d(const void *bufptr, size_t bufsz, struct AttackPacket *s)
 	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
 		s->CRC = 1;
 	else
-		s->CRC = 0;
+		System_Error("CRC Value is WRONG!");
 
 	return (src - (uint8_t *)bufptr);
 }
@@ -747,7 +749,7 @@ s_AttackResult_d(const void *bufptr, size_t bufsz, struct AttackResult *s)
 	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
 		s->CRC = 1;
 	else
-		s->CRC = 0;
+		System_Error("CRC Value is WRONG!");
 
 	return (src - (uint8_t *)bufptr);
 }
@@ -801,7 +803,7 @@ s_empire_d(const void *bufptr, size_t bufsz, struct empire *s)
 	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
 		s->CRC = 1;
 	else
-		s->CRC = 0;
+		System_Error("CRC Value is WRONG!");
 
 	return (src - (uint8_t *)bufptr);
 }
@@ -889,7 +891,7 @@ s_clan_d(const void *bufptr, size_t bufsz, struct clan *s)
 	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
 		s->CRC = 1;
 	else
-		s->CRC = 0;
+		System_Error("CRC Value is WRONG!");
 	return (src - (uint8_t *)bufptr);
 }
 
