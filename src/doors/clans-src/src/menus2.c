@@ -48,14 +48,14 @@ void ResurrectDead(bool Unconscious)
 
 	// if reached max..
 	if (Unconscious) {
-		MaxRes = Village.Data->ChurchLevel + 1;
+		MaxRes = Village.Data.ChurchLevel + 1;
 		if (PClan->ResUncToday == MaxRes) {
 			rputs("|07This level of church cannot revive any more unconscious today.\n%P");
 			return;
 		}
 	}
 	else {
-		MaxRes = Village.Data->ChurchLevel;
+		MaxRes = Village.Data.ChurchLevel;
 		if (PClan->ResDeadToday == MaxRes) {
 			rputs("|07This level of church cannot raise any more dead today.\n%P");
 			return;
@@ -310,7 +310,7 @@ void TrainMember(void)
 	int16_t IncreaseAmount;
 
 	for (iTemp = 0; iTemp < 8; iTemp++) {
-		TCost[iTemp] -= Village.Data->TrainingHallLevel;
+		TCost[iTemp] -= Village.Data.TrainingHallLevel;
 	}
 
 	szTheOptions[0] = ST_ATTRNAME0;

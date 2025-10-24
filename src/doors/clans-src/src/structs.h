@@ -181,7 +181,7 @@ struct village {
 		struct empire Empire;
 
 		int32_t CRC;                 // used to prevent cheating
-	} *Data;
+	} Data;
 };
 
 struct game {

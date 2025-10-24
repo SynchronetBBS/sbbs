@@ -802,7 +802,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 				rputs(szString);
 
 				/* take some away due to taxes */
-				TaxedGold = (int32_t)(GoldGained * Village.Data->TaxRate)/100L;
+				TaxedGold = (int32_t)(GoldGained * Village.Data.TaxRate)/100L;
 				if (TaxedGold) {
 					snprintf(szString, sizeof(szString), ST_FIGHTTAXEDGOLD, TaxedGold);
 					rputs(szString);
@@ -810,7 +810,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 
 				if ((GoldGained-TaxedGold) > 0) {
 					PClan->Empire.VaultGold += (GoldGained-TaxedGold);
-					Village.Data->Empire.VaultGold += TaxedGold;
+					Village.Data.Empire.VaultGold += TaxedGold;
 				}
 			}
 		}
@@ -1577,7 +1577,7 @@ static void Fight_GiveFollowers(int16_t Level)
 	char szString[128];
 
 	NumFollowers = MineFollowersGained(Level);
-	NumConscripted = (NumFollowers*Village.Data->ConscriptionRate)/100L;
+	NumConscripted = (NumFollowers*Village.Data.ConscriptionRate)/100L;
 
 	if (NumFollowers || NumConscripted) {
 		snprintf(szString, sizeof(szString), ST_FIGHTOVER1, NumFollowers, NumConscripted);
@@ -1588,7 +1588,7 @@ static void Fight_GiveFollowers(int16_t Level)
 	if (NumFollowers < 0)
 		NumFollowers = 0;
 
-	Village.Data->Empire.Army.Followers += NumConscripted;
+	Village.Data.Empire.Army.Followers += NumConscripted;
 	PClan->Empire.Army.Followers += NumFollowers;
 
 }

@@ -627,13 +627,13 @@ void Item_BuyItem(int16_t ItemType)
 		if (Items.Data[iTemp] &&
 				Items.Data[iTemp]->cType == ItemType && Items.Data[iTemp]->Special == false
 				&&
-				((Items.Data[iTemp]->MarketLevel <= Village.Data->MarketLevel &&
+				((Items.Data[iTemp]->MarketLevel <= Village.Data.MarketLevel &&
 				  (ItemType == I_WEAPON || ItemType == I_ARMOR || ItemType == I_SHIELD))
 				 ||
-				 (Items.Data[iTemp]->MarketLevel <= Village.Data->WizardLevel &&
+				 (Items.Data[iTemp]->MarketLevel <= Village.Data.WizardLevel &&
 				  (ItemType == I_SCROLL || ItemType == I_BOOK)))
 
-				&& (Items.Data[iTemp]->VillageType == Village.Data->VillageType ||
+				&& (Items.Data[iTemp]->VillageType == Village.Data.VillageType ||
 					Items.Data[iTemp]->VillageType == V_ALL)) {
 			/* found item type */
 			ItemIndex[TotalItems] = iTemp;
@@ -641,9 +641,9 @@ void Item_BuyItem(int16_t ItemType)
 			// cost fluctuation... FIXME: in future, have different ones for
 			// spells+books??
 			ItemCosts[TotalItems] = Items.Data[  ItemIndex[TotalItems] ]->lCost
-									+ ((int32_t)Village.Data->CostFluctuation*Items.Data[ItemIndex[TotalItems] ]->lCost)/100L;
+									+ ((int32_t)Village.Data.CostFluctuation*Items.Data[ItemIndex[TotalItems] ]->lCost)/100L;
 
-			ItemGst[TotalItems] = ((ItemCosts[TotalItems] * Village.Data->GST)/100L);
+			ItemGst[TotalItems] = ((ItemCosts[TotalItems] * Village.Data.GST)/100L);
 
 			/* add gst */
 			ItemCosts[TotalItems] += ItemGst[TotalItems];
@@ -750,7 +750,7 @@ void Item_BuyItem(int16_t ItemType)
 							/* ask if he wants to use this */
 							if (YesNo("\n|0SUse this material?") == YES) {
 								/* see if he can afford it */
-								//NewCost = (ItemCosts[Choice - 'A'] * (RANDOM(Village.Data->MarketLevel*10) + 90 + RANDOM(10)))/100L;
+								//NewCost = (ItemCosts[Choice - 'A'] * (RANDOM(Village.Data.MarketLevel*10) + 90 + RANDOM(10)))/100L;
 
 								if (PClan->Empire.VaultGold < ItemCosts[Choice - 'A']) {
 									rputs("|12You cannot afford this!\n");
@@ -804,7 +804,7 @@ void Item_BuyItem(int16_t ItemType)
 				PClan->Empire.VaultGold -= ItemCosts[Choice - 'A'];
 
 				/* give GST to vault */
-				Village.Data->Empire.VaultGold += ItemGst[Choice - 'A'];
+				Village.Data.Empire.VaultGold += ItemGst[Choice - 'A'];
 
 				/* make stats here -------- */
 				strlcpy(Item.szName, Items.Data[ ItemIndex[Choice - 'A'] ]->szName, sizeof(Item.szName));
@@ -819,12 +819,12 @@ void Item_BuyItem(int16_t ItemType)
 					if (ItemType == I_WEAPON || ItemType == I_ARMOR || ItemType == I_SHIELD) {
 						if (Item.Attributes[iTemp])
 							Item.Attributes[iTemp] =
-								Items.Data[ ItemIndex[Choice - 'A'] ]->Attributes[iTemp] + RANDOM(Village.Data->MarketLevel/3 + 1) + Village.Data->MarketLevel/2;
+								Items.Data[ ItemIndex[Choice - 'A'] ]->Attributes[iTemp] + RANDOM(Village.Data.MarketLevel/3 + 1) + Village.Data.MarketLevel/2;
 					}
 					else { // scroll or book
 						if (Item.Attributes[iTemp])
 							Item.Attributes[iTemp] =
-								Items.Data[ ItemIndex[Choice - 'A'] ]->Attributes[iTemp] + RANDOM(Village.Data->WizardLevel/3 + 1) + Village.Data->WizardLevel/2;
+								Items.Data[ ItemIndex[Choice - 'A'] ]->Attributes[iTemp] + RANDOM(Village.Data.WizardLevel/3 + 1) + Village.Data.WizardLevel/2;
 					}
 
 					Item.ReqAttributes[iTemp] =
@@ -875,12 +875,12 @@ void Item_BuyItem(int16_t ItemType)
 
 
 				// add onto it due to Quality Level
-				if (Village.Data->MarketQuality)
+				if (Village.Data.MarketQuality)
 					for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++) {
-						Item.Attributes[iTemp] += ((Item.Attributes[iTemp]*(RANDOM(20) + (Village.Data->MarketQuality*50)/4))/100);
+						Item.Attributes[iTemp] += ((Item.Attributes[iTemp]*(RANDOM(20) + (Village.Data.MarketQuality*50)/4))/100);
 
 						if (Item.ReqAttributes[iTemp])
-							Item.ReqAttributes[iTemp] -= ((Item.ReqAttributes[iTemp]*(RANDOM(10) + (Village.Data->MarketQuality*30)/4))/100);
+							Item.ReqAttributes[iTemp] -= ((Item.ReqAttributes[iTemp]*(RANDOM(10) + (Village.Data.MarketQuality*30)/4))/100);
 					}
 
 				/* ------------------------ */
@@ -900,7 +900,7 @@ void Item_BuyItem(int16_t ItemType)
 					PClan->Empire.VaultGold += ((Item.lCost*75)/100);
 
 					/* get GST back from gov't */
-					Village.Data->Empire.VaultGold -= (ItemGst[Choice - 'A']/2);
+					Village.Data.Empire.VaultGold -= (ItemGst[Choice - 'A']/2);
 				}
 				continue;
 			}

@@ -398,7 +398,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 
 				UseCurrent = true;
 
-				if (FlagSet(Village.Data->GFlags, atoi(szIndex)))
+				if (FlagSet(Village.Data.GFlags, atoi(szIndex)))
 					bCurrent = true;
 				else
 					bCurrent = false;
@@ -428,7 +428,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 
 				UseCurrent = true;
 
-				if (FlagSet(Village.Data->HFlags, atoi(szIndex)))
+				if (FlagSet(Village.Data.HFlags, atoi(szIndex)))
 					bCurrent = true;
 				else
 					bCurrent = false;
@@ -717,10 +717,10 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 								SetFlag(Quests_TFlags, atoi(pcCurrentPos+1));
 								break;
 							case 'G' :
-								SetFlag(Village.Data->GFlags, atoi(pcCurrentPos+1));
+								SetFlag(Village.Data.GFlags, atoi(pcCurrentPos+1));
 								break;
 							case 'H' :
-								SetFlag(Village.Data->HFlags, atoi(pcCurrentPos+1));
+								SetFlag(Village.Data.HFlags, atoi(pcCurrentPos+1));
 								break;
 						}
 						break;
@@ -737,10 +737,10 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 								ClearFlag(Quests_TFlags, atoi(pcCurrentPos+1));
 								break;
 							case 'G' :
-								ClearFlag(Village.Data->GFlags, atoi(pcCurrentPos+1));
+								ClearFlag(Village.Data.GFlags, atoi(pcCurrentPos+1));
 								break;
 							case 'H' :
-								ClearFlag(Village.Data->HFlags, atoi(pcCurrentPos+1));
+								ClearFlag(Village.Data.HFlags, atoi(pcCurrentPos+1));
 								break;
 						}
 						break;

@@ -328,7 +328,7 @@ static int16_t MainMenu(void)
 
 #ifdef PRELAB
 
-				Village.Data->MarketQuality = ((Village.Data->MarketQuality+1)%4);
+				Village.Data.MarketQuality = ((Village.Data.MarketQuality+1)%4);
 
 				rputs("Cheat ON!\n");
 				PClan->Empire.VaultGold += 320000;
@@ -536,7 +536,7 @@ static int16_t CommunicationsMenu(void)
 			case 'U' :      /* update lastread pointer */
 				snprintf(szString, sizeof(szString), "|03The last message you read was #%d.\nSet to which message? ",
 						PClan->PublicMsgIndex);
-				PClan->PublicMsgIndex = GetLong(szString, PClan->PublicMsgIndex, Village.Data->PublicMsgIndex-1);
+				PClan->PublicMsgIndex = GetLong(szString, PClan->PublicMsgIndex, Village.Data.PublicMsgIndex-1);
 				break;
 			case 'Q' :      /* return */
 				return 0;
@@ -572,7 +572,7 @@ static void WizardShop(void)
 	}
 
 	// if no wizard shop, tell him
-	if (Village.Data->WizardLevel == 0) {
+	if (Village.Data.WizardLevel == 0) {
 		rputs(ST_WIZ0);
 		return;
 	}
@@ -883,7 +883,7 @@ static int16_t ChurchMenu(void)
 	}
 
 	/* if no church yet, tell user */
-	if (Village.Data->ChurchLevel == 0) {
+	if (Village.Data.ChurchLevel == 0) {
 		rputs("\n|07There is currently no church in the village.\n%P");
 		return 0;
 	}
@@ -894,7 +894,7 @@ static int16_t ChurchMenu(void)
 		rputs("\n\n");
 		rputs(ST_LONGLINE);
 
-		snprintf(szString, sizeof(szString), " |0CLevel of Church: |0M%d\n", Village.Data->ChurchLevel);
+		snprintf(szString, sizeof(szString), " |0CLevel of Church: |0M%d\n", Village.Data.ChurchLevel);
 		rputs(szString);
 
 		switch (GetChoice("Church Menu", ST_ENTEROPTION, szTheOptions, "MBPDQ?VU/", 'Q', true)) {
@@ -920,7 +920,7 @@ static int16_t ChurchMenu(void)
 				break;
 			case 'B' :      /* ask for blessing */
 				// FIXME: make better?
-				if (Village.Data->ChurchLevel < 2) {
+				if (Village.Data.ChurchLevel < 2) {
 					rputs("|07This church isn't of a high enough level.  You aren't able to find a priest.\n%P");
 					break;
 				}
@@ -942,14 +942,14 @@ static int16_t ChurchMenu(void)
 				rputs("|14Your clan regenerates all its lost skill points!\n%P");
 				break;
 			case 'D' :      /* resurrect somebody */
-				if (Village.Data->ChurchLevel < 3) {
+				if (Village.Data.ChurchLevel < 3) {
 					rputs("|07This church isn't capable of that at its current level.\n%P");
 					break;
 				}
 				ResurrectDead(false);
 				break;
 			case 'U' :      /* revive unconscious */
-				if (Village.Data->ChurchLevel < 2) {
+				if (Village.Data.ChurchLevel < 2) {
 					rputs("|07This church isn't capable of that at its current level.\n%P");
 					break;
 				}
@@ -986,7 +986,7 @@ static int16_t THallMenu(void)
 	}
 
 	/* if no training hall yet, tell user */
-	if (Village.Data->TrainingHallLevel == 0) {
+	if (Village.Data.TrainingHallLevel == 0) {
 		rputs("\n|07There is currently no training hall in the village.\n%P");
 		return 0;
 	}
@@ -997,7 +997,7 @@ static int16_t THallMenu(void)
 		rputs("\n\n");
 		rputs(ST_LONGLINE);
 
-		snprintf(szString, sizeof(szString), " |0CLevel of Hall  : |0M%d\n", Village.Data->TrainingHallLevel);
+		snprintf(szString, sizeof(szString), " |0CLevel of Hall  : |0M%d\n", Village.Data.TrainingHallLevel);
 		rputs(szString);
 
 		switch (GetChoice("Training Hall", ST_ENTEROPTION, szTheOptions, "TALQ?V/", 'Q', true)) {
@@ -1079,10 +1079,10 @@ void GameLoop(void)
 				}
 
 				/* see if ruler */
-				if (Village.Data->RulingClanId[0] == -1) {
+				if (Village.Data.RulingClanId[0] == -1) {
 					/* no ruler yet, ask if he wants to rule */
 					// currently no ruler
-					snprintf(szString, sizeof(szString), ST_MAIN6, Village.Data->szName);
+					snprintf(szString, sizeof(szString), ST_MAIN6, Village.Data.szName);
 					rputs(szString);
 
 					if (YesNo("|0SDoes your clan wish to rule the village?") == YES) {
@@ -1092,8 +1092,8 @@ void GameLoop(void)
 				//MenuNum = 0;
 				//break;
 
-				if (Village.Data->RulingClanId[0] != PClan->ClanID[0] ||
-						Village.Data->RulingClanId[1] != PClan->ClanID[1]) {
+				if (Village.Data.RulingClanId[0] != PClan->ClanID[0] ||
+						Village.Data.RulingClanId[1] != PClan->ClanID[1]) {
 					MenuNum = OutsiderTownHallMenu();
 				}
 				else

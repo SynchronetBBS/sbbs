@@ -269,8 +269,8 @@ void DisplayScores(bool MakeFile)
 
 			SortData[CurClan]->IsRuler = false;
 
-			if (TmpClan.ClanID[0] == Village.Data->RulingClanId[0] &&
-					TmpClan.ClanID[1] == Village.Data->RulingClanId[1])
+			if (TmpClan.ClanID[0] == Village.Data.RulingClanId[0] &&
+					TmpClan.ClanID[1] == Village.Data.RulingClanId[1])
 				SortData[CurClan]->IsRuler = true;
 			else
 				SortData[CurClan]->IsRuler = false;

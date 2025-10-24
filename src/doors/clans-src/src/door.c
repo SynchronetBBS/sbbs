@@ -558,26 +558,26 @@ void rputs(char *string)
 			}
 			else if (*(pCurChar+1) == '1') {
 				/* pawn level */
-				snprintf(szString, sizeof(szString), "%d", Village.Data->PawnLevel);
+				snprintf(szString, sizeof(szString), "%d", Village.Data.PawnLevel);
 				rputs(szString);
 				pCurChar += 2;
 			}
 			else if (*(pCurChar+1) == '2') {
 				/* wiz shop level */
-				snprintf(szString, sizeof(szString), "%d", Village.Data->WizardLevel);
+				snprintf(szString, sizeof(szString), "%d", Village.Data.WizardLevel);
 				rputs(szString);
 				pCurChar += 2;
 			}
 			else if (*(pCurChar+1) == 'X') {
 				/* mine level */
-				snprintf(szString, sizeof(szString), "%d", Village.Data->MarketLevel);
+				snprintf(szString, sizeof(szString), "%d", Village.Data.MarketLevel);
 				rputs(szString);
 				pCurChar += 2;
 			}
 			else if (*(pCurChar+1) == 'Q') {
 				/* market quality level */
 
-				snprintf(szString, sizeof(szString), "%s", szQuality[Village.Data->MarketQuality]);
+				snprintf(szString, sizeof(szString), "%s", szQuality[Village.Data.MarketQuality]);
 				rputs(szString);
 				pCurChar += 2;
 			}

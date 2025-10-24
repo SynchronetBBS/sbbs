@@ -133,7 +133,7 @@ static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 	// strlcpy(Message.szFromName, GlobalPlayerClan->szName, sizeof(Message.szFromName));
 	// fromname not used in generic msgs
 	strlcpy(Message.szFromName, Reply->szFromName, sizeof(Message.szFromName));
-	strlcpy(Message.szFromVillageName, Village.Data->szName, sizeof(Message.szFromVillageName));
+	strlcpy(Message.szFromVillageName, Village.Data.szName, sizeof(Message.szFromVillageName));
 	Message.ToClanID[0] = Reply->FromClanID[0];
 	Message.ToClanID[1] = Reply->FromClanID[1];
 
@@ -192,7 +192,7 @@ void GenericMessage(char *szString, int16_t ToClanID[2], int16_t FromClanID[2], 
 
 	strlcpy(Message.szFromName, szFrom, sizeof(Message.szFromName));
 	strlcpy(Message.szDate, System.szTodaysDate, sizeof(Message.szDate));
-	strlcpy(Message.szFromVillageName, Village.Data->szName, sizeof(Message.szFromVillageName));
+	strlcpy(Message.szFromVillageName, Village.Data.szName, sizeof(Message.szFromVillageName));
 	Message.Flags = 0;
 	Message.MessageType = MT_PRIVATE;
 
@@ -226,7 +226,7 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 	Message.ToClanID[0] = ClanID[0];
 	Message.ToClanID[1] = ClanID[1];
 	strlcpy(Message.szFromName, PClan->szName, sizeof(Message.szFromName));
-	strlcpy(Message.szFromVillageName, Village.Data->szName, sizeof(Message.szFromVillageName));
+	strlcpy(Message.szFromVillageName, Village.Data.szName, sizeof(Message.szFromVillageName));
 	Message.FromClanID[0] = PClan->ClanID[0];
 	Message.FromClanID[1] = PClan->ClanID[1];
 
@@ -283,8 +283,8 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 			if (ToAll) {
 				/* public post */
 				if (!(GlobalPost && (Message.Flags & MF_ONEVILLONLY))) {
-					Message.PublicMsgIndex = Village.Data->PublicMsgIndex;
-					Village.Data->PublicMsgIndex++;
+					Message.PublicMsgIndex = Village.Data.PublicMsgIndex;
+					Village.Data.PublicMsgIndex++;
 				}
 			}
 			else
@@ -618,7 +618,7 @@ static void Reply_Message(struct Message *Reply)
 	Message.FromClanID[1] =  PClan->ClanID[1];
 	strlcpy(Message.szFromName, PClan->szName, sizeof(Message.szFromName));
 	strlcpy(Message.szDate, System.szTodaysDate, sizeof(Message.szDate));
-	strlcpy(Message.szFromVillageName, Village.Data->szName, sizeof(Message.szFromVillageName));
+	strlcpy(Message.szFromVillageName, Village.Data.szName, sizeof(Message.szFromVillageName));
 
 	Message.BBSIDFrom = Config.BBSID;
 
@@ -743,8 +743,8 @@ static void Reply_Message(struct Message *Reply)
 				Message.MessageType = MT_PUBLIC;
 
 				if (!(GlobalPost && (Message.Flags & MF_ONEVILLONLY))) {
-					Message.PublicMsgIndex = Village.Data->PublicMsgIndex;
-					Village.Data->PublicMsgIndex++;
+					Message.PublicMsgIndex = Village.Data.PublicMsgIndex;
+					Village.Data.PublicMsgIndex++;
 				}
 
 				// make public but limit it depending on original message
@@ -1283,7 +1283,7 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 	Message.FromClanID[1] = PClan->ClanID[1];
 	strlcpy(Message.szFromName, PClan->szName, sizeof(Message.szFromName));
 	strlcpy(Message.szDate, System.szTodaysDate, sizeof(Message.szDate));
-	strlcpy(Message.szFromVillageName, Village.Data->szName, sizeof(Message.szFromVillageName));
+	strlcpy(Message.szFromVillageName, Village.Data.szName, sizeof(Message.szFromVillageName));
 
 	Message.BBSIDFrom = Config.BBSID;
 
@@ -1336,8 +1336,8 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 			if (Message.MessageType == MT_PUBLIC) {
 				/* public post */
 				if (!(GlobalPost && (Message.Flags & MF_ONEVILLONLY))) {
-					Message.PublicMsgIndex = Village.Data->PublicMsgIndex;
-					Village.Data->PublicMsgIndex++;
+					Message.PublicMsgIndex = Village.Data.PublicMsgIndex;
+					Village.Data.PublicMsgIndex++;
 				}
 			}
 			else
@@ -1647,7 +1647,7 @@ void PostMsj(struct Message *Message)
 	if (fp) {
 		// if public post (MsgPublicIndex != 0), update msgPublicIndex
 		if (Message->MessageType == MT_PUBLIC)
-			Message->PublicMsgIndex = Village.Data->PublicMsgIndex++;
+			Message->PublicMsgIndex = Village.Data.PublicMsgIndex++;
 
 		EncryptWrite_s(Message, Message, fp, XOR_MSG);
 		EncryptWrite(Message->Data.MsgTxt, Message->Data.Length, fp, XOR_MSG);

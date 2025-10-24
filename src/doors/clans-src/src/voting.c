@@ -302,8 +302,8 @@ void ChooseNewLeader(void)
 	GetClanNameID(szName, NewRulerID);
 
 	// if same as yesterday's ruler, just tell people he was re-elected
-	if (NewRulerID[0] == Village.Data->RulingClanId[0] &&
-			NewRulerID[1] == Village.Data->RulingClanId[1]) {
+	if (NewRulerID[0] == Village.Data.RulingClanId[0] &&
+			NewRulerID[1] == Village.Data.RulingClanId[1]) {
 		// snprintf(szString, sizeof(szString), ">> %s is re-elected as the leader of town!\n\n",
 		snprintf(szString, sizeof(szString), ST_NEWS1, szName);
 		News_AddNews(szString);
@@ -314,13 +314,13 @@ void ChooseNewLeader(void)
 		News_AddNews(szString);
 
 		// make him the new ruler
-		Village.Data->RulingClanId[0] = NewRulerID[0];
-		Village.Data->RulingClanId[1] = NewRulerID[1];
-		strlcpy(Village.Data->szRulingClan, szName, sizeof(Village.Data->szRulingClan));
-		Village.Data->RulingDays = 0;
+		Village.Data.RulingClanId[0] = NewRulerID[0];
+		Village.Data.RulingClanId[1] = NewRulerID[1];
+		strlcpy(Village.Data.szRulingClan, szName, sizeof(Village.Data.szRulingClan));
+		Village.Data.RulingDays = 0;
 
 		// make sure voting is allowed for the new ruler
-		Village.Data->GovtSystem = GS_DEMOCRACY;
+		Village.Data.GovtSystem = GS_DEMOCRACY;
 
 		// write message? -- no need, pretty obvious if it's first thing
 		// in the news

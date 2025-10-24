@@ -132,13 +132,13 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 	}
 
 	// if this is the ruler of town, remove him
-	if (ClanID[0] == Village.Data->RulingClanId[0] && ClanID[1] == Village.Data->RulingClanId[1]) {
-		Village.Data->RulingClanId[0] = -1;
-		Village.Data->RulingClanId[1] = -1;
-		Village.Data->RulingDays = 0;
-		Village.Data->GovtSystem = GS_DEMOCRACY;
+	if (ClanID[0] == Village.Data.RulingClanId[0] && ClanID[1] == Village.Data.RulingClanId[1]) {
+		Village.Data.RulingClanId[0] = -1;
+		Village.Data.RulingClanId[1] = -1;
+		Village.Data.RulingDays = 0;
+		Village.Data.GovtSystem = GS_DEMOCRACY;
 
-		Village.Data->szRulingClan[0] = 0;
+		Village.Data.szRulingClan[0] = 0;
 	}
 
 	// go through PC file
@@ -1399,35 +1399,35 @@ void ShowVillageStats(void)
 	if (Game.Data.InterBBS)
 		snprintf(szString, sizeof(szString), ST_VSTATHEADER, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName);
 	else
-		snprintf(szString, sizeof(szString), ST_VSTATHEADER, Village.Data->szName);
+		snprintf(szString, sizeof(szString), ST_VSTATHEADER, Village.Data.szName);
 	rputs(szString);
 
 	rputs(ST_LONGDIVIDER);
 
-	if (Village.Data->szRulingClan[0] == 0)
+	if (Village.Data.szRulingClan[0] == 0)
 		strlcpy(szRuler, "None", sizeof(szRuler));
 	else
-		strlcpy(szRuler, Village.Data->szRulingClan, sizeof(szRuler));
+		strlcpy(szRuler, Village.Data.szRulingClan, sizeof(szRuler));
 
 	snprintf(szString, sizeof(szString), ST_VSTATS1, NumClansInVillage(), szRuler);
 	rputs(szString);
 
-	snprintf(szString, sizeof(szString), ST_VSTATS2, Village.Data->TaxRate);
+	snprintf(szString, sizeof(szString), ST_VSTATS2, Village.Data.TaxRate);
 	rputs(szString);
 
-	snprintf(szString, sizeof(szString), ST_VSTATS4, Village.Data->GST);
+	snprintf(szString, sizeof(szString), ST_VSTATS4, Village.Data.GST);
 	rputs(szString);
 
-	snprintf(szString, sizeof(szString), ST_VSTATS7, Village.Data->Empire.VaultGold);
+	snprintf(szString, sizeof(szString), ST_VSTATS7, Village.Data.Empire.VaultGold);
 	rputs(szString);
 
-	snprintf(szString, sizeof(szString), ST_TMENUSTAT8, Village.Data->ConscriptionRate);
+	snprintf(szString, sizeof(szString), ST_TMENUSTAT8, Village.Data.ConscriptionRate);
 	rputs(szString);
-	/*    snprintf(szString, sizeof(szString), ST_TMENUSTAT9, Village.Data->GovtSystem == GS_DEMOCRACY ?
+	/*    snprintf(szString, sizeof(szString), ST_TMENUSTAT9, Village.Data.GovtSystem == GS_DEMOCRACY ?
 	        "Democracy" : "Dictatorship");
 	      rputs(szString);
 
-	      snprintf(szString, sizeof(szString), ST_TMENUSTAT10, Village.Data->ShowEmpireStats ?
+	      snprintf(szString, sizeof(szString), ST_TMENUSTAT10, Village.Data.ShowEmpireStats ?
 	        "Available" : "Unavailable");
 	      rputs(szString);
 	*/
@@ -2701,8 +2701,8 @@ void User_Maint(void)
 			*/
 
 			/* is this the current ruler?  If so, give daily points */
-			if (TmpClan.ClanID[0] == Village.Data->RulingClanId[0] &&
-					TmpClan.ClanID[1] == Village.Data->RulingClanId[1]) {
+			if (TmpClan.ClanID[0] == Village.Data.RulingClanId[0] &&
+					TmpClan.ClanID[1] == Village.Data.RulingClanId[1]) {
 				TmpClan.Points += 25;
 			}
 

@@ -269,7 +269,7 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 	szTheOptions[5] = "Sell All";
 
 	snprintf(szString, sizeof(szString), "|0CAt its current level, this shop can take in up to |0B%d |0Citems.\n\n",
-			20*Village.Data->PawnLevel);
+			20*Village.Data.PawnLevel);
 	rputs(szString);
 
 	Done = false;
@@ -301,11 +301,11 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 
 			case 'S' :  // sell item
 				// find index of next item slot open
-				for (CurItem = 0; CurItem < 20*Village.Data->PawnLevel; CurItem++) {
+				for (CurItem = 0; CurItem < 20*Village.Data.PawnLevel; CurItem++) {
 					if (PS_Items[CurItem] == NULL)  break;
 				}
 
-				if (CurItem == 20*Village.Data->PawnLevel) {
+				if (CurItem == 20*Village.Data.PawnLevel) {
 					//snprintf(szString, sizeof(szString), "I'm sorry, we cannot accept any more items.\n\r");
 					rputs(ST_PAWN9);
 					break;
@@ -362,11 +362,11 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 					}
 
 					// find index of next item slot open
-					for (CurItem = 0; CurItem < 20*Village.Data->PawnLevel; CurItem++) {
+					for (CurItem = 0; CurItem < 20*Village.Data.PawnLevel; CurItem++) {
 						if (PS_Items[CurItem] == NULL)  break;
 					}
 
-					if (CurItem == 20*Village.Data->PawnLevel) {
+					if (CurItem == 20*Village.Data.PawnLevel) {
 						// od_printf("I'm sorry, we cannot accept any more items.\n\r");
 						rputs(ST_PAWN9);
 						break;
@@ -440,7 +440,7 @@ void PawnShop(void)
 	}
 
 	// if no pawn shop, tell him
-	if (Village.Data->PawnLevel == 0) {
+	if (Village.Data.PawnLevel == 0) {
 		rputs("\n|07There is currently no pawn shop in the village.\n%P");
 		return;
 	}

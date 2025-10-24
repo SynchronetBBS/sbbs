@@ -231,8 +231,6 @@ int main(void)
 	// Update Village Data
 	UpdateVillage();
 
-	if (Village.Data)
-		free(Village.Data);
 	return 0;
 }
 
@@ -250,14 +248,14 @@ static void DeleteClan(int16_t ClanID[2])
 	struct Alliance *Alliances[MAX_ALLIANCES];
 
 	// if this is the ruler of town, remove him
-	if (ClanID[0] == Village.Data->RulingClanId[0] &&
-			ClanID[1] == Village.Data->RulingClanId[1]) {
-		Village.Data->RulingClanId[0] = -1;
-		Village.Data->RulingClanId[1] = -1;
-		Village.Data->RulingDays = 0;
-		Village.Data->GovtSystem = GS_DEMOCRACY;
+	if (ClanID[0] == Village.Data.RulingClanId[0] &&
+			ClanID[1] == Village.Data.RulingClanId[1]) {
+		Village.Data.RulingClanId[0] = -1;
+		Village.Data.RulingClanId[1] = -1;
+		Village.Data.RulingDays = 0;
+		Village.Data.GovtSystem = GS_DEMOCRACY;
 
-		Village.Data->szRulingClan[0] = 0;
+		Village.Data.szRulingClan[0] = 0;
 
 		UpdateVillage();
 	}
@@ -483,9 +481,6 @@ static void InitVillage(void)
 	    char FlagScheme[3] = { 12, 15, 9 }; */
 	/*  int16_t iTemp;*/
 
-	Village.Data = (struct village_data *) malloc(sizeof(struct village_data));
-	CheckMem(Village.Data);
-
 	/* try opening it for share */
 	fpVillage = fopen(VILLAGE_DATAFILE, "rb");
 	if (!fpVillage) {
@@ -493,7 +488,7 @@ static void InitVillage(void)
 		exit(0);
 	}
 	else
-		EncryptRead_s(village_data, Village.Data, fpVillage, XOR_VILLAGE);
+		EncryptRead_s(village_data, &Village.Data, fpVillage, XOR_VILLAGE);
 
 	fclose(fpVillage);
 }
@@ -514,7 +509,7 @@ static void UpdateVillage(void)
 		exit(0);
 	}
 
-	EncryptWrite_s(village_data, Village.Data, fpVillage, XOR_VILLAGE);
+	EncryptWrite_s(village_data, &Village.Data, fpVillage, XOR_VILLAGE);
 
 	fclose(fpVillage);
 }

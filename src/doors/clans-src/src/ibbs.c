@@ -278,7 +278,7 @@ static void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
 	// load up empire
 	switch (Spy->TargetType) {
 		case EO_VILLAGE :
-			Empire = &Village.Data->Empire;
+			Empire = &Village.Data.Empire;
 			strlcpy(SpyResult.szTargetName, Empire->szName, sizeof(SpyResult.szTargetName));
 			break;
 		case EO_CLAN :
@@ -311,7 +311,7 @@ static void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
 		if (Spy->TargetType == EO_VILLAGE) {
 			// snprintf(szMessage, sizeof(szMessage), " You caught a spy attempting to gain info on the village's empire.\n The spy was from %s.\n",
 			snprintf(szMessage, sizeof(szMessage), ST_SPY4, Spy->szSpierName);
-			GenericMessage(szMessage, Village.Data->RulingClanId, Junk, "", false);
+			GenericMessage(szMessage, Village.Data.RulingClanId, Junk, "", false);
 		}
 		else if (Spy->TargetType == EO_CLAN && NoTarget == false) {
 			// snprintf(szMessage, sizeof(szMessage), " You caught a spy attempting to gain info on the village's empire.\n The spy was from %s.\n",
@@ -694,9 +694,9 @@ static void ReturnLostAttack(struct AttackPacket *AttackPacket)
 	switch (AttackPacket->AttackingEmpire.OwnerType) {
 		case EO_VILLAGE :
 			strlcpy(szAttackerName, "This village", sizeof(szAttackerName));
-			Village.Data->Empire.Army.Footmen += AttackPacket->AttackingArmy.Footmen;
-			Village.Data->Empire.Army.Axemen  += AttackPacket->AttackingArmy.Axemen;
-			Village.Data->Empire.Army.Knights += AttackPacket->AttackingArmy.Knights;
+			Village.Data.Empire.Army.Footmen += AttackPacket->AttackingArmy.Footmen;
+			Village.Data.Empire.Army.Axemen  += AttackPacket->AttackingArmy.Axemen;
+			Village.Data.Empire.Army.Knights += AttackPacket->AttackingArmy.Knights;
 			break;
 		case EO_CLAN :
 			strlcpy(szAttackerName, "Your clan", sizeof(szAttackerName));
@@ -1952,10 +1952,10 @@ void IBBS_SendSpy(struct empire *Empire, int16_t DestID)
 
 	switch (Empire->OwnerType) {
 		case EO_VILLAGE :
-			snprintf(Spy.szSpierName, sizeof(Spy.szSpierName), "the village of %s", Village.Data->szName);
+			snprintf(Spy.szSpierName, sizeof(Spy.szSpierName), "the village of %s", Village.Data.szName);
 			break;
 		case EO_CLAN :
-			snprintf(Spy.szSpierName, sizeof(Spy.szSpierName), "the clan of %s from %s", Empire->szName, Village.Data->szName);
+			snprintf(Spy.szSpierName, sizeof(Spy.szSpierName), "the clan of %s from %s", Empire->szName, Village.Data.szName);
 			break;
 	}
 

@@ -144,9 +144,9 @@ void ProcessAttackPacket(struct AttackPacket *AttackPacket)
 	Result.AttackIndex = AttackPacket->AttackIndex;
 
 	if (Result.DefenderType == EO_VILLAGE) {
-		Result.DefenderID[0] = Village.Data->RulingClanId[0];
-		Result.DefenderID[1] = Village.Data->RulingClanId[1];
-		strlcpy(Result.szDefenderName, Village.Data->szName, sizeof(Result.szDefenderName));
+		Result.DefenderID[0] = Village.Data.RulingClanId[0];
+		Result.DefenderID[1] = Village.Data.RulingClanId[1];
+		strlcpy(Result.szDefenderName, Village.Data.szName, sizeof(Result.szDefenderName));
 	}
 	else if (Result.DefenderType == EO_CLAN) {
 		Result.DefenderID[0] = AttackPacket->ClanID[0];
@@ -165,7 +165,7 @@ void ProcessAttackPacket(struct AttackPacket *AttackPacket)
 	Result.ReturningArmy.Knights = AttackPacket->AttackingArmy.Knights;
 
 	// if no ruler, skip this
-	if ((Village.Data->RulingClanId[0] == -1 && AttackPacket->TargetType == EO_VILLAGE
+	if ((Village.Data.RulingClanId[0] == -1 && AttackPacket->TargetType == EO_VILLAGE
 			&& AttackPacket->Goal == G_OUSTRULER)
 			|| (ClanExists(Result.DefenderID) == false && AttackPacket->TargetType == EO_CLAN)) {
 		Result.NoTarget = true;
@@ -176,7 +176,7 @@ void ProcessAttackPacket(struct AttackPacket *AttackPacket)
 	}
 	else {
 		EmpireAttack(&AttackPacket->AttackingEmpire, &AttackPacket->AttackingArmy,
-					 &Village.Data->Empire, &Result,
+					 &Village.Data.Empire, &Result,
 					 AttackPacket->Goal, AttackPacket->ExtentOfAttack);
 
 		// process result -- this writes messages, updates news
@@ -187,9 +187,9 @@ void ProcessAttackPacket(struct AttackPacket *AttackPacket)
 	SendResultPacket(&Result, Result.BBSIDFrom);
 
 	// update defender's army
-	Village.Data->Empire.Army.Footmen -= Result.DefendCasualties.Footmen;
-	Village.Data->Empire.Army.Axemen  -= Result.DefendCasualties.Axemen;
-	Village.Data->Empire.Army.Knights -= Result.DefendCasualties.Knights;
+	Village.Data.Empire.Army.Footmen -= Result.DefendCasualties.Footmen;
+	Village.Data.Empire.Army.Axemen  -= Result.DefendCasualties.Axemen;
+	Village.Data.Empire.Army.Knights -= Result.DefendCasualties.Knights;
 
 	// "give" the defender land from which his buildings came from
 	//   this land is "gained" because of buildings destroyed
@@ -197,14 +197,14 @@ void ProcessAttackPacket(struct AttackPacket *AttackPacket)
 	for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
 		LandGained += (Result.BuildingsDestroyed[iTemp]*BuildingType[iTemp].LandUsed);
 	}
-	Village.Data->Empire.Land += LandGained;
+	Village.Data.Empire.Land += LandGained;
 
 	// update his losses
-	Village.Data->Empire.VaultGold -= Result.GoldStolen;
-	Village.Data->Empire.Land -= Result.LandStolen;
+	Village.Data.Empire.VaultGold -= Result.GoldStolen;
+	Village.Data.Empire.Land -= Result.LandStolen;
 
 	for (iTemp = 0; iTemp < MAX_BUILDINGS; iTemp++) {
-		Village.Data->Empire.Buildings[iTemp] -= Result.BuildingsDestroyed[iTemp];
+		Village.Data.Empire.Buildings[iTemp] -= Result.BuildingsDestroyed[iTemp];
 	}
 }
 
@@ -232,14 +232,14 @@ void ProcessResultPacket(struct AttackResult *Result)
 	switch (Result->AttackerType) {
 		case EO_VILLAGE :
 			// update attack's army
-			Village.Data->Empire.Army.Footmen += Result->ReturningArmy.Footmen;
-			Village.Data->Empire.Army.Axemen  += Result->ReturningArmy.Axemen;
-			Village.Data->Empire.Army.Knights += Result->ReturningArmy.Knights;
+			Village.Data.Empire.Army.Footmen += Result->ReturningArmy.Footmen;
+			Village.Data.Empire.Army.Axemen  += Result->ReturningArmy.Axemen;
+			Village.Data.Empire.Army.Knights += Result->ReturningArmy.Knights;
 
 			// give attacker his land
-			Village.Data->Empire.Land         += Result->LandStolen;
-			Village.Data->Empire.VaultGold    += Result->GoldStolen;
-			strlcpy(szAttackerName, Village.Data->szName, sizeof(szAttackerName));
+			Village.Data.Empire.Land         += Result->LandStolen;
+			Village.Data.Empire.VaultGold    += Result->GoldStolen;
+			strlcpy(szAttackerName, Village.Data.szName, sizeof(szAttackerName));
 			break;
 		case EO_CLAN :
 			if (GetClan(Result->AttackerID, &TmpClan)) {
@@ -1800,11 +1800,11 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 				strlcat(szMessage, ST_PAR1, sizeof(szMessage));
 
 				// oust the ruler
-				Village.Data->RulingClanId[0] = -1;
-				Village.Data->RulingClanId[1] = -1;
-				Village.Data->szRulingClan[0] = 0;
-				Village.Data->GovtSystem = GS_DEMOCRACY;
-				Village.Data->RulingDays = 0;
+				Village.Data.RulingClanId[0] = -1;
+				Village.Data.RulingClanId[1] = -1;
+				Village.Data.szRulingClan[0] = 0;
+				Village.Data.GovtSystem = GS_DEMOCRACY;
+				Village.Data.RulingDays = 0;
 				break;
 			case G_STEALLAND :  // steal land, figure out how much land stolen
 				// tell him in message how much was lost
@@ -1813,11 +1813,11 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 				switch (AttackResult->DefenderType) {
 					case EO_VILLAGE :
 						Percent = (AttackResult->PercentDamage*AttackResult->ExtentOfAttack)/200L;
-						DestroyBuildings(Village.Data->Empire.Buildings,
+						DestroyBuildings(Village.Data.Empire.Buildings,
 										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
 						// after destroying everything, Land is gained
 
-						AttackResult->LandStolen = ((Village.Data->Empire.Land + LandGained)*Percent)/100L;
+						AttackResult->LandStolen = ((Village.Data.Empire.Land + LandGained)*Percent)/100L;
 						break;
 					case EO_CLAN :
 						GetClan(AttackResult->DefenderID, &TmpClan);
@@ -1874,7 +1874,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 				switch (AttackResult->DefenderType) {
 					case EO_VILLAGE :
 						AttackResult->GoldStolen =
-							((Village.Data->Empire.VaultGold/100L) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack)/100L);
+							((Village.Data.Empire.VaultGold/100L) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack)/100L);
 						break;
 					case EO_CLAN :
 						GetClan(AttackResult->DefenderID, &TmpClan);
@@ -1911,7 +1911,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 				switch (AttackResult->DefenderType) {
 					case EO_VILLAGE :
 						Percent = (AttackResult->PercentDamage*AttackResult->ExtentOfAttack)/100L;
-						DestroyBuildings(Village.Data->Empire.Buildings,
+						DestroyBuildings(Village.Data.Empire.Buildings,
 										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
 						break;
 					case EO_CLAN :
@@ -2328,7 +2328,7 @@ static void StartEmpireWar(struct empire *Empire)
 
 		// put our village in the list first IF the empire is not a village
 		if (Empire->OwnerType != EO_VILLAGE) {
-			aszVillageNames[0] = Village.Data->szName;
+			aszVillageNames[0] = Village.Data.szName;
 			// get rest of the other villages and skip ours
 			NumBBSes = 1;
 
@@ -2440,7 +2440,7 @@ static void StartEmpireWar(struct empire *Empire)
 			// rputs("Our village!\n");
 
 			// if no ruler, tell him
-			if (Village.Data->RulingClanId[0] == -1 && Goal == G_OUSTRULER) {
+			if (Village.Data.RulingClanId[0] == -1 && Goal == G_OUSTRULER) {
 				// rputs("There is no ruler to oust.  The attack is aborted.\n");
 				rputs(ST_WEMPIRE4);
 				return;
@@ -2453,12 +2453,12 @@ static void StartEmpireWar(struct empire *Empire)
 			Result.BBSIDTo = IBBS.Data->BBSID;
 			Result.AttackerID[0] = PClan->ClanID[0];
 			Result.AttackerID[1] = PClan->ClanID[1];
-			Result.DefenderID[0] = Village.Data->RulingClanId[0];
-			Result.DefenderID[1] = Village.Data->RulingClanId[1];
+			Result.DefenderID[0] = Village.Data.RulingClanId[0];
+			Result.DefenderID[1] = Village.Data.RulingClanId[1];
 			Result.Goal = Goal;
 			Result.AllianceID = -1;
 
-			EmpireAttack(Empire, &AttackingArmy, &Village.Data->Empire, &Result, Goal, ExtentOfAttack);
+			EmpireAttack(Empire, &AttackingArmy, &Village.Data.Empire, &Result, Goal, ExtentOfAttack);
 
 			// process result -- this writes messages, updates news
 			ProcessAttackResult(&Result);
@@ -2470,23 +2470,23 @@ static void StartEmpireWar(struct empire *Empire)
 			Empire->Army.Knights -= Result.AttackCasualties.Knights;
 
 			// update defender's army
-			Village.Data->Empire.Army.Footmen -= Result.DefendCasualties.Footmen;
-			Village.Data->Empire.Army.Axemen  -= Result.DefendCasualties.Axemen;
-			Village.Data->Empire.Army.Knights -= Result.DefendCasualties.Knights;
+			Village.Data.Empire.Army.Footmen -= Result.DefendCasualties.Footmen;
+			Village.Data.Empire.Army.Axemen  -= Result.DefendCasualties.Axemen;
+			Village.Data.Empire.Army.Knights -= Result.DefendCasualties.Knights;
 
 			// "give" the defender land from which his buildings came from
 			LandGained = 0;
 			for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
 				LandGained += (Result.BuildingsDestroyed[iTemp]*BuildingType[iTemp].LandUsed);
 			}
-			Village.Data->Empire.Land += LandGained;
+			Village.Data.Empire.Land += LandGained;
 
 			// update his losses
-			Village.Data->Empire.VaultGold -= Result.GoldStolen;
-			Village.Data->Empire.Land -= Result.LandStolen;
+			Village.Data.Empire.VaultGold -= Result.GoldStolen;
+			Village.Data.Empire.Land -= Result.LandStolen;
 
 			for (iTemp = 0; iTemp < MAX_BUILDINGS; iTemp++) {
-				Village.Data->Empire.Buildings[iTemp]
+				Village.Data.Empire.Buildings[iTemp]
 				-= Result.BuildingsDestroyed[iTemp];
 			}
 
@@ -2943,7 +2943,7 @@ static void SpyMenu(struct empire *Empire)
 
 		// put our village in the list first IF the empire is not a village
 		if (Empire->OwnerType != EO_VILLAGE) {
-			aszVillageNames[0] = Village.Data->szName;
+			aszVillageNames[0] = Village.Data.szName;
 			// get rest of the other villages and skip ours
 			NumBBSes = 1;
 
@@ -3002,21 +3002,21 @@ static void SpyMenu(struct empire *Empire)
 			// see if we can spy, if so, spy on 'em now using EmpireStats
 			// increment spies per day in future
 			if ((Empire->Buildings[B_AGENCY]+RANDOM(5)) >
-					(Village.Data->Empire.Buildings[B_SECURITY]+RANDOM(3))) {
+					(Village.Data.Empire.Buildings[B_SECURITY]+RANDOM(3))) {
 				// success!
 				// rputs("Your spy is successful!\n");
 				rputs(ST_SPY2);
-				Empire_Stats(&Village.Data->Empire);
+				Empire_Stats(&Village.Data.Empire);
 			}
 			else {
 				// rputs("Your spy failed and was captured!\n");
 				rputs(ST_SPY3);
 
-				if (Village.Data->RulingClanId[0] != -1) {
+				if (Village.Data.RulingClanId[0] != -1) {
 					// snprintf(szMessage, sizeof(szMessage), " You caught a spy attempting to gain info on the village's empire.\n The spy was from %s.\n",
 					snprintf(szMessage, sizeof(szMessage), ST_SPY4,
 							szSpierName);
-					GenericMessage(szMessage, Village.Data->RulingClanId, Junk, "", false);
+					GenericMessage(szMessage, Village.Data.RulingClanId, Junk, "", false);
 				}
 			}
 		}

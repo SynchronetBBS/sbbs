@@ -668,14 +668,14 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 
 						/* take some away due to taxes */
 						if (GoldGained > 0) {
-							TaxedGold = (int32_t)(GoldGained * Village.Data->TaxRate)/100L;
+							TaxedGold = (int32_t)(GoldGained * Village.Data.TaxRate)/100L;
 							if (TaxedGold) {
 								snprintf(szString, sizeof(szString), ST_FIGHTTAXEDGOLD, TaxedGold);
 								rputs(szString);
 							}
 
 							PClan->Empire.VaultGold += (GoldGained-TaxedGold);
-							Village.Data->Empire.VaultGold += TaxedGold;
+							Village.Data.Empire.VaultGold += TaxedGold;
 						}
 					}
 				}
