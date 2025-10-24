@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "win_wrappers.h"
 
 #include "alliance.h"
+#include "alliancem.h"
 #include "game.h"
 #include "ibbs.h"
 #include "mail.h"

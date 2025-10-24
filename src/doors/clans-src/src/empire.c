@@ -1739,9 +1739,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 			snprintf(szDefender, sizeof(szDefender), "the alliance of %s", Alliances[iTemp]->szName);
 
 			// free up mem used by alliances
-			for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-				if (Alliances[iTemp])
-					free(Alliances[iTemp]);
+			FreeAlliances(Alliances);
 			break;
 	}
 
@@ -1845,9 +1843,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						AttackResult->LandStolen = ((Alliances[WhichAlliance]->Empire.Land + LandGained)*Percent)/100L;
 
 						// free up mem used by alliances
-						for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-							if (Alliances[iTemp])
-								free(Alliances[iTemp]);
+						FreeAlliances(Alliances);
 						break;
 				}
 				ShowedOne = false;
@@ -1896,9 +1892,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 							((Alliances[WhichAlliance]->Empire.VaultGold/100L) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack)/100L);
 
 						// free up mem used by alliances
-						for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-							if (Alliances[iTemp])
-								free(Alliances[iTemp]);
+						FreeAlliances(Alliances);
 						break;
 				}
 				// snprintf(szString, sizeof(szString), " They stole %ld gold!\n", AttackResult->GoldStolen);
@@ -1936,9 +1930,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
 
 						// free up mem used by alliances
-						for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-							if (Alliances[iTemp])
-								free(Alliances[iTemp]);
+						FreeAlliances(Alliances);
 						break;
 				}
 				// tell what they lost
@@ -2530,9 +2522,7 @@ static void StartEmpireWar(struct empire *Empire)
 			rputs(ST_WEMPIRE5);
 
 			// free up mem used by alliances
-			for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-				if (Alliances[iTemp])
-					free(Alliances[iTemp]);
+			FreeAlliances(Alliances);
 
 			return;
 		}
@@ -2544,9 +2534,7 @@ static void StartEmpireWar(struct empire *Empire)
 			rputs(ST_ABORTED);
 
 			// free up mem used by alliances
-			for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-				if (Alliances[iTemp])
-					free(Alliances[iTemp]);
+			FreeAlliances(Alliances);
 
 			return;
 		}
@@ -2555,9 +2543,7 @@ static void StartEmpireWar(struct empire *Empire)
 			rputs("You cannot attack your own alliance!\n%P");
 
 			// free up mem used by alliances
-			for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-				if (Alliances[iTemp])
-					free(Alliances[iTemp]);
+			FreeAlliances(Alliances);
 
 			return;
 		}
@@ -2571,9 +2557,7 @@ static void StartEmpireWar(struct empire *Empire)
 			rputs(ST_ABORTED);
 
 			// free up mem used by alliances
-			for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-				if (Alliances[iTemp])
-					free(Alliances[iTemp]);
+			FreeAlliances(Alliances);
 
 			return;
 		}
@@ -2594,9 +2578,7 @@ static void StartEmpireWar(struct empire *Empire)
 				rputs(ST_ABORTED);
 
 				// free up mem used by alliances
-				for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-					if (Alliances[iTemp])
-						free(Alliances[iTemp]);
+				FreeAlliances(Alliances);
 
 				return;
 			}
@@ -2615,9 +2597,7 @@ static void StartEmpireWar(struct empire *Empire)
 				// ExtentOfAttack = GetLong(ST_WAR2, 5, 10);
 				if (!ExtentOfAttack) {
 					// free up mem used by alliances
-					for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-						if (Alliances[iTemp])
-							free(Alliances[iTemp]);
+					FreeAlliances(Alliances);
 					return;
 				}
 				break;
@@ -2626,9 +2606,7 @@ static void StartEmpireWar(struct empire *Empire)
 				ExtentOfAttack = 15;
 				if (!ExtentOfAttack) {
 					// free up mem used by alliances
-					for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-						if (Alliances[iTemp])
-							free(Alliances[iTemp]);
+					FreeAlliances(Alliances);
 					return;
 				}
 				break;
@@ -2637,9 +2615,7 @@ static void StartEmpireWar(struct empire *Empire)
 				ExtentOfAttack = 15;
 				if (!ExtentOfAttack) {
 					// free up mem used by alliances
-					for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-						if (Alliances[iTemp])
-							free(Alliances[iTemp]);
+					FreeAlliances(Alliances);
 					return;
 				}
 				break;
@@ -2701,9 +2677,7 @@ static void StartEmpireWar(struct empire *Empire)
 		UpdateAlliances(Alliances);
 
 		// free up mem used by alliances
-		for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-			if (Alliances[iTemp])
-				free(Alliances[iTemp]);
+		FreeAlliances(Alliances);
 
 	}
 	else if (TypeOfDefender == EO_CLAN) {
@@ -3042,9 +3016,7 @@ static void SpyMenu(struct empire *Empire)
 			rputs("No alliances found!\n");
 
 			// free up mem used by alliances
-			for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-				if (Alliances[iTemp])
-					free(Alliances[iTemp]);
+			FreeAlliances(Alliances);
 
 			return;
 		}
@@ -3056,9 +3028,7 @@ static void SpyMenu(struct empire *Empire)
 			rputs(ST_ABORTED);
 
 			// free up mem used by alliances
-			for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-				if (Alliances[iTemp])
-					free(Alliances[iTemp]);
+			FreeAlliances(Alliances);
 
 			return;
 		}
@@ -3067,16 +3037,12 @@ static void SpyMenu(struct empire *Empire)
 		snprintf(szString, sizeof(szString), ST_SPY1, SPY_COST, Empire->VaultGold);
 		if (YesNo(szString) == NO) {
 			// free up mem used by alliances
-			for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-				if (Alliances[iTemp])
-					free(Alliances[iTemp]);
+			FreeAlliances(Alliances);
 			return;
 		}
 		if (Empire->VaultGold < SPY_COST) {
 			// free up mem used by alliances
-			for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-				if (Alliances[iTemp])
-					free(Alliances[iTemp]);
+			FreeAlliances(Alliances);
 			rputs(ST_FMENUNOAFFORD);
 			return;
 		}
@@ -3103,9 +3069,7 @@ static void SpyMenu(struct empire *Empire)
 		}
 
 		// free up mem used by alliances
-		for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-			if (Alliances[iTemp])
-				free(Alliances[iTemp]);
+		FreeAlliances(Alliances);
 	}
 	else if (TypeToSpyOn == EO_CLAN) {
 		// choose clan using GetClanID()

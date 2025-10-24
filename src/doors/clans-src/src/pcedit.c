@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
 
+#include "alliance.h"
 #include "structs.h"
 #include "myopen.h"
 
@@ -46,8 +47,6 @@ void CheckMem(void *Test);
 static void InitVillage(void);
 static void UpdateVillage(void);
 static void RejectTrade(struct TradeData *TradeData);
-static void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
-static void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
 static void RemoveFromIPScores(const int16_t ClanID[2]);
 static bool ClanIDInList(const int16_t ClanID[2]);
 static void RemoveFromUList(const int16_t ClanID[2]);
@@ -438,8 +437,7 @@ static void DeleteClan(int16_t ClanID[2])
 
 			if (FoundNewCreator == false) {
 				// delete this alliance since no new ruler
-				free(Alliances[CurAlliance]);
-				Alliances[CurAlliance] = NULL;
+				DeleteAlliance(CurAlliance, Alliances);
 			}
 		}
 	}
@@ -461,9 +459,7 @@ static void DeleteClan(int16_t ClanID[2])
 	UpdateAlliances(Alliances);
 
 	// free up mem used by alliances
-	for (CurAlliance = 0; CurAlliance < MAX_ALLIANCES; CurAlliance++)
-		if (Alliances[CurAlliance])
-			free(Alliances[CurAlliance]);
+	FreeAlliances(Alliances);
 
 	// remove from list of clan names, remove from list of user names
 	RemoveFromUList(ClanID);
@@ -550,49 +546,6 @@ static void RejectTrade(struct TradeData *TradeData)
 	UpdateClan(TmpClan);
 
 	FreeClan(TmpClan);
-}
-
-static void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
-{
-	FILE *fp;
-	int16_t iTemp;
-
-	// init alliances as NULLs
-	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-		Alliances[iTemp] = NULL;
-
-	fp = fopen(ALLIANCE_DATAFILE, "rb");
-	if (fp) {
-		for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
-			Alliances[iTemp] = malloc(sizeof(struct Alliance));
-			CheckMem(Alliances[iTemp]);
-
-			notEncryptRead_s(Alliance, Alliances[iTemp], fp, XOR_ALLIES) {
-				// no more alliances to read in
-				free(Alliances[iTemp]);
-				Alliances[iTemp] = NULL;
-				break;
-			}
-		}
-		fclose(fp);
-	}
-}
-
-static void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
-{
-	FILE *fp;
-	int16_t iTemp;
-
-	fp = fopen(ALLIANCE_DATAFILE, "wb");
-	if (fp) {
-		for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
-			if (Alliances[iTemp] == NULL)
-				continue;
-
-			EncryptWrite_s(Alliance, Alliances[iTemp], fp, XOR_ALLIES);
-		}
-		fclose(fp);
-	}
 }
 
 static void RemoveFromUList(const int16_t ClanID[2])

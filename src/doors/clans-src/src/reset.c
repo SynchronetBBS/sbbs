@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
 
+#include "alliance.h"
 #include "myopen.h"
 #include "parsing.h"
 #include "readcfg.h"
@@ -117,7 +118,6 @@ static void News_AddNews(char *szString);
 static void News_CreateTodayNews(void);
 
 static void CreateVillageDat(struct ResetData *ResetData);
-static void KillAlliances(void);
 
 void System_Error(char *szErrorMsg);
 
@@ -1983,61 +1983,6 @@ static void CreateVillageDat(struct ResetData *ResetData)
 }
 
 
-
-static void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
-{
-	FILE *fp;
-	int16_t iTemp;
-
-	// init alliances as NULLs
-	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-		Alliances[iTemp] = NULL;
-
-	fp = fopen("ally.dat", "rb");
-	if (fp) {
-		for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
-			Alliances[iTemp] = malloc(sizeof(struct Alliance));
-			CheckMem(Alliances[iTemp]);
-
-			notEncryptRead_s(Alliance, Alliances[iTemp], fp, XOR_ALLIES) {
-				// no more alliances to read in
-				free(Alliances[iTemp]);
-				Alliances[iTemp] = NULL;
-				break;
-			}
-		}
-		fclose(fp);
-	}
-}
-
-
-static void KillAlliances(void)
-{
-	struct Alliance *Alliances[MAX_ALLIANCES];
-	char szFileName[13];
-	int16_t iTemp;
-
-	GetAlliances(Alliances);
-
-	// delete files
-	// free up mem used by alliances
-	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-		if (Alliances[iTemp]) {
-			snprintf(szFileName, sizeof(szFileName), "hall%02d.txt", Alliances[iTemp]->ID);
-			unlink(szFileName);
-
-			free(Alliances[iTemp]);
-			Alliances[iTemp] = NULL;
-		}
-
-	// free up mem used by alliances
-	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-		if (Alliances[iTemp])
-			free(Alliances[iTemp]);
-
-	// called to destroy ALLY.DAT and remove those pesky HALLxxyy.TXT files
-	unlink("ally.dat");
-}
 
 void System_Error(char *szErrorMsg)
 /*

@@ -2268,34 +2268,6 @@ void IBBS_LeagueInfo(void)
 
 // ------------------------------------------------------------------------- //
 
-void KillAlliances(void)
-{
-	struct Alliance *Alliances[MAX_ALLIANCES];
-	char szFileName[13];
-	int16_t iTemp;
-
-	GetAlliances(Alliances);
-
-	// delete files
-	// free up mem used by alliances
-	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-		if (Alliances[iTemp]) {
-			snprintf(szFileName, sizeof(szFileName), "hall%02d.txt", Alliances[iTemp]->ID);
-			unlink(szFileName);
-
-			free(Alliances[iTemp]);
-			Alliances[iTemp] = NULL;
-		}
-
-	// free up mem used by alliances
-	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-		if (Alliances[iTemp])
-			free(Alliances[iTemp]);
-
-	// called to destroy ALLY.DAT and remove those pesky HALLxxyy.TXT files
-	unlink("ally.dat");
-}
-
 static void Reset(void)
 {
 	// Delete unwanted files here

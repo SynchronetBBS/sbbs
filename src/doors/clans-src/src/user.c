@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <OpenDoor.h>
 
 #include "alliance.h"
+#include "alliancem.h"
 #include "class.h"
 #include "door.h"
 #include "empire.h"
@@ -339,8 +340,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 
 			if (FoundNewCreator == false) {
 				// delete this alliance since no new ruler
-				free(Alliances[CurAlliance]);
-				Alliances[CurAlliance] = NULL;
+				DeleteAlliance(CurAlliance, Alliances);
 			}
 		}
 	}
@@ -360,9 +360,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 	UpdateAlliances(Alliances);
 
 	// free up mem used by alliances
-	for (CurAlliance = 0; CurAlliance < MAX_ALLIANCES; CurAlliance++)
-		if (Alliances[CurAlliance])
-			free(Alliances[CurAlliance]);
+	FreeAlliances(Alliances);
 }
 
 

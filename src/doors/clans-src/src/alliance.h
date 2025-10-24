@@ -5,13 +5,9 @@
 #include "structs.h"
 
 void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
+void FreeAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
 void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
-void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_ALLIANCES]);
-void ShowAlliances(struct clan *Clan);
-bool EnterAlliance(struct Alliance *Alliance);
-void KillAlliance(int AllianceID);
-void Alliance_Maint(void);
-
-void FormAlliance(int AllyID);
+void KillAlliances(void);
+void DeleteAlliance(int Index, struct Alliance *Alliances[MAX_ALLIANCES]);
 
 #endif

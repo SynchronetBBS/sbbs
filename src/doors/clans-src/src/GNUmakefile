@@ -70,21 +70,21 @@ BINDIR	?=	../bin/
 #
 # See convert.txt for more suggestions.
 
-CLANS_OBJS :=	$(OBJDIR)alliance.o $(OBJDIR)clans.o $(OBJDIR)clansini.o \
-		$(OBJDIR)class.o $(OBJDIR)cmdline.o $(OBJDIR)crc.o \
-		$(OBJDIR)deserialize.o $(OBJDIR)door.o $(OBJDIR)empire.o \
-		$(OBJDIR)fight.o $(OBJDIR)game.o $(OBJDIR)help.o \
-		$(OBJDIR)ibbs.o $(OBJDIR)input.o $(OBJDIR)items.o \
-		$(OBJDIR)language.o $(OBJDIR)mail.o $(OBJDIR)maint.o \
-		$(OBJDIR)menus.o $(OBJDIR)menus2.o $(OBJDIR)misc.o \
-		$(OBJDIR)myibbs.o $(OBJDIR)myopen.o $(OBJDIR)news.o \
-		$(OBJDIR)npc.o $(OBJDIR)parsing.o $(OBJDIR)pawn.o \
-		$(OBJDIR)quests.o $(OBJDIR)readcfg.o $(OBJDIR)reg.o \
-		$(OBJDIR)scores.o $(OBJDIR)serialize.o $(OBJDIR)spells.o \
-		$(OBJDIR)system.o $(OBJDIR)trades.o \
-		$(OBJDIR)unix_wrappers.o $(OBJDIR)user.o \
-		$(OBJDIR)video.o $(OBJDIR)village.o $(OBJDIR)voting.o \
-		$(OBJDIR)wb_fapnd.o
+CLANS_OBJS :=	$(OBJDIR)alliance.o $(OBJDIR)alliancem.o \
+		$(OBJDIR)clans.o $(OBJDIR)clansini.o $(OBJDIR)class.o \
+		$(OBJDIR)cmdline.o $(OBJDIR)crc.o $(OBJDIR)deserialize.o \
+		$(OBJDIR)door.o $(OBJDIR)empire.o $(OBJDIR)fight.o \
+		$(OBJDIR)game.o $(OBJDIR)help.o $(OBJDIR)ibbs.o \
+		$(OBJDIR)input.o $(OBJDIR)items.o $(OBJDIR)language.o \
+		$(OBJDIR)mail.o $(OBJDIR)maint.o $(OBJDIR)menus.o \
+		$(OBJDIR)menus2.o $(OBJDIR)misc.o $(OBJDIR)myibbs.o \
+		$(OBJDIR)myopen.o $(OBJDIR)news.o $(OBJDIR)npc.o \
+		$(OBJDIR)parsing.o $(OBJDIR)pawn.o $(OBJDIR)quests.o \
+		$(OBJDIR)readcfg.o $(OBJDIR)reg.o $(OBJDIR)scores.o \
+		$(OBJDIR)serialize.o $(OBJDIR)spells.o $(OBJDIR)system.o \
+		$(OBJDIR)trades.o $(OBJDIR)unix_wrappers.o \
+		$(OBJDIR)user.o $(OBJDIR)video.o $(OBJDIR)village.o \
+		$(OBJDIR)voting.o $(OBJDIR)wb_fapnd.o
 
 CHEW_OBJS :=	$(OBJDIR)chew.o $(OBJDIR)gum.o $(OBJDIR)parsing.o
 
@@ -112,12 +112,13 @@ MITEMS_OBJS :=	$(OBJDIR)mitems.o $(OBJDIR)serialize.o $(OBJDIR)crc.o
 
 MSPELLS_OBJS :=	$(OBJDIR)mspells.o $(OBJDIR)serialize.o $(OBJDIR)crc.o
 
-PCEDIT_OBJS :=	$(OBJDIR)pcedit.o $(OBJDIR)myopen.o \
+PCEDIT_OBJS :=	$(OBJDIR)pcedit.o $(OBJDIR)alliance.o $(OBJDIR)myopen.o \
 		$(OBJDIR)unix_wrappers.o $(OBJDIR)serialize.o \
 		$(OBJDIR)deserialize.o $(OBJDIR)crc.o
 
-RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)crc.o $(OBJDIR)deserialize.o \
-		$(OBJDIR)myopen.o $(OBJDIR)parsing.o $(OBJDIR)readcfg.o \
+RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)alliance.o $(OBJDIR)crc.o \
+		$(OBJDIR)deserialize.o $(OBJDIR)myopen.o \
+		$(OBJDIR)parsing.o $(OBJDIR)readcfg.o \
 		$(OBJDIR)serialize.o $(OBJDIR)unix_wrappers.o
 
 ifdef WIN

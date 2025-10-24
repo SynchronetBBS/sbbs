@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <OpenDoor.h>
 
 #include "alliance.h"
+#include "alliancem.h"
 #include "door.h"
 #include "empire.h"
 #include "fight.h"
@@ -791,9 +792,7 @@ static int16_t AlliancesMenu(void)
 						KillAlliance(Alliances[NumAlliances]->ID);
 
 						// delete alliance since user chose to
-						free(Alliances[NumAlliances]);
-
-						Alliances[NumAlliances] = NULL;
+						DeleteAlliance(NumAlliances, Alliances);
 					}
 				}
 			}
@@ -833,9 +832,7 @@ static int16_t AlliancesMenu(void)
 				KillAlliance(Alliances[WhichAlliance]->ID);
 
 				// delete hall since user chose to
-				free(Alliances[WhichAlliance]);
-
-				Alliances[WhichAlliance] = NULL;
+				DeleteAlliance(WhichAlliance, Alliances);
 			}
 		}
 		else {
@@ -853,11 +850,7 @@ static int16_t AlliancesMenu(void)
 	UpdateAlliances(Alliances);
 
 	// free up mem used by alliances
-	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
-		if (Alliances[iTemp]) {
-			free(Alliances[iTemp]);
-			Alliances[iTemp] = NULL;
-		}
+	FreeAlliances(Alliances);
 
 	return 0;
 }

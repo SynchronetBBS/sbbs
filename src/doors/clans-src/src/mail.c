@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <OpenDoor.h>
 
 #include "alliance.h"
+#include "alliancem.h"
 #include "door.h"
 #include "fight.h"
 #include "game.h"

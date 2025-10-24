@@ -39,7 +39,7 @@ PT_CLANMOVE		0
 
 PT_DATAOK       1
 	- Generated in response to a PT_CLANMOVE
-	- Contains just the ClanID if the received clan
+	- Contains just the ClanID of the received clan
 	- When received, removes the PT_CLANMOVE from the backup via IBBS_RemoveFromBackup()
 
 PT_RESET        2
@@ -124,5 +124,6 @@ PT_NEWNDX       18
 		- Not much point until the game is multinode though
 
 PT_ULIST        19
-	- Contains a complete userlist.data
+	- Contains a complete userlist.dat
 	- Overwrites in place... likely clobbering new users that haven't made it to BBS 1 yet
+		- Actually that's fine, this is remote users only
