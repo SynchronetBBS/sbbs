@@ -534,7 +534,7 @@ void NPC_AddNPCMember(char *szIndex)
 	// This function ASSUMES the user has an empty slot already!!
 
 	// find empty slot first
-	for (iTemp = Game.Data->MaxPermanentMembers; iTemp < 6; iTemp++)
+	for (iTemp = Game.Data.MaxPermanentMembers; iTemp < 6; iTemp++)
 		if (PClan->Member[iTemp] == NULL)
 			break;
 

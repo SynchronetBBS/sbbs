@@ -167,7 +167,7 @@ static void LocalLoad(void)
 	zputs(ST_LOCAL11);
 
 	// if in a league, tell the guy
-	if (Game.Data->InterBBS) {
+	if (Game.Data.InterBBS) {
 		IBBS_LoginStats();
 	}
 

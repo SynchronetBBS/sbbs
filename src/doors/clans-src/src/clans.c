@@ -67,13 +67,13 @@ static void MainGame(void)
 
 	while (!Quit) {
 		// tell user if game in progress, etc.
-		switch (Game.Data->GameState) {
+		switch (Game.Data.GameState) {
 			case 0 :  // Game in progress
 				// rputs("The game is currently in progress\n");
 				break;
 			case 1 :  // Game is waiting for day to start
 				rputs("\n|0CThe game will begin on ");
-				rputs(Game.Data->szDateGameStart);
+				rputs(Game.Data.szDateGameStart);
 				rputs("\n");
 				break;
 			case 2 :  // Game is waiting for LC's reset
@@ -81,7 +81,7 @@ static void MainGame(void)
 				break;
 		}
 
-		if (DaysBetween(Game.Data->szLastJoinDate, System.szTodaysDate) > 0)
+		if (DaysBetween(Game.Data.szLastJoinDate, System.szTodaysDate) > 0)
 			rputs("|12No new players may join at the moment.\n");
 
 
@@ -101,14 +101,14 @@ static void MainGame(void)
 
 				// if user disbanded today, don't let him play
 
-				if (Game.Data->GameState == 1 || Game.Data->GameState == 2) {
+				if (Game.Data.GameState == 1 || Game.Data.GameState == 2) {
 					// Game is waiting for day to start
 					rputs("The game has not yet begun.\n");
 					break;
 				}
 
 				/* see if past end of game, if so, disallow user */
-				if (DaysBetween(Game.Data->szLastJoinDate, System.szTodaysDate) > 0) {
+				if (DaysBetween(Game.Data.szLastJoinDate, System.szTodaysDate) > 0) {
 					// rputs("|07Sorry, this game is currently taking in no new players.\n");
 					rputs(ST_MAIN0);
 					break;
@@ -180,11 +180,11 @@ static void MainGame(void)
 				// show game settings
 				Game_Settings();
 
-				if (Game.Data->InterBBS)
+				if (Game.Data.InterBBS)
 					IBBS_LeagueInfo();
 				break;
 			case 'L' :  // league scores
-				if (Game.Data->InterBBS == false)
+				if (Game.Data.InterBBS == false)
 					rputs("|07Not in a league\n%P");
 				else
 					LeagueScores();
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
 
 	System_Init();
 	// run maintenance if need be
-	if (DaysBetween(Game.Data->szTodaysDate, System.szTodaysDate) > 0)
+	if (DaysBetween(Game.Data.szTodaysDate, System.szTodaysDate) > 0)
 		Maintenance();
 
 	UnregMessage();
@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
 
 	Display("news.txt");
 
-	if (Game.Data->InterBBS)
+	if (Game.Data.InterBBS)
 		IBBS_ShowLeagueAscii();
 
 	MainGame();

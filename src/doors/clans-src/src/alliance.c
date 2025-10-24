@@ -480,7 +480,7 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 	bool AllianceNameInUse;
 
 	// get NextID
-	Alliance->ID = Game.Data->NextAllianceID++;
+	Alliance->ID = Game.Data.NextAllianceID++;
 
 	// get name of alliance
 	szName[0] = 0;

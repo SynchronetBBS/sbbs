@@ -135,7 +135,7 @@ void ReadBook(void)
 	// choose who will read it
 	rputs("\n");
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
-		if (PClan->Member[iTemp] && iTemp < Game.Data->MaxPermanentMembers) {
+		if (PClan->Member[iTemp] && iTemp < Game.Data.MaxPermanentMembers) {
 			snprintf(szString, sizeof(szString), "|0A(|0B%c|0A) |0C%s\n",
 					iTemp + 'A', PClan->Member[iTemp]->szName);
 			rputs(szString);
@@ -153,7 +153,7 @@ void ReadBook(void)
 
 		WhichMember = cKey - 'A';
 
-		if (WhichMember >= 0 && WhichMember < Game.Data->MaxPermanentMembers) {
+		if (WhichMember >= 0 && WhichMember < Game.Data.MaxPermanentMembers) {
 			if (PClan->Member[ WhichMember ]) {
 				rputs(PClan->Member[ WhichMember ]->szName);
 				rputs("\n");

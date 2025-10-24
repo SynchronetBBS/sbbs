@@ -368,7 +368,7 @@ void DisplayScores(bool MakeFile)
 				if (SortData[ SortList[CurClan] ]->Living == false)
 					strlcat(szString, "Dead", sizeof(szString));
 				else if (SortData[ SortList[CurClan] ]->VillageID != Config.BBSID
-						 && Game.Data->InterBBS)
+						 && Game.Data.InterBBS)
 					strlcat(szString, "Visiting", sizeof(szString));
 				else
 					strlcat(szString, ST_SCORE4ASCII, sizeof(szString));
@@ -400,7 +400,7 @@ void DisplayScores(bool MakeFile)
 				if (SortData[ SortList[CurClan] ]->Living == false)
 					strlcat(szString, "\x1B[0;31mDead", sizeof(szString));
 				else if (SortData[ SortList[CurClan] ]->VillageID != Config.BBSID
-						 && Game.Data->InterBBS)
+						 && Game.Data.InterBBS)
 					strlcat(szString, "Visiting", sizeof(szString));
 				else
 					strlcat(szString, ST_SCORE4ANSI, sizeof(szString));
@@ -435,7 +435,7 @@ void DisplayScores(bool MakeFile)
 				if (SortData[ SortList[CurClan] ]->Living == false)
 					strlcat(szString, "|04Dead", sizeof(szString));
 				else if (SortData[ SortList[CurClan] ]->VillageID != Config.BBSID
-						 && Game.Data->InterBBS)
+						 && Game.Data.InterBBS)
 					strlcat(szString, "|0BVisiting", sizeof(szString));
 				else
 					strlcat(szString, "|0BHere", sizeof(szString));
@@ -494,7 +494,7 @@ static void SendScoreData(struct UserScore **UserScores)
 	Packet.PacketType = PT_SCOREDATA;
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 	Packet.PacketLength = NumScores * BUF_SIZE_UserScore + sizeof(int16_t);
-	strlcpy(Packet.GameID, Game.Data->GameID, sizeof(Packet.GameID));
+	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
 
 	fp = _fsopen("tmp.$$$", "wb", SH_DENYRW);
 	if (!fp)  return;
@@ -824,7 +824,7 @@ void SendScoreList(void)
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 	Packet.PacketLength = NumScores * BUF_SIZE_UserScore + sizeof(int16_t) +
 						  sizeof(char)*11;
-	strlcpy(Packet.GameID, Game.Data->GameID, sizeof(Packet.GameID));
+	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
 
 	// send it to all bbses except this one in the league
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {

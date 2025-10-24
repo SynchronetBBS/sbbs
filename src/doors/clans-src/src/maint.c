@@ -62,22 +62,22 @@ void Maintenance(void)
 	// if IBBS game AND maintenance already run, don't run it again
 	// otherwise, run it again
 	// REP: remove false so cheating not allowed
-	if ((DaysBetween(Game.Data->szTodaysDate, System.szTodaysDate) <= 0) &&
+	if ((DaysBetween(Game.Data.szTodaysDate, System.szTodaysDate) <= 0) &&
 #ifdef PRELAB
-			Game.Data->InterBBS && false)
+			Game.Data.InterBBS && false)
 #else
-			Game.Data->InterBBS)
+			Game.Data.InterBBS)
 #endif
 	{
 		System_Error("Maintenance already run today.\n");
 	}
 
 	// update today's date
-	strlcpy(Game.Data->szTodaysDate, System.szTodaysDate, sizeof(Game.Data->szTodaysDate));
+	strlcpy(Game.Data.szTodaysDate, System.szTodaysDate, sizeof(Game.Data.szTodaysDate));
 
 
 	// if the game has not yet begun, skip reset of maintenance
-	if (Game.Data->GameState == 1 || Game.Data->GameState == 2) {
+	if (Game.Data.GameState == 1 || Game.Data.GameState == 2) {
 		DisplayStr("* Game currently not in progress, maintenance skipped.\n");
 		return;
 	}

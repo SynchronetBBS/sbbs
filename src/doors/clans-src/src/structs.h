@@ -222,7 +222,7 @@ struct game {
 
 		int32_t CRC;                 // used to prevent cheating
 
-	} *Data;
+	} Data;
 };
 
 struct SpellsInEffect {

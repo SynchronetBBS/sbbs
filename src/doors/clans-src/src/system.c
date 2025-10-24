@@ -194,7 +194,7 @@ void ODCmdLineHandler(char *flag, char *val)
 	if (flag[0] == '-' || flag[0] == '/') {
 		if (stricmp(&flag[1], "Recon") == 0) {
 			if (!primitive) {
-				if (Game.Data->InterBBS) {
+				if (Game.Data.InterBBS) {
 					if (IBBS.Data->BBSID != atoi(val) &&
 							(atoi(val) > 0 && atoi(val) < MAX_IBBSNODES)) {
 						snprintf(szString, sizeof(szString), "Sending recon to %d\n", atoi(val));
@@ -210,7 +210,7 @@ void ODCmdLineHandler(char *flag, char *val)
 		}
 		else if (stricmp(&flag[1], "SendReset") == 0) {
 			if (!primitive) {
-				if (Game.Data->InterBBS) {
+				if (Game.Data.InterBBS) {
 					if (IBBS.Data->BBSID != 1) {
 						System_Error("Only the League Coordinator can send a reset.\n");
 					}
@@ -269,7 +269,7 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 			if (primitive)
 				System.LocalIBBS = true;
 			else {
-				if (Game.Data->InterBBS == false)
+				if (Game.Data.InterBBS == false)
 					System_Error(ST_IBBSONLY);
 				if (Config.MailerType != MAIL_NONE)
 					System_Error("Local IBBS with mailer type set");
@@ -285,7 +285,7 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 		}
 		else if (stricmp(&flag[1], "NewNDX") == 0) {
 			if (!primitive) {
-				if (Game.Data->InterBBS) {
+				if (Game.Data.InterBBS) {
 					if (IBBS.Data->BBSID != 1) {
 						System_Error("Only the League Coordinator can update the world.ndx file.\n");
 					}
@@ -303,7 +303,7 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 				// read in packets waiting
 				IBBS_PacketIn();
 
-				if (Game.Data->InterBBS == false)
+				if (Game.Data.InterBBS == false)
 					System_Error(ST_IBBSONLY);
 				else
 					System_Close();
@@ -551,7 +551,7 @@ void System_Init(void)
 
 	Village_Init();
 
-	if (Game.Data->InterBBS) {
+	if (Game.Data.InterBBS) {
 		IBBS_Init();
 
 		// update recons + resets

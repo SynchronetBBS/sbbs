@@ -220,7 +220,7 @@ void ReleaseMember(void)
 	rputs(szString);
 
 	// if he is not a perm. member, tell user
-	if (WhichOne >= Game.Data->MaxPermanentMembers) {
+	if (WhichOne >= Game.Data.MaxPermanentMembers) {
 		rputs("|04That is not a permanent member.  He will be released at the end of the day.\n%P");
 		return;
 	}
@@ -257,13 +257,13 @@ void AddMember(void)
 
 	NumMembers = 0;
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
-		if (PClan->Member[iTemp] && iTemp < Game.Data->MaxPermanentMembers &&
+		if (PClan->Member[iTemp] && iTemp < Game.Data.MaxPermanentMembers &&
 				PClan->Member[iTemp]->Undead == false)
 			NumMembers++;
 	}
 
 	/* see if too many members already */
-	if (NumMembers >= Game.Data->MaxPermanentMembers) {
+	if (NumMembers >= Game.Data.MaxPermanentMembers) {
 		// rputs("|07Your clan has the maximum number of permanent members already.\n%P");
 		rputs(ST_TOOMANYMEMBERS);
 		return;
@@ -272,7 +272,7 @@ void AddMember(void)
 	/* train dude */
 
 	/* search for empty slot in player list */
-	for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++)
+	for (iTemp = 0; iTemp < Game.Data.MaxPermanentMembers; iTemp++)
 		if (PClan->Member[iTemp] == NULL)
 			break;
 
@@ -327,7 +327,7 @@ void TrainMember(void)
 
 	while (!DoneTraining) {
 		rputs(ST_LONGLINE);
-		for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
+		for (iTemp = 0; iTemp < Game.Data.MaxPermanentMembers; iTemp++) {
 			if (PClan->Member[iTemp] &&
 					PClan->Member[iTemp]->Status == Here) {
 				snprintf(szString, sizeof(szString), " |0A(|0B%c|0A) |0C%-15s |03(%d tpoints)\n", iTemp + 'A', PClan->Member[iTemp]->szName,
@@ -349,7 +349,7 @@ void TrainMember(void)
 			}
 
 			WhichOne = cInput - 'A';
-			if (WhichOne >= 0 && WhichOne < Game.Data->MaxPermanentMembers &&
+			if (WhichOne >= 0 && WhichOne < Game.Data.MaxPermanentMembers &&
 					PClan->Member[WhichOne])
 				break;
 		}

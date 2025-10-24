@@ -83,7 +83,7 @@ static int16_t WorldMenu(void)
 				// FIXME: This may cause problems in the future:  what if a
 				// user calls and plays around 11:50pm and then calls back
 				// at 12:05, he'll be able to travel!?
-				if (Game.Data->ClanTravel == false) {
+				if (Game.Data.ClanTravel == false) {
 					rputs("\n|07Clan travel has been disabled in this league.\n%P");
 					return 0;
 				}
@@ -272,7 +272,7 @@ static int16_t MainMenu(void)
 					// was deleted and that he should be removed from the userlist
 					rputs("|14You have been successfully deleted from the game.\n|07Please play again.\n%P");
 
-					if (Game.Data->InterBBS) {
+					if (Game.Data.InterBBS) {
 						// remove user from league
 						User.ClanID[0] = PClan->ClanID[0];
 						User.ClanID[1] = PClan->ClanID[1];
@@ -546,7 +546,7 @@ static int16_t CommunicationsMenu(void)
 			case '?' :      /* redisplay options */
 				break;
 			case 'G' :
-				if (Game.Data->InterBBS == false)
+				if (Game.Data.InterBBS == false)
 					rputs("Option available only in IBBS!\n");
 				else
 					GlobalMsgPost();
@@ -1058,7 +1058,7 @@ void GameLoop(void)
 				MenuNum = CommunicationsMenu();
 				break;
 			case 5 :  /* World Travel Menu */
-				if (Game.Data->InterBBS) {
+				if (Game.Data.InterBBS) {
 					rputs(ST_4RETURNS);
 					MenuNum = WorldMenu();
 				}
@@ -1101,7 +1101,7 @@ void GameLoop(void)
 				break;
 			case 7 :  /* empire Menu */
 				rputs(ST_4RETURNS);
-				if (Game.Data->ClanEmpires)
+				if (Game.Data.ClanEmpires)
 					Empire_Manage(&PClan->Empire);
 				else
 					rputs("Clan empires are disabled.\n%P");

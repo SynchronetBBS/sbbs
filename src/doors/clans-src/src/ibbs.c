@@ -651,7 +651,7 @@ void IBBS_SendComeBack(int16_t BBSIdTo, struct clan *Clan)
 	Packet.PacketType = PT_COMEBACK;
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 	Packet.PacketLength = sizeof(int16_t)*3;
-	strlcpy(Packet.GameID, Game.Data->GameID, sizeof(Packet.GameID));
+	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
 
 	fp = _fsopen("tmp.$$$", "wb", SH_DENYWR);
 	if (!fp) return;
@@ -765,7 +765,7 @@ static void IBBS_BackupMaint(void)
 			break;
 
 		if (Packet.Active) {
-			if (DaysBetween(Packet.szDate, System.szTodaysDate) > Game.Data->LostDays) {
+			if (DaysBetween(Packet.szDate, System.szTodaysDate) > Game.Data.LostDays) {
 				// see if it's also a travel packet type
 				// if so do this
 				if (Packet.PacketType == PT_CLANMOVE) {
@@ -1036,7 +1036,7 @@ static void IBBS_TravelMaint(void)
 		Packet.PacketType = PT_CLANMOVE;
 		strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 		Packet.PacketLength = BUF_SIZE_clan + 6 * BUF_SIZE_pc;
-		strlcpy(Packet.GameID, Game.Data->GameID, sizeof(Packet.GameID));
+		strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
 
 		/* write packet */
 		EncryptWrite_s(Packet, &Packet, fpOutboundDat, XOR_PACKET);
@@ -1320,7 +1320,7 @@ void IBBS_LoginStats(void)
 	char szString[128];
 
 	snprintf(szString, sizeof(szString), "|02\xf0 |07This BBS is in the InterBBS league %s %s (GameID = %s)\n",
-			Game.Data->LeagueID, Game.Data->szWorldName, Game.Data->GameID);
+			Game.Data.LeagueID, Game.Data.szWorldName, Game.Data.GameID);
 	zputs(szString);
 }
 
@@ -1602,11 +1602,11 @@ static void IBBS_LoadNDX(void)
 						//printf("status: currently unused\n");
 						break;
 					case 7 :    /* worldname */
-						strlcpy(Game.Data->szWorldName, pcCurrentPos, sizeof(Game.Data->szWorldName));
+						strlcpy(Game.Data.szWorldName, pcCurrentPos, sizeof(Game.Data.szWorldName));
 						break;
 					case 8 :    /* league ID */
 						pcCurrentPos[2] = 0;    /* truncate it to two chars */
-						strlcpy(Game.Data->LeagueID, pcCurrentPos, sizeof(Game.Data->LeagueID));
+						strlcpy(Game.Data.LeagueID, pcCurrentPos, sizeof(Game.Data.LeagueID));
 						break;
 					case 9 :        /* Host */
 						/* get tokens till no more */
@@ -1836,7 +1836,7 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 	strlcpy(InterBBSInfo.szThisNodeAddress, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszAddress, sizeof(InterBBSInfo.szThisNodeAddress));
 	InterBBSInfo.szThisNodeAddress[NODE_ADDRESS_CHARS] = '\0';
 
-	snprintf(szString, sizeof(szString), "The Clans League %s", Game.Data->LeagueID);
+	snprintf(szString, sizeof(szString), "The Clans League %s", Game.Data.LeagueID);
 	strlcpy(InterBBSInfo.szProgName, szString, sizeof(InterBBSInfo.szProgName));
 	InterBBSInfo.szProgName[PROG_NAME_CHARS] = '\0';
 
@@ -1882,7 +1882,7 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 		LastCounter = IBBS.Data->Nodes[ IBBS.Data->Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex - 1;
 
 	snprintf(szPacketName, sizeof(szPacketName),"cl%03d%03d.%-2s", IBBS.Data->BBSID,
-			IBBS.Data->Nodes[DestID-1].Info.RouteThrough, Game.Data->LeagueID);
+			IBBS.Data->Nodes[DestID-1].Info.RouteThrough, Game.Data.LeagueID);
 
 	strlcat(szFullFileName, szPacketName, sizeof(szFullFileName));
 
@@ -1976,7 +1976,7 @@ void IBBS_SendSpy(struct empire *Empire, int16_t DestID)
 	Packet.BBSIDTo = DestID;
 	Packet.BBSIDFrom = IBBS.Data->BBSID;
 	Packet.PacketType = PT_SPY;
-	strlcpy(Packet.GameID, Game.Data->GameID, sizeof(Packet.GameID));
+	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 	Packet.PacketLength = BUF_SIZE_SpyAttemptPacket;
 
@@ -2067,7 +2067,7 @@ void IBBS_ShowLeagueAscii(void)
 
 	// snprintf(szString, sizeof(szString), "|02You are entering the village of |10%s |02in the world of |14%s|02.\n",
 	snprintf(szString, sizeof(szString), ST_MAIN2,
-			IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName, Game.Data->szWorldName);
+			IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName, Game.Data.szWorldName);
 	rputs(szString);
 }
 
@@ -2087,7 +2087,7 @@ void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
 
 	Packet.Active = true;
 
-	strlcpy(Packet.GameID, Game.Data->GameID, sizeof(Packet.GameID));
+	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 	Packet.BBSIDFrom = IBBS.Data->BBSID;
 	Packet.BBSIDTo = DestID;
@@ -2143,7 +2143,7 @@ void IBBS_SendReset(int16_t DestID)
 	uint8_t pktBuf[BUF_SIZE_game_data];
 	size_t res;
 
-	res = s_game_data_s(Game.Data, pktBuf, sizeof(pktBuf));
+	res = s_game_data_s(&Game.Data, pktBuf, sizeof(pktBuf));
 	assert(res == sizeof(pktBuf));
 	if (res != sizeof(pktBuf))
 		return;
@@ -2212,16 +2212,16 @@ void IBBS_LeagueInfo(void)
 
 	rputs("\n\n|14League Info|06\n\n");
 
-	snprintf(szString, sizeof(szString), "League Id        |07%s|06\n", Game.Data->LeagueID);
+	snprintf(szString, sizeof(szString), "League Id        |07%s|06\n", Game.Data.LeagueID);
 	rputs(szString);
-	snprintf(szString, sizeof(szString), "World Name       |07%s|06\n", Game.Data->szWorldName);
+	snprintf(szString, sizeof(szString), "World Name       |07%s|06\n", Game.Data.szWorldName);
 	rputs(szString);
-	snprintf(szString, sizeof(szString), "GameID           |07%s|06\n", Game.Data->GameID);
+	snprintf(szString, sizeof(szString), "GameID           |07%s|06\n", Game.Data.GameID);
 	rputs(szString);
 
-	if (Game.Data->GameState == 0) {
+	if (Game.Data.GameState == 0) {
 		rputs("A game is currently in progress.\n");
-		snprintf(szString, sizeof(szString), "Days in progress |07%" PRId32 "|06\n", DaysBetween(Game.Data->szDateGameStart, System.szTodaysDate));
+		snprintf(szString, sizeof(szString), "Days in progress |07%" PRId32 "|06\n", DaysBetween(Game.Data.szDateGameStart, System.szTodaysDate));
 		rputs(szString);
 		/*
 		            snprintf(szString, sizeof(szString), "Elimination mode is |14%s|06\n",
@@ -2229,12 +2229,12 @@ void IBBS_LeagueInfo(void)
 		            rputs(szString);
 		*/
 	}
-	else if (Game.Data->GameState == 2) {
+	else if (Game.Data.GameState == 2) {
 		rputs("The game is waiting for the main BBS's OK.\n");
 	}
-	else if (Game.Data->GameState == 1) {
+	else if (Game.Data.GameState == 1) {
 		snprintf(szString, sizeof(szString), "The game will begin on |07%s|06\n",
-				Game.Data->szDateGameStart);
+				Game.Data.szDateGameStart);
 		rputs(szString);
 	}
 	rputs("\n");
@@ -2342,21 +2342,21 @@ static void IBBS_Reset(struct game_data *GameData)
  */
 {
 	// if reset is same as last game's, don't run this
-	if (stricmp(GameData->GameID, Game.Data->GameID) == 0) {
+	if (stricmp(GameData->GameID, Game.Data.GameID) == 0) {
 		DisplayStr("|08* |07dupe reset skipped.\n");
 		return;
 	}
 
 	// otherwise, it's a legit reset request
-	*Game.Data = *GameData;
+	Game.Data = *GameData;
 
-	strlcpy(Game.Data->szTodaysDate, System.szTodaysDate, sizeof(Game.Data->szTodaysDate));
-	Game.Data->NextClanID = 0;
-	Game.Data->NextAllianceID = 0;
-	Game.Data->GameState = 1;
+	strlcpy(Game.Data.szTodaysDate, System.szTodaysDate, sizeof(Game.Data.szTodaysDate));
+	Game.Data.NextClanID = 0;
+	Game.Data.NextAllianceID = 0;
+	Game.Data.GameState = 1;
 
 	// if today is game's start date
-	if (DaysBetween(Game.Data->szDateGameStart, System.szTodaysDate) >= 0) {
+	if (DaysBetween(Game.Data.szDateGameStart, System.szTodaysDate) >= 0) {
 		// today is the start of new game
 		Game_Start();
 	}
@@ -2629,9 +2629,9 @@ static int16_t IBBS_ProcessPacket(char *szFileName)
 		}
 
 		// if gameId is of the current game, update recon stuff
-		if (stricmp(Packet.GameID, Game.Data->GameID) == 0) {
+		if (stricmp(Packet.GameID, Game.Data.GameID) == 0) {
 			IBBS.Data->Nodes[ Packet.BBSIDFrom - 1 ].Recon.LastReceived =
-				DaysSince1970(Game.Data->szTodaysDate);
+				DaysSince1970(Game.Data.szTodaysDate);
 		}
 		else {
 			// GameIDs differ AND this isn't a reset packet, so we must ignore
@@ -2804,7 +2804,7 @@ static int16_t IBBS_ProcessPacket(char *szFileName)
 				TmpClan->Member[iTemp] = NULL;
 
 			// only do if in a game already
-			if (Game.Data->GameState == 0) {
+			if (Game.Data.GameState == 0) {
 				snprintf(szString, sizeof(szString), "|08- |07%s found.  Destination: |09%d\n", TmpClan->szName, Packet.BBSIDTo);
 				DisplayStr(szString);
 			}
@@ -2818,7 +2818,7 @@ static int16_t IBBS_ProcessPacket(char *szFileName)
 
 			/* update .PC file with this guys stats */
 			// only do if in a game already
-			if (Game.Data->GameState == 0) {
+			if (Game.Data.GameState == 0) {
 				IBBS_AddToGame(TmpClan, false);
 				TmpClan->ClanID[0] = SWAP16(TmpClan->ClanID[0]);
 				TmpClan->ClanID[1] = SWAP16(TmpClan->ClanID[1]);
@@ -2830,7 +2830,7 @@ static int16_t IBBS_ProcessPacket(char *szFileName)
 			FreeClan(TmpClan);
 		}
 		else if (Packet.PacketType == PT_DATAOK) {
-			if (Game.Data->GameState != 0)
+			if (Game.Data.GameState != 0)
 				continue;
 
 			/* data ok for specific char */
@@ -3084,6 +3084,7 @@ MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo,
 					struct MessageHeader hdr;
 					// Check if it's to us and from us
 					s_MessageHeader_d(hdrbuf, sizeof(hdrbuf), &hdr);
+					// TODO: Check the source address too
 					if (ThisNode.wZone == hdr.wDestZone
 					    && ThisNode.wNet == hdr.wDestNet
 					    && ThisNode.wNode == hdr.wDestNode
@@ -3163,7 +3164,7 @@ void IBBS_PacketIn(void)
 	FILE *fp;
 	int16_t nInbound;
 
-	if (Game.Data->InterBBS == false) {
+	if (Game.Data.InterBBS == false) {
 		DisplayStr("|12* This game is not set up for InterBBS!\n");
 		return;
 	}
@@ -3173,7 +3174,7 @@ void IBBS_PacketIn(void)
 	strlcpy(InterBBSInfo.szThisNodeAddress, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszAddress, sizeof(InterBBSInfo.szThisNodeAddress));
 	InterBBSInfo.szThisNodeAddress[NODE_ADDRESS_CHARS] = '\0';
 
-	snprintf(szString, sizeof(szString), "The Clans League %s", Game.Data->LeagueID);
+	snprintf(szString, sizeof(szString), "The Clans League %s", Game.Data.LeagueID);
 	strlcpy(InterBBSInfo.szProgName, szString, sizeof(InterBBSInfo.szProgName));
 	InterBBSInfo.szProgName[PROG_NAME_CHARS] = '\0';
 
@@ -3195,9 +3196,9 @@ void IBBS_PacketIn(void)
 		// create filename to search for
 #ifdef __unix__
 		strlcpy(szPacketName, Config.szInboundDirs[nInbound], sizeof(szPacketName));
-		snprintf(szFileName, sizeof(szFileName),"[Cc][Ll]???%03d.%-2s?",IBBS.Data->BBSID,Game.Data->LeagueID);
+		snprintf(szFileName, sizeof(szFileName),"[Cc][Ll]???%03d.%-2s?",IBBS.Data->BBSID,Game.Data.LeagueID);
 #else
-		snprintf(szFileName, sizeof(szFileName),"CL???%03d.%-2s?",IBBS.Data->BBSID,Game.Data->LeagueID);
+		snprintf(szFileName, sizeof(szFileName),"CL???%03d.%-2s?",IBBS.Data->BBSID,Game.Data.LeagueID);
 #endif
 		// now copy over to the full filename
 		strlcat(szPacketName, szFileName, sizeof(szPacketName));
@@ -3247,9 +3248,9 @@ void IBBS_PacketIn(void)
 		for (nInbound = 0; nInbound < Config.NumInboundDirs; nInbound++) {
 			// try world.ID
 #ifdef __unix__
-			snprintf(szFileName2, sizeof(szFileName2), "[Ww][Oo][Rr][Ll][Dd].%-2s", Game.Data->LeagueID);
+			snprintf(szFileName2, sizeof(szFileName2), "[Ww][Oo][Rr][Ll][Dd].%-2s", Game.Data.LeagueID);
 #else
-			snprintf(szFileName2, sizeof(szFileName2), "WORLD.%-2s", Game.Data->LeagueID);
+			snprintf(szFileName2, sizeof(szFileName2), "WORLD.%-2s", Game.Data.LeagueID);
 #endif
 
 			strlcpy(szFileName, Config.szInboundDirs[nInbound], sizeof(szFileName));
@@ -3337,7 +3338,7 @@ void IBBS_Maint(void)
 {
 	int16_t CurBBS;
 
-	if (Game.Data->InterBBS == false)
+	if (Game.Data.InterBBS == false)
 		return;
 
 	DisplayStr("* IBBS_Maint()\n");

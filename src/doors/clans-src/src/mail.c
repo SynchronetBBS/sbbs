@@ -1585,7 +1585,7 @@ static void SendMsj(struct Message *Message, int16_t WhichVillage)
 	Packet.PacketType = PT_MSJ;
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 	Packet.PacketLength = BUF_SIZE_Message + Message->Data.Length;
-	strlcpy(Packet.GameID, Game.Data->GameID, sizeof(Packet.GameID));
+	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
 
 	if (WhichVillage != -1) {
 		Packet.BBSIDTo = WhichVillage;

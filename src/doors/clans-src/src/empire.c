@@ -463,7 +463,7 @@ void Empire_Create(struct empire *Empire, bool UserEmpire)
 {
 	int16_t iTemp;
 
-	if (UserEmpire && Game.Data->ClanEmpires) {
+	if (UserEmpire && Game.Data.ClanEmpires) {
 		Empire->Land = 100;
 	}
 	else
@@ -1686,7 +1686,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 	// function will update defender's empire but NOT the attacker's
 
 
-	if (Game.Data->InterBBS)
+	if (Game.Data.InterBBS)
 		for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 			if (IBBS.Data->Nodes[iTemp].Active == false) continue;
 
@@ -2299,7 +2299,7 @@ static void StartEmpireWar(struct empire *Empire)
 
 	// choose who to attack:
 
-	if (Game.Data->ClanEmpires == false) {
+	if (Game.Data.ClanEmpires == false) {
 		pszWhoToAttack[0] = pszVillage;
 		pszWhoToAttack[1] = pszAlliance;
 		NumOfTypes = 2;
@@ -2332,7 +2332,7 @@ static void StartEmpireWar(struct empire *Empire)
 			// get rest of the other villages and skip ours
 			NumBBSes = 1;
 
-			if (Game.Data->InterBBS)
+			if (Game.Data.InterBBS)
 				for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 					if (IBBS.Data->Nodes[iTemp].Active == false)
 						continue;
@@ -2348,7 +2348,7 @@ static void StartEmpireWar(struct empire *Empire)
 		else
 			NumBBSes = 0;
 
-		if (Game.Data->InterBBS)
+		if (Game.Data.InterBBS)
 			for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 				if (IBBS.Data->Nodes[iTemp].Active == false)
 					continue;
@@ -2432,8 +2432,8 @@ static void StartEmpireWar(struct empire *Empire)
 		}
 
 		// if OUR village, proceed normally in attack
-		if ((Game.Data->InterBBS && BBSIndex[WhichVillage] == IBBS.Data->BBSID)
-				|| (Game.Data->InterBBS == false && WhichVillage == 0)) {
+		if ((Game.Data.InterBBS && BBSIndex[WhichVillage] == IBBS.Data->BBSID)
+				|| (Game.Data.InterBBS == false && WhichVillage == 0)) {
 			// amass village's troops corresponding to type of attack
 			// do attack now, tell user result, write changes
 
@@ -2914,7 +2914,7 @@ static void SpyMenu(struct empire *Empire)
 		snprintf(szSpierName, sizeof(szSpierName), "the alliance of %s", Empire->szName);
 
 	// choose who to spy on:
-	if (Game.Data->ClanEmpires == false) {
+	if (Game.Data.ClanEmpires == false) {
 		pszWhoToSpy[0] = pszVillage;
 		pszWhoToSpy[1] = pszAlliance;
 		NumOfTypes = 2;
@@ -2947,7 +2947,7 @@ static void SpyMenu(struct empire *Empire)
 			// get rest of the other villages and skip ours
 			NumBBSes = 1;
 
-			if (Game.Data->InterBBS)
+			if (Game.Data.InterBBS)
 				for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 					if (IBBS.Data->Nodes[iTemp].Active == false)
 						continue;
@@ -2963,7 +2963,7 @@ static void SpyMenu(struct empire *Empire)
 		else
 			NumBBSes = 0;
 
-		if (Game.Data->InterBBS)
+		if (Game.Data.InterBBS)
 			for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 				if (IBBS.Data->Nodes[iTemp].Active == false)
 					continue;
@@ -2997,8 +2997,8 @@ static void SpyMenu(struct empire *Empire)
 		else
 			Empire->VaultGold -= SPY_COST;
 
-		if ((Game.Data->InterBBS && BBSIndex[WhichVillage] == IBBS.Data->BBSID)
-				|| (Game.Data->InterBBS == false && WhichVillage == 0)) {
+		if ((Game.Data.InterBBS && BBSIndex[WhichVillage] == IBBS.Data->BBSID)
+				|| (Game.Data.InterBBS == false && WhichVillage == 0)) {
 			// see if we can spy, if so, spy on 'em now using EmpireStats
 			// increment spies per day in future
 			if ((Empire->Buildings[B_AGENCY]+RANDOM(5)) >

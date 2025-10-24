@@ -121,7 +121,7 @@ int main(void)
 	// open Game Data
 	InitGame();
 
-	entry_size = true_ENTRY_SIZE(Game.Data->MaxPermanentMembers);
+	entry_size = true_ENTRY_SIZE(Game.Data.MaxPermanentMembers);
 
 	// otherwise, open file, get filesize
 	fseek(fpPC, 0L, SEEK_END);
@@ -233,8 +233,6 @@ int main(void)
 
 	if (Village.Data)
 		free(Village.Data);
-	if (Game.Data)
-		free(Game.Data);
 	return 0;
 }
 
@@ -287,12 +285,12 @@ static void DeleteClan(int16_t ClanID[2])
 			/* if this is him */
 			if (TmpClan->ClanID[0] == ClanID[0] &&
 					TmpClan->ClanID[1] == ClanID[1]) {
-				fseek(fpOldPC, Game.Data->MaxPermanentMembers * BUF_SIZE_pc, SEEK_CUR);
+				fseek(fpOldPC, Game.Data.MaxPermanentMembers * BUF_SIZE_pc, SEEK_CUR);
 				continue;
 			}
 
 			// read in 6 members
-			for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
+			for (iTemp = 0; iTemp < Game.Data.MaxPermanentMembers; iTemp++) {
 				TmpClan->Member[iTemp] = malloc(sizeof(struct pc));
 				EncryptRead_s(pc, TmpClan->Member[iTemp], fpOldPC, XOR_PC);
 			}
@@ -313,7 +311,7 @@ static void DeleteClan(int16_t ClanID[2])
 			/* write new stuff to new file */
 			EncryptWrite_s(clan, TmpClan, fpNewPC, XOR_USER);
 
-			for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
+			for (iTemp = 0; iTemp < Game.Data.MaxPermanentMembers; iTemp++) {
 				EncryptWrite_s(pc, TmpClan->Member[iTemp], fpNewPC, XOR_PC);
 				free(TmpClan->Member[iTemp]);
 			}
@@ -837,7 +835,7 @@ static void UpdateClan(struct clan *Clan)
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
 
-		Offset = (long)CurClan * (BUF_SIZE_clan + Game.Data->MaxPermanentMembers * BUF_SIZE_pc);
+		Offset = (long)CurClan * (BUF_SIZE_clan + Game.Data.MaxPermanentMembers * BUF_SIZE_pc);
 		if (fseek(fpPlayerFile, Offset, SEEK_SET)) {
 			break;  /* couldn't fseek, so exit */
 		}
@@ -890,10 +888,7 @@ static void InitGame(void)
 		System_Error("Failure to open " GAME_DATAFILE);
 	}
 
-	Game.Data = (struct game_data *) malloc(sizeof(struct game_data));
-	CheckMem(Game.Data);
-
-	notEncryptRead_s(game_data, Game.Data, fpGame, XOR_GAME) {
+	notEncryptRead_s(game_data, &Game.Data, fpGame, XOR_GAME) {
 		System_Error("Unable to read the " GAME_DATAFILE " information!");
 	}
 

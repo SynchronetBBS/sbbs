@@ -123,7 +123,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 
 	AddToDisband();
 
-	if (Game.Data->InterBBS) {
+	if (Game.Data.InterBBS) {
 		// remove from list of clan names, remove from list of user names
 		RemoveFromUList(ClanID);
 
@@ -1396,7 +1396,7 @@ void ShowVillageStats(void)
 	char szString[255], szRuler[25];
 
 	od_clr_scr();
-	if (Game.Data->InterBBS)
+	if (Game.Data.InterBBS)
 		snprintf(szString, sizeof(szString), ST_VSTATHEADER, IBBS.Data->Nodes[IBBS.Data->BBSID-1].Info.pszVillageName);
 	else
 		snprintf(szString, sizeof(szString), ST_VSTATHEADER, Village.Data->szName);
@@ -1433,14 +1433,14 @@ void ShowVillageStats(void)
 	*/
 
 	// == 0 means game in progress
-	if (Game.Data->GameState == 0) {
-		snprintf(szString, sizeof(szString), ST_VSTATS8, DaysBetween(Game.Data->szDateGameStart, System.szTodaysDate),
-				Game.Data->szDateGameStart, "Disabled");
+	if (Game.Data.GameState == 0) {
+		snprintf(szString, sizeof(szString), ST_VSTATS8, DaysBetween(Game.Data.szDateGameStart, System.szTodaysDate),
+				Game.Data.szDateGameStart, "Disabled");
 		rputs(szString);
 	}
-	else if (Game.Data->GameState == 1) {
-		if (Game.Data->szDateGameStart[0] != 0) {
-			snprintf(szString, sizeof(szString), ST_VSTATS9, Game.Data->szDateGameStart);
+	else if (Game.Data.GameState == 1) {
+		if (Game.Data.szDateGameStart[0] != 0) {
+			snprintf(szString, sizeof(szString), ST_VSTATS9, Game.Data.szDateGameStart);
 			rputs(szString);
 		}
 		else
@@ -1590,7 +1590,7 @@ void ClanStats(struct clan *Clan, bool AllowModify)
 				break;
 			case 'E' :  // empire stats
 				rputs("Empire\n\n");
-				if (Game.Data->ClanEmpires == true) {
+				if (Game.Data.ClanEmpires == true) {
 					if (AllowModify == false)
 						rputs("You are unable to find any info on that.\n%P");
 					else
@@ -1811,7 +1811,7 @@ bool NameInUse(char *szName)
 	}
 
 	// look through names list to see if that name is in use
-	if (Game.Data->InterBBS && IBBS_InList(szName, true)) {
+	if (Game.Data.InterBBS && IBBS_InList(szName, true)) {
 		// found this clanname in the list of clannames of the league
 		// don't allow him to use it
 		return true;
@@ -1926,8 +1926,8 @@ static bool User_Create(void)
 	PClan->AttendedMass = false;
 	PClan->GotBlessing = false;
 	PClan->Prayed = false;
-	PClan->FightsLeft = Game.Data->MineFights;
-	PClan->ClanFights = Game.Data->ClanFights;
+	PClan->FightsLeft = Game.Data.MineFights;
+	PClan->ClanFights = Game.Data.ClanFights;
 	PClan->WasRulerToday = false;
 	PClan->ClanWars = 0;
 	PClan->ChatsToday = 0;
@@ -1941,7 +1941,7 @@ static bool User_Create(void)
 	PClan->Eliminated = false;
 	PClan->WasRulerToday = false;
 	PClan->FirstDay = true;
-	PClan->Protection = Game.Data->DaysOfProtection;
+	PClan->Protection = Game.Data.DaysOfProtection;
 
 	PClan->Empire.VaultGold = 0;
 	PClan->TradesToday = 0;
@@ -1964,8 +1964,8 @@ static bool User_Create(void)
 
 	// Figure out ID
 	PClan->ClanID[0] = Config.BBSID;
-	PClan->ClanID[1] = Game.Data->NextClanID;
-	Game.Data->NextClanID++;
+	PClan->ClanID[1] = Game.Data.NextClanID;
+	Game.Data.NextClanID++;
 
 	// init empire
 	Empire_Create(&PClan->Empire, true);
@@ -1974,11 +1974,11 @@ static bool User_Create(void)
 	PClan->Empire.AllianceID = -1;
 
 	// Create the players
-	for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
+	for (iTemp = 0; iTemp < Game.Data.MaxPermanentMembers; iTemp++) {
 		od_clr_scr();
 
 		// creating clansmen x of
-		snprintf(szString, sizeof(szString), ST_STUFF5, iTemp + 1, Game.Data->MaxPermanentMembers);
+		snprintf(szString, sizeof(szString), ST_STUFF5, iTemp + 1, Game.Data.MaxPermanentMembers);
 		rputs(szString);
 
 		if (iTemp == 0) {
@@ -2023,14 +2023,14 @@ static bool User_Create(void)
 
 	/* write it to file */
 	EncryptWrite_s(clan, PClan, fpPlayerFile, XOR_USER);
-	for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
+	for (iTemp = 0; iTemp < Game.Data.MaxPermanentMembers; iTemp++) {
 		EncryptWrite_s(pc, PClan->Member[iTemp], fpPlayerFile, XOR_PC);
 	}
 
 	/* write null players to complete it */
 	TmpPC.szName[0] = 0;
 	TmpPC.Status = Dead;
-	for (iTemp = Game.Data->MaxPermanentMembers; iTemp < 6; iTemp++) {
+	for (iTemp = Game.Data.MaxPermanentMembers; iTemp < 6; iTemp++) {
 		EncryptWrite_s(pc, &TmpPC, fpPlayerFile, XOR_PC);
 	}
 
@@ -2042,7 +2042,7 @@ static bool User_Create(void)
 
 
 	// add to league
-	if (Game.Data->InterBBS) {
+	if (Game.Data.InterBBS) {
 		User.ClanID[0] = PClan->ClanID[0];
 		User.ClanID[1] = PClan->ClanID[1];
 		strlcpy(User.szMasterName, PClan->szUserName, sizeof(User.szMasterName));
@@ -2564,7 +2564,7 @@ void User_List(void)
 
 	fputs(ST_USERLISTH, stdout);
 
-	if (Game.Data->InterBBS == false) {
+	if (Game.Data.InterBBS == false) {
 		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYWR);
 		if (!fpPlayerFile) {
 			/* file not found, so clan not found! */
@@ -2664,8 +2664,8 @@ void User_Maint(void)
 			TmpClan.AttendedMass = false;
 			TmpClan.GotBlessing = false;
 			TmpClan.Prayed = false;
-			TmpClan.FightsLeft = Game.Data->MineFights;
-			TmpClan.ClanFights = Game.Data->ClanFights;
+			TmpClan.FightsLeft = Game.Data.MineFights;
+			TmpClan.ClanFights = Game.Data.ClanFights;
 			TmpClan.WasRulerToday = false;
 			TmpClan.ClanWars = 0;
 			TmpClan.ChatsToday = 0;
@@ -2714,7 +2714,7 @@ void User_Maint(void)
 			}
 
 			/* set HP to max */
-			for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
+			for (iTemp = 0; iTemp < Game.Data.MaxPermanentMembers; iTemp++) {
 				/* if player is unconscious, revive him */
 				if (TmpClan.Member[iTemp]->Status == Unconscious ||
 						TmpClan.Member[iTemp]->Status == Here) {
@@ -2735,7 +2735,7 @@ void User_Maint(void)
 			}
 
 			// "release" NPC members
-			for (iTemp = Game.Data->MaxPermanentMembers; iTemp < 6; iTemp++)
+			for (iTemp = Game.Data.MaxPermanentMembers; iTemp < 6; iTemp++)
 				if (TmpClan.Member[iTemp]->szName[0]) {
 					// is a npc-player
 					//printf("releasing %s\n", TmpClan.Member[iTemp]->szName);
@@ -2756,13 +2756,13 @@ void User_Maint(void)
 			for (CurItem = 0; CurItem < MAX_ITEMS_HELD; CurItem++) {
 				/* if held by deleted char, remove link */
 				if (TmpClan.Items[CurItem].UsedBy < 0 ||
-						TmpClan.Items[CurItem].UsedBy > Game.Data->MaxPermanentMembers) {
+						TmpClan.Items[CurItem].UsedBy > Game.Data.MaxPermanentMembers) {
 					TmpClan.Items[CurItem].UsedBy = 0;
 				}
 			}
 
 			/* make it so they stop using invalid items */
-			for (iTemp = 0; iTemp < Game.Data->MaxPermanentMembers; iTemp++) {
+			for (iTemp = 0; iTemp < Game.Data.MaxPermanentMembers; iTemp++) {
 				if (TmpClan.Member[iTemp]->szName[0]) {
 					if (TmpClan.Member[iTemp]->Weapon &&
 							TmpClan.Items[ TmpClan.Member[iTemp]->Weapon-1 ].Available == false) {
