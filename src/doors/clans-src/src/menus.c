@@ -704,7 +704,7 @@ static int16_t AlliancesMenu(void)
 {
 	struct Alliance *Alliances[MAX_ALLIANCES];
 	int16_t iTemp, NumAlliances, WhichAlliance, NumUserAlliances;
-	char cKey, szChoices[MAX_ALLIANCES + 5], szFileName[13];
+	char cKey, szChoices[MAX_ALLIANCES + 5];
 	char szString[128];
 
 	if (!PClan->AllyHelp) {
@@ -774,25 +774,7 @@ static int16_t AlliancesMenu(void)
 					UpdateAlliances(Alliances);
 					PClan->MadeAlliance = true;
 					if (EnterAlliance(Alliances[ NumAlliances ])) {
-						// remove chatfile first
-						snprintf(szFileName, sizeof(szFileName), "hall%02d.txt", Alliances[NumAlliances]->ID);
-						unlink(szFileName);
-
-						// remove from user's alliance list
-						for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
-							if (PClan->Alliances[iTemp] == Alliances[NumAlliances]->ID)
-								PClan->Alliances[iTemp] = -1;
-
-						// only if he is the ORIGINAL creator will he have flag set
-						if (Alliances[NumAlliances]->OriginalCreatorID[0] == PClan->ClanID[0] &&
-								Alliances[NumAlliances]->OriginalCreatorID[1] == PClan->ClanID[1]) {
-							PClan->MadeAlliance = false;
-						}
-
-						KillAlliance(Alliances[NumAlliances]->ID);
-
-						// delete alliance since user chose to
-						DeleteAlliance(NumAlliances, Alliances);
+						KillAlliance(NumAlliances, Alliances);
 					}
 				}
 			}
@@ -814,25 +796,7 @@ static int16_t AlliancesMenu(void)
 			// in that alliance, enter it
 
 			if (EnterAlliance(Alliances[ WhichAlliance ])) {
-				// remove chatfile first
-				snprintf(szFileName, sizeof(szFileName), "hall%02d.txt", Alliances[WhichAlliance]->ID);
-				unlink(szFileName);
-
-				// only if he is the ORIGINAL creator will he have flag set
-				if (Alliances[WhichAlliance]->OriginalCreatorID[0] == PClan->ClanID[0] &&
-						Alliances[WhichAlliance]->OriginalCreatorID[1] == PClan->ClanID[1]) {
-					PClan->MadeAlliance = false;
-				}
-
-				// remove from user's alliance list
-				for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
-					if (PClan->Alliances[iTemp] == Alliances[WhichAlliance]->ID)
-						PClan->Alliances[iTemp] = -1;
-
-				KillAlliance(Alliances[WhichAlliance]->ID);
-
-				// delete hall since user chose to
-				DeleteAlliance(WhichAlliance, Alliances);
+				KillAlliance(WhichAlliance, Alliances);
 			}
 		}
 		else {

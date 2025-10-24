@@ -733,8 +733,26 @@ void FormAlliance(int AllyID)
 	FreeAlliances(Alliances);
 }
 
-void KillAlliance(int AllianceID)
+void KillAlliance(int16_t WhichAlliance, struct Alliance *Alliances[MAX_ALLIANCES])
 {
+	char szFileName[15];
+	int16_t iTemp;
+
+	// remove chatfile first
+	snprintf(szFileName, sizeof(szFileName), "hall%02" PRId16 ".txt", Alliances[WhichAlliance]->ID);
+	unlink(szFileName);
+
+	// only if he is the ORIGINAL creator will he have flag set
+	if (Alliances[WhichAlliance]->OriginalCreatorID[0] == PClan->ClanID[0] &&
+			Alliances[WhichAlliance]->OriginalCreatorID[1] == PClan->ClanID[1]) {
+		PClan->MadeAlliance = false;
+	}
+
+	// remove from user's alliance list
+	for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
+		if (PClan->Alliances[iTemp] == Alliances[WhichAlliance]->ID)
+			PClan->Alliances[iTemp] = -1;
+
 	// go through player file
 	// skip user online
 	// if Alliance is same as one given, make it -1
@@ -771,7 +789,7 @@ void KillAlliance(int AllianceID)
 
 		// see if in alliance
 		for (CurAlliance = 0; CurAlliance < MAX_ALLIES; CurAlliance++)
-			if (TmpClan.Alliances[CurAlliance] == AllianceID)
+			if (TmpClan.Alliances[CurAlliance] == Alliances[WhichAlliance]->ID)
 				break;
 
 		// not in alliance, skip
@@ -787,6 +805,7 @@ void KillAlliance(int AllianceID)
 	}
 
 	fclose(fpPlayerFile);
+	DeleteAlliance(WhichAlliance, Alliances);
 }
 
 void Alliance_Maint(void)

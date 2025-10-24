@@ -8,7 +8,7 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 void ShowAlliances(struct clan *Clan);
 bool EnterAlliance(struct Alliance *Alliance);
 void FormAlliance(int AllyID);
-void KillAlliance(int AllianceID);
+void KillAlliance(int16_t WhichAlliance, struct Alliance *Alliances[MAX_ALLIANCES]);
 void Alliance_Maint(void);
 
 #endif
