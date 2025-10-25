@@ -179,7 +179,7 @@ void usage()
 static void
 cooked_tty(void)
 {
-	if (isatty(STDIN_FILENO)) {
+	if (isatty(STDIN_FILENO) && isatty(STDOUT_FILENO)) {
 #ifdef __unix__
 		tcsetattr(STDIN_FILENO, TCSANOW, &orig_term);
 #elif defined _WIN32
@@ -208,7 +208,7 @@ static void raw_input(struct termios *t)
 static void
 raw_tty(void)
 {
-	if (isatty(STDIN_FILENO)) {
+	if (isatty(STDIN_FILENO) && isatty(STDOUT_FILENO)) {
 #ifdef __unix__
 		struct termios term = orig_term;
 
