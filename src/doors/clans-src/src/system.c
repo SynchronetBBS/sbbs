@@ -333,6 +333,11 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 			}
 			return TRUE;
 		}
+		else if (stricmp(&flag[1], "Exclusive") == 0) {
+			if (primitive)
+				RemoveSemaphor();
+			return TRUE;
+		}
 		else if (flag[1] == 'S') {
 			if (primitive) {
 				od_control.od_use_socket = TRUE;
@@ -516,6 +521,8 @@ void System_Init(void)
 #else
 	od_parse_cmd_line(_argc, _argv);
 #endif
+	if (od_control.od_force_local)
+		System.Local = true;
 	if (System.Node == 0 && od_control.od_node)
 		System.Node = od_control.od_node;
 
@@ -541,6 +548,15 @@ void System_Init(void)
 
 	// init stuff
 	System.Local = false;
+
+	if (System.Node == 0)
+		WaitSemaphor();
+	else {
+		if (!CreateSemaphor()) {
+			Door.UserBooted = true;
+			Door_Init(System.Local);
+		}
+	}
 
 	// Game Specific data (village, game.dat)
 	Game_Init();

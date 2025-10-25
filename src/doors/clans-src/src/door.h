@@ -3,6 +3,8 @@
 
 #include "structs.h"
 
+extern struct Door Door;
+
 /*
  * Door-specific ADT
  */
@@ -50,5 +52,8 @@ int16_t NoYes(char *Query);
 bool Door_AllowScreenPause(void);
 
 void Door_ShowTitle(void);
+bool CreateSemaphor(void);
+void RemoveSemaphor(void);
+void WaitSemaphor(void);
 
 #endif
