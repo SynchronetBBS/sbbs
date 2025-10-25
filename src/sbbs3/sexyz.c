@@ -483,6 +483,10 @@ static int recv_buffer(int timeout /* seconds */)
 							else
 								lprintf(LOG_ERR, "Receive ERROR %d", magic_errno);
 						}
+						if (i == 1 && fds.revents & POLLIN) {
+							timeout = 0;
+							continue;
+						}
 #else
 						// Call select()
 						FD_ZERO(&socket_set);
