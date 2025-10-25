@@ -369,6 +369,17 @@ if(options.reverse)
 
 log("Formatting " + file_list.length + " files for output...");
 if(fmt == "json") {
+	if(options.utf8) {
+		for(var i = 0; i < file_list.length; i++) {
+			var file = file_list[i];
+			if(typeof file == "object") {
+				for(p in file) {
+					if(typeof file[p] == "string")
+						file[p] = utf8_encode(file[p]);
+				}
+			}
+		}
+	}
 	out.writeln(JSON.stringify(file_list, null, json_space));
 	exit(0);
 }
