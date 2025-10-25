@@ -8,7 +8,11 @@
 WorldName       Magnamund
 LeagueId        MG
 
-# StrictMsgFile <- optional, require .MSG file to exist and be correct
+# StrictRouting <- optional, requires that all routes are symmetric and only
+#                  parses packets coming via the appropriate route
+# StrictMsgFile <- optional, requires StrictRouting and requires .MSG file to
+#                  exist and be correct (ie: No NoMSG use, and all nodes
+#                  configured with a mailer type that isn't None)
 
 # The following is a listing of all BBSes in the league.
 # ----------------------------------------------------------------------------

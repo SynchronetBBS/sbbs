@@ -607,6 +607,7 @@ struct ibbs {
 		int16_t BBSID;
 		int16_t NumNodes;
 		bool StrictMsgFile;
+		bool StrictRouting;
 		bool PacketSent;
 
 		// Note, use IBBS.Nodes[x] where x corresponds to the BBSID

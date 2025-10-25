@@ -1663,6 +1663,9 @@ static void IBBS_LoadNDX(void)
 						}
 						IBBS.Data.StrictMsgFile = true;
 						break;
+					case 12 : /* StrictRouting */
+						IBBS.Data.StrictRouting = true;
+						break;
 				}
 				break;
 			}
@@ -2568,7 +2571,36 @@ static void ComeBack(int16_t ClanID[2], int16_t BBSID)
 }
 
 
-static int16_t IBBS_ProcessPacket(char *szFileName)
+static bool CheckID(int16_t ID, const char *name)
+{
+	int16_t idx;
+	char szString[256];
+
+	if (ID < 1 || ID > MAX_IBBSNODES) {
+		snprintf(szString, sizeof(szString), "|04x |12Invalid %s BBS ID", name);
+		DisplayStr(szString);
+		return false;
+	}
+	idx = ID - 1;
+	if (!IBBS.Data.Nodes[idx].Active) {
+		snprintf(szString, sizeof(szString), "|04x |12%s BBS ID is inactive, skipping", name);
+		DisplayStr(szString);
+		return false;
+	}
+	return true;
+}
+
+static bool CheckSourceID(int16_t ID)
+{
+	return (CheckID(ID, "Source"));
+}
+
+static bool CheckDestinationID(int16_t ID)
+{
+	return (CheckID(ID, "Source"));
+}
+
+static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 {
 	struct SpyResultPacket SpyResult;
 	struct SpyAttemptPacket Spy;
@@ -2591,7 +2623,7 @@ static int16_t IBBS_ProcessPacket(char *szFileName)
 	if (!fp) {
 		snprintf(szString, sizeof(szString), "Can't read in %s\n", szFileName);
 		DisplayStr(szString);
-		return 0;
+		return false;
 	}
 
 	// show processing it
@@ -2623,6 +2655,20 @@ static int16_t IBBS_ProcessPacket(char *szFileName)
 			}
 		}
 
+		if (SrcID && IBBS.Data.StrictRouting && SrcID == IBBS.Data.Nodes[Packet.BBSIDTo - 1].Info.RouteThrough) {
+			snprintf(szString, sizeof(szString), "|08* |07Packet %s received from next hop\n", szFileName);
+			DisplayStr(szString);
+			continue;
+		}
+
+		// Check that source and destination IDs are valid and active...
+		if (!CheckSourceID(Packet.BBSIDFrom)) {
+			continue;
+		}
+		if (!CheckDestinationID(Packet.BBSIDTo)) {
+			continue;
+		}
+
 		/* see if this packet is for you.  if not, reroute it to where it
 		    belongs */
 
@@ -2644,7 +2690,7 @@ static int16_t IBBS_ProcessPacket(char *szFileName)
 
 				fclose(fp);
 				DisplayStr("Can't write outbound.tmp\n");
-				return 0;
+				return false;
 			}
 			EncryptWrite_s(Packet, &Packet, fpNewFile, XOR_PACKET);
 			if (Packet.PacketLength)
@@ -2975,14 +3021,14 @@ static int16_t IBBS_ProcessPacket(char *szFileName)
 		else {
 			DisplayStr("|04x |12Unknown packet type!  ABORTING!!\n");
 			fclose(fp);
-			return 0;
+			return false;
 		}
 	}
 
 	fclose(fp);
 
-	/* if unsuccessfully dealt with, return 0 */
-	return 1;
+	/* if unsuccessfully dealt with, return false */
+	return true;
 }
 
 
@@ -3027,7 +3073,7 @@ static bool GetNextFile(char *szWildcard, char *szFileName, size_t sz)
  * be skipped and calling process() for each match
  */
 static void
-MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo,
+MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo, int16_t SourceID,
     bool(*skip)(void *),
     void(*process)(const char *, const char *, void *), void *cbdata)
 {
@@ -3053,7 +3099,7 @@ MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo,
 		FILE *f;
 
 		// We need to get to the last iteration or we'll leak resources
-		if (!skip(cbdata)) {
+		if (skip == NULL || !skip(cbdata)) {
 			bool Found = false;
 			char fname[PATH_SIZE];
 
@@ -3065,31 +3111,43 @@ MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo,
 					struct MessageHeader hdr;
 					// Check if it's to us and from us
 					s_MessageHeader_d(hdrbuf, sizeof(hdrbuf), &hdr);
-					// TODO: Check the source address too
 					if (ThisNode.wZone == hdr.wDestZone
 					    && ThisNode.wNet == hdr.wDestNet
 					    && ThisNode.wNode == hdr.wDestNode
 					    && ThisNode.wPoint == hdr.wDestPoint
 					    && (strcmp(InterBBSInfo->szProgName, hdr.szToUserName) == 0)
 					    && (strcmp(InterBBSInfo->szProgName, hdr.szFromUserName) == 0)) {
-						// Then see if the file is attached
-						const char *pktfname = hdr.szSubject;
-						switch (*pktfname) {
-							case '#':
-							case '^':
-							case '-':
-							case '~':
-							case '!':
-							case '@':
-								pktfname++;
+						bool SrcMatched = true;
+
+						if (IBBS.Data.StrictMsgFile && SourceID) {
+							tFidoNode SrcNode;
+							ConvertStringToAddress(&SrcNode, IBBS.Data.Nodes[SourceID - 1].Info.pszAddress);
+							if (hdr.wOrigZone != SrcNode.wZone
+							    || hdr.wOrigNet != SrcNode.wNet
+							    || hdr.wOrigNode != SrcNode.wZone
+							    || hdr.wOrigPoint != SrcNode.wPoint)
+								SrcMatched = false;
 						}
-						if (strcmp(pktfname, pszFileName) == 0)
-							Found = true;
+						if (SrcMatched) {
+							// Then see if the file is attached
+							const char *pktfname = hdr.szSubject;
+							switch (*pktfname) {
+								case '#':
+								case '^':
+								case '-':
+								case '~':
+								case '!':
+								case '@':
+									pktfname++;
+							}
+							if (strcmp(pktfname, pszFileName) == 0)
+								Found = true;
+						}
 					}
 				}
 				fclose(f);
 			}
-			if (Found)
+			if (Found && process)
 				process(fname, ffblks.ff_name, cbdata);
 		}
 
@@ -3110,17 +3168,25 @@ static void SetSkip(const char *fname, const char *sname, void *cbdata)
 	*skip = true;
 }
 
-static bool CheckMessageFile(const char *pszFileName, tIBInfo *InterBBSInfo)
+/*
+ * This checks that a message file for the specified file exists and has
+ * the correct to and from addresses.
+ * 
+ * Note that it doesn't guarantee that *this* copy of the file is associated
+ * with *that* MSG file... it's very likely that what exactly happens is up
+ * to the mailer, and it may allow two MSG files attaching the same filename
+ * int the netmail directory with only one copy with that name in the inbound
+ * directory.
+ * 
+ * This could be leveraged by a clever attacker because the filenames are
+ * mostly predictable.
+ */
+static bool CheckMessageFile(const char *pszFileName, tIBInfo *InterBBSInfo, uint16_t SourceID)
 {
 	bool Found = false;
 
-	MessageFileIterate(pszFileName, InterBBSInfo, SkipAfterFound, SetSkip, &Found);
+	MessageFileIterate(pszFileName, InterBBSInfo, SourceID, SkipAfterFound, SetSkip, &Found);
 	return Found;
-}
-
-static bool NeverSkip(void *cbdata)
-{
-	return false;
 }
 
 static void DeleteFound(const char *fname, const char *sname, void *cbdata)
@@ -3133,7 +3199,7 @@ static void DeleteFound(const char *fname, const char *sname, void *cbdata)
 
 static void DeleteMessageWithFile(const char *pszFileName, tIBInfo *InterBBSInfo)
 {
-	MessageFileIterate(pszFileName, InterBBSInfo, NeverSkip, DeleteFound, NULL);
+	MessageFileIterate(pszFileName, InterBBSInfo, 0, NULL, DeleteFound, NULL);
 }
 
 void IBBS_PacketIn(void)
@@ -3191,27 +3257,39 @@ void IBBS_PacketIn(void)
 
 		/* keep calling till no more messages to read */
 		while (!Done) {
-			szFileName[0] = 0;
+			char srcID[4];
+			uint16_t srcBBSID;
 
-			strlcpy(szFileName, Config.szInboundDirs[nInbound], sizeof(szFileName));
-			//strlcat(szFileName, ffblk.ff_name, sizeof(szFileName));
-			strlcat(szFileName, szFileName2, sizeof(szFileName));
+			memcpy(srcID, &szFileName2[2], 3);
+			srcID[3] = 0;
+			srcBBSID = atoi(srcID);
+			if (CheckSourceID(srcBBSID)) {
+				strlcpy(szFileName, Config.szInboundDirs[nInbound], sizeof(szFileName));
+				//strlcat(szFileName, ffblk.ff_name, sizeof(szFileName));
+				strlcat(szFileName, szFileName2, sizeof(szFileName));
 
-			/* process file */
-			if (IBBS.Data.StrictMsgFile && !CheckMessageFile(szFileName, &InterBBSInfo)) {
-				snprintf(szString, sizeof(szString), "No valid msg file for packet %s\n", szFileName);
-				DisplayStr(szString);
-			}
-			else {
-				if (IBBS_ProcessPacket(szFileName) == 0) {
-					snprintf(szString, sizeof(szString), "Error dealing with packet %s\n", szFileName);
+				// Set to the assumed previous hop...
+				if (IBBS.Data.StrictRouting)
+					srcBBSID = IBBS.Data.Nodes[srcBBSID - 1].Info.RouteThrough;
+				else
+					srcBBSID = 0;
+				/* process file */
+				if (IBBS.Data.StrictMsgFile && !CheckMessageFile(szFileName, &InterBBSInfo, srcBBSID)) {
+					snprintf(szString, sizeof(szString), "|08x |12No valid msg file for packet %s\n", szFileName);
 					DisplayStr(szString);
+					// TODO: Delete?
 				}
 				else {
-					/* delete it */
-					unlink(szFileName);
-					/* And try to delete *.msg files that had it attached */
-					DeleteMessageWithFile(szFileName, &InterBBSInfo);
+					if (!IBBS_ProcessPacket(szFileName, srcBBSID)) {
+						snprintf(szString, sizeof(szString), "|08x |12Error dealing with packet %s\n", szFileName);
+						DisplayStr(szString);
+					}
+					else {
+						/* delete it */
+						unlink(szFileName);
+						/* And try to delete *.msg files that had it attached */
+						DeleteMessageWithFile(szFileName, &InterBBSInfo);
+					}
 				}
 			}
 
@@ -3237,10 +3315,16 @@ void IBBS_PacketIn(void)
 			strlcpy(szFileName, Config.szInboundDirs[nInbound], sizeof(szFileName));
 			strlcat(szFileName, szFileName2, sizeof(szFileName));
 
-			while (!GetNextFile(szFileName,szFileName2, sizeof(szFileName2)))  {
-				if (IBBS.Data.StrictMsgFile && !CheckMessageFile(szFileName2, &InterBBSInfo)) {
-					snprintf(szString, sizeof(szString), "No valid msg file for packet %s\n", szFileName2);
+			while (!GetNextFile(szFileName,szFileName2, sizeof(szFileName2))) {
+				int16_t AllowedSourceID = 0;
+
+				if (IBBS.Data.StrictRouting)
+					AllowedSourceID = IBBS.Data.Nodes[0].Info.RouteThrough;
+				if (IBBS.Data.StrictMsgFile && !CheckMessageFile(szFileName2, &InterBBSInfo, AllowedSourceID)) {
+					snprintf(szString, sizeof(szString), "|08x |12No valid msg file packet %s, renaming to world.bad\n", szFileName2);
 					DisplayStr(szString);
+					file_copy(szFileName2, "world.bad");
+					unlink(szFileName2);
 				}
 				else {
 					fp = _fsopen(szFileName2, "r", SH_DENYWR);
