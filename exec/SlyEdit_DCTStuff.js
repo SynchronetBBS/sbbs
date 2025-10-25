@@ -396,15 +396,16 @@ function DisplayBottomHelpLine_DCTStyle(pLineNum, pUsingQuotes)
 		                                        + gConfigSettings.DCTColors.BottomHelpKeys + "A"
 		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
 		                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Abort";
-		// If we can allow message quoting, then add a text to show Ctrl-Q for
+		// If we can allow message quoting, then add a text to show Ctrl-Q (or Ctrl-Y) for
 		// quoting.
 		if (pUsingQuotes)
 		{
+			const quoteHotkeyChar = gConfigSettings.ctrlQQuote ? "Q" : "Y";
 			DisplayBottomHelpLine_DCTStyle.helpText += "\x01n      "
 			                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "["
 			                                        + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
 			                                        + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
-			                                        + gConfigSettings.DCTColors.BottomHelpKeys + "Q"
+			                                        + gConfigSettings.DCTColors.BottomHelpKeys + quoteHotkeyChar
 			                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
 			                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Quote";
 		}
@@ -492,10 +493,11 @@ function DrawQuoteWindowBottomBorder_DCTStyle(pEditLeft, pEditRight)
 	if (typeof(DrawQuoteWindowBottomBorder_DCTStyle.border) == "undefined")
 	{
 		// Create a string containing the quote help text.
+		const quoteHotkeyChar = gConfigSettings.ctrlQQuote ? "Q" : "Y";
 		var quoteHelpText = gConfigSettings.DCTColors.QuoteWinBorderTextColor
 		                 + "[Enter] Accept" + gConfigSettings.DCTColors.QuoteWinBorderColor
 		                 + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
-		                 + "[^Q/ESC] End" + gConfigSettings.DCTColors.QuoteWinBorderColor
+		                 + "[^" + quoteHotkeyChar + "/ESC] End" + gConfigSettings.DCTColors.QuoteWinBorderColor
 		                 + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
 		                 + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn/Home/End] Scroll"
 		                 + gConfigSettings.DCTColors.QuoteWinBorderColor + HORIZONTAL_SINGLE

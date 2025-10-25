@@ -1941,7 +1941,8 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pTxtR
 	console.print("\x01n\x01gCommand/edit keys\r\n\x01k\x01h" + charStr(HORIZONTAL_SINGLE, 17) + "\r\n");
 	displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up", true);
 	displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down", true);
-	displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-W", "Word/text search", true);
+	const quoteHotkey = gConfigSettings.ctrlQQuote ? "Ctrl-Q" : "Ctrl-Y";
+	displayCmdKeyFormattedDouble(quoteHotkey, "Quote message", "Ctrl-W", "Word/text search", true);
 	displayCmdKeyFormattedDouble("Insert/Ctrl-I", "Toggle insert/overwrite mode",
 	                             "Ctrl-D", "Delete line", true);
 	if (pCanChangeSubject)
@@ -2187,6 +2188,7 @@ function ReadSlyEditConfigFile()
 		allowUserSettings: true,
 		allowEditQuoteLines: true,
 		allowSpellCheck: true,
+		ctrlQQuote: true,
 		dictionaryFilenames: [],
 		memeSettings: {
 			memeMaxTextLen: 500,
@@ -2337,13 +2339,15 @@ function ReadSlyEditConfigFile()
 		if (behaviorSettings != null)
 		{
 			// The following are all boolean properties/settings:
-			var propsToCopy = ["displayEndInfoScreen", "reWrapQuoteLines", "allowColorSelection", "saveColorsAsANSI",
-			                   "useQuoteLineInitials", "indentQuoteLinesWithInitials", "allowCrossPosting", "enableTaglines",
-			                   "quoteTaglines", "shuffleTaglines", "allowUserSettings", "allowEditQuoteLines", "allowSpellCheck"];
-			for (var i = 0; i < propsToCopy.length; ++i)
+			var boolPropNames = ["displayEndInfoScreen", "reWrapQuoteLines", "allowColorSelection", "saveColorsAsANSI",
+			                     "useQuoteLineInitials", "indentQuoteLinesWithInitials", "allowCrossPosting", "enableTaglines",
+			                     "quoteTaglines", "shuffleTaglines", "allowUserSettings", "allowEditQuoteLines", "allowSpellCheck",
+			                     "ctrlQQuote"];
+			for (var i = 0; i < boolPropNames.length; ++i)
 			{
-				var propName = propsToCopy[i];
-				cfgObj[propName] = behaviorSettings[propName];
+				var propName = boolPropNames[i];
+				if (behaviorSettings.hasOwnProperty(propName) && typeof(behaviorSettings[propName]) === "boolean")
+					cfgObj[propName] = behaviorSettings[propName];
 			}
 			// Other settings:
 			if (behaviorSettings.hasOwnProperty("add3rdPartyStartupScript") && typeof(behaviorSettings.add3rdPartyStartupScript) === "string")
@@ -2378,10 +2382,10 @@ function ReadSlyEditConfigFile()
 					cfgObj.memeSettings.memeMaxTextLen = behaviorSettings.memeMaxTextLen;
 			}
 			if (behaviorSettings.hasOwnProperty("memeDefaultWidth") && typeof(behaviorSettings.memeDefaultWidth) === "number")
-				{
-					if (behaviorSettings.memeDefaultWidth >= 1)
-						cfgObj.memeSettings.memeDefaultWidth = behaviorSettings.memeDefaultWidth;
-				}
+			{
+				if (behaviorSettings.memeDefaultWidth >= 1)
+					cfgObj.memeSettings.memeDefaultWidth = behaviorSettings.memeDefaultWidth;
+			}
 			if (behaviorSettings.hasOwnProperty("memeStyleRandom") && typeof(behaviorSettings.memeStyleRandom) === "boolean")
 				cfgObj.memeSettings.random = behaviorSettings.memeStyleRandom;
 			if (behaviorSettings.hasOwnProperty("memeDefaultBorder"))
