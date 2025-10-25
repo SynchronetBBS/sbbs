@@ -215,10 +215,6 @@ void ODCmdLineHandler(char *flag, char *val)
 						System_Error("Only the League Coordinator can send a reset.\n");
 					}
 
-					/* snprintf(szString, sizeof(szString), "trying to send reset to %d\n", atoi(val));
-					DisplayStr(szString);
-					*/
-
 					if (IBBS.Data.BBSID != atoi(val) &&
 							(atoi(val) > 0 && atoi(val) < MAX_IBBSNODES)) {
 						snprintf(szString, sizeof(szString), "Sending reset to %d\n", atoi(val));

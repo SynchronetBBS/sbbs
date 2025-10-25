@@ -750,7 +750,6 @@ static void IBBS_BackupMaint(void)
 
 	fpOld = _fsopen("backup.dat", "rb", SH_DENYWR);
 	if (!fpOld) {
-		// DisplayStr("> No BACKUP.DAT to process.\n");
 		return;
 	}
 
@@ -966,8 +965,6 @@ static void IBBS_TravelMaint(void)
 	struct clan TmpClan = {0};
 	struct pc TmpPC = {0};
 	int16_t iTemp;
-
-	// DisplayStr("IBBS_TravelMaint()\n");
 
 	fpLeavingDat = _fsopen("leaving.dat", "rb", SH_DENYWR);
 	if (!fpLeavingDat) {
@@ -1520,7 +1517,6 @@ static void IBBS_LoadNDX(void)
 	/* read in .NDX file */
 	fpWorld = _fsopen("world.ndx", "r", SH_DENYWR);
 	if (!fpWorld) {
-		// DisplayStr("|12Could not find world.ndx file.  If you are not in an InterBBS league,\nturn off the InterBBS option in the CONFIG.EXE program.\n\n");
 		IBBS_Destroy();
 		System_Error(ST_NOWORLDNDX);
 	}
@@ -1840,10 +1836,6 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 
 	IBBS.Data.Nodes[DestID-1].Recon.LastSent = DaysSince1970(System.szTodaysDate);
 
-//      snprintf(szString, sizeof(szString), "|03Sending Packet:  %s to %d\n", pszSendFile, DestinationId);
-//      DisplayStr(szString);
-
-
 	/* set up interbbsinfo */
 	strlcpy(InterBBSInfo.szThisNodeAddress, IBBS.Data.Nodes[IBBS.Data.BBSID-1].Info.pszAddress, sizeof(InterBBSInfo.szThisNodeAddress));
 	InterBBSInfo.szThisNodeAddress[NODE_ADDRESS_CHARS] = '\0';
@@ -1903,12 +1895,9 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 	fp = _fsopen(szFullFileName, "rb", SH_DENYWR);
 	if (fp) {
 		/* if so, add onto it */
-		//DisplayStr("Appending to packet.\n");
 		fclose(fp);
 
 		file_append(pszSendFile, szFullFileName);
-
-		// DisplayStr("|15Appended|03\n");
 	}
 	else {
 		// couldn't open file
@@ -1928,26 +1917,15 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 		szPacketName[12] = 0;
 		strlcat(szFullFileName, szPacketName, sizeof(szFullFileName));
 
-		/* else, make a new packet */
-		// DisplayStr("Making new packet.\n");
-
 		/* increment for next time */
 		IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex++;
 		if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex == 'z' + 1)
 			IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex = 'a';
 
 		/* copy file to outbound dir */
-		//printf("Copying %s to %s\n", pszSendFile, szFullFileName);
 		file_copy(pszSendFile, szFullFileName);
 
-		//  snprintf(szString, sizeof(szString), "Sendfile is called %s\n", szFullFileName);
-		//  DisplayStr(szString);
-
 		/* send that file! */
-//      snprintf(szString, sizeof(szString), "Packet for BBS #%d being sent through %s\n", DestinationId, BBS[ BBS[DestinationId-1].RouteThrough-1 ].Info.pszAddress);
-//      DisplayStr(szString);
-
-		//snprintf("Filenameis %s\n", sizeof("Filenameis %s\n"), szFullFileName);
 		if (!NoMSG[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ])
 			IBSendFileAttach(&InterBBSInfo, IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Info.pszAddress, szFullFileName);
 	}
@@ -2577,13 +2555,13 @@ static bool CheckID(int16_t ID, const char *name)
 	char szString[256];
 
 	if (ID < 1 || ID > MAX_IBBSNODES) {
-		snprintf(szString, sizeof(szString), "|04x |12Invalid %s BBS ID", name);
+		snprintf(szString, sizeof(szString), "|04x |12Invalid %s BBS ID\n", name);
 		DisplayStr(szString);
 		return false;
 	}
 	idx = ID - 1;
 	if (!IBBS.Data.Nodes[idx].Active) {
-		snprintf(szString, sizeof(szString), "|04x |12%s BBS ID is inactive, skipping", name);
+		snprintf(szString, sizeof(szString), "|04x |12%s BBS ID is inactive, skipping\n", name);
 		DisplayStr(szString);
 		return false;
 	}
@@ -3117,31 +3095,32 @@ MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo, int16_t Sourc
 					    && ThisNode.wPoint == hdr.wDestPoint
 					    && (strcmp(InterBBSInfo->szProgName, hdr.szToUserName) == 0)
 					    && (strcmp(InterBBSInfo->szProgName, hdr.szFromUserName) == 0)) {
-						bool SrcMatched = true;
+						// Then see if the file is attached
+						const char *pktfname = hdr.szSubject;
+						switch (*pktfname) {
+							case '#':
+							case '^':
+							case '-':
+							case '~':
+							case '!':
+							case '@':
+								pktfname++;
+						}
+						if (strcmp(pktfname, pszFileName) == 0)
+							Found = true;
 
-						if (IBBS.Data.StrictMsgFile && SourceID) {
+						if (Found && IBBS.Data.StrictMsgFile && SourceID) {
 							tFidoNode SrcNode;
 							ConvertStringToAddress(&SrcNode, IBBS.Data.Nodes[SourceID - 1].Info.pszAddress);
 							if (hdr.wOrigZone != SrcNode.wZone
 							    || hdr.wOrigNet != SrcNode.wNet
-							    || hdr.wOrigNode != SrcNode.wZone
-							    || hdr.wOrigPoint != SrcNode.wPoint)
-								SrcMatched = false;
-						}
-						if (SrcMatched) {
-							// Then see if the file is attached
-							const char *pktfname = hdr.szSubject;
-							switch (*pktfname) {
-								case '#':
-								case '^':
-								case '-':
-								case '~':
-								case '!':
-								case '@':
-									pktfname++;
+							    || hdr.wOrigNode != SrcNode.wNode
+							    || hdr.wOrigPoint != SrcNode.wPoint) {
+								Found = false;
+								char str[1024];
+								sprintf(str, "|08* |07Source node %d should be %d:%d/%d.%d, got %d:%d/%d.%d\n", SourceID, SrcNode.wZone, SrcNode.wNet, SrcNode.wNode, SrcNode.wPoint, hdr.wOrigZone, hdr.wOrigNet, hdr.wOrigNode, hdr.wOrigPoint);
+								DisplayStr(str);
 							}
-							if (strcmp(pktfname, pszFileName) == 0)
-								Found = true;
 						}
 					}
 				}
@@ -3192,7 +3171,7 @@ static bool CheckMessageFile(const char *pszFileName, tIBInfo *InterBBSInfo, uin
 static void DeleteFound(const char *fname, const char *sname, void *cbdata)
 {
 	char msg[256];
-	snprintf(msg, sizeof(msg), "|08* |07Deleting %s from netmail directory", sname);
+	snprintf(msg, sizeof(msg), "|08* |07Deleting %s from netmail directory\n", sname);
 	DisplayStr(msg);
 	unlink(fname);
 }
@@ -3200,6 +3179,15 @@ static void DeleteFound(const char *fname, const char *sname, void *cbdata)
 static void DeleteMessageWithFile(const char *pszFileName, tIBInfo *InterBBSInfo)
 {
 	MessageFileIterate(pszFileName, InterBBSInfo, 0, NULL, DeleteFound, NULL);
+}
+
+void MoveToBad(const char *szOldFilename)
+{
+	char szNewFileName[PATH_SIZE + 4];
+
+	snprintf(szNewFileName, sizeof(szNewFileName), "%s.bad", szOldFilename);
+	file_copy(szOldFilename, szNewFileName);
+	unlink(szOldFilename);
 }
 
 void IBBS_PacketIn(void)
@@ -3277,12 +3265,13 @@ void IBBS_PacketIn(void)
 				if (IBBS.Data.StrictMsgFile && !CheckMessageFile(szFileName, &InterBBSInfo, srcBBSID)) {
 					snprintf(szString, sizeof(szString), "|08x |12No valid msg file for packet %s\n", szFileName);
 					DisplayStr(szString);
-					// TODO: Delete?
+					MoveToBad(szFileName);
 				}
 				else {
 					if (!IBBS_ProcessPacket(szFileName, srcBBSID)) {
 						snprintf(szString, sizeof(szString), "|08x |12Error dealing with packet %s\n", szFileName);
 						DisplayStr(szString);
+						MoveToBad(szFileName);
 					}
 					else {
 						/* delete it */

@@ -115,7 +115,7 @@ void Language_Init(char *szLangFile)
 
 	Language->BigString = malloc(Language->NumBytes);
 	if (!Language->BigString) {
-		DisplayStr("|12Couldn't allocate enough memory to run!");
+		DisplayStr("|12Couldn't allocate enough memory to run!\n");
 		fclose(FileHeader.fp);
 		System_Close();
 	}

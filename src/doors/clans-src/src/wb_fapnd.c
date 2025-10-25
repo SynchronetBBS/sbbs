@@ -28,7 +28,7 @@
 #include <sys/stat.h>
 #include "wb_fapnd.h"
 
-int file_append(char *from, char *to)
+int file_append(const char *from, const char *to)
 {
 	int fdfrom,fdto;
 	int bufsiz;
@@ -80,7 +80,7 @@ err:
 	return 1;
 }
 
-int file_copy(char *from, char *to)
+int file_copy(const char *from, const char *to)
 {
 	int fdfrom,fdto;
 	int bufsiz;
