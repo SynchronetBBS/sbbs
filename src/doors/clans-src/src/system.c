@@ -338,19 +338,19 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 				RemoveSemaphor();
 			return TRUE;
 		}
-		else if (flag[1] == 'S') {
+		else if (flag[1] == 'S' || flag[1] == 's') {
 			if (primitive) {
 				od_control.od_use_socket = TRUE;
 				od_control.od_open_handle = atoi(&flag[2]);
 			}
 			return TRUE;
 		}
-		else if (flag[1] == 'D') {
+		else if (flag[1] == 'D' || flag[1] == 'd') {
 			if (primitive)
 				strlcpy(od_control.info_path, &flag[2], sizeof(od_control.info_path));
 			return TRUE;
 		}
-		else if (flag[1] == 'N') {
+		else if (flag[1] == 'N' || flag[1] == 'n') {
 			if (primitive)
 				System.Node = atoi(&flag[2]);
 			return TRUE;
