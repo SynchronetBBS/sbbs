@@ -9,7 +9,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("SlyEdit 1.92b Configurator"))
+if (!uifc.init("SlyEdit 1.92c Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -157,6 +157,7 @@ function doBehaviorMenu()
 		"shuffleTaglines",
 		"quoteTaglines",
 		"allowSpellCheck",
+		"ctrlQQuote",
 
 		"enableTextReplacements",
 		"tagLineFilename",
@@ -187,6 +188,7 @@ function doBehaviorMenu()
 		"Shuffle taglines",
 		"Double-quotes around tag lines",
 		"Allow/enable spell check",
+		"Ctrl-Q to quote (if not, use Ctrl-Y)",
 		// Other options:
 		"Enable text replacements",
 		"Tagline filename",
@@ -202,8 +204,9 @@ function doBehaviorMenu()
 	// Build the array of items to be displayed on the menu
 	var menuItems = [];
 	// Toggle (on/off) settings
+	const enableTextReplacementsIdx = 15;
 	var optionIdx = 0
-	for (; optionIdx < 14; ++optionIdx)
+	for (; optionIdx < enableTextReplacementsIdx; ++optionIdx)
 		menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx], gCfgInfo.cfgSections.BEHAVIOR[cfgOptProps[optionIdx]]));
 	// Text replacements can be a boolean true/false or "regex"
 	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], getTxtReplacementsVal()));
@@ -672,6 +675,8 @@ function getOptionHelpText()
 
 	optionHelpText["allowSpellCheck"] = "Allow/enable spell check: Whether or not to allow spell check";
 
+	optionHelpText["ctrlQQuote"] = "Ctrl-Q to quote: Use Ctrl-Q hotkey to quote. If not, Ctrl-Y will be used.";
+
 	optionHelpText["enableTextReplacements"] = "Enable text replacements: Whether or not to enable text replacements (AKA macros). Can be ";
 	optionHelpText["enableTextReplacements"] += "true, false, or 'regex' to use regular expressions.";
 
@@ -840,6 +845,8 @@ function readSlyEditCfgFile()
 		retObj.cfgSections.BEHAVIOR.allowEditQuoteLines = true;
 	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("allowSpellCheck"))
 		retObj.cfgSections.BEHAVIOR.allowSpellCheck = true;
+	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("ctrlQQuote"))
+		retObj.cfgSections.BEHAVIOR.ctrlQQuote = true;
 	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("dictionaryFilenames"))
 		retObj.cfgSections.BEHAVIOR.dictionaryFilenames = "en,en-US-supplemental";
 	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("memeMaxTextLen"))

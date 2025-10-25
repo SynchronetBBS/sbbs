@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.92b
-                        Release date: 2025-08-02
+                              Version 1.92c
+                        Release date: 2025-10-25
 
                                   by
 
@@ -358,6 +358,10 @@ allowSpellCheck                   Whether or not to allow spell check.  Valid
                                   You might want to disable spell check if,
                                   for instance, the spell check feature causes
                                   an "out of memory" error on your system.
+
+ctrlQQuote                        Whether or not to use Ctrl-Q as the hotkey for
+                                  quoting. If not, Ctrl-Y will be used. Valid
+                                  values are true and false. Defaults to true.
 
 useQuoteLineInitials              Whether or not to prefix quoted message lines
                                   with the previous author's initials when
@@ -1001,6 +1005,12 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.92c    2025-10-25   New configuration option to toggle whether Ctrl-Q is the
+                      hotkey to be used for quoting (if not, Ctrl-Y will be used
+                      instead). The option name in SlyEdit.cfg is ctrlQQuote; it
+                      can also be toggled using slyedcfg.js.
+                      Improvement to user input for choosing a graphic character
+                      to insert.
 1.92b    2025-08-02   Cross-post selection fix to not select when just enter is
                       pressed (just confirm; this change was mainly in
                       dd_lightbar_menu.js). Also, updated cross-post help text

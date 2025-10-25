@@ -6,133 +6,6 @@
  * BBS: Digital Distortion
  * BBS address: digdist.bbsindex.com
  *
- * Date       Author            Description
- * 2022-06-23 Eric Oulashin     Version 1.80 Beta
- *                              Started working (again) on text color support
- * 2022-07-04 Eric Oulashin     Version 1.80
- *                              Added the ability to choose/change the color of text being typed,
- *                              using Ctrl-K if color changing is enabled.
- * 2022-11-19 Eric Oulashin     Version 1.81 Beta
- *                              Refactored ReadSlyEditConfigFile().  Also, the color configuration
- *                              files now can just specify attribute characters, without the
- *                              control character.
- * 2022-11-26 Eric Oulashin     Version 1.81
- *                              Releasing this verison.
- * 2022-12-01 Eric Oulashin     Version 1.82
- *                              Added some safety checks when reading the configuration file
- *                              (that section of code was refactored recently).
- * 2022-12-13 Eric Oulashin     Version 1.83
- *                              Quote lines that are wider than the user's terminal width are
- *                              now wrapped to the user's terminal width to ensure all the
- *                              quote lines are entirely available to be quoted.
- * 2023-02-10 Eric Oulashin     Version 1.84
- *                              Sysops: When importing a file from the BBS machine, SlyEdit now
- *                              prompts to send it immediately or not (if not, edit it before
- *                              sending).  Sending immediately can be useful for posting
- *                              ANSI files unmodified.
- * 2023-05-15 Eric Oulashin     Version 1.85
- *                              Internal: Refactored readColorConfig() in _DCTStuff.js and _IceStuff.js.
- *                              Removed the readValueSettingConfigFile() function.
- * 2023-06-09 Eric Oulashin     Version 1.86 Beta
- *                              Started refactoring the re-wrapping of quote lines to
- *                              work better for the various quote prefixes used in
- *                              various messages.
- * 2023-07-26 Eric Oulashin     Version 1.86
- *                              Releasing this version
- * 2023-08-15 Eric Oulashin     Version 1.87
- *                              Improvement to paragraph/line breaks in quote line wrapping
- * 2023-12-17 Eric Oulashin     Version 1.87a
- *                              Using the msg_area.sub object to check sub-board settings instead
- *                              of opening the sub-board (for determining whether to post with
- *                              real name)
- * 2024-02-07 Eric Oulashin     Version 1.88
- *                              Support for entering UTF-8/Unicode characters; using K_CP437 to
- *                              convert to CP437
- * 2024-02-11 Eric Oulashin     1.88b
- *                              Previous change reverted; "Real" UTF-8 support implemented for
- *                              text input.
- *                              New feature: Entering a graphic char with Ctrl-G (Ctrl-G
- *                              was previously the key for general help, which wasn't much)
- * 2024-02-12 Eric Oulashin     1.88c
- *                              UTF-8 support in the displayed header and when quoting text
- *                              and when quoting message text
- * 2024-02-16 Eric Oulashin     1.88d
- *                              Header display update for UTF-8. And printing from/to/subj after
- *                              writing the header with empty data so that the header 'graphic'
- *                              characters & everything lines up properly.
- * 2024-04-30 Eric Oulashin     Version 1.89
- *                              Quote wrapping length: When re-wrapping quote lines, read the
- *                              editor configuration settings for "word-wrap quoted text" as
- *                              specified in xtrn.ini (settable in scfg) - Wrap quote lines
- *                              to the width specified there, or if not specified, default to
- *                              79 columns. This is to help ensure quoted text is a reasonable
- *                              width for many terminals. The wrapping logic is also called for
- *                              prepending quoted text with the quote prefix, so (for now)
- *                              there needs to be a default quote wrap width.
- * 2024-05-04 Eric Oulashin     Version 1.89a
- *                              Don't line-wrap poll messages for quoting, as that could mess
- *                              up the formatting of the poll options.  Also, a minor fix for
- *                              the 'to' name length in DCT mode when using a wide terminal.
- * 2024-05-11 Eric Oulashin     Version 1.89b
- *                              In SlyEdit_Misc.js, check to see that xtrn_area.editor[user.editor]
- *                              is an object before using it.
- * 2024-10-19 Eric Oulashin     Version 1.89c
- *                              Open the quote file in binary mode to avoid EOF issues on Windows
- *                              if a unicode "right arrow" code exists in the message, which
- *                              would get truncated to ASCII Ctrl-Z (ASCII 26), which is
- *                              interpreted as EOF on Windows.
- * 2024-10-19 Eric Oulashin     Version 1.89d
- *                              User inactivity timeout improvement (via use of console.getkey()
- *                              instead of the custom function that was being used)
- * 2025-02-09 Eric Oulashin     Version 1.89e
- *                              User inactivity timeout: Display a warning message (without
- *                              messing with the screen). New [STRINGS] configuration section
- *                              with stringsFilename to specify the name of a strings file,
- *                              which for now just contains an areYouThere setting
- * 2025-04-23 Eric Oulashin     Version 1.90 Beta
- *                              Started work on updating the way files are saved when not
- *                              editing a message (i.e., if the user is editing an SSH key):
- *                              Not adding a space after each (wrapped) line, etc..
- *                              Also, color/attribute codes are no longer removed from
- *                              quote lines. Although quote lines still appear in SlyEdit
- *                              with one (configurable) color, the quoted text will retain
- *                              color/attribute codes when the message is posted.
- * 2025-05-03 Eric Oulashin     New feature: A 'meme' can be added to the message by typing
- *                              /m on an empty line by itself and pressing enter.
- * 2025-05-04 Eric Oulashin     Bug fix: When closing the User Settings dialog, quote lines
- *                              are refreshed with the configured quote line color (instead
- *                              of with any color codes included in those lines)
- *
- *                              Bug fix: When closing the User Settings dialog, existing message
- *                              lines are refreshed better; sometimes, there were small parts of
- *                              the beginnings of some lines that were blanked out.
- *
- * 2025-05-06 Eric Oulashin     Bug fix (sort of): DCT mode File menu wasn't drawing when the user
- *                              presses the ESC key to bring up the menu. I don't know why that's
- *                              happening. I found a kludge that seems to fix it.
- *
- *                              On startup, SlyEdit now sets the 'normal' attribute on the
- *                              console to clear away any background color or other attribute(s)
- *                              that may have been set.
- * 2025-05-07 Eric Oulashin     Version 1.90
- *                              Releasing this version
- * 2025-05-20 Eric Oulashin     Version 1.91
- *                              Bug fix: Message text is now properly re-written when the Program
- *                              Info box (available from DCT mode) is erased
- * 2025-06-09 Eric Oulashin     Version 1.92
- *                              Added a user-togglable setting in the user settings for whether
- *                              to (re-)wrap quote lines to terminal width. Also, a user toggle
- *                              for whether to join wrapped quote lines.
- * 2025-06-24 Eric Oulashin     Version 1.92a
- *                              Bug fix: For cross-posting, when selecting a sub-board,
- *                              the additional menu quit keys were set as item-select keys
- *                              instead..  Switched the function call so it sets them as
- *                              additional quit keys.
- * 2025-08-02 Eric Oulashin     Version 1.92b
- *                              Cross-post selection fix to not select when just enter
- *                              is pressed (just confirm). Also, updated cross-post help
- *                              text and bottom border help text for othe cross-post menu
- *                              to explain that better.
  */
 
 "use strict";
@@ -227,8 +100,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.92b";
-var EDITOR_VER_DATE = "2025-08-02";
+var EDITOR_VERSION = "1.92c";
+var EDITOR_VER_DATE = "2025-10-25";
 
 
 // Program variables
@@ -1430,7 +1303,7 @@ function doEditLoop()
 	const CMDLIST_HELP_KEY          = CTRL_L;
 	const CMDLIST_HELP_KEY_2        = KEY_F1;
 	const IMPORT_FILE_KEY           = CTRL_O;
-	const QUOTE_KEY                 = CTRL_Q;
+	const QUOTE_KEY                 = gConfigSettings.ctrlQQuote ? CTRL_Q : CTRL_Y;
 	const SPELL_CHECK_KEY           = CTRL_R;
 	const CHANGE_SUBJECT_KEY        = CTRL_S;
 	const LIST_TXT_REPLACEMENTS_KEY = CTRL_T;
@@ -1573,7 +1446,7 @@ function doEditLoop()
 				// Let the user choose & insert quote lines into the message.
 				if (gUseQuotes)
 				{
-					var quoteRetObj = doQuoteSelection(curpos, currentWordLength);
+					var quoteRetObj = doQuoteSelection(curpos, currentWordLength, QUOTE_KEY);
 					curpos.x = quoteRetObj.x;
 					curpos.y = quoteRetObj.y;
 					currentWordLength = quoteRetObj.currentWordLength;
@@ -1889,7 +1762,7 @@ function doEditLoop()
 							case ENTER_ACTION_DO_QUOTE_SELECTION:
 								if (gUseQuotes)
 								{
-									enterRetObj = doQuoteSelection(curpos, currentWordLength);
+									enterRetObj = doQuoteSelection(curpos, currentWordLength, QUOTE_KEY);
 									curpos.x = enterRetObj.x;
 									curpos.y = enterRetObj.y;
 									currentWordLength = enterRetObj.currentWordLength;
@@ -3329,12 +3202,14 @@ function textLineIsEditable(pLineIdx)
 //  pCurpos: An object containing x and y values representing the
 //           cursor position.
 //  pCurrentWordLength: The length of the current word that has been typed
+//  pQuoteKey: The hotkey to use to open/close the quote window (could be Ctrl-Q
+//             or Ctrl-Y, depending on the SlyEdit configuration)
 //
 // Return value: An object containing the following properties:
 //               x and y: The horizontal and vertical cursor position
 //               timedOut: Whether or not the user input timed out (boolean)
 //               currentWordLength: The length of the current word
-function doQuoteSelection(pCurpos, pCurrentWordLength)
+function doQuoteSelection(pCurpos, pCurrentWordLength, pQuoteKey)
 {
 	// Create the return object
 	var retObj = {
@@ -3475,7 +3350,7 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 	console.gotoxy(gEditLeft, gEditBottom+1);
 	fpDrawQuoteWindowBottomBorder(gEditLeft, gEditRight);
 
-	var quoteLineMenu = createQuoteLineMenu(quoteTopScreenRow);
+	var quoteLineMenu = createQuoteLineMenu(quoteTopScreenRow, pQuoteKey);
 	var insertedQuoteLines = false;
 	// Customize the menu's OnItemSelect function to add the selected quote
 	// line to the message.  Note that the menu's exitOnItemSelect is set
@@ -3590,7 +3465,9 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 //
 // Parameters:
 //  pQuoteTopScreenRow: The first line on the screen where quote lines are written
-function createQuoteLineMenu(pQuoteTopScreenRow)
+//  pQuoteKey: The hotkey to use to open/close the quote window (could be Ctrl-Q
+//             or Ctrl-Y, depending on the SlyEdit configuration)
+function createQuoteLineMenu(pQuoteTopScreenRow, pQuoteKey)
 {
 	// Quote window parameters
 	const quoteBottomScreenRow = console.screen_rows - 2;
@@ -3611,7 +3488,7 @@ function createQuoteLineMenu(pQuoteTopScreenRow)
 	quoteLineMenu.colors.selectedItemColor = gQuoteLineHighlightColor;
 
 	// Add additional keypresses for quitting the menu's input loop
-	quoteLineMenu.AddAdditionalQuitKeys(CTRL_Q);
+	quoteLineMenu.AddAdditionalQuitKeys(pQuoteKey);
 
 	// Change the menu's NumItems() and GetItem() function to reference
 	// the message list in this object rather than add the menu items
@@ -7001,9 +6878,10 @@ function promptForGraphicsChar(pCurPos)
 	console.cleartoeol("\x01n");
 	console.gotoxy(1, console.screen_rows);
 	console.putmsg("Enter Graphics Code (\x01H?\x01N for a list, \x01HCTRL-C\x01N to cancel): ");
+	// Write a few spaces with a background color to indicate input text length
 	console.attributes = 31;
 	console.write(format("%3.3s",""));
-	var inp = ""; // The uer's inputted string
+	var inp = ""; // The user's inputted string
 	console.gotoxy(55 + inp.length, console.screen_rows);
 	var continueOn = true;
 	while (continueOn)
@@ -7064,10 +6942,17 @@ function promptForGraphicsChar(pCurPos)
 				console.print(ch);
 				inp += ch;
 				break;
-			case '\x08':	/* Backspace */
-				inp = inp.substr(0, inp.length-1);
+			case '\x08':	// Backspace
+				if (inp.length > 0)
+				{
+					inp = inp.substr(0, inp.length-1);
+					var curPos = console.getxy();
+					console.gotoxy(curPos.x-1, curPos.y);
+					console.print(" ");
+					console.gotoxy(curPos.x-1, curPos.y);
+				}
 				break;
-			case '\x0d':	/* CR */
+			case '\x0d':	// CR
 				if (inp.length >= 3)
 				{
 					// Return the chosen graphic char here
@@ -7089,7 +6974,7 @@ function promptForGraphicsChar(pCurPos)
 					continueOn = false;
 					break;
 				}
-			case '\x03':	/* CTRL-C */
+			case '\x03':	// CTRL-C
 				continueOn = false;
 				break;
 			case '?':
@@ -7128,6 +7013,10 @@ function promptForGraphicsChar(pCurPos)
 				displayMessageRectangle(1, gEditTop, gEditWidth, gEditHeight, editLinesTopIndex, true);
 				
 				// Return to the char # prompt
+				console.gotoxy(55 + inp.length, console.screen_rows);
+				// Write a few spaces with a background color to indicate input text length
+				console.attributes = 31;
+				console.write(format("%3.3s",""));
 				console.gotoxy(55 + inp.length, console.screen_rows);
 				break;
 			default:
