@@ -481,46 +481,47 @@ function DrawQuoteWindowTopBorder_IceStyle(pQuoteWinHeight, pEditLeft, pEditRigh
 //  pEditRight: The rightmost column of the edit area
 function DrawQuoteWindowBottomBorder_IceStyle(pEditLeft, pEditRight)
 {
-   // The border will use random bright/normal colors.  The colors
-   // should stay the same each time we draw it, so a "static"
-   // variable is used for the border text.  If that variable has
-   // not been defined yet, then build it.
-   if (typeof(DrawQuoteWindowBottomBorder_IceStyle.border) == "undefined")
-   {
-      DrawQuoteWindowBottomBorder_IceStyle.border = randomTwoColorString(LOWER_LEFT_VSINGLE_HDOUBLE,
-                                                             gConfigSettings.iceColors.BorderColor1,
-                                                             gConfigSettings.iceColors.BorderColor2)
-                + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
-                + gConfigSettings.iceColors.QuoteWinBorderTextColor + "^Q/ESC=End"
-                + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT
-                + gConfigSettings.iceColors.BorderColor1 + HORIZONTAL_DOUBLE
-                + gConfigSettings.iceColors.BorderColor2  + THIN_RECTANGLE_LEFT
-                + gConfigSettings.iceColors.QuoteWinBorderTextColor + "CR=Accept"
-                + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT
-                + gConfigSettings.iceColors.BorderColor1 + HORIZONTAL_DOUBLE
-                + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
-				+ gConfigSettings.iceColors.QuoteWinBorderTextColor + "Up/Down/PgUp/PgDn/Home/End=Scroll"
-                + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT;
-				/*
-                + gConfigSettings.iceColors.QuoteWinBorderTextColor + "Up/Down/PgUp/PgDn=Scroll"
-                + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT
-                + gConfigSettings.iceColors.BorderColor1 + HORIZONTAL_DOUBLE
-                + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
-                + gConfigSettings.iceColors.QuoteWinBorderTextColor + "F/L=First/Last pg"
-                + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT;
-				*/
-      // The border from here to the end of the line: Random high/low blue
-      var screenText = "";
-      for (var posX = pEditLeft + 62/*73*/; posX <= pEditRight; ++posX)
-         screenText += HORIZONTAL_DOUBLE;
-      screenText += LOWER_RIGHT_VSINGLE_HDOUBLE;
-      DrawQuoteWindowBottomBorder_IceStyle.border += randomTwoColorString(screenText,
-                                                          gConfigSettings.iceColors.BorderColor1,
-                                                          gConfigSettings.iceColors.BorderColor2);
-   }
+	// The border will use random bright/normal colors.  The colors
+	// should stay the same each time we draw it, so a "static"
+	// variable is used for the border text.  If that variable has
+	// not been defined yet, then build it.
+	if (typeof(DrawQuoteWindowBottomBorder_IceStyle.border) == "undefined")
+	{
+		const quoteHotkeyChar = gConfigSettings.ctrlQQuote ? "Q" : "Y";
+		DrawQuoteWindowBottomBorder_IceStyle.border = randomTwoColorString(LOWER_LEFT_VSINGLE_HDOUBLE,
+		                                                                   gConfigSettings.iceColors.BorderColor1,
+		                                                                   gConfigSettings.iceColors.BorderColor2)
+		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
+		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + format("^%s/ESC=End", quoteHotkeyChar)
+		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT
+		                                            + gConfigSettings.iceColors.BorderColor1 + HORIZONTAL_DOUBLE
+		                                            + gConfigSettings.iceColors.BorderColor2  + THIN_RECTANGLE_LEFT
+		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + "CR=Accept"
+		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT
+		                                            + gConfigSettings.iceColors.BorderColor1 + HORIZONTAL_DOUBLE
+		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
+		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + "Up/Down/PgUp/PgDn/Home/End=Scroll"
+		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT;
+		                                            /*
+		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + "Up/Down/PgUp/PgDn=Scroll"
+		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT
+		                                            + gConfigSettings.iceColors.BorderColor1 + HORIZONTAL_DOUBLE
+		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
+		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + "F/L=First/Last pg"
+		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT;
+		                                            */
+		// The border from here to the end of the line: Random high/low blue
+		var screenText = "";
+		for (var posX = pEditLeft + 62/*73*/; posX <= pEditRight; ++posX)
+		screenText += HORIZONTAL_DOUBLE;
+		screenText += LOWER_RIGHT_VSINGLE_HDOUBLE;
+		DrawQuoteWindowBottomBorder_IceStyle.border += randomTwoColorString(screenText,
+		gConfigSettings.iceColors.BorderColor1,
+		gConfigSettings.iceColors.BorderColor2);
+	}
 
-   // Draw the border line on the screen
-   console.print(DrawQuoteWindowBottomBorder_IceStyle.border);
+	// Draw the border line on the screen
+	console.print(DrawQuoteWindowBottomBorder_IceStyle.border);
 }
 
 // Prompts the user for a yes/no question, IceEdit-style.  Note that
