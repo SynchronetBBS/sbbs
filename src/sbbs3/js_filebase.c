@@ -1815,9 +1815,6 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	private_t* p;
 	scfg_t*    scfg;
 
-	if (js_argcIsInsufficient(cx, argc, 1))
-		return JS_FALSE;
-
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
 	obj = JS_NewObject(cx, &js_filebase_class, NULL, NULL);
@@ -1830,21 +1827,23 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	memset(p, 0, sizeof(private_t));
 	p->smb.retry_time = scfg->smb_retry_time;
 
-	uintN argn = 0;
-	JSVALUE_TO_STRBUF(cx, argv[argn], base, sizeof base, NULL);
-	++argn;
-	if (JS_IsExceptionPending(cx)) {
-		free(p);
-		return JS_FALSE;
-	}
-	if (*base == '\0') {
-		JS_ReportError(cx, "Invalid 'path_or_code' parameter");
-		free(p);
-		return JS_FALSE;
-	}
-	if (argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
-		is_path = JSVAL_TO_BOOLEAN(argv[argn]);
+	if(argc >= 1) {
+		uintN argn = 0;
+		JSVALUE_TO_STRBUF(cx, argv[argn], base, sizeof base, NULL);
 		++argn;
+		if (JS_IsExceptionPending(cx)) {
+			free(p);
+			return JS_FALSE;
+		}
+		if (*base == '\0') {
+			JS_ReportError(cx, "Invalid 'path_or_code' parameter");
+			free(p);
+			return JS_FALSE;
+		}
+		if (argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
+			is_path = JSVAL_TO_BOOLEAN(argv[argn]);
+			++argn;
+		}
 	}
 
 	if (!JS_SetPrivate(cx, obj, p)) {
@@ -1863,14 +1862,16 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", filebase_prop_desc, JSPROP_READONLY);
 #endif
 
-	if (is_path) {
-		p->smb.dirnum = INVALID_DIR;
-		SAFECOPY(p->smb.file, base);
-	} else if (dirnum_is_valid(scfg, p->smb.dirnum = getdirnum(scfg, base))) {
-		safe_snprintf(p->smb.file, sizeof(p->smb.file), "%s%s"
-		              , scfg->dir[p->smb.dirnum]->data_dir, scfg->dir[p->smb.dirnum]->code);
-	} else { /* unknown code */
-		JS_ReportError(cx, "Unrecognized file area (directory) internal code: '%s'", base);
+	if(argc >= 1) {
+		if (is_path) {
+			p->smb.dirnum = INVALID_DIR;
+			SAFECOPY(p->smb.file, base);
+		} else if (dirnum_is_valid(scfg, p->smb.dirnum = getdirnum(scfg, base))) {
+			safe_snprintf(p->smb.file, sizeof(p->smb.file), "%s%s"
+						  , scfg->dir[p->smb.dirnum]->data_dir, scfg->dir[p->smb.dirnum]->code);
+		} else { /* unknown code */
+			JS_ReportError(cx, "Unrecognized file area (directory) internal code: '%s'", base);
+		}
 	}
 
 	return JS_TRUE;
