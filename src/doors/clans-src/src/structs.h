@@ -685,4 +685,13 @@ struct LeavingData {
 	int32_t Followers, Footmen, Axemen, Knights, Catapults;
 };
 
+struct Door {
+	bool Initialized;
+	bool AllowScreenPause;
+
+	char ColorScheme[50];
+
+	bool UserBooted;            // True if a user was online already
+};
+
 #endif

@@ -64,18 +64,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define COLOR   0xB800
 #define MONO    0xB000
 
-static struct {
-	bool Initialized;
-	bool AllowScreenPause;
-
-	char ColorScheme[50];
-
-	bool UserBooted;            // True if a user was online already
-} Door = { false, true,
-		   { 1, 9, 3, 1, 11, 7, 3, 2, 10, 2, 5, 3, 9, 5, 13, 1, 9, 15, 7, 0, 0, 8, 4,
-			 1, 1, 1 },
-		   false
-		 };
+struct Door Door = { false, true,
+	{ 1, 9, 3, 1, 11, 7, 3, 2, 10, 2, 5, 3, 9, 5, 13, 1, 9, 15, 7, 0, 0, 8, 4,
+	  1, 1, 1 },
+	false
+};
 
 // ------------------------------------------------------------------------- //
 
@@ -89,43 +82,66 @@ bool Door_Initialized(void)
 
 // ------------------------------------------------------------------------- //
 
-static void CreateSemaphor(void)
+bool CreateSemaphor(void)
 {
 	FILE *fp;
-	uint16_t node = SWAP16(System.Node);
+#ifdef __unix__
+	/*
+	 * This is the classic O_EXCL|O_CREAT dance for NFS
+	 */
+	char hostname[256];
+	char fname[sizeof(hostname) + 32];
+	pid_t pid;
+	struct stat st;
 
-	fp = _fsopen("online.flg", "wb", SH_DENYRW);
-	fwrite(&node, sizeof(node), 1, fp);
+	pid = getpid();
+	if (gethostname(hostname, sizeof(hostname)))
+		return false;
+	snprintf(fname, sizeof(fname), "online.%s.%" PRIuMAX, hostname, (uintmax_t)pid);
+	fp = fopen(fname, "w+x");
+	if (!fp)
+		return false;
+	fprintf(fp, "Node: %d\n", System.Node);
 	fclose(fp);
+	if (link(fname, "online.flg") == 0) {
+		unlink(fname);
+		return true;
+	}
+	if (stat(fname, &st)) {
+		unlink(fname);
+		return false;
+	}
+	if (st.st_nlink == 2) {
+		unlink(fname);
+		return true;
+	}
+	unlink(fname);
+	return false;
+#else
+	fp = fopen("online.flg", "w+x");
+	if (!fp)
+		return false;
+	fprintf(fp, "Node: %d\n", System.Node);
+	fclose(fp);
+	return true;
+#endif
 }
 
-static void RemoveSemaphor(void)
+void WaitSemaphor(void)
+{
+	int count = 0;
+	while (!CreateSemaphor()) {
+		if (count++ == 0)
+			DisplayStr("Waiting for online flag to clear\n");
+		if (count == 60)
+			count = 0;
+		sleep(1);
+	}
+}
+
+void RemoveSemaphor(void)
 {
 	unlink("online.flg");
-}
-
-static bool SomeoneOnline(void)
-/*
- * Function will check if a user is online by seeing if a semaphor file
- * exists.
- */
-{
-	FILE *fp;
-	int16_t WhichNode;
-
-	fp = _fsopen("online.flg", "rb", SH_DENYWR);
-	if (fp) {
-		fread(&WhichNode, sizeof(int16_t), 1, fp);
-		fclose(fp);
-
-		// if node is same as current node, disregard this file
-		if (SWAP16(WhichNode) == System.Node)
-			return false;
-		else
-			return true;
-	}
-	else
-		return false;
 }
 
 // ------------------------------------------------------------------------- //
@@ -833,15 +849,11 @@ void Door_Init(bool Local)
 		}
 	}
 
-	if (SomeoneOnline()) {
-		//  rputs("\nSomeone is currently playing the game on another node.\nPlease return in a few minutes.\n%P");
+	if (Door.UserBooted) {
 		Door.UserBooted = true;
 		rputs(ST_MAIN4);
 		System_Close();
 	}
-
-	// otherwise, create semaphor
-	CreateSemaphor();
 }
 
 // ------------------------------------------------------------------------- //
