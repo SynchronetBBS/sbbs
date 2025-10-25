@@ -645,11 +645,15 @@ zmodem_progress(void *cbdata, int64_t current_pos)
 	zmodem_t             *zm = zcb->zm;
 	bool                  growing = false;
 	int                   tww = transw_ti.winright - transw_ti.winleft + 1;
+	struct text_info      orig_info;
 
 	now = time(NULL);
 	if (current_pos > zm->current_file_size)
 		growing = true;
 	if ((now != last_progress) || ((current_pos >= zm->current_file_size) && (growing == false))) {
+		gettextinfo(&orig_info);
+		int os = _wscroll;
+		_wscroll = 0;
 		zmodem_check_abort(cbdata);
 		hold_update = true;
 		window(progress_ti.winleft, progress_ti.wintop, progress_ti.winright, progress_ti.winbottom);
@@ -697,12 +701,12 @@ zmodem_progress(void *cbdata, int64_t current_pos)
 		cputs("\r\n");
 		if (zm->current_file_size == 0) {
 			cprintf("%*s%3d%%\r\n", tww / 2 - 5, "", 100);
-			l = 60;
+			l = tww - 6;
 		}
 		else {
 			cprintf("%*s%3d%%\r\n", tww / 2 - 5, "",
 			    (long)(((float)current_pos / (float)zm->current_file_size) * 100.0));
-			l = (long)(60 * ((float)current_pos / (float)zm->current_file_size));
+			l = (long)((tww - 6) * ((float)current_pos / (float)zm->current_file_size));
 		}
 		cprintf("[%*.*s%*s]", l, l,
 		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
@@ -711,10 +715,12 @@ zmodem_progress(void *cbdata, int64_t current_pos)
 		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 		    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1",
-		    (int)(60 - l), "");
+		    (int)((tww - 6) - l), "");
 		last_progress = now;
 		hold_update = false;
-		gotoxy(wherex(), wherey());
+		window(orig_info.winleft, orig_info.wintop, orig_info.winright, orig_info.winbottom);
+		gotoxy(orig_info.curx, orig_info.cury);
+		_wscroll = os;
 		hold_update = old_hold;
 	}
 }
@@ -1154,15 +1160,18 @@ cet_frame_recv_byte(void *ptr, unsigned timeout)
 static void
 cet_telesoftware_progress(struct cet_ts_state *sp)
 {
-	static int16_t last_frame;
-	int            old_hold = hold_update;
+	static int16_t   last_frame;
+	int              old_hold = hold_update;
+	struct text_info orig_info;
 
 	time_t now = time(NULL);
 	if (sp->frame_num == 0) {
 		last_frame = -1;
 	}
 	if (sp->frame_num != last_frame) {
+		gettextinfo(&orig_info);
 		hold_update = true;
+		int os = _wscroll;
 		window(progress_ti.winleft, progress_ti.wintop, progress_ti.winright, progress_ti.winbottom);
 		gotoxy(1, 1);
 		textattr(LIGHTCYAN | (BLUE << 4));
@@ -1208,7 +1217,9 @@ cet_telesoftware_progress(struct cet_ts_state *sp)
 		}
 		last_frame = sp->frame_num;
 		hold_update = false;
-		gotoxy(wherex(), wherey());
+		window(orig_info.winleft, orig_info.wintop, orig_info.winright, orig_info.winbottom);
+		gotoxy(orig_info.curx, orig_info.cury);
+		_wscroll = os;
 		hold_update = old_hold;
 	}
 }
@@ -2135,22 +2146,25 @@ num_blocks(unsigned curr_block, uint64_t offset, uint64_t len, unsigned block_si
 void
 xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize, time_t start)
 {
-	uint64_t      total_blocks;
-	unsigned      cps;
-	int           i;
-	uint64_t      l;
-	time_t        t;
-	time_t        now;
-	static time_t last_progress;
-	int           old_hold = hold_update;
-	xmodem_t     *xm = (xmodem_t *)cbdata;
-	int           tww = transw_ti.winright - transw_ti.winleft + 1;
+	uint64_t         total_blocks;
+	unsigned         cps;
+	int              i;
+	uint64_t         l;
+	time_t           t;
+	time_t           now;
+	static time_t    last_progress;
+	int              old_hold = hold_update;
+	xmodem_t        *xm = (xmodem_t *)cbdata;
+	int              tww = transw_ti.winright - transw_ti.winleft + 1;
+	struct text_info orig_info;
 
 	now = time(NULL);
 	if ((now - last_progress > 0) || (offset >= fsize)) {
 		xmodem_check_abort(cbdata);
 
 		hold_update = true;
+		int os = _wscroll;
+		gettextinfo(&orig_info);
 		window(progress_ti.winleft, progress_ti.wintop, progress_ti.winright, progress_ti.winbottom);
 		gotoxy(1, 1);
 		textattr(LIGHTCYAN | (BLUE << 4));
@@ -2184,11 +2198,11 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 			cputs("\r\n");
 			cprintf("%*s%3d%%\r\n", tww / 2 - 5, "",
 			    fsize ? (long)(((float)offset / (float)fsize) * 100.0) : 100);
-			i = fsize ? (((float)offset / (float)fsize) * 60.0) : 60;
+			i = fsize ? (((float)offset / (float)fsize) * (tww - 6)) : (tww - 6);
 			if (i < 0)
 				i = 0;
-			else if (i > 60)
-				i = 60;
+			else if (i > (tww - 6))
+				i = (tww - 6);
 			cprintf("[%*.*s%*s]", i, i,
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
@@ -2196,7 +2210,7 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1",
-			    60 - i, "");
+			    (tww - 6) - i, "");
 		}
 		else if ((*(xm->mode)) & YMODEM) {
 			cprintf("Block (%lu%s): %lu  Byte: %" PRId64,
@@ -2216,11 +2230,11 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 			cputs("\r\n");
 			cprintf("%*s%3d%%\r\n", tww / 2 - 5, "",
 			    fsize ? (long)(((float)offset / (float)fsize) * 100.0) : 100);
-			i = fsize ? (long)(((float)offset / (float)fsize) * 60.0) : 60;
+			i = fsize ? (long)(((float)offset / (float)fsize) * (tww - 6)) : (tww - 6);
 			if (i < 0)
 				i = 0;
-			else if (i > 60)
-				i = 60;
+			else if (i > (tww - 6))
+				i = (tww - 6);
 			cprintf("[%*.*s%*s]", i, i,
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
@@ -2228,7 +2242,7 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1"
 			    "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1",
-			    60 - i, "");
+			    (tww - 6) - i, "");
 		}
 		else { /* XModem receive */
 			cprintf("Block (%lu%s): %lu  Byte: %" PRId64,
@@ -2246,7 +2260,9 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 		}
 		last_progress = now;
 		hold_update = false;
-		gotoxy(wherex(), wherey());
+		window(orig_info.winleft, orig_info.wintop, orig_info.winright, orig_info.winbottom);
+		gotoxy(orig_info.curx, orig_info.cury);
+		_wscroll = os;
 		hold_update = old_hold;
 	}
 }
