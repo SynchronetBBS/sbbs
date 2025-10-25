@@ -28,6 +28,8 @@ function archive_date(file)
 
 function is_user_accessible_dir(dir)
 {
+	if(!file_area.dir[dir])
+		return false;
 	if(user.number === 0)
 		return true;
 	return user.compare_ars(file_area.dir[dir].ars)
@@ -102,6 +104,20 @@ for(var i = 0; i < argc; i++) {
 			writeln("  -v              increase verbosity (detail) of output");
 			exit(0);
 		}
+		if(opt.indexOf("user=") == 0) {
+			user.number = system.matchuser(opt.slice(5));
+			if(user.number < 1)
+				alert("Invalid user specified: " + opt.slice(5));
+			continue;
+		}
+	}
+}
+for(var i = 0; i < argc; i++) {
+	var arg = argv[i];
+	if(arg[0] == '-') {
+		var opt = arg;
+		while(opt[0] == '-')
+			opt = opt.slice(1);
 		if(opt.indexOf("ex=") == 0) {
 			exclude_list.push(opt.slice(3));
 			continue;
@@ -140,12 +156,6 @@ for(var i = 0; i < argc; i++) {
 		if(opt.indexOf("sort=") == 0) {
 			sort_prop = opt.slice(5);
 			options.sort = true;
-			continue;
-		}
-		if(opt.indexOf("user=") == 0) {
-			user.number = system.matchuser(opt.slice(5));
-			if(user.number < 1)
-				alert("Invalid user specified: " + opt.slice(5));
 			continue;
 		}
 		if(opt.indexOf("out=") == 0) {
@@ -269,9 +279,11 @@ if(fmt != "json") {
 
 if(!dir_list.length) {
 	var code;
-	while(!file_area.dir[code] && !js.terminated) {
-		for(var d in file_area.dir)
-			writeln(d);
+	while(!is_user_accessible_dir(code) && !js.terminated) {
+		for(var d in file_area.dir) {
+			if(is_user_accessible_dir(d))
+				writeln(d);
+		}
 		code = prompt("Directory code");
 	}
 	dir_list.push(code);
@@ -282,6 +294,8 @@ var dir_code;
 var file_list = [];
 for(var i = 0; i < dir_list.length; i++) {
 	dir_code = dir_list[i];
+	if(!is_user_accessible_dir(dir_code))
+		continue;
 	var base = new FileBase(dir_code);
 	if(!base.open())
 		throw new Error(base.last_error);
