@@ -179,7 +179,7 @@ void usage()
 static void
 cooked_tty(void)
 {
-	if (isatty(fileno(stdin))) {
+	if (isatty(STDIN_FILENO)) {
 #ifdef __unix__
 		tcsetattr(STDIN_FILENO, TCSANOW, &orig_term);
 #elif defined _WIN32
@@ -208,12 +208,12 @@ static void raw_input(struct termios *t)
 static void
 raw_tty(void)
 {
-	if (isatty(fileno(stdin))) {
+	if (isatty(STDIN_FILENO)) {
 #ifdef __unix__
 		struct termios term = orig_term;
 
 		raw_input(&term);
-		tcsetattr(fileno(stdin), TCSANOW, &term);
+		tcsetattr(STDIN_FILENO, TCSANOW, &term);
 #elif defined _WIN32
 		SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), 0);
 #else
@@ -1228,9 +1228,9 @@ int main(int argc, char **argv)
 		perror(_PATH_DEVNULL);
 		return do_bail(-1);
 	}
-	if (isatty(fileno(stdin))) {
+	if (isatty(STDIN_FILENO)) {
 #ifdef __unix__
-		tcgetattr(fileno(stdin), &orig_term);
+		tcgetattr(STDIN_FILENO, &orig_term);
 #endif
 		raw_tty();
 		statfp = stderr;
@@ -1466,7 +1466,7 @@ int main(int argc, char **argv)
 	if (umask_val >= 0)
 		umask(umask_val);
 
-	if (module == NULL && js_buf == NULL && isatty(fileno(stdin))) {
+	if (module == NULL && js_buf == NULL && isatty(STDIN_FILENO)) {
 		fprintf(stderr, "\n!No JavaScript module-name or expression specified\n");
 		usage();
 		iniFreeStringList(ini);
