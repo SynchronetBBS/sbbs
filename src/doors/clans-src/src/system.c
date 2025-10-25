@@ -56,6 +56,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "readcfg.h"
 #include "reg.h"
 #include "scores.h"
+#include "semfile.h"
 #include "spells.h"
 #include "structs.h"
 #include "system.h"
@@ -550,9 +551,9 @@ void System_Init(void)
 	System.Local = false;
 
 	if (System.Node == 0)
-		WaitSemaphor();
+		WaitSemaphor(System.Node);
 	else {
-		if (!CreateSemaphor()) {
+		if (!CreateSemaphor(System.Node)) {
 			Door.UserBooted = true;
 			Door_Init(System.Local);
 		}

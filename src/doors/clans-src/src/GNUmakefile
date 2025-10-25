@@ -81,10 +81,11 @@ CLANS_OBJS :=	$(OBJDIR)alliance.o $(OBJDIR)alliancem.o \
 		$(OBJDIR)myopen.o $(OBJDIR)news.o $(OBJDIR)npc.o \
 		$(OBJDIR)parsing.o $(OBJDIR)pawn.o $(OBJDIR)quests.o \
 		$(OBJDIR)readcfg.o $(OBJDIR)reg.o $(OBJDIR)scores.o \
-		$(OBJDIR)serialize.o $(OBJDIR)spells.o $(OBJDIR)system.o \
-		$(OBJDIR)trades.o $(OBJDIR)unix_wrappers.o \
-		$(OBJDIR)user.o $(OBJDIR)video.o $(OBJDIR)village.o \
-		$(OBJDIR)voting.o $(OBJDIR)wb_fapnd.o
+		$(OBJDIR)semfile.o $(OBJDIR)serialize.o \
+		$(OBJDIR)spells.o $(OBJDIR)system.o $(OBJDIR)trades.o \
+		$(OBJDIR)unix_wrappers.o $(OBJDIR)user.o \
+		$(OBJDIR)video.o $(OBJDIR)village.o $(OBJDIR)voting.o \
+		$(OBJDIR)wb_fapnd.o
 
 CHEW_OBJS :=	$(OBJDIR)chew.o $(OBJDIR)gum.o $(OBJDIR)parsing.o
 

@@ -51,6 +51,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "myopen.h"
 #include "parsing.h"
 #include "readcfg.h"
+#include "semfile.h"
 #include "spells.h"
 #include "structs.h"
 #include "system.h"
@@ -78,70 +79,6 @@ bool Door_Initialized(void)
  */
 {
 	return Door.Initialized;
-}
-
-// ------------------------------------------------------------------------- //
-
-bool CreateSemaphor(void)
-{
-	FILE *fp;
-#ifdef __unix__
-	/*
-	 * This is the classic O_EXCL|O_CREAT dance for NFS
-	 */
-	char hostname[256];
-	char fname[sizeof(hostname) + 32];
-	pid_t pid;
-	struct stat st;
-
-	pid = getpid();
-	if (gethostname(hostname, sizeof(hostname)))
-		return false;
-	snprintf(fname, sizeof(fname), "online.%s.%" PRIuMAX, hostname, (uintmax_t)pid);
-	fp = fopen(fname, "w+x");
-	if (!fp)
-		return false;
-	fprintf(fp, "Node: %d\n", System.Node);
-	fclose(fp);
-	if (link(fname, "online.flg") == 0) {
-		unlink(fname);
-		return true;
-	}
-	if (stat(fname, &st)) {
-		unlink(fname);
-		return false;
-	}
-	if (st.st_nlink == 2) {
-		unlink(fname);
-		return true;
-	}
-	unlink(fname);
-	return false;
-#else
-	fp = fopen("online.flg", "w+x");
-	if (!fp)
-		return false;
-	fprintf(fp, "Node: %d\n", System.Node);
-	fclose(fp);
-	return true;
-#endif
-}
-
-void WaitSemaphor(void)
-{
-	int count = 0;
-	while (!CreateSemaphor()) {
-		if (count++ == 0)
-			DisplayStr("Waiting for online flag to clear\n");
-		if (count == 60)
-			count = 0;
-		sleep(1);
-	}
-}
-
-void RemoveSemaphor(void)
-{
-	unlink("online.flg");
 }
 
 // ------------------------------------------------------------------------- //
