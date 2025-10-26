@@ -245,7 +245,7 @@ static int16_t MainMenu(void)
 	struct UserInfo User;
 	int16_t BannerShown;
 
-	BannerShown = RANDOM(5) + 1;
+	BannerShown = my_random(5) + 1;
 
 	LoadStrings(970, 20, szTheOptions);
 	snprintf(szMainMenu, sizeof(szMainMenu), "Main Menu%d", BannerShown);
@@ -434,11 +434,11 @@ static int16_t MineMenu(void)
 					}
 
 					// sometimes find treasure
-					if (RANDOM(15) == 0) {
+					if (my_random(15) == 0) {
 						Items_FindTreasureChest();
 					}
 					// sometimes run a random event
-					else if (RANDOM(7) == 0) {
+					else if (my_random(7) == 0) {
 						// run random event using file corresponding to
 						// level groupings
 						if (PClan->MineLevel == 0)

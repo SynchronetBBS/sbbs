@@ -44,6 +44,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "news.h"
 #include "npc.h"
 #include "quests.h"
+#include "random.h"
 #include "structs.h"
 #include "user.h"
 #include "video.h"
@@ -171,7 +172,7 @@ void NPC_Maint(void)
 			NPCNdx.Status = NPCS_NOTHERE;
 
 			// yes, he is a wanderer, see if appears in town today
-			if (RANDOM(100) < NPCInfo->OddsOfSeeing) {
+			if (my_random(100) < NPCInfo->OddsOfSeeing) {
 				// printf("%s is in town\n", NPCInfo->szName);
 
 				// he appears in town today

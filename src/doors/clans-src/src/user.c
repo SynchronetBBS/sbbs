@@ -1677,7 +1677,7 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 
 		PC->MaxHP = Races[ PC->WhichRace ]->MaxHP;
 		if (ClanLeader)
-			PC->MaxHP += RANDOM(10);
+			PC->MaxHP += my_random(10);
 
 		PC->MaxSP = Races[ PC->WhichRace ]->MaxSP;
 
@@ -1689,16 +1689,17 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 		PC->Difficulty = -1;  // no difficulty
 
 		/* randomize stats a bit */
-		for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++)
-			PC->Attributes[iTemp] += RANDOM(1);
+		// my_random(1) always returns 0.
+		//for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++)
+		//	PC->Attributes[iTemp] += my_random(1);
 
 		// if clan leader, add on some random stats
 		if (ClanLeader)
 			for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++)
-				PC->Attributes[iTemp] += RANDOM(3);
+				PC->Attributes[iTemp] += my_random(3);
 
-		PC->MaxHP += RANDOM(5);
-		PC->MaxSP += RANDOM(5);
+		PC->MaxHP += my_random(5);
+		PC->MaxSP += my_random(5);
 		PC->HP = PC->MaxHP;
 		PC->SP = PC->MaxSP;
 

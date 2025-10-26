@@ -549,7 +549,7 @@ void ShowAlliances(struct clan *Clan)
 bool EnterAlliance(struct Alliance *Alliance)
 {
 	char *szTheOptions[13], szString[128], szName[25];
-	char szFileName[13];
+	char szFileName[16];
 	int iTemp;
 
 	// show stats

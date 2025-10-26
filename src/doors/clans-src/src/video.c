@@ -1310,7 +1310,7 @@ void clrscr(void)
 
 void textattr(uint8_t attrib)
 {
-	char seq[16];
+	char seq[23];
 	snprintf(seq, sizeof(seq), "\x1b[0;%d;%d", ansi_colours(attrib & 0x07), ansi_colours((attrib >> 4) & 0x07) + 10);
 	if (attrib & 0x08)
 		strlcat(seq, ";1", sizeof(seq));

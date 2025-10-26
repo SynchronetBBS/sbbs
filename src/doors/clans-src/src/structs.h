@@ -579,7 +579,7 @@ struct AttackPacket {
 };
 
 struct SpyAttemptPacket {
-	char szSpierName[40];
+	char szSpierName[74];
 	int16_t IntelligenceLevel;
 	int16_t TargetType;      // either a village or clan
 	int16_t ClanID[2];           // who is the target
@@ -593,7 +593,7 @@ struct SpyResultPacket {
 	int16_t BBSFromID;           // these are the same as spyattemptpacket
 	int16_t BBSToID;
 	int16_t MasterID[2];     // who sent it originally?
-	char szTargetName[35];  // who we're spying on
+	char szTargetName[25];  // who we're spying on
 
 	bool Success;
 	struct empire Empire;   // unused if unsuccessful

@@ -112,7 +112,7 @@ void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 void KillAlliances(void)
 {
 	struct Alliance *Alliances[MAX_ALLIANCES];
-	char szFileName[13];
+	char szFileName[16];
 	int16_t iTemp;
 
 	GetAlliances(Alliances);
