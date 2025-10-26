@@ -117,6 +117,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->sys_misc = iniGetUInteger(ini, ROOT_SECTION, "settings", 0);
 	cfg->sys_date_fmt = iniGetInteger(ini, ROOT_SECTION, "date_fmt", cfg->sys_misc & SM_EURODATE ? DDMMYY : MMDDYY);
 	cfg->sys_date_sep = *iniGetString(ini, NULL, "date_sep", "/", value);
+	cfg->sys_vdate_sep = *iniGetString(ini, NULL, "vdate_sep", "'", value);
 	cfg->sys_date_verbal = iniGetBool(ini, NULL, "date_verbal", false);
 	cfg->sys_login = iniGetUInteger(ini, ROOT_SECTION, "login", 0);
 	cfg->sys_pwdays = iniGetInteger(ini, ROOT_SECTION, "pwdays", 0);

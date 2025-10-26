@@ -34,9 +34,9 @@ char* date_format(scfg_t* cfg, char* buf, size_t size, bool verbal)
 {
 	if (verbal) {
 		switch (cfg->sys_date_fmt) {
-			case MMDDYY: snprintf(buf, size, "MonDD%cYY", cfg->sys_date_sep); return buf;
-			case DDMMYY: snprintf(buf, size, "DD%cMonYY", cfg->sys_date_sep); return buf;
-			case YYMMDD: snprintf(buf, size, "YY%cMonDD", cfg->sys_date_sep); return buf;
+			case MMDDYY: snprintf(buf, size, "MonDD%cYY", cfg->sys_vdate_sep); return buf;
+			case DDMMYY: snprintf(buf, size, "DD%cMonYY", cfg->sys_vdate_sep); return buf;
+			case YYMMDD: snprintf(buf, size, "YY%cMonDD", cfg->sys_vdate_sep); return buf;
 		}
 	}
 	else switch (cfg->sys_date_fmt) {
@@ -181,13 +181,13 @@ char* verbal_datestr(scfg_t* cfg, time_t t, char* str)
 	char      fmt[32] = "";
 	switch (cfg->sys_date_fmt) {
 		case MMDDYY:
-			snprintf(fmt, sizeof fmt, "%%b%%d%c%%y", cfg->sys_date_sep);
+			snprintf(fmt, sizeof fmt, "%%b%%d%c%%y", cfg->sys_vdate_sep);
 			break;
 		case DDMMYY:
-			snprintf(fmt, sizeof fmt, "%%d%c%%b%%y", cfg->sys_date_sep);
+			snprintf(fmt, sizeof fmt, "%%d%c%%b%%y", cfg->sys_vdate_sep);
 			break;
 		case YYMMDD:
-			snprintf(fmt, sizeof fmt, "%%y%c%%b%%d", cfg->sys_date_sep);
+			snprintf(fmt, sizeof fmt, "%%y%c%%b%%d", cfg->sys_vdate_sep);
 			break;
 	}
 	strftime(str, 9, fmt, &tm);

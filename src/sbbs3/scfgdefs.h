@@ -480,6 +480,7 @@ typedef struct
 	int16_t			sys_timezone;		/* Time Zone of BBS */
 	enum date_fmt	sys_date_fmt;
 	char			sys_date_sep;
+	char			sys_vdate_sep;
 	bool			sys_date_verbal;
 	fevent_t		sys_monthly;		/* Monthly event */
 	fevent_t		sys_weekly;			/* Weekly event */

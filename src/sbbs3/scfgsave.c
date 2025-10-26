@@ -127,6 +127,8 @@ bool write_main_cfg(scfg_t* cfg)
 	iniSetUInteger(&ini, ROOT_SECTION, "date_fmt", cfg->sys_date_fmt, NULL);
 	SAFEPRINTF(tmp, "%c", cfg->sys_date_sep);
 	iniSetString(&ini, ROOT_SECTION, "date_sep", tmp, NULL);
+	SAFEPRINTF(tmp, "%c", cfg->sys_vdate_sep);
+	iniSetString(&ini, ROOT_SECTION, "vdate_sep", tmp, NULL);
 	iniSetBool(&ini, ROOT_SECTION, "date_verbal", cfg->sys_date_verbal, NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "login", cfg->sys_login, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "lastnode", cfg->sys_lastnode, NULL);
