@@ -1401,47 +1401,69 @@ int edit_sys_datefmt(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	int i = cfg.sys_date_fmt;
-	if (cfg.sys_date_sep == '.')
-		i += 3;
-	else if (cfg.sys_date_sep == '_')
-		i += 6;
-	else if (cfg.sys_date_sep == ' ')
-		i += 9;
 	char* opts[] = {
-		"MM/DD/YY", "DD/MM/YY", "YY/MM/DD",
-		"MM.DD.YY", "DD.MM.YY", "YY.MM.DD",
-		"MM-DD-YY", "DD-MM-YY", "YY-MM-DD",
-		"MM DD YY", "DD MM YY", "YY MM DD",
+		"Month First", "Day First", "Year First",
 		NULL
 	};
 	uifc.helpbuf =
-		"`Numeric Date Format:`\n"
+		"`Short Date Format:`\n"
 		"\n"
-		"If you would like short dates to be displayed in the traditional U.S.\n"
-		"date format of month first, choose `MM/DD/YY`.  If you prefer the\n"
-		"European traditional date format of day first, choose `DD/MM/YY`.\n"
-		"If you and your users would prefer year first, choose `YY/MM/DD`.\n"
-		"\n"
-		"Different date value separators are also supported.\n";
+		"If you would like dates to be entered and displayed in the traditional\n"
+		"U.S. date format of month first (e.g. 'MM/DD/YY'), choose `Month First`.\n"
+		"If you prefer the European traditional date format of day first, choose\n"
+		"`Day First`.  If you and your users would prefer year first format, choose\n"
+		"`Year First`.\n"
 	;
 	if (page) {
 		mode = wiz_help(page, total, uifc.helpbuf);
 		mode |= WIN_FIXEDHEIGHT;
-		uifc.list_height = 7;
+		uifc.list_height = 3;
 	}
 	i = uifc.list(mode, 0, 11, 0, &i, 0
-	              , "Numeric Date Format", opts);
+	              , "Short Date Format", opts);
 	if (i < 0)
 		return i;
-	cfg.sys_date_fmt = i % 3;
-	if (i < 3)
-		cfg.sys_date_sep = '/';
-	else if (i < 6)
-		cfg.sys_date_sep = '.';
-	else if (i < 9)
-		cfg.sys_date_sep = '-';
-	else
-		cfg.sys_date_sep = ' ';
+	cfg.sys_date_fmt = i;
+	return i;
+}
+
+int edit_sys_date_sep(int page, int total)
+{
+	char str[2] = { cfg.sys_date_sep };
+	int mode = WIN_SAV | WIN_MID;
+	uifc.helpbuf =
+		"`Numeric Date Separator:`\n"
+		"\n"
+		"Choose a preferred short numeric date field separating character.\n"
+		"\n"
+		"Default: `/`\n"
+	;
+	if (page)
+		mode = wiz_help(page, total, uifc.helpbuf);
+	int i = uifc.input(mode, 0, 16, "Numeric Date Field Separator"
+	                   , str, 1, K_EDIT | K_SPACE);
+	if (i >= 0 && *str >= ' ')
+		cfg.sys_date_sep = *str;
+	return i;
+}
+
+int edit_sys_vdate_sep(int page, int total)
+{
+	char str[2] = { cfg.sys_vdate_sep };
+	int mode = WIN_SAV | WIN_MID;
+	uifc.helpbuf =
+		"`Verbal Date Separator:`\n"
+		"\n"
+		"Choose a preferred verbal numeric date field separating character.\n"
+		"\n"
+		"Default: `'`\n"
+	;
+	if (page)
+		mode = wiz_help(page, total, uifc.helpbuf);
+	int i = uifc.input(mode, 0, 16, "Verbal Date Field Separator"
+	                   , str, 2, K_EDIT | K_SPACE);
+	if (i >= 0 && *str >= ' ')
+		cfg.sys_vdate_sep = *str;
 	return i;
 }
 
@@ -1795,8 +1817,8 @@ void sys_cfg(void)
 		         , cfg.sys_timezone == SYS_TIMEZONE_AUTO ? "Auto: " : ""
 		         , smb_zonestr(sys_timezone(&cfg), NULL)
 		         , SMB_TZ_HAS_DST(cfg.sys_timezone) && cfg.sys_misc & SM_AUTO_DST ? "(Auto-DST)" : "");
-		snprintf(opt[i++], MAX_OPLN, "%-20s%s (e.g. %s)", "Short Date Format"
-		         , date_format(&cfg, str, sizeof str, cfg.sys_date_verbal)
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s, display: %s", "Short Date Format"
+		         , date_format(&cfg, str, sizeof str, false)
 		         , datestr(&cfg, time(NULL), dstr));
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Operator", cfg.sys_op);
 
@@ -1841,8 +1863,14 @@ void sys_cfg(void)
 				edit_sys_timezone(false, false);
 				break;
 			case 3:
-				if (edit_sys_datefmt(false, false) >= 0)
-					edit_sys_date_verbal(false, false);
+				if (edit_sys_datefmt(false, false) < 0)
+					break;
+				if (edit_sys_date_sep(false, 0) < 0)
+					break;
+				if (edit_sys_date_verbal(false, false) < 0)
+					break;
+				if (cfg.sys_date_verbal)
+					edit_sys_vdate_sep(false, 0);
 				break;
 			case 4:
 				edit_sys_operator(false, false);
