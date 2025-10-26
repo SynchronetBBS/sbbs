@@ -5,6 +5,7 @@
 
 #include <sys/file.h>
 #include <fnmatch.h>
+
 #include "unix_wrappers.h"
 
 #if defined(__linux__) || defined(__NetBSD__)

@@ -10,7 +10,8 @@ CLANS_LIBS +=	$(ODOORS)/libs-$(OS)/libODoors.a
 LDFLAGS	+=	-L$(ODOORS)/libs-$(OS)
 
 ifeq ($(os),linux)
- WRAPPER_LIBS += -lbsd
+ CFLAGS	+=	`pkg-config libbsd-overlay --cflags`
+ WRAPPER_LIBS += `pkg-config libbsd-overlay --libs`
 endif
 
 # Some platform-specific things...
