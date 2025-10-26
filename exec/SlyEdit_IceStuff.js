@@ -3,17 +3,6 @@
  * Author: Eric Oulashin (AKA Nightfox)
  * BBS: Digital Distortion
  * BBS address: digdist.bbsindex.com
- *
- * Date       User              Description
- * 2009-06-06 Eric Oulashin     Started development
- * 2009-08-09 Eric Oulashin     More development & testing
- * 2009-08-22 Eric Oulashin     Version 1.00
- *                              Initial public release
- * ... Removed comments ...
- * 2019-05-04 Eric Oulashin     Updated to use require() instead of load() if possible.
- * 2021-12-11 Eric Oulashin     Updated the quote window bottom border text
- * 2022-11-19 Eric Oulashin     Updated readColorConfig() to handle just attribute characters
- * 2023-05-15 Eric Oulashin     Refactored readColorConfig()
  */
 
 "use strict";
@@ -96,10 +85,12 @@ function globalScreenVarsSetup_IceStyle()
 //  pEditColor: The edit color
 //  pInsertMode: The insert mode ("INS" or "OVR")
 //  pUseQuotes: Whether or not message quoting is enabled
+//  pCtrlQQuote: Boolean - Whether or not we're using Ctrl-Q to quote (if not, using Ctrl-Y).
+//               This isn't used; it's only here to match the DCT-style function.
 //  pEditLinesIndex: The index of the message line at the top of the edit area
 //  pDisplayEditLines: The function that displays the edit lines
 function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEditColor,
-                               pInsertMode, pUseQuotes, pEditLinesIndex, pDisplayEditLines)
+                               pInsertMode, pUseQuotes, pCtrlQQuote, pEditLinesIndex, pDisplayEditLines)
 {
 	// Top header
 	// Generate & display the top border line (Note: Generate this
@@ -293,7 +284,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 
 	// Display the bottom message area border and help line
 	DisplayTextAreaBottomBorder_IceStyle(pEditBottom + 1, pUseQuotes);
-	DisplayBottomHelpLine_IceStyle(console.screen_rows, pUseQuotes);
+	DisplayBottomHelpLine_IceStyle(console.screen_rows, pUseQuotes, pCtrlQQuote);
 
 	// Go to the start of the edit area
 	console.gotoxy(pEditLeft, pEditTop);
@@ -387,28 +378,26 @@ function DisplayTextAreaBottomBorder_IceStyle(pLineNum, pUseQuotes, pEditLeft, p
 //
 // Parameters:
 //  pLineNum: The line number on the screen where the text should be placed
-//  The following are not used and are only here to match the DCT-style function:
-//   pUsingQuotes: Boolean - Whether or not message quoting is enabled.
-function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes)
+//  pUsingQuotes: Boolean - Whether or not message quoting is enabled. Not used; only to match
+//                the DCT-style function.
+//  pCtrlQQuote: Boolean - Whether or not we're using Ctrl-Q to quote (if not, using Ctrl-Y).
+//               Not used; only to match the DCT-style function.
+function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes, pCtrlQQuote)
 {
-	// Construct the help text only once
-	if (typeof(DisplayBottomHelpLine_IceStyle.helpText) == "undefined")
-	{
-		// This line contains the copyright mesage & ESC key help
-		var screenText = iceText(EDITOR_PROGRAM_NAME + " v", "\x01w") + "\x01c\x01h"
-		               + EDITOR_VERSION.toString() + "   "
-		               + iceText("Copyright", "\x01w") + " \x01c\x01h" + COPYRIGHT_YEAR + " "
-		               + iceText("Eric Oulashin", "\x01w") + " \x01n\x01b" + DOT_CHAR + " "
-		               + iceText("Press ESCape For Help", "\x01w");
-		// Calculate the starting position to center the help text, and front-pad
-		// DisplayBottomHelpLine_IceStyle.helpText with that many spaces.
-		var xPos = Math.floor(console.screen_columns / 2)
-		         - Math.floor(console.strlen(screenText) / 2);
-		DisplayBottomHelpLine_IceStyle.helpText = "";
-		for (var i = 0; i < xPos; ++i)
-			DisplayBottomHelpLine_IceStyle.helpText += " ";
-		DisplayBottomHelpLine_IceStyle.helpText += screenText;
-	}
+	// This line contains the copyright mesage & ESC key help
+	var screenText = iceText(EDITOR_PROGRAM_NAME + " v", "\x01w") + "\x01c\x01h"
+				   + EDITOR_VERSION.toString() + "   "
+				   + iceText("Copyright", "\x01w") + " \x01c\x01h" + COPYRIGHT_YEAR + " "
+				   + iceText("Eric Oulashin", "\x01w") + " \x01n\x01b" + DOT_CHAR + " "
+				   + iceText("Press ESCape For Help", "\x01w");
+	// Calculate the starting position to center the help text, and front-pad
+	// helpText with that many spaces.
+	var xPos = Math.floor(console.screen_columns / 2)
+	         - Math.floor(console.strlen(screenText) / 2);
+	var helpText = "";
+	for (var i = 0; i < xPos; ++i)
+		helpText += " ";
+	helpText += screenText;
 
 	// If pLineNum is not specified, then default to the last line
 	// on the screen.
@@ -417,7 +406,7 @@ function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes)
 		lineNum = pLineNum;
 	// Display the help text on the screen
 	console.gotoxy(1, lineNum);
-	console.print(DisplayBottomHelpLine_IceStyle.helpText);
+	console.print(helpText);
 	console.print("\x01n");
 	console.cleartoeol();
 }
@@ -487,7 +476,7 @@ function DrawQuoteWindowBottomBorder_IceStyle(pEditLeft, pEditRight)
 	// not been defined yet, then build it.
 	if (typeof(DrawQuoteWindowBottomBorder_IceStyle.border) == "undefined")
 	{
-		const quoteHotkeyChar = gConfigSettings.ctrlQQuote ? "Q" : "Y";
+		const quoteHotkeyChar = gUserSettings.ctrlQQuote ? "Q" : "Y";
 		DrawQuoteWindowBottomBorder_IceStyle.border = randomTwoColorString(LOWER_LEFT_VSINGLE_HDOUBLE,
 		                                                                   gConfigSettings.iceColors.BorderColor1,
 		                                                                   gConfigSettings.iceColors.BorderColor2)
