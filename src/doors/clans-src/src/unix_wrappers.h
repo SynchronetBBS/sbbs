@@ -49,7 +49,6 @@ typedef struct {
 } SYSTEMTIME;
 
 // ToDo needs some kind of REAL randomisation.
-#define randomize   srandomdev
 #define RANDOM      unix_random
 
 #define strnicmp    strncasecmp
@@ -87,6 +86,7 @@ int findnext(struct ffblk *fblk);
 int clans_getdate(struct date *getme);
 int32_t unix_random(int32_t maxnum);
 int gettime(struct tm *getme);
+void randomize(void);
 
 #define SH_DENYWR   1
 #define SH_DENYRW   2

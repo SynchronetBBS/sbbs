@@ -1,25 +1,22 @@
-#include <stdio.h>      // Only need for printf() debugging.
-#include <stdlib.h>
-
 #ifdef __unix__
 
 #include <sys/file.h>
 #include <fnmatch.h>
+#include <stdio.h>      // Only need for printf() debugging.
+#include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
 
-#if defined(__linux__) || defined(__NetBSD__)
-void srandomdev(void)
+void randomize(void)
 {
-	/*  int f;
-	    unsigned int r;
-	    f = open("/dev/random",O_RDONLY);
-	    read(f,&r,sizeof(r));
-	    close(f);*/
-	srand(time(0));
+	time_t now = time(NULL);
+	pid_t pid = getpid();
+	unsigned short seed[3] = {now & 0xFFFF, (now >> 16) & 0xFFFF, pid & 0xFFFF};
+	seed48(seed);
 }
-#endif
 
 off_t
 filelength(int file)
@@ -135,8 +132,20 @@ gettime(struct tm *getme)
 int32_t
 unix_random(int32_t maxnum)
 {
-	if (maxnum == 0) return 0;
-	return (int32_t)random()%maxnum;
+	/*
+	 * Eliminate bias...
+	 * Figure out the highest multiple of maxnum that fits in 31 bits...
+	 */
+	int32_t mult = INT32_MAX / maxnum;
+	int32_t max = maxnum * mult;
+	if (maxnum <= 0) return 0;
+
+	// Loop until the result is less than max
+	for (;;) {
+		long val = lrand48();
+		if (val < max)
+			return val % maxnum;
+	}
 }
 
 FILE *
