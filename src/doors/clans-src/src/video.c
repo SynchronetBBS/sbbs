@@ -963,6 +963,7 @@ void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 
 // ------------------------------------------------------------------------- //
 
+#if defined(__unix__)
 static void makeraw(struct termios *raw)
 {
 	raw->c_iflag &= ~(IXOFF|INPCK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON|IGNPAR);
@@ -974,6 +975,7 @@ static void makeraw(struct termios *raw)
 	raw->c_cc[VMIN] = 1;
 	raw->c_cc[VTIME] = 0;
 }
+#endif
 
 void Video_Init(void)
 {
