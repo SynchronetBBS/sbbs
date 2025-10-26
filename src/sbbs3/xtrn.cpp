@@ -1114,7 +1114,7 @@ xtrn_waitpid(pid_t wpid, int *status, int options)
 
 	do {
 		ret = waitpid(wpid, status, options);
-	} while(ret == -1 && errno != EINTR);
+	} while(ret == -1 && errno == EINTR);
 
 	return ret;
 }
