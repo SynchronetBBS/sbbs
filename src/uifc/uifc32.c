@@ -2311,9 +2311,9 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					pb = NULL;
 				}
 			}
-			if ((mode & K_TRIM) && i < 1 && IS_WHITESPACE(ch))
+			if ((mode & (K_SPACE|K_TRIM)) == K_TRIM && i < 1 && IS_WHITESPACE(ch))
 				continue;
-			if ((mode & K_NOSPACE) && IS_WHITESPACE(ch))
+			if ((mode & (K_SPACE|K_NOSPACE)) == K_NOSPACE && IS_WHITESPACE(ch))
 				continue;
 			if (ch == CIO_KEY_MOUSE) {
 				ch = uifc_getmouse(&mevnt);
@@ -2543,7 +2543,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		if (!(mode & K_FIND) && j)
 			api->changes = 1;
 	}
-	if (mode & K_TRIM)
+	if ((mode & (K_SPACE|K_TRIM)) == K_TRIM)
 		truncspctrl(str);
 	strcpy(outstr, str);
 	cursor = _NOCURSOR;
