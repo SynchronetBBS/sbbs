@@ -56,7 +56,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 static void ResetMenu(bool InterBBSGame);
 
-static int16_t YesNo(char *Query);
+static bool YesNo(char *Query, bool Current);
 
 static void EditOption(int16_t WhichOption);
 static void DosHelp(char *Topic, char *File);
@@ -268,7 +268,7 @@ static void ResetMenu(bool InterBBSGame)
 				screen_state = save_screen();
 				textattr(7);
 				clrscr();
-				if (YesNo("|07Are you sure you wish to reset?") == NO) {
+				if (!YesNo("|07Are you sure you wish to reset?", false)) {
 					restore_screen(screen_state);
 					break;
 				}
@@ -286,7 +286,7 @@ static void ResetMenu(bool InterBBSGame)
 				// ask one last time, are you sure?
 				textattr(7);
 				clrscr();
-				if (YesNo("|07Are you sure you are joining a league?") == NO) {
+				if (!YesNo("|07Are you sure you are joining a league?", false)) {
 					restore_screen(screen_state);
 					break;
 				}
@@ -305,7 +305,7 @@ static void ResetMenu(bool InterBBSGame)
 				// ask one last time, are you sure?
 				textattr(7);
 				clrscr();
-				if (YesNo("|07Are you sure you wish to reset the league?") == NO) {
+				if (!YesNo("|07Are you sure you wish to reset the league?", false)) {
 					restore_screen(screen_state);
 					break;
 				}
@@ -342,24 +342,31 @@ static void ResetMenu(bool InterBBSGame)
 }
 
 
-static int16_t YesNo(char *Query)
+static bool YesNo(char *Query, bool Current)
 {
+	char Answer;
 	/* show query */
 	zputs(Query);
 
 	/* show Yes/no */
-	zputs(" |01(|15Yes|07/no|01) |11");
+	if (Current)
+		zputs(" |01(|15Yes|07/no|01) |11");
+	else
+		zputs(" |01(|07yes|15/No|01) |11");
 
 	/* get user input */
-	if (get_answer("YN\r\n") == 'N') {
+	Answer = get_answer("YN\r\n");
+	if (Answer == 'N') {
 		/* user says NO */
 		zputs("No\n");
-		return (NO);
+		return false;
 	}
-	else {  /* user says YES */
+	else if (Answer == 'Y') {  /* user says YES */
 		zputs("Yes\n");
-		return (YES);
+		return true;
 	}
+	zputs(Current ? "Yes\n" : "No\n");
+	return Current;
 }
 
 static void EditOption(int16_t WhichOption)
@@ -414,19 +421,11 @@ static void EditOption(int16_t WhichOption)
 			break;
 		case 3 :    /* elimination mode? */
 			gotoxy(0, 15);
-			if (YesNo("|07Setup elimination mode?") == YES) {
-				ResetData.EliminationMode = true;
-			}
-			else
-				ResetData.EliminationMode = false;
+			ResetData.EliminationMode = YesNo("|07Setup elimination mode?", ResetData.EliminationMode);
 			break;
 		case 4 :    /* clan travel? */
 			gotoxy(0, 15);
-			if (YesNo("|07Allow clans to travel?") == YES) {
-				ResetData.ClanTravel = true;
-			}
-			else
-				ResetData.ClanTravel = false;
+			ResetData.ClanTravel = YesNo("|07Allow clans to travel?", ResetData.ClanTravel);
 			break;
 		case 5 :    /* days before lost troops return */
 			gotoxy(0, 15);
@@ -434,11 +433,7 @@ static void EditOption(int16_t WhichOption)
 			break;
 		case 6 :    /* clan empires? */
 			gotoxy(0, 15);
-			if (YesNo("|07Allow clans to create empires?") == YES) {
-				ResetData.ClanEmpires = true;
-			}
-			else
-				ResetData.ClanEmpires = false;
+			ResetData.ClanEmpires = YesNo("|07Allow clans to create empires?", ResetData.ClanEmpires);
 			break;
 		case 7 :    /* mine fights */
 			gotoxy(0, 15);
