@@ -147,7 +147,7 @@ void ScrollUp(void)
 #if defined(__MSDOS__)
 	asm {
 		mov al,1    // number of lines
-		mov ch,screen_top    // starting row
+		mov ch,ScrollTop    // starting row
 		mov cl,0    // starting column
 		mov dh, bottom  // ending row
 		mov dl, 79  // ending column
@@ -158,7 +158,7 @@ void ScrollUp(void)
 #elif defined(_WIN32)
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	SMALL_RECT scroll_rect;
-	COORD top_left = { 0, screen_top };
+	COORD top_left = { 0, ScrollTop };
 	CHAR_INFO char_info;
 
 	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
@@ -217,7 +217,7 @@ void ClearScrollRegion(void)
 
 	GetConsoleScreenBufferInfo(stdout_handle, &screen_buffer);
 
-	display_len = (screen_buffer.dwSize.Y - STARTROW - (ScreenLines - ScrollBottom - 1)) *
+	display_len = (screen_buffer.dwSize.Y - (ScreenLines - 1 - ScrollBottom)) *
 				  (screen_buffer.dwSize.X);
 
 	FillConsoleOutputCharacter(
