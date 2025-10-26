@@ -169,19 +169,6 @@ delay(unsigned msec)
 	select(0,NULL,NULL,NULL,&delaytime);
 }
 
-#ifdef NEED_GETCH
-char
-getch()
-{
-	fd_set fds;
-	FD_ZERO(&fds);
-	FD_SET(fileno(stdin),&fds);
-
-	select(1, &fds, NULL, NULL, NULL);
-	return (char)getchar();
-}
-#endif
-
 void
 GetSystemTime(SYSTEMTIME *t)
 {

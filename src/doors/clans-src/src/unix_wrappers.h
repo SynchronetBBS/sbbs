@@ -87,9 +87,6 @@ int findnext(struct ffblk *fblk);
 int clans_getdate(struct date *getme);
 int32_t unix_random(int32_t maxnum);
 int gettime(struct tm *getme);
-#ifdef NEED_GETCH
-char getch(void);
-#endif
 
 #define SH_DENYWR   1
 #define SH_DENYRW   2
