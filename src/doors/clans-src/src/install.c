@@ -50,19 +50,19 @@
 #define false   0
 #define MAX_TOKEN_CHARS 32
 
-void GetGumName(void);
-void ListFiles(void);
-void kputs(char *szString);
-int GetGUM(FILE *fpGUM);
-void install(void);
-char get_answer(char *szAllowableChars);
-bool FileExists(char *szFileName);
-void InitFiles(char *szFileName);
-int WriteType(char *szFileName);
-void Extract(char *szExtractFile, char *szNewName);
-void upgrade(void);
-__inline void get_screen_dimension(int *lines, int *width);
-void gotoxy(int x, int y);
+static void GetGumName(void);
+static void ListFiles(void);
+static void kputs(char *szString);
+static int GetGUM(FILE *fpGUM);
+static void install(void);
+static char get_answer(char *szAllowableChars);
+static bool FileExists(char *szFileName);
+static void InitFiles(char *szFileName);
+static int WriteType(char *szFileName);
+static void Extract(char *szExtractFile, char *szNewName);
+static void upgrade(void);
+static __inline void get_screen_dimension(int *lines, int *width);
+static void gotoxy(int x, int y);
 
 #ifdef __MSDOS__
 char far *VideoMem;
@@ -78,16 +78,16 @@ struct FileInfo {
 
 #ifdef __unix__
 #define MKDIR(dir)              mkdir(dir,0777)
-short curses_color(short color);
+static short curses_color(short color);
 #else
 #define MKDIR(dir)              mkdir(dir)
 #endif
 
 #ifndef __MSDOS__
-unsigned short _dos_setftime(int, unsigned short, unsigned short);
+static unsigned short _dos_setftime(int, unsigned short, unsigned short);
 #endif /* !__MSDOS__ */
 
-void reset_attribute(void)
+static void reset_attribute(void)
 {
 #ifdef __MSDOS__
 	textattr(7);
@@ -101,7 +101,7 @@ void reset_attribute(void)
 #endif
 }
 
-void Display(char *szFileName)
+static void Display(char *szFileName)
 {
 	FILE *fpInput;
 	char szString[300];
@@ -161,7 +161,7 @@ void Display(char *szFileName)
 }
 
 #ifdef _WIN32
-void display_win32_error(void)
+static void display_win32_error(void)
 {
 	LPVOID msg;
 
@@ -183,7 +183,7 @@ void display_win32_error(void)
 }
 #endif
 
-void ScrollUp(void)
+static void ScrollUp(void)
 {
 #ifdef __MSDOS__
 	asm {
@@ -240,7 +240,7 @@ void ScrollUp(void)
 #endif
 }
 
-void get_xy(int *x, int *y)
+static void get_xy(int *x, int *y)
 {
 #ifdef __MSDOS__
 	struct text_info TextInfo;
@@ -264,7 +264,7 @@ void get_xy(int *x, int *y)
 #endif
 }
 
-void get_screen_dimension(int *lines, int *width)
+static void get_screen_dimension(int *lines, int *width)
 {
 #ifdef __MSDOS__
 	/* default to 80x25 */
@@ -285,7 +285,7 @@ void get_screen_dimension(int *lines, int *width)
 #endif
 }
 
-void put_character(int x, int y, char ch, unsigned short int attribute)
+static void put_character(int x, int y, char ch, unsigned short int attribute)
 {
 #ifdef __MSDOS__
 	VideoMem[(long)(y_lookup[(long) y]+ (long)(x<<1))] = (unsigned char)ch;
@@ -324,7 +324,7 @@ void put_character(int x, int y, char ch, unsigned short int attribute)
 }
 
 #ifdef _WIN32
-void gotoxy(int x, int y)
+static void gotoxy(int x, int y)
 {
 	COORD cursor_pos;
 	HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -335,7 +335,7 @@ void gotoxy(int x, int y)
 	SetConsoleCursorPosition(stdout_handle, cursor_pos);
 }
 
-void clrscr(void)
+static void clrscr(void)
 {
 	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
@@ -365,19 +365,19 @@ void clrscr(void)
 #endif /* _WIN32 */
 
 #ifdef __unix__
-void gotoxy(int x, int y)
+static void gotoxy(int x, int y)
 {
 	move(y, x);
 	refresh();
 }
 
-void clrscr(void)
+static void clrscr(void)
 {
 	clear();
 }
 #endif /* __unix__ */
 
-void kputs(char *szString)
+static void kputs(char *szString)
 {
 	char number[3];
 	int cur_char, attr;
@@ -491,7 +491,7 @@ void kputs(char *szString)
 #endif
 }
 
-void kcls(void)
+static void kcls(void)
 {
 #ifdef __MSDOS__
 	asm {
@@ -541,7 +541,7 @@ void kcls(void)
 #endif
 }
 
-void GetLine(char *InputStr, int MaxChars)
+static void GetLine(char *InputStr, int MaxChars)
 {
 	int CurChar;
 	unsigned char InputCh;
@@ -601,9 +601,9 @@ void GetLine(char *InputStr, int MaxChars)
 	}
 }
 
-char far *vid_address(void)
-{
 #ifdef __MSDOS__
+static char far *vid_address(void)
+{
 	int tmp1, tmp2;
 	long VideoType;                 /* B800 = color monitor */
 
@@ -630,13 +630,11 @@ FC1:
 		return ((void far *) 0xB0000000L) ;
 	else
 		return ((void far *) 0xB8000000L) ;
-#else
-	return NULL;
-#endif
 }
+#endif
 
 
-void SystemInit(void)
+static void SystemInit(void)
 {
 #ifdef __MSDOS__
 	int iTemp;
@@ -674,7 +672,7 @@ void SystemInit(void)
 }
 
 #ifdef __unix__
-short curses_color(short color)
+static short curses_color(short color)
 {
 	switch (color) {
 		case 0 :
@@ -783,7 +781,7 @@ int main(int argc, char **argv)
 	return(0);
 }
 
-int GetGUM(FILE *fpGUM)
+static int GetGUM(FILE *fpGUM)
 {
 	char szKey[80];
 	char szEncryptedName[MAX_FILENAME_LEN], cInput;
@@ -902,7 +900,7 @@ int GetGUM(FILE *fpGUM)
 	return true;
 }
 
-void install(void)
+static void install(void)
 {
 	FILE *fpGUM;
 #ifdef __unix__
@@ -954,7 +952,7 @@ void install(void)
 	Display("InstallDone");
 }
 
-void upgrade(void)
+static void upgrade(void)
 {
 	FILE *fpGUM;
 #ifdef __unix__
@@ -1005,7 +1003,7 @@ void upgrade(void)
 	Display("UpgradeDone");
 }
 
-char get_answer(char *szAllowableChars)
+static char get_answer(char *szAllowableChars)
 {
 	char cKey, szString[20];
 	unsigned int iTemp;
@@ -1028,7 +1026,7 @@ char get_answer(char *szAllowableChars)
 	return (toupper(cKey));
 }
 
-bool FileExists(char *szFileName)
+static bool FileExists(char *szFileName)
 {
 	FILE *fp;
 
@@ -1041,7 +1039,7 @@ bool FileExists(char *szFileName)
 	return true;
 }
 
-void InitFiles(char *szFileName)
+static void InitFiles(char *szFileName)
 {
 	// init files to be installed
 
@@ -1111,7 +1109,7 @@ void InitFiles(char *szFileName)
 	fclose(fpInput);
 }
 
-int WriteType(char *szFileName)
+static int WriteType(char *szFileName)
 {
 	int CurFile;
 
@@ -1127,7 +1125,7 @@ int WriteType(char *szFileName)
 	return QUERY;
 }
 
-void Extract(char *szExtractFile, char *szNewName)
+static void Extract(char *szExtractFile, char *szNewName)
 {
 	char szKey[80];
 	char szEncryptedName[MAX_FILENAME_LEN], cInput;
@@ -1262,7 +1260,7 @@ void Extract(char *szExtractFile, char *szNewName)
 	kputs("|15Done.\n");
 }
 
-void ListFiles(void)
+static void ListFiles(void)
 {
 	char szKey[80];
 	char szEncryptedName[MAX_FILENAME_LEN];
@@ -1359,7 +1357,7 @@ void ListFiles(void)
 	fclose(fpGUM);
 }
 
-void GetGumName(void)
+static void GetGumName(void)
 {
 	// init files to be installed
 	FILE *fpInput;
@@ -1400,7 +1398,7 @@ void GetGumName(void)
 }
 
 #ifndef __MSDOS__
-unsigned short _dos_setftime(int handle, unsigned short date, unsigned short time)
+static unsigned short _dos_setftime(int handle, unsigned short date, unsigned short time)
 {
 	struct tm dos_dt;
 	time_t file_dt;
