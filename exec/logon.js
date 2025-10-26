@@ -74,6 +74,7 @@ if ((options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.termi
 //bbs.node_settings|=NM_NOPAUSESPIN	
 
 if(user.security.restrictions&UFLAG_G) {
+	console.cond_newline();
 	while(options.guest_name && bbs.online) {
 		write(options.guest_name);
 		const name = console.getstr(LEN_NAME,K_UPRLWR);
