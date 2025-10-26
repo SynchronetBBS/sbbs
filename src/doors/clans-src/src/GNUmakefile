@@ -9,11 +9,6 @@ CLANS_LIBS +=	$(ODOORS)/libs-$(OS)/libODoors.a
 
 LDFLAGS	+=	-L$(ODOORS)/libs-$(OS)
 
-ifeq ($(os),linux)
- CFLAGS	+=	`pkg-config libbsd-overlay --cflags`
- WRAPPER_LIBS += `pkg-config libbsd-overlay --libs`
-endif
-
 # Some platform-specific things...
 ifdef UNIXY
  # NetBSD and Darwin don't define this themselves
@@ -28,6 +23,10 @@ ifdef WIN
  WRAPEXT :=	.cmd
 else
  WRAPEXT :=
+endif
+
+ifeq ($(os),linux)
+ CFLAGS += -D_POSIX_C_SOURCE=200809L
 endif
 
 # Build types, debug and opt
@@ -109,6 +108,23 @@ RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)alliance.o $(OBJDIR)cmdline.o \
 		$(OBJDIR)video.o
 
 ifdef WIN
+ CLANS_OBJS +=	$(OBJDIR)win_wrappers.o
+ CHEW_OBJS +=	$(OBJDIR)win_wrappers.o
+ CONFIG_OBJS +=	$(OBJDIR)win_wrappers.o
+ ECOMP_OBJS +=	$(OBJDIR)win_wrappers.o
+ INSTALL_OBJS += $(OBJDIR)win_wrappers.o
+ LANGCOMP_OBJS += $(OBJDIR)win_wrappers.o
+ MAKENPC_OBJS += $(OBJDIR)win_wrappers.o
+ MAKEPAK_OBJS += $(OBJDIR)win_wrappers.o
+ MCLASS_OBJS +=	$(OBJDIR)win_wrappers.o
+ MCOMP_OBJS +=	$(OBJDIR)win_wrappers.o
+ MITEMS_OBJS +=	$(OBJDIR)win_wrappers.o
+ MSPELLS_OBJS += $(OBJDIR)win_wrappers.o
+ PCEDIT_OBJS +=	$(OBJDIR)win_wrappers.o
+ RESET_OBJS +=	$(OBJDIR)win_wrappers.o
+endif
+
+ifeq ($(os), linux)
  CLANS_OBJS +=	$(OBJDIR)win_wrappers.o
  CHEW_OBJS +=	$(OBJDIR)win_wrappers.o
  CONFIG_OBJS +=	$(OBJDIR)win_wrappers.o

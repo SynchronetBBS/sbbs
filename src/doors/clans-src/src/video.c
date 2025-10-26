@@ -963,6 +963,18 @@ void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 
 // ------------------------------------------------------------------------- //
 
+static void makeraw(struct termios *raw)
+{
+	raw->c_iflag &= ~(IXOFF|INPCK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON|IGNPAR);
+	raw->c_iflag |= IGNBRK;
+	raw->c_oflag &= ~OPOST;
+	raw->c_lflag &= ~(ECHO|ECHOE|ECHOK|ECHONL|ICANON|ISIG|NOFLSH|TOSTOP);
+	raw->c_cflag &= ~(CSIZE|PARENB);
+	raw->c_cflag |= CS8|CREAD;
+	raw->c_cc[VMIN] = 1;
+	raw->c_cc[VTIME] = 0;
+}
+
 void Video_Init(void)
 {
 #if defined(_WIN32)
@@ -1006,7 +1018,7 @@ void Video_Init(void)
 
 	tcgetattr(STDIN_FILENO, &orig_tio);
 	raw = orig_tio;
-	cfmakeraw(&raw);
+	makeraw(&raw);
 	tcsetattr(STDIN_FILENO, TCSANOW, &raw);
 	setvbuf(stdout, NULL, _IONBF, 0);
 	getxy(&x, &y);

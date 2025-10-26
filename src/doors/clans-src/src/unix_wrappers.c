@@ -7,6 +7,7 @@
 #include <fnmatch.h>
 
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #if defined(__linux__) || defined(__NetBSD__)
 void srandomdev(void)
