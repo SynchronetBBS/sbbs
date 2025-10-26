@@ -1667,7 +1667,7 @@ Selects top and bottom margins, defining the scrolling region. `Pn1` is
 the line number of the first line in the scrolling region. `Pn2` is the
 line number of the bottom line.
 
-SOURCE: <<XTerm>>
+SOURCE: <<VT100>>
 
 === `CSI Ps1 ; Ps2 * r` Select Communication Speed (`DECSCS`)
 Set the output emulation speed.
@@ -2634,3 +2634,4 @@ for people who want to maintain compatibility.
 * [[ANSISYS]]https://en.wikipedia.org/wiki/ANSI.SYS[[ANSISYS\]] Wikipedia. ANSI.SYS.
 * [[ECMA-35]]https://ecma-international.org/wp-content/uploads/ECMA-35_6th_edition_december_1994.pdf[[ECMA-35\]] ECMA. Character Code Structure and Extension Techniques. December 1994
 * [[VT520]]https://vt100.net/dec/ek-vt520-rm.pdf[[VT520\]] Digital. VT520/VT525 Video Terminal Programmer Information. July 1994.
+* [[VT100]]https://vt100.net/docs/vt100-ug/contents.html[[VT100\]] Digital. User Guide VT100. 1981.
