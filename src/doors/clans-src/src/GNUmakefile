@@ -17,7 +17,6 @@ endif
 ifdef UNIXY
  # NetBSD and Darwin don't define this themselves
  CFLAGS	+=	-D__unix__
- CFLAGS	+=	-DNCURSES_WIDECHAR
 endif
 
 ifdef WIN
@@ -27,24 +26,6 @@ ifdef WIN
  CLANS_LDFLAGS+=-mwindows $(ODOORS)/libs-$(OS)/ODoor.res
  WRAPEXT :=	.cmd
 else
- # Oh, the things we put up with to use curses...
- ifeq ($(os),darwin)
-  CONSOLE_LIBS := -lcurses
- else ifeq ($(os),linux)
-  ifeq ($(shell pkg-config ncursesw --exists && echo YES), YES)
-   CONSOLE_LIBS += $(shell pkg-config ncursesw --libs)
-   CFLAGS += $(shell pkg-config ncursesw --cflags)
-  else
-   # This probobly won't work
-   CONSOLE_LIBS := -lncursesw
-  endif
- else ifeq ($(os),openbsd)
-  CONSOLE_LIBS := -lncursesw
- else ifeq ($(os),netbsd)
-  CONSOLE_LIBS := -lcurses
- else
-  CONSOLE_LIBS := -lcursesw
- endif
  WRAPEXT :=
 endif
 
@@ -96,7 +77,9 @@ CONFIG_OBJS :=	$(OBJDIR)config.o $(OBJDIR)cmdline.o $(OBJDIR)console.o \
 ECOMP_OBJS :=	$(OBJDIR)ecomp.o $(OBJDIR)parsing.o $(OBJDIR)serialize.o \
 		$(OBJDIR)crc.o
 
-INSTALL_OBJS :=	$(OBJDIR)install.o $(OBJDIR)gum.o $(OBJDIR)parsing.o
+INSTALL_OBJS :=	$(OBJDIR)install.o $(OBJDIR)cmdline.o $(OBJDIR)console.o \
+		$(OBJDIR)gum.o $(OBJDIR)parsing.o \
+		$(OBJDIR)unix_wrappers.o $(OBJDIR)video.o
 
 LANGCOMP_OBJS := $(OBJDIR)langcomp.o $(OBJDIR)serialize.o $(OBJDIR)crc.o
 
@@ -229,7 +212,7 @@ $(BINDIR)ecomp$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)ecomp$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)install$(EXEFILE): $(INSTALL_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(CONSOLE_LIBS) $(WRAPPER_LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)install$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)install$(EXEFILE)
 	cp $^ $@

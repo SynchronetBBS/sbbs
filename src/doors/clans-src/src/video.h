@@ -11,21 +11,24 @@
 #define FAR
 #endif
 
-#define K_UP        72
-#define K_DOWN      80
 #define K_HOME      71
-#define K_END       79
+#define K_UP        72
 #define K_PGUP      73
-#define K_PGDN      81
 #define K_LEFT      75
 #define K_RIGHT     77
+#define K_END       79
+#define K_DOWN      80
+#define K_PGDN      81
+#define K_INSERT    82
+#define K_DELETE    83
 
 #define HILIGHT     11|(1<<4)
 
 #define COLOR   0xB800
 #define MONO    0xB000
 
-char FAR *vid_address(void);
+extern int ScreenWidth;
+extern int ScreenLines;
 
 void Video_Init(void);
 /*
@@ -47,6 +50,8 @@ void zputs(const char *string);
 void qputs(const char *string, int16_t x, int16_t y);
 
 void ScrollUp(void);
+void SetScrollRegion(int top, int bottom);
+void ClearScrollRegion(void);
 void textattr(uint8_t attrib);
 int getch(void);
 void * save_screen(void);
@@ -59,7 +64,7 @@ void gotoxy(int, int);
 
 void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color);
 int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum);
-void DosGetStr(char *InputStr, int16_t MaxChars);
+void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit);
 char get_answer(char *szAllowableChars);
 
 #endif

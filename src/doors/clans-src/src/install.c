@@ -6,14 +6,11 @@
 #include <time.h>
 #ifdef __MSDOS__
 # include <dos.h>
-# include <conio.h>
 #elif defined(_WIN32)
 # include <windows.h>
-# include <conio.h>
 # include <sys/utime.h>
 # include <direct.h> /* mkdir */
 #elif defined(__unix__)
-# include <curses.h>
 # include <sys/time.h>
 # include <unistd.h>
 #endif /* __MSDOS__ */
@@ -23,21 +20,21 @@
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
 
+#include "cmdline.h"
 #include "defines.h"
 #include "gum.h"
 #include "parsing.h"
+#include "video.h"
 
 #ifndef __MSDOS__
 #define far
 #endif /* !__MSDOS__ */
 
 #define STARTROW    9           // start at row 5
-#ifdef __MSDOS__
-#define COLOR   0xB800
-#define MONO    0xB000
-#endif /* __MSDOS__ */
+
 #define CODE1           0x7D
 #define CODE2           0x1F
+
 #define MAX_FILES   75          // say 75 files is most in .GUM file for now
 #define MAX_FILENAME_LEN 13
 
@@ -46,23 +43,16 @@
 #define QUERY       2           // ask user if he wishes to overwrite
 
 #define ALWAYS  2
-#define true    1
-#define false   0
-#define MAX_TOKEN_CHARS 32
 
 static void GetGumName(void);
 static void ListFiles(void);
-static void kputs(char *szString);
 static int GetGUM(FILE *fpGUM);
 static void install(void);
-static char get_answer(char *szAllowableChars);
 static bool FileExists(char *szFileName);
 static void InitFiles(char *szFileName);
 static int WriteType(char *szFileName);
 static void Extract(char *szExtractFile, char *szNewName);
 static void upgrade(void);
-static __inline void get_screen_dimension(int *lines, int *width);
-static void gotoxy(int x, int y);
 
 #ifdef __MSDOS__
 char far *VideoMem;
@@ -78,7 +68,6 @@ struct FileInfo {
 
 #ifdef __unix__
 #define MKDIR(dir)              mkdir(dir,0777)
-static short curses_color(short color);
 #else
 #define MKDIR(dir)              mkdir(dir)
 #endif
@@ -89,16 +78,7 @@ static unsigned short _dos_setftime(int, unsigned short, unsigned short);
 
 static void reset_attribute(void)
 {
-#ifdef __MSDOS__
 	textattr(7);
-#elif defined(_WIN32)
-	SetConsoleTextAttribute(
-		GetStdHandle(STD_OUTPUT_HANDLE),
-		(WORD)(FOREGROUND_GREEN|FOREGROUND_BLUE|FOREGROUND_RED));
-#elif defined(__unix__)
-	attrset(A_NORMAL|COLOR_PAIR(0));
-	refresh();
-#endif
 }
 
 static void Display(char *szFileName)
@@ -132,7 +112,7 @@ static void Display(char *szFileName)
 		// search dos for file
 		fpInput = fopen(szFileName, "r");
 		if (!fpInput) {
-			kputs("|04File to display not found\n");
+			zputs("|04File to display not found\n");
 			return;
 		}
 	}
@@ -145,460 +125,19 @@ static void Display(char *szFileName)
 		if (szString[0] == ':')
 			break;
 
-		kputs(szString);
+		zputs(szString);
 		CurLine++;
 
-		if (CurLine == (25-STARTROW-1)) {
+		if (CurLine == (ScreenLines - STARTROW - 1)) {
 			CurLine = 0;
-			kputs("[more]");
+			zputs("[more]");
 			if (toupper(getch()) == 'Q')
 				Done = true;
-			kputs("\r       \r");
+			zputs("\r       \r");
 		}
 	}
 
 	fclose(fpInput);
-}
-
-#ifdef _WIN32
-static void display_win32_error(void)
-{
-	LPVOID msg;
-
-	FormatMessageA(
-		FORMAT_MESSAGE_FROM_SYSTEM|
-		FORMAT_MESSAGE_ALLOCATE_BUFFER|
-		FORMAT_MESSAGE_IGNORE_INSERTS,
-		NULL,
-		GetLastError(),
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPSTR)&msg,
-		0,
-		NULL);
-
-	fprintf(stderr, "System Error: %s\n", (LPSTR)msg);
-	fflush(stderr);
-
-	LocalFree(msg);
-}
-#endif
-
-static void ScrollUp(void)
-{
-#ifdef __MSDOS__
-	asm {
-		mov al,1    // number of lines
-		mov ch,STARTROW // starting row
-		mov cl,0    // starting column
-		mov dh, 24  // ending row
-		mov dl, 79  // ending column
-		mov bh, 7   // color
-		mov ah, 6
-		int 10h     // do the scroll
-	}
-#elif defined(_WIN32)
-	HANDLE handle_stdout = GetStdHandle(STD_OUTPUT_HANDLE);
-	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
-	SMALL_RECT scroll_rect;
-	COORD top_left = { 0, 0 };
-	CHAR_INFO char_info;
-
-	GetConsoleScreenBufferInfo(handle_stdout, &screen_buffer);
-	scroll_rect.Top = 1;
-	scroll_rect.Left = 0;
-	scroll_rect.Bottom = screen_buffer.dwSize.Y;
-	scroll_rect.Right = screen_buffer.dwSize.X;
-
-	char_info.Attributes = screen_buffer.wAttributes;
-	char_info.Char.UnicodeChar = (TCHAR)' ';
-
-	if (!ScrollConsoleScreenBuffer(handle_stdout,
-								   &scroll_rect, NULL, top_left, &char_info)) {
-		display_win32_error();
-		reset_attribute();
-		exit(0);
-	}
-#elif defined (__unix__)
-	int sizey, sizex;
-	int x,y;
-	chtype this;
-
-	get_screen_dimension(&sizey, &sizex);
-
-	for (y=STARTROW; y<sizey; y++) {
-		for (x=0; x<sizex; x++) {
-			this=mvinch(y+1,x);
-			mvaddch(y,x,this);
-		}
-	}
-	scrollok(stdscr,false);
-	gotoxy(0, sizey-1);
-	clrtobot();
-	refresh();
-#else
-#pragma message ("ScrollUp() Undefined")
-#endif
-}
-
-static void get_xy(int *x, int *y)
-{
-#ifdef __MSDOS__
-	struct text_info TextInfo;
-
-	gettextinfo(&TextInfo);
-	*x = TextInfo.curx-1;
-	*y = TextInfo.cury-1;
-#elif defined(_WIN32)
-	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
-
-	GetConsoleScreenBufferInfo(
-		GetStdHandle(STD_OUTPUT_HANDLE),
-		&screen_buffer);
-	*x = screen_buffer.dwCursorPosition.X;
-	*y = screen_buffer.dwCursorPosition.Y;
-#elif defined(__unix__)
-	getyx(stdscr,*y,*x);
-#else
-	*x = 0;
-	*y = 0;
-#endif
-}
-
-static void get_screen_dimension(int *lines, int *width)
-{
-#ifdef __MSDOS__
-	/* default to 80x25 */
-	*lines = 25;
-	*width = 80;
-#elif defined(_WIN32)
-	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
-	GetConsoleScreenBufferInfo(
-		GetStdHandle(STD_OUTPUT_HANDLE),
-		&screen_buffer);
-	*lines = screen_buffer.dwSize.Y;
-	*width = screen_buffer.dwSize.X;
-#elif defined(__unix__)
-	getmaxyx(stdscr,*lines,*width);
-#else
-	*lines = 0;
-	*width = 0;
-#endif
-}
-
-static void put_character(int x, int y, char ch, unsigned short int attribute)
-{
-#ifdef __MSDOS__
-	VideoMem[(long)(y_lookup[(long) y]+ (long)(x<<1))] = (unsigned char)ch;
-	VideoMem[(long)(y_lookup[(long) y]+ (long)(x<<1) + 1L)] = (unsigned char)attribute;
-#elif defined(_WIN32)
-	DWORD bytes_written;
-	COORD cursor_pos;
-	HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-
-	cursor_pos.X = x;
-	cursor_pos.Y = y;
-
-	SetConsoleCursorPosition(stdout_handle, cursor_pos);
-
-	SetConsoleTextAttribute(
-		stdout_handle,
-		attribute);
-	WriteConsole(
-		stdout_handle,
-		&ch,
-		1,
-		&bytes_written,
-		NULL);
-#elif defined(__unix__)
-	short fg, bg;
-	int   attrs=A_NORMAL;
-
-	pair_content(attribute,&fg,&bg);
-	if (attribute & 128)
-		attrs |= A_BLINK;
-	attrset(attrs);
-	mvaddch(y, x, ch|COLOR_PAIR(attribute+1));
-#else
-	/* Ignore Attribute */
-#endif
-}
-
-#ifdef _WIN32
-static void gotoxy(int x, int y)
-{
-	COORD cursor_pos;
-	HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-
-	cursor_pos.X = x;
-	cursor_pos.Y = y;
-
-	SetConsoleCursorPosition(stdout_handle, cursor_pos);
-}
-
-static void clrscr(void)
-{
-	HANDLE std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
-	COORD top_left = { 0, 0 };
-	DWORD cells_written;
-
-	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
-
-	FillConsoleOutputCharacter(
-		std_handle,
-		(TCHAR)' ',
-		screen_buffer.dwSize.X * screen_buffer.dwSize.Y,
-		top_left,
-		&cells_written);
-
-	FillConsoleOutputAttribute(
-		std_handle,
-		(WORD)7,
-		screen_buffer.dwSize.X * screen_buffer.dwSize.Y,
-		top_left,
-		&cells_written);
-
-	SetConsoleCursorPosition(
-		std_handle,
-		top_left);
-}
-#endif /* _WIN32 */
-
-#ifdef __unix__
-static void gotoxy(int x, int y)
-{
-	move(y, x);
-	refresh();
-}
-
-static void clrscr(void)
-{
-	clear();
-}
-#endif /* __unix__ */
-
-static void kputs(char *szString)
-{
-	char number[3];
-	int cur_char, attr;
-	char foreground, background, cur_attr;
-	int i, j,  x,y;
-	static char o_fg = 7, o_bg = 0;
-	int scr_lines, scr_width;
-
-	get_xy(&x, &y);
-	get_screen_dimension(&scr_lines, &scr_width);
-
-	cur_attr = o_fg | o_bg;
-	cur_char=0;
-
-	for (;;) {
-		if (x == scr_width) {
-			x = 0;
-			y++;
-
-			if (y == scr_lines) {
-				/* scroll line up */
-				ScrollUp();
-				y = scr_lines - 1;
-				break;
-			}
-		}
-		if (y == scr_lines) {
-			/* scroll line up */
-			ScrollUp();
-			y = scr_lines - 1;
-		}
-		if (szString[cur_char] == 0)
-			break;
-		if (szString[cur_char] == '\b') {
-			x--;
-			cur_char++;
-			continue;
-		}
-		if (szString[cur_char] == '\r') {
-			x = 0;
-			cur_char++;
-			continue;
-		}
-		if (szString[cur_char]=='|')    {
-			if (isdigit(szString[cur_char+1]) && isdigit(szString[cur_char+2]))  {
-				number[0]=szString[cur_char+1];
-				number[1]=szString[cur_char+2];
-				number[2]=0;
-
-				attr=atoi(number);
-				if (attr>15)    {
-					background=attr-16;
-					o_bg = background << 4;
-					attr = o_bg | o_fg;
-					cur_attr = attr;
-				}
-				else    {
-					foreground=attr;
-					o_fg=foreground;
-					attr = o_fg | o_bg;
-					cur_attr = attr;
-				}
-				cur_char += 3;
-			}
-			else    {
-				put_character(x, y, szString[cur_char], cur_attr);
-
-				cur_char++;
-			}
-		}
-		else if (szString[cur_char] == '\n')  {
-			y++;
-			if (y == scr_lines) {
-				/* scroll line up */
-				ScrollUp();
-				y = scr_lines - 1;
-			}
-			cur_char++;
-			x = 0;
-		}
-		else if (szString[cur_char] == 9)  {  /* tab */
-			cur_char++;
-			for (i=0; i<8; i++)   {
-				j = i + x;
-				if (j > scr_width) break;
-				put_character(j, y, ' ', cur_attr);
-			}
-			x += 8;
-		}
-		else    {
-			put_character(x, y, szString[cur_char], cur_attr);
-
-			cur_char++;
-			x++;
-		}
-	}
-
-	if (x == scr_width) {
-		x = 0;
-		y++;
-
-		if (y == scr_lines) {
-			/* scroll line up */
-			ScrollUp();
-			y = scr_lines - 1;
-		}
-	}
-	gotoxy(x,y);
-#ifdef __unix__
-	refresh();
-#endif
-}
-
-static void kcls(void)
-{
-#ifdef __MSDOS__
-	asm {
-		mov al,0    // number of lines
-		mov ch,STARTROW // starting row
-		mov cl,0    // starting column
-		mov dh, 24  // ending row
-		mov dl, 79  // ending column
-		mov bh, 7   // color
-		mov ah, 6
-		int 10h     // do the scroll
-	}
-#elif defined(_WIN32)
-	HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	COORD top_corner;
-	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
-	DWORD display_len, written;
-
-	top_corner.X = 0;
-	top_corner.Y = STARTROW;
-
-	GetConsoleScreenBufferInfo(stdout_handle, &screen_buffer);
-
-	display_len = (screen_buffer.dwSize.Y - STARTROW) *
-				  (screen_buffer.dwSize.X);
-
-	FillConsoleOutputCharacter(
-		stdout_handle,
-		(TCHAR)' ',
-		display_len,
-		top_corner,
-		&written);
-
-	FillConsoleOutputAttribute(
-		stdout_handle,
-		(WORD)(FOREGROUND_GREEN|FOREGROUND_BLUE|FOREGROUND_RED),
-		display_len,
-		top_corner,
-		&written);
-#elif defined(__unix__)
-	move(STARTROW,0);
-	attrset(A_NORMAL|COLOR_PAIR(0));
-	clrtobot();
-	refresh();
-#else
-	/* No Function */
-#endif
-}
-
-static void GetLine(char *InputStr, int MaxChars)
-{
-	int CurChar;
-	unsigned char InputCh;
-	char Spaces[85] = "                                                                                     ";
-	char BackSpaces[85] = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
-	char TempStr[100], szString[100];
-
-	Spaces[MaxChars] = 0;
-	BackSpaces[MaxChars] = 0;
-
-	CurChar = strlen(InputStr);
-
-	kputs(Spaces);
-	kputs(BackSpaces);
-	kputs(InputStr);
-
-	for (;;) {
-		InputCh = getch();
-
-		if (InputCh == '\b') {
-			if (CurChar>0) {
-				CurChar--;
-				kputs("\b \b");
-			}
-		}
-		else if (InputCh == '\r') {
-			kputs("|16\n");
-			InputStr[CurChar]=0;
-			break;
-		}
-		else if (InputCh== '' || InputCh == '\x1B') { // ctrl-y
-			InputStr [0] = 0;
-			strlcpy(TempStr, BackSpaces, sizeof(TempStr));
-			TempStr[ CurChar ] = 0;
-			kputs(TempStr);
-			Spaces[MaxChars] = 0;
-			BackSpaces[MaxChars] = 0;
-			kputs(Spaces);
-			kputs(BackSpaces);
-			CurChar = 0;
-		}
-		else if (InputCh >= '')
-			continue;
-		else if (InputCh == 0)
-			continue;
-		else if (iscntrl(InputCh))
-			continue;
-		else {  /* valid character input */
-			if (CurChar == MaxChars)
-				continue;
-
-			InputStr[CurChar++]=InputCh;
-			InputStr[CurChar] = 0;
-			snprintf(szString, sizeof(szString), "%c", InputCh);
-			kputs(szString);
-		}
-	}
 }
 
 #ifdef __MSDOS__
@@ -636,81 +175,9 @@ FC1:
 
 static void SystemInit(void)
 {
-#ifdef __MSDOS__
-	int iTemp;
-
-	VideoMem = vid_address();
-	for (iTemp = 0; iTemp < 25;  iTemp++)
-		y_lookup[ iTemp ] = iTemp * 160;
-#endif /* __MSDOS__ */
-#ifdef __unix__
-	short fg;
-	short bg;
-	short pair=0;
-
-	// Initialize Curses lib.
-	initscr();
-	cbreak();
-	noecho();
-	nonl();
-//  intrflush(stdscr, false);
-	keypad(stdscr, true);
-	scrollok(stdscr,false);
-	start_color();
-	clear();
-	refresh();
-
-	// Set up color pairs
-	for (bg=0; bg<8; bg++)  {
-		for (fg=0; fg<16; fg++) {
-			init_pair(++pair,curses_color(fg),curses_color(bg));
-		}
-	}
-
-#endif
+	Video_Init();
 	GetGumName();
 }
-
-#ifdef __unix__
-static short curses_color(short color)
-{
-	switch (color) {
-		case 0 :
-			return(COLOR_BLACK);
-		case 1 :
-			return(COLOR_BLUE);
-		case 2 :
-			return(COLOR_GREEN);
-		case 3 :
-			return(COLOR_CYAN);
-		case 4 :
-			return(COLOR_RED);
-		case 5 :
-			return(COLOR_MAGENTA);
-		case 6 :
-			return(COLOR_YELLOW);
-		case 7 :
-			return(COLOR_WHITE);
-		case 8 :
-			return(COLOR_BLACK);
-		case 9 :
-			return(COLOR_BLUE);
-		case 10 :
-			return(COLOR_GREEN);
-		case 11 :
-			return(COLOR_CYAN);
-		case 12 :
-			return(COLOR_RED);
-		case 13 :
-			return(COLOR_MAGENTA);
-		case 14 :
-			return(COLOR_YELLOW);
-		case 15 :
-			return(COLOR_WHITE);
-	}
-	return(0);
-}
-#endif /* __unix__ */
 
 int main(int argc, char **argv)
 {
@@ -729,18 +196,19 @@ int main(int argc, char **argv)
 	SystemInit();
 	clrscr();
 
-	gotoxy(1, 1);
+	gotoxy(0, 0);
 	Display("TITLE");
-	gotoxy(1, STARTROW+1);
+	SetScrollRegion(STARTROW, INT_MAX);
+	gotoxy(0, STARTROW);
 
 	Display("WELCOME");
 
 	for (;;) {
-		kputs("|14> |07");
+		zputs("|14> |07");
 
 		// get input
 		szInput[0] = 0;
-		GetLine(szInput, 45);
+		DosGetStr(szInput, 45, false);
 
 		GetToken(szInput, szToken);
 
@@ -764,20 +232,21 @@ int main(int argc, char **argv)
 			Extract(szToken2, szInput);
 		}
 		else if (stricmp(szToken, "cls") == 0) {
-			kcls();
-			gotoxy(1, STARTROW+1);
+			ClearScrollRegion();
+			gotoxy(0, STARTROW);
 		}
 		else if (szToken[0] == '?' || stricmp(szToken, "help") == 0)
 			Display("Help");
 		else {
 			snprintf(szString, sizeof(szString), "|04%s not a valid command!\n", szToken);
-			kputs(szString);
+			zputs(szString);
 		}
 	}
 
-	kcls();
-	gotoxy(1, STARTROW+1);
+	ClearScrollRegion();
+	gotoxy(0, STARTROW);
 	Display("Goodbye");
+	Video_Close();
 	return(0);
 }
 
@@ -806,7 +275,7 @@ static int GetGUM(FILE *fpGUM)
 	}
 	*pcTo = 0;
 	snprintf(szString, sizeof(szString), "|14%-*s |06", MAX_FILENAME_LEN, szFileName);
-	kputs(szString);
+	zputs(szString);
 
 	/* make key using filename */
 	snprintf(szKey, sizeof(szKey), "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
@@ -821,7 +290,7 @@ static int GetGUM(FILE *fpGUM)
 	// if dirname, makedir
 	if (szFileName[0] == '/') {
 		snprintf(szString, sizeof(szString), "dir |14%-*s\n", MAX_FILENAME_LEN, szFileName);
-		kputs(szString);
+		zputs(szString);
 
 		MKDIR(&szFileName[1]
 
@@ -845,18 +314,18 @@ static int GetGUM(FILE *fpGUM)
 	// get type of input depending on WriteType
 	if (FileExists(szFileName) && WriteType(szFileName) == OVERWRITE) {
 		// continue -- overwrite file
-		kputs("|07- updating - |06");
+		zputs("|07- updating - |06");
 	}
 	else if (WriteType(szFileName) == SKIP && FileExists(szFileName)) {
 		// skip file
-		kputs("|07- skipping (no update required)\n");
+		zputs("|07- skipping (no update required)\n");
 		fseek(fpGUM, lCompressSize, SEEK_CUR);
 		return 1;
 	}
 	// else, normal file, do normally
 	// if file exists, ask user if he wants to overwrite it
 	else if (FileExists(szFileName) && Overwrite != ALWAYS) {
-		kputs("|03exists.  overwrite? (yes/no/rename/always) :");
+		zputs("|03exists.  overwrite? (yes/no/rename/always) :");
 
 		cInput = get_answer("YNAR");
 
@@ -864,8 +333,8 @@ static int GetGUM(FILE *fpGUM)
 			Overwrite = ALWAYS;
 		}
 		else if (cInput == 'R') {
-			kputs("\n|03enter new file name: ");
-			GetLine(szFileName, MAX_FILENAME_LEN);
+			zputs("\n|03enter new file name: ");
+			DosGetStr(szFileName, MAX_FILENAME_LEN, false);
 		}
 		else if (cInput == 'N') {
 			// skip file
@@ -878,12 +347,12 @@ static int GetGUM(FILE *fpGUM)
 	fpToFile = fopen(szFileName, "wb");
 	if (!fpToFile) {
 		snprintf(szString, sizeof(szString), "|04Couldn't open %s\n", szFileName);
-		kputs(szString);
+		zputs(szString);
 		return false;
 	}
 
 	// === decode here
-	decode(fpGUM, fpToFile, kputs);
+	decode(fpGUM, fpToFile, zputs);
 
 	fclose(fpToFile);
 
@@ -894,8 +363,8 @@ static int GetGUM(FILE *fpGUM)
 
 
 	snprintf(szString, sizeof(szString), "%" PRId32 "b ", lFileSize);
-	kputs(szString);
-	kputs("|15done.\n");
+	zputs(szString);
+	zputs("|15done.\n");
 
 	return true;
 }
@@ -914,11 +383,11 @@ static void install(void)
 	Display("Install");
 
 	// make sure he wants to
-	kputs("\n|07Are you sure you wish to run the install now? (y/n):");
+	zputs("\n|07Are you sure you wish to run the install now? (y/n):");
 	cInput = get_answer("YN");
 
 	if (cInput == 'N') {
-		kputs("\n|04Installation aborted.\n");
+		zputs("\n|04Installation aborted.\n");
 		return;
 	}
 
@@ -928,7 +397,7 @@ static void install(void)
 	fpGUM = fopen(szGumName, "rb");
 	if (!fpGUM) {
 		printf("Can't find -%s-\n",szGumName);
-		kputs("|04No .GUM to blowup!\n");
+		zputs("|04No .GUM to blowup!\n");
 		return;
 	}
 
@@ -966,11 +435,11 @@ static void upgrade(void)
 	Display("Upgrade");
 
 	// make sure he wants to
-	kputs("\n|07Are you sure you wish to upgrade? (y/n):");
+	zputs("\n|07Are you sure you wish to upgrade? (y/n):");
 	cInput = get_answer("YN");
 
 	if (cInput == 'N') {
-		kputs("\n|04Upgrade aborted.\n");
+		zputs("\n|04Upgrade aborted.\n");
 		return;
 	}
 
@@ -979,7 +448,7 @@ static void upgrade(void)
 
 	fpGUM = fopen(szGumName, "rb");
 	if (!fpGUM) {
-		kputs("|04No .GUM to blowup!\n");
+		zputs("|04No .GUM to blowup!\n");
 		return;
 	}
 
@@ -1001,29 +470,6 @@ static void upgrade(void)
 	fclose(fpGUM);
 
 	Display("UpgradeDone");
-}
-
-static char get_answer(char *szAllowableChars)
-{
-	char cKey, szString[20];
-	unsigned int iTemp;
-
-	for (;;) {
-		cKey = getch();
-
-		/* see if allowable */
-		for (iTemp = 0; iTemp < strlen(szAllowableChars); iTemp++) {
-			if (toupper(cKey) == toupper(szAllowableChars[iTemp]))
-				break;
-		}
-
-		if (iTemp < strlen(szAllowableChars))
-			break;  /* found allowable key */
-	}
-	snprintf(szString, sizeof(szString), "%c\n", cKey);
-	kputs(szString);
-
-	return (toupper(cKey));
 }
 
 static bool FileExists(char *szFileName)
@@ -1053,8 +499,9 @@ static void InitFiles(char *szFileName)
 
 	fpInput = fopen(szIniName, "r");
 	if (!fpInput) {
-		kputs("|06usage:   |14install <inifile>\n");
+		zputs("|06usage:   |14install <inifile>\n");
 		reset_attribute();
+		Video_Close();
 		exit(0);
 		return;
 	}
@@ -1138,14 +585,14 @@ static void Extract(char *szExtractFile, char *szNewName)
 
 	fpGUM = fopen(szGumName, "rb");
 	if (!fpGUM) {
-		kputs("|04No .GUM to blowup!\n");
+		zputs("|04No .GUM to blowup!\n");
 		return;
 	}
 
 	for (;;) {
 		/* read in filename */
 		if (!fread(&szEncryptedName, sizeof(szEncryptedName), sizeof(char), fpGUM)) {
-			kputs("|04file not found!\n");
+			zputs("|04file not found!\n");
 			fclose(fpGUM);
 			return;
 		}
@@ -1207,7 +654,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 	// if dirname, makedir
 	if (szFileName[0] == '/') {
 		snprintf(szString, sizeof(szString), "|14%-*s\n", MAX_FILENAME_LEN, szFileName);
-		kputs(szString);
+		zputs(szString);
 
 		MKDIR(&szFileName[1]);
 		fclose(fpGUM);
@@ -1215,7 +662,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 	}
 
 	if (FileExists(szFileName)) {
-		kputs("|03exists.  overwrite? (yes/no/rename/always) :");
+		zputs("|03exists.  overwrite? (yes/no/rename/always) :");
 
 		cInput = get_answer("YNAR");
 
@@ -1223,8 +670,8 @@ static void Extract(char *szExtractFile, char *szNewName)
 			Overwrite = ALWAYS;
 		}
 		else if (cInput == 'R') {
-			kputs("\n|03enter new file name: ");
-			GetLine(szFileName, MAX_FILENAME_LEN);
+			zputs("\n|03enter new file name: ");
+			DosGetStr(szFileName, MAX_FILENAME_LEN, false);
 		}
 		else if (cInput == 'N') {
 			// skip file
@@ -1238,15 +685,15 @@ static void Extract(char *szExtractFile, char *szNewName)
 	fpToFile = fopen(szFileName, "wb");
 	if (!fpToFile) {
 		snprintf(szString, sizeof(szString), "|04Couldn't write to %s\n", szFileName);
-		kputs(szString);
+		zputs(szString);
 		return;
 	}
 
 	snprintf(szString, sizeof(szString), "|06Extracting %s\n", szFileName);
-	kputs(szString);
+	zputs(szString);
 
 	//== decode it here
-	decode(fpGUM, fpToFile, kputs);
+	decode(fpGUM, fpToFile, zputs);
 
 	fclose(fpToFile);
 	fclose(fpGUM);
@@ -1256,8 +703,8 @@ static void Extract(char *szExtractFile, char *szNewName)
 	fclose(fpToFile);
 
 	snprintf(szString, sizeof(szString), "(%" PRId32 " bytes) ", lFileSize);
-	kputs(szString);
-	kputs("|15Done.\n");
+	zputs(szString);
+	zputs("|15Done.\n");
 }
 
 static void ListFiles(void)
@@ -1273,7 +720,7 @@ static void ListFiles(void)
 
 	fpGUM = fopen(szGumName, "rb");
 	if (!fpGUM) {
-		kputs("|04No .GUM to blowup!\n");
+		zputs("|04No .GUM to blowup!\n");
 		return;
 	}
 
@@ -1283,7 +730,7 @@ static void ListFiles(void)
 			// done
 			fclose(fpGUM);
 			snprintf(szString, sizeof(szString), "\n|14%" PRId32 " total bytes\n\n", TotalBytes);
-			kputs(szString);
+			zputs(szString);
 			break;
 		}
 
@@ -1310,7 +757,7 @@ static void ListFiles(void)
 		if (szFileName[0] == '/') {
 			snprintf(szString, sizeof(szString), "|15%14s  |06-- |07      directory  ",
 					szFileName);
-			kputs(szString);
+			zputs(szString);
 
 			lCompressSize = 0L;
 			lFileSize = 0L;
@@ -1332,18 +779,18 @@ static void ListFiles(void)
 			// show dir like DOS :)
 			snprintf(szString, sizeof(szString), "|15%14s  |06-- |07%9" PRId32 " bytes  ",
 					szFileName, lFileSize);
-			kputs(szString);
+			zputs(szString);
 		}
 		FilesFound++;
 
 		if ((FilesFound % 2) == 0)
-			kputs("\n");
+			zputs("\n");
 
 		if (FilesFound % (2*(25-STARTROW)-4) == 0 && FilesFound) {
-			kputs("[more]");
+			zputs("[more]");
 			if (toupper(getch()) == 'Q')
 				Done = true;
-			kputs("\r       \r");
+			zputs("\r       \r");
 		}
 
 		fseek(fpGUM, lCompressSize, SEEK_CUR);
@@ -1352,7 +799,7 @@ static void ListFiles(void)
 	}
 
 	if ((FilesFound % 2) != 0)
-		kputs("\n");
+		zputs("\n");
 
 	fclose(fpGUM);
 }
@@ -1370,16 +817,18 @@ static void GetGumName(void)
 	fpInput = fopen(szIniName, "r");
 	if (!fpInput) {
 		// no ini file
-		kputs("|06usage:   |14install <inifile>\n");
+		zputs("|06usage:   |14install <inifile>\n");
 		reset_attribute();
+		Video_Close();
 		exit(0);
 	}
 
 	// search for filename
 	for (;;) {
 		if (!fgets(szString, 128, fpInput)) {
-			kputs("\n|12Couldn't get GUM filename\n");
+			zputs("\n|12Couldn't get GUM filename\n");
 			reset_attribute();
+			Video_Close();
 			exit(0);
 			break;
 		}

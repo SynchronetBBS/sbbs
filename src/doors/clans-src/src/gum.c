@@ -444,7 +444,7 @@ int encode(FILE *input, FILE *output)
 }
 
 /* Decode file from input to output */
-void decode(FILE *input, FILE *output, void(*kputs)(char *))
+void decode(FILE *input, FILE *output, void(*kputs)(const char *))
 {
 	int c, i, j, k, dist, len, n = 0, index;
 	int poll = 0;

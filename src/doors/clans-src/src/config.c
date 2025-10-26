@@ -407,22 +407,22 @@ static void EditOption(int16_t WhichOption)
 	switch (WhichOption) {
 		case 0 :    /* sysop name started */
 			gotoxy(40, 2);
-			DosGetStr(Config.szSysopName, sizeof(Config.szSysopName) - 1);
+			DosGetStr(Config.szSysopName, sizeof(Config.szSysopName) - 1, false);
 			break;
 		case 1 :    /* BBS name */
 			gotoxy(40, 3);
-			DosGetStr(Config.szBBSName, sizeof(Config.szBBSName) - 1);
+			DosGetStr(Config.szBBSName, sizeof(Config.szBBSName) - 1, false);
 			break;
 		case 2 :    /* Use Log */
 			ConfigUseLog = !ConfigUseLog;
 			break;
 		case 3 :    /* ANSI Score File */
 			gotoxy(40, 5);
-			DosGetStr(Config.szScoreFile[1], 39);
+			DosGetStr(Config.szScoreFile[1], 39, false);
 			break;
 		case 4 :    /* ASCII Score File */
 			gotoxy(40, 6);
-			DosGetStr(Config.szScoreFile[0], 39);
+			DosGetStr(Config.szScoreFile[0], 39, false);
 			break;
 		case 5 :    /* InterBBS Enable */
 			Config.InterBBS = !Config.InterBBS;
@@ -433,15 +433,15 @@ static void EditOption(int16_t WhichOption)
 			break;
 		case 7 :    /* Netmail Dir */
 			gotoxy(40, 9);
-			DosGetStr(Config.szNetmailDir, 39);
+			DosGetStr(Config.szNetmailDir, 39, false);
 			break;
 		case 8 :    /* Inbound Dir */
 			gotoxy(40, 10);
-			DosGetStr(Config.szInboundDirs[0], 39);
+			DosGetStr(Config.szInboundDirs[0], 39, false);
 			break;
 		case 9 :    /* Alt. Inbound Dir */
 			gotoxy(40, 11);
-			DosGetStr(Config.szInboundDirs[1], 39);
+			DosGetStr(Config.szInboundDirs[1], 39, false);
 			break;
 		case 10 :    /* Mailer type */
 			switch (Config.MailerType) {
@@ -459,7 +459,7 @@ static void EditOption(int16_t WhichOption)
 			break;
 		case 11 :   /* Outbound Semaphore */
 			gotoxy(40, 13);
-			DosGetStr(Config.szOutputSem, 39);
+			DosGetStr(Config.szOutputSem, 39, false);
 			break;
 		case 12:    /* Configure node */
 			gotoxy(40, 14);
@@ -479,7 +479,7 @@ static void EditNodeOption(int16_t WhichOption)
 	switch (WhichOption) {
 		case 0 :    /* dropfile directory */
 			gotoxy(40, 2);
-			DosGetStr(currNode->dropDir, 39);
+			DosGetStr(currNode->dropDir, 39, false);
 			break;
 		case 1 :    /* use fossil */
 			currNode->fossil = !currNode->fossil;
@@ -490,7 +490,7 @@ static void EditNodeOption(int16_t WhichOption)
 				snprintf(addrstr, sizeof(addrstr), "0x%" PRIXPTR, currNode->addr);
 			else
 				strlcpy(addrstr, "Default", sizeof(addrstr));
-			DosGetStr(addrstr, sizeof(addrstr) - 1);
+			DosGetStr(addrstr, sizeof(addrstr) - 1, false);
 			currNode->addr = strtoull(addrstr, NULL, 0);
 			break;
 		case 3 :    /* IRQ */

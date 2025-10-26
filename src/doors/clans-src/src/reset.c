@@ -417,7 +417,7 @@ static void EditOption(int16_t WhichOption)
 		case 2 :    /* village name */
 			gotoxy(0, 15);
 			zputs("|07Please enter the village name|08> |15");
-			DosGetStr(ResetData.szVillageName, 29);
+			DosGetStr(ResetData.szVillageName, 29, false);
 			break;
 		case 3 :    /* elimination mode? */
 			gotoxy(0, 15);

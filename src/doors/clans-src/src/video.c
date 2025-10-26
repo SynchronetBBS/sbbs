@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 #include <ctype.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,6 +59,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 static char o_fg4 = 7, o_bg4 = 0;
 
+static unsigned ScrollTop = 0;
+static unsigned ScrollBottom = UINT_MAX;
+
 #ifdef __MSDOS__
 static void getxy(int *x, int*y);
 #endif
@@ -78,12 +82,13 @@ int getch(void);
 static short ansi_colours(short color);
 uint8_t cur_attr;
 struct termios orig_tio;
-int ScreenWidth = 80;
-int ScreenLines = 24;
 int CurrentX = 0;
 int CurrentY = 0;
 uint8_t CurrentAttr = 7;
 #endif
+
+int ScreenWidth = 80;
+int ScreenLines = 24;
 
 // ------------------------------------------------------------------------- //
 
@@ -101,10 +106,10 @@ int32_t Video_VideoType(void)
 
 // ------------------------------------------------------------------------- //
 
-char FAR *vid_address(void)
+#ifdef __MSDOS__
+static char FAR *vid_address(void)
 {
 // As usual, block off the local stuff
-#if !defined(__unix__) && !defined(_WIN32)
 	int16_t tmp1, tmp2;
 
 	asm {
@@ -130,22 +135,21 @@ FC1:
 		return ((void FAR *) 0xB0000000L) ;
 	else
 		return ((void FAR *) 0xB8000000L) ;
-
-#else
-	Video.VideoType = COLOR; /* Assume Color on Win32 & UNIX */
-	return NULL;
-#endif
 }
+#endif
 
 void ScrollUp(void)
 {
+	int bottom = ScrollBottom;
+	if (bottom >= ScreenLines)
+		bottom = ScreenLines - 1;
 // As usual, block off the local stuff
-#if !defined(__unix__) && !defined(_WIN32)
+#if defined(__MSDOS__)
 	asm {
 		mov al,1    // number of lines
-		mov ch,0    // starting row
+		mov ch,screen_top    // starting row
 		mov cl,0    // starting column
-		mov dh, 24  // ending row
+		mov dh, bottom  // ending row
 		mov dl, 79  // ending column
 		mov bh, 7   // color
 		mov ah, 6
@@ -154,13 +158,13 @@ void ScrollUp(void)
 #elif defined(_WIN32)
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	SMALL_RECT scroll_rect;
-	COORD top_left = { 0, 0 };
+	COORD top_left = { 0, screen_top };
 	CHAR_INFO char_info;
 
 	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
-	scroll_rect.Top = 1;
+	scroll_rect.Top = ScrollTop + 1;
 	scroll_rect.Left = 0;
-	scroll_rect.Bottom = screen_buffer.dwSize.Y;
+	scroll_rect.Bottom = bottom;
 	scroll_rect.Right = screen_buffer.dwSize.X;
 
 	char_info.Attributes = screen_buffer.wAttributes;
@@ -178,10 +182,76 @@ void ScrollUp(void)
 #endif
 }
 
+void SetScrollRegion(int top, int bottom)
+{
+	if (top < 0)
+		top = 0;
+	ScrollTop = top;
+	if (bottom >= ScreenLines)
+		bottom = ScreenLines - 1;
+	ScrollBottom = bottom;
+	fprintf(stdout, "\x1b[%d;%dr", top + 1, bottom + 1);
+}
 
+void ClearScrollRegion(void)
+{
+#ifdef __MSDOS__
+	asm {
+		mov al,0    // number of lines
+		mov ch,ScrollTop // starting row
+		mov cl,0    // starting column
+		mov dh, ScrollBottom  // ending row
+		mov dl, 79  // ending column
+		mov bh, 7   // color
+		mov ah, 6
+		int 10h     // do the scroll
+	}
+#elif defined(_WIN32)
+	HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+	COORD top_corner;
+	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
+	DWORD display_len, written;
+
+	top_corner.X = 0;
+	top_corner.Y = ScrollTop;
+
+	GetConsoleScreenBufferInfo(stdout_handle, &screen_buffer);
+
+	display_len = (screen_buffer.dwSize.Y - STARTROW - (ScreenLines - ScrollBottom - 1)) *
+				  (screen_buffer.dwSize.X);
+
+	FillConsoleOutputCharacter(
+		stdout_handle,
+		(TCHAR)' ',
+		display_len,
+		top_corner,
+		&written);
+
+	FillConsoleOutputAttribute(
+		stdout_handle,
+		(WORD)(FOREGROUND_GREEN|FOREGROUND_BLUE|FOREGROUND_RED),
+		display_len,
+		top_corner,
+		&written);
+#elif defined(__unix__)
+	if (ScrollBottom >= (ScreenLines - 1)) {
+		gotoxy(0, ScrollTop);
+		fputs("\x1b[J", stdout);
+	}
+	else {
+		for (int i = ScrollTop; i <= ScrollBottom; i++) {
+			gotoxy(0, i);
+			fputs("\x1b[K", stdout);
+		}
+		gotoxy(0, ScrollTop);
+	}
+#else
+# error No ClearScrollRegiob()
+#endif
+}
 
 // ------------------------------------------------------------------------- //
-void put_character(char ch, short attrib, int x, int y)
+static void put_character(char ch, short attrib, int x, int y)
 {
 #ifdef __MSDOS__
 	Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1))] = ch;
@@ -200,47 +270,22 @@ void zputs(const char *string)
 	char foreground, background, cur_attrs;
 	int16_t i, j;
 	int x, y;
-#ifdef __MSDOS__
-	struct text_info TextInfo;
-#elif defined(_WIN32)
-	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
-	/*  TCHAR space_char = (TCHAR)' ';*/
-#endif
 	static char o_fg = 7, o_bg = 0;
-	int scr_lines = 25, scr_width = 80;
-
-#ifdef _WIN32
-	GetConsoleScreenBufferInfo(
-		std_handle,
-		&screen_buffer);
-	x = screen_buffer.dwCursorPosition.X;
-	y = screen_buffer.dwCursorPosition.Y;
-	scr_lines = screen_buffer.dwSize.Y;
-	scr_width = screen_buffer.dwSize.X;
-#elif defined(__unix__)
-	x = CurrentX;
-	y = CurrentY;
-	scr_lines = ScreenLines;
-	scr_width = ScreenWidth;
-#else
-	gettextinfo(&TextInfo);
-	x = TextInfo.curx-1;
-	y = TextInfo.cury-1;
-	scr_lines = TextInfo.screenheight;
-	scr_lines = TextInfo.screenwidth;
-#endif
+	int scr_lines = ScreenLines;
+	int scr_width = ScreenWidth;
 
 	cur_attrs = o_fg | o_bg;
 	cur_char = 0;
+	getxy(&x, &y);
 
 	for (;;) {
 #ifdef _WIN32
 		gotoxy(x, y);
 #endif
-		if (y >= scr_lines) {
+		if (y > ScrollBottom) {
 			/* scroll line up */
 			ScrollUp();
-			y = scr_lines - 1;
+			y = ScrollBottom;
 		}
 		if (string[cur_char] == 0)
 			break;
@@ -260,10 +305,10 @@ void zputs(const char *string)
 			x = 0;
 			y++;
 
-			if (y >= scr_lines) {
+			if (y > ScrollBottom) {
 				/* scroll line up */
 				ScrollUp();
-				y = scr_lines - 1;
+				y = ScrollBottom;
 			}
 			break;
 		}
@@ -479,7 +524,7 @@ static void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t len
 }
 
 
-int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char attr,
+static int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char attr,
 				 int16_t low_char, int16_t high_char)
 {
 	int16_t length = strlen(string);  // length of string
@@ -527,34 +572,34 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 			case 0xE0 :
 			case 0 :
 				switch (getch()) {
-					case 80 : // down
-					case 72 : // up
+					case K_DOWN : // down
+					case K_UP : // up
 						break;
-					case 79 : // end
+					case K_END : // end
 						cur_letter = length;
 						update = true;
 						break;
-					case 77 :   // right
+					case K_RIGHT :   // right
 						if (cur_letter < length)
 							cur_letter++;
 						update = true;
 						break;
-					case 75 :   // left
+					case K_LEFT :   // left
 						if (cur_letter)
 							cur_letter--;
 						update = true;
 						break;
-					case 71 : // home
+					case K_HOME : // home
 						cur_letter = 0;
 						update = true;
 						break;
-					case 82 : // insert
+					case K_INSERT : // insert
 						insert = !insert;
 						SetCurs(insert);
 						// change cursor here
 						update = true;
 						break;
-					case 83 :   // delete
+					case K_DELETE :   // delete
 						if (length && cur_letter < length) {
 							i = cur_letter;
 							while (i<length)  {
@@ -579,6 +624,7 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 				cur_letter = 0;
 				update = true;
 				break;
+			case 127  : // maybe backspace (maybe delete)
 			case '\b' : // backspace
 				if (cur_letter > 0)   {
 					i = cur_letter-1;
@@ -602,10 +648,9 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 					length = 0;
 					cur_letter = 0;
 				}
-				if ((char)key < low_char || (char)key > high_char)  break;
+				if (key < low_char || key > high_char)  break;
 				update = true;
 				if (insert && length < input_length)  {
-
 					strlcpy(tmp_str, &string[cur_letter], sizeof(tmp_str));
 					strlcpy(&string[cur_letter+1], tmp_str, slength - cur_letter+1);
 
@@ -650,7 +695,7 @@ void Input(char *string, int16_t length)
 
 void ClearArea(int x1, int y1,  int x2, int y2, int attr)
 {
-#if !defined(__unix__) && !defined(_WIN32)
+#if defined(__MSDOS__)
 	asm {
 		push ax
 		push bx
@@ -690,13 +735,14 @@ void ClearArea(int x1, int y1,  int x2, int y2, int attr)
 		FillConsoleOutputCharacter(std_handle, ' ', len, pos, &written);
 		FillConsoleOutputAttribute(std_handle, attr, len, pos, &written);
 	}
+#else
+# error No implementation of ClearArea()
 #endif
 }
 
 void xputs(const char *string, int16_t x, int16_t y)
 {
-// As usual, block off the local stuff
-#if !defined(__unix__) && !defined(_WIN32)
+#if defined(__MSDOS__)
 	char FAR *VidPtr;
 
 	VidPtr = Video.VideoMem + Video.y_lookup[y] + (x<<1);
@@ -851,10 +897,10 @@ int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 	return (atol(NumString));
 }
 
-void DosGetStr(char *InputStr, int16_t MaxChars)
+void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 {
 	int16_t CurChar;
-	char InputCh;
+	int InputCh;
 	char Spaces[85] = "                                                                                     ";
 	char BackSpaces[85] = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
 	char TempStr[100], szString[100];
@@ -883,7 +929,7 @@ void DosGetStr(char *InputStr, int16_t MaxChars)
 			InputStr[CurChar]=0;
 			break;
 		}
-		else if (InputCh== '' || InputCh == '\x1B') { // ctrl-y
+		else if (InputCh== '\x19' || InputCh == '\x1B') { // ctrl-y
 			InputStr [0] = 0;
 			strlcpy(TempStr, BackSpaces, sizeof(TempStr));
 			TempStr[ CurChar ] = 0;
@@ -894,7 +940,9 @@ void DosGetStr(char *InputStr, int16_t MaxChars)
 			zputs(BackSpaces);
 			CurChar = 0;
 		}
-		else if (InputCh >= '')
+		else if (InputCh == '\x7f')
+			continue;
+		else if (InputCh > '\x7f' && !HiBit)
 			continue;
 		else if (InputCh == 0)
 			continue;
@@ -919,6 +967,7 @@ void Video_Init(void)
 {
 #if defined(_WIN32)
 	CONSOLE_CURSOR_INFO cursor_info;
+	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 
 	std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	if (std_handle == NULL) {
@@ -947,6 +996,10 @@ void Video_Init(void)
 		exit(0);
 	}
 	default_cursor_size = cursor_info.dwSize;
+
+	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
+	ScreenLines = screen_buffer.dwSize.Y;
+	ScreenWidth = screen_buffer.dwSize.X;
 #elif defined(__unix__)
 	struct termios raw;
 	int x, y;
@@ -966,12 +1019,18 @@ void Video_Init(void)
 	// character then attribute
 	Video.VideoMem = calloc(1, ScreenWidth * ScreenLines * 2);
 	clrscr();
-#else
+#elif defined(__MSDOS__)
 	int16_t iTemp;
+	struct text_info TextInfo
+	gettextinfo(&TextInfo);
 
 	Video.VideoMem = vid_address();
 	for (iTemp = 0; iTemp < 25;  iTemp++)
 		Video.y_lookup[ iTemp ] = iTemp * 160;
+	ScreenLines = TextInfo.screenheight;
+	ScreenWidth = TextInfo.screenwidth;
+#else
+# error No Video_Init() implementation for this platform
 #endif
 }
 
@@ -982,6 +1041,10 @@ void Video_Close(void)
 		CloseHandle(buf_handle);
 	FreeConsole();
 #elif defined(__unix__)
+	int x, y;
+	getxy(&x, &y);
+	fputs("\x1b[r", stdout);
+	gotoxy(x, y);
 	textattr(7);
 	ShowTextCursor(true);
 	tcsetattr(STDIN_FILENO, TCSANOW, &orig_tio);
@@ -1454,29 +1517,29 @@ static struct keys {
 	int ret;
 	const char *seq;
 } allkeys[] = {
-	{K_UP    << 8, "\x1b[A"},
-	{K_DOWN  << 8, "\x1b[B"},
-	{K_RIGHT << 8, "\x1b[C"},
-	{K_LEFT  << 8, "\x1b[D"},
-	{K_HOME  << 8, "\x1b[H"},
-	{K_PGUP  << 8, "\x1b[V"},
-	{K_PGDN  << 8, "\x1b[U"},
-	{K_END   << 8, "\x1b[F"},
-	{K_END   << 8, "\x1b[K"},
-	//{K_INSERT,   "\x1b[@"},
-	{K_HOME  << 8, "\x1b[1~"},
-	//{K_INSERT, "\x1b[2~"},
-	{127         , "\x1b[3~"},
-	{K_END   << 8, "\x1b[4~"},
-	{K_PGUP  << 8, "\x1b[5~"},
-	{K_PGDN  << 8, "\x1b[6~"},
-	{K_HOME  << 8, "\x1b[L"},
-	{K_UP    << 8, "\x1b" "A"},
-	{K_DOWN  << 8, "\x1b" "B"},
-	{K_RIGHT << 8, "\x1b" "C"},
-	{K_LEFT  << 8, "\x1b" "D"},
-	{K_HOME  << 8, "\x1b" "H"},
-	{K_END   << 8, "\x1b" "K"},
+	{K_UP     << 8, "\x1b[A"},
+	{K_DOWN   << 8, "\x1b[B"},
+	{K_RIGHT  << 8, "\x1b[C"},
+	{K_LEFT   << 8, "\x1b[D"},
+	{K_HOME   << 8, "\x1b[H"},
+	{K_PGUP   << 8, "\x1b[V"},
+	{K_PGDN   << 8, "\x1b[U"},
+	{K_END    << 8, "\x1b[F"},
+	{K_END    << 8, "\x1b[K"},
+	{K_INSERT << 8, "\x1b[@"},
+	{K_HOME   << 8, "\x1b[1~"},
+	{K_INSERT << 8, "\x1b[2~"},
+	{K_DELETE << 8, "\x1b[3~"},
+	{K_END    << 8, "\x1b[4~"},
+	{K_PGUP   << 8, "\x1b[5~"},
+	{K_PGDN   << 8, "\x1b[6~"},
+	{K_HOME   << 8, "\x1b[L"},
+	{K_UP     << 8, "\x1b" "A"},
+	{K_DOWN   << 8, "\x1b" "B"},
+	{K_RIGHT  << 8, "\x1b" "C"},
+	{K_LEFT   << 8, "\x1b" "D"},
+	{K_HOME   << 8, "\x1b" "H"},
+	{K_END    << 8, "\x1b" "K"},
 	{0, NULL}
 };
 
