@@ -59,7 +59,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 static char o_fg4 = 7, o_bg4 = 0;
 
 #ifdef __MSDOS__
-static void set_attrs(uint8_t attrib);
 static void getxy(int *x, int*y);
 #endif
 
@@ -67,20 +66,23 @@ static void getxy(int *x, int*y);
 static int default_cursor_size = 1;
 static HANDLE std_handle;
 static HANDLE buf_handle;
-static void set_attrs(uint8_t attrib);
 static void clans_putch(unsigned char ch);
 uint8_t cur_attr;
 static void getxy(int *x, int*y);
 #endif
 
 #ifdef __unix__
-static void set_attrs(uint8_t attrib);
 static void clans_putch(unsigned char ch);
 static void getxy(int *x, int*y);
-static int getch(void);
+int getch(void);
 static short ansi_colours(short color);
 uint8_t cur_attr;
 struct termios orig_tio;
+int ScreenWidth = 80;
+int ScreenLines = 24;
+int CurrentX = 0;
+int CurrentY = 0;
+uint8_t CurrentAttr = 7;
 #endif
 
 // ------------------------------------------------------------------------- //
@@ -165,7 +167,7 @@ void ScrollUp(void)
 	char_info.Char.UnicodeChar = (TCHAR)' ';
 
 	if (!ScrollConsoleScreenBuffer(std_handle,
-								   &scroll_rect, NULL, top_left, &char_info)) {
+	    &scroll_rect, NULL, top_left, &char_info)) {
 		display_win32_error();
 		exit(0);
 	}
@@ -185,13 +187,13 @@ void put_character(char ch, short attrib, int x, int y)
 	Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1))] = ch;
 	Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1) + 1L)] = (char)(attrib & 0xff);
 #else
-	gotoxy(x + 1, y + 1);
-	set_attrs(attrib);
+	gotoxy(x, y);
+	textattr(attrib);
 	clans_putch(ch);
 #endif
 }
 
-void zputs(char *string)
+void zputs(const char *string)
 {
 	char number[3];
 	int16_t cur_char, attr;
@@ -216,12 +218,10 @@ void zputs(char *string)
 	scr_lines = screen_buffer.dwSize.Y;
 	scr_width = screen_buffer.dwSize.X;
 #elif defined(__unix__)
-	getxy(&x, &y);
-	fputs("\x1b[255B\x1b[255C", stdout);
-	getxy(&scr_width, &scr_lines);
-	scr_width++;
-	scr_lines++;
-	gotoxy(x, y);
+	x = CurrentX;
+	y = CurrentY;
+	scr_lines = ScreenLines;
+	scr_width = ScreenWidth;
 #else
 	gettextinfo(&TextInfo);
 	x = TextInfo.curx-1;
@@ -253,7 +253,7 @@ void zputs(char *string)
 		if (string[cur_char] == '\r') {
 			x = 0;
 			cur_char++;
-			gotoxy(x + 1, y + 1);
+			gotoxy(x, y);
 			continue;
 		}
 		if (x == scr_width) {
@@ -321,7 +321,7 @@ void zputs(char *string)
 			x++;
 		}
 	}
-	gotoxy(x+1,y+1);
+	gotoxy(x, y);
 }
 
 void SetCurs(int16_t CursType)
@@ -367,10 +367,10 @@ void SetCurs(int16_t CursType)
 #endif
 }
 
-void qputs(char *string, int16_t x, int16_t y)
+void qputs(const char *string, int16_t x, int16_t y)
 {
 #if defined(_WIN32) || defined(__unix__)
-	gotoxy(x+1, y+1);
+	gotoxy(x, y);
 	zputs(string);
 #else
 	char number[3];
@@ -467,14 +467,14 @@ static void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t len
 #else
 	uint8_t orig_attr = cur_attr;
 
-	gotoxy(x+1, y+1);
-	set_attrs(color);
+	gotoxy(x, y);
+	textattr(color);
 	for (char *i = string; *i; i++)
 		clans_putch(*i);
-	set_attrs(8);
+	textattr(8);
 	for (int i = length; i < input_length; i++)
 		clans_putch(PADDING);
-	set_attrs(orig_attr);
+	textattr(orig_attr);
 #endif
 }
 
@@ -497,12 +497,12 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 	// initialize the string here
 
 	SetCurs(insert);
-	set_attrs(attr);
+	textattr(attr);
 
 	o_fg4 = attr&0x00FF;
 	o_bg4 = (attr&0xFF00) >> 8;
 	qputs(string, x, y);
-	gotoxy(x+length+1, y+1);
+	gotoxy(x+length, y);
 
 	old_fg4 = o_fg4;
 	o_fg4 = 8;
@@ -517,7 +517,7 @@ int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char
 	for (;;) {
 		if (update) {
 			sdisplay(string, x, y, attr, length, input_length);
-			gotoxy(x+ 1 + cur_letter, y+1);
+			gotoxy(x + cur_letter, y);
 			update = false;
 		}
 
@@ -673,9 +673,9 @@ void ClearArea(int x1, int y1,  int x2, int y2, int attr)
 	}
 #elif defined(__unix__)
 	if (x2 == 79) {
-		set_attrs(attr);
+		textattr(attr);
 		for (int y = y1; y <= y2; y++) {
-			gotoxy(x1 + 1, y + 1);
+			gotoxy(x1, y);
 			fputs("\x1b[K", stdout);
 		}
 	}
@@ -693,7 +693,7 @@ void ClearArea(int x1, int y1,  int x2, int y2, int attr)
 #endif
 }
 
-void xputs(char *string, int16_t x, int16_t y)
+void xputs(const char *string, int16_t x, int16_t y)
 {
 // As usual, block off the local stuff
 #if !defined(__unix__) && !defined(_WIN32)
@@ -709,8 +709,8 @@ void xputs(char *string, int16_t x, int16_t y)
 		string++;
 	}
 #else
-	gotoxy(x + 1, y + 1);
-	for (char *i = string; *i; i++)
+	gotoxy(x, y);
+	for (const char *i = string; *i; i++)
 		clans_putch(*i);
 #endif
 }
@@ -721,6 +721,196 @@ void DisplayStr(char *szString)
 		rputs(szString);
 	else
 		zputs(szString);
+}
+
+char get_answer(char *szAllowableChars)
+{
+	char cKey;
+	uint16_t iTemp;
+
+	for (;;) {
+		cKey = getch();
+		if (cKey == 0 || cKey == (char)0xE0) {
+			getch();
+			continue;
+		}
+
+		/* see if allowable */
+		for (iTemp = 0; iTemp < strlen(szAllowableChars); iTemp++) {
+			if (toupper(cKey) == toupper(szAllowableChars[iTemp]))
+				break;
+		}
+
+		if (iTemp < strlen(szAllowableChars))
+			break;  /* found allowable key */
+	}
+
+	return (toupper(cKey));
+}
+
+int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
+{
+	char string[255], NumString[13], DefMax[40];
+	char InputChar;
+	int16_t NumDigits, CurDigit = 0, cTemp;
+	int32_t TenPower;
+
+	/* init screen */
+	zputs(" ");
+	zputs(Prompt);
+
+	snprintf(DefMax, sizeof(DefMax), " |01(|15%" PRId32 "|07; %" PRId32 "|01) |11", DefaultVal, Maximum);
+	zputs(DefMax);
+
+	/* NumDigits contains amount of digits allowed using max. value input */
+
+	TenPower = 10;
+	for (NumDigits = 1; NumDigits < 11; NumDigits++) {
+		if (Maximum < TenPower)
+			break;
+
+		TenPower *= 10;
+	}
+
+	/* now get input */
+	ShowTextCursor(true);
+	for (;;) {
+		InputChar = get_answer("0123456789><.,\r\n\b\x19");
+
+		if (isdigit(InputChar)) {
+			if (CurDigit < NumDigits) {
+				NumString[CurDigit++] = InputChar;
+				NumString[CurDigit] = 0;
+				snprintf(string, sizeof(string), "%c", InputChar);
+				zputs(string);
+			}
+
+		}
+		else if (InputChar == '\b' || InputChar == '\x7f') {
+			if (CurDigit > 0) {
+				CurDigit--;
+				NumString[CurDigit] = 0;
+				zputs("\b \b");
+			}
+		}
+		else if (InputChar == '>' || InputChar == '.') {
+			/* get rid of old value, by showing backspaces */
+			for (cTemp = 0; cTemp < CurDigit; cTemp++)
+				zputs("\b \b");
+
+			snprintf(string, sizeof(string), "%-" PRId32, Maximum);
+			string[NumDigits] = 0;
+			zputs(string);
+
+			strlcpy(NumString, string, sizeof(NumString));
+			CurDigit = NumDigits;
+		}
+		else if (InputChar == '<' || InputChar == ',' || InputChar == 25) {
+			/* get rid of old value, by showing backspaces */
+			for (cTemp = 0; cTemp < CurDigit; cTemp++)
+				zputs("\b \b");
+
+			CurDigit = 0;
+			string[CurDigit] = 0;
+
+			strlcpy(NumString, string, sizeof(NumString));
+		}
+		else if (InputChar == '\r' || InputChar == '\n') {
+			if (CurDigit == 0) {
+				snprintf(string, sizeof(string), "%-" PRId32, DefaultVal);
+				string[NumDigits] = 0;
+				zputs(string);
+
+				strlcpy(NumString, string, sizeof(NumString));
+				CurDigit = NumDigits;
+
+				zputs("\n");
+				break;
+			}
+			/* see if number too high, if so, make it max */
+			else if (atol(NumString) > Maximum) {
+				/* get rid of old value, by showing backspaces */
+				for (cTemp = 0; cTemp < CurDigit; cTemp++)
+					zputs("\b \b");
+
+				snprintf(string, sizeof(string), "%-" PRId32, Maximum);
+				string[NumDigits] = 0;
+				zputs(string);
+
+				strlcpy(NumString, string, sizeof(NumString));
+				CurDigit = NumDigits;
+			}
+			else {  /* is a valid value */
+				zputs("\n");
+				break;
+			}
+		}
+	}
+	ShowTextCursor(false);
+
+	return (atol(NumString));
+}
+
+void DosGetStr(char *InputStr, int16_t MaxChars)
+{
+	int16_t CurChar;
+	char InputCh;
+	char Spaces[85] = "                                                                                     ";
+	char BackSpaces[85] = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
+	char TempStr[100], szString[100];
+
+	Spaces[MaxChars] = 0;
+	BackSpaces[MaxChars] = 0;
+
+	CurChar = strlen(InputStr);
+
+	zputs(Spaces);
+	zputs(BackSpaces);
+	zputs(InputStr);
+
+	ShowTextCursor(true);
+	for (;;) {
+		InputCh = getch();
+
+		if (InputCh == '\b' || InputCh == '\x7f') {
+			if (CurChar>0) {
+				CurChar--;
+				zputs("\b \b");
+			}
+		}
+		else if (InputCh == '\r' || InputCh == '\n') {
+			zputs("|16\n");
+			InputStr[CurChar]=0;
+			break;
+		}
+		else if (InputCh== '' || InputCh == '\x1B') { // ctrl-y
+			InputStr [0] = 0;
+			strlcpy(TempStr, BackSpaces, sizeof(TempStr));
+			TempStr[ CurChar ] = 0;
+			zputs(TempStr);
+			Spaces[MaxChars] = 0;
+			BackSpaces[MaxChars] = 0;
+			zputs(Spaces);
+			zputs(BackSpaces);
+			CurChar = 0;
+		}
+		else if (InputCh >= '')
+			continue;
+		else if (InputCh == 0)
+			continue;
+		else if (iscntrl(InputCh))
+			continue;
+		else if (isalpha(InputCh) && CurChar && InputStr[CurChar-1] == SPECIAL_CODE)
+			continue;
+		else {  /* valid character input */
+			if (CurChar==MaxChars)   continue;
+			InputStr[CurChar++]=InputCh;
+			InputStr[CurChar] = 0;
+			snprintf(szString, sizeof(szString), "%c", InputCh);
+			zputs(szString);
+		}
+	}
+	ShowTextCursor(false);
 }
 
 // ------------------------------------------------------------------------- //
@@ -759,12 +949,23 @@ void Video_Init(void)
 	default_cursor_size = cursor_info.dwSize;
 #elif defined(__unix__)
 	struct termios raw;
+	int x, y;
 
 	tcgetattr(STDIN_FILENO, &orig_tio);
 	raw = orig_tio;
 	cfmakeraw(&raw);
 	tcsetattr(STDIN_FILENO, TCSANOW, &raw);
 	setvbuf(stdout, NULL, _IONBF, 0);
+	getxy(&x, &y);
+	fputs("\x1b[255B\x1b[255C", stdout);
+	getxy(&ScreenWidth, &ScreenLines);
+	ScreenWidth++;
+	ScreenLines++;
+	gotoxy(x, y);
+	textattr(7);
+	// character then attribute
+	Video.VideoMem = calloc(1, ScreenWidth * ScreenLines * 2);
+	clrscr();
 #else
 	int16_t iTemp;
 
@@ -781,14 +982,48 @@ void Video_Close(void)
 		CloseHandle(buf_handle);
 	FreeConsole();
 #elif defined(__unix__)
-	set_attrs(8);
-	SetCurs(CURS_NORMAL);
+	textattr(7);
+	ShowTextCursor(true);
 	tcsetattr(STDIN_FILENO, TCSANOW, &orig_tio);
 #endif
 }
 
+void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color)
+{
+	int16_t x, y;
+#ifdef _WIN32
+	COORD cursor_pos;
+	DWORD cells_written;
+	uint16_t line_len;
+#endif
+
+	for (y = yPos1; y <= yPos2;  y++) {
+		for (x = xPos1;  x <= xPos2;  x++) {
+#if defined(_WIN32)
+			line_len = (xPos2 - xPos1);
+
+			// Is it just me or is this a replace loop?
+			for (y = yPos1; y <= yPos2; y++) {
+				cursor_pos.X = xPos1;
+				cursor_pos.Y = y;
+				FillConsoleOutputAttribute(
+					std_handle,
+					(uint16_t)Color,
+					line_len,
+					cursor_pos,
+					&cells_written);
+			}
+#elif defined(__unix__)
+			gotoxy(x, y);
+			textattr(Color);
+			clans_putch(Video.VideoMem[(((y) * ScreenWidth) + (x)) * 2]);
+#endif
+		}
+	}
+}
+
 #ifdef __MSDOS__
-static void set_attrs(uint8_t attrib)
+void textattr(uint8_t attrib)
 {
 	textattr(attrib);
 }
@@ -801,6 +1036,72 @@ static void getxy(int *x, int*y)
 		*y = wherey()-1;
 }
 #elif defined(_WIN32)
+void * save_screen(void)
+{
+	CHAR_INFO *char_info_buffer;
+	uint32_t buffer_len;
+	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
+	COORD top_left = { 0, 0 };
+	SMALL_RECT rect_rw;
+
+	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
+
+	buffer_len = (screen_buffer.dwSize.X * screen_buffer.dwSize.Y);
+	char_info_buffer = (CHAR_INFO *) malloc(buffer_len * sizeof(CHAR_INFO));
+	if (!char_info_buffer) {
+		MessageBox(NULL, TEXT("Memory Allocation Failure"),
+				   TEXT("ERROR"), MB_OK | MB_ICONERROR);
+		exit(0);
+	}
+
+	rect_rw.Top = 0;
+	rect_rw.Left = 0;
+	rect_rw.Right = screen_buffer.dwSize.X;
+	rect_rw.Bottom = screen_buffer.dwSize.Y;
+
+	ReadConsoleOutput(
+		std_handle,
+		char_info_buffer,
+		screen_buffer.dwSize,
+		top_left,
+		&rect_rw);
+
+	return (void *)char_info_buffer;
+}
+
+void restore_screen(void *state)
+{
+	CHAR_INFO *char_info_buffer = (CHAR_INFO *)state;
+	COORD top_left = { 0, 0 };
+	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
+	SMALL_RECT rect_write;
+
+	if (!char_info_buffer)
+		return;
+
+	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
+
+	rect_write.Top = 0;
+	rect_write.Left = 0;
+	rect_write.Bottom = screen_buffer.dwSize.Y;
+	rect_write.Right = screen_buffer.dwSize.X;
+
+	WriteConsoleOutput(
+		std_handle,
+		char_info_buffer,
+		screen_buffer.dwSize,
+		top_left,
+		&rect_write);
+
+	free(char_info_buffer);
+}
+
+void ShowTextCursor(bool sh)
+{
+	CONSOLE_CURSOR_INFO ci = {default_cursor_size, sh};
+	SetConsoleCursorInfo(std_handle, &ci);
+}
+
 void gotoxy(int x, int y)
 {
 	COORD cursor_pos;
@@ -838,7 +1139,7 @@ void clrscr(void)
 	gotoxy(0, 0);
 }
 
-static void set_attrs(uint8_t attrib)
+void textattr(uint8_t attrib)
 {
 	SetConsoleTextAttribute(std_handle, (uint16_t)attrib);
 }
@@ -867,17 +1168,70 @@ static void getxy(int *x, int*y)
 		*y = screen_buffer.dwCursorPosition.Y;
 }
 #elif defined(__unix__)
+void * save_screen(void)
+{
+	size_t sz = ScreenLines * ScreenWidth * 2;
+	void *ret = malloc(sz);
+	if (ret == NULL)
+		return NULL;
+	memcpy(ret, Video.VideoMem, sz);
+	return ret;
+}
+
+static void redraw(void)
+{
+	char *ch = Video.VideoMem;
+	gotoxy(0, 0);
+	for (int y = 0; y < ScreenLines; y++) {
+		for (int x = 0; x < ScreenWidth; x++) {
+			textattr(ch[1]);
+			if (y == ScreenLines - 1 && x == ScreenWidth - 1) {
+				fputs("\x1b[K", stdout);
+			}
+			else {
+				clans_putch(ch[0]);
+				ch += 2;
+			}
+		}
+	}
+}
+
+void restore_screen(void *state)
+{
+	size_t sz = ScreenLines * ScreenWidth * 2;
+	memcpy(Video.VideoMem, state, sz);
+	free(state);
+	redraw();
+}
+
+void ShowTextCursor(bool sh)
+{
+	fputs(sh ? "\x1b[?25h" : "\x1b[?25l", stdout);
+}
+
 void gotoxy(int x, int y)
 {
-	printf("\x1b[%d;%dH", y, x);
+	CurrentX = x;
+	CurrentY = y;
+	printf("\x1b[%d;%dH", y + 1, x + 1);
 }
 
 void clrscr(void)
 {
+	char *ch = Video.VideoMem;
+	for (int y = 0; y < ScreenLines; y++) {
+		for (int x = 0; x < ScreenWidth; x++) {
+			*(ch++) = ' ';
+			*(ch++) = CurrentAttr;
+		}
+	}
+			
 	fputs("\x1b[H\x1b[J", stdout);
+	CurrentX = 0;
+	CurrentY = 0;
 }
 
-static void set_attrs(uint8_t attrib)
+void textattr(uint8_t attrib)
 {
 	char seq[16];
 	snprintf(seq, sizeof(seq), "\x1b[0;%d;%d", ansi_colours(attrib & 0x07), ansi_colours((attrib >> 4) & 0x07) + 10);
@@ -887,6 +1241,7 @@ static void set_attrs(uint8_t attrib)
 		strlcat(seq, ";5", sizeof(seq));
 	strlcat(seq, "m", sizeof(seq));
 	fputs(seq, stdout);
+	CurrentAttr = attrib;
 }
 
 const static char *cp437_unicode_table[128] = {
@@ -904,18 +1259,35 @@ const static char *cp437_unicode_table[128] = {
 	"\xe2\x95\xaa", "\xe2\x94\x98", "\xe2\x94\x8c", "\xe2\x96\x88", "\xe2\x96\x84", "\xe2\x96\x8c", "\xe2\x96\x90", "\xe2\x96\x80",
 	"\xce\xb1", "\xc3\x9f", "\xce\x93", "\xcf\x80", "\xce\xa3", "\xcf\x83", "\xc2\xb5", "\xcf\x84",
 	"\xce\xa6", "\xce\x98", "\xce\xa9", "\xce\xb4", "\xe2\x88\x9e", "\xcf\x86", "\xce\xb5", "\xe2\x88\xa9",
-	"\xe2\x89\xa1", "\xc2\xb1", "\xe2\x89\xa5", "\xe2\x89\xa4", "\xe2\x8c\xa0", "\xe2\x8c\xa1", "\xc3\xb7", "\xe2\x89\x88"
+	"\xe2\x89\xa1", "\xc2\xb1", "\xe2\x89\xa5", "\xe2\x89\xa4", "\xe2\x8c\xa0", "\xe2\x8c\xa1", "\xc3\xb7", "\xe2\x89\x88",
 	"\xc2\xb0", "\xe2\x88\x99", "\xc2\xb7", "\xe2\x88\x9a", "\xe2\x81\xbf", "\xc2\xb2", "\xe2\x96\xa0", "\xc2\xa0"
 };
 
 static void clans_putch(unsigned char ch)
 {
+	char *ptr = &Video.VideoMem[(CurrentY * ScreenWidth + CurrentX) * 2];
 	if (ch > 127)
 		fputs(cp437_unicode_table[ch - 128], stdout);
 	else if (ch < 32)
 		fputc(' ', stdout);
 	else
 		fputc(ch, stdout);
+	ptr[0] = ch;
+	ptr[1] = CurrentAttr;
+	CurrentX++;
+	if (CurrentX == ScreenWidth) {
+		CurrentX = 0;
+		CurrentY++;
+		if (CurrentY == ScreenLines) {
+			memmove(Video.VideoMem, &Video.VideoMem[ScreenWidth * 2], (ScreenLines - 1) * ScreenWidth * 2);
+			char *ch = &Video.VideoMem[(ScreenLines - 1) * ScreenWidth * 2];
+			for (int x = 0; x < ScreenWidth; x++) {
+				*(ch++) = ' ';
+				*(ch++) = CurrentAttr;
+			}
+			CurrentY--;
+		}
+	}
 }
 
 static short ansi_colours(short color)
@@ -941,7 +1313,7 @@ static short ansi_colours(short color)
 	return(0);
 }
 
-static int getch(void)
+static int getbyte(void)
 {
 	struct timeval tv = {
 		.tv_sec = 0,
@@ -960,51 +1332,222 @@ static int getch(void)
 	return -1;
 }
 
-static void getxy(int *x, int*y)
+uint8_t keybuf[1024];
+unsigned keypos;
+
+enum parseState {
+	PSstart = 0,
+	PSesc,
+	PScsiparams,
+	PScsiibs,
+	PSctrlseq,
+	PSnF = 10,
+};
+
+static int getseq(void)
 {
-	char seqbuf[16];
-	size_t sbp = 0;
+	int state = PSstart;
 	int ch;
-	int state = 0;
 
-	fputs("\x1b[6n", stdout);
-	while ((ch = getch()) != -1) {
-		if (ch == '\x1b')
-			state = 0;
+	keypos = 0;
+	while ((ch = getbyte()) != -1) {
+		// NULs are ignored (even inside a sequence)
+		if (ch == 0)
+			continue;
+		keybuf[keypos++] = ch;
+		// If we hit this, just do whatever.
+		if (keypos == sizeof(keybuf)) {
+			keypos = 0;
+			continue;
+		}
 		switch (state) {
-			case 0:
+			case PSstart:
 				if (ch == '\x1b') {
-					state++;
-					sbp = 0;
+					state = PSesc;
+					break;
+				}
+				else {
+					keybuf[keypos] = 0;
+					return keypos;
 				}
 				break;
-			case 1:
-				if (ch == '[')
-					state++;
-				else
-					state = 0;
-				break;
-			case 2:
-				if ((ch >= '0' && ch <= '9') || ch == ';') {
-					seqbuf[sbp++] = ch;
+			case PSesc:
+				if (ch == '[') {
+					state = PScsiparams;
+					break;
 				}
-				else if (ch == 'R') {
-					unsigned nx, ny;
-
-					seqbuf[sbp++] = ch;
-					seqbuf[sbp++] = 0;
-					if (sscanf(seqbuf, "%u;%uR", &ny, &nx) == 2) {
-						*x = nx - 1;
-						*y = ny - 1;
-						return;
+				// nF escape sequence
+				else if (ch >= ' ' && ch <= '/') {
+					state = PSnF;
+					break;
+				}
+				else {
+					// Fp escape sequence...
+					if (ch >= '0' && ch <= '?') {
+						keybuf[keypos] = 0;
+						return keypos;
+					}
+					// Fe escape sequence
+					if (ch >= '@' && ch <= '_') {
+						keybuf[keypos] = 0;
+						return keypos;
+					}
+					// Fs escape sequence
+					if (ch >= '`' && ch <= '~') {
+						keybuf[keypos] = 0;
+						return keypos;
 					}
 				}
+				// Anything else is invalid
+				keypos = 0;
+				break;
+			case PSnF:
+				if (ch >= '0' && ch <= '~') {
+					keybuf[keypos] = 0;
+					return keypos;
+				}
+				if (ch >= ' ' && ch <= '/')
+					continue;
+				// Anything else is invalid
+				keypos = 0;
+				break;
+			case PScsiparams:
+				if (ch >= '0' && ch <= '?')
+					break;
+				if (ch >= ' ' && ch <= '/') {
+					state = PScsiibs;
+					break;
+				}
+				if (ch >= '@' && ch <= '~') {
+					keybuf[keypos] = 0;
+					return keypos;
+				}
+				// Anything else is invalid
+				keypos = 0;
+				break;
+			case PScsiibs:
+				if (ch >= ' ' && ch <= '/') {
+					break;
+				}
+				if (ch >= '@' && ch <= '~') {
+					keybuf[keypos] = 0;
+					return keypos;
+				}
+				// Anything else is invalid
+				keypos = 0;
 				break;
 		}
 	}
+	return -1;
+}
 
-	*x = 1;
-	*y = 1;
+#define K_UP        72
+#define K_DOWN      80
+#define K_HOME      71
+#define K_END       79
+#define K_PGUP      73
+#define K_PGDN      81
+#define K_LEFT      75
+#define K_RIGHT     77
+
+static struct keys {
+	int ret;
+	const char *seq;
+} allkeys[] = {
+	{K_UP    << 8, "\x1b[A"},
+	{K_DOWN  << 8, "\x1b[B"},
+	{K_RIGHT << 8, "\x1b[C"},
+	{K_LEFT  << 8, "\x1b[D"},
+	{K_HOME  << 8, "\x1b[H"},
+	{K_PGUP  << 8, "\x1b[V"},
+	{K_PGDN  << 8, "\x1b[U"},
+	{K_END   << 8, "\x1b[F"},
+	{K_END   << 8, "\x1b[K"},
+	//{K_INSERT,   "\x1b[@"},
+	{K_HOME  << 8, "\x1b[1~"},
+	//{K_INSERT, "\x1b[2~"},
+	{127         , "\x1b[3~"},
+	{K_END   << 8, "\x1b[4~"},
+	{K_PGUP  << 8, "\x1b[5~"},
+	{K_PGDN  << 8, "\x1b[6~"},
+	{K_HOME  << 8, "\x1b[L"},
+	{K_UP    << 8, "\x1b" "A"},
+	{K_DOWN  << 8, "\x1b" "B"},
+	{K_RIGHT << 8, "\x1b" "C"},
+	{K_LEFT  << 8, "\x1b" "D"},
+	{K_HOME  << 8, "\x1b" "H"},
+	{K_END   << 8, "\x1b" "K"},
+	{0, NULL}
+};
+
+static int nextch;
+int getch(void)
+{
+	int ret = -1;
+	if (nextch) {
+		ret = nextch;
+		nextch = 0;
+		return ret;
+	}
+	for (;;) {
+		int seqlen = getseq();
+		if (seqlen != -1) {
+			if (seqlen == 1)
+				return keybuf[0];
+			for (int i = 0; allkeys[i].ret; i++) {
+				if (strcmp((char *)keybuf, allkeys[i].seq) == 0) {
+					if (allkeys[i].ret < 256)
+						return allkeys[i].ret;
+					nextch = allkeys[i].ret >> 8;
+					return 0;
+				}
+			}
+		}
+	}
+	return -1;
+}
+
+static const char *digits = "0123456789";
+static void getxy(int *x, int*y)
+{
+	char *p;
+	int seqlen;
+	size_t span;
+
+	fputs("\x1b[6n", stdout);
+	while((seqlen = getseq()) != -1) {
+		if (seqlen < 6)
+			continue;
+		if (keybuf[0] != '\x1b')
+			continue;
+		if (keybuf[1] != '[')
+			continue;
+		p = (char *)&keybuf[2];
+		span = strspn(p, digits);
+		if (span < 1)
+			continue;
+		if (span > 5)
+			continue;
+		if (p[span] != ';')
+			continue;
+		p[span] = 0;
+		*y = atoi(p) - 1;
+		p += span;
+		p++;
+		span = strspn(p, digits);
+		if (span < 1)
+			continue;
+		if (span > 5)
+			continue;
+		if (p[span] != 'R')
+			continue;
+		p[span] = 0;
+		*x = atoi(p) - 1;
+		return;
+	}
+
+	*x = 0;
+	*y = 0;
 	return;
 }
 #endif

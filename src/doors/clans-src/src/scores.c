@@ -200,7 +200,7 @@ void DisplayScores(bool MakeFile)
 	int16_t CurHigh, Padding;
 	bool NoPlayers = true;
 
-	if (ST_CLANSPCFILE == NULL)
+	if (Language->BigString == NULL)
 		return;
 	/* initialize sortdata */
 	for (iTemp = 0; iTemp < 128; iTemp++)

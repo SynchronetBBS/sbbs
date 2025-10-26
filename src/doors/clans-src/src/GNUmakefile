@@ -89,8 +89,9 @@ CLANS_OBJS :=	$(OBJDIR)alliance.o $(OBJDIR)alliancem.o \
 
 CHEW_OBJS :=	$(OBJDIR)chew.o $(OBJDIR)gum.o $(OBJDIR)parsing.o
 
-CONFIG_OBJS :=	$(OBJDIR)config.o $(OBJDIR)parsing.o \
-		$(OBJDIR)readcfg.o $(OBJDIR)unix_wrappers.o
+CONFIG_OBJS :=	$(OBJDIR)config.o $(OBJDIR)cmdline.o $(OBJDIR)console.o \
+		$(OBJDIR)parsing.o $(OBJDIR)readcfg.o \
+		$(OBJDIR)unix_wrappers.o $(OBJDIR)video.o
 
 ECOMP_OBJS :=	$(OBJDIR)ecomp.o $(OBJDIR)parsing.o $(OBJDIR)serialize.o \
 		$(OBJDIR)crc.o
@@ -117,10 +118,11 @@ PCEDIT_OBJS :=	$(OBJDIR)pcedit.o $(OBJDIR)alliance.o $(OBJDIR)myopen.o \
 		$(OBJDIR)unix_wrappers.o $(OBJDIR)serialize.o \
 		$(OBJDIR)deserialize.o $(OBJDIR)crc.o
 
-RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)alliance.o $(OBJDIR)crc.o \
-		$(OBJDIR)deserialize.o $(OBJDIR)myopen.o \
-		$(OBJDIR)parsing.o $(OBJDIR)readcfg.o \
-		$(OBJDIR)serialize.o $(OBJDIR)unix_wrappers.o
+RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)alliance.o $(OBJDIR)cmdline.o \
+		$(OBJDIR)console.o $(OBJDIR)crc.o $(OBJDIR)deserialize.o \
+		$(OBJDIR)myopen.o $(OBJDIR)parsing.o $(OBJDIR)readcfg.o \
+		$(OBJDIR)serialize.o $(OBJDIR)unix_wrappers.o \
+		$(OBJDIR)video.o
 
 ifdef WIN
  CLANS_OBJS +=	$(OBJDIR)win_wrappers.o
@@ -215,7 +217,7 @@ $(BINDIR)chew$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)chew$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)config$(EXEFILE): $(CONFIG_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(CONSOLE_LIBS) $(WRAPPER_LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)config$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)config$(EXEFILE)
 	cp $^ $@
@@ -239,7 +241,7 @@ $(BINDIR)langcomp$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)langcomp$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)reset$(EXEFILE): $(RESET_OBJS) | $(BINDIR)
-	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(CONSOLE_LIBS) $(WRAPPER_LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)reset$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)reset$(EXEFILE)
 	cp $^ $@
