@@ -250,11 +250,32 @@ int main(int argc, char **argv)
 	return(0);
 }
 
+static bool ReadFilename(FILE *fpGUM, char *szEncryptedName, size_t sz)
+{
+	char *pcTo;
+
+	/* read in filename */
+	memset(szEncryptedName, 0, sz);
+	if (!fread(szEncryptedName, 1, 1, fpGUM))
+		return false;
+	if (szEncryptedName[0] == CODE1) {
+		pcTo = szEncryptedName;
+		do {
+			if (!fread(pcTo, 1, 1, fpGUM))
+				return false;
+		} while(*(pcTo++) != CODE1);
+	}
+	else {
+		if (!fread(&szEncryptedName[1], MAX_FILENAME_LEN - 1, sizeof(char), fpGUM))
+			return false;
+	}
+	return true;
+}
+
 static int GetGUM(FILE *fpGUM)
 {
-	char szKey[80];
-	char szEncryptedName[MAX_FILENAME_LEN], cInput;
-	char *pcFrom, *pcTo, szFileName[MAX_FILENAME_LEN], szString[128];
+	char szEncryptedName[PATH_SIZE], cInput;
+	char *pcFrom, *pcTo, szFileName[PATH_SIZE], szString[128];
 	FILE *fpToFile;
 	uint32_t lFileSize, lCompressSize;
 	uint16_t date, time;
@@ -262,7 +283,7 @@ static int GetGUM(FILE *fpGUM)
 	ClearAll();
 
 	/* read in filename */
-	if (!fread(&szEncryptedName, sizeof(szEncryptedName), sizeof(char), fpGUM))
+	if (!ReadFilename(fpGUM, szEncryptedName, sizeof(szEncryptedName)))
 		return false;
 
 	/* then decrypt it */
@@ -276,16 +297,6 @@ static int GetGUM(FILE *fpGUM)
 	*pcTo = 0;
 	snprintf(szString, sizeof(szString), "|14%-*s |06", MAX_FILENAME_LEN, szFileName);
 	zputs(szString);
-
-	/* make key using filename */
-	snprintf(szKey, sizeof(szKey), "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
-	// printf("key = '%s%x%x'\n", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
-
-	pcTo = szKey;
-	while (*pcTo) {
-		*pcTo ^= CODE2;
-		pcTo++;
-	}
 
 	// if dirname, makedir
 	if (szFileName[0] == '/') {
@@ -574,9 +585,8 @@ static int WriteType(char *szFileName)
 
 static void Extract(char *szExtractFile, char *szNewName)
 {
-	char szKey[80];
-	char szEncryptedName[MAX_FILENAME_LEN], cInput;
-	char *pcFrom, *pcTo, szFileName[MAX_FILENAME_LEN], szString[128];
+	char szEncryptedName[PATH_SIZE], cInput;
+	char *pcFrom, *pcTo, szFileName[PATH_SIZE], szString[128];
 	FILE *fpToFile, *fpGUM;
 	int32_t lFileSize, lCompressSize;
 	uint16_t date, time;
@@ -591,7 +601,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 
 	for (;;) {
 		/* read in filename */
-		if (!fread(&szEncryptedName, sizeof(szEncryptedName), sizeof(char), fpGUM)) {
+		if (!ReadFilename(fpGUM, szEncryptedName, sizeof(szEncryptedName))) {
 			zputs("|04file not found!\n");
 			fclose(fpGUM);
 			return;
@@ -606,16 +616,6 @@ static void Extract(char *szExtractFile, char *szNewName)
 			pcTo++;
 		}
 		*pcTo = 0;
-
-		/* make key using filename */
-		snprintf(szKey, sizeof(szKey), "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
-		// printf("key = '%s%x%x'\n", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
-
-		pcTo = szKey;
-		while (*pcTo) {
-			*pcTo ^= CODE2;
-			pcTo++;
-		}
 
 		// file, do following
 		if (szFileName[0] != '/') {
@@ -709,9 +709,8 @@ static void Extract(char *szExtractFile, char *szNewName)
 
 static void ListFiles(void)
 {
-	char szKey[80];
-	char szEncryptedName[MAX_FILENAME_LEN];
-	char *pcFrom, *pcTo, szFileName[MAX_FILENAME_LEN], szString[128];
+	char szEncryptedName[PATH_SIZE];
+	char *pcFrom, *pcTo, szFileName[PATH_SIZE], szString[128];
 	FILE *fpGUM;
 	int32_t lFileSize, TotalBytes = 0, lCompressSize;
 	int FilesFound = 0;
@@ -726,7 +725,7 @@ static void ListFiles(void)
 
 	while (!Done) {
 		/* read in filename */
-		if (!fread(&szEncryptedName, sizeof(szEncryptedName), sizeof(char), fpGUM)) {
+		if (!ReadFilename(fpGUM, szEncryptedName, sizeof(szEncryptedName))) {
 			// done
 			fclose(fpGUM);
 			snprintf(szString, sizeof(szString), "\n|14%" PRId32 " total bytes\n\n", TotalBytes);
@@ -743,16 +742,6 @@ static void ListFiles(void)
 			pcTo++;
 		}
 		*pcTo = 0;
-
-		/* make key using filename */
-		snprintf(szKey, sizeof(szKey), "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
-		// printf("key = '%s%x%x'\n", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
-
-		pcTo = szKey;
-		while (*pcTo) {
-			*pcTo ^= CODE2;
-			pcTo++;
-		}
 
 		if (szFileName[0] == '/') {
 			snprintf(szString, sizeof(szString), "|15%14s  |06-- |07      directory  ",

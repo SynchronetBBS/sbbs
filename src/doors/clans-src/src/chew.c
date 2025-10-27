@@ -125,11 +125,10 @@ int main(int argc, char **argv)
 
 static void AddGUM(FILE *fpGUM, char *pszFileName)
 {
-	char szKey[80];
-	char szEncryptedName[MAX_FILENAME_LEN];
+	char szEncryptedName[PATH_SIZE];
 	char *pcFrom, *pcTo;
 	FILE *fpFromFile;
-	int32_t lFileSize, Offset1, Offset2;
+	long lFileSize, Offset1, Offset2;
 	int32_t lCompressSize;
 	int32_t tmp32;
 	int /*BytesRead,*/ iTemp;
@@ -158,19 +157,15 @@ static void AddGUM(FILE *fpGUM, char *pszFileName)
 	*pcTo = 0;
 	//printf("Encrypted name = %s\n", szEncryptedName);
 
-	/* make key using filename */
-	snprintf(szKey, sizeof(szKey), "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
-	//printf("key = '%s%x%x'\n", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
-
-	pcTo = szKey;
-	while (*pcTo) {
-		*pcTo ^= CODE2;
-		pcTo++;
-	}
-
-
 	/* write it to file */
-	fwrite(&szEncryptedName, sizeof(szEncryptedName), sizeof(char), fpGUM);
+	if (strlen(pszFileName) < MAX_FILENAME_LEN)
+		fwrite(szEncryptedName, MAX_FILENAME_LEN, sizeof(char), fpGUM);
+	else {
+		char ch = CODE1;
+		fwrite(&ch, 1, sizeof(char), fpGUM);
+		fwrite(szEncryptedName, strlen(pszFileName), sizeof(char), fpGUM);
+		fwrite(&ch, 1, sizeof(char), fpGUM);
+	}
 
 	/* write filesize to psi file */
 	fpFromFile = fopen(pszFileName, "rb");
@@ -222,7 +217,6 @@ static void AddGUM(FILE *fpGUM, char *pszFileName)
 
 static void AddDir(FILE *fpGUM, char *pszDirName)
 {
-	char szKey[80];
 	char szEncryptedName[MAX_FILENAME_LEN];
 	char *pcFrom, *pcTo;
 	int iTemp;
@@ -243,16 +237,6 @@ static void AddDir(FILE *fpGUM, char *pszDirName)
 	}
 	*pcTo = 0;
 	//printf("Encrypted name = %s\n", szEncryptedName);
-
-	/* make key using filename */
-	snprintf(szKey, sizeof(szKey), "%s%x%x", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
-	//printf("key = '%s%x%x'\n", szEncryptedName, szEncryptedName[0], szEncryptedName[1]);
-
-	pcTo = szKey;
-	while (*pcTo) {
-		*pcTo ^= CODE2;
-		pcTo++;
-	}
 
 	// write dir name to file as is
 	fwrite(szEncryptedName, sizeof(szEncryptedName), 1, fpGUM);
