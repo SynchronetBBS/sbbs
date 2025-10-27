@@ -503,7 +503,7 @@ void System_Init(void)
 		System_Error("Invalid Month");
 	else if (system_time.wDay > 31 || system_time.wDay < 1)
 		System_Error("Invalid Day");
-	else if (system_time.wYear > 9999 || system_time.wDay < 2025)
+	else if (system_time.wYear > 9999 || system_time.wYear < 2025)
 		System_Error("Invalid Year");
 	snprintf(System.szTodaysDate, sizeof(System.szTodaysDate), "%02d/%02d/%4d", system_time.wMonth, system_time.wDay, system_time.wYear);
 

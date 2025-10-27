@@ -69,7 +69,6 @@ static void getxy(int *x, int*y);
 #ifdef _WIN32
 static int default_cursor_size = 1;
 static HANDLE std_handle;
-static HANDLE buf_handle;
 static void clans_putch(unsigned char ch);
 uint8_t cur_attr;
 static void getxy(int *x, int*y);
@@ -190,7 +189,9 @@ void SetScrollRegion(int top, int bottom)
 	if (bottom >= ScreenLines)
 		bottom = ScreenLines - 1;
 	ScrollBottom = bottom;
+#if defined(__unix__)
 	fprintf(stdout, "\x1b[%d;%dr", top + 1, bottom + 1);
+#endif
 }
 
 void ClearScrollRegion(void)
@@ -992,17 +993,6 @@ void Video_Init(void)
 		std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	}
 
-	buf_handle = CreateConsoleScreenBuffer(
-				GENERIC_READ | GENERIC_WRITE,
-				FILE_SHARE_READ | FILE_SHARE_WRITE,
-				NULL,
-				CONSOLE_TEXTMODE_BUFFER,
-				NULL);
-	if (!buf_handle) {
-		display_win32_error();
-		exit(0);
-	}
-
 	if (!GetConsoleCursorInfo(
 				std_handle,
 				&cursor_info)) {
@@ -1012,8 +1002,8 @@ void Video_Init(void)
 	default_cursor_size = cursor_info.dwSize;
 
 	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
-	ScreenLines = screen_buffer.dwSize.Y;
-	ScreenWidth = screen_buffer.dwSize.X;
+	ScreenWidth = screen_buffer.srWindow.Right - screen_buffer.srWindow.Left + 1;
+	ScreenLines = screen_buffer.srWindow.Bottom - screen_buffer.srWindow.Top + 1;
 #elif defined(__unix__)
 	struct termios raw;
 	int x, y;
@@ -1051,9 +1041,7 @@ void Video_Init(void)
 void Video_Close(void)
 {
 #ifdef _WIN32
-	if (buf_handle)
-		CloseHandle(buf_handle);
-	FreeConsole();
+	//FreeConsole();
 #elif defined(__unix__)
 	int x, y;
 	getxy(&x, &y);
@@ -1067,36 +1055,31 @@ void Video_Close(void)
 
 void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color)
 {
-	int16_t x, y;
-#ifdef _WIN32
+#if defined(_WIN32)
+	int16_t y;
+
 	COORD cursor_pos;
 	DWORD cells_written;
 	uint16_t line_len;
-#endif
+
+	line_len = xPos2 - xPos1 + 1;
+
+	for (y = yPos1; y <= yPos2; y++) {
+		cursor_pos.X = xPos1;
+		cursor_pos.Y = y;
+		FillConsoleOutputAttribute( std_handle, (uint16_t)Color, line_len, cursor_pos, &cells_written);
+	}
+#elif defined(__unix__)
+	int16_t x, y;
 
 	for (y = yPos1; y <= yPos2;  y++) {
 		for (x = xPos1;  x <= xPos2;  x++) {
-#if defined(_WIN32)
-			line_len = (xPos2 - xPos1);
-
-			// Is it just me or is this a replace loop?
-			for (y = yPos1; y <= yPos2; y++) {
-				cursor_pos.X = xPos1;
-				cursor_pos.Y = y;
-				FillConsoleOutputAttribute(
-					std_handle,
-					(uint16_t)Color,
-					line_len,
-					cursor_pos,
-					&cells_written);
-			}
-#elif defined(__unix__)
 			gotoxy(x, y);
 			textattr(Color);
 			clans_putch(Video.VideoMem[(((y) * ScreenWidth) + (x)) * 2]);
-#endif
 		}
 	}
+#endif
 }
 
 #ifdef __MSDOS__
@@ -1183,8 +1166,8 @@ void gotoxy(int x, int y)
 {
 	COORD cursor_pos;
 
-	cursor_pos.X = x - 1;
-	cursor_pos.Y = y - 1;
+	cursor_pos.X = x;
+	cursor_pos.Y = y;
 
 	SetConsoleCursorPosition(
 		std_handle,
