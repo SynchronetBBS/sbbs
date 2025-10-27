@@ -119,13 +119,13 @@ uninstall:
 	-for srcfile in $(INSTALL_BINARIES); do rm $(INSTALLDIR)$$(basename $${srcfile}); done
 	-for srcfile in $(DATA_FILES); do rm $(INSTALLDIR)$$(basename $${srcfile}); done
 	-for srcfile in $(SRC)release/*; do rm $(INSTALLDIR)$$(basename $${srcfile}); done
-	-rm -r $(INSTALLDIR)outbound
-	-rm -r $(INSTALLDIR)
+	rm -r $(INSTALLDIR)outbound
+	rm -r $(INSTALLDIR)
 
 .PHONY: uninstall-devkit
 uninstall-devkit:
 	-for srcfile in $(DEVKIT_BINARIES); do rm $(INSTALLDIR)$$(basename $${srcfile}); done
 	-for srcfile in $(INSTALL_BINARIES); do rm $(INSTALLDIR)$$(basename $${srcfile}); done
 	-for srcfile in $(SRC)devkit/*; do rm $(INSTALLDIR)$$(basename $${srcfile}); done
-	-rm -r $(INSTALLDIR)outbound
-	-rm -r $(INSTALLDIR)
+	rm -r $(INSTALLDIR)outbound
+	rm -r $(INSTALLDIR)
