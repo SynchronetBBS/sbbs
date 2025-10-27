@@ -64,21 +64,21 @@ int main(int argc, char **argv)
 	fpGUM = fopen(szGumName, "wb");
 	if (!fpGUM) {
 		printf("Couldn't create %s file!\n", szGumName);
-		return(0);
+		return(1);
 	}
 
 	fpList = fopen(szFileList, "r");
 	if (!fpList) {
 		fclose(fpGUM);
 		printf("Couldn't read listing file: %s\n", szFileList);
-		return(0);
+		return(1);
 	}
 
 #ifdef __unix__
 	fpAttr = fopen("UnixAttr.DAT", "wb");
 	if (!fpAttr) {
 		printf("Couldn't create UnixAttr.DAT file\n");
-		return(0);
+		return(1);
 	}
 #endif
 
@@ -126,8 +126,6 @@ int main(int argc, char **argv)
 static void AddGUM(FILE *fpGUM, char *pszFileName)
 {
 	char szKey[80];
-	/*    char acChunk[1024];
-	    char acEncryptedChunk[1024]; */
 	char szEncryptedName[MAX_FILENAME_LEN];
 	char *pcFrom, *pcTo;
 	FILE *fpFromFile;
@@ -140,8 +138,11 @@ static void AddGUM(FILE *fpGUM, char *pszFileName)
 
 	ClearAll();
 
-	for (iTemp = 0; iTemp < MAX_FILENAME_LEN; iTemp++)
-		szEncryptedName[iTemp] = 0;
+	if (strlen(pszFileName) >= sizeof(szEncryptedName)) {
+		printf("\aFilename too long: \"%s\"\n", pszFileName);
+		exit(1);
+	}
+	memset(szEncryptedName, 0, sizeof(szEncryptedName));
 
 	/* encrypt the filename */
 	pcFrom = pszFileName;
@@ -175,7 +176,7 @@ static void AddGUM(FILE *fpGUM, char *pszFileName)
 	fpFromFile = fopen(pszFileName, "rb");
 	if (!fpFromFile) {
 		printf("\aCouldn't open \"%s\"\n", pszFileName);
-		exit(0);
+		exit(1);
 	}
 	fseek(fpFromFile, 0L, SEEK_END);
 	lFileSize = ftell(fpFromFile);
