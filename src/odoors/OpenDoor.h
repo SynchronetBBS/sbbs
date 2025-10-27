@@ -130,7 +130,7 @@
 # endif /* !_MSC_VER */
 # define OD_IMPORT DECLSPEC_IMPORT
 #else /* !OD_DLL */
-# if __GNUC__ >= 4
+# if defined(BUILDING_OPTNDOORS) && (__GNUC__ >= 4)
 #  define OD_EXPORT __attribute__ ((visibility ("default")))
 #  define OD_IMPORT __attribute__ ((visibility ("hidden")))
 # else
