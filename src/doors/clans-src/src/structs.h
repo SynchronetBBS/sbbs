@@ -579,7 +579,7 @@ struct AttackPacket {
 };
 
 struct SpyAttemptPacket {
-	char szSpierName[74];
+	char szSpierName[72];
 	int16_t IntelligenceLevel;
 	int16_t TargetType;      // either a village or clan
 	int16_t ClanID[2];           // who is the target
