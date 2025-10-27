@@ -8,8 +8,8 @@ include $(SRC)/mk/Paths.gmake
 
 CFLAGS	+=	-I$(ODOORS)
 LDFLAGS	+=	"-L$(ODOORS)libs-$(OS)"
-CLANS_LIBS +=	$(ODOORS)libs-$(OS)/libODoors.a
-
+ODOORS_LIB ?=	$(ODOORS)libs-$(OS)/libODoors.a
+CLANS_LIBS +=	$(ODOORS_LIB)
 LDFLAGS	+=	-L$(ODOORS)libs-$(OS)
 
 # Some platform-specific things...
@@ -144,7 +144,10 @@ $(OBJDIR):
 $(BINDIR):
 	mkdir -p $@
 
-$(BINDIR)clans$(EXEFILE): $(CLANS_OBJS) | $(BINDIR)
+$(ODOORS_LIB):
+	$(MAKE) -C $(ODOORS) static-lib
+
+$(BINDIR)clans$(EXEFILE): $(CLANS_OBJS) $(ODOORS_LIB) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(CLANS_LDFLAGS) $(CLANS_OBJS) -o $@ $(CLANS_LIBS) $(WRAPPER_LIBS)
 
 $(BINDIR)clans$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)clans$(EXEFILE)

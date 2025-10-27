@@ -14,6 +14,9 @@ INSTALL_DATA ?=	$(INSTALL) -m 644
 include $(SRC)mk/Platform.gmake
 include $(SRC)mk/Paths.gmake
 
+.PHONY: build
+build:	data binaries devkit-binaries
+
 .PHONY: game
 game:	data binaries
 	cp $(DOOR_BINARIES) .
