@@ -34,7 +34,6 @@ DOOR_BINARIES	:=	$(BINDIR)clans$(EXEFILE) \
 			$(BINDIR)reset$(WRAPEXT)
 
 DEVKIT_BINARIES	:=	$(BINDIR)chew$(EXEFILE) $(BINDIR)ecomp$(EXEFILE) \
-			$(BINDIR)install$(EXEFILE) \
 			$(BINDIR)langcomp$(EXEFILE) \
 			$(BINDIR)makenpc$(EXEFILE) \
 			$(BINDIR)makepak$(EXEFILE) \
@@ -43,7 +42,6 @@ DEVKIT_BINARIES	:=	$(BINDIR)chew$(EXEFILE) $(BINDIR)ecomp$(EXEFILE) \
 			$(BINDIR)mitems$(EXEFILE) \
 			$(BINDIR)mspells$(EXEFILE) \
 			$(BINDIR)chew$(WRAPEXT) $(BINDIR)ecomp$(WRAPEXT) \
-			$(BINDIR)install$(WRAPEXT) \
 			$(BINDIR)langcomp$(WRAPEXT) \
 			$(BINDIR)makenpc$(WRAPEXT) \
 			$(BINDIR)makepak$(WRAPEXT) \
@@ -51,5 +49,8 @@ DEVKIT_BINARIES	:=	$(BINDIR)chew$(EXEFILE) $(BINDIR)ecomp$(EXEFILE) \
 			$(BINDIR)mclass$(WRAPEXT) \
 			$(BINDIR)mitems$(WRAPEXT) \
 			$(BINDIR)mspells$(WRAPEXT)
+
+INSTALL_BINARIES :=	$(BINDIR)install$(EXEFILE) \
+			$(BINDIR)install$(WRAPEXT)
 
 DATA_FILES	:=	$(DATADIR)clans.pak

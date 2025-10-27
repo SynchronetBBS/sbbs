@@ -110,7 +110,7 @@ RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)alliance.o $(OBJDIR)cmdline.o \
 		$(OBJDIR)win_wrappers.o
 
 # Default target
-default: $(DOOR_BINARIES)
+default: $(DOOR_BINARIES) $(INSTALL_BINARIES)
 
 # Implicit rules
 $(OBJDIR)%.o: %.c | $(OBJDIR)
@@ -120,7 +120,7 @@ $(OBJDIR)%.o: %.c | $(OBJDIR)
 -include $(OBJDIR)*.d
 
 .PHONY: devkit
-devkit: $(DEVKIT_BINARIES)
+devkit: $(DEVKIT_BINARIES) $(INSTALL_BINARIES)
 
 .PHONY: all
 all: default devkit

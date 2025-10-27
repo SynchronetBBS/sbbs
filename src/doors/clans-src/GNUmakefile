@@ -1,5 +1,15 @@
+PREFIX	?=	/opt
+override PREFIX := $(abspath $(PREFIX))/
 SRC	?=	.
 override SRC := $(abspath $(SRC))/
+INSTALL	?=	install
+ifdef INSTALLDIR
+ override INSTALLDIR := $(abspath $(INSTALLDIR))/
+else
+ override INSTALLDIR := $(abspath $(DESTDIR)$(PREFIX)clans)/
+endif
+INSTALL_PROGRAM ?= $(INSTALL)
+INSTALL_DATA ?=	$(INSTALL) -m 644
 
 include $(SRC)mk/Platform.gmake
 include $(SRC)mk/Paths.gmake
@@ -85,3 +95,37 @@ deepclean:
 	rm -f Clans-$(os)-$(MACH)-0_97b1.zip
 	rm -rf $(SRC)stage
 	rm -rf $(SRC)stagedk
+
+.PHONY: installdirs
+installdirs:
+	mkdir -p $(INSTALLDIR)outbound
+
+.PHONY: install
+install: installdirs data binaries
+	for srcfile in $(DOOR_BINARIES); do $(INSTALL_PROGRAM) $${srcfile} $(INSTALLDIR); done
+	for srcfile in $(INSTALL_BINARIES); do $(INSTALL_PROGRAM) $${srcfile} $(INSTALLDIR); done
+	for srcfile in $(DATA_FILES); do $(INSTALL_DATA) $${srcfile} $(INSTALLDIR); done
+	for srcfile in $(SRC)release/*; do $(INSTALL_DATA) $${srcfile} $(INSTALLDIR); done
+
+.PHONY: install-devkit
+install-devkit: installdirs data devkit-binaries
+	for srcfile in $(DEVKIT_BINARIES); do $(INSTALL_PROGRAM) $${srcfile} $(INSTALLDIR); done
+	for srcfile in $(INSTALL_BINARIES); do $(INSTALL_PROGRAM) $${srcfile} $(INSTALLDIR); done
+	for srcfile in $(SRC)devkit/*; do $(INSTALL_DATA) $${srcfile} $(INSTALLDIR); done
+
+.PHONY: uninstall
+uninstall:
+	-for srcfile in $(DOOR_BINARIES); do rm $(INSTALLDIR)$$(basename $${srcfile}); done
+	-for srcfile in $(INSTALL_BINARIES); do rm $(INSTALLDIR)$$(basename $${srcfile}); done
+	-for srcfile in $(DATA_FILES); do rm $(INSTALLDIR)$$(basename $${srcfile}); done
+	-for srcfile in $(SRC)release/*; do rm $(INSTALLDIR)$$(basename $${srcfile}); done
+	-rm -r $(INSTALLDIR)outbound
+	-rm -r $(INSTALLDIR)
+
+.PHONY: uninstall-devkit
+uninstall-devkit:
+	-for srcfile in $(DEVKIT_BINARIES); do rm $(INSTALLDIR)$$(basename $${srcfile}); done
+	-for srcfile in $(INSTALL_BINARIES); do rm $(INSTALLDIR)$$(basename $${srcfile}); done
+	-for srcfile in $(SRC)devkit/*; do rm $(INSTALLDIR)$$(basename $${srcfile}); done
+	-rm -r $(INSTALLDIR)outbound
+	-rm -r $(INSTALLDIR)
