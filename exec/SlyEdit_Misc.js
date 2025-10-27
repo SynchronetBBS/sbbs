@@ -4,34 +4,6 @@
  * Author: Eric Oulashin (AKA Nightfox)
  * BBS: Digital Distortion
  * BBS address: digdist.bbsindex.com
- *
- * Date       User              Description
- * 2009-06-06 Eric Oulashin     Started development
- * 2009-06-11 Eric Oulashin     Taking a break from development
- * 2009-08-09 Eric Oulashin     Started more development & testing
- * 2009-08-22 Eric Oulashin     Version 1.00
- *                              Initial public release
- * ....Removed some comments...
- * 2017-12-16 Eric Oulashin     Updated ReadSlyEditConfigFile() to include the
- *                              allowEditQuoteLines option.
- * 2017-12-18 Eric Oulashin     Update the KEY_PAGE_UP and KEY_PAGE_DOWN keys to
- *                              ensure they mat what's in sbbsdef.js
- * 2019-05-04 Eric Oulashin     Updated to use require() instead of load() if possible.
- * 2020-03-03 Eric Oulashin     Updated the postMsgToSubBoard() to ensure the user
- *                              has posting access to the sub-board before posting the
- *                              message.
- * 2020-03-04 Eric Oulashin     Updated the way postMsgToSubBoard() checks whether
- *                              the user can post in a sub-board by checking the can_post
- *                              property of the sub-board rather than checking the
- *                              ARS.  The can_post property covers more cases.
- * 2021-12-09 Eric Oulashin     Added consolePauseWithoutText()
- * 2022-05-27                   Fixed a few instances where SlyEdit was trying to access
- *                              sub-board information with an empty sub-board code (in the rare
- *                              case when no sub-boards are configured).
- * 2022-11-19 Eric Oulashin     Refactored ReadSlyEditConfigFile().
- * 2022-12-01 Eric Oulashin     Added some safety checks to ReadSlyEditConfigFile().
- * 2023-06-24 Eric Oulashin     Refactored quote line wrapping..  Consolidated a few functions
- *                              into wrapTextLinesForQuoting().
  */
 
 "use strict";
@@ -1941,7 +1913,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pTxtR
 	console.print("\x01n\x01gCommand/edit keys\r\n\x01k\x01h" + charStr(HORIZONTAL_SINGLE, 17) + "\r\n");
 	displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up", true);
 	displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down", true);
-	const quoteHotkey = gConfigSettings.ctrlQQuote ? "Ctrl-Q" : "Ctrl-Y";
+	const quoteHotkey = gUserSettings.ctrlQQuote ? "Ctrl-Q" : "Ctrl-Y";
 	displayCmdKeyFormattedDouble(quoteHotkey, "Quote message", "Ctrl-W", "Word/text search", true);
 	displayCmdKeyFormattedDouble("Insert/Ctrl-I", "Toggle insert/overwrite mode",
 	                             "Ctrl-D", "Delete line", true);
@@ -4444,6 +4416,7 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 		autoSignMessages: false,
 		autoSignRealNameOnlyFirst: true,
 		autoSignEmailsRealName: true,
+		ctrlQQuote: pSlyEdCfgObj.ctrlQQuote,
 		dictionaryFilenames: pSlyEdCfgObj.dictionaryFilenames
 	};
 
@@ -4451,83 +4424,22 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 	var userSettingsFile = new File(gUserSettingsFilename);
 	if (userSettingsFile.open("r"))
 	{
-		var settingsMode = "behavior";
-		var fileLine = null;     // A line read from the file
-		var equalsPos = 0;       // Position of a = in the line
-		var commentPos = 0;      // Position of the start of a comment
-		var setting = null;      // A setting name (string)
-		var settingUpper = null; // Upper-case setting name
-		var value = null;        // A value for a setting (string)
-		var valueUpper = null;   // Upper-cased value
-		while (!userSettingsFile.eof)
-		{
-			// Read the next line from the config file.
-			fileLine = userSettingsFile.readln(2048);
-
-			// fileLine should be a string, but I've seen some cases
-			// where for some reason it isn't.  If it's not a string,
-			// then continue onto the next line.
-			if (typeof(fileLine) != "string")
-				continue;
-
-			// If the line starts with with a semicolon (the comment
-			// character) or is blank, then skip it.
-			if ((fileLine.substr(0, 1) == ";") || (fileLine.length == 0))
-				continue;
-
-			// If in the "behavior" section, then set the behavior-related variables.
-			if (fileLine.toUpperCase() == "[BEHAVIOR]")
-			{
-				settingsMode = "behavior";
-				continue;
-			}
-
-			// If the line has a semicolon anywhere in it, then remove
-			// everything from the semicolon onward.
-			commentPos = fileLine.indexOf(";");
-			if (commentPos > -1)
-				fileLine = fileLine.substr(0, commentPos);
-
-			// Look for an equals sign, and if found, separate the line
-			// into the setting name (before the =) and the value (after the
-			// equals sign).
-			equalsPos = fileLine.indexOf("=");
-			if (equalsPos > 0)
-			{
-				// Read the setting & value, and trim leading & trailing spaces.
-				setting = trimSpaces(fileLine.substr(0, equalsPos), true, false, true);
-				settingUpper = setting.toUpperCase();
-				value = trimSpaces(fileLine.substr(equalsPos+1), true, false, true);
-				valueUpper = value.toUpperCase();
-
-				if (settingsMode == "behavior")
-				{
-					if (settingUpper == "ENABLETAGLINES")
-						userSettingsObj.enableTaglines = (valueUpper == "TRUE");
-					else if (settingUpper == "PROMPTSPELLCHECKONSAVE")
-						userSettingsObj.promptSpellCheckOnSave = (valueUpper == "TRUE");
-					else if (settingUpper == "WRAPQUOTELINES")
-						userSettingsObj.wrapQuoteLines = (valueUpper == "TRUE");
-					else if (settingUpper == "JOINQUOTELINESWHENWRAPPING")
-						userSettingsObj.joinQuoteLinesWhenWrapping = (valueUpper == "TRUE");
-					else if (settingUpper == "USEQUOTELINEINITIALS")
-						userSettingsObj.useQuoteLineInitials = (valueUpper == "TRUE");
-					else if (settingUpper == "INDENTQUOTELINESWITHINITIALS")
-						userSettingsObj.indentQuoteLinesWithInitials = (valueUpper == "TRUE");
-					else if (settingUpper == "TRIMSPACESFROMQUOTELINES")
-						userSettingsObj.trimSpacesFromQuoteLines = (valueUpper == "TRUE");
-					else if (settingUpper == "AUTOSIGNMESSAGES")
-						userSettingsObj.autoSignMessages = (valueUpper == "TRUE");
-					else if (settingUpper == "AUTOSIGNREALNAMEONLYFIRST")
-						userSettingsObj.autoSignRealNameOnlyFirst = (valueUpper == "TRUE");
-					else if (settingUpper == "AUTOSIGNEMAILSREALNAME")
-						userSettingsObj.autoSignEmailsRealName = (valueUpper == "TRUE");
-					else if (settingUpper == "DICTIONARYFILENAMES")
-						userSettingsObj.dictionaryFilenames = parseDictionaryConfig(value, js.exec_dir);
-				}
-			}
-		}
+		// Behavior settings
+		var behaviorSettings = userSettingsFile.iniGetObject("BEHAVIOR");
 		userSettingsFile.close();
+		// The following are all boolean properties/settings:
+		var boolPropNames = ["enableTaglines", "promptSpellCheckOnSave", "wrapQuoteLines", "joinQuoteLinesWhenWrapping",
+		                     "useQuoteLineInitials", "indentQuoteLinesWithInitials", "trimSpacesFromQuoteLines",
+		                     "autoSignMessages", "autoSignRealNameOnlyFirst", "autoSignEmailsRealName", "ctrlQQuote"];
+		for (var i = 0; i < boolPropNames.length; ++i)
+		{
+			var propName = boolPropNames[i];
+			if (behaviorSettings.hasOwnProperty(propName) && typeof(behaviorSettings[propName]) === "boolean")
+				userSettingsObj[propName] = behaviorSettings[propName];
+		}
+		// Other settings
+		if (behaviorSettings.hasOwnProperty("dictionaryFilenames") && typeof(behaviorSettings.dictionaryFilenames) === "string")
+			userSettingsObj.dictionaryFilenames = parseDictionaryConfig(behaviorSettings.dictionaryFilenames, js.exec_dir);
 	}
 	else
 	{
@@ -4563,7 +4475,8 @@ function WriteUserSettingsFile(pUserSettingsObj)
 		                                  "trimSpacesFromQuoteLines",
 		                                  "autoSignMessages",
 		                                  "autoSignRealNameOnlyFirst",
-		                                  "autoSignEmailsRealName"];
+		                                  "autoSignEmailsRealName",
+		                                  "ctrlQQuote"];
 		userSettingsFile.writeln("[BEHAVIOR]");
 		for (var i = 0; i < behaviorBoolSettingNames.length; ++i)
 		{
