@@ -95,7 +95,7 @@ endif
 #
 # Compiler command-line flags.
 #
-CFLAGS	+=	-fPIC
+CFLAGS	+=	-fPIC -fvisibility="hidden"
 LDFLAGS	+=	-fPIC
 CFLAGS	+=	-O2 -I../xpdev
 ifeq ($(OS),Darwin)
@@ -169,6 +169,12 @@ ODOORS_LIB	:= ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB}
 all: ${OBJDIR} ${LIBDIR} $(EXEDIR) ${ODOORS_SHLIB}${LIB_SUFFIX} \
     ${ODOORS_LIB} $(EXEDIR)ex_chat${EXE_SUFFIX} $(EXEDIR)ex_diag${EXE_SUFFIX} \
     $(EXEDIR)ex_hello${EXE_SUFFIX} $(EXEDIR)ex_music${EXE_SUFFIX} $(EXEDIR)ex_vote${EXE_SUFFIX}
+
+.PHONY: static-lib
+static-lib: ${ODOORS_LIB}
+
+.PHONY: shared-lib
+shared-lib: ${ODOORS_SHLIB}${LIB_SUFFIX}
 
 ifdef XPDEV_LIB
 all: $(EXEDIR)ex_ski${EXE_SUFFIX}
@@ -244,10 +250,10 @@ ${LIBDIR}:
 ${EXEDIR}:
 	mkdir ${EXEDIR}
 
-$(OBJDIR)%$(OBJFILE) : %.c
+$(OBJDIR)%$(OBJFILE) : %.c |  ${OBJDIR}
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(LIBDIR)ODoor.res : ODRes.rc
+$(LIBDIR)ODoor.res : ODRes.rc | ${LIBDIR}
 	$(WINDRES) $(WINDRESFLAGS) -O coff -i $< -o $@
 
 ${ODOORS_SHLIB}${LIB_SUFFIX} : ${OBJECTS} | ${LIBDIR}

@@ -130,8 +130,13 @@
 # endif /* !_MSC_VER */
 # define OD_IMPORT DECLSPEC_IMPORT
 #else /* !OD_DLL */
-# define OD_EXPORT
-# define OD_IMPORT
+# if __GNUC__ >= 4
+#  define OD_EXPORT __attribute__ ((visibility ("default")))
+#  define OD_IMPORT __attribute__ ((visibility ("hidden")))
+# else
+#  define OD_EXPORT
+#  define OD_IMPORT
+# endif
 #endif /* !OD_DLL */
 
 /* Definition of function naming convention used by OpenDoors. */
