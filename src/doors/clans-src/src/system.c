@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
 #include <ctype.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -498,13 +499,15 @@ void System_Init(void)
 
 	// initialize date
 	GetSystemTime(&system_time);
+	if (system_time.wMonth > 12 || system_time.wMonth < 1)
+		System_Error("Invalid Month");
+	else if (system_time.wDay > 31 || system_time.wDay < 1)
+		System_Error("Invalid Day");
+	else if (system_time.wYear > 9999 || system_time.wYear < 2025)
+		System_Error("Invalid Year");
 	snprintf(System.szTodaysDate, sizeof(System.szTodaysDate), "%02d/%02d/%4d", system_time.wMonth, system_time.wDay, system_time.wYear);
 
-#ifndef _WIN32
-	randomize();
-#else
 	srand((unsigned)time(NULL));
-#endif
 
 	// initialize screen data
 	Video_Init();

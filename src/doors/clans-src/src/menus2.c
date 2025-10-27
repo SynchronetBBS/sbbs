@@ -433,7 +433,7 @@ void TrainMember(void)
 					}
 					else if (Choice == '7') {
 						/* HP increase */
-						IncreaseAmount = (3 + RANDOM(5) + RANDOM(5));
+						IncreaseAmount = (3 + my_random(5) + my_random(5));
 						PClan->Member[WhichOne]->MaxHP += IncreaseAmount;
 
 						snprintf(szString, sizeof(szString), "|03%s's max HP increases by |14%d|03.\n",
@@ -442,7 +442,7 @@ void TrainMember(void)
 					}
 					else if (Choice == '8') {
 						/* SP increase */
-						IncreaseAmount = (2 + RANDOM(3) + RANDOM(3));
+						IncreaseAmount = (2 + my_random(3) + my_random(3));
 						PClan->Member[WhichOne]->MaxSP += IncreaseAmount;
 
 						snprintf(szString, sizeof(szString), "|03%s's max SP increases by |14%d|03.\n",

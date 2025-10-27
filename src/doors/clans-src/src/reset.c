@@ -39,6 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "alliance.h"
 #include "myopen.h"
 #include "parsing.h"
+#include "random.h"
 #include "readcfg.h"
 #include "structs.h"
 #include "video.h"
@@ -87,6 +88,12 @@ int main(void)
 
 	// initialize date
 	GetSystemTime(&system_time);
+	if (system_time.wMonth > 12 || system_time.wMonth < 1)
+		System_Error("Invalid Month");
+	else if (system_time.wDay > 31 || system_time.wDay < 1)
+		System_Error("Invalid Day");
+	else if (system_time.wYear > 9999 || system_time.wDay < 2025)
+		System_Error("Invalid Year");
 	snprintf(szTodaysDate, sizeof(szTodaysDate), "%02d/%02d/%4d", system_time.wMonth, system_time.wDay,
 			system_time.wYear);
 
@@ -791,7 +798,7 @@ static void CreateVillageDat(struct ResetData *ResetData)
 	Village_Data.Empire.Army.Footmen = 100;
 	Village_Data.Empire.Army.Axemen = 25;
 
-	Village_Data.CostFluctuation = 5 - RANDOM(11);
+	Village_Data.CostFluctuation = 5 - my_random(11);
 	Village_Data.MarketQuality = MQ_AVERAGE;
 
 	fp = fopen("village.dat", "wb");

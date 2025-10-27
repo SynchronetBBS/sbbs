@@ -177,7 +177,7 @@ bool iscodechar(char c)
  *
  */
 {
-	if ((c <= 'F' && c >= 'A')  || (isdigit(c) && isascii(c)))
+	if ((c <= 'F' && c >= 'A')  || (isdigit(c) && (c >= 0 && c <= 127)))
 		return true;
 	else
 		return false;

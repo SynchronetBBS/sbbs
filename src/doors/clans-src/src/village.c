@@ -1303,7 +1303,7 @@ void Village_Reset(void)
 	Village.Data.Empire.Army.Footmen = 100;
 	Village.Data.Empire.Army.Axemen = 25;
 
-	Village.Data.CostFluctuation = 5 - RANDOM(11);
+	Village.Data.CostFluctuation = 5 - my_random(11);
 	Village.Data.MarketQuality = MQ_AVERAGE;
 }
 
@@ -1343,22 +1343,22 @@ void Village_Maint(void)
 	ChooseNewLeader();
 
 	// figure out village fluctuation costs
-	MarketIndex = RANDOM(15);
+	MarketIndex = my_random(15);
 
 	if (MarketIndex < 7) {
-		Village.Data.CostFluctuation = 5 - RANDOM(11);
+		Village.Data.CostFluctuation = 5 - my_random(11);
 		Village.Data.MarketQuality = MQ_AVERAGE;
 	}
 	else if (MarketIndex < 11) {
-		Village.Data.CostFluctuation = RANDOM(10);
+		Village.Data.CostFluctuation = my_random(10);
 		Village.Data.MarketQuality = MQ_GOOD;
 	}
 	else if (MarketIndex < 13) {
-		Village.Data.CostFluctuation = 10 + RANDOM(10);
+		Village.Data.CostFluctuation = 10 + my_random(10);
 		Village.Data.MarketQuality = MQ_VERYGOOD;
 	}
 	else {
-		Village.Data.CostFluctuation = 20 + RANDOM(10);
+		Village.Data.CostFluctuation = 20 + my_random(10);
 		Village.Data.MarketQuality = MQ_EXCELLENT;
 	}
 

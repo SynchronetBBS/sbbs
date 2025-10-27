@@ -1,6 +1,7 @@
 #ifdef __unix__
 
 #include <sys/file.h>
+#include <errno.h>
 #include <fnmatch.h>
 #include <stdio.h>      // Only need for printf() debugging.
 #include <stdlib.h>
@@ -9,22 +10,6 @@
 
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
-
-void randomize(void)
-{
-	time_t now = time(NULL);
-	pid_t pid = getpid();
-	unsigned short seed[3] = {now & 0xFFFF, (now >> 16) & 0xFFFF, pid & 0xFFFF};
-	seed48(seed);
-}
-
-off_t
-filelength(int file)
-{
-	struct stat file_stat;
-	fstat(file,&file_stat);
-	return file_stat.st_size;
-}
 
 int
 findfirst(char *pathname, struct ffblk *fblk, int attrib)
@@ -101,67 +86,22 @@ findnext(struct ffblk *fblk)
 	return(1);
 }
 
-int
-clans_getdate(struct date *getme)
-{
-	time_t    currtime;
-	struct tm     *thetime;
-
-	currtime=time(NULL);
-	thetime=localtime(&currtime);
-	(*getme).da_year=(*thetime).tm_year+1900;
-	(*getme).da_day=(*thetime).tm_mday;
-	(*getme).da_mon=(*thetime).tm_mon+1;
-	return 0;
-}
-
-int
-gettime(struct tm *getme)
-{
-	time_t    currtime;
-	struct tm *gottime;
-
-	currtime=time(NULL);
-	gottime=localtime(&currtime);
-	(*getme).tm_sec=(*gottime).tm_sec;
-	(*getme).tm_min=(*gottime).tm_min;
-	(*getme).tm_hour=(*gottime).tm_hour;
-	return 0;
-}
-
-int32_t
-unix_random(int32_t maxnum)
-{
-	/*
-	 * Eliminate bias...
-	 * Figure out the highest multiple of maxnum that fits in 31 bits...
-	 */
-	int32_t mult = INT32_MAX / maxnum;
-	int32_t max = maxnum * mult;
-	if (maxnum <= 0) return 0;
-
-	// Loop until the result is less than max
-	for (;;) {
-		long val = lrand48();
-		if (val < max)
-			return val % maxnum;
-	}
-}
-
 FILE *
 _fsopen(char *pathname, char *mode, int flags)
 {
+	struct flock f = {
+		.l_type = flags & SH_DENYWR ? F_RDLCK : F_WRLCK,
+		.l_whence = SEEK_SET
+	};
 	FILE *thefile;
 
 	thefile = fopen(pathname, mode);
-	if (thefile != NULL)  {
-		if (flags&SH_DENYWR) {
-			flock(fileno(thefile), LOCK_SH);
-			return(thefile);
-		}
-		if (flags&SH_DENYRW) {
-			flock(fileno(thefile), LOCK_EX);
-			return(thefile);
+	if (thefile != NULL) {
+		if (flags & (SH_DENYRW | SH_DENYWR)) {
+			if (fcntl(fileno(thefile), F_SETLKW, &f) == -1) {
+				fclose(thefile);
+				return NULL;
+			}
 		}
 	}
 	return(thefile);
@@ -170,12 +110,14 @@ _fsopen(char *pathname, char *mode, int flags)
 void
 delay(unsigned msec)
 {
-	struct timeval delaytime;
-
-	delaytime.tv_sec=msec/1000;
-	delaytime.tv_usec=msec % 1000;
-
-	select(0,NULL,NULL,NULL,&delaytime);
+	struct timespec ts = {
+		.tv_sec = msec/1000,
+		.tv_nsec = (long)(msec % 1000) * 1000000,
+	};
+	int ret;
+	do {
+		ret = nanosleep(&ts, &ts);
+	} while (ret == -1 && errno == EINTR);
 }
 
 void
@@ -193,5 +135,9 @@ GetSystemTime(SYSTEMTIME *t)
 	t->wMonth = gottime->tm_mon + 1;
 	t->wYear = gottime->tm_year + 1900;
 }
+
+#else
+
+static int Windows = 1;
 
 #endif

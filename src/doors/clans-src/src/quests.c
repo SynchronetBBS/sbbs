@@ -351,7 +351,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 				UseCurrent = true;
 				iTemp = atoi(szIndex);
 
-				if (RANDOM(100) >= (100-iTemp))
+				if (my_random(100) >= (100-iTemp))
 					bCurrent = true;
 				else
 					bCurrent = false;
@@ -599,7 +599,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 		}
 
 		// choose one randomly and seek it
-		ChosenEvent = RANDOM(EventsFound);
+		ChosenEvent = my_random(EventsFound);
 
 		fseek(FileHeader.fp, FileHeader.lStart, SEEK_SET);
 

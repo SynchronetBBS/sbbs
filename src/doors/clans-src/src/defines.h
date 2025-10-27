@@ -223,7 +223,6 @@ typedef unsigned char bool;
 # include <windows.h>
 # define delay(x) Sleep(x)
 # define sleep(x) Sleep((x * 1000))
-# define RANDOM(x) ((x) == 0 ? 0 : (rand() % (x)))
 #endif
 
 enum Status { Dead, Unconscious, RanAway, Here };

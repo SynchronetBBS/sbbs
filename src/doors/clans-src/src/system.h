@@ -30,4 +30,6 @@ void System_Error(char *szErrorMsg);
 
 void System_Maint(void);
 
+int my_random(int limit);
+
 #endif

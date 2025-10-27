@@ -272,7 +272,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 			Test = true;
 		/* see if spell is successful */
 		if ((PC->Level + 3 + Spells[SpellNum]->TypeFlag + GetStat(PC, ATTR_WISDOM) +
-				RANDOM(5)) < RANDOM(15)) {
+				my_random(5)) < my_random(15)) {
 			snprintf(szString, sizeof(szString), ST_SPELLFAIL, PC->szName, Spells[SpellNum]->szName);
 			rputs(szString);
 			return;
@@ -296,7 +296,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 		}
 
 		/* see how many undead to banish */
-		NumUndeadToRemove = RANDOM(4) + 1;
+		NumUndeadToRemove = my_random(4) + 1;
 
 		/* if too many to remove, truncate size */
 		if (NumUndeadToRemove > NumUndead)
@@ -346,8 +346,8 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 		else
 			Test = true;
 		/* see if spell is successful */
-		if ((PC->Level + Spells[SpellNum]->Level + GetStat(PC, ATTR_WISDOM) + RANDOM(6)) <
-				RANDOM(15)) {
+		if ((PC->Level + Spells[SpellNum]->Level + GetStat(PC, ATTR_WISDOM) + my_random(6)) <
+				my_random(15)) {
 			snprintf(szString, sizeof(szString), ST_SPELLFAIL, PC->szName, Spells[SpellNum]->szName);
 			rputs(szString);
 			return;
@@ -357,7 +357,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 
 		/* see how many undead to raise */
 		if (Spells[SpellNum]->Value == 0)
-			NumUndead = RANDOM(2 + PC->Level/4) + 1;
+			NumUndead = my_random(2 + PC->Level/4) + 1;
 		else
 			NumUndead = Spells[SpellNum]->Value;
 
@@ -391,7 +391,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 			PC->MyClan->Member[CurSlot]->Status = Here;
 
 			PC->MyClan->Member[CurSlot]->MaxHP =
-				PC->MyClan->Member[CurSlot]->HP = RANDOM(10) + 5 + PC->Level;
+				PC->MyClan->Member[CurSlot]->HP = my_random(10) + 5 + PC->Level;
 
 			PC->MyClan->Member[CurSlot]->MaxSP =
 				PC->MyClan->Member[CurSlot]->SP = 0;
@@ -400,10 +400,10 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 				/* if attributes set, use them, otherwise, use caster's */
 				if (Spells[SpellNum]->Attributes[iTemp2])
 					PC->MyClan->Member[CurSlot]->Attributes[iTemp2] =
-						Spells[SpellNum]->Attributes[iTemp2] + RANDOM(1);
+						Spells[SpellNum]->Attributes[iTemp2] + my_random(1);
 				else {
 					PC->MyClan->Member[CurSlot]->Attributes[iTemp2] =
-						PC->Attributes[iTemp2]  - 2 + RANDOM(4);
+						PC->Attributes[iTemp2]  - 2 + my_random(4);
 				}
 			}
 
@@ -452,7 +452,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 		else
 			Level = PC->Level;
 
-		Value = (((Spells[SpellNum]->Value + Level/2)*(RANDOM(50)+50))/100);
+		Value = (((Spells[SpellNum]->Value + Level/2)*(my_random(50)+50))/100);
 
 		PC->MyClan->Member[Target]->HP += Value;
 		if (PC->MyClan->Member[Target]->HP > PC->MyClan->Member[Target]->MaxHP)
@@ -482,15 +482,15 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 		/* see if spell is successful */
 		if (Spells[SpellNum]->Friendly) {
 			if ((PC->Level + Spells[SpellNum]->Level + GetStat(PC, ATTR_WISDOM) +
-					RANDOM(12)) < (RANDOM(12))) {
+					my_random(12)) < (my_random(12))) {
 				snprintf(szString, sizeof(szString), ST_SPELLFAIL, PC->szName, Spells[SpellNum]->szName);
 				rputs(szString);
 				return;
 			}
 		}
 		else {
-			if ((PC->Level + GetStat(PC, ATTR_WISDOM) + RANDOM(8) + Spells[SpellNum]->Level) <
-					(TargetPC->Level + GetStat(TargetPC, ATTR_WISDOM) + RANDOM(4))) {
+			if ((PC->Level + GetStat(PC, ATTR_WISDOM) + my_random(8) + Spells[SpellNum]->Level) <
+					(TargetPC->Level + GetStat(TargetPC, ATTR_WISDOM) + my_random(4))) {
 				snprintf(szString, sizeof(szString), ST_SPELLFAIL, PC->szName,
 						Spells[SpellNum]->szName);
 				rputs(szString);
@@ -572,8 +572,8 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 				}
 			}
 
-			if ((PC->Level + GetStat(PC, ATTR_WISDOM) + RANDOM(10) + 8 + Spells[SpellNum]->Level) <
-					(TargetPC->Level + GetStat(TargetPC, ATTR_WISDOM) + RANDOM(6))) {
+			if ((PC->Level + GetStat(PC, ATTR_WISDOM) + my_random(10) + 8 + Spells[SpellNum]->Level) <
+					(TargetPC->Level + GetStat(TargetPC, ATTR_WISDOM) + my_random(6))) {
 				// failed attack
 
 				snprintf(szString, sizeof(szString), ST_SPELLFAIL, PC->szName, Spells[SpellNum]->szName);
@@ -591,7 +591,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 			if (Level > 10)
 				Level = 10;
 
-			Damage = ((Spells[SpellNum]->Value+(Level+GetStat(PC, ATTR_WISDOM))/3)*(RANDOM(60) + 50))/100
+			Damage = ((Spells[SpellNum]->Value+(Level+GetStat(PC, ATTR_WISDOM))/3)*(my_random(60) + 50))/100
 					 - GetStat(TargetPC, ATTR_ARMORSTR);
 			Spells_CastValue = Damage;
 
@@ -635,7 +635,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 							EnemyClan->Member[Target]->Level*2);
 
 					/* loses percentage of MaxHP */
-					EnemyClan->Member[Target]->MaxHP = (EnemyClan->Member[Target]->MaxHP * (RANDOM(10)+90))/100;
+					EnemyClan->Member[Target]->MaxHP = (EnemyClan->Member[Target]->MaxHP * (my_random(10)+90))/100;
 
 					/* give xp because of death */
 					PC->Experience += (EnemyClan->Member[Target]->Level*2);
@@ -646,7 +646,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 							EnemyClan->Member[Target]->Level);
 
 					/* loses percentage of MaxHP */
-					EnemyClan->Member[Target]->MaxHP = (EnemyClan->Member[Target]->MaxHP * (RANDOM(10)+90))/100;
+					EnemyClan->Member[Target]->MaxHP = (EnemyClan->Member[Target]->MaxHP * (my_random(10)+90))/100;
 
 					PC->Experience += (EnemyClan->Member[Target]->Level);
 				}
@@ -662,7 +662,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 				/* give gold to clan */
 				if (PC->MyClan == PClan) {
 					if (EnemyClan->Member[Target]->Difficulty != -1) {
-						GoldGained = EnemyClan->Member[Target]->Difficulty*((int32_t)RANDOM(10) + 20L) + 50L + (int32_t)RANDOM(20);
+						GoldGained = EnemyClan->Member[Target]->Difficulty*((int32_t)my_random(10) + 20L) + 50L + (int32_t)my_random(20);
 						snprintf(szString, sizeof(szString), ST_FIGHTGETGOLD, GoldGained);
 						rputs(szString);
 

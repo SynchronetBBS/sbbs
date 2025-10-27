@@ -42,6 +42,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "mstrings.h"
 #include "myopen.h"
 #include "news.h"
+#include "random.h"
 #include "structs.h"
 #include "user.h"
 #include "village.h"
@@ -285,14 +286,14 @@ void ChooseNewLeader(void)
 	// where we stopped is the amount of votes tied for first place
 	NumTied = iTemp-1;
 
-	if (NumTied == 0) {
+	if (NumTied <= 1) {
 		// only one guy at the top, make him the new ruler
 		NewRulerID[0] = TopCandidates[0][0];
 		NewRulerID[1] = TopCandidates[0][1];
 	}
 	else {
 		// choose one at random
-		iTemp = RANDOM(NumTied);
+		iTemp = my_random(NumTied);
 
 		NewRulerID[0] = TopCandidates[iTemp][0];
 		NewRulerID[1] = TopCandidates[iTemp][1];

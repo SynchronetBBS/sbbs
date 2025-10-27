@@ -1,5 +1,3 @@
-#if defined(_WIN32) || defined(__linux__)
-
 #include "win_wrappers.h"
 
 size_t strlcpy(char *dst, const char *src, size_t dsize)
@@ -53,5 +51,3 @@ strlcat(char *dst, const char *src, size_t dsize)
 
 	return dlen + (src - osrc);    /* count does not include NUL */
 }
-
-#endif

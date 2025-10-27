@@ -710,7 +710,7 @@ void Door_ShowTitle(void)
 {
 	char szFileName[20];
 
-	snprintf(szFileName, sizeof(szFileName), "Title %d", (int16_t) RANDOM(3));
+	snprintf(szFileName, sizeof(szFileName), "Title %d", (int16_t) my_random(3));
 
 	Door_SetScreenPause(false);
 	Help(szFileName, ST_MENUSHLP);

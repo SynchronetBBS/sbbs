@@ -298,8 +298,8 @@ static void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
 	SpyResult.BBSFromID = Spy->BBSFromID;
 	SpyResult.BBSToID = Spy->BBSToID;
 
-	if (NoTarget == false && (Spy->IntelligenceLevel+RANDOM(5)) >
-			(Empire->Buildings[B_SECURITY]+RANDOM(3))) {
+	if (NoTarget == false && (Spy->IntelligenceLevel+my_random(5)) >
+			(Empire->Buildings[B_SECURITY]+my_random(3))) {
 		// success
 		SpyResult.Success = true;
 		SpyResult.Empire = *Empire;
@@ -1817,7 +1817,7 @@ static void IBBS_ProcessRouteConfig(void)
 
 void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 {
-	char szFullFileName[PATH_SIZE], szPacketName[13]; /* 12345678.123 */
+	char szFullFileName[PATH_SIZE], szPacketName[19]; /* 12345678.123 */
 	char LastCounter, szString[580];
 	FILE *fp;
 	tIBInfo InterBBSInfo;
@@ -3055,7 +3055,7 @@ MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo, int16_t Sourc
     bool(*skip)(void *),
     void(*process)(const char *, const char *, void *), void *cbdata)
 {
-	char wildcard[PATH_SIZE];
+	char wildcard[PATH_SIZE + 15];
 	struct ffblk ffblks;
 	bool Done;
 	tFidoNode ThisNode;
@@ -3079,7 +3079,7 @@ MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo, int16_t Sourc
 		// We need to get to the last iteration or we'll leak resources
 		if (skip == NULL || !skip(cbdata)) {
 			bool Found = false;
-			char fname[PATH_SIZE];
+			char fname[sizeof(ffblks.ff_name) + PATH_SIZE];
 
 			snprintf(fname, sizeof(fname), "%s/%s", InterBBSInfo->szNetmailDir, ffblks.ff_name);
 			f = fopen(fname, "rb");

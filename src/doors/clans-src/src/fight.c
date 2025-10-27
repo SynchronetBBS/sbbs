@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "mstrings.h"
 #include "myopen.h"
 #include "news.h"
+#include "random.h"
 #include "spells.h"
 #include "structs.h"
 #include "user.h"
@@ -96,7 +97,7 @@ static void Fight_GetBattleOrder(struct order *BattleOrder, struct clan *Team[2]
 				TempPC = Team[CurTeam]->Member[CurMember];
 
 				SortData[CurSortMember].AgiValue =
-					GetStat(TempPC, stAgility) + (TempPC->HP*10)/TempPC->MaxHP + RANDOM(2);
+					GetStat(TempPC, stAgility) + (TempPC->HP*10)/TempPC->MaxHP + my_random(2);
 				SortData[CurSortMember].WhichTeam = CurTeam;
 				SortData[CurSortMember].WhichPlayer = CurMember;
 				SortData[CurSortMember].InList = false;
@@ -153,7 +154,7 @@ static void Fight_ManaRegenerate(struct pc *PC)
 		return;
 
 	/* regenerate according to Wisdom attribute */
-	PC->SP += ((GetStat(PC, ATTR_WISDOM)*(RANDOM(15)+5))/150 + 1);
+	PC->SP += ((GetStat(PC, ATTR_WISDOM)*(my_random(15)+5))/150 + 1);
 
 	if (PC->SP >= PC->MaxSP)
 		PC->SP = PC->MaxSP;
@@ -194,7 +195,7 @@ static int16_t Fight_ChooseVictim(struct clan *EnemyClan)
 	int16_t iTemp, Target;
 	bool FoundTarget = false;
 
-	if (RANDOM(100) < 60) {
+	if (my_random(100) < 60) {
 		/* attack guy with lowest HP percentage */
 
 		//od_printf("Choosing guy with lowest HP\n\r");
@@ -228,7 +229,7 @@ static int16_t Fight_ChooseVictim(struct clan *EnemyClan)
 		NumPCs = NumMembers(EnemyClan, true);
 
 		/* choose one at random */
-		EnemyTarget = RANDOM(NumPCs);
+		EnemyTarget = my_random(NumPCs);
 
 		/* since the player listing may skip some spaces, we must
 		   "seek" to that player in the member listing and find
@@ -327,7 +328,7 @@ static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct mo
 		/* if FoundHealSpell is true, that means a heal spell was found
 		   and it CAN be cast.  Decide now whether to cast or not using
 		   randomness */
-		if (FoundHealSpell && SomeoneNeedsHeal && RANDOM(100) < 55) {
+		if (FoundHealSpell && SomeoneNeedsHeal && my_random(100) < 55) {
 			/* 55% of the time, he'll heal him if he can */
 			Move->Action = acCast;
 			Move->Target = WhoNeedsHeal;
@@ -355,7 +356,7 @@ static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct mo
 			FoundSpell = false;
 			while (NumSpellsTried < TotalSpells) {
 				/* choose spell at random*/
-				WhichSpell = RANDOM(TotalSpells);
+				WhichSpell = my_random(TotalSpells);
 
 				/* see if this spell can be cast  and is NOT a heal spell */
 				if (NPC->SP >= Spells[ NPC->SpellsKnown[WhichSpell] - 1]->SP &&
@@ -374,7 +375,7 @@ static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct mo
 			if (FoundSpell) {
 				/* according to spell type, see if we can using randomness */
 				if ((Spells[ NPC->SpellsKnown[WhichSpell] - 1]->TypeFlag &
-						SF_RAISEUNDEAD) && (RANDOM(10) == 0)) {
+						SF_RAISEUNDEAD) && (my_random(10) == 0)) {
 					// od_printf("Gonna cast %s\n\r", Spells[NPC->SpellsKnown[WhichSpell] - 1]->szName);
 
 					/* 1 in 10 chance of casting this spell */
@@ -386,7 +387,7 @@ static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct mo
 					return;
 				}
 				if ((Spells[ NPC->SpellsKnown[WhichSpell] - 1]->TypeFlag &
-						SF_BANISHUNDEAD) && RANDOM(5) == 0 &&
+						SF_BANISHUNDEAD) && my_random(5) == 0 &&
 						NumUndeadMembers(EnemyClan) != 0) {
 					// od_printf("Gonna cast %s\n\r", Spells[NPC->SpellsKnown[WhichSpell] - 1]->szName);
 
@@ -400,7 +401,7 @@ static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct mo
 					return;
 				}
 				if ((Spells[ NPC->SpellsKnown[WhichSpell] - 1]->TypeFlag &
-						SF_DAMAGE) && RANDOM(3) == 0) {
+						SF_DAMAGE) && my_random(3) == 0) {
 					// od_printf("Gonna cast %s\n\r", Spells[NPC->SpellsKnown[WhichSpell] - 1]->szName);
 
 					/* 1 in 3 chance of casting this spell */
@@ -413,7 +414,7 @@ static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct mo
 				}
 				if (((Spells[ NPC->SpellsKnown[WhichSpell] - 1]->TypeFlag &
 						SF_MODIFY) || (Spells[ NPC->SpellsKnown[WhichSpell] - 1]->TypeFlag &
-									   SF_INCAPACITATE)) && RANDOM(5) == 0) {
+									   SF_INCAPACITATE)) && my_random(5) == 0) {
 					// od_printf("Gonna cast %s\n\r", Spells[NPC->SpellsKnown[WhichSpell] - 1]->szName);
 
 					/* of course, in future, we'd see who is the strongest
@@ -634,7 +635,7 @@ static bool CanRun(struct clan *RunningClan, struct clan *StayingClan)
 	AvgWisdom = TotalWisdom / TotalMembers;
 
 	RunningVariable = AllAgilities + AllDexterities + AvgWisdom + TotalMembers*3
-					  + RANDOM(15);
+					  + my_random(15);
 
 
 	TotalMembers = NumMembers(StayingClan, true);
@@ -660,7 +661,7 @@ static bool CanRun(struct clan *RunningClan, struct clan *StayingClan)
 	AvgWisdom = TotalWisdom / TotalMembers;
 
 	StayingVariable = AllAgilities + AllDexterities + AvgWisdom + TotalMembers*3
-					  + RANDOM(15);
+					  + my_random(15);
 
 	if (RunningVariable > StayingVariable)
 		return true;
@@ -717,15 +718,15 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 	}
 
 	/* Figure out if attack lands on other victim */
-	if ((GetStat(Attacker, stDexterity) + RANDOM(4) + RANDOM(4) + 2) <
-			(GetStat(VictimClan->Member[Who], stAgility) + RANDOM(4))) {
+	if ((GetStat(Attacker, stDexterity) + my_random(4) + my_random(4) + 2) <
+			(GetStat(VictimClan->Member[Who], stAgility) + my_random(4))) {
 		if (SkipOutput == false) {
 			snprintf(szString, sizeof(szString), ST_FIGHTMISS, Attacker->szName);
 			rputs(szString);
 		}
 	}
 	else {
-		Damage = ((GetStat(Attacker, stStrength)/2)*(RANDOM(40)+80))/100   -
+		Damage = ((GetStat(Attacker, stStrength)/2)*(my_random(40)+80))/100   -
 				 GetStat(VictimClan->Member[Who], stArmorStr);
 
 		if (Damage <= 0)
@@ -770,7 +771,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 					VictimClan->Member[Who]->Level*2);
 
 			/* loses percentage of MaxHP */
-			VictimClan->Member[Who]->MaxHP = (VictimClan->Member[Who]->MaxHP * (RANDOM(10)+90))/100;
+			VictimClan->Member[Who]->MaxHP = (VictimClan->Member[Who]->MaxHP * (my_random(10)+90))/100;
 
 			/* give xp because of death */
 			Attacker->Experience += (VictimClan->Member[Who]->Level*2);
@@ -781,7 +782,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 					VictimClan->Member[Who]->Level);
 
 			/* loses percentage of MaxHP */
-			VictimClan->Member[Who]->MaxHP = (VictimClan->Member[Who]->MaxHP * (RANDOM(10)+90))/100;
+			VictimClan->Member[Who]->MaxHP = (VictimClan->Member[Who]->MaxHP * (my_random(10)+90))/100;
 
 			Attacker->Experience += (VictimClan->Member[Who]->Level);
 		}
@@ -797,7 +798,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		/* give gold to clan */
 		if (Attacker->MyClan == PClan) {
 			if (VictimClan->Member[Who]->Difficulty != -1) {
-				GoldGained = VictimClan->Member[Who]->Difficulty*((int32_t)RANDOM(10) + 20L) + 50L + (int32_t)RANDOM(20);
+				GoldGained = VictimClan->Member[Who]->Difficulty*((int32_t)my_random(10) + 20L) + 50L + (int32_t)my_random(20);
 				snprintf(szString, sizeof(szString), ST_FIGHTGETGOLD, GoldGained);
 				rputs(szString);
 
@@ -1349,7 +1350,7 @@ void Fight_CheckLevelUp(void)
 	   next level */
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
 		/* if so, tell user "blah has raised a level".  raise his level,
-		   graint him RANDOM(1) + 1 training points */
+		   graint him my_random(1) + 1 training points */
 
 
 		if (PClan->Member[CurMember]) {
@@ -1363,7 +1364,7 @@ void Fight_CheckLevelUp(void)
 				FirstTime = false;
 
 				/* Enough XP, raise level and give training point */
-				Points = RANDOM(4) + 10;
+				Points = my_random(4) + 10;
 
 				PClan->Member[CurMember]->Level++;
 				PClan->Member[CurMember]->TrainingPoints += Points;
@@ -1395,17 +1396,17 @@ static int16_t GetDifficulty(int16_t Level)
 	int16_t Difficulty = 0;
 
 	if (Level <= 2)
-		Difficulty = 5 + RANDOM(3);
+		Difficulty = 5 + my_random(3);
 	else if (Level <= 4)
-		Difficulty = 7 + RANDOM(4);
+		Difficulty = 7 + my_random(4);
 	else if (Level <= 6)
-		Difficulty = 20 + RANDOM(10);
+		Difficulty = 20 + my_random(10);
 	else if (Level <= 10)
-		Difficulty = 30 + RANDOM(10);
+		Difficulty = 30 + my_random(10);
 	else if (Level <= 15)
-		Difficulty = 45 + RANDOM(15);
+		Difficulty = 45 + my_random(15);
 	else if (Level <= 20)
-		Difficulty = 90 + RANDOM(30);
+		Difficulty = 90 + my_random(30);
 
 	return Difficulty;
 }
@@ -1457,7 +1458,7 @@ static int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16
 
 	//od_printf("%d valid monsters found.\n\r", ValidMonsters);
 
-	iTemp = RANDOM(ValidMonsters);
+	iTemp = my_random(ValidMonsters);
 	MonsterChosen = ValidMonIndex[ iTemp ];
 
 	//od_printf("Using #%d in the file.\n\r", MonsterChosen);
@@ -1473,9 +1474,9 @@ static int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16
 
 	/* randomize stats */
 	for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++) {
-		Monster->Attributes[iTemp] = (Monster->Attributes[iTemp] * (RANDOM(60)+80))/100;
+		Monster->Attributes[iTemp] = (Monster->Attributes[iTemp] * (my_random(60)+80))/100;
 	}
-	Monster->HP = (Monster->HP* (RANDOM(30)+80))/100;
+	Monster->HP = (Monster->HP* (my_random(30)+80))/100;
 	Monster->MaxHP = Monster->HP;
 
 	return 0;
@@ -1491,10 +1492,10 @@ static void Fight_LoadMonsters(struct clan *Clan, int16_t Level, char *szFileNam
 	// figure out difficulty value
 	Difficulty = GetDifficulty(Level);
 
-	MinDifficulty = Level - 2 - RANDOM(3);
+	MinDifficulty = Level - 2 - my_random(3);
 	if (MinDifficulty < 1)
 		MinDifficulty = 1;
-	MaxDifficulty = Level + 1 + RANDOM(3);
+	MaxDifficulty = Level + 1 + my_random(3);
 	if (MaxDifficulty > 20)
 		MaxDifficulty = 20;
 
@@ -1559,13 +1560,13 @@ static int32_t MineFollowersGained(int16_t Level)
 	int32_t NumFollowers = 0;
 
 	if (Level <= 5)
-		NumFollowers = 4 + RANDOM(3);
+		NumFollowers = 4 + my_random(3);
 	else if (Level > 5 && Level <= 10)
-		NumFollowers = 7 + RANDOM(3);
+		NumFollowers = 7 + my_random(3);
 	else if (Level > 10 && Level <= 15)
-		NumFollowers = 11 + RANDOM(3);
+		NumFollowers = 11 + my_random(3);
 	else if (Level > 15 && Level <= 20)
-		NumFollowers = 14 + RANDOM(3);
+		NumFollowers = 14 + my_random(3);
 
 	return NumFollowers;
 }

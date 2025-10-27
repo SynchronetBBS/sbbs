@@ -211,7 +211,7 @@ static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 
 				lCost = PS_Items[ItemIndex]->lCost -
 						(PS_Items[ItemIndex]->lCost*10)/100L +
-						(PS_Items[ItemIndex]->lCost*RANDOM(10))/100L;
+						(PS_Items[ItemIndex]->lCost*my_random(10))/100L;
 
 				snprintf(szString, sizeof(szString), ST_PAWN4, lCost);
 
@@ -333,7 +333,7 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 				}
 
 				lCost = (PClan->Items[ItemIndex].lCost*3L)/4L +
-						(PClan->Items[ItemIndex].lCost*(int32_t)RANDOM(15))/100L;
+						(PClan->Items[ItemIndex].lCost*(int32_t)my_random(15))/100L;
 
 				snprintf(szString, sizeof(szString), ST_PAWN12, lCost);
 
@@ -377,7 +377,7 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 					ShowItemStats(&PClan->Items[ItemIndex], PClan);
 
 					lCost = (PClan->Items[ItemIndex].lCost*3L)/4L +
-							(PClan->Items[ItemIndex].lCost*(int32_t)RANDOM(15))/100L;
+							(PClan->Items[ItemIndex].lCost*(int32_t)my_random(15))/100L;
 
 					snprintf(szString, sizeof(szString), ST_PAWN12, lCost);
 

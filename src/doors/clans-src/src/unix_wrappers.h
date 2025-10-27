@@ -77,16 +77,8 @@ struct ffblk {
 #define FA_DIREC    16
 #define FA_ARCH     32
 
-#if defined(__linux__) || defined(__NetBSD__)
-void srandomdev(void);
-#endif
-off_t filelength(int file);
 int findfirst(char *pathname, struct ffblk *fblk, int attrib);
 int findnext(struct ffblk *fblk);
-int clans_getdate(struct date *getme);
-int32_t unix_random(int32_t maxnum);
-int gettime(struct tm *getme);
-void randomize(void);
 
 #define SH_DENYWR   1
 #define SH_DENYRW   2

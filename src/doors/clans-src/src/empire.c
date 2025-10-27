@@ -508,7 +508,7 @@ void Empire_Maint(struct empire *Empire)
 	Empire->AttacksToday = 0;
 
 	Rating = Empire->Army.Rating;
-	Rating += (RANDOM(10) + 2*Empire->Buildings[B_GYM]);
+	Rating += (my_random(10) + 2*Empire->Buildings[B_GYM]);
 	if (Rating > 100)
 		Rating = 100;
 	if (Rating < 0)
@@ -521,7 +521,7 @@ void Empire_Maint(struct empire *Empire)
 
 		// each business makes about 1000 gold
 		for (iTemp = 0; iTemp < Empire->Buildings[B_BUSINESS]; iTemp++) {
-			GoldMade += (1000 + RANDOM(500) + RANDOM(500));
+			GoldMade += (1000 + my_random(500) + my_random(500));
 		}
 
 		// snprintf(szNews, sizeof(szNews), ">> Businesses brought in %ld gold today!\n\n",
@@ -1610,8 +1610,8 @@ static void EmpireAttack(struct empire *AttackingEmpire, struct Army *AttackingA
 	ArmyStoppedByWalls.Axemen  = 0;
 	ArmyStoppedByWalls.Knights = 0;
 	for (iTemp = 0; iTemp < DefendingEmpire->Buildings[B_WALL]; iTemp++) {
-		ArmyStoppedByWalls.Footmen += RANDOM(2);
-		ArmyStoppedByWalls.Axemen  += RANDOM(2);
+		ArmyStoppedByWalls.Footmen += my_random(2);
+		ArmyStoppedByWalls.Axemen  += my_random(2);
 	}
 	if (ArmyStoppedByWalls.Footmen > AttackingArmy->Footmen)
 		ArmyStoppedByWalls.Footmen = AttackingArmy->Footmen;
@@ -1635,9 +1635,9 @@ static void EmpireAttack(struct empire *AttackingEmpire, struct Army *AttackingA
 	ArmyKilledByTowers.Axemen  = 0;
 	ArmyKilledByTowers.Knights = 0;
 	for (iTemp = 0; iTemp < DefendingEmpire->Buildings[B_TOWER]; iTemp++) {
-		ArmyKilledByTowers.Footmen += RANDOM(3);
-		ArmyKilledByTowers.Axemen  += RANDOM(3);
-		ArmyKilledByTowers.Knights += RANDOM(2);
+		ArmyKilledByTowers.Footmen += my_random(3);
+		ArmyKilledByTowers.Axemen  += my_random(3);
+		ArmyKilledByTowers.Knights += my_random(2);
 	}
 	if (ArmyKilledByTowers.Footmen > AttackingArmy->Footmen)
 		ArmyKilledByTowers.Footmen = AttackingArmy->Footmen;
@@ -1676,7 +1676,7 @@ static void EmpireAttack(struct empire *AttackingEmpire, struct Army *AttackingA
 static void ProcessAttackResult(struct AttackResult *AttackResult)
 {
 	char szNews[128], szMessage[600], szString[255],
-	szDefenderType[40], szAttacker[40], szDefender[40];
+	szDefenderType[40], szAttacker[43], szDefender[46];
 	int16_t WhichBBS = 0, iTemp, Junk[2] = {-1, -1};  // <<-- Junk[] is used as dummy
 	int16_t Percent, WhichAlliance, LandGained;
 	struct clan TmpClan = {0};
@@ -2020,7 +2020,7 @@ static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 	//    od_printf("Num hits = %d\n\r", NumHits);
 
 	for (CurHit = 0; CurHit < NumHits;) {
-		WhichToHit = RANDOM(TotalEnergy);
+		WhichToHit = my_random(TotalEnergy);
 		TypeToHit = WarZone[WhichToHit];
 
 		// do hit
@@ -2858,11 +2858,11 @@ static void SpyMenu(struct empire *Empire)
 	struct Alliance *Alliances[MAX_ALLIANCES];
 	struct clan TmpClan = {0};
 	char *pszVillage = "1 A Village",
-					   *pszAlliance = "2 An Alliance",
-									  *pszClan = "3 A Clan",
-												 *aszVillageNames[MAX_IBBSNODES],
-												 *pszWhoToSpy[3],
-												 *aszAllianceNames[MAX_ALLIANCES], szSpierName[40], szMessage[128];
+	     *pszAlliance = "2 An Alliance",
+	     *pszClan = "3 A Clan",
+	     *aszVillageNames[MAX_IBBSNODES],
+	     *pszWhoToSpy[3],
+	     *aszAllianceNames[MAX_ALLIANCES], szSpierName[41], szMessage[128];
 	int16_t NumOfTypes, iTemp, NumBBSes, BBSIndex[MAX_IBBSNODES];
 	int16_t WhichVillage, NumAlliances, WhichAlliance, TypeToSpyOn;
 	char szString[255];
@@ -2975,8 +2975,8 @@ static void SpyMenu(struct empire *Empire)
 				|| (Game.Data.InterBBS == false && WhichVillage == 0)) {
 			// see if we can spy, if so, spy on 'em now using EmpireStats
 			// increment spies per day in future
-			if ((Empire->Buildings[B_AGENCY]+RANDOM(5)) >
-					(Village.Data.Empire.Buildings[B_SECURITY]+RANDOM(3))) {
+			if ((Empire->Buildings[B_AGENCY]+my_random(5)) >
+					(Village.Data.Empire.Buildings[B_SECURITY]+my_random(3))) {
 				// success!
 				// rputs("Your spy is successful!\n");
 				rputs(ST_SPY2);
@@ -3052,8 +3052,8 @@ static void SpyMenu(struct empire *Empire)
 		// spy on them here if possible
 		// see if we can spy, if so, spy on 'em now using EmpireStats
 		// increment spies per day in future
-		if ((Empire->Buildings[B_AGENCY]+RANDOM(5)) >
-				(Alliances[WhichAlliance]->Empire.Buildings[B_SECURITY]+RANDOM(3))) {
+		if ((Empire->Buildings[B_AGENCY]+my_random(5)) >
+				(Alliances[WhichAlliance]->Empire.Buildings[B_SECURITY]+my_random(3))) {
 			// success!
 			// rputs("Your spy is successful!\n");
 			rputs(ST_SPY2);
@@ -3095,8 +3095,8 @@ static void SpyMenu(struct empire *Empire)
 		// spy on them here if possible
 		// see if we can spy, if so, spy on 'em now using EmpireStats
 		// increment spies per day in future
-		if ((Empire->Buildings[B_AGENCY]+RANDOM(5)) >
-				(TmpClan.Empire.Buildings[B_SECURITY]+RANDOM(3))) {
+		if ((Empire->Buildings[B_AGENCY]+my_random(5)) >
+				(TmpClan.Empire.Buildings[B_SECURITY]+my_random(3))) {
 			// success!
 			rputs(ST_SPY2);
 			Empire_Stats(&TmpClan.Empire);

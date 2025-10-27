@@ -442,7 +442,7 @@ void UnregMessage(void)
 		rputs(ST_REGMSG4);
 		rputs(ST_REGMSG5);
 		rputs(ST_REGMSG6);
-		cKeyToPress = random(26) + 'A';
+		cKeyToPress = my_random(26) + 'A';
 		snprintf(szString, sizeof(szString), "   |05Hit the |13%c |05key to continue.", cKeyToPress);
 		rputs(szString);
 
