@@ -95,7 +95,8 @@ int main(int argc, char **argv)
 			// directory to create
 			AddDir(fpGUM, szFileName);
 #ifdef __unix__
-			stat(szFileName, &tStat);
+			if (stat(szFileName, &tStat))
+				tStat.st_mode = 0755;
 			tStat.st_mode&=511;
 			fprintf(fpAttr, "%o %s\n", tStat.st_mode, szFileName+1);
 #endif
