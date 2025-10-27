@@ -225,6 +225,8 @@ typedef unsigned char bool;
 # define sleep(x) Sleep((x * 1000))
 #endif
 
+#define PATH_SIZE 512
+
 enum Status { Dead, Unconscious, RanAway, Here };
 enum PlayerStats { stAgility, stDexterity, stStrength, stWisdom, stArmorStr };
 enum action { acAttack, acRun, acCast, acRead, acSkip, acNone };

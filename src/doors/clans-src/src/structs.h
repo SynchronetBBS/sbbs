@@ -3,8 +3,6 @@
 
 #include "defines.h"
 
-#define PATH_SIZE 512
-
 struct IniFile {
 	bool Initialized;
 
