@@ -1,11 +1,11 @@
 # External paths we need... default is "what's on Deuce's system"
-ODOORS ?= ../../../odoors/
-override ODOORS := $(abspath $(ODOORS))/
 SRC	?=	..
 
 include $(SRC)/mk/Platform.gmake
 include $(SRC)/mk/Paths.gmake
 
+ODOORS ?= $(SRC)odoors/
+override ODOORS := $(abspath $(ODOORS))/
 CFLAGS	+=	-I$(ODOORS)
 LDFLAGS	+=	"-L$(ODOORS)libs-$(OS)"
 ODOORS_LIB ?=	$(ODOORS)libs-$(OS)/libODoors.a
