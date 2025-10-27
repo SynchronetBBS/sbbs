@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.92c
-                        Release date: 2025-10-25
+                              Version 1.92d
+                        Release date: 2025-10-26
 
                                   by
 
@@ -362,6 +362,12 @@ allowSpellCheck                   Whether or not to allow spell check.  Valid
 ctrlQQuote                        Whether or not to use Ctrl-Q as the hotkey for
                                   quoting. If not, Ctrl-Y will be used. Valid
                                   values are true and false. Defaults to true.
+                                  This is a default value for a user setting;
+                                  users are allowed to toggle this according
+                                  to their preference (also dependent on what
+                                  terminal they're using, since Ctrl-Q can be
+                                  used to toggle XON/XOFF flow control or
+                                  disconnect.
 
 useQuoteLineInitials              Whether or not to prefix quoted message lines
                                   with the previous author's initials when
@@ -1005,6 +1011,10 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.92d    2025-10-26   New user setting to allow users to toggle for themselves
+                      whether to use Ctrl-Q to quote (if not, Ctrl-Y will be
+                      used). The SlyEdit configuration option ctrlQQuote is now
+                      a default for the user setting.
 1.92c    2025-10-25   New configuration option to toggle whether Ctrl-Q is the
                       hotkey to be used for quoting (if not, Ctrl-Y will be used
                       instead). The option name in SlyEdit.cfg is ctrlQQuote; it

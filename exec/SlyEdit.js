@@ -100,8 +100,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.92c";
-var EDITOR_VER_DATE = "2025-10-25";
+var EDITOR_VERSION = "1.92d";
+var EDITOR_VER_DATE = "2025-10-26";
 
 
 // Program variables
@@ -1303,7 +1303,7 @@ function doEditLoop()
 	const CMDLIST_HELP_KEY          = CTRL_L;
 	const CMDLIST_HELP_KEY_2        = KEY_F1;
 	const IMPORT_FILE_KEY           = CTRL_O;
-	const QUOTE_KEY                 = gConfigSettings.ctrlQQuote ? CTRL_Q : CTRL_Y;
+	var QUOTE_KEY                   = gUserSettings.ctrlQQuote ? CTRL_Q : CTRL_Y;
 	const SPELL_CHECK_KEY           = CTRL_R;
 	const CHANGE_SUBJECT_KEY        = CTRL_S;
 	const LIST_TXT_REPLACEMENTS_KEY = CTRL_T;
@@ -1319,7 +1319,8 @@ function doEditLoop()
 	// want to place the cursor at the first character on the top line,
 	// too.  This is for the case where we're editing an existing message -
 	// we want to start editigng it at the top.
-	fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode, gUseQuotes, 0, displayEditLines);
+	fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode, gUseQuotes,
+	               gUserSettings.ctrlQQuote, 0, displayEditLines);
 
 	var curpos = {
 		x: gEditLeft,
@@ -1417,22 +1418,22 @@ function doEditLoop()
 				                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings,
 				                   gConfigSettings.allowSpellCheck, gConfigSettings.allowColorSelection, gCanChangeSubject);
 				clearEditAreaBuffer();
-				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-				               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
+				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode,
+				               gUseQuotes, gUserSettings.ctrlQQuote, gEditLinesIndex-(curpos.y-gEditTop),
 				               displayEditLines);
 				break;
 			/*
 			case GENERAL_HELP_KEY:
 				displayGeneralHelp(true, true, true);
 				clearEditAreaBuffer();
-				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-				               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
+				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode,
+				               gUseQuotes, gUserSettings.ctrlQQuote, gEditLinesIndex-(curpos.y-gEditTop),
 				               displayEditLines);
 				break;
 			*/
 			case GRAPHICS_CHAR_KEY:
 				var graphicChar = promptForGraphicsChar(curpos);
-				fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+				fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
 				console.gotoxy(curpos);
 				if (graphicChar != null && typeof(graphicChar) === "string" && graphicChar.length > 0)
 				{
@@ -1501,7 +1502,7 @@ function doEditLoop()
 					{
 						writeWithPause(1, console.screen_rows, "\x01n\x01y\x01hCan't change quote line colors\x01n", ERRORMSG_PAUSE_MS);
 						// Refresh the help line on the bottom of the screen
-						fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+						fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
 						console.gotoxy(curpos.x, curpos.y);
 						console.print(gTextAttrs);
 					}
@@ -1799,8 +1800,8 @@ function doEditLoop()
 									// Refresh the screen
 									clearEditAreaBuffer();
 									fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-									               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
-									               displayEditLines);
+									               gInsertMode, gUseQuotes, gUserSettings.ctrlQQuote,
+									               gEditLinesIndex-(curpos.y-gEditTop), displayEditLines);
 								}
 								console.gotoxy(curpos);
 								break;
@@ -1811,8 +1812,8 @@ function doEditLoop()
 								                   gConfigSettings.allowSpellCheck, gConfigSettings.allowColorSelection, gCanChangeSubject);
 								clearEditAreaBuffer();
 								fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-								               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
-								               displayEditLines);
+								               gInsertMode, gUseQuotes, gUserSettings.ctrlQQuote,
+								               gEditLinesIndex-(curpos.y-gEditTop), displayEditLines);
 								console.gotoxy(curpos);
 								break;
 							default:
@@ -2022,7 +2023,21 @@ function doEditLoop()
 					listTextReplacements();
 				break;
 			case USER_SETTINGS_KEY:
-				doUserSettings(curpos, true);
+				var userSettingsRetObj = doUserSettings(curpos, true);
+				// If the user changed their option for using Ctrl-Q as the quote hotkey,
+				// then change it
+				if (userSettingsRetObj.ctrlQQuoteOptChanged)
+				{
+					QUOTE_KEY = gUserSettings.ctrlQQuote ? CTRL_Q : CTRL_Y;
+					// If we have quote lines and the UI style is DCT, then refresh the key
+					// help line at the bottom of the screen, which includes the quote hotkey
+					// in this case
+					if (gUseQuotes && EDITOR_STYLE == "DCT")
+					{
+						fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
+						console.gotoxy(curpos);
+					}
+				}
 				break;
 			case CHANGE_SUBJECT_KEY:
 				if (gCanChangeSubject)
@@ -3883,7 +3898,7 @@ function callIceESCMenu(pCurpos)
 	// If the user didn't choose help, then we need to refresh the bottom row
 	// on the screen.
 	if (chosenAction != ESC_MENU_HELP_COMMAND_LIST)
-		fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+		fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
 	return chosenAction;
 }
 function callDCTESCMenu(pCurpos)
@@ -3968,11 +3983,12 @@ function doESCMenu(pCurpos, pCurrentWordLength)
 			                   gConfigSettings.allowSpellCheck, gConfigSettings.allowColorSelection, gCanChangeSubject);
 			clearEditAreaBuffer();
 			fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode,
-			               gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop), displayEditLines);
+			               gUseQuotes, gUserSettings.ctrlQQuote, gEditLinesIndex-(pCurpos.y-gEditTop),
+			               displayEditLines);
 			break;
 		case ESC_MENU_HELP_GRAPHIC_CHAR:
 			var graphicChar = promptForGraphicsChar(pCurpos);
-			fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+			fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
 			console.gotoxy(pCurpos);
 			if (graphicChar != null && typeof(graphicChar) === "string" && graphicChar.length > 0)
 			{
@@ -4021,8 +4037,8 @@ function doESCMenu(pCurpos, pCurrentWordLength)
 				// Refresh the screen
 				clearEditAreaBuffer();
 				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-				               gInsertMode, gUseQuotes, gEditLinesIndex-(returnObj.y-gEditTop),
-				               displayEditLines);
+				               gInsertMode, gUseQuotes, gUserSettings.ctrlQQuote,
+				               gEditLinesIndex-(returnObj.y-gEditTop), displayEditLines);
 			}
 			break;
 	}
@@ -4336,7 +4352,7 @@ function importFile(pCurpos)
 	}
 
 	// Refresh the help line on the bottom of the screen
-	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
 
 	// If not sending immediately and we loaded a file, then refresh the message text.
 	if (!retObj.sendImmediately && loadedAFile)
@@ -4424,7 +4440,7 @@ function exportToFile()
       writeWithPause(1, console.screen_rows, "\x01m\x01hMessage not exported.", ERRORMSG_PAUSE_MS);
 
    // Refresh the help line on the bottom of the screen
-   fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+   fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
 }
 
 // Performs a text search.
@@ -4555,7 +4571,7 @@ function findText(pCurpos)
 	}
 
 	// Refresh the help line on the bottom of the screen
-	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
 
 	// Make sure the cursor is positioned where it should be.
 	console.gotoxy(retObj.x, retObj.y);
@@ -4607,7 +4623,7 @@ function doSpellCheck(pCurpos, pConfirmSpellcheck)
 	{
 		writeWithPause(1, console.screen_rows, "\x01y\x01hThere are no dictionaries configured!\x01n", ERRORMSG_PAUSE_MS);
 		// Refresh the help line on the bottom of the screen
-		fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+		fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
 		console.gotoxy(pCurpos.x, pCurpos.y);
 		return retObj;
 	}
@@ -4632,7 +4648,7 @@ function doSpellCheck(pCurpos, pConfirmSpellcheck)
 	{
 		writeWithPause(1, console.screen_rows, "\x01y\x01hUnable to load the dictionary file(s)!\x01n", ERRORMSG_PAUSE_MS);
 		// Refresh the help line on the bottom of the screen
-		fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+		fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
 		console.gotoxy(pCurpos.x, pCurpos.y);
 		return retObj;
 	}
@@ -4728,7 +4744,7 @@ function doSpellCheck(pCurpos, pConfirmSpellcheck)
 	retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
 
 	// Refresh the help line on the bottom of the screen
-	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
 
 	// Make sure the cursor is positioned where it should be.
 	console.gotoxy(retObj.x, retObj.y);
@@ -5182,7 +5198,7 @@ function doColorSelection(pTxtAttrs, pCurpos, pCurrentWordLength)
 	displayEditLines(colorSelTopLine, gEditLinesIndex + screenYDiff, gEditBottom, true, true);
 	fpDisplayTextAreaBottomBorder(gEditBottom+1, gUseQuotes, gEditLeft, gEditRight,
 	                              gInsertMode, gConfigSettings.allowColorSelection);
-	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
 
 	// Move the cursor to where it should be before returning
 	curpos.x = pCurpos.x;
@@ -6121,8 +6137,12 @@ function listTextReplacements()
 //                              to its original position when done.
 function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 {
+	var retObj = {
+		ctrlQQuoteOptChanged: false
+	};
+
 	if (!gConfigSettings.allowUserSettings)
-		return;
+		return retObj;
 
 	const originalCurpos = (typeof(pCurpos) == "object" ? pCurpos : console.getxy());
 	var returnCursorWhenDone = true;
@@ -6145,7 +6165,7 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	// Create the user settings box
 	var optBoxTitle = "Setting                                      Enabled";
 	var optBoxWidth = ChoiceScrollbox_MinWidth();
-	var optBoxHeight = (dictionaryFilenames.length > 1 ? 13 : 12);
+	var optBoxHeight = (dictionaryFilenames.length > 1 ? 14 : 13);
 	var optBoxStartX = gEditLeft + Math.floor((gEditWidth/2) - (optBoxWidth/2));
 	if (optBoxStartX < gEditLeft)
 		optBoxStartX = gEditLeft;
@@ -6172,6 +6192,7 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	// Add the options to the option box
 	const optFormatStr = "%-46s [ ]";
 	const checkIdx = 48;
+	const CTRL_Q_QUOTE_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "Ctrl-Q to quote (if not, then Ctrl-Y)"));
 	const TAGLINE_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "Taglines"));
 	var SPELLCHECK_ON_SAVE_OPT_INDEX = -1;
 	if (gConfigSettings.allowSpellCheck)
@@ -6184,6 +6205,8 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	const AUTO_SIGN_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "Auto-sign messages"));
 	const SIGN_REAL_ONLY_FIRST_NAME_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "  When using real name, use only first name"));
 	const SIGN_EMAILS_REAL_NAME_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "  Sign emails with real name"));
+	if (gUserSettings.ctrlQQuote)
+		optionBox.chgCharInTextItem(CTRL_Q_QUOTE_OPT_INDEX, checkIdx, CHECK_CHAR);
 	var DICTIONARY_OPT_INDEX = -1;
 	if (dictionaryFilenames.length > 1)
 		DICTIONARY_OPT_INDEX = optionBox.addTextItem("Spell-check dictionary/dictionaries");
@@ -6210,6 +6233,7 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 
 	// Create an object containing toggle values (true/false) for each option index
 	var optionToggles = {};
+	optionToggles[CTRL_Q_QUOTE_OPT_INDEX] = gUserSettings.ctrlQQuote;
 	optionToggles[QUOTE_WRAP_OPT_INDEX] = gUserSettings.wrapQuoteLines;
 	optionToggles[JOIN_WRAPPED_QUOTE_LINES_OPT_INDEX] = gUserSettings.joinQuoteLinesWhenWrapping;
 	optionToggles[TAGLINE_OPT_INDEX] = gUserSettings.enableTaglines;
@@ -6242,6 +6266,9 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 				// Toggle the setting for the user in global user setting object.
 				switch (itemIndex)
 				{
+					case CTRL_Q_QUOTE_OPT_INDEX:
+						gUserSettings.ctrlQQuote = !gUserSettings.ctrlQQuote;
+						break;
 					case QUOTE_WRAP_OPT_INDEX:
 						gUserSettings.wrapQuoteLines = !gUserSettings.wrapQuoteLines;
 						break;
@@ -6342,6 +6369,12 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 
 	if (returnCursorWhenDone)
 		console.gotoxy(originalCurpos);
+
+	// See if the user changed their option for using Ctrl-Q to quote
+	if (originalSettings.hasOwnProperty("ctrlQQuote") && typeof(originalSettings.ctrlQQuote) === "boolean")
+		retObj.ctrlQQuoteOptChanged = (gUserSettings.ctrlQQuote != originalSettings.ctrlQQuote);
+
+	return retObj;
 }
 // Helper for doUserSettings(): Does the dictionary language selection
 //
@@ -6681,7 +6714,7 @@ function writeMsgOntBtmHelpLineWithPause(pMsg, pPauseMS)
    // Write the message with the pause, then refresh the help line on the
    // bottom of the screen.
    writeWithPause(1, console.screen_rows, pMsg, pPauseMS);
-   fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes);
+   fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
 }
 
 // Gets the user's alias/name to use for auto-signing the message.
@@ -6781,13 +6814,15 @@ function letUserUploadMessageFile(pCurpos)
 			else
 			{
 				console.print("\x01y\x01hFailed to read the message file!\x01n\r\n\x01p");
-				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode, gUseQuotes, 0, displayEditLines);
+				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode, gUseQuotes,
+				               gUserSettings.ctrlQQuote, 0, displayEditLines);
 			}
 		}
 		else
 		{
 			console.print("\x01y\x01hUpload failed!\x01n\r\n\x01p");
-			fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode, gUseQuotes, 0, displayEditLines);
+			fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode, gUseQuotes,
+			               gUserSettings.ctrlQQuote, 0, displayEditLines);
 		}
 	}
 

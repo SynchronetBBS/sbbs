@@ -3,17 +3,6 @@
  * Author: Eric Oulashin (AKA Nightfox)
  * BBS: Digital Distortion
  * BBS address: digdist.bbsindex.com
- *
- * Date       User              Description
- * 2009-05-11 Eric Oulashin     Started development
- * 2009-08-09 Eric Oulashin     More development & testing
- * 2009-08-22 Eric Oulashin     Version 1.00
- *                              Initial public release
- * ... Removed comments ...
- * 2019-05-04 Eric Oulashin     Updated to use require() instead of load() if possible.
- * 2021-12-11 Eric Oulashin     Updated the quote window bottom border text
- * 2022-11-19 Eric Oulashin     Updated readColorConfig() to handle just attribute characters
- * 2023-05-15 Eric Oulashin     Refactored readColorConfig()
  */
 
 "use strict";
@@ -110,10 +99,11 @@ function globalScreenVarsSetup_DCTStyle()
 //  pEditColor: The edit color
 //  pInsertMode: The insert mode ("INS" or "OVR")
 //  pUseQuotes: Whether or not message quoting is enabled
+//  pCtrlQQuote: Boolean - Whether or not we're using Ctrl-Q to quote (if not, using Ctrl-Y)
 //  pEditLinesIndex: The index of the message line at the top of the edit area
 //  pDisplayEditLines: The function that displays the edit lines
 function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEditColor,
-                               pInsertMode, pUseQuotes, pEditLinesIndex, pDisplayEditLines)
+                               pInsertMode, pUseQuotes, pCtrlQQuote, pEditLinesIndex, pDisplayEditLines)
 {
 	// Top header
 	// Generate & display the top border line (Note: Generate this
@@ -244,7 +234,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 
 	// Display the bottom message area border and help line
 	DisplayTextAreaBottomBorder_DCTStyle(pEditBottom+1, null, pEditLeft, pEditRight, pInsertMode);
-	DisplayBottomHelpLine_DCTStyle(console.screen_rows, pUseQuotes);
+	DisplayBottomHelpLine_DCTStyle(console.screen_rows, pUseQuotes, pCtrlQQuote);
 
 	// Display the message header information fields (From, To, Subj, Area). We use
 	// gotoxy() and print these last in case they're UTF-8, to avoid header graphic
@@ -379,55 +369,52 @@ function DisplayTextAreaBottomBorder_DCTStyle(pLineNum, pUseQuotes, pEditLeft, p
 // Parameters:
 //  pLineNum: The line number on the screen at which to draw the help line
 //  pUsingQuotes: Boolean - Whether or not message quoting is enabled.
-function DisplayBottomHelpLine_DCTStyle(pLineNum, pUsingQuotes)
+//  pCtrlQQuote: Boolean - Whether or not we're using Ctrl-Q to quote (if not, using Ctrl-Y)
+function DisplayBottomHelpLine_DCTStyle(pLineNum, pUsingQuotes, pCtrlQQuote)
 {
-	// For efficiency, define the help line variable only once.
-	if (typeof(DisplayBottomHelpLine_DCTStyle.helpText) == "undefined")
+	var helpText = gConfigSettings.DCTColors.BottomHelpBrackets
+	             + "[" + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
+	             + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
+	             + gConfigSettings.DCTColors.BottomHelpKeys + "Z"
+	             + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
+	             + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Save\x01n      "
+	             + gConfigSettings.DCTColors.BottomHelpBrackets + "["
+	             + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
+	             + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
+	             + gConfigSettings.DCTColors.BottomHelpKeys + "A"
+	             + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
+	             + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Abort";
+	// If we can allow message quoting, then add a text to show Ctrl-Q (or Ctrl-Y) for
+	// quoting.
+	if (pUsingQuotes)
 	{
-		DisplayBottomHelpLine_DCTStyle.helpText = gConfigSettings.DCTColors.BottomHelpBrackets
-		                                        + "[" + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
-		                                        + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
-		                                        + gConfigSettings.DCTColors.BottomHelpKeys + "Z"
-		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
-		                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Save\x01n      "
-		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "["
-		                                        + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
-		                                        + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
-		                                        + gConfigSettings.DCTColors.BottomHelpKeys + "A"
-		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
-		                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Abort";
-		// If we can allow message quoting, then add a text to show Ctrl-Q (or Ctrl-Y) for
-		// quoting.
-		if (pUsingQuotes)
-		{
-			const quoteHotkeyChar = gConfigSettings.ctrlQQuote ? "Q" : "Y";
-			DisplayBottomHelpLine_DCTStyle.helpText += "\x01n      "
-			                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "["
-			                                        + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
-			                                        + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
-			                                        + gConfigSettings.DCTColors.BottomHelpKeys + quoteHotkeyChar
-			                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
-			                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Quote";
-		}
-		DisplayBottomHelpLine_DCTStyle.helpText += "\x01n      "
-		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "["
-		                                        + gConfigSettings.DCTColors.BottomHelpKeys + "ESC"
-		                                        + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
-		                                        + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Menu";
-		// Center the text by padding it in the front with spaces.  This is done instead
-		// of using console.center() because console.center() will output a newline,
-		// which would not be good on the last line of the screen.
-		var numSpaces = Math.floor(console.screen_columns/2) - Math.floor(console.strlen(DisplayBottomHelpLine_DCTStyle.helpText)/2);
-		for (var i = 0; i < numSpaces; ++i)
-			DisplayBottomHelpLine_DCTStyle.helpText = " " + DisplayBottomHelpLine_DCTStyle.helpText;
+		const quoteHotkeyChar = pCtrlQQuote ? "Q" : "Y";
+		helpText += "\x01n      "
+		         + gConfigSettings.DCTColors.BottomHelpBrackets + "["
+		         + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
+		         + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
+		         + gConfigSettings.DCTColors.BottomHelpKeys + quoteHotkeyChar
+		         + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
+		         + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Quote";
 	}
+	helpText += "\x01n      "
+	         + gConfigSettings.DCTColors.BottomHelpBrackets + "["
+	         + gConfigSettings.DCTColors.BottomHelpKeys + "ESC"
+	         + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
+	         + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Menu";
+	// Center the text by padding it in the front with spaces.  This is done instead
+	// of using console.center() because console.center() will output a newline,
+	// which would not be good on the last line of the screen.
+	var numSpaces = Math.floor(console.screen_columns/2) - Math.floor(console.strlen(helpText)/2);
+	for (var i = 0; i < numSpaces; ++i)
+		helpText = " " + helpText;
 
 	// Display the help line on the screen
 	var lineNum = console.screen_rows;
 	if ((typeof(pLineNum) != "undefined") && (pLineNum != null))
 		lineNum = pLineNum;
 	console.gotoxy(1, lineNum);
-	console.print(DisplayBottomHelpLine_DCTStyle.helpText);
+	console.print(helpText);
 	console.print("\x01n");
 	console.cleartoeol();
 }
@@ -493,7 +480,7 @@ function DrawQuoteWindowBottomBorder_DCTStyle(pEditLeft, pEditRight)
 	if (typeof(DrawQuoteWindowBottomBorder_DCTStyle.border) == "undefined")
 	{
 		// Create a string containing the quote help text.
-		const quoteHotkeyChar = gConfigSettings.ctrlQQuote ? "Q" : "Y";
+		const quoteHotkeyChar = gUserSettings.ctrlQQuote ? "Q" : "Y";
 		var quoteHelpText = gConfigSettings.DCTColors.QuoteWinBorderTextColor
 		                 + "[Enter] Accept" + gConfigSettings.DCTColors.QuoteWinBorderColor
 		                 + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor

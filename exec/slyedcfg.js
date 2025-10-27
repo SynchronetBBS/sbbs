@@ -9,7 +9,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("SlyEdit 1.92c Configurator"))
+if (!uifc.init("SlyEdit 1.92d Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -675,7 +675,10 @@ function getOptionHelpText()
 
 	optionHelpText["allowSpellCheck"] = "Allow/enable spell check: Whether or not to allow spell check";
 
-	optionHelpText["ctrlQQuote"] = "Ctrl-Q to quote: Use Ctrl-Q hotkey to quote. If not, Ctrl-Y will be used.";
+	optionHelpText["ctrlQQuote"] = "Ctrl-Q to quote: Use Ctrl-Q hotkey to quote. If not, Ctrl-Y will be used. This is a default ";
+	optionHelpText["ctrlQQuote"] += "value for a user setting; users are allowed to toggle this according to their preference ";
+	optionHelpText["ctrlQQuote"] += "(also dependent on what terminal they're using, since Ctrl-Q can be used to toggle ";
+	optionHelpText["ctrlQQuote"] += "XON/XOFF flow control or disconnect.";
 
 	optionHelpText["enableTextReplacements"] = "Enable text replacements: Whether or not to enable text replacements (AKA macros). Can be ";
 	optionHelpText["enableTextReplacements"] += "true, false, or 'regex' to use regular expressions.";
