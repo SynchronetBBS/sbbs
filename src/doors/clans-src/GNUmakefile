@@ -34,27 +34,27 @@ data:
 installer: binaries devkit-binaries data
 	mkdir -p $(SRC)stage/gum
 	cd $(SRC)stage/gum && $(MAKE) SRC=$(SRC) -f $(SRC)/GNUmakefile game
-	cd $(SRC)stage/gum && ls -p1 | grep -v gum/ > ../files.lst
-	cd $(SRC)stage/gum && $(BINDIR)chew$(NATIVEEXEFILE) ../clans.gum ../files.lst
+	cd $(SRC)stage/gum && ls -p1 | grep -v /$ > files.lst
+	echo /outbound >> $(SRC)stage/gum/files.lst
+	cd $(SRC)stage/gum && $(BINDIR)chew$(NATIVEEXEFILE) ../clans.gum files.lst
 	rm -rf $(SRC)stage/gum
-	rm -f $(SRC)stage/files.lst
 	cp $(SRC)installer/* $(SRC)stage
 	cp $(BINDIR)install$(EXEFILE) $(SRC)stage
 	cp $(BINDIR)install$(WRAPEXT) $(SRC)stage
-	zip -j Clans-$(os)-$(MACH)-0_97b1.zip ../stage/*
+	zip -j Clans-$(os)-$(MACH)-0_97b1.zip $(SRC)stage/*
 
 .PHONY: devkit-installer
-devkit-installer: $(DEVKIT_BINARIES) native-chew$(NATIVEEXEFILE) install$(EXEFILE)
-	mkdir -p $(SRC)stage/gum
-	cd $(SRC)stage/gum && $(MAKE) SRC=$(SRC) -f $(SRC)/GNUmakefile devkit
-	cd $(SRC)stage/gum && ls -p1 | grep -v gum/ > ../files.lst
-	cd $(SRC)stage/gum && $(BINDIR)chew$(NATIVEEXEFILE) ../clans.gum ../files.lst
-	rm -rf ../stagedk/gum
-	rm -f ../stagedk/files.lst
-	rm -f ../stagedk/UnixAttr.DAT
-	cp ../installerdk/* ../stagedk
-	cp install$(EXEFILE) ../stagedk
-	zip -j ClansDevKit-$(os)-$(MACH)-0_12.zip ../stagedk/*
+devkit-installer: $(DEVKIT_BINARIES) $(BINDIR)chew$(NATIVEEXEFILE) $(BINDIR)install$(EXEFILE)
+	mkdir -p $(SRC)stagedk/gum
+	cd $(SRC)stagedk/gum && $(MAKE) SRC=$(SRC) -f $(SRC)/GNUmakefile devkit
+	cd $(SRC)stagedk/gum && ls -p1 | grep -v /$ > files.lst
+	cd $(SRC)stagedk/gum && $(BINDIR)chew$(NATIVEEXEFILE) ../clandev.gum files.lst
+	rm -rf $(SRC)stagedk/gum
+	rm -f $(SRC)stagedk/files.lst
+	rm -f $(SRC)stagedk/UnixAttr.DAT
+	cp $(SRC)installerdk/* $(SRC)stagedk
+	cp $(BINDIR)install$(EXEFILE) $(SRC)stagedk
+	zip -j ClansDevKit-$(os)-$(MACH)-0_12.zip $(SRC)stagedk/*
 
 .PHONY: clean
 clean:
