@@ -32,7 +32,13 @@ ifdef DEBUG
  CFLAGS	+=	-g -O0 -Wall -pedantic
  LDFLAGS +=	-g
 else
- CFLAGS	+=	-O3 -DNDEBUG
+ CFLAGS	+=	-O3 -DNDEBUG -flto
+ LDFLAGS +=	-O3 -flto -fwhole-program
+ ifeq ($(os),darwin)
+  LDFLAGS +=	-Wl,-x,-dead_strip
+ else
+  LDFLAGS +=	-s
+ endif
 endif
 
 CFLAGS	+=	-std=c11 -MMD -MP
