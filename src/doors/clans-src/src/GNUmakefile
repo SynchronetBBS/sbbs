@@ -1,13 +1,16 @@
 # External paths we need... default is "what's on Deuce's system"
-ODOORS ?= ../../../odoors
+ODOORS ?= ../../../odoors/
+override ODOORS := $(abspath $(ODOORS))/
+SRC	?=	..
 
-include ../mk/Platform.gmake
+include $(SRC)/mk/Platform.gmake
+include $(SRC)/mk/Paths.gmake
 
 CFLAGS	+=	-I$(ODOORS)
-LDFLAGS	+=	"-L$(ODOORS)/libs-$(OS)"
-CLANS_LIBS +=	$(ODOORS)/libs-$(OS)/libODoors.a
+LDFLAGS	+=	"-L$(ODOORS)libs-$(OS)"
+CLANS_LIBS +=	$(ODOORS)libs-$(OS)/libODoors.a
 
-LDFLAGS	+=	-L$(ODOORS)/libs-$(OS)
+LDFLAGS	+=	-L$(ODOORS)libs-$(OS)
 
 # Some platform-specific things...
 ifdef UNIXY
@@ -19,10 +22,8 @@ ifdef WIN
  # We won't be using the DLL
  CFLAGS	+=	-DOD_WIN32_STATIC
  CLANS_LIBS +=	-lws2_32 -lgdi32 -lcomctl32
- CLANS_LDFLAGS+=-mwindows $(ODOORS)/libs-$(OS)/ODoor.res
- WRAPEXT :=	.cmd
+ CLANS_LDFLAGS+=-mwindows $(ODOORS)libs-$(OS)/ODoor.res
 else
- WRAPEXT :=
  CFLAGS	+=	-D_POSIX_C_SOURCE=200809L
 endif
 
@@ -30,20 +31,11 @@ endif
 ifdef DEBUG
  CFLAGS	+=	-g -O0 -Wall -pedantic
  LDFLAGS +=	-g
- PPATH	?=	$(os).$(mach).debug
- FLAVOUR ?=	debug
 else
  CFLAGS	+=	-O3 -DNDEBUG
- PPATH	?=	$(os).$(mach).opt
- FLAVOUR ?=	opt
 endif
 
 CFLAGS	+=	-std=c11 -MMD -MP
-
-EXEFILE ?=	.$(os).$(mach).$(FLAVOUR)$(EXE_EXT)
-OBJPREFIX ?=	../obj/
-OBJDIR	?=	$(OBJPREFIX)$(os).$(mach).$(FLAVOUR)/
-BINDIR	?=	../bin/
 
 #
 # See convert.txt for more suggestions.
@@ -117,34 +109,6 @@ RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)alliance.o $(OBJDIR)cmdline.o \
 		$(OBJDIR)unix_wrappers.o $(OBJDIR)video.o \
 		$(OBJDIR)win_wrappers.o
 
-DOOR_BINARIES	:=	$(BINDIR)clans$(EXEFILE) \
-			$(BINDIR)config$(EXEFILE) \
-			$(BINDIR)pcedit$(EXEFILE) \
-			$(BINDIR)reset$(EXEFILE) \
-			$(BINDIR)clans$(WRAPEXT) \
-			$(BINDIR)config$(WRAPEXT) \
-			$(BINDIR)pcedit$(WRAPEXT) \
-			$(BINDIR)reset$(WRAPEXT)
-
-DEVKIT_BINARIES	:=	$(BINDIR)chew$(EXEFILE) $(BINDIR)ecomp$(EXEFILE) \
-			$(BINDIR)install$(EXEFILE) \
-			$(BINDIR)langcomp$(EXEFILE) \
-			$(BINDIR)makenpc$(EXEFILE) \
-			$(BINDIR)makepak$(EXEFILE) \
-			$(BINDIR)mcomp$(EXEFILE) \
-			$(BINDIR)mclass$(EXEFILE) \
-			$(BINDIR)mitems$(EXEFILE) \
-			$(BINDIR)mspells$(EXEFILE) \
-			$(BINDIR)chew$(WRAPEXT) $(BINDIR)ecomp$(WRAPEXT) \
-			$(BINDIR)install$(WRAPEXT) \
-			$(BINDIR)langcomp$(WRAPEXT) \
-			$(BINDIR)makenpc$(WRAPEXT) \
-			$(BINDIR)makepak$(WRAPEXT) \
-			$(BINDIR)mcomp$(WRAPEXT) \
-			$(BINDIR)mclass$(WRAPEXT) \
-			$(BINDIR)mitems$(WRAPEXT) \
-			$(BINDIR)mspells$(WRAPEXT)
-
 # Default target
 default: $(DOOR_BINARIES)
 
@@ -166,7 +130,7 @@ native-exefile:
 	@echo NATIVE EXEFILE: $(EXEFILE)
 
 deepclean:
-	rm -rf $(OBJPREFIX)*
+	rm -rf $(OBJPREFIX)
 	rm -rf $(BINDIR)
 
 clean:

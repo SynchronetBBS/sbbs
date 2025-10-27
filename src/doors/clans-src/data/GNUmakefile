@@ -1,4 +1,8 @@
-BINDIR	?=	../bin/
+SRC	?=	..
+override SRC := $(abspath $(SRC))/
+include $(SRC)/mk/Platform.gmake
+include $(SRC)/mk/Paths.gmake
+
 PAKFILES :=	$(shell awk '{print $$1}' pak.lst)
 
 pak: clans.pak

@@ -1,0 +1,55 @@
+# Requires Platform.gmake to be included first
+
+SRC	?=	../
+override SRC	:= $(abspath $(SRC))/
+BINDIR	?= $(SRC)bin/
+override BINDIR	:= $(abspath $(BINDIR))/
+DATADIR	?= $(SRC)data/
+override DATADIR := $(abspath $(DATADIR))/
+
+# Build types, debug and opt
+ifdef DEBUG
+ FLAVOUR ?=	debug
+else
+ FLAVOUR ?=	opt
+endif
+
+EXEFILE :=	.$(os).$(mach).$(FLAVOUR)$(EXE_EXT)
+OBJPREFIX :=	$(SRC)obj/
+OBJDIR	:=	$(OBJPREFIX)$(os).$(mach).$(FLAVOUR)/
+
+ifdef WIN
+ WRAPEXT :=	.cmd
+else
+ WRAPEXT :=
+endif
+
+DOOR_BINARIES	:=	$(BINDIR)clans$(EXEFILE) \
+			$(BINDIR)config$(EXEFILE) \
+			$(BINDIR)pcedit$(EXEFILE) \
+			$(BINDIR)reset$(EXEFILE) \
+			$(BINDIR)clans$(WRAPEXT) \
+			$(BINDIR)config$(WRAPEXT) \
+			$(BINDIR)pcedit$(WRAPEXT) \
+			$(BINDIR)reset$(WRAPEXT)
+
+DEVKIT_BINARIES	:=	$(BINDIR)chew$(EXEFILE) $(BINDIR)ecomp$(EXEFILE) \
+			$(BINDIR)install$(EXEFILE) \
+			$(BINDIR)langcomp$(EXEFILE) \
+			$(BINDIR)makenpc$(EXEFILE) \
+			$(BINDIR)makepak$(EXEFILE) \
+			$(BINDIR)mcomp$(EXEFILE) \
+			$(BINDIR)mclass$(EXEFILE) \
+			$(BINDIR)mitems$(EXEFILE) \
+			$(BINDIR)mspells$(EXEFILE) \
+			$(BINDIR)chew$(WRAPEXT) $(BINDIR)ecomp$(WRAPEXT) \
+			$(BINDIR)install$(WRAPEXT) \
+			$(BINDIR)langcomp$(WRAPEXT) \
+			$(BINDIR)makenpc$(WRAPEXT) \
+			$(BINDIR)makepak$(WRAPEXT) \
+			$(BINDIR)mcomp$(WRAPEXT) \
+			$(BINDIR)mclass$(WRAPEXT) \
+			$(BINDIR)mitems$(WRAPEXT) \
+			$(BINDIR)mspells$(WRAPEXT)
+
+DATA_FILES	:=	$(DATADIR)clans.pak
