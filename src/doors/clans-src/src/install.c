@@ -469,7 +469,7 @@ static void upgrade(void)
 #ifdef __unix__
 	fpAttr = fopen("UnixAttr.DAT", "r");
 	if (fpAttr) {
-		while (fscanf(fpAttr, "%u %s\n", &tmp, szFileName) != EOF) {
+		while (fscanf(fpAttr, "%o %s\n", &tmp, szFileName) != EOF) {
 			tMode = tmp;
 			chmod(szFileName, tMode);
 		}
