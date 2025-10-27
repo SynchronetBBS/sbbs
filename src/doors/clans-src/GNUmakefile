@@ -58,3 +58,28 @@ devkit-installer: $(DEVKIT_BINARIES) $(BINDIR)chew$(NATIVEEXEFILE) $(BINDIR)inst
 
 .PHONY: clean
 clean:
+	$(MAKE) SRC=$(SRC) -C $(SRC)src clean
+	$(MAKE) SRC=$(SRC) -C $(SRC)data clean
+	for srcfile in $(DOOR_BINARIES); do rm -f ./$$(basename $${srcfile}); done
+	for srcfile in $(DEVKIT_BINARIES); do rm -f ./$$(basename $${srcfile}); done
+	for srcfile in $(DATA_FILES); do rm -f ./$$(basename $${srcfile}); done
+	for srcfile in $(SRC)release/*; do rm -f ./$$(basename $${srcfile}); done
+	rm -rf outbound
+	rm -f ClansDevKit-$(os)-$(MACH)-0_12.zip
+	rm -f Clans-$(os)-$(MACH)-0_97b1.zip
+	rm -rf $(SRC)stage
+	rm -rf $(SRC)stagedk
+
+.PHONY: deepclean
+deepclean:
+	$(MAKE) SRC=$(SRC) -C $(SRC)src deepclean
+	$(MAKE) SRC=$(SRC) -C $(SRC)data clean
+	for srcfile in $(DOOR_BINARIES); do rm -f ./$$(basename $${srcfile}); done
+	for srcfile in $(DEVKIT_BINARIES); do rm -f ./$$(basename $${srcfile}); done
+	for srcfile in $(DATA_FILES); do rm -f ./$$(basename $${srcfile}); done
+	for srcfile in $(SRC)release/*; do rm -f ./$$(basename $${srcfile}); done
+	rm -rf outbound
+	rm -f ClansDevKit-$(os)-$(MACH)-0_12.zip
+	rm -f Clans-$(os)-$(MACH)-0_97b1.zip
+	rm -rf $(SRC)stage
+	rm -rf $(SRC)stagedk
