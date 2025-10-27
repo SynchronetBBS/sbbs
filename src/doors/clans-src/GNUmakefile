@@ -16,7 +16,7 @@ devkit: devkit-binaries
 	cp $(DEVKIT_BINARIES) .
 	cp $(SRC)devkit/* .
 
-all: game devkit
+all: game installer devkit devkit-installer
 
 .PHONY: binaries
 binaries:
@@ -64,6 +64,7 @@ clean:
 	for srcfile in $(DEVKIT_BINARIES); do rm -f ./$$(basename $${srcfile}); done
 	for srcfile in $(DATA_FILES); do rm -f ./$$(basename $${srcfile}); done
 	for srcfile in $(SRC)release/*; do rm -f ./$$(basename $${srcfile}); done
+	for srcfile in $(SRC)devkit/*; do rm -f ./$$(basename $${srcfile}); done
 	rm -rf outbound
 	rm -f ClansDevKit-$(os)-$(MACH)-0_12.zip
 	rm -f Clans-$(os)-$(MACH)-0_97b1.zip
@@ -78,6 +79,7 @@ deepclean:
 	for srcfile in $(DEVKIT_BINARIES); do rm -f ./$$(basename $${srcfile}); done
 	for srcfile in $(DATA_FILES); do rm -f ./$$(basename $${srcfile}); done
 	for srcfile in $(SRC)release/*; do rm -f ./$$(basename $${srcfile}); done
+	for srcfile in $(SRC)devkit/*; do rm -f ./$$(basename $${srcfile}); done
 	rm -rf outbound
 	rm -f ClansDevKit-$(os)-$(MACH)-0_12.zip
 	rm -f Clans-$(os)-$(MACH)-0_97b1.zip
