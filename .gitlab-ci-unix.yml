@@ -25,6 +25,8 @@ spec:
       default: 'yes'
     build_doors:
       default: 'no'
+    slow_system:
+      default: 'no'
 ---
 
 ".$[[ inputs.os ]]":
@@ -111,6 +113,8 @@ spec:
   rules:
     - if: '"$[[ inputs.has_gtk ]]" == "no"'
       when: never
+    - if: '"$[[ inputs.slow_system ]]" == "yes"'
+      when: never
     - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [gtkmonitor]":
@@ -146,6 +150,8 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
   rules:
     - if: '"$[[ inputs.has_gtk ]]" == "no"'
+      when: never
+    - if: '"$[[ inputs.slow_system ]]" == "yes"'
       when: never
     - !reference [.rules, rules]
 
@@ -183,6 +189,8 @@ spec:
   rules:
     - if: '"$[[ inputs.has_gtk ]]" == "no"'
       when: never
+    - if: '"$[[ inputs.slow_system ]]" == "yes"'
+      when: never
     - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [gtkuserlist]":
@@ -215,6 +223,8 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
   rules:
     - if: '"$[[ inputs.has_gtk ]]" == "no"'
+      when: never
+    - if: '"$[[ inputs.slow_system ]]" == "yes"'
       when: never
     - !reference [.rules, rules]
 
@@ -450,6 +460,10 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+  rules:
+    - if: '"$[[ inputs.slow_system ]]" == "yes"'
+      when: never
+    - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [syncterm]":
   extends:
@@ -509,6 +523,8 @@ spec:
   rules:
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
+    - if: '"$[[ inputs.slow_system ]]" == "yes"'
+      when: never
     - !reference [.rules, rules]
   needs:
 
@@ -546,6 +562,8 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
   rules:
     - if: '"$[[ inputs.has_graphics ]]" == "no"'
+      when: never
+    - if: '"$[[ inputs.slow_system ]]" == "yes"'
       when: never
     - !reference [.rules, rules]
 

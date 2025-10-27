@@ -47,6 +47,7 @@ include:
       platform: 'armhf-on-aarch64'
       tagname: 'RaspberryPi'
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1 NO_ABSOLUTE_RPATH=1'
+      slow_system: 'yes'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: "linux"
@@ -101,6 +102,7 @@ include:
       gnu_make: 'make'
       has_gtk: "yes"
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1'
+      slow_system: 'yes'
 
 "linux-x64 jsexec-smoketest":
   tags: [Linux]
