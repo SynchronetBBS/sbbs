@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
 
+#include "console.h"
 #include "defines.h"
 #include "parsing.h"
 #include "readcfg.h"
@@ -402,6 +403,7 @@ static void EditOption(int16_t WhichOption)
 	/* save screen */
 	SCREENSTATE screen_state;
 	screen_state = save_screen();
+	char szString[PATH_SIZE];
 
 	textattr(15);
 	switch (WhichOption) {
@@ -437,11 +439,19 @@ static void EditOption(int16_t WhichOption)
 			break;
 		case 8 :    /* Inbound Dir */
 			gotoxy(40, 10);
-			DosGetStr(Config.szInboundDirs[0], 39, false);
+			strlcpy(szString, Config.szInboundDirs[0], sizeof(szString));
+			DosGetStr(szString, 39, false);
+			free(Config.szInboundDirs[0]);
+			Config.szInboundDirs[0] = strdup(szString);
+			CheckMem(Config.szInboundDirs[0]);
 			break;
 		case 9 :    /* Alt. Inbound Dir */
 			gotoxy(40, 11);
-			DosGetStr(Config.szInboundDirs[1], 39, false);
+			strlcpy(szString, Config.szInboundDirs[1], sizeof(szString));
+			DosGetStr(szString, 39, false);
+			free(Config.szInboundDirs[1]);
+			Config.szInboundDirs[1] = strdup(szString);
+			CheckMem(Config.szInboundDirs[1]);
 			break;
 		case 10 :    /* Mailer type */
 			switch (Config.MailerType) {
