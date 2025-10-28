@@ -367,6 +367,7 @@ function BinkITCfg(fname)
 	var sects;
 
 	this.node = {};
+	this.semfile = {};
 	if (!f.open('r')) {
 		log(LOG_ERROR, "Unable to open '"+f.name+"'");
 	}
@@ -396,6 +397,12 @@ function BinkITCfg(fname)
 			this.node[sec].outbox = f.iniGetValue(section, 'outbox');
 			this.node[sec].tls = f.iniGetValue(section, 'BinkpTLS', false);
 		}, this);
+		sects = f.iniGetSections('semfile:');
+		sects.forEach(function(wildcard) {
+			var wc = wildcard.substr(8);
+			this.semfile[wc] = f.iniGetValue(wildcard, 'SemFile', '');
+		}, this);
+
 		f.close();
 	}
 }
