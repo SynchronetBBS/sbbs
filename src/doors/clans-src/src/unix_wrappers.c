@@ -89,15 +89,36 @@ findnext(struct ffblk *fblk)
 FILE *
 _fsopen(char *pathname, char *mode, int flags)
 {
-	struct flock f = {
-		.l_type = flags & SH_DENYWR ? F_RDLCK : F_WRLCK,
-		.l_whence = SEEK_SET
-	};
 	FILE *thefile;
+	bool isRead = strchr(mode, 'r');
+	bool isWrite = strchr(mode, 'w');
+	if (!isRead)
+		isRead = strchr(mode, '+');
+	if (!isWrite)
+		isWrite = strchr(mode, '+');
+	if (!isWrite)
+		isWrite = strchr(mode, 'a');
 
 	thefile = fopen(pathname, mode);
 	if (thefile != NULL) {
+		// Fix up share type...
+		if (flags & SH_DENYWR) {
+			if (!isRead) {
+				flags &= ~SH_DENYWR;
+				flags |= SH_DENYRW;
+			}
+		}
+		if (flags & SH_DENYRW) {
+			if (!isWrite) {
+				flags &= ~SH_DENYRW;
+				flags |= SH_DENYWR;
+			}
+		}
 		if (flags & (SH_DENYRW | SH_DENYWR)) {
+			struct flock f = {
+				.l_type = flags & SH_DENYWR ? F_RDLCK : F_WRLCK,
+				.l_whence = SEEK_SET
+			};
 			if (fcntl(fileno(thefile), F_SETLKW, &f) == -1) {
 				fclose(thefile);
 				return NULL;
