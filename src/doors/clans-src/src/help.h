@@ -5,7 +5,7 @@ void MainHelp(void);
  *
  */
 
-void Help(char *Topic, char *File);
+void Help(const char *Topic, char *File);
 /*
  * Given the Topic and File, the help is shown.
  */

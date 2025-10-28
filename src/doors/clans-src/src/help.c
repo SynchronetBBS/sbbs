@@ -42,7 +42,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // ------------------------------------------------------------------------- //
 
 
-void Help(char *Topic, char *File)
+void Help(const char *Topic, char *File)
 /*
  * Given the Topic and File, the help is shown.
  */
@@ -165,7 +165,8 @@ void GeneralHelp(char *pszFileName)
  * and read them.
  */
 {
-	char *Topics[50], Line[256];
+	const char *Topics[50];
+	char Line[256];
 	int16_t NumTopics, cTemp, WhichTopic, iTemp;
 	int32_t MaxBytes;
 	struct FileHeader HelpFile;
@@ -240,7 +241,7 @@ void GeneralHelp(char *pszFileName)
 	/* free memory */
 	for (cTemp = 0; cTemp < NumTopics; cTemp++) {
 		if (Topics[cTemp])
-			free(Topics[cTemp]);
+			free((void*)Topics[cTemp]);
 	}
 }
 

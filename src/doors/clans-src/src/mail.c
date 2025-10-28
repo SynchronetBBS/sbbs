@@ -78,7 +78,7 @@ static void SendMsj(struct Message *Message, int16_t WhichVillage);
 
 // ------------------------------------------------------------------------- //
 
-static void GetUserNames(char *apszUserNames[50], int16_t WhichVillage, int16_t *NumUsers,
+static void GetUserNames(const char *apszUserNames[50], int16_t WhichVillage, int16_t *NumUsers,
 				  int16_t ClanIDs[50][2])
 {
 	FILE *fpUList;
@@ -1663,8 +1663,9 @@ void GlobalMsgPost(void)
 	//  public (everyone sees)
 	//  private (direct)
 
-	char *apszVillageNames[MAX_IBBSNODES], *apszUserNames[50],
-	*pszChoices[2] = { "1. Public", "2. Private" };
+	const char *apszVillageNames[MAX_IBBSNODES],
+	    *pszChoices[2] = { "1. Public", "2. Private" };
+	const char *apszUserNames[50];
 	int16_t iTemp, NumVillages, WhichVillage, NumClans;
 	int16_t ClanIDs[50][2], WhichClan, ClanID[2], PostType;
 	unsigned char VillageIndex[MAX_IBBSNODES];
@@ -1685,7 +1686,7 @@ void GlobalMsgPost(void)
 			continue;
 
 		if (IBBS.Data.Nodes[iTemp].Active) {
-			apszVillageNames[NumVillages] = IBBS.Data.Nodes[iTemp].Info.pszVillageName;
+			apszVillageNames[NumVillages] = VillageName(iTemp + 1);
 			VillageIndex[NumVillages] = iTemp+1;
 			NumVillages++;
 		}
@@ -1741,7 +1742,7 @@ void GlobalMsgPost(void)
 			rputs(ST_ABORTED);
 			for (iTemp = 0; iTemp < 50; iTemp++) {
 				if (apszUserNames[iTemp])
-					free(apszUserNames[iTemp]);
+					free((void*)apszUserNames[iTemp]);
 			}
 			return;
 		}
@@ -1751,7 +1752,7 @@ void GlobalMsgPost(void)
 
 		for (iTemp = 0; iTemp < 50; iTemp++) {
 			if (apszUserNames[iTemp])
-				free(apszUserNames[iTemp]);
+				free((void*)apszUserNames[iTemp]);
 		}
 
 		MyWriteMessage2(ClanID, false, false, -1, "", true, WhichVillage);

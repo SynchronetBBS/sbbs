@@ -468,7 +468,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 
 // ------------------------------------------------------------------------- //
 
-static void JumpToEvent(char *szLabel, struct FileHeader *FileHeader)
+static void JumpToEvent(const char *szLabel, struct FileHeader *FileHeader)
 {
 	struct EventHeader EventHeader;
 	uint8_t hBuf[BUF_SIZE_EventHeader];
@@ -543,7 +543,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 	char szNPCFileName[25], *apszLabels[MAX_OPTIONS];
 	char szText[255];
 	char CommandType, OldCommType = 0, DataLength, cInput, *pcCurrentPos;
-	char *pszOptionNames[MAX_OPTIONS];
+	const char *pszOptionNames[MAX_OPTIONS];
 	char szKeys[MAX_OPTIONS+1];      // extra space for '\0'
 	char Buffer[256];               // not same as ecomp.c's buffer
 	bool Done;
@@ -829,7 +829,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 
 				for (iTemp = 0; iTemp < MAX_OPTIONS; iTemp++) {
 					if (pszOptionNames[iTemp]) {
-						free(pszOptionNames[iTemp]);
+						free((void*)pszOptionNames[iTemp]);
 						pszOptionNames[iTemp] = NULL;
 					}
 					szKeys[iTemp] = 0;
@@ -1085,7 +1085,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 
 				for (iTemp = 0; iTemp < MAX_OPTIONS; iTemp++) {
 					if (pszOptionNames[iTemp]) {
-						free(pszOptionNames[iTemp]);
+						free((void*)pszOptionNames[iTemp]);
 						pszOptionNames[iTemp] = NULL;
 					}
 
@@ -1112,7 +1112,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 
 				pszOptionNames[0] = malloc(DataLength);
 				CheckMem(pszOptionNames[0]);
-				fread(pszOptionNames[0], DataLength, 1, FileHeader.fp);
+				fread((char*)pszOptionNames[0], DataLength, 1, FileHeader.fp);
 
 				for (CurOption = 1; CurOption < MAX_OPTIONS;) {
 					OldOffset = ftell(FileHeader.fp);
@@ -1153,7 +1153,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 
 						pszOptionNames[CurOption] = malloc(DataLength);
 						CheckMem(pszOptionNames[CurOption]);
-						fread(pszOptionNames[CurOption], DataLength, 1, FileHeader.fp);
+						fread((char*)pszOptionNames[CurOption], DataLength, 1, FileHeader.fp);
 
 					}
 
@@ -1197,7 +1197,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 	/* free labels */
 	for (iTemp = 0; iTemp < MAX_OPTIONS; iTemp++) {
 		if (pszOptionNames[iTemp]) {
-			free(pszOptionNames[iTemp]);
+			free((void*)pszOptionNames[iTemp]);
 			pszOptionNames[iTemp] = NULL;
 		}
 

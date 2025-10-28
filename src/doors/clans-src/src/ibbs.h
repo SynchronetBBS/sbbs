@@ -60,5 +60,7 @@ void IBBS_PacketIn(void);
 void IBBS_LeagueNewUser(struct UserInfo *User);
 
 void KillAlliances(void);
+const char *VillageName(int16_t BBSID);
+const char *BBSName(int16_t BBSID);
 
 #endif

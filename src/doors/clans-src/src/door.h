@@ -31,7 +31,7 @@ void Door_SetColorScheme(char *ColorScheme);
  * This function will set the color scheme.
  */
 
-void rputs(char *string);
+void rputs(const char *string);
 /*
  * Outputs the pipe or ` encoded string.
  */

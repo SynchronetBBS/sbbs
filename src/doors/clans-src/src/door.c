@@ -344,14 +344,14 @@ void door_pause(void)
 
 // ------------------------------------------------------------------------- //
 
-void rputs(char *string)
+void rputs(const char *string)
 /*
  * Outputs the pipe or ` encoded string.
  */
 {
 	int16_t i;
 	char number[3]; // two digit number!
-	char *pCurChar,*pStrChar;
+	const char *pCurChar,*pStrChar;
 	int16_t attr;  // color
 	static int16_t o_fg = 7, o_bg = 0;
 	static int16_t old_fg = 7, old_bg = 0;

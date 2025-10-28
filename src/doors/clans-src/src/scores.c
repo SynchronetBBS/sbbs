@@ -685,6 +685,9 @@ void LeagueScores(void)
 	for (iTemp = 0; iTemp < UsersFound; iTemp++) {
 		if (ScoreList[iTemp] == NULL)
 			break;
+		// Skip clans from inactive or removed systems.
+		if (!IBBS.Data.Nodes[ ScoreList[iTemp]->ClanID[0]-1 ].Active)
+			continue;
 
 		RemovePipes(ScoreList[iTemp]->Symbol, szString);
 		Padding = 20 - strlen(szString);
@@ -697,7 +700,7 @@ void LeagueScores(void)
 				szPadding,
 				ScoreList[iTemp]->Symbol,
 				ScoreList[iTemp]->Points,
-				IBBS.Data.Nodes[ ScoreList[iTemp]->ClanID[0]-1 ].Info.pszVillageName);
+				VillageName(ScoreList[iTemp]->ClanID[0]));
 		rputs(szString);
 	}
 

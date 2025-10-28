@@ -27,7 +27,7 @@ void LoadStrings(int16_t StartIndex, int16_t NumStrings, char *szStrings[]);
  *
  */
 
-void CheckMem(void *Test);
+void CheckMem(const void *Test);
 /*
  * Gives system error if the pointer is NULL.
  */

@@ -206,8 +206,8 @@ void NPC_ChatNPC(char *szIndex)
 	struct NPCInfo *NPCInfo;
 	int16_t iTemp, NumTopicsKnown, WhichTopic, QuoteIndex[MAX_TOPICS],
 	CurFile, CurNPC, UserInput;
-	char szString[256], *pszTopics[MAX_TOPICS],
-	szPrompt[128];
+	char szString[256], szPrompt[128];
+	const char *pszTopics[MAX_TOPICS];
 	struct clan *EnemyClan;
 	struct FileHeader FileHeader;
 	struct NPCNdx NPCNdx;

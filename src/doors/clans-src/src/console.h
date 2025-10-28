@@ -5,7 +5,7 @@
 
 bool Door_Initialized(void);
 void rputs(const char *str);
-void CheckMem(void *Test);
+void CheckMem(const void *Test);
 void System_Error(char *szErrorMsg);
 
 #endif

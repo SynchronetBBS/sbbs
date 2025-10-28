@@ -42,7 +42,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // ------------------------------------------------------------------------- //
 
-static int16_t Similar(char *string, char *word)
+static int16_t Similar(const char *string, const char *word)
 /*
  * Returns true if the first N chars of string match the first N chars of
  * word.  N being the strlen of word.
@@ -66,7 +66,7 @@ static int16_t Similar(char *string, char *word)
 }
 
 
-static int16_t InsideStr(char *SubString, char *FullString, int16_t AtStart)
+static int16_t InsideStr(const char *SubString, const char *FullString, int16_t AtStart)
 /*
  * Returns true if SubString appears within FullString.
  *
@@ -98,7 +98,7 @@ static int16_t InsideStr(char *SubString, char *FullString, int16_t AtStart)
 }
 
 
-static void ListChoices(char **apszChoices, int16_t NumChoices, int16_t DisplayType)
+static void ListChoices(const char **apszChoices, int16_t NumChoices, int16_t DisplayType)
 /*
  * This lists the choices used by GetStringChoice.
  *
@@ -143,7 +143,7 @@ static void ListChoices(char **apszChoices, int16_t NumChoices, int16_t DisplayT
 }
 
 
-void GetStringChoice(char **apszChoices, int16_t NumChoices, char *szPrompt,
+void GetStringChoice(const char **apszChoices, int16_t NumChoices, char *szPrompt,
 					 int16_t *UserChoice, bool ShowChoicesInitially, int16_t DisplayType, bool AllowBlank)
 /*
  * This will choose a string from a listing and return which was chosen in
