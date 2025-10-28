@@ -112,11 +112,7 @@ void System_Error(char *szErrorMsg)
  *          be FOOLPROOF.
  */
 {
-#ifdef __unix__
-	printf("System Error: %s\n",szErrorMsg);
-	delay(1000);
-	System_Close();
-#elif defined(_WIN32)
+#if defined(_WIN32)
 	char buffer[1000];
 	_snprintf(buffer, 1000, "System Error: %s\n", szErrorMsg);
 	MessageBox(NULL, buffer, TEXT("System Error"), MB_OK |
