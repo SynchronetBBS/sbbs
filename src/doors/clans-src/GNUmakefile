@@ -49,6 +49,7 @@ native-devkit:
 
 .PHONY: installer
 installer: binaries data native-devkit
+	rm -rf $(SRC)stage
 	mkdir -p $(SRC)stage/gum
 	cd $(SRC)stage/gum && $(MAKE) SRC=$(SRC) -f $(SRC)/GNUmakefile game
 	cd $(SRC)stage/gum && ls -p1 | grep -v /$ > ../files.lst
@@ -63,6 +64,7 @@ installer: binaries data native-devkit
 
 .PHONY: devkit-installer
 devkit-installer: devkit-binaries native-devkit
+	rm -rf $(SRC)stagedk
 	mkdir -p $(SRC)stagedk/gum
 	cd $(SRC)stagedk/gum && $(MAKE) SRC=$(SRC) -f $(SRC)/GNUmakefile devkit
 	cd $(SRC)stagedk/gum && ls -p1 | grep -v /$ > ../files.lst
