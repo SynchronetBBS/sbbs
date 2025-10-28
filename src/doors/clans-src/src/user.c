@@ -615,7 +615,7 @@ static void ChooseDefaultAction(struct pc *PC)
  * This allows the user to choose a default action for the PC specified.
  */
 {
-	char *pszOptions[MAX_SPELLS + 1];       // add 1 for "Attack" command
+	const char *pszOptions[MAX_SPELLS + 1];       // add 1 for "Attack" command
 	int16_t iTemp, NumOptions, WhichOption;
 
 	if (!PClan->DefActionHelp) {
@@ -1395,7 +1395,7 @@ void ShowVillageStats(void)
 
 	od_clr_scr();
 	if (Game.Data.InterBBS)
-		snprintf(szString, sizeof(szString), ST_VSTATHEADER, IBBS.Data.Nodes[IBBS.Data.BBSID-1].Info.pszVillageName);
+		snprintf(szString, sizeof(szString), ST_VSTATHEADER, VillageName(IBBS.Data.BBSID));
 	else
 		snprintf(szString, sizeof(szString), ST_VSTATHEADER, Village.Data.szName);
 	rputs(szString);
@@ -2315,7 +2315,7 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 			   int16_t WhichAlliance, bool InAllianceOnly)
 {
 	FILE *fpPlayerFile;
-	char *apszClanNames[50];
+	const char *apszClanNames[50];
 	int16_t CurClan, ClanIDs[50][2], WhichClan, NumClans, iTemp;
 	bool AllianceFound;
 	struct clan TmpClan = {0};
@@ -2423,7 +2423,7 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 	for (CurClan = 0; CurClan < 50; CurClan++) {
 		// free up clan names
 		if (apszClanNames[CurClan])
-			free(apszClanNames[CurClan]);
+			free((void*)apszClanNames[CurClan]);
 	}
 
 	return FoundClan;

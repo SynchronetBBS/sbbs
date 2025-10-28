@@ -30,7 +30,7 @@ int32_t GetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum);
  *
  */
 
-void GetStringChoice(char **apszChoices, int16_t NumChoices, char *szPrompt,
+void GetStringChoice(const char **apszChoices, int16_t NumChoices, char *szPrompt,
 					 int16_t *UserChoice, bool ShowChoicesInitially, int16_t DisplayType, bool AllowBlank);
 /*
  * This will choose a string from a listing and return which was chosen in

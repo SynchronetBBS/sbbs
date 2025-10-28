@@ -16,7 +16,7 @@ void rputs(const char *str)
 	zputs(str);
 }
 
-void CheckMem(void *Test)
+void CheckMem(const void *Test)
 /*
  * Gives system error if the pointer is NULL.
  */

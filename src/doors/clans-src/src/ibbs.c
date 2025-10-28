@@ -671,6 +671,25 @@ void IBBS_SendComeBack(int16_t BBSIdTo, struct clan *Clan)
 	unlink("tmp.$$$");
 }
 
+const char *VillageName(int16_t BBSID)
+{
+	if (BBSID < 1 || BBSID > MAX_IBBSNODES)
+		return "<invalid>";
+	const char *ret = IBBS.Data.Nodes[BBSID - 1].Info.pszVillageName;
+	if (ret == NULL)
+		return "<defunct>";
+	return ret;
+}
+
+const char *BBSName(int16_t BBSID)
+{
+	if (BBSID < 1 || BBSID > MAX_IBBSNODES)
+		return "<invalid>";
+	const char *ret = IBBS.Data.Nodes[BBSID - 1].Info.pszBBSName;
+	if (ret == NULL)
+		return "<defunct>";
+	return ret;
+}
 
 // ------------------------------------------------------------------------- //
 /* Function Procedure:
@@ -689,7 +708,7 @@ static void ReturnLostAttack(struct AttackPacket *AttackPacket)
 {
 	struct clan TmpClan;
 	char szMessage[300], szAttackerName[20];
-	int16_t WhichBBS, Junk[2];
+	int16_t Junk[2];
 
 	switch (AttackPacket->AttackingEmpire.OwnerType) {
 		case EO_VILLAGE :
@@ -711,11 +730,8 @@ static void ReturnLostAttack(struct AttackPacket *AttackPacket)
 	}
 
 	// write message to AttackOriginator telling him the attack was lost
-	// figure out which village it was
-	WhichBBS = AttackPacket->BBSToID-1;
-
 	snprintf(szMessage, sizeof(szMessage), "%s's attack on the village of %s was lost but returned.\nYou had sent the following: %" PRId32 " footmen, %" PRId32 " axemen, %" PRId32 " knights.",
-			szAttackerName, IBBS.Data.Nodes[WhichBBS].Info.pszVillageName,
+			szAttackerName, VillageName(AttackPacket->BBSToID),
 			AttackPacket->AttackingArmy.Footmen, AttackPacket->AttackingArmy.Axemen,
 			AttackPacket->AttackingArmy.Knights);
 	Junk[0] = Junk[1] = -1;
@@ -896,7 +912,7 @@ void IBBS_CurrentTravelInfo(void)
 	/* see if travelling already */
 	if (PClan->WorldStatus == WS_LEAVING) {
 		snprintf(szString, sizeof(szString), "|0SYou are set to leave for %s.\n",
-				IBBS.Data.Nodes[ PClan->DestinationBBS-1 ].Info.pszVillageName);
+				VillageName(PClan->DestinationBBS));
 		rputs(szString);
 
 		if (YesNo("|0SDo you wish to abort the trip?") == YES) {
@@ -1158,7 +1174,7 @@ static bool IBBS_TravelToBBS(int16_t DestID)
 	/* see if travelling already */
 	if (PClan->WorldStatus == WS_LEAVING) {
 		snprintf(szString, sizeof(szString), "|0SYou are already set to leave for %s!\n",
-				IBBS.Data.Nodes[ PClan->DestinationBBS-1 ].Info.pszVillageName);
+				VillageName(PClan->DestinationBBS));
 		rputs(szString);
 
 		if (YesNo("|0SDo you wish to abort the trip?") == YES) {
@@ -1171,7 +1187,7 @@ static bool IBBS_TravelToBBS(int16_t DestID)
 	Help("Traveling", ST_VILLHLP);
 
 	snprintf(szString, sizeof(szString), "|0SAre you sure you wish to travel to %s?",
-			IBBS.Data.Nodes[ DestID-1 ].Info.pszVillageName);
+			VillageName(DestID));
 
 	if (YesNo(szString) == YES) {
 		/* append LEAVING.DAT file */
@@ -1221,7 +1237,8 @@ void IBBS_SeeVillages(bool Travel)
 	/* if user enters blank line, quit */
 
 	int16_t iTemp, NumBBSes, WhichBBS;
-	char *pszBBSNames[MAX_IBBSNODES], szString[128], BBSIndex[MAX_IBBSNODES];
+	char szString[128], BBSIndex[MAX_IBBSNODES];
+	const char *pszBBSNames[MAX_IBBSNODES];
 	bool ShowInitially;
 
 	NumBBSes = 0;
@@ -1231,7 +1248,7 @@ void IBBS_SeeVillages(bool Travel)
 		if (IBBS.Data.Nodes[iTemp].Active == false)
 			continue;
 
-		pszBBSNames [ NumBBSes ] = IBBS.Data.Nodes[iTemp].Info.pszVillageName;
+		pszBBSNames [ NumBBSes ] = VillageName(iTemp + 1);
 		BBSIndex[NumBBSes] = iTemp;
 		NumBBSes++;
 	}
@@ -1249,7 +1266,7 @@ void IBBS_SeeVillages(bool Travel)
 			return;
 
 		rputs("\n");
-		Help(IBBS.Data.Nodes[0+(BBSIndex[WhichBBS])].Info.pszVillageName, "world.ndx");
+		Help(VillageName(BBSIndex[WhichBBS] + 1), "world.ndx");
 		rputs("\n");
 
 		if (Travel) {
@@ -1293,12 +1310,18 @@ static void IBBS_Destroy(void)
 
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
 		if (IBBS.Data.Nodes[CurBBS].Active) {
-			if (IBBS.Data.Nodes[CurBBS].Info.pszBBSName)
+			if (IBBS.Data.Nodes[CurBBS].Info.pszBBSName) {
 				free(IBBS.Data.Nodes[CurBBS].Info.pszBBSName);
-			if (IBBS.Data.Nodes[CurBBS].Info.pszVillageName)
+				IBBS.Data.Nodes[CurBBS].Info.pszBBSName = NULL;
+			}
+			if (IBBS.Data.Nodes[CurBBS].Info.pszVillageName) {
 				free(IBBS.Data.Nodes[CurBBS].Info.pszVillageName);
-			if (IBBS.Data.Nodes[CurBBS].Info.pszAddress)
+				IBBS.Data.Nodes[CurBBS].Info.pszVillageName = NULL;
+			}
+			if (IBBS.Data.Nodes[CurBBS].Info.pszAddress) {
 				free(IBBS.Data.Nodes[CurBBS].Info.pszAddress);
+				IBBS.Data.Nodes[CurBBS].Info.pszAddress = NULL;
+			}
 		}
 	}
 
@@ -2057,7 +2080,7 @@ void IBBS_ShowLeagueAscii(void)
 
 	// snprintf(szString, sizeof(szString), "|02You are entering the village of |10%s |02in the world of |14%s|02.\n",
 	snprintf(szString, sizeof(szString), ST_MAIN2,
-			IBBS.Data.Nodes[IBBS.Data.BBSID-1].Info.pszVillageName, Game.Data.szWorldName);
+			VillageName(IBBS.Data.BBSID), Game.Data.szWorldName);
 	rputs(szString);
 }
 
@@ -2236,15 +2259,15 @@ void IBBS_LeagueInfo(void)
 		if (IBBS.Data.Nodes[CurBBS].Active) {
 			if (CurBBS+1 != IBBS.Data.BBSID) {
 				snprintf(szString, sizeof(szString), "|06%-2d |14%-20s |06%-20s |07%-10s (%2" PRId32 "/%2" PRId32 ")\n",
-						CurBBS+1, IBBS.Data.Nodes[CurBBS].Info.pszBBSName,
-						IBBS.Data.Nodes[CurBBS].Info.pszVillageName, IBBS.Data.Nodes[CurBBS].Info.pszAddress,
+						CurBBS+1, BBSName(CurBBS + 1),
+						VillageName(CurBBS + 1), IBBS.Data.Nodes[CurBBS].Info.pszAddress,
 						DaysSince1970(System.szTodaysDate) - IBBS.Data.Nodes[CurBBS].Recon.LastReceived,
 						DaysSince1970(System.szTodaysDate) - IBBS.Data.Nodes[CurBBS].Recon.LastSent);
 			}
 			else {
 				snprintf(szString, sizeof(szString), "|06%-2d |14%-20s |06%-20s |07%-10s ( N/A )\n",
-						CurBBS+1, IBBS.Data.Nodes[CurBBS].Info.pszBBSName,
-						IBBS.Data.Nodes[CurBBS].Info.pszVillageName, IBBS.Data.Nodes[CurBBS].Info.pszAddress);
+						CurBBS+1, BBSName(CurBBS + 1),
+						VillageName(CurBBS + 1), IBBS.Data.Nodes[CurBBS].Info.pszAddress);
 			}
 
 			rputs(szString);
@@ -2699,7 +2722,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 		}
 		else if (Packet.PacketType == PT_GOTRESET) {
 			snprintf(szString, sizeof(szString), "%s - Received GotReset from %s\n\n",
-					System.szTodaysDate, IBBS.Data.Nodes[ Packet.BBSIDFrom - 1 ].Info.pszBBSName);
+					System.szTodaysDate, BBSName(Packet.BBSIDFrom));
 			IBBS_AddLCLog(szString);
 
 			DisplayStr(szString);

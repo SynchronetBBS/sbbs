@@ -132,7 +132,6 @@ static void AddGUM(FILE *fpGUM, char *pszFileName)
 	long lFileSize, Offset1, Offset2;
 	int32_t lCompressSize;
 	int32_t tmp32;
-	int /*BytesRead,*/ iTemp;
 	uint16_t date, time;
 	uint16_t tmp16;
 

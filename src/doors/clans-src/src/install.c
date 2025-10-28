@@ -776,7 +776,6 @@ static void DisplayLFNs(int row, int column, uint32_t TotalBytes)
 {
 	bool Done = false;
 	char szString[PATH_SIZE + 32];
-	struct lfn *next = NULL;
 	if (column)
 		zputs("\n");
 	for (struct lfn *fn = LFNHead; fn && !Done; fn = fn->next) {

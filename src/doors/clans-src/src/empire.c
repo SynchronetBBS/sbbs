@@ -227,7 +227,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 	long AfterOffset, BeforeOffset;
 	FILE *fpBackup;
 
-	WhichBBS = Result->BBSIDTo-1;
+	WhichBBS = Result->BBSIDTo;
 
 	switch (Result->AttackerType) {
 		case EO_VILLAGE :
@@ -274,7 +274,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 	if (Result->NoTarget && Result->Goal == G_OUSTRULER) {
 		// snprintf(szNews, sizeof(szNews), ">> %s's army returns after finding no ruler to oust in %s\n",
 		snprintf(szNews, sizeof(szNews), ST_WNEWS5,
-				szAttackerName, IBBS.Data.Nodes[WhichBBS].Info.pszVillageName);
+				szAttackerName, VillageName(WhichBBS));
 		News_AddNews(szNews);
 
 		// strlcpy(szOutcome, "but found no ruler to oust!\n", sizeof(szOutcome));
@@ -296,14 +296,14 @@ void ProcessResultPacket(struct AttackResult *Result)
 			case G_OUSTRULER :
 				// snprintf(szNews, sizeof(szNews), ">> %s's army returns after successfully ousting the ruler of %s\n\n",
 				snprintf(szNews, sizeof(szNews), ST_WNEWS10,
-						szAttackerName, IBBS.Data.Nodes[WhichBBS].Info.pszVillageName);
+						szAttackerName, VillageName(WhichBBS));
 				News_AddNews(szNews);
 				break;
 			case G_STEALLAND :
 				// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s looting %d land from %s.\n\n",
 				snprintf(szNews, sizeof(szNews), ST_WNEWS11,
 						szAttackerName,
-						IBBS.Data.Nodes[WhichBBS].Info.pszVillageName,
+						VillageName(WhichBBS),
 						Result->LandStolen, szDefenderName);
 				News_AddNews(szNews);
 				break;
@@ -311,7 +311,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 				// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s looting %d gold from %s.\n\n",
 				snprintf(szNews, sizeof(szNews), ST_WNEWS12,
 						szAttackerName,
-						IBBS.Data.Nodes[WhichBBS].Info.pszVillageName,
+						VillageName(WhichBBS),
 						Result->GoldStolen, szDefenderName);
 				News_AddNews(szNews);
 				break;
@@ -319,7 +319,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 				// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s destroying %s's buildings.\n\n",
 				snprintf(szNews, sizeof(szNews), ST_WNEWS13,
 						szAttackerName,
-						IBBS.Data.Nodes[WhichBBS].Info.pszVillageName, szDefenderName);
+						VillageName(WhichBBS), szDefenderName);
 				News_AddNews(szNews);
 				break;
 		}
@@ -330,7 +330,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 		// snprintf(szNews, sizeof(szNews), ">> %s's army returns unsuccessfully from %s after attacking %s.\n\n",
 		snprintf(szNews, sizeof(szNews), ST_WNEWS15,
 				szAttackerName,
-				IBBS.Data.Nodes[WhichBBS].Info.pszVillageName, szDefenderName);
+				VillageName(WhichBBS), szDefenderName);
 		News_AddNews(szNews);
 	}
 
@@ -1710,7 +1710,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 			snprintf(szAttacker, sizeof(szAttacker), "The village of %s", AttackResult->szAttackerName);
 		else if (AttackResult->AttackerType == EO_CLAN)
 			snprintf(szAttacker, sizeof(szAttacker), "The clan of %s from %s", AttackResult->szAttackerName,
-					IBBS.Data.Nodes[WhichBBS-1].Info.pszVillageName);
+					VillageName(WhichBBS));
 	}
 	else {
 		if (AttackResult->AttackerType == EO_VILLAGE)
@@ -2270,15 +2270,17 @@ static void StartEmpireWar(struct empire *Empire)
 	struct Alliance *Alliances[MAX_ALLIANCES];
 	struct AttackResult Result;
 	struct clan TmpClan = {0};
-	char *pszVillage = "1 A Village",
-					   *pszAlliance = "2 An Alliance",
-									  *pszClan = "3 A Clan",
-												 *pszOustRuler = "0 Oust the Ruler of the Village",
-																 *pszStealLand = "1 Capture Land",
-																				 *pszStealGold = "2 Capture Gold",
-																								 *pszDestroy =   "3 Destroy Buildings";
-	char *pszWhoToAttack[3], *aszVillageNames[MAX_IBBSNODES],
-	*aszAllianceNames[MAX_ALLIANCES], *apszGoals[4];
+	const char *pszVillage = "1 A Village",
+	    *pszAlliance = "2 An Alliance",
+	    *pszClan = "3 A Clan",
+	    *pszOustRuler = "0 Oust the Ruler of the Village",
+	    *pszStealLand = "1 Capture Land",
+	    *pszStealGold = "2 Capture Gold",
+	    *pszDestroy =   "3 Destroy Buildings";
+	const char *pszWhoToAttack[3];
+	const char *aszVillageNames[MAX_IBBSNODES];
+	const char *aszAllianceNames[MAX_ALLIANCES];
+	const char *apszGoals[4];
 	int16_t TypeOfDefender, NumOfTypes, iTemp, NumBBSes, BBSIndex[MAX_IBBSNODES];
 	int16_t WhichVillage, NumAlliances, WhichAlliance, NumGoals, Goal, ExtentOfAttack = 0;
 	int16_t ClanID[2], LandGained, Decrease;
@@ -2348,7 +2350,7 @@ static void StartEmpireWar(struct empire *Empire)
 				if (iTemp+1 == IBBS.Data.BBSID)
 					continue;
 
-				aszVillageNames[NumBBSes] = IBBS.Data.Nodes[iTemp].Info.pszVillageName;
+				aszVillageNames[NumBBSes] = VillageName(iTemp + 1);
 				BBSIndex[NumBBSes] = iTemp+1;
 				NumBBSes++;
 			}
@@ -2857,12 +2859,13 @@ static void SpyMenu(struct empire *Empire)
 {
 	struct Alliance *Alliances[MAX_ALLIANCES];
 	struct clan TmpClan = {0};
-	char *pszVillage = "1 A Village",
-	     *pszAlliance = "2 An Alliance",
-	     *pszClan = "3 A Clan",
-	     *aszVillageNames[MAX_IBBSNODES],
-	     *pszWhoToSpy[3],
-	     *aszAllianceNames[MAX_ALLIANCES], szSpierName[41], szMessage[128];
+	const char *pszVillage = "1 A Village",
+	    *pszAlliance = "2 An Alliance",
+	    *pszClan = "3 A Clan",
+	    *pszWhoToSpy[3];
+	const char *aszVillageNames[MAX_IBBSNODES];
+	const char *aszAllianceNames[MAX_ALLIANCES];
+	char szSpierName[41], szMessage[128];
 	int16_t NumOfTypes, iTemp, NumBBSes, BBSIndex[MAX_IBBSNODES];
 	int16_t WhichVillage, NumAlliances, WhichAlliance, TypeToSpyOn;
 	char szString[255];
@@ -2945,7 +2948,7 @@ static void SpyMenu(struct empire *Empire)
 				if (iTemp+1 == IBBS.Data.BBSID)
 					continue;
 
-				aszVillageNames[NumBBSes] = IBBS.Data.Nodes[iTemp].Info.pszVillageName;
+				aszVillageNames[NumBBSes] = VillageName(iTemp + 1);
 				BBSIndex[NumBBSes] = iTemp+1;
 				NumBBSes++;
 			}

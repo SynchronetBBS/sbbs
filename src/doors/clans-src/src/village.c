@@ -83,7 +83,7 @@ int16_t OutsiderTownHallMenu(void)
 
 		/* show 'menu' */
 		if (Game.Data.InterBBS)
-			snprintf(szString, sizeof(szString), ST_VSTATHEADER, IBBS.Data.Nodes[IBBS.Data.BBSID-1].Info.pszVillageName);
+			snprintf(szString, sizeof(szString), ST_VSTATHEADER, VillageName(IBBS.Data.BBSID));
 		else
 			snprintf(szString, sizeof(szString), ST_VSTATHEADER, Village.Data.szName);
 		rputs(szString);
@@ -505,7 +505,7 @@ static void BuildMenu(void)
 
 		/* show 'menu' */
 		if (Game.Data.InterBBS)
-			snprintf(szString, sizeof(szString), ST_VSTATHEADER, IBBS.Data.Nodes[IBBS.Data.BBSID-1].Info.pszVillageName);
+			snprintf(szString, sizeof(szString), ST_VSTATHEADER, VillageName(IBBS.Data.BBSID));
 		else
 			snprintf(szString, sizeof(szString), ST_VSTATHEADER, Village.Data.szName);
 		rputs(szString);
@@ -878,7 +878,7 @@ static void EconomicsMenu(void)
 
 		/* show 'menu' */
 		if (Game.Data.InterBBS)
-			snprintf(szString, sizeof(szString), ST_VSTATHEADER, IBBS.Data.Nodes[IBBS.Data.BBSID-1].Info.pszVillageName);
+			snprintf(szString, sizeof(szString), ST_VSTATHEADER, VillageName(IBBS.Data.BBSID));
 		else
 			snprintf(szString, sizeof(szString), ST_VSTATHEADER, Village.Data.szName);
 		rputs(szString);
@@ -1031,7 +1031,7 @@ int16_t TownHallMenu(void)
 
 		/* show 'menu' */
 		if (Game.Data.InterBBS)
-			snprintf(szString, sizeof(szString), ST_VSTATHEADER, IBBS.Data.Nodes[IBBS.Data.BBSID-1].Info.pszVillageName);
+			snprintf(szString, sizeof(szString), ST_VSTATHEADER, VillageName(IBBS.Data.BBSID));
 		else
 			snprintf(szString, sizeof(szString), ST_VSTATHEADER, Village.Data.szName);
 		rputs(szString);
