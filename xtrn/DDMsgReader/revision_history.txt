@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.97f    2025-10-28   When reading a message, the sub-board information can now
+                      be displayed by pressing S.
 1.97e    2025-09-07   Fix: When listing messages in lightbar mode in reverse
                       order, deleting (with DEL) and toggling messages (with
                       the spacebar) now work on the correct message.
