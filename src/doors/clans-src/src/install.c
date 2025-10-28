@@ -309,17 +309,22 @@ static int GetGUM(FILE *fpGUM)
 		cInput = get_answer("YNAR");
 
 		if (cInput == 'A') {
+			zputs("Always\n");
 			Overwrite = ALWAYS;
 		}
 		else if (cInput == 'R') {
-			zputs("\n|03enter new file name: ");
+			zputs("Rename\n|03enter new file name: ");
 			DosGetStr(szFileName, MAX_FILENAME_LEN, false);
+			zputs("\n");
 		}
 		else if (cInput == 'N') {
+			zputs("No\n");
 			// skip file
 			fseek(fpGUM, lCompressSize, SEEK_CUR);
 			return 1;
 		}
+		else
+			zputs("Yes\n");
 	}
 
 	/* open file to write to */
@@ -680,15 +685,18 @@ static void Extract(char *szExtractFile, char *szNewName)
 		cInput = get_answer("YNR");
 
 		if (cInput == 'R') {
-			zputs("\n|03enter new file name: ");
+			zputs("Rename\n|03enter new file name: ");
 			DosGetStr(szFileName, MAX_FILENAME_LEN, false);
 		}
 		else if (cInput == 'N') {
+			zputs("No\n");
 			// skip file
 			fseek(fpGUM, lCompressSize, SEEK_CUR);
 			fclose(fpGUM);
 			return;
 		}
+		else
+			zputs("Yes\n");
 	}
 
 	/* open file to write to */
