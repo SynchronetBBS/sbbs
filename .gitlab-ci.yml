@@ -124,7 +124,7 @@ include:
   script:
     - mkdir sbbs
     - cd sbbs
-    - make -f ../install/install-sbbs.mk NOCAP=1 REPODIR=$(realpath ..)
+    - make -f ../install/install-sbbs.mk NOCAP=1 REPODIR=$(realpath ..) CC="ccache cc" CXX="ccache c++"
   needs: []
 
 "windows-x86 [sbbs]":
