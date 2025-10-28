@@ -115,6 +115,7 @@ void System_Error(char *szErrorMsg)
 #if defined(_WIN32)
 	char buffer[1000];
 	_snprintf(buffer, 1000, "System Error: %s\n", szErrorMsg);
+	RemovePipes(buffer, buffer);
 	MessageBox(NULL, buffer, TEXT("System Error"), MB_OK |
 			   MB_ICONERROR);
 	System_Close();
