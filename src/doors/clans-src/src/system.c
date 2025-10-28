@@ -520,6 +520,7 @@ void System_Init(void)
 
 	od_control.od_cmd_line_flag_handler = ODCmdLineFlagHandler;
 	od_control.od_cmd_line_handler = ODCmdLineHandler;
+	od_control.od_cmd_line_help_func = ShowHelp;
 #ifdef ODPLAT_WIN32
 	od_parse_cmd_line(_lpCmdLine);
 #else
