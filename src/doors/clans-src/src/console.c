@@ -25,7 +25,7 @@ void CheckMem(void *Test)
 		printf("Checkmem Failed.\n");
 		ShowTextCursor(true);
 		Video_Close();
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -36,10 +36,10 @@ void System_Error(char *szErrorMsg)
  *          be FOOLPROOF.
  */
 {
-	qputs("|12Error: |07", 0,0);
-	qputs(szErrorMsg, 0, 7);
+	zputs("\n|12Error: |07");
+	zputs(szErrorMsg);
 	delay(1000);
 	ShowTextCursor(true);
 	Video_Close();
-	exit(0);
+	exit(EXIT_FAILURE);
 }

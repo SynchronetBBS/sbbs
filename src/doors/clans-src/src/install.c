@@ -20,6 +20,7 @@
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
 
+#include "console.h"
 #include "cmdline.h"
 #include "defines.h"
 #include "gum.h"
@@ -62,7 +63,7 @@ int Overwrite = false;
 char szGumName[25], szIniName[25];
 
 struct FileInfo {
-	char szFileName[14];
+	char *szFileName;
 	int WriteType;
 } FileInfo[MAX_FILES];
 
@@ -93,7 +94,7 @@ static void Display(char *szFileName)
 
 	// search for filename
 	for (;;) {
-		if (!fgets(szString, 300, fpInput))
+		if (!fgets(szString, sizeof(szString), fpInput))
 			break;
 
 		// get rid of \n and \r
@@ -119,7 +120,7 @@ static void Display(char *szFileName)
 	// print file
 	CurLine = 0;
 	while (!Done) {
-		if (!fgets(szString, 300, fpInput))
+		if (!fgets(szString, sizeof(szString), fpInput))
 			break;
 
 		if (szString[0] == ':')
@@ -139,39 +140,6 @@ static void Display(char *szFileName)
 
 	fclose(fpInput);
 }
-
-#ifdef __MSDOS__
-static char far *vid_address(void)
-{
-	int tmp1, tmp2;
-	long VideoType;                 /* B800 = color monitor */
-
-	asm {
-		mov bx,0040h
-		mov es,bx
-		mov dx,es:63h
-		add dx,6
-		mov tmp1, dx           // move this into status port
-	};
-	VideoType = COLOR;
-
-	asm {
-		mov bx,es:10h
-		and bx,30h
-		cmp bx,30h
-		jne FC1
-	};
-	VideoType = MONO;
-
-FC1:
-
-	if (VideoType == MONO)
-		return ((void far *) 0xB0000000L) ;
-	else
-		return ((void far *) 0xB8000000L) ;
-}
-#endif
-
 
 static void SystemInit(void)
 {
@@ -247,7 +215,7 @@ int main(int argc, char **argv)
 	gotoxy(0, STARTROW);
 	Display("Goodbye");
 	Video_Close();
-	return(0);
+	return(EXIT_SUCCESS);
 }
 
 static bool ReadFilename(FILE *fpGUM, char *szEncryptedName, size_t sz)
@@ -496,30 +464,38 @@ static bool FileExists(char *szFileName)
 	return true;
 }
 
+static void FreeFiles(void)
+{
+	for (int i = 0; i < sizeof(FileInfo) / sizeof(*FileInfo); i++) {
+		free(FileInfo[i].szFileName);
+		FileInfo[i].szFileName = NULL;
+		FileInfo[i].WriteType = QUERY;
+	}
+}
+
 static void InitFiles(char *szFileName)
 {
 	// init files to be installed
 
 	FILE *fpInput;
-	char szString[128];
+	char szString[PATH_SIZE + 2];
 	bool FileFound = false, Done = false;
 	int CurFile;
 
-	for (CurFile = 0; CurFile < MAX_FILES; CurFile++)
-		FileInfo[CurFile].szFileName[0] = 0;
+	FreeFiles();
 
 	fpInput = fopen(szIniName, "r");
 	if (!fpInput) {
 		zputs("|06usage:   |14install <inifile>\n");
 		reset_attribute();
 		Video_Close();
-		exit(0);
+		exit(EXIT_FAILURE);
 		return;
 	}
 
 	// search for filename
 	for (;;) {
-		if (!fgets(szString, 128, fpInput))
+		if (!fgets(szString, sizeof(szString), fpInput))
 			break;
 
 		// get rid of \n and \r
@@ -553,7 +529,7 @@ static void InitFiles(char *szFileName)
 		// found another filename, copy it over
 		// x filename
 		// 0123456789...
-		strlcpy(FileInfo[CurFile].szFileName, &szString[2], sizeof(FileInfo[CurFile].szFileName));
+		FileInfo[CurFile].szFileName = strdup(&szString[2]);
 		FileInfo[CurFile].WriteType = QUERY;
 
 		if (szString[0] == 'o')
@@ -567,15 +543,52 @@ static void InitFiles(char *szFileName)
 	fclose(fpInput);
 }
 
+/*
+ * Recursive, greedy, stupid wildcard matching
+ */
+static bool Match(const char *re, const char *Candidate)
+{
+	while (*re) {
+		switch (*re) {
+			case '?':
+				if (!*Candidate)
+					return false;
+				re++;
+				Candidate++;
+				break;
+			case '*':
+				re++;
+				for (int remain = strlen(Candidate); remain >= 0; remain--) {
+					if (Match(re, &Candidate[remain]))
+						return true;
+				}
+				return false;
+			default:
+				if (!*Candidate)
+					return false;
+				if (tolower(*re) != tolower(*Candidate))
+					return false;
+				re++;
+				Candidate++;
+				break;
+		}
+	}
+	if (*re == 0 && *Candidate == 0)
+		return true;
+	return false;
+}
+
 static int WriteType(char *szFileName)
 {
 	int CurFile;
 
 	// search for file
 	for (CurFile = 0; CurFile < MAX_FILES; CurFile++) {
-		if (stricmp(FileInfo[CurFile].szFileName, szFileName) == 0) {
-			// found file
-			return (FileInfo[CurFile].WriteType);
+		if (FileInfo[CurFile].szFileName) {
+			if (Match(FileInfo[CurFile].szFileName, szFileName)) {
+				// found file
+				return (FileInfo[CurFile].WriteType);
+			}
 		}
 	}
 
@@ -662,14 +675,11 @@ static void Extract(char *szExtractFile, char *szNewName)
 	}
 
 	if (FileExists(szFileName)) {
-		zputs("|03exists.  overwrite? (yes/no/rename/always) :");
+		zputs("|03exists.  overwrite? (yes/no/rename) :");
 
-		cInput = get_answer("YNAR");
+		cInput = get_answer("YNR");
 
-		if (cInput == 'A') {
-			Overwrite = ALWAYS;
-		}
-		else if (cInput == 'R') {
+		if (cInput == 'R') {
 			zputs("\n|03enter new file name: ");
 			DosGetStr(szFileName, MAX_FILENAME_LEN, false);
 		}
@@ -707,6 +717,91 @@ static void Extract(char *szExtractFile, char *szNewName)
 	zputs("|15Done.\n");
 }
 
+int CheckRow(int row, bool *Done)
+{
+	if (row >= ScreenLines - STARTROW - 1) {
+		zputs("[more]");
+		if (toupper(getch()) == 'Q')
+			*Done = true;
+		zputs("\r       \r");
+		return Done ? -1 : 0;
+	}
+	return row;
+}
+
+struct lfn {
+	struct lfn *next;
+	char *name;
+	int32_t size;
+};
+
+struct lfn *LFNHead = NULL;
+struct lfn *LFNTail = NULL;
+size_t LongestLFN = 0;
+
+static void AddLFN(const char *name, int32_t size)
+{
+	struct lfn *n = malloc(sizeof(struct lfn));
+	size_t len = strlen(name);
+	if (len > LongestLFN)
+		LongestLFN = len;
+	if (n == NULL)
+		System_Error("|06Out of memory\n");
+	n->name = strdup(name);
+	if (n->name == NULL)
+		System_Error("|06Out of memory\n");
+	n->size = size;
+	n->next = NULL;
+	if (LFNHead == NULL) {
+		LFNHead = n;
+		LFNTail = n;
+	}
+	LFNTail->next = n;
+	LFNTail = n;
+}
+
+static void FreeLFNs(void)
+{
+	struct lfn *next = NULL;
+	for (struct lfn *fn = LFNHead; fn; fn = next) {
+		next = fn->next;
+		free(fn->name);
+		free(fn);
+	}
+	LFNHead = NULL;
+	LFNTail = NULL;
+}
+
+static void DisplayLFNs(int row, int column, uint32_t TotalBytes)
+{
+	bool Done = false;
+	char szString[PATH_SIZE + 32];
+	struct lfn *next = NULL;
+	if (column)
+		zputs("\n");
+	for (struct lfn *fn = LFNHead; fn && !Done; fn = fn->next) {
+		if (fn->size == -1) {
+			snprintf(szString, sizeof(szString), "|15%*s  |06-- |07      directory\n",
+			    (int)LongestLFN, fn->name);
+		}
+		else {
+			snprintf(szString, sizeof(szString), "|15%*s  |06-- |07%9" PRId32 " bytes\n",
+			    (int)LongestLFN, fn->name, fn->size);
+			TotalBytes += fn->size;
+		}
+		zputs(szString);
+		row++;
+		row = CheckRow(row, &Done);
+	}
+	if (!Done) {
+		zputs("\n");
+		row = CheckRow(row, &Done);
+		snprintf(szString, sizeof(szString), "|14%" PRId32 " total bytes\n\n", TotalBytes);
+		zputs(szString);
+	}
+	FreeLFNs();
+}
+
 static void ListFiles(void)
 {
 	char szEncryptedName[PATH_SIZE];
@@ -716,6 +811,9 @@ static void ListFiles(void)
 	int FilesFound = 0;
 	uint16_t date, time;
 	bool Done = false;
+	const int columns = ScreenWidth / 36;
+	int column = 0;
+	int row = 0;
 
 	fpGUM = fopen(szGumName, "rb");
 	if (!fpGUM) {
@@ -728,8 +826,7 @@ static void ListFiles(void)
 		if (!ReadFilename(fpGUM, szEncryptedName, sizeof(szEncryptedName))) {
 			// done
 			fclose(fpGUM);
-			snprintf(szString, sizeof(szString), "\n|14%" PRId32 " total bytes\n\n", TotalBytes);
-			zputs(szString);
+			DisplayLFNs(row, column, TotalBytes);
 			break;
 		}
 
@@ -744,6 +841,10 @@ static void ListFiles(void)
 		*pcTo = 0;
 
 		if (szFileName[0] == '/') {
+			if (strlen(szFileName) > 14) {
+				AddLFN(szFileName, -1);
+				continue;
+			}
 			snprintf(szString, sizeof(szString), "|15%14s  |06-- |07      directory  ",
 					szFileName);
 			zputs(szString);
@@ -752,18 +853,25 @@ static void ListFiles(void)
 			lFileSize = 0L;
 		}
 		else {
-
 			/* get filesize from psi file */
 			fread(&lFileSize, sizeof(lFileSize), 1, fpGUM);
 			lFileSize = SWAP32(lFileSize);
 			fread(&lCompressSize, sizeof(lCompressSize), 1, fpGUM);
 			lCompressSize = SWAP32(lCompressSize);
-
 			// get datestamp
 			fread(&date, sizeof(date), 1, fpGUM);
 			date = SWAP16(date);
 			fread(&time, sizeof(time), 1, fpGUM);
 			time = SWAP16(time);
+			if (strcmp(szFileName, "UnixAttr.DAT") == 0) {
+				fseek(fpGUM, lCompressSize, SEEK_CUR);
+				continue;
+			}
+			if (strlen(szFileName) > 14) {
+				AddLFN(szFileName, lFileSize);
+				fseek(fpGUM, lCompressSize, SEEK_CUR);
+				continue;
+			}
 
 			// show dir like DOS :)
 			snprintf(szString, sizeof(szString), "|15%14s  |06-- |07%9" PRId32 " bytes  ",
@@ -771,21 +879,21 @@ static void ListFiles(void)
 			zputs(szString);
 		}
 		FilesFound++;
+		column++;
 
-		if ((FilesFound % 2) == 0)
+		if (column >= columns) {
 			zputs("\n");
-
-		if (FilesFound % (2*(25-STARTROW)-4) == 0 && FilesFound) {
-			zputs("[more]");
-			if (toupper(getch()) == 'Q')
-				Done = true;
-			zputs("\r       \r");
+			column = 0;
+			row++;
 		}
+
+		row = CheckRow(row, &Done);
 
 		fseek(fpGUM, lCompressSize, SEEK_CUR);
 
 		TotalBytes += lFileSize;
 	}
+	FreeLFNs();
 
 	if ((FilesFound % 2) != 0)
 		zputs("\n");
@@ -797,11 +905,9 @@ static void GetGumName(void)
 {
 	// init files to be installed
 	FILE *fpInput;
-	char szString[128];
-	int CurFile;
+	char szString[PATH_SIZE + 1];
 
-	for (CurFile = 0; CurFile < MAX_FILES; CurFile++)
-		FileInfo[CurFile].szFileName[0] = 0;
+	FreeFiles();
 
 	fpInput = fopen(szIniName, "r");
 	if (!fpInput) {
@@ -809,16 +915,16 @@ static void GetGumName(void)
 		zputs("|06usage:   |14install <inifile>\n");
 		reset_attribute();
 		Video_Close();
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	// search for filename
 	for (;;) {
-		if (!fgets(szString, 128, fpInput)) {
+		if (!fgets(szString, sizeof(szString), fpInput)) {
 			zputs("\n|12Couldn't get GUM filename\n");
 			reset_attribute();
 			Video_Close();
-			exit(0);
+			exit(EXIT_FAILURE);
 			break;
 		}
 
