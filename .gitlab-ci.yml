@@ -43,8 +43,8 @@ include:
       build_doors: "yes"
   - local: '.gitlab-ci-unix.yml'
     inputs:
-      os: 'raspian'
-      platform: 'armhf-on-aarch64'
+      os: 'RaspberryPiOS'
+      platform: 'arm64'
       tagname: 'RaspberryPi'
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1 NO_ABSOLUTE_RPATH=1'
       slow_system: 'yes'
