@@ -43,30 +43,35 @@ devkit-binaries:
 data:
 	$(MAKE) SRC=$(SRC) -C $(SRC)data all
 
+.PHONY: native-devkit
+native-devkit:
+	env - PATH="$(PATH)" $(MAKE) -C $(SRC)src devkit
+
 .PHONY: installer
-installer: binaries devkit-binaries data
+installer: binaries data native-devkit
 	mkdir -p $(SRC)stage/gum
 	cd $(SRC)stage/gum && $(MAKE) SRC=$(SRC) -f $(SRC)/GNUmakefile game
-	cd $(SRC)stage/gum && ls -p1 | grep -v /$ > files.lst
-	echo /outbound >> $(SRC)stage/gum/files.lst
-	cd $(SRC)stage/gum && $(BINDIR)chew$(NATIVEEXEFILE) ../clans.gum files.lst
+	cd $(SRC)stage/gum && ls -p1 | grep -v /$ > ../files.lst
+	echo /outbound >> $(SRC)stage/files.lst
+	cd $(SRC)stage/gum && $(BINDIR)chew$(NATIVEEXEFILE) ../clans.gum ../files.lst
 	rm -rf $(SRC)stage/gum
-	cp $(SRC)installer/* $(SRC)stage
-	cp $(BINDIR)install$(EXEFILE) $(SRC)stage
-	cp $(BINDIR)install$(WRAPEXT) $(SRC)stage
+	rm -f $(SRC)stage/files.lst
+	cp $(SRC)installer/* $(SRC)stage/
+	cp $(BINDIR)install$(EXEFILE) $(SRC)stage/
+	cp $(BINDIR)install$(WRAPEXT) $(SRC)stage/
 	zip -j Clans-$(os)-$(MACH)-0_97b1.zip $(SRC)stage/*
 
 .PHONY: devkit-installer
-devkit-installer: $(DEVKIT_BINARIES) $(BINDIR)chew$(NATIVEEXEFILE) $(BINDIR)install$(EXEFILE)
+devkit-installer: devkit-binaries native-devkit
 	mkdir -p $(SRC)stagedk/gum
 	cd $(SRC)stagedk/gum && $(MAKE) SRC=$(SRC) -f $(SRC)/GNUmakefile devkit
-	cd $(SRC)stagedk/gum && ls -p1 | grep -v /$ > files.lst
-	cd $(SRC)stagedk/gum && $(BINDIR)chew$(NATIVEEXEFILE) ../clandev.gum files.lst
+	cd $(SRC)stagedk/gum && ls -p1 | grep -v /$ > ../files.lst
+	cd $(SRC)stagedk/gum && $(BINDIR)chew$(NATIVEEXEFILE) ../clandev.gum ../files.lst
 	rm -rf $(SRC)stagedk/gum
 	rm -f $(SRC)stagedk/files.lst
-	rm -f $(SRC)stagedk/UnixAttr.DAT
-	cp $(SRC)installerdk/* $(SRC)stagedk
-	cp $(BINDIR)install$(EXEFILE) $(SRC)stagedk
+	cp $(SRC)installerdk/* $(SRC)stagedk/
+	cp $(BINDIR)install$(EXEFILE) $(SRC)stagedk/
+	cp $(BINDIR)install$(WRAPEXT) $(SRC)stagedk/
 	zip -j ClansDevKit-$(os)-$(MACH)-0_12.zip $(SRC)stagedk/*
 
 .PHONY: clean
@@ -111,7 +116,7 @@ install: installdirs data binaries
 	for srcfile in $(SRC)release/*; do $(INSTALL_DATA) $${srcfile} $(INSTALLDIR); done
 
 .PHONY: install-devkit
-install-devkit: installdirs data devkit-binaries
+install-devkit: installdirs devkit-binaries
 	for srcfile in $(DEVKIT_BINARIES); do $(INSTALL_PROGRAM) $${srcfile} $(INSTALLDIR); done
 	for srcfile in $(INSTALL_BINARIES); do $(INSTALL_PROGRAM) $${srcfile} $(INSTALLDIR); done
 	for srcfile in $(SRC)devkit/*; do $(INSTALL_DATA) $${srcfile} $(INSTALLDIR); done
