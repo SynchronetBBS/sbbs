@@ -349,6 +349,7 @@ void zputs(const char *string)
 			}
 			cur_char++;
 			x = 0;
+			gotoxy(x, y);
 		}
 		else if (string[cur_char] == 9) {
 			/* tab */

@@ -403,36 +403,36 @@ ODAPIDEF void ODCALL od_parse_cmd_line(INT nArgCount, char *papszArguments[])
                   szODWorkString, MB_ICONINFORMATION | MB_OK);
             }
 #else /* !ODPLAT_WIN32 */
-            printf("AVALIABLE COMMAND LINE OPTIONS ");
+            puts("AVALIABLE COMMAND LINE OPTIONS \r");
             if(od_control.od_cmd_line_help != NULL)
             {
                fputs(od_control.od_cmd_line_help, stdout);
             }
             else
             {
-               printf("(Some can be overriden by config/drop file)\n");
-               printf(" -C or -CONFIG    - Specfies configuration filename.\n");
-               printf(" -L or -LOCAL     - Causes door to operate in local mode, without requiring a\n");
-               printf("                    door information (drop) file.\n");
-               printf(" -D or -DROPFILE  - Door information file directory and/or filename.\n");
-               printf(" -N x or -NODE x  - Sets the node number to use.\n");
-               printf(" -B x or -BPS x   - Sets the serial port <---> modem bps (baud) rate to use.\n");
-               printf(" -P x or -PORT x  - Sets serial port to use. For COM1: use -P 0 or -P COM1, for\n");
-               printf("                    COM2: use -P 1 or -P COM2, etc.\n");
-               printf(" -ADDRESS x       - Sets serial port address in HEXIDECIMAL (if no FOSSIL).\n");
-               printf(" -IRQ x           - Sets the serial port IRQ line (if FOSSIL is not used).\n");
-               printf(" -NOFOSSIL        - Disables use of FOSSIL driver, even if available.\n");
-               printf(" -NOFIFO          - Disables use of 16550 FIFO buffers (only if no FOSSIL).\n");
-               printf(" -MAXTIME x       - Sets the maximum number of minutes that any user will be\n");
-               printf("                    permitted to access the door, regardless of time left.\n");
-               printf(" -SILENT          - Operate in silent mode, with no local display.\n");
-               printf(" -G or -GRAPHICS  - Unless followed by 0 or N, turns on ANSI display mode.\n");
-               printf(" -BBSNAME x       - Name of BBS.\n");
-               printf(" -USERNAME x      - Name of user who is currently online.\n");
-               printf(" -TIMELEFT x      - User's time remaining online.\n");
-               printf(" -SECURITY x      - User's security level.\n");
-               printf(" -LOCATION x      - Location from which user is calling.\n");
-               printf(" -?, -H or -HELP  - Displays command-line help and exits.\n");
+               puts("(Some can be overriden by config/drop file)\r");
+               puts(" -C or -CONFIG    - Specfies configuration filename.\r");
+               puts(" -L or -LOCAL     - Causes door to operate in local mode, without requiring a\r");
+               puts("                    door information (drop) file.\r");
+               puts(" -D or -DROPFILE  - Door information file directory and/or filename.\r");
+               puts(" -N x or -NODE x  - Sets the node number to use.\r");
+               puts(" -B x or -BPS x   - Sets the serial port <---> modem bps (baud) rate to use.\r");
+               puts(" -P x or -PORT x  - Sets serial port to use. For COM1: use -P 0 or -P COM1, for\r");
+               puts("                    COM2: use -P 1 or -P COM2, etc.\r");
+               puts(" -ADDRESS x       - Sets serial port address in HEXIDECIMAL (if no FOSSIL).\r");
+               puts(" -IRQ x           - Sets the serial port IRQ line (if FOSSIL is not used).\r");
+               puts(" -NOFOSSIL        - Disables use of FOSSIL driver, even if available.\r");
+               puts(" -NOFIFO          - Disables use of 16550 FIFO buffers (only if no FOSSIL).\r");
+               puts(" -MAXTIME x       - Sets the maximum number of minutes that any user will be\r");
+               puts("                    permitted to access the door, regardless of time left.\r");
+               puts(" -SILENT          - Operate in silent mode, with no local display.\r");
+               puts(" -G or -GRAPHICS  - Unless followed by 0 or N, turns on ANSI display mode.\r");
+               puts(" -BBSNAME x       - Name of BBS.\r");
+               puts(" -USERNAME x      - Name of user who is currently online.\r");
+               puts(" -TIMELEFT x      - User's time remaining online.\r");
+               puts(" -SECURITY x      - User's security level.\r");
+               puts(" -LOCATION x      - Location from which user is calling.\r");
+               puts(" -?, -H or -HELP  - Displays command-line help and exits.\r");
             }
 #endif /* !ODPLAT_WIN32 */
             exit(1);
@@ -584,7 +584,7 @@ static void ODAdvanceToNextArg(INT *pnCurrentArg, INT nArgCount,
 
    if(++*pnCurrentArg >= nArgCount)
    {
-      printf("Missing parameter for option: %s\n", pszOption);
+      printf("Missing parameter for option: %s\r\n", pszOption);
       exit(1);
    }
 }
@@ -622,7 +622,7 @@ static void ODGetNextArgName(INT *pnCurrentArg, INT nArgCount,
 
    if((*pnCurrentArg) + 1 >= nArgCount)
    {
-      printf("Missing parameter for option: %s\n",
+      printf("Missing parameter for option: %s\r\n",
          papszArguments[(*pnCurrentArg) - 1]);
       exit(1);
    }
