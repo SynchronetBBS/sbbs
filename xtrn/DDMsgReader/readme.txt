@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.97e
-                           Release date: 2025-09-07
+                                 Version 1.97f
+                           Release date: 2025-10-28
 
                                      by
 
@@ -1403,6 +1403,11 @@ sets, exemptions, restrictions, and additional credits. For example:
 
 9. Drop file for replying to messages with Synchronet message editors
 =====================================================================
+As of version 1.96 (2024-10-26), the drop file described in this section may no
+longer be needed, depending on the version of Synchronet you're using.
+Internally, in Synchronet 3.20, bbs.msg_number and bbs.smb_curmsg are
+writeable, in which case, the drop file described in this section won't be used.
+
 When reading a message, the message lister will write a drop file in the node
 directory, called DDML_SyncSMBInfo.txt, which contains some information about
 the message being read, for use by Synchronet message editors.  This drop file
@@ -1448,7 +1453,14 @@ This message reader uses the following lines from Synchronet's text.dat file
 501 (SelectItemHdr)
 503 (SelectItemWhich)
 563 (Pause)
+558 (CallBackWhenYoureThere)
 578 (QWKNoNewMessages)
+603 SubInfoHdr
+604 SubInfoLongName
+605 SubInfoShortName
+606 SubInfoQWKName
+607 SubInfoMaxMsgs
+608 SubInfoTagLine
 621 (SubGroupOrAll)
 662 (DownloadAttachedFileQ)
 759 (CantReadSub)
@@ -1457,7 +1469,7 @@ This message reader uses the following lines from Synchronet's text.dat file
 781 (R_Voting)
 783 (VoteMsgUpDownOrQuit)
 787 (PollVoteNotice)
-558 (CallBackWhenYoureThere)
+
 
 When using the scrollable/lightbra interface, DDMsgReader replaces the
 following with its own:

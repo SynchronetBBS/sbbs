@@ -292,6 +292,9 @@
  *                              Fix: When listing messages in lightbar mode in reverse
  *                              order, deleting (with DEL) and toggling messages (with
  *                              the spacebar) now work on the correct message.
+ * 2025-10-28 Eric Oulashin     Version 1.97f
+ *                              When reading a message, the sub-board information can
+ *                              now be displayed by pressing S.
  */
 
 "use strict";
@@ -399,8 +402,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.97e";
-var READER_DATE = "2025-09-07";
+var READER_VERSION = "1.97f";
+var READER_DATE = "2025-10-28";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -989,6 +992,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.ReadMessageEnhanced_Scrollable = DigDistMsgReader_ReadMessageEnhanced_Scrollable;
 	this.ShowHdrOrKludgeLines_Scrollable = DigDistMsgReader_ShowHdrOrKludgeLines_Scrollable;
 	this.ShowVoteInfo_Scrollable = DigDistMsgReader_ShowVoteInfo_Scrollable;
+	this.ShowSubBoardInfo_Scrollable = DigDistMsgReader_ShowSubBoardInfo_Scrollable;
 	this.ScrollableReaderNextReadableMessage = DigDistMsgReader_ScrollableReaderNextReadableMessage;
 	this.ScrollReaderDetermineClickCoordAction = DigDistMsgReader_ScrollReaderDetermineClickCoordAction;
 	this.ReadMessageEnhanced_Traditional = DigDistMsgReader_ReadMessageEnhanced_Traditional;
@@ -1307,6 +1311,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		validateMsg: "A", // Only if the user is a sysop
 		quickValUser: CTRL_Q,
 		threadView: "*", // TODO: Implement this
+		subBoardInfo: "S",
 		operatorMenu: CTRL_O,
 		showMsgHex: "X",
 		hexDump: CTRL_X
@@ -6587,6 +6592,22 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 					this.RefreshMsgAreaRectangle(msgInfo.messageLines, topMsgLineIdx, userSettingsRetObj.optionBoxTopLeftX, userSettingsRetObj.optionBoxTopLeftY, userSettingsRetObj.optionBoxWidth, userSettingsRetObj.optionBoxHeight);
 				}
 				break;
+			case this.enhReaderKeys.threadView:
+				// TODO Impement this
+				break;
+			case this.enhReaderKeys.subBoardInfo: // Show sub-board information
+				writeMessage = this.ShowSubBoardInfo_Scrollable(msgAreaWidth, msgAreaHeight);
+				// Display the scrollbar for the message to refresh it on the screen
+				if (this.userSettings.useEnhReaderScrollbar)
+				{
+					solidBlockStartRow = this.msgAreaTop + Math.floor(numNonSolidScrollBlocks * fractionToLastPage);
+					this.DisplayEnhancedReaderWholeScrollbar(solidBlockStartRow, numSolidScrollBlocks);
+				}
+				else
+				{
+					// TODO
+				}
+				break;
 			case this.enhReaderKeys.showMsgHex:
 				if (user.is_sysop)
 				{
@@ -8002,6 +8023,22 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					writeMessage = true;
 				}
 				break;
+			case this.enhReaderKeys.threadView:
+				// TODO Impement this
+				break;
+			case this.enhReaderKeys.subBoardInfo: // Show sub-board information
+				console.attributes = "N";
+				console.print(bbs.text(SubInfoHdr));
+				printf(bbs.text(SubInfoLongName), msg_area.sub[this.subBoardCode].description);
+				printf(bbs.text(SubInfoShortName), msg_area.sub[this.subBoardCode].name);
+				printf(bbs.text(SubInfoQWKName), msg_area.sub[this.subBoardCode].qwk_name);
+				printf(bbs.text(SubInfoMaxMsgs), msg_area.sub[this.subBoardCode].max_msgs);
+				printf(bbs.text(SubInfoTagLine), msg_area.sub[this.subBoardCode].qwknet_tagline);
+				console.attributes = "N";
+				console.pause();
+				writeMessage = true;
+				writePromptText = true;
+				break;
 			case this.enhReaderKeys.showMsgHex: // Show message hex dump
 				writeMessage = false;
 				writePromptText = false;
@@ -8298,6 +8335,73 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 	this.currentAction = ACTION_NONE;
 
 	return retObj;
+}
+
+// For the DDMsgReader class: Displays sub-board information, for the scrolling
+// interface
+function DigDistMsgReader_ShowSubBoardInfo_Scrollable(msgAreaWidth, msgAreaHeight)
+{
+	var msgReaderObj = this;
+	// This is a scrollbar update function for use when viewing the header info/kludge lines.
+	function msgInfoScrollbarUpdateFn(pFractionToLastPage)
+	{
+		var infoSolidBlockStartRow = msgReaderObj.msgAreaTop + Math.floor(numNonSolidInfoScrollBlocks * pFractionToLastPage);
+		if (infoSolidBlockStartRow != lastInfoSolidBlockStartRow)
+			msgReaderObj.UpdateEnhancedReaderScrollbar(infoSolidBlockStartRow, lastInfoSolidBlockStartRow, numInfoSolidScrollBlocks);
+		lastInfoSolidBlockStartRow = infoSolidBlockStartRow;
+		console.gotoxy(1, console.screen_rows);
+	}
+
+	var writeMessage = false;
+
+	// Save the original cursor position
+	var originalCurPos = console.getxy();
+
+	// Create an array containing the sub-board information lines and then
+	// allow the user to scroll through them.
+	var subBoardInfoText = "\x01n" + bbs.text(SubInfoHdr);
+	subBoardInfoText += format(bbs.text(SubInfoLongName), msg_area.sub[this.subBoardCode].description);
+	subBoardInfoText += format(bbs.text(SubInfoShortName), msg_area.sub[this.subBoardCode].name);
+	subBoardInfoText += format(bbs.text(SubInfoQWKName), msg_area.sub[this.subBoardCode].qwk_name);
+	subBoardInfoText += format(bbs.text(SubInfoMaxMsgs), msg_area.sub[this.subBoardCode].max_msgs);
+	subBoardInfoText += format(bbs.text(SubInfoTagLine), msg_area.sub[this.subBoardCode].qwknet_tagline);
+	var subBoardInfoLines = lfexpand(word_wrap(subBoardInfoText, console.screen_columns-1, null, true)).split("\r\n");
+	// Remove any blank lines from the start of the array
+	while (subBoardInfoLines.length > 0 && console.strlen(subBoardInfoLines[0]) == 0)
+		subBoardInfoLines.shift();
+	// If the last line is blank, then remove it
+	if (subBoardInfoLines.length > 0 && console.strlen(subBoardInfoLines[subBoardInfoLines.length-1]) == 0)
+		subBoardInfoLines.pop();
+	if (subBoardInfoLines.length > 0)
+	{
+		if (this.userSettings.useEnhReaderScrollbar)
+		{
+			// Calculate information for the scrollbar for the kludge lines
+			var infoFractionShown = this.msgAreaHeight / subBoardInfoLines.length;
+			if (infoFractionShown > 1)
+				infoFractionShown = 1.0;
+			var numInfoSolidScrollBlocks = Math.floor(this.msgAreaHeight * infoFractionShown);
+			if (numInfoSolidScrollBlocks == 0)
+				numInfoSolidScrollBlocks = 1;
+			var numNonSolidInfoScrollBlocks = this.msgAreaHeight - numInfoSolidScrollBlocks;
+			var lastInfoSolidBlockStartRow = this.msgAreaTop;
+			// Display the kludge lines and let the user scroll through them
+			this.DisplayEnhancedReaderWholeScrollbar(this.msgAreaTop, numInfoSolidScrollBlocks);
+		}
+		scrollTextLines(subBoardInfoLines, 0, this.colors.msgBodyColor, true, this.msgAreaLeft,
+						this.msgAreaTop, msgAreaWidth, msgAreaHeight, 1, console.screen_rows,
+						this.userSettings.useEnhReaderScrollbar, msgInfoScrollbarUpdateFn);
+		writeMessage = true; // We want to refresh the message on the screen
+	}
+	else
+	{
+		// There are no sub-board information lines for some reason (this probably shouldn't happen)
+		var msgText = pOnlyKludgeLines ? this.text.noKludgeLinesForThisMsgText : this.text.noHdrLinesForThisMsgText;
+		this.DisplayEnhReaderError(replaceAtCodesInStr(msgText), msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+		console.gotoxy(originalCurPos);
+	}
+
+	return writeMessage;
 }
 
 // For the DDMsgReader class: Does the operator mode for reading.
@@ -11955,6 +12059,7 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 		keyHelpLines.push("\x01h\x01c" + this.enhReaderKeys.closePoll + "                \x01g: \x01n\x01cClose a poll");
 	}
 	keyHelpLines.push("\x01h\x01c" + this.enhReaderKeys.showVotes + "                \x01g: \x01n\x01cShow vote (tally) stats for the message");
+	keyHelpLines.push("\x01h\x01c" + this.enhReaderKeys.subBoardInfo + "                \x01g: \x01n\x01cShow sub-board information");
 	keyHelpLines.push("\x01h\x01c" + this.enhReaderKeys.quit + "                \x01g: \x01n\x01cQuit back to the BBS");
 	if (this.indexedMode)
 		keyHelpLines.push(" \x01n\x01cCurrently in indexed mode; quitting will quit back to the index list.");
