@@ -26,6 +26,7 @@ include:
       tagname: 'OpenBSD'
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1 NO_ABSOLUTE_RPATH=1'
       has_graphics: 'no'
+      slow_system: 'yes'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'netbsd'
