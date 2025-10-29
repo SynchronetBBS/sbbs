@@ -3417,7 +3417,7 @@ void IBBS_Close(void)
 
 	IBBS_Write();
 	IBBS_Destroy();
-	if (Config.szOutputSem[0]) {
+	if (Config.szOutputSem[0] && IBBS.Data.PacketSent) {
 		// Touch the semaphore
 		FILE *f;
 
