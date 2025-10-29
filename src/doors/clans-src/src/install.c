@@ -374,9 +374,11 @@ static void install(void)
 	cInput = get_answer("YN");
 
 	if (cInput == 'N') {
-		zputs("\n|04Installation aborted.\n");
+		zputs("No\n|04Installation aborted.\n");
 		return;
 	}
+	else
+		zputs("Yes\n");
 
 	InitFiles("INSTALL.FILES");
 	Overwrite = false;
@@ -426,9 +428,11 @@ static void upgrade(void)
 	cInput = get_answer("YN");
 
 	if (cInput == 'N') {
-		zputs("\n|04Upgrade aborted.\n");
+		zputs("No\n|04Upgrade aborted.\n");
 		return;
 	}
+	else
+		zputs("Yes\n");
 
 	InitFiles("UPGRADE.FILES");
 	Overwrite = false;
