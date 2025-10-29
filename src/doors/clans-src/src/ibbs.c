@@ -1529,7 +1529,7 @@ static void IBBS_LoadNDX(void)
 	char szLine[400], *pcCurrentPos, szString[400];
 	char szToken[MAX_TOKEN_CHARS + 1];
 	int16_t iKeyWord;
-	int16_t CurBBS = 0;
+	int16_t CurBBS = -1;
 	int16_t iTemp, CurSlot;
 	bool UseHost = false;           // set if using host method of routing
 	bool InDescription = false;
@@ -1613,22 +1613,22 @@ static void IBBS_LoadNDX(void)
 						IBBS.Data.Nodes[CurBBS].Attack.ReceiveIndex = 0;
 						break;
 					case 1 :    /* village name */
-						if (CurBBS == 0)
+						if (CurBBS == -1)
 							System_Error("VillageName outside of BBSId section!\n");
 						IBBS.Data.Nodes[CurBBS].Info.pszVillageName = DupeStr(pcCurrentPos);
 						break;
 					case 2 :    /* Address */
-						if (CurBBS == 0)
+						if (CurBBS == -1)
 							System_Error("Address outside of BBSId section!\n");
 						IBBS.Data.Nodes[CurBBS].Info.pszAddress = DupeStr(pcCurrentPos);
 						break;
 					case 0 :    /* BBS name */
-						if (CurBBS == 0)
+						if (CurBBS == -1)
 							System_Error("BBSName outside of BBSId section!\n");
 						IBBS.Data.Nodes[CurBBS].Info.pszBBSName = DupeStr(pcCurrentPos);
 						break;
 					case 6 :    /* Status */
-						if (CurBBS == 0)
+						if (CurBBS == -1)
 							System_Error("Status outside of BBSId section!\n");
 						if (stricmp(pcCurrentPos, "inactive") == 0)
 							IBBS.Data.Nodes[CurBBS].Active = false;
@@ -1645,7 +1645,7 @@ static void IBBS_LoadNDX(void)
 					case 9 :        /* Host */
 						/* get tokens till no more */
 						UseHost = true;
-						if (CurBBS == 0)
+						if (CurBBS == -1)
 							System_Error("Host outside of BBSId section!\n");
 
 						for (;;) {
@@ -1688,7 +1688,7 @@ static void IBBS_LoadNDX(void)
 						}
 						break;
 					case 10 : /* NoMSG */
-						if (CurBBS == 0)
+						if (CurBBS == -1)
 							System_Error("NoMSG outside of BBSId section!\n");
 						if (IBBS.Data.StrictMsgFile)
 							System_Error("NoMSG used with StrictMsgFile");
