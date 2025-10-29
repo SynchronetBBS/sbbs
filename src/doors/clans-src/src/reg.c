@@ -101,7 +101,7 @@ int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 	uint32_t chksum = 0L;
 	uint32_t chksum2 = 0L;
 	char szRealCode[40];
-	char szUserCode[40];
+	char szUserCode[40] = {0};
 	char *pc, *pc2, szString[155];
 	uint16_t c;
 	uint16_t c2;
