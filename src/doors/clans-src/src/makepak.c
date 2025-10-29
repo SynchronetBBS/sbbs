@@ -27,8 +27,8 @@ static int32_t lPakSize;
 int main(int argc, char *argv[])
 {
 	FILE *fpPakFile, *fpList;
-	char szFileName[PATH_MAX], szFileAlias[30];       // filealias = filename in .pak
-	char szLine[255], szPakName[PATH_MAX], szPakList[PATH_MAX];
+	char szFileName[PATH_SIZE], szFileAlias[30];       // filealias = filename in .pak
+	char szLine[255], szPakName[PATH_SIZE], szPakList[PATH_SIZE];
 
 	printf("MAKEPAK utility by Allen Ussher\n\n");
 

@@ -79,6 +79,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <SubSystem>Console</SubSystem>
       <OutputFile>.\Win32_Release\reset.exe</OutputFile>
+      <AdditionalDependencies>$(OutDir)\clanslib.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -111,22 +112,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OutputFile>.\Win32_Debug\reset.exe</OutputFile>
+      <AdditionalDependencies>$(OutDir)\clanslib.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="alliance.c" />
-    <ClCompile Include="cmdline.c" />
-    <ClCompile Include="console.c" />
-    <ClCompile Include="crc.c" />
-    <ClCompile Include="deserialize.c" />
-    <ClCompile Include="myopen.c" />
-    <ClCompile Include="parsing.c" />
-    <ClCompile Include="random.c" />
-    <ClCompile Include="readcfg.c" />
     <ClCompile Include="reset.c" />
-    <ClCompile Include="serialize.c" />
-    <ClCompile Include="video.c" />
-    <ClCompile Include="win_wrappers.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="alliance.h" />

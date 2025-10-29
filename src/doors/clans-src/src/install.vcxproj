@@ -75,6 +75,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <SubSystem>Console</SubSystem>
       <OutputFile>.\Win32_Release\install.exe</OutputFile>
+      <AdditionalDependencies>$(OutDir)\clanslib.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -106,17 +107,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OutputFile>.\Win32_Debug\install.exe</OutputFile>
+      <AdditionalDependencies>$(OutDir)\clanslib.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="cmdline.c" />
-    <ClCompile Include="console.c" />
-    <ClCompile Include="gum.c" />
     <ClCompile Include="install.c" />
-    <ClCompile Include="parsing.c" />
-    <ClCompile Include="unix_wrappers.c" />
-    <ClCompile Include="video.c" />
-    <ClCompile Include="win_wrappers.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cmdline.h" />

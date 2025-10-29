@@ -78,6 +78,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OutputFile>.\Win32_Debug\pcedit.exe</OutputFile>
+      <AdditionalDependencies>$(OutDir)\clanslib.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -107,16 +108,11 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <SubSystem>Console</SubSystem>
       <OutputFile>.\Win32_Release\pcedit.exe</OutputFile>
+      <AdditionalDependencies>$(OutDir)\clanslib.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="alliance.c" />
-    <ClCompile Include="crc.c" />
-    <ClCompile Include="deserialize.c" />
-    <ClCompile Include="myopen.c" />
     <ClCompile Include="pcedit.c" />
-    <ClCompile Include="serialize.c" />
-    <ClCompile Include="win_wrappers.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="alliance.h" />

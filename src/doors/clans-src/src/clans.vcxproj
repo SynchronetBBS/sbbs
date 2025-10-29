@@ -79,7 +79,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OutputFile>.\Win32_Debug\clans.exe</OutputFile>
-      <AdditionalDependencies>ODoorW.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)\clanslib.lib;ODoorW.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -112,18 +112,14 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <SubSystem>Windows</SubSystem>
       <OutputFile>.\Win32_Release\clans.exe</OutputFile>
-      <AdditionalDependencies>ODoorW.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)\clanslib.lib;ODoorW.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="alliance.c" />
     <ClCompile Include="alliancem.c" />
     <ClCompile Include="clans.c" />
     <ClCompile Include="clansini.c" />
     <ClCompile Include="class.c" />
-    <ClCompile Include="cmdline.c" />
-    <ClCompile Include="crc.c" />
-    <ClCompile Include="deserialize.c" />
     <ClCompile Include="door.c" />
     <ClCompile Include="empire.c" />
     <ClCompile Include="fight.c" />
@@ -139,27 +135,20 @@
     <ClCompile Include="menus2.c" />
     <ClCompile Include="misc.c" />
     <ClCompile Include="myibbs.c" />
-    <ClCompile Include="myopen.c" />
     <ClCompile Include="news.c" />
     <ClCompile Include="npc.c" />
-    <ClCompile Include="parsing.c" />
     <ClCompile Include="pawn.c" />
     <ClCompile Include="quests.c" />
-    <ClCompile Include="random.c" />
-    <ClCompile Include="readcfg.c" />
     <ClCompile Include="reg.c" />
     <ClCompile Include="scores.c" />
     <ClCompile Include="semfile.c" />
-    <ClCompile Include="serialize.c" />
     <ClCompile Include="spells.c" />
     <ClCompile Include="system.c" />
     <ClCompile Include="trades.c" />
     <ClCompile Include="user.c" />
-    <ClCompile Include="video.c" />
     <ClCompile Include="village.c" />
     <ClCompile Include="voting.c" />
     <ClCompile Include="wb_fapnd.c" />
-    <ClCompile Include="win_wrappers.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="alliance.h" />

@@ -75,6 +75,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <SubSystem>Console</SubSystem>
       <OutputFile>.\Win32_Release\chew.exe</OutputFile>
+      <AdditionalDependencies>$(OutDir)\clanslib.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -106,13 +107,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <OutputFile>.\Win32_Debug\chew.exe</OutputFile>
+      <AdditionalDependencies>$(OutDir)\clanslib.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="chew.c" />
-    <ClCompile Include="gum.c" />
-    <ClCompile Include="parsing.c" />
-    <ClCompile Include="win_wrappers.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="defines.h" />

@@ -16,7 +16,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
+#ifdef __unix__
+# include <unistd.h>
+#endif
 #include "win_wrappers.h"
 
 #include "defines.h"
