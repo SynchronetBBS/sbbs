@@ -1060,6 +1060,8 @@ void Video_Close(void)
 		CurrentX = -1;
 		CurrentY = -1;
 		gotoxy(x, y);
+		free(Video.VideoMem);
+		Video.VideoMem = NULL;
 		tcsetattr(STDIN_FILENO, TCSANOW, &orig_tio);
 #endif
 	}

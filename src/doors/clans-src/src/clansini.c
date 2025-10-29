@@ -56,7 +56,7 @@ void ClansIni_Init(void)
 	}
 
 
-	IniFile.Initialized = false;
+	IniFile.Initialized = true;
 
 	for (iTemp = 0; iTemp < MAX_NPCFILES; iTemp++)
 		IniFile.pszNPCFileName[iTemp] = NULL;

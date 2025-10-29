@@ -204,7 +204,10 @@ void Config_Close(void)
  */
 {
 	int16_t i;
-	for (i = 0; i < Config.NumInboundDirs; i++)
+	for (i = 0; i < Config.NumInboundDirs; i++) {
 		free(Config.szInboundDirs[i]);
+		Config.szInboundDirs[i] = NULL;
+	}
+	free(Config.szInboundDirs);
 	free(Config.pszInfoPath);
 }

@@ -83,7 +83,10 @@ static bool System_LockedOut(void)
 	// while not end of file
 	for (;;) {
 		// read in line
-		if (fgets(szLine, 128, fp) == NULL) break;
+		if (fgets(szLine, 128, fp) == NULL) {
+			fclose(fp);
+			break;
+		}
 
 		/* Ignore all of line after comments or CR/LF char */
 		pcCurrentPos=(char *)szLine;
@@ -180,6 +183,8 @@ static char * fullpath(char *target, const char *path, size_t size)
 				out++;
 			}
 		}
+		if (!*out)
+			break;
 	}
 	return(target);
 }
