@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 {
 	FILE *fFrom, *fTo;
 	int16_t iTemp, CurString;
-	char TempString[800], String[800], FromFile[PATH_MAX], ToFile[PATH_MAX];
+	char TempString[800], String[800], FromFile[PATH_SIZE], ToFile[PATH_SIZE];
 
 	printf("The Clans Language File Compiler v.1.0 (c) copyright 1997 Allen Ussher\n\n");
 

@@ -21,6 +21,21 @@
     <ClCompile Include="PCEDIT.C">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="win_wrappers.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="alliance.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="deserialize.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="crc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="serialize.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MYOPEN.H">

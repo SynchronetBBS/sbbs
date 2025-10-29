@@ -53,7 +53,6 @@ void ScrollUp(void);
 void SetScrollRegion(int top, int bottom);
 void ClearScrollRegion(void);
 void textattr(uint8_t attrib);
-int getch(void);
 void * save_screen(void);
 void restore_screen(void *state);
 void ShowTextCursor(bool sh);
@@ -66,5 +65,8 @@ void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char 
 int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum);
 void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit);
 char get_answer(char *szAllowableChars);
+#ifdef __unix__
+int getch(void);
+#endif
 
 #endif

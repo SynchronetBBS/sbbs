@@ -12,32 +12,34 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{53FD16D9-126D-4A5E-BCF3-19E870CD569D}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v142</PlatformToolset>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>MultiByte</CharacterSet>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
-    <Import Project="..\..\odoors\odoors.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets">
+    <Import Project="..\..\..\odoors\odoors.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
-    <Import Project="..\..\odoors\odoors.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -53,30 +55,19 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <FunctionLevelLinking>false</FunctionLevelLinking>
       <Optimization>Disabled</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <WarningLevel>Level3</WarningLevel>
-      <MinimalRebuild>true</MinimalRebuild>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AssemblerListingLocation>.\Win32_Debug\</AssemblerListingLocation>
-      <PrecompiledHeaderOutputFile>.\Win32_Debug\clans.pch</PrecompiledHeaderOutputFile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>.\Win32_Debug\</ObjectFileName>
       <ProgramDataBaseFileName>.\Win32_Debug\</ProgramDataBaseFileName>
-      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <StructMemberAlignment>1Byte</StructMemberAlignment>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <TypeLibraryName>.\Win32_Debug\clans.tlb</TypeLibraryName>
-      <MkTypLibCompatible>true</MkTypLibCompatible>
       <TargetEnvironment>Win32</TargetEnvironment>
     </Midl>
     <ResourceCompile>
-      <Culture>0x0409</Culture>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Bscmake>
@@ -88,34 +79,29 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
       <OutputFile>.\Win32_Debug\clans.exe</OutputFile>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;ODoorW.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+      <AdditionalDependencies>ODoorW.lib;%(AdditionalDependencies)</AdditionalDependencies>
+	</Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <FunctionLevelLinking>false</FunctionLevelLinking>
       <Optimization>MaxSpeed</Optimization>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <WarningLevel>Level3</WarningLevel>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_MT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AssemblerListingLocation>.\Win32_Release\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\Win32_Release\clans.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\Win32_Release\</ObjectFileName>
       <ProgramDataBaseFileName>.\Win32_Release\</ProgramDataBaseFileName>
-      <StructMemberAlignment>1Byte</StructMemberAlignment>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Midl>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <TypeLibraryName>.\Win32_Release\clans.tlb</TypeLibraryName>
-      <MkTypLibCompatible>true</MkTypLibCompatible>
       <TargetEnvironment>Win32</TargetEnvironment>
     </Midl>
     <ResourceCompile>
-      <Culture>0x0409</Culture>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Bscmake>
@@ -126,104 +112,116 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <SubSystem>Windows</SubSystem>
       <OutputFile>.\Win32_Release\clans.exe</OutputFile>
-      <AdditionalDependencies>odbc32.lib;odbccp32.lib;ODoorW.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ODoorW.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ALLIANCE.C" />
-    <ClCompile Include="CLANS.C" />
-    <ClCompile Include="CLANSINI.C" />
-    <ClCompile Include="CLASS.C" />
+    <ClCompile Include="alliance.c" />
+    <ClCompile Include="alliancem.c" />
+    <ClCompile Include="clans.c" />
+    <ClCompile Include="clansini.c" />
+    <ClCompile Include="class.c" />
     <ClCompile Include="cmdline.c" />
-    <ClCompile Include="CRC.C" />
-    <ClCompile Include="DOOR.C" />
-    <ClCompile Include="EMPIRE.C" />
-    <ClCompile Include="EVENT.C" />
-    <ClCompile Include="FIGHT.C" />
-    <ClCompile Include="GAME.C" />
-    <ClCompile Include="HELP.C" />
-    <ClCompile Include="IBBS.C" />
-    <ClCompile Include="INPUT.C" />
-    <ClCompile Include="ITEMS.C" />
-    <ClCompile Include="LANGUAGE.C" />
-    <ClCompile Include="MAIL.C" />
-    <ClCompile Include="MAINT.C" />
-    <ClCompile Include="MENUS.C" />
-    <ClCompile Include="MENUS2.C" />
-    <ClCompile Include="MISC.C" />
-    <ClCompile Include="MYIBBS.C" />
-    <ClCompile Include="MYOPEN.C" />
-    <ClCompile Include="NEWS.C" />
-    <ClCompile Include="NPC.C" />
-    <ClCompile Include="PARSING.C" />
-    <ClCompile Include="PAWN.C" />
-    <ClCompile Include="QUESTS.C" />
-    <ClCompile Include="REG.C" />
-    <ClCompile Include="SCORES.C" />
-    <ClCompile Include="SPELLS.C" />
+    <ClCompile Include="crc.c" />
+    <ClCompile Include="deserialize.c" />
+    <ClCompile Include="door.c" />
+    <ClCompile Include="empire.c" />
+    <ClCompile Include="fight.c" />
+    <ClCompile Include="game.c" />
+    <ClCompile Include="help.c" />
+    <ClCompile Include="ibbs.c" />
+    <ClCompile Include="input.c" />
+    <ClCompile Include="items.c" />
+    <ClCompile Include="language.c" />
+    <ClCompile Include="mail.c" />
+    <ClCompile Include="maint.c" />
+    <ClCompile Include="menus.c" />
+    <ClCompile Include="menus2.c" />
+    <ClCompile Include="misc.c" />
+    <ClCompile Include="myibbs.c" />
+    <ClCompile Include="myopen.c" />
+    <ClCompile Include="news.c" />
+    <ClCompile Include="npc.c" />
+    <ClCompile Include="parsing.c" />
+    <ClCompile Include="pawn.c" />
+    <ClCompile Include="quests.c" />
+    <ClCompile Include="random.c" />
+    <ClCompile Include="readcfg.c" />
+    <ClCompile Include="reg.c" />
+    <ClCompile Include="scores.c" />
+    <ClCompile Include="semfile.c" />
+    <ClCompile Include="serialize.c" />
+    <ClCompile Include="spells.c" />
     <ClCompile Include="system.c" />
-    <ClCompile Include="TRADES.C" />
-    <ClCompile Include="TSLICER.C" />
-    <ClCompile Include="USER.C" />
-    <ClCompile Include="VIDEO.C" />
-    <ClCompile Include="VILLAGE.C" />
-    <ClCompile Include="VOTING.C" />
-    <ClCompile Include="WB_FAPND.C" />
+    <ClCompile Include="trades.c" />
+    <ClCompile Include="user.c" />
+    <ClCompile Include="video.c" />
+    <ClCompile Include="village.c" />
+    <ClCompile Include="voting.c" />
+    <ClCompile Include="wb_fapnd.c" />
+    <ClCompile Include="win_wrappers.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ALLIANCE.H" />
-    <ClInclude Include="CLANS.H" />
-    <ClInclude Include="CLANSF.H" />
-    <ClInclude Include="CLANSINI.H" />
-    <ClInclude Include="CLASS.H" />
+    <ClInclude Include="alliance.h" />
+    <ClInclude Include="alliancem.h" />
+    <ClInclude Include="clans.h" />
+    <ClInclude Include="clansf.h" />
+    <ClInclude Include="clansini.h" />
+    <ClInclude Include="class.h" />
     <ClInclude Include="cmdline.h" />
-    <ClInclude Include="CRC.H" />
-    <ClInclude Include="DEFINES.H" />
-    <ClInclude Include="DOOR.H" />
-    <ClInclude Include="EMPIRE.H" />
-    <ClInclude Include="FIGHT.H" />
-    <ClInclude Include="GAME.H" />
-    <ClInclude Include="HELP.H" />
-    <ClInclude Include="IBBS.H" />
-    <ClInclude Include="INIT.H" />
-    <ClInclude Include="INPUT.H" />
-    <ClInclude Include="INTERBBS.H" />
-    <ClInclude Include="ITEMS.H" />
-    <ClInclude Include="K_CLANSI.H" />
-    <ClInclude Include="K_COMMAN.H" />
-    <ClInclude Include="K_CONFIG.H" />
-    <ClInclude Include="K_IBBS.H" />
-    <ClInclude Include="K_QUESTS.H" />
-    <ClInclude Include="LANGUAGE.H" />
-    <ClInclude Include="MAIL.H" />
-    <ClInclude Include="MAINT.H" />
-    <ClInclude Include="MENUS.H" />
-    <ClInclude Include="MENUS2.H" />
-    <ClInclude Include="MISC.H" />
-    <ClInclude Include="MSTRINGS.H" />
-    <ClInclude Include="MYIBBS.H" />
-    <ClInclude Include="MYOPEN.H" />
-    <ClInclude Include="NEWS.H" />
-    <ClInclude Include="NPC.H" />
-    <ClInclude Include="OPENDOOR.H" />
-    <ClInclude Include="PACKET.H" />
-    <ClInclude Include="PARSING.H" />
-    <ClInclude Include="PAWN.H" />
-    <ClInclude Include="QUESTS.H" />
-    <ClInclude Include="REG.H" />
-    <ClInclude Include="SCORES.H" />
-    <ClInclude Include="SNIPFILE.H" />
-    <ClInclude Include="SPELLS.H" />
-    <ClInclude Include="STRUCTS.H" />
-    <ClInclude Include="SYSTEM.H" />
-    <ClInclude Include="SYSTEMF.H" />
-    <ClInclude Include="TASKER.H" />
-    <ClInclude Include="TRADES.H" />
-    <ClInclude Include="TSLICER.H" />
-    <ClInclude Include="USER.H" />
-    <ClInclude Include="VIDEO.H" />
-    <ClInclude Include="VILLAGE.H" />
-    <ClInclude Include="VOTING.H" />
+    <ClInclude Include="crc.h" />
+    <ClInclude Include="defines.h" />
+    <ClInclude Include="deserialize.h" />
+    <ClInclude Include="door.h" />
+    <ClInclude Include="empire.h" />
+    <ClInclude Include="fight.h" />
+    <ClInclude Include="game.h" />
+    <ClInclude Include="help.h" />
+    <ClInclude Include="ibbs.h" />
+    <ClInclude Include="init.h" />
+    <ClInclude Include="input.h" />
+    <ClInclude Include="interbbs.h" />
+    <ClInclude Include="items.h" />
+    <ClInclude Include="k_clansi.h" />
+    <ClInclude Include="k_comman.h" />
+    <ClInclude Include="k_config.h" />
+    <ClInclude Include="k_ibbs.h" />
+    <ClInclude Include="k_quests.h" />
+    <ClInclude Include="language.h" />
+    <ClInclude Include="mail.h" />
+    <ClInclude Include="maint.h" />
+    <ClInclude Include="menus.h" />
+    <ClInclude Include="menus2.h" />
+    <ClInclude Include="misc.h" />
+    <ClInclude Include="mstrings.h" />
+    <ClInclude Include="myibbs.h" />
+    <ClInclude Include="myopen.h" />
+    <ClInclude Include="new.h" />
+    <ClInclude Include="npc.h" />
+    <ClInclude Include="OpenDoor.h" />
+    <ClInclude Include="packet.h" />
+    <ClInclude Include="parsing.h" />
+    <ClInclude Include="pawn.h" />
+    <ClInclude Include="quests.h" />
+    <ClInclude Include="random.h" />
+    <ClInclude Include="readcfg.h" />
+    <ClInclude Include="reg.h" />
+    <ClInclude Include="scores.h" />
+    <ClInclude Include="semfile.h" />
+    <ClInclude Include="serialize.h" />
+    <ClInclude Include="snipfile.h" />
+    <ClInclude Include="spells.h" />
+    <ClInclude Include="structs.h" />
+    <ClInclude Include="system.h" />
+    <ClInclude Include="systemf.h" />
+    <ClInclude Include="tasker.h" />
+    <ClInclude Include="trades.h" />
+    <ClInclude Include="tslicer.h" />
+    <ClInclude Include="user.h" />
+    <ClInclude Include="video.h" />
+    <ClInclude Include="village.h" />
+    <ClInclude Include="voting.h" />
+    <ClInclude Include="win_wrappers.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

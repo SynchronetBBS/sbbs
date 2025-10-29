@@ -18,5 +18,14 @@
     <ClCompile Include="MCOMP.C">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="serialize.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="crc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="win_wrappers.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

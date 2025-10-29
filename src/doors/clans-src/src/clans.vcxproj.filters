@@ -39,9 +39,6 @@
     <ClCompile Include="EMPIRE.C">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="EVENT.C">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="FIGHT.C">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -114,9 +111,6 @@
     <ClCompile Include="TRADES.C">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TSLICER.C">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="USER.C">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -130,6 +124,27 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="WB_FAPND.C">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="deserialize.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="serialize.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="win_wrappers.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="semfile.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="random.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="readcfg.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="alliancem.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -230,9 +245,6 @@
     <ClInclude Include="MYOPEN.H">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NEWS.H">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="NPC.H">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -291,6 +303,30 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VOTING.H">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="new.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="win_wrappers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="deserialize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="serialize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="semfile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="random.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="readcfg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="alliancem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
