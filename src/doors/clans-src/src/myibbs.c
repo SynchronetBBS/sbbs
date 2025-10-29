@@ -346,7 +346,7 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 	snprintf(MessageHeader.szDateTime, sizeof(MessageHeader.szDateTime), "%2.2d %s %2.2d  %2.2d:%2.2d:%2.2d",
 			pTimeInfo->tm_mday,
 			aszShortMonthName[pTimeInfo->tm_mon],
-			pTimeInfo->tm_year,
+			pTimeInfo->tm_year % 100,
 			pTimeInfo->tm_hour,
 			pTimeInfo->tm_min,
 			pTimeInfo->tm_sec);
