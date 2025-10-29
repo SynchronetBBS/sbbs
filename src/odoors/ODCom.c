@@ -2971,7 +2971,6 @@ BYTE *ODComCP437ToUnicode(BYTE *buf, int *sz)
    }
    BYTE *ret = malloc(need);
    size_t outpos = 0;
-   *sz = need;
 
    if (ret == NULL) {
       od_control.od_error = ERR_MEMORY;
@@ -2999,6 +2998,7 @@ BYTE *ODComCP437ToUnicode(BYTE *buf, int *sz)
          ret[outpos++] = (ch & 0x3f) | 0x80;
       }
    }
+   *sz = need;
    return ret;
 }
 
