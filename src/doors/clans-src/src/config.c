@@ -118,7 +118,7 @@ WriteCfg(void)
 			fprintf(f, "%sInboundDir      %s\n", Config.InterBBS ? "" : "#", Config.szInboundDirs[i]);
 	}
 	fprintf(f, "%sMailerType      %s\n", Config.InterBBS ? "" : "#", MailerTypeName(Config.MailerType));
-	fprintf(f, "%sOutputSemaphore %s\n", Config.InterBBS ? "" : "#", Config.szOutputSem);
+	fprintf(f, "%sOutputSemaphore %s\n", (Config.InterBBS && Config.szOutputSem[0]) ? "" : "#", Config.szOutputSem);
 	for (struct NodeData *nd = nodes; nd && nd->number > 0; nd++) {
 		fputs("\n", f);
 		fputs("# [NodeData] ----------------------------------------------------------------\n", f);
