@@ -1760,7 +1760,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 	 , 31900},
 	{"format_name",     js_format_file_name, 1, JSTYPE_STRING
 	 , JSDOCSTR("path/filename [,<i>number</i> size=12] [,<i>bool</i> pad=false]")
-	 , JSDOCSTR("Return formatted (e.g. shortened) version of filename without path (file base does not have to be open) for display")
+	 , JSDOCSTR("Return formatted (e.g. shortened) version of filename without path (file base does not have to be open) for display (also available as a class method)")
 	 , 31900},
 	{0}
 };
@@ -1917,6 +1917,7 @@ JSObject* js_CreateFileBaseClass(JSContext* cx, JSObject* parent)
 
 	if (JS_GetProperty(cx, parent, js_filebase_class.name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JS_ValueToObject(cx, val, &constructor);
+		JS_DefineFunction(cx, constructor, "format_name", js_format_file_name, 1, 0);
 		JSObject* detail = JS_DefineObject(cx, constructor, "DETAIL", NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 		if (detail != NULL) {
 			JS_DefineProperty(cx, detail, "MIN", INT_TO_JSVAL(file_detail_index), NULL, NULL
