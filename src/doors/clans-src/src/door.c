@@ -364,8 +364,15 @@ void rputs(const char *string)
 	pCurChar = string;
 
 	while (*pCurChar) {
-		for (pStrChar=pCurChar; *pStrChar!='|'&&*pStrChar!=0&&*pStrChar!=SPECIAL_CODE&&*pStrChar!='\n'&&*pStrChar!='`'&&*pStrChar!=SPECIAL_CODE; pStrChar++);
-		od_disp(pCurChar, pStrChar-pCurChar, true);
+		// Skips to the next special character...
+		for (pStrChar=pCurChar; *pStrChar != '|'
+		    && *pStrChar != 0
+		    && *pStrChar != SPECIAL_CODE
+		    && *pStrChar != '\n'
+		    && *pStrChar != '`'
+		    && *pStrChar!=SPECIAL_CODE; pStrChar++);
+		if (pCurChar != pStrChar)
+			od_disp(pCurChar, pStrChar-pCurChar, true);
 		pCurChar=pStrChar;
 		if (!(*pCurChar))break;
 
