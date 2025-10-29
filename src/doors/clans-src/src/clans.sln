@@ -29,7 +29,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mclass", "mclass.vcxproj", 
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mitems", "mitems.vcxproj", "{B4A178D4-EB7D-420D-986A-8019C96116DD}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mitems", "mitems.vcxproj", "{B4A178D4-EB7D-420D-986A-8019C96116DE}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mspells", "mspells.vcxproj", "{B4A178D4-EB7D-420D-986A-8019C96116DE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
