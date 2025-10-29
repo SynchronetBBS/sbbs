@@ -89,6 +89,8 @@ uint8_t CurrentAttr = 7;
 int ScreenWidth = 80;
 int ScreenLines = 24;
 
+static bool VideoInitialized;
+
 // ------------------------------------------------------------------------- //
 
 static struct {
@@ -1041,23 +1043,26 @@ void Video_Init(void)
 #else
 # error No Video_Init() implementation for this platform
 #endif
+	VideoInitialized = true;
 }
 
 void Video_Close(void)
 {
+	if (VideoInitialized) {
 #ifdef _WIN32
-	//FreeConsole();
+		//FreeConsole();
 #elif defined(__unix__)
-	int x, y;
-	getxy(&x, &y);
-	fputs("\x1b[?7h\x1b[r", stdout);
-	textattr(7);
-	ShowTextCursor(true);
-	CurrentX = -1;
-	CurrentY = -1;
-	gotoxy(x, y);
-	tcsetattr(STDIN_FILENO, TCSANOW, &orig_tio);
+		int x, y;
+		getxy(&x, &y);
+		fputs("\x1b[?7h\x1b[r", stdout);
+		textattr(7);
+		ShowTextCursor(true);
+		CurrentX = -1;
+		CurrentY = -1;
+		gotoxy(x, y);
+		tcsetattr(STDIN_FILENO, TCSANOW, &orig_tio);
 #endif
+	}
 }
 
 void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color)

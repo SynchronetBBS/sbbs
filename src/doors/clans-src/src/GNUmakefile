@@ -41,7 +41,7 @@ else
  endif
 endif
 
-CFLAGS	+=	-std=c11 -MMD -MP
+CFLAGS	+=	-std=c17 -MMD -MP
 
 #
 # See convert.txt for more suggestions.

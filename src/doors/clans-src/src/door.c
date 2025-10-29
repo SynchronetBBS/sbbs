@@ -133,7 +133,7 @@ static void LocalLoad(void)
 
 	name[0] = 0;
 	szString[0] = 0;
-	gotoxy(14,20);
+	gotoxy(13,19);
 	Input(szString, 27);
 
 	if (strlen(szString))
