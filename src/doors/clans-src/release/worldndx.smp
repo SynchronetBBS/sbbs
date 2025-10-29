@@ -45,6 +45,7 @@ Status          Active
 # BBSName         BBS Name
 # VillageName     Village Name
 # Address         XXX:YYY/ZZZ
+# Status          Inactive
 # NoMSG <- optional, use this if you don't want a .MSG file to be created.
 #          this is useful for ftp networks
 
