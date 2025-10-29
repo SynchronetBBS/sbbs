@@ -1596,6 +1596,11 @@ static void IBBS_LoadNDX(void)
 
 						/* activate this BBS */
 
+						if (IBBS.Data.Nodes[CurBBS].Active
+						    || IBBS.Data.Nodes[CurBBS].Info.pszBBSName
+						    || IBBS.Data.Nodes[CurBBS].Info.pszVillageName
+						    || IBBS.Data.Nodes[CurBBS].Info.pszAddress)
+							System_Error("Duplicate BBS ID in world.ndx!\n");
 						IBBS.Data.Nodes[CurBBS].Active = true;
 						IBBS.Data.Nodes[CurBBS].Info.pszBBSName = NULL;
 						IBBS.Data.Nodes[CurBBS].Info.pszVillageName = NULL;
@@ -1607,16 +1612,27 @@ static void IBBS_LoadNDX(void)
 						IBBS.Data.Nodes[CurBBS].Attack.ReceiveIndex = 0;
 						break;
 					case 1 :    /* village name */
+						if (CurBBS == 0)
+							System_Error("VillageName outside of BBSId section!\n");
 						IBBS.Data.Nodes[CurBBS].Info.pszVillageName = DupeStr(pcCurrentPos);
 						break;
 					case 2 :    /* Address */
+						if (CurBBS == 0)
+							System_Error("Address outside of BBSId section!\n");
 						IBBS.Data.Nodes[CurBBS].Info.pszAddress = DupeStr(pcCurrentPos);
 						break;
 					case 0 :    /* BBS name */
+						if (CurBBS == 0)
+							System_Error("BBSName outside of BBSId section!\n");
 						IBBS.Data.Nodes[CurBBS].Info.pszBBSName = DupeStr(pcCurrentPos);
 						break;
 					case 6 :    /* Status */
-						//printf("status: currently unused\n");
+						if (CurBBS == 0)
+							System_Error("Status outside of BBSId section!\n");
+						if (stricmp(pcCurrentPos, "inactive") == 0)
+							IBBS.Data.Nodes[CurBBS].Active = false;
+						else
+							IBBS.Data.Nodes[CurBBS].Active = true;
 						break;
 					case 7 :    /* worldname */
 						strlcpy(Game.Data.szWorldName, pcCurrentPos, sizeof(Game.Data.szWorldName));
@@ -1628,6 +1644,8 @@ static void IBBS_LoadNDX(void)
 					case 9 :        /* Host */
 						/* get tokens till no more */
 						UseHost = true;
+						if (CurBBS == 0)
+							System_Error("Host outside of BBSId section!\n");
 
 						for (;;) {
 							GetToken(pcCurrentPos, szString);
@@ -1669,6 +1687,8 @@ static void IBBS_LoadNDX(void)
 						}
 						break;
 					case 10 : /* NoMSG */
+						if (CurBBS == 0)
+							System_Error("NoMSG outside of BBSId section!\n");
 						if (IBBS.Data.StrictMsgFile)
 							System_Error("NoMSG used with StrictMsgFile");
 						NoMSG[CurBBS] = true;
