@@ -28,6 +28,8 @@ findfirst(char *pathname, struct ffblk *fblk, int attrib)
 	}
 	*(strrchr(path,'/')+1)=0;
 	fblk->dir_handle = opendir(path);
+	if (fblk->dir_handle == NULL)
+		return 1;
 	strlcpy(fblk->pathname, strrchr(pathname,'/')+1, sizeof(fblk->pathname));
 
 	while ((dp = readdir(fblk->dir_handle)) != NULL)
