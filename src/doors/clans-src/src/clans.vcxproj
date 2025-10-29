@@ -59,7 +59,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>.\Win32_Debug\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Win32_Debug\</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>.\Win32_Debug\clans.pdb</ProgramDataBaseFileName>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Midl>
@@ -92,7 +92,7 @@
       <AssemblerListingLocation>.\Win32_Release\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\Win32_Release\clans.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\Win32_Release\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Win32_Release\</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>.\Win32_Release\clans.pdb</ProgramDataBaseFileName>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Midl>

@@ -59,7 +59,7 @@
       <AssemblerListingLocation>.\Win32_Release\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\Win32_Release\langcomp.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\Win32_Release\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Win32_Release\</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>.\Win32_Release\langcomp.pdb</ProgramDataBaseFileName>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Midl>
@@ -89,7 +89,7 @@
       <AssemblerListingLocation>.\win32_debug\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\win32_debug\langcomp.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\win32_debug\</ObjectFileName>
-      <ProgramDataBaseFileName>.\win32_debug\</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>.\win32_debug\langcomp.pdb</ProgramDataBaseFileName>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Midl>

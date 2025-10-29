@@ -59,7 +59,7 @@
       <AssemblerListingLocation>.\Win32_Debug\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\Win32_Debug\pcedit.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\Win32_Debug\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Win32_Debug\</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>.\Win32_Debug\pcedit.pdb</ProgramDataBaseFileName>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Midl>
@@ -89,7 +89,7 @@
       <AssemblerListingLocation>.\Win32_Release\</AssemblerListingLocation>
       <PrecompiledHeaderOutputFile>.\Win32_Release\pcedit.pch</PrecompiledHeaderOutputFile>
       <ObjectFileName>.\Win32_Release\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Win32_Release\</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>.\Win32_Release\pcedit.pdb</ProgramDataBaseFileName>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Midl>
