@@ -290,6 +290,9 @@ static int GetGUM(FILE *fpGUM)
 	fread(&time, sizeof(date), 1, fpGUM);
 	time = SWAP16(time);
 
+	if (strcmp(szFileName, "UnixAttr.DAT") == 0)
+		unlink(szFileName);
+
 	// get type of input depending on WriteType
 	if (FileExists(szFileName) && WriteType(szFileName) == OVERWRITE) {
 		// continue -- overwrite file
@@ -359,7 +362,7 @@ static void install(void)
 #ifdef __unix__
 	FILE *fpAttr;
 	mode_t  tMode;
-	char szFileName[MAX_FILENAME_LEN];
+	char szFileName[PATH_SIZE];
 	unsigned tmp;
 #endif
 	char cInput;

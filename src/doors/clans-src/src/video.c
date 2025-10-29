@@ -191,6 +191,11 @@ void SetScrollRegion(int top, int bottom)
 	ScrollBottom = bottom;
 #if defined(__unix__)
 	fprintf(stdout, "\x1b[%d;%dr", top + 1, bottom + 1);
+	int x = CurrentX;
+	int y = CurrentY;
+	CurrentX = -1;
+	CurrentY = -1;
+	gotoxy(x, y);
 #endif
 }
 
@@ -272,8 +277,6 @@ void zputs(const char *string)
 	int16_t i, j;
 	int x, y;
 	static char o_fg = 7, o_bg = 0;
-	int scr_lines = ScreenLines;
-	int scr_width = ScreenWidth;
 
 	cur_attrs = o_fg | o_bg;
 	cur_char = 0;
@@ -283,37 +286,20 @@ void zputs(const char *string)
 #ifdef _WIN32
 		gotoxy(x, y);
 #endif
-		if (y > ScrollBottom) {
-			/* scroll line up */
-			ScrollUp();
-			y = ScrollBottom;
-		}
 		if (string[cur_char] == 0)
 			break;
 		if (string[cur_char] == '\b') {
 			if (x)
 				x--;
+			gotoxy(x, y);
 			cur_char++;
-			continue;
 		}
-		if (string[cur_char] == '\r') {
+		else if (string[cur_char] == '\r') {
 			x = 0;
 			cur_char++;
 			gotoxy(x, y);
-			continue;
 		}
-		if (x == scr_width) {
-			x = 0;
-			y++;
-
-			if (y > ScrollBottom) {
-				/* scroll line up */
-				ScrollUp();
-				y = ScrollBottom;
-			}
-			break;
-		}
-		if (string[cur_char]=='|') {
+		else if (string[cur_char]=='|') {
 			if (isdigit(string[cur_char+1]) && isdigit(string[cur_char+2])) {
 				number[0]=string[cur_char+1];
 				number[1]=string[cur_char+2];
@@ -342,10 +328,10 @@ void zputs(const char *string)
 		}
 		else if (string[cur_char] == '\n')  {
 			y++;
-			if (y >= scr_lines) {
+			if (y >= ScreenLines) {
 				/* scroll line up */
 				ScrollUp();
-				y = scr_lines - 1;
+				y = ScreenLines - 1;
 			}
 			cur_char++;
 			x = 0;
@@ -356,16 +342,34 @@ void zputs(const char *string)
 			cur_char++;
 			for (i=0; i<8; i++) {
 				j = i + x;
-				if (j > scr_width) break;
+				if (j > ScreenWidth)
+					break;
 				put_character(' ', cur_attrs, j, y);
 			}
-			x += 8;
 		}
 		else {
 			put_character(string[cur_char], cur_attrs, x, y);
 
 			cur_char++;
 			x++;
+		}
+
+		if (y > ScrollBottom) {
+			/* scroll line up */
+			ScrollUp();
+			y = ScrollBottom;
+			gotoxy(x, y);
+		}
+		if (x >= ScreenWidth) {
+			x = 0;
+			y++;
+
+			if (y > ScrollBottom) {
+				/* scroll line up */
+				ScrollUp();
+				y = ScrollBottom;
+			}
+			gotoxy(x, y);
 		}
 	}
 	gotoxy(x, y);
@@ -1015,7 +1019,7 @@ void Video_Init(void)
 	tcsetattr(STDIN_FILENO, TCSANOW, &raw);
 	setvbuf(stdout, NULL, _IONBF, 0);
 	getxy(&x, &y);
-	fputs("\x1b[255B\x1b[255C", stdout);
+	fputs("\x1b[?7l\x1b[255B\x1b[255C", stdout);
 	getxy(&ScreenWidth, &ScreenLines);
 	ScreenWidth++;
 	ScreenLines++;
@@ -1046,10 +1050,12 @@ void Video_Close(void)
 #elif defined(__unix__)
 	int x, y;
 	getxy(&x, &y);
-	fputs("\x1b[r", stdout);
-	gotoxy(x, y);
+	fputs("\x1b[?7h\x1b[r", stdout);
 	textattr(7);
 	ShowTextCursor(true);
+	CurrentX = -1;
+	CurrentY = -1;
+	gotoxy(x, y);
 	tcsetattr(STDIN_FILENO, TCSANOW, &orig_tio);
 #endif
 }
@@ -1272,6 +1278,25 @@ void ShowTextCursor(bool sh)
 
 void gotoxy(int x, int y)
 {
+	if (CurrentX == x && CurrentY == y)
+		return;
+	if (x == 0 && CurrentX != 0 && (y == CurrentY || y == CurrentY + 1)) {
+		printf("\r");
+		CurrentX = 0;
+		if (y == CurrentY)
+			return;
+	}
+	if (x == CurrentX - 1) {
+		printf("\b");
+		CurrentX--;
+		if (y == CurrentY)
+			return;
+	}
+	if (x == CurrentX && y == CurrentY + 1) {
+		printf("\n");
+		CurrentY++;
+		return;
+	}
 	CurrentX = x;
 	CurrentY = y;
 	printf("\x1b[%d;%dH", y + 1, x + 1);
@@ -1286,7 +1311,7 @@ void clrscr(void)
 			*(ch++) = CurrentAttr;
 		}
 	}
-			
+
 	fputs("\x1b[H\x1b[J", stdout);
 	CurrentX = 0;
 	CurrentY = 0;
@@ -1294,6 +1319,8 @@ void clrscr(void)
 
 void textattr(uint8_t attrib)
 {
+	if (attrib == CurrentAttr)
+		return;
 	char seq[23];
 	snprintf(seq, sizeof(seq), "\x1b[0;%d;%d", ansi_colours(attrib & 0x07), ansi_colours((attrib >> 4) & 0x07) + 10);
 	if (attrib & 0x08)
@@ -1336,18 +1363,9 @@ static void clans_putch(unsigned char ch)
 	ptr[0] = ch;
 	ptr[1] = CurrentAttr;
 	CurrentX++;
-	if (CurrentX == ScreenWidth) {
-		CurrentX = 0;
-		CurrentY++;
-		if (CurrentY == ScreenLines) {
-			memmove(Video.VideoMem, &Video.VideoMem[ScreenWidth * 2], (ScreenLines - 1) * ScreenWidth * 2);
-			char *ch = &Video.VideoMem[(ScreenLines - 1) * ScreenWidth * 2];
-			for (int x = 0; x < ScreenWidth; x++) {
-				*(ch++) = ' ';
-				*(ch++) = CurrentAttr;
-			}
-			CurrentY--;
-		}
+	if (CurrentX >= ScreenWidth) {
+		CurrentX = ScreenWidth - 1;
+		gotoxy(CurrentX, CurrentY);
 	}
 }
 
