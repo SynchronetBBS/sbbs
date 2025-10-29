@@ -80,7 +80,7 @@
       <SubSystem>Windows</SubSystem>
       <OutputFile>.\Win32_Debug\clans.exe</OutputFile>
       <AdditionalDependencies>ODoorW.lib;%(AdditionalDependencies)</AdditionalDependencies>
-	</Link>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
