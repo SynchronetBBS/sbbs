@@ -787,7 +787,6 @@ void Door_Init(bool Local)
 	}
 
 	if (Door.UserBooted) {
-		Door.UserBooted = true;
 		rputs(ST_MAIN4);
 		System_Close();
 	}

@@ -477,10 +477,8 @@ static void JumpToEvent(const char *szLabel, struct FileHeader *FileHeader)
 
 	for (;;) {
 		// if past end of file or at it, break
-		if (ftell(FileHeader->fp) >= FileHeader->lEnd) {
-			printf("Couldn't find event!\n");
-			od_exit(0, false);
-		}
+		if (ftell(FileHeader->fp) >= FileHeader->lEnd)
+			System_Error("Couldn't find event!\n");
 
 		// find event to run first
 		fread(hBuf, sizeof(hBuf), 1, FileHeader->fp);

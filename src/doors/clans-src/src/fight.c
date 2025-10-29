@@ -1431,7 +1431,7 @@ static int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16
 	if (!FileHeader.fp) {
 		snprintf(szString, sizeof(szString), "Error:  couldn't open %s!\n", szFileName);
 		rputs(szString);
-		od_exit(0, false);
+		System_Error(szString);
 	}
 
 	/* read index */

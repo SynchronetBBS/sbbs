@@ -254,7 +254,7 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 		else if (stricmp(&flag[1], "?") == 0 || stricmp(&flag[1], "Help") == 0) {
 			ShowHelp();
 			delay(3000);
-			exit(0);
+			System_Close();
 		}
 		else if (stricmp(&flag[1], "T") == 0) {
 			// No longer available, backward compatibility.
@@ -358,7 +358,9 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 	snprintf(szString, sizeof(szString), "|06Invalid parameter \"%s\" |07type |14CLANS /? |07for help\n", flag);
 	zputs(szString);
 	delay(3000);
-	exit(0);
+	System_Close();
+	// We shouldn't be able to get here...
+	return true;
 }
 
 // ------------------------------------------------------------------------- //
@@ -377,12 +379,24 @@ void System_Maint(void)
 
 // ------------------------------------------------------------------------- //
 
-void System_Close(void)
+/*
+ * This is used to detect if something called from System_Close_AtExit()
+ * has called exit().
+ * 
+ * System_Close_AtExit() toggles this bit, so the caller can clear the
+ * bit and call System_Close_AtExit(). If the bit is cleared when
+ * System_Close_AtExit() returns, it was called twice instead of just
+ * once, and it can be assumed the second call was from the atexit()
+ * handler.
+ */
+static bool RecurseCheck = false;
+static void System_Close_AtExit(void)
 /*
  * purpose  Closes down the system, no matter WHERE it is called.
- *          Should be foolproof.
+ *          Should be foolproof, but MUST NOT call exit()
  */
 {
+	RecurseCheck = !RecurseCheck;
 	if (System.Initialized) {
 		// This simply ensures this function is run ONLY ONCE!
 		System.Initialized = false;
@@ -440,13 +454,31 @@ void System_Close(void)
 
 		TRACEX("Video_Close()");
 		Video_Close();
+	}
+}
 
-		TRACEX("Door_Initialized()");
-		if (Door_Initialized()) {
-			od_exit(0, false);
+void System_Close(void)
+/*
+ * purpose  Closes down the system, no matter WHERE it is called.
+ *          Should be foolproof.
+ */
+{
+	if (System.Initialized) {
+		RecurseCheck = false;
+		System_Close_AtExit();
+
+		if (RecurseCheck) {
+			TRACEX("Door_Initialized()");
+			if (Door_Initialized()) {
+				od_exit(0, false);
+			}
+			else {
+				exit(0);
+			}
 		}
 		else {
-			exit(0);
+			puts("exit() called from System_Close_AtExit()\r");
+			abort();
 		}
 	}
 }
@@ -462,6 +494,7 @@ void System_Init(void)
 	char *pszResolvedPath;
 #endif
 
+	atexit(System_Close_AtExit);
 	System.Initialized = true;
 	System.LocalIBBS = false;
 
@@ -588,7 +621,7 @@ void System_Init(void)
 
 	if (System_LockedOut()) {
 		rputs("Sorry, you have been locked out of this door.\n%P");
-		od_exit(0, false);
+		System_Close();
 	}
 
 
