@@ -119,7 +119,31 @@
     <ClCompile Include="win_wrappers.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="alliance.h" />
+    <ClInclude Include="crc.h" />
+    <ClInclude Include="door.h" />
+    <ClInclude Include="defines.h" />
+    <ClInclude Include="deserialize.h" />
+    <ClInclude Include="empire.h" />
+    <ClInclude Include="fight.h" />
+    <ClInclude Include="game.h" />
+    <ClInclude Include="help.h" />
+    <ClInclude Include="input.h" />
+    <ClInclude Include="interbbs.h" />
+    <ClInclude Include="items.h" />
+    <ClInclude Include="language.h" />
+    <ClInclude Include="mail.h" />
+    <ClInclude Include="menus.h" />
+    <ClInclude Include="mstrings.h" />
     <ClInclude Include="myopen.h" />
+    <ClInclude Include="parsing.h" />
+    <ClInclude Include="quests.h" />
+    <ClInclude Include="serialize.h" />
+    <ClInclude Include="structs.h" />
+    <ClInclude Include="unix_wrappers.h" />
+    <ClInclude Include="user.h" />
+    <ClInclude Include="video.h" />
+    <ClInclude Include="win_wrappers.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

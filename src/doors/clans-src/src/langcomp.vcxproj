@@ -117,7 +117,16 @@
     <ClCompile Include="win_wrappers.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="crc.h" />
     <ClInclude Include="defines.h" />
+    <ClInclude Include="deserialize.h" />
+    <ClInclude Include="interbbs.h" />
+    <ClInclude Include="myopen.h" />
+    <ClInclude Include="quests.h" />
+    <ClInclude Include="serialize.h" />
+    <ClInclude Include="structs.h" />
+    <ClInclude Include="unix_wrappers.h" />
+    <ClInclude Include="win_wrappers.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
