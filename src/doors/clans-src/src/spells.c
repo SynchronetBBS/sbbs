@@ -60,7 +60,7 @@ static char * get_spell(char **dest, FILE *fp)
 		CheckMem(*dest);
 		if (!fread(*dest, StringLength, 1, fp))
 			System_Error("fread failed in get_spell() [String Read]");
-		dest[StringLength] = 0;
+		(*dest)[StringLength] = 0;
 	}
 	return (*dest);
 }
