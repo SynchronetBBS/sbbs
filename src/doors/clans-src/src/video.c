@@ -281,6 +281,9 @@ void zputs(const char *string)
 	int x, y;
 	static char o_fg = 7, o_bg = 0;
 
+	if (!VideoInitialized)
+		Video_Init();
+
 	cur_attrs = o_fg | o_bg;
 	cur_char = 0;
 	getxy(&x, &y);
@@ -988,68 +991,71 @@ static void makeraw(struct termios *raw)
 
 void Video_Init(void)
 {
+	if (!VideoInitialized) {
 #if defined(_WIN32)
-	CONSOLE_CURSOR_INFO cursor_info;
-	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
+		CONSOLE_CURSOR_INFO cursor_info;
+		CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 
-	std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	if (std_handle == NULL) {
-		if (!AllocConsole()) {
+		std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+		if (std_handle == NULL) {
+			if (!AllocConsole()) {
+				display_win32_error();
+				exit(0);
+			}
+			std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
+		}
+
+		if (!GetConsoleCursorInfo(
+					std_handle,
+					&cursor_info)) {
 			display_win32_error();
 			exit(0);
 		}
-		std_handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	}
+		default_cursor_size = cursor_info.dwSize;
 
-	if (!GetConsoleCursorInfo(
-				std_handle,
-				&cursor_info)) {
-		display_win32_error();
-		exit(0);
-	}
-	default_cursor_size = cursor_info.dwSize;
-
-	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
-	ScreenWidth = screen_buffer.srWindow.Right - screen_buffer.srWindow.Left + 1;
-	ScreenLines = screen_buffer.srWindow.Bottom - screen_buffer.srWindow.Top + 1;
+		GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
+		ScreenWidth = screen_buffer.srWindow.Right - screen_buffer.srWindow.Left + 1;
+		ScreenLines = screen_buffer.srWindow.Bottom - screen_buffer.srWindow.Top + 1;
 #elif defined(__unix__)
-	struct termios raw;
-	int x, y;
+		struct termios raw;
+		int x, y;
 
-	tcgetattr(STDIN_FILENO, &orig_tio);
-	raw = orig_tio;
-	makeraw(&raw);
-	tcsetattr(STDIN_FILENO, TCSANOW, &raw);
-	setvbuf(stdout, NULL, _IONBF, 0);
-	getxy(&x, &y);
-	fputs("\x1b[?7l\x1b[255B\x1b[255C", stdout);
-	getxy(&ScreenWidth, &ScreenLines);
-	ScreenWidth++;
-	ScreenLines++;
-	gotoxy(x, y);
-	textattr(7);
-	// character then attribute
-	Video.VideoMem = calloc(1, ScreenWidth * ScreenLines * 2);
-	clrscr();
+		tcgetattr(STDIN_FILENO, &orig_tio);
+		raw = orig_tio;
+		makeraw(&raw);
+		tcsetattr(STDIN_FILENO, TCSANOW, &raw);
+		setvbuf(stdout, NULL, _IONBF, 0);
+		getxy(&x, &y);
+		fputs("\x1b[?7l\x1b[255B\x1b[255C", stdout);
+		getxy(&ScreenWidth, &ScreenLines);
+		ScreenWidth++;
+		ScreenLines++;
+		gotoxy(x, y);
+		textattr(7);
+		// character then attribute
+		Video.VideoMem = calloc(1, ScreenWidth * ScreenLines * 2);
+		clrscr();
 #elif defined(__MSDOS__)
-	int16_t iTemp;
-	struct text_info TextInfo
-	gettextinfo(&TextInfo);
+		int16_t iTemp;
+		struct text_info TextInfo
+		gettextinfo(&TextInfo);
 
-	Video.VideoMem = vid_address();
-	for (iTemp = 0; iTemp < 25;  iTemp++)
-		Video.y_lookup[ iTemp ] = iTemp * 160;
-	ScreenLines = TextInfo.screenheight;
-	ScreenWidth = TextInfo.screenwidth;
+		Video.VideoMem = vid_address();
+		for (iTemp = 0; iTemp < 25;  iTemp++)
+			Video.y_lookup[ iTemp ] = iTemp * 160;
+		ScreenLines = TextInfo.screenheight;
+		ScreenWidth = TextInfo.screenwidth;
 #else
 # error No Video_Init() implementation for this platform
 #endif
+	}
 	VideoInitialized = true;
 }
 
 void Video_Close(void)
 {
 	if (VideoInitialized) {
+		VideoInitialized = false;
 #ifdef _WIN32
 		//FreeConsole();
 #elif defined(__unix__)
