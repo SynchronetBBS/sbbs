@@ -85,6 +85,7 @@ int CurrentX = 0;
 int CurrentY = 0;
 uint8_t CurrentAttr = 7;
 static void forced_gotoxy(int x, int y);
+bool IsTTY = false;
 #endif
 
 int ScreenWidth = 80;
@@ -1020,16 +1021,25 @@ void Video_Init(void)
 		struct termios raw;
 		int x, y;
 
-		tcgetattr(STDIN_FILENO, &orig_tio);
-		raw = orig_tio;
-		makeraw(&raw);
-		tcsetattr(STDIN_FILENO, TCSANOW, &raw);
-		setvbuf(stdout, NULL, _IONBF, 0);
-		getxy(&x, &y);
-		fputs("\x1b[?7l\x1b[255B\x1b[255C", stdout);
-		getxy(&ScreenWidth, &ScreenLines);
-		ScreenWidth++;
-		ScreenLines++;
+		IsTTY = isatty(STDOUT_FILENO);
+		if (IsTTY) {
+			tcgetattr(STDIN_FILENO, &orig_tio);
+			raw = orig_tio;
+			makeraw(&raw);
+			tcsetattr(STDIN_FILENO, TCSANOW, &raw);
+			setvbuf(stdout, NULL, _IONBF, 0);
+			getxy(&x, &y);
+			fputs("\x1b[?7l\x1b[255B\x1b[255C", stdout);
+			getxy(&ScreenWidth, &ScreenLines);
+			ScreenWidth++;
+			ScreenLines++;
+		}
+		else {
+			ScreenWidth = 80;
+			ScreenLines = 25;
+			x = 0;
+			y = 0;
+		}
 		gotoxy(x, y);
 		textattr(7);
 		// character then attribute
@@ -1069,7 +1079,8 @@ void Video_Close(void)
 		gotoxy(x, y);
 		free(Video.VideoMem);
 		Video.VideoMem = NULL;
-		tcsetattr(STDIN_FILENO, TCSANOW, &orig_tio);
+		if (IsTTY)
+			tcsetattr(STDIN_FILENO, TCSANOW, &orig_tio);
 #endif
 	}
 }
@@ -1613,6 +1624,11 @@ static void getxy(int *x, int*y)
 	int seqlen;
 	size_t span;
 
+	if (!IsTTY) {
+		*x = CurrentX;
+		*y = CurrentY;
+		return;
+	}
 	fputs("\x1b[6n", stdout);
 	while((seqlen = getseq()) != -1) {
 		if (seqlen < 6)
