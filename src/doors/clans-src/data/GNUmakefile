@@ -15,6 +15,23 @@ all: pak
 native-devkit:
 	env - PATH="$(PATH)" $(MAKE) -C ../src devkit
 
+$(BINDIR)ecomp: native-devkit
+$(BINDIR)ecomp$(NATIVEEXEFILE): native-devkit
+$(BINDIR)langcomp: native-devkit
+$(BINDIR)langcomp$(NATIVEEXEFILE): native-devkit
+$(BINDIR)mcomp: native-devkit
+$(BINDIR)mcomp$(NATIVEEXEFILE): native-devkit
+$(BINDIR)mspells: native-devkit
+$(BINDIR)mspells$(NATIVEEXEFILE): native-devkit
+$(BINDIR)mitems: native-devkit
+$(BINDIR)mitems$(NATIVEEXEFILE): native-devkit
+$(BINDIR)mclass: native-devkit
+$(BINDIR)mclass$(NATIVEEXEFILE): native-devkit
+$(BINDIR)makenpc: native-devkit
+$(BINDIR)makenpc$(NATIVEEXEFILE): native-devkit
+$(BINDIR)makepak: native-devkit
+$(BINDIR)makepak$(NATIVEEXEFILE): native-devkit
+
 %.e: %.evt $(BINDIR)ecomp $(BINDIR)ecomp$(NATIVEEXEFILE) | native-devkit
 	$(BINDIR)ecomp $< $@
 
