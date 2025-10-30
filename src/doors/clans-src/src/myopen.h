@@ -67,12 +67,12 @@ int16_t EncryptRead(void *Data, int32_t DataSize, FILE *fp, char XorValue);
 	}                                                                   \
 	if (!erRet)
 
-#define BUF_SIZE_Alliance 2129U
+#define BUF_SIZE_Alliance 2121U
 #define BUF_SIZE_Army 27U
-#define BUF_SIZE_AttackPacket 200U
+#define BUF_SIZE_AttackPacket 192U
 #define BUF_SIZE_AttackResult 263U
-#define BUF_SIZE_clan 2257U
-#define BUF_SIZE_empire 149U
+#define BUF_SIZE_clan 2249U
+#define BUF_SIZE_empire 141U
 #define BUF_SIZE_EventHeader 35U
 #define BUF_SIZE_FileHeader 42U
 #define BUF_SIZE_game_data 105U
@@ -85,7 +85,7 @@ int16_t EncryptRead(void *Data, int32_t DataSize, FILE *fp, char XorValue);
 #define BUF_SIZE_Message 210U
 #define BUF_SIZE_MessageHeader 190U
 #define BUF_SIZE_Msg_Txt 84U
-#define BUF_SIZE_NPCInfo 1235U
+#define BUF_SIZE_NPCInfo 1228U
 #define BUF_SIZE_NPCNdx 29U
 #define BUF_SIZE_Packet 38U
 #define BUF_SIZE_pc 140U
@@ -93,14 +93,14 @@ int16_t EncryptRead(void *Data, int32_t DataSize, FILE *fp, char XorValue);
 #define BUF_SIZE_Spell 39U
 #define BUF_SIZE_SpellsInEffect 4U
 #define BUF_SIZE_SpyAttemptPacket 88U
-#define BUF_SIZE_SpyResultPacket 194U
+#define BUF_SIZE_SpyResultPacket 186U
 #define BUF_SIZE_Strategy 5U
 #define BUF_SIZE_Topic 98U
 #define BUF_SIZE_TradeData 86U
 #define BUF_SIZE_TradeList 24U
 #define BUF_SIZE_UserInfo 65U
 #define BUF_SIZE_UserScore 61U
-#define BUF_SIZE_village_data 312U
+#define BUF_SIZE_village_data 303U
 STATIC_ASSERT_GLOBAL(BUF_SIZE_Language <= sizeof(serBuf), "Shared buffer too small")
 
 #endif
