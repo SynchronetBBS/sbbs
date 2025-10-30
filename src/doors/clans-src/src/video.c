@@ -84,6 +84,7 @@ struct termios orig_tio;
 int CurrentX = 0;
 int CurrentY = 0;
 uint8_t CurrentAttr = 7;
+static void forced_gotoxy(int x, int y);
 #endif
 
 int ScreenWidth = 80;
@@ -1257,6 +1258,7 @@ static void redraw(void)
 	char *ch = Video.VideoMem;
 	gotoxy(0, 0);
 	for (int y = 0; y < ScreenLines; y++) {
+		gotoxy(0, y);
 		for (int x = 0; x < ScreenWidth; x++) {
 			textattr(ch[1]);
 			if (y == ScreenLines - 1 && x == ScreenWidth - 1) {
@@ -1283,6 +1285,13 @@ void ShowTextCursor(bool sh)
 	fputs(sh ? "\x1b[?25h" : "\x1b[?25l", stdout);
 }
 
+static void forced_gotoxy(int x, int y)
+{
+	CurrentX = x;
+	CurrentY = y;
+	printf("\x1b[%d;%dH", y + 1, x + 1);
+}
+
 void gotoxy(int x, int y)
 {
 	if (CurrentX == x && CurrentY == y)
@@ -1304,9 +1313,7 @@ void gotoxy(int x, int y)
 		CurrentY++;
 		return;
 	}
-	CurrentX = x;
-	CurrentY = y;
-	printf("\x1b[%d;%dH", y + 1, x + 1);
+	forced_gotoxy(x, y);
 }
 
 void clrscr(void)
