@@ -274,7 +274,6 @@ static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName)
 						Spells[CurSpell]->StrengthCanReduce = false;
 						Spells[CurSpell]->WisdomCanReduce = false;
 						Spells[CurSpell]->MultiAffect = false;
-						Spells[CurSpell]->Garbage = false;
 
 						strlcpy(Spells[CurSpell]->szName, pcCurrentPos, sizeof(Spells[CurSpell]->szName));
 						Spells[CurSpell]->TypeFlag = 0;
