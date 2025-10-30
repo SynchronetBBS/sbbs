@@ -872,17 +872,17 @@ spec:
   script:
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
-    - cd src/doors/clans-src/src
+    - cd src/doors/clans-src
     - touch depend
     - touch odoors
     - echo -e "\e[0Ksection_end:`date +%s`:extract_depends\r\e[0K"
-    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS all
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS installer devkit-installer
   variables:
     GIT_STRATEGY: fetch
   artifacts:
     name: "clans-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
-      - "src/doors/clans-src/bin/*"
+      - "src/doors/clans-src/Clans*.zip"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
   rules:
