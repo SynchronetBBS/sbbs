@@ -120,7 +120,6 @@ struct empire {
 	int16_t SpiesToday;              // how many spying attempts today?
 	int16_t AttacksToday;
 	int32_t Points;                    // used in future?
-	int16_t Junk[4];
 
 	// other stuff goes here
 	struct Army Army;
@@ -164,8 +163,7 @@ struct village {
 		UpPawnToday     : 1,
 		UpWizToday      : 1,
 		SetConToday     : 1,
-		ShowEmpireStats : 1,
-		Junk            : 6;
+		ShowEmpireStats : 1;
 
 		char HFlags[8];         /* daily flags -- reset nightly */
 		char GFlags[8];         /* global flags -- reset with reset */
@@ -378,7 +376,6 @@ struct Spell {
 	bool StrengthCanReduce;
 	bool WisdomCanReduce;
 	unsigned MultiAffect : 1; // set to true if it affects more than one user
-	unsigned Garbage : 7;
 };
 
 
@@ -480,11 +477,8 @@ struct NPCInfo {
 	char szName[20];
 	struct Topic Topics[MAX_TOPICS];
 	struct Topic IntroTopic;
-	bool Garbage;
-	int16_t Garbage2[2];
 	char Loyalty;       /* how loyal is he? */
 	int16_t WhereWander; // where does he wander most often?
-	int16_t Garbage3;
 	bool Roamer;      // is he a roamer type?
 	int16_t NPCPCIndex;  // which NPC is he in the NPC.PC file?
 	int16_t KnownTopics; // how many topics does he know?

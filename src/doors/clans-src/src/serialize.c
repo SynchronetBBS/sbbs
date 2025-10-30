@@ -384,7 +384,7 @@ s_Spell_s(const struct Spell *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->SP);
 	pack_bool(s->StrengthCanReduce);
 	pack_bool(s->WisdomCanReduce);
-	pack_char((s->MultiAffect << 7) | s->Garbage);
+	pack_char(s->MultiAffect << 7);
 
 	return (dst - (uint8_t *)bufptr);
 }
@@ -448,11 +448,8 @@ s_NPCInfo_s(const struct NPCInfo *s, void *bufptr, size_t bufsz)
 	pack_charArr(s->szName);
 	pack_structArr(s->Topics, Topic);
 	pack_struct(&s->IntroTopic, Topic);
-	pack_bool(s->Garbage);
-	pack_int16_tArr(s->Garbage2);
 	pack_char(s->Loyalty);
 	pack_int16_t(s->WhereWander);
-	pack_int16_t(s->Garbage3);
 	pack_bool(s->Roamer);
 	pack_int16_t(s->NPCPCIndex);
 	pack_int16_t(s->KnownTopics);
@@ -585,7 +582,6 @@ s_village_data_s(const struct village_data *s, void *bufptr, size_t bufsz)
 	*dst = 0;
 	*dst |= (s->SetConToday << 7);
 	*dst |= (s->ShowEmpireStats << 6);
-	*(dst++) |= s->Junk;
 	remain--;
 
 	pack_charArr(s->HFlags);
@@ -767,7 +763,6 @@ s_empire_s(const struct empire *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->SpiesToday);
 	pack_int16_t(s->AttacksToday);
 	pack_int32_t(s->Points);
-	pack_int16_tArr(s->Junk);
 	pack_struct(&s->Army, Army);
 	crc = CRCValue(bufptr, dst - (uint8_t*)bufptr);
 	pack_int32_t(crc);

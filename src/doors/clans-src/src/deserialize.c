@@ -403,7 +403,6 @@ s_Spell_d(const void *bufptr, size_t bufsz, struct Spell *s)
 	unpack_bool(s->WisdomCanReduce);
 	unpack_uint8_t(tmp);
 	s->MultiAffect = tmp >> 7;
-	s->Garbage = tmp & 0x7F;
 
 	return (src - (uint8_t *)bufptr);
 }
@@ -472,11 +471,8 @@ s_NPCInfo_d(const void *bufptr, size_t bufsz, struct NPCInfo *s)
 	unpack_charArr(s->szName);
 	unpack_structArr(s->Topics, Topic);
 	unpack_struct(&s->IntroTopic, Topic);
-	unpack_bool(s->Garbage);
-	unpack_int16_tArr(s->Garbage2);
 	unpack_char(s->Loyalty);
 	unpack_int16_t(s->WhereWander);
-	unpack_int16_t(s->Garbage3);
 	unpack_bool(s->Roamer);
 	unpack_int16_t(s->NPCPCIndex);
 	unpack_int16_t(s->KnownTopics);
@@ -608,7 +604,6 @@ s_village_data_d(const void *bufptr, size_t bufsz, struct village_data *s)
 		return SIZE_MAX;
 	s->SetConToday = (*src & 0x80) >> 7;
 	s->ShowEmpireStats = (*src & 0x40) >> 6;
-	s->Junk = (*(src++) & 0x3F);
 	remain--;
 
 	unpack_charArr(s->HFlags);
@@ -798,7 +793,6 @@ s_empire_d(const void *bufptr, size_t bufsz, struct empire *s)
 	unpack_int16_t(s->SpiesToday);
 	unpack_int16_t(s->AttacksToday);
 	unpack_int32_t(s->Points);
-	unpack_int16_tArr(s->Junk);
 	unpack_struct(&s->Army, Army);
 	unpack_int32_t(s->CRC);
 	if (CRCValue(bufptr, (src - (uint8_t*)bufptr) - 4) == s->CRC)
