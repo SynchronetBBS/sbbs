@@ -428,6 +428,7 @@ s_Packet_s(const struct Packet *s, void *bufptr, size_t bufsz)
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
 
+	pack_bool(s->Active);
 	pack_charArr(s->GameID);
 	pack_charArr(s->szDate);
 	pack_int16_t(s->BBSIDFrom);
