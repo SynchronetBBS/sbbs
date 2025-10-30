@@ -56,7 +56,7 @@ struct video_params vparams[] = {
 	/* BW 40x28 */
 	{BW40X28, GREYSCALE_PALETTE,          40, 28, 12, 13, 14, 8, 7, 0,  4, 3, 320,  392},
 	/* BW 40x43 */
-	{BW40X43, GREYSCALE_PALETTE,          40, 43,  7,  7, 14, 8, 7, 0,  4, 3, 320,  350},
+	{BW40X43, GREYSCALE_PALETTE,          40, 43, 12, 13, 14, 8, 7, 0,  4, 3, 320,  350},
 	/* BW 40x50 */
 	{BW40X50, GREYSCALE_PALETTE,          40, 50,  7,  7,  8, 8, 7, 0,  4, 3, 320,  400},
 	/* BW 40x60 */
@@ -68,7 +68,7 @@ struct video_params vparams[] = {
 	/* BW 80x28 */
 	{BW80X28, GREYSCALE_PALETTE,          80, 28, 12, 13, 14, 8, 7, 0,  4, 3, 640,  392},
 	/* BW 80x43 */
-	{BW80X43, GREYSCALE_PALETTE,          80, 43,  7,  7, 14, 8, 7, 0,  4, 3, 640,  350},
+	{BW80X43, GREYSCALE_PALETTE,          80, 43, 12, 13, 14, 8, 7, 0,  4, 3, 640,  350},
 	/* BW 80x50 */
 	{BW80X50, GREYSCALE_PALETTE,          80, 50,  7,  7,  8, 8, 7, 0,  4, 3, 640,  400},
 	/* BW 80x60 */
@@ -80,7 +80,7 @@ struct video_params vparams[] = {
 	/* MONO 80x28 */
 	{MONO28, MONO_PALETTE,                80, 28, 12, 13, 14, 8, 7, 0,  4, 3, 640,  392},
 	/* MONO 80x43 */
-	{MONO43, MONO_PALETTE,                80, 43,  7,  7, 14, 8, 7, 0,  4, 3, 640,  350},
+	{MONO43, MONO_PALETTE,                80, 43, 12, 13, 14, 8, 7, 0,  4, 3, 640,  350},
 	/* MONO 80x50 */
 	{MONO50, MONO_PALETTE,                80, 50,  7,  7,  8, 8, 7, 0,  4, 3, 640,  400},
 	/* MONO 80x60 */
