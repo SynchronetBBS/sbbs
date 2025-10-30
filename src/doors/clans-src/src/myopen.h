@@ -100,7 +100,7 @@ int16_t EncryptRead(void *Data, int32_t DataSize, FILE *fp, char XorValue);
 #define BUF_SIZE_TradeList 24U
 #define BUF_SIZE_UserInfo 65U
 #define BUF_SIZE_UserScore 61U
-#define BUF_SIZE_village_data 303U
+#define BUF_SIZE_village_data 304U
 STATIC_ASSERT_GLOBAL(BUF_SIZE_Language <= sizeof(serBuf), "Shared buffer too small")
 
 #endif

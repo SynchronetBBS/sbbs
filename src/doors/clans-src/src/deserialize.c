@@ -603,7 +603,7 @@ s_village_data_d(const void *bufptr, size_t bufsz, struct village_data *s)
 	if (!remain)
 		return SIZE_MAX;
 	s->SetConToday = (*src & 0x80) >> 7;
-	s->ShowEmpireStats = (*src & 0x40) >> 6;
+	s->ShowEmpireStats = (*(src++) & 0x40) >> 6;
 	remain--;
 
 	unpack_charArr(s->HFlags);

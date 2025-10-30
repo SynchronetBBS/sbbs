@@ -581,7 +581,7 @@ s_village_data_s(const struct village_data *s, void *bufptr, size_t bufsz)
 		return SIZE_MAX;
 	*dst = 0;
 	*dst |= (s->SetConToday << 7);
-	*dst |= (s->ShowEmpireStats << 6);
+	*(dst++) |= (s->ShowEmpireStats << 6);
 	remain--;
 
 	pack_charArr(s->HFlags);
