@@ -150,8 +150,16 @@ void EncryptWrite(void *Data, int32_t DataSize, FILE *fp, char XorValue)
 {
 	char *EncryptedData;
 
-	if (DataSize == 0) {
+	if (!DataSize) {
 		System_Error("EncryptWrite() called with 0 bytes\n");
+	}
+
+	if (!Data) {
+		System_Error("EncryptWrite() called with NULL Data\n");
+	}
+
+	if (!XorValue) {
+		System_Error("EncryptRead() called with bad key\n");
 	}
 
 	//printf("EncryptWrite(): Data size is %d\n", (int16_t)DataSize);
@@ -172,8 +180,16 @@ int16_t EncryptRead(void *Data, int32_t DataSize, FILE *fp, char XorValue)
 	char *EncryptedData;
 	int16_t Result;
 
-	if (DataSize == 0) {
+	if (!DataSize) {
 		System_Error("EncryptRead() called with 0 bytes\n");
+	}
+
+	if (!Data) {
+		System_Error("EncryptRead() called with NULL Data\n");
+	}
+
+	if (!XorValue) {
+		System_Error("EncryptRead() called with bad key\n");
 	}
 
 	EncryptedData = malloc(DataSize);
