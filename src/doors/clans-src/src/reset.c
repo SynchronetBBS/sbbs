@@ -544,7 +544,7 @@ GenerateGameID(char *ptr, size_t sz)
 static void GoReset(struct ResetData *ResetData, int16_t Option)
 {
 	FILE *fp;
-	struct game_data Game_Data;
+	struct game_data Game_Data = {0};
 
 	// Delete unwanted files here
 	unlink("clans.msj");
