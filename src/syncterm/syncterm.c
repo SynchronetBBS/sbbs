@@ -60,6 +60,9 @@ static const KNOWNFOLDERID FOLDERID_ProgramData = {
 #include <stdbool.h>
 #include <stdlib.h>
 #include <vidmodes.h>
+#ifdef HAS_VSTAT
+ #include "bitmap_con.h"
+#endif
 #if !(defined __BORLANDC__ || defined _MSC_VER)
  #include <stdbool.h>
 #else
@@ -883,6 +886,22 @@ char *output_enum[] = {
 	NULL
 };
 
+char *cursor_descrs[] = {
+	"Default (set by video mode)",
+	"Blinking Underline",
+	"Solid Underline",
+	"Blinking Block",
+	"Solid Block",
+};
+
+char *cursor_enum[] = {
+	"Default",
+	"BlinkingUnderline",
+	"SolidUnderline",
+	"BlinkingBlock",
+	"SolidBlock",
+};
+
 ini_bitdesc_t audio_output_bits[] = {
 	{
 		.name = "PulseAudio",
@@ -956,6 +975,46 @@ ini_bitdesc_t audio_output_types[] = {
 		.bit = 0
 	},
 };
+
+void
+set_default_cursor(void)
+{
+	bool solid = false; // _SOLIDCURSOR, not "Doesn't Blink"
+#ifdef HAS_VSTAT
+	switch (settings.defaultCursor) {
+		case ST_CT_DEFAULT:
+			break;
+		case ST_CT_BLINK_BLK:
+			vstat.curs_blinks = 1;
+			vstat.default_curs_start = 0;
+			vstat.default_curs_end = vstat.charheight - 1;
+			solid = true;
+			break;
+		case ST_CT_SOLID_BLK:
+			vstat.curs_blinks = 0;
+			vstat.default_curs_start = 0;
+			vstat.default_curs_end = vstat.charheight - 1;
+			solid = true;
+			break;
+		case ST_CT_BLINK_UNDER:
+			vstat.curs_blinks = 1;
+			vstat.default_curs_start = vstat.charheight - (vstat.charheight > 8 ? 2 : 1);
+			vstat.default_curs_end = vstat.charheight - 1;
+			break;
+		case ST_CT_SOLID_UNDER:
+			vstat.curs_blinks = 0;
+			vstat.default_curs_start = vstat.charheight - (vstat.charheight > 8 ? 2 : 1);
+			vstat.default_curs_end = vstat.charheight - 1;
+			break;
+	}
+	_setcursortype(solid ? _SOLIDCURSOR : _NORMALCURSOR);
+	setcustomcursor(vstat.default_curs_start, vstat.default_curs_end, 0, vstat.curs_blinks, vstat.curs_visible);
+#else
+	if (settings.defaultCursor == ST_CT_SOLID_UNDER || settings.defaultCursor == ST_CT_SOLID_BLK)
+		solid = true;
+	_setcursortype(solid ? _SOLIDCURSOR : _NORMALCURSOR);
+#endif
+}
 
 bool
 check_exit(bool force)
@@ -1577,6 +1636,7 @@ load_settings(struct syncterm_settings *set)
 	set->blocky = iniReadBool(inifile, "SyncTERM", "BlockyScaling", true);
 	set->extern_scale = iniReadBool(inifile, "SyncTERM", "ExternalScaling", false);
 	set->invert_wheel = iniReadBool(inifile, "SyncTERM", "InvertMouseWheel", false);
+	set->defaultCursor = iniReadEnum(inifile, "SyncTERM", "DefaultCursor", cursor_enum, ST_CT_DEFAULT);
 
         // TODO: Add this to the UI somewhere.
 	set->left_just = iniReadBool(inifile, "SyncTERM", "LeftJustify", false);
@@ -2130,6 +2190,7 @@ main(int argc, char **argv)
 	ciolib_reaper = false;
 	seticon(syncterm_icon.pixel_data, syncterm_icon.width);
 	textmode(text_mode);
+	set_default_cursor();
 	if (settings.scaling_factor)
 		setscaling(settings.scaling_factor);
 
@@ -2272,6 +2333,7 @@ main(int argc, char **argv)
 		if (bbs->screen_mode != SCREEN_MODE_CURRENT)
 			fake_mode = screen_to_ciolib(bbs->screen_mode);
 		textmode(screen_to_ciolib(bbs->screen_mode));
+		set_default_cursor();
 		if (!bbs->hidepopups)
 			init_uifc(true, true);
 		load_font_files();
@@ -2280,6 +2342,7 @@ main(int argc, char **argv)
 			load_font_files();
 			uifcbail();
 			textmode(txtinfo.currmode);
+			set_default_cursor();
 			fake_mode = -1;
 			init_uifc(true, true);
 			settitle("SyncTERM");
@@ -2354,6 +2417,7 @@ main(int argc, char **argv)
 				log_fp = NULL;
 			}
 			textmode(txtinfo.currmode);
+			set_default_cursor();
 			settitle("SyncTERM");
 		}
 		if (quitting || url[0]) {

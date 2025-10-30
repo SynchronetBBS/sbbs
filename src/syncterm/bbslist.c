@@ -389,6 +389,7 @@ viewofflinescroll(void)
 	gettextinfo(&txtinfo);
 
 	textmode(scrollback_mode);
+	set_default_cursor();
 	switch (ciolib_to_screen(scrollback_mode)) {
 		case SCREEN_MODE_C64:
 			setfont(33, true, 1);
@@ -514,6 +515,7 @@ viewofflinescroll(void)
 	}
 
 	textmode(txtinfo.currmode);
+	set_default_cursor();
 	init_uifc(true, true);
 	return;
 }
@@ -2617,6 +2619,7 @@ custom_mode_adjusted(int *cur, char **opt)
 
 	uifcbail();
 	textmode(0);
+	set_default_cursor();
 	cvmode = find_vmode(CIOLIB_MODE_CUSTOM);
 	if (cvmode >= 0) {
 		vparams[cvmode].cols = settings.custom_cols;
@@ -2625,6 +2628,7 @@ custom_mode_adjusted(int *cur, char **opt)
 		vparams[cvmode].aspect_width = settings.custom_aw;
 		vparams[cvmode].aspect_height = settings.custom_ah;
 		textmode(ti.currmode);
+		set_default_cursor();
 	}
 	init_uifc(true, true);
 
@@ -2707,8 +2711,8 @@ change_settings(int connected)
 	char inipath[MAX_PATH + 1];
 	FILE *inifile;
 	str_list_t inicontents;
-	char opts[16][1049];
-	char *opt[17];
+	char opts[17][1049];
+	char *opt[18];
 	char *subopts[10];
 	char audio_opts[1024];
 	int i, j, k, l;
@@ -2737,6 +2741,8 @@ change_settings(int connected)
 		               "        Set the initial screen screen mode/size.\n\n"
 		               "~ Video Output Mode ~\n"
 		               "        Set video output mode (used during startup).\n\n"
+		               "~ Default Cursor Style ~\n"
+		               "        Set the default cursor style\n\n"
 		               "~ Audio Output Mode ~\n"
 		               "        Set audio output modes attempted.\n\n"
 		               "~ Scrollback Buffer Lines ~\n"
@@ -2763,6 +2769,7 @@ change_settings(int connected)
 		SAFEPRINTF(opts[1], "Prompt to Save          %s", settings.prompt_save ? "Yes" : "No");
 		SAFEPRINTF(opts[2], "Startup Screen Mode     %s", screen_modes[settings.startup_mode]);
 		SAFEPRINTF(opts[3], "Video Output Mode       %s", output_descrs[settings.output_mode]);
+		SAFEPRINTF(opts[4], "Default Cursor Style    %s", cursor_descrs[settings.defaultCursor]);
 		audio_opts[0] = 0;
 		for (j = 0; audio_output_types[j].name != NULL; j++) {
 			if (xpbeep_sound_devices_enabled & audio_output_types[j].bit) {
@@ -2773,25 +2780,25 @@ change_settings(int connected)
 		}
 		if (!audio_opts[0])
 			strcpy(audio_opts, "<None>");
-		SAFEPRINTF(opts[4], "Audio Output Mode       %s", audio_opts);
-		SAFEPRINTF(opts[5], "Scrollback Buffer Lines %d", settings.backlines);
-		SAFEPRINTF(opts[6], "Modem/Comm Device       %s", settings.mdm.device_name);
+		SAFEPRINTF(opts[5], "Audio Output Mode       %s", audio_opts);
+		SAFEPRINTF(opts[6], "Scrollback Buffer Lines %d", settings.backlines);
+		SAFEPRINTF(opts[7], "Modem/Comm Device       %s", settings.mdm.device_name);
 		if (settings.mdm.com_rate)
 			sprintf(str, "%lubps", settings.mdm.com_rate);
 		else
 			strcpy(str, "Current");
-		SAFEPRINTF(opts[7], "Modem/Comm Rate         %s", str);
-		SAFEPRINTF(opts[8], "Modem Init String       %s", settings.mdm.init_string);
-		SAFEPRINTF(opts[9], "Modem Dial String       %s", settings.mdm.dial_string);
-		SAFEPRINTF(opts[10], "List Path               %s", settings.stored_list_path);
-		SAFEPRINTF(opts[11], "TERM For Shell          %s", settings.TERM);
-		sprintf(opts[12], "Scaling                 %s", scaling_names[settings_to_scale()]);
-		sprintf(opts[13], "Invert Mouse Wheel      %s", settings.invert_wheel ? "Yes" : "No");
-		sprintf(opts[14], "Key Derivation Iters.   %d", settings.keyDerivationIterations);
+		SAFEPRINTF(opts[8], "Modem/Comm Rate         %s", str);
+		SAFEPRINTF(opts[9], "Modem Init String       %s", settings.mdm.init_string);
+		SAFEPRINTF(opts[10], "Modem Dial String       %s", settings.mdm.dial_string);
+		SAFEPRINTF(opts[11], "List Path               %s", settings.stored_list_path);
+		SAFEPRINTF(opts[12], "TERM For Shell          %s", settings.TERM);
+		sprintf(opts[13], "Scaling                 %s", scaling_names[settings_to_scale()]);
+		sprintf(opts[14], "Invert Mouse Wheel      %s", settings.invert_wheel ? "Yes" : "No");
+		sprintf(opts[15], "Key Derivation Iters.   %d", settings.keyDerivationIterations);
 		if (connected)
 			opt[15] = NULL;
 		else
-			sprintf(opts[15], "Custom Screen Mode");
+			sprintf(opts[16], "Custom Screen Mode");
 		switch (uifc.list(WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &cur, NULL, "Program Settings", opt)) {
 			case -1:
 				check_exit(false);
@@ -2904,9 +2911,30 @@ change_settings(int connected)
 				}
 				break;
 			case 4:
-				edit_audio_mode(&inicontents);
+				j = settings.defaultCursor;
+				if (j < 0 || j > ST_CT_SOLID_BLK)
+					j = 0;
+				uifc.helpbuf = "`Default Cursor Style`\n\n"
+				               "The style the cursor is normally displayed with\n";
+				switch (i = uifc.list(WIN_SAV, 0, 0, 0, &j, NULL, "Default Cursor Style", cursor_descrs)) {
+					case -1:
+						check_exit(false);
+						continue;
+					default:
+						settings.defaultCursor = j;
+						iniSetEnum(&inicontents,
+						           "SyncTERM",
+						           "DefaultCursor",
+						           cursor_enum,
+						           settings.defaultCursor,
+						           &ini_style);
+						break;
+				}
 				break;
 			case 5:
+				edit_audio_mode(&inicontents);
+				break;
+			case 6:
 				uifc.helpbuf = "`Scrollback Buffer Lines`\n\n"
 				               "        The number of lines in the scrollback buffer.\n"
 				               "        This value MUST be greater than zero\n";
@@ -2946,7 +2974,7 @@ change_settings(int connected)
 				else
 					check_exit(false);
 				break;
-			case 6:
+			case 7:
 				uifc.helpbuf = "`Modem/Comm Device`\n\n"
 				               "Enter the name of the device used to communicate with the modem.\n\n"
 				               "Example: \"`"
@@ -2963,7 +2991,7 @@ change_settings(int connected)
 				else
 					check_exit(false);
 				break;
-			case 7:
+			case 8:
 				uifc.helpbuf = "`Modem/Comm Rate`\n\n"
 				               "Enter the rate (in `bits-per-second`) used to communicate with the modem.\n"
 				               "Use the highest `DTE Rate` supported by your communication port and modem.\n\n"
@@ -2983,7 +3011,7 @@ change_settings(int connected)
 					check_exit(false);
 				break;
 
-			case 8:
+			case 9:
 				uifc.helpbuf = "`Modem Init String`\n\n"
 				               "Your modem initialization string goes here.\n\n"
 				               "Example:\n"
@@ -3014,7 +3042,7 @@ change_settings(int connected)
 				else
 					check_exit(false);
 				break;
-			case 9:
+			case 10:
 				uifc.helpbuf = "`Modem Dial String`\n\n"
 				               "The command string to dial the modem goes here.\n\n"
 				               "Example: \"`ATDT`\" will dial a Hayes-compatible modem in touch-tone mode.";
@@ -3029,7 +3057,7 @@ change_settings(int connected)
 				else
 					check_exit(false);
 				break;
-			case 10:
+			case 11:
 				uifc.helpbuf = "`List Path`\n\n"
 				               "The complete path to the BBS list goes here.\n";
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "List Path", settings.stored_list_path, MAX_PATH,
@@ -3045,7 +3073,7 @@ change_settings(int connected)
 				else
 					check_exit(false);
 				break;
-			case 11:
+			case 12:
 				uifc.helpbuf = "`TERM For Shell`\n\n"
 				               "The value to set the TERM envirnonment variable to goes here.\n\n"
 				               "Example: \"`ansi`\" will select a dumb ANSI mode.";
@@ -3055,7 +3083,7 @@ change_settings(int connected)
 				else
 					check_exit(false);
 				break;
-			case 12:
+			case 13:
 				i = settings_to_scale();
 				i++;
 				if (i == 3)
@@ -3070,12 +3098,12 @@ change_settings(int connected)
 					cio_api.options &= ~CONIO_OPT_BLOCKY_SCALING;
 				setscaling_type(settings.extern_scale ? CIOLIB_SCALING_EXTERNAL : CIOLIB_SCALING_INTERNAL);
 				break;
-			case 13:
+			case 14:
 				settings.invert_wheel = !settings.invert_wheel;
 				ciolib_swap_mouse_butt45 = settings.invert_wheel;
 				iniSetBool(&inicontents, "SyncTERM", "InvertMouseWheel", settings.invert_wheel, &ini_style);
 				break;
-			case 14:
+			case 15:
 				{
 					uifc.helpbuf = "`Key Derivation Function Iterations`\n\n"
 						       "Number of iterations to run the Key Derivation Function when creating an\n"
@@ -3114,7 +3142,7 @@ change_settings(int connected)
 					}
 				}
 				break;
-			case 15:
+			case 16:
 				uifc.helpbuf = "`Custom Screen Mode`\n\n"
 				               "~ Rows ~\n"
 				               "        Sets the number of rows in the custom screen mode\n"
@@ -4476,6 +4504,7 @@ show_bbslist(char *current, int connected)
 							i++;
 							uifcbail();
 							textmode(screen_to_ciolib(i));
+							set_default_cursor();
 							init_uifc(true, true);
 							uifc.list_height = listcount + 5;
 							if (uifc.list_height > (uifc.scrn_len - 4))
