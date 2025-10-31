@@ -70,7 +70,7 @@ int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum);
 void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit);
 char get_answer(char *szAllowableChars);
 #ifdef __unix__
-int getch(void);
+int cio_getch(void);
 #endif
 
 #endif
