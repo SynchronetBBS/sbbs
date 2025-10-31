@@ -128,96 +128,99 @@ struct empire {
 };
 
 
+struct village_data {
+	char ColorScheme[50];
+	char szName[30];
+
+	int16_t TownType;
+	int16_t TaxRate, InterestRate, GST;
+	int16_t ConscriptionRate;
+
+	int16_t RulingClanId[2];
+	char szRulingClan[25];
+	int16_t GovtSystem;
+	int16_t RulingDays;
+
+	uint16_t PublicMsgIndex;
+
+	int16_t MarketLevel;
+	int16_t TrainingHallLevel;  /* how good is the training hall? */
+	int16_t ChurchLevel;    /* how good is the church */
+	int16_t PawnLevel;      // level of pawn shop
+	int16_t WizardLevel;    // wizard's shop level
+
+	unsigned
+		SetTaxToday : 1,
+		SetInterestToday : 1,
+		SetGSTToday : 1,
+		UpMarketToday : 1,
+		UpTHallToday : 1,
+		UpChurchToday : 1,
+		UpPawnToday : 1,
+		UpWizToday : 1,
+		SetConToday : 1,
+		ShowEmpireStats : 1;
+
+	char HFlags[8];         /* daily flags -- reset nightly */
+	char GFlags[8];         /* global flags -- reset with reset */
+
+	int16_t VillageType;    // what type of village do we have here?
+
+	int16_t CostFluctuation;  // from -10% to +10%
+	int16_t MarketQuality;
+
+	struct empire Empire;
+
+	int32_t CRC;                 // used to prevent cheating
+};
 
 struct village {
 	bool Initialized;
 
-	struct village_data {
-		char ColorScheme[50];
-		char szName[30];
+	struct village_data Data;
+};
 
-		int16_t TownType;
-		int16_t TaxRate, InterestRate, GST;
-		int16_t ConscriptionRate;
+struct game_data {
+	int16_t GameState;            // 0 == Game is in progress
+	// 1 == Game is waiting for day to come to play
+	// 2 == Game is inactive, waiting for reset msg.
+	//      from LC
 
-		int16_t RulingClanId[2];
-		char szRulingClan[25];
-		int16_t GovtSystem;
-		int16_t RulingDays;
+	bool InterBBS;            // set to true if IBBS *originally*
+	// check when entering game against
+	// Config->InterBBS to see if cheating occurs
 
-		uint16_t PublicMsgIndex;
+	char szTodaysDate[11];    // Set to today's date when maintenance run
+	char szDateGameStart[11]; // First day new game begins
+	char szLastJoinDate[11];  // Last day to join game
 
-		int16_t MarketLevel;
-		int16_t TrainingHallLevel;  /* how good is the training hall? */
-		int16_t ChurchLevel;    /* how good is the church */
-		int16_t PawnLevel;      // level of pawn shop
-		int16_t WizardLevel;    // wizard's shop level
+	int16_t NextClanID;           // contains next available clanid[1] value
+	int16_t NextAllianceID;       // contains next available alliance ID
 
-		unsigned
-		SetTaxToday     : 1,
-		SetInterestToday: 1,
-		SetGSTToday     : 1,
-		UpMarketToday   : 1,
-		UpTHallToday    : 1,
-		UpChurchToday   : 1,
-		UpPawnToday     : 1,
-		UpWizToday      : 1,
-		SetConToday     : 1,
-		ShowEmpireStats : 1;
 
-		char HFlags[8];         /* daily flags -- reset nightly */
-		char GFlags[8];         /* global flags -- reset with reset */
+	// ---- league specific data, not used in local games
+	char szWorldName[30];     // league's world name
+	char LeagueID[3];         // 2 char league ID
+	char GameID[16];          // used to differentiate from old league games
+	bool ClanTravel;          // true if clans are allowed to travel
+	int16_t LostDays;             // # of days before lost packets are returned
+	// ----
 
-		int16_t VillageType;    // what type of village do we have here?
+	// ---- Individual game settings go here
+	int16_t MaxPermanentMembers;  // up to 6
+	bool ClanEmpires;         // toggles whether clans can create empires
+	int16_t MineFights,           // Max # of mine fights per day
+		ClanFights,           // max # of clan fights per day
+		DaysOfProtection;     // # of days of protection for newbies
 
-		int16_t CostFluctuation;  // from -10% to +10%
-		int16_t MarketQuality;
+	int32_t CRC;                 // used to prevent cheating
 
-		struct empire Empire;
-
-		int32_t CRC;                 // used to prevent cheating
-	} Data;
 };
 
 struct game {
 	bool Initialized;
 
-	struct game_data {
-		int16_t GameState;            // 0 == Game is in progress
-		// 1 == Game is waiting for day to come to play
-		// 2 == Game is inactive, waiting for reset msg.
-		//      from LC
-
-		bool InterBBS;            // set to true if IBBS *originally*
-		// check when entering game against
-		// Config->InterBBS to see if cheating occurs
-
-		char szTodaysDate[11];    // Set to today's date when maintenance run
-		char szDateGameStart[11]; // First day new game begins
-		char szLastJoinDate[11];  // Last day to join game
-
-		int16_t NextClanID;           // contains next available clanid[1] value
-		int16_t NextAllianceID;       // contains next available alliance ID
-
-
-		// ---- league specific data, not used in local games
-		char szWorldName[30];     // league's world name
-		char LeagueID[3];         // 2 char league ID
-		char GameID[16];          // used to differentiate from old league games
-		bool ClanTravel;          // true if clans are allowed to travel
-		int16_t LostDays;             // # of days before lost packets are returned
-		// ----
-
-		// ---- Individual game settings go here
-		int16_t MaxPermanentMembers;  // up to 6
-		bool ClanEmpires;         // toggles whether clans can create empires
-		int16_t MineFights,           // Max # of mine fights per day
-		ClanFights,           // max # of clan fights per day
-		DaysOfProtection;     // # of days of protection for newbies
-
-		int32_t CRC;                 // used to prevent cheating
-
-	} Data;
+	struct game_data Data;
 };
 
 struct SpellsInEffect {
