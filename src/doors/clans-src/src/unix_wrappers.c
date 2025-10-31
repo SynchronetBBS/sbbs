@@ -89,7 +89,7 @@ findnext(struct ffblk *fblk)
 }
 
 FILE *
-_fsopen(char *pathname, char *mode, int flags)
+_fsopen(const char *pathname, const char *mode, int shflag)
 {
 	FILE *thefile;
 	bool isRead = strchr(mode, 'r');
@@ -104,21 +104,19 @@ _fsopen(char *pathname, char *mode, int flags)
 	thefile = fopen(pathname, mode);
 	if (thefile != NULL) {
 		// Fix up share type...
-		if (flags & SH_DENYWR) {
+		if (shflag == _SH_DENYWR) {
 			if (!isRead) {
-				flags &= ~SH_DENYWR;
-				flags |= SH_DENYRW;
+				shflag = _SH_DENYRW;
 			}
 		}
-		if (flags & SH_DENYRW) {
+		if (shflag == _SH_DENYRW) {
 			if (!isWrite) {
-				flags &= ~SH_DENYRW;
-				flags |= SH_DENYWR;
+				shflag = _SH_DENYWR;
 			}
 		}
-		if (flags & (SH_DENYRW | SH_DENYWR)) {
+		if ((shflag == _SH_DENYRW) || (shflag == _SH_DENYWR)) {
 			struct flock f = {
-				.l_type = flags & SH_DENYWR ? F_RDLCK : F_WRLCK,
+				.l_type = shflag & _SH_DENYWR ? F_RDLCK : F_WRLCK,
 				.l_whence = SEEK_SET
 			};
 			if (fcntl(fileno(thefile), F_SETLKW, &f) == -1) {

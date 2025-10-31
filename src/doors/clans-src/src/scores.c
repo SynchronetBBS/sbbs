@@ -232,7 +232,7 @@ void DisplayScores(bool MakeFile)
 		fputs(ST_SCORE0ANSI, fpScoreFile[1]);
 	}
 
-	fpPCFile = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYWR);
+	fpPCFile = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYWR);
 	if (!fpPCFile) {
 		NoPlayers = true;
 	}
@@ -498,7 +498,7 @@ static void SendScoreData(struct UserScore **UserScores)
 	Packet.PacketLength = NumScores * BUF_SIZE_UserScore + sizeof(int16_t);
 	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
 
-	fp = _fsopen("tmp.$$$", "wb", SH_DENYRW);
+	fp = _fsopen("tmp.$$$", "wb", _SH_DENYRW);
 	if (!fp)  return;
 
 	// write packet header
@@ -537,7 +537,7 @@ void ProcessScoreData(struct UserScore **UserScores)
 		NewList[iTemp] = OldList[iTemp] = NULL;
 
 	// load up old list
-	fpOld = _fsopen("ipscores.dat", "rb", SH_DENYRW);
+	fpOld = _fsopen("ipscores.dat", "rb", _SH_DENYRW);
 	if (fpOld) {
 		// skip date
 		fseek(fpOld, 11 * sizeof(char), SEEK_SET);
@@ -618,7 +618,7 @@ void ProcessScoreData(struct UserScore **UserScores)
 	}
 
 	// write new list to file
-	fpNew = _fsopen("ipscores.dat", "wb", SH_DENYRW);
+	fpNew = _fsopen("ipscores.dat", "wb", _SH_DENYRW);
 	if (fpNew) {
 		// write date
 		EncryptWrite(System.szTodaysDate, 11, fpNew, XOR_IPS);
@@ -648,7 +648,7 @@ void LeagueScores(void)
 	char ScoreDate[11], szString[128], szPadding[21];
 	FILE *fp;
 
-	fp = _fsopen("ipscores.dat", "rb", SH_DENYRW);
+	fp = _fsopen("ipscores.dat", "rb", _SH_DENYRW);
 
 	if (!fp) {
 		rputs(ST_LSCORES0);
@@ -727,7 +727,7 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 	char ScoreDate[11];
 	FILE *fp;
 
-	fp = _fsopen("ipscores.dat", "rb", SH_DENYRW);
+	fp = _fsopen("ipscores.dat", "rb", _SH_DENYRW);
 
 	if (!fp) {
 		return;
@@ -761,7 +761,7 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 	}
 	fclose(fp);
 
-	fp = _fsopen("ipscores.dat", "wb", SH_DENYRW);
+	fp = _fsopen("ipscores.dat", "wb", _SH_DENYRW);
 
 	// write date
 	EncryptWrite(ScoreDate, 11, fp, XOR_IPS);
@@ -786,7 +786,7 @@ void SendScoreList(void)
 	char ScoreDate[11];
 	FILE *fp;
 
-	fp = _fsopen("ipscores.dat", "rb", SH_DENYWR);
+	fp = _fsopen("ipscores.dat", "rb", _SH_DENYWR);
 
 	if (!fp) {
 		// no scorefile yet
@@ -838,7 +838,7 @@ void SendScoreList(void)
 
 		Packet.BBSIDTo = CurBBS+1;
 
-		fp = _fsopen("tmp.$$$", "wb", SH_DENYRW);
+		fp = _fsopen("tmp.$$$", "wb", _SH_DENYRW);
 		if (!fp)    return;
 
 		// write packet header
@@ -885,7 +885,7 @@ void CreateScoreData(bool LocalOnly)
 		UserScores[iTemp] = NULL;
 
 	/* find guy in file */
-	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYRW);
+	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYRW);
 	if (!fpPlayerFile) {
 		free(UserScores);
 		return;

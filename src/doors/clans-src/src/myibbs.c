@@ -147,7 +147,7 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 				   tMessageHeader *pHeader, char *pszText)
 {
 	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
-	int16_t hFile;
+	FILE *hFile;
 	size_t nTextSize;
 	char hbuf[BUF_SIZE_MessageHeader];
 
@@ -156,49 +156,39 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 		GetMessageFilename(pszMessageDir, lwMessageNum, szFileName, sizeof(szFileName));
 
 		/* Open message file */
-	#ifdef __unix__
-		hFile = open(szFileName, O_WRONLY | O_BINARY | O_CREAT | O_EXCL,
-					 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-	#elif defined(_WIN32)
-		hFile = _sopen(szFileName, _O_WRONLY | _O_BINARY | _O_CREAT | _O_EXCL, _SH_DENYRW,
-					  _S_IREAD | _S_IWRITE);
-	#else
-		hFile = open(szFileName, O_WRONLY|O_BINARY|O_CREAT|O_DENYALL|O_EXCL,
-					 S_IREAD|S_IWRITE);
-	#endif
+		hFile = _fsopen(szFileName, "wbx", _SH_DENYRW);
 
 		/* If open failed, return false */
-		if (hFile == -1) {
+		if (!hFile) {
 			if (errno == EEXIST)
 				lwMessageNum++;
 			else
 				return(false);
 		}
-	} while (hFile == -1);
+	} while (!hFile);
 
 	/* Attempt to write header */
 	s_MessageHeader_s(pHeader, hbuf, sizeof(hbuf));
-	if (write(hFile, hbuf, sizeof(hbuf)) != sizeof(hbuf)) {
+	if (fwrite(hbuf, sizeof(hbuf), 1, hFile) != 1) {
 		/* On failure, close file, erase file, and return false */
-		close(hFile);
+		fclose(hFile);
 		unlink(szFileName);
 		return(false);
 	}
 
 	/* Determine size of message text, including string terminator */
 	nTextSize = strlen(pszText) + 1;
-	// nTextSize = strlen(pszText);
 
 	/* Attempt to write message text */
-	if ((unsigned)write(hFile, pszText, nTextSize) != nTextSize) {
+	if (fwrite(pszText, nTextSize, 1, hFile) != 1) {
 		/* On failure, close file, erase file, and return false */
-		close(hFile);
+		fclose(hFile);
 		unlink(szFileName);
 		return(false);
 	}
 
 	/* Close message file */
-	close(hFile);
+	fclose(hFile);
 
 	/* Return with success */
 	return(true);

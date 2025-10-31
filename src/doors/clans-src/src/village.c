@@ -1221,7 +1221,7 @@ static bool Village_Read(void)
 {
 	FILE *fp;
 
-	fp = _fsopen(ST_VILLAGEDATFILE, "rb", SH_DENYWR);
+	fp = _fsopen(ST_VILLAGEDATFILE, "rb", _SH_DENYWR);
 	if (!fp)  return false;
 
 	notEncryptRead_s(village_data, &Village.Data, fp, XOR_VILLAGE)
@@ -1243,7 +1243,7 @@ static void Village_Write(void)
 		System_Error("Village not initialized!\n");
 	}
 
-	fp = _fsopen(ST_VILLAGEDATFILE, "wb", SH_DENYRW);
+	fp = _fsopen(ST_VILLAGEDATFILE, "wb", _SH_DENYRW);
 	if (fp) {
 		EncryptWrite_s(village_data, &Village.Data, fp, XOR_VILLAGE);
 		fclose(fp);

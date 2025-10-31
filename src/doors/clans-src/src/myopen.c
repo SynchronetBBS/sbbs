@@ -83,7 +83,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 	FileHeader->fp = NULL;
 	if (szModFileName[0] == '/') {
 		// look for the file
-		// fp = _fsopen(szPakFileName, "rb", SH_DENYWR);
+		// fp = _fsopen(szPakFileName, "rb", _SH_DENYWR);
 		fp = fopen(szPakFileName, "rb");
 
 		if (! fp)  {
@@ -114,7 +114,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 		}
 		else {
 			// open file from dos
-			fp = _fsopen(szModFileName, szMode, SH_DENYWR);
+			fp = _fsopen(szModFileName, szMode, _SH_DENYWR);
 			if (!fp) return;
 
 			// read in file stats
@@ -130,7 +130,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 	}
 	else {
 		// open file from dos
-		fp = _fsopen(szModFileName, szMode, SH_DENYWR);
+		fp = _fsopen(szModFileName, szMode, _SH_DENYWR);
 		if (!fp) return;
 
 		// read in file stats

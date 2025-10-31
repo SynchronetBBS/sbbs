@@ -73,7 +73,7 @@ bool Disbanded(void)
 	FILE *fp;
 	bool Found = false;
 
-	fp = _fsopen("disband.dat", "rb", SH_DENYWR);
+	fp = _fsopen("disband.dat", "rb", _SH_DENYWR);
 
 	if (!fp)  return false;
 
@@ -98,7 +98,7 @@ static void AddToDisband(void)
 	// append user name to disband.dat
 	FILE *fp;
 
-	fp = _fsopen("disband.dat", "ab", SH_DENYRW);
+	fp = _fsopen("disband.dat", "ab", _SH_DENYRW);
 	if (fp) {
 		EncryptWrite(od_control.user_name, 36, fp, XOR_DISBAND);
 		fclose(fp);
@@ -143,9 +143,9 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 	}
 
 	// go through PC file
-	fpOldPC = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYWR);
+	fpOldPC = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYWR);
 	if (fpOldPC) {
-		fpNewPC = _fsopen(ST_NEWPCFILE, "w+b", SH_DENYWR);
+		fpNewPC = _fsopen(ST_NEWPCFILE, "w+b", _SH_DENYWR);
 		if (!fpNewPC) {
 			System_Error("Can't write to new.pc\n");
 		}
@@ -216,9 +216,9 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 
 	// go through msg file, set all his mail (to/from him) as deleted
 
-	OldMessage = _fsopen("clans.msj", "rb", SH_DENYRW);
+	OldMessage = _fsopen("clans.msj", "rb", _SH_DENYRW);
 	if (OldMessage) {   // MSJ file exists, so go on
-		NewMessage = _fsopen("tmp.$$$", "wb", SH_DENYRW);
+		NewMessage = _fsopen("tmp.$$$", "wb", _SH_DENYRW);
 		if (!NewMessage) {
 			return;
 		}
@@ -259,7 +259,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 	// go through trades.dat, for each trade struct, see if trade is headed
 	// for him, if so, set trade as aborted, return goods to user sending
 
-	fpTradeFile = _fsopen("trades.dat", "r+b", SH_DENYRW);
+	fpTradeFile = _fsopen("trades.dat", "r+b", _SH_DENYRW);
 
 	if (fpTradeFile) {
 		for (CurTradeData = 0;; CurTradeData++) {
@@ -2002,9 +2002,9 @@ static bool User_Create(void)
 	}
 
 	/* open player file for append */
-	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "r+b", SH_DENYRW);
+	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "r+b", _SH_DENYRW);
 	if (!fpPlayerFile) {
-		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "wb", SH_DENYRW);
+		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "wb", _SH_DENYRW);
 		if (!fpPlayerFile) {
 			// !!!
 			// DisplayStr("User_Create: creating new file\n");
@@ -2126,7 +2126,7 @@ static bool User_Read(void)
 	int16_t CurClan, CurMember, iTemp;
 	long Offset;
 
-	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYRW);
+	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYRW);
 	if (!fpPlayerFile) {
 		/* file not found, so clan not found! */
 		return false;
@@ -2328,7 +2328,7 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 	// get list of all clan names from file, write to
 	NumClans = 0;
 	for (CurClan = 0; CurClan < 50; CurClan++) {
-		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYRW);
+		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYRW);
 		if (!fpPlayerFile) {
 			/* !! */
 			rputs("!! Chkpt 3\n");
@@ -2444,7 +2444,7 @@ bool GetClanNameID(char *szName, int16_t ID[2])
 	for (;;) {
 		/* go through file till you find clan he wants */
 
-		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYRW);
+		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYRW);
 		if (!fpPlayerFile) {
 			return false;  /* means failed to find clan */
 		}
@@ -2564,7 +2564,7 @@ void User_List(void)
 	fputs(ST_USERLISTH, stdout);
 
 	if (Game.Data.InterBBS == false) {
-		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYWR);
+		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYWR);
 		if (!fpPlayerFile) {
 			/* file not found, so clan not found! */
 			return;
@@ -2592,7 +2592,7 @@ void User_List(void)
 	}
 	else {
 		// list interbbs users using USERLIST.DAT
-		fpUserList = _fsopen("userlist.dat", "rb", SH_DENYWR);
+		fpUserList = _fsopen("userlist.dat", "rb", _SH_DENYWR);
 		if (fpUserList) {
 			for (;;) {
 				notEncryptRead_s(UserInfo, &User, fpUserList, XOR_ULIST)
@@ -2632,9 +2632,9 @@ void User_Maint(void)
 	}
 
 
-	fpOldPC = _fsopen(ST_CLANSPCFILE, "rb", SH_DENYRW);
+	fpOldPC = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYRW);
 	if (fpOldPC) {
-		fpNewPC = _fsopen(ST_NEWPCFILE, "w+b", SH_DENYRW);
+		fpNewPC = _fsopen(ST_NEWPCFILE, "w+b", _SH_DENYRW);
 		if (!fpNewPC) {
 			System_Error("New.PC unopenable");
 		}

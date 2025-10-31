@@ -53,7 +53,7 @@ static bool Game_Read(void)
 {
 	FILE *fp;
 
-	fp = _fsopen("game.dat", "rb", SH_DENYWR);
+	fp = _fsopen("game.dat", "rb", _SH_DENYWR);
 	if (!fp)  return false;
 
 	EncryptRead_s(game_data, &Game.Data, fp, XOR_GAME);
@@ -68,7 +68,7 @@ void Game_Write(void)
 {
 	FILE *fp;
 
-	fp = _fsopen("game.dat", "wb", SH_DENYRW);
+	fp = _fsopen("game.dat", "wb", _SH_DENYRW);
 	if (fp) {
 		EncryptWrite_s(game_data, &Game.Data, fp, XOR_GAME);
 		fclose(fp);

@@ -11,124 +11,63 @@
 ** for files larger than a few bytes (the trick is to use large disk buffers):
 */
 
-#include <stdlib.h>
-#ifdef __unix__
 #include <stdio.h>
-#else
-#include <io.h>
-#endif
-#include <fcntl.h>
+#include <stdlib.h>
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
 
-#if !defined(__ZTC__) && !defined(__TURBOC__)
-#include <sys/types.h>
-#endif
-
-#include "defines.h"
-#include <sys/stat.h>
 #include "wb_fapnd.h"
 
-int file_append(const char *from, const char *to)
+static int file_oper(const char *from, const char *to, const char *tmode)
 {
-	int fdfrom,fdto;
-	int bufsiz;
+	FILE *ffrom, *fto;
+	size_t bufsiz;
 
-	fdfrom = open(from,O_RDONLY|O_BINARY,0);
-	if (fdfrom < 0)
+	ffrom = _fsopen(from, "rb", _SH_DENYWR);
+	if (!ffrom)
 		return 1;
 
-	/* Open R/W by owner, R by everyone else        */
-
-#ifdef __unix__
-	fdto = open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
-#else
-	fdto = open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IREAD|S_IWRITE);
-#endif
-	if (fdto < 0)
+	fto = _fsopen(to, tmode, _SH_DENYRW);
+	if (!fto)
 		goto err;
 
 	/* Use the largest buffer we can get    */
 
 	for (bufsiz = 0x4000; bufsiz >= 128; bufsiz >>= 1) {
-		register char *buffer;
+		void *buffer;
 
-		buffer = (char *) malloc(bufsiz);
+		buffer = malloc(bufsiz);
 		if (buffer) {
-			while (1) {
-				register int n;
-
-				n = read(fdfrom,buffer,bufsiz);
-				if (n == -1)                /* if error             */
-					break;
-				if (n == 0) {               /* if end of file       */
-					free(buffer);
-					close(fdto);
-					close(fdfrom);
-					return 0;             /* success              */
+			for (;;) {
+				size_t n = fread(buffer, 1, bufsiz, ffrom);
+				if (n == 0) {
+					if (feof(ffrom)) {      /* if end of file       */
+						fclose(fto);
+						fclose(ffrom);
+						return 0;       /* success              */
+					}
+					break;                  /* if error             */
 				}
-				if (n != write(fdto,buffer,(unsigned) n))
+				if (1 != fwrite(buffer, n, 1, fto))
 					break;
 			}
 			free(buffer);
 			break;
 		}
 	}
-	close(fdto);
+	fclose(fto);
 	remove(to);                               /* delete any partial file  */
 err:
-	close(fdfrom);
+	fclose(ffrom);
 	return 1;
+}
+
+int file_append(const char *from, const char *to)
+{
+	return file_oper(from, to, "ab");
 }
 
 int file_copy(const char *from, const char *to)
 {
-	int fdfrom,fdto;
-	int bufsiz;
-
-	fdfrom = open(from,O_RDONLY|O_BINARY,0);
-	if (fdfrom < 0)
-		return 1;
-
-	/* Open R/W by owner, R by everyone else        */
-
-#ifdef __unix__
-	fdto = open(to,O_BINARY|O_CREAT|O_APPEND|O_RDWR,S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH);
-#else
-	fdto = open(to,O_BINARY|O_CREAT|O_TRUNC|O_RDWR,S_IREAD|S_IWRITE);
-#endif
-	if (fdto < 0)
-		goto err;
-
-	/* Use the largest buffer we can get    */
-
-	for (bufsiz = 0x4000; bufsiz >= 128; bufsiz >>= 1) {
-		register char *buffer;
-
-		buffer = (char *) malloc(bufsiz);
-		if (buffer) {
-			while (1) {
-				register int n;
-
-				n = read(fdfrom,buffer,bufsiz);
-				if (n == -1)                /* if error             */
-					break;
-				if (n == 0) {               /* if end of file       */
-					free(buffer);
-					close(fdto);
-					close(fdfrom);
-					return 0;             /* success              */
-				}
-				if (n != write(fdto,buffer,(unsigned) n))
-					break;
-			}
-			free(buffer);
-			break;
-		}
-	}
-	close(fdto);
-	remove(to);                               /* delete any partial file  */
-err:
-	close(fdfrom);
-	return 1;
+	return file_oper(from, to, "wb");
 }

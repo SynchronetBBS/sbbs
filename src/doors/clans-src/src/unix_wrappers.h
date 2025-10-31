@@ -77,11 +77,10 @@ struct ffblk {
 int findfirst(char *pathname, struct ffblk *fblk, int attrib);
 int findnext(struct ffblk *fblk);
 
-#define SH_DENYWR   1
-#define SH_DENYRW   2
-#define O_BINARY    0
+#define _SH_DENYWR   1
+#define _SH_DENYRW   2
 
-FILE * _fsopen(char *pathname, char *mode, int flags);
+FILE * _fsopen(const char *pathname, const char *mode, int flags);
 
 void delay(unsigned msec);
 void GetSystemTime(SYSTEMTIME *t);

@@ -763,7 +763,7 @@ void KillAlliance(int16_t WhichAlliance, struct Alliance *Alliances[MAX_ALLIANCE
 	int CurClan, CurAlliance;
 	long Offset;
 
-	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "r+b", SH_DENYRW);
+	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "r+b", _SH_DENYRW);
 	if (!fpPlayerFile) {
 		rputs(ST_ERRORPC);
 		return;

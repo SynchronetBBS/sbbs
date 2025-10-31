@@ -10,6 +10,7 @@ size_t strlcat(char *dst, const char *src, size_t dsize);
 
 #ifdef _WIN32
 #include <sys/utime.h>
+#include <share.h>
 
 #ifndef S_ISDIR
 #define S_ISDIR(x) ((x) & _S_IFDIR)
@@ -28,10 +29,6 @@ size_t strlcat(char *dst, const char *src, size_t dsize);
 #define cio_getch() _getch()
 #define strdup(x) _strdup(x)
 #define mkdir(x) _mkdir(x)
-#define write(x, z, y) _write(x, (void*)y, (unsigned int)z)
-#define close(x) _close(x)
-#define open(x, y, ...) _open(x, y, __VA_ARGS__)
-#define read(x, y, z) _read(x, y, z)
 
 #else
 #include <utime.h>

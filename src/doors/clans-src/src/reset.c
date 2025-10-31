@@ -689,7 +689,7 @@ static void News_AddNews(char *szString)
 
 	/* add to it */
 
-	fpNewsFile = _fsopen("today.asc", "at", SH_DENYWR);
+	fpNewsFile = _fsopen("today.asc", "at", _SH_DENYWR);
 
 	fputs(szString, fpNewsFile);
 
