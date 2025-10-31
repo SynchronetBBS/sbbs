@@ -528,7 +528,7 @@ void Items_GiveItem(char *szItemName)
 
 	// see which item we're referring to
 	for (iTemp = 0; iTemp < MAX_ITEMS; iTemp++)
-		if (stricmp(Items.Data[iTemp]->szName, szItemName) == 0)
+		if (strcasecmp(Items.Data[iTemp]->szName, szItemName) == 0)
 			break;
 
 	if (iTemp == MAX_ITEMS) {

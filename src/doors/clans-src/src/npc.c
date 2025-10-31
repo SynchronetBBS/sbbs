@@ -68,7 +68,7 @@ void NPC_GetNPCNdx(struct NPCInfo *NPCInfo, struct NPCNdx *NPCNdx)
 			s_NPCNdx_d(iBuf, sizeof(iBuf), NPCNdx);
 
 			// found it!
-			if (stricmp(NPCNdx->szIndex, NPCInfo->szIndex) == 0) {
+			if (strcasecmp(NPCNdx->szIndex, NPCInfo->szIndex) == 0) {
 				Found = true;
 				break;
 			}
@@ -108,7 +108,7 @@ void NPC_UpdateNPCNdx(char *szIndex, struct NPCNdx *NPCNdx)
 			s_NPCNdx_d(iBuf, sizeof(iBuf), &TmpNdx);
 
 			// found it!
-			if (stricmp(TmpNdx.szIndex, szIndex) == 0) {
+			if (strcasecmp(TmpNdx.szIndex, szIndex) == 0) {
 				fseek(fpNPX, Offset, SEEK_SET);
 				break;
 			}
@@ -246,7 +246,7 @@ void NPC_ChatNPC(char *szIndex)
 			s_NPCInfo_d(nBuf, sizeof(nBuf), NPCInfo);
 
 			// one we want?
-			if (stricmp(NPCInfo->szIndex, szIndex) == 0) {
+			if (strcasecmp(NPCInfo->szIndex, szIndex) == 0) {
 				// yes
 				FoundNPC = true;
 				break;
@@ -569,7 +569,7 @@ void NPC_AddNPCMember(char *szIndex)
 			s_NPCInfo_d(nBuf, sizeof(nBuf), NPCInfo);
 
 			// one we want?
-			if (stricmp(NPCInfo->szIndex, szIndex) == 0) {
+			if (strcasecmp(NPCInfo->szIndex, szIndex) == 0) {
 				// yes
 				FoundNPC = true;
 				break;

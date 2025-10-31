@@ -211,10 +211,10 @@ static void ConfigMenu(void)
 			/* Unhighlight old option */
 		}
 
-		cInput = getch();
+		cInput = cio_getch();
 		if (cInput == 0 || cInput == (char)0xE0 || strchr("wkahsjdl", cInput)) {
 			if (cInput == 0 || cInput == (char)0xE0)
-				cInput = getch();
+				cInput = cio_getch();
 			switch (cInput) {
 				case 'w':
 				case 'k':
@@ -345,10 +345,10 @@ static void NodeMenu(void)
 			/* Unhighlight old option */
 		}
 
-		cInput = getch();
+		cInput = cio_getch();
 		if (cInput == 0 || cInput == (char)0xE0 || strchr("wkahsjdl", cInput)) {
 			if (cInput == 0 || cInput == (char)0xE0)
-				cInput = getch();
+				cInput = cio_getch();
 			switch (cInput) {
 				case 'w':
 				case 'k':

@@ -14,11 +14,12 @@
 #include <stdlib.h>
 #ifdef __unix__
 #include <stdio.h>
-#include "unix_wrappers.h"
 #else
 #include <io.h>
 #endif
 #include <fcntl.h>
+#include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #if !defined(__ZTC__) && !defined(__TURBOC__)
 #include <sys/types.h>

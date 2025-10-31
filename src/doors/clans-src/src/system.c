@@ -98,7 +98,7 @@ static bool System_LockedOut(void)
 
 
 		// else, compare names
-		if (stricmp(pcCurrentPos, od_control.user_name) == 0) {
+		if (strcasecmp(pcCurrentPos, od_control.user_name) == 0) {
 			fclose(fp);
 			return true;
 		}
@@ -196,7 +196,7 @@ void ODCmdLineHandler(char *flag, char *val)
 
 	bool primitive = !Config.Initialized;
 	if (flag[0] == '-' || flag[0] == '/') {
-		if (stricmp(&flag[1], "Recon") == 0) {
+		if (strcasecmp(&flag[1], "Recon") == 0) {
 			if (!primitive) {
 				if (Game.Data.InterBBS) {
 					if (IBBS.Data.BBSID != atoi(val) &&
@@ -212,7 +212,7 @@ void ODCmdLineHandler(char *flag, char *val)
 			}
 			return;
 		}
-		else if (stricmp(&flag[1], "SendReset") == 0) {
+		else if (strcasecmp(&flag[1], "SendReset") == 0) {
 			if (!primitive) {
 				if (Game.Data.InterBBS) {
 					if (IBBS.Data.BBSID != 1) {
@@ -244,28 +244,28 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 	bool primitive = !Config.Initialized;
 
 	if (flag[0] == '-' || flag[0] == '/') {
-		if (stricmp(&flag[1], "L") == 0 || stricmp(&flag[1], "Local") == 0) {
+		if (strcasecmp(&flag[1], "L") == 0 || strcasecmp(&flag[1], "Local") == 0) {
 			if (!primitive)
 				System.Local = true;
 			return TRUE;
 		}
-		else if (stricmp(&flag[1], "M") == 0) {
+		else if (strcasecmp(&flag[1], "M") == 0) {
 			if (!primitive) {
 				Maintenance();
 				System_Close();
 			}
 			return TRUE;
 		}
-		else if (stricmp(&flag[1], "?") == 0 || stricmp(&flag[1], "Help") == 0) {
+		else if (strcasecmp(&flag[1], "?") == 0 || strcasecmp(&flag[1], "Help") == 0) {
 			ShowHelp();
 			delay(3000);
 			System_Close();
 		}
-		else if (stricmp(&flag[1], "T") == 0) {
+		else if (strcasecmp(&flag[1], "T") == 0) {
 			// No longer available, backward compatibility.
 			return TRUE;
 		}
-		else if (stricmp(&flag[1], "LIBBS") == 0) {
+		else if (strcasecmp(&flag[1], "LIBBS") == 0) {
 			if (primitive)
 				System.LocalIBBS = true;
 			else {
@@ -276,14 +276,14 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 			}
 			return TRUE;
 		}
-		else if (stricmp(&flag[1], "Users") == 0) {
+		else if (strcasecmp(&flag[1], "Users") == 0) {
 			if (!primitive) {
 				User_List();
 				System_Close();
 			}
 			return TRUE;
 		}
-		else if (stricmp(&flag[1], "NewNDX") == 0) {
+		else if (strcasecmp(&flag[1], "NewNDX") == 0) {
 			if (!primitive) {
 				if (Game.Data.InterBBS) {
 					if (IBBS.Data.BBSID != 1) {
@@ -298,7 +298,7 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 			}
 			return TRUE;
 		}
-		else if (stricmp(&flag[1], "I") == 0) {
+		else if (strcasecmp(&flag[1], "I") == 0) {
 			if (!primitive) {
 				// read in packets waiting
 				IBBS_PacketIn();
@@ -310,34 +310,34 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 			}
 			return TRUE;
 		}
-		else if (stricmp(&flag[1], "Recon") == 0) {
+		else if (strcasecmp(&flag[1], "Recon") == 0) {
 			// Requires an argument
 			return FALSE;
 		}
-		else if (stricmp(&flag[1], "SendReset") == 0) {
+		else if (strcasecmp(&flag[1], "SendReset") == 0) {
 			// Requires an argument
 			return FALSE;
 		}
-		else if (stricmp(&flag[1], "Reset") == 0) {
+		else if (strcasecmp(&flag[1], "Reset") == 0) {
 			if (primitive)
 				System_Error("To reset the game, please run RESET.EXE.\n");
 			return TRUE;
 		}
-		else if (stricmp(&flag[1], "Verbose") == 0) {
+		else if (strcasecmp(&flag[1], "Verbose") == 0) {
 			if (primitive) {
 				DisplayStr("|07Verbose |14ON\n");
 				Verbose = true;
 			}
 			return TRUE;
 		}
-		else if (stricmp(&flag[1], "Slop") == 0) {
+		else if (strcasecmp(&flag[1], "Slop") == 0) {
 			if (primitive) {
 				Register();
 				System_Close();
 			}
 			return TRUE;
 		}
-		else if (stricmp(&flag[1], "Exclusive") == 0) {
+		else if (strcasecmp(&flag[1], "Exclusive") == 0) {
 			if (primitive)
 				RemoveSemaphor();
 			return TRUE;

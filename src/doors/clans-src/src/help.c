@@ -84,7 +84,7 @@ void Help(const char *Topic, char *File)
 
 			/* see if topic is correct */
 			// if (strspn(&string[1], Topic) == strlen(Topic))
-			if (stricmp(&string[1], Topic) == 0) {
+			if (strcasecmp(&string[1], Topic) == 0) {
 				Found = true;
 			}
 		}
@@ -112,11 +112,11 @@ void Help(const char *Topic, char *File)
 				if (Lines[CurLine][ strlen(Lines[CurLine]) - 1] == '\r')
 					Lines[CurLine][ strlen(Lines[CurLine]) - 1] = 0;
 
-				if (stricmp(&Lines[CurLine][1], ST_HELPEND) == 0) {
+				if (strcasecmp(&Lines[CurLine][1], ST_HELPEND) == 0) {
 					EndOfTopic = true;
 					break;
 				}
-				else if (stricmp(&Lines[CurLine][1], ST_HELPPAUSE) == 0) {
+				else if (strcasecmp(&Lines[CurLine][1], ST_HELPPAUSE) == 0) {
 					Pause = true;
 					break;
 				}
@@ -214,9 +214,9 @@ void GeneralHelp(char *pszFileName)
 			if (Line[ strlen(Line) - 1] == '\r')
 				Line[ strlen(Line) - 1] = 0;
 
-			if (stricmp(&Line[1], ST_HELPPAUSE) == 0)
+			if (strcasecmp(&Line[1], ST_HELPPAUSE) == 0)
 				continue; /* skip it, it's a pause */
-			else if (stricmp(&Line[1], ST_HELPEND) != 0) {
+			else if (strcasecmp(&Line[1], ST_HELPEND) != 0) {
 				Topics[NumTopics] = DupeStr(&Line[1]);
 				NumTopics++;
 			}

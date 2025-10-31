@@ -2541,7 +2541,7 @@ static void StartEmpireWar(struct empire *Empire)
 			return;
 		}
 
-		if (stricmp(Empire->szName, Alliances[WhichAlliance]->szName) == 0) {
+		if (strcasecmp(Empire->szName, Alliances[WhichAlliance]->szName) == 0) {
 			rputs("You cannot attack your own alliance!\n%P");
 
 			// free up mem used by alliances

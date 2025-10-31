@@ -80,7 +80,7 @@ bool Disbanded(void)
 	for (;;) {
 		if (!EncryptRead(szUserName, 36, fp, XOR_DISBAND)) break;
 
-		if (stricmp(szUserName, od_control.user_name) == 0) {
+		if (strcasecmp(szUserName, od_control.user_name) == 0) {
 			Found = true;
 			break;
 		}
@@ -1798,7 +1798,7 @@ bool NameInUse(char *szName)
 
 			/* see if this player has same name as user online */
 			/* strip names */
-			if (stricmp(szName, TmpClan.szName) == 0) {
+			if (strcasecmp(szName, TmpClan.szName) == 0) {
 				/* are the same, found another player with name, close file */
 				fclose(fpPCFile);
 				return true;
@@ -2143,7 +2143,7 @@ static bool User_Read(void)
 			break;  /* stop reading if no more players found */
 
 		/* see if this player has same name as user online */
-		if (stricmp(od_control.user_name, TmpClan.szUserName) == 0) {
+		if (strcasecmp(od_control.user_name, TmpClan.szUserName) == 0) {
 
 			/* are the same, found player, copy it, return true */
 			*PClan = TmpClan;

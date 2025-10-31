@@ -118,7 +118,7 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_NPC_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (stricmp(szToken, papszNPCKeyWords[iKeyWord]) == 0) {
+			if (strcasecmp(szToken, papszNPCKeyWords[iKeyWord]) == 0) {
 				/* Process token */
 				switch (iKeyWord) {
 					case 12 :   /* Index of NPC */
@@ -189,25 +189,25 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 						break;
 					case 4 :    // where does he wander.
 						// leave it for now
-						if (stricmp(pcCurrentPos, "Church") == 0) {
+						if (strcasecmp(pcCurrentPos, "Church") == 0) {
 							NPCInfo->WhereWander = WN_CHURCH;
 						}
-						else if (stricmp(pcCurrentPos, "Street") == 0) {
+						else if (strcasecmp(pcCurrentPos, "Street") == 0) {
 							NPCInfo->WhereWander = WN_STREET;
 						}
-						else if (stricmp(pcCurrentPos, "Market") == 0) {
+						else if (strcasecmp(pcCurrentPos, "Market") == 0) {
 							NPCInfo->WhereWander = WN_MARKET;
 						}
-						else if (stricmp(pcCurrentPos, "Town Hall") == 0) {
+						else if (strcasecmp(pcCurrentPos, "Town Hall") == 0) {
 							NPCInfo->WhereWander = WN_TOWNHALL;
 						}
-						else if (stricmp(pcCurrentPos, "Training Hall") == 0) {
+						else if (strcasecmp(pcCurrentPos, "Training Hall") == 0) {
 							NPCInfo->WhereWander = WN_THALL;
 						}
-						else if (stricmp(pcCurrentPos, "Rebel Menu") == 0) {
+						else if (strcasecmp(pcCurrentPos, "Rebel Menu") == 0) {
 							NPCInfo->WhereWander = WN_REBEL;
 						}
-						else if (stricmp(pcCurrentPos, "Mine") == 0) {
+						else if (strcasecmp(pcCurrentPos, "Mine") == 0) {
 							NPCInfo->WhereWander = WN_MINE;
 						}
 						else

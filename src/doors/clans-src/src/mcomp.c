@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_MON_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (stricmp(szToken, papszMonKeyWords[iKeyWord]) == 0) {
+			if (strcasecmp(szToken, papszMonKeyWords[iKeyWord]) == 0) {
 				/* Process token */
 				switch (iKeyWord) {
 					case 0 :    /* NAME of monster */

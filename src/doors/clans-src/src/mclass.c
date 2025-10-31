@@ -148,7 +148,7 @@ static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileNa
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_PCLASS_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (stricmp(szToken, papszPClassKeyWords[iKeyWord]) == 0) {
+			if (strcasecmp(szToken, papszPClassKeyWords[iKeyWord]) == 0) {
 				/* Process token */
 				switch (iKeyWord) {
 					case 0 :    /* NAME of class */

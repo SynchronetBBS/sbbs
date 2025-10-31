@@ -3,6 +3,7 @@
 # include <sys/stat.h>
 # include <unistd.h>
 #endif
+#include "win_wrappers.h"
 
 #include "defines.h"
 #include "semfile.h"

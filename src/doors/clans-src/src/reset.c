@@ -207,9 +207,9 @@ static void ResetMenu(bool InterBBSGame)
 			/* Unhighlight old option */
 		}
 
-		cInput = getch();
+		cInput = cio_getch();
 		if (cInput == 0 || cInput == 0xE0) {
-			cInput = getch();
+			cInput = cio_getch();
 			switch (cInput) {
 				case K_UP   :
 				case K_LEFT :

@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <time.h>
 #if defined(_WIN32) || defined(DOS)
-# include <conio.h> /* Defines getch */
+# include <conio.h> /* Defines _getch */
 #endif
 #ifdef __unix__
 # include <unistd.h>
@@ -56,7 +56,7 @@ static void DeleteClan(int16_t ID[2]);
 static void UpdateClan(struct clan *Clan);
 static void InitGame(void);
 #ifdef __unix__
-static char getch(void);
+static char cio_getch(void);
 #endif
 
 
@@ -92,7 +92,7 @@ int main(void)
 	fflush(stdout);
 
 	do {
-		cKey = toupper(getch());
+		cKey = toupper(cio_getch());
 	}
 	while (!strchr("YN\n\r", cKey));
 
@@ -152,7 +152,7 @@ int main(void)
 
 		// get key
 		do {
-			cKey = getch();
+			cKey = cio_getch();
 		}
 		while (!strchr("[]q!", cKey));
 
@@ -845,7 +845,7 @@ static void InitGame(void)
 
 #ifdef __unix__
 static char
-getch(void)
+cio_getch(void)
 {
 	fd_set fds;
 	FD_ZERO(&fds);

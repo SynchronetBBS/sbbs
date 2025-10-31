@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <dos.h>
 #endif
 #include "unix_wrappers.h"
+#include "win_wrappers.h"
 
 #include <OpenDoor.h>
 
@@ -135,7 +136,7 @@ static void MainGame(void)
 					break;
 				}
 
-				if (stricmp(PClan->szDateOfLastGame, System.szTodaysDate) != 0)
+				if (strcasecmp(PClan->szDateOfLastGame, System.szTodaysDate) != 0)
 					User_FirstTimeToday();
 
 				News_ReadNews(true);

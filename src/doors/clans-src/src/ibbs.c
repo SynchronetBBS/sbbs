@@ -612,14 +612,14 @@ bool IBBS_InList(char *szName, bool ClanName)
 
 		// see if this user's name is same as one we're looking for
 		if (ClanName) {
-			if (stricmp(User.szName, szName) == 0) {
+			if (strcasecmp(User.szName, szName) == 0) {
 				Found = true;
 				break;
 			}
 		}
 		else {
 			// compare with player's name
-			if (stricmp(User.szMasterName, szName) == 0) {
+			if (strcasecmp(User.szMasterName, szName) == 0) {
 				Found = true;
 				break;
 			}
@@ -1575,7 +1575,7 @@ static void IBBS_LoadNDX(void)
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_NDX_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (stricmp(szToken, papszNdxKeyWords[iKeyWord]) == 0) {
+			if (strcasecmp(szToken, papszNdxKeyWords[iKeyWord]) == 0) {
 				/* Process token */
 				switch (iKeyWord) {
 					case 5 :    /* num of BBS in list */
@@ -1630,7 +1630,7 @@ static void IBBS_LoadNDX(void)
 					case 6 :    /* Status */
 						if (CurBBS == -1)
 							System_Error("Status outside of BBSId section!\n");
-						if (stricmp(pcCurrentPos, "inactive") == 0)
+						if (strcasecmp(pcCurrentPos, "inactive") == 0)
 							IBBS.Data.Nodes[CurBBS].Active = false;
 						else
 							IBBS.Data.Nodes[CurBBS].Active = true;
@@ -1772,7 +1772,7 @@ static void IBBS_ProcessRouteConfig(void)
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_RT_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (stricmp(szToken, papszRouteKeyWords[iKeyWord]) == 0) {
+			if (strcasecmp(szToken, papszRouteKeyWords[iKeyWord]) == 0) {
 				/* Process config token */
 				switch (iKeyWord) {
 					case 0 :    /* route */
@@ -1780,7 +1780,7 @@ static void IBBS_ProcessRouteConfig(void)
 						GetToken(pcCurrentPos, szSecondToken);
 
 						//printf("Token1 = [%s]\nToken2 = [%s]\n", szFirstToken, szSecondToken);
-						if (stricmp(szFirstToken, "ALL") == 0) {
+						if (strcasecmp(szFirstToken, "ALL") == 0) {
 							//printf("all mail being routed through %d\n", atoi(szSecondToken));
 							/* route all through somewhere else */
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
@@ -1799,7 +1799,7 @@ static void IBBS_ProcessRouteConfig(void)
 						GetToken(pcCurrentPos, szFirstToken);
 
 						//printf("Token1 = %s\n", szFirstToken);
-						if (stricmp(szFirstToken, "ALL") == 0) {
+						if (strcasecmp(szFirstToken, "ALL") == 0) {
 							//printf("all mail being crashed\n");
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 								if (IBBS.Data.Nodes[iTemp].Active == false)
@@ -1817,7 +1817,7 @@ static void IBBS_ProcessRouteConfig(void)
 						GetToken(pcCurrentPos, szFirstToken);
 
 						//printf("Token1 = %s\n", szFirstToken);
-						if (stricmp(szFirstToken, "ALL") == 0) {
+						if (strcasecmp(szFirstToken, "ALL") == 0) {
 							//printf("all mail being held\n");
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 								if (IBBS.Data.Nodes[iTemp].Active == false)
@@ -1835,7 +1835,7 @@ static void IBBS_ProcessRouteConfig(void)
 						GetToken(pcCurrentPos, szFirstToken);
 
 						//printf("Token1 = %s\n", szFirstToken);
-						if (stricmp(szFirstToken, "ALL") == 0) {
+						if (strcasecmp(szFirstToken, "ALL") == 0) {
 							//printf("all mail set to normal\n");
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 								if (IBBS.Data.Nodes[iTemp].Active == false)
@@ -2088,7 +2088,7 @@ void IBBS_ShowLeagueAscii(void)
 		strlcpy(szToken, szString, sizeof(szToken));
 		szToken[5] = 0;
 
-		if (stricmp(szToken, "Ascii") == 0) {
+		if (strcasecmp(szToken, "Ascii") == 0) {
 			// point out to screen
 			if (szString[6])
 				rputs(&szString[6]);
@@ -2348,7 +2348,7 @@ static void IBBS_Reset(struct game_data *GameData)
  */
 {
 	// if reset is same as last game's, don't run this
-	if (stricmp(GameData->GameID, Game.Data.GameID) == 0) {
+	if (strcasecmp(GameData->GameID, Game.Data.GameID) == 0) {
 		DisplayStr("|08* |07dupe reset skipped.\n");
 		return;
 	}
@@ -2664,7 +2664,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 		}
 
 		// if gameId is of the current game, update recon stuff
-		if (stricmp(Packet.GameID, Game.Data.GameID) == 0) {
+		if (strcasecmp(Packet.GameID, Game.Data.GameID) == 0) {
 			IBBS.Data.Nodes[ Packet.BBSIDFrom - 1 ].Recon.LastReceived =
 				DaysSince1970(Game.Data.szTodaysDate);
 		}

@@ -77,7 +77,7 @@ static void getxy(int *x, int*y);
 #ifdef __unix__
 static void clans_putch(unsigned char ch);
 static void getxy(int *x, int*y);
-int getch(void);
+int cio_getch(void);
 static short ansi_colours(short color);
 uint8_t cur_attr;
 struct termios orig_tio;
@@ -579,12 +579,12 @@ static int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_lengt
 			update = false;
 		}
 
-		key = getch();
+		key = cio_getch();
 
 		switch ((unsigned char)key) {
 			case 0xE0 :
 			case 0 :
-				switch (getch()) {
+				switch (cio_getch()) {
 					case K_DOWN : // down
 					case K_UP : // up
 						break;
@@ -788,9 +788,9 @@ char get_answer(char *szAllowableChars)
 	uint16_t iTemp;
 
 	for (;;) {
-		cKey = getch();
+		cKey = cio_getch();
 		if (cKey == 0 || cKey == (char)0xE0) {
-			getch();
+			cio_getch();
 			continue;
 		}
 
@@ -929,7 +929,7 @@ void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 
 	ShowTextCursor(true);
 	for (;;) {
-		InputCh = getch();
+		InputCh = cio_getch();
 
 		if (InputCh == '\b' || InputCh == '\x7f') {
 			if (CurChar>0) {
@@ -1591,7 +1591,7 @@ static struct keys {
 };
 
 static int nextch;
-int getch(void)
+int cio_getch(void)
 {
 	int ret = -1;
 	if (nextch) {

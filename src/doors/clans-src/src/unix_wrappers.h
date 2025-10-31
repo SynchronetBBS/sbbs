@@ -51,9 +51,6 @@ typedef struct {
 // ToDo needs some kind of REAL randomisation.
 #define RANDOM      unix_random
 
-#define strnicmp    strncasecmp
-#define stricmp     strcasecmp
-
 struct ffblk {
 	char lfn_magic[6];        /* LFN: the magic "LFN32" signature */
 	short lfn_handle;         /* LFN: the handle used by findfirst/findnext */

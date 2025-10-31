@@ -461,7 +461,7 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 			if (Alliances[iTemp] == NULL)
 				continue;
 
-			if (stricmp(szName, Alliances[iTemp]->szName) == 0) {
+			if (strcasecmp(szName, Alliances[iTemp]->szName) == 0) {
 				AllianceNameInUse = true;
 				break;
 			}

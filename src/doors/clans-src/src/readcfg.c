@@ -96,7 +96,7 @@ bool Config_Init(int16_t Node, struct NodeData *(*getNodeData)(int))
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_CONFIG_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (stricmp(szToken, papszConfigKeyWords[iKeyWord]) == 0) {
+			if (strcasecmp(szToken, papszConfigKeyWords[iKeyWord]) == 0) {
 				/* Process config token */
 				switch (iKeyWord) {
 					case 0 :  /* sysopname */
@@ -106,7 +106,7 @@ bool Config_Init(int16_t Node, struct NodeData *(*getNodeData)(int))
 						strlcpy(Config.szBBSName, pcCurrentPos, sizeof(Config.szBBSName));
 						break;
 					case 2 :  /* use log? */
-						if (stricmp(pcCurrentPos, "Yes") == 0)
+						if (strcasecmp(pcCurrentPos, "Yes") == 0)
 							Config.UseLog = true;
 						break;
 					case 3 :  /* ansi file */
@@ -129,13 +129,13 @@ bool Config_Init(int16_t Node, struct NodeData *(*getNodeData)(int))
 						break;
 					case 7 :  /* usefossil */
 						if (currNode) {
-							if (stricmp(pcCurrentPos, "No") == 0)
+							if (strcasecmp(pcCurrentPos, "No") == 0)
 								currNode->fossil = false;
 							else
 								currNode->fossil = true;
 						}
 						if (Node == iCurrentNode) {
-							if (stricmp(pcCurrentPos, "No") == 0) {
+							if (strcasecmp(pcCurrentPos, "No") == 0) {
 								/* do not use fossil */
 								Config.NoFossil = true;
 							}
@@ -152,7 +152,7 @@ bool Config_Init(int16_t Node, struct NodeData *(*getNodeData)(int))
 						if (currNode)
                                                         currNode->irq = atoi(pcCurrentPos);
 						if (Node == iCurrentNode) {
-							if (stricmp(pcCurrentPos, "Default") != 0)
+							if (strcasecmp(pcCurrentPos, "Default") != 0)
 								Config.ComIRQ = atoi(pcCurrentPos);
 						}
 						break;
@@ -170,9 +170,9 @@ bool Config_Init(int16_t Node, struct NodeData *(*getNodeData)(int))
 						AddInboundDir(pcCurrentPos);
 						break;
 					case 13 : /* mailer type */
-						if (stricmp(pcCurrentPos, "None") == 0)
+						if (strcasecmp(pcCurrentPos, "None") == 0)
 							Config.MailerType = MAIL_NONE;
-						else if (stricmp(pcCurrentPos, "Attach") == 0)
+						else if (strcasecmp(pcCurrentPos, "Attach") == 0)
 							Config.MailerType = MAIL_OTHER;
 						else
 							Config.MailerType = MAIL_BINKLEY;

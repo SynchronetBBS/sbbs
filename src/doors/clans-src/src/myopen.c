@@ -97,7 +97,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 
 			// od_printf("read in %s\n\r", FileHeader->szFileName);
 
-			if (stricmp(FileHeader->szFileName, szModFileName) == 0) {
+			if (strcasecmp(FileHeader->szFileName, szModFileName) == 0) {
 				FoundFile = true;
 				break;
 			}

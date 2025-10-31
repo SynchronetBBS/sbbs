@@ -101,7 +101,7 @@ static void Display(char *szFileName)
 		while (szString[ strlen(szString) - 1] == '\n' || szString[ strlen(szString) - 1] == '\r')
 			szString[ strlen(szString) - 1] = 0;
 
-		if (szString[0] == ':' && stricmp(szFileName, &szString[1]) == 0) {
+		if (szString[0] == ':' && strcasecmp(szFileName, &szString[1]) == 0) {
 			FileFound = true;
 			break;
 		}
@@ -132,7 +132,7 @@ static void Display(char *szFileName)
 		if (CurLine == (ScreenLines - STARTROW - 1)) {
 			CurLine = 0;
 			zputs("[more]");
-			if (toupper(getch()) == 'Q')
+			if (toupper(cio_getch()) == 'Q')
 				Done = true;
 			zputs("\r       \r");
 		}
@@ -183,27 +183,27 @@ int main(int argc, char **argv)
 		if (szToken[0] == 0)
 			continue;
 
-		if (stricmp(szToken, "quit") == 0 || stricmp(szToken, "q") == 0)
+		if (strcasecmp(szToken, "quit") == 0 || strcasecmp(szToken, "q") == 0)
 			break;
-		else if (stricmp(szToken, "install") == 0)
+		else if (strcasecmp(szToken, "install") == 0)
 			install();
-		else if (stricmp(szToken, "upgrade") == 0)
+		else if (strcasecmp(szToken, "upgrade") == 0)
 			upgrade();
-		else if (stricmp(szToken, "read") == 0)
+		else if (strcasecmp(szToken, "read") == 0)
 			Display(szInput);
-		else if (stricmp(szToken, "list") == 0)
+		else if (strcasecmp(szToken, "list") == 0)
 			ListFiles();
-		else if (stricmp(szToken, "about") == 0)
+		else if (strcasecmp(szToken, "about") == 0)
 			Display("About");
-		else if (stricmp(szToken, "extract") == 0) {
+		else if (strcasecmp(szToken, "extract") == 0) {
 			GetToken(szInput, szToken2);
 			Extract(szToken2, szInput);
 		}
-		else if (stricmp(szToken, "cls") == 0) {
+		else if (strcasecmp(szToken, "cls") == 0) {
 			ClearScrollRegion();
 			gotoxy(0, STARTROW);
 		}
-		else if (szToken[0] == '?' || stricmp(szToken, "help") == 0)
+		else if (szToken[0] == '?' || strcasecmp(szToken, "help") == 0)
 			Display("Help");
 		else {
 			snprintf(szString, sizeof(szString), "|04%s not a valid command!\n", szToken);
@@ -514,7 +514,7 @@ static void InitFiles(char *szFileName)
 		while (szString[ strlen(szString) - 1] == '\n' || szString[ strlen(szString) - 1] == '\r')
 			szString[ strlen(szString) - 1] = 0;
 
-		if (szString[0] == ':' && stricmp(szFileName, &szString[1]) == 0) {
+		if (szString[0] == ':' && strcasecmp(szFileName, &szString[1]) == 0) {
 			FileFound = true;
 			break;
 		}
@@ -664,7 +664,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 		}
 
 		// same file? -- if so, keep going, if not, skip
-		if (stricmp(szExtractFile, szFileName) == 0) {
+		if (strcasecmp(szExtractFile, szFileName) == 0) {
 			break;
 		}
 		else {
@@ -736,7 +736,7 @@ int CheckRow(int row, bool *Done)
 {
 	if (row >= ScreenLines - STARTROW - 1) {
 		zputs("[more]");
-		if (toupper(getch()) == 'Q')
+		if (toupper(cio_getch()) == 'Q')
 			*Done = true;
 		zputs("\r       \r");
 		return Done ? -1 : 0;

@@ -234,7 +234,7 @@ static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName)
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_SPELL_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (stricmp(szToken, papszSpellKeyWords[iKeyWord]) == 0) {
+			if (strcasecmp(szToken, papszSpellKeyWords[iKeyWord]) == 0) {
 				/* Process token */
 				switch (iKeyWord) {
 					case 0 :    /* NAME of spell */
@@ -295,28 +295,28 @@ static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName)
 						//printf("    - val: %+d\n", Spells[CurSpell]->Value);
 						break;
 					case 8 :    /* Flag */
-						if (stricmp(pcCurrentPos, "Heal") == 0) {
+						if (strcasecmp(pcCurrentPos, "Heal") == 0) {
 							//printf("is heal ");
 							Spells[CurSpell]->TypeFlag |= SF_HEAL;
 						}
-						else if (stricmp(pcCurrentPos, "Damage") == 0) {
+						else if (strcasecmp(pcCurrentPos, "Damage") == 0) {
 							//printf("is damage ");
 							Spells[CurSpell]->TypeFlag |= SF_DAMAGE;
 						}
-						else if (stricmp(pcCurrentPos, "Modify") == 0) {
+						else if (strcasecmp(pcCurrentPos, "Modify") == 0) {
 							//printf("is modify ");
 							Spells[CurSpell]->TypeFlag |= SF_MODIFY;
 						}
-						else if (stricmp(pcCurrentPos, "Incapacitate") == 0) {
+						else if (strcasecmp(pcCurrentPos, "Incapacitate") == 0) {
 							//printf("is incap ");
 							Spells[CurSpell]->TypeFlag |= SF_INCAPACITATE;
 						}
-						else if (stricmp(pcCurrentPos, "RaiseUndead") == 0) {
+						else if (strcasecmp(pcCurrentPos, "RaiseUndead") == 0) {
 							//printf("is raiseundead ");
 							Spells[CurSpell]->TypeFlag |= SF_RAISEUNDEAD;
 							printf("flag = %d\n", Spells[CurSpell]->TypeFlag);
 						}
-						else if (stricmp(pcCurrentPos, "BanishUndead") == 0) {
+						else if (strcasecmp(pcCurrentPos, "BanishUndead") == 0) {
 							//printf("is banish ");
 							Spells[CurSpell]->TypeFlag |= SF_BANISHUNDEAD;
 						}
