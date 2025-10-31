@@ -8,10 +8,18 @@
 size_t strlcpy(char *dst, const char *src, size_t dsize);
 size_t strlcat(char *dst, const char *src, size_t dsize);
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <sys/utime.h>
 
+#ifndef S_ISDIR
 #define S_ISDIR(x) ((x) & _S_IFDIR)
+#endif
+#ifndef S_IREAD
+#define S_IREAD _S_IREAD
+#endif
+#ifndef S_IWRITE
+#define S_IWRITE _S_IWRITE
+#endif
 
 // These are extensions that Microsoft (correctly) added a leading underscore to...
 #define unlink(x) _unlink(x)
@@ -25,8 +33,6 @@ size_t strlcat(char *dst, const char *src, size_t dsize);
 #define open(x, y, ...) _open(x, y, __VA_ARGS__)
 #define read(x, y, z) _read(x, y, z)
 
-#define S_IREAD _S_IREAD
-#define S_IWRITE _S_IWRITE
 #else
 #include <utime.h>
 #endif
