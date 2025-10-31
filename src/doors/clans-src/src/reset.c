@@ -208,7 +208,7 @@ static void ResetMenu(bool InterBBSGame)
 		}
 
 		cInput = getch();
-		if (cInput == 0 || cInput == (char)0xE0) {
+		if (cInput == 0 || cInput == 0xE0) {
 			cInput = getch();
 			switch (cInput) {
 				case K_UP   :
