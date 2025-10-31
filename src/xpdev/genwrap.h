@@ -224,6 +224,10 @@ extern "C" {
 	#define ARCHITECTURE_DESC "ia64"
 #elif defined(__EMSCRIPTEN__)
 	#define ARCHITECTURE_DESC "wasm"
+#elif defined(__riscv) && defined(__riscv_xlen) && (__riscv_xlen == 64)
+	#define ARCHITECTURE_DESC "riscv64"
+#elif defined(__riscv) && defined(__riscv_xlen) && (__riscv_xlen == 32)
+	#define ARCHITECTURE_DESC "riscv32"
 #else
 	#ifdef UNAME_ARCHITECTURE_DESC
 		#define ARCHITECTURE_DESC UNAME_ARCHITECTURE_DESC
