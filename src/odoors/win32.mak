@@ -84,7 +84,7 @@ RC=rc
 #
 # /c /W3 /D "WIN32" /D "_WINDOWS"  - For Microsoft compilers
 #
-CFLAGS=/nologo /MT /W3 /GX /O2 /D "WIN32" /D "_WINDOWS" /c
+CFLAGS=/nologo /MT /W3 /GX /O2 /D "WIN32" /D "_WINDOWS" /c /D "_CRT_NONSTDC_NO_WARNINGS"
 # /MTd /Zi - for debug
 #
 #------------------------------------------------------------------------------
@@ -153,168 +153,168 @@ DEF_FILE=$(SOURCEDIR)OpenDoor.def
 #
 $(OBJDIR)odauto$(TARGET).obj : $(SOURCEDIR)odauto.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odauto.c
-   command /c erase $(OBJDIR)odauto$(TARGET).obj
+   cmd /c erase $(OBJDIR)odauto$(TARGET).obj
    move odauto.obj $(OBJDIR)odauto$(TARGET).obj
 
 $(OBJDIR)odblock$(TARGET).obj : $(SOURCEDIR)odblock.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odblock.c
-   command /c erase $(OBJDIR)odblock$(TARGET).obj
+   cmd /c erase $(OBJDIR)odblock$(TARGET).obj
    move odblock.obj $(OBJDIR)odblock$(TARGET).obj
 
 $(OBJDIR)odcfile$(TARGET).obj : $(SOURCEDIR)odcfile.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odcfile.c
-   command /c erase $(OBJDIR)odcfile$(TARGET).obj
+   cmd /c erase $(OBJDIR)odcfile$(TARGET).obj
    move odcfile.obj $(OBJDIR)odcfile$(TARGET).obj
 
 $(OBJDIR)odcmdln$(TARGET).obj : $(SOURCEDIR)odcmdln.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odcmdln.c
-   command /c erase $(OBJDIR)odcmdln$(TARGET).obj
+   cmd /c erase $(OBJDIR)odcmdln$(TARGET).obj
    move odcmdln.obj $(OBJDIR)odcmdln$(TARGET).obj
 
 $(OBJDIR)odcom$(TARGET).obj : $(SOURCEDIR)odcom.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odcom.c
-   command /c erase $(OBJDIR)odcom$(TARGET).obj
+   cmd /c erase $(OBJDIR)odcom$(TARGET).obj
    move odcom.obj $(OBJDIR)odcom$(TARGET).obj
 
 $(OBJDIR)odcore$(TARGET).obj : $(SOURCEDIR)odcore.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odcore.c
-   command /c erase $(OBJDIR)odcore$(TARGET).obj
+   cmd /c erase $(OBJDIR)odcore$(TARGET).obj
    move odcore.obj $(OBJDIR)odcore$(TARGET).obj
 
 $(OBJDIR)oddrbox$(TARGET).obj : $(SOURCEDIR)oddrbox.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)oddrbox.c
-   command /c erase $(OBJDIR)oddrbox$(TARGET).obj
+   cmd /c erase $(OBJDIR)oddrbox$(TARGET).obj
    move oddrbox.obj $(OBJDIR)oddrbox$(TARGET).obj
 
 $(OBJDIR)odedit$(TARGET).obj : $(SOURCEDIR)odedit.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odedit.c
-   command /c erase $(OBJDIR)odedit$(TARGET).obj
+   cmd /c erase $(OBJDIR)odedit$(TARGET).obj
    move odedit.obj $(OBJDIR)odedit$(TARGET).obj
 
 $(OBJDIR)odedstr$(TARGET).obj : $(SOURCEDIR)odedstr.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odedstr.c
-   command /c erase $(OBJDIR)odedstr$(TARGET).obj
+   cmd /c erase $(OBJDIR)odedstr$(TARGET).obj
    move odedstr.obj $(OBJDIR)odedstr$(TARGET).obj
 
 $(OBJDIR)odemu$(TARGET).obj : $(SOURCEDIR)odemu.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odemu.c
-   command /c erase $(OBJDIR)odemu$(TARGET).obj
+   cmd /c erase $(OBJDIR)odemu$(TARGET).obj
    move odemu.obj $(OBJDIR)odemu$(TARGET).obj
 
 $(OBJDIR)odframe$(TARGET).obj : $(SOURCEDIR)odframe.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odframe.c
-   command /c erase $(OBJDIR)odframe$(TARGET).obj
+   cmd /c erase $(OBJDIR)odframe$(TARGET).obj
    move odframe.obj $(OBJDIR)odframe$(TARGET).obj
 
 $(OBJDIR)odgetin$(TARGET).obj : $(SOURCEDIR)odgetin.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odgetin.c
-   command /c erase $(OBJDIR)odgetin$(TARGET).obj
+   cmd /c erase $(OBJDIR)odgetin$(TARGET).obj
    move odgetin.obj $(OBJDIR)odgetin$(TARGET).obj
 
 $(OBJDIR)odgraph$(TARGET).obj : $(SOURCEDIR)odgraph.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odgraph.c
-   command /c erase $(OBJDIR)odgraph$(TARGET).obj
+   cmd /c erase $(OBJDIR)odgraph$(TARGET).obj
    move odgraph.obj $(OBJDIR)odgraph$(TARGET).obj
 
 $(OBJDIR)odinex1$(TARGET).obj : $(SOURCEDIR)odinex1.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odinex1.c
-   command /c erase $(OBJDIR)odinex1$(TARGET).obj
+   cmd /c erase $(OBJDIR)odinex1$(TARGET).obj
    move odinex1.obj $(OBJDIR)odinex1$(TARGET).obj
 
 $(OBJDIR)odinex2$(TARGET).obj : $(SOURCEDIR)odinex2.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odinex2.c
-   command /c erase $(OBJDIR)odinex2$(TARGET).obj
+   cmd /c erase $(OBJDIR)odinex2$(TARGET).obj
    move odinex2.obj $(OBJDIR)odinex2$(TARGET).obj
 
 $(OBJDIR)odinque$(TARGET).obj : $(SOURCEDIR)odinque.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odinque.c
-   command /c erase $(OBJDIR)odinque$(TARGET).obj
+   cmd /c erase $(OBJDIR)odinque$(TARGET).obj
    move odinque.obj $(OBJDIR)odinque$(TARGET).obj
 
 $(OBJDIR)odkrnl$(TARGET).obj : $(SOURCEDIR)odkrnl.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odkrnl.c
-   command /c erase $(OBJDIR)odkrnl$(TARGET).obj
+   cmd /c erase $(OBJDIR)odkrnl$(TARGET).obj
    move odkrnl.obj $(OBJDIR)odkrnl$(TARGET).obj
 
 $(OBJDIR)odlist$(TARGET).obj : $(SOURCEDIR)odlist.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odlist.c
-   command /c erase $(OBJDIR)odlist$(TARGET).obj
+   cmd /c erase $(OBJDIR)odlist$(TARGET).obj
    move odlist.obj $(OBJDIR)odlist$(TARGET).obj
 
 $(OBJDIR)odlog$(TARGET).obj : $(SOURCEDIR)odlog.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odlog.c
-   command /c erase $(OBJDIR)odlog$(TARGET).obj
+   cmd /c erase $(OBJDIR)odlog$(TARGET).obj
    move odlog.obj $(OBJDIR)odlog$(TARGET).obj
 
 $(OBJDIR)odmulti$(TARGET).obj : $(SOURCEDIR)odmulti.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odmulti.c
-   command /c erase $(OBJDIR)odmulti$(TARGET).obj
+   cmd /c erase $(OBJDIR)odmulti$(TARGET).obj
    move odmulti.obj $(OBJDIR)odmulti$(TARGET).obj
 
 $(OBJDIR)odplat$(TARGET).obj : $(SOURCEDIR)odplat.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odplat.c
-   command /c erase $(OBJDIR)odplat$(TARGET).obj
+   cmd /c erase $(OBJDIR)odplat$(TARGET).obj
    move odplat.obj $(OBJDIR)odplat$(TARGET).obj
 
 $(OBJDIR)odpcb$(TARGET).obj : $(SOURCEDIR)odpcb.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odpcb.c
-   command /c erase $(OBJDIR)odpcb$(TARGET).obj
+   cmd /c erase $(OBJDIR)odpcb$(TARGET).obj
    move odpcb.obj $(OBJDIR)odpcb$(TARGET).obj
 
 $(OBJDIR)odpopup$(TARGET).obj : $(SOURCEDIR)odpopup.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odpopup.c
-   command /c erase $(OBJDIR)odpopup$(TARGET).obj
+   cmd /c erase $(OBJDIR)odpopup$(TARGET).obj
    move odpopup.obj $(OBJDIR)odpopup$(TARGET).obj
 
 $(OBJDIR)odprntf$(TARGET).obj : $(SOURCEDIR)odprntf.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odprntf.c
-   command /c erase $(OBJDIR)odprntf$(TARGET).obj
+   cmd /c erase $(OBJDIR)odprntf$(TARGET).obj
    move odprntf.obj $(OBJDIR)odprntf$(TARGET).obj
 
 $(OBJDIR)odra$(TARGET).obj : $(SOURCEDIR)odra.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odra.c
-   command /c erase $(OBJDIR)odra$(TARGET).obj
+   cmd /c erase $(OBJDIR)odra$(TARGET).obj
    move odra.obj $(OBJDIR)odra$(TARGET).obj
 
 $(OBJDIR)odscrn$(TARGET).obj : $(SOURCEDIR)odscrn.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odscrn.c
-   command /c erase $(OBJDIR)odscrn$(TARGET).obj
+   cmd /c erase $(OBJDIR)odscrn$(TARGET).obj
    move odscrn.obj $(OBJDIR)odscrn$(TARGET).obj
 
 $(OBJDIR)odspawn$(TARGET).obj : $(SOURCEDIR)odspawn.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odspawn.c
-   command /c erase $(OBJDIR)odspawn$(TARGET).obj
+   cmd /c erase $(OBJDIR)odspawn$(TARGET).obj
    move odspawn.obj $(OBJDIR)odspawn$(TARGET).obj
 
 $(OBJDIR)odstand$(TARGET).obj : $(SOURCEDIR)odstand.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odstand.c
-   command /c erase $(OBJDIR)odstand$(TARGET).obj
+   cmd /c erase $(OBJDIR)odstand$(TARGET).obj
    move odstand.obj $(OBJDIR)odstand$(TARGET).obj
 
 $(OBJDIR)odstat$(TARGET).obj : $(SOURCEDIR)odstat.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odstat.c
-   command /c erase $(OBJDIR)odstat$(TARGET).obj
+   cmd /c erase $(OBJDIR)odstat$(TARGET).obj
    move odstat.obj $(OBJDIR)odstat$(TARGET).obj
 
 # This file (odsys.c) wasn't included in 6.1.1 source <shrug>
 #$(OBJDIR)odsys$(TARGET).obj : $(SOURCEDIR)odsys.c $(HEADERS)
 #   $(CC) $(CFLAGS) $(SOURCEDIR)odsys.c
-#   command /c erase $(OBJDIR)odsys$(TARGET).obj
+#   cmd /c erase $(OBJDIR)odsys$(TARGET).obj
 #   move odsys.obj $(OBJDIR)odsys$(TARGET).obj
 
 $(OBJDIR)odutil$(TARGET).obj : $(SOURCEDIR)odutil.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odutil.c
-   command /c erase $(OBJDIR)odutil$(TARGET).obj
+   cmd /c erase $(OBJDIR)odutil$(TARGET).obj
    move odutil.obj $(OBJDIR)odutil$(TARGET).obj
 
 $(OBJDIR)odwcat$(TARGET).obj : $(SOURCEDIR)odwcat.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odwcat.c
-   command /c erase $(OBJDIR)odwcat$(TARGET).obj
+   cmd /c erase $(OBJDIR)odwcat$(TARGET).obj
    move odwcat.obj $(OBJDIR)odwcat$(TARGET).obj
 
 $(OBJDIR)odwin$(TARGET).obj : $(SOURCEDIR)odwin.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odwin.c
-   command /c erase $(OBJDIR)odwin$(TARGET).obj
+   cmd /c erase $(OBJDIR)odwin$(TARGET).obj
    move odwin.obj $(OBJDIR)odwin$(TARGET).obj
 #
 #------------------------------------------------------------------------------
@@ -323,7 +323,7 @@ $(OBJDIR)odwin$(TARGET).obj : $(SOURCEDIR)odwin.c $(HEADERS)
 #
 $(OBJDIR)ODoor$(TARGET).res: $(SOURCEDIR)ODRes.rc
    $(RC) $(SOURCEDIR)ODRes.rc
-   command /c erase $(LIBDIR)ODoor$(TARGET).res
+   cmd /c erase $(LIBDIR)ODoor$(TARGET).res
    move $(SOURCEDIR)ODRes.res $(OBJDIR)ODoor$(TARGET).res
 #
 #------------------------------------------------------------------------------

@@ -38,7 +38,7 @@ EXPORTS
    ; Untested... these next three need the @s added
    ; I just hacked in the size of the parameters for 32-bit systems
    od_split_cmd_line=_od_split_cmd_line@8
-   od_free_split_cmd_line=_od_free_split_cmd_line_free@4
+   od_free_split_cmd_line=_od_free_split_cmd_line@4
    ; Presumably tested stuff
    ODConfigInit=_ODConfigInit@0
    ODLogEnable=_ODLogEnable@0
