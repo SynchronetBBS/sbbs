@@ -59,8 +59,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 static char o_fg4 = 7, o_bg4 = 0;
 
-static unsigned ScrollTop = 0;
-static unsigned ScrollBottom = UINT_MAX;
+static int ScrollTop = 0;
+static int ScrollBottom = INT_MAX;
 
 #ifdef __MSDOS__
 static void getxy(int *x, int*y);
@@ -382,7 +382,7 @@ void zputs(const char *string)
 	gotoxy(x, y);
 }
 
-void SetCurs(int16_t CursType)
+static void SetCurs(int16_t CursType)
 {
 // As usual, block off the local stuff
 #if !defined(__unix__) && !defined(_WIN32)
