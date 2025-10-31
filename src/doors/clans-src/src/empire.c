@@ -2360,7 +2360,7 @@ static void StartEmpireWar(struct empire *Empire)
 		GetStringChoice(aszVillageNames, NumBBSes, ST_WEMPIRE1,
 						&WhichVillage, true, DT_WIDE, true);
 
-		if (WhichVillage == -1) {
+		if (WhichVillage == -1 || (WhichVillage && !Game.Data.InterBBS)) {
 			rputs(ST_ABORTED);
 			return;
 		}
@@ -2494,7 +2494,7 @@ static void StartEmpireWar(struct empire *Empire)
 			ClanID[1] = -1;
 
 			IBBS_SendAttackPacket(Empire, &AttackingArmy, Goal,
-								  ExtentOfAttack, EO_VILLAGE, ClanID, BBSIndex[WhichVillage]);
+			    ExtentOfAttack, EO_VILLAGE, ClanID, BBSIndex[WhichVillage]);
 
 			// reduce his army now
 			Empire->Army.Footmen -= AttackingArmy.Footmen;
@@ -2819,6 +2819,9 @@ static void StartEmpireWar(struct empire *Empire)
 		// update info to file
 		Clan_Update(&TmpClan);
 		FreeClanMembers(&TmpClan);
+	}
+	else {
+		System_Error("Invalid Defender Type");
 	}
 
 	// reduce attacks
