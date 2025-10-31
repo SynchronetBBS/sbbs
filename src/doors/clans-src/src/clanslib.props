@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{DFC3074C-DA50-6EA6-4205-5AEC6C6F6092}</ProjectGuid>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <Link>
+      <AdditionalDependencies>$(OutDir)clanslib.$(Platform).$(Configuration).lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+</Project>

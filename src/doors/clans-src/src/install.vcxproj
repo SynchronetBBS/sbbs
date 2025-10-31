@@ -1,115 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{B4A178D4-EB7D-420D-986A-8019C96116D8}</ProjectGuid>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v143</PlatformToolset>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>MultiByte</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v143</PlatformToolset>
-    <UseOfMfc>false</UseOfMfc>
-    <CharacterSet>MultiByte</CharacterSet>
-  </PropertyGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-  <ImportGroup Label="ExtensionSettings">
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(VCTargetsPath)Microsoft.Cpp.UpgradeFromVC60.props" />
-  </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>.\Win32_Release\</OutDir>
-    <IntDir>.\Win32_Release\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>.\Win32_Debug\</OutDir>
-    <IntDir>.\Win32_Debug\</IntDir>
-  </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ClCompile>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <Optimization>MaxSpeed</Optimization>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AssemblerListingLocation>.\Win32_Release\</AssemblerListingLocation>
-      <PrecompiledHeaderOutputFile>.\Win32_Release\install.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>.\Win32_Release\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Win32_Release\install.pdb</ProgramDataBaseFileName>
-      <LanguageStandard_C>stdc17</LanguageStandard_C>
-    </ClCompile>
-    <Midl>
-      <TypeLibraryName>.\Win32_Release\install.tlb</TypeLibraryName>
-    </Midl>
-    <ResourceCompile>
-      <Culture>0x0409</Culture>
-      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <Bscmake>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Win32_Release\install.bsc</OutputFile>
-    </Bscmake>
-    <Link>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <SubSystem>Console</SubSystem>
-      <OutputFile>.\Win32_Release\install.exe</OutputFile>
-      <AdditionalDependencies>$(OutDir)\clanslib.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <Optimization>Disabled</Optimization>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AssemblerListingLocation>.\Win32_Debug\</AssemblerListingLocation>
-      <PrecompiledHeaderOutputFile>.\Win32_Debug\install.pch</PrecompiledHeaderOutputFile>
-      <ObjectFileName>.\Win32_Debug\</ObjectFileName>
-      <ProgramDataBaseFileName>.\Win32_Debug\install.pdb</ProgramDataBaseFileName>
-      <LanguageStandard_C>stdc17</LanguageStandard_C>
-    </ClCompile>
-    <Midl>
-      <TypeLibraryName>.\Win32_Debug\install.tlb</TypeLibraryName>
-    </Midl>
-    <ResourceCompile>
-      <Culture>0x0409</Culture>
-      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ResourceCompile>
-    <Bscmake>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Win32_Debug\install.bsc</OutputFile>
-    </Bscmake>
-    <Link>
-      <SuppressStartupBanner>true</SuppressStartupBanner>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Console</SubSystem>
-      <OutputFile>.\Win32_Debug\install.exe</OutputFile>
-      <AdditionalDependencies>$(OutDir)\clanslib.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
-  </ItemDefinitionGroup>
+  <Import Project="clans.props" />
+  <Import Project="clanslib.props" />
   <ItemGroup>
     <ClCompile Include="install.c" />
   </ItemGroup>
@@ -126,7 +21,4 @@
     <ClInclude Include="video.h" />
     <ClInclude Include="win_wrappers.h" />
   </ItemGroup>
-  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
 </Project>
