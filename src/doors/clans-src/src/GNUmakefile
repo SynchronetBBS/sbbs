@@ -100,7 +100,7 @@ MCOMP_OBJS :=	$(OBJDIR)mcomp.o $(OBJDIR)crc.o $(OBJDIR)tools.o \
 MITEMS_OBJS :=	$(OBJDIR)mitems.o $(OBJDIR)crc.o $(OBJDIR)tools.o \
 		$(OBJDIR)serialize.o $(OBJDIR)win_wrappers.o
 
-MSPELLS_OBJS :=	$(OBJDIR)mspells.o $(OBJDIR)crc.o $(OBJDOR)tools.o \
+MSPELLS_OBJS :=	$(OBJDIR)mspells.o $(OBJDIR)crc.o $(OBJDIR)tools.o \
 		$(OBJDIR)serialize.o $(OBJDIR)win_wrappers.o
 
 PCEDIT_OBJS :=	$(OBJDIR)pcedit.o $(OBJDIR)alliance.o $(OBJDIR)myopen.o \
