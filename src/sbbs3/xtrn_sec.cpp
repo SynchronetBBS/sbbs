@@ -967,19 +967,18 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			return;
 		}
 
-		safe_snprintf(str, sizeof(str), "%d\n%d\n%u\n%s%c\n%d\n%s\n%s\n%d\n%d\n"
-		              "%d\n%d\n"
-		              , misc & (XTRN_STDIO | XTRN_CONIO) ? 0 /* Local */ : 2 /* Telnet */
-		, misc & (XTRN_STDIO | XTRN_CONIO) ? INVALID_SOCKET : client_socket_dup
-		, dte_rate
-		, VERSION_NOTICE, REVISION
-		, useron.number
-		, useron.name
-		, name
-		, useron.level
-		, tleft / 60
-		, term->supports(ANSI)
-		, cfg.node_num);
+		safe_snprintf(str, sizeof(str), "%d\n%d\n%u\n%s%c\n%d\n%s\n%s\n%d\n%d\n%d\n%d\n"
+			, misc & (XTRN_STDIO | XTRN_CONIO) ? 0 /* Local */ : 2 /* Telnet */
+			, misc & (XTRN_STDIO | XTRN_CONIO) ? INVALID_SOCKET : client_socket_dup
+			, dte_rate
+			, VERSION_NOTICE, REVISION
+			, useron.number
+			, useron.name
+			, name
+			, useron.level
+			, tleft / 60
+			, term->supports(ANSI)
+			, cfg.node_num);
 		lfexpand(str, misc);
 		fwrite(str, strlen(str), 1, fp);
 		fclose(fp);
