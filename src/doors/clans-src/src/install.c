@@ -646,10 +646,10 @@ static void Extract(char *szExtractFile, char *szNewName)
 		if (szFileName[0] != '/') {
 			/* get filesize from psi file */
 			fread(&lFileSize, sizeof(lFileSize), 1, fpGUM);
-			lFileSize = SWAP32(lFileSize);
+			lFileSize = SWAP32S(lFileSize);
 
 			fread(&lCompressSize, sizeof(lCompressSize), 1, fpGUM);
-			lCompressSize = SWAP32(lCompressSize);
+			lCompressSize = SWAP32S(lCompressSize);
 
 			// get datestamp
 			fread(&date, sizeof(date), 1, fpGUM);
@@ -870,9 +870,9 @@ static void ListFiles(void)
 		else {
 			/* get filesize from psi file */
 			fread(&lFileSize, sizeof(lFileSize), 1, fpGUM);
-			lFileSize = SWAP32(lFileSize);
+			lFileSize = SWAP32S(lFileSize);
 			fread(&lCompressSize, sizeof(lCompressSize), 1, fpGUM);
-			lCompressSize = SWAP32(lCompressSize);
+			lCompressSize = SWAP32S(lCompressSize);
 			// get datestamp
 			fread(&date, sizeof(date), 1, fpGUM);
 			date = SWAP16(date);

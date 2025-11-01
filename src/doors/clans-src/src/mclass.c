@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 
 	/* fwrite num of races */
 	printf("Writing %d classes.\n", Total);
-	tmp16 = SWAP16(Total);
+	tmp16 = SWAP16S(Total);
 	fwrite(&tmp16, sizeof(tmp16), 1, fpData);
 	for (iTemp = 0; iTemp < Total; iTemp++) {
 		s_PClass_s(PClasses[iTemp], pcbuf, sizeof(pcbuf));

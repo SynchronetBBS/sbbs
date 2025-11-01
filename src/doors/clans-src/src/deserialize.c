@@ -38,7 +38,7 @@ void System_Error(char *szErrorMsg);
 	if (remain < sizeof(tmp))       \
 		return SIZE_MAX;         \
 	memcpy(&tmp, src, sizeof(tmp));   \
-	x = SWAP16(tmp);                   \
+	x = SWAP16S(tmp);                  \
 	src += sizeof(tmp);                 \
 	remain -= sizeof(tmp);               \
 } while(0)
@@ -60,7 +60,7 @@ void System_Error(char *szErrorMsg);
 	if (remain < sizeof(tmp))       \
 		return SIZE_MAX;         \
 	memcpy(&tmp, src, sizeof(tmp));   \
-	x = SWAP32(tmp);                   \
+	x = SWAP32S(tmp);                  \
 	src += sizeof(tmp);                 \
 	remain -= sizeof(tmp);               \
 } while(0)

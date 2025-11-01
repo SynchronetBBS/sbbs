@@ -2909,11 +2909,11 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			// only do if in a game already
 			if (Game.Data.GameState == 0) {
 				IBBS_AddToGame(TmpClan, false);
-				TmpClan->ClanID[0] = SWAP16(TmpClan->ClanID[0]);
-				TmpClan->ClanID[1] = SWAP16(TmpClan->ClanID[1]);
+				TmpClan->ClanID[0] = SWAP16S(TmpClan->ClanID[0]);
+				TmpClan->ClanID[1] = SWAP16S(TmpClan->ClanID[1]);
 				IBBS_SendPacket(PT_DATAOK, sizeof(int16_t)*2, TmpClan->ClanID, Packet.BBSIDFrom);
-				TmpClan->ClanID[0] = SWAP16(TmpClan->ClanID[0]);
-				TmpClan->ClanID[1] = SWAP16(TmpClan->ClanID[1]);
+				TmpClan->ClanID[0] = SWAP16S(TmpClan->ClanID[0]);
+				TmpClan->ClanID[1] = SWAP16S(TmpClan->ClanID[1]);
 			}
 
 			FreeClan(TmpClan);

@@ -41,17 +41,17 @@ void Video_Init(void);
  */
 void Video_Close(void);
 
-void Input(char *string, int16_t length);
+void Input(char *string, size_t length);
 
-void ClearArea(int x1, int y1,  int x2, int y2, int attr);
-void xputs(const char *string, int16_t x, int16_t y);
+void ClearArea(int x1, int y1,  int x2, int y2, uint8_t attr);
+void xputs(const char *string, int x, int y);
 
 int32_t Video_VideoType(void);
 
 void DisplayStr(char *szString);
 
 void zputs(const char *string);
-void qputs(const char *string, int16_t x, int16_t y);
+void qputs(const char *string, int x, int y);
 
 void ScrollUp(void);
 void SetScrollRegion(int top, int bottom);
@@ -65,8 +65,8 @@ void clrscr(void);
 void gotoxy(int, int);
 #endif
 
-void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color);
-int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum);
+void ColorArea(int xPos1, int yPos1, int xPos2, int yPos2, uint8_t Color);
+long DosGetLong(char *Prompt, long DefaultVal, long Maximum);
 void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit);
 char get_answer(char *szAllowableChars);
 #ifdef __unix__

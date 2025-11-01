@@ -46,6 +46,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quests.h"
 #include "random.h"
 #include "structs.h"
+#include "system.h"
 #include "user.h"
 #include "video.h"
 
@@ -354,7 +355,8 @@ void ChatVillagers(int16_t WhichMenu)
 	struct NPCInfo *NPCInfo;
 	char *pszNPCIndex[MAX_NPCS], szString[80];
 	char *pszNPCNames[MAX_NPCS], cInput, szKeys[MAX_NPCS + 4];
-	int16_t CurNPC, NPCsFound = 0, CurFile;
+	signed char CurNPC;
+	int16_t NPCsFound = 0, CurFile;
 	long Offset;
 	struct FileHeader FileHeader;
 	struct NPCNdx NPCNdx;
@@ -511,8 +513,10 @@ void NPC_GetNPC(struct pc *NPC, char *szFileName, int16_t WhichNPC)
 		DisplayStr("Error finding NPC file.\n");
 		return;
 	}
-	Offset = (long)WhichNPC * BUF_SIZE_pc + sizeof(int16_t) * MAX_MONSTERS +
-			 FileHeader.lStart;
+	if (WhichNPC < 0)
+		System_Error("Getting NPC with negative ID");
+	Offset = (long)((size_t)WhichNPC * BUF_SIZE_pc + sizeof(int16_t) * MAX_MONSTERS +
+			 (size_t)FileHeader.lStart);
 	fseek(FileHeader.fp, Offset, SEEK_SET);
 	fread(pcBuf, sizeof(pcBuf), 1, FileHeader.fp);
 	s_pc_d(pcBuf, sizeof(pcBuf), NPC);
@@ -604,8 +608,8 @@ void NPC_AddNPCMember(char *szIndex)
 	CheckMem(TmpPC);
 
 	// seek to it but make sure you skip the monster index at start of pc file
-	SeekOffset = (long)NPCInfo->NPCPCIndex * BUF_SIZE_pc + sizeof(int16_t) * MAX_MONSTERS
-				 + PCFile.lStart;
+	SeekOffset = (long)((size_t)NPCInfo->NPCPCIndex * BUF_SIZE_pc + sizeof(int16_t) * MAX_MONSTERS
+				 + (size_t)PCFile.lStart);
 	fseek(PCFile.fp, SeekOffset, SEEK_SET);
 
 	fread(pBuf, sizeof(pBuf), 1, PCFile.fp);

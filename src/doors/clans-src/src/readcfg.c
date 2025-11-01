@@ -7,6 +7,7 @@
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
 
+#include "misc.h"
 #include "parsing.h"
 #include "readcfg.h"
 
@@ -40,7 +41,9 @@ char *papszConfigKeyWords[MAX_CONFIG_WORDS] = {
 
 void AddInboundDir(const char *dir)
 {
-	char **new = realloc(Config.szInboundDirs, sizeof(Config.szInboundDirs[0]) * (Config.NumInboundDirs + 1));
+	if (Config.NumInboundDirs < 0)
+		System_Error("Negative inbounds in AddInboundDir");
+	char **new = realloc(Config.szInboundDirs, sizeof(Config.szInboundDirs[0]) * ((size_t)Config.NumInboundDirs + 1));
 	size_t dirlen = strlen(dir);
 	bool addSlash = false;
 	CheckMem(new);
@@ -56,7 +59,7 @@ void AddInboundDir(const char *dir)
 	Config.NumInboundDirs++;
 }
 
-bool Config_Init(int16_t Node, struct NodeData *(*getNodeData)(int))
+bool Config_Init(uint16_t Node, struct NodeData *(*getNodeData)(int))
 /*
  * Loads data from .CFG file into Config.
  *
@@ -116,7 +119,7 @@ bool Config_Init(int16_t Node, struct NodeData *(*getNodeData)(int))
 						strlcpy(Config.szScoreFile[0], pcCurrentPos, sizeof(Config.szScoreFile[0]));
 						break;
 					case 5 :  /* node = ? */
-						iCurrentNode = atoi(pcCurrentPos);
+						iCurrentNode = ato16(pcCurrentPos, "Node Number", __func__);
 						if (getNodeData)
 							currNode = getNodeData(iCurrentNode);
 						break;
@@ -143,7 +146,7 @@ bool Config_Init(int16_t Node, struct NodeData *(*getNodeData)(int))
 						break;
 					case 8 :  /* serial port addr */
 						if (currNode)
-							currNode->addr = atoi(pcCurrentPos);
+							currNode->addr = atoull(pcCurrentPos, "Serial Port Address", __func__);
 						if (Node == iCurrentNode) {
 							//printf("Not yet used\n");
 						}
@@ -153,11 +156,11 @@ bool Config_Init(int16_t Node, struct NodeData *(*getNodeData)(int))
                                                         currNode->irq = atoi(pcCurrentPos);
 						if (Node == iCurrentNode) {
 							if (strcasecmp(pcCurrentPos, "Default") != 0)
-								Config.ComIRQ = atoi(pcCurrentPos);
+								Config.ComIRQ = atou8(pcCurrentPos, "IRQ", __func__);
 						}
 						break;
 					case 10 : /* BBS Id */
-						Config.BBSID = atoi(pcCurrentPos);
+						Config.BBSID = ato16(pcCurrentPos, "BBS ID", __func__);
 						break;
 					case 11 : /* netmail dir */
 						strlcpy(Config.szNetmailDir, pcCurrentPos, sizeof(Config.szNetmailDir));

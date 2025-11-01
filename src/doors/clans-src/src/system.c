@@ -50,6 +50,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "items.h"
 #include "language.h"
 #include "maint.h"
+#include "misc.h"
 #include "mstrings.h"
 #include "news.h"
 #include "parsing.h"
@@ -199,11 +200,11 @@ void ODCmdLineHandler(char *flag, char *val)
 		if (strcasecmp(&flag[1], "Recon") == 0) {
 			if (!primitive) {
 				if (Game.Data.InterBBS) {
-					if (IBBS.Data.BBSID != atoi(val) &&
-							(atoi(val) > 0 && atoi(val) < MAX_IBBSNODES)) {
+					if (IBBS.Data.BBSID != ato16(val, "Recon", __func__) &&
+							(ato16(val, "Recon", __func__) > 0 && ato16(val, "Recon", __func__) < MAX_IBBSNODES)) {
 						snprintf(szString, sizeof(szString), "Sending recon to %d\n", atoi(val));
 						DisplayStr(szString);
-						IBBS_SendRecon(atoi(val));
+						IBBS_SendRecon(ato16(val, "Recon", __func__));
 					}
 					System_Close();
 				}
@@ -223,7 +224,7 @@ void ODCmdLineHandler(char *flag, char *val)
 							(atoi(val) > 0 && atoi(val) < MAX_IBBSNODES)) {
 						snprintf(szString, sizeof(szString), "Sending reset to %d\n", atoi(val));
 						DisplayStr(szString);
-						IBBS_SendReset(atoi(val));
+						IBBS_SendReset(ato16(val, "Reset", __func__));
 					}
 					System_Close();
 				}
@@ -345,7 +346,7 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 		else if (flag[1] == 'S' || flag[1] == 's') {
 			if (primitive) {
 				od_control.od_use_socket = TRUE;
-				od_control.od_open_handle = atoi(&flag[2]);
+				od_control.od_open_handle = atoul(&flag[2], "Socket handle", __func__);
 			}
 			return TRUE;
 		}
@@ -356,7 +357,7 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 		}
 		else if (flag[1] == 'N' || flag[1] == 'n') {
 			if (primitive)
-				System.Node = atoi(&flag[2]);
+				System.Node = atou16(&flag[2], "Node", __func__);
 			return TRUE;
 		}
 	}
@@ -494,7 +495,7 @@ void System_Init(void)
  */
 {
 	SYSTEMTIME system_time;
-	int16_t iTemp;
+	size_t iTemp;
 #ifdef __unix__
 	char *pszResolvedPath;
 #endif

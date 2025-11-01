@@ -13,6 +13,7 @@
 #include "myopen.h"
 #include "serialize.h"
 #include "structs.h"
+#include "tools.h"
 
 #define NPCS_NOTHERE    0   // status of NPC, not here -- i.e. not in town
 #define NPCS_HERE       1
@@ -49,7 +50,7 @@ int main(int argc, char *argv[])
 
 	/* fwrite number of items */
 	printf("Writing %d items.\n", TotalItems);
-	tmp16 = SWAP16(TotalItems);
+	tmp16 = SWAP16S(TotalItems);
 	fwrite(&tmp16, sizeof(tmp16), 1, fpData);
 	for (iTemp = 0; iTemp < TotalItems; iTemp++) {
 		s_item_data_s(Items[iTemp], ibuf, sizeof(ibuf));
@@ -79,7 +80,7 @@ static void Init_Items(char *szFileName)
 	char szToken[MAX_TOKEN_CHARS + 1];
 	size_t uCount;
 	int iKeyWord;
-	int CurItem = -1;
+	int16_t CurItem = -1;
 	int iTemp;
 	char TypeOfStat=0;
 
@@ -220,14 +221,14 @@ static void Init_Items(char *szFileName)
 					case 7 :    /* Armor */
 					case 8 :    /* Charisma */
 						if (TypeOfStat == ITM_STAT) {
-							Items[CurItem]->Attributes[iKeyWord - 3] = atoi(pcCurrentPos);
+							Items[CurItem]->Attributes[iKeyWord - 3] = atoc(pcCurrentPos, "Attribute");
 						}
 						else if (TypeOfStat == ITM_REQ) {
-							Items[CurItem]->ReqAttributes[iKeyWord - 3] = atoi(pcCurrentPos);
+							Items[CurItem]->ReqAttributes[iKeyWord - 3] = atoc(pcCurrentPos, "Requirement");
 						}
 						break;
 					case 9 :    /* Cost */
-						Items[CurItem]->lCost = atol(pcCurrentPos);
+						Items[CurItem]->lCost = ato32(pcCurrentPos, "Cost");
 						break;
 					case 10 :    /* DiffMaterials */
 						Items[CurItem]->DiffMaterials = true;
@@ -242,32 +243,32 @@ static void Init_Items(char *szFileName)
 						TypeOfStat = ITM_PEN;
 						break;
 					case 14 :    /* Energy */
-						Items[CurItem]->Energy = atoi(pcCurrentPos);
+						Items[CurItem]->Energy = ato16(pcCurrentPos, "Energy");
 						break;
 					case 15 :    /* Uses */
-						Items[CurItem]->Energy = atoi(pcCurrentPos);
+						Items[CurItem]->Energy = ato16(pcCurrentPos, "Uses");
 						break;
 					case 16 :    /* Spell # */
-						Items[CurItem]->SpellNum = atoi(pcCurrentPos) - 1;
+						Items[CurItem]->SpellNum = ato16(pcCurrentPos, "Spell") - 1;
 						printf("spellnum = %d\n", Items[CurItem]->SpellNum);
 						break;
 					case 17 :    /* Market Level */
-						Items[CurItem]->MarketLevel = atoi(pcCurrentPos);
+						Items[CurItem]->MarketLevel = ato16(pcCurrentPos, "Market Level");
 						break;
 					case 18 :   // villagetypes
 						if (!strcasecmp(pcCurrentPos, "ALL"))
 							Items[CurItem]->VillageType = V_ALL;
 						else
-							Items[CurItem]->VillageType = atoi(pcCurrentPos);
+							Items[CurItem]->VillageType = ato16(pcCurrentPos, "Village Types");
 						break;
 					case 19 :   // randlevel
-						Items[CurItem]->RandLevel = atoi(pcCurrentPos);
+						Items[CurItem]->RandLevel = atoc(pcCurrentPos, "Rand Level");
 						break;
 					case 20 :   // HP
-						Items[CurItem]->HPAdd = atoi(pcCurrentPos);
+						Items[CurItem]->HPAdd = atoc(pcCurrentPos, "HP");
 						break;
 					case 21 :   // SP
-						Items[CurItem]->SPAdd = atoi(pcCurrentPos);
+						Items[CurItem]->SPAdd = atoc(pcCurrentPos, "SP");
 						break;
 				}
 				break;

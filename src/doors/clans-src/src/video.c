@@ -54,7 +54,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define CURS_NORMAL     0
 #define CURS_FAT        1
-#define PADDING         '\xb0'
+#define PADDING         0xB0
 #define SPECIAL_CODE    '%'
 
 static char o_fg4 = 7, o_bg4 = 0;
@@ -261,7 +261,7 @@ void ClearScrollRegion(void)
 }
 
 // ------------------------------------------------------------------------- //
-static void put_character(char ch, short attrib, int x, int y)
+static void put_character(char ch, uint8_t attrib, int x, int y)
 {
 #ifdef __MSDOS__
 	Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1))] = ch;
@@ -269,18 +269,18 @@ static void put_character(char ch, short attrib, int x, int y)
 #else
 	gotoxy(x, y);
 	textattr(attrib);
-	clans_putch(ch);
+	clans_putch((uint8_t)ch);
 #endif
 }
 
 void zputs(const char *string)
 {
 	char number[3];
-	int16_t cur_char, attr;
-	char foreground, background, cur_attrs;
-	int16_t i, j;
+	int16_t cur_char;
+	uint8_t foreground, background, cur_attrs, attr;
+	int i, j;
 	int x, y;
-	static char o_fg = 7, o_bg = 0;
+	static uint8_t o_fg = 7, o_bg = 0;
 
 	if (!VideoInitialized)
 		Video_Init();
@@ -312,10 +312,10 @@ void zputs(const char *string)
 				number[1]=string[cur_char+2];
 				number[2]=0;
 
-				attr=atoi(number);
+				attr = (uint8_t)((string[cur_char + 1] - '0') * 10 + string[cur_char + 2] - '0');
 				if (attr>15) {
 					background=attr-16;
-					o_bg = background << 4;
+					o_bg = (uint8_t)(background << 4);
 					attr = o_bg | o_fg;
 					cur_attrs = attr;
 				}
@@ -425,7 +425,7 @@ static void SetCurs(int16_t CursType)
 #endif
 }
 
-void qputs(const char *string, int16_t x, int16_t y)
+void qputs(const char *string, int x, int y)
 {
 #if defined(_WIN32) || defined(__unix__)
 	gotoxy(x, y);
@@ -501,10 +501,10 @@ void qputs(const char *string, int16_t x, int16_t y)
 }
 
 
-static void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t length, int16_t input_length)
+static void sdisplay(char *string, int x, int y, uint8_t color, size_t length, size_t input_length)
 {
 #ifdef __MSDOS__
-	int16_t i, offset;
+	size_t i, offset;
 	char *pString;
 
 	pString = string;
@@ -528,29 +528,29 @@ static void sdisplay(char *string, int16_t x, int16_t y, char color, int16_t len
 	gotoxy(x, y);
 	textattr(color);
 	for (char *i = string; *i; i++)
-		clans_putch(*i);
+		clans_putch((uint8_t)*i);
 	textattr(8);
-	for (int i = length; i < input_length; i++)
+	for (size_t i = length; i < input_length; i++)
 		clans_putch(PADDING);
 	textattr(orig_attr);
 #endif
 }
 
 
-static int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_length, char attr,
+static int16_t LongInput(char *string, int x, int y, size_t input_length, uint8_t attr,
 				 int16_t low_char, int16_t high_char)
 {
-	int16_t length = strlen(string);  // length of string
-	int16_t i,
-	insert = false,
-			 key,        // key inputted
-			 cur_letter = length; // letter we're editing right now
+	size_t length = strlen(string);  // length of string
+	size_t i;
+	int key;
+	int16_t insert = false;
+	size_t cur_letter = length; // letter we're editing right now
 	char tmp_str[255];
 	char first_time = true; // flags if this is the first time to input
 	// if true, it will clear the line and input
 	char old_fg4;
 	bool update = true;
-	int16_t slength = length;
+	size_t slength = length;
 
 	// initialize the string here
 
@@ -560,7 +560,7 @@ static int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_lengt
 	o_fg4 = attr&0x00FF;
 	o_bg4 = (attr&0xFF00) >> 8;
 	qputs(string, x, y);
-	gotoxy(x+length, y);
+	gotoxy(x + (int)length, y);
 
 	old_fg4 = o_fg4;
 	o_fg4 = 8;
@@ -575,7 +575,7 @@ static int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_lengt
 	for (;;) {
 		if (update) {
 			sdisplay(string, x, y, attr, length, input_length);
-			gotoxy(x + cur_letter, y);
+			gotoxy(x + (int)cur_letter, y);
 			update = false;
 		}
 
@@ -667,7 +667,7 @@ static int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_lengt
 					strlcpy(tmp_str, &string[cur_letter], sizeof(tmp_str));
 					strlcpy(&string[cur_letter+1], tmp_str, slength - cur_letter+1);
 
-					string[cur_letter] = key;
+					string[cur_letter] = (char)key;
 
 					length++;
 
@@ -676,7 +676,7 @@ static int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_lengt
 				}
 				else if (!insert && cur_letter<input_length) {
 
-					string[ cur_letter ] = key;
+					string[ cur_letter ] = (char)key;
 
 					if (cur_letter < length)
 						cur_letter++;
@@ -693,7 +693,7 @@ static int16_t LongInput(char *string, int16_t x, int16_t y, int16_t input_lengt
 	}
 }
 
-void Input(char *string, int16_t length)
+void Input(char *string, size_t length)
 {
 	int cur_x, cur_y;
 
@@ -706,7 +706,7 @@ void Input(char *string, int16_t length)
 }
 
 
-void ClearArea(int x1, int y1,  int x2, int y2, int attr)
+void ClearArea(int x1, int y1,  int x2, int y2, uint8_t attr)
 {
 #if defined(__MSDOS__)
 	asm {
@@ -753,7 +753,7 @@ void ClearArea(int x1, int y1,  int x2, int y2, int attr)
 #endif
 }
 
-void xputs(const char *string, int16_t x, int16_t y)
+void xputs(const char *string, int x, int y)
 {
 #if defined(__MSDOS__)
 	char FAR *VidPtr;
@@ -770,7 +770,7 @@ void xputs(const char *string, int16_t x, int16_t y)
 #else
 	gotoxy(x, y);
 	for (const char *i = string; *i; i++)
-		clans_putch(*i);
+		clans_putch((uint8_t)*i);
 #endif
 }
 
@@ -784,12 +784,12 @@ void DisplayStr(char *szString)
 
 char get_answer(char *szAllowableChars)
 {
-	char cKey;
+	int cKey;
 	uint16_t iTemp;
 
 	for (;;) {
 		cKey = cio_getch();
-		if (cKey == 0 || cKey == (char)0xE0) {
+		if (cKey == 0 || cKey == 0xE0) {
 			cio_getch();
 			continue;
 		}
@@ -804,10 +804,10 @@ char get_answer(char *szAllowableChars)
 			break;  /* found allowable key */
 	}
 
-	return (toupper(cKey));
+	return (char)(toupper(cKey));
 }
 
-int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
+long DosGetLong(char *Prompt, long DefaultVal, long Maximum)
 {
 	char string[255], NumString[13], DefMax[40];
 	char InputChar;
@@ -818,7 +818,7 @@ int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 	zputs(" ");
 	zputs(Prompt);
 
-	snprintf(DefMax, sizeof(DefMax), " |01(|15%" PRId32 "|07; %" PRId32 "|01) |11", DefaultVal, Maximum);
+	snprintf(DefMax, sizeof(DefMax), " |01(|15%ld|07; %ld|01) |11", DefaultVal, Maximum);
 	zputs(DefMax);
 
 	/* NumDigits contains amount of digits allowed using max. value input */
@@ -857,7 +857,7 @@ int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 			for (cTemp = 0; cTemp < CurDigit; cTemp++)
 				zputs("\b \b");
 
-			snprintf(string, sizeof(string), "%-" PRId32, Maximum);
+			snprintf(string, sizeof(string), "%-ld", Maximum);
 			string[NumDigits] = 0;
 			zputs(string);
 
@@ -876,7 +876,7 @@ int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 		}
 		else if (InputChar == '\r' || InputChar == '\n') {
 			if (CurDigit == 0) {
-				snprintf(string, sizeof(string), "%-" PRId32, DefaultVal);
+				snprintf(string, sizeof(string), "%-ld", DefaultVal);
 				string[NumDigits] = 0;
 				zputs(string);
 
@@ -892,7 +892,7 @@ int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 				for (cTemp = 0; cTemp < CurDigit; cTemp++)
 					zputs("\b \b");
 
-				snprintf(string, sizeof(string), "%-" PRId32, Maximum);
+				snprintf(string, sizeof(string), "%-ld", Maximum);
 				string[NumDigits] = 0;
 				zputs(string);
 
@@ -912,7 +912,7 @@ int32_t DosGetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 
 void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 {
-	int16_t CurChar;
+	size_t CurChar;
 	int InputCh;
 	char Spaces[85] = "                                                                                     ";
 	char BackSpaces[85] = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
@@ -965,7 +965,7 @@ void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 			continue;
 		else {  /* valid character input */
 			if (CurChar==MaxChars)   continue;
-			InputStr[CurChar++]=InputCh;
+			InputStr[CurChar++]=(char)InputCh;
 			InputStr[CurChar] = 0;
 			snprintf(szString, sizeof(szString), "%c", InputCh);
 			zputs(szString);
@@ -979,11 +979,11 @@ void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 #if defined(__unix__)
 static void makeraw(struct termios *raw)
 {
-	raw->c_iflag &= ~(IXOFF|INPCK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON|IGNPAR);
+	raw->c_iflag &= ~(unsigned)(IXOFF|INPCK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL|IXON|IGNPAR);
 	raw->c_iflag |= IGNBRK;
-	raw->c_oflag &= ~OPOST;
-	raw->c_lflag &= ~(ECHO|ECHOE|ECHOK|ECHONL|ICANON|ISIG|NOFLSH|TOSTOP);
-	raw->c_cflag &= ~(CSIZE|PARENB);
+	raw->c_oflag &= ~(unsigned)OPOST;
+	raw->c_lflag &= ~(unsigned)(ECHO|ECHOE|ECHOK|ECHONL|ICANON|ISIG|NOFLSH|TOSTOP);
+	raw->c_cflag &= ~(unsigned)(CSIZE|PARENB);
 	raw->c_cflag |= CS8|CREAD;
 	raw->c_cc[VMIN] = 1;
 	raw->c_cc[VTIME] = 0;
@@ -1043,7 +1043,7 @@ void Video_Init(void)
 		gotoxy(x, y);
 		textattr(7);
 		// character then attribute
-		Video.VideoMem = calloc(1, ScreenWidth * ScreenLines * 2);
+		Video.VideoMem = calloc(1, (size_t)ScreenWidth * (size_t)ScreenLines * 2);
 		clrscr();
 #elif defined(__MSDOS__)
 		int16_t iTemp;
@@ -1085,7 +1085,7 @@ void Video_Close(void)
 	}
 }
 
-void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char Color)
+void ColorArea(int xPos1, int yPos1, int xPos2, int yPos2, uint8_t Color)
 {
 #if defined(_WIN32)
 	int16_t y;
@@ -1102,13 +1102,13 @@ void ColorArea(int16_t xPos1, int16_t yPos1, int16_t xPos2, int16_t yPos2, char 
 		FillConsoleOutputAttribute( std_handle, (uint16_t)Color, line_len, cursor_pos, &cells_written);
 	}
 #elif defined(__unix__)
-	int16_t x, y;
+	int x, y;
 
 	for (y = yPos1; y <= yPos2;  y++) {
 		for (x = xPos1;  x <= xPos2;  x++) {
 			gotoxy(x, y);
 			textattr(Color);
-			clans_putch(Video.VideoMem[(((y) * ScreenWidth) + (x)) * 2]);
+			clans_putch((unsigned char)Video.VideoMem[(((y) * ScreenWidth) + (x)) * 2]);
 		}
 	}
 #endif
@@ -1262,7 +1262,7 @@ static void getxy(int *x, int*y)
 #elif defined(__unix__)
 void * save_screen(void)
 {
-	size_t sz = ScreenLines * ScreenWidth * 2;
+	size_t sz = (size_t)(ScreenLines * ScreenWidth * 2);
 	void *ret = malloc(sz);
 	if (ret == NULL)
 		return NULL;
@@ -1277,12 +1277,12 @@ static void redraw(void)
 	for (int y = 0; y < ScreenLines; y++) {
 		gotoxy(0, y);
 		for (int x = 0; x < ScreenWidth; x++) {
-			textattr(ch[1]);
+			textattr((unsigned char)ch[1]);
 			if (y == ScreenLines - 1 && x == ScreenWidth - 1) {
 				fputs("\x1b[K", stdout);
 			}
 			else {
-				clans_putch(ch[0]);
+				clans_putch((unsigned char)ch[0]);
 				ch += 2;
 			}
 		}
@@ -1291,7 +1291,7 @@ static void redraw(void)
 
 void restore_screen(void *state)
 {
-	size_t sz = ScreenLines * ScreenWidth * 2;
+	size_t sz = (size_t)(ScreenLines * ScreenWidth * 2);
 	memcpy(Video.VideoMem, state, sz);
 	free(state);
 	redraw();
@@ -1339,7 +1339,7 @@ void clrscr(void)
 	for (int y = 0; y < ScreenLines; y++) {
 		for (int x = 0; x < ScreenWidth; x++) {
 			*(ch++) = ' ';
-			*(ch++) = CurrentAttr;
+			*(ch++) = (char)CurrentAttr;
 		}
 	}
 
@@ -1391,8 +1391,8 @@ static void clans_putch(unsigned char ch)
 		fputc(' ', stdout);
 	else
 		fputc(ch, stdout);
-	ptr[0] = ch;
-	ptr[1] = CurrentAttr;
+	ptr[0] = (char)ch;
+	ptr[1] = (char)CurrentAttr;
 	CurrentX++;
 	if (CurrentX >= ScreenWidth) {
 		CurrentX = ScreenWidth - 1;
@@ -1454,7 +1454,7 @@ enum parseState {
 	PSnF = 10,
 };
 
-static int getseq(void)
+static unsigned getseq(void)
 {
 	int state = PSstart;
 	int ch;
@@ -1462,9 +1462,9 @@ static int getseq(void)
 	keypos = 0;
 	while ((ch = getbyte()) != -1) {
 		// NULs are ignored (even inside a sequence)
-		if (ch == 0)
+		if (ch <= 0)
 			continue;
-		keybuf[keypos++] = ch;
+		keybuf[keypos++] = (uint8_t)ch;
 		// If we hit this, just do whatever.
 		if (keypos == sizeof(keybuf)) {
 			keypos = 0;
@@ -1548,7 +1548,7 @@ static int getseq(void)
 				break;
 		}
 	}
-	return -1;
+	return UINT_MAX;
 }
 
 #define K_UP        72
@@ -1600,8 +1600,8 @@ int cio_getch(void)
 		return ret;
 	}
 	for (;;) {
-		int seqlen = getseq();
-		if (seqlen != -1) {
+		unsigned seqlen = getseq();
+		if (seqlen != UINT_MAX) {
 			if (seqlen == 1)
 				return keybuf[0];
 			for (int i = 0; allkeys[i].ret; i++) {
@@ -1621,7 +1621,7 @@ static const char *digits = "0123456789";
 static void getxy(int *x, int*y)
 {
 	char *p;
-	int seqlen;
+	unsigned seqlen;
 	size_t span;
 
 	if (!IsTTY) {
@@ -1630,7 +1630,7 @@ static void getxy(int *x, int*y)
 		return;
 	}
 	fputs("\x1b[6n", stdout);
-	while((seqlen = getseq()) != -1) {
+	while((seqlen = getseq()) != UINT_MAX) {
 		if (seqlen < 6)
 			continue;
 		if (keybuf[0] != '\x1b')

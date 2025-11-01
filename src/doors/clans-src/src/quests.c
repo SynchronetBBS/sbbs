@@ -40,6 +40,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "items.h"
 #include "k_quests.h"
 #include "language.h"
+#include "misc.h"
 #include "mstrings.h"
 #include "myopen.h"
 #include "news.h"
@@ -240,7 +241,9 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 		switch (*pcCurrentPos) {
 			case ')' :  /* end bCurrent conditions */
 				pcCurrentPos++;
-				*iCharsRead = pcCurrentPos - pszAcs;
+				if (pcCurrentPos - pszAcs > INT16_MAX)
+					System_Error("Unterminated string in legal()");
+				*iCharsRead = (int16_t)(pcCurrentPos - pszAcs);
 				return bSoFar;
 			case '(' :  /* start a new set of conditions */
 				pcCurrentPos++;
@@ -286,7 +289,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 				szIndex[iTemp] = 0;
 
 				UseCurrent = true;
-				iTemp = atoi(szIndex) - 1;
+				iTemp = ato16(szIndex, "Quest Done", __func__) - 1;
 
 				// if this quest done, it's true
 				if (PClan->QuestsDone[ iTemp/8 ] & (char)(1 << (iTemp%8)))
@@ -303,7 +306,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 				szIndex[iTemp] = 0;
 
 				UseCurrent = true;
-				GoldAmount = atol(szIndex);
+				GoldAmount = ato32(szIndex, "Gold", __func__);
 
 				if (PClan->Empire.VaultGold >= GoldAmount)
 					bCurrent = true;
@@ -318,7 +321,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 				szIndex[iTemp] = 0;
 
 				UseCurrent = true;
-				iTemp = atoi(szIndex);
+				iTemp = ato16(szIndex, "Level", __func__);
 
 				if (PClan->MineLevel == iTemp)
 					bCurrent = true;
@@ -333,7 +336,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 				szIndex[iTemp] = 0;
 
 				UseCurrent = true;
-				iTemp = atoi(szIndex);
+				iTemp = ato16(szIndex, "MinLevel", __func__);
 
 				if (PClan->MineLevel >= iTemp)
 					bCurrent = true;
@@ -349,7 +352,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 				szIndex[iTemp] = 0;
 
 				UseCurrent = true;
-				iTemp = atoi(szIndex);
+				iTemp = ato16(szIndex, "Random", __func__);
 
 				if (my_random(100) >= (100-iTemp))
 					bCurrent = true;
@@ -366,7 +369,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 
 				UseCurrent = true;
 
-				if (FlagSet(Quests_TFlags, atoi(szIndex)))
+				if (FlagSet(Quests_TFlags, ato16(szIndex, "TFlag", __func__)))
 					bCurrent = true;
 				else
 					bCurrent = false;
@@ -383,7 +386,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 
 				UseCurrent = true;
 
-				if (FlagSet(PClan->PFlags, atoi(szIndex)))
+				if (FlagSet(PClan->PFlags, ato16(szIndex, "PFlag", __func__)))
 					bCurrent = true;
 				else
 					bCurrent = false;
@@ -398,7 +401,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 
 				UseCurrent = true;
 
-				if (FlagSet(Village.Data.GFlags, atoi(szIndex)))
+				if (FlagSet(Village.Data.GFlags, ato16(szIndex, "GFlag", __func__)))
 					bCurrent = true;
 				else
 					bCurrent = false;
@@ -413,7 +416,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 
 				UseCurrent = true;
 
-				if (FlagSet(PClan->DFlags, atoi(szIndex)))
+				if (FlagSet(PClan->DFlags, ato16(szIndex, "DFlag", __func__)))
 					bCurrent = true;
 				else
 					bCurrent = false;
@@ -428,7 +431,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 
 				UseCurrent = true;
 
-				if (FlagSet(Village.Data.HFlags, atoi(szIndex)))
+				if (FlagSet(Village.Data.HFlags, ato16(szIndex, "HFlag", __func__)))
 					bCurrent = true;
 				else
 					bCurrent = false;
@@ -458,8 +461,11 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 		}
 	}
 
-	if (iCharsRead)
-		*iCharsRead = pcCurrentPos - pszAcs;
+	if (iCharsRead) {
+		if (pcCurrentPos - pszAcs > INT16_MAX)
+			System_Error("Too many characters read!");
+		*iCharsRead = (int16_t)(pcCurrentPos - pszAcs);
+	}
 
 	return bSoFar;
 }
@@ -540,7 +546,8 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 	struct FileHeader FileHeader;
 	char szNPCFileName[25], *apszLabels[MAX_OPTIONS];
 	char szText[255];
-	char CommandType, OldCommType = 0, DataLength, cInput, *pcCurrentPos;
+	unsigned char DataLength;
+	char CommandType, OldCommType = 0, cInput, *pcCurrentPos;
 	const char *pszOptionNames[MAX_OPTIONS];
 	char szKeys[MAX_OPTIONS+1];      // extra space for '\0'
 	char Buffer[256];               // not same as ecomp.c's buffer
@@ -597,7 +604,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 		}
 
 		// choose one randomly and seek it
-		ChosenEvent = my_random(EventsFound);
+		ChosenEvent = (int16_t)my_random(EventsFound);
 
 		fseek(FileHeader.fp, FileHeader.lStart, SEEK_SET);
 
@@ -706,19 +713,19 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 						pcCurrentPos = szText;
 						switch (toupper(*pcCurrentPos)) {
 							case 'D' :
-								SetFlag(PClan->DFlags, atoi(pcCurrentPos+1));
+								SetFlag(PClan->DFlags, ato16(pcCurrentPos+1, "Set DFlag", __func__));
 								break;
 							case 'P' :
-								SetFlag(PClan->PFlags, atoi(pcCurrentPos+1));
+								SetFlag(PClan->PFlags, ato16(pcCurrentPos+1, "Set PFlag", __func__));
 								break;
 							case 'T' :
-								SetFlag(Quests_TFlags, atoi(pcCurrentPos+1));
+								SetFlag(Quests_TFlags, ato16(pcCurrentPos+1, "Set TFlag", __func__));
 								break;
 							case 'G' :
-								SetFlag(Village.Data.GFlags, atoi(pcCurrentPos+1));
+								SetFlag(Village.Data.GFlags, ato16(pcCurrentPos+1, "Set GFlag", __func__));
 								break;
 							case 'H' :
-								SetFlag(Village.Data.HFlags, atoi(pcCurrentPos+1));
+								SetFlag(Village.Data.HFlags, ato16(pcCurrentPos+1, "Set HFlag", __func__));
 								break;
 						}
 						break;
@@ -726,19 +733,19 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 						pcCurrentPos = szText;
 						switch (toupper(*pcCurrentPos)) {
 							case 'D' :
-								ClearFlag(PClan->DFlags, atoi(pcCurrentPos+1));
+								ClearFlag(PClan->DFlags, ato16(pcCurrentPos+1, "Clear DFlag", __func__));
 								break;
 							case 'P' :
-								ClearFlag(PClan->PFlags, atoi(pcCurrentPos+1));
+								ClearFlag(PClan->PFlags, ato16(pcCurrentPos+1, "Clear PFlag", __func__));
 								break;
 							case 'T' :
-								ClearFlag(Quests_TFlags, atoi(pcCurrentPos+1));
+								ClearFlag(Quests_TFlags, ato16(pcCurrentPos+1, "Clear TFlag", __func__));
 								break;
 							case 'G' :
-								ClearFlag(Village.Data.GFlags, atoi(pcCurrentPos+1));
+								ClearFlag(Village.Data.GFlags, ato16(pcCurrentPos+1, "Clear GFlag", __func__));
 								break;
 							case 'H' :
-								ClearFlag(Village.Data.HFlags, atoi(pcCurrentPos+1));
+								ClearFlag(Village.Data.HFlags, ato16(pcCurrentPos+1, "Clear HFlag", __func__));
 								break;
 						}
 						break;
@@ -764,7 +771,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 					case 18 : // TakeGold
 						pcCurrentPos = szText;
 						if (*pcCurrentPos == '%') {
-							PercentGold = atoi(&pcCurrentPos[1]);
+							PercentGold = ato16(&pcCurrentPos[1], "Precent Gold", __func__);
 							if (PercentGold < 0)
 								PercentGold = 0;
 							if (PercentGold > 100)
@@ -773,16 +780,16 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 							GoldAmount = (PClan->Empire.VaultGold*PercentGold)/100L;
 						}
 						else
-							GoldAmount = atol(pcCurrentPos);
+							GoldAmount = ato32(pcCurrentPos, "Take Gold", __func__);
 
 						PClan->Empire.VaultGold -= GoldAmount;
 						break;
 					case 19 : // GiveGold
-						GoldAmount = atol(szText);
+						GoldAmount = ato32(szText, "Give Gold", __func__);
 						PClan->Empire.VaultGold += GoldAmount;
 						break;
 					case 20 : // GiveXP
-						XPAmount = atol(szText);
+						XPAmount = ato32(szText, "Give XP", __func__);
 
 						for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
 							if (PClan->Member[iTemp] && PClan->Member[iTemp]->Status == Here)
@@ -887,7 +894,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 
 				// get input from user
 
-				cInput = toupper(od_get_answer(szKeys));
+				cInput = toupper(od_get_answer(szKeys) & 0x7f) & 0x7f;
 
 				if (OldCommType != 33) {
 					snprintf(szString, sizeof(szString), "%c\n\r", cInput);
@@ -1260,7 +1267,7 @@ void Quests_GoQuest(void)
 			KnownBitSet =
 				(PClan->QuestsKnown[ iTemp/8 ] & (1 << (iTemp%8)) ||
 				 (Quests[iTemp].Known && Quests[iTemp].Active));
-			DoneBitSet  = PClan->QuestsDone[ iTemp/8 ] & (1 << (iTemp%8));
+			DoneBitSet  = PClan->QuestsDone[ iTemp / 8 ] & (unsigned char)(1U << (iTemp % 8));
 
 			// quest known? AND not complete?
 			if (KnownBitSet && !DoneBitSet && Quests[iTemp].pszQuestName) {
@@ -1282,7 +1289,7 @@ void Quests_GoQuest(void)
 		rputs(" |0GWhich quest? (Enter=abort)|0E> |0F");
 		/* get choice from user on which quest to complete */
 		for (;;) {
-			cInput = toupper(od_get_key(true));
+			cInput = toupper(od_get_key(true) & 0x7f) & 0x7f;
 
 			if (cInput == '\r' || cInput == '\n') {
 				rputs(ST_ABORTED);

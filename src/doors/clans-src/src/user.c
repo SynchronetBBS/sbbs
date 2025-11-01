@@ -227,6 +227,11 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 			notEncryptRead_s(Message, &Message, OldMessage, XOR_MSG)
 				break;
 
+			if (Message.Data.Length < 0) {
+				fclose(NewMessage);
+				unlink("tmp.$$$");
+				System_Error("Message with negative length in DeleteClan()");
+			}
 			if ((Message.FromClanID[0] == ClanID[0] &&
 					Message.FromClanID[1] == ClanID[1]) ||
 					(Message.ToClanID[0] == ClanID[0] &&
@@ -235,14 +240,14 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 				fseek(OldMessage, Message.Data.Length, SEEK_CUR);
 			}
 			else {
-				Message.Data.MsgTxt = malloc(Message.Data.Length);
+				Message.Data.MsgTxt = malloc((size_t)Message.Data.Length);
 				CheckMem(Message.Data.MsgTxt);
 
 				// write it to new file
-				EncryptRead(Message.Data.MsgTxt, Message.Data.Length, OldMessage, XOR_MSG);
+				EncryptRead(Message.Data.MsgTxt, (size_t)Message.Data.Length, OldMessage, XOR_MSG);
 
 				EncryptWrite_s(Message, &Message, NewMessage, XOR_MSG);
-				EncryptWrite(Message.Data.MsgTxt, Message.Data.Length, NewMessage, XOR_MSG);
+				EncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, NewMessage, XOR_MSG);
 
 				free(Message.Data.MsgTxt);
 			}
@@ -557,13 +562,14 @@ static int16_t GetClass(struct PClass *PClass[MAX_PCLASSES], char *szHelp)
  */
 {
 	int16_t ClassChosen, iTemp;
+	signed char cTemp;
 	char szKeys[MAX_PCLASSES + 2], szString[128], Choice;
 
 	/* so we have szKeys[] = "?ABCDEFGHI..." */
 	szKeys[0] = '?';
-	for (iTemp = 0; iTemp < MAX_PCLASSES; iTemp++)
-		szKeys[iTemp + 1] = 'A' + iTemp;
-	szKeys[iTemp + 1] = 0;
+	for (cTemp = 0; cTemp < MAX_PCLASSES; cTemp++)
+		szKeys[cTemp + 1] = 'A' + cTemp;
+	szKeys[cTemp + 1] = 0;
 
 	rputs("\n");
 
@@ -644,7 +650,7 @@ static void ChooseDefaultAction(struct pc *PC)
 	if (WhichOption == 0)
 		PC->DefaultAction = 0;
 	else
-		PC->DefaultAction = WhichOption + 9;
+		PC->DefaultAction = (unsigned)(WhichOption + 9);
 }
 
 
@@ -655,7 +661,8 @@ void ShowPlayerStats(struct pc *PC, bool AllowModify)
 {
 	int16_t iTemp, NumSpellsKnown, SpellNum;
 	bool AtLeastOneSpell, Done;
-	int16_t SpellStrLength = 0, CurAttr, CurSpell;
+	size_t SpellStrLength = 0;
+	int16_t CurAttr, CurSpell;
 	char szString[255], cInput;
 	int32_t XPRequired[MAX_LEVELS];
 	int16_t Level;
@@ -817,7 +824,7 @@ void ShowPlayerStats(struct pc *PC, bool AllowModify)
 		if (AllowModify) {
 			rputs(ST_P2STATS13);
 
-			cInput = toupper(od_get_key(true));
+			cInput = toupper(od_get_key(true) & 0x7f) & 0x7f;
 
 			if (cInput == 'C') {
 				rputs("Change Default Acton\n\n");
@@ -837,7 +844,8 @@ void ListItems(struct clan *Clan)
  * Lists Items for the given clan.
  */
 {
-	int16_t iTemp, iTemp2, Length, LastItem = 0, FoundItem = false;
+	size_t iTemp2, Length;
+	int16_t iTemp, LastItem = 0, FoundItem = false;
 	int16_t CurItem;
 	char szString[100], szOwner[30];
 
@@ -940,6 +948,7 @@ void ItemStats(void)
 	int16_t DefaultItemIndex, iTemp, WhoEquip;
 	char szKeys[11], szString[100], /*szTemp[60],*/ szItemName[25];
 	bool DoneEquipping;
+	signed char cTemp;
 
 	for (;;) {
 		rputs(ST_ISTATS0);
@@ -1187,42 +1196,42 @@ void ItemStats(void)
 					szKeys[1] = '\n';
 					szKeys[2] = 0;
 					rputs("\n");
-					for (iTemp = 0; iTemp < 6; iTemp++) {
-						if (PClan->Member[iTemp]) {
+					for (cTemp = 0; cTemp < 6; cTemp++) {
+						if (PClan->Member[cTemp]) {
 							strlcpy(szItemName, "Nothing", sizeof(szItemName));
 
 							// see if equipped already
 							switch (PClan->Items[ ItemIndex ].cType) {
 								case I_WEAPON :
-									if (PClan->Member[iTemp]->Weapon) {
-										strlcpy(szItemName, PClan->Items[PClan->Member[iTemp]->Weapon-1].szName, sizeof(szItemName));
+									if (PClan->Member[cTemp]->Weapon) {
+										strlcpy(szItemName, PClan->Items[PClan->Member[cTemp]->Weapon-1].szName, sizeof(szItemName));
 									}
 									break;
 								case I_ARMOR :
-									if (PClan->Member[iTemp]->Armor) {
-										strlcpy(szItemName, PClan->Items[PClan->Member[iTemp]->Armor-1].szName, sizeof(szItemName));
+									if (PClan->Member[cTemp]->Armor) {
+										strlcpy(szItemName, PClan->Items[PClan->Member[cTemp]->Armor-1].szName, sizeof(szItemName));
 									}
 									break;
 								case I_SHIELD :
-									if (PClan->Member[iTemp]->Shield) {
-										strlcpy(szItemName, PClan->Items[PClan->Member[iTemp]->Shield-1].szName, sizeof(szItemName));
+									if (PClan->Member[cTemp]->Shield) {
+										strlcpy(szItemName, PClan->Items[PClan->Member[cTemp]->Shield-1].szName, sizeof(szItemName));
 									}
 									break;
 							}
 
 							snprintf(szString, sizeof(szString), ST_ISTATS22,
-									iTemp+'A',
-									ItemPenalty(PClan->Member[iTemp], &PClan->Items[ItemIndex]) ? "|08" : "|0C",
-									PClan->Member[iTemp]->szName,
+									cTemp+'A',
+									ItemPenalty(PClan->Member[cTemp], &PClan->Items[ItemIndex]) ? "|08" : "|0C",
+									PClan->Member[cTemp]->szName,
 									szItemName);
 
 							// append race/class
 							/* show race/class */
 							/*
-							              if (PClan->Member[iTemp]->WhichRace != -1)
+							              if (PClan->Member[cTemp]->WhichRace != -1)
 							                snprintf(szTemp, sizeof(szTemp), "%s/%s\n",
-							                  Races[PClan->Member[iTemp]->WhichRace]->szName,
-							                  PClasses[PClan->Member[iTemp]->WhichClass]->szName);
+							                  Races[PClan->Member[cTemp]->WhichRace]->szName,
+							                  PClasses[PClan->Member[cTemp]->WhichClass]->szName);
 							              else
 							                strlcpy(szTemp, "[unknown]\n", sizeof(szTemp));
 							              strlcat(szString, szTemp, sizeof(szString));
@@ -1230,7 +1239,7 @@ void ItemStats(void)
 
 							rputs(szString);
 							szKeys[ strlen(szKeys) +1 ] = 0;
-							szKeys[ strlen(szKeys)] = iTemp + 'A';
+							szKeys[ strlen(szKeys)] = cTemp + 'A';
 						}
 					}
 					strlcat(szKeys, "Q", sizeof(szKeys));
@@ -1455,7 +1464,8 @@ void ClanStats(struct clan *Clan, bool AllowModify)
  * Shows stats for given Clan with option to modify values.
  */
 {
-	int16_t iTemp, TotalItems, ItemsShown, Length, iTemp2;
+	size_t Length;
+	int16_t iTemp, TotalItems, ItemsShown, iTemp2;
 	char szString[160], szStats[160];
 	bool DoneLooking = false;
 	char szShortName[25], cKey;
@@ -1940,7 +1950,7 @@ static bool User_Create(void)
 	PClan->Eliminated = false;
 	PClan->WasRulerToday = false;
 	PClan->FirstDay = true;
-	PClan->Protection = Game.Data.DaysOfProtection;
+	PClan->Protection = (unsigned)Game.Data.DaysOfProtection;
 
 	PClan->Empire.VaultGold = 0;
 	PClan->TradesToday = 0;

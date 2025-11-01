@@ -92,7 +92,7 @@ int main(void)
 	fflush(stdout);
 
 	do {
-		cKey = toupper(cio_getch());
+		cKey = toupper(cio_getch()) & 0x7f;
 	}
 	while (!strchr("YN\n\r", cKey));
 
@@ -111,7 +111,7 @@ int main(void)
 
 	if (!fpPC) {
 		printf("No " PLAYER_DATAFILE " file!\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	// open Village Data
@@ -120,17 +120,21 @@ int main(void)
 	// open Game Data
 	InitGame();
 
-	entry_size = true_ENTRY_SIZE(Game.Data.MaxPermanentMembers);
+	entry_size = true_ENTRY_SIZE((unsigned)Game.Data.MaxPermanentMembers);
 
 	// otherwise, open file, get filesize
 	fseek(fpPC, 0L, SEEK_END);
 	FileSize = ftell(fpPC);
-	NumClans = FileSize / entry_size;
+	if (FileSize / (long)entry_size > INT16_MAX) {
+		puts(PLAYER_DATAFILE " too large");
+		return(EXIT_FAILURE);
+	}
+	NumClans = (int16_t)(FileSize / (long)entry_size);
 
 	CurClan = 0;
 
 	for (;;) {
-		if (fseek(fpPC, (CurClan * entry_size), SEEK_SET)) {
+		if (fseek(fpPC, CurClan * (long)entry_size, SEEK_SET)) {
 			printf("fseek error\n");
 			break;
 		}
@@ -190,13 +194,13 @@ int main(void)
 
 			if (!fpPC) {
 				printf("No CLANS.PC file!\n");
-				exit(0);
+				exit(EXIT_FAILURE);
 			}
 
 			// otherwise, open file, get filesize
 			fseek(fpPC, 0L, SEEK_END);
 			FileSize = ftell(fpPC);
-			NumClans = FileSize / entry_size;
+			NumClans = (int16_t)(FileSize / (long)entry_size);
 
 			if (NumClans == 0) {
 				printf("All players deleted\n");
@@ -265,7 +269,7 @@ static void DeleteClan(int16_t ClanID[2])
 		fpNewPC = fopen(NEW_PLAYER_DATAFILE, "w+b");
 		if (!fpNewPC) {
 			printf("Can't write to " NEW_PLAYER_DATAFILE "!\n");
-			exit(0);
+			exit(EXIT_FAILURE);
 		}
 
 		/* allocate memory */
@@ -282,7 +286,7 @@ static void DeleteClan(int16_t ClanID[2])
 			/* if this is him */
 			if (TmpClan->ClanID[0] == ClanID[0] &&
 					TmpClan->ClanID[1] == ClanID[1]) {
-				fseek(fpOldPC, Game.Data.MaxPermanentMembers * BUF_SIZE_pc, SEEK_CUR);
+				fseek(fpOldPC, (long)((unsigned)Game.Data.MaxPermanentMembers * BUF_SIZE_pc), SEEK_CUR);
 				continue;
 			}
 
@@ -340,6 +344,12 @@ static void DeleteClan(int16_t ClanID[2])
 			notEncryptRead_s(Message, &Message, OldMessage, XOR_MSG)
 				break;
 
+			if (Message.Data.Length < 0) {
+				puts("Negative Message Length\n");
+				fclose(NewMessage);
+				unlink(TEMP_FILENAME);
+				exit(EXIT_FAILURE);
+			}
 			if ((Message.FromClanID[0] == ClanID[0] &&
 					Message.FromClanID[1] == ClanID[1]) ||
 					(Message.ToClanID[0] == ClanID[0] &&
@@ -348,14 +358,14 @@ static void DeleteClan(int16_t ClanID[2])
 				fseek(OldMessage, Message.Data.Length, SEEK_CUR);
 			}
 			else {
-				Message.Data.MsgTxt = malloc(Message.Data.Length);
+				Message.Data.MsgTxt = malloc((size_t)Message.Data.Length);
 				CheckMem(Message.Data.MsgTxt);
 
 				// write it to new file
-				EncryptRead(Message.Data.MsgTxt, Message.Data.Length, OldMessage, XOR_MSG);
+				EncryptRead(Message.Data.MsgTxt, (size_t)Message.Data.Length, OldMessage, XOR_MSG);
 
 				EncryptWrite_s(Message, &Message, NewMessage, XOR_MSG);
-				EncryptWrite(Message.Data.MsgTxt, Message.Data.Length, NewMessage, XOR_MSG);
+				EncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, NewMessage, XOR_MSG);
 
 				free(Message.Data.MsgTxt);
 			}
@@ -481,7 +491,7 @@ static void InitVillage(void)
 	fpVillage = fopen(VILLAGE_DATAFILE, "rb");
 	if (!fpVillage) {
 		printf("Error opening " VILLAGE_DATAFILE "!\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 	else
 		EncryptRead_s(village_data, &Village.Data, fpVillage, XOR_VILLAGE);
@@ -502,7 +512,7 @@ static void UpdateVillage(void)
 	fpVillage = fopen(VILLAGE_DATAFILE, "wb");
 	if (!fpVillage) {
 		printf("Error opening " VILLAGE_DATAFILE "!\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	EncryptWrite_s(village_data, &Village.Data, fpVillage, XOR_VILLAGE);
@@ -783,7 +793,7 @@ static void UpdateClan(struct clan *Clan)
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
 
-		Offset = (long)CurClan * (BUF_SIZE_clan + Game.Data.MaxPermanentMembers * BUF_SIZE_pc);
+		Offset = (long)CurClan * (BUF_SIZE_clan + (unsigned)Game.Data.MaxPermanentMembers * BUF_SIZE_pc);
 		if (fseek(fpPlayerFile, Offset, SEEK_SET)) {
 			break;  /* couldn't fseek, so exit */
 		}

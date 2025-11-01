@@ -44,6 +44,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "language.h"
 #include "mail.h"
 #include "menus.h"
+#include "misc.h"
 #include "mstrings.h"
 #include "myopen.h"
 #include "news.h"
@@ -72,7 +73,7 @@ int16_t OutsiderTownHallMenu(void)
 	char *szTheOptions[11];
 	char szString[128];
 	int16_t ClanId[2];
-	int32_t lTemp;
+	long lTemp;
 
 	LoadStrings(380, 10, szTheOptions);
 	szTheOptions[10] = "View Village Empire Stats";
@@ -201,7 +202,7 @@ static void ChangeFlagScheme(void)
 	bool Quit = false;
 	char cInput;
 	int16_t WhichColour;
-	int16_t OldFlag[3];
+	char OldFlag[3];
 	bool ChangesMade = false;
 	char szString[255];
 
@@ -278,7 +279,7 @@ static void GetNums(char *Array, int16_t NumVars, char *string)
 		CurChar++;
 
 	for (iTemp = 0;  iTemp < NumVars; iTemp++) {
-		Array[iTemp] = atoi(&string[CurChar]);
+		Array[iTemp] = atoc(&string[CurChar], "Number?", __func__);
 
 		while (isdigit(string[CurChar]))
 			CurChar++;
@@ -351,15 +352,15 @@ static void ChangeColourScheme(void)
 {
 	bool Quit = false;
 	char cInput, szKeys[26], szString[128];
+	unsigned char cTemp;
 	int16_t iTemp, WhichColour, Choice;
 	struct Scheme *Scheme[128];
-	int16_t TableColor[128];
-
+	char TableColor[128];
 
 	/* set up tables which "point" to which color */
 	/* this is a tricky way of fixing a problem. ;) */
-	for (iTemp = 0; iTemp < 128; iTemp++)
-		TableColor[iTemp] = iTemp;
+	for (cTemp = 0; cTemp < 128; cTemp++)
+		TableColor[cTemp] = (char)cTemp;
 	/* now for the abnormal ones */
 	TableColor[ '5' ] = '7';
 	TableColor[ '6' ] = '5';
@@ -464,10 +465,10 @@ static void ChangeColourScheme(void)
 
 				Help("Individual Colours", ST_CLANSHLP);
 
-				iTemp = GetLong("|0SPlease enter the colour to use (1 to 15) ", (int32_t)Village.Data.ColorScheme[ WhichColour ], 15);
+				iTemp = (int16_t)GetLong("|0SPlease enter the colour to use (1 to 15) ", (int32_t)Village.Data.ColorScheme[ WhichColour ], 15);
 
 				if (iTemp)
-					Village.Data.ColorScheme[ WhichColour ] = iTemp;
+					Village.Data.ColorScheme[ WhichColour ] = (char)iTemp;
 				Door_SetColorScheme(Village.Data.ColorScheme);
 				break;
 		}
@@ -863,7 +864,7 @@ static void EconomicsMenu(void)
 	char *szTheOptions[7];
 	char szString[128];
 	int16_t iTemp, OldTax;
-	int32_t lTemp;
+	long lTemp;
 
 	LoadStrings(390, 7, szTheOptions);
 
@@ -1303,7 +1304,7 @@ void Village_Reset(void)
 	Village.Data.Empire.Army.Footmen = 100;
 	Village.Data.Empire.Army.Axemen = 25;
 
-	Village.Data.CostFluctuation = 5 - my_random(11);
+	Village.Data.CostFluctuation = (int16_t)(5 - my_random(11));
 	Village.Data.MarketQuality = MQ_AVERAGE;
 }
 
@@ -1343,22 +1344,22 @@ void Village_Maint(void)
 	ChooseNewLeader();
 
 	// figure out village fluctuation costs
-	MarketIndex = my_random(15);
+	MarketIndex = (int16_t)my_random(15);
 
 	if (MarketIndex < 7) {
-		Village.Data.CostFluctuation = 5 - my_random(11);
+		Village.Data.CostFluctuation = (int16_t)(5 - my_random(11));
 		Village.Data.MarketQuality = MQ_AVERAGE;
 	}
 	else if (MarketIndex < 11) {
-		Village.Data.CostFluctuation = my_random(10);
+		Village.Data.CostFluctuation = (int16_t)my_random(10);
 		Village.Data.MarketQuality = MQ_GOOD;
 	}
 	else if (MarketIndex < 13) {
-		Village.Data.CostFluctuation = 10 + my_random(10);
+		Village.Data.CostFluctuation = (int16_t)(10 + my_random(10));
 		Village.Data.MarketQuality = MQ_VERYGOOD;
 	}
 	else {
-		Village.Data.CostFluctuation = 20 + my_random(10);
+		Village.Data.CostFluctuation = (int16_t)(20 + my_random(10));
 		Village.Data.MarketQuality = MQ_EXCELLENT;
 	}
 

@@ -183,7 +183,7 @@ static void AddGUM(FILE *fpGUM, char *pszFileName)
 	}
 	//printf(" (%ld bytes) ", lFileSize);
 	fseek(fpFromFile, 0L, SEEK_SET);
-	tmp32 = SWAP32((int32_t)lFileSize);
+	tmp32 = SWAP32S((int32_t)lFileSize);
 	fwrite(&tmp32, sizeof(tmp32), 1, fpGUM);
 
 	// record this offset since we come back later to write the compressed
@@ -213,7 +213,7 @@ static void AddGUM(FILE *fpGUM, char *pszFileName)
 		exit(1);
 	}
 	lCompressSize = (int32_t)bytes_out;
-	tmp32 = SWAP32(lCompressSize);
+	tmp32 = SWAP32S(lCompressSize);
 	fwrite(&tmp32, sizeof(tmp32), 1, fpGUM);
 	fseek(fpGUM, Offset2, SEEK_SET);
 

@@ -76,7 +76,7 @@ static void Load_PClasses(struct PClass *PClass[MAX_PCLASSES], bool GetPClasses)
 
 		/* get num classes */
 		fread(&NumClasses, sizeof(NumClasses), 1, ClassFile.fp);
-		NumClasses = SWAP16(NumClasses);
+		NumClasses = SWAP16S(NumClasses);
 
 		/* read them in */
 		for (iTemp = 0; iTemp < NumClasses; iTemp++) {

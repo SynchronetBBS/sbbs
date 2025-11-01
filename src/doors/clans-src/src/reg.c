@@ -73,12 +73,12 @@ static void Jumble(char *szString)
 	//
 	// abcd -> dbac
 
-	MidChar = strlen(szString)/2;
+	MidChar = (char)(strlen(szString)/2);
 
 	// middle char is simply first char in szString
 	*(pcCurrentPos + MidChar) = szString[0];
 
-	StrLength = strlen(szString);
+	StrLength = (char)(strlen(szString));
 
 	for (CurChar = 1; CurChar < StrLength; CurChar++) {
 		// if odd, subtract (curchar+1)/2 from pc...
@@ -119,7 +119,7 @@ int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 	pc = szUserCode;
 	pc2 = szRegCode;
 	while (*pc2) {
-		*pc = toupper(*pc2);
+		*pc = (char)(toupper(*pc2));
 		*pc ^= 0xD5;
 		pc++;
 		pc2++;
@@ -128,21 +128,21 @@ int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 
 	pc = szString;
 	while (*pc) {
-		c = *pc;
+		c = (uint16_t)*pc;
 		chksum += (uint32_t)c;
 		pc++;
 	}
 
 	pc = szString;
 	while (*pc) {
-		c = *pc;
+		c = (uint16_t)*pc;
 		chksum += ((uint32_t)((double)c*(PI)));
 		pc++;
 	}
 
 	pc = szString;
 	while (*pc) {
-		c = *pc;
+		c = (uint16_t)*pc;
 		chksum += ((uint32_t)c&HEXSEED);
 		pc++;
 	}
@@ -157,21 +157,21 @@ int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 
 	pc = szString;
 	while (*pc) {
-		c2 = *pc;
+		c2 = (uint16_t)*pc;
 		chksum2 += (uint32_t)c2;
 		pc++;
 	}
 
 	pc = szString;
 	while (*pc) {
-		c2 = *pc;
+		c2 = (uint16_t)*pc;
 		chksum2 += ((uint32_t)((double)c2*(PI)));
 		pc++;
 	}
 
 	pc = szString;
 	while (*pc) {
-		c2 = *pc;
+		c2 = (uint16_t)*pc;
 		chksum2 += ((uint32_t)c2&HEXSEED);
 		pc++;
 	}
@@ -190,7 +190,7 @@ int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 	/* further encrypt 'em */
 	pc = szRealCode;
 	while (*pc) {
-		*pc = toupper(*pc);
+		*pc = (char)toupper(*pc);
 		*pc ^= 0xD5;
 		pc++;
 	}

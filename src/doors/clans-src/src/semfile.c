@@ -9,7 +9,7 @@
 #include "semfile.h"
 #include "video.h"
 
-bool CreateSemaphor(int16_t Node)
+bool CreateSemaphor(uint16_t Node)
 {
 	FILE *fp;
 #ifdef __unix__
@@ -28,7 +28,7 @@ bool CreateSemaphor(int16_t Node)
 	fp = fopen(fname, "w+x");
 	if (!fp)
 		return false;
-	fprintf(fp, "Node: %d\n", Node);
+	fprintf(fp, "Node: %" PRIu16 "\n", Node);
 	fclose(fp);
 	if (link(fname, "online.flg") == 0) {
 		unlink(fname);
@@ -54,7 +54,7 @@ bool CreateSemaphor(int16_t Node)
 #endif
 }
 
-void WaitSemaphor(int16_t Node)
+void WaitSemaphor(uint16_t Node)
 {
 	int count = 0;
 	while (!CreateSemaphor(Node)) {

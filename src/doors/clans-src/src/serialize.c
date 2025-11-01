@@ -35,7 +35,7 @@
 	assert(remain >= sizeof(tmp)); \
 	if (remain < sizeof(tmp))       \
 		return SIZE_MAX;         \
-	tmp = SWAP16(tmp);                \
+	tmp = SWAP16S(tmp);               \
 	memcpy(dst, &tmp, sizeof(tmp));    \
 	dst += sizeof(tmp);                 \
 	remain -= sizeof(tmp);               \
@@ -57,7 +57,7 @@
 	assert(remain >= sizeof(tmp)); \
 	if (remain < sizeof(tmp))       \
 		return SIZE_MAX;         \
-	tmp = SWAP32(tmp);                \
+	tmp = SWAP32S(tmp);               \
 	memcpy(dst, &tmp, sizeof(tmp));    \
 	dst += sizeof(tmp);                 \
 	remain -= sizeof(tmp);               \

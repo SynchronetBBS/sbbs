@@ -195,12 +195,14 @@ typedef unsigned char bool;
 #endif
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-#define SWAP16(x) (x)
-#define SWAP32(x) (x)
+#define SWAP16(x) ((uint16_t)x)
+#define SWAP32(x) ((uint32_t)x)
 #else
 #define SWAP16(x) ((((uint16_t)(x) & 0xff00) >> 8) | (((uint16_t)(x) & 0x00ff) << 8))
 #define SWAP32(x) ((((uint32_t)(x) & 0xff000000) >> 24) | (((uint32_t)(x) & 0x00ff0000) >> 8) | (((uint32_t)(x) & 0x0000ff00) << 8) | (((uint32_t)(x) & 0x000000ff) << 24))
 #endif
+#define SWAP16S(x) ((int16_t)SWAP16(x))
+#define SWAP32S(x) ((int32_t)SWAP32(x))
 
 // uncomment for Turbo C++
 // typedef char bool;

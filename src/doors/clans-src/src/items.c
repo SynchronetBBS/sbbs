@@ -466,7 +466,7 @@ static void Items_Read(void)
 
 		// get num items in file
 		fread(&NumItems, sizeof(int16_t), 1, ItemFile.fp);
-		NumItems = SWAP16(NumItems);
+		NumItems = SWAP16S(NumItems);
 
 		// read each item in file
 		for (iTemp = 0; iTemp < NumItems; iTemp++) {

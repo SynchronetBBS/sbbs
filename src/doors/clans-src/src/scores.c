@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "game.h"
 #include "ibbs.h"
 #include "language.h"
+#include "misc.h"
 #include "mstrings.h"
 #include "myopen.h"
 #include "packet.h"
@@ -152,7 +153,7 @@ static void PipeToAnsi(char *szOut, char *szIn)
 			szDigits[1] = *(pcIn+2);
 			szDigits[2] = 0;
 
-			Colour = atoi(szDigits);
+			Colour = atoc(szDigits, "Colour", __func__);
 
 			GetColourString(szColourString, Colour, true);
 
@@ -197,7 +198,8 @@ void DisplayScores(bool MakeFile)
 	int16_t CurClan = 0, iTemp, NumClans, CurMember;
 	long Offset;
 	int32_t MostPoints;
-	int16_t CurHigh, Padding;
+	int16_t CurHigh;
+	size_t Padding;
 	bool NoPlayers = true;
 
 	if (Language == NULL || Language->BigString == NULL)
@@ -479,7 +481,8 @@ void DisplayScores(bool MakeFile)
 
 static void SendScoreData(struct UserScore **UserScores)
 {
-	int16_t iTemp, NumScores;
+	int16_t iTemp;
+	size_t NumScores;
 	struct Packet Packet;
 	FILE *fp;
 
@@ -495,7 +498,9 @@ static void SendScoreData(struct UserScore **UserScores)
 	Packet.BBSIDFrom = IBBS.Data.BBSID;
 	Packet.PacketType = PT_SCOREDATA;
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
-	Packet.PacketLength = NumScores * BUF_SIZE_UserScore + sizeof(int16_t);
+	if (NumScores * BUF_SIZE_UserScore + sizeof(int16_t) > INT32_MAX)
+		System_Error("Score data too long!");
+	Packet.PacketLength = (int32_t)(NumScores * BUF_SIZE_UserScore + sizeof(int16_t));
 	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
 
 	fp = _fsopen("tmp.$$$", "wb", _SH_DENYRW);
@@ -644,7 +649,8 @@ void ProcessScoreData(struct UserScore **UserScores)
 void LeagueScores(void)
 {
 	struct UserScore **ScoreList;
-	int16_t iTemp, UsersFound, /*CurID,*/ iTemp2, Padding;
+	size_t Padding;
+	int16_t iTemp, UsersFound, /*CurID,*/ iTemp2;
 	char ScoreDate[11], szString[128], szPadding[21];
 	FILE *fp;
 
@@ -782,7 +788,8 @@ void SendScoreList(void)
 {
 	struct UserScore **ScoreList;
 	struct Packet Packet;
-	int16_t iTemp, NumScores, CurBBS;
+	size_t NumScores, iTemp;
+	int16_t CurBBS;
 	char ScoreDate[11];
 	FILE *fp;
 
@@ -827,8 +834,10 @@ void SendScoreList(void)
 	Packet.BBSIDFrom = IBBS.Data.BBSID;
 	Packet.PacketType = PT_SCORELIST;
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
-	Packet.PacketLength = NumScores * BUF_SIZE_UserScore + sizeof(int16_t) +
-						  sizeof(char)*11;
+	if ((NumScores * BUF_SIZE_UserScore + sizeof(int16_t) + sizeof(char) * 11) > INT32_MAX)
+		System_Error("Score list too large");
+	Packet.PacketLength = (int32_t)(NumScores * BUF_SIZE_UserScore + sizeof(int16_t) +
+						  sizeof(char) * 11);
 	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
 
 	// send it to all bbses except this one in the league

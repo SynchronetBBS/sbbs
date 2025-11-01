@@ -68,7 +68,7 @@ CHEW_OBJS :=	$(OBJDIR)chew.o $(OBJDIR)gum.o $(OBJDIR)parsing.o \
 		$(OBJDIR)win_wrappers.o
 
 CONFIG_OBJS :=	$(OBJDIR)config.o $(OBJDIR)cmdline.o $(OBJDIR)console.o \
-		$(OBJDIR)parsing.o $(OBJDIR)readcfg.o \
+		$(OBJDIR)misc.o $(OBJDIR)parsing.o $(OBJDIR)readcfg.o \
 		$(OBJDIR)unix_wrappers.o $(OBJDIR)video.o \
 		$(OBJDIR)win_wrappers.o
 
@@ -94,14 +94,14 @@ MAKEPAK_OBJS :=	$(OBJDIR)makepak.o $(OBJDIR)parsing.o \
 MCLASS_OBJS :=	$(OBJDIR)mclass.o $(OBJDIR)serialize.o $(OBJDIR)crc.o \
 		$(OBJDIR)win_wrappers.o
 
-MCOMP_OBJS :=	$(OBJDIR)mcomp.o $(OBJDIR)serialize.o $(OBJDIR)crc.o \
-		$(OBJDIR)win_wrappers.o
+MCOMP_OBJS :=	$(OBJDIR)mcomp.o $(OBJDIR)crc.o $(OBJDIR)tools.o \
+		$(OBJDIR)serialize.o $(OBJDIR)win_wrappers.o
 
-MITEMS_OBJS :=	$(OBJDIR)mitems.o $(OBJDIR)serialize.o $(OBJDIR)crc.o \
-		$(OBJDIR)win_wrappers.o
+MITEMS_OBJS :=	$(OBJDIR)mitems.o $(OBJDIR)crc.o $(OBJDIR)tools.o \
+		$(OBJDIR)serialize.o $(OBJDIR)win_wrappers.o
 
-MSPELLS_OBJS :=	$(OBJDIR)mspells.o $(OBJDIR)serialize.o $(OBJDIR)crc.o \
-		$(OBJDIR)win_wrappers.o
+MSPELLS_OBJS :=	$(OBJDIR)mspells.o $(OBJDIR)crc.o $(OBJDOR)tools.o \
+		$(OBJDIR)serialize.o $(OBJDIR)win_wrappers.o
 
 PCEDIT_OBJS :=	$(OBJDIR)pcedit.o $(OBJDIR)alliance.o $(OBJDIR)myopen.o \
 		$(OBJDIR)unix_wrappers.o $(OBJDIR)serialize.o \
@@ -110,10 +110,10 @@ PCEDIT_OBJS :=	$(OBJDIR)pcedit.o $(OBJDIR)alliance.o $(OBJDIR)myopen.o \
 
 RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)alliance.o $(OBJDIR)cmdline.o \
 		$(OBJDIR)console.o $(OBJDIR)crc.o $(OBJDIR)deserialize.o \
-		$(OBJDIR)myopen.o $(OBJDIR)parsing.o $(OBJDIR)random.o \
-		$(OBJDIR)readcfg.o $(OBJDIR)serialize.o \
-		$(OBJDIR)unix_wrappers.o $(OBJDIR)video.o \
-		$(OBJDIR)win_wrappers.o
+		$(OBJDIR)misc.o $(OBJDIR)myopen.o $(OBJDIR)parsing.o \
+		$(OBJDIR)random.o $(OBJDIR)readcfg.o \
+		$(OBJDIR)serialize.o $(OBJDIR)unix_wrappers.o \
+		$(OBJDIR)video.o $(OBJDIR)win_wrappers.o
 
 # Default target
 default: $(DOOR_BINARIES) $(INSTALL_BINARIES)

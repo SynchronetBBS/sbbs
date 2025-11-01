@@ -14,10 +14,11 @@
 #include "myopen.h"
 #include "serialize.h"
 #include "structs.h"
+#include "tools.h"
 
 static struct Spell *Spells[MAX_SPELLS];
 
-static int TotalSpells;
+static int16_t TotalSpells;
 
 static void Deinit_Spells(struct Spell *Spells[MAX_SPELLS]);
 static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName);
@@ -26,7 +27,7 @@ int main(int argc, char *argv[])
 {
 	FILE *fpData;
 	int iTemp;
-	int StringLength;
+	size_t StringLength;
 	uint16_t tmp16;
 	uint8_t sbuf[BUF_SIZE_Spell];
 
@@ -162,7 +163,7 @@ static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName)
 	char szToken[MAX_TOKEN_CHARS + 1];
 	size_t uCount;
 	int iKeyWord;
-	int CurSpell = -1;
+	int16_t CurSpell = -1;
 	int iTemp;
 
 	fpSpell = fopen(szFileName, "r");
@@ -286,11 +287,11 @@ static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName)
 					case 4 :    /* Wisdom */
 					case 5 :    /* ArmorStr */
 					case 6 :    /* Charisma */
-						Spells[CurSpell]->Attributes[iKeyWord-1] = atoi(pcCurrentPos);
+						Spells[CurSpell]->Attributes[iKeyWord-1] = atoc(pcCurrentPos, "Attribute");
 
 						break;
 					case 7 :    /* Value */
-						Spells[CurSpell]->Value = atoi(pcCurrentPos);
+						Spells[CurSpell]->Value = atoc(pcCurrentPos, "Value");
 
 						//printf("    - val: %+d\n", Spells[CurSpell]->Value);
 						break;
@@ -333,7 +334,7 @@ static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName)
 						Spells[CurSpell]->pszModifyStr = strdup(pcCurrentPos);
 						break;
 					case 12 :    /* SP */
-						Spells[CurSpell]->SP = atoi(pcCurrentPos);
+						Spells[CurSpell]->SP = ato16(pcCurrentPos, "SP");
 						break;
 					case 13 :   /* friendly */
 						Spells[CurSpell]->Friendly = true;
@@ -342,13 +343,13 @@ static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName)
 						Spells[CurSpell]->Target = false;
 						break;
 					case 15 :   /* Level */
-						Spells[CurSpell]->Level = atoi(pcCurrentPos);
+						Spells[CurSpell]->Level = atoc(pcCurrentPos, "Level");
 						break;
 					case 16 :    /* WearoffStr */
 						Spells[CurSpell]->pszWearoffStr = strdup(pcCurrentPos);
 						break;
 					case 17 :    /* energy */
-						Spells[CurSpell]->Energy = atoi(pcCurrentPos);
+						Spells[CurSpell]->Energy = ato16(pcCurrentPos, "Energy");
 						break;
 					case 18 :    /* StatusStr */
 						Spells[CurSpell]->pszStatusStr = strdup(pcCurrentPos);

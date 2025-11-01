@@ -197,8 +197,8 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 
 static uint32_t GetFirstUnusedMsgNum(char *pszMessageDir)
 {
-	uint32_t lwHighestMsgNum = 0;
-	uint32_t lwCurrentMsgNum;
+	long lwHighestMsgNum = 0;
+	long lwCurrentMsgNum;
 #ifndef _WIN32
 	struct ffblk DirEntry;
 #else
@@ -237,7 +237,8 @@ static uint32_t GetFirstUnusedMsgNum(char *pszMessageDir)
 	}
 #endif
 
-	return(lwHighestMsgNum + 1);
+	// Ignore possible overflow...
+	return (uint32_t)(lwHighestMsgNum + 1);
 }
 
 
@@ -288,8 +289,9 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
 	char szFMPT[13];
 	char szINTL[43];
 	char szMSGID[42];
-	int16_t nKludgeSize;
-	int16_t nTextSize, iTemp;
+	size_t nKludgeSize;
+	size_t nTextSize;
+	size_t iTemp;
 	char *pszMessageText;
 	tFidoNode DestNode;
 	tFidoNode OrigNode;

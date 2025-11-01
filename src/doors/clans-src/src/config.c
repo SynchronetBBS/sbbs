@@ -473,7 +473,7 @@ static void EditOption(int16_t WhichOption)
 			break;
 		case 12:    /* Configure node */
 			gotoxy(40, 14);
-			if (setCurrentNode(DosGetLong("Node Number to Edit", 1, 32767)))
+			if (setCurrentNode((int16_t)DosGetLong("Node Number to Edit", 1, 32767)))
 				NodeMenu();
 			break;
 	}
@@ -505,7 +505,7 @@ static void EditNodeOption(int16_t WhichOption)
 			break;
 		case 3 :    /* IRQ */
 			gotoxy(40, 5);
-			currNode->irq = DosGetLong("", currNode->irq, 2048);
+			currNode->irq = (int)DosGetLong("", currNode->irq, 2048);
 			break;
 	}
 }

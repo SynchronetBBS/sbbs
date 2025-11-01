@@ -55,10 +55,12 @@ static char * get_spell(char **dest, FILE *fp)
 	if (!fread(&StringLength, sizeof(int16_t), 1, fp))
 		System_Error("fread failed in get_spell() [StringLength]");
 	else if (StringLength) {
-		StringLength = SWAP16(StringLength);
-		*dest = (char *) malloc(StringLength + 1);
+		StringLength = SWAP16S(StringLength);
+		if (StringLength < 0)
+			System_Error("Negative string length in get_spell()");
+		*dest = (char *) malloc((size_t)StringLength + 1);
 		CheckMem(*dest);
-		if (!fread(*dest, StringLength, 1, fp))
+		if (!fread(*dest, (size_t)StringLength, 1, fp))
 			System_Error("fread failed in get_spell() [String Read]");
 		(*dest)[StringLength] = 0;
 	}
@@ -96,7 +98,7 @@ void Spells_Init(void)
 
 		/* get num spells */
 		fread(&NumSpells, sizeof(int16_t), 1, SpellFile.fp);
-		NumSpells = SWAP16(NumSpells);
+		NumSpells = SWAP16S(NumSpells);
 
 		/* read them in */
 		for (iTemp = 0; iTemp < NumSpells; iTemp++) {
@@ -296,7 +298,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 		}
 
 		/* see how many undead to banish */
-		NumUndeadToRemove = my_random(4) + 1;
+		NumUndeadToRemove = (int16_t)(my_random(4) + 1);
 
 		/* if too many to remove, truncate size */
 		if (NumUndeadToRemove > NumUndead)
@@ -357,7 +359,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 
 		/* see how many undead to raise */
 		if (Spells[SpellNum]->Value == 0)
-			NumUndead = my_random(2 + PC->Level/4) + 1;
+			NumUndead = (int16_t)(my_random(2 + PC->Level / 4) + 1);
 		else
 			NumUndead = Spells[SpellNum]->Value;
 
@@ -391,7 +393,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 			PC->MyClan->Member[CurSlot]->Status = Here;
 
 			PC->MyClan->Member[CurSlot]->MaxHP =
-				PC->MyClan->Member[CurSlot]->HP = my_random(10) + 5 + PC->Level;
+				PC->MyClan->Member[CurSlot]->HP = (int16_t)(my_random(10) + 5 + PC->Level);
 
 			PC->MyClan->Member[CurSlot]->MaxSP =
 				PC->MyClan->Member[CurSlot]->SP = 0;
@@ -400,10 +402,10 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 				/* if attributes set, use them, otherwise, use caster's */
 				if (Spells[SpellNum]->Attributes[iTemp2])
 					PC->MyClan->Member[CurSlot]->Attributes[iTemp2] =
-						Spells[SpellNum]->Attributes[iTemp2] + my_random(1);
+						(char)(Spells[SpellNum]->Attributes[iTemp2] + my_random(1));
 				else {
 					PC->MyClan->Member[CurSlot]->Attributes[iTemp2] =
-						PC->Attributes[iTemp2]  - 2 + my_random(4);
+						(char)(PC->Attributes[iTemp2]  - 2 + my_random(4));
 				}
 			}
 
@@ -452,7 +454,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 		else
 			Level = PC->Level;
 
-		Value = (((Spells[SpellNum]->Value + Level/2)*(my_random(50)+50))/100);
+		Value = (int16_t)(((Spells[SpellNum]->Value + Level / 2) * (my_random(50) + 50)) / 100);
 
 		PC->MyClan->Member[Target]->HP += Value;
 		if (PC->MyClan->Member[Target]->HP > PC->MyClan->Member[Target]->MaxHP)
@@ -591,8 +593,8 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 			if (Level > 10)
 				Level = 10;
 
-			Damage = ((Spells[SpellNum]->Value+(Level+GetStat(PC, ATTR_WISDOM))/3)*(my_random(60) + 50))/100
-					 - GetStat(TargetPC, ATTR_ARMORSTR);
+			Damage = (int16_t)(((Spells[SpellNum]->Value + (Level + GetStat(PC, ATTR_WISDOM)) / 3) * (my_random(60) + 50)) / 100
+					 - GetStat(TargetPC, ATTR_ARMORSTR));
 			Spells_CastValue = Damage;
 
 			if (Damage <= 0) {
@@ -635,7 +637,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 							EnemyClan->Member[Target]->Level*2);
 
 					/* loses percentage of MaxHP */
-					EnemyClan->Member[Target]->MaxHP = (EnemyClan->Member[Target]->MaxHP * (my_random(10)+90))/100;
+					EnemyClan->Member[Target]->MaxHP = (int16_t)((EnemyClan->Member[Target]->MaxHP * (my_random(10) + 90)) / 100);
 
 					/* give xp because of death */
 					PC->Experience += (EnemyClan->Member[Target]->Level*2);
@@ -646,7 +648,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 							EnemyClan->Member[Target]->Level);
 
 					/* loses percentage of MaxHP */
-					EnemyClan->Member[Target]->MaxHP = (EnemyClan->Member[Target]->MaxHP * (my_random(10)+90))/100;
+					EnemyClan->Member[Target]->MaxHP = (int16_t)((EnemyClan->Member[Target]->MaxHP * (my_random(10) + 90)) / 100);
 
 					PC->Experience += (EnemyClan->Member[Target]->Level);
 				}

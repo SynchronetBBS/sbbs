@@ -6,7 +6,7 @@
 extern struct config Config;
 
 void AddInboundDir(const char *dir);
-bool Config_Init(int16_t Node, struct NodeData *(*getNodeData)(int));
+bool Config_Init(uint16_t Node, struct NodeData *(*getNodeData)(int));
 void Config_Close(void);
 
 #endif

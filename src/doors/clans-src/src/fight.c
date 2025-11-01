@@ -1446,7 +1446,7 @@ static int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16
 		if (MonIndex[iTemp] == 0)   /* done looking */
 			break;
 
-		MonIndex[iTemp] = SWAP16(MonIndex[iTemp]);
+		MonIndex[iTemp] = SWAP16S(MonIndex[iTemp]);
 		if (MonIndex[iTemp] >= MinDifficulty && MonIndex[iTemp] <= MaxDifficulty) {
 			ValidMonIndex[ValidMonsters] = iTemp;
 			ValidMonsters++;

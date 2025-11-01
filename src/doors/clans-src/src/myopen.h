@@ -40,7 +40,7 @@ size_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
 } while(0)
 
 #define EncryptWrite16(d, fp, xv) do {     \
-	((int16_t*)serBuf)[0] = SWAP16(*d); \
+	((int16_t*)serBuf)[0] = SWAP16S(*d); \
 	EncryptWrite(serBuf, 2, fp, xv);     \
 } while(0)
 
@@ -56,7 +56,7 @@ size_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
 	size_t ret = EncryptRead(serBuf, 2, fp, xv); \
 	assert(ret);                                  \
 	if (ret)                                       \
-		*(d) = SWAP16(((int16_t*)serBuf)[0]);   \
+		*(d) = SWAP16S(((int16_t*)serBuf)[0]);   \
 } while(0)
 
 #define notEncryptRead_s(s, d, fp, xv)                                 \

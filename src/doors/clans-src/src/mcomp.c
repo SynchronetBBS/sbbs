@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "defines.h"
 #include "serialize.h"
 #include "structs.h"
+#include "tools.h"
 
 #define MAX_SPELLS          40
 #define MAX_MEMBERS         20
@@ -65,7 +66,7 @@ int main(int argc, char *argv[])
 //  char szString[255];
 	char szToken[MAX_TOKEN_CHARS + 1];
 //  char *pcAt;
-	uint16_t uCount;
+	size_t uCount;
 	int16_t iKeyWord;
 	int16_t iTemp;
 //  int16_t OrigMonIn;
@@ -138,7 +139,7 @@ int main(int argc, char *argv[])
 
 		/* Trim trailing spaces from setting string */
 		if (*pcCurrentPos) {
-			for (uCount=strlen(pcCurrentPos)-1; uCount>0; --uCount) {
+			for (uCount = strlen(pcCurrentPos) - 1; uCount > 0; --uCount) {
 				if (isspace(pcCurrentPos[uCount])) {
 					pcCurrentPos[uCount]='\0';
 				}
@@ -202,45 +203,45 @@ int main(int argc, char *argv[])
 						break;
 					case 1 :    /* HP */
 						printf("    - hp  : %d\n", atoi(pcCurrentPos));
-						TmpMonster.HP = TmpMonster.MaxHP = atoi(pcCurrentPos);
+						TmpMonster.HP = TmpMonster.MaxHP = ato16(pcCurrentPos, "HP");
 						break;
 					case 2 :    /* agility */
 					case 3 :    /* Dexterity */
 					case 4 :    /* Strength */
 					case 5 :    /* Wisdom */
 					case 6 :    /* ArmorStr */
-						TmpMonster.Attributes[iKeyWord - 2] = atoi(pcCurrentPos);
+						TmpMonster.Attributes[iKeyWord - 2] = atoc(pcCurrentPos, "Attribute");
 						break;
 					case 7 :    /* Weapon */
-						TmpMonster.Weapon = atoi(pcCurrentPos);
+						TmpMonster.Weapon = ato16(pcCurrentPos, "Weapon");
 
 						printf("    - wep: %d\n", TmpMonster.Weapon);
 						break;
 					case 8 :    /* Shield */
-						TmpMonster.Shield = atoi(pcCurrentPos);
+						TmpMonster.Shield = ato16(pcCurrentPos, "Shield");
 
 						printf("    - shi: %d\n", TmpMonster.Shield);
 						break;
 					case 9 :    /* Armor */
-						TmpMonster.Armor = atoi(pcCurrentPos);
+						TmpMonster.Armor = ato16(pcCurrentPos, "Armor");
 
 						printf("    - amr: %d\n", TmpMonster.Armor);
 						break;
 					case 10 :    /* difficulty */
 						TmpMonster.Difficulty =
-							MonIndex[CurMonster] = atoi(pcCurrentPos);
+							MonIndex[CurMonster] = ato16(pcCurrentPos, "Difficulty");
 
 						TmpMonster.Level = TmpMonster.Difficulty;
 
 						printf("    - dif: %d\n", MonIndex[CurMonster]);
-						MonIndex[CurMonster] = SWAP16(MonIndex[CurMonster]);
+						MonIndex[CurMonster] = SWAP16S(MonIndex[CurMonster]);
 						break;
 					case 11 :    /* SP */
 						printf("    - sp  : %d\n", atoi(pcCurrentPos));
-						TmpMonster.SP = TmpMonster.MaxSP = atoi(pcCurrentPos);
+						TmpMonster.SP = TmpMonster.MaxSP = ato16(pcCurrentPos, "SP");
 						break;
 					case 12 :   /* spell! */
-						TmpMonster.SpellsKnown[LastSpellSlot] = atoi(pcCurrentPos);
+						TmpMonster.SpellsKnown[LastSpellSlot] = atoc(pcCurrentPos, "Spell");
 						LastSpellSlot++;
 						break;
 					case 13 :   // undead
