@@ -146,7 +146,8 @@ static void SeeMemberStats(struct Alliance *Alliance)
 
 static void ShowAllianceItems(struct Alliance *Alliance)
 {
-	int     iTemp, iTemp2, Length, LastItem = 0, FoundItem = false;
+	size_t  stTemp2, Length;
+	int     iTemp, LastItem = 0, FoundItem = false;
 	int     CurItem;
 	char    szString[100];
 
@@ -172,8 +173,8 @@ static void ShowAllianceItems(struct Alliance *Alliance)
 				/* add spaces */
 				szString[LEN] = 0;
 				Length = strlen(szString);
-				for (iTemp2 = LEN-1; iTemp2 >= Length; iTemp2--)
-					szString[iTemp2] = ' ';
+				for (stTemp2 = LEN-1; stTemp2 >= Length; stTemp2--)
+					szString[stTemp2] = ' ';
 			}
 			rputs(szString);
 			if (CurItem%2 != 0)
@@ -660,7 +661,7 @@ bool EnterAlliance(struct Alliance *Alliance)
 	}
 }
 
-void FormAlliance(int AllyID)
+void FormAlliance(int16_t AllyID)
 {
 	int iTemp, UserAllianceSlot, WhichAlliance;
 	struct Alliance *Alliances[MAX_ALLIANCES];

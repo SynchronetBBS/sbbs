@@ -5,7 +5,7 @@
 #include "crc.h"
 #include "defines.h"
 
-int32_t CRCValue(const void *Data, int DataSize)
+int32_t CRCValue(const void *Data, ptrdiff_t DataSize)
 {
 	const char *p;
 	int32_t CRC = 0;

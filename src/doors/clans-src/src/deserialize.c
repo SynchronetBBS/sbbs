@@ -12,7 +12,7 @@ void System_Error(char *szErrorMsg);
 	assert(remain);           \
 	if (remain < sizeof(char)) \
 		return SIZE_MAX;    \
-	x = *(src++);                \
+	x = (char)*(src++);                \
 	remain--;                     \
 } while(0)
 
@@ -126,7 +126,7 @@ s_ibbs_node_attack_d(const void *bufptr, size_t bufsz, struct ibbs_node_attack *
 	unpack_int16_t(s->ReceiveIndex);
 	unpack_int16_t(s->SendIndex);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -153,7 +153,7 @@ s_MessageHeader_d(const void *bufptr, size_t bufsz, struct MessageHeader *s)
 	unpack_uint16_t(s->wAttribute);
 	unpack_uint16_t(s->wNextReply);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -165,7 +165,7 @@ s_ibbs_node_reset_d(const void *bufptr, size_t bufsz, struct ibbs_node_reset *s)
 	unpack_int16_t(s->Received);
 	unpack_int32_t(s->LastSent);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -178,7 +178,7 @@ s_ibbs_node_recon_d(const void *bufptr, size_t bufsz, struct ibbs_node_recon *s)
 	unpack_int32_t(s->LastSent);
 	unpack_char(s->PacketIndex);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -192,7 +192,7 @@ s_Msg_Txt_d(const void *bufptr, size_t bufsz, struct Msg_Txt *s)
 	unpack_int16_t(s->NumLines);
 	unpack_ptr(s->MsgTxt);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -215,7 +215,7 @@ s_Message_d(const void *bufptr, size_t bufsz, struct Message *s)
 	unpack_int16_t(s->PublicMsgIndex);
 	unpack_struct(&s->Data, Msg_Txt);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -230,7 +230,7 @@ s_Topic_d(const void *bufptr, size_t bufsz, struct Topic *s)
 	unpack_charArr(s->szName);
 	unpack_charArr(s->szFileName);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -248,7 +248,7 @@ s_LeavingData_d(const void *bufptr, size_t bufsz, struct LeavingData *s)
 	unpack_int32_t(s->Knights);
 	unpack_int32_t(s->Catapults);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -265,7 +265,7 @@ s_PClass_d(const void *bufptr, size_t bufsz, struct PClass *s)
 	unpack_charArr(s->SpellsKnown);
 	unpack_int16_t(s->VillageType);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -277,7 +277,7 @@ s_SpellsInEffect_d(const void *bufptr, size_t bufsz, struct SpellsInEffect *s)
 	unpack_int16_t(s->SpellNum);
 	unpack_int16_t(s->Energy);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -294,7 +294,7 @@ s_SpyAttemptPacket_d(const void *bufptr, size_t bufsz, struct SpyAttemptPacket *
 	unpack_int16_t(s->BBSFromID);
 	unpack_int16_t(s->BBSToID);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -311,7 +311,7 @@ s_SpyResultPacket_d(const void *bufptr, size_t bufsz, struct SpyResultPacket *s)
 	unpack_struct(&s->Empire, empire);
 	unpack_charArr(s->szTheDate);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -328,7 +328,7 @@ s_TradeData_d(const void *bufptr, size_t bufsz, struct TradeData *s)
 	unpack_charArr(s->szFromClan);
 	unpack_int32_t(s->Code);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -344,7 +344,7 @@ s_TradeList_d(const void *bufptr, size_t bufsz, struct TradeList *s)
 	unpack_int32_t(s->Knights);
 	unpack_int32_t(s->Catapults);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -358,7 +358,7 @@ s_UserInfo_d(const void *bufptr, size_t bufsz, struct UserInfo *s)
 	unpack_charArr(s->szMasterName);
 	unpack_charArr(s->szName);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -373,7 +373,7 @@ s_UserScore_d(const void *bufptr, size_t bufsz, struct UserScore *s)
 	unpack_int32_t(s->Points);
 	unpack_int16_t(s->BBSID);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -404,7 +404,7 @@ s_Spell_d(const void *bufptr, size_t bufsz, struct Spell *s)
 	unpack_uint8_t(tmp);
 	s->MultiAffect = tmp >> 7;
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -442,7 +442,7 @@ s_pc_d(const void *bufptr, size_t bufsz, struct pc *s)
 	else
 		System_Error("CRC Value is WRONG!");
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -459,7 +459,7 @@ s_Packet_d(const void *bufptr, size_t bufsz, struct Packet *s)
 	unpack_int16_t(s->PacketType);
 	unpack_int32_t(s->PacketLength);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -484,7 +484,7 @@ s_NPCInfo_d(const void *bufptr, size_t bufsz, struct NPCInfo *s)
 	unpack_charArr(s->szIndex);
 	unpack_int16_t(s->VillageType);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -499,7 +499,7 @@ s_NPCNdx_d(const void *bufptr, size_t bufsz, struct NPCNdx *s)
 	unpack_int16_t(s->WhereWander);
 	unpack_int16_t(s->Status);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -513,7 +513,7 @@ s_Language_d(const void *bufptr, size_t bufsz, struct Language *s)
 	unpack_uint16_t(s->NumBytes);
 	unpack_ptr(s->BigString);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -529,7 +529,7 @@ s_Alliance_d(const void *bufptr, size_t bufsz, struct Alliance *s)
 	unpack_int16_tArr2(s->Member, MAX_ALLIANCEMEMBERS, 2);
 	unpack_struct(&s->Empire, empire);
 	unpack_structArr(s->Items, item_data);
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -561,7 +561,7 @@ s_game_data_d(const void *bufptr, size_t bufsz, struct game_data *s)
 	else
 		System_Error("CRC Value is WRONG!");
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -618,7 +618,7 @@ s_village_data_d(const void *bufptr, size_t bufsz, struct village_data *s)
 	else
 		System_Error("CRC Value is WRONG!");
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -631,7 +631,7 @@ s_EventHeader_d(const void *bufptr, size_t bufsz, struct EventHeader *s)
 	unpack_int32_t(s->EventSize);
 	unpack_bool(s->Event);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -646,7 +646,7 @@ s_FileHeader_d(const void *bufptr, size_t bufsz, struct FileHeader *s)
 	unpack_int32_t(s->lEnd);
 	unpack_int32_t(s->lFileSize);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -668,7 +668,7 @@ s_Army_d(const void *bufptr, size_t bufsz, struct Army *s)
 	else
 		System_Error("CRC Value is WRONG!");
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -683,7 +683,7 @@ s_Strategy_d(const void *bufptr, size_t bufsz, struct Strategy *s)
 	unpack_char(s->DefendLength);
 	unpack_char(s->DefendIntensity);
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -708,7 +708,7 @@ s_AttackPacket_d(const void *bufptr, size_t bufsz, struct AttackPacket *s)
 	else
 		System_Error("CRC Value is WRONG!");
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -747,7 +747,7 @@ s_AttackResult_d(const void *bufptr, size_t bufsz, struct AttackResult *s)
 	else
 		System_Error("CRC Value is WRONG!");
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -773,7 +773,7 @@ s_item_data_d(const void *bufptr, size_t bufsz, struct item_data *s)
 	unpack_char(s->RandLevel);
 	unpack_char(s->HPAdd);
 	unpack_char(s->SPAdd);
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -800,7 +800,7 @@ s_empire_d(const void *bufptr, size_t bufsz, struct empire *s)
 	else
 		System_Error("CRC Value is WRONG!");
 
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 size_t
@@ -887,7 +887,7 @@ s_clan_d(const void *bufptr, size_t bufsz, struct clan *s)
 		s->CRC = 1;
 	else
 		System_Error("CRC Value is WRONG!");
-	return (src - (uint8_t *)bufptr);
+	return (size_t)(src - (uint8_t *)bufptr);
 }
 
 #if 0

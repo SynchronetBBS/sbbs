@@ -146,7 +146,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 	}
 }
 
-void EncryptWrite(void *Data, int32_t DataSize, FILE *fp, char XorValue)
+void EncryptWrite(void *Data, size_t DataSize, FILE *fp, char XorValue)
 {
 	char *EncryptedData;
 
@@ -163,7 +163,7 @@ void EncryptWrite(void *Data, int32_t DataSize, FILE *fp, char XorValue)
 	}
 
 	//printf("EncryptWrite(): Data size is %d\n", (int16_t)DataSize);
-	EncryptedData = malloc((int16_t)DataSize);
+	EncryptedData = malloc(DataSize);
 	CheckMem(EncryptedData);
 
 	/*  -- Removed the original Encrypt() function for simplicity
@@ -175,7 +175,7 @@ void EncryptWrite(void *Data, int32_t DataSize, FILE *fp, char XorValue)
 	free(EncryptedData);
 }
 
-int16_t EncryptRead(void *Data, int32_t DataSize, FILE *fp, char XorValue)
+int16_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue)
 {
 	char *EncryptedData;
 	int16_t Result;

@@ -55,7 +55,7 @@ struct system {
 	char szTodaysDate[11];
 	char szMainDir[PATH_SIZE];
 
-	int16_t Node;
+	uint16_t Node;
 	bool Local;
 	bool LocalIBBS;
 };

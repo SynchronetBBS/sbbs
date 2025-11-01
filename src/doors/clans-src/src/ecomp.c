@@ -53,18 +53,37 @@ static char *papszEvaKeyWords[MAX_EVA_WORDS] = {
 	"GetKey"
 };
 
+#define CHECK_SZLEGAL() do { \
+	size_t TempLen = strlen(szLegal) + 1; \
+	if (TempLen > 255) { \
+		printf("String too long (%lu characters) for %s at %d\n", TempLen - 1, papszEvaKeyWords[(int)iKeyWord], CurLine); \
+		return EXIT_FAILURE; \
+	} \
+} while(0)
+
+#define ADD_SIZE_BYTE(x) do { \
+	size_t TempLen = (x); \
+	if (TempLen > 255) { \
+		printf("Data too long (%lu bytes) for %s at %d\n", TempLen, papszEvaKeyWords[(int)iKeyWord], CurLine); \
+		return EXIT_FAILURE; \
+	} \
+	((uint8_t*)Buffer)[BufferPtr++] = (uint8_t)TempLen; \
+} while(0)
 #define MALLOC_SZ	64000
 int main(int argc, char *argv[])
 {
 	FILE *fpEvent, *fpOut;
 	char szLine[255], *pcCurrentPos, szString[255], *pcBrace, szLegal[255],
 	szLabel[30], szLabel1[30], szLabel2[30], szLabel3[30];
-	char szToken[MAX_TOKEN_CHARS + 1], *Buffer, DataLength, cKey, cTemp;
-	int iKeyWord, BufferPtr, CurLine;
+	char szToken[MAX_TOKEN_CHARS + 1], *Buffer, cKey, cTemp;
+	char iKeyWord;
+	int CurLine;
+	int iTemp;
 	bool EventInBuffer, NoMatch, CommentOn;
 	int Errors = 0;
 	struct EventHeader EventHeader = {0};
 	uint8_t ehbuf[BUF_SIZE_EventHeader];
+	size_t BufferPtr;
 
 	printf("ECOMP (dk0.10) by Allen Ussher\n\n");
 
@@ -154,7 +173,7 @@ int main(int argc, char *argv[])
 		NoMatch = true;
 		for (iKeyWord = 0; iKeyWord < MAX_EVA_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (strcasecmp(szToken, papszEvaKeyWords[iKeyWord]) == 0) {
+			if (strcasecmp(szToken, papszEvaKeyWords[(int)iKeyWord]) == 0) {
 				NoMatch = false;
 				/* Process token */
 				switch (iKeyWord) {
@@ -166,8 +185,12 @@ int main(int argc, char *argv[])
 
 							// write to buffer
 							EventInBuffer = false;
+							if (BufferPtr > INT32_MAX) {
+								printf("Event too long (%zu bytes)!\n", BufferPtr);
+								return EXIT_FAILURE;
+							}
 
-							EventHeader.EventSize = BufferPtr;
+							EventHeader.EventSize = (int32_t)BufferPtr;
 							s_EventHeader_s(&EventHeader, ehbuf, sizeof(ehbuf));
 							fwrite(&ehbuf, sizeof(ehbuf), 1, fpOut);
 							fwrite(Buffer, BufferPtr, 1, fpOut);
@@ -194,7 +217,12 @@ int main(int argc, char *argv[])
 							// write to buffer
 							EventInBuffer = false;
 
-							EventHeader.EventSize = BufferPtr;
+							if (BufferPtr > INT32_MAX) {
+								printf("Event too long (%zu bytes)!\n", BufferPtr);
+								return EXIT_FAILURE;
+							}
+
+							EventHeader.EventSize = (int32_t)BufferPtr;
 							s_EventHeader_s(&EventHeader, ehbuf, sizeof(ehbuf));
 							fwrite(&ehbuf, sizeof(ehbuf), 1, fpOut);
 							fwrite(Buffer, BufferPtr, 1, fpOut);
@@ -218,22 +246,20 @@ int main(int argc, char *argv[])
 						Buffer[ BufferPtr++ ] = iKeyWord;
 
 						// put szLegal in buffer
-						Buffer[ BufferPtr ] = strlen(szLegal) + 1;
+						CHECK_SZLEGAL();
+						((uint8_t*)Buffer)[ BufferPtr ] = (uint8_t)(strlen(szLegal) + 1);
 						BufferPtr++;
 						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
 
 						if (*pcCurrentPos == 0) {
 							// no text, data length is 1 -- just a '\0'
-							DataLength = 1;
-							Buffer[ BufferPtr++ ] = DataLength;
+							ADD_SIZE_BYTE(1);
 							Buffer[ BufferPtr++ ] = 0;
 						}
 						else {
 							/* must skip the " which starts the line */
-							DataLength = strlen(&pcCurrentPos[1]) + 1;
-
-							Buffer[ BufferPtr++ ] = DataLength;
+							ADD_SIZE_BYTE(strlen(&pcCurrentPos[1]) + 1);
 							strlcpy(&Buffer[ BufferPtr ], &pcCurrentPos[1], MALLOC_SZ - BufferPtr);
 							BufferPtr += (strlen(&pcCurrentPos[1]) + 1);
 						}
@@ -244,7 +270,8 @@ int main(int argc, char *argv[])
 						Buffer[ BufferPtr++ ] = iKeyWord;
 
 						// put szLegal in buffer
-						Buffer[ BufferPtr ] = strlen(szLegal) + 1;
+						CHECK_SZLEGAL();
+						((uint8_t*)Buffer)[ BufferPtr ] = (uint8_t)(strlen(szLegal) + 1);
 						BufferPtr++;
 						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
@@ -256,9 +283,7 @@ int main(int argc, char *argv[])
 
 						GetToken(&pcCurrentPos[1], szLabel);
 
-						DataLength = sizeof(char) + strlen(szLabel) + sizeof(char);
-
-						Buffer[ BufferPtr++ ] = DataLength;
+						ADD_SIZE_BYTE(sizeof(char) + strlen(szLabel) + sizeof(char));
 						Buffer[ BufferPtr++ ] = cKey;
 						strlcpy(&Buffer[ BufferPtr ], szLabel, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLabel) + sizeof(char));
@@ -270,7 +295,8 @@ int main(int argc, char *argv[])
 						Buffer[ BufferPtr++ ] = iKeyWord;
 
 						// put szLegal in buffer
-						Buffer[ BufferPtr ] = strlen(szLegal) + 1;
+						CHECK_SZLEGAL();
+						((uint8_t*)Buffer)[ BufferPtr ] = (uint8_t)(strlen(szLegal) + 1);
 						BufferPtr++;
 						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
@@ -281,19 +307,19 @@ int main(int argc, char *argv[])
 						GetToken(pcCurrentPos, szLabel3);
 
 						// write datalength
-						Buffer[ BufferPtr++ ] = strlen(szLabel1) + strlen(szLabel2) +
-												strlen(szLabel3) + sizeof(char) * 3;
+						ADD_SIZE_BYTE(strlen(szLabel1) + strlen(szLabel2) +
+						    strlen(szLabel3) + sizeof(char) * 3);
 
 						// write to file the 3 labels
-						Buffer[ BufferPtr++ ] = strlen(szLabel1) + 1;
+						ADD_SIZE_BYTE(strlen(szLabel1) + 1);
 						strlcpy(&Buffer[ BufferPtr ], szLabel1, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLabel1) + 1);
 
-						Buffer[ BufferPtr++ ] = strlen(szLabel2) + 1;
+						ADD_SIZE_BYTE(strlen(szLabel2) + 1);
 						strlcpy(&Buffer[ BufferPtr ], szLabel2, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLabel2) + 1);
 
-						Buffer[ BufferPtr++ ] = strlen(szLabel3) + 1;
+						ADD_SIZE_BYTE(strlen(szLabel3) + 1);
 						strlcpy(&Buffer[ BufferPtr ], szLabel3, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLabel3) + 1);
 						break;
@@ -315,14 +341,13 @@ int main(int argc, char *argv[])
 						Buffer[ BufferPtr++ ] = iKeyWord;
 
 						// put szLegal in buffer
-						Buffer[ BufferPtr ] = strlen(szLegal) + 1;
+						CHECK_SZLEGAL();
+						((uint8_t*)Buffer)[ BufferPtr ] = (uint8_t)(strlen(szLegal) + 1);
 						BufferPtr++;
 						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
 
-						DataLength = strlen(pcCurrentPos) + 1;
-
-						Buffer[ BufferPtr++ ] = DataLength;
+						ADD_SIZE_BYTE(strlen(pcCurrentPos) + 1);
 						strlcpy(&Buffer[ BufferPtr ], pcCurrentPos, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(pcCurrentPos) + 1);
 						break;
@@ -334,7 +359,8 @@ int main(int argc, char *argv[])
 						Buffer[ BufferPtr++ ] = iKeyWord;
 
 						// put szLegal in buffer
-						Buffer[ BufferPtr ] = strlen(szLegal) + 1;
+						CHECK_SZLEGAL();
+						((uint8_t*)Buffer)[ BufferPtr ] = (uint8_t)(strlen(szLegal) + 1);
 						BufferPtr++;
 						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
@@ -347,19 +373,23 @@ int main(int argc, char *argv[])
 						Buffer[ BufferPtr++ ] = iKeyWord;
 
 						// put szLegal in buffer
-						Buffer[ BufferPtr ] = strlen(szLegal) + 1;
+						CHECK_SZLEGAL();
+						((uint8_t*)Buffer)[ BufferPtr ] = (uint8_t)(strlen(szLegal) + 1);
 						BufferPtr++;
 						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
 
 						// get monster filename
 						GetToken(pcCurrentPos, szLabel);        // filename
-						cTemp = atoi(pcCurrentPos);             // # of beast
+						iTemp = atoi(pcCurrentPos);             // # of beast
+						if (iTemp < 0 || iTemp > 255) {
+							printf("Invalid beast number in %s %d at %d\n", papszEvaKeyWords[(int)iKeyWord], iTemp, CurLine);
+							return EXIT_FAILURE;
+						}
+						cTemp = (char)iTemp;
 						//printf("%3d:  addenemy %s %d\n", CurLine, szLabel, cTemp);
 
-						DataLength = strlen(szLabel) + 2;
-
-						Buffer[ BufferPtr++ ] = DataLength;
+						ADD_SIZE_BYTE(strlen(szLabel) + 2);
 						strlcpy(&Buffer[ BufferPtr ], szLabel, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLabel) + 1);
 						Buffer[ BufferPtr++ ] = cTemp;
@@ -374,7 +404,12 @@ int main(int argc, char *argv[])
 							// write to buffer
 							EventInBuffer = false;
 
-							EventHeader.EventSize = BufferPtr;
+							if (BufferPtr > INT32_MAX) {
+								printf("Event too long (%zu bytes)!\n", BufferPtr);
+								return EXIT_FAILURE;
+							}
+
+							EventHeader.EventSize = (int32_t)BufferPtr;
 							s_EventHeader_s(&EventHeader, ehbuf, sizeof(ehbuf));
 							fwrite(&ehbuf, sizeof(ehbuf), 1, fpOut);
 							fwrite(Buffer, BufferPtr, 1, fpOut);
@@ -387,7 +422,8 @@ int main(int argc, char *argv[])
 						Buffer[ BufferPtr++ ] = iKeyWord;
 
 						// put szLegal in buffer
-						Buffer[ BufferPtr ] = strlen(szLegal) + 1;
+						CHECK_SZLEGAL();
+						((uint8_t*)Buffer)[ BufferPtr ] = (uint8_t)(strlen(szLegal) + 1);
 						BufferPtr++;
 						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
@@ -395,19 +431,17 @@ int main(int argc, char *argv[])
 						GetToken(pcCurrentPos, szLabel);
 						strlcpy(szString, pcCurrentPos, sizeof(szString));
 
-						DataLength = strlen(szLabel) + strlen(szString) + 2*sizeof(char);
-
-						Buffer[ BufferPtr++ ] = DataLength;
+						ADD_SIZE_BYTE(strlen(szLabel) + strlen(szString) + 2*sizeof(char));
 
 						// write length of szLabel
-						Buffer[ BufferPtr++ ] = strlen(szLabel) + sizeof(char);
+						ADD_SIZE_BYTE(strlen(szLabel) + sizeof(char));
 
 						// write label
 						strlcpy(&Buffer[ BufferPtr ], szLabel, MALLOC_SZ - BufferPtr);
 						// increment pointer
 						BufferPtr += (strlen(szLabel) + sizeof(char));
 
-						Buffer[ BufferPtr++ ] = strlen(szString) + sizeof(char);
+						ADD_SIZE_BYTE(strlen(szString) + sizeof(char));
 						strlcpy(&Buffer[ BufferPtr ], szString, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szString) + sizeof(char));
 
@@ -432,7 +466,12 @@ int main(int argc, char *argv[])
 		// write to buffer
 		EventInBuffer = false;
 
-		EventHeader.EventSize = BufferPtr;
+		if (BufferPtr > INT32_MAX) {
+			printf("Event too long (%zu bytes)!\n", BufferPtr);
+			return EXIT_FAILURE;
+		}
+
+		EventHeader.EventSize = (int32_t)BufferPtr;
 		s_EventHeader_s(&EventHeader, ehbuf, sizeof(ehbuf));
 		fwrite(&ehbuf, sizeof(ehbuf), 1, fpOut);
 		fwrite(Buffer, BufferPtr, 1, fpOut);

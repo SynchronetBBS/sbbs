@@ -1,8 +1,9 @@
 #ifndef THE_CLANS__CRC___H
 #define THE_CLANS__CRC___H
 
-#include "defines.h"
+#include <stddef.h>
+#include <inttypes.h>
 
-int32_t CRCValue(const void *Data, int DataSize);
+int32_t CRCValue(const void *Data, ptrdiff_t DataSize);
 
 #endif

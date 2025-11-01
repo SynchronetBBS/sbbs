@@ -27,8 +27,8 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader);
  * file or a regular DOS file.
  */
 
-void EncryptWrite(void *Data, int32_t DataSize, FILE *fp, char XorValue);
-int16_t EncryptRead(void *Data, int32_t DataSize, FILE *fp, char XorValue);
+void EncryptWrite(void *Data, size_t DataSize, FILE *fp, char XorValue);
+int16_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
 
 #define EXTRABYTES      10L
 

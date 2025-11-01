@@ -140,7 +140,7 @@ WriteCfg(void)
 static void ConfigMenu(void)
 {
 	char CurOption = 0;
-	char cInput;
+	int  cInput;
 	char OldOption = -1;
 	bool Quit = false, DidReset = false;
 
@@ -212,8 +212,8 @@ static void ConfigMenu(void)
 		}
 
 		cInput = cio_getch();
-		if (cInput == 0 || cInput == (char)0xE0 || strchr("wkahsjdl", cInput)) {
-			if (cInput == 0 || cInput == (char)0xE0)
+		if (cInput == 0 || cInput == 0xE0 || strchr("wkahsjdl", cInput)) {
+			if (cInput == 0 || cInput == 0xE0)
 				cInput = cio_getch();
 			switch (cInput) {
 				case 'w':
@@ -296,7 +296,7 @@ static void ConfigMenu(void)
 static void NodeMenu(void)
 {
 	char CurOption = 0;
-	char  cInput;
+	int  cInput;
 	char OldOption = -1;
 	bool Quit = false;
 	char str[80];
@@ -346,8 +346,8 @@ static void NodeMenu(void)
 		}
 
 		cInput = cio_getch();
-		if (cInput == 0 || cInput == (char)0xE0 || strchr("wkahsjdl", cInput)) {
-			if (cInput == 0 || cInput == (char)0xE0)
+		if (cInput == 0 || cInput == 0xE0 || strchr("wkahsjdl", cInput)) {
+			if (cInput == 0 || cInput == 0xE0)
 				cInput = cio_getch();
 			switch (cInput) {
 				case 'w':
@@ -431,7 +431,7 @@ static void EditOption(int16_t WhichOption)
 			break;
 		case 6 :    /* BBS ID */
 			gotoxy(40,8);
-			Config.BBSID = DosGetLong("", Config.BBSID, 32767);
+			Config.BBSID = (int16_t)DosGetLong("", Config.BBSID, 32767);
 			break;
 		case 7 :    /* Netmail Dir */
 			gotoxy(40, 9);
@@ -536,7 +536,7 @@ setCurrentNode(int node)
 	currNode->number = node;
 	snprintf(currNode->dropDir, sizeof(currNode->dropDir), "/bbs/node%d", node);
 	currNode->fossil = false;
-	currNode->addr = -1;
+	currNode->addr = UINTPTR_MAX;
 	currNode->irq = -1;
 	return currNode;
 }

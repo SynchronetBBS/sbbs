@@ -350,7 +350,6 @@ void rputs(const char *string)
  */
 {
 	int16_t i;
-	char number[3]; // two digit number!
 	const char *pCurChar,*pStrChar;
 	int16_t attr;  // color
 	static int16_t o_fg = 7, o_bg = 0;
@@ -372,17 +371,13 @@ void rputs(const char *string)
 		    && *pStrChar != '`'
 		    && *pStrChar!=SPECIAL_CODE; pStrChar++);
 		if (pCurChar != pStrChar)
-			od_disp(pCurChar, pStrChar-pCurChar, true);
+			od_disp(pCurChar, (INT)(pStrChar - pCurChar), true);
 		pCurChar=pStrChar;
 		if (!(*pCurChar))break;
 
 		if ((*pCurChar) == '|') {
 			if (isdigit(*(pCurChar + 1)) && isdigit(*(pCurChar +2))) {
-				number[0] = *(pCurChar+1);
-				number[1] = *(pCurChar+2);
-				number[2] = 0;
-
-				attr = atoi(number);
+				attr = (pCurChar[1] - '0') * 10 + (pCurChar[2] - '0');
 				if (attr > 15) {
 					if (o_bg != (attr-16)) {
 						o_bg = attr - 16;
@@ -619,7 +614,7 @@ void Display(char *FileName)
 		// if at end of file, stop
 		/* get od_control.user_screen_length-3 lines if possible */
 		for (cTemp = 0; cTemp < (od_control.user_screen_length-3) && cTemp < 30; cTemp++) {
-			MaxBytes = FileHeader.lEnd - ftell(FileHeader.fp) + EXTRABYTES;
+			MaxBytes = FileHeader.lEnd - (int32_t)ftell(FileHeader.fp) + EXTRABYTES;
 			if (MaxBytes > 254)
 				MaxBytes = 254;
 

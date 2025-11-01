@@ -177,9 +177,13 @@ static void AddGUM(FILE *fpGUM, char *pszFileName)
 	}
 	fseek(fpFromFile, 0L, SEEK_END);
 	lFileSize = ftell(fpFromFile);
+	if (lFileSize > INT32_MAX || lFileSize < 0) {
+		printf("\aftell(\"%s\") returned %ld\n", pszFileName, lFileSize);
+		exit(1);
+	}
 	//printf(" (%ld bytes) ", lFileSize);
 	fseek(fpFromFile, 0L, SEEK_SET);
-	tmp32 = SWAP32(lFileSize);
+	tmp32 = SWAP32((int32_t)lFileSize);
 	fwrite(&tmp32, sizeof(tmp32), 1, fpGUM);
 
 	// record this offset since we come back later to write the compressed
@@ -204,7 +208,11 @@ static void AddGUM(FILE *fpGUM, char *pszFileName)
 	// we write the compressed size now
 	Offset2 = ftell(fpGUM);
 	fseek(fpGUM, Offset1, SEEK_SET);
-	lCompressSize = bytes_out;
+	if (bytes_out < 0 || bytes_out > INT32_MAX) {
+		printf("\abytes_out invalid for \"%s\" (%ld)\n", pszFileName, lFileSize);
+		exit(1);
+	}
+	lCompressSize = (int32_t)bytes_out;
 	tmp32 = SWAP32(lCompressSize);
 	fwrite(&tmp32, sizeof(tmp32), 1, fpGUM);
 	fseek(fpGUM, Offset2, SEEK_SET);
