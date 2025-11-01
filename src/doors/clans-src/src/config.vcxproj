@@ -8,6 +8,7 @@
   <Import Project="clanslib.props" />
   <ItemGroup>
     <ClCompile Include="config.c" />
+    <ClCompile Include="misc.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="console.h" />

@@ -7,6 +7,7 @@
   <Import Project="clanslib.props" />
   <ItemGroup>
     <ClCompile Include="reset.c" />
+    <ClCompile Include="misc.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="alliance.h" />
