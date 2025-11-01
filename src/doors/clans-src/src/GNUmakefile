@@ -29,7 +29,7 @@ endif
 
 # Build types, debug and opt
 ifdef DEBUG
- CFLAGS	+=	-g -O0 -Wall -pedantic
+ CFLAGS	+=	-g -O0 -Wall -pedantic -Wconversion
  LDFLAGS +=	-g
 else
  CFLAGS	+=	-O3 -DNDEBUG -flto
