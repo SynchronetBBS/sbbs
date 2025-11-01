@@ -409,13 +409,15 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 	rputs(ST_MAILENTERCOLOR);
 	rputs(String);
 	cur_char = strlen(String);
+	if (cur_char > INT_MAX)
+		System_Error("String too long in QInputStr()");
 
 	for (;;) {
 		if (cur_char == (*JustLen)) {
 			String[cur_char] = 0;
 
 			// break off last String
-			for (i = strlen(String); i>0; i--) {
+			for (i = (int)strlen(String); i>0; i--) {
 				if (String[i] == ' ') {
 					i++;
 					break;
@@ -1097,13 +1099,15 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 	rputs(ST_MAILENTERCOLOR);
 	rputs(String);
 	cur_char = strlen(String);
+	if (cur_char > INT_MAX)
+		System_Error("String too long in InputStr()");
 
 	for (;;) {
 		if (cur_char == (*JustLen)) {
 			String[cur_char] = 0;
 
 			// break off last String
-			for (i = strlen(String); i>0; i--) {
+			for (i = (int)strlen(String); i>0; i--) {
 				if (String[i] == ' ') {
 					i++;
 					break;
