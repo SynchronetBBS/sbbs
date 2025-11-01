@@ -517,6 +517,7 @@ static bool new_robot(unsigned new_botnum)
 		memcpy(&cfg.robot_list[i], &cfg.robot_list[i - 1], sizeof(struct robot));
 	cfg.robot_count++;
 	memset(&cfg.robot_list[new_botnum], 0, sizeof(struct robot));
+	cfg.robot_list[new_botnum].attr = FIDO_INTRANS;
 	return true;
 }
 
@@ -721,6 +722,35 @@ void read_echocfg_ini()
 	if (!fexist(path))
 		snprintf(path, sizeof path, "%s/uifc.ini", get_ctrl_dir(/* warn: */ false));
 	read_uifc_ini(path, &uifc, &ciolib_mode, &video_mode);
+}
+
+static const char* fmsgattr_str(uint16_t attr)
+{
+	char str[128] = "";
+
+	str[0] = '\0';
+#define FIDO_ATTR_CHECK(a, f) if (a & FIDO_ ## f)    sprintf(str + strlen(str), "%s%s", str[0] == 0 ? "" : ", ", #f);
+	FIDO_ATTR_CHECK(attr, PRIVATE);
+	FIDO_ATTR_CHECK(attr, CRASH);
+	FIDO_ATTR_CHECK(attr, RECV);
+	FIDO_ATTR_CHECK(attr, SENT);
+	FIDO_ATTR_CHECK(attr, FILE);
+	FIDO_ATTR_CHECK(attr, INTRANS);
+	FIDO_ATTR_CHECK(attr, ORPHAN);
+	FIDO_ATTR_CHECK(attr, KILLSENT);
+	FIDO_ATTR_CHECK(attr, LOCAL);
+	FIDO_ATTR_CHECK(attr, HOLD);
+	FIDO_ATTR_CHECK(attr, FREQ);
+	FIDO_ATTR_CHECK(attr, RRREQ);
+	FIDO_ATTR_CHECK(attr, RR);
+	FIDO_ATTR_CHECK(attr, AUDIT);
+	FIDO_ATTR_CHECK(attr, FUPREQ);
+	if (str[0] == 0)
+		return "";
+
+	static char buf[256];
+	snprintf(buf, sizeof buf, " (%s)", str);
+	return buf;
 }
 
 int main(int argc, char **argv)
@@ -2464,14 +2494,17 @@ USAGE:
 					"The `Robots` sub-menu is where NetMail Robots are configured.\n"
 					"\n"
 					"When a NetMail message is received addressed to one of the configured\n"
-					"Robot `Names`, it will be stored in the `mail` message base and the\n"
-					"associated `Semaphore File` (if non-blank) will be touched.\n"
+					"Robot `Names`, it can be stored in the `mail` message base and/or saved\n"
+					"in FidoNet `Stored Message` format and the associated `Semaphore File`\n"
+					"(if non-blank) will be touched.\n"
 					"\n"
-					"If the NetMail message has the `In-Transit` attribute flag set, it\n"
-					"will not be exported by SBBSecho back into a stored message (*.msg)\n"
-					"file. Therefore, it is recommended to include the In-Transit attribute\n"
-					"flag (0x20) in the Robot's `Attributes` value if the Robot (e.g. script)\n"
-					"is going to expect the message to be in the mail base.\n"
+					"NetMail messages with the `In-Transit` attribute flag set will not be\n"
+					"repeatedly processed by SBBSecho, so, it is recommended to include\n"
+					"the In-Transit attribute flag (0x20) in the Robot's `Attributes` value.\n"
+					"This is the default value of the Attributes setting.\n"
+					"\n"
+					"If the Robot expects to deal with FidoNet `Stored Messages` (.msg files)\n"
+					"directly, set the `Uses MSG Files` option to `Yes`.\n"
 				;
 				i = 0;
 				while (1) {
@@ -2533,8 +2566,10 @@ USAGE:
 						         , cfg.robot_list[i].name);
 						snprintf(opt[j++], MAX_OPLN - 1, "%-30.30s %s", "Semaphore File"
 						         , cfg.robot_list[i].semfile);
-						snprintf(opt[j++], MAX_OPLN - 1, "%-30.30s 0x%04hX", "Attributes"
-						         , cfg.robot_list[i].attr);
+						snprintf(opt[j++], MAX_OPLN - 1, "%-30.30s 0x%04hX%s", "Attributes"
+						         , cfg.robot_list[i].attr, fmsgattr_str(cfg.robot_list[i].attr));
+						snprintf(opt[j++], MAX_OPLN - 1, "%-30.30s %s", "Uses MSG File"
+						         , cfg.robot_list[i].uses_msg ? "Yes" : "No");
 						opt[j][0] = 0;
 						SAFEPRINTF(str, "Robot - %s", cfg.robot_list[i].name);
 						uifc_winmode_t wmode = WIN_ACT | WIN_SAV | WIN_RHT | WIN_BOT | WIN_EXTKEYS;
@@ -2572,6 +2607,10 @@ USAGE:
 								               , "NetMail Attributes (in hexadecimal)"
 								               , str, sizeof(str), K_EDIT) > 0)
 									cfg.robot_list[i].attr = (uint16_t)strtoul(str, NULL, 16);
+								break;
+							case 3:
+								cfg.robot_list[i].uses_msg = !cfg.robot_list[i].uses_msg;
+								uifc.changes = true;
 								break;
 						}
 					}

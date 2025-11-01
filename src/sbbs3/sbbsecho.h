@@ -28,7 +28,7 @@
 #include "ini_file.h"
 
 #define SBBSECHO_VERSION_MAJOR      3
-#define SBBSECHO_VERSION_MINOR      30
+#define SBBSECHO_VERSION_MINOR      31
 
 #define SBBSECHO_PRODUCT_CODE       0x12FF  /* from http://ftsc.org/docs/ftscprod.013 */
 
@@ -150,6 +150,7 @@ struct robot {
 	char semfile[MAX_PATH + 1];
 	uint16_t attr;
 	unsigned recv_count;
+	bool uses_msg; // Uses FTS-1 stored message (.msg file)
 };
 
 typedef struct {

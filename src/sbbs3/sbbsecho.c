@@ -3433,21 +3433,21 @@ char* getfmsg(FILE* stream, ulong* outlen)
 #define MAX_TAILLEN 1024
 
 enum {
-	IMPORT_FAILURE         = -1
-	, IMPORT_SUCCESS         = SMB_SUCCESS
-	, IMPORT_FILTERED_DUPE   = SMB_DUPE_MSG
-	, IMPORT_FILTERED_TWIT   = 2
-	, IMPORT_FILTERED_EMPTY  = 3
-	, IMPORT_FILTERED_AGE    = 4
-	, IMPORT_FILTERED_SUBJ   = 5
+	  IMPORT_FAILURE          = -1
+	, IMPORT_SUCCESS          = SMB_SUCCESS
+	, IMPORT_FILTERED_DUPE    = SMB_DUPE_MSG
+	, IMPORT_FILTERED_TWIT    = 2
+	, IMPORT_FILTERED_EMPTY   = 3
+	, IMPORT_FILTERED_AGE     = 4
+	, IMPORT_FILTERED_SUBJ    = 5
 	, IMPORT_FILTERED_FOREIGN = 6
-	, IMPORT_FILTERED_ORPHAN = 7
-	, IMPORT_FILTERED_LOCAL  = 8
-	, IMPORT_FILTERED_RECV   = 9
-	, IMPORT_FILTERED_INTRANSIT = 10
-	, IMPORT_IGNORED         = 11
-	, IMPORT_CLOSED          = 12
-	, IMPORT_UNKNOWN_USER    = 13
+	, IMPORT_FILTERED_ORPHAN  = 7
+	, IMPORT_FILTERED_LOCAL   = 8
+	, IMPORT_FILTERED_RECV    = 9
+	, IMPORT_FILTERED_INTRANS = 10
+	, IMPORT_IGNORED          = 11
+	, IMPORT_CLOSED           = 12
+	, IMPORT_UNKNOWN_USER     = 13
 };
 
 /****************************************************************************/
@@ -4673,8 +4673,26 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		}
 		if (hdr.attr & FIDO_INTRANS) {
 			printf("In-transit");
-			return IMPORT_FILTERED_INTRANSIT;
+			return IMPORT_FILTERED_INTRANS;
 		}
+	}
+
+	struct robot* robot = NULL;
+	for (unsigned u = 0; u < cfg.robot_count; u++) {
+		if (stricmp(hdr.to, cfg.robot_list[u].name) == 0) {
+			robot = &cfg.robot_list[u];
+			hdr.attr |= robot->attr;
+			lprintf(LOG_DEBUG, "%s NetMail received for robot: %s", info, robot->name);
+			break;
+		}
+	}
+	if (robot != NULL && robot->uses_msg) {
+		if (!path[0]) {
+			printf(" - ");
+			pkt_to_msg(fp, &hdr, info, inbound);
+		}
+		robot->recv_count++;
+		return IMPORT_SUCCESS;
 	}
 
 	if (email->shd_fp == NULL) {
@@ -4696,16 +4714,6 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 			lprintf(LOG_ERR, "ERROR %d (%s) line %d creating %s", i, email->last_error, __LINE__, email->file);
 			bail(1);
 			return IMPORT_FAILURE;
-		}
-	}
-
-	struct robot* robot = NULL;
-	for (unsigned u = 0; u < cfg.robot_count; u++) {
-		if (stricmp(hdr.to, cfg.robot_list[u].name) == 0) {
-			robot = &cfg.robot_list[u];
-			hdr.attr |= robot->attr;
-			lprintf(LOG_DEBUG, "%s NetMail received for robot: %s", info, robot->name);
-			break;
 		}
 	}
 

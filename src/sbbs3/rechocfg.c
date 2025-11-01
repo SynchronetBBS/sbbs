@@ -486,6 +486,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 		SAFECOPY(bot->name, robot + 6);
 		SAFECOPY(bot->semfile, iniGetString(ini, robot, "SemFile", "", value));
 		bot->attr = iniGetShortInt(ini, robot, "attr", 0);
+		bot->uses_msg = iniGetBool(ini, robot, "UsesMsg", false);
 	}
 	strListFree(&robots);
 
@@ -692,6 +693,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		SAFEPRINTF(section, "robot:%s", bot->name);
 		iniSetString(&ini, section, "SemFile", bot->semfile, style);
 		iniSetHexInt(&ini, section, "attr", bot->attr, style);
+		iniSetBool(&ini, section, "UsesMSG", bot->uses_msg, style);
 	}
 
 	iniWriteFile(fp, ini);
