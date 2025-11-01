@@ -3440,6 +3440,14 @@ enum {
 	, IMPORT_FILTERED_EMPTY  = 3
 	, IMPORT_FILTERED_AGE    = 4
 	, IMPORT_FILTERED_SUBJ   = 5
+	, IMPORT_FILTERED_FOREIGN = 6
+	, IMPORT_FILTERED_ORPHAN = 7
+	, IMPORT_FILTERED_LOCAL  = 8
+	, IMPORT_FILTERED_RECV   = 9
+	, IMPORT_FILTERED_INTRANSIT = 10
+	, IMPORT_IGNORED         = 11
+	, IMPORT_CLOSED          = 12
+	, IMPORT_UNKNOWN_USER    = 13
 };
 
 /****************************************************************************/
@@ -4638,7 +4646,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		} else
 			lprintf(LOG_INFO, "%s Ignored", info);
 
-		return -1;
+		return IMPORT_IGNORED;
 	}
 
 	if (!sysfaddr_is_valid(match) && !cfg.ignore_netmail_dest_addr) {
@@ -4647,25 +4655,25 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 			printf(" - ");
 			pkt_to_msg(fp, &hdr, info, inbound);
 		}
-		return 2;
+		return IMPORT_FILTERED_FOREIGN;
 	}
 
 	if (path[0]) {   /* .msg file, not .pkt */
 		if (hdr.attr & FIDO_ORPHAN) {
 			printf("Orphaned");
-			return 1;
+			return IMPORT_FILTERED_ORPHAN;
 		}
 		if ((hdr.attr & FIDO_RECV) && !cfg.ignore_netmail_recv_attr) {
 			printf("Already received");
-			return 3;
+			return IMPORT_FILTERED_RECV;
 		}
 		if ((hdr.attr & FIDO_LOCAL) && !cfg.ignore_netmail_local_attr) {
 			printf("Created locally");
-			return 4;
+			return IMPORT_FILTERED_LOCAL;
 		}
 		if (hdr.attr & FIDO_INTRANS) {
 			printf("In-transit");
-			return 5;
+			return IMPORT_FILTERED_INTRANSIT;
 		}
 	}
 
@@ -4675,7 +4683,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		if ((i = smb_open(email)) != SMB_SUCCESS) {
 			lprintf(LOG_ERR, "ERROR %d (%s) line %d opening mailbase: %s", i, email->last_error, __LINE__, email->file);
 			bail(1);
-			return -1;
+			return IMPORT_FAILURE;
 		}
 	}
 
@@ -4687,7 +4695,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		if ((i = smb_create(email)) != SMB_SUCCESS) {
 			lprintf(LOG_ERR, "ERROR %d (%s) line %d creating %s", i, email->last_error, __LINE__, email->file);
 			bail(1);
-			return -1;
+			return IMPORT_FAILURE;
 		}
 	}
 
@@ -4707,7 +4715,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		    || stricmp(hdr.to, FIDO_PING_NAME) == 0) {
 			fmsgbuf = getfmsg(fp, NULL);
 			if (fmsgbuf == NULL)
-				return -1;
+				return IMPORT_FAILURE;
 			if (path[0]) {
 				if (cfg.delete_netmail && opt_delete_netmail) {
 					fclose(fp);
@@ -4801,7 +4809,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 				}
 			}
 			FREE_AND_NULL(fmsgbuf);
-			return -2;
+			return IMPORT_CLOSED;
 		}
 
 		usernumber = atoi(hdr.to);
@@ -4818,7 +4826,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 				printf(" - ");
 				pkt_to_msg(fp, &hdr, info, inbound);
 			}
-			return 2;
+			return IMPORT_UNKNOWN_USER;
 		}
 	}
 
@@ -4848,9 +4856,9 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 			lprintf(LOG_ERR, "ERROR (%d) Importing %s", i, info);
 			break;
 	}
-	if (i) {
+	if (i != IMPORT_SUCCESS) {
 		FREE_AND_NULL(fmsgbuf);
-		return 0;
+		return i;
 	}
 
 	if (usernumber) {
@@ -4916,7 +4924,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		fwrite(&hdr,sizeof(fmsghdr_t),1,fp); }
 	***/
 	lprintf(LOG_INFO, "%s Imported", info);
-	return 0;
+	return IMPORT_SUCCESS;
 }
 
 static uint32_t read_export_ptr(int subnum, const char* tag)
@@ -6207,7 +6215,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			if (strncmp(fmsgbuf, "AREA:", 5) != 0) {                 /* Netmail */
 				(void)fseeko(fidomsg, msg_offset, SEEK_SET);
 				result = import_netmail("", &hdr, fidomsg, inbound);
-				if (result != 0)
+				if (result != IMPORT_SUCCESS)
 					lprintf(LOG_DEBUG, "import_netmail() returned %d", result);
 				(void)fseeko(fidomsg, next_msg, SEEK_SET);
 				printf("\n");
@@ -7117,7 +7125,7 @@ int main(int argc, char **argv)
 			/**************************************/
 			/* Delete source netmail if specified */
 			/**************************************/
-			if (i == 0) {
+			if (i == IMPORT_SUCCESS) {
 				if (cfg.delete_netmail && opt_delete_netmail) {
 					fclose(fidomsg);
 					delfile(path, __LINE__);
@@ -7131,7 +7139,7 @@ int main(int argc, char **argv)
 			}
 			else {
 				lprintf(LOG_DEBUG, "import_netmail(%s) returned %d", path, i);
-				if (i != -2)
+				if (i != IMPORT_CLOSED)
 					fclose(fidomsg);
 			}
 			printf("\n");
