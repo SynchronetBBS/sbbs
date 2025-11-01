@@ -513,7 +513,7 @@ void Empire_Maint(struct empire *Empire)
 		Rating = 100;
 	if (Rating < 0)
 		Rating = 0;
-	Empire->Army.Rating = Rating;
+	Empire->Army.Rating = (char)Rating;
 
 	// make money for empire here
 	if (Empire->OwnerType == EO_VILLAGE) {
@@ -536,13 +536,14 @@ void Empire_Maint(struct empire *Empire)
 
 int16_t ArmySpeed(struct Army *Army)
 {
-	int16_t Speed, NumTroops;
+	int16_t Speed;
+	int64_t NumTroops;
 
 	NumTroops = Army->Footmen + Army->Axemen + Army->Knights;
 
 	if (NumTroops)
-		Speed = (Army->Footmen*SPD_FOOTMEN + Army->Axemen*SPD_AXEMEN
-				 + Army->Knights*SPD_KNIGHTS) / NumTroops;
+		Speed = (int16_t)(((int64_t)Army->Footmen * SPD_FOOTMEN + (int64_t)Army->Axemen * SPD_AXEMEN
+				 + (int64_t)Army->Knights * SPD_KNIGHTS) / NumTroops);
 	else
 		Speed = 0;
 
@@ -550,33 +551,33 @@ int16_t ArmySpeed(struct Army *Army)
 }
 
 
-int32_t ArmyOffense(struct Army *Army)
+int64_t ArmyOffense(struct Army *Army)
 {
-	int32_t Offense;
+	int64_t Offense;
 
-	Offense = Army->Footmen*OFF_FOOTMEN + Army->Axemen*OFF_AXEMEN
-			  + Army->Knights*OFF_KNIGHTS;
+	Offense = Army->Footmen * OFF_FOOTMEN + Army->Axemen * OFF_AXEMEN
+			  + Army->Knights * OFF_KNIGHTS;
 
 	return Offense;
 }
 
 
-int32_t ArmyDefense(struct Army *Army)
+int64_t ArmyDefense(struct Army *Army)
 {
-	int32_t Defense;
+	int64_t Defense;
 
-	Defense = Army->Footmen*DEF_FOOTMEN + Army->Axemen*DEF_AXEMEN
-			  + Army->Knights*DEF_KNIGHTS;
+	Defense = (int64_t)Army->Footmen * DEF_FOOTMEN + (int64_t)Army->Axemen * DEF_AXEMEN
+			  + (int64_t)Army->Knights * DEF_KNIGHTS;
 
 	return Defense;
 }
 
-int32_t ArmyVitality(struct Army *Army)
+int64_t ArmyVitality(struct Army *Army)
 {
-	int32_t Vitality;
+	int64_t Vitality;
 
-	Vitality = (Army->Footmen*VIT_FOOTMEN + Army->Axemen*VIT_AXEMEN
-				+ Army->Knights*VIT_KNIGHTS) * 2;
+	Vitality = ((int64_t)Army->Footmen * VIT_FOOTMEN + (int64_t)Army->Axemen * VIT_AXEMEN
+				+ (int64_t)Army->Knights * VIT_KNIGHTS) * 2;
 
 	return Vitality;
 }
@@ -659,21 +660,26 @@ static void DevelopLand(struct empire *Empire)
 	CostToDevelop = (int32_t)(100L - Empire->Buildings[B_DEVELOPERS]*5L);
 	if (CostToDevelop < 20)
 		CostToDevelop = 20;
+	if (CostToDevelop > 100)
+		CostToDevelop = 100;
 	// FIXME: in future have X developments as max per day?!
 
-	LimitingVariable = Empire->VaultGold/CostToDevelop;
+	LimitingVariable = Empire->VaultGold / CostToDevelop;
+	if (LimitingVariable > 3000)
+		LimitingVariable = 3000;
 
 	if (LimitingVariable + Empire->Land >= 3000)
 		LimitingVariable = 3000 - Empire->Land;
 
 	if (LimitingVariable < 0)
 		LimitingVariable = 0;
-
+	if (LimitingVariable > INT16_MAX)
+		LimitingVariable = INT16_MAX;
 
 	snprintf(szString, sizeof(szString), ST_DEVLAND0, CostToDevelop);
 	rputs(szString);
 
-	LandToDevelop = GetLong(ST_DEVLAND1, 0, LimitingVariable);
+	LandToDevelop = (int16_t)GetLong(ST_DEVLAND1, 0, LimitingVariable);
 
 	if (LandToDevelop) {
 		Empire->Land += LandToDevelop;
@@ -1379,10 +1385,11 @@ static void ArmyAttack(struct Army *Attacker, struct Army *Defender,
 	int16_t NumRounds, CurRound;
 	struct Army OrigAttacker, OrigDefender;
 	int16_t AttackerSpeed, DefenderSpeed;
-	int32_t AttackerOffense, DefenderOffense;
-	int32_t AttackerDefense, DefenderDefense;
-	int32_t AttackerVitality, DefenderVitality;
-	int32_t Damage, Percent;
+	int64_t AttackerOffense, DefenderOffense;
+	int64_t AttackerDefense, DefenderDefense;
+	int64_t AttackerVitality, DefenderVitality;
+	int64_t Damage;
+	int32_t Percent;
 	int16_t Intensity, AttackerLoss, DefenderLoss;
 
 	// Initialize result now
@@ -1405,8 +1412,8 @@ static void ArmyAttack(struct Army *Attacker, struct Army *Defender,
 	DefenderSpeed = ArmySpeed(Defender);
 
 	// figure out offense
-	AttackerOffense = (ArmyOffense(Attacker)*AttackerSpeed*Attacker->Rating)/100;
-	DefenderOffense = (ArmyOffense(Defender)*DefenderSpeed*Defender->Rating)/100;
+	AttackerOffense = (ArmyOffense(Attacker) * AttackerSpeed * Attacker->Rating)/100;
+	DefenderOffense = (ArmyOffense(Defender) * DefenderSpeed * Defender->Rating)/100;
 
 	// figure out defense
 	AttackerDefense = (ArmyDefense(Attacker)*AttackerSpeed*Attacker->Rating)/100;
@@ -1461,12 +1468,12 @@ static void ArmyAttack(struct Army *Attacker, struct Army *Defender,
 
 
 		// figure out # of troops left after attack
-		Percent = (AttackerVitality*100)/ArmyVitality(&OrigAttacker);
+		Percent = (int32_t)((AttackerVitality * 100) / ArmyVitality(&OrigAttacker));
 		Attacker->Footmen = (Percent*OrigAttacker.Footmen)/100;
 		Attacker->Axemen = (Percent*OrigAttacker.Axemen)/100;
 		Attacker->Knights = (Percent*OrigAttacker.Knights)/100;
 
-		Percent = (DefenderVitality*100)/ArmyVitality(&OrigDefender);
+		Percent = (int32_t)((DefenderVitality * 100) / ArmyVitality(&OrigDefender));
 		Defender->Footmen = (Percent*OrigDefender.Footmen)/100;
 		Defender->Axemen = (Percent*OrigDefender.Axemen)/100;
 		Defender->Knights = (Percent*OrigDefender.Knights)/100;
@@ -1496,8 +1503,8 @@ static void ArmyAttack(struct Army *Attacker, struct Army *Defender,
 	}
 
 	// figure out percent damage done to each side
-	AttackerLoss = 100 - (ArmyVitality(Attacker)*100)/ArmyVitality(&OrigAttacker);
-	DefenderLoss = 100 - (ArmyVitality(Defender)*100)/ArmyVitality(&OrigDefender);
+	AttackerLoss = (int16_t)(100 - (ArmyVitality(Attacker) * 100) / ArmyVitality(&OrigAttacker));
+	DefenderLoss = (int16_t)(100 - (ArmyVitality(Defender) * 100) / ArmyVitality(&OrigDefender));
 
 	//    od_printf("Attacker's loss = %d\n\rDefender's Loss = %d\n\r", AttackerLoss, DefenderLoss);
 
@@ -1964,8 +1971,10 @@ static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 	int16_t LandUsed[MAX_BUILDINGS];
 	int16_t NumRemaining[MAX_BUILDINGS];
 	char *WarZone;
-	int16_t CurChar, CurType, CurBuilding, Start, End, TotalEnergy,
-	CurHit, WhichToHit, TypeToHit, iTemp;
+	int CurChar, TotalEnergy, Start, End, WhichToHit;
+	signed char CurType;
+	int16_t CurBuilding,
+	CurHit, TypeToHit, iTemp;
 	int32_t NumHits;
 
 	//    od_printf("\r\nBefore:  %d towers\r\n %d barracks\r\n %d walls\r\n",
@@ -1985,13 +1994,13 @@ static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 			CurChar += BuildingType[CurType].HitZones;
 		}
 
-	if (CurChar == 0) {
+	if (CurChar <= 0) {
 		// no buildings found!
 		*LandGained = 0;
 		return;
 	}
 
-	WarZone = malloc(CurChar);
+	WarZone = malloc((size_t)CurChar);
 	CheckMem(WarZone);
 
 	TotalEnergy = CurChar;
@@ -1999,7 +2008,7 @@ static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 
 	// put buildings in there
 	CurChar = 0;
-	for (CurType = 0; CurType < NUM_BUILDINGTYPES; CurType++)
+	for (CurType = 0; CurType < NUM_BUILDINGTYPES; CurType++) {
 		for (CurBuilding = 0; CurBuilding < NumBuildings[CurType]; CurBuilding++) {
 			// fill up with junk
 			Start = CurChar;
@@ -2007,6 +2016,7 @@ static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 			for (CurChar = Start; CurChar < End; CurChar++)
 				WarZone[CurChar] = CurType;
 		}
+	}
 
 	// damage them using percent
 

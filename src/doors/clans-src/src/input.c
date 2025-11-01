@@ -411,7 +411,7 @@ void GetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 
 // ------------------------------------------------------------------------- //
 
-int16_t GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, char DefChar, bool ShowTime)
+char GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, char DefChar, bool ShowTime)
 /*
  * This function allows the user to choose an option from the options
  * listed.  Works much like FE's input system.

@@ -13,7 +13,7 @@ struct FileHeader;
 #include "deserialize.h"
 
 extern uint8_t serBuf[4096];
-extern int16_t erRet;
+extern size_t erRet;
 
 struct FileHeader {
 	FILE *fp;     // used only when reading the file in
@@ -28,7 +28,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader);
  */
 
 void EncryptWrite(void *Data, size_t DataSize, FILE *fp, char XorValue);
-int16_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
+size_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
 
 #define EXTRABYTES      10L
 

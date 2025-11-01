@@ -39,7 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "video.h"
 
 uint8_t serBuf[4096];
-int16_t erRet;
+size_t erRet;
 
 static void cipher(void *, void *, size_t, unsigned char);
 
@@ -175,10 +175,10 @@ void EncryptWrite(void *Data, size_t DataSize, FILE *fp, char XorValue)
 	free(EncryptedData);
 }
 
-int16_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue)
+size_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue)
 {
 	char *EncryptedData;
-	int16_t Result;
+	size_t Result;
 
 	if (!DataSize) {
 		System_Error("EncryptRead() called with 0 bytes\n");
@@ -200,7 +200,7 @@ int16_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue)
 	/*  -- Removed the original Decrypt() function for simplicity
 	    Decrypt((char *)Data, EncryptedData, DataSize, XorValue);*/
 	if (Result)
-		cipher(Data, EncryptedData, DataSize, (unsigned char)XorValue);
+		cipher(Data, EncryptedData, Result, (unsigned char)XorValue);
 
 	free(EncryptedData);
 

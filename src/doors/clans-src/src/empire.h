@@ -17,9 +17,9 @@ void DonateToEmpire(struct empire *Empire);
 
 
 int16_t ArmySpeed(struct Army *Army);
-int32_t ArmyOffense(struct Army *Army);
-int32_t ArmyDefense(struct Army *Army);
-int32_t ArmyVitality(struct Army *Army);
+int64_t ArmyOffense(struct Army *Army);
+int64_t ArmyDefense(struct Army *Army);
+int64_t ArmyVitality(struct Army *Army);
 
 void ProcessAttackPacket(struct AttackPacket *AttackPacket);
 void ProcessResultPacket(struct AttackResult *Result);
