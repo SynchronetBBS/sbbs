@@ -7,6 +7,7 @@
   <Import Project="clanslib.props" />
   <ItemGroup>
     <ClCompile Include="mspells.c" />
+    <ClCompile Include="tools.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="crc.h" />
