@@ -225,7 +225,7 @@ int fwrite_intl_control_line(FILE* fp, fmsghdr_t* hdr)
 
 static const char* fmsgattr_str(uint16_t attr)
 {
-	char str[64] = "";
+	char str[128] = "";
 
 	str[0] = '\0';
 #define FIDO_ATTR_CHECK(a, f) if (a & FIDO_ ## f)    sprintf(str + strlen(str), "%s%s", str[0] == 0 ? "" : ", ", #f);
@@ -247,7 +247,7 @@ static const char* fmsgattr_str(uint16_t attr)
 	if (str[0] == 0)
 		return "";
 
-	static char buf[128];
+	static char buf[256];
 	snprintf(buf, sizeof buf, " (%s)", str);
 	return buf;
 }
