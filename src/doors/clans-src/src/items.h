@@ -23,7 +23,7 @@ void Items_GiveItem(char *szItemName);
 
 void Items_ReadScroll(struct pc *PC, struct clan *TargetClan, int16_t Target, int16_t ScrollNum);
 
-void Item_BuyItem(int16_t ItemType);
+void Item_BuyItem(signed char ItemType);
 
 void ShowItemStats(struct item_data *Item, struct clan *Clan);
 

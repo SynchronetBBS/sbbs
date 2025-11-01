@@ -91,9 +91,10 @@ static void AddToPak(char *pszFileName, char *pszFileAlias, FILE *fpPakFile)
 {
 	struct FileHeader FileHeader;
 	FILE *fpInput;
-	long CurByte, NumBytes;
+	size_t CurByte, NumBytes;
 	char FAR *Chunk;
 	uint8_t fhbuf[BUF_SIZE_FileHeader];
+	long lTemp;
 
 	fpInput = fopen(pszFileName, "rb");
 	if (!fpInput) {
@@ -105,7 +106,12 @@ static void AddToPak(char *pszFileName, char *pszFileAlias, FILE *fpPakFile)
 
 	// get size of file
 	fseek(fpInput, 0L, SEEK_END);
-	FileHeader.lFileSize = ftell(fpInput);
+	lTemp = ftell(fpInput);
+	if (lTemp < INT32_MIN || lTemp > INT32_MAX) {
+		printf("File size %ld unsupported\n", lTemp);
+		return;
+	}
+	FileHeader.lFileSize = (int32_t)lTemp;
 
 	// go back to start of file
 	fseek(fpInput, 0L, SEEK_SET);
@@ -122,7 +128,7 @@ static void AddToPak(char *pszFileName, char *pszFileAlias, FILE *fpPakFile)
 
 	// read in file and transfer to pakfile
 	CurByte = 0;
-	NumBytes = FileHeader.lFileSize;
+	NumBytes = (size_t)FileHeader.lFileSize;
 
 	Chunk = calloc(1, 64000);
 	if (!Chunk) {

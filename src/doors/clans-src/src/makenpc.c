@@ -45,9 +45,10 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 	char szToken[MAX_TOKEN_CHARS + 1]/*, *pcAt*/;
 	size_t uCount;
 	int iKeyWord;
+	int TempInt;
 	int CurNPC = -1;
 	int iTemp; /*, OrigNPC*/
-	int TopicsKnown=0;
+	int16_t TopicsKnown = 0;
 	uint8_t nbuf[BUF_SIZE_NPCInfo];
 
 	fpNPC = fopen(szInfile, "r");
@@ -153,7 +154,12 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 						TopicsKnown = 0;
 						break;
 					case 1 :    // loyalty
-						NPCInfo->Loyalty = atoi(pcCurrentPos);
+						TempInt = atoi(pcCurrentPos);
+						if (TempInt < CHAR_MIN || TempInt > CHAR_MAX) {
+							puts("Invalid Loyalty Value");
+							exit(EXIT_FAILURE);
+						}
+						NPCInfo->Loyalty = (char)TempInt;
 						break;
 					case 2 :    // KnownTopic
 						NPCInfo->Topics[TopicsKnown].Active = true;
@@ -214,13 +220,28 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 							printf("\aIncorrect usage: %s\n", pcCurrentPos);
 						break;
 					case 5 :    // which NPC in the NPC.PC is he?
-						NPCInfo->NPCPCIndex = atoi(pcCurrentPos);
+						TempInt = atoi(pcCurrentPos);
+						if (TempInt < INT16_MIN || TempInt > INT16_MAX) {
+							puts("Invalid Loyalty Value");
+							exit(EXIT_FAILURE);
+						}
+						NPCInfo->NPCPCIndex = (int16_t)TempInt;
 						break;
 					case 6 :
-						NPCInfo->MaxTopics = atoi(pcCurrentPos);
+						TempInt = atoi(pcCurrentPos);
+						if (TempInt < INT16_MIN || TempInt > INT16_MAX) {
+							puts("Invalid Loyalty Value");
+							exit(EXIT_FAILURE);
+						}
+						NPCInfo->MaxTopics = (int16_t)TempInt;
 						break;
 					case 7 :    // odds of seing
-						NPCInfo->OddsOfSeeing = atoi(pcCurrentPos);
+						TempInt = atoi(pcCurrentPos);
+						if (TempInt < INT16_MIN || TempInt > INT16_MAX) {
+							puts("Invalid Loyalty Value");
+							exit(EXIT_FAILURE);
+						}
+						NPCInfo->OddsOfSeeing = (int16_t)TempInt;
 						printf("Odds of seeing are %d%%\n", NPCInfo->OddsOfSeeing);
 						break;
 					case 8 :    // introtopic

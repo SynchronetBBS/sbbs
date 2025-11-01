@@ -312,7 +312,7 @@ struct clan {
 
 	char VaultWithdrawals;
 
-	int16_t PublicMsgIndex;
+	uint16_t PublicMsgIndex;
 
 	int16_t ClanCombatToday[MAX_CLANCOMBAT][2];
 	int16_t ClanWars;
@@ -536,7 +536,7 @@ struct Message {
 	int16_t Flags;
 	int16_t BBSIDFrom, BBSIDTo;
 
-	int16_t PublicMsgIndex;               // Msg# for public posts
+	uint16_t PublicMsgIndex;               // Msg# for public posts
 
 	struct Msg_Txt {
 		int16_t Offsets[40];

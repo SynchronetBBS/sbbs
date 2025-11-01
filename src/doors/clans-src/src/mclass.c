@@ -74,7 +74,7 @@ static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileNa
 	FILE *fpPClass;
 	char szLine[255], *pcCurrentPos/*, szString[255]*/;
 	char szToken[MAX_TOKEN_CHARS + 1]/*, *pcAt*/;
-	unsigned int uCount;
+	size_t uCount;
 	int iKeyWord;
 	int16_t CurPClass = -1;
 	int iTemp, /*OrigPClass,*/ LastSpellSlot=0;
@@ -184,19 +184,44 @@ static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileNa
 					case 4 :    /* Wisdom */
 					case 5 :    /* ArmorStr */
 					case 6 :    /* Charisma */
-						PClass[CurPClass]->Attributes[iKeyWord - 1] = atoi(pcCurrentPos);
+						iTemp = atoi(pcCurrentPos);
+						if (iTemp < CHAR_MIN || iTemp > CHAR_MAX) {
+							printf("Invalid ability score %d\n", iTemp);
+							exit(EXIT_FAILURE);
+						}
+						PClass[CurPClass]->Attributes[iKeyWord - 1] = (char)iTemp;
 						break;
 					case 7 :    /* MaxHP */
-						PClass[CurPClass]->MaxHP = atoi(pcCurrentPos);
+						iTemp = atoi(pcCurrentPos);
+						if (iTemp < INT16_MIN || iTemp > INT16_MAX) {
+							printf("Invalid MaxHP %d\n", iTemp);
+							exit(EXIT_FAILURE);
+						}
+						PClass[CurPClass]->MaxHP = (int16_t)iTemp;
 						break;
 					case 8 :    /* Gold */
-						PClass[CurPClass]->Gold = atoi(pcCurrentPos);
+						iTemp = atoi(pcCurrentPos);
+						if (iTemp < INT16_MIN || iTemp > INT16_MAX) {
+							printf("Invalid Gold %d\n", iTemp);
+							exit(EXIT_FAILURE);
+						}
+						PClass[CurPClass]->Gold = (int16_t)iTemp;
 						break;
 					case 9 :    /* MaxSP */
-						PClass[CurPClass]->MaxSP = atoi(pcCurrentPos);
+						iTemp = atoi(pcCurrentPos);
+						if (iTemp < INT16_MIN || iTemp > INT16_MAX) {
+							printf("Invalid MaxSP %d\n", iTemp);
+							exit(EXIT_FAILURE);
+						}
+						PClass[CurPClass]->MaxSP = (int16_t)iTemp;
 						break;
 					case 10 :   /* spell */
-						PClass[CurPClass]->SpellsKnown[LastSpellSlot] = atoi(pcCurrentPos);
+						iTemp = atoi(pcCurrentPos);
+						if (iTemp < CHAR_MIN || iTemp > CHAR_MAX) {
+							printf("Invalid ability score %d\n", iTemp);
+							exit(EXIT_FAILURE);
+						}
+						PClass[CurPClass]->SpellsKnown[LastSpellSlot] = (char)iTemp;
 						LastSpellSlot++;
 						break;
 				}

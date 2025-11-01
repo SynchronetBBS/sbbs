@@ -196,7 +196,8 @@ static void ShowAllianceItems(struct Alliance *Alliance)
 static void DonationRoom(struct Alliance *Alliance)
 {
 	/* modify item stats, assume it's the player */
-	int     ItemIndex, RoomItemIndex, EmptySlot;
+	long ItemIndex, RoomItemIndex;
+	int EmptySlot;
 	int     DefaultItemIndex, iTemp;
 	char    szString[100];
 

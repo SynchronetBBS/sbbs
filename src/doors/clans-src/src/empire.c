@@ -696,7 +696,8 @@ void DonateToEmpire(struct empire *Empire)
 {
 	char *szTheOptions[15];
 	char szString[128], szFileName[30];
-	int32_t LimitingVariable, NumToDonate;
+	int32_t LimitingVariable;
+	long NumToDonate;
 
 	LoadStrings(1450, 15, szTheOptions);
 
@@ -1207,7 +1208,8 @@ static void ManageArmy(struct empire *Empire)
 {
 	char *szTheOptions[6];
 	char szString[128];
-	int32_t LimitingVariable, NumToTrain;
+	int32_t LimitingVariable;
+	long NumToTrain;
 
 	LoadStrings(360, 6, szTheOptions);
 
@@ -2252,18 +2254,15 @@ static void GetNumTroops(struct Army *OriginalArmy, struct Army *AttackingArmy)
 				break;
 			case 'A' :
 				rputs("Footmen\n\n");
-				AttackingArmy->Footmen = GetLong(ST_GTROOPS4,
-												 AttackingArmy->Footmen, OriginalArmy->Footmen);
+				AttackingArmy->Footmen = (int32_t)GetLong(ST_GTROOPS4, AttackingArmy->Footmen, OriginalArmy->Footmen);
 				break;
 			case 'B' :
 				rputs("Axemen\n\n");
-				AttackingArmy->Axemen= GetLong(ST_GTROOPS5,
-											   AttackingArmy->Axemen, OriginalArmy->Axemen);
+				AttackingArmy->Axemen = (int32_t)GetLong(ST_GTROOPS5, AttackingArmy->Axemen, OriginalArmy->Axemen);
 				break;
 			case 'C' :
 				rputs("Knights\n\n");
-				AttackingArmy->Knights = GetLong(ST_GTROOPS6,
-												 AttackingArmy->Knights, OriginalArmy->Knights);
+				AttackingArmy->Knights = (int32_t)GetLong(ST_GTROOPS6, AttackingArmy->Knights, OriginalArmy->Knights);
 				break;
 		}
 		rputs("\n");

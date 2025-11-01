@@ -29,7 +29,7 @@ void IBBS_SendSpy(struct empire *Empire, int16_t DestID);
 void IBBS_ShowLeagueAscii(void);
 void IBBS_LeagueInfo(void);
 
-void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
+void IBBS_SendPacket(int16_t PacketType, size_t PacketLength, void *PacketData,
 					 int16_t DestID);
 
 void IBBS_UpdateReset(void);

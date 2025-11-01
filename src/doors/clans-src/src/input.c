@@ -48,7 +48,7 @@ static int16_t Similar(const char *string, const char *word)
  * word.  N being the strlen of word.
  */
 {
-	int16_t NumLetters = strlen(word);
+	size_t NumLetters = strlen(word);
 	int16_t CurLetter;
 
 	for (CurLetter = 0; CurLetter < NumLetters; CurLetter++) {
@@ -73,7 +73,7 @@ static int16_t InsideStr(const char *SubString, const char *FullString, int16_t 
  * PRE: AtStart is true if you only want to check the start of the string.
  */
 {
-	int16_t NumLetters = strlen(FullString);
+	size_t NumLetters = strlen(FullString);
 	int16_t CurLetter = 0;
 
 	if (*SubString == 0)
@@ -350,8 +350,8 @@ void GetStr(char *InputStr, int16_t MaxChars, bool HiBit)
  *      can be used to toggle whether the user can enter hibit ascii.
  */
 {
-	int16_t CurChar;
-	unsigned char InputCh;
+	size_t CurChar;
+	char InputCh;
 	char Spaces[85] = "                                                                                     ";
 	char BackSpaces[85] = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
 	char TempStr[190];
@@ -370,7 +370,7 @@ void GetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 		InputCh = od_get_key(true);
 
 		if (InputCh == '\b' || InputCh == 127) {
-			if (CurChar>0) {
+			if (CurChar > 0) {
 				CurChar--;
 				rputs("\b \b");
 			}
@@ -380,7 +380,7 @@ void GetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 			InputStr[CurChar]=0;
 			break;
 		}
-		else if (InputCh== '' || InputCh == '\x1B') { // ctrl-y
+		else if (InputCh== '\x19' || InputCh == '\x1B') { // ctrl-y
 			InputStr [0] = 0;
 			strlcpy(TempStr, BackSpaces, sizeof(TempStr));
 			TempStr[ CurChar ] = 0;
@@ -391,18 +391,19 @@ void GetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 			rputs(BackSpaces);
 			CurChar = 0;
 		}
-		else if (InputCh >= '' && HiBit == false)
+		else if ((InputCh >= '\x7f' || InputCh < 0) && HiBit == false)
 			continue;
 		else if (InputCh == 0)
 			continue;
 		//      else if (iscntrl(InputCh) && InputCh < 30 || HiBit == false)
 		else if (iscntrl(InputCh) && InputCh < 30)
 			continue;
-		else if (isalpha(InputCh) && CurChar && InputStr[CurChar-1] == SPECIAL_CODE)
+		else if (isalpha(InputCh) && CurChar && InputStr[CurChar - 1] == SPECIAL_CODE)
 			continue;
 		else { /* valid character input */
-			if (CurChar==MaxChars)   continue;
-			InputStr[CurChar++]=InputCh;
+			if (CurChar == MaxChars)
+				continue;
+			InputStr[CurChar++] = InputCh;
 			InputStr[CurChar] = 0;
 			od_putch(InputCh);
 		}
@@ -425,7 +426,8 @@ char GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, cha
  *      ShowTime is set to true if the time is to be displayed in prompt.
  */
 {
-	int16_t cTemp, DefChoice;
+	size_t cTemp;
+	size_t DefChoice;
 	char KeysAndEnter[50], Choice, Spaces[] = "                      \b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
 	char TimeStr[40];
 	int16_t HoursLeft, MinutesLeft;
@@ -506,7 +508,7 @@ char GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, cha
 
 // ------------------------------------------------------------------------- //
 
-int32_t GetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
+long GetLong(char *Prompt, long DefaultVal, long Maximum)
 /*
  * This allows the user to input a long integer.
  *
@@ -519,7 +521,7 @@ int32_t GetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 	/* init screen */
 	rputs(Prompt);
 
-	snprintf(DefMax, sizeof(DefMax), " |08(|15%" PRId32 "|07; %" PRId32 "|08) |15", DefaultVal, Maximum);
+	snprintf(DefMax, sizeof(DefMax), " |08(|15%ld|07; %ld|08) |15", DefaultVal, Maximum);
 	rputs(DefMax);
 
 	/* NumDigits contains amount of digits allowed using max. value input */
@@ -558,7 +560,7 @@ int32_t GetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 			for (cTemp = 0; cTemp < CurDigit; cTemp++)
 				rputs("\b \b");
 
-			snprintf(string, sizeof(string), "%-" PRId32, Maximum);
+			snprintf(string, sizeof(string), "%-ld", Maximum);
 			string[NumDigits] = 0;
 			rputs(string);
 
@@ -577,7 +579,7 @@ int32_t GetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 		}
 		else if (InputChar == '\r' || InputChar == '\n') {
 			if (CurDigit == 0) {
-				snprintf(string, sizeof(string), "%-" PRId32, DefaultVal);
+				snprintf(string, sizeof(string), "%-ld", DefaultVal);
 				string[NumDigits] = 0;
 				rputs(string);
 
@@ -593,7 +595,7 @@ int32_t GetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum)
 				for (cTemp = 0; cTemp < CurDigit; cTemp++)
 					rputs("\b \b");
 
-				snprintf(string, sizeof(string), "%-" PRId32, Maximum);
+				snprintf(string, sizeof(string), "%-ld", Maximum);
 				string[NumDigits] = 0;
 				rputs(string);
 

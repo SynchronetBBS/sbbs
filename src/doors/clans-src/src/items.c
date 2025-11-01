@@ -58,11 +58,12 @@ static void Items_Init(void);
 void Items_FindTreasureChest(void)
 {
 	char *RandomTable, szString[128], szItemName[25];
-	int16_t CurItem, CurLevel, RandIndex, ChosenItem;
+	signed char CurItem;
+	int16_t CurLevel, RandIndex, ChosenItem;
 
 	Items_Init();
 
-	RandomTable = malloc(Items.NumItems*10);
+	RandomTable = malloc((size_t)Items.NumItems * 10);
 	CheckMem(RandomTable);
 
 	// generate random table
@@ -145,7 +146,7 @@ void ReadBook(void)
 	rputs("|0SWho will read it? |04[Enter=abort] |0F");
 
 	for (;;) {
-		cKey = toupper(od_get_key(true));
+		cKey = toupper(od_get_key(true) & 0x7f) & 0x7f;
 
 		if (cKey == '\r' || cKey == '\n') {
 			rputs(ST_ABORTED);
@@ -197,7 +198,7 @@ void ReadBook(void)
 			PClan->Member[ WhichMember ]->szName);
 	rputs(szString);
 
-	if (PClan->Items[ ItemIndex ].SpellNum != -1) {
+	if (PClan->Items[ ItemIndex ].SpellNum != -1 && PClan->Items[ ItemIndex ].SpellNum < MAX_SPELLS) {
 		snprintf(szString, sizeof(szString), "|0C%s learns the |0B%s |0Cspell.\n",
 				PClan->Member[ WhichMember ]->szName,
 				Spells[ PClan->Items[ ItemIndex ].SpellNum ]->szName);
@@ -205,7 +206,7 @@ void ReadBook(void)
 
 		// learn it
 		PClan->Member[ WhichMember ]->SpellsKnown[iTemp] =
-			PClan->Items[ ItemIndex ].SpellNum + 1;
+			(char)(PClan->Items[ ItemIndex ].SpellNum + 1);
 	}
 
 	// if HPadd
@@ -598,10 +599,11 @@ void Items_ReadScroll(struct pc *PC, struct clan *TargetClan, int16_t Target, in
 	Spells_CastSpell(PC, TargetClan, Target, PC->MyClan->Items[ScrollNum].SpellNum);
 }
 
-void Item_BuyItem(int16_t ItemType)
+void Item_BuyItem(signed char ItemType)
 {
 	int16_t ItemIndex[MAX_ITEMS];
 	int16_t iTemp, TotalItems;
+	signed char cTemp;
 	char szString[255];
 	char szKeys[MAX_ITEMS + 6], Choice;
 	int32_t ItemCosts[MAX_ITEMS], /*NewCost,*/ ItemGst[MAX_ITEMS];
@@ -617,9 +619,9 @@ void Item_BuyItem(int16_t ItemType)
 	szKeys[2] = '\r';
 	szKeys[3] = '\n';
 	szKeys[4] = ' ';
-	for (iTemp = 0; iTemp < MAX_ITEMS; iTemp++)
-		szKeys[iTemp + 5] = 'A' + iTemp;
-	szKeys[iTemp+5] = 0;
+	for (cTemp = 0; cTemp < MAX_ITEMS; cTemp++)
+		szKeys[cTemp + 5] = 'A' + cTemp;
+	szKeys[cTemp+5] = 0;
 
 	/* generate index of items which are the item type */
 	for (iTemp = 0, TotalItems = 0; iTemp < MAX_ITEMS; iTemp++) {
@@ -820,12 +822,12 @@ void Item_BuyItem(int16_t ItemType)
 					if (ItemType == I_WEAPON || ItemType == I_ARMOR || ItemType == I_SHIELD) {
 						if (Item.Attributes[iTemp])
 							Item.Attributes[iTemp] =
-								Items.Data[ ItemIndex[Choice - 'A'] ]->Attributes[iTemp] + my_random(Village.Data.MarketLevel/3 + 1) + Village.Data.MarketLevel/2;
+								(char)(Items.Data[ ItemIndex[Choice - 'A'] ]->Attributes[iTemp] + my_random(Village.Data.MarketLevel / 3 + 1) + Village.Data.MarketLevel / 2);
 					}
 					else { // scroll or book
 						if (Item.Attributes[iTemp])
 							Item.Attributes[iTemp] =
-								Items.Data[ ItemIndex[Choice - 'A'] ]->Attributes[iTemp] + my_random(Village.Data.WizardLevel/3 + 1) + Village.Data.WizardLevel/2;
+								(char)(Items.Data[ ItemIndex[Choice - 'A'] ]->Attributes[iTemp] + my_random(Village.Data.WizardLevel / 3 + 1) + Village.Data.WizardLevel / 2);
 					}
 
 					Item.ReqAttributes[iTemp] =
@@ -843,7 +845,7 @@ void Item_BuyItem(int16_t ItemType)
 						Item.Attributes[ATTR_DEXTERITY] += my_random(2);
 
 					/* make it have less energy -- it'll have between 0 and 20% less energy */
-					Item.Energy = (Item.Energy*(my_random(20)+80))/100;
+					Item.Energy = (int16_t)((Item.Energy * (my_random(20) + 80)) / 100);
 				}
 				else if (MaterialChoice == MT_LACONIA) {
 					/* make it stronger by giving higher strength */
@@ -855,7 +857,7 @@ void Item_BuyItem(int16_t ItemType)
 						Item.Attributes[ATTR_STRENGTH] += (my_random(2) + 1);
 
 					/* make it have longer lifespan but higher strength reqattrib */
-					Item.Energy = (Item.Energy*(my_random(40)+90))/100;
+					Item.Energy = (int16_t)((Item.Energy * (my_random(40) + 90)) / 100);
 				}
 
 				// make it super item (+)

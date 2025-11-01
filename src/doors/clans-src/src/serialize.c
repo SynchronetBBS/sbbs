@@ -10,6 +10,14 @@
 	assert(remain);           \
 	if (remain < sizeof(char)) \
 		return SIZE_MAX;    \
+	*(char *)(dst++) = x;        \
+	remain--;                     \
+} while(0)
+
+#define pack_uint8_t(x) do {     \
+	assert(remain);           \
+	if (remain < sizeof(char)) \
+		return SIZE_MAX;    \
 	*(dst++) = x;                \
 	remain--;                     \
 } while(0)
@@ -196,7 +204,7 @@ s_Message_s(const struct Message *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->Flags);
 	pack_int16_t(s->BBSIDFrom);
 	pack_int16_t(s->BBSIDTo);
-	pack_int16_t(s->PublicMsgIndex);
+	pack_uint16_t(s->PublicMsgIndex);
 	pack_struct(&s->Data, Msg_Txt);
 
 	return (size_t)(dst - (uint8_t *)bufptr);
@@ -384,7 +392,7 @@ s_Spell_s(const struct Spell *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->SP);
 	pack_bool(s->StrengthCanReduce);
 	pack_bool(s->WisdomCanReduce);
-	pack_char(s->MultiAffect << 7);
+	pack_uint8_t((uint8_t)(s->MultiAffect << 7));
 
 	return (size_t)(dst - (uint8_t *)bufptr);
 }
@@ -415,7 +423,7 @@ s_pc_s(const struct pc *s, void *bufptr, size_t bufsz)
 	pack_charArr(s->SpellsKnown);
 	pack_structArr(s->SpellsInEffect, SpellsInEffect);
 	pack_int16_t(s->Difficulty);
-	pack_char((s->Undead << 7) | s->DefaultAction);
+	pack_uint8_t((uint8_t)((s->Undead << 7) | s->DefaultAction));
 	crc = CRCValue(bufptr, dst - (uint8_t*)bufptr);
 	pack_int32_t(crc);
 
@@ -796,7 +804,7 @@ s_clan_s(const struct clan *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->WorldStatus);
 	pack_int16_t(s->DestinationBBS);
 	pack_char(s->VaultWithdrawals);
-	pack_int16_t(s->PublicMsgIndex);
+	pack_uint16_t(s->PublicMsgIndex);
 	pack_int16_tArr2(s->ClanCombatToday, MAX_CLANCOMBAT, 2);
 	pack_int16_t(s->ClanWars);
 	pack_ptrArr(s->Member);

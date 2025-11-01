@@ -39,7 +39,8 @@ uint8_t serBuf[4096];
 int main(int argc, char *argv[])
 {
 	FILE *fFrom, *fTo;
-	int16_t iTemp, CurString;
+	int CurString;
+	size_t iTemp;
 	char TempString[800], String[800], FromFile[PATH_SIZE], ToFile[PATH_SIZE];
 
 	printf("The Clans Language File Compiler v.1.0 (c) copyright 1997 Allen Ussher\n\n");

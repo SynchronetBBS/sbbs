@@ -114,8 +114,8 @@ static int search_and_construct_ffblk(WIN32_FIND_DATA *, struct ffblk *, bool);
 struct ibbs IBBS;
 
 static bool NoMSG[MAX_IBBSNODES];
-
 static void IBBS_AddToGame(struct clan *Clan, bool WasLost);
+static void MoveToBad(const char *szOldFilename);
 
 // ------------------------------------------------------------------------- //
 /* Function Procedure:
@@ -126,7 +126,7 @@ static void IBBS_SendFileInPacket(int16_t DestID, int16_t PacketType, char *szFi
 {
 	FILE *fp;
 	char *cpBuffer;
-	int32_t lFileSize;
+	long lFileSize;
 
 	if (IBBS.Initialized == false) {
 		System_Error("IBBS not initialized for call.\n");
@@ -141,16 +141,19 @@ static void IBBS_SendFileInPacket(int16_t DestID, int16_t PacketType, char *szFi
 	lFileSize = ftell(fp);
 
 	// allocate memory for it
-	cpBuffer = malloc(lFileSize);
+	if (lFileSize < 0)
+		System_Error("Negative Filesize in IBBS_SendFileInPacket()");
+	cpBuffer = malloc((size_t)lFileSize);
 	CheckMem(cpBuffer);
 
 	// now read it in
 	fseek(fp, 0L, SEEK_SET);
-	fread(cpBuffer, lFileSize, sizeof(char), fp);
+	if (fread(cpBuffer, (size_t)lFileSize, sizeof(char), fp) != 1)
+		System_Error("Error reading file in IBBS_SendFileInPacket()");
 
 	fclose(fp);
 
-	IBBS_SendPacket(PacketType, lFileSize, cpBuffer, DestID);
+	IBBS_SendPacket(PacketType, (size_t)lFileSize, cpBuffer, DestID);
 
 	free(cpBuffer);
 }
@@ -177,7 +180,7 @@ void IBBS_DistributeNDX(void)
 	FILE *fpNDX;
 	char *cpBuffer;
 	int16_t CurBBS;
-	int32_t lFileSize;
+	long lFileSize;
 
 	DisplayStr("Distributing new NDX file, please wait...\n");
 
@@ -190,14 +193,16 @@ void IBBS_DistributeNDX(void)
 	// find out length of file
 	fseek(fpNDX, 0L, SEEK_END);
 	lFileSize = ftell(fpNDX);
+	if (lFileSize < 0)
+		System_Error("Negative file size in IBBS_DistributeNDX()");
 
 	// allocate memory for it
-	cpBuffer = malloc(lFileSize);
+	cpBuffer = malloc((size_t)lFileSize);
 	CheckMem(cpBuffer);
 
 	// now read it in
 	fseek(fpNDX, 0L, SEEK_SET);
-	fread(cpBuffer, lFileSize, sizeof(char), fpNDX);
+	fread(cpBuffer, (size_t)lFileSize, sizeof(char), fpNDX);
 
 	fclose(fpNDX);
 
@@ -209,7 +214,7 @@ void IBBS_DistributeNDX(void)
 		if (CurBBS+1 == IBBS.Data.BBSID)
 			continue;
 
-		IBBS_SendPacket(PT_NEWNDX, lFileSize, cpBuffer, CurBBS+1);
+		IBBS_SendPacket(PT_NEWNDX, (size_t)lFileSize, cpBuffer, CurBBS+1);
 	}
 
 	free(cpBuffer);
@@ -824,12 +829,12 @@ static void IBBS_BackupMaint(void)
 			EncryptWrite_s(Packet, &Packet, fpNew, XOR_PACKET);
 
 			/* write buffer if any */
-			if (Packet.PacketLength) {
+			if (Packet.PacketLength > 0) {
 				//printf("length found\n");
-				cpBuffer = malloc(Packet.PacketLength);
+				cpBuffer = malloc((size_t)Packet.PacketLength);
 				CheckMem(cpBuffer);
-				EncryptRead(cpBuffer, Packet.PacketLength, fpOld, XOR_PACKET);
-				EncryptWrite(cpBuffer, Packet.PacketLength, fpNew, XOR_PACKET);
+				EncryptRead(cpBuffer, (size_t)Packet.PacketLength, fpOld, XOR_PACKET);
+				EncryptWrite(cpBuffer, (size_t)Packet.PacketLength, fpNew, XOR_PACKET);
 				free(cpBuffer);
 			}
 		}
@@ -1126,23 +1131,23 @@ static void GetTroopsTraveling(struct LeavingData *LeavingData)
 		switch (cInput) {
 			case 'A' :
 				rputs("Followers\n\n");
-				LeavingData->Followers = GetLong("|0SHow many followers?",
-												 LeavingData->Followers, PClan->Empire.Army.Followers);
+				LeavingData->Followers = (int32_t)GetLong("|0SHow many followers?",
+				    LeavingData->Followers, PClan->Empire.Army.Followers);
 				break;
 			case 'B' :
 				rputs("Footmen\n\n");
-				LeavingData->Footmen = GetLong("|0SHow many footmen?",
-											   LeavingData->Footmen, PClan->Empire.Army.Footmen);
+				LeavingData->Footmen = (int32_t)GetLong("|0SHow many footmen?",
+				    LeavingData->Footmen, PClan->Empire.Army.Footmen);
 				break;
 			case 'C' :
 				rputs("Axemen\n\n");
-				LeavingData->Axemen = GetLong("|0SHow many Axemen?",
-											  LeavingData->Axemen , PClan->Empire.Army.Axemen);
+				LeavingData->Axemen = (int32_t)GetLong("|0SHow many Axemen?",
+				    LeavingData->Axemen , PClan->Empire.Army.Axemen);
 				break;
 			case 'D' :
 				rputs("Knights\n\n");
-				LeavingData->Knights = GetLong("|0SHow many Knights?",
-											   LeavingData->Knights, PClan->Empire.Army.Knights);
+				LeavingData->Knights = (int32_t)GetLong("|0SHow many Knights?",
+				    LeavingData->Knights, PClan->Empire.Army.Knights);
 				break;
 		}
 		rputs("\n");
@@ -1237,20 +1242,21 @@ void IBBS_SeeVillages(bool Travel)
 	/* display last stats for that village -- ruler, tax rate, etc. */
 	/* if user enters blank line, quit */
 
-	int16_t iTemp, NumBBSes, WhichBBS;
+	int16_t NumBBSes, WhichBBS;
 	char szString[128], BBSIndex[MAX_IBBSNODES];
+	signed char cTemp;
 	const char *pszBBSNames[MAX_IBBSNODES];
 	bool ShowInitially;
 
 	NumBBSes = 0;
-	for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
-		pszBBSNames[iTemp] = NULL;
+	for (cTemp = 0; cTemp < MAX_IBBSNODES; cTemp++) {
+		pszBBSNames[cTemp] = NULL;
 
-		if (IBBS.Data.Nodes[iTemp].Active == false)
+		if (IBBS.Data.Nodes[cTemp].Active == false)
 			continue;
 
-		pszBBSNames [ NumBBSes ] = VillageName(iTemp + 1);
-		BBSIndex[NumBBSes] = iTemp;
+		pszBBSNames [ NumBBSes ] = VillageName(cTemp + 1);
+		BBSIndex[NumBBSes] = cTemp;
 		NumBBSes++;
 	}
 
@@ -1529,8 +1535,10 @@ static void IBBS_LoadNDX(void)
 	char szLine[400], *pcCurrentPos, szString[400];
 	char szToken[MAX_TOKEN_CHARS + 1];
 	int16_t iKeyWord;
-	int16_t CurBBS = -1;
-	int16_t iTemp, CurSlot;
+	signed char CurBBS = -1;
+	signed char cTemp;
+	int16_t CurSlot;
+	int iTemp;
 	bool UseHost = false;           // set if using host method of routing
 	bool InDescription = false;
 
@@ -1576,13 +1584,15 @@ static void IBBS_LoadNDX(void)
 		for (iKeyWord = 0; iKeyWord < MAX_NDX_WORDS; ++iKeyWord) {
 			/* If keyword matches */
 			if (strcasecmp(szToken, papszNdxKeyWords[iKeyWord]) == 0) {
+				int TempInt;
 				/* Process token */
 				switch (iKeyWord) {
 					case 5 :    /* num of BBS in list */
 						/* see if out of items memory yet */
-						CurBBS = atoi(pcCurrentPos) - 1;
-						if (CurBBS < 0 || CurBBS >= MAX_IBBSNODES)
+						TempInt = atoi(pcCurrentPos) - 1;
+						if (TempInt < 0 || TempInt >= MAX_IBBSNODES)
 							System_Error("BBSId out of bounds!\n");
+						CurBBS = (char)TempInt;
 
 						if (Points[CurBBS] == NULL) {
 							Points[CurBBS] = malloc(sizeof(struct Point));
@@ -1655,6 +1665,9 @@ static void IBBS_LoadNDX(void)
 								break;
 
 							iTemp = atoi(szString);
+							if (iTemp < 1 || iTemp > MAX_IBBSNODES)
+								System_Error("Invalid Host value");
+							cTemp = (signed char)iTemp;
 
 							// REP: delete later
 							//printf("Linking %d through %d\n", iTemp, CurBBS+1);
@@ -1662,20 +1675,20 @@ static void IBBS_LoadNDX(void)
 
 							/* Node "iTemp" is a node of this host */
 
-							if (Points[iTemp-1] == NULL) {
+							if (Points[cTemp-1] == NULL) {
 								//printf("Initializing node %d\n", iTemp);
-								Points[iTemp-1] = (struct Point *) malloc(sizeof(struct Point));
-								CheckMem(Points[iTemp-1]);
+								Points[cTemp-1] = (struct Point *) malloc(sizeof(struct Point));
+								CheckMem(Points[cTemp-1]);
 
 								/* nullify all links since initialized it */
 								for (CurSlot = 0; CurSlot < MAX_IBBSNODES; CurSlot++)
-									Points[iTemp-1]->ForwardLinks[CurSlot] = -1;
+									Points[cTemp-1]->ForwardLinks[CurSlot] = -1;
 
-								Points[iTemp-1]->BackLink = -1;
+								Points[cTemp-1]->BackLink = -1;
 							}
 
 
-							Points[ iTemp-1 ]->BackLink = CurBBS;
+							Points[ cTemp-1 ]->BackLink = CurBBS;
 
 							/* find open slot for this forward link */
 							for (CurSlot = 0; CurSlot < MAX_IBBSNODES; CurSlot++)
@@ -1683,7 +1696,7 @@ static void IBBS_LoadNDX(void)
 									break;
 
 							/* set up forwardlink */
-							Points[CurBBS]->ForwardLinks[CurSlot] = iTemp-1;
+							Points[CurBBS]->ForwardLinks[CurSlot] = cTemp - 1;
 
 						}
 						break;
@@ -1722,7 +1735,7 @@ static void IBBS_LoadNDX(void)
 			//printf("searching for %d\n", iTemp+1);
 			FoundPoint = false;
 			StartingPoint = -1;
-			FindPoint(iTemp, IBBS.Data.BBSID-1, IBBS.Data.BBSID-1);
+			FindPoint((int16_t)iTemp, IBBS.Data.BBSID-1, IBBS.Data.BBSID-1);
 
 			IBBS.Data.Nodes[iTemp].Info.RouteThrough = StartingPoint+1;
 			//printf("%d routed through %d\n", iTemp+1, IBBS.Data.Nodes[iTemp].Info.RouteThrough);
@@ -1747,6 +1760,7 @@ static void IBBS_ProcessRouteConfig(void)
 	char *pcCurrentPos;
 	char szToken[MAX_TOKEN_CHARS + 1], szFirstToken[20], szSecondToken[20];
 	int16_t iKeyWord, iTemp;
+	int TempInt, TempInt2;
 
 	fpRouteConfigFile = _fsopen("route.cfg", "rt", _SH_DENYWR);
 	if (!fpRouteConfigFile) {
@@ -1787,11 +1801,20 @@ static void IBBS_ProcessRouteConfig(void)
 								if (IBBS.Data.Nodes[iTemp].Active == false)
 									continue;
 
-								IBBS.Data.Nodes[iTemp].Info.RouteThrough = atoi(szSecondToken);
+								TempInt = atoi(szSecondToken);
+								if (TempInt < 1 || TempInt > MAX_IBBSNODES)
+									System_Error("Invalid Route ALL Through in route.cfg");
+								IBBS.Data.Nodes[iTemp].Info.RouteThrough = (int16_t)TempInt;
 							}
 						}
 						else {
-							IBBS.Data.Nodes[ atoi(szFirstToken)-1 ].Info.RouteThrough = atoi(szSecondToken);
+							TempInt = atoi(szSecondToken);
+							if (TempInt < 1 || TempInt > MAX_IBBSNODES)
+								System_Error("Invalid Target BBS ID in route.cfg");
+							TempInt2 = atoi(szFirstToken) - 1;
+							if (TempInt2 < 1 || TempInt2 > MAX_IBBSNODES)
+								System_Error("Invalid Next BBS in route.cfg");
+							IBBS.Data.Nodes[ TempInt2 ].Info.RouteThrough = (int16_t)TempInt;
 							//printf("Mail to %d being routed through %d\n", atoi(szFirstToken), atoi(szSecondToken));
 						}
 						break;
@@ -2107,7 +2130,7 @@ void IBBS_ShowLeagueAscii(void)
 
 // ------------------------------------------------------------------------- //
 
-void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
+void IBBS_SendPacket(int16_t PacketType, size_t PacketLength, void *PacketData,
 					 int16_t DestID)
 {
 	struct Packet Packet;
@@ -2119,6 +2142,9 @@ void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
 		return;
 	}
 
+	if (PacketLength > INT32_MAX)
+		System_Error("Packet too long in IBBS_SendPacket()");
+
 	Packet.Active = true;
 
 	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
@@ -2127,7 +2153,7 @@ void IBBS_SendPacket(int16_t PacketType, int32_t PacketLength, void *PacketData,
 	Packet.BBSIDTo = DestID;
 
 	Packet.PacketType = PacketType;
-	Packet.PacketLength = PacketLength;
+	Packet.PacketLength = (int32_t)PacketLength;
 
 	fpOutboundDat = _fsopen(ST_OUTBOUNDFILE, "wb", _SH_DENYWR);
 	if (!fpOutboundDat) {
@@ -2593,7 +2619,7 @@ static void ComeBack(int16_t ClanID[2], int16_t BBSID)
 }
 
 
-static bool CheckID(int16_t ID, const char *name)
+static int16_t CheckID(int ID, const char *name)
 {
 	int16_t idx;
 	char szString[256];
@@ -2603,23 +2629,23 @@ static bool CheckID(int16_t ID, const char *name)
 		DisplayStr(szString);
 		return false;
 	}
-	idx = ID - 1;
+	idx = (int16_t)(ID - 1);
 	if (!IBBS.Data.Nodes[idx].Active) {
 		snprintf(szString, sizeof(szString), "|04x |12%s BBS ID is inactive, skipping\n", name);
 		DisplayStr(szString);
-		return false;
+		return 0;
 	}
-	return true;
+	return (int16_t)ID;
 }
 
-static bool CheckSourceID(int16_t ID)
+static int16_t CheckSourceID(int ID)
 {
 	return (CheckID(ID, "Source"));
 }
 
-static bool CheckDestinationID(int16_t ID)
+static int16_t CheckDestinationID(int ID)
 {
-	return (CheckID(ID, "Source"));
+	return (CheckID(ID, "Destination"));
 }
 
 static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
@@ -2691,15 +2717,23 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			continue;
 		}
 
+		if (Packet.PacketLength < 0) {
+			fclose(fp);
+			snprintf(szString, sizeof(szString), "|08* |07Packet %s has negative size\n", szFileName);
+			DisplayStr(szString);
+			MoveToBad(szFileName);
+			return false;
+		}
+
 		/* see if this packet is for you.  if not, reroute it to where it
 		    belongs */
 
 		if (Packet.BBSIDTo != IBBS.Data.BBSID) {
 			/* get packet info and write it to file */
 			if (Packet.PacketLength) {
-				pcBuffer = malloc(Packet.PacketLength);
+				pcBuffer = malloc((size_t)Packet.PacketLength);
 				CheckMem(pcBuffer);
-				EncryptRead(pcBuffer, Packet.PacketLength, fp, XOR_PACKET);
+				EncryptRead(pcBuffer, (size_t)Packet.PacketLength, fp, XOR_PACKET);
 			}
 			else
 				pcBuffer = NULL;
@@ -2716,7 +2750,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			}
 			EncryptWrite_s(Packet, &Packet, fpNewFile, XOR_PACKET);
 			if (Packet.PacketLength)
-				EncryptWrite(pcBuffer, Packet.PacketLength, fpNewFile, XOR_PACKET);
+				EncryptWrite(pcBuffer, (size_t)Packet.PacketLength, fpNewFile, XOR_PACKET);
 
 			fclose(fpNewFile);
 
@@ -2765,12 +2799,18 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			// read in message from file
 			EncryptRead_s(Message, &Message, fp, XOR_PACKET);
 
+			if (Message.Data.Length < 0) {
+				fclose(fp);
+				DisplayStr("|08- |20negative message length\n");
+				MoveToBad(szFileName);
+			}
+
 			// allocate mem for text
-			Message.Data.MsgTxt = malloc(Message.Data.Length);
+			Message.Data.MsgTxt = malloc((size_t)Message.Data.Length);
 			CheckMem(Message.Data.MsgTxt);
 
 			// load message text
-			EncryptRead(Message.Data.MsgTxt, Message.Data.Length, fp, XOR_PACKET);
+			EncryptRead(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_PACKET);
 
 			// write message
 			PostMsj(&Message);
@@ -3004,16 +3044,16 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			DisplayStr("|08- |07ndx found\n");
 
 			// allocate mem for world.ndx file
-			pcBuffer = malloc(Packet.PacketLength);
+			pcBuffer = malloc((size_t)Packet.PacketLength);
 			CheckMem(pcBuffer);
 
 			// load world.ndx
-			EncryptRead(pcBuffer, Packet.PacketLength, fp, XOR_PACKET);
+			EncryptRead(pcBuffer, (size_t)Packet.PacketLength, fp, XOR_PACKET);
 
 			// write to file
 			fpWorldNDX = _fsopen("world.ndx", "wb", _SH_DENYRW);
 			if (fpWorldNDX) {
-				fwrite(pcBuffer, Packet.PacketLength, 1, fpWorldNDX);
+				fwrite(pcBuffer, (size_t)Packet.PacketLength, 1, fpWorldNDX);
 				fclose(fpWorldNDX);
 			}
 
@@ -3024,16 +3064,16 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			DisplayStr("|08- |07userlist found\n");
 
 			// allocate mem for world.ndx file
-			pcBuffer = malloc(Packet.PacketLength);
+			pcBuffer = malloc((size_t)Packet.PacketLength);
 			CheckMem(pcBuffer);
 
 			// load file in
-			EncryptRead(pcBuffer, Packet.PacketLength, fp, XOR_PACKET);
+			EncryptRead(pcBuffer, (size_t)Packet.PacketLength, fp, XOR_PACKET);
 
 			// write to file
 			fpUserList = _fsopen("userlist.dat", "wb", _SH_DENYRW);
 			if (fpUserList) {
-				fwrite(pcBuffer, Packet.PacketLength, 1, fpUserList);
+				fwrite(pcBuffer, (size_t)Packet.PacketLength, 1, fpUserList);
 				fclose(fpUserList);
 			}
 
@@ -3043,6 +3083,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 		else {
 			DisplayStr("|04x |12Unknown packet type!  ABORTING!!\n");
 			fclose(fp);
+			MoveToBad(szFileName);
 			return false;
 		}
 	}
@@ -3204,7 +3245,7 @@ static void SetSkip(const char *fname, const char *sname, void *cbdata)
  * This could be leveraged by a clever attacker because the filenames are
  * mostly predictable.
  */
-static bool CheckMessageFile(const char *pszFileName, tIBInfo *InterBBSInfo, uint16_t SourceID)
+static bool CheckMessageFile(const char *pszFileName, tIBInfo *InterBBSInfo, int16_t SourceID)
 {
 	bool Found = false;
 
@@ -3225,7 +3266,7 @@ static void DeleteMessageWithFile(const char *pszFileName, tIBInfo *InterBBSInfo
 	MessageFileIterate(pszFileName, InterBBSInfo, 0, NULL, DeleteFound, NULL);
 }
 
-void MoveToBad(const char *szOldFilename)
+static void MoveToBad(const char *szOldFilename)
 {
 	char szNewFileName[PATH_SIZE + 4];
 
@@ -3290,12 +3331,12 @@ void IBBS_PacketIn(void)
 		/* keep calling till no more messages to read */
 		while (!Done) {
 			char srcID[4];
-			uint16_t srcBBSID;
+			int16_t srcBBSID;
 
 			memcpy(srcID, &szFileName2[2], 3);
 			srcID[3] = 0;
-			srcBBSID = atoi(srcID);
-			if (CheckSourceID(srcBBSID)) {
+			srcBBSID = CheckSourceID(atoi(srcID));
+			if (srcBBSID) {
 				strlcpy(szFileName, Config.szInboundDirs[nInbound], sizeof(szFileName));
 				//strlcat(szFileName, ffblk.ff_name, sizeof(szFileName));
 				strlcat(szFileName, szFileName2, sizeof(szFileName));

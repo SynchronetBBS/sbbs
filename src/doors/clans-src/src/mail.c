@@ -71,7 +71,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define ALL_VILLAGES    -1
 
-#define MSGTXT_SZ	4000
+#define MSGTXT_SZ	4000U
 
 static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t CurLine);
 static void SendMsj(struct Message *Message, int16_t WhichVillage);
@@ -122,6 +122,7 @@ static void GetUserNames(const char *apszUserNames[50], int16_t WhichVillage, in
 
 static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 {
+	size_t stTemp;
 	struct Message Message;
 	FILE *fp;
 
@@ -156,7 +157,10 @@ static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 
 	strlcpy(Message.Data.MsgTxt, szReply, sizeof(Message.Data.MsgTxt));
 
-	Message.Data.Length = strlen(szReply) + 1;
+	stTemp = strlen(szReply) + 1;
+	if (stTemp > INT16_MAX)
+		System_Error("Message Text too long");
+	Message.Data.Length = (int16_t)stTemp;
 	Message.Data.NumLines = 1;
 	Message.Data.Offsets[0] = 0;
 	Message.Data.Offsets[1] = 0;
@@ -169,7 +173,7 @@ static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 		return;
 	}
 	EncryptWrite_s(Message, &Message, fp, XOR_MSG);
-	EncryptWrite(Message.Data.MsgTxt, Message.Data.Length, fp, XOR_MSG);
+	EncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_MSG);
 	fclose(fp);
 
 	free(Message.Data.MsgTxt);
@@ -333,6 +337,8 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 			// else continue
 			NumLines--;
 			CurChar -= (strlen(OldLine) + 1);
+			if (CurChar < 0)
+				CurChar = 0;
 
 			strlcpy(Line1, OldLine, sizeof(Line1));
 
@@ -347,8 +353,10 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 
 
 		// else continue
+		if (CurChar < 0)
+			CurChar = 0;
 		Message.Data.Offsets[NumLines] = CurChar;
-		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, MSGTXT_SZ - CurChar);
+		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, (size_t)(MSGTXT_SZ - (unsigned)CurChar));
 		CurChar += (strlen(Line1) + 1);
 
 		strlcpy(OldLine, Line1, sizeof(OldLine));
@@ -362,7 +370,8 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 	}
 	Message.Data.Length = CurChar;
 	Message.Data.NumLines = NumLines;
-
+	if (Message.Data.Length < 0)
+		System_Error("Negative Message Length in MyWriteMessage2()");
 
 	// save message
 
@@ -374,7 +383,7 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 			return;
 		}
 		EncryptWrite_s(Message, &Message, fp, XOR_MSG);
-		EncryptWrite(Message.Data.MsgTxt, Message.Data.Length, fp, XOR_MSG);
+		EncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_MSG);
 		fclose(fp);
 	}
 
@@ -389,9 +398,10 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 
 // ------------------------------------------------------------------------- //
 static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct Message *Reply,
-				 int16_t CurLine)
+				 int CurLine)
 {
-	int16_t cur_char = 0, i, FirstLine;
+	size_t cur_char = 0, i;
+	int FirstLine;
 	unsigned char ch, key;
 	char string[128];
 
@@ -428,7 +438,7 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 			}
 		}
 
-		ch = od_get_key(true);
+		ch = (unsigned char)od_get_key(true);
 		if (ch == '\b') {
 			if (cur_char>0) {
 				cur_char--;
@@ -456,24 +466,16 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 			NextString[0]=0;
 			break;
 		}
-		/*
-		        else if (ch == '\t')    // tab
-		        {
-		            rputs("     ");
-		            String[cur_char] = '\t';
-		            cur_char++;
-		        }
-		*/
 		else if (iscntrl(ch) && ch != '\r' && ch != '\n')
 			continue;
 		else if (ch == '/' && cur_char == 0) {
 			rputs(ST_INPUTSTRCOMMAND);
 
-			key = toupper(od_get_answer("SACQLR?/\r\n"));
+			key = toupper(od_get_answer("SACQLR?/\r\n")) & 0x7F;
 
 			if (key == '?') {
 				rputs(ST_INPUTSTRHELP2);
-				key = toupper(od_get_answer("SACQLR/\r\n"));
+				key = toupper(od_get_answer("SACQLR/\r\n")) & 0x7F;
 			}
 
 			if (key == 'C' || key == '\r' || key == '\n') {
@@ -527,16 +529,6 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 				rputs(ST_LONGSPACES);
 				rputs(ST_MAILENTERCOLOR);
 			}
-			/*
-			else if (key == 'W')
-			{
-			  rputs("\r|05Enter new wrap-around detection width x10 [|1379|05] : |05");
-			  i = (od_get_answer("2345678")-'0') * 10  - 1;
-			  *JustLen = i;
-			  rputs("\r                                                                     \r");
-			  rputs(ST_MAILENTERCOLOR);
-			}
-			*/
 			else if (key == 'L') {
 				rputs("\n");
 				NextString[0]=0;
@@ -585,9 +577,9 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 			}
 		}
 		else {
-			String[cur_char]=ch;
+			String[cur_char]=(char)ch;
 			cur_char++;
-			od_putch(ch);
+			od_putch((char)ch);
 		}
 	}
 
@@ -600,7 +592,8 @@ static void Reply_Message(struct Message *Reply)
 	struct Message Message;
 	FILE *fp;
 
-	int16_t result, NumLines = 0, CurChar = 0, i, FirstLine, LastLine;
+	int16_t CurChar = 0;
+	int result, NumLines = 0, i, FirstLine, LastLine;
 	int16_t Quoted = false;
 	char string[128], JustLen = 78;
 	char Line1[128], Line2[128], OldLine[128];
@@ -669,29 +662,33 @@ static void Reply_Message(struct Message *Reply)
 			if ((LastLine < 1 || LastLine > Reply->Data.NumLines || LastLine < FirstLine) == false) {
 				if (FirstLine != LastLine) {
 					for (i = FirstLine;  i <= LastLine; i++) {
-						Message.Data.Offsets[NumLines] = CurChar;
-						strlcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET, MSGTXT_SZ - CurChar);
-						strlcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[i-1]], MSGTXT_SZ - CurChar);
-						Message.Data.MsgTxt[CurChar+78] = 0;
+						if (CurChar >= MSGTXT_SZ || CurChar < 0)
+							System_Error("Mem error in mail\n%P");
 
-						if (CurChar >= MSGTXT_SZ)
-							rputs("Mem error in mail\n%P");
+						Message.Data.Offsets[NumLines] = CurChar;
+						strlcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET, MSGTXT_SZ - (size_t)CurChar);
+						strlcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[i-1]], MSGTXT_SZ - (size_t)CurChar);
+						Message.Data.MsgTxt[CurChar + 78] = 0;
 
 						CurChar += (strlen(&Message.Data.MsgTxt[CurChar]) + 1);
+						if (CurChar >= MSGTXT_SZ || CurChar < 0)
+							System_Error("Mem error in mail\n%P");
 
 						NumLines++;
 					}
 				}
 				else {
+					if (CurChar >= MSGTXT_SZ || CurChar < 0)
+						System_Error("Mem error in mail\n%P");
+
 					Message.Data.Offsets[NumLines] = CurChar;
-					strlcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET, MSGTXT_SZ - CurChar);
-					strlcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[FirstLine-1]], MSGTXT_SZ - CurChar);
+					strlcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET, MSGTXT_SZ - (size_t)CurChar);
+					strlcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[FirstLine-1]], MSGTXT_SZ - (size_t)CurChar);
 					Message.Data.MsgTxt[CurChar+78] = 0;
 
 					CurChar += (strlen(&Message.Data.MsgTxt[CurChar]) + 1);
-
-					if (CurChar >= MSGTXT_SZ)
-						rputs("Mem error in mail\n");
+					if (CurChar >= MSGTXT_SZ || CurChar < 0)
+						System_Error("Mem error in mail\n%P");
 
 					NumLines++;
 				}
@@ -799,6 +796,8 @@ static void Reply_Message(struct Message *Reply)
 			// else continue
 			NumLines--;
 			CurChar -= (strlen(OldLine) + 1);
+			if (CurChar < 0)
+				CurChar = 0;
 
 			strlcpy(Line1, OldLine, sizeof(Line1));
 
@@ -810,23 +809,26 @@ static void Reply_Message(struct Message *Reply)
 			Line2[0] = 0;
 			continue;
 		}
+		if (CurChar >= MSGTXT_SZ || CurChar < 0)
+			System_Error("Mem error in mail\n%P");
 
-		// else continue
 		Message.Data.Offsets[NumLines] = CurChar;
-		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, MSGTXT_SZ - CurChar);
+		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, MSGTXT_SZ - (size_t)CurChar);
 		CurChar += (strlen(Line1) + 1);
+		if (CurChar >= MSGTXT_SZ || CurChar < 0)
+			System_Error("Mem error in mail\n%P");
 
 		strlcpy(OldLine, Line1, sizeof(OldLine));
 		strlcpy(Line1, Line2, sizeof(Line1));
 		NumLines++;
 
-		if (NumLines == 40) {
+		if (NumLines >= 40) {
 			rputs(ST_MAIL40LINES);
 			break;
 		}
 	}
 	Message.Data.Length = CurChar;
-	Message.Data.NumLines = NumLines;
+	Message.Data.NumLines = (int16_t)NumLines;
 
 	// save message
 	if ((GlobalPost && WhichVillage == -1) || GlobalPost == false) {
@@ -837,7 +839,7 @@ static void Reply_Message(struct Message *Reply)
 			return;
 		}
 		EncryptWrite_s(Message, &Message, fp, XOR_MSG);
-		EncryptWrite(Message.Data.MsgTxt, Message.Data.Length, fp, XOR_MSG);
+		EncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_MSG);
 		fclose(fp);
 	}
 
@@ -873,6 +875,9 @@ bool Mail_Read(void)
 			fclose(fp);
 			break;
 		}
+
+		if (Message.Data.Length < 0)
+			System_Error("Negative message in Mail_Read()");
 
 		CurOffset = ftell(fp);
 
@@ -946,9 +951,9 @@ bool Mail_Read(void)
 
 
 		// display message body
-		Message.Data.MsgTxt = malloc(Message.Data.Length);
+		Message.Data.MsgTxt = malloc((size_t)Message.Data.Length);
 		CheckMem(Message.Data.MsgTxt);
-		EncryptRead(Message.Data.MsgTxt, Message.Data.Length, fp, XOR_MSG);
+		EncryptRead(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_MSG);
 		CurOffset = ftell(fp);
 		fclose(fp);
 
@@ -1084,7 +1089,7 @@ bool Mail_Read(void)
 
 static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t CurLine)
 {
-	int16_t cur_char = 0, i;
+	size_t cur_char = 0, i;
 	unsigned char ch, key;
 
 	rputs(ST_MAILENTERCOLOR);
@@ -1120,7 +1125,7 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 			}
 		}
 
-		ch = od_get_key(false);
+		ch = (unsigned char)od_get_key(false);
 		if (ch=='\b') {
 			if (cur_char>0) {
 				cur_char--;
@@ -1159,11 +1164,11 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 		else if (ch == '/' && cur_char == 0) {
 			rputs(ST_INPUTSTRCOMMAND);
 
-			key = toupper(od_get_answer("SACLR?/\r\n"));
+			key = toupper(od_get_answer("SACLR?/\r\n") & 0x7f) & 0x7f;
 
 			if (key == '?') {
 				rputs(ST_INPUTSTRHELP);
-				key = toupper(od_get_answer("SACLR/\r\n"));
+				key = toupper(od_get_answer("SACLR/\r\n") & 0x7f) & 0x7f;
 			}
 
 			if (key == 'C' || key == '\r' || key == '\n') {
@@ -1232,9 +1237,9 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 			}
 		}
 		else {
-			String[cur_char]=ch;
+			String[cur_char] = (char)ch;
 			cur_char++;
-			od_putch(ch);
+			od_putch((char)ch);
 		}
 	}
 
@@ -1386,6 +1391,8 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 			// else continue
 			NumLines--;
 			CurChar -= (strlen(OldLine) + 1);
+			if (CurChar < 0)
+				CurChar = 0;
 
 			strlcpy(Line1, OldLine, sizeof(Line1));
 
@@ -1398,11 +1405,15 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 			continue;
 		}
 
+		if (CurChar >= MSGTXT_SZ || CurChar < 0)
+			System_Error("Mem error in mail\n%P");
 
 		// else continue
 		Message.Data.Offsets[NumLines] = CurChar;
-		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, MSGTXT_SZ - CurChar);
+		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, MSGTXT_SZ - (size_t)CurChar);
 		CurChar += (strlen(Line1) + 1);
+		if (CurChar >= MSGTXT_SZ || CurChar < 0)
+			System_Error("Mem error in mail\n%P");
 
 		strlcpy(OldLine, Line1, sizeof(OldLine));
 		strlcpy(Line1, Line2, sizeof(Line1));
@@ -1413,6 +1424,8 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 			break;
 		}
 	}
+	if (CurChar >= MSGTXT_SZ || CurChar < 0)
+		System_Error("Mem error in mail\n%P");
 	Message.Data.Length = CurChar;
 	Message.Data.NumLines = NumLines;
 
@@ -1425,7 +1438,7 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 			return;
 		}
 		EncryptWrite_s(Message, &Message, fp, XOR_MSG);
-		EncryptWrite(Message.Data.MsgTxt, Message.Data.Length, fp, XOR_MSG);
+		EncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_MSG);
 		fclose(fp);
 	}
 
@@ -1468,6 +1481,8 @@ void Mail_Maint(void)
 		for (;;) {
 			notEncryptRead_s(Message, &Message, OldMessage, XOR_MSG)
 				break;
+			if (Message.Data.Length < 0)
+				System_Error("Negative message in Mail_Maint()");
 
 			if (Message.Flags & MF_DELETED)
 				//FIXME:      DaysBetween(Message.Date, GameInfo.TheDate) > 7)
@@ -1477,14 +1492,14 @@ void Mail_Maint(void)
 			}
 			else {
 				/* write it, not read yet */
-				Message.Data.MsgTxt = malloc(Message.Data.Length);
+				Message.Data.MsgTxt = malloc((size_t)Message.Data.Length);
 				CheckMem(Message.Data.MsgTxt);
 
 				// write it to new file
-				EncryptRead(Message.Data.MsgTxt, Message.Data.Length, OldMessage, XOR_MSG);
+				EncryptRead(Message.Data.MsgTxt, (size_t)Message.Data.Length, OldMessage, XOR_MSG);
 
 				EncryptWrite_s(Message, &Message, NewMessage, XOR_MSG);
-				EncryptWrite(Message.Data.MsgTxt, Message.Data.Length, NewMessage, XOR_MSG);
+				EncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, NewMessage, XOR_MSG);
 
 				free(Message.Data.MsgTxt);
 			}
@@ -1585,7 +1600,9 @@ static void SendMsj(struct Message *Message, int16_t WhichVillage)
 	Packet.BBSIDFrom = IBBS.Data.BBSID;
 	Packet.PacketType = PT_MSJ;
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
-	Packet.PacketLength = BUF_SIZE_Message + Message->Data.Length;
+	if (Message->Data.Length < 0 || Message->Data.Length > MSGTXT_SZ)
+		System_Error("Negative message length in SendMsj()");
+	Packet.PacketLength = (int16_t)(BUF_SIZE_Message + (unsigned)Message->Data.Length);
 	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
 
 	if (WhichVillage != -1) {
@@ -1598,7 +1615,7 @@ static void SendMsj(struct Message *Message, int16_t WhichVillage)
 		EncryptWrite_s(Packet, &Packet, fp, XOR_PACKET);
 
 		EncryptWrite_s(Message, Message, fp, XOR_PACKET);
-		EncryptWrite(Message->Data.MsgTxt, Message->Data.Length, fp, XOR_PACKET);
+		EncryptWrite(Message->Data.MsgTxt, (size_t)Message->Data.Length, fp, XOR_PACKET);
 
 		fclose(fp);
 
@@ -1623,7 +1640,7 @@ static void SendMsj(struct Message *Message, int16_t WhichVillage)
 			EncryptWrite_s(Packet, &Packet, fp, XOR_PACKET);
 
 			EncryptWrite_s(Message, Message, fp, XOR_PACKET);
-			EncryptWrite(Message->Data.MsgTxt, Message->Data.Length, fp, XOR_PACKET);
+			EncryptWrite(Message->Data.MsgTxt, (size_t)Message->Data.Length, fp, XOR_PACKET);
 
 			fclose(fp);
 
@@ -1643,6 +1660,8 @@ void PostMsj(struct Message *Message)
 
 	FILE *fp;
 
+	if (Message->Data.Length < 0 || Message->Data.Length > MSGTXT_SZ)
+		System_Error("Negative message length in PostMsj()");
 	fp = fopen(ST_MSJFILE, "ab");
 
 	if (fp) {
@@ -1651,7 +1670,7 @@ void PostMsj(struct Message *Message)
 			Message->PublicMsgIndex = Village.Data.PublicMsgIndex++;
 
 		EncryptWrite_s(Message, Message, fp, XOR_MSG);
-		EncryptWrite(Message->Data.MsgTxt, Message->Data.Length, fp, XOR_MSG);
+		EncryptWrite(Message->Data.MsgTxt, (size_t)Message->Data.Length, fp, XOR_MSG);
 		fclose(fp);
 	}
 }
@@ -1687,7 +1706,7 @@ void GlobalMsgPost(void)
 
 		if (IBBS.Data.Nodes[iTemp].Active) {
 			apszVillageNames[NumVillages] = VillageName(iTemp + 1);
-			VillageIndex[NumVillages] = iTemp+1;
+			VillageIndex[NumVillages] = (unsigned char)(iTemp + 1);
 			NumVillages++;
 		}
 	}

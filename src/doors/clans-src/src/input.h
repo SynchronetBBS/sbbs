@@ -24,7 +24,7 @@ void GetStr(char *InputStr, int16_t MaxChars, bool HiBit);
  *      can be used to toggle whether the user can enter hibit ascii.
  */
 
-int32_t GetLong(char *Prompt, int32_t DefaultVal, int32_t Maximum);
+long GetLong(char *Prompt, long DefaultVal, long Maximum);
 /*
  * This allows the user to input a long integer.
  *

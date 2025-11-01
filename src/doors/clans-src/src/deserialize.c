@@ -212,7 +212,7 @@ s_Message_d(const void *bufptr, size_t bufsz, struct Message *s)
 	unpack_int16_t(s->Flags);
 	unpack_int16_t(s->BBSIDFrom);
 	unpack_int16_t(s->BBSIDTo);
-	unpack_int16_t(s->PublicMsgIndex);
+	unpack_uint16_t(s->PublicMsgIndex);
 	unpack_struct(&s->Data, Msg_Txt);
 
 	return (size_t)(src - (uint8_t *)bufptr);
@@ -829,7 +829,7 @@ s_clan_d(const void *bufptr, size_t bufsz, struct clan *s)
 	unpack_int16_t(s->WorldStatus);
 	unpack_int16_t(s->DestinationBBS);
 	unpack_char(s->VaultWithdrawals);
-	unpack_int16_t(s->PublicMsgIndex);
+	unpack_uint16_t(s->PublicMsgIndex);
 	unpack_int16_tArr2(s->ClanCombatToday, MAX_CLANCOMBAT, 2);
 	unpack_int16_t(s->ClanWars);
 	unpack_ptrArr(s->Member);

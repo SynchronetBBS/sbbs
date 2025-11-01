@@ -74,7 +74,7 @@ struct FileInfo {
 #endif
 
 #ifndef __MSDOS__
-static unsigned short _dos_setftime(int, unsigned short, unsigned short);
+static int _dos_setftime(int handle, unsigned short date, unsigned short time);
 #endif /* !__MSDOS__ */
 
 static void reset_attribute(void)
@@ -397,7 +397,7 @@ static void install(void)
 	fpAttr = fopen("UnixAttr.DAT", "r");
 	if (fpAttr) {
 		while (fscanf(fpAttr, "%o %s\n", &tmp, szFileName) != EOF) {
-			tMode = tmp;
+			tMode = (mode_t)tmp;
 			chmod(szFileName, tMode);
 		}
 		fclose(fpAttr);
@@ -450,7 +450,7 @@ static void upgrade(void)
 	fpAttr = fopen("UnixAttr.DAT", "r");
 	if (fpAttr) {
 		while (fscanf(fpAttr, "%o %s\n", &tmp, szFileName) != EOF) {
-			tMode = tmp;
+			tMode = (mode_t)tmp;
 			chmod(szFileName, tMode);
 		}
 		fclose(fpAttr);
@@ -570,7 +570,7 @@ static bool Match(const char *re, const char *Candidate)
 				break;
 			case '*':
 				re++;
-				for (int remain = strlen(Candidate); remain >= 0; remain--) {
+				for (int remain = (int)strlen(Candidate); remain >= 0; remain--) {
 					if (Match(re, &Candidate[remain]))
 						return true;
 				}
@@ -787,7 +787,7 @@ static void FreeLFNs(void)
 	LFNTail = NULL;
 }
 
-static void DisplayLFNs(int row, int column, uint32_t TotalBytes)
+static void DisplayLFNs(int row, int column, size_t TotalBytes)
 {
 	bool Done = false;
 	char szString[PATH_SIZE + 32];
@@ -801,7 +801,7 @@ static void DisplayLFNs(int row, int column, uint32_t TotalBytes)
 		else {
 			snprintf(szString, sizeof(szString), "|15%*s  |06-- |07%9" PRId32 " bytes\n",
 			    (int)LongestLFN, fn->name, fn->size);
-			TotalBytes += fn->size;
+			TotalBytes += (size_t)fn->size;
 		}
 		zputs(szString);
 		row++;
@@ -810,7 +810,7 @@ static void DisplayLFNs(int row, int column, uint32_t TotalBytes)
 	if (!Done) {
 		zputs("\n");
 		row = CheckRow(row, &Done);
-		snprintf(szString, sizeof(szString), "|14%" PRId32 " total bytes\n\n", TotalBytes);
+		snprintf(szString, sizeof(szString), "|14%zu total bytes\n\n", TotalBytes);
 		zputs(szString);
 	}
 	FreeLFNs();
@@ -821,7 +821,8 @@ static void ListFiles(void)
 	char szEncryptedName[PATH_SIZE];
 	char *pcFrom, *pcTo, szFileName[PATH_SIZE], szString[128];
 	FILE *fpGUM;
-	int32_t lFileSize, TotalBytes = 0, lCompressSize;
+	int32_t lFileSize, lCompressSize;
+	size_t TotalBytes = 0;
 	int FilesFound = 0;
 	uint16_t date, time;
 	bool Done = false;
@@ -905,7 +906,7 @@ static void ListFiles(void)
 
 		fseek(fpGUM, lCompressSize, SEEK_CUR);
 
-		TotalBytes += lFileSize;
+		TotalBytes += (size_t)lFileSize;
 	}
 	FreeLFNs();
 
@@ -956,7 +957,7 @@ static void GetGumName(void)
 }
 
 #ifndef __MSDOS__
-static unsigned short _dos_setftime(int handle, unsigned short date, unsigned short time)
+static int _dos_setftime(int handle, unsigned short date, unsigned short time)
 {
 	struct tm dos_dt;
 	time_t file_dt;
