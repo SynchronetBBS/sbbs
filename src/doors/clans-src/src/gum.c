@@ -123,13 +123,13 @@ static void initialize(void)
 	int i, j;
 
 	/* Initialize Huffman frequency tree */
-	for (i = 2; i<=TWICEMAX; i++) {
-		up[i] = i/2;
+	for (i = 2; i <= TWICEMAX; i++) {
+		up[i] = (short)(i / 2);
 		freq[i] = 1;
 	}
 	for (i = 1; i<=_MAXCHAR; i++) {
-		left[i] = 2*i;
-		right[i] = 2*i+1;
+		left[i] = (short)(2 * i);
+		right[i] = (short)(2 * i + 1);
 	}
 
 	/* Initialize copy distance ranges */
@@ -180,18 +180,20 @@ static void update_model(int code)
 
 			/* If high freq lower in tree, swap nodes */
 			if (freq[a] > freq[b]) {
-				if (left[uua] == ua) right[uua] = a;
-				else left[uua] = a;
+				if (left[uua] == ua)
+					right[uua] = (short)a;
+				else
+					left[uua] = (short)a;
 				if (left[ua] == a) {
-					left[ua] = b;
+					left[ua] = (short)b;
 					c = right[ua];
 				}
 				else {
-					right[ua] = b;
+					right[ua] = (short)b;
 					c = left[ua];
 				}
-				up[b] = ua;
-				up[a] = uua;
+				up[b] = (short)ua;
+				up[a] = (short)uua;
 				update_freq(b,c);
 				a = b;
 			}
@@ -244,14 +246,14 @@ static void add_node(int n)
 
 	key = getkey(n);
 	if (head[key] == NIL) {
-		tail[key] = n;
+		tail[key] = (short)n;
 		succ[n] = NIL;
 	}
 	else {
 		succ[n] = head[key];
-		pred[head[key]] = n;
+		pred[head[key]] = (short)n;
 	}
-	head[key] = n;
+	head[key] = (short)n;
 	pred[n] = NIL;
 }
 
@@ -338,7 +340,7 @@ int encode(FILE *input, FILE *output)
 	tail = calloc(1, (unsigned long)HASHSIZE*sizeof(short));
 	succ = calloc(1, (unsigned long)maxsize*sizeof(short));
 	pred = calloc(1, (unsigned long)maxsize*sizeof(short));
-	buffer = (unsigned char *) calloc(1, maxsize*sizeof(unsigned char));
+	buffer = (unsigned char *) calloc(1, (size_t)maxsize * sizeof(unsigned char));
 	if (head==NULL || tail==NULL || succ==NULL || pred==NULL || buffer==NULL) {
 		printf("Error allocating memory\n");
 		exit(1);
@@ -354,17 +356,17 @@ int encode(FILE *input, FILE *output)
 		if ((c = getc(input)) == EOF) {
 			compress(output,TERMINATE);
 			flush_bits(output);
-			return(bytes_in);
+			return (int)bytes_in;
 		}
 		compress(output,c);
 		++bytes_in;
-		buffer[i] = c;
+		buffer[i] = (uint8_t)c;
 	}
 
 	/* Preload next few characters into lookahead buffer */
 	for (i = 0; i<MAXCOPY; i++) {
 		if ((c = getc(input)) == EOF) break;
-		buffer[insert++] = c;
+		buffer[insert++] = (uint8_t)c;
 		++bytes_in;
 		if (c > 127) binary = 1;     /* Binary file ? */
 	}
@@ -420,7 +422,7 @@ int encode(FILE *input, FILE *output)
 		/* Add next input character to buffer */
 		if (c != EOF) {
 			if ((c = getc(input)) != EOF) {
-				buffer[insert++] = c;
+				buffer[insert++] = (uint8_t)c;
 				++bytes_in;
 			}
 			else full = 0;
@@ -450,7 +452,7 @@ void decode(FILE *input, FILE *output, void(*kputs)(const char *))
 	int poll = 0;
 
 	initialize();
-	buffer = (unsigned char *) malloc(maxsize*sizeof(unsigned char));
+	buffer = (unsigned char *) malloc((size_t)maxsize * sizeof(unsigned char));
 	if (buffer == NULL) {
 		printf("Error allocating memory\n");
 		exit(1);
@@ -465,7 +467,7 @@ void decode(FILE *input, FILE *output, void(*kputs)(const char *))
 		if (c < 256) {     /* Single literal character ? */
 			putc(c,output);
 			++bytes_out;
-			buffer[n++] = c;
+			buffer[n++] = (uint8_t)c;
 			if (n == maxsize) n = 0;
 		}
 		else {            /* Else string copy length/distance codes */

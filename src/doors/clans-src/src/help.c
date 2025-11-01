@@ -63,11 +63,11 @@ void Help(const char *Topic, char *File)
 
 	/* search for topic */
 	while (!Found) {
-		MaxBytes = FileHeader.lEnd - ftell(FileHeader.fp) + EXTRABYTES;
+		MaxBytes = (int32_t)(FileHeader.lEnd - ftell(FileHeader.fp) + EXTRABYTES);
 		if (MaxBytes > 254)
 			MaxBytes = 254;
 
-		if (fgets(string, (int16_t) MaxBytes, FileHeader.fp) == NULL) {
+		if (fgets(string, MaxBytes, FileHeader.fp) == NULL) {
 			fclose(FileHeader.fp);
 			rputs(ST_NOHELP);
 			rputs("\n");
@@ -93,7 +93,7 @@ void Help(const char *Topic, char *File)
 	while (EndOfTopic == false) {
 		/* read in up to 22 lines */
 		for (CurLine = 0; CurLine < 22; CurLine++) {
-			MaxBytes = FileHeader.lEnd - ftell(FileHeader.fp) + EXTRABYTES;
+			MaxBytes = (int32_t)(FileHeader.lEnd - ftell(FileHeader.fp) + EXTRABYTES);
 
 			if (MaxBytes > 254)
 				MaxBytes = 254;
@@ -101,7 +101,7 @@ void Help(const char *Topic, char *File)
 			if (MaxBytes == 1)
 				break;
 
-			fgets(Lines[CurLine], (int16_t)MaxBytes, FileHeader.fp);
+			fgets(Lines[CurLine], MaxBytes, FileHeader.fp);
 
 			// Lines[CurLine][ MaxBytes - EXTRABYTES + 1] = 0;
 
@@ -193,7 +193,7 @@ void GeneralHelp(char *pszFileName)
 		// od_printf("%ld  %ld\n", ftell(HelpFile.fp), HelpFile.lEnd);
 
 		// get how many more bytes to read as max
-		MaxBytes = HelpFile.lEnd - ftell(HelpFile.fp) + EXTRABYTES;
+		MaxBytes = (int32_t)(HelpFile.lEnd - ftell(HelpFile.fp) + EXTRABYTES);
 		if (MaxBytes > 254)
 			MaxBytes = 254;
 
