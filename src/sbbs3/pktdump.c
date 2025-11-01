@@ -1,5 +1,6 @@
 /* pktdump.c */
 
+#include "genwrap.h"	/* strlcpy */
 #include "fidodefs.h"
 #include "xpendian.h"   /* swap */
 #include "dirwrap.h"    /* _PATH_DEVNULL */
@@ -284,7 +285,7 @@ int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 	return 0;
 }
 
-char* usage = "usage: pktdump [-body | -ctrl] [-recover | -split] <file1.pkt> [file2.pkt] [...]\n";
+char* usage = "usage: pktdump [-body | -ctrl] [-recover | -split] [-good=file_ext] <file1.pkt> [file2.pkt] [...]\n";
 
 int main(int argc, char** argv)
 {
@@ -292,8 +293,9 @@ int main(int argc, char** argv)
 	bool  split = false;
 	bool  recover = false;
 	int   i;
+	const char* good_fext = ".good.pkt";
 
-	fprintf(stderr, "pktdump rev 1.18 - Dump FidoNet Packets\n\n");
+	fprintf(stderr, "pktdump rev 1.20 - Dump FidoNet Packets\n\n");
 
 	if (argc < 2) {
 		fprintf(stderr, "%s", usage);
@@ -339,6 +341,9 @@ int main(int argc, char** argv)
 					printf("%s", usage);
 					return 0;
 			}
+			if (strncmp(argv[i], "-good=", 6) == 0) {
+				good_fext = &argv[i][6];
+			}
 			continue;
 		}
 		fprintf(stdout, "Opening %s\n", argv[i]);
@@ -351,7 +356,11 @@ int main(int argc, char** argv)
 		char  good_fname[MAX_PATH + 1] = "";
 		char  bad_fname[MAX_PATH + 1] = "";
 		if (recover || split) {
-			SAFEPRINTF(good_fname, "%s.good", argv[i]);
+			SAFECOPY(good_fname, argv[i]);
+			char* ext = getfext(good_fname);
+			if (ext != NULL)
+				*ext = '\0';
+			SAFECAT(good_fname, good_fext);
 			if ((good = fopen(good_fname, "wb")) == NULL) {
 				perror(argv[i]);
 				return EXIT_FAILURE;
