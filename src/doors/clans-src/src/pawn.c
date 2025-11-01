@@ -172,7 +172,7 @@ static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 				break;
 
 			case 'X' :  // examine item
-				ItemIndex = GetLong(ST_PAWN1, 0, MAX_PSITEMS);
+				ItemIndex = (int16_t)GetLong(ST_PAWN1, 0, MAX_PSITEMS);
 
 				if (ItemIndex == 0) break;
 
@@ -195,7 +195,7 @@ static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 					break;
 				}
 
-				ItemIndex = GetLong(ST_PAWN3, 0, MAX_PSITEMS);
+				ItemIndex = (int16_t)GetLong(ST_PAWN3, 0, MAX_PSITEMS);
 
 				if (ItemIndex == 0) break;
 
@@ -284,7 +284,7 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 				break;
 
 			case 'X' :  // examine item
-				ItemIndex = GetLong(ST_PAWN8, 0, 30);
+				ItemIndex = (int16_t)GetLong(ST_PAWN8, 0, 30);
 
 				if (ItemIndex == 0) break;
 
@@ -312,7 +312,7 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 				}
 				ItemSlot = CurItem;
 
-				ItemIndex = GetLong(ST_PAWN10, 0, 30);
+				ItemIndex = (int16_t)GetLong(ST_PAWN10, 0, 30);
 
 				if (ItemIndex == 0) break;
 

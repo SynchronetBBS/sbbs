@@ -12,7 +12,7 @@
  */
 int my_random(int limit)
 {
-	unsigned ulimit = limit - 1;
+	unsigned ulimit = (unsigned)(limit - 1);
 	// -1 for the sign bit, -1 because it's base 0
 	unsigned maxbit = sizeof(int) * CHAR_BIT - 2;
 	unsigned mask = 0;
@@ -33,7 +33,7 @@ int my_random(int limit)
 	 * Once we find the highest set bit in limit, set every bit below
 	 * it in mask.
 	 */
-	for (int bit = maxbit; bit >= 0; bit--) {
+	for (int bit = (int)maxbit; bit >= 0; bit--) {
 		if (ulimit & (1 << bit))
 			found = bit + 1;
 		if (found)
@@ -45,7 +45,7 @@ int my_random(int limit)
 	 * Next up, we need to find the highest value less than RAND_MAX
 	 * that can hold the mask.
 	 */
-	for (shift = maxbit - (found - 1); shift >= 0; shift--) {
+	for (shift = (int)(maxbit - (unsigned)(found - 1)); shift >= 0; shift--) {
 		if ((mask << shift) <= RAND_MAX)
 			break;
 	}
@@ -53,8 +53,7 @@ int my_random(int limit)
 		System_Error("Broken Random (impossible mask)!");
 	mask <<= shift;
 	do {
-		val = (rand() & mask) >> shift;
+		val = ((unsigned)rand() & mask) >> shift;
 	} while(val > ulimit);
-	return val;
-	
+	return (int)val;
 }

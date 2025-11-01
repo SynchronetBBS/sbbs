@@ -81,7 +81,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				else
 					MaxInput = 1000000000L;
 
-				TradeList->Gold = GetLong("|0SHow much gold?", TradeList->Gold, MaxInput);
+				TradeList->Gold = (int32_t)GetLong("|0SHow much gold?", TradeList->Gold, MaxInput);
 				break;
 			case '2' :  /* followers */
 				if (GivingList)
@@ -89,7 +89,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				else
 					MaxInput = 1000000L;
 
-				TradeList->Followers = GetLong("|0SHow many followers?", TradeList->Followers, MaxInput);
+				TradeList->Followers = (int32_t)GetLong("|0SHow many followers?", TradeList->Followers, MaxInput);
 				break;
 			case '3' :  /* footmen */
 				if (GivingList)
@@ -97,7 +97,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				else
 					MaxInput = 1000000L;
 
-				TradeList->Footmen = GetLong("|0SHow many footmen?", TradeList->Footmen, MaxInput);
+				TradeList->Footmen = (int32_t)GetLong("|0SHow many footmen?", TradeList->Footmen, MaxInput);
 				break;
 			case '4' :  /* axemen */
 				if (GivingList)
@@ -105,7 +105,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				else
 					MaxInput = 1000000L;
 
-				TradeList->Axemen = GetLong("|0SHow many axemen?", TradeList->Axemen, MaxInput);
+				TradeList->Axemen = (int32_t)GetLong("|0SHow many axemen?", TradeList->Axemen, MaxInput);
 				break;
 			case '5' :  /* knights */
 				if (GivingList)
@@ -113,7 +113,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				else
 					MaxInput = 1000000L;
 
-				TradeList->Knights = GetLong("|0SHow many knights?", TradeList->Knights, MaxInput);
+				TradeList->Knights = (int32_t)GetLong("|0SHow many knights?", TradeList->Knights, MaxInput);
 				break;
 			case '0' :  /* done */
 				Done = true;

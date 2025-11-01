@@ -798,7 +798,7 @@ static void CreateVillageDat(struct ResetData *ResetData)
 	Village_Data.Empire.Army.Footmen = 100;
 	Village_Data.Empire.Army.Axemen = 25;
 
-	Village_Data.CostFluctuation = 5 - my_random(11);
+	Village_Data.CostFluctuation = (int16_t)(5 - my_random(11));
 	Village_Data.MarketQuality = MQ_AVERAGE;
 
 	fp = fopen("village.dat", "wb");

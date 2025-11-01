@@ -100,7 +100,7 @@ void ResurrectDead(bool Unconscious)
 
 	rputs(ST_LONGLINE);
 	rputs(" |0AWhich to resurrect? [|0BEnter=Abort|0A] : |15");
-	cInput = toupper(od_get_key(true));
+	cInput = toupper(od_get_key(true) & 0x7f) & 0x7f;
 
 	if (cInput == 'Q' || cInput == '\r' || cInput == '\n') {
 		rputs(ST_ABORTED);
@@ -203,7 +203,7 @@ void ReleaseMember(void)
 	rputs(" |0AWhich to release? [|0BEnter=abort|0A] : |0F");
 
 	for (;;) {
-		cInput = toupper(od_get_key(true));
+		cInput = toupper(od_get_key(true) & 0x7f) & 0x7f;
 
 		if (cInput == 'Q' || cInput == '\r' || cInput == '\n') {
 			rputs(ST_ABORTED);
@@ -341,7 +341,7 @@ void TrainMember(void)
 		rputs(" |0SWho to train? [|0BEnter=Return|0A] : |0F");
 
 		for (;;) {
-			cInput = toupper(od_get_key(true));
+			cInput = toupper(od_get_key(true) & 0x7f) & 0x7f;
 
 			if (cInput == 'Q' || cInput == '\r' || cInput == '\n') {
 				DoneTraining = true;
@@ -433,7 +433,7 @@ void TrainMember(void)
 					}
 					else if (Choice == '7') {
 						/* HP increase */
-						IncreaseAmount = (3 + my_random(5) + my_random(5));
+						IncreaseAmount = (int16_t)(3 + my_random(5) + my_random(5));
 						PClan->Member[WhichOne]->MaxHP += IncreaseAmount;
 
 						snprintf(szString, sizeof(szString), "|03%s's max HP increases by |14%d|03.\n",
@@ -442,7 +442,7 @@ void TrainMember(void)
 					}
 					else if (Choice == '8') {
 						/* SP increase */
-						IncreaseAmount = (2 + my_random(3) + my_random(3));
+						IncreaseAmount = (int16_t)(2 + my_random(3) + my_random(3));
 						PClan->Member[WhichOne]->MaxSP += IncreaseAmount;
 
 						snprintf(szString, sizeof(szString), "|03%s's max SP increases by |14%d|03.\n",

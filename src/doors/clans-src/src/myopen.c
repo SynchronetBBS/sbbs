@@ -53,6 +53,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 	bool FoundFile = false;
 	char szPakFileName[PATH_SIZE], szModFileName[PATH_SIZE], *pc;
 	uint8_t fhBuf[BUF_SIZE_FileHeader];
+	long lTemp;
 
 	strlcpy(szModFileName, szFileName, sizeof(szModFileName));
 
@@ -121,7 +122,10 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 			FileHeader->lStart = 0;
 
 			fseek(fp, 0L, SEEK_END);
-			FileHeader->lEnd = FileHeader->lFileSize = ftell(fp);
+			lTemp = ftell(fp);
+			if (lTemp < 0 || lTemp > INT32_MAX)
+				System_Error("Invalid position in clans.pak");
+			FileHeader->lEnd = FileHeader->lFileSize = (int32_t)lTemp;
 			fseek(fp, 0L, SEEK_SET);
 
 			FileHeader->fp = fp;
@@ -137,7 +141,10 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 		FileHeader->lStart = 0;
 
 		fseek(fp, 0L, SEEK_END);
-		FileHeader->lEnd = FileHeader->lFileSize = ftell(fp);
+		lTemp = ftell(fp);
+		if (lTemp < 0 || lTemp > INT32_MAX)
+			System_Error("Invalid position in clans.pak");
+		FileHeader->lEnd = FileHeader->lFileSize = (int32_t)lTemp;
 		fseek(fp, 0L, SEEK_SET);
 
 		FileHeader->fp = fp;
@@ -214,7 +221,7 @@ static void cipher(void *dest, void *src, size_t len, unsigned char xor_val)
 		System_Error("Invalid Parameters to cipher");
 
 	while (len--) {
-		*(char *)dest = *(char *)src ^ xor_val;
+		*(unsigned char *)dest = *(unsigned char *)src ^ xor_val;
 		dest = (char *)dest + 1;
 		src = (char *)src + 1;
 	}

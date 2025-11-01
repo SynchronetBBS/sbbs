@@ -293,7 +293,7 @@ void ChooseNewLeader(void)
 	}
 	else {
 		// choose one at random
-		iTemp = my_random(NumTied);
+		iTemp = (int16_t)my_random(NumTied);
 
 		NewRulerID[0] = TopCandidates[iTemp][0];
 		NewRulerID[1] = TopCandidates[iTemp][1];

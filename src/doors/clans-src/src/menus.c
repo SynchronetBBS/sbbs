@@ -245,7 +245,7 @@ static int16_t MainMenu(void)
 	struct UserInfo User;
 	int16_t BannerShown;
 
-	BannerShown = my_random(5) + 1;
+	BannerShown = (int16_t)(my_random(5) + 1);
 
 	LoadStrings(970, 20, szTheOptions);
 	snprintf(szMainMenu, sizeof(szMainMenu), "Main Menu%d", BannerShown);
@@ -537,7 +537,7 @@ static int16_t CommunicationsMenu(void)
 			case 'U' :      /* update lastread pointer */
 				snprintf(szString, sizeof(szString), "|03The last message you read was #%d.\nSet to which message? ",
 						PClan->PublicMsgIndex);
-				PClan->PublicMsgIndex = GetLong(szString, PClan->PublicMsgIndex, Village.Data.PublicMsgIndex-1);
+				PClan->PublicMsgIndex = (uint16_t)GetLong(szString, PClan->PublicMsgIndex, Village.Data.PublicMsgIndex-1);
 				break;
 			case 'Q' :      /* return */
 				return 0;
@@ -603,7 +603,7 @@ static void WizardShop(void)
 				ListItems(PClan);
 
 				// which item to examine?
-				ItemIndex = GetLong(ST_WIZ1, 0, 30);
+				ItemIndex = (int16_t)GetLong(ST_WIZ1, 0, 30);
 
 				if (ItemIndex == 0) break;
 
@@ -703,7 +703,8 @@ static int16_t MarketMenu(void)
 static int16_t AlliancesMenu(void)
 {
 	struct Alliance *Alliances[MAX_ALLIANCES];
-	int16_t iTemp, NumAlliances, WhichAlliance, NumUserAlliances;
+	signed char iTemp;
+	int16_t NumAlliances, WhichAlliance, NumUserAlliances;
 	char cKey, szChoices[MAX_ALLIANCES + 5];
 	char szString[128];
 

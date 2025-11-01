@@ -65,7 +65,7 @@ void Strip(char *szString)
 	}
 
 	// Set len to the number of non-whitespace characters
-	len = end - start + 1;
+	len = (size_t)(end - start) + 1;
 	memmove(szString, start, len);
 	szString[len] = 0;
 }
@@ -116,7 +116,7 @@ void GetToken(char *szString, char *szToken)
  */
 {
 	char *pcCurrentPos;
-	uint16_t uCount;
+	size_t uCount;
 
 	/* Ignore all of line after comments or CR/LF char */
 	pcCurrentPos=(char *)szString;
@@ -142,10 +142,11 @@ void GetToken(char *szString, char *szToken)
 	/* Get first token from line */
 	uCount=0;
 	while (*pcCurrentPos && !isspace(*pcCurrentPos)) {
-		if (uCount<MAX_TOKEN_CHARS) szToken[uCount++]=*pcCurrentPos;
+		if (uCount < MAX_TOKEN_CHARS)
+			szToken[uCount++] = *pcCurrentPos;
 		++pcCurrentPos;
 	}
-	if (uCount<=MAX_TOKEN_CHARS)
+	if (uCount <= MAX_TOKEN_CHARS)
 		szToken[uCount]='\0';
 	else
 		szToken[MAX_TOKEN_CHARS]='\0';
@@ -155,7 +156,7 @@ void GetToken(char *szString, char *szToken)
 
 	/* Trim trailing spaces from setting string */
 	if (*pcCurrentPos) {
-		for (uCount=strlen(pcCurrentPos)-1; uCount>0; --uCount) {
+		for (uCount = strlen(pcCurrentPos) - 1; uCount > 0; --uCount) {
 			if (isspace(pcCurrentPos[uCount])) {
 				pcCurrentPos[uCount]='\0';
 			}

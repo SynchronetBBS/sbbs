@@ -149,12 +149,12 @@ GetSystemTime(SYSTEMTIME *t)
 
 	currtime=time(NULL);
 	gottime=localtime(&currtime);
-	t->wSecond = gottime->tm_sec;
-	t->wMinute = gottime->tm_min;
-	t->wHour = gottime->tm_hour;
-	t->wDay = gottime->tm_mday;
-	t->wMonth = gottime->tm_mon + 1;
-	t->wYear = gottime->tm_year + 1900;
+	t->wSecond = (short)gottime->tm_sec;
+	t->wMinute = (short)gottime->tm_min;
+	t->wHour = (short)gottime->tm_hour;
+	t->wDay = (short)gottime->tm_mday;
+	t->wMonth = (short)gottime->tm_mon + 1;
+	t->wYear = (short)gottime->tm_year + 1900;
 }
 
 #else
