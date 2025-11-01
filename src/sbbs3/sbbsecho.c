@@ -2638,6 +2638,13 @@ bool fread_fmsghdr(fmsghdr_t* hdr, FILE* fp)
 	return true;
 }
 
+/* Updates a single FTS-1 stored message header in the specified file stream, optionally adding attributes */
+bool update_fmsghdr(fmsghdr_t* hdr, int attr, FILE* fp)
+{
+	hdr->attr |= attr;
+	return fseek(fp, 0L, SEEK_SET) == 0 && fwrite(hdr, sizeof *hdr, 1, fp) == 1;
+}
+
 enum attachment_mode {
 	ATTACHMENT_ADD
 	, ATTACHMENT_NETMAIL
@@ -3446,9 +3453,8 @@ enum {
 	, IMPORT_FILTERED_RECV    = 9
 	, IMPORT_FILTERED_INTRANS = 10
 	, IMPORT_IGNORED          = 11
-	, IMPORT_CLOSED           = 12
-	, IMPORT_UNKNOWN_USER     = 13
-	, IMPORT_ROBOT_MSG        = 14
+	, IMPORT_UNKNOWN_USER     = 12
+	, IMPORT_ROBOT_MSG        = 13
 };
 
 /****************************************************************************/
@@ -4600,11 +4606,13 @@ bool pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inb
 	return result;
 }
 
-
-/**************************************/
-/* Send netmail, returns 0 on success */
-/**************************************/
-int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const char* inbound)
+/***************************************************/
+/* Send netmail, returns IMPORT_SUCCESS on success */
+/* Source (*fp) is either a packed message or      */
+/* (when path[0] != 0) a "stored" .msg file.       */
+/* '*fp' is set to NULL if file is closed here     */
+/***************************************************/
+int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const char* inbound)
 {
 	char       info[512], str[256];
 	char       tmp[MAX_PATH + 1];
@@ -4613,10 +4621,11 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 	ulong      length;
 	fidoaddr_t addr;
 	fmsghdr_t  hdr = *inhdr;
+	bool       is_pkt = (path[0] == 0);
 
 	hdr.destzone = sys_faddr.zone;
 	hdr.destpoint = hdr.origpoint = 0;
-	bool       got_zones = getzpt(fp, &hdr);        /* use kludge if found */
+	bool       got_zones = getzpt(*fp, &hdr);        /* use kludge if found */
 	for (match = 0; match < scfg.total_faddrs; match++)
 		if ((hdr.destzone == scfg.faddr[match].zone || (cfg.fuzzy_zone && !got_zones))
 		    && hdr.destnet == scfg.faddr[match].net
@@ -4641,9 +4650,9 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 
 	if (!opt_import_netmail) {
 		printf("Ignored");
-		if (!path[0]) {
+		if (is_pkt) {
 			printf(" - ");
-			pkt_to_msg(fp, &hdr, info, inbound);
+			pkt_to_msg(*fp, &hdr, info, inbound);
 		} else
 			lprintf(LOG_INFO, "%s Ignored", info);
 
@@ -4652,14 +4661,14 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 
 	if (!sysfaddr_is_valid(match) && !cfg.ignore_netmail_dest_addr) {
 		printf("Foreign address");
-		if (!path[0]) {
+		if (is_pkt) {
 			printf(" - ");
-			pkt_to_msg(fp, &hdr, info, inbound);
+			pkt_to_msg(*fp, &hdr, info, inbound);
 		}
 		return IMPORT_FILTERED_FOREIGN;
 	}
 
-	if (path[0]) {   /* .msg file, not .pkt */
+	if (!is_pkt) {   /* .msg file, not .pkt */
 		if (hdr.attr & FIDO_ORPHAN) {
 			printf("Orphaned");
 			return IMPORT_FILTERED_ORPHAN;
@@ -4688,10 +4697,11 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		}
 	}
 	if (robot != NULL && robot->uses_msg) {
-		if (!path[0]) {
+		if (is_pkt) {
 			printf(" - ");
-			pkt_to_msg(fp, &hdr, info, inbound);
-		}
+			pkt_to_msg(*fp, &hdr, info, inbound);
+		} else
+			update_fmsghdr(&hdr, FIDO_RECV, *fp);
 		robot->recv_count++;
 		return IMPORT_ROBOT_MSG;
 	}
@@ -4722,20 +4732,13 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		if (stricmp(hdr.to, FIDO_AREAMGR_NAME) == 0
 		    || stricmp(hdr.to, "SBBSecho") == 0
 		    || stricmp(hdr.to, FIDO_PING_NAME) == 0) {
-			fmsgbuf = getfmsg(fp, NULL);
+			fmsgbuf = getfmsg(*fp, NULL);
 			if (fmsgbuf == NULL)
 				return IMPORT_FAILURE;
-			if (path[0]) {
-				if (cfg.delete_netmail && opt_delete_netmail) {
-					fclose(fp);
-					delfile(path, __LINE__);
-				}
-				else {
-					hdr.attr |= FIDO_RECV;
-					(void)fseek(fp, 0L, SEEK_SET);
-					(void)fwrite(&hdr, sizeof(fmsghdr_t), 1, fp);
-					fclose(fp); /* Gotta close it here for areamgr stuff */
-				}
+			update_fmsghdr(&hdr, FIDO_RECV, *fp);
+			if (!is_pkt) {
+				fclose(*fp); /* Gotta close it here for areamgr stuff */
+				*fp = NULL;
 			}
 			addr.zone = hdr.origzone;
 			addr.net = hdr.orignet;
@@ -4818,7 +4821,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 				}
 			}
 			FREE_AND_NULL(fmsgbuf);
-			return IMPORT_CLOSED;
+			return IMPORT_SUCCESS;
 		}
 
 		usernumber = atoi(hdr.to);
@@ -4831,9 +4834,9 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		if (!usernumber) {
 			lprintf(LOG_WARNING, "%s Unknown user", info);
 
-			if (!path[0]) {
+			if (is_pkt) {
 				printf(" - ");
-				pkt_to_msg(fp, &hdr, info, inbound);
+				pkt_to_msg(*fp, &hdr, info, inbound);
 			}
 			return IMPORT_UNKNOWN_USER;
 		}
@@ -4843,7 +4846,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 	/* Importing NetMail */
 	/*********************/
 
-	fmsgbuf = getfmsg(fp, &length);
+	fmsgbuf = getfmsg(*fp, &length);
 
 	bool forwarded = false;
 	switch (i = fmsgtosmsg(fmsgbuf, &hdr, usernumber, INVALID_SUB, &forwarded)) {
@@ -4917,21 +4920,13 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 				lprintf(LOG_ERR, "ERROR %d moving attached file from %s to %s for NetMail %s", i, fpath, tmp, info);
 		}
 	}
+	update_fmsghdr(&hdr, FIDO_RECV, *fp);
 	netmail++;
 	if (robot != NULL)
 		robot->recv_count++;
 
 	FREE_AND_NULL(fmsgbuf);
 
-	/***************************/
-	/* Updating message header */
-	/***************************/
-	/***	NOT packet compatible
-	if(!(misc&DONT_SET_RECV)) {
-		hdr.attr|=FIDO_RECV;
-		fseek(fp,0L,SEEK_SET);
-		fwrite(&hdr,sizeof(fmsghdr_t),1,fp); }
-	***/
 	lprintf(LOG_INFO, "%s Imported", info);
 	return IMPORT_SUCCESS;
 }
@@ -5707,13 +5702,11 @@ bool netmail_sent(const char* fname)
 		lprintf(LOG_ERR, "ERROR line %u reading header from %s", __LINE__, fname);
 		return false;
 	}
-	hdr.attr |= FIDO_SENT;
-	rewind(fp);
-	(void)fwrite(&hdr, sizeof(hdr), 1, fp);
+	bool success = updae_fmsghdr(&hdr, FIDO_SENT, fp);
 	fclose(fp);
-	if (!cfg.ignore_netmail_kill_attr && (hdr.attr & FIDO_KILLSENT))
+	if (success && !cfg.ignore_netmail_kill_attr && (hdr.attr & FIDO_KILLSENT))
 		return delfile(fname, __LINE__);
-	return true;
+	return success;
 }
 
 void pack_netmail(void)
@@ -6223,7 +6216,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 
 			if (strncmp(fmsgbuf, "AREA:", 5) != 0) {                 /* Netmail */
 				(void)fseeko(fidomsg, msg_offset, SEEK_SET);
-				result = import_netmail("", &hdr, fidomsg, inbound);
+				result = import_netmail("", &hdr, &fidomsg, inbound);
 				if (result != IMPORT_SUCCESS && result != IMPORT_ROBOT_MSG)
 					lprintf(LOG_DEBUG, "import_netmail() returned %d", result);
 				(void)fseeko(fidomsg, next_msg, SEEK_SET);
@@ -7130,19 +7123,14 @@ int main(int argc, char **argv)
 				lprintf(LOG_ERR, "ERROR line %d reading fido msghdr from %s", __LINE__, path);
 				continue;
 			}
-			i = import_netmail(path, &hdr, fidomsg, cfg.inbound);
-			if (i != IMPORT_CLOSED) {
-				hdr.attr |= FIDO_RECV;
-				(void)fseek(fidomsg, 0L, SEEK_SET);
-				(void)fwrite(&hdr, sizeof(fmsghdr_t), 1, fidomsg);
+			i = import_netmail(path, &hdr, &fidomsg, cfg.inbound);
+			if (fidomsg != NULL)
 				fclose(fidomsg);
-			}
 			/**************************************/
 			/* Delete source netmail if specified */
 			/**************************************/
 			if (i == IMPORT_SUCCESS) {
 				if (cfg.delete_netmail && opt_delete_netmail) {
-					fclose(fidomsg);
 					delfile(path, __LINE__);
 				}
 			}
