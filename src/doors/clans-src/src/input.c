@@ -49,7 +49,7 @@ static int16_t Similar(const char *string, const char *word)
  */
 {
 	size_t NumLetters = strlen(word);
-	int16_t CurLetter;
+	size_t CurLetter;
 
 	for (CurLetter = 0; CurLetter < NumLetters; CurLetter++) {
 		if (string[CurLetter] == 0)
@@ -74,7 +74,7 @@ static int16_t InsideStr(const char *SubString, const char *FullString, int16_t 
  */
 {
 	size_t NumLetters = strlen(FullString);
-	int16_t CurLetter = 0;
+	size_t CurLetter = 0;
 
 	if (*SubString == 0)
 		return false;

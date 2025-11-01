@@ -79,6 +79,8 @@ bool Disbanded(void)
 
 	for (;;) {
 		if (!EncryptRead(szUserName, 36, fp, XOR_DISBAND)) break;
+		if (memchr(szUserName, 0, 36) == NULL)
+			System_Error("Unterminated username in disband.dat");
 
 		if (strcasecmp(szUserName, od_control.user_name) == 0) {
 			Found = true;
@@ -1465,7 +1467,7 @@ void ClanStats(struct clan *Clan, bool AllowModify)
  */
 {
 	size_t Length;
-	int16_t iTemp, TotalItems, ItemsShown, iTemp2;
+	int16_t iTemp, TotalItems, ItemsShown;
 	char szString[160], szStats[160];
 	bool DoneLooking = false;
 	char szShortName[25], cKey;
@@ -1512,8 +1514,8 @@ void ClanStats(struct clan *Clan, bool AllowModify)
 					/* add spaces */
 					szString[20] = 0;
 					Length = strlen(szString);
-					for (iTemp2 = 19; iTemp2 >= Length; iTemp2--)
-						szString[iTemp2] = ' ';
+					for (size_t stTemp = 19; stTemp >= Length; stTemp--)
+						szString[stTemp] = ' ';
 				}
 				rputs(szString);
 

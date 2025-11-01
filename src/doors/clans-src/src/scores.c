@@ -200,6 +200,7 @@ void DisplayScores(bool MakeFile)
 	int32_t MostPoints;
 	int16_t CurHigh;
 	size_t Padding;
+	size_t stTemp;
 	bool NoPlayers = true;
 
 	if (Language == NULL || Language->BigString == NULL)
@@ -355,7 +356,7 @@ void DisplayScores(bool MakeFile)
 			RemovePipes(SortData[ SortList[CurClan] ]->Symbol, szString);
 			Padding = 20 - strlen(szString);
 			szPadding[0] = 0;
-			for (iTemp = 0; iTemp < Padding; iTemp++)
+			for (stTemp = 0; stTemp < Padding; stTemp++)
 				strlcat(szPadding, " ", sizeof(szPadding));
 
 			snprintf(szString, sizeof(szString), ST_SCORE2ASCII,
@@ -423,7 +424,7 @@ void DisplayScores(bool MakeFile)
 			RemovePipes(SortData[ SortList[CurClan] ]->Symbol, szString);
 			Padding = 20 - strlen(szString);
 			szPadding[0] = 0;
-			for (iTemp = 0; iTemp < Padding; iTemp++)
+			for (stTemp = 0; stTemp < Padding; stTemp++)
 				strlcat(szPadding, " ", sizeof(szPadding));
 
 			snprintf(szString, sizeof(szString), " |0C%-30s %s%s`07  |15%-6" PRId32 "  ",
@@ -650,7 +651,7 @@ void LeagueScores(void)
 {
 	struct UserScore **ScoreList;
 	size_t Padding;
-	int16_t iTemp, UsersFound, /*CurID,*/ iTemp2;
+	int16_t iTemp, UsersFound;
 	char ScoreDate[11], szString[128], szPadding[21];
 	FILE *fp;
 
@@ -698,7 +699,7 @@ void LeagueScores(void)
 		RemovePipes(ScoreList[iTemp]->Symbol, szString);
 		Padding = 20 - strlen(szString);
 		szPadding[0] = 0;
-		for (iTemp2 = 0; iTemp2 < Padding; iTemp2++)
+		for (size_t stTemp = 0; stTemp < Padding; stTemp++)
 			strlcat(szPadding, " ", sizeof(szPadding));
 
 		snprintf(szString, sizeof(szString), ST_LSCORES3,

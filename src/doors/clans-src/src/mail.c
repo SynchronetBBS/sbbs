@@ -401,8 +401,8 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct Message *Reply,
 				 int CurLine)
 {
-	size_t cur_char = 0, i;
-	int FirstLine;
+	size_t cur_char = 0;
+	int FirstLine, i;
 	unsigned char ch, key;
 	char string[128];
 
@@ -422,11 +422,11 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 				}
 			}
 
-			if (i > ((*JustLen)/2)) {
+			if (i > ((*JustLen) / 2)) {
 				strlcpy(NextString, &String[i], sizeof(NextString));
 				String[i] = 0;
 
-				for (; i < cur_char; i++)
+				for (; i < (int)cur_char; i++)
 					rputs("\b \b");
 
 				rputs("\n");
@@ -1090,7 +1090,8 @@ bool Mail_Read(void)
 
 static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t CurLine)
 {
-	size_t cur_char = 0, i;
+	size_t cur_char = 0;
+	int i;
 	unsigned char ch, key;
 
 	rputs(ST_MAILENTERCOLOR);
@@ -1109,11 +1110,11 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 				}
 			}
 
-			if (i > ((*JustLen)/2)) {
+			if (i > ((*JustLen) / 2)) {
 				strlcpy(NextString, &String[i], sizeof(NextString));
 				String[i] = 0;
 
-				for (; i < cur_char; i++)
+				for (; i < (int)cur_char; i++)
 					rputs("\b \b");
 
 				rputs("\n");
