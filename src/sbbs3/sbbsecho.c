@@ -5702,7 +5702,7 @@ bool netmail_sent(const char* fname)
 		lprintf(LOG_ERR, "ERROR line %u reading header from %s", __LINE__, fname);
 		return false;
 	}
-	bool success = updae_fmsghdr(&hdr, FIDO_SENT, fp);
+	bool success = update_fmsghdr(&hdr, FIDO_SENT, fp);
 	fclose(fp);
 	if (success && !cfg.ignore_netmail_kill_attr && (hdr.attr & FIDO_KILLSENT))
 		return delfile(fname, __LINE__);
