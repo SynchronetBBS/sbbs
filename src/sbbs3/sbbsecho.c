@@ -3448,6 +3448,7 @@ enum {
 	, IMPORT_IGNORED          = 11
 	, IMPORT_CLOSED           = 12
 	, IMPORT_UNKNOWN_USER     = 13
+	, IMPORT_ROBOT_MSG        = 14
 };
 
 /****************************************************************************/
@@ -4692,7 +4693,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 			pkt_to_msg(fp, &hdr, info, inbound);
 		}
 		robot->recv_count++;
-		return IMPORT_SUCCESS;
+		return IMPORT_ROBOT_MSG;
 	}
 
 	if (email->shd_fp == NULL) {
@@ -6223,7 +6224,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			if (strncmp(fmsgbuf, "AREA:", 5) != 0) {                 /* Netmail */
 				(void)fseeko(fidomsg, msg_offset, SEEK_SET);
 				result = import_netmail("", &hdr, fidomsg, inbound);
-				if (result != IMPORT_SUCCESS)
+				if (result != IMPORT_SUCCESS && result != IMPORT_ROBOT_MSG)
 					lprintf(LOG_DEBUG, "import_netmail() returned %d", result);
 				(void)fseeko(fidomsg, next_msg, SEEK_SET);
 				printf("\n");
@@ -7130,6 +7131,12 @@ int main(int argc, char **argv)
 				continue;
 			}
 			i = import_netmail(path, &hdr, fidomsg, cfg.inbound);
+			if (i != IMPORT_CLOSED) {
+				hdr.attr |= FIDO_RECV;
+				(void)fseek(fidomsg, 0L, SEEK_SET);
+				(void)fwrite(&hdr, sizeof(fmsghdr_t), 1, fidomsg);
+				fclose(fidomsg);
+			}
 			/**************************************/
 			/* Delete source netmail if specified */
 			/**************************************/
@@ -7138,17 +7145,9 @@ int main(int argc, char **argv)
 					fclose(fidomsg);
 					delfile(path, __LINE__);
 				}
-				else {
-					hdr.attr |= FIDO_RECV;
-					(void)fseek(fidomsg, 0L, SEEK_SET);
-					(void)fwrite(&hdr, sizeof(fmsghdr_t), 1, fidomsg);
-					fclose(fidomsg);
-				}
 			}
-			else {
+			else if (i != IMPORT_ROBOT_MSG) {
 				lprintf(LOG_DEBUG, "import_netmail(%s) returned %d", path, i);
-				if (i != IMPORT_CLOSED)
-					fclose(fidomsg);
 			}
 			printf("\n");
 		}
