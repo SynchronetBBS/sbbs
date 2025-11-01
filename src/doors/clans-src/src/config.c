@@ -300,7 +300,7 @@ static void NodeMenu(void)
 	char OldOption = -1;
 	bool Quit = false;
 	char str[80];
-	const int last = 4;
+	const char last = 4;
 
 	/* clear all */
 	clrscr();
@@ -501,7 +501,7 @@ static void EditNodeOption(int16_t WhichOption)
 			else
 				strlcpy(addrstr, "Default", sizeof(addrstr));
 			DosGetStr(addrstr, sizeof(addrstr) - 1, false);
-			currNode->addr = strtoull(addrstr, NULL, 0);
+			currNode->addr = (uintptr_t)strtoull(addrstr, NULL, 0);
 			break;
 		case 3 :    /* IRQ */
 			gotoxy(40, 5);

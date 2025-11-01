@@ -120,7 +120,7 @@ int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 	pc2 = szRegCode;
 	while (*pc2) {
 		*pc = (char)(toupper(*pc2));
-		*pc ^= 0xD5;
+		*pc ^= (char)0xD5;
 		pc++;
 		pc2++;
 	}
@@ -151,7 +151,7 @@ int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 
 	pc = szString;
 	while (*pc) {
-		*pc ^= 0xF7;
+		*pc ^= (char)0xF7;
 		pc++;
 	}
 
@@ -191,7 +191,7 @@ int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 	pc = szRealCode;
 	while (*pc) {
 		*pc = (char)toupper(*pc);
-		*pc ^= 0xD5;
+		*pc ^= (char)0xD5;
 		pc++;
 	}
 

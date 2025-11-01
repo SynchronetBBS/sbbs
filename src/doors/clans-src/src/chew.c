@@ -279,12 +279,12 @@ static unsigned _dos_getftime(int handle, uint16_t *datep, uint16_t *timep)
 	*datep = 0;
 	*datep = ((file_dt.tm_mday) & 0x1f);
 	*datep |= ((file_dt.tm_mon + 1) & 0x0f) << 5;
-	*datep |= ((file_dt.tm_year - 80) & 0x7f) << 9;
+	*datep |= (uint16_t)(((file_dt.tm_year - 80) & 0x7f) << 9);
 
 	*timep = 0;
 	*timep = (((file_dt.tm_sec + 2) / 2) & 0x1f);
 	*timep |= ((file_dt.tm_min) & 0x3f) << 5;
-	*timep |= ((file_dt.tm_hour) & 0x1f) << 11;
+	*timep |= (uint16_t)(((file_dt.tm_hour) & 0x1f) << 11);
 
 	return 0;
 }

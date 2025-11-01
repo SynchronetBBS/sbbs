@@ -203,7 +203,7 @@ static uint32_t GetFirstUnusedMsgNum(char *pszMessageDir)
 	struct ffblk DirEntry;
 #else
 	struct _finddata_t find_data;
-	int32_t find_handle;
+	intptr_t find_handle;
 #endif
 	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
 

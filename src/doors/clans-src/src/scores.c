@@ -535,8 +535,8 @@ void ProcessScoreData(struct UserScore **UserScores)
 
 	// initialize lists
 	NewList = malloc(sizeof(struct UserScore *) * MAX_USERS);
-	OldList = malloc(sizeof(struct UserScore *) * MAX_USERS);
 	CheckMem(NewList);
+	OldList = malloc(sizeof(struct UserScore *) * MAX_USERS);
 	CheckMem(OldList);
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
 		NewList[iTemp] = OldList[iTemp] = NULL;

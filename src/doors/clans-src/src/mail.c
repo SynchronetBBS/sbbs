@@ -212,7 +212,8 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 {
 	struct Message Message;
 	FILE *fp;
-	int16_t result, NumLines = 0, CurChar = 0, i;
+	size_t CurChar = 0;
+	int16_t result, NumLines = 0, i;
 	char string[128], JustLen = 78;
 	char Line1[128], Line2[128], OldLine[128];
 
@@ -355,7 +356,7 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 		// else continue
 		if (CurChar < 0)
 			CurChar = 0;
-		Message.Data.Offsets[NumLines] = CurChar;
+		Message.Data.Offsets[NumLines] = (int16_t)CurChar;
 		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, (size_t)(MSGTXT_SZ - (unsigned)CurChar));
 		CurChar += (strlen(Line1) + 1);
 
@@ -368,7 +369,7 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 			break;
 		}
 	}
-	Message.Data.Length = CurChar;
+	Message.Data.Length = (int16_t)CurChar;
 	Message.Data.NumLines = NumLines;
 	if (Message.Data.Length < 0)
 		System_Error("Negative Message Length in MyWriteMessage2()");
@@ -592,7 +593,7 @@ static void Reply_Message(struct Message *Reply)
 	struct Message Message;
 	FILE *fp;
 
-	int16_t CurChar = 0;
+	size_t CurChar = 0;
 	int result, NumLines = 0, i, FirstLine, LastLine;
 	int16_t Quoted = false;
 	char string[128], JustLen = 78;
@@ -665,7 +666,7 @@ static void Reply_Message(struct Message *Reply)
 						if (CurChar >= MSGTXT_SZ || CurChar < 0)
 							System_Error("Mem error in mail\n%P");
 
-						Message.Data.Offsets[NumLines] = CurChar;
+						Message.Data.Offsets[NumLines] = (int16_t)CurChar;
 						strlcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET, MSGTXT_SZ - (size_t)CurChar);
 						strlcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[i-1]], MSGTXT_SZ - (size_t)CurChar);
 						Message.Data.MsgTxt[CurChar + 78] = 0;
@@ -681,7 +682,7 @@ static void Reply_Message(struct Message *Reply)
 					if (CurChar >= MSGTXT_SZ || CurChar < 0)
 						System_Error("Mem error in mail\n%P");
 
-					Message.Data.Offsets[NumLines] = CurChar;
+					Message.Data.Offsets[NumLines] = (int16_t)CurChar;
 					strlcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET, MSGTXT_SZ - (size_t)CurChar);
 					strlcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[FirstLine-1]], MSGTXT_SZ - (size_t)CurChar);
 					Message.Data.MsgTxt[CurChar+78] = 0;
@@ -812,7 +813,7 @@ static void Reply_Message(struct Message *Reply)
 		if (CurChar >= MSGTXT_SZ || CurChar < 0)
 			System_Error("Mem error in mail\n%P");
 
-		Message.Data.Offsets[NumLines] = CurChar;
+		Message.Data.Offsets[NumLines] = (int16_t)CurChar;
 		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, MSGTXT_SZ - (size_t)CurChar);
 		CurChar += (strlen(Line1) + 1);
 		if (CurChar >= MSGTXT_SZ || CurChar < 0)
@@ -827,7 +828,7 @@ static void Reply_Message(struct Message *Reply)
 			break;
 		}
 	}
-	Message.Data.Length = CurChar;
+	Message.Data.Length = (int16_t)CurChar;
 	Message.Data.NumLines = (int16_t)NumLines;
 
 	// save message
@@ -1267,7 +1268,8 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 {
 	struct Message Message;
 	FILE *fp;
-	int16_t result, NumLines = 0, CurChar = 0, i;
+	size_t CurChar = 0;
+	int16_t result, NumLines = 0, i;
 	char string[128], JustLen = 78;
 	char Line1[128], Line2[128], OldLine[128];
 
@@ -1409,7 +1411,7 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 			System_Error("Mem error in mail\n%P");
 
 		// else continue
-		Message.Data.Offsets[NumLines] = CurChar;
+		Message.Data.Offsets[NumLines] = (int16_t)CurChar;
 		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, MSGTXT_SZ - (size_t)CurChar);
 		CurChar += (strlen(Line1) + 1);
 		if (CurChar >= MSGTXT_SZ || CurChar < 0)
@@ -1426,7 +1428,7 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 	}
 	if (CurChar >= MSGTXT_SZ || CurChar < 0)
 		System_Error("Mem error in mail\n%P");
-	Message.Data.Length = CurChar;
+	Message.Data.Length = (int16_t)CurChar;
 	Message.Data.NumLines = NumLines;
 
 

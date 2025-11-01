@@ -453,7 +453,7 @@ static void ShowBaseStats(struct PClass *PClass)
 {
 	char szFullString[128], szString[128];
 	char *szAttributeNames[NUM_ATTRIBUTES];
-	int16_t SpellStrLength = 0;
+	size_t SpellStrLength = 0;
 	/* = {
 	  "Agility",
 	  "Dexterity",
@@ -650,7 +650,7 @@ static void ChooseDefaultAction(struct pc *PC)
 	if (WhichOption == 0)
 		PC->DefaultAction = 0;
 	else
-		PC->DefaultAction = (unsigned)(WhichOption + 9);
+		PC->DefaultAction = (unsigned)((WhichOption + 9) & 0x7F);
 }
 
 
@@ -1687,7 +1687,7 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 
 		PC->MaxHP = Races[ PC->WhichRace ]->MaxHP;
 		if (ClanLeader)
-			PC->MaxHP += my_random(10);
+			PC->MaxHP += (int16_t)my_random(10);
 
 		PC->MaxSP = Races[ PC->WhichRace ]->MaxSP;
 
@@ -1706,10 +1706,10 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 		// if clan leader, add on some random stats
 		if (ClanLeader)
 			for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++)
-				PC->Attributes[iTemp] += my_random(3);
+				PC->Attributes[iTemp] += (char)my_random(3);
 
-		PC->MaxHP += my_random(5);
-		PC->MaxSP += my_random(5);
+		PC->MaxHP += (int16_t)my_random(5);
+		PC->MaxSP += (int16_t)my_random(5);
 		PC->HP = PC->MaxHP;
 		PC->SP = PC->MaxSP;
 
@@ -1950,7 +1950,7 @@ static bool User_Create(void)
 	PClan->Eliminated = false;
 	PClan->WasRulerToday = false;
 	PClan->FirstDay = true;
-	PClan->Protection = (unsigned)Game.Data.DaysOfProtection;
+	PClan->Protection = (unsigned)(Game.Data.DaysOfProtection & 0x0F);
 
 	PClan->Empire.VaultGold = 0;
 	PClan->TradesToday = 0;

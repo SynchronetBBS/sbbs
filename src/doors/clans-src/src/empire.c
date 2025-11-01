@@ -195,7 +195,7 @@ void ProcessAttackPacket(struct AttackPacket *AttackPacket)
 	//   this land is "gained" because of buildings destroyed
 	LandGained = 0;
 	for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
-		LandGained += (Result.BuildingsDestroyed[iTemp]*BuildingType[iTemp].LandUsed);
+		LandGained += (int16_t)(Result.BuildingsDestroyed[iTemp]*BuildingType[iTemp].LandUsed);
 	}
 	Village.Data.Empire.Land += LandGained;
 
@@ -508,7 +508,7 @@ void Empire_Maint(struct empire *Empire)
 	Empire->AttacksToday = 0;
 
 	Rating = Empire->Army.Rating;
-	Rating += (my_random(10) + 2*Empire->Buildings[B_GYM]);
+	Rating += (int16_t)(my_random(10) + 2*Empire->Buildings[B_GYM]);
 	if (Rating > 100)
 		Rating = 100;
 	if (Rating < 0)
@@ -940,8 +940,8 @@ void DonateToEmpire(struct empire *Empire)
 				NumToDonate = GetLong(ST_DEMPIRE14, 0, LimitingVariable);
 
 				if (NumToDonate) {
-					PClan->Empire.Land -= NumToDonate;
-					Empire->Land += NumToDonate;
+					PClan->Empire.Land -= (int16_t)NumToDonate;
+					Empire->Land += (int16_t)NumToDonate;
 				}
 				break;
 			case '0' :      /* take land */
@@ -955,8 +955,8 @@ void DonateToEmpire(struct empire *Empire)
 				NumToDonate = GetLong(ST_DEMPIRE15, 0, LimitingVariable);
 
 				if (NumToDonate) {
-					PClan->Empire.Land += NumToDonate;
-					Empire->Land -= NumToDonate;
+					PClan->Empire.Land += (int16_t)NumToDonate;
+					Empire->Land -= (int16_t)NumToDonate;
 				}
 				break;
 			case 'A' :      /* give gold */
@@ -1399,10 +1399,9 @@ static void ArmyAttack(struct Army *Attacker, struct Army *Defender,
 	Result->NoTarget = false;
 	Result->PercentDamage = 0;
 
-	NumRounds = (Attacker->Strategy.AttackLength +
-				 Defender->Strategy.DefendLength) / 2;
+	NumRounds = (int16_t)((Attacker->Strategy.AttackLength + Defender->Strategy.DefendLength) / 2);
 
-	Intensity = (Attacker->Strategy.AttackIntensity + Defender->Strategy.DefendIntensity)/2;
+	Intensity = (int16_t)((Attacker->Strategy.AttackIntensity + Defender->Strategy.DefendIntensity) / 2);
 	//    od_printf("Intensity of battle is %d\n", Intensity);
 
 	// save original values
@@ -1819,20 +1818,20 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 
 				switch (AttackResult->DefenderType) {
 					case EO_VILLAGE :
-						Percent = (AttackResult->PercentDamage*AttackResult->ExtentOfAttack)/200L;
+						Percent = (int16_t)((AttackResult->PercentDamage * AttackResult->ExtentOfAttack) / 200L);
 						DestroyBuildings(Village.Data.Empire.Buildings,
 										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
 						// after destroying everything, Land is gained
 
-						AttackResult->LandStolen = ((Village.Data.Empire.Land + LandGained)*Percent)/100L;
+						AttackResult->LandStolen = (int16_t)(((Village.Data.Empire.Land + LandGained) * Percent) / 100L);
 						break;
 					case EO_CLAN :
 						GetClan(AttackResult->DefenderID, &TmpClan);
-						Percent = (AttackResult->PercentDamage*AttackResult->ExtentOfAttack)/200L;
+						Percent = (int16_t)((AttackResult->PercentDamage * AttackResult->ExtentOfAttack) / 200L);
 						DestroyBuildings(TmpClan.Empire.Buildings,
 										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
 
-						AttackResult->LandStolen = ((TmpClan.Empire.Land + LandGained)*Percent)/100L;
+						AttackResult->LandStolen = (int16_t)(((TmpClan.Empire.Land + LandGained) * Percent) / 100L);
 						FreeClanMembers(&TmpClan);
 						break;
 					case EO_ALLIANCE :
@@ -1845,11 +1844,11 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						}
 						WhichAlliance = iTemp;
 
-						Percent = (AttackResult->PercentDamage*AttackResult->ExtentOfAttack)/200L;
+						Percent = (int16_t)((AttackResult->PercentDamage * AttackResult->ExtentOfAttack) / 200L);
 						DestroyBuildings(Alliances[WhichAlliance]->Empire.Buildings,
 										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
 
-						AttackResult->LandStolen = ((Alliances[WhichAlliance]->Empire.Land + LandGained)*Percent)/100L;
+						AttackResult->LandStolen = (int16_t)(((Alliances[WhichAlliance]->Empire.Land + LandGained) * Percent) / 100L);
 
 						// free up mem used by alliances
 						FreeAlliances(Alliances);
@@ -1913,15 +1912,15 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 			case G_DESTROY :  // destroy, figure out how much of his stuff was destroyed
 				switch (AttackResult->DefenderType) {
 					case EO_VILLAGE :
-						Percent = (AttackResult->PercentDamage*AttackResult->ExtentOfAttack)/100L;
+						Percent = (int16_t)((AttackResult->PercentDamage*AttackResult->ExtentOfAttack) / 100L);
 						DestroyBuildings(Village.Data.Empire.Buildings,
 										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
 						break;
 					case EO_CLAN :
 						GetClan(AttackResult->DefenderID, &TmpClan);
-						Percent = (AttackResult->PercentDamage*AttackResult->ExtentOfAttack)/100L;
+						Percent = (int16_t)((AttackResult->PercentDamage*AttackResult->ExtentOfAttack) / 100L);
 						DestroyBuildings(TmpClan.Empire.Buildings,
-										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
+						    AttackResult->BuildingsDestroyed, Percent, &LandGained);
 						FreeClanMembers(&TmpClan);
 						break;
 					case EO_ALLIANCE :
@@ -1934,7 +1933,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						}
 						WhichAlliance = iTemp;
 
-						Percent = (AttackResult->PercentDamage*AttackResult->ExtentOfAttack)/100L;
+						Percent = (int16_t)((AttackResult->PercentDamage*AttackResult->ExtentOfAttack) / 100L);
 						DestroyBuildings(Alliances[WhichAlliance]->Empire.Buildings,
 										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
 
@@ -2055,8 +2054,8 @@ static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 								BuildingType[CurType].LandUsed;
 
 		// round up here
-		iTemp = LandUsed[CurType] -
-				NumRemaining[CurType]*BuildingType[CurType].LandUsed;
+		iTemp = (int16_t)(LandUsed[CurType] -
+				NumRemaining[CurType]*BuildingType[CurType].LandUsed);
 
 		if ((iTemp*100)/BuildingType[CurType].LandUsed >= 50) {
 			// round up
@@ -2072,7 +2071,7 @@ static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 
 	*LandGained = 0;
 	for (CurType = 0; CurType < NUM_BUILDINGTYPES; CurType++)
-		*LandGained += (BuildingType[CurType].LandUsed*NumDestroyed[CurType]);
+		*LandGained += (int16_t)(BuildingType[CurType].LandUsed*NumDestroyed[CurType]);
 
 	free(WarZone);
 }
@@ -2480,7 +2479,7 @@ static void StartEmpireWar(struct empire *Empire)
 			// "give" the defender land from which his buildings came from
 			LandGained = 0;
 			for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
-				LandGained += (Result.BuildingsDestroyed[iTemp]*BuildingType[iTemp].LandUsed);
+				LandGained += (int16_t)(Result.BuildingsDestroyed[iTemp]*BuildingType[iTemp].LandUsed);
 			}
 			Village.Data.Empire.Land += LandGained;
 
@@ -2657,7 +2656,7 @@ static void StartEmpireWar(struct empire *Empire)
 		// "give" the defender land from which his buildings came from
 		LandGained = 0;
 		for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
-			LandGained += (Result.BuildingsDestroyed[iTemp]*BuildingType[iTemp].LandUsed);
+			LandGained += (int16_t)(Result.BuildingsDestroyed[iTemp]*BuildingType[iTemp].LandUsed);
 		}
 		Alliances[WhichAlliance]->Empire.Land += LandGained;
 
@@ -2799,7 +2798,7 @@ static void StartEmpireWar(struct empire *Empire)
 		// "give" the defender land from which his buildings came from
 		LandGained = 0;
 		for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
-			LandGained += (Result.BuildingsDestroyed[iTemp]*BuildingType[iTemp].LandUsed);
+			LandGained += (int16_t)(Result.BuildingsDestroyed[iTemp]*BuildingType[iTemp].LandUsed);
 		}
 		TmpClan.Empire.Land += LandGained;
 
@@ -2840,8 +2839,8 @@ static void StartEmpireWar(struct empire *Empire)
 		PClan->Empire.AttacksToday++;
 
 	// update attacker's army rating
-	Decrease = ExtentOfAttack/5 + 2;
-	Empire->Army.Rating -= Decrease;
+	Decrease = ExtentOfAttack / 5 + 2;
+	Empire->Army.Rating -= (char)Decrease;
 	if (Empire->Army.Rating < 0)
 		Empire->Army.Rating = 0;
 

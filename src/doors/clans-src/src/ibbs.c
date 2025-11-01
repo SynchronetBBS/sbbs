@@ -89,7 +89,7 @@ struct ffblk {
 	int32_t ff_fsize;
 	char ff_name[13];
 	HANDLE ff_findhandle; /* Added for Win32's API */
-	char   ff_findattribute; /* Added for attribute matching on Win32 */
+	int   ff_findattribute; /* Added for attribute matching on Win32 */
 };
 
 int findfirst(const char *pathname, struct ffblk *ffblk, int attribute);
@@ -3598,7 +3598,7 @@ static int search_and_construct_ffblk(WIN32_FIND_DATA *w32_finddata, struct ffbl
 	   Minutes [6 bits/0x07E0]
 	   Seconds/2 [5 bits/0x001F]
 	*/
-	ffblks->ff_fdate  = ((system_time.wYear - 1980) & 0x7F) << 9;
+	ffblks->ff_fdate  = (uint16_t)(((system_time.wYear - 1980) & 0x7F) << 9);
 	ffblks->ff_fdate |= ((system_time.wMonth - 1) & 0x0F) << 5;
 	ffblks->ff_fdate |= ((system_time.wDay) & 0x1F);
 	ffblks->ff_ftime  = ((system_time.wHour) & 0x1F) << 11;

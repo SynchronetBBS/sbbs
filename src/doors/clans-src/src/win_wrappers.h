@@ -23,12 +23,14 @@ size_t strlcat(char *dst, const char *src, size_t dsize);
 #endif
 
 // These are extensions that Microsoft (correctly) added a leading underscore to...
-#define unlink(x) _unlink(x)
+#ifndef __MINGW32__
 #define strcasecmp(x, y) _stricmp(x, y)
+#endif
+#define unlink(x) _unlink(x)
 #define fileno(x) _fileno(x)
-#define cio_getch() _getch()
 #define strdup(x) _strdup(x)
 #define mkdir(x) _mkdir(x)
+#define cio_getch() _getch()
 
 #else
 #include <utime.h>

@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 
 	if (argc < 2 || argc > 3) {
 		printf("Format:  Langcomp <Language.txt> [Language.xl]\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	strlcpy(FromFile, argv[1], sizeof(FromFile));
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 	fFrom = fopen(FromFile, "r");
 	if (!fFrom) {
 		printf("Error opening %s\n", FromFile);
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	// initialize the big string
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 	if (!Language.BigString) {
 		printf("Couldn't allocate enough memory to run!");
 		fclose(fFrom);
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	// just to ensure it works out, make the first string in BigString = ""
@@ -125,7 +125,11 @@ int main(int argc, char *argv[])
 
 		Language.StrOffsets[CurString] = Language.NumBytes;
 		strlcpy(&Language.BigString[ Language.NumBytes ], String, MALLOC_SZ - Language.NumBytes);
-		Language.NumBytes += (strlen(String)+1); // must also include zero byte
+		if (strlen(String) + 1 > UINT16_MAX) {
+			printf("Overlong string %03d\n", CurString);
+			exit(EXIT_FAILURE);
+		}
+		Language.NumBytes += (uint16_t)(strlen(String)+1); // must also include zero byte
 	}
 
 	fclose(fFrom);
@@ -135,7 +139,7 @@ int main(int argc, char *argv[])
 	if (!fTo) {
 		printf("Error opening %s\n", ToFile);
 		free(Language.BigString);
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	s_Language_s(&Language, serBuf, sizeof(serBuf));

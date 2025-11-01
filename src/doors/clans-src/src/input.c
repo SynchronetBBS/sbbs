@@ -432,8 +432,8 @@ char GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, cha
 	char TimeStr[40];
 	int16_t HoursLeft, MinutesLeft;
 
-	HoursLeft = (od_control.user_timelimit - od_control.user_time_used)/60;
-	MinutesLeft = (od_control.user_timelimit - od_control.user_time_used)%60;
+	HoursLeft = (int16_t)((od_control.user_timelimit - od_control.user_time_used) / 60);
+	MinutesLeft = (int16_t)((od_control.user_timelimit - od_control.user_time_used) % 60);
 
 	if (MinutesLeft < 0)
 		MinutesLeft = 0;
@@ -488,8 +488,8 @@ char GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, cha
 	/* display choice */
 	rputs("\r");
 
-	HoursLeft = (od_control.user_timelimit - od_control.user_time_used)/60;
-	MinutesLeft = (od_control.user_timelimit - od_control.user_time_used)%60;
+	HoursLeft = (int16_t)((od_control.user_timelimit - od_control.user_time_used) / 60);
+	MinutesLeft = (int16_t)((od_control.user_timelimit - od_control.user_time_used) % 60);
 	snprintf(TimeStr, sizeof(TimeStr), " |0H[|0J%02d:%02d|0H] ", HoursLeft, MinutesLeft);
 
 	if (ShowTime)

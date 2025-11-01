@@ -80,7 +80,7 @@ int main(void)
 	FILE *fpPC;
 	long FileSize;
 	int16_t NumClans, CurClan;
-	char cKey;
+	int cKey;
 	struct clan Clan;
 
 	system("stty raw");
@@ -793,7 +793,7 @@ static void UpdateClan(struct clan *Clan)
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
 
-		Offset = (long)CurClan * (BUF_SIZE_clan + (unsigned)Game.Data.MaxPermanentMembers * BUF_SIZE_pc);
+		Offset = (long)CurClan * (BUF_SIZE_clan + Game.Data.MaxPermanentMembers * BUF_SIZE_pc);
 		if (fseek(fpPlayerFile, Offset, SEEK_SET)) {
 			break;  /* couldn't fseek, so exit */
 		}

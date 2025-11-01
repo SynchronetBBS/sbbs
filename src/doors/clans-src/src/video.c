@@ -57,7 +57,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define PADDING         0xB0
 #define SPECIAL_CODE    '%'
 
-static char o_fg4 = 7, o_bg4 = 0;
+static char o_fg4 = 7;
 
 static int ScrollTop = 0;
 static int ScrollBottom = INT_MAX;
@@ -67,7 +67,7 @@ static void getxy(int *x, int*y);
 #endif
 
 #ifdef _WIN32
-static int default_cursor_size = 1;
+static DWORD default_cursor_size = 1;
 static HANDLE std_handle;
 static void clans_putch(unsigned char ch);
 uint8_t cur_attr;
@@ -161,13 +161,13 @@ void ScrollUp(void)
 #elif defined(_WIN32)
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	SMALL_RECT scroll_rect;
-	COORD top_left = { 0, ScrollTop };
+	COORD top_left = { 0, (SHORT)ScrollTop };
 	CHAR_INFO char_info;
 
 	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
-	scroll_rect.Top = ScrollTop + 1;
+	scroll_rect.Top = (SHORT)(ScrollTop + 1);
 	scroll_rect.Left = 0;
-	scroll_rect.Bottom = bottom;
+	scroll_rect.Bottom = (SHORT)bottom;
 	scroll_rect.Right = screen_buffer.dwSize.X;
 
 	char_info.Attributes = screen_buffer.wAttributes;
@@ -223,12 +223,12 @@ void ClearScrollRegion(void)
 	DWORD display_len, written;
 
 	top_corner.X = 0;
-	top_corner.Y = ScrollTop;
+	top_corner.Y = (SHORT)ScrollTop;
 
 	GetConsoleScreenBufferInfo(stdout_handle, &screen_buffer);
 
-	display_len = (screen_buffer.dwSize.Y - (ScreenLines - 1 - ScrollBottom)) *
-				  (screen_buffer.dwSize.X);
+	display_len = (DWORD)((screen_buffer.dwSize.Y - (ScreenLines - 1 - ScrollBottom)) *
+				  (screen_buffer.dwSize.X));
 
 	FillConsoleOutputCharacter(
 		stdout_handle,
@@ -275,7 +275,6 @@ static void put_character(char ch, uint8_t attrib, int x, int y)
 
 void zputs(const char *string)
 {
-	char number[3];
 	int16_t cur_char;
 	uint8_t foreground, background, cur_attrs, attr;
 	int i, j;
@@ -308,10 +307,6 @@ void zputs(const char *string)
 		}
 		else if (string[cur_char]=='|') {
 			if (isdigit(string[cur_char+1]) && isdigit(string[cur_char+2])) {
-				number[0]=string[cur_char+1];
-				number[1]=string[cur_char+2];
-				number[2]=0;
-
 				attr = (uint8_t)((string[cur_char + 1] - '0') * 10 + string[cur_char + 2] - '0');
 				if (attr>15) {
 					background=attr-16;
@@ -557,8 +552,7 @@ static int16_t LongInput(char *string, int x, int y, size_t input_length, uint8_
 	SetCurs(insert);
 	textattr(attr);
 
-	o_fg4 = attr&0x00FF;
-	o_bg4 = (attr&0xFF00) >> 8;
+	o_fg4 = attr & 0x0F;
 	qputs(string, x, y);
 	gotoxy(x + (int)length, y);
 
@@ -738,10 +732,10 @@ void ClearArea(int x1, int y1,  int x2, int y2, uint8_t attr)
 		}
 	}
 #elif defined(_WIN32)
-	int len = x2 - x1 + 1;
+	DWORD len = (DWORD)(x2 - x1 + 1);
 	DWORD written = 0;
 	COORD pos = {
-		.X = x1,
+		.X = (SHORT)x1,
 	};
 
 	for (; y1 <= y2; y1++) {
@@ -1088,18 +1082,18 @@ void Video_Close(void)
 void ColorArea(int xPos1, int yPos1, int xPos2, int yPos2, uint8_t Color)
 {
 #if defined(_WIN32)
-	int16_t y;
+	SHORT y;
 
 	COORD cursor_pos;
 	DWORD cells_written;
-	uint16_t line_len;
+	DWORD line_len;
 
-	line_len = xPos2 - xPos1 + 1;
+	line_len = (DWORD)(xPos2 - xPos1 + 1);
 
-	for (y = yPos1; y <= yPos2; y++) {
-		cursor_pos.X = xPos1;
+	for (y = (SHORT)yPos1; y <= (SHORT)yPos2; y++) {
+		cursor_pos.X = (SHORT)xPos1;
 		cursor_pos.Y = y;
-		FillConsoleOutputAttribute( std_handle, (uint16_t)Color, line_len, cursor_pos, &cells_written);
+		FillConsoleOutputAttribute( std_handle, (WORD)Color, line_len, cursor_pos, &cells_written);
 	}
 #elif defined(__unix__)
 	int x, y;
@@ -1131,14 +1125,14 @@ static void getxy(int *x, int*y)
 void * save_screen(void)
 {
 	CHAR_INFO *char_info_buffer;
-	uint32_t buffer_len;
+	DWORD buffer_len;
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	COORD top_left = { 0, 0 };
 	SMALL_RECT rect_rw;
 
 	GetConsoleScreenBufferInfo(std_handle, &screen_buffer);
 
-	buffer_len = (screen_buffer.dwSize.X * screen_buffer.dwSize.Y);
+	buffer_len = (DWORD)(screen_buffer.dwSize.X * screen_buffer.dwSize.Y);
 	char_info_buffer = (CHAR_INFO *) malloc(buffer_len * sizeof(CHAR_INFO));
 	if (!char_info_buffer) {
 		MessageBox(NULL, TEXT("Memory Allocation Failure"),
@@ -1190,7 +1184,7 @@ void restore_screen(void *state)
 
 void ShowTextCursor(bool sh)
 {
-	CONSOLE_CURSOR_INFO ci = {default_cursor_size, sh};
+	CONSOLE_CURSOR_INFO ci = {(DWORD)default_cursor_size, sh};
 	SetConsoleCursorInfo(std_handle, &ci);
 }
 
@@ -1198,8 +1192,8 @@ void gotoxy(int x, int y)
 {
 	COORD cursor_pos;
 
-	cursor_pos.X = x;
-	cursor_pos.Y = y;
+	cursor_pos.X = (SHORT)x;
+	cursor_pos.Y = (SHORT)y;
 
 	SetConsoleCursorPosition(
 		std_handle,
@@ -1217,14 +1211,14 @@ void clrscr(void)
 	FillConsoleOutputCharacter(
 		std_handle,
 		(TCHAR)' ',
-		screen_buffer.dwSize.X * screen_buffer.dwSize.Y,
+		(DWORD)(screen_buffer.dwSize.X * screen_buffer.dwSize.Y),
 		top_left,
 		&cells_written);
 
 	FillConsoleOutputAttribute(
 		std_handle,
 		(uint16_t)7,
-		screen_buffer.dwSize.X * screen_buffer.dwSize.Y,
+		(DWORD)(screen_buffer.dwSize.X * screen_buffer.dwSize.Y),
 		top_left,
 		&cells_written);
 

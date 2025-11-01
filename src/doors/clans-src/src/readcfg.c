@@ -146,7 +146,7 @@ bool Config_Init(uint16_t Node, struct NodeData *(*getNodeData)(int))
 						break;
 					case 8 :  /* serial port addr */
 						if (currNode)
-							currNode->addr = atoull(pcCurrentPos, "Serial Port Address", __func__);
+							currNode->addr = (uintptr_t)atoull(pcCurrentPos, "Serial Port Address", __func__);
 						if (Node == iCurrentNode) {
 							//printf("Not yet used\n");
 						}

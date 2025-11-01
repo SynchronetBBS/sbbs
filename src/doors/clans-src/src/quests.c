@@ -801,7 +801,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 						Items_GiveItem(szText);
 						break;
 					case 23 : // GiveFight
-						PClan->FightsLeft += atoi(szText);
+						PClan->FightsLeft += ato16(szText, "Give Fight", __func__);
 						break;
 					case 24 : // GiveFollowers
 						PClan->Empire.Army.Followers += atol(szText);
@@ -1267,7 +1267,7 @@ void Quests_GoQuest(void)
 			KnownBitSet =
 				(PClan->QuestsKnown[ iTemp/8 ] & (1 << (iTemp%8)) ||
 				 (Quests[iTemp].Known && Quests[iTemp].Active));
-			DoneBitSet  = PClan->QuestsDone[ iTemp / 8 ] & (unsigned char)(1U << (iTemp % 8));
+			DoneBitSet  = (char)(PClan->QuestsDone[ iTemp / 8 ] & (unsigned char)(1U << (iTemp % 8)));
 
 			// quest known? AND not complete?
 			if (KnownBitSet && !DoneBitSet && Quests[iTemp].pszQuestName) {

@@ -377,7 +377,7 @@ void rputs(const char *string)
 
 		if ((*pCurChar) == '|') {
 			if (isdigit(*(pCurChar + 1)) && isdigit(*(pCurChar +2))) {
-				attr = (pCurChar[1] - '0') * 10 + (pCurChar[2] - '0');
+				attr = (int16_t)((pCurChar[1] - '0') * 10 + (pCurChar[2] - '0'));
 				if (attr > 15) {
 					if (o_bg != (attr-16)) {
 						o_bg = attr - 16;

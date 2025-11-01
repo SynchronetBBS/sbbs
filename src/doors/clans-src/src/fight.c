@@ -155,7 +155,7 @@ static void Fight_ManaRegenerate(struct pc *PC)
 		return;
 
 	/* regenerate according to Wisdom attribute */
-	PC->SP += ((GetStat(PC, ATTR_WISDOM)*(my_random(15)+5))/150 + 1);
+	PC->SP += (int16_t)((GetStat(PC, ATTR_WISDOM)*(my_random(15)+5))/150 + 1);
 
 	if (PC->SP >= PC->MaxSP)
 		PC->SP = PC->MaxSP;
@@ -206,7 +206,7 @@ static int16_t Fight_ChooseVictim(struct clan *EnemyClan)
 		for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 			if (EnemyClan->Member[iTemp] && EnemyClan->Member[iTemp]->Status == Here) {
 				TempEnergyPercentage =
-					(EnemyClan->Member[iTemp]->HP * 100)/EnemyClan->Member[iTemp]->MaxHP;
+					(int16_t)((EnemyClan->Member[iTemp]->HP * 100)/EnemyClan->Member[iTemp]->MaxHP);
 
 				if (TempEnergyPercentage < LowestEnergy) {
 					EnemyTarget = iTemp;
@@ -287,8 +287,8 @@ static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct mo
 			continue;
 
 		if (!NPC->MyClan->Member[iTemp]->Undead && NPC->MyClan->Member[iTemp]->Status == Here) {
-			TempEnergyPercentage = (NPC->MyClan->Member[iTemp]->HP * 100) /
-								   NPC->MyClan->Member[iTemp]->MaxHP;
+			TempEnergyPercentage = (int16_t)((NPC->MyClan->Member[iTemp]->HP * 100) /
+			    NPC->MyClan->Member[iTemp]->MaxHP);
 
 			if (TempEnergyPercentage < 50) {
 				/* this guy needs healing */

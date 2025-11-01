@@ -197,12 +197,12 @@ void Spells_UpdatePCSpells(struct pc *PC)
 		/* if strength can reduce this, reduce it */
 		if (Spells[ PC->SpellsInEffect[iTemp].SpellNum ]->Friendly == false &&
 				Spells[ PC->SpellsInEffect[iTemp].SpellNum ]->StrengthCanReduce) {
-			PC->SpellsInEffect[iTemp].Energy -= (GetStat(PC, ATTR_STRENGTH)/2);
+			PC->SpellsInEffect[iTemp].Energy -= (int16_t)(GetStat(PC, ATTR_STRENGTH) / 2);
 		}
 		/* if wisdom can reduce this, reduce it */
 		if (Spells[ PC->SpellsInEffect[iTemp].SpellNum ]->Friendly == false &&
 				Spells[ PC->SpellsInEffect[iTemp].SpellNum ]->WisdomCanReduce) {
-			PC->SpellsInEffect[iTemp].Energy -= (GetStat(PC, ATTR_WISDOM)/2);
+			PC->SpellsInEffect[iTemp].Energy -= (int16_t)(GetStat(PC, ATTR_WISDOM) / 2);
 		}
 
 		/* check wisdom variables + Level var
@@ -528,7 +528,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 
 			/* now set spell */
 			TargetPC->SpellsInEffect[iTemp].SpellNum = SpellNum;
-			TargetPC->SpellsInEffect[iTemp].Energy = Spells[SpellNum]->Energy + (GetStat(PC, ATTR_WISDOM)*4) + PC->Level*2;
+			TargetPC->SpellsInEffect[iTemp].Energy = (int16_t)(Spells[SpellNum]->Energy + (GetStat(PC, ATTR_WISDOM) * 4) + PC->Level * 2);
 		}
 
 		/* output of spell */

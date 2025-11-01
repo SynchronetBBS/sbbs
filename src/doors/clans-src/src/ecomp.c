@@ -56,7 +56,7 @@ static char *papszEvaKeyWords[MAX_EVA_WORDS] = {
 #define CHECK_SZLEGAL() do { \
 	size_t TempLen = strlen(szLegal) + 1; \
 	if (TempLen > 255) { \
-		printf("String too long (%lu characters) for %s at %d\n", TempLen - 1, papszEvaKeyWords[(int)iKeyWord], CurLine); \
+		printf("String too long (%zu characters) for %s at %d\n", TempLen - 1, papszEvaKeyWords[(int)iKeyWord], CurLine); \
 		return EXIT_FAILURE; \
 	} \
 } while(0)
@@ -64,7 +64,7 @@ static char *papszEvaKeyWords[MAX_EVA_WORDS] = {
 #define ADD_SIZE_BYTE(x) do { \
 	size_t TempLen = (x); \
 	if (TempLen > 255) { \
-		printf("Data too long (%lu bytes) for %s at %d\n", TempLen, papszEvaKeyWords[(int)iKeyWord], CurLine); \
+		printf("Data too long (%zu bytes) for %s at %d\n", TempLen, papszEvaKeyWords[(int)iKeyWord], CurLine); \
 		return EXIT_FAILURE; \
 	} \
 	((uint8_t*)Buffer)[BufferPtr++] = (uint8_t)TempLen; \

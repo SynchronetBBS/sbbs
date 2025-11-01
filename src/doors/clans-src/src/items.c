@@ -838,11 +838,11 @@ void Item_BuyItem(signed char ItemType)
 				if (MaterialChoice == MT_POLYMETRAL) {
 					/* make it lighter by decreasing req attributes */
 					if (Item.ReqAttributes[ATTR_STRENGTH])
-						Item.ReqAttributes[ATTR_STRENGTH] -= (my_random(3) + 1);
+						Item.ReqAttributes[ATTR_STRENGTH] -= (char)(my_random(3) + 1);
 					if (Item.Attributes[ATTR_STRENGTH])
-						Item.Attributes[ATTR_AGILITY] += my_random(2);
+						Item.Attributes[ATTR_AGILITY] += (char)my_random(2);
 					if (Item.Attributes[ATTR_DEXTERITY])
-						Item.Attributes[ATTR_DEXTERITY] += my_random(2);
+						Item.Attributes[ATTR_DEXTERITY] += (char)my_random(2);
 
 					/* make it have less energy -- it'll have between 0 and 20% less energy */
 					Item.Energy = (int16_t)((Item.Energy * (my_random(20) + 80)) / 100);
@@ -850,11 +850,11 @@ void Item_BuyItem(signed char ItemType)
 				else if (MaterialChoice == MT_LACONIA) {
 					/* make it stronger by giving higher strength */
 					if (Item.ReqAttributes[ATTR_STRENGTH])
-						Item.ReqAttributes[ATTR_STRENGTH] += (my_random(3) + 1);
+						Item.ReqAttributes[ATTR_STRENGTH] += (char)(my_random(3) + 1);
 
 					/* and increase strength attribute */
 					if (Item.Attributes[ATTR_STRENGTH])
-						Item.Attributes[ATTR_STRENGTH] += (my_random(2) + 1);
+						Item.Attributes[ATTR_STRENGTH] += (char)(my_random(2) + 1);
 
 					/* make it have longer lifespan but higher strength reqattrib */
 					Item.Energy = (int16_t)((Item.Energy * (my_random(40) + 90)) / 100);
@@ -880,10 +880,10 @@ void Item_BuyItem(signed char ItemType)
 				// add onto it due to Quality Level
 				if (Village.Data.MarketQuality)
 					for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++) {
-						Item.Attributes[iTemp] += ((Item.Attributes[iTemp]*(my_random(20) + (Village.Data.MarketQuality*50)/4))/100);
+						Item.Attributes[iTemp] += (char)((Item.Attributes[iTemp] * (my_random(20) + (Village.Data.MarketQuality * 50) / 4)) / 100);
 
 						if (Item.ReqAttributes[iTemp])
-							Item.ReqAttributes[iTemp] -= ((Item.ReqAttributes[iTemp]*(my_random(10) + (Village.Data.MarketQuality*30)/4))/100);
+							Item.ReqAttributes[iTemp] -= (char)((Item.ReqAttributes[iTemp]*(my_random(10) + (Village.Data.MarketQuality * 30) / 4)) / 100);
 					}
 
 				/* ------------------------ */

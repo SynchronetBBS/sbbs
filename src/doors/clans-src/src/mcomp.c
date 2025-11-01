@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
 	/* since they started at -1 and not 0 */
 	CurMonster++;
 
-	printf("%d Monster found.\n%ld bytes used", CurMonster, (long)CurMonster * BUF_SIZE_pc);
+	printf("%d Monster found.\n%zu bytes used", CurMonster, (size_t)CurMonster * BUF_SIZE_pc);
 
 	fclose(fpMonIn);
 	fclose(fpMonOut);

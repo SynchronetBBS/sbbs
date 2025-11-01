@@ -301,7 +301,7 @@ static int GetGUM(FILE *fpGUM)
 	else if (WriteType(szFileName) == SKIP && FileExists(szFileName)) {
 		// skip file
 		zputs("|07- skipping (no update required)\n");
-		fseek(fpGUM, lCompressSize, SEEK_CUR);
+		fseek(fpGUM, (long)lCompressSize, SEEK_CUR);
 		return 1;
 	}
 	// else, normal file, do normally
@@ -323,7 +323,7 @@ static int GetGUM(FILE *fpGUM)
 		else if (cInput == 'N') {
 			zputs("No\n");
 			// skip file
-			fseek(fpGUM, lCompressSize, SEEK_CUR);
+			fseek(fpGUM, (long)lCompressSize, SEEK_CUR);
 			return 1;
 		}
 		else
