@@ -50,8 +50,6 @@ static void EditNodeOption(int16_t WhichOption);
 
 static struct NodeData *setCurrentNode(int node);
 
-void System_Error(char *szErrorMsg);
-
 static void UpdateOption(char Option);
 static void UpdateNodeOption(char Option);
 

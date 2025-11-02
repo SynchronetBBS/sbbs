@@ -367,7 +367,7 @@ static void DeleteClan(int16_t ClanID[2])
 				EncryptRead(Message.Data.MsgTxt, (size_t)Message.Data.Length, OldMessage, XOR_MSG);
 
 				EncryptWrite_s(Message, &Message, NewMessage, XOR_MSG);
-				EncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, NewMessage, XOR_MSG);
+				CheckedEncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, NewMessage, XOR_MSG);
 
 				free(Message.Data.MsgTxt);
 			}
@@ -680,7 +680,7 @@ static void RemoveFromIPScores(const int16_t ClanID[2])
 	fp = fopen(IPSCORES_DATAFILE, "wb");
 
 	// write date
-	EncryptWrite(ScoreDate, 11, fp, XOR_IPS);
+	CheckedEncryptWrite(ScoreDate, 11, fp, XOR_IPS);
 
 	// write them to file now and free them at the same time
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)

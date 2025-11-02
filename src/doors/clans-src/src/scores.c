@@ -174,9 +174,10 @@ static void PipeToAnsi(char *szOut, char *szIn)
 	}
 }
 
-
-
-
+/*
+ * When MakeFile is true, this is in the exit() path, so should not
+ * recurse into System_Close()
+ */
 void DisplayScores(bool MakeFile)
 {
 	FILE *fpPCFile, *fpScoreFile[2] = {NULL, NULL};
@@ -247,14 +248,22 @@ void DisplayScores(bool MakeFile)
 				break;  /* couldn't fseek, so exit */
 			}
 
-			notEncryptRead_s(clan, &TmpClan, fpPCFile, XOR_USER) {
-				break;  /* stop reading if no more players found */
-			}
+			if (!EncryptRead(serBuf, BUF_SIZE_clan, fpPCFile, XOR_USER))
+				break;
+			s_clan_d(serBuf, BUF_SIZE_clan, &TmpClan);
 
 			for (CurMember = 0; CurMember < 6; CurMember++) {
 				TmpClan.Member[CurMember] = malloc(sizeof(struct pc));
-				CheckMem(TmpClan.Member[CurMember]);
-				EncryptRead_s(pc, TmpClan.Member[CurMember], fpPCFile, XOR_PC);
+				if (TmpClan.Member[CurMember] == NULL)
+					break;
+				if (!EncryptRead(serBuf, BUF_SIZE_pc, fpPCFile, XOR_PC))
+					break;
+				s_pc_d(serBuf, BUF_SIZE_pc, TmpClan.Member[CurMember]);
+			}
+			if (CurMember < 6) {
+				for (; CurMember >= 0; CurMember--)
+					free(TmpClan.Member[CurMember]);
+				break;
 			}
 
 			// since we could read in a player, means at least one exists
@@ -262,7 +271,8 @@ void DisplayScores(bool MakeFile)
 
 			/* allocate mem for this clan in the list */
 			SortData[CurClan] = malloc(sizeof(struct SortData));
-			CheckMem(SortData[CurClan]);
+			if (SortData[CurClan] == NULL)
+				break;
 
 			/* this sets it so it hasn't been used yet in the sort list */
 			SortData[CurClan]->UsedInList = false;
@@ -270,7 +280,6 @@ void DisplayScores(bool MakeFile)
 			strlcpy(SortData[CurClan]->szName, TmpClan.szName, sizeof(SortData[CurClan]->szName));
 			SortData[CurClan]->Points = TmpClan.Points;
 			SortData[CurClan]->VillageID = TmpClan.ClanID[0];
-
 
 			SortData[CurClan]->IsRuler = false;
 
@@ -313,13 +322,12 @@ void DisplayScores(bool MakeFile)
 			rputs(" |07No one has played the game.\n");
 		return;
 	}
+
 	/* sort them into SortList */
 	/* SortList[0] points to top clan
 	   SortList[1] points to 2nd top clan
 	   etc.
 	 */
-
-
 	for (iTemp = 0; iTemp < NumClans; iTemp++) {
 		MostPoints = -32000;
 		CurHigh = 0;
@@ -352,71 +360,80 @@ void DisplayScores(bool MakeFile)
 	/* go through list */
 	for (CurClan = 0; CurClan < NumClans; CurClan++) {
 		if (MakeFile) {
-			strlcpy(szString, SortData[ SortList[CurClan] ]->Symbol, sizeof(szString));
-			RemovePipes(SortData[ SortList[CurClan] ]->Symbol, szString);
-			Padding = 20 - strlen(szString);
-			szPadding[0] = 0;
-			for (stTemp = 0; stTemp < Padding; stTemp++)
-				strlcat(szPadding, " ", sizeof(szPadding));
+			if (fpScoreFile[0]) {
+				strlcpy(szString, SortData[ SortList[CurClan] ]->Symbol, sizeof(szString));
+				RemovePipes(SortData[ SortList[CurClan] ]->Symbol, szString);
+				Padding = 20 - strlen(szString);
+				szPadding[0] = 0;
+				for (stTemp = 0; stTemp < Padding; stTemp++)
+					strlcat(szPadding, " ", sizeof(szPadding));
 
-			snprintf(szString, sizeof(szString), ST_SCORE2ASCII,
-					SortData[ SortList[CurClan] ]->szName,
-					szPadding, SortData[ SortList[CurClan] ]->PlainSymbol,
-					(long)SortData[ SortList[CurClan] ]->Points);
+				snprintf(szString, sizeof(szString), ST_SCORE2ASCII,
+						SortData[ SortList[CurClan] ]->szName,
+						szPadding, SortData[ SortList[CurClan] ]->PlainSymbol,
+						(long)SortData[ SortList[CurClan] ]->Points);
 
-			if (SortData[ SortList[CurClan] ]->Eliminated)
-				strlcat(szString, ST_SCORE6ASCII, sizeof(szString));
-			else if (SortData[ SortList[CurClan] ]->WorldStatus == WS_GONE) {
-				strlcat(szString, ST_SCORE3ASCII, sizeof(szString));
-			}
-			else {
-				if (SortData[ SortList[CurClan] ]->Living == false)
-					strlcat(szString, "Dead", sizeof(szString));
-				else if (SortData[ SortList[CurClan] ]->VillageID != Config.BBSID
-						 && Game.Data.InterBBS)
-					strlcat(szString, "Visiting", sizeof(szString));
+				if (SortData[ SortList[CurClan] ]->Eliminated)
+					strlcat(szString, ST_SCORE6ASCII, sizeof(szString));
+				else if (SortData[ SortList[CurClan] ]->WorldStatus == WS_GONE) {
+					strlcat(szString, ST_SCORE3ASCII, sizeof(szString));
+				}
+				else {
+					if (SortData[ SortList[CurClan] ]->Living == false)
+						strlcat(szString, "Dead", sizeof(szString));
+					else if (SortData[ SortList[CurClan] ]->VillageID != Config.BBSID
+							 && Game.Data.InterBBS)
+						strlcat(szString, "Visiting", sizeof(szString));
+					else
+						strlcat(szString, ST_SCORE4ASCII, sizeof(szString));
+				}
+
+				if (SortData[ SortList[CurClan] ]->IsRuler)
+					strlcat(szString, ST_SCORE5ASCII, sizeof(szString));
 				else
-					strlcat(szString, ST_SCORE4ASCII, sizeof(szString));
+					strlcat(szString, "\n", sizeof(szString));
+
+				// for ASCII
+				if (fputs(szString, fpScoreFile[0]) == EOF) {
+					fclose(fpScoreFile[0]);
+					fpScoreFile[0] = NULL;
+				}
 			}
-
-			if (SortData[ SortList[CurClan] ]->IsRuler)
-				strlcat(szString, ST_SCORE5ASCII, sizeof(szString));
-			else
-				strlcat(szString, "\n", sizeof(szString));
-
-			// for ASCII
-			fputs(szString, fpScoreFile[0]);
 
 			// for ANSI
+			if (fpScoreFile[1]) {
+				PipeToAnsi(AnsiSymbol, SortData[ SortList[CurClan] ]->Symbol);
 
-			PipeToAnsi(AnsiSymbol, SortData[ SortList[CurClan] ]->Symbol);
+				snprintf(szString, sizeof(szString), ST_SCORE2ANSI,
+						SortData[ SortList[CurClan] ]->szName,
+						szPadding, AnsiSymbol,
+						(long)SortData[ SortList[CurClan] ]->Points);
 
-			snprintf(szString, sizeof(szString), ST_SCORE2ANSI,
-					SortData[ SortList[CurClan] ]->szName,
-					szPadding, AnsiSymbol,
-					(long)SortData[ SortList[CurClan] ]->Points);
+				if (SortData[ SortList[CurClan] ]->Eliminated)
+					strlcat(szString, ST_SCORE6ANSI, sizeof(szString));
+				else if (SortData[ SortList[CurClan] ]->WorldStatus == WS_GONE) {
+					strlcat(szString, ST_SCORE3ANSI, sizeof(szString));
+				}
+				else {
+					if (SortData[ SortList[CurClan] ]->Living == false)
+						strlcat(szString, "\x1B[0;31mDead", sizeof(szString));
+					else if (SortData[ SortList[CurClan] ]->VillageID != Config.BBSID
+							 && Game.Data.InterBBS)
+						strlcat(szString, "Visiting", sizeof(szString));
+					else
+						strlcat(szString, ST_SCORE4ANSI, sizeof(szString));
+				}
 
-			if (SortData[ SortList[CurClan] ]->Eliminated)
-				strlcat(szString, ST_SCORE6ANSI, sizeof(szString));
-			else if (SortData[ SortList[CurClan] ]->WorldStatus == WS_GONE) {
-				strlcat(szString, ST_SCORE3ANSI, sizeof(szString));
-			}
-			else {
-				if (SortData[ SortList[CurClan] ]->Living == false)
-					strlcat(szString, "\x1B[0;31mDead", sizeof(szString));
-				else if (SortData[ SortList[CurClan] ]->VillageID != Config.BBSID
-						 && Game.Data.InterBBS)
-					strlcat(szString, "Visiting", sizeof(szString));
+				if (SortData[ SortList[CurClan] ]->IsRuler)
+					strlcat(szString, ST_SCORE5ANSI, sizeof(szString));
 				else
-					strlcat(szString, ST_SCORE4ANSI, sizeof(szString));
+					strlcat(szString, "\n", sizeof(szString));
+
+				if (fputs(szString, fpScoreFile[1]) == EOF) {
+					fclose(fpScoreFile[1]);
+					fpScoreFile[1] = NULL;
+				}
 			}
-
-			if (SortData[ SortList[CurClan] ]->IsRuler)
-				strlcat(szString, ST_SCORE5ANSI, sizeof(szString));
-			else
-				strlcat(szString, "\n", sizeof(szString));
-
-			fputs(szString, fpScoreFile[1]);
 		}
 		else {
 			// snprintf(szString, sizeof(szString), " |%02d%3s |02%-30s |15%6ld  ", SortData[ SortList[CurClan] ]->Color, SortData[ SortList[CurClan] ]->Symbol, SortData[ SortList[CurClan] ]->szName, SortData[ SortList[CurClan] ]->Points);
@@ -459,8 +476,10 @@ void DisplayScores(bool MakeFile)
 	}
 
 	if (MakeFile) {
-		fclose(fpScoreFile[0]);
-		fclose(fpScoreFile[1]);
+		if (fpScoreFile[0])
+			fclose(fpScoreFile[0]);
+		if (fpScoreFile[1])
+			fclose(fpScoreFile[1]);
 	}
 	else
 		rputs(ST_SCORELINE);
@@ -627,7 +646,7 @@ void ProcessScoreData(struct UserScore **UserScores)
 	fpNew = _fsopen("ipscores.dat", "wb", _SH_DENYRW);
 	if (fpNew) {
 		// write date
-		EncryptWrite(System.szTodaysDate, 11, fpNew, XOR_IPS);
+		CheckedEncryptWrite(System.szTodaysDate, 11, fpNew, XOR_IPS);
 
 		for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
 			if (NewList[iTemp])
@@ -771,7 +790,7 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 	fp = _fsopen("ipscores.dat", "wb", _SH_DENYRW);
 
 	// write date
-	EncryptWrite(ScoreDate, 11, fp, XOR_IPS);
+	CheckedEncryptWrite(ScoreDate, 11, fp, XOR_IPS);
 
 	// write them to file now and free them at the same time
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
@@ -858,7 +877,7 @@ void SendScoreList(void)
 		EncryptWrite16(&NumScores, fp, XOR_PACKET);
 
 		// write date
-		EncryptWrite(ScoreDate, 11, fp, XOR_PACKET);
+		CheckedEncryptWrite(ScoreDate, 11, fp, XOR_PACKET);
 
 		// write scores
 		for (iTemp = 0; iTemp < MAX_USERS; iTemp++)

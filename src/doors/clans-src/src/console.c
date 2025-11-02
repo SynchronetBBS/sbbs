@@ -29,7 +29,7 @@ void CheckMem(const void *Test)
 	}
 }
 
-void System_Error(char *szErrorMsg)
+noreturn void System_Error(char *szErrorMsg)
 /*
  * purpose  To output an error message and close down the system.
  *          This SHOULD be run from anywhere and NOT fail.  It should

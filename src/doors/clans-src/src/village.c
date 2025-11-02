@@ -1208,12 +1208,13 @@ static void Village_Write(void)
 
 	if (Village.Initialized == false) {
 		Village_Destroy();
-		System_Error("Village not initialized!\n");
+		return;
 	}
 
 	fp = _fsopen(ST_VILLAGEDATFILE, "wb", _SH_DENYRW);
 	if (fp) {
-		EncryptWrite_s(village_data, &Village.Data, fp, XOR_VILLAGE);
+		s_village_data_s(&Village.Data, serBuf, BUF_SIZE_village_data);
+		EncryptWrite(serBuf, BUF_SIZE_village_data, fp, XOR_VILLAGE);
 		fclose(fp);
 	}
 }

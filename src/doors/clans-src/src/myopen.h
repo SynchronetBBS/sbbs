@@ -13,7 +13,7 @@ struct FileHeader;
 #include "deserialize.h"
 
 extern uint8_t serBuf[4096];
-extern size_t erRet;
+extern bool erRet;
 
 struct FileHeader {
 	FILE *fp;     // used only when reading the file in
@@ -27,30 +27,47 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader);
  * file or a regular DOS file.
  */
 
-void EncryptWrite(void *Data, size_t DataSize, FILE *fp, char XorValue);
-size_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
+bool EncryptWrite(void *Data, size_t DataSize, FILE *fp, char XorValue);
+bool EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
 
 #define EXTRABYTES      10L
 
-#define EncryptWrite_s(s, d, fp, xv) do {                                                                  \
-	size_t bs = s_ ## s ## _s(d, serBuf, BUF_SIZE_ ## s);                                               \
-	assert(bs == BUF_SIZE_ ## s);                                                                        \
-	if (bs != SIZE_MAX)                                                                                   \
-		EncryptWrite(serBuf, bs, fp, xv);                                                              \
-	else {                                                                                                  \
+#define CheckedEncryptWrite(b, s, fp, xv) do {                                                   \
+	if (!EncryptWrite(b, s, fp, xv)) {                                                        \
+		char szES[1024];                                                                   \
+		snprintf(szES, sizeof(szES), "EncryptWrite() failed at %s:%d", __func__, __LINE__); \
+		System_Error(szES);                                                                  \
+	}                                                                                             \
+} while(0)
+
+#define EncryptWrite_s(s, d, fp, xv) do {                                                               \
+	size_t bs = s_ ## s ## _s(d, serBuf, BUF_SIZE_ ## s);                                            \
+	assert(bs == BUF_SIZE_ ## s);                                                                     \
+	if (bs != SIZE_MAX) {                                                                              \
+		if (!EncryptWrite(serBuf, bs, fp, xv)) {                                                    \
+			char szES[1024];                                                                     \
+			snprintf(szES, sizeof(szES), "EncryptWrite_s() failed at %s:%d", __func__, __LINE__); \
+			System_Error(szES);                                                                    \
+		}                                                                                               \
+	}                                                                                                        \
+	else {                                                                                                    \
+		char szErrorStr[1024];                                                                             \
+		snprintf(szErrorStr, sizeof(szErrorStr), "EncryptWrite_s() failed at %s:%d", __func__, __LINE__);   \
+		System_Error(szErrorStr);                                                                            \
+	}                                                                                                             \
+} while(0)
+
+#define EncryptWrite16(d, fp, xv) do {                                                                        \
+	((int16_t*)serBuf)[0] = SWAP16S(*d);                                                                   \
+	if (!EncryptWrite(serBuf, 2, fp, xv)) {                                                                 \
 		char szErrorStr[1024];                                                                           \
 		snprintf(szErrorStr, sizeof(szErrorStr), "EncryptWrite_s() failed at %s:%d", __func__, __LINE__); \
 		System_Error(szErrorStr);                                                                          \
 	}                                                                                                           \
 } while(0)
 
-#define EncryptWrite16(d, fp, xv) do {      \
-	((int16_t*)serBuf)[0] = SWAP16S(*d); \
-	EncryptWrite(serBuf, 2, fp, xv);      \
-} while(0)
-
 #define EncryptRead_s(s, d, fp, xv) do {                                                               \
-	size_t ret;                                                                                     \
+	bool ret;                                                                                       \
 	ret = EncryptRead(serBuf, BUF_SIZE_ ## s, fp, xv);                                               \
 	assert(ret);                                                                                      \
 	if (ret)                                                                                           \
@@ -63,7 +80,7 @@ size_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
 } while(0)
 
 #define EncryptRead16(d, fp, xv) do {                                                                     \
-	size_t ret = EncryptRead(serBuf, 2, fp, xv);                                                       \
+	bool ret = EncryptRead(serBuf, 2, fp, xv);                                                         \
 	assert(ret);                                                                                        \
 	if (ret)                                                                                             \
 		*(d) = SWAP16S(((int16_t*)serBuf)[0]);                                                        \
@@ -78,7 +95,7 @@ size_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
 	erRet = EncryptRead(serBuf, BUF_SIZE_ ## s, fp, xv);            \
 	if (erRet) {                                                     \
 		if (s_ ## s ## _d(serBuf, BUF_SIZE_ ## s, d) == SIZE_MAX) \
-			erRet = 0;                                         \
+			erRet = false;                                     \
 	}                                                                   \
 	if (!erRet)
 

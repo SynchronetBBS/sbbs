@@ -109,7 +109,7 @@ static bool System_LockedOut(void)
 
 // ------------------------------------------------------------------------- //
 
-void System_Error(char *szErrorMsg)
+noreturn void System_Error(char *szErrorMsg)
 /*
  * purpose  To output an error message and close down the system.
  *          This SHOULD be run from anywhere and NOT fail.  It should
@@ -122,13 +122,12 @@ void System_Error(char *szErrorMsg)
 	RemovePipes(buffer, buffer);
 	MessageBox(NULL, buffer, TEXT("System Error"), MB_OK |
 			   MB_ICONERROR);
-	System_Close();
 #else
 	DisplayStr("|12System Error: |07");
 	DisplayStr(szErrorMsg);
 	delay(1000);
-	System_Close();
 #endif
+	System_Close();
 }
 
 // ------------------------------------------------------------------------- //
@@ -468,7 +467,7 @@ static void System_Close_AtExit(void)
 	}
 }
 
-void System_Close(void)
+noreturn void System_Close(void)
 /*
  * purpose  Closes down the system, no matter WHERE it is called.
  *          Should be foolproof.
@@ -492,6 +491,8 @@ void System_Close(void)
 			abort();
 		}
 	}
+	puts("System not initialized!\r");
+	abort();
 }
 
 void System_Init(void)

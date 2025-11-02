@@ -102,7 +102,7 @@ static void AddToDisband(void)
 
 	fp = _fsopen("disband.dat", "ab", _SH_DENYRW);
 	if (fp) {
-		EncryptWrite(od_control.user_name, 36, fp, XOR_DISBAND);
+		CheckedEncryptWrite(od_control.user_name, 36, fp, XOR_DISBAND);
 		fclose(fp);
 	}
 }
@@ -250,7 +250,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 				EncryptRead(Message.Data.MsgTxt, (size_t)Message.Data.Length, OldMessage, XOR_MSG);
 
 				EncryptWrite_s(Message, &Message, NewMessage, XOR_MSG);
-				EncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, NewMessage, XOR_MSG);
+				CheckedEncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, NewMessage, XOR_MSG);
 
 				free(Message.Data.MsgTxt);
 			}
@@ -2225,17 +2225,24 @@ void Clan_Update(struct clan *Clan)
 				TmpClan.ClanID[1] == Clan->ClanID[1]) {
 			fseek(fpPlayerFile, OldOffset, SEEK_SET);
 
-			EncryptWrite_s(clan, Clan, fpPlayerFile, XOR_USER);
+			s_clan_s(Clan, serBuf, BUF_SIZE_clan);
+			if (!EncryptWrite(serBuf, BUF_SIZE_clan, fpPlayerFile, XOR_USER))
+				break;
 
 			// fwrite players
 			TmpPC.szName[0] = 0;
 			TmpPC.Status = Dead;
 			for (iTemp = 0; iTemp < 6; iTemp++) {
 				if (Clan->Member[iTemp] && Clan->Member[iTemp]->Undead == false) {
-					EncryptWrite_s(pc, Clan->Member[iTemp], fpPlayerFile, XOR_PC);
+					s_pc_s(Clan->Member[iTemp], serBuf, BUF_SIZE_pc);
+					if (!EncryptWrite(serBuf, BUF_SIZE_pc, fpPlayerFile, XOR_PC))
+						break;
 				}
-				else
-					EncryptWrite_s(pc, &TmpPC, fpPlayerFile, XOR_PC);
+				else {
+					s_pc_s(&TmpPC, serBuf, BUF_SIZE_pc);
+					if (!EncryptWrite(serBuf, BUF_SIZE_pc, fpPlayerFile, XOR_PC))
+						break;
+				}
 			}
 			break;
 		}

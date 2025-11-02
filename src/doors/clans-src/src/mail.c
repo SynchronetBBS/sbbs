@@ -173,7 +173,7 @@ static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 		return;
 	}
 	EncryptWrite_s(Message, &Message, fp, XOR_MSG);
-	EncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_MSG);
+	CheckedEncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_MSG);
 	fclose(fp);
 
 	free(Message.Data.MsgTxt);
@@ -385,7 +385,7 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 			return;
 		}
 		EncryptWrite_s(Message, &Message, fp, XOR_MSG);
-		EncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_MSG);
+		CheckedEncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_MSG);
 		fclose(fp);
 	}
 
@@ -843,7 +843,7 @@ static void Reply_Message(struct Message *Reply)
 			return;
 		}
 		EncryptWrite_s(Message, &Message, fp, XOR_MSG);
-		EncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_MSG);
+		CheckedEncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_MSG);
 		fclose(fp);
 	}
 
@@ -1447,7 +1447,7 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 			return;
 		}
 		EncryptWrite_s(Message, &Message, fp, XOR_MSG);
-		EncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_MSG);
+		CheckedEncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_MSG);
 		fclose(fp);
 	}
 
@@ -1508,7 +1508,7 @@ void Mail_Maint(void)
 				EncryptRead(Message.Data.MsgTxt, (size_t)Message.Data.Length, OldMessage, XOR_MSG);
 
 				EncryptWrite_s(Message, &Message, NewMessage, XOR_MSG);
-				EncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, NewMessage, XOR_MSG);
+				CheckedEncryptWrite(Message.Data.MsgTxt, (size_t)Message.Data.Length, NewMessage, XOR_MSG);
 
 				free(Message.Data.MsgTxt);
 			}
@@ -1624,7 +1624,7 @@ static void SendMsj(struct Message *Message, int16_t WhichVillage)
 		EncryptWrite_s(Packet, &Packet, fp, XOR_PACKET);
 
 		EncryptWrite_s(Message, Message, fp, XOR_PACKET);
-		EncryptWrite(Message->Data.MsgTxt, (size_t)Message->Data.Length, fp, XOR_PACKET);
+		CheckedEncryptWrite(Message->Data.MsgTxt, (size_t)Message->Data.Length, fp, XOR_PACKET);
 
 		fclose(fp);
 
@@ -1649,7 +1649,7 @@ static void SendMsj(struct Message *Message, int16_t WhichVillage)
 			EncryptWrite_s(Packet, &Packet, fp, XOR_PACKET);
 
 			EncryptWrite_s(Message, Message, fp, XOR_PACKET);
-			EncryptWrite(Message->Data.MsgTxt, (size_t)Message->Data.Length, fp, XOR_PACKET);
+			CheckedEncryptWrite(Message->Data.MsgTxt, (size_t)Message->Data.Length, fp, XOR_PACKET);
 
 			fclose(fp);
 
@@ -1679,7 +1679,7 @@ void PostMsj(struct Message *Message)
 			Message->PublicMsgIndex = Village.Data.PublicMsgIndex++;
 
 		EncryptWrite_s(Message, Message, fp, XOR_MSG);
-		EncryptWrite(Message->Data.MsgTxt, (size_t)Message->Data.Length, fp, XOR_MSG);
+		CheckedEncryptWrite(Message->Data.MsgTxt, (size_t)Message->Data.Length, fp, XOR_MSG);
 		fclose(fp);
 	}
 }

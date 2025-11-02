@@ -70,7 +70,8 @@ void Game_Write(void)
 
 	fp = _fsopen("game.dat", "wb", _SH_DENYRW);
 	if (fp) {
-		EncryptWrite_s(game_data, &Game.Data, fp, XOR_GAME);
+		s_game_data_s(&Game.Data, serBuf, BUF_SIZE_game_data);
+		EncryptWrite(serBuf, BUF_SIZE_game_data, fp, XOR_GAME);
 		fclose(fp);
 	}
 }

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdnoreturn.h>
 #include <string.h>
 #ifndef __unix__
 # include <share.h>
@@ -15,7 +16,7 @@ struct config Config;
 
 // Someone else needs to provide these...
 void CheckMem(void *Test);
-void System_Error(char *szErrorMsg);
+noreturn void System_Error(char *szErrorMsg);
 
 #define MAX_CONFIG_WORDS          17
 

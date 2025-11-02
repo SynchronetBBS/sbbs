@@ -166,10 +166,10 @@ void Quests_Close(void)
 {
 	int16_t iTemp;
 
-	if (!QuestsInitialized) return;
+	if (!QuestsInitialized)
+		return;
 
-
-	for (iTemp = 0; iTemp < MAX_QUESTS; iTemp++)
+	for (iTemp = 0; iTemp < MAX_QUESTS; iTemp++) {
 		if (Quests[iTemp].Active) {
 			if (Quests[iTemp].pszQuestName) {
 				free(Quests[iTemp].pszQuestName);
@@ -186,6 +186,7 @@ void Quests_Close(void)
 				Quests[iTemp].pszQuestIndex = NULL;
 			}
 		}
+	}
 }
 
 // ------------------------------------------------------------------------- //

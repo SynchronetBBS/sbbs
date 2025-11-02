@@ -344,6 +344,9 @@ void door_pause(void)
 
 // ------------------------------------------------------------------------- //
 
+/*
+ * Called from System_Close(), so must not recurse back into it
+ */
 void rputs(const char *string)
 /*
  * Outputs the pipe or ` encoded string.

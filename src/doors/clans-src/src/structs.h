@@ -522,6 +522,11 @@ struct TradeData {
 	int32_t Code;
 };
 
+struct Msg_Txt {
+	int16_t Offsets[40];
+	int16_t Length, NumLines;
+	char *MsgTxt;
+};
 
 struct Message {
 	int16_t ToClanID[2], FromClanID[2];
@@ -538,11 +543,7 @@ struct Message {
 
 	uint16_t PublicMsgIndex;               // Msg# for public posts
 
-	struct Msg_Txt {
-		int16_t Offsets[40];
-		int16_t Length, NumLines;
-		char *MsgTxt;
-	} Data;
+	struct Msg_Txt Data;
 };
 
 

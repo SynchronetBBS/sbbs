@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "win_wrappers.h"
 
 #include "alliance.h"
+#include "console.h"
 #include "myopen.h"
 #include "parsing.h"
 #include "random.h"
@@ -68,8 +69,6 @@ static void News_AddNews(char *szString);
 static void News_CreateTodayNews(void);
 
 static void CreateVillageDat(struct ResetData *ResetData);
-
-void System_Error(char *szErrorMsg);
 
 static void UpdateOption(char Option);
 

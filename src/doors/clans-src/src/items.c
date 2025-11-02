@@ -217,7 +217,7 @@ void ReadBook(void)
 		else {
 			int16_t add = PClan->Items[ ItemIndex ].HPAdd;
 			if (PClan->Member[ WhichMember ]->MaxHP + add > 20000)
-				add - (20000 - PClan->Member[ WhichMember ]->MaxHP);
+				add = (20000 - PClan->Member[ WhichMember ]->MaxHP);
 			snprintf(szString, sizeof(szString), "|0C%s gains |0B%d HP\n",
 					PClan->Member[ WhichMember ]->szName,
 					add);
@@ -238,14 +238,13 @@ void ReadBook(void)
 		else {
 			int16_t add = PClan->Items[ ItemIndex ].SPAdd;
 			if (PClan->Member[ WhichMember ]->MaxSP + add > 20000)
-				add - (20000 - PClan->Member[ WhichMember ]->MaxSP);
+				add = (20000 - PClan->Member[ WhichMember ]->MaxSP);
 			snprintf(szString, sizeof(szString), "|0C%s gains |0B%d SP\n",
 					PClan->Member[ WhichMember ]->szName,
 					PClan->Items[ ItemIndex ].SPAdd);
 			rputs(szString);
 
-			PClan->Member[ WhichMember ]->MaxSP +=
-				PClan->Items[ ItemIndex ].SPAdd;
+			PClan->Member[ WhichMember ]->MaxSP += add;
 		}
 
 		PClan->Member[ WhichMember ]->SP =

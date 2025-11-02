@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdnoreturn.h>
 #include <string.h>
 
 #include "crc.h"
@@ -6,7 +7,7 @@
 #include "deserialize.h"
 #include "myopen.h"
 
-void System_Error(char *szErrorMsg);
+noreturn void System_Error(char *szErrorMsg);
 
 #define unpack_char(x) do {      \
 	assert(remain);           \

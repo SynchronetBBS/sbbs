@@ -836,7 +836,7 @@ static void IBBS_BackupMaint(void)
 				cpBuffer = malloc((size_t)Packet.PacketLength);
 				CheckMem(cpBuffer);
 				EncryptRead(cpBuffer, (size_t)Packet.PacketLength, fpOld, XOR_PACKET);
-				EncryptWrite(cpBuffer, (size_t)Packet.PacketLength, fpNew, XOR_PACKET);
+				CheckedEncryptWrite(cpBuffer, (size_t)Packet.PacketLength, fpNew, XOR_PACKET);
 				free(cpBuffer);
 			}
 		}
@@ -1434,22 +1434,46 @@ static void IBBS_Write(void)
 
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
 		if (IBBS.Data.Nodes[CurBBS].Active) {
-			EncryptWrite_s(ibbs_node_recon, &IBBS.Data.Nodes[CurBBS].Recon, fp, XOR_IBBS);
-			EncryptWrite_s(ibbs_node_attack, &IBBS.Data.Nodes[CurBBS].Attack, fp, XOR_IBBS);
+			s_ibbs_node_recon_s(&IBBS.Data.Nodes[CurBBS].Recon, serBuf, BUF_SIZE_ibbs_node_recon);
+			if (!EncryptWrite(serBuf, BUF_SIZE_ibbs_node_recon, fp, XOR_IBBS)) {
+				fclose(fp);
+				return;
+			}
+			s_ibbs_node_attack_s(&IBBS.Data.Nodes[CurBBS].Attack, serBuf, BUF_SIZE_ibbs_node_attack);
+			if (!EncryptWrite(serBuf, BUF_SIZE_ibbs_node_attack, fp, XOR_IBBS)) {
+				fclose(fp);
+				return;
+			}
 		}
 		else {
-			EncryptWrite_s(ibbs_node_recon, &DummyRecon, fp, XOR_IBBS);
-			EncryptWrite_s(ibbs_node_attack, &DummyAttack, fp, XOR_IBBS);
+			s_ibbs_node_recon_s(&DummyRecon, serBuf, BUF_SIZE_ibbs_node_recon);
+			if (!EncryptWrite(serBuf, BUF_SIZE_ibbs_node_recon, fp, XOR_IBBS)) {
+				fclose(fp);
+				return;
+			}
+			s_ibbs_node_attack_s(&DummyAttack, serBuf, BUF_SIZE_ibbs_node_attack);
+			if (!EncryptWrite(serBuf, BUF_SIZE_ibbs_node_attack, fp, XOR_IBBS)) {
+				fclose(fp);
+				return;
+			}
 		}
 	}
 
 	// now write reset data
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
 		if (IBBS.Data.Nodes[CurBBS].Active) {
-			EncryptWrite_s(ibbs_node_reset, &IBBS.Data.Nodes[CurBBS].Reset, fp, XOR_IBBS);
+			s_ibbs_node_reset_s(&IBBS.Data.Nodes[CurBBS].Reset, serBuf, BUF_SIZE_ibbs_node_reset);
+			if (!EncryptWrite(serBuf, BUF_SIZE_ibbs_node_reset, fp, XOR_IBBS)) {
+				fclose(fp);
+				return;
+			}
 		}
 		else {
-			EncryptWrite_s(ibbs_node_reset, &DummyReset, fp, XOR_IBBS);
+			s_ibbs_node_reset_s(&DummyReset, serBuf, BUF_SIZE_ibbs_node_reset);
+			if (!EncryptWrite(serBuf, BUF_SIZE_ibbs_node_reset, fp, XOR_IBBS)) {
+				fclose(fp);
+				return;
+			}
 		}
 	}
 
@@ -2169,8 +2193,9 @@ void IBBS_SendPacket(int16_t PacketType, size_t PacketLength, void *PacketData,
 	/* write packet */
 	EncryptWrite_s(Packet, &Packet, fpOutboundDat, XOR_PACKET);
 
-	if (PacketLength)
-		EncryptWrite(PacketData, PacketLength, fpOutboundDat, XOR_PACKET);
+	if (PacketLength) {
+		CheckedEncryptWrite(PacketData, PacketLength, fpOutboundDat, XOR_PACKET);
+	}
 
 	fclose(fpOutboundDat);
 
@@ -2188,8 +2213,9 @@ void IBBS_SendPacket(int16_t PacketType, size_t PacketLength, void *PacketData,
 		// write to backup packet
 		EncryptWrite_s(Packet, &Packet, fpBackupDat, XOR_PACKET);
 
-		if (PacketLength)
-			EncryptWrite(PacketData, PacketLength, fpOutboundDat, XOR_PACKET);
+		if (PacketLength) {
+			CheckedEncryptWrite(PacketData, PacketLength, fpOutboundDat, XOR_PACKET);
+		}
 
 		fclose(fpBackupDat);
 	}
@@ -2755,7 +2781,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			}
 			EncryptWrite_s(Packet, &Packet, fpNewFile, XOR_PACKET);
 			if (Packet.PacketLength)
-				EncryptWrite(pcBuffer, (size_t)Packet.PacketLength, fpNewFile, XOR_PACKET);
+				CheckedEncryptWrite(pcBuffer, (size_t)Packet.PacketLength, fpNewFile, XOR_PACKET);
 
 			fclose(fpNewFile);
 
@@ -2873,7 +2899,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			// write it all to the IPSCORES.DAT file
 			fpScores = _fsopen("ipscores.dat", "wb", _SH_DENYWR);
 			if (fpScores) {
-				EncryptWrite(ScoreDate, 11, fpScores, XOR_IPS);
+				CheckedEncryptWrite(ScoreDate, 11, fpScores, XOR_IPS);
 
 				for (iTemp = 0; iTemp < NumScores; iTemp++) {
 					EncryptWrite_s(UserScore, UserScores[iTemp], fpScores, XOR_IPS);

@@ -39,7 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "video.h"
 
 uint8_t serBuf[4096];
-size_t erRet;
+bool erRet;
 
 static void cipher(void *, void *, size_t, unsigned char);
 
@@ -160,10 +160,8 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 	}
 }
 
-void EncryptWrite(void *Data, size_t DataSize, FILE *fp, char XorValue)
+bool EncryptWrite(void *Data, size_t DataSize, FILE *fp, char XorValue)
 {
-	char *EncryptedData;
-
 	if (!DataSize) {
 		System_Error("EncryptWrite() called with 0 bytes\n");
 	}
@@ -176,23 +174,15 @@ void EncryptWrite(void *Data, size_t DataSize, FILE *fp, char XorValue)
 		System_Error("EncryptWrite() called with bad key\n");
 	}
 
-	//printf("EncryptWrite(): Data size is %d\n", (int16_t)DataSize);
-	EncryptedData = malloc(DataSize);
-	CheckMem(EncryptedData);
-
 	/*  -- Removed the original Encrypt() function for simplicity
 	    Encrypt(EncryptedData, (char *)Data, DataSize, XorValue);*/
-	cipher(EncryptedData, Data, DataSize, (unsigned char)XorValue);
+	cipher(Data, Data, DataSize, (unsigned char)XorValue);
 
-	if (fwrite(EncryptedData, DataSize, 1, fp) != 1)
-		System_Error("Write failed in EncryptWrite()");
-
-	free(EncryptedData);
+	return (fwrite(Data, DataSize, 1, fp) == 1);
 }
 
-size_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue)
+bool EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue)
 {
-	char *EncryptedData;
 	size_t Result;
 
 	if (!DataSize) {
@@ -207,19 +197,14 @@ size_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue)
 		System_Error("EncryptRead() called with bad key\n");
 	}
 
-	EncryptedData = malloc(DataSize);
-	CheckMem(EncryptedData);
-
-	Result = fread(EncryptedData, 1, DataSize, fp);
+	Result = fread(Data, DataSize, 1, fp);
 
 	/*  -- Removed the original Decrypt() function for simplicity
 	    Decrypt((char *)Data, EncryptedData, DataSize, XorValue);*/
-	if (Result)
-		cipher(Data, EncryptedData, Result, (unsigned char)XorValue);
+	if (Result == 1)
+		cipher(Data, Data, Result, (unsigned char)XorValue);
 
-	free(EncryptedData);
-
-	return Result;
+	return Result == 1;
 }
 
 /* -- Replacement Encrypt/Decrypt function, reduces redundant code */
