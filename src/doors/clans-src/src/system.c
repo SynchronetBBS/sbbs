@@ -148,19 +148,24 @@ static char * fullpath(char *target, const char *path, size_t size)
 {
 	char    *out;
 	char    *p;
+	bool alloced = false;
 
 	if (target==NULL)  {
 		if ((target=malloc(PATH_MAX+1))==NULL) {
 			return(NULL);
 		}
+		alloced = true;
 	}
 	out=target;
 	*out=0;
 
 	if (*path != '/')  {
 		p=getcwd(target,size);
-		if (p==NULL || strlen(p)+strlen(path)>=size)
+		if (p==NULL || strlen(p)+strlen(path)>=size) {
+			if (alloced)
+				free(target);
 			return(NULL);
+		}
 		out=strrchr(target,'\0');
 		*(out++)='/';
 		*out=0;

@@ -57,6 +57,9 @@ static char *papszEvaKeyWords[MAX_EVA_WORDS] = {
 	size_t TempLen = strlen(szLegal) + 1; \
 	if (TempLen > 255) { \
 		printf("String too long (%zu characters) for %s at %d\n", TempLen - 1, papszEvaKeyWords[(int)iKeyWord], CurLine); \
+		free(Buffer); \
+		fclose(fpOut); \
+		fclose(fpEvent); \
 		return EXIT_FAILURE; \
 	} \
 } while(0)
@@ -65,6 +68,9 @@ static char *papszEvaKeyWords[MAX_EVA_WORDS] = {
 	size_t TempLen = (x); \
 	if (TempLen > 255) { \
 		printf("Data too long (%zu bytes) for %s at %d\n", TempLen, papszEvaKeyWords[(int)iKeyWord], CurLine); \
+		free(Buffer); \
+		fclose(fpOut); \
+		fclose(fpEvent); \
 		return EXIT_FAILURE; \
 	} \
 	((uint8_t*)Buffer)[BufferPtr++] = (uint8_t)TempLen; \
@@ -187,6 +193,8 @@ int main(int argc, char *argv[])
 							EventInBuffer = false;
 							if (BufferPtr > INT32_MAX) {
 								printf("Event too long (%zu bytes)!\n", BufferPtr);
+								fclose(fpEvent);
+								fclose(fpOut);
 								return EXIT_FAILURE;
 							}
 
@@ -219,6 +227,8 @@ int main(int argc, char *argv[])
 
 							if (BufferPtr > INT32_MAX) {
 								printf("Event too long (%zu bytes)!\n", BufferPtr);
+								fclose(fpEvent);
+								fclose(fpOut);
 								return EXIT_FAILURE;
 							}
 
@@ -384,6 +394,8 @@ int main(int argc, char *argv[])
 						iTemp = atoi(pcCurrentPos);             // # of beast
 						if (iTemp < 0 || iTemp > 255) {
 							printf("Invalid beast number in %s %d at %d\n", papszEvaKeyWords[(int)iKeyWord], iTemp, CurLine);
+							fclose(fpEvent);
+							fclose(fpOut);
 							return EXIT_FAILURE;
 						}
 						cTemp = (char)iTemp;
@@ -406,6 +418,8 @@ int main(int argc, char *argv[])
 
 							if (BufferPtr > INT32_MAX) {
 								printf("Event too long (%zu bytes)!\n", BufferPtr);
+								fclose(fpEvent);
+								fclose(fpOut);
 								return EXIT_FAILURE;
 							}
 
@@ -468,6 +482,8 @@ int main(int argc, char *argv[])
 
 		if (BufferPtr > INT32_MAX) {
 			printf("Event too long (%zu bytes)!\n", BufferPtr);
+			fclose(fpEvent);
+			fclose(fpOut);
 			return EXIT_FAILURE;
 		}
 
@@ -484,5 +500,5 @@ int main(int argc, char *argv[])
 	fclose(fpEvent);
 
 	printf("Done!\n\n%d error(s)\n\n", Errors);
-	return(0);
+	return EXIT_SUCCESS;
 }

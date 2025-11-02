@@ -380,6 +380,7 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 	if ((GlobalPost && WhichVillage == -1) || GlobalPost == false) {
 		fp = _fsopen(ST_MSJFILE, "ab", _SH_DENYRW);
 		if (!fp) {
+			free(Message.Data.MsgTxt);
 			rputs(ST_NOMSJFILE);
 			return;
 		}
@@ -1441,6 +1442,7 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 	if ((GlobalPost && WhichVillage == ALL_VILLAGES) || GlobalPost == false) {
 		fp = _fsopen(ST_MSJFILE, "ab", _SH_DENYRW);
 		if (!fp) {
+			free(Message.Data.MsgTxt);
 			rputs(ST_NOMSJFILE);
 			return;
 		}

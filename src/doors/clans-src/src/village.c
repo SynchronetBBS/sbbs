@@ -338,11 +338,16 @@ static void AddScheme(void)
 
 	fp = fopen("schemes.txt", "a");
 
-	fprintf(fp, "\nScheme ");
-	for (iTemp = 0; iTemp < 23; iTemp++)
-		fprintf(fp, "%d ", Village.Data.ColorScheme[iTemp]);
+	if (fp) {
+		fprintf(fp, "\nScheme ");
+		for (iTemp = 0; iTemp < 23; iTemp++)
+			fprintf(fp, "%d ", Village.Data.ColorScheme[iTemp]);
 
-	fclose(fp);
+		fclose(fp);
+	}
+	else {
+		rputs("\n|04Failed to open schemes.txt\n");
+	}
 }
 
 

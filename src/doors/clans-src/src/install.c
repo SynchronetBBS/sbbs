@@ -278,16 +278,32 @@ static int GetGUM(FILE *fpGUM)
 	}
 
 	/* get filesize from psi file */
-	fread(&lFileSize, sizeof(lFileSize), 1, fpGUM);
+	if (fread(&lFileSize, sizeof(lFileSize), 1, fpGUM) == 0) {
+		fclose(fpGUM);
+		System_Error("|04Failed to read filesize!\n");
+		return -1;
+	}
 	lFileSize = SWAP32(lFileSize);
 
-	fread(&lCompressSize, sizeof(lCompressSize), 1, fpGUM);
+	if (fread(&lCompressSize, sizeof(lCompressSize), 1, fpGUM) == 0) {
+		fclose(fpGUM);
+		System_Error("|04Failed to read compressed size!\n");
+		return -1;
+	}
 	lCompressSize = SWAP32(lCompressSize);
 
 	// get datestamp
-	fread(&date, sizeof(date), 1, fpGUM);
+	if (fread(&date, sizeof(date), 1, fpGUM) != 1) {
+		fclose(fpGUM);
+		System_Error("|04Failed to read datestamp!\n");
+		return -1;
+	}
 	date = SWAP16(date);
-	fread(&time, sizeof(date), 1, fpGUM);
+	if (fread(&time, sizeof(date), 1, fpGUM) != 1) {
+		fclose(fpGUM);
+		System_Error("|04Failed to read timestamp!\n");
+		return -1;
+	}
 	time = SWAP16(time);
 
 	if (strcmp(szFileName, "UnixAttr.DAT") == 0)
@@ -340,14 +356,9 @@ static int GetGUM(FILE *fpGUM)
 
 	// === decode here
 	decode(fpGUM, fpToFile, zputs);
-
-	fclose(fpToFile);
-
-	fpToFile = fopen(szFileName, "r+b");
 	_dos_setftime(fileno(fpToFile), date, time);
+
 	fclose(fpToFile);
-
-
 
 	snprintf(szString, sizeof(szString), "%" PRId32 "b ", lFileSize);
 	zputs(szString);
@@ -645,16 +656,33 @@ static void Extract(char *szExtractFile, char *szNewName)
 		// file, do following
 		if (szFileName[0] != '/') {
 			/* get filesize from psi file */
-			fread(&lFileSize, sizeof(lFileSize), 1, fpGUM);
+			if (fread(&lFileSize, sizeof(lFileSize), 1, fpGUM) != 1) {
+				zputs("|04Reading file size failed!\n");
+				fclose(fpGUM);
+				return;
+			}
 			lFileSize = SWAP32S(lFileSize);
 
-			fread(&lCompressSize, sizeof(lCompressSize), 1, fpGUM);
+			if (fread(&lCompressSize, sizeof(lCompressSize), 1, fpGUM) != 1) {
+				zputs("|04Reading compressed size failed!\n");
+				fclose(fpGUM);
+				return;
+			}
 			lCompressSize = SWAP32S(lCompressSize);
 
 			// get datestamp
-			fread(&date, sizeof(date), 1, fpGUM);
+			if (fread(&date, sizeof(date), 1, fpGUM) != 1) {
+				zputs("|04Reading datestamp failed!\n");
+				fclose(fpGUM);
+				return;
+			}
 			date = SWAP16(date);
-			fread(&time, sizeof(time), 1, fpGUM);
+			if (fread(&time, sizeof(time), 1, fpGUM) != 1) {
+				zputs("|04Reading timestamp failed!\n");
+				fclose(fpGUM);
+				return;
+			}
+
 			time = SWAP16(time);
 		}
 		else {
@@ -669,7 +697,11 @@ static void Extract(char *szExtractFile, char *szNewName)
 		}
 		else {
 			// skip it
-			fseek(fpGUM, lCompressSize, SEEK_CUR);
+			if (fseek(fpGUM, lCompressSize, SEEK_CUR) != 1) {
+				zputs("|04Seek failed!\n");
+				fclose(fpGUM);
+				return;
+			}
 		}
 	}
 
@@ -698,7 +730,11 @@ static void Extract(char *szExtractFile, char *szNewName)
 		else if (cInput == 'N') {
 			zputs("No\n");
 			// skip file
-			fseek(fpGUM, lCompressSize, SEEK_CUR);
+			if (fseek(fpGUM, lCompressSize, SEEK_CUR) != 1) {
+				zputs("|04Seek failed!\n");
+				fclose(fpGUM);
+				return;
+			}
 			fclose(fpGUM);
 			return;
 		}
@@ -709,6 +745,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 	/* open file to write to */
 	fpToFile = fopen(szFileName, "wb");
 	if (!fpToFile) {
+		fclose(fpGUM);
 		snprintf(szString, sizeof(szString), "|04Couldn't write to %s\n", szFileName);
 		zputs(szString);
 		return;
@@ -720,12 +757,9 @@ static void Extract(char *szExtractFile, char *szNewName)
 	//== decode it here
 	decode(fpGUM, fpToFile, zputs);
 
-	fclose(fpToFile);
-	fclose(fpGUM);
-
-	fpToFile = fopen(szFileName, "r+b");
 	_dos_setftime(fileno(fpToFile), date, time);
 	fclose(fpToFile);
+	fclose(fpGUM);
 
 	snprintf(szString, sizeof(szString), "(%" PRId32 " bytes) ", lFileSize);
 	zputs(szString);
@@ -840,7 +874,6 @@ static void ListFiles(void)
 		/* read in filename */
 		if (!ReadFilename(fpGUM, szEncryptedName, sizeof(szEncryptedName))) {
 			// done
-			fclose(fpGUM);
 			DisplayLFNs(row, column, TotalBytes);
 			break;
 		}
@@ -869,22 +902,46 @@ static void ListFiles(void)
 		}
 		else {
 			/* get filesize from psi file */
-			fread(&lFileSize, sizeof(lFileSize), 1, fpGUM);
+			if (fread(&lFileSize, sizeof(lFileSize), 1, fpGUM) == 0) {
+				fclose(fpGUM);
+				System_Error("|04Failed to read file size!\n");
+				return;
+			}
 			lFileSize = SWAP32S(lFileSize);
-			fread(&lCompressSize, sizeof(lCompressSize), 1, fpGUM);
+			if (fread(&lCompressSize, sizeof(lCompressSize), 1, fpGUM) != 1) {
+				fclose(fpGUM);
+				System_Error("|04Failed to read compressed size!\n");
+				return;
+			}
 			lCompressSize = SWAP32S(lCompressSize);
 			// get datestamp
-			fread(&date, sizeof(date), 1, fpGUM);
+			if (fread(&date, sizeof(date), 1, fpGUM) != 1) {
+				fclose(fpGUM);
+				System_Error("|04Failed to read datestamp!\n");
+				return;
+			}
 			date = SWAP16(date);
-			fread(&time, sizeof(time), 1, fpGUM);
+			if (fread(&time, sizeof(time), 1, fpGUM) != 1) {
+				fclose(fpGUM);
+				System_Error("|04Failed to read timestamp!\n");
+				return;
+			}
 			time = SWAP16(time);
 			if (strcmp(szFileName, "UnixAttr.DAT") == 0) {
-				fseek(fpGUM, lCompressSize, SEEK_CUR);
+				if (fseek(fpGUM, lCompressSize, SEEK_CUR)) {
+					fclose(fpGUM);
+					System_Error("|04Failed to skip UnixAttr.DAT!\n");
+					return;
+				}
 				continue;
 			}
 			if (strlen(szFileName) > 14) {
 				AddLFN(szFileName, lFileSize);
-				fseek(fpGUM, lCompressSize, SEEK_CUR);
+				if (fseek(fpGUM, lCompressSize, SEEK_CUR)) {
+					fclose(fpGUM);
+					System_Error("|04Failed to skip file contents!\n");
+					return;
+				}
 				continue;
 			}
 

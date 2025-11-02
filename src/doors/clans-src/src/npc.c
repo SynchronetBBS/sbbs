@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -102,24 +103,48 @@ void NPC_UpdateNPCNdx(char *szIndex, struct NPCNdx *NPCNdx)
 	fpNPX = fopen(NPXFile, "r+b");
 	if (fpNPX) {
 		for (;;) {
+			errno = 0;
 			Offset = ftell(fpNPX);
+			if (Offset == 0 && errno) {
+				System_Error("|04Error reading clans.npx offset!\n");
+				return;
+			}
 
-			if (!fread(iBuf, sizeof(iBuf), 1, fpNPX))
+			if (fread(iBuf, sizeof(iBuf), 1, fpNPX) == 0) {
+				if (ferror(fpNPX)) {
+					fclose(fpNPX);
+					System_Error("|04Error reading clans.npx!\n");
+					return;
+				}
+				clearerr(fpNPX);
+				if (fseek(fpNPX, Offset, SEEK_SET)) {
+					fclose(fpNPX);
+					System_Error("|04Error seeking clans.npx!\n");
+					return;
+				}
 				break;
+			}
 			s_NPCNdx_d(iBuf, sizeof(iBuf), &TmpNdx);
 
 			// found it!
 			if (strcasecmp(TmpNdx.szIndex, szIndex) == 0) {
-				fseek(fpNPX, Offset, SEEK_SET);
+				if (fseek(fpNPX, Offset, SEEK_SET)) {
+					fclose(fpNPX);
+					System_Error("|04Error seeking clans.npx!\n");
+					return;
+				}
 				break;
 			}
 		}
+		s_NPCNdx_s(NPCNdx, iBuf, sizeof(iBuf));
+		if (fwrite(iBuf, sizeof(iBuf), 1, fpNPX) == 0) {
+			fclose(fpNPX);
+			System_Error("|04Error writing clans.npx!\n");
+			return;
+		}
+
+		fclose(fpNPX);
 	}
-
-	s_NPCNdx_s(NPCNdx, iBuf, sizeof(iBuf));
-	fwrite(iBuf, sizeof(iBuf), 1, fpNPX);
-
-	fclose(fpNPX);
 }
 
 void NPC_Maint(void)
@@ -142,6 +167,11 @@ void NPC_Maint(void)
 	unlink(szClansNPX);
 
 	fpNPX = fopen(szClansNPX, "wb");
+	if (!fpNPX) {
+		free(NPCInfo);
+		DisplayStr("|04x |12Failed to create clans.npx");
+		return;
+	}
 
 	for (iTemp = 0; iTemp < MAX_NPCFILES; iTemp++) {
 		if (IniFile.pszNPCFileName[iTemp] == NULL) break;

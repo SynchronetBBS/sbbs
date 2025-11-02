@@ -79,6 +79,8 @@ int main(int argc, char **argv)
 #ifdef __unix__
 	fpAttr = fopen("UnixAttr.DAT", "wbx");
 	if (!fpAttr) {
+		fclose(fpList);
+		fclose(fpGUM);
 		printf("Couldn't create UnixAttr.DAT file\n");
 		return(1);
 	}

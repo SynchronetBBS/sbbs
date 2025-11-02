@@ -109,12 +109,17 @@ static void AddToPak(char *pszFileName, char *pszFileAlias, FILE *fpPakFile)
 	lTemp = ftell(fpInput);
 	if (lTemp < INT32_MIN || lTemp > INT32_MAX) {
 		printf("File size %ld unsupported\n", lTemp);
+		fclose(fpInput);
 		return;
 	}
 	FileHeader.lFileSize = (int32_t)lTemp;
 
 	// go back to start of file
-	fseek(fpInput, 0L, SEEK_SET);
+	if (fseek(fpInput, 0L, SEEK_SET)) {
+		puts("Failed to seek to start");
+		fclose(fpInput);
+		return;
+	}
 
 	// get header info
 	strlcpy(FileHeader.szFileName, pszFileAlias, sizeof(FileHeader.szFileName));
@@ -134,19 +139,32 @@ static void AddToPak(char *pszFileName, char *pszFileAlias, FILE *fpPakFile)
 	if (!Chunk) {
 		fputs("out of memory!", stderr);
 		fflush(stderr);
+		fclose(fpInput);
 		exit(1);
 	}
 	while (CurByte != FileHeader.lFileSize) {
 		if (NumBytes > 64000L) {
-			fread(Chunk, 64000L, 1, fpInput);
-			fwrite(Chunk, 64000L, 1, fpPakFile);
+			if (fread(Chunk, 64000L, 1, fpInput) != 1) {
+				puts("Read error");
+				break;
+			}
+			if (fwrite(Chunk, 64000L, 1, fpPakFile) != 1) {
+				puts("Write error");
+				break;
+			}
 
 			NumBytes -= 64000L;
 			CurByte += 64000L;
 		}
 		else {
-			fread(Chunk, NumBytes, 1, fpInput);
-			fwrite(Chunk, NumBytes, 1, fpPakFile);
+			if (fread(Chunk, NumBytes, 1, fpInput) != 1) {
+				puts("Read error");
+				break;
+			}
+			if (fwrite(Chunk, NumBytes, 1, fpPakFile) != 1) {
+				puts("Write error");
+				break;
+			}
 
 			CurByte += NumBytes;
 			NumBytes -= NumBytes;

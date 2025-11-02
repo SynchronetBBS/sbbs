@@ -55,6 +55,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 	uint8_t fhBuf[BUF_SIZE_FileHeader];
 	long lTemp;
 
+	FileHeader->fp = NULL;
 	strlcpy(szModFileName, szFileName, sizeof(szModFileName));
 
 	if (szFileName[0] == '@') {
@@ -89,6 +90,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 
 		if (! fp)  {
 			System_Error("Can't open CLANS.PAK file.\n");
+			return;
 		}
 
 		for (;;) {
@@ -111,6 +113,10 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 
 		if (FoundFile) {
 			FileHeader->fp = fopen(szPakFileName, szMode);
+			if (FileHeader->fp == NULL) {
+				System_Error("Unable to open clans.pak");
+				return;
+			}
 			fseek(FileHeader->fp, FileHeader->lStart, SEEK_SET);
 		}
 		else {
@@ -135,7 +141,8 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 	else {
 		// open file from dos
 		fp = _fsopen(szModFileName, szMode, _SH_DENYWR);
-		if (!fp) return;
+		if (!fp)
+			return;
 
 		// read in file stats
 		FileHeader->lStart = 0;
@@ -143,7 +150,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 		fseek(fp, 0L, SEEK_END);
 		lTemp = ftell(fp);
 		if (lTemp < 0 || lTemp > INT32_MAX)
-			System_Error("Invalid position in clans.pak");
+			System_Error("Invalid position in file");
 		FileHeader->lEnd = FileHeader->lFileSize = (int32_t)lTemp;
 		fseek(fp, 0L, SEEK_SET);
 

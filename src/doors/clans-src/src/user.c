@@ -150,6 +150,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 		fpNewPC = _fsopen(ST_NEWPCFILE, "w+b", _SH_DENYWR);
 		if (!fpNewPC) {
 			System_Error("Can't write to new.pc\n");
+			return;
 		}
 
 		for (;;) {

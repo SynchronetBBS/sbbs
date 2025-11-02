@@ -1,5 +1,6 @@
 // MItems -- make items
 
+#include <errno.h>
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
@@ -47,20 +48,30 @@ int main(int argc, char *argv[])
 	Init_Items(argv[1]);
 
 	fpData = fopen(argv[2], "wb");
+	if (!fpData) {
+		printf("Failed to open %s\n", argv[2]);
+		return EXIT_FAILURE;
+	}
 
 	/* fwrite number of items */
 	printf("Writing %d items.\n", TotalItems);
 	tmp16 = SWAP16S(TotalItems);
-	fwrite(&tmp16, sizeof(tmp16), 1, fpData);
+	if (fwrite(&tmp16, sizeof(tmp16), 1, fpData) != 1) {
+		printf("Write failure %d\n", errno);
+		return EXIT_FAILURE;
+	}
 	for (iTemp = 0; iTemp < TotalItems; iTemp++) {
 		s_item_data_s(Items[iTemp], ibuf, sizeof(ibuf));
-		fwrite(ibuf, sizeof(ibuf), 1, fpData);
+		if (fwrite(ibuf, sizeof(ibuf), 1, fpData) != 1) {
+			printf("Write failure %d\n", errno);
+			return EXIT_FAILURE;
+		}
 	}
 
 	fclose(fpData);
 
 	Deinit_Items();
-	return(0);
+	return EXIT_SUCCESS;
 }
 
 static void Deinit_Items(void)

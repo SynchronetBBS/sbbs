@@ -98,43 +98,47 @@ WriteCfg(void)
 {
 	FILE *f = fopen("clans.cfg", "w");
 
-	fputs("# Clans Config File ---------------------------------------------------------\n"
-	    "#\n"
-	    "# Edit it as you wish with a text file or use CONFIG.EXE to modify.\n"
-	    "#\n\n"
-	    "# [GameData] ----------------------------------------------------------------\n", f);
-	fprintf(f, "SysopName       %s\n", Config.szSysopName);
-	fprintf(f, "BBSName         %s\n", Config.szBBSName);
-	fprintf(f, "UseLog          %s\n", ConfigUseLog ? "Yes" : "No");
-	fprintf(f, "ScoreANSI       %s\n", Config.szScoreFile[1]);
-	fprintf(f, "ScoreASCII      %s\n", Config.szScoreFile[0]);
-	fputs("\n", f);
-	fputs("# [InterBBSData] ------------------------------------------------------------\n", f);
-	fprintf(f, "%sInterBBS\n", Config.InterBBS ? "" : "#");
-	fprintf(f, "%sBBSID           %d\n", Config.InterBBS ? "" : "#", Config.BBSID);
-	fprintf(f, "%sNetmailDir      %s\n", Config.InterBBS ? "" : "#", Config.szNetmailDir);
-	for (int i = 0; i < Config.NumInboundDirs; i++) {
-		if (Config.szInboundDirs[i][0])
-			fprintf(f, "%sInboundDir      %s\n", Config.InterBBS ? "" : "#", Config.szInboundDirs[i]);
-	}
-	fprintf(f, "%sMailerType      %s\n", Config.InterBBS ? "" : "#", MailerTypeName(Config.MailerType));
-	fprintf(f, "%sOutputSemaphore %s\n", (Config.InterBBS && Config.szOutputSem[0]) ? "" : "#", Config.szOutputSem);
-	for (struct NodeData *nd = nodes; nd && nd->number > 0; nd++) {
+	if (f) {
+		fputs("# Clans Config File ---------------------------------------------------------\n"
+		    "#\n"
+		    "# Edit it as you wish with a text file or use CONFIG.EXE to modify.\n"
+		    "#\n\n"
+		    "# [GameData] ----------------------------------------------------------------\n", f);
+		fprintf(f, "SysopName       %s\n", Config.szSysopName);
+		fprintf(f, "BBSName         %s\n", Config.szBBSName);
+		fprintf(f, "UseLog          %s\n", ConfigUseLog ? "Yes" : "No");
+		fprintf(f, "ScoreANSI       %s\n", Config.szScoreFile[1]);
+		fprintf(f, "ScoreASCII      %s\n", Config.szScoreFile[0]);
 		fputs("\n", f);
-		fputs("# [NodeData] ----------------------------------------------------------------\n", f);
-		fprintf(f, "Node            %d\n", nd->number);
-		fprintf(f, "DropDirectory   %s\n", nd->dropDir);
-		fprintf(f, "UseFOSSIL       %s\n", nd->fossil ? "Yes" : "No");
-		if (nd->addr != UINTPTR_MAX)
-			fprintf(f, "SerialPortAddr  0x%" PRIXPTR "\n", nd->addr);
-		else
-			fputs("SerialPortAddr  Default\n", f);
-		if (nd->irq >= 0)
-			fprintf(f, "SerialPortIRQ   %d\n", nd->irq);
-		else
-			fputs("SerialPortIRQ   Default\n", f);
+		fputs("# [InterBBSData] ------------------------------------------------------------\n", f);
+		fprintf(f, "%sInterBBS\n", Config.InterBBS ? "" : "#");
+		fprintf(f, "%sBBSID           %d\n", Config.InterBBS ? "" : "#", Config.BBSID);
+		fprintf(f, "%sNetmailDir      %s\n", Config.InterBBS ? "" : "#", Config.szNetmailDir);
+		for (int i = 0; i < Config.NumInboundDirs; i++) {
+			if (Config.szInboundDirs[i][0])
+				fprintf(f, "%sInboundDir      %s\n", Config.InterBBS ? "" : "#", Config.szInboundDirs[i]);
+		}
+		fprintf(f, "%sMailerType      %s\n", Config.InterBBS ? "" : "#", MailerTypeName(Config.MailerType));
+		fprintf(f, "%sOutputSemaphore %s\n", (Config.InterBBS && Config.szOutputSem[0]) ? "" : "#", Config.szOutputSem);
+		for (struct NodeData *nd = nodes; nd && nd->number > 0; nd++) {
+			fputs("\n", f);
+			fputs("# [NodeData] ----------------------------------------------------------------\n", f);
+			fprintf(f, "Node            %d\n", nd->number);
+			fprintf(f, "DropDirectory   %s\n", nd->dropDir);
+			fprintf(f, "UseFOSSIL       %s\n", nd->fossil ? "Yes" : "No");
+			if (nd->addr != UINTPTR_MAX)
+				fprintf(f, "SerialPortAddr  0x%" PRIXPTR "\n", nd->addr);
+			else
+				fputs("SerialPortAddr  Default\n", f);
+			if (nd->irq >= 0)
+				fprintf(f, "SerialPortIRQ   %d\n", nd->irq);
+			else
+				fputs("SerialPortIRQ   Default\n", f);
+		}
+		fclose(f);
 	}
-	fclose(f);
+	else
+		System_Error("Failed to write config!");
 }
 
 static void ConfigMenu(void)

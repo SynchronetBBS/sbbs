@@ -498,10 +498,13 @@ void Trades_MakeTrade(void)
 	strlcpy(TradeData.szFromClan, PClan->szName, sizeof(TradeData.szFromClan));
 
 	fpTradeFile = fopen("trades.dat", "ab");
-
-	/* append it */
-	EncryptWrite_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE);
-	fclose(fpTradeFile);
+	if (!fpTradeFile)
+		rputs("\n|04Failed to open trades.dat!\n\n");
+	else {
+		/* append it */
+		EncryptWrite_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE);
+		fclose(fpTradeFile);
+	}
 
 	rputs("\n|13Trade has been requested.\n\n");
 }
@@ -514,8 +517,10 @@ void Trades_Maint(void)
 	fpTradeFile = fopen("trades.dat", "rb");
 	if (fpTradeFile) {
 		fpNewTradeFile = fopen("tmp.$$$", "wb");
-		if (!fpNewTradeFile)
+		if (!fpNewTradeFile) {
+			fclose(fpTradeFile);
 			return;
+		}
 
 		for (;;) {
 			notEncryptRead_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE)

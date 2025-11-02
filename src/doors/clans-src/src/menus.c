@@ -126,8 +126,10 @@ static void AddChatFile(char *szString, char *pszFileName)
 		/* no file, make it */
 		fpChatFile = fopen(pszFileName, "w");
 		/* write string */
-		fputs(szString, fpChatFile);
-		fclose(fpChatFile);
+		if (fpChatFile) {
+			fputs(szString, fpChatFile);
+			fclose(fpChatFile);
+		}
 		return;
 	}
 

@@ -127,6 +127,7 @@ int main(void)
 	FileSize = ftell(fpPC);
 	if (FileSize / (long)entry_size > INT16_MAX) {
 		puts(PLAYER_DATAFILE " too large");
+		fclose(fpPC);
 		return(EXIT_FAILURE);
 	}
 	NumClans = (int16_t)(FileSize / (long)entry_size);
@@ -337,6 +338,7 @@ static void DeleteClan(int16_t ClanID[2])
 	if (OldMessage) {       // MSJ file exists, so go on
 		NewMessage = fopen(TEMP_FILENAME, "wb");
 		if (!NewMessage) {
+			fclose(OldMessage);
 			return;
 		}
 
@@ -346,6 +348,7 @@ static void DeleteClan(int16_t ClanID[2])
 
 			if (Message.Data.Length < 0) {
 				puts("Negative Message Length\n");
+				fclose(OldMessage);
 				fclose(NewMessage);
 				unlink(TEMP_FILENAME);
 				exit(EXIT_FAILURE);
@@ -578,7 +581,11 @@ static void RemoveFromUList(const int16_t ClanID[2])
 		return;
 
 	fpNewUList = fopen(TEMP_FILENAME, "wb");
-	// FIXME: assume file is opened
+	if (!fpNewUList) {
+		printf("Failed to create %s\n", TEMP_FILENAME);
+		fclose(fpOldUList);
+		exit(EXIT_FAILURE);
+	}
 
 	for (;;) {
 		notEncryptRead_s(UserInfo, &User, fpOldUList, XOR_USER)

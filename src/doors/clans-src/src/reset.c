@@ -589,6 +589,10 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 		Game_Data.DaysOfProtection = ResetData->DaysOfProtection;
 
 		fp = fopen("game.dat", "wb");
+		if (!fp) {
+			System_Error("Failed to create game.dat");
+			return;
+		}
 		EncryptWrite_s(game_data, &Game_Data, fp, XOR_GAME);
 		fclose(fp);
 
@@ -619,6 +623,10 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 		Game_Data.DaysOfProtection = ResetData->DaysOfProtection;
 
 		fp = fopen("game.dat", "wb");
+		if (!fp) {
+			System_Error("Failed to create game.dat");
+			return;
+		}
 		EncryptWrite_s(game_data, &Game_Data, fp, XOR_GAME);
 		fclose(fp);
 
@@ -654,6 +662,10 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 		Game_Data.DaysOfProtection = ResetData->DaysOfProtection;
 
 		fp = fopen("game.dat", "wb");
+		if (!fp) {
+			System_Error("Failed to create game.dat");
+			return;
+		}
 		EncryptWrite_s(game_data, &Game_Data, fp, XOR_GAME);
 		fclose(fp);
 
@@ -802,8 +814,13 @@ static void CreateVillageDat(struct ResetData *ResetData)
 	Village_Data.MarketQuality = MQ_AVERAGE;
 
 	fp = fopen("village.dat", "wb");
-	EncryptWrite_s(village_data, &Village_Data, fp, XOR_VILLAGE);
-	fclose(fp);
+	if (!fp) {
+		System_Error("|04Failed to create village.dat");
+	}
+	else {
+		EncryptWrite_s(village_data, &Village_Data, fp, XOR_VILLAGE);
+		fclose(fp);
+	}
 }
 
 static void UpdateOption(char Option)
