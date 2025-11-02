@@ -362,7 +362,7 @@ void DisplayScores(bool MakeFile)
 			snprintf(szString, sizeof(szString), ST_SCORE2ASCII,
 					SortData[ SortList[CurClan] ]->szName,
 					szPadding, SortData[ SortList[CurClan] ]->PlainSymbol,
-					SortData[ SortList[CurClan] ]->Points);
+					(long)SortData[ SortList[CurClan] ]->Points);
 
 			if (SortData[ SortList[CurClan] ]->Eliminated)
 				strlcat(szString, ST_SCORE6ASCII, sizeof(szString));
@@ -394,7 +394,7 @@ void DisplayScores(bool MakeFile)
 			snprintf(szString, sizeof(szString), ST_SCORE2ANSI,
 					SortData[ SortList[CurClan] ]->szName,
 					szPadding, AnsiSymbol,
-					SortData[ SortList[CurClan] ]->Points);
+					(long)SortData[ SortList[CurClan] ]->Points);
 
 			if (SortData[ SortList[CurClan] ]->Eliminated)
 				strlcat(szString, ST_SCORE6ANSI, sizeof(szString));
@@ -706,7 +706,7 @@ void LeagueScores(void)
 				ScoreList[iTemp]->szName,
 				szPadding,
 				ScoreList[iTemp]->Symbol,
-				ScoreList[iTemp]->Points,
+				(long)ScoreList[iTemp]->Points,
 				VillageName(ScoreList[iTemp]->ClanID[0]));
 		rputs(szString);
 	}

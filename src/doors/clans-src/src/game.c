@@ -92,7 +92,7 @@ void Game_Settings(void)
 	snprintf(szString, sizeof(szString), ST_GSETTINGS1, Game.Data.EliminationMode ? "On" : "Off");
 	rputs(szString);
 	*/
-	snprintf(szString, sizeof(szString), ST_GSETTINGS2, Game.Data.MaxPermanentMembers);
+	snprintf(szString, sizeof(szString), ST_GSETTINGS2, (int)Game.Data.MaxPermanentMembers);
 	rputs(szString);
 
 	if (Game.Data.InterBBS) {
@@ -103,11 +103,11 @@ void Game_Settings(void)
 	snprintf(szString, sizeof(szString), ST_GSETTINGS4, Game.Data.ClanEmpires ? "allowed" : "disabled");
 	rputs(szString);
 
-	snprintf(szString, sizeof(szString), ST_GSETTINGS5, Game.Data.MineFights);
+	snprintf(szString, sizeof(szString), ST_GSETTINGS5, (int)Game.Data.MineFights);
 	rputs(szString);
-	snprintf(szString, sizeof(szString), ST_GSETTINGS6, Game.Data.ClanFights);
+	snprintf(szString, sizeof(szString), ST_GSETTINGS6, (int)Game.Data.ClanFights);
 	rputs(szString);
-	snprintf(szString, sizeof(szString), ST_GSETTINGS7, Game.Data.DaysOfProtection);
+	snprintf(szString, sizeof(szString), ST_GSETTINGS7, (int)Game.Data.DaysOfProtection);
 	rputs(szString);
 	door_pause();
 }

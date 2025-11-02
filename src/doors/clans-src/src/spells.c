@@ -309,7 +309,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 
 		/* figure out XP gained */
 		XPGained = NumUndeadToRemove * 4;
-		snprintf(szString, sizeof(szString), ST_FIGHTXP, XPGained);
+		snprintf(szString, sizeof(szString), ST_FIGHTXP, (long)XPGained);
 		rputs(szString);
 		PC->Experience += XPGained;
 		rputs("\n\n");
@@ -434,7 +434,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 
 		/* figure out XP gained */
 		XPGained = NumUndead * 2;
-		snprintf(szString, sizeof(szString), ST_FIGHTXP, XPGained);
+		snprintf(szString, sizeof(szString), ST_FIGHTXP, (long)XPGained);
 		rputs(szString);
 		PC->Experience += XPGained;
 		rputs("\n\n");
@@ -468,7 +468,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 
 		/* figure out XP gained */
 		XPGained = HPIncrease/3;
-		snprintf(szString, sizeof(szString), ST_FIGHTXP, XPGained);
+		snprintf(szString, sizeof(szString), ST_FIGHTXP, (long)XPGained);
 		rputs(szString);
 		PC->Experience += XPGained;
 
@@ -536,7 +536,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 
 		/* figure out XP gained */
 		XPGained = 3;
-		snprintf(szString, sizeof(szString), ST_FIGHTXP, XPGained);
+		snprintf(szString, sizeof(szString), ST_FIGHTXP, (long)XPGained);
 		rputs(szString);
 		PC->Experience += XPGained;
 		rputs("\n\n");
@@ -608,7 +608,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 
 				/* experience goes here */
 				XPGained = Damage/3 + 1;
-				snprintf(szString, sizeof(szString), ST_FIGHTXP, XPGained);
+				snprintf(szString, sizeof(szString), ST_FIGHTXP, (long)XPGained);
 				rputs(szString);
 				PC->Experience += XPGained;
 
@@ -624,7 +624,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 				if (EnemyClan->szName[0] == 0) {
 					EnemyClan->Member[Target]->Status = Dead;
 					snprintf(szString, sizeof(szString), ST_FIGHTKILLED, EnemyClan->Member[Target]->szName,
-							EnemyClan->Member[Target]->Difficulty);
+							(int)EnemyClan->Member[Target]->Difficulty);
 
 					/* give xp because of death */
 					PC->Experience += (EnemyClan->Member[Target]->Difficulty);
@@ -632,7 +632,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 				else if (EnemyClan->Member[Target]->HP < -15) {
 					EnemyClan->Member[Target]->Status = Dead;
 					snprintf(szString, sizeof(szString), ST_FIGHTKILLED, EnemyClan->Member[Target]->szName,
-							EnemyClan->Member[Target]->Level*2);
+							(int)(EnemyClan->Member[Target]->Level * 2));
 
 					/* loses percentage of MaxHP */
 					EnemyClan->Member[Target]->MaxHP = (int16_t)((EnemyClan->Member[Target]->MaxHP * (my_random(10) + 90)) / 100);
@@ -643,7 +643,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 				else if (EnemyClan->Member[Target]->HP < -5) {
 					EnemyClan->Member[Target]->Status = Unconscious;
 					snprintf(szString, sizeof(szString), ST_FIGHTMORTALWOUND, EnemyClan->Member[Target]->szName,
-							EnemyClan->Member[Target]->Level);
+							(int)EnemyClan->Member[Target]->Level);
 
 					/* loses percentage of MaxHP */
 					EnemyClan->Member[Target]->MaxHP = (int16_t)((EnemyClan->Member[Target]->MaxHP * (my_random(10) + 90)) / 100);
@@ -653,7 +653,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 				else {
 					EnemyClan->Member[Target]->Status = Unconscious;
 					snprintf(szString, sizeof(szString), ST_FIGHTKNOCKEDOUT, EnemyClan->Member[Target]->szName,
-							EnemyClan->Member[Target]->Level);
+							(int)EnemyClan->Member[Target]->Level);
 
 					PC->Experience += (EnemyClan->Member[Target]->Level);
 				}
@@ -663,14 +663,14 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 				if (PC->MyClan == PClan) {
 					if (EnemyClan->Member[Target]->Difficulty != -1) {
 						GoldGained = EnemyClan->Member[Target]->Difficulty*((int32_t)my_random(10) + 20L) + 50L + (int32_t)my_random(20);
-						snprintf(szString, sizeof(szString), ST_FIGHTGETGOLD, GoldGained);
+						snprintf(szString, sizeof(szString), ST_FIGHTGETGOLD, (long)GoldGained);
 						rputs(szString);
 
 						/* take some away due to taxes */
 						if (GoldGained > 0) {
 							TaxedGold = (int32_t)(GoldGained * Village.Data.TaxRate)/100L;
 							if (TaxedGold) {
-								snprintf(szString, sizeof(szString), ST_FIGHTTAXEDGOLD, TaxedGold);
+								snprintf(szString, sizeof(szString), ST_FIGHTTAXEDGOLD, (long)TaxedGold);
 								rputs(szString);
 							}
 

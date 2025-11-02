@@ -627,7 +627,7 @@ static void WizardShop(void)
 
 				ExamineCost = PClan->Items[ItemIndex].lCost/4;
 
-				snprintf(szString, sizeof(szString), ST_WIZ3, ExamineCost, PClan->Empire.VaultGold);
+				snprintf(szString, sizeof(szString), ST_WIZ3, (long)ExamineCost, (long)PClan->Empire.VaultGold);
 
 				rputs(szString);
 				if (PClan->Empire.VaultGold < ExamineCost) {
@@ -725,7 +725,7 @@ static int16_t AlliancesMenu(void)
 		if (Alliances[iTemp] == NULL) break;
 
 		// od_printf("(%c) %s\n\r", iTemp+'A', Alliances[iTemp]->szName);
-		snprintf(szString, sizeof(szString), ST_AMENU1, iTemp+'A', Alliances[iTemp]->szName);
+		snprintf(szString, sizeof(szString), ST_AMENU1, (char)(iTemp + 'A'), Alliances[iTemp]->szName);
 		rputs(szString);
 
 		szChoices[iTemp] = iTemp + 'A';

@@ -320,7 +320,7 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 				continue;
 			}
 			for (i = 0; i < NumLines; i++) {
-				snprintf(string, sizeof(string), ST_MAILLIST, i+1, &Message.Data.MsgTxt[ Message.Data.Offsets[i] ]);
+				snprintf(string, sizeof(string), ST_MAILLIST, (int)(i + 1), &Message.Data.MsgTxt[ Message.Data.Offsets[i] ]);
 				string[84] = 0;
 				strlcat(string, "\n", sizeof(string));
 				strlcat(string, ST_MAILENTERCOLOR, sizeof(string));
@@ -545,7 +545,7 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 
 				// show old message
 				for (i = 0; i < Reply->Data.NumLines; i++) {
-					snprintf(string, sizeof(string), ST_RMAILQUOTELIST , i+1, &Reply->Data.MsgTxt[  Reply->Data.Offsets[i]  ]);
+					snprintf(string, sizeof(string), ST_RMAILQUOTELIST , (int)(i + 1), &Reply->Data.MsgTxt[  Reply->Data.Offsets[i]  ]);
 					string[84] = 0;
 					rputs(string);
 				}
@@ -782,7 +782,7 @@ static void Reply_Message(struct Message *Reply)
 				continue;
 			}
 			for (i = 0; i < NumLines; i++) {
-				snprintf(string, sizeof(string), ST_MAILLIST, i+1, &Message.Data.MsgTxt[ Message.Data.Offsets[i] ]);
+				snprintf(string, sizeof(string), ST_MAILLIST, (int)(i + 1), &Message.Data.MsgTxt[ Message.Data.Offsets[i] ]);
 				string[84] = 0;
 				strlcat(string, "\n", sizeof(string));
 				strlcat(string, ST_MAILENTERCOLOR, sizeof(string));
@@ -931,7 +931,7 @@ bool Mail_Read(void)
 		rputs(szString);
 
 		if (Message.MessageType == MT_PUBLIC) {
-			snprintf(szString, sizeof(szString), ST_RMAILPUBLICPOST, Message.PublicMsgIndex);
+			snprintf(szString, sizeof(szString), ST_RMAILPUBLICPOST, (int)Message.PublicMsgIndex);
 			rputs(szString);
 		}
 		rputs("\n");
@@ -1381,7 +1381,7 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 				continue;
 			}
 			for (i = 0; i < NumLines; i++) {
-				snprintf(string, sizeof(string), ST_MAILLIST, i+1, &Message.Data.MsgTxt[ Message.Data.Offsets[i] ]);
+				snprintf(string, sizeof(string), ST_MAILLIST, (int)(i + 1), &Message.Data.MsgTxt[ Message.Data.Offsets[i] ]);
 				string[84] = 0;
 				strlcat(string, "\n", sizeof(string));
 				strlcat(string, ST_MAILENTERCOLOR, sizeof(string));

@@ -357,13 +357,13 @@ static void IBBS_ProcessSpyResult(struct SpyResultPacket *SpyResult)
 	if (SpyResult->Success) {
 		// snprintf(szMessage, sizeof(szMessage), "Your spies sent to %s were successful and return with information:\n\nGold:  %ld\nLand:  %d\n\nTroops:  %ld footmen, %ld axemen, %ld knights\n\nBuildings:",
 		snprintf(szMessage, sizeof(szMessage), ST_SPY7, SpyResult->Empire.szName,
-				SpyResult->Empire.VaultGold,
-				SpyResult->Empire.Land, SpyResult->Empire.Army.Footmen,
-				SpyResult->Empire.Army.Axemen, SpyResult->Empire.Army.Knights,
-				ArmySpeed(&SpyResult->Empire.Army),
-				ArmyOffense(&SpyResult->Empire.Army),
-				ArmyDefense(&SpyResult->Empire.Army),
-				ArmyVitality(&SpyResult->Empire.Army));
+				(long)SpyResult->Empire.VaultGold,
+				(int)SpyResult->Empire.Land, (long)SpyResult->Empire.Army.Footmen,
+				(long)SpyResult->Empire.Army.Axemen, (long)SpyResult->Empire.Army.Knights,
+				(int)ArmySpeed(&SpyResult->Empire.Army),
+				(long)ArmyOffense(&SpyResult->Empire.Army),
+				(long)ArmyDefense(&SpyResult->Empire.Army),
+				(long)ArmyVitality(&SpyResult->Empire.Army));
 
 		// buildings now
 

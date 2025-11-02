@@ -128,7 +128,7 @@ static void PS_List(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 	for (CurItem = 0; CurItem < MAX_PSITEMS; CurItem++) {
 		if (PS_Items[CurItem]) {
 			snprintf(szString, sizeof(szString), ST_PAWN6,
-					CurItem+1, PS_Items[CurItem]->szName);
+					(int)(CurItem + 1), PS_Items[CurItem]->szName);
 			rputs(szString);
 
 			if (ItemsShown == 60)
@@ -213,9 +213,10 @@ static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 						(PS_Items[ItemIndex]->lCost*10)/100L +
 						(PS_Items[ItemIndex]->lCost*my_random(10))/100L;
 
-				snprintf(szString, sizeof(szString), ST_PAWN4, lCost);
+				snprintf(szString, sizeof(szString), ST_PAWN4, (long)lCost);
 
-				if (YesNo(szString) == NO)  break;
+				if (YesNo(szString) == NO)
+					break;
 
 				// see if enough gold
 				if (PClan->Empire.VaultGold < lCost) {
@@ -335,7 +336,7 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 				lCost = (PClan->Items[ItemIndex].lCost*3L)/4L +
 						(PClan->Items[ItemIndex].lCost*(int32_t)my_random(15))/100L;
 
-				snprintf(szString, sizeof(szString), ST_PAWN12, lCost);
+				snprintf(szString, sizeof(szString), ST_PAWN12, (long)lCost);
 
 				if (YesNo(szString) == NO) break;
 
@@ -379,7 +380,7 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 					lCost = (PClan->Items[ItemIndex].lCost*3L)/4L +
 							(PClan->Items[ItemIndex].lCost*(int32_t)my_random(15))/100L;
 
-					snprintf(szString, sizeof(szString), ST_PAWN12, lCost);
+					snprintf(szString, sizeof(szString), ST_PAWN12, (long)lCost);
 
 					if (YesNo(szString) == NO) continue;
 

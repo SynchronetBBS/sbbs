@@ -671,12 +671,12 @@ void Item_BuyItem(signed char ItemType)
 		rputs(ST_ITEMHEADER);
 		/* list which ones to buy */
 		for (iTemp = 0; iTemp < TotalItems; iTemp++) {
-			snprintf(szString, sizeof(szString), ST_ITEMLINE, 'A' + iTemp,
+			snprintf(szString, sizeof(szString), ST_ITEMLINE, (char)('A' + iTemp),
 					PClan->Empire.VaultGold >= Items.Data[ ItemIndex[iTemp] ]->lCost ? "|0C" : "|08",
-					Items.Data[ ItemIndex[iTemp] ]->szName, ItemCosts[iTemp]);
+					Items.Data[ ItemIndex[iTemp] ]->szName, (long)ItemCosts[iTemp]);
 			rputs(szString);
 		}
-		snprintf(szString, sizeof(szString), ST_ITEMOPTIONS, PClan->Empire.VaultGold);
+		snprintf(szString, sizeof(szString), ST_ITEMOPTIONS, (long)PClan->Empire.VaultGold);
 		rputs(szString);
 		rputs(ST_LONGLINE);
 		rputs(ST_ITEMPROMPT);
@@ -707,7 +707,7 @@ void Item_BuyItem(signed char ItemType)
 					Items.Data[ ItemIndex[Choice - 'A'] ]->cType != I_OTHER)
 				Help(Items.Data[ ItemIndex[Choice - 'A'] ]->szName, ST_ITEMHLP);
 
-			snprintf(szString, sizeof(szString), ST_ITEMCOSTIS, ItemCosts[ Choice - 'A'], PClan->Empire.VaultGold);
+			snprintf(szString, sizeof(szString), ST_ITEMCOSTIS, (long)ItemCosts[ Choice - 'A'], (long)PClan->Empire.VaultGold);
 			rputs(szString);
 
 			/* ask if he still wants to buy it */

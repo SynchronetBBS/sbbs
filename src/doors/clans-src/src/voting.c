@@ -251,20 +251,6 @@ void ChooseNewLeader(void)
 	int16_t NewRulerID[2];
 	char szName[25], szString[128];
 
-	// if voting not allowed, just write in news that the dictatorship
-	// continues
-	/*
-	    if (Village.GovtSystem == GS_DICTATOR && Village.RulingClanId[0] != -1)
-	    {
-	      GetClanNameID(szName, Village.RulingClanId);
-
-	      // snprintf(szString, sizeof(szString), ">> %s's reign as dictator continues.\n\n",
-	      snprintf(szString, sizeof(szString), ST_NEWS0, szName);
-	      AddNews(szString);
-	      return;
-	    }
-	*/
-
 	// get sorted votes
 	GetVotes(TopCandidates, TopVotes, false);
 
@@ -305,7 +291,6 @@ void ChooseNewLeader(void)
 	// if same as yesterday's ruler, just tell people he was re-elected
 	if (NewRulerID[0] == Village.Data.RulingClanId[0] &&
 			NewRulerID[1] == Village.Data.RulingClanId[1]) {
-		// snprintf(szString, sizeof(szString), ">> %s is re-elected as the leader of town!\n\n",
 		snprintf(szString, sizeof(szString), ST_NEWS1, szName);
 		News_AddNews(szString);
 	}

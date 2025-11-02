@@ -735,7 +735,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 			Damage = 1;
 
 		if (SkipOutput == false) {
-			snprintf(szString, sizeof(szString), ST_FIGHTATTACK, Attacker->szName, VictimClan->Member[Who]->szName, Damage);
+			snprintf(szString, sizeof(szString), ST_FIGHTATTACK, Attacker->szName, VictimClan->Member[Who]->szName, (int)Damage);
 			rputs(szString);
 		}
 
@@ -743,7 +743,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		XPGained = Damage/3 + 1;
 
 		if (SkipOutput == false) {
-			snprintf(szString, sizeof(szString), ST_FIGHTXP, XPGained);
+			snprintf(szString, sizeof(szString), ST_FIGHTXP, (long)XPGained);
 			rputs(szString);
 		}
 
@@ -762,7 +762,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		if (VictimClan->szName[0] == 0) {
 			VictimClan->Member[Who]->Status = Dead;
 			snprintf(szString, sizeof(szString), ST_FIGHTKILLED, VictimClan->Member[Who]->szName,
-					VictimClan->Member[Who]->Difficulty);
+					(int)VictimClan->Member[Who]->Difficulty);
 
 			/* give xp because of death */
 			Attacker->Experience += (VictimClan->Member[Who]->Difficulty);
@@ -770,7 +770,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		else if (VictimClan->Member[Who]->HP < -15) {
 			VictimClan->Member[Who]->Status = Dead;
 			snprintf(szString, sizeof(szString), ST_FIGHTKILLED, VictimClan->Member[Who]->szName,
-					VictimClan->Member[Who]->Level*2);
+					(int)(VictimClan->Member[Who]->Level * 2));
 
 			/* loses percentage of MaxHP */
 			VictimClan->Member[Who]->MaxHP = (int16_t)((VictimClan->Member[Who]->MaxHP * (my_random(10) + 90))/100);
@@ -781,7 +781,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		else if (VictimClan->Member[Who]->HP < -5) {
 			VictimClan->Member[Who]->Status = Unconscious;
 			snprintf(szString, sizeof(szString), ST_FIGHTMORTALWOUND, VictimClan->Member[Who]->szName,
-					VictimClan->Member[Who]->Level);
+					(int)VictimClan->Member[Who]->Level);
 
 			/* loses percentage of MaxHP */
 			VictimClan->Member[Who]->MaxHP = (int16_t)((VictimClan->Member[Who]->MaxHP * (my_random(10)+90))/100);
@@ -791,7 +791,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		else {
 			VictimClan->Member[Who]->Status = Unconscious;
 			snprintf(szString, sizeof(szString), ST_FIGHTKNOCKEDOUT, VictimClan->Member[Who]->szName,
-					VictimClan->Member[Who]->Level);
+					(int)VictimClan->Member[Who]->Level);
 
 			Attacker->Experience += VictimClan->Member[Who]->Level;
 		}
@@ -801,13 +801,13 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		if (Attacker->MyClan == PClan) {
 			if (VictimClan->Member[Who]->Difficulty != -1) {
 				GoldGained = VictimClan->Member[Who]->Difficulty*((int32_t)my_random(10) + 20L) + 50L + (int32_t)my_random(20);
-				snprintf(szString, sizeof(szString), ST_FIGHTGETGOLD, GoldGained);
+				snprintf(szString, sizeof(szString), ST_FIGHTGETGOLD, (long)GoldGained);
 				rputs(szString);
 
 				/* take some away due to taxes */
 				TaxedGold = (int32_t)(GoldGained * Village.Data.TaxRate)/100L;
 				if (TaxedGold) {
-					snprintf(szString, sizeof(szString), ST_FIGHTTAXEDGOLD, TaxedGold);
+					snprintf(szString, sizeof(szString), ST_FIGHTTAXEDGOLD, (long)TaxedGold);
 					rputs(szString);
 				}
 
@@ -891,10 +891,10 @@ static int16_t GetTarget2(struct clan *Clan, int16_t Default)
 	// list who's here
 	for (CurIndex = 0; CurIndex < TotalMembers; CurIndex++) {
 		if (Clan == PClan)
-			snprintf(szString, sizeof(szString), ST_FIGHTTARGETLIST1, CurIndex+'A', Clan->Member[Index[CurIndex]]->szName,
-					Clan->Member[Index[CurIndex]]->HP, Clan->Member[Index[CurIndex]]->MaxHP);
+			snprintf(szString, sizeof(szString), ST_FIGHTTARGETLIST1, (char)(CurIndex + 'A'), Clan->Member[Index[CurIndex]]->szName,
+					(int)Clan->Member[Index[CurIndex]]->HP, (int)Clan->Member[Index[CurIndex]]->MaxHP);
 		else
-			snprintf(szString, sizeof(szString), ST_FIGHTTARGETLIST2, CurIndex+'A', Clan->Member[Index[CurIndex]]->szName);
+			snprintf(szString, sizeof(szString), ST_FIGHTTARGETLIST2, (char)(CurIndex + 'A'), Clan->Member[Index[CurIndex]]->szName);
 
 		rputs(szString);
 	}
@@ -910,10 +910,10 @@ static int16_t GetTarget2(struct clan *Clan, int16_t Default)
 			// list who's here
 			for (CurIndex = 0; CurIndex < TotalMembers; CurIndex++) {
 				if (Clan == PClan)
-					snprintf(szString, sizeof(szString), ST_FIGHTTARGETLIST1, CurIndex+'A', Clan->Member[Index[CurIndex]]->szName,
-							Clan->Member[Index[CurIndex]]->HP, Clan->Member[Index[CurIndex]]->MaxHP);
+					snprintf(szString, sizeof(szString), ST_FIGHTTARGETLIST1, (char)(CurIndex + 'A'), Clan->Member[Index[CurIndex]]->szName,
+							(int)Clan->Member[Index[CurIndex]]->HP, (int)Clan->Member[Index[CurIndex]]->MaxHP);
 				else
-					snprintf(szString, sizeof(szString), ST_FIGHTTARGETLIST2, CurIndex+'A', Clan->Member[Index[CurIndex]]->szName);
+					snprintf(szString, sizeof(szString), ST_FIGHTTARGETLIST2, (char)(CurIndex + 'A'), Clan->Member[Index[CurIndex]]->szName);
 
 				rputs(szString);
 			}
@@ -1043,10 +1043,10 @@ static bool Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct mov
 				break;
 			}
 
-			snprintf(szString, sizeof(szString), ST_CSPELL1, cTemp+'A',
+			snprintf(szString, sizeof(szString), ST_CSPELL1, (char)(cTemp + 'A'),
 					PC->SP >= Spells[ PC->SpellsKnown[cTemp]-1 ]->SP ? "|0C" : "|08",
 					Spells[ PC->SpellsKnown[cTemp]-1 ]->szName,
-					Spells[ PC->SpellsKnown[cTemp]-1 ]->SP);
+					(int)Spells[ PC->SpellsKnown[cTemp]-1 ]->SP);
 			rputs(szString);
 		}
 
@@ -1203,8 +1203,8 @@ int16_t Fight_Fight(struct clan *Attacker, struct clan *Defender,
 					rputs(ST_FIGHTOPTIONS);
 
 					snprintf(szString, sizeof(szString), ST_FIGHTPSTATS, Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->szName,
-							Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->HP, Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->MaxHP,
-							Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->SP, Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->MaxSP);
+							(int)Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->HP, (int)Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->MaxHP,
+							(int)Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->SP, (int)Team[ BattleOrder[CurMember].TeamNum ]->Member[ BattleOrder[CurMember].MemberNum ]->MaxSP);
 					rputs(szString);
 
 					// show options
@@ -1373,7 +1373,7 @@ void Fight_CheckLevelUp(void)
 
 				// snprintf(szString, sizeof(szString), "|10>> |15%s |02raises to level |14%d |02and gains %d training points!\n",
 				snprintf(szString, sizeof(szString), ST_LEVELUP, PClan->Member[CurMember]->szName,
-						PClan->Member[CurMember]->Level, Points);
+						(int)PClan->Member[CurMember]->Level, (int)Points);
 				rputs(szString);
 
 				LevelUpFound = true;
@@ -1584,7 +1584,7 @@ static void Fight_GiveFollowers(int16_t Level)
 	NumConscripted = (NumFollowers*Village.Data.ConscriptionRate)/100L;
 
 	if (NumFollowers || NumConscripted) {
-		snprintf(szString, sizeof(szString), ST_FIGHTOVER1, NumFollowers, NumConscripted);
+		snprintf(szString, sizeof(szString), ST_FIGHTOVER1, (long)NumFollowers, (long)NumConscripted);
 		rputs(szString);
 	}
 

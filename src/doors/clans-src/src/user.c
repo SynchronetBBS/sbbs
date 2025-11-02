@@ -708,7 +708,7 @@ void ShowPlayerStats(struct pc *PC, bool AllowModify)
 		strlcat(szString, ST_P2STATS1, sizeof(szString));
 		rputs(szString);
 
-		snprintf(szString, sizeof(szString), ST_P2STATS2, PC->Level);
+		snprintf(szString, sizeof(szString), ST_P2STATS2, (int)PC->Level);
 		PadString(szString, 43);
 		rputs(szString);
 
@@ -719,7 +719,7 @@ void ShowPlayerStats(struct pc *PC, bool AllowModify)
 		rputs(szString);
 
 
-		snprintf(szString, sizeof(szString), ST_P2STATS4, PC->Experience, XPRequired[ PC->Level + 1 ]-PC->Experience,
+		snprintf(szString, sizeof(szString), ST_P2STATS4, (long)PC->Experience, (long)(XPRequired[ PC->Level + 1 ] - PC->Experience),
 				PC->TrainingPoints);
 		PadString(szString, 43);
 		rputs(szString);
@@ -748,11 +748,11 @@ void ShowPlayerStats(struct pc *PC, bool AllowModify)
 			snprintf(szString, sizeof(szString), ST_P2STATS7, "Nothing");
 		rputs(szString);
 
-		snprintf(szString, sizeof(szString), ST_P2STATS8, PC->HP, PC->MaxHP);
+		snprintf(szString, sizeof(szString), ST_P2STATS8, (int)PC->HP, (int)PC->MaxHP);
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_P2STATS9, PC->SP, PC->MaxSP);
+		snprintf(szString, sizeof(szString), ST_P2STATS9, (int)PC->SP, (int)PC->MaxSP);
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_P2STATS14, PC->TrainingPoints);
+		snprintf(szString, sizeof(szString), ST_P2STATS14, (int)PC->TrainingPoints);
 		rputs(szString);
 
 		rputs(ST_P2STATS10);
@@ -1221,7 +1221,7 @@ void ItemStats(void)
 							}
 
 							snprintf(szString, sizeof(szString), ST_ISTATS22,
-									cTemp+'A',
+									(char)(cTemp + 'A'),
 									ItemPenalty(PClan->Member[cTemp], &PClan->Items[ItemIndex]) ? "|08" : "|0C",
 									PClan->Member[cTemp]->szName,
 									szItemName);
@@ -1414,32 +1414,24 @@ void ShowVillageStats(void)
 	else
 		strlcpy(szRuler, Village.Data.szRulingClan, sizeof(szRuler));
 
-	snprintf(szString, sizeof(szString), ST_VSTATS1, NumClansInVillage(), szRuler);
+	snprintf(szString, sizeof(szString), ST_VSTATS1, (int)NumClansInVillage(), szRuler);
 	rputs(szString);
 
-	snprintf(szString, sizeof(szString), ST_VSTATS2, Village.Data.TaxRate);
+	snprintf(szString, sizeof(szString), ST_VSTATS2, (int)Village.Data.TaxRate);
 	rputs(szString);
 
-	snprintf(szString, sizeof(szString), ST_VSTATS4, Village.Data.GST);
+	snprintf(szString, sizeof(szString), ST_VSTATS4, (int)Village.Data.GST);
 	rputs(szString);
 
-	snprintf(szString, sizeof(szString), ST_VSTATS7, Village.Data.Empire.VaultGold);
+	snprintf(szString, sizeof(szString), ST_VSTATS7, (long)Village.Data.Empire.VaultGold);
 	rputs(szString);
 
-	snprintf(szString, sizeof(szString), ST_TMENUSTAT8, Village.Data.ConscriptionRate);
+	snprintf(szString, sizeof(szString), ST_TMENUSTAT8, (int)Village.Data.ConscriptionRate);
 	rputs(szString);
-	/*    snprintf(szString, sizeof(szString), ST_TMENUSTAT9, Village.Data.GovtSystem == GS_DEMOCRACY ?
-	        "Democracy" : "Dictatorship");
-	      rputs(szString);
-
-	      snprintf(szString, sizeof(szString), ST_TMENUSTAT10, Village.Data.ShowEmpireStats ?
-	        "Available" : "Unavailable");
-	      rputs(szString);
-	*/
 
 	// == 0 means game in progress
 	if (Game.Data.GameState == 0) {
-		snprintf(szString, sizeof(szString), ST_VSTATS8, DaysBetween(Game.Data.szDateGameStart, System.szTodaysDate),
+		snprintf(szString, sizeof(szString), ST_VSTATS8, (long)DaysBetween(Game.Data.szDateGameStart, System.szTodaysDate),
 				Game.Data.szDateGameStart, "Disabled");
 		rputs(szString);
 	}
@@ -1473,8 +1465,6 @@ void ClanStats(struct clan *Clan, bool AllowModify)
 	while (DoneLooking == false) {
 		od_clr_scr();
 
-		// snprintf(szString, sizeof(szString), ST_CSTATS0, Clan->szName, Clan->ClanID[0], Clan->ClanID[1]);
-		// using color snprintf(szString, sizeof(szString), ST_CSTATS0, Clan->szName, Clan->Color, Clan->Symbol);
 		snprintf(szString, sizeof(szString), ST_CSTATS0, Clan->szName, Clan->Symbol);
 		rputs(szString);
 
@@ -1482,10 +1472,10 @@ void ClanStats(struct clan *Clan, bool AllowModify)
 		snprintf(szString, sizeof(szString), ST_CSTATS1, Clan->szDateOfLastGame);
 		rputs(szString);
 
-		snprintf(szString, sizeof(szString), ST_CSTATS2, Clan->Empire.VaultGold);
+		snprintf(szString, sizeof(szString), ST_CSTATS2, (long)Clan->Empire.VaultGold);
 		rputs(szString);
 
-		snprintf(szString, sizeof(szString), ST_CSTATS3, Clan->MineLevel);
+		snprintf(szString, sizeof(szString), ST_CSTATS3, (int)Clan->MineLevel);
 		rputs(szString);
 
 		/* members */
@@ -1570,7 +1560,7 @@ void ClanStats(struct clan *Clan, bool AllowModify)
 		rputs("\n");
 
 		/* show army stats */
-		snprintf(szString, sizeof(szString), ST_CSTATS5, Clan->Empire.Army.Followers);
+		snprintf(szString, sizeof(szString), ST_CSTATS5, (long)Clan->Empire.Army.Followers);
 		rputs(szString);
 
 		if (Clan->Protection) {
@@ -1985,7 +1975,7 @@ static bool User_Create(void)
 		od_clr_scr();
 
 		// creating clansmen x of
-		snprintf(szString, sizeof(szString), ST_STUFF5, iTemp + 1, Game.Data.MaxPermanentMembers);
+		snprintf(szString, sizeof(szString), ST_STUFF5, (int)(iTemp + 1), (int)(Game.Data.MaxPermanentMembers));
 		rputs(szString);
 
 		if (iTemp == 0) {

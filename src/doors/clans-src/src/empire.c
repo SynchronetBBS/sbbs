@@ -304,7 +304,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 				snprintf(szNews, sizeof(szNews), ST_WNEWS11,
 						szAttackerName,
 						VillageName(WhichBBS),
-						Result->LandStolen, szDefenderName);
+						(int)Result->LandStolen, szDefenderName);
 				News_AddNews(szNews);
 				break;
 			case G_STEALGOLD :
@@ -312,7 +312,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 				snprintf(szNews, sizeof(szNews), ST_WNEWS12,
 						szAttackerName,
 						VillageName(WhichBBS),
-						Result->GoldStolen, szDefenderName);
+						(long)Result->GoldStolen, szDefenderName);
 				News_AddNews(szNews);
 				break;
 			case G_DESTROY :
@@ -357,29 +357,29 @@ void ProcessResultPacket(struct AttackResult *Result)
 	// append what was lost and who you killed
 	//    snprintf(szString, sizeof(szString), " %ld Footmen\n %ld Axemen\n %ld Knights \n",
 	snprintf(szString, sizeof(szString), ST_WAR0,
-			Result->DefendCasualties.Footmen,
-			Result->DefendCasualties.Axemen,
-			Result->DefendCasualties.Knights);
+			(long)Result->DefendCasualties.Footmen,
+			(long)Result->DefendCasualties.Axemen,
+			(long)Result->DefendCasualties.Knights);
 	strlcat(szMessage, szString, sizeof(szMessage));
 	//    snprintf(szString, sizeof(szString), "You lost the following:\n %ld Footmen\n %ld Axemen\n %ld Knights \n",
 	snprintf(szString, sizeof(szString), ST_WAR1,
-			Result->AttackCasualties.Footmen,
-			Result->AttackCasualties.Axemen,
-			Result->AttackCasualties.Knights);
+			(long)Result->AttackCasualties.Footmen,
+			(long)Result->AttackCasualties.Axemen,
+			(long)Result->AttackCasualties.Knights);
 	strlcat(szMessage, szString, sizeof(szMessage));
 
 	// snprintf(szString, sizeof(szString), "The following have returned:\n %ld Footmen\n %ld Axemen\n %ld Knights \n",
 	snprintf(szString, sizeof(szString), ST_WNEWS17,
-			Result->ReturningArmy.Footmen,
-			Result->ReturningArmy.Axemen,
-			Result->ReturningArmy.Knights);
+			(long)Result->ReturningArmy.Footmen,
+			(long)Result->ReturningArmy.Axemen,
+			(long)Result->ReturningArmy.Knights);
 	strlcat(szMessage, szString, sizeof(szMessage));
 
 	switch (Result->Goal) {
 		case G_STEALLAND :
 			if (Result->LandStolen) {
 				// snprintf(szString, sizeof(szString), "You stole %ld land.\n", Result->LandStolen);
-				snprintf(szString, sizeof(szString), ST_WNEWS18, Result->LandStolen);
+				snprintf(szString, sizeof(szString), ST_WNEWS18, (int)Result->LandStolen);
 				strlcat(szMessage, szString, sizeof(szMessage));
 			}
 			else if (Result->Success)
@@ -389,7 +389,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 		case G_STEALGOLD :
 			if (Result->GoldStolen) {
 				// snprintf(szString, sizeof(szString), "You stole %ld gold.\n", Result->GoldStolen);
-				snprintf(szString, sizeof(szString), ST_WNEWS20, Result->GoldStolen);
+				snprintf(szString, sizeof(szString), ST_WNEWS20, (long)Result->GoldStolen);
 				strlcat(szMessage, szString, sizeof(szMessage));
 			}
 			else if (Result->Success)
@@ -408,7 +408,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 			strlcat(szMessage, ST_PAR2, sizeof(szMessage));
 			ShowedOne = true;
 		}
-		snprintf(szString, sizeof(szString), ST_WRESULTS10, Result->BuildingsDestroyed[iTemp],
+		snprintf(szString, sizeof(szString), ST_WRESULTS10, (int)Result->BuildingsDestroyed[iTemp],
 				BuildingType[iTemp].szName);
 		strlcat(szMessage, szString, sizeof(szMessage));
 	}
@@ -525,7 +525,7 @@ void Empire_Maint(struct empire *Empire)
 		}
 
 		// snprintf(szNews, sizeof(szNews), ">> Businesses brought in %ld gold today!\n\n",
-		snprintf(szNews, sizeof(szNews), ST_NEWS3, GoldMade);
+		snprintf(szNews, sizeof(szNews), ST_NEWS3, (long)GoldMade);
 		News_AddNews(szNews);
 		Empire->VaultGold += GoldMade;
 	}
@@ -596,32 +596,32 @@ void Empire_Stats(struct empire *Empire)
 
 	rputs(ST_LONGDIVIDER);
 
-	snprintf(szString, sizeof(szString), ST_ESTATS1, Empire->VaultGold);
+	snprintf(szString, sizeof(szString), ST_ESTATS1, (long)Empire->VaultGold);
 	rputs(szString);
-	snprintf(szString, sizeof(szString), ST_ESTATS2, Empire->Land);
+	snprintf(szString, sizeof(szString), ST_ESTATS2, (int)Empire->Land);
 	rputs(szString);
 
-	snprintf(szString, sizeof(szString), ST_ESTATS3, Empire->WorkerEnergy);
+	snprintf(szString, sizeof(szString), ST_ESTATS3, (int)Empire->WorkerEnergy);
 	rputs(szString);
 
 	rputs(ST_ESTATS4);
-	snprintf(szString, sizeof(szString), ST_ESTATS5, Empire->Army.Footmen);
+	snprintf(szString, sizeof(szString), ST_ESTATS5, (long)Empire->Army.Footmen);
 	rputs(szString);
-	snprintf(szString, sizeof(szString), ST_ESTATS6, Empire->Army.Axemen);
+	snprintf(szString, sizeof(szString), ST_ESTATS6, (long)Empire->Army.Axemen);
 	rputs(szString);
-	snprintf(szString, sizeof(szString), ST_ESTATS7, Empire->Army.Knights);
+	snprintf(szString, sizeof(szString), ST_ESTATS7, (long)Empire->Army.Knights);
 	rputs(szString);
-	snprintf(szString, sizeof(szString), ST_ESTATS8, Empire->Army.Rating);
+	snprintf(szString, sizeof(szString), ST_ESTATS8, (int)Empire->Army.Rating);
 	rputs(szString);
 
 	// show stats
-	snprintf(szString, sizeof(szString), ST_ESTATS9, ArmySpeed(&Empire->Army));
+	snprintf(szString, sizeof(szString), ST_ESTATS9, (int)ArmySpeed(&Empire->Army));
 	rputs(szString);
-	snprintf(szString, sizeof(szString), ST_ESTATS10, ArmyVitality(&Empire->Army));
+	snprintf(szString, sizeof(szString), ST_ESTATS10, (long)ArmyVitality(&Empire->Army));
 	rputs(szString);
-	snprintf(szString, sizeof(szString), ST_ESTATS11, ArmyOffense(&Empire->Army));
+	snprintf(szString, sizeof(szString), ST_ESTATS11, (long)ArmyOffense(&Empire->Army));
 	rputs(szString);
-	snprintf(szString, sizeof(szString), ST_ESTATS12, ArmyDefense(&Empire->Army));
+	snprintf(szString, sizeof(szString), ST_ESTATS12, (long)ArmyDefense(&Empire->Army));
 	rputs(szString);
 
 	rputs(ST_ESTATS13);
@@ -676,7 +676,7 @@ static void DevelopLand(struct empire *Empire)
 	if (LimitingVariable > INT16_MAX)
 		LimitingVariable = INT16_MAX;
 
-	snprintf(szString, sizeof(szString), ST_DEVLAND0, CostToDevelop);
+	snprintf(szString, sizeof(szString), ST_DEVLAND0, (long)CostToDevelop);
 	rputs(szString);
 
 	LandToDevelop = (int16_t)GetLong(ST_DEVLAND1, 0, LimitingVariable);
@@ -685,7 +685,7 @@ static void DevelopLand(struct empire *Empire)
 		Empire->Land += LandToDevelop;
 		Empire->VaultGold -= (CostToDevelop*LandToDevelop);
 
-		snprintf(szString, sizeof(szString), ST_DEVLAND2, LandToDevelop, (CostToDevelop*LandToDevelop));
+		snprintf(szString, sizeof(szString), ST_DEVLAND2, (int)LandToDevelop, (long)(CostToDevelop * LandToDevelop));
 		rputs(szString);
 
 		Empire->LandDevelopedToday += LandToDevelop;
@@ -714,17 +714,17 @@ void DonateToEmpire(struct empire *Empire)
 
 		// show empire stats
 		{
-			snprintf(szString, sizeof(szString), ST_DEMPIRE0, Empire->Army.Followers);
+			snprintf(szString, sizeof(szString), ST_DEMPIRE0, (long)Empire->Army.Followers);
 			rputs(szString);
-			snprintf(szString, sizeof(szString), ST_DEMPIRE1, Empire->Army.Footmen);
+			snprintf(szString, sizeof(szString), ST_DEMPIRE1, (long)Empire->Army.Footmen);
 			rputs(szString);
-			snprintf(szString, sizeof(szString), ST_DEMPIRE2, Empire->Army.Axemen);
+			snprintf(szString, sizeof(szString), ST_DEMPIRE2, (long)Empire->Army.Axemen);
 			rputs(szString);
-			snprintf(szString, sizeof(szString), ST_DEMPIRE3, Empire->Army.Knights);
+			snprintf(szString, sizeof(szString), ST_DEMPIRE3, (long)Empire->Army.Knights);
 			rputs(szString);
-			snprintf(szString, sizeof(szString), ST_DEMPIRE4, Empire->VaultGold);
+			snprintf(szString, sizeof(szString), ST_DEMPIRE4, (long)Empire->VaultGold);
 			rputs(szString);
-			snprintf(szString, sizeof(szString), ST_DEMPIRE5, Empire->Land);
+			snprintf(szString, sizeof(szString), ST_DEMPIRE5, (int)Empire->Land);
 			rputs(szString);
 		}
 
@@ -1016,14 +1016,14 @@ static void Destroy_Menu(struct empire *Empire)
 		rputs(ST_LONGLINE);
 
 		/* show stats */
-		snprintf(szString, sizeof(szString), ST_MEMPIRE11, Empire->Land);
+		snprintf(szString, sizeof(szString), ST_MEMPIRE11, (int)Empire->Land);
 		rputs(szString);
 
 		// show all buildings erected
 		for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
 			// snprintf(szString, sizeof(szString), " |0A(|0B%c|0A) |0C%-20s    |0F%d\n\r", iTemp + '0', BuildingType[iTemp].szName,
-			snprintf(szString, sizeof(szString), ST_MEMPIRE13, iTemp + '0', BuildingType[iTemp].szName,
-					Empire->Buildings[iTemp]);
+			snprintf(szString, sizeof(szString), ST_MEMPIRE13, (char)(iTemp + '0'), BuildingType[iTemp].szName,
+					(int)Empire->Buildings[iTemp]);
 			rputs(szString);
 		}
 		// rputs(" |0A(|0BQ|0A) |0CQuit\n |0A(|0BV|0A) |0CView Stats\n");
@@ -1047,9 +1047,9 @@ static void Destroy_Menu(struct empire *Empire)
 				// show building stats
 				snprintf(szString, sizeof(szString), ST_MEMPIRE15, BuildingType[ WhichBuilding ].szName);
 				rputs(szString);
-				snprintf(szString, sizeof(szString), ST_MEMPIRE17, BuildingType[ WhichBuilding ].LandUsed);
+				snprintf(szString, sizeof(szString), ST_MEMPIRE17, (int)BuildingType[ WhichBuilding ].LandUsed);
 				rputs(szString);
-				snprintf(szString, sizeof(szString), ST_MEMPIRE18, BuildingType[ WhichBuilding ].Cost);
+				snprintf(szString, sizeof(szString), ST_MEMPIRE18, (long)BuildingType[ WhichBuilding ].Cost);
 				rputs(szString);
 
 				Help(BuildingType[ WhichBuilding ].szName, ST_WARHLP);
@@ -1072,8 +1072,8 @@ static void Destroy_Menu(struct empire *Empire)
 				// snprintf(szString, sizeof(szString), "%s destroyed.  %d land and %d gold gained.\n",
 				snprintf(szString, sizeof(szString), ST_MEMPIRE31,
 						BuildingType[ WhichBuilding ].szName,
-						BuildingType[ WhichBuilding ].LandUsed,
-						((BuildingType[ WhichBuilding ].Cost*1)/2));
+						(int)BuildingType[ WhichBuilding ].LandUsed,
+						(long)((BuildingType[ WhichBuilding ].Cost*1)/2));
 				rputs(szString);
 				break;
 			case 'V' :      // clan stats
@@ -1102,9 +1102,9 @@ static void StructureMenu(struct empire *Empire)
 		rputs(ST_LONGLINE);
 
 		/* show stats */
-		snprintf(szString, sizeof(szString), ST_MEMPIRE11, Empire->Land);
+		snprintf(szString, sizeof(szString), ST_MEMPIRE11, (int)Empire->Land);
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_MEMPIRE12, Empire->WorkerEnergy);
+		snprintf(szString, sizeof(szString), ST_MEMPIRE12, (int)Empire->WorkerEnergy);
 		rputs(szString);
 
 		// show all buildings erected
@@ -1113,8 +1113,8 @@ static void StructureMenu(struct empire *Empire)
 				continue;
 
 			// snprintf(szString, sizeof(szString), " |0A(|0B%c|0A) |0C%-20s    |0F%d\n\r", iTemp + '0', BuildingType[iTemp].szName,
-			snprintf(szString, sizeof(szString), ST_MEMPIRE13, iTemp + '0', BuildingType[iTemp].szName,
-					Empire->Buildings[iTemp]);
+			snprintf(szString, sizeof(szString), ST_MEMPIRE13, (char)(iTemp + '0'), BuildingType[iTemp].szName,
+					(int)Empire->Buildings[iTemp]);
 			rputs(szString);
 		}
 		// rputs(" |0A(|0BQ|0A) |0CQuit\n |0A(|0BV|0A) |0CView Stats\n");
@@ -1144,11 +1144,11 @@ static void StructureMenu(struct empire *Empire)
 				// show building stats
 				snprintf(szString, sizeof(szString), ST_MEMPIRE15, BuildingType[ WhichBuilding ].szName);
 				rputs(szString);
-				snprintf(szString, sizeof(szString), ST_MEMPIRE16, BuildingType[ WhichBuilding ].EnergyUsed);
+				snprintf(szString, sizeof(szString), ST_MEMPIRE16, (int)BuildingType[ WhichBuilding ].EnergyUsed);
 				rputs(szString);
-				snprintf(szString, sizeof(szString), ST_MEMPIRE17, BuildingType[ WhichBuilding ].LandUsed);
+				snprintf(szString, sizeof(szString), ST_MEMPIRE17, (int)BuildingType[ WhichBuilding ].LandUsed);
 				rputs(szString);
-				snprintf(szString, sizeof(szString), ST_MEMPIRE18, BuildingType[ WhichBuilding ].Cost);
+				snprintf(szString, sizeof(szString), ST_MEMPIRE18, (long)BuildingType[ WhichBuilding ].Cost);
 				rputs(szString);
 
 				Help(BuildingType[ WhichBuilding ].szName, ST_WARHLP);
@@ -1220,27 +1220,27 @@ static void ManageArmy(struct empire *Empire)
 		rputs(ST_LONGLINE);
 
 		// show army stats
-		snprintf(szString, sizeof(szString), ST_ESTATS15, ArmySpeed(&Empire->Army));
+		snprintf(szString, sizeof(szString), ST_ESTATS15, (int)ArmySpeed(&Empire->Army));
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_ESTATS16, ArmyOffense(&Empire->Army));
+		snprintf(szString, sizeof(szString), ST_ESTATS16, (long)ArmyOffense(&Empire->Army));
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_ESTATS17, ArmyDefense(&Empire->Army));
+		snprintf(szString, sizeof(szString), ST_ESTATS17, (long)ArmyDefense(&Empire->Army));
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_ESTATS18, ArmyVitality(&Empire->Army));
+		snprintf(szString, sizeof(szString), ST_ESTATS18, (long)ArmyVitality(&Empire->Army));
 		rputs(szString);
 
 		rputs(ST_MTROOPHEADER);
 
-		snprintf(szString, sizeof(szString), ST_MTROOPCOST1, Empire->Army.Footmen);
+		snprintf(szString, sizeof(szString), ST_MTROOPCOST1, (long)Empire->Army.Footmen);
 		rputs(szString);
 
 		if (Empire->Buildings[B_STEELMILL]) {
-			snprintf(szString, sizeof(szString), ST_MTROOPCOST2, Empire->Army.Axemen);
+			snprintf(szString, sizeof(szString), ST_MTROOPCOST2, (long)Empire->Army.Axemen);
 			rputs(szString);
 		}
 
 		if (Empire->Buildings[B_STABLES] && Empire->Buildings[B_STEELMILL]) {
-			snprintf(szString, sizeof(szString), ST_MTROOPCOST3, Empire->Army.Knights);
+			snprintf(szString, sizeof(szString), ST_MTROOPCOST3, (long)Empire->Army.Knights);
 			rputs(szString);
 		}
 
@@ -1248,7 +1248,7 @@ static void ManageArmy(struct empire *Empire)
 
 		/* give status of troops in one line */
 		snprintf(szString, sizeof(szString), ST_MMENUTROOPSTATUS,
-				Empire->Army.Followers, Empire->VaultGold);
+				(long)Empire->Army.Followers, (long)Empire->VaultGold);
 		rputs(szString);
 
 		rputs(ST_LONGLINE);
@@ -1284,7 +1284,7 @@ static void ManageArmy(struct empire *Empire)
 
 				if (NumToTrain) {
 					/* tell him he trained em */
-					snprintf(szString, sizeof(szString), ST_MMENUTRAIN2, NumToTrain, NumToTrain*SCOST_FOOTMAN);
+					snprintf(szString, sizeof(szString), ST_MMENUTRAIN2, (long)NumToTrain, (long)(NumToTrain * SCOST_FOOTMAN));
 					rputs(szString);
 
 					Empire->VaultGold -= (NumToTrain*SCOST_FOOTMAN);
@@ -1323,7 +1323,7 @@ static void ManageArmy(struct empire *Empire)
 				NumToTrain = GetLong(ST_MMENUTRAIN3, 0, LimitingVariable);
 
 				if (NumToTrain) {
-					snprintf(szString, sizeof(szString), ST_MMENUTRAIN4, NumToTrain, NumToTrain*SCOST_AXEMEN);
+					snprintf(szString, sizeof(szString), ST_MMENUTRAIN4, (long)NumToTrain, (long)(NumToTrain * SCOST_AXEMEN));
 					rputs(szString);
 
 					Empire->VaultGold -= (NumToTrain*SCOST_AXEMEN);
@@ -1363,7 +1363,7 @@ static void ManageArmy(struct empire *Empire)
 				NumToTrain = GetLong(ST_MMENUTRAIN5, 0, LimitingVariable);
 
 				if (NumToTrain) {
-					snprintf(szString, sizeof(szString), ST_MMENUTRAIN6, NumToTrain, NumToTrain*SCOST_KNIGHT);
+					snprintf(szString, sizeof(szString), ST_MMENUTRAIN6, (long)NumToTrain, (long)(NumToTrain * SCOST_KNIGHT));
 					rputs(szString);
 
 					Empire->VaultGold -= (NumToTrain*SCOST_KNIGHT);
@@ -1790,15 +1790,15 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 	// append what was lost and who you killed
 	//    snprintf(szString, sizeof(szString), " %ld Footmen\n %ld Axemen\n %ld Knights \n",
 	snprintf(szString, sizeof(szString), ST_WAR0,
-			AttackResult->AttackCasualties.Footmen,
-			AttackResult->AttackCasualties.Axemen,
-			AttackResult->AttackCasualties.Knights);
+			(long)AttackResult->AttackCasualties.Footmen,
+			(long)AttackResult->AttackCasualties.Axemen,
+			(long)AttackResult->AttackCasualties.Knights);
 	strlcat(szMessage, szString, sizeof(szMessage));
 	//    snprintf(szString, sizeof(szString), "You lost the following:\n %ld Footmen\n %ld Axemen\n %ld Knights \n",
 	snprintf(szString, sizeof(szString), ST_WAR1,
-			AttackResult->DefendCasualties.Footmen,
-			AttackResult->DefendCasualties.Axemen,
-			AttackResult->DefendCasualties.Knights);
+			(long)AttackResult->DefendCasualties.Footmen,
+			(long)AttackResult->DefendCasualties.Axemen,
+			(long)AttackResult->DefendCasualties.Knights);
 	strlcat(szMessage, szString, sizeof(szMessage));
 
 	// finally find out what was lost in terms of stuff
@@ -1870,13 +1870,13 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						strlcat(szMessage, ST_PAR2, sizeof(szMessage));
 						ShowedOne = true;
 					}
-					snprintf(szString, sizeof(szString), ST_WRESULTS10, AttackResult->BuildingsDestroyed[iTemp],
+					snprintf(szString, sizeof(szString), ST_WRESULTS10, (int)AttackResult->BuildingsDestroyed[iTemp],
 							BuildingType[iTemp].szName);
 					strlcat(szMessage, szString, sizeof(szMessage));
 				}
 				// snprintf(szString, sizeof(szString), " They stole %d land!\n", AttackResult->LandStolen);
 				if (AttackResult->LandStolen) {
-					snprintf(szString, sizeof(szString), ST_PAR3, AttackResult->LandStolen);
+					snprintf(szString, sizeof(szString), ST_PAR3, (int)AttackResult->LandStolen);
 					strlcat(szMessage, szString, sizeof(szMessage));
 				}
 				break;
@@ -1914,7 +1914,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 				}
 				// snprintf(szString, sizeof(szString), " They stole %ld gold!\n", AttackResult->GoldStolen);
 				if (AttackResult->GoldStolen) {
-					snprintf(szString, sizeof(szString), ST_PAR4, AttackResult->GoldStolen);
+					snprintf(szString, sizeof(szString), ST_PAR4, (long)AttackResult->GoldStolen);
 					strlcat(szMessage, szString, sizeof(szMessage));
 				}
 				break;
@@ -1962,7 +1962,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						strlcat(szMessage, ST_PAR2, sizeof(szMessage));
 						ShowedOne = true;
 					}
-					snprintf(szString, sizeof(szString), ST_WRESULTS10, AttackResult->BuildingsDestroyed[iTemp],
+					snprintf(szString, sizeof(szString), ST_WRESULTS10, (int)AttackResult->BuildingsDestroyed[iTemp],
 							BuildingType[iTemp].szName);
 					strlcat(szMessage, szString, sizeof(szMessage));
 				}
@@ -2094,15 +2094,15 @@ static void ShowResults(struct AttackResult *Result)
 	// reduce both armies
 	// snprintf(szString, sizeof(szString), "You lost %ld footmen, %ld axemen, and %ld knights\n\r",
 	snprintf(szString, sizeof(szString), ST_WRESULTS0,
-			Result->AttackCasualties.Footmen,
-			Result->AttackCasualties.Axemen,
-			Result->AttackCasualties.Knights);
+			(long)Result->AttackCasualties.Footmen,
+			(long)Result->AttackCasualties.Axemen,
+			(long)Result->AttackCasualties.Knights);
 	rputs(szString);
 	// snprintf(szString, sizeof(szString), "You killed %ld footmen, %ld axemen, and %ld knights\n\r",
 	snprintf(szString, sizeof(szString), ST_WRESULTS1,
-			Result->DefendCasualties.Footmen,
-			Result->DefendCasualties.Axemen,
-			Result->DefendCasualties.Knights);
+			(long)Result->DefendCasualties.Footmen,
+			(long)Result->DefendCasualties.Axemen,
+			(long)Result->DefendCasualties.Knights);
 	rputs(szString);
 
 	// if no one killed and no one lost, means unable to get through
@@ -2132,7 +2132,7 @@ static void ShowResults(struct AttackResult *Result)
 			case G_STEALGOLD :
 				if (Result->GoldStolen)
 					// od_printf("You stole %ld gold\n\r", Result->GoldStolen);
-					snprintf(szString, sizeof(szString), ST_WRESULTS5, Result->GoldStolen);
+					snprintf(szString, sizeof(szString), ST_WRESULTS5, (long)Result->GoldStolen);
 				else
 					// od_printf("You couldn't find any gold!\n\r");
 					strlcpy(szString, ST_WRESULTS6, sizeof(szString));
@@ -2141,7 +2141,7 @@ static void ShowResults(struct AttackResult *Result)
 			case G_STEALLAND :
 				if (Result->LandStolen)
 					// od_printf("You stole %d land\n\r", Result->LandStolen);
-					snprintf(szString, sizeof(szString), ST_WRESULTS7, Result->LandStolen);
+					snprintf(szString, sizeof(szString), ST_WRESULTS7, (int)Result->LandStolen);
 				else
 					// od_printf("You couldn't steal any land!\n\r");
 					strlcpy(szString, ST_WRESULTS8, sizeof(szString));
@@ -2159,7 +2159,7 @@ static void ShowResults(struct AttackResult *Result)
 						ShowedOne = true;
 					}
 					// snprintf(szString, sizeof(szString), "%2d %s\n\r", Result->BuildingsDestroyed[iTemp],
-					snprintf(szString, sizeof(szString), ST_WRESULTS10, Result->BuildingsDestroyed[iTemp],
+					snprintf(szString, sizeof(szString), ST_WRESULTS10, (int)Result->BuildingsDestroyed[iTemp],
 							BuildingType[iTemp].szName);
 					rputs(szString);
 				}
@@ -2179,7 +2179,7 @@ static void ShowResults(struct AttackResult *Result)
 						ShowedOne = true;
 					}
 					// snprintf(szString, sizeof(szString), "%2d %s\n\r", Result->BuildingsDestroyed[iTemp],
-					snprintf(szString, sizeof(szString), ST_WRESULTS12, Result->BuildingsDestroyed[iTemp],
+					snprintf(szString, sizeof(szString), ST_WRESULTS12, (int)Result->BuildingsDestroyed[iTemp],
 							BuildingType[iTemp].szName);
 					rputs(szString);
 				}
@@ -2213,26 +2213,26 @@ static void GetNumTroops(struct Army *OriginalArmy, struct Army *AttackingArmy)
 		rputs(ST_LONGLINE);
 
 		// show army stats
-		snprintf(szString, sizeof(szString), ST_ESTATS15, ArmySpeed(AttackingArmy));
+		snprintf(szString, sizeof(szString), ST_ESTATS15, (int)ArmySpeed(AttackingArmy));
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_ESTATS16, ArmyOffense(AttackingArmy));
+		snprintf(szString, sizeof(szString), ST_ESTATS16, (long)ArmyOffense(AttackingArmy));
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_ESTATS17, ArmyDefense(AttackingArmy));
+		snprintf(szString, sizeof(szString), ST_ESTATS17, (long)ArmyDefense(AttackingArmy));
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_ESTATS18, ArmyVitality(AttackingArmy));
+		snprintf(szString, sizeof(szString), ST_ESTATS18, (long)ArmyVitality(AttackingArmy));
 		rputs(szString);
 
 		rputs("     |0CSoldiers    Owned  Readied\n");
 
 		// show troops currently going
 		snprintf(szString, sizeof(szString), ST_GTROOPS0,
-				OriginalArmy->Footmen, AttackingArmy->Footmen);
+				(long)OriginalArmy->Footmen, (long)AttackingArmy->Footmen);
 		rputs(szString);
 		snprintf(szString, sizeof(szString), ST_GTROOPS1,
-				OriginalArmy->Axemen, AttackingArmy->Axemen);
+				(long)OriginalArmy->Axemen, (long)AttackingArmy->Axemen);
 		rputs(szString);
 		snprintf(szString, sizeof(szString), ST_GTROOPS2,
-				OriginalArmy->Knights, AttackingArmy->Knights);
+				(long)OriginalArmy->Knights, (long)AttackingArmy->Knights);
 		rputs(szString);
 		rputs(ST_GTROOPS3);
 		rputs(ST_LONGLINE);
@@ -2983,7 +2983,7 @@ static void SpyMenu(struct empire *Empire)
 			return;
 		}
 		// snprintf(szString, sizeof(szString), "It will cost you %ld gold to spy.  The empire has %ld gold.\nContinue?",
-		snprintf(szString, sizeof(szString), ST_SPY1, SPY_COST, Empire->VaultGold);
+		snprintf(szString, sizeof(szString), ST_SPY1, SPY_COST, (long)Empire->VaultGold);
 		if (YesNo(szString) == NO) {
 			return;
 		}
@@ -3057,7 +3057,7 @@ static void SpyMenu(struct empire *Empire)
 		}
 
 		// snprintf(szString, sizeof(szString), "It will cost you %ld gold to spy.  The empire has %ld gold.\nContinue?",
-		snprintf(szString, sizeof(szString), ST_SPY1, SPY_COST, Empire->VaultGold);
+		snprintf(szString, sizeof(szString), ST_SPY1, SPY_COST, (long)Empire->VaultGold);
 		if (YesNo(szString) == NO) {
 			// free up mem used by alliances
 			FreeAlliances(Alliances);
@@ -3102,7 +3102,7 @@ static void SpyMenu(struct empire *Empire)
 		}
 
 		// snprintf(szString, sizeof(szString), "It will cost you %ld gold to spy.  The empire has %ld gold.\nContinue?",
-		snprintf(szString, sizeof(szString), ST_SPY1, SPY_COST, Empire->VaultGold);
+		snprintf(szString, sizeof(szString), ST_SPY1, SPY_COST, (long)Empire->VaultGold);
 		if (YesNo(szString) == NO) {
 			return;
 		}
@@ -3156,19 +3156,19 @@ void Empire_Manage(struct empire *Empire)
 		/* show 'menu' */
 		rputs(ST_MEMPIRE0);
 		rputs(ST_LONGLINE);
-		snprintf(szString, sizeof(szString), ST_MEMPIRE1, Empire->VaultGold);
+		snprintf(szString, sizeof(szString), ST_MEMPIRE1, (long)Empire->VaultGold);
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_MEMPIRE2, Empire->Army.Rating);
+		snprintf(szString, sizeof(szString), ST_MEMPIRE2, (int)Empire->Army.Rating);
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_MEMPIRE3, Empire->Land);
+		snprintf(szString, sizeof(szString), ST_MEMPIRE3, (int)Empire->Land);
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_MEMPIRE4, Empire->WorkerEnergy);
+		snprintf(szString, sizeof(szString), ST_MEMPIRE4, (int)Empire->WorkerEnergy);
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_MEMPIRE5, Empire->Buildings[B_SECURITY]);
+		snprintf(szString, sizeof(szString), ST_MEMPIRE5, (int)Empire->Buildings[B_SECURITY]);
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_MEMPIRE6, Empire->Buildings[B_AGENCY]);
+		snprintf(szString, sizeof(szString), ST_MEMPIRE6, (int)Empire->Buildings[B_AGENCY]);
 		rputs(szString);
-		snprintf(szString, sizeof(szString), ST_MEMPIRE10,Empire->Buildings[B_DEVELOPERS]);
+		snprintf(szString, sizeof(szString), ST_MEMPIRE10,(int)Empire->Buildings[B_DEVELOPERS]);
 		rputs(szString);
 
 		switch (GetChoice("Empire Menu", ST_ENTEROPTION, szTheOptions, "BMAQ?SDLH", 'Q', true)) {
