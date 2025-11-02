@@ -49,6 +49,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "language.h"
 #include "mstrings.h"
 #include "myopen.h"
+#include "system.h"
 #include "user.h"
 
 static void RemoveFromAlliance(struct Alliance *Alliance)

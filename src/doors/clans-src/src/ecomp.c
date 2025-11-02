@@ -484,6 +484,7 @@ int main(int argc, char *argv[])
 			printf("Event too long (%zu bytes)!\n", BufferPtr);
 			fclose(fpEvent);
 			fclose(fpOut);
+			free(Buffer);
 			return EXIT_FAILURE;
 		}
 

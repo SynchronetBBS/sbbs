@@ -103,10 +103,10 @@ MITEMS_OBJS :=	$(OBJDIR)mitems.o $(OBJDIR)crc.o $(OBJDIR)tools.o \
 MSPELLS_OBJS :=	$(OBJDIR)mspells.o $(OBJDIR)crc.o $(OBJDIR)tools.o \
 		$(OBJDIR)serialize.o $(OBJDIR)win_wrappers.o
 
-PCEDIT_OBJS :=	$(OBJDIR)pcedit.o $(OBJDIR)alliance.o $(OBJDIR)myopen.o \
-		$(OBJDIR)unix_wrappers.o $(OBJDIR)serialize.o \
-		$(OBJDIR)deserialize.o $(OBJDIR)crc.o \
-		$(OBJDIR)win_wrappers.o
+PCEDIT_OBJS :=	$(OBJDIR)pcedit.o $(OBJDIR)alliance.o $(OBJDIR)console.o \
+		$(OBJDIR)crc.o $(OBJDIR)deserialize.o $(OBJDIR)myopen.o \
+		$(OBJDIR)serialize.o $(OBJDIR)unix_wrappers.o \
+		$(OBJDIR)video.o $(OBJDIR)win_wrappers.o
 
 RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)alliance.o $(OBJDIR)cmdline.o \
 		$(OBJDIR)console.o $(OBJDIR)crc.o $(OBJDIR)deserialize.o \

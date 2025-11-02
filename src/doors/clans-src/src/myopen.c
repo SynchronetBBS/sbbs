@@ -173,7 +173,7 @@ void EncryptWrite(void *Data, size_t DataSize, FILE *fp, char XorValue)
 	}
 
 	if (!XorValue) {
-		System_Error("EncryptRead() called with bad key\n");
+		System_Error("EncryptWrite() called with bad key\n");
 	}
 
 	//printf("EncryptWrite(): Data size is %d\n", (int16_t)DataSize);
@@ -184,7 +184,8 @@ void EncryptWrite(void *Data, size_t DataSize, FILE *fp, char XorValue)
 	    Encrypt(EncryptedData, (char *)Data, DataSize, XorValue);*/
 	cipher(EncryptedData, Data, DataSize, (unsigned char)XorValue);
 
-	fwrite(EncryptedData, DataSize, 1, fp);
+	if (fwrite(EncryptedData, DataSize, 1, fp) != 1)
+		System_Error("Write failed in EncryptWrite()");
 
 	free(EncryptedData);
 }

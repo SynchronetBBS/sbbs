@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "mstrings.h"
 #include "myopen.h"
 #include "structs.h"
+#include "system.h"
 #include "user.h"
 
 static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szTitle)

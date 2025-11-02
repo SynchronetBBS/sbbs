@@ -32,31 +32,46 @@ size_t EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
 
 #define EXTRABYTES      10L
 
-#define EncryptWrite_s(s, d, fp, xv) do {                    \
-	size_t bs = s_ ## s ## _s(d, serBuf, BUF_SIZE_ ## s); \
-	assert(bs == BUF_SIZE_ ## s);                          \
-	if (bs != SIZE_MAX)                                     \
-		EncryptWrite(serBuf, bs, fp, xv);                \
+#define EncryptWrite_s(s, d, fp, xv) do {                                                                  \
+	size_t bs = s_ ## s ## _s(d, serBuf, BUF_SIZE_ ## s);                                               \
+	assert(bs == BUF_SIZE_ ## s);                                                                        \
+	if (bs != SIZE_MAX)                                                                                   \
+		EncryptWrite(serBuf, bs, fp, xv);                                                              \
+	else {                                                                                                  \
+		char szErrorStr[1024];                                                                           \
+		snprintf(szErrorStr, sizeof(szErrorStr), "EncryptWrite_s() failed at %s:%d", __func__, __LINE__); \
+		System_Error(szErrorStr);                                                                          \
+	}                                                                                                           \
 } while(0)
 
-#define EncryptWrite16(d, fp, xv) do {     \
+#define EncryptWrite16(d, fp, xv) do {      \
 	((int16_t*)serBuf)[0] = SWAP16S(*d); \
-	EncryptWrite(serBuf, 2, fp, xv);     \
+	EncryptWrite(serBuf, 2, fp, xv);      \
 } while(0)
 
-#define EncryptRead_s(s, d, fp, xv) do {                 \
-	size_t ret;                                       \
-	ret = EncryptRead(serBuf, BUF_SIZE_ ## s, fp, xv); \
-	assert(ret);                                        \
-	if (ret)                                             \
-		s_ ## s ## _d(serBuf, BUF_SIZE_ ## s, d);     \
+#define EncryptRead_s(s, d, fp, xv) do {                                                               \
+	size_t ret;                                                                                     \
+	ret = EncryptRead(serBuf, BUF_SIZE_ ## s, fp, xv);                                               \
+	assert(ret);                                                                                      \
+	if (ret)                                                                                           \
+		s_ ## s ## _d(serBuf, BUF_SIZE_ ## s, d);                                                   \
+	else {                                                                                               \
+		char szErrorStr[1024];                                                                        \
+		snprintf(szErrorStr, sizeof(szErrorStr), "EncryptRead_s failed at %s:%d", __func__, __LINE__); \
+		System_Error(szErrorStr);                                                                       \
+	}                                                                                                        \
 } while(0)
 
-#define EncryptRead16(d, fp, xv) do {               \
-	size_t ret = EncryptRead(serBuf, 2, fp, xv); \
-	assert(ret);                                  \
-	if (ret)                                       \
-		*(d) = SWAP16S(((int16_t*)serBuf)[0]);   \
+#define EncryptRead16(d, fp, xv) do {                                                                     \
+	size_t ret = EncryptRead(serBuf, 2, fp, xv);                                                       \
+	assert(ret);                                                                                        \
+	if (ret)                                                                                             \
+		*(d) = SWAP16S(((int16_t*)serBuf)[0]);                                                        \
+	else {                                                                                                 \
+		char szErrorStr[1024];                                                                          \
+		snprintf(szErrorStr, sizeof(szErrorStr), "EncryptRead16() failed at %s:%d", __func__, __LINE__); \
+		System_Error(szErrorStr);                                                                         \
+	}                                                                                                          \
 } while(0)
 
 #define notEncryptRead_s(s, d, fp, xv)                                 \

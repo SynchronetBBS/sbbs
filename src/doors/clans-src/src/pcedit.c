@@ -35,14 +35,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "win_wrappers.h"
 
 #include "alliance.h"
+#include "console.h"
 #include "structs.h"
 #include "myopen.h"
 
 static struct village Village;
 static struct game Game;
 static size_t entry_size = 0;
-
-void CheckMem(void *Test);
 
 static void InitVillage(void);
 static void UpdateVillage(void);
@@ -523,14 +522,6 @@ static void UpdateVillage(void)
 	fclose(fpVillage);
 }
 
-void CheckMem(void *Test)
-{
-	if (Test == NULL) {
-		printf("\aCheckmem Failed!\n");
-		exit(-1);
-	}
-}
-
 static void RejectTrade(struct TradeData *TradeData)
 {
 	struct clan *TmpClan;
@@ -834,13 +825,6 @@ static void UpdateClan(struct clan *Clan)
 
 	free(TmpPC);
 	free(TmpClan);
-}
-
-void System_Error(char *szErrorMsg)
-{
-	fprintf(stderr, "System Error: %s\n", szErrorMsg);
-	fflush(stderr);
-	exit(1);
 }
 
 static void InitGame(void)
