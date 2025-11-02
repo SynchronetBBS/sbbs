@@ -545,8 +545,6 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 	if (Spells[SpellNum]->TypeFlag & SF_DAMAGE) {
 		if (Test)
 			printf("\aError!\n");
-		else
-			Test = true;
 		// if is multiaffect spell, go through each guy
 
 		// if multiaffect, start from first enemy

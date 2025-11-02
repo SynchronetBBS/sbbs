@@ -451,8 +451,6 @@ char GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, cha
 	strlcpy(KeysAndEnter, Keys, sizeof(KeysAndEnter));
 	strlcat(KeysAndEnter, "\r\n ", sizeof(KeysAndEnter));
 
-	cTemp = strlen(KeysAndEnter);
-
 	/* now get input */
 
 	/* Display file */
@@ -584,7 +582,6 @@ long GetLong(char *Prompt, long DefaultVal, long Maximum)
 				rputs(string);
 
 				strlcpy(NumString, string, sizeof(NumString));
-				CurDigit = NumDigits;
 
 				rputs("\n");
 				break;

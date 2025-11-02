@@ -90,18 +90,15 @@ void News_ReadNews(bool Today)
 				break;
 			}
 			rputs("\r                       \r");
-
-			CurLine = 0;
 		}
-		else if (Door_AllowScreenPause() == false)
-			CurLine = 0;
 
 		/* see if end of file, if so, exit */
 		if (feof(fp))
 			break;
 
 		/* see if key hit */
-		if (od_get_key(false)) break;
+		if (od_get_key(false))
+			break;
 	}
 
 	fclose(fp);

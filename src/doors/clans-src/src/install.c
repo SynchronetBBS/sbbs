@@ -843,7 +843,7 @@ static void DisplayLFNs(int row, int column, size_t TotalBytes)
 	}
 	if (!Done) {
 		zputs("\n");
-		row = CheckRow(row, &Done);
+		CheckRow(row, &Done);
 		snprintf(szString, sizeof(szString), "|14%zu total bytes\n\n", TotalBytes);
 		zputs(szString);
 	}

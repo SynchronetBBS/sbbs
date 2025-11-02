@@ -42,7 +42,6 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 	/* enter choices */
 	/* keep looping till chooses "Done" */
 
-	int16_t /*iTemp, WhichOne,*/ Choice;
 	int32_t MaxInput;
 	char szString[128];
 	bool Done = false;
@@ -75,7 +74,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 		rputs(" |0A(|0B0|0A) |0CDone\n");
 		rputs(ST_LONGLINE);
 
-		switch (Choice = GetChoice("", ST_ENTEROPTION, szTheOptions, "12345V0", '0', true)) {
+		switch (GetChoice("", ST_ENTEROPTION, szTheOptions, "12345V0", '0', true)) {
 			case '1' :  /* gold */
 				if (GivingList)
 					MaxInput = PClan->Empire.VaultGold;

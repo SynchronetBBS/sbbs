@@ -190,7 +190,6 @@ int main(int argc, char *argv[])
 							Buffer[BufferPtr++] = 0;
 
 							// write to buffer
-							EventInBuffer = false;
 							if (BufferPtr > INT32_MAX) {
 								printf("Event too long (%zu bytes)!\n", BufferPtr);
 								fclose(fpEvent);
@@ -223,8 +222,6 @@ int main(int argc, char *argv[])
 
 
 							// write to buffer
-							EventInBuffer = false;
-
 							if (BufferPtr > INT32_MAX) {
 								printf("Event too long (%zu bytes)!\n", BufferPtr);
 								fclose(fpEvent);
@@ -478,8 +475,6 @@ int main(int argc, char *argv[])
 		Buffer[BufferPtr++] = 0;
 
 		// write to buffer
-		EventInBuffer = false;
-
 		if (BufferPtr > INT32_MAX) {
 			printf("Event too long (%zu bytes)!\n", BufferPtr);
 			fclose(fpEvent);
@@ -492,8 +487,6 @@ int main(int argc, char *argv[])
 		s_EventHeader_s(&EventHeader, ehbuf, sizeof(ehbuf));
 		fwrite(&ehbuf, sizeof(ehbuf), 1, fpOut);
 		fwrite(Buffer, BufferPtr, 1, fpOut);
-
-		BufferPtr = 0;
 	}
 	free(Buffer);
 

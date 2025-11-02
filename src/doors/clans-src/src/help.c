@@ -148,8 +148,6 @@ void Help(const char *Topic, char *File)
 				break;
 			}
 			rputs("\r                       \r");
-
-			CurLine = 0;
 		}
 	}
 

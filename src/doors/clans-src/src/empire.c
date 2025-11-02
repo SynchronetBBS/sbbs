@@ -1739,12 +1739,15 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 			GetAlliances(Alliances);
 			// figure out which one is the defender
 			for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
-				if (Alliances[iTemp] == NULL) break;
+				if (Alliances[iTemp] == NULL)
+					break;
 				if (Alliances[iTemp]->ID == AttackResult->AllianceID)
 					break;
 			}
-			WhichAlliance = iTemp;
-			snprintf(szDefender, sizeof(szDefender), "the alliance of %s", Alliances[iTemp]->szName);
+			if (Alliances[iTemp])
+				snprintf(szDefender, sizeof(szDefender), "the alliance of %s", Alliances[iTemp]->szName);
+			else
+				strlcpy(szDefender, "<invalid alliance>", sizeof(szDefender));
 
 			// free up mem used by alliances
 			FreeAlliances(Alliances);
@@ -1838,17 +1841,20 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						GetAlliances(Alliances);
 						// figure out which one is the defender
 						for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
-							if (Alliances[iTemp] == NULL) break;
+							if (Alliances[iTemp] == NULL)
+								break;
 							if (Alliances[iTemp]->ID == AttackResult->AllianceID)
 								break;
 						}
-						WhichAlliance = iTemp;
+						if (iTemp < MAX_ALLIANCES && Alliances[iTemp]) {
+							WhichAlliance = iTemp;
 
-						Percent = (int16_t)((AttackResult->PercentDamage * AttackResult->ExtentOfAttack) / 200L);
-						DestroyBuildings(Alliances[WhichAlliance]->Empire.Buildings,
-										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
+							Percent = (int16_t)((AttackResult->PercentDamage * AttackResult->ExtentOfAttack) / 200L);
+							DestroyBuildings(Alliances[WhichAlliance]->Empire.Buildings,
+											 AttackResult->BuildingsDestroyed, Percent, &LandGained);
 
-						AttackResult->LandStolen = (int16_t)(((Alliances[WhichAlliance]->Empire.Land + LandGained) * Percent) / 100L);
+							AttackResult->LandStolen = (int16_t)(((Alliances[WhichAlliance]->Empire.Land + LandGained) * Percent) / 100L);
+						}
 
 						// free up mem used by alliances
 						FreeAlliances(Alliances);
@@ -1890,14 +1896,17 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						GetAlliances(Alliances);
 						// figure out which one is the defender
 						for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
-							if (Alliances[iTemp] == NULL) break;
+							if (Alliances[iTemp] == NULL)
+								break;
 							if (Alliances[iTemp]->ID == AttackResult->AllianceID)
 								break;
 						}
-						WhichAlliance = iTemp;
+						if (iTemp < MAX_ALLIANCES && Alliances[iTemp]) {
+							WhichAlliance = iTemp;
 
-						AttackResult->GoldStolen =
-							((Alliances[WhichAlliance]->Empire.VaultGold/100L) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack)/100L);
+							AttackResult->GoldStolen =
+								((Alliances[WhichAlliance]->Empire.VaultGold/100L) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack)/100L);
+						}
 
 						// free up mem used by alliances
 						FreeAlliances(Alliances);

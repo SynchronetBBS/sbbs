@@ -646,11 +646,7 @@ void Display(char *FileName)
 				break;
 			}
 			rputs("\r                       \r");
-
-			CurLine = 0;
 		}
-		else if (Door.AllowScreenPause == false)
-			CurLine = 0;
 
 		/* see if end of file, if so, exit */
 		if (ftell(FileHeader.fp) >= FileHeader.lEnd || feof(FileHeader.fp))

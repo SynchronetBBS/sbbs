@@ -281,7 +281,6 @@ static void ResetMenu(bool InterBBSGame)
 				}
 
 				GoReset(&ResetData, RESET_LOCAL);
-				Quit = true;
 				DidReset = true;
 				restore_screen(screen_state);
 				break;

@@ -921,7 +921,6 @@ static int16_t GetTarget2(struct clan *Clan, int16_t Default)
 
 		}
 		else if (cInput == '\r' || cInput == 'Q' || cInput == '\n') {
-			MemberNumber = FirstAvailable(Clan);
 			return -1;
 		}
 		else {

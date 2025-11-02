@@ -688,8 +688,6 @@ void ShowPlayerStats(struct pc *PC, bool AllowModify)
 		Done = false;
 
 	do {
-		SpellStrLength = 0;
-		AtLeastOneSpell = false;
 		od_clr_scr();
 
 		snprintf(szString, sizeof(szString), ST_P2STATS0, PC->szName);
@@ -1290,7 +1288,6 @@ void ItemStats(void)
 
 									PClan->Member[WhoEquip]->Weapon = 0;
 									PClan->Items[iTemp].UsedBy = 0;
-									DoneEquipping = true;
 								}
 								else {
 									rputs(ST_ABORTED);
@@ -1321,7 +1318,6 @@ void ItemStats(void)
 
 									PClan->Member[WhoEquip]->Armor = 0;
 									PClan->Items[iTemp].UsedBy = 0;
-									DoneEquipping = true;
 								}
 								else {
 									rputs(ST_ABORTED);
@@ -1351,7 +1347,6 @@ void ItemStats(void)
 
 									PClan->Member[WhoEquip]->Shield = 0;
 									PClan->Items[iTemp].UsedBy = 0;
-									DoneEquipping = true;
 								}
 								else {
 									rputs(ST_ABORTED);

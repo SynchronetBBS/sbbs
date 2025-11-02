@@ -143,9 +143,11 @@ FC1:
 
 void ScrollUp(void)
 {
+#if defined(__MSDOS__) || defined(_WIN32)
 	int bottom = ScrollBottom;
 	if (bottom >= ScreenLines)
 		bottom = ScreenLines - 1;
+#endif
 // As usual, block off the local stuff
 #if defined(__MSDOS__)
 	asm {
@@ -875,8 +877,6 @@ long DosGetLong(char *Prompt, long DefaultVal, long Maximum)
 				zputs(string);
 
 				strlcpy(NumString, string, sizeof(NumString));
-				CurDigit = NumDigits;
-
 				zputs("\n");
 				break;
 			}

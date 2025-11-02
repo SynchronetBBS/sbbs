@@ -296,6 +296,8 @@ static void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
 				strlcpy(SpyResult.szTargetName, TmpClan.Empire.szName, sizeof(SpyResult.szTargetName));
 			Empire = &TmpClan.Empire;
 			break;
+		default:
+			NoTarget = true;
 	}
 
 	strlcpy(SpyResult.szTheDate, System.szTodaysDate, sizeof(SpyResult.szTheDate));
@@ -1930,6 +1932,9 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 	/* change this later to the outbound directory of BBS */
 	// strlcpy(szFullFileName, "C:\\PROG\\THECLANS\\OUTBOUND\\", sizeof(szFullFileName));
 	// FIXME: ?!    Use outbound directory or don't care?
+	// TODO: This append thing never actually works because LastCounter is not appended...
+	//       That's good though because we don't want to be sneaking in while the .msg is
+	//       being processed... deferring ths MSG file to exit would make this work well.
 
 	if (System.LocalIBBS) {
 		if (Config.NumInboundDirs)
