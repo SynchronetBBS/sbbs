@@ -202,7 +202,7 @@ bool EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue)
 	/*  -- Removed the original Decrypt() function for simplicity
 	    Decrypt((char *)Data, EncryptedData, DataSize, XorValue);*/
 	if (Result == 1)
-		cipher(Data, Data, Result, (unsigned char)XorValue);
+		cipher(Data, Data, DataSize, (unsigned char)XorValue);
 
 	return Result == 1;
 }

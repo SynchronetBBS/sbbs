@@ -12,7 +12,7 @@ int32_t CRCValue(const void *Data, ptrdiff_t DataSize)
 
 	p = (char *)Data;
 
-	while (p < ((char *)Data+DataSize)) {
+	while (p < ((char *)Data + DataSize)) {
 		CRC += (*p);
 		p++;
 	}
