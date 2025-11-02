@@ -211,13 +211,20 @@ void ReadBook(void)
 
 	// if HPadd
 	if (PClan->Items[ ItemIndex ].HPAdd) {
-		snprintf(szString, sizeof(szString), "|0C%s gains |0B%d HP\n",
-				PClan->Member[ WhichMember ]->szName,
-				PClan->Items[ ItemIndex ].HPAdd);
-		rputs(szString);
+		if (PClan->Member[ WhichMember ]->MaxHP >= 20000) {
+			rputs("|07That characters max HP can't increase any further\n");
+		}
+		else {
+			int16_t add = PClan->Items[ ItemIndex ].HPAdd;
+			if (PClan->Member[ WhichMember ]->MaxHP + add > 20000)
+				add - (20000 - PClan->Member[ WhichMember ]->MaxHP);
+			snprintf(szString, sizeof(szString), "|0C%s gains |0B%d HP\n",
+					PClan->Member[ WhichMember ]->szName,
+					add);
+			rputs(szString);
 
-		PClan->Member[ WhichMember ]->MaxHP +=
-			PClan->Items[ ItemIndex ].HPAdd;
+			PClan->Member[ WhichMember ]->MaxHP += add;
+		}
 
 		PClan->Member[ WhichMember ]->HP =
 			PClan->Member[ WhichMember ]->MaxHP;
@@ -225,13 +232,21 @@ void ReadBook(void)
 
 	// if SPadd
 	if (PClan->Items[ ItemIndex ].SPAdd) {
-		snprintf(szString, sizeof(szString), "|0C%s gains |0B%d SP\n",
-				PClan->Member[ WhichMember ]->szName,
-				PClan->Items[ ItemIndex ].SPAdd);
-		rputs(szString);
+		if (PClan->Member[ WhichMember ]->SP >= 20000) {
+			rputs("|07That characters max SP can't increase any further\n");
+		}
+		else {
+			int16_t add = PClan->Items[ ItemIndex ].SPAdd;
+			if (PClan->Member[ WhichMember ]->MaxSP + add > 20000)
+				add - (20000 - PClan->Member[ WhichMember ]->MaxSP);
+			snprintf(szString, sizeof(szString), "|0C%s gains |0B%d SP\n",
+					PClan->Member[ WhichMember ]->szName,
+					PClan->Items[ ItemIndex ].SPAdd);
+			rputs(szString);
 
-		PClan->Member[ WhichMember ]->MaxSP +=
-			PClan->Items[ ItemIndex ].SPAdd;
+			PClan->Member[ WhichMember ]->MaxSP +=
+				PClan->Items[ ItemIndex ].SPAdd;
+		}
 
 		PClan->Member[ WhichMember ]->SP =
 			PClan->Member[ WhichMember ]->MaxSP;

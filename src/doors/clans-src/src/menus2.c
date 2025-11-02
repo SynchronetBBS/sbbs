@@ -419,6 +419,25 @@ void TrainMember(void)
 						break;
 					}
 
+					if (Choice >= '1' && Choice <= '6') {
+						if (PClan->Member[WhichOne]->Attributes[Choice-'1'] >= 100) {
+							rputs("|04Already at maximum!\n%P");
+							break;
+						}
+					}
+					else if (Choice == '7') {
+						if (PClan->Member[WhichOne]->MaxHP >= 15000) {
+							rputs("|04Already at maximum!\n%P");
+							break;
+						}
+					}
+					else if (Choice == '8') {
+						if (PClan->Member[WhichOne]->MaxSP >= 15000) {
+							rputs("|04Already at maximum!\n%P");
+							break;
+						}
+					}
+
 					PClan->Member[WhichOne]->TrainingPoints -=
 						TCost[Choice - '1'];
 
@@ -434,6 +453,8 @@ void TrainMember(void)
 					else if (Choice == '7') {
 						/* HP increase */
 						IncreaseAmount = (int16_t)(3 + my_random(5) + my_random(5));
+						if (IncreaseAmount + PClan->Member[WhichOne]->MaxHP > 15000)
+							IncreaseAmount = 15000 - PClan->Member[WhichOne]->MaxHP;
 						PClan->Member[WhichOne]->MaxHP += IncreaseAmount;
 
 						snprintf(szString, sizeof(szString), "|03%s's max HP increases by |14%d|03.\n",
@@ -443,6 +464,8 @@ void TrainMember(void)
 					else if (Choice == '8') {
 						/* SP increase */
 						IncreaseAmount = (int16_t)(2 + my_random(3) + my_random(3));
+						if (IncreaseAmount + PClan->Member[WhichOne]->MaxSP > 15000)
+							IncreaseAmount = 15000 - PClan->Member[WhichOne]->MaxSP;
 						PClan->Member[WhichOne]->MaxSP += IncreaseAmount;
 
 						snprintf(szString, sizeof(szString), "|03%s's max SP increases by |14%d|03.\n",
