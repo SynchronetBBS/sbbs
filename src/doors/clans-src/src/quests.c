@@ -243,7 +243,8 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 				pcCurrentPos++;
 				if (pcCurrentPos - pszAcs > INT16_MAX)
 					System_Error("Unterminated string in legal()");
-				*iCharsRead = (int16_t)(pcCurrentPos - pszAcs);
+				if (iCharsRead)
+					*iCharsRead = (int16_t)(pcCurrentPos - pszAcs);
 				return bSoFar;
 			case '(' :  /* start a new set of conditions */
 				pcCurrentPos++;

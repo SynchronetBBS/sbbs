@@ -54,15 +54,19 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 	fpNPC = fopen(szInfile, "r");
 	if (!fpNPC) {
 		printf("Error reading %s\n", szInfile);
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 	fpNPCDat = fopen(szOutfile, "wb");
 	if (!fpNPCDat) {
 		printf("Error writing %s\n", szOutfile);
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	NPCInfo = calloc(1, sizeof(struct NPCInfo));
+	if (NPCInfo == NULL) {
+		printf("Error allocating %zu\n", sizeof(struct NPCInfo));
+		exit(EXIT_FAILURE);
+	}
 
 	for (;;) {
 		/* read in a line */

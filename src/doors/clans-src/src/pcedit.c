@@ -531,24 +531,26 @@ static void RejectTrade(struct TradeData *TradeData)
 	TmpClan = malloc(sizeof(struct clan));
 	CheckMem(TmpClan);
 
-	GetClan(TradeData->FromClanID, TmpClan);
+	if (GetClan(TradeData->FromClanID, TmpClan)) {
+		TmpClan->Empire.VaultGold += TradeData->Giving.Gold;
+		TmpClan->Empire.Army.Followers += TradeData->Giving.Followers;
+		TmpClan->Empire.Army.Footmen += TradeData->Giving.Footmen;
+		TmpClan->Empire.Army.Axemen += TradeData->Giving.Axemen;
+		TmpClan->Empire.Army.Knights += TradeData->Giving.Knights;
 
-	TmpClan->Empire.VaultGold += TradeData->Giving.Gold;
-	TmpClan->Empire.Army.Followers += TradeData->Giving.Followers;
-	TmpClan->Empire.Army.Footmen += TradeData->Giving.Footmen;
-	TmpClan->Empire.Army.Axemen += TradeData->Giving.Axemen;
-	TmpClan->Empire.Army.Knights += TradeData->Giving.Knights;
+		/* this ensures the file is zeroed for cheaters -- improve later */
+		TradeData->Giving.Gold = 0L;
+		TradeData->Giving.Followers = 0L;
+		TradeData->Giving.Footmen = 0L;
+		TradeData->Giving.Axemen = 0L;
+		TradeData->Giving.Knights = 0L;
+		TradeData->Giving.Catapults = 0L;
 
-	/* this ensures the file is zeroed for cheaters -- improve later */
-	TradeData->Giving.Gold = 0L;
-	TradeData->Giving.Followers = 0L;
-	TradeData->Giving.Footmen = 0L;
-	TradeData->Giving.Axemen = 0L;
-	TradeData->Giving.Knights = 0L;
-	TradeData->Giving.Catapults = 0L;
-
-	UpdateClan(TmpClan);
-
+		UpdateClan(TmpClan);
+	}
+	else {
+		puts("Failed to reject trade, couldn't load the clan");
+	}
 	FreeClan(TmpClan);
 }
 
