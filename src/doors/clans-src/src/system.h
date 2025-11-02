@@ -17,6 +17,8 @@ void System_Init(void);
  */
 
 noreturn void System_Close(void);
+void System_Close_AtExit(void);
+
 /*
  * purpose  Closes down the system, no matter WHERE it is called.
  *          Should be foolproof.

@@ -400,7 +400,7 @@ void System_Maint(void)
  * handler.
  */
 static bool RecurseCheck = false;
-static void System_Close_AtExit(void)
+void System_Close_AtExit(void)
 /*
  * purpose  Closes down the system, no matter WHERE it is called.
  *          Should be foolproof, but MUST NOT call exit()
@@ -491,7 +491,6 @@ noreturn void System_Close(void)
 			abort();
 		}
 	}
-	puts("System not initialized!\r");
 	abort();
 }
 

@@ -736,7 +736,7 @@ void Door_Init(bool Local)
 	/* force opendoors to NOT show copyright message */
 	od_control.od_nocopyright = true;
 	od_control.od_node = System.Node;
-	od_control.od_before_exit = System_Close;
+	od_control.od_before_exit = System_Close_AtExit;
 	//    od_registration_key = YOUR_KEY;
 
 	/* If local, intialize user data before od_init is run */
