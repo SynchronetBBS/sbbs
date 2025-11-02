@@ -776,12 +776,10 @@ void KillAlliance(int16_t WhichAlliance, struct Alliance *Alliances[MAX_ALLIANCE
 	for (CurClan = 0;; CurClan++) {
 		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
 		if (fseek(fpPlayerFile, Offset, SEEK_SET)) {
-			fclose(fpPlayerFile);
 			break;  /* couldn't fseek, so exit */
 		}
 
 		notEncryptRead_s(clan, &TmpClan, fpPlayerFile, XOR_USER) {
-			fclose(fpPlayerFile);
 			break;  /* stop reading if no more players found */
 		}
 

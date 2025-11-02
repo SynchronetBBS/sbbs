@@ -451,9 +451,9 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 			else if (cur_char == 0 && CurLine > 0)
 				return 4;
 		}
-		else if ((isalnum(ch) || ispunct(ch)) && (String[cur_char-1] == '%'  || String[cur_char-1]=='&'))
+		else if (cur_char > 0 && (isalnum(ch) || ispunct(ch)) && (String[cur_char - 1] == '%'  || String[cur_char - 1]=='&'))
 			continue;
-		else if ((isdigit(ch) || toupper(ch) == 'S') && String[cur_char-1] == '@')
+		else if (cur_char > 0 && (isdigit(ch) || toupper(ch) == 'S') && String[cur_char - 1] == '@')
 			continue;
 		else if (ch == 25) { // CTRL-Y
 			rputs("\r                                                                     \r");
@@ -1141,9 +1141,9 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 			else if (cur_char == 0 && CurLine > 0)
 				return 4;
 		}
-		else if ((isalnum(ch) || ispunct(ch)) && (String[cur_char-1] == '%'  || String[cur_char-1]=='&') && cur_char > 0)
+		else if (cur_char > 0 && (isalnum(ch) || ispunct(ch)) && (String[cur_char - 1] == '%'  || String[cur_char - 1]=='&'))
 			continue;
-		else if ((isdigit(ch) || toupper(ch) == 'S') && String[cur_char-1] == '@' && cur_char > 0)
+		else if (cur_char > 0 && (isdigit(ch) || toupper(ch) == 'S') && String[cur_char - 1] == '@')
 			continue;
 		else if (ch== 13) {
 			rputs("\n");

@@ -44,6 +44,7 @@ static int file_oper(const char *from, const char *to, const char *tmode)
 					if (feof(ffrom)) {      /* if end of file       */
 						fclose(fto);
 						fclose(ffrom);
+						free(buffer);
 						return 0;       /* success              */
 					}
 					break;                  /* if error             */

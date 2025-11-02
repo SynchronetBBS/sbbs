@@ -364,7 +364,7 @@ static void ChangeColourScheme(void)
 
 	/* set up tables which "point" to which color */
 	/* this is a tricky way of fixing a problem. ;) */
-	for (cTemp = 0; cTemp < 128; cTemp++)
+	for (cTemp = 0; cTemp <= 128; cTemp++)
 		TableColor[cTemp] = (char)cTemp;
 	/* now for the abnormal ones */
 	TableColor[ '5' ] = '7';
