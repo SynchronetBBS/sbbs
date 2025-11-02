@@ -613,6 +613,8 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 
 		Game_Data.NextClanID = 0;
 		Game_Data.NextAllianceID = 0;
+		Game_Data.ClanTravel = ResetData->ClanTravel;
+		Game_Data.LostDays = ResetData->LostDays;
 
 		Game_Data.MaxPermanentMembers = ResetData->MaxPermanentMembers;
 		Game_Data.ClanEmpires = ResetData->ClanEmpires;
@@ -652,6 +654,8 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 
 		Game_Data.NextClanID = 0;
 		Game_Data.NextAllianceID = 0;
+		Game_Data.ClanTravel = ResetData->ClanTravel;
+		Game_Data.LostDays = ResetData->LostDays;
 
 		Game_Data.MaxPermanentMembers = ResetData->MaxPermanentMembers;
 		Game_Data.ClanEmpires = ResetData->ClanEmpires;
