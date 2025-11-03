@@ -897,8 +897,8 @@ static void ListFiles(void)
 					szFileName);
 			zputs(szString);
 
-			lCompressSize = 0L;
-			lFileSize = 0L;
+			lCompressSize = 0;
+			lFileSize = 0;
 		}
 		else {
 			/* get filesize from psi file */

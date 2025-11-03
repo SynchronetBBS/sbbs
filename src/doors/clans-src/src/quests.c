@@ -779,7 +779,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 							if (PercentGold > 100)
 								PercentGold = 100;
 
-							GoldAmount = (PClan->Empire.VaultGold*PercentGold)/100L;
+							GoldAmount = (PClan->Empire.VaultGold*PercentGold) / 100;
 						}
 						else
 							GoldAmount = ato32(pcCurrentPos, "Take Gold", __func__);

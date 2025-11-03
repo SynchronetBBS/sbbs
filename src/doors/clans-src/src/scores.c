@@ -436,7 +436,6 @@ void DisplayScores(bool MakeFile)
 			}
 		}
 		else {
-			// snprintf(szString, sizeof(szString), " |%02d%3s |02%-30s |15%6ld  ", SortData[ SortList[CurClan] ]->Color, SortData[ SortList[CurClan] ]->Symbol, SortData[ SortList[CurClan] ]->szName, SortData[ SortList[CurClan] ]->Points);
 			// figure out clanid length without pipes
 			RemovePipes(SortData[ SortList[CurClan] ]->Symbol, szString);
 			Padding = 20 - strlen(szString);

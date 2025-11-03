@@ -805,7 +805,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 				rputs(szString);
 
 				/* take some away due to taxes */
-				TaxedGold = (int32_t)(GoldGained * Village.Data.TaxRate)/100L;
+				TaxedGold = (int32_t)(GoldGained * Village.Data.TaxRate) / 100;
 				if (TaxedGold) {
 					snprintf(szString, sizeof(szString), ST_FIGHTTAXEDGOLD, (long)TaxedGold);
 					rputs(szString);
@@ -1337,7 +1337,7 @@ void Fight_CheckLevelUp(void)
 
 	/* figure XP required per level */
 	for (Level = 1; Level < MAX_LEVELS; Level++) {
-		XPRequired[Level] = 50L;
+		XPRequired[Level] = 50;
 
 		for (iTemp = 1; iTemp <= Level; iTemp++)
 			XPRequired[Level] += ((int32_t)(iTemp - 1) * 75);
@@ -1576,7 +1576,7 @@ static void Fight_GiveFollowers(int16_t Level)
 	char szString[128];
 
 	NumFollowers = MineFollowersGained(Level);
-	NumConscripted = (NumFollowers*Village.Data.ConscriptionRate)/100L;
+	NumConscripted = (NumFollowers * Village.Data.ConscriptionRate) / 100;
 
 	if (NumFollowers || NumConscripted) {
 		snprintf(szString, sizeof(szString), ST_FIGHTOVER1, (long)NumFollowers, (long)NumConscripted);

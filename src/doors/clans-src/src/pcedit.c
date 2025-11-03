@@ -122,7 +122,7 @@ int main(void)
 	entry_size = true_ENTRY_SIZE((unsigned)Game.Data.MaxPermanentMembers);
 
 	// otherwise, open file, get filesize
-	fseek(fpPC, 0L, SEEK_END);
+	fseek(fpPC, 0, SEEK_END);
 	FileSize = ftell(fpPC);
 	if (FileSize / (long)entry_size > INT16_MAX) {
 		puts(PLAYER_DATAFILE " too large");
@@ -198,7 +198,7 @@ int main(void)
 			}
 
 			// otherwise, open file, get filesize
-			fseek(fpPC, 0L, SEEK_END);
+			fseek(fpPC, 0, SEEK_END);
 			FileSize = ftell(fpPC);
 			NumClans = (int16_t)(FileSize / (long)entry_size);
 
@@ -539,12 +539,12 @@ static void RejectTrade(struct TradeData *TradeData)
 		TmpClan->Empire.Army.Knights += TradeData->Giving.Knights;
 
 		/* this ensures the file is zeroed for cheaters -- improve later */
-		TradeData->Giving.Gold = 0L;
-		TradeData->Giving.Followers = 0L;
-		TradeData->Giving.Footmen = 0L;
-		TradeData->Giving.Axemen = 0L;
-		TradeData->Giving.Knights = 0L;
-		TradeData->Giving.Catapults = 0L;
+		TradeData->Giving.Gold = 0;
+		TradeData->Giving.Followers = 0;
+		TradeData->Giving.Footmen = 0;
+		TradeData->Giving.Axemen = 0;
+		TradeData->Giving.Knights = 0;
+		TradeData->Giving.Catapults = 0;
 
 		UpdateClan(TmpClan);
 	}

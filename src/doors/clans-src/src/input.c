@@ -531,7 +531,7 @@ long GetLong(char *Prompt, long DefaultVal, long Maximum)
 
 		TenPower *= 10;
 	}
-	if (Maximum < 0L)
+	if (Maximum < 0)
 		NumDigits++;
 
 	/* now get input */

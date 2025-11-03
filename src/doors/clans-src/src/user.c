@@ -850,8 +850,6 @@ void ListItems(struct clan *Clan)
 	int16_t CurItem;
 	char szString[100], szOwner[30];
 
-	// rputs("|0LNumber |0MItemName       |0N(Used by)\n\n");
-
 	rputs("|0B # Name|07                 |0CUsed By|07      ");
 	rputs("|0B # Name|07                 |0CUsed By|07\n");
 	rputs("|0A\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd|07   ");
@@ -2010,7 +2008,7 @@ static bool User_Create(void)
 		}
 	}
 	else {
-		fseek(fpPlayerFile, 0L, SEEK_END);
+		fseek(fpPlayerFile, 0, SEEK_END);
 	}
 
 	/* write it to file */
@@ -2619,7 +2617,7 @@ void User_Maint(void)
 
 	/* figure XP required per level */
 	for (Level = 1; Level < MAX_LEVELS; Level++) {
-		XPRequired[Level] = 50L;
+		XPRequired[Level] = 50;
 
 		for (iTemp = 1; iTemp <= Level; iTemp++)
 			XPRequired[Level] += (((int32_t)iTemp - 1) * 75);

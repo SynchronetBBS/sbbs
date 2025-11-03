@@ -658,9 +658,9 @@ void Item_BuyItem(signed char ItemType)
 			// cost fluctuation... FIXME: in future, have different ones for
 			// spells+books??
 			ItemCosts[TotalItems] = Items.Data[  ItemIndex[TotalItems] ]->lCost
-									+ ((int32_t)Village.Data.CostFluctuation*Items.Data[ItemIndex[TotalItems] ]->lCost)/100L;
+			    + ((int32_t)Village.Data.CostFluctuation * Items.Data[ItemIndex[TotalItems] ]->lCost) / 100;
 
-			ItemGst[TotalItems] = ((ItemCosts[TotalItems] * Village.Data.GST)/100L);
+			ItemGst[TotalItems] = (ItemCosts[TotalItems] * Village.Data.GST) / 100;
 
 			/* add gst */
 			ItemCosts[TotalItems] += ItemGst[TotalItems];
@@ -767,8 +767,6 @@ void Item_BuyItem(signed char ItemType)
 							/* ask if he wants to use this */
 							if (YesNo("\n|0SUse this material?") == YES) {
 								/* see if he can afford it */
-								//NewCost = (ItemCosts[Choice - 'A'] * (my_random(Village.Data.MarketLevel*10) + 90 + my_random(10)))/100L;
-
 								if (PClan->Empire.VaultGold < ItemCosts[Choice - 'A']) {
 									rputs("|12You cannot afford this!\n");
 									if (NoYes("|0SUse Laconia instead?") == NO) {

@@ -126,12 +126,12 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 			// read in file stats
 			FileHeader->lStart = 0;
 
-			fseek(fp, 0L, SEEK_END);
+			fseek(fp, 0, SEEK_END);
 			lTemp = ftell(fp);
 			if (lTemp < 0 || lTemp > INT32_MAX)
 				System_Error("Invalid position in clans.pak");
 			FileHeader->lEnd = FileHeader->lFileSize = (int32_t)lTemp;
-			fseek(fp, 0L, SEEK_SET);
+			fseek(fp, 0, SEEK_SET);
 
 			FileHeader->fp = fp;
 		}
@@ -146,12 +146,12 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 		// read in file stats
 		FileHeader->lStart = 0;
 
-		fseek(fp, 0L, SEEK_END);
+		fseek(fp, 0, SEEK_END);
 		lTemp = ftell(fp);
 		if (lTemp < 0 || lTemp > INT32_MAX)
 			System_Error("Invalid position in file");
 		FileHeader->lEnd = FileHeader->lFileSize = (int32_t)lTemp;
-		fseek(fp, 0L, SEEK_SET);
+		fseek(fp, 0, SEEK_SET);
 
 		FileHeader->fp = fp;
 

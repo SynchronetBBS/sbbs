@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
 	fwrite(mBuf, sizeof(mBuf), 1, fpMonOut);
 
 	/* rewrite index */
-	fseek(fpMonOut, 0L, SEEK_SET);
+	fseek(fpMonOut, 0, SEEK_SET);
 	fwrite(MonIndex, sizeof(MonIndex), 1, fpMonOut);
 
 	/* since they started at -1 and not 0 */

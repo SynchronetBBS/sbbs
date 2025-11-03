@@ -79,7 +79,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				if (GivingList)
 					MaxInput = PClan->Empire.VaultGold;
 				else
-					MaxInput = 1000000000L;
+					MaxInput = 1000000000;
 
 				TradeList->Gold = (int32_t)GetLong("|0SHow much gold?", TradeList->Gold, MaxInput);
 				break;
@@ -87,7 +87,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				if (GivingList)
 					MaxInput = PClan->Empire.Army.Followers;
 				else
-					MaxInput = 1000000L;
+					MaxInput = 1000000;
 
 				TradeList->Followers = (int32_t)GetLong("|0SHow many followers?", TradeList->Followers, MaxInput);
 				break;
@@ -95,7 +95,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				if (GivingList)
 					MaxInput = PClan->Empire.Army.Footmen;
 				else
-					MaxInput = 1000000L;
+					MaxInput = 1000000;
 
 				TradeList->Footmen = (int32_t)GetLong("|0SHow many footmen?", TradeList->Footmen, MaxInput);
 				break;
@@ -103,7 +103,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				if (GivingList)
 					MaxInput = PClan->Empire.Army.Axemen;
 				else
-					MaxInput = 1000000L;
+					MaxInput = 1000000;
 
 				TradeList->Axemen = (int32_t)GetLong("|0SHow many axemen?", TradeList->Axemen, MaxInput);
 				break;
@@ -111,7 +111,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				if (GivingList)
 					MaxInput = PClan->Empire.Army.Knights;
 				else
-					MaxInput = 1000000L;
+					MaxInput = 1000000;
 
 				TradeList->Knights = (int32_t)GetLong("|0SHow many knights?", TradeList->Knights, MaxInput);
 				break;
@@ -141,12 +141,12 @@ void RejectTrade(struct TradeData *TradeData)
 	TmpClan.Empire.Army.Knights += TradeData->Giving.Knights;
 
 	/* this ensures the file is zeroed for cheaters -- improve later */
-	TradeData->Giving.Gold = 0L;
-	TradeData->Giving.Followers = 0L;
-	TradeData->Giving.Footmen = 0L;
-	TradeData->Giving.Axemen = 0L;
-	TradeData->Giving.Knights = 0L;
-	TradeData->Giving.Catapults = 0L;
+	TradeData->Giving.Gold = 0;
+	TradeData->Giving.Followers = 0;
+	TradeData->Giving.Footmen = 0;
+	TradeData->Giving.Axemen = 0;
+	TradeData->Giving.Knights = 0;
+	TradeData->Giving.Catapults = 0;
 
 	snprintf(szString, sizeof(szString), "%s rejected your trade offer.", PClan->szName);
 	GenericMessage(szString, TradeData->FromClanID, PClan->ClanID, PClan->szName, false);

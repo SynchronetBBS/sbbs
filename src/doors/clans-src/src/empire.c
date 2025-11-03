@@ -61,7 +61,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_EMPIREATTACKS           5
 
 #define MAX_SPIES       10
-#define SPY_COST        1000L
+#define SPY_COST        1000
 
 // our goals
 #define G_OUSTRULER     0
@@ -657,7 +657,7 @@ static void DevelopLand(struct empire *Empire)
 	}
 
 	// each unit of land costs this much to develop
-	CostToDevelop = (int32_t)(100L - Empire->Buildings[B_DEVELOPERS]*5L);
+	CostToDevelop = (int32_t)(100 - Empire->Buildings[B_DEVELOPERS] * 5);
 	if (CostToDevelop < 20)
 		CostToDevelop = 20;
 	if (CostToDevelop > 100)
@@ -1819,20 +1819,20 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 
 				switch (AttackResult->DefenderType) {
 					case EO_VILLAGE :
-						Percent = (int16_t)((AttackResult->PercentDamage * AttackResult->ExtentOfAttack) / 200L);
+						Percent = (int16_t)((AttackResult->PercentDamage * AttackResult->ExtentOfAttack) / 200);
 						DestroyBuildings(Village.Data.Empire.Buildings,
 										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
 						// after destroying everything, Land is gained
 
-						AttackResult->LandStolen = (int16_t)(((Village.Data.Empire.Land + LandGained) * Percent) / 100L);
+						AttackResult->LandStolen = (int16_t)(((Village.Data.Empire.Land + LandGained) * Percent) / 100);
 						break;
 					case EO_CLAN :
 						GetClan(AttackResult->DefenderID, &TmpClan);
-						Percent = (int16_t)((AttackResult->PercentDamage * AttackResult->ExtentOfAttack) / 200L);
+						Percent = (int16_t)((AttackResult->PercentDamage * AttackResult->ExtentOfAttack) / 200);
 						DestroyBuildings(TmpClan.Empire.Buildings,
 										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
 
-						AttackResult->LandStolen = (int16_t)(((TmpClan.Empire.Land + LandGained) * Percent) / 100L);
+						AttackResult->LandStolen = (int16_t)(((TmpClan.Empire.Land + LandGained) * Percent) / 100);
 						FreeClanMembers(&TmpClan);
 						break;
 					case EO_ALLIANCE :
@@ -1847,11 +1847,11 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						if (iTemp < MAX_ALLIANCES && Alliances[iTemp]) {
 							WhichAlliance = iTemp;
 
-							Percent = (int16_t)((AttackResult->PercentDamage * AttackResult->ExtentOfAttack) / 200L);
+							Percent = (int16_t)((AttackResult->PercentDamage * AttackResult->ExtentOfAttack) / 200);
 							DestroyBuildings(Alliances[WhichAlliance]->Empire.Buildings,
 											 AttackResult->BuildingsDestroyed, Percent, &LandGained);
 
-							AttackResult->LandStolen = (int16_t)(((Alliances[WhichAlliance]->Empire.Land + LandGained) * Percent) / 100L);
+							AttackResult->LandStolen = (int16_t)(((Alliances[WhichAlliance]->Empire.Land + LandGained) * Percent) / 100);
 						}
 
 						// free up mem used by alliances
@@ -1919,13 +1919,13 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 			case G_DESTROY :  // destroy, figure out how much of his stuff was destroyed
 				switch (AttackResult->DefenderType) {
 					case EO_VILLAGE :
-						Percent = (int16_t)((AttackResult->PercentDamage*AttackResult->ExtentOfAttack) / 100L);
+						Percent = (int16_t)((AttackResult->PercentDamage*AttackResult->ExtentOfAttack) / 100);
 						DestroyBuildings(Village.Data.Empire.Buildings,
 										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
 						break;
 					case EO_CLAN :
 						GetClan(AttackResult->DefenderID, &TmpClan);
-						Percent = (int16_t)((AttackResult->PercentDamage*AttackResult->ExtentOfAttack) / 100L);
+						Percent = (int16_t)((AttackResult->PercentDamage*AttackResult->ExtentOfAttack) / 100);
 						DestroyBuildings(TmpClan.Empire.Buildings,
 						    AttackResult->BuildingsDestroyed, Percent, &LandGained);
 						FreeClanMembers(&TmpClan);
@@ -1940,7 +1940,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						}
 						WhichAlliance = iTemp;
 
-						Percent = (int16_t)((AttackResult->PercentDamage*AttackResult->ExtentOfAttack) / 100L);
+						Percent = (int16_t)((AttackResult->PercentDamage*AttackResult->ExtentOfAttack) / 100);
 						DestroyBuildings(Alliances[WhichAlliance]->Empire.Buildings,
 										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
 

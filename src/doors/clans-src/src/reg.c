@@ -98,8 +98,8 @@ static void Jumble(char *szString)
 
 int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 {
-	uint32_t chksum = 0L;
-	uint32_t chksum2 = 0L;
+	uint32_t chksum = 0;
+	uint32_t chksum2 = 0;
 	char szRealCode[40];
 	char szUserCode[40] = {0};
 	char *pc, *pc2, szString[155];
@@ -147,7 +147,7 @@ int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 		pc++;
 	}
 
-	chksum2 = 0L;
+	chksum2 = 0;
 
 	pc = szString;
 	while (*pc) {
@@ -365,7 +365,7 @@ static void dputs(char *string)
 			}
 			else {
 				Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1))] = cDecrypted;
-				Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1) + 1L)] = cur_attr;
+				Video.VideoMem[(int32_t)(Video.y_lookup[(int32_t) y]+ (int32_t)(x<<1) + 1)] = cur_attr;
 
 				pcFrom++;
 			}

@@ -463,10 +463,10 @@ static void BuildMenu(void)
 {
 	char *szTheOptions[9];
 	char szString[255];
-	int32_t THallBuildCosts[MAX_THALLLEVEL] = { 15500L, 50000L, 100000L, 250000L };
-	int32_t ChurchBuildCosts[MAX_CHURCHLEVEL] = { 8000L, 25000L, 30000L, 50000L, 70000L };
-	int32_t PawnBuildCosts[MAX_PAWNLEVEL] = { 10000L, 25000L, 30000L, 50000L, 70000L };
-	int32_t WizardBuildCosts[MAX_WIZARDLEVEL] = { 10000L, 25000L, 35000L, 40000L, 70000L };
+	int32_t THallBuildCosts[MAX_THALLLEVEL] = { 15500, 50000, 100000, 250000 };
+	int32_t ChurchBuildCosts[MAX_CHURCHLEVEL] = { 8000, 25000, 30000, 50000, 70000 };
+	int32_t PawnBuildCosts[MAX_PAWNLEVEL] = { 10000, 25000, 30000, 50000, 70000 };
+	int32_t WizardBuildCosts[MAX_WIZARDLEVEL] = { 10000, 25000, 35000, 40000, 70000 };
 	int32_t TotalCost;
 
 	LoadStrings(350, 9, szTheOptions);
@@ -1167,7 +1167,7 @@ void Village_NewRuler(void)
 	News_AddNews(szString);
 
 	/* give him points for becoming ruler */
-	PClan->Points += 20L;
+	PClan->Points += 20;
 
 	rputs("|15Your clan now rules the village!\n");
 	door_pause();
@@ -1229,7 +1229,7 @@ void Village_Reset(void)
 	Village.Data.TaxRate = 0;        /* no taxes */
 	Village.Data.InterestRate = 0;   /* 0% interest rate */
 	Village.Data.GST = 0;        /* no gst */
-	Village.Data.Empire.VaultGold = 45000L; /* some money to begin with */
+	Village.Data.Empire.VaultGold = 45000; /* some money to begin with */
 	Village.Data.ConscriptionRate = 10;
 
 	Village.Data.RulingClanId[0] = -1; /* no ruling clan yet */

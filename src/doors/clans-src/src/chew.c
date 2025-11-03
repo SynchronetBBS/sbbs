@@ -177,14 +177,14 @@ static void AddGUM(FILE *fpGUM, char *pszFileName)
 		printf("\aCouldn't open \"%s\"\n", pszFileName);
 		exit(1);
 	}
-	fseek(fpFromFile, 0L, SEEK_END);
+	fseek(fpFromFile, 0, SEEK_END);
 	lFileSize = ftell(fpFromFile);
 	if (lFileSize > INT32_MAX || lFileSize < 0) {
 		printf("\aftell(\"%s\") returned %ld\n", pszFileName, lFileSize);
 		exit(1);
 	}
 	//printf(" (%ld bytes) ", lFileSize);
-	fseek(fpFromFile, 0L, SEEK_SET);
+	fseek(fpFromFile, 0, SEEK_SET);
 	tmp32 = SWAP32S((int32_t)lFileSize);
 	fwrite(&tmp32, sizeof(tmp32), 1, fpGUM);
 

@@ -136,7 +136,7 @@ static void IBBS_SendFileInPacket(int16_t DestID, int16_t PacketType, char *szFi
 		return;
 
 	// find out length of file
-	fseek(fp, 0L, SEEK_END);
+	fseek(fp, 0, SEEK_END);
 	lFileSize = ftell(fp);
 
 	// allocate memory for it
@@ -146,7 +146,7 @@ static void IBBS_SendFileInPacket(int16_t DestID, int16_t PacketType, char *szFi
 	CheckMem(cpBuffer);
 
 	// now read it in
-	fseek(fp, 0L, SEEK_SET);
+	fseek(fp, 0, SEEK_SET);
 	if (fread(cpBuffer, (size_t)lFileSize, sizeof(char), fp) != 1)
 		System_Error("Error reading file in IBBS_SendFileInPacket()");
 
@@ -190,7 +190,7 @@ void IBBS_DistributeNDX(void)
 	}
 
 	// find out length of file
-	fseek(fpNDX, 0L, SEEK_END);
+	fseek(fpNDX, 0, SEEK_END);
 	lFileSize = ftell(fpNDX);
 	if (lFileSize < 0)
 		System_Error("Negative file size in IBBS_DistributeNDX()");
@@ -200,7 +200,7 @@ void IBBS_DistributeNDX(void)
 	CheckMem(cpBuffer);
 
 	// now read it in
-	fseek(fpNDX, 0L, SEEK_SET);
+	fseek(fpNDX, 0, SEEK_SET);
 	fread(cpBuffer, (size_t)lFileSize, sizeof(char), fpNDX);
 
 	fclose(fpNDX);

@@ -769,7 +769,7 @@ static void CreateVillageDat(struct ResetData *ResetData)
 	Village_Data.TaxRate = 0;      /* no taxes */
 	Village_Data.InterestRate = 0;   /* 0% interest rate */
 	Village_Data.GST = 0;        /* no gst */
-	Village_Data.Empire.VaultGold = 45000L; /* some money to begin with */
+	Village_Data.Empire.VaultGold = 45000; /* some money to begin with */
 	Village_Data.ConscriptionRate = 10;
 
 	Village_Data.RulingClanId[0] = -1; /* no ruling clan yet */
