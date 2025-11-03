@@ -174,8 +174,8 @@ static void ConfigMenu(void)
 
 	/* init defaults */
 
-	ColorArea(0,2+MAX_OPTION, 39, 2+MAX_OPTION, 7);
-	gotoxy(2, CurOption+3);
+	ColorArea(0, 2 + MAX_OPTION, 39, 2 + MAX_OPTION, 7);
+	gotoxy(2, CurOption + 3);
 
 	/* dehilight all options */
 	ColorArea(39, 2, 76, 16, 15);    // choices on the right side
@@ -206,10 +206,10 @@ static void ConfigMenu(void)
 	while (!Quit) {
 		if (OldOption != CurOption) {
 			if (OldOption != -1)
-				ColorArea(0, (int16_t)(OldOption+2), 39, (int16_t)(OldOption+2), 7);
+				ColorArea(0, OldOption + 2, 39, OldOption + 2, 7);
 			OldOption = CurOption;
 			/* show which is highlighted */
-			ColorArea(0, (int16_t)(CurOption+2), 39, (int16_t)(CurOption+2), HILIGHT);
+			ColorArea(0, (CurOption+2), 39, CurOption + 2, HILIGHT);
 			/* Unhighlight old option */
 		}
 
@@ -322,13 +322,13 @@ static void NodeMenu(void)
 
 	/* init defaults */
 
-	ColorArea(0,2+last, 39, 2+last, 7);
+	ColorArea(0, 2 + last, 39, 2 + last, 7);
 	gotoxy(2, CurOption+3);
 
 	/* dehilight all options */
-	ColorArea(39,2, 76, 6, 15);    // choices on the right side
+	ColorArea(39, 2, 76, 6, 15);    // choices on the right side
 
-	ColorArea(0, 2, 39, last+2, 7);
+	ColorArea(0, 2, 39, last + 2, 7);
 
 	textattr(15);
 	/* show data */
@@ -340,10 +340,10 @@ static void NodeMenu(void)
 	while (!Quit) {
 		if (OldOption != CurOption) {
 			if (OldOption != -1)
-				ColorArea(0, (int16_t)(OldOption+2), 39, (int16_t)(OldOption+2), 7);
+				ColorArea(0, OldOption + 2, 39, OldOption + 2, 7);
 			OldOption = CurOption;
 			/* show which is highlighted */
-			ColorArea(0, (int16_t)(CurOption+2), 39, (int16_t)(CurOption+2), HILIGHT);
+			ColorArea(0, CurOption + 2, 39, CurOption + 2, HILIGHT);
 			/* Unhighlight old option */
 		}
 

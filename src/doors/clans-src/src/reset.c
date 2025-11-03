@@ -199,10 +199,10 @@ static void ResetMenu(bool InterBBSGame)
 	while (!Quit) {
 		if (OldOption != CurOption) {
 			if (OldOption != -1)
-				ColorArea(0, (int16_t)(OldOption+2), 39, (int16_t)(OldOption+2), 7);
+				ColorArea(0, OldOption + 2, 39, OldOption + 2, 7);
 			OldOption = CurOption;
 			/* show which is highlighted */
-			ColorArea(0, (int16_t)(CurOption+2), 39, (int16_t)(CurOption+2), HILIGHT);
+			ColorArea(0, CurOption + 2, 39, CurOption + 2, HILIGHT);
 			/* Unhighlight old option */
 		}
 
@@ -520,7 +520,7 @@ static void DosHelp(char *Topic, char *File)
 
 		/* display it */
 		for (CurLine = 0; CurLine < NumLines; CurLine++) {
-			qputs(Lines[CurLine], 0, (int16_t)(CurLine+2));
+			qputs(Lines[CurLine], 0, CurLine + 2);
 		}
 	}
 

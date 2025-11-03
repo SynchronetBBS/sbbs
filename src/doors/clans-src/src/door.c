@@ -723,7 +723,7 @@ void Display(char *FileName)
 	/* if ends in something else, assume pipe codes */
 
 	int16_t FileType; /* 0 == ASCII, 1 == ANSI */
-	int16_t CurLine = 0, NumLines, cTemp;
+	int16_t CurLine = 0, NumLines, iTemp;
 	int32_t MaxBytes;
 	char Lines[30][256];
 	struct FileHeader FileHeader;
@@ -745,21 +745,20 @@ void Display(char *FileName)
 	for (;;) {
 		// if at end of file, stop
 		/* get od_control.user_screen_length-3 lines if possible */
-		for (cTemp = 0; cTemp < (od_control.user_screen_length-3) && cTemp < 30; cTemp++) {
+		for (iTemp = 0; iTemp < (od_control.user_screen_length-3) && iTemp < 30; iTemp++) {
 			MaxBytes = FileHeader.lEnd - (int32_t)ftell(FileHeader.fp) + EXTRABYTES;
 			if (MaxBytes > 254)
 				MaxBytes = 254;
 
-			if (ftell(FileHeader.fp) >= FileHeader.lEnd || feof(FileHeader.fp)) {
-				break;
-			}
-
-			if (!fgets(Lines[cTemp], (int16_t) MaxBytes, FileHeader.fp))
+			if (ftell(FileHeader.fp) >= FileHeader.lEnd || feof(FileHeader.fp))
 				break;
 
-			Lines[cTemp][(int16_t)(MaxBytes - EXTRABYTES + 1)] = 0;
+			if (!fgets(Lines[iTemp], (int)MaxBytes, FileHeader.fp))
+				break;
+
+			Lines[iTemp][(int16_t)(MaxBytes - EXTRABYTES + 1)] = 0;
 		}
-		NumLines = cTemp;
+		NumLines = iTemp;
 
 		/* display them all */
 		for (CurLine = 0; CurLine < NumLines; CurLine++) {
