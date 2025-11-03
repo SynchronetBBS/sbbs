@@ -1897,7 +1897,6 @@ static FILE *getPacketFP(int16_t DestID)
 
 static void IBBS_SendPacketBuffer(int16_t DestID, char *PacketHeader, char *PacketData, size_t PacketDataSize)
 {
-	char szString[580];
 	FILE *fp;
 
 	if (IBBS.Initialized == false) {
