@@ -246,7 +246,6 @@ Prompt "What do you wish to do? [|12PL|02]: |13
 Option P BedOfRoses.Pick
 Option L NEXTLINE
 Text "|02You |10leave |02the flowers alone and they |10leave |02you alone.
-Text "%P
 End
 
         Result BedOfRoses.Pick
@@ -263,7 +262,6 @@ End
         Text
         Text "|02You watch as the mad gardener stumbles and falls into his bed of flowers.
         Text "Soon, the flowers turn a shade of blood red . . .
-        pause
         End
 
 # -----------------------------------------------------------------------------
