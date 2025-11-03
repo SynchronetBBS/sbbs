@@ -1852,6 +1852,7 @@ tODResult ODComOpenFromExistingHandle(tPortHandle hPort,
 #endif
       pPortInfo->socket = dwExistingHandle;
 
+      delay = sizeof(pPortInfo->old_delay);
       getsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, (void*)&(pPortInfo->old_delay), &delay);
       delay=FALSE;
       setsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, (void*)&delay, sizeof(delay));
