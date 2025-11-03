@@ -61,8 +61,7 @@ CLANS_OBJS :=	$(OBJDIR)alliance.o $(OBJDIR)alliancem.o \
 		$(OBJDIR)serialize.o $(OBJDIR)spells.o $(OBJDIR)system.o \
 		$(OBJDIR)trades.o $(OBJDIR)unix_wrappers.o \
 		$(OBJDIR)user.o $(OBJDIR)video.o $(OBJDIR)village.o \
-		$(OBJDIR)voting.o $(OBJDIR)wb_fapnd.o \
-		$(OBJDIR)win_wrappers.o
+		$(OBJDIR)voting.o $(OBJDIR)win_wrappers.o
 
 CHEW_OBJS :=	$(OBJDIR)chew.o $(OBJDIR)gum.o $(OBJDIR)parsing.o \
 		$(OBJDIR)win_wrappers.o

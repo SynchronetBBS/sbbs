@@ -279,10 +279,10 @@ void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource)
 #define KEYWORD_LINK_NAME  8
 #define KEYWORD_LINK_LOC   9
 
-tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName)
+tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, const char *pszFileName)
 {
 	tIBResult ToReturn;
-	tMessageHeader MessageHeader;
+	tMessageHeader MessageHeader = {0};
 	time_t lnSecondsSince1970;
 	struct tm *pTimeInfo;
 	char szTOPT[13];

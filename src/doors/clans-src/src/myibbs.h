@@ -4,6 +4,6 @@
 #include "interbbs.h"
 
 void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource);
-tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, char *pszFileName);
+tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, const char *pszFileName);
 
 #endif

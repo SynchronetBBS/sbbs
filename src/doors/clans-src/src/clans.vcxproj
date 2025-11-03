@@ -46,7 +46,6 @@
     <ClCompile Include="user.c" />
     <ClCompile Include="village.c" />
     <ClCompile Include="voting.c" />
-    <ClCompile Include="wb_fapnd.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="alliance.h" />

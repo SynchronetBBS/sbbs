@@ -516,7 +516,7 @@ void Trades_Maint(void)
 
 	fpTradeFile = fopen("trades.dat", "rb");
 	if (fpTradeFile) {
-		fpNewTradeFile = fopen("tmp.$$$", "wb");
+		fpNewTradeFile = fopen("trades.new", "wb");
 		if (!fpNewTradeFile) {
 			fclose(fpTradeFile);
 			return;
@@ -538,7 +538,7 @@ void Trades_Maint(void)
 		fclose(fpNewTradeFile);
 
 		unlink("trades.dat");
-		rename("tmp.$$$", "trades.dat");
+		rename("trades.new", "trades.dat");
 	}
 
 }

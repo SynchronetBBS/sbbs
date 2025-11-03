@@ -72,7 +72,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "user.h"
 #include "video.h"
 #include "village.h"
-#include "wb_fapnd.h"
 
 #define MT_NORMAL       0
 #define MT_CRASH        1
@@ -463,7 +462,7 @@ void RemoveFromUList(const int16_t ClanID[2])
 	if (!fpOldUList)    // no user list at all
 		return;
 
-	fpNewUList = _fsopen("tmp.$$$", "wb", _SH_DENYRW);
+	fpNewUList = _fsopen("userlist.new", "wb", _SH_DENYRW);
 	// FIXME: assume file is opened
 
 	for (;;) {
@@ -489,7 +488,7 @@ void RemoveFromUList(const int16_t ClanID[2])
 
 	// rename file
 	unlink("userlist.dat");
-	rename("tmp.$$$", "userlist.dat");
+	rename("userlist.new", "userlist.dat");
 }
 /* Function Procedure:
    If the user is not already in the userlist, open USERLIST.DAT.
@@ -648,35 +647,11 @@ bool IBBS_InList(char *szName, bool ClanName)
 */
 void IBBS_SendComeBack(int16_t BBSIdTo, struct clan *Clan)
 {
-	// write packet
-	struct Packet Packet;
-	FILE *fp;
-
-	/* create packet header */
-	Packet.Active = true;
-	Packet.BBSIDFrom = IBBS.Data.BBSID;
-	Packet.BBSIDTo = BBSIdTo;
-	Packet.PacketType = PT_COMEBACK;
-	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
-	Packet.PacketLength = sizeof(int16_t)*3;
-	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
-
-	fp = _fsopen("tmp.$$$", "wb", _SH_DENYWR);
-	if (!fp) return;
-
-	/* write packet */
-	EncryptWrite_s(Packet, &Packet, fp, XOR_PACKET);
-
-	// write info
-	EncryptWrite16(&Clan->ClanID[0], fp, XOR_PACKET);
-	EncryptWrite16(&Clan->ClanID[1], fp, XOR_PACKET);
-	EncryptWrite16(&IBBS.Data.BBSID, fp, XOR_PACKET);
-
-	fclose(fp);
-
-	// send packet to BBS
-	IBBS_SendPacketFile(Packet.BBSIDTo, "tmp.$$$");
-	unlink("tmp.$$$");
+	int16_t ComeBackData[3];
+	ComeBackData[0] = Clan->ClanID[0];
+	ComeBackData[1] = Clan->ClanID[1];
+	ComeBackData[2] = IBBS.Data.BBSID;
+	IBBS_SendPacket(PT_COMEBACK, sizeof(ComeBackData), ComeBackData, BBSIdTo);
 }
 
 const char *VillageName(int16_t BBSID)
@@ -984,11 +959,12 @@ static void IBBS_UpdateLeavingClan(struct clan *Clan, struct LeavingData Leaving
 static void IBBS_TravelMaint(void)
 {
 	struct LeavingData LeavingData;
-	struct Packet Packet;
-	FILE *fpLeavingDat, *fpOutboundDat, *fpOld;
+	FILE *fpLeavingDat;
 	struct clan TmpClan = {0};
 	struct pc TmpPC = {0};
 	int16_t iTemp;
+	char TravelBuffer[BUF_SIZE_clan + 6 * BUF_SIZE_pc];
+	size_t TravelBufferOffset;
 
 	fpLeavingDat = _fsopen("leaving.dat", "rb", _SH_DENYWR);
 	if (!fpLeavingDat) {
@@ -1020,72 +996,14 @@ static void IBBS_TravelMaint(void)
 		IBBS_UpdateLeavingClan(&TmpClan, LeavingData);
 
 		TmpClan.WorldStatus = WS_STAYING;
+		TravelBufferOffset = 0;
+		TravelBufferOffset += s_clan_s(&TmpClan, &TravelBuffer[TravelBufferOffset], BUF_SIZE_clan);
 
-		/* write packet file */
-		fpOutboundDat = _fsopen(ST_OUTBOUNDFILE, "wb", _SH_DENYWR);
-		if (!fpOutboundDat) {
-			LogDisplayStr("|04Error writing temporary outbound.tmp file\n");
-			fclose(fpLeavingDat);
-
-			FreeClanMembers(&TmpClan);
-			return;
-		}
-
-		fpOld = _fsopen("backup.dat", "ab", _SH_DENYRW);
-		if (!fpOld) {
-			LogDisplayStr("|04Can't open BACKUP.DAT!!\n");
-			FreeClanMembers(&TmpClan);
-			fclose(fpLeavingDat);
-			return;
-		}
-
-		/* BACKUP.DAT is checked daily.  When DataOk messages are sent from
-		   BBSes, entries in BACKUP.DAT are set to "inactive" and are skipped
-		   -- on next maintenance, inactive data in BACKUP.DAT is purged.
-		   * if backup.dat is found which is a week old (meaning no DataOk
-		     was received for a week), this BBS processes the user in as if
-		     he were travelling here.  In the news, it'll say "Blah was lost
-		     but returned to Blah"  --
-		     FIXME:  then send packet saying "he aborted the trip, so make him
-		     "comeback"
-		*/
-
-		/* create packet header */
-		Packet.Active = true;
-		Packet.BBSIDFrom = IBBS.Data.BBSID;
-		Packet.BBSIDTo = LeavingData.DestID;
-		Packet.PacketType = PT_CLANMOVE;
-		strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
-		Packet.PacketLength = BUF_SIZE_clan + 6 * BUF_SIZE_pc;
-		strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
-
-		/* write packet */
-		EncryptWrite_s(Packet, &Packet, fpOutboundDat, XOR_PACKET);
-		EncryptWrite_s(Packet, &Packet, fpOld, XOR_PACKET);
-
-		EncryptWrite_s(clan, &TmpClan, fpOutboundDat, XOR_PACKET);
-		EncryptWrite_s(clan, &TmpClan, fpOld, XOR_PACKET);
-
-		/* write members to file */
-		TmpPC.szName[0] = 0;
-		TmpPC.Status = Dead;
 		for (iTemp = 0; iTemp < 6; iTemp++) {
-			if (TmpClan.Member[iTemp]) {
-				EncryptWrite_s(pc, TmpClan.Member[iTemp], fpOutboundDat, XOR_PACKET);
-				EncryptWrite_s(pc, TmpClan.Member[iTemp], fpOld, XOR_PACKET);
-			}
-			else {
-				EncryptWrite_s(pc, &TmpPC, fpOutboundDat, XOR_PACKET);
-				EncryptWrite_s(pc, &TmpPC, fpOld, XOR_PACKET);
-			}
+			TravelBufferOffset += s_pc_s(TmpClan.Member[iTemp] ? TmpClan.Member[iTemp] : &TmpPC,
+			    &TravelBuffer[TravelBufferOffset], BUF_SIZE_pc);
 		}
-
-		fclose(fpOld);
-		fclose(fpOutboundDat);
-
-		/* send this packet to the destination BBS */
-		IBBS_SendPacketFile(LeavingData.DestID, ST_OUTBOUNDFILE);
-		unlink(ST_OUTBOUNDFILE);
+		IBBS_SendPacket(PT_CLANMOVE, sizeof(TravelBuffer), TravelBuffer, LeavingData.DestID);
 
 		// need to free up members used...
 		FreeClanMembers(&TmpClan);
@@ -1908,57 +1826,30 @@ static void IBBS_ProcessRouteConfig(void)
 
 // ------------------------------------------------------------------------- //
 
-void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
-{
-	char szFullFileName[PATH_SIZE], szPacketName[19]; /* 12345678.123 */
-	char LastCounter, szString[580];
+struct IBBS_PacketList {
+	struct IBBS_PacketList *next;
+	int16_t DestID;
 	FILE *fp;
-	tIBInfo InterBBSInfo;
+	const char *szFullFileName;
+};
+struct IBBS_PacketList *IBBS_PacketList;
 
-	if (IBBS.Initialized == false) {
-		System_Error("IBBS not initialized for call.\n");
+static FILE *getPacketFP(int16_t DestID)
+{
+	struct IBBS_PacketList *e;
+	struct IBBS_PacketList *last = NULL;
+	char LastCounter;
+	char szFullFileName[PATH_SIZE];
+	char szPacketName[19];
+
+	for (struct IBBS_PacketList *e = IBBS_PacketList; e; e = e->next) {
+		last = e;
+		if (e->DestID == DestID)
+			return e->fp;
 	}
 
-
-	if (DestID <= 0 || DestID > MAX_IBBSNODES ||
-			IBBS.Data.Nodes[DestID-1].Active == false) {
-		LogDisplayStr("IBBS_SendPacketFile() aborted:  Invalid ID\n");
-		return;
-	}
-
-
-	IBBS.Data.Nodes[DestID-1].Recon.LastSent = DaysSince1970(System.szTodaysDate);
-
-	/* set up interbbsinfo */
-	strlcpy(InterBBSInfo.szThisNodeAddress, IBBS.Data.Nodes[IBBS.Data.BBSID-1].Info.pszAddress, sizeof(InterBBSInfo.szThisNodeAddress));
-	InterBBSInfo.szThisNodeAddress[NODE_ADDRESS_CHARS] = '\0';
-
-	snprintf(szString, sizeof(szString), "The Clans League %s", Game.Data.LeagueID);
-	strlcpy(InterBBSInfo.szProgName, szString, sizeof(InterBBSInfo.szProgName));
-	InterBBSInfo.szProgName[PROG_NAME_CHARS] = '\0';
-
-	strlcpy(InterBBSInfo.szNetmailDir, Config.szNetmailDir, sizeof(InterBBSInfo.szNetmailDir));
-	InterBBSInfo.szNetmailDir[PATH_CHARS] = '\0';
-
-	InterBBSInfo.bHold = false;
-	InterBBSInfo.bCrash = false;
-
-	if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Info.MailType == MT_CRASH)
-		InterBBSInfo.bCrash = true;
-	else if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Info.MailType == MT_HOLD)
-		InterBBSInfo.bHold = true;
-
-	InterBBSInfo.bEraseOnSend = true;
-	InterBBSInfo.bEraseOnReceive = true;
-	InterBBSInfo.nTotalSystems = 0;
-	InterBBSInfo.paOtherSystem = NULL;
-
-	/* change this later to the outbound directory of BBS */
-	// strlcpy(szFullFileName, "C:\\PROG\\THECLANS\\OUTBOUND\\", sizeof(szFullFileName));
-	// FIXME: ?!    Use outbound directory or don't care?
-	// TODO: This append thing never actually works because LastCounter is not appended...
-	//       That's good though because we don't want to be sneaking in while the .msg is
-	//       being processed... deferring ths MSG file to exit would make this work well.
+	// couldn't open file
+	LastCounter = IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex;
 
 	if (System.LocalIBBS) {
 		if (Config.NumInboundDirs)
@@ -1975,66 +1866,64 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 	     id = league ID
 	     c = counter for that node */
 
-	/* init the lastcounter */
-	if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex == 'a')
-		LastCounter = 'z';
-	else
-		LastCounter = IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex - 1;
-
 	snprintf(szPacketName, sizeof(szPacketName),"cl%03d%03d.%-2s", IBBS.Data.BBSID,
 			IBBS.Data.Nodes[DestID-1].Info.RouteThrough, Game.Data.LeagueID);
 
+	szPacketName[11] = LastCounter;
+	szPacketName[12] = 0;
 	strlcat(szFullFileName, szPacketName, sizeof(szFullFileName));
 
+	/* increment for next time */
+	IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex++;
+	if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex == 'z' + 1)
+		IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex = 'a';
+	FILE *fp = _fsopen(szFullFileName, "ab", _SH_DENYWR);
+	if (fp == NULL)
+		System_Error("Failed to create packet file");
 
-	/* see if can open that file */
-	fp = _fsopen(szFullFileName, "rb", _SH_DENYWR);
-	if (fp) {
-		/* if so, add onto it */
-		fclose(fp);
-
-		file_append(pszSendFile, szFullFileName);
-	}
-	else {
-		// couldn't open file
-
-		LastCounter = IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex;
-
-		if (System.LocalIBBS) {
-			if (Config.NumInboundDirs)
-				strlcpy(szFullFileName, Config.szInboundDirs[0], sizeof(szFullFileName));
-		}
-		else {
-			strlcpy(szFullFileName, System.szMainDir, sizeof(szFullFileName));
-			strlcat(szFullFileName, "outbound/", sizeof(szFullFileName));
-		}
-
-		szPacketName[11] = LastCounter;
-		szPacketName[12] = 0;
-		strlcat(szFullFileName, szPacketName, sizeof(szFullFileName));
-
-		/* increment for next time */
-		IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex++;
-		if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex == 'z' + 1)
-			IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex = 'a';
-
-		/* copy file to outbound dir */
-		file_copy(pszSendFile, szFullFileName);
-
-		/* send that file! */
-		if (!NoMSG[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ])
-			IBSendFileAttach(&InterBBSInfo, IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Info.pszAddress, szFullFileName);
-	}
-	IBBS.Data.PacketSent = true;
+	e = malloc(sizeof(struct IBBS_PacketList));
+	CheckMem(e);
+	e->DestID = DestID;
+	e->fp = fp;
+	e->next = NULL;
+	e->szFullFileName = strdup(szFullFileName);
+	CheckMem(e->szFullFileName);
+	if (last == NULL)
+		IBBS_PacketList = e;
+	else
+		last->next = e;
+	return fp;
 }
 
+static void IBBS_SendPacketBuffer(int16_t DestID, char *PacketHeader, char *PacketData, size_t PacketDataSize)
+{
+	char szString[580];
+	FILE *fp;
+
+	if (IBBS.Initialized == false) {
+		System_Error("IBBS not initialized for call.\n");
+	}
+
+	if (DestID <= 0 || DestID > MAX_IBBSNODES ||
+			IBBS.Data.Nodes[DestID-1].Active == false) {
+		LogDisplayStr("IBBS_SendPacketBuffer() aborted:  Invalid ID\n");
+		return;
+	}
+
+	IBBS.Data.Nodes[DestID-1].Recon.LastSent = DaysSince1970(System.szTodaysDate);
+
+	/* see if can open that file */
+	fp = getPacketFP(DestID);
+	CheckedEncryptWrite(PacketHeader, BUF_SIZE_Packet, fp, XOR_PACKET);
+	if (PacketDataSize)
+		CheckedEncryptWrite(PacketData, PacketDataSize, fp, XOR_PACKET);
+}
 
 // ------------------------------------------------------------------------- //
 void IBBS_SendSpy(struct empire *Empire, int16_t DestID)
 {
-	struct SpyAttemptPacket Spy;
-	struct Packet Packet;
-	FILE *fp;
+	struct SpyAttemptPacket Spy = {0};
+	char SpyBuffer[BUF_SIZE_SpyAttemptPacket];
 
 	switch (Empire->OwnerType) {
 		case EO_VILLAGE :
@@ -2057,28 +1946,8 @@ void IBBS_SendSpy(struct empire *Empire, int16_t DestID)
 	Spy.MasterID[1] = PClan->ClanID[1];
 	Spy.TargetType = EO_VILLAGE;
 
-	/* create packet header */
-	Packet.Active = true;
-	Packet.BBSIDTo = DestID;
-	Packet.BBSIDFrom = IBBS.Data.BBSID;
-	Packet.PacketType = PT_SPY;
-	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
-	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
-	Packet.PacketLength = BUF_SIZE_SpyAttemptPacket;
-
-	fp = _fsopen(ST_OUTBOUNDFILE, "wb", _SH_DENYWR);
-	if (!fp)    return;
-
-	// write packet header
-	EncryptWrite_s(Packet, &Packet, fp, XOR_PACKET);
-
-	EncryptWrite_s(SpyAttemptPacket, &Spy, fp, XOR_PACKET);
-
-	fclose(fp);
-
-	// send packet to BBS
-	IBBS_SendPacketFile(Packet.BBSIDTo, ST_OUTBOUNDFILE);
-	unlink(ST_OUTBOUNDFILE);
+	s_SpyAttemptPacket_s(&Spy, SpyBuffer, sizeof(SpyBuffer));
+	IBBS_SendPacket(PT_SPY, sizeof(SpyBuffer), SpyBuffer, DestID);
 
 	rputs("|0BYour spy has been sent!\n");
 }
@@ -2162,8 +2031,8 @@ void IBBS_ShowLeagueAscii(void)
 void IBBS_SendPacket(int16_t PacketType, size_t PacketLength, void *PacketData,
 					 int16_t DestID)
 {
-	struct Packet Packet;
-	FILE *fpOutboundDat, *fpBackupDat;
+	struct Packet Packet = {0};
+	char PacketHeader[BUF_SIZE_Packet];
 
 	if (DestID <= 0 || DestID > MAX_IBBSNODES ||
 			IBBS.Data.Nodes[ DestID - 1].Active == false) {
@@ -2180,42 +2049,23 @@ void IBBS_SendPacket(int16_t PacketType, size_t PacketLength, void *PacketData,
 	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 	Packet.BBSIDFrom = IBBS.Data.BBSID;
 	Packet.BBSIDTo = DestID;
-
 	Packet.PacketType = PacketType;
 	Packet.PacketLength = (int32_t)PacketLength;
 
-	fpOutboundDat = _fsopen(ST_OUTBOUNDFILE, "wb", _SH_DENYWR);
-	if (!fpOutboundDat) {
-		LogDisplayStr("|04Error writing temporary outbound.tmp file\n");
-		return;
-	}
+	s_Packet_s(&Packet, PacketHeader, sizeof(PacketHeader));
 
-	/* write packet */
-	EncryptWrite_s(Packet, &Packet, fpOutboundDat, XOR_PACKET);
-
-	if (PacketLength) {
-		CheckedEncryptWrite(PacketData, PacketLength, fpOutboundDat, XOR_PACKET);
-	}
-
-	fclose(fpOutboundDat);
-
-	// printf("Sending packet to %d\n", DestID);
-
-	IBBS_SendPacketFile(DestID, ST_OUTBOUNDFILE);
-	unlink(ST_OUTBOUNDFILE);
-
+	IBBS_SendPacketBuffer(DestID, PacketHeader, PacketData, PacketLength);
 
 	// write to backup.dat
-	if (PacketType == PT_ATTACK) {
-		fpBackupDat = _fsopen("backup.dat", "ab", _SH_DENYWR);
-		if (!fpBackupDat)  return;
+	if (PacketType == PT_ATTACK || PacketType == PT_CLANMOVE) {
+		FILE *fpBackupDat = _fsopen("backup.dat", "ab", _SH_DENYWR);
+		if (!fpBackupDat)
+			return;
 
 		// write to backup packet
-		EncryptWrite_s(Packet, &Packet, fpBackupDat, XOR_PACKET);
-
-		if (PacketLength) {
-			CheckedEncryptWrite(PacketData, PacketLength, fpOutboundDat, XOR_PACKET);
-		}
+		CheckedEncryptWrite(PacketHeader, sizeof(PacketHeader), fpBackupDat, XOR_PACKET);
+		if (PacketLength)
+			CheckedEncryptWrite(PacketData, PacketLength, fpBackupDat, XOR_PACKET);
 
 		fclose(fpBackupDat);
 	}
@@ -2683,7 +2533,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 {
 	struct SpyResultPacket SpyResult;
 	struct SpyAttemptPacket Spy;
-	FILE *fp, *fpNewFile, *fpScores, *fpWorldNDX, *fpUserList;
+	FILE *fp, *fpScores, *fpWorldNDX, *fpUserList;
 	struct Packet Packet;
 	struct clan *TmpClan;
 	int16_t iTemp, NumScores;
@@ -2769,28 +2619,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			else
 				pcBuffer = NULL;
 
-
-			fpNewFile = _fsopen(ST_OUTBOUNDFILE, "wb", _SH_DENYWR);
-			if (!fpNewFile) {
-				if (pcBuffer)
-					free(pcBuffer);
-
-				fclose(fp);
-				LogDisplayStr("Can't write outbound.tmp\n");
-				return false;
-			}
-			EncryptWrite_s(Packet, &Packet, fpNewFile, XOR_PACKET);
-			if (Packet.PacketLength)
-				CheckedEncryptWrite(pcBuffer, (size_t)Packet.PacketLength, fpNewFile, XOR_PACKET);
-
-			fclose(fpNewFile);
-
-			if (pcBuffer)
-				free(pcBuffer);
-
-			LogDisplayStr("|08* |07Routing packet\n");
-			IBBS_SendPacketFile(Packet.BBSIDTo, ST_OUTBOUNDFILE);
-			unlink(ST_OUTBOUNDFILE);
+			IBBS_SendPacket(Packet.PacketType, (size_t)Packet.PacketLength, pcBuffer, Packet.BBSIDTo);
 
 			/* move onto next packet in file */
 			continue;
@@ -3161,6 +2990,51 @@ static bool GetNextFile(char *szWildcard, char *szFileName, size_t sz)
 	return NoMoreFiles;
 }
 
+static bool isRelative(const char *fname)
+{
+	if (fname[0] == '/')
+		return false;
+#ifdef _WIN32
+	if (fname[0] == '\\')
+		return false;
+	if (fname[0] && fname[1] == ':' && (fname[2] == '/' || fname[2] == '\\'))
+		return false;
+#endif
+	return true;
+}
+
+static const char *NamePart(const char *fname)
+{
+#ifdef _WIN32
+	const char *ret1 = strrchr(fname, '/');
+	const char *ret2 = strrchr(fname, '\\');
+	if (ret1 == NULL && ret2 == NULL)
+		return fname;
+	if (ret1 == NULL)
+		return ret2 + 1;
+	if (ret2 == NULL)
+		return ret1 + 1;
+	return ret1 > ret2 ? ret1 + 1 : ret2 + 1;
+#else
+	const char *ret = strrchr(fname, '/');
+	if (ret)
+		return ret + 1;
+	return fname;
+#endif
+}
+
+static bool SameFile(const char *f1, const char *f2)
+{
+	if (strcmp(f1, f2) == 0)
+		return true;
+	if (isRelative(f1) || isRelative(f2)) {
+		const char *n1 = NamePart(f1);
+		const char *n2 = NamePart(f2);
+		if (strcmp(n1, n2) == 0)
+			return true;
+	}
+	return false;
+}
 
 /*
  * Iterates over the message files, calling skip() to see if one can
@@ -3222,7 +3096,7 @@ MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo, int16_t Sourc
 							case '@':
 								pktfname++;
 						}
-						if (strcmp(pktfname, pszFileName) == 0)
+						if (SameFile(pktfname, pszFileName))
 							Found = true;
 
 						if (Found && IBBS.Data.StrictMsgFile && SourceID) {
@@ -3302,8 +3176,8 @@ static void MoveToBad(const char *szOldFilename)
 	char szNewFileName[PATH_SIZE + 4];
 
 	snprintf(szNewFileName, sizeof(szNewFileName), "%s.bad", szOldFilename);
-	file_copy(szOldFilename, szNewFileName);
-	unlink(szOldFilename);
+	unlink(szNewFileName);
+	rename(szOldFilename, szNewFileName);
 }
 
 void IBBS_PacketIn(void)
@@ -3428,8 +3302,8 @@ void IBBS_PacketIn(void)
 				if (IBBS.Data.StrictMsgFile && !CheckMessageFile(szFileName2, &InterBBSInfo, AllowedSourceID)) {
 					snprintf(szString, sizeof(szString), "|08x |12No valid msg file packet %s, renaming to world.bad\n", szFileName2);
 					LogDisplayStr(szString);
-					file_copy(szFileName2, "world.bad");
-					unlink(szFileName2);
+					unlink("world.bad");
+					rename(szFileName2, "world.bad");
 				}
 				else {
 					fp = _fsopen(szFileName2, "r", _SH_DENYWR);
@@ -3437,8 +3311,8 @@ void IBBS_PacketIn(void)
 						LogDisplayStr("|08- |07new world.ndx found.\n");
 						// found it
 						fclose(fp);
-						file_copy(szFileName2, "world.ndx");
-						unlink(szFileName2);
+						unlink("world.ndx");
+						rename(szFileName2, "world.ndx");
 					}
 				}
 			}
@@ -3481,14 +3355,62 @@ void IBBS_Close(void)
  * Closes down IBBS.
  */
 {
-	if (!IBBS.Initialized) return;
+	if (!IBBS.Initialized)
+		return;
 
 #ifdef PRELAB
 	printf("IBBS Closing. -- %lu\n", farcoreleft());
 #endif
 
+	/* set up interbbsinfo */
+	tIBInfo InterBBSInfo;
+	strlcpy(InterBBSInfo.szThisNodeAddress, IBBS.Data.Nodes[IBBS.Data.BBSID-1].Info.pszAddress, sizeof(InterBBSInfo.szThisNodeAddress));
+	InterBBSInfo.szThisNodeAddress[NODE_ADDRESS_CHARS] = '\0';
+
+	char szString[250];
+	snprintf(szString, sizeof(szString), "The Clans League %s", Game.Data.LeagueID);
+	strlcpy(InterBBSInfo.szProgName, szString, sizeof(InterBBSInfo.szProgName));
+	InterBBSInfo.szProgName[PROG_NAME_CHARS] = '\0';
+
+	strlcpy(InterBBSInfo.szNetmailDir, Config.szNetmailDir, sizeof(InterBBSInfo.szNetmailDir));
+	InterBBSInfo.szNetmailDir[PATH_CHARS] = '\0';
+
+	InterBBSInfo.bHold = false;
+	InterBBSInfo.bCrash = false;
+
+	InterBBSInfo.bEraseOnSend = true;
+	InterBBSInfo.bEraseOnReceive = true;
+	InterBBSInfo.nTotalSystems = 0;
+	InterBBSInfo.paOtherSystem = NULL;
+
+	struct IBBS_PacketList *next;
+	for (struct IBBS_PacketList *e = IBBS_PacketList; e; e = next) {
+		next = e->next;
+		fclose(e->fp);
+		/* send that file! */
+		if (IBBS.Data.Nodes[ IBBS.Data.Nodes[e->DestID-1].Info.RouteThrough-1 ].Info.MailType == MT_CRASH) {
+			InterBBSInfo.bCrash = true;
+			InterBBSInfo.bHold = false;
+		}
+		else if (IBBS.Data.Nodes[ IBBS.Data.Nodes[e->DestID-1].Info.RouteThrough-1 ].Info.MailType == MT_HOLD) {
+			InterBBSInfo.bCrash = false;
+			InterBBSInfo.bHold = true;
+		}
+		else {
+			InterBBSInfo.bCrash = false;
+			InterBBSInfo.bHold = false;
+		}
+
+		if (!NoMSG[ IBBS.Data.Nodes[e->DestID-1].Info.RouteThrough-1 ])
+			IBSendFileAttach(&InterBBSInfo, IBBS.Data.Nodes[ IBBS.Data.Nodes[e->DestID-1].Info.RouteThrough-1 ].Info.pszAddress, e->szFullFileName);
+		IBBS.Data.PacketSent = true;
+		free((void*)e->szFullFileName);
+		free(e);
+	}
+
 	IBBS_Write();
 	IBBS_Destroy();
+
 	if (Config.szOutputSem[0] && IBBS.Data.PacketSent) {
 		// Touch the semaphore
 		FILE *f;

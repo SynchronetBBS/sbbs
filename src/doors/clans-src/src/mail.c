@@ -1480,7 +1480,7 @@ void Mail_Maint(void)
 
 	OldMessage = _fsopen("clans.msj", "rb", _SH_DENYRW);
 	if (OldMessage) {   // MSJ file exists, so go on
-		NewMessage = _fsopen("tmp.$$$", "wb", _SH_DENYRW);
+		NewMessage = _fsopen("clansmsj.new", "wb", _SH_DENYRW);
 		if (!NewMessage) {
 			LogDisplayStr("Error opening temp file\n");
 			sleep(3);
@@ -1519,7 +1519,7 @@ void Mail_Maint(void)
 
 		// delete old, and rename new
 		unlink("clans.msj");
-		rename("tmp.$$$", "clans.msj");
+		rename("clansmsj.new", "clans.msj");
 	}
 }
 
@@ -1600,37 +1600,16 @@ static void SendMsj(struct Message *Message, int16_t WhichVillage)
 {
 	// if WhichVillage == -1, do a for loop and send packet to all BBSes
 
-	struct Packet Packet;
 	int16_t CurBBS;
-	FILE *fp;
+	size_t BufferSize = BUF_SIZE_Message + (size_t)Message->Data.Length;
+	char *MessageBuffer = malloc(BufferSize);
+	CheckMem(MessageBuffer);
 
-
-	Packet.Active = true;
-	Packet.BBSIDFrom = IBBS.Data.BBSID;
-	Packet.PacketType = PT_MSJ;
-	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
-	if (Message->Data.Length < 0 || Message->Data.Length > MSGTXT_SZ)
-		System_Error("Negative message length in SendMsj()");
-	Packet.PacketLength = (int16_t)(BUF_SIZE_Message + (unsigned)Message->Data.Length);
-	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
+	s_Message_s(Message, MessageBuffer, BUF_SIZE_Message);
+	memcpy(&MessageBuffer[BUF_SIZE_Message], Message->Data.MsgTxt, (size_t)Message->Data.Length);
 
 	if (WhichVillage != -1) {
-		Packet.BBSIDTo = WhichVillage;
-
-		fp = fopen("tmp.$$$", "wb");
-		if (!fp)    return;
-
-		/* write packet */
-		EncryptWrite_s(Packet, &Packet, fp, XOR_PACKET);
-
-		EncryptWrite_s(Message, Message, fp, XOR_PACKET);
-		CheckedEncryptWrite(Message->Data.MsgTxt, (size_t)Message->Data.Length, fp, XOR_PACKET);
-
-		fclose(fp);
-
-		// send packet to BBS
-		IBBS_SendPacketFile(Packet.BBSIDTo, "tmp.$$$");
-		unlink("tmp.$$$");
+		IBBS_SendPacket(PT_MSJ, BufferSize, MessageBuffer, WhichVillage);
 	}
 	else {
 		// go through ALL BBSes and send this to them all
@@ -1639,23 +1618,7 @@ static void SendMsj(struct Message *Message, int16_t WhichVillage)
 			if (IBBS.Data.Nodes[CurBBS].Active == false ||
 					CurBBS+1 == IBBS.Data.BBSID)
 				continue;
-
-			Packet.BBSIDTo = CurBBS+1;
-
-			fp = fopen("tmp.$$$", "wb");
-			if (!fp)    return;
-
-			/* write packet */
-			EncryptWrite_s(Packet, &Packet, fp, XOR_PACKET);
-
-			EncryptWrite_s(Message, Message, fp, XOR_PACKET);
-			CheckedEncryptWrite(Message->Data.MsgTxt, (size_t)Message->Data.Length, fp, XOR_PACKET);
-
-			fclose(fp);
-
-			// send packet to BBS
-			IBBS_SendPacketFile(Packet.BBSIDTo, "tmp.$$$");
-			unlink("tmp.$$$");
+			IBBS_SendPacket(PT_MSJ, BufferSize, MessageBuffer, CurBBS + 1);
 		}
 	}
 }

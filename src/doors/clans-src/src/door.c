@@ -740,10 +740,8 @@ void Display(char *FileName)
 	// open the file
 	MyOpen(FileName, "r", &FileHeader);
 
-	if (!FileHeader.fp) {
-		/* rputs("Display: File not found!\n"); */
+	if (!FileHeader.fp)
 		return;
-	}
 
 	for (;;) {
 		// if at end of file, stop

@@ -36,9 +36,6 @@ void IBBS_UpdateReset(void);
 
 void IBBS_UpdateRecon(void);
 
-void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile);
-
-
 void IBBS_SeeVillages(bool Travel);
 
 void IBBS_CurrentTravelInfo(void);

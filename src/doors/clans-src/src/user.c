@@ -221,7 +221,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 
 	OldMessage = _fsopen("clans.msj", "rb", _SH_DENYRW);
 	if (OldMessage) {   // MSJ file exists, so go on
-		NewMessage = _fsopen("tmp.$$$", "wb", _SH_DENYRW);
+		NewMessage = _fsopen("clansmsj.new", "wb", _SH_DENYRW);
 		if (!NewMessage) {
 			return;
 		}
@@ -232,7 +232,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 
 			if (Message.Data.Length < 0) {
 				fclose(NewMessage);
-				unlink("tmp.$$$");
+				unlink("clansmsj.new");
 				System_Error("Message with negative length in DeleteClan()");
 			}
 			if ((Message.FromClanID[0] == ClanID[0] &&
@@ -261,7 +261,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 
 		// delete old, and rename new
 		unlink("clans.msj");
-		rename("tmp.$$$", "clans.msj");
+		rename("clansmsj.new", "clans.msj");
 	}
 
 	// go through trades.dat, for each trade struct, see if trade is headed

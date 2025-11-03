@@ -502,45 +502,33 @@ void DisplayScores(bool MakeFile)
 static void SendScoreData(struct UserScore **UserScores)
 {
 	int16_t iTemp;
-	size_t NumScores;
-	struct Packet Packet;
-	FILE *fp;
+	uint16_t NumScores;
+	size_t Offset;
+	size_t ScoreBufferSize;
+	char *ScoreBuffer;
 
 	// figure out how many scores
 	NumScores = 0;
-	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
+	for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
 		if (UserScores[iTemp])
 			NumScores++;
+	}
 
-	/* create packet header */
-	Packet.Active = true;
-	Packet.BBSIDTo = 1;         // Main BBS
-	Packet.BBSIDFrom = IBBS.Data.BBSID;
-	Packet.PacketType = PT_SCOREDATA;
-	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
-	if (NumScores * BUF_SIZE_UserScore + sizeof(int16_t) > INT32_MAX)
-		System_Error("Score data too long!");
-	Packet.PacketLength = (int32_t)(NumScores * BUF_SIZE_UserScore + sizeof(int16_t));
-	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
-
-	fp = _fsopen("tmp.$$$", "wb", _SH_DENYRW);
-	if (!fp)  return;
-
-	// write packet header
-	EncryptWrite_s(Packet, &Packet, fp, XOR_PACKET);
+	ScoreBufferSize = sizeof(NumScores) + BUF_SIZE_UserScore * NumScores;
+	ScoreBuffer = malloc(ScoreBufferSize);
+	CheckMem(ScoreBuffer);
 
 	// write how many scores
-	EncryptWrite16(&NumScores, fp, XOR_PACKET);
+	NumScores = SWAP16(NumScores);
+	memcpy(ScoreBuffer, &NumScores, sizeof(NumScores));
+	Offset = sizeof(NumScores);
 
 	// write scores
-	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
+	for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
 		if (UserScores[iTemp])
-			EncryptWrite_s(UserScore, UserScores[iTemp], fp, XOR_PACKET);
-
-	fclose(fp);
-
-	IBBS_SendPacketFile(Packet.BBSIDTo, "tmp.$$$");
-	unlink("tmp.$$$");
+			Offset += s_UserScore_s(UserScores[iTemp], &ScoreBuffer[Offset], BUF_SIZE_UserScore);
+	}
+	IBBS_SendPacket(PT_SCOREDATA, ScoreBufferSize, ScoreBuffer, 1);
 }
 
 void ProcessScoreData(struct UserScore **UserScores)
@@ -807,11 +795,14 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 void SendScoreList(void)
 {
 	struct UserScore **ScoreList;
-	struct Packet Packet;
 	size_t NumScores, iTemp;
+	uint16_t NumScores16;
 	int16_t CurBBS;
 	char ScoreDate[11];
 	FILE *fp;
+	size_t Offset;
+	size_t ScoreBufferSize;
+	char *ScoreBuffer;
 
 	fp = _fsopen("ipscores.dat", "rb", _SH_DENYWR);
 
@@ -849,46 +840,29 @@ void SendScoreList(void)
 
 	fclose(fp);
 
-	/* create packet header */
-	Packet.Active = true;
-	Packet.BBSIDFrom = IBBS.Data.BBSID;
-	Packet.PacketType = PT_SCORELIST;
-	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
 	if ((NumScores * BUF_SIZE_UserScore + sizeof(int16_t) + sizeof(char) * 11) > INT32_MAX)
 		System_Error("Score list too large");
-	Packet.PacketLength = (int32_t)(NumScores * BUF_SIZE_UserScore + sizeof(int16_t) +
-						  sizeof(char) * 11);
-	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
+	ScoreBufferSize = (size_t)(NumScores * BUF_SIZE_UserScore + sizeof(int16_t) + sizeof(char) * 11);
+	ScoreBuffer = malloc(ScoreBufferSize);
+	CheckMem(ScoreBuffer);
+	Offset = 0;
+	NumScores16 = (uint16_t)NumScores;
+	NumScores16 = SWAP16(NumScores16);
+	memcpy(&ScoreBuffer[Offset], &NumScores16, sizeof(int16_t));
+	Offset += sizeof(int16_t);
+	memcpy(&ScoreBuffer[Offset], ScoreDate, 11);
+	Offset += 11;
+	for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
+		if (ScoreList[iTemp])
+			Offset += s_UserScore_s(ScoreList[iTemp], &ScoreBuffer[Offset], BUF_SIZE_UserScore);
+	}
 
 	// send it to all bbses except this one in the league
 	for (CurBBS = 0; CurBBS < MAX_IBBSNODES; CurBBS++) {
 		if (IBBS.Data.Nodes[CurBBS].Active == false || CurBBS+1 == IBBS.Data.BBSID)
 			continue;
 
-		Packet.BBSIDTo = CurBBS+1;
-
-		fp = _fsopen("tmp.$$$", "wb", _SH_DENYRW);
-		if (!fp)    return;
-
-		// write packet header
-		EncryptWrite_s(Packet, &Packet, fp, XOR_PACKET);
-
-		// write how many scores
-		EncryptWrite16(&NumScores, fp, XOR_PACKET);
-
-		// write date
-		CheckedEncryptWrite(ScoreDate, 11, fp, XOR_PACKET);
-
-		// write scores
-		for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
-			if (ScoreList[iTemp])
-				EncryptWrite_s(UserScore, ScoreList[iTemp], fp, XOR_PACKET);
-
-		fclose(fp);
-
-		// send packet to BBS
-		IBBS_SendPacketFile(Packet.BBSIDTo, "tmp.$$$");
-		unlink("tmp.$$$");
+		IBBS_SendPacket(PT_SCORELIST, ScoreBufferSize, ScoreBuffer, CurBBS + 1);
 	}
 
 	// free 'em
