@@ -82,7 +82,6 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 	}
 
 	// if file starts with / then it is in pakfile
-	FileHeader->fp = NULL;
 	if (szModFileName[0] == '/') {
 		// look for the file
 		// fp = _fsopen(szPakFileName, "rb", _SH_DENYWR);
