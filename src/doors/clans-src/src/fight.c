@@ -1088,12 +1088,7 @@ static bool Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct mov
 				rputs(ST_CSPELL4);
 				return false;
 			}
-
-			// ask if they really want to cast it for sure
-			if (YesNo(ST_CSPELL5) == YES)
-				break;
-			else    // aborted it
-				Move->SpellNum = -1;
+			break;
 		}
 	}
 
