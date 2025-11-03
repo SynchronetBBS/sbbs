@@ -379,8 +379,7 @@ void rputs(const char *string)
 		    && *pStrChar != 0
 		    && *pStrChar != SPECIAL_CODE
 		    && *pStrChar != '\n'
-		    && *pStrChar != '`'
-		    && *pStrChar!=SPECIAL_CODE; pStrChar++);
+		    && *pStrChar != '`'; pStrChar++);
 		if (pCurChar != pStrChar)
 			od_disp(pCurChar, (INT)(pStrChar - pCurChar), true);
 		pCurChar=pStrChar;
