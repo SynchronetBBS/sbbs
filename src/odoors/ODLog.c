@@ -109,7 +109,7 @@ ODAPIDEF BOOL ODCALL od_log_open()
       od_control.od_day[ptmTimeRecord->tm_wday],
       ptmTimeRecord->tm_mday,
       od_control.od_month[ptmTimeRecord->tm_mon],
-      ptmTimeRecord->tm_year,
+      ptmTimeRecord->tm_year % 100,
       od_program_name);
 
    /* Print message of door start up. */
