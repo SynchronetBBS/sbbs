@@ -166,7 +166,7 @@ static BOOL ODLogWriteStandardMsg(INT nLogfileMessage)
  *
  *     Return: TRUE on success, or FALSE on failure.
  */
-ODAPIDEF BOOL ODCALL od_log_write(char *pszMessage)
+ODAPIDEF BOOL ODCALL od_log_write(const char *pszMessage)
 {
    char *pszFormat;
    time_t nUnixTime;

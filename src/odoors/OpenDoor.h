@@ -1022,7 +1022,7 @@ ODAPIDEF void ODCALL   od_input_str(char *pszInput, INT nMaxLength,
                           unsigned char chMin, unsigned char chMax);
 ODAPIDEF void ODCALL   od_kernel(void);
 ODAPIDEF BOOL ODCALL   od_list_files(char *pszFileSpec);
-ODAPIDEF BOOL ODCALL   od_log_write(char *pszMessage);
+ODAPIDEF BOOL ODCALL   od_log_write(const char *pszMessage);
 ODAPIDEF INT ODCALL    od_multiline_edit(char *pszBufferToEdit,
                           UINT unBufferSize, tODEditOptions *pEditOptions);
 ODAPIDEF void ODCALL   od_page(void);
