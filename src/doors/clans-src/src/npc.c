@@ -158,7 +158,7 @@ void NPC_Maint(void)
 	uint8_t nfoBuf[BUF_SIZE_NPCInfo];
 	uint8_t idxBuf[BUF_SIZE_NPCNdx];
 
-	DisplayStr("* NPC Maint\n");
+	LogDisplayStr("* NPC Maint\n");
 
 	NPCInfo = malloc(sizeof(struct NPCInfo));
 	CheckMem(NPCInfo);
@@ -169,7 +169,7 @@ void NPC_Maint(void)
 	fpNPX = fopen(szClansNPX, "wb");
 	if (!fpNPX) {
 		free(NPCInfo);
-		DisplayStr("|04x |12Failed to create clans.npx");
+		LogDisplayStr("|04x |12Failed to create clans.npx");
 		return;
 	}
 
@@ -540,7 +540,7 @@ void NPC_GetNPC(struct pc *NPC, char *szFileName, int16_t WhichNPC)
 
 	MyOpen(szFileName, "rb", &FileHeader);
 	if (!FileHeader.fp) {
-		DisplayStr("Error finding NPC file.\n");
+		LogDisplayStr("Error finding NPC file.\n");
 		return;
 	}
 	if (WhichNPC < 0)

@@ -6,6 +6,7 @@
 #include "win_wrappers.h"
 
 #include "defines.h"
+#include "door.h"
 #include "semfile.h"
 #include "video.h"
 
@@ -59,7 +60,7 @@ void WaitSemaphor(uint16_t Node)
 	int count = 0;
 	while (!CreateSemaphor(Node)) {
 		if (count++ == 0)
-			DisplayStr("Waiting for online flag to clear\n");
+			LogDisplayStr("Waiting for online flag to clear\n");
 		if (count == 60)
 			count = 0;
 		sleep(1);

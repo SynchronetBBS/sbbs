@@ -182,11 +182,11 @@ void IBBS_DistributeNDX(void)
 	int16_t CurBBS;
 	long lFileSize;
 
-	DisplayStr("Distributing new NDX file, please wait...\n");
+	LogDisplayStr("Distributing new NDX file, please wait...\n");
 
 	fpNDX = fopen("world.ndx", "rb");
 	if (!fpNDX) {
-		DisplayStr("world.ndx not found!\n");
+		LogDisplayStr("world.ndx not found!\n");
 		return;
 	}
 
@@ -779,7 +779,7 @@ static void IBBS_BackupMaint(void)
 
 	fpNew = _fsopen("backup.new", "wb", _SH_DENYWR);
 	if (!fpNew) {
-		DisplayStr("> Error writing BACKUP.DAT\n");
+		LogDisplayStr("> Error writing BACKUP.DAT\n");
 		return;
 	}
 
@@ -1024,7 +1024,7 @@ static void IBBS_TravelMaint(void)
 		/* write packet file */
 		fpOutboundDat = _fsopen(ST_OUTBOUNDFILE, "wb", _SH_DENYWR);
 		if (!fpOutboundDat) {
-			DisplayStr("|04Error writing temporary outbound.tmp file\n");
+			LogDisplayStr("|04Error writing temporary outbound.tmp file\n");
 			fclose(fpLeavingDat);
 
 			FreeClanMembers(&TmpClan);
@@ -1033,7 +1033,7 @@ static void IBBS_TravelMaint(void)
 
 		fpOld = _fsopen("backup.dat", "ab", _SH_DENYRW);
 		if (!fpOld) {
-			DisplayStr("|04Can't open BACKUP.DAT!!\n");
+			LogDisplayStr("|04Can't open BACKUP.DAT!!\n");
 			FreeClanMembers(&TmpClan);
 			fclose(fpLeavingDat);
 			return;
@@ -1922,7 +1922,7 @@ void IBBS_SendPacketFile(int16_t DestID, char *pszSendFile)
 
 	if (DestID <= 0 || DestID > MAX_IBBSNODES ||
 			IBBS.Data.Nodes[DestID-1].Active == false) {
-		DisplayStr("IBBS_SendPacketFile() aborted:  Invalid ID\n");
+		LogDisplayStr("IBBS_SendPacketFile() aborted:  Invalid ID\n");
 		return;
 	}
 
@@ -2167,7 +2167,7 @@ void IBBS_SendPacket(int16_t PacketType, size_t PacketLength, void *PacketData,
 
 	if (DestID <= 0 || DestID > MAX_IBBSNODES ||
 			IBBS.Data.Nodes[ DestID - 1].Active == false) {
-		DisplayStr("IBBS_SendPacket() aborted:  Invalid ID\n");
+		LogDisplayStr("IBBS_SendPacket() aborted:  Invalid ID\n");
 		return;
 	}
 
@@ -2186,7 +2186,7 @@ void IBBS_SendPacket(int16_t PacketType, size_t PacketLength, void *PacketData,
 
 	fpOutboundDat = _fsopen(ST_OUTBOUNDFILE, "wb", _SH_DENYWR);
 	if (!fpOutboundDat) {
-		DisplayStr("|04Error writing temporary outbound.tmp file\n");
+		LogDisplayStr("|04Error writing temporary outbound.tmp file\n");
 		return;
 	}
 
@@ -2406,7 +2406,7 @@ static void IBBS_Reset(struct game_data *GameData)
 {
 	// if reset is same as last game's, don't run this
 	if (strcasecmp(GameData->GameID, Game.Data.GameID) == 0) {
-		DisplayStr("|08* |07dupe reset skipped.\n");
+		LogDisplayStr("|08* |07dupe reset skipped.\n");
 		return;
 	}
 
@@ -2441,7 +2441,7 @@ static void IBBS_RemoveFromBackup(int16_t ID[2])
 	fpBackupDat = _fsopen("backup.dat", "r+b", _SH_DENYRW);
 	if (!fpBackupDat) {
 		/* no need for dataOk?!  Report as error for now */
-		DisplayStr("|12Error with backup.dat in RemoveFromBackup()\n");
+		LogDisplayStr("|12Error with backup.dat in RemoveFromBackup()\n");
 		return;
 	}
 
@@ -2657,13 +2657,13 @@ static int16_t CheckID(int ID, const char *name)
 
 	if (ID < 1 || ID > MAX_IBBSNODES) {
 		snprintf(szString, sizeof(szString), "|04x |12Invalid %s BBS ID\n", name);
-		DisplayStr(szString);
+		LogDisplayStr(szString);
 		return false;
 	}
 	idx = (int16_t)(ID - 1);
 	if (!IBBS.Data.Nodes[idx].Active) {
 		snprintf(szString, sizeof(szString), "|04x |12%s BBS ID is inactive, skipping\n", name);
-		DisplayStr(szString);
+		LogDisplayStr(szString);
 		return 0;
 	}
 	return (int16_t)ID;
@@ -2701,13 +2701,13 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 	fp = _fsopen(szFileName, "rb", _SH_DENYWR);
 	if (!fp) {
 		snprintf(szString, sizeof(szString), "Can't read in %s\n", szFileName);
-		DisplayStr(szString);
+		LogDisplayStr(szString);
 		return false;
 	}
 
 	// show processing it
 	snprintf(szString, sizeof(szString), "|07> |15Processing |14%s\n", szFileName);
-	DisplayStr(szString);
+	LogDisplayStr(szString);
 
 	/* read it in until end of file */
 	for (;;) {
@@ -2736,7 +2736,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 
 		if (SrcID && IBBS.Data.StrictRouting && SrcID == IBBS.Data.Nodes[Packet.BBSIDTo - 1].Info.RouteThrough) {
 			snprintf(szString, sizeof(szString), "|08* |07Packet %s received from next hop\n", szFileName);
-			DisplayStr(szString);
+			LogDisplayStr(szString);
 			continue;
 		}
 
@@ -2751,7 +2751,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 		if (Packet.PacketLength < 0) {
 			fclose(fp);
 			snprintf(szString, sizeof(szString), "|08* |07Packet %s has negative size\n", szFileName);
-			DisplayStr(szString);
+			LogDisplayStr(szString);
 			MoveToBad(szFileName);
 			return false;
 		}
@@ -2776,7 +2776,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 					free(pcBuffer);
 
 				fclose(fp);
-				DisplayStr("Can't write outbound.tmp\n");
+				LogDisplayStr("Can't write outbound.tmp\n");
 				return false;
 			}
 			EncryptWrite_s(Packet, &Packet, fpNewFile, XOR_PACKET);
@@ -2788,7 +2788,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			if (pcBuffer)
 				free(pcBuffer);
 
-			DisplayStr("|08* |07Routing packet\n");
+			LogDisplayStr("|08* |07Routing packet\n");
 			IBBS_SendPacketFile(Packet.BBSIDTo, ST_OUTBOUNDFILE);
 			unlink(ST_OUTBOUNDFILE);
 
@@ -2797,7 +2797,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 		}
 		else if (Packet.PacketType == PT_RESET) {
 			/* data ok for specific char */
-			DisplayStr("|08- |07received reset\n");
+			LogDisplayStr("|08- |07received reset\n");
 
 			EncryptRead_s(game_data, &GameData, fp, XOR_PACKET);
 
@@ -2811,28 +2811,28 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 					System.szTodaysDate, BBSName(Packet.BBSIDFrom));
 			IBBS_AddLCLog(szString);
 
-			DisplayStr(szString);
+			LogDisplayStr(szString);
 
 			IBBS.Data.Nodes[ Packet.BBSIDFrom - 1].Reset.Received = true;
 		}
 		else if (Packet.PacketType == PT_RECON) {
 			// send back a GOTRECON
-			DisplayStr("|08* |07sending gotrecon\n");
+			LogDisplayStr("|08* |07sending gotrecon\n");
 			IBBS_SendPacket(PT_GOTRECON, 0, 0, Packet.BBSIDFrom);
 		}
 		else if (Packet.PacketType == PT_GOTRECON) {
 			// do nothing
-			DisplayStr("|08- |07got gotrecon\n");
+			LogDisplayStr("|08- |07got gotrecon\n");
 		}
 		else if (Packet.PacketType == PT_MSJ) {
-			DisplayStr("|08- |07msj found\n");
+			LogDisplayStr("|08- |07msj found\n");
 
 			// read in message from file
 			EncryptRead_s(Message, &Message, fp, XOR_PACKET);
 
 			if (Message.Data.Length < 0) {
 				fclose(fp);
-				DisplayStr("|08- |20negative message length\n");
+				LogDisplayStr("|08- |20negative message length\n");
 				MoveToBad(szFileName);
 			}
 
@@ -2850,7 +2850,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			free(Message.Data.MsgTxt);
 		}
 		else if (Packet.PacketType == PT_SCOREDATA) {
-			DisplayStr("|08- |07score data\n");
+			LogDisplayStr("|08- |07score data\n");
 
 			EncryptRead16(&NumScores, fp, XOR_PACKET);
 
@@ -2877,7 +2877,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			free(UserScores);
 		}
 		else if (Packet.PacketType == PT_SCORELIST) {
-			DisplayStr("|08- |07score list\n");
+			LogDisplayStr("|08- |07score list\n");
 
 			EncryptRead16(&NumScores, fp, XOR_PACKET);
 
@@ -2926,7 +2926,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			// only do if in a game already
 			if (Game.Data.GameState == 0) {
 				snprintf(szString, sizeof(szString), "|08- |07%s found.  Destination: |09%d\n", TmpClan->szName, Packet.BBSIDTo);
-				DisplayStr(szString);
+				LogDisplayStr(szString);
 			}
 
 			/* read in each PC */
@@ -2954,7 +2954,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 				continue;
 
 			/* data ok for specific char */
-			DisplayStr("|08- |07Received DataOk\n");
+			LogDisplayStr("|08- |07Received DataOk\n");
 
 			EncryptRead16(&ClanID[0], fp, XOR_PACKET);
 			EncryptRead16(&ClanID[1], fp, XOR_PACKET);
@@ -2963,7 +2963,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 		}
 		else if (Packet.PacketType == PT_COMEBACK) {
 			// user is returning to the board specified FROM this board
-			DisplayStr("|08- |07comeback found\n");
+			LogDisplayStr("|08- |07comeback found\n");
 
 			// read in clanID + BBSId of destination
 			EncryptRead16(&ClanID[0], fp, XOR_PACKET);
@@ -2973,7 +2973,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			ComeBack(ClanID, BBSID);
 		}
 		else if (Packet.PacketType == PT_NEWUSER) {
-			DisplayStr("|08- |07newuser found\n");
+			LogDisplayStr("|08- |07newuser found\n");
 			// new user has logged into a BBS in the league, we will
 			// now see if he is a dupe user or a valid one
 
@@ -2998,7 +2998,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 		}
 		else if (Packet.PacketType == PT_ADDUSER) {
 			// new user update from main BBS
-			DisplayStr("|08- |07adduser found\n");
+			LogDisplayStr("|08- |07adduser found\n");
 
 			// read in user from file
 			EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
@@ -3007,32 +3007,32 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			AddToUList(&User);
 		}
 		else if (Packet.PacketType == PT_DELUSER) {
-			DisplayStr("|08- |07deluser found\n");
+			LogDisplayStr("|08- |07deluser found\n");
 
 			// he is a dupe user
 			// got word from head BBS to delete a certain user, do it then :)
 			EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
 
 			snprintf(szString, sizeof(szString), "deleting %s\n", User.szName);
-			DisplayStr(szString);
+			LogDisplayStr(szString);
 
 			DeleteClan(User.ClanID, User.szName, false);
 		}
 		else if (Packet.PacketType == PT_SUBUSER) {
 			// user is being deleted from all boards
-			DisplayStr("|08- |07subuser found\n");
+			LogDisplayStr("|08- |07subuser found\n");
 
 			// read in user from file
 			EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
 
 			snprintf(szString, sizeof(szString), "deleting %s\n", User.szName);
-			DisplayStr(szString);
+			LogDisplayStr(szString);
 
 			// remove him from clan data AND userlist (done in DeleteClan)
 			DeleteClan(User.ClanID, User.szName, false);
 		}
 		else if (Packet.PacketType == PT_ATTACK) {
-			DisplayStr("|08- |07attack found\n");
+			LogDisplayStr("|08- |07attack found\n");
 
 			// read attack packet
 			AttackPacket = malloc(sizeof(struct AttackPacket));
@@ -3044,7 +3044,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			free(AttackPacket);
 		}
 		else if (Packet.PacketType == PT_ATTACKRESULT) {
-			DisplayStr("|08- |07attackresult found\n");
+			LogDisplayStr("|08- |07attackresult found\n");
 
 			// read attack packet
 			AttackResult = malloc(sizeof(struct AttackResult));
@@ -3056,7 +3056,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			free(AttackResult);
 		}
 		else if (Packet.PacketType == PT_SPY) {
-			DisplayStr("|08- |07spy\n");
+			LogDisplayStr("|08- |07spy\n");
 
 			EncryptRead_s(SpyAttemptPacket, &Spy, fp, XOR_PACKET);
 
@@ -3064,7 +3064,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			IBBS_ProcessSpy(&Spy);
 		}
 		else if (Packet.PacketType == PT_SPYRESULT) {
-			DisplayStr("|08- |07spy result\n");
+			LogDisplayStr("|08- |07spy result\n");
 
 			EncryptRead_s(SpyResultPacket, &SpyResult, fp, XOR_PACKET);
 
@@ -3072,7 +3072,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			IBBS_ProcessSpyResult(&SpyResult);
 		}
 		else if (Packet.PacketType == PT_NEWNDX) {
-			DisplayStr("|08- |07ndx found\n");
+			LogDisplayStr("|08- |07ndx found\n");
 
 			// allocate mem for world.ndx file
 			pcBuffer = malloc((size_t)Packet.PacketLength);
@@ -3092,7 +3092,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			free(pcBuffer);
 		}
 		else if (Packet.PacketType == PT_ULIST) {
-			DisplayStr("|08- |07userlist found\n");
+			LogDisplayStr("|08- |07userlist found\n");
 
 			// allocate mem for world.ndx file
 			pcBuffer = malloc((size_t)Packet.PacketLength);
@@ -3112,7 +3112,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			free(pcBuffer);
 		}
 		else {
-			DisplayStr("|04x |12Unknown packet type!  ABORTING!!\n");
+			LogDisplayStr("|04x |12Unknown packet type!  ABORTING!!\n");
 			fclose(fp);
 			MoveToBad(szFileName);
 			return false;
@@ -3235,7 +3235,7 @@ MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo, int16_t Sourc
 								Found = false;
 								char str[1024];
 								sprintf(str, "|08* |07Source node %d should be %d:%d/%d.%d, got %d:%d/%d.%d\n", SourceID, SrcNode.wZone, SrcNode.wNet, SrcNode.wNode, SrcNode.wPoint, hdr.wOrigZone, hdr.wOrigNet, hdr.wOrigNode, hdr.wOrigPoint);
-								DisplayStr(str);
+								LogDisplayStr(str);
 							}
 						}
 					}
@@ -3288,7 +3288,7 @@ static void DeleteFound(const char *fname, const char *sname, void *cbdata)
 {
 	char msg[256];
 	snprintf(msg, sizeof(msg), "|08* |07Deleting %s from netmail directory\n", sname);
-	DisplayStr(msg);
+	LogDisplayStr(msg);
 	unlink(fname);
 }
 
@@ -3316,10 +3316,10 @@ void IBBS_PacketIn(void)
 	int16_t nInbound;
 
 	if (Game.Data.InterBBS == false) {
-		DisplayStr("|12* This game is not set up for InterBBS!\n");
+		LogDisplayStr("|12* This game is not set up for InterBBS!\n");
 		return;
 	}
-	DisplayStr("|09* IBBS_PacketIn()\n");
+	LogDisplayStr("|09* IBBS_PacketIn()\n");
 
 	/* set up interbbsinfo */
 	strlcpy(InterBBSInfo.szThisNodeAddress, IBBS.Data.Nodes[IBBS.Data.BBSID-1].Info.pszAddress, sizeof(InterBBSInfo.szThisNodeAddress));
@@ -3380,13 +3380,13 @@ void IBBS_PacketIn(void)
 				/* process file */
 				if (IBBS.Data.StrictMsgFile && !CheckMessageFile(szFileName, &InterBBSInfo, srcBBSID)) {
 					snprintf(szString, sizeof(szString), "|08x |12No valid msg file for packet %s\n", szFileName);
-					DisplayStr(szString);
+					LogDisplayStr(szString);
 					MoveToBad(szFileName);
 				}
 				else {
 					if (!IBBS_ProcessPacket(szFileName, srcBBSID)) {
 						snprintf(szString, sizeof(szString), "|08x |12Error dealing with packet %s\n", szFileName);
-						DisplayStr(szString);
+						LogDisplayStr(szString);
 						MoveToBad(szFileName);
 					}
 					else {
@@ -3427,14 +3427,14 @@ void IBBS_PacketIn(void)
 					AllowedSourceID = IBBS.Data.Nodes[0].Info.RouteThrough;
 				if (IBBS.Data.StrictMsgFile && !CheckMessageFile(szFileName2, &InterBBSInfo, AllowedSourceID)) {
 					snprintf(szString, sizeof(szString), "|08x |12No valid msg file packet %s, renaming to world.bad\n", szFileName2);
-					DisplayStr(szString);
+					LogDisplayStr(szString);
 					file_copy(szFileName2, "world.bad");
 					unlink(szFileName2);
 				}
 				else {
 					fp = _fsopen(szFileName2, "r", _SH_DENYWR);
 					if (fp) {
-						DisplayStr("|08- |07new world.ndx found.\n");
+						LogDisplayStr("|08- |07new world.ndx found.\n");
 						// found it
 						fclose(fp);
 						file_copy(szFileName2, "world.ndx");
@@ -3456,7 +3456,7 @@ void IBBS_Init(void)
  */
 {
 	if (Verbose) {
-		DisplayStr("> IBBS_Init()\n");
+		LogDisplayStr("> IBBS_Init()\n");
 		delay(500);
 	}
 
@@ -3509,7 +3509,7 @@ void IBBS_Maint(void)
 	if (Game.Data.InterBBS == false)
 		return;
 
-	DisplayStr("* IBBS_Maint()\n");
+	LogDisplayStr("* IBBS_Maint()\n");
 
 	IBBS_PacketIn();
 

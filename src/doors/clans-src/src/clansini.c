@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "clansini.h"
 #include "defines.h"
+#include "door.h"
 #include "language.h"
 #include "system.h"
 #include "parsing.h"
@@ -52,7 +53,7 @@ void ClansIni_Init(void)
 	int CurNPCFile, CurItemFile, CurRaceFile, CurClassFile, CurSpellFile;
 
 	if (Verbose) {
-		DisplayStr("> ClansIni_Init()\n");
+		LogDisplayStr("> ClansIni_Init()\n");
 		delay(500);
 	}
 

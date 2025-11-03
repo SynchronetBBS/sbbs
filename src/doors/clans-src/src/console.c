@@ -43,3 +43,8 @@ noreturn void System_Error(char *szErrorMsg)
 	Video_Close();
 	exit(EXIT_FAILURE);
 }
+
+void LogDisplayStr(const char *szString)
+{
+	DisplayStr(szString);
+}

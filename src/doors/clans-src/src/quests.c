@@ -75,7 +75,7 @@ void Quests_Init(void)
 	int16_t iKeyWord;
 
 	if (Verbose) {
-		DisplayStr("> Quests_Init()\n");
+		LogDisplayStr("> Quests_Init()\n");
 		delay(500);
 	}
 
@@ -91,7 +91,7 @@ void Quests_Init(void)
 
 	fp = fopen("quests.ini", "r");
 	if (!fp) {
-		DisplayStr("NO QUESTS FILE!!\n");
+		LogDisplayStr("NO QUESTS FILE!!\n");
 		return;
 	}
 
@@ -646,7 +646,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 	Done = false;
 	while (!Done) {
 		if (ftell(FileHeader.fp) >= FileHeader.lEnd) {
-			DisplayStr("K-Error\n%P");
+			LogDisplayStr("K-Error\n%P");
 			break;
 		}
 

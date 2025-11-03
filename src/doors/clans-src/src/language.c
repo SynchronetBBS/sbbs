@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <string.h>
 #include "unix_wrappers.h"
 
+#include "door.h"
 #include "language.h"
 #include "myopen.h"
 #include "structs.h"
@@ -92,7 +93,7 @@ void Language_Init(char *szLangFile)
 	struct FileHeader FileHeader;
 
 	if (Verbose) {
-		DisplayStr("> Language_Init()\n");
+		LogDisplayStr("> Language_Init()\n");
 		delay(500);
 	}
 
@@ -116,7 +117,7 @@ void Language_Init(char *szLangFile)
 
 	Language->BigString = malloc(Language->NumBytes);
 	if (!Language->BigString) {
-		DisplayStr("|12Couldn't allocate enough memory to run!\n");
+		LogDisplayStr("|12Couldn't allocate enough memory to run!\n");
 		fclose(FileHeader.fp);
 		System_Close();
 	}

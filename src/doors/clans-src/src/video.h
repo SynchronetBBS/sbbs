@@ -48,7 +48,7 @@ void xputs(const char *string, int x, int y);
 
 int32_t Video_VideoType(void);
 
-void DisplayStr(char *szString);
+void DisplayStr(const char *szString);
 
 void zputs(const char *string);
 void qputs(const char *string, int x, int y);

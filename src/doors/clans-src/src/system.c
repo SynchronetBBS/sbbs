@@ -117,6 +117,7 @@ noreturn void System_Error(char *szErrorMsg)
  */
 {
 #if defined(_WIN32)
+	LogStr(szErrorMsg);
 	char buffer[1000];
 	_snprintf(buffer, 1000, "System Error: %s\n", szErrorMsg);
 	RemovePipes(buffer, buffer);
@@ -124,7 +125,7 @@ noreturn void System_Error(char *szErrorMsg)
 			   MB_ICONERROR);
 #else
 	DisplayStr("|12System Error: |07");
-	DisplayStr(szErrorMsg);
+	LogDisplayStr(szErrorMsg);
 	delay(1000);
 #endif
 	System_Close();
@@ -207,7 +208,7 @@ void ODCmdLineHandler(char *flag, char *val)
 					if (IBBS.Data.BBSID != ato16(val, "Recon", __func__) &&
 							(ato16(val, "Recon", __func__) > 0 && ato16(val, "Recon", __func__) < MAX_IBBSNODES)) {
 						snprintf(szString, sizeof(szString), "Sending recon to %d\n", atoi(val));
-						DisplayStr(szString);
+						LogDisplayStr(szString);
 						IBBS_SendRecon(ato16(val, "Recon", __func__));
 					}
 					System_Close();
@@ -227,7 +228,7 @@ void ODCmdLineHandler(char *flag, char *val)
 					if (IBBS.Data.BBSID != atoi(val) &&
 							(atoi(val) > 0 && atoi(val) < MAX_IBBSNODES)) {
 						snprintf(szString, sizeof(szString), "Sending reset to %d\n", atoi(val));
-						DisplayStr(szString);
+						LogDisplayStr(szString);
 						IBBS_SendReset(ato16(val, "Reset", __func__));
 					}
 					System_Close();
@@ -330,7 +331,7 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 		}
 		else if (strcasecmp(&flag[1], "Verbose") == 0) {
 			if (primitive) {
-				DisplayStr("|07Verbose |14ON\n");
+				LogDisplayStr("|07Verbose |14ON\n");
 				Verbose = true;
 			}
 			return TRUE;
@@ -378,7 +379,7 @@ BOOL ODCmdLineFlagHandler(const char *flag)
 void System_Maint(void)
 {
 
-	DisplayStr("* System_Maint()\n");
+	LogDisplayStr("* System_Maint()\n");
 
 	// Update News
 	unlink("yest.asc");
@@ -573,7 +574,7 @@ void System_Init(void)
 		System.Node = od_control.od_node;
 
 	if (Verbose) {
-		DisplayStr("> Config_Init()\n");
+		LogDisplayStr("> Config_Init()\n");
 		delay(500);
 	}
 
@@ -583,7 +584,7 @@ void System_Init(void)
 	/* use log */
 	if (Config.UseLog) {
 		od_control.od_logfile = INCLUDE_LOGFILE;
-		snprintf(od_control.od_logfile_name, sizeof(od_control.od_logfile_name), "clans%d.log", System.Node);
+		snprintf(od_control.od_logfile_name, sizeof(od_control.od_logfile_name), "clans%u.log", (unsigned)System.Node);
 	}
 	if (Config.pszInfoPath)
 		strlcpy(od_control.info_path, Config.pszInfoPath, sizeof(od_control.info_path));

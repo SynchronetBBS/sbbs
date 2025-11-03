@@ -1433,7 +1433,6 @@ static void ArmyAttack(struct Army *Attacker, struct Army *Defender,
 
 	// if attacker has no energy to begin with, defender wins battle
 	if (AttackerVitality == 0) {
-		//DisplayStr("You have no energy\n");
 		Result->PercentDamage = 0;
 		return;
 	}
@@ -1441,7 +1440,6 @@ static void ArmyAttack(struct Army *Attacker, struct Army *Defender,
 
 	// if no energy to begin with, attacker wins battle
 	if (DefenderVitality == 0) {
-		//DisplayStr("Enemy has no energy\n");
 		Result->PercentDamage = 100;
 		Result->Success = true;
 		return;

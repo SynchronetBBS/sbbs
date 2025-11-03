@@ -111,7 +111,7 @@ static void Fight_GetBattleOrder(struct order *BattleOrder, struct clan *Team[2]
 	TotalMembers = NumMembers(Team[0], true) + NumMembers(Team[1], true);
 
 	if (TotalMembers != CurSortMember)
-		DisplayStr(">>> TotalMembers != CurSortMember!\n%P");
+		LogDisplayStr(">>> TotalMembers != CurSortMember!\n%P");
 
 	for (CurOrder = 0; CurOrder < TotalMembers; CurOrder++) {
 		// initialize sort data for this iteration (loop)

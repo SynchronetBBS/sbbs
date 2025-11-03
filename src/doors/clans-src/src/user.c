@@ -2004,17 +2004,12 @@ static bool User_Create(void)
 	if (!fpPlayerFile) {
 		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "wb", _SH_DENYRW);
 		if (!fpPlayerFile) {
-			// !!!
-			// DisplayStr("User_Create: creating new file\n");
-			/* !!! */
 			rputs("!! Chkpt 1\n");
 			rputs(ST_ERRORPC);
 			return false;
 		}
 	}
 	else {
-		// !!!
-		// DisplayStr("User_Create: appending to file\n");
 		fseek(fpPlayerFile, 0L, SEEK_END);
 	}
 
@@ -2515,10 +2510,6 @@ bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 			return false;
 		}
 
-		// if CRCs don't match, warn for now
-//    if (!TmpClan->CRC)
-//      DisplayStr("|12-> CRCs don't match!!\n");
-
 		// make them all NULLs for safety
 		for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
 			TmpClan->Member[iTemp] = NULL;
@@ -2548,10 +2539,8 @@ bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 
 	if (FoundClan)
 		return true;
-	else {
-		// DisplayStr("Bug #2\n%P");
+	else
 		return false;
-	}
 }
 
 // ------------------------------------------------------------------------- //
@@ -2626,7 +2615,7 @@ void User_Maint(void)
 	int16_t iTemp, iTemp2, CurItem, Level;
 	int32_t XPRequired[MAX_LEVELS];
 
-	DisplayStr("* User_Maint()\n");
+	LogDisplayStr("* User_Maint()\n");
 
 	/* figure XP required per level */
 	for (Level = 1; Level < MAX_LEVELS; Level++) {

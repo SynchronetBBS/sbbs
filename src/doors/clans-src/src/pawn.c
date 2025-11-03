@@ -408,7 +408,7 @@ void PS_Maint(void)
 	struct item_data *PS_Items[MAX_PSITEMS];
 	int16_t CurItem;
 
-	DisplayStr("* PS_Maint()\n");
+	LogDisplayStr("* PS_Maint()\n");
 
 	PS_Init(PS_Items);
 

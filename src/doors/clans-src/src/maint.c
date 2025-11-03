@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "alliance.h"
 #include "alliancem.h"
+#include "door.h"
 #include "game.h"
 #include "ibbs.h"
 #include "mail.h"
@@ -58,7 +59,7 @@ void Maintenance(void)
  *
  */
 {
-	DisplayStr("|09Maintenance running\n");
+	LogDisplayStr("|09Maintenance running\n");
 
 	// if IBBS game AND maintenance already run, don't run it again
 	// otherwise, run it again
@@ -79,7 +80,7 @@ void Maintenance(void)
 
 	// if the game has not yet begun, skip reset of maintenance
 	if (Game.Data.GameState == 1 || Game.Data.GameState == 2) {
-		DisplayStr("* Game currently not in progress, maintenance skipped.\n");
+		LogDisplayStr("* Game currently not in progress, maintenance skipped.\n");
 		return;
 	}
 
@@ -107,6 +108,6 @@ void Maintenance(void)
 
 	Game_Write();
 
-	DisplayStr("Done.\n");
+	LogDisplayStr("Done.\n");
 
 }

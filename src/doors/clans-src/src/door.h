@@ -36,6 +36,16 @@ void rputs(const char *string);
  * Outputs the pipe or ` encoded string.
  */
 
+void LogDisplayStr(const char *szString);
+/*
+ * Logs a string then passes to DisplayStr()
+ */
+
+void LogStr(const char *szString);
+/*
+ * Logs a string
+ */
+
 void door_pause(void);
 /*
  * Displays <pause> prompt.

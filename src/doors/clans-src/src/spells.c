@@ -78,7 +78,7 @@ void Spells_Init(void)
 	uint8_t sBuf[BUF_SIZE_Spell];
 
 	if (Verbose) {
-		DisplayStr("> Spells_Init()\n");
+		LogDisplayStr("> Spells_Init()\n");
 		delay(500);
 	}
 
@@ -133,7 +133,7 @@ void Spells_Init(void)
 	}
 
 	if (Verbose) {
-		DisplayStr("> Spells_Init done()\n");
+		LogDisplayStr("> Spells_Init done()\n");
 		delay(500);
 	}
 

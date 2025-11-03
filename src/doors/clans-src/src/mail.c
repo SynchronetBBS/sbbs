@@ -169,7 +169,7 @@ static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 	fp = _fsopen(ST_MSJFILE, "a+b", _SH_DENYRW);
 	if (!fp) {
 		free(Message.Data.MsgTxt);
-		DisplayStr(ST_NOMSJFILE);
+		LogDisplayStr(ST_NOMSJFILE);
 		return;
 	}
 	EncryptWrite_s(Message, &Message, fp, XOR_MSG);
@@ -1476,13 +1476,13 @@ void Mail_Maint(void)
 	FILE *OldMessage, *NewMessage;
 	struct Message Message;
 
-	DisplayStr("* Mail_Maint()\n");
+	LogDisplayStr("* Mail_Maint()\n");
 
 	OldMessage = _fsopen("clans.msj", "rb", _SH_DENYRW);
 	if (OldMessage) {   // MSJ file exists, so go on
 		NewMessage = _fsopen("tmp.$$$", "wb", _SH_DENYRW);
 		if (!NewMessage) {
-			DisplayStr("Error opening temp file\n");
+			LogDisplayStr("Error opening temp file\n");
 			sleep(3);
 			return;
 		}

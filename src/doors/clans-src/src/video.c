@@ -770,7 +770,7 @@ void xputs(const char *string, int x, int y)
 #endif
 }
 
-void DisplayStr(char *szString)
+void DisplayStr(const char *szString)
 {
 	if (Door_Initialized())
 		rputs(szString);

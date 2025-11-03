@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "clansini.h"
 #include "class.h"
 #include "deserialize.h"
+#include "door.h"
 #include "language.h"
 #include "myopen.h"
 #include "structs.h"
@@ -123,7 +124,7 @@ void PClass_Init(void)
  */
 {
 	if (Verbose) {
-		DisplayStr("> PClass_Init()\n");
+		LogDisplayStr("> PClass_Init()\n");
 		delay(500);
 	}
 

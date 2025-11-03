@@ -139,7 +139,7 @@ void Game_Init(void)
  */
 {
 	if (Verbose) {
-		DisplayStr("> Game_Init()\n");
+		LogDisplayStr("> Game_Init()\n");
 		delay(500);
 	}
 

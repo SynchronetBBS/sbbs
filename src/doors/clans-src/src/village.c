@@ -1284,7 +1284,7 @@ void Village_Maint(void)
 	char *szQuality[4] = { "Average", "Good", "Very Good", "Excellent" },
 						 szString[255];
 
-	DisplayStr("* Village_Maint()\n");
+	LogDisplayStr("* Village_Maint()\n");
 
 	if (Village.Data.Empire.VaultGold < 0)
 		Village.Data.Empire.VaultGold = 0;
@@ -1350,7 +1350,7 @@ void Village_Init(void)
  */
 {
 	if (Verbose) {
-		DisplayStr("> Village_Init()\n");
+		LogDisplayStr("> Village_Init()\n");
 		delay(500);
 	}
 
@@ -1370,7 +1370,7 @@ void Village_Init(void)
 	Door_SetColorScheme(Village.Data.ColorScheme);
 
 	if (Verbose) {
-		DisplayStr("> Village_Init done()\n");
+		LogDisplayStr("> Village_Init done()\n");
 		delay(500);
 	}
 

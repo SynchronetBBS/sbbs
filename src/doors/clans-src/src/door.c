@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #ifndef __unix__
 # include <conio.h>
 # include <dos.h>
@@ -70,6 +71,8 @@ struct Door Door = { false, true,
 	  1, 1, 1 },
 	false
 };
+
+static FILE *LogFD;
 
 // ------------------------------------------------------------------------- //
 
@@ -580,6 +583,130 @@ void rputs(const char *string)
 	}
 }
 
+static const char wdays[7][4] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+static const char months[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+static void LogToWhatever(const char *szString)
+{
+	if (Door_Initialized()) {
+		od_log_write(szString);
+	}
+	else {
+		time_t now = time(NULL);
+		struct tm *tm = localtime(&now);
+
+		if (LogFD == NULL) {
+			char szFileName[16];
+			snprintf(szFileName, sizeof(szFileName), "clans%u.log", (unsigned)System.Node);
+			LogFD = fopen(szFileName, "a");
+			if (LogFD) {
+				fprintf(LogFD, "\n----------  %s %02d %s %02d, %s\n", wdays[tm->tm_wday],
+				    tm->tm_mday, months[tm->tm_mon], tm->tm_year % 100, "The Clans");
+			}
+		}
+		if (LogFD) {
+			fprintf(LogFD, "> %2d:%02d:%02d  %s\n", tm->tm_hour, tm->tm_min, tm->tm_sec, szString);
+		}
+	}
+}
+
+void LogStr(const char *szString)
+{
+	if (od_control.od_logfile == INCLUDE_LOGFILE) {
+		// Remove pipes, %-codes, and control characters.
+		char *szStrDup = strdup(szString);
+		size_t stLen;
+
+		if (!szStrDup) {
+			LogToWhatever("Failed to allocate memory, raw log entry follows:");
+			LogToWhatever(szString);
+			return;
+		}
+
+		stLen = strlen(szStrDup);
+		for (size_t stPos = 0; stPos < stLen; stPos++) {
+			char *src = &szStrDup[stPos];
+			size_t remain = stLen - stPos + 1;
+			if ((*src < 32 && *src >= 0) || *src == 127) {
+				// Remove control characters
+				memmove(src, &src[1], remain - 1);
+				stPos--;
+				stLen--;
+				continue;
+			}
+			if (*src == '|') {
+				// Remove pipe codes
+				if (remain > 3 && isdigit(src[1]) && isdigit(src[2])) {
+					memmove(src, &src[3], remain - 3);
+					stPos--;
+					stLen -= 3;
+					continue;
+				}
+				if (remain > 3 && src[1] == 0 && isalpha(src[2])) {
+					memmove(src, &src[3], remain - 3);
+					stPos--;
+					stLen -= 3;
+					continue;
+				}
+				if (remain > 2 && (src[1] == 'S' || src[1] == 'R')) {
+					memmove(src, &src[2], remain - 2);
+					stPos--;
+					stLen -= 2;
+					continue;
+				}
+			}
+			if (remain > 2 && *src == SPECIAL_CODE) {
+				switch (src[1]) {
+					case '1':
+					case '2':
+					case 'B':
+					case 'C':
+					case 'D':
+					case 'F':
+					case 'L':
+					case 'M':
+					case 'N':
+					case 'P':
+					case 'Q':
+					case 'R':
+					case 'T':
+					case 'V':
+					case 'X':
+					case 'Y':
+					case 'Z':
+						memmove(src, &src[2], remain - 2);
+						stPos--;
+						stLen -= 2;
+						continue;
+					case 'S': // SS, SD, SV or nothing
+						if (remain > 3 && (src[2] == 'S' || src[2] == 'D' || src[2] == 'V')) {
+							memmove(src, &src[3], remain - 3);
+							stPos--;
+							stLen -= 3;
+							continue;
+						}
+						break;
+					default:
+						break;
+				}
+			}
+			if (remain > 3 && *src == '`' && iscodechar(src[1]) && iscodechar(src[2])) {
+				memmove(src, &src[3], remain - 3);
+				stPos--;
+				stLen -= 3;
+				continue;
+			}
+		}
+		LogToWhatever(szStrDup);
+		free(szStrDup);
+	}
+}
+
+void LogDisplayStr(const char *szString)
+{
+	LogStr(szString);
+	DisplayStr(szString);
+}
+
 // ------------------------------------------------------------------------- //
 
 void Display(char *FileName)
@@ -729,7 +856,7 @@ void Door_Init(bool Local)
  */
 {
 	if (Verbose) {
-		DisplayStr("> Door_Init()\n");
+		LogDisplayStr("> Door_Init()\n");
 		delay(500);
 	}
 
@@ -773,6 +900,10 @@ void Door_Init(bool Local)
 	/* All need for the console has passed */
 	Video_Close();
 
+	if (LogFD) {
+		fclose(LogFD);
+		LogFD = NULL;
+	}
 	od_init();
 
 	Door.Initialized = true;
@@ -800,6 +931,10 @@ void Door_Close(void)
  * Called to destroy anything created by Door_Init.
  */
 {
+	if (LogFD) {
+		fclose(LogFD);
+		LogFD = NULL;
+	}
 	if (Door.UserBooted == false)
 		RemoveSemaphor();
 }
