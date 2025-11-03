@@ -30,7 +30,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader);
 bool EncryptWrite(void *Data, size_t DataSize, FILE *fp, char XorValue);
 bool EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
 
-#define EXTRABYTES      10L
+#define EXTRABYTES      10
 
 #define CheckedEncryptWrite(b, s, fp, xv) do {                                                   \
 	if (!EncryptWrite(b, s, fp, xv)) {                                                        \
