@@ -322,6 +322,7 @@ bool Door_AllowScreenPause(void)
 
 // ------------------------------------------------------------------------- //
 
+static bool JustPaused;
 void door_pause(void)
 /*
  * Displays <pause> prompt.
@@ -329,19 +330,22 @@ void door_pause(void)
 {
 	char *pc;
 
-	rputs(ST_PAUSE);
+	if (!JustPaused) {
+		rputs(ST_PAUSE);
 
-	/* wait for user to hit key */
-	while (od_get_key(true) == false)
-		od_sleep(0);
+		/* wait for user to hit key */
+		while (od_get_key(true) == false)
+			od_sleep(0);
 
-	od_putch('\r');
-	pc = ST_PAUSE;
-	while (*pc) {
-		od_putch(' ');
-		pc++;
+		od_putch('\r');
+		pc = ST_PAUSE;
+		while (*pc) {
+			od_putch(' ');
+			pc++;
+		}
+		od_putch('\r');
 	}
-	od_putch('\r');
+	JustPaused = true;
 }
 
 
@@ -366,6 +370,7 @@ void rputs(const char *string)
 	if (!(*string))
 		return;
 
+	JustPaused = false;
 	pCurChar = string;
 
 	while (*pCurChar) {
@@ -761,8 +766,10 @@ void Display(char *FileName)
 
 		/* display them all */
 		for (CurLine = 0; CurLine < NumLines; CurLine++) {
-			if (FileType == ANSIFILE)
+			if (FileType == ANSIFILE) {
+				JustPaused = false;
 				od_disp_emu(Lines[CurLine], true);
+			}
 			else  /* assume ASCII pipe codes */
 				rputs(Lines[CurLine]);
 		}

@@ -1228,8 +1228,6 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 		}
 	}
 
-
-
 	if (QuoteToggle) {
 		if (EndedChat) {
 			door_pause();
