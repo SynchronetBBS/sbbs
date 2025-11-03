@@ -806,10 +806,10 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 						PClan->FightsLeft += ato16(szText, "Give Fight", __func__);
 						break;
 					case 24 : // GiveFollowers
-						PClan->Empire.Army.Followers += atol(szText);
+						PClan->Empire.Army.Followers += ato32(szText, "Give Followers", __func__);
 						break;
 					case 25 : // GivePoints
-						PClan->Points += atol(szText);
+						PClan->Points += ato32(szText, "Give Points", __func__);
 						break;
 					case 28 : // TellTopic
 						for (iTemp = 0; iTemp < MAX_TOPICS; iTemp++) {

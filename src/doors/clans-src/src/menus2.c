@@ -130,9 +130,9 @@ void ResurrectDead(bool Unconscious)
 
 	/* else tell them how much it costs */
 	if (Unconscious == false)
-		Cost = ((int32_t)PClan->Member[ WhichOne ]->Level + 1L) * 750L;
+		Cost = ((int32_t)PClan->Member[ WhichOne ]->Level + 1) * 750;
 	else
-		Cost = ((int32_t)PClan->Member[ WhichOne ]->Level + 1L) * 300L;
+		Cost = ((int32_t)PClan->Member[ WhichOne ]->Level + 1) * 300;
 
 	snprintf(szString, sizeof(szString), "\n|0CIt will cost you %" PRId32 " gold.\n", Cost);
 	rputs(szString);

@@ -697,7 +697,7 @@ void DonateToEmpire(struct empire *Empire)
 	char *szTheOptions[15];
 	char szString[128], szFileName[30];
 	int32_t LimitingVariable;
-	long NumToDonate;
+	int32_t NumToDonate;
 
 	LoadStrings(1450, 15, szTheOptions);
 
@@ -732,7 +732,7 @@ void DonateToEmpire(struct empire *Empire)
 			case '1' :      /* followers */
 				LimitingVariable = PClan->Empire.Army.Followers;
 
-				NumToDonate = GetLong(ST_DEMPIRE6, 0, LimitingVariable);
+				NumToDonate = (int32_t)GetLong(ST_DEMPIRE6, 0, LimitingVariable);
 
 				if (NumToDonate) {
 					Empire->Army.Followers += NumToDonate;
@@ -757,7 +757,7 @@ void DonateToEmpire(struct empire *Empire)
 				if (LimitingVariable < 0)
 					LimitingVariable = 0;
 
-				NumToDonate = GetLong(ST_DEMPIRE7, 0, LimitingVariable);
+				NumToDonate = (int32_t)GetLong(ST_DEMPIRE7, 0, LimitingVariable);
 
 				if (NumToDonate) {
 					Empire->Army.Footmen   += NumToDonate;
@@ -786,7 +786,7 @@ void DonateToEmpire(struct empire *Empire)
 				if (LimitingVariable < 0)
 					LimitingVariable = 0;
 
-				NumToDonate = GetLong(ST_DEMPIRE8, 0, LimitingVariable);
+				NumToDonate = (int32_t)GetLong(ST_DEMPIRE8, 0, LimitingVariable);
 
 				if (NumToDonate) {
 					Empire->Army.Axemen   += NumToDonate;
@@ -816,7 +816,7 @@ void DonateToEmpire(struct empire *Empire)
 				if (LimitingVariable < 0)
 					LimitingVariable = 0;
 
-				NumToDonate = GetLong(ST_DEMPIRE9, 0, LimitingVariable);
+				NumToDonate = (int32_t)GetLong(ST_DEMPIRE9, 0, LimitingVariable);
 
 				if (NumToDonate) {
 					Empire->Army.Knights   += NumToDonate;
@@ -846,7 +846,7 @@ void DonateToEmpire(struct empire *Empire)
 				if (LimitingVariable < 0)
 					LimitingVariable = 0;
 
-				NumToDonate = GetLong(ST_DEMPIRE11, 0, LimitingVariable);
+				NumToDonate = (int32_t)GetLong(ST_DEMPIRE11, 0, LimitingVariable);
 
 				if (NumToDonate) {
 					PClan->Empire.Army.Footmen += NumToDonate;
@@ -879,7 +879,7 @@ void DonateToEmpire(struct empire *Empire)
 				if (LimitingVariable < 0)
 					LimitingVariable = 0;
 
-				NumToDonate = GetLong(ST_DEMPIRE12, 0, LimitingVariable);
+				NumToDonate = (int32_t)GetLong(ST_DEMPIRE12, 0, LimitingVariable);
 
 				if (NumToDonate) {
 					PClan->Empire.Army.Axemen   += NumToDonate;
@@ -913,7 +913,7 @@ void DonateToEmpire(struct empire *Empire)
 				if (LimitingVariable < 0)
 					LimitingVariable = 0;
 
-				NumToDonate = GetLong(ST_DEMPIRE13, 0, LimitingVariable);
+				NumToDonate = (int32_t)GetLong(ST_DEMPIRE13, 0, LimitingVariable);
 
 				if (NumToDonate) {
 					PClan->Empire.Army.Knights += NumToDonate;
@@ -927,7 +927,7 @@ void DonateToEmpire(struct empire *Empire)
 				}
 				LimitingVariable = Empire->Army.Followers;
 
-				NumToDonate = GetLong(ST_DEMPIRE10, 0, LimitingVariable);
+				NumToDonate = (int32_t)GetLong(ST_DEMPIRE10, 0, LimitingVariable);
 
 				if (NumToDonate) {
 					PClan->Empire.Army.Followers += NumToDonate;
@@ -937,7 +937,7 @@ void DonateToEmpire(struct empire *Empire)
 			case '5' :      /* land */
 				LimitingVariable = PClan->Empire.Land;
 
-				NumToDonate = GetLong(ST_DEMPIRE14, 0, LimitingVariable);
+				NumToDonate = (int32_t)GetLong(ST_DEMPIRE14, 0, LimitingVariable);
 
 				if (NumToDonate) {
 					PClan->Empire.Land -= (int16_t)NumToDonate;
@@ -952,7 +952,7 @@ void DonateToEmpire(struct empire *Empire)
 
 				LimitingVariable = Empire->Land;
 
-				NumToDonate = GetLong(ST_DEMPIRE15, 0, LimitingVariable);
+				NumToDonate = (int32_t)GetLong(ST_DEMPIRE15, 0, LimitingVariable);
 
 				if (NumToDonate) {
 					PClan->Empire.Land += (int16_t)NumToDonate;
@@ -966,7 +966,7 @@ void DonateToEmpire(struct empire *Empire)
 				}
 				LimitingVariable = PClan->Empire.VaultGold;
 
-				NumToDonate = GetLong(ST_DEMPIRE16, 0, LimitingVariable);
+				NumToDonate = (int32_t)GetLong(ST_DEMPIRE16, 0, LimitingVariable);
 
 				if (NumToDonate) {
 					PClan->Empire.VaultGold -= NumToDonate;
@@ -981,7 +981,7 @@ void DonateToEmpire(struct empire *Empire)
 
 				LimitingVariable = Empire->VaultGold;
 
-				NumToDonate = GetLong(ST_DEMPIRE17, 0, LimitingVariable);
+				NumToDonate = (int32_t)GetLong(ST_DEMPIRE17, 0, LimitingVariable);
 
 				if (NumToDonate) {
 					PClan->Empire.VaultGold += NumToDonate;
@@ -1209,7 +1209,7 @@ static void ManageArmy(struct empire *Empire)
 	char *szTheOptions[6];
 	char szString[128];
 	int32_t LimitingVariable;
-	long NumToTrain;
+	int32_t NumToTrain;
 
 	LoadStrings(360, 6, szTheOptions);
 
@@ -1280,14 +1280,14 @@ static void ManageArmy(struct empire *Empire)
 				if (LimitingVariable < 0)
 					LimitingVariable = 0;
 
-				NumToTrain = GetLong(ST_MMENUTRAIN1, 0, LimitingVariable);
+				NumToTrain = (int32_t)GetLong(ST_MMENUTRAIN1, 0, LimitingVariable);
 
 				if (NumToTrain) {
 					/* tell him he trained em */
 					snprintf(szString, sizeof(szString), ST_MMENUTRAIN2, (long)NumToTrain, (long)(NumToTrain * SCOST_FOOTMAN));
 					rputs(szString);
 
-					Empire->VaultGold -= (NumToTrain*SCOST_FOOTMAN);
+					Empire->VaultGold -= (NumToTrain * SCOST_FOOTMAN);
 
 					Empire->Army.Footmen += NumToTrain;
 					Empire->Army.Followers -= NumToTrain;
@@ -1320,7 +1320,7 @@ static void ManageArmy(struct empire *Empire)
 				if (LimitingVariable < 0)
 					LimitingVariable = 0;
 
-				NumToTrain = GetLong(ST_MMENUTRAIN3, 0, LimitingVariable);
+				NumToTrain = (int32_t)GetLong(ST_MMENUTRAIN3, 0, LimitingVariable);
 
 				if (NumToTrain) {
 					snprintf(szString, sizeof(szString), ST_MMENUTRAIN4, (long)NumToTrain, (long)(NumToTrain * SCOST_AXEMEN));
@@ -1360,7 +1360,7 @@ static void ManageArmy(struct empire *Empire)
 				if (LimitingVariable < 0)
 					LimitingVariable = 0;
 
-				NumToTrain = GetLong(ST_MMENUTRAIN5, 0, LimitingVariable);
+				NumToTrain = (int32_t)GetLong(ST_MMENUTRAIN5, 0, LimitingVariable);
 
 				if (NumToTrain) {
 					snprintf(szString, sizeof(szString), ST_MMENUTRAIN6, (long)NumToTrain, (long)(NumToTrain * SCOST_KNIGHT));
@@ -1369,7 +1369,7 @@ static void ManageArmy(struct empire *Empire)
 					Empire->VaultGold -= (NumToTrain*SCOST_KNIGHT);
 
 					Empire->Army.Knights += NumToTrain;
-					Empire->Army.Followers -= NumToTrain;
+					Empire->Army.Followers -= (int32_t)NumToTrain;
 				}
 				break;
 			case 'Q' :      /* return to previous menu */
@@ -1882,12 +1882,12 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 				switch (AttackResult->DefenderType) {
 					case EO_VILLAGE :
 						AttackResult->GoldStolen =
-							((Village.Data.Empire.VaultGold/100L) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack)/100L);
+							((Village.Data.Empire.VaultGold / 100) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack) / 100);
 						break;
 					case EO_CLAN :
 						GetClan(AttackResult->DefenderID, &TmpClan);
 						AttackResult->GoldStolen =
-							((TmpClan.Empire.VaultGold/100L) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack)/100L);
+							((TmpClan.Empire.VaultGold / 100) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack) / 100);
 						FreeClanMembers(&TmpClan);
 						break;
 					case EO_ALLIANCE :
@@ -1903,7 +1903,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 							WhichAlliance = iTemp;
 
 							AttackResult->GoldStolen =
-								((Alliances[WhichAlliance]->Empire.VaultGold/100L) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack)/100L);
+								((Alliances[WhichAlliance]->Empire.VaultGold / 100) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack) / 100);
 						}
 
 						// free up mem used by alliances

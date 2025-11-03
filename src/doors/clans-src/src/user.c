@@ -2622,9 +2622,8 @@ void User_Maint(void)
 		XPRequired[Level] = 50L;
 
 		for (iTemp = 1; iTemp <= Level; iTemp++)
-			XPRequired[Level] += ((int32_t)(iTemp-1)*75L);
+			XPRequired[Level] += (((int32_t)iTemp - 1) * 75);
 	}
-
 
 	fpOldPC = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYRW);
 	if (fpOldPC) {

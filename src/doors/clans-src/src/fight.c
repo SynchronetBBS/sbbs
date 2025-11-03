@@ -800,7 +800,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		/* give gold to clan */
 		if (Attacker->MyClan == PClan) {
 			if (VictimClan->Member[Who]->Difficulty != -1) {
-				GoldGained = VictimClan->Member[Who]->Difficulty*((int32_t)my_random(10) + 20L) + 50L + (int32_t)my_random(20);
+				GoldGained = VictimClan->Member[Who]->Difficulty * ((int32_t)my_random(10) + 20) + 50 + (int32_t)my_random(20);
 				snprintf(szString, sizeof(szString), ST_FIGHTGETGOLD, (long)GoldGained);
 				rputs(szString);
 
@@ -1340,7 +1340,7 @@ void Fight_CheckLevelUp(void)
 		XPRequired[Level] = 50L;
 
 		for (iTemp = 1; iTemp <= Level; iTemp++)
-			XPRequired[Level] += ((int32_t)(iTemp-1)*75L);
+			XPRequired[Level] += ((int32_t)(iTemp - 1) * 75);
 	}
 
 	/* for each member, see if xp is higher than the xp required for the

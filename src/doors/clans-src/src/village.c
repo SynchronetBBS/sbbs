@@ -128,8 +128,8 @@ int16_t OutsiderTownHallMenu(void)
 				lTemp = GetLong(ST_T2MENU1Q, 0, PClan->Empire.VaultGold);
 
 				if (lTemp) {
-					Village.Data.Empire.VaultGold += lTemp;
-					PClan->Empire.VaultGold -= lTemp;
+					Village.Data.Empire.VaultGold += (int32_t)lTemp;
+					PClan->Empire.VaultGold -= (int32_t)lTemp;
 
 					snprintf(szString, sizeof(szString), ST_T2MENU1, (long)lTemp);
 					rputs(szString);
@@ -806,7 +806,7 @@ static void BuildMenu(void)
 				          }
 				*/
 
-				TotalCost = ((int32_t)(Village.Data.MarketLevel+1)*(Village.Data.MarketLevel+1)*1250L) + 15000L;
+				TotalCost = ((int32_t)(Village.Data.MarketLevel + 1) * (Village.Data.MarketLevel + 1) * 1250) + 15000;
 
 				snprintf(szString, sizeof(szString), ST_TOWN3, (long)TotalCost, (int)(Village.Data.MarketLevel + 1), (long)Village.Data.Empire.VaultGold);
 				rputs(szString);
@@ -945,8 +945,8 @@ static void EconomicsMenu(void)
 				lTemp = GetLong(ST_EMENU26, 0, PClan->Empire.VaultGold);
 
 				if (lTemp) {
-					Village.Data.Empire.VaultGold += lTemp;
-					PClan->Empire.VaultGold -= lTemp;
+					Village.Data.Empire.VaultGold += (int32_t)lTemp;
+					PClan->Empire.VaultGold -= (int32_t)lTemp;
 
 					snprintf(szString, sizeof(szString), ST_EMENU27, (long)lTemp);
 					rputs(szString);
@@ -968,8 +968,8 @@ static void EconomicsMenu(void)
 				lTemp = GetLong(ST_EMENU29, 0, Village.Data.Empire.VaultGold);
 
 				if (lTemp) {
-					Village.Data.Empire.VaultGold -= lTemp;
-					PClan->Empire.VaultGold += lTemp;
+					Village.Data.Empire.VaultGold -= (int32_t)lTemp;
+					PClan->Empire.VaultGold += (int32_t)lTemp;
 
 					snprintf(szString, sizeof(szString), ST_EMENU30, (long)lTemp);
 					rputs(szString);
