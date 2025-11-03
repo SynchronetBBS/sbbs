@@ -571,6 +571,7 @@ s_village_data_s(const struct village_data *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->ChurchLevel);
 	pack_int16_t(s->PawnLevel);
 	pack_int16_t(s->WizardLevel);
+
 	assert(remain);
 	if (!remain)
 		return SIZE_MAX;
@@ -583,6 +584,7 @@ s_village_data_s(const struct village_data *s, void *bufptr, size_t bufsz)
 	*dst |= (s->UpChurchToday << 2);
 	*dst |= (s->UpPawnToday << 1);
 	*(dst++) |= (s->UpWizToday << 0);
+
 	remain--;
 	assert(remain);
 	if (!remain)
@@ -818,51 +820,56 @@ s_clan_s(const struct clan *s, void *bufptr, size_t bufsz)
 	if (!remain)
 		return SIZE_MAX;
 	*dst = 0;
-	*dst |= (s->DefActionHelp << 7);
-	*dst |= (s->CommHelp << 6);
-	*dst |= (s->MineHelp << 5);
-	*dst |= (s->MineLevelHelp << 4);
-	*dst |= (s->CombatHelp << 3);
-	*dst |= (s->TrainHelp << 2);
-	*dst |= (s->MarketHelp << 1);
-	*(dst++) |= (s->PawnHelp << 0);
+	*dst |= (s->DefActionHelp ? 0x80U : 0U);
+	*dst |= (s->CommHelp ? 0x40U : 0U);
+	*dst |= (s->MineHelp ? 0x20U : 0U);
+	*dst |= (s->MineLevelHelp ? 0x10U : 0U);
+	*dst |= (s->CombatHelp ? 0x08U : 0U);
+	*dst |= (s->TrainHelp ? 0x04U : 0U);
+	*dst |= (s->MarketHelp ? 0x02U : 0U);
+	*(dst++) |= (s->PawnHelp ? 0x01U : 0U);
 	remain--;
+
 	assert(remain);
 	if (!remain)
 		return SIZE_MAX;
 	*dst = 0;
-	*dst |= (s->WizardHelp << 7);
-	*dst |= (s->EmpireHelp << 6);
-	*dst |= (s->DevelopHelp << 5);
-	*dst |= (s->TownHallHelp << 4);
-	*dst |= (s->DestroyHelp << 3);
-	*dst |= (s->ChurchHelp << 2);
-	*dst |= (s->THallHelp << 1);
-	*(dst++) |= (s->SpyHelp << 0);
+	*dst |= (s->WizardHelp ? 0x80U : 0U);
+	*dst |= (s->EmpireHelp ? 0x40U : 0U);
+	*dst |= (s->DevelopHelp ? 0x20U : 0U);
+	*dst |= (s->TownHallHelp ? 0x10U : 0U);
+	*dst |= (s->DestroyHelp ? 0x08U : 0U);
+	*dst |= (s->ChurchHelp ? 0x04U : 0U);
+	*dst |= (s->THallHelp ? 0x02U : 0U);
+	*(dst++) |= (s->SpyHelp ? 0x01U : 0U);
 	remain--;
+
 	assert(remain);
 	if (!remain)
 		return SIZE_MAX;
 	*dst = 0;
-	*dst |= (s->AllyHelp << 7);
-	*dst |= (s->WarHelp << 6);
-	*dst |= (s->VoteHelp << 5);
-	*dst |= (s->TravelHelp << 4);
-	*dst |= (s->WasRulerToday << 3);
-	*dst |= (s->MadeAlliance << 2);
-	*(dst++) |= ((s->Protection >> 2) << 0);
+	*dst |= (s->AllyHelp ? 0x80U : 0U);
+	*dst |= (s->WarHelp ? 0x40U : 0U);
+	*dst |= (s->VoteHelp ? 0x20U : 0U);
+	*dst |= (s->TravelHelp ? 0x10U : 0U);
+	*dst |= (s->WasRulerToday ? 0x08U : 0U);
+	*dst |= (s->MadeAlliance ? 0x04U : 0U);
+	*(dst++) |= ((s->Protection & 0x0c) >> 2);
 	remain--;
+
 	assert(remain);
 	if (!remain)
 		return SIZE_MAX;
-	*dst |= ((s->Protection % 3) << 6);
-	*dst |= (s->FirstDay << 5);
-	*dst |= (s->Eliminated << 4);
-	*dst |= (s->QuestToday << 3);
-	*dst |= (s->AttendedMass << 2);
-	*dst |= (s->GotBlessing << 1);
-	*(dst++) |= (s->Prayed << 0);
+	*dst = 0;
+	*dst |= ((s->Protection & 0x03U) << 6);
+	*dst |= (s->FirstDay ? 0x20U : 0U);
+	*dst |= (s->Eliminated ? 0x10U : 0U);
+	*dst |= (s->QuestToday ? 0x08U : 0U);
+	*dst |= (s->AttendedMass ? 0x04U : 0U);
+	*dst |= (s->GotBlessing ? 0x02U : 0U);
+	*(dst++) |= (s->Prayed ? 0x01U : 0U);
 	remain--;
+
 	crc = CRCValue(bufptr, dst - (uint8_t*)bufptr);
 	pack_int32_t(crc);
 	return (size_t)(dst - (uint8_t *)bufptr);

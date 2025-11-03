@@ -852,6 +852,7 @@ s_clan_d(const void *bufptr, size_t bufsz, struct clan *s)
 	s->MarketHelp = (*src & 0x02 ? 1U : 0U);
 	s->PawnHelp = (*(src++) & 0x01 ? 1U : 0U);
 	remain--;
+
 	assert(remain);
 	if (!remain)
 		return SIZE_MAX;
@@ -864,6 +865,7 @@ s_clan_d(const void *bufptr, size_t bufsz, struct clan *s)
 	s->THallHelp = (*src & 0x02 ? 1U : 0U);
 	s->SpyHelp = (*(src++) & 0x01 ? 1U : 0U);
 	remain--;
+
 	assert(remain >= 2);
 	if (remain < 2)
 		return SIZE_MAX;
@@ -875,6 +877,11 @@ s_clan_d(const void *bufptr, size_t bufsz, struct clan *s)
 	s->MadeAlliance = (*src & 0x04 ? 1U : 0U);
 	s->Protection = (src[0] & 0x03U << 2) | (src[1] & 0xC0U >> 6);
 	src++;
+	remain--;
+
+	assert(remain);
+	if (!remain)
+		return SIZE_MAX;
 	s->FirstDay = (*src & 0x20 ? 1U : 0U);
 	s->Eliminated = (*src & 0x10 ? 1U : 0U);
 	s->QuestToday = (*src & 0x08 ? 1U : 0U);
