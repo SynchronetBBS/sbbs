@@ -536,6 +536,10 @@ public:
     bool	output_thread_running = false;
     bool	input_thread_running = false;
 	bool	terminate_output_thread = false;
+	char*	event_running_filename(char* str, size_t sz, int event) {
+		snprintf(str, sz, "%sevent.%s.running", cfg.data_dir, cfg.event[event]->code);
+		return str;
+	}
 
 	JSRuntime*		js_runtime = nullptr;
 	JSContext*		js_cx = nullptr;

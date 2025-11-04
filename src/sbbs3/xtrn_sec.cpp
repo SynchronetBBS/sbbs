@@ -1265,7 +1265,7 @@ const char* sbbs_t::xtrn_dropdir(const xtrn_t* xtrn, char* buf, size_t maxlen)
 bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 {
 	char   str[256], path[MAX_PATH + 1], dropdir[MAX_PATH + 1], name[32], c;
-	uint   i;
+	int    i;
 	int    tleft, mode;
 	node_t node;
 	time_t start, end;
@@ -1314,6 +1314,16 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		}
 		if (i <= cfg.sys_nodes)
 			return false;
+	}
+
+	for (i = 0; i < cfg.total_events; ++i) {
+		if (strcmp(cfg.event[i]->xtrn, cfg.xtrn[xtrnnum]->code) != 0)
+			continue;
+		if (fexist(event_running_filename(str, sizeof str, i))) {
+			bprintf(text[NodeStatusEventLimbo], cfg.event[i]->node);
+			pause();
+			return false;
+		}
 	}
 
 	if (cfg.xtrn[xtrnnum]->misc & XTRN_TEMP_DIR)

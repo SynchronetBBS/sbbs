@@ -2940,6 +2940,9 @@ void event_thread(void* arg)
 		/* Event always runs after initialization? */
 		if (sbbs->cfg.event[i]->misc & EVENT_INIT)
 			sbbs->cfg.event[i]->last = -1;
+		if (sbbs->cfg.event[i]->node == NODE_ANY
+		    || (sbbs->cfg.event[i]->node >= first_node && sbbs->cfg.event[i]->node <= last_node))
+			sbbs->fremove(WHERE, sbbs->event_running_filename(str, sizeof str, i));
 	}
 
 	while (!sbbs->terminated && !terminate_server) {
@@ -3459,9 +3462,14 @@ void event_thread(void* arg)
 					              , (ex_mode & EX_BG)        ? "background ":""
 					              , cmd);
 					{
-						int result = sbbs->external(cmd, ex_mode, sbbs->cfg.event[i]->dir);
+						char path[MAX_PATH + 1];
 						if (!(ex_mode & EX_BG))
+							ftouch(sbbs->event_running_filename(path, sizeof path, i));
+						int result = sbbs->external(cmd, ex_mode, sbbs->cfg.event[i]->dir);
+						if (!(ex_mode & EX_BG)) {
 							sbbs->lprintf(result ? sbbs->cfg.event[i]->errlevel : LOG_INFO, "Timed event: '%s' returned %d", cmd, result);
+							sbbs->fremove(WHERE, path);
+						}
 						else
 							sbbs->lprintf(LOG_DEBUG, "Background timed event spawned: %s", cmd);
 					}
