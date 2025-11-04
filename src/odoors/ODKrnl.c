@@ -343,6 +343,7 @@ void ODKrnlShutdown(void)
  *
  *     Return: void
  */
+extern tODMilliSec ODMaxMSToWait;
 ODAPIDEF void ODCALL od_kernel(void)
 {
 #ifndef OD_MULTITHREADED
@@ -402,6 +403,7 @@ ODAPIDEF void ODCALL od_kernel(void)
       while(ODComGetByte(hSerialPort, &ch, FALSE) == kODRCSuccess)
       {
          ODKrnlHandleReceivedChar(ch, TRUE);
+         ODMaxMSToWait = 0;
       }
    }
 
