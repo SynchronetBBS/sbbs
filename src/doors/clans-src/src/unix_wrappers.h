@@ -27,12 +27,6 @@
 #define MAXDIR  PATH_MAX
 #define MAXPATH PATH_MAX
 
-// ToDo - Tune this better.
-#define KERN_SKIP   8
-
-// ToDo This is totally arbitrary.
-#define MAX_STRING_LEN  1024
-
 struct date {
 	short da_year;
 	short da_mon;
@@ -47,9 +41,6 @@ typedef struct {
 	short wDay;
 	short wYear;
 } SYSTEMTIME;
-
-// ToDo needs some kind of REAL randomisation.
-#define RANDOM      unix_random
 
 struct ffblk {
 	char lfn_magic[6];        /* LFN: the magic "LFN32" signature */
