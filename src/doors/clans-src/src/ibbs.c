@@ -3268,7 +3268,8 @@ void IBBS_PacketIn(void)
 				if (IBBS.Data.StrictMsgFile && !CheckMessageFile(szFileName, &InterBBSInfo, srcBBSID)) {
 					snprintf(szString, sizeof(szString), "|08x |12No valid msg file for packet %s\n", szFileName);
 					LogDisplayStr(szString);
-					MoveToBad(szFileName);
+					// If .msg is created right after, moving to bad breaks it.
+					//MoveToBad(szFileName);
 				}
 				else {
 					if (!IBBS_ProcessPacket(szFileName, srcBBSID)) {
