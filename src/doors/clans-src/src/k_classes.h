@@ -3,7 +3,7 @@
 
 #define MAX_PCLASS_WORDS    11
 
-char *papszPClassKeyWords[MAX_PCLASS_WORDS] = {
+const char *const papszPClassKeyWords[MAX_PCLASS_WORDS] = {
         "Name",
         "Agility",
         "Dexterity",

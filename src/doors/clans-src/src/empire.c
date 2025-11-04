@@ -89,7 +89,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define VIT_AXEMEN      7
 #define VIT_KNIGHTS     6
 
-struct BuildingType BuildingType[NUM_BUILDINGTYPES] = {
+const struct BuildingType BuildingType[NUM_BUILDINGTYPES] = {
 	{"Barracks",            5, 15,  30,  2500 },
 	{"Walls",              15, 5,    7,  1000 },
 	{"Towers",             10, 8,   12,  1500 },

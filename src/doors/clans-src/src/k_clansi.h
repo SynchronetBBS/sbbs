@@ -1,6 +1,6 @@
 #define MAX_INI_WORDS       6
 
-char *papszIniKeyWords[MAX_INI_WORDS] = {
+const char *const papszIniKeyWords[MAX_INI_WORDS] = {
 	"NpcFile",
 	"Language",
 	"Items",

@@ -4,7 +4,7 @@
 #include "structs.h"
 
 extern struct ibbs IBBS;
-extern char aszShortMonthName[12][4];
+extern const char aszShortMonthName[12][4];
 
 void IBBS_Init(void);
 /*

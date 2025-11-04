@@ -3,7 +3,7 @@
 
 #define MAX_NPC_WORDS   13
 
-char *papszNPCKeyWords[MAX_NPC_WORDS] = {
+const char *const papszNPCKeyWords[MAX_NPC_WORDS] = {
 	"Name",
 	"Loyalty",
 	"KnownTopic",

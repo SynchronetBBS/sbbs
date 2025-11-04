@@ -3,7 +3,7 @@
 
 #define MAX_SPELL_WORDS     24
 
-char *papszSpellKeyWords[MAX_SPELL_WORDS] = {
+const char *const papszSpellKeyWords[MAX_SPELL_WORDS] = {
 	"Name",
 	"Agility",
 	"Dexterity",

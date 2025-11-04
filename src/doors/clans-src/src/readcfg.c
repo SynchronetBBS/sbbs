@@ -20,7 +20,7 @@ noreturn void System_Error(char *szErrorMsg);
 
 #define MAX_CONFIG_WORDS          17
 
-char *papszConfigKeyWords[MAX_CONFIG_WORDS] = {
+const char *const papszConfigKeyWords[MAX_CONFIG_WORDS] = {
 	"SysopName",
 	"BBSName",
 	"UseLog",

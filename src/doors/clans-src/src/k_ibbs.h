@@ -1,6 +1,6 @@
 #define MAX_NDX_WORDS   13
 
-char *papszNdxKeyWords[MAX_NDX_WORDS] = {
+const char *const papszNdxKeyWords[MAX_NDX_WORDS] = {
 	"BBSName",
 	"VillageName",
 	"Address",
@@ -18,7 +18,7 @@ char *papszNdxKeyWords[MAX_NDX_WORDS] = {
 
 #define MAX_RT_WORDS    4
 
-char *papszRouteKeyWords[MAX_RT_WORDS] = {
+const char *const papszRouteKeyWords[MAX_RT_WORDS] = {
 	"ROUTE",
 	"CRASH",
 	"HOLD",

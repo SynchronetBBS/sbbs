@@ -111,7 +111,7 @@ static int search_and_construct_ffblk(WIN32_FIND_DATA *, struct ffblk *, bool);
 #endif
 
 struct ibbs IBBS;
-char aszShortMonthName[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+const char aszShortMonthName[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
 				 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
 static bool NoMSG[MAX_IBBSNODES];

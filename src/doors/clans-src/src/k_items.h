@@ -3,7 +3,7 @@
 
 #define MAX_IM_WORDS    22
 
-char *papszItemKeyWords[MAX_IM_WORDS] = {
+const char *const papszItemKeyWords[MAX_IM_WORDS] = {
         "Name",
         "Type",
         "Special",

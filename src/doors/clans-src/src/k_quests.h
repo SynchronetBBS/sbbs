@@ -1,6 +1,6 @@
 #define MAX_QUEST_WORDS     4
 
-char *papszQuestKeyWords[MAX_QUEST_WORDS] = {
+const char *const papszQuestKeyWords[MAX_QUEST_WORDS] = {
 	"Name",
 	"Index",
 	"File",

@@ -66,10 +66,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define COLOR   0xB800
 #define MONO    0xB000
 
-struct Door Door = { false, true,
-	{ 1, 9, 3, 1, 11, 7, 3, 2, 10, 2, 5, 3, 9, 5, 13, 1, 9, 15, 7, 0, 0, 8, 4,
+struct Door Door = { 
+	.AllowScreenPause = true,
+	.ColorScheme = { 1, 9, 3, 1, 11, 7, 3, 2, 10, 2, 5, 3, 9, 5, 13, 1, 9, 15, 7, 0, 0, 8, 4,
 	  1, 1, 1 },
-	false
 };
 
 static FILE *LogFD;

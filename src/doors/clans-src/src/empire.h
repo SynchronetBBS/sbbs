@@ -3,7 +3,7 @@
 
 #include "structs.h"
 
-extern struct BuildingType BuildingType[NUM_BUILDINGTYPES];
+extern const struct BuildingType BuildingType[NUM_BUILDINGTYPES];
 
 void Empire_Stats(struct empire *Empire);
 
