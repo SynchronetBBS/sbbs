@@ -32,8 +32,8 @@ ifdef DEBUG
  CFLAGS	+=	-g -O0 -Wall -pedantic -Wconversion
  LDFLAGS +=	-g
 else
- CFLAGS	+=	-O3 -DNDEBUG -flto
- LDFLAGS +=	-O3 -flto -fwhole-program
+ CFLAGS	+=	-Oz -DNDEBUG -flto
+ LDFLAGS +=	-Oz -flto -fwhole-program
  ifeq ($(os),darwin)
   LDFLAGS +=	-Wl,-x,-dead_strip
  else
