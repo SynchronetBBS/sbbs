@@ -300,6 +300,7 @@ tODResult ODInQueueAddEvent(tODInQueueHandle hInQueue,
  *     Return: kODRCSuccess on succes, or kODRCTimeout if the maximum wait time
  *             is exceeded.
  */
+tODMilliSec ODMaxMSToWait = 1;
 tODResult ODInQueueGetNextEvent(tODInQueueHandle hInQueue,
    tODInputEvent *pEvent, tODMilliSec Timeout)
 {
@@ -360,7 +361,17 @@ tODResult ODInQueueGetNextEvent(tODInQueueHandle hInQueue,
          od_sleep(0);
 
          /* Call od_kernel(). */
+         if (Timeout == OD_NO_TIMEOUT)
+            ODMaxMSToWait = 250; // Kernel timer period
+         else if (Timeout == 0)
+            ODMaxMSToWait = 1;
+         else {
+            ODMaxMSToWait = ODTimerLeft(&Timer);
+            if (ODMaxMSToWait <= 0)
+               ODMaxMSToWait = 1;
+         }
          CALL_KERNEL_IF_NEEDED();
+         ODMaxMSToWait = 1;
       }
    }
 

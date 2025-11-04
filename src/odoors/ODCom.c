@@ -2667,6 +2667,7 @@ tODResult ODComInbound(tPortHandle hPort, int *pnInboundWaiting)
  *
  *     Return: kODRCSuccess on success, or an error code on failure.
  */
+extern tODMilliSec ODMaxMSToWait;
 tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 {
    tPortInfo *pPortInfo = ODHANDLE2PTR(hPort, tPortInfo);
@@ -2844,10 +2845,13 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
             return (kODRCNothingWaiting);
 #else
          int i;
+         tODMilliSec wait = ODMaxMSToWait;
+         if (wait == OD_NO_TIMEOUT || wait > 200)
+            wait = 200;
          struct pollfd pfd = {0};
          pfd.fd = pPortInfo->socket;
          pfd.events = POLLIN | POLLHUP;
-         i = poll(&pfd, 1, bWait ? -1 : 1);
+         i = poll(&pfd, 1, bWait ? -1 : wait);
          if (i == 0)
             return (kODRCNothingWaiting);
          else if (i == -1 || !(pfd.revents & POLLIN)) {
@@ -2891,8 +2895,11 @@ tODResult ODComGetByte(tPortHandle hPort, char *pbtNext, BOOL bWait)
 				FD_ZERO(&socket_set);
 				FD_SET(STDIN_FILENO,&socket_set);
 
+				tODMilliSec wait = ODMaxMSToWait;
+				if (wait == OD_NO_TIMEOUT || wait > 200)
+					wait = 200;
 				tv.tv_sec=0;
-				tv.tv_usec=100;
+				tv.tv_usec=wait * 1000;
 
 				select_ret = select(STDIN_FILENO+1, &socket_set, NULL, NULL, bWait ? NULL : &tv);
 				if (select_ret == -1) {
