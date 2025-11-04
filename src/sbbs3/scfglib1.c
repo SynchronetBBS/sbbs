@@ -834,6 +834,8 @@ int getxtrnnum(scfg_t* cfg, const char* code)
 {
 	int i;
 
+	if (*code == '\0')
+		return cfg->total_xtrns;
 	for (i = 0; i < cfg->total_xtrns; i++) {
 		if (stricmp(cfg->xtrn[i]->code, code) == 0)
 			break;

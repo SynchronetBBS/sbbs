@@ -521,6 +521,7 @@ void tevents_cfg()
 			continue;
 		done = 0;
 		while (!done) {
+			event_t* event = cfg.event[i];
 			k = 0;
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Internal Code", cfg.event[i]->code);
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Start-up Directory", cfg.event[i]->dir);
@@ -545,8 +546,11 @@ void tevents_cfg()
 				        , cfg.event[i]->time / 60, cfg.event[i]->time % 60);
 				snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Execution Time", str);
 			}
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Requires Exclusive Exec"
-			         , cfg.event[i]->misc & EVENT_EXCL ? "Yes":"No");
+			if (event->xtrn[0] != '\0')
+				snprintf(str, sizeof str, "XTRN: %s", event->xtrn);
+			else
+				SAFECOPY(str, (event->misc & EVENT_EXCL) ? "Yes" : "No");
+			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Requires Exclusive Exec", str);
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Force Users Off-line"
 			         , cfg.event[i]->misc & EVENT_FORCE ? "Yes":"No");
 			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", native_opt
@@ -793,12 +797,55 @@ void tevents_cfg()
 					}
 					break;
 				case 9:
-					toggle_flag("Exclusive Execution", &cfg.event[i]->misc, EVENT_EXCL, false,
-					            "`Exclusive Event Execution:`\n"
-					            "\n"
-					            "If this event must be run exclusively (all nodes inactive), set this\n"
-					            "option to `Yes`.\n"
-					            );
+					k = 0;
+					strcpy(opt[k++], "Yes, All Nodes Must Be Inactive");
+					strcpy(opt[k++], "Yes, An External Program Must Not Be Running");
+					strcpy(opt[k++], "No");
+					opt[k][0] = '\0';
+					uifc.helpbuf =
+				        "`Exclusive Event Execution:`\n"
+				        "\n"
+						"If this event `should not` execute unless all nodes are inactive, set this\n"
+						"option to `Yes, All Nodes Must Be Inactive` and when all nodes become\n"
+						"become inactive, the event will execute at the scheduled time or when\n"
+						"triggered via semaphore.\n"
+						"\n"
+						"Alternatively, if this event `should not` execute when a specific Online\n"
+						"Program (e.g. Door Game) is being run by a user of a node, set this\n"
+						"option to `Yes, An External Program Must Not Be Running` and you will\n"
+						"next be prompted to specify which external program requires exclusive\n"
+						"execution with this event.\n"
+						"\n"
+						"If this event can execute regardless of node activity, set this option\n"
+						"to `No`.\n"
+					;
+					k = (event->misc & EVENT_EXCL) ? 0 : (event->xtrn[0] ? 1 : 2);
+					k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, 0
+					              , "Requires Exclusive Execution", opt);
+					if (k == 0) {
+						event->misc |= EVENT_EXCL;
+						event->xtrn[0] = '\0';
+						uifc.changes = true;
+					}
+					else if (k == 1) {
+						str_list_t list = strListInit();
+						for (int j = 0; j < cfg.total_xtrns; ++j)
+							strListPush(&list, cfg.xtrn[j]->code);
+						k = getxtrnnum(&cfg, cfg.event[i]->xtrn);
+						static int xtrn_bar;
+						k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, &xtrn_bar
+								, "Exclusive with Which External Program", list);
+						if (k < 0)
+							break;
+						cfg.event[i]->misc &= ~EVENT_EXCL;
+						SAFECOPY(cfg.event[i]->xtrn, list[k]);
+						uifc.changes = true;
+					}
+					else if (k == 2) {
+						event->misc &= ~EVENT_EXCL;
+						event->xtrn[0] = '\0';
+						uifc.changes = true;
+					}
 					break;
 				case 10:
 					toggle_flag("Force Users Off-line for Event"

@@ -512,6 +512,7 @@ bool read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		SAFECOPY(cfg->event[i]->code, name + 6);
 		SAFECOPY(cfg->event[i]->cmd, iniGetString(section, NULL, "cmd", "", value));
+		SAFECOPY(cfg->event[i]->xtrn, iniGetString(section, NULL, "xtrn", "", value));
 		cfg->event[i]->days = (uint8_t)iniGetUInteger(section, NULL, "days", 0);
 		cfg->event[i]->time = iniGetUInteger(section, NULL, "time", 0);
 		cfg->event[i]->node = iniGetUInteger(section, NULL, "node_num", 0);

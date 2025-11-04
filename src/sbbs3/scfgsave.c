@@ -1043,6 +1043,7 @@ bool write_xtrn_cfg(scfg_t* cfg)
 		iniSetHexInt(&section, name, "mdays", cfg->event[i]->mdays, &ini_style);
 		iniSetUInteger(&section, name, "months", cfg->event[i]->months, &ini_style);
 		iniSetUInteger(&section, name, "errlevel", cfg->event[i]->errlevel, &ini_style);
+		iniSetString(&section, name, "xtrn", cfg->event[i]->xtrn, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}

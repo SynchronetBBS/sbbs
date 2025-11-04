@@ -2826,6 +2826,9 @@ static bool is_time_to_run(time_t now, const event_t* event)
 	if (!is_time_to_run(now, &now_tm, event->last, event->freq, event->time))
 		return false;
 
+	if (xtrn_is_running(&scfg, getxtrnnum(&scfg, event->xtrn)))
+		return false;
+
 	return true;
 }
 

@@ -308,6 +308,7 @@ typedef struct {							/* Generic Timed Event */
 	char			code[LEN_CODE+1],		/* Internal code */
 					dir[LEN_DIR+1], 		/* Start-up directory */
 					cmd[LEN_CMD+1]; 		/* Command line */
+	char			xtrn[LEN_CODE+1];		/* Associated external program (optional) */
 	uint8_t			days;					/* Week days to run event */
 	uint16_t		node,					/* Node to execute event */
 					time,					/* Time to run event */
