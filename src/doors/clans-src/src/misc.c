@@ -33,21 +33,31 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define TOTAL_MONTHS    12
 
+static bool IsLeapYear(int year)
+{
+	if ((year % 4) == 0) {
+		if ((year % 100) == 0)
+			return (year % 400) == 0;
+		return true;
+	}
+	return false;
+}
+
 static int32_t DaysSinceJan1(char szTheDate[])
 {
-	int32_t CurMonth, Days = 0, ThisMonth, ThisYear, ThisDay;
-	bool LeapYear;
-	int16_t NumDaysPerMonth[2][TOTAL_MONTHS] = {
+	int CurMonth, ThisMonth, ThisYear, ThisDay;
+	int NumDaysPerMonth[2][TOTAL_MONTHS] = {
 		{ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
 		{ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
 	};
+	int32_t Days = 0;
 
-	ThisDay = atoi(&szTheDate[3]);
 	ThisMonth = atoi(szTheDate);
+	ThisDay = atoi(&szTheDate[3]);
 	ThisYear = atoi(&szTheDate[6]);
 
 	for (CurMonth = 1; CurMonth < ThisMonth; CurMonth++) {
-		LeapYear = (ThisYear % 4) == 0;
+		bool LeapYear = IsLeapYear(ThisYear);
 
 		Days += (int32_t) NumDaysPerMonth[LeapYear + 0][CurMonth - 1];
 	}
@@ -60,13 +70,13 @@ static int32_t DaysSinceJan1(char szTheDate[])
 
 int32_t DaysSince1970(char szTheDate[])
 {
-	int32_t Days = 0, ThisYear, CurYear;
-	bool LeapYear;
+	int ThisYear, CurYear;
+	int32_t Days = 0;
 
 	ThisYear = atoi(&szTheDate[6]);
 
 	for (CurYear = 1970; CurYear < ThisYear; CurYear++) {
-		LeapYear = (CurYear % 4) == 0;
+		bool LeapYear = IsLeapYear(CurYear);
 
 		if (LeapYear)
 			Days += 366;
