@@ -111,6 +111,8 @@ static int search_and_construct_ffblk(WIN32_FIND_DATA *, struct ffblk *, bool);
 #endif
 
 struct ibbs IBBS;
+char aszShortMonthName[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+				 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
 static bool NoMSG[MAX_IBBSNODES];
 static void IBBS_AddToGame(struct clan *Clan, bool WasLost);
@@ -463,13 +465,15 @@ void RemoveFromUList(const int16_t ClanID[2])
 		return;
 
 	fpNewUList = _fsopen("userlist.new", "wb", _SH_DENYRW);
-	// FIXME: assume file is opened
+	if (!fpNewUList) {
+		LogStr("Unable to create userlist.new");
+		fclose(fpOldUList);
+		return;
+	}
 
 	for (;;) {
 		notEncryptRead_s(UserInfo, &User, fpOldUList, XOR_ULIST)
 			break;
-
-//    printf("Read in %s\n", User.szName);
 
 		// for each user in file, see if same as ClanID
 		if (User.ClanID[0] == ClanID[0] && User.ClanID[1] == ClanID[1]) {

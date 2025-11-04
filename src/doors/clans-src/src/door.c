@@ -588,7 +588,6 @@ void rputs(const char *string)
 }
 
 static const char wdays[7][4] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-static const char months[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 static void LogToWhatever(const char *szString)
 {
 	if (Door_Initialized()) {
@@ -604,7 +603,7 @@ static void LogToWhatever(const char *szString)
 			LogFD = fopen(szFileName, "a");
 			if (LogFD) {
 				fprintf(LogFD, "\n----------  %s %02d %s %02d, %s\n", wdays[tm->tm_wday],
-				    tm->tm_mday, months[tm->tm_mon], tm->tm_year % 100, "The Clans");
+				    tm->tm_mday, aszShortMonthName[tm->tm_mon], tm->tm_year % 100, "The Clans");
 			}
 		}
 		if (LogFD) {

@@ -29,6 +29,7 @@
 #include <OpenDoor.h>
 
 #include "defines.h"
+#include "ibbs.h"
 #include "interbbs.h"
 #include "myibbs.h"
 #include "myopen.h"
@@ -36,10 +37,6 @@
 #include "structs.h"
 #include "system.h"
 #include "video.h"
-
-static char aszShortMonthName[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-								 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-								};
 
 static tBool DirExists(const char *pszDirName);
 static void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut, size_t sz);
@@ -321,8 +318,6 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, const char *pszFil
 	/* file attach addition */
 
 	/* figure out filename if no path in it */
-	// FIXME: In future remove this code
-//   RidPath(pszFileName, szFileNameNoPath);
 	strlcpy(szFileNameNoPath, pszFileName, sizeof(szFileNameNoPath));
 
 	if (Config.MailerType == MAIL_BINKLEY) {

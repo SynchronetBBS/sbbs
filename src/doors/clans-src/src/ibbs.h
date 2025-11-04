@@ -1,7 +1,10 @@
 #ifndef THE_CLANS__IBBS___H
 #define THE_CLANS__IBBS___H
 
+#include "structs.h"
+
 extern struct ibbs IBBS;
+extern char aszShortMonthName[12][4];
 
 void IBBS_Init(void);
 /*

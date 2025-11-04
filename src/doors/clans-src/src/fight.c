@@ -416,25 +416,17 @@ static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct mo
 				if (((Spells[ NPC->SpellsKnown[WhichSpell] - 1]->TypeFlag &
 						SF_MODIFY) || (Spells[ NPC->SpellsKnown[WhichSpell] - 1]->TypeFlag &
 									   SF_INCAPACITATE)) && my_random(5) == 0) {
-					// od_printf("Gonna cast %s\n\r", Spells[NPC->SpellsKnown[WhichSpell] - 1]->szName);
-
 					/* of course, in future, we'd see who is the strongest
 					   dude on other team before casting */
 					/* 1 in 13 chance of casting this spell */
-
 					Move->Action = acCast;
 
 					if (Spells[ NPC->SpellsKnown[WhichSpell] - 1]->Friendly) {
 						/* modify/incapacitate cast */
 						Move->Target = Fight_ChooseVictim(NPC->MyClan);
-						// FIXME:
-//                        od_printf("Gonna cast %s on %s\n\r", Spells[NPC->SpellsKnown[WhichSpell] - 1]->szName,
-//                            NPC->MyClan->Member[*Target]->szName);
 					}
 					else {
 						Move->Target = Fight_ChooseVictim(EnemyClan);
-//                        od_printf("Gonna cast %s on %s\n\r", Spells[NPC->SpellsKnown[WhichSpell] - 1]->szName,
-//                            EnemyClan->Member[*Target]->szName);
 					}
 
 
