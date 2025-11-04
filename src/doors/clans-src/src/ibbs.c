@@ -2564,11 +2564,14 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 
 	/* read it in until end of file */
 	for (;;) {
-		notEncryptRead_s(Packet, &Packet, fp, XOR_PACKET)
+		notEncryptRead_s(Packet, &Packet, fp, XOR_PACKET) {
+			LogStr("* End of packet file");
 			break;
+		}
 
 		// if packet is old, ignore it
 		if (DaysBetween(Packet.szDate, System.szTodaysDate) > MAX_PACKETAGE) {
+			LogStr("* Packet too old, ignoring");
 			fseek(fp, Packet.PacketLength, SEEK_CUR);
 			continue;
 		}
@@ -2582,6 +2585,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			// GameIDs differ AND this isn't a reset packet, so we must ignore
 			// this packet completely
 			if (Packet.PacketType != PT_RESET) {
+				LogStr("* Packet from wrong game, ignoring");
 				fseek(fp, Packet.PacketLength, SEEK_CUR);
 				continue;
 			}
@@ -2595,9 +2599,11 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 
 		// Check that source and destination IDs are valid and active...
 		if (!CheckSourceID(Packet.BBSIDFrom)) {
+			LogStr("* Invalid source ID, ignoring");
 			continue;
 		}
 		if (!CheckDestinationID(Packet.BBSIDTo)) {
+			LogStr("* Invalid destination ID, ignoring");
 			continue;
 		}
 
@@ -2622,6 +2628,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 			else
 				pcBuffer = NULL;
 
+			LogStr("* forwarding to next hop");
 			IBBS_SendPacket(Packet.PacketType, (size_t)Packet.PacketLength, pcBuffer, Packet.BBSIDTo);
 
 			/* move onto next packet in file */
@@ -2777,6 +2784,9 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 				IBBS_SendPacket(PT_DATAOK, sizeof(int16_t)*2, TmpClan->ClanID, Packet.BBSIDFrom);
 				TmpClan->ClanID[0] = SWAP16S(TmpClan->ClanID[0]);
 				TmpClan->ClanID[1] = SWAP16S(TmpClan->ClanID[1]);
+			}
+			else {
+				LogStr("* Clan move without active game");
 			}
 
 			FreeClan(TmpClan);
