@@ -1906,6 +1906,28 @@ int putsmsg(scfg_t* cfg, int usernumber, char *strin)
 	return USER_SUCCESS;
 }
 
+bool xtrn_is_running(scfg_t* cfg, int xtrnnum)
+{
+	int    i;
+	int    file = -1;
+	node_t node;
+	bool   result = false;
+
+	if (!xtrnnum_is_valid(cfg, xtrnnum))
+		return false;
+	for (i = 1; i <= cfg->sys_nodes && !result; ++i) {
+		if (getnodedat(cfg, i, &node, /* lockit: */false, &file) != 0)
+			continue;
+		if (node.status != NODE_INUSE && node.status != NODE_QUIET)
+			continue;
+		if (node.action == NODE_XTRN && node.aux == (xtrnnum + 1))
+			result = true;
+	}
+	CLOSE_OPEN_FILE(file);
+
+	return result;
+}
+
 /****************************************************************************/
 /* Returns any short messages waiting for user number, buffer must be freed */
 /****************************************************************************/

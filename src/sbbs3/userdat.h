@@ -115,8 +115,9 @@ DLLEXPORT bool  set_node_interrupt(scfg_t*, int node_num, bool);
 DLLEXPORT bool  set_node_down(scfg_t*, int node_num, bool);
 DLLEXPORT bool  set_node_rerun(scfg_t*, int node_num, bool);
 DLLEXPORT bool  set_node_status(scfg_t*, int node_num, enum node_status);
-DLLEXPORT bool set_node_misc(scfg_t*, int node_num, uint);
-DLLEXPORT bool set_node_errors(scfg_t*, int node_num, uint);
+DLLEXPORT bool  set_node_misc(scfg_t*, int node_num, uint);
+DLLEXPORT bool  set_node_errors(scfg_t*, int node_num, uint);
+DLLEXPORT bool  xtrn_is_running(scfg_t*, int xtrn_num);
 
 DLLEXPORT uint  finduserstr(scfg_t*, uint usernumber, enum user_field, const char *str
                             , bool del, bool next, void (*progress)(void*, int, int), void* cbdata);
