@@ -888,9 +888,6 @@ void Door_Init(bool Local)
 	od_add_personality("TWOLINER", 1, 23, TwoLiner);
 	od_control.od_default_personality = TwoLiner;
 
-	// 12/23/2001 [au] no longer use time-slicer
-	//    od_control.od_ker_exec = TSlicer_Update;
-
 	od_control.od_cbefore_chat = BeforeChat;
 	od_control.od_cafter_chat = AfterChat;
 

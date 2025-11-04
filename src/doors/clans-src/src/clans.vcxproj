@@ -102,7 +102,6 @@
     <ClInclude Include="systemf.h" />
     <ClInclude Include="tasker.h" />
     <ClInclude Include="trades.h" />
-    <ClInclude Include="tslicer.h" />
     <ClInclude Include="user.h" />
     <ClInclude Include="video.h" />
     <ClInclude Include="village.h" />
