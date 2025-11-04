@@ -80,21 +80,20 @@ static char szTodaysDate[11];
 
 int main(void)
 {
-	SYSTEMTIME system_time;
+	time_t now = time(NULL);
+	struct tm tm = *localtime(&now);
 
 	Video_Init();
 	Config_Init(0, NULL);
 
-	// initialize date
-	GetSystemTime(&system_time);
-	if (system_time.wMonth > 12 || system_time.wMonth < 1)
+	if (tm.tm_mon > 11 || tm.tm_mon < 0)
 		System_Error("Invalid Month");
-	else if (system_time.wDay > 31 || system_time.wDay < 1)
+	else if (tm.tm_mday > 31 || tm.tm_mday < 1)
 		System_Error("Invalid Day");
-	else if (system_time.wYear > 9999 || system_time.wYear < 2025)
+	else if (tm.tm_year > 8099 || tm.tm_year < 125)
 		System_Error("Invalid Year");
-	snprintf(szTodaysDate, sizeof(szTodaysDate), "%02d/%02d/%4d", system_time.wMonth, system_time.wDay,
-			system_time.wYear);
+	snprintf(szTodaysDate, sizeof(szTodaysDate), "%02d/%02d/%4d", tm.tm_mon + 1, tm.tm_mday,
+			tm.tm_year + 1900);
 
 	// load up config
 
@@ -533,10 +532,10 @@ static void DosHelp(char *Topic, char *File)
 static void
 GenerateGameID(char *ptr, size_t sz)
 {
-	SYSTEMTIME st;
+	time_t now = time(NULL);
+	struct tm tm = *localtime(&now);;
 
-	GetSystemTime(&st);
-	snprintf(ptr, sz, "%04d%02d%02d%02d%02d%02d", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+	snprintf(ptr, sz, "%04d%02d%02d%02d%02d%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
 }
 
 static void GoReset(struct ResetData *ResetData, int16_t Option)

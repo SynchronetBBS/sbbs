@@ -141,22 +141,6 @@ delay(unsigned msec)
 	} while (ret == -1 && errno == EINTR);
 }
 
-void
-GetSystemTime(SYSTEMTIME *t)
-{
-	time_t    currtime;
-	struct tm *gottime;
-
-	currtime=time(NULL);
-	gottime=localtime(&currtime);
-	t->wSecond = (short)gottime->tm_sec;
-	t->wMinute = (short)gottime->tm_min;
-	t->wHour = (short)gottime->tm_hour;
-	t->wDay = (short)gottime->tm_mday;
-	t->wMonth = (short)gottime->tm_mon + 1;
-	t->wYear = (short)gottime->tm_year + 1900;
-}
-
 #else
 
 static int Windows = 1;

@@ -74,7 +74,6 @@ int findnext(struct ffblk *fblk);
 FILE * _fsopen(const char *pathname, const char *mode, int flags);
 
 void delay(unsigned msec);
-void GetSystemTime(SYSTEMTIME *t);
 
 #endif
 
