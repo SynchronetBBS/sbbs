@@ -46,7 +46,7 @@ static bool IsLeapYear(int year)
 static int32_t DaysSinceJan1(char szTheDate[])
 {
 	int CurMonth, ThisMonth, ThisYear, ThisDay;
-	int NumDaysPerMonth[2][TOTAL_MONTHS] = {
+	char NumDaysPerMonth[2][TOTAL_MONTHS] = {
 		{ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 },
 		{ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 }
 	};
