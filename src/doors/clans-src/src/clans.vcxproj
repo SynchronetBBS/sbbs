@@ -51,7 +51,6 @@
     <ClInclude Include="alliance.h" />
     <ClInclude Include="alliancem.h" />
     <ClInclude Include="clans.h" />
-    <ClInclude Include="clansf.h" />
     <ClInclude Include="clansini.h" />
     <ClInclude Include="class.h" />
     <ClInclude Include="cmdline.h" />

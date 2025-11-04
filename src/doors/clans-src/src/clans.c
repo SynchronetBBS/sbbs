@@ -34,7 +34,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <OpenDoor.h>
 
-#include "clans.h"                // functions for this module
 #ifdef _WIN32
 #include "cmdline.h" /* Win32 only */
 #endif

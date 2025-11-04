@@ -441,17 +441,6 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, const char *pszFil
 	if (Config.MailerType != MAIL_BINKLEY) {
 		iTemp = strlen(pszMessageText);
 		strlcpy(pszMessageText+iTemp, "FLAGS KFS", nTextSize - iTemp);
-		/*      pszMessageText[ iTemp ] = '';
-		      pszMessageText[ iTemp+1 ] = 'F';
-		      pszMessageText[ iTemp+2 ] = 'L';
-		      pszMessageText[ iTemp+3 ] = 'A';
-		      pszMessageText[ iTemp+4 ] = 'G';
-		      pszMessageText[ iTemp+5 ] = 'S';
-		      pszMessageText[ iTemp+6 ] = ' ';
-		      pszMessageText[ iTemp+7 ] = 'K';
-		      pszMessageText[ iTemp+8 ] = 'F';
-		      pszMessageText[ iTemp+9 ] = 'S';
-		      pszMessageText[ iTemp+10 ] = '\0';    */
 	}
 
 	/* Attempt to send the message */
