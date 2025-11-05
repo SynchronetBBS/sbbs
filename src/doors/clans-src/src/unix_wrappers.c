@@ -1,6 +1,7 @@
 #ifdef __unix__
 
 #include <sys/file.h>
+#include <sys/stat.h>
 #include <errno.h>
 #include <fnmatch.h>
 #include <glob.h>
@@ -76,13 +77,8 @@ static scmp(const void *s1p, const void *s2p)
 	struct Sortable const * const s1 = s1p;
 	struct Sortable const * const s2 = s2p;
 
-	if (s1->st.st_mtim.tv_sec != s2->st.st_mtim.tv_sec) {
-		if (s1->st.st_mtim.tv_sec < s2->st.st_mtim.tv_sec)
-			return -1;
-		return 1;
-	}
-	if (s1->st.st_mtim.tv_nsec != s2->st.st_mtim.tv_nsec) {
-		if (s1->st.st_mtim.tv_nsec < s2->st.st_mtim.tv_nsec)
+	if (s1->st.st_mtime != s2->st.st_mtime) {
+		if (s1->st.st_mtime < s2->st.st_mtime)
 			return -1;
 		return 1;
 	}
