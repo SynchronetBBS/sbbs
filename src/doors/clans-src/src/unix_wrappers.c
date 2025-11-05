@@ -138,20 +138,22 @@ char **FilesOrderedByDate(const char *path, const char *match, bool *error)
 	*out = 0;
 
 	glob_t gl = {0};
-	if (glob(Expanded, GLOB_NOSORT | GLOB_NOCHECK, NULL, &gl)) {
+	int globret = glob(Expanded, GLOB_NOSORT | GLOB_NOCHECK, NULL, &gl);
+	if (globret) {
 		free(Expanded);
-		*error = true;
+		if (globret != GLOB_NOMATCH)
+			*error = true;
 		return NULL;
 	}
 	free(Expanded);
-	if (gl.gl_matchc == 0) {
+	if (gl.gl_pathc == 0) {
 		globfree(&gl);
 		return NULL;
 	}
 
 	size_t sortlen = 0;
-	struct Sortable *sa = malloc(sizeof(struct Sortable) * gl.gl_matchc);
-	for (size_t match = 0; match < gl.gl_matchc; match++) {
+	struct Sortable *sa = malloc(sizeof(struct Sortable) * gl.gl_pathc);
+	for (size_t match = 0; match < gl.gl_pathc; match++) {
 		if (!stat(gl.gl_pathv[match], &sa[sortlen].st)) {
 			if (S_ISDIR(sa[sortlen].st.st_mode))
 				continue;
