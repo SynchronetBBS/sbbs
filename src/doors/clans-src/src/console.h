@@ -6,7 +6,7 @@
 
 bool Door_Initialized(void);
 void rputs(const char *str);
-void CheckMem(const void *Test);
+void CheckMem(void *Test);
 noreturn void System_Error(char *szErrorMsg);
 void LogDisplayStr(const char *szString);
 

@@ -51,7 +51,10 @@ static struct {
 	int16_t NumItems;
 
 	struct item_data *Data[MAX_ITEMS];
-} Items = { false, 0 };
+} Items = {
+	.Initialized = false,
+	.NumItems = 0,
+};
 static void Items_Init(void);
 
 // ------------------------------------------------------------------------- //

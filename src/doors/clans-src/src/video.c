@@ -958,7 +958,8 @@ void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 		else if (isalpha(InputCh) && CurChar && InputStr[CurChar-1] == SPECIAL_CODE)
 			continue;
 		else {  /* valid character input */
-			if (CurChar==MaxChars)   continue;
+			if (CurChar == (size_t)MaxChars)
+				continue;
 			InputStr[CurChar++]=(char)InputCh;
 			InputStr[CurChar] = 0;
 			snprintf(szString, sizeof(szString), "%c", InputCh);
@@ -1357,7 +1358,7 @@ void textattr(uint8_t attrib)
 	CurrentAttr = attrib;
 }
 
-const static char *const cp437_unicode_table[128] = {
+static const char *const cp437_unicode_table[128] = {
 	"\xc3\x87", "\xc3\xbc", "\xc3\xa9", "\xc3\xa2", "\xc3\xa4", "\xc3\xa0", "\xc3\xa5", "\xc3\xa7",
 	"\xc3\xaa", "\xc3\xab", "\xc3\xa8", "\xc3\xaf", "\xc3\xae", "\xc3\xac", "\xc3\x84", "\xc3\x85",
 	"\xc3\x89", "\xc3\xa6", "\xc3\x86", "\xc3\xb4", "\xc3\xb6", "\xc3\xb2", "\xc3\xbb", "\xc3\xb9",
@@ -1554,7 +1555,7 @@ static unsigned getseq(void)
 #define K_LEFT      75
 #define K_RIGHT     77
 
-const static struct keys {
+static const struct keys {
 	int ret;
 	const char *seq;
 } allkeys[] = {

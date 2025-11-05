@@ -901,7 +901,7 @@ void ListItems(struct clan *Clan)
 }
 
 
-static void ItemEquipResults(struct pc *PC, struct item_data *Item, bool Equipping)
+static void ItemEquipResults(struct item_data *Item, bool Equipping)
 /*
  * This functions outputs results of equipping an item.
  */
@@ -1111,7 +1111,7 @@ void ItemStats(void)
 								PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->szName, PClan->Items[ItemIndex].szName);
 						rputs(szString);
 
-						ItemEquipResults(PClan->Member[PClan->Items[ItemIndex].UsedBy-1], &PClan->Items[ItemIndex], false);
+						ItemEquipResults(&PClan->Items[ItemIndex], false);
 
 						PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->Weapon = 0;
 						PClan->Items[ItemIndex].UsedBy = 0;
@@ -1121,7 +1121,7 @@ void ItemStats(void)
 								PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->szName, PClan->Items[ItemIndex].szName);
 						rputs(szString);
 
-						ItemEquipResults(PClan->Member[PClan->Items[ItemIndex].UsedBy-1], &PClan->Items[ItemIndex], false);
+						ItemEquipResults(&PClan->Items[ItemIndex], false);
 
 						PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->Armor = 0;
 						PClan->Items[ItemIndex].UsedBy = 0;
@@ -1131,7 +1131,7 @@ void ItemStats(void)
 								PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->szName, PClan->Items[ItemIndex].szName);
 						rputs(szString);
 
-						ItemEquipResults(PClan->Member[PClan->Items[ItemIndex].UsedBy-1], &PClan->Items[ItemIndex], false);
+						ItemEquipResults(&PClan->Items[ItemIndex], false);
 
 						PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->Shield = 0;
 						PClan->Items[ItemIndex].UsedBy = 0;
@@ -1282,7 +1282,7 @@ void ItemStats(void)
 											PClan->Member[WhoEquip]->szName, PClan->Items[iTemp].szName);
 									rputs(szString);
 
-									ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[iTemp], false);
+									ItemEquipResults(&PClan->Items[iTemp], false);
 
 									PClan->Member[WhoEquip]->Weapon = 0;
 									PClan->Items[iTemp].UsedBy = 0;
@@ -1299,7 +1299,7 @@ void ItemStats(void)
 							PClan->Member[WhoEquip]->Weapon = ItemIndex + 1;
 							PClan->Items[ItemIndex].UsedBy = WhoEquip + 1;
 							// tell them what happened to his stats
-							ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[ItemIndex], true);
+							ItemEquipResults(&PClan->Items[ItemIndex], true);
 							DoneEquipping = true;
 							break;
 						case I_ARMOR :
@@ -1312,7 +1312,7 @@ void ItemStats(void)
 											PClan->Member[WhoEquip]->szName, PClan->Items[iTemp].szName);
 									rputs(szString);
 
-									ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[iTemp], false);
+									ItemEquipResults(&PClan->Items[iTemp], false);
 
 									PClan->Member[WhoEquip]->Armor = 0;
 									PClan->Items[iTemp].UsedBy = 0;
@@ -1328,7 +1328,7 @@ void ItemStats(void)
 							PClan->Member[WhoEquip]->Armor = ItemIndex + 1;
 							PClan->Items[ItemIndex].UsedBy = WhoEquip + 1;
 							// tell them what happened to his stats
-							ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[ItemIndex], true);
+							ItemEquipResults(&PClan->Items[ItemIndex], true);
 							DoneEquipping = true;
 							break;
 						case I_SHIELD :
@@ -1341,7 +1341,7 @@ void ItemStats(void)
 											PClan->Member[WhoEquip]->szName, PClan->Items[iTemp].szName);
 									rputs(szString);
 
-									ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[iTemp], false);
+									ItemEquipResults(&PClan->Items[iTemp], false);
 
 									PClan->Member[WhoEquip]->Shield = 0;
 									PClan->Items[iTemp].UsedBy = 0;
@@ -1357,7 +1357,7 @@ void ItemStats(void)
 							PClan->Member[WhoEquip]->Shield = ItemIndex + 1;
 							PClan->Items[ItemIndex].UsedBy = WhoEquip + 1;
 							// tell them what happened to his stats
-							ItemEquipResults(PClan->Member[WhoEquip], &PClan->Items[ItemIndex], true);
+							ItemEquipResults(&PClan->Items[ItemIndex], true);
 							DoneEquipping = true;
 							break;
 					}

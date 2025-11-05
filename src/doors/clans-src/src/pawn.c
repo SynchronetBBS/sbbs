@@ -118,7 +118,7 @@ static void PS_Close(struct item_data **PS_Items)
 	}
 }
 
-static void PS_List(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
+static void PS_List(struct item_data *PS_Items[MAX_PSITEMS])
 {
 	// list items of a specified type -- in future use type
 
@@ -150,7 +150,7 @@ static void PS_List(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 }
 
 
-static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
+static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS])
 {
 	bool Done;
 	int16_t ItemIndex;
@@ -168,7 +168,7 @@ static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS], int16_t ItemType)
 				break;
 
 			case 'L' :  // list items
-				PS_List(PS_Items, ItemType);
+				PS_List(PS_Items);
 				break;
 
 			case 'X' :  // examine item
@@ -454,7 +454,7 @@ void PawnShop(void)
 		rputs("\n\n");
 		switch (GetChoice("Pawn Menu", ST_ENTEROPTION, szTheOptions, "BSVQ?", 'Q', true)) {
 			case 'B' :    /* buy */
-				PS_Buy(PS_Items, 0);
+				PS_Buy(PS_Items);
 				break;
 			case 'S' :    /* sell items */
 				PS_Sell(PS_Items);

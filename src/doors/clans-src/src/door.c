@@ -300,6 +300,8 @@ static void TwoLiner(unsigned char which)
 			xputs("[F9] Toggle Status Line ON/OFF  [Up] Give Time to user  [Down] Take Time        ", 0, 23);
 			break;
 	}
+#else
+	(void)which;
 #endif
 }
 

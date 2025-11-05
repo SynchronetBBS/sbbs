@@ -71,8 +71,8 @@ struct Sortable {
 	struct stat st;
 };
 
-int
-static scmp(const void *s1p, const void *s2p)
+static int
+scmp(const void *s1p, const void *s2p)
 {
 	struct Sortable const * const s1 = s1p;
 	struct Sortable const * const s2 = s2p;

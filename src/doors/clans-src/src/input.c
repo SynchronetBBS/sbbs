@@ -39,6 +39,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "mstrings.h"
 #include "myopen.h"
 #include "structs.h"
+#include "system.h"
 
 // ------------------------------------------------------------------------- //
 
@@ -82,7 +83,6 @@ static int16_t InsideStr(const char *SubString, const char *FullString, int16_t 
 	if (AtStart == false) {
 		/* if AtStart set, only checks start of string for match */
 		for (CurLetter = 0; CurLetter < NumLetters; CurLetter++) {
-			//od_printf("Comparing letter #%d:  ", CurLetter);
 			if (Similar(&FullString[CurLetter], SubString))
 				return true;
 		}
@@ -355,6 +355,8 @@ void GetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 	char Spaces[85] = "                                                                                     ";
 	char BackSpaces[85] = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
 	char TempStr[190];
+	if (MaxChars < 0)
+		System_Error("Negative MaxChars in GetStr()");
 
 	Spaces[MaxChars] = 0;
 	BackSpaces[MaxChars] = 0;
@@ -401,7 +403,7 @@ void GetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 		else if (isalpha(InputCh) && CurChar && InputStr[CurChar - 1] == SPECIAL_CODE)
 			continue;
 		else { /* valid character input */
-			if (CurChar == MaxChars)
+			if (CurChar >= (size_t)MaxChars)
 				continue;
 			InputStr[CurChar++] = InputCh;
 			InputStr[CurChar] = 0;
@@ -441,7 +443,7 @@ char GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, cha
 	snprintf(TimeStr, sizeof(TimeStr), " |0H[|0I%02d:%02d|0H] ", HoursLeft, MinutesLeft);
 
 	/* figure out default char */
-	for (cTemp = 0; cTemp < (signed)strlen(Keys); cTemp++) {
+	for (cTemp = 0; cTemp < strlen(Keys); cTemp++) {
 		if (DefChar == Keys[cTemp])
 			break;
 	}
@@ -478,7 +480,7 @@ char GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, cha
 		cTemp = DefChoice;
 	}
 	else
-		for (cTemp = 0; cTemp < (signed)strlen(Keys); cTemp++) {
+		for (cTemp = 0; cTemp < strlen(Keys); cTemp++) {
 			if (Choice == Keys[cTemp])
 				break;
 		}

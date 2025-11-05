@@ -55,7 +55,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define CLANCOMBATADAY  5
 
 
-static void ResetMenu(bool InterBBSGame);
+static void ResetMenu(void);
 
 static bool YesNo(char *Query, bool Current);
 
@@ -96,12 +96,12 @@ int main(void)
 
 	// load up config
 
-	ResetMenu(Config.InterBBS);
+	ResetMenu();
 	Video_Close();
 	return (0);
 }
 
-static void ResetMenu(bool InterBBSGame)
+static void ResetMenu(void)
 {
 	char CurOption = 0;
 	int  cInput;
@@ -755,9 +755,8 @@ static void CreateVillageDat(struct ResetData *ResetData)
 {
 	FILE *fp;
 	struct village_data Village_Data = {
-		{ 1, 9, 3, 1, 11, 7, 3, 2, 10, 2, 5, 3, 9, 5, 13, 1, 9, 15, 7, 0, 0, 8, 4,
-			1, 8, 1 },
-		{ -1 }
+		.ColorScheme = { 1, 9, 3, 1, 11, 7, 3, 2, 10, 2, 5, 3, 9, 5, 13, 1, 9, 15, 7, 0, 0, 8, 4, 1, 8, 1 },
+		.TownType = -1,
 	};
 
 	Village_Data.PublicMsgIndex = 1;

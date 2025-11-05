@@ -488,4 +488,3 @@ void TrainMember(void)
 		}
 	}
 }
-

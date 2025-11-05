@@ -142,7 +142,7 @@ static void AddToPak(char *pszFileName, char *pszFileAlias, FILE *fpPakFile)
 		fclose(fpInput);
 		exit(1);
 	}
-	while (CurByte != FileHeader.lFileSize) {
+	while ((int32_t)CurByte != FileHeader.lFileSize) {
 		if (NumBytes > 64000) {
 			if (fread(Chunk, 64000, 1, fpInput) != 1) {
 				puts("Read error");

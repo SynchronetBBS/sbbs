@@ -140,8 +140,6 @@ static void Fight_GetBattleOrder(struct order *BattleOrder, struct clan *Team[2]
 			BattleOrder[CurOrder].TeamNum = CurHighest.WhichTeam;
 			BattleOrder[CurOrder].MemberNum = CurHighest.WhichPlayer;
 			SortData[ CurHighest.WhichSortData ].InList = true;
-
-			// od_printf("Using %s\n\r", Team[ Turn[CurOrder].WhichTeam ]->Member[ Turn[CurOrder].WhichPlayer ]->szName);
 		}
 	}
 
@@ -199,8 +197,6 @@ static int16_t Fight_ChooseVictim(struct clan *EnemyClan)
 	if (my_random(100) < 60) {
 		/* attack guy with lowest HP percentage */
 
-		//od_printf("Choosing guy with lowest HP\n\r");
-
 		LowestEnergy = 110; /* set lowest energy percentage to 110% */
 
 		for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
@@ -224,7 +220,6 @@ static int16_t Fight_ChooseVictim(struct clan *EnemyClan)
 	}
 	else {
 		/* attack anyone at random */
-		//od_printf("Choosing guy at random\n\r");
 
 		/* find how many PCs in enemy clan */
 		NumPCs = NumMembers(EnemyClan, true);
@@ -377,7 +372,6 @@ static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct mo
 				/* according to spell type, see if we can using randomness */
 				if ((Spells[ NPC->SpellsKnown[WhichSpell] - 1]->TypeFlag &
 						SF_RAISEUNDEAD) && (my_random(10) == 0)) {
-					// od_printf("Gonna cast %s\n\r", Spells[NPC->SpellsKnown[WhichSpell] - 1]->szName);
 
 					/* 1 in 10 chance of casting this spell */
 
@@ -390,7 +384,6 @@ static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct mo
 				if ((Spells[ NPC->SpellsKnown[WhichSpell] - 1]->TypeFlag &
 						SF_BANISHUNDEAD) && my_random(5) == 0 &&
 						NumUndeadMembers(EnemyClan) != 0) {
-					// od_printf("Gonna cast %s\n\r", Spells[NPC->SpellsKnown[WhichSpell] - 1]->szName);
 
 					/* ALSO check to see if other clan even has undead */
 					/* 1 in 5 chance of casting this spell */
@@ -403,7 +396,6 @@ static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct mo
 				}
 				if ((Spells[ NPC->SpellsKnown[WhichSpell] - 1]->TypeFlag &
 						SF_DAMAGE) && my_random(3) == 0) {
-					// od_printf("Gonna cast %s\n\r", Spells[NPC->SpellsKnown[WhichSpell] - 1]->szName);
 
 					/* 1 in 3 chance of casting this spell */
 
@@ -446,7 +438,6 @@ static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct mo
 	Move->Target = Fight_ChooseVictim(EnemyClan);
 
 	/* otherwise attack */
-	// od_printf("Gonna attack %s\n\r", EnemyClan->Member[*Target]->szName);
 }
 
 static void Fight_Stats(struct clan *PlayerClan, struct clan *MobClan, struct pc *WhichPC)
@@ -748,8 +739,6 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 	}
 
 	if (VictimClan->Member[Who]->HP <= 0) {
-		//od_printf("in battleattack\n\r");
-
 		/* according to how bad the hit was, figure out status */
 		if (VictimClan->szName[0] == 0) {
 			VictimClan->Member[Who]->Status = Dead;
@@ -860,7 +849,7 @@ static bool Fight_DoMove(struct pc *AttackerPC, struct move Move, struct clan *D
 	return false;
 }
 
-static int16_t GetTarget2(struct clan *Clan, int16_t Default)
+static int16_t GetTarget2(struct clan *Clan)
 {
 	int16_t CurMember, MemberNumber, CurIndex;
 	int16_t Index[MAX_MEMBERS];             // indexes who's around to fight
@@ -974,11 +963,11 @@ static bool Fight_ReadyScroll(struct pc *PC, struct clan *TargetClan, struct mov
 	if (Spells[SpellChosen]->Target) {
 		if (Spells[SpellChosen]->Friendly) {
 			/* choose from your players */
-			Move->Target = GetTarget2(PC->MyClan, 0);
+			Move->Target = GetTarget2(PC->MyClan);
 		}
 		else {
 			/* choose from enemies */
-			Move->Target = GetTarget2(TargetClan, 0);
+			Move->Target = GetTarget2(TargetClan);
 		}
 		if (Move->Target == -1) {
 			rputs(ST_ABORTED);
@@ -1090,11 +1079,11 @@ static bool Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct mov
 	if (Spells[SpellChosen]->Target) {
 		if (Spells[SpellChosen]->Friendly) {
 			/* choose from your players */
-			Move->Target = GetTarget2(PC->MyClan, 0);
+			Move->Target = GetTarget2(PC->MyClan);
 		}
 		else {
 			/* choose from enemies */
-			Move->Target = GetTarget2(VictimClan, 0);
+			Move->Target = GetTarget2(VictimClan);
 		}
 		if (Move->Target == -1) {
 			rputs(ST_ABORTED);
@@ -1446,12 +1435,8 @@ static int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16
 		return -1;
 	}
 
-	//od_printf("%d valid monsters found.\n\r", ValidMonsters);
-
 	iTemp = (int16_t)my_random(ValidMonsters);
 	MonsterChosen = ValidMonIndex[ iTemp ];
-
-	//od_printf("Using #%d in the file.\n\r", MonsterChosen);
 
 	/* fseek there and read it in */
 	fseek(FileHeader.fp,

@@ -26,8 +26,6 @@
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
 
-#include <OpenDoor.h>
-
 #include "defines.h"
 #include "ibbs.h"
 #include "interbbs.h"

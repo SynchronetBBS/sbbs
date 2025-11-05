@@ -38,7 +38,7 @@ struct Language *Language;
 
 // ------------------------------------------------------------------------- //
 
-void CheckMem(const void *Test)
+void CheckMem(void *Test)
 /*
  * Gives system error if the pointer is NULL.
  */

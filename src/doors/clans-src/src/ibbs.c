@@ -1860,7 +1860,7 @@ static FILE *getPacketFP(int16_t DestID)
 	e->fp = fp;
 	e->next = NULL;
 	e->szFullFileName = strdup(szFullFileName);
-	CheckMem(e->szFullFileName);
+	CheckMem((void*)e->szFullFileName);
 	if (last == NULL)
 		IBBS_PacketList = e;
 	else
@@ -3074,6 +3074,8 @@ static bool SkipAfterFound(void *cbdata)
 
 static void SetSkip(const char *fname, void *cbdata)
 {
+	(void)fname;
+
 	bool *skip = cbdata;
 	*skip = true;
 }
@@ -3101,6 +3103,7 @@ static bool CheckMessageFile(const char *pszFileName, tIBInfo *InterBBSInfo, int
 
 static void DeleteFound(const char *fname, void *cbdata)
 {
+	(void)cbdata;
 	char msg[256];
 	snprintf(msg, sizeof(msg), "|08* |07Deleting %s from netmail directory\n", FileName(fname));
 	LogDisplayStr(msg);

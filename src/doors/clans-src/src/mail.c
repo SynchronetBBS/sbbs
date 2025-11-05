@@ -71,7 +71,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define ALL_VILLAGES    -1
 
-#define MSGTXT_SZ	4000U
+#define MSGTXT_SZ	4000
 
 static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t CurLine);
 static void SendMsj(struct Message *Message, int16_t WhichVillage);
@@ -338,8 +338,6 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 			// else continue
 			NumLines--;
 			CurChar -= (strlen(OldLine) + 1);
-			if (CurChar < 0)
-				CurChar = 0;
 
 			strlcpy(Line1, OldLine, sizeof(Line1));
 
@@ -354,8 +352,6 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 
 
 		// else continue
-		if (CurChar < 0)
-			CurChar = 0;
 		Message.Data.Offsets[NumLines] = (int16_t)CurChar;
 		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, (size_t)(MSGTXT_SZ - (unsigned)CurChar));
 		CurChar += (strlen(Line1) + 1);
@@ -414,7 +410,7 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 		System_Error("String too long in QInputStr()");
 
 	for (;;) {
-		if (cur_char == (*JustLen)) {
+		if (cur_char == (size_t)(*JustLen)) {
 			String[cur_char] = 0;
 
 			// break off last String
@@ -666,7 +662,7 @@ static void Reply_Message(struct Message *Reply)
 			if ((LastLine < 1 || LastLine > Reply->Data.NumLines || LastLine < FirstLine) == false) {
 				if (FirstLine != LastLine) {
 					for (i = FirstLine;  i <= LastLine; i++) {
-						if (CurChar >= MSGTXT_SZ || CurChar < 0)
+						if (CurChar >= MSGTXT_SZ)
 							System_Error("Mem error in mail\n%P");
 
 						Message.Data.Offsets[NumLines] = (int16_t)CurChar;
@@ -675,14 +671,14 @@ static void Reply_Message(struct Message *Reply)
 						Message.Data.MsgTxt[CurChar + 78] = 0;
 
 						CurChar += (strlen(&Message.Data.MsgTxt[CurChar]) + 1);
-						if (CurChar >= MSGTXT_SZ || CurChar < 0)
+						if (CurChar >= MSGTXT_SZ)
 							System_Error("Mem error in mail\n%P");
 
 						NumLines++;
 					}
 				}
 				else {
-					if (CurChar >= MSGTXT_SZ || CurChar < 0)
+					if (CurChar >= MSGTXT_SZ)
 						System_Error("Mem error in mail\n%P");
 
 					Message.Data.Offsets[NumLines] = (int16_t)CurChar;
@@ -691,7 +687,7 @@ static void Reply_Message(struct Message *Reply)
 					Message.Data.MsgTxt[CurChar+78] = 0;
 
 					CurChar += (strlen(&Message.Data.MsgTxt[CurChar]) + 1);
-					if (CurChar >= MSGTXT_SZ || CurChar < 0)
+					if (CurChar >= MSGTXT_SZ)
 						System_Error("Mem error in mail\n%P");
 
 					NumLines++;
@@ -800,8 +796,6 @@ static void Reply_Message(struct Message *Reply)
 			// else continue
 			NumLines--;
 			CurChar -= (strlen(OldLine) + 1);
-			if (CurChar < 0)
-				CurChar = 0;
 
 			strlcpy(Line1, OldLine, sizeof(Line1));
 
@@ -813,13 +807,13 @@ static void Reply_Message(struct Message *Reply)
 			Line2[0] = 0;
 			continue;
 		}
-		if (CurChar >= MSGTXT_SZ || CurChar < 0)
+		if (CurChar >= MSGTXT_SZ)
 			System_Error("Mem error in mail\n%P");
 
 		Message.Data.Offsets[NumLines] = (int16_t)CurChar;
 		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, MSGTXT_SZ - (size_t)CurChar);
 		CurChar += (strlen(Line1) + 1);
-		if (CurChar >= MSGTXT_SZ || CurChar < 0)
+		if (CurChar >= MSGTXT_SZ)
 			System_Error("Mem error in mail\n%P");
 
 		strlcpy(OldLine, Line1, sizeof(OldLine));
@@ -1104,7 +1098,7 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 		System_Error("String too long in InputStr()");
 
 	for (;;) {
-		if (cur_char == (*JustLen)) {
+		if (cur_char == (size_t)(*JustLen)) {
 			String[cur_char] = 0;
 
 			// break off last String
@@ -1399,8 +1393,6 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 			// else continue
 			NumLines--;
 			CurChar -= (strlen(OldLine) + 1);
-			if (CurChar < 0)
-				CurChar = 0;
 
 			strlcpy(Line1, OldLine, sizeof(Line1));
 
@@ -1413,14 +1405,14 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 			continue;
 		}
 
-		if (CurChar >= MSGTXT_SZ || CurChar < 0)
+		if (CurChar >= MSGTXT_SZ)
 			System_Error("Mem error in mail\n%P");
 
 		// else continue
 		Message.Data.Offsets[NumLines] = (int16_t)CurChar;
 		strlcpy(&Message.Data.MsgTxt[CurChar], Line1, MSGTXT_SZ - (size_t)CurChar);
 		CurChar += (strlen(Line1) + 1);
-		if (CurChar >= MSGTXT_SZ || CurChar < 0)
+		if (CurChar >= MSGTXT_SZ)
 			System_Error("Mem error in mail\n%P");
 
 		strlcpy(OldLine, Line1, sizeof(OldLine));
@@ -1432,7 +1424,7 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 			break;
 		}
 	}
-	if (CurChar >= MSGTXT_SZ || CurChar < 0)
+	if (CurChar >= MSGTXT_SZ)
 		System_Error("Mem error in mail\n%P");
 	Message.Data.Length = (int16_t)CurChar;
 	Message.Data.NumLines = NumLines;

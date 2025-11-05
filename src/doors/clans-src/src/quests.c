@@ -1118,7 +1118,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 				fread(&DataLength, sizeof(char), 1, FileHeader.fp);
 
 				pszOptionNames[0] = malloc(DataLength);
-				CheckMem(pszOptionNames[0]);
+				CheckMem((void*)pszOptionNames[0]);
 				fread((char*)pszOptionNames[0], DataLength, 1, FileHeader.fp);
 
 				for (CurOption = 1; CurOption < MAX_OPTIONS;) {
@@ -1159,7 +1159,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 						fread(&DataLength, sizeof(char), 1, FileHeader.fp);
 
 						pszOptionNames[CurOption] = malloc(DataLength);
-						CheckMem(pszOptionNames[CurOption]);
+						CheckMem((void*)pszOptionNames[CurOption]);
 						fread((char*)pszOptionNames[CurOption], DataLength, 1, FileHeader.fp);
 
 					}

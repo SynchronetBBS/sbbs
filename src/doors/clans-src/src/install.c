@@ -489,7 +489,7 @@ static bool FileExists(char *szFileName)
 
 static void FreeFiles(void)
 {
-	for (int i = 0; i < sizeof(FileInfo) / sizeof(*FileInfo); i++) {
+	for (size_t i = 0; i < sizeof(FileInfo) / sizeof(*FileInfo); i++) {
 		free(FileInfo[i].szFileName);
 		FileInfo[i].szFileName = NULL;
 		FileInfo[i].WriteType = QUERY;
