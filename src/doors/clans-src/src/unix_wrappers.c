@@ -3,6 +3,7 @@
 #include <sys/file.h>
 #include <errno.h>
 #include <fnmatch.h>
+#include <glob.h>
 #include <stdio.h>      // Only need for printf() debugging.
 #include <stdlib.h>
 #include <time.h>
@@ -10,83 +11,6 @@
 
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
-
-int
-findfirst(char *pathname, struct ffblk *fblk, int attrib)
-{
-	char  path[MAXPATH+3];
-	struct dirent *dp;
-	struct stat   file_stat;
-
-	strlcpy(&path[2], pathname, sizeof(path) - 2);
-	if (path[2] != '/' && path[2] != '~')  {
-		path[0]='.';
-		path[1]='/';
-	}
-	else  {
-		memmove(path, &path[2], strlen(&path[2])+1);
-	}
-	*(strrchr(path,'/')+1)=0;
-	fblk->dir_handle = opendir(path);
-	if (fblk->dir_handle == NULL)
-		return 1;
-	strlcpy(fblk->pathname, strrchr(pathname,'/')+1, sizeof(fblk->pathname));
-
-	while ((dp = readdir(fblk->dir_handle)) != NULL)
-		if (!fnmatch(fblk->pathname,dp->d_name,0)) {
-			stat(dp->d_name,&file_stat);
-			// Do this if it's ever needed (Not yet)
-			(*fblk).lfn_ctime=0;
-			(*fblk).lfn_cdate=0;
-			(*fblk).lfn_atime=0;
-			(*fblk).lfn_adate=0;
-			(*fblk).ff_ftime=0;
-			(*fblk).ff_fdate=0;
-			(*fblk).ff_fsize=file_stat.st_size;
-
-			if (S_ISDIR(file_stat.st_mode))
-				(*fblk).ff_attrib=FA_DIREC;
-			if (strrchr(dp->d_name,'/') != NULL)
-				strlcpy((*fblk).ff_name, strrchr(dp->d_name,'/')+1, sizeof((*fblk).ff_name));
-			else
-				strlcpy((*fblk).ff_name, dp->d_name, sizeof((*fblk).ff_name));
-			return(0);
-		}
-
-	closedir(fblk->dir_handle);
-	return(1);
-}
-
-int
-findnext(struct ffblk *fblk)
-{
-	struct dirent *dp;
-	struct stat   file_stat;
-
-	while ((dp = readdir(fblk->dir_handle)) != NULL)
-		if (!fnmatch(fblk->pathname,dp->d_name,0)) {
-			stat(dp->d_name,&file_stat);
-			// Do this if it's ever needed (Not yet)
-			(*fblk).lfn_ctime=0;
-			(*fblk).lfn_cdate=0;
-			(*fblk).lfn_atime=0;
-			(*fblk).lfn_adate=0;
-			(*fblk).ff_ftime=0;
-			(*fblk).ff_fdate=0;
-			(*fblk).ff_fsize=file_stat.st_size;
-
-			if (S_ISDIR(file_stat.st_mode))
-				(*fblk).ff_attrib=FA_DIREC;
-			if (strrchr(dp->d_name,'/')!=NULL)
-				strlcpy((*fblk).ff_name, strrchr(dp->d_name,'/')+1, sizeof((*fblk).ff_name));
-			else
-				strlcpy((*fblk).ff_name,dp->d_name, sizeof((*fblk).ff_name));
-			return(0);
-		}
-
-	closedir(fblk->dir_handle);
-	return(1);
-}
 
 FILE *
 _fsopen(const char *pathname, const char *mode, int shflag)
@@ -139,6 +63,132 @@ delay(unsigned msec)
 	do {
 		ret = nanosleep(&ts, &ts);
 	} while (ret == -1 && errno == EINTR);
+}
+
+struct Sortable {
+	const char *p;
+	struct stat st;
+};
+
+int
+static scmp(const void *s1p, const void *s2p)
+{
+	struct Sortable const * const s1 = s1p;
+	struct Sortable const * const s2 = s2p;
+
+	if (s1->st.st_mtim.tv_sec != s2->st.st_mtim.tv_sec) {
+		if (s1->st.st_mtim.tv_sec < s2->st.st_mtim.tv_sec)
+			return -1;
+		return 1;
+	}
+	if (s1->st.st_mtim.tv_nsec != s2->st.st_mtim.tv_nsec) {
+		if (s1->st.st_mtim.tv_nsec < s2->st.st_mtim.tv_nsec)
+			return -1;
+		return 1;
+	}
+	return strcmp(s1->p, s2->p);
+}
+
+const char *FileName(const char *path)
+{
+	const char *LastSlash = strrchr(path, '/');
+	if (LastSlash)
+		return &LastSlash[1];
+	return path;
+}
+
+void FreeFileList(char **fl)
+{
+	for (char **f = fl; *f; f++)
+		free(*f);
+	free(fl);
+}
+
+char **FilesOrderedByDate(const char *path, const char *match, bool *error)
+{
+	*error = false;
+	size_t pathlen = path ? strlen(path) : 0;
+	bool add_slash = pathlen && path[pathlen - 1] != '/';
+	char *Expanded = malloc(pathlen + add_slash + strlen(match) * 4 + 1);
+	if (Expanded == NULL) {
+		*error = true;
+		return NULL;
+	}
+	char *out = Expanded;
+	if (path) {
+		for (const char *in = path; *in; in++) {
+			*(out++) = *(in);
+		}
+		if (add_slash)
+			*(out++) = '/';
+	}
+	// Expand to make case insentitive...
+	for (const char *in = match; *in; in++) {
+		if (*in >= 'a' && *in <= 'z') {
+			*(out++) = '[';
+			*(out++) = *in & 0x5F;
+			*(out++) = *in;
+			*(out++) = ']';
+		}
+		else if (*in >= 'A' && *in <= 'Z') {
+			*(out++) = '[';
+			*(out++) = *in;
+			*(out++) = *in | 0x20;
+			*(out++) = ']';
+		}
+		else
+			*(out++) = *in;
+	}
+	*out = 0;
+
+	glob_t gl = {0};
+	if (glob(Expanded, GLOB_NOSORT | GLOB_NOCHECK, NULL, &gl)) {
+		free(Expanded);
+		*error = true;
+		return NULL;
+	}
+	free(Expanded);
+	if (gl.gl_matchc == 0) {
+		globfree(&gl);
+		return NULL;
+	}
+
+	size_t sortlen = 0;
+	struct Sortable *sa = malloc(sizeof(struct Sortable) * gl.gl_matchc);
+	for (size_t match = 0; match < gl.gl_matchc; match++) {
+		if (!stat(gl.gl_pathv[match], &sa[sortlen].st)) {
+			if (S_ISDIR(sa[sortlen].st.st_mode))
+				continue;
+			sa[sortlen].p = gl.gl_pathv[match];
+			sortlen++;
+		}
+	}
+	if (sortlen == 0) {
+		free(sa);
+		globfree(&gl);
+		return NULL;
+	}
+	qsort(sa, sortlen, sizeof(struct Sortable), scmp);
+	char **ret = calloc(sortlen + 1, sizeof(char *));
+	if (ret == NULL) {
+		*error = true;
+		free(sa);
+		globfree(&gl);
+		return NULL;
+	}
+	for (size_t match = 0; match < sortlen; match++) {
+		ret[match] = strdup(sa[match].p);
+		if (ret[match] == NULL) {
+			globfree(&gl);
+			free(sa);
+			FreeFileList(ret);
+			*error = true;
+			return NULL;
+		}
+	}
+	globfree(&gl);
+	free(sa);
+	return ret;
 }
 
 #else

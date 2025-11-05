@@ -79,37 +79,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define RECONDAYS       5
 
-#ifdef _WIN32
-struct ffblk {
-	char ff_reserved[21];
-	char ff_attrib;
-	unsigned short ff_ftime;
-	unsigned short ff_fdate;
-	int32_t ff_fsize;
-	char ff_name[13];
-	HANDLE ff_findhandle; /* Added for Win32's API */
-	int   ff_findattribute; /* Added for attribute matching on Win32 */
-};
-
-int findfirst(const char *pathname, struct ffblk *ffblk, int attribute);
-int findnext(struct ffblk *);
-static void convert_attribute(char *, uint32_t);
-static int search_and_construct_ffblk(WIN32_FIND_DATA *, struct ffblk *, bool);
-
-#ifndef _A_VOLID
-# define _A_VOLID 0x08 /* not normally used in Win32 */
-#endif
-
-/* File Attributes */
-#define FA_NORMAL _A_NORMAL /* 0x00 */
-#define FA_RDONLY _A_RDONLY /* 0x01 */
-#define FA_HIDDEN _A_HIDDEN /* 0x02 */
-#define FA_SYSTEM _A_SYSTEM /* 0x04 */
-#define FA_LABEL  _A_VOLID  /* 0x08 */
-#define FA_DIREC  _A_SUBDIR /* 0x10 */
-#define FA_ARCH   _A_ARCH   /* 0x20 */
-#endif
-
 struct ibbs IBBS;
 const char aszShortMonthName[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
 				 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -2970,39 +2939,6 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 
 // ------------------------------------------------------------------------- //
 
-// returns true (I think) if no more files
-static bool GetNextFile(char *szWildcard, char *szFileName, size_t sz)
-{
-	struct ffblk ffblks;
-	uint16_t date = 65534, time = 65534;
-	bool Done, NoMoreFiles = true;
-
-	Done = findfirst(szWildcard, &ffblks, 0);
-
-
-	// go through a file, record date, timestamps
-
-	while (!Done) {
-		//printf("trying out %s\n", ffblks.ff_name);
-		// is date of file less than last file read in?
-		if (ffblks.ff_fdate <= date) {
-			// if same date, and this file's time is greater than
-			// other time, this ain't the file we want.
-			if ((ffblks.ff_fdate == date && ffblks.ff_ftime < time) ||
-					(ffblks.ff_fdate < date)) {
-				//printf("found file %s\n", ffblks.ff_name);
-				date = ffblks.ff_fdate;
-				time = ffblks.ff_ftime;
-				strlcpy(szFileName, ffblks.ff_name, sz);
-				NoMoreFiles = false;
-			}
-		}
-		Done = findnext(&ffblks);
-	}
-
-	return NoMoreFiles;
-}
-
 static bool isRelative(const char *fname)
 {
 	if (fname[0] == '/')
@@ -3056,11 +2992,8 @@ static bool SameFile(const char *f1, const char *f2)
 static void
 MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo, int16_t SourceID,
     bool(*skip)(void *),
-    void(*process)(const char *, const char *, void *), void *cbdata)
+    void(*process)(const char *, void *), void *cbdata)
 {
-	char wildcard[PATH_SIZE + 15];
-	struct ffblk ffblks;
-	bool Done;
 	tFidoNode ThisNode;
 
 	if (Config.MailerType == MAIL_NONE)
@@ -3068,24 +3001,20 @@ MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo, int16_t Sourc
 	ConvertStringToAddress(&ThisNode, InterBBSInfo->szThisNodeAddress);
 
 	// Go through all *.msg files in the netmail directory.
-#ifdef __unix__
-	snprintf(wildcard, sizeof(wildcard), "%s/*.[Mm][Ss][Gg]", InterBBSInfo->szNetmailDir);
-#else
-	snprintf(wildcard, sizeof(wildcard), "%s/*.msg", InterBBSInfo->szNetmailDir);
-#endif
+	bool err;
+	char **MsgFiles = FilesOrderedByDate(InterBBSInfo->szNetmailDir, "*.msg", &err);
+	if (err)
+		System_Error("Error getting list of MSG files");
+	if (MsgFiles == NULL)
+		return;
 
-	Done = findfirst(wildcard, &ffblks, 0);
-	while (!Done) {
+	for (char **msg = MsgFiles; *msg; msg++) {
 		char hdrbuf[BUF_SIZE_MessageHeader];
 		FILE *f;
 
-		// We need to get to the last iteration or we'll leak resources
 		if (skip == NULL || !skip(cbdata)) {
 			bool Found = false;
-			char fname[sizeof(ffblks.ff_name) + PATH_SIZE];
-
-			snprintf(fname, sizeof(fname), "%s/%s", InterBBSInfo->szNetmailDir, ffblks.ff_name);
-			f = fopen(fname, "rb");
+			f = fopen(*msg, "rb");
 
 			if (f) {
 				if (fread(hdrbuf, sizeof(hdrbuf), 1, f) == 1) {
@@ -3130,11 +3059,10 @@ MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo, int16_t Sourc
 				fclose(f);
 			}
 			if (Found && process)
-				process(fname, ffblks.ff_name, cbdata);
+				process(*msg, cbdata);
 		}
-
-		Done = findnext(&ffblks);
 	}
+	FreeFileList(MsgFiles);
 	return;
 }
 
@@ -3144,7 +3072,7 @@ static bool SkipAfterFound(void *cbdata)
 	return ret;
 }
 
-static void SetSkip(const char *fname, const char *sname, void *cbdata)
+static void SetSkip(const char *fname, void *cbdata)
 {
 	bool *skip = cbdata;
 	*skip = true;
@@ -3171,10 +3099,10 @@ static bool CheckMessageFile(const char *pszFileName, tIBInfo *InterBBSInfo, int
 	return Found;
 }
 
-static void DeleteFound(const char *fname, const char *sname, void *cbdata)
+static void DeleteFound(const char *fname, void *cbdata)
 {
 	char msg[256];
-	snprintf(msg, sizeof(msg), "|08* |07Deleting %s from netmail directory\n", sname);
+	snprintf(msg, sizeof(msg), "|08* |07Deleting %s from netmail directory\n", FileName(fname));
 	LogDisplayStr(msg);
 	unlink(fname);
 }
@@ -3196,9 +3124,7 @@ static void MoveToBad(const char *szOldFilename)
 void IBBS_PacketIn(void)
 {
 	tIBInfo InterBBSInfo;
-	/*      struct ffblk ffblk;*/
-	char szFileName[PATH_SIZE], szPacketName[PATH_SIZE], szString[580], szFileName2[PATH_SIZE];
-	bool Done;
+	char szFileName[PATH_SIZE], szString[580], szFileName2[PATH_SIZE];
 	FILE *fp;
 	int16_t nInbound;
 
@@ -3230,65 +3156,54 @@ void IBBS_PacketIn(void)
 	//
 	// xxx is THIS BBS's Id.
 
+	// create filename to search for
+	snprintf(szFileName, sizeof(szFileName),"CL???%03d.%-2s?",IBBS.Data.BBSID,Game.Data.LeagueID);
 	for (nInbound = 0; nInbound < Config.NumInboundDirs; nInbound++) {
-		// create filename to search for
-#ifdef __unix__
-		strlcpy(szPacketName, Config.szInboundDirs[nInbound], sizeof(szPacketName));
-		snprintf(szFileName, sizeof(szFileName),"[Cc][Ll]???%03d.%-2s?",IBBS.Data.BBSID,Game.Data.LeagueID);
-#else
-		snprintf(szFileName, sizeof(szFileName),"CL???%03d.%-2s?",IBBS.Data.BBSID,Game.Data.LeagueID);
-#endif
-		// now copy over to the full filename
-		strlcat(szPacketName, szFileName, sizeof(szPacketName));
-
-		// printf("Filespec to search is %s\n", szPacketName);
-
-		//Done = findfirst(szPacketName, &ffblk, 0);
-		Done = GetNextFile(szPacketName, szFileName2, sizeof(szFileName2));
+		bool err;
+		char **fnames = FilesOrderedByDate(Config.szInboundDirs[nInbound], szFileName, &err);
+		if (err)
+			System_Error("Failed to get packet file names");
+		if (fnames == NULL)
+			continue;
 
 		/* keep calling till no more messages to read */
-		while (!Done) {
+		for (char **fp = fnames; *fp; fp++) {
+			const char *fn = FileName(*fp);
 			char srcID[4];
 			int16_t srcBBSID;
 
-			memcpy(srcID, &szFileName2[2], 3);
+			memcpy(srcID, &fn[2], 3);
 			srcID[3] = 0;
 			srcBBSID = CheckSourceID(atoi(srcID));
 			if (srcBBSID) {
-				strlcpy(szFileName, Config.szInboundDirs[nInbound], sizeof(szFileName));
-				//strlcat(szFileName, ffblk.ff_name, sizeof(szFileName));
-				strlcat(szFileName, szFileName2, sizeof(szFileName));
-
 				// Set to the assumed previous hop...
 				if (IBBS.Data.StrictRouting)
 					srcBBSID = IBBS.Data.Nodes[srcBBSID - 1].Info.RouteThrough;
 				else
 					srcBBSID = 0;
 				/* process file */
-				if (IBBS.Data.StrictMsgFile && !CheckMessageFile(szFileName, &InterBBSInfo, srcBBSID)) {
-					snprintf(szString, sizeof(szString), "|08x |12No valid msg file for packet %s\n", szFileName);
+				if (IBBS.Data.StrictMsgFile && !CheckMessageFile(*fp, &InterBBSInfo, srcBBSID)) {
+					snprintf(szString, sizeof(szString), "|08x |12No valid msg file for packet %s\n", fn);
 					LogDisplayStr(szString);
 					// If .msg is created right after, moving to bad breaks it.
 					//MoveToBad(szFileName);
 				}
 				else {
-					if (!IBBS_ProcessPacket(szFileName, srcBBSID)) {
-						snprintf(szString, sizeof(szString), "|08x |12Error dealing with packet %s\n", szFileName);
+					if (!IBBS_ProcessPacket(*fp, srcBBSID)) {
+						snprintf(szString, sizeof(szString), "|08x |12Error dealing with packet %s\n", fn);
 						LogDisplayStr(szString);
-						MoveToBad(szFileName);
+						MoveToBad(*fp);
 					}
 					else {
 						/* delete it */
-						unlink(szFileName);
+						unlink(*fp);
 						/* And try to delete *.msg files that had it attached */
-						DeleteMessageWithFile(szFileName, &InterBBSInfo);
+						DeleteMessageWithFile(*fp, &InterBBSInfo);
 					}
 				}
 			}
-
-			// Done = findnext(&ffblk);
-			Done = GetNextFile(szPacketName, szFileName2, sizeof(szFileName2));
 		}
+		FreeFileList(fnames);
 	}
 
 	DisplayStr("\n");
@@ -3297,39 +3212,40 @@ void IBBS_PacketIn(void)
 	// look for world.ndx first
 	// if not found, go for WORLD.ID
 	if (System.LocalIBBS == false) {
+		// try world.ID
+		snprintf(szFileName, sizeof(szFileName2), "WORLD.%-2s", Game.Data.LeagueID);
 		for (nInbound = 0; nInbound < Config.NumInboundDirs; nInbound++) {
-			// try world.ID
-#ifdef __unix__
-			snprintf(szFileName2, sizeof(szFileName2), "[Ww][Oo][Rr][Ll][Dd].%-2s", Game.Data.LeagueID);
-#else
-			snprintf(szFileName2, sizeof(szFileName2), "WORLD.%-2s", Game.Data.LeagueID);
-#endif
+			bool err;
+			char **fnames = FilesOrderedByDate(Config.szInboundDirs[nInbound], szFileName, &err);
+			if (err)
+				System_Error("Failed to get world index file names");
+			if (fnames == NULL)
+				continue;
 
-			strlcpy(szFileName, Config.szInboundDirs[nInbound], sizeof(szFileName));
-			strlcat(szFileName, szFileName2, sizeof(szFileName));
-
-			while (!GetNextFile(szFileName,szFileName2, sizeof(szFileName2))) {
+			for (char **fpath = fnames; *fpath; fpath++) {
+				const char *fn = FileName(*fpath);
 				int16_t AllowedSourceID = 0;
 
 				if (IBBS.Data.StrictRouting)
 					AllowedSourceID = IBBS.Data.Nodes[0].Info.RouteThrough;
-				if (IBBS.Data.StrictMsgFile && !CheckMessageFile(szFileName2, &InterBBSInfo, AllowedSourceID)) {
-					snprintf(szString, sizeof(szString), "|08x |12No valid msg file packet %s, renaming to world.bad\n", szFileName2);
+				if (IBBS.Data.StrictMsgFile && !CheckMessageFile(*fpath, &InterBBSInfo, AllowedSourceID)) {
+					snprintf(szString, sizeof(szString), "|08x |12No valid msg file packet %s, renaming to world.bad\n", fn);
 					LogDisplayStr(szString);
 					unlink("world.bad");
-					rename(szFileName2, "world.bad");
+					rename(*fpath, "world.bad");
 				}
 				else {
-					fp = _fsopen(szFileName2, "r", _SH_DENYWR);
+					fp = _fsopen(*fpath, "r", _SH_DENYWR);
 					if (fp) {
 						LogDisplayStr("|08- |07new world.ndx found.\n");
 						// found it
 						fclose(fp);
 						unlink("world.ndx");
-						rename(szFileName2, "world.ndx");
+						rename(*fpath, "world.ndx");
 					}
 				}
 			}
+			FreeFileList(fnames);
 		}
 	}
 }
@@ -3481,111 +3397,3 @@ void IBBS_Maint(void)
 	IBBS_TravelMaint();
 	IBBS_BackupMaint();
 }
-
-#ifdef _WIN32
-#if defined(_UNICODE) || defined(UNICODE)
-# error "findfirst/findnext clones will not compile under UNICODE"
-#endif
-
-int findfirst(const char *pathname, struct ffblk *ffblks, int attribute)
-{
-	WIN32_FIND_DATA w32_finddata;
-
-	if (!ffblks) {
-		errno = ENOENT;
-		return -1;
-	}
-
-	ffblks->ff_findhandle = FindFirstFile(pathname, &w32_finddata);
-	if (ffblks->ff_findhandle == INVALID_HANDLE_VALUE) {
-		errno = ENOENT;
-		return -1;
-	}
-
-	ffblks->ff_findattribute = attribute;
-	convert_attribute(&ffblks->ff_attrib, w32_finddata.dwFileAttributes);
-	/* Search for matching attribute */
-	return (search_and_construct_ffblk(&w32_finddata, ffblks, true));
-}
-
-int findnext(struct ffblk *ffblks)
-{
-	WIN32_FIND_DATA w32_finddata;
-
-	if (!ffblks) {
-		errno = ENOENT;
-		return -1;
-	}
-
-	return (search_and_construct_ffblk(&w32_finddata, ffblks, false));
-}
-
-static int search_and_construct_ffblk(WIN32_FIND_DATA *w32_finddata, struct ffblk *ffblks, bool bhave_file)
-{
-	SYSTEMTIME system_time;
-
-	if ((bhave_file == true && !(ffblks->ff_attrib & ffblks->ff_findattribute)) ||
-			(bhave_file == false)) {
-		do {
-			/* Check for FA_NORMAL and FA_ARCH  */
-			/* Make sure these IFs only run AFTER a file has been found for FindNextFile */
-			if (bhave_file) {
-				if (ffblks->ff_attrib == FA_NORMAL && ffblks->ff_findattribute == FA_NORMAL)
-					break;
-				if (ffblks->ff_attrib == FA_ARCH && ffblks->ff_findattribute == FA_NORMAL)
-					break;
-			}
-			else
-				bhave_file = true;
-			if (!FindNextFile(ffblks->ff_findhandle, w32_finddata)) {
-				FindClose(ffblks->ff_findhandle);
-				errno = ENOENT;
-				return -1;
-			}
-			else
-				convert_attribute(&ffblks->ff_attrib, w32_finddata->dwFileAttributes);
-		}
-		while (!(ffblks->ff_attrib & ffblks->ff_findattribute));
-	}
-
-	if (strlen(w32_finddata->cAlternateFileName))
-		strlcpy(ffblks->ff_name, w32_finddata->cAlternateFileName, sizeof(ffblks->ff_name));
-	else
-		strlcpy(ffblks->ff_name, w32_finddata->cFileName, sizeof(ffblks->ff_name));
-
-	FileTimeToSystemTime(&w32_finddata->ftLastWriteTime, &system_time);
-
-	ffblks->ff_fsize = (int32_t)w32_finddata->nFileSizeLow;
-	/* Packed Date Format:
-	   Year [7 bits/0xFE00]
-	   Month [4 bits/0x01E0]
-	   Day [5 bits/0x001F]
-	   Packed Time Format:
-	   Hours [5 bits/0xF800]
-	   Minutes [6 bits/0x07E0]
-	   Seconds/2 [5 bits/0x001F]
-	*/
-	ffblks->ff_fdate  = (uint16_t)(((system_time.wYear - 1980) & 0x7F) << 9);
-	ffblks->ff_fdate |= ((system_time.wMonth - 1) & 0x0F) << 5;
-	ffblks->ff_fdate |= ((system_time.wDay) & 0x1F);
-	ffblks->ff_ftime  = ((system_time.wHour) & 0x1F) << 11;
-	ffblks->ff_ftime |= ((system_time.wMinute) & 0x2F) << 5;
-	ffblks->ff_ftime |= ((system_time.wSecond / 2) & 0x1F);
-	return 0;
-}
-
-static void convert_attribute(char *attrib_out, uint32_t attrib_in)
-{
-	*attrib_out = FA_NORMAL;
-	if (attrib_in & FILE_ATTRIBUTE_READONLY)
-		*attrib_out |= FA_RDONLY;
-	if (attrib_in & FILE_ATTRIBUTE_HIDDEN)
-		*attrib_out |= FA_HIDDEN;
-	if (attrib_in & FILE_ATTRIBUTE_SYSTEM)
-		*attrib_out |= FA_SYSTEM;
-	if (attrib_in & FILE_ATTRIBUTE_DIRECTORY)
-		*attrib_out |= FA_DIREC;
-	if (attrib_in & FILE_ATTRIBUTE_ARCHIVE)
-		*attrib_out |= FA_ARCH;
-}
-#endif

@@ -2,7 +2,7 @@
 #define THE_CLANS__WIN_WRAPPERS___H
 
 #include <string.h>
-
+#include <stdbool.h>
 #include <stddef.h>
 
 size_t strlcpy(char *dst, const char *src, size_t dsize);
@@ -31,6 +31,10 @@ size_t strlcat(char *dst, const char *src, size_t dsize);
 #define strdup(x) _strdup(x)
 #define mkdir(x) _mkdir(x)
 #define cio_getch() _getch()
+
+void FreeFileList(char **fl);
+char **FilesOrderedByDate(const char *path, const char *match, bool *error);
+const char *FileName(const char *path);
 
 #else
 #include <utime.h>

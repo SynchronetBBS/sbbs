@@ -191,51 +191,61 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 	return(true);
 }
 
+int
+ptrcmp(const void *a, const void *b)
+{
+	const uintptr_t *p1 = a;
+	const uintptr_t *p2 = b;
+
+	if (*p1 < *p2)
+		return -1;
+	if (*p2 < *p1)
+		return 0;
+	return 0;
+}
 
 static uint32_t GetFirstUnusedMsgNum(char *pszMessageDir)
 {
-	long lwHighestMsgNum = 0;
-	long lwCurrentMsgNum;
-#ifndef _WIN32
-	struct ffblk DirEntry;
-#else
-	struct _finddata_t find_data;
-	intptr_t find_handle;
-#endif
-	char szFileName[PATH_CHARS + FILENAME_CHARS + 2];
-
-#ifdef __unix__
-	MakeFilename(pszMessageDir, "*.[Mm][Ss][Gg]", szFileName, sizeof(szFileName));
-#else
-	MakeFilename(pszMessageDir, "*.msg", szFileName, sizeof(szFileName));
-#endif
-
-#ifndef _WIN32
-	if (findfirst(szFileName, &DirEntry, FA_ARCH) == 0) {
-		do {
-			lwCurrentMsgNum = atol(DirEntry.ff_name);
-			if (lwCurrentMsgNum > lwHighestMsgNum) {
-				lwHighestMsgNum = lwCurrentMsgNum;
+	bool err;
+	char **fnames = FilesOrderedByDate(pszMessageDir, "*.msg", &err);
+	if (err)
+		System_Error("Failed to get list of MSG files");
+	if (fnames == NULL)
+		return 1;
+	// Convert to an array of uintptr_ts...
+	size_t cnt = 0;
+	for (char **fp = fnames; *fp; fp++) {
+		const char *fn = FileName(*fp);
+		cnt++;
+		if ((fn)[0] < '0' || (fn)[0] > '9') {
+			free(*fp);
+			*fp = 0;
+		}
+		else {
+			char *endptr;
+			errno = 0;
+			unsigned long val = strtoul(fn, &endptr, 10);
+			if (errno || strcasecmp(endptr, ".msg") != 0) {
+				free(*fp);
+				*fp = 0;
+			}
+			else {
+				free(*fp);
+				*fp = (char *)((intptr_t)val);
 			}
 		}
-		while (findnext(&DirEntry) == 0);
 	}
-#else
-	find_handle = _findfirst(szFileName, &find_data);
-	if (find_handle) {
-		do {
-			lwCurrentMsgNum = atol(find_data.name);
-			if (lwCurrentMsgNum > lwHighestMsgNum) {
-				lwHighestMsgNum = lwCurrentMsgNum;
-			}
+	qsort(fnames, cnt, sizeof(char *), ptrcmp);
+	for (size_t i = 0; i < cnt; i++) {
+		if (fnames[i + 1] > fnames[i] + 1) {
+			uint32_t ret = (uint32_t)((uintptr_t)fnames[i] + 1);
+			free(fnames);
+			return ret;
 		}
-		while (_findnext(find_handle, &find_data) == 0);
-		_findclose(find_handle);
 	}
-#endif
-
-	// Ignore possible overflow...
-	return (uint32_t)(lwHighestMsgNum + 1);
+	uint32_t ret = (uint32_t)((uintptr_t)fnames[cnt - 1] + 1);
+	free(fnames);
+	return ret;
 }
 
 

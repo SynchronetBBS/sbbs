@@ -27,53 +27,16 @@
 #define MAXDIR  PATH_MAX
 #define MAXPATH PATH_MAX
 
-struct date {
-	short da_year;
-	short da_mon;
-	short da_day;
-};
-
-typedef struct {
-	short wSecond;
-	short wMinute;
-	short wHour;
-	short wMonth;
-	short wDay;
-	short wYear;
-} SYSTEMTIME;
-
-struct ffblk {
-	char lfn_magic[6];        /* LFN: the magic "LFN32" signature */
-	short lfn_handle;         /* LFN: the handle used by findfirst/findnext */
-	unsigned short lfn_ctime; /* LFN: file creation time */
-	unsigned short lfn_cdate; /* LFN: file creation date */
-	unsigned short lfn_atime; /* LFN: file last access time (usually 0) */
-	unsigned short lfn_adate; /* LFN: file last access date */
-	char ff_reserved[5];      /* used to hold the state of the search */
-	unsigned char ff_attrib;  /* actual attributes of the file found */
-	unsigned short ff_ftime;  /* hours:5, minutes:6, (seconds/2):5 */
-	unsigned short ff_fdate;  /* (year-1980):7, month:4, day:5 */
-	off_t ff_fsize;           /* size of file */
-	char ff_name[MAXPATH];    /* name of file as ASCIIZ string */
-	DIR *dir_handle;
-	char pathname[MAXPATH];
-};
-#define FA_RDONLY   1
-#define FA_HIDDEN   2
-#define FA_SYSTEM   4
-#define FA_LABEL    8
-#define FA_DIREC    16
-#define FA_ARCH     32
-
-int findfirst(char *pathname, struct ffblk *fblk, int attrib);
-int findnext(struct ffblk *fblk);
-
 #define _SH_DENYWR   1
 #define _SH_DENYRW   2
 
 FILE * _fsopen(const char *pathname, const char *mode, int flags);
 
 void delay(unsigned msec);
+
+void FreeFileList(char **fl);
+char **FilesOrderedByDate(const char *path, const char *match, bool *error);
+const char *FileName(const char *path);
 
 #endif
 
