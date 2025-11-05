@@ -234,6 +234,10 @@ static uint32_t GetFirstUnusedMsgNum(char *pszMessageDir)
 		}
 	}
 	qsort(fnames, cnt, sizeof(char *), ptrcmp);
+	if (fnames[0] > 1) {
+		free(fnames);
+		return 1;
+	}
 	for (size_t i = 0; i < cnt; i++) {
 		if (fnames[i + 1] > fnames[i] + 1) {
 			uint32_t ret = (uint32_t)((uintptr_t)fnames[i] + 1);
