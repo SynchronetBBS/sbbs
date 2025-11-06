@@ -22,13 +22,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef __unix__
-# include <share.h>
-#endif
-#include "unix_wrappers.h"
-#include "win_wrappers.h"
-
 #include <OpenDoor.h>
+#include "platform.h"
 
 #include "alliance.h"
 #include "alliancem.h"
@@ -65,34 +60,28 @@ static struct user {
 
 struct clan *PClan=NULL;
 
-// ------------------------------------------------------------------------- //
-bool Disbanded(void)
+static void PadString(char *szString, int16_t PadLength)
+/*
+ * This takes the string and pads it with spaces.
+ */
 {
-	// returns true if the user is in DISBAND.DAT
-	char szUserName[36];
-	FILE *fp;
-	bool Found = false;
+	int16_t iTemp;
+	char szTemp[255], *pc;
 
-	fp = _fsopen("disband.dat", "rb", _SH_DENYWR);
+	RemovePipes(szString, szTemp);
 
-	if (!fp)  return false;
+	pc = strchr(szString, 0);
 
-	for (;;) {
-		if (!EncryptRead(szUserName, 36, fp, XOR_DISBAND)) break;
-		if (memchr(szUserName, 0, 36) == NULL)
-			System_Error("Unterminated username in disband.dat");
-
-		if (strcasecmp(szUserName, od_control.user_name) == 0) {
-			Found = true;
-			break;
+	// if less than the required length, pad
+	if ((signed)strlen(szTemp) < PadLength) {
+		for (iTemp = 0; iTemp < PadLength - ((signed)strlen(szTemp)); iTemp++) {
+			*pc = ' ';
+			pc++;
 		}
+
+		*pc = 0;
 	}
-
-	fclose(fp);
-
-	return Found;
 }
-
 
 // ------------------------------------------------------------------------- //
 static void AddToDisband(void)

@@ -4,14 +4,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include "platform.h"
 
 #include "defines.h"
 #include "myopen.h"
 #include "parsing.h"
 #include "serialize.h"
 #include "structs.h"
-#include "unix_wrappers.h"
-#include "win_wrappers.h"
 
 #define MAX_TOKEN_CHARS     32
 #define MAX_EVA_WORDS       34

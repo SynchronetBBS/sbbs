@@ -12,7 +12,6 @@
 /*                         Configuration Constants                            */
 /******************************************************************************/
 #define PROG_NAME_CHARS    35
-#define PATH_CHARS         (PATH_SIZE - 1)
 #define FILENAME_CHARS     12
 #define MESSAGE_SUBJECT    "OpenDoors Inter-BBS Door Message"
 #define MESSAGE_PID        "\1PID: ODIBMS 1\r"

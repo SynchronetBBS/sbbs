@@ -5,11 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#ifdef __MSDOS__
-# include <malloc.h>
-#endif
-#include "unix_wrappers.h"
-#include "win_wrappers.h"
+#include "platform.h"
 
 #include "defines.h"
 #include "k_npcs.h"

@@ -2,8 +2,8 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include "platform.h"
 
-#include "crc.h"
 #include "serialize.h"
 
 #define pack_char(x) do {        \

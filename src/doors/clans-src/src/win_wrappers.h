@@ -1,16 +1,17 @@
 #ifndef THE_CLANS__WIN_WRAPPERS___H
 #define THE_CLANS__WIN_WRAPPERS___H
 
-#include <string.h>
-#include <stdbool.h>
-#include <stddef.h>
-
-size_t strlcpy(char *dst, const char *src, size_t dsize);
-size_t strlcat(char *dst, const char *src, size_t dsize);
-
 #ifdef _WIN32
 #include <sys/utime.h>
+#include <conio.h>
+#include <direct.h>
 #include <share.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <string.h>
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 #ifndef S_ISDIR
 #define S_ISDIR(x) ((x) & _S_IFDIR)
@@ -32,6 +33,7 @@ size_t strlcat(char *dst, const char *src, size_t dsize);
 #define mkdir(x) _mkdir(x)
 #define cio_getch() _getch()
 
+void display_win32_error();
 void FreeFileList(char **fl);
 char **FilesOrderedByDate(const char *path, const char *match, bool *error);
 const char *FileName(const char *path);

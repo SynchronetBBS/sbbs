@@ -189,8 +189,55 @@ char **FilesOrderedByDate(const char *path, const char *match, bool *error)
 	return ret;
 }
 
-#else
+char * fullpath(char *target, const char *path, size_t size)
+{
+	char    *out;
+	char    *p;
+	bool alloced = false;
 
-static int Windows = 1;
+	if (target==NULL)  {
+		if ((target=malloc(PATH_MAX+1))==NULL) {
+			return(NULL);
+		}
+		alloced = true;
+	}
+	out=target;
+	*out=0;
+
+	if (*path != '/')  {
+		p=getcwd(target,size);
+		if (p==NULL || strlen(p)+strlen(path)>=size) {
+			if (alloced)
+				free(target);
+			return(NULL);
+		}
+		out=strrchr(target,'\0');
+		*(out++)='/';
+		*out=0;
+		out--;
+	}
+	strlcat(target, path, size);
+
+	for (; *out; out++)  {
+		while (*out=='/')  {
+			if (*(out+1)=='/')
+				memmove(out,out+1,strlen(out));
+			else if (*(out+1)=='.' && (*(out+2)=='/' || *(out+2)==0))
+				memmove(out,out+2,strlen(out)-1);
+			else if (*(out+1)=='.' && *(out+2)=='.' && (*(out+3)=='/' || *(out+3)==0))  {
+				*out=0;
+				p=strrchr(target,'/');
+				memmove(p,out+3,strlen(out+3)+1);
+				out=p;
+			}
+			else  {
+				out++;
+			}
+		}
+		if (!*out)
+			break;
+	}
+	return(target);
+}
 
 #endif

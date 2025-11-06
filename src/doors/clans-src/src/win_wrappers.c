@@ -1,64 +1,34 @@
-#include <stdbool.h>
-#include <stdlib.h>
 #ifdef _WIN32
-# include <io.h>
-#endif
+
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <tchar.h>
+#include <io.h>
 
 #include "win_wrappers.h"
 
-size_t strlcpy(char *dst, const char *src, size_t dsize)
+void display_win32_error(void)
 {
-	const char *osrc = src;
-	size_t      nleft = dsize;
+	LPVOID message;
+	TCHAR buffer[1000];
 
-	/* Copy as many bytes as will fit. */
-	if (nleft != 0) {
-		while (--nleft != 0) {
-			if ((*dst++ = *src++) == '\0')
-				break;
-		}
-	}
+	FormatMessage(
+		FORMAT_MESSAGE_IGNORE_INSERTS|
+		FORMAT_MESSAGE_FROM_SYSTEM|
+		FORMAT_MESSAGE_ALLOCATE_BUFFER,
+		NULL,
+		GetLastError(),
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+		(LPTSTR)&message,
+		0,
+		NULL);
 
-	/* Not enough room in dst, add NUL and traverse rest of src. */
-	if (nleft == 0) {
-		if (dsize != 0)
-			*dst = '\0'; /* NUL-terminate dst */
-		while (*src++)
-			;
-	}
+	_stprintf(buffer, _T("Win32 System Error:\n%s\n"), (char*)message);
+	MessageBox(NULL, buffer, _T("System Error"), MB_OK | MB_ICONERROR);
 
-	return (size_t)(src - osrc - 1); /* count does not include NUL */
+	LocalFree(message);
 }
-
-size_t
-strlcat(char *dst, const char *src, size_t dsize)
-{
-	const char *odst = dst;
-	const char *osrc = src;
-	size_t      n = dsize;
-	size_t      dlen;
-
-	/* Find the end of dst and adjust bytes left but don't go past end. */
-	while (n-- != 0 && *dst != '\0')
-		dst++;
-	dlen = (size_t)(dst - odst);
-	n = dsize - dlen;
-
-	if (n-- == 0)
-		return dlen + strlen(src);
-	while (*src != '\0') {
-		if (n != 0) {
-			*dst++ = *src;
-			n--;
-		}
-		src++;
-	}
-	*dst = '\0';
-
-	return dlen + (size_t)(src - osrc);    /* count does not include NUL */
-}
-
-#ifdef _WIN32
 
 struct Sortable {
 	char *p;

@@ -9,25 +9,20 @@
   <Import Project="clans.props" />
   <ItemGroup>
     <ClCompile Include="alliance.c" />
-    <ClCompile Include="cmdline.c" />
     <ClCompile Include="console.c" />
-    <ClCompile Include="crc.c" />
     <ClCompile Include="deserialize.c" />
     <ClCompile Include="gum.c" />
     <ClCompile Include="myopen.c" />
     <ClCompile Include="parsing.c" />
+    <ClCompile Include="platform.c" />
     <ClCompile Include="random.c" />
     <ClCompile Include="readcfg.c" />
     <ClCompile Include="serialize.c" />
-    <ClCompile Include="unix_wrappers.c" />
     <ClCompile Include="video.c" />
-    <ClCompile Include="win_wrappers.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="alliance.h" />
-    <ClInclude Include="cmdline.h" />
     <ClInclude Include="console.h" />
-    <ClInclude Include="crc.h" />
     <ClInclude Include="defines.h" />
     <ClInclude Include="deserialize.h" />
     <ClInclude Include="door.h" />
@@ -50,7 +45,6 @@
     <ClInclude Include="serialize.h" />
     <ClInclude Include="structs.h" />
     <ClInclude Include="system.h" />
-    <ClInclude Include="unix_wrappers.h" />
     <ClInclude Include="user.h" />
     <ClInclude Include="video.h" />
     <ClInclude Include="win_wrappers.h" />

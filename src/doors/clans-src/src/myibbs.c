@@ -14,17 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#ifndef __unix__
-# if defined(_MSC_VER) || defined(__MINGW32__)
-#  include <share.h>
-# else
-#  include <dir.h>
-# endif
-# include <dos.h>
-# include <io.h>
-#endif
-#include "unix_wrappers.h"
-#include "win_wrappers.h"
+#include "platform.h"
 
 #include "defines.h"
 #include "ibbs.h"
@@ -36,7 +26,6 @@
 #include "system.h"
 #include "video.h"
 
-static tBool DirExists(const char *pszDirName);
 static void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut, size_t sz);
 static tIBResult ValidateInfoStruct(tIBInfo *pInfo);
 static tBool CreateMessage(char *pszMessageDir, tMessageHeader *pHeader,
@@ -48,39 +37,6 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 				   tMessageHeader *pHeader, char *pszText);
 static uint32_t GetNextMSGID(void);
 void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource);
-
-static tBool DirExists(const char *pszDirName)
-{
-	char szDirFileName[PATH_CHARS + 1];
-#if !defined(_WIN32) & !defined(__unix__)
-	struct ffblk DirEntry;
-#else
-	struct stat file_stats;
-#endif
-
-	assert(pszDirName != NULL);
-	assert(strlen(pszDirName) <= PATH_CHARS);
-
-	strlcpy(szDirFileName, pszDirName, sizeof(szDirFileName));
-
-	/* Remove any trailing backslash from directory name */
-	if (szDirFileName[strlen(szDirFileName) - 1] == '/' || szDirFileName[strlen(szDirFileName) - 1] == '\\') {
-		szDirFileName[strlen(szDirFileName) - 1] = '\0';
-	}
-
-	/* Return true iff file exists and it is a directory */
-#if !defined(_WIN32) & !defined(__unix__)
-	return(findfirst(szDirFileName, &DirEntry, FA_ARCH|FA_DIREC) == 0 &&
-		   (DirEntry.ff_attrib & FA_DIREC));
-#else
-	if (stat(szDirFileName, &file_stats) == 0)
-		if (S_ISDIR(file_stats.st_mode))
-			return true;
-
-	return false;
-#endif
-}
-
 
 static void MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut, size_t sz)
 {
@@ -234,7 +190,7 @@ static uint32_t GetFirstUnusedMsgNum(char *pszMessageDir)
 		}
 	}
 	qsort(fnames, cnt, sizeof(char *), ptrcmp);
-	if (fnames[0] > 1) {
+	if (fnames[0] > (char *)1) {
 		free(fnames);
 		return 1;
 	}

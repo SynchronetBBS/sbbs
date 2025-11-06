@@ -48,72 +48,65 @@ CFLAGS	+=	-std=c17 -MMD -MP
 
 CLANS_OBJS :=	$(OBJDIR)alliance.o $(OBJDIR)alliancem.o \
 		$(OBJDIR)clans.o $(OBJDIR)clansini.o $(OBJDIR)class.o \
-		$(OBJDIR)cmdline.o $(OBJDIR)crc.o $(OBJDIR)deserialize.o \
-		$(OBJDIR)door.o $(OBJDIR)empire.o $(OBJDIR)fight.o \
-		$(OBJDIR)game.o $(OBJDIR)help.o $(OBJDIR)ibbs.o \
-		$(OBJDIR)input.o $(OBJDIR)items.o $(OBJDIR)language.o \
-		$(OBJDIR)mail.o $(OBJDIR)maint.o $(OBJDIR)menus.o \
-		$(OBJDIR)menus2.o $(OBJDIR)misc.o $(OBJDIR)myibbs.o \
-		$(OBJDIR)myopen.o $(OBJDIR)news.o $(OBJDIR)npc.o \
-		$(OBJDIR)parsing.o $(OBJDIR)pawn.o $(OBJDIR)quests.o \
-		$(OBJDIR)random.o $(OBJDIR)readcfg.o $(OBJDIR)reg.o \
-		$(OBJDIR)scores.o $(OBJDIR)semfile.o \
-		$(OBJDIR)serialize.o $(OBJDIR)spells.o $(OBJDIR)system.o \
-		$(OBJDIR)trades.o $(OBJDIR)unix_wrappers.o \
+		$(OBJDIR)deserialize.o $(OBJDIR)door.o $(OBJDIR)empire.o \
+		$(OBJDIR)fight.o $(OBJDIR)game.o $(OBJDIR)help.o \
+		$(OBJDIR)ibbs.o $(OBJDIR)input.o $(OBJDIR)items.o \
+		$(OBJDIR)language.o $(OBJDIR)mail.o $(OBJDIR)maint.o \
+		$(OBJDIR)menus.o $(OBJDIR)menus2.o $(OBJDIR)misc.o \
+		$(OBJDIR)myibbs.o $(OBJDIR)myopen.o $(OBJDIR)news.o \
+		$(OBJDIR)npc.o $(OBJDIR)platform.o $(OBJDIR)parsing.o \
+		$(OBJDIR)pawn.o $(OBJDIR)quests.o $(OBJDIR)random.o \
+		$(OBJDIR)readcfg.o $(OBJDIR)reg.o $(OBJDIR)scores.o \
+		$(OBJDIR)semfile.o $(OBJDIR)serialize.o \
+		$(OBJDIR)spells.o $(OBJDIR)system.o $(OBJDIR)trades.o \
 		$(OBJDIR)user.o $(OBJDIR)video.o $(OBJDIR)village.o \
-		$(OBJDIR)voting.o $(OBJDIR)win_wrappers.o
+		$(OBJDIR)voting.o
 
 CHEW_OBJS :=	$(OBJDIR)chew.o $(OBJDIR)gum.o $(OBJDIR)parsing.o \
-		$(OBJDIR)win_wrappers.o
+		$(OBJDIR)platform.o
 
-CONFIG_OBJS :=	$(OBJDIR)config.o $(OBJDIR)cmdline.o $(OBJDIR)console.o \
-		$(OBJDIR)misc.o $(OBJDIR)parsing.o $(OBJDIR)readcfg.o \
-		$(OBJDIR)unix_wrappers.o $(OBJDIR)video.o \
-		$(OBJDIR)win_wrappers.o
+CONFIG_OBJS :=	$(OBJDIR)config.o $(OBJDIR)console.o \
+		$(OBJDIR)misc.o $(OBJDIR)parsing.o $(OBJDIR)platform.o \
+		$(OBJDIR)readcfg.o $(OBJDIR)video.o
 
-ECOMP_OBJS :=	$(OBJDIR)ecomp.o $(OBJDIR)parsing.o $(OBJDIR)serialize.o \
-		$(OBJDIR)crc.o $(OBJDIR)win_wrappers.o
+ECOMP_OBJS :=	$(OBJDIR)ecomp.o $(OBJDIR)parsing.o $(OBJDIR)platform.o \
+		$(OBJDIR)serialize.o
 
-INSTALL_OBJS :=	$(OBJDIR)install.o $(OBJDIR)cmdline.o $(OBJDIR)console.o \
+INSTALL_OBJS :=	$(OBJDIR)install.o  $(OBJDIR)console.o \
 		$(OBJDIR)gum.o $(OBJDIR)parsing.o \
-		$(OBJDIR)unix_wrappers.o $(OBJDIR)video.o \
-		$(OBJDIR)win_wrappers.o
+		$(OBJDIR)platform.o $(OBJDIR)video.o
 
-LANGCOMP_OBJS := $(OBJDIR)langcomp.o $(OBJDIR)serialize.o $(OBJDIR)crc.o \
-		$(OBJDIR)win_wrappers.o
+LANGCOMP_OBJS := $(OBJDIR)langcomp.o $(OBJDIR)serialize.o \
+		$(OBJDIR)platform.o 
 
 MAKENPC_OBJS :=	$(OBJDIR)makenpc.o $(OBJDIR)parsing.o \
-		$(OBJDIR)serialize.o $(OBJDIR)crc.o \
-		$(OBJDIR)win_wrappers.o
+		$(OBJDIR)platform.o $(OBJDIR)serialize.o \
 
 MAKEPAK_OBJS :=	$(OBJDIR)makepak.o $(OBJDIR)parsing.o \
-		$(OBJDIR)serialize.o $(OBJDIR)crc.o \
-		$(OBJDIR)win_wrappers.o
+		$(OBJDIR)platform.o $(OBJDIR)serialize.o
 
-MCLASS_OBJS :=	$(OBJDIR)mclass.o $(OBJDIR)serialize.o $(OBJDIR)crc.o \
-		$(OBJDIR)win_wrappers.o
+MCLASS_OBJS :=	$(OBJDIR)mclass.o $(OBJDIR)platform.o \
+		$(OBJDIR)serialize.o
 
-MCOMP_OBJS :=	$(OBJDIR)mcomp.o $(OBJDIR)crc.o $(OBJDIR)tools.o \
-		$(OBJDIR)serialize.o $(OBJDIR)win_wrappers.o
+MCOMP_OBJS :=	$(OBJDIR)mcomp.o $(OBJDIR)platform.o \
+		$(OBJDIR)serialize.o $(OBJDIR)tools.o 
 
-MITEMS_OBJS :=	$(OBJDIR)mitems.o $(OBJDIR)crc.o $(OBJDIR)tools.o \
-		$(OBJDIR)serialize.o $(OBJDIR)win_wrappers.o
+MITEMS_OBJS :=	$(OBJDIR)mitems.o $(OBJDIR)platform.o \
+		$(OBJDIR)serialize.o $(OBJDIR)tools.o
 
-MSPELLS_OBJS :=	$(OBJDIR)mspells.o $(OBJDIR)crc.o $(OBJDIR)tools.o \
-		$(OBJDIR)serialize.o $(OBJDIR)win_wrappers.o
+MSPELLS_OBJS :=	$(OBJDIR)mspells.o $(OBJDIR)platform.o \
+		$(OBJDIR)serialize.o $(OBJDIR)tools.o
 
-PCEDIT_OBJS :=	$(OBJDIR)pcedit.o $(OBJDIR)alliance.o $(OBJDIR)cmdline.o \
-		$(OBJDIR)console.o $(OBJDIR)crc.o $(OBJDIR)deserialize.o \
-		$(OBJDIR)myopen.o $(OBJDIR)serialize.o \
-		$(OBJDIR)unix_wrappers.o $(OBJDIR)video.o \
-		$(OBJDIR)win_wrappers.o
+PCEDIT_OBJS :=	$(OBJDIR)pcedit.o $(OBJDIR)alliance.o \
+		$(OBJDIR)console.o $(OBJDIR)deserialize.o \
+		$(OBJDIR)myopen.o $(OBJDIR)platform.o \
+		$(OBJDIR)serialize.o $(OBJDIR)video.o
 
-RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)alliance.o $(OBJDIR)cmdline.o \
-		$(OBJDIR)console.o $(OBJDIR)crc.o $(OBJDIR)deserialize.o \
-		$(OBJDIR)misc.o $(OBJDIR)myopen.o $(OBJDIR)parsing.o \
-		$(OBJDIR)random.o $(OBJDIR)readcfg.o \
-		$(OBJDIR)serialize.o $(OBJDIR)unix_wrappers.o \
-		$(OBJDIR)video.o $(OBJDIR)win_wrappers.o
+RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)alliance.o \
+		$(OBJDIR)console.o $(OBJDIR)deserialize.o \
+		$(OBJDIR)misc.o $(OBJDIR)myopen.o $(OBJDIR)platform.o \
+		$(OBJDIR)parsing.o $(OBJDIR)random.o $(OBJDIR)readcfg.o \
+		$(OBJDIR)serialize.o $(OBJDIR)video.o
 
 # Default target
 default: $(DOOR_BINARIES) $(INSTALL_BINARIES)

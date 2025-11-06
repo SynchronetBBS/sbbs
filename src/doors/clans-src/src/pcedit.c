@@ -24,15 +24,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#if defined(_WIN32) || defined(DOS)
-# include <conio.h> /* Defines _getch */
-#endif
-#ifdef __unix__
-# include <unistd.h>
-#endif
 #include <string.h>
-#include "unix_wrappers.h"
-#include "win_wrappers.h"
+#include "platform.h"
 
 #include "alliance.h"
 #include "console.h"

@@ -66,8 +66,6 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate);
 
 void User_Destroy(void);
 
-bool Disbanded(void);
-
 void User_Write(void);
 
 #endif

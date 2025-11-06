@@ -1,11 +1,13 @@
 #include <assert.h>
 #include <stdnoreturn.h>
 #include <string.h>
+#include "platform.h"
 
-#include "crc.h"
 #include "defines.h"
 #include "deserialize.h"
 #include "myopen.h"
+#include "quests.h"
+#include "structs.h"
 
 noreturn void System_Error(char *szErrorMsg);
 

@@ -2,11 +2,7 @@
 #include <stdlib.h>
 #include <stdnoreturn.h>
 #include <string.h>
-#ifndef __unix__
-# include <share.h>
-#endif
-#include "unix_wrappers.h"
-#include "win_wrappers.h"
+#include "platform.h"
 
 #include "misc.h"
 #include "parsing.h"

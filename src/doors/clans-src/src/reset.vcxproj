@@ -12,7 +12,6 @@
   <ItemGroup>
     <ClInclude Include="alliance.h" />
     <ClInclude Include="console.h" />
-    <ClInclude Include="crc.h" />
     <ClInclude Include="defines.h" />
     <ClInclude Include="deserialize.h" />
     <ClInclude Include="door.h" />

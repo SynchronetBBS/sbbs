@@ -4,12 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef __MSDOS__
-# include <alloc.h>
-# include <malloc.h>
-#endif /* __MSDOS__ */
-#include "unix_wrappers.h"
-#include "win_wrappers.h"
+#include "platform.h"
 
 #include "defines.h"
 #include "myopen.h"

@@ -53,8 +53,6 @@
     <ClInclude Include="clans.h" />
     <ClInclude Include="clansini.h" />
     <ClInclude Include="class.h" />
-    <ClInclude Include="cmdline.h" />
-    <ClInclude Include="crc.h" />
     <ClInclude Include="defines.h" />
     <ClInclude Include="deserialize.h" />
     <ClInclude Include="door.h" />

@@ -28,19 +28,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#ifdef __unix__
-# include <sys/param.h>
-#else
-# ifndef _WIN32
-#  include <alloc.h>
-#  include <dos.h>
-# endif
-# include <share.h>
-#endif
-#include "unix_wrappers.h"
-#include "win_wrappers.h"
-
 #include <OpenDoor.h>
+#include "platform.h"
 
 #include "clansini.h"
 #include "class.h"
@@ -62,7 +51,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "spells.h"
 #include "structs.h"
 #include "system.h"
-#include "tasker.h"
 #include "user.h"
 #include "video.h"
 #include "village.h"
@@ -143,60 +131,7 @@ static void ShowHelp(void)
 	zputs(ST_HELPPARM);
 }
 
-#if defined(__unix__)
-static char * fullpath(char *target, const char *path, size_t size)
-{
-	char    *out;
-	char    *p;
-	bool alloced = false;
-
-	if (target==NULL)  {
-		if ((target=malloc(PATH_MAX+1))==NULL) {
-			return(NULL);
-		}
-		alloced = true;
-	}
-	out=target;
-	*out=0;
-
-	if (*path != '/')  {
-		p=getcwd(target,size);
-		if (p==NULL || strlen(p)+strlen(path)>=size) {
-			if (alloced)
-				free(target);
-			return(NULL);
-		}
-		out=strrchr(target,'\0');
-		*(out++)='/';
-		*out=0;
-		out--;
-	}
-	strlcat(target, path, size);
-
-	for (; *out; out++)  {
-		while (*out=='/')  {
-			if (*(out+1)=='/')
-				memmove(out,out+1,strlen(out));
-			else if (*(out+1)=='.' && (*(out+2)=='/' || *(out+2)==0))
-				memmove(out,out+2,strlen(out)-1);
-			else if (*(out+1)=='.' && *(out+2)=='.' && (*(out+3)=='/' || *(out+3)==0))  {
-				*out=0;
-				p=strrchr(target,'/');
-				memmove(p,out+3,strlen(out+3)+1);
-				out=p;
-			}
-			else  {
-				out++;
-			}
-		}
-		if (!*out)
-			break;
-	}
-	return(target);
-}
-#endif
-
-void ODCmdLineHandler(char *flag, char *val)
+static void ODCmdLineHandler(char *flag, char *val)
 {
 	char szString[128];
 
@@ -244,7 +179,7 @@ void ODCmdLineHandler(char *flag, char *val)
 	System_Close();
 }
 
-BOOL ODCmdLineFlagHandler(const char *flag)
+static BOOL ODCmdLineFlagHandler(const char *flag)
 {
 	char szString[128];
 	bool primitive = !Config.Initialized;

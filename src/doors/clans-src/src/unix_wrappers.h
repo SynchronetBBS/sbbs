@@ -3,21 +3,21 @@
 #ifndef THE_CLANS__UNIX_WRAPPERS___H
 #define THE_CLANS__UNIX_WRAPPERS___H
 
-#include <signal.h>
-#include <stdlib.h>
-
 #include <sys/stat.h>
-#include <limits.h>
-#include <sys/types.h>
 #include <sys/time.h>
-#include <unistd.h>
+#include <sys/types.h>
+#include <dirent.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <math.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <dirent.h>
-#include <stdio.h>
 #include <time.h>
+#include <unistd.h>
+#include <utime.h>
 
 #include "defines.h"
 
@@ -37,6 +37,7 @@ void delay(unsigned msec);
 void FreeFileList(char **fl);
 char **FilesOrderedByDate(const char *path, const char *match, bool *error);
 const char *FileName(const char *path);
+char * fullpath(char *target, const char *path, size_t size);
 
 #endif
 

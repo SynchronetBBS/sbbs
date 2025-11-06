@@ -30,21 +30,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef __unix__
-# include <utime.h>
-#else
-# include <dos.h>
-# include <share.h>
-# ifndef _WIN32
-#  include <dir.h>
-# else
-#  include <io.h>
-# endif
-#endif
-#include "unix_wrappers.h"
-#include "win_wrappers.h"
-
 #include <OpenDoor.h>
+#include "platform.h"
 
 #include "alliance.h"
 #include "door.h"
@@ -1380,7 +1367,6 @@ static struct Point {
 	char BackLink;
 	char ForwardLinks[MAX_IBBSNODES];
 } *Points[MAX_IBBSNODES];
-
 
 static void FindPoint(int16_t Destination, int16_t Source, int16_t BasePoint)
 {
@@ -2938,52 +2924,6 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 
 
 // ------------------------------------------------------------------------- //
-
-static bool isRelative(const char *fname)
-{
-	if (fname[0] == '/')
-		return false;
-#ifdef _WIN32
-	if (fname[0] == '\\')
-		return false;
-	if (fname[0] && fname[1] == ':' && (fname[2] == '/' || fname[2] == '\\'))
-		return false;
-#endif
-	return true;
-}
-
-static const char *NamePart(const char *fname)
-{
-#ifdef _WIN32
-	const char *ret1 = strrchr(fname, '/');
-	const char *ret2 = strrchr(fname, '\\');
-	if (ret1 == NULL && ret2 == NULL)
-		return fname;
-	if (ret1 == NULL)
-		return ret2 + 1;
-	if (ret2 == NULL)
-		return ret1 + 1;
-	return ret1 > ret2 ? ret1 + 1 : ret2 + 1;
-#else
-	const char *ret = strrchr(fname, '/');
-	if (ret)
-		return ret + 1;
-	return fname;
-#endif
-}
-
-static bool SameFile(const char *f1, const char *f2)
-{
-	if (strcmp(f1, f2) == 0)
-		return true;
-	if (isRelative(f1) || isRelative(f2)) {
-		const char *n1 = NamePart(f1);
-		const char *n2 = NamePart(f2);
-		if (strcmp(n1, n2) == 0)
-			return true;
-	}
-	return false;
-}
 
 /*
  * Iterates over the message files, calling skip() to see if one can

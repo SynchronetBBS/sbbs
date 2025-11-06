@@ -10,7 +10,6 @@
     <ClCompile Include="tools.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="crc.h" />
     <ClInclude Include="defines.h" />
     <ClInclude Include="deserialize.h" />
     <ClInclude Include="interbbs.h" />

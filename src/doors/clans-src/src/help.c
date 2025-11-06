@@ -22,14 +22,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef __unix__
-#include <sys/mman.h>
-#include <termios.h>
-#endif
-#include "unix_wrappers.h"
-#include "win_wrappers.h"
-
 #include <OpenDoor.h>
+#include "platform.h"
 
 #include "door.h"
 #include "help.h"

@@ -228,6 +228,7 @@ typedef unsigned char bool;
 #endif
 
 #define PATH_SIZE 512
+#define PATH_CHARS         (PATH_SIZE - 1)
 
 enum Status { Dead, Unconscious, RanAway, Here };
 enum PlayerStats { stAgility, stDexterity, stStrength, stWisdom, stArmorStr };

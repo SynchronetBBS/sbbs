@@ -4,24 +4,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#ifdef __MSDOS__
-# include <dos.h>
-#elif defined(_WIN32)
-# include <windows.h>
-# include <sys/utime.h>
-# include <direct.h> /* mkdir */
-#elif defined(__unix__)
-# include <sys/time.h>
-# include <unistd.h>
-#endif /* __MSDOS__ */
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <ctype.h>
-#include "unix_wrappers.h"
-#include "win_wrappers.h"
+#include "platform.h"
 
 #include "console.h"
-#include "cmdline.h"
 #include "defines.h"
 #include "gum.h"
 #include "parsing.h"

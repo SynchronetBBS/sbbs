@@ -5,6 +5,7 @@
 #include "quests.h"
 #include "structs.h"
 
+struct EventHeader;
 struct FileHeader;
 
 size_t s_Alliance_d(const void *bufptr, size_t bufsz, struct Alliance *s);

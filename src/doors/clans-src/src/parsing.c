@@ -26,49 +26,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "platform.h"
 
 #include "defines.h"
 #include "language.h"
 #include "parsing.h"
-
-// ------------------------------------------------------------------------- //
-
-void Strip(char *szString)
-/*
- * This function will strip any leading and trailing spaces from the
- * string.
- */
-{
-	char *start = szString;
-	char *end;
-	size_t len;
-
-	// Set start to first non-space character
-	while(isspace(*start))
-		start++;
-
-	// Set end to the string terminator
-	end = strchr(start, 0);
-
-	/*
-	 * Set end to last non-space character
-	 * if there are no non-space characters, end ends up as start-1
-	 */
-	end--;
-	while (end >= start && isspace(*end))
-		end--;
-
-	// Early return if it's all whitespace
-	if (end < start) {
-		*szString = 0;
-		return;
-	}
-
-	// Set len to the number of non-whitespace characters
-	len = (size_t)(end - start) + 1;
-	memmove(szString, start, len);
-	szString[len] = 0;
-}
 
 // ------------------------------------------------------------------------- //
 
@@ -168,67 +130,3 @@ void GetToken(char *szString, char *szToken)
 
 	memmove(szString, pcCurrentPos, strlen(pcCurrentPos) + 1);
 }
-
-// ------------------------------------------------------------------------- //
-
-bool iscodechar(char c)
-/*
- * Returns true if the character is a digit or within 'A' and 'F'
- * (Used mainly to see if it is a valid char for `xx codes.
- *
- */
-{
-	if ((c <= 'F' && c >= 'A')  || (isdigit(c) && (c >= 32 && c <= 126)))
-		return true;
-	else
-		return false;
-}
-
-
-void RemovePipes(char *pszSrc, char *pszDest)
-/*
- * This function removes any colour codes from the string and outputs the
- * result to the destination.
- *
- */
-{
-	while (*pszSrc) {
-		if (*pszSrc == '|' && isdigit(*(pszSrc+1)) && isalnum(*(pszSrc+2)))
-			pszSrc += 3;
-		else if (*pszSrc == '`' && iscodechar(*(pszSrc+1)) && iscodechar(*(pszSrc+2)))
-			pszSrc += 3;
-		else {
-			/* else is normal */
-			*pszDest = *pszSrc;
-			++pszSrc;
-			++pszDest;
-		}
-	}
-	*pszDest = 0;
-}
-
-// ------------------------------------------------------------------------- //
-
-void PadString(char *szString, int16_t PadLength)
-/*
- * This takes the string and pads it with spaces.
- */
-{
-	int16_t iTemp;
-	char szTemp[255], *pc;
-
-	RemovePipes(szString, szTemp);
-
-	pc = strchr(szString, 0);
-
-	// if less than the required length, pad
-	if ((signed)strlen(szTemp) < PadLength) {
-		for (iTemp = 0; iTemp < PadLength - ((signed)strlen(szTemp)); iTemp++) {
-			*pc = ' ';
-			pc++;
-		}
-
-		*pc = 0;
-	}
-}
-

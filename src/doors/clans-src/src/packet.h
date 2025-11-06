@@ -1,3 +1,6 @@
+#ifndef THE_CLANS__PACKET___H
+#define THE_CLANS__PACKET___H
+
 /* packet types */
 #define PT_CLANMOVE     0
 #define PT_DATAOK       1
@@ -19,3 +22,5 @@
 #define PT_SCORELIST    17
 #define PT_NEWNDX       18
 #define PT_ULIST        19
+
+#endif

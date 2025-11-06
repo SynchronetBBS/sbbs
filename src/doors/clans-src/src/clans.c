@@ -25,18 +25,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
 #include <stdio.h>
-#ifndef __unix__
-#include <conio.h>
-#include <dos.h>
-#endif
-#include "unix_wrappers.h"
-#include "win_wrappers.h"
+#include "platform.h"
 
 #include <OpenDoor.h>
 
-#ifdef _WIN32
-#include "cmdline.h" /* Win32 only */
-#endif
 #include "door.h"
 #include "game.h"
 #include "help.h"
@@ -48,6 +40,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "menus.h"
 #include "misc.h"
 #include "mstrings.h"
+#include "myopen.h"
 #include "news.h"
 #include "reg.h"
 #include "scores.h"
@@ -55,6 +48,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "system.h"
 #include "trades.h"
 #include "user.h"
+
+static bool Disbanded(void);
 
 /* ----------------------------------------------------------------------- */
 
@@ -239,4 +234,32 @@ int main(int argc, char *argv[])
 #endif
 
 	return 0;
+}
+
+// ------------------------------------------------------------------------- //
+static bool Disbanded(void)
+{
+	// returns true if the user is in DISBAND.DAT
+	char szUserName[36];
+	FILE *fp;
+	bool Found = false;
+
+	fp = _fsopen("disband.dat", "rb", _SH_DENYWR);
+
+	if (!fp)  return false;
+
+	for (;;) {
+		if (!EncryptRead(szUserName, 36, fp, XOR_DISBAND)) break;
+		if (memchr(szUserName, 0, 36) == NULL)
+			System_Error("Unterminated username in disband.dat");
+
+		if (strcasecmp(szUserName, od_control.user_name) == 0) {
+			Found = true;
+			break;
+		}
+	}
+
+	fclose(fp);
+
+	return Found;
 }

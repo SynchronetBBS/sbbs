@@ -9,7 +9,6 @@
     <ClCompile Include="install.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cmdline.h" />
     <ClInclude Include="console.h" />
     <ClInclude Include="defines.h" />
     <ClInclude Include="door.h" />

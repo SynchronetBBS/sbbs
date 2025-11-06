@@ -1,9 +1,5 @@
 #include <stdio.h>
-#ifdef __unix__
-# include <sys/stat.h>
-# include <unistd.h>
-#endif
-#include "win_wrappers.h"
+#include "platform.h"
 
 #include "defines.h"
 #include "door.h"

@@ -23,11 +23,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
 
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif
-
 #include <ctype.h>
 #include <limits.h>
 #include <stdio.h>
@@ -36,14 +31,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifdef __unix__
 # include <sys/select.h>
 # include <termios.h>
-# include <unistd.h>
 #else
 # include <conio.h>
 #endif
-#ifdef _WIN32
-# include "cmdline.h" // defines display_win32_error ()
-#endif
-#include "win_wrappers.h"
+#include "platform.h"
 
 #include "defines.h"
 #include "door.h"

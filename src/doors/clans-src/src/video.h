@@ -5,8 +5,8 @@
 #ifndef THE_CLANS__VIDEO___H
 #define THE_CLANS__VIDEO___H
 
-#ifdef _WIN32
-#include <conio.h>
+#ifndef __unix__
+# include <conio.h>
 #endif
 
 #include "defines.h"
