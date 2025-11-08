@@ -2379,7 +2379,7 @@ static void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 
 			/* write members */
 			for (iTemp = 0; iTemp < 6; iTemp++)
-				EncryptWrite_s(pc, Clan->Member[iTemp], fpPC, XOR_USER);
+				EncryptWrite_s(pc, Clan->Member[iTemp], fpPC, XOR_PC);
 
 			FoundMatch = true;
 			break;

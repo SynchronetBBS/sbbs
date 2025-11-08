@@ -2762,7 +2762,7 @@ void User_Maint(void)
 			EncryptWrite_s(clan, &TmpClan, fpNewPC, XOR_USER);
 
 			for (iTemp = 0; iTemp < 6; iTemp++) {
-				EncryptWrite_s(pc, TmpClan.Member[iTemp], fpNewPC, XOR_USER);
+				EncryptWrite_s(pc, TmpClan.Member[iTemp], fpNewPC, XOR_PC);
 				free(TmpClan.Member[iTemp]);
 				TmpClan.Member[iTemp] = NULL;
 			}
