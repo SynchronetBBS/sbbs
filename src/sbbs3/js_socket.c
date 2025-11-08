@@ -22,6 +22,7 @@
 #include <cryptlib.h>
 
 #include "sbbs.h"
+#include "js_cryptcert.h"
 #include "js_socket.h"
 #include "js_request.h"
 #include "multisock.h"
@@ -224,7 +225,7 @@ static void do_js_close(JSContext *cx, js_socket_private_t *p, bool finalize)
 	size_t i;
 
 	if (p->session != -1) {
-		if (p->tls_server)
+		if (p->tls_server || p->tls_clientauth)
 			destroy_session(lprintf, p->session);
 		else
 			cryptDestroySession(p->session);
@@ -2245,6 +2246,10 @@ enum {
 	, SOCK_PROP_TLS_MINVER
 	, SOCK_PROP_TLS_PSK
 	, SOCK_PROP_TLS_PSK_ID
+	, SOCK_PROP_TLS_NAMEVERIFY
+	, SOCK_PROP_TLS_CERTVERIFY
+	, SOCK_PROP_TLS_CLIENTAUTH
+	, SOCK_PROP_TLS_ENHANCED_CERTCHECK
 
 };
 
@@ -2273,6 +2278,10 @@ static const char* socket_prop_desc[] = {
 	, "Set to 100 to support TLS 1.0, 101 to support TLS 1.1 and 102 (default) for TLS 1.2, must be set before enabling TLS"
 	, "Set to an object with id: key pairs for TLS PSK auth, must be set before enabling TLS"
 	, "If TLS PSK is used, indicates which entry in <i>tls_psk</i> was used by the remote"
+	, "Enables/Disables TLS server name verification, must be set before enabling TLS"
+	, "Enables/Disables TLS certificate verification, must be set before enabling TLS"
+	, "Enables/Disables TLS client authentication, must be set before enabling TLS"
+	, "Enables/Disables Enhanced check of TLS certificates"
 
 	/* statically-defined properties: */
 	, "Array of socket option names supported by the current platform"
@@ -2361,7 +2370,8 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 									minver = CRYPT_TLSOPTION_MINVER_TLS11;
 								do_cryptAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, minver);
 								// Reduced compliance checking... required for acme-staging-v02.api.letsencrypt.org
-								do_cryptAttribute(p->session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_REDUCED);
+								if (!p->tls_enhanced_certcheck)
+									do_cryptAttribute(p->session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_REDUCED);
 								// Add TLS PSK pairs
 								// Iterate object...
 								if (p->tls_psk) {
@@ -2395,16 +2405,18 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 										JS_DestroyIdArray(cx, ids);
 									}
 								}
+								if (p->tls_disable_certverify)
+									do_cryptAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_CERTVERIFY);
 								// Ensure key and value are both strings...
 								// Set the strings.
-								
 								if (tiny == SOCK_PROP_SSL_SESSION) {
 									// TODO: Make this configurable
-									do_cryptAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_NAMEVERIFY);
+									if (!p->tls_nameverify)
+										do_cryptAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_NAMEVERIFY);
 									ret = do_cryptAttributeString(p->session, CRYPT_SESSINFO_SERVER_NAME, p->hostname, strlen(p->hostname));
 									p->tls_server = false;
 								}
-								else {
+								if (tiny == SOCK_PROP_SSL_SERVER || p->tls_clientauth) {
 									if (scfg == NULL) {
 										ret = CRYPT_ERROR_NOTAVAIL;
 									}
@@ -2415,9 +2427,37 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 										}
 									}
 								}
+								if (tiny == SOCK_PROP_SSL_SERVER && p->tls_clientauth) {
+									do_cryptAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_MANUAL_CERTCHECK);
+								}
 								if (ret == CRYPT_OK) {
 									if ((ret = do_cryptAttribute(p->session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
-										GCES(ret, p, estr, "setting session active");
+										if (ret == CRYPT_ENVELOPE_RESOURCE) {
+											// Get the client cert/cert chain
+											CRYPT_CERTIFICATE client_cert;
+											ret = cryptGetAttribute(p->session, CRYPT_SESSINFO_RESPONSE, &client_cert);
+											if (ret != CRYPT_OK)
+												GCES(ret, p, estr, "getting remote certificate");
+											else {
+												// TODO: Do we need to do everything here?
+												cryptSetAttribute(p->session, CRYPT_SESSINFO_AUTHRESPONSE, 1);
+												// Create tls_client_cert object...
+												JS_DefineProperty(cx, obj, "tls_remote_cert", OBJECT_TO_JSVAL(js_CreateCryptCertObject(cx, client_cert)), NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
+											}
+										}
+										else
+											GCES(ret, p, estr, "setting session active");
+									}
+									if (ret == CRYPT_OK && tiny == SOCK_PROP_SSL_SESSION) {
+										// Get the client cert/cert chain
+										CRYPT_CERTIFICATE client_cert;
+										ret = cryptGetAttribute(p->session, CRYPT_SESSINFO_RESPONSE, &client_cert);
+										if (ret != CRYPT_OK)
+											GCES(ret, p, estr, "getting remote certificate");
+										else {
+											// TODO: CRLs?
+											JS_DefineProperty(cx, obj, "tls_remote_cert", OBJECT_TO_JSVAL(js_CreateCryptCertObject(cx, client_cert)), NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
+										}
 									}
 								}
 							}
@@ -2467,6 +2507,28 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 				p->tls_psk = pskobj;
 				JS_AddObjectRoot(cx, &p->tls_psk);
 			}
+			break;
+		case SOCK_PROP_TLS_NAMEVERIFY:
+			JS_ValueToBoolean(cx, *vp, &b);
+			p->tls_nameverify = b;
+			break;
+		case SOCK_PROP_TLS_CERTVERIFY:
+			JS_ValueToBoolean(cx, *vp, &b);
+			p->tls_disable_certverify = !b;
+			break;
+		case SOCK_PROP_TLS_CLIENTAUTH:
+			if (p->session == -1) {
+				JS_ValueToBoolean(cx, *vp, &b);
+				p->tls_clientauth = b;
+			}
+			else {
+				JS_ReportError(cx, "Cannot change TLS client auth after connection");
+				return JS_FALSE;
+			}
+			break;
+		case SOCK_PROP_TLS_ENHANCED_CERTCHECK:
+			JS_ValueToBoolean(cx, *vp, &b);
+			p->tls_enhanced_certcheck = !b;
 			break;
 	}
 
@@ -2663,6 +2725,18 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 					}
 				}
 			}
+		case SOCK_PROP_TLS_NAMEVERIFY:
+			*vp = BOOLEAN_TO_JSVAL(p->tls_nameverify);
+			break;
+		case SOCK_PROP_TLS_CERTVERIFY:
+			*vp = BOOLEAN_TO_JSVAL(!p->tls_disable_certverify);
+			break;
+		case SOCK_PROP_TLS_CLIENTAUTH:
+			*vp = BOOLEAN_TO_JSVAL(p->tls_clientauth);
+			break;
+		case SOCK_PROP_TLS_ENHANCED_CERTCHECK:
+			*vp = BOOLEAN_TO_JSVAL(!p->tls_disable_certverify);
+			break;
 	}
 
 	JS_RESUMEREQUEST(cx, rc);
@@ -2697,6 +2771,10 @@ static jsSyncPropertySpec js_socket_properties[] = {
 	{   "tls_minver", SOCK_PROP_TLS_MINVER, JSPROP_ENUMERATE,  320 },
 	{   "tls_psk", SOCK_PROP_TLS_PSK, JSPROP_ENUMERATE,  32002 },
 	{   "tls_psk_id", SOCK_PROP_TLS_PSK_ID, JSPROP_ENUMERATE | JSPROP_READONLY,  32002 },
+	{   "tls_nameverify", SOCK_PROP_TLS_NAMEVERIFY, JSPROP_ENUMERATE,  32101 },
+	{   "tls_certverify", SOCK_PROP_TLS_CERTVERIFY, JSPROP_ENUMERATE,  32101 },
+	{   "tls_client_auth", SOCK_PROP_TLS_CLIENTAUTH, JSPROP_ENUMERATE,  32101 },
+	{   "tls_enhanced_certcheck", SOCK_PROP_TLS_ENHANCED_CERTCHECK, JSPROP_ENUMERATE,  32101 },
 	{0}
 };
 
