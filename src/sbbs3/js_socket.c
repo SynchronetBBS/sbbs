@@ -2443,6 +2443,9 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 												cryptSetAttribute(p->session, CRYPT_SESSINFO_AUTHRESPONSE, 1);
 												// Create tls_client_cert object...
 												JS_DefineProperty(cx, obj, "tls_remote_cert", OBJECT_TO_JSVAL(js_CreateCryptCertObject(cx, client_cert)), NULL, NULL, JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
+												if ((ret = do_cryptAttribute(p->session, CRYPT_SESSINFO_ACTIVE, 1)) != CRYPT_OK) {
+													GCES(ret, p, estr, "getting remote certificate");
+												}
 											}
 										}
 										else
