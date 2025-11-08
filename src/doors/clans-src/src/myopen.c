@@ -172,7 +172,9 @@ bool EncryptWrite(void *Data, size_t DataSize, FILE *fp, char XorValue)
 	    Encrypt(EncryptedData, (char *)Data, DataSize, XorValue);*/
 	cipher(Data, Data, DataSize, (unsigned char)XorValue);
 
-	return (fwrite(Data, DataSize, 1, fp) == 1);
+	bool ret = fwrite(Data, DataSize, 1, fp) == 1;
+	cipher(Data, Data, DataSize, (unsigned char)XorValue);
+	return ret;
 }
 
 bool EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue)
