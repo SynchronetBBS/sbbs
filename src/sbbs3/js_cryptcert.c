@@ -1523,14 +1523,14 @@ static jsSyncMethodSpec   js_cryptcert_functions[] = {
 	{"export_cert", js_export,  0,  JSTYPE_STRING,  "format"
 	 , JSDOCSTR("Exports the certificate in the format chosen from CryptCert.FORMAT.")
 	 , 316},
-	{"get_attribute", js_get_attribute, 0,  JSTYPE_VOID,    "attr, value"
-	 , JSDOCSTR("Sets the specified attribute to the specified value")
+	{"get_attribute", js_get_attribute, 0,  JSTYPE_VOID,    "attr"
+	 , JSDOCSTR("Gets the specified attribute as an integer")
 	 , 316},
-	{"get_attribute_string", js_get_attribute_string,   0,  JSTYPE_VOID,    "attr, value"
-	 , JSDOCSTR("Sets the specified attribute to the specified value")
+	{"get_attribute_string", js_get_attribute_string,   0,  JSTYPE_VOID,    "attr"
+	 , JSDOCSTR("Gets the specified attribute as a string")
 	 , 316},
-	{"get_attribute_time", js_get_attribute_time,   0,  JSTYPE_VOID,    "attr, value"
-	 , JSDOCSTR("Sets the specified attribute to the specified value")
+	{"get_attribute_time", js_get_attribute_time,   0,  JSTYPE_VOID,    "attr"
+	 , JSDOCSTR("Gets the specified attribute as a time")
 	 , 316},
 	{"set_attribute", js_set_attribute, 0,  JSTYPE_VOID,    "attr, value"
 	 , JSDOCSTR("Sets the specified attribute to the specified value")
@@ -3207,6 +3207,15 @@ JSObject* js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 			JS_DefineProperty(cx, cursor, "NEXT", INT_TO_JSVAL(CRYPT_CURSOR_NEXT), NULL, NULL
 			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 			JS_DefineProperty(cx, cursor, "LAST", INT_TO_JSVAL(CRYPT_CURSOR_LAST), NULL, NULL
+			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
+
+			JS_DefineProperty(cx, cursor, "CURRENT_GROUP", INT_TO_JSVAL(CRYPT_ATTRIBUTE_CURRENT_GROUP), NULL, NULL
+			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
+			JS_DefineProperty(cx, cursor, "CURRENT", INT_TO_JSVAL(CRYPT_ATTRIBUTE_CURRENT), NULL, NULL
+			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
+			JS_DefineProperty(cx, cursor, "CURRENT_INSTANCE", INT_TO_JSVAL(CRYPT_ATTRIBUTE_CURRENT_INSTANCE), NULL, NULL
+			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
+			JS_DefineProperty(cx, cursor, "CURRENT_CERTIFICATE", INT_TO_JSVAL(CRYPT_CERTINFO_CURRENT_CERTIFICATE), NULL, NULL
 			                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 #ifdef BUILD_JSDOCS
 			js_CreateArrayOfStrings(cx, cursor, "_property_desc_list", cryptcert_cursor_prop_desc, JSPROP_READONLY);
