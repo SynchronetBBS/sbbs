@@ -168,38 +168,6 @@ typedef struct {                        /* File (transfers) Data */
 #define FM_ANON     (1 << 1)          /* Anonymous upload */
 
 /****************************************************************************/
-/* Turns FILE.EXT into FILE    .EXT                                         */
-/****************************************************************************/
-char* padfname(const char *filename, char *str)
-{
-	int c, d;
-
-	for (c = 0; c < 8; c++)
-		if (filename[c] == '.' || !filename[c])
-			break;
-		else
-			str[c] = filename[c];
-	d = c;
-	if (filename[c] == '.')
-		c++;
-	while (d < 8)
-		str[d++] = ' ';
-	if (filename[c] > ' ') /* Change "FILE" to "FILE        " */
-		str[d++] = '.'; /* (don't add a dot if there's no extension) */
-	else
-		str[d++] = ' ';
-	while (d < 12)
-		if (!filename[c])
-			break;
-		else
-			str[d++] = filename[c++];
-	while (d < 12)
-		str[d++] = ' ';
-	str[d] = 0;
-	return str;
-}
-
-/****************************************************************************/
 /* Turns FILE    .EXT into FILE.EXT                                         */
 /****************************************************************************/
 char* unpadfname(const char *filename, char *str)
@@ -307,54 +275,6 @@ BOOL getfiledat(scfg_t* cfg, oldfile_t* f)
 }
 
 /****************************************************************************/
-/* Puts filedata into DIR_code.DAT file                                     */
-/* Called from removefiles                                                  */
-/****************************************************************************/
-BOOL putfiledat(scfg_t* cfg, oldfile_t* f)
-{
-	char buf[F_LEN + 1], str[MAX_PATH + 1], tmp[128];
-	int  file;
-	long length;
-
-	putrec(buf, F_CDT, LEN_FCDT, ultoa(f->cdt, tmp, 10));
-	putrec(buf, F_DESC, LEN_FDESC, f->desc);
-	putrec(buf, F_DESC + LEN_FDESC, 2, "\r\n");
-	putrec(buf, F_ULER, LEN_ALIAS + 5, f->uler);
-	putrec(buf, F_ULER + LEN_ALIAS + 5, 2, "\r\n");
-	putrec(buf, F_TIMESDLED, 5, ultoa(f->timesdled, tmp, 10));
-	putrec(buf, F_TIMESDLED + 5, 2, "\r\n");
-	putrec(buf, F_OPENCOUNT, 3, ultoa(f->opencount, tmp, 10));
-	putrec(buf, F_OPENCOUNT + 3, 2, "\r\n");
-	buf[F_MISC] = (char)f->misc + ' ';
-	putrec(buf, F_ALTPATH, 2, hexplus(f->altpath, tmp));
-	putrec(buf, F_ALTPATH + 2, 2, "\r\n");
-	SAFEPRINTF2(str, "%s%s.dat", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
-	if ((file = sopen(str, O_WRONLY | O_BINARY, SH_DENYRW)) == -1) {
-		return FALSE;
-	}
-	length = (long)filelength(file);
-	if (length % F_LEN) {
-		close(file);
-		return FALSE;
-	}
-	if (f->datoffset > length) {
-		close(file);
-		return FALSE;
-	}
-	lseek(file, f->datoffset, SEEK_SET);
-	if (write(file, buf, F_LEN) != F_LEN) {
-		close(file);
-		return FALSE;
-	}
-	length = (long)filelength(file);
-	close(file);
-	if (length % F_LEN) {
-		return FALSE;
-	}
-	return TRUE;
-}
-
-/****************************************************************************/
 /* Gets file data from dircode.ixb file										*/
 /* Need fields .name and .dir filled.                                       */
 /* only fills .offset, .dateuled, and .datedled                             */
@@ -407,59 +327,6 @@ BOOL getfileixb(scfg_t* cfg, oldfile_t* f)
 	return TRUE;
 }
 
-/****************************************************************************/
-/* Updates the datedled and dateuled index record fields for a file			*/
-/****************************************************************************/
-BOOL putfileixb(scfg_t* cfg, oldfile_t* f)
-{
-	char   str[MAX_PATH + 1], fname[13];
-	uchar* ixbbuf;
-	int    file;
-	long   l, length;
-
-	SAFEPRINTF2(str, "%s%s.ixb", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
-	if ((file = sopen(str, O_RDWR | O_BINARY, SH_DENYRW)) == -1) {
-		return FALSE;
-	}
-	length = (long)filelength(file);
-	if (length % F_IXBSIZE) {
-		close(file);
-		return FALSE;
-	}
-	if ((ixbbuf = (uchar *)malloc(length)) == NULL) {
-		close(file);
-		return FALSE;
-	}
-	if (read(file, ixbbuf, length) != length) {
-		close(file);
-		free(ixbbuf);
-		return FALSE;
-	}
-	SAFECOPY(fname, f->name);
-	for (l = 8; l < 12; l++)   /* Turn FILENAME.EXT into FILENAMEEXT */
-		fname[l] = fname[l + 1];
-	for (l = 0; l < length; l += F_IXBSIZE) {
-		SAFEPRINTF(str, "%11.11s", ixbbuf + l);
-		if (!stricmp(str, fname))
-			break;
-	}
-	free(ixbbuf);
-
-	if (l >= length) {
-		close(file);
-		return FALSE;
-	}
-
-	lseek(file, l + 11 + 3, SEEK_SET);
-
-	my_write(file, &f->dateuled, 4);
-	my_write(file, &f->datedled, 4);
-
-	close(file);
-
-	return TRUE;
-}
-
 int openextdesc(scfg_t* cfg, uint dirnum)
 {
 	char str[MAX_PATH + 1];
@@ -490,74 +357,6 @@ void fgetextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext, int file)
 {
 	lseek(file, (datoffset / F_LEN) * F_EXBSIZE, SEEK_SET);
 	my_read(file, ext, F_EXBSIZE);
-}
-
-void putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
-{
-	char str[MAX_PATH + 1], nulbuf[F_EXBSIZE];
-	int  file;
-
-	strip_ansi(ext);
-	strip_invalid_attr(ext);    /* eliminate bogus ctrl-a codes */
-	memset(nulbuf, 0, sizeof(nulbuf));
-	SAFEPRINTF2(str, "%s%s.exb", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
-	if ((file = nopen(str, O_WRONLY | O_CREAT)) == -1)
-		return;
-	lseek(file, 0L, SEEK_END);
-	while (filelength(file) < (long)(datoffset / F_LEN) * F_EXBSIZE)
-		my_write(file, nulbuf, sizeof(nulbuf));
-	lseek(file, (datoffset / F_LEN) * F_EXBSIZE, SEEK_SET);
-	my_write(file, ext, F_EXBSIZE);
-	close(file);
-}
-
-/****************************************************************************/
-/* Update the upload date for the file 'f'                                  */
-/****************************************************************************/
-int update_uldate(scfg_t* cfg, oldfile_t* f)
-{
-	char str[MAX_PATH + 1], fname[13];
-	int  i, file;
-	long l, length;
-
-	/*******************/
-	/* Update IXB File */
-	/*******************/
-	SAFEPRINTF2(str, "%s%s.ixb", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
-	if ((file = nopen(str, O_RDWR)) == -1)
-		return errno;
-	length = (long)filelength(file);
-	if (length % F_IXBSIZE) {
-		close(file);
-		return -1;
-	}
-	SAFECOPY(fname, f->name);
-	for (i = 8; i < 12; i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
-		fname[i] = fname[i + 1];
-	for (l = 0; l < length; l += F_IXBSIZE) {
-		my_read(file, str, F_IXBSIZE);      /* Look for the filename in the IXB file */
-		str[11] = 0;
-		if (!stricmp(fname, str))
-			break;
-	}
-	if (l >= length) {
-		close(file);
-		return -2;
-	}
-	lseek(file, l + 14, SEEK_SET);
-	my_write(file, &f->dateuled, 4);
-	close(file);
-
-	/*******************************************/
-	/* Update last upload date/time stamp file */
-	/*******************************************/
-	SAFEPRINTF2(str, "%s%s.dab", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
-	if ((file = nopen(str, O_WRONLY | O_CREAT)) == -1)
-		return errno;
-
-	my_write(file, &f->dateuled, 4);
-	close(file);
-	return 0;
 }
 
 bool upgrade_file_bases(bool hash)
