@@ -28,7 +28,7 @@
 #include "ini_file.h"
 
 #define SBBSECHO_VERSION_MAJOR      3
-#define SBBSECHO_VERSION_MINOR      31
+#define SBBSECHO_VERSION_MINOR      32
 
 #define SBBSECHO_PRODUCT_CODE       0x12FF  /* from http://ftsc.org/docs/ftscprod.013 */
 
@@ -207,6 +207,7 @@ typedef struct {
 	bool ignore_netmail_kill_attr;
 	bool ignore_netmail_recv_attr;
 	bool ignore_netmail_local_attr;
+	bool ignore_packed_foreign_netmail;
 	bool relay_filtered_msgs;
 	bool auto_add_subs;
 	bool auto_add_to_areafile;

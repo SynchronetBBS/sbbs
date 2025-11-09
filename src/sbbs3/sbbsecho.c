@@ -4661,7 +4661,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const ch
 
 	if (!sysfaddr_is_valid(match) && !cfg.ignore_netmail_dest_addr) {
 		printf("Foreign address");
-		if (is_pkt) {
+		if (is_pkt && !cfg.ignore_packed_foreign_netmail) {
 			printf(" - ");
 			pkt_to_msg(*fp, &hdr, info, inbound);
 		}

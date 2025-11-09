@@ -1884,6 +1884,11 @@ USAGE:
 						"    NetMail messages even when their 'Local' attribute flag is set.\n"
 						"    This setting defaults to `No`.\n"
 						"\n"
+						"`Ignore Packed Foreign NetMail` will instruct SBBSecho to ignore (not\n"
+						"    export to `.msg` files) NetMail messages in received packets that are\n"
+						"    destined for foreign (non-local) FTN addresses.\n"
+						"    This setting defaults to `No`.\n"
+						"\n"
 						"`Maximum Age of Imported NetMail` allows you to optionally set an age\n"
 						"    limit of NetMail messages that may be imported.\n"
 						"    This setting defaults to `None` (no maximum age).\n"
@@ -1909,6 +1914,8 @@ USAGE:
 					         , cfg.ignore_netmail_recv_attr ? "Yes" : "No");
 					snprintf(opt[i++], MAX_OPLN - 1, "%-40.40s%-3.3s", "Ignore NetMail 'Local' Attribute"
 					         , cfg.ignore_netmail_local_attr ? "Yes" : "No");
+					snprintf(opt[i++], MAX_OPLN - 1, "%-40.40s%-3.3s", "Ignore Packed Foreign NetMail"
+					         , cfg.ignore_packed_foreign_netmail ? "Yes" : "No");
 					if (cfg.max_netmail_age)
 						duration_to_vstr(cfg.max_netmail_age, str, sizeof(str));
 					else
@@ -2003,6 +2010,14 @@ USAGE:
 							}
 							break;
 						case 10:
+							k = !cfg.ignore_packed_foreign_netmail;
+							switch (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, 0
+							                  , "Ignore Packed Foreign NetMail Messages", uifcYesNoOpts)) {
+								case 0: cfg.ignore_packed_foreign_netmail = true;   break;
+								case 1: cfg.ignore_packed_foreign_netmail = false;  break;
+							}
+							break;
+						case 11:
 							uifc.helpbuf =
 								"~ Maximum Age of Imported NetMail ~\n\n"
 								"Maximum age of NetMail that may be imported. The age is based\n"

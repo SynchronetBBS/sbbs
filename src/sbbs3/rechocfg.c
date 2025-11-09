@@ -310,6 +310,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 	cfg->ignore_netmail_kill_attr   = iniGetBool(ini, ROOT_SECTION, "IgnoreNetmailKillAttr", cfg->ignore_netmail_kill_attr);
 	cfg->ignore_netmail_recv_attr   = iniGetBool(ini, ROOT_SECTION, "IgnoreNetmailRecvAttr", cfg->ignore_netmail_recv_attr);
 	cfg->ignore_netmail_local_attr  = iniGetBool(ini, ROOT_SECTION, "IgnoreNetmailLocalAttr", cfg->ignore_netmail_local_attr);
+	cfg->ignore_packed_foreign_netmail = iniGetBool(ini, ROOT_SECTION, "IgnorePackedForeignNetmail", cfg->ignore_packed_foreign_netmail);
 	cfg->kill_empty_netmail         = iniGetBool(ini, ROOT_SECTION, "KillEmptyNetmail", cfg->kill_empty_netmail);
 	cfg->delete_netmail             = iniGetBool(ini, ROOT_SECTION, "DeleteNetmail", cfg->delete_netmail);
 	cfg->max_netmail_age            = (ulong)iniGetDuration(ini, ROOT_SECTION, "MaxNetmailAge", cfg->max_netmail_age);
@@ -581,6 +582,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 	iniSetBool(&ini,        ROOT_SECTION, "IgnoreNetmailKillAttr", cfg->ignore_netmail_kill_attr, style);
 	iniSetBool(&ini,        ROOT_SECTION, "IgnoreNetmailRecvAttr", cfg->ignore_netmail_recv_attr, style);
 	iniSetBool(&ini,        ROOT_SECTION, "IgnoreNetmailLocalAttr", cfg->ignore_netmail_local_attr, style);
+	iniSetBool(&ini,        ROOT_SECTION, "IgnorePackedForeignNetmail", cfg->ignore_packed_foreign_netmail, style);
 	iniSetString(&ini,      ROOT_SECTION, "DefaultRecipient", cfg->default_recipient, style);
 	iniSetEnum(&ini,        ROOT_SECTION, "DefaultPacketType", pktTypeStringList, cfg->default_packet_type, style);
 
