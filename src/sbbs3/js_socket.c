@@ -2413,7 +2413,8 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 									// TODO: Make this configurable
 									if (!p->tls_nameverify)
 										do_cryptAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_NAMEVERIFY);
-									ret = do_cryptAttributeString(p->session, CRYPT_SESSINFO_SERVER_NAME, p->hostname, strlen(p->hostname));
+									if (p->hostname)
+										ret = do_cryptAttributeString(p->session, CRYPT_SESSINFO_SERVER_NAME, p->hostname, strlen(p->hostname));
 									p->tls_server = false;
 								}
 								if (tiny == SOCK_PROP_SSL_SERVER || p->tls_clientauth) {
