@@ -32,8 +32,6 @@ extern "C" {
 DLLEXPORT char*     backslashcolon(char *str);
 DLLEXPORT ulong     ahtoul(const char *str);    /* Converts ASCII hex to ulong */
 DLLEXPORT uint32_t  ahtou32(const char* str);   /* Converts ASCII hex to uint32_t */
-DLLEXPORT char *    hexplus(uint num, char *str);   /* Hex plus for 3 digits up to 9000 */
-DLLEXPORT uint      hptoi(const char *str);
 DLLEXPORT int       pstrcmp(const char **str1, const char **str2);  /* Compares pointers to pointers */
 DLLEXPORT int       strsame(const char *str1, const char *str2);    /* Compares number of same chars */
 DLLEXPORT char *    remove_ctrl_a(const char* instr, char* outstr);

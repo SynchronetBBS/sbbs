@@ -121,6 +121,22 @@ long dstrtodate(scfg_t* cfg, char *instr)
 	return ((tm.tm_year + 1900) * 10000) + (tm.tm_mon * 100) + tm.tm_mday;
 }
 
+/****************************************************************************/
+/* Converts hex-plus string to integer										*/
+/****************************************************************************/
+uint hptoi(const char *str)
+{
+	char tmp[128];
+	uint i;
+
+	if (!str[1] || toupper(str[0]) <= 'F')
+		return ahtoul(str);
+	SAFECOPY(tmp, str);
+	tmp[0] = 'F';
+	i = ahtoul(tmp) + ((toupper(str[0]) - 'F') * 0x10);
+	return i;
+}
+
 /*****************************/
 /* LEGACY FILEBASE CONSTANTS */
 /*****************************/

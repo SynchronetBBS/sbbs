@@ -384,19 +384,6 @@ int strsame(const char *str1, const char *str2)
 	return j;
 }
 
-
-/****************************************************************************/
-/* Returns string for 2 digit hex+ numbers up to 575						*/
-/****************************************************************************/
-char *hexplus(uint num, char *str)
-{
-	sprintf(str, "%03x", num);
-	str[0] = num / 0x100 ? 'f' + (num / 0x10) - 0xf : str[1];
-	str[1] = str[2];
-	str[2] = 0;
-	return str;
-}
-
 /****************************************************************************/
 /* Converts an ASCII Hex string into an ulong                               */
 /* by Steve Deppe (Ille Homine Albe)										*/
@@ -421,22 +408,6 @@ uint32_t ahtou32(const char *str)
 	while ((l = (*str++) | 0x20) != 0x20)
 		val = (l & 0xf) + (l >> 6 & 1) * 9 + val * 16;
 	return val;
-}
-
-/****************************************************************************/
-/* Converts hex-plus string to integer										*/
-/****************************************************************************/
-uint hptoi(const char *str)
-{
-	char tmp[128];
-	uint i;
-
-	if (!str[1] || toupper(str[0]) <= 'F')
-		return ahtoul(str);
-	SAFECOPY(tmp, str);
-	tmp[0] = 'F';
-	i = ahtoul(tmp) + ((toupper(str[0]) - 'F') * 0x10);
-	return i;
 }
 
 /****************************************************************************/
