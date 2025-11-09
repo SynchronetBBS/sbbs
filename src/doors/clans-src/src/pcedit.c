@@ -48,7 +48,7 @@ static void DeleteClan(int16_t ID[2]);
 static void UpdateClan(struct clan *Clan);
 static void InitGame(void);
 #ifdef __unix__
-static char cio_getch(void);
+static int cio_getch(void);
 #endif
 
 
@@ -833,7 +833,7 @@ static void InitGame(void)
 }
 
 #ifdef __unix__
-static char
+static int
 cio_getch(void)
 {
 	fd_set fds;
@@ -841,6 +841,6 @@ cio_getch(void)
 	FD_SET(fileno(stdin),&fds);
 
 	select(fileno(stdin)+1, &fds, NULL, NULL, NULL);
-	return (char)getchar();
+	return getchar();
 }
 #endif
