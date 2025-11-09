@@ -155,7 +155,7 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 						break;
 					case 1 :    // loyalty
 						TempInt = atoi(pcCurrentPos);
-						if (TempInt < CHAR_MIN || TempInt > CHAR_MAX) {
+						if (TempInt < INT8_MIN || TempInt > INT8_MAX) {
 							puts("Invalid Loyalty Value");
 							exit(EXIT_FAILURE);
 						}

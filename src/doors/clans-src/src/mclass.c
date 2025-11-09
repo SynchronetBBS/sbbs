@@ -179,7 +179,7 @@ static int16_t Init_PClasses(char *szFileName)
 					case 5 :    /* ArmorStr */
 					case 6 :    /* Charisma */
 						iTemp = atoi(pcCurrentPos);
-						if (iTemp < CHAR_MIN || iTemp > CHAR_MAX) {
+						if (iTemp < INT8_MIN || iTemp > INT8_MAX) {
 							printf("Invalid ability score %d\n", iTemp);
 							exit(EXIT_FAILURE);
 						}
@@ -211,7 +211,7 @@ static int16_t Init_PClasses(char *szFileName)
 						break;
 					case 10 :   /* spell */
 						iTemp = atoi(pcCurrentPos);
-						if (iTemp < CHAR_MIN || iTemp > CHAR_MAX) {
+						if (iTemp < INT8_MIN || iTemp > INT8_MAX) {
 							printf("Invalid ability score %d\n", iTemp);
 							exit(EXIT_FAILURE);
 						}
