@@ -45,14 +45,69 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "system.h"
 #include "user.h"
 
-void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
+struct Alliance *Alliances[MAX_ALLIANCES];
+int16_t NumAlliances ;
+bool Alliances_Initialized;
+
+static void
+FreeAlliances(void)
+{
+	int iTemp;
+
+	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
+		free(Alliances[iTemp]);
+		Alliances[iTemp] = NULL;
+	}
+	Alliances_Initialized = false;
+	NumAlliances = 0;
+}
+
+static void
+UpdateAlliances(void)
+{
+	FILE *fp;
+	int iTemp;
+
+	if (!Alliances_Initialized)
+		return;
+	fp = fopen("ally.dat", "wb");
+	if (fp) {
+		for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
+			if (Alliances[iTemp] == NULL)
+				continue;
+
+			EncryptWrite_s(Alliance, Alliances[iTemp], fp, XOR_ALLIES);
+		}
+		fclose(fp);
+	}
+}
+
+void DeleteAlliance(int Index)
+{
+	if (!Alliances_Initialized)
+		System_Error("Alliances not initialized!");
+	free(Alliances[Index]);
+
+	// Pack the alliances...
+	memmove(&Alliances[Index], &Alliances[Index + 1], sizeof(Alliances[0]) * (MAX_ALLIANCES - ((size_t)Index + 1U)));
+	Alliances[MAX_ALLIANCES - 1] = NULL;
+	NumAlliances--;
+}
+
+void Alliances_Init(void)
 {
 	FILE    *fp;
 	int     iTemp;
 
+	if (Alliances_Initialized)
+		return;
 	// init alliances as NULLs
-	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++)
+	FreeAlliances();
+	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
+		free(Alliances[iTemp]);
 		Alliances[iTemp] = NULL;
+		NumAlliances = 0;
+	}
 
 	fp = fopen("ally.dat", "rb");
 	if (fp) {
@@ -66,41 +121,19 @@ void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
 				Alliances[iTemp] = NULL;
 				break;
 			}
+			NumAlliances++;
 		}
 		fclose(fp);
 	}
+	Alliances_Initialized = true;
 }
 
-void DeleteAlliance(int Index, struct Alliance *Alliances[MAX_ALLIANCES])
+void Alliances_Close(void)
 {
-	free(Alliances[Index]);
-	Alliances[Index] = NULL;
-}
-
-void FreeAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
-{
-	int iTemp;
-
-	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
-		DeleteAlliance(iTemp, Alliances);
-	}
-}
-
-void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES])
-{
-	FILE *fp;
-	int iTemp;
-
-	fp = fopen("ally.dat", "wb");
-	if (fp) {
-		for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
-			if (Alliances[iTemp] == NULL)
-				continue;
-
-			EncryptWrite_s(Alliance, Alliances[iTemp], fp, XOR_ALLIES);
-		}
-		fclose(fp);
-	}
+	if (!Alliances_Initialized)
+		return;
+	UpdateAlliances();
+	FreeAlliances();
 }
 
 void KillAlliances(void)
@@ -109,7 +142,7 @@ void KillAlliances(void)
 	char szFileName[16];
 	int16_t iTemp;
 
-	GetAlliances(Alliances);
+	Alliances_Init();
 
 	// delete files
 	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
@@ -120,7 +153,7 @@ void KillAlliances(void)
 	}
 
 	// free up mem used by alliances
-	FreeAlliances(Alliances);
+	FreeAlliances();
 
 	// called to destroy ALLY.DAT and remove those pesky HALLxxyy.TXT files
 	unlink("ally.dat");

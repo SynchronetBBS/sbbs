@@ -4,10 +4,12 @@
 #include "defines.h"
 #include "structs.h"
 
-void GetAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
-void FreeAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
-void UpdateAlliances(struct Alliance *Alliances[MAX_ALLIANCES]);
+extern struct Alliance *Alliances[MAX_ALLIANCES];
+extern int16_t NumAlliances;
+
+void DeleteAlliance(int Index);
+void Alliances_Init(void);
+void Alliances_Close(void);
 void KillAlliances(void);
-void DeleteAlliance(int Index, struct Alliance *Alliances[MAX_ALLIANCES]);
 
 #endif

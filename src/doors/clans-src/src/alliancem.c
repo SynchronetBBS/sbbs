@@ -428,7 +428,7 @@ static void DonationRoom(struct Alliance *Alliance)
 	}
 }
 
-void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_ALLIANCES])
+void CreateAlliance(struct Alliance *Alliance)
 {
 	int iTemp;
 	char szName[30], szString[128];
@@ -510,7 +510,6 @@ void ShowAlliances(struct clan *Clan)
 {
 	int iTemp, NumAlliances = 0, CurAlliance;
 	char /*szName[25],*/ szString[50];
-	struct Alliance *Alliances[MAX_ALLIANCES];
 
 	rputs(ST_ALLIANCES);
 
@@ -525,8 +524,6 @@ void ShowAlliances(struct clan *Clan)
 		return;
 	}
 
-	GetAlliances(Alliances);
-
 	/* if alliances found, display names */
 
 	for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++) {
@@ -539,9 +536,6 @@ void ShowAlliances(struct clan *Clan)
 		}
 	}
 	door_pause();
-
-	// free up mem used by alliances
-	FreeAlliances(Alliances);
 }
 
 bool EnterAlliance(struct Alliance *Alliance)
@@ -661,7 +655,6 @@ bool EnterAlliance(struct Alliance *Alliance)
 void FormAlliance(int16_t AllyID)
 {
 	int iTemp, UserAllianceSlot, WhichAlliance;
-	struct Alliance *Alliances[MAX_ALLIANCES];
 
 	// see if this guy can ally any more
 	for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++) {
@@ -685,9 +678,6 @@ void FormAlliance(int16_t AllyID)
 	// else, found spot to place alliance
 	UserAllianceSlot = iTemp;
 
-	// load up alliances
-	GetAlliances(Alliances);
-
 	// find that alliance
 	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
 		if (Alliances[iTemp] != NULL && Alliances[iTemp]->ID == AllyID)
@@ -696,9 +686,6 @@ void FormAlliance(int16_t AllyID)
 
 	if (iTemp == MAX_ALLIANCES) {
 		rputs("Alliance no longer exists!\n");
-
-		// free up mem used by alliances
-		FreeAlliances(Alliances);
 		return;
 	}
 
@@ -712,9 +699,6 @@ void FormAlliance(int16_t AllyID)
 
 	if (iTemp == MAX_ALLIANCEMEMBERS) {
 		rputs("Too many members in that alliance, you cannot join.\n");
-
-		// free up mem used by alliances
-		FreeAlliances(Alliances);
 		return;
 	}
 
@@ -722,16 +706,9 @@ void FormAlliance(int16_t AllyID)
 	Alliances[WhichAlliance]->Member[ iTemp ][0] = PClan.ClanID[0];
 	Alliances[WhichAlliance]->Member[ iTemp ][1] = PClan.ClanID[1];
 	PClan.Alliances[ UserAllianceSlot ] = AllyID;
-
-
-	// deinit alliances and update to file
-	UpdateAlliances(Alliances);
-
-	// free up mem used by alliances
-	FreeAlliances(Alliances);
 }
 
-void KillAlliance(int16_t WhichAlliance, struct Alliance *Alliances[MAX_ALLIANCES])
+void KillAlliance(int16_t WhichAlliance)
 {
 	char szFileName[15];
 	int16_t iTemp;
@@ -801,15 +778,12 @@ void KillAlliance(int16_t WhichAlliance, struct Alliance *Alliances[MAX_ALLIANCE
 	}
 
 	fclose(fpPlayerFile);
-	DeleteAlliance(WhichAlliance, Alliances);
+	DeleteAlliance(WhichAlliance);
 }
 
 void Alliance_Maint(void)
 {
-	struct Alliance *Alliances[MAX_ALLIANCES];
 	int iTemp;
-
-	GetAlliances(Alliances);
 
 	// maintain alliances...
 	for (iTemp = 0; iTemp  < MAX_ALLIANCES; iTemp++) {
@@ -820,10 +794,4 @@ void Alliance_Maint(void)
 				Alliances[iTemp]->szName[0] = '!';
 		}
 	}
-
-	// deinit alliances and update to file
-	UpdateAlliances(Alliances);
-
-	// free up mem used by alliances
-	FreeAlliances(Alliances);
 }

@@ -111,8 +111,6 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 	struct Message Message;
 	bool FoundInPCFile = false;   // set to true if he was ever on this board
 	bool FoundNewCreator;
-	struct Alliance *Alliances[MAX_ALLIANCES];
-
 
 	AddToDisband();
 
@@ -312,8 +310,6 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 
 
 	// remove from ALLY.DAT
-	GetAlliances(Alliances);
-
 	// see if this clan is the creator of an alliance
 	for (CurAlliance = 0; CurAlliance < MAX_ALLIANCES; CurAlliance++) {
 		if (Alliances[CurAlliance] &&
@@ -338,7 +334,8 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 
 			if (FoundNewCreator == false) {
 				// delete this alliance since no new ruler
-				DeleteAlliance(CurAlliance, Alliances);
+				DeleteAlliance(CurAlliance);
+				CurAlliance--;
 			}
 		}
 	}
@@ -353,12 +350,6 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 			}
 		}
 	}
-
-	// deinit alliances and update to file
-	UpdateAlliances(Alliances);
-
-	// free up mem used by alliances
-	FreeAlliances(Alliances);
 }
 
 

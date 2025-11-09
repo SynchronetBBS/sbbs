@@ -243,7 +243,6 @@ static void DeleteClan(int16_t ClanID[2])
 	struct clan *TmpClan;
 	struct Message Message;
 	bool FoundNewCreator;
-	struct Alliance *Alliances[MAX_ALLIANCES];
 
 	// if this is the ruler of town, remove him
 	if (ClanID[0] == Village.Data.RulingClanId[0] &&
@@ -418,8 +417,7 @@ static void DeleteClan(int16_t ClanID[2])
 
 
 	// remove from ALLY.DAT
-	GetAlliances(Alliances);
-
+	Alliances_Init();
 	// see if this clan is the creator of an alliance
 	for (CurAlliance = 0; CurAlliance < MAX_ALLIANCES; CurAlliance++) {
 		if (Alliances[CurAlliance] &&
@@ -444,7 +442,8 @@ static void DeleteClan(int16_t ClanID[2])
 
 			if (FoundNewCreator == false) {
 				// delete this alliance since no new ruler
-				DeleteAlliance(CurAlliance, Alliances);
+				DeleteAlliance(CurAlliance);
+				CurAlliance--;
 			}
 		}
 	}
@@ -462,11 +461,8 @@ static void DeleteClan(int16_t ClanID[2])
 		}
 	}
 
-	// deinit alliances and update to file
-	UpdateAlliances(Alliances);
-
-	// free up mem used by alliances
-	FreeAlliances(Alliances);
+	// update to file
+	Alliances_Close();
 
 	// remove from list of clan names, remove from list of user names
 	RemoveFromUList(ClanID);

@@ -4,11 +4,11 @@
 #include "defines.h"
 #include "structs.h"
 
-void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_ALLIANCES]);
+void CreateAlliance(struct Alliance *Alliance);
 void ShowAlliances(struct clan *Clan);
 bool EnterAlliance(struct Alliance *Alliance);
 void FormAlliance(int16_t AllyID);
-void KillAlliance(int16_t WhichAlliance, struct Alliance *Alliances[MAX_ALLIANCES]);
+void KillAlliance(int16_t WhichAlliance);
 void Alliance_Maint(void);
 
 #endif

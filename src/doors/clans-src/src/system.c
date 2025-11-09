@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <OpenDoor.h>
 #include "platform.h"
 
+#include "alliance.h"
 #include "clansini.h"
 #include "class.h"
 #include "door.h"
@@ -376,6 +377,8 @@ void System_Close_AtExit(void)
 		TRACEX("Door_Close()");
 		Door_Close();
 
+		TRACEX("Alliances_Close()");
+		Alliances_Close();
 		TRACEX("Village_Close()");
 		Village_Close();
 		TRACEX("Game_Close()");
@@ -542,8 +545,8 @@ void System_Init(void)
 
 	// Game Specific data (village, game.dat)
 	Game_Init();
-
 	Village_Init();
+	Alliances_Init();
 
 	if (Game.Data.InterBBS) {
 		IBBS_Init();

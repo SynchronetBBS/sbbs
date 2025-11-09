@@ -693,9 +693,8 @@ static int16_t MarketMenu(void)
 
 static int16_t AlliancesMenu(void)
 {
-	struct Alliance *Alliances[MAX_ALLIANCES];
 	signed char iTemp;
-	int16_t NumAlliances, WhichAlliance, NumUserAlliances;
+	int16_t WhichAlliance, NumUserAlliances;
 	char cKey, szChoices[MAX_ALLIANCES + 5];
 	char szString[128];
 
@@ -705,13 +704,12 @@ static int16_t AlliancesMenu(void)
 		rputs("\n%P");
 	}
 
-	GetAlliances(Alliances);
-
 	// display them, if any
 	rputs(ST_AMENU0);    // show title
 	rputs(ST_LONGLINE);
 	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
-		if (Alliances[iTemp] == NULL) break;
+		if (Alliances[iTemp] == NULL)
+			break;
 
 		// od_printf("(%c) %s\n\r", iTemp+'A', Alliances[iTemp]->szName);
 		snprintf(szString, sizeof(szString), ST_AMENU1, (char)(iTemp + 'A'), Alliances[iTemp]->szName);
@@ -719,7 +717,8 @@ static int16_t AlliancesMenu(void)
 
 		szChoices[iTemp] = (char)(iTemp + 'A');
 	}
-	NumAlliances = iTemp;
+	if (NumAlliances != iTemp)
+		System_Error("Alliances inconsistency!");
 
 	// see how many alliances the user has
 	NumUserAlliances = 0;
@@ -762,11 +761,10 @@ static int16_t AlliancesMenu(void)
 					Alliances[NumAlliances] = malloc(sizeof(struct Alliance));
 					CheckMem(Alliances[NumAlliances]);
 
-					CreateAlliance(Alliances[ NumAlliances ], Alliances);
-					UpdateAlliances(Alliances);
+					CreateAlliance(Alliances[ NumAlliances ]);
 					PClan.MadeAlliance = true;
 					if (EnterAlliance(Alliances[ NumAlliances ])) {
-						KillAlliance(NumAlliances, Alliances);
+						KillAlliance(NumAlliances);
 					}
 				}
 			}
@@ -789,7 +787,7 @@ static int16_t AlliancesMenu(void)
 				// in that alliance, enter it
 
 				if (EnterAlliance(Alliances[WhichAlliance])) {
-					KillAlliance(WhichAlliance, Alliances);
+					KillAlliance(WhichAlliance);
 				}
 			}
 			else {
@@ -803,12 +801,6 @@ static int16_t AlliancesMenu(void)
 	}
 	else  // quit
 		rputs(ST_QUIT);
-
-	// deinit alliances and update to file
-	UpdateAlliances(Alliances);
-
-	// free up mem used by alliances
-	FreeAlliances(Alliances);
 
 	return 0;
 }

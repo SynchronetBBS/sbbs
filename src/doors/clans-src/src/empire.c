@@ -1684,7 +1684,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 	int16_t WhichBBS = 0, iTemp, Junk[2] = {-1, -1};  // <<-- Junk[] is used as dummy
 	int16_t Percent, WhichAlliance, LandGained;
 	struct clan TmpClan = {0};
-	struct Alliance *Alliances[MAX_ALLIANCES];
 	bool ShowedOne;
 
 	// function will update defender's empire but NOT the attacker's
@@ -1732,7 +1731,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 			GetClanNameID(szDefender, AttackResult->DefenderID);
 			break;
 		case EO_ALLIANCE :
-			GetAlliances(Alliances);
 			// figure out which one is the defender
 			for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
 				if (Alliances[iTemp] == NULL)
@@ -1744,9 +1742,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 				snprintf(szDefender, sizeof(szDefender), "the alliance of %s", Alliances[iTemp]->szName);
 			else
 				strlcpy(szDefender, "<invalid alliance>", sizeof(szDefender));
-
-			// free up mem used by alliances
-			FreeAlliances(Alliances);
 			break;
 	}
 
@@ -1834,7 +1829,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						FreeClanMembers(&TmpClan);
 						break;
 					case EO_ALLIANCE :
-						GetAlliances(Alliances);
 						// figure out which one is the defender
 						for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
 							if (Alliances[iTemp] == NULL)
@@ -1851,9 +1845,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 
 							AttackResult->LandStolen = (int16_t)(((Alliances[WhichAlliance]->Empire.Land + LandGained) * Percent) / 100);
 						}
-
-						// free up mem used by alliances
-						FreeAlliances(Alliances);
 						break;
 				}
 				ShowedOne = false;
@@ -1889,7 +1880,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						FreeClanMembers(&TmpClan);
 						break;
 					case EO_ALLIANCE :
-						GetAlliances(Alliances);
 						// figure out which one is the defender
 						for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
 							if (Alliances[iTemp] == NULL)
@@ -1903,9 +1893,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 							AttackResult->GoldStolen =
 								((Alliances[WhichAlliance]->Empire.VaultGold / 100) * ((int32_t)AttackResult->PercentDamage * (int32_t)AttackResult->ExtentOfAttack) / 100);
 						}
-
-						// free up mem used by alliances
-						FreeAlliances(Alliances);
 						break;
 				}
 				// snprintf(szString, sizeof(szString), " They stole %ld gold!\n", AttackResult->GoldStolen);
@@ -1929,7 +1916,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						FreeClanMembers(&TmpClan);
 						break;
 					case EO_ALLIANCE :
-						GetAlliances(Alliances);
 						// figure out which one is the defender
 						for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
 							if (Alliances[iTemp] == NULL) break;
@@ -1941,9 +1927,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						Percent = (int16_t)((AttackResult->PercentDamage*AttackResult->ExtentOfAttack) / 100);
 						DestroyBuildings(Alliances[WhichAlliance]->Empire.Buildings,
 										 AttackResult->BuildingsDestroyed, Percent, &LandGained);
-
-						// free up mem used by alliances
-						FreeAlliances(Alliances);
 						break;
 				}
 				// tell what they lost
@@ -2280,7 +2263,6 @@ static void GetNumTroops(struct Army *OriginalArmy, struct Army *AttackingArmy)
 static void StartEmpireWar(struct empire *Empire)
 {
 	struct Army AttackingArmy;
-	struct Alliance *Alliances[MAX_ALLIANCES];
 	struct AttackResult Result;
 	struct clan TmpClan = {0};
 	const char *pszVillage = "1 A Village",
@@ -2295,7 +2277,7 @@ static void StartEmpireWar(struct empire *Empire)
 	const char *aszAllianceNames[MAX_ALLIANCES];
 	const char *apszGoals[4];
 	int16_t TypeOfDefender, NumOfTypes, iTemp, NumBBSes, BBSIndex[MAX_IBBSNODES];
-	int16_t WhichVillage, NumAlliances, WhichAlliance, NumGoals, Goal, ExtentOfAttack = 0;
+	int16_t WhichVillage, WhichAlliance, NumGoals, Goal, ExtentOfAttack = 0;
 	int16_t ClanID[2], LandGained, Decrease;
 
 	if (!PClan.WarHelp) {
@@ -2522,23 +2504,18 @@ static void StartEmpireWar(struct empire *Empire)
 	else if (TypeOfDefender == EO_ALLIANCE) {
 		// get alliances and choose one
 
-		GetAlliances(Alliances);
-
 		for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
 			if (Alliances[iTemp] == NULL)
 				break;
 			else
 				aszAllianceNames[iTemp] = Alliances[iTemp]->szName;
 		}
-		NumAlliances = iTemp;
+		if (NumAlliances != iTemp)
+			System_Error("Alliances inconsistency!");
 
 		if (NumAlliances == 0) {
 			// rputs("No alliances found!\n");
 			rputs(ST_WEMPIRE5);
-
-			// free up mem used by alliances
-			FreeAlliances(Alliances);
-
 			return;
 		}
 
@@ -2547,19 +2524,11 @@ static void StartEmpireWar(struct empire *Empire)
 
 		if (WhichAlliance == -1) {
 			rputs(ST_ABORTED);
-
-			// free up mem used by alliances
-			FreeAlliances(Alliances);
-
 			return;
 		}
 
 		if (strcasecmp(Empire->szName, Alliances[WhichAlliance]->szName) == 0) {
 			rputs("You cannot attack your own alliance!\n%P");
-
-			// free up mem used by alliances
-			FreeAlliances(Alliances);
-
 			return;
 		}
 
@@ -2570,10 +2539,6 @@ static void StartEmpireWar(struct empire *Empire)
 				AttackingArmy.Axemen  == 0 &&
 				AttackingArmy.Knights == 0) {
 			rputs(ST_ABORTED);
-
-			// free up mem used by alliances
-			FreeAlliances(Alliances);
-
 			return;
 		}
 
@@ -2591,10 +2556,6 @@ static void StartEmpireWar(struct empire *Empire)
 			if (Goal == -1) {
 				// choose against it, so quit
 				rputs(ST_ABORTED);
-
-				// free up mem used by alliances
-				FreeAlliances(Alliances);
-
 				return;
 			}
 
@@ -2611,8 +2572,6 @@ static void StartEmpireWar(struct empire *Empire)
 				ExtentOfAttack = 10;
 				// ExtentOfAttack = GetLong(ST_WAR2, 5, 10);
 				if (!ExtentOfAttack) {
-					// free up mem used by alliances
-					FreeAlliances(Alliances);
 					return;
 				}
 				break;
@@ -2620,8 +2579,6 @@ static void StartEmpireWar(struct empire *Empire)
 				// ExtentOfAttack = GetLong(ST_WAR3, 8, 15);
 				ExtentOfAttack = 15;
 				if (!ExtentOfAttack) {
-					// free up mem used by alliances
-					FreeAlliances(Alliances);
 					return;
 				}
 				break;
@@ -2629,8 +2586,6 @@ static void StartEmpireWar(struct empire *Empire)
 				// ExtentOfAttack = GetLong(ST_WAR4, 5, 15);
 				ExtentOfAttack = 15;
 				if (!ExtentOfAttack) {
-					// free up mem used by alliances
-					FreeAlliances(Alliances);
 					return;
 				}
 				break;
@@ -2687,13 +2642,6 @@ static void StartEmpireWar(struct empire *Empire)
 		// give attacker his land
 		Empire->Land += Result.LandStolen;
 		Empire->VaultGold += Result.GoldStolen;
-
-		// update info to file
-		UpdateAlliances(Alliances);
-
-		// free up mem used by alliances
-		FreeAlliances(Alliances);
-
 	}
 	else if (TypeOfDefender == EO_CLAN) {
 		// choose clan using GetClanID()
@@ -2873,7 +2821,6 @@ static void StartEmpireWar(struct empire *Empire)
 // ------------------------------------------------------------------------- //
 static void SpyMenu(struct empire *Empire)
 {
-	struct Alliance *Alliances[MAX_ALLIANCES];
 	struct clan TmpClan = {0};
 	const char *pszVillage = "1 A Village",
 	    *pszAlliance = "2 An Alliance",
@@ -2883,7 +2830,7 @@ static void SpyMenu(struct empire *Empire)
 	const char *aszAllianceNames[MAX_ALLIANCES];
 	char szSpierName[41], szMessage[128];
 	int16_t NumOfTypes, iTemp, NumBBSes, BBSIndex[MAX_IBBSNODES];
-	int16_t WhichVillage, NumAlliances, WhichAlliance, TypeToSpyOn;
+	int16_t WhichVillage, WhichAlliance, TypeToSpyOn;
 	char szString[255];
 	int16_t ClanID[2], Junk[2] = {-1, -1};
 
@@ -3021,22 +2968,17 @@ static void SpyMenu(struct empire *Empire)
 	else if (TypeToSpyOn == EO_ALLIANCE) {
 		// get alliances and choose one
 
-		GetAlliances(Alliances);
-
 		for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
 			if (Alliances[iTemp] == NULL)
 				break;
 			else
 				aszAllianceNames[iTemp] = Alliances[iTemp]->szName;
 		}
-		NumAlliances = iTemp;
+		if (NumAlliances != iTemp)
+			System_Error("Alliances inconsistency!");
 
 		if (NumAlliances == 0) {
 			rputs("No alliances found!\n");
-
-			// free up mem used by alliances
-			FreeAlliances(Alliances);
-
 			return;
 		}
 
@@ -3045,23 +2987,15 @@ static void SpyMenu(struct empire *Empire)
 
 		if (WhichAlliance == -1) {
 			rputs(ST_ABORTED);
-
-			// free up mem used by alliances
-			FreeAlliances(Alliances);
-
 			return;
 		}
 
 		// snprintf(szString, sizeof(szString), "It will cost you %ld gold to spy.  The empire has %ld gold.\nContinue?",
 		snprintf(szString, sizeof(szString), ST_SPY1, SPY_COST, (long)Empire->VaultGold);
 		if (YesNo(szString) == NO) {
-			// free up mem used by alliances
-			FreeAlliances(Alliances);
 			return;
 		}
 		if (Empire->VaultGold < SPY_COST) {
-			// free up mem used by alliances
-			FreeAlliances(Alliances);
 			rputs(ST_FMENUNOAFFORD);
 			return;
 		}
@@ -3086,9 +3020,6 @@ static void SpyMenu(struct empire *Empire)
 					Alliances[WhichAlliance]->szName, szSpierName);
 			GenericMessage(szMessage, Alliances[WhichAlliance]->CreatorID, Junk, "", false);
 		}
-
-		// free up mem used by alliances
-		FreeAlliances(Alliances);
 	}
 	else if (TypeToSpyOn == EO_CLAN) {
 		// choose clan using GetClanID()
