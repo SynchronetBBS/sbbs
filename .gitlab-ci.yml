@@ -48,6 +48,7 @@ include:
       platform: 'arm64'
       tagname: 'RaspberryPi'
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1 NO_ABSOLUTE_RPATH=1'
+      build_doors: "yes"
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: "linux"
