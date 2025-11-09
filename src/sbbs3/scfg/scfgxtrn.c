@@ -368,7 +368,7 @@ void fevents_cfg()
 		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Monthly", (cfg.sys_monthly.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_monthly.cmd);
 		opt[i][0] = 0;
 		uifc.helpbuf =
-			"`External Events:`\n"
+			"`Fixed Events:`\n"
 			"\n"
 			"From this menu, you can configure the logon and logout events, and the\n"
 			"system daily and monthly (off-line) events.\n"
