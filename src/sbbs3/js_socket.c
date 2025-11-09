@@ -2728,6 +2728,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 					}
 				}
 			}
+			break;
 		case SOCK_PROP_TLS_NAMEVERIFY:
 			*vp = BOOLEAN_TO_JSVAL(p->tls_nameverify);
 			break;
