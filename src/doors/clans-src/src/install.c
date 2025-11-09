@@ -754,7 +754,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 	zputs("|15Done.\n");
 }
 
-int CheckRow(int row, bool *Done)
+static int CheckRow(int row, bool *Done)
 {
 	if (row >= ScreenLines - STARTROW - 1) {
 		zputs("[more]");

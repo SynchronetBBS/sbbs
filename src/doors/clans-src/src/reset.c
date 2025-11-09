@@ -495,7 +495,7 @@ static void DosHelp(char *Topic, char *File)
 	while (EndOfTopic == false) {
 		/* read in up to 22 lines */
 		for (CurLine = 0; CurLine < 22; CurLine++) {
-			fgets(Lines[CurLine], 355, fp);
+			fgets(Lines[CurLine], 255, fp);
 
 			if (Lines[CurLine][0] == '^') {
 				if (strspn(&Lines[CurLine][1], "END") == 3) {

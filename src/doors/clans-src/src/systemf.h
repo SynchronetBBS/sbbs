@@ -1,3 +1,5 @@
+#include "defines.h"
+
 /*
  * System functions
  */

@@ -73,6 +73,8 @@ void FreeFileList(char **fl)
 static void
 FreePartialSortableArray(struct Sortable *sa, size_t found)
 {
+	if (sa == NULL)
+		return;
 	for (size_t i = 0; i < found; i++) {
 		free(sa[i].p);
 	}
@@ -119,7 +121,8 @@ char **FilesOrderedByDate(const char *path, const char *match, bool *error)
 		*error = true;
 		return NULL;
 	}
-	memcpy(tmpstr, Backslashed, path_bytes);
+	if (path_bytes)
+		memcpy(tmpstr, Backslashed, path_bytes);
 	free(Backslashed);
 	if (sh == -1) {
 		if (errno != ENOENT)

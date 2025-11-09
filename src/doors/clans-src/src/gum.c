@@ -336,11 +336,11 @@ int encode(FILE *input, FILE *output)
 	int c, i, n=MINCOPY, addpos=0, len=0, full=0, state=IDLE, nextlen;
 
 	initialize();
-	head = calloc(1, (unsigned long)HASHSIZE*sizeof(short));
-	tail = calloc(1, (unsigned long)HASHSIZE*sizeof(short));
-	succ = calloc(1, (unsigned long)maxsize*sizeof(short));
-	pred = calloc(1, (unsigned long)maxsize*sizeof(short));
-	buffer = (unsigned char *) calloc(1, (size_t)maxsize * sizeof(unsigned char));
+	head = calloc(HASHSIZE, sizeof(short));
+	tail = calloc(HASHSIZE, sizeof(short));
+	succ = calloc(maxsize, sizeof(short));
+	pred = calloc(maxsize, sizeof(short));
+	buffer = (unsigned char *) calloc(maxsize, sizeof(unsigned char));
 	if (head==NULL || tail==NULL || succ==NULL || pred==NULL || buffer==NULL) {
 		printf("Error allocating memory\n");
 		exit(1);

@@ -926,7 +926,7 @@ static void ItemEquipResults(struct item_data *Item, bool Equipping)
 	}
 }
 
-void ItemStats(void)
+static void ItemStats(void)
 /*
  * Shows item statistics for PClan.
  */
@@ -1760,7 +1760,7 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 }
 
 
-bool NameInUse(char *szName)
+static bool NameInUse(char *szName)
 /*
  * Returns true if the given Clan name is already in use.
  */
@@ -2055,7 +2055,7 @@ void User_Destroy(void)
 
 // ------------------------------------------------------------------------- //
 
-void CopyPC(struct pc *PCDest, struct pc *PCSrc)
+static void CopyPC(struct pc *PCDest, struct pc *PCSrc)
 {
 	int16_t iTemp;
 

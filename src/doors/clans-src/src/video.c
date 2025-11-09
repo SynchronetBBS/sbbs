@@ -1029,7 +1029,7 @@ void Video_Init(void)
 		gotoxy(x, y);
 		textattr(7);
 		// character then attribute
-		Video.VideoMem = calloc(1, (size_t)ScreenWidth * (size_t)ScreenLines * 2);
+		Video.VideoMem = calloc(2, (size_t)ScreenWidth * (size_t)ScreenLines);
 		clrscr();
 #elif defined(__MSDOS__)
 		int16_t iTemp;

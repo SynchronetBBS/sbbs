@@ -517,19 +517,16 @@ static void UpdateVillage(void)
 
 static void RejectTrade(struct TradeData *TradeData)
 {
-	struct clan *TmpClan;
+	struct clan TmpClan;
 
 	TradeData->Active = false;
 
-	TmpClan = malloc(sizeof(struct clan));
-	CheckMem(TmpClan);
-
-	if (GetClan(TradeData->FromClanID, TmpClan)) {
-		TmpClan->Empire.VaultGold += TradeData->Giving.Gold;
-		TmpClan->Empire.Army.Followers += TradeData->Giving.Followers;
-		TmpClan->Empire.Army.Footmen += TradeData->Giving.Footmen;
-		TmpClan->Empire.Army.Axemen += TradeData->Giving.Axemen;
-		TmpClan->Empire.Army.Knights += TradeData->Giving.Knights;
+	if (GetClan(TradeData->FromClanID, &TmpClan)) {
+		TmpClan.Empire.VaultGold += TradeData->Giving.Gold;
+		TmpClan.Empire.Army.Followers += TradeData->Giving.Followers;
+		TmpClan.Empire.Army.Footmen += TradeData->Giving.Footmen;
+		TmpClan.Empire.Army.Axemen += TradeData->Giving.Axemen;
+		TmpClan.Empire.Army.Knights += TradeData->Giving.Knights;
 
 		/* this ensures the file is zeroed for cheaters -- improve later */
 		TradeData->Giving.Gold = 0;
@@ -539,12 +536,11 @@ static void RejectTrade(struct TradeData *TradeData)
 		TradeData->Giving.Knights = 0;
 		TradeData->Giving.Catapults = 0;
 
-		UpdateClan(TmpClan);
+		UpdateClan(&TmpClan);
 	}
 	else {
 		puts("Failed to reject trade, couldn't load the clan");
 	}
-	FreeClan(TmpClan);
 }
 
 static void RemoveFromUList(const int16_t ClanID[2])
@@ -643,11 +639,8 @@ static void RemoveFromIPScores(const int16_t ClanID[2])
 	}
 
 	// initialize the score data
-	ScoreList = malloc(sizeof(struct UserScore *)*MAX_USERS);
+	ScoreList = calloc(MAX_USERS, sizeof(struct UserScore *));
 	CheckMem(ScoreList);
-
-	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
-		ScoreList[iTemp] = NULL;
 
 	// read date
 	EncryptRead(ScoreDate, 11, fp, XOR_IPS);

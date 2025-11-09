@@ -662,7 +662,6 @@ static void Reply_Message(struct Message *Reply)
 						Message.Data.Offsets[NumLines] = (int16_t)CurChar;
 						strlcpy(&Message.Data.MsgTxt[CurChar], ST_RMAILQUOTEBRACKET, MSGTXT_SZ - (size_t)CurChar);
 						strlcat(&Message.Data.MsgTxt[CurChar], &Reply->Data.MsgTxt[ Reply->Data.Offsets[i-1]], MSGTXT_SZ - (size_t)CurChar);
-						Message.Data.MsgTxt[CurChar + 78] = 0;
 
 						CurChar += (strlen(&Message.Data.MsgTxt[CurChar]) + 1);
 						if (CurChar >= MSGTXT_SZ)
@@ -1677,7 +1676,7 @@ void GlobalMsgPost(void)
 							"|0SEnter the name of the village\n|0G> |0F",
 							&WhichVillage, true, DT_LONG, true);
 
-			if (WhichVillage == -1) {
+			if (WhichVillage < 0 || WhichVillage >= NumVillages) {
 				rputs(ST_ABORTED);
 				return;
 			}
@@ -1701,7 +1700,7 @@ void GlobalMsgPost(void)
 						"|0SEnter the name of the village\n|0G> |0F",
 						&WhichVillage, true, DT_LONG, true);
 
-		if (WhichVillage == -1) {
+		if (WhichVillage < 0 || WhichVillage >= NumVillages) {
 			rputs(ST_ABORTED);
 			return;
 		}

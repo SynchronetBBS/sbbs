@@ -596,6 +596,30 @@ struct SpyResultPacket {
 	char szTheDate[11];
 };
 
+struct ibbs_node_info {
+	char* pszBBSName;
+	char* pszVillageName;
+	char* pszAddress;
+	int16_t RouteThrough;
+	int16_t MailType;
+};
+
+struct ibbs_node_reset {
+	int16_t Received;           /* used only by main BBS */
+	int32_t LastSent;          /* last attempt at sending a reset command */
+};
+
+struct ibbs_node_recon {
+	int32_t LastReceived;      /* when last recon gotten was */
+	int32_t LastSent;          /* last attempted recon */
+	char PacketIndex;
+};
+
+struct ibbs_node_attack {
+	int16_t ReceiveIndex;
+	int16_t SendIndex;
+};
+
 struct ibbs {
 	bool Initialized;
 
@@ -610,30 +634,10 @@ struct ibbs {
 		struct ibbs_node {
 			bool Active;
 
-			struct ibbs_node_info {
-				char *pszBBSName;
-				char *pszVillageName;
-				char *pszAddress;
-				int16_t RouteThrough;
-				int16_t MailType;
-			} Info;
-
-			struct ibbs_node_reset {
-				int16_t Received;           /* used only by main BBS */
-				int32_t LastSent;          /* last attempt at sending a reset command */
-			} Reset;
-
-			struct ibbs_node_recon {
-				int32_t LastReceived;      /* when last recon gotten was */
-				int32_t LastSent;          /* last attempted recon */
-				char PacketIndex;
-			} Recon;
-
-			struct ibbs_node_attack {
-				int16_t ReceiveIndex;
-				int16_t SendIndex;
-			} Attack;
-
+			struct ibbs_node_info Info;
+			struct ibbs_node_reset Reset;
+			struct ibbs_node_recon Recon;
+			struct ibbs_node_attack Attack;
 		} Nodes[MAX_IBBSNODES];
 
 	} Data;

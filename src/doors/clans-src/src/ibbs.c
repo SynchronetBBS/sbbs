@@ -1125,7 +1125,7 @@ void IBBS_SeeVillages(bool Travel)
 	int16_t NumBBSes, WhichBBS;
 	char szString[128], BBSIndex[MAX_IBBSNODES];
 	signed char cTemp;
-	const char *pszBBSNames[MAX_IBBSNODES];
+	const char* pszBBSNames[MAX_IBBSNODES];
 	bool ShowInitially;
 
 	NumBBSes = 0;
@@ -1135,7 +1135,7 @@ void IBBS_SeeVillages(bool Travel)
 		if (IBBS.Data.Nodes[cTemp].Active == false)
 			continue;
 
-		pszBBSNames [ NumBBSes ] = VillageName(cTemp + 1);
+		pszBBSNames[NumBBSes] = VillageName(cTemp + 1);
 		BBSIndex[NumBBSes] = cTemp;
 		NumBBSes++;
 	}
@@ -1149,7 +1149,7 @@ void IBBS_SeeVillages(bool Travel)
 
 		ShowInitially = false;
 
-		if (WhichBBS == -1)
+		if (WhichBBS < 0 || WhichBBS >= NumBBSes)
 			return;
 
 		rputs("\n");
@@ -2461,15 +2461,16 @@ static void ComeBack(int16_t ClanID[2], int16_t BBSID)
 static int16_t CheckID(int ID, const char *name)
 {
 	int16_t idx;
-	char szString[256];
 
 	if (ID < 1 || ID > MAX_IBBSNODES) {
+		char szString[256];
 		snprintf(szString, sizeof(szString), "|04x |12Invalid %s BBS ID\n", name);
 		LogDisplayStr(szString);
 		return false;
 	}
 	idx = (int16_t)(ID - 1);
 	if (!IBBS.Data.Nodes[idx].Active) {
+		char szString[256];
 		snprintf(szString, sizeof(szString), "|04x |12%s BBS ID is inactive, skipping\n", name);
 		LogDisplayStr(szString);
 		return 0;
@@ -2487,23 +2488,324 @@ static int16_t CheckDestinationID(int ID)
 	return (CheckID(ID, "Destination"));
 }
 
-static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
+static void
+HandleResetPacket(struct Packet* Packet, FILE* fp)
+{
+	struct game_data GameData;
+
+	EncryptRead_s(game_data, &GameData, fp, XOR_PACKET);
+
+	IBBS_Reset(&GameData);
+
+	// send back a gotreset
+	IBBS_SendPacket(PT_GOTRESET, 0, 0, Packet->BBSIDFrom);
+}
+
+static void
+HandleMessagePacket(FILE* fp, const char *szFileName)
+{
+	struct Message Message;
+
+	// read in message from file
+	EncryptRead_s(Message, &Message, fp, XOR_PACKET);
+
+	if (Message.Data.Length < 0) {
+		fclose(fp);
+		LogDisplayStr("|08- |20negative message length\n");
+		MoveToBad(szFileName);
+	}
+
+	// allocate mem for text
+	Message.Data.MsgTxt = malloc((size_t)Message.Data.Length);
+	CheckMem(Message.Data.MsgTxt);
+
+	// load message text
+	EncryptRead(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_PACKET);
+
+	// write message
+	PostMsj(&Message);
+
+	// deallocate mem
+	free(Message.Data.MsgTxt);
+}
+
+static void
+HandleScoreDataPacket(FILE* fp)
+{
+	struct UserScore* UserScores[MAX_USERS];
+	int16_t iTemp, NumScores;
+
+	EncryptRead16(&NumScores, fp, XOR_PACKET);
+
+	// read the scores in
+	for (iTemp = 0; iTemp < NumScores; iTemp++) {
+		UserScores[iTemp] = malloc(sizeof(struct UserScore));
+		CheckMem(UserScores[iTemp]);
+		EncryptRead_s(UserScore, UserScores[iTemp], fp, XOR_PACKET);
+	}
+
+	// process it
+	ProcessScoreData(UserScores);
+
+	// free up mem used
+	for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
+		if (UserScores[iTemp])
+			free(UserScores[iTemp]);
+	}
+}
+
+static void
+HandleScoreListPacket(FILE* fp)
+{
+	int16_t iTemp, NumScores;
+	struct UserScore** UserScores;
+	char ScoreDate[11];
+	FILE* fpScores;
+
+	EncryptRead16(&NumScores, fp, XOR_PACKET);
+
+	// read in date
+	EncryptRead(ScoreDate, 11, fp, XOR_PACKET);
+
+	// read the scores in
+	UserScores = calloc(MAX_USERS, sizeof(struct UserScore*));
+	CheckMem(UserScores);
+
+	for (iTemp = 0; iTemp < NumScores; iTemp++) {
+		UserScores[iTemp] = malloc(sizeof(struct UserScore));
+		CheckMem(UserScores[iTemp]);
+		EncryptRead_s(UserScore, UserScores[iTemp], fp, XOR_PACKET);
+	}
+
+	// write it all to the IPSCORES.DAT file
+	fpScores = _fsopen("ipscores.dat", "wb", _SH_DENYWR);
+	if (fpScores) {
+		CheckedEncryptWrite(ScoreDate, 11, fpScores, XOR_IPS);
+
+		for (iTemp = 0; iTemp < NumScores; iTemp++) {
+			EncryptWrite_s(UserScore, UserScores[iTemp], fpScores, XOR_IPS);
+		}
+
+		fclose(fpScores);
+	}
+
+	// free up mem used
+	for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
+		if (UserScores[iTemp])
+			free(UserScores[iTemp]);
+	}
+	free(UserScores);
+}
+
+static void
+HandleClanMovePacket(struct Packet *Packet, FILE* fp)
+{
+	struct clan TmpClan;
+	int16_t iTemp;
+
+	EncryptRead_s(clan, &TmpClan, fp, XOR_PACKET);
+
+	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
+		TmpClan.Member[iTemp] = NULL;
+
+	// only do if in a game already
+	if (Game.Data.GameState == 0) {
+		char szString[256];
+		snprintf(szString, sizeof(szString), "|08- |07%s found.  Destination: |09%d\n", TmpClan.szName, Packet->BBSIDTo);
+		LogDisplayStr(szString);
+	}
+
+	/* read in each PC */
+	for (iTemp = 0; iTemp < 6; iTemp++) {
+		TmpClan.Member[iTemp] = malloc(sizeof(struct pc));
+		CheckMem(TmpClan.Member[iTemp]);
+		EncryptRead_s(pc, TmpClan.Member[iTemp], fp, XOR_PACKET);
+	}
+
+	/* update .PC file with this guys stats */
+	// only do if in a game already
+	if (Game.Data.GameState == 0) {
+		IBBS_AddToGame(&TmpClan, false);
+		TmpClan.ClanID[0] = SWAP16S(TmpClan.ClanID[0]);
+		TmpClan.ClanID[1] = SWAP16S(TmpClan.ClanID[1]);
+		IBBS_SendPacket(PT_DATAOK, sizeof(int16_t) * 2, TmpClan.ClanID, Packet->BBSIDFrom);
+	}
+	else {
+		LogStr("* Clan move without active game");
+	}
+}
+
+static void
+HandleNewUserPacket(struct Packet *Packet, FILE* fp)
+{
+	struct UserInfo User;
+
+	// new user has logged into a BBS in the league, we will
+	// now see if he is a dupe user or a valid one
+
+	// read in user from file
+	EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
+
+	// see if user is already in list
+	if (IBBS_InList(User.szMasterName, false)) {
+		// if so, return packet saying "Delete that guy!"
+		IBBS_SendDelUser(Packet->BBSIDFrom, &User);
+	}
+	else {
+		// if not already in list, send packet to everybody
+		// in league saying
+		//   "here is a new user, add him"
+		// add the user to your own user list too
+
+		UpdateNodesOnNewUser(&User);
+
+		AddToUList(&User);
+	}
+}
+
+static void
+HandleAddUserPacket(FILE* fp)
+{
+	struct UserInfo User;
+
+	// read in user from file
+	EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
+
+	// add to THIS bbs's list
+	AddToUList(&User);
+}
+
+static void
+HandleDelUserPacket(FILE* fp)
+{
+	struct UserInfo User;
+	char szString[256];
+
+	// he is a dupe user
+	// got word from head BBS to delete a certain user, do it then :)
+	EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
+
+	snprintf(szString, sizeof(szString), "deleting %s\n", User.szName);
+	LogDisplayStr(szString);
+
+	DeleteClan(User.ClanID, User.szName, false);
+}
+
+static void
+HandleSubUserPacket(FILE* fp)
+{
+	struct UserInfo User;
+	char szString[256];
+
+	// read in user from file
+	EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
+
+	snprintf(szString, sizeof(szString), "deleting %s\n", User.szName);
+	LogDisplayStr(szString);
+
+	// remove him from clan data AND userlist (done in DeleteClan)
+	DeleteClan(User.ClanID, User.szName, false);
+}
+
+static void
+HandleAttackPacket(FILE* fp)
+{
+	struct AttackPacket AttackPacket;
+
+	// read attack packet
+	EncryptRead_s(AttackPacket, &AttackPacket, fp, XOR_PACKET);
+
+	// process attack packet
+	ProcessAttackPacket(&AttackPacket);
+}
+
+static void
+HandleAttackResultPacket(FILE* fp)
+{
+	struct AttackResult AttackResult;
+
+	// read attack packet
+	EncryptRead_s(AttackResult, &AttackResult, fp, XOR_PACKET);
+
+	// process attack packet
+	ProcessResultPacket(&AttackResult);
+}
+
+static void
+HandleSpyPacket(FILE* fp)
+{
+	struct SpyAttemptPacket Spy;
+
+	EncryptRead_s(SpyAttemptPacket, &Spy, fp, XOR_PACKET);
+
+	// process attack packet
+	IBBS_ProcessSpy(&Spy);
+}
+
+static void
+HandleSpyResultPacket(FILE* fp)
 {
 	struct SpyResultPacket SpyResult;
-	struct SpyAttemptPacket Spy;
-	FILE *fp, *fpScores, *fpWorldNDX, *fpUserList;
+
+	EncryptRead_s(SpyResultPacket, &SpyResult, fp, XOR_PACKET);
+
+	// process attack packet
+	IBBS_ProcessSpyResult(&SpyResult);
+}
+
+static void
+HandleNewNDXPacket(struct Packet* Packet, FILE* fp)
+{
+	char* pcBuffer;
+
+	// allocate mem for world.ndx file
+	pcBuffer = malloc((size_t)Packet->PacketLength);
+	CheckMem(pcBuffer);
+
+	// load world.ndx
+	EncryptRead(pcBuffer, (size_t)Packet->PacketLength, fp, XOR_PACKET);
+
+	// write to file
+	FILE *fpWorldNDX = _fsopen("world.ndx", "wb", _SH_DENYRW);
+	if (fpWorldNDX) {
+		fwrite(pcBuffer, (size_t)Packet->PacketLength, 1, fpWorldNDX);
+		fclose(fpWorldNDX);
+	}
+
+	// deallocate mem
+	free(pcBuffer);
+}
+
+static void
+HandleUserListPacket(struct Packet* Packet, FILE* fp)
+{
+	char* pcBuffer;
+
+	// allocate mem for world.ndx file
+	pcBuffer = malloc((size_t)Packet->PacketLength);
+	CheckMem(pcBuffer);
+
+	// load file in
+	EncryptRead(pcBuffer, (size_t)Packet->PacketLength, fp, XOR_PACKET);
+
+	// write to file
+	FILE *fpUserList = _fsopen("userlist.dat", "wb", _SH_DENYRW);
+	if (fpUserList) {
+		fwrite(pcBuffer, (size_t)Packet->PacketLength, 1, fpUserList);
+		fclose(fpUserList);
+	}
+
+	// deallocate mem
+	free(pcBuffer);
+}
+
+static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
+{
+	FILE *fp;
 	struct Packet Packet;
-	struct clan *TmpClan;
-	int16_t iTemp, NumScores;
-	char *pcBuffer, szString[128],
-	ScoreDate[11];
 	int16_t ClanID[2], BBSID;
-	struct game_data GameData;
-	struct Message Message;
-	struct UserScore **UserScores;
-	struct UserInfo User;
-	struct AttackPacket *AttackPacket;
-	struct AttackResult *AttackResult;
+	char szString[256];
+	char* pcBuffer;
 
 	/* open it */
 	fp = _fsopen(szFileName, "rb", _SH_DENYWR);
@@ -2592,13 +2894,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 		else if (Packet.PacketType == PT_RESET) {
 			/* data ok for specific char */
 			LogDisplayStr("|08- |07received reset\n");
-
-			EncryptRead_s(game_data, &GameData, fp, XOR_PACKET);
-
-			IBBS_Reset(&GameData);
-
-			// send back a gotreset
-			IBBS_SendPacket(PT_GOTRESET, 0, 0, Packet.BBSIDFrom);
+			HandleResetPacket(&Packet, fp);
 		}
 		else if (Packet.PacketType == PT_GOTRESET) {
 			snprintf(szString, sizeof(szString), "%s - Received GotReset from %s\n\n",
@@ -2620,131 +2916,18 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 		}
 		else if (Packet.PacketType == PT_MSJ) {
 			LogDisplayStr("|08- |07msj found\n");
-
-			// read in message from file
-			EncryptRead_s(Message, &Message, fp, XOR_PACKET);
-
-			if (Message.Data.Length < 0) {
-				fclose(fp);
-				LogDisplayStr("|08- |20negative message length\n");
-				MoveToBad(szFileName);
-			}
-
-			// allocate mem for text
-			Message.Data.MsgTxt = malloc((size_t)Message.Data.Length);
-			CheckMem(Message.Data.MsgTxt);
-
-			// load message text
-			EncryptRead(Message.Data.MsgTxt, (size_t)Message.Data.Length, fp, XOR_PACKET);
-
-			// write message
-			PostMsj(&Message);
-
-			// deallocate mem
-			free(Message.Data.MsgTxt);
+			HandleMessagePacket(fp, szFileName);
 		}
 		else if (Packet.PacketType == PT_SCOREDATA) {
 			LogDisplayStr("|08- |07score data\n");
-
-			EncryptRead16(&NumScores, fp, XOR_PACKET);
-
-			// read the scores in
-			UserScores = malloc(sizeof(struct UserScore *) * MAX_USERS);
-			CheckMem(UserScores);
-			for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
-				UserScores[iTemp] = NULL;
-
-			for (iTemp = 0; iTemp < NumScores; iTemp++) {
-				UserScores[iTemp] = malloc(sizeof(struct UserScore));
-				CheckMem(UserScores[iTemp]);
-				EncryptRead_s(UserScore, UserScores[iTemp], fp, XOR_PACKET);
-			}
-
-			// process it
-			ProcessScoreData(UserScores);
-
-			// free up mem used
-			for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
-				if (UserScores[iTemp])
-					free(UserScores[iTemp]);
-			}
-			free(UserScores);
+			HandleScoreDataPacket(fp);
 		}
 		else if (Packet.PacketType == PT_SCORELIST) {
 			LogDisplayStr("|08- |07score list\n");
-
-			EncryptRead16(&NumScores, fp, XOR_PACKET);
-
-			// read in date
-			EncryptRead(ScoreDate, 11, fp, XOR_PACKET);
-
-			// read the scores in
-			UserScores = malloc(sizeof(struct UserScore *) * MAX_USERS);
-			CheckMem(UserScores);
-			for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
-				UserScores[iTemp] = NULL;
-
-			for (iTemp = 0; iTemp < NumScores; iTemp++) {
-				UserScores[iTemp] = malloc(sizeof(struct UserScore));
-				CheckMem(UserScores[iTemp]);
-				EncryptRead_s(UserScore, UserScores[iTemp], fp, XOR_PACKET);
-			}
-
-			// write it all to the IPSCORES.DAT file
-			fpScores = _fsopen("ipscores.dat", "wb", _SH_DENYWR);
-			if (fpScores) {
-				CheckedEncryptWrite(ScoreDate, 11, fpScores, XOR_IPS);
-
-				for (iTemp = 0; iTemp < NumScores; iTemp++) {
-					EncryptWrite_s(UserScore, UserScores[iTemp], fpScores, XOR_IPS);
-				}
-
-				fclose(fpScores);
-			}
-
-			// free up mem used
-			for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
-				if (UserScores[iTemp])
-					free(UserScores[iTemp]);
-			}
-			free(UserScores);
+			HandleScoreListPacket(fp);
 		}
 		else if (Packet.PacketType == PT_CLANMOVE) {
-			TmpClan = malloc(sizeof(struct clan));
-			CheckMem(TmpClan);
-			EncryptRead_s(clan, TmpClan, fp, XOR_PACKET);
-
-			for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
-				TmpClan->Member[iTemp] = NULL;
-
-			// only do if in a game already
-			if (Game.Data.GameState == 0) {
-				snprintf(szString, sizeof(szString), "|08- |07%s found.  Destination: |09%d\n", TmpClan->szName, Packet.BBSIDTo);
-				LogDisplayStr(szString);
-			}
-
-			/* read in each PC */
-			for (iTemp = 0; iTemp < 6; iTemp++) {
-				TmpClan->Member[iTemp] = malloc(sizeof(struct pc));
-				CheckMem(TmpClan->Member[iTemp]);
-				EncryptRead_s(pc, TmpClan->Member[iTemp], fp, XOR_PACKET);
-			}
-
-			/* update .PC file with this guys stats */
-			// only do if in a game already
-			if (Game.Data.GameState == 0) {
-				IBBS_AddToGame(TmpClan, false);
-				TmpClan->ClanID[0] = SWAP16S(TmpClan->ClanID[0]);
-				TmpClan->ClanID[1] = SWAP16S(TmpClan->ClanID[1]);
-				IBBS_SendPacket(PT_DATAOK, sizeof(int16_t)*2, TmpClan->ClanID, Packet.BBSIDFrom);
-				TmpClan->ClanID[0] = SWAP16S(TmpClan->ClanID[0]);
-				TmpClan->ClanID[1] = SWAP16S(TmpClan->ClanID[1]);
-			}
-			else {
-				LogStr("* Clan move without active game");
-			}
-
-			FreeClan(TmpClan);
+			HandleClanMovePacket(&Packet, fp);
 		}
 		else if (Packet.PacketType == PT_DATAOK) {
 			if (Game.Data.GameState != 0)
@@ -2771,142 +2954,45 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 		}
 		else if (Packet.PacketType == PT_NEWUSER) {
 			LogDisplayStr("|08- |07newuser found\n");
-			// new user has logged into a BBS in the league, we will
-			// now see if he is a dupe user or a valid one
-
-			// read in user from file
-			EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
-
-			// see if user is already in list
-			if (IBBS_InList(User.szMasterName, false)) {
-				// if so, return packet saying "Delete that guy!"
-				IBBS_SendDelUser(Packet.BBSIDFrom, &User);
-			}
-			else {
-				// if not already in list, send packet to everybody
-				// in league saying
-				//   "here is a new user, add him"
-				// add the user to your own user list too
-
-				UpdateNodesOnNewUser(&User);
-
-				AddToUList(&User);
-			}
+			HandleNewUserPacket(&Packet, fp);
 		}
 		else if (Packet.PacketType == PT_ADDUSER) {
 			// new user update from main BBS
 			LogDisplayStr("|08- |07adduser found\n");
-
-			// read in user from file
-			EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
-
-			// add to THIS bbs's list
-			AddToUList(&User);
+			HandleAddUserPacket(fp);
 		}
 		else if (Packet.PacketType == PT_DELUSER) {
 			LogDisplayStr("|08- |07deluser found\n");
-
-			// he is a dupe user
-			// got word from head BBS to delete a certain user, do it then :)
-			EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
-
-			snprintf(szString, sizeof(szString), "deleting %s\n", User.szName);
-			LogDisplayStr(szString);
-
-			DeleteClan(User.ClanID, User.szName, false);
+			HandleDelUserPacket(fp);
 		}
 		else if (Packet.PacketType == PT_SUBUSER) {
 			// user is being deleted from all boards
 			LogDisplayStr("|08- |07subuser found\n");
-
-			// read in user from file
-			EncryptRead_s(UserInfo, &User, fp, XOR_PACKET);
-
-			snprintf(szString, sizeof(szString), "deleting %s\n", User.szName);
-			LogDisplayStr(szString);
-
-			// remove him from clan data AND userlist (done in DeleteClan)
-			DeleteClan(User.ClanID, User.szName, false);
+			HandleSubUserPacket(fp);
 		}
 		else if (Packet.PacketType == PT_ATTACK) {
 			LogDisplayStr("|08- |07attack found\n");
-
-			// read attack packet
-			AttackPacket = malloc(sizeof(struct AttackPacket));
-			CheckMem(AttackPacket);
-			EncryptRead_s(AttackPacket, AttackPacket, fp, XOR_PACKET);
-
-			// process attack packet
-			ProcessAttackPacket(AttackPacket);
-			free(AttackPacket);
+			HandleAttackPacket(fp);
 		}
 		else if (Packet.PacketType == PT_ATTACKRESULT) {
 			LogDisplayStr("|08- |07attackresult found\n");
-
-			// read attack packet
-			AttackResult = malloc(sizeof(struct AttackResult));
-			CheckMem(AttackResult);
-			EncryptRead_s(AttackResult, AttackResult, fp, XOR_PACKET);
-
-			// process attack packet
-			ProcessResultPacket(AttackResult);
-			free(AttackResult);
+			HandleAttackResultPacket(fp);
 		}
 		else if (Packet.PacketType == PT_SPY) {
 			LogDisplayStr("|08- |07spy\n");
-
-			EncryptRead_s(SpyAttemptPacket, &Spy, fp, XOR_PACKET);
-
-			// process attack packet
-			IBBS_ProcessSpy(&Spy);
+			HandleSpyPacket(fp);
 		}
 		else if (Packet.PacketType == PT_SPYRESULT) {
 			LogDisplayStr("|08- |07spy result\n");
-
-			EncryptRead_s(SpyResultPacket, &SpyResult, fp, XOR_PACKET);
-
-			// process attack packet
-			IBBS_ProcessSpyResult(&SpyResult);
+			HandleSpyResultPacket(fp);
 		}
 		else if (Packet.PacketType == PT_NEWNDX) {
 			LogDisplayStr("|08- |07ndx found\n");
-
-			// allocate mem for world.ndx file
-			pcBuffer = malloc((size_t)Packet.PacketLength);
-			CheckMem(pcBuffer);
-
-			// load world.ndx
-			EncryptRead(pcBuffer, (size_t)Packet.PacketLength, fp, XOR_PACKET);
-
-			// write to file
-			fpWorldNDX = _fsopen("world.ndx", "wb", _SH_DENYRW);
-			if (fpWorldNDX) {
-				fwrite(pcBuffer, (size_t)Packet.PacketLength, 1, fpWorldNDX);
-				fclose(fpWorldNDX);
-			}
-
-			// deallocate mem
-			free(pcBuffer);
+			HandleNewNDXPacket(&Packet, fp);
 		}
 		else if (Packet.PacketType == PT_ULIST) {
 			LogDisplayStr("|08- |07userlist found\n");
-
-			// allocate mem for world.ndx file
-			pcBuffer = malloc((size_t)Packet.PacketLength);
-			CheckMem(pcBuffer);
-
-			// load file in
-			EncryptRead(pcBuffer, (size_t)Packet.PacketLength, fp, XOR_PACKET);
-
-			// write to file
-			fpUserList = _fsopen("userlist.dat", "wb", _SH_DENYRW);
-			if (fpUserList) {
-				fwrite(pcBuffer, (size_t)Packet.PacketLength, 1, fpUserList);
-				fclose(fpUserList);
-			}
-
-			// deallocate mem
-			free(pcBuffer);
+			HandleUserListPacket(&Packet, fp);
 		}
 		else {
 			LogDisplayStr("|04x |12Unknown packet type!  ABORTING!!\n");

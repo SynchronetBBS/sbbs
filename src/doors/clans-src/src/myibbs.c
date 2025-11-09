@@ -145,7 +145,7 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 	return(true);
 }
 
-int
+static int
 ptrcmp(const void *a, const void *b)
 {
 	const uintptr_t *p1 = a;

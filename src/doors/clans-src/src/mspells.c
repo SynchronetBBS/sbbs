@@ -19,8 +19,8 @@ static struct Spell *Spells[MAX_SPELLS];
 
 static int16_t TotalSpells;
 
-static void Deinit_Spells(struct Spell *Spells[MAX_SPELLS]);
-static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName);
+static void Deinit_Spells();
+static void Init_Spells(char *szFileName);
 
 int main(int argc, char *argv[])
 {
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 
-	Init_Spells(Spells, argv[1]);
+	Init_Spells(argv[1]);
 
 	fpData = fopen(argv[2], "wb");
 	if (!fpData) return(1);
@@ -124,11 +124,11 @@ int main(int argc, char *argv[])
 
 	fclose(fpData);
 
-	Deinit_Spells(Spells);
+	Deinit_Spells();
 	return(0);
 }
 
-static void Deinit_Spells(struct Spell *Spells[MAX_SPELLS])
+static void Deinit_Spells()
 {
 	int iTemp;
 
@@ -155,7 +155,7 @@ static void Deinit_Spells(struct Spell *Spells[MAX_SPELLS])
 	}
 }
 
-static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName)
+static void Init_Spells(char *szFileName)
 {
 	FILE *fpSpell;
 	char szLine[255], *pcCurrentPos;
@@ -252,11 +252,7 @@ static void Init_Spells(struct Spell *Spells[MAX_SPELLS], char *szFileName)
 
 						/* allocate mem for this room */
 						Spells[CurSpell] = calloc(1, sizeof(struct Spell));
-						memset(Spells[CurSpell], 0, sizeof(struct Spell));
-
-						/* initialize it */
-						for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++)
-							Spells[CurSpell]->Attributes[iTemp] = 0;
+						CheckMem(Spells[CurSpell]);
 
 						Spells[CurSpell]->Level = 0;    /* 0 == doesn't matter */
 						Spells[CurSpell]->Value = 0;

@@ -537,12 +537,10 @@ void ProcessScoreData(struct UserScore **UserScores)
 	int32_t HighestPoints;
 
 	// initialize lists
-	NewList = malloc(sizeof(struct UserScore *) * MAX_USERS);
+	NewList = calloc(MAX_USERS, sizeof(struct UserScore *));
 	CheckMem(NewList);
-	OldList = malloc(sizeof(struct UserScore *) * MAX_USERS);
+	OldList = calloc(MAX_USERS, sizeof(struct UserScore *));
 	CheckMem(OldList);
-	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
-		NewList[iTemp] = OldList[iTemp] = NULL;
 
 	// load up old list
 	fpOld = _fsopen("ipscores.dat", "rb", _SH_DENYRW);
@@ -665,11 +663,8 @@ void LeagueScores(void)
 	}
 
 	// initialize the score data
-	ScoreList = malloc(sizeof(struct UserScore *)*MAX_USERS);
+	ScoreList = calloc(MAX_USERS, sizeof(struct UserScore *));
 	CheckMem(ScoreList);
-
-	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
-		ScoreList[iTemp] = NULL;
 
 	EncryptRead(ScoreDate, 11, fp, XOR_IPS);
 
@@ -743,11 +738,8 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 	}
 
 	// initialize the score data
-	ScoreList = malloc(sizeof(struct UserScore *)*MAX_USERS);
+	ScoreList = calloc(MAX_USERS, sizeof(struct UserScore *));
 	CheckMem(ScoreList);
-
-	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
-		ScoreList[iTemp] = NULL;
 
 	// read date
 	EncryptRead(ScoreDate, 11, fp, XOR_IPS);
@@ -807,11 +799,8 @@ void SendScoreList(void)
 	}
 
 	// initialize the score data
-	ScoreList = malloc(sizeof(struct UserScore *)*MAX_USERS);
+	ScoreList = calloc(MAX_USERS, sizeof(struct UserScore *));
 	CheckMem(ScoreList);
-
-	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
-		ScoreList[iTemp] = NULL;
 
 	EncryptRead(ScoreDate, 11, fp, XOR_IPS);
 
@@ -875,12 +864,8 @@ void CreateScoreData(bool LocalOnly)
 	FILE *fpPlayerFile;
 	int16_t ClanNum, iTemp, NumClans;
 
-	UserScores = malloc(sizeof(struct UserScore *) * MAX_USERS);
+	UserScores = calloc(MAX_USERS, sizeof(struct UserScore *));
 	CheckMem(UserScores);
-
-	// initialize scores to NULL pointers
-	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
-		UserScores[iTemp] = NULL;
 
 	/* find guy in file */
 	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYRW);
@@ -926,10 +911,7 @@ void CreateScoreData(bool LocalOnly)
 
 	// free up mem used by score data
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
-		if (UserScores[iTemp]) {
-			free(UserScores[iTemp]);
-			UserScores[iTemp] = NULL;
-		}
+		free(UserScores[iTemp]);
 
 	free(UserScores);
 }

@@ -250,7 +250,7 @@ void ReleaseMember(void)
 
 void AddMember(void)
 {
-	struct pc *TmpPC;
+	struct pc TmpPC;
 	int16_t EmptySlot, iTemp, NumMembers;
 
 	NumMembers = 0;
@@ -276,19 +276,15 @@ void AddMember(void)
 
 	EmptySlot = iTemp;
 
-	TmpPC = malloc(sizeof(struct pc));
-	CheckMem(TmpPC);
-
 	if (iTemp == 0)
-		PC_Create(TmpPC, true);
+		PC_Create(&TmpPC, true);
 	else
-		PC_Create(TmpPC, false);
+		PC_Create(&TmpPC, false);
 
 	PClan->Member[EmptySlot] = malloc(sizeof(struct pc));
 	CheckMem(PClan->Member[EmptySlot]);
 	// CopyPC(PClan->Member[EmptySlot], TmpPC);
-	*PClan->Member[EmptySlot] = *TmpPC;
-	free(TmpPC);
+	*PClan->Member[EmptySlot] = TmpPC;
 }
 
 void TrainMember(void)

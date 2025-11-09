@@ -784,27 +784,29 @@ static int16_t AlliancesMenu(void)
 	else if (cKey != 'Q' && cKey != '\r' && cKey != '\n') {
 		WhichAlliance = cKey - 'A';
 
-		snprintf(szString, sizeof(szString), "%s\n", Alliances[ WhichAlliance ]->szName);
-		rputs(szString);
+		if (WhichAlliance >= 0 && WhichAlliance < NumAlliances) {
+			snprintf(szString, sizeof(szString), "%s\n", Alliances[WhichAlliance]->szName);
+			rputs(szString);
 
-		// see if in that alliance
-		for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++) {
-			if (PClan->Alliances[ iTemp ] == Alliances[ WhichAlliance ]->ID)
-				break;
-		}
-
-		if (iTemp != MAX_ALLIES) {
-			// in that alliance, enter it
-
-			if (EnterAlliance(Alliances[ WhichAlliance ])) {
-				KillAlliance(WhichAlliance, Alliances);
+			// see if in that alliance
+			for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++) {
+				if (PClan->Alliances[iTemp] == Alliances[WhichAlliance]->ID)
+					break;
 			}
-		}
-		else {
-			// not in alliance
-			rputs("\n |0CYou are not in that alliance.\n");
-			if (YesNo(" |0SWrite a message to the alliance's creator?") == YES) {
-				MyWriteMessage2(Alliances[WhichAlliance]->CreatorID, false, false, -1, "", false, -1);
+
+			if (iTemp != MAX_ALLIES) {
+				// in that alliance, enter it
+
+				if (EnterAlliance(Alliances[WhichAlliance])) {
+					KillAlliance(WhichAlliance, Alliances);
+				}
+			}
+			else {
+				// not in alliance
+				rputs("\n |0CYou are not in that alliance.\n");
+				if (YesNo(" |0SWrite a message to the alliance's creator?") == YES) {
+					MyWriteMessage2(Alliances[WhichAlliance]->CreatorID, false, false, -1, "", false, -1);
+				}
 			}
 		}
 	}

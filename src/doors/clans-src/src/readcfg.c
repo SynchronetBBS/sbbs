@@ -49,7 +49,8 @@ void AddInboundDir(const char *dir)
 		addSlash = true;
 	Config.szInboundDirs[Config.NumInboundDirs] = malloc(dirlen + addSlash + 1);
 	CheckMem(Config.szInboundDirs[Config.NumInboundDirs]);
-	memcpy(Config.szInboundDirs[Config.NumInboundDirs], dir, dirlen);
+	if (dirlen)
+		memcpy(Config.szInboundDirs[Config.NumInboundDirs], dir, dirlen);
 	if (addSlash)
 		Config.szInboundDirs[Config.NumInboundDirs][dirlen++] = '/';
 	Config.szInboundDirs[Config.NumInboundDirs][dirlen] = 0;

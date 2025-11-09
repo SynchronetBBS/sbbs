@@ -2,7 +2,6 @@
 #define THE_CLANS__DEFINES___H 1
 
 #include <assert.h>
-#include <inttypes.h>
 
 #define VERSION                 "v0.97b1"
 
@@ -180,7 +179,7 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #else
-typedef unsigned char bool;
+#define bool unsigned char
 #define true 1
 #define false 0
 #define STATIC_ASSERT

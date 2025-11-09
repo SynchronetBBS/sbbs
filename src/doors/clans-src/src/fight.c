@@ -75,12 +75,6 @@ static void Fight_GetBattleOrder(struct order *BattleOrder, struct clan *Team[2]
 	struct {
 		int16_t WhichTeam;
 		int16_t WhichPlayer;
-		int16_t WhichSortData;
-		int16_t AgiValue;
-	} CurHighest;
-	struct {
-		int16_t WhichTeam;
-		int16_t WhichPlayer;
 		int16_t AgiValue;                   // his "agility+energy" ranking
 		int16_t InList;                     // set if already in sort list
 	} SortData[MAX_MEMBERS * 2];
@@ -113,10 +107,12 @@ static void Fight_GetBattleOrder(struct order *BattleOrder, struct clan *Team[2]
 
 	for (CurOrder = 0; CurOrder < TotalMembers; CurOrder++) {
 		// initialize sort data for this iteration (loop)
-		CurHighest.WhichTeam = -1;
-		CurHighest.WhichPlayer = -1;
-		CurHighest.WhichSortData = -1;
-		CurHighest.AgiValue = -1;
+		struct {
+			int16_t WhichTeam;
+			int16_t WhichPlayer;
+			int16_t WhichSortData;
+			int16_t AgiValue;
+		} CurHighest = { -1, -1, -1, -1 };
 
 		for (CurSortMember = 0; CurSortMember < TotalMembers; CurSortMember++) {
 			// see who is the highest in value
@@ -541,6 +537,8 @@ static int16_t Fight_GetTarget(struct clan *MobClan, int16_t Default)
 		CurIndex++;
 	}
 	TotalMembers = CurIndex;        // total members who are alive
+	if (TotalMembers == 0)
+		System_Error("Call to Fight_GetTarget() with no possible targets");
 
 	rputs(ST_FIGHTTARGET1);
 
@@ -1567,7 +1565,7 @@ static void Fight_GiveFollowers(int16_t Level)
 
 }
 
-int16_t GetOpenItemSlot(struct clan *Clan)
+static int16_t GetOpenItemSlot(struct clan *Clan)
 {
 	// return -1 if no more open slots
 

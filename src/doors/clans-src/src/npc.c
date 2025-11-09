@@ -334,7 +334,7 @@ void NPC_ChatNPC(char *szIndex)
 		GetStringChoice(pszTopics, NumTopicsKnown, szPrompt, &UserInput,
 						true, DT_LONG, true);
 
-		if (UserInput == -1)
+		if (UserInput < 0 || UserInput >= NumTopicsKnown)
 			break;
 
 		if (NPCInfo->MaxTopics != -1)
@@ -554,7 +554,7 @@ void NPC_GetNPC(struct pc *NPC, char *szFileName, int16_t WhichNPC)
 
 void NPC_AddNPCMember(char *szIndex)
 {
-	struct pc *TmpPC;
+	struct pc TmpPC;
 	struct NPCInfo *NPCInfo;
 	struct NPCNdx NPCNdx;
 	int16_t EmptySlot, CurFile, CurNPC, iTemp;
@@ -632,9 +632,6 @@ void NPC_AddNPCMember(char *szIndex)
 		free(NPCInfo);
 		return;
 	}
-	TmpPC = malloc(sizeof(struct pc));
-	CheckMem(TmpPC);
-
 	// seek to it but make sure you skip the monster index at start of pc file
 	SeekOffset = (long)((size_t)NPCInfo->NPCPCIndex * BUF_SIZE_pc + sizeof(int16_t) * MAX_MONSTERS
 				 + (size_t)PCFile.lStart);
@@ -642,14 +639,13 @@ void NPC_AddNPCMember(char *szIndex)
 
 	fread(pBuf, sizeof(pBuf), 1, PCFile.fp);
 	fclose(PCFile.fp);
-	s_pc_d(pBuf, sizeof(pBuf), TmpPC);
+	s_pc_d(pBuf, sizeof(pBuf), &TmpPC);
 
 	PClan->Member[EmptySlot] = malloc(sizeof(struct pc));
 	CheckMem(PClan->Member[EmptySlot]);
-	// CopyPC(PClan->Member[EmptySlot], TmpPC);
-	*PClan->Member[EmptySlot] = *TmpPC;
+	// CopyPC(PClan->Member[EmptySlot], &TmpPC);
+	*PClan->Member[EmptySlot] = TmpPC;
 	PClan->Member[EmptySlot]->MyClan = PClan;
-	free(TmpPC);
 	free(NPCInfo);
 }
 

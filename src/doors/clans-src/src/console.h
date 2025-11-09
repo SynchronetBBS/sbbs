@@ -3,6 +3,7 @@
 
 #include <stdnoreturn.h>
 #include "defines.h"
+#include "video.h"
 
 bool Door_Initialized(void);
 void rputs(const char *str);

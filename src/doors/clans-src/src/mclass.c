@@ -7,6 +7,7 @@
 #include <time.h>
 #include "platform.h"
 
+#include "console.h"
 #include "defines.h"
 #include "k_classes.h"
 #include "myopen.h"
@@ -17,8 +18,8 @@ static struct PClass *PClasses[MAX_PCLASSES];
 
 static int16_t Total = 0;
 
-static void Deinit_PClasses(struct PClass *PClass[MAX_PCLASSES]);
-static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileName);
+static void Deinit_PClasses();
+static int16_t Init_PClasses(char *szFileName);
 
 int main(int argc, char **argv)
 {
@@ -32,7 +33,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	Total = Init_PClasses(PClasses, argv[1]);
+	Total = Init_PClasses(argv[1]);
 
 	fpData = fopen(argv[2], "wb");
 	if (!fpData) {
@@ -51,21 +52,23 @@ int main(int argc, char **argv)
 
 	fclose(fpData);
 
-	Deinit_PClasses(PClasses);
+	Deinit_PClasses();
 	return(0);
 }
 
-static void Deinit_PClasses(struct PClass *PClass[MAX_PCLASSES])
+static void Deinit_PClasses()
 {
 	int iTemp;
 
+	if (PClasses == NULL)
+		return;
 	for (iTemp = 0; iTemp < MAX_PCLASSES; iTemp++) {
-		if (PClass[iTemp])
-			free(PClass[iTemp]);
+		if (PClasses[iTemp])
+			free(PClasses[iTemp]);
 	}
 }
 
-static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileName)
+static int16_t Init_PClasses(char *szFileName)
 {
 	FILE *fpPClass;
 	char szLine[255], *pcCurrentPos/*, szString[255]*/;
@@ -83,7 +86,7 @@ static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileNa
 
 	/* make all classes NULL pointers */
 	for (iTemp = 0; iTemp < MAX_PCLASSES; iTemp++)
-		PClass[iTemp] = NULL;
+		PClasses[iTemp] = NULL;
 
 	for (;;) {
 		/* read in a line */
@@ -155,22 +158,18 @@ static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileNa
 						}
 
 						/* allocate mem for this room */
-						PClass[CurPClass] = calloc(1, sizeof(struct PClass));
-						memset(PClass[CurPClass], 0, sizeof(struct PClass));
+						PClasses[CurPClass] = calloc(1, sizeof(struct PClass));
+						CheckMem(PClasses[CurPClass]);
 
-						/* initialize it */
-						for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++)
-							PClass[CurPClass]->Attributes[iTemp] = 0;
+						PClasses[CurPClass]->MaxHP = 10;
+						PClasses[CurPClass]->MaxSP = 10;
+						PClasses[CurPClass]->Gold = 0;
 
-						PClass[CurPClass]->MaxHP = 10;
-						PClass[CurPClass]->MaxSP = 10;
-						PClass[CurPClass]->Gold = 0;
-
-						strlcpy(PClass[CurPClass]->szName, pcCurrentPos, sizeof(PClass[CurPClass]->szName));
+						strlcpy(PClasses[CurPClass]->szName, pcCurrentPos, sizeof(PClasses[CurPClass]->szName));
 
 						/* set known spells to none */
 						for (iTemp = 0; iTemp < MAX_SPELLS; iTemp++)
-							PClass[CurPClass]->SpellsKnown[iTemp] = 0;
+							PClasses[CurPClass]->SpellsKnown[iTemp] = 0;
 						LastSpellSlot = 0;
 
 						break;
@@ -185,7 +184,7 @@ static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileNa
 							printf("Invalid ability score %d\n", iTemp);
 							exit(EXIT_FAILURE);
 						}
-						PClass[CurPClass]->Attributes[iKeyWord - 1] = (char)iTemp;
+						PClasses[CurPClass]->Attributes[iKeyWord - 1] = (char)iTemp;
 						break;
 					case 7 :    /* MaxHP */
 						iTemp = atoi(pcCurrentPos);
@@ -193,7 +192,7 @@ static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileNa
 							printf("Invalid MaxHP %d\n", iTemp);
 							exit(EXIT_FAILURE);
 						}
-						PClass[CurPClass]->MaxHP = (int16_t)iTemp;
+						PClasses[CurPClass]->MaxHP = (int16_t)iTemp;
 						break;
 					case 8 :    /* Gold */
 						iTemp = atoi(pcCurrentPos);
@@ -201,7 +200,7 @@ static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileNa
 							printf("Invalid Gold %d\n", iTemp);
 							exit(EXIT_FAILURE);
 						}
-						PClass[CurPClass]->Gold = (int16_t)iTemp;
+						PClasses[CurPClass]->Gold = (int16_t)iTemp;
 						break;
 					case 9 :    /* MaxSP */
 						iTemp = atoi(pcCurrentPos);
@@ -209,7 +208,7 @@ static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileNa
 							printf("Invalid MaxSP %d\n", iTemp);
 							exit(EXIT_FAILURE);
 						}
-						PClass[CurPClass]->MaxSP = (int16_t)iTemp;
+						PClasses[CurPClass]->MaxSP = (int16_t)iTemp;
 						break;
 					case 10 :   /* spell */
 						iTemp = atoi(pcCurrentPos);
@@ -217,7 +216,7 @@ static int16_t Init_PClasses(struct PClass *PClass[MAX_PCLASSES], char *szFileNa
 							printf("Invalid ability score %d\n", iTemp);
 							exit(EXIT_FAILURE);
 						}
-						PClass[CurPClass]->SpellsKnown[LastSpellSlot] = (char)iTemp;
+						PClasses[CurPClass]->SpellsKnown[LastSpellSlot] = (char)iTemp;
 						LastSpellSlot++;
 						break;
 				}

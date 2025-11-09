@@ -3,6 +3,7 @@
 
 #include "defines.h"
 #include "structs.h"
+#include "system.h"
 
 extern struct Language *Language;
 
