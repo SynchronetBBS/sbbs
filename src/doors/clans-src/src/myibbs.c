@@ -220,7 +220,7 @@ static tIBResult ValidateInfoStruct(tIBInfo *pInfo)
 
 void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource)
 {
-	uint16_t zone = 0, net = 0, node = 0, pt = 0;
+	int16_t zone = 0, net = 0, node = 0, pt = 0;
 
 	sscanf(pszSource, "%hd:%hd/%hd.%hd", &zone, &net
 		,&node, &pt);
