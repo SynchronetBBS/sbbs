@@ -283,7 +283,6 @@ void AddMember(void)
 
 	PClan->Member[EmptySlot] = malloc(sizeof(struct pc));
 	CheckMem(PClan->Member[EmptySlot]);
-	// CopyPC(PClan->Member[EmptySlot], TmpPC);
 	*PClan->Member[EmptySlot] = TmpPC;
 }
 

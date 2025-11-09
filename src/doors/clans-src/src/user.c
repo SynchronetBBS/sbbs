@@ -2055,43 +2055,6 @@ void User_Destroy(void)
 
 // ------------------------------------------------------------------------- //
 
-static void CopyPC(struct pc *PCDest, struct pc *PCSrc)
-{
-	int16_t iTemp;
-
-	strlcpy(PCDest->szName, PCSrc->szName, sizeof(PCDest->szName));
-	PCDest->HP = PCSrc->HP;
-	PCDest->SP = PCSrc->SP;
-	PCDest->MaxHP = PCSrc->MaxHP;
-	PCDest->MaxSP = PCSrc->MaxSP;
-
-	/* copy all attributes */
-	for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++)
-		PCDest->Attributes[iTemp] = PCSrc->Attributes[iTemp];
-
-	PCDest->Status = PCSrc->Status;
-	PCDest->Weapon = PCSrc->Weapon;
-	PCDest->Shield = PCSrc->Shield;
-	PCDest->Armor = PCSrc->Armor;
-	PCDest->MyClan = PCSrc->MyClan;
-	PCDest->WhichRace = PCSrc->WhichRace;
-	PCDest->WhichClass = PCSrc->WhichClass;
-	PCDest->Experience = PCSrc->Experience;
-	PCDest->Level = PCSrc->Level;
-	PCDest->TrainingPoints = PCSrc->TrainingPoints;
-	PCDest->Difficulty = PCSrc->Difficulty;
-	PCDest->Undead = PCSrc->Undead;
-	PCDest->DefaultAction = PCSrc->DefaultAction;
-
-	PCDest->CRC = PCSrc->CRC;
-
-	for (iTemp = 0; iTemp < MAX_SPELLS; iTemp++)
-		PCDest->SpellsKnown[iTemp] = PCSrc->SpellsKnown[iTemp];
-
-	for (iTemp = 0; iTemp < 10; iTemp++)
-		PCDest->SpellsInEffect[iTemp] = PCSrc->SpellsInEffect[iTemp];
-}
-
 static bool User_Read(void)
 /*
  * Reads the PClan from file which corresponds to the user online.

@@ -643,7 +643,6 @@ void NPC_AddNPCMember(char *szIndex)
 
 	PClan->Member[EmptySlot] = malloc(sizeof(struct pc));
 	CheckMem(PClan->Member[EmptySlot]);
-	// CopyPC(PClan->Member[EmptySlot], &TmpPC);
 	*PClan->Member[EmptySlot] = TmpPC;
 	PClan->Member[EmptySlot]->MyClan = PClan;
 	free(NPCInfo);

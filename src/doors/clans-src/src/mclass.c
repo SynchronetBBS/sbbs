@@ -7,7 +7,6 @@
 #include <time.h>
 #include "platform.h"
 
-#include "console.h"
 #include "defines.h"
 #include "k_classes.h"
 #include "myopen.h"
@@ -18,7 +17,7 @@ static struct PClass *PClasses[MAX_PCLASSES];
 
 static int16_t Total = 0;
 
-static void Deinit_PClasses();
+static void Deinit_PClasses(void);
 static int16_t Init_PClasses(char *szFileName);
 
 int main(int argc, char **argv)
@@ -56,12 +55,10 @@ int main(int argc, char **argv)
 	return(0);
 }
 
-static void Deinit_PClasses()
+static void Deinit_PClasses(void)
 {
 	int iTemp;
 
-	if (PClasses == NULL)
-		return;
 	for (iTemp = 0; iTemp < MAX_PCLASSES; iTemp++) {
 		if (PClasses[iTemp])
 			free(PClasses[iTemp]);
@@ -159,7 +156,9 @@ static int16_t Init_PClasses(char *szFileName)
 
 						/* allocate mem for this room */
 						PClasses[CurPClass] = calloc(1, sizeof(struct PClass));
+#ifdef NOTYET
 						CheckMem(PClasses[CurPClass]);
+#endif
 
 						PClasses[CurPClass]->MaxHP = 10;
 						PClasses[CurPClass]->MaxSP = 10;

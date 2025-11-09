@@ -8,7 +8,6 @@
 #include <ctype.h>
 #include "platform.h"
 
-#include "console.h"
 #include "defines.h"
 #include "k_items.h"
 #include "myopen.h"
@@ -172,7 +171,9 @@ static void Init_Items(char *szFileName)
 
 						/* allocate mem for this room */
 						Items[CurItem] = calloc(1, sizeof(struct item_data));
+#ifdef NOTYET
 						CheckMem(Items[CurItem]);
+#endif
 
 						TypeOfStat = ITM_STAT;
 

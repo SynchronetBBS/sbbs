@@ -19,7 +19,7 @@ static struct Spell *Spells[MAX_SPELLS];
 
 static int16_t TotalSpells;
 
-static void Deinit_Spells();
+static void Deinit_Spells(void);
 static void Init_Spells(char *szFileName);
 
 int main(int argc, char *argv[])
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 	return(0);
 }
 
-static void Deinit_Spells()
+static void Deinit_Spells(void)
 {
 	int iTemp;
 
@@ -252,7 +252,9 @@ static void Init_Spells(char *szFileName)
 
 						/* allocate mem for this room */
 						Spells[CurSpell] = calloc(1, sizeof(struct Spell));
+#ifdef NOTYET
 						CheckMem(Spells[CurSpell]);
+#endif
 
 						Spells[CurSpell]->Level = 0;    /* 0 == doesn't matter */
 						Spells[CurSpell]->Value = 0;

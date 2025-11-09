@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "platform.h"
 
 #include "alliance.h"
+#include "console.h"
 #include "structs.h"
 #include "myopen.h"
 
@@ -47,7 +48,7 @@ static void DeleteClan(int16_t ID[2]);
 static void UpdateClan(struct clan *Clan);
 static void InitGame(void);
 #ifdef __unix__
-static int cio_getch(void);
+static int pce_getch(void);
 #endif
 
 
@@ -83,7 +84,7 @@ int main(void)
 	fflush(stdout);
 
 	do {
-		cKey = toupper(cio_getch()) & 0x7f;
+		cKey = toupper(pce_getch()) & 0x7f;
 	}
 	while (!strchr("YN\n\r", cKey));
 
@@ -148,7 +149,7 @@ int main(void)
 
 		// get key
 		do {
-			cKey = cio_getch();
+			cKey = pce_getch();
 		}
 		while (!strchr("[]q!", cKey));
 
@@ -536,6 +537,7 @@ static void RejectTrade(struct TradeData *TradeData)
 		TradeData->Giving.Catapults = 0;
 
 		UpdateClan(&TmpClan);
+		FreeClan(&TmpClan);
 	}
 	else {
 		puts("Failed to reject trade, couldn't load the clan");
@@ -690,9 +692,6 @@ static void FreeClan(struct clan *Clan)
 			Clan->Member[CurMember] = NULL;
 		}
 	}
-
-	free(Clan);
-	Clan = NULL;
 }
 
 static bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
@@ -833,7 +832,7 @@ static void InitGame(void)
 
 #ifdef __unix__
 static int
-cio_getch(void)
+pce_getch(void)
 {
 	fd_set fds;
 	FD_ZERO(&fds);

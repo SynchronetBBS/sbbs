@@ -338,9 +338,9 @@ int encode(FILE *input, FILE *output)
 	initialize();
 	head = calloc(HASHSIZE, sizeof(short));
 	tail = calloc(HASHSIZE, sizeof(short));
-	succ = calloc(maxsize, sizeof(short));
-	pred = calloc(maxsize, sizeof(short));
-	buffer = (unsigned char *) calloc(maxsize, sizeof(unsigned char));
+	succ = calloc((size_t)maxsize, sizeof(short));
+	pred = calloc((size_t)maxsize, sizeof(short));
+	buffer = (unsigned char *) calloc((size_t)maxsize, sizeof(unsigned char));
 	if (head==NULL || tail==NULL || succ==NULL || pred==NULL || buffer==NULL) {
 		printf("Error allocating memory\n");
 		exit(1);
