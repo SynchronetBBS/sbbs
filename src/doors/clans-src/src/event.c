@@ -47,7 +47,7 @@ void GoQuest(void)
 
 	// tell him how many quests he's done right here for now since i'm too lazy
 	for (iTemp = 0, NumQuestsDone = 0; iTemp < MAX_QUESTS; iTemp++) {
-		if (PClan->QuestsDone[ iTemp/8 ] & (1 << (iTemp%8)))
+		if (PClan.QuestsDone[ iTemp/8 ] & (1 << (iTemp%8)))
 			NumQuestsDone++;
 	}
 
@@ -61,9 +61,9 @@ void GoQuest(void)
 		TotalQuests = 0;
 		for (iTemp = 0; iTemp < MAX_QUESTS; iTemp++) {
 			KnownBitSet =
-				(PClan->QuestsKnown[ iTemp/8 ] & (1 << (iTemp%8)) ||
+				(PClan.QuestsKnown[ iTemp/8 ] & (1 << (iTemp%8)) ||
 				 (Quests[iTemp].Known && Quests[iTemp].Active));
-			DoneBitSet  = PClan->QuestsDone[ iTemp/8 ] & (1 << (iTemp%8));
+			DoneBitSet  = PClan.QuestsDone[ iTemp/8 ] & (1 << (iTemp%8));
 
 			// quest known? AND not complete?
 			if (KnownBitSet && !DoneBitSet && Quests[iTemp].pszQuestName) {
@@ -104,9 +104,9 @@ void GoQuest(void)
 			return;
 		}
 
-		QuestKnown = PClan->QuestsKnown[ QuestIndex[WhichQuest]/8 ] & (char)(1 << (QuestIndex[WhichQuest]%8)) ||
+		QuestKnown = PClan.QuestsKnown[ QuestIndex[WhichQuest]/8 ] & (char)(1 << (QuestIndex[WhichQuest]%8)) ||
 					 (Quests[QuestIndex[WhichQuest]].Known && Quests[QuestIndex[WhichQuest]].Active);
-		QuestDone  = PClan->QuestsDone[ QuestIndex[WhichQuest]/8 ] & (char)(1 << (QuestIndex[WhichQuest]%8));
+		QuestDone  = PClan.QuestsDone[ QuestIndex[WhichQuest]/8 ] & (char)(1 << (QuestIndex[WhichQuest]%8));
 
 		//od_printf("Comparing with %d\n", (1 << (QuestIndex[WhichQuest]%8)));
 
@@ -127,14 +127,14 @@ void GoQuest(void)
 		rputs("\n");
 	}
 
-	PClan->QuestToday = true;
+	PClan.QuestToday = true;
 
 	/* if successful (returns true), set that quest bit to done */
 	if (RunEvent(false,
 				 Quests[QuestIndex[WhichQuest]].pszQuestFile, Quests[QuestIndex[WhichQuest]].pszQuestIndex,
 				 NULL, NULL)) {
 		// set bit since quest completed
-		PClan->QuestsDone[ QuestIndex[WhichQuest]/8 ] |= (1<<(QuestIndex[WhichQuest]%8));
+		PClan.QuestsDone[ QuestIndex[WhichQuest]/8 ] |= (1<<(QuestIndex[WhichQuest]%8));
 	}
 	door_pause();
 }

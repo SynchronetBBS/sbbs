@@ -86,8 +86,8 @@ static int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool
 
 		// skip if it's this user and he's online
 		if (UserOnline &&
-				TmpClan.ClanID[0] == PClan->ClanID[0] &&
-				TmpClan.ClanID[1] == PClan->ClanID[1])
+				TmpClan.ClanID[0] == PClan.ClanID[0] &&
+				TmpClan.ClanID[1] == PClan.ClanID[1])
 			continue;
 
 		// skip vote if undecided
@@ -119,10 +119,10 @@ static int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool
 	// now add on the current user's stats
 
 	// see if who he voted for is in list, if not, add to it
-	if (UserOnline && PClan->ClanRulerVote[0] != -1)
+	if (UserOnline && PClan.ClanRulerVote[0] != -1)
 		for (CurVote = 0; CurVote < 50; CurVote++) {
-			if (TopCandidates[CurVote][0] == PClan->ClanRulerVote[0] &&
-					TopCandidates[CurVote][1] == PClan->ClanRulerVote[1]) {
+			if (TopCandidates[CurVote][0] == PClan.ClanRulerVote[0] &&
+					TopCandidates[CurVote][1] == PClan.ClanRulerVote[1]) {
 				// found match, increment this vote
 				TopVotes[CurVote]++;
 				break;
@@ -130,13 +130,13 @@ static int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool
 
 			// if -1, set this vote as our user's choice and increment votes
 			if (TopCandidates[CurVote][0] == -1) {
-				TopCandidates[CurVote][0] = PClan->ClanRulerVote[0];
-				TopCandidates[CurVote][1] = PClan->ClanRulerVote[1];
+				TopCandidates[CurVote][0] = PClan.ClanRulerVote[0];
+				TopCandidates[CurVote][1] = PClan.ClanRulerVote[1];
 				TopVotes[CurVote] = 1;
 				break;
 			}
 		}
-	else if (UserOnline && PClan->ClanRulerVote[0] == -1)
+	else if (UserOnline && PClan.ClanRulerVote[0] == -1)
 		NumUndecided++;
 
 
@@ -170,8 +170,8 @@ void VotingBooth(void)
 	char *szTheOptions[4], szTop10Names[10][25];
 	bool Done = false;
 
-	if (!PClan->VoteHelp) {
-		PClan->VoteHelp = true;
+	if (!PClan.VoteHelp) {
+		PClan.VoteHelp = true;
 		Help("Voting Booth", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -205,7 +205,7 @@ void VotingBooth(void)
 		snprintf(szString, sizeof(szString), "      |0C%-20s %d\n", "Undecided", Undecided);
 		rputs(szString);
 
-		if (PClan->ClanRulerVote[0] != -1) {
+		if (PClan.ClanRulerVote[0] != -1) {
 			GetClanNameID(szName, ClanID);
 		}
 		else
@@ -221,19 +221,19 @@ void VotingBooth(void)
 			case '?' :    /* redisplay options */
 				break;
 			case 'V' :    /* stats */
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 			case 'C' :    /* change vote */
 				rputs("|0CEnter a blank line to become undecided\n");
 				if (GetClanID(ClanID, false, false, -1, -1) == false) {
 					rputs("You are now undecided.\n");
-					PClan->ClanRulerVote[0] = -1;
-					PClan->ClanRulerVote[1] = -1;
+					PClan.ClanRulerVote[0] = -1;
+					PClan.ClanRulerVote[1] = -1;
 				}
 				else {
 					rputs("Vote changed.\n");
-					PClan->ClanRulerVote[0] = ClanID[0];
-					PClan->ClanRulerVote[1] = ClanID[1];
+					PClan.ClanRulerVote[0] = ClanID[0];
+					PClan.ClanRulerVote[1] = ClanID[1];
 				}
 				break;
 		}

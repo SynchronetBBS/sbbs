@@ -3,7 +3,7 @@
 
 #include "structs.h"
 
-extern struct clan *PClan;
+extern struct clan PClan;
 
 void User_Maint(void);
 

@@ -681,7 +681,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 	char szString[128];
 	int32_t XPGained, GoldGained, TaxedGold;
 
-	if (Attacker->MyClan == PClan)
+	if (Attacker->MyClan == &PClan)
 		rputs(ST_FIGHTYOURCOLOR);
 	else
 		rputs(ST_FIGHTENEMYCOLOR);
@@ -775,7 +775,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 		rputs(szString);
 
 		/* give gold to clan */
-		if (Attacker->MyClan == PClan) {
+		if (Attacker->MyClan == &PClan) {
 			if (VictimClan->Member[Who]->Difficulty != -1) {
 				GoldGained = VictimClan->Member[Who]->Difficulty * ((int32_t)my_random(10) + 20) + 50 + (int32_t)my_random(20);
 				snprintf(szString, sizeof(szString), ST_FIGHTGETGOLD, (long)GoldGained);
@@ -789,7 +789,7 @@ static void Fight_BattleAttack(struct pc *Attacker, struct clan *VictimClan, int
 				}
 
 				if ((GoldGained-TaxedGold) > 0) {
-					PClan->Empire.VaultGold += (GoldGained-TaxedGold);
+					PClan.Empire.VaultGold += (GoldGained-TaxedGold);
 					Village.Data.Empire.VaultGold += TaxedGold;
 				}
 			}
@@ -867,7 +867,7 @@ static int16_t GetTarget2(struct clan *Clan)
 
 	// list who's here
 	for (CurIndex = 0; CurIndex < TotalMembers; CurIndex++) {
-		if (Clan == PClan)
+		if (Clan == &PClan)
 			snprintf(szString, sizeof(szString), ST_FIGHTTARGETLIST1, (char)(CurIndex + 'A'), Clan->Member[Index[CurIndex]]->szName,
 					(int)Clan->Member[Index[CurIndex]]->HP, (int)Clan->Member[Index[CurIndex]]->MaxHP);
 		else
@@ -886,7 +886,7 @@ static int16_t GetTarget2(struct clan *Clan)
 
 			// list who's here
 			for (CurIndex = 0; CurIndex < TotalMembers; CurIndex++) {
-				if (Clan == PClan)
+				if (Clan == &PClan)
 					snprintf(szString, sizeof(szString), ST_FIGHTTARGETLIST1, (char)(CurIndex + 'A'), Clan->Member[Index[CurIndex]]->szName,
 							(int)Clan->Member[Index[CurIndex]]->HP, (int)Clan->Member[Index[CurIndex]]->MaxHP);
 				else
@@ -1327,11 +1327,11 @@ void Fight_CheckLevelUp(void)
 		   graint him my_random(1) + 1 training points */
 
 
-		if (PClan->Member[CurMember]) {
+		if (PClan.Member[CurMember]) {
 			/* see if enough XP */
 
-			if (PClan->Member[CurMember]->Experience >=
-					XPRequired[PClan->Member[CurMember]->Level+1]) {
+			if (PClan.Member[CurMember]->Experience >=
+					XPRequired[PClan.Member[CurMember]->Level+1]) {
 				if (FirstTime)
 					rputs("\n");
 
@@ -1340,21 +1340,21 @@ void Fight_CheckLevelUp(void)
 				/* Enough XP, raise level and give training point */
 				Points = (int16_t)(my_random(4) + 10);
 
-				PClan->Member[CurMember]->Level++;
-				PClan->Member[CurMember]->TrainingPoints += Points;
+				PClan.Member[CurMember]->Level++;
+				PClan.Member[CurMember]->TrainingPoints += Points;
 
 				// snprintf(szString, sizeof(szString), "|10>> |15%s |02raises to level |14%d |02and gains %d training points!\n",
-				snprintf(szString, sizeof(szString), ST_LEVELUP, PClan->Member[CurMember]->szName,
-						(int)PClan->Member[CurMember]->Level, (int)Points);
+				snprintf(szString, sizeof(szString), ST_LEVELUP, PClan.Member[CurMember]->szName,
+						(int)PClan.Member[CurMember]->Level, (int)Points);
 				rputs(szString);
 
 				LevelUpFound = true;
 			}
 		}
 	}
-	if (LevelUpFound && !PClan->TrainHelp) {
+	if (LevelUpFound && !PClan.TrainHelp) {
 		rputs("\n\n");
-		PClan->TrainHelp = true;
+		PClan.TrainHelp = true;
 		Help("Level Raise", ST_NEWBIEHLP);
 	}
 
@@ -1561,7 +1561,7 @@ static void Fight_GiveFollowers(int16_t Level)
 		NumFollowers = 0;
 
 	Village.Data.Empire.Army.Followers += NumConscripted;
-	PClan->Empire.Army.Followers += NumFollowers;
+	PClan.Empire.Army.Followers += NumFollowers;
 
 }
 
@@ -1612,7 +1612,7 @@ static void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 				// take an item
 				rputs("Take item\n");
 
-				EmptySlot = GetOpenItemSlot(PClan);
+				EmptySlot = GetOpenItemSlot(&PClan);
 				if (EmptySlot == -1) {
 					rputs(ST_ITEMNOMOREROOM);
 					break;
@@ -1650,7 +1650,7 @@ static void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 					Clan->Items[ItemIndex].UsedBy = 0;
 				}
 				// add it to our items
-				PClan->Items[EmptySlot] = Clan->Items[ItemIndex];
+				PClan.Items[EmptySlot] = Clan->Items[ItemIndex];
 
 				// get rid of it in theirs
 				Clan->Items[ItemIndex].Available = false;
@@ -1726,7 +1726,7 @@ void Fight_Clan(void)
 	char szString[128], szMessage[500];
 
 	/* if all guys dead, tell guy can't fight */
-	if (NumMembers(PClan, true) == 0) {
+	if (NumMembers(&PClan, true) == 0) {
 		rputs(ST_FIGHT0);
 		return;
 	}
@@ -1738,8 +1738,8 @@ void Fight_Clan(void)
 
 	/* see if already fought him today */
 	for (iTemp = 0; iTemp < MAX_CLANCOMBAT; iTemp++) {
-		if (PClan->ClanCombatToday[iTemp][0] == ClanID[0] &&
-				PClan->ClanCombatToday[iTemp][1] == ClanID[1]) {
+		if (PClan.ClanCombatToday[iTemp][0] == ClanID[0] &&
+				PClan.ClanCombatToday[iTemp][1] == ClanID[1]) {
 			rputs(ST_FIGHTCLANALREADY);
 			return;
 		}
@@ -1763,31 +1763,31 @@ void Fight_Clan(void)
 
 	/* record fight so he can't do it again */
 	for (iTemp = 0; iTemp < MAX_CLANCOMBAT; iTemp++) {
-		if (PClan->ClanCombatToday[iTemp][0] == -1) {
+		if (PClan.ClanCombatToday[iTemp][0] == -1) {
 			break;
 		}
 	}
-	PClan->ClanCombatToday[iTemp][0] = ClanID[0];
-	PClan->ClanCombatToday[iTemp][1] = ClanID[1];
+	PClan.ClanCombatToday[iTemp][0] = ClanID[0];
+	PClan.ClanCombatToday[iTemp][1] = ClanID[1];
 
-	PClan->ClanFights--;
+	PClan.ClanFights--;
 
 	/* set all spells to 0 */
-	Spells_ClearSpells(PClan);
+	Spells_ClearSpells(&PClan);
 	Spells_ClearSpells(&EnemyClan);
 
 	/* fight 'em here using the function for fighting */
-	FightResult = Fight_Fight(PClan, &EnemyClan, true, false, false);
+	FightResult = Fight_Fight(&PClan, &EnemyClan, true, false, false);
 
 	/* set all spells to 0 */
-	Spells_ClearSpells(PClan);
+	Spells_ClearSpells(&PClan);
 	Spells_ClearSpells(&EnemyClan);
 
 	// reset their HPs if they are alive
-	Fight_Heal(PClan);
+	Fight_Heal(&PClan);
 	Fight_Heal(&EnemyClan);
 
-	RemoveUndead(PClan);
+	RemoveUndead(&PClan);
 	RemoveUndead(&EnemyClan);
 
 	/* do stuff because of win/loss */
@@ -1795,42 +1795,42 @@ void Fight_Clan(void)
 	/* figure out number of followers from Difficulty of battle */
 	if (FightResult == FT_WON) {
 		/* put in news you won */
-		snprintf(szString, sizeof(szString), ST_NEWSFIGHT1, EnemyClan.szName, PClan->szName);
+		snprintf(szString, sizeof(szString), ST_NEWSFIGHT1, EnemyClan.szName, PClan.szName);
 		News_AddNews(szString);
 
 		/* tell that guy about loss */
-		snprintf(szMessage, sizeof(szMessage), ST_NEWSFIGHT2, PClan->szName);
+		snprintf(szMessage, sizeof(szMessage), ST_NEWSFIGHT2, PClan.szName);
 
 		// allow user to take an item
 		TakeItemsFromClan(&EnemyClan, szMessage);
 
-		GenericMessage(szMessage, EnemyClan.ClanID, PClan->ClanID, PClan->szName, false);
+		GenericMessage(szMessage, EnemyClan.ClanID, PClan.ClanID, PClan.szName, false);
 
 		/* give points for win in battle */
-		PClan->Points += 20;
+		PClan.Points += 20;
 	}
 	else if (FightResult == FT_LOST) {
 		/* put in news you lost */
-		snprintf(szString, sizeof(szString), ST_NEWSFIGHT3, PClan->szName, EnemyClan.szName);
+		snprintf(szString, sizeof(szString), ST_NEWSFIGHT3, PClan.szName, EnemyClan.szName);
 		News_AddNews(szString);
 
 		/* tell that guy about loss */
-		snprintf(szMessage, sizeof(szMessage), ST_NEWSFIGHT4, PClan->szName);
-		GenericMessage(szMessage, EnemyClan.ClanID, PClan->ClanID, PClan->szName, false);
+		snprintf(szMessage, sizeof(szMessage), ST_NEWSFIGHT4, PClan.szName);
+		GenericMessage(szMessage, EnemyClan.ClanID, PClan.ClanID, PClan.szName, false);
 
-		PClan->Points -= 15;
+		PClan.Points -= 15;
 	}
 	else {
 		// ran away
 		/* put in news you lost */
-		snprintf(szString, sizeof(szString), ST_NEWSFIGHT5, PClan->szName, EnemyClan.szName);
+		snprintf(szString, sizeof(szString), ST_NEWSFIGHT5, PClan.szName, EnemyClan.szName);
 		News_AddNews(szString);
 
 		/* tell that guy about loss */
-		snprintf(szString, sizeof(szString), ST_NEWSFIGHT6, PClan->szName);
-		GenericMessage(szString, EnemyClan.ClanID, PClan->ClanID, PClan->szName, false);
+		snprintf(szString, sizeof(szString), ST_NEWSFIGHT6, PClan.szName);
+		GenericMessage(szString, EnemyClan.ClanID, PClan.ClanID, PClan.szName, false);
 
-		PClan->Points -= 20;
+		PClan.Points -= 20;
 	}
 
 	Clan_Update(&EnemyClan);
@@ -1840,8 +1840,8 @@ void Fight_Clan(void)
 
 	/* fix it so they didn't run away */
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
-		if (PClan->Member[CurMember] && PClan->Member[CurMember]->Status == RanAway)
-			PClan->Member[CurMember]->Status = Here;
+		if (PClan.Member[CurMember] && PClan.Member[CurMember]->Status == RanAway)
+			PClan.Member[CurMember]->Status = Here;
 	}
 
 	Fight_CheckLevelUp();
@@ -1863,20 +1863,20 @@ void Fight_Monster(int16_t Level, char *szFileName)
 
 	rputs("Cheat ON\n");
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++)
-		if (PClan->Member[CurMember]) {
-			PClan->Member[CurMember]->HP = PClan->Member[CurMember]->MaxHP;
-			PClan->Member[CurMember]->Status = Here;
+		if (PClan.Member[CurMember]) {
+			PClan.Member[CurMember]->HP = PClan.Member[CurMember]->MaxHP;
+			PClan.Member[CurMember]->Status = Here;
 		}
 
 #endif
 
-	if (!PClan->CombatHelp) {
-		PClan->CombatHelp = true;
+	if (!PClan.CombatHelp) {
+		PClan.CombatHelp = true;
 		Help("Combat", ST_NEWBIEHLP);
 	}
 
 	// reduce # of fights left
-	PClan->FightsLeft--;
+	PClan.FightsLeft--;
 
 	// load monsters into enemy clan
 
@@ -1884,30 +1884,30 @@ void Fight_Monster(int16_t Level, char *szFileName)
 
 
 	od_clr_scr();
-	FightResult = Fight_Fight(PClan, &EnemyClan, false, true, false);
+	FightResult = Fight_Fight(&PClan, &EnemyClan, false, true, false);
 
-	Fight_Heal(PClan);
-	Spells_ClearSpells(PClan);
+	Fight_Heal(&PClan);
+	Spells_ClearSpells(&PClan);
 
-	RemoveUndead(PClan);
+	RemoveUndead(&PClan);
 
 	FreeClanMembers(&EnemyClan);
 
 	if (FightResult == FT_WON) {
 		Fight_GiveFollowers(Level);
 
-		PClan->Points += 10;
+		PClan.Points += 10;
 	}
 	else {
 		// lose points -- same for running AND losing
-		PClan->Points -= 10;
+		PClan.Points -= 10;
 	}
 
 	// fix up status so players aren't set as running away
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
-		if (PClan->Member[CurMember] &&
-				PClan->Member[CurMember]->Status == RanAway) {
-			PClan->Member[CurMember]->Status = Here;
+		if (PClan.Member[CurMember] &&
+				PClan.Member[CurMember]->Status == RanAway) {
+			PClan.Member[CurMember]->Status = Here;
 		}
 	}
 

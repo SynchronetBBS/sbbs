@@ -658,7 +658,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 				rputs(szString);
 
 				/* give gold to clan */
-				if (PC->MyClan == PClan) {
+				if (PC->MyClan == &PClan) {
 					if (EnemyClan->Member[Target]->Difficulty != -1) {
 						GoldGained = EnemyClan->Member[Target]->Difficulty * ((int32_t)my_random(10) + 20) + 50 + (int32_t)my_random(20);
 						snprintf(szString, sizeof(szString), ST_FIGHTGETGOLD, (long)GoldGained);
@@ -672,7 +672,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 								rputs(szString);
 							}
 
-							PClan->Empire.VaultGold += (GoldGained-TaxedGold);
+							PClan.Empire.VaultGold += (GoldGained-TaxedGold);
 							Village.Data.Empire.VaultGold += TaxedGold;
 						}
 					}

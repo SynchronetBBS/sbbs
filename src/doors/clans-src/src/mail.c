@@ -126,21 +126,14 @@ static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 
 	Message.Data.MsgTxt[0] = 0;
 
-	// strlcpy(Message.szFromName, GlobalPlayerClan->szName, sizeof(Message.szFromName));
 	// fromname not used in generic msgs
 	strlcpy(Message.szFromName, Reply->szFromName, sizeof(Message.szFromName));
 	strlcpy(Message.szFromVillageName, Village.Data.szName, sizeof(Message.szFromVillageName));
 	Message.ToClanID[0] = Reply->FromClanID[0];
 	Message.ToClanID[1] = Reply->FromClanID[1];
 
-	if (PClan == NULL) {
-		Message.FromClanID[0] =  -1;
-		Message.FromClanID[1] =  -1;
-	}
-	else {
-		Message.FromClanID[0] =  PClan->ClanID[0];
-		Message.FromClanID[1] =  PClan->ClanID[1];
-	}
+	Message.FromClanID[0] =  PClan.ClanID[0];
+	Message.FromClanID[1] =  PClan.ClanID[1];
 	strlcpy(Message.szDate, System.szTodaysDate, sizeof(Message.szDate));
 
 	if (AllowReply == false)
@@ -225,10 +218,10 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 
 	Message.ToClanID[0] = ClanID[0];
 	Message.ToClanID[1] = ClanID[1];
-	strlcpy(Message.szFromName, PClan->szName, sizeof(Message.szFromName));
+	strlcpy(Message.szFromName, PClan.szName, sizeof(Message.szFromName));
 	strlcpy(Message.szFromVillageName, Village.Data.szName, sizeof(Message.szFromVillageName));
-	Message.FromClanID[0] = PClan->ClanID[0];
-	Message.FromClanID[1] = PClan->ClanID[1];
+	Message.FromClanID[0] = PClan.ClanID[0];
+	Message.FromClanID[1] = PClan.ClanID[1];
 
 	Message.BBSIDFrom = Config.BBSID;
 
@@ -602,9 +595,9 @@ static void Reply_Message(struct Message *Reply)
 	// Set up header
 	Message.ToClanID[0] = Reply->FromClanID[0];
 	Message.ToClanID[1] = Reply->FromClanID[1];
-	Message.FromClanID[0] =  PClan->ClanID[0];
-	Message.FromClanID[1] =  PClan->ClanID[1];
-	strlcpy(Message.szFromName, PClan->szName, sizeof(Message.szFromName));
+	Message.FromClanID[0] =  PClan.ClanID[0];
+	Message.FromClanID[1] =  PClan.ClanID[1];
+	strlcpy(Message.szFromName, PClan.szName, sizeof(Message.szFromName));
 	strlcpy(Message.szDate, System.szTodaysDate, sizeof(Message.szDate));
 	strlcpy(Message.szFromVillageName, Village.Data.szName, sizeof(Message.szFromVillageName));
 
@@ -874,8 +867,8 @@ bool Mail_Read(void)
 
 		// Skip message if not this clan's || it's public and it has been read ||
 		//    it has been deleted
-		if ((Message.MessageType == MT_PRIVATE && ((Message.ToClanID[0] != PClan->ClanID[0]) || (Message.ToClanID[1] != PClan->ClanID[1]))) ||
-				(Message.MessageType == MT_PUBLIC && PClan->PublicMsgIndex >= Message.PublicMsgIndex) ||
+		if ((Message.MessageType == MT_PRIVATE && ((Message.ToClanID[0] != PClan.ClanID[0]) || (Message.ToClanID[1] != PClan.ClanID[1]))) ||
+				(Message.MessageType == MT_PUBLIC && PClan.PublicMsgIndex >= Message.PublicMsgIndex) ||
 				(Message.Flags & MF_DELETED)) {
 			fclose(fp);
 			CurOffset += Message.Data.Length;
@@ -886,7 +879,7 @@ bool Mail_Read(void)
 		if (Message.MessageType == MT_ALLIANCE) {
 			AllianceFound = false;
 			for (iTemp = 0; !AllianceFound && (iTemp < MAX_ALLIES); iTemp++) {
-				if (PClan->Alliances[iTemp] == Message.AllianceID)
+				if (PClan.Alliances[iTemp] == Message.AllianceID)
 					AllianceFound = true;
 			}
 
@@ -903,8 +896,8 @@ bool Mail_Read(void)
 
 		// Message IS readable, continue...
 
-		if (PClan->PublicMsgIndex < Message.PublicMsgIndex)
-			PClan->PublicMsgIndex = Message.PublicMsgIndex;
+		if (PClan.PublicMsgIndex < Message.PublicMsgIndex)
+			PClan.PublicMsgIndex = Message.PublicMsgIndex;
 
 		NewMail = true;
 
@@ -991,9 +984,9 @@ bool Mail_Read(void)
 
 			/* make generic message saying he said no */
 			if (WillAlly == false)
-				snprintf(szString, sizeof(szString), ST_RMAILREJECTALLY, PClan->szName);
+				snprintf(szString, sizeof(szString), ST_RMAILREJECTALLY, PClan.szName);
 			else
-				snprintf(szString, sizeof(szString), ST_RMAILAGREEALLY, PClan->szName);
+				snprintf(szString, sizeof(szString), ST_RMAILAGREEALLY, PClan.szName);
 			GenericReply(&Message, szString, false);
 		}
 		else {
@@ -1280,9 +1273,9 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 	// Set up header
 	Message.ToClanID[0] = ToClanID[0];
 	Message.ToClanID[1] = ToClanID[1];
-	Message.FromClanID[0] = PClan->ClanID[0];
-	Message.FromClanID[1] = PClan->ClanID[1];
-	strlcpy(Message.szFromName, PClan->szName, sizeof(Message.szFromName));
+	Message.FromClanID[0] = PClan.ClanID[0];
+	Message.FromClanID[1] = PClan.ClanID[1];
+	strlcpy(Message.szFromName, PClan.szName, sizeof(Message.szFromName));
 	strlcpy(Message.szDate, System.szTodaysDate, sizeof(Message.szDate));
 	strlcpy(Message.szFromVillageName, Village.Data.szName, sizeof(Message.szFromVillageName));
 

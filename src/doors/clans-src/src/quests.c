@@ -292,7 +292,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 				iTemp = ato16(szIndex, "Quest Done", __func__) - 1;
 
 				// if this quest done, it's true
-				if (PClan->QuestsDone[ iTemp/8 ] & (char)(1 << (iTemp%8)))
+				if (PClan.QuestsDone[ iTemp/8 ] & (char)(1 << (iTemp%8)))
 					bCurrent = true;
 				else
 					bCurrent = false;
@@ -308,7 +308,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 				UseCurrent = true;
 				GoldAmount = ato32(szIndex, "Gold", __func__);
 
-				if (PClan->Empire.VaultGold >= GoldAmount)
+				if (PClan.Empire.VaultGold >= GoldAmount)
 					bCurrent = true;
 				else
 					bCurrent = false;
@@ -323,7 +323,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 				UseCurrent = true;
 				iTemp = ato16(szIndex, "Level", __func__);
 
-				if (PClan->MineLevel == iTemp)
+				if (PClan.MineLevel == iTemp)
 					bCurrent = true;
 				else
 					bCurrent = false;
@@ -338,7 +338,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 				UseCurrent = true;
 				iTemp = ato16(szIndex, "MinLevel", __func__);
 
-				if (PClan->MineLevel >= iTemp)
+				if (PClan.MineLevel >= iTemp)
 					bCurrent = true;
 				else
 					bCurrent = false;
@@ -386,7 +386,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 
 				UseCurrent = true;
 
-				if (FlagSet(PClan->PFlags, ato16(szIndex, "PFlag", __func__)))
+				if (FlagSet(PClan.PFlags, ato16(szIndex, "PFlag", __func__)))
 					bCurrent = true;
 				else
 					bCurrent = false;
@@ -416,7 +416,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 
 				UseCurrent = true;
 
-				if (FlagSet(PClan->DFlags, ato16(szIndex, "DFlag", __func__)))
+				if (FlagSet(PClan.DFlags, ato16(szIndex, "DFlag", __func__)))
 					bCurrent = true;
 				else
 					bCurrent = false;
@@ -522,11 +522,11 @@ static void TellQuest(char *pszQuestIndex)
 	}
 
 	// set bit
-	if (PClan->QuestsKnown[ QuestNum/8 ] & (1<<(QuestNum%8)))
+	if (PClan.QuestsKnown[ QuestNum/8 ] & (1<<(QuestNum%8)))
 		return;  // already knew about that quest
 
 	// set it
-	PClan->QuestsKnown[ QuestNum/8 ] |= (1<<(QuestNum%8));
+	PClan.QuestsKnown[ QuestNum/8 ] |= (1<<(QuestNum%8));
 
 	// tell user
 	snprintf(szString, sizeof(szString), "\n|0CYour clan now knows of |0B%s|0C.\n",
@@ -713,10 +713,10 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 						pcCurrentPos = szText;
 						switch (toupper(*pcCurrentPos)) {
 							case 'D' :
-								SetFlag(PClan->DFlags, ato16(pcCurrentPos+1, "Set DFlag", __func__));
+								SetFlag(PClan.DFlags, ato16(pcCurrentPos+1, "Set DFlag", __func__));
 								break;
 							case 'P' :
-								SetFlag(PClan->PFlags, ato16(pcCurrentPos+1, "Set PFlag", __func__));
+								SetFlag(PClan.PFlags, ato16(pcCurrentPos+1, "Set PFlag", __func__));
 								break;
 							case 'T' :
 								SetFlag(Quests_TFlags, ato16(pcCurrentPos+1, "Set TFlag", __func__));
@@ -733,10 +733,10 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 						pcCurrentPos = szText;
 						switch (toupper(*pcCurrentPos)) {
 							case 'D' :
-								ClearFlag(PClan->DFlags, ato16(pcCurrentPos+1, "Clear DFlag", __func__));
+								ClearFlag(PClan.DFlags, ato16(pcCurrentPos+1, "Clear DFlag", __func__));
 								break;
 							case 'P' :
-								ClearFlag(PClan->PFlags, ato16(pcCurrentPos+1, "Clear PFlag", __func__));
+								ClearFlag(PClan.PFlags, ato16(pcCurrentPos+1, "Clear PFlag", __func__));
 								break;
 							case 'T' :
 								ClearFlag(Quests_TFlags, ato16(pcCurrentPos+1, "Clear TFlag", __func__));
@@ -754,16 +754,16 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 						break;
 					case 17 : // Heal
 						for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
-							if (PClan->Member[iTemp]) {
+							if (PClan.Member[iTemp]) {
 								if (szText[0] == 0) {
-									if (PClan->Member[iTemp]->Status == Here)
-										PClan->Member[iTemp]->HP =
-											PClan->Member[iTemp]->MaxHP;
+									if (PClan.Member[iTemp]->Status == Here)
+										PClan.Member[iTemp]->HP =
+											PClan.Member[iTemp]->MaxHP;
 								}
 								else if (strcasecmp(szText, "SP") == 0) {
-									if (PClan->Member[iTemp]->Status == Here)
-										PClan->Member[iTemp]->SP =
-											PClan->Member[iTemp]->MaxSP;
+									if (PClan.Member[iTemp]->Status == Here)
+										PClan.Member[iTemp]->SP =
+											PClan.Member[iTemp]->MaxSP;
 								}
 							}
 						}
@@ -777,23 +777,23 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 							if (PercentGold > 100)
 								PercentGold = 100;
 
-							GoldAmount = (PClan->Empire.VaultGold*PercentGold) / 100;
+							GoldAmount = (PClan.Empire.VaultGold*PercentGold) / 100;
 						}
 						else
 							GoldAmount = ato32(pcCurrentPos, "Take Gold", __func__);
 
-						PClan->Empire.VaultGold -= GoldAmount;
+						PClan.Empire.VaultGold -= GoldAmount;
 						break;
 					case 19 : // GiveGold
 						GoldAmount = ato32(szText, "Give Gold", __func__);
-						PClan->Empire.VaultGold += GoldAmount;
+						PClan.Empire.VaultGold += GoldAmount;
 						break;
 					case 20 : // GiveXP
 						XPAmount = ato32(szText, "Give XP", __func__);
 
 						for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
-							if (PClan->Member[iTemp] && PClan->Member[iTemp]->Status == Here)
-								PClan->Member[iTemp]->Experience +=
+							if (PClan.Member[iTemp] && PClan.Member[iTemp]->Status == Here)
+								PClan.Member[iTemp]->Experience +=
 									XPAmount;
 						Fight_CheckLevelUp();
 						break;
@@ -801,13 +801,13 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 						Items_GiveItem(szText);
 						break;
 					case 23 : // GiveFight
-						PClan->FightsLeft += ato16(szText, "Give Fight", __func__);
+						PClan.FightsLeft += ato16(szText, "Give Fight", __func__);
 						break;
 					case 24 : // GiveFollowers
-						PClan->Empire.Army.Followers += ato32(szText, "Give Followers", __func__);
+						PClan.Empire.Army.Followers += ato32(szText, "Give Followers", __func__);
 						break;
 					case 25 : // GivePoints
-						PClan->Points += ato32(szText, "Give Points", __func__);
+						PClan.Points += ato32(szText, "Give Points", __func__);
 						break;
 					case 28 : // TellTopic
 						for (iTemp = 0; iTemp < MAX_TOPICS; iTemp++) {
@@ -941,26 +941,26 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 				fread(szLabel3, DataLength, 1, FileHeader.fp);
 
 				if (strcasecmp(szLabel3, "NoRun") == 0)
-					FightResult = Fight_Fight(PClan, &EnemyClan, false, false, false);
+					FightResult = Fight_Fight(&PClan, &EnemyClan, false, false, false);
 				else  // can run
-					FightResult = Fight_Fight(PClan, &EnemyClan, false, true, false);
+					FightResult = Fight_Fight(&PClan, &EnemyClan, false, true, false);
 
 				/* set all spells to 0 */
 				for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
-					if (PClan->Member[CurMember] == NULL)
+					if (PClan.Member[CurMember] == NULL)
 						continue;
 
 					for (iTemp = 0; iTemp < 10; iTemp++)
-						PClan->Member[CurMember]->SpellsInEffect[iTemp].SpellNum = -1;
+						PClan.Member[CurMember]->SpellsInEffect[iTemp].SpellNum = -1;
 				}
 
 
 				/* free up memory used by undead */
 				for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
-					if (PClan->Member[iTemp] &&
-							PClan->Member[iTemp]->Undead) {
-						free(PClan->Member[iTemp]);
-						PClan->Member[iTemp] = NULL;
+					if (PClan.Member[iTemp] &&
+							PClan.Member[iTemp]->Undead) {
+						free(PClan.Member[iTemp]);
+						PClan.Member[iTemp] = NULL;
 					}
 				}
 
@@ -1017,8 +1017,8 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 					NPC_GetNPCNdx(NPCInfo, &NPCNdx);
 
 					if (NPCNdx.InClan) {
-						if (NPCNdx.ClanID[0] == PClan->ClanID[0] &&
-								NPCNdx.ClanID[1] == PClan->ClanID[1]) {
+						if (NPCNdx.ClanID[0] == PClan.ClanID[0] &&
+								NPCNdx.ClanID[1] == PClan.ClanID[1]) {
 							rputs("|0BI am in your clan already.\n");
 							break;
 						}
@@ -1040,7 +1040,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 						}
 					}
 					else {
-						if (NumMembers(PClan, false) == 6) {
+						if (NumMembers(&PClan, false) == 6) {
 							rputs("Your clan already has the max. amount of members in it.\n\n");
 							break;
 						}
@@ -1049,8 +1049,8 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 						// right now and set which clan (this one)
 
 						NPCNdx.InClan = true;
-						NPCNdx.ClanID[0] = PClan->ClanID[0];
-						NPCNdx.ClanID[1] = PClan->ClanID[1];
+						NPCNdx.ClanID[0] = PClan.ClanID[0];
+						NPCNdx.ClanID[1] = PClan.ClanID[1];
 
 						NPC_AddNPCMember(szNPCIndex);
 
@@ -1220,9 +1220,9 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 	// reset health
 
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
-		if (PClan->Member[iTemp] && PClan->Member[iTemp]->Status == Here) {
-			PClan->Member[iTemp]->HP = PClan->Member[iTemp]->MaxHP;
-			PClan->Member[iTemp]->MaxSP = PClan->Member[iTemp]->MaxSP;
+		if (PClan.Member[iTemp] && PClan.Member[iTemp]->Status == Here) {
+			PClan.Member[iTemp]->HP = PClan.Member[iTemp]->MaxHP;
+			PClan.Member[iTemp]->MaxSP = PClan.Member[iTemp]->MaxSP;
 		}
 	}
 
@@ -1249,7 +1249,7 @@ void Quests_GoQuest(void)
 
 	// tell him how many quests he's done right here for now since i'm too lazy
 	for (iTemp = 0, NumQuestsDone = 0; iTemp < MAX_QUESTS; iTemp++) {
-		if (PClan->QuestsDone[ iTemp/8 ] & (1 << (iTemp%8)))
+		if (PClan.QuestsDone[ iTemp/8 ] & (1 << (iTemp%8)))
 			NumQuestsDone++;
 	}
 
@@ -1263,9 +1263,9 @@ void Quests_GoQuest(void)
 		TotalQuests = 0;
 		for (iTemp = 0; iTemp < MAX_QUESTS; iTemp++) {
 			KnownBitSet =
-				(PClan->QuestsKnown[ iTemp/8 ] & (1 << (iTemp%8)) ||
+				(PClan.QuestsKnown[ iTemp/8 ] & (1 << (iTemp%8)) ||
 				 (Quests[iTemp].Known && Quests[iTemp].Active));
-			DoneBitSet  = (char)(PClan->QuestsDone[ iTemp / 8 ] & (unsigned char)(1U << (iTemp % 8)));
+			DoneBitSet  = (char)(PClan.QuestsDone[ iTemp / 8 ] & (unsigned char)(1U << (iTemp % 8)));
 
 			// quest known? AND not complete?
 			if (KnownBitSet && !DoneBitSet && Quests[iTemp].pszQuestName) {
@@ -1306,9 +1306,9 @@ void Quests_GoQuest(void)
 			return;
 		}
 
-		QuestKnown = PClan->QuestsKnown[ QuestIndex[WhichQuest]/8 ] & (char)(1 << (QuestIndex[WhichQuest]%8)) ||
+		QuestKnown = PClan.QuestsKnown[ QuestIndex[WhichQuest]/8 ] & (char)(1 << (QuestIndex[WhichQuest]%8)) ||
 					 (Quests[QuestIndex[WhichQuest]].Known && Quests[QuestIndex[WhichQuest]].Active);
-		QuestDone  = PClan->QuestsDone[ QuestIndex[WhichQuest]/8 ] & (char)(1 << (QuestIndex[WhichQuest]%8));
+		QuestDone  = PClan.QuestsDone[ QuestIndex[WhichQuest]/8 ] & (char)(1 << (QuestIndex[WhichQuest]%8));
 
 		//od_printf("Comparing with %d\n", (1 << (QuestIndex[WhichQuest]%8)));
 
@@ -1329,14 +1329,14 @@ void Quests_GoQuest(void)
 		rputs("\n");
 	}
 
-	PClan->QuestToday = true;
+	PClan.QuestToday = true;
 
 	/* if successful (returns true), set that quest bit to done */
 	if (RunEvent(false,
 				 Quests[QuestIndex[WhichQuest]].pszQuestFile, Quests[QuestIndex[WhichQuest]].pszQuestIndex,
 				 NULL, NULL)) {
 		// set bit since quest completed
-		PClan->QuestsDone[ QuestIndex[WhichQuest]/8 ] |= (1<<(QuestIndex[WhichQuest]%8));
+		PClan.QuestsDone[ QuestIndex[WhichQuest]/8 ] |= (1<<(QuestIndex[WhichQuest]%8));
 	}
 	door_pause();
 }

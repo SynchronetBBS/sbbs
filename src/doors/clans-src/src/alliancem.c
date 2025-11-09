@@ -104,9 +104,9 @@ static void RemoveFromAlliance(struct Alliance *Alliance)
 	FreeClanMembers(&TmpClan);
 
 	// send message to that player
-	snprintf(szString, sizeof(szString), "%s ousted you from %s!", PClan->szName,
+	snprintf(szString, sizeof(szString), "%s ousted you from %s!", PClan.szName,
 			Alliance->szName);
-	GenericMessage(szString, ClanID, PClan->ClanID, PClan->szName, false);
+	GenericMessage(szString, ClanID, PClan.ClanID, PClan.szName, false);
 }
 
 static void SeeMemberStats(struct Alliance *Alliance)
@@ -214,7 +214,7 @@ static void DonationRoom(struct Alliance *Alliance)
 		switch (od_get_answer("?XDTLQ\r\n I*V")) {
 			case 'V' :  // clan stats
 				rputs("View Stats\n");
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 			case 'I' :  // show room items
 				rputs("List room items\n\n");
@@ -267,7 +267,7 @@ static void DonationRoom(struct Alliance *Alliance)
 				break;
 			case 'L' :
 				rputs(ST_ISTATS5);
-				ListItems(PClan);
+				ListItems(&PClan);
 				break;
 			case 'D' :  /* drop item */
 				// see if room in room to drop item
@@ -285,8 +285,8 @@ static void DonationRoom(struct Alliance *Alliance)
 
 				/* see if anything to drop */
 				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan->Items[iTemp].Available &&
-							PClan->Items[iTemp].UsedBy == 0)
+					if (PClan.Items[iTemp].Available &&
+							PClan.Items[iTemp].UsedBy == 0)
 						break;
 				}
 				if (iTemp == MAX_ITEMS_HELD) {
@@ -302,31 +302,31 @@ static void DonationRoom(struct Alliance *Alliance)
 				ItemIndex--;
 
 				/* if that item is non-existant, tell him */
-				if (PClan->Items[ItemIndex].Available == false) {
+				if (PClan.Items[ItemIndex].Available == false) {
 					rputs(ST_ISTATS4);
 					break;
 				}
 				/* if that item is in use, tell him */
-				if (PClan->Items[ItemIndex].UsedBy != 0) {
+				if (PClan.Items[ItemIndex].UsedBy != 0) {
 					rputs(ST_ISTATS8);
 					break;
 				}
 
 				/* still wanna drop it? */
-				snprintf(szString, sizeof(szString), ST_ISTATS9, PClan->Items[ItemIndex].szName);
+				snprintf(szString, sizeof(szString), ST_ISTATS9, PClan.Items[ItemIndex].szName);
 
 				if (NoYes(szString) == YES) {
 					/* drop it */
-					snprintf(szString, sizeof(szString), ST_ISTATS10, PClan->Items[ItemIndex].szName);
+					snprintf(szString, sizeof(szString), ST_ISTATS10, PClan.Items[ItemIndex].szName);
 					rputs(szString);
 
 					// add it to room
-					Alliance->Items[RoomItemIndex] = PClan->Items[ItemIndex];
-					Alliance->Items[RoomItemIndex] = PClan->Items[ItemIndex];
+					Alliance->Items[RoomItemIndex] = PClan.Items[ItemIndex];
+					Alliance->Items[RoomItemIndex] = PClan.Items[ItemIndex];
 
 					// remove from user's stats
-					PClan->Items[ItemIndex].szName[0] = 0;
-					PClan->Items[ItemIndex].Available = false;
+					PClan.Items[ItemIndex].szName[0] = 0;
+					PClan.Items[ItemIndex].Available = false;
 				}
 				break;
 			case '*' :  /* destroy item */
@@ -378,7 +378,7 @@ static void DonationRoom(struct Alliance *Alliance)
 
 				// see if inventory full
 				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan->Items[iTemp].Available == false)
+					if (PClan.Items[iTemp].Available == false)
 						break;
 				}
 				if (iTemp == MAX_ITEMS_HELD) {
@@ -419,7 +419,7 @@ static void DonationRoom(struct Alliance *Alliance)
 				snprintf(szString, sizeof(szString), "%s taken!\n\n", Alliance->Items[ItemIndex].szName);
 				rputs(szString);
 
-				PClan->Items[EmptySlot] = Alliance->Items[ItemIndex];
+				PClan.Items[EmptySlot] = Alliance->Items[ItemIndex];
 
 				Alliance->Items[ItemIndex].szName[0] = 0;
 				Alliance->Items[ItemIndex].Available = false;
@@ -473,10 +473,10 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 
 	strlcpy(Alliance->szName, szName, sizeof(Alliance->szName));
 
-	Alliance->CreatorID[0] = PClan->ClanID[0];
-	Alliance->CreatorID[1] = PClan->ClanID[1];
-	Alliance->OriginalCreatorID[0] = PClan->ClanID[0];
-	Alliance->OriginalCreatorID[1] = PClan->ClanID[1];
+	Alliance->CreatorID[0] = PClan.ClanID[0];
+	Alliance->CreatorID[1] = PClan.ClanID[1];
+	Alliance->OriginalCreatorID[0] = PClan.ClanID[0];
+	Alliance->OriginalCreatorID[1] = PClan.ClanID[1];
 
 	for (iTemp = 0; iTemp < MAX_ALLIANCEMEMBERS; iTemp++) {
 		Alliance->Member[ iTemp ][0] = -1;
@@ -484,8 +484,8 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 	}
 
 	// set first member to be this creator
-	Alliance->Member[0][0] = PClan->ClanID[0];
-	Alliance->Member[0][1] = PClan->ClanID[1];
+	Alliance->Member[0][0] = PClan.ClanID[0];
+	Alliance->Member[0][1] = PClan.ClanID[1];
 
 	Empire_Create(&Alliance->Empire, false);
 	Alliance->Empire.VaultGold = 0;
@@ -499,10 +499,10 @@ void CreateAlliance(struct Alliance *Alliance, struct Alliance *Alliances[MAX_AL
 
 	// make user a part of alliance
 	for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
-		if (PClan->Alliances[iTemp] == -1)
+		if (PClan.Alliances[iTemp] == -1)
 			break;
 
-	PClan->Alliances[ iTemp ] = Alliance->ID;
+	PClan.Alliances[ iTemp ] = Alliance->ID;
 }
 
 
@@ -567,8 +567,8 @@ bool EnterAlliance(struct Alliance *Alliance)
 				break;
 			case '!' :  // remove self from alliance
 				// if creator, tell him he can't or destroy alliance
-				if (PClan->ClanID[0] == Alliance->CreatorID[0] &&
-						PClan->ClanID[1] == Alliance->CreatorID[1]) {
+				if (PClan.ClanID[0] == Alliance->CreatorID[0] &&
+						PClan.ClanID[1] == Alliance->CreatorID[1]) {
 					rputs("You are the creator, can't remove self...\n");
 					break;
 				}
@@ -579,8 +579,8 @@ bool EnterAlliance(struct Alliance *Alliance)
 
 				// remove from member[] list
 				for (iTemp = 0; iTemp < MAX_ALLIANCEMEMBERS; iTemp++)
-					if (Alliance->Member[iTemp][0] == PClan->ClanID[0] &&
-							Alliance->Member[iTemp][1] == PClan->ClanID[1]) {
+					if (Alliance->Member[iTemp][0] == PClan.ClanID[0] &&
+							Alliance->Member[iTemp][1] == PClan.ClanID[1]) {
 						Alliance->Member[iTemp][0] = -1;
 						Alliance->Member[iTemp][1] = -1;
 						break;
@@ -588,17 +588,17 @@ bool EnterAlliance(struct Alliance *Alliance)
 
 				// remove from globalplayerclan->alliances[]
 				for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
-					if (PClan->Alliances[iTemp] == Alliance->ID) {
-						PClan->Alliances[iTemp] = -1;
+					if (PClan.Alliances[iTemp] == Alliance->ID) {
+						PClan.Alliances[iTemp] = -1;
 						break;
 					}
 
 				// write message to creator
 				snprintf(szString, sizeof(szString), "%s left the alliance of %s",
-						PClan->szName, Alliance->szName);
+						PClan.szName, Alliance->szName);
 
 				GenericMessage(szString, Alliance->CreatorID,
-							   PClan->ClanID, PClan->szName, false);
+							   PClan.ClanID, PClan.szName, false);
 
 				// done
 				return false;
@@ -622,7 +622,7 @@ bool EnterAlliance(struct Alliance *Alliance)
 				RemoveFromAlliance(Alliance);
 				break;
 			case 'V' :  // clan stats
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 			case 'D' :    /* donation room */
 				DonationRoom(Alliance);
@@ -635,13 +635,13 @@ bool EnterAlliance(struct Alliance *Alliance)
 				Empire_Manage(&Alliance->Empire);
 				break;
 			case '*' :  // destroy alliance
-				if (Alliance->CreatorID[0] != PClan->ClanID[0] ||
-						Alliance->CreatorID[1] != PClan->ClanID[1]) {
+				if (Alliance->CreatorID[0] != PClan.ClanID[0] ||
+						Alliance->CreatorID[1] != PClan.ClanID[1]) {
 					rputs("|0SOnly the creator may change destroy this alliance.\n");
 					if (ClanExists(Alliance->CreatorID) == false) {
 						rputs("|0SAlliance creator was not found, however.  You will be the new creator.\n");
-						Alliance->CreatorID[0] = PClan->ClanID[0];
-						Alliance->CreatorID[1] = PClan->ClanID[1];
+						Alliance->CreatorID[0] = PClan.ClanID[0];
+						Alliance->CreatorID[1] = PClan.ClanID[1];
 					}
 					else {
 						door_pause();
@@ -666,13 +666,13 @@ void FormAlliance(int16_t AllyID)
 	// see if this guy can ally any more
 	for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++) {
 		// if in this alliance, tell user and exit!
-		if (PClan->Alliances[iTemp] == AllyID) {
+		if (PClan.Alliances[iTemp] == AllyID) {
 			rputs("Already in this alliance!\n");
 			return;
 		}
 
 		// find open slot
-		if (PClan->Alliances[iTemp] == -1)
+		if (PClan.Alliances[iTemp] == -1)
 			break;
 	}
 
@@ -719,9 +719,9 @@ void FormAlliance(int16_t AllyID)
 	}
 
 	// else, found spot, make him part of it now
-	Alliances[WhichAlliance]->Member[ iTemp ][0] = PClan->ClanID[0];
-	Alliances[WhichAlliance]->Member[ iTemp ][1] = PClan->ClanID[1];
-	PClan->Alliances[ UserAllianceSlot ] = AllyID;
+	Alliances[WhichAlliance]->Member[ iTemp ][0] = PClan.ClanID[0];
+	Alliances[WhichAlliance]->Member[ iTemp ][1] = PClan.ClanID[1];
+	PClan.Alliances[ UserAllianceSlot ] = AllyID;
 
 
 	// deinit alliances and update to file
@@ -741,15 +741,15 @@ void KillAlliance(int16_t WhichAlliance, struct Alliance *Alliances[MAX_ALLIANCE
 	unlink(szFileName);
 
 	// only if he is the ORIGINAL creator will he have flag set
-	if (Alliances[WhichAlliance]->OriginalCreatorID[0] == PClan->ClanID[0] &&
-			Alliances[WhichAlliance]->OriginalCreatorID[1] == PClan->ClanID[1]) {
-		PClan->MadeAlliance = false;
+	if (Alliances[WhichAlliance]->OriginalCreatorID[0] == PClan.ClanID[0] &&
+			Alliances[WhichAlliance]->OriginalCreatorID[1] == PClan.ClanID[1]) {
+		PClan.MadeAlliance = false;
 	}
 
 	// remove from user's alliance list
 	for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
-		if (PClan->Alliances[iTemp] == Alliances[WhichAlliance]->ID)
-			PClan->Alliances[iTemp] = -1;
+		if (PClan.Alliances[iTemp] == Alliances[WhichAlliance]->ID)
+			PClan.Alliances[iTemp] = -1;
 
 	// go through player file
 	// skip user online
@@ -779,8 +779,8 @@ void KillAlliance(int16_t WhichAlliance, struct Alliance *Alliances[MAX_ALLIANCE
 		}
 
 		// skip if user is online
-		if (TmpClan.ClanID[0] == PClan->ClanID[0] &&
-				TmpClan.ClanID[1] == PClan->ClanID[1])
+		if (TmpClan.ClanID[0] == PClan.ClanID[0] &&
+				TmpClan.ClanID[1] == PClan.ClanID[1])
 			continue;
 
 		// see if in alliance

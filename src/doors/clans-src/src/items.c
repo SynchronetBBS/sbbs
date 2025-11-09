@@ -102,7 +102,7 @@ void ReadBook(void)
 
 	// see if anything to read
 	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-		if (PClan->Items[iTemp].Available)
+		if (PClan.Items[iTemp].Available)
 			break;
 	}
 	if (iTemp == MAX_ITEMS_HELD) {
@@ -112,8 +112,8 @@ void ReadBook(void)
 
 	/* find first item in inventory which is a book */
 	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-		if (PClan->Items[iTemp].Available &&
-				PClan->Items[iTemp].cType == I_BOOK)
+		if (PClan.Items[iTemp].Available &&
+				PClan.Items[iTemp].cType == I_BOOK)
 			break;
 	}
 	if (iTemp == MAX_ITEMS_HELD) {
@@ -129,19 +129,19 @@ void ReadBook(void)
 	ItemIndex--;
 
 	/* if that item is non-existant, tell him */
-	if (PClan->Items[ItemIndex].Available == false ||
-			PClan->Items[ItemIndex].cType != I_BOOK) {
+	if (PClan.Items[ItemIndex].Available == false ||
+			PClan.Items[ItemIndex].cType != I_BOOK) {
 		rputs(ST_INVALIDITEM);
 		return;
 	}
-	ShowItemStats(&PClan->Items[ItemIndex], PClan);
+	ShowItemStats(&PClan.Items[ItemIndex], &PClan);
 
 	// choose who will read it
 	rputs("\n");
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
-		if (PClan->Member[iTemp] && iTemp < Game.Data.MaxPermanentMembers) {
+		if (PClan.Member[iTemp] && iTemp < Game.Data.MaxPermanentMembers) {
 			snprintf(szString, sizeof(szString), "|0A(|0B%c|0A) |0C%s\n",
-					iTemp + 'A', PClan->Member[iTemp]->szName);
+					iTemp + 'A', PClan.Member[iTemp]->szName);
 			rputs(szString);
 		}
 	}
@@ -158,8 +158,8 @@ void ReadBook(void)
 		WhichMember = cKey - 'A';
 
 		if (WhichMember >= 0 && WhichMember < Game.Data.MaxPermanentMembers) {
-			if (PClan->Member[ WhichMember ]) {
-				rputs(PClan->Member[ WhichMember ]->szName);
+			if (PClan.Member[ WhichMember ]) {
+				rputs(PClan.Member[ WhichMember ]->szName);
 				rputs("\n");
 				break;
 			}
@@ -167,24 +167,24 @@ void ReadBook(void)
 	}
 
 	// see what can read
-	if (ItemPenalty(PClan->Member[ WhichMember], &PClan->Items[ItemIndex])) {
+	if (ItemPenalty(PClan.Member[ WhichMember], &PClan.Items[ItemIndex])) {
 		snprintf(szString, sizeof(szString), "%s cannot read that book!\n",
-				PClan->Member[ WhichMember]->szName);
+				PClan.Member[ WhichMember]->szName);
 		rputs(szString);
 		return;
 	}
 
 	// find next spell index open AND see if spell already known
 	for (iTemp = 0; iTemp < MAX_SPELLS; iTemp++) {
-		if (PClan->Member[ WhichMember]->SpellsKnown[iTemp]-1 ==
-				PClan->Items[ItemIndex].SpellNum &&
-				PClan->Items[ItemIndex].SpellNum != -1) {
+		if (PClan.Member[ WhichMember]->SpellsKnown[iTemp]-1 ==
+				PClan.Items[ItemIndex].SpellNum &&
+				PClan.Items[ItemIndex].SpellNum != -1) {
 			// already know this spell
 			rputs("|0CThat character already knows that spell.\n");
 			return;
 		}
 
-		if (PClan->Member[ WhichMember]->SpellsKnown[iTemp] == 0)
+		if (PClan.Member[ WhichMember]->SpellsKnown[iTemp] == 0)
 			break;
 	}
 
@@ -197,64 +197,64 @@ void ReadBook(void)
 
 	// make him read it NOW
 	snprintf(szString, sizeof(szString), "|0B%s |0Creads the book...\n",
-			PClan->Member[ WhichMember ]->szName);
+			PClan.Member[ WhichMember ]->szName);
 	rputs(szString);
 
-	if (PClan->Items[ ItemIndex ].SpellNum != -1 && PClan->Items[ ItemIndex ].SpellNum < MAX_SPELLS) {
+	if (PClan.Items[ ItemIndex ].SpellNum != -1 && PClan.Items[ ItemIndex ].SpellNum < MAX_SPELLS) {
 		snprintf(szString, sizeof(szString), "|0C%s learns the |0B%s |0Cspell.\n",
-				PClan->Member[ WhichMember ]->szName,
-				Spells[ PClan->Items[ ItemIndex ].SpellNum ]->szName);
+				PClan.Member[ WhichMember ]->szName,
+				Spells[ PClan.Items[ ItemIndex ].SpellNum ]->szName);
 		rputs(szString);
 
 		// learn it
-		PClan->Member[ WhichMember ]->SpellsKnown[iTemp] =
-			(int8_t)(PClan->Items[ ItemIndex ].SpellNum + 1);
+		PClan.Member[ WhichMember ]->SpellsKnown[iTemp] =
+			(int8_t)(PClan.Items[ ItemIndex ].SpellNum + 1);
 	}
 
 	// if HPadd
-	if (PClan->Items[ ItemIndex ].HPAdd) {
-		if (PClan->Member[ WhichMember ]->MaxHP >= 20000) {
+	if (PClan.Items[ ItemIndex ].HPAdd) {
+		if (PClan.Member[ WhichMember ]->MaxHP >= 20000) {
 			rputs("|07That characters max HP can't increase any further\n");
 		}
 		else {
-			int16_t add = PClan->Items[ ItemIndex ].HPAdd;
-			if (PClan->Member[ WhichMember ]->MaxHP + add > 20000)
-				add = (20000 - PClan->Member[ WhichMember ]->MaxHP);
+			int16_t add = PClan.Items[ ItemIndex ].HPAdd;
+			if (PClan.Member[ WhichMember ]->MaxHP + add > 20000)
+				add = (20000 - PClan.Member[ WhichMember ]->MaxHP);
 			snprintf(szString, sizeof(szString), "|0C%s gains |0B%d HP\n",
-					PClan->Member[ WhichMember ]->szName,
+					PClan.Member[ WhichMember ]->szName,
 					add);
 			rputs(szString);
 
-			PClan->Member[ WhichMember ]->MaxHP += add;
+			PClan.Member[ WhichMember ]->MaxHP += add;
 		}
 
-		PClan->Member[ WhichMember ]->HP =
-			PClan->Member[ WhichMember ]->MaxHP;
+		PClan.Member[ WhichMember ]->HP =
+			PClan.Member[ WhichMember ]->MaxHP;
 	}
 
 	// if SPadd
-	if (PClan->Items[ ItemIndex ].SPAdd) {
-		if (PClan->Member[ WhichMember ]->SP >= 20000) {
+	if (PClan.Items[ ItemIndex ].SPAdd) {
+		if (PClan.Member[ WhichMember ]->SP >= 20000) {
 			rputs("|07That characters max SP can't increase any further\n");
 		}
 		else {
-			int16_t add = PClan->Items[ ItemIndex ].SPAdd;
-			if (PClan->Member[ WhichMember ]->MaxSP + add > 20000)
-				add = (20000 - PClan->Member[ WhichMember ]->MaxSP);
+			int16_t add = PClan.Items[ ItemIndex ].SPAdd;
+			if (PClan.Member[ WhichMember ]->MaxSP + add > 20000)
+				add = (20000 - PClan.Member[ WhichMember ]->MaxSP);
 			snprintf(szString, sizeof(szString), "|0C%s gains |0B%d SP\n",
-					PClan->Member[ WhichMember ]->szName,
-					PClan->Items[ ItemIndex ].SPAdd);
+					PClan.Member[ WhichMember ]->szName,
+					PClan.Items[ ItemIndex ].SPAdd);
 			rputs(szString);
 
-			PClan->Member[ WhichMember ]->MaxSP += add;
+			PClan.Member[ WhichMember ]->MaxSP += add;
 		}
 
-		PClan->Member[ WhichMember ]->SP =
-			PClan->Member[ WhichMember ]->MaxSP;
+		PClan.Member[ WhichMember ]->SP =
+			PClan.Member[ WhichMember ]->MaxSP;
 	}
 
 	// get rid of item
-	PClan->Items[ ItemIndex ].Available = false;
+	PClan.Items[ ItemIndex ].Available = false;
 
 }
 
@@ -295,11 +295,11 @@ static void ItemUseableBy(struct item_data *Item)
 	// go through each member
 	ShownOne = false;    // haven't shown at least one member yet
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
-		if (PClan->Member[CurMember] == NULL)
+		if (PClan.Member[CurMember] == NULL)
 			continue;
 
 		// if he meets the requirements, display him
-		PC = PClan->Member[CurMember];
+		PC = PClan.Member[CurMember];
 
 		if (ItemPenalty(PC, Item) == false) {
 			if (ShownOne)
@@ -529,7 +529,7 @@ void Items_GiveItem(char *szItemName)
 
 	// see if he has room to carry it
 	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-		if (PClan->Items[iTemp].Available == false)
+		if (PClan.Items[iTemp].Available == false)
 			break;
 	}
 	if (iTemp == MAX_ITEMS_HELD) {
@@ -554,9 +554,9 @@ void Items_GiveItem(char *szItemName)
 		return;
 	}
 
-	PClan->Items[EmptySlot] = *Items.Data[iTemp];
-	PClan->Items[EmptySlot].UsedBy = 0;
-	PClan->Items[EmptySlot].Available = true;
+	PClan.Items[EmptySlot] = *Items.Data[iTemp];
+	PClan.Items[EmptySlot].UsedBy = 0;
+	PClan.Items[EmptySlot].Available = true;
 
 	Items_Close();
 }
@@ -688,11 +688,11 @@ void Item_BuyItem(signed char ItemType)
 		/* list which ones to buy */
 		for (iTemp = 0; iTemp < TotalItems; iTemp++) {
 			snprintf(szString, sizeof(szString), ST_ITEMLINE, (char)('A' + iTemp),
-					PClan->Empire.VaultGold >= Items.Data[ ItemIndex[iTemp] ]->lCost ? "|0C" : "|08",
+					PClan.Empire.VaultGold >= Items.Data[ ItemIndex[iTemp] ]->lCost ? "|0C" : "|08",
 					Items.Data[ ItemIndex[iTemp] ]->szName, (long)ItemCosts[iTemp]);
 			rputs(szString);
 		}
-		snprintf(szString, sizeof(szString), ST_ITEMOPTIONS, (long)PClan->Empire.VaultGold);
+		snprintf(szString, sizeof(szString), ST_ITEMOPTIONS, (long)PClan.Empire.VaultGold);
 		rputs(szString);
 		rputs(ST_LONGLINE);
 		rputs(ST_ITEMPROMPT);
@@ -723,7 +723,7 @@ void Item_BuyItem(signed char ItemType)
 					Items.Data[ ItemIndex[Choice - 'A'] ]->cType != I_OTHER)
 				Help(Items.Data[ ItemIndex[Choice - 'A'] ]->szName, ST_ITEMHLP);
 
-			snprintf(szString, sizeof(szString), ST_ITEMCOSTIS, (long)ItemCosts[ Choice - 'A'], (long)PClan->Empire.VaultGold);
+			snprintf(szString, sizeof(szString), ST_ITEMCOSTIS, (long)ItemCosts[ Choice - 'A'], (long)PClan.Empire.VaultGold);
 			rputs(szString);
 
 			/* ask if he still wants to buy it */
@@ -733,7 +733,7 @@ void Item_BuyItem(signed char ItemType)
 				/* bought.  see if user has room for item and can afford */
 				/* if can't, kick him out */
 				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan->Items[iTemp].Available == false)
+					if (PClan.Items[iTemp].Available == false)
 						break;
 				}
 				if (iTemp == MAX_ITEMS_HELD) {
@@ -746,7 +746,7 @@ void Item_BuyItem(signed char ItemType)
 					EmptySlot = iTemp;
 
 				/* see if can afford it */
-				if (PClan->Empire.VaultGold < ItemCosts[Choice - 'A']) {
+				if (PClan.Empire.VaultGold < ItemCosts[Choice - 'A']) {
 					rputs(ST_ITEMNOAFFORD);
 					continue;
 				}
@@ -769,7 +769,7 @@ void Item_BuyItem(signed char ItemType)
 							/* ask if he wants to use this */
 							if (YesNo("\n|0SUse this material?") == YES) {
 								/* see if he can afford it */
-								if (PClan->Empire.VaultGold < ItemCosts[Choice - 'A']) {
+								if (PClan.Empire.VaultGold < ItemCosts[Choice - 'A']) {
 									rputs("|12You cannot afford this!\n");
 									if (NoYes("|0SUse Laconia instead?") == NO) {
 										Items_Close();
@@ -796,7 +796,7 @@ void Item_BuyItem(signed char ItemType)
 								/* see if he can afford it under this type of */
 								//NewCost = ItemCosts[Choice - 'A'];
 
-								if (PClan->Empire.VaultGold < ItemCosts[Choice - 'A']) {
+								if (PClan.Empire.VaultGold < ItemCosts[Choice - 'A']) {
 									rputs("|12You cannot afford this!\n");
 									if (NoYes("|0SUse PolyMetral instead?") == NO) {
 										Items_Close();
@@ -818,7 +818,7 @@ void Item_BuyItem(signed char ItemType)
 				}
 
 				/* take user's money */
-				PClan->Empire.VaultGold -= ItemCosts[Choice - 'A'];
+				PClan.Empire.VaultGold -= ItemCosts[Choice - 'A'];
 
 				/* give GST to vault */
 				Village.Data.Empire.VaultGold += ItemGst[Choice - 'A'];
@@ -910,11 +910,11 @@ void Item_BuyItem(signed char ItemType)
 					/* add to items list */
 					rputs("\n|0BYou take the item.\n");
 
-					PClan->Items[EmptySlot] = Item;
+					PClan.Items[EmptySlot] = Item;
 				}
 				else {
 					// rputs("\n|0BYou are refunded half the cost.\n");
-					PClan->Empire.VaultGold += ((Item.lCost*75)/100);
+					PClan.Empire.VaultGold += ((Item.lCost*75)/100);
 
 					/* get GST back from gov't */
 					Village.Data.Empire.VaultGold -= (ItemGst[Choice - 'A']/2);

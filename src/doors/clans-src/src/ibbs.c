@@ -822,8 +822,8 @@ static void AbortTrip(void)
 			continue;
 
 		/* see if that's the one */
-		if (LeavingData.ClanID[0] == PClan->ClanID[0] &&
-				LeavingData.ClanID[1] == PClan->ClanID[1]) {
+		if (LeavingData.ClanID[0] == PClan.ClanID[0] &&
+				LeavingData.ClanID[1] == PClan.ClanID[1]) {
 			/* found it! */
 			fseek(fpLeavingDat, (long)CurEntry * BUF_SIZE_LeavingData, SEEK_SET);
 
@@ -836,8 +836,8 @@ static void AbortTrip(void)
 	fclose(fpLeavingDat);
 
 	/* set this guy's trip stuff to none */
-	PClan->WorldStatus = WS_STAYING;
-	PClan->DestinationBBS = -1;
+	PClan.WorldStatus = WS_STAYING;
+	PClan.DestinationBBS = -1;
 
 	rputs("|04Trip aborted.\n");
 }
@@ -853,9 +853,9 @@ void IBBS_CurrentTravelInfo(void)
 	char szString[90];
 
 	/* see if travelling already */
-	if (PClan->WorldStatus == WS_LEAVING) {
+	if (PClan.WorldStatus == WS_LEAVING) {
 		snprintf(szString, sizeof(szString), "|0SYou are set to leave for %s.\n",
-				VillageName(PClan->DestinationBBS));
+				VillageName(PClan.DestinationBBS));
 		rputs(szString);
 
 		if (YesNo("|0SDo you wish to abort the trip?") == YES) {
@@ -1012,22 +1012,22 @@ static void GetTroopsTraveling(struct LeavingData *LeavingData)
 			case 'A' :
 				rputs("Followers\n\n");
 				LeavingData->Followers = (int32_t)GetLong("|0SHow many followers?",
-				    LeavingData->Followers, PClan->Empire.Army.Followers);
+				    LeavingData->Followers, PClan.Empire.Army.Followers);
 				break;
 			case 'B' :
 				rputs("Footmen\n\n");
 				LeavingData->Footmen = (int32_t)GetLong("|0SHow many footmen?",
-				    LeavingData->Footmen, PClan->Empire.Army.Footmen);
+				    LeavingData->Footmen, PClan.Empire.Army.Footmen);
 				break;
 			case 'C' :
 				rputs("Axemen\n\n");
 				LeavingData->Axemen = (int32_t)GetLong("|0SHow many Axemen?",
-				    LeavingData->Axemen , PClan->Empire.Army.Axemen);
+				    LeavingData->Axemen , PClan.Empire.Army.Axemen);
 				break;
 			case 'D' :
 				rputs("Knights\n\n");
 				LeavingData->Knights = (int32_t)GetLong("|0SHow many Knights?",
-				    LeavingData->Knights, PClan->Empire.Army.Knights);
+				    LeavingData->Knights, PClan.Empire.Army.Knights);
 				break;
 		}
 		rputs("\n");
@@ -1058,9 +1058,9 @@ static bool IBBS_TravelToBBS(int16_t DestID)
 	}
 
 	/* see if travelling already */
-	if (PClan->WorldStatus == WS_LEAVING) {
+	if (PClan.WorldStatus == WS_LEAVING) {
 		snprintf(szString, sizeof(szString), "|0SYou are already set to leave for %s!\n",
-				VillageName(PClan->DestinationBBS));
+				VillageName(PClan.DestinationBBS));
 		rputs(szString);
 
 		if (YesNo("|0SDo you wish to abort the trip?") == YES) {
@@ -1079,8 +1079,8 @@ static bool IBBS_TravelToBBS(int16_t DestID)
 		/* append LEAVING.DAT file */
 		LeavingData.DestID = DestID;
 		LeavingData.Active = true;
-		LeavingData.ClanID[0] = PClan->ClanID[0];
-		LeavingData.ClanID[1] = PClan->ClanID[1];
+		LeavingData.ClanID[0] = PClan.ClanID[0];
+		LeavingData.ClanID[1] = PClan.ClanID[1];
 
 		// ask user how many guys to bring along
 		LeavingData.Followers = 0;
@@ -1098,8 +1098,8 @@ static bool IBBS_TravelToBBS(int16_t DestID)
 		EncryptWrite_s(LeavingData, &LeavingData, fpLeavingDat, XOR_TRAVEL);
 		fclose(fpLeavingDat);
 
-		PClan->WorldStatus = WS_LEAVING;
-		PClan->DestinationBBS = DestID;
+		PClan.WorldStatus = WS_LEAVING;
+		PClan.DestinationBBS = DestID;
 
 		if (YesNo("|0SDo you wish to exit the game now?") == YES) {
 			System_Close();
@@ -1901,8 +1901,8 @@ void IBBS_SendSpy(struct empire *Empire, int16_t DestID)
 	// for now
 	Spy.ClanID[0] = -1;
 	Spy.ClanID[1] = -1;
-	Spy.MasterID[0] = PClan->ClanID[0];
-	Spy.MasterID[1] = PClan->ClanID[1];
+	Spy.MasterID[0] = PClan.ClanID[0];
+	Spy.MasterID[1] = PClan.ClanID[1];
 	Spy.TargetType = EO_VILLAGE;
 
 	s_SpyAttemptPacket_s(&Spy, SpyBuffer, sizeof(SpyBuffer));
@@ -1931,8 +1931,8 @@ void IBBS_SendAttackPacket(struct empire *AttackingEmpire, struct Army *Attackin
 	AttackPacket.ClanID[0] = ClanID[0];
 	AttackPacket.ClanID[1] = ClanID[1];
 
-	AttackPacket.AttackOriginatorID[0] = PClan->ClanID[0];
-	AttackPacket.AttackOriginatorID[1] = PClan->ClanID[1];
+	AttackPacket.AttackOriginatorID[0] = PClan.ClanID[0];
+	AttackPacket.AttackOriginatorID[1] = PClan.ClanID[1];
 
 	AttackPacket.AttackIndex = IBBS.Data.Nodes[DestID-1].Attack.SendIndex+1;
 	IBBS.Data.Nodes[DestID-1].Attack.SendIndex++;

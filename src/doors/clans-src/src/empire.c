@@ -251,9 +251,9 @@ void ProcessResultPacket(struct AttackResult *Result)
 
 				// give points for win, take away some for loss
 				if (Result->Success)
-					PClan->Points += 50;
+					PClan.Points += 50;
 				else
-					PClan->Points -= 25;
+					PClan.Points -= 25;
 
 				strlcpy(szAttackerName, TmpClan.szName, sizeof(szAttackerName));
 
@@ -648,8 +648,8 @@ static void DevelopLand(struct empire *Empire)
 	char szString[128];
 
 	// show help for developing land
-	if (!PClan->DevelopHelp) {
-		PClan->DevelopHelp = true;
+	if (!PClan.DevelopHelp) {
+		PClan.DevelopHelp = true;
 		Help("Development Help", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -728,13 +728,13 @@ void DonateToEmpire(struct empire *Empire)
 
 		switch (GetChoice(szFileName, ST_ENTEROPTION, szTheOptions, "12346789Q?V50AB", 'Q', true)) {
 			case '1' :      /* followers */
-				LimitingVariable = PClan->Empire.Army.Followers;
+				LimitingVariable = PClan.Empire.Army.Followers;
 
 				NumToDonate = (int32_t)GetLong(ST_DEMPIRE6, 0, LimitingVariable);
 
 				if (NumToDonate) {
 					Empire->Army.Followers += NumToDonate;
-					PClan->Empire.Army.Followers -= NumToDonate;
+					PClan.Empire.Army.Followers -= NumToDonate;
 				}
 				break;
 			case '2' :      /* footmen */
@@ -748,8 +748,8 @@ void DonateToEmpire(struct empire *Empire)
 
 				// if you have less troops to donate than this,
 				// you can only train that many
-				if (PClan->Empire.Army.Footmen < LimitingVariable)
-					LimitingVariable = PClan->Empire.Army.Footmen;
+				if (PClan.Empire.Army.Footmen < LimitingVariable)
+					LimitingVariable = PClan.Empire.Army.Footmen;
 
 				// if less than 0, make it 0
 				if (LimitingVariable < 0)
@@ -759,7 +759,7 @@ void DonateToEmpire(struct empire *Empire)
 
 				if (NumToDonate) {
 					Empire->Army.Footmen   += NumToDonate;
-					PClan->Empire.Army.Footmen -= NumToDonate;
+					PClan.Empire.Army.Footmen -= NumToDonate;
 				}
 				break;
 			case '3' :      /* axemen */
@@ -777,8 +777,8 @@ void DonateToEmpire(struct empire *Empire)
 
 				// if you have less troops to donate than this,
 				// you can only train that many
-				if (PClan->Empire.Army.Axemen < LimitingVariable)
-					LimitingVariable = PClan->Empire.Army.Axemen;
+				if (PClan.Empire.Army.Axemen < LimitingVariable)
+					LimitingVariable = PClan.Empire.Army.Axemen;
 
 				// if less than 0, make it 0
 				if (LimitingVariable < 0)
@@ -788,7 +788,7 @@ void DonateToEmpire(struct empire *Empire)
 
 				if (NumToDonate) {
 					Empire->Army.Axemen   += NumToDonate;
-					PClan->Empire.Army.Axemen -= NumToDonate;
+					PClan.Empire.Army.Axemen -= NumToDonate;
 				}
 				break;
 			case '4' :      /* Knights */
@@ -807,8 +807,8 @@ void DonateToEmpire(struct empire *Empire)
 
 				// if you have less troops to donate than this,
 				// you can only train that many
-				if (PClan->Empire.Army.Knights < LimitingVariable)
-					LimitingVariable = PClan->Empire.Army.Knights;
+				if (PClan.Empire.Army.Knights < LimitingVariable)
+					LimitingVariable = PClan.Empire.Army.Knights;
 
 				// if less than 0, make it 0
 				if (LimitingVariable < 0)
@@ -818,7 +818,7 @@ void DonateToEmpire(struct empire *Empire)
 
 				if (NumToDonate) {
 					Empire->Army.Knights   += NumToDonate;
-					PClan->Empire.Army.Knights -= NumToDonate;
+					PClan.Empire.Army.Knights -= NumToDonate;
 				}
 				break;
 			case '7' :      /* withdraw footmen */
@@ -828,10 +828,10 @@ void DonateToEmpire(struct empire *Empire)
 				}
 
 				// first limit is number of barracks you can own
-				LimitingVariable = PClan->Empire.Buildings[B_BARRACKS]*20;
+				LimitingVariable = PClan.Empire.Buildings[B_BARRACKS]*20;
 
 				// next, subtract from this the number of troops you already own
-				LimitingVariable -= PClan->Empire.Army.Footmen;
+				LimitingVariable -= PClan.Empire.Army.Footmen;
 
 				// this leaves how many you can take in
 
@@ -847,7 +847,7 @@ void DonateToEmpire(struct empire *Empire)
 				NumToDonate = (int32_t)GetLong(ST_DEMPIRE11, 0, LimitingVariable);
 
 				if (NumToDonate) {
-					PClan->Empire.Army.Footmen += NumToDonate;
+					PClan.Empire.Army.Footmen += NumToDonate;
 					Empire->Army.Footmen -= NumToDonate;
 				}
 				break;
@@ -856,15 +856,15 @@ void DonateToEmpire(struct empire *Empire)
 					rputs(ST_DEMPIRE20);
 					break;
 				}
-				if (PClan->Empire.Buildings[B_STEELMILL] == 0) {
+				if (PClan.Empire.Buildings[B_STEELMILL] == 0) {
 					rputs(ST_DEMPIRE21);
 					break;
 				}
 				// first limit is number of barracks you can own
-				LimitingVariable = PClan->Empire.Buildings[B_BARRACKS]*10;
+				LimitingVariable = PClan.Empire.Buildings[B_BARRACKS]*10;
 
 				// next, subtract from this the number of troops you already own
-				LimitingVariable -= PClan->Empire.Army.Axemen;
+				LimitingVariable -= PClan.Empire.Army.Axemen;
 
 				// this leaves how many you can take in
 
@@ -880,7 +880,7 @@ void DonateToEmpire(struct empire *Empire)
 				NumToDonate = (int32_t)GetLong(ST_DEMPIRE12, 0, LimitingVariable);
 
 				if (NumToDonate) {
-					PClan->Empire.Army.Axemen   += NumToDonate;
+					PClan.Empire.Army.Axemen   += NumToDonate;
 					Empire->Army.Axemen -= NumToDonate;
 				}
 				break;
@@ -889,16 +889,16 @@ void DonateToEmpire(struct empire *Empire)
 					rputs(ST_DEMPIRE20);
 					break;
 				}
-				if (PClan->Empire.Buildings[B_STEELMILL] == 0 ||
-						PClan->Empire.Buildings[B_STABLES] == 0) {
+				if (PClan.Empire.Buildings[B_STEELMILL] == 0 ||
+						PClan.Empire.Buildings[B_STABLES] == 0) {
 					rputs(ST_DEMPIRE22);
 					break;
 				}
 				// first limit is number of barracks you can own
-				LimitingVariable = PClan->Empire.Buildings[B_BARRACKS]*5;
+				LimitingVariable = PClan.Empire.Buildings[B_BARRACKS]*5;
 
 				// next, subtract from this the number of troops you already own
-				LimitingVariable -= PClan->Empire.Army.Knights;
+				LimitingVariable -= PClan.Empire.Army.Knights;
 
 				// this leaves how many you can take in
 
@@ -914,7 +914,7 @@ void DonateToEmpire(struct empire *Empire)
 				NumToDonate = (int32_t)GetLong(ST_DEMPIRE13, 0, LimitingVariable);
 
 				if (NumToDonate) {
-					PClan->Empire.Army.Knights += NumToDonate;
+					PClan.Empire.Army.Knights += NumToDonate;
 					Empire->Army.Knights -= NumToDonate;
 				}
 				break;
@@ -928,17 +928,17 @@ void DonateToEmpire(struct empire *Empire)
 				NumToDonate = (int32_t)GetLong(ST_DEMPIRE10, 0, LimitingVariable);
 
 				if (NumToDonate) {
-					PClan->Empire.Army.Followers += NumToDonate;
+					PClan.Empire.Army.Followers += NumToDonate;
 					Empire->Army.Followers -= NumToDonate;
 				}
 				break;
 			case '5' :      /* land */
-				LimitingVariable = PClan->Empire.Land;
+				LimitingVariable = PClan.Empire.Land;
 
 				NumToDonate = (int32_t)GetLong(ST_DEMPIRE14, 0, LimitingVariable);
 
 				if (NumToDonate) {
-					PClan->Empire.Land -= (int16_t)NumToDonate;
+					PClan.Empire.Land -= (int16_t)NumToDonate;
 					Empire->Land += (int16_t)NumToDonate;
 				}
 				break;
@@ -953,7 +953,7 @@ void DonateToEmpire(struct empire *Empire)
 				NumToDonate = (int32_t)GetLong(ST_DEMPIRE15, 0, LimitingVariable);
 
 				if (NumToDonate) {
-					PClan->Empire.Land += (int16_t)NumToDonate;
+					PClan.Empire.Land += (int16_t)NumToDonate;
 					Empire->Land -= (int16_t)NumToDonate;
 				}
 				break;
@@ -962,12 +962,12 @@ void DonateToEmpire(struct empire *Empire)
 					rputs(ST_DEMPIRE23);
 					break;
 				}
-				LimitingVariable = PClan->Empire.VaultGold;
+				LimitingVariable = PClan.Empire.VaultGold;
 
 				NumToDonate = (int32_t)GetLong(ST_DEMPIRE16, 0, LimitingVariable);
 
 				if (NumToDonate) {
-					PClan->Empire.VaultGold -= NumToDonate;
+					PClan.Empire.VaultGold -= NumToDonate;
 					Empire->VaultGold += NumToDonate;
 				}
 				break;
@@ -982,7 +982,7 @@ void DonateToEmpire(struct empire *Empire)
 				NumToDonate = (int32_t)GetLong(ST_DEMPIRE17, 0, LimitingVariable);
 
 				if (NumToDonate) {
-					PClan->Empire.VaultGold += NumToDonate;
+					PClan.Empire.VaultGold += NumToDonate;
 					Empire->VaultGold -= NumToDonate;
 				}
 				break;
@@ -991,7 +991,7 @@ void DonateToEmpire(struct empire *Empire)
 			case '?' :      /* redisplay options */
 				break;
 			case 'V' :      /* stats */
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 		}
 	}
@@ -1075,7 +1075,7 @@ static void Destroy_Menu(struct empire *Empire)
 				rputs(szString);
 				break;
 			case 'V' :      // clan stats
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 			case 'Q' :      /* return to previous menu */
 				return;
@@ -1193,7 +1193,7 @@ static void StructureMenu(struct empire *Empire)
 			case 'Q' :      /* return to previous menu */
 				return;
 			case 'V' :      // clan stats
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 			case '?' :      /* redisplay options */
 				break;
@@ -2298,8 +2298,8 @@ static void StartEmpireWar(struct empire *Empire)
 	int16_t WhichVillage, NumAlliances, WhichAlliance, NumGoals, Goal, ExtentOfAttack = 0;
 	int16_t ClanID[2], LandGained, Decrease;
 
-	if (!PClan->WarHelp) {
-		PClan->WarHelp = true;
+	if (!PClan.WarHelp) {
+		PClan.WarHelp = true;
 		Help("War Help", ST_WARHLP);
 		rputs("\n%P");
 	}
@@ -2458,8 +2458,8 @@ static void StartEmpireWar(struct empire *Empire)
 			Result.DefenderType = EO_VILLAGE;
 			Result.BBSIDFrom = IBBS.Data.BBSID;
 			Result.BBSIDTo = IBBS.Data.BBSID;
-			Result.AttackerID[0] = PClan->ClanID[0];
-			Result.AttackerID[1] = PClan->ClanID[1];
+			Result.AttackerID[0] = PClan.ClanID[0];
+			Result.AttackerID[1] = PClan.ClanID[1];
 			Result.DefenderID[0] = Village.Data.RulingClanId[0];
 			Result.DefenderID[1] = Village.Data.RulingClanId[1];
 			Result.Goal = Goal;
@@ -2641,8 +2641,8 @@ static void StartEmpireWar(struct empire *Empire)
 		Result.DefenderType = EO_ALLIANCE;
 		Result.BBSIDFrom = Config.BBSID;
 		Result.BBSIDTo = Config.BBSID;
-		Result.AttackerID[0] = PClan->ClanID[0];
-		Result.AttackerID[1] = PClan->ClanID[1];
+		Result.AttackerID[0] = PClan.ClanID[0];
+		Result.AttackerID[1] = PClan.ClanID[1];
 		Result.DefenderID[0] = Alliances[WhichAlliance]->CreatorID[0];
 		Result.DefenderID[1] = Alliances[WhichAlliance]->CreatorID[1];
 		Result.Goal = Goal;
@@ -2783,8 +2783,8 @@ static void StartEmpireWar(struct empire *Empire)
 		Result.DefenderType = EO_CLAN;
 		Result.BBSIDFrom = Config.BBSID;
 		Result.BBSIDTo = Config.BBSID;
-		Result.AttackerID[0] = PClan->ClanID[0];
-		Result.AttackerID[1] = PClan->ClanID[1];
+		Result.AttackerID[0] = PClan.ClanID[0];
+		Result.AttackerID[1] = PClan.ClanID[1];
 		Result.DefenderID[0] = ClanID[0];
 		Result.DefenderID[1] = ClanID[1];
 		Result.AllianceID = Empire->AllianceID;
@@ -2841,7 +2841,7 @@ static void StartEmpireWar(struct empire *Empire)
 	if (Empire->OwnerType == EO_VILLAGE)
 		Empire->AttacksToday++;
 	else
-		PClan->Empire.AttacksToday++;
+		PClan.Empire.AttacksToday++;
 
 	// update attacker's army rating
 	Decrease = ExtentOfAttack / 5 + 2;
@@ -2861,9 +2861,9 @@ static void StartEmpireWar(struct empire *Empire)
 	// give points for win, take away some for loss
 	if (Empire->OwnerType == EO_CLAN) {
 		if (Result.Success)
-			PClan->Points += 50;
+			PClan.Points += 50;
 		else
-			PClan->Points -= 25;
+			PClan.Points -= 25;
 	}
 
 	door_pause();
@@ -2887,8 +2887,8 @@ static void SpyMenu(struct empire *Empire)
 	char szString[255];
 	int16_t ClanID[2], Junk[2] = {-1, -1};
 
-	if (!PClan->SpyHelp) {
-		PClan->SpyHelp = true;
+	if (!PClan.SpyHelp) {
+		PClan.SpyHelp = true;
 		Help("Spy Help", ST_EMPIREHLP);
 		rputs("\n%P");
 	}
@@ -3139,8 +3139,8 @@ void Empire_Manage(struct empire *Empire)
 
 	LoadStrings(1260, 9, szTheOptions);
 
-	if (!PClan->EmpireHelp) {
-		PClan->EmpireHelp = true;
+	if (!PClan.EmpireHelp) {
+		PClan.EmpireHelp = true;
 		Help("Empire Help", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -3192,7 +3192,7 @@ void Empire_Manage(struct empire *Empire)
 					ManageArmy(Empire);
 				break;
 			case 'A' :  // attack empire
-				if (PClan->Protection && Empire->OwnerType == EO_CLAN) {
+				if (PClan.Protection && Empire->OwnerType == EO_CLAN) {
 					rputs("|07You cannot attack another empire while in protection.\n%P");
 					break;
 				}
@@ -3211,7 +3211,7 @@ void Empire_Manage(struct empire *Empire)
 						StartEmpireWar(Empire);
 					}
 					else {
-						if (PClan->Empire.AttacksToday == MAX_EMPIREATTACKS) {
+						if (PClan.Empire.AttacksToday == MAX_EMPIREATTACKS) {
 							// rputs("You can only command 5 attacks per day.\n");
 							rputs(ST_MEMPIRE33);
 							break;

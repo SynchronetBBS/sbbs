@@ -114,28 +114,28 @@ static void MainGame(void)
 					break;
 
 				/* if not on this BBS, tell him */
-				if (PClan->WorldStatus == WS_GONE) {
+				if (PClan.WorldStatus == WS_GONE) {
 					// tell him
 					// snprintf(szString, sizeof(szString), "|02Your clan was last seen headed for |14%s |02(%s)!\nPlease call that BBS instead.\n\n",
 					snprintf(szString, sizeof(szString), ST_MAIN1,
-							VillageName(PClan->DestinationBBS),
-							BBSName(PClan->DestinationBBS));
+							VillageName(PClan.DestinationBBS),
+							BBSName(PClan.DestinationBBS));
 					rputs(szString);
 
 					rputs("\nIf you had trouble connecting to that BBS, you can call back your clan.\n");
 					if (NoYes("|0SCall back your clan to this BBS?") == YES) {
-						IBBS_SendComeBack(PClan->DestinationBBS, PClan);
+						IBBS_SendComeBack(PClan.DestinationBBS, &PClan);
 						rputs("\n|0SYour clan will return tomorrow to this village.\n%P");
 					}
 					break;
 				}
 
-				if (strcasecmp(PClan->szDateOfLastGame, System.szTodaysDate) != 0)
+				if (strcasecmp(PClan.szDateOfLastGame, System.szTodaysDate) != 0)
 					User_FirstTimeToday();
 
 				News_ReadNews(true);
 
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 
 				Mail_Read();
 				Trades_CheckTrades();

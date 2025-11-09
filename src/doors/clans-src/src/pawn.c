@@ -185,7 +185,7 @@ static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS])
 				break;
 			case 'B' :  // buy an item
 				// find open slot
-				EmptySlot = PS_GetOpenItemSlot(PClan);
+				EmptySlot = PS_GetOpenItemSlot(&PClan);
 
 				if (EmptySlot == -1) {
 					rputs(ST_PAWN2);
@@ -216,15 +216,15 @@ static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS])
 					break;
 
 				// see if enough gold
-				if (PClan->Empire.VaultGold < lCost) {
+				if (PClan.Empire.VaultGold < lCost) {
 					rputs(ST_PAWN5);
 					break;
 				}
 
 				// else add to items, remove cash
-				PClan->Empire.VaultGold -= lCost;
+				PClan.Empire.VaultGold -= lCost;
 
-				PClan->Items[EmptySlot] = *PS_Items[ItemIndex];
+				PClan.Items[EmptySlot] = *PS_Items[ItemIndex];
 
 				free(PS_Items[ItemIndex]);
 				PS_Items[ItemIndex] = NULL;
@@ -278,7 +278,7 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 				break;
 
 			case 'L' :  // list items
-				ListItems(PClan);
+				ListItems(&PClan);
 				break;
 
 			case 'X' :  // examine item
@@ -288,13 +288,13 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 
 				ItemIndex--;
 
-				if (PClan->Items[ItemIndex].Available == false) {
+				if (PClan.Items[ItemIndex].Available == false) {
 					rputs(ST_INVALIDITEM);
 					break;
 				}
 
 				// show item
-				ShowItemStats(&PClan->Items[ItemIndex], PClan);
+				ShowItemStats(&PClan.Items[ItemIndex], &PClan);
 				break;
 
 			case 'S' :  // sell item
@@ -316,46 +316,46 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 
 				ItemIndex--;
 
-				if (PClan->Items[ItemIndex].Available == false) {
+				if (PClan.Items[ItemIndex].Available == false) {
 					rputs(ST_INVALIDITEM);
 					break;
 				}
 
 				// show item
-				ShowItemStats(&PClan->Items[ItemIndex], PClan);
+				ShowItemStats(&PClan.Items[ItemIndex], &PClan);
 
 				// if in use, tell him
-				if (PClan->Items[ItemIndex].UsedBy != 0) {
+				if (PClan.Items[ItemIndex].UsedBy != 0) {
 					rputs(ST_PAWN11);
 					break;
 				}
 
-				lCost = (PClan->Items[ItemIndex].lCost * 3) / 4 +
-						(PClan->Items[ItemIndex].lCost * (int32_t)my_random(15)) / 100;
+				lCost = (PClan.Items[ItemIndex].lCost * 3) / 4 +
+						(PClan.Items[ItemIndex].lCost * (int32_t)my_random(15)) / 100;
 
 				snprintf(szString, sizeof(szString), ST_PAWN12, (long)lCost);
 
 				if (YesNo(szString) == NO) break;
 
 				// give him gold
-				PClan->Empire.VaultGold += lCost;
+				PClan.Empire.VaultGold += lCost;
 
 				// get mem for it
 				PS_Items[ItemSlot] = malloc(sizeof(struct item_data));
 				CheckMem(PS_Items[ItemSlot]);
 
-				*PS_Items[ItemSlot] = PClan->Items[ItemIndex];
+				*PS_Items[ItemSlot] = PClan.Items[ItemIndex];
 
 				PS_Items[ItemSlot]->ItemDate = DaysSince1970(System.szTodaysDate);
 
 				// remove from user's item list
-				PClan->Items[ItemIndex].Available = false;
+				PClan.Items[ItemIndex].Available = false;
 				break;
 			case 'A' :  // sell all
 				for (ItemIndex = 0; ItemIndex < MAX_ITEMS_HELD; ItemIndex++) {
 					// skip this item if not available or in use
-					if (PClan->Items[ItemIndex].Available == false ||
-							PClan->Items[ItemIndex].UsedBy) {
+					if (PClan.Items[ItemIndex].Available == false ||
+							PClan.Items[ItemIndex].UsedBy) {
 						continue;
 					}
 
@@ -372,28 +372,28 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 					ItemSlot = CurItem;
 
 					// show item
-					ShowItemStats(&PClan->Items[ItemIndex], PClan);
+					ShowItemStats(&PClan.Items[ItemIndex], &PClan);
 
-					lCost = (PClan->Items[ItemIndex].lCost * 3) / 4 +
-							(PClan->Items[ItemIndex].lCost * (int32_t)my_random(15)) / 100;
+					lCost = (PClan.Items[ItemIndex].lCost * 3) / 4 +
+							(PClan.Items[ItemIndex].lCost * (int32_t)my_random(15)) / 100;
 
 					snprintf(szString, sizeof(szString), ST_PAWN12, (long)lCost);
 
 					if (YesNo(szString) == NO) continue;
 
 					// give him gold
-					PClan->Empire.VaultGold += lCost;
+					PClan.Empire.VaultGold += lCost;
 
 					// get mem for it
 					PS_Items[ItemSlot] = malloc(sizeof(struct item_data));
 					CheckMem(PS_Items[ItemSlot]);
 
-					*PS_Items[ItemSlot] = PClan->Items[ItemIndex];
+					*PS_Items[ItemSlot] = PClan.Items[ItemIndex];
 
 					PS_Items[ItemSlot]->ItemDate = DaysSince1970(System.szTodaysDate);
 
 					// remove from user's item list
-					PClan->Items[ItemIndex].Available = false;
+					PClan.Items[ItemIndex].Available = false;
 				}
 				break;
 		}
@@ -431,8 +431,8 @@ void PawnShop(void)
 
 	LoadStrings(1180, 5, szTheOptions);
 
-	if (!PClan->PawnHelp) {
-		PClan->PawnHelp = true;
+	if (!PClan.PawnHelp) {
+		PClan.PawnHelp = true;
 		Help("Pawn Shop", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -462,7 +462,7 @@ void PawnShop(void)
 			case '?' :    /* redisplay options */
 				break;
 			case 'V' :    /* stats */
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 		}
 	}

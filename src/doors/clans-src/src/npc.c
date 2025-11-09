@@ -391,7 +391,7 @@ void ChatVillagers(int16_t WhichMenu)
 	uint8_t nBuf[BUF_SIZE_NPCInfo];
 
 	/* if all guys dead, tell guy can't fight */
-	if (NumMembers(PClan, true) == 0) {
+	if (NumMembers(&PClan, true) == 0) {
 		rputs(ST_FIGHT0);
 		return;
 	}
@@ -471,7 +471,7 @@ void ChatVillagers(int16_t WhichMenu)
 		szKeys[CurNPC + 3] = 0;
 
 		rputs(" |0A(|0BQ|0A) |0CQuit\n\n");
-		snprintf(szString, sizeof(szString), " |0B%d |0Achat(s) left\n", MAX_CHATSPERDAY - PClan->ChatsToday);
+		snprintf(szString, sizeof(szString), " |0B%d |0Achat(s) left\n", MAX_CHATSPERDAY - PClan.ChatsToday);
 		rputs(szString);
 		rputs(ST_LONGDIVIDER);
 		rputs(" |0GChoose one|0E> |0FQuit");
@@ -489,7 +489,7 @@ void ChatVillagers(int16_t WhichMenu)
 		rputs(szString);
 
 		// if not enough chats, don't let him chat
-		if (PClan->ChatsToday == MAX_CHATSPERDAY) {
+		if (PClan.ChatsToday == MAX_CHATSPERDAY) {
 			rputs("\n|15You have chatted enough already today.\n%P");
 			continue;
 		}
@@ -498,7 +498,7 @@ void ChatVillagers(int16_t WhichMenu)
 		NPC_ChatNPC(pszNPCIndex[ cInput - 'A' ]);
 
 		// decrease chats today
-		PClan->ChatsToday++;
+		PClan.ChatsToday++;
 	}
 
 	// free up name memory used
@@ -568,7 +568,7 @@ void NPC_AddNPCMember(char *szIndex)
 
 	// find empty slot first
 	for (iTemp = Game.Data.MaxPermanentMembers; iTemp < 6; iTemp++)
-		if (PClan->Member[iTemp] == NULL)
+		if (PClan.Member[iTemp] == NULL)
 			break;
 
 	EmptySlot = iTemp;
@@ -621,8 +621,8 @@ void NPC_AddNPCMember(char *szIndex)
 	NPC_GetNPCNdx(NPCInfo, &NPCNdx);
 
 	NPCNdx.InClan = true;
-	NPCNdx.ClanID[0] = PClan->ClanID[0];
-	NPCNdx.ClanID[1] = PClan->ClanID[1];
+	NPCNdx.ClanID[0] = PClan.ClanID[0];
+	NPCNdx.ClanID[1] = PClan.ClanID[1];
 
 	NPC_UpdateNPCNdx(NPCInfo->szIndex, &NPCNdx);
 
@@ -641,10 +641,9 @@ void NPC_AddNPCMember(char *szIndex)
 	fclose(PCFile.fp);
 	s_pc_d(pBuf, sizeof(pBuf), &TmpPC);
 
-	PClan->Member[EmptySlot] = malloc(sizeof(struct pc));
-	CheckMem(PClan->Member[EmptySlot]);
-	*PClan->Member[EmptySlot] = TmpPC;
-	PClan->Member[EmptySlot]->MyClan = PClan;
+	PClan.Member[EmptySlot] = malloc(sizeof(struct pc));
+	CheckMem(PClan.Member[EmptySlot]);
+	*PClan.Member[EmptySlot] = TmpPC;
+	PClan.Member[EmptySlot]->MyClan = &PClan;
 	free(NPCInfo);
 }
-

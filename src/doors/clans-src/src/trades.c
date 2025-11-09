@@ -74,7 +74,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 		switch (GetChoice("", ST_ENTEROPTION, szTheOptions, "12345V0", '0', true)) {
 			case '1' :  /* gold */
 				if (GivingList)
-					MaxInput = PClan->Empire.VaultGold;
+					MaxInput = PClan.Empire.VaultGold;
 				else
 					MaxInput = 1000000000;
 
@@ -82,7 +82,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				break;
 			case '2' :  /* followers */
 				if (GivingList)
-					MaxInput = PClan->Empire.Army.Followers;
+					MaxInput = PClan.Empire.Army.Followers;
 				else
 					MaxInput = 1000000;
 
@@ -90,7 +90,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				break;
 			case '3' :  /* footmen */
 				if (GivingList)
-					MaxInput = PClan->Empire.Army.Footmen;
+					MaxInput = PClan.Empire.Army.Footmen;
 				else
 					MaxInput = 1000000;
 
@@ -98,7 +98,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				break;
 			case '4' :  /* axemen */
 				if (GivingList)
-					MaxInput = PClan->Empire.Army.Axemen;
+					MaxInput = PClan.Empire.Army.Axemen;
 				else
 					MaxInput = 1000000;
 
@@ -106,7 +106,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				break;
 			case '5' :  /* knights */
 				if (GivingList)
-					MaxInput = PClan->Empire.Army.Knights;
+					MaxInput = PClan.Empire.Army.Knights;
 				else
 					MaxInput = 1000000;
 
@@ -116,7 +116,7 @@ static void GetTradeList(struct TradeList *TradeList, bool GivingList, char *szT
 				Done = true;
 				break;
 			case 'V' :  /* view stats */
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 		}
 	}
@@ -145,8 +145,8 @@ void RejectTrade(struct TradeData *TradeData)
 	TradeData->Giving.Knights = 0;
 	TradeData->Giving.Catapults = 0;
 
-	snprintf(szString, sizeof(szString), "%s rejected your trade offer.", PClan->szName);
-	GenericMessage(szString, TradeData->FromClanID, PClan->ClanID, PClan->szName, false);
+	snprintf(szString, sizeof(szString), "%s rejected your trade offer.", PClan.szName);
+	GenericMessage(szString, TradeData->FromClanID, PClan.ClanID, PClan.szName, false);
 
 	Clan_Update(&TmpClan);
 
@@ -182,8 +182,8 @@ void Trades_CheckTrades(void)
 			continue;
 
 		/* if so, see if for this dude */
-		if (TradeData.ToClanID[0] != PClan->ClanID[0] ||
-				TradeData.ToClanID[1] != PClan->ClanID[1]) {
+		if (TradeData.ToClanID[0] != PClan.ClanID[0] ||
+				TradeData.ToClanID[1] != PClan.ClanID[1]) {
 			/* not for him, skip it */
 			continue;
 		}
@@ -260,11 +260,11 @@ void Trades_CheckTrades(void)
 			rputs("  |12Nothing\n");
 
 		/* see if user CAN trade */
-		if ((PClan->Empire.VaultGold < TradeData.Asking.Gold) ||
-				(PClan->Empire.Army.Followers < TradeData.Asking.Followers) ||
-				(PClan->Empire.Army.Footmen < TradeData.Asking.Footmen) ||
-				(PClan->Empire.Army.Axemen < TradeData.Asking.Axemen) ||
-				(PClan->Empire.Army.Knights < TradeData.Asking.Knights)) {
+		if ((PClan.Empire.VaultGold < TradeData.Asking.Gold) ||
+				(PClan.Empire.Army.Followers < TradeData.Asking.Followers) ||
+				(PClan.Empire.Army.Footmen < TradeData.Asking.Footmen) ||
+				(PClan.Empire.Army.Axemen < TradeData.Asking.Axemen) ||
+				(PClan.Empire.Army.Knights < TradeData.Asking.Knights)) {
 			if (YesNo("\n|12You cannot currently accept the trade's requirements.\n\n|0SDo you wish to ignore this for now?")
 					== YES)
 				continue;
@@ -275,12 +275,12 @@ void Trades_CheckTrades(void)
 			fseek(fpTradeFile, OldOffset, SEEK_SET);
 			EncryptWrite_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE);
 		}
-		else if (((PClan->Empire.Army.Footmen+TradeData.Giving.Footmen) >
-				  PClan->Empire.Buildings[B_BARRACKS]*20) ||
-				 ((PClan->Empire.Army.Axemen+TradeData.Giving.Axemen) >
-				  PClan->Empire.Buildings[B_BARRACKS]*10) ||
-				 ((PClan->Empire.Army.Knights+TradeData.Giving.Knights) >
-				  PClan->Empire.Buildings[B_BARRACKS]*5)) {
+		else if (((PClan.Empire.Army.Footmen+TradeData.Giving.Footmen) >
+				  PClan.Empire.Buildings[B_BARRACKS]*20) ||
+				 ((PClan.Empire.Army.Axemen+TradeData.Giving.Axemen) >
+				  PClan.Empire.Buildings[B_BARRACKS]*10) ||
+				 ((PClan.Empire.Army.Knights+TradeData.Giving.Knights) >
+				  PClan.Empire.Buildings[B_BARRACKS]*5)) {
 			if (YesNo("\n|12You cannot currently accept the trade's requirements.  You do\nnot have enough room in your barracks to hold the troops.\n\n|0SDo you wish to ignore this for now?")
 					== YES)
 				continue;
@@ -306,13 +306,13 @@ void Trades_CheckTrades(void)
 
 				snprintf(szString, sizeof(szString), "%s accepted your trade.  You received the following:\n\n\
  %" PRId32 " Gold\n %" PRId32 " Followers\n %" PRId32 " Footmen\n %" PRId32 " Axemen\n %" PRId32 " Knights\n %" PRId32 " Catapults\n",
-						PClan->szName, TradeData.Asking.Gold,
+						PClan.szName, TradeData.Asking.Gold,
 						TradeData.Asking.Followers, TradeData.Asking.Footmen,
 						TradeData.Asking.Axemen, TradeData.Asking.Knights,
 						TradeData.Asking.Catapults);
 
 				GenericMessage(szString, TradeData.FromClanID,
-							   PClan->ClanID, PClan->szName, false);
+							   PClan.ClanID, PClan.szName, false);
 
 				/* update this data */
 				Clan_Update(&TmpClan);
@@ -320,18 +320,18 @@ void Trades_CheckTrades(void)
 				FreeClanMembers(&TmpClan);
 
 				/* update this clan's data */
-				PClan->Empire.VaultGold += TradeData.Giving.Gold;
-				PClan->Empire.Army.Followers += TradeData.Giving.Followers;
-				PClan->Empire.Army.Footmen += TradeData.Giving.Footmen;
-				PClan->Empire.Army.Axemen += TradeData.Giving.Axemen;
-				PClan->Empire.Army.Knights += TradeData.Giving.Knights;
+				PClan.Empire.VaultGold += TradeData.Giving.Gold;
+				PClan.Empire.Army.Followers += TradeData.Giving.Followers;
+				PClan.Empire.Army.Footmen += TradeData.Giving.Footmen;
+				PClan.Empire.Army.Axemen += TradeData.Giving.Axemen;
+				PClan.Empire.Army.Knights += TradeData.Giving.Knights;
 
 				/* update this clan's data */
-				PClan->Empire.VaultGold -= TradeData.Asking.Gold;
-				PClan->Empire.Army.Followers -= TradeData.Asking.Followers;
-				PClan->Empire.Army.Footmen -= TradeData.Asking.Footmen;
-				PClan->Empire.Army.Axemen -= TradeData.Asking.Axemen;
-				PClan->Empire.Army.Knights -= TradeData.Asking.Knights;
+				PClan.Empire.VaultGold -= TradeData.Asking.Gold;
+				PClan.Empire.Army.Followers -= TradeData.Asking.Followers;
+				PClan.Empire.Army.Footmen -= TradeData.Asking.Footmen;
+				PClan.Empire.Army.Axemen -= TradeData.Asking.Axemen;
+				PClan.Empire.Army.Knights -= TradeData.Asking.Knights;
 
 				/* now delete it */
 				TradeData.Active = false;
@@ -481,18 +481,18 @@ void Trades_MakeTrade(void)
 	}
 
 	/* if so, reduce his stats accordingly */
-	PClan->Empire.VaultGold       -= TradeData.Giving.Gold;
-	PClan->Empire.Army.Followers  -= TradeData.Giving.Followers;
-	PClan->Empire.Army.Footmen -= TradeData.Giving.Footmen;
-	PClan->Empire.Army.Axemen -= TradeData.Giving.Axemen;
-	PClan->Empire.Army.Knights -= TradeData.Giving.Knights;
+	PClan.Empire.VaultGold       -= TradeData.Giving.Gold;
+	PClan.Empire.Army.Followers  -= TradeData.Giving.Followers;
+	PClan.Empire.Army.Footmen -= TradeData.Giving.Footmen;
+	PClan.Empire.Army.Axemen -= TradeData.Giving.Axemen;
+	PClan.Empire.Army.Knights -= TradeData.Giving.Knights;
 
 	TradeData.Active = true;
 	TradeData.ToClanID[0] = ClanID[0];
 	TradeData.ToClanID[1] = ClanID[1];
-	TradeData.FromClanID[0] = PClan->ClanID[0];
-	TradeData.FromClanID[1] = PClan->ClanID[1];
-	strlcpy(TradeData.szFromClan, PClan->szName, sizeof(TradeData.szFromClan));
+	TradeData.FromClanID[0] = PClan.ClanID[0];
+	TradeData.FromClanID[1] = PClan.ClanID[1];
+	strlcpy(TradeData.szFromClan, PClan.szName, sizeof(TradeData.szFromClan));
 
 	fpTradeFile = fopen("trades.dat", "ab");
 	if (!fpTradeFile)

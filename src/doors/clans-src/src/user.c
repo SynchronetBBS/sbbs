@@ -54,11 +54,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "village.h"
 
 static struct user {
-	bool Initialized;     // true if user clan malloc'd
-	bool UpdateUser;      // true if user data should be written to file
-} User = { false, false };
+	bool Initialized;     // true if user clan is in the file
+} User;
 
-struct clan *PClan=NULL;
+struct clan PClan = {
+	.ClanID = {-1, -1}
+};
 
 static void PadString(char *szString, int16_t PadLength)
 /*
@@ -298,7 +299,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 
 	// add message to news
 	if (*szClanName && FoundInPCFile && Eliminate == false &&
-			PClan->Eliminated == false) {
+			PClan.Eliminated == false) {
 		snprintf(szString, sizeof(szString), "|0A \xaf\xaf\xaf |0CThe clan of |0D%s |0Chas disbanded!\n\n",
 				szClanName);
 		News_AddNews(szString);
@@ -616,8 +617,8 @@ static void ChooseDefaultAction(struct pc *PC)
 	const char *pszOptions[MAX_SPELLS + 1];       // add 1 for "Attack" command
 	int16_t iTemp, NumOptions, WhichOption;
 
-	if (!PClan->DefActionHelp) {
-		PClan->DefActionHelp = true;
+	if (!PClan.DefActionHelp) {
+		PClan.DefActionHelp = true;
 		Help("Default Action", ST_NEWBIEHLP);
 	}
 
@@ -960,7 +961,7 @@ static void ItemStats(void)
 
 				/* see if anything to examine */
 				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan->Items[iTemp].Available)
+					if (PClan.Items[iTemp].Available)
 						break;
 				}
 				if (iTemp == MAX_ITEMS_HELD) {
@@ -970,7 +971,7 @@ static void ItemStats(void)
 
 				/* find first item in inventory */
 				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan->Items[iTemp].Available)
+					if (PClan.Items[iTemp].Available)
 						break;
 				}
 				if (iTemp == MAX_ITEMS_HELD) {
@@ -985,22 +986,22 @@ static void ItemStats(void)
 				ItemIndex--;
 
 				/* if that item is non-existant, tell him */
-				if (PClan->Items[ItemIndex].Available == false) {
+				if (PClan.Items[ItemIndex].Available == false) {
 					rputs(ST_ISTATS4);
 					break;
 				}
-				ShowItemStats(&PClan->Items[ItemIndex], PClan);
+				ShowItemStats(&PClan.Items[ItemIndex], &PClan);
 				break;
 			case 'L' :
 				rputs(ST_ISTATS5);
-				ListItems(PClan);
+				ListItems(&PClan);
 				break;
 			case 'D' :  /* drop item */
 				rputs(ST_ISTATS6);
 
 				/* see if anything to drop */
 				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan->Items[iTemp].Available)
+					if (PClan.Items[iTemp].Available)
 						break;
 				}
 				if (iTemp == MAX_ITEMS_HELD) {
@@ -1010,8 +1011,8 @@ static void ItemStats(void)
 
 				/* find first item which is not equipped */
 				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan->Items[iTemp].Available &&
-							PClan->Items[iTemp].UsedBy == 0)
+					if (PClan.Items[iTemp].Available &&
+							PClan.Items[iTemp].UsedBy == 0)
 						break;
 				}
 				if (iTemp == MAX_ITEMS_HELD) {
@@ -1026,26 +1027,26 @@ static void ItemStats(void)
 				ItemIndex--;
 
 				/* if that item is non-existant, tell him */
-				if (PClan->Items[ItemIndex].Available == false) {
+				if (PClan.Items[ItemIndex].Available == false) {
 					rputs(ST_ISTATS4);
 					break;
 				}
 				/* if that item is in use, tell him */
-				if (PClan->Items[ItemIndex].UsedBy != 0) {
+				if (PClan.Items[ItemIndex].UsedBy != 0) {
 					rputs(ST_ISTATS8);
 					break;
 				}
 
 				/* still wanna drop it? */
-				snprintf(szString, sizeof(szString), ST_ISTATS9, PClan->Items[ItemIndex].szName);
+				snprintf(szString, sizeof(szString), ST_ISTATS9, PClan.Items[ItemIndex].szName);
 
 				if (NoYes(szString) == YES) {
 					/* drop it */
-					snprintf(szString, sizeof(szString), ST_ISTATS10, PClan->Items[ItemIndex].szName);
+					snprintf(szString, sizeof(szString), ST_ISTATS10, PClan.Items[ItemIndex].szName);
 					rputs(szString);
 
-					PClan->Items[ItemIndex].szName[0] = 0;
-					PClan->Items[ItemIndex].Available = false;
+					PClan.Items[ItemIndex].szName[0] = 0;
+					PClan.Items[ItemIndex].Available = false;
 				}
 				break;
 			case 'S' :
@@ -1054,15 +1055,15 @@ static void ItemStats(void)
 				/* find first item which is equipped */
 				OneItemFound = false;
 				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan->Items[iTemp].Available &&
-							PClan->Items[iTemp].cType != I_SCROLL &&
-							PClan->Items[iTemp].cType != I_BOOK)
+					if (PClan.Items[iTemp].Available &&
+							PClan.Items[iTemp].cType != I_SCROLL &&
+							PClan.Items[iTemp].cType != I_BOOK)
 						OneItemFound = true;
 
-					if (PClan->Items[iTemp].Available &&
-							PClan->Items[iTemp].UsedBy != 0 &&
-							PClan->Items[iTemp].cType != I_SCROLL &&
-							PClan->Items[iTemp].cType != I_BOOK)
+					if (PClan.Items[iTemp].Available &&
+							PClan.Items[iTemp].UsedBy != 0 &&
+							PClan.Items[iTemp].cType != I_SCROLL &&
+							PClan.Items[iTemp].cType != I_BOOK)
 						break;
 				}
 				if (iTemp == MAX_ITEMS_HELD && OneItemFound == true) {
@@ -1082,48 +1083,48 @@ static void ItemStats(void)
 				ItemIndex--;
 
 				/* if that item is non-existant, tell him */
-				if (PClan->Items[ItemIndex].Available == false) {
+				if (PClan.Items[ItemIndex].Available == false) {
 					rputs(ST_ISTATS4);
 					break;
 				}
 
 				/* see if not equipped */
-				if (PClan->Items[ItemIndex].UsedBy == 0) {
+				if (PClan.Items[ItemIndex].UsedBy == 0) {
 					rputs(ST_ISTATS14);
 					break;
 				}
 
 				/* if equipped, take it away from whoever using it */
-				switch (PClan->Items[ ItemIndex ].cType) {
+				switch (PClan.Items[ ItemIndex ].cType) {
 					case I_WEAPON :
 						snprintf(szString, sizeof(szString), ST_ISTATS15,
-								PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->szName, PClan->Items[ItemIndex].szName);
+								PClan.Member[PClan.Items[ItemIndex].UsedBy-1]->szName, PClan.Items[ItemIndex].szName);
 						rputs(szString);
 
-						ItemEquipResults(&PClan->Items[ItemIndex], false);
+						ItemEquipResults(&PClan.Items[ItemIndex], false);
 
-						PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->Weapon = 0;
-						PClan->Items[ItemIndex].UsedBy = 0;
+						PClan.Member[PClan.Items[ItemIndex].UsedBy-1]->Weapon = 0;
+						PClan.Items[ItemIndex].UsedBy = 0;
 						break;
 					case I_ARMOR :
 						snprintf(szString, sizeof(szString), ST_ISTATS16,
-								PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->szName, PClan->Items[ItemIndex].szName);
+								PClan.Member[PClan.Items[ItemIndex].UsedBy-1]->szName, PClan.Items[ItemIndex].szName);
 						rputs(szString);
 
-						ItemEquipResults(&PClan->Items[ItemIndex], false);
+						ItemEquipResults(&PClan.Items[ItemIndex], false);
 
-						PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->Armor = 0;
-						PClan->Items[ItemIndex].UsedBy = 0;
+						PClan.Member[PClan.Items[ItemIndex].UsedBy-1]->Armor = 0;
+						PClan.Items[ItemIndex].UsedBy = 0;
 						break;
 					case I_SHIELD :
 						snprintf(szString, sizeof(szString), ST_ISTATS17,
-								PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->szName, PClan->Items[ItemIndex].szName);
+								PClan.Member[PClan.Items[ItemIndex].UsedBy-1]->szName, PClan.Items[ItemIndex].szName);
 						rputs(szString);
 
-						ItemEquipResults(&PClan->Items[ItemIndex], false);
+						ItemEquipResults(&PClan.Items[ItemIndex], false);
 
-						PClan->Member[PClan->Items[ItemIndex].UsedBy-1]->Shield = 0;
-						PClan->Items[ItemIndex].UsedBy = 0;
+						PClan.Member[PClan.Items[ItemIndex].UsedBy-1]->Shield = 0;
+						PClan.Items[ItemIndex].UsedBy = 0;
 						break;
 				}
 				break;
@@ -1132,15 +1133,15 @@ static void ItemStats(void)
 				/* find first item which is not equipped yet */
 				OneItemFound = false;
 				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan->Items[iTemp].Available &&
-							PClan->Items[iTemp].cType != I_SCROLL &&
-							PClan->Items[iTemp].cType != I_BOOK)
+					if (PClan.Items[iTemp].Available &&
+							PClan.Items[iTemp].cType != I_SCROLL &&
+							PClan.Items[iTemp].cType != I_BOOK)
 						OneItemFound = true;
 
-					if (PClan->Items[iTemp].Available &&
-							PClan->Items[iTemp].UsedBy == 0 &&
-							PClan->Items[iTemp].cType != I_SCROLL &&
-							PClan->Items[iTemp].cType != I_BOOK)
+					if (PClan.Items[iTemp].Available &&
+							PClan.Items[iTemp].UsedBy == 0 &&
+							PClan.Items[iTemp].cType != I_SCROLL &&
+							PClan.Items[iTemp].cType != I_BOOK)
 						break;
 				}
 				if (iTemp == MAX_ITEMS_HELD && OneItemFound == true) {
@@ -1159,20 +1160,20 @@ static void ItemStats(void)
 				ItemIndex--;
 
 				/* if that item is non-existant, tell him */
-				if (PClan->Items[ItemIndex].Available == false) {
+				if (PClan.Items[ItemIndex].Available == false) {
 					rputs(ST_ISTATS4);
 					break;
 				}
 
 				/* see if already equipped */
-				if (PClan->Items[ItemIndex].UsedBy != 0) {
+				if (PClan.Items[ItemIndex].UsedBy != 0) {
 					rputs(ST_ISTATS21);
 					break;
 				}
 
-				if (PClan->Items[ ItemIndex ].cType == I_SCROLL ||
-						PClan->Items[ ItemIndex ].cType == I_BOOK ||
-						PClan->Items[ ItemIndex ].cType == I_OTHER) {
+				if (PClan.Items[ ItemIndex ].cType == I_SCROLL ||
+						PClan.Items[ ItemIndex ].cType == I_BOOK ||
+						PClan.Items[ ItemIndex ].cType == I_OTHER) {
 					rputs("|04Can't equip that!\n");
 					break;
 				}
@@ -1185,56 +1186,44 @@ static void ItemStats(void)
 					szKeys[2] = 0;
 					rputs("\n");
 					for (cTemp = 0; cTemp < 6; cTemp++) {
-						if (PClan->Member[cTemp]) {
+						if (PClan.Member[cTemp]) {
 							strlcpy(szItemName, "Nothing", sizeof(szItemName));
 
 							// see if equipped already
-							switch (PClan->Items[ ItemIndex ].cType) {
+							switch (PClan.Items[ ItemIndex ].cType) {
 								case I_WEAPON :
-									if (PClan->Member[cTemp]->Weapon) {
-										strlcpy(szItemName, PClan->Items[PClan->Member[cTemp]->Weapon-1].szName, sizeof(szItemName));
+									if (PClan.Member[cTemp]->Weapon) {
+										strlcpy(szItemName, PClan.Items[PClan.Member[cTemp]->Weapon-1].szName, sizeof(szItemName));
 									}
 									break;
 								case I_ARMOR :
-									if (PClan->Member[cTemp]->Armor) {
-										strlcpy(szItemName, PClan->Items[PClan->Member[cTemp]->Armor-1].szName, sizeof(szItemName));
+									if (PClan.Member[cTemp]->Armor) {
+										strlcpy(szItemName, PClan.Items[PClan.Member[cTemp]->Armor-1].szName, sizeof(szItemName));
 									}
 									break;
 								case I_SHIELD :
-									if (PClan->Member[cTemp]->Shield) {
-										strlcpy(szItemName, PClan->Items[PClan->Member[cTemp]->Shield-1].szName, sizeof(szItemName));
+									if (PClan.Member[cTemp]->Shield) {
+										strlcpy(szItemName, PClan.Items[PClan.Member[cTemp]->Shield-1].szName, sizeof(szItemName));
 									}
 									break;
 							}
 
 							snprintf(szString, sizeof(szString), ST_ISTATS22,
 									(char)(cTemp + 'A'),
-									ItemPenalty(PClan->Member[cTemp], &PClan->Items[ItemIndex]) ? "|08" : "|0C",
-									PClan->Member[cTemp]->szName,
+									ItemPenalty(PClan.Member[cTemp], &PClan.Items[ItemIndex]) ? "|08" : "|0C",
+									PClan.Member[cTemp]->szName,
 									szItemName);
-
-							// append race/class
-							/* show race/class */
-							/*
-							              if (PClan->Member[cTemp]->WhichRace != -1)
-							                snprintf(szTemp, sizeof(szTemp), "%s/%s\n",
-							                  Races[PClan->Member[cTemp]->WhichRace]->szName,
-							                  PClasses[PClan->Member[cTemp]->WhichClass]->szName);
-							              else
-							                strlcpy(szTemp, "[unknown]\n", sizeof(szTemp));
-							              strlcat(szString, szTemp, sizeof(szString));
-							*/
 
 							rputs(szString);
 							szKeys[ strlen(szKeys) +1 ] = 0;
-							szKeys[ strlen(szKeys)] = (char)cTemp + 'A';
+							szKeys[ strlen(szKeys)] = (char)(cTemp + 'A');
 						}
 					}
 					strlcat(szKeys, "Q", sizeof(szKeys));
 					rputs(ST_ISTATS23);
 
 
-					snprintf(szString, sizeof(szString), ST_ISTATS24, PClan->Items[ItemIndex].szName);
+					snprintf(szString, sizeof(szString), ST_ISTATS24, PClan.Items[ItemIndex].szName);
 					rputs(szString);
 
 					WhoEquip = od_get_answer(szKeys);
@@ -1250,31 +1239,31 @@ static void ItemStats(void)
 					   can't equip him */
 
 					/* see if he has access to use that weapon, probably does :) */
-					snprintf(szString, sizeof(szString), "|15%s\n\n", PClan->Member[WhoEquip]->szName);
+					snprintf(szString, sizeof(szString), "|15%s\n\n", PClan.Member[WhoEquip]->szName);
 					rputs(szString);
 
-					if (ItemPenalty(PClan->Member[WhoEquip], &PClan->Items[ ItemIndex ])) {
+					if (ItemPenalty(PClan.Member[WhoEquip], &PClan.Items[ ItemIndex ])) {
 						rputs("\n|04That player cannot use that item\n");
 						continue;
 					}
 
 
 					/* see if that guy has something equipped, if so, tell user */
-					switch (PClan->Items[ ItemIndex ].cType) {
+					switch (PClan.Items[ ItemIndex ].cType) {
 						case I_WEAPON :
-							if (PClan->Member[WhoEquip]->Weapon) {
+							if (PClan.Member[WhoEquip]->Weapon) {
 								snprintf(szString, sizeof(szString), ST_ISTATS25,
-										PClan->Items[ PClan->Member[WhoEquip]->Weapon-1].szName);
+										PClan.Items[ PClan.Member[WhoEquip]->Weapon-1].szName);
 								if (YesNo(szString) == YES) {
-									iTemp = PClan->Member[WhoEquip]->Weapon-1;
+									iTemp = PClan.Member[WhoEquip]->Weapon-1;
 									snprintf(szString, sizeof(szString), ST_ISTATS15,
-											PClan->Member[WhoEquip]->szName, PClan->Items[iTemp].szName);
+											PClan.Member[WhoEquip]->szName, PClan.Items[iTemp].szName);
 									rputs(szString);
 
-									ItemEquipResults(&PClan->Items[iTemp], false);
+									ItemEquipResults(&PClan.Items[iTemp], false);
 
-									PClan->Member[WhoEquip]->Weapon = 0;
-									PClan->Items[iTemp].UsedBy = 0;
+									PClan.Member[WhoEquip]->Weapon = 0;
+									PClan.Items[iTemp].UsedBy = 0;
 								}
 								else {
 									rputs(ST_ABORTED);
@@ -1282,71 +1271,71 @@ static void ItemStats(void)
 								}
 							}
 
-							snprintf(szString, sizeof(szString), ST_ISTATS26, PClan->Member[WhoEquip]->szName, PClan->Items[ItemIndex].szName);
+							snprintf(szString, sizeof(szString), ST_ISTATS26, PClan.Member[WhoEquip]->szName, PClan.Items[ItemIndex].szName);
 							rputs(szString);
 
-							PClan->Member[WhoEquip]->Weapon = ItemIndex + 1;
-							PClan->Items[ItemIndex].UsedBy = WhoEquip + 1;
+							PClan.Member[WhoEquip]->Weapon = ItemIndex + 1;
+							PClan.Items[ItemIndex].UsedBy = WhoEquip + 1;
 							// tell them what happened to his stats
-							ItemEquipResults(&PClan->Items[ItemIndex], true);
+							ItemEquipResults(&PClan.Items[ItemIndex], true);
 							DoneEquipping = true;
 							break;
 						case I_ARMOR :
-							if (PClan->Member[WhoEquip]->Armor) {
+							if (PClan.Member[WhoEquip]->Armor) {
 								snprintf(szString, sizeof(szString), ST_ISTATS27,
-										PClan->Items[ PClan->Member[WhoEquip]->Armor-1].szName);
+										PClan.Items[ PClan.Member[WhoEquip]->Armor-1].szName);
 								if (YesNo(szString) == YES) {
-									iTemp = PClan->Member[WhoEquip]->Armor-1;
+									iTemp = PClan.Member[WhoEquip]->Armor-1;
 									snprintf(szString, sizeof(szString), ST_ISTATS15,
-											PClan->Member[WhoEquip]->szName, PClan->Items[iTemp].szName);
+											PClan.Member[WhoEquip]->szName, PClan.Items[iTemp].szName);
 									rputs(szString);
 
-									ItemEquipResults(&PClan->Items[iTemp], false);
+									ItemEquipResults(&PClan.Items[iTemp], false);
 
-									PClan->Member[WhoEquip]->Armor = 0;
-									PClan->Items[iTemp].UsedBy = 0;
+									PClan.Member[WhoEquip]->Armor = 0;
+									PClan.Items[iTemp].UsedBy = 0;
 								}
 								else {
 									rputs(ST_ABORTED);
 									break;
 								}
 							}
-							snprintf(szString, sizeof(szString), ST_ISTATS28, PClan->Member[WhoEquip]->szName, PClan->Items[ItemIndex].szName);
+							snprintf(szString, sizeof(szString), ST_ISTATS28, PClan.Member[WhoEquip]->szName, PClan.Items[ItemIndex].szName);
 							rputs(szString);
 
-							PClan->Member[WhoEquip]->Armor = ItemIndex + 1;
-							PClan->Items[ItemIndex].UsedBy = WhoEquip + 1;
+							PClan.Member[WhoEquip]->Armor = ItemIndex + 1;
+							PClan.Items[ItemIndex].UsedBy = WhoEquip + 1;
 							// tell them what happened to his stats
-							ItemEquipResults(&PClan->Items[ItemIndex], true);
+							ItemEquipResults(&PClan.Items[ItemIndex], true);
 							DoneEquipping = true;
 							break;
 						case I_SHIELD :
-							if (PClan->Member[WhoEquip]->Shield) {
+							if (PClan.Member[WhoEquip]->Shield) {
 								snprintf(szString, sizeof(szString), ST_ISTATS29,
-										PClan->Items[ PClan->Member[WhoEquip]->Shield-1].szName);
+										PClan.Items[ PClan.Member[WhoEquip]->Shield-1].szName);
 								if (YesNo(szString) == YES) {
-									iTemp = PClan->Member[WhoEquip]->Shield-1;
+									iTemp = PClan.Member[WhoEquip]->Shield-1;
 									snprintf(szString, sizeof(szString), ST_ISTATS15,
-											PClan->Member[WhoEquip]->szName, PClan->Items[iTemp].szName);
+											PClan.Member[WhoEquip]->szName, PClan.Items[iTemp].szName);
 									rputs(szString);
 
-									ItemEquipResults(&PClan->Items[iTemp], false);
+									ItemEquipResults(&PClan.Items[iTemp], false);
 
-									PClan->Member[WhoEquip]->Shield = 0;
-									PClan->Items[iTemp].UsedBy = 0;
+									PClan.Member[WhoEquip]->Shield = 0;
+									PClan.Items[iTemp].UsedBy = 0;
 								}
 								else {
 									rputs(ST_ABORTED);
 									break;
 								}
 							}
-							snprintf(szString, sizeof(szString), ST_ISTATS30, PClan->Member[WhoEquip]->szName, PClan->Items[ItemIndex].szName);
+							snprintf(szString, sizeof(szString), ST_ISTATS30, PClan.Member[WhoEquip]->szName, PClan.Items[ItemIndex].szName);
 							rputs(szString);
 
-							PClan->Member[WhoEquip]->Shield = ItemIndex + 1;
-							PClan->Items[ItemIndex].UsedBy = WhoEquip + 1;
+							PClan.Member[WhoEquip]->Shield = ItemIndex + 1;
+							PClan.Items[ItemIndex].UsedBy = WhoEquip + 1;
 							// tell them what happened to his stats
-							ItemEquipResults(&PClan->Items[ItemIndex], true);
+							ItemEquipResults(&PClan.Items[ItemIndex], true);
 							DoneEquipping = true;
 							break;
 					}
@@ -1673,11 +1662,6 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 		PC->MaxSP += PClasses[ PC->WhichClass ]->MaxSP;
 		PC->Difficulty = -1;  // no difficulty
 
-		/* randomize stats a bit */
-		// my_random(1) always returns 0.
-		//for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++)
-		//	PC->Attributes[iTemp] += my_random(1);
-
 		// if clan leader, add on some random stats
 		if (ClanLeader)
 			for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++)
@@ -1750,7 +1734,7 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 			break;
 	}
 
-	PC->MyClan = PClan;
+	PC->MyClan = &PClan;
 	PC->Undead = false;
 	PC->DefaultAction = 0;
 
@@ -1850,17 +1834,17 @@ static void User_ResetHelp(void)
  * Resets help database for clan
  */
 {
-	PClan->DefActionHelp = false;
-	PClan->CommHelp      = false;
-	PClan->MineHelp      = false;
-	PClan->MineLevelHelp = false;
-	PClan->CombatHelp    = false;
-	PClan->TrainHelp     = false;
-	PClan->MarketHelp    = false;
-	PClan->PawnHelp      = false;
-	PClan->WizardHelp    = false;
-	PClan->EmpireHelp    = false;
-	PClan->DevelopHelp   = false;
+	PClan.DefActionHelp = false;
+	PClan.CommHelp      = false;
+	PClan.MineHelp      = false;
+	PClan.MineLevelHelp = false;
+	PClan.CombatHelp    = false;
+	PClan.TrainHelp     = false;
+	PClan.MarketHelp    = false;
+	PClan.PawnHelp      = false;
+	PClan.WizardHelp    = false;
+	PClan.EmpireHelp    = false;
+	PClan.DevelopHelp   = false;
 }
 
 static bool User_Create(void)
@@ -1874,7 +1858,7 @@ static bool User_Create(void)
 	int16_t iTemp;
 	char szString[128];
 
-	strlcpy(PClan->szUserName, od_control.user_name, sizeof(PClan->szUserName));
+	strlcpy(PClan.szUserName, od_control.user_name, sizeof(PClan.szUserName));
 
 	Help("Welcome", ST_CLANSHLP);
 
@@ -1884,78 +1868,78 @@ static bool User_Create(void)
 		return false;
 	}
 
-	if (!ChooseClanName(PClan->szName))
+	if (!ChooseClanName(PClan.szName))
 		return false;
 
 
 	// initialize clan data
-	PClan->Symbol[0] = 0;
+	PClan.Symbol[0] = 0;
 
 	for (iTemp = 0; iTemp < 8; iTemp++) {
-		PClan->QuestsDone[iTemp] = 0;
-		PClan->QuestsKnown[iTemp] = 0;
+		PClan.QuestsDone[iTemp] = 0;
+		PClan.QuestsKnown[iTemp] = 0;
 	}
 
-	PClan->WorldStatus = WS_STAYING;
-	PClan->DestinationBBS = -1;
+	PClan.WorldStatus = WS_STAYING;
+	PClan.DestinationBBS = -1;
 
-	PClan->Points = 0;
-	strlcpy(PClan->szDateOfLastGame, System.szTodaysDate, sizeof(PClan->szDateOfLastGame));
+	PClan.Points = 0;
+	strlcpy(PClan.szDateOfLastGame, System.szTodaysDate, sizeof(PClan.szDateOfLastGame));
 
 	// Reset help database for him
 	User_ResetHelp();
 
-	PClan->QuestToday = false;
-	PClan->VaultWithdrawals = 0;
-	PClan->AttendedMass = false;
-	PClan->GotBlessing = false;
-	PClan->Prayed = false;
-	PClan->FightsLeft = Game.Data.MineFights;
-	PClan->ClanFights = Game.Data.ClanFights;
-	PClan->WasRulerToday = false;
-	PClan->ClanWars = 0;
-	PClan->ChatsToday = 0;
-	ClearFlags(PClan->PFlags);
-	ClearFlags(PClan->DFlags);
-	PClan->ResUncToday = 0;
-	PClan->ResDeadToday = 0;
-	PClan->MineLevel = 1;
-	PClan->PublicMsgIndex = 0;
-	PClan->MadeAlliance = false;
-	PClan->Eliminated = false;
-	PClan->WasRulerToday = false;
-	PClan->FirstDay = true;
-	PClan->Protection = (unsigned)(Game.Data.DaysOfProtection & 0x0F);
+	PClan.QuestToday = false;
+	PClan.VaultWithdrawals = 0;
+	PClan.AttendedMass = false;
+	PClan.GotBlessing = false;
+	PClan.Prayed = false;
+	PClan.FightsLeft = Game.Data.MineFights;
+	PClan.ClanFights = Game.Data.ClanFights;
+	PClan.WasRulerToday = false;
+	PClan.ClanWars = 0;
+	PClan.ChatsToday = 0;
+	ClearFlags(PClan.PFlags);
+	ClearFlags(PClan.DFlags);
+	PClan.ResUncToday = 0;
+	PClan.ResDeadToday = 0;
+	PClan.MineLevel = 1;
+	PClan.PublicMsgIndex = 0;
+	PClan.MadeAlliance = false;
+	PClan.Eliminated = false;
+	PClan.WasRulerToday = false;
+	PClan.FirstDay = true;
+	PClan.Protection = (unsigned)(Game.Data.DaysOfProtection & 0x0F);
 
-	PClan->Empire.VaultGold = 0;
-	PClan->TradesToday = 0;
-	PClan->ClanRulerVote[0] = -1;
-	PClan->ClanRulerVote[1] = -1;
+	PClan.Empire.VaultGold = 0;
+	PClan.TradesToday = 0;
+	PClan.ClanRulerVote[0] = -1;
+	PClan.ClanRulerVote[1] = -1;
 
 	// initialize empire
 
 	// set up no alliances
 	for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
-		PClan->Alliances[iTemp] = -1;
+		PClan.Alliances[iTemp] = -1;
 
 	/* NULL-pointer each member of clan for now */
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
-		PClan->Member[iTemp] = NULL;
+		PClan.Member[iTemp] = NULL;
 
 	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++)
-		PClan->Items[iTemp].Available = false;
+		PClan.Items[iTemp].Available = false;
 
 
 	// Figure out ID
-	PClan->ClanID[0] = Config.BBSID;
-	PClan->ClanID[1] = Game.Data.NextClanID;
+	PClan.ClanID[0] = Config.BBSID;
+	PClan.ClanID[1] = Game.Data.NextClanID;
 	Game.Data.NextClanID++;
 
 	// init empire
-	Empire_Create(&PClan->Empire, true);
-	strlcpy(PClan->Empire.szName, PClan->szName, sizeof(PClan->Empire.szName));
-	PClan->Empire.OwnerType = EO_CLAN;
-	PClan->Empire.AllianceID = -1;
+	Empire_Create(&PClan.Empire, true);
+	strlcpy(PClan.Empire.szName, PClan.szName, sizeof(PClan.Empire.szName));
+	PClan.Empire.OwnerType = EO_CLAN;
+	PClan.Empire.AllianceID = -1;
 
 	// Create the players
 	for (iTemp = 0; iTemp < Game.Data.MaxPermanentMembers; iTemp++) {
@@ -1977,13 +1961,13 @@ static bool User_Create(void)
 			PC_Create(&TmpPC, false);
 
 
-		PClan->Member[iTemp] = malloc(sizeof(struct pc));
-		CheckMem(PClan->Member[iTemp]);
-		*PClan->Member[iTemp] = TmpPC;
+		PClan.Member[iTemp] = malloc(sizeof(struct pc));
+		CheckMem(PClan.Member[iTemp]);
+		*PClan.Member[iTemp] = TmpPC;
 
 		// give 'em gold dude
-		PClan->Empire.VaultGold  += PClasses[ TmpPC.WhichClass ]->Gold;
-		PClan->Empire.VaultGold += Races[ TmpPC.WhichRace ]->Gold;
+		PClan.Empire.VaultGold  += PClasses[ TmpPC.WhichClass ]->Gold;
+		PClan.Empire.VaultGold += Races[ TmpPC.WhichRace ]->Gold;
 	}
 
 	/* open player file for append */
@@ -2001,9 +1985,9 @@ static bool User_Create(void)
 	}
 
 	/* write it to file */
-	EncryptWrite_s(clan, PClan, fpPlayerFile, XOR_USER);
+	EncryptWrite_s(clan, &PClan, fpPlayerFile, XOR_USER);
 	for (iTemp = 0; iTemp < Game.Data.MaxPermanentMembers; iTemp++) {
-		EncryptWrite_s(pc, PClan->Member[iTemp], fpPlayerFile, XOR_PC);
+		EncryptWrite_s(pc, PClan.Member[iTemp], fpPlayerFile, XOR_PC);
 	}
 
 	/* write null players to complete it */
@@ -2016,16 +2000,16 @@ static bool User_Create(void)
 	fclose(fpPlayerFile);
 
 	/* write news */
-	snprintf(szString, sizeof(szString), ST_NEWSNEWCLAN, PClan->szName);
+	snprintf(szString, sizeof(szString), ST_NEWSNEWCLAN, PClan.szName);
 	News_AddNews(szString);
 
 
 	// add to league
 	if (Game.Data.InterBBS) {
-		User.ClanID[0] = PClan->ClanID[0];
-		User.ClanID[1] = PClan->ClanID[1];
-		strlcpy(User.szMasterName, PClan->szUserName, sizeof(User.szMasterName));
-		strlcpy(User.szName, PClan->szName, sizeof(User.szName));
+		User.ClanID[0] = PClan.ClanID[0];
+		User.ClanID[1] = PClan.ClanID[1];
+		strlcpy(User.szMasterName, PClan.szUserName, sizeof(User.szMasterName));
+		strlcpy(User.szName, PClan.szName, sizeof(User.szName));
 		User.Deleted = false;
 		IBBS_LeagueNewUser(&User);
 	}
@@ -2045,11 +2029,14 @@ void User_Destroy(void)
 {
 	int16_t iTemp;
 
-	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
-		if (PClan->Member[iTemp])
-			free(PClan->Member[iTemp]);
+	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
+		free(PClan.Member[iTemp]);
+		PClan.Member[iTemp] = NULL;
+	}
+	memset(&PClan, 0, sizeof(PClan));
+	PClan.ClanID[0] = -1;
+	PClan.ClanID[1] = -1;
 
-	free(PClan);
 	User.Initialized = false;
 }
 
@@ -2089,11 +2076,11 @@ static bool User_Read(void)
 		if (strcasecmp(od_control.user_name, TmpClan.szUserName) == 0) {
 
 			/* are the same, found player, copy it, return true */
-			*PClan = TmpClan;
+			PClan = TmpClan;
 
 			/* read in the other guys, members, etc. */
 			for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++)
-				PClan->Member[CurMember] = NULL;
+				PClan.Member[CurMember] = NULL;
 
 			for (CurMember = 0; CurMember < 6; CurMember++) {
 				/* read 'em in */
@@ -2101,15 +2088,15 @@ static bool User_Read(void)
 
 				// [0] != 0 if member exists
 				if (TmpPC.szName[0]) {
-					PClan->Member[CurMember] = malloc(sizeof(struct pc));
-					CheckMem(PClan->Member[CurMember]);
+					PClan.Member[CurMember] = malloc(sizeof(struct pc));
+					CheckMem(PClan.Member[CurMember]);
 
-					*PClan->Member[CurMember] = TmpPC;
-					PClan->Member[CurMember]->MyClan = PClan;
+					*PClan.Member[CurMember] = TmpPC;
+					PClan.Member[CurMember]->MyClan = &PClan;
 
 					/* set all spells to 0 */
 					for (iTemp = 0; iTemp < 10; iTemp++)
-						PClan->Member[CurMember]->SpellsInEffect[iTemp].SpellNum = -1;
+						PClan.Member[CurMember]->SpellsInEffect[iTemp].SpellNum = -1;
 
 				}
 			}
@@ -2203,10 +2190,9 @@ void User_Write(void)
  * PRE: User has been written to file already once.
  */
 {
-
 	// updates the current user information to file
 	if (User.Initialized) {
-		Clan_Update(PClan);
+		Clan_Update(&PClan);
 	}
 }
 
@@ -2220,19 +2206,19 @@ void User_FirstTimeToday(void)
 {
 	int16_t iTemp;
 
-	PClan->Points += 25;
+	PClan.Points += 25;
 
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
-		if (PClan->Member[iTemp] && PClan->Member[iTemp]->Status != Dead) {
-			PClan->Member[iTemp]->HP = PClan->Member[iTemp]->MaxHP;
-			PClan->Member[iTemp]->SP = PClan->Member[iTemp]->MaxSP;
+		if (PClan.Member[iTemp] && PClan.Member[iTemp]->Status != Dead) {
+			PClan.Member[iTemp]->HP = PClan.Member[iTemp]->MaxHP;
+			PClan.Member[iTemp]->SP = PClan.Member[iTemp]->MaxSP;
 
-			if (PClan->Member[iTemp]->Status == Unconscious)
-				PClan->Member[iTemp]->Status = Here;
+			if (PClan.Member[iTemp]->Status == Unconscious)
+				PClan.Member[iTemp]->Status = Here;
 		}
 	}
 
-	strlcpy(PClan->szDateOfLastGame, System.szTodaysDate, sizeof(PClan->szDateOfLastGame));
+	strlcpy(PClan.szDateOfLastGame, System.szTodaysDate, sizeof(PClan.szDateOfLastGame));
 }
 
 // ------------------------------------------------------------------------- //
@@ -2316,8 +2302,8 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 
 		/* skip if your clan */
 		if (IncludeSelf == false &&
-				TmpClan.ClanID[0] == PClan->ClanID[0] &&
-				TmpClan.ClanID[1] == PClan->ClanID[1])
+				TmpClan.ClanID[0] == PClan.ClanID[0] &&
+				TmpClan.ClanID[1] == PClan.ClanID[1])
 			continue;
 
 		/* skip if not in alliance and alliance used */
@@ -2632,16 +2618,6 @@ void User_Maint(void)
 			if (TmpClan.Empire.VaultGold < 0)
 				TmpClan.Empire.VaultGold = 0;
 
-			/* WAS this the ruler and WAS he ousted? */
-			/* REP:
-			if (OustedRuler && OldRulerId[0] == TmpClan.ClanID[0] &&
-			  OldRulerId[1] == TmpClan.ClanID[1])
-			{
-			  TmpClan.WasRulerToday = true;
-			  TmpClan.Points -= 100;
-			}
-			*/
-
 			/* is this the current ruler?  If so, give daily points */
 			if (TmpClan.ClanID[0] == Village.Data.RulingClanId[0] &&
 					TmpClan.ClanID[1] == Village.Data.RulingClanId[1]) {
@@ -2725,7 +2701,7 @@ void User_Maint(void)
 			EncryptWrite_s(clan, &TmpClan, fpNewPC, XOR_USER);
 
 			for (iTemp = 0; iTemp < 6; iTemp++) {
-				EncryptWrite_s(pc, TmpClan.Member[iTemp], fpNewPC, XOR_PC);
+				EncryptWrite_s(pc, TmpClan.Member[iTemp], fpNewPC, XOR_USER);
 				free(TmpClan.Member[iTemp]);
 				TmpClan.Member[iTemp] = NULL;
 			}
@@ -2755,12 +2731,10 @@ bool User_Init(void)
 	// returns false
 	int16_t iTemp;
 
-	User.Initialized = true;
-	PClan = malloc(sizeof(struct clan));
-	CheckMem(PClan);
-
-	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
-		PClan->Member[iTemp] = NULL;
+	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
+		free(PClan.Member[iTemp]);
+		PClan.Member[iTemp] = NULL;
+	}
 
 	if (!User_Read()) {
 		// see if in league already but he's just not on this
@@ -2770,35 +2744,15 @@ bool User_Init(void)
 			// this BBS, so tell him that
 
 			rputs("You're already logged as a user on another BBS.\n%P");
-			User_Destroy();
 			return false;
 		}
 
 		if (!User_Create()) {
-			User_Destroy();
 			return false;
 		}
 	}
+	User.Initialized = true;
 
-	/*
-	  // ensure CRC is correct
-	  if (!PClan->CRC)
-	  {
-	    User_Destroy();
-	    System_Error("CLANS.PC data corrupt! [u]\n");
-	  }
-
-	  // ensure CRC is correct
-	  for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++)
-	    if (!PClan->Member[iTemp]->CRC)
-	    {
-	      User_Destroy();
-	      System_Error("CLANS.PC data corrupt [m]!\n");
-	    }
-	*/
-
-
-	User.UpdateUser = true;
 	return true;
 }
 
@@ -2807,15 +2761,13 @@ bool User_Init(void)
 void User_Close(void)
 /*
  * Must be called to close down the user data.  User data is written to
- * file if UpdateUser set (so that deleted users are not written to file
- * if they chose to delete themselves).
+ * file.
  */
 {
 	// closes down current user logged in
-	if (User.Initialized == false) return;
+	if (User.Initialized == false)
+		return;
 
-	if (User.UpdateUser)
-		User_Write();
-
+	User_Write();
 	User_Destroy();
 }

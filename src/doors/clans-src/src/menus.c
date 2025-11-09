@@ -64,8 +64,8 @@ static int16_t WorldMenu(void)
 	LoadStrings(990, 7, szTheOptions);
 
 
-	if (!PClan->TravelHelp) {
-		PClan->TravelHelp = true;
+	if (!PClan.TravelHelp) {
+		PClan.TravelHelp = true;
 		Help("World Travel", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -87,7 +87,7 @@ static int16_t WorldMenu(void)
 					return 0;
 				}
 
-				if (PClan->FirstDay)
+				if (PClan.FirstDay)
 					rputs("|07You may not travel to another BBS until tomorrow\n%P");
 				else
 					IBBS_SeeVillages(true);
@@ -97,7 +97,7 @@ static int16_t WorldMenu(void)
 			case '?' :    /* redisplay options */
 				break;
 			case 'V' :    /* stats */
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 			case 'H' :  /* help */
 				GeneralHelp(ST_VILLHLP);
@@ -217,7 +217,7 @@ void Menus_ChatRoom(char *pszFileName)
 		if (FirstTime) {
 			/* first write clan name on one line */
 			strlcpy(szLine, "|0B", sizeof(szLine));
-			strlcat(szLine, PClan->szName, sizeof(szLine));
+			strlcat(szLine, PClan.szName, sizeof(szLine));
 			strlcat(szLine, "\n", sizeof(szLine));
 			AddChatFile(szLine, pszFileName);
 
@@ -259,7 +259,7 @@ static int16_t MainMenu(void)
 			FirstTimeInMain = true;
 		}
 
-		if (PClan->FightsLeft == 0 || NumMembers(PClan, true) == 0)
+		if (PClan.FightsLeft == 0 || NumMembers(&PClan, true) == 0)
 			DefaultAction = 'Q';
 		else
 			DefaultAction = 'E';
@@ -267,7 +267,7 @@ static int16_t MainMenu(void)
 		switch (GetChoice(szMainMenu, ST_ENTEROPTION, szTheOptions, "EQ?VMWCTPUH/N!1A2345", DefaultAction, true)) {
 			case '!' :    /* delete clan */
 				if (NoYes("|0SAre you sure you wish to delete your clan?!") == YES) {
-					DeleteClan(PClan->ClanID, PClan->szName, false);
+					DeleteClan(PClan.ClanID, PClan.szName, false);
 
 					// if interbbs, send packet to main BBS saying this guy
 					// was deleted and that he should be removed from the userlist
@@ -275,13 +275,13 @@ static int16_t MainMenu(void)
 
 					if (Game.Data.InterBBS) {
 						// remove user from league
-						User.ClanID[0] = PClan->ClanID[0];
-						User.ClanID[1] = PClan->ClanID[1];
+						User.ClanID[0] = PClan.ClanID[0];
+						User.ClanID[1] = PClan.ClanID[1];
 
 						User.Deleted = false; // don't care
 
-						strlcpy(User.szMasterName, PClan->szUserName, sizeof(User.szMasterName));
-						strlcpy(User.szName, PClan->szName, sizeof(User.szName));
+						strlcpy(User.szMasterName, PClan.szUserName, sizeof(User.szMasterName));
+						strlcpy(User.szName, PClan.szName, sizeof(User.szName));
 
 						LeagueKillUser(&User);
 					}
@@ -297,7 +297,7 @@ static int16_t MainMenu(void)
 			case '?' :    /* redisplay options */
 				break;
 			case 'V' :    /* stats */
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 			case 'M' :    /* market */
 				return 2;
@@ -332,28 +332,20 @@ static int16_t MainMenu(void)
 				Village.Data.MarketQuality = ((Village.Data.MarketQuality+1)%4);
 
 				rputs("Cheat ON!\n");
-				PClan->Empire.VaultGold += 320000;
-				PClan->Empire.Land += 10;
-				PClan->FightsLeft = 20;
-				PClan->QuestToday = false;
+				PClan.Empire.VaultGold += 320000;
+				PClan.Empire.Land += 10;
+				PClan.FightsLeft = 20;
+				PClan.QuestToday = false;
 				for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
-					if (PClan->Member[iTemp]) {
-						PClan->Member[iTemp]->Status = Here;
+					if (PClan.Member[iTemp]) {
+						PClan.Member[iTemp]->Status = Here;
 					}
 				}
-				Fight_Heal(PClan);
+				Fight_Heal(&PClan);
 #else
 				rputs("Debugging flag is off.\n");
 #endif
 
-				/*
-				PClan->Empire.Land += 10;
-				PClan->Empire.VaultGold += 1000;
-				PClan->Empire.Army.Followers += 200;
-				Village.Empire.Army.Followers += 200;
-				Village.Empire.VaultGold += 2000;
-				Village.Empire.Land += 20;
-				*/
 				door_pause();
 				break;
 			case '2' :  // secret #2
@@ -389,8 +381,8 @@ static int16_t MineMenu(void)
 
 	LoadStrings(930, 9, szTheOptions);
 
-	if (!PClan->MineHelp) {
-		PClan->MineHelp = true;
+	if (!PClan.MineHelp) {
+		PClan.MineHelp = true;
 		Help("Mine Help", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -399,7 +391,7 @@ static int16_t MineMenu(void)
 
 	/* get a choice */
 	for (;;) {
-		if (PClan->FightsLeft == 0 || NumMembers(PClan, true) == 0)
+		if (PClan.FightsLeft == 0 || NumMembers(&PClan, true) == 0)
 			DefaultAction = 'Q';
 		else
 			DefaultAction = 'L';
@@ -410,12 +402,11 @@ static int16_t MineMenu(void)
 				break;
 			case 'G' :  /* Quest */
 				/* if all guys dead, tell guy can't fight */
-				if (NumMembers(PClan, true) == 0) {
+				if (NumMembers(&PClan, true) == 0) {
 					rputs(ST_FIGHT0);
 					break;
 				}
-				// if (PClan->QuestToday && Debug == false)
-				if (PClan->QuestToday) {
+				if (PClan.QuestToday) {
 					rputs("\n|15You have already gone on a quest today.  Please try again tomorrow!\n%P");
 					break;
 				}
@@ -423,11 +414,11 @@ static int16_t MineMenu(void)
 				Quests_GoQuest();
 				break;
 			case 'L' :    /* the mines */
-				if (PClan->FightsLeft == 0)
+				if (PClan.FightsLeft == 0)
 					rputs("|07You have no more fights left for today.\n%P");
 				else {
 					/* if all guys dead, tell guy can't fight */
-					if (NumMembers(PClan, true) == 0) {
+					if (NumMembers(&PClan, true) == 0) {
 						/* tell him all members are dead, come again tomorrow */
 						rputs(ST_FIGHT0);
 						break;
@@ -441,30 +432,30 @@ static int16_t MineMenu(void)
 					else if (my_random(7) == 0) {
 						// run random event using file corresponding to
 						// level groupings
-						if (PClan->MineLevel == 0)
+						if (PClan.MineLevel == 0)
 							RunEvent(false, "/e/Eva", "", NULL, NULL);
-						else if (PClan->MineLevel == 1)
+						else if (PClan.MineLevel == 1)
 							RunEvent(false, "/e/Eva", "", NULL, NULL);
-						else if (PClan->MineLevel == 2)
+						else if (PClan.MineLevel == 2)
 							RunEvent(false, "/e/Eva", "", NULL, NULL);
-						else if (PClan->MineLevel == 3)
+						else if (PClan.MineLevel == 3)
 							RunEvent(false, "/e/Eva", "", NULL, NULL);
-						else if (PClan->MineLevel == 4)
+						else if (PClan.MineLevel == 4)
 							RunEvent(false, "/e/Eva", "", NULL, NULL);
-						else if (PClan->MineLevel <= 10)
+						else if (PClan.MineLevel <= 10)
 							RunEvent(false, "/e/Eva", "", NULL, NULL);
 						else
 							RunEvent(false, "/e/Eva", "", NULL, NULL);
 						door_pause();
 					}
 					else {
-						Fight_Monster(PClan->MineLevel, "/m/Output");
+						Fight_Monster(PClan.MineLevel, "/m/Output");
 					}
 					User_Write();
 				}
 				break;
 			case 'F' :  /* fight another clan */
-				if (PClan->ClanFights == 0)
+				if (PClan.ClanFights == 0)
 					rputs("|07You have no more clan battles.\n%P");
 				else {
 					Fight_Clan();
@@ -472,12 +463,12 @@ static int16_t MineMenu(void)
 				}
 				break;
 			case 'C' :    /* change level */
-				if (!PClan->MineLevelHelp) {
-					PClan->MineLevelHelp = true;
+				if (!PClan.MineLevelHelp) {
+					PClan.MineLevelHelp = true;
 					Help("Mine Level", ST_NEWBIEHLP);
 				}
 
-				iTemp = (int16_t) GetLong("|0SEnter level of mine to change to.", PClan->MineLevel, 20);
+				iTemp = (int16_t) GetLong("|0SEnter level of mine to change to.", PClan.MineLevel, 20);
 				/* NO MORE REG!
 				if (iTemp >= 5 &&
 				  IsRegged(Config.szSysopName, Config.szBBSName, Config.szRegcode) == NFALSE)
@@ -487,14 +478,14 @@ static int16_t MineMenu(void)
 				}
 				*/
 				if (iTemp)
-					PClan->MineLevel = iTemp;
+					PClan.MineLevel = iTemp;
 				break;
 			case 'Q' :    /* return to previous menu */
 				return 0;
 			case '?' :    /* redisplay options */
 				break;
 			case 'V' :    /* stats */
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 			case '/' :  //chat villagers
 				ChatVillagers(WN_MINE);
@@ -514,8 +505,8 @@ static int16_t CommunicationsMenu(void)
 
 	LoadStrings(205, 8, szTheOptions);
 
-	if (!PClan->CommHelp) {
-		PClan->CommHelp = true;
+	if (!PClan.CommHelp) {
+		PClan.CommHelp = true;
 		Help("Communications", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -536,13 +527,13 @@ static int16_t CommunicationsMenu(void)
 				break;
 			case 'U' :      /* update lastread pointer */
 				snprintf(szString, sizeof(szString), "|03The last message you read was #%d.\nSet to which message? ",
-						PClan->PublicMsgIndex);
-				PClan->PublicMsgIndex = (uint16_t)GetLong(szString, PClan->PublicMsgIndex, Village.Data.PublicMsgIndex-1);
+						PClan.PublicMsgIndex);
+				PClan.PublicMsgIndex = (uint16_t)GetLong(szString, PClan.PublicMsgIndex, Village.Data.PublicMsgIndex-1);
 				break;
 			case 'Q' :      /* return */
 				return 0;
 			case 'V' :      /* stats */
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 			case '?' :      /* redisplay options */
 				break;
@@ -566,8 +557,8 @@ static void WizardShop(void)
 
 	LoadStrings(1320, 6, szTheOptions);
 
-	if (!PClan->WizardHelp) {
-		PClan->WizardHelp = true;
+	if (!PClan.WizardHelp) {
+		PClan.WizardHelp = true;
 		Help("Wizard", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -600,7 +591,7 @@ static void WizardShop(void)
 				// show help
 
 
-				ListItems(PClan);
+				ListItems(&PClan);
 
 				// which item to examine?
 				ItemIndex = (int16_t)GetLong(ST_WIZ1, 0, 30);
@@ -609,37 +600,37 @@ static void WizardShop(void)
 
 				ItemIndex--;
 
-				if (PClan->Items[ItemIndex].Available == false) {
+				if (PClan.Items[ItemIndex].Available == false) {
 					rputs(ST_INVALIDITEM);
 					break;
 				}
 
 				// show item
-				ShowItemStats(&PClan->Items[ItemIndex], PClan);
+				ShowItemStats(&PClan.Items[ItemIndex], &PClan);
 
-				if (PClan->Items[ItemIndex].cType != I_SCROLL &&
-						PClan->Items[ItemIndex].cType != I_BOOK) {
+				if (PClan.Items[ItemIndex].cType != I_SCROLL &&
+						PClan.Items[ItemIndex].cType != I_BOOK) {
 					rputs(ST_WIZ2);
 					break;
 				}
 
-				ExamineCost = PClan->Items[ItemIndex].lCost/4;
+				ExamineCost = PClan.Items[ItemIndex].lCost/4;
 
-				snprintf(szString, sizeof(szString), ST_WIZ3, (long)ExamineCost, (long)PClan->Empire.VaultGold);
+				snprintf(szString, sizeof(szString), ST_WIZ3, (long)ExamineCost, (long)PClan.Empire.VaultGold);
 
 				rputs(szString);
-				if (PClan->Empire.VaultGold < ExamineCost) {
+				if (PClan.Empire.VaultGold < ExamineCost) {
 					rputs(ST_FMENUNOAFFORD);
 					break;
 				}
 				if (YesNo(ST_WIZ4) == YES) {
-					Help(PClan->Items[ItemIndex].szName, ST_WIZHLP);
-					PClan->Empire.VaultGold -= ExamineCost;
+					Help(PClan.Items[ItemIndex].szName, ST_WIZHLP);
+					PClan.Empire.VaultGold -= ExamineCost;
 					door_pause();
 				}
 				break;
 			case 'V' :  // clan stats
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 		}
 	}
@@ -652,8 +643,8 @@ static int16_t MarketMenu(void)
 	LoadStrings(231, 9, szTheOptions);
 	szTheOptions[9] = "Wizard's Shop";
 
-	if (!PClan->MarketHelp) {
-		PClan->MarketHelp = true;
+	if (!PClan.MarketHelp) {
+		PClan.MarketHelp = true;
 		Help("Market", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -675,7 +666,7 @@ static int16_t MarketMenu(void)
 				WizardShop();
 				break;
 			case 'T' :  /* trading */
-				if (PClan->FirstDay)
+				if (PClan.FirstDay)
 					rputs("|07You cannot trade until tomorrow.\n%P");
 				else
 					Trades_MakeTrade();
@@ -688,7 +679,7 @@ static int16_t MarketMenu(void)
 			case '?' :    /* redisplay options */
 				break;
 			case 'V' :    /* stats */
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 			case '/' :  //chat villagers
 				ChatVillagers(WN_MARKET);
@@ -708,8 +699,8 @@ static int16_t AlliancesMenu(void)
 	char cKey, szChoices[MAX_ALLIANCES + 5];
 	char szString[128];
 
-	if (!PClan->AllyHelp) {
-		PClan->AllyHelp = true;
+	if (!PClan.AllyHelp) {
+		PClan.AllyHelp = true;
 		Help("Alliances", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -733,7 +724,7 @@ static int16_t AlliancesMenu(void)
 	// see how many alliances the user has
 	NumUserAlliances = 0;
 	for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
-		if (PClan->Alliances[iTemp] != -1)
+		if (PClan.Alliances[iTemp] != -1)
 			NumUserAlliances++;
 
 	// make options ... "ABC....Q\r\n"
@@ -753,7 +744,7 @@ static int16_t AlliancesMenu(void)
 
 	if (cKey == 'Z') {
 		rputs(ST_CREATEALLIANCE);
-		if (PClan->MadeAlliance)
+		if (PClan.MadeAlliance)
 			rputs("\n|07You have already created an alliance.\n");
 		else {
 			// ask user if he wants to build one
@@ -773,7 +764,7 @@ static int16_t AlliancesMenu(void)
 
 					CreateAlliance(Alliances[ NumAlliances ], Alliances);
 					UpdateAlliances(Alliances);
-					PClan->MadeAlliance = true;
+					PClan.MadeAlliance = true;
 					if (EnterAlliance(Alliances[ NumAlliances ])) {
 						KillAlliance(NumAlliances, Alliances);
 					}
@@ -790,7 +781,7 @@ static int16_t AlliancesMenu(void)
 
 			// see if in that alliance
 			for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++) {
-				if (PClan->Alliances[iTemp] == Alliances[WhichAlliance]->ID)
+				if (PClan.Alliances[iTemp] == Alliances[WhichAlliance]->ID)
 					break;
 			}
 
@@ -836,8 +827,8 @@ static int16_t ChurchMenu(void)
 	// ST_CHURCHOP0
 	LoadStrings(890, 9, szTheOptions);
 
-	if (!PClan->ChurchHelp) {
-		PClan->ChurchHelp = true;
+	if (!PClan.ChurchHelp) {
+		PClan.ChurchHelp = true;
 		Help("Church Menu", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -859,21 +850,21 @@ static int16_t ChurchMenu(void)
 
 		switch (GetChoice("Church Menu", ST_ENTEROPTION, szTheOptions, "MBPDQ?VU/", 'Q', true)) {
 			case 'M' :      /* attend mass */
-				if (PClan->AttendedMass) {
+				if (PClan.AttendedMass) {
 					rputs("|07You've already attended today's mass.\n%P");
 					break;
 				}
-				PClan->AttendedMass = true;
+				PClan.AttendedMass = true;
 
 				RunEvent(false, "/e/Church", "", NULL, NULL);
 				door_pause();
 				break;
 			case 'P' :      /* pray */
-				if (PClan->Prayed) {
+				if (PClan.Prayed) {
 					rputs("|07You've already prayed today.\n%P");
 					break;
 				}
-				PClan->Prayed = true;
+				PClan.Prayed = true;
 
 				RunEvent(false, "/e/Pray", "", NULL, NULL);
 				door_pause();
@@ -885,18 +876,18 @@ static int16_t ChurchMenu(void)
 					break;
 				}
 
-				if (PClan->GotBlessing) {
+				if (PClan.GotBlessing) {
 					rputs("|07You've already gotten a blessing today.\n%P");
 					break;
 				}
-				PClan->GotBlessing = true;
+				PClan.GotBlessing = true;
 
 				rputs("\n|06A priest blesses your clan.\n\n");
 
 				/* give XP */
 				for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
-					if (PClan->Member[iTemp] && PClan->Member[iTemp]->Status == Here) {
-						PClan->Member[iTemp]->SP = PClan->Member[iTemp]->MaxSP;
+					if (PClan.Member[iTemp] && PClan.Member[iTemp]->Status == Here) {
+						PClan.Member[iTemp]->SP = PClan.Member[iTemp]->MaxSP;
 					}
 				}
 				rputs("|14Your clan regenerates all its lost skill points!\n%P");
@@ -920,7 +911,7 @@ static int16_t ChurchMenu(void)
 			case '?' :      /* redisplay options */
 				break;
 			case 'V' :      /* stats */
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 			case '/' :  //chat villagers
 				ChatVillagers(WN_CHURCH);
@@ -939,8 +930,8 @@ static int16_t THallMenu(void)
 
 	LoadStrings(655, 7, szTheOptions);
 
-	if (!PClan->THallHelp) {
-		PClan->THallHelp = true;
+	if (!PClan.THallHelp) {
+		PClan.THallHelp = true;
 		Help("Training Hall Menu", ST_NEWBIEHLP);
 		rputs("\n%P");
 	}
@@ -979,7 +970,7 @@ static int16_t THallMenu(void)
 			case '?' :      /* redisplay options */
 				break;
 			case 'V' :      /* stats */
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 			case '/' :  //chat villagers
 				ChatVillagers(WN_THALL);
@@ -1032,8 +1023,8 @@ void GameLoop(void)
 			case 6 :  /* Town Hall Menu */
 				rputs(ST_4RETURNS);
 
-				if (!PClan->TownHallHelp) {
-					PClan->TownHallHelp = true;
+				if (!PClan.TownHallHelp) {
+					PClan.TownHallHelp = true;
 					Help("Town Hall", ST_NEWBIEHLP);
 					rputs("\n%P");
 				}
@@ -1052,8 +1043,8 @@ void GameLoop(void)
 				//MenuNum = 0;
 				//break;
 
-				if (Village.Data.RulingClanId[0] != PClan->ClanID[0] ||
-						Village.Data.RulingClanId[1] != PClan->ClanID[1]) {
+				if (Village.Data.RulingClanId[0] != PClan.ClanID[0] ||
+						Village.Data.RulingClanId[1] != PClan.ClanID[1]) {
 					MenuNum = OutsiderTownHallMenu();
 				}
 				else
@@ -1062,7 +1053,7 @@ void GameLoop(void)
 			case 7 :  /* empire Menu */
 				rputs(ST_4RETURNS);
 				if (Game.Data.ClanEmpires)
-					Empire_Manage(&PClan->Empire);
+					Empire_Manage(&PClan.Empire);
 				else
 					rputs("Clan empires are disabled.\n%P");
 				MenuNum = 0;

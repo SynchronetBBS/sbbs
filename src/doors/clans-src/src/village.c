@@ -120,11 +120,11 @@ int16_t OutsiderTownHallMenu(void)
 				break;
 			case 'D' :  /* deposit into vault */
 				Help("Deposit into Vault", ST_CITIZENHLP);
-				lTemp = GetLong(ST_T2MENU1Q, 0, PClan->Empire.VaultGold);
+				lTemp = GetLong(ST_T2MENU1Q, 0, PClan.Empire.VaultGold);
 
 				if (lTemp) {
 					Village.Data.Empire.VaultGold += (int32_t)lTemp;
-					PClan->Empire.VaultGold -= (int32_t)lTemp;
+					PClan.Empire.VaultGold -= (int32_t)lTemp;
 
 					snprintf(szString, sizeof(szString), ST_T2MENU1, (long)lTemp);
 					rputs(szString);
@@ -147,7 +147,7 @@ int16_t OutsiderTownHallMenu(void)
 				GeneralHelp(ST_CITIZENHLP);
 				break;
 			case 'V' :  /* view clan stats */
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 			case 'Q' :      /* return to previous menu */
 				return 0;
@@ -466,8 +466,8 @@ static void BuildMenu(void)
 
 	LoadStrings(350, 9, szTheOptions);
 
-	if (!PClan->TownHallHelp) {
-		PClan->TownHallHelp = true;
+	if (!PClan.TownHallHelp) {
+		PClan.TownHallHelp = true;
 		Help("Town Hall", ST_NEWBIEHLP);
 	}
 
@@ -839,8 +839,8 @@ static void EconomicsMenu(void)
 
 	LoadStrings(390, 7, szTheOptions);
 
-	if (!PClan->TownHallHelp) {
-		PClan->TownHallHelp = true;
+	if (!PClan.TownHallHelp) {
+		PClan.TownHallHelp = true;
 		Help("Town Hall", ST_NEWBIEHLP);
 	}
 
@@ -937,39 +937,39 @@ static void EconomicsMenu(void)
 				break;
 			case 'D' :  /* deposit in vault */
 				Help("Deposit into Vault", ST_RULERHLP);
-				lTemp = GetLong(ST_EMENU26, 0, PClan->Empire.VaultGold);
+				lTemp = GetLong(ST_EMENU26, 0, PClan.Empire.VaultGold);
 
 				if (lTemp) {
 					Village.Data.Empire.VaultGold += (int32_t)lTemp;
-					PClan->Empire.VaultGold -= (int32_t)lTemp;
+					PClan.Empire.VaultGold -= (int32_t)lTemp;
 
 					snprintf(szString, sizeof(szString), ST_EMENU27, (long)lTemp);
 					rputs(szString);
 
-					snprintf(szString, sizeof(szString), ST_NEWSDONATED, PClan->szName, (long)lTemp);
+					snprintf(szString, sizeof(szString), ST_NEWSDONATED, PClan.szName, (long)lTemp);
 					News_AddNews(szString);
 				}
 				break;
 			case 'W' :  /* withdraw from vault */
 				Help("Withdraw from Vault", ST_RULERHLP);
 
-				if (PClan->VaultWithdrawals == 3) {
+				if (PClan.VaultWithdrawals == 3) {
 					/* can only do 3 withdrawals a day */
 					rputs(ST_EMENU28);
 					break;
 				}
-				PClan->VaultWithdrawals++;
+				PClan.VaultWithdrawals++;
 
 				lTemp = GetLong(ST_EMENU29, 0, Village.Data.Empire.VaultGold);
 
 				if (lTemp) {
 					Village.Data.Empire.VaultGold -= (int32_t)lTemp;
-					PClan->Empire.VaultGold += (int32_t)lTemp;
+					PClan.Empire.VaultGold += (int32_t)lTemp;
 
 					snprintf(szString, sizeof(szString), ST_EMENU30, (long)lTemp);
 					rputs(szString);
 
-					snprintf(szString, sizeof(szString), ST_NEWSEMBEZZLE, PClan->szName, (long)lTemp);
+					snprintf(szString, sizeof(szString), ST_NEWSEMBEZZLE, PClan.szName, (long)lTemp);
 					News_AddNews(szString);
 				}
 				break;
@@ -1071,7 +1071,7 @@ int16_t TownHallMenu(void)
 				EconomicsMenu();
 				break;
 			case 'V' :  /* view clan stats */
-				ClanStats(PClan, true);
+				ClanStats(&PClan, true);
 				break;
 			case 'L' :    /* flag scheme */
 				ChangeFlagScheme();
@@ -1111,10 +1111,10 @@ int16_t TownHallMenu(void)
 
 					/* reduce score */
 					/* reset user stats */
-					PClan->WasRulerToday = true;
-					PClan->Points -= 100;
+					PClan.WasRulerToday = true;
+					PClan.Points -= 100;
 
-					snprintf(szString, sizeof(szString), ST_NEWSABDICATED, PClan->szName);
+					snprintf(szString, sizeof(szString), ST_NEWSABDICATED, PClan.szName);
 					News_AddNews(szString);
 
 					return 0;
@@ -1147,22 +1147,22 @@ void Village_NewRuler(void)
 	char szString[128];
 
 	/* if they WERE the rulers today, can't become rulers again */
-	if (PClan->WasRulerToday) {
+	if (PClan.WasRulerToday) {
 		rputs("|15Your clan cannot claim rule again until tomorrow.\n%P");
 		return;
 	}
 
-	Village.Data.RulingClanId[0] = PClan->ClanID[0];
-	Village.Data.RulingClanId[1] = PClan->ClanID[1];
+	Village.Data.RulingClanId[0] = PClan.ClanID[0];
+	Village.Data.RulingClanId[1] = PClan.ClanID[1];
 	Village.Data.RulingDays = 0;
 
-	strlcpy(Village.Data.szRulingClan, PClan->szName, sizeof(Village.Data.szRulingClan));
+	strlcpy(Village.Data.szRulingClan, PClan.szName, sizeof(Village.Data.szRulingClan));
 
 	snprintf(szString, sizeof(szString), ST_NEWSNEWRULER, Village.Data.szRulingClan);
 	News_AddNews(szString);
 
 	/* give him points for becoming ruler */
-	PClan->Points += 20;
+	PClan.Points += 20;
 
 	rputs("|15Your clan now rules the village!\n");
 	door_pause();

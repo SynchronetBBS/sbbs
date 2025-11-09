@@ -485,13 +485,13 @@ void rputs(const char *string)
 			}
 			else if (*(pCurChar+1) == 'F') {
 				/* fights remaining */
-				snprintf(szString, sizeof(szString), "%d", PClan->FightsLeft);
+				snprintf(szString, sizeof(szString), "%d", PClan.FightsLeft);
 				rputs(szString);
 				pCurChar += 2;
 			}
 			else if (*(pCurChar+1) == 'M') {
 				/* mine level */
-				snprintf(szString, sizeof(szString), "%d", PClan->MineLevel);
+				snprintf(szString, sizeof(szString), "%d", PClan.MineLevel);
 				rputs(szString);
 				pCurChar += 2;
 			}
