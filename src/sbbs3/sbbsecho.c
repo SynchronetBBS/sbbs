@@ -4538,17 +4538,16 @@ bool pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inb
 	bool  result = true;
 
 	if ((fmsgbuf = getfmsg(fidomsg, &l)) == NULL) {
-		lprintf(LOG_ERR, "ERROR line %d netmail allocation", __LINE__);
+		lprintf(LOG_ERR, "%s ERROR line %d netmail allocation", info, __LINE__);
 		return false;
 	}
 
 	if (!l && cfg.kill_empty_netmail)
-		printf("Empty NetMail");
+		lprintf(LOG_NOTICE, "%s Empty NetMail", info);
 	else {
-		printf("Exporting: ");
 		if (!isdir(scfg.netmail_dir) && mkpath(scfg.netmail_dir) != 0) {
-			lprintf(LOG_ERR, "Error %u (%s) line %d creating directory: %s"
-			        , errno, strerror(errno), __LINE__, scfg.netmail_dir);
+			lprintf(LOG_ERR, "%s Error %u (%s) line %d creating directory: %s"
+			        , info, errno, strerror(errno), __LINE__, scfg.netmail_dir);
 			free(fmsgbuf);
 			return false;
 		}
@@ -4562,12 +4561,12 @@ bool pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inb
 			}
 		}
 		if (i == INT_MAX) {
-			lprintf(LOG_WARNING, "Too many netmail messages");
+			lprintf(LOG_WARNING, "%s Too many netmail messages", info);
 			free(fmsgbuf);
 			return false;
 		}
 		if ((file = nopen(path, O_WRONLY | O_CREAT)) == -1) {
-			lprintf(LOG_ERR, "ERROR %u (%s) line %d creating %s", errno, strerror(errno), __LINE__, path);
+			lprintf(LOG_ERR, "%s ERROR %u (%s) line %d creating %s", info, errno, strerror(errno), __LINE__, path);
 			free(fmsgbuf);
 			return false;
 		}
@@ -4598,7 +4597,6 @@ bool pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inb
 		if (write(file, fmsgbuf, l + 1) != l + 1) /* Write the '\0' terminator too */
 			result = false;
 		close(file);
-		printf("%s", path);
 		lprintf(LOG_INFO, "%s Exported to %s", info, path);
 	}
 	free(fmsgbuf);
@@ -4642,47 +4640,41 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const ch
 		SAFEPRINTF(str, ".%hu", hdr.destpoint);
 	else
 		str[0] = 0;
-	safe_snprintf(info, sizeof(info), "%s%s%s (%hu:%hu/%hu%s) To: %s (%hu:%hu/%hu%s)"
+	safe_snprintf(info, sizeof(info), "%s%s%s (%hu:%hu/%hu%s) To: %s (%hu:%hu/%hu%s) Attr: %04hX%s"
 	              , path, path[0] ? " ":""
 	              , hdr.from, hdr.origzone, hdr.orignet, hdr.orignode, tmp
-	              , hdr.to, hdr.destzone, hdr.destnet, hdr.destnode, str);
-	printf("%s ", info);
+	              , hdr.to, hdr.destzone, hdr.destnet, hdr.destnode, str
+	              , hdr.attr, fmsgattr_str(hdr.attr));
 
 	if (!opt_import_netmail) {
-		printf("Ignored");
-		if (is_pkt) {
-			printf(" - ");
+		lprintf(LOG_INFO, "%s Ignored", info);
+		if (is_pkt)
 			pkt_to_msg(*fp, &hdr, info, inbound);
-		} else
-			lprintf(LOG_INFO, "%s Ignored", info);
-
 		return IMPORT_IGNORED;
 	}
 
 	if (!sysfaddr_is_valid(match) && !cfg.ignore_netmail_dest_addr) {
-		printf("Foreign address");
-		if (is_pkt && !cfg.ignore_packed_foreign_netmail) {
-			printf(" - ");
+		lprintf(LOG_INFO, "%s Foreign address", info);
+		if (is_pkt && !cfg.ignore_packed_foreign_netmail)
 			pkt_to_msg(*fp, &hdr, info, inbound);
-		}
 		return IMPORT_FILTERED_FOREIGN;
 	}
 
 	if (!is_pkt) {   /* .msg file, not .pkt */
 		if (hdr.attr & FIDO_ORPHAN) {
-			printf("Orphaned");
+			lprintf(LOG_DEBUG, "%s Orphaned", info);
 			return IMPORT_FILTERED_ORPHAN;
 		}
 		if ((hdr.attr & FIDO_RECV) && !cfg.ignore_netmail_recv_attr) {
-			printf("Already received");
+			lprintf(LOG_DEBUG, "%s Already received", info);
 			return IMPORT_FILTERED_RECV;
 		}
 		if ((hdr.attr & FIDO_LOCAL) && !cfg.ignore_netmail_local_attr) {
-			printf("Created locally");
+			lprintf(LOG_DEBUG, "%s Created locally", info);
 			return IMPORT_FILTERED_LOCAL;
 		}
 		if (hdr.attr & FIDO_INTRANS) {
-			printf("In-transit");
+			lprintf(LOG_DEBUG, "%s In-transit", info);
 			return IMPORT_FILTERED_INTRANS;
 		}
 	}
@@ -4697,10 +4689,9 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const ch
 		}
 	}
 	if (robot != NULL && robot->uses_msg) {
-		if (is_pkt) {
-			printf(" - ");
+		if (is_pkt)
 			pkt_to_msg(*fp, &hdr, info, inbound);
-		} else
+		else
 			update_fmsghdr(&hdr, FIDO_RECV, *fp);
 		robot->recv_count++;
 		return IMPORT_ROBOT_MSG;
@@ -4834,10 +4825,9 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const ch
 		if (!usernumber) {
 			lprintf(LOG_WARNING, "%s Unknown user", info);
 
-			if (is_pkt) {
-				printf(" - ");
+			if (is_pkt)
 				pkt_to_msg(*fp, &hdr, info, inbound);
-			}
+
 			return IMPORT_UNKNOWN_USER;
 		}
 	}
