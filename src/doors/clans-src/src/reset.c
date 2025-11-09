@@ -59,7 +59,7 @@ static void News_CreateTodayNews(void);
 
 static void CreateVillageDat(struct ResetData *ResetData);
 
-static void UpdateOption(char Option);
+static void UpdateOption(int16_t Option);
 
 static struct ResetData ResetData;
 
@@ -93,9 +93,9 @@ int main(void)
 
 static void ResetMenu(void)
 {
-	char CurOption = 0;
+	int8_t CurOption = 0;
 	int  cInput;
-	char OldOption = -1;
+	int8_t OldOption = -1;
 	bool Quit = false, DidReset = false, InterBBS = false;
 //  int16_t iTemp;
 
@@ -698,7 +698,7 @@ static void News_AddNews(char *szString)
 	fclose(fpNewsFile);
 }
 
-void ClearFlags(char *Flags)
+void ClearFlags(uint8_t *Flags)
 {
 	int16_t iTemp;
 
@@ -812,7 +812,7 @@ static void CreateVillageDat(struct ResetData *ResetData)
 	}
 }
 
-static void UpdateOption(char Option)
+static void UpdateOption(int16_t Option)
 {
 	char szString[50];
 	switch (Option) {

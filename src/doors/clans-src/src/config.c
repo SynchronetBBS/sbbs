@@ -49,8 +49,8 @@ static void EditNodeOption(int16_t WhichOption);
 
 static struct NodeData *setCurrentNode(int node);
 
-static void UpdateOption(char Option);
-static void UpdateNodeOption(char Option);
+static void UpdateOption(int8_t Option);
+static void UpdateNodeOption(int8_t Option);
 
 struct NodeData *nodes;
 struct NodeData *currNode;
@@ -140,9 +140,9 @@ WriteCfg(void)
 
 static void ConfigMenu(void)
 {
-	char CurOption = 0;
+	int8_t CurOption = 0;
 	int  cInput;
-	char OldOption = -1;
+	int8_t OldOption = -1;
 	bool Quit = false, DidReset = false;
 
 	/* clear all */
@@ -296,12 +296,12 @@ static void ConfigMenu(void)
 
 static void NodeMenu(void)
 {
-	char CurOption = 0;
+	int8_t CurOption = 0;
 	int  cInput;
-	char OldOption = -1;
+	int8_t OldOption = -1;
 	bool Quit = false;
 	char str[80];
-	const char last = 4;
+	const int8_t last = 4;
 
 	/* clear all */
 	clrscr();
@@ -542,7 +542,7 @@ setCurrentNode(int node)
 	return currNode;
 }
 
-static void UpdateOption(char Option)
+static void UpdateOption(int8_t Option)
 {
 	char szString[50];
 	switch (Option) {
@@ -610,7 +610,7 @@ static void UpdateOption(char Option)
 	}
 }
 
-static void UpdateNodeOption(char Option)
+static void UpdateNodeOption(int8_t Option)
 {
 	char szString[50];
 	switch (Option) {

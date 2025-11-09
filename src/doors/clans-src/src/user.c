@@ -404,13 +404,13 @@ bool ClanExists(int16_t ClanID[2])
 
 // ------------------------------------------------------------------------- //
 
-char GetStat(struct pc *PC, char Stat)
+int8_t GetStat(struct pc *PC, char Stat)
 /*
  * Returns value of attribute specfied and takes into account weapons
  * and spells.
  */
 {
-	char StatValue;
+	int8_t StatValue;
 	int16_t iTemp;
 
 	/* soon to contain other modifiers! */
@@ -554,7 +554,7 @@ static int16_t GetClass(struct PClass *PClass[MAX_PCLASSES], char *szHelp)
  */
 {
 	int16_t ClassChosen, iTemp;
-	signed char cTemp;
+	char cTemp;
 	char szKeys[MAX_PCLASSES + 2], szString[128], Choice;
 
 	/* so we have szKeys[] = "?ABCDEFGHI..." */
@@ -896,8 +896,8 @@ static void ItemEquipResults(struct item_data *Item, bool Equipping)
  */
 {
 	char *szVerb;
-	char szString[128], Gain,
-	*szAttrNames[NUM_ATTRIBUTES];
+	char szString[128], *szAttrNames[NUM_ATTRIBUTES];
+	int8_t Gain;
 	int16_t CurStat;
 
 	LoadStrings(10, 6, szAttrNames);
@@ -936,7 +936,7 @@ static void ItemStats(void)
 	int16_t DefaultItemIndex, iTemp, WhoEquip;
 	char szKeys[11], szString[100], /*szTemp[60],*/ szItemName[25];
 	bool DoneEquipping;
-	signed char cTemp;
+	int cTemp;
 
 	for (;;) {
 		rputs(ST_ISTATS0);
@@ -1227,7 +1227,7 @@ static void ItemStats(void)
 
 							rputs(szString);
 							szKeys[ strlen(szKeys) +1 ] = 0;
-							szKeys[ strlen(szKeys)] = cTemp + 'A';
+							szKeys[ strlen(szKeys)] = (char)cTemp + 'A';
 						}
 					}
 					strlcat(szKeys, "Q", sizeof(szKeys));
@@ -1681,7 +1681,7 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 		// if clan leader, add on some random stats
 		if (ClanLeader)
 			for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++)
-				PC->Attributes[iTemp] += (char)my_random(3);
+				PC->Attributes[iTemp] += (int8_t)my_random(3);
 
 		PC->MaxHP += (int16_t)my_random(5);
 		PC->MaxSP += (int16_t)my_random(5);

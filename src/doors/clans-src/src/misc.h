@@ -4,6 +4,7 @@
 #include <inttypes.h>
 
 char atoc(const char *str, const char *desc, const char *func);
+int8_t ato8(const char *str, const char *desc, const char *func);
 uint8_t atou8(const char *str, const char *desc, const char *func);
 int16_t ato16(const char *str, const char *desc, const char *func);
 uint16_t atou16(const char *str, const char *desc, const char *func);

@@ -57,7 +57,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 struct Quest Quests[MAX_QUESTS];
 
-char Quests_TFlags[8];          // temp. flags
+uint8_t Quests_TFlags[8];          // temp. flags
 
 static bool QuestsInitialized = false;
 
@@ -189,7 +189,7 @@ void Quests_Close(void)
 
 // ------------------------------------------------------------------------- //
 
-void ClearFlags(char *Flags)
+void ClearFlags(uint8_t *Flags)
 {
 	int16_t iTemp;
 
@@ -197,18 +197,18 @@ void ClearFlags(char *Flags)
 		Flags[iTemp] = 0;
 }
 
-static void SetFlag(char *Flags, int16_t WhichFlag)
+static void SetFlag(uint8_t *Flags, int16_t WhichFlag)
 {
 	Flags[ WhichFlag/8 ] |= (1 << (WhichFlag % 8));
 }
 
-static void ClearFlag(char *Flags, int16_t WhichFlag)
+static void ClearFlag(uint8_t *Flags, int16_t WhichFlag)
 {
 	if (Flags[ WhichFlag/8 ]  & (1 << (WhichFlag % 8)))
 		Flags[ WhichFlag/8 ] ^= (1 << (WhichFlag % 8));
 }
 
-static bool FlagSet(char *Flags, int16_t WhichFlag)
+static bool FlagSet(uint8_t *Flags, int16_t WhichFlag)
 {
 	if (Flags[ WhichFlag/8 ] & (1 << (WhichFlag % 8)))
 		return true;

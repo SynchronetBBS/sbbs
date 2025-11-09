@@ -19,9 +19,9 @@ struct EventHeader {
 };
 
 extern struct Quest Quests[MAX_QUESTS];
-extern char Quests_TFlags[8];
+extern uint8_t Quests_TFlags[8];
 
-void ClearFlags(char *Flags);
+void ClearFlags(uint8_t *Flags);
 
 bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 			  struct NPCInfo *NPCInfo, char *szNPCIndex);

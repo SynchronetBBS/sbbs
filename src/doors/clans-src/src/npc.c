@@ -383,7 +383,7 @@ void ChatVillagers(int16_t WhichMenu)
 	struct NPCInfo *NPCInfo;
 	char *pszNPCIndex[MAX_NPCS], szString[80];
 	char *pszNPCNames[MAX_NPCS], cInput, szKeys[MAX_NPCS + 4];
-	signed char CurNPC;
+	int CurNPC;
 	int16_t NPCsFound = 0, CurFile;
 	long Offset;
 	struct FileHeader FileHeader;
@@ -463,7 +463,7 @@ void ChatVillagers(int16_t WhichMenu)
 		for (CurNPC = 0; CurNPC < NPCsFound; CurNPC++) {
 			snprintf(szString, sizeof(szString), " |0A(|0B%c|0A) |0C%s\n", CurNPC + 'A', pszNPCNames[ CurNPC ]);
 			rputs(szString);
-			szKeys[CurNPC] = CurNPC + 'A';
+			szKeys[CurNPC] = (char)(CurNPC + 'A');
 		}
 		szKeys[CurNPC] = 'Q';
 		szKeys[CurNPC + 1] = '\r';

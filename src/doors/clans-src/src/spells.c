@@ -400,10 +400,10 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 				/* if attributes set, use them, otherwise, use caster's */
 				if (Spells[SpellNum]->Attributes[iTemp2])
 					PC->MyClan->Member[CurSlot]->Attributes[iTemp2] =
-						(char)(Spells[SpellNum]->Attributes[iTemp2] + my_random(1));
+						(int8_t)(Spells[SpellNum]->Attributes[iTemp2] + my_random(1));
 				else {
 					PC->MyClan->Member[CurSlot]->Attributes[iTemp2] =
-						(char)(PC->Attributes[iTemp2]  - 2 + my_random(4));
+						(int8_t)(PC->Attributes[iTemp2]  - 2 + my_random(4));
 				}
 			}
 

@@ -990,7 +990,7 @@ static bool Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct mov
 	szKeys[2] = '\r';
 	szKeys[3] = '\n';
 	for (cTemp = 0; cTemp < MAX_SPELLS; cTemp++)
-		szKeys[cTemp + 4] = 'A' + cTemp;
+		szKeys[cTemp + 4] = (char)('A' + cTemp);
 	szKeys[cTemp + 3] = 0;
 
 	rputs("\n");
@@ -1445,7 +1445,7 @@ static int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16
 
 	/* randomize stats */
 	for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++) {
-		Monster->Attributes[iTemp] = (char)((Monster->Attributes[iTemp] * (my_random(60) + 80)) / 100);
+		Monster->Attributes[iTemp] = (int8_t)((Monster->Attributes[iTemp] * (my_random(60) + 80)) / 100);
 	}
 	Monster->HP = (int16_t)((Monster->HP* (my_random(30) + 80)) / 100);
 	Monster->MaxHP = Monster->HP;

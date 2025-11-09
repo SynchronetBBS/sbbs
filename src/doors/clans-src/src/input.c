@@ -391,7 +391,7 @@ void GetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 			rputs(BackSpaces);
 			CurChar = 0;
 		}
-		else if ((InputCh >= '\x7f' || InputCh < 0) && HiBit == false)
+		else if ((InputCh >= '\x7f' || (signed char)InputCh < 0) && HiBit == false)
 			continue;
 		else if (InputCh == 0)
 			continue;

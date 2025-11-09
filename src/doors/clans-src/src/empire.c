@@ -511,7 +511,7 @@ void Empire_Maint(struct empire *Empire)
 		Rating = 100;
 	if (Rating < 0)
 		Rating = 0;
-	Empire->Army.Rating = (char)Rating;
+	Empire->Army.Rating = (int8_t)Rating;
 
 	// make money for empire here
 	if (Empire->OwnerType == EO_VILLAGE) {
@@ -1976,9 +1976,9 @@ static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 {
 	int16_t LandUsed[MAX_BUILDINGS];
 	int16_t NumRemaining[MAX_BUILDINGS];
-	char *WarZone;
+	uint8_t *WarZone;
 	int CurChar, TotalEnergy, Start, End, WhichToHit;
-	signed char CurType;
+	uint8_t CurType;
 	int16_t CurBuilding,
 	CurHit, TypeToHit, iTemp;
 	int32_t NumHits;
@@ -2845,7 +2845,7 @@ static void StartEmpireWar(struct empire *Empire)
 
 	// update attacker's army rating
 	Decrease = ExtentOfAttack / 5 + 2;
-	Empire->Army.Rating -= (char)Decrease;
+	Empire->Army.Rating -= (int8_t)Decrease;
 	if (Empire->Army.Rating < 0)
 		Empire->Army.Rating = 0;
 

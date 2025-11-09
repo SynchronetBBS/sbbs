@@ -183,7 +183,7 @@ static int16_t Init_PClasses(char *szFileName)
 							printf("Invalid ability score %d\n", iTemp);
 							exit(EXIT_FAILURE);
 						}
-						PClasses[CurPClass]->Attributes[iKeyWord - 1] = (char)iTemp;
+						PClasses[CurPClass]->Attributes[iKeyWord - 1] = (int8_t)iTemp;
 						break;
 					case 7 :    /* MaxHP */
 						iTemp = atoi(pcCurrentPos);
@@ -215,7 +215,7 @@ static int16_t Init_PClasses(char *szFileName)
 							printf("Invalid ability score %d\n", iTemp);
 							exit(EXIT_FAILURE);
 						}
-						PClasses[CurPClass]->SpellsKnown[LastSpellSlot] = (char)iTemp;
+						PClasses[CurPClass]->SpellsKnown[LastSpellSlot] = (int8_t)iTemp;
 						LastSpellSlot++;
 						break;
 				}

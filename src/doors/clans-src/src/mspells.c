@@ -284,11 +284,11 @@ static void Init_Spells(char *szFileName)
 					case 4 :    /* Wisdom */
 					case 5 :    /* ArmorStr */
 					case 6 :    /* Charisma */
-						Spells[CurSpell]->Attributes[iKeyWord-1] = atoc(pcCurrentPos, "Attribute");
+						Spells[CurSpell]->Attributes[iKeyWord-1] = ato8(pcCurrentPos, "Attribute");
 
 						break;
 					case 7 :    /* Value */
-						Spells[CurSpell]->Value = atoc(pcCurrentPos, "Value");
+						Spells[CurSpell]->Value = ato8(pcCurrentPos, "Value");
 
 						//printf("    - val: %+d\n", Spells[CurSpell]->Value);
 						break;
@@ -340,7 +340,7 @@ static void Init_Spells(char *szFileName)
 						Spells[CurSpell]->Target = false;
 						break;
 					case 15 :   /* Level */
-						Spells[CurSpell]->Level = atoc(pcCurrentPos, "Level");
+						Spells[CurSpell]->Level = ato8(pcCurrentPos, "Level");
 						break;
 					case 16 :    /* WearoffStr */
 						Spells[CurSpell]->pszWearoffStr = strdup(pcCurrentPos);

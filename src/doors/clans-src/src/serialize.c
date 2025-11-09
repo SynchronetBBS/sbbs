@@ -14,6 +14,14 @@
 	remain--;                     \
 } while(0)
 
+#define pack_int8(x) do {        \
+	assert(remain);           \
+	if (remain < sizeof(char)) \
+		return SIZE_MAX;    \
+	*(int8_t *)(dst++) = x;      \
+	remain--;                     \
+} while(0)
+
 #define pack_uint8_t(x) do {     \
 	assert(remain);           \
 	if (remain < sizeof(char)) \
@@ -379,9 +387,9 @@ s_Spell_s(const struct Spell *s, void *bufptr, size_t bufsz)
 	pack_bool(s->Friendly);
 	pack_bool(s->Target);
 	pack_charArr(s->Attributes);
-	pack_char(s->Value);
+	pack_int8(s->Value);
 	pack_int16_t(s->Energy);
-	pack_char(s->Level);
+	pack_int8(s->Level);
 	pack_ptr(s->pszDamageStr);
 	pack_ptr(s->pszHealStr);
 	pack_ptr(s->pszModifyStr);
@@ -410,7 +418,7 @@ s_pc_s(const struct pc *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->SP);
 	pack_int16_t(s->MaxSP);
 	pack_charArr(s->Attributes);
-	pack_char(s->Status);
+	pack_int8(s->Status);
 	pack_int16_t(s->Weapon);
 	pack_int16_t(s->Shield);
 	pack_int16_t(s->Armor);
@@ -456,7 +464,7 @@ s_NPCInfo_s(const struct NPCInfo *s, void *bufptr, size_t bufsz)
 	pack_charArr(s->szName);
 	pack_structArr(s->Topics, Topic);
 	pack_struct(&s->IntroTopic, Topic);
-	pack_char(s->Loyalty);
+	pack_int8(s->Loyalty);
 	pack_int16_t(s->WhereWander);
 	pack_bool(s->Roamer);
 	pack_int16_t(s->NPCPCIndex);
@@ -645,8 +653,8 @@ s_Army_s(const struct Army *s, void *bufptr, size_t bufsz)
 	pack_int32_t(s->Axemen);
 	pack_int32_t(s->Knights);
 	pack_int32_t(s->Followers);
-	pack_char(s->Rating);
-	pack_char(s->Level);
+	pack_int8(s->Rating);
+	pack_int8(s->Level);
 	pack_struct(&s->Strategy, Strategy);
 	crc = CRCValue(bufptr, dst - (uint8_t*)bufptr);
 	pack_int32_t(crc);
@@ -660,11 +668,11 @@ s_Strategy_s(const struct Strategy *s, void *bufptr, size_t bufsz)
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
 
-	pack_char(s->AttackLength);
-	pack_char(s->AttackIntensity);
-	pack_char(s->LootLevel);
-	pack_char(s->DefendLength);
-	pack_char(s->DefendIntensity);
+	pack_int8(s->AttackLength);
+	pack_int8(s->AttackIntensity);
+	pack_int8(s->LootLevel);
+	pack_int8(s->DefendLength);
+	pack_int8(s->DefendIntensity);
 
 	return (size_t)(dst - (uint8_t *)bufptr);
 }
@@ -738,7 +746,7 @@ s_item_data_s(const struct item_data *s, void *bufptr, size_t bufsz)
 	pack_bool(s->Available);
 	pack_int16_t(s->UsedBy);
 	pack_charArr(s->szName);
-	pack_char(s->cType);
+	pack_int8(s->cType);
 	pack_bool(s->Special);
 	pack_int16_t(s->SpellNum);
 	pack_charArr(s->Attributes);
@@ -749,9 +757,9 @@ s_item_data_s(const struct item_data *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->MarketLevel);
 	pack_int16_t(s->VillageType);
 	pack_int32_t(s->ItemDate);
-	pack_char(s->RandLevel);
-	pack_char(s->HPAdd);
-	pack_char(s->SPAdd);
+	pack_int8(s->RandLevel);
+	pack_int8(s->HPAdd);
+	pack_int8(s->SPAdd);
 	return (size_t)(dst - (uint8_t *)bufptr);
 }
 
@@ -768,7 +776,7 @@ s_empire_s(const struct empire *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->Land);
 	pack_int16_tArr(s->Buildings);
 	pack_int16_t(s->AllianceID);
-	pack_char(s->WorkerEnergy);
+	pack_int8(s->WorkerEnergy);
 	pack_int16_t(s->LandDevelopedToday);
 	pack_int16_t(s->SpiesToday);
 	pack_int16_t(s->AttacksToday);
@@ -794,8 +802,8 @@ s_clan_s(const struct clan *s, void *bufptr, size_t bufsz)
 	pack_charArr(s->QuestsKnown);
 	pack_charArr(s->PFlags);
 	pack_charArr(s->DFlags);
-	pack_char(s->ChatsToday);
-	pack_char(s->TradesToday);
+	pack_uint8_t(s->ChatsToday);
+	pack_uint8_t(s->TradesToday);
 	pack_int16_tArr(s->ClanRulerVote);
 	pack_int16_tArr(s->Alliances);
 	pack_int32_t(s->Points);
@@ -805,14 +813,14 @@ s_clan_s(const struct clan *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->MineLevel);
 	pack_int16_t(s->WorldStatus);
 	pack_int16_t(s->DestinationBBS);
-	pack_char(s->VaultWithdrawals);
+	pack_int8(s->VaultWithdrawals);
 	pack_uint16_t(s->PublicMsgIndex);
 	pack_int16_tArr2(s->ClanCombatToday, MAX_CLANCOMBAT, 2);
 	pack_int16_t(s->ClanWars);
 	pack_ptrArr(s->Member);
 	pack_structArr(s->Items, item_data);
-	pack_char(s->ResUncToday);
-	pack_char(s->ResDeadToday);
+	pack_int8(s->ResUncToday);
+	pack_int8(s->ResDeadToday);
 	pack_struct(&s->Empire, empire);
 
 	// Bitfields...
@@ -867,7 +875,7 @@ s_clan_s(const struct clan *s, void *bufptr, size_t bufsz)
 	*dst |= (s->QuestToday ? 0x08U : 0U);
 	*dst |= (s->AttendedMass ? 0x04U : 0U);
 	*dst |= (s->GotBlessing ? 0x02U : 0U);
-	*(dst++) |= (s->Prayed ? 0x01U : 0U);
+	*(dst++) |= (uint8_t)(s->Prayed ? 0x01U : 0U);
 	remain--;
 
 	crc = CRCValue(bufptr, dst - (uint8_t*)bufptr);

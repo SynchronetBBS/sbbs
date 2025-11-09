@@ -233,10 +233,10 @@ static void Init_Items(char *szFileName)
 					case 7 :    /* Armor */
 					case 8 :    /* Charisma */
 						if (TypeOfStat == ITM_STAT) {
-							Items[CurItem]->Attributes[iKeyWord - 3] = atoc(pcCurrentPos, "Attribute");
+							Items[CurItem]->Attributes[iKeyWord - 3] = ato8(pcCurrentPos, "Attribute");
 						}
 						else if (TypeOfStat == ITM_REQ) {
-							Items[CurItem]->ReqAttributes[iKeyWord - 3] = atoc(pcCurrentPos, "Requirement");
+							Items[CurItem]->ReqAttributes[iKeyWord - 3] = ato8(pcCurrentPos, "Requirement");
 						}
 						break;
 					case 9 :    /* Cost */
@@ -274,13 +274,13 @@ static void Init_Items(char *szFileName)
 							Items[CurItem]->VillageType = ato16(pcCurrentPos, "Village Types");
 						break;
 					case 19 :   // randlevel
-						Items[CurItem]->RandLevel = atoc(pcCurrentPos, "Rand Level");
+						Items[CurItem]->RandLevel = ato8(pcCurrentPos, "Rand Level");
 						break;
 					case 20 :   // HP
-						Items[CurItem]->HPAdd = atoc(pcCurrentPos, "HP");
+						Items[CurItem]->HPAdd = ato8(pcCurrentPos, "HP");
 						break;
 					case 21 :   // SP
-						Items[CurItem]->SPAdd = atoc(pcCurrentPos, "SP");
+						Items[CurItem]->SPAdd = ato8(pcCurrentPos, "SP");
 						break;
 				}
 				break;

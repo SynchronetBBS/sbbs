@@ -726,7 +726,7 @@ static int16_t AlliancesMenu(void)
 		snprintf(szString, sizeof(szString), ST_AMENU1, (char)(iTemp + 'A'), Alliances[iTemp]->szName);
 		rputs(szString);
 
-		szChoices[iTemp] = iTemp + 'A';
+		szChoices[iTemp] = (char)(iTemp + 'A');
 	}
 	NumAlliances = iTemp;
 

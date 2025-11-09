@@ -58,7 +58,7 @@ struct village Village;
 
 struct  Scheme {
 	char szName[20];
-	char ColorScheme[23];
+	int8_t ColorScheme[23];
 };
 
 // ------------------------------------------------------------------------- //
@@ -168,7 +168,7 @@ static void ChangeFlagScheme(void)
 	bool Quit = false;
 	char cInput;
 	int16_t WhichColour;
-	char OldFlag[3];
+	int8_t OldFlag[3];
 	bool ChangesMade = false;
 	char szString[255];
 
@@ -207,7 +207,7 @@ static void ChangeFlagScheme(void)
 
 				Help("Individual Colours", ST_CLANSHLP);
 
-				Village.Data.ColorScheme[ WhichColour ] = (char)GetLong("|0SPlease enter the colour to use (0 to 15) ", Village.Data.ColorScheme[ WhichColour ], 15);
+				Village.Data.ColorScheme[ WhichColour ] = (int8_t)GetLong("|0SPlease enter the colour to use (0 to 15) ", Village.Data.ColorScheme[ WhichColour ], 15);
 				Door_SetColorScheme(Village.Data.ColorScheme);
 				break;
 			case 'Q' :
@@ -236,7 +236,7 @@ static void ChangeFlagScheme(void)
 
 // ------------------------------------------------------------------------- //
 
-static void GetNums(char *Array, int16_t NumVars, char *string)
+static void GetNums(int8_t *Array, int16_t NumVars, char *string)
 {
 	int16_t iTemp, CurChar = 0;
 
@@ -245,7 +245,7 @@ static void GetNums(char *Array, int16_t NumVars, char *string)
 		CurChar++;
 
 	for (iTemp = 0;  iTemp < NumVars; iTemp++) {
-		Array[iTemp] = atoc(&string[CurChar], "Number?", __func__);
+		Array[iTemp] = ato8(&string[CurChar], "Number?", __func__);
 
 		while (isdigit(string[CurChar]))
 			CurChar++;
@@ -439,7 +439,7 @@ static void ChangeColourScheme(void)
 				iTemp = (int16_t)GetLong("|0SPlease enter the colour to use (1 to 15) ", (int32_t)Village.Data.ColorScheme[ WhichColour ], 15);
 
 				if (iTemp)
-					Village.Data.ColorScheme[ WhichColour ] = (char)iTemp;
+					Village.Data.ColorScheme[ WhichColour ] = (int8_t)iTemp;
 				Door_SetColorScheme(Village.Data.ColorScheme);
 				break;
 		}

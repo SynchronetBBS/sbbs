@@ -58,8 +58,9 @@ static void Items_Init(void);
 // ------------------------------------------------------------------------- //
 void Items_FindTreasureChest(void)
 {
-	char *RandomTable, szString[128], szItemName[25];
-	signed char CurItem;
+	int8_t *RandomTable;
+	char szString[128], szItemName[25];
+	int CurItem;
 	int16_t CurLevel, RandIndex, ChosenItem;
 
 	Items_Init();
@@ -70,7 +71,7 @@ void Items_FindTreasureChest(void)
 	// generate random table
 	for (CurItem = 0, RandIndex = 0; CurItem < Items.NumItems; CurItem++) {
 		for (CurLevel = 0; CurLevel < Items.Data[CurItem]->RandLevel; CurLevel++) {
-			RandomTable[ RandIndex++ ] = CurItem;
+			RandomTable[ RandIndex++ ] = (int8_t)CurItem;
 		}
 	}
 
@@ -207,7 +208,7 @@ void ReadBook(void)
 
 		// learn it
 		PClan->Member[ WhichMember ]->SpellsKnown[iTemp] =
-			(char)(PClan->Items[ ItemIndex ].SpellNum + 1);
+			(int8_t)(PClan->Items[ ItemIndex ].SpellNum + 1);
 	}
 
 	// if HPadd
@@ -635,7 +636,7 @@ void Item_BuyItem(signed char ItemType)
 	szKeys[3] = '\n';
 	szKeys[4] = ' ';
 	for (cTemp = 0; cTemp < MAX_ITEMS; cTemp++)
-		szKeys[cTemp + 5] = 'A' + cTemp;
+		szKeys[cTemp + 5] = (char)('A' + cTemp);
 	szKeys[cTemp+5] = 0;
 
 	/* generate index of items which are the item type */
@@ -835,12 +836,12 @@ void Item_BuyItem(signed char ItemType)
 					if (ItemType == I_WEAPON || ItemType == I_ARMOR || ItemType == I_SHIELD) {
 						if (Item.Attributes[iTemp])
 							Item.Attributes[iTemp] =
-								(char)(Items.Data[ ItemIndex[Choice - 'A'] ]->Attributes[iTemp] + my_random(Village.Data.MarketLevel / 3 + 1) + Village.Data.MarketLevel / 2);
+								(int8_t)(Items.Data[ ItemIndex[Choice - 'A'] ]->Attributes[iTemp] + my_random(Village.Data.MarketLevel / 3 + 1) + Village.Data.MarketLevel / 2);
 					}
 					else { // scroll or book
 						if (Item.Attributes[iTemp])
 							Item.Attributes[iTemp] =
-								(char)(Items.Data[ ItemIndex[Choice - 'A'] ]->Attributes[iTemp] + my_random(Village.Data.WizardLevel / 3 + 1) + Village.Data.WizardLevel / 2);
+								(int8_t)(Items.Data[ ItemIndex[Choice - 'A'] ]->Attributes[iTemp] + my_random(Village.Data.WizardLevel / 3 + 1) + Village.Data.WizardLevel / 2);
 					}
 
 					Item.ReqAttributes[iTemp] =
@@ -851,11 +852,11 @@ void Item_BuyItem(signed char ItemType)
 				if (MaterialChoice == MT_POLYMETRAL) {
 					/* make it lighter by decreasing req attributes */
 					if (Item.ReqAttributes[ATTR_STRENGTH])
-						Item.ReqAttributes[ATTR_STRENGTH] -= (char)(my_random(3) + 1);
+						Item.ReqAttributes[ATTR_STRENGTH] -= (int8_t)(my_random(3) + 1);
 					if (Item.Attributes[ATTR_STRENGTH])
-						Item.Attributes[ATTR_AGILITY] += (char)my_random(2);
+						Item.Attributes[ATTR_AGILITY] += (int8_t)my_random(2);
 					if (Item.Attributes[ATTR_DEXTERITY])
-						Item.Attributes[ATTR_DEXTERITY] += (char)my_random(2);
+						Item.Attributes[ATTR_DEXTERITY] += (int8_t)my_random(2);
 
 					/* make it have less energy -- it'll have between 0 and 20% less energy */
 					Item.Energy = (int16_t)((Item.Energy * (my_random(20) + 80)) / 100);
@@ -863,11 +864,11 @@ void Item_BuyItem(signed char ItemType)
 				else if (MaterialChoice == MT_LACONIA) {
 					/* make it stronger by giving higher strength */
 					if (Item.ReqAttributes[ATTR_STRENGTH])
-						Item.ReqAttributes[ATTR_STRENGTH] += (char)(my_random(3) + 1);
+						Item.ReqAttributes[ATTR_STRENGTH] += (int8_t)(my_random(3) + 1);
 
 					/* and increase strength attribute */
 					if (Item.Attributes[ATTR_STRENGTH])
-						Item.Attributes[ATTR_STRENGTH] += (char)(my_random(2) + 1);
+						Item.Attributes[ATTR_STRENGTH] += (int8_t)(my_random(2) + 1);
 
 					/* make it have longer lifespan but higher strength reqattrib */
 					Item.Energy = (int16_t)((Item.Energy * (my_random(40) + 90)) / 100);
@@ -893,10 +894,10 @@ void Item_BuyItem(signed char ItemType)
 				// add onto it due to Quality Level
 				if (Village.Data.MarketQuality)
 					for (iTemp = 0; iTemp < NUM_ATTRIBUTES; iTemp++) {
-						Item.Attributes[iTemp] += (char)((Item.Attributes[iTemp] * (my_random(20) + (Village.Data.MarketQuality * 50) / 4)) / 100);
+						Item.Attributes[iTemp] += (int8_t)((Item.Attributes[iTemp] * (my_random(20) + (Village.Data.MarketQuality * 50) / 4)) / 100);
 
 						if (Item.ReqAttributes[iTemp])
-							Item.ReqAttributes[iTemp] -= (char)((Item.ReqAttributes[iTemp]*(my_random(10) + (Village.Data.MarketQuality * 30) / 4)) / 100);
+							Item.ReqAttributes[iTemp] -= (int8_t)((Item.ReqAttributes[iTemp]*(my_random(10) + (Village.Data.MarketQuality * 30) / 4)) / 100);
 					}
 
 				/* ------------------------ */

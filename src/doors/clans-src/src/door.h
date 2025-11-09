@@ -26,7 +26,7 @@ bool Door_Initialized(void);
  */
 
 
-void Door_SetColorScheme(char *ColorScheme);
+void Door_SetColorScheme(int8_t *ColorScheme);
 /*
  * This function will set the color scheme.
  */

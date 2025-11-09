@@ -79,7 +79,7 @@ bool Door_Initialized(void)
 
 // ------------------------------------------------------------------------- //
 
-void Door_SetColorScheme(char *ColorScheme)
+void Door_SetColorScheme(int8_t *ColorScheme)
 /*
  * This function will set the color scheme.
  */
@@ -624,7 +624,7 @@ void LogStr(const char *szString)
 		for (size_t stPos = 0; stPos < stLen; stPos++) {
 			char *src = &szStrDup[stPos];
 			size_t remain = stLen - stPos + 1;
-			if ((*src < 32 && *src >= 0) || *src == 127) {
+			if ((*src < 32 && (signed char)*src >= 0) || *src == 127) {
 				// Remove control characters
 				memmove(src, &src[1], remain - 1);
 				stPos--;

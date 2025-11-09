@@ -159,7 +159,7 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 							puts("Invalid Loyalty Value");
 							exit(EXIT_FAILURE);
 						}
-						NPCInfo->Loyalty = (char)TempInt;
+						NPCInfo->Loyalty = (int8_t)TempInt;
 						break;
 					case 2 :    // KnownTopic
 						NPCInfo->Topics[TopicsKnown].Active = true;

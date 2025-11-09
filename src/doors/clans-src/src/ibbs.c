@@ -1123,8 +1123,9 @@ void IBBS_SeeVillages(bool Travel)
 	/* if user enters blank line, quit */
 
 	int16_t NumBBSes, WhichBBS;
-	char szString[128], BBSIndex[MAX_IBBSNODES];
-	signed char cTemp;
+	char szString[128];
+	int8_t BBSIndex[MAX_IBBSNODES];
+	int8_t cTemp;
 	const char* pszBBSNames[MAX_IBBSNODES];
 	bool ShowInitially;
 
@@ -1364,8 +1365,8 @@ static int16_t FoundPoint = false;
 static int16_t Level = 0;
 static int16_t StartingPoint;
 static struct Point {
-	char BackLink;
-	char ForwardLinks[MAX_IBBSNODES];
+	int8_t BackLink;
+	int8_t ForwardLinks[MAX_IBBSNODES];
 } *Points[MAX_IBBSNODES];
 
 static void FindPoint(int16_t Destination, int16_t Source, int16_t BasePoint)
@@ -1495,7 +1496,7 @@ static void IBBS_LoadNDX(void)
 						TempInt = atoi(pcCurrentPos) - 1;
 						if (TempInt < 0 || TempInt >= MAX_IBBSNODES)
 							System_Error("BBSId out of bounds!\n");
-						CurBBS = (char)TempInt;
+						CurBBS = (int8_t)TempInt;
 
 						if (Points[CurBBS] == NULL) {
 							Points[CurBBS] = malloc(sizeof(struct Point));
@@ -1828,7 +1829,7 @@ static FILE *getPacketFP(int16_t DestID)
 	snprintf(szPacketName, sizeof(szPacketName),"cl%03d%03d.%-2s", IBBS.Data.BBSID,
 			IBBS.Data.Nodes[DestID-1].Info.RouteThrough, Game.Data.LeagueID);
 
-	szPacketName[11] = LastCounter;
+	szPacketName[11] = (char)LastCounter;
 	szPacketName[12] = 0;
 	strlcat(szFullFileName, szPacketName, sizeof(szFullFileName));
 

@@ -3,6 +3,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int8_t ato8(const char *str, const char *desc)
+{
+	int ret = atoi(str);
+
+	if (ret < INT8_MIN || ret > INT8_MAX) {
+		printf("%s out of range\n", desc);
+		exit(EXIT_FAILURE);
+	}
+	return (int8_t)ret;
+}
+
 char atoc(const char *str, const char *desc)
 {
 	int ret = atoi(str);

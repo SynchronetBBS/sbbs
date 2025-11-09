@@ -43,6 +43,18 @@ char atoc(const char *str, const char *desc, const char *func)
 	return (char)ret;
 }
 
+int8_t ato8(const char *str, const char *desc, const char *func)
+{
+	int ret = atoi(str);
+
+	if (ret < INT8_MIN || ret > INT8_MAX) {
+		char szErrorString[1024];
+		snprintf(szErrorString, sizeof(szErrorString), "%s value (%hhu) out of range (%d to %d) in %s", desc, ret, 0, 0xFF, func);
+		System_Error(szErrorString);
+	}
+	return (int8_t)ret;
+}
+
 uint8_t atou8(const char *str, const char *desc, const char *func)
 {
 	int ret = atoi(str);

@@ -44,7 +44,7 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 				 int16_t WhichAlliance, bool InAllianceOnly);
 
 void ShowPlayerStats(struct pc *PC, bool AllowModify);
-char GetStat(struct pc *PC, char Stat);
+int8_t GetStat(struct pc *PC, char Stat);
 
 void ListItems(struct clan *Clan);
 

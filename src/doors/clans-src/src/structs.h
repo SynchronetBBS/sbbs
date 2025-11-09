@@ -62,18 +62,18 @@ struct system {
 
 struct PClass {
 	char szName[15];
-	char Attributes[NUM_ATTRIBUTES];
+	int8_t Attributes[NUM_ATTRIBUTES];
 	int16_t MaxHP;
 	int16_t Gold;
 	int16_t MaxSP;
-	char SpellsKnown[MAX_SPELLS];
+	int8_t SpellsKnown[MAX_SPELLS];
 
 	int16_t VillageType;     // which villages is this allowed in?  0 == ALL
 };
 
 struct Strategy {
-	char AttackLength, AttackIntensity, LootLevel;
-	char DefendLength, DefendIntensity;
+	int8_t AttackLength, AttackIntensity, LootLevel;
+	int8_t DefendLength, DefendIntensity;
 
 	/*
 
@@ -100,8 +100,8 @@ struct Strategy {
 
 struct Army {
 	int32_t Footmen, Axemen, Knights, Followers;
-	char Rating;                        // 0-100%, 100% = strongest
-	char Level;                         // useable later?
+	int8_t Rating;                        // 0-100%, 100% = strongest
+	int8_t Level;                         // useable later?
 
 	struct Strategy Strategy;
 
@@ -115,7 +115,7 @@ struct empire {
 	int16_t Land;                        // amount of land available for use
 	int16_t Buildings[MAX_BUILDINGS];    // # of each building type
 	int16_t AllianceID;
-	char WorkerEnergy;              // energy left for builders in %'age
+	int8_t WorkerEnergy;              // energy left for builders in %'age
 	int16_t LandDevelopedToday;      // how much development we did
 	int16_t SpiesToday;              // how many spying attempts today?
 	int16_t AttacksToday;
@@ -129,7 +129,7 @@ struct empire {
 
 
 struct village_data {
-	char ColorScheme[50];
+	int8_t ColorScheme[50];
 	char szName[30];
 
 	int16_t TownType;
@@ -161,8 +161,8 @@ struct village_data {
 		SetConToday : 1,
 		ShowEmpireStats : 1;
 
-	char HFlags[8];         /* daily flags -- reset nightly */
-	char GFlags[8];         /* global flags -- reset with reset */
+	uint8_t HFlags[8];         /* daily flags -- reset nightly */
+	uint8_t GFlags[8];         /* global flags -- reset with reset */
 
 	int16_t VillageType;    // what type of village do we have here?
 
@@ -232,12 +232,12 @@ struct item_data {
 	bool Available;
 	int16_t UsedBy;  /* 0 means nobody, 1.. etc. gives num of who uses it +1 */
 	char szName[25];
-	char cType;
+	int8_t cType;
 	bool Special; /* if special item, can't be bought or sold */
 	int16_t SpellNum;    // which spell do you cast when reading this scroll?
 
-	char Attributes[NUM_ATTRIBUTES];
-	char ReqAttributes[NUM_ATTRIBUTES];
+	int8_t Attributes[NUM_ATTRIBUTES];
+	int8_t ReqAttributes[NUM_ATTRIBUTES];
 
 	int32_t lCost;
 	bool DiffMaterials;   /* means it can be made with different matterials */
@@ -246,8 +246,8 @@ struct item_data {
 
 	int16_t VillageType;     // which villages is this allowed in?  0 == ALL
 	int32_t ItemDate;          // when was item taken into the pawn shop?
-	char RandLevel;         // from 0 - 10, level of randomness, 10 is highest
-	char HPAdd, SPAdd;
+	int8_t RandLevel;         // from 0 - 10, level of randomness, 10 is highest
+	int8_t HPAdd, SPAdd;
 };
 
 
@@ -256,8 +256,8 @@ struct pc {
 	int16_t HP, MaxHP;
 	int16_t SP, MaxSP;
 
-	char Attributes[NUM_ATTRIBUTES];
-	char Status;
+	int8_t Attributes[NUM_ATTRIBUTES];
+	int8_t Status;
 
 	int16_t Weapon, Shield, Armor;
 
@@ -267,7 +267,7 @@ struct pc {
 	int16_t TrainingPoints;
 
 	struct clan *MyClan;  /* pointer to his clan */
-	char SpellsKnown[MAX_SPELLS];
+	int8_t SpellsKnown[MAX_SPELLS];
 
 	struct SpellsInEffect SpellsInEffect[10]; /* 10 spells is sufficient */
 
@@ -291,10 +291,10 @@ struct clan {
 	char szName[25];
 	char Symbol[21];
 
-	char QuestsDone[8], QuestsKnown[8];
+	int8_t QuestsDone[8], QuestsKnown[8];
 
-	char PFlags[8], DFlags[8];
-	char ChatsToday, TradesToday;
+	uint8_t PFlags[8], DFlags[8];
+	uint8_t ChatsToday, TradesToday;
 
 	int16_t ClanRulerVote[2];        // who are you voting for as the ruler?
 
@@ -310,7 +310,7 @@ struct clan {
 
 	int16_t WorldStatus, DestinationBBS;
 
-	char VaultWithdrawals;
+	int8_t VaultWithdrawals;
 
 	uint16_t PublicMsgIndex;
 
@@ -320,7 +320,7 @@ struct clan {
 	struct pc *Member[MAX_MEMBERS];
 	struct item_data Items[MAX_ITEMS_HELD];
 
-	char ResUncToday, ResDeadToday ;
+	int8_t ResUncToday, ResDeadToday ;
 
 	struct empire Empire;
 
@@ -364,10 +364,10 @@ struct Spell {
 	int16_t TypeFlag;
 	bool Friendly;
 	bool Target;
-	char Attributes[NUM_ATTRIBUTES];
-	char Value;
+	int8_t Attributes[NUM_ATTRIBUTES];
+	int8_t Value;
 	int16_t Energy;
-	char Level;     /* used to see if affects target */
+	int8_t Level;     /* used to see if affects target */
 	char *pszDamageStr;
 	char *pszHealStr;
 	char *pszModifyStr;
@@ -394,7 +394,7 @@ struct Language {
 
 struct BuildingType {
 	char szName[30];
-	char HitZones,          // how vulnerable is it?  Higher = more vulnerable
+	int8_t HitZones,          // how vulnerable is it?  Higher = more vulnerable
 	LandUsed,          // how many units of land used?
 	EnergyUsed;        // how much energy is used to build it? 100=highest
 	int32_t Cost;              // how much it'll cost ya to build this
@@ -480,7 +480,7 @@ struct NPCInfo {
 	char szName[20];
 	struct Topic Topics[MAX_TOPICS];
 	struct Topic IntroTopic;
-	char Loyalty;       /* how loyal is he? */
+	int8_t Loyalty;       /* how loyal is he? */
 	int16_t WhereWander; // where does he wander most often?
 	bool Roamer;      // is he a roamer type?
 	int16_t NPCPCIndex;  // which NPC is he in the NPC.PC file?
@@ -689,7 +689,7 @@ struct Door {
 	bool Initialized;
 	bool AllowScreenPause;
 
-	char ColorScheme[50];
+	int8_t ColorScheme[50];
 
 	bool UserBooted;            // True if a user was online already
 };

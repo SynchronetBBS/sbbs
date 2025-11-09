@@ -209,7 +209,7 @@ int main(int argc, char *argv[])
 					case 4 :    /* Strength */
 					case 5 :    /* Wisdom */
 					case 6 :    /* ArmorStr */
-						TmpMonster.Attributes[iKeyWord - 2] = atoc(pcCurrentPos, "Attribute");
+						TmpMonster.Attributes[iKeyWord - 2] = ato8(pcCurrentPos, "Attribute");
 						break;
 					case 7 :    /* Weapon */
 						TmpMonster.Weapon = ato16(pcCurrentPos, "Weapon");
@@ -240,7 +240,7 @@ int main(int argc, char *argv[])
 						TmpMonster.SP = TmpMonster.MaxSP = ato16(pcCurrentPos, "SP");
 						break;
 					case 12 :   /* spell! */
-						TmpMonster.SpellsKnown[LastSpellSlot] = atoc(pcCurrentPos, "Spell");
+						TmpMonster.SpellsKnown[LastSpellSlot] = ato8(pcCurrentPos, "Spell");
 						LastSpellSlot++;
 						break;
 					case 13 :   // undead
