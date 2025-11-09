@@ -68,15 +68,15 @@ typedef struct MessageHeader {
 	char szSubject[72];
 	char szDateTime[20];         /* "DD Mon YY  HH:MM:SS" */
 	uint16_t wTimesRead;
-	uint16_t wDestNode;
-	uint16_t wOrigNode;
+	int16_t wDestNode;
+	int16_t wOrigNode;
 	uint16_t wCost;                  /* Lowest unit of originator's currency */
-	uint16_t wOrigNet;
-	uint16_t wDestNet;
-	uint16_t wDestZone;
-	uint16_t wOrigZone;
-	uint16_t wDestPoint;
-	uint16_t wOrigPoint;
+	int16_t wOrigNet;
+	int16_t wDestNet;
+	int16_t wDestZone;
+	int16_t wOrigZone;
+	int16_t wDestPoint;
+	int16_t wOrigPoint;
 	uint16_t wReplyTo;
 	uint16_t wAttribute;
 	uint16_t wNextReply;
@@ -99,10 +99,10 @@ typedef struct MessageHeader {
 #define ATTRIB_FILE_UPDATE  0x8000
 
 typedef struct {
-	uint16_t wZone;
-	uint16_t wNet;
-	uint16_t wNode;
-	uint16_t wPoint;
+	int16_t wZone;
+	int16_t wNet;
+	int16_t wNode;
+	int16_t wPoint;
 } tFidoNode;
 
 #endif

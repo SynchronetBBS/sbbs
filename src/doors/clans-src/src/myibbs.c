@@ -222,7 +222,7 @@ void ConvertStringToAddress(tFidoNode *pNode, const char *pszSource)
 {
 	uint16_t zone = 0, net = 0, node = 0, pt = 0;
 
-	sscanf(pszSource, "%hu:%hu/%hu.%hu", &zone, &net
+	sscanf(pszSource, "%hd:%hd/%hd.%hd", &zone, &net
 		,&node, &pt);
 	pNode->wZone = zone;
 	pNode->wNet = net;
