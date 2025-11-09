@@ -49,6 +49,8 @@ static void UpdateClan(struct clan *Clan);
 static void InitGame(void);
 #ifdef __unix__
 static int pce_getch(void);
+#else
+#define pce_getch() _getch()
 #endif
 
 
