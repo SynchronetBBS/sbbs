@@ -149,7 +149,7 @@ static void PipeToAnsi(char *szOut, char *szIn)
 			szDigits[1] = *(pcIn+2);
 			szDigits[2] = 0;
 
-			Colour = atoc(szDigits, "Colour", __func__);
+			Colour = ato8(szDigits, "Colour", __func__);
 
 			GetColourString(szColourString, Colour, true);
 
