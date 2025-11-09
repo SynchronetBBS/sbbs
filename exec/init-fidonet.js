@@ -157,6 +157,8 @@ function send_app_netmail(destaddr)
 	body_text += "\r\n";
 	body_text += "My requested AreaFix password is: '" + link.AreaFixPwd + "'\r\n";
 	body_text += "My requested BinkP Session password is: '" + link.SessionPwd + "'\r\n";
+	if(link.PacketPwd)
+		body_text += "My requested Packet Password is: '" + link.PacketPwd  + "'\r\n";
 	if(link.TicFilePwd)
 		body_text += "My requested TIC Password is: '" + link.TicFilePwd  + "'\r\n";
 	body_text += "\r\n";
@@ -612,6 +614,8 @@ while((!link.AreaFixPwd || !confirm("Your AreaFix Password is '" + link.AreaFixP
 	link.AreaFixPwd = prompt("Your AreaFix (a.k.a. Area Manager) Password (case in-sensitive)");
 while((!link.SessionPwd || !confirm("Your BinkP Session Password is '" + link.SessionPwd + "'")) && !aborted())
 	link.SessionPwd = prompt("Your BinkP Session Password (case sensitive)");
+while(((!link.PacketPwd && (link.PacketPwd !== "")) || !confirm("Your Packet Password is '" + (link.PacketPwd ? link.PacketPwd : "(not set)") + "'")) && !aborted())
+	link.PacketPwd = prompt("Your Packet Password (case in-sensitive) (optional)");
 while(((!link.TicFilePwd && (link.TicFilePwd !== "")) || !confirm("Your TIC File Password is '" + (link.TicFilePwd ? link.TicFilePwd : "(not set)") + "'")) && !aborted())
 	link.TicFilePwd = prompt("Your TIC File Password (case sensitive) (optional)");
 
