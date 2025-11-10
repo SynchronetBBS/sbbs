@@ -745,6 +745,8 @@ void Items_ReadScroll(struct pc *PC, struct clan *TargetClan, int16_t Target, in
 
 	// reduce energy
 	PC->MyClan->Items[ ScrollNum ].Energy--;
+	// Reduce cost (used scrolls are worth less!)
+	PC->MyClan->Items[ ScrollNum ].lCost /= 2;
 
 	// if depleted
 	if (PC->MyClan->Items[ ScrollNum ].Energy == 0) {
