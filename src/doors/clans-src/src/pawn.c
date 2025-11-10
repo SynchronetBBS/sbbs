@@ -44,25 +44,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_PSITEMS     100
 #define MAX_PSITEMAGE   2
 
-static int16_t PS_GetOpenItemSlot(struct clan *Clan)
-{
-	// return -1 if no more open slots
-
-	int16_t iTemp;
-
-	// see if he has room to carry it
-	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-		if (Clan->Items[iTemp].Available == false)
-			break;
-	}
-	if (iTemp == MAX_ITEMS_HELD) {
-		/* no more room in inventory */
-		return -1;
-	}
-	else
-		return iTemp;
-}
-
 static void PS_Init(struct item_data **PS_Items)
 {
 	int16_t iTemp, CurItem;
@@ -185,7 +166,7 @@ static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS])
 				break;
 			case 'B' :  // buy an item
 				// find open slot
-				EmptySlot = PS_GetOpenItemSlot(&PClan);
+				EmptySlot = GetOpenItemSlot(&PClan);
 
 				if (EmptySlot == -1) {
 					rputs(ST_PAWN2);

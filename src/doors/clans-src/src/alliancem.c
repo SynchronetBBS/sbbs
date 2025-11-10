@@ -283,34 +283,13 @@ static void DonationRoom(struct Alliance *Alliance)
 
 				rputs(ST_ISTATS6);
 
-				/* see if anything to drop */
-				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan.Items[iTemp].Available &&
-							PClan.Items[iTemp].UsedBy == 0)
-						break;
-				}
-				if (iTemp == MAX_ITEMS_HELD) {
+				ItemIndex = ChooseItem(ST_ISTATS7, &PClan, I_ITEM, IF_UNUSED);
+				if (ItemIndex == ITEM_NO_MATCH) {
 					rputs("No items to be dropped.\n");
 					break;
 				}
-
-				DefaultItemIndex = iTemp+1;
-
-				ItemIndex = GetLong(ST_ISTATS7, DefaultItemIndex, MAX_ITEMS_HELD);
-				if (ItemIndex == 0)
+				if (ItemIndex < 0)
 					break;
-				ItemIndex--;
-
-				/* if that item is non-existant, tell him */
-				if (PClan.Items[ItemIndex].Available == false) {
-					rputs(ST_ISTATS4);
-					break;
-				}
-				/* if that item is in use, tell him */
-				if (PClan.Items[ItemIndex].UsedBy != 0) {
-					rputs(ST_ISTATS8);
-					break;
-				}
 
 				/* still wanna drop it? */
 				snprintf(szString, sizeof(szString), ST_ISTATS9, PClan.Items[ItemIndex].szName);
@@ -377,17 +356,12 @@ static void DonationRoom(struct Alliance *Alliance)
 				rputs("Take item\n");
 
 				// see if inventory full
-				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan.Items[iTemp].Available == false)
-						break;
-				}
-				if (iTemp == MAX_ITEMS_HELD) {
+				EmptySlot = GetOpenItemSlot(&PClan);
+				if (EmptySlot == -1) {
 					/* no more room in inventory */
 					rputs(ST_ITEMNOMOREROOM);
 					break;
 				}
-				else
-					EmptySlot = iTemp;
 
 				/* see if anything to take */
 				for (iTemp = 0; iTemp < MAX_ALLIANCEITEMS; iTemp++) {

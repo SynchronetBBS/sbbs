@@ -506,7 +506,7 @@ char GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, cha
 
 // ------------------------------------------------------------------------- //
 
-long GetLong(char *Prompt, long DefaultVal, long Maximum)
+long GetLong(const char *Prompt, long DefaultVal, long Maximum)
 /*
  * This allows the user to input a long integer.
  *

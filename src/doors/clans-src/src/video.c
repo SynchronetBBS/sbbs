@@ -794,7 +794,7 @@ char get_answer(char *szAllowableChars)
 	return (char)(toupper(cKey));
 }
 
-long DosGetLong(char *Prompt, long DefaultVal, long Maximum)
+long DosGetLong(const char *Prompt, long DefaultVal, long Maximum)
 {
 	char string[255], NumString[13], DefMax[40];
 	char InputChar;

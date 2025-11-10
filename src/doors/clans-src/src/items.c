@@ -54,6 +54,175 @@ static struct {
 	.NumItems = 0,
 };
 static void Items_Init(void);
+static void Items_GiveItemData(struct item_data *Item);
+
+int16_t GetOpenItemSlot(struct clan *Clan)
+{
+	// Available means there's an item in the slot that can be used.
+	for (int16_t iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
+		if (!Clan->Items[iTemp].Available)
+			return iTemp;
+	}
+	return ITEM_NO_MATCH;
+}
+
+static int16_t GetUnusedItem(struct clan *Clan, int16_t type)
+{
+	// Available means there's an item in the slot that can be used.
+	for (int16_t iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
+		if (Clan->Items[iTemp].Available && Clan->Items[iTemp].UsedBy == 0) {
+			if (type == Clan->Items[iTemp].cType || type == I_ITEM)
+				return iTemp;
+		}
+	}
+	return ITEM_NO_MATCH;
+}
+
+/*
+ * Returns -2 if there's at least one item, but none are equipped
+ * -1 if there's no items
+ */
+static int16_t GetUsedItem(struct clan *Clan, int16_t type)
+{
+	bool OneFound = false;
+
+	// Available means there's an item in the slot that can be used.
+	for (int16_t iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
+		// Scrolls and books can't be equipped...
+		if (Clan->Items[iTemp].Available && Clan->Items[iTemp].cType != I_BOOK && Clan->Items[iTemp].cType != I_SCROLL) {
+			if (type == Clan->Items[iTemp].cType || type == I_ITEM) {
+				OneFound = true;
+				if (Clan->Items[iTemp].UsedBy != 0) {
+					return iTemp;
+				}
+			}
+		}
+	}
+	if (OneFound)
+		return ITEM_NONE_EQUIPPED;
+	return ITEM_NO_MATCH;
+}
+
+/*
+ * Returns -3 if there's at least one item, but all are equipped
+ * -1 if there's no items
+ */
+static int16_t GetEquippableItem(struct clan *Clan, int16_t type)
+{
+	bool OneFound = false;
+
+	// Available means there's an item in the slot that can be used.
+	for (int16_t iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
+		// Scrolls and books can't be equipped...
+		if (Clan->Items[iTemp].Available && Clan->Items[iTemp].cType != I_BOOK && Clan->Items[iTemp].cType != I_SCROLL) {
+			if (type == Clan->Items[iTemp].cType || type == I_ITEM) {
+				OneFound = true;
+				if (Clan->Items[iTemp].UsedBy != 0) {
+					return iTemp;
+				}
+			}
+		}
+	}
+	if (OneFound)
+		return ITEM_NOTHING_EQUIPPABLE;
+	return ITEM_NO_MATCH;
+}
+
+static int16_t GetFirstItem(struct clan *Clan, int16_t type)
+{
+	// Available means there's an item in the slot that can be used.
+	for (int16_t iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
+		if (Clan->Items[iTemp].Available) {
+			if (type == Clan->Items[iTemp].cType || type == I_ITEM)
+				return iTemp;
+		}
+	}
+	return ITEM_NO_MATCH;
+}
+
+int16_t ChooseItem(const char *prompt, struct clan *Clan, int16_t type, int filter)
+{
+	int16_t DefaultItemIndex = -1;
+
+	switch (filter) {
+		case IF_ANY:
+			DefaultItemIndex = GetFirstItem(Clan, type);
+			break;
+		case IF_USED:
+			DefaultItemIndex = GetUsedItem(Clan, type);
+			break;
+		case IF_UNUSED:
+			DefaultItemIndex = GetUnusedItem(Clan, type);
+			break;
+		case IF_CANEQUIP:
+			DefaultItemIndex = GetEquippableItem(Clan, type);
+			break;
+		default:
+			System_Error("Unknown filter type!");
+	}
+	if (DefaultItemIndex == ITEM_NOTHING_EQUIPPABLE) {
+		rputs(ST_ISTATS19); // "Everything already equipped"
+		return DefaultItemIndex;
+	}
+	if (DefaultItemIndex == ITEM_NONE_EQUIPPED) {
+		rputs(ST_ISTATS12); // "Nothing equipped"
+		return DefaultItemIndex;
+	}
+	if (DefaultItemIndex == ITEM_NO_MATCH) {
+		rputs(ST_ISTATS2); // "No items found"
+		return DefaultItemIndex;
+	}
+	DefaultItemIndex++;
+
+	int16_t ItemIndex = (int16_t)GetLong(prompt, DefaultItemIndex, MAX_ITEMS_HELD);
+	if (ItemIndex == 0)
+		return ITEM_SELECTED_ABORT;
+	ItemIndex--;
+
+	/* if that item is non-existant, tell him */
+	if (Clan->Items[ItemIndex].Available == false) {
+		rputs(ST_ISTATS4); // "Item does not exist"
+		return ITEM_SELECTED_INVALID;
+	}
+	if (type != I_ITEM && Clan->Items[ItemIndex].cType != type) {
+		rputs(ST_INVALIDITEM); // "Invalid item!"
+		return ITEM_SELECTED_INVALID;
+	}
+	if (filter == IF_UNUSED) {
+		/* if that item is in use, tell him */
+		if (Clan->Items[ItemIndex].UsedBy != 0) {
+			rputs(ST_ISTATS8); // "Item is still in use.  Stop using it first"
+			return ITEM_SELECTED_INVALID;
+		}
+	}
+	if (filter == IF_USED) {
+		/* if that item is not in use, tell him */
+		if (Clan->Items[ItemIndex].UsedBy == 0) {
+			rputs(ST_ISTATS14); // "Item not in use"
+			return ITEM_SELECTED_INVALID;
+		}
+	}
+	if (filter == IF_CANEQUIP) {
+		if (Clan->Items[ ItemIndex ].cType == I_SCROLL ||
+		    Clan->Items[ ItemIndex ].cType == I_BOOK ||
+		    Clan->Items[ ItemIndex ].cType == I_OTHER) {
+			rputs("|04Can't equip that!\n");
+			return ITEM_SELECTED_INVALID;
+		}
+	}
+
+	return ItemIndex;
+}
+
+void UnequipItemsFromPC(int16_t PC)
+{
+	// Convert from index to ID
+	PC++;
+	for (int16_t iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
+		if (PClan.Items[iTemp].Available && PClan.Items[iTemp].UsedBy == PC)
+			PClan.Items[iTemp].UsedBy = 0;
+	}
+}
 
 // ------------------------------------------------------------------------- //
 void Items_FindTreasureChest(void)
@@ -79,6 +248,10 @@ void Items_FindTreasureChest(void)
 			snprintf(szString, sizeof(szString), ST_TREASURE0, Items.Data[ CurItem ]->szName);
 			strlcpy(szItemName, Items.Data[ CurItem ]->szName, sizeof(szItemName));
 			FoundItem = true;
+			if (YesNo(szString) == YES) {
+				// give item reloads items!
+				Items_GiveItemData(Items.Data[CurItem]);
+			}
 			break;
 		}
 		ChosenItem -= Items.Data[CurItem]->RandLevel;
@@ -89,55 +262,19 @@ void Items_FindTreasureChest(void)
 		LogDisplayStr("Failed to select an item to give you, please file a bug report, you found it fair and square!");
 		return;
 	}
-
-	if (YesNo(szString) == YES) {
-		// give item reloads items!
-		Items_GiveItem(szItemName);
-	}
 }
 
 // ------------------------------------------------------------------------- //
 void ReadBook(void)
 {
-	int16_t DefaultItemIndex, iTemp, ItemIndex, WhichMember;
+	int16_t iTemp, ItemIndex, WhichMember;
 	char cKey, szString[128];
 
 	// which book?
-
-	// see if anything to read
-	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-		if (PClan.Items[iTemp].Available)
-			break;
-	}
-	if (iTemp == MAX_ITEMS_HELD) {
-		rputs(ST_ISTATS2);
+	ItemIndex = ChooseItem(ST_ISTATS3, &PClan, I_BOOK, IF_ANY);
+	if (ItemIndex < 0)
 		return;
-	}
 
-	/* find first item in inventory which is a book */
-	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-		if (PClan.Items[iTemp].Available &&
-				PClan.Items[iTemp].cType == I_BOOK)
-			break;
-	}
-	if (iTemp == MAX_ITEMS_HELD) {
-		rputs("|04No books found.\n");
-		return;
-	}
-	else
-		DefaultItemIndex = iTemp+1;
-
-	ItemIndex = (int16_t) GetLong(ST_ISTATS3, DefaultItemIndex, MAX_ITEMS_HELD);
-	if (ItemIndex == 0)
-		return;
-	ItemIndex--;
-
-	/* if that item is non-existant, tell him */
-	if (PClan.Items[ItemIndex].Available == false ||
-			PClan.Items[ItemIndex].cType != I_BOOK) {
-		rputs(ST_INVALIDITEM);
-		return;
-	}
 	ShowItemStats(&PClan.Items[ItemIndex], &PClan);
 
 	// choose who will read it
@@ -523,26 +660,28 @@ static void Items_Destroy(void)
 }
 
 // ------------------------------------------------------------------------- //
+static void Items_GiveItemData(struct item_data *Item)
+{
+	// see if he has room to carry it
+	int16_t EmptySlot = GetOpenItemSlot(&PClan);
+	if (EmptySlot == -1) {
+		/* no more room in inventory */
+		rputs(ST_ITEMNOMOREROOM);
+		return;
+	}
+
+	PClan.Items[EmptySlot] = *Item;
+	PClan.Items[EmptySlot].UsedBy = 0;
+	PClan.Items[EmptySlot].Available = true;
+}
+
 void Items_GiveItem(char *szItemName)
 /*
  * This function will give the item with the name specified to
  * PClan.
  */
 {
-	int16_t iTemp, EmptySlot/*, ItemIndex*/;
-
-	// see if he has room to carry it
-	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-		if (PClan.Items[iTemp].Available == false)
-			break;
-	}
-	if (iTemp == MAX_ITEMS_HELD) {
-		/* no more room in inventory */
-		rputs(ST_ITEMNOMOREROOM);
-		return;
-	}
-	else
-		EmptySlot = iTemp;
+	int16_t iTemp;
 
 	// load items
 	Items_Init();
@@ -558,9 +697,7 @@ void Items_GiveItem(char *szItemName)
 		return;
 	}
 
-	PClan.Items[EmptySlot] = *Items.Data[iTemp];
-	PClan.Items[EmptySlot].UsedBy = 0;
-	PClan.Items[EmptySlot].Available = true;
+	Items_GiveItemData(Items.Data[iTemp]);
 
 	Items_Close();
 }
@@ -736,18 +873,13 @@ void Item_BuyItem(signed char ItemType)
 
 				/* bought.  see if user has room for item and can afford */
 				/* if can't, kick him out */
-				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan.Items[iTemp].Available == false)
-						break;
-				}
-				if (iTemp == MAX_ITEMS_HELD) {
+				EmptySlot = GetOpenItemSlot(&PClan);
+				if (EmptySlot == -1) {
 					/* no more room in inventory */
 					rputs(ST_ITEMNOMOREROOM);
 					Items_Close();
 					return;
 				}
-				else
-					EmptySlot = iTemp;
 
 				/* see if can afford it */
 				if (PClan.Empire.VaultGold < ItemCosts[Choice - 'A']) {

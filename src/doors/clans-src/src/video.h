@@ -66,7 +66,7 @@ void gotoxy(int, int);
 #endif
 
 void ColorArea(int xPos1, int yPos1, int xPos2, int yPos2, uint8_t Color);
-long DosGetLong(char *Prompt, long DefaultVal, long Maximum);
+long DosGetLong(const char *Prompt, long DefaultVal, long Maximum);
 void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit);
 char get_answer(char *szAllowableChars);
 #ifdef __unix__

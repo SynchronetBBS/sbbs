@@ -927,20 +927,11 @@ static bool Fight_ReadyScroll(struct pc *PC, struct clan *TargetClan, struct mov
 	// list items
 	ListItems(PC->MyClan);
 
-	// choose one
-	ItemIndex = (int16_t)GetLong("|0SWhich scroll to read?", 0, MAX_ITEMS_HELD);
+	ItemIndex = ChooseItem("|0SWhich scroll to read?", PC->MyClan, I_SCROLL, IF_ANY);
 
 	// if not chosen properly, return 0
-	if (ItemIndex == 0) {
+	if (ItemIndex < 0) {
 		rputs(ST_ABORTED);
-		return 0;
-	}
-
-	ItemIndex--;
-
-	if (PC->MyClan->Items[ItemIndex].Available == false ||
-			PC->MyClan->Items[ItemIndex].cType != I_SCROLL) {
-		rputs(ST_INVALIDITEM);
 		return 0;
 	}
 
@@ -1565,29 +1556,10 @@ static void Fight_GiveFollowers(int16_t Level)
 
 }
 
-static int16_t GetOpenItemSlot(struct clan *Clan)
-{
-	// return -1 if no more open slots
-
-	int16_t iTemp;
-
-	// see if he has room to carry it
-	for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-		if (Clan->Items[iTemp].Available == false)
-			break;
-	}
-	if (iTemp == MAX_ITEMS_HELD) {
-		/* no more room in inventory */
-		return -1;
-	}
-	else
-		return iTemp;
-}
-
 static void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 {
 	int16_t ItemIndex, EmptySlot;
-	int16_t DefaultItemIndex, iTemp, ItemsTaken = 0;
+	int16_t ItemsTaken = 0;
 	char szString[100];
 	bool SomethingTaken = false;
 
@@ -1623,15 +1595,9 @@ static void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 					break;
 				}
 
-				ItemIndex = (int16_t) GetLong("|0STake which item?", 0, MAX_ITEMS_HELD);
-				if (ItemIndex == 0)
+				ItemIndex = ChooseItem("|0STake which item?", Clan, I_ITEM, IF_ANY);
+				if (ItemIndex < 0)
 					break;
-				ItemIndex--;
-
-				if (Clan->Items[ItemIndex].Available == false) {
-					rputs(ST_INVALIDITEM);
-					break;
-				}
 
 				// take that item now
 				// if it is equipped, stop equipping it
@@ -1675,37 +1641,10 @@ static void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 			case 'X' :  /* examine item */
 				rputs(ST_ISTATS1);
 
-				/* see if anything to examine */
-				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (Clan->Items[iTemp].Available)
-						break;
-				}
-				if (iTemp == MAX_ITEMS_HELD) {
-					rputs(ST_ISTATS2);
+				ItemIndex = ChooseItem(ST_ISTATS3, &PClan, I_ITEM, IF_ANY);
+				if (ItemIndex < 0)
 					break;
-				}
 
-				/* find first item in inventory */
-				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (Clan->Items[iTemp].Available)
-						break;
-				}
-				if (iTemp == MAX_ITEMS_HELD) {
-					DefaultItemIndex = 1;
-				}
-				else
-					DefaultItemIndex = iTemp+1;
-
-				ItemIndex = (int16_t) GetLong(ST_ISTATS3, DefaultItemIndex, MAX_ITEMS_HELD);
-				if (ItemIndex == 0)
-					break;
-				ItemIndex--;
-
-				/* if that item is non-existant, tell him */
-				if (Clan->Items[ItemIndex].Available == false) {
-					rputs(ST_ISTATS4);
-					break;
-				}
 				ShowItemStats(&Clan->Items[ItemIndex], Clan);
 				break;
 			case 'L' :

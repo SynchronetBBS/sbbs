@@ -924,8 +924,8 @@ static void ItemStats(void)
  */
 {
 	/* modify item stats, assume it's the player */
-	int16_t ItemIndex, OneItemFound;
-	int16_t DefaultItemIndex, iTemp, WhoEquip;
+	int16_t ItemIndex;
+	int16_t iTemp, WhoEquip;
 	char szKeys[11], szString[100], /*szTemp[60],*/ szItemName[25];
 	bool DoneEquipping;
 	int cTemp;
@@ -950,37 +950,10 @@ static void ItemStats(void)
 			case 'X' :  /* examine item */
 				rputs(ST_ISTATS1);
 
-				/* see if anything to examine */
-				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan.Items[iTemp].Available)
-						break;
-				}
-				if (iTemp == MAX_ITEMS_HELD) {
-					rputs(ST_ISTATS2);
+				ItemIndex = ChooseItem(ST_ISTATS3, &PClan, I_ITEM, IF_ANY);
+				if (ItemIndex < 0)
 					break;
-				}
 
-				/* find first item in inventory */
-				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan.Items[iTemp].Available)
-						break;
-				}
-				if (iTemp == MAX_ITEMS_HELD) {
-					DefaultItemIndex = 1;
-				}
-				else
-					DefaultItemIndex = iTemp+1;
-
-				ItemIndex = (int16_t) GetLong(ST_ISTATS3, DefaultItemIndex, MAX_ITEMS_HELD);
-				if (ItemIndex == 0)
-					break;
-				ItemIndex--;
-
-				/* if that item is non-existant, tell him */
-				if (PClan.Items[ItemIndex].Available == false) {
-					rputs(ST_ISTATS4);
-					break;
-				}
 				ShowItemStats(&PClan.Items[ItemIndex], &PClan);
 				break;
 			case 'L' :
@@ -990,43 +963,9 @@ static void ItemStats(void)
 			case 'D' :  /* drop item */
 				rputs(ST_ISTATS6);
 
-				/* see if anything to drop */
-				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan.Items[iTemp].Available)
-						break;
-				}
-				if (iTemp == MAX_ITEMS_HELD) {
-					rputs(ST_ISTATS2);
+				ItemIndex = ChooseItem(ST_ISTATS7, &PClan, I_ITEM, IF_UNUSED);
+				if (ItemIndex < 0)
 					break;
-				}
-
-				/* find first item which is not equipped */
-				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan.Items[iTemp].Available &&
-							PClan.Items[iTemp].UsedBy == 0)
-						break;
-				}
-				if (iTemp == MAX_ITEMS_HELD) {
-					DefaultItemIndex = 1;
-				}
-				else
-					DefaultItemIndex = iTemp+1;
-
-				ItemIndex = (int16_t) GetLong(ST_ISTATS7, DefaultItemIndex, MAX_ITEMS_HELD);
-				if (ItemIndex == 0)
-					break;
-				ItemIndex--;
-
-				/* if that item is non-existant, tell him */
-				if (PClan.Items[ItemIndex].Available == false) {
-					rputs(ST_ISTATS4);
-					break;
-				}
-				/* if that item is in use, tell him */
-				if (PClan.Items[ItemIndex].UsedBy != 0) {
-					rputs(ST_ISTATS8);
-					break;
-				}
 
 				/* still wanna drop it? */
 				snprintf(szString, sizeof(szString), ST_ISTATS9, PClan.Items[ItemIndex].szName);
@@ -1044,46 +983,9 @@ static void ItemStats(void)
 				rputs(ST_ISTATS11);
 
 				/* find first item which is equipped */
-				OneItemFound = false;
-				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan.Items[iTemp].Available &&
-							PClan.Items[iTemp].cType != I_SCROLL &&
-							PClan.Items[iTemp].cType != I_BOOK)
-						OneItemFound = true;
-
-					if (PClan.Items[iTemp].Available &&
-							PClan.Items[iTemp].UsedBy != 0 &&
-							PClan.Items[iTemp].cType != I_SCROLL &&
-							PClan.Items[iTemp].cType != I_BOOK)
-						break;
-				}
-				if (iTemp == MAX_ITEMS_HELD && OneItemFound == true) {
-					rputs(ST_ISTATS12);
+				ItemIndex = ChooseItem(ST_ISTATS13, &PClan, I_ITEM, IF_USED);
+				if (ItemIndex < 0)
 					break;
-				}
-				else if (OneItemFound == false) {
-					rputs(ST_ISTATS2);
-					break;
-				}
-
-				DefaultItemIndex = iTemp+1;
-
-				ItemIndex = (int16_t) GetLong(ST_ISTATS13, DefaultItemIndex, MAX_ITEMS_HELD);
-				if (ItemIndex == 0)
-					break;
-				ItemIndex--;
-
-				/* if that item is non-existant, tell him */
-				if (PClan.Items[ItemIndex].Available == false) {
-					rputs(ST_ISTATS4);
-					break;
-				}
-
-				/* see if not equipped */
-				if (PClan.Items[ItemIndex].UsedBy == 0) {
-					rputs(ST_ISTATS14);
-					break;
-				}
 
 				/* if equipped, take it away from whoever using it */
 				switch (PClan.Items[ ItemIndex ].cType) {
@@ -1121,53 +1023,9 @@ static void ItemStats(void)
 				break;
 			case 'E' :
 				rputs(ST_ISTATS18);
-				/* find first item which is not equipped yet */
-				OneItemFound = false;
-				for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-					if (PClan.Items[iTemp].Available &&
-							PClan.Items[iTemp].cType != I_SCROLL &&
-							PClan.Items[iTemp].cType != I_BOOK)
-						OneItemFound = true;
-
-					if (PClan.Items[iTemp].Available &&
-							PClan.Items[iTemp].UsedBy == 0 &&
-							PClan.Items[iTemp].cType != I_SCROLL &&
-							PClan.Items[iTemp].cType != I_BOOK)
-						break;
-				}
-				if (iTemp == MAX_ITEMS_HELD && OneItemFound == true) {
-					rputs(ST_ISTATS19);
+				ItemIndex = ChooseItem(ST_ISTATS20, &PClan, I_ITEM, IF_CANEQUIP);
+				if (ItemIndex < 0)
 					break;
-				}
-				else if (OneItemFound == false) {
-					rputs(ST_ISTATS2);
-					break;
-				}
-				DefaultItemIndex = iTemp+1;
-
-				ItemIndex = (int16_t) GetLong(ST_ISTATS20, DefaultItemIndex, MAX_ITEMS_HELD);
-				if (ItemIndex == 0)
-					break;
-				ItemIndex--;
-
-				/* if that item is non-existant, tell him */
-				if (PClan.Items[ItemIndex].Available == false) {
-					rputs(ST_ISTATS4);
-					break;
-				}
-
-				/* see if already equipped */
-				if (PClan.Items[ItemIndex].UsedBy != 0) {
-					rputs(ST_ISTATS21);
-					break;
-				}
-
-				if (PClan.Items[ ItemIndex ].cType == I_SCROLL ||
-						PClan.Items[ ItemIndex ].cType == I_BOOK ||
-						PClan.Items[ ItemIndex ].cType == I_OTHER) {
-					rputs("|04Can't equip that!\n");
-					break;
-				}
 
 				DoneEquipping = false;
 				while (!DoneEquipping) {
@@ -2539,7 +2397,7 @@ void User_Maint(void)
 {
 	FILE *fpOldPC, *fpNewPC;
 	struct clan TmpClan = {0};
-	int16_t iTemp, iTemp2, CurItem, Level;
+	int16_t iTemp, CurItem, Level;
 	int32_t XPRequired[MAX_LEVELS];
 
 	LogDisplayStr("* User_Maint()\n");
@@ -2649,13 +2507,7 @@ void User_Maint(void)
 					// is a npc-player
 					//printf("releasing %s\n", TmpClan.Member[iTemp]->szName);
 
-					for (iTemp2 = 0; iTemp2 < MAX_ITEMS_HELD; iTemp2++) {
-						/* if held by deleted char, remove link */
-						if (TmpClan.Items[iTemp2].Available &&
-								TmpClan.Items[iTemp2].UsedBy == iTemp+1) {
-							TmpClan.Items[iTemp2].UsedBy = 0;
-						}
-					}
+					UnequipItemsFromPC(iTemp);
 
 					// delete him now
 					TmpClan.Member[iTemp]->szName[0] = 0;

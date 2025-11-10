@@ -29,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "game.h"
 #include "help.h"
 #include "input.h"
+#include "items.h"
 #include "language.h"
 #include "menus2.h"
 #include "mstrings.h"
@@ -234,14 +235,7 @@ void ReleaseMember(void)
 
 		/* release member */
 		/* release data from his links */
-		for (iTemp = 0; iTemp < MAX_ITEMS_HELD; iTemp++) {
-			/* if held by deleted char, remove link */
-			if (PClan.Items[iTemp].Available &&
-					PClan.Items[iTemp].UsedBy == WhichOne+1) {
-				PClan.Items[iTemp].UsedBy = 0;
-			}
-		}
-
+		UnequipItemsFromPC(WhichOne);
 
 		free(PClan.Member[ WhichOne ]);
 		PClan.Member[ WhichOne ] = NULL;

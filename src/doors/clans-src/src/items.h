@@ -31,4 +31,22 @@ void Items_FindTreasureChest(void);
 
 void ReadBook(void);
 
+// Results
+#define ITEM_NO_MATCH	        -1
+#define ITEM_NONE_EQUIPPED      -2
+#define ITEM_SELECTED_ABORT     -3
+#define ITEM_SELECTED_INVALID   -4
+#define ITEM_NOTHING_EQUIPPABLE -5
+
+int16_t GetOpenItemSlot(struct clan *Clan);
+
+// Item filters
+#define IF_ANY      1
+#define IF_UNUSED   2
+#define IF_USED     3
+#define IF_CANEQUIP 4
+int16_t ChooseItem(const char *prompt, struct clan *Clan, int16_t type, int filter);
+
+void UnequipItemsFromPC(int16_t PC);
+
 #endif
