@@ -149,7 +149,7 @@ void ProcessAttackPacket(struct AttackPacket *AttackPacket)
 	else if (Result.DefenderType == EO_CLAN) {
 		Result.DefenderID[0] = AttackPacket->ClanID[0];
 		Result.DefenderID[1] = AttackPacket->ClanID[1];
-		GetClanNameID(Result.szDefenderName, Result.DefenderID);
+		GetClanNameID(Result.szDefenderName, sizeof(Result.szDefenderName), Result.DefenderID);
 	}
 
 	Result.BBSIDFrom = AttackPacket->BBSFromID;
@@ -1728,7 +1728,7 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 			strlcpy(szDefender, "our village", sizeof(szDefender));
 			break;
 		case EO_CLAN :
-			GetClanNameID(szDefender, AttackResult->DefenderID);
+			GetClanNameID(szDefender, sizeof(szDefender), AttackResult->DefenderID);
 			break;
 		case EO_ALLIANCE :
 			// figure out which one is the defender

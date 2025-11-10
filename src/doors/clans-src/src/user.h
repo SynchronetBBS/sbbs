@@ -48,7 +48,7 @@ int8_t GetStat(struct pc *PC, char Stat);
 
 void ListItems(struct clan *Clan);
 
-bool GetClanNameID(char *szName, int16_t ID[2]);
+bool GetClanNameID(char *szName, size_t sz, int16_t ID[2]);
 
 bool GetClan(int16_t ClanID[2], struct clan *TmpClan);
 

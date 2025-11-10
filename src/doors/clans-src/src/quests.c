@@ -1032,7 +1032,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 							NPCInfo->Topics[ NPCInfo->KnownTopics ].Known = true;
 							NPCInfo->Topics[ NPCInfo->KnownTopics ].ClanInfo = true;
 
-							GetClanNameID(szClanName, NPCNdx.ClanID);
+							GetClanNameID(szClanName, sizeof(szClanName), NPCNdx.ClanID);
 							strlcpy(NPCInfo->Topics[ NPCInfo->KnownTopics ].szName, szClanName, sizeof(NPCInfo->Topics[ NPCInfo->KnownTopics ].szName));
 
 							snprintf(szString, sizeof(szString), "I'm already in a clan called %s.\n\n", szClanName);

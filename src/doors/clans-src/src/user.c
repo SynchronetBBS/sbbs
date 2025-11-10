@@ -2216,10 +2216,9 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 
 // ------------------------------------------------------------------------- //
 
-bool GetClanNameID(char *szName, int16_t ID[2])
+bool GetClanNameID(char *szName, size_t sz, int16_t ID[2])
 {
 	FILE *fpPlayerFile;
-	/*    char szString[255];*/
 	int16_t CurClan = 0;
 	bool FoundClan = false;
 	struct clan TmpClan = {0};
@@ -2248,7 +2247,7 @@ bool GetClanNameID(char *szName, int16_t ID[2])
 		/* see if name is the one */
 		if (TmpClan.ClanID[0] == ID[0] && TmpClan.ClanID[1] == ID[1]) {
 			/* found it! */
-			strlcpy(szName, TmpClan.szName, sizeof(szName));
+			strlcpy(szName, TmpClan.szName, sz);
 			FoundClan = true;
 			break;
 		}

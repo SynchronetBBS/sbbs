@@ -186,7 +186,7 @@ void VotingBooth(void)
 			if (TopCandidates[iTemp][0] == -1)
 				break;
 
-			GetClanNameID(szTop10Names[iTemp], TopCandidates[iTemp]);
+			GetClanNameID(szTop10Names[iTemp], sizeof(szTop10Names[0]), TopCandidates[iTemp]);
 		}
 
 		// show top votes to user
@@ -206,7 +206,7 @@ void VotingBooth(void)
 		rputs(szString);
 
 		if (PClan.ClanRulerVote[0] != -1) {
-			GetClanNameID(szName, ClanID);
+			GetClanNameID(szName, sizeof(szName), ClanID);
 		}
 		else
 			strlcpy(szName, "Undecided", sizeof(szName));
@@ -282,7 +282,7 @@ void ChooseNewLeader(void)
 	}
 
 	// get his name, put it in the news
-	GetClanNameID(szName, NewRulerID);
+	GetClanNameID(szName, sizeof(szName), NewRulerID);
 
 	// if same as yesterday's ruler, just tell people he was re-elected
 	if (NewRulerID[0] == Village.Data.RulingClanId[0] &&

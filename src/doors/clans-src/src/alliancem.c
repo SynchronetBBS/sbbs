@@ -58,7 +58,7 @@ static void RemoveFromAlliance(struct Alliance *Alliance)
 		return;
 	}
 
-	GetClanNameID(szName, ClanID);
+	GetClanNameID(szName, sizeof(szName), ClanID);
 
 	// if it's the creator, tell him he can't
 	if (ClanID[0] == Alliance->CreatorID[0] &&
@@ -576,7 +576,7 @@ bool EnterAlliance(struct Alliance *Alliance)
 			case 'L' :  // list members
 				for (iTemp = 0; iTemp < MAX_ALLIANCEMEMBERS; iTemp++) {
 					if (Alliance->Member[iTemp][0] != -1) {
-						GetClanNameID(szName, Alliance->Member[iTemp]);
+						GetClanNameID(szName, sizeof(szName), Alliance->Member[iTemp]);
 						snprintf(szString, sizeof(szString), "|0A* |0B%s\n", szName);
 						rputs(szString);
 					}
