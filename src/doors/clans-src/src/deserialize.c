@@ -885,7 +885,7 @@ s_clan_d(const void *bufptr, size_t bufsz, struct clan *s)
 	s->TravelHelp = (*src & 0x10 ? 1U : 0U);
 	s->WasRulerToday = (*src & 0x08 ? 1U : 0U);
 	s->MadeAlliance = (*src & 0x04 ? 1U : 0U);
-	s->Protection = (src[0] & 0x03U << 2) | (src[1] & 0xC0U >> 6);
+	s->Protection = ((src[0] & 0x03U) << 2) | ((src[1] & 0xC0U) >> 6);
 	src++;
 	remain--;
 
