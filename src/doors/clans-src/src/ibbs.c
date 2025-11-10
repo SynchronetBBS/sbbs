@@ -3294,10 +3294,6 @@ void IBBS_Init(void)
 		delay(500);
 	}
 
-#ifdef PRELAB
-	printf("IBBS Initializing. -- %lu\n", farcoreleft());
-#endif
-
 	IBBS.Initialized = true;
 
 	IBBS.Data.BBSID = Config.BBSID;
@@ -3317,10 +3313,6 @@ void IBBS_Close(void)
 {
 	if (!IBBS.Initialized)
 		return;
-
-#ifdef PRELAB
-	printf("IBBS Closing. -- %lu\n", farcoreleft());
-#endif
 
 	/* set up interbbsinfo */
 	tIBInfo InterBBSInfo;

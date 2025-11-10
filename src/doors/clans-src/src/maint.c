@@ -62,11 +62,7 @@ void Maintenance(void)
 	// otherwise, run it again
 	// REP: remove false so cheating not allowed
 	if ((DaysBetween(Game.Data.szTodaysDate, System.szTodaysDate) <= 0) &&
-#ifdef PRELAB
-			Game.Data.InterBBS && false)
-#else
 			Game.Data.InterBBS)
-#endif
 	{
 		System_Error("Maintenance already run today.\n");
 	}

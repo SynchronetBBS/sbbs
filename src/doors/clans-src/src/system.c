@@ -370,10 +370,6 @@ void System_Close_AtExit(void)
 		TRACEX("Spells_Close()");
 		Spells_Close();
 
-#ifdef PRELAB
-		printf("post data -- mem left = %lu\n", farcoreleft());
-#endif
-
 		TRACEX("Door_Close()");
 		Door_Close();
 
@@ -396,10 +392,6 @@ void System_Close_AtExit(void)
 
 		TRACEX("Language_Close()");
 		Language_Close();
-
-#ifdef PRELAB
-		printf("Clans End   -- mem left = %lu\n", farcoreleft());
-#endif
 
 		TRACEX("Video_Close()");
 		Video_Close();
@@ -468,10 +460,6 @@ void System_Init(void)
 	else
 		System.szMainDir[0] = 0;
 	free(pszResolvedPath);
-#endif
-
-#ifdef PRELAB
-	printf("Clans Start -- mem left = %lu\n", farcoreleft());
 #endif
 
 	// 12/23/2001 [au] getting rid of time-slicer support
@@ -574,10 +562,6 @@ void System_Init(void)
 		System_Close();
 	}
 
-
-#ifdef PRELAB
-	printf("pre data -- mem left = %lu\n", farcoreleft());
-#endif
 
 	// Clans specific data is loaded here (spells)
 	Spells_Init();

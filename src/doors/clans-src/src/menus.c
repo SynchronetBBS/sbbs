@@ -323,31 +323,6 @@ static int16_t MainMenu(void)
 			case 'N' :  // newbie help
 				GeneralHelp(ST_NEWBIEHLP);
 				break;
-			case '1' :
-				// od_printf("mem = %ld, stack = %u\n\r", farcoreleft(), stackavail());
-				// give gold
-
-#ifdef PRELAB
-
-				Village.Data.MarketQuality = ((Village.Data.MarketQuality+1)%4);
-
-				rputs("Cheat ON!\n");
-				PClan.Empire.VaultGold += 320000;
-				PClan.Empire.Land += 10;
-				PClan.FightsLeft = 20;
-				PClan.QuestToday = false;
-				for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
-					if (PClan.Member[iTemp]) {
-						PClan.Member[iTemp]->Status = Here;
-					}
-				}
-				Fight_Heal(&PClan);
-#else
-				rputs("Debugging flag is off.\n");
-#endif
-
-				door_pause();
-				break;
 			case '2' :  // secret #2
 				if (BannerShown != 2)
 					rputs(ST_SECRET2);

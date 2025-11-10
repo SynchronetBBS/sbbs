@@ -1797,18 +1797,6 @@ void Fight_Monster(int16_t Level, char *szFileName)
 	struct clan EnemyClan = {0};
 
 
-#ifdef PRELAB
-	od_printf("@@Mem: %lu\n\r", MemBefore = farcoreleft());
-
-	rputs("Cheat ON\n");
-	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++)
-		if (PClan.Member[CurMember]) {
-			PClan.Member[CurMember]->HP = PClan.Member[CurMember]->MaxHP;
-			PClan.Member[CurMember]->Status = Here;
-		}
-
-#endif
-
 	if (!PClan.CombatHelp) {
 		PClan.CombatHelp = true;
 		Help("Combat", ST_NEWBIEHLP);
@@ -1851,8 +1839,4 @@ void Fight_Monster(int16_t Level, char *szFileName)
 	}
 
 	Fight_CheckLevelUp();
-
-#ifdef PRELAB
-	od_printf("@@Mem: %lu, %lu\n\r", MemBefore, farcoreleft());
-#endif
 }
