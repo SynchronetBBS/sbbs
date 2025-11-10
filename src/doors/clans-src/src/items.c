@@ -58,33 +58,37 @@ static void Items_Init(void);
 // ------------------------------------------------------------------------- //
 void Items_FindTreasureChest(void)
 {
-	int8_t *RandomTable;
 	char szString[128], szItemName[25];
 	int CurItem;
-	int16_t CurLevel, RandIndex, ChosenItem;
+	int ChosenItem;
+	int RandomRange = 0;
+	bool FoundItem = false;
 
 	Items_Init();
 
-	RandomTable = malloc((size_t)Items.NumItems * 10);
-	CheckMem(RandomTable);
-
-	// generate random table
-	for (CurItem = 0, RandIndex = 0; CurItem < Items.NumItems; CurItem++) {
-		for (CurLevel = 0; CurLevel < Items.Data[CurItem]->RandLevel; CurLevel++) {
-			RandomTable[ RandIndex++ ] = (int8_t)CurItem;
-		}
+	// Calculate the range for the random call
+	for (CurItem = 0; CurItem < Items.NumItems; CurItem++) {
+		RandomRange += Items.Data[CurItem]->RandLevel;
 	}
 
 	// choose one of those items
-	ChosenItem = RandomTable[ my_random(RandIndex)];
+	ChosenItem = my_random(RandomRange);
 
-	// give him that item
-	// snprintf(szString, sizeof(szString), "|07You find |15%s|07. |0STake it?", Items[ ChosenItem ]->szName);
-	snprintf(szString, sizeof(szString), ST_TREASURE0, Items.Data[ ChosenItem ]->szName);
+	for (CurItem = 0; CurItem < Items.NumItems; CurItem++) {
+		if (ChosenItem < Items.Data[CurItem]->RandLevel) {
+			snprintf(szString, sizeof(szString), ST_TREASURE0, Items.Data[ CurItem ]->szName);
+			strlcpy(szItemName, Items.Data[ CurItem ]->szName, sizeof(szItemName));
+			FoundItem = true;
+			break;
+		}
+		ChosenItem -= Items.Data[CurItem]->RandLevel;
+	}
 
-	strlcpy(szItemName, Items.Data[ ChosenItem ]->szName, sizeof(szItemName));
-	free(RandomTable);
 	Items_Close();
+	if (!FoundItem) {
+		LogDisplayStr("Failed to select an item to give you, please file a bug report, you found it fair and square!");
+		return;
+	}
 
 	if (YesNo(szString) == YES) {
 		// give item reloads items!
