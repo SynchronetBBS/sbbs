@@ -842,6 +842,8 @@ void sbbs_read_ini(
 		web->bind_retry_delay = iniGetInteger(list, section, strBindRetryDelay, global->bind_retry_delay);
 		web->login_attempt = get_login_attempt_settings(list, section, global);
 		web->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, WEB_DEFAULT_MAX_CON_CONN);
+		SAFECOPY(web->proxy_ip_header
+		         , iniGetString(list, section, "RemoteIPHeader", nulstr, value));
 	}
 
 	free(global_interfaces);
@@ -1457,6 +1459,8 @@ bool sbbs_write_ini(
 			if (!iniSetUInteger(lp, section, "OutbufDrainTimeout", web->outbuf_drain_timeout, &style))
 				break;
 			if (!iniSetUInteger(lp, section, strMaxConConn, web->max_concurrent_connections, &style))
+				break;
+			if (!iniSetString(lp, section, "RemoteIPHeader", web->proxy_ip_header, &style))
 				break;
 		}
 

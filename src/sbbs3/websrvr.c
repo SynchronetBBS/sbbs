@@ -2709,6 +2709,10 @@ static bool parse_headers(http_session_t * session)
 		if ((strtok_r(head_line, ":", &last)) != NULL && (value = strtok_r(NULL, "", &last)) != NULL) {
 			i = get_header_type(head_line);
 			while (*value && *value <= ' ') value++;
+			if (startup->proxy_ip_header[0] && stricmp(startup->proxy_ip_header, head_line) == 0) {
+				lprintf(LOG_INFO, "%04d %-5s [%s] New IP Address from %s header: %s", session->socket, session->client.protocol, session->host_ip, startup->proxy_ip_header, value);
+				SAFECOPY(session->host_ip, value);
+			}
 			switch (i) {
 				case HEAD_AUTH:
 					/* If you're authenticated via TLS-PSK, you can't use basic or digest */
