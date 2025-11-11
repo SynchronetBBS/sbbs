@@ -291,7 +291,7 @@ struct clan {
 	char szName[25];
 	char Symbol[21];
 
-	int8_t QuestsDone[8], QuestsKnown[8];
+	uint8_t QuestsDone[8], QuestsKnown[8];
 
 	uint8_t PFlags[8], DFlags[8];
 	uint8_t ChatsToday, TradesToday;

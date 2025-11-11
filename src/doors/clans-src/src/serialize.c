@@ -87,7 +87,26 @@
 			pack_int16_t(x[ctro][ctri]);       \
 } while(0)
 
-#define pack_charArr(x) do {        \
+#define pack_charSz(x) do {            \
+	assert(remain >= sizeof(x));    \
+	if (remain < sizeof(x))          \
+		return SIZE_MAX;          \
+	strncpy((char*)dst, x, sizeof(x)); \
+	dst[sizeof(x) - 1] = (char)0;       \
+	dst += sizeof(x);                    \
+	remain -= sizeof(x);                  \
+} while(0)
+
+#define pack_int8Arr(x) do {        \
+	assert(remain >= sizeof(x)); \
+	if (remain < sizeof(x))       \
+		return SIZE_MAX;       \
+	memcpy(dst, x, sizeof(x));      \
+	dst += sizeof(x);                \
+	remain -= sizeof(x);              \
+} while(0)
+
+#define pack_uint8Arr(x) do {       \
 	assert(remain >= sizeof(x)); \
 	if (remain < sizeof(x))       \
 		return SIZE_MAX;       \
@@ -135,10 +154,10 @@ s_MessageHeader_s(const struct MessageHeader *s, void *bufptr, size_t bufsz)
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
 
-	pack_charArr(s->szFromUserName);
-	pack_charArr(s->szToUserName);
-	pack_charArr(s->szSubject);
-	pack_charArr(s->szDateTime);
+	pack_charSz(s->szFromUserName);
+	pack_charSz(s->szToUserName);
+	pack_charSz(s->szSubject);
+	pack_charSz(s->szDateTime);
 	pack_uint16_t(s->wTimesRead);
 	pack_int16_t(s->wDestNode);
 	pack_int16_t(s->wOrigNode);
@@ -203,10 +222,10 @@ s_Message_s(const struct Message *s, void *bufptr, size_t bufsz)
 
 	pack_int16_tArr(s->ToClanID);
 	pack_int16_tArr(s->FromClanID);
-	pack_charArr(s->szFromName);
-	pack_charArr(s->szDate);
-	pack_charArr(s->szAllyName);
-	pack_charArr(s->szFromVillageName);
+	pack_charSz(s->szFromName);
+	pack_charSz(s->szDate);
+	pack_charSz(s->szAllyName);
+	pack_charSz(s->szFromVillageName);
 	pack_int16_t(s->MessageType);
 	pack_int16_t(s->AllianceID);
 	pack_int16_t(s->Flags);
@@ -227,8 +246,8 @@ s_Topic_s(const struct Topic *s, void *bufptr, size_t bufsz)
 	pack_bool(s->Known);
 	pack_bool(s->Active);
 	pack_bool(s->ClanInfo);
-	pack_charArr(s->szName);
-	pack_charArr(s->szFileName);
+	pack_charSz(s->szName);
+	pack_charSz(s->szFileName);
 
 	return (size_t)(dst - (uint8_t *)bufptr);
 }
@@ -257,12 +276,12 @@ s_PClass_s(const struct PClass *s, void *bufptr, size_t bufsz)
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
 
-	pack_charArr(s->szName);
-	pack_charArr(s->Attributes);
+	pack_charSz(s->szName);
+	pack_int8Arr(s->Attributes);
 	pack_int16_t(s->MaxHP);
 	pack_int16_t(s->Gold);
 	pack_int16_t(s->MaxSP);
-	pack_charArr(s->SpellsKnown);
+	pack_int8Arr(s->SpellsKnown);
 	pack_int16_t(s->VillageType);
 
 	return (size_t)(dst - (uint8_t *)bufptr);
@@ -286,7 +305,7 @@ s_SpyAttemptPacket_s(const struct SpyAttemptPacket *s, void *bufptr, size_t bufs
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
 
-	pack_charArr(s->szSpierName);
+	pack_charSz(s->szSpierName);
 	pack_int16_t(s->IntelligenceLevel);
 	pack_int16_t(s->TargetType);
 	pack_int16_tArr(s->ClanID);
@@ -306,10 +325,10 @@ s_SpyResultPacket_s(const struct SpyResultPacket *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->BBSFromID);
 	pack_int16_t(s->BBSToID);
 	pack_int16_tArr(s->MasterID);
-	pack_charArr(s->szTargetName);
+	pack_charSz(s->szTargetName);
 	pack_bool(s->Success);
 	pack_struct(&s->Empire, empire);
-	pack_charArr(s->szTheDate);
+	pack_charSz(s->szTheDate);
 
 	return (size_t)(dst - (uint8_t *)bufptr);
 }
@@ -325,7 +344,7 @@ s_TradeData_s(const struct TradeData *s, void *bufptr, size_t bufsz)
 	pack_bool(s->Active);
 	pack_int16_tArr(s->FromClanID);
 	pack_int16_tArr(s->ToClanID);
-	pack_charArr(s->szFromClan);
+	pack_charSz(s->szFromClan);
 	pack_int32_t(s->Code);
 
 	return (size_t)(dst - (uint8_t *)bufptr);
@@ -355,8 +374,8 @@ s_UserInfo_s(const struct UserInfo *s, void *bufptr, size_t bufsz)
 
 	pack_int16_tArr(s->ClanID);
 	pack_bool(s->Deleted);
-	pack_charArr(s->szMasterName);
-	pack_charArr(s->szName);
+	pack_charSz(s->szMasterName);
+	pack_charSz(s->szName);
 
 	return (size_t)(dst - (uint8_t *)bufptr);
 }
@@ -368,8 +387,8 @@ s_UserScore_s(const struct UserScore *s, void *bufptr, size_t bufsz)
 	uint8_t *dst = bufptr;
 
 	pack_int16_tArr(s->ClanID);
-	pack_charArr(s->Symbol);
-	pack_charArr(s->szName);
+	pack_charSz(s->Symbol);
+	pack_charSz(s->szName);
 	pack_int32_t(s->Points);
 	pack_int16_t(s->BBSID);
 
@@ -382,11 +401,11 @@ s_Spell_s(const struct Spell *s, void *bufptr, size_t bufsz)
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
 
-	pack_charArr(s->szName);
+	pack_charSz(s->szName);
 	pack_int16_t(s->TypeFlag);
 	pack_bool(s->Friendly);
 	pack_bool(s->Target);
-	pack_charArr(s->Attributes);
+	pack_int8Arr(s->Attributes);
 	pack_int8(s->Value);
 	pack_int16_t(s->Energy);
 	pack_int8(s->Level);
@@ -412,12 +431,12 @@ s_pc_s(const struct pc *s, void *bufptr, size_t bufsz)
 	uint8_t *dst = bufptr;
 	int32_t crc;
 
-	pack_charArr(s->szName);
+	pack_charSz(s->szName);
 	pack_int16_t(s->HP);
 	pack_int16_t(s->MaxHP);
 	pack_int16_t(s->SP);
 	pack_int16_t(s->MaxSP);
-	pack_charArr(s->Attributes);
+	pack_int8Arr(s->Attributes);
 	pack_int8(s->Status);
 	pack_int16_t(s->Weapon);
 	pack_int16_t(s->Shield);
@@ -428,7 +447,7 @@ s_pc_s(const struct pc *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->Level);
 	pack_int16_t(s->TrainingPoints);
 	pack_ptr(s->MyClan);
-	pack_charArr(s->SpellsKnown);
+	pack_int8Arr(s->SpellsKnown);
 	pack_structArr(s->SpellsInEffect, SpellsInEffect);
 	pack_int16_t(s->Difficulty);
 	pack_uint8_t((uint8_t)((s->Undead << 7) | s->DefaultAction));
@@ -445,8 +464,8 @@ s_Packet_s(const struct Packet *s, void *bufptr, size_t bufsz)
 	uint8_t *dst = bufptr;
 
 	pack_bool(s->Active);
-	pack_charArr(s->GameID);
-	pack_charArr(s->szDate);
+	pack_charSz(s->GameID);
+	pack_charSz(s->szDate);
 	pack_int16_t(s->BBSIDFrom);
 	pack_int16_t(s->BBSIDTo);
 	pack_int16_t(s->PacketType);
@@ -461,7 +480,7 @@ s_NPCInfo_s(const struct NPCInfo *s, void *bufptr, size_t bufsz)
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
 
-	pack_charArr(s->szName);
+	pack_charSz(s->szName);
 	pack_structArr(s->Topics, Topic);
 	pack_struct(&s->IntroTopic, Topic);
 	pack_int8(s->Loyalty);
@@ -471,10 +490,10 @@ s_NPCInfo_s(const struct NPCInfo *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->KnownTopics);
 	pack_int16_t(s->MaxTopics);
 	pack_int16_t(s->OddsOfSeeing);
-	pack_charArr(s->szHereNews);
-	pack_charArr(s->szQuoteFile);
-	pack_charArr(s->szMonFile);
-	pack_charArr(s->szIndex);
+	pack_charSz(s->szHereNews);
+	pack_charSz(s->szQuoteFile);
+	pack_charSz(s->szMonFile);
+	pack_charSz(s->szIndex);
 	pack_int16_t(s->VillageType);
 
 	return (size_t)(dst - (uint8_t *)bufptr);
@@ -486,7 +505,7 @@ s_NPCNdx_s(const struct NPCNdx *s, void *bufptr, size_t bufsz)
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
 
-	pack_charArr(s->szIndex);
+	pack_charSz(s->szIndex);
 	pack_bool(s->InClan);
 	pack_int16_tArr(s->ClanID);
 	pack_int16_t(s->WhereWander);
@@ -501,7 +520,7 @@ s_Language_s(const struct Language *s, void *bufptr, size_t bufsz)
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
 
-	pack_charArr(s->Signature);
+	pack_charSz(s->Signature);
 	pack_uint16_tArr(s->StrOffsets);
 	pack_uint16_t(s->NumBytes);
 	pack_ptr(s->BigString);
@@ -516,7 +535,7 @@ s_Alliance_s(const struct Alliance *s, void *bufptr, size_t bufsz)
 	uint8_t *dst = bufptr;
 
 	pack_int16_t(s->ID);
-	pack_charArr(s->szName);
+	pack_charSz(s->szName);
 	pack_int16_tArr(s->CreatorID);
 	pack_int16_tArr(s->OriginalCreatorID);
 	pack_int16_tArr2(s->Member, MAX_ALLIANCEMEMBERS, 2);
@@ -534,14 +553,14 @@ s_game_data_s(const struct game_data *s, void *bufptr, size_t bufsz)
 
 	pack_int16_t(s->GameState);
 	pack_bool(s->InterBBS);
-	pack_charArr(s->szTodaysDate);
-	pack_charArr(s->szDateGameStart);
-	pack_charArr(s->szLastJoinDate);
+	pack_charSz(s->szTodaysDate);
+	pack_charSz(s->szDateGameStart);
+	pack_charSz(s->szLastJoinDate);
 	pack_int16_t(s->NextClanID);
 	pack_int16_t(s->NextAllianceID);
-	pack_charArr(s->szWorldName);
-	pack_charArr(s->LeagueID);
-	pack_charArr(s->GameID);
+	pack_charSz(s->szWorldName);
+	pack_charSz(s->LeagueID);
+	pack_charSz(s->GameID);
 	pack_bool(s->ClanTravel);
 	pack_int16_t(s->LostDays);
 	pack_int16_t(s->MaxPermanentMembers);
@@ -562,15 +581,15 @@ s_village_data_s(const struct village_data *s, void *bufptr, size_t bufsz)
 	uint8_t *dst = bufptr;
 	int32_t crc;
 
-	pack_charArr(s->ColorScheme);
-	pack_charArr(s->szName);
+	pack_int8Arr(s->ColorScheme);
+	pack_charSz(s->szName);
 	pack_int16_t(s->TownType);
 	pack_int16_t(s->TaxRate);
 	pack_int16_t(s->InterestRate);
 	pack_int16_t(s->GST);
 	pack_int16_t(s->ConscriptionRate);
 	pack_int16_tArr(s->RulingClanId);
-	pack_charArr(s->szRulingClan);
+	pack_charSz(s->szRulingClan);
 	pack_int16_t(s->GovtSystem);
 	pack_int16_t(s->RulingDays);
 	pack_uint16_t(s->PublicMsgIndex);
@@ -602,8 +621,8 @@ s_village_data_s(const struct village_data *s, void *bufptr, size_t bufsz)
 	*(dst++) |= (s->ShowEmpireStats << 6);
 	remain--;
 
-	pack_charArr(s->HFlags);
-	pack_charArr(s->GFlags);
+	pack_uint8Arr(s->HFlags);
+	pack_uint8Arr(s->GFlags);
 	pack_int16_t(s->VillageType);
 	pack_int16_t(s->CostFluctuation);
 	pack_int16_t(s->MarketQuality);
@@ -620,7 +639,7 @@ s_EventHeader_s(const struct EventHeader *s, void *bufptr, size_t bufsz)
 	size_t remain = bufsz;
 	uint8_t *dst = bufptr;
 
-	pack_charArr(s->szName);
+	pack_charSz(s->szName);
 	pack_int32_t(s->EventSize);
 	pack_bool(s->Event);
 
@@ -634,7 +653,7 @@ s_FileHeader_s(const struct FileHeader *s, void *bufptr, size_t bufsz)
 	uint8_t *dst = bufptr;
 
 	pack_ptr(s->fp);
-	pack_charArr(s->szFileName);
+	pack_charSz(s->szFileName);
 	pack_int32_t(s->lStart);
 	pack_int32_t(s->lEnd);
 	pack_int32_t(s->lFileSize);
@@ -714,10 +733,10 @@ s_AttackResult_s(const struct AttackResult *s, void *bufptr, size_t bufsz)
 	pack_int16_t(s->AttackerType);
 	pack_int16_tArr(s->AttackerID);
 	pack_int16_t(s->AllianceID);
-	pack_charArr(s->szAttackerName);
+	pack_charSz(s->szAttackerName);
 	pack_int16_t(s->DefenderType);
 	pack_int16_tArr(s->DefenderID);
-	pack_charArr(s->szDefenderName);
+	pack_charSz(s->szDefenderName);
 	pack_int16_t(s->BBSIDFrom);
 	pack_int16_t(s->BBSIDTo);
 	pack_int16_t(s->PercentDamage);
@@ -745,12 +764,12 @@ s_item_data_s(const struct item_data *s, void *bufptr, size_t bufsz)
 
 	pack_bool(s->Available);
 	pack_int16_t(s->UsedBy);
-	pack_charArr(s->szName);
+	pack_charSz(s->szName);
 	pack_int8(s->cType);
 	pack_bool(s->Special);
 	pack_int16_t(s->SpellNum);
-	pack_charArr(s->Attributes);
-	pack_charArr(s->ReqAttributes);
+	pack_int8Arr(s->Attributes);
+	pack_int8Arr(s->ReqAttributes);
 	pack_int32_t(s->lCost);
 	pack_bool(s->DiffMaterials);
 	pack_int16_t(s->Energy);
@@ -770,7 +789,7 @@ s_empire_s(const struct empire *s, void *bufptr, size_t bufsz)
 	uint8_t *dst = bufptr;
 	int32_t crc;
 
-	pack_charArr(s->szName);
+	pack_charSz(s->szName);
 	pack_int16_t(s->OwnerType);
 	pack_int32_t(s->VaultGold);
 	pack_int16_t(s->Land);
@@ -795,19 +814,19 @@ s_clan_s(const struct clan *s, void *bufptr, size_t bufsz)
 	int32_t crc;
 
 	pack_int16_tArr(s->ClanID);
-	pack_charArr(s->szUserName);
-	pack_charArr(s->szName);
-	pack_charArr(s->Symbol);
-	pack_charArr(s->QuestsDone);
-	pack_charArr(s->QuestsKnown);
-	pack_charArr(s->PFlags);
-	pack_charArr(s->DFlags);
+	pack_charSz(s->szUserName);
+	pack_charSz(s->szName);
+	pack_charSz(s->Symbol);
+	pack_uint8Arr(s->QuestsDone);
+	pack_uint8Arr(s->QuestsKnown);
+	pack_uint8Arr(s->PFlags);
+	pack_uint8Arr(s->DFlags);
 	pack_uint8_t(s->ChatsToday);
 	pack_uint8_t(s->TradesToday);
 	pack_int16_tArr(s->ClanRulerVote);
 	pack_int16_tArr(s->Alliances);
 	pack_int32_t(s->Points);
-	pack_charArr(s->szDateOfLastGame);
+	pack_charSz(s->szDateOfLastGame);
 	pack_int16_t(s->FightsLeft);
 	pack_int16_t(s->ClanFights);
 	pack_int16_t(s->MineLevel);

@@ -92,13 +92,32 @@ noreturn void System_Error(char *szErrorMsg);
 			unpack_int16_t(x[ctro][ctri]);     \
 } while(0)
 
-#define unpack_charArr(x) do {      \
+#define unpack_uint8Arr(x) do {     \
 	assert(remain >= sizeof(x)); \
 	if (remain < sizeof(x))       \
 		return SIZE_MAX;       \
 	memcpy(x, src, sizeof(x));      \
 	src += sizeof(x);                \
 	remain -= sizeof(x);              \
+} while(0)
+
+#define unpack_int8Arr(x) do {      \
+	assert(remain >= sizeof(x)); \
+	if (remain < sizeof(x))       \
+		return SIZE_MAX;       \
+	memcpy(x, src, sizeof(x));      \
+	src += sizeof(x);                \
+	remain -= sizeof(x);              \
+} while(0)
+
+#define unpack_charSz(x) do {          \
+	assert(remain >= sizeof(x));    \
+	if (remain < sizeof(x))          \
+		return SIZE_MAX;          \
+	strncpy(x, (char*)src, sizeof(x)); \
+	x[sizeof(x) - 1] = (char)0;         \
+	src += sizeof(x);                    \
+	remain -= sizeof(x);                  \
 } while(0)
 
 #define unpack_ptr(x) do {    \
@@ -146,10 +165,10 @@ s_MessageHeader_d(const void *bufptr, size_t bufsz, struct MessageHeader *s)
 	size_t remain = bufsz;
 	const uint8_t *src = bufptr;
 
-	unpack_charArr(s->szFromUserName);
-	unpack_charArr(s->szToUserName);
-	unpack_charArr(s->szSubject);
-	unpack_charArr(s->szDateTime);
+	unpack_charSz(s->szFromUserName);
+	unpack_charSz(s->szToUserName);
+	unpack_charSz(s->szSubject);
+	unpack_charSz(s->szDateTime);
 	unpack_uint16_t(s->wTimesRead);
 	unpack_int16_t(s->wDestNode);
 	unpack_int16_t(s->wOrigNode);
@@ -214,10 +233,10 @@ s_Message_d(const void *bufptr, size_t bufsz, struct Message *s)
 
 	unpack_int16_tArr(s->ToClanID);
 	unpack_int16_tArr(s->FromClanID);
-	unpack_charArr(s->szFromName);
-	unpack_charArr(s->szDate);
-	unpack_charArr(s->szAllyName);
-	unpack_charArr(s->szFromVillageName);
+	unpack_charSz(s->szFromName);
+	unpack_charSz(s->szDate);
+	unpack_charSz(s->szAllyName);
+	unpack_charSz(s->szFromVillageName);
 	unpack_int16_t(s->MessageType);
 	unpack_int16_t(s->AllianceID);
 	unpack_int16_t(s->Flags);
@@ -238,8 +257,8 @@ s_Topic_d(const void *bufptr, size_t bufsz, struct Topic *s)
 	unpack_bool(s->Known);
 	unpack_bool(s->Active);
 	unpack_bool(s->ClanInfo);
-	unpack_charArr(s->szName);
-	unpack_charArr(s->szFileName);
+	unpack_charSz(s->szName);
+	unpack_charSz(s->szFileName);
 
 	return (size_t)(src - (uint8_t *)bufptr);
 }
@@ -268,12 +287,12 @@ s_PClass_d(const void *bufptr, size_t bufsz, struct PClass *s)
 	size_t remain = bufsz;
 	const uint8_t *src = bufptr;
 
-	unpack_charArr(s->szName);
-	unpack_charArr(s->Attributes);
+	unpack_charSz(s->szName);
+	unpack_int8Arr(s->Attributes);
 	unpack_int16_t(s->MaxHP);
 	unpack_int16_t(s->Gold);
 	unpack_int16_t(s->MaxSP);
-	unpack_charArr(s->SpellsKnown);
+	unpack_int8Arr(s->SpellsKnown);
 	unpack_int16_t(s->VillageType);
 
 	return (size_t)(src - (uint8_t *)bufptr);
@@ -297,7 +316,7 @@ s_SpyAttemptPacket_d(const void *bufptr, size_t bufsz, struct SpyAttemptPacket *
 	size_t remain = bufsz;
 	const uint8_t *src = bufptr;
 
-	unpack_charArr(s->szSpierName);
+	unpack_charSz(s->szSpierName);
 	unpack_int16_t(s->IntelligenceLevel);
 	unpack_int16_t(s->TargetType);
 	unpack_int16_tArr(s->ClanID);
@@ -317,10 +336,10 @@ s_SpyResultPacket_d(const void *bufptr, size_t bufsz, struct SpyResultPacket *s)
 	unpack_int16_t(s->BBSFromID);
 	unpack_int16_t(s->BBSToID);
 	unpack_int16_tArr(s->MasterID);
-	unpack_charArr(s->szTargetName);
+	unpack_charSz(s->szTargetName);
 	unpack_bool(s->Success);
 	unpack_struct(&s->Empire, empire);
-	unpack_charArr(s->szTheDate);
+	unpack_charSz(s->szTheDate);
 
 	return (size_t)(src - (uint8_t *)bufptr);
 }
@@ -336,7 +355,7 @@ s_TradeData_d(const void *bufptr, size_t bufsz, struct TradeData *s)
 	unpack_bool(s->Active);
 	unpack_int16_tArr(s->FromClanID);
 	unpack_int16_tArr(s->ToClanID);
-	unpack_charArr(s->szFromClan);
+	unpack_charSz(s->szFromClan);
 	unpack_int32_t(s->Code);
 
 	return (size_t)(src - (uint8_t *)bufptr);
@@ -366,8 +385,8 @@ s_UserInfo_d(const void *bufptr, size_t bufsz, struct UserInfo *s)
 
 	unpack_int16_tArr(s->ClanID);
 	unpack_bool(s->Deleted);
-	unpack_charArr(s->szMasterName);
-	unpack_charArr(s->szName);
+	unpack_charSz(s->szMasterName);
+	unpack_charSz(s->szName);
 
 	return (size_t)(src - (uint8_t *)bufptr);
 }
@@ -379,8 +398,8 @@ s_UserScore_d(const void *bufptr, size_t bufsz, struct UserScore *s)
 	const uint8_t *src = bufptr;
 
 	unpack_int16_tArr(s->ClanID);
-	unpack_charArr(s->Symbol);
-	unpack_charArr(s->szName);
+	unpack_charSz(s->Symbol);
+	unpack_charSz(s->szName);
 	unpack_int32_t(s->Points);
 	unpack_int16_t(s->BBSID);
 
@@ -394,11 +413,11 @@ s_Spell_d(const void *bufptr, size_t bufsz, struct Spell *s)
 	const uint8_t *src = bufptr;
 	uint8_t tmp;
 
-	unpack_charArr(s->szName);
+	unpack_charSz(s->szName);
 	unpack_int16_t(s->TypeFlag);
 	unpack_bool(s->Friendly);
 	unpack_bool(s->Target);
-	unpack_charArr(s->Attributes);
+	unpack_int8Arr(s->Attributes);
 	unpack_int8(s->Value);
 	unpack_int16_t(s->Energy);
 	unpack_int8(s->Level);
@@ -425,12 +444,12 @@ s_pc_d(const void *bufptr, size_t bufsz, struct pc *s)
 	const uint8_t *src = bufptr;
 	uint8_t tmp;
 
-	unpack_charArr(s->szName);
+	unpack_charSz(s->szName);
 	unpack_int16_t(s->HP);
 	unpack_int16_t(s->MaxHP);
 	unpack_int16_t(s->SP);
 	unpack_int16_t(s->MaxSP);
-	unpack_charArr(s->Attributes);
+	unpack_int8Arr(s->Attributes);
 	unpack_int8(s->Status);
 	unpack_int16_t(s->Weapon);
 	unpack_int16_t(s->Shield);
@@ -441,7 +460,7 @@ s_pc_d(const void *bufptr, size_t bufsz, struct pc *s)
 	unpack_int16_t(s->Level);
 	unpack_int16_t(s->TrainingPoints);
 	unpack_ptr(s->MyClan);
-	unpack_charArr(s->SpellsKnown);
+	unpack_int8Arr(s->SpellsKnown);
 	unpack_structArr(s->SpellsInEffect, SpellsInEffect);
 	unpack_int16_t(s->Difficulty);
 	unpack_uint8_t(tmp);
@@ -463,8 +482,8 @@ s_Packet_d(const void *bufptr, size_t bufsz, struct Packet *s)
 	const uint8_t *src = bufptr;
 
 	unpack_bool(s->Active);
-	unpack_charArr(s->GameID);
-	unpack_charArr(s->szDate);
+	unpack_charSz(s->GameID);
+	unpack_charSz(s->szDate);
 	unpack_int16_t(s->BBSIDFrom);
 	unpack_int16_t(s->BBSIDTo);
 	unpack_int16_t(s->PacketType);
@@ -479,7 +498,7 @@ s_NPCInfo_d(const void *bufptr, size_t bufsz, struct NPCInfo *s)
 	size_t remain = bufsz;
 	const uint8_t *src = bufptr;
 
-	unpack_charArr(s->szName);
+	unpack_charSz(s->szName);
 	unpack_structArr(s->Topics, Topic);
 	unpack_struct(&s->IntroTopic, Topic);
 	unpack_int8(s->Loyalty);
@@ -489,10 +508,10 @@ s_NPCInfo_d(const void *bufptr, size_t bufsz, struct NPCInfo *s)
 	unpack_int16_t(s->KnownTopics);
 	unpack_int16_t(s->MaxTopics);
 	unpack_int16_t(s->OddsOfSeeing);
-	unpack_charArr(s->szHereNews);
-	unpack_charArr(s->szQuoteFile);
-	unpack_charArr(s->szMonFile);
-	unpack_charArr(s->szIndex);
+	unpack_charSz(s->szHereNews);
+	unpack_charSz(s->szQuoteFile);
+	unpack_charSz(s->szMonFile);
+	unpack_charSz(s->szIndex);
 	unpack_int16_t(s->VillageType);
 
 	return (size_t)(src - (uint8_t *)bufptr);
@@ -504,7 +523,7 @@ s_NPCNdx_d(const void *bufptr, size_t bufsz, struct NPCNdx *s)
 	size_t remain = bufsz;
 	const uint8_t *src = bufptr;
 
-	unpack_charArr(s->szIndex);
+	unpack_charSz(s->szIndex);
 	unpack_bool(s->InClan);
 	unpack_int16_tArr(s->ClanID);
 	unpack_int16_t(s->WhereWander);
@@ -519,7 +538,7 @@ s_Language_d(const void *bufptr, size_t bufsz, struct Language *s)
 	size_t remain = bufsz;
 	const uint8_t *src = bufptr;
 
-	unpack_charArr(s->Signature);
+	unpack_charSz(s->Signature);
 	unpack_uint16_tArr(s->StrOffsets);
 	unpack_uint16_t(s->NumBytes);
 	unpack_ptr(s->BigString);
@@ -534,7 +553,7 @@ s_Alliance_d(const void *bufptr, size_t bufsz, struct Alliance *s)
 	const uint8_t *src = bufptr;
 
 	unpack_int16_t(s->ID);
-	unpack_charArr(s->szName);
+	unpack_charSz(s->szName);
 	unpack_int16_tArr(s->CreatorID);
 	unpack_int16_tArr(s->OriginalCreatorID);
 	unpack_int16_tArr2(s->Member, MAX_ALLIANCEMEMBERS, 2);
@@ -551,14 +570,14 @@ s_game_data_d(const void *bufptr, size_t bufsz, struct game_data *s)
 
 	unpack_int16_t(s->GameState);
 	unpack_bool(s->InterBBS);
-	unpack_charArr(s->szTodaysDate);
-	unpack_charArr(s->szDateGameStart);
-	unpack_charArr(s->szLastJoinDate);
+	unpack_charSz(s->szTodaysDate);
+	unpack_charSz(s->szDateGameStart);
+	unpack_charSz(s->szLastJoinDate);
 	unpack_int16_t(s->NextClanID);
 	unpack_int16_t(s->NextAllianceID);
-	unpack_charArr(s->szWorldName);
-	unpack_charArr(s->LeagueID);
-	unpack_charArr(s->GameID);
+	unpack_charSz(s->szWorldName);
+	unpack_charSz(s->LeagueID);
+	unpack_charSz(s->GameID);
 	unpack_bool(s->ClanTravel);
 	unpack_int16_t(s->LostDays);
 	unpack_int16_t(s->MaxPermanentMembers);
@@ -581,15 +600,15 @@ s_village_data_d(const void *bufptr, size_t bufsz, struct village_data *s)
 	size_t remain = bufsz;
 	const uint8_t *src = bufptr;
 
-	unpack_charArr(s->ColorScheme);
-	unpack_charArr(s->szName);
+	unpack_int8Arr(s->ColorScheme);
+	unpack_charSz(s->szName);
 	unpack_int16_t(s->TownType);
 	unpack_int16_t(s->TaxRate);
 	unpack_int16_t(s->InterestRate);
 	unpack_int16_t(s->GST);	
 	unpack_int16_t(s->ConscriptionRate);
 	unpack_int16_tArr(s->RulingClanId);
-	unpack_charArr(s->szRulingClan);
+	unpack_charSz(s->szRulingClan);
 	unpack_int16_t(s->GovtSystem);
 	unpack_int16_t(s->RulingDays);
 	unpack_uint16_t(s->PublicMsgIndex);
@@ -617,8 +636,8 @@ s_village_data_d(const void *bufptr, size_t bufsz, struct village_data *s)
 	s->ShowEmpireStats = (*(src++) & 0x40) ? 1U : 0U;
 	remain--;
 
-	unpack_charArr(s->HFlags);
-	unpack_charArr(s->GFlags);
+	unpack_uint8Arr(s->HFlags);
+	unpack_uint8Arr(s->GFlags);
 	unpack_int16_t(s->VillageType);
 	unpack_int16_t(s->CostFluctuation);
 	unpack_int16_t(s->MarketQuality);
@@ -638,7 +657,7 @@ s_EventHeader_d(const void *bufptr, size_t bufsz, struct EventHeader *s)
 	size_t remain = bufsz;
 	const uint8_t *src = bufptr;
 
-	unpack_charArr(s->szName);
+	unpack_charSz(s->szName);
 	unpack_int32_t(s->EventSize);
 	unpack_bool(s->Event);
 
@@ -652,7 +671,7 @@ s_FileHeader_d(const void *bufptr, size_t bufsz, struct FileHeader *s)
 	const uint8_t *src = bufptr;
 
 	unpack_ptr(s->fp);
-	unpack_charArr(s->szFileName);
+	unpack_charSz(s->szFileName);
 	unpack_int32_t(s->lStart);
 	unpack_int32_t(s->lEnd);
 	unpack_int32_t(s->lFileSize);
@@ -735,10 +754,10 @@ s_AttackResult_d(const void *bufptr, size_t bufsz, struct AttackResult *s)
 	unpack_int16_t(s->AttackerType);
 	unpack_int16_tArr(s->AttackerID);
 	unpack_int16_t(s->AllianceID);
-	unpack_charArr(s->szAttackerName);
+	unpack_charSz(s->szAttackerName);
 	unpack_int16_t(s->DefenderType);
 	unpack_int16_tArr(s->DefenderID);
-	unpack_charArr(s->szDefenderName);
+	unpack_charSz(s->szDefenderName);
 	unpack_int16_t(s->BBSIDFrom);
 	unpack_int16_t(s->BBSIDTo);
 	unpack_int16_t(s->PercentDamage);
@@ -769,12 +788,12 @@ s_item_data_d(const void *bufptr, size_t bufsz, struct item_data *s)
 
 	unpack_bool(s->Available);
 	unpack_int16_t(s->UsedBy);
-	unpack_charArr(s->szName);
+	unpack_charSz(s->szName);
 	unpack_int8(s->cType);
 	unpack_bool(s->Special);
 	unpack_int16_t(s->SpellNum);
-	unpack_charArr(s->Attributes);
-	unpack_charArr(s->ReqAttributes);
+	unpack_int8Arr(s->Attributes);
+	unpack_int8Arr(s->ReqAttributes);
 	unpack_int32_t(s->lCost);
 	unpack_bool(s->DiffMaterials);
 	unpack_int16_t(s->Energy);
@@ -793,7 +812,7 @@ s_empire_d(const void *bufptr, size_t bufsz, struct empire *s)
 	size_t remain = bufsz;
 	const uint8_t *src = bufptr;
 
-	unpack_charArr(s->szName);
+	unpack_charSz(s->szName);
 	unpack_int16_t(s->OwnerType);
 	unpack_int32_t(s->VaultGold);
 	unpack_int16_t(s->Land);
@@ -821,19 +840,19 @@ s_clan_d(const void *bufptr, size_t bufsz, struct clan *s)
 	const uint8_t *src = bufptr;
 
 	unpack_int16_tArr(s->ClanID);
-	unpack_charArr(s->szUserName);
-	unpack_charArr(s->szName);
-	unpack_charArr(s->Symbol);
-	unpack_charArr(s->QuestsDone);
-	unpack_charArr(s->QuestsKnown);
-	unpack_charArr(s->PFlags);
-	unpack_charArr(s->DFlags);
+	unpack_charSz(s->szUserName);
+	unpack_charSz(s->szName);
+	unpack_charSz(s->Symbol);
+	unpack_uint8Arr(s->QuestsDone);
+	unpack_uint8Arr(s->QuestsKnown);
+	unpack_uint8Arr(s->PFlags);
+	unpack_uint8Arr(s->DFlags);
 	unpack_uint8_t(s->ChatsToday);
 	unpack_uint8_t(s->TradesToday);
 	unpack_int16_tArr(s->ClanRulerVote);
 	unpack_int16_tArr(s->Alliances);
 	unpack_int32_t(s->Points);
-	unpack_charArr(s->szDateOfLastGame);
+	unpack_charSz(s->szDateOfLastGame);
 	unpack_int16_t(s->FightsLeft);
 	unpack_int16_t(s->ClanFights);
 	unpack_int16_t(s->MineLevel);
