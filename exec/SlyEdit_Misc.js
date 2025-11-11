@@ -4427,6 +4427,10 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 		// Behavior settings
 		var behaviorSettings = userSettingsFile.iniGetObject("BEHAVIOR");
 		userSettingsFile.close();
+		// In case behaviorSettings is null/invalid for some reason, ensure
+		// it's an object.
+		if (behaviorSettings == null || typeof(behaviorSettings) !== "object")
+			behaviorSettings = {};
 		// The following are all boolean properties/settings:
 		var boolPropNames = ["enableTaglines", "promptSpellCheckOnSave", "wrapQuoteLines", "joinQuoteLinesWhenWrapping",
 		                     "useQuoteLineInitials", "indentQuoteLinesWithInitials", "trimSpacesFromQuoteLines",

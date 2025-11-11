@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.92d
-                        Release date: 2025-10-26
+                              Version 1.92e
+                        Release date: 2025-11-11
 
                                   by
 
@@ -1011,6 +1011,10 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.92e    2025-11-11   When loading user settings, if the settings object is null
+                      or invalid for some reason, ensure it's an object. This
+                      this should fix GiitLab issue #1006, filed by Fernando
+                      Toledo.
 1.92d    2025-10-26   New user setting to allow users to toggle for themselves
                       whether to use Ctrl-Q to quote (if not, Ctrl-Y will be
                       used). The SlyEdit configuration option ctrlQQuote is now
