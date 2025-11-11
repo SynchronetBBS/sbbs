@@ -2533,7 +2533,7 @@ HandleMessagePacket(FILE* fp, const char *szFileName)
 static void
 HandleScoreDataPacket(FILE* fp)
 {
-	struct UserScore* UserScores[MAX_USERS];
+	struct UserScore* UserScores[MAX_USERS] = {0};
 	int16_t iTemp, NumScores;
 
 	EncryptRead16(&NumScores, fp, XOR_PACKET);
