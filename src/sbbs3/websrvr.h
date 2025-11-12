@@ -114,6 +114,7 @@ static ini_bitdesc_t web_options[] = {
 	{ BBS_OPT_NO_RECYCLE, "NO_RECYCLE"           },
 	{ BBS_OPT_NO_JAVASCRIPT, "NO_JAVASCRIPT"        },
 	{ BBS_OPT_MUTE, "MUTE"                 },
+	{ BBS_OPT_HAPROXY_PROTO, "HAPROXY_PROTO" },
 
 	/* terminator */
 	{ 0, NULL                   }
