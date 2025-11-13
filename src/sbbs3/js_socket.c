@@ -2532,7 +2532,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 			break;
 		case SOCK_PROP_TLS_ENHANCED_CERTCHECK:
 			JS_ValueToBoolean(cx, *vp, &b);
-			p->tls_enhanced_certcheck = !b;
+			p->tls_enhanced_certcheck = b;
 			break;
 	}
 
