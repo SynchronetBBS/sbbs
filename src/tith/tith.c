@@ -1,3 +1,4 @@
+#include <setjmp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,6 +83,8 @@ TITH_main(int argc, char **argv, void *handle)
 		tith_logError("No nodes specified");
 	cfg = tith_readConfig(cfname);
 	free(cfname);
+	if (setjmp(tith_exitJmpBuf))
+		return EXIT_FAILURE;
 	if (isServer)
 		return tith_server(handle);
 	return(tith_client(argc - firstNonOpt, &argv[firstNonOpt], handle));

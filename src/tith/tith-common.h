@@ -1,6 +1,7 @@
 #ifndef TITH_COMMON_HEADER
 #define TITH_COMMON_HEADER
 
+#include <setjmp.h>
 #include <stdnoreturn.h>
 
 #include "hydro/hydrogen.h"
@@ -12,6 +13,7 @@
 extern hydro_kx_session_keypair tith_sessionKeyPair;
 extern bool tith_encrypting;
 extern void *tith_handle;
+extern jmp_buf tith_exitJmpBuf;
 
 noreturn void tith_logError(const char *str);
 void tith_freeTLV(struct TITH_TLV *tlv);

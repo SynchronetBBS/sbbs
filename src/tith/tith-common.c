@@ -16,6 +16,7 @@ bool tith_encrypting;
 static uint64_t rxMsgId;
 static uint64_t txMsgId;
 void *tith_handle;
+jmp_buf tith_exitJmpBuf;
 
 char *tith_strDup(const char *str)
 {
@@ -32,7 +33,7 @@ tith_logError(const char *str)
 {
 	logString(str);
 	closeConnection(tith_handle);
-	exit(EXIT_FAILURE);
+	longjmp(tith_exitJmpBuf, EXIT_FAILURE);
 }
 
 static uint64_t
