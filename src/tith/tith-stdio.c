@@ -64,7 +64,8 @@ closeConnection(void *handle)
 void
 logString(const char *str)
 {
-	fprintf(stdout, "%s\n", str);
+	fprintf(stderr, "%s\n", str);
+	fflush(stderr);
 }
 
 int

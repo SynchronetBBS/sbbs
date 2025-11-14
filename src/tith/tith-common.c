@@ -350,7 +350,7 @@ tith_validateCmd(struct TITH_TLV *tlv, enum TITH_Type command, int numargs, ...)
 	for (int i = 0; i < numargs; i++) {
 		int required = va_arg(ap, int);
 		enum TITH_Type type = va_arg(ap, enum TITH_Type);
-		if (tlv->next->type != type) {
+		if (tlv->next == NULL || tlv->next->type != type) {
 			if (required)
 				tith_logError("Missing required type");
 		}
