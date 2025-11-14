@@ -235,8 +235,11 @@ function parse_news_header(hdr, line)
 			break;
 
 		case "references":
-			if(!hdr.reply_id && data.length)
-				hdr.reply_id = data.match(/<[^\<]*>$/);
+			if(!hdr.reply_id && data.length) {
+				var match = data.match(/<[^\<]*>$/);
+				if(match !== null && match.length)
+					hdr.reply_id = match[0];
+			}
 			// fall-through
 		default:
 			if(hdr.field_list==undefined)
