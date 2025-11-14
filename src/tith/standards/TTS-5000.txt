@@ -5,7 +5,8 @@ TITH                                              THIS ISN'T THAT HARD
 Publication:  TTS-5000
 Revision:     1
 Title:        The Distribution Nodelist
-Author(s):    Stephen Hurd
+Author(s):    FTSC Members, Administrator, Honoured Guests and
+              Stephen Hurd
 Date:         2025-11-14
 ======================================================================
 
