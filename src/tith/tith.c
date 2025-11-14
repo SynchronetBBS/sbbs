@@ -55,7 +55,8 @@ TITH_main(int argc, char **argv, void *handle)
 				switch (*arg) {
 					case 'k':
 						genKeyPair();
-						exit(EXIT_SUCCESS);
+						tith_cleanup();
+						return EXIT_SUCCESS;
 						break;
 					case 'c':
 						arg++;
