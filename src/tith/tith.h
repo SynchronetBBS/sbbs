@@ -65,4 +65,7 @@ struct TITH_TLV {
 	uint8_t *value;
 };
 
+extern void *handle;
+extern struct TITH_Config *cfg;
+
 #endif

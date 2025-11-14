@@ -8,40 +8,20 @@
 #include "tith-config.h"
 
 int
-main(int argc, char **argv)
+tith_client(int argc, char **argv, void *handle)
 {
 	char *cfname = NULL;
 	char *source = NULL;
 	char *dest = NULL;
-	for (int i = 1; i < argc; i++) {
-		if (argv[i][0] == '-' || argv[i][0] == '/') {
-			char *arg = &argv[i][1];
-			while (*arg) {
-				switch (*arg) {
-					case 'c':
-						arg++;
-						free(cfname);
-						if (*arg)
-							cfname = StrDup(arg);
-						else {
-							i++;
-							cfname = StrDup(argv[i]);
-						}
-						break;
-					default:
-						tith_logError("Bad argument");
-				}
-			}
+	tith_handle = handle;
+	for (int i = 0; i < argc; i++) {
+		if (!dest) {
+			dest = argv[i];
+			tith_validateAddress(dest);
 		}
-		else {
-			if (!dest) {
-				dest = argv[i];
-				validateAddress(dest);
-			}
-			else if (!cfname) {
-				source = argv[i];
-				validateAddress(source);
-			}
+		else if (!cfname) {
+			source = argv[i];
+			tith_validateAddress(source);
 		}
 	}
 	if (!dest)
@@ -78,10 +58,10 @@ main(int argc, char **argv)
 
 	cmd = tith_getCmd();
 	tith_validateCmd(cmd, TITH_LHP2, 1, TITH_REQUIRED, TITH_KK_Packet2);
-	if (hydro_kx_kk_3(&client_state, &sessionKeyPair, cmd->next->value, &sn->kp))
+	if (hydro_kx_kk_3(&client_state, &tith_sessionKeyPair, cmd->next->value, &sn->kp))
 		tith_logError("Handshake failed");
 	tith_freeTLV(cmd);
-	encrypting = true;
+	tith_encrypting = true;
 
 	cmd = tith_allocCmd(TITH_Info);
 	tith_addData(cmd, TITH_Message, 15, "HelloFromClient");

@@ -1,4 +1,4 @@
-all: tith-server tith-client nodelist
+all: tith nodelist
 -include $(OBJDIR)*.d
 
 CFLAGS	+=	-std=c11 -MMD -MP -D_C11_SOURCE
@@ -9,19 +9,15 @@ else
  LDFLAGS+=	-Oz -flto -fwhole-program -s
 endif
 
-SERVER_OBJS := \
+TITH_OBJS := \
 	base64.o \
 	hydro/hydrogen.o \
+	tith.o \
 	tith-common.o \
 	tith-config.o \
-	tith-server.o
-
-CLIENT_OBJS := \
-	base64.o \
-	hydro/hydrogen.o \
-	tith-common.o \
-	tith-config.o \
-	tith-client.o
+	tith-client.o \
+	tith-server.o \
+	tith-stdio.o
 
 NODELIST_OBJS := \
 	nodelist.o \
@@ -31,14 +27,11 @@ NODELIST_OBJS := \
 $(OBJDIR)%.o: %.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-tith-server: $(SERVER_OBJS)
-	$(CC) $(LDFLAGS) $^ -o $@
-
-tith-client: $(CLIENT_OBJS)
+tith: $(TITH_OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
 
 nodelist: $(NODELIST_OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
 
 clean:
-	rm -f *.o *.d hydro/*.o hydro/*.d tith-server tith-client nodelist
+	rm -f *.o *.d hydro/*.o hydro/*.d tith nodelist

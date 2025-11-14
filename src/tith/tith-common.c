@@ -4,19 +4,20 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "tith-common.h"
+#include "tith-interface.h"
 
-hydro_kx_session_keypair sessionKeyPair;
-bool encrypting;
+hydro_kx_session_keypair tith_sessionKeyPair;
+bool tith_encrypting;
 
 static uint64_t rxMsgId;
 static uint64_t txMsgId;
+void *tith_handle;
 
-char *StrDup(const char *str)
+char *tith_strDup(const char *str)
 {
 	size_t sz = strlen(str);
 	char *ret = malloc(sz + 1);
@@ -29,7 +30,8 @@ char *StrDup(const char *str)
 noreturn void
 tith_logError(const char *str)
 {
-	fprintf(stderr, "%s\n", str);
+	logString(str);
+	closeConnection(tith_handle);
 	exit(EXIT_FAILURE);
 }
 
@@ -81,10 +83,10 @@ getNumber(uint64_t *remain)
 	for (;;) {
 		if (remain && *remain == 0)
 			tith_logError("Reading number past end");
-		int ch = getchar();
+		int ch = getByte(tith_handle);
 		if (remain)
 			*remain -= 1;
-		if (ch == EOF)
+		if (ch == -1)
 			tith_logError("EOF on getchar() in getNumber()");
 		gotbits += 7;
 		if (gotbits > 63)
@@ -148,18 +150,18 @@ struct TITH_TLV *
 tith_getCmd(void)
 {
 	enum TITH_Type type = getCmd(NULL);
-	if (encrypting && type != TITH_Encrypted)
+	if (tith_encrypting && type != TITH_Encrypted)
 		tith_logError("Non-encrypted command on encrypted channel");
 	uint64_t len = getNumber(NULL);
 	struct TITH_TLV *ret = allocTLV(type, len);
-	if (fread(ret->value, len, 1, stdin) != 1)
+	if (!getBytes(tith_handle, ret->value, len))
 		tith_logError("Error reading command");
-	if (encrypting) {
+	if (tith_encrypting) {
 		uint64_t plainTextLen = len - hydro_secretbox_HEADERBYTES;
 		uint8_t *plainText = malloc(plainTextLen);
 		if (plainText == NULL)
 			tith_logError("malloc() error in getCmd()");
-		if (hydro_secretbox_decrypt(plainText, ret->value, ret->length, rxMsgId++, "TITHctx", sessionKeyPair.rx))
+		if (hydro_secretbox_decrypt(plainText, ret->value, ret->length, rxMsgId++, "TITHctx", tith_sessionKeyPair.rx))
 			tith_logError("decryption failure");
 		tith_freeTLV(ret);
 		uint64_t offset = 0;
@@ -250,7 +252,7 @@ tith_sendCmd(struct TITH_TLV *cmd)
 	}
 	if (offset != len)
 		tith_logError("offset/len mismatch!");
-	if (encrypting) {
+	if (tith_encrypting) {
 		uint64_t encryptedValueLen = len + hydro_secretbox_HEADERBYTES;
 		uint64_t encryptedLen = encryptedValueLen;
 		encryptedLen += numLen(TITH_Encrypted);
@@ -261,18 +263,18 @@ tith_sendCmd(struct TITH_TLV *cmd)
 		offset = 0;
 		offset += sendNumber(TITH_Encrypted, &encBuffer[offset]);
 		offset += sendNumber(encryptedValueLen, &encBuffer[offset]);
-		if (hydro_secretbox_encrypt(&encBuffer[offset], buffer, len, txMsgId++, "TITHctx", sessionKeyPair.tx))
+		if (hydro_secretbox_encrypt(&encBuffer[offset], buffer, len, txMsgId++, "TITHctx", tith_sessionKeyPair.tx))
 			tith_logError("encrypt() failure");
 		free(buffer);
-		if (fwrite(encBuffer, encryptedLen, 1, stdout) != 1)
+		if (!sendBytes(tith_handle, encBuffer, encryptedLen))
 			tith_logError("Failed to write TLV data");
 	}
 	else {
-		if (fwrite(buffer, offset, 1, stdout) != 1)
+		if (!sendBytes(tith_handle, buffer, offset))
 			tith_logError("Failed to write TLV data");
 		free(buffer);
 	}
-	if (fflush(stdout) == EOF)
+	if (!flushWrite(tith_handle))
 		tith_logError("fflush(stdout) failed");
 }
 
@@ -294,7 +296,7 @@ validateAddrPart(const char **addr)
 }
 
 void
-validateAddress(const char *addr)
+tith_validateAddress(const char *addr)
 {
 	/*
 	 * A valid address is the following sequence

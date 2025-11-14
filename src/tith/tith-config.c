@@ -36,7 +36,7 @@ splitKeyValue(char *str, char **key, char **val)
 static void
 addNode(struct TITH_Config **config, const char *key, const char *value)
 {
-	validateAddress(key);
+	tith_validateAddress(key);
 	for (size_t i = 0; i < (*config)->nodes; i++) {
 		if (strcmp((*config)->node[i].FTNaddress, key) == 0)
 			tith_logError("Duplicate node in config");
@@ -45,9 +45,9 @@ addNode(struct TITH_Config **config, const char *key, const char *value)
 	if (newConfig == NULL)
 		tith_logError("realloc() failure");
 	*config = newConfig;
-	(*config)->node[(*config)->nodes].FTNaddress = StrDup(key);
+	(*config)->node[(*config)->nodes].FTNaddress = tith_strDup(key);
 	if ((*config)->node[(*config)->nodes].FTNaddress == NULL)
-		tith_logError("StrDup() failed in addNode()");
+		tith_logError("tith_strDup() failed in addNode()");
 	b64_decode((*config)->node[(*config)->nodes].kp.pk, sizeof((*config)->node[(*config)->nodes].kp.pk), value);
 	char *p = strchr(value, ',');
 	if (p) {
@@ -95,16 +95,16 @@ tith_readConfig(const char *configFile)
 		if (strcmp(key, "Outbound") == 0) {
 			if (ret->outbound)
 				tith_logError("Multiple Outbounds in config");
-			ret->outbound = StrDup(val);
+			ret->outbound = tith_strDup(val);
 			if (ret->outbound == NULL)
-				tith_logError("StrDup() failed in tith_readConfig()");
+				tith_logError("tith_strDup() failed in tith_readConfig()");
 		}
 		else if (strcmp(key, "Inbound") == 0) {
 			if (ret->inbound)
 				tith_logError("Multiple Inbounds in config");
-			ret->inbound = StrDup(val);
+			ret->inbound = tith_strDup(val);
 			if (ret->inbound == NULL)
-				tith_logError("StrDup() failed in tith_readConfig()");
+				tith_logError("tith_strDup() failed in tith_readConfig()");
 		}
 		else
 			addNode(&ret, key, val);
