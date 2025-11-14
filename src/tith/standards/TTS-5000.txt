@@ -264,13 +264,11 @@ Contents
 
      For a Region entry, this number is the region number.  A net
      number of equal value is implied, and the node number is zero.
-     Region numbers must be unique within each zone, but it is
-     recommended future Region numbers be unique across the entire
-     network for better 2D compatibility.
+     Region numbers must be unique within each zone.
 
      For a Host entry, this number is the net number, and the node
      number is zero.  As with Region numbers, net numbers must be
-     unique within each zone, but should be fully unique if possible.
+     unique within each zone.
 
      Because the node number zero is reserved for Zone, Region and
      Host entries, the value "0" is strictly forbidden in this field.
@@ -290,7 +288,7 @@ Contents
      This is the physical location of the node.
 
      Generally, this is expressed as the primary local area (town,
-     suburb, city, etc.) and where applicable, an comma and space,
+     suburb, city, etc.) and where applicable, a comma and space,
      followed by the abbreviation of the regional geopolitical
      administrative district (state, province, department, county,
      etc.).
@@ -344,11 +342,11 @@ Contents
 
      Type: string.
 
-     Contains a comma (U+2C) separated list of flags that are used to
-     decide when a node is available and what services can be used.
-     FTS-5001.006 defines these in sections 5.2 (Modem Connection
-     Protocol Flags), 5.3 (Session Level Error-correction and
-     Compression Flags), and 5.8 (ISDN Capability Flags).
+     Contains a comma (U+2C) separated list of flags that are used
+     when dialing with PSTN or ISDN.  FTS-5001.006 defines these in
+     sections 5.2 (Modem Connection Protocol Flags), 5.3 (Session
+     Level Error-correction and Compression Flags), and 5.8 (ISDN
+     Capability Flags).
 
      See FTS-5001 for details on the flag fields.  Ignore any length
      restrictions specified in that document.
@@ -361,7 +359,7 @@ Contents
      make a direct connection over the public internet. FTS-5001.006
      defines these in sections 5.9.1 (Internet Protocol Flags), 5.9.2
      (Server Address Flags), and 5.9.3 (Internet Information Flags).
-     Note however, that the ICM flag does *not* go in this field, but
+     Note however, that the ICM flag does not go in this field, but
      rather goes in Field 7 (System Flags).
 
      If the the INA: flag is present, it MUST be the first flag in
