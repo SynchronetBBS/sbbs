@@ -1,0 +1,449 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TTS-5000
+Revision:     1
+Title:        The Distribution Nodelist
+Author(s):    Stephen Hurd
+Date:         2025-11-14
+======================================================================
+
+Status of this document
+-----------------------
+
+  This document is a TITH Technical Standard (TTS) - it specifies
+  the current technical requirements and recommendations for TITH
+  software developers, coordinators and sysops of the Fidonet network
+  and other networks using FTN technology.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+--------
+
+  Current practice for Fidonet Technology Networks (FTN) is to
+  maintain a nodelist used to store the details of the nodes in the
+  network, and the network structure.
+
+
+Contents
+--------
+
+  1.  Introduction
+  2.  Supersessions
+  3.  Purpose
+  4.  Publication and Distribution
+  5.  Content
+      5.1  Comment Lines
+      5.2  Special Header
+      5.3  Data lines
+  6.  Nodediffs
+  7.  Segments
+
+  A.  References
+  B.  History
+
+======================================================================
+
+
+1. Introduction
+---------------
+
+  Fidonet is a peer-to-peer network utilising multiple different, and
+  often incompatible, communication technologies that are independent
+  of Fidonet itself, and is organised into a particular hierarchy for
+  both technical and management purposes.
+
+  For direct communication, it is necessary that the originating node
+  knows in advance the exact method and capabilities of the destina-
+  tion node in order to determine if, when, and how a direct Fidonet
+  mail session can be established.  For routing and management, the
+  stated hierarchy must also be known.
+
+  All this information is collected into a file called the "nodelist".
+
+  While nodelists of various flavours and completeness are in use, the
+  "Distribution Nodelist" is the official record of all Fidonet nodes,
+  their operators, their capabilities and their relation to each other
+  in the network hierarchy.  In essence, the nodelist defines Fidonet.
+
+
+2. Supersessions
+----------------
+
+  FTS-0005 superseded and replaced the documents known under the names
+  of FSC-0002, and FTS-0002.
+
+  FTS-5000 superseded and replaced the documents known under the name
+  of FTS-0005.
+
+  This document supersedes and replaces FTS-5000.
+
+
+3. Purpose
+----------
+
+  Along with the companion technical standard (FTS-5001) this document
+  defines the format and content of Fidonet's distribution nodelist.
+
+  Unlike most TITH documents, the nodelist standards are not only
+  aimed at developers, but also at maintainers of Fidonet (and other
+  Fidonet Technology Networks) nodelist segments.  While nodelist
+  segment maintainers should try to be quite strict in their adherence
+  to this document, it is recommended that software developers be
+  prepared to accept deviations from this standard, especially with
+  regard to field and line size.
+
+  It is assumed you're already familiar with Fidonet structure and
+  addressing terminology.
+
+
+4. Publication and Distribution
+-------------------------------
+
+  The Distribution Nodelist uses the filename TITH-nodelist.nnn, where
+  nnn is the day-of-year of publication, starting at 001 for the first
+  day of January.  Partial and/or alternate nodelists must use some
+  other base filename (i.e. in place of TITH-nodelist).
+
+  For actual distribution, TITH-nodelist.nnn is packed into an archive
+  file named TITH-nodelist.nnn.zstd.
+
+  The ZSTD format is presently the official TITH standard, although
+  others may be distributed in addition.
+
+
+5. Content
+----------
+
+  The nodelist is a flat text file containing any number of lines,
+  encoded in UTF-8.
+
+  For the remainder of this document, characters in the range U+00
+  to U+1F, plus U+7F, shall be called "control characters".
+
+  Every line must be terminated with a line feed (U+0A).  Fields are
+  separated with tabs (U+09).  No other control characters are
+  permitted anywhere in the nodelist.
+
+
+5.1. Comment Lines
+------------------
+
+  Comment lines begin with a semicolon (U+3B) in the first character
+  position followed by zero or more alphabetic characters called
+  "interest flags."  A program which processes the nodelist may use
+  comment interest flags to determine the disposition of a comment
+  line.  The remainder of a comment line (with one exception, treated
+  below) is free-form text.
+
+  There are five interest flags defined as follows:
+
+     ;S This comment is of particular interest to Sysops.
+
+     ;U This comment is of particular interest to BBS users.
+
+     ;F This comment should appear in any formatted "Fido List."
+
+     ;A This comment is of general interest (shorthand for ;SUF).
+
+     ;E This comment is an error message inserted by a nodelist
+        generating program.
+
+     ;  This comment may be ignored by a nodelist processor.
+
+
+5.2.  Data lines
+----------------
+
+  A nodelist data line contains exactly eleven (11) variable length
+  fields separated by tabs (U+09), defined below.  Each data line is
+  a record/entry for an individual Fidonet node.
+
+  All printable Unicode characters are allowed in all string fields
+  unless specified otherwise.
+
+  Field 1: Keyword
+
+    Type: string;  Length: 1 to 6.
+
+    The keyword field defines the type of node, and will either be
+    empty or contain exactly one of the keywords defined below,
+    grouped by functional class.
+
+    No other keywords are valid in the distribution nodelist at this
+    time, but private nodelist distributions may include other node
+    types by marking them appropriately in this field.  One common
+    example is the "Point" keyword.  See FTS-5002 for the pointlist
+    specification.
+
+    It is recommended that future implementations allow for keywords
+    of unlimited length.
+
+    Full/Member Nodes -- these are the system numbers of individual
+    Fidonet members.  See [Policy] for details on Fidonet membership.
+
+      <empty>
+        Defines a normal node entry.
+
+      Pvt
+        This keyword defines a Private node (see Policy v4.07,
+        Section 2.1.9) - i.e. a node that is operational, but
+        not publicly available for direct contact. When this keyword
+        is used, field six should by empty, and no ineternet or email
+        addresses should be specified in flags fields. 
+
+        If the originating node cannot contact the destination node,
+        mail may instead be routed via its Hub or Host.
+
+        Pvt entries are only allowed as members of local networks.
+
+      Hold
+        Defines a node which is operational but cannot be publicly
+        contacted.  This is expected to be a temporary condition.
+
+        Mail may be sent to such nodes, routed via its Hub, Host or
+        Coordinator, or held locally by the originating node until the
+        Hold keyword is removed.
+
+      Down
+        Defines a node which is not operational.  This is expected to
+        be (semi-)permanent.  Mail may NOT be sent or routed to it.
+
+    Administrative Nodes -- these nodes indicate the beginning of a
+    branch in the Fidonet addressing/management hierarchy.
+
+    Each branch may contain one or more administrative nodes of lower
+    tier, or any of the above member node types unless stated
+    otherwise.
+
+    Since the nodelist is a flat file, a branch is simply terminated
+    at the next administrative node of equal or higher tier (or EOF).
+
+    Member nodes are always part of an administrative branch, and may
+    never appear at the top level of the nodelist.
+
+    In order from highest to lowest:
+
+      Zone
+        Begins the definition of a geographic zone and defines its
+        coordinator.  A zone is also a logical region AND net.
+
+        Normal nodes immediately below a Zone node, and before any
+        other administrative nodes, are Zone Independent Nodes.
+
+      Region
+        Begins the definition of a geographic region and defines its
+        coordinator.  A region is also a logical net.
+
+        Normal nodes immediately below a Region node, and before any
+        other administrative nodes, are Region Independent Nodes.
+
+      Host
+        Begins the definition of a local network (net) and normally
+        defines its coordinator (see FTS-5001 for the override flag).
+
+      Hub
+        Begins the definition of a routing subunit within a multilevel
+        local network.
+
+
+  Field 2: Node number
+
+     Type: integer;  Range: 1 to 32767;  Length: 1 to 5.
+
+     For member nodes and Hubs (which are treated as member nodes as
+     far as addressing goes), this number is the node number, and must
+     be unique within their local network.
+
+     For a Zone entry, this number is the zone number.  A region and
+     net number of equal value is implied, and the node number is
+     zero.  Zone numbers must be unique across the entire network.
+
+     For a Region entry, this number is the region number.  A net
+     number of equal value is implied, and the node number is zero.
+     Region numbers must be unique within each zone, but it is
+     recommended future Region numbers be unique across the entire
+     network for better 2D compatibility.
+
+     For a Host entry, this number is the net number, and the node
+     number is zero.  As with Region numbers, net numbers must be
+     unique within each zone, but should be fully unique if possible.
+
+     Because the node number zero is reserved for Zone, Region and
+     Host entries, the value "0" is strictly forbidden in this field.
+
+
+  Field 3: Node name
+
+     Type: string.
+
+     This is the name by which the system is known.
+
+
+  Field 4: Location
+
+     Type: string.
+
+     This is the physical location of the node.
+
+     Generally, this is expressed as the primary local area (town,
+     suburb, city, etc.) and where applicable, an comma and space,
+     followed by the abbreviation of the regional geopolitical
+     administrative district (state, province, department, county,
+     etc.).
+
+
+  Field 5: Sysop name
+
+     Type: string.
+
+     This is the name of the Fidonet member responsible for the node.
+
+     The name SHOULD be a valid user of the node.  That is to say that
+     netmail addressed to this name should reach a Sysop.
+
+
+  Field 6: Phone number (PSTN or ISDN)
+
+     Type: string;  Length: 3 to 29 (theoretically);  Characters:
+     digits and dashes.
+
+     This field is either empty, or contains two or more numeric
+     subfields separated by dashes (U+2D). The first field is the
+     country code. The rest of the phone number should be formatted
+     according to local practise.
+
+     The various parts of the phone number may be used to derive cost
+     and routing information, as well as what number is to be dialled.
+     A typical example of the data in a phone number field is
+     1-800-555-0100, corresponding to country 1 (USA), area 800 (area
+     code), exchange 555, and number 0100.
+
+     Alternatively, this field may be empty if the node has no
+     conventional phone number. Software must recognize the empty
+     string as an indicator to never attempt to dial this node by
+     PSTN/ISDN.
+
+
+  Field 7: System Flags
+
+     Type: string.
+
+     Contains a comma (U+2C) separated list of flags that are used to
+     decide when a node is available and what services can be used.
+     Currently (as of FTS-5001.006), this consists of the CM, ICM, MN,
+     XA, XB, XC, XP, XR, XW, XX, #nn, !nn, and Tyz flags.
+
+     See FTS-5001 for details on the flag fields.  Ignore any length
+     restrictions specified in that document.
+
+  Field 8: PSTN/ISDN Flags
+
+     Type: string.
+
+     Contains a comma (U+2C) separated list of flags that are used to
+     decide when a node is available and what services can be used.
+     FTS-5001.006 defines these in sections 5.2 (Modem Connection
+     Protocol Flags), 5.3 (Session Level Error-correction and
+     Compression Flags), and 5.8 (ISDN Capability Flags).
+
+     See FTS-5001 for details on the flag fields.  Ignore any length
+     restrictions specified in that document.
+
+  Field 9: Internet Flags
+
+     Type: string.
+
+     Contains a comma (U+2C) separated list of flags that are used to
+     make a direct connection over the public internet. FTS-5001.006
+     defines these in sections 5.9.1 (Internet Protocol Flags), 5.9.2
+     (Server Address Flags), and 5.9.3 (Internet Information Flags).
+     Note however, that the ICM flag does *not* go in this field, but
+     rather goes in Field 7 (System Flags).
+
+     If the the INA: flag is present, it MUST be the first flag in
+     this field.
+
+     See FTS-5001 for details on the flag fields.  Ignore any length
+     restrictions specified in that document.
+
+  Field 10: Email Flags
+
+     Type: string.
+
+     Contains a comma (U+2C) separated list of flags that are used to
+     pass traffic via STD 11 ARPA Internet Text Messages (E-Mail).
+     FTS-5001.006 defines these in sections 5.9.4 (Email Protocol
+     Flags), and 5.9.5 (E-mail Adress Flags).
+
+     If the IEM: flag is present with an email address, it MUST be the
+     first flag in this field.
+
+     See FTS-5001 for details on the flag fields.  Ignore any length
+     restrictions specified in that document.
+
+  Field 11: Other Flags
+
+     Type: string.
+
+     Contains a comma (U+2C) separated list of flags that are not
+     carried in other flags fields..
+
+     See FTS-5001 for details on the flag fields.  Ignore any length
+     restrictions specified in that document.
+
+
+6. Segments
+-----------
+
+  Segments are partial nodelists, usually containing only one complete
+  branch of nodes, starting at the relevant zone, region, host or hub
+  node.  The Distribution Nodelist is also referred to as a composite
+  nodelist, as it is assembled from multiple zone-lists.
+
+  The format and structure is the same as the Distribution Nodelist,
+  including the header, with a base filename of local invention,
+  usually derived from the contents of the segment (e.g.
+  TITH-N712list.nnn or TITH-N712seg.nnn for a segment containing all
+  the nodes in Net 712).
+
+  To generate the Distribution Nodelist, segments propagate up through
+  the network's administrative hierarchy, each tier compiling segments
+  from the tier immediately below, then passing on the resulting
+  segment to the next tier upstream.
+
+  For example, a Network Coordinator will collect Hub Segments from
+  all the hubs in the same local network, compile it into a Network
+  Segment, and forward it on to the Regional Coordinator.  And so on.
+
+  Segments can also be sent back downstream - this is most commonly
+  done with Zone Nodelists.  Nodes that do not need to attempt direct
+  contact with nodes in other zones can use the Zone Nodelist instead
+  of the full composite nodelist, saving on storage space and
+  transmission time.
+
+
+A. References
+-------------
+
+  [FTS-0005] "The distribution nodelist", Ben Baker, Rick Moore.
+  February 1989. Obsoleted by this document.
+
+  [FTS-5000] "The Distribution Nodelist", FTSC Members, Administrator
+  and Honoured Guests.  January 2014. Obsoleted by this document.
+
+  [FTA-1006] "Keywords to indicate requirement levels"
+  FTSC, 2000-01-17.
+
+  [Policy] "FidoNet Policy Document" v4.07 - June 9, 1989.
+
+
+B. History
+----------
+
+   Rev.1, 2025-11-14: Initial Release. Slightly modified from FTS-5000
+
+**********************************************************************
