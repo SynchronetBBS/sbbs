@@ -23,6 +23,11 @@ CLIENT_OBJS := \
 	tith-config.o \
 	tith-client.o
 
+NODELIST_OBJS := \
+	nodelist.o \
+	tith-file.o \
+	tith-nodelist.o
+
 $(OBJDIR)%.o: %.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -32,7 +37,7 @@ tith-server: $(SERVER_OBJS)
 tith-client: $(CLIENT_OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
 
-nodelist: nodelist.o
+nodelist: $(NODELIST_OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
 
 clean:

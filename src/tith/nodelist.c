@@ -7,6 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "tith-file.h"
+#include "tith-nodelist.h"
+
 /*
  * Generates a TITH nodelist from a standard nodelist
  * 
@@ -75,35 +78,8 @@
  * (but can't delete flags that are present in the official nodelist).
  */
 
-static struct NodelistAddr {
-	uint16_t zone;
-	uint16_t net;
-	uint16_t node;
-} curAddr = {0};
-
-static const char *const keywords[] = {
-	"",
-	"Down",
-	"Hold",
-	"Host",
-	"Hub",
-	"Pvt",
-	"Region",
-	"Zone",
-};
-
 static size_t line = 0;
-static enum lineType {
-	TYPE_Normal,
-	TYPE_Down,
-	TYPE_Hold,
-	TYPE_Host,
-	TYPE_Hub,
-	TYPE_Private,
-	TYPE_Region,
-	TYPE_Zone,
-	TYPE_Unknown
-} type = TYPE_Unknown;
+static struct TITH_NodelistAddr curAddr;
 
 static void
 stripend(char *line)
@@ -133,65 +109,6 @@ getfield(char *line, char **end)
 		*end = NULL;
 	stripend(line);
 	return line;
-}
-
-int
-bstrcmp(const void *key, const void *val)
-{
-	return strcmp((const char *)key, *(const char **)val);
-}
-
-enum lineType
-parseKeyword(const char *kw)
-{
-	const char **kws = bsearch(kw, keywords, sizeof(keywords) / sizeof(keywords[0]), sizeof(keywords[0]), bstrcmp);
-	type = kws ? (enum lineType)(kws - keywords) : TYPE_Unknown;
-	switch (type) {
-		case TYPE_Zone:
-			curAddr.zone = 0;
-			// Fallthrough
-		case TYPE_Region:
-		case TYPE_Host:
-			curAddr.net = 0;
-			// Fallthrough
-		case TYPE_Hub:
-		case TYPE_Normal:
-		case TYPE_Private:
-		case TYPE_Hold:
-		case TYPE_Down:
-			curAddr.node = 0;
-			break;
-		default:
-			fprintf(stderr, "Unhandled Keyword \"%s\", line %zu, skipped\n", kw, line);
-			return (enum lineType)type;
-	}
-	fprintf(stdout, "%s\t", kw);
-	return (enum lineType)type;
-}
-
-bool
-parseNodeNumber(const char *str)
-{
-	char *end;
-	long val = strtol(str, &end, 10);
-	if (val < 1 || val > 32767 || end == NULL || *end) {
-		fprintf(stderr, "Invalid node number %s line %zu", str, line);
-		return false;
-	}
-	switch(type) {
-		case TYPE_Zone:
-			curAddr.zone = (uint16_t)val;
-			// Fallthrough
-		case TYPE_Region:
-		case TYPE_Host:
-			curAddr.net = (uint16_t)val;
-			break;
-		default:
-			curAddr.node = (uint16_t)val;
-			break;
-	}
-	fprintf(stdout, "%ld\t", val);
-	return true;
 }
 
 void
@@ -303,7 +220,7 @@ appendFlag(char **list, const char *flag)
 }
 
 struct Overrides {
-	struct NodelistAddr addr;
+	struct TITH_NodelistAddr addr;
 	char *flags;		// FL
 	char *location;		// LO
 	char *nodeName;		// NN
@@ -313,103 +230,11 @@ struct Overrides {
 struct Overrides *override;
 size_t overrides;
 
-char *
-readLine(FILE *fp)
-{
-	char *ret = malloc(1);
-	if (ret == NULL) {
-		fprintf(stderr, "Failed to allocate a single byte\n");
-		exit(EXIT_FAILURE);
-	}
-	*ret = 0;
-	size_t sz = 1;
-	size_t len = 0;
-	for (;;) {
-		int ch = fgetc(fp);
-		if (ch == EOF) {
-			if (len == 0) {
-				free(ret);
-				return NULL;
-			}
-			fprintf(stderr, "End of file not at start of line\n");
-			exit(EXIT_FAILURE);
-		}
-		if (ch < 0 || ch > 0xFF) {
-			fprintf(stderr, "fgetc() is drunk again\n");
-			exit(EXIT_FAILURE);
-		}
-		if (ch == '\n') {
-			char *small = realloc(ret, len + 1);
-			if (small == NULL)
-				return ret;
-			return small;
-		}
-		if ((len + 1) >= sz) {
-			size_t newsz = sz == 1 ? 1024 : sz * 2;
-			char *newret = realloc(ret, newsz);
-			if (newret == NULL) {
-				fprintf(stderr, "Failed to realloc() %zu bytes\n", sz * 2);
-				exit(EXIT_FAILURE);
-			}
-			sz = newsz;
-			ret = newret;
-		}
-		ret[len++] = (char)ch;
-		ret[len] = 0;
-	}
-}
-
-bool
-checkedStrToUL(const char * restrict nptr, char **restrict endptr, int base, long *l)
-{
-	if (nptr == NULL)
-		return false;
-	errno = 0;
-	char *end = NULL;
-	*l = strtol(nptr, &end, base);
-	if (errno)
-		return false;
-	if (end == NULL)
-		return false;
-	if (end == nptr)
-		return false;
-	if (endptr)
-		*endptr = end;
-	return true;
-}
-
-uint16_t
-parseAddrComponent(const char *addr, char *start, char **end, char final)
-{
-	long ret;
-	if (!checkedStrToUL(start, end, 10, &ret) || **end != final) {
-		fprintf(stderr, "Invalid address \"%s\"\n", addr);
-		exit(EXIT_FAILURE);
-	}
-	if (ret < 0 || ret > 32767) {
-		fprintf(stderr, "Invalid address \"%s\"\n", addr);
-		exit(EXIT_FAILURE);
-	}
-	return (uint16_t)ret;
-}
-
-void
-parseAddr(char *line, struct NodelistAddr *addr)
-{
-	char *next = line;
-	errno = 0;
-	addr->zone = parseAddrComponent(line, next, &next, ':');
-	next++;
-	addr->net = parseAddrComponent(line, next, &next, '/');
-	next++;
-	addr->node = parseAddrComponent(line, next, &next, 0);
-}
-
 int
 cmpaddr(const void *a1, const void *a2)
 {
-	const struct NodelistAddr *addr1 = a1;
-	const struct NodelistAddr *addr2 = a2;
+	const struct TITH_NodelistAddr *addr1 = a1;
+	const struct TITH_NodelistAddr *addr2 = a2;
 
 	if (addr1->zone != addr2->zone)
 		return addr1->zone - addr2->zone;
@@ -421,7 +246,7 @@ cmpaddr(const void *a1, const void *a2)
 }
 
 struct Overrides *
-findOverride(struct NodelistAddr *addr)
+findOverride(struct TITH_NodelistAddr *addr)
 {
 	return bsearch(addr, override, overrides, sizeof(*override), cmpaddr);
 }
@@ -450,7 +275,7 @@ checkType(char *line, const char *prefix, char **member, char *addrStr)
 void
 loadOverrides(const char *path)
 {
-	struct NodelistAddr addr = {0};
+	struct TITH_NodelistAddr addr = {0};
 	char *addrStr = NULL;
 	struct Overrides *over = NULL;
 	FILE *fp = fopen(path, "rb");
@@ -465,7 +290,10 @@ loadOverrides(const char *path)
 			continue;
 		}
 		if (isdigit(line[0])) {
-			parseAddr(line, &addr);
+			if (!tith_parseNodelistAddr(line, &addr)) {
+				fprintf(stderr, "Failed to parse address \"%s\"\n", line);
+				exit(EXIT_FAILURE);
+			}
 			free(addrStr);
 			addrStr = line;
 			over = findOverride(&addr);
@@ -501,6 +329,10 @@ loadOverrides(const char *path)
 			exit(EXIT_FAILURE);
 		}
 	}
+	if (!feof(fp)) {
+		fprintf(stderr, "Failed to read to end of file\n");
+		exit(EXIT_FAILURE);
+	}
 	free(addrStr);
 }
 
@@ -527,16 +359,25 @@ main(int argc, char **argv)
 		if (linebuf[0] == 0x1a)
 			break;
 		char *next;
+
 		// Keyword
 		// TODO: Strip Pvt when an internet address is present
 		char *field = getfield(linebuf, &next);
-		const enum lineType type = parseKeyword(field);
-		if (type == TYPE_Unknown)
+		const enum TITH_NodelistLineType type = tith_parseNodelistKeyword(field, &curAddr);
+		if (type == TYPE_Unknown) {
+			fprintf(stderr, "Unknown Keyword \"%s\", skipping\n", field);
 			continue;
+		}
+		fprintf(stdout, "%s\t", field);
+
 		// Node number
 		field = getfield(next, &next);
-		if (!parseNodeNumber(field))
+		if (!tith_parseNodelistNodeNumber(field, type, &curAddr)) {
+			fprintf(stderr, "Failed to parse node number\n");
 			continue;
+		}
+		fprintf(stdout, "%s\t", field);
+
 		struct Overrides *over = findOverride(&curAddr);
 		// Node name (MAY be an internet addres)
 		field = getfield(next, &next);
