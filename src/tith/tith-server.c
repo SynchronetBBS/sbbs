@@ -9,12 +9,24 @@
 #include "tith-config.h"
 
 static void
+removePadding(char *str)
+{
+	size_t len = strlen(str);
+	while (str[len - 1] == '=') {
+		len--;
+		str[len] = 0;
+	}
+}
+
+static void
 genKeyPair(void)
 {
 	hydro_kx_keypair kp;
 	hydro_kx_keygen(&kp);
 	char *pk = b64_encode(kp.pk, sizeof(kp.pk));
+	removePadding(pk);
 	char *sk = b64_encode(kp.sk, sizeof(kp.sk));
+	removePadding(sk);
 	if (fprintf(stdout, "Keypair: %s,%s\n", pk, sk) < 0)
 		tith_logError("Failed to write key pair");
 	if (fflush(stdout) == EOF)
