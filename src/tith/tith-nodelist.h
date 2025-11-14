@@ -40,7 +40,12 @@ bool tith_parseNodelistNodeNumber(const char *str, enum TITH_NodelistLineType ty
  * 
  * Returns false on failure
  */
-bool
-tith_parseNodelistAddr(char *addrStr, struct TITH_NodelistAddr *addr);
+bool tith_parseNodelistAddr(char *addrStr, struct TITH_NodelistAddr *addr);
+
+/*
+ * Compares two struct TITH_NodelistAddr *s
+ * Suitable for usage with qsort() and bsearch()
+ */
+int tith_cmpNodelistAddr(const void *a1, const void *a2);
 
 #endif

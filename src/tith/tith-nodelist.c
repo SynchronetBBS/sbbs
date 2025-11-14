@@ -132,3 +132,18 @@ tith_parseNodelistAddr(char *line, struct TITH_NodelistAddr *addr)
 	}
 	return ret;
 }
+
+int
+tith_cmpNodelistAddr(const void *a1, const void *a2)
+{
+	const struct TITH_NodelistAddr *addr1 = a1;
+	const struct TITH_NodelistAddr *addr2 = a2;
+
+	if (addr1->zone != addr2->zone)
+		return addr1->zone - addr2->zone;
+	if (addr1->net != addr2->net)
+		return addr1->net - addr2->net;
+	if (addr1->node != addr2->node)
+		return addr1->node - addr2->node;
+	return 0;
+}

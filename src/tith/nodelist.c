@@ -230,25 +230,10 @@ struct Overrides {
 struct Overrides *override;
 size_t overrides;
 
-int
-cmpaddr(const void *a1, const void *a2)
-{
-	const struct TITH_NodelistAddr *addr1 = a1;
-	const struct TITH_NodelistAddr *addr2 = a2;
-
-	if (addr1->zone != addr2->zone)
-		return addr1->zone - addr2->zone;
-	if (addr1->net != addr2->net)
-		return addr1->net - addr2->net;
-	if (addr1->node != addr2->node)
-		return addr1->node - addr2->node;
-	return 0;
-}
-
 struct Overrides *
 findOverride(struct TITH_NodelistAddr *addr)
 {
-	return bsearch(addr, override, overrides, sizeof(*override), cmpaddr);
+	return bsearch(addr, override, overrides, sizeof(*override), tith_cmpNodelistAddr);
 }
 
 bool
@@ -308,7 +293,7 @@ loadOverrides(const char *path)
 				over = &override[overrides++];
 				memset(over, 0, sizeof(*over));
 				over->addr = addr;
-				qsort(override, overrides, sizeof(*override), cmpaddr);
+				qsort(override, overrides, sizeof(*override), tith_cmpNodelistAddr);
 				over = findOverride(&addr);
 				if (over == NULL) {
 					fputs("Failed to find override after inserting\n", stderr);
