@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <threads.h>
 
 /*
  * FSC-0067 - Solidly good ideas here
@@ -65,7 +66,6 @@ struct TITH_TLV {
 	uint8_t *value;
 };
 
-extern void *handle;
-extern struct TITH_Config *cfg;
+extern thread_local void *handle;
 
 #endif

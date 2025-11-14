@@ -11,8 +11,6 @@
 #include "tith-config.h"
 #include "tith-server.h"
 
-struct TITH_Config *cfg;
-
 static void
 removePadding(char *str)
 {
@@ -43,6 +41,10 @@ genKeyPair(void)
 int
 TITH_main(int argc, char **argv, void *handle)
 {
+	if (setjmp(tith_exitJmpBuf)) {
+		tith_cleanup();
+		return EXIT_FAILURE;
+	}
 	char *cfname = NULL;
 	bool isServer = false;
 	int firstNonOpt = 0;
@@ -57,13 +59,17 @@ TITH_main(int argc, char **argv, void *handle)
 						break;
 					case 'c':
 						arg++;
-						free(cfname);
+						if (cfname) {
+							tith_popAlloc();
+							free(cfname);
+						}
 						if (*arg)
 							cfname = tith_strDup(arg);
 						else {
 							i++;
 							cfname = tith_strDup(argv[i]);
 						}
+						tith_pushAlloc(cfname);
 						break;
 					case 's':
 						arg++;
@@ -81,11 +87,16 @@ TITH_main(int argc, char **argv, void *handle)
 	}
 	if (!firstNonOpt && !isServer)
 		tith_logError("No nodes specified");
-	cfg = tith_readConfig(cfname);
-	free(cfname);
-	if (setjmp(tith_exitJmpBuf))
-		return EXIT_FAILURE;
+	tith_readConfig(cfname);
+	if (cfname) {
+		tith_popAlloc();
+		free(cfname);
+	}
+	int ret = EXIT_FAILURE;
 	if (isServer)
-		return tith_server(handle);
-	return(tith_client(argc - firstNonOpt, &argv[firstNonOpt], handle));
+		ret = tith_server(handle);
+	else
+		ret = tith_client(argc - firstNonOpt, &argv[firstNonOpt], handle);
+	tith_cleanup();
+	return ret;
 }

@@ -3,10 +3,14 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <threads.h>
 
 #include "base64.h"
 #include "tith-common.h"
 #include "tith-config.h"
+#include "tith-file.h"
+
+thread_local struct TITH_Config *cfg;
 
 static char *
 removeWhitespace(char *str)
@@ -64,20 +68,22 @@ cmpAddrs(const void *a1, const void *a2)
 	return strcmp(a1, a2);
 }
 
-struct TITH_Config *
+void
 tith_readConfig(const char *configFile)
 {
 	if (configFile == NULL)
 		configFile = "tith.cfg";
+	if (cfg)
+		tith_freeConfig();
 	FILE *fp = fopen(configFile, "r");
 	if (fp == NULL)
 		tith_logError("Unable to open config file");
-	struct TITH_Config *ret = calloc(1, offsetof(struct TITH_Config, node));
-	if (ret == NULL)
+	cfg = calloc(1, offsetof(struct TITH_Config, node));
+	if (cfg == NULL)
 		tith_logError("malloc() failure");
 	for (;;) {
-		char line[1024];
-		if (fgets(line, sizeof(line), fp) == NULL) {
+		char *line = tith_readLine(fp);
+		if (line == NULL) {
 			if (feof(fp))
 				break;
 			tith_logError("Error reading config line");
@@ -85,33 +91,37 @@ tith_readConfig(const char *configFile)
 		char *p = line;
 		while (isspace(*p))
 			p++;
-		if (!*p)
+		if (!*p) {
+			free(line);
 			continue;
-		if (*p == ';')
+		}
+		if (*p == ';') {
+			free(line);
 			continue;
+		}
 		char *key;
 		char *val;
 		splitKeyValue(line, &key, &val);
 		if (strcmp(key, "Outbound") == 0) {
-			if (ret->outbound)
+			if (cfg->outbound)
 				tith_logError("Multiple Outbounds in config");
-			ret->outbound = tith_strDup(val);
-			if (ret->outbound == NULL)
+			cfg->outbound = tith_strDup(val);
+			if (cfg->outbound == NULL)
 				tith_logError("tith_strDup() failed in tith_readConfig()");
 		}
 		else if (strcmp(key, "Inbound") == 0) {
-			if (ret->inbound)
+			if (cfg->inbound)
 				tith_logError("Multiple Inbounds in config");
-			ret->inbound = tith_strDup(val);
-			if (ret->inbound == NULL)
+			cfg->inbound = tith_strDup(val);
+			if (cfg->inbound == NULL)
 				tith_logError("tith_strDup() failed in tith_readConfig()");
 		}
 		else
-			addNode(&ret, key, val);
+			addNode(&cfg, key, val);
+		free(line);
 	}
-	if (ret->nodes)
-		qsort(ret->node, ret->nodes, sizeof(ret->node[0]), cmpAddrs);
-	return ret;
+	if (cfg->nodes)
+		qsort(cfg->node, cfg->nodes, sizeof(cfg->node[0]), cmpAddrs);
 }
 
 static int
@@ -136,4 +146,15 @@ struct TITH_Node *
 tith_getNode(struct TITH_Config * restrict cfg, struct TITH_TLV * restrict addr)
 {
 	return bsearch(addr, cfg->node, cfg->nodes, sizeof(cfg->node[0]), cmpAddrsTLV);
+}
+
+void tith_freeConfig(void)
+{
+	if (cfg == NULL)
+		return;
+	free((void*)cfg->inbound);
+	free((void*)cfg->outbound);
+	for (size_t node = 0; node < cfg->nodes; node++)
+		free((void*)cfg->node[node].FTNaddress);
+	free(cfg);
 }

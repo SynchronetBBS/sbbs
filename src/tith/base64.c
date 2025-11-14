@@ -59,8 +59,7 @@ b64_encode(const uint8_t *source, size_t slen)
 	const uint8_t *inp = source;
 	size_t tlen = (((4ULL * slen / 3ULL) + 3ULL) & ~3ULL) + 1;
 	char *target = malloc(tlen);
-	if (target == NULL)
-		tith_logError("malloc() failure in b64_encode");
+	tith_pushAlloc(target);
 	char *outp = target;
 	char *outend = outp + tlen;
 	const uint8_t *inend = inp + slen;
@@ -98,5 +97,6 @@ b64_encode(const uint8_t *source, size_t slen)
 	*(outp++) = 0;
 	if (outp != outend)
 		tith_logError("b64 string overallocated");
+	tith_popAlloc();
 	return target;
 }

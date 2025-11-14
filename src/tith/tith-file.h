@@ -11,6 +11,6 @@
  * 
  * The caller must free() the returned value
  */
-char *readLine(FILE *fp);
+char *tith_readLine(FILE *fp);
 
 #endif

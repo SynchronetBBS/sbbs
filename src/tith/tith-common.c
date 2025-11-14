@@ -8,15 +8,45 @@
 #include <string.h>
 
 #include "tith-common.h"
+#include "tith-config.h"
 #include "tith-interface.h"
 
-hydro_kx_session_keypair tith_sessionKeyPair;
-bool tith_encrypting;
+thread_local hydro_kx_session_keypair tith_sessionKeyPair;
+thread_local bool tith_encrypting;
+thread_local static uint64_t rxMsgId;
+thread_local static uint64_t txMsgId;
+thread_local static void **allocStack;
+thread_local static size_t allocStackSize;
+thread_local static size_t allocStackUsed;
+thread_local struct TITH_TLV *tith_cmd;
+thread_local void *tith_handle;
+thread_local jmp_buf tith_exitJmpBuf;
 
-static uint64_t rxMsgId;
-static uint64_t txMsgId;
-void *tith_handle;
-jmp_buf tith_exitJmpBuf;
+static void freeTLV(struct TITH_TLV *tlv);
+
+void
+tith_pushAlloc(void *ptr)
+{
+	if (ptr == NULL)
+		tith_logError("Allocation failure");
+	if (allocStackUsed + 1 > allocStackSize) {
+		size_t newSz = allocStackSize ? allocStackSize * 2 : 8;
+		void **newStack = realloc(allocStack, sizeof(void *) * newSz);
+		if (newStack == NULL)
+			tith_logError("Unable to realloc() allocStack");
+		allocStackSize = newSz;
+		allocStack = newStack;
+	}
+	allocStack[allocStackUsed++] = ptr;
+}
+
+void *
+tith_popAlloc(void)
+{
+	if (allocStackUsed == 0)
+		tith_logError("Popping of empty allocStack");
+	return allocStack[--allocStackUsed];
+}
 
 char *tith_strDup(const char *str)
 {
@@ -28,11 +58,24 @@ char *tith_strDup(const char *str)
 	return ret;
 }
 
+void
+tith_cleanup(void)
+{
+	closeConnection(tith_handle);
+	tith_handle = NULL;
+	tith_freeConfig();
+	cfg = NULL;
+	while (allocStackUsed)
+		free(tith_popAlloc());
+	if (tith_cmd)
+		tith_freeCmd();
+}
+
 noreturn void
 tith_logError(const char *str)
 {
 	logString(str);
-	closeConnection(tith_handle);
+	tith_cleanup();
 	longjmp(tith_exitJmpBuf, EXIT_FAILURE);
 }
 
@@ -103,6 +146,8 @@ getNumber(uint64_t *remain)
 static enum TITH_Type
 getCmd(uint64_t *remain)
 {
+	if (tith_cmd)
+		tith_logError("Attempting to get a second command");
 	uint64_t num = getNumber(remain);
 	if (num < TITH_FIRST_CMD || num > TITH_LAST_CMD)
 		tith_logError("Invalid command type");
@@ -124,14 +169,23 @@ allocTLV(enum TITH_Type type, uint64_t len)
 	return ret;
 }
 
-void
-tith_freeTLV(struct TITH_TLV *tlv)
+static void
+freeTLV(struct TITH_TLV *tlv)
 {
 	while (tlv) {
 		struct TITH_TLV *next = tlv->next;
 		free(tlv);
 		tlv = next;
 	}
+}
+
+void
+tith_freeCmd(void)
+{
+	if (!tith_cmd)
+		tith_logError("Attempt to free unallocated tith_cmd");
+	freeTLV(tith_cmd);
+	tith_cmd = NULL;
 }
 
 static struct TITH_TLV *
@@ -147,24 +201,24 @@ parseTLV(uint8_t *buf, uint64_t *offset, uint64_t sz)
 	return ret;
 }
 
-struct TITH_TLV *
+void
 tith_getCmd(void)
 {
 	enum TITH_Type type = getCmd(NULL);
 	if (tith_encrypting && type != TITH_Encrypted)
 		tith_logError("Non-encrypted command on encrypted channel");
 	uint64_t len = getNumber(NULL);
-	struct TITH_TLV *ret = allocTLV(type, len);
-	if (!getBytes(tith_handle, ret->value, len))
+	tith_cmd = allocTLV(type, len);
+	if (!getBytes(tith_handle, tith_cmd->value, len))
 		tith_logError("Error reading command");
 	if (tith_encrypting) {
 		uint64_t plainTextLen = len - hydro_secretbox_HEADERBYTES;
 		uint8_t *plainText = malloc(plainTextLen);
-		if (plainText == NULL)
-			tith_logError("malloc() error in getCmd()");
-		if (hydro_secretbox_decrypt(plainText, ret->value, ret->length, rxMsgId++, "TITHctx", tith_sessionKeyPair.rx))
+		tith_pushAlloc(plainText);
+		if (hydro_secretbox_decrypt(plainText, tith_cmd->value, tith_cmd->length, rxMsgId++, "TITHctx", tith_sessionKeyPair.rx))
 			tith_logError("decryption failure");
-		tith_freeTLV(ret);
+		tith_freeCmd();
+		tith_cmd = NULL;
 		uint64_t offset = 0;
 		type = parseCmd(plainText, &offset, plainTextLen);
 		if (type == TITH_Encrypted)
@@ -172,27 +226,28 @@ tith_getCmd(void)
 		len = parseNumber(plainText, &offset, plainTextLen);
 		if (len != plainTextLen - offset)
 			tith_logError("Bad plainTextLen");
-		ret = allocTLV(type, len);
-		memcpy(ret->value, &plainText[offset], len);
+		tith_cmd = allocTLV(type, len);
+		memcpy(tith_cmd->value, &plainText[offset], len);
+		tith_popAlloc();
 		free(plainText);
 	}
 	uint64_t offset = 0;
 	while (offset < len) {
-		struct TITH_TLV *param = parseTLV(ret->value, &offset, ret->length);
-		ret->tail->next = param;
-		ret->tail = param;
+		struct TITH_TLV *param = parseTLV(tith_cmd->value, &offset, tith_cmd->length);
+		tith_cmd->tail->next = param;
+		tith_cmd->tail = param;
 	}
-	return ret;
 }
 
-struct TITH_TLV *
+void
 tith_allocCmd(enum TITH_Type type)
 {
 	if (type < TITH_FIRST_CMD || type > TITH_LAST_CMD)
 		tith_logError("Invalid type to tith_allocCmd()");
-	struct TITH_TLV *ret = allocTLV(type, 0);
-	ret->type = type;
-	return ret;
+	if (tith_cmd)
+		tith_logError("Attempting to alloc a second command");
+	tith_cmd = allocTLV(type, 0);
+	tith_cmd->type = type;
 }
 
 static unsigned
@@ -207,15 +262,15 @@ numLen(uint64_t num)
 }
 
 void
-tith_addData(struct TITH_TLV *cmd, enum TITH_Type type, uint64_t len, void *data)
+tith_addData(enum TITH_Type type, uint64_t len, void *data)
 {
 	struct TITH_TLV *newData = allocTLV(type, len);
 	memcpy(newData->value, data, len);
-	cmd->tail->next = newData;
-	cmd->tail = newData;
-	cmd->length += (uint64_t)numLen((uint64_t)type);
-	cmd->length += (uint64_t)numLen(len);
-	cmd->length += len;
+	tith_cmd->tail->next = newData;
+	tith_cmd->tail = newData;
+	tith_cmd->length += (uint64_t)numLen((uint64_t)type);
+	tith_cmd->length += (uint64_t)numLen(len);
+	tith_cmd->length += len;
 }
 
 static unsigned
@@ -234,18 +289,17 @@ sendNumber(uint64_t num, uint8_t *buf)
 }
 
 void
-tith_sendCmd(struct TITH_TLV *cmd)
+tith_sendCmd(void)
 {
-	uint64_t len = cmd->length;
-	len += numLen(cmd->type);
-	len += numLen(cmd->length);
+	uint64_t len = tith_cmd->length;
+	len += numLen(tith_cmd->type);
+	len += numLen(tith_cmd->length);
 	uint8_t *buffer = malloc(len);
-	if (buffer == NULL)
-		tith_logError("maloc() failure in tith_sendCmd()");
+	tith_pushAlloc(buffer);
 	uint64_t offset = 0;
-	offset += sendNumber(cmd->type, &buffer[offset]);
-	offset += sendNumber(cmd->length, &buffer[offset]);
-	for (struct TITH_TLV *tlv = cmd->next; tlv; tlv = tlv->next) {
+	offset += sendNumber(tith_cmd->type, &buffer[offset]);
+	offset += sendNumber(tith_cmd->length, &buffer[offset]);
+	for (struct TITH_TLV *tlv = tith_cmd->next; tlv; tlv = tlv->next) {
 		offset += sendNumber(tlv->type, &buffer[offset]);
 		offset += sendNumber(tlv->length, &buffer[offset]);
 		memcpy(&buffer[offset], tlv->value, tlv->length);
@@ -259,20 +313,23 @@ tith_sendCmd(struct TITH_TLV *cmd)
 		encryptedLen += numLen(TITH_Encrypted);
 		encryptedLen += numLen(encryptedValueLen);
 		uint8_t *encBuffer = malloc(encryptedLen);
-		if (encBuffer == NULL)
-			tith_logError("malloc() failure creating crypt buffer");
+		tith_pushAlloc(encBuffer);
 		offset = 0;
 		offset += sendNumber(TITH_Encrypted, &encBuffer[offset]);
 		offset += sendNumber(encryptedValueLen, &encBuffer[offset]);
 		if (hydro_secretbox_encrypt(&encBuffer[offset], buffer, len, txMsgId++, "TITHctx", tith_sessionKeyPair.tx))
 			tith_logError("encrypt() failure");
+		tith_popAlloc();
 		free(buffer);
 		if (!sendBytes(tith_handle, encBuffer, encryptedLen))
 			tith_logError("Failed to write TLV data");
+		tith_popAlloc();
+		free(encBuffer);
 	}
 	else {
 		if (!sendBytes(tith_handle, buffer, offset))
 			tith_logError("Failed to write TLV data");
+		tith_popAlloc();
 		free(buffer);
 	}
 	if (!flushWrite(tith_handle))
@@ -314,11 +371,11 @@ tith_validateAddress(const char *addr)
 	 * A period (.)
 	 * A 16-bit signed integer in decimal format without leading zeros
 	 */
-	do {
+	while(*addr != '#') {
 		if (!(isdigit(*addr) || isalpha(*addr)))
 			tith_logError("Invalid domain character");
 		addr++;
-	} while(*addr != '#');
+	};
 	addr++;
 	errno = 0;
 	validateAddrPart(&addr);
@@ -341,8 +398,9 @@ tith_validateAddress(const char *addr)
 }
 
 void
-tith_validateCmd(struct TITH_TLV *tlv, enum TITH_Type command, int numargs, ...)
+tith_validateCmd(enum TITH_Type command, int numargs, ...)
 {
+	struct TITH_TLV *tlv = tith_cmd;
 	va_list ap;
 	va_start(ap, numargs);
 	if (tlv->type != command)

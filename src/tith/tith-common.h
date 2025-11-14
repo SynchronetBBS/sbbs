@@ -3,6 +3,7 @@
 
 #include <setjmp.h>
 #include <stdnoreturn.h>
+#include <threads.h>
 
 #include "hydro/hydrogen.h"
 #include "tith.h"
@@ -10,19 +11,23 @@
 #define TITH_OPTIONAL 0
 #define TITH_REQUIRED 1
 
-extern hydro_kx_session_keypair tith_sessionKeyPair;
-extern bool tith_encrypting;
-extern void *tith_handle;
-extern jmp_buf tith_exitJmpBuf;
+extern thread_local hydro_kx_session_keypair tith_sessionKeyPair;
+extern thread_local bool tith_encrypting;
+extern thread_local void *tith_handle;
+extern thread_local jmp_buf tith_exitJmpBuf;
+extern thread_local struct TITH_TLV *tith_cmd;
 
 noreturn void tith_logError(const char *str);
-void tith_freeTLV(struct TITH_TLV *tlv);
-struct TITH_TLV * tith_getCmd(void);
-struct TITH_TLV * tith_allocCmd(enum TITH_Type type);
-void tith_addData(struct TITH_TLV *cmd, enum TITH_Type type, uint64_t len, void *data);
-void tith_sendCmd(struct TITH_TLV *cmd);
+void tith_getCmd(void);
+void tith_allocCmd(enum TITH_Type type);
+void tith_addData(enum TITH_Type type, uint64_t len, void *data);
+void tith_sendCmd(void);
 void tith_validateAddress(const char *addr);
-void tith_validateCmd(struct TITH_TLV *tlv, enum TITH_Type command, int numargs, ...);
+void tith_validateCmd(enum TITH_Type command, int numargs, ...);
 char *tith_strDup(const char *str);
+void tith_cleanup(void);
+void tith_pushAlloc(void *ptr);
+void *tith_popAlloc(void);
+void tith_freeCmd(void);
 
 #endif

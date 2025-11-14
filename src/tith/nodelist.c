@@ -269,7 +269,7 @@ loadOverrides(const char *path)
 		exit(EXIT_FAILURE);
 	}
 	char *line;
-	while ((line = readLine(fp))) {
+	while ((line = tith_readLine(fp))) {
 		if (line[0] == 0) {
 			free(line);
 			continue;

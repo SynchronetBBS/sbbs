@@ -16,6 +16,7 @@ TITH_OBJS := \
 	tith-common.o \
 	tith-config.o \
 	tith-client.o \
+	tith-file.o \
 	tith-server.o \
 	tith-stdio.o
 
