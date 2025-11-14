@@ -67,6 +67,7 @@ tith_cleanup(void)
 	cfg = NULL;
 	while (allocStackUsed)
 		free(tith_popAlloc());
+	free(allocStack);
 	if (tith_cmd)
 		tith_freeCmd();
 }

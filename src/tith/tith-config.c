@@ -65,7 +65,9 @@ addNode(struct TITH_Config **config, const char *key, const char *value)
 static int
 cmpAddrs(const void *a1, const void *a2)
 {
-	return strcmp(a1, a2);
+	const struct TITH_Node *n1 = a1;
+	const struct TITH_Node *n2 = a2;
+	return strcmp(n1->FTNaddress, n2->FTNaddress);
 }
 
 void

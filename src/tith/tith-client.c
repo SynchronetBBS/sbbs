@@ -12,7 +12,6 @@
 int
 tith_client(int argc, char **argv, void *handle)
 {
-	char *cfname = NULL;
 	char *source = NULL;
 	char *dest = NULL;
 	tith_handle = handle;
@@ -21,7 +20,7 @@ tith_client(int argc, char **argv, void *handle)
 			dest = argv[i];
 			tith_validateAddress(dest);
 		}
-		else if (!cfname) {
+		else if (!source) {
 			source = argv[i];
 			tith_validateAddress(source);
 		}
@@ -30,7 +29,6 @@ tith_client(int argc, char **argv, void *handle)
 		tith_logError("No destination");
 	if (!source)
 		logString("No source address, assuming #-1:-1/-1.-1");
-	free(cfname);
 	if (cfg->outbound == NULL)
 		tith_logError("No outbound");
 
