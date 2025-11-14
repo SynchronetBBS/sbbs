@@ -373,7 +373,7 @@ tith_validateAddress(const char *addr)
 	 * A 16-bit signed integer in decimal format without leading zeros
 	 */
 	while(*addr != '#') {
-		if (!(isdigit(*addr) || isalpha(*addr)))
+		if (*addr < ' ' || *addr == 0x7F)
 			tith_logError("Invalid domain character");
 		addr++;
 	};
