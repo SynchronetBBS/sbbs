@@ -13,8 +13,12 @@
 
 enum TITH_Type {
 	TITH_FIRST_TYPE = 1,
+	TITH_Origin,
+	TITH_Signature,
+	TITH_SignedData,
+	TITH_EncryptedData,
 
-	TITH_FIRST_CMD = TITH_FIRST_TYPE,
+	TITH_FIRST_CMD = 32,
 	TITH_IAm = TITH_FIRST_CMD,
 	TITH_LHP1,
 	TITH_LHP2,

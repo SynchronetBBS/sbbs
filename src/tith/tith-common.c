@@ -206,7 +206,7 @@ void
 tith_getCmd(void)
 {
 	enum TITH_Type type = getCmd(NULL);
-	if (tith_encrypting && type != TITH_Encrypted)
+	if (tith_encrypting && type != TITH_EncryptedData)
 		tith_logError("Non-encrypted command on encrypted channel");
 	uint64_t len = getNumber(NULL);
 	tith_cmd = allocTLV(type, len);
@@ -222,7 +222,7 @@ tith_getCmd(void)
 		tith_cmd = NULL;
 		uint64_t offset = 0;
 		type = parseCmd(plainText, &offset, plainTextLen);
-		if (type == TITH_Encrypted)
+		if (type == TITH_EncryptedData)
 			tith_logError("Invalid encrypted command type");
 		len = parseNumber(plainText, &offset, plainTextLen);
 		if (len != plainTextLen - offset)
@@ -311,12 +311,12 @@ tith_sendCmd(void)
 	if (tith_encrypting) {
 		uint64_t encryptedValueLen = len + hydro_secretbox_HEADERBYTES;
 		uint64_t encryptedLen = encryptedValueLen;
-		encryptedLen += numLen(TITH_Encrypted);
+		encryptedLen += numLen(TITH_EncryptedData);
 		encryptedLen += numLen(encryptedValueLen);
 		uint8_t *encBuffer = malloc(encryptedLen);
 		tith_pushAlloc(encBuffer);
 		offset = 0;
-		offset += sendNumber(TITH_Encrypted, &encBuffer[offset]);
+		offset += sendNumber(TITH_EncryptedData, &encBuffer[offset]);
 		offset += sendNumber(encryptedValueLen, &encBuffer[offset]);
 		if (hydro_secretbox_encrypt(&encBuffer[offset], buffer, len, txMsgId++, "TITHctx", tith_sessionKeyPair.tx))
 			tith_logError("encrypt() failure");
