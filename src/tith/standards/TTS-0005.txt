@@ -1,0 +1,132 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TTS‐0005
+Revision:     1
+Title:        Bundle Format
+Author(s):    Stephen Hurd
+Date:         2025‐11‐15
+══════════════════════════════════════════════════════════════════════
+
+Status of this document
+―――――――――――――――――――――――
+
+  This document is a TITH Technical Standard (TTS) — it specifies
+  the current technical requirements and recommendations for TITH
+  software developers, coordinators and sysops of the Fidonet network
+  and other networks using FTN technology.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+――――――――
+
+  This document describes how assets are placing into a bundle for
+  transfer to another system.
+
+Contents
+――――――――
+
+  1.  Introduction
+  2.  Encoding
+  3.  Bundle Types
+
+  A. References
+  B. History
+
+══════════════════════════════════════════════════════════════════════
+
+
+1. Introduction
+―――――――――――――――
+
+  One of the core capabilities needed for an FTN network is the
+  ability to transfer data from one node to another.  This standard
+  defines the format to be used for that transfer.
+
+
+2. Encoding
+―――――――――――
+
+  Data to be transfered between two nodes is collected into a single
+  bundle for the transfer.  The entire bundle is TLV encoded as
+  defined in TTS-0002.
+
+  The bundle as a whole is a SignedTLV value as descrived in TTS-0003.
+
+  The first item MUST be a Destination as defined in TTS-0003.
+
+  The second item MUST be a Timestamp as defined in TTS-0003.  This
+  timestamp indicates the time when the bundling process started.  In
+  cases where an additional item is added to an existing bundle, the
+  Timestamp is not updated (though the Length will be).
+
+  After this, a sequence of values continues until the end of the
+  bundle.  Types from 32 to 63 are reserved for experimental
+  extensions to this standard, and may be used by explicit agreement
+  between the operators of two nodes.  If the use is useful to other
+  operators, it is RECOMMENDED that it be added to this document with
+  a new number, and the software using it modified to use the new
+  value.  Basically, as soon as three node operators agree to use the
+  same value, it should be added to this document and the experimental
+  value abandoned.
+
+
+3. Types
+――――――――
+
+  The following types may be included in a bundle.
+
+  64. Reserved
+  ――――――――――――
+  This type is reserved for a message type that does not yet have a
+  TTS number.
+
+  65. File
+  ――――――――
+  A File value which begins with an optional Filename as defined in
+  section 4, followed by an optional Timestamp as defined in TTS-0003,
+  followed by a required Contents as defined in section 4.
+
+  If a timestamp is present, it represents the time of last
+  modification of the file.
+
+
+4. Ancillary Types
+――――――――――――――――――
+
+  The following types are defined for use by types in section 3.
+
+  96. Filename
+  ――――――――――――
+  The value is a UTF-8 string containing the name of the file.  No
+  restrictions are placed on the value of this string, but the name
+  MUST NOT contain additional path components.  Software SHOULD NOT
+  use values that are not allowed by common operating systems.
+  Commonly this means no control characters (U+00 to U+1F, and U+7F),
+  and none of U+22 ('"'), U+2A ('*'), U+2F ('/'), U+3A (':'),
+  U+3C ('<'), U+3D ('>'), U+3F ('?'), U+5C ('\'), or U+7C ('|').
+
+  97. Contents
+  ――――――――――――
+  An arbitrary sequence of bytes with no restrictions on contents or
+  length.
+
+
+A. References
+―――――――――――――
+
+  [FTA-1006] "Keywords to indicate requirement levels" FTSC,
+  2000-01-17.
+
+  [TTS-5000] "The Distribution Nodelist", TITH, 2025-11-14
+
+
+B. History
+――――――――――
+
+   Rev.1, 2025-11-15: Initial Release.
+
+**********************************************************************
