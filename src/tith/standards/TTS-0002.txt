@@ -82,7 +82,7 @@ Contents
   more efficiently deal with them.
 
   To this end, any software that parses TLV values MUST be capable of
-  parsing at least 32-bit values, and SHOULD parse at least 64-bit
+  parsing at least 32-bit values, and SHOULD parse at least 63-bit
   values.
 
 
