@@ -93,11 +93,6 @@ Contents
   The point is a number in the range of negative one to thirty‐two
   thousand, seven hundred and sixty‐seven (−1–32,767).
 
-  The text representation of a node address is in UTF‑8 and has two
-  manditory parts followed by up to three optional parts.  If an
-  optional part contains the default value, it MUST NOT be included in
-  the address.
-
 
 3. Default Values
 ―――――――――――――――――
