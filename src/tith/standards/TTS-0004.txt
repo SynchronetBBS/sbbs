@@ -81,17 +81,22 @@ Contents
   ―――
   The net is a number that is either negative one, or a value from one
   to thirty‐two thousand, seven hundred and sixty‐seven inclusive
-  (−1, 1–32,767).
+  (−1, 1–32,767).  If the Zone is negative one (−1), Net MUST also be
+  negative one (−1).  If the Zone is not negative one (−1), the Net
+  MUST NOT be negative one (−1).
 
   Node
   ――――
   The node is a number in the range of negative one to thirty‐two
-  thousand, seven hundred and sixty‐seven (−1–32,767).
+  thousand, seven hundred and sixty‐seven (−1–32,767).  If the Zone is
+  negative one, the Node MUST also be negative one (−1).  If the Zone
+  is not negative one (−1), the Node MUST NOT be negative one (−1).
 
   Point
   ―――――
   The point is a number in the range of negative one to thirty‐two
-  thousand, seven hundred and sixty‐seven (−1–32,767).
+  thousand, seven hundred and sixty‐seven (−1–32,767).  If the Zone is
+  negative one, the Point MUST be zero (0).
 
 
 3. Default Values
@@ -104,7 +109,7 @@ Contents
 
   The Net and Node have a default value that depends on the value of
   the Zone.  If the Zone is negative one (−1), the default for the
-  Net, and Node is also negative one (−1).
+  Net and Node is also negative one (−1).
 
   If the Zone is not negative one (−1), the default Net is the same
   value as the Zone, and the default Node is zero (0).
@@ -131,7 +136,8 @@ Contents
   negative one (−1) or with a code point from U+31 ('1') to U+39 ('9')
   followed by zero or more code points from U+31 ('0') to U+39 ('9').
   That is to say that leading zeros are not allowed, and negative one
-  (−1) has a single legal encoding.
+  (−1) has a single legal encoding.  In the cases where zero (0) is a
+  legal value, it is also the default, so will not be encoded.
 
   Examples:
   ―――――――――
@@ -141,7 +147,7 @@ Contents
 
   "fidonet#1" would represent fidonet, Z1, N1, O0, P0 (AKA Z1C)
   "fidonet#1:10" would represent fidonet, Z1, N10, O0, P0 (AKA R10C)
-  "fidonet#1/2" would represent fidonet, Z1, N1, O2, P0 (Zone 2 GW?)
+  "fidonet#1/2" would represent fidonet, Z1, N1, O2, P0
   "fidonet#1.5" would represent fidonet, Z1, N1, O0, P5
   "fidonet#-1" would represent fidonet, Z-1, N-1, O-1, P0
   (Preferred by Policy 4 for applying for a new node number)
@@ -173,11 +179,11 @@ Contents
   fidonet#1:2/103.1,BBSDev#885,BBSDev#885:1,BBSDev#885:1/1,
   BBSDev#885:1/2
 
-  Would first be sorted to: fidonet#1,fidonet#1:2,fidonet#1:2/103,
-  fidonet#1:2/103.1,BBSDev#885,BBSDev#885:1,BBSDev#885:1/1,
-  BBSDev#885:1/2
+  Would first be sorted to: BBSDev#885,BBSDev#885:1,BBSDev#885:1/1,
+  BBSDev#885:1/2,fidonet#1,fidonet#1:2,fidonet#1:2/103,
+  fidonet#1:2/103.1
 
-  Then be trimmed to: fidonet#1,:2,/103,.1,BBSDev#885,:1,/1,/2
+  Then be trimmed to: BBSDev#885,:1,/1,/2,fidonet#1,:2,/103,.1
 
 
 6. Trimmed Lists
