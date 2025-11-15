@@ -131,6 +131,22 @@ Contents
       to permit some or all TLV values to be replaced by an
       EncryptedTLV value.
 
+  6.  Timestamp
+      The value is encoded in the same manner as the Type and Length
+      parts of a TLV value.  The number encoded is the POSIX Seconds
+      Since the Epoch, defined in XBD4.19.  This is the value returned
+      by time(NULL) on POSIX systems.  Despite popular belief, this is
+      NOT the number of seconds since the beginning of January 1st,
+      1970 but rather the number of complete days since January 1st,
+      1970 times 86400, plus the number of seconds that have passed so
+      far in the current day.  That is to say that the existence of
+      leap seconds is pretended out of existence by this definition.
+
+  7.  Destination
+      This type contains the text representation of a 5D address as
+      specified by TTS-0004.  This address may identify the public key
+      used for encryption operations at this level and below.
+
 
 A. References
 -------------
@@ -142,6 +158,12 @@ A. References
 
   [Libhydrogen] Version 1,
   https://github.com/jedisct1/libhydrogen/wiki
+
+  [POSIX] "The Open Group Base Specifications Issue 8"
+  https://pubs.opengroup.org/onlinepubs/9799919799/
+
+  [XBD4.19] "Seconds Since the Epoch"
+  https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap04.html#tag_04_19
 
 
 B. History
