@@ -3,14 +3,14 @@ TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
 Publication:  TTS‑0003
-Revision:     ─
+Revision:     1
 Title:        Common TLV Types
 Author(s):    Stephen Hurd
-Date:         2025‑──‑─5
+Date:         2025‑11‑15
 ══════════════════════════════════════════════════════════════════════
 
 Status of this document
-―――――――――――――――――――――――
+───────────────────────
 
   This document is a TITH Technical Standard (TTS) — it specifies
   the current technical requirements and recommendations for TITH
@@ -21,15 +21,15 @@ Status of this document
   copied or modified for any purpose whatever.
 
 Abstract
-――――――――
+────────
 
   Overall, TITH uses a tagged TLV structure.  This document describes
   how the types are assigned and used.
 
 Contents
-――――――――
+────────
 
-  ─.  Introduction
+  1.  Introduction
   2.  Reservation
   3.  Defined Types
 
@@ -39,8 +39,8 @@ Contents
 ══════════════════════════════════════════════════════════════════════
 
 
-─. Introduction
-―――――――――――――――
+1. Introduction
+───────────────
 
   In TITH, data is encoded as a hierarchy of TLV values with every
   value having a context‐specific meaning.  However, there's a few
@@ -50,7 +50,7 @@ Contents
 
 
 2. Reservation
-――――――――――――――
+──────────────
 
   The first thirty‐two, numbered zero to thirty‐one are reserved for
   types specified in this document.  These types can not be redefined
@@ -58,7 +58,7 @@ Contents
 
 
 3. Defined Types
-――――――――――――――――
+────────────────
 
   These are the defined types and their data format at the time of
   this writing:
@@ -67,7 +67,7 @@ Contents
       A type of zero will never be used.  If it is encountered, the
       implementation MUST stop processing the TLV data.
 
-  ─.  Origin
+  1.  Origin
       This type contains the 5D address as specified by TTS‑0004.
       This address identifies the public key to use for signing
       operations at this level and below.
@@ -95,12 +95,12 @@ Contents
       given data with the following structure:
 
       OuterTLV
-       ├──🭬Origin─
-       ├──🭬GenericData─
-       ├─┬🭬Group─
+       ├──🭬Origin1
+       ├──🭬GenericData1
+       ├─┬🭬Group1
        │ ├──🭬Origin2
-       │ ├──🭬SignedData─
-       │ ╰──🭬Signature─
+       │ ├──🭬SignedData1
+       │ ╰──🭬Signature1
        ├─┬🭬Group2
        │ ├──🭬SignedData2
        │ ╰──🭬Signature2
@@ -113,8 +113,8 @@ Contents
                    ├──🭬SignedData3
                    ╰──🭬Signature3
 
-      SignedData─ will be signed using the public key of Origin2,
-      SignedData2 will be signed using the public key of Origin─, and
+      SignedData1 will be signed using the public key of Origin2,
+      SignedData2 will be signed using the public key of Origin1, and
       SignedData3 will be signed using the public key of Origin4.
 
   4.  SignedTLV
@@ -129,11 +129,11 @@ Contents
   5.  Timestamp
       The value is encoded in the same manner as the Type and Length
       parts of a TLV value.  The number encoded is the POSIX Seconds
-      Since the Epoch, defined in XBD4.─9.  This is the value returned
+      Since the Epoch, defined in XBD4.19.  This is the value returned
       by time(NULL) on POSIX systems.  Despite popular belief, this is
-      NOT the number of seconds since the beginning of January ─st,
-      ─970 but rather the number of complete days since January ─st,
-      ─970 times 86400, plus the number of seconds that have passed so
+      NOT the number of seconds since the beginning of January 1st,
+      1970 but rather the number of complete days since January 1st,
+      1970 times 86400, plus the number of seconds that have passed so
       far in the current day.  That is to say that the existence of
       leap seconds is pretended out of existence by this definition.
 
@@ -143,26 +143,26 @@ Contents
 
 
 A. References
-―――――――――――――
+─────────────
 
-  [TTS‑0002] "Type Length Value Encoding" TITH, 2025‑──‑─4.
+  [TTS‑0002] "Type Length Value Encoding" TITH, 2025‑11‑14.
 
-  [FTA‑─006] "Keywords to indicate requirement levels" FTSC,
-  2000‑0─‑─7.
+  [FTA‑1006] "Keywords to indicate requirement levels" FTSC,
+  2000‑01‑17.
 
-  [Libhydrogen] Version ─,
-  https://github.com/jedisct─/libhydrogen/wiki
+  [Libhydrogen] Version 1,
+  https://github.com/jedisct1/libhydrogen/wiki
 
   [POSIX] "The Open Group Base Specifications Issue 8"
-  https://pubs.opengroup.org/onlinepubs/97999─9799/
+  https://pubs.opengroup.org/onlinepubs/9799919799/
 
-  [XBD4.─9] "Seconds Since the Epoch"
-  https://pubs.opengroup.org/onlinepubs/97999─9799/basedefs/V─_chap04.html#tag_04_─9
+  [XBD4.19] "Seconds Since the Epoch"
+  https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap04.html#tag_04_19
 
 
 B. History
-――――――――――
+──────────
 
-   Rev.─, 2025‑──‑─5: Initial Release.
+   Rev.1, 2025‑11‑15: Initial Release.
 
 **********************************************************************
