@@ -13,4 +13,9 @@
  */
 char *tith_readLine(FILE *fp);
 
+/*
+ * Returns the length of the file specified by fname or -1L on error.
+ */
+long tith_flen(const char *fname);
+
 #endif

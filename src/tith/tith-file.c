@@ -2,6 +2,21 @@
 
 #include "tith-file.h"
 
+long
+tith_flen(const char *fname)
+{
+	FILE *fp = fopen(fname, "rb");
+	if (!fp)
+		return -1L;
+	if (fseek(fp, 0, SEEK_END)) {
+		fclose(fp);
+		return -1L;
+	}
+	long ret = ftell(fp);
+	fclose(fp);
+	return ret;
+}
+
 char *
 tith_readLine(FILE *fp)
 {

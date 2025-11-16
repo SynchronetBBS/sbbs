@@ -6,9 +6,9 @@
 #define TITH_FADDR_MAXLEN 36
 
 struct TITH_Node {
-	const char *FTNaddress; // Full FSC-0067 format
+	const char *FTNaddress; // TTS-0003 format
 	bool hasSecretKey;
-	hydro_kx_keypair kp;
+	hydro_sign_keypair kp;
 };
 
 struct TITH_Config {

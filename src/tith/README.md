@@ -38,7 +38,7 @@ Maybe needed (but bad) FTSC Documents:
 FTS-0004 (Tear line, origin line, "full" SEEN-BYs, 2D PATH, prefer FSC-0068)
 FTS-0006 (REQ file format)
 FTS-0009 (MSGID and REPLY, highly restrictive and requires wishful magic)
-FTS-4001 (INTL, FMPT, TOPT, because we still can't put a 5D address anywhere)
+FTS-4001 (INTL, FMPT, TOPT, because we still can't put a 4D address anywhere)
 FTS-4009 (Via, arbitrary stupid limits, timezone, allows random YOLO formats)
 FTS-5000 (PING, TRACE, specification failure "clearly quoting" is basically the whole spec)
 FTS-5006 (TIC format, DOS only, highly underspecified, examples seem to be normative?)
