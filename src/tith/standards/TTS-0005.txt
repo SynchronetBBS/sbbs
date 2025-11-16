@@ -54,24 +54,39 @@ Contents
   bundle for the transfer.  The entire bundle is TLV encoded as
   defined in TTS-0002.
 
-  The bundle as a whole is a SignedTLV value as descrived in TTS-0003.
+  The bundle as a whole is a sequence of TLV values as described in
+  TTS-0003.
 
   The first item MUST be a Destination as defined in TTS-0003.
 
-  The second item MUST be a Timestamp as defined in TTS-0003.  This
+  The second item MUST be an Origin as defined in TTS-0003.
+
+  The third item MUST be a Timestamp as defined in TTS-0003.  This
   timestamp indicates the time when the bundling process started.  In
   cases where an additional item is added to an existing bundle, the
   Timestamp is not updated (though the Length will be).
 
-  After this, a sequence of values continues until the end of the
-  bundle.  Types from 32 to 63 are reserved for experimental
-  extensions to this standard, and may be used by explicit agreement
-  between the operators of two nodes.  If the use is useful to other
-  operators, it is RECOMMENDED that it be added to this document with
-  a new number, and the software using it modified to use the new
-  value.  Basically, as soon as three node operators agree to use the
-  same value, it should be added to this document and the experimental
-  value abandoned.
+  After this is a sequence of SignedTLV values containing sequences of
+  the types defined in section 3, or one of the experimental reserved
+  values 32 to 63. These SignedTLV values SHOULD NOT contain an Origin
+  value.
+
+  Types 32 to 63 are reserved for experimental extensions to this
+  standard, and may be used by explicit agreement between the
+  operators of two nodes.  If the use is useful to other operators, it
+  is RECOMMENDED that it be added to this document with a new number,
+  and the software using it modified to use the new value.  Basically,
+  as soon as three node operators agree to use the same value, it
+  should be added to this document and the experimental value
+  abandoned.
+
+  It is RECOMMENDED that there be no more than two SignedTLV values in
+  each bundle, with the first containing all FileRequest values, and
+  the next containing everything else.  If there are no FileRequest
+  values, a single SignedTLV SHOULD be used.  The reason for this is
+  to allow the destination node to validate the SignedTLV containing
+  the FileRequests and start sending them while any Files or Messages
+  are being sent from the Origin to the Destination.
 
 
 3. Types
@@ -88,17 +103,22 @@ Contents
   ――――――――
   A File value which begins with an optional Filename as defined in
   section 4, followed by an optional Timestamp as defined in TTS-0003,
+  followed by an optional RequestIdentifier as defined in section 4,
   followed by a required Contents as defined in section 4.
 
   If a timestamp is present, it represents the time of last
   modification of the file.
 
+  If a RequestIdentifier is present, indicates that this file is
+  included because of a FileRequest from Destination to Origin.
+
   66. FileRequest
   ―――――――――――――――
   A Request value which contains a manditory Filename as defined in
   section 4, optionally followed by a Timestamp as defined in
-  TTS-0003.  If a Timestamp is present, the request is conditional on
-  the last modified time of Filename being newer than the Timestamp.
+  TTS-0003, and followed by a manditory RequestIdentifier.  If a
+  Timestamp is present, the request is conditional on the last
+  modified time of Filename being newer than the Timestamp.
 
   Existing FidoNet requests types (Bark and WaZOO) have an optional
   password, but it is expected that having public key authentication
@@ -115,6 +135,39 @@ Contents
   unrestricted, it's not like I can stop you can allowing wildcards
   in there.  I think it's a terrible idea though, and the processors
   written as part of the TITH project won't support them.
+
+  67. NoFile
+  ――――――――――
+  A NoFile value which contains a manditory RequestIdentifier as
+  defined in section 4, followed by an optional Timestamp as defined
+  by TTS-0003, followed by a manditory number encoded in the same
+  manner as Type and Length, optionally followed by a UTF‑8 string
+  containing a human-readable description of why there is no file.
+
+  This is included because a FileRequest from Destination to Origin
+  did not result in a file being included.
+
+  The RequestIdentifier is the the one that was in the original
+  FileRequest.
+
+  If a Timestamp is present, indicates an expcted time at which the
+  same FileRequest would result in a File.
+  
+  The number may have one of the following values:
+
+  1 - Indicates that no file by that name may be requested by the
+      node that send the FileRequest.  This may be due to the file not
+      existing, the file not being requestable, or the file requesting
+      node not having access to the file.
+  2 - Indicates that the request was conditional, and the condition
+      was not met.  For example, if a Timestamp was included in the
+      request, but the last modified time of the requested file
+      matches the value of the Timestamp.  If a Timestamp is included
+      in the NoFile value, this is a time after which it is expected
+      that the file will have been updated.
+  3 - Indicates that the node is not willing to send the file at this
+      time.  If a Timestamp is included in the NoFile value, this is
+      a time at which the node expects to be willing to send the file.
 
 
 4. Ancillary Types
@@ -136,6 +189,14 @@ Contents
   ――――――――――――
   An arbitrary sequence of bytes with no restrictions on contents or
   length.
+
+  98. RequestIdentifier
+  ―――――――――――――――――――――
+  Contains a number encoded using the same method as the Type and
+  Length values as defined by TTS-0002.  This number MUST be unique
+  for each FileRequest from the Origin to the Destination, and is used
+  to correlate a status or file from the Destination with a specific
+  request.
 
 
 A. References
