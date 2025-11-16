@@ -11,8 +11,6 @@
 #define TITH_OPTIONAL 0
 #define TITH_REQUIRED 1
 
-extern thread_local hydro_kx_session_keypair tith_sessionKeyPair;
-extern thread_local bool tith_encrypting;
 extern thread_local void *tith_handle;
 extern thread_local jmp_buf tith_exitJmpBuf;
 extern thread_local struct TITH_TLV *tith_cmd;

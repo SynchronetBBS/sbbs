@@ -9,9 +9,7 @@
 #include "impl/gimli-core.h"
 
 #include "impl/hash.h"
-#include "impl/kdf.h"
-#include "impl/secretbox.h"
 
 #include "impl/x25519.h"
 
-#include "impl/kx.h"
+#include "impl/sign.h"

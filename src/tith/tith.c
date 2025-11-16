@@ -24,8 +24,8 @@ removePadding(char *str)
 static void
 genKeyPair(void)
 {
-	hydro_kx_keypair kp;
-	hydro_kx_keygen(&kp);
+	hydro_sign_keypair kp;
+	hydro_sign_keygen(&kp);
 	char *pk = b64_encode(kp.pk, sizeof(kp.pk));
 	removePadding(pk);
 	char *sk = b64_encode(kp.sk, sizeof(kp.sk));

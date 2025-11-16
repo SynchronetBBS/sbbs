@@ -11,10 +11,6 @@
 #include "tith-config.h"
 #include "tith-interface.h"
 
-thread_local hydro_kx_session_keypair tith_sessionKeyPair;
-thread_local bool tith_encrypting;
-thread_local static uint64_t rxMsgId;
-thread_local static uint64_t txMsgId;
 thread_local static void **allocStack;
 thread_local static size_t allocStackSize;
 thread_local static size_t allocStackUsed;
@@ -110,15 +106,6 @@ parseType(uint8_t *buf, uint64_t *offset, uint64_t sz)
 	return (enum TITH_Type)num;
 }
 
-static enum TITH_Type
-parseCmd(uint8_t *buf, uint64_t *offset, uint64_t sz)
-{
-	uint64_t num = parseNumber(buf, offset, sz);
-	if (num < TITH_FIRST_CMD || num > TITH_LAST_CMD)
-		tith_logError("Command out of range");
-	return (enum TITH_Type)num;
-}
-
 static uint64_t
 getNumber(uint64_t *remain)
 {
@@ -196,8 +183,9 @@ parseTLV(uint8_t *buf, uint64_t *offset, uint64_t sz)
 	uint64_t length = parseNumber(buf, offset, sz);
 	if (length > sz - *offset)
 		tith_logError("Value extends past length");
-	struct TITH_TLV *ret = allocTLV(type, length);
+	struct TITH_TLV *ret = allocTLV(type, 0);
 	ret->value = &buf[*offset];
+	ret->length = length;
 	*offset += length;
 	return ret;
 }
@@ -206,32 +194,10 @@ void
 tith_getCmd(void)
 {
 	enum TITH_Type type = getCmd(NULL);
-	if (tith_encrypting && type != TITH_EncryptedData)
-		tith_logError("Non-encrypted command on encrypted channel");
 	uint64_t len = getNumber(NULL);
 	tith_cmd = allocTLV(type, len);
 	if (!getBytes(tith_handle, tith_cmd->value, len))
 		tith_logError("Error reading command");
-	if (tith_encrypting) {
-		uint64_t plainTextLen = len - hydro_secretbox_HEADERBYTES;
-		uint8_t *plainText = malloc(plainTextLen);
-		tith_pushAlloc(plainText);
-		if (hydro_secretbox_decrypt(plainText, tith_cmd->value, tith_cmd->length, rxMsgId++, "TITHctx", tith_sessionKeyPair.rx))
-			tith_logError("decryption failure");
-		tith_freeCmd();
-		tith_cmd = NULL;
-		uint64_t offset = 0;
-		type = parseCmd(plainText, &offset, plainTextLen);
-		if (type == TITH_EncryptedData)
-			tith_logError("Invalid encrypted command type");
-		len = parseNumber(plainText, &offset, plainTextLen);
-		if (len != plainTextLen - offset)
-			tith_logError("Bad plainTextLen");
-		tith_cmd = allocTLV(type, len);
-		memcpy(tith_cmd->value, &plainText[offset], len);
-		tith_popAlloc();
-		free(plainText);
-	}
 	uint64_t offset = 0;
 	while (offset < len) {
 		struct TITH_TLV *param = parseTLV(tith_cmd->value, &offset, tith_cmd->length);
@@ -308,36 +274,15 @@ tith_sendCmd(void)
 	}
 	if (offset != len)
 		tith_logError("offset/len mismatch!");
-	if (tith_encrypting) {
-		uint64_t encryptedValueLen = len + hydro_secretbox_HEADERBYTES;
-		uint64_t encryptedLen = encryptedValueLen;
-		encryptedLen += numLen(TITH_EncryptedData);
-		encryptedLen += numLen(encryptedValueLen);
-		uint8_t *encBuffer = malloc(encryptedLen);
-		tith_pushAlloc(encBuffer);
-		offset = 0;
-		offset += sendNumber(TITH_EncryptedData, &encBuffer[offset]);
-		offset += sendNumber(encryptedValueLen, &encBuffer[offset]);
-		if (hydro_secretbox_encrypt(&encBuffer[offset], buffer, len, txMsgId++, "TITHctx", tith_sessionKeyPair.tx))
-			tith_logError("encrypt() failure");
-		tith_popAlloc();
-		free(buffer);
-		if (!sendBytes(tith_handle, encBuffer, encryptedLen))
-			tith_logError("Failed to write TLV data");
-		tith_popAlloc();
-		free(encBuffer);
-	}
-	else {
-		if (!sendBytes(tith_handle, buffer, offset))
-			tith_logError("Failed to write TLV data");
-		tith_popAlloc();
-		free(buffer);
-	}
+	if (!sendBytes(tith_handle, buffer, offset))
+		tith_logError("Failed to write TLV data");
+	tith_popAlloc();
+	free(buffer);
 	if (!flushWrite(tith_handle))
 		tith_logError("fflush(stdout) failed");
 }
 
-static void
+static int16_t
 validateAddrPart(const char **addr)
 {
 	errno = 0;
@@ -352,50 +297,42 @@ validateAddrPart(const char **addr)
 	if (l && **addr == '0')
 		tith_logError("Leading zero");
 	*addr = endptr;
+	return (int16_t)l;
+}
+
+static void
+checkComponent(const char **addr, int16_t zone, char prefix)
+{
+	if (**addr == prefix) {
+		if (zone == -1)
+			tith_logError("Additional component specified in zone -1");
+		(*addr)++;
+		int16_t component = validateAddrPart(addr);
+		if (component < 1)
+			tith_logError("Invalid component");
+	}
 }
 
 void
 tith_validateAddress(const char *addr)
 {
 	/*
-	 * A valid address is the following sequence
-	 * ANY NUMBER of alpha-numeric characters
-	 * TODO: Allow UTF-8
-	 * TODO: Case? Tough with Unicode, mostly pointless
-	 * A hash (#)
-	 * A 16-bit signed integer in decimal format without leading zeros
-	 * A colon (:)
-	 * A 16-bit signed integer in decimal format without leading zeros
-	 * A slash (/)
-	 * A 16-bit signed integer in decimal format without leading zeros
-	 * The following two may be left off
-	 * A period (.)
-	 * A 16-bit signed integer in decimal format without leading zeros
+	 * See TTS-0004
 	 */
 	while(*addr != '#') {
-		if ((unsigned char)*addr < ' ' || (unsigned char)*addr == 0x7F)
+		if ((unsigned char)*addr < ' ' || (unsigned char)*addr == 0x7F || (unsigned char)*addr == ',')
 			tith_logError("Invalid domain character");
 		addr++;
 	};
 	addr++;
-	errno = 0;
-	validateAddrPart(&addr);
-	if (*addr != ':')
-		tith_logError("Garbage after zone");
-	addr++;
-	validateAddrPart(&addr);
-	if (*addr != '/')
-		tith_logError("Garbage after net/region");
-	addr++;
-	validateAddrPart(&addr);
-	if (*addr == 0)
-		return;
-	if (*addr != '.')
-		tith_logError("Garbage after node");
-	addr++;
-	validateAddrPart(&addr);
+	int16_t zone = validateAddrPart(&addr);
+	if (zone < -1 || zone == 0)
+		tith_logError("Invalid zone");
+	checkComponent(&addr, zone, ':');
+	checkComponent(&addr, zone, '/');
+	checkComponent(&addr, zone, '.');
 	if (*addr)
-		tith_logError("Garbage after point");
+		tith_logError("Garbage at end");
 }
 
 void
