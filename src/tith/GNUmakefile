@@ -18,12 +18,14 @@ TITH_OBJS := \
 	tith-client.o \
 	tith-file.o \
 	tith-server.o \
-	tith-stdio.o
+	tith-stdio.o \
+	tith-strings.o
 
 NODELIST_OBJS := \
 	nodelist.o \
 	tith-file.o \
-	tith-nodelist.o
+	tith-nodelist.o \
+	tith-strings.o
 
 $(OBJDIR)%.o: %.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@

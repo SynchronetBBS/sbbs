@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "tith-common.h"
+#include "tith-file.h"
 #include "tith-nodelist.h"
 
 static const char *const keywords[] = {
@@ -146,4 +148,231 @@ tith_cmpNodelistAddr(const void *a1, const void *a2)
 	if (addr1->node != addr2->node)
 		return addr1->node - addr2->node;
 	return 0;
+}
+
+static char *
+getfield(char *line, char **end)
+{
+	if (line == NULL)
+		return "";
+	char *p = strchr(line, '\t');
+	if (p) {
+		if (*p) {
+			*end = p + 1;
+			*p = 0;
+		}
+		else
+			*end = p;
+	}
+	else
+		*end = NULL;
+	return line;
+}
+
+static bool
+resizeAlloc(struct TITH_NodelistEntry **cur, size_t *sz, size_t *count, size_t msz)
+{
+	size_t newSize = *sz ? *sz * 2 : 32;
+	void *newAlloc = realloc(*cur, msz * newSize);
+	if (newAlloc == NULL) {
+		free(*cur);
+		*cur = NULL;
+		*count = 0;
+		return false;
+	}
+	*cur = newAlloc;
+	*sz = newSize;
+	return true;
+}
+
+static int
+cmpNL(const void *a, const void *b)
+{
+	const struct TITH_NodelistEntry *e1 = a;
+	const struct TITH_NodelistEntry *e2 = b;
+
+	return tith_cmpNodelistAddr(&e1->address, &e2->address);
+}
+
+static int
+cmpNLk(const void *a, const void *b)
+{
+	const struct TITH_NodelistAddr *key = a;
+	const struct TITH_NodelistEntry *e = b;
+
+	return tith_cmpNodelistAddr(key, &e->address);
+}
+
+struct TITH_NodelistEntry *
+tith_findNodelistEntry(struct TITH_NodelistEntry *list, size_t listLen, const char *addrStr, uint16_t defaultZone, uint16_t defaultNet)
+{
+	struct TITH_NodelistAddr addr = {
+		.zone = defaultZone,
+		.net = defaultNet ? defaultNet : defaultZone
+	};
+	int expect = -1;
+	// Parse any kind of whackadoodle 4D or less address
+	switch (*addrStr) {
+		case ':':
+			expect = 1;
+			addrStr++;
+			break;
+		case '/':
+			expect = 2;
+			addrStr++;
+			break;
+		case '.':
+			expect = 3;
+			addrStr++;
+			return NULL;
+	}
+	char *end = NULL;
+	long val;
+	do {
+		if (!checkedStrToUL(addrStr, &end, 10, &val) || val < 0 || val > INT16_MAX)
+			return NULL;
+		switch (*end) {
+			case ':':
+				if (expect == 0 || expect == -1) {
+					if (val == 0)
+						return NULL;
+					addr.zone = (uint16_t)val;
+				}
+				else
+					return NULL;
+				expect = 1;
+				addrStr = end + 1;
+				break;
+			case '/':
+				if (expect == 1 || expect == -1) {
+					if (val == 0)
+						return NULL;
+					addr.net = (uint16_t)val;
+				}
+				else
+					return NULL;
+				expect = 2;
+				addrStr = end + 1;
+				break;
+			case '.':
+				if (expect == 2 || expect == -1)
+					addr.node = (uint16_t)val;
+				else
+					return NULL;
+				expect = 3;
+				addrStr = end + 1;
+				break;
+			case '@':
+			case 0:
+				switch (expect) {
+					case 0:
+						if (val == 0)
+							return NULL;
+						addr.zone = (uint16_t)val;
+						break;
+					case 1:
+						if (val == 0)
+							return NULL;
+						addr.net = (uint16_t)val;
+						break;
+					case 2:
+						addr.node = (uint16_t)val;
+						break;
+					case 3:
+						if (val)
+							return NULL;
+						break;
+					default:
+						return NULL;
+				}
+				end = NULL;
+		}
+	} while (end && *end);
+	if (addr.net == 0 || addr.zone == 0)
+		return NULL;
+	// Ok, we've parsed the hellspawn, now find it.
+	return bsearch(&addr, list, listLen, sizeof(*list), cmpNLk);
+}
+
+struct TITH_NodelistEntry *
+tith_loadNodelist(const char *fileName, size_t *list_size, uint32_t flags, uint16_t defaultZone)
+{
+	struct TITH_NodelistEntry *ret = NULL;
+	FILE *fp = fopen(fileName, "rb");
+	if (fp == NULL)
+		goto fail;
+	struct TITH_NodelistAddr addr = {
+		.zone = defaultZone
+	};
+	size_t retSz = 0;
+	size_t retCount = 0;
+	for (;;) {
+		char *line = tith_readLine(fp);
+		if (line == NULL)
+			break;
+		if (line[0] != ';') {
+			if (retCount + 1 >= retSz) {
+				if (!resizeAlloc(&ret, &retSz, &retCount, sizeof(*ret)))
+					break;
+			}
+			struct TITH_NodelistEntry *entry = &ret[retCount];
+			memset(entry, 0, sizeof(*entry));
+			char *next = line;
+			char *field = getfield(next, &next);
+			entry->keyword = tith_parseNodelistKeyword(field, &addr);
+			if (entry->keyword == TYPE_Unknown)
+				goto fail;
+			field = getfield(next, &next);
+			if(!tith_parseNodelistNodeNumber(field, entry->keyword, &addr))
+				goto abortLine;
+			memcpy(&entry->address, &addr, sizeof(entry->address));
+			field = getfield(next, &next);
+			if (flags & TITH_NL_NAME)
+				entry->name = tith_strDup(field);
+			field = getfield(next, &next);
+			if (flags & TITH_NL_LOCATION)
+				entry->location = tith_strDup(field);
+			field = getfield(next, &next);
+			if (flags & TITH_NL_SYSOP)
+				entry->sysop = tith_strDup(field);
+			field = getfield(next, &next);
+			if (flags & TITH_NL_PHONENUMBER)
+				entry->phoneNumber = tith_strDup(field);
+			field = getfield(next, &next);
+			if (flags & TITH_NL_SYSTEMFLAGS)
+				entry->systemFlags = tith_strDup(field);
+			field = getfield(next, &next);
+			if (flags & TITH_NL_PSTNISDNFLAGS)
+				entry->pstnIsdnFlags = tith_strDup(field);
+			field = getfield(next, &next);
+			if (flags & TITH_NL_INTERNETFLAGS)
+				entry->internetFlags = tith_strDup(field);
+			field = getfield(next, &next);
+			if (flags & TITH_NL_EMAILFLAGS)
+				entry->emailFlags = tith_strDup(field);
+			field = getfield(next, &next);
+			if (flags & TITH_NL_OTHERFLAGS)
+				entry->otherFlags = tith_strDup(field);
+		}
+abortLine:
+		free(line);
+	}
+	if (!feof(fp))
+		goto fail;
+	fclose(fp);
+	*list_size = retCount;
+	if (ret) {
+		struct TITH_NodelistEntry *small = realloc(ret, retCount * sizeof(struct TITH_NodelistEntry));
+		if (small)
+			ret = small;
+	}
+	qsort(ret, retCount, sizeof(*ret), cmpNL);
+	return ret;
+
+fail:
+	if (fp)
+		fclose(fp);
+	free(ret);
+	*list_size = 0;
+	return NULL;
 }

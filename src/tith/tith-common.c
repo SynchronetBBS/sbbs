@@ -7,10 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "tith-common.h"
 #include "tith-config.h"
 #include "tith-file.h"
 #include "tith-interface.h"
+#include "tith-strings.h"
 
 thread_local struct TITH_TLV *tith_TLV;
 thread_local struct TITH_TLV *tail;
@@ -94,19 +94,6 @@ tith_popAlloc(void)
 	if (allocStackUsed == 0)
 		tith_logError("Popping of empty allocStack");
 	return allocStack[--allocStackUsed];
-}
-
-/*
- * Basically the same as the POSIX strdup()
- */
-char *tith_strDup(const char *str)
-{
-	size_t sz = strlen(str);
-	char *ret = malloc(sz + 1);
-	if (ret == NULL)
-		return ret;
-	strcpy(ret, str);
-	return ret;
 }
 
 /*
