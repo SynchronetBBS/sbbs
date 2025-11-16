@@ -118,7 +118,7 @@ Contents
       SignedData3 will be signed using the public key of Origin4.
 
   4.  SignedTLV
-      The value begines with a sequence of TLV values in the order
+      The value begins with a sequence of TLV values in the order
       Origin, SignedData, Signature.  The Origin value is optional,
       and may be left out if an Origin has been established earlier.
       SignedData and Signature values are required.  The data in the

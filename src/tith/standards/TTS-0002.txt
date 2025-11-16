@@ -118,12 +118,12 @@ Contents
   most significant set bit in the value and divide it by seven
   rounding up:
 
-  0b0000'0010'0111'1010 (378)
+  0b0000'0001'0111'1010 (378)
     1111 111
     6543 2109 8765 4321
 
-  The most significant bit here is in position number ten.  Ten
-  divided by seven is one and three sevenths (1-3/7, or 1.43) which,
+  The most significant bit here is in position number nine.  Nine
+  divided by seven is one and two sevenths (1-2/7, or 1.29) which,
   rounded up, is two indicating that it will take two bytes to encode.
 
   For each byte, we can take the original number, and divide it by 128
@@ -132,7 +132,7 @@ Contents
   bits of the result and, if there are any bytes after it, set the
   high bit to one.
 
-  So 378 divided by 128 is 2, so and there's an additional byte left,
+  So 378 divided by 128 is 2, and there's an additional byte left,
   so the first encoded byte would be 130. For the next byte, there's
   no need to divide anymore and we just take the low seven bits as-is
   and our second byte is 122.
