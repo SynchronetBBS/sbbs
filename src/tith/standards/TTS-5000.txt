@@ -369,6 +369,14 @@ Contents
      See FTS-5001 for details on the flag fields.  Ignore any length
      restrictions specified in that document.
 
+     In addition to the flags specified in FTS-5001, the TITH nodelist
+     supports the IIH Internet Protocol Flag.  This flag is in the
+     form IIH[:<server address>][:<port>]:<PublicKey> where
+     <PublicKey> is a 43-character base 64 encoded public key with the
+     training equals sign (U+3D) removed, representing the 32-byte
+     public key of the node. If the IIH flag is present, the public
+     key MUST be included.
+
   Field 10: Email Flags
 
      Type: string.
