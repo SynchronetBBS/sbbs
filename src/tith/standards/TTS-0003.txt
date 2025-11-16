@@ -74,9 +74,12 @@ Contents
 
   2.  Signature
       The value is the 64 binary bytes of data output from the
-      Libhydrogen hydro_sign_create() function. Implementations SHOULD
-      ensure this is exactly 64 bytes, and MUST pass the value, the
-      public key of the appropriate Origin address, and the
+      Libhydrogen hydro_sign_create() or hydro_sign_final_create()
+      function.  The context parameter should be the C string
+      "SignTLV" which is the code points U+53, U+69, U+67, U+6E, U+54,
+      U+4C, U+56, U+00.  Implementations SHOULD ensure this is exactly
+      64 bytes, and MUST pass the value, the public key of the
+      appropriate Origin address, the specified context value, and the
       accompanying SignedData value to hydro_sign_verify().  If there
       is no applicable Origin or SignedData, the implementation SHOULD
       notify the appropriate entities of the error.  If the signature
