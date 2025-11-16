@@ -93,6 +93,29 @@ Contents
   If a timestamp is present, it represents the time of last
   modification of the file.
 
+  66. FileRequest
+  ―――――――――――――――
+  A Request value which contains a manditory Filename as defined in
+  section 4, optionally followed by a Timestamp as defined in
+  TTS-0003.  If a Timestamp is present, the request is conditional on
+  the last modified time of Filename being newer than the Timestamp.
+
+  Existing FidoNet requests types (Bark and WaZOO) have an optional
+  password, but it is expected that having public key authentication
+  should be both more secure and easier to administer, making password
+  controlled file requests obsolete.
+
+  The WaZOO request can also request files the same age or older than
+  the timestamp.  The author can't come up with a reasonable use for
+  this, so is not including that functionality initially.
+
+  Finally, WaZOO requests allow wildcards, which means the requester
+  does not know the name of the file they're requesting, or how many
+  files they are requesting.  However, since the Filename value is
+  unrestricted, it's not like I can stop you can allowing wildcards
+  in there.  I think it's a terrible idea though, and the processors
+  written as part of the TITH project won't support them.
+
 
 4. Ancillary Types
 ――――――――――――――――――
