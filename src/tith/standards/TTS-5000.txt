@@ -104,13 +104,13 @@ Contents
 4. Publication and Distribution
 ───────────────────────────────
 
-  The Distribution Nodelist uses the filename TITH‑nodelist.nnn, where
+  The Distribution Nodelist uses the filename TITH-nodelist.nnn, where
   nnn is the day‐of‐year of publication, starting at 001 for the first
   day of January.  Partial and/or alternate nodelists must use some
-  other base filename (i.e. in place of TITH‑nodelist).
+  other base filename (i.e. in place of TITH-nodelist).
 
-  For actual distribution, TITH‑nodelist.nnn is packed into an archive
-  file named TITH‑nodelist.nnn.zstd.
+  For actual distribution, TITH-nodelist.nnn is packed into an archive
+  file named TITH-nodelist.nnn.zstd.
 
   The ZSTD format is presently the official TITH standard, although
   others may be distributed in addition.
