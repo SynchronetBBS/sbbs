@@ -2,17 +2,17 @@
 TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
-Publication:  TTS-0002
+Publication:  TTS‑0002
 Revision:     1
 Title:        Type Length Value Encoding
 Author(s):    Stephen Hurd
-Date:         2025-11-14
-======================================================================
+Date:         2025‑11‑14
+══════════════════════════════════════════════════════════════════════
 
 Status of this document
------------------------
+───────────────────────
 
-  This document is a TITH Technical Standard (TTS) - it specifies
+  This document is a TITH Technical Standard (TTS) — it specifies
   the current technical requirements and recommendations for TITH
   software developers, coordinators and sysops of the Fidonet network
   and other networks using FTN technology.
@@ -21,13 +21,13 @@ Status of this document
   copied or modified for any purpose whatever.
 
 Abstract
---------
+────────
 
   Many TITH packages use binary encoding of data.  When this is done,
   The encoding will conform to this document.
 
 Contents
---------
+────────
 
   1.  Introduction
   2.  Purpose
@@ -38,11 +38,11 @@ Contents
   A. References
   B. History
 
-======================================================================
+══════════════════════════════════════════════════════════════════════
 
 
 1. Introduction
----------------
+───────────────
 
   In many cases, a binary format is used for transferring data.  While
   with text, there's a generally understood set of formatting concepts
@@ -65,7 +65,7 @@ Contents
 
 
 2. Purpose
-----------
+──────────
 
   This document defines how the Type and Length is encoded in TLV
   values as used by TITH software.  Because all TITH software that
@@ -74,20 +74,20 @@ Contents
 
 
 3. Limitations
---------------
+──────────────
 
   The encoding described in this document does not limit the values at
-  all, 2052-bit values can be encoded using these rules.  However, it
+  all, 2052‑bit values can be encoded using these rules.  However, it
   is convenient to put a "reasonable" limit on values so software can
   more efficiently deal with them.
 
   To this end, any software that parses TLV values MUST be capable of
-  parsing at least 32-bit values, and SHOULD parse at least 63-bit
+  parsing at least 32‑bit values, and SHOULD parse at least 63‑bit
   values.
 
 
 4. Decoding
------------
+───────────
 
   Values are decoded by taking the seven least significant bits of the
   number and adding them to the running value.  If the high bit is
@@ -111,7 +111,7 @@ Contents
 
 
 5. Encoding
------------
+───────────
 
   Encoding is a bit trickier because the most significant seven byte
   group is encoded first.  The easiest is to find the position of the
@@ -123,7 +123,7 @@ Contents
     6543 2109 8765 4321
 
   The most significant bit here is in position number nine.  Nine
-  divided by seven is one and two sevenths (1-2/7, or 1.29) which,
+  divided by seven is one and two sevenths (1²⁄₇, or 1.29) which,
   rounded up, is two indicating that it will take two bytes to encode.
 
   For each byte, we can take the original number, and divide it by 128
@@ -134,20 +134,20 @@ Contents
 
   So 378 divided by 128 is 2, and there's an additional byte left,
   so the first encoded byte would be 130. For the next byte, there's
-  no need to divide anymore and we just take the low seven bits as-is
+  no need to divide anymore and we just take the low seven bits as‐is
   and our second byte is 122.
 
 
 A. References
--------------
+─────────────
 
-  [FTA-1006] "Keywords to indicate requirement levels"
-  FTSC, 2000-01-17.
+  [FTA‑1006] "Keywords to indicate requirement levels"
+  FTSC, 2000‑01‑17.
 
 
 B. History
-----------
+──────────
 
-   Rev.1, 2025-11-14: Initial Release.
+   Rev.1, 2025‑11‑14: Initial Release.
 
 **********************************************************************

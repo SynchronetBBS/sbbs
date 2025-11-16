@@ -2,17 +2,17 @@
 TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
-Publication:  TTS-0003
-Revision:     1
+Publication:  TTS‑0003
+Revision:     ─
 Title:        Common TLV Types
 Author(s):    Stephen Hurd
-Date:         2025-11-15
-======================================================================
+Date:         2025‑──‑─5
+══════════════════════════════════════════════════════════════════════
 
 Status of this document
------------------------
+―――――――――――――――――――――――
 
-  This document is a TITH Technical Standard (TTS) - it specifies
+  This document is a TITH Technical Standard (TTS) — it specifies
   the current technical requirements and recommendations for TITH
   software developers, coordinators and sysops of the Fidonet network
   and other networks using FTN technology.
@@ -21,44 +21,44 @@ Status of this document
   copied or modified for any purpose whatever.
 
 Abstract
---------
+――――――――
 
   Overall, TITH uses a tagged TLV structure.  This document describes
   how the types are assigned and used.
 
 Contents
---------
+――――――――
 
-  1.  Introduction
+  ─.  Introduction
   2.  Reservation
   3.  Defined Types
 
   A. References
   B. History
 
-======================================================================
+══════════════════════════════════════════════════════════════════════
 
 
-1. Introduction
----------------
+─. Introduction
+―――――――――――――――
 
   In TITH, data is encoded as a hierarchy of TLV values with every
-  value having a context-specific meaning.  However, there's a few
+  value having a context‐specific meaning.  However, there's a few
   general encodings that will be reused across different contexts, so
   it's good to have a small number of well known types that won't be
   redfined based on the context.
 
 
 2. Reservation
---------------
+――――――――――――――
 
-  The first thirty-two, numbered zero to thirty-one are reserved for
+  The first thirty‐two, numbered zero to thirty‐one are reserved for
   types specified in this document.  These types can not be redefined
   by any other TITH standard in any context.
 
 
 3. Defined Types
-----------------
+――――――――――――――――
 
   These are the defined types and their data format at the time of
   this writing:
@@ -67,8 +67,8 @@ Contents
       A type of zero will never be used.  If it is encountered, the
       implementation MUST stop processing the TLV data.
 
-  1.  Origin
-      This type contains the 5D address as specified by TTS-0004.
+  ─.  Origin
+      This type contains the 5D address as specified by TTS‑0004.
       This address identifies the public key to use for signing
       operations at this level and below.
 
@@ -95,26 +95,26 @@ Contents
       given data with the following structure:
 
       OuterTLV
-       +--> Origin1
-       +--> GenericData1
-       +--> Group1
-         +--> Origin2
-         +--> SignedData1
-         +--> Signature1
-       +--> Group2
-         +--> SignedData2
-         +--> Signature2
-       +--> Group3
-         +--> Group4
-           +--> Origin3
-             +--> Group4
-               +--> Origin4
-                 +--> Group5
-                   +--> SignedData3
-                   +--> Signature3
+       ├──🭬Origin─
+       ├──🭬GenericData─
+       ├─┬🭬Group─
+       │ ├──🭬Origin2
+       │ ├──🭬SignedData─
+       │ ╰──🭬Signature─
+       ├─┬🭬Group2
+       │ ├──🭬SignedData2
+       │ ╰──🭬Signature2
+       ╰─┬🭬Group3
+         ╰─┬🭬Group4
+           ╰─┬🭬Origin3
+             ╰─┬🭬Group4
+               ╰─┬🭬Origin4
+                 ╰─┬🭬Group5
+                   ├──🭬SignedData3
+                   ╰──🭬Signature3
 
-      SignedData1 will be signed using the public key of Origin2,
-      SignedData2 will be signed using the public key of Origin1, and
+      SignedData─ will be signed using the public key of Origin2,
+      SignedData2 will be signed using the public key of Origin─, and
       SignedData3 will be signed using the public key of Origin4.
 
   4.  SignedTLV
@@ -122,47 +122,47 @@ Contents
       Origin, SignedData, Signature.  The Origin value is optional,
       and may be left out if an Origin has been established earlier.
       SignedData and Signature values are required.  The data in the
-      SignedData value MUST be TLV encoded as described in TTS-0002.
+      SignedData value MUST be TLV encoded as described in TTS‑0002.
       The purpose of this type is to allow specifications to permit
       some or all TLV values to be replaced by a SignedTLV value.
 
   5.  Timestamp
       The value is encoded in the same manner as the Type and Length
       parts of a TLV value.  The number encoded is the POSIX Seconds
-      Since the Epoch, defined in XBD4.19.  This is the value returned
+      Since the Epoch, defined in XBD4.─9.  This is the value returned
       by time(NULL) on POSIX systems.  Despite popular belief, this is
-      NOT the number of seconds since the beginning of January 1st,
-      1970 but rather the number of complete days since January 1st,
-      1970 times 86400, plus the number of seconds that have passed so
+      NOT the number of seconds since the beginning of January ─st,
+      ─970 but rather the number of complete days since January ─st,
+      ─970 times 86400, plus the number of seconds that have passed so
       far in the current day.  That is to say that the existence of
       leap seconds is pretended out of existence by this definition.
 
   6.  Destination
       This type contains the text representation of a 5D address as
-      specified by TTS-0004.
+      specified by TTS‑0004.
 
 
 A. References
--------------
+―――――――――――――
 
-  [TTS-0002] "Type Length Value Encoding" TITH, 2025-11-14.
+  [TTS‑0002] "Type Length Value Encoding" TITH, 2025‑──‑─4.
 
-  [FTA-1006] "Keywords to indicate requirement levels" FTSC,
-  2000-01-17.
+  [FTA‑─006] "Keywords to indicate requirement levels" FTSC,
+  2000‑0─‑─7.
 
-  [Libhydrogen] Version 1,
-  https://github.com/jedisct1/libhydrogen/wiki
+  [Libhydrogen] Version ─,
+  https://github.com/jedisct─/libhydrogen/wiki
 
   [POSIX] "The Open Group Base Specifications Issue 8"
-  https://pubs.opengroup.org/onlinepubs/9799919799/
+  https://pubs.opengroup.org/onlinepubs/97999─9799/
 
-  [XBD4.19] "Seconds Since the Epoch"
-  https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap04.html#tag_04_19
+  [XBD4.─9] "Seconds Since the Epoch"
+  https://pubs.opengroup.org/onlinepubs/97999─9799/basedefs/V─_chap04.html#tag_04_─9
 
 
 B. History
-----------
+――――――――――
 
-   Rev.1, 2025-11-15: Initial Release.
+   Rev.─, 2025‑──‑─5: Initial Release.
 
 **********************************************************************

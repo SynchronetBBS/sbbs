@@ -2,18 +2,18 @@
 TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
-Publication:  TTS-5000
+Publication:  TTS‑5000
 Revision:     1
 Title:        The Distribution Nodelist
 Author(s):    FTSC Members, Administrator, Honoured Guests and
               Stephen Hurd
-Date:         2025-11-14
-======================================================================
+Date:         2025‑11‑14
+══════════════════════════════════════════════════════════════════════
 
 Status of this document
------------------------
+───────────────────────
 
-  This document is a TITH Technical Standard (TTS) - it specifies
+  This document is a TITH Technical Standard (TTS) – it specifies
   the current technical requirements and recommendations for TITH
   software developers, coordinators and sysops of the Fidonet network
   and other networks using FTN technology.
@@ -22,7 +22,7 @@ Status of this document
   copied or modified for any purpose whatever.
 
 Abstract
---------
+────────
 
   Current practice for Fidonet Technology Networks (FTN) is to
   maintain a nodelist used to store the details of the nodes in the
@@ -30,7 +30,7 @@ Abstract
 
 
 Contents
---------
+────────
 
   1.  Introduction
   2.  Supersessions
@@ -46,19 +46,19 @@ Contents
   A.  References
   B.  History
 
-======================================================================
+══════════════════════════════════════════════════════════════════════
 
 
 1. Introduction
----------------
+───────────────
 
-  Fidonet is a peer-to-peer network utilising multiple different, and
+  Fidonet is a peer‐to‐peer network utilising multiple different, and
   often incompatible, communication technologies that are independent
   of Fidonet itself, and is organised into a particular hierarchy for
   both technical and management purposes.
 
   For direct communication, it is necessary that the originating node
-  knows in advance the exact method and capabilities of the destina-
+  knows in advance the exact method and capabilities of the destina‐
   tion node in order to determine if, when, and how a direct Fidonet
   mail session can be established.  For routing and management, the
   stated hierarchy must also be known.
@@ -72,21 +72,21 @@ Contents
 
 
 2. Supersessions
-----------------
+────────────────
 
-  FTS-0005 superseded and replaced the documents known under the names
-  of FSC-0002, and FTS-0002.
+  FTS‑0005 superseded and replaced the documents known under the names
+  of FSC‑0002, and FTS‑0002.
 
-  FTS-5000 superseded and replaced the documents known under the name
-  of FTS-0005.
+  FTS‑5000 superseded and replaced the documents known under the name
+  of FTS‑0005.
 
-  This document supersedes and replaces FTS-5000.
+  This document supersedes and replaces FTS‑5000.
 
 
 3. Purpose
-----------
+──────────
 
-  Along with the companion technical standard (FTS-5001) this document
+  Along with the companion technical standard (FTS‑5001) this document
   defines the format and content of Fidonet's distribution nodelist.
 
   Unlike most TITH documents, the nodelist standards are not only
@@ -102,25 +102,25 @@ Contents
 
 
 4. Publication and Distribution
--------------------------------
+───────────────────────────────
 
-  The Distribution Nodelist uses the filename TITH-nodelist.nnn, where
-  nnn is the day-of-year of publication, starting at 001 for the first
+  The Distribution Nodelist uses the filename TITH‑nodelist.nnn, where
+  nnn is the day‐of‐year of publication, starting at 001 for the first
   day of January.  Partial and/or alternate nodelists must use some
-  other base filename (i.e. in place of TITH-nodelist).
+  other base filename (i.e. in place of TITH‑nodelist).
 
-  For actual distribution, TITH-nodelist.nnn is packed into an archive
-  file named TITH-nodelist.nnn.zstd.
+  For actual distribution, TITH‑nodelist.nnn is packed into an archive
+  file named TITH‑nodelist.nnn.zstd.
 
   The ZSTD format is presently the official TITH standard, although
   others may be distributed in addition.
 
 
 5. Content
-----------
+──────────
 
   The nodelist is a flat text file containing any number of lines,
-  encoded in UTF-8.
+  encoded in UTF‑8.
 
   For the remainder of this document, characters in the range U+00
   to U+1F, plus U+7F, shall be called "control characters".
@@ -131,14 +131,14 @@ Contents
 
 
 5.1. Comment Lines
-------------------
+──────────────────
 
   Comment lines begin with a semicolon (U+3B) in the first character
   position followed by zero or more alphabetic characters called
   "interest flags."  A program which processes the nodelist may use
   comment interest flags to determine the disposition of a comment
   line.  The remainder of a comment line (with one exception, treated
-  below) is free-form text.
+  below) is free‐form text.
 
   There are five interest flags defined as follows:
 
@@ -157,7 +157,7 @@ Contents
 
 
 5.2.  Data lines
-----------------
+────────────────
 
   A nodelist data line contains exactly eleven (11) variable length
   fields separated by tabs (U+09), defined below.  Each data line is
@@ -177,13 +177,13 @@ Contents
     No other keywords are valid in the distribution nodelist at this
     time, but private nodelist distributions may include other node
     types by marking them appropriately in this field.  One common
-    example is the "Point" keyword.  See FTS-5002 for the pointlist
+    example is the "Point" keyword.  See FTS‑5002 for the pointlist
     specification.
 
     It is recommended that future implementations allow for keywords
     of unlimited length.
 
-    Full/Member Nodes -- these are the system numbers of individual
+    Full/Member Nodes ⸺ these are the system numbers of individual
     Fidonet members.  See [Policy] for details on Fidonet membership.
 
       <empty>
@@ -191,7 +191,7 @@ Contents
 
       Pvt
         This keyword defines a Private node (see Policy v4.07,
-        Section 2.1.9) - i.e. a node that is operational, but
+        Section 2.1.9) – i.e. a node that is operational, but
         not publicly available for direct contact. When this keyword
         is used, field six should by empty, and no ineternet or email
         addresses should be specified in flags fields. 
@@ -211,9 +211,9 @@ Contents
 
       Down
         Defines a node which is not operational.  This is expected to
-        be (semi-)permanent.  Mail may NOT be sent or routed to it.
+        be (semi‑)permanent.  Mail may NOT be sent or routed to it.
 
-    Administrative Nodes -- these nodes indicate the beginning of a
+    Administrative Nodes ⸺ these nodes indicate the beginning of a
     branch in the Fidonet addressing/management hierarchy.
 
     Each branch may contain one or more administrative nodes of lower
@@ -244,7 +244,7 @@ Contents
 
       Host
         Begins the definition of a local network (net) and normally
-        defines its coordinator (see FTS-5001 for the override flag).
+        defines its coordinator (see FTS‑5001 for the override flag).
 
       Hub
         Begins the definition of a routing subunit within a multilevel
@@ -318,7 +318,7 @@ Contents
      The various parts of the phone number may be used to derive cost
      and routing information, as well as what number is to be dialled.
      A typical example of the data in a phone number field is
-     1-800-555-0100, corresponding to country 1 (USA), area 800 (area
+     1‑800‑555‑0100, corresponding to country 1 (USA), area 800 (area
      code), exchange 555, and number 0100.
 
      Alternatively, this field may be empty if the node has no
@@ -333,10 +333,10 @@ Contents
 
      Contains a comma (U+2C) separated list of flags that are used to
      decide when a node is available and what services can be used.
-     Currently (as of FTS-5001.006), this consists of the CM, ICM, MN,
+     Currently (as of FTS‑5001.006), this consists of the CM, ICM, MN,
      XA, XB, XC, XP, XR, XW, XX, #nn, !nn, and Tyz flags.
 
-     See FTS-5001 for details on the flag fields.  Ignore any length
+     See FTS‑5001 for details on the flag fields.  Ignore any length
      restrictions specified in that document.
 
   Field 8: PSTN/ISDN Flags
@@ -344,12 +344,12 @@ Contents
      Type: string.
 
      Contains a comma (U+2C) separated list of flags that are used
-     when dialing with PSTN or ISDN.  FTS-5001.006 defines these in
+     when dialing with PSTN or ISDN.  FTS‑5001.006 defines these in
      sections 5.2 (Modem Connection Protocol Flags), 5.3 (Session
-     Level Error-correction and Compression Flags), and 5.8 (ISDN
+     Level Error‐correction and Compression Flags), and 5.8 (ISDN
      Capability Flags).
 
-     See FTS-5001 for details on the flag fields.  Ignore any length
+     See FTS‑5001 for details on the flag fields.  Ignore any length
      restrictions specified in that document.
 
   Field 9: Internet Flags
@@ -357,7 +357,7 @@ Contents
      Type: string.
 
      Contains a comma (U+2C) separated list of flags that are used to
-     make a direct connection over the public internet. FTS-5001.006
+     make a direct connection over the public internet. FTS‑5001.006
      defines these in sections 5.9.1 (Internet Protocol Flags), 5.9.2
      (Server Address Flags), and 5.9.3 (Internet Information Flags).
      Note however, that the ICM flag does not go in this field, but
@@ -366,14 +366,14 @@ Contents
      If the the INA: flag is present, it MUST be the first flag in
      this field.
 
-     See FTS-5001 for details on the flag fields.  Ignore any length
+     See FTS‑5001 for details on the flag fields.  Ignore any length
      restrictions specified in that document.
 
-     In addition to the flags specified in FTS-5001, the TITH nodelist
+     In addition to the flags specified in FTS‑5001, the TITH nodelist
      supports the IIH Internet Protocol Flag.  This flag is in the
      form IIH[:<server address>][:<port>]:<PublicKey> where
-     <PublicKey> is a 43-character base 64 encoded public key with the
-     training equals sign (U+3D) removed, representing the 32-byte
+     <PublicKey> is a 43‐character base 64 encoded public key with the
+     training equals sign (U+3D) removed, representing the 32‑byte
      public key of the node. If the IIH flag is present, the public
      key MUST be included.
 
@@ -382,14 +382,14 @@ Contents
      Type: string.
 
      Contains a comma (U+2C) separated list of flags that are used to
-     pass traffic via STD 11 ARPA Internet Text Messages (E-Mail).
-     FTS-5001.006 defines these in sections 5.9.4 (Email Protocol
-     Flags), and 5.9.5 (E-mail Adress Flags).
+     pass traffic via STD 11 ARPA Internet Text Messages (E‑Mail).
+     FTS‑5001.006 defines these in sections 5.9.4 (Email Protocol
+     Flags), and 5.9.5 (E‑mail Adress Flags).
 
      If the IEM: flag is present with an email address, it MUST be the
      first flag in this field.
 
-     See FTS-5001 for details on the flag fields.  Ignore any length
+     See FTS‑5001 for details on the flag fields.  Ignore any length
      restrictions specified in that document.
 
   Field 11: Other Flags
@@ -399,22 +399,22 @@ Contents
      Contains a comma (U+2C) separated list of flags that are not
      carried in other flags fields..
 
-     See FTS-5001 for details on the flag fields.  Ignore any length
+     See FTS‑5001 for details on the flag fields.  Ignore any length
      restrictions specified in that document.
 
 
 6. Segments
------------
+───────────
 
   Segments are partial nodelists, usually containing only one complete
   branch of nodes, starting at the relevant zone, region, host or hub
   node.  The Distribution Nodelist is also referred to as a composite
-  nodelist, as it is assembled from multiple zone-lists.
+  nodelist, as it is assembled from multiple zone‐lists.
 
   The format and structure is the same as the Distribution Nodelist,
   including the header, with a base filename of local invention,
   usually derived from the contents of the segment (e.g.
-  TITH-N712list.nnn or TITH-N712seg.nnn for a segment containing all
+  TITH‑N712list.nnn or TITH‑N712seg.nnn for a segment containing all
   the nodes in Net 712).
 
   To generate the Distribution Nodelist, segments propagate up through
@@ -426,7 +426,7 @@ Contents
   all the hubs in the same local network, compile it into a Network
   Segment, and forward it on to the Regional Coordinator.  And so on.
 
-  Segments can also be sent back downstream - this is most commonly
+  Segments can also be sent back downstream – this is most commonly
   done with Zone Nodelists.  Nodes that do not need to attempt direct
   contact with nodes in other zones can use the Zone Nodelist instead
   of the full composite nodelist, saving on storage space and
@@ -434,23 +434,23 @@ Contents
 
 
 A. References
--------------
+─────────────
 
-  [FTS-0005] "The distribution nodelist", Ben Baker, Rick Moore.
+  [FTS‑0005] "The distribution nodelist", Ben Baker, Rick Moore.
   February 1989. Obsoleted by this document.
 
-  [FTS-5000] "The Distribution Nodelist", FTSC Members, Administrator
+  [FTS‑5000] "The Distribution Nodelist", FTSC Members, Administrator
   and Honoured Guests.  January 2014. Obsoleted by this document.
 
-  [FTA-1006] "Keywords to indicate requirement levels"
-  FTSC, 2000-01-17.
+  [FTA‑1006] "Keywords to indicate requirement levels"
+  FTSC, 2000‑01‑17.
 
-  [Policy] "FidoNet Policy Document" v4.07 - June 9, 1989.
+  [Policy] "FidoNet Policy Document" v4.07 — June 9, 1989.
 
 
 B. History
-----------
+──────────
 
-   Rev.1, 2025-11-14: Initial Release. Slightly modified from FTS-5000
+   Rev.1, 2025‑11‑14: Initial Release. Slightly modified from FTS‑5000
 
 **********************************************************************

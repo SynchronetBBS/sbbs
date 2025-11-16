@@ -10,7 +10,7 @@ Date:         2025‐11‐15
 ══════════════════════════════════════════════════════════════════════
 
 Status of this document
-―――――――――――――――――――――――
+───────────────────────
 
   This document is a TITH Technical Standard (TTS) — it specifies
   the current technical requirements and recommendations for TITH
@@ -21,13 +21,13 @@ Status of this document
   copied or modified for any purpose whatever.
 
 Abstract
-――――――――
+────────
 
   This document describes how assets are placing into a bundle for
   transfer to another system.
 
 Contents
-――――――――
+────────
 
   1.  Introduction
   2.  Encoding
@@ -40,7 +40,7 @@ Contents
 
 
 1. Introduction
-―――――――――――――――
+───────────────
 
   One of the core capabilities needed for an FTN network is the
   ability to transfer data from one node to another.  This standard
@@ -48,20 +48,20 @@ Contents
 
 
 2. Encoding
-―――――――――――
+───────────
 
   Data to be transfered between two nodes is collected into a single
   bundle for the transfer.  The entire bundle is TLV encoded as
-  defined in TTS-0002.
+  defined in TTS‑0002.
 
   The bundle as a whole is a sequence of TLV values as described in
-  TTS-0003.
+  TTS‑0003.
 
-  The first item MUST be a Destination as defined in TTS-0003.
+  The first item MUST be a Destination as defined in TTS‑0003.
 
-  The second item MUST be an Origin as defined in TTS-0003.
+  The second item MUST be an Origin as defined in TTS‑0003.
 
-  The third item MUST be a Timestamp as defined in TTS-0003.  This
+  The third item MUST be a Timestamp as defined in TTS‑0003.  This
   timestamp indicates the time when the bundling process started.  In
   cases where an additional item is added to an existing bundle, the
   Timestamp is not updated (though the Length will be).
@@ -90,19 +90,19 @@ Contents
 
 
 3. Types
-――――――――
+────────
 
   The following types may be included in a bundle.
 
   64. Reserved
-  ――――――――――――
+  ────────────
   This type is reserved for a message type that does not yet have a
   TTS number.
 
   65. File
-  ――――――――
+  ────────
   A File value which begins with an optional Filename as defined in
-  section 4, followed by an optional Timestamp as defined in TTS-0003,
+  section 4, followed by an optional Timestamp as defined in TTS‑0003,
   followed by an optional RequestIdentifier as defined in section 4,
   followed by a required Contents as defined in section 4.
 
@@ -113,10 +113,10 @@ Contents
   included because of a FileRequest from Destination to Origin.
 
   66. FileRequest
-  ―――――――――――――――
+  ───────────────
   A Request value which contains a manditory Filename as defined in
   section 4, optionally followed by a Timestamp as defined in
-  TTS-0003, and followed by a manditory RequestIdentifier.  If a
+  TTS‑0003, and followed by a manditory RequestIdentifier.  If a
   Timestamp is present, the request is conditional on the last
   modified time of Filename being newer than the Timestamp.
 
@@ -137,12 +137,12 @@ Contents
   written as part of the TITH project won't support them.
 
   67. NoFile
-  ――――――――――
+  ──────────
   A NoFile value which contains a manditory RequestIdentifier as
   defined in section 4, followed by an optional Timestamp as defined
-  by TTS-0003, followed by a manditory number encoded in the same
+  by TTS‑0003, followed by a manditory number encoded in the same
   manner as Type and Length, optionally followed by a UTF‑8 string
-  containing a human-readable description of why there is no file.
+  containing a human‐readable description of why there is no file.
 
   This is included because a FileRequest from Destination to Origin
   did not result in a file being included.
@@ -150,34 +150,34 @@ Contents
   The RequestIdentifier is the the one that was in the original
   FileRequest.
 
-  If a Timestamp is present, indicates an expcted time at which the
+  If a Timestamp is present, indicates an expected time at which the
   same FileRequest would result in a File.
-  
+
   The number may have one of the following values:
 
-  1 - Indicates that no file by that name may be requested by the
+  1 – Indicates that no file by that name may be requested by the
       node that send the FileRequest.  This may be due to the file not
       existing, the file not being requestable, or the file requesting
       node not having access to the file.
-  2 - Indicates that the request was conditional, and the condition
+  2 – Indicates that the request was conditional, and the condition
       was not met.  For example, if a Timestamp was included in the
       request, but the last modified time of the requested file
       matches the value of the Timestamp.  If a Timestamp is included
       in the NoFile value, this is a time after which it is expected
       that the file will have been updated.
-  3 - Indicates that the node is not willing to send the file at this
+  3 – Indicates that the node is not willing to send the file at this
       time.  If a Timestamp is included in the NoFile value, this is
       a time at which the node expects to be willing to send the file.
 
 
 4. Ancillary Types
-――――――――――――――――――
+──────────────────
 
   The following types are defined for use by types in section 3.
 
   96. Filename
-  ――――――――――――
-  The value is a UTF-8 string containing the name of the file.  No
+  ────────────
+  The value is a UTF‑8 string containing the name of the file.  No
   restrictions are placed on the value of this string, but the name
   MUST NOT contain additional path components.  Software SHOULD NOT
   use values that are not allowed by common operating systems.
@@ -186,31 +186,31 @@ Contents
   U+3C ('<'), U+3D ('>'), U+3F ('?'), U+5C ('\'), or U+7C ('|').
 
   97. Contents
-  ――――――――――――
+  ────────────
   An arbitrary sequence of bytes with no restrictions on contents or
   length.
 
   98. RequestIdentifier
-  ―――――――――――――――――――――
+  ─────────────────────
   Contains a number encoded using the same method as the Type and
-  Length values as defined by TTS-0002.  This number MUST be unique
+  Length values as defined by TTS‑0002.  This number MUST be unique
   for each FileRequest from the Origin to the Destination, and is used
   to correlate a status or file from the Destination with a specific
   request.
 
 
 A. References
-―――――――――――――
+─────────────
 
-  [FTA-1006] "Keywords to indicate requirement levels" FTSC,
-  2000-01-17.
+  [FTA‑1006] "Keywords to indicate requirement levels" FTSC,
+  2000‑01‑17.
 
-  [TTS-5000] "The Distribution Nodelist", TITH, 2025-11-14
+  [TTS‑5000] "The Distribution Nodelist", TITH, 2025‑11‑14
 
 
 B. History
-――――――――――
+──────────
 
-   Rev.1, 2025-11-15: Initial Release.
+   Rev.1, 2025‑11‑15: Initial Release.
 
 **********************************************************************
