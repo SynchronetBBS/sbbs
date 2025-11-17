@@ -152,6 +152,9 @@ bool isInternet(char *field)
 	if (strncmp(field, "INA:", 4) == 0) {
 		return true;
 	}
+	if (strncmp(field, "IIH:", 4) == 0) {
+		return true;
+	}
 	if (strncmp(field, "IP", 2) == 0 && (field[2] == ':' || field[2] == 0)) {
 		return true;
 	}
@@ -192,7 +195,7 @@ appendFlag(char **list, const char *flag)
 {
 	size_t llen = *list ? strlen(*list) : 0;
 	size_t flen = strlen(flag);
-	size_t newsz = llen + flen + llen ? 1 : 0 + 1;
+	size_t newsz = llen + flen + (llen ? 1 : 0 + 1);
 	char *nlist = realloc(*list, newsz);
 	if (nlist == NULL) {
 		fprintf(stderr, "realloc() to %zu failed for flag \"%s\"\n", newsz, flag);
@@ -255,7 +258,7 @@ checkType(char *line, const char *prefix, char **member, char *addrStr)
  * Overrides format
  * One line with the address in Z:R/N format followed by zero or more lines
  * prefixed with one of:
- * LO, NN, FF, or SN
+ * LO, NN, FL, or SN
  */
 void
 loadOverrides(const char *path)
