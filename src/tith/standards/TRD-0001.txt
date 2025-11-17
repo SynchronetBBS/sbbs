@@ -1,0 +1,321 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TRD‑0001
+Revision:     1
+Title:        FidoNet Technology Network Basics
+Author(s):    Stephen Hurd
+Date:         2025‑11‑17
+══════════════════════════════════════════════════════════════════════
+
+Status of this document
+───────────────────────
+
+  This document is a TITH Reference Document (TRD) — it goes into
+  detail about a particular subject and is intended only as
+  supplemental reading.  Nothing in a TRD should be considered to be
+  part of a standard.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+────────
+
+  This document goes into details about the basic FidoNet design.
+
+Contents
+────────
+
+  1.  Introduction
+  2.  The Message
+  3.  File Requests
+  4.  File Transfers
+  5.  A Node
+  6.  A Nodelist
+  7.  A Minimal Member Node
+  8.  A Minimal Administrative Node
+  9.  A Message Path
+  10. Points
+  11. Addresses
+  12. Domains
+  13. Echomail
+  14. File Distribution Networks
+
+  A. References
+  B. History
+
+══════════════════════════════════════════════════════════════════════
+
+
+1. Introduction
+───────────────
+
+  FidoNet is fundamentally a way for systems to exchange messages.
+  There is quite a bit of infrastructure built up around this that can
+  be hard to understand from existing documentation.  This document
+  attempts to act as a primer for someone new to FidoNet or FidoNet
+  Technology Networks (FTNs).
+
+
+2. The Message
+──────────────
+
+  The basic unit of information on FidoNet is the Message.  A message
+  has an origin node (the system it originally entered the network
+  on), a destination node (the system it should be ultimately
+  delivered to), a from user name (the user on the origin node that
+  created the message), a to user name (the user on the destination
+  node the message should be delivered to), a subject, and a
+  timestamp.  The message may also have one or more flags set.  The
+  standard set of flags are "Private", "Crash", "FileAttached",
+  "ReturnReceiptReqeuest", "IsReturnReceipt", and "AuditRequest".
+  Finally, a message on FidoNet can have a "cost" associated with it.
+
+  If the optional flags, only the "FileAttached" flag is well defined
+  and in common use.  Historically, when the FileAttached flag is set,
+  the subject of the message is replaced with the name of the attached
+  file, and the original subject (if any) is lost.
+
+  Cost is effectively never used, and can be considered optional, with
+  anything that needs it assuming the absence of a cost indicates a
+  cost of zero.
+
+  The Message has been used to implement other features offered by
+  FidoNet, and these usually work by modifying the text of the message
+  itself.  Because of this, Messages should not start with the string
+  "AREA:" or have lines starting with U+0001 (called Start of Heading,
+  Ctrl-A, or SOH).
+
+
+3. File Requests
+────────────────
+
+  Many Nodes on FidoNet support a second basic unit of information,
+  known as a File Request.  These are not carried in Messages, and
+  allow any system to request a file or a wildcard file specification
+  from a FidoNet Node.  Usually, "Update" requests are also supported,
+  can be used to request a file if the Node has a copy that has been
+  modified more recently than a time you specify in the request.
+
+  File Requests are not routed, and the requesting system must connect
+  directly to the system that has the file available.
+
+
+4. File Transfers
+─────────────────
+
+  FidoNet systems generally transfer Messages and File Requests as
+  files, usually with specific names or extensions (PKT files for
+  messages and REQ files for File Requests).  Most software to do
+  these transfers will allow a system to send arbitrary files to the
+  remote system without an accompanying message or any kind of File
+  Request.
+
+
+5. A Node
+─────────
+
+  A node is a system that is part of FidoNet and can send messages to
+  and receive messages from any other node on the network.  There are
+  two general classes of nodes, "Administrative Nodes" and "Member
+  Nodes".  Member Nodes are normal systems, which are expected to have
+  users that may originate and receive messages.  Administrative Nodes
+  are expected to forward messages between other nodes, and may or may
+  not have users.
+
+
+6. A Nodelist
+─────────────
+
+  A nodelist is simply a list of nodes, with information on how and
+  when you can exchange messages and request files.  In general, a
+  standard nodelist expresses a hierarchal system starting with an
+  Administrative Node, so every Member Node has at least one
+  Administrative Node "above" it in the hierarchy.  The hierarchy as
+  it exists on FidoNet is Zone, Region, Net, and Hub.  Every Member
+  Node is listed as being "under" one of these four types in the
+  Nodelist, and each of those types are "under" one of the previous
+  types.  Every Hub is part of a Net, every Net is part of a Region,
+  etc.  Historically, Zones and Regions were geographical, and
+  Nets and Hubs were groupings of convenience, often based on the
+  costs of making phone calls between them.
+
+  Regions and Nets occupy the same component of a FidoNet address,
+  Regions have the Net numbers 10 to 99, and Nets have numbers of 100
+  and greater.
+
+
+7. A Minimal Member Node
+────────────────────────
+
+  The minimum requirements for a Member Node is to have an entry in
+  a nodelist and be able to exchange Messages with the Administrative
+  Node above it.  While many times, most things will work without
+  being listed in a nodelist, various failures can occur when a node
+  is not listed.
+
+
+8. A Minimal Administrative Node
+────────────────────────────────
+
+  An Administrative Node must be able to accept and forward messages
+  whose origin or destination is "under" it in the hierarchy.
+
+
+9. A Message Path
+─────────────────
+
+  There are two general methods of delivering a message to the
+  destination node, either "Direct" where the ultimate destination is
+  directly contacted and the message delivered, or "Routed" where the
+  message is delievered to a series of Administrative Nodes which then
+  forward it.  A Routed message may be delivered Direct by any node it
+  passes through, it is not required that a message follow the
+  hierarchy all the way to the highest common Administrative Node.  In
+  fact, since there is no level above a Zone, there may not be a
+  common node above any specific pair of nodes.
+
+
+10. Points
+──────────
+
+  Points are an extra layer of addressing below the Node.  It is
+  completely up to the Node "above" the Point what the Point
+  represents.  The node a Point is under is referred to as the "Boss
+  Node" for that Point, and all messages to and from the Point should
+  go through the Boss Node.  Points are not expected to deliver
+  anything Direct, and there is a high likelyhood of nodes (even
+  Administrative Nodes) refusing to accept message Direct from a
+  Point.
+
+
+11. Addresses
+─────────────
+
+  FidoNet has a four component hierarcheal address for every node
+  These components are Zone, Net, Node, and Point.  Each component can
+  technically have any value from -32,768 to 32,767 inclusive.
+  However, there are restrictions on what should be considered a valid
+  component for each level, and some special exceptions for Points.
+
+  The Zone component should only have a value between 1 and 32,767.
+
+  The Net component should only have a value between 1 and 32,767 or
+  the special value of -1, which should only be used to apply for a
+  node number.
+
+  The Node component should only have a value between 1 and 32,767 or
+  one of the the special values of 0, which should only be used for
+  Administrative Nodes, or -1, which should only be used to apply for
+  a node number.
+
+  If the Point component is 0, the address is of the Boss Node.  A
+  Point address may be expressed in the range of 0 to 65535 instead of
+  the range -32,768 to 32,767.  When expressed in this manner, a value
+  of 32,768 is considered identical to -32,768, a value of 32,769 is 
+  considered identical to -32,767, etc.
+
+  When the Point is zero, it is almost always left out of the address.
+
+  When writing FidoNet addresses, the most common format is the Zone,
+  followed by a colon, followed by the Net, followed by the Node.  If
+  the point is not zero, a period is placed after the Node, then the
+  Point is placed at the end.
+
+  The Zone is sometimes left out of an address.  In this case it
+  should be obvious from context.  For example, if you're on a system
+  with a Node Address of 1:103/1 and are creating a message whose
+  destination you specify as 218/700, the zone will be assumed to be
+  one and the point will be assumed to be zero.
+
+  Addresses are often refered to as a number-D address.  The number is
+  generally the number of components shown in the address, but in the
+  case where the Point is left off because it is zero, it may still be
+  called a 4D address.
+
+  1D Address: 1 — This is very rare and should not be assumed to be
+                  valid in most contexts.  This would indicate Node 1
+                  on the same Zone and Net.
+  2D Address: 103/1 — Much of FidoNet was designed for 2D addresses,
+                      and this format is commonly supported by
+                      software.  It is good pratice to abvoid using it
+                      though.
+  3D Address: 1:103/1 — This fully specifies a Zone, Net, and Domain,
+                        and is the most common form of address seen.
+                        This may be called a 4D address because the
+                        Point is zero.
+  4D Address: 1:103/1.100 — A full 4D address.
+
+
+12. Domains
+───────────
+
+  An additional layer of addressing above Zones has been implemented
+  by some software.  This layer is called a "Domain" and it represents
+  a completely separate network hierarchy.  When Domains are in use,
+  it is generally called "5D Addressing".  The most common form for a
+  5D address is to place an @ at the end of the address, followed by
+  the domain, such as 1:103/1@fidonet.  Most software that implements
+  5D Addressing limits the domain to eight alpha-numeric ASCII
+  characters, and treats it as case-insensitive, where "fidonet" and
+  "FidoNet" are the same domain.
+
+  For TITH however, domains are generally case-sensitive, may contain
+  almost any Unicode code-point (with some minor restrictions), and
+  have no length limit.  TITH places domains at the beginning of the
+  address followed by a number sign, ie: fidonet#1:103/1.
+
+
+12. AKAs
+────────
+
+  It is common, especially for Administrative Nodes, to have the same
+  system acting as multiple Nodes on the same Network.  All messages
+  between these Nodes are routed "Direct".  One address is generally
+  chosen as the main address, and the rest of the nodes are AKAs.
+
+
+13. Echomail
+────────────
+
+  Echomail is a special use of FidoNet messages to implement a one-to-
+  many messaging system.  Each Echomail has an "Area", and each Node
+  has a list of other nodes that are connected to that area.  When
+  a post is entered in a specific Area, one Message is generated for
+  each connected node.  The Message will start with an "AREA:" line,
+  and will usually have multiple other lines added before and after
+  the post text, some starting with a U+0001 or Ctrl-A character and
+  others just have a specific sequence of characters.
+
+  While it is common to get all your Echomail areas from your
+  Administrative Node, this is not required or guaranteed by FidoNet,
+  and may result in your posts taking a long time to be widely
+  available.  It is often preferrable to connect an area to a system
+  that will directly deliver new posts in an area quickly.  When doing
+  this however, it is important to not connect other nodes (or allow
+  other nodes to connect themselves) in a way that could create a
+  "loop".
+
+14. File Distribution Networks
+──────────────────────────────
+
+  File Distribution Networks act much like Echomail, but using the
+  File Transfer capabilities of FidoNet.  Each file is accompanied by
+  a Tick file (with the TIC extension) that carries much of the same
+  information as an Echomail message.
+
+
+A. References
+─────────────
+
+  [TBD]
+
+
+B. History
+──────────
+
+   Rev.1, 2025‑11‑17: Initial Release.
+
+**********************************************************************
