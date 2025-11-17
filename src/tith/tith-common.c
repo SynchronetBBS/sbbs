@@ -599,8 +599,12 @@ sendTLV(struct TITH_TLV *tlv)
 	else if (tlv->fileName)
 		used += sendFile(tlv->fileName, tlv->length);
 	// Otherwise, it must have children... send those
-	else
-		used += sendTLV(tlv->child);
+	else {
+		uint64_t TLVlen = sendTLV(tlv->child);
+		if (TLVlen != tlv->length)
+			tith_logError("TLV Length mismatch");
+		used += TLVlen;
+	}
 	if (as) {
 		// Finish up the signature we started earlier
 		hydro_sign_final_create(&as->st, as->signatureStorage, as->kp->sk);
@@ -614,7 +618,6 @@ sendTLV(struct TITH_TLV *tlv)
 void
 tith_sendTLV(void)
 {
-	// TODO: Ensure lengths all match up!
 	if (sendTLV(tith_TLV) != tith_TLV->length + typeLen(tith_TLV->type) + lengthLen(tith_TLV->length))
 		tith_logError("Length mismatch!");
 	flushWrite(tith_handle);
