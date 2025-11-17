@@ -3,7 +3,7 @@ CFLAGS += -DHAS_STDINT_H
 CFLAGS += -DHAS_INTTYPES_H
 CFLAGS += -g -std=c11 -Wall -Wextra -Wpedantic
 LDFLAGS += -L../conio/clang.freebsd.amd64.lib.portable -L../xpdev/clang.freebsd.amd64.lib.portable
-LIBS += -lpthread -lciolib_mt -lxpdev_mt -lcursesw -lm
+LIBS += -pthread -lciolib_mt -lxpdev_mt -lcursesw -lm
 
 VPATH = ../cutest:../xpdev
 

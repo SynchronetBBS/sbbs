@@ -152,9 +152,12 @@ Contents
 
   The minimum requirements for a Member Node is to have an entry in
   a nodelist and be able to exchange Messages with the Administrative
-  Node above it.  While many times, most things will work without
-  being listed in a nodelist, various failures can occur when a node
-  is not listed.
+  Node above it when that Admistrative Node has explicitly agreed to
+  forward bith inbound and outbound Messages (a common agreement).
+  While many times, most things will work without being listed in a
+  nodelist, various failures can occur when a node is not listed, and
+  any Node may silentry drop a Message if the Destination is not in
+  the Nodelist.
 
 
 8. A Minimal Administrative Node
@@ -173,9 +176,23 @@ Contents
   message is delievered to a series of Administrative Nodes which then
   forward it.  A Routed message may be delivered Direct by any node it
   passes through, it is not required that a message follow the
-  hierarchy all the way to the highest common Administrative Node.  In
-  fact, since there is no level above a Zone, there may not be a
-  common node above any specific pair of nodes.
+  hierarchy all the way to the highest common Administrative Node.
+
+  In FidoNet, Policy only requires two systems to accept Messages for
+  delivery to a Destination Node.  These are the Node itself (except
+  when it is listed as a private node), and Network Coordinator if
+  the Node is a member of a network (called "Host Routing").  The
+  Regional Coordinator and the Zone Coordinator above a node
+  specifically do not perform message forwarding.
+
+  There are no implicit agreements by any node to forward outgoing
+  Messages.  If you are planning to forward outgoing messages, you
+  should get explicit agreements from any system you plan to route
+  messages through before sending any such messages.  If you have such
+  an agreement, they are expected to return forwarded messages with an
+  explination of why it was not forwarded.  Without such an agreement,
+  they are free to stop forwarding the messages at any time without
+  any notice.
 
 
 10. Points
@@ -282,7 +299,7 @@ Contents
 
   Echomail is a special use of FidoNet messages to implement a one-to-
   many messaging system.  Each Echomail has an "Area", and each Node
-  has a list of other nodes that are connected to that area.  When
+  has a list of other nodes that are connected to that Area.  When
   a post is entered in a specific Area, one Message is generated for
   each connected node.  The Message will start with an "AREA:" line,
   and will usually have multiple other lines added before and after
@@ -311,7 +328,28 @@ Contents
 A. References
 ─────────────
 
-  [TBD]
+  [POLICY4]
+       FidoNet Policy Document Version 4.07. 9 June, 1989
+
+  [FTS-0001.016]
+       A Basic FidoNet(r) Technical Standard Revision 16. Randy Bush,
+       Pacific Systems Group. September 30, 1995.
+
+  [FTS-0004.001]
+       EchoMail Specification. 12 March, 2013.
+
+  [FTS-0006.002]
+       YOOHOO and YOOHOO/2U2. Vince Perriello. 30 November, 2991
+
+  [FTS-4000.001]
+       CONTROL PARAGRAPHS. FTSC. 1 October 2000
+
+  [FTS-0008.003]
+       Extending FTS-0001 to include Bark requests. 15 October, 1990
+
+  [FTS-5000.005]
+       The Distribution Nodelist. FTSC Members, Administrator and
+       Honoured Guests. 23 January 2014.
 
 
 B. History
