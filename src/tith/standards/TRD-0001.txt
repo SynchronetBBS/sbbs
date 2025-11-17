@@ -73,7 +73,7 @@ Contents
   "ReturnReceiptReqeuest", "IsReturnReceipt", and "AuditRequest".
   Finally, a message on FidoNet can have a "cost" associated with it.
 
-  If the optional flags, only the "FileAttached" flag is well defined
+  Of the optional flags, only the "FileAttached" flag is well defined
   and in common use.  Historically, when the FileAttached flag is set,
   the subject of the message is replaced with the name of the attached
   file, and the original subject (if any) is lost.
@@ -240,7 +240,7 @@ Contents
                   on the same Zone and Net.
   2D Address: 103/1 — Much of FidoNet was designed for 2D addresses,
                       and this format is commonly supported by
-                      software.  It is good pratice to abvoid using it
+                      software.  It is good pratice to avoid using it
                       though.
   3D Address: 1:103/1 — This fully specifies a Zone, Net, and Domain,
                         and is the most common form of address seen.
