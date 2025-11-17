@@ -79,6 +79,11 @@ int tith_cmpNodelistAddr(const void *a1, const void *a2);
 struct TITH_NodelistEntry *tith_loadNodelist(const char *fileName, size_t *list_size, uint32_t flags, uint16_t defaultZone);
 
 /*
+ * Frees a nodelist created by tith_loadNodelist()
+ */
+void tith_freeNodelist(struct TITH_NodelistEntry *list, size_t listCount);
+
+/*
  * Finds a nodelist entry in list of size listLen entries.
  * addrStr is parsed as a fidonet address, with defaultZone and defaultNet
  * being used for zone and net respectively if they're not present

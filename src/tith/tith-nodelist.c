@@ -325,6 +325,7 @@ tith_loadNodelist(const char *fileName, size_t *list_size, uint32_t flags, uint1
 			field = getfield(next, &next);
 			if(!tith_parseNodelistNodeNumber(field, entry->keyword, &addr))
 				goto abortLine;
+			retCount++;
 			memcpy(&entry->address, &addr, sizeof(entry->address));
 			field = getfield(next, &next);
 			if (flags & TITH_NL_NAME)
@@ -375,4 +376,21 @@ fail:
 	free(ret);
 	*list_size = 0;
 	return NULL;
+}
+
+void
+tith_freeNodelist(struct TITH_NodelistEntry *list, size_t listCount)
+{
+	for (size_t i = 0; i < listCount; i++) {
+		free(list[i].emailFlags);
+		free(list[i].internetFlags);
+		free(list[i].location);
+		free(list[i].name);
+		free(list[i].otherFlags);
+		free(list[i].phoneNumber);
+		free(list[i].pstnIsdnFlags);
+		free(list[i].sysop);
+		free(list[i].systemFlags);
+	}
+	free(list);
 }

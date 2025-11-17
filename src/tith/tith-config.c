@@ -180,10 +180,9 @@ void tith_freeConfig(void)
 		return;
 	free((void*)cfg->inbound);
 	free((void*)cfg->outbound);
-	free(cfg->nodeList);
 	for (size_t nl = 0; nl < cfg->nodeLists; nl++) {
 		free(cfg->nodeList[nl].domain);
-		free(cfg->nodeList[nl].list);
+		tith_freeNodelist(cfg->nodeList[nl].list, cfg->nodeList[nl].nodelistLength);
 	}
 	free(cfg->nodeList);
 	for (size_t node = 0; node < cfg->nodes; node++)
