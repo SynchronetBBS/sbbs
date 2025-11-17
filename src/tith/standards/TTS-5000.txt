@@ -111,7 +111,7 @@ Contents
   in place of DDD-nodelist).
 
   For actual distribution, DDD-nodelist.nnn is packed into an archive
-  file named DDD-nodelist.nnn.zstd.
+  file named DDD-nodelist.nnn.zst.
 
   The ZSTD format is presently the official TITH standard, although
   others may be distributed in addition.
