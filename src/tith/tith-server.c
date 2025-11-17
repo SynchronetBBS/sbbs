@@ -14,15 +14,16 @@ tith_server(void *handle)
 		tith_logError("No inbound");
 	tith_handle = handle;
 
-	tith_allocCmd(TITH_Info);
-	tith_addData(TITH_Message, 15, "HelloFromServer");
-	tith_sendCmd();
-	tith_freeCmd();
+	tith_allocTLV(TITH_Info);
+	tith_addData(tith_TLV, TITH_Message, 15, "HelloFromServer", true);
+	tith_sendTLV();
+	tith_freeTLV();
 
-	tith_getCmd();
-	tith_validateCmd(TITH_Info, 1, TITH_REQUIRED, TITH_Message);
-	fprintf(stderr, "Server got info message: %.*s\n", (int)tith_cmd->next->length, tith_cmd->next->value);
-	tith_freeCmd();
+	tith_getTLV();
+	tith_parseTLV(tith_TLV);
+	tith_validateTLV(TITH_Info, 1, TITH_REQUIRED, TITH_Message);
+	fprintf(stderr, "Server got info message: %.*s\n", (int)tith_TLV->child->length, tith_TLV->child->value);
+	tith_freeTLV();
 
 	return EXIT_SUCCESS;
 }

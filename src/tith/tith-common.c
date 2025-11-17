@@ -6,8 +6,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <threads.h>
 
 #include "tith-config.h"
+#include "tith-common.h"
 #include "tith-file.h"
 #include "tith-interface.h"
 #include "tith-strings.h"
@@ -222,6 +224,7 @@ allocTLVBuffer(int type, uint64_t len, struct TITH_TLV *first, struct TITH_TLV *
 	ret->length = len;
 	ret->type = type;
 	ret->parsed = false;
+	ret->added = false;
 	ret->value = (uint8_t *)&ret->value;
 	ret->value += sizeof(ret->value);
 	return ret;
@@ -318,6 +321,7 @@ tith_parseTLV(struct TITH_TLV *tlv)
 		int type = parseType(tlv->value, &offset, tlv->length);
 		uint64_t length = parseNumber(tlv->value, &offset, tlv->length);
 		struct TITH_TLV *newTail = allocTLVData(type, length, &tlv->value[offset], first, tlv);
+		offset += length;
 		*tail = newTail;
 		tail = &newTail->next;
 		first = newTail->first;
@@ -441,6 +445,7 @@ tith_allocTLV(int type)
 		tith_logError("Attempting to alloc a second root TLV");
 	tith_TLV = allocTLVBuffer(type, 0, NULL, NULL);
 	tith_TLV->value = NULL;
+	tith_TLV->added = true;
 }
 
 static unsigned
@@ -471,12 +476,13 @@ tith_addData(struct TITH_TLV *tlv, int type, uint64_t len, void *data, bool chil
 		tith_logError("TLV already has a next item");
 	struct TITH_TLV *newTlv = allocTLVBuffer(type, len, child ? NULL : tlv->first, child ? tlv : tlv->parent);
 	memcpy(newTlv->value, data, len);
+	newTlv->added = true;
 	if (child)
 		tlv->child = newTlv;
 	else
 		tlv->next = newTlv;
 	uint64_t addLen = (uint64_t)len + typeLen(type) + lengthLen(len);
-	for (struct TITH_TLV *parent = tlv->parent; parent; parent = parent->parent)
+	for (struct TITH_TLV *parent = newTlv->parent; parent; parent = parent->parent)
 		parent->length += addLen;
 	return newTlv;
 }
@@ -490,6 +496,7 @@ tith_addFile(struct TITH_TLV *tlv, int type, const char *filename, bool child)
 		tith_logError("TLV already has a next item");
 	struct TITH_TLV *newTlv = allocTLVBuffer(type, 0, child ? NULL : tlv->first, child ? tlv : tlv->parent);
 	newTlv->value = NULL;
+	newTlv->added = true;
 	long len = tith_flen(filename);
 	if (len < 0)
 		tith_logError("Unable to get file length");
@@ -563,7 +570,7 @@ sendTLV(struct TITH_TLV *tlv)
 	struct ActiveSignature *as = NULL;
 	struct TITH_TLV *origin = NULL;
 	
-	if (tlv->type == TITH_SignedData) {
+	if (tlv->type == TITH_SignedData && tlv->added) {
 		origin = findOrigin(tlv);
 		// TODO: Ensure origin has a secret key
  		if (tlv->next == NULL)
@@ -608,23 +615,24 @@ void
 tith_sendTLV(void)
 {
 	// TODO: Ensure lengths all match up!
-	sendTLV(tith_TLV);
+	if (sendTLV(tith_TLV) != tith_TLV->length + typeLen(tith_TLV->type) + lengthLen(tith_TLV->length))
+		tith_logError("Length mismatch!");
+	flushWrite(tith_handle);
 }
 
-////////////////////////
-#if 0
 void
-tith_validateCmd(enum TITH_Type command, int numargs, ...)
+tith_validateTLV(int command, int numargs, ...)
 {
-	struct TITH_TLV *tlv = tith_cmd;
+	struct TITH_TLV *tlv = tith_TLV;
 	va_list ap;
 	va_start(ap, numargs);
 	if (tlv->type != command)
-		tith_logError("Invalid command");
+		tith_logError("Incorrect top-level type");
+	tlv = tlv->child;
 	for (int i = 0; i < numargs; i++) {
 		int required = va_arg(ap, int);
-		enum TITH_Type type = va_arg(ap, enum TITH_Type);
-		if (tlv->next == NULL || tlv->next->type != type) {
+		int type = va_arg(ap, int);
+		if (tlv == NULL || tlv->type != type) {
 			if (required)
 				tith_logError("Missing required type");
 		}
@@ -633,4 +641,3 @@ tith_validateCmd(enum TITH_Type command, int numargs, ...)
 		}
 	}
 }
-#endif

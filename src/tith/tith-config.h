@@ -2,6 +2,8 @@
 #define TITH_CONFIG_HEADER
 
 #include "hydro/hydrogen.h"
+#include "tith-common.h"
+#include "tith-nodelist.h"
 
 #define TITH_FADDR_MAXLEN 36
 
@@ -11,9 +13,17 @@ struct TITH_Node {
 	hydro_sign_keypair kp;
 };
 
+struct TITH_ConfigNodelist {
+	char *domain;
+	size_t nodelistLength;
+	struct TITH_NodelistEntry *list;
+};
+
 struct TITH_Config {
 	const char *outbound;
 	const char *inbound;
+	size_t nodeLists;
+	struct TITH_ConfigNodelist *nodeList;
 	size_t nodes;
 	struct TITH_Node node[];
 };

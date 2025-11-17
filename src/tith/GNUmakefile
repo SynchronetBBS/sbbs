@@ -17,6 +17,7 @@ TITH_OBJS := \
 	tith-config.o \
 	tith-client.o \
 	tith-file.o \
+	tith-nodelist.o \
 	tith-server.o \
 	tith-stdio.o \
 	tith-strings.o

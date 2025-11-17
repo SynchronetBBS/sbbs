@@ -70,6 +70,22 @@ cmpAddrs(const void *a1, const void *a2)
 	return strcmp(n1->FTNaddress, n2->FTNaddress);
 }
 
+static bool
+resizeAlloc(struct TITH_ConfigNodelist **cur, size_t *sz, size_t *count, size_t msz)
+{
+	size_t newSize = *sz ? *sz * 2 : 2;
+	void *newAlloc = realloc(*cur, msz * newSize);
+	if (newAlloc == NULL) {
+		free(*cur);
+		*cur = NULL;
+		*count = 0;
+		return false;
+	}
+	*cur = newAlloc;
+	*sz = newSize;
+	return true;
+}
+
 void
 tith_readConfig(const char *configFile)
 {
@@ -83,6 +99,7 @@ tith_readConfig(const char *configFile)
 	cfg = calloc(1, offsetof(struct TITH_Config, node));
 	if (cfg == NULL)
 		tith_logError("malloc() failure");
+	size_t nodeListSz = 0;
 	for (;;) {
 		char *line = tith_readLine(fp);
 		if (line == NULL) {
@@ -117,6 +134,13 @@ tith_readConfig(const char *configFile)
 			cfg->inbound = tith_strDup(val);
 			if (cfg->inbound == NULL)
 				tith_logError("tith_strDup() failed in tith_readConfig()");
+		}
+		else if (strncmp(key, "Nodelist,", 9) == 0) {
+			if (!resizeAlloc(&cfg->nodeList, &nodeListSz, &cfg->nodeLists, sizeof(struct TITH_ConfigNodelist)))
+				tith_logError("Failed to create storage for nodelist");
+			struct TITH_ConfigNodelist *nl = &cfg->nodeList[cfg->nodeLists++];
+			nl->domain = tith_strDup(&key[9]);
+			nl->list = tith_loadNodelist(val, &nl->nodelistLength, TITH_NL_INTERNETFLAGS | TITH_NL_SYSOP | TITH_NL_LOCATION | TITH_NL_NAME | TITH_NL_SYSTEMFLAGS, 0);
 		}
 		else
 			addNode(&cfg, key, val);
@@ -156,6 +180,12 @@ void tith_freeConfig(void)
 		return;
 	free((void*)cfg->inbound);
 	free((void*)cfg->outbound);
+	free(cfg->nodeList);
+	for (size_t nl = 0; nl < cfg->nodeLists; nl++) {
+		free(cfg->nodeList[nl].domain);
+		free(cfg->nodeList[nl].list);
+	}
+	free(cfg->nodeList);
 	for (size_t node = 0; node < cfg->nodes; node++)
 		free((void*)cfg->node[node].FTNaddress);
 	free(cfg);

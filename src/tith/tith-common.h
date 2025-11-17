@@ -20,6 +20,7 @@ struct TITH_TLV {
 	uint64_t length;
 	int type;
 	bool parsed;             // Indicates the value has been parsed as a TLV sequence
+	bool added;              // Indicates the value was added by the program, not read from somewhere else
 	uint8_t *value;
 };
 
@@ -114,8 +115,12 @@ struct TITH_TLV *tith_addFile(struct TITH_TLV *tlv, int type, const char *filena
  */
 void tith_sendTLV(void);
 
-#if 0
-void tith_validateCmd(enum TITH_Type command, int numargs, ...);
-#endif
+/*
+ * Verifies a TLV type and the types if the sequence of TLVs in it.
+ * numargs is the number of required/type pairs that follow, each pair
+ * starts with either TITH_OPTIONAL or TITH_REQUIRED indicating that the
+ * type is required or optional, then a type.
+ */
+void tith_validateTLV(int command, int numargs, ...);
 
 #endif
