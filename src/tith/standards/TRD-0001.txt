@@ -220,9 +220,9 @@ Contents
   When the Point is zero, it is almost always left out of the address.
 
   When writing FidoNet addresses, the most common format is the Zone,
-  followed by a colon, followed by the Net, followed by the Node.  If
-  the point is not zero, a period is placed after the Node, then the
-  Point is placed at the end.
+  followed by a colon, followed by the Net, followed by a slash,
+  followed by the Node.  If the point is not zero, a period is placed
+  after the Node, then the Point is placed at the end.
 
   The Zone is sometimes left out of an address.  In this case it
   should be obvious from context.  For example, if you're on a system
@@ -297,6 +297,7 @@ Contents
   this however, it is important to not connect other nodes (or allow
   other nodes to connect themselves) in a way that could create a
   "loop".
+
 
 14. File Distribution Networks
 ──────────────────────────────
