@@ -117,7 +117,7 @@ static int16_t GetEquippableItem(struct clan *Clan, int16_t type)
 		if (Clan->Items[iTemp].Available && Clan->Items[iTemp].cType != I_BOOK && Clan->Items[iTemp].cType != I_SCROLL) {
 			if (type == Clan->Items[iTemp].cType || type == I_ITEM) {
 				OneFound = true;
-				if (Clan->Items[iTemp].UsedBy != 0) {
+				if (Clan->Items[iTemp].UsedBy == 0) {
 					return iTemp;
 				}
 			}
