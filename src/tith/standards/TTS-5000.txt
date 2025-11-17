@@ -104,13 +104,14 @@ Contents
 4. Publication and Distribution
 ───────────────────────────────
 
-  The Distribution Nodelist uses the filename TITH-nodelist.nnn, where
-  nnn is the day‐of‐year of publication, starting at 001 for the first
-  day of January.  Partial and/or alternate nodelists must use some
-  other base filename (i.e. in place of TITH-nodelist).
+  The Distribution Nodelist uses the filename DDD-nodelist.nnn, where
+  DDD is the domain of the nodelist, nnn is the day‐of‐year of
+  publication, starting at 001 for the first day of January.  Partial
+  and/or alternate nodelists must use some other base filename (i.e.
+  in place of DDD-nodelist).
 
-  For actual distribution, TITH-nodelist.nnn is packed into an archive
-  file named TITH-nodelist.nnn.zstd.
+  For actual distribution, DDD-nodelist.nnn is packed into an archive
+  file named DDD-nodelist.nnn.zstd.
 
   The ZSTD format is presently the official TITH standard, although
   others may be distributed in addition.
@@ -414,8 +415,8 @@ Contents
   The format and structure is the same as the Distribution Nodelist,
   including the header, with a base filename of local invention,
   usually derived from the contents of the segment (e.g.
-  TITH‑N712list.nnn or TITH‑N712seg.nnn for a segment containing all
-  the nodes in Net 712).
+  fidonet‑N712list.nnn or fidonet‑N712seg.nnn for a segment containing
+  all the nodes in Net 712 of fidonet).
 
   To generate the Distribution Nodelist, segments propagate up through
   the network's administrative hierarchy, each tier compiling segments
