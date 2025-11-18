@@ -33,5 +33,6 @@ extern thread_local struct TITH_Config *cfg;
 void tith_readConfig(const char *configFile);
 struct TITH_Node * tith_getNode(struct TITH_Config * restrict cfg, struct TITH_TLV * restrict addr);
 void tith_freeConfig(void);
+void tith_configGetPublicKey(const struct TITH_TLV *addr, uint8_t *pk);
 
 #endif

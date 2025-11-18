@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "base64.h"
 #include "tith-common.h"
 #include "tith-file.h"
 #include "tith-nodelist.h"
@@ -151,11 +152,11 @@ tith_cmpNodelistAddr(const void *a1, const void *a2)
 }
 
 static char *
-getfield(char *line, char **end)
+getfield(char *line, char sep, char **end)
 {
 	if (line == NULL)
 		return "";
-	char *p = strchr(line, '\t');
+	char *p = strchr(line, sep);
 	if (p) {
 		if (*p) {
 			*end = p + 1;
@@ -203,6 +204,32 @@ cmpNLk(const void *a, const void *b)
 	return tith_cmpNodelistAddr(key, &e->address);
 }
 
+bool
+tith_getPublicKey(struct TITH_NodelistEntry *entry, uint8_t *pk)
+{
+	if (entry == NULL)
+		return false;
+	if (entry->internetFlags == NULL)
+		return false;
+	char *ifs = tith_strDup(entry->internetFlags);
+	char *next = ifs;
+	bool ret = false;
+	for (;;) {
+		char *field = getfield(next, ',', &next);
+		if (field[0] == 0)
+			break;
+		if (strncmp(field, "IIH:", 4))
+			continue;
+		char *lc = strrchr(field, ':');
+		lc++;
+		if (b64_decode(pk, hydro_sign_SECRETKEYBYTES, lc))
+			ret = true;
+		break;
+	}
+	free(ifs);
+	return ret;
+}
+
 struct TITH_NodelistEntry *
 tith_findNodelistEntry(struct TITH_NodelistEntry *list, size_t listLen, const char *addrStr, uint16_t defaultZone, uint16_t defaultNet)
 {
@@ -211,20 +238,27 @@ tith_findNodelistEntry(struct TITH_NodelistEntry *list, size_t listLen, const ch
 		.net = defaultNet ? defaultNet : defaultZone
 	};
 	int expect = -1;
-	// Parse any kind of whackadoodle 4D or less address
-	switch (*addrStr) {
-		case ':':
-			expect = 1;
-			addrStr++;
-			break;
-		case '/':
-			expect = 2;
-			addrStr++;
-			break;
-		case '.':
-			expect = 3;
-			addrStr++;
-			return NULL;
+	// Parse any kind of whackadoodle 5D or less address
+	char *p = strchr(addrStr, '#');
+	if (p) {
+		addrStr = p + 1;
+		expect = 0;
+	}
+	else {
+		switch (*addrStr) {
+			case ':':
+				expect = 1;
+				addrStr++;
+				break;
+			case '/':
+				expect = 2;
+				addrStr++;
+				break;
+			case '.':
+				expect = 3;
+				addrStr++;
+				return NULL;
+		}
 	}
 	char *end = NULL;
 	long val;
@@ -237,6 +271,7 @@ tith_findNodelistEntry(struct TITH_NodelistEntry *list, size_t listLen, const ch
 					if (val == 0)
 						return NULL;
 					addr.zone = (uint16_t)val;
+					addr.net = addr.zone;
 				}
 				else
 					return NULL;
@@ -269,6 +304,7 @@ tith_findNodelistEntry(struct TITH_NodelistEntry *list, size_t listLen, const ch
 						if (val == 0)
 							return NULL;
 						addr.zone = (uint16_t)val;
+						addr.net = addr.zone;
 						break;
 					case 1:
 						if (val == 0)
@@ -318,40 +354,40 @@ tith_loadNodelist(const char *fileName, size_t *list_size, uint32_t flags, uint1
 			struct TITH_NodelistEntry *entry = &ret[retCount];
 			memset(entry, 0, sizeof(*entry));
 			char *next = line;
-			char *field = getfield(next, &next);
+			char *field = getfield(next, '\t', &next);
 			entry->keyword = tith_parseNodelistKeyword(field, &addr);
 			if (entry->keyword == TYPE_Unknown)
 				goto fail;
-			field = getfield(next, &next);
+			field = getfield(next, '\t', &next);
 			if(!tith_parseNodelistNodeNumber(field, entry->keyword, &addr))
 				goto abortLine;
 			retCount++;
 			memcpy(&entry->address, &addr, sizeof(entry->address));
-			field = getfield(next, &next);
+			field = getfield(next, '\t', &next);
 			if (flags & TITH_NL_NAME)
 				entry->name = tith_strDup(field);
-			field = getfield(next, &next);
+			field = getfield(next, '\t', &next);
 			if (flags & TITH_NL_LOCATION)
 				entry->location = tith_strDup(field);
-			field = getfield(next, &next);
+			field = getfield(next, '\t', &next);
 			if (flags & TITH_NL_SYSOP)
 				entry->sysop = tith_strDup(field);
-			field = getfield(next, &next);
+			field = getfield(next, '\t', &next);
 			if (flags & TITH_NL_PHONENUMBER)
 				entry->phoneNumber = tith_strDup(field);
-			field = getfield(next, &next);
+			field = getfield(next, '\t', &next);
 			if (flags & TITH_NL_SYSTEMFLAGS)
 				entry->systemFlags = tith_strDup(field);
-			field = getfield(next, &next);
+			field = getfield(next, '\t', &next);
 			if (flags & TITH_NL_PSTNISDNFLAGS)
 				entry->pstnIsdnFlags = tith_strDup(field);
-			field = getfield(next, &next);
+			field = getfield(next, '\t', &next);
 			if (flags & TITH_NL_INTERNETFLAGS)
 				entry->internetFlags = tith_strDup(field);
-			field = getfield(next, &next);
+			field = getfield(next, '\t', &next);
 			if (flags & TITH_NL_EMAILFLAGS)
 				entry->emailFlags = tith_strDup(field);
-			field = getfield(next, &next);
+			field = getfield(next, '\t', &next);
 			if (flags & TITH_NL_OTHERFLAGS)
 				entry->otherFlags = tith_strDup(field);
 		}

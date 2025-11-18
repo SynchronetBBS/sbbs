@@ -32,14 +32,18 @@ tith_client(int argc, char **argv, void *handle)
 	if (cfg->outbound == NULL)
 		tith_logError("No outbound");
 
-	tith_allocTLV(TITH_Info);
-	tith_addData(tith_TLV, TITH_Message, 15, "HelloFromClient", true);
+	tith_allocTLV(TITH_SignedTLV);
+	struct TITH_TLV *tlv = tith_addData(tith_TLV, TITH_Origin, strlen(source), source, true);
+	tlv = tith_addContainer(tlv, TITH_SignedData, false);
+	struct TITH_TLV *info = tith_addContainer(tlv, TITH_Info, true);
+	tith_addData(info, TITH_Message, 15, "HelloFromClient", true);
+	tith_addNullData(tlv, TITH_Signature, hydro_sign_BYTES, false);
 	tith_sendTLV();
 	tith_freeTLV();
 
 	tith_getTLV();
 	tith_parseTLV(tith_TLV);
-	tith_validateTLV(TITH_Info, 1, TITH_REQUIRED, TITH_Message);
+	tith_validateTLV(tith_TLV, TITH_Info, 1, TITH_REQUIRED, TITH_Message);
 	fprintf(stderr, "Client got info message: %.*s\n", (int)tith_TLV->child->length, tith_TLV->child->value);
 	tith_freeTLV();
 

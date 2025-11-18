@@ -93,4 +93,9 @@ void tith_freeNodelist(struct TITH_NodelistEntry *list, size_t listCount);
  */
 struct TITH_NodelistEntry *tith_findNodelistEntry(struct TITH_NodelistEntry *list, size_t listLen, const char *addrStr, uint16_t defaultZone, uint16_t defaultNet);
 
+/*
+ * Get a public key for the specified nodelist entry
+ */
+bool tith_getPublicKey(struct TITH_NodelistEntry *entry, uint8_t *pk);
+
 #endif

@@ -104,11 +104,21 @@ void tith_allocTLV(int type);
 struct TITH_TLV *tith_addData(struct TITH_TLV *tlv, int type, uint64_t len, void *data, bool child);
 
 /*
+ * As above but sets the data to NULs
+ */
+struct TITH_TLV *tith_addNullData(struct TITH_TLV *tlv, int type, uint64_t len, bool child);
+
+/*
  * As above, but adds the data in filename as the value
  * The file must not be deleted or modified from when this is called to
  * when tith_freeTLV() is called.
  */
 struct TITH_TLV *tith_addFile(struct TITH_TLV *tlv, int type, const char *filename, bool child);
+
+/*
+ * As above, but this is a container for adding new TLVs to
+ */
+struct TITH_TLV *tith_addContainer(struct TITH_TLV *tlv, int type, bool child);
 
 /*
  * Sends the current root TLV
@@ -121,6 +131,6 @@ void tith_sendTLV(void);
  * starts with either TITH_OPTIONAL or TITH_REQUIRED indicating that the
  * type is required or optional, then a type.
  */
-void tith_validateTLV(int command, int numargs, ...);
+void tith_validateTLV(struct TITH_TLV *tlv, int command, int numargs, ...);
 
 #endif

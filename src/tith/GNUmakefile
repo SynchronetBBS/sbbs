@@ -1,7 +1,8 @@
 all: tith nodelist
 -include $(OBJDIR)*.d
 
-CFLAGS	+=	-std=c11 -MMD -MP -D_C11_SOURCE
+CFLAGS	+=	-std=c11 -MMD -MP -D_C11_SOURCE -pthread
+LDFLAGS	+=	-pthread
 ifdef DEBUG
  CFLAGS	+=	-g -O0 -Wall -pedantic -Wconversion -Wextra -Wno-format-truncation
 else
@@ -23,6 +24,7 @@ TITH_OBJS := \
 	tith-strings.o
 
 NODELIST_OBJS := \
+	base64.o \
 	nodelist.o \
 	tith-file.o \
 	tith-nodelist.o \

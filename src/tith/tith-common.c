@@ -279,8 +279,12 @@ findOrigin(struct TITH_TLV *tlv)
 		}
 		else if (cur == NULL)
 			tith_logError("Unable to find Origin for SignedTLV");
-		else if (cur->type == TITH_Origin)
+		else if (cur->type == TITH_Origin) {
 			o = cur;
+			cur = cur->next;
+		}
+		else
+			cur = cur->next;
 	}
 	return origin;
 }
@@ -292,21 +296,24 @@ checkForSignedTLV(struct TITH_TLV *tlv)
 		return;
 	// Since we know this is a sequence, go ahead and parse it...
 	tith_parseTLV(tlv);
+	tith_validateTLV(tlv, TITH_SignedTLV, 3, TITH_OPTIONAL, TITH_Origin, TITH_REQUIRED, TITH_SignedData, TITH_REQUIRED, TITH_Signature);
 	// Now find the origin...
 	struct TITH_TLV *origin = NULL;
-	if (tlv->child->type == TITH_Origin)
+	struct TITH_TLV *sdata = NULL;
+	if (tlv->child->type == TITH_Origin) {
 		origin = tlv->child;
-	else
+		sdata = tlv->child->next;
+	}
+	else {
 		origin = findOrigin(tlv);
+		sdata = tlv->child;
+	}
 	// Now that we have an origin, look up the public key for it
-	/*
-	 * TODO: We need this interface in tith-config
-	 *       Basically, we need a nodelist per zone to be parsed
-	 *       so we have the nodelist deets available.
-	 *       WE only need the public key, but SRIF will need
-	 *       Sysop Name, and possibly other fields if we want to lie
-	 *       about where we got them.
-	 */
+	uint8_t pk[hydro_sign_PUBLICKEYBYTES];
+	tith_configGetPublicKey(origin, pk);
+	// And validate...
+	if (hydro_sign_verify(sdata->next->value, sdata->value, sdata->length, "SignTLV", pk))
+		tith_logError("Signature failed to validate!");
 }
 
 void
@@ -467,47 +474,74 @@ typeLen(int num)
 	return lengthLen((uint64_t)num);
 }
 
-struct TITH_TLV *
-tith_addData(struct TITH_TLV *tlv, int type, uint64_t len, void *data, bool child)
+static struct TITH_TLV *
+addRaw(struct TITH_TLV *tlv, int type, uint64_t len, bool child)
 {
 	if (child && tlv->child)
 		tith_logError("TLV already has a child");
 	if (!child && tlv->next)
 		tith_logError("TLV already has a next item");
 	struct TITH_TLV *newTlv = allocTLVBuffer(type, len, child ? NULL : tlv->first, child ? tlv : tlv->parent);
-	memcpy(newTlv->value, data, len);
 	newTlv->added = true;
 	if (child)
 		tlv->child = newTlv;
 	else
 		tlv->next = newTlv;
+	return newTlv;
+}
+
+static void
+growParents(struct TITH_TLV *tlv, uint64_t len)
+{
+	for (struct TITH_TLV *parent = tlv->parent; parent; parent = parent->parent) {
+		uint64_t oldplen = lengthLen(parent->length);
+		parent->length += len;
+		uint64_t newplen = lengthLen(parent->length);
+		len += newplen - oldplen;
+	}
+}
+
+struct TITH_TLV *
+tith_addData(struct TITH_TLV *tlv, int type, uint64_t len, void *data, bool child)
+{
+	struct TITH_TLV *newTlv = addRaw(tlv, type, len, child);
+	memcpy(newTlv->value, data, len);
 	uint64_t addLen = (uint64_t)len + typeLen(type) + lengthLen(len);
-	for (struct TITH_TLV *parent = newTlv->parent; parent; parent = parent->parent)
-		parent->length += addLen;
+	growParents(newTlv, addLen);
+	return newTlv;
+}
+
+struct TITH_TLV *
+tith_addNullData(struct TITH_TLV *tlv, int type, uint64_t len, bool child)
+{
+	struct TITH_TLV *newTlv = addRaw(tlv, type, len, child);
+	memset(newTlv->value, 0, len);
+	uint64_t addLen = (uint64_t)len + typeLen(type) + lengthLen(len);
+	growParents(newTlv, addLen);
+	return newTlv;
+}
+
+struct TITH_TLV *
+tith_addContainer(struct TITH_TLV *tlv, int type, bool child)
+{
+	struct TITH_TLV *newTlv = addRaw(tlv, type, 0, child);
+	newTlv->value = NULL;
+	uint64_t addLen = typeLen(type) + lengthLen(0);
+	growParents(newTlv, addLen);
 	return newTlv;
 }
 
 struct TITH_TLV *
 tith_addFile(struct TITH_TLV *tlv, int type, const char *filename, bool child)
 {
-	if (child && tlv->child)
-		tith_logError("TLV already has a child");
-	if (!child && tlv->next)
-		tith_logError("TLV already has a next item");
-	struct TITH_TLV *newTlv = allocTLVBuffer(type, 0, child ? NULL : tlv->first, child ? tlv : tlv->parent);
+	struct TITH_TLV *newTlv = addRaw(tlv, type, 0, child);
 	newTlv->value = NULL;
-	newTlv->added = true;
+	newTlv->fileName = tith_strDup(filename);
 	long len = tith_flen(filename);
 	if (len < 0)
 		tith_logError("Unable to get file length");
-	newTlv->fileName = tith_strDup(filename);
-	if (child)
-		tlv->child = newTlv;
-	else
-		tlv->next = newTlv;
 	uint64_t addLen = (uint64_t)len + typeLen(type) + lengthLen((uint64_t)len);
-	for (struct TITH_TLV *parent = tlv->parent; parent; parent = parent->parent)
-		parent->length += addLen;
+	growParents(newTlv, addLen);
 	return newTlv;
 }
 
@@ -561,53 +595,58 @@ sendFile(const char *fname, uint64_t len)
 }
 
 static uint64_t
-sendTLV(struct TITH_TLV *tlv)
+sendTLV(struct TITH_TLV *firstTLV)
 {
-	if (tlv == NULL)
+	if (firstTLV == NULL)
 		tith_logError("Attempting to send NULL TLV");
-	uint64_t used = sendNumber((uint64_t)tlv->type);
-	used += sendNumber(tlv->length);
-	struct ActiveSignature *as = NULL;
-	struct TITH_TLV *origin = NULL;
-	
-	if (tlv->type == TITH_SignedData && tlv->added) {
-		origin = findOrigin(tlv);
-		// TODO: Ensure origin has a secret key
- 		if (tlv->next == NULL)
-			tith_logError("Sending SignedData at end of sequence");
-		if (tlv->next->type != TITH_Signature)
-			tith_logError("Sending SignedData that's not followed by Signature");
-		if (tlv->next->length != hydro_sign_BYTES)
-			tith_logError("Sending SignedData followed by Signature with wrong size");
-		if (!tlv->next->value)
-			tith_logError("Sending SignedData followed by Signature without storage");
-		if (activeSignaturesSize <= activeSignaturesCount) {
-			struct ActiveSignature *newSigs = realloc(activeSignatures, sizeof(struct ActiveSignature) * (activeSignaturesCount + 1));
-			if (newSigs == NULL)
-				tith_logError("Unable to allocated new ActiveSignature");
-			activeSignatures = newSigs;
+	uint64_t used = 0;
+	for (struct TITH_TLV *tlv = firstTLV; tlv; tlv = tlv->next) {
+		used += sendNumber((uint64_t)tlv->type);
+		used += sendNumber(tlv->length);
+		struct ActiveSignature *as = NULL;
+		struct TITH_TLV *origin = NULL;
+
+		if (tlv->type == TITH_SignedData && tlv->added) {
+			origin = findOrigin(tlv);
+			// TODO: Ensure origin has a secret key
+			if (tlv->next == NULL)
+				tith_logError("Sending SignedData at end of sequence");
+			if (tlv->next->type != TITH_Signature)
+				tith_logError("Sending SignedData that's not followed by Signature");
+			if (tlv->next->length != hydro_sign_BYTES)
+				tith_logError("Sending SignedData followed by Signature with wrong size");
+			if (!tlv->next->value)
+				tith_logError("Sending SignedData followed by Signature without storage");
+			if (activeSignaturesSize <= activeSignaturesCount) {
+				struct ActiveSignature *newSigs = realloc(activeSignatures, sizeof(struct ActiveSignature) * (activeSignaturesCount + 1));
+				if (newSigs == NULL)
+					tith_logError("Unable to allocated new ActiveSignature");
+				activeSignatures = newSigs;
+			}
+			as = &activeSignatures[activeSignaturesCount++];
+			as->signatureStorage = tlv->next->value;
+			hydro_sign_init(&as->st, "SignTLV");
+			struct TITH_Node *node = tith_getNode(cfg, origin);
+			as->kp = &node->kp;
+			// TODO: Set the keypair here...
 		}
-		as = &activeSignatures[activeSignaturesCount++];
-		as->signatureStorage = tlv->next->value;
-		hydro_sign_init(&as->st, "SignTLV");
-		// TODO: Set the keypair here...
-	}
-	// If we have the value in memory, send it...
-	if (tlv->value)
-		used += sendBuffer(tlv->value, tlv->length);
-	// If it's in a file, send that...
-	else if (tlv->fileName)
-		used += sendFile(tlv->fileName, tlv->length);
-	// Otherwise, it must have children... send those
-	else {
-		uint64_t TLVlen = sendTLV(tlv->child);
-		if (TLVlen != tlv->length)
-			tith_logError("TLV Length mismatch");
-		used += TLVlen;
-	}
-	if (as) {
-		// Finish up the signature we started earlier
-		hydro_sign_final_create(&as->st, as->signatureStorage, as->kp->sk);
+		// If we have the value in memory, send it...
+		if (tlv->value)
+			used += sendBuffer(tlv->value, tlv->length);
+		// If it's in a file, send that...
+		else if (tlv->fileName)
+			used += sendFile(tlv->fileName, tlv->length);
+		// Otherwise, it must have children... send those
+		else {
+			uint64_t TLVlen = sendTLV(tlv->child);
+			if (TLVlen != tlv->length)
+				tith_logError("TLV Length mismatch");
+			used += TLVlen;
+		}
+		if (as) {
+			// Finish up the signature we started earlier
+			hydro_sign_final_create(&as->st, as->signatureStorage, as->kp->sk);
+		}
 	}
 	return used;
 }
@@ -624,9 +663,8 @@ tith_sendTLV(void)
 }
 
 void
-tith_validateTLV(int command, int numargs, ...)
+tith_validateTLV(struct TITH_TLV *tlv, int command, int numargs, ...)
 {
-	struct TITH_TLV *tlv = tith_TLV;
 	va_list ap;
 	va_start(ap, numargs);
 	if (tlv->type != command)

@@ -3,14 +3,13 @@
 #include <string.h>
 
 #include "base64.h"
-#include "tith-common.h"
 
 static const char *const base64alphabet =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
 // TODO: No padding... we're using fixed buffers and don't need it
 
-void
+bool
 b64_decode(uint8_t *target, size_t tlen, const char *source)
 {
 	unsigned working = 0;
@@ -25,10 +24,10 @@ b64_decode(uint8_t *target, size_t tlen, const char *source)
 		working <<= 6;
 		char *i = strchr(base64alphabet, (char)*inp);
 		if (i == NULL)
-			tith_logError("Invalid b64");
+			return false;
 		if (*i == '=')  { /* pad char */
 			if ((working & 0xFF) != 0)
-				tith_logError("Invalid b64 pad");
+				return false;
 			break;
 		}
 		bits += 6;
@@ -39,18 +38,20 @@ b64_decode(uint8_t *target, size_t tlen, const char *source)
 		}
 	}
 	if (outp != outend)
-		tith_logError("Incorrect b64 length");
+		return false;
+	return true;
 }
 
-static void
+static bool
 add_char(char *pos, uint8_t ch, bool done, char *end)
 {
 	if (pos >= end)
-		tith_logError("b64 source too long");
+		return false;
 	if (done)
 		*pos = base64alphabet[64];
 	else
 		*pos = base64alphabet[(int)ch];
+	return true;
 }
 
 char *
@@ -59,7 +60,6 @@ b64_encode(const uint8_t *source, size_t slen)
 	const uint8_t *inp = source;
 	size_t tlen = (((4ULL * slen / 3ULL) + 3ULL) & ~3ULL) + 1;
 	char *target = malloc(tlen);
-	tith_pushAlloc(target);
 	char *outp = target;
 	char *outend = outp + tlen;
 	const uint8_t *inend = inp + slen;
@@ -92,11 +92,14 @@ b64_encode(const uint8_t *source, size_t slen)
 		if (inp == inend)
 			done = true;
 	}
-	if (outp == outend)
-		tith_logError("b64 string underallocated");
+	if (outp == outend) {
+		free(target);
+		return NULL;
+	}
 	*(outp++) = 0;
-	if (outp != outend)
-		tith_logError("b64 string overallocated");
-	tith_popAlloc();
+	if (outp != outend) {
+		free(target);
+		return NULL;
+	}
 	return target;
 }

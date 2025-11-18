@@ -21,8 +21,13 @@ tith_server(void *handle)
 
 	tith_getTLV();
 	tith_parseTLV(tith_TLV);
-	tith_validateTLV(TITH_Info, 1, TITH_REQUIRED, TITH_Message);
-	fprintf(stderr, "Server got info message: %.*s\n", (int)tith_TLV->child->length, tith_TLV->child->value);
+	// We require the Origin here because we have no context.
+	tith_validateTLV(tith_TLV, TITH_SignedTLV, 3, TITH_REQUIRED, TITH_Origin, TITH_REQUIRED, TITH_SignedData, TITH_REQUIRED, TITH_Signature);
+	tith_parseTLV(tith_TLV->child->next);
+	tith_parseTLV(tith_TLV->child->next->child);
+	tith_validateTLV(tith_TLV->child->next->child, TITH_Info, 1, TITH_REQUIRED, TITH_Message);
+	tith_parseTLV(tith_TLV->child->next->child->child);
+	fprintf(stderr, "Server got info message: %.*s\n", (int)tith_TLV->child->next->child->child->length, tith_TLV->child->next->child->child->value);
 	tith_freeTLV();
 
 	return EXIT_SUCCESS;
