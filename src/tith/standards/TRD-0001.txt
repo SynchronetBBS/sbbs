@@ -138,9 +138,8 @@ Contents
   Node is listed as being "under" one of these four types in the
   Nodelist, and each of those types are "under" one of the previous
   types.  Every Hub is part of a Net, every Net is part of a Region,
-  etc.  Historically, Zones and Regions were geographical, and
-  Nets and Hubs were groupings of convenience, often based on the
-  costs of making phone calls between them.
+  etc.  Historically, Zones, Regions, and Nets were geographical, and
+  Hubs were groupings of convenience.
 
   Regions and Nets occupy the same component of a FidoNet address,
   Regions have the Net numbers 10 to 99, and Nets have numbers of 100
@@ -156,8 +155,19 @@ Contents
   forward bith inbound and outbound Messages (a common agreement).
   While many times, most things will work without being listed in a
   nodelist, various failures can occur when a node is not listed, and
-  any Node may silentry drop a Message if the Destination is not in
+  any Node may silently drop a Message if the Destination is not in
   the Nodelist.
+
+  While current FidoNet policy requires a Node be reachable via a
+  dial-up connection during Zone Mail Hour, a cursory glance at the
+  current FidoNet Nodelist indicates that at most 150 out of 1,194
+  Nodes have this capability (Less than 13%), one out of four ZCs have
+  this capability (25%), four out of thirty RCs (Less than 14%), and
+  most importantly, 23 out of 158 NCs (Less than 15%).
+
+  Deeper analysis shows that if you want to be able to contact the
+  largest percentage of FidoNet nodes Direct using a single method,
+  you should support the binkp protocol.
 
 
 8. A Minimal Administrative Node
@@ -265,6 +275,10 @@ Contents
                         Point is zero.
   4D Address: 1:103/1.100 — A full 4D address.
 
+  Interestingly, in the current Nodelist, there are no duplicate Host
+  or Region lines, which means any nodelisted 2D FidoNet address can
+  be used to uniquely identify a Node without the need for a zone.
+
 
 12. Domains
 ───────────
@@ -342,7 +356,10 @@ A. References
        YOOHOO and YOOHOO/2U2. Vince Perriello. 30 November, 2991
 
   [FTS-4000.001]
-       CONTROL PARAGRAPHS. FTSC. 1 October 2000
+       CONTROL PARAGRAPHS. FTSC. 1 October 2000.
+
+  [FTS-4009.001]
+       Netmail tracking (Via). FTSC. 16 May, 2003.
 
   [FTS-0008.003]
        Extending FTS-0001 to include Bark requests. 15 October, 1990
@@ -350,6 +367,15 @@ A. References
   [FTS-5000.005]
        The Distribution Nodelist. FTSC Members, Administrator and
        Honoured Guests. 23 January 2014.
+
+  [FTS-5005.003]
+       Advanced BinkleyTerm Style Outbound flow and control files.
+       Igor Romanovsky, Administrator and FTSC members.
+       31 October, 2016
+
+  [FTS-5006.001]
+       TIC file format. Michiel van der Vlist, FTSC members.
+       7 November, 2016
 
 
 B. History
