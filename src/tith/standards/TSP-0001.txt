@@ -1,0 +1,74 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TSP‑0001
+Revision:     1
+Title:        DNS Records for Nodelist Fields
+Author(s):    Stephen Hurd
+Date:         2025‑11‑19
+══════════════════════════════════════════════════════════════════════
+
+Status of this document
+───────────────────────
+
+  This document is a TITH Standard Proposal (TSP) — it documents a
+  proposed standard and solicits discussion.  Until promoted to a TTS,
+  this is experimental only and does not describe required behaviour.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+────────
+
+  Some networks prefer to work without a nodelist using DNS, but
+  current DNS mapping does not probide all required nodelist
+  information.
+
+Contents
+────────
+
+  1.  Introduction
+  2.  TXT Records
+
+  A. References
+  B. History
+
+══════════════════════════════════════════════════════════════════════
+
+
+1. Introduction
+───────────────
+
+  It is common to run a system using DNS and not maintaining a local
+  copy of the nodelist.  While this works for connecting to a specific
+  node, the nodelist contains more than just hostnames.
+
+
+2. TXT Records
+──────────────
+
+  _tith_sysopname is a TXT record that contains the string "sysop="
+  followed by the user name of a sysop of the node.
+
+  _tith_sysopname.f1.n1.z885.bbsdev.net. IN TXT "sysop=Deuce"
+
+  _tith_iflags is a TXT record that contains the string "iflags="
+  followed by the inernet flags field from the nodelist.  The INA flag
+  if present may be stripped from the field.
+
+  _tith_iflags.f1.n1.z885.bbsdev.net. IN TXT
+          "iflags=IIH:Jeq+WuDMPtjZLRWb7IWSguOecnyqJT/y2SnQBkQ0Gi8"
+
+
+A. References
+─────────────
+
+
+B. History
+──────────
+
+   Rev.1, 2025‑11‑19: Initial Release.
+
+**********************************************************************
