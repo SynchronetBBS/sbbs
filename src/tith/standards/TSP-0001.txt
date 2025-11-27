@@ -31,6 +31,7 @@ Contents
 
   1.  Introduction
   2.  TXT Records
+  3.  Feedback
 
   A. References
   B. History
@@ -62,8 +63,18 @@ Contents
           "iflags=IIH:Jeq+WuDMPtjZLRWb7IWSguOecnyqJT/y2SnQBkQ0Gi8"
 
 
+3. Feedback
+───────────
+
+  There has been a suggestion that _tith should be a suffix, not a
+  prefix (ie: _sysopname_tith).
+
+
 A. References
 ─────────────
+
+  [RFC1464] Using the Domain Name System To Store Arbitrary String
+  Attributes. R. Rosenbaum, Digital Equipment Corporation. May 1993.
 
 
 B. History
