@@ -90,7 +90,7 @@ utf8_to_utf16(const uint8_t *str8, int buflen)
 	sz = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, (LPCCH)str8, buflen, NULL, 0);
 	if (sz == 0)
 		return NULL;
-	ret = (LPWSTR)malloc((sz + 2) * sizeof(*ret));
+	ret = (LPWSTR)malloc((sz + 1) * sizeof(*ret));
 	if (ret != NULL) {
 		if (sz == MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, (LPCCH)str8, buflen, (LPWSTR)ret, sz)) {
 			ret[sz] = 0;
