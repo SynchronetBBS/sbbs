@@ -1426,7 +1426,7 @@ local_draw_rect(struct rectlist *rect)
 			}
 			if (VisualIsRGB8) {
 				pixel = source_data[idx];
-				((uint32_t*)xim->data)[idx] = pixel;
+				((uint32_t*)xim->data)[idx] = base_pixel | pixel;
 			}
 			else {
 				if (last_pixel != source_data[idx]) {
