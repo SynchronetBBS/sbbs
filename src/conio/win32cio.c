@@ -1003,16 +1003,16 @@ void win32_copytext(const char *text, size_t buflen)
 	LPWSTR	clip;
 	int new_buflen = MultiByteToWideChar(CP_UTF8, 0, text, buflen, NULL, 0);
 
-	new_buflen = MultiByteToWideChar(CP_UTF8, 0, text, buflen, NULL, 0);
 	if (new_buflen == 0) {
 		return;
 	}
+	new_buflen++;
 	clipbuf=GlobalAlloc(GMEM_MOVEABLE, new_buflen * sizeof(WCHAR));
 	if (clipbuf == NULL) {
 		return;
 	}
 	clip=GlobalLock(clipbuf);
-	if (MultiByteToWideChar(CP_UTF8, 0, text, buflen, clip, new_buflen) != new_buflen) {
+	if (MultiByteToWideChar(CP_UTF8, 0, text, buflen, clip, new_buflen) != new_buflen - 1) {
 		GlobalUnlock(clipbuf);
 		GlobalFree(clipbuf);
 		return;
