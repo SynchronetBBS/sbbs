@@ -142,7 +142,7 @@ static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 	Message.PublicMsgIndex = 0;
 	Message.MessageType = MT_PRIVATE;
 
-	strlcpy(Message.Data.MsgTxt, szReply, sizeof(Message.Data.MsgTxt));
+	strlcpy(Message.Data.MsgTxt, szReply, MSGTXT_SZ);
 
 	stTemp = strlen(szReply) + 1;
 	if (stTemp > INT16_MAX)
