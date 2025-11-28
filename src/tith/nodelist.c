@@ -321,6 +321,7 @@ loadOverrides(const char *path)
 		fprintf(stderr, "Failed to read to end of file\n");
 		exit(EXIT_FAILURE);
 	}
+	fclose(fp);
 	free(addrStr);
 }
 

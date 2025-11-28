@@ -22,6 +22,8 @@ struct TITH_ConfigNodelist {
 struct TITH_Config {
 	const char *outbound;
 	const char *inbound;
+	const char *defaultDomain;
+	uint16_t defaultZone;
 	size_t nodeLists;
 	struct TITH_ConfigNodelist *nodeList;
 	size_t nodes;

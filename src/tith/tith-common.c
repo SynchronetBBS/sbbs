@@ -22,6 +22,10 @@ thread_local void *tith_handle;
 thread_local static void **allocStack;
 thread_local static size_t allocStackSize;
 thread_local static size_t allocStackUsed;
+thread_local static FILE **fileStack;
+thread_local static size_t fileStackSize;
+thread_local static size_t fileStackUsed;
+
 #define NO_NEXT_TYPE -1
 thread_local static int nextType = NO_NEXT_TYPE;
 
@@ -98,6 +102,30 @@ tith_popAlloc(void)
 	return allocStack[--allocStackUsed];
 }
 
+void
+tith_pushFile(FILE *file)
+{
+	if (file == NULL)
+		tith_logError("Open failure");
+	if (fileStackUsed + 1 > fileStackSize) {
+		size_t newSz = fileStackSize ? fileStackSize * 2 : 8;
+		FILE **newStack = realloc(fileStack, sizeof(void *) * newSz);
+		if (newStack == NULL)
+			tith_logError("Unable to realloc() allocStack");
+		fileStackSize = newSz;
+		fileStack = newStack;
+	}
+	fileStack[allocStackUsed++] = file;
+}
+
+FILE *
+tith_popFile(void)
+{
+	if (fileStackUsed == 0)
+		tith_logError("Popping of empty fileStack");
+	return fileStack[--fileStackUsed];
+}
+
 /*
  * Closes the current TITH handle and frees all allocations
  */
@@ -112,6 +140,10 @@ tith_cleanup(void)
 		free(tith_popAlloc());
 	free(allocStack);
 	allocStack = NULL;
+	while (fileStackUsed)
+		free(tith_popFile());
+	free(fileStack);
+	fileStack = NULL;
 	if (tith_TLV)
 		tith_freeTLV();
 	free(activeSignatures);
@@ -575,8 +607,7 @@ static uint64_t
 sendFile(const char *fname, uint64_t len)
 {
 	FILE *fp = fopen(fname, "rb");
-	if (!fp)
-		tith_logError("Unable to open file");
+	tith_pushFile(fp);
 	size_t remain = len;
 	for (;;) {
 		uint8_t buf[1024];
@@ -584,13 +615,13 @@ sendFile(const char *fname, uint64_t len)
 		if (bytes == 0)
 			break;
 		size_t ret = fread(buf, 1, bytes, fp);
-		if (ret != bytes) {
-			fclose(fp);
+		if (ret != bytes)
 			tith_logError("Failed to read file");
-		}
 		sendBuffer(buf, ret);
 		remain -= ret;
 	}
+	tith_popFile();
+	fclose(fp);
 	return len;
 }
 
@@ -681,4 +712,22 @@ tith_validateTLV(struct TITH_TLV *tlv, int command, int numargs, ...)
 			tlv = tlv->next;
 		}
 	}
+	va_end(ap);
+}
+
+void
+tith_logf(const char *format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	int len = vsnprintf(NULL, 0, format, ap);
+	if (len <= 0)
+		return;
+	char *buf = malloc((size_t)len + 1);
+	tith_pushAlloc(buf);
+	if (vsnprintf(buf, (size_t)len + 1, format, ap) > 0)
+		logString(buf);
+	va_end(ap);
+	tith_popAlloc();
+	free(buf);
 }

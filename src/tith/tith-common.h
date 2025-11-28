@@ -2,6 +2,7 @@
 #define TITH_COMMON_HEADER
 
 #include <setjmp.h>
+#include <stdio.h>
 #include <stdnoreturn.h>
 #include <threads.h>
 
@@ -87,6 +88,13 @@ void *tith_popAlloc(void);
 void tith_pushAlloc(void *ptr);
 
 /*
+ * As above but with file pointers
+ */
+void tith_pushFile(FILE *file);
+FILE *tith_popFile(void);
+
+
+/*
  * Validates that addr conforms to TTS-0004
  */
 void tith_validateAddress(const char *addr);
@@ -132,5 +140,11 @@ void tith_sendTLV(void);
  * type is required or optional, then a type.
  */
 void tith_validateTLV(struct TITH_TLV *tlv, int command, int numargs, ...);
+
+/*
+ * Calls vsnprintf() with the given format and args, then passes the
+ * result (if any) to logString()
+ */
+void tith_logf(const char *format, ...);
 
 #endif

@@ -106,8 +106,7 @@ tith_readConfig(const char *configFile)
 	if (cfg)
 		tith_freeConfig();
 	FILE *fp = fopen(configFile, "r");
-	if (fp == NULL)
-		tith_logError("Unable to open config file");
+	tith_pushFile(fp);
 	cfg = calloc(1, offsetof(struct TITH_Config, node));
 	if (cfg == NULL)
 		tith_logError("malloc() failure");
@@ -147,6 +146,21 @@ tith_readConfig(const char *configFile)
 			if (cfg->inbound == NULL)
 				tith_logError("tith_strDup() failed in tith_readConfig()");
 		}
+		else if (strcmp(key, "DefaultDomain") == 0) {
+			if (cfg->defaultDomain)
+				tith_logError("Multiple DefaultDomains in config");
+			cfg->defaultDomain = tith_strDup(val);
+			if (cfg->defaultDomain == NULL)
+				tith_logError("tith_strDup() failed in tith_readConfig()");
+		}
+		else if (strcmp(key, "DefaultZone") == 0) {
+			if (cfg->defaultZone)
+				tith_logError("Multiple DefaultZones in config");
+			long zone = strtol(val, NULL, 10);
+			if (zone < 1 || zone > 32767)
+				tith_logError("Invalid default zone in config");
+			cfg->defaultZone = (uint16_t)zone;
+		}
 		else if (strncmp(key, "Nodelist,", 9) == 0) {
 			if (!resizeAlloc(&cfg->nodeList, &nodeListSz, &cfg->nodeLists, sizeof(struct TITH_ConfigNodelist)))
 				tith_logError("Failed to create storage for nodelist");
@@ -158,6 +172,8 @@ tith_readConfig(const char *configFile)
 			addNode(&cfg, key, val);
 		free(line);
 	}
+	tith_popFile();
+	fclose(fp);
 	if (cfg->nodes)
 		qsort(cfg->node, cfg->nodes, sizeof(cfg->node[0]), cmpAddrs);
 	if (cfg->nodeLists) {
@@ -198,6 +214,7 @@ void tith_freeConfig(void)
 		return;
 	free((void*)cfg->inbound);
 	free((void*)cfg->outbound);
+	free((void*)cfg->defaultDomain);
 	for (size_t nl = 0; nl < cfg->nodeLists; nl++) {
 		free(cfg->nodeList[nl].domain);
 		tith_freeNodelist(cfg->nodeList[nl].list, cfg->nodeList[nl].nodelistLength);
