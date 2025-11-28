@@ -50,17 +50,17 @@ Contents
 2. TXT Records
 ──────────────
 
-  _tith_sysopname is a TXT record that contains the string "sysop="
+  _tith-sysopname is a TXT record that contains the string "n="
   followed by the user name of a sysop of the node.
 
-  _tith_sysopname.f1.n1.z885.bbsdev.net. IN TXT "sysop=Deuce"
+  _tith-sysopname.f1.n1.z885.bbsdev.net. IN TXT "n=Deuce"
 
-  _tith_iflags is a TXT record that contains the string "iflags="
+  _tith-iflags is a TXT record that contains the string "f="
   followed by the inernet flags field from the nodelist.  The INA flag
   if present may be stripped from the field.
 
-  _tith_iflags.f1.n1.z885.bbsdev.net. IN TXT
-          "iflags=IIH:Jeq+WuDMPtjZLRWb7IWSguOecnyqJT/y2SnQBkQ0Gi8"
+  _tith-iflags.f1.n1.z885.bbsdev.net. IN TXT
+          "f=IIH:Jeq+WuDMPtjZLRWb7IWSguOecnyqJT/y2SnQBkQ0Gi8"
 
 
 3. Feedback
@@ -69,12 +69,25 @@ Contents
   There has been a suggestion that _tith should be a suffix, not a
   prefix (ie: _sysopname_tith).
 
+  Previous versions used a more verbose key name in the TXT record
+  ("sysop=" and "iflags=").  Since we want to comply with RFC-1461, we
+  need <something>= at the start, but since the name completely
+  includes that value, it's been reduced to a single letter.
+
+  Previous versions used an _ both before and after tith in the name.
+  Existing standards use - between components (ie: _ical-access,
+  _acme-challenge).
+
 
 A. References
 ─────────────
 
   [RFC1464] Using the Domain Name System To Store Arbitrary String
   Attributes. R. Rosenbaum, Digital Equipment Corporation. May 1993.
+
+  [RFC8552] Scoped Interpretation of DNS Resource Records through
+  "Underscored" Naming of Attribute Leaves. D. Crocker, Brandenburg
+  InternetWorking. March 2019
 
 
 B. History
