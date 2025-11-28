@@ -121,10 +121,7 @@ noreturn void System_Error(char *szErrorMsg);
 } while(0)
 
 #define unpack_ptr(x) do {    \
-	assert(remain >= 4);   \
-	if (remain < 4)         \
-		return SIZE_MAX; \
-	x = NULL;                 \
+	x = NULL;              \
 } while(0)
 
 // Setting these to zero... hopefully they don't round-trip. :(
