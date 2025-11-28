@@ -91,4 +91,36 @@ void logString(const char *str);
  */
 int TITH_main(int argc, char **argv, void *handle);
 
+/*
+ * Generates a context for reading directory contents of the passed
+ * path.  The passed path must be to a directory.
+ * 
+ * Returns NULL on failure.
+ */
+void *openDirectory(const char *path);
+
+/*
+ * Reads the next entry from a context returned by openDirectory()
+ * 
+ * The returned entry does not include the path, and must remain valid
+ * until the next call to either readDirectory() or closeDirectory() on
+ * the directory handle dhandle
+ * 
+ * returns NULL when the end of the directory is reached or an error
+ * occurs
+ */
+const char *readDirectory(void *dhandle);
+
+/*
+ * Frees all resources associated with the directory handle and makes
+ * future calls to readDirectory() with the specified handle return NULL
+ * (unless the handle is returned from a later call to openDirectory).
+ */
+void closeDirectory(void *dhandle);
+
+/*
+ * Returns true if path is a directory
+ */
+bool isDir(const char *path);
+
 #endif
