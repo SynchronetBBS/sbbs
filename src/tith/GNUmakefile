@@ -1,7 +1,7 @@
 all: tith nodelist
 -include $(OBJDIR)*.d
 
-CFLAGS	+=	-std=c11 -MMD -MP -D_C11_SOURCE -pthread
+CFLAGS	+=	-std=c11 -MMD -MP -pthread
 LDFLAGS	+=	-pthread
 ifdef DEBUG
  CFLAGS	+=	-g -O0 -Wall -pedantic -Wconversion -Wextra -Wno-format-truncation
@@ -9,6 +9,20 @@ else
  CFLAGS	+=	-Oz -flto
  LDFLAGS+=	-Oz -flto -fwhole-program -s
 endif
+
+XSI_CFLAGS := $(CFLAGS) -D_XOPEN_SOURCE=500
+CFLAGS	+=  -D_C11_SOURCE
+
+TITH_BUNDLE_OBJS := \
+	base64.o \
+	tith-bundle.o \
+	tith-common.o \
+	tith-config.o \
+	tith-file.o \
+	tith-nodelist.o \
+	tith-stdio.o \
+	tith-strings.o \
+	tith-xsi.o \
 
 TITH_OBJS := \
 	base64.o \
@@ -33,11 +47,17 @@ NODELIST_OBJS := \
 $(OBJDIR)%.o: %.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+tith-xsi.o: tith-xsi.c | $(OBJDIR)
+	$(CC) $(XSI_CFLAGS) -c $< -o $@
+
 tith: $(TITH_OBJS)
+	$(CC) $(LDFLAGS) $^ -o $@
+
+tith-bundle: $(TITH_BUNDLE_OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
 
 nodelist: $(NODELIST_OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
 
 clean:
-	rm -f *.o *.d hydro/*.o hydro/*.d tith nodelist
+	rm -f *.o *.d hydro/*.o hydro/*.d tith nodelist tith-bundle
