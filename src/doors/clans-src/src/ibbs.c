@@ -1530,6 +1530,8 @@ static void IBBS_LoadNDX(void)
 						if (CurBBS == -1)
 							System_Error("VillageName outside of BBSId section!\n");
 						IBBS.Data.Nodes[CurBBS].Info.pszVillageName = DupeStr(pcCurrentPos);
+						if (Config.BBSID == CurBBS + 1)
+							strlcpy(Village.Data.szName, pcCurrentPos, sizeof(Village.Data.szName));
 						break;
 					case 2 :    /* Address */
 						if (CurBBS == -1)
