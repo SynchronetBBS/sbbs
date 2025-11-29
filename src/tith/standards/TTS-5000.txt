@@ -116,6 +116,9 @@ Contents
   The ZSTD format is presently the official TITH standard, although
   others may be distributed in addition.
 
+  Every node on a network SHOULD have their current nodelists
+  available via file request as DDD-nodelist.zst
+
 
 5. Content
 ──────────
