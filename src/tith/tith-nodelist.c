@@ -351,7 +351,10 @@ tith_loadNodelist(const char *fileName, size_t *list_size, uint32_t flags, uint1
 	};
 	size_t retSz = 0;
 	size_t retCount = 0;
+	char *hubRoute = NULL;
 	char *hostRoute = NULL;
+	char *regionRoute = NULL;
+	char *zoneRoute = NULL;
 	for (;;) {
 		char *line = tith_readLine(fp);
 		if (line == NULL)
@@ -369,13 +372,29 @@ tith_loadNodelist(const char *fileName, size_t *list_size, uint32_t flags, uint1
 			if (entry->keyword == TYPE_Unknown)
 				goto fail;
 			if (entry->keyword == TYPE_Normal || entry->keyword == TYPE_Private || entry->keyword == TYPE_Hold) {
+				if (hubRoute)
+					entry->hubRoute = tith_strDup(hubRoute);
 				if (hostRoute)
 					entry->hostRoute = tith_strDup(hostRoute);
+				if (regionRoute)
+					entry->regionRoute = tith_strDup(regionRoute);
+				if (zoneRoute)
+					entry->zoneRoute = tith_strDup(zoneRoute);
 			}
-			else {
-				if (entry->keyword != TYPE_Down) {
+			else if (entry->keyword != TYPE_Down) {
+				free(hubRoute);
+				hubRoute = NULL;
+				if (entry->keyword != TYPE_Hub) {
 					free(hostRoute);
 					hostRoute = NULL;
+					if (entry->keyword != TYPE_Host) {
+						free(regionRoute);
+						regionRoute = NULL;
+						if (entry->keyword != TYPE_Region) {
+							free(zoneRoute);
+							zoneRoute = NULL;
+						}
+					}
 				}
 			}
 			field = getfield(next, '\t', &next);
@@ -383,8 +402,14 @@ tith_loadNodelist(const char *fileName, size_t *list_size, uint32_t flags, uint1
 				goto abortLine;
 			retCount++;
 			memcpy(&entry->address, &addr, sizeof(entry->address));
-			if (entry->keyword == TYPE_Host || entry->keyword == TYPE_Hub)
-				entry->hostRoute = addrString(&entry->address);
+			if (entry->keyword == TYPE_Hub)
+				hubRoute = addrString(&entry->address);
+			if (entry->keyword == TYPE_Host)
+				hostRoute = addrString(&entry->address);
+			if (entry->keyword == TYPE_Region)
+				regionRoute = addrString(&entry->address);
+			if (entry->keyword == TYPE_Zone)
+				zoneRoute = addrString(&entry->address);
 			field = getfield(next, '\t', &next);
 			if (flags & TITH_NL_NAME)
 				entry->name = tith_strDup(field);
