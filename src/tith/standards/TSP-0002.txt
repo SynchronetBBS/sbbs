@@ -1,0 +1,268 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TSP‑0002
+Revision:     1
+Title:        Route Configuration
+Author(s):    Stephen Hurd
+Date:         2025‑11‑29
+══════════════════════════════════════════════════════════════════════
+
+Status of this document
+───────────────────────
+
+  This document is a TITH Standard Proposal (TSP) — it documents a
+  proposed standard and solicits discussion.  Until promoted to a TTS,
+  this is experimental only and does not describe required behaviour.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+────────
+
+  Routing configuration on FTNs should use a common format. This
+  document outlines a suggested format based on historical FidoNet
+  route files.
+
+Contents
+────────
+
+  1.  Introduction
+  2.  Proposed Syntax
+  3.  Examples
+  4.  Feedback and Discussion
+
+  A. References
+  B. History
+
+══════════════════════════════════════════════════════════════════════
+
+
+1. Introduction
+───────────────
+
+  By default, FidoNet only supports direct and host-routed messages.
+  However, it's very common to have an agreement in place to route
+  most or even all of your traffic through a single link. With TITH
+  proposing a new transport, new formats, and new capabilities, it
+  will be beneficial to have gateways willing to forward to legacy
+  systems.
+
+
+2. Proposed Syntax
+──────────────────
+
+  The route file will consist of a number of schedules, each having a
+  number of clases after it. A schedule is started with a Schedule
+  line and terminated by another Schedule line or the end of file.
+
+
+  1. Schedule Line
+  ────────────────
+
+  A Schedule Line consists of the word "Schedule", a space, then a
+  name for the schedule.  The name must be unique and exists for
+  logging and organization purposes.
+
+
+  2. Destinations Clause
+  ──────────────────────
+
+  A Destinations Clause consists of the word "Destinations", a space,
+  then a list of nodes that will be included in bundles generated
+  during the current Schedule.  The format may include wildcards as
+  specified in [TODO].
+
+
+  3. Route-Via Clause
+  ───────────────────
+
+  A Route-Via Clause consists of the word "Route-Via", a space, an
+  address as specified in TTS-0004, another space, then a list of
+  addresses with wildcards as specified in [TODO].  The address
+  specifies the node to deliver the messages to (ie: a next hop), and
+  the list specifies destination nodes to be delivered.  By default,
+  this clause will only apply if the node cannot be contacted directly
+  and if the nodes net or hub cannot be contacted.
+
+
+  4. No-Direct Clause
+  ───────────────────
+
+  A No-Direct Clause consists of the word "No-Direct", a space, then a
+  list of addresses with wildcards as specified in [TODO].  If this
+  clause is present, nodes will not be contacted directly and always
+  use host-routing or a Route-Via Clause.
+
+
+  5. No-Host Clause
+  ─────────────────
+
+  A No-Host Clause consists of the word "No-Host", a space, then a
+  list of addresses with wildcards as specified in [TODO].  If this
+  clause is present, host routing will not be used, and Route-Via will
+  be used node is not reachable.  If both No-Direct and No-Host are
+  present, all messages must be routed using a Route-Via Clause.
+
+
+  5. Forward-For Clause
+  ─────────────────────
+
+  A Forward-For Clause consists of the word "Forward-For", a space,
+  then a list of addresses with wildcards as specified in [TODO].  The
+  list specifies destination nodes messages will be forwarded for.
+  Note that this is the message destination, not the next hop or
+  message origin.
+
+
+  6. Accept-From Clause
+  ─────────────────────
+
+  An Accept-From Clause consists of the word "Accept-From", a space,
+  then a list of addresses with wildcards as specified in [TODO].  The
+  list specifies origin nodes messages will be forwarded for.
+  Note that this is the origin node, not the previous hop.
+
+
+  6. Hold Clause
+  ──────────────
+
+  A Hold Clause consists of the word "Hold", a space, the a list of
+  addresses with wildcards as specified in [TODO].  The list specifies
+  nodes that may call and pick up bundles during the schedule.  Any
+  node listed here will not be contacted during the schedule.
+
+
+  7. Poll Clause
+  ──────────────
+
+  A Poll Clause consists of the word "Poll", a space, the a list of
+  addresses with wildcards as specified in [TODO].  The list specifies
+  nodes that will be contacted and sent a poll request during this
+  schedule.
+
+
+  8. Start Clause
+  ───────────────
+
+  A Start Clause consists of the word "Start", a space, optionally the
+  word "Local" followed by a space, then a time in 24-hour format with
+  hours and minutes only.  If Local is specified, the time is in local
+  time.  If not, the time is in UTC.  This clause specifies the time
+  that this schedule should begin.  The schedule may be delayed until
+  the previous schedule completes.  If multiple schedule start at the
+  same time, it is unspecified which will start first, so this should
+  be avoided.  If multiple schedules are waiting to start, the one
+  that has waited the longest will be started.  If the Duration has
+  passed, the schedule will still run.
+
+
+  9. Duration Clause
+  ──────────────────
+
+  A Duration Clause consists of the word "Duration", a space, then
+  either a number of minutes, of a number of hours, a colon, then a
+  number of minutes (ie: "60" and "1:00" would be identical).  This
+  is the number of minutes after the time in the Start Clause that the
+  schedule ends.  Since the schedule start may be delayed, this is the
+  maximum duration, not the total duration.  Connections in progress
+  at the end of a schedule will run to completion before the next
+  schedule starts.  The Duration may be zero indicating that
+  connections should be attempted once for all bundles and polls after
+  which the schedule will end.
+
+
+  10. Repeat-After Clause
+  ───────────────────────
+
+  A Repeat-After Clause consists of the word "Repeat-After", a space,
+  then either a number of minutes, or a number of hours, a colon, then
+  a number of minutes (ie: "60" and "1:00" would be identical).  This
+  is the number of minutes after the time in the end time that the
+  schedule will attempt to run again.  If another schedule is running
+  at that time, it will be delayed until that schedule ends.  If
+  another schedule will start for the first time, it will be given
+  preference.  If multiple Repeat-After Clauses can take effect, the
+  one that has waited the longest since it's repeat after time expired
+  will run first.
+
+
+3. Examples
+───────────
+
+  A typical node schedule could be to periodically deliver new
+  messages to a single node for forwarding (with an agreement by the
+  other node to perform forwarding) unless the destination can be
+  reached direct or via host-routing:
+
+    Schedule Mail
+    Destinations *
+    Route-Via BBSDev#885:1/1 *
+    Start 00:00
+    Duration 0
+    Repeat-After 15
+
+  As above but with no direct or host-routed messages at all:
+
+    Schedule Mail
+    Destinations *
+    Route-Via BBSDev#885:1/1 *
+    No-Direct *
+    No-Host *
+    Start 00:00
+    Duration 0
+    Repeat-After 15
+
+  For a net coordinator, you are likely required to accept host-routed
+  messages:
+
+    Schedule Mail
+    Destinations *
+    Route-Via BBSDev#885:1/1 *
+    Forward-For BBSDev#885:1/*
+    Start 00:00
+    Duration 15
+    Repeat-After 0
+
+  If you are a Boss Node, you will want to hold bundles for and route
+  messages from your points:
+
+    Schedule Mail
+    Destinations *
+    Route-Via BBSDev#885:1/1 *
+    Accept-From BBSDev#885:1/3.*
+    Hold BBSDev#885:1/3.*
+    Start 00:00
+    Duration 15
+    Repeat-After 0
+
+
+4. Feedback and Discussion
+──────────────────────────
+
+  Note that this document specifies configuration for Boss Node, but
+  at present there is no standard pointlist format, so no way to
+  configure public keys.  This is still [TODO].
+
+  Note that the syntax for wildcards is currently undefined.  This
+  should likely go in TTS-0004.  It should support *, ranges, and
+  lists (ie: BBSDev#*, BBSDev#[1-2]/*, and BBSDev#[1,3]/*).
+
+
+A. References
+─────────────
+
+  [TTS-0004] Node Addresses. Stephen Hurd. 15 November, 2025.
+
+  [FSC-0003] FidoNet Route Files Explained. Ben Barker, 100/76.
+  23 March, 1986.
+
+
+B. History
+──────────
+
+   Rev.1, 2025‑11‑19: Initial Release.
+
+**********************************************************************
