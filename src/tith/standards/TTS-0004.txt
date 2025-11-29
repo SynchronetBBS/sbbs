@@ -101,9 +101,9 @@ Contents
 
   Point
   ─────
-  The point is a number in the range of negative one to thirty‐two
-  thousand, seven hundred and sixty‐seven (−1–32,767).  If the Zone is
-  negative one, the Point MUST be zero (0).
+  The point is a number in the range of zero to sixty‐five thousand,
+  five hundred and thirty-five (0–65,535).  If the Zone is negative
+  one, the Point MUST be zero (0).
 
 
 3. Default Values
@@ -220,7 +220,8 @@ Contents
 
   The following wildcard components are supported:
 
-  A single Asterisk (U+2A) which will match any value in the Component
+  A single Asterisk (U+2A) which will match any value except -1 in the
+  Component.
 
   A list, enclosed by a Less-Than Sign (U+3C) and a Greater-Than Sign
   (U+3E) containing a comma-separated list of values.  For numeric
