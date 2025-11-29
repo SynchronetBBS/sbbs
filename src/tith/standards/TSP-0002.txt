@@ -297,7 +297,11 @@ Contents
   The message is passed to the Hub listed before the destination node
   in the nodelist.  This may be disabled via the No-Hub Clause, and is
   only possible when there is a Hub listed above a node, and there is
-  a shared protocol between the sending node and the Hub.
+  a shared protocol between the sending node and the Hub.  Note that
+  FidoNet Policy 4 does not require a Hub to actually do anything, so
+  No-Hub should always be used on FidoNet for strict conformance with
+  policy unless you contact all Hubs and get permission to forward
+  trafic to them.
 
   Host
   ────
