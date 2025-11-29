@@ -330,6 +330,15 @@ tith_findNodelistEntry(struct TITH_NodelistEntry *list, size_t listLen, const ch
 	return bsearch(&addr, list, listLen, sizeof(*list), cmpNLk);
 }
 
+static char *
+addrString(struct TITH_NodelistAddr *addr)
+{
+	char tmpAddr[18];
+
+	printf(tmpAddr, "%hu:%hu/%hu", addr->zone, addr->net, addr->node);
+	return tith_strDup(tmpAddr);
+}
+
 struct TITH_NodelistEntry *
 tith_loadNodelist(const char *fileName, size_t *list_size, uint32_t flags, uint16_t defaultZone)
 {
@@ -342,6 +351,7 @@ tith_loadNodelist(const char *fileName, size_t *list_size, uint32_t flags, uint1
 	};
 	size_t retSz = 0;
 	size_t retCount = 0;
+	char *hostRoute = NULL;
 	for (;;) {
 		char *line = tith_readLine(fp);
 		if (line == NULL)
@@ -358,11 +368,23 @@ tith_loadNodelist(const char *fileName, size_t *list_size, uint32_t flags, uint1
 			entry->keyword = tith_parseNodelistKeyword(field, &addr);
 			if (entry->keyword == TYPE_Unknown)
 				goto fail;
+			if (entry->keyword == TYPE_Normal || entry->keyword == TYPE_Private || entry->keyword == TYPE_Hold) {
+				if (hostRoute)
+					entry->hostRoute = tith_strDup(hostRoute);
+			}
+			else {
+				if (entry->keyword != TYPE_Down) {
+					free(hostRoute);
+					hostRoute = NULL;
+				}
+			}
 			field = getfield(next, '\t', &next);
 			if(!tith_parseNodelistNodeNumber(field, entry->keyword, &addr))
 				goto abortLine;
 			retCount++;
 			memcpy(&entry->address, &addr, sizeof(entry->address));
+			if (entry->keyword == TYPE_Host || entry->keyword == TYPE_Hub)
+				entry->hostRoute = addrString(&entry->address);
 			field = getfield(next, '\t', &next);
 			if (flags & TITH_NL_NAME)
 				entry->name = tith_strDup(field);
@@ -419,6 +441,7 @@ tith_freeNodelist(struct TITH_NodelistEntry *list, size_t listCount)
 {
 	for (size_t i = 0; i < listCount; i++) {
 		free(list[i].emailFlags);
+		free(list[i].hostRoute);
 		free(list[i].internetFlags);
 		free(list[i].location);
 		free(list[i].name);

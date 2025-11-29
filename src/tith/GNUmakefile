@@ -1,4 +1,4 @@
-all: tith nodelist
+all: tith nodelist tith-bundle
 -include $(OBJDIR)*.d
 
 CFLAGS	+=	-std=c11 -MMD -MP -pthread
@@ -15,6 +15,7 @@ CFLAGS	+=  -D_C11_SOURCE
 
 TITH_BUNDLE_OBJS := \
 	base64.o \
+	hydro/hydrogen.o \
 	tith-bundle.o \
 	tith-common.o \
 	tith-config.o \

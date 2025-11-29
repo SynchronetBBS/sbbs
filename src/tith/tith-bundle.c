@@ -22,13 +22,16 @@ struct pendingAddress {
 bool
 bundleOutbound(const char *path, const char *domain, uint16_t zone)
 {
+	(void)domain;
+	(void)zone;
 	void *dir = openDirectory(path);
-	for (const char *file = readdir(dir); file; file = readdir(dir)) {
+	for (const char *file = readDirectory(dir); file; file = readDirectory(dir)) {
 		/*
 		 * Hrm, we need routing info here to know what the
 		 * source address should be.
 		 */
 	}
+	return false;
 }
 
 void
@@ -53,6 +56,7 @@ bundle(void)
 int
 TITH_main(int argc, char **argv, void *handle)
 {
+	(void)handle;
 	if (setjmp(tith_exitJmpBuf)) {
 		tith_cleanup();
 		return EXIT_FAILURE;

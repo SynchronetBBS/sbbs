@@ -34,6 +34,7 @@ enum TITH_NodelistLineType {
 struct TITH_NodelistEntry {
 	enum TITH_NodelistLineType keyword;
 	struct TITH_NodelistAddr address;
+	char *hostRoute;
 	char *name;
 	char *location;
 	char *sysop;
