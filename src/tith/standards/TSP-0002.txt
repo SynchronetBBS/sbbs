@@ -31,8 +31,9 @@ Contents
 
   1.  Introduction
   2.  Proposed Syntax
-  3.  Examples
-  4.  Feedback and Discussion
+  3.  Orphans
+  4.  Examples
+  5.  Feedback and Discussion
 
   A. References
   B. History
@@ -73,7 +74,8 @@ Contents
   A Destinations Clause consists of the word "Destinations", a space,
   then a list of nodes that will be included in bundles generated
   during the current Schedule.  The format may include wildcards as
-  specified in [TODO].
+  specified in [TODO].  This controls which messages will be
+  transferred during this schedule.
 
 
   3. Route-Via Clause
@@ -102,12 +104,12 @@ Contents
 
   A No-Host Clause consists of the word "No-Host", a space, then a
   list of addresses with wildcards as specified in [TODO].  If this
-  clause is present, host routing will not be used, and Route-Via will
-  be used node is not reachable.  If both No-Direct and No-Host are
-  present, all messages must be routed using a Route-Via Clause.
+  clause is present, host routing will not be used, and Direct or
+  Route-Via will be used.  If both No-Direct and No-Host are present,
+  all messages must be routed using a Route-Via Clause.
 
 
-  5. Forward-For Clause
+  6. Forward-For Clause
   ─────────────────────
 
   A Forward-For Clause consists of the word "Forward-For", a space,
@@ -117,7 +119,7 @@ Contents
   message origin.
 
 
-  6. Accept-From Clause
+  7. Accept-From Clause
   ─────────────────────
 
   An Accept-From Clause consists of the word "Accept-From", a space,
@@ -126,26 +128,26 @@ Contents
   Note that this is the origin node, not the previous hop.
 
 
-  6. Hold Clause
+  8. Hold Clause
   ──────────────
 
-  A Hold Clause consists of the word "Hold", a space, the a list of
+  A Hold Clause consists of the word "Hold", a space, then a list of
   addresses with wildcards as specified in [TODO].  The list specifies
   nodes that may call and pick up bundles during the schedule.  Any
   node listed here will not be contacted during the schedule.
 
 
-  7. Poll Clause
+  9. Poll Clause
   ──────────────
 
-  A Poll Clause consists of the word "Poll", a space, the a list of
+  A Poll Clause consists of the word "Poll", a space, then a list of
   addresses with wildcards as specified in [TODO].  The list specifies
   nodes that will be contacted and sent a poll request during this
   schedule.
 
 
-  8. Start Clause
-  ───────────────
+  10. Start Clause
+  ────────────────
 
   A Start Clause consists of the word "Start", a space, optionally the
   word "Local" followed by a space, then a time in 24-hour format with
@@ -159,8 +161,8 @@ Contents
   passed, the schedule will still run.
 
 
-  9. Duration Clause
-  ──────────────────
+  11. Duration Clause
+  ───────────────────
 
   A Duration Clause consists of the word "Duration", a space, then
   either a number of minutes, of a number of hours, a colon, then a
@@ -174,7 +176,7 @@ Contents
   which the schedule will end.
 
 
-  10. Repeat-After Clause
+  12. Repeat-After Clause
   ───────────────────────
 
   A Repeat-After Clause consists of the word "Repeat-After", a space,
@@ -189,7 +191,61 @@ Contents
   will run first.
 
 
-3. Examples
+  13. Orphan-For
+  ──────────────
+  A Orphan-For Clause consists of the word "Orphan-For", a space, then
+  a list of addresses with wildcards as specified in [TODO], a space,
+  the a reason the message has been orphaned..  If a message is
+  received whose origin matches the wildcard list, the message will be
+  handled as an orphan regardless of any matching Forward-For Clauses.
+
+
+  14. Orphan-From
+  ───────────────
+  A Orphan-From Clause consists of the word "Orphan-From", a space,
+  then a list of addresses with wildcards as specified in [TODO], a
+  space, the a reason the message has been orphaned.  If a message is
+  received whose destination matches the wildcard list, the message
+  will be handled as an orphan regardless of any matching Accept-From
+  Clauses.
+
+
+  15. Notify-Sender
+  ─────────────────
+
+  A Notify-Sender Clause consists of the word "Notify-Sender", a
+  space, then a list of addresses with wildcards as specified in
+  [TODO].  If an orphan message is received whose origin matches the
+  wildcard list, a new message will be generated to the original
+  sender indicating that the message will not be forwarded.  This
+  message should contain at least the original subject and the path
+  the message took as well as a reason for not forwarding.
+
+
+  16. Notify-Sysop
+  ────────────────
+
+  A Notify-Sysop Clause consists of the word "Notify-Sysop", a space,
+  then a list of addresses with wildcards as specified in [TODO].  If
+  an orphan message is received whose origin matches the wildcard
+  list, a new message will be generated to the sysop of the origin
+  node indicating that the message will not be forwarded.  This
+  message should contain at least the original subject and the path
+  the message took as well as a reason for not forwarding.
+
+
+3. Orphans
+──────────
+
+  Incoming messages that do not have a local destination and do not
+  match a Forward-For or Accept-From clause in any schedule are
+  Orphans.  Orphans are messages which were delivered to us, but we do
+  not have an agreement to route.  The software that detects the
+  orphan should notify the local sysop that an orphan was detected and
+  the path it took to reach the system.
+
+
+4. Examples
 ───────────
 
   A typical node schedule could be to periodically deliver new
@@ -226,6 +282,20 @@ Contents
     Duration 15
     Repeat-After 0
 
+  As above, but with a problematic node that you have stopped routing
+  for due to violation of policy:
+
+    Schedule Mail
+    Destinations *
+    Route-Via BBSDev#885:1/1 *
+    Forward-For BBSDev#885:1/*
+    Orphan-For BBSDev#885:1/213 Violation of Policy 4
+    Orphan-From BBSDev#885:1/213 Violation of Policy 4
+    Notify-Sysop BBSDev#885:1/213
+    Start 00:00
+    Duration 15
+    Repeat-After 0
+
   If you are a Boss Node, you will want to hold bundles for and route
   messages from your points:
 
@@ -239,7 +309,7 @@ Contents
     Repeat-After 0
 
 
-4. Feedback and Discussion
+5. Feedback and Discussion
 ──────────────────────────
 
   Note that this document specifies configuration for Boss Node, but
@@ -247,8 +317,9 @@ Contents
   configure public keys.  This is still [TODO].
 
   Note that the syntax for wildcards is currently undefined.  This
-  should likely go in TTS-0004.  It should support *, ranges, and
-  lists (ie: BBSDev#*, BBSDev#[1-2]/*, and BBSDev#[1,3]/*).
+  should likely go in TTS-0004.  It should support *, ranges,
+  negation, and lists (ie: BBSDev#*, BBSDev#[1-2]/*, BBSDev#![103],
+  and BBSDev#[1,3]/*).
 
 
 A. References
