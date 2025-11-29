@@ -528,6 +528,22 @@ void Empire_Maint(struct empire *Empire)
 		Empire->VaultGold += GoldMade;
 	}
 
+	// Turn troops without barracks back into followers
+	if (Empire->Army.Footmen > Empire->Buildings[B_BARRACKS]*20) {
+		int32_t FootmenLeft = Empire->Army.Footmen - Empire->Buildings[B_BARRACKS]*20;
+		Empire->Army.Followers += FootmenLeft;
+		Empire->Army.Footmen -= FootmenLeft;
+	}
+	if (Empire->Army.Axemen > Empire->Buildings[B_BARRACKS]*10) {
+		int32_t AxemenLeft = Empire->Army.Axemen - Empire->Buildings[B_BARRACKS]*10;
+		Empire->Army.Followers += AxemenLeft;
+		Empire->Army.Axemen -= AxemenLeft;
+	}
+	if (Empire->Army.Knights > Empire->Buildings[B_BARRACKS]*5) {
+		int32_t KnightsLeft = Empire->Army.Knights - Empire->Buildings[B_BARRACKS]*5;
+		Empire->Army.Followers += KnightsLeft;
+		Empire->Army.Knights -= KnightsLeft;
+	}
 }
 
 // ------------------------------------------------------------------------- //
