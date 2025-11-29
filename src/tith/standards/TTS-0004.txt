@@ -231,8 +231,9 @@ Contents
   ─────────
   * matches any node
   BBSDev#* matches any node in domain "BBSDev"
-  BBSDev#*/0 Matches any any node in domain "BBSDev" with a Node of 0
-  *:1 Matches any node with a Net of one.
+  BBSDev#*/0 Matches any node in domain "BBSDev" with a Node of 0
+  *:1 Matches any node with a Net of one
+  *#<885,1-6> Matches nodes with a Domain of 885, 1, 2, 3, 4, 5, or 6
 
 
 A. References
