@@ -96,21 +96,42 @@ Contents
 
   A No-Direct Clause consists of the word "No-Direct", a space, then a
   list of addresses with wildcards as specified in TTS-0004.  If this
-  clause is present, nodes will not be contacted directly and always
-  use host-routing or a Route-Via Clause.
+  clause is present, nodes will not be contacted directly.
 
 
-  5. No-Host Clause
+  5. No-Hub Clause
+  ────────────────
+
+  A No-Hub Clause consists of the word "No-Hub", a space, then a list
+  of addresses with wildcards as specified in TTS-0004.  If this
+  clause is present, hub routing will not be used.
+
+
+  6. No-Host Clause
   ─────────────────
 
   A No-Host Clause consists of the word "No-Host", a space, then a
   list of addresses with wildcards as specified in TTS-0004.  If this
-  clause is present, host routing will not be used, and Direct or
-  Route-Via will be used.  If both No-Direct and No-Host are present,
-  all messages must be routed using a Route-Via Clause.
+  clause is present, host routing will not be used.
 
 
-  6. Forward-For Clause
+  7. No-Region Clause
+  ───────────────────
+
+  A No-Region Clause consists of the word "No-Region", a space, then a
+  list of addresses with wildcards as specified in TTS-0004.  If this
+  clause is present, region routing will not be used.
+
+
+  8. No-Zone Clause
+  ─────────────────
+
+  A No-Zone Clause consists of the word "No-Zone", a space, then a
+  list of addresses with wildcards as specified in TTS-0004.  If this
+  clause is present, zone routing will not be used.
+
+
+  9. Forward-For Clause
   ─────────────────────
 
   A Forward-For Clause consists of the word "Forward-For", a space,
@@ -120,8 +141,8 @@ Contents
   message origin.
 
 
-  7. Accept-From Clause
-  ─────────────────────
+  10. Accept-From Clause
+  ──────────────────────
 
   An Accept-From Clause consists of the word "Accept-From", a space,
   then a list of addresses with wildcards as specified in TTS-0004.
@@ -129,8 +150,8 @@ Contents
   Note that this is the origin node, not the previous hop.
 
 
-  8. Hold Clause
-  ──────────────
+  11. Hold Clause
+  ───────────────
 
   A Hold Clause consists of the word "Hold", a space, then a list of
   addresses with wildcards as specified in TTS-0004.  The list
@@ -139,7 +160,7 @@ Contents
   schedule.
 
 
-  9. Poll Clause
+  12. Poll Clause
   ──────────────
 
   A Poll Clause consists of the word "Poll", a space, then a list of
@@ -148,7 +169,7 @@ Contents
   during this schedule.
 
 
-  10. Start Clause
+  13. Start Clause
   ────────────────
 
   A Start Clause consists of the word "Start", a space, optionally the
@@ -164,7 +185,7 @@ Contents
   Clause per Schedule.
 
 
-  11. Duration Clause
+  14. Duration Clause
   ───────────────────
 
   A Duration Clause consists of the word "Duration", a space, then
@@ -180,7 +201,7 @@ Contents
   per schedule.
 
 
-  12. Repeat-After Clause
+  15. Repeat-After Clause
   ───────────────────────
 
   A Repeat-After Clause consists of the word "Repeat-After", a space,
@@ -196,8 +217,9 @@ Contents
   schedule.
 
 
-  13. Orphan-For
+  16. Orphan-For
   ──────────────
+
   A Orphan-For Clause consists of the word "Orphan-For", a space, then
   a list of addresses with wildcards as specified in TTS-0004, a
   space, the a reason the message has been orphaned..  If a message is
@@ -205,8 +227,9 @@ Contents
   handled as an orphan regardless of any matching Forward-For Clauses.
 
 
-  14. Orphan-From
+  17. Orphan-From
   ───────────────
+
   A Orphan-From Clause consists of the word "Orphan-From", a space,
   then a list of addresses with wildcards as specified in TTS-0004, a
   space, the a reason the message has been orphaned.  If a message is
@@ -215,7 +238,7 @@ Contents
   Clauses.
 
 
-  15. Notify-Sender
+  18. Notify-Sender
   ─────────────────
 
   A Notify-Sender Clause consists of the word "Notify-Sender", a
@@ -227,7 +250,7 @@ Contents
   the message took as well as a reason for not forwarding.
 
 
-  16. Notify-Sysop
+  19. Notify-Sysop
   ────────────────
 
   A Notify-Sysop Clause consists of the word "Notify-Sysop", a space,
@@ -250,7 +273,76 @@ Contents
   the path it took to reach the system.
 
 
-4. Defaults
+5. Routing
+──────────
+
+  A message will be routed by the "best available" method.
+  In order from best to worst, these methods are:
+
+  Direct
+  ──────
+  The message is passed directly to the destination node and no
+  further routing is performed.  This may be disabled via the
+  No-Direct Clause, and is only possible if the destination node
+  supports a protocol the sending node also supports.
+
+  BossNode
+  ────────
+  Only messages whose destination has a non-zero point Component will
+  use BossNode routing.  The message is passed directly to the Boss
+  Node for the point.  This is disabled by the No-Direct Clause.
+
+  Hub
+  ───
+  The message is passed to the Hub listed before the destination node
+  in the nodelist.  This may be disabled via the No-Hub Clause, and is
+  only possible when there is a Hub listed above a node, and there is
+  a shared protocol between the sending node and the Hub.
+
+  Host
+  ────
+  The message is passed to the Host listed before the destination node
+  in the nodelist.  This may be disabled via the No-Hub Clause, and is
+  only possible when there is a Host listed above a node, and there is
+  a shared protocol between the sending node and the Host.
+
+  Region
+  ──────
+  The message is passed to the Region listed before the destination
+  node in the nodelist.  This may be disabled via the No-Region
+  Clause, and is only possible when there is a Region listed above a
+  node, and there is a shared protocol between the sending node and
+  the Region.  Note that FidoNet Policy 4 indicates that RCs do not
+  route traffic, so No-Region should always be used on FidoNet for
+  strict conformance with policy unless you contact all RCs and get
+  permission to forward trafic to them.
+
+  Zone
+  ────
+  The message is passed to the Zone listed before the destination node
+  in the nodelist.  This may be disabled via the No-Zone Clause, and
+  is only possible when there is a Host listed above a node, and there
+  is a shared protocol between the sending node and the Host.  Note
+  that FidoNet Policy 4 indicates that ZCs do not route traffic, so
+  No-Zone should always be used on FidoNet for strict conformance with
+  policy unless you contact all ZCs and get permission to forward
+  trafic to them.
+
+  Route-Via
+  ─────────
+  The message is passed to the node listed in the Route-Via Clause in
+  the Route Configuration which has a wildcard matching the
+  destination node.  This is only possible when there is a shared
+  protocol between the sending node and the Route-Via node.  This can
+  be disabled via a Hold Clause for the destination node.
+
+  Hold
+  ────
+  The message is held at the source until the destination makes a
+  connection and polls for messages.  This method is always possible.
+
+
+6. Defaults
 ───────────
 
   If a schedule does not contain any of the following values, the
@@ -265,7 +357,7 @@ Contents
   Repeat-After defaults to "Repeat-After 1"
 
 
-5. Examples
+7. Examples
 ───────────
 
   A typical node schedule could be to periodically deliver new
@@ -317,7 +409,7 @@ Contents
     Hold BBSDev#885:1/3.*
 
 
-6. Feedback and Discussion
+8. Feedback and Discussion
 ──────────────────────────
 
   Note that this document specifies configuration for Boss Node, but
