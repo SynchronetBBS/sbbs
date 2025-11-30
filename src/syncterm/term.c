@@ -2505,8 +2505,11 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 		if (mode & XMODEM) {
 			if (isfullpath(path))
 				SAFECOPY(str, path);
-			else
-				SAFEPRINTF2(str, "%s/%s", bbs->dldir, path);
+			else {
+				snprintf(str, sizeof(str) - 2, bbs->dldir);
+				backslash(str);
+				SAFECAT(str, path);
+			}
 			file_bytes = file_bytes_left = 0x7fffffff;
 		}
 		else {
