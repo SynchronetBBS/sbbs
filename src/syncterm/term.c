@@ -2616,6 +2616,12 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 
 		lprintf(LOG_DEBUG, "Receiving: %.64s ", str);
 
+		if (isdir(str)) {
+			lprintf(LOG_ERR, "%s is an existing directory", str);
+			xmodem_cancel(&xm);
+			goto end;
+		}
+
 		while (fexistcase(str) && !(mode & OVERWRITE)) {
 			lprintf(LOG_WARNING, "%s already exists", str);
 			if (!xmodem_duplicate(&xm, bbs, str, sizeof(str), getfname(fname))) {
