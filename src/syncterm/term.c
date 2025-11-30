@@ -614,6 +614,9 @@ lputs(void *cbdata, int level, const char *str)
 	return chars;
 }
 
+#if defined(__GNUC__)   // Catch printf-format errors with lprintf
+static int lprintf(int level, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
+#endif
 static int
 lprintf(int level, const char *fmt, ...)
 {
@@ -1378,7 +1381,7 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 						cet_append_fb(sp, b1);
 						if (b1 < 'a' || b1 > 'z') {
 							free(ret);
-							lprintf(LOG_ERR, "Invalid |G frame byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
+							lprintf(LOG_ERR, "Invalid |G frame byte 0x%02x%s", b1, b1 == -1 ? " (timeout)" : "");
 							return NULL;
 						}
 						checkxor ^= b1;
@@ -1387,7 +1390,7 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 						cet_append_fb(sp, b1);
 						if (((b1 < '0') || (b1 > '9')) && (b1 != '|')) {
 							free(ret);
-							lprintf(LOG_ERR, "Invalid |G block id byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
+							lprintf(LOG_ERR, "Invalid |G block id byte 0x%02x%s", b1, b1 == -1 ? " (timeout)" : "");
 							return NULL;
 						}
 						if (b1 == '|') {
@@ -1400,7 +1403,7 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 							cet_append_fb(sp, b1);
 							if ((b1 < '0') || (b1 > '9')) {
 								free(ret);
-								lprintf(LOG_ERR, "Invalid |G block id byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
+								lprintf(LOG_ERR, "Invalid |G block id byte 0x%02x%s", b1, b1 == -1 ? " (timeout)" : "");
 								return NULL;
 							}
 							ret->block_cnt = b1 - '0';
@@ -1422,27 +1425,27 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 						cet_append_fb(sp, b1);
 						if (b1 < '0' || b1 > '9') {
 							free(ret);
-							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
+							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02x%s", b1, b1 == -1 ? " (timeout)" : "");
 							return NULL;
 						}
 						b2 = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
 						cet_append_fb(sp, b2);
 						if (b2 < '0' || b2 > '9') {
 							free(ret);
-							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02%s", b2, b2 == -1 ? " (timeout)" : "");
+							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02x%s", b2, b2 == -1 ? " (timeout)" : "");
 							return NULL;
 						}
 						b3 = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
 						cet_append_fb(sp, b3);
 						if (b3 < '0' || b3 > '9') {
 							free(ret);
-							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02%s", b3, b3 == -1 ? " (timeout)" : "");
+							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02x%s", b3, b3 == -1 ? " (timeout)" : "");
 							return NULL;
 						}
 						uint8_t checked = (b1 - '0') * 100 + (b2 - '0') * 10 + (b3 - '0');
 						if (checked != checkxor) {
 							free(ret);
-							lprintf(LOG_ERR, "Incorrect checkxor. Calculated 0x%02, Remote indicated 0x%02", checkxor, checked);
+							lprintf(LOG_ERR, "Incorrect checkxor. Calculated 0x%02x, Remote indicated 0x%02x", checkxor, checked);
 							return NULL;
 						}
 						got_block_end = true;
