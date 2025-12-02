@@ -114,18 +114,15 @@ bool sbbs_t::answer()
 	memset(&tm, 0, sizeof(tm));
 	localtime_r(&now, &tm);
 
-	safe_snprintf(str, sizeof(str), "%-6s  %s %s %02d %u            Node %3u"
+	llprintf("@", "%-6s  %s %s %02d %u            Node %3u"
 	              , tm_as_hhmm(&cfg, &tm, str2)
 	              , wday[tm.tm_wday]
 	              , mon[tm.tm_mon], tm.tm_mday, tm.tm_year + 1900, cfg.node_num);
-	logline("@ ", str);
 
-	safe_snprintf(str, sizeof(str), "%s  %s [%s]", connection, client_name, client_ipaddr);
-	logline("@+:", str);
+	llprintf("@+", "%s  %s [%s]", connection, client_name, client_ipaddr);
 
 	if (client_ident[0]) {
-		safe_snprintf(str, sizeof(str), "Identity: %s", client_ident);
-		logline("@*", str);
+		llprintf("@*", "Identity: %s", client_ident);
 	}
 
 	if (sys_status & SS_RLOGIN) {
@@ -172,12 +169,11 @@ bool sbbs_t::answer()
 					for (i = 0; i < 3 && online; i++) {
 						if (stricmp(tmp, useron.pass)) {
 							if (cfg.sys_misc & SM_ECHO_PW)
-								safe_snprintf(str, sizeof(str), "(%04u)  %-25s  FAILED Password attempt: '%s'"
+								llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  FAILED Password attempt: '%s'"
 								              , useron.number, useron.alias, tmp);
 							else
-								safe_snprintf(str, sizeof(str), "(%04u)  %-25s  FAILED Password attempt"
+								llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  FAILED Password attempt"
 								              , useron.number, useron.alias);
-							logline(LOG_NOTICE, "+!", str);
 							badlogin(useron.alias, tmp);
 							rioctl(IOFI);       /* flush input buffer */
 							bputs(text[InvalidLogon]);
@@ -205,12 +201,11 @@ bool sbbs_t::answer()
 					if (i) {
 						if (stricmp(tmp, useron.pass)) {
 							if (cfg.sys_misc & SM_ECHO_PW)
-								safe_snprintf(str, sizeof(str), "(%04u)  %-25s  FAILED Password attempt: '%s'"
+								llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  FAILED Password attempt: '%s'"
 								              , useron.number, useron.alias, tmp);
 							else
-								safe_snprintf(str, sizeof(str), "(%04u)  %-25s  FAILED Password attempt"
+								llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  FAILED Password attempt"
 								              , useron.number, useron.alias);
-							logline(LOG_NOTICE, "+!", str);
 							badlogin(useron.alias, tmp);
 							bputs(text[InvalidLogon]);
 						}
@@ -340,12 +335,11 @@ bool sbbs_t::answer()
 							}
 							else if (ssh_failed) {
 								if (cfg.sys_misc & SM_ECHO_PW)
-									safe_snprintf(str, sizeof(str), "(%04u)  %-25s  FAILED Password attempt: '%s'"
+									llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  FAILED Password attempt: '%s'"
 									              , useron.number, useron.alias, tmp);
 								else
-									safe_snprintf(str, sizeof(str), "(%04u)  %-25s  FAILED Password attempt"
+									llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  FAILED Password attempt"
 									              , useron.number, useron.alias);
-								logline(LOG_NOTICE, "+!", str);
 								badlogin(useron.alias, tmp);
 								useron.number = 0;
 							}
@@ -455,9 +449,8 @@ bool sbbs_t::answer()
 								SAFECOPY(useron.comp, client_name);
 								useron.logons++;
 								putuserdat(&useron);
-								snprintf(str, sizeof(str), "(%04u)  %-25s  %s Logon"
+								llprintf("++", "(%04u)  %-25s  %s Logon"
 								         , useron.number, useron.alias, client.protocol);
-								logline("++", str);
 								max_socket_inactivity = startup->max_sftp_inactivity;
 							}
 							else {
@@ -720,15 +713,13 @@ bool sbbs_t::answer()
 
 			if (telnet_cmds_received) {
 				if (stricmp(telnet_terminal, "sexpots") == 0) { /* dial-up connection (via SexPOTS) */
-					SAFEPRINTF2(str, "%s connection detected at %u bps", terminal, cur_rate);
-					logline("@S", str);
+					llprintf("@S", "%s connection detected at %u bps", terminal, cur_rate);
 					node_connection = (ushort)cur_rate;
 					SAFEPRINTF(connection, "%u", cur_rate);
 					SAFECOPY(cid, "Unknown");
 					SAFECOPY(client_name, "Unknown");
 					if (telnet_location[0]) {            /* Caller-ID info provided */
-						SAFEPRINTF(str, "CID: %s", telnet_location);
-						logline("@*", str);
+						llprintf("@*", "CID: %s", telnet_location);
 						SAFECOPY(cid, telnet_location);
 						truncstr(cid, " ");              /* Only include phone number in CID */
 						char* p = telnet_location;

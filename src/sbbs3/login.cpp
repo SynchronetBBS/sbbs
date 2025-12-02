@@ -44,7 +44,6 @@ const char* sbbs_t::parse_login(const char* str)
 int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_pw, const char* sys_pw)
 {
 	char str[128];
-	char tmp[512];
 	long useron_misc = useron.misc;
 
 	username = parse_login(username);
@@ -67,17 +66,15 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 			badlogin(useron.alias, str);
 			bputs(text[InvalidLogon]);
 			if (cfg.sys_misc & SM_ECHO_PW)
-				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Login-ID attempt, Password: '%s'"
+				llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  FAILED Login-ID attempt, Password: '%s'"
 				         , 0, useron.alias, str);
 			else
-				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Login-ID attempt"
+				llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  FAILED Login-ID attempt"
 				         , 0, useron.alias);
-			logline(LOG_NOTICE, "+!", tmp);
 		} else {
 			badlogin(username, NULL);
 			bputs(text[UnknownUser]);
-			snprintf(tmp, sizeof tmp, "Unknown User '%s'", username);
-			logline(LOG_NOTICE, "+!", tmp);
+			llprintf(LOG_NOTICE, "+!", "Unknown User '%s'", username);
 		}
 		useron.misc = useron_misc;
 		return LOGIC_FALSE;
@@ -106,12 +103,11 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 			badlogin(useron.alias, str);
 			bputs(text[InvalidLogon]);
 			if (cfg.sys_misc & SM_ECHO_PW)
-				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Password attempt: '%s' expected: '%s'"
+				llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  FAILED Password attempt: '%s' expected: '%s'"
 				         , useron.number, useron.alias, str, useron.pass);
 			else
-				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Password attempt"
+				llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  FAILED Password attempt"
 				         , useron.number, useron.alias);
-			logline(LOG_NOTICE, "+!", tmp);
 			useron.number = 0;
 			useron.misc = useron_misc;
 			return LOGIC_FALSE;

@@ -3692,10 +3692,9 @@ bool sbbs_t::init()
 		if (filelength(fileno(logfile_fp)) > 0) {
 			log(crlf);
 			time_t ftime = fdate(str);
-			safe_snprintf(str, sizeof(str),
+			llprintf(LOG_NOTICE, "L!",
 			              "End of preexisting log entry (possible crash on %s)"
 			              , timestr(ftime));
-			logline(LOG_NOTICE, "L!", str);
 			log(crlf);
 			catsyslog(true);
 		}
@@ -3990,7 +3989,6 @@ int sbbs_t::smb_stack(smb_t* smb, bool push)
 /****************************************************************************/
 int sbbs_t::nopen(char *str, int access)
 {
-	char logstr[256];
 	int file, share, count = 0;
 
 	if (access & O_DENYNONE) {
@@ -4007,14 +4005,12 @@ int sbbs_t::nopen(char *str, int access)
 	       && FILE_RETRY_ERRNO(errno) && count++ < LOOP_NOPEN)
 		FILE_RETRY_DELAY(count);
 	if (count > (LOOP_NOPEN / 2) && count <= LOOP_NOPEN) {
-		SAFEPRINTF2(logstr, "NOPEN COLLISION - File: \"%s\" Count: %d"
+		llprintf(LOG_WARNING, "!!", "NOPEN COLLISION - File: \"%s\" Count: %d"
 		            , str, count);
-		logline(LOG_WARNING, "!!", logstr);
 	}
 	if (file == -1 && (errno == EACCES || errno == EAGAIN || errno == EDEADLOCK)) {
-		SAFEPRINTF2(logstr, "NOPEN ACCESS DENIED - File: \"%s\" errno: %d"
+		llprintf(LOG_WARNING, "!!", "NOPEN ACCESS DENIED - File: \"%s\" errno: %d"
 		            , str, errno);
-		logline(LOG_WARNING, "!!", logstr);
 		bputs("\7\r\nNOPEN: ACCESS DENIED\r\n\7");
 	}
 	return file;

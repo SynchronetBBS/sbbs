@@ -38,10 +38,9 @@ void sbbs_t::logout()
 
 	if (!useron.number) {                 /* Not logged in, so do nothing */
 		if (!online) {
-			SAFEPRINTF2(str, "%-6s  T:%3u sec\r\n"
+			llprintf("@-", "%-6s  T:%3u sec\r\n"
 			            , time_as_hhmm(&cfg, now, tmp)
 			            , (uint)(now - answertime));
-			logline("@-", str);
 		}
 		return;
 	}
@@ -108,8 +107,7 @@ void sbbs_t::logout()
 
 	if (useron.min && j > i) {
 		j -= i;                               /* j=time to deduct from min */
-		SAFEPRINTF(str, "Minute Adjustment: %d", -j);
-		logline(">>", str);
+		llprintf(">>", "Minute Adjustment: %d", -j);
 		if (useron.min > (ulong)j)
 			useron.min -= j;
 		else

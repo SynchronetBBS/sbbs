@@ -295,8 +295,7 @@ void sbbs_t::qwk_success(uint msgcnt, char bi, char prepack)
 	}
 
 	if (!prepack) {
-		SAFECOPY(str, "downloaded QWK packet");
-		logline("D-", str);
+		logline("D-", "downloaded QWK packet");
 		posts_read += msgcnt;
 
 		snprintf(str, sizeof str, "%sfile/%04u.qwk", cfg.data_dir, useron.number);
@@ -733,8 +732,7 @@ void sbbs_t::qwkcfgline(char *buf, int subnum)
 				y = l - (x * 1000);
 				if (x >= usrgrps || y >= usrsubs[x]) {
 					bprintf(text[QWKInvalidConferenceN], l);
-					snprintf(str, sizeof str, "Invalid conference number %u", l);
-					logline(LOG_NOTICE, "Q!", str);
+					llprintf(LOG_NOTICE, "Q!", "Invalid conference number %u", l);
 				}
 				else
 					subscan[usrsub[x][y]].cfg &= ~SUB_CFG_NSCAN;
@@ -1082,12 +1080,10 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 		return false;
 	}
 	if (hubnum == -1 && strnicmp(section, "poll:", 5) == 0) {
-		char str[256];
 		uint reason = CantPostOnSub;
 		if (!user_can_post(&cfg, smb.subnum, &useron, &client, &reason)) {
 			bputs(text[reason]);
-			SAFEPRINTF2(str, "QWK Poll not allowed, reason = %u (%s)", reason, text[reason]);
-			logline(LOG_NOTICE, "P!", str);
+			llprintf(LOG_NOTICE, "P!", "QWK Poll not allowed, reason = %u (%s)", reason, text[reason]);
 			return false;
 		}
 	}

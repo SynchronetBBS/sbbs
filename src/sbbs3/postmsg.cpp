@@ -339,9 +339,8 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	user_posted_msg(&cfg, &useron, 1);
 	bprintf(text[Posted], cfg.grp[cfg.sub[subnum]->grp]->sname
 	        , cfg.sub[subnum]->lname);
-	snprintf(str, sizeof str, "posted to %s on %s %s"
+	llprintf("P+", "posted to %s on %s %s"
 	         , touser, cfg.grp[cfg.sub[subnum]->grp]->sname, cfg.sub[subnum]->lname);
-	logline("P+", str);
 
 	char topic[128];
 	snprintf(topic, sizeof(topic), "post/%s", cfg.sub[subnum]->code);

@@ -505,14 +505,12 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 		bprintf("\r\n!%s\r\n", smb->last_error);
 		if (!fromhub) {
 			if (subnum == INVALID_SUB) {
-				SAFEPRINTF(str, "duplicate e-mail attempt (%s)", smb->last_error);
-				logline(LOG_NOTICE, "E!", str);
+				llprintf(LOG_NOTICE, "E!", "duplicate e-mail attempt (%s)", smb->last_error);
 			} else {
-				SAFEPRINTF3(str, "duplicate message attempt in %s %s (%s)"
+				llprintf(LOG_NOTICE, "P!", "duplicate message attempt in %s %s (%s)"
 				            , cfg.grp[cfg.sub[subnum]->grp]->sname
 				            , cfg.sub[subnum]->lname
 				            , smb->last_error);
-				logline(LOG_NOTICE, "P!", str);
 			}
 		}
 		*dupe = true;

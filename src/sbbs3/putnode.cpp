@@ -130,9 +130,8 @@ bool sbbs_t::putnodeext(uint number, char *ext)
 	node_ext = -1;
 
 	if (count > (LOOP_NODEDAB / 2) && count != LOOP_NODEDAB) {
-		snprintf(str, sizeof str, "NODE.EXB (node %d) COLLISION - Count: %d"
+		llprintf(LOG_NOTICE, "!!", "NODE.EXB (node %d) COLLISION - Count: %d"
 		         , number + 1, count);
-		logline(LOG_NOTICE, "!!", str);
 	}
 	if (count == LOOP_NODEDAB) {
 		errormsg(WHERE, ERR_WRITE, "NODE.EXB", number + 1);

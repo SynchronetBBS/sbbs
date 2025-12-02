@@ -46,10 +46,9 @@ bool sbbs_t::uploadfile(file_t* f)
 		mv(tmp, path, 0);
 	if (!fexistcase(path)) {
 		bprintf(text[FileNotReceived], f->name);
-		safe_snprintf(str, sizeof(str), "attempted to upload %s to %s %s (Not received)"
+		llprintf(LOG_NOTICE, "U!", "attempted to upload %s to %s %s (Not received)"
 		              , f->name
 		              , cfg.lib[cfg.dir[f->dir]->lib]->sname, cfg.dir[f->dir]->sname);
-		logline(LOG_NOTICE, "U!", str);
 		return false;
 	}
 	f->hdr.when_written.time = (uint32_t)fdate(path);
@@ -75,11 +74,10 @@ bool sbbs_t::uploadfile(file_t* f)
 			int result = external(cmdstr(cfg.ftest[i]->cmd, path, str, NULL, cfg.ftest[i]->ex_mode), cfg.ftest[i]->ex_mode | EX_OFFLINE);
 			term->clearline();
 			if (result != 0) {
-				safe_snprintf(str, sizeof(str), "attempted to upload %s to %s %s (%s error code %d)"
+				llprintf(LOG_NOTICE, "U!", "attempted to upload %s to %s %s (%s error code %d)"
 				              , f->name
 				              , cfg.lib[cfg.dir[f->dir]->lib]->sname, cfg.dir[f->dir]->sname, cfg.ftest[i]->ext
 				              , result);
-				logline(LOG_NOTICE, "U!", str);
 				bprintf(text[FileHadErrors], f->name, cfg.ftest[i]->ext);
 				if (!useron_is_sysop() || yesno(text[DeleteFileQ]))
 					remove(path);
@@ -108,10 +106,9 @@ bool sbbs_t::uploadfile(file_t* f)
 	if ((length = flength(path)) == 0L) {
 		bprintf(text[FileZeroLength], f->name);
 		remove(path);
-		safe_snprintf(str, sizeof(str), "attempted to upload %s to %s %s (Zero length)"
+		llprintf(LOG_NOTICE, "U!", "attempted to upload %s to %s %s (Zero length)"
 		              , f->name
 		              , cfg.lib[cfg.dir[f->dir]->lib]->sname, cfg.dir[f->dir]->sname);
-		logline(LOG_NOTICE, "U!", str);
 		return false;
 	}
 
@@ -128,10 +125,9 @@ bool sbbs_t::uploadfile(file_t* f)
 					bprintf(text[FileAlreadyOnline], f->name, lib_name(usrdir[i][j]), dir_name(usrdir[i][j]));
 					if (!dir_op(f->dir)) {
 						remove(path);
-						safe_snprintf(str, sizeof(str), "attempted to upload %s to %s %s (duplicate hash)"
+						llprintf(LOG_NOTICE, "U!", "attempted to upload %s to %s %s (duplicate hash)"
 						              , f->name
 						              , cfg.lib[cfg.dir[f->dir]->lib]->sname, cfg.dir[f->dir]->sname);
-						logline(LOG_NOTICE, "U!", str);
 						return false;   /* File is in database for another dir */
 					}
 				}
@@ -175,14 +171,13 @@ bool sbbs_t::uploadfile(file_t* f)
 	if (!addfile(&cfg, f, ext, /* metadata: */ NULL, &client, NULL))
 		return false;
 
-	snprintf(str, sizeof(str), "uploaded %s (%" PRId64 " bytes) to %s %s"
+	llprintf("U+", "uploaded %s (%" PRId64 " bytes) to %s %s"
 	         , f->name
 	         , length
 	         , cfg.lib[cfg.dir[f->dir]->lib]->sname
 	         , cfg.dir[f->dir]->sname);
 	if (cfg.dir[f->dir]->upload_sem[0])
 		ftouch(cmdstr(cfg.dir[f->dir]->upload_sem, nulstr, nulstr, NULL));
-	logline("U+", str);
 	/**************************/
 	/* Update Uploader's Info */
 	/**************************/

@@ -95,18 +95,16 @@ bool sbbs_t::logon()
 
 	if (!chk_ars(startup->login_ars, &useron, &client)) {
 		bputs(text[NoNodeAccess]);
-		safe_snprintf(str, sizeof str, "(%04u)  %-25s  Insufficient server access: %s"
+		llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Insufficient server access: %s"
 		              , useron.number, useron.alias, startup->login_ars);
-		logline(LOG_NOTICE, "+!", str);
 		hangup();
 		return false;
 	}
 
 	if (!chk_ar(cfg.node_ar, &useron, &client)) {
 		bputs(text[NoNodeAccess]);
-		safe_snprintf(str, sizeof(str), "(%04u)  %-25s  Insufficient node access: %s"
+		llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Insufficient node access: %s"
 		              , useron.number, useron.alias, cfg.node_arstr);
-		logline(LOG_NOTICE, "+!", str);
 		hangup();
 		return false;
 	}
@@ -121,9 +119,8 @@ bool sbbs_t::logon()
 		unlocknodedat(cfg.node_num);    /* must unlock! */
 		if (!useron_is_sysop() && !(useron.exempt & FLAG('N'))) {
 			bputs(text[NodeLocked]);
-			safe_snprintf(str, sizeof(str), "(%04u)  %-25s  Locked node logon attempt"
+			llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Locked node logon attempt"
 			              , useron.number, useron.alias);
-			logline(LOG_NOTICE, "+!", str);
 			hangup();
 			return false;
 		}
@@ -330,17 +327,15 @@ bool sbbs_t::logon()
 		if (useron.ltoday > cfg.level_callsperday[useron.level]
 		    && !(useron.exempt & FLAG('L'))) {
 			bputs(text[NoMoreLogons]);
-			safe_snprintf(str, sizeof(str), "(%04u)  %-25s  Out of logons"
+			llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Out of logons"
 			              , useron.number, useron.alias);
-			logline(LOG_NOTICE, "+!", str);
 			hangup();
 			return false;
 		}
 		if (useron.rest & FLAG('L') && useron.ltoday > 1) {
 			bputs(text[R_Logons]);
-			safe_snprintf(str, sizeof(str), "(%04u)  %-25s  Out of logons"
+			llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Out of logons"
 			              , useron.number, useron.alias);
-			logline(LOG_NOTICE, "+!", str);
 			hangup();
 			return false;
 		}
@@ -445,9 +440,8 @@ bool sbbs_t::logon()
 		}
 	}
 	if (!online) {
-		safe_snprintf(str, sizeof(str), "(%04u)  %-25s  Unsuccessful logon"
+		llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Unsuccessful logon"
 		              , useron.number, useron.alias);
-		logline(LOG_NOTICE, "+!", str);
 		return false;
 	}
 	useron.logons++;
@@ -462,9 +456,8 @@ bool sbbs_t::logon()
 	mqtt_user_login(mqtt, &client);
 
 	if (useron.rest & FLAG('Q')) {
-		safe_snprintf(str, sizeof(str), "(%04u)  %-25s  QWK Network Connection"
+		llprintf("++", "(%04u)  %-25s  QWK Network Connection"
 		              , useron.number, useron.alias);
-		logline("++", str);
 		return true;
 	}
 
@@ -472,9 +465,8 @@ bool sbbs_t::logon()
 	/* SUCCESSFUL LOGON */
 	/********************/
 	totallogons = logonstats();
-	safe_snprintf(str, sizeof(str), "(%04u)  %-25s  %sLogon %u - %u"
+	llprintf("++", "(%04u)  %-25s  %sLogon %u - %u"
 	              , useron.number, useron.alias, (sys_status & SS_FASTLOGON) ? "Fast-":"", totallogons, useron.ltoday);
-	logline("++", str);
 
 	if (!(sys_status & SS_QWKLOGON) && cfg.logon_mod[0])
 		exec_bin(cfg.logon_mod, &main_csi);
@@ -552,9 +544,8 @@ bool sbbs_t::logon()
 			}
 			if (node.status == NODE_INUSE && i != cfg.node_num && node.useron == useron.number
 			    && !useron_is_sysop() && !useron_is_guest()) {
-				SAFEPRINTF2(str, "(%04u)  %-25s  On more than one node at the same time"
+				llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  On more than one node at the same time"
 				            , useron.number, useron.alias);
-				logline(LOG_NOTICE, "+!", str);
 				bputs(text[UserOnTwoNodes]);
 				hangup();
 				return false;
@@ -617,7 +608,6 @@ bool sbbs_t::logon()
 /****************************************************************************/
 uint sbbs_t::logonstats()
 {
-	char      msg[256];
 	char      path[MAX_PATH + 1];
 	FILE*     csts;
 	FILE*     dsts;
@@ -653,11 +643,10 @@ uint sbbs_t::logonstats()
 			sys_status |= SS_NEW_MONTH;
 		if (tm.tm_wday == 0 || difftime(now, stats.date) > (7 * 24 * 60 * 60))
 			sys_status |= SS_NEW_WEEK;
-		safe_snprintf(msg, sizeof(msg), "New Day%s%s - Prev: %s "
+		llprintf(LOG_NOTICE, "!=", "New Day%s%s - Prev: %s "
 			          , (sys_status & SS_NEW_WEEK) ? " and Week" :""
 		              , (sys_status & SS_NEW_MONTH) ? " and Month" :""
 			          , timestr(stats.date));
-		logline(LOG_NOTICE, "!=", msg);
 		safe_snprintf(path, sizeof(path), "%slogon.lst", cfg.data_dir);    /* Truncate logon list (LEGACY) */
 		int file;
 		if ((file = nopen(path, O_TRUNC | O_CREAT | O_WRONLY)) == -1) {

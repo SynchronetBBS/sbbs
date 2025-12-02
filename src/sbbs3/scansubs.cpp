@@ -28,7 +28,6 @@ void sbbs_t::scansubs(int mode)
 {
 	char keys[32];
 	char ch, str[256] = "";
-	char tmp[512];
 	int  i = 0;
 	uint found = 0;
 	uint subs_scanned = 0;
@@ -69,8 +68,7 @@ void sbbs_t::scansubs(int mode)
 						found = listsub(usrsub[curgrp][i], SCAN_FIND, 0, str);
 						subs_scanned++;
 					}
-				SAFEPRINTF2(tmp, "searched %u sub-boards for '%s'", subs_scanned, str);
-				logline(nulstr, tmp);
+				llprintf(nulstr, "searched %u sub-boards for '%s'", subs_scanned, str);
 				if (!found)
 					term->newline();
 				return;
@@ -141,7 +139,6 @@ void sbbs_t::scansubs(int mode)
 void sbbs_t::scanallsubs(int mode)
 {
 	char  str[256] = "";
-	char  tmp[512];
 	int   i, j;
 	uint  found = 0;
 	int   subs_scanned = 0;
@@ -180,9 +177,8 @@ void sbbs_t::scanallsubs(int mode)
 				}
 				if (!found)
 					term->newline();
-				snprintf(tmp, sizeof tmp, "searched %u sub-boards for '%s'"
+				llprintf(nulstr, "searched %u sub-boards for '%s'"
 				         , subs_scanned, str);
-				logline(nulstr, tmp);
 				return;
 			}
 		}

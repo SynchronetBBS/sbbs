@@ -1193,8 +1193,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 		if (fgets(str, 81, stream)) {      /* additional minutes */
 			mod = atol(str);
 			if (mod) {
-				SAFEPRINTF(str, "Minute Adjustment: %s", ultoac(mod, tmp));
-				logline("*+", str);
+				llprintf("*+", "Minute Adjustment: %s", ultoac(mod, tmp));
 				useron.min = (uint32_t)adjustuserval(&cfg, &useron, USER_MIN, mod);
 			}
 		}
@@ -1387,10 +1386,9 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	xtrndat(name, dropdir, cfg.xtrn[xtrnnum]->type, tleft, cfg.xtrn[xtrnnum]->misc);
 	if (!online)
 		return false;
-	snprintf(str, sizeof(str), "running external %s: %s"
+	llprintf("X-", "running external %s: %s"
 	         , user_event ? "user event" : "program"
 	         , cfg.xtrn[xtrnnum]->name);
-	logline("X-", str);
 	if (cfg.xtrn[xtrnnum]->cmd[0] != '?' &&  cfg.xtrn[xtrnnum]->cmd[0] != '*' && logfile_fp != NULL) {
 		fclose(logfile_fp);
 		logfile_fp = NULL;
