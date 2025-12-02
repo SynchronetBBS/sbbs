@@ -1168,13 +1168,13 @@ BOOL zmodem_recv_hex_header(zmodem_t* zm)
 	 * drop the end of line sequence after a hex header
 	 */
 	c = zmodem_rx(zm);
-	if (c == '\r' || c == SET_PARITY('\r')) { // CR with Odd Parity (Tera Term's ZMODEM sends this)
+	if (c == '\r' || c == SET_PARITY('\r')) { // CR with Even Parity (Tera Term's ZMODEM sends this)
 		/*
-		 * both are expected with CR
+		 * both bytes are expected when the first received is a CR
 		 */
 		c = zmodem_rx(zm);  /* drop LF */
 	}
-	if (c != '\n' && c != SET_PARITY('\n')) { // LF with Even Parity
+	if (c != '\n' && c != SET_PARITY('\n')) { // LF with Odd Parity
 		lprintf(zm, LOG_ERR, "%s HEX header not terminated with LF: %s"
 		        , __FUNCTION__, chr(c));
 		return FALSE;
