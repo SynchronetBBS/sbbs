@@ -234,35 +234,34 @@ static void client_on(void* p, bool on, int sock, client_t* client, bool update)
         i=-1;
 	}
 
-    if(on) {
-	    if(!update)
-	        client_add(NULL, TRUE);
-    } else { // Off
-        client_add(NULL, FALSE);
-        if(i>=0)
-            ClientForm->ListView->Items->Delete(i);
-        ReleaseMutex(ClientForm->ListMutex);
-        return;
-    }
 	try {
-		if(client!=NULL && client->size==sizeof(client_t)) {
-			t=time(NULL);
-			if(i>=0) {
-				Item=ClientForm->ListView->Items->Item[i];
-			} else {
-				Item=ClientForm->ListView->Items->Add();
-				Item->Data=(void*)t;
-				Item->Caption=sock;
+		if(!on) {
+			client_add(NULL, FALSE);
+			if(i>=0)
+				ClientForm->ListView->Items->Delete(i);
+		}
+		else {
+			if(!update)
+				client_add(NULL, TRUE);
+			if(client!=NULL && client->size==sizeof(client_t)) {
+				t=time(NULL);
+				if(i>=0) {
+					Item=ClientForm->ListView->Items->Item[i];
+				} else {
+					Item=ClientForm->ListView->Items->Add();
+					Item->Data=(void*)t;
+					Item->Caption=sock;
+				}
+				Item->SubItems->Clear();
+				Item->SubItems->Add(client->protocol);
+				Item->SubItems->Add(client->user);
+				Item->SubItems->Add(client->addr);
+				Item->SubItems->Add(client->host);
+				Item->SubItems->Add(client->port);
+				t-=(time_t)Item->Data;
+				sprintf(str,"%d:%02d",t/60,t%60);
+				Item->SubItems->Add(str);
 			}
-			Item->SubItems->Clear();
-			Item->SubItems->Add(client->protocol);
-			Item->SubItems->Add(client->user);
-			Item->SubItems->Add(client->addr);
-			Item->SubItems->Add(client->host);
-			Item->SubItems->Add(client->port);
-			t-=(time_t)Item->Data;
-			sprintf(str,"%d:%02d",t/60,t%60);
-			Item->SubItems->Add(str);
 		}
 	} catch(...) {}
     ReleaseMutex(ClientForm->ListMutex);

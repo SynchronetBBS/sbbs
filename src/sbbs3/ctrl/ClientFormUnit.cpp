@@ -58,6 +58,7 @@ void __fastcall TClientForm::TimerTimer(TObject *Sender)
     if(WaitForSingleObject(ListMutex,1)!=WAIT_OBJECT_0)
         return;
 	ListView->Items->BeginUpdate();
+	try {
     for(i=0;i<ListView->Items->Count;i++) {
         t=time(NULL)-(ulong)ListView->Items->Item[i]->Data;
         if(t/(60*60))
@@ -67,6 +68,7 @@ void __fastcall TClientForm::TimerTimer(TObject *Sender)
         ListView->Items->Item[i]->SubItems->Strings[5]=str;
 
     }
+	} catch(...) { }
 	ListView->Items->EndUpdate();
     ReleaseMutex(ListMutex);
 }
