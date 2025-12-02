@@ -567,7 +567,7 @@ public:
 #define SMB_STACK_POP	false
 	int 	smb_stack(smb_t* smb, bool push);
 
-	enum { user_not_logged_in, user_logged_in, user_logged_on } user_login_state{};
+	enum { user_not_logged_in, user_registering, user_logged_in, user_logged_on } user_login_state{};
 	bool	useron_is_guest() { return user_is_guest(&useron); }
 	bool	useron_is_sysop() { return user_is_sysop(&useron) || (sys_status & SS_TMPSYSOP); }
 
@@ -1181,7 +1181,16 @@ public:
 	void	logch(char ch, bool comma);	/* Writes 'ch' to node log */
 	void	logline(const char *code,const char *str); /* Writes 'str' on it's own line in log (LOG_INFO level) */
 	void	logline(int level, const char *code,const char *str);
-	void	llprintf(int level, const char* code, const char *fmt, ...);
+	void	llprintf(int level, const char* code, const char *fmt, ...)
+#if defined(__GNUC__)   // Catch printf-format errors
+    __attribute__ ((format (printf, 4, 5)))			// 1 is 'this', 2 is 'level', 3 is 'code'
+#endif
+	;
+	void	llprintf(const char* code, const char *fmt, ...)
+#if defined(__GNUC__)   // Catch printf-format errors
+    __attribute__ ((format (printf, 3, 4)))			// 1 is 'this', 2 is 'code'
+#endif
+	;
 
 	bool	logofflist(void);              /* List of users logon activity */
 	bool	errormsg_inside = false;

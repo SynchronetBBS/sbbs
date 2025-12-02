@@ -235,6 +235,21 @@ void sbbs_t::llprintf(int level, const char* code, const char *fmt, ...)
 }
 
 /****************************************************************************/
+/* Writes INFO-level formatted string on it's own line in node.log			*/
+/****************************************************************************/
+void sbbs_t::llprintf(const char* code, const char *fmt, ...)
+{
+	va_list argptr;
+	char    sbuf[1024];
+
+	va_start(argptr, fmt);
+	vsnprintf(sbuf, sizeof sbuf, fmt, argptr);
+	TERMINATE(sbuf);
+	va_end(argptr);
+	logline(code, sbuf);
+}
+
+/****************************************************************************/
 /* Writes a comma then 'ch' to log, tracking column.						*/
 /****************************************************************************/
 void sbbs_t::logch(char ch, bool comma)

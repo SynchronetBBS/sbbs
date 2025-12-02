@@ -4627,7 +4627,7 @@ void node_thread(void* arg)
 		}
 	}
 
-	if (sbbs->user_login_state >= sbbs->user_logged_in)
+	if (sbbs->user_login_state > sbbs->user_not_logged_in)
 		sbbs->catsyslog(/* Crash: */ false);
 	else {
 		rewind(sbbs->logfile_fp);

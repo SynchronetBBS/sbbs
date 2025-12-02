@@ -39,6 +39,8 @@ bool sbbs_t::newuser()
 
 	max_socket_inactivity = startup->max_newuser_inactivity;
 	bputs(text[StartingNewUserRegistration]);
+	user_login_state = user_registering;
+	logline("N", "New user registration begun");
 	getnodedat(cfg.node_num, &thisnode);
 	if (thisnode.misc & NODE_LOCK) {
 		bputs(text[NodeLocked]);
@@ -49,6 +51,7 @@ bool sbbs_t::newuser()
 
 	if (cfg.sys_misc & SM_CLOSED) {
 		bputs(text[NoNewUsers]);
+		logline(LOG_WARNING, "N!", "System is closed to new users");
 		hangup();
 		return false;
 	}
@@ -66,10 +69,10 @@ bool sbbs_t::newuser()
 			getstr(str, 40, K_UPPER | K_TRIM);
 			if (!strcmp(str, cfg.new_pass))
 				break;
-			SAFEPRINTF(tmp, "NUP Attempted: '%s'", str);
-			logline(LOG_NOTICE, "N!", tmp);
+			llprintf(LOG_NOTICE, "N!", "NUP Attempted: '%s'", str);
 		}
 		if (c == 4) {
+			logline(LOG_NOTICE, "N!", "Failed all New User Password attempts");
 			menu("../nupguess", P_NOABORT | P_NOERROR);
 			hangup();
 			return false;
@@ -121,6 +124,7 @@ bool sbbs_t::newuser()
 			else if (key == PETSCII_DELETE)
 				useron.misc |= (PETSCII | COLOR);
 			else {
+				llprintf(LOG_NOTICE, "N!", "Unsupported backspace key received: %02Xh", key);
 				bprintf(text[InvalidBackspaceKeyFmt], key, key);
 				if (text[ContinueQ][0] && !yesno(text[ContinueQ]))
 					return false;
@@ -176,6 +180,7 @@ bool sbbs_t::newuser()
 			if (!check_name(&cfg, useron.alias)
 			    || finduserstr(useron.number, USER_NAME, useron.alias)
 			    || (!(cfg.uq & UQ_ALIASES) && !check_realname(&cfg, useron.alias))) {
+				llprintf(LOG_NOTICE, "N!", "Invalid or duplicate user real name or alias: '%s'", useron.alias);
 				bputs(text[YouCantUseThatName]);
 				if (text[ContinueQ][0] && !yesno(text[ContinueQ]))
 					return false;
@@ -192,9 +197,10 @@ bool sbbs_t::newuser()
 				if (!check_name(&cfg, useron.name)
 				    || !check_realname(&cfg, useron.name)
 				    || ((cfg.uq & UQ_DUPREAL)
-				        && finduserstr(useron.number, USER_NAME, useron.name)))
+				        && finduserstr(useron.number, USER_NAME, useron.name))) {
+					llprintf(LOG_NOTICE, "N!", "Invalid or duplicate user real name: '%s'", useron.name);
 					bputs(text[YouCantUseThatName]);
-				else
+				} else
 					break;
 				if (text[ContinueQ][0] && !yesno(text[ContinueQ]))
 					return false;
@@ -223,9 +229,10 @@ bool sbbs_t::newuser()
 			    || strchr(useron.handle, 0xff)
 			    || ((cfg.uq & UQ_DUPHAND)
 			        && finduserstr(0, USER_HANDLE, useron.handle))
-			    || trashcan(useron.handle, "name"))
+			    || trashcan(useron.handle, "name")) {
+				llprintf(LOG_NOTICE, "N!", "Invalid or duplicate user handle: '%s'", useron.name);
 				bputs(text[YouCantUseThatName]);
-			else
+			} else
 				break;
 			if (text[ContinueQ][0] && !yesno(text[ContinueQ]))
 				return false;
@@ -321,8 +328,7 @@ bool sbbs_t::newuser()
 	}
 	if (!online)
 		return false;
-	SAFEPRINTF(str, "New user: %s", useron.alias);
-	logline("N", str);
+	llprintf("N", "New user: %s", useron.alias);
 	if (!online)
 		return false;
 	menu("../sbbs", P_NOABORT | P_NOERROR);
@@ -362,9 +368,9 @@ bool sbbs_t::newuser()
 	else {
 		if (rlogin_pass[0]) {
 			if (cfg.sys_misc & SM_ECHO_PW)
-				lprintf(LOG_NOTICE, "Rejected RLogin password for new user: '%s'", rlogin_pass);
+				llprintf(LOG_NOTICE, "N!", "Rejected RLogin password for new user: '%s'", rlogin_pass);
 			else
-				lprintf(LOG_NOTICE, "Rejected RLogin password for new user");
+				llprintf(LOG_NOTICE, "N!", "Rejected RLogin password for new user");
 		}
 		lprintf(LOG_INFO, "Generating a random password for new user");
 		do {
@@ -403,12 +409,11 @@ bool sbbs_t::newuser()
 			if (!strcmp(str, useron.pass))
 				break;
 			if (cfg.sys_misc & SM_ECHO_PW)
-				SAFEPRINTF2(tmp, "FAILED Password verification: '%s' instead of '%s'"
+				llprintf(LOG_NOTICE, "N!", "FAILED Password verification: '%s' instead of '%s'"
 				            , str
 				            , useron.pass);
 			else
-				SAFECOPY(tmp, "FAILED Password verification");
-			logline(LOG_NOTICE, nulstr, tmp);
+				logline(LOG_NOTICE, "N!", "FAILED Password verification");
 			if (++c == 4) {
 				logline(LOG_NOTICE, "N!", "Couldn't figure out password.");
 				hangup();
@@ -426,8 +431,7 @@ bool sbbs_t::newuser()
 		getstr(str, 50, K_UPPER | K_TRIM);
 		if (strcmp(str, cfg.new_magic)) {
 			bputs(text[FailedMagicWord]);
-			SAFEPRINTF(tmp, "failed magic word: '%s'", str);
-			logline("N!", tmp);
+			llprintf("N!", "failed magic word: '%s'", str);
 			hangup();
 		}
 		if (!online)
@@ -442,8 +446,7 @@ bool sbbs_t::newuser()
 		hangup();
 		return false;
 	}
-	SAFEPRINTF2(str, "Created user record #%u: %s", useron.number, useron.alias);
-	logline(nulstr, str);
+	llprintf(nulstr, "Created user record #%u: %s", useron.number, useron.alias);
 
 	snprintf(str, sizeof(str), "%u\t%s"
 	         , useron.number, useron.alias);
@@ -494,7 +497,7 @@ bool sbbs_t::newuser()
 		exec_bin(cfg.newuser_mod, &main_csi);
 	user_event(EVENT_NEWUSER);
 	getuseron(WHERE);   // In case event(s) modified user data
-	logline("N+", "Successful new user logon");
+	logline("N+", "Successful new user registration");
 
 	return true;
 }
