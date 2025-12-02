@@ -1449,7 +1449,7 @@ int edit_sys_date_sep(int page, int total)
 
 int edit_sys_vdate_sep(int page, int total)
 {
-	char str[2] = { cfg.sys_vdate_sep };
+	char str[3] = { cfg.sys_vdate_sep };
 	int mode = WIN_SAV | WIN_MID;
 	uifc.helpbuf =
 		"`Verbal Date Separator:`\n"
@@ -1504,6 +1504,8 @@ int edit_sys_alias_policy(int page, int total)
 		"If you want the users of your system to be allowed to be known by a\n"
 		"false name, handle, or alias, set this option to `Yes`.  If you want all\n"
 		"users on your system to be known only by their real names, select `No`.\n"
+		"\n"
+		"Note: real names are required to consist of more than one word.\n"
 	;
 	if (page)
 		mode = wiz_help(page, total, uifc.helpbuf);
