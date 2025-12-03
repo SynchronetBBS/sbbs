@@ -1814,7 +1814,7 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 /****************************************************************************/
 bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 {
-	char     str[256], *buf;
+	char     *buf;
 	int      i;
 	int      newgrp, newsub, storage;
 	off_t    offset;

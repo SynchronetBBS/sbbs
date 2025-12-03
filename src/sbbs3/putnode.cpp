@@ -102,7 +102,6 @@ bool sbbs_t::unlocknodedat(uint number)
 
 bool sbbs_t::putnodeext(uint number, char *ext)
 {
-	char str[MAX_PATH + 1];
 	int  count;
 	int  wr;
 
