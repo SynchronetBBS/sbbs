@@ -339,9 +339,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 				}
 				useron.etoday = (uint)adjustuserval(&cfg, &useron, USER_ETODAY, 1);
 				bprintf(P_REMOTE, text[Emailed], username(&cfg, usernum, tmp), usernum);
-				SAFEPRINTF2(str, "sent QWK e-mail to %s #%d"
+				llprintf("E+", "sent QWK e-mail to %s #%d"
 				            , username(&cfg, usernum, tmp), usernum);
-				logline("E+", str);
 				if (cfg.node_num) {
 					for (k = 1; k <= cfg.sys_nodes; k++) { /* Tell user, if online */
 						getnodedat(k, &node);
@@ -374,8 +373,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			    /**************************/
 			if ((n = resolve_qwkconf(confnum)) == INVALID_SUB) {
 				bprintf(P_REMOTE, text[QWKInvalidConferenceN], confnum);
-				SAFEPRINTF(str, "Invalid QWK conference number %ld", confnum);
-				logline(LOG_NOTICE, "P!", str);
+				llprintf(LOG_NOTICE, "P!", "Invalid QWK conference number %ld", confnum);
 				errors++;
 				continue;
 			}
@@ -411,8 +409,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			uint reason = CantPostOnSub;
 			if (!user_can_post(&cfg, n, &useron, &client, &reason)) {
 				bputs(text[reason]);
-				SAFEPRINTF2(str, "QWK Post not allowed, reason = %u (%s)", reason, text[reason]);
-				logline(LOG_NOTICE, "P!", str);
+				llprintf(LOG_NOTICE, "P!", "QWK Post not allowed, reason = %u (%s)", reason, text[reason]);
 				continue;
 			}
 
@@ -498,10 +495,9 @@ bool sbbs_t::unpack_rep(char* repfile)
 				user_posted_msg(&cfg, &useron, 1);
 				bprintf(P_REMOTE, text[Posted], cfg.grp[cfg.sub[n]->grp]->sname
 				        , cfg.sub[n]->lname);
-				SAFEPRINTF2(str, "posted QWK message on %s %s"
+				llprintf("P+", "posted QWK message on %s %s"
 				            , cfg.grp[cfg.sub[n]->grp]->sname, cfg.sub[n]->lname);
 				signal_sub_sem(&cfg, n);
-				logline("P+", str);
 				int destuser = lookup_user(&cfg, &user_list, msg.to);
 				if (destuser > 0) {
 					SAFEPRINTF4(str, text[MsgPostedToYouVia]

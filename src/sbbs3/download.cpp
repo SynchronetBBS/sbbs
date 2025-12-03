@@ -30,7 +30,6 @@
 /****************************************************************************/
 void sbbs_t::downloadedfile(file_t* f)
 {
-	char  str[MAX_PATH + 1];
 	char  tmp[512];
 	off_t length;
 
@@ -40,12 +39,11 @@ void sbbs_t::downloadedfile(file_t* f)
 		logon_dls++;
 	}
 	bprintf(text[FileNBytesSent], f->name, ultoac((ulong)length, tmp));
-	snprintf(str, sizeof str, "downloaded %s (%" PRId64 " bytes) from %s %s"
+	llprintf("D-", "downloaded %s (%" PRId64 " bytes) from %s %s"
 	         , f->name
 	         , length
 	         , cfg.lib[cfg.dir[f->dir]->lib]->sname
 	         , cfg.dir[f->dir]->sname);
-	logline("D-", str);
 
 	user_downloaded_file(&cfg, &useron, &client, f->dir, f->name, length);
 	mqtt_file_download(mqtt, &useron, f->dir, f->name, length, &client);
@@ -72,13 +70,12 @@ void sbbs_t::downloadedbytes(off_t size, time_t elapsed)
 /****************************************************************************/
 void sbbs_t::notdownloaded(off_t size, time_t elapsed)
 {
-	char str[256], tmp2[256];
+	char tmp2[256];
 	char tmp[512];
 
-	SAFEPRINTF2(str, "Estimated Time: %s  Transfer Time: %s"
+	llprintf(nulstr, "Estimated Time: %s  Transfer Time: %s"
 	            , sectostr(cur_cps ? (uint)(size / cur_cps) : 0, tmp)
 	            , sectostr((uint)(elapsed), tmp2));
-	logline(nulstr, str);
 	if (cfg.leech_pct && cur_cps                 /* leech detection */
 	    && elapsed >= cfg.leech_sec
 	    && elapsed >= (double)(size / cur_cps) * (double)cfg.leech_pct / 100.0) {
@@ -433,16 +430,12 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 		char bytes[32];
 		u64toac(length, bytes);
 		bprintf(text[FileNBytesSent], getfname(fname), bytes);
-		char str[128];
-		SAFEPRINTF3(str, "downloaded %s: %s (%s bytes)"
+		llprintf("D-", "downloaded %s: %s (%s bytes)"
 		            , desc == NULL ? "file" : desc, fname, bytes);
-		logline("D-", str);
 		autohangup();
 	} else {
-		char str[128];
 		bprintf(text[FileNotSent], getfname(fname));
-		SAFEPRINTF2(str, "attempted to download %s: %s", desc == NULL ? "file" : desc, fname);
-		logline(LOG_NOTICE, "D!", str);
+		llprintf(LOG_NOTICE, "D!", "attempted to download %s: %s", desc == NULL ? "file" : desc, fname);
 	}
 	return result;
 }

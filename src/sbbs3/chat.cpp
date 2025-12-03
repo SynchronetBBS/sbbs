@@ -736,9 +736,8 @@ void sbbs_t::privchat(bool forced, int node_num)
 				         , cfg.node_num, thisnode.misc & NODE_ANON
 				        ? text[UNKNOWN_USER] : useron.alias);
 				putnmsg(n, str);
-				snprintf(str, sizeof str, "paged %s on node %d to private chat"
+				llprintf("C", "paged %s on node %d to private chat"
 				         , username(&cfg, node.useron, tmp), n);
-				logline("C", str);
 			}
 		}
 
@@ -1384,9 +1383,8 @@ void sbbs_t::nodemsg()
 					break;
 				}
 				putsmsg(usernumber, buf);
-				snprintf(str, sizeof str, "sent telegram to %s #%u"
+				llprintf("C", "sent telegram to %s #%u"
 				         , username(&cfg, usernumber, tmp), usernumber);
-				logline("C", str);
 				logline(nulstr, logbuf);
 				bprintf(text[MsgSentToUser], "Telegram"
 				        , username(&cfg, usernumber, tmp), usernumber);
@@ -1417,9 +1415,8 @@ void sbbs_t::nodemsg()
 						if (!(node.misc & NODE_ANON))
 							bprintf(text[MsgSentToUser], "Message"
 							        , username(&cfg, usernumber, tmp), usernumber);
-						snprintf(str, sizeof str, "sent message to %s on node %d:"
+						llprintf("C", "sent message to %s on node %d:"
 						         , username(&cfg, usernumber, tmp), i);
-						logline("C", str);
 						logline(nulstr, line);
 					}
 				}
@@ -1439,8 +1436,7 @@ void sbbs_t::nodemsg()
 						    && (useron_is_sysop() || !(node.misc & NODE_POFF)))
 							putnmsg(i, buf);
 					}
-					SAFECOPY(str, "sent message to all nodes");
-					logline("C", str);
+					logline("C", "sent message to all nodes");
 					logline(nulstr, line);
 				}
 				break;

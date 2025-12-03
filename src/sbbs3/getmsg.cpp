@@ -451,10 +451,9 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del, bool 
 									downloadedbytes(length, elapsed);
 									bprintf(text[FileNBytesSent]
 									        , getfname(fpath), u64toac(length, tmp));
-									SAFEPRINTF(str
+									llprintf("D-"
 									           , "downloaded attached file: %s"
 									           , getfname(fpath));
-									logline("D-", str);
 								}
 								autohangup();
 							}

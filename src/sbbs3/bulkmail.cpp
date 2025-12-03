@@ -195,9 +195,8 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 
 	term->lncntr = 0;
 	bprintf(text[Emailing], user.alias, usernum);
-	SAFEPRINTF2(str, "bulk-mailed %s #%d"
+	llprintf("E+", "bulk-mailed %s #%d"
 	            , user.alias, usernum);
-	logline("E+", str);
 	useron.emails++;
 	logon_emails++;
 	useron.etoday++;

@@ -217,14 +217,12 @@ bool sbbs_t::removefcdt(file_t* f)
 /****************************************************************************/
 bool sbbs_t::removefile(smb_t* smb, file_t* f)
 {
-	char str[256];
 	int  result;
 
 	if ((result = smb_removefile(smb, f)) == SMB_SUCCESS) {
-		SAFEPRINTF3(str, "removed %s from %s %s"
+		llprintf("U-", "removed %s from %s %s"
 		            , f->name
 		            , cfg.lib[cfg.dir[smb->dirnum]->lib]->sname, cfg.dir[smb->dirnum]->sname);
-		logline("U-", str);
 		f->hdr.attr |= MSG_DELETE;
 		return true;
 	}
@@ -255,12 +253,10 @@ bool sbbs_t::movefile(smb_t* smb, file_t* f, int newdir)
 		return false;
 	bprintf(text[MovedFile], f->name
 	        , cfg.lib[cfg.dir[newdir]->lib]->sname, cfg.dir[newdir]->sname);
-	char str[MAX_PATH + 1];
-	SAFEPRINTF3(str, "moved %s to %s %s"
+	llprintf(nulstr, "moved %s to %s %s"
 	            , f->name
 	            , cfg.lib[cfg.dir[newdir]->lib]->sname
 	            , cfg.dir[newdir]->sname);
-	logline(nulstr, str);
 
 	/* move actual file */
 	char oldpath[MAX_PATH + 1];

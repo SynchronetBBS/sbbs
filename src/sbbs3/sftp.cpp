@@ -1240,10 +1240,8 @@ static void
 record_transfer(sbbs_t *sbbs, sftp_filedescriptor_t desc, bool upload)
 {
 	if (desc->dir == -1) {
-		char str[MAX_PATH + 1];
-		snprintf(str, sizeof str, "%sloaded %s (%" PRId64 " bytes)"
+		sbbs->llprintf(upload ? "U+" : "D-", "%sloaded %s (%" PRId64 " bytes)"
 		         , upload ? "up" : "down", desc->local_path, flength(desc->local_path));
-		sbbs->logline(upload ? "U+" : "D-", str);
 		return;
 	}
 	char *nptr = strrchr(desc->local_path, '/');

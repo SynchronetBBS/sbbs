@@ -145,7 +145,7 @@ int sbbs_t::mselect(const char *hdr, str_list_t list, unsigned max_selections, c
 /****************************************************************************/
 bool sbbs_t::chksyspass(const char* sys_pw)
 {
-	char str[256], str2[256];
+	char str[256];
 
 	if (online == ON_REMOTE && !(cfg.sys_misc & SM_R_SYSOP)) {
 		logline(LOG_NOTICE, "S!", "Remote sysop access disabled");
@@ -163,11 +163,10 @@ bool sbbs_t::chksyspass(const char* sys_pw)
 	}
 	if (stricmp(cfg.sys_pass, str)) {
 		if (cfg.sys_misc & SM_ECHO_PW)
-			SAFEPRINTF3(str2, "%s #%u System password attempt: '%s'"
+			llprintf(LOG_NOTICE, "S!", "%s #%u System password attempt: '%s'"
 			            , useron.alias, useron.number, str);
 		else
-			SAFECOPY(str2, "System password verification failure");
-		logline(LOG_NOTICE, "S!", str2);
+			llprintf(LOG_NOTICE, "S!", "System password verification failure");
 		return false;
 	}
 	last_sysop_auth = time(NULL);

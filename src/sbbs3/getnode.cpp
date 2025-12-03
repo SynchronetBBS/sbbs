@@ -29,7 +29,6 @@
 /****************************************************************************/
 bool sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 {
-	char str[MAX_PATH + 1];
 	int  rd = sizeof(node_t);
 	int  count;
 
@@ -85,9 +84,8 @@ bool sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	}
 	pthread_mutex_unlock(&nodefile_mutex);
 	if (count > (LOOP_NODEDAB / 2)) {
-		SAFEPRINTF2(str, "NODE.DAB (node %d) COLLISION - Count: %d"
+		llprintf(LOG_WARNING, "!!", "NODE.DAB (node %d) COLLISION - Count: %d"
 		            , number + 1, count);
-		logline(LOG_WARNING, "!!", str);
 	}
 
 	return true;
@@ -269,7 +267,6 @@ bool sbbs_t::getnmsg(bool clearline)
 /****************************************************************************/
 bool sbbs_t::getnodeext(uint number, char *ext)
 {
-	char str[MAX_PATH + 1];
 	int  rd, count;
 
 	if (number < 1 || number > cfg.sys_nodes) {
@@ -304,9 +301,8 @@ bool sbbs_t::getnodeext(uint number, char *ext)
 		return false;
 	}
 	if (count > (LOOP_NODEDAB / 2)) {
-		SAFEPRINTF2(str, "NODE.EXB (node %d) COLLISION - Count: %d"
+		llprintf("!!", "NODE.EXB (node %d) COLLISION - Count: %d"
 		            , number + 1, count);
-		logline("!!", str);
 	}
 
 	return true;

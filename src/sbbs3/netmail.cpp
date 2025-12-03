@@ -342,12 +342,11 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 
 	bprintf(text[FidoNetMailSent], to, smb_faddrtoa(&dest_addr, tmp));
 	if (mode & WM_FILE)
-		SAFEPRINTF2(str, "sent NetMail file attachment to %s (%s)"
+		llprintf("EN", "sent NetMail file attachment to %s (%s)"
 		            , to, smb_faddrtoa(&dest_addr, tmp));
 	else
-		SAFEPRINTF2(str, "sent NetMail to %s (%s)"
+		llprintf("EN", "sent NetMail to %s (%s)"
 		            , to, smb_faddrtoa(&dest_addr, tmp));
-	logline("EN", str);
 
 	return true;
 }
@@ -741,10 +740,9 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 				bprintf(text[QWKNetMailSent], name, fulladdr);
 			else
 				bprintf(text[InternetMailSent], name, to);
-			safe_snprintf(str, sizeof(str), "%s (%s) sent %s NetMail to %s (%s) via QWK"
+			llprintf("EN", "%s (%s) sent %s NetMail to %s (%s) via QWK"
 			              , sender, sender_id
 			              , qnet ? "QWK":"Internet", name, qnet ? fulladdr : to);
-			logline("EN", str);
 		}
 
 		free((char *)qwkbuf);
@@ -933,10 +931,9 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	useron.etoday = (uint)adjustuserval(&cfg, &useron, USER_ETODAY, 1);
 
 	bprintf(text[FidoNetMailSent], hdr.to, smb_faddrtoa(&fidoaddr, tmp));
-	snprintf(str, sizeof str, "%s sent NetMail to %s @%s via QWK"
+	llprintf("EN", "%s sent NetMail to %s @%s via QWK"
 	         , sender_id
 	         , hdr.to, smb_faddrtoa(&fidoaddr, tmp));
-	logline("EN", str);
 }
 
 /****************************************************************************/
@@ -1255,8 +1252,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	useron.etoday = (uint)adjustuserval(&cfg, &useron, USER_ETODAY, rcpt_count);
 
 	bprintf(text[InternetMailSent], to_list);
-	SAFEPRINTF(str, "sent Internet Mail to %s", to_list);
-	logline("EN", str);
+	llprintf("EN", "sent Internet Mail to %s", to_list);
 	return true;
 }
 
@@ -1470,9 +1466,8 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	useron.etoday = (uint)adjustuserval(&cfg, &useron, USER_ETODAY, 1);
 
 	bprintf(text[QWKNetMailSent], to, fulladdr);
-	SAFEPRINTF2(str, "sent QWK NetMail to %s (%s)"
+	llprintf("EN", "sent QWK NetMail to %s (%s)"
 	            , to, fulladdr);
-	logline("EN", str);
 	return true;
 }
 
