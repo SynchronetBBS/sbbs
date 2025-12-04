@@ -778,7 +778,7 @@ Do Nothing
 
 @if responce is 2 then do begin
  @begin
- @do `s04 is 
+ @do `s04 is nil
  @do write
 `\`\`\   `2New Message:`x`x
  @do readstring 40 `s04 `s04
