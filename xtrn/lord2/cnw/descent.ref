@@ -35,7 +35,7 @@
   @run genran in genran.ref
   @end
 @dataload child3.idf &playernum `p20
-@If `p20 is 1 then
+@If `p20 is 1 then do
   @begin
   @drawmap
   @update
