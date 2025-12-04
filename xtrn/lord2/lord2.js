@@ -735,7 +735,7 @@ function insane_run_ref(sec, fname, refret)
 			dk.console.gotoxy(2, 23);
 			lw('`$Q `2to quit, `$ENTER `2to buy item.        You have `$'+pretty_int(player.money)+' `2gold.`r0');
 
-			if (items.length === 0) {
+			if (itms.length === 0) {
 				dk.console.gotoxy(0, 10);
 				lw('  `2They have nothing to sell.  (press `%Q `2to continue)');
 				do {
