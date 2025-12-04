@@ -247,7 +247,7 @@ There is nothing in the tree.
 `4Aaron:  `%I'll kick your ass!
  
 @#bank
-@do `p30 27
+@do `p30 is 27
 @do `v01 is 1
 @do `p22 is 0
 @do `p24 is 0
