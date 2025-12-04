@@ -242,7 +242,8 @@ vaults.ref|RUN
         @end
 @do `p22 - `p21
 @datasave vaults.idf `p20 `p22
-@routine bankname
+; No routine named bankname in any file... commented out
+;@routine bankname
 @writefile lognow.txt
   `5`s01 `%never received their requested money. It is believed that someone
  managed to rob from the empire today.
