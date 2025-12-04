@@ -471,7 +471,7 @@ NOTE: This file has been modified by ShroomTrip Software. Please read the
                 @datasave npc/npclost2.idf `p71 &playernum
                 @do addlog
 `%`s01 didn't return home last night.
-                @routine location in npclost.ref
+                @routine location in locate2.ref
                 @do `t50 is 0
                 @bitset `t50 6 1
                 @do `p71 is 0
