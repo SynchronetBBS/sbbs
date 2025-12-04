@@ -719,6 +719,8 @@ function insane_run_ref(sec, fname, refret)
 			var y = scr.pos.y;
 
 			for (i = 0; i < itms.length; i++) {
+				if (itms[i] == '')
+					continue;
 				itms[i] = parseInt(itms[i], 10);
 				// TODO: Does this abort or ignore?
 				if (isNaN(itms[i])) {
