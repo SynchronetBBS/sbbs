@@ -481,7 +481,6 @@ Go outside.
 @if responce is 1 then do begin
  @begin
 @buymanager
-
   05
   40
   55
