@@ -195,7 +195,7 @@ appendFlag(char **list, const char *flag)
 {
 	size_t llen = *list ? strlen(*list) : 0;
 	size_t flen = strlen(flag);
-	size_t newsz = llen + flen + (llen ? 1 : 0 + 1);
+	size_t newsz = llen + flen + (llen ? 1 : 0) + 1;
 	char *nlist = realloc(*list, newsz);
 	if (nlist == NULL) {
 		fprintf(stderr, "realloc() to %zu failed for flag \"%s\"\n", newsz, flag);
