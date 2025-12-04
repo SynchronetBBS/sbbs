@@ -172,7 +172,7 @@ Prisond.ref|Save
 ;if lose: ref file|name or NONE
 prisonb.ref|strike
 ;if runs: ref file|name or NONE
-GENRAN.REF|4RUN
+GENRAN2.REF|4RUN
   @end
 @if responce is 3 then do
 @begin
