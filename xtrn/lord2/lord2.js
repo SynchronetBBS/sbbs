@@ -712,7 +712,8 @@ function insane_run_ref(sec, fname, refret)
 			update_update();
 		},
 		'buymanager':function(args) {
-			var itms = getlines();
+			var startitms = getlines();
+			var itms = [];
 			var itm;
 			var i;
 			var cur = 0;
@@ -720,14 +721,11 @@ function insane_run_ref(sec, fname, refret)
 			var choice;
 			var y = scr.pos.y;
 
-			for (i = 0; i < itms.length; i++) {
-				if (itms[i] == '')
+			for (i = 0; i < startitms.length; i++) {
+				itm = parseInt(startitms[i], 10);
+				if (isNaN(itm))
 					continue;
-				itms[i] = parseInt(itms[i], 10);
-				// TODO: Does this abort or ignore?
-				if (isNaN(itms[i])) {
-					throw new Error('@buymanager inventory item ' + (i + 1) + ' is invalid');
-				}
+				itms.push(itm);
 			}
 			// Don't clear the screen first?  Interesting...
 			dk.console.gotoxy(0, y);
