@@ -1,0 +1,293 @@
+;    ITEMNAME.REF v1.0
+;
+;  This script will look up an item name with only a few chars for search and
+; put into `s10 var for the ITEM # eg, ITEM 1 , `s10 is `i01
+; The search string should be in `s09
+; The item result # is `p20
+; Quantity of `p20 is `p21
+;
+; This script is currently used with AUCTION.REF
+;
+;
+@#TEST
+@do move 1 1
+@clear screen
+@DO READSTRING 20 NIL `s09
+@routine ITEMNAME
+@drawmap
+
+@#ITEMNAME
+@DO `p20 IS LENGTH `s09
+@if `p20 < 3 then do
+        @begin
+        @do write
+`\`@Please type at least 3 chars.`\`k
+        @closescript
+        @end
+
+@if `s09 is `x then do
+        @begin
+        @do write
+`\`@Could not find that ITEM.`\`k
+        @do `s10 is `x
+        @closescript
+        @end
+
+@if `s09 is NIL then do
+        @begin
+        @do write
+`\`@Could not find that ITEM.`\`k
+        @do `s10 is `x
+        @closescript
+        @end
+
+@do write
+`\`4[Please wait, searching]
+@do `p20 is 0
+@do `p22 is 0
+
+@label NEXTITEM
+@do `p20 + 1
+@if `p20 is 1 then `s10 is `+01
+@if `p20 is 2 then `s10 is `+02
+@if `p20 is 3 then `s10 is `+03
+@if `p20 is 4 then `s10 is `+04
+@if `p20 is 5 then `s10 is `+05
+@if `p20 is 6 then `s10 is `+06
+@if `p20 is 7 then `s10 is `+07
+@if `p20 is 8 then `s10 is `+08
+@if `p20 is 9 then `s10 is `+09
+@if `p20 is 10 then `s10 is `+10
+@if `p20 is 11 then `s10 is `+11
+@if `p20 is 12 then `s10 is `+12
+@if `p20 is 13 then `s10 is `+13
+@if `p20 is 14 then `s10 is `+14
+@if `p20 is 15 then `s10 is `+15
+@if `p20 is 16 then `s10 is `+16
+@if `p20 is 17 then `s10 is `+17
+@if `p20 is 18 then `s10 is `+18
+@if `p20 is 19 then `s10 is `+19
+@if `p20 is 20 then `s10 is `+20
+@if `p20 is 21 then `s10 is `+21
+@if `p20 is 22 then `s10 is `+22
+@if `p20 is 23 then `s10 is `+23
+@if `p20 is 24 then `s10 is `+24
+@if `p20 is 25 then `s10 is `+25
+@if `p20 is 26 then `s10 is `+26
+@if `p20 is 27 then `s10 is `+27
+@if `p20 is 28 then `s10 is `+28
+@if `p20 is 29 then `s10 is `+29
+@if `p20 is 30 then `s10 is `+30
+@if `p20 is 31 then `s10 is `+31
+@if `p20 is 32 then `s10 is `+32
+@if `p20 is 33 then `s10 is `+33
+@if `p20 is 34 then `s10 is `+34
+@if `p20 is 35 then `s10 is `+35
+@if `p20 is 36 then `s10 is `+36
+@if `p20 is 37 then `s10 is `+37
+@if `p20 is 38 then `s10 is `+38
+@if `p20 is 39 then `s10 is `+39
+@if `p20 is 40 then `s10 is `+40
+@if `p20 is 41 then `s10 is `+41
+@if `p20 is 42 then `s10 is `+42
+@if `p20 is 43 then `s10 is `+43
+@if `p20 is 44 then `s10 is `+44
+@if `p20 is 45 then `s10 is `+45
+@if `p20 is 46 then `s10 is `+46
+@if `p20 is 47 then `s10 is `+47
+@if `p20 is 48 then `s10 is `+48
+@if `p20 is 49 then `s10 is `+49
+@if `p20 is 50 then `s10 is `+50
+@if `p20 is 51 then `s10 is `+51
+@if `p20 is 52 then `s10 is `+52
+@if `p20 is 53 then `s10 is `+53
+@if `p20 is 54 then `s10 is `+54
+@if `p20 is 55 then `s10 is `+55
+@if `p20 is 56 then `s10 is `+56
+@if `p20 is 57 then `s10 is `+57
+@if `p20 is 58 then `s10 is `+58
+@if `p20 is 59 then `s10 is `+59
+@if `p20 is 60 then `s10 is `+60
+@if `p20 is 61 then `s10 is `+61
+@if `p20 is 62 then `s10 is `+62
+@if `p20 is 63 then `s10 is `+63
+@if `p20 is 64 then `s10 is `+64
+@if `p20 is 65 then `s10 is `+65
+@if `p20 is 66 then `s10 is `+66
+@if `p20 is 67 then `s10 is `+67
+@if `p20 is 68 then `s10 is `+68
+@if `p20 is 69 then `s10 is `+69
+@if `p20 is 70 then `s10 is `+70
+@if `p20 is 71 then `s10 is `+71
+@if `p20 is 72 then `s10 is `+72
+@if `p20 is 73 then `s10 is `+73
+@if `p20 is 74 then `s10 is `+74
+@if `p20 is 75 then `s10 is `+75
+@if `p20 is 76 then `s10 is `+76
+@if `p20 is 77 then `s10 is `+77
+@if `p20 is 78 then `s10 is `+78
+@if `p20 is 79 then `s10 is `+79
+@if `p20 is 80 then `s10 is `+80
+@if `p20 is 81 then `s10 is `+81
+@if `p20 is 82 then `s10 is `+82
+@if `p20 is 83 then `s10 is `+83
+@if `p20 is 84 then `s10 is `+84
+@if `p20 is 85 then `s10 is `+85
+@if `p20 is 86 then `s10 is `+86
+@if `p20 is 87 then `s10 is `+87
+@if `p20 is 88 then `s10 is `+88
+@if `p20 is 89 then `s10 is `+89
+@if `p20 is 90 then `s10 is `+90
+@if `p20 is 91 then `s10 is `+91
+@if `p20 is 92 then `s10 is `+92
+@if `p20 is 93 then `s10 is `+93
+@if `p20 is 94 then `s10 is `+94
+@if `p20 is 95 then `s10 is `+95
+@if `p20 is 96 then `s10 is `+96
+@if `p20 is 97 then `s10 is `+97
+@if `p20 is 98 then `s10 is `+98
+@if `p20 is 99 then `s10 is `+99
+@do UPCASE `s10                              
+@do UPCASE `s09                              
+
+@if `s09 is `s10 then goto ISIT
+@do `s08 is `s10
+
+@do pad `s08 5
+@do pad `s09 5
+@if `s09 is `s08 then goto ISIT
+
+        @do pad `s08 4
+        @do pad `s09 4
+        @if `s09 is `s08 then goto ISIT
+
+@if `p22 is 1 then do
+        @begin
+        @do pad `s08 3
+        @do pad `s09 3
+        @if `s09 is `s08 then goto ISIT
+        @end
+
+@if `p20 > 98 then do
+        @Begin
+        @do `p22 + 1
+        @do `p20 is 0
+        @end
+
+@if `p22 > 1 then do
+        @begin
+        @do write
+`\`@Could not find that ITEM.`\`k
+        @do `s10 is `x
+        @closescript
+        @end
+@do goto NEXTITEM
+
+@#ISIT
+@do write
+`\`%Is it `$`s10 `%?`x`x`8[`7Y`8/`7N`8]`x
+@if `p20 is 1 then `p21 is `i01
+@if `p20 is 2 then `p21 is `i02
+@if `p20 is 3 then `p21 is `i03
+@if `p20 is 4 then `p21 is `i04
+@if `p20 is 5 then `p21 is `i05
+@if `p20 is 6 then `p21 is `i06
+@if `p20 is 7 then `p21 is `i07
+@if `p20 is 8 then `p21 is `i08
+@if `p20 is 9 then `p21 is `i09
+@if `p20 is 10 then `p21 is `i10
+@if `p20 is 11 then `p21 is `i11
+@if `p20 is 12 then `p21 is `i12
+@if `p20 is 13 then `p21 is `i13
+@if `p20 is 14 then `p21 is `i14
+@if `p20 is 15 then `p21 is `i15
+@if `p20 is 16 then `p21 is `i16
+@if `p20 is 17 then `p21 is `i17
+@if `p20 is 18 then `p21 is `i18
+@if `p20 is 19 then `p21 is `i19
+@if `p20 is 20 then `p21 is `i20
+@if `p20 is 21 then `p21 is `i21
+@if `p20 is 22 then `p21 is `i22
+@if `p20 is 23 then `p21 is `i23
+@if `p20 is 24 then `p21 is `i24
+@if `p20 is 25 then `p21 is `i25
+@if `p20 is 26 then `p21 is `i26
+@if `p20 is 27 then `p21 is `i27
+@if `p20 is 28 then `p21 is `i28
+@if `p20 is 29 then `p21 is `i29
+@if `p20 is 30 then `p21 is `i30
+@if `p20 is 31 then `p21 is `i31
+@if `p20 is 32 then `p21 is `i32
+@if `p20 is 33 then `p21 is `i33
+@if `p20 is 34 then `p21 is `i34
+@if `p20 is 35 then `p21 is `i35
+@if `p20 is 36 then `p21 is `i36
+@if `p20 is 37 then `p21 is `i37
+@if `p20 is 38 then `p21 is `i38
+@if `p20 is 39 then `p21 is `i39
+@if `p20 is 40 then `p21 is `i40
+@if `p20 is 41 then `p21 is `i41
+@if `p20 is 42 then `p21 is `i42
+@if `p20 is 43 then `p21 is `i43
+@if `p20 is 44 then `p21 is `i44
+@if `p20 is 45 then `p21 is `i45
+@if `p20 is 46 then `p21 is `i46
+@if `p20 is 47 then `p21 is `i47
+@if `p20 is 48 then `p21 is `i48
+@if `p20 is 49 then `p21 is `i49
+@if `p20 is 50 then `p21 is `i50
+@if `p20 is 51 then `p21 is `i51
+@if `p20 is 52 then `p21 is `i52
+@if `p20 is 53 then `p21 is `i53
+@if `p20 is 54 then `p21 is `i54
+@if `p20 is 55 then `p21 is `i55
+@if `p20 is 56 then `p21 is `i56
+@if `p20 is 57 then `p21 is `i57
+@if `p20 is 58 then `p21 is `i58
+@if `p20 is 59 then `p21 is `i59
+@if `p20 is 60 then `p21 is `i60
+@if `p20 is 61 then `p21 is `i61
+@if `p20 is 62 then `p21 is `i62
+@if `p20 is 63 then `p21 is `i63
+@if `p20 is 64 then `p21 is `i64
+@if `p20 is 65 then `p21 is `i65
+@if `p20 is 66 then `p21 is `i66
+@if `p20 is 67 then `p21 is `i67
+@if `p20 is 68 then `p21 is `i68
+@if `p20 is 69 then `p21 is `i69
+@if `p20 is 70 then `p21 is `i70
+@if `p20 is 71 then `p21 is `i71
+@if `p20 is 72 then `p21 is `i72
+@if `p20 is 73 then `p21 is `i73
+@if `p20 is 74 then `p21 is `i74
+@if `p20 is 75 then `p21 is `i75
+@if `p20 is 76 then `p21 is `i76
+@if `p20 is 77 then `p21 is `i77
+@if `p20 is 78 then `p21 is `i78
+@if `p20 is 79 then `p21 is `i79
+@if `p20 is 80 then `p21 is `i80
+@if `p20 is 81 then `p21 is `i81
+@if `p20 is 82 then `p21 is `i82
+@if `p20 is 83 then `p21 is `i83
+@if `p20 is 84 then `p21 is `i84
+@if `p20 is 85 then `p21 is `i85
+@if `p20 is 86 then `p21 is `i86
+@if `p20 is 87 then `p21 is `i87
+@if `p20 is 88 then `p21 is `i88
+@if `p20 is 89 then `p21 is `i89
+@if `p20 is 90 then `p21 is `i90
+@if `p20 is 91 then `p21 is `i91
+@if `p20 is 92 then `p21 is `i92
+@if `p20 is 93 then `p21 is `i93
+@if `p20 is 94 then `p21 is `i94
+@if `p20 is 95 then `p21 is `i95
+@if `p20 is 96 then `p21 is `i96
+@if `p20 is 97 then `p21 is `i97
+@if `p20 is 98 then `p21 is `i98
+@if `p20 is 99 then `p21 is `i99
+@do readspecial `s01 YN
+@if `s01 is N then goto NEXTITEM
+@closescript
+
+@#DONE
+@closescript
