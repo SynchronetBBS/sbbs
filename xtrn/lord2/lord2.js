@@ -301,8 +301,10 @@ function insane_run_ref(sec, fname, refret)
 				throw new Error('@do getkey with no argument');
 			if (!dk.console.waitkey(0))
 				setvar(args[0], '_');
-			lastkey = time();
-			setvar(args[0], dk.console.getkey());
+			else {
+				lastkey = time();
+				setvar(args[0], dk.console.getkey());
+			}
 		},
 		'goto':function(args) {
 			if (args.length < 1)
