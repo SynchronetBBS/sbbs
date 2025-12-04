@@ -1079,7 +1079,6 @@ function insane_run_ref(sec, fname, refret)
 					lln(l);
 				}
 			}
-			throw new Error('@display not implemented');
 		},
 		'displayfile':function(args) {
 			// TODO: This seems to be the only way the moremap string is used.
