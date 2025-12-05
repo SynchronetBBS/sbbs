@@ -851,20 +851,26 @@ function redraw_screen()
 		draw_graphic_box();
 	if(quote_window_displayed)
 		draw_quote_window();
-	for(i=edit_top; i<=edit_bottom; i++) {
-		if(colour_box_displayed>0 && i>=colour_box_displayed && i<colour_box_displayed+3)
-			continue;
-		if(graphics_box_displayed>0 && i==graphics_box_displayed)
-			continue;
-		if(quote_window_displayed>0) {
-			if(i>=quote_top && i<=quote_bottom)
-				continue;
-			if(i==quote_sep_pos)
-				continue;
-		}
-		draw_line(i-edit_top+topline);
+	if (quote_window_displayed && line.length === 1 && line[0].text === '') {
+		quote_help();
+		console.gotoxy(1, quote_ypos - quote_topline + quote_top);
 	}
-	set_cursor();
+	else {
+		for(i=edit_top; i<=edit_bottom; i++) {
+			if(colour_box_displayed>0 && i>=colour_box_displayed && i<colour_box_displayed+3)
+				continue;
+			if(graphics_box_displayed>0 && i==graphics_box_displayed)
+				continue;
+			if(quote_window_displayed>0) {
+				if(i>=quote_top && i<=quote_bottom)
+					continue;
+				if(i==quote_sep_pos)
+					continue;
+			}
+			draw_line(i-edit_top+topline);
+		}
+		set_cursor();
+	}
 }
 
 /*
@@ -1272,6 +1278,38 @@ function draw_quote_window()
 	for(i=0; i<quote_height; i++) {
 		draw_quote_line(quote_topline+i);
 	}
+	if (quote_window_displayed && line.length === 1 && line[0].text === '')
+		quote_help();
+}
+
+function quote_help()
+{
+	console.attributes=7;
+	if(quote_ontop)
+		console.gotoxy(1,quote_sep_pos+1);
+	else
+		console.gotoxy(1,edit_top);
+	console.write("Quote mode keys: (SPACE to select a line, ENTER to accept and continue)");
+	console.cleartoeol();
+	console.write("\r\n CTRL-A - Select all                     CTRL-R - Redraw screen");
+	console.cleartoeol();
+	console.write("\r\n CTRL-B - Move to begining of message    CTRL-^ - Move up one line");
+	console.cleartoeol();
+	console.write("\r\n CTRL-E - Move to end of message         CTRL-_ - Quick exit (no save)");
+	console.cleartoeol();
+	console.write("\r\n CTRL-J - Move down one line             SPACE  - Select/Unselect current line");
+	console.cleartoeol();
+	console.write("\r\n CTRL-K - Show this help                 ENTER  - Paste lines into message");
+	console.cleartoeol();
+	console.write("\r\n CTRL-M - Paste lines into message       A      - Select all");
+	console.cleartoeol();
+	console.write("\r\n CTRL-N - Move down one page             B      - Toggle block select mode");
+	console.cleartoeol();
+	console.write("\r\n CTRL-P - Move up one page               N      - Unselect all");
+	console.cleartoeol();
+	console.write("\r\n CTRL-Q - Quick exit (no save)");
+	console.cleartoeol();
+	console.write('\r\n');
 }
 
 function quote_mode()
@@ -1311,7 +1349,12 @@ function quote_mode()
 	draw_quote_window();
 
 	while(1) {
-		set_cursor();
+		if (quote_window_displayed && line.length === 1 && line[0].text === '') {
+			console.gotoxy(1, quote_ypos - quote_topline + quote_top);
+		}
+		else {
+			set_cursor();
+		}
 		key=shitty_inkey(0,10000);
 		if(key=='')
 			continue;
@@ -1429,32 +1472,7 @@ function quote_mode()
 				draw_quote_window();
 				break;
 			case '\x0b':	/* CTRL-K */
-				console.attributes=7;
-				if(quote_ontop)
-					console.gotoxy(1,quote_sep_pos+1);
-				else
-					console.gotoxy(1,edit_top);
-				console.write("Quote mode keys:");
-				console.cleartoeol();
-				console.write("\r\n CTRL-A - Select all                     CTRL-R - Redraw screen");
-				console.cleartoeol();
-				console.write("\r\n CTRL-B - Move to begining of message    CTRL-^ - Move up one line");
-				console.cleartoeol();
-				console.write("\r\n CTRL-E - Move to end of message         CTRL-_ - Quick exit (no save)");
-				console.cleartoeol();
-				console.write("\r\n CTRL-J - Move down one line             SPACE  - Select/Unselect current line");
-				console.cleartoeol();
-				console.write("\r\n CTRL-K - Show this help                 ENTER  - Paste lines into message");
-				console.cleartoeol();
-				console.write("\r\n CTRL-M - Paste lines into message       A      - Select all");
-				console.cleartoeol();
-				console.write("\r\n CTRL-N - Move down one page             B      - Toggle block select mode");
-				console.cleartoeol();
-				console.write("\r\n CTRL-P - Move up one page               N      - Unselect all");
-				console.cleartoeol();
-				console.write("\r\n CTRL-Q - Quick exit (no save)");
-				console.cleartoeol();
-				console.write('\r\n');
+				quote_help();
 				console.cleartoeol();
 				console.write('\r\n');
 				console.write("Press any key to return to editing..");
