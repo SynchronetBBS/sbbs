@@ -1,0 +1,1301 @@
+                                 RTSCRIPT
+
+                       Programmer's Reference Manual
+               LORD II and RTREADER are copyrights of RTSoft
+           Manual Written by Carl S. Oakley of Oaksoft Computing.
+                Manual Copyright (c) 1997 Oaksoft Computing
+
+                               INTRODUCTION
+
+So you want to write LORD II IGM's.  Or maybe you want to create your own
+world.  Or maybe, just maybe, you want to edit some of the things in your
+LORD ][ game.  If any of the above is true then this is the file for you.  
+This file takes you in-depth into the REF Scripting Language created by RTSoft 
+for their LORD ][ engine.
+
+So why not read the REFHELP.DOC that comes with the LORD II Archive?
+By all means read it.  It has a lot of information in it.  However, Seth 
+Robinson, author of the program was obviously in a hurry and he made a few
+mistakes and he also left out a few commands.  This document corrects that.
+It includes ALL the commands that I have been able to find.  It also includes 
+formulas for calculating XY coordinates from map block numbers.  This way you 
+can mark your player map with reference marks without the tedium of trial and 
+error.
+
+                                   DISCLAIMER
+
+Neither RTSoft, the developer of RTSCRIPT, Gameport, the current owner, nor
+Oaksoft Computing, the author of this document will be held liable for any
+use or misuse of any of the commands, procedures, and/or routines listed in
+this document.  This includes consequential damages including but not limited
+to loss of time, revenue, data, hardware, software, and/or profit.
+Permission is hearby given to Gameport and their authorized representitives
+to use and/or modify this document as they see fit for any reason they deem
+necessary.  All other rights are reserved.
+
+                                    OVERVIEW
+
+So what is RTSCRIPT?  To quote RTSOFT, "It is a script language that can be 
+used to do complex gaming things, like math and getting random numbers, adding 
+and deleting other varibles in the game - nearly everything a simple basic 
+could do."
+The source files you create must have the extention ".REF"(without the quotes).
+So what does REF mean?  Reference file?  Relay execution file?  Who cares?
+The .REF system is the heart of the LORD ][ System.  Writing good .REF files 
+that run as expected can be tricky at first.  But it is really pretty simple
+if you have a basic knowledge of programming.  If something doesn't work you 
+can always go back and change it.  Your program files are simple text files 
+that can be changed at will.  The L2.EXE engine will tell you at runtime about 
+any syntax errors and/or words it doesn't understand.
+
+REF file size is limited by conventional memory.  These files are loaded and 
+interpreted before they are ran for speed in execution.  They can also load 
+and save their own data.
+
+                                 VARIABLES
+
+There are a quite a few global and player variables.  
+
+                              GLOBAL VARIABLES
+
+LOCAL:  LOCAL will equal 5 if the ref is being executed locally.  It will 
+equal 0 if the ref is being executed remotely.
+
+RESPONSE or RESPONCE:  This is the value returned by the @choice command
+
+The following variables will expand to the actual value of the variable if 
+placed in an @show or @do write command.
+
+`V01 - `V40:  These are the 40 global long integer variables.  They are for 
+numbers.
+
+`S01 - `S10:  These are 10 Global string varibles. They are for text.
+
+                              PLAYER VARIABLES
+
+`P01 - `P99:  These are the 99 player long integer varibles. They are for 
+              numbers.  Maximum value of 2 billion.
+              `P20 - `P30 are scratch variables reserved for math.
+
+`T01 - `T99:  These are the 99 player byte varibles.  Maximum value of 255.
+
+                               ITEM VARIABLES
+
+`I01 - `I99:  These are the 99 player integer item varibles.  Maximum value of 
+              32000.
+
+`+01 - `+99:  Same as above, but shows the item NAME, not amount.
+
+`v05 and `p11 are reserved for those who wish to limit the number of turns per 
+day and let a player die only once per day.
+
+                             LANGUAGE VARIABLES
+
+The following variables are for use by the language only.  They will not be 
+expanded to the actual value if placed in an @show or @do write command.
+
+x  (players x cordinates)
+y  (players y cordinates)
+map (players current block #)
+dead (1 is player is dead)
+sexmale (1 if player is male)
+narm (current armour #)
+nwep (current weapon #)
+money (players moola)
+bank (moola in bank)
+enemy (force `e (last monster faught) to equal a certain name)
+
+ALL The above can also be changed. Examples:
+
+@do x is 20   <-sets X to 20
+@do `i05 is 90  <- Gives dude 90 item 5's (item is defined in l2cfg.exe)
+
+                              VARIABLE SYMBOLS
+
+Below are symbols that will be translated automatically when using
+@show or @do write.  You can also make variables equal these, etc.  These are 
+similar to Renegades MCI codes.
+
+`N User's game name.
+`E Enemy name.
+`G Current Graphics Level.
+`X Adds a space.
+`D Sends a #8 (delete).
+`0 through `9 and `! through `^ change color.
+`W One tenth a second wait.
+`L About a half second wait.
+`\ Simulates a carriage return.
+`r0 through `r7, change background color.
+`c Clears the screen and simulates 2 carriage returns.
+`k Presents the more propmt and waits for ENTER to be pressed.
+
+&realname       Real name as passed by the drop file
+&date           The date and time like 12/12/97 format.
+&nicedate       Time AND date like 5:19 on 12/12.
+s&armour        equipped armour name.
+s&arm_num       equipped armour's defensive value
+s&weapon        equipped weapon name.
+s&wep_num       equipped weapon's attack value.
+s&son           son/daughter, depending on current users sex
+s&boy           boy/girl, depending on current users sex
+s&man           man/lady, depending on current users sex
+s&sir           sir/ma'am, depending on current users sex
+s&him           him/her, depending on current users sex
+s&his           his/her, depending on current users sex
+&money          current users gold
+&bank           current users gold in bank
+&lastx          users x position before last move.
+&lasty          users y position before last move - helpfull to determine which
+                direction they came from before the hit the ref, etc.
+&map            current map #
+&lmap           last 'visible' map the player was on.
+&time           current age of the game in days.
+&timeleft       minutes the user has left in the door.
+&sex            returns 0 if player is female, 1 if player is male
+&playernum      the account # of the current player.
+&totalaccounts  how many player accounts exist. Includes accounts marked
+                deleted.
+
+(NOTE: Vars starting with s& usually means if you can control the case
+of the first letter of the outpout by the case of the first s - so
+S&sir would return "Sir" and s&sir would return "sir")
+
+(NOTE: These waits are the SAME on all computers.  It goes by the clock)
+
+                                  HEADERS
+
+Some may be familiar with the way the door LORD keeps track of it's many 
+ansi's and other display files.  It gives each one a HEADER.  Any header can 
+be reached with a @DO GOTO <header name> command.
+
+Example header:
+
+@#START
+
+This MUST be in a ref file if the file is to be read by RTREADER.EXE.  This is 
+where RTREADER will start.  Anytime you wish to return to the start, just do a
+@DO GOTO START command.  @#START does not need to be in a ref file if the file
+is to be read by L2.EXE since it will read the refname in the file specified 
+in the HOTSPOT information.  There are a few routine names that are required 
+in a couple of required ref files.  These will be discussed later.
+
+ANOTHER KIND OF HEADER
+
+Anytime RTREADER hit's a @#, it knows another section is starting, and closes 
+the script.  If you would like to use goto commands INSIDE of a 'section', use
+the @LABEL command.  They work like headers, but don't cause a section to 
+close the script.
+
+Example:
+
+@LABEL LOOP
+
+@DO GOTO LOOP
+
+You can have as many headers/labels as you want, however, the first 300
+'headers' and 'labels' will be INSTANT access, anything past will not be
+quite as quick.
+
+This 'speed up' routine runs by default on all .REF files.  (The reader 
+processes the labels and headers before running)
+
+This takes a noticable pause when doing so, so you may wish to disable this
+feature.  Add a
+
+@NOCHECK
+
+Somewhere near the beginning, it won't check past that point.
+
+Also, the Reader is now capable of mapping labels/headers on the fly if it
+runs across one that isn't - So the SECOND time you run GOTO it, it's
+instantanous.  (this is always active)
+
+@DECLARE <Label/header name> <offset in decimal format>
+
+There is now available a program called REFINDEX.EXE that maps all the labels 
+and headers and inserts @DECLARE statements at the beginning of the file and 
+then inserts a @NOCHECK.  Be sure to re-index your file if you make any 
+changes.  This is ALL IMPORTANT.
+
+NOTE:  Headers like all other commands in LORD II and RTREADER are NOT case
+       sensitive.  As with any of the other commands you can type the whole 
+       thing in lowercase, or uppercase - or mixed.  The interpreter ignores 
+       the case.
+
+
+                           COMMAND SYNTAX LISTING
+
+All of the commands listed can be typed in upper case, lower case, or a 
+combination of both.  The Lord II or RTREADER (whichever) command interpreter 
+will ignore case.  For convention sake, in this manual, the command names will 
+be in upper case while any parameters will be in lower case.  When the reader 
+encounters a semicolon ; The rest of that line is ignored.  This can be used 
+for comments.  If you want an entire line commented you would use a semicolon
+at the very first of the line.  If you want to do inline comments, you may.  
+You may not, however have a command, a comment, and then a command on the same 
+line.  Once the reader sees a semicolon the rest of the line is ignored.
+
+There are six sections of Command Listings.  Commands to get information on 
+other players, DATA Commands, General Commands, String Commands, File 
+Commands, and Special Talking Commands.  In each section the commands 
+requiring @DO will be listed first.  All of the commands will be listed in 
+alphabetical order with a few exceptions.
+
+                  COMMANDS THAT GET INFO ON OTHER PLAYERS
+
+@DO `s01 is getname 8
+This would get the name of player 8 and put it in `s01.  This only works with 
+`s variables.  The account number can be a `p variable.
+
+@DO `p20 is deleted 8
+Puts 1 (player is deleted) or 0 (player is not deleted) in `p20.  This only 
+works with `p variables.  The account number can be a `p variable.
+
+                               DATA COMMANDS
+
+The following three commands are a new way to save and load data, it is
+much quicker than conventional @writefile and @loadfile. it saves the data as
+binary, not text.  It takes only 1004 bytes per file!  Extra room is allocated 
+for upgrades and some info about the file.  The files these commands create 
+and load are called "IGM DATA FILES" or .IDF's.  It is recommended that you 
+use this naming convention so Sysops know they should delete them when they 
+reset.
+
+@DATALOAD <filename> <record (1 to 200)> <`p variable to put it in> : This loads
+a long integer by # from a datafile.  If the file doesn't exist, it is created
+and all 200 long integers are set to 0.
+
+@DATASAVE <filename> <record (1 to 200)> <value to make it> : This SAVES
+a long integer by # to a datafile.  If the file doesn't exist, it is created
+and all 200 long integers (except the one referenced) are set to 0.  The 
+record that is referenced will be set to the value of the 3rd parameter.
+
+@DATANEWDAY <filename> :  If it is the NEXT day since this function was
+called, all records in <filename> will be set to 0.  Check EXAMPLE.REF in the 
+LORD II archive for an example of how this works.
+
+Note:  The <filename> parameter on the above commands will not add any 
+extention.  The command @DATASAVE test 1 1 will set record number 1 to a value 
+of 1 and the file name will be TEST (not TEST.IDF).  Specify the entire 
+filename INCLUDING the extention.
+
+                              GENERAL COMMANDS
+
+@DO
+This statement does a lot - It can be put a the end of a @IF statement also.  
+(Some commands need @DO in front, some don't.  If they do, they can be used at 
+the end of an @IF statement, if not, you can't.  (like @SHOW)  You would need 
+to use the @BEGIN and @END with the @IF to do it conditionally.
+
+EXAMPLES OF @DO:
+
+Possible DO math symbols are:
+
+@DO <Number To Change> <How To Change It> <Change With What>
+
+Ways to change it:
+- <- Take number away
++ <- Addition
+/ <- Division
+* <- Multiplication
+IS <- Makes same as
+
+NOTE:  You can also do this with `S (string variables) but you are limited to
+only using IS.  If you wish to add something to a string, use the word ADD.  
+This is the only case where you can use math with a string.  Using ADD will 
+add the new string to the current string.  For example:
+@do `S01 IS Hello
+@do `S01 ADD  there.
+`S01 will now contain the string Hello there   Notice the space before there.
+if there had been no space, then `S01 would have contained Hellothere.  See 
+the @DO READSTRING command below for more information on this.
+
+@IF `V04 MORE 500 THEN DO `V04 - 500
+(This would take 500 from `V04 if they had it)
+(+ would add 500, IS would MAKE it 500)
+@IF `V04 MORE 500 THEN DO
+ @BEGIN
+ @SHOW
+ `2You have more then 500!  In fact you have `V04!
+ @END
+ (if @BEGIN is followed by a @DO it will be executed, otherwise skipped)
+ (In @DO WRITE, @SAY and @SHOW (Except SHOW SCROLL) it will print the `V,
+  `P and `S varibles - It also understands:
+ `N (user name)
+ `* (node number)
+
+@DO <Varible to put # in> RANDOM <Highest number> <number to add to it>
+
+This is how you generate random numbers.  To generate a number between 500 and
+1000 and put it in varible `P05 you would put:
+
+@DO `P05 RANDOM 500 500
+
+@DO `v01 is 1
+This sets the default option on the next lightbar selection.  ALWAYS use this
+before a @choice command.
+
+@DO BEEP
+Makes a weird beep noise, locally only
+
+@DO GETKEY <String variable to put it in>
+This command is useful, *IF* a key IS CURRENTLY being pressed, it puts that 
+key into the string variable.  Otherwise, it puts a '_' in to signal no key was 
+pressed.  This is a good way to stop a loop.
+
+@DO GOTO <header or label>
+Passes control of the script to the header or label specified.
+
+@DO MOVE <X> <Y> : This moves the curser.  (like GOTOXY in TP) Enter 0 for
+                   a number will default to 'current location'.
+
+@DO moveback
+This moves the player back to where he moved from.  This is good for when a 
+player pushes against a treasure chest or such, and you don't want them to 
+appear inside of it when they are done.
+
+@DO <number variable> IS LENGTH <String variable>
+Gets length, smart way.
+
+@DO <number variable> IS REALLENGTH <String variable>
+Gets length dumb way. (includes '`' codes without deciphering them.)
+
+@DO quebar
+<message>
+This adds a message to the saybar que.  This will ensure that the message is 
+displayed at it's proper time instead of immediately.
+
+@DO READCHAR <string variable to put it in> 
+Waits for a key to be pressed.  This uses DV and Windows time slicing while 
+waiting.  `S10 doesn't seem to work with this command.  All the other `S 
+variables do though.
+
+@DO READNUM <MAX LENGTH> (Optional: <FOREGROUND COLOR> <BACKGROUND COLOR>
+<DEFAULT>
+The number is put into `V40.
+The READNUM procedure is a very nice string editer to get a number in. It
+supports arrow keys and such.
+
+@DO READSPECIAL (String variable to put it in> <legal chars, 1st is default>
+Example:
+@do write
+Would you like to kill the monster? Y/N :
+@DO READSPECIAL `s01 YN
+if `s01 is Y then do
+ @begin
+ @show
+You killed him!
+ @end
+The above would ONLY allow the person to hit Y or N - if he hit ENTER, it
+would be the same as hitting Y, because that was listed first.  
+
+@DO READSTRING <MAX LENGTH> <DEFAULT> <variable TO PUT IT IN>
+Get a string.  Uses same string editer as READNUM.
+Note:  You can only use the `S01 through `S10 vars for READSTRING.  You can 
+also use these vars for the default.  (or `N)  Use NIL if you want the default 
+to be nothing.  (if no variable to put it in is specified, it will be put into `S10 
+for compatibilty with old .REF's)
+To make a string EQUAL something, you would do it like this:  
+@DO `S04 IS Hello I am
+(OR)
+@DO `S04 ADD A programmer
+(OR)
+@DO `S04 IS `S02 <- Would copy `S02 to `S04.
+Note:  There you can only have three spaces per string defination.  Use the 
+ADD to make a long string.  OR use `X to make spaces, this way you can have 
+many spaces in one @DO.
+
+@DO saybar
+<message>
+This is like @do quebar except it displays the message instantly without
+taking into consideration that a message might have just been displayed.  This 
+will overwrite any current message on the saybar unconditionally.
+
+@ADDCHAR
+This command adds a new character to the TRADER.DAT file.  This command is 
+used in the @#newplayer routine in gametxt.ref.  Make sure you do an 
+@READSTRING, @DO COPYTONAME, set appropriate variables including the player's 
+X and Y coordinates and map block number before issuing this command.  Failure 
+to do this can result in a corrupted TRADER.DAT file.
+
+@BITSET <`tX> <bit> <Y>
+Sets a certain bit in byte variable X to value Y.  Y must be 0 or 1.  This lets you 
+have 8 yes/no variables to each byte variable.
+
+Now of course there will be times you'll want to check to see if a bit is yes 
+or no...
+
+@IF bitcheck `t12 1 1 then do
+  @BEGIN
+  @SHOW
+  Yeah!  Bit 1 of t12 is TRUE!!! Yay.
+  @END
+
+It works like a standard @IF after the 'then' part.
+
+ALSO:  Check the CHOICE command, you can check a bit there too, like this:
++`t12 1 Hey, byte 12 bit 1 is TRUE!
+
+Use '-' for false.
+
+@BUYMANAGER
+<item number>
+<item number>
+<ect until next @ at beginning of string is hit>
+This command offers items for sale at the price set in items.dat
+
+@BUSY
+This makes the player appear 'red' to other players currently playing.  It 
+also tells the Lord II engine to run @#busy in gametxt.ref if a player logs on 
+and someone is attacking him or giving him an item.
+
+@CHOICE
+<A choice>
+<another choice>
+<ect..When a @ is found in the beginning of a choice it quits>
+This gives the user a choice using a lightbar.
+The responce is put into varible RESPONCE.  This may also be spelled RESPONSE. 
+To set which choice the cursor starts on, put that number into `V01.
+** EXAMPLE OF @CHOICE COMMAND **
+@DO `V01 IS 1 ;which choice should be highlighted when they start
+(now the actual choice command)
+@CHOICE
+Yes   <- Defaults to this, since it's 1
+No
+I don't know
+Who cares
+@IF RESPONCE IS 3 THEN DO
+  @BEGIN
+  @DO `P01 IS RESPONCE
+  @SHOW
+
+You chose `P01!, silly boy!
+
+  @END
+The choice command is more useful now; you can now define *IF* type statements 
+so a certain choice will only be there if a conditional statement is met.
+For instance:
+@CHOICE
+Yes
+No
+=`p20 500 Hey, I have 500 exactly!
+!`p20 500 Hey, I have anything BUT 500 exactly!
+>`p20 500 Hey, I have MORE than 500!
+<`p20 100 Hey, I have LESS than 100!
+>`p20 100 <`p20 500 I have more then 100 and less than 500!
+Also:  You can check the status of individual bits in a `T player byte.  The 
+bit is true or false, like this:
++`t12 1 Hey! Byte 12's bit 1 is TRUE! (which is 1)
+-`t12 3 Hey! Byte 12's bit 3 is FALSE! (which is 0)
+
+The = > and < commands can be stacked as needed.  In the above example, if 
+`p20 was 600, only options 1, 2, 4, and 5 would be available, and RESPONSE 
+would be set to the correct option if one of those were selected.  For 
+example, if `p20 was 600 and the user hit the selection:
+"Hey, I have more than 500", RESPONSE would be set to 5.
+
+IMPORTANT NOTE:  Never have trailing spaces in lines under a choice command.. 
+This can make options not show up, etc... still working on why..
+
+@CHOOSEPLAYER `p20
+This will prompt user for another players name - its the standard 'full or 
+partial name' prompt, with a 'you mean this guy?'.  It returns the players # 
+or 0 if none.  If the player isn't found it will display "No one by that name 
+lives 'round here" and return 0.
+
+@CLEARBLOCK <x> <y>
+This clears lines quick.  <x> is the first line you want to clear. <y> is the 
+last line you want to clear.  Example:  @clear block 20 24   This would clear 
+4 lines starting at line 20.
+
+@CLEAR SCREEN
+This command clears the entire screen.
+
+@CLOSESCRIPT 
+This closes the script and returns command to the L2 movement system.
+
+@DRAWMAP
+This draws the current map the user is on.  This command does NOT update the 
+screen.  See the @update command below concerning updating the scren.
+
+@DRAWPART <x> <y>
+This command will draw one block of the current map as defined by <x> and <y> 
+with whatever is supposed to be there, including any people.
+
+@FIGHT  : Causes the L2 engine to go into fight mode.
+<Monster name>
+<String said when you see him>
+<Power Move Kill String>
+<Weapon 1|strength>
+<Weapon 2|strength or NONE|NONE>
+<Weapon 3|strength or NONE|NONE>
+<Weapon 4|strength or NONE|NONE>      
+<Weapon 5|strength or NONE|NONE>
+<Defense>
+<Experience Points rewarded for victory>
+<Gold rewarded for victory>
+<Hitpoints the monster has>
+<REFFILENAME|REFNAME or NONE|NONE> player victory
+<REFFILENAME|REFNAME or NONE|NONE> player defeat
+<REFFILENAME|REFNAME or NONE|NONE> player runs
+
+As with any of the other commands you may have comment lines and inline 
+comments within this command.
+It is also important to note here that while this can be in a standard routine 
+it will not execute until after the script has completed execution and the 
+player returned to the map screen.  This is usually used for the random fights 
+as players walk around.  Below is an example of how it is used in this way.  
+In the map attributes (edited by pressing z while editing a screen in the 
+world editor of L2CFG) you specify a fight file name and a fight ref name.  
+The ref name is the routine the L2 engine calls.  Let's say your ref name is 
+fight.  The file name can be anything you choose so long as the following 
+routine is in that file.  The following routine shows how random fighting is 
+accomplished:
+
+@#fight
+@do `p20 random 6 1
+@do goto monster`p20
+@#monster1
+@fight
+;name
+Tiny Scorpion
+;string said when you see him
+Something crawls up your leg...
+;power move kill string
+You laugh as the tiny thing burns in the sand.
+;sex - 1 is male, 2 is female, 3 is it
+3
+;weapon and strength for the weapon, up to 5
+stings you|44
+pinches you|25
+NONE|NONE
+NONE|NONE
+NONE|NONE
+;defense
+15
+;gold reward
+89
+;experience
+54
+;hit points
+64
+;if win: ref file|name or NONE
+NONE|NONE
+;if lose: ref file|name or NONE
+GAMETXT.REF|DIE
+;if runs: ref file|name or NONE
+NONE|NONE
+@#monster2
+@fight
+(parameters for fight command until you have as many monster commands as the 
+highest random number
+
+You might also have a hotspot defined that calls a routine that will be a 
+fight.  Make sure you DON'T clear the screen.  It won't hurt anything if you 
+do, but it won't look very good.  
+
+@GRAPHICS IS <Num> 
+3 or more enable remote ANSI.  If you never wanted to send ANSI, you could set 
+this to 1. You will probably never touch this one.
+
+@HALT <error level>
+This command closes the door and returns the specified error level.
+
+@IF <Varible> <Math> <Thing the varible must be, or more or less then, or
+another varible>  (Possible math functions: EQUALS, MORE, LESS, NOT)
+
+You can also use @if checkdupe `S10 is TRUE(or FALSE) then do
+                 @begin
+                   code to execute
+                 @end
+This will check all the accounts for a name as specified in `S10.  If a match 
+is found, then checkdupe will be true.  Othewise checkdupe will be false.  `S10
+is used for example only.  `S10 can be substituted for any of the `S variables.
+
+@IF <Word or variable> INSIDE <Word or variable> THEN (ect)
+This allows you to search a string for something inside of it.  Not case 
+sensitive.
+
+@IF <Word or variable> INSIDE <Word or variable> THEN DO
+Same as above except this requires an @BEGIN @END block
+
+@ITEMEXIT
+This tells the item editor to automatically return the player to the map 
+screen after the item is used.  It is up to you to use the @drawmap and 
+@update commands as usual though.
+
+@KEY 
+Does a [MORE] prompt, centered on current line.
+
+@KEY NODISPLAY
+Waits for keypress without saying anything.
+
+@LOADCURSOR
+This command restores the cursor to the position before the last @SAVECURSOR 
+was issued.  This is good for creative graphics and text positioning with a 
+minimum of calculations.  See @SAVECURSOR below.
+
+@SAVECURSOR
+This command saves the current cursor positioning for later retrieval.
+
+@LOADGLOBALS
+This command loads the last value of all global variables as existed when the 
+last @SAVEGLOBALS command was issued.  See @SAVEGLOBALS below.
+
+@SAVEGLOBALS
+This command saves the current global variables for later retrieval
+
+@LOADMAP <map #>
+This is a very handy command.  It lets you change someones map location in a 
+ref file.  This is the 'block #' not the physical map location, so it could be 
+1 to 1600.  Be sure it exists in l2cfg.exe.  If the map block does not exist, 
+The L2 engine will display a runtime error and close the door.   Be SURE to 
+change the map variable too!!  Using this and changing the X and Y coordinates 
+effectivly lets you do a 'warp' from a .ref file.
+
+@LOADWORLD
+This command loads globals and world data.  It has never been used but is 
+included just in case it becomes necessary to do this.  See @SAVEWORLD below.
+
+@SAVEWORLD
+This command saves stats and world data.  The only use yet is right after 
+@#maint is called to save random stats set for that day and such.
+
+@MOREMAP
+The line UNDER this will be the new <more> prompt.  30 characters maximum.
+
+@OFFMAP
+This takes the player's symbol off the map.  This makes the player appear to 
+disappear to other players currently playing.  This is usful to make it look
+like they actually went into the hut, building, ect.
+
+@OVERHEADMAP
+This command displays the visible portion of the map as defined in the world 
+editor of L2CFG.  All maps marked as no show and all unused maps will be 
+blue signifying ocean.  No marks or legend will be written on the map.  This 
+is your responsibility.  If you wish to mark the map you must do this in 
+help.ref under the @#M routine.  Be sure to include a legend so people have 
+some reference concerning what the marks mean.  The following is the math to 
+mark the player's location:
+
+  @do `p20 is &lmap
+  @do `p20 / 80
+  @do `p21 is &lmap
+  @do `p22 is `p20
+  @do `p22 * 80
+  @do `p21 - `p22
+  @do `p20 + 1
+  @if `p21 is 0 then do
+   @begin
+   @do `p21 is 80
+   @do `p20 - 1
+   @end
+  @do move `p21 `p20
+  @do write
+`r2`b`r0
+
+Note the last line is what is written as the mark.  You may change this as you 
+see fit.  Note that &lmap is used instead of &map.  This is the player's last
+*visible* map block.  This is used because you don't want to show the player 
+out in the ocean if he is not on a visible map.
+
+The following is the math to convert move the cursor to the proper location 
+for other map blocks you might want to mark.  You are free to cut this routine 
+and paste it into your help.ref file as you see fit.  Here it is.
+
+First.  Set `P23 to the map block you want converted
+@do `p23 is 1223 ;example only.  Replace 1223 with any block you need marked.
+;now the command to call the routine.
+@routine blocktoxy ; you can name this routine anything you want.
+@do write
+%þ
+Note that %þ is the mark to be written.  This is for example only.  You may
+write anything you need as your marks.
+
+You will notice that all you have to do is set `p23 to the block you want to 
+write on and then call the routine.  The routine will move the cursor to the 
+proper block number.  Then you issue the @do write.
+
+Now for the actual @#blocktoxy routine:
+@#blocktoxy
+;`p23 must be set to the block number to convert
+;before calling this routine.
+  @do `p20 is `p23
+  @do `p20 / 80
+  @do `p21 is `p23
+  @do `p22 is `p20
+  @do `p22 * 80
+  @do `p21 - `p22
+  @do `p20 + 1
+  @if `p21 is 0 then do
+   @begin
+   @do `p21 is 80
+   @do `p20 - 1
+   @end
+  @do move `p21 `p20
+  @#nomore
+
+Note that @#nomore is used.  This is a placeholder only.  It is used to 
+signify the end of the routine.  If you have other routines to go after this 
+routine you may dispense with the @#nomore.  
+
+@PAUSEOFF
+This turns the 24 line pause off so you can show long ansis etc and it won't 
+pause every 24 lines.
+
+@PAUSEON
+Just the opposite of the above command.  This turns the pause back on.
+
+@PROGNAME
+The line UNDER this will be the status bar name of the game.
+
+@ROUTINE <Header or label name> IN <Filename of .REF file>
+The @ROUTINE command is useful - You can use it jump to a completely new .REF 
+file - when it's finished there, instead of closing the script, it will load 
+back up the original .REF file and continue where it left off.  One note.  I 
+have found that @ROUTINE cannot be nested.  That is if you use an @ROUTINE 
+command inside of a routine called by @ROUTINE, the reader cannot return to 
+the first procedure that ran @ROUTINE.
+
+@RUN <Header or label name> IN <Filename of .REF file>
+Same thing as above, but doesn't come back to the original .REF.
+
+@SELLMANAGER
+This command presents a menu of the player's current inventory.  The player 
+can then sell his items at 1/2 the price in items.dat.  Any item that has the 
+"Can be sold" field in the items.dat file set to 'no' will be greyed and if 
+the player chooses that item a box will appear saying "They don't seem 
+interested in that".  It is highly recommended that there be a routine such as
+@clear screen
+@do write
+`cSo what do you want to sell?
+@SELLMANAGER
+OR
+@clear screen
+@show
+`cSo what do you want to sell
+@SELLMANAGER
+The `c is included so that there will be two carriage returns issued.  This is 
+important for cosmetic purposes only.  I have found that if the @sellmanager
+is issued at the top of the screen, the boxes don't dissapear as they should.
+
+@SHOW           
+Shows following text/ansi.  Stops when a @ is hit on beginning of line.
+
+@SHOW SCROLL          
+Same thing, but puts all the text in a nifty scroll window. (scroll window has 
+commands line Next Screen, Previous Screen, Start, and End.
+
+@STATBAR
+This draws the statbar.
+
+@UPDATE
+Draws all the people on the screen.
+
+@UPDATE_UPDATE
+This command writes current player data to UPDATE.TMP file.  This is useful 
+when you just can't wait until the script is finished for some reason.
+
+@VERSION  <Version it needs>  
+For instance, you would put @VERSION 2 for this version of RTREADER.  (002) If 
+it is run on Version 1, (could happen) a window will pop up warning the person 
+he had better get the latest version.
+
+                              STRING COMMANDS
+
+@DO COPYTONAME  
+This will put whatever is in `S10 into `N.  (name)  This is a good way to 
+allow a player to change his name or to get the name a new player wants to go 
+by.  It is also useful in the @#newplayer routine to get the alias the player 
+wants to go by in the game.
+
+@DO PAD <string variable> <length>
+This adds spaces to the end of the string until string is as long as <length>.
+
+@DO FRONTPAD <string variable> <length>
+This adds spaces to the front of the string until the string is as long as 
+<length>.
+NOTE:  Both Pad commands as shown above automatically does not include color 
+codes in the length, and DOES include varibles in the length.   
+
+@DO STRIP <string variable>
+This strips beginning and end spaces of a string.
+
+@DO STRIPALL
+This command strips out all ` codes.  This is good for passwords, etc.
+
+@DO STRIPBAD
+This strips out illegal ` codes, and replaces badwords with the standard 
+badword.dat file.
+
+@DO UPCASE <string variable>
+This makes a string all capitals.
+
+@REPLACE <X> <Y> <in `S10>
+Replaces X with Y in an `s variable.
+
+@REPLACEALL <X> <Y> <in `S10>:
+Same as above but replaces all instances.
+
+@STRIPCODE <any `s variable>
+This will remove ALL ` codes from a string.
+
+                               FILE COMMANDS
+
+@DO addlog
+The line UNDER this command is added to the 'lognow.txt' file.
+
+@DO DELETE <file name>
+This command deletes the file specified by <file name>.  The file name must be 
+a valid DOS file name.  There can be no spaces.
+
+@DO TRIM <file name> <number to trim to>
+This nifty command makes text file larger than <number to trim to> get 
+smaller.  (It deletes lines from the top until the file is correct # of lines, 
+if smaller than <number to trim to>, it doesn't change the file)
+
+@DO WRITE
+<Stuff to write>
+Same thing as regular @SHOW, but does only one line, without a line feed.  
+Used with @DO MOVE this is good for putting prompts, right in front of READNUM 
+and READSTRING's.
+NOTE:  You can use variables mixed with text, ansi and color codes in the 
+<stuff to write> part.  Works this way with most stuff.
+
+@COPYFILE <input filename> <output filename>
+This command copies a <input filename to <output filename>.          
+
+@CONVERT_FILE_TO_ANSI <input file> <output file>
+Converts a text file of Sethansi (whatever) to regular ansi.  This is good for 
+a final score output.
+
+@CONVERT_FILE_TO_ASCII <input file> <output file>
+Converts a text file of Sethansi (whatever) to regular ascii, ie, no colors at 
+all.
+
+@DISPLAY <this> IN <this file> <options>
+This is used to display a certain part of a file.  This is compatible with the 
+LORDTXT.DAT format.
+
+@DISPLAYFILE <filename> <options> 
+This display an entire file.  Possible options are:  NOPAUSE and NOSKIP.  Put a
+space between options if you use both.
+
+@LORDRANK <filename> <`p variable to rank by>
+This command produces a file as specified by <filename>.  It uses the `p 
+variable specified for the order of the ranking.  This parameter must be a 
+number without the `p.  The file that is created contains no headers and is 
+not deleted before writing.  If a file of the same name already exists, the 
+procedure will append the file.  The following table is the column numbers
+where @LORDRANK places the ranking information.
+  COLUMN     STAT
+  1          Sex if female
+  3          Name
+  37         Stat to rank by (right justified) (Usually Experience)
+  42         Level 
+  48         Status 
+  60         Alignment
+  65         Quests completed
+
+@RANK <filename> <`p variable to rank by> <procedure to format the ranking>
+This command is the same as above with the exception it uses a procedure to 
+format the ranking.  This procedure needs to be in the same file as the @RANK 
+command.  It is preferable to use the @LORDRANK command rather than this one,
+if feasible.  This one works, but @LORDRANK uses a preset formatting
+procedure and is therefore quicker.  There may be occasion, however, if you
+write your own world to use this command rather than @LORDRANK.
+
+@READFILE <file name>
+<variable to read into>
+<variable to read into>
+<Ect until next @ at beginning of string is hit>
+This works just like @WRITEFILE.  You can use String and Number variables, 
+just be warned if a number variable attempts to read a string, you will always 
+get 0.
+NOTE:  @READFILE is a smart procedure - It will not run-time error or 
+anything, even if you try to read past the end of the file. It simply won't 
+change the variables if the file isn't long enough.
+
+@WRITEFILE <file name>
+<Thing to write>
+<Thing to write>
+<ect until next @ at beginning of string is hit>
+<Thing to write> can be a varible, (string or num) or it can be a word you 
+write - or a combination of the two.
+Note:  @WRITEFILE appends the lines if the file exists, otherwise it creates 
+it.  File locking techniques are used.
+
+Note:  On ALL of these file commands, you cannot give a path.  A path will 
+be put in the beginning, so file commands can only be used in the current dir.
+
+                          SPECIAL TALKING COMMANDS
+
+These commands are tricky to use.  They are used in RTNEWS02.REF, (the
+talking to Seth part) but most people probably don't want to hassle with
+getting the pictures in the exact right spot for everything to look right.
+(It's a New World thing)
+
+
+@SAY
+All text UNDER this will be put in the 'talk window' until a @ is hit.
+
+@KEY BOTTOM
+This does <MORE> prompt at user text window.
+
+@KEY TOP
+This does <MORE> prompt at game text window.
+
+@CLEAR NAME
+This deletes the name line of the game window.
+
+@CLEAR USERSCREEN
+This clears user text.
+
+@CLEAR TEXT
+This clears game text.
+
+@CLEAR PICTURE
+This clears the picture.
+
+@CLEAR ALL
+This clears user text, picture, game text, name and redraws screen.
+
+                             THE SHELL COMMAND
+
+NOTE:  THIS FEATURE DOES NOT WORK IN LORD II AT THIS TIME.
+
+A powerful feature of RTREADER is the ability to run OTHER programs inside
+of it, and return to the exact spot it left automatically.
+
+@SHELL <.EXE, BAT or COM> <Parms, up to 8> (note, use `* for node num)
+
+When this happens, two files are created.
+
+DO<node num>.BAT is created.  This is actually the file that is run.
+
+INFO.<node num> is created.  Simular to LORD's INFO.? system.
+
+This text file contains the following:
+
+Users first name
+Users Last Name
+Ref file it was reading before shelling
+Offset of ref file (where it was when it shelled)
+Graphics <- Passed from drop file, usually between 2 and 5.
+Time Left
+Com Port
+Baud Rate
+Lockbaud
+FOSSIL (or INTERNAL or DIGI)
+
+The procedure RTREADER uses upon 're-entry' is it reads the proper 
+NODE<node num>.DAT file, *THEN* it reads the INFO.? file and fills in the 
+gaps.  It reads the Time Left back in also.
+
+                      PROGRAMMING AND TROUBLESHOOTING
+
+As you can see from the above section, the RTSCRIPT language is flexible and 
+extensive.  A word or two about putting these commands together and making a 
+workable IGM or world is in order, however.
+
+For those who have studied programming, the following will be familiar but it 
+cannot be over-emphasized so it will be repeated here.
+
+DEFINE THE PROBLEM.  That is, what do you want your IGM to accomplish in 
+general terms.  Don't worry about the specifics at this point.  What general 
+function should it fulfill?  Once you have answered this question you can 
+begin to go into the specifics that make your IGM or world a working reality.
+Will your IGM be a means to facilitate transportation?  Will it be a quest IGM?
+Will it help players without destroying the continuity of the game or throwing 
+the game totally out of balance?  These are questions that need to be addressed
+before writing one line of code.  If you are writing a world, what will be the 
+main theme?  This is important because without a goal the game tends to become 
+boring.
+
+Ok.  You've got your problem defined.  You know what you want your IGM to do.  
+Now comes the tricky part.  Writing the actual code that will be used to make 
+it work.  Actually, this can be as simple or as difficult as you make it.  You 
+can have your code in large chunks that do general tasks.  Or you can have it 
+in small modules that each accomplish a specific task.  The latter is highly 
+recommended.  The smaller the modules, the easier it is to debug and find 
+mistakes.  And there WILL be mistakes.
+
+This document will not attempt to define all the runtime errors.  The runtime 
+errors shown by the LORD II engine are self explanatory for the most part.  
+Instead, this document will address logic errors.  A logic error is defined as 
+an error that does not produce a runtime error code yet causes the program or 
+routine to operate contrary to design plan.  In other words, a logic error 
+causes the program to do something that you don't want it to do without 
+causing a runtime error.
+
+Most of the logic errors will be caused by an unclosed @begin statement.  This 
+means an @begin without a corresponding @end.  Or you might have a proper 
+command but in the wrong place and it causes the screen not to be updated 
+because the @update command is after instead of before the @end statement.
+
+A word of caution about nesting @if statements.  The deeper you nest them 
+especially if you have @begin statements, the more likely you will have logic 
+errors from unclosed @begin statements.
+
+Another common error it to have indexed your file and then you find a mistake. 
+You go and change it and the same thing happens again or something really 
+wierd happens.  If you index a file, anytime you change that file, you must 
+re-index or delete the index.  Either will work.
+
+                              THE WORLD EDITOR
+
+A word or two about the world editor is in order.  This applies to people who 
+are writing IGM's and people who design and write their own world.
+
+The world editor is in L2CFG.EXE.  This is the place where you define your hot 
+spots and warps.  It is also where you modify current and create new maps.  
+When in the world editor you move the cursor over the map you want to work on 
+and then press ENTER.  This will take you to the map.  If the map is 
+undefined, that is blue, then you will see a blank screen with grey blocks on 
+a black background.  Otherwise the editor will call up the map for editing.  
+
+You can press ? at any time for a help screen that will tell you all you need 
+to know.  Pressing Z will edit the map's attributes.  This is where you define 
+how dangerous the screen is to players, whether players can fight each other 
+here, the fight file, the fight ref name, the name of the screen and how often 
+the fight file will be accessed.
+
+                          DESIGNING YOUR OWN WORLD
+
+The following is for people who want to design their own worlds.  The 
+principles that apply here generally do not apply to IGM's.
+
+The LORD II gaming engine is strong and flexible.  Almost all of the global 
+and player variables can be changed.  The L2 engine does use a few for 
+reference but for the most part all can be changed.  The variables that the L2 
+engine uses are listed below:
+
+RESERVED GLOBAL VARIABLES:
+
+    `V01  Reserved for lightbar default
+    `V05  Reserved for turns given at new day.  Use 0 for unlimited turns.
+    `V09  Reserved for level at which a player may be attacked on a screen 
+          where player fighting is not allowed.
+    `V39  Reserved.  Haven't figured out for what.
+    `V40  Reserved for input from @do readnum.
+
+PLAYER VARIABLES:
+
+    `P01  Reserved for player's experience.
+    `P02  Reserved for player's current hitpoints.
+    `P03  Reserved for player's maximum hitpoints.
+    `P04  Reserved for player's muscle (personal attack).
+    `P05  Reserved for player's dodge (personal defense).
+    `P07  Reserved for Player's alignment (if your world uses this.  This is 
+          only used by @LORDRANK)
+    `P11  Reserved for player's turns left (unless `v05 is 0).
+    `P18  Reserved for player's quests completed (if your world uses this.  
+          This is only used by @LORDRANK)
+    Money Reserved for player's money on hand.
+    Bank  Reserved for player's money in the bank.
+
+Note:  A player's total attack strength is their weapon strength + `P04.
+       A player's total defense is their armor rating + `P05.
+
+None of the player byte variables are used for reference by the LORD II
+engine.
+
+                      REQUIRED REF FILES AND ROUTINES
+
+It is now appropriate do discuss the .REF files and routines that the LORD II
+engine calls automatically.  There are three .REF files that are accessed 
+automatically.  These are RULES.REF, GAMETXT.REF, and HELP.REF.  If a required 
+routine is not found, the engine will give an error message to that effect.  
+GAMETXT.REF MUST exist or the game will not run.  If RULES.REF doesn't exist 
+the engine will give a message to that effect and continue the game.  To be 
+safe, make sure that your game has these three files, with the routines listed 
+below in the proper files.
+
+RULES.REF is the file where you put your rules.  This file is accessed and 
+processed first.  In it you would put whether players are allowed unlimited 
+deaths per day, the number of turns they are allowed or 0 for unlimited.  Also 
+if clean mode is on, if your world will use this, The level players can be 
+attacked on safe screens, how many times the player may gamble, if your world 
+has this feature, and so forth.  The variables set in this file should be 
+GLOBAL variables ONLY.
+
+The routines that are called automatically under certain  conditions are 
+listed below.  The routine name will be shown first and then beside it the 
+file in which the engine looks for it.  For convention sake, the routine name 
+is in lowercase, and the file to which it belongs is in uppercase.  The order 
+of the routines in the files is of no importance.
+
+@#newplayer    GAMETXT.REF
+This routine is called anytime a player starts the game and is not found in 
+the TRADER.DAT file.  This is the routine where you give background about your 
+scenario, ask for the player's alias, check for duplicate aliases, give the 
+player the starting items, money and set his X and Y coordinates map #.  The 
+last command in this routine should be @ADDCHAR.
+
+@#full        GAMETEXT.REF
+This routine is called if 200 people are already playing.  You should give 
+some explanation and a @key command.  The game will halt upon completion of 
+this routine.
+
+@#stats       GAMETXT.REF
+This routine is called anytime a player presses V from the map screen.  Upon 
+completion of the routine a listing of the player's inventory will be 
+displayed with the number of items on hand and description.  A lightbar will 
+be available for item selection.  If the item is a weapon or armor, 
+highlighting this item will offer to arm/disarm or wear/take off respectively.
+It the item selected is not a weapon or armor, the engine will look up the 
+routine in ITEMS.REF as listed in the item editor.  If a routine does not 
+exist for this item a box will be displayed with the message:
+"You cannot think of any way to use this item".  If the player is not carrying 
+any items then the message "You are carrying nothing.  (Press Q to quit).
+The inventory will display up to and including line 23.  You may use line 24 
+for brief instructions.  The action keys are as follows.  Q Quit
+ENTER equip/use/eat, D Drop item, N Next page, P Previous page.
+
+@#closestats  GAMETXT.REF
+This routine is called when a player presses Q from the stats screen.
+
+#@startgame   GAMETXT.REF
+This routine is called to start the game.  You should perform mail checking, 
+checking for previously being on, check to see if the player is dead, 
+displaying the lognow.txt file and so forth.
+
+@#endgame     GAMETXT.REF
+This routine is called when the player presses Q and then Y at the map screen. 
+This quits the game.
+
+@#iwon        GAMETXT.REF
+This routine is called when a player kills another player in multinode combat.
+If a player kills another player and both player's aren't on line at the same 
+time, @#live in GAMETXT.REF will be called.  For that reason you will probably 
+want @#live to call this routine.
+
+@#live        GAMETXT.REF
+See the above explanation.
+
+@#Z           HELP.REF
+This routine is called anytime the player presses the Z key from the map 
+screen.  In LORD II it is reserved for using the Smackrod, but you can use it 
+for anything you need if you write your own world.
+
+@#M           HELP.REF
+This routine is called anytime the player presses the M key from the map 
+screen.  In LORD II it is reserved for the player's world map if he has one.  
+It is recommended you use it for this purpose if you write your own world.
+
+@#whoison     HELP.REF
+This routine is called anytime the player presses the P key from the map 
+screen.  This is usually used to list People Online.
+
+@#help        HELP.REF
+This routine is called anytime the player presses the ? key from the map 
+screen.  This is usually used for online help.
+
+@#T           HELP.REF
+This routine is called anytime the player presses the T key from the map 
+screen.
+
+@#Y           HELP.REF
+This routine is called anytime the player presses the Y key from the map 
+screen.
+
+@#listplayers HELP.REF
+This routine is called anytime the player presses the L key from the map 
+screen.  It is recommended you use this to do a ranking of the current players 
+in the game.
+
+@#maint       MAINT.REF
+This routine is called anytime LORD II is started with LORD2 /MAINT.  It is 
+also called at other times when it is needed.  As when the first player of a 
+new day logs on.
+
+The following keys when pressed at the map screen are reserved by the LORD II 
+engine and perform the functions that are listed below.
+
+  W  Write mail to another player
+  H  Interact with another player.  The player pressing this key must be on the
+     same map square as the player they are trying to interact with.
+  B  Show the log of messages.
+  F  Show the last three messages.
+  Q  Quit the game.  Confirmation will be requested.
+
+                           USIGN THE ITEM EDITOR
+
+One last subject that needs addressing is the item editor.  When designing 
+your own world, you will undoubtedly need to have an items list.  Weapons, 
+armor, potions, maps, and various sundry items that the players can find, buy 
+and use.
+
+The item editor is where you define these items.  The options in the item 
+editor will now be explained.
+
+A. Item Name
+   Self explanatory.  Data type: String.
+B. Action String
+   The string displayed when item is used as a weapon.  This can be left blank 
+   if option D is No.  Data Type: String.
+C. Use as armor?
+   Whether or not the item can be worn as armor.  Data Type: Boolean.
+D. Use as weapon?
+   Whether or not the item can be armed as a weapon.  Data Type: Boolean.
+E. Can be sold?
+   Whether or not the item can be sold using @SELLMANAGER.  Data Type: Boolean.
+F. Ref if usable
+   Header name in ITEMS.REF if the item is usable.  If this is left blank and 
+   the item is not a weapon or armor, if the player selects this item after 
+   issuing a V (view stats) a box will be presented with the following 
+   message:  You can't think of any way to use this item.  Remember, you can 
+   check for items in a .REF file and have conditional instructions if the 
+   player has a certain item.  Data Type: String.
+G. Use String
+   String to display if item is usable.  This is displayed when a player 
+   selects this item after issuing a V (view stats).  Data Type: String.
+H. Gold value
+   The cost of the item when using @BUYMANAGER.  @SELLMANAGER will credit the 
+   player's account with 1/2 this value when buying the item back from the 
+   player.  String Type: Integer.
+I. Use only once
+   Whether or not the item is expended and removed from the player's inventory 
+   after use.  If this is set to yes and the player has more than one of this 
+   item, the quantity will be decremented by one each time the player uses 
+   this item.  Data Type: Boolean.
+J. Breaks 1 out of
+   Chances of the item breaking if used as a weapon or armor.  This option has 
+   not yet been implemented.  Data Type: Integer.
+K. Description
+   The description of the item as presented by @BUYMANAGER.  This string will 
+   also be shown in the player inventory if the item is not armed as a weapon 
+   or worn as armor.  Data Type: String.
+L. Weapon Strength
+   The attack rating of the item if armed as a weapon.  If the item cannot be 
+   armed as a weapon, this value should be 0.  Data Type: Integer.
+M. Armor Defense
+   The defense rating of the item if worn as armor.  If the item cannot be 
+   worn as armor, this value should be 0.  Data Type: Integer.
+
+                                 DATA TYPES
+
+You will note that the above descriptions include a data types.  This is the 
+type of data the field will hold.  A short explanation of the data types 
+involved is in order.
+
+String:   A literal containing A-Z, a-z, 0-9, and the punctuation marks.
+Boolean:  A 1 or 0.  In this case Yes or No.
+Integer:  A number.  If there are any places to the right of the decimal point 
+          they are truncated.  4.3872928 would be 4.  7.927 would be 7.
+
+                                 CONCLUSION
+
+As you can see, the LORD II engine is a strong and workable gaming engine.  
+It's main strength comes from it's flexibility.  The .REF system, which is the 
+heart, soul and personality of any LORD II world is a comprehensive yet 
+workable system.  It is limited only by the imagination of the programmer and 
+the hard disk space on his computer.  Thank you for using this manual.  
+Hopefully it will help you create better IGM's and/or worlds for the LORD II 
+engine.
+
+                                  CREDITS
+
+Thanks to Seth Robinson for creating such a flexible gaming system.  
+Thanks to Bobby Queen, The Webmaster of the LORD II IGM Web Page.
+
