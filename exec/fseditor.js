@@ -1329,6 +1329,8 @@ function quote_mode()
 		quote_ontop=true;
 	else
 		quote_ontop=false;
+	if (line.length === 1 && line[0].text === '')
+		quote_ontop = true;
 
 	if(quote_ontop) {
 		quote_sep_pos=edit_top+quote_height;
