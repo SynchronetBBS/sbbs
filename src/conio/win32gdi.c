@@ -1082,8 +1082,8 @@ gdi_kbwait(int ms)
 	DWORD got = 0;
 	OVERLAPPED ohgod = {0};
 
-	if (ReadFile(rch, &ch, 1, &got, &ohgod))
-		return kbwaitGot(ch, got);
+	if (ReadFile(rch, &ch, 1, NULL, &ohgod))
+		return kbwaitGot(ch, 1);
 	if (GetLastError() == ERROR_IO_PENDING) {
 		if (GetOverlappedResultEx(rch, &ohgod, &got, ms, FALSE))
 			return kbwaitGot(ch, got);
