@@ -68,6 +68,7 @@ CIOLIBEXPORT cioapi_t	cio_api;
 
 static const int tabs[]={1,9,17,25,33,41,49,57,65,73,81,89,97,105,113,121,129,137,145};
 static int ungotch;
+static bool ungot;
 struct text_info cio_textinfo;
 uint32_t ciolib_fg;
 uint32_t ciolib_bg;
@@ -610,7 +611,7 @@ CIOLIBEXPORT int initciolib(int mode)
 CIOLIBEXPORT int ciolib_kbwait(int ms)
 {
 	CIOLIB_INIT();
-	if(ungotch)
+	if(ungot)
 		return(1);
 	if (ciolib_kbhit())
 		return(1);
@@ -631,7 +632,7 @@ CIOLIBEXPORT int ciolib_kbwait(int ms)
 CIOLIBEXPORT int ciolib_kbhit(void)
 {
 	CIOLIB_INIT();
-	if(ungotch)
+	if(ungot)
 		return(1);
 	return(cio_api.kbhit());
 }
@@ -643,9 +644,9 @@ CIOLIBEXPORT int ciolib_getch(void)
 
 	CIOLIB_INIT();
 
-	if(ungotch) {
+	if(ungot) {
 		ch=ungotch;
-		ungotch=0;
+		ungot=false;
 		return(ch);
 	}
 	return(cio_api.getch());
@@ -658,9 +659,9 @@ CIOLIBEXPORT int ciolib_getche(void)
 
 	CIOLIB_INIT();
 
-	if(ungotch) {
+	if(ungot) {
 		ch=ungotch;
-		ungotch=0;
+		ungot=0;
 		ciolib_putch(ch);
 		return(ch);
 	}
@@ -694,13 +695,14 @@ CIOLIBEXPORT int ciolib_ungetch(int ch)
 {
 	CIOLIB_INIT();
 
-	if(ungotch)
+	if(ungot)
 		return(EOF);
 	if (ch == 0xe0)
 		ch = CIO_KEY_LITERAL_E0;
 	if(cio_api.ungetch)
 		return(cio_api.ungetch(ch));
 	ungotch=ch;
+	ungot = true;
 	return(ch);
 }
 
