@@ -74,6 +74,7 @@ static int outstanding_rects;
 #define MAX_OUTSTANDING 2
 static protected_int32_t videoflags;
 static int real_screenwidth = 80;
+static bool have_blink; // true if there's any blinking characters on the screen
 
 /* Exported globals */
 
@@ -876,7 +877,7 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 {
 	assert(sx <= ex);
 	assert(sy <= ey);
-	struct charstate charstate[510]; // ciolib only supports 255 columns, but syncview does to 510!
+	struct charstate charstate[510]; // ciolib only supports 255 columns, but syncview goes to 510!
 	struct blockstate bs;
 	unsigned vwidth = ex - sx + 1;
 	unsigned vheight  = ey - sy + 1;
@@ -972,6 +973,8 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 					else {
 						draw_char_row_fast(&bs, &charstate[vx]);
 					}
+					if (!have_blink && !vstat.no_blink && charstate[vx].afc != charstate[vx].bfc)
+						have_blink = true;
 				}
 				bs.pixeloffset += rsz;
 				if (bs.pixeloffset >= bs.maxpix)
@@ -1063,7 +1066,7 @@ static void blinker_thread(void *data)
 							vstat.curs_blink = FALSE;
 							next_blink = now + 314;
 						}
-						blink_changed = 1;
+						blink_changed = have_blink;
 					}
 				}
 				break;
@@ -1080,7 +1083,7 @@ static void blinker_thread(void *data)
 						vstat.curs_blink=TRUE;
 						vstat.blink=FALSE;
 					}
-					blink_changed = 1;
+					blink_changed = have_blink;
 					curs_changed = (curs_changed != cursor_visible_locked());
 					next_cursor = now + 333;
 				}
@@ -1122,7 +1125,7 @@ static void blinker_thread(void *data)
 							vstat.blink=TRUE;
 						}
 						next_blink = now + 266;
-						blink_changed = 1;
+						blink_changed = have_blink;
 					}
 				}
 				break;
@@ -1304,6 +1307,7 @@ static int update_from_vmem(int force)
 	width=vstat.cols;
 	height=vstat.rows;
 
+	have_blink = false;
 	if (force || bitmap_drawn == NULL) {
 		bitmap_draw_from_vmem(1, 1, width, height, false);
 	}
@@ -1336,8 +1340,9 @@ static int update_from_vmem(int force)
 		for(int y=0;y<height;y++) {
 			for(int x=0;x<width;x++) {
 				/* Has this char been updated? */
+				bool blink_set = vstat.vmem->vmem[pos].legacy_attr & 0x80;
 				if(!same_cell(&bitmap_drawn[pos], &vstat.vmem->vmem[pos])
-				    || (bb_attr_changed && (vstat.vmem->vmem[pos].legacy_attr & 0x80))
+				    || (bb_attr_changed && blink_set)
 				    ) {
 					ex = x + 1;
 					if (sx == 0) {
