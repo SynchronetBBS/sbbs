@@ -1269,11 +1269,7 @@ static int update_from_vmem(int force)
 		int no_bright;
 		int bright_altcharset;
 	} vs;
-	int x,y,width,height;
-	unsigned int pos;
-
-	int bright_attr_changed=0;
-	int blink_attr_changed=0;
+	int width,height;
 
 	if(!bitmap_initialized)
 		return(-1);
@@ -1308,53 +1304,58 @@ static int update_from_vmem(int force)
 	width=vstat.cols;
 	height=vstat.rows;
 
-	/* Did the meaning of the blink bit change? */
-	if (vstat.bright_background != vs.bright_background ||
-			vstat.no_blink != vs.no_blink ||
-			vstat.blink_altcharset != vs.blink_altcharset)
-	    blink_attr_changed = 1;
+	if (force || bitmap_drawn == NULL) {
+		bitmap_draw_from_vmem(1, 1, width, height, false);
+	}
+	else {
+		unsigned int pos = vmem_cell_offset(vstat.vmem, 0, 0);
+		bool bb_attr_changed = false;
 
-	/* Did the meaning of the bright bit change? */
-	if (vstat.no_bright != vs.no_bright ||
-			vstat.bright_altcharset != vs.bright_altcharset)
-		bright_attr_changed = 1;
+		/* Did the meaning of the blink bit change? */
+		if (vstat.bright_background != vs.bright_background ||
+				vstat.no_blink != vs.no_blink ||
+				vstat.blink_altcharset != vs.blink_altcharset)
+			bb_attr_changed = true;
 
-	/*
-	 * Now we go through each character seeing if it's changed (or force is set)
-	 * We combine updates into rectangles by lines...
-	 *
-	 * First, in the same line, we build this_rect.
-	 * At the end of the line, if this_rect is the same width as the screen,
-	 * we add it to last_rect.
-	 */
+		/* Did the meaning of the bright bit change? */
+		if (vstat.no_bright != vs.no_bright ||
+				vstat.bright_altcharset != vs.bright_altcharset)
+			bb_attr_changed = true;
 
-	int sx = 0;
-	int ex = 0;
-	pos = vmem_cell_offset(vstat.vmem, 0, 0);
-	for(y=0;y<height;y++) {
-		for(x=0;x<width;x++) {
-			/* Has this char been updated? */
-			if(force || bitmap_drawn == NULL || !same_cell(&bitmap_drawn[pos], &vstat.vmem->vmem[pos])
-			    || ((vstat.vmem->vmem[pos].legacy_attr & 0x80)
-				&& blink_attr_changed)
-			    || ((vstat.vmem->vmem[pos].legacy_attr & 0x08) && bright_attr_changed))
-			    {
-				ex = x + 1;
-				if (sx == 0) {
-					sx = ex;
+		/*
+		 * Now we go through each character seeing if it's changed (or force is set)
+		 * We combine updates into rectangles by lines...
+		 *
+		 * First, in the same line, we build this_rect.
+		 * At the end of the line, if this_rect is the same width as the screen,
+		 * we add it to last_rect.
+		 */
+
+		int sx = 0;
+		int ex = 0;
+		for(int y=0;y<height;y++) {
+			for(int x=0;x<width;x++) {
+				/* Has this char been updated? */
+				if(!same_cell(&bitmap_drawn[pos], &vstat.vmem->vmem[pos])
+				    || (bb_attr_changed && (vstat.vmem->vmem[pos].legacy_attr & 0x80))
+				    ) {
+					ex = x + 1;
+					if (sx == 0) {
+						sx = ex;
+					}
 				}
-			}
-			else {
-				if (sx) {
-					bitmap_draw_from_vmem(sx, y + 1, ex, y + 1, false);
-					sx = ex = 0;
+				else {
+					if (sx) {
+						bitmap_draw_from_vmem(sx, y + 1, ex, y + 1, false);
+						sx = ex = 0;
+					}
 				}
+				pos = vmem_next_offset(vstat.vmem, pos);
 			}
-			pos = vmem_next_offset(vstat.vmem, pos);
-		}
-		if (sx) {
-			bitmap_draw_from_vmem(sx, y + 1, ex, y + 1, false);
-			sx = ex = 0;
+			if (sx) {
+				bitmap_draw_from_vmem(sx, y + 1, ex, y + 1, false);
+				sx = ex = 0;
+			}
 		}
 	}
 	vs.cols = vstat.cols;
