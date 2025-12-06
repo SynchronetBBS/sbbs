@@ -457,8 +457,10 @@ setup_xbin(uint8_t *data, int *mode, int *setflags, bool *xbin, size_t sz)
 			if (setflags)
 				*setflags |= (CIOLIB_VIDEO_BLINKALTCHARS);
 			vparams[cvmode].flags |= (CIOLIB_VIDEO_BLINKALTCHARS);
+#ifdef HAS_VSTAT
 			vstat.blink_altcharset = true;
 			vstat.forced_font3 = &data[offset];
+#endif
 			hack_font3 = &data[offset];
 			offset += fontsize * 256;
 		}
@@ -466,14 +468,18 @@ setup_xbin(uint8_t *data, int *mode, int *setflags, bool *xbin, size_t sz)
 			if (setflags)
 				*setflags |= (CIOLIB_VIDEO_ALTCHARS | CIOLIB_VIDEO_BLINKALTCHARS);
 			vparams[cvmode].flags |= (CIOLIB_VIDEO_ALTCHARS | CIOLIB_VIDEO_BLINKALTCHARS);
+#ifdef HAS_VSTAT
 			vstat.bright_altcharset = true;
 			vstat.blink_altcharset = true;
 			vstat.forced_font4 = &data[offset];
+#endif
 			hack_font4 = &data[offset];
 			offset += fontsize * 256;
 		}
 		if (font) {
+#ifdef HAS_VSTAT
 			vstat.forced_font = &data[offset];
+#endif
 			hack_font1 = &data[offset];
 			offset += fontsize * 256;
 		}
@@ -485,8 +491,10 @@ setup_xbin(uint8_t *data, int *mode, int *setflags, bool *xbin, size_t sz)
 			if (setflags)
 				*setflags |= (CIOLIB_VIDEO_ALTCHARS);
 			vparams[cvmode].flags |= (CIOLIB_VIDEO_ALTCHARS);
+#ifdef HAS_VSTAT
 			vstat.bright_altcharset = true;
 			vstat.forced_font2 = &data[offset];
+#endif
 			hack_font2 = &data[offset];
 			offset += fontsize * 256;
 		}
