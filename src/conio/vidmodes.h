@@ -41,6 +41,7 @@
  #undef CIOLIB_EXPORTS
 #endif
 
+#include <stdbool.h>
 #include "ciolib.h"
 
 #define TOTAL_DAC_SIZE	282
@@ -70,12 +71,13 @@ struct  video_params {
 };
 
 struct vstat_vmem {
+	struct vmem_cell *vmem;
+	size_t count;
 	unsigned refcount;
 	int top_row;
 	int width;
 	int height;
-	size_t count;
-	struct vmem_cell *vmem;
+	bool changed;
 };
 
 struct video_stats {

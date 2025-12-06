@@ -271,6 +271,7 @@ bitmap_vmem_puttext_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fil
 		return(0);
 	}
 
+	vstat.vmem->changed = true;
 	for(y=sy-1;y<ey;y++) {
 		vc = vmem_cell_ptr(vstat.vmem, sx - 1, y);
 		for(x=sx-1;x<ex;x++) {
@@ -305,6 +306,7 @@ set_vmem_cell(size_t x, size_t y, uint16_t cell, uint32_t fg, uint32_t bg)
 	int		altfont;
 	int		font;
 
+	vstat.vmem->changed = true;
 	bitmap_attr2palette_locked(cell>>8, fg == 0xffffff ? &fg : NULL, bg == 0xffffff ? &bg : NULL);
 
 	altfont = (cell>>11 & 0x01) | ((cell>>14) & 0x02);
@@ -1140,6 +1142,8 @@ static void blinker_thread(void *data)
 			continue;
 		}
 		assert_pthread_mutex_unlock(&screenlock);
+		if (curs_changed || blink_changed || lfc)
+			vstat.vmem->changed = true;
 		assert_rwlock_unlock(&vstatlock);
 
 		if (check_redraw()) {
@@ -1288,6 +1292,12 @@ static int update_from_vmem(int force)
 		assert_rwlock_unlock(&vstatlock);
 		return -1;
 	}
+
+	if(!vstat.vmem->changed) {
+		assert_rwlock_unlock(&vstatlock);
+		return 0;
+	}
+	vstat.vmem->changed = false;
 
 	/* If we change window size, redraw everything */
 	if(bitmap_drawn == NULL || vs.cols!=vstat.cols || vs.rows != vstat.rows) {
@@ -1818,6 +1828,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	bool oscrolldown = scrolldown;
 
 	assert_rwlock_wrlock(&vstatlock);
+	vstat.vmem->changed = true;
 	if (width == vstat.cols && height > vstat.rows / 2 && toy == 1) {
 		vstat.vmem->top_row += (y - toy);
 		if (vstat.vmem->top_row >= vstat.vmem->height)
@@ -2009,6 +2020,7 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 	int ychar = y / vstat.charheight;
 
 	assert_rwlock_wrlock(&vstatlock);
+	vstat.vmem->changed = true;
 	assert_pthread_mutex_lock(&screenlock);
 	if (screena.rect == NULL || screenb.rect == NULL || x >= screena.screenwidth || y >= screena.screenheight) {
 		assert_pthread_mutex_unlock(&screenlock);
@@ -2084,6 +2096,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	}
 
 	assert_rwlock_wrlock(&vstatlock);
+	vstat.vmem->changed = true;
 	assert_pthread_mutex_lock(&screenlock);
 	if (ex > screena.screenwidth || ey > screena.screenheight) {
 		assert_pthread_mutex_unlock(&screenlock);
@@ -2687,6 +2700,7 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 	os = ((int64_t)vstat.winwidth * vstat.winwidth) + ((int64_t)vstat.winheight * vstat.winheight);
 
 	/* Initialize video memory with black background, white foreground */
+	vstat.vmem->changed = true;
 	for (i = 0; i < vstat.cols*vstat.rows; ++i) {
 		if (i > 0)
 			vstat.vmem->vmem[i] = vstat.vmem->vmem[0];

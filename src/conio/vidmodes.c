@@ -358,6 +358,7 @@ static struct vstat_vmem *new_vmem(int cols, int rows, bool palette)
 	ret->width = cols;
 	ret->height = rows;
 	ret->count = cols * rows;
+	ret->changed = true;
 	ret->vmem = malloc(ret->count * sizeof(ret->vmem[0]));
 	if (ret->vmem == NULL) {
 		free(ret);

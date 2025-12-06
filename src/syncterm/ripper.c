@@ -10333,6 +10333,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 
                 // Now, make the vmem array large enough for the new bits...
                 // TODO: Handle failures!
+                vstat.vmem->changed = true;
 		nvmem = realloc(vstat.vmem->vmem, vstat.cols * vstat.rows * sizeof(vstat.vmem->vmem[0]));
 
                 // And use it.
