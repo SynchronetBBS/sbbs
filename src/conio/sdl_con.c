@@ -547,10 +547,10 @@ int sdl_getch(void)
 	/* If we have missed mouse keys, tack them on to the end of the buffer now */
 	if(sdl_pending_mousekeys) {
 		if(sdl_pending_mousekeys & 1)	/* Odd number... second char */
-	       	sdl_keybuf[sdl_keynext++]=CIO_KEY_MOUSE >> 8;
+			sdl_keybuf[sdl_keynext++]=CIO_KEY_MOUSE >> 8;
 		else							/* Even number... first char */
-	        sdl_keybuf[sdl_keynext++]=CIO_KEY_MOUSE & 0xff;
-        sem_post(&sdl_key_pending);
+			sdl_keybuf[sdl_keynext++]=CIO_KEY_MOUSE & 0xff;
+		sem_post(&sdl_key_pending);
 		sdl_pending_mousekeys--;
 	}
 	assert_pthread_mutex_unlock(&sdl_keylock);

@@ -93,6 +93,7 @@ CIOLIBEXPORT int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy)
 CIOLIBEXPORT char * ciolib_cgets(char *str);
 CIOLIBEXPORT int ciolib_cscanf (char *format , ...);
 CIOLIBEXPORT int ciolib_kbhit(void);
+CIOLIBEXPORT int ciolib_kbwait(int);
 CIOLIBEXPORT int ciolib_getch(void);
 CIOLIBEXPORT int ciolib_getche(void);
 CIOLIBEXPORT int ciolib_ungetch(int ch);
@@ -292,6 +293,7 @@ static int try_x_init(int mode)
 		cio_api.setvideoflags=bitmap_setvideoflags;
 
 		cio_api.kbhit=x_kbhit;
+		cio_api.kbwait=x_kbwait;
 		cio_api.getch=x_getch;
 		cio_api.textmode=x_textmode;
 		cio_api.setname=x_setname;
@@ -601,11 +603,30 @@ CIOLIBEXPORT int initciolib(int mode)
 	return(0);
 }
 
+/*
+ * Returns non-zero if a key is hit, attempts to wait for ms milliseconds
+ */
+CIOLIBEXPORT int ciolib_kbwait(int ms)
+{
+	CIOLIB_INIT();
+	if(ungotch)
+		return(1);
+	if (ciolib_kbhit())
+		return(1);
+	if (cio_api.kbwait)
+		return cio_api.kbwait(ms);
+	for (int i = 0; i < ms; i++) {
+		if (ciolib_kbhit())
+			return(1);
+		ciolib_delay(1);
+	}
+	return 0;
+}
+
 /* **MUST** be implemented */
 /*
  * Returns non-zero if a key is hit
  */
-// TODO: A version that takes a timeout and blocks (ie: kbwait()?)
 CIOLIBEXPORT int ciolib_kbhit(void)
 {
 	CIOLIB_INIT();

@@ -55,6 +55,7 @@ int x_puttext(int sx, int sy, int ex, int ey, void *fill);
 int x_gettext(int sx, int sy, int ex, int ey, void *fill);
 void x_textattr(int attr);
 int x_kbhit(void);
+int x_kbwait(int ms);
 void x_delay(long msec);
 int x_wherey(void);
 int x_wherex(void);

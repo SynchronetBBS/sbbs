@@ -354,6 +354,7 @@ typedef struct {
 	int		(*vmem_gettext)		(int,int,int,int,struct vmem_cell *);
 	void	(*textattr)		(int);
 	int		(*kbhit)		(void);
+	int		(*kbwait)		(int);
 	void	(*delay)		(long);
 	int		(*wherex)		(void);
 	int		(*wherey)		(void);
@@ -455,6 +456,7 @@ CIOLIBEXPORT int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy)
 CIOLIBEXPORT char * ciolib_cgets(char *str);
 CIOLIBEXPORT int ciolib_cscanf (char *format , ...);
 CIOLIBEXPORT int ciolib_kbhit(void);
+CIOLIBEXPORT int ciolib_kbwait(int);
 CIOLIBEXPORT int ciolib_getch(void);
 CIOLIBEXPORT int ciolib_getche(void);
 CIOLIBEXPORT int ciolib_ungetch(int ch);
@@ -544,6 +546,7 @@ CIOLIBEXPORT void ansi_ciolib_setdoorway(int enable);
 	#define movetext(a,b,c,d,e,f)	ciolib_movetext(a,b,c,d,e,f)
 	#define cgets(a)				ciolib_cgets(a)
 	#define kbhit()					ciolib_kbhit()
+	#define kbwait(a)				ciolib_kbwait(a)
 	#define getch()					ciolib_getch()
 	#define getche()				ciolib_getche()
 	#define ungetch(a)				ciolib_ungetch(a)

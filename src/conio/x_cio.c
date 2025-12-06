@@ -48,6 +48,19 @@
 pthread_mutex_t scalinglock;
 double newscaling;
 
+int x_kbwait(int ms)
+{
+	fd_set	rfd;
+	struct timeval tv = {
+		.tv_sec = ms / 1000,
+		.tv_usec = (ms % 1000) * 1000
+	};
+
+	FD_ZERO(&rfd);
+	FD_SET(key_pipe[0], &rfd);
+	return(select(key_pipe[0]+1, &rfd, NULL, NULL, &tv)==1);
+}
+
 int x_kbhit(void)
 {
 	fd_set	rfd;

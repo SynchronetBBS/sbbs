@@ -176,21 +176,15 @@ void uifc_mouse_disable(void)
 	hidemouse();
 }
 
-int kbwait(void) {
-	int timeout = 0;
-	while (timeout++ < 50) {
-		if (kbhit())
-			return TRUE;
-		mswait(1);
-	}
-	return FALSE;
+int uifc_kbwait(void) {
+	return kbwait(100);
 }
 
 static int
 dyn_kbwait(uifc_winmode_t mode) {
 	if (mode & WIN_DYN)
 		return kbhit();
-	return kbwait();
+	return uifc_kbwait();
 }
 
 int inkey(void)
@@ -2214,7 +2208,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		}
 		strcpy(str, outstr);
 #if 0
-		while (kbwait() == 0) {
+		while (uifc_kbwait() == 0) {
 			mswait(1);
 		}
 #endif

@@ -1585,13 +1585,9 @@ get_default_palette_value(int palette, size_t entry)
 }
 
 static void
-kbwait(void)
+bl_kbwait(void)
 {
-	for (int tc = 0; tc < 50; tc++) {
-		if (kbhit())
-			break;
-		SLEEP(1);
-	}
+	kbwait(50);
 }
 
 #define COLORBOX_WIDTH  15
@@ -3891,7 +3887,7 @@ show_bbslist(char *current, int connected)
 				if (uifc.list_height > (uifc.scrn_len - 4))
 					uifc.list_height = uifc.scrn_len - 4;
 				if (!nowait) {
-					kbwait();
+					bl_kbwait();
 					nowait = true;
 				}
 				val = uifc.list((listcount < MAX_OPTS ? WIN_XTR : 0)
@@ -4411,7 +4407,7 @@ show_bbslist(char *current, int connected)
 					settitle(syncterm_version);
 				oldopt = -2;
 				if (!nowait) {
-					kbwait();
+					bl_kbwait();
 					nowait = true;
 				}
 				val = settings_list(&sopt, &sbar, connected ? connected_settings_menu : settings_menu, WIN_UNGETMOUSE | WIN_ESC);
