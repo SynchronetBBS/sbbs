@@ -1087,10 +1087,11 @@ gdi_kbwait(int ms)
 	if (GetLastError() == ERROR_IO_PENDING) {
 		if (GetOverlappedResultEx(rch, &ohgod, &got, ms, FALSE))
 			return kbwaitGot(ch, got);
-		if (GetLastError() == ERROR_IO_INCOMPLETE) {
+		if (GetLastError() == WAIT_TIMEOUT) {
 			if (CancelIo(rch)) {
 				if (GetOverlappedResult(rch, &ohgod, &got, TRUE))
 					return kbwaitGot(ch, got);
+				return 0;
 			}
 		}
 	}
@@ -1278,11 +1279,26 @@ gdi_get_window_info(int *width, int *height, int *xpos, int *ypos)
 	return(1);
 }
 
+static volatile long PipeSerialNumber;
+BOOL CreateOverlappedPipe(LPHANDLE rp, LPHANDLE wp)
+{
+	UCHAR PipeNameBuffer[ MAX_PATH ];
+	sprintf( PipeNameBuffer,
+           "\\\\.\\Pipe\\RemoteExeAnon.%08x.%08x",
+           GetCurrentProcessId(),
+           InterlockedIncrement(&PipeSerialNumber)
+         );
+	*rp = CreateNamedPipeA(PipeNameBuffer, PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED, PIPE_TYPE_BYTE | PIPE_WAIT,
+	    1, 0, 0, 120 * 1000, NULL);
+	*wp = CreateFileA(PipeNameBuffer, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	return TRUE;
+}
+
 static dll_handle shcoreDLL;
 int
 gdi_init(int mode)
 {
-	CreatePipe(&rch, &wch, NULL, 0);
+	CreateOverlappedPipe(&rch, &wch);
 
 	// code that tells windows we're High DPI aware so it doesn't scale our windows
 	// taken from Yamagi Quake II
