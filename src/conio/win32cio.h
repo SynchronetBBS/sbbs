@@ -58,6 +58,7 @@ void	win32_textmode(int newmode);
 void	win32_setcursortype(int);
 int	win32_getch(void);
 int	win32_kbhit(void);
+int     gdi_kbwait(int ms);
 void	win32_settitle(const char *title);
 int	win32_initciolib(int inmode);
 void win32_copytext(const char *text, size_t buflen);

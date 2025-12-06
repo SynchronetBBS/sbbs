@@ -1067,6 +1067,38 @@ gdi_kbhit(void)
 	return (avail > 0);
 }
 
+static int
+kbwaitGot(uint8_t ch, DWORD got)
+{
+	if (got)
+		ciolib_ungetch(ch);
+	return got;
+}
+
+int
+gdi_kbwait(int ms)
+{
+	uint8_t ch;
+	DWORD got = 0;
+	OVERLAPPED ohgod = {0};
+
+	if (ReadFile(rch, &ch, 1, &got, &ohgod))
+		return kbwaitGot(ch, got);
+	if (GetLastError() == ERROR_IO_PENDING) {
+		if (GetOverlappedResultEx(rch, &ohgod, &got, ms, FALSE))
+			return kbwaitGot(ch, got);
+		if (GetLastError() == ERROR_IO_INCOMPLETE) {
+			if (CancelIo(rch)) {
+				if (GetOverlappedResult(rch, &ohgod, &got, TRUE))
+					return kbwaitGot(ch, got);
+			}
+		}
+	}
+	// If we failed. do a quick sleep to prevent 100% CPU
+	Sleep(1);
+	return 0;
+}
+
 int
 gdi_getch(void)
 {

@@ -178,6 +178,7 @@ static int try_gdi_init(int mode)
 		cio_api.setvideoflags=bitmap_setvideoflags;
 
 		cio_api.kbhit=gdi_kbhit;
+		cio_api.kbwait=gdi_kbwait;
 		cio_api.getch=gdi_getch;
 		cio_api.textmode=gdi_textmode;
 		cio_api.seticon=gdi_seticon;
