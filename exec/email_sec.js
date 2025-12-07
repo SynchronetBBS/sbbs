@@ -22,26 +22,25 @@ while(bbs.online) {
 	console.print("\r\n\1_\1y\1hE-mail: \1n");
 	var wm_mode = WM_NONE;
 	var cmdkeys = "LSARUFNKQ?\r";
-	switch(console.getkeys(cmdkeys,K_UPPER)) {
+	var key = console.getkeys(cmdkeys,K_UPPER);
+	switch(key) {
 		case 'L':	// List/read your mail
 			bbs.exec("?msglist.js mail -preview");
 			break;
 		case 'R':	// Read your mail
+		case 'U':	// Read your un-read mail
+		case 'K':	// Read/Kill sent mail
 			const MAIL_LM_MODE = LM_REVERSE;
 			var lm_mode = user.mail_settings & MAIL_LM_MODE;
-			var new_lm_mode = bbs.read_mail(MAIL_YOUR, user.number, lm_mode) & MAIL_LM_MODE;
-			if(new_lm_mode != lm_mode) {
+			if(key == 'U')
+				lm_mode |= LM_UNREAD;
+			var new_lm_mode = bbs.read_mail(key == 'K' ? MAIL_SENT : MAIL_YOUR, user.number, lm_mode) & MAIL_LM_MODE;
+			if(new_lm_mode != (lm_mode & MAIL_LM_MODE)) {
 				if(new_lm_mode & MAIL_LM_MODE)
 					user.mail_settings |= MAIL_LM_MODE;
 				else
 					user.mail_settings &= ~MAIL_LM_MODE;
 			}
-			break;
-		case 'U':	// Read your un-read mail
-			bbs.read_mail(MAIL_YOUR, user.number, LM_UNREAD|LM_REVERSE);
-			break;
-		case 'K':	// Read/Kill sent mail
-			bbs.read_mail(MAIL_SENT, user.number, LM_REVERSE);
 			break;
 		case 'F':	// Send Feedback
 			bbs.email(/* user # */1, bbs.text(text.ReFeedback));
