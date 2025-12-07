@@ -1125,3 +1125,4 @@
 "\1n\r\n\1b\1hQWK Control [\1c%s\1b]: \1g%s\r\n"		   936 QWKControlCommand
 "Unrecognized Control Command!\1n\r\n"					   937 QWKBadControlCommand
 "You are limited to @MAXDL@ file downloads per day.\r\n"   938 NoMoreDownloads
+"Read your unread mail now"                                939 ReadYourUnreadMailNowQ

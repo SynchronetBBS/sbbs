@@ -581,14 +581,16 @@ bool sbbs_t::logon()
 	if (online == ON_REMOTE)
 		rioctl(IOSM | ABORT);   /* Turn abort ability on */
 	if (text[ReadYourMailNowQ][0] && mailw) {
-		if ((mailw == mailr && !noyes(text[ReadYourMailNowQ]))
-		    || (mailw != mailr && yesno(text[ReadYourMailNowQ]))) {
-			uint32_t user_mail = useron.mail & ~MAIL_LM_MODE;
-			int      result = readmail(useron.number, MAIL_YOUR, useron.mail & MAIL_LM_MODE);
-			user_mail |= result & MAIL_LM_MODE;
-			if (user_mail != useron.mail)
-				putusermail(&cfg, useron.number, useron.mail = user_mail);
-		}
+		if (mailw == mailr) {
+			if (!noyes(text[ReadYourMailNowQ])) {
+				uint32_t user_mail = useron.mail & ~MAIL_LM_MODE;
+				int      result = readmail(useron.number, MAIL_YOUR, useron.mail & MAIL_LM_MODE);
+				user_mail |= result & MAIL_LM_MODE;
+				if (user_mail != useron.mail)
+					putusermail(&cfg, useron.number, useron.mail = user_mail);
+			}
+		} else if (yesno(text[ReadYourUnreadMailNowQ]))
+			readmail(useron.number, MAIL_YOUR, LM_UNREAD | LM_REVERSE);
 	}
 	if (usrgrps && useron.misc & ASK_NSCAN && text[NScanAllGrpsQ][0] && yesno(text[NScanAllGrpsQ]))
 		scanallsubs(SCAN_NEW);

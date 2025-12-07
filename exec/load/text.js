@@ -945,7 +945,8 @@ var QWKTagLineFmt=935;
 var QWKControlCommand=936;
 var QWKBadControlCommand=937;
 var NoMoreDownloads=938;
+var ReadYourUnreadMailNowQ=939;
 
-var TOTAL_TEXT=938;
+var TOTAL_TEXT=939;
 
 this;

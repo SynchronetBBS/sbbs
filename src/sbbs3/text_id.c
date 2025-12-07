@@ -939,4 +939,5 @@ const char* const text_id[]={
 	,"QWKControlCommand"
 	,"QWKBadControlCommand"
 	,"NoMoreDownloads"
+	,"ReadYourUnreadMailNowQ"
 };
