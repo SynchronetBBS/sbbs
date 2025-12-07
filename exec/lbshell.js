@@ -2272,13 +2272,13 @@ function show_emailmenu()
 				break;
 			case 'R':
 				menu_opt(function() {
-					bbs.read_mail(MAIL_YOUR);
+					bbs.read_mail(MAIL_YOUR, false);
 					console.pause();
 				});
 				break;
 			case 'M':
 				menu_opt(function() {
-					bbs.read_mail(MAIL_SENT);
+					bbs.read_mail(MAIL_SENT, false);
 					console.pause();
 				});
 				break;
