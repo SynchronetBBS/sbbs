@@ -1587,7 +1587,7 @@ get_default_palette_value(int palette, size_t entry)
 static void
 bl_kbwait(void)
 {
-	kbwait(50);
+	kbwait(1000);
 }
 
 #define COLORBOX_WIDTH  15
