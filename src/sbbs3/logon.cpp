@@ -587,7 +587,7 @@ bool sbbs_t::logon()
 			if (!noyes(text[ReadYourMailNowQ]))
 				result = readmail(useron.number, MAIL_YOUR, useron.mail & MAIL_LM_MODE);
 		} else if (yesno(text[ReadYourUnreadMailNowQ]))
-			result = readmail(useron.number, MAIL_YOUR, (useron.mail & MAIL_LM_MODE) | LM_UNREAD);
+			result = readmail(useron.number, MAIL_YOUR, (useron.mail & MAIL_LM_MODE) | LM_UNREAD, /* listmsgs: */false);
 		user_mail |= result & MAIL_LM_MODE;
 		if (user_mail != useron.mail)
 			putusermail(&cfg, useron.number, useron.mail = user_mail);

@@ -161,7 +161,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			readmail(useron.number, MAIL_SENT);
 			return 0;
 		case CS_MAIL_READ_ALL:
-			readmail(useron.number, MAIL_ALL);
+			readmail(useron.number, MAIL_ALL, /* list msgs: */false);
 			return 0;
 		case CS_MAIL_SEND:       /* Send E-mail */
 			if (strchr(csi->str, '@')) {

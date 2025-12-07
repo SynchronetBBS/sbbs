@@ -874,7 +874,7 @@ public:
 	void	download_msg_attachments(smb_t*, smbmsg_t*, bool del, bool use_default_prot = false);
 
 	/* readmail.cpp */
-	int		readmail(uint usernumber, int which, int lm_mode = 0);
+	int		readmail(uint usernumber, int which, int lm_mode = 0, bool listmsgs = true);
 	bool	readmail_inside = false;
 	int		searchmail(mail_t*, int start, int msgss, int which, const char *search, const char* order);
 

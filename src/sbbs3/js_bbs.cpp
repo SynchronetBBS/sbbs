@@ -2853,6 +2853,7 @@ js_readmail(JSContext *cx, uintN argc, jsval *arglist)
 	uint32     readwhich = MAIL_YOUR;
 	uint32     usernumber;
 	uint32     lm_mode = 0;
+	bool       listmsgs = true;
 	sbbs_t*    sbbs;
 	jsrefcount rc;
 
@@ -2860,21 +2861,29 @@ js_readmail(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	usernumber = sbbs->useron.number;
-	if (argc > 0 && JSVAL_IS_NUMBER(argv[0])) {
-		if (!JS_ValueToECMAUint32(cx, argv[0], &readwhich))
+	uintN argn = 0;
+	if (argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if (!JS_ValueToECMAUint32(cx, argv[argn], &readwhich))
 			return JS_FALSE;
+		++argn;
 	}
-	if (argc > 1 && JSVAL_IS_NUMBER(argv[1])) {
-		if (!JS_ValueToECMAUint32(cx, argv[1], &usernumber))
+	if (argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if (!JS_ValueToECMAUint32(cx, argv[argn], &usernumber))
 			return JS_FALSE;
+		++argn;
 	}
-	if (argc > 2 && JSVAL_IS_NUMBER(argv[2])) {
-		if (!JS_ValueToECMAUint32(cx, argv[2], &lm_mode))
+	if (argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if (!JS_ValueToECMAUint32(cx, argv[argn], &lm_mode))
 			return JS_FALSE;
+		++argn;
+	}
+	if (argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
+		listmsgs = JSVAL_TO_BOOLEAN(argv[argn]);
+		++argn;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	int result = sbbs->readmail(usernumber, readwhich, lm_mode);
+	int result = sbbs->readmail(usernumber, readwhich, lm_mode, listmsgs);
 	JS_RESUMEREQUEST(cx, rc);
 
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(result));
@@ -4837,7 +4846,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , JSDOCSTR("Display the logon list (optionally passing arguments to the logon list module).")
 	 , 310
 	},
-	{"read_mail",       js_readmail,        0,  JSTYPE_NUMBER,  JSDOCSTR("[<i>number</i> which=MAIL_YOUR] [,<i>number</i> user=<i>current</i>] [,<i>number</i> loadmail_mode=0]")
+	{"read_mail",       js_readmail,        0,  JSTYPE_NUMBER,  JSDOCSTR("[<i>number</i> which=MAIL_YOUR] [,<i>number</i> user=<i>current</i>] [,<i>number</i> loadmail_mode=0] [,<i>bool</i> listmsgs=true")
 	 , JSDOCSTR("Read private e-mail"
 		        "(see <tt>MAIL_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>which</i> values), returns user-modified loadmail_mode value.")
 	 , 310

@@ -69,7 +69,7 @@ static const char* msg_to(smbmsg_t* msg)
 /****************************************************************************/
 /* Reads mail waiting for usernumber.                                       */
 /****************************************************************************/
-int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
+int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 {
 	char     str[256], str2[256], done = 0, domsg = 1
 	, *p;
@@ -147,9 +147,11 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 	last = smb.status.last_msg;
 
 	const char* order = (lm_mode & LM_REVERSE) ? "newest" : "oldest";
-	if (smb.msgs > 1 && which != MAIL_ALL) {
+	if (smb.msgs > 1 && listmsgs) {
 		if (which == MAIL_SENT)
 			bprintf(text[MailSentLstHdr], order);
+		else if (which == MAIL_ALL)
+			bprintf(text[MailOnSystemLstHdr], order);
 		else
 			bprintf(text[MailWaitingLstHdr], order);
 
