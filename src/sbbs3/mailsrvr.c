@@ -1915,10 +1915,12 @@ static in_addr_t rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, 
 		return 0;
 
 	if (res->ai_family == AF_INET) {
-		char tmp[128];
-		result = ((struct sockaddr_in*)res->ai_addr)->sin_addr.s_addr;
-		lprintf(LOG_INFO, "%04d %-5s DNSBL Query: %s resolved to: %s"
-		    , sock, prot, name, inet_ntop(AF_INET, &((struct sockaddr_in*)res->ai_addr)->sin_addr, tmp, sizeof tmp));
+		char addr[128];
+		inet_ntop(AF_INET, &((struct sockaddr_in*)res->ai_addr)->sin_addr, addr, sizeof addr);
+		if (strncmp(addr, "127.0.0.", 8) == 0)
+			result = ((struct sockaddr_in*)res->ai_addr)->sin_addr.s_addr;
+		lprintf(result ? LOG_INFO : LOG_ERR, "%04d %-5s DNSBL Query: %s resolved to: %s"
+		    , sock, prot, name, addr);
 	}
 	freeaddrinfo(res);
 	return result;
