@@ -345,7 +345,7 @@ function str_cmds(str)
 
 		help["MAIL"] = "Read all mail currently in the mail base";
 		if(str=="MAIL") {
-			bbs.read_mail(MAIL_ALL);
+			bbs.read_mail(MAIL_ALL, /* list msgs: */false);
 			return;
 		}
 
