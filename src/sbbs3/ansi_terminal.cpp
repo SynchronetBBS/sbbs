@@ -346,7 +346,9 @@ bool ANSI_Terminal::getdims()
 	if (sbbs->sys_status & SS_USERON
 	    && (sbbs->useron.rows == TERM_ROWS_AUTO || sbbs->useron.cols == TERM_COLS_AUTO)
 	    && sbbs->online == ON_REMOTE) {                                 /* Remote */
+		unsigned saved_line_counter = sbbs->term->lncntr;
 		sbbs->term_out("\x1b[s\x1b[255B\x1b[255C\x1b[6n\x1b[u");
+		sbbs->term->lncntr = saved_line_counter;
 		return sbbs->inkey(K_ANSI_CPR, TIMEOUT_ANSI_GETXY * 1000) == 0;
 	}
 	return false;
