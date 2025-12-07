@@ -580,7 +580,7 @@ bool sbbs_t::logon()
 	sys_status &= ~SS_PAUSEON;    /* Turn off the pause override flag */
 	if (online == ON_REMOTE)
 		rioctl(IOSM | ABORT);   /* Turn abort ability on */
-	if (text[ReadYourMailNowQ][0] && mailw) {
+	if (mailw) {
 		if (mailw == mailr) {
 			if (!noyes(text[ReadYourMailNowQ])) {
 				uint32_t user_mail = useron.mail & ~MAIL_LM_MODE;
