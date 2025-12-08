@@ -76,6 +76,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 	char     tmp[512];
 	char     savepath[MAX_PATH + 1]{};
 	int      i;
+	int64_t  i64;
 	uint32_t u, v;
 	int      mismatches = 0, act;
 	int      unum;
@@ -501,13 +502,10 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 					break;
 				}
 
-				bprintf(text[StartWithN], (int)smb.curmsg + 1);
-				if ((i = getnum(smb.msgs)) > 0)
-					i--;
-				else if (i == -1)
+				i64 = get_start_msgnum(&smb, 1);
+				if (i64 < 0)
 					break;
-				else
-					i = smb.curmsg;
+				i = (int)i64;
 				if (which == MAIL_SENT)
 					bprintf(text[MailSentLstHdr], order);
 				else if (which == MAIL_ALL)
