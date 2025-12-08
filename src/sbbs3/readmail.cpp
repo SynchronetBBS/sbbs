@@ -155,7 +155,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 		else
 			bprintf(text[MailWaitingLstHdr], order);
 
-		for (smb.curmsg = 0; smb.curmsg < smb.msgs && !msgabort(); smb.curmsg++) {
+		for (smb.curmsg = 0; smb.curmsg < smb.msgs; smb.curmsg++) {
 			if (msg.total_hfields)
 				smb_freemsgmem(&msg);
 			msg.total_hfields = 0;
@@ -170,26 +170,14 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 			        , msg.subj);
 			smb_freemsgmem(&msg);
 			msg.total_hfields = 0;
+			if (msgabort())
+				break;
 		}
+		domsg = 0;
+		if (smb.curmsg >= smb.msgs)
+			smb.curmsg = 0;
 
 		sync();
-		if (sys_status & SS_ABORT) {
-			domsg = 0;
-			smb.curmsg = 0;
-		} else {
-			bprintf(text[StartWithN], 1L);
-			l = getnum(smb.msgs);
-			if (l > 0)
-				smb.curmsg = l - 1;
-			else if (l == -1) {
-				free(mail);
-				smb_close(&smb);
-				smb_stack(&smb, SMB_STACK_POP);
-				return lm_mode;
-			}
-			else
-				smb.curmsg = l;
-		}
 		clearabort();
 	}
 	else {
