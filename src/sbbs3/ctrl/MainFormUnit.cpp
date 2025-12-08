@@ -219,22 +219,28 @@ static void client_on(void* p, bool on, int sock, client_t* client, bool update)
     time_t  t;
     TListItem*  Item;
 	
-    WaitForSingleObject(ClientForm->ListMutex,INFINITE);
-
-    /* Search for existing entry for this socket */
-    for(i=0;i<ClientForm->ListView->Items->Count;i++) {
-        if(ClientForm->ListView->Items->Item[i]->Caption.ToIntDef(0)==sock)
-            break;
-    }
-    if(i>=ClientForm->ListView->Items->Count) {
-		if(update)	{ /* Can't update a non-existing entry */
-			ReleaseMutex(ClientForm->ListMutex);
-			return;
-		}
-        i=-1;
+    if(WaitForSingleObject(ClientForm->ListMutex,INFINITE) != WAIT_OBJECT_0) {
+		Application->MessageBox(AnsiString("ERROR " + IntToStr(GetLastError()) +
+            " acquiring ListMutex").c_str()
+            ,"ERROR"
+            ,MB_OK|MB_ICONEXCLAMATION);
+		return;
 	}
-
 	try {
+
+		/* Search for existing entry for this socket */
+		for(i=0;i<ClientForm->ListView->Items->Count;i++) {
+			if(ClientForm->ListView->Items->Item[i]->Caption.ToIntDef(0)==sock)
+				break;
+		}
+		if(i>=ClientForm->ListView->Items->Count) {
+			if(update)	{ /* Can't update a non-existing entry */
+				ReleaseMutex(ClientForm->ListMutex);
+				return;
+			}
+			i=-1;
+		}
+
 		if(!on) {
 			client_add(NULL, FALSE);
 			if(i>=0)
