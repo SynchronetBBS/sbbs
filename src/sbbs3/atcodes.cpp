@@ -362,9 +362,33 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return nulstr;
 	}
 
+	if (strcmp(sp, "RAINBOW") == 0) {
+		rainbow_index = 0;
+		rainbow_repeat = true;
+		return nulstr;
+	}
+
 	if (strncmp(sp, "RAINBOW:", 8) == 0) {
-		memset(rainbow, 0, sizeof rainbow);
-		parse_attr_str_list(rainbow, LEN_RAINBOW, sp + 8);
+		rainbow_repeat = true;
+		if (strcmp(sp + 8, "ON") == 0)
+			rainbow_index = 0;
+		else if (strcmp(sp + 8, "OFF") == 0)
+			rainbow_index = -1;
+		else if (strcmp(sp + 8, "RAND") == 0)
+			rainbow_index = sbbs_random(rainbow_len());
+		else if (strchr(sp + 8, ':') != NULL) {
+			memset(rainbow, 0, sizeof rainbow);
+			parse_attr_str_list(rainbow, LEN_RAINBOW, sp + 8);
+		}
+		else if (isdigit(*(sp + 8))) {
+			int idx = atoi(sp + 8);
+			if (idx < 0)
+				rainbow_index = -1;
+			else if (idx >= rainbow_len())
+				rainbow_index = 0;
+			else
+				rainbow_index = idx;
+		}
 		return nulstr;
 	}
 

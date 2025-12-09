@@ -624,6 +624,7 @@ public:
 	uint	rainbow[LEN_RAINBOW + 1]{};
 	bool	rainbow_repeat = false;
 	int		rainbow_index = -1;
+	int		rainbow_len() { int len = 0; for (len = 0; len < LEN_RAINBOW; ++len) if (rainbow[len] == 0) break; return len; }
 	bool	msghdr_tos = false;	/* Message header was displayed at Top of Screen */
 	int 	autoterm=0;		/* Auto-detected terminal type */
 	size_t	unicode_zerowidth=0;
