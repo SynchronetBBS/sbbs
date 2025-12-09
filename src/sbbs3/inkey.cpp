@@ -181,12 +181,8 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 		term->saveline();
 		attr(LIGHTGRAY);
 		term->newline();
-		bputs(text[RawMsgInputModeIsNow]);
-		if (console & CON_RAW_IN)
-			bputs(text[Off]);
-		else
-			bputs(text[On]);
 		console ^= CON_RAW_IN;
+		bputs(text[RawMsgInputModeIsNow]);
 		term->newline(2);
 		term->restoreline();
 		term->lncntr = 0;

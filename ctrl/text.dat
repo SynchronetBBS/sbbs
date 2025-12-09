@@ -175,7 +175,7 @@
 	", ~@All@, or ~@Quit@: "
 "\1n\1g[\1h%d\1n\1g] %-40.40s  \1h\1c%s\r\n"                  137 SubPtrLstFmt
 "\r\nSet new-scan pointer for\1\\ @Which@, ~@All@, or ~@Quit@: "  138 WhichOrAll
-"\r\nRaw Input/Output Mode is now: \1h"                 139 RawMsgInputModeIsNow
+"\r\nRaw Input/Output Mode is now: @RAWIO@\1h"          139 RawMsgInputModeIsNow
 "OFF"                                                   140 Unused140 /* was OFF */
 "ON"                                                    141 Unused141 /* was ON */
 "\r\n\1n\1mPaging \1h%s #%u\1n\1m for private chat\r\n" 142 PagingUser
@@ -688,7 +688,7 @@
 "\r\n\r\n\1nCtrl-Key Commands (from most anywhere)\r\n"\ 556 ControlKeyMenu
     "\r\n\1h^K  \1nThis Menu"\
 	"\r\n\1h^C  \1nAbort Current Process"\
-	"\r\n\1h^O  \1nToggle Pause Prompt Temporarily"\
+	"\r\n\1h^O  \1nToggle Pause Prompt Temporarily\1\\ (currently @PSTAT@)"\
 	"\r\n\1h^Z  \1nToggle Raw Input/Output Mode\1\\ (e.g. for ASCII-uploading msg text)"\
 	"\r\n\1h^U  \1nList Users Online"\
 	"\r\n\1h^P  \1nSend Instant-Messages and Telegrams"\
