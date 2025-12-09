@@ -364,12 +364,12 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if (strcmp(sp, "RAINBOW") == 0) {
 		rainbow_index = 0;
-		rainbow_repeat = true;
+		rainbow_wrap = true;
 		return nulstr;
 	}
 
 	if (strncmp(sp, "RAINBOW:", 8) == 0) {
-		rainbow_repeat = true;
+		rainbow_wrap = true;
 		if (strcmp(sp + 8, "ON") == 0)
 			rainbow_index = 0;
 		else if (strcmp(sp + 8, "OFF") == 0)

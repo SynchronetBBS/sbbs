@@ -622,7 +622,7 @@ public:
 	uint	mneattr_high = LIGHTGRAY;
 	uint	mneattr_cmd = LIGHTGRAY;
 	uint	rainbow[LEN_RAINBOW + 1]{};
-	bool	rainbow_repeat = false;
+	bool	rainbow_wrap = true;
 	int		rainbow_index = -1;
 	int		rainbow_len() { int len = 0; for (len = 0; len < LEN_RAINBOW; ++len) if (rainbow[len] == 0) break; return len; }
 	bool	msghdr_tos = false;	/* Message header was displayed at Top of Screen */

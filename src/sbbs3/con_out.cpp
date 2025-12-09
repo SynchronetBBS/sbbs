@@ -730,7 +730,7 @@ int sbbs_t::outchar(char ch)
 	if (rainbow_index >= 0) {
 		attr(rainbow[rainbow_index]);
 		if (rainbow[rainbow_index + 1] == 0) {
-			if (rainbow_repeat)
+			if (rainbow_wrap)
 				rainbow_index = 0;
 		} else
 			++rainbow_index;
@@ -1064,7 +1064,7 @@ void sbbs_t::ctrl_a(char x)
 		case 'X':   // Rainbow
 			if (rainbow[rainbow_index + 1] != 0)
 				++rainbow_index;
-			rainbow_repeat = (x == 'X');
+			rainbow_wrap = (x == 'X');
 			break;
 	}
 }
