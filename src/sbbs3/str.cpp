@@ -908,23 +908,23 @@ void sbbs_t::dirinfo(int dirnum)
 bool sbbs_t::trashcan(const char *insearchof, const char *name, struct trash* trash)
 {
 	char str[MAX_PATH + 1];
-	bool result;
 
-	result = ::trashcan2(&cfg, insearchof, NULL, name, trash);
-	if (result) {
-		snprintf(str, sizeof str, "%sbad%s.msg", cfg.text_dir, name);
-		if (cfg.mods_dir[0] != '\0') {
-			char modpath[MAX_PATH + 1];
-			snprintf(modpath, sizeof modpath, "%stext/bad%s.msg", cfg.mods_dir, name);
-			if (fexistcase(modpath))
-				SAFECOPY(str, modpath);
+	if (!::trashcan2(&cfg, insearchof, NULL, name, trash))
+		return false;
+	if (trash != nullptr && trash->quiet)
+		return true;
+	snprintf(str, sizeof str, "%sbad%s.msg", cfg.text_dir, name);
+	if (cfg.mods_dir[0] != '\0') {
+		char modpath[MAX_PATH + 1];
+		snprintf(modpath, sizeof modpath, "%stext/bad%s.msg", cfg.mods_dir, name);
+		if (fexistcase(modpath))
+			SAFECOPY(str, modpath);
 	}
-		if (fexistcase(str)) {
-			printfile(str, 0);
-			flush_output(500); // give time for tx buffer to clear before disconnect
-		}
+	if (fexistcase(str)) {
+		printfile(str, 0);
+		flush_output(500); // give time for tx buffer to clear before disconnect
 	}
-	return result;
+	return true;
 }
 
 char* sbbs_t::timestr(time_t intime)
@@ -1280,7 +1280,7 @@ void sbbs_t::time_bank(void)
 		if (s > 0) {
 			logline("  ", "Minute Bank Deposit");
 			useron.min = (uint32_t)adjustuserval(&cfg, &useron, USER_MIN, s);
-			useron.ttoday = adjustuserval(&cfg, &useron, USER_TTODAY, s);
+			useron.ttoday = (uint)adjustuserval(&cfg, &useron, USER_TTODAY, s);
 			snprintf(str, sizeof str, "Minute Adjustment: %u", s * cfg.cdt_min_value);
 			logline("*+", str);
 		}
