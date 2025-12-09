@@ -1092,9 +1092,9 @@ void sbbs_t::user_config(user_t* user)
 			case 'W':
 				if (!noyes(text[NewPasswordQ])) {
 					bputs(text[CurrentPassword]);
-					console |= CON_R_ECHOX;
+					console |= CON_PASSWORD;
 					getstr(str, LEN_PASS, K_UPPER);
-					console &= ~(CON_R_ECHOX | CON_L_ECHOX);
+					console &= ~CON_PASSWORD;
 					if (sys_status & SS_ABORT)
 						break;
 					if (stricmp(str, user->pass)) {
@@ -1112,11 +1112,11 @@ void sbbs_t::user_config(user_t* user)
 						break;
 					}
 					bputs(text[VerifyPassword]);
-					console |= CON_R_ECHOX;
+					console |= CON_PASSWORD;
 					getstr(tmp, LEN_PASS * 2, K_UPPER);
 					if (sys_status & SS_ABORT)
 						break;
-					console &= ~(CON_R_ECHOX | CON_L_ECHOX);
+					console &= ~CON_PASSWORD;
 					if (strcmp(str, tmp)) {
 						bputs(text[WrongPassword]);
 						pause();
