@@ -144,8 +144,6 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 			errormsg(WHERE, ERR_ALLOC, fpath, length + 1L);
 			return false;
 		}
-		uint rainbow_sav[LEN_RAINBOW + 1];
-		memcpy(rainbow_sav, rainbow, sizeof rainbow_sav);
 
 		ansiParser.reset();
 		while (!feof(stream) && !msgabort()) {
@@ -158,7 +156,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 		}
 		if (ansiParser.current_state() != ansiState_none)
 			lprintf(LOG_DEBUG, "Incomplete ANSI stripped from end");
-		memcpy(rainbow, rainbow_sav, sizeof rainbow);
+		memcpy(rainbow, cfg.rainbow, sizeof rainbow);
 		free(buf);
 		fclose(stream);
 		if (!(mode & P_SAVEATR)) {

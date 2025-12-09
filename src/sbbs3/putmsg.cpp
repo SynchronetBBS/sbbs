@@ -41,7 +41,6 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 	uint             org_line_delay = line_delay;
 	uint             orgcon = console;
 	uint             sys_status_sav = sys_status;
-	uint             rainbow_sav[LEN_RAINBOW + 1];
 	enum output_rate output_rate = term->cur_output_rate;
 
 	attr_sp = 0;  /* clear any saved attributes */
@@ -51,12 +50,11 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 	if (mode & P_NOPAUSE)
 		sys_status |= SS_PAUSEOFF;
 
-	memcpy(rainbow_sav, rainbow, sizeof rainbow_sav);
 	ansiParser.reset();
 	char ret = putmsgfrag(buf, mode, org_cols, obj);
 	if (ansiParser.current_state() != ansiState_none)
 		lprintf(LOG_DEBUG, "Incomplete ANSI stripped from end");
-	memcpy(rainbow, rainbow_sav, sizeof rainbow);
+	memcpy(rainbow, cfg.rainbow, sizeof rainbow);
 	if (!(mode & P_SAVEATR)) {
 		console = orgcon;
 		attr(tmpatr);
