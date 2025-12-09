@@ -984,6 +984,9 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return nulstr;
 	}
 
+	if (strcmp(sp, "PSTAT") == 0)
+		return pause_enabled() ? text[On] : text[Off];
+
 	if (strncmp(sp, "FILL:", 5) == 0) {
 		SAFECOPY(tmp, sp + 5);
 		int margin = centered ? term->column : 1;
