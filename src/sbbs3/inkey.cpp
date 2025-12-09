@@ -238,7 +238,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 
 	switch (ch) {
 		case CTRL_O:    /* Ctrl-O toggles pause temporarily */
-			console ^= CON_PAUSEOFF;
+			console ^= CON_PAUSE;
 			return 0;
 		case CTRL_P:    /* Ctrl-P Private node-node comm */
 			if (!(sys_status & SS_USERON))

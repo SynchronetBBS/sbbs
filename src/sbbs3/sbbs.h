@@ -909,7 +909,8 @@ public:
 	;
 	int		outchar(char ch);				/* Output a char - check echo and emu.  */
 	int		cls() { return outchar(FF); }	// Clear the screen
-	bool	check_pause();			/* Check lncntr to and pause() if appropriate */
+	bool	pause_enabled();		// Check if screen pausing is enabled
+	bool	check_pause();			// Check line counter (lncntr) and pause() if appropriate
 	int		outcp(enum unicode_codepoint, char cp437_fallback);
 	int		outcp(enum unicode_codepoint, const char* cp437_fallback = NULL);
 	void	wide(const char*);

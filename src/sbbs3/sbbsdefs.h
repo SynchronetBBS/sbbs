@@ -485,7 +485,7 @@ typedef enum {                       // Values for xtrn_t.event
 #define CON_L_ECHOX     0       // Unused
 #define CON_R_INPUT     (1 << 2)  // Accept input remotely
 #define CON_L_ECHO      0         // Echo locally
-#define CON_PAUSEOFF    (1 << 4)  // Temporary pause over-ride (same as UPAUSE)
+#define CON_PAUSE       (1 << 4)  // Temporary pause over-ride (same as UPAUSE)
 #define CON_L_INPUT     (1 << 5)  // Accept input locally
 #define CON_RAW_IN      (1 << 8)  // Raw input mode - no editing capabilities
 #define CON_RIGHTARROW  (1 << 9)  // Right arrow hit, exiting from getstr()

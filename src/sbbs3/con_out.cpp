@@ -742,7 +742,7 @@ int sbbs_t::outchar(char ch)
 		SLEEP(line_delay);
 
 	/*
-	 * When line counter overflows, pause on the next pause-eligable line
+	 * When line counter overflows, pause on the next pause-eligible line
 	 * and log a debug message
 	 */
 	if (term->lncntr >= term->rows - 1 && term->column == 0) {
@@ -757,7 +757,7 @@ int sbbs_t::outchar(char ch)
 	if (ch == FF && term->lncntr > 0 && term->row > 0) {
 		term->lncntr = 0;
 		term->newline();
-		if (!(sys_status & SS_PAUSEOFF)) {
+		if (!(sys_status & SS_PAUSEOFF)) { // Intentionally ignore UPAUSE here
 			pause();
 			while (term->lncntr && online && !(sys_status & SS_ABORT))
 				pause();
@@ -770,9 +770,13 @@ int sbbs_t::outchar(char ch)
 	return 0;
 }
 
+bool sbbs_t::pause_enabled() {
+	return (((useron.misc ^ (console & CON_PAUSE)) & UPAUSE) || (sys_status & SS_PAUSEON))
+		&& !(sys_status & (SS_PAUSEOFF | SS_ABORT));
+}
+
 bool sbbs_t::check_pause() {
-	if (term->lncntr == term->rows - 1 && ((useron.misc & (UPAUSE ^ (console & CON_PAUSEOFF))) || sys_status & SS_PAUSEON)
-	    && !(sys_status & (SS_PAUSEOFF | SS_ABORT))) {
+	if (term->lncntr == term->rows - 1 && pause_enabled()) {
 		term->lncntr = 0;
 		pause();
 		return true;
