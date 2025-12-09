@@ -1337,9 +1337,9 @@ bool sbbs_t::change_user(const char* username)
 	if (getuserdec32(&cfg, i, USER_LEVEL) > logon_ml) {
 		if (getuserstr(&cfg, i, USER_PASS, passwd, sizeof passwd) != NULL) {
 			bputs(text[ChUserPwPrompt]);
-			console |= CON_R_ECHOX;
+			console |= CON_PASSWORD;
 			getstr(str, sizeof str - 1, K_UPPER);
-			console &= ~CON_R_ECHOX;
+			console &= ~CON_PASSWORD;
 			if (strcmp(str, passwd) != 0)
 				return false;
 		}
