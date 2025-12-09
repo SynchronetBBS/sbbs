@@ -143,8 +143,8 @@ var CON_MOUSE_CLK_PASSTHRU	=(1<<24); // Pass-through unhandled mouse button-clic
 var CON_MOUSE_REL_PASSTHRU	=(1<<25); // Pass-through unhandled mouse button-release reports
 var CON_MOUSE_SCROLL		=(1<<26); // Enable mouse scroll-wheel to arrow key translations
 var CON_CR_CLREOL			=(1<<31); // Sending '\r', clears to end-of-line first
-var CON_R_ECHOX     CON_PASSWORD // Legacy
-var CON_L_ECHOX     0            // Legacy
+var CON_R_ECHOX     = CON_PASSWORD; // Legacy
+var CON_L_ECHOX     = 0;            // Legacy
 
 								// Terminal mouse reporting mode (console.mouse_mode)
 var MOUSE_MODE_OFF	= 0;		// No terminal mouse reporting enabled/expected
