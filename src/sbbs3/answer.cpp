@@ -178,9 +178,9 @@ bool sbbs_t::answer()
 							rioctl(IOFI);       /* flush input buffer */
 							bputs(text[InvalidLogon]);
 							bputs(text[PasswordPrompt]);
-							console |= CON_R_ECHOX;
+							console |= CON_PASSWORD;
 							getstr(tmp, LEN_PASS * 2, K_UPPER | K_LOWPRIO | K_TAB);
-							console &= ~(CON_R_ECHOX | CON_L_ECHOX);
+							console &= ~CON_PASSWORD;
 						}
 						else {
 							if (user_is_sysop(&useron) && (cfg.sys_misc & SM_SYSPASSLOGIN) && (cfg.sys_misc & SM_R_SYSOP)) {

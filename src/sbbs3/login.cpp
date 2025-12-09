@@ -59,10 +59,10 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 		if ((cfg.sys_login & LOGIN_PWPROMPT) && pw_prompt != NULL) {
 			SAFECOPY(useron.alias, username);
 			bputs(pw_prompt);
-			console |= CON_R_ECHOX;
+			console |= CON_PASSWORD;
 			getstr(str, LEN_PASS * 2, K_UPPER | K_LOWPRIO | K_TAB);
 			// We don't care about the password in this case, we already know it's a bad user-ID
-			console &= ~(CON_R_ECHOX | CON_L_ECHOX);
+			console &= ~CON_PASSWORD;
 			badlogin(useron.alias, str);
 			bputs(text[InvalidLogon]);
 			if (cfg.sys_misc & SM_ECHO_PW)
@@ -91,9 +91,9 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 		else {
 			if (pw_prompt != NULL)
 				bputs(pw_prompt);
-			console |= CON_R_ECHOX;
+			console |= CON_PASSWORD;
 			getstr(str, LEN_PASS * 2, K_UPPER | K_LOWPRIO | K_TAB);
-			console &= ~(CON_R_ECHOX | CON_L_ECHOX);
+			console &= ~CON_PASSWORD;
 		}
 		if (!online) {
 			useron.number = 0;

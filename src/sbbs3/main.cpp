@@ -2151,8 +2151,6 @@ void input_thread(void *arg)
 	lprintf(LOG_DEBUG, "Node %d input thread started", sbbs->cfg.node_num);
 #endif
 
-	sbbs->console |= CON_R_INPUT;
-
 	while (sbbs->online && sbbs->client_socket != INVALID_SOCKET
 	       && node_socket[sbbs->cfg.node_num - 1] != INVALID_SOCKET) {
 

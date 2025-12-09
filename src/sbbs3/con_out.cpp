@@ -735,7 +735,7 @@ int sbbs_t::outchar(char ch)
 		} else
 			++rainbow_index;
 	}
-	if ((console & CON_R_ECHOX) && (uchar)ch >= ' ')
+	if ((console & CON_PASSWORD) && (uchar)ch >= ' ')
 		ch = *text[PasswordChar];
 
 	if (ch == '\n' && line_delay)

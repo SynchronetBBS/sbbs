@@ -479,17 +479,12 @@ typedef enum {                       // Values for xtrn_t.event
 
 #define EDIT_TABSIZE 4      // Tab size for internal message/line editor
 
-// Console I/O Bits	(console)
-#define CON_R_ECHO      0         // Echo remotely - Unused
-#define CON_R_ECHOX     (1 << 1)  // Echo X's to remote user
-#define CON_L_ECHOX     0       // Unused
-#define CON_R_INPUT     (1 << 2)  // Accept input remotely
-#define CON_L_ECHO      0         // Echo locally
+// Terminal Console I/O Bits (console)
+#define CON_PASSWORD    (1 << 1)  // Password input mode, echo *'s to remote user
 #define CON_PAUSE       (1 << 4)  // Temporary pause over-ride (same as UPAUSE)
-#define CON_L_INPUT     (1 << 5)  // Accept input locally
 #define CON_RAW_IN      (1 << 8)  // Raw input mode - no editing capabilities
 #define CON_RIGHTARROW  (1 << 9)  // Right arrow hit, exiting from getstr()
-#define CON_ECHO_OFF    (1 << 10) // Remote & Local echo disabled for ML/MF
+#define CON_ECHO_OFF    (1 << 10) // Output disabled
 #define CON_UPARROW     (1 << 11) // Up arrow hit - move up one line
 #define CON_DOWNARROW   (1 << 12) // Down arrow hit, exiting from getstr()
 #define CON_NO_INACT    (1 << 13) // Console inactivity detection disabled

@@ -402,10 +402,10 @@ bool sbbs_t::newuser()
 		c = 0;
 		while (online && text[NewUserPasswordVerify][0]) {
 			bputs(text[NewUserPasswordVerify]);
-			console |= CON_R_ECHOX;
+			console |= CON_PASSWORD;
 			str[0] = 0;
 			getstr(str, LEN_PASS * 2, K_UPPER);
-			console &= ~(CON_R_ECHOX | CON_L_ECHOX);
+			console &= ~CON_PASSWORD;
 			if (!strcmp(str, useron.pass))
 				break;
 			if (cfg.sys_misc & SM_ECHO_PW)

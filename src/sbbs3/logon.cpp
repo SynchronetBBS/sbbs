@@ -309,9 +309,9 @@ bool sbbs_t::logon()
 						break;
 					bputs(text[NewUserPasswordVerify]);
 				}
-				console |= CON_R_ECHOX;
+				console |= CON_PASSWORD;
 				getstr(tmp, LEN_PASS * 2, K_UPPER);
-				console &= ~(CON_R_ECHOX | CON_L_ECHOX);
+				console &= ~CON_PASSWORD;
 				if (strcmp(str, tmp)) {
 					bputs(text[Wrong]); // Should be WrongPassword instead?
 					continue;
