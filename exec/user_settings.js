@@ -497,9 +497,9 @@ while(bbs.online && !js.terminated) {
 		case 'W':
 			if (console.yesno(bbs.text(bbs.text.NewPasswordQ))){
 				console.putmsg(bbs.text(bbs.text.CurrentPassword));
-				console.status |= CON_R_ECHOX;
+				console.status |= CON_PASSWORD;
 				var str = console.getstr(LEN_PASS * 2, K_UPPER);
-				console.status &= ~(CON_R_ECHOX|CON_L_ECHOX);
+				console.status &= ~CON_PASSWORD;
 				bbs.user_sync();
 				if (str !== thisuser.security.password) {
 					console.putmsg(bbs.text(bbs.text.WrongPassword));
@@ -514,9 +514,9 @@ while(bbs.online && !js.terminated) {
 					break;
 				}
 				console.putmsg(bbs.text(bbs.text.VerifyPassword));
-				console.status |= CON_R_ECHOX;
+				console.status |= CON_PASSWORD;
 				var pw = console.getstr(LEN_PASS, K_UPPER | K_LINE | K_TRIM);
-				console.status &= ~(CON_R_ECHOX|CON_L_ECHOX);
+				console.status &= ~CON_PASSWORD;
 				if (str !== pw) {
 					console.putmsg(bbs.text(bbs.text.WrongPassword));
 					break;
