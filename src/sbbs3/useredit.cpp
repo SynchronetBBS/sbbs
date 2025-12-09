@@ -125,6 +125,10 @@ void sbbs_t::useredit(int usernumber)
 		bprintf(text[UserUploads], byte_estimate_to_str(user.ulb, tmp, sizeof(tmp), 1, 1), user.uls);
 		if (user.leech)
 			SAFEPRINTF(str, text[UserLeech], user.leech);
+		else if (user.dtoday)
+			snprintf(str, sizeof str, text[UserDownloadsToday]
+				, byte_estimate_to_str(user.btoday, tmp, sizeof tmp, 1, 1)
+				, user.dtoday);
 		else
 			str[0] = 0;
 		bprintf(text[UserDownloads], byte_estimate_to_str(user.dlb, tmp, sizeof(tmp), 1, 1), user.dls, str);

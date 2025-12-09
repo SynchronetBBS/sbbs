@@ -1021,8 +1021,14 @@ void sbbs_t::user_info()
 	term->newline();
 	bprintf(text[UserUploads]
 	        , byte_estimate_to_str(useron.ulb, tmp, sizeof(tmp), 1, 1), useron.uls);
+	if (useron.dtoday)
+		snprintf(str, sizeof str, text[UserDownloadsToday]
+			, byte_estimate_to_str(useron.btoday, tmp, sizeof tmp, 1, 1)
+			, useron.dtoday);
+	else
+		str[0] = '\0';
 	bprintf(text[UserDownloads]
-	        , byte_estimate_to_str(useron.dlb, tmp, sizeof(tmp), 1, 1), useron.dls, nulstr);
+	        , byte_estimate_to_str(useron.dlb, tmp, sizeof(tmp), 1, 1), useron.dls, str);
 	bprintf(text[UserCredits], byte_estimate_to_str(useron.cdt, tmp, sizeof(tmp), 1, 1)
 	        , byte_estimate_to_str(useron.freecdt, tmp2, sizeof(tmp2), 1, 1)
 	        , byte_estimate_to_str(cfg.level_freecdtperday[useron.level], str, sizeof(str), 1, 1));

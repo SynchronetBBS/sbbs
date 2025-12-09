@@ -1126,3 +1126,4 @@
 "Unrecognized Control Command!\1n\r\n"					   937 QWKBadControlCommand
 "You are limited to @MAXDL@ file downloads per day.\r\n"   938 NoMoreDownloads
 "Read your unread mail now"                                939 ReadYourUnreadMailNowQ
+"\1n\1c(\1h%s\1n\1c bytes in \1h%u\1n\1c files today)"     940 UserDownloadsToday

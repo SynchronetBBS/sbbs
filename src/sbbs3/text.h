@@ -956,6 +956,7 @@ enum text {
 	,QWKBadControlCommand
 	,NoMoreDownloads
 	,ReadYourUnreadMailNowQ
+	,UserDownloadsToday
 
 	,TOTAL_TEXT
 };
