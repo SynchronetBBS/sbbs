@@ -113,14 +113,25 @@ function authorize_order(acme, order, webroots)
 			 */
 			waittime = 1000;
 			if (fulfilled) {
-				while (!acme.poll_authorization(order.authorizations[auth])) {
+				try {
+					while (!acme.poll_authorization(order.authorizations[auth])) {
+						if (waittime > 64000) {
+							throw("Authorization timeout");
+						}
+						mswait(waittime);
+						waittime *= 2;
+					}
+					completed++;
+				}
+				catch (e) {
+					if (e === 'Authorization timeout')
+						throw(e);
 					if (waittime > 64000) {
 						throw("Authorization timeout");
 					}
 					mswait(waittime);
 					waittime *= 2;
 				}
-				completed++;
 			}
 		}
 	}
