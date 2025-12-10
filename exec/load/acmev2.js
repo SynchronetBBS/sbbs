@@ -209,7 +209,7 @@ ACMEv2.prototype.poll_order = function(order)
 	var loc = order.Location;
 	if (loc === undefined)
 		throw new Error("No order location!");
-	log(LOG_DEBUG, "Polling oder.");
+	log(LOG_DEBUG, "Polling order.");
 	var ret = this.ua.Get(loc);
 	this.log_headers();
 	if (this.ua.response_code != 200) {
