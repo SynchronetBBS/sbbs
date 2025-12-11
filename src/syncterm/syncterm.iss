@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "SyncTERM"
-#define MyAppVersion "1.6"
+#define MyAppVersion "1.7"
 #define MyAppPublisher "SyncTERM"
 #define MyAppURL "http://www.syncterm.net/"
 #define MyAppExeName "syncterm.exe"
