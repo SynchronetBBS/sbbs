@@ -4084,7 +4084,7 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 
 			lastlen = 7;
 			net_exists = 0;
-			fprintf(stream, "\r\1PATH:");
+			const char* prefix = "\r\1PATH:";
 			addr = getsysfaddr(dest);
 			for (u = 0; u < paths.addrs; u++) {              /* Put back the original PATH */
 				if (paths.addr[u].net == 0)
@@ -4102,7 +4102,8 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 				snprintf(str, sizeof str, "%d", paths.addr[u].node);
 				SAFECAT(seenby, str);
 				if (lastlen + strlen(seenby) < 80) {
-					(void)fwrite(seenby, strlen(seenby), 1, stream);
+					fprintf(stream, "%s%s", prefix, seenby);
+					prefix = "";
 					lastlen += strlen(seenby);
 				}
 				else {
@@ -4126,13 +4127,15 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 				snprintf(str, sizeof str, "%d", sysaddr.node);
 				SAFECAT(seenby, str);
 				if (lastlen + strlen(seenby) < 80)
-					(void)fwrite(seenby, strlen(seenby), 1, stream);
+					fprintf(stream, "%s%s", prefix, seenby);
 				else {
 					fprintf(stream, "\r\1PATH:");
 					(void)fwrite(seenby, strlen(seenby), 1, stream);
 				}
+				prefix = "";
 			}
-			fputc('\r', stream);
+			if (*prefix == '\0')
+				fputc('\r', stream);
 		}
 	}
 
