@@ -271,8 +271,10 @@ void PETSCII_Terminal::backspace(unsigned int count)
 
 void PETSCII_Terminal::newline(unsigned count)
 {
-	sbbs->term_out('\r');
-	sbbs->check_pause();
+	for (unsigned i = 0; i < count; i++) {
+		sbbs->term_out('\r');
+		sbbs->check_pause();
+	}
 }
 
 void PETSCII_Terminal::clearscreen()
