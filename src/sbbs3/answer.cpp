@@ -579,6 +579,7 @@ bool sbbs_t::answer()
 		}
 		if (autoterm & PETSCII) {
 			SAFECOPY(terminal, "PETSCII");
+			term->lncntr = 0;
 			cls();
 			term->center(str);
 			term_out("\r\n");
