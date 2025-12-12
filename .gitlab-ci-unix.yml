@@ -55,6 +55,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
   variables:
     GIT_STRATEGY: fetch
@@ -82,6 +83,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
@@ -121,6 +123,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
@@ -159,6 +162,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
@@ -197,6 +201,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
@@ -232,6 +237,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
@@ -304,6 +310,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
@@ -373,6 +380,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
@@ -414,6 +422,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
@@ -438,6 +447,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
@@ -469,6 +479,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
@@ -509,6 +520,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - cd src/syncterm
     - mkdir build
     - cd build
@@ -532,6 +544,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
@@ -571,6 +584,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
@@ -616,6 +630,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
@@ -655,6 +670,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
@@ -701,6 +717,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - cd src/conio
     - touch depend
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
@@ -714,6 +731,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - cd 3rdp/build
     - touch depend
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] FIXED_FIXED_SEED=1 $BUILD_ARGS cryptlib
@@ -727,6 +745,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - cd src/encode
     - touch depend
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
@@ -740,6 +759,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - cd src/sbbs3
     - touch depend
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS gitinfo
@@ -753,6 +773,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - cd src/hash
     - touch depend
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
@@ -766,6 +787,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - cd src/odoors
     - touch depend
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
@@ -785,6 +807,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - cd src/sftp
     - touch depend
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
@@ -798,6 +821,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - cd src/smblib
     - touch depend
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
@@ -811,6 +835,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - cd 3rdp/build
     - touch depend
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS libmozjs
@@ -828,6 +853,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - cd src/uifc
@@ -847,6 +873,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - cd src/xpdev
@@ -870,6 +897,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
     - cd src/doors/clans-src
@@ -894,6 +922,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
@@ -923,6 +952,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
@@ -956,6 +986,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gamesdk.tgz"
@@ -994,6 +1025,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gamesdk.tgz"
@@ -1032,6 +1064,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gamesdk.tgz"
@@ -1070,6 +1103,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
@@ -1102,6 +1136,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
@@ -1140,6 +1175,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-test
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - rm -rf ci-test
     - mkdir ci-test
@@ -1166,6 +1202,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-test
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - rm -rf ci-test
     - mkdir ci-test
@@ -1194,6 +1231,8 @@ spec:
   extends:
     - .$[[ inputs.os ]]-test
   script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - rm -rf ci-test
     - mkdir ci-test
@@ -1225,13 +1264,10 @@ spec:
   extends:
     - .$[[ inputs.os ]]-cleanup
   script:
+    - touch ${CI_PIPELINE_ID}.ci
     - rm -rf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
-    - cd ../..
-    - pwd
-    - echo ${CI_PROJECT_NAMESPACE}
-    - cd ..
-    - pwd
-    - ls -ld */${CI_PROJECT_NAMESPACE}
+    - cd ../../..
+    - for dir in */${CI_PROJECT_NAMESPACE}; do if [ -f $dir/${CI_PIPELINE_ID}.ci ]; then rm -rf $dir/; fi; done
   variables:
     GIT_STRATEGY: empty
   dependencies: []
