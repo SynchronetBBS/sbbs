@@ -1232,7 +1232,6 @@ spec:
     - .$[[ inputs.os ]]-test
   script:
     - touch ${CI_PIPELINE_ID}.ci
-    - touch ${CI_PIPELINE_ID}.ci
     - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
     - rm -rf ci-test
     - mkdir ci-test
