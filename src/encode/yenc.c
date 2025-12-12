@@ -29,7 +29,7 @@
 #define YENC_ESCAPE_CHAR    '='
 #define YENC_ESCAPE_BIAS    64
 
-int ydecode(char *target, size_t tlen, const char *source, size_t slen)
+ssize_t ydecode(char *target, size_t tlen, const char *source, size_t slen)
 {
 	char   ch;
 	size_t rd = 0;
@@ -48,7 +48,7 @@ int ydecode(char *target, size_t tlen, const char *source, size_t slen)
 	return wr;
 }
 
-int yencode(char *target, size_t tlen, const char *source, size_t slen)
+ssize_t yencode(char *target, size_t tlen, const char *source, size_t slen)
 {
 	char   ch;
 	size_t rd = 0;

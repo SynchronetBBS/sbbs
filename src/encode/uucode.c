@@ -25,7 +25,7 @@
 #include <ctype.h>
 #include "uucode.h"
 
-int uudecode(char *target, size_t tlen, const char *source, size_t slen)
+ssize_t uudecode(char *target, size_t tlen, const char *source, size_t slen)
 {
 	int           i;
 	char          ch;
@@ -79,7 +79,7 @@ int uudecode(char *target, size_t tlen, const char *source, size_t slen)
 
 #define BIAS(b) if ((b) == 0) (b) = '`'; else (b) += ' ';
 
-int uuencode(char *target, size_t tlen, const char *source, size_t slen)
+ssize_t uuencode(char *target, size_t tlen, const char *source, size_t slen)
 {
 	size_t rd = 0;
 	size_t wr = 0;

@@ -27,7 +27,7 @@
 static const char * base64alphabet =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
-int b64_decode(char *target, size_t tlen, const char *source, size_t slen)
+ssize_t b64_decode(char *target, size_t tlen, const char *source, size_t slen)
 {
 	const char *inp;
 	char *      outp;
@@ -83,7 +83,7 @@ static int add_char(char *pos, char ch, int done, char *end)
 	return 0;
 }
 
-int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
+ssize_t b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
 	const char *inp;
 	char *      outp;
 	char *      outend;
