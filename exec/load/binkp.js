@@ -706,7 +706,7 @@ BinkP.prototype.session = function()
 			if (this.senteob)
 				cur_timeout = this.timeout;
 		}
-		if (this.sending === undefined || (this.sending.waitingForGet !== undefined && this.sending.waitingForGet))
+		if ((this.sending === undefined && this.tx_queue.length === 0) || (this.sending !== undefined && this.sending.waitingForGet !== undefined && this.sending.waitingForGet))
 			cur_timeout = this.timeout;
 		pkt = this.recvFrame(cur_timeout);
 		if (pkt !== undefined && pkt !== this.partialFrame && pkt !== null) {
