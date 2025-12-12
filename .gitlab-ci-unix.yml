@@ -1187,7 +1187,7 @@ spec:
     - cd ..
     - rm -rf ci-test
   variables:
-    GIT_STRATEGY: empty
+    GIT_STRATEGY: none
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
       artifacts: false
@@ -1214,7 +1214,7 @@ spec:
     - cd ..
     - rm -rf ci-test
   variables:
-    GIT_STRATEGY: empty
+    GIT_STRATEGY: none
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
       artifacts: false
@@ -1243,7 +1243,7 @@ spec:
     - cd ..
     - rm -rf ci-test
   variables:
-    GIT_STRATEGY: empty
+    GIT_STRATEGY: none
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]"
@@ -1268,6 +1268,6 @@ spec:
     - cd ../../..
     - for dir in */${CI_PROJECT_NAMESPACE}; do if [ -f $dir/${CI_PROJECT_NAME}/${CI_PIPELINE_ID}.ci ]; then rm -rf $dir/; fi; done
   variables:
-    GIT_STRATEGY: empty
+    GIT_STRATEGY: none
   dependencies: []
   when: always
