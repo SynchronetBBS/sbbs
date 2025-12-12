@@ -1151,7 +1151,7 @@ spec:
     - cd ..
     - rm -rf ci-test
   variables:
-    GIT_STRATEGY: none
+    GIT_STRATEGY: empty
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
       artifacts: false
@@ -1177,7 +1177,7 @@ spec:
     - cd ..
     - rm -rf ci-test
   variables:
-    GIT_STRATEGY: none
+    GIT_STRATEGY: empty
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
       artifacts: false
@@ -1205,7 +1205,7 @@ spec:
     - cd ..
     - rm -rf ci-test
   variables:
-    GIT_STRATEGY: none
+    GIT_STRATEGY: empty
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]"
@@ -1227,6 +1227,6 @@ spec:
   script:
     - rm -rf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
   variables:
-    GIT_STRATEGY: clone
+    GIT_STRATEGY: empty
   dependencies: []
   when: always
