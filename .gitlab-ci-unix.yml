@@ -1227,6 +1227,6 @@ spec:
   script:
     - rm -rf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
   variables:
-    GIT_STRATEGY: none
+    GIT_STRATEGY: clone
   dependencies: []
   when: always
