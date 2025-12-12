@@ -347,7 +347,7 @@ spec:
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS GIT=NO all
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
-    - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz" src/sbbs3/*.exe.release* src/sbbs3/*.obj.release*/*.o* src/sbbs3/*.lib.release/* src/sbbs3/*/*.exe.release/*
+    - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz" src/sbbs3/*.exe.release* src/sbbs3/*.obj.release*/*.o* src/sbbs3/*.lib.release/* src/sbbs3/*/*.exe.release/* src/sbbs3/suppressions.vg
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ctrl_exec${EXTRA_FILENAME}.tgz" ctrl exec
   variables:
     GIT_STRATEGY: fetch
@@ -1226,6 +1226,8 @@ spec:
     - .$[[ inputs.os ]]-cleanup
   script:
     - rm -rf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
+    - cd ../..
+    - ls -l */${CI_PROJECT_NAME}
   variables:
     GIT_STRATEGY: empty
   dependencies: []
