@@ -1228,10 +1228,10 @@ spec:
     - rm -rf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - pwd
-    - echo ${CI_PROJECT_NAME}
+    - echo ${CI_PROJECT_NAMESPACE}
     - cd ..
     - pwd
-    - ls -ld */${CI_PROJECT_NAME}
+    - ls -ld */${CI_PROJECT_NAMESPACE}
   variables:
     GIT_STRATEGY: empty
   dependencies: []
