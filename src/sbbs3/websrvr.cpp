@@ -692,7 +692,8 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, vo
 				GCES(status, session, "pushing data");
 				if (status == CRYPT_ERROR_TIMEOUT) {
 					tls_sent = 0;
-					if (!cryptStatusOK(status = cryptPopData(session->tls_sess, NULL, 0, &status))) {
+					char tmp; // hack to avoid warning about about unexpected NULL
+					if (!cryptStatusOK(status = cryptPopData(session->tls_sess, &tmp, 0, &status))) {
 						if (status != CRYPT_ERROR_TIMEOUT && status != CRYPT_ERROR_PARAM2)
 							GCES(status, session, "popping data after timeout");
 					}
