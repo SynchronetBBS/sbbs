@@ -1708,7 +1708,11 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 			continue;
 		}
 		service_t serv{};
+#if !__STDC_NO_ATOMICS__
 		serv.clients = new protected_uint32_t;
+#else
+		serv.clients = static_cast<protected_uint32_t *>(calloc(sizeof(protected_uint32_t), 1));
+#endif
 		SAFECOPY(serv.protocol, iniGetString(list, sec_list[i], "Protocol", sec_list[i], prot));
 		serv.set = NULL;
 		serv.interfaces = iniGetStringList(list, sec_list[i], "Interface", ",", default_interfaces);
