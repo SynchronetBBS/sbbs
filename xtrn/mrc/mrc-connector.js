@@ -73,7 +73,7 @@ function parse_message(line) {
         from_site: msg[1],
         from_room: msg[2],
         to_user: msg[3],
-        to_site: msg[4],
+        msg_ext: msg[4],
         to_room: msg[5],
         body: msg[6]
     };
@@ -84,7 +84,7 @@ function validate_message(msg) {
         typeof msg == 'object'
         && typeof msg.from_room == 'string'
         && typeof msg.to_user == 'string'
-        && typeof msg.to_site == 'string'
+        && typeof msg.msg_ext == 'string'
         && typeof msg.to_room == 'string'
         && typeof msg.body == 'string'
     );
@@ -142,6 +142,7 @@ function client_accept() {
         alias: msg.alias.replace(/\s/g, '_')
     };
     c.sendline(JSON.stringify({ error: null }));
+    client_send({ from_user: 'SERVER', to_user: clients[c.descriptor].username, to_room: "", body: 'PROTOCOLVERSION:' + PROTOCOL_VERSION });
 }
 
 // Forward a message to all applicable clients
@@ -191,10 +192,12 @@ function mrc_connect(host, port, ssl) {
     mrc_send_info(sock, 'SSH', system_info.ssh || system.inet_addr);
     mrc_send_info(sock, 'SYS', system_info.sysop || system.operator);
     mrc_send_info(sock, 'DSC', system_info.description || system.name);
+    mrc_send(sock, 'CLIENT', '', 'SERVER', "", '', 'IMALIVE:' + SYSTEM_NAME);
+    mrc_send(sock, 'CLIENT', '', 'SERVER', '', '', 'CAPABILITIES: MCI CTCP' + (ssl ? " SSL" : ""));
     return sock;
 }
 
-function mrc_send(sock, from_user, from_room, to_user, to_site, to_room, msg) {
+function mrc_send(sock, from_user, from_room, to_user, msg_ext, to_room, msg) {
     if (!sock.is_connected) throw new Error('Not connected.');
     const m = sanitize_message(msg);
     const line = [
@@ -202,7 +205,7 @@ function mrc_send(sock, from_user, from_room, to_user, to_site, to_room, msg) {
         FROM_SITE,
         sanitize_room(from_room),
         sanitize_name(to_user || ''),
-        sanitize_name(to_site || ''),
+        sanitize_name(msg_ext || ''),
         sanitize_room(to_room || ''),
         m
     ].join('~') + '~';
@@ -212,7 +215,7 @@ function mrc_send(sock, from_user, from_room, to_user, to_site, to_room, msg) {
 }
 
 function mrc_send_info(sock, field, str) {
-    mrc_send(sock, 'CLIENT', '', 'SERVER', 'ALL', '', 'INFO' + field + ':' + str);
+    mrc_send(sock, 'CLIENT', '', 'SERVER', '', '', 'INFO' + field + ':' + str);
 }
 
 function mrc_receive(sock) {
@@ -221,9 +224,8 @@ function mrc_receive(sock) {
         line = sock.recvline(MAX_LINE, settings.timeout);
         if (!line || line == '') break;
         latency_tracker.forEach(function(m) {
-            if (m.line===line.trim() || 
-                (m.line.indexOf("~STATS") >= 0 && line.indexOf("~STATS") >= 0 ) ) {
-                client_send({ from_user: "SERVER", to_user: 'CLIENT', body: 'LATENCY:' + (Date.now() - m.time) }); 
+            if (m.line===line.trim() || (m.line.indexOf("~STATS") >= 0 && line.indexOf("~STATS") >= 0 ) ) {
+                client_send({ from_user: "SERVER", to_user: 'CLIENT', to_room: "", body: 'LATENCY:' + (Date.now() - m.time) }); 
                 log(LOG_DEBUG, 'Latency: ' +  (Date.now() - m.time) );
                 latency_tracker = [];
             }
@@ -232,7 +234,7 @@ function mrc_receive(sock) {
         message = parse_message(line);
         if (!message) continue;
         if (message.from_user == 'SERVER' && message.body.toUpperCase() == 'PING') {
-            mrc_send(sock, 'CLIENT', '', 'SERVER', 'ALL', '', 'IMALIVE:' + SYSTEM_NAME);
+            mrc_send(sock, 'CLIENT', '', 'SERVER', "", '', 'IMALIVE:' + SYSTEM_NAME);
             return;
         }
         if (message.from_user == 'SERVER' && message.body.toUpperCase().substr(0,6) == 'STATS:') {                      
@@ -241,7 +243,7 @@ function mrc_receive(sock) {
             fMa.write(message.body.substr(message.body.indexOf(':')+1).trim());
             fMa.close();
         }
-        if (['', 'CLIENT', 'ALL', 'NOTME'].indexOf(message.to_user) > -1) {
+        if (['', 'CLIENT', "", 'NOTME'].indexOf(message.to_user) > -1) {
             // Forward to all clients
             client_send(message);
         } else {
@@ -276,7 +278,7 @@ function main() {
             if (!clients[e].socket.is_connected) {
                 mrc_send(mrc_sock, clients[e].username, "", "NOTME", "", "", "|07- |12" + clients[e].username + " |04has left chat|08.");                
                 mrc_send(mrc_sock, clients[e].username, '', 'SERVER', '', '', 'LOGOFF');
-                client_send({ from_user: clients[e].username, to_user: 'SERVER', body: 'LOGOFF' }); // Notify local clients
+                client_send({ from_user: clients[e].username, to_user: 'SERVER', body: 'LOGOFF' }); // Notify local clients // is this even needed, since the SERVER handles the notify?
                 delete clients[e];
             } else {
                 var msg;
@@ -289,7 +291,7 @@ function main() {
                         clients[e].username,
                         msg.from_room,
                         msg.to_user,
-                        msg.to_site,
+                        msg.msg_ext,
                         msg.to_room,
                         msg.body
                     );
@@ -302,7 +304,7 @@ function main() {
     }
 
     log(LOG_INFO, 'Disconnecting from MRC');
-    mrc_send(mrc_sock, 'CLIENT', '', 'SERVER', 'ALL', '', 'SHUTDOWN');
+    mrc_send(mrc_sock, 'CLIENT', '', 'SERVER', "", '', 'SHUTDOWN');
     const stime = time();
     while (mrc_sock.is_connected && time() - stime > settings.timeout) {
         yield();

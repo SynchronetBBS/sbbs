@@ -52,6 +52,9 @@ var paused_msg_buffer = [];
 var show_nicks = false;
 var chat_sounds = false;
 var stat_mode = 0; // 0 = Local Session stats (Chatters, Latency, & Mentions); 1 = Global MRC Stats
+var reconnect = false;
+var attempt_count = 0;
+const max_attempts = 3;
 
 var mentions = [];
 var mention_index = 0;
@@ -333,23 +336,14 @@ function manage_twits(cmd, twit, twitlist, frames) {
     }
 }
 
-function display_system_messages(frames) { // display local system messages (e.g.: user new email alerts, etc.)
-    if (file_size(NOTIF_FILE) > 0) {
-        var fnotif = new File(NOTIF_FILE);
-        if ( fnotif.open('r') ) {
-            const notif = fnotif.readAll();
-            fnotif.close();
-            fnotif = undefined;
-            display_server_message(frames, "\x01k\x01h*.:\x01y\x01h :: System Notification ::\x01n\x01w");
-            for (var notif_line in notif) {
-                display_server_message(frames, "\x01k\x01h*.: " + notif[notif_line]);
-            }
-            display_server_message(frames, "\x01k\x01h*.:\x01k\x01h__\x01n\x01w");
-        }
+function display_system_messages(frames, session) { // display local system messages (e.g.: user new email alerts, etc.)
+    if (file_size(NOTIF_FILE) > 0 ) {
+        display_server_message(frames, "\x01k\x01h*.:\x01y\x01h :: System Notification ::\x01n\x01w");
+        display_server_message(frames, "\x01k\x01h*.:\x01n " + system.get_telegram(user.number));
+        display_server_message(frames, "\x01k\x01h*.:\x01k\x01h__\x01n\x01w");
         if (chat_sounds) {
             console.beep();
         }
-        file_removecase(NOTIF_FILE);
     }
 }
 
@@ -384,7 +378,7 @@ function main() {
     var break_loop = false;
     const nick_colours = {};
 
-    const session = new MRC_Session(
+    var session = new MRC_Session(
         settings.root.server,
         settings.root.port,
         user.alias,
@@ -418,16 +412,21 @@ function main() {
     redraw_nicklist(frames, []);
 
     session.connect();
+
     session.on('banner', function (msg) {
         display_server_message(frames, msg);
     });
     session.on('disconnect', function () {
         break_loop = true;
     });
+    session.on('reconnect', function () {
+        attempt_count = 0;
+        reconnect = true;
+        break_loop = true;
+    });
     session.on('error', function (err) {
         display_message(frames, { from_user: 'ERROR', body: err });
     });
-
     session.on('local_help', function (help_topic) {
         display_external_text(frames, "help-" + (help_topic ? help_topic : "main"));
         if (help_topic == "theme") {
@@ -441,7 +440,7 @@ function main() {
         } else {
             if (session.twit_list.indexOf(msg.from_user.toLowerCase()) < 0) {
                 var mention = false;
-                if (msg.body.toUpperCase().indexOf(user.alias.toUpperCase()) >= 0 && msg.from_user !== user.alias) {
+                if (msg.body.toUpperCase().indexOf(user.alias.replace(/\s/g, '_').toUpperCase()) >= 0 && msg.from_user !== user.alias.replace(/\s/g, '_')) {
                     if (chat_sounds) {
                         console.beep();
                     }
@@ -451,7 +450,7 @@ function main() {
                 }
                 display_message(frames, msg, mention);
             } /*else {
-                log ( "filtered message from " + msg.from_user + ".");
+                log(LOG_DEBUG, "Filtered message from " + msg.from_user + ".");
             }*/
         }
     });
@@ -479,15 +478,21 @@ function main() {
         display_server_message(frames, pipeToCtrlA( msg ) );
     });
 
+    if (reconnect) {
+        reconnect = false;
+        display_server_message(frames, "\x01k\x01h*.:\x01y\x01h Reconnected successfully!");
+    }
+    
     if (settings.startup.splash) display_external_text(frames, "splash");
     if (settings.startup.motd) session.motd();
-    session.send_notme("|07- |11" + user.alias + " |03has arrived.");
-    mswait(20);
     session.send_command('TERMSIZE:' + console.screen_columns + 'x' + console.screen_rows);
     mswait(20);
     session.send_command('BBSMETA: SecLevel(' + user.security.level + ') SysOp(' + system.operator + ')');
     mswait(20);
     session.send_command('USERIP:' + (bbs.atcode("IP") == "127.0.0.1" ? client.ip_address : bbs.atcode("IP")) );
+    mswait(20);
+    session.send_notme("|07- |11" + user.alias.replace(/\s/g, '_') + " |03has arrived.");
+
     if (settings.startup.room) session.join(settings.startup.room);
 
     if (settings.startup.commands) {
@@ -513,10 +518,12 @@ function main() {
             frames.divider.gotoxy(frames.divider.width - 16, 1);
             frames.divider.putmsg(theme_2nd_color + "[" + theme_fg_color + ("000" + inputline.buffer.length).slice(-3) + theme_2nd_color + '/' + theme_fg_color + inputline.max_buffer + theme_2nd_color + "]");
 
-            if (inputline.buffer.search(/^\/(identify|register|roompass|update password|roomconfig password) ./i) == 0) {
+            // mask text after commands involving passwords
+            if ( (inputline.buffer.search(/^\/(identify|roompass|update password|roomconfig password) ./i) == 0 ) ||                  
+                 (inputline.buffer.search(/^\/register ./i) == 0 && (inputline.buffer.match(/ /g) || []).length < 2 ) ) { // don't mask the email portion; e.g. more than 2 spaces used after register command
                 inputline.frame.left();
-                inputline.frame.write("*"); // mask text after commands involving passwords
-            } 
+                inputline.frame.write("*"); 
+            }                
         }
         user_input = inputline.getkey();
         if (typeof user_input == 'string') {
@@ -549,14 +556,14 @@ function main() {
                     cmd = user_input.split(' ');
                     cmd[0] = cmd[0].substr(1).toLowerCase();
                     switch (cmd[0]) {
-                        case 'rainbow':
+                        /*case 'rainbow': // replaced by !rainbow MRC helper
                             line = user_input.replace(/^\/rainbow\s/, '').split('').reduce(function (a, c) {
                                 var cc = PIPE_COLOURS[Math.floor(Math.random() * PIPE_COLOURS.length)];
                                 a += format('|%02d%s', cc, c);
                                 return a;
                             }, '').substr(0, inputline.max_buffer).replace(/\\s\|\d*$/, '');
                             session.send_room_message(line);
-                            break;
+                            break;*/ 
                         case 'scroll':
                             input_state = 'scroll';
                             frames.divider.clear();
@@ -584,7 +591,7 @@ function main() {
                         case 'nick_colour':
                             if (cmd.length == 2) {
                                 if (PIPE_COLOURS.indexOf(parseInt(cmd[1])) >= 0) {
-                                    var re = new RegExp('(\\|\\d\\d)*' + user.alias, 'i');
+                                    var re = new RegExp('(\\|\\d\\d)*' + user.alias.replace(/\s/g, '_'), 'i');
                                     settings.aliases[user.alias] = settings.aliases[user.alias].replace(re, format('|%02d%s', cmd[1], user.alias));
                                     set_alias(settings.aliases[user.alias]);
                                     session.alias = settings.aliases[user.alias];
@@ -594,13 +601,13 @@ function main() {
                         case 'nick_suffix':
                             if (cmd.length == 2) {
                                 if (cmd[1].replace(/(\|\d\d)/g, '').length <= 8) {
-                                    var re = new RegExp(user.alias + '.*$', 'i');
+                                    var re = new RegExp(user.alias.replace(/\s/g, '_') + '.*$', 'i');
                                     settings.aliases[user.alias] = settings.aliases[user.alias].replace(re, user.alias + cmd[1]);
                                     set_alias(settings.aliases[user.alias]);
                                     session.alias = settings.aliases[user.alias];
                                 }
                             } else { // Clearing a nick suffix
-                                var re = new RegExp(user.alias + '.*$', 'i');
+                                var re = new RegExp(user.alias.replace(/\s/g, '_') + '.*$', 'i');
                                 settings.aliases[user.alias] = settings.aliases[user.alias].replace(re, user.alias);
                                 set_alias(settings.aliases[user.alias]);
                                 session.alias = settings.aliases[user.alias];
@@ -748,11 +755,14 @@ function main() {
             console.gotoxy(inputline.frame.__relations__.child[0].x, inputline.frame.y);
         }
 
-        display_system_messages(frames);
+        display_system_messages(frames, session);
 
         yield();
-    }
-    console.clear(autopause=false); // prevent an unintended auto-pause when quitting
+    }    
 }
 
-main();
+do {
+    main();
+    attempt_count = attempt_count + 1;
+} while (reconnect && attempt_count < max_attempts);
+console.clear(autopause=false); // prevent an unintended auto-pause when quitting
