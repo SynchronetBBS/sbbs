@@ -4524,7 +4524,7 @@ static int fastcgi_write_in(void *arg, char *buf, size_t bufsz)
 		head.len = htons((uint16_t)chunk_size);
 		if (sendsocket(cd->sock, (const char *)&head, sizeof(head)) != sizeof(head))
 			return -1;
-		if (sendsocket(cd->sock, buf + pos, chunk_size) != chunk_size)
+		if (sendsocket(cd->sock, buf + pos, chunk_size) != (ssize_t)chunk_size)
 			return -1;
 		pos += chunk_size;
 	}
