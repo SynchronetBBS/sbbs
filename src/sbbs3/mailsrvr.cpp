@@ -2201,11 +2201,11 @@ static char* mailcmdstr(char* instr, char* msgpath, char* newpath, char* logpath
 }
 #ifdef JAVASCRIPT
 
-typedef struct {
+struct private_t {
 	SOCKET sock;
 	const char* log_prefix;
 	const char* proc_name;
-} private_t;
+};
 
 static void
 js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)

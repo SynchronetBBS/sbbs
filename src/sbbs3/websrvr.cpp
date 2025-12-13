@@ -178,7 +178,7 @@ enum qop_option {
 	, QOP_UNKNOWN
 };
 
-typedef struct {
+struct authentication_request_t {
 	enum auth_type type;
 	char username[(LEN_ALIAS > LEN_NAME ? LEN_ALIAS : LEN_NAME) + 1];
 	char password[LEN_PASS + 1];
@@ -191,9 +191,9 @@ typedef struct {
 	char *nonce_count;
 	unsigned char digest[16];       /* MD5 digest */
 	bool stale;
-} authentication_request_t;
+};
 
-typedef struct  {
+struct http_request_t {
 	int method;
 	char virtual_path[MAX_PATH + 1];
 	char physical_path[MAX_PATH + 1];
@@ -251,9 +251,9 @@ typedef struct  {
 	char *realm;
 	char *digest_realm;
 	char *fastcgi_socket;
-} http_request_t;
+};
 
-typedef struct  {
+struct http_session_t {
 	SOCKET socket;
 	union xp_sockaddr addr;
 	socklen_t addr_len;
@@ -303,7 +303,7 @@ typedef struct  {
 	bool tls_pending;
 	bool peeked_valid;
 	char peeked;
-} http_session_t;
+};
 
 enum {
 	HTTP_0_9
