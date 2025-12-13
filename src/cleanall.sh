@@ -10,3 +10,4 @@ make -C $DIR/uifc clean $@
 make -C $DIR/xpdev clean $@
 make -C $DIR/encode clean $@
 make -C $DIR/hash clean $@
+make -C $DIR/sftp clean $@
