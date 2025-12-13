@@ -35,7 +35,7 @@
 #include "js_request.h"
 #include "jsdebug.h"
 
-scfg_t scfg;
+extern scfg_t scfg;
 
 void js_do_lock_input(JSContext *cx, JSBool lock)
 {
@@ -219,8 +219,8 @@ bool DLLCALL js_CreateCommonObjects(JSContext* js_cx
                                     , scfg_t *unused2
                                     , jsSyncMethodSpec* methods     /* global */
                                     , time_t uptime                 /* system */
-                                    , char* host_name               /* system */
-                                    , char* socklib_desc            /* system */
+                                    , const char* host_name         /* system */
+                                    , const char* socklib_desc      /* system */
                                     , js_callback_t* cb             /* js */
                                     , js_startup_t* js_startup      /* js */
                                     , client_t* client              /* client */
@@ -305,6 +305,6 @@ bool DLLCALL js_CreateCommonObjects(JSContext* js_cx
 #define PROG_NAME_LC    "jsdoor"
 #define JSDOOR
 
-#include "jsexec.c"
-#include "js_system.c"
+#include "jsexec.cpp"
+#include "js_system.cpp"
 #include "ver.cpp"
