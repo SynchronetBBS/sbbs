@@ -194,7 +194,7 @@ $(WEBSRVR): $(WEB_OBJS)
 # Services Link Rule
 $(SERVICES): $(SERVICE_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(SERVICE_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs
+	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) $(SERVICE_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs
 
 # Synchronet Console Build Rule
 $(SBBSCON): $(CON_OBJS) $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
