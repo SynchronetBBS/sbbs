@@ -1197,6 +1197,7 @@ void get_ini_values(str_list_t ini, const char* section, js_callback_t* cb)
 /*********************/
 /* Entry point (duh) */
 /*********************/
+extern char **environ;
 int main(int argc, char **argv)
 {
 #ifndef JSDOOR
