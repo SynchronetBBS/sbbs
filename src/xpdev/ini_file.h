@@ -150,10 +150,10 @@ DLLEXPORT uint 			iniReadBitField(FILE*, const char* section, const char* key
 #define		iniReadLogLevel(f,s,k,d) iniReadEnum(f,s,k,iniLogLevelStringList(),d)
 
 /* Free string list returned from iniRead*List functions */
-DLLEXPORT void* 		iniFreeStringList(str_list_t list);
+DLLEXPORT str_list_t 	iniFreeStringList(str_list_t list);
 
 /* Free named string list returned from iniReadNamedStringList */
-DLLEXPORT void* 		iniFreeNamedStringList(named_string_t** list);
+DLLEXPORT named_string_t** iniFreeNamedStringList(named_string_t** list);
 
 
 /* File I/O Functions */

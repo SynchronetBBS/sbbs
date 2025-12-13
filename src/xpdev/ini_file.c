@@ -1278,13 +1278,13 @@ str_list_t iniGetStringList(str_list_t list, const char* section, const char* ke
 	return splitList(value, sep);
 }
 
-void* iniFreeStringList(str_list_t list)
+str_list_t iniFreeStringList(str_list_t list)
 {
 	strListFree(&list);
 	return list;
 }
 
-void* iniFreeNamedStringList(named_string_t** list)
+named_string_t** iniFreeNamedStringList(named_string_t** list)
 {
 	ulong i;
 
