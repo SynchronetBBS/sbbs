@@ -1708,7 +1708,6 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 			continue;
 		}
 		service_t serv{};
-		serv.clients = new protected_uint32_t;
 		SAFECOPY(serv.protocol, iniGetString(list, sec_list[i], "Protocol", sec_list[i], prot));
 		serv.set = NULL;
 		serv.interfaces = iniGetStringList(list, sec_list[i], "Interface", ",", default_interfaces);
@@ -1774,6 +1773,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 		}
 		service = np;
 		service[*services] = serv;
+		service[*services].clients = new protected_uint32_t;
 		(*services)++;
 	}
 	free(default_interfaces);
@@ -1793,6 +1793,7 @@ static void cleanup(int code)
 
 	for (unsigned i = 0; i < services; i++) {
 		protected_uint32_destroy(*service[i].clients);
+		delete service[i].clients;
 		iniFreeStringList(service[i].interfaces);
 	}
 
