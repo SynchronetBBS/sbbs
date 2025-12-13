@@ -12,7 +12,7 @@ struct private_data {
 	char *name;
 };
 
-static JSClass     js_cryptkeyset_class;
+extern JSClass js_cryptkeyset_class;
 static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
 
 // Helpers
@@ -322,42 +322,14 @@ js_get_public_key(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_cryptkeyset_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
-	jsval                idval;
-	jsint                tiny;
-	struct private_data* p;
-
-	if ((p = (struct private_data *)JS_GetPrivate(cx, obj)) == NULL) {
-		return JS_TRUE;
-	}
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
-
-	switch (tiny) {
-	}
 	return JS_TRUE;
 }
 
 static JSBool
 js_cryptkeyset_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
-	jsval                idval;
-	jsint                tiny;
-	struct private_data* p;
-
-	if ((p = (struct private_data *)JS_GetPrivate(cx, obj)) == NULL) {
-		JS_ReportError(cx, getprivate_failure, WHERE);
-		return JS_FALSE;
-	}
-
-	JS_IdToValue(cx, id, &idval);
-	tiny = JSVAL_TO_INT(idval);
-
-	switch (tiny) {
-	}
 	return JS_TRUE;
 }
-
 
 #ifdef BUILD_JSDOCS
 static const char*        cryptkeyset_prop_desc[] = {
@@ -422,7 +394,7 @@ static JSBool js_cryptkeyset_enumerate(JSContext *cx, JSObject *obj)
 	return js_cryptkeyset_resolve(cx, obj, JSID_VOID);
 }
 
-static JSClass js_cryptkeyset_class = {
+JSClass js_cryptkeyset_class = {
 	"CryptKeyset"               /* name			*/
 	, JSCLASS_HAS_PRIVATE        /* flags		*/
 	, JS_PropertyStub            /* addProperty	*/
@@ -477,7 +449,7 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 	rc = JS_SUSPENDREQUEST(cx);
-	status = cryptKeysetOpen(&p->ks, CRYPT_UNUSED, CRYPT_KEYSET_FILE, p->name, opts);
+	status = cryptKeysetOpen(&p->ks, CRYPT_UNUSED, CRYPT_KEYSET_FILE, p->name, static_cast<CRYPT_KEYOPT_TYPE>(opts));
 	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		JS_ReportError(cx, "CryptLib error %d", status);

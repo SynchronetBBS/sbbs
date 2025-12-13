@@ -87,7 +87,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	v = msgQueuePeek(q, timeout);
+	v = static_cast<queued_value_t *>(msgQueuePeek(q, timeout));
 	JS_RESUMEREQUEST(cx, rc);
 	if (v == NULL)
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -120,7 +120,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 		ZERO_VAR(find_v);
 		JSVALUE_TO_STRBUF(cx, argv[0], find_v.name, sizeof(find_v.name), NULL);
 		rc = JS_SUSPENDREQUEST(cx);
-		v = msgQueueFind(q, &find_v, sizeof(find_v.name));
+		v = static_cast<queued_value_t *>(msgQueueFind(q, &find_v, sizeof(find_v.name)));
 		JS_RESUMEREQUEST(cx, rc);
 	} else {
 		if (argc && JSVAL_IS_NUMBER(argv[0])) {
@@ -128,7 +128,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 				return JS_FALSE;
 		}
 		rc = JS_SUSPENDREQUEST(cx);
-		v = msgQueueRead(q, timeout);
+		v = static_cast<queued_value_t *>(msgQueueRead(q, timeout));
 		JS_RESUMEREQUEST(cx, rc);
 	}
 
@@ -166,7 +166,7 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	v = msgQueuePeek(q, timeout);
+	v = static_cast<queued_value_t *>(msgQueuePeek(q, timeout));
 	JS_RESUMEREQUEST(cx, rc);
 	if (v != NULL) {
 		jsval rval;
@@ -182,7 +182,7 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name)
 	queued_value_t *v;
 	uint64 *        serialized;
 
-	if ((v = malloc(sizeof(queued_value_t))) == NULL)
+	if ((v = static_cast<queued_value_t *>(malloc(sizeof(queued_value_t)))) == NULL)
 		return NULL;
 	memset(v, 0, sizeof(queued_value_t));
 
@@ -433,7 +433,7 @@ js_queue_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	if (name != NULL) {
 		listLock(&named_queues);
 		for (n = named_queues.first; n != NULL; n = n->next)
-			if ((q = n->data) != NULL && !stricmp(q->name, name))
+			if ((q = static_cast<msg_queue_t *>(n->data)) != NULL && !stricmp(q->name, name))
 				break;
 		listUnlock(&named_queues);
 		if (n == NULL)
@@ -481,7 +481,7 @@ JSObject* js_CreateQueueClass(JSContext* cx, JSObject* parent)
 	return obj;
 }
 
-JSObject* js_CreateQueueObject(JSContext* cx, JSObject* parent, char *name, msg_queue_t* q)
+JSObject* js_CreateQueueObject(JSContext* cx, JSObject* parent, const char *name, msg_queue_t* q)
 {
 	JSObject* obj;
 

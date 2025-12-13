@@ -7,7 +7,7 @@
 #include "ssl.h"
 #include "base64.h"
 
-JSClass            js_cryptcon_class;
+extern JSClass     js_cryptcon_class;
 static const char* getprivate_failure = "line %d %s %s JS_GetPrivate failed";
 
 // Helpers
@@ -101,12 +101,12 @@ static int js_ecc_to_prop(unsigned char *data, size_t len, size_t *off, JSContex
 		sz = js_asn1_len(data, len, off);
 		if (data[*off] == 0 && data[(*off) + 1] == 4 && ((sz % 1) == 0)) {
 			half = (sz - 2) / 2;
-			x = malloc(half);
+			x = static_cast<char*>(malloc(half));
 			if (x == NULL)
 				return 0;
 			for (z = data + (*off) + 2, zcnt = half; *z == 0 && half; z++, zcnt--);
 			memcpy(x, z, zcnt);
-			x64 = malloc(zcnt * 4 / 3 + 3);
+			x64 = static_cast<char*>(malloc(zcnt * 4 / 3 + 3));
 			if (x64 == NULL) {
 				free(x);
 				return 0;
@@ -122,12 +122,12 @@ static int js_ecc_to_prop(unsigned char *data, size_t len, size_t *off, JSContex
 					*x = 0;
 			}
 
-			y = malloc(half);
+			y = static_cast<char*>(malloc(half));
 			if (y == NULL)
 				return 0;
 			for (z = data + (*off) + 2 + half, zcnt = half; *z == 0 && half; z++, zcnt--);
 			memcpy(y, z, zcnt);
-			y64 = malloc(zcnt * 4 / 3 + 3);
+			y64 = static_cast<char*>(malloc(zcnt * 4 / 3 + 3));
 			if (y64 == NULL) {
 				free(x64);
 				free(y);
@@ -207,7 +207,7 @@ static void js_simple_asn1(unsigned char *data, size_t len, JSContext *cx, JSObj
 						return;
 					if (js_asn1_type(data, len, &off) == 2) {
 						sz = js_asn1_len(data, len, &off);
-						n = malloc(sz);
+						n = static_cast<char*>(malloc(sz));
 						if (n == NULL)
 							return;
 						while (data[off] == 0) {
@@ -215,7 +215,7 @@ static void js_simple_asn1(unsigned char *data, size_t len, JSContext *cx, JSObj
 							sz--;
 						}
 						memcpy(n, data + off, sz);
-						n64 = malloc(sz * 4 / 3 + 3);
+						n64 = static_cast<char*>(malloc(sz * 4 / 3 + 3));
 						if (n64 == NULL) {
 							free(n);
 							return;
@@ -236,7 +236,7 @@ static void js_simple_asn1(unsigned char *data, size_t len, JSContext *cx, JSObj
 							return;
 						}
 						sz = js_asn1_len(data, len, &off);
-						e = malloc(sz);
+						e = static_cast<char*>(malloc(sz));
 						if (e == NULL) {
 							free(n64);
 							return;
@@ -246,7 +246,7 @@ static void js_simple_asn1(unsigned char *data, size_t len, JSContext *cx, JSObj
 							sz--;
 						}
 						memcpy(e, data + off, sz);
-						e64 = malloc(sz * 4 / 3 + 3);
+						e64 = static_cast<char*>(malloc(sz * 4 / 3 + 3));
 						if (e64 == NULL) {
 							free(e);
 							free(n64);
@@ -357,7 +357,7 @@ static void js_create_key_object(JSContext *cx, JSObject *parent)
 		lprintf(LOG_ERR, "cryptExportCert(NULL) returned %d\n", status);
 		goto resume;
 	}
-	certbuf = malloc(sz);
+	certbuf = static_cast<uchar *>(malloc(sz));
 	if (certbuf == NULL) {
 		lprintf(LOG_ERR, "Unable to allocate %d bytes\n", sz);
 		goto resume;
@@ -611,7 +611,7 @@ js_create_signature(JSContext *cx, uintN argc, jsval *arglist)
 		js_cryptcon_error(cx, p->ctx, status);
 		return JS_FALSE;
 	}
-	signature = malloc(len);
+	signature = static_cast<char*>(malloc(len));
 	if (signature == NULL) {
 		lprintf(LOG_ERR, "Unable to allocate %u bytes\n", len);
 		JS_RESUMEREQUEST(cx, rc);
@@ -986,7 +986,7 @@ js_cryptcon_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	status = cryptCreateContext(&p->ctx, CRYPT_UNUSED, algo);
+	status = cryptCreateContext(&p->ctx, CRYPT_UNUSED, static_cast<CRYPT_ALGO_TYPE>(algo));
 	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcon_error(cx, p->ctx, status);

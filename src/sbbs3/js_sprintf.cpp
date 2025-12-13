@@ -44,7 +44,7 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 		int next = xp_printf_get_next(p);
 		if (next < 0)
 			break;
-		if (next > 0 && next != (cur + 1))
+		if (next > 0 && next != (int)(cur + 1))
 			cur = next;
 		else
 			cur++;

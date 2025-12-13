@@ -74,9 +74,9 @@ bool sbbs_t::hacklog(const char* prot, const char* text)
 	return ::hacklog(&cfg, mqtt, prot, useron.alias, text, client_name, &client_addr);
 }
 
-extern "C" bool spamlog(scfg_t* cfg, struct mqtt* mqtt, char* prot, char* action
-                        , char* reason, char* host, char* ip_addr
-                        , char* to, char* from)
+extern "C" bool spamlog(scfg_t* cfg, struct mqtt* mqtt, const char* prot, const char* action
+                        , const char* reason, const char* host, const char* ip_addr
+                        , const char* to, const char* from)
 {
 	char   to_user[256];
 	char   tstr[64];

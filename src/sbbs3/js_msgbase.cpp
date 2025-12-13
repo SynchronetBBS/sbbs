@@ -74,7 +74,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
@@ -142,7 +142,7 @@ static bool parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 	scfg_t* scfg;
 	int     smb_result = SMB_SUCCESS;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	if (JS_GetProperty(cx, hdr, "to", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
@@ -255,7 +255,7 @@ static bool parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		if ((p != NULL) && (p->smb.status.attr & SMB_EMAIL)) {
 			if (nettype == NET_QWK && msg->idx.to == 0) {
 				char fulladdr[128];
-				msg->idx.to = qwk_route(scfg, msg->to_net.addr, fulladdr, sizeof(fulladdr) - 1);
+				msg->idx.to = qwk_route(scfg, static_cast<const char *>(msg->to_net.addr), fulladdr, sizeof(fulladdr) - 1);
 				if (fulladdr[0] == 0) {
 					JS_ReportError(cx, "Unroutable QWKnet \"to_net_addr\" (%s) in recipient object"
 					               , msg->to_net.addr);
@@ -318,6 +318,8 @@ static bool parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	JSObject* array;
 	JSObject* field;
 	jsuint    i, len;
+	const char* prop_name;
+	uint16_t    hfield_type;
 	int       smb_result = SMB_SUCCESS;
 
 	if (hdr == NULL) {
@@ -809,8 +811,8 @@ static bool parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 		msg->hdr.when_written = rfc822date(cp);
 	}
 
-	const char* prop_name = "summary";
-	uint16_t    hfield_type = SMB_SUMMARY;
+	prop_name = "summary";
+	hfield_type = SMB_SUMMARY;
 	if (JS_GetProperty(cx, hdr, prop_name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
 		HANDLE_PENDING(cx, cp);
@@ -1200,7 +1202,7 @@ js_get_index(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	off_t index_length = filelength(fileno(priv->smb.sid_fp));
-	if (index_length < sizeof(*idx))
+	if (index_length < static_cast<off_t>(sizeof(*idx)))
 		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -1223,7 +1225,7 @@ js_get_index(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 	}
 
-	if ((idx = calloc(total_msgs, sizeof(*idx))) == NULL) {
+	if ((idx = static_cast<idxrec_t *>(calloc(total_msgs, sizeof(*idx)))) == NULL) {
 		JS_RESUMEREQUEST(cx, rc);
 		JS_ReportError(cx, "malloc failure of %u bytes on line %d in %s of %s", total_msgs * sizeof(*idx), WHERE);
 		return JS_FALSE;
@@ -1365,7 +1367,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	jsrefcount    rc;
 	scfg_t*       scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	if (id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
@@ -1406,7 +1408,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	if (p->expand_fields) {
 		LAZY_STRING_TRUNCSP_NULL("reverse_path", p->msg.reverse_path, JSPROP_ENUMERATE);
 	} else {
-		LAZY_STRING_COND("reverse_path", (val = smb_get_hfield(&(p->msg), SMTPREVERSEPATH, NULL)) != NULL, val, JSPROP_ENUMERATE);
+		LAZY_STRING_COND("reverse_path", (val = static_cast<char *>(smb_get_hfield(&(p->msg), SMTPREVERSEPATH, NULL))) != NULL, val, JSPROP_ENUMERATE);
 	}
 	LAZY_STRING_TRUNCSP_NULL("forward_path", p->msg.forward_path, JSPROP_ENUMERATE);
 	LAZY_UINTEGER_EXPAND("to_agent", p->msg.to_agent, JSPROP_ENUMERATE);
@@ -1419,13 +1421,13 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRING_COND("from_net_addr", p->msg.from_net.addr, smb_netaddrstr(&(p->msg).from_net, tmp), JSPROP_ENUMERATE);
 	LAZY_UINTEGER_COND("replyto_net_type", p->msg.replyto_net.addr != NULL, p->msg.replyto_net.type, JSPROP_ENUMERATE);
 	LAZY_STRING_COND("replyto_net_addr", p->msg.replyto_net.addr, smb_netaddrstr(&(p->msg).replyto_net, tmp), JSPROP_ENUMERATE);
-	LAZY_STRING_COND("from_ip_addr", (val = smb_get_hfield(&(p->msg), SENDERIPADDR, NULL)) != NULL, val, JSPROP_ENUMERATE);
-	LAZY_STRING_COND("from_host_name", (val = smb_get_hfield(&(p->msg), SENDERHOSTNAME, NULL)) != NULL, val, JSPROP_ENUMERATE);
-	LAZY_STRING_COND("from_protocol", (val = smb_get_hfield(&(p->msg), SENDERPROTOCOL, NULL)) != NULL, val, JSPROP_ENUMERATE);
-	LAZY_STRING_COND("from_port", (val = smb_get_hfield(&(p->msg), SENDERPORT, NULL)) != NULL, val, JSPROP_ENUMERATE);
-	LAZY_STRING_COND("sender_userid", (val = smb_get_hfield(&(p->msg), SENDERUSERID, NULL)) != NULL, val, JSPROP_ENUMERATE);
-	LAZY_STRING_COND("sender_server", (val = smb_get_hfield(&(p->msg), SENDERSERVER, NULL)) != NULL, val, JSPROP_ENUMERATE);
-	LAZY_STRING_COND("sender_time", (val = smb_get_hfield(&(p->msg), SENDERTIME, NULL)) != NULL, val, JSPROP_ENUMERATE);
+	LAZY_STRING_COND("from_ip_addr", (val = static_cast<char *>(smb_get_hfield(&(p->msg), SENDERIPADDR, NULL))) != NULL, val, JSPROP_ENUMERATE);
+	LAZY_STRING_COND("from_host_name", (val = static_cast<char *>(smb_get_hfield(&(p->msg), SENDERHOSTNAME, NULL))) != NULL, val, JSPROP_ENUMERATE);
+	LAZY_STRING_COND("from_protocol", (val = static_cast<char *>(smb_get_hfield(&(p->msg), SENDERPROTOCOL, NULL))) != NULL, val, JSPROP_ENUMERATE);
+	LAZY_STRING_COND("from_port", (val = static_cast<char *>(smb_get_hfield(&(p->msg), SENDERPORT, NULL))) != NULL, val, JSPROP_ENUMERATE);
+	LAZY_STRING_COND("sender_userid", (val = static_cast<char *>(smb_get_hfield(&(p->msg), SENDERUSERID, NULL))) != NULL, val, JSPROP_ENUMERATE);
+	LAZY_STRING_COND("sender_server", (val = static_cast<char *>(smb_get_hfield(&(p->msg), SENDERSERVER, NULL))) != NULL, val, JSPROP_ENUMERATE);
+	LAZY_STRING_COND("sender_time", (val = static_cast<char *>(smb_get_hfield(&(p->msg), SENDERTIME, NULL))) != NULL, val, JSPROP_ENUMERATE);
 	LAZY_UINTEGER_EXPAND("forwarded", p->msg.forwarded, JSPROP_ENUMERATE);
 	LAZY_UINTEGER_EXPAND("expiration", p->msg.expiration, JSPROP_ENUMERATE);
 	LAZY_UINTEGER_EXPAND("cost", (uint32)p->msg.cost, JSPROP_ENUMERATE);
@@ -1568,7 +1570,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 				JS_DefineProperty(cx, field, "type"
 				                  , INT_TO_JSVAL((p->msg).hfield[i].type)
 				                  , NULL, NULL, JSPROP_ENUMERATE);
-				if ((js_str = JS_NewStringCopyN(cx, (p->msg).hfield_dat[i], (p->msg).hfield[i].length)) == NULL)
+				if ((js_str = JS_NewStringCopyN(cx, static_cast<const char*>((p->msg).hfield_dat[i]), (p->msg).hfield[i].length)) == NULL)
 					break;
 				JS_DefineProperty(cx, field, "data"
 				                  , STRING_TO_JSVAL(js_str)
@@ -1602,7 +1604,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 				JSClass * cl;
 
 				if (obj != NULL && (cl = JS_GetClass(cx, obj)) != NULL && strcmp(cl->name, "Client") == 0)
-					client = JS_GetPrivate(cx, obj);
+					client = static_cast<client_t *>(JS_GetPrivate(cx, obj));
 			}
 
 			/* dig a user object out of the global object */
@@ -1882,7 +1884,7 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	off_t index_length = filelength(fileno(priv->smb.sid_fp));
-	if (index_length < sizeof(*idx))
+	if (index_length < static_cast<off_t>(sizeof(*idx)))
 		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -1905,12 +1907,12 @@ js_get_all_msg_headers(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 	}
 
-	if ((post = calloc(total_msgs, sizeof(*post))) == NULL) {
+	if ((post = static_cast<post_t *>(calloc(total_msgs, sizeof(*post)))) == NULL) {
 		JS_RESUMEREQUEST(cx, rc);
 		JS_ReportError(cx, "malloc failure of %u bytes on line %d in %s of %s", total_msgs * sizeof(*post), WHERE);
 		return JS_FALSE;
 	}
-	if ((idx = calloc(total_msgs, sizeof(*idx))) == NULL) {
+	if ((idx = static_cast<idxrec_t *>(calloc(total_msgs, sizeof(*idx)))) == NULL) {
 		JS_RESUMEREQUEST(cx, rc);
 		JS_ReportError(cx, "malloc failure of %u bytes on line %d in %s of %s", total_msgs * sizeof(*idx), WHERE);
 		free(post);
@@ -2314,7 +2316,7 @@ static char* get_msg_text(private_t* p, smbmsg_t* msg, bool strip_ctrl_a, bool d
 
 	if (dot_stuffing) {  /* must escape lines starting with dot ('.'), e.g. RFC821 */
 		char* newbuf;
-		if ((newbuf = malloc((strlen(buf) * 2) + 1)) != NULL) {
+		if ((newbuf = static_cast<char *>(malloc((strlen(buf) * 2) + 1))) != NULL) {
 			int i, j;
 			for (i = j = 0; buf[i]; i++) {
 				if ((i == 0 || buf[i - 1] == '\n') && buf[i] == '.')
@@ -2398,7 +2400,7 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 		} else if (JSVAL_IS_OBJECT(argv[n]) && !JSVAL_IS_NULL(argv[n])) {        /* Use existing header */
 			JSClass *oc = JS_GetClass(cx, JSVAL_TO_OBJECT(argv[n]));
 			if (oc != NULL && strcmp(oc->name, js_msghdr_class.name) == 0) {
-				privatemsg_t *pmsg = JS_GetPrivate(cx, JSVAL_TO_OBJECT(argv[n]));
+				privatemsg_t *pmsg = static_cast<privatemsg_t *>(JS_GetPrivate(cx, JSVAL_TO_OBJECT(argv[n])));
 
 				if (pmsg != NULL) {
 					msg_specified = JS_TRUE;
@@ -2512,7 +2514,7 @@ js_get_msg_tail(JSContext *cx, uintN argc, jsval *arglist)
 		} else if (JSVAL_IS_OBJECT(argv[n])) {       /* Use existing header */
 			JSClass *oc = JS_GetClass(cx, JSVAL_TO_OBJECT(argv[n]));
 			if (oc != NULL && strcmp(oc->name, js_msghdr_class.name) == 0) {
-				privatemsg_t *pmsg = JS_GetPrivate(cx, JSVAL_TO_OBJECT(argv[n]));
+				privatemsg_t *pmsg = static_cast<privatemsg_t *>(JS_GetPrivate(cx, JSVAL_TO_OBJECT(argv[n])));
 
 				if (pmsg != NULL) {
 					msg_specified = JS_TRUE;
@@ -2570,7 +2572,7 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
@@ -2597,7 +2599,7 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 			if (objarg == NULL)
 				continue;
 			if (objarg != NULL && (cl = JS_GetClass(cx, objarg)) != NULL && strcmp(cl->name, "Client") == 0) {
-				client = JS_GetPrivate(cx, objarg);
+				client = static_cast<client_t *>(JS_GetPrivate(cx, objarg));
 				continue;
 			}
 			if (JS_IsArrayObject(cx, objarg)) {      /* recipient_list is an array of objects */
@@ -2626,7 +2628,7 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 		if (JS_GetProperty(cx, JS_GetGlobalObject(cx), "client", &val) && !JSVAL_NULL_OR_VOID(val)) {
 			objarg = JSVAL_TO_OBJECT(val);
 			if (objarg != NULL && (cl = JS_GetClass(cx, objarg)) != NULL && strcmp(cl->name, "Client") == 0)
-				client = JS_GetPrivate(cx, objarg);
+				client = static_cast<client_t *>(JS_GetPrivate(cx, objarg));
 		}
 	}
 
@@ -2727,7 +2729,7 @@ js_vote_msg(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
@@ -2795,7 +2797,7 @@ js_add_poll(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
@@ -2899,7 +2901,7 @@ js_close_poll(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -3353,7 +3355,7 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	obj = JS_NewObject(cx, &js_msgbase_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));

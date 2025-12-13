@@ -567,7 +567,7 @@ JSBool js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 					continue;
 				if ((subobj = JS_NewObject(cx, &js_sub_class, subobj_proto, NULL)) == NULL)
 					return JS_FALSE;
-				struct js_msg_area_priv *np = malloc(sizeof(struct js_msg_area_priv));
+				struct js_msg_area_priv *np = static_cast<js_msg_area_priv *>(malloc(sizeof(struct js_msg_area_priv)));
 				if (np == NULL)
 					continue;
 				*np = *p;

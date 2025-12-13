@@ -69,7 +69,7 @@ static str_list_t          shutdown_semfiles;
 static protected_uint32_t  threads_pending_start;
 static struct mqtt         mqtt;
 
-typedef struct {
+struct service_t {
 	/* These are sysop-configurable */
 	uint32_t interface_addr;
 	uint16_t port;
@@ -88,14 +88,14 @@ typedef struct {
 	js_startup_t js;
 	js_server_props_t js_server_props;
 	/* These are run-time state and stat vars */
-	protected_uint32_t clients;
+	protected_uint32_t* clients;
 	ulong served;
 	struct xpms_set *set;
 	int running;
 	bool terminated;
-} service_t;
+};
 
-typedef struct {
+struct service_client_t {
 	SOCKET socket;
 	struct xpms_set *set;
 	union xp_sockaddr addr;
@@ -105,11 +105,11 @@ typedef struct {
 	service_t* service;
 	js_callback_t callback;
 	/* Initial UDP datagram */
-	BYTE* udp_buf;
+	char* udp_buf;
 	int udp_len;
 	subscan_t *subscan;
 	CRYPT_SESSION tls_sess;
-} service_client_t;
+};
 
 static service_t *  service = NULL;
 static unsigned int services = 0;
@@ -224,7 +224,7 @@ static ulong active_clients(void)
 	ulong total_clients = 0;
 
 	for (i = 0; i < services; i++)
-		total_clients += protected_uint32_value(service[i].clients);
+		total_clients += protected_uint32_value(*service[i].clients);
 
 	return total_clients;
 }
@@ -635,9 +635,9 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	char              line[64];
 	char              user[LEN_ALIAS * 2] = "";
 	char              file[MAX_PATH + 1];
-	char*             prot = "???";
+	const char*       prot = "???";
 	SOCKET            sock = 0;
-	char*             warning = "";
+	const char*       warning = "";
 	service_client_t* client;
 	jsrefcount        rc;
 	int               log_level = LOG_ERR;
@@ -713,7 +713,7 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	if ((service_client = (service_client_t*)JS_GetContextPrivate(cx)) == NULL)
 		return JS_FALSE;
 
-	protected_uint32_adjust(&service_client->service->clients, 1);
+	protected_uint32_adjust(service_client->service->clients, 1);
 	update_clients();
 	service_client->service->served++;
 	served++;
@@ -834,11 +834,11 @@ js_client_remove(JSContext *cx, uintN argc, jsval *arglist)
 		rc = JS_SUSPENDREQUEST(cx);
 		client_off(sock);
 
-		if (protected_uint32_value(service_client->service->clients) == 0)
+		if (protected_uint32_value(*service_client->service->clients) == 0)
 			lprintf(LOG_WARNING, "%s !client_remove() called with 0 service clients"
 			        , service_client->service->protocol);
 		else {
-			protected_uint32_adjust(&service_client->service->clients, -1);
+			protected_uint32_adjust(service_client->service->clients, -1);
 			update_clients();
 		}
 		JS_RESUMEREQUEST(cx, rc);
@@ -943,7 +943,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 			            , "Synchronet Services %s%c", VERSION, REVISION);
 			service_client->service->js_server_props.version_detail =
 				services_ver();
-			service_client->service->js_server_props.clients = &service_client->service->clients;
+			service_client->service->js_server_props.clients = service_client->service->clients;
 			service_client->service->js_server_props.interfaces =
 				&service_client->service->interfaces;
 			service_client->service->js_server_props.options =
@@ -1077,7 +1077,7 @@ static bool handle_crypt_call(int status, service_client_t *service_client, cons
 static void js_service_failure_cleanup(service_t *service, SOCKET socket)
 {
 	close_socket(socket);
-	protected_uint32_adjust(&service->clients, -1);
+	protected_uint32_adjust(service->clients, -1);
 	thread_down();
 	return;
 }
@@ -1136,7 +1136,7 @@ static void js_service_thread(void* arg)
 			        , socket, service->protocol, client.addr, host_name, trash_details(&trash, details, sizeof details));
 		}
 		close_socket(socket);
-		protected_uint32_adjust(&service->clients, -1);
+		protected_uint32_adjust(service->clients, -1);
 		thread_down();
 		return;
 	}
@@ -1218,7 +1218,7 @@ static void js_service_thread(void* arg)
 			destroy_session(lprintf, service_client.tls_sess);
 		client_off(socket);
 		close_socket(socket);
-		protected_uint32_adjust(&service->clients, -1);
+		protected_uint32_adjust(service->clients, -1);
 		if (js_runtime != NULL)
 			jsrt_Release(js_runtime);
 		thread_down();
@@ -1297,7 +1297,7 @@ static void js_service_thread(void* arg)
 	}
 	FREE_AND_NULL(service_client.subscan);
 
-	ulong remain = protected_uint32_adjust_fetch(&service->clients, -1);
+	ulong remain = protected_uint32_adjust_fetch(service->clients, -1);
 	update_clients();
 
 #ifdef _WIN32
@@ -1409,11 +1409,11 @@ static void js_static_service_thread(void* arg)
 
 	jsrt_Release(js_runtime);
 
-	if (protected_uint32_value(service->clients)) {
+	if (protected_uint32_value(*service->clients)) {
 		if (service->log_level >= LOG_WARNING)
 			lprintf(LOG_WARNING, "%s !service terminating with %u active clients"
-			        , service->protocol, protected_uint32_value(service->clients));
-		protected_uint32_set(&service->clients, 0);
+			        , service->protocol, protected_uint32_value(*service->clients));
+		protected_uint32_set(service->clients, 0);
 	}
 
 	thread_down();
@@ -1553,7 +1553,7 @@ static void native_service_thread(void* arg)
 					, socket, service->protocol, client.addr, host_name, trash_details(&trash, details, sizeof details));
 		}
 		close_socket(socket);
-		protected_uint32_adjust(&service->clients, -1);
+		protected_uint32_adjust(service->clients, -1);
 		thread_down();
 		return;
 	}
@@ -1631,7 +1631,7 @@ static void native_service_thread(void* arg)
 		errprintf(LOG_ERR, WHERE, "%04d %s '%s' returned %d"
 		          , socket, service->protocol, fullcmd, result);
 
-	ulong remain = protected_uint32_adjust_fetch(&service->clients, -1);
+	ulong remain = protected_uint32_adjust_fetch(service->clients, -1);
 	update_clients();
 
 #ifdef _WIN32
@@ -1676,7 +1676,6 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 	char**     sec_list;
 	str_list_t list;
 	service_t* np;
-	service_t  serv;
 	int        log_level;
 	int        listen_backlog;
 	uint       max_clients;
@@ -1708,7 +1707,8 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 			lprintf(LOG_WARNING, "Ignoring disabled service: %s", sec_list[i]);
 			continue;
 		}
-		memset(&serv, 0, sizeof(service_t));
+		service_t serv{};
+		serv.clients = new protected_uint32_t;
 		SAFECOPY(serv.protocol, iniGetString(list, sec_list[i], "Protocol", sec_list[i], prot));
 		serv.set = NULL;
 		serv.interfaces = iniGetStringList(list, sec_list[i], "Interface", ",", default_interfaces);
@@ -1792,7 +1792,7 @@ static void cleanup(int code)
 	protected_uint32_destroy(threads_pending_start);
 
 	for (unsigned i = 0; i < services; i++) {
-		protected_uint32_destroy(service[i].clients);
+		protected_uint32_destroy(*service[i].clients);
 		iniFreeStringList(service[i].interfaces);
 	}
 
@@ -1891,7 +1891,7 @@ static nfds_t setup_poll(struct pollfd **fds)
 		nfds += service[i].set->sock_count;
 	}
 
-	*fds = calloc(nfds, sizeof(**fds));
+	*fds = static_cast<pollfd *>(calloc(nfds, sizeof(**fds)));
 	if (*fds == NULL)
 		return 0;
 	nfds = 0;
@@ -1900,7 +1900,7 @@ static nfds_t setup_poll(struct pollfd **fds)
 			continue;
 		if (service[i].set == NULL)
 			continue;
-		for (j = 0; j < service[i].set->sock_count; j++) {
+		for (j = 0; j < (int)service[i].set->sock_count; j++) {
 			(*fds)[nfds].fd = service[i].set->socks[j].sock;
 			(*fds)[nfds].events = POLLIN;
 			nfds++;
@@ -1924,7 +1924,7 @@ void services_thread(void* arg)
 	union xp_sockaddr client_addr;
 	socklen_t         client_addr_len;
 	SOCKET            client_socket;
-	BYTE*             udp_buf = NULL;
+	char*             udp_buf = NULL;
 	int               udp_len;
 	int               i;
 	size_t            j;
@@ -2055,7 +2055,7 @@ void services_thread(void* arg)
 		}
 
 		for (i = 0; i < (int)services; i++)
-			protected_uint32_init(&service[i].clients, 0);
+			protected_uint32_init(service[i].clients, 0);
 
 		update_clients();
 
@@ -2188,7 +2188,7 @@ void services_thread(void* arg)
 				if (service[i].set == NULL)
 					continue;
 				if (!(service[i].options & SERVICE_OPT_FULL_ACCEPT)) {
-					if (service[i].max_clients && protected_uint32_value(service[i].clients) >= service[i].max_clients) {
+					if (service[i].max_clients && protected_uint32_value(*service[i].clients) >= service[i].max_clients) {
 						for (j = 0; j < service[i].set->sock_count; j++)
 							fds[nfdsi + j].fd = -1;
 					}
@@ -2231,7 +2231,7 @@ void services_thread(void* arg)
 				if (service[i].set == NULL)
 					continue;
 				if (!(service[i].options & SERVICE_OPT_FULL_ACCEPT)
-				    && service[i].max_clients && protected_uint32_value(service[i].clients) >= service[i].max_clients)
+				    && service[i].max_clients && protected_uint32_value(*service[i].clients) >= service[i].max_clients)
 					continue;
 				for (j = 0; j < service[i].set->sock_count; j++) {
 					FD_SET(service[i].set->socks[j].sock, &socket_set);
@@ -2273,7 +2273,7 @@ void services_thread(void* arg)
 
 					if (service[i].options & SERVICE_OPT_UDP) {
 						/* UDP */
-						if ((udp_buf = (BYTE*)calloc(1, MAX_UDP_BUF_LEN)) == NULL) {
+						if ((udp_buf = (char*)calloc(1, MAX_UDP_BUF_LEN)) == NULL) {
 							errprintf(LOG_CRIT, WHERE, "%04d %s !ERROR %d allocating UDP buffer"
 							          , service[i].set->socks[j].sock, service[i].protocol, errno);
 							continue;
@@ -2400,7 +2400,7 @@ void services_thread(void* arg)
 						        , inet_addrport(&local_addr)
 						        , inet_addrport(&client_addr));
 
-					if (service[i].max_clients && protected_uint32_value(service[i].clients) + 1 > service[i].max_clients) {
+					if (service[i].max_clients && protected_uint32_value(*service[i].clients) + 1 > service[i].max_clients) {
 						FREE_AND_NULL(udp_buf);
 						lprintf(LOG_WARNING, "%04d %s [%s] !MAXIMUM CLIENTS (%u) reached, access denied"
 						        , client_socket, service[i].protocol, host_ip, service[i].max_clients);
@@ -2437,7 +2437,7 @@ void services_thread(void* arg)
 						PlaySound(startup->sound.answer, NULL, SND_ASYNC | SND_FILENAME);
 	#endif
 
-					if ((client = malloc(sizeof(service_client_t))) == NULL) {
+					if ((client = static_cast<service_client_t *>(malloc(sizeof(service_client_t)))) == NULL) {
 						FREE_AND_NULL(udp_buf);
 						errprintf(LOG_CRIT, WHERE, "%04d %s !ERROR allocating %lu bytes of memory for service_client"
 						          , client_socket, service[i].protocol, (ulong)sizeof(service_client_t));
@@ -2449,7 +2449,7 @@ void services_thread(void* arg)
 					client->socket = client_socket;
 					client->addr = client_addr;
 					client->service = &service[i];
-					protected_uint32_adjust(&client->service->clients, 1);
+					protected_uint32_adjust(client->service->clients, 1);
 					client->udp_buf = udp_buf;
 					client->udp_len = udp_len;
 					client->callback.limit          = service[i].js.time_limit;

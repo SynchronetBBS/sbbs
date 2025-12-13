@@ -31,7 +31,9 @@
 
 /* SpiderMonkey: */
 #include <jsapi.h>
+#if TODO_DEBUG
 #include <jsdbgapi.h>
+#endif
 
 #define MAX_ANSI_SEQ    16
 #define MAX_ANSI_PARAMS 8
@@ -692,7 +694,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ClearContextThread(bg->cx);
 		bg->sem = &p->bg_sem;
 //		lprintf(LOG_DEBUG, "JavaScript Background Load: %s", path); // non-contextual (always logs to terminal server)
-		success = _beginthread(background_thread, 0, bg) != -1;
+		success = _beginthread(background_thread, 0, bg) != static_cast<uintptr_t>(-1);
 		JS_RESUMEREQUEST(cx, rc);
 		if (success) {
 			p->bg_count++;
@@ -1480,7 +1482,7 @@ js_quote_msg(JSContext *cx, uintN argc, jsval *arglist)
 			clen++;
 		if ((unsigned)l >= linebuf_sz - 1) {
 			linebuf_sz *= 2;
-			tmpptr = realloc(linebuf, linebuf_sz);
+			tmpptr = static_cast<char *>(realloc(linebuf, linebuf_sz));
 			if (tmpptr == NULL) {
 				free(linebuf);
 				free(inbuf);
@@ -1544,7 +1546,7 @@ js_netaddr_type(JSContext *cx, uintN argc, jsval *arglist)
 /* Much of this table supplied by Deuce (thanks!) */
 static struct {
 	int value;
-	char* name;
+	const char* name;
 } exasctbl[128] = {
 /*  HTML val,name             ASCII  description */
 	{ 199, "Ccedil"   },   /* 128 C, cedilla */
@@ -1679,7 +1681,7 @@ static struct {
 
 static struct {
 	int value;
-	char* name;
+	const char* name;
 } lowasctbl[32] = {
 	{ 160, "nbsp"     },   /* NULL non-breaking space */
 	{ 9786, NULL       },  /* 0x263a white smiling face (^A, 1) */
@@ -1935,7 +1937,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		if (j >= tmpbuf_sz - 1) {
 			tmpbuf_sz += (tmpbuf_sz / 2);
-			tmpptr = realloc(tmpbuf, tmpbuf_sz);
+			tmpptr = static_cast<char *>(realloc(tmpbuf, tmpbuf_sz));
 			if (tmpptr == NULL) {
 				free(tmpbuf);
 				free(inbuf);
@@ -1967,7 +1969,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 			if (j > (obsize / 2))        /* Completely arbitrary here... must be carefull with this eventually ToDo */
 			{
 				obsize += (obsize / 2);
-				if ((param = realloc(outbuf, obsize)) == NULL)
+				if ((param = static_cast<char *>(realloc(outbuf, obsize))) == NULL)
 				{
 					free(tmpbuf);
 					free(outbuf);
@@ -2837,7 +2839,7 @@ js_internal_charfunc(JSContext *cx, uintN argc, jsval *arglist, char *(*func)(ch
 	if (str == NULL)
 		return JS_TRUE;
 	if (extra_bytes) {
-		rastr = realloc(str, strlen + extra_bytes + 1 /* for terminator */);
+		rastr = static_cast<char *>(realloc(str, strlen + extra_bytes + 1 /* for terminator */));
 		if (rastr == NULL)
 			goto error;
 		str = rastr;
@@ -3942,7 +3944,7 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 		if (nfds == 0)
 			return JS_TRUE;
 
-		fds = calloc(nfds, sizeof(*fds));
+		fds = static_cast<pollfd *>(calloc(nfds, sizeof(*fds)));
 		if (fds == NULL) {
 			JS_ReportError(cx, "Error allocating %d elements of %lu bytes at %s:%d"
 			               , nfds, sizeof(*fds), getfname(__FILE__), __LINE__);
@@ -4057,7 +4059,7 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 		if (nfds == 0)
 			return JS_TRUE;
 
-		fds = calloc(nfds, sizeof(*fds));
+		fds = static_cast<pollfd *>(calloc(nfds, sizeof(*fds)));
 		if (fds == NULL) {
 			JS_ReportError(cx, "Error allocating %d elements of %lu bytes at %s:%d"
 			               , nfds, sizeof(*fds), getfname(__FILE__), __LINE__);
@@ -4476,7 +4478,7 @@ js_resolve_ip(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(rarray));
 		for (cur = res; cur; cur = cur->ai_next) {
-			inet_addrtop((void *)cur->ai_addr, ip_str, sizeof(ip_str));
+			inet_addrtop((xp_sockaddr *)cur->ai_addr, ip_str, sizeof(ip_str));
 			if ((str = JS_NewStringCopyZ(cx, ip_str)) == NULL) {
 				freeaddrinfo(res);
 				return JS_FALSE;
@@ -4488,7 +4490,7 @@ js_resolve_ip(JSContext *cx, uintN argc, jsval *arglist)
 		freeaddrinfo(res);
 	}
 	else {
-		inet_addrtop((void *)res->ai_addr, ip_str, sizeof(ip_str));
+		inet_addrtop((xp_sockaddr *)res->ai_addr, ip_str, sizeof(ip_str));
 		freeaddrinfo(res);
 		JS_RESUMEREQUEST(cx, rc);
 
@@ -4573,7 +4575,7 @@ js_list_named_queues(JSContext *cx, uintN argc, jsval *arglist)
 	rc = JS_SUSPENDREQUEST(cx);
 	listLock(&named_queues);
 	for (node = named_queues.first; node != NULL; node = node->next) {
-		if ((q = listNodeData(node)) == NULL)
+		if ((q = static_cast<msg_queue_t *>(listNodeData(node))) == NULL)
 			continue;
 		JS_RESUMEREQUEST(cx, rc);
 		val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, q->name));
@@ -4678,7 +4680,7 @@ js_utf8_encode(JSContext *cx, uintN argc, jsval *arglist)
 
 			len = (inbuf_len * UTF8_MAX_LEN) + 1;
 
-			if ((outbuf = malloc(len)) == NULL) {
+			if ((outbuf = static_cast<char *>(malloc(len))) == NULL) {
 				JS_ReportError(cx, "Error allocating %lu bytes at %s:%d"
 				               , len, getfname(__FILE__), __LINE__);
 				return JS_FALSE;
@@ -4687,7 +4689,7 @@ js_utf8_encode(JSContext *cx, uintN argc, jsval *arglist)
 			rc = JS_SUSPENDREQUEST(cx);
 			size_t outlen = 0;
 			for (size_t i = 0; i < inbuf_len; i++) {
-				int retval = utf8_putc(outbuf + outlen, len - outlen, inbuf[i]);
+				int retval = utf8_putc(outbuf + outlen, len - outlen, static_cast<unicode_codepoint>(inbuf[i]));
 				if (retval < 1)
 					break;
 				outlen += retval;
@@ -4705,7 +4707,7 @@ js_utf8_encode(JSContext *cx, uintN argc, jsval *arglist)
 
 			len = (inbuf_len * UTF8_MAX_LEN) + 1;
 
-			if ((outbuf = malloc(len)) == NULL) {
+			if ((outbuf = static_cast<char *>(malloc(len))) == NULL) {
 				free(inbuf);
 				JS_ReportError(cx, "Error allocating %lu bytes at %s:%d"
 				               , len, getfname(__FILE__), __LINE__);
@@ -4720,7 +4722,7 @@ js_utf8_encode(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	else if (JSVAL_IS_NUMBER(argv[0])) {
 		len = UTF8_MAX_LEN + 1;
-		if ((outbuf = malloc(len)) == NULL) {
+		if ((outbuf = static_cast<char *>(malloc(len))) == NULL) {
 			JS_ReportError(cx, "Error allocating %lu bytes at %s:%d"
 			               , len, getfname(__FILE__), __LINE__);
 			return JS_FALSE;
@@ -4730,7 +4732,7 @@ js_utf8_encode(JSContext *cx, uintN argc, jsval *arglist)
 			free(outbuf);
 			return JS_FALSE;
 		}
-		int result = utf8_putc(outbuf, len - 1, codepoint);
+		int result = utf8_putc(outbuf, len - 1, static_cast<unicode_codepoint>(codepoint));
 		if (result < 1) {
 			free(outbuf);
 			JS_ReportError(cx, "utf8_encode: error: %d for codepoint %X", result, codepoint);
@@ -5344,7 +5346,7 @@ static jsConstIntSpec   js_global_const_ints[] = {
 	{"LOG_DEBUG", LOG_DEBUG      },
 
 	/* Other useful constants */
-	{"INVALID_SOCKET", INVALID_SOCKET },
+	{"INVALID_SOCKET", (int)INVALID_SOCKET },
 
 	/* Terminator (Governor Arnold) */
 	{0}

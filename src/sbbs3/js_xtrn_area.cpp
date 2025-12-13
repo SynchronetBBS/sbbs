@@ -210,7 +210,7 @@ static JSBool js_event_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	jsint       tiny;
 	event_t*    event;
 
-	if ((event = JS_GetPrivate(cx, obj)) == NULL)
+	if ((event = static_cast<event_t *>(JS_GetPrivate(cx, obj))) == NULL)
 		return JS_FALSE;
 
 	JS_IdToValue(cx, id, &idval);

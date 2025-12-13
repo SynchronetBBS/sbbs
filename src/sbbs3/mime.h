@@ -22,6 +22,10 @@
 #ifndef _MIME_H_
 #define _MIME_H_
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 /* mime.c */
 char *  mimegetboundary(void);
 void    mimeheaders(SOCKET socket, const char* prot, int sess, char * boundary);
@@ -29,5 +33,9 @@ void    mimeblurb(SOCKET socket, const char* prot, int sess, char * boundary);
 void    mimetextpartheader(SOCKET socket, const char* prot, int sess, char * boundary, const char* text_subtype, const char* charset);
 bool    mimeattach(SOCKET socket, const char* prot, int sess, char * boundary, char * pathfile);
 void    endmime(SOCKET socket, const char* prot, int sess, char * boundary);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif  /* Don't add anything after this line */

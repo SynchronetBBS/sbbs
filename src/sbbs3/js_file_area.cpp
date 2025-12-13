@@ -373,7 +373,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 				if ((dirobj = JS_NewObject(cx, &js_dir_class, NULL, NULL)) == NULL)
 					return JS_FALSE;
-				struct js_file_area_priv *np = malloc(sizeof(struct js_file_area_priv));
+				struct js_file_area_priv *np = static_cast<js_file_area_priv *>(malloc(sizeof(struct js_file_area_priv)));
 				if (np == NULL)
 					continue;
 				*np = *p;

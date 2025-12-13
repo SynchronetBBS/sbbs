@@ -19,7 +19,7 @@ static void trigger_thread(void *args)
 		list_node_t *node;
 		pthread_mutex_lock(&jsrt_mutex);
 		for (node = listFirstNode(&rt_list); node; node = listNextNode(node))
-			JS_TriggerAllOperationCallbacks(node->data);
+			JS_TriggerAllOperationCallbacks(static_cast<JSRuntime *>(node->data));
 		pthread_mutex_unlock(&jsrt_mutex);
 		SLEEP(100);
 	}

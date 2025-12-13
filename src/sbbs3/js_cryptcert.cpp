@@ -191,7 +191,7 @@ js_export(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	status = cryptExportCert(NULL, 0, &len, format, p->cert);
+	status = cryptExportCert(NULL, 0, &len, static_cast<CRYPT_CERTFORMAT_TYPE>(format), p->cert);
 	if (cryptStatusError(status)) {
 		JS_RESUMEREQUEST(cx, rc);
 		js_cryptcert_error(cx, p->cert, status);
@@ -203,13 +203,13 @@ js_export(JSContext *cx, uintN argc, jsval *arglist)
 	 * is -----BEGIN CERTIFICATE----- but uses -----BEGIN CERTIFICATE CHAIN-----
 	 * instead.  This, plus the end uses and extra 12 bytes.
 	 */
-	buf = malloc(len + 12);
+	buf = static_cast<char *>(malloc(len + 12));
 	if (buf == NULL) {
 		JS_RESUMEREQUEST(cx, rc);
 		JS_ReportError(cx, "Unable to allocate %d bytes\n", len);
 		return JS_FALSE;
 	}
-	status = cryptExportCert(buf, len + 12, &len, format, p->cert);
+	status = cryptExportCert(buf, len + 12, &len, static_cast<CRYPT_CERTFORMAT_TYPE>(format), p->cert);
 	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		JS_RESUMEREQUEST(cx, rc);
@@ -253,7 +253,7 @@ js_get_attribute(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	status = cryptGetAttribute(p->cert, attr, &val);
+	status = cryptGetAttribute(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), &val);
 	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcert_error(cx, p->cert, status);
@@ -293,7 +293,7 @@ js_get_attribute_string(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	status = cryptGetAttributeString(p->cert, attr, NULL, &len);
+	status = cryptGetAttributeString(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), NULL, &len);
 	if (cryptStatusError(status)) {
 		JS_RESUMEREQUEST(cx, rc);
 		js_cryptcert_error(cx, p->cert, status);
@@ -304,7 +304,7 @@ js_get_attribute_string(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "malloc(%d) failure", len);
 		return JS_FALSE;
 	}
-	status = cryptGetAttributeString(p->cert, attr, val, &len);
+	status = cryptGetAttributeString(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), val, &len);
 	if (cryptStatusError(status)) {
 		JS_RESUMEREQUEST(cx, rc);
 		js_cryptcert_error(cx, p->cert, status);
@@ -351,7 +351,7 @@ js_get_attribute_time(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc = JS_SUSPENDREQUEST(cx);
 
-	status = cryptGetAttributeString(p->cert, attr, NULL, &len);
+	status = cryptGetAttributeString(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), NULL, &len);
 	if (cryptStatusError(status)) {
 		JS_RESUMEREQUEST(cx, rc);
 		js_cryptcert_error(cx, p->cert, status);
@@ -362,7 +362,7 @@ js_get_attribute_time(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "Time size %d not sizeof(time_t) (%d)\n", len, sizeof(val));
 		return JS_FALSE;
 	}
-	status = cryptGetAttributeString(p->cert, attr, &val, &len);
+	status = cryptGetAttributeString(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), &val, &len);
 	if (cryptStatusError(status)) {
 		JS_RESUMEREQUEST(cx, rc);
 		js_cryptcert_error(cx, p->cert, status);
@@ -407,7 +407,7 @@ js_set_attribute(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	status = cryptSetAttribute(p->cert, attr, val);
+	status = cryptSetAttribute(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), val);
 	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcert_error(cx, p->cert, status);
@@ -448,7 +448,7 @@ js_set_attribute_string(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	status = cryptSetAttributeString(p->cert, attr, val, len);
+	status = cryptSetAttributeString(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), val, len);
 	free(val);
 	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
@@ -510,7 +510,7 @@ js_set_attribute_time(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	status = cryptSetAttributeString(p->cert, attr, &val, sizeof(val));
+	status = cryptSetAttributeString(p->cert, static_cast<CRYPT_ATTRIBUTE_TYPE>(attr), &val, sizeof(val));
 	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcert_error(cx, p->cert, status);
@@ -3117,7 +3117,7 @@ js_cryptcert_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		if (!JS_ValueToInt32(cx, argv[0], &type))
 			return JS_FALSE;
 		rc = JS_SUSPENDREQUEST(cx);
-		status = cryptCreateCert(&p->cert, CRYPT_UNUSED, type);
+		status = cryptCreateCert(&p->cert, CRYPT_UNUSED, static_cast<CRYPT_CERTTYPE_TYPE>(type));
 		JS_RESUMEREQUEST(cx, rc);
 	}
 

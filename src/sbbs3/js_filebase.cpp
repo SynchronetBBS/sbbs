@@ -60,7 +60,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
@@ -176,7 +176,7 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 	JSString*   js_str;
 	const uintN flags = JSPROP_ENUMERATE;
 
-	scfg_t*     scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg_t*     scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
@@ -660,7 +660,7 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	scfg_t*          scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg_t*          scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
@@ -728,7 +728,7 @@ js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	scfg_t*          scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg_t*          scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
@@ -762,7 +762,7 @@ js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 	else if (filename == NULL)
 		return JS_TRUE;
 	if (argn < argc && JSVAL_IS_NUMBER(argv[argn])) {
-		detail = JSVAL_TO_INT(argv[argn]);
+		detail = static_cast<file_detail>(JSVAL_TO_INT(argv[argn]));
 		argn++;
 	}
 	JSBool result = JS_TRUE;
@@ -798,7 +798,7 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 	enum file_sort   sort = FILE_SORT_NAME_A;
 	jsrefcount       rc;
 
-	scfg_t*          scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg_t*          scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
@@ -813,7 +813,7 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if (dirnum_is_valid(scfg, p->smb.dirnum))
-		sort = scfg->dir[p->smb.dirnum]->sort;
+		sort = static_cast<file_sort>(scfg->dir[p->smb.dirnum]->sort);
 
 	uintN argn = 0;
 	if (argn < argc && JSVAL_IS_STRING(argv[argn]))  {
@@ -824,7 +824,7 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 		argn++;
 	}
 	if (argn < argc && JSVAL_IS_NUMBER(argv[argn])) {
-		detail = JSVAL_TO_INT(argv[argn]);
+		detail = static_cast<file_detail>(JSVAL_TO_INT(argv[argn]));
 		argn++;
 	}
 	if (argn < argc && JSVAL_IS_NUMBER(argv[argn]))  {
@@ -835,7 +835,7 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 		if (argv[argn++] == JSVAL_FALSE)
 			sort = FILE_SORT_NATURAL;
 		else if (argn < argc && JSVAL_IS_NUMBER(argv[argn])) {
-			sort = JSVAL_TO_INT(argv[argn]);
+			sort = static_cast<file_sort>(JSVAL_TO_INT(argv[argn]));
 			argn++;
 		}
 	}
@@ -883,7 +883,7 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 	enum file_sort sort = FILE_SORT_NAME_A;
 	jsrefcount     rc;
 
-	scfg_t*        scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg_t*        scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
@@ -898,7 +898,7 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if (dirnum_is_valid(scfg, p->smb.dirnum))
-		sort = scfg->dir[p->smb.dirnum]->sort;
+		sort = static_cast<file_sort>(scfg->dir[p->smb.dirnum]->sort);
 
 	uintN argn = 0;
 	if (argn < argc && JSVAL_IS_STRING(argv[argn]))  {
@@ -916,7 +916,7 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 		if (argv[argn++] == JSVAL_FALSE)
 			sort = FILE_SORT_NATURAL;
 		else if (argn < argc && JSVAL_IS_NUMBER(argv[argn])) {
-			sort = JSVAL_TO_INT(argv[argn]);
+			sort = static_cast<file_sort>(JSVAL_TO_INT(argv[argn]));
 			argn++;
 		}
 	}
@@ -997,7 +997,7 @@ js_format_file_name(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "Invalid size: %d", size);
 		return JS_FALSE;
 	}
-	char* buf = calloc(size + 1, 1);
+	char* buf = static_cast<char *>(calloc(size + 1, 1));
 	if (buf == NULL) {
 		JS_ReportError(cx, "malloc failure: %d", size + 1);
 		return JS_FALSE;
@@ -1023,7 +1023,7 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 	ZERO_VAR(file);
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	scfg_t* scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg_t* scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
@@ -1078,7 +1078,7 @@ js_get_file_size(JSContext *cx, uintN argc, jsval *arglist)
 	ZERO_VAR(file);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
 
-	scfg_t* scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg_t* scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
@@ -1126,7 +1126,7 @@ js_get_file_time(JSContext *cx, uintN argc, jsval *arglist)
 	ZERO_VAR(file);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
 
-	scfg_t* scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg_t* scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
@@ -1198,7 +1198,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	ZERO_VAR(file);
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	scfg_t* scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg_t* scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
@@ -1230,7 +1230,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 		JSObject* objarg = JSVAL_TO_OBJECT(argv[argn]);
 		JSClass*  cl;
 		if (objarg != NULL && (cl = JS_GetClass(cx, objarg)) != NULL && strcmp(cl->name, "Client") == 0) {
-			client = JS_GetPrivate(cx, objarg);
+			client = static_cast<client_t *>(JS_GetPrivate(cx, objarg));
 		}
 	}
 
@@ -1274,7 +1274,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 	ZERO_VAR(file);
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	scfg_t* scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg_t* scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
@@ -1382,7 +1382,7 @@ js_renew_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	scfg_t*    scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg_t*    scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
@@ -1431,7 +1431,7 @@ js_remove_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	scfg_t*    scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg_t*    scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "JS_GetRuntimePrivate returned NULL");
 		return JS_FALSE;
@@ -1815,7 +1815,7 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	private_t* p;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	obj = JS_NewObject(cx, &js_filebase_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));

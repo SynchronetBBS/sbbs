@@ -273,6 +273,9 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 /***********************/
 /* Synchronet-specific */
 /***********************/
+#ifndef RINGBUF_EVENT
+ #define RINGBUF_EVENT
+#endif
 #include "startup.h"
 #ifdef __cplusplus
 	#include "threadwrap.h"	/* pthread_mutex_t */
@@ -1420,8 +1423,8 @@ extern "C" {
 													,scfg_t* node_cfg			/* node-specific */
 													,jsSyncMethodSpec* methods	/* global */
 													,time_t uptime				/* system */
-													,char* host_name			/* system */
-													,char* socklib_desc			/* system */
+													,const char* host_name		/* system */
+													,const char* socklib_desc	/* system */
 													,js_callback_t*				/* js */
 													,js_startup_t*				/* js */
 													,client_t* client			/* client */
@@ -1475,8 +1478,8 @@ extern "C" {
 	/* js_system.c */
 	DLLEXPORT JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
 													,scfg_t* cfg, time_t uptime
-													,char* host_name
-													,char* socklib_desc
+													,const char* host_name
+													,const char* socklib_desc
 													,struct mqtt*);
 	DLLEXPORT JSBool	js_CreateTextProperties(JSContext* cx, JSObject* parent);
 
@@ -1488,7 +1491,7 @@ extern "C" {
 	/* js_user.c */
 	DLLEXPORT JSObject*	js_CreateUserClass(JSContext* cx, JSObject* parent);
 	DLLEXPORT JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent
-													,char* name, user_t* user, client_t* client, bool global_user, struct mqtt*);
+													,const char* name, user_t* user, client_t* client, bool global_user, struct mqtt*);
 	DLLEXPORT JSBool	js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg
 													,user_t* user, client_t* client, const char* web_file_vpath_prefix
 													,subscan_t* subscan, struct mqtt*);
@@ -1518,10 +1521,10 @@ extern "C" {
 	DLLEXPORT JSObject* js_CreateSocketClass(JSContext* cx, JSObject* parent);
 #ifdef USE_CRYPTLIB
 	DLLEXPORT JSObject* js_CreateSocketObject(JSContext* cx, JSObject* parent
-													,char *name, SOCKET sock, CRYPT_CONTEXT session);
+													,const char *name, SOCKET sock, CRYPT_CONTEXT session);
 #endif
 	DLLEXPORT JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent
-													,char *name, struct xpms_set *set);
+													,const char *name, struct xpms_set *set);
 
 	DLLEXPORT SOCKET	js_socket(JSContext *cx, jsval val);
 	DLLEXPORT int		js_polltimeout(JSContext* cx, jsval val);
@@ -1537,12 +1540,12 @@ extern "C" {
 	/* js_queue.c */
 	DLLEXPORT JSObject* js_CreateQueueClass(JSContext* cx, JSObject* parent);
 	DLLEXPORT JSObject* js_CreateQueueObject(JSContext* cx, JSObject* parent
-													,char *name, msg_queue_t* q);
+													,const char *name, msg_queue_t* q);
 	bool js_enqueue_value(JSContext *cx, msg_queue_t* q, jsval val, char* name);
 
 	/* js_file.c */
 	DLLEXPORT JSObject* js_CreateFileClass(JSContext* cx, JSObject* parent);
-	DLLEXPORT JSObject* js_CreateFileObject(JSContext* cx, JSObject* parent, char *name, int fd, const char* mode);
+	DLLEXPORT JSObject* js_CreateFileObject(JSContext* cx, JSObject* parent, const char *name, int fd, const char* mode);
 
 	/* js_archive.c */
 	DLLEXPORT JSObject* js_CreateArchiveClass(JSContext* cx, JSObject* parent, const str_list_t supported_formats);
@@ -1599,7 +1602,7 @@ extern "C" {
 	char *	readtext(int *line, FILE *stream, int dflt);
 
 	/* ver.cpp */
-	char*	socklib_version(char* str, size_t, char* winsock_ver);
+	char*	socklib_version(char* str, size_t, const char* winsock_ver);
 
 	/* sortdir.cpp */
 	int		fnamecmp_a(char **str1, char **str2);	 /* for use with resort() */

@@ -372,6 +372,13 @@ typedef struct {
 	char		cmd[LEN_CMD+1];
 } hotkey_t;
 
+enum mqtt_tls_mode {
+	MQTT_TLS_DISABLED,
+	MQTT_TLS_CERT,
+	MQTT_TLS_PSK,
+	MQTT_TLS_SBBS
+};
+
 struct mqtt_cfg {
 	bool		enabled;
 	bool		verbose;
@@ -385,12 +392,7 @@ struct mqtt_cfg {
 	int			protocol_version;
 	int			log_level;
 	struct {
-		enum {
-			MQTT_TLS_DISABLED,
-			MQTT_TLS_CERT,
-			MQTT_TLS_PSK,
-			MQTT_TLS_SBBS
-		} mode;
+		enum mqtt_tls_mode mode;
 		char	cafile[256];
 		char	certfile[256];
 		char	keyfile[256];

@@ -126,7 +126,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval                idval;
 	char                 str[128];
-	char*                p = NULL;
+	const char*          p = NULL;
 	jsint                tiny;
 	JSString*            js_str;
 	uint64_t             space;
@@ -986,7 +986,7 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_ValueToInt32(cx, argv[0], &field);
 	rc = JS_SUSPENDREQUEST(cx);
-	len = user_field_len(field);
+	len = user_field_len(static_cast<user_field>(field));
 	JS_RESUMEREQUEST(cx, rc);
 	if (len < 1) {
 		JS_ReportError(cx, "Invalid user field: %d", field);
@@ -1008,7 +1008,7 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	int result = finduserstr(sys->cfg, usernumber, field, p, match_del, match_next, NULL, NULL);
+	int result = finduserstr(sys->cfg, usernumber, static_cast<user_field>(field), p, match_del, match_next, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(result));
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
@@ -1851,7 +1851,7 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 		if (JSVAL_IS_OBJECT(argv[n])) {
 			objarg = JSVAL_TO_OBJECT(argv[n]);
 			if (objarg != NULL && (cl = JS_GetClass(cx, objarg)) != NULL && strcmp(cl->name, "Client") == 0) {
-				client = JS_GetPrivate(cx, objarg);
+				client = static_cast<client_t *>(JS_GetPrivate(cx, objarg));
 				continue;
 			}
 		}
@@ -1861,7 +1861,7 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 		if (JS_GetProperty(cx, JS_GetGlobalObject(cx), "client", &val) && !JSVAL_NULL_OR_VOID(val)) {
 			objarg = JSVAL_TO_OBJECT(val);
 			if (objarg != NULL && (cl = JS_GetClass(cx, objarg)) != NULL && strcmp(cl->name, "Client") == 0)
-				client = JS_GetPrivate(cx, objarg);
+				client = static_cast<client_t *>(JS_GetPrivate(cx, objarg));
 		}
 	}
 	if (client != NULL) {
@@ -2972,7 +2972,7 @@ JSClass js_system_class = {
 };
 
 JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
-                                , scfg_t* cfg, time_t uptime, char* host_name, char* socklib_desc, struct mqtt* mqtt)
+                                , scfg_t* cfg, time_t uptime, const char* host_name, const char* socklib_desc, struct mqtt* mqtt)
 {
 	jsval     val;
 	JSObject* sysobj;
@@ -2985,7 +2985,7 @@ JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
 		return NULL;
 
 	js_system_private_t* sys;
-	if ((sys = calloc(sizeof(*sys), 1)) == NULL)
+	if ((sys = static_cast<js_system_private_t *>(calloc(sizeof(*sys), 1))) == NULL)
 		return NULL;
 
 	sys->cfg = cfg;

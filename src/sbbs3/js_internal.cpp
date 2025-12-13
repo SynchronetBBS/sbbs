@@ -25,7 +25,9 @@
 #include "js_socket.h"
 
 /* SpiderMonkey: */
+#if TODO_DEBUG
 #include <jsdbgapi.h>
+#endif
 
 enum {
 	PROP_VERSION
@@ -390,7 +392,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "Unable to get parent js object");
 		return JS_FALSE;
 	}
-	js_callback = JS_GetPrivate(cx, pjs_obj);
+	js_callback = static_cast<js_callback_t *>(JS_GetPrivate(cx, pjs_obj));
 
 	if (isfullpath(cmd))
 		SAFECOPY(path, cmd);
@@ -465,11 +467,11 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		if (JS_GetProperty(cx, pjs_obj, JAVASCRIPT_LOAD_PATH_LIST, &val) && val != JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
 			pload_path_list = JSVAL_TO_OBJECT(val);
 			if (pload_path_list == NULL || !JS_IsArrayObject(cx, pload_path_list)) {
-				JS_ReportError(cx, "Weird js."JAVASCRIPT_LOAD_PATH_LIST" value");
+				JS_ReportError(cx, "Weird js." JAVASCRIPT_LOAD_PATH_LIST " value");
 				return JS_FALSE;
 			}
 			if ((load_path_list = JS_NewArrayObject(cx, 0, NULL)) == NULL) {
-				JS_ReportError(cx, "Unable to create js."JAVASCRIPT_LOAD_PATH_LIST);
+				JS_ReportError(cx, "Unable to create js." JAVASCRIPT_LOAD_PATH_LIST);
 				return JS_FALSE;
 			}
 			val = OBJECT_TO_JSVAL(load_path_list);
@@ -481,7 +483,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 				}
 		}
 		else {
-			JS_ReportError(cx, "Unable to get parent js."JAVASCRIPT_LOAD_PATH_LIST" array.");
+			JS_ReportError(cx, "Unable to get parent js." JAVASCRIPT_LOAD_PATH_LIST " array.");
 			return JS_FALSE;
 		}
 	}
@@ -671,7 +673,7 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 
 		/* If one isn't found, insert it */
 		if (oes == NULL) {
-			oes = malloc(sizeof(*oes));
+			oes = static_cast<js_onexit_scope *>(malloc(sizeof(*oes)));
 			if (oes == NULL) {
 				JS_ReportError(cx, "Unable to allocate memory for onexit scope");
 				return JS_FALSE;
@@ -698,37 +700,6 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 		else
 			oes->onexit = list;
 	}
-	return JS_TRUE;
-}
-
-static JSBool
-js_get_parent(JSContext *cx, uintN argc, jsval *arglist)
-{
-	jsval *   argv = JS_ARGV(cx, arglist);
-	JSObject* child = NULL;
-	JSObject* parent;
-
-	if (JS_ValueToObject(cx, argv[0], &child)
-	    && child != NULL
-	    && (parent = JS_GetParent(cx, child)) != NULL)
-		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(parent));
-
-	return JS_TRUE;
-}
-
-static JSBool js_getsize(JSContext *cx, uintN argc, jsval *arglist)
-{
-	jsval *   argv = JS_ARGV(cx, arglist);
-	JSObject* tmp_obj;
-
-	if (!JSVAL_IS_OBJECT(argv[0])) {
-		JS_ReportError(cx, "Parameter is not an object.");
-		return JS_FALSE;
-	}
-	tmp_obj = JSVAL_TO_OBJECT(argv[0]);
-	if (!tmp_obj)
-		return JS_FALSE;
-	JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL(JS_GetObjectTotalSize(cx, tmp_obj)));
 	return JS_TRUE;
 }
 
@@ -779,7 +750,7 @@ js_setTimeout(JSContext *cx, uintN argc, jsval *arglist)
 	if (!JS_ValueToNumber(cx, argv[1], &timeout)) {
 		return JS_FALSE;
 	}
-	ev = malloc(sizeof(*ev));
+	ev = static_cast<js_event_list *>(malloc(sizeof(*ev)));
 	if (ev == NULL) {
 		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*ev));
 		return JS_FALSE;
@@ -897,7 +868,7 @@ js_setInterval(JSContext *cx, uintN argc, jsval *arglist)
 		if (!JS_ValueToObject(cx, argv[2], &obj))
 			return JS_FALSE;
 	}
-	ev = malloc(sizeof(*ev));
+	ev = static_cast<js_event_list *>(malloc(sizeof(*ev)));
 	if (ev == NULL) {
 		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*ev));
 		return JS_FALSE;
@@ -946,7 +917,7 @@ js_setImmediate(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 
-	rqe = malloc(sizeof(*rqe));
+	rqe = static_cast<js_runq_entry *>(malloc(sizeof(*rqe)));
 	if (rqe == NULL) {
 		JS_ReportError(cx, "error allocating %ul bytes", sizeof(*rqe));
 		return JS_FALSE;
@@ -991,7 +962,7 @@ js_addEventListener(JSContext *cx, uintN argc, jsval *arglist)
 	JSVALUE_TO_MSTRING(cx, argv[0], name, NULL);
 	HANDLE_PENDING(cx, name);
 
-	listener = malloc(sizeof(*listener));
+	listener = static_cast<js_listener_entry *>(malloc(sizeof(*listener)));
 	if (listener == NULL) {
 		free(name);
 		JS_ReportError(cx, "error allocating %ul bytes", sizeof(*listener));
@@ -1090,7 +1061,7 @@ js_dispatchEvent(JSContext *cx, uintN argc, jsval *arglist)
 
 	for (listener = cb->listeners; listener; listener = listener->next) {
 		if (strcmp(name, listener->name) == 0) {
-			rqe = malloc(sizeof(*rqe));
+			rqe = static_cast<js_runq_entry *>(malloc(sizeof(*rqe)));
 			if (rqe == NULL) {
 				JS_ReportError(cx, "error allocating %ul bytes", sizeof(*rqe));
 				free(name);
@@ -1202,7 +1173,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 		}
 
 		if (sc) {
-			fds = calloc(sc, sizeof(*fds));
+			fds = static_cast<pollfd *>(calloc(sc, sizeof(*fds)));
 			if (fds == NULL) {
 				JS_ReportError(cx, "error allocating %d elements of %ul bytes", sc, sizeof(*fds));
 				return JS_FALSE;
@@ -1511,12 +1482,6 @@ static jsSyncMethodSpec js_functions[] = {
 		        "(including script filename and line number), "
 		        "if <i>fatal</i> is <tt>true</tt>, immediately terminates script")
 	 , 313},
-	{"get_parent",      js_get_parent,      1,  JSTYPE_OBJECT,  JSDOCSTR("<i>object</i> child")
-	 , JSDOCSTR("Return the parent of the specified child object")
-	 , 314},
-	{"get_size",        js_getsize,         1,  JSTYPE_NUMBER,  JSDOCSTR("[object]")
-	 , JSDOCSTR("Return the size in bytes the object uses in memory (forces GC) ")
-	 , 316},
 	{"flatten_string",  js_flatten,         1,  JSTYPE_VOID,    JSDOCSTR("<i>string</i> value")
 	 , JSDOCSTR("Flatten a string, optimizing allocated memory used for concatenated strings")
 	 , 316},

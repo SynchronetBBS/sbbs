@@ -145,7 +145,7 @@ static void js_getuserdat(scfg_t* scfg, private_t* p)
 static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval      idval;
-	char*      s = NULL;
+	const char* s = NULL;
 	char       tmp[128];
 	int64_t    val = 0;
 	jsint      tiny;
@@ -154,7 +154,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	jsrefcount rc;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL)
 		return JS_TRUE;
@@ -483,7 +483,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 	scfg_t*    scfg;
 	void*      ptr;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL)
 		return JS_TRUE;
@@ -621,6 +621,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			putuserstr(scfg, p->user->number, USER_SHELL, str);
 			break;
 		case USER_PROP_MISC:
+		{
 			JS_RESUMEREQUEST(cx, rc);
 			if (!JS_ValueToECMAUint32(cx, *vp, &val)) {
 				free(str);
@@ -645,6 +646,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				}
 			}
 			break;
+		}
 		case USER_PROP_QWK:
 			JS_RESUMEREQUEST(cx, rc);
 			if (!JS_ValueToECMAUint32(cx, *vp, &val)) {
@@ -1158,7 +1160,7 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 	}
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
@@ -1193,7 +1195,7 @@ js_posted_msg(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
@@ -1225,7 +1227,7 @@ js_sent_email(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
@@ -1261,7 +1263,7 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 	int        dirnum = INVALID_DIR;
 	char*      fname = NULL;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
@@ -1317,7 +1319,7 @@ js_uploaded_file(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
@@ -1359,7 +1361,7 @@ js_adjust_credits(JSContext *cx, uintN argc, jsval *arglist)
 	if (js_argvIsNullOrVoid(cx, argv, 0))
 		return JS_FALSE;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
@@ -1391,7 +1393,7 @@ js_adjust_minutes(JSContext *cx, uintN argc, jsval *arglist)
 	if (js_argvIsNullOrVoid(cx, argv, 0))
 		return JS_FALSE;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
@@ -1424,7 +1426,7 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 	if (js_argvIsNullOrVoid(cx, argv, 0))
 		return JS_FALSE;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
@@ -1457,7 +1459,7 @@ js_can_access_sub(JSContext *cx, uintN argc, jsval *arglist)
 	if (js_argvIsNullOrVoid(cx, argv, 0))
 		return JS_FALSE;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
@@ -1499,7 +1501,7 @@ js_can_access_dir(JSContext *cx, uintN argc, jsval *arglist)
 	if (js_argvIsNullOrVoid(cx, argv, 0))
 		return JS_FALSE;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
@@ -1814,7 +1816,7 @@ js_user_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	private_t* p;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 	obj = JS_NewObject(cx, &js_user_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
@@ -1857,7 +1859,7 @@ JSObject* js_CreateUserClass(JSContext* cx, JSObject* parent)
 	return userclass;
 }
 
-JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, char* name
+JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, const char* name
                               , user_t* user, client_t* client, bool global_user, struct mqtt* mqtt)
 {
 	JSObject*  userobj;
@@ -1874,7 +1876,7 @@ JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, char* name
 	if (userobj == NULL)
 		return NULL;
 
-	if ((p = JS_GetPrivate(cx, userobj)) == NULL) {    /* Uses existing private pointer: Fix memory leak? */
+	if ((p = static_cast<private_t *>(JS_GetPrivate(cx, userobj))) == NULL) {    /* Uses existing private pointer: Fix memory leak? */
 		if ((p = (private_t*)malloc(sizeof(private_t))) == NULL)
 			return NULL;
 		memset(p, 0, sizeof(private_t));

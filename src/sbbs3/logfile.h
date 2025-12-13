@@ -37,8 +37,8 @@ extern "C" {
 DLLEXPORT int		errorlog(scfg_t*, struct mqtt*, int level, const char* host, const char* text);
 DLLEXPORT bool		hacklog(scfg_t*, struct mqtt*, const char* prot, const char* user, const char* text
 									,const char* host, union xp_sockaddr* addr);
-DLLEXPORT bool		spamlog(scfg_t*, struct mqtt*, char* prot, char* action, char* reason
-									,char* host, char* ip_addr, char* to, char* from);
+DLLEXPORT bool		spamlog(scfg_t*, struct mqtt*, const char* prot, const char* action, const char* reason
+									,const char* host, const char* ip_addr, const char* to, const char* from);
 DLLEXPORT FILE*		fopenlog(scfg_t*, const char* path, bool shareable);
 DLLEXPORT size_t	fprintlog(scfg_t*, FILE**, const char* str);
 DLLEXPORT void		fcloselog(FILE*);

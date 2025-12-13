@@ -52,7 +52,7 @@ typedef struct
 
 } private_t;
 
-static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
+static void dbprintf(BOOL error, private_t* p, const char* fmt, ...)
 {
 	va_list argptr;
 	char    sbuf[1024];
@@ -365,7 +365,7 @@ js_raw_read(JSContext *cx, uintN argc, jsval *arglist)
 	if (len < 0)
 		len = 1;
 
-	if ((buf = malloc(len)) == NULL)
+	if ((buf = static_cast<char *>(malloc(len))) == NULL)
 		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -465,7 +465,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	if (len < 0)
 		len = 512;
 
-	if ((buf = malloc(len + 1)) == NULL)
+	if ((buf = static_cast<char *>(malloc(len + 1))) == NULL)
 		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -487,7 +487,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (p->uuencoded || p->b64encoded || p->yencoded) {
 		uulen = len * 2;
-		if ((uubuf = malloc(uulen)) == NULL) {
+		if ((uubuf = static_cast<char *>(malloc(uulen))) == NULL) {
 			free(buf);
 			JS_RESUMEREQUEST(cx, rc);
 			return JS_TRUE;
@@ -545,7 +545,7 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 
-	if ((buf = malloc(len + 1)) == NULL)
+	if ((buf = static_cast<char *>(malloc(len + 1))) == NULL)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -623,10 +623,10 @@ js_readbin(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_FALSE;
 	}
-	b = buffer;
-	w = buffer;
-	l = buffer;
-	q = buffer;
+	b = static_cast<BYTE *>(buffer);
+	w = static_cast<WORD *>(buffer);
+	l = static_cast<DWORD *>(buffer);
+	q = static_cast<uint64_t *>(buffer);
 	retlen = fread(buffer, size, count, p->fp);
 	if (count == 1) {
 		if (retlen == 1) {
@@ -1713,7 +1713,7 @@ js_raw_write(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	if (write(fileno(p->fp), cp, len) == (size_t)len) {
+	if (write(fileno(p->fp), cp, len) == (int)len) {
 		free(cp);
 		dbprintf(FALSE, p, "wrote %lu raw bytes", len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
@@ -1761,7 +1761,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc = JS_SUSPENDREQUEST(cx);
 	if ((p->uuencoded || p->b64encoded || p->yencoded)
-	    && len && (uubuf = malloc(len)) != NULL) {
+	    && len && (uubuf = static_cast<char *>(malloc(len))) != NULL) {
 		if (p->uuencoded)
 			decoded_len = uudecode(uubuf, len, cp, len);
 		else if (p->yencoded)
@@ -1799,7 +1799,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		free(cp);
 		if (tlen > len) {
 			len = tlen - len;
-			if ((cp = malloc(len)) == NULL) {
+			if ((cp = static_cast<char *>(malloc(len))) == NULL) {
 				JS_RESUMEREQUEST(cx, rc);
 				JS_ReportError(cx, "malloc failure of %u bytes", len);
 				return JS_FALSE;
@@ -1949,7 +1949,7 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_FALSE;
 	}
-	o.b = buffer;
+	o.b = static_cast<uint8_t *>(buffer);
 	if (array == NULL) {
 		switch (size) {
 			case sizeof(int8_t):
@@ -3176,7 +3176,7 @@ JSObject* js_CreateFileClass(JSContext* cx, JSObject* parent)
 	return obj;
 }
 
-JSObject* js_CreateFileObject(JSContext* cx, JSObject* parent, char *name, int fd, const char* mode)
+JSObject* js_CreateFileObject(JSContext* cx, JSObject* parent, const char *name, int fd, const char* mode)
 {
 	JSObject*  obj;
 	private_t* p;

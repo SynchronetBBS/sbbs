@@ -39,7 +39,7 @@ typedef struct
 
 } private_t;
 
-static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
+static void dbprintf(BOOL error, private_t* p, const char* fmt, ...)
 {
 	va_list argptr;
 	char    sbuf[1024];
@@ -172,7 +172,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	HANDLE_PENDING(cx, cp);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	if (cp && comWriteBuf(p->com, (uint8_t *)cp, len) == len) {
+	if (cp && comWriteBuf(p->com, (uint8_t *)cp, len) == (int)len) {
 		dbprintf(FALSE, p, "sent %lu bytes", len);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
@@ -229,7 +229,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 		close(file);
 		return JS_TRUE;
 	}
-	if ((buf = malloc((size_t)len)) == NULL) {
+	if ((buf = static_cast<char*>(malloc((size_t)len))) == NULL) {
 		close(file);
 		return JS_TRUE;
 	}
@@ -305,7 +305,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 			dbprintf(TRUE, p, "unsupported binary write size: %d", size);
 			break;
 	}
-	if (wr == size) {
+	if (wr == (size_t)size) {
 		dbprintf(FALSE, p, "sent %u bytes (binary)", size);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {

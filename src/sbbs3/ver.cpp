@@ -54,7 +54,7 @@ extern WSADATA WSAData;
 	#include <sys/utsname.h>    /* uname() */
 #endif
 
-char* socklib_version(char* str, size_t size, char* winsock_ver)
+char* socklib_version(char* str, size_t size, const char* winsock_ver)
 {
 #if defined(_WINSOCKAPI_)
 

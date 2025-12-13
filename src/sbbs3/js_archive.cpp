@@ -27,7 +27,7 @@
 #include <archive.h>
 #include <archive_entry.h>
 
-JSClass js_archive_class;
+extern JSClass js_archive_class;
 
 static JSBool
 js_create(JSContext *cx, uintN argc, jsval *arglist)
@@ -43,7 +43,7 @@ js_create(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount  rc;
 	const char* filename;
 
-	if ((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
+	if ((filename = static_cast<const char*>(js_GetClassPrivate(cx, obj, &js_archive_class))) == NULL)
 		return JS_FALSE;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -104,7 +104,7 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *     argv = JS_ARGV(cx, arglist);
 	JSObject *  obj = JS_THIS_OBJECT(cx, arglist);
 	char*       outdir = NULL;
-	char*       allowed_filename_chars = SAFEST_FILENAME_CHARS;
+	const char* allowed_filename_chars = SAFEST_FILENAME_CHARS;
 	str_list_t  file_list = NULL;
 	bool        with_path = false;
 	bool        overwrite = true;
@@ -115,7 +115,7 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 	const char* filename;
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if ((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
+	if ((filename = static_cast<const char*>(js_GetClassPrivate(cx, obj, &js_archive_class))) == NULL)
 		return JS_FALSE;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -184,7 +184,7 @@ js_archive_type(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	jsrefcount  rc;
 	const char* filename;
 
-	if ((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
+	if ((filename = static_cast<const char*>(js_GetClassPrivate(cx, obj, &js_archive_class))) == NULL)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -203,7 +203,7 @@ js_archive_name(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	const char* filename;
 
-	if ((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
+	if ((filename = static_cast<const char*>(js_GetClassPrivate(cx, obj, &js_archive_class))) == NULL)
 		return JS_FALSE;
 
 	JSString* js_str = JS_NewStringCopyZ(cx, filename);
@@ -228,7 +228,7 @@ js_list(JSContext *cx, uintN argc, jsval *arglist)
 	const char*           filename;
 	char                  pattern[MAX_PATH + 1] = "";
 
-	if ((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
+	if ((filename = static_cast<const char*>(js_GetClassPrivate(cx, obj, &js_archive_class))) == NULL)
 		return JS_FALSE;
 
 	uintN argn = 0;
@@ -412,8 +412,8 @@ js_list(JSContext *cx, uintN argc, jsval *arglist)
 				result = archive_read_data_block(ar, &buff, &size, &offset);
 				if (result != ARCHIVE_OK)
 					break;
-				crc32 = crc32i(~crc32, buff, size);
-				crc16 = icrc16(crc16, buff, size);
+				crc32 = crc32i(~crc32, static_cast<const char*>(buff), size);
+				crc16 = icrc16(crc16, static_cast<const char*>(buff), size);
 				MD5_digest(&md5_ctx, buff, size);
 				SHA1Update(&sha1_ctx, buff, size);
 			}
@@ -461,7 +461,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	const char*           filename;
 	char                  pattern[MAX_PATH + 1] = "";
 
-	if ((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
+	if ((filename = static_cast<const char*>(js_GetClassPrivate(cx, obj, &js_archive_class))) == NULL)
 		return JS_FALSE;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -532,7 +532,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 				retval = JS_FALSE;
 				break;
 			}
-			char* np = realloc(p, total + size);
+			char* np = static_cast<char*>(realloc(p, total + size));
 			if (np == NULL) {
 				JS_ReportError(cx, "realloc failure of %" PRIi64 " bytes", total + size);
 				retval = JS_FALSE;

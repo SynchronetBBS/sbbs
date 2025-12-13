@@ -157,7 +157,7 @@ enum auth_type {
 	, AUTHENTICATION_TLS_PSK
 };
 
-char *auth_type_names[] = {
+const char *auth_type_names[] = {
 	"Unknown"
 	, "Basic"
 	, "Digest"
@@ -310,13 +310,13 @@ enum {
 	, HTTP_1_0
 	, HTTP_1_1
 };
-static char* http_vers[] = {
+static const char* http_vers[] = {
 	""
 	, "HTTP/1.0"
 	, "HTTP/1.1"
 	, NULL   /* terminator */
 };
-static char* response_http_vers[] = {
+static const char* response_http_vers[] = {
 	""
 	, "HTTP/1.1"
 	, "HTTP/1.1"
@@ -330,7 +330,7 @@ enum {
 	, HTTP_OPTIONS
 };
 
-static char* methods[] = {
+static const char* methods[] = {
 	"HEAD"
 	, "GET"
 	, "POST"
@@ -377,7 +377,7 @@ enum {
 
 static struct {
 	int id;
-	char* text;
+	const char* text;
 } headers[] = {
 	{ HEAD_DATE,            "Date"                  },
 	{ HEAD_HOST,            "Host"                  },
@@ -432,8 +432,8 @@ enum  {
 			}                                                                               \
 } while (0)
 
-static char *days[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-static char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+static const char *days[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+static const char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
 static void respond(http_session_t * session);
 static bool js_setup_cx(http_session_t* session);
@@ -692,7 +692,7 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, vo
 				GCES(status, session, "pushing data");
 				if (status == CRYPT_ERROR_TIMEOUT) {
 					tls_sent = 0;
-					if (!cryptStatusOK(status = cryptPopData(session->tls_sess, "", 0, &status))) {
+					if (!cryptStatusOK(status = cryptPopData(session->tls_sess, NULL, 0, &status))) {
 						if (status != CRYPT_ERROR_TIMEOUT && status != CRYPT_ERROR_PARAM2)
 							GCES(status, session, "popping data after timeout");
 					}
@@ -994,7 +994,7 @@ static void open_socket(SOCKET sock, void *cbdata)
 
 	if (startup != NULL && startup->socket_open != NULL)
 		startup->socket_open(startup->cbdata, true);
-	if (cbdata != NULL && !strcmp(cbdata, "TLS")) {
+	if (cbdata != NULL && !strcmp(static_cast<const char *>(cbdata), "TLS")) {
 		if (set_socket_options(&scfg, sock, "web|http|tls", error, sizeof(error)))
 			lprintf(LOG_ERR, "%04d !ERROR %s", sock, error);
 	}
@@ -1224,7 +1224,7 @@ static int get_header_type(char *header)
 }
 
 /* Opposite of get_header_type() */
-static char *get_header(int id)
+static const char *get_header(int id)
 {
 	int i;
 	if (headers[id].id == id)
@@ -1327,7 +1327,7 @@ static bool send_headers(http_session_t *session, const char *status, int chunke
 			session->req.ld->status = atoi(status);
 		return true;
 	}
-	headers = malloc(MAX_HEADERS_SIZE);
+	headers = static_cast<char *>(malloc(MAX_HEADERS_SIZE));
 	if (headers == NULL)  {
 		errprintf(LOG_CRIT, WHERE, "Could not allocate memory for response headers.");
 		session->req.sent_headers = true;
@@ -1794,7 +1794,7 @@ static void calculate_digest(http_session_t * session, char *ha1, char *ha2, uns
 	MD5_close(&ctx, digest);
 }
 
-static bool digest_authentication(http_session_t* session, int auth_allowed, user_t* thisuser, char** reason)
+static bool digest_authentication(http_session_t* session, int auth_allowed, user_t* thisuser, const char** reason)
 {
 	unsigned char digest[MD5_DIGEST_SIZE];
 	char          ha1[MD5_DIGEST_SIZE * 2 + 1];
@@ -1983,7 +1983,7 @@ static bool check_ars(http_session_t * session)
 	unsigned *auth_list;
 	unsigned  auth_list_len;
 
-	auth_list = parseEnumList(session->req.auth_list?session->req.auth_list:default_auth_list, ",", auth_type_names, &auth_list_len);
+	auth_list = parseEnumList(session->req.auth_list?session->req.auth_list:default_auth_list, ",", (str_list_t)auth_type_names, &auth_list_len);
 	for (i = 0; ((unsigned)i) < auth_list_len; i++)
 		auth_allowed |= 1 << auth_list[i];
 	if (auth_list)
@@ -2081,7 +2081,7 @@ static bool check_ars(http_session_t * session)
 			break;
 		case AUTHENTICATION_DIGEST:
 		{
-			char* reason = "unknown";
+			const char* reason = "unknown";
 			if (!digest_authentication(session, auth_allowed, &thisuser, &reason)) {
 				lprintf(LOG_NOTICE, "%04d <%s> !DIGEST AUTHENTICATION FAILURE (reason: %s)"
 				        , session->socket, session->req.auth.username, reason);
@@ -2175,7 +2175,7 @@ static bool check_ars(http_session_t * session)
 	return false;
 }
 
-static named_string_t** read_ini_list(char* path, char* section, char* desc
+static named_string_t** read_ini_list(char* path, const char* section, const char* desc
                                       , named_string_t** list, bool warn)
 {
 	size_t i;
@@ -2416,7 +2416,7 @@ static void unescape(char *p)
 	*(dst) = 0;
 }
 
-static void js_add_queryval(http_session_t * session, char *key, char *value)
+static void js_add_queryval(http_session_t * session, const char *key, const char *value)
 {
 	JSObject* keyarray;
 	jsval     val;
@@ -2454,7 +2454,7 @@ static void js_add_queryval(http_session_t * session, char *key, char *value)
 	}
 }
 
-static void js_add_cookieval(http_session_t * session, char *key, char *value)
+static void js_add_cookieval(http_session_t * session, const char *key, const char *value)
 {
 	JSObject* keyarray;
 	jsval     val;
@@ -2492,7 +2492,7 @@ static void js_add_cookieval(http_session_t * session, char *key, char *value)
 	}
 }
 
-static void js_add_request_property(http_session_t * session, char *key, char *value, size_t len, bool writeable)
+static void js_add_request_property(http_session_t * session, const char *key, const char *value, size_t len, bool writeable)
 {
 	JSString* js_str;
 
@@ -2520,17 +2520,17 @@ static void js_add_request_property(http_session_t * session, char *key, char *v
 	}
 }
 
-static void js_add_request_prop_writeable(http_session_t * session, char *key, char *value)
+static void js_add_request_prop_writeable(http_session_t * session, const char *key, const char *value)
 {
 	js_add_request_property(session, key, value, 0, /* writeable: */ true);
 }
 
-static void js_add_request_prop(http_session_t * session, char *key, char *value)
+static void js_add_request_prop(http_session_t * session, const char *key, const char *value)
 {
 	js_add_request_property(session, key, value, 0, /* writeable: */ false);
 }
 
-static void js_add_header(http_session_t * session, char *key, char *value)
+static void js_add_header(http_session_t * session, const char *key, const char *value)
 {
 	JSString* js_str;
 	char *    lckey;
@@ -2949,7 +2949,7 @@ static bool parse_headers(http_session_t * session)
 								portstr[0] = 0;
 								if (startup->tls_port != 443)
 									sprintf(portstr, ":%hu", startup->tls_port);
-								p = realloc(session->req.vary_list, (session->req.vary_list ? strlen(session->req.vary_list) + 2 : 0) + strlen(get_header(HEAD_UPGRADEINSECURE)) + 1);
+								p = static_cast<char *>(realloc(session->req.vary_list, (session->req.vary_list ? strlen(session->req.vary_list) + 2 : 0) + strlen(get_header(HEAD_UPGRADEINSECURE)) + 1));
 								if (p == NULL)
 									send_error(session, __LINE__, error_500);
 								else {
@@ -3278,7 +3278,7 @@ static bool get_request_headers(http_session_t * session)
 			if (i == -1 && (session->is_tls || SOCKET_ERRNO != EAGAIN))
 				close_session_socket(session);
 			i = strlen(head_line);
-			if (i > sizeof(head_line) - 1) {
+			if (i > (int)sizeof(head_line) - 1) {
 				errprintf(LOG_ERR, WHERE, "%04d !ERROR long multi-line header. The web server is broken!", session->socket);
 				i = sizeof(head_line) / 2;
 				break;
@@ -3654,7 +3654,7 @@ static bool check_extra_path(http_session_t * session)
 	return false;
 }
 
-static bool exec_js_webctrl(http_session_t* session, char *name, char* script, char *curdir, bool rewrite)  {
+static bool exec_js_webctrl(http_session_t* session, const char *name, const char* script, const char *curdir, bool rewrite)  {
 	jsval     rval;
 	jsval     val;
 	JSString* js_str;
@@ -4000,7 +4000,7 @@ static bool check_request(http_session_t * session)
 
 		/* No authentication provided */
 		strcpy(str, "401 Unauthorized");
-		auth_list = parseEnumList(session->req.auth_list?session->req.auth_list:default_auth_list, ",", auth_type_names, &auth_list_len);
+		auth_list = parseEnumList(session->req.auth_list?session->req.auth_list:default_auth_list, ",", (str_list_t)auth_type_names, &auth_list_len);
 		for (i = 0; ((unsigned)i) < auth_list_len; i++) {
 			p = strchr(str, 0);
 			switch (auth_list[i]) {
@@ -4213,7 +4213,7 @@ static void fastcgi_init_header(struct fastcgi_header *head, uint8_t type)
 
 static bool fastcgi_add_param(struct fastcgi_message **msg, size_t *end, size_t *size, const char *env)
 {
-	char *   sep;
+	const char * sep;
 	void *   p;
 	size_t   namelen, vallen, new_len;
 	size_t   need_bytes;
@@ -4244,7 +4244,7 @@ static bool fastcgi_add_param(struct fastcgi_message **msg, size_t *end, size_t 
 		p = realloc(*msg, *size + sizeof(struct fastcgi_header));
 		if (p == NULL)
 			return false;
-		*msg = p;
+		*msg = static_cast<fastcgi_message *>(p);
 	}
 	if (namelen > 127) {
 		l = htonl(namelen | 0x80000000);
@@ -4289,7 +4289,7 @@ static bool fastcgi_send_params(SOCKET sock, http_session_t *session)
 		}
 		if (end > 32000) {
 			msg->head.len = htons((uint16_t)end);
-			if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
+			if (sendsocket(sock, (const char *)msg, sizeof(struct fastcgi_header) + end) != (ssize_t)(sizeof(struct fastcgi_header) + end)) {
 				errprintf(LOG_ERR, WHERE, "%04d ERROR sending FastCGI params", session->socket);
 				free(msg);
 				strListFree(&env);
@@ -4301,7 +4301,7 @@ static bool fastcgi_send_params(SOCKET sock, http_session_t *session)
 	strListFree(&env);
 	if (end) {
 		msg->head.len = htons((uint16_t)end);
-		if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
+		if (sendsocket(sock, (const char *)msg, sizeof(struct fastcgi_header) + end) != (ssize_t)(sizeof(struct fastcgi_header) + end)) {
 			errprintf(LOG_ERR, WHERE, "%04d ERROR sending FastCGI params", session->socket);
 			free(msg);
 			return false;
@@ -4309,7 +4309,7 @@ static bool fastcgi_send_params(SOCKET sock, http_session_t *session)
 		end = 0;
 	}
 	msg->head.len = htons((uint16_t)end);
-	if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
+	if (sendsocket(sock, (const char *)msg, sizeof(struct fastcgi_header) + end) != (ssize_t)(sizeof(struct fastcgi_header) + end)) {
 		errprintf(LOG_ERR, WHERE, "%04d ERROR sending FastCGI params", session->socket);
 		free(msg);
 		return false;
@@ -4385,7 +4385,7 @@ static int fastcgi_read_wait_timeout(void *arg)
 	}
 
 	if (socket_readable(cd->sock, startup->max_cgi_inactivity * 1000)) {
-		if (recv(cd->sock, (void *)&cd->header, offsetof(struct fastcgi_header, len), MSG_WAITALL) != offsetof(struct fastcgi_header, len)) {
+		if (recv(cd->sock, (char *)&cd->header, offsetof(struct fastcgi_header, len), MSG_WAITALL) != offsetof(struct fastcgi_header, len)) {
 			errprintf(LOG_ERR, WHERE, "FastCGI failed to read header");
 			return ret;
 		}
@@ -4522,7 +4522,7 @@ static int fastcgi_write_in(void *arg, char *buf, size_t bufsz)
 		if (chunk_size > UINT16_MAX)
 			chunk_size = UINT16_MAX;
 		head.len = htons((uint16_t)chunk_size);
-		if (sendsocket(cd->sock, (void *)&head, sizeof(head)) != sizeof(head))
+		if (sendsocket(cd->sock, (const char *)&head, sizeof(head)) != sizeof(head))
 			return -1;
 		if (sendsocket(cd->sock, buf + pos, chunk_size) != chunk_size)
 			return -1;
@@ -4673,7 +4673,7 @@ static int cgi_readln_out(void *arg, char *buf, size_t bufsz, char *fbuf, size_t
 
 static int cgi_write_in(void *arg, char *buf, size_t bufsz)
 {
-	int              wr;
+	DWORD wr;
 	struct cgi_data *cd = (struct cgi_data *)arg;
 
 	(void)WriteFile(cd->wrpipe, buf, bufsz, &wr, /* Overlapped: */ NULL);
@@ -4921,15 +4921,14 @@ static bool exec_fastcgi(http_session_t *session)
 	struct fastcgi_message *      msg;
 	struct fastcgi_begin_request *br;
 	struct fastcgi_data           cd;
-	struct cgi_api                cgi = {
-		.read_wait_timeout = fastcgi_read_wait_timeout,
-		.read_out = fastcgi_read,
-		.read_err = fastcgi_read,
-		.readln_out = fastcgi_readln_out,
-		.write_in = fastcgi_write_in,
-		.done_wait = fastcgi_done_wait,
-		.arg = &cd
-	};
+	struct cgi_api                cgi{};
+	cgi.read_wait_timeout = fastcgi_read_wait_timeout;
+	cgi.read_out = fastcgi_read;
+	cgi.read_err = fastcgi_read;
+	cgi.readln_out = fastcgi_readln_out;
+	cgi.write_in = fastcgi_write_in;
+	cgi.done_wait = fastcgi_done_wait;
+	cgi.arg = &cd;
 
 	lprintf(LOG_DEBUG, "%04d %-5s [%s] Executing FastCGI: %s", session->socket, session->client.protocol, session->host_ip, session->req.physical_path);
 	if (session->req.fastcgi_socket == NULL) {
@@ -4958,7 +4957,7 @@ static bool exec_fastcgi(http_session_t *session)
 	br->role = htons(FCGI_RESPONDER);
 	br->flags = 0;
 	memset(br->reserved, 0, sizeof(br->reserved));
-	int result = sendsocket(sock, (void *)msg, msglen);
+	int result = sendsocket(sock, (const char *)msg, msglen);
 	if (result != msglen) {
 		errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR %d sending %d bytes to FastCGI socket (send returned %d)"
 		          , session->socket, session->client.protocol, session->host_ip, SOCKET_ERRNO, msglen, result);
@@ -4979,7 +4978,7 @@ static bool exec_fastcgi(http_session_t *session)
 	fastcgi_write_in(&cd, session->req.post_data, session->req.post_len);
 	msg->head.len = 0;
 	msg->head.type = FCGI_STDIN;
-	if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header)) != sizeof(struct fastcgi_header)) {
+	if (sendsocket(sock, (const char *)msg, sizeof(struct fastcgi_header)) != sizeof(struct fastcgi_header)) {
 		free(msg);
 		closesocket(sock);
 		lprintf(LOG_WARNING, "%04d %-s [%s] Failure to send stdin to FastCGI socket!"
@@ -5009,15 +5008,14 @@ static bool exec_fastcgi(http_session_t *session)
 static bool exec_cgi(http_session_t *session)
 {
 	struct cgi_data cd;
-	struct cgi_api  cgi = {
-		.read_wait_timeout = cgi_read_wait_timeout,
-		.read_out = cgi_read_out,
-		.read_err = cgi_read_err,
-		.readln_out = cgi_readln_out,
-		.write_in = cgi_write_in,
-		.done_wait = cgi_done_wait,
-		.arg = &cd
-	};
+	struct cgi_api  cgi{};
+	cgi.read_wait_timeout = cgi_read_wait_timeout;
+	cgi.read_out = cgi_read_out;
+	cgi.read_err = cgi_read_err;
+	cgi.readln_out = cgi_readln_out;
+	cgi.write_in = cgi_write_in;
+	cgi.done_wait = cgi_done_wait;
+	cgi.arg = &cd;
 #ifdef __unix__
 	char            cmdline[MAX_PATH + 256];
 	int             i = 0;
@@ -5412,7 +5410,7 @@ JSObject* js_CreateHttpReplyObject(JSContext* cx
 		                        , NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 
 	if ((js_str = JS_NewStringCopyZ(cx, session->req.status)) == NULL)
-		return false;
+		return nullptr;
 	JS_DefineProperty(cx, reply, "status", STRING_TO_JSVAL(js_str)
 	                  , NULL, NULL, JSPROP_ENUMERATE);
 
@@ -5426,7 +5424,7 @@ JSObject* js_CreateHttpReplyObject(JSContext* cx
 		                          , NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 
 	if ((js_str = JS_NewStringCopyZ(cx, "text/html")) == NULL)
-		return false;
+		return nullptr;
 	JS_DefineProperty(cx, headers, "Content-Type", STRING_TO_JSVAL(js_str)
 	                  , NULL, NULL, JSPROP_ENUMERATE);
 
@@ -5487,7 +5485,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 {
 	char            line[64];
 	char            file[MAX_PATH + 1];
-	char*           warning = "";
+	const char*     warning = "";
 	http_session_t* session;
 	int             log_level = LOG_ERR;
 
@@ -6548,7 +6546,7 @@ int read_post_data(http_session_t * session)
 				else {
 					/* realloc() to new size */
 					/* FREE()d in close_request */
-					p = realloc(session->req.post_data, s);
+					p = static_cast<char *>(realloc(session->req.post_data, s));
 					if (p == NULL) {
 						errprintf(LOG_CRIT, WHERE, "%04d %-5s [%s] !ERROR Allocating %lu bytes of memory"
 							, session->socket, session->client.protocol, session->host_ip, (ulong)session->req.post_len);
@@ -6576,7 +6574,7 @@ int read_post_data(http_session_t * session)
 				session->req.post_map = xpmap(session->req.cleanup_file[CLEANUP_POST_DATA], XPMAP_WRITE);
 				if (!session->req.post_map)
 					return false;
-				session->req.post_data = session->req.post_map->addr;
+				session->req.post_data = static_cast<char *>(session->req.post_map->addr);
 			}
 			/* Read more headers! */
 			if (!get_request_headers(session))
@@ -6602,11 +6600,11 @@ int read_post_data(http_session_t * session)
 				session->req.post_map = xpmap(session->req.cleanup_file[CLEANUP_POST_DATA], XPMAP_WRITE);
 				if (!session->req.post_map)
 					return false;
-				session->req.post_data = session->req.post_map->addr;
+				session->req.post_data = static_cast<char *>(session->req.post_map->addr);
 			}
 			else {
 				/* FREE()d in close_request()  */
-				if (s < (MAX_POST_LEN + 1) && (session->req.post_data = malloc((size_t)(s + 1))) != NULL)
+				if (s < (MAX_POST_LEN + 1) && (session->req.post_data = static_cast<char *>(malloc((size_t)(s + 1)))) != NULL)
 					session->req.post_len = recvbufsocket(session, session->req.post_data, s);
 				else  {
 					errprintf(LOG_CRIT, WHERE, "%04d %-5s [%s] !ERROR Allocating %lu bytes of memory"
@@ -7228,7 +7226,7 @@ void http_logging_thread(void* arg)
 
 	terminate_http_logging_thread = false;
 
-	SAFECOPY(base, arg);
+	SAFECOPY(base, static_cast<char *>(arg));
 	if (!base[0])
 		SAFEPRINTF(base, "%slogs/http-", scfg.logs_dir);
 
@@ -7251,7 +7249,7 @@ void http_logging_thread(void* arg)
 			listSemWait(&log_list);
 		}
 
-		ld = listShiftNode(&log_list);
+		ld = (log_data *)listShiftNode(&log_list);
 		/*
 		 * Because the sem is posted when terminate_http_logging_thread is set, this will
 		 * ensure that all pending log entries are written to disk
@@ -7490,7 +7488,7 @@ void web_server(void* arg)
 		mime_types = read_ini_list(mime_types_ini, NULL /* root section */, "MIME types"
 		                           , mime_types, true);
 		iniFileName(web_handler_ini, sizeof(web_handler_ini), scfg.ctrl_dir, "web_handler.ini");
-		if ((cgi_handlers = read_ini_list(web_handler_ini, "CGI."PLATFORM_DESC, "CGI content handlers"
+		if ((cgi_handlers = read_ini_list(web_handler_ini, "CGI." PLATFORM_DESC, "CGI content handlers"
 		                                  , cgi_handlers, true)) == NULL)
 			cgi_handlers = read_ini_list(web_handler_ini, "CGI", "CGI content handlers"
 			                             , cgi_handlers, true);
@@ -7533,7 +7531,7 @@ void web_server(void* arg)
 			if (!ssl_sync(&scfg, lprintf))
 				errprintf(LOG_CRIT, WHERE, "!ssl_sync() failure trying to enable TLS support");
 			else
-				xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", &terminate_server, open_socket, startup->seteuid, "TLS");
+				xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", &terminate_server, open_socket, startup->seteuid, (void*)"TLS");
 		}
 
 		listInit(&log_list, /* flags */ LINK_LIST_MUTEX | LINK_LIST_SEMAPHORE);
@@ -7616,7 +7614,7 @@ void web_server(void* arg)
 			/* Startup next session thread */
 			if (session == NULL) {
 				/* FREE()d at the start of the session thread */
-				if ((session = malloc(sizeof(http_session_t))) == NULL) {
+				if ((session = (http_session_t*)malloc(sizeof(http_session_t))) == NULL) {
 					errprintf(LOG_CRIT, WHERE, "!ERROR allocating %lu bytes of memory for http_session_t", (ulong)sizeof(http_session_t));
 					continue;
 				}
@@ -7639,7 +7637,7 @@ void web_server(void* arg)
 			if (client_socket == INVALID_SOCKET)
 				continue;
 
-			if (acc_type != NULL && !strcmp(acc_type, "TLS"))
+			if (acc_type != NULL && !strcmp((const char*)acc_type, "TLS"))
 				session->is_tls = true;
 
 			if (startup->socket_open != NULL)
@@ -7730,7 +7728,7 @@ void web_server(void* arg)
 			        , protected_uint32_value(active_clients));
 			start = time(NULL);
 			while (protected_uint32_value(active_clients)) {
-				if (time(NULL) - start > startup->max_inactivity) {
+				if (time(NULL) - start > startup->max_inactivity) { // crash here Nov-14-2025, startup is invalid non-NULL pointer
 					lprintf(LOG_WARNING, "!TIMEOUT waiting for %d active clients"
 					        , protected_uint32_value(active_clients));
 					break;

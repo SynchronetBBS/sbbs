@@ -34,7 +34,6 @@
 
 #ifdef JAVASCRIPT
 
-static void dbprintf(bool error, js_socket_private_t* p, char* fmt, ...);
 static bool do_CryptFlush(js_socket_private_t *p);
 static int do_cryptAttribute(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, int val);
 static int do_cryptAttributeString(const CRYPT_CONTEXT session, CRYPT_ATTRIBUTE_TYPE attr, void *val, int len);
@@ -315,7 +314,7 @@ static ptrdiff_t js_socket_recv(JSContext *cx, js_socket_private_t *p, void *buf
 			else {
 				ret = 0;
 				if (socket_readable(p->sock, timeout * 1000))
-					ret = recv(p->sock, buf, len, flags);
+					ret = recv(p->sock, static_cast<char *>(buf), len, flags);
 			}
 		}
 		else {
@@ -363,7 +362,7 @@ static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, s
 	char *    estr;
 
 	if (p->session == -1)
-		return sendsocket(p->sock, msg, len);
+		return sendsocket(p->sock, static_cast<const char *>(msg), len);
 	do {
 		// If we don't limit this, we occasionally get errors on large sends...
 		if ((ret = cryptPushData(p->session, msg, len > 0x2000 ? 0x2000 : len, &copied)) == CRYPT_OK) {
@@ -437,7 +436,7 @@ static off_t js_socket_sendfilesocket(js_socket_private_t *p, int file)
 	return total;
 }
 
-static void dbprintf(bool error, js_socket_private_t* p, char* fmt, ...)
+static void dbprintf(bool error, js_socket_private_t* p, const char* fmt, ...)
 {
 	va_list argptr;
 	char    sbuf[1024];
@@ -897,7 +896,7 @@ struct js_connect_event_args {
 static void
 js_connect_event_thread(void *args)
 {
-	struct js_connect_event_args *a = args;
+	struct js_connect_event_args *a = static_cast<js_connect_event_args *>(args);
 	struct addrinfo               hints, *res = NULL, *cur;
 	int                           result;
 	ulong                         val;
@@ -915,7 +914,7 @@ js_connect_event_thread(void *args)
 	ioctlsocket(a->sock, FIONBIO, &val);
 	result = SOCKET_ERROR;
 	for (cur = res; cur != NULL; cur = cur->ai_next) {
-		inet_setaddrport((void *)cur->ai_addr, a->port);
+		inet_setaddrport((xp_sockaddr *)cur->ai_addr, a->port);
 
 		result = connect(a->sock, cur->ai_addr, cur->ai_addrlen);
 		if (result == 0)
@@ -972,7 +971,7 @@ js_connect_event(JSContext *cx, uintN argc, jsval *arglist, js_socket_private_t 
 	}
 
 	// Create event
-	ev = malloc(sizeof(*ev));
+	ev = static_cast<js_event_list *>(malloc(sizeof(*ev)));
 	if (ev == NULL) {
 		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*ev));
 		closesocket(sv[0]);
@@ -995,7 +994,7 @@ js_connect_event(JSContext *cx, uintN argc, jsval *arglist, js_socket_private_t 
 	cb->events = ev;
 
 	// Start thread
-	args = malloc(sizeof(*args));
+	args = static_cast<js_connect_event_args *>(malloc(sizeof(*args)));
 	if (args == NULL) {
 		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*args));
 		closesocket(sv[0]);
@@ -1077,9 +1076,9 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 		if (argc > 2)  /* time-out value specified */
 			timeout = js_polltimeout(cx, argv[2]);
 
-		inet_addrtop((void *)cur->ai_addr, ip_str, sizeof(ip_str));
+		inet_addrtop((xp_sockaddr *)cur->ai_addr, ip_str, sizeof(ip_str));
 		dbprintf(false, p, "connecting to %s on port %u at %s", ip_str, port, p->hostname);
-		inet_setaddrport((void *)cur->ai_addr, port);
+		inet_setaddrport((xp_sockaddr *)cur->ai_addr, port);
 
 		result = connect(p->sock, cur->ai_addr, cur->ai_addrlen);
 
@@ -1090,7 +1089,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 				if (socket_writable(p->sock, timeout)) {
 					int       so_error = -1;
 					socklen_t optlen = sizeof(so_error);
-					if (getsockopt(p->sock, SOL_SOCKET, SO_ERROR, (void*)&so_error, &optlen) == 0 && so_error == 0)
+					if (getsockopt(p->sock, SOL_SOCKET, SO_ERROR, (char*)&so_error, &optlen) == 0 && so_error == 0)
 						result = 0; /* success */
 					else
 						result = so_error;
@@ -1187,7 +1186,7 @@ js_sendline(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	if (js_socket_sendsocket(p, cp, len, false) == len && js_socket_sendsocket(p, "\r\n", 2, TRUE) == 2) {
+	if (js_socket_sendsocket(p, cp, len, false) == static_cast<ptrdiff_t>(len) && js_socket_sendsocket(p, "\r\n", 2, TRUE) == 2) {
 		dbprintf(false, p, "sent %lu bytes", len + 2);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
@@ -1262,11 +1261,11 @@ js_sendto(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	for (cur = res; cur; cur = cur->ai_next) {
-		inet_addrtop((void *)cur->ai_addr, ip_addr, sizeof(ip_addr));
+		inet_addrtop((xp_sockaddr *)cur->ai_addr, ip_addr, sizeof(ip_addr));
 		dbprintf(false, p, "sending %lu bytes to %s port %u at %s"
 		         , len, ip_addr, port, p->hostname);
-		inet_setaddrport((void *)cur->ai_addr, port);
-		if (sendto(p->sock, cp, len, 0 /* flags */, cur->ai_addr, cur->ai_addrlen) == len) {
+		inet_setaddrport((xp_sockaddr *)cur->ai_addr, port);
+		if (sendto(p->sock, cp, len, 0 /* flags */, cur->ai_addr, cur->ai_addrlen) == (int)len) {
 			dbprintf(false, p, "sent %lu bytes", len);
 			JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 		} else {
@@ -1378,7 +1377,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 			dbprintf(TRUE, p, "unsupported binary write size: %d", size);
 			break;
 	}
-	if (wr == size) {
+	if (wr == static_cast<size_t>(size)) {
 		dbprintf(false, p, "sent %u bytes (binary)", size);
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	} else {
@@ -1495,11 +1494,11 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 		rc = JS_SUSPENDREQUEST(cx);
 		switch (len) {
 			case sizeof(BYTE):
-				if ((rd = recvfrom(p->sock, &b, len, 0, &addr.addr, &addrlen)) == len)
+				if ((rd = recvfrom(p->sock, (char *)&b, len, 0, &addr.addr, &addrlen)) == len)
 					data_val = INT_TO_JSVAL(b);
 				break;
 			case sizeof(WORD):
-				if ((rd = recvfrom(p->sock, (BYTE*)&w, len, 0, &addr.addr, &addrlen)) == len) {
+				if ((rd = recvfrom(p->sock, (char *)&w, len, 0, &addr.addr, &addrlen)) == len) {
 					if (p->network_byte_order)
 						w = ntohs(w);
 					data_val = INT_TO_JSVAL(w);
@@ -1507,7 +1506,7 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 				break;
 			default:
 			case sizeof(DWORD):
-				if ((rd = recvfrom(p->sock, (BYTE*)&l, len, 0, &addr.addr, &addrlen)) == len) {
+				if ((rd = recvfrom(p->sock, (char *)&l, len, 0, &addr.addr, &addrlen)) == len) {
 					if (p->network_byte_order)
 						l = ntohl(l);
 					data_val = UINT_TO_JSVAL(l);
@@ -1831,7 +1830,7 @@ js_getsockopt(JSContext *cx, uintN argc, jsval *arglist)
 		vp = &linger;
 		len = sizeof(linger);
 	}
-	if (getsockopt(p->sock, level, opt, vp, &len) == 0) {
+	if (getsockopt(p->sock, level, opt, static_cast<char *>(vp), &len) == 0) {
 		if (opt == SO_LINGER) {
 			if (linger.l_onoff == TRUE)
 				val = linger.l_linger;
@@ -1894,7 +1893,7 @@ js_setsockopt(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(
-					setsockopt(p->sock, level, opt, vp, len) == 0));
+					setsockopt(p->sock, level, opt, static_cast<const char*>(vp), len) == 0));
 	store_socket_error(p, SOCKET_ERRNO, NULL);
 
 	JS_RESUMEREQUEST(cx, rc);
@@ -1992,7 +1991,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	else {
 		nfds = js_socket_numsocks(cx, objval);
-		fds = calloc(nfds, sizeof(*fds));
+		fds = static_cast<pollfd *>(calloc(nfds, sizeof(*fds)));
 		if (fds == NULL) {
 			JS_RESUMEREQUEST(cx, rc);
 			JS_ReportError(cx, "Error allocating %d elements of %lu bytes at %s:%d"
@@ -2057,7 +2056,7 @@ js_get_callback(JSContext *cx)
 	pjs_obj = JSVAL_TO_OBJECT(val);
 	if (pjs_obj == NULL)
 		return NULL;
-	return JS_GetPrivate(cx, pjs_obj);
+	return static_cast<js_callback_t *>(JS_GetPrivate(cx, pjs_obj));
 }
 
 static void
@@ -2065,7 +2064,7 @@ js_install_one_socket_event(JSContext *cx, JSObject *obj, JSFunction *ecb, js_ca
 {
 	struct js_event_list *ev;
 
-	ev = malloc(sizeof(*ev));
+	ev = static_cast<js_event_list *>(malloc(sizeof(*ev)));
 	if (ev == NULL) {
 		JS_ReportError(cx, "error allocating %lu bytes", sizeof(*ev));
 		return;
@@ -2354,7 +2353,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 			if (b) {
 				if (p->session == -1) {
 					int ret = CRYPT_ERROR_NOTINITED;
-					scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+					scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
 					if (ssl_sync(scfg, lprintf)) {
 						if ((ret = cryptCreateSession(&p->session, CRYPT_UNUSED, tiny == SOCK_PROP_SSL_SESSION ? CRYPT_SESSION_TLS: CRYPT_SESSION_TLS_SERVER)) == CRYPT_OK) {
@@ -2715,7 +2714,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 					*vp = JSVAL_VOID;
 				else {
 					if ((cryptGetAttributeString(p->session, CRYPT_SESSINFO_USERNAME, NULL, &attrval) == CRYPT_OK) && (attrval > 0)) {
-						char *id = malloc(attrval);
+						char *id = static_cast<char *>(malloc(attrval));
 						if (id) {
 							if (cryptGetAttributeString(p->session, CRYPT_SESSINFO_USERNAME, id, &attrval) == CRYPT_OK) {
 								if ((js_str = JS_NewStringCopyN(cx, id, attrval)) == NULL) {
@@ -2980,7 +2979,7 @@ JSObject* js_CreateSocketObjectWithoutParent(JSContext* cx, SOCKET sock, CRYPT_C
 		return NULL;
 
 	len = sizeof(type);
-	getsockopt(sock, SOL_SOCKET, SO_TYPE, (void*)&type, &len);
+	getsockopt(sock, SOL_SOCKET, SO_TYPE, (char *)&type, &len);
 
 	if (!js_DefineSocketOptionsArray(cx, obj, type))
 		return NULL;
@@ -3120,7 +3119,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	jsuint               count;
 	int32                timeout = 10;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "Unable to get private runtime");
 		return JS_FALSE;
@@ -3299,7 +3298,7 @@ js_connected_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 			}
 			/* Set to non-blocking for the connect */
 			nonblock = -1;
-			ioctlsocket(p->sock, FIONBIO, &nonblock);
+			ioctlsocket(p->sock, FIONBIO, (u_long *)&nonblock);
 		}
 
 		if (connect(p->sock, cur->ai_addr, cur->ai_addrlen)) {
@@ -3400,7 +3399,7 @@ struct ls_cb_data {
 static void
 ls_cb(SOCKET sock, void *cbptr)
 {
-	struct ls_cb_data *cb = cbptr;
+	struct ls_cb_data *cb = static_cast<ls_cb_data *>(cbptr);
 	char               error[256];
 
 	call_socket_open_callback(TRUE);
@@ -3430,7 +3429,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	jsuint               count;
 	int                  i;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 	if (scfg == NULL) {
 		JS_ReportError(cx, "Unable to get private runtime");
 		goto fail;
@@ -3746,7 +3745,7 @@ JSObject* js_CreateSocketClass(JSContext* cx, JSObject* parent)
 	return sockobj;
 }
 
-JSObject* js_CreateSocketObject(JSContext* cx, JSObject* parent, char *name, SOCKET sock, CRYPT_CONTEXT session)
+JSObject* js_CreateSocketObject(JSContext* cx, JSObject* parent, const char *name, SOCKET sock, CRYPT_CONTEXT session)
 {
 	JSObject* obj;
 
@@ -3758,7 +3757,7 @@ JSObject* js_CreateSocketObject(JSContext* cx, JSObject* parent, char *name, SOC
 	return obj;
 }
 
-JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent, char *name, struct xpms_set *set)
+JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent, const char *name, struct xpms_set *set)
 {
 	JSObject*            obj;
 	js_socket_private_t* p;
@@ -3775,7 +3774,7 @@ JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent, char *na
 		return NULL;
 
 	len = sizeof(type);
-	getsockopt(set->socks[0].sock, SOL_SOCKET, SO_TYPE, (void*)&type, &len);
+	getsockopt(set->socks[0].sock, SOL_SOCKET, SO_TYPE, (char *)&type, &len);
 
 	if (!js_DefineSocketOptionsArray(cx, obj, type))
 		return NULL;

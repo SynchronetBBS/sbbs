@@ -515,7 +515,7 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 			uifc->mode = i;
 			break;
 		case PROP_SAVNUM:
-			if (i == uifc->savnum - 1 && uifc->restore != NULL)
+			if (i == static_cast<int32>(uifc->savnum) - 1 && uifc->restore != NULL)
 				uifc->restore();
 			else
 				uifc->savnum = i;
@@ -903,7 +903,7 @@ js_uifc_list(JSContext *cx, uintN argc, jsval *arglist)
 			FREE_AND_NULL(opt);
 		}
 		else if (JS_GetClass(cx, objarg) == &js_uifc_list_ctx_class) {
-			p = JS_GetPrivate(cx, objarg);
+			p = static_cast<list_ctx_private *>(JS_GetPrivate(cx, objarg));
 			if (p != NULL) {
 				dptr = &(p->cur);
 				bptr = &(p->bar);
@@ -1036,7 +1036,7 @@ js_uifc_getstrxy(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 		}
 		if (JS_GetClass(cx, objarg) == &js_uifc_getstrxy_ctx_class) {
-			p = JS_GetPrivate(cx, objarg);
+			p = static_cast<getstrxy_ctx_private *>(JS_GetPrivate(cx, objarg));
 			if (p != NULL) {
 				lastkey = &(p->lastkey);
 			}
@@ -1120,7 +1120,7 @@ js_uifc_showbuf(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 		}
 		if (JS_GetClass(cx, objarg) == &js_uifc_showbuf_ctx_class) {
-			p = JS_GetPrivate(cx, objarg);
+			p = static_cast<showbuf_ctx_private *>(JS_GetPrivate(cx, objarg));
 			if (p != NULL) {
 				cur = &(p->cur);
 				bar = &(p->bar);

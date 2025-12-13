@@ -1534,13 +1534,13 @@ bool sbbs_t::js_create_user_objects(JSContext* cx, JSObject* glob)
 	return result;
 }
 
-extern "C" bool js_CreateCommonObjects(JSContext* js_cx
+bool js_CreateCommonObjects(JSContext* js_cx
                                        , scfg_t* cfg                /* common */
                                        , scfg_t* node_cfg           /* node-specific */
                                        , jsSyncMethodSpec* methods  /* global */
                                        , time_t uptime              /* system */
-                                       , char* host_name            /* system */
-                                       , char* socklib_desc         /* system */
+                                       , const char* host_name      /* system */
+                                       , const char* socklib_desc   /* system */
                                        , js_callback_t* cb          /* js */
                                        , js_startup_t* js_startup   /* js */
                                        , client_t* client           /* client */

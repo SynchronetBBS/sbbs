@@ -75,7 +75,7 @@ FILE*              statfp;
 char               compiler[32];
 char*              host_name = NULL;
 char               host_name_buf[128];
-char*              load_path_list = JAVASCRIPT_LOAD_PATH;
+const char*        load_path_list = JAVASCRIPT_LOAD_PATH;
 bool               pause_on_exit = false;
 bool               pause_on_error = false;
 bool               terminated = false;
@@ -222,7 +222,7 @@ raw_tty(void)
 	}
 }
 
-int mfprintf(FILE* fp, char *fmt, ...)
+int mfprintf(FILE* fp, const char *fmt, ...)
 {
 	va_list argptr;
 	char    sbuf[8192];
@@ -419,7 +419,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 		if (!JS_ValueToInt32(cx, argv[0], &len))
 			return JS_FALSE;
 	}
-	if ((buf = malloc(len)) == NULL)
+	if ((buf = static_cast<char *>(malloc(len))) == NULL)
 		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -452,7 +452,7 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if (len > 0) {
-		if ((buf = malloc(len + 1)) == NULL)
+		if ((buf = static_cast<char *>(malloc(len + 1))) == NULL)
 			return JS_TRUE;
 
 		rc = JS_SUSPENDREQUEST(cx);
@@ -828,7 +828,7 @@ js_OperationCallback(JSContext *cx)
 static bool js_CreateEnvObject(JSContext* cx, JSObject* glob, char** env)
 {
 	char      name[256];
-	char*     val;
+	const char* val;
 	uint      i;
 	JSObject* js_env;
 
@@ -1062,7 +1062,7 @@ long js_exec(const char *fname, const char* buf, char** args)
 			if (line_no == 1 && strncmp(line, "#!", 2) == 0)
 				strcpy(line, "\n"); /* To keep line count correct */
 			len = strlen(line);
-			if ((js_buf = realloc_or_free(js_buf, js_buflen + len)) == NULL) {
+			if ((js_buf = static_cast<char *>(realloc_or_free(js_buf, js_buflen + len))) == NULL) {
 				lprintf(LOG_ERR, "!Error allocating %lu bytes of memory"
 				        , (ulong)(js_buflen + len));
 				if (fp != stdin)
@@ -1197,7 +1197,6 @@ void get_ini_values(str_list_t ini, const char* section, js_callback_t* cb)
 /*********************/
 /* Entry point (duh) */
 /*********************/
-extern char **environ;
 int main(int argc, char **argv)
 {
 #ifndef JSDOOR
@@ -1206,7 +1205,7 @@ int main(int argc, char **argv)
 	char*            module = NULL;
 	char*            js_buf = NULL;
 	char*            p;
-	char*            omode = "w";
+	const char*      omode = "w";
 	int              argn;
 	long             result;
 	ulong            exec_count = 0;

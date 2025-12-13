@@ -283,7 +283,7 @@ static const char* bbs_prop_desc[] = {
 };
 #endif
 
-extern "C" JSClass     js_bbs_class; // defined later
+extern JSClass js_bbs_class; // defined later
 static sbbs_t *js_GetPrivate(JSContext *cx, JSObject *obj)
 {
 	return (sbbs_t *)js_GetClassPrivate(cx, obj, &js_bbs_class);
