@@ -44,6 +44,7 @@
 #include "js_rtpool.h"
 #include "js_request.h"
 #include "multisock.h"
+#include "mxlookup.h"
 #include "ssl.h"
 #include "cryptlib.h"
 #include "git_branch.h"
@@ -55,9 +56,6 @@ static const char* server_abbrev = "mail";
 #define FORWARD         "forward:"
 #define NO_FORWARD      "local:"
 #define NO_SPAM         "#nospam"
-
-extern "C" int dns_getmx(char* name, char* mx, char* mx2
-              , DWORD intf, DWORD ip_addr, bool use_tcp, int timeout);
 
 #define pop_error       "-ERR System Error: %s, try again later"
 #define pop_auth_error  "-ERR Authentication failure"

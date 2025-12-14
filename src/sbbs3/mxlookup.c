@@ -30,6 +30,7 @@
 #include "gen_defs.h"
 #include "smbdefs.h"        /* _PACK */
 #include "mailsrvr.h"
+#include "mxlookup.h"
 
 #if defined(_WIN32) || defined(__BORLANDC__)
 	#pragma pack(push,1)    /* Packet structures must be packed */
@@ -101,7 +102,7 @@ enum {
 #define DNS_IN          1           /* Internet Query Class */
 #define DNS_ALL         255         /* Query all records */
 
-size_t dns_name(char* name, size_t* namelen, size_t maxlen, BYTE* srcbuf, char* p)
+static size_t dns_name(char* name, size_t* namelen, size_t maxlen, BYTE* srcbuf, char* p)
 {
 	size_t len = 0;
 	size_t plen;
@@ -110,7 +111,7 @@ size_t dns_name(char* name, size_t* namelen, size_t maxlen, BYTE* srcbuf, char* 
 	while (p && *p && (*namelen) < maxlen) {
 		if (len)
 			name[(*namelen)++] = '.';   /* insert between.names */
-		if (((*p) & 0xC0) == 0xC0) { /* Compresssed name */
+		if (((*p) & 0xC0) == 0xC0) { /* Compressed name */
 			(*p) &= ~0xC0;
 			offset = ntohs(*(WORD*)p);
 			(*p) |= 0xC0;
@@ -148,7 +149,7 @@ void dump(BYTE* buf, int len)
 #endif
 
 int dns_getmx(char* name, char* mx, char* mx2
-              , DWORD intf, DWORD ip_addr, BOOL use_tcp, int timeout)
+              , DWORD intf, DWORD ip_addr, bool use_tcp, int timeout)
 {
 	char*        p;
 	char*        tp;
@@ -367,7 +368,7 @@ void main(int argc, char **argv)
 	if (argc > 3)
 		bindaddr = ntohl(inet_addr(argv[3]));
 
-	if ((result = dns_getmx(argv[1], mx, mx2, bindaddr, inet_addr(argv[2]), FALSE, 60)) != 0)
+	if ((result = dns_getmx(argv[1], mx, mx2, bindaddr, inet_addr(argv[2]), false, 60)) != 0)
 		printf("Error %d getting mx record\n", result);
 	else {
 		printf("MX1: %s\n", mx);
