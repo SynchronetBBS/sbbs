@@ -138,7 +138,6 @@ void Alliances_Close(void)
 
 void KillAlliances(void)
 {
-	struct Alliance *Alliances[MAX_ALLIANCES];
 	char szFileName[16];
 	int16_t iTemp;
 
