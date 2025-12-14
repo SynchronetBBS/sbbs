@@ -418,7 +418,7 @@ function lock(op, timeout /* in seconds */, max)
 
 	while(!file_mutex(lock_fname(), op, max)) {
 		if(time() - start >= timeout) {
-        		log(LOG_ERR, "SBBSLIST: Timeout locking " + list_fname + " for " + op);
+			log(LOG_ERR, "SBBSLIST: Timeout acquiring " + lock_fname() + " for " + op);
 			return false;
 		}
 		sleep(1000);
