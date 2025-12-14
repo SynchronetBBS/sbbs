@@ -102,6 +102,14 @@ function reply_to_msg(re, text)
 		delete_msg(re);
 }
 
+function area_description(tag)
+{
+	var desc = area_desc[tag.toLowerCase()];
+	if(desc)
+		return format("%-25s %s", tag, desc);
+	return tag;
+}
+
 function handle_command(hdr, cmd)
 {
 	var me = hdr.to_net_addr;
@@ -111,13 +119,16 @@ function handle_command(hdr, cmd)
 		case "%help":
 			return help_text;
 		case "%list":
+			var response = [];
+			for(var a in area_list)
+				response.push(area_description(area_list[a]));
 			return format("%u file areas are available from %s to %s:\r\n\r\n"
-				,area_list.length, me, you) + area_list.join("\r\n");
+				,response.length, me, you) + response.join("\r\n");
 		case "%query":
 			var response = [];
 			for(var a in area_map) {
 				if(area_map[a].indexOf(you) >= 0)
-					response.push(a.toUpperCase());
+					response.push(area_description(a.toUpperCase()));
 			}
 			return format("%u file areas are connected from %s to %s:\r\n\r\n"
 				,response.length, me, you) + response.join("\r\n");
@@ -125,7 +136,7 @@ function handle_command(hdr, cmd)
 			var response = [];
 			for(var a in area_map) {
 				if(area_map[a].indexOf(you) < 0)
-					response.push(a.toUpperCase());
+					response.push(area_description(a.toUpperCase()));
 			}
 			return format("%u available file areas on %s are not connected to %s:\r\n\r\n"
 				,response.length, me, you) + response.join("\r\n");
@@ -173,9 +184,13 @@ if(!tickit.open(tickit.exists ? 'r+':'w+'))
 	js.report_error(tickit.error + " opening " + tickit.name, /* fatal */true);
 var area_list = tickit.iniGetSections();
 var area_map = {};
+var area_desc = {};
 for(var i = 0; i < area_list.length; i++) {
 	var tag = area_list[i].toLowerCase();
 	area_map[tag] = tickit.iniGetValue(tag, "links", []);
+	var dir_code = tickit.iniGetValue(tag, "dir");
+	if(dir_code)
+		area_desc[tag] = file_area.dir[dir_code].description;
 }
 var orig_map = JSON.stringify(area_map);
 
