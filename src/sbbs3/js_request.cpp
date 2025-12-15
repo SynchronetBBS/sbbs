@@ -1,3 +1,5 @@
+#ifdef DEBUG_JS_REQUESTS
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,8 +15,6 @@
 #include <jsapi.h>
 #include "threadwrap.h"
 #include "js_request.h"
-
-#ifdef DEBUG_JS_REQUESTS
 
 #define DEBUG
 
