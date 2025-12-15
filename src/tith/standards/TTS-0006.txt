@@ -126,6 +126,15 @@ Contents
   behaviour, simply calling close() on the socket should do this.
 
 
+4. Error Handling
+─────────────────
+
+  If an error is detected, it MUST be handled as described in
+  TTS-0005.  This means that if a SignedTLV has a data error, neither
+  an Accepted or Rejected will be generated for that TLV.  Both the
+  Client and Server SHOULD log this with as much detail as practical.
+
+
 A. References
 ─────────────
 
