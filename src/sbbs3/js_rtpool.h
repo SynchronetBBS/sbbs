@@ -1,15 +1,5 @@
-/* $Id: js_rtpool.h,v 1.6 2019/03/22 21:28:27 rswindell Exp $ */
-
 #ifndef _JS_RTPOOL_H_
 #define _JS_RTPOOL_H_
-
-#ifdef __unix__
-	#define XP_UNIX
-#else
-	#define XP_PC
-	#define XP_WIN
-#endif
-#include <jsapi.h>
 
 #ifdef DLLEXPORT
 #undef DLLEXPORT
