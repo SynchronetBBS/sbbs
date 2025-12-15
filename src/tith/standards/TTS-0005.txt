@@ -112,11 +112,11 @@ Contents
   O  LegacyAttributes (Section 4)
   M  Timestamp (TTS-0003)
   O  TimestampOffset (Section 4)
-  M+ ToUserName (Section 4)
+  M  ToUserName (Section 4)
   M  FromUserName (Section 4)
   M  Subject (Section 4)
   M  MessageText (Section 4)
-  E+ Area (Section 4, NOTE: May include description)
+  E  Area (Section 4, NOTE: May include description)
   O  TearLine (Section 4)
   O  OriginLine (Section 4)
   O  MessageID (Section 4)
@@ -126,6 +126,10 @@ Contents
   O  SeenBy (Section 4)
   M+ Via (Section 4)
   O+ AdditionalKludgeLine (Section 4)
+
+  Note that everything before the Signature value MUST NOT be modified
+  in transit, or the Signature will fail to validate.  If the
+  Signature does not 
 
   65. File
   ────────
@@ -200,26 +204,26 @@ Contents
 
   68. Accepted
   ────────────
-  An Accepted value  which contains a manditory RequestIdentifier as
+  An Accepted value which contains a manditory RequestIdentifier as
   defined in section 4, followed by a manditory TLVHash as defined in
   section 4.
 
   69. PollMessages
   ────────────────
-  A PollMessages value currently does not contain any data.  If this
-  is present, requests that the Destination include any held Messages
-  for the Origin in the response.
+  A PollMessages value contains a manditory RequestIdentifier.  If
+  this is present, requests that the Destination include any held
+  Messages for the Origin in the response.
 
   70. PollFiles
   ─────────────
-  A PollFiles value currently does not contain any data.  If this is
-  present, requests that the Destination include any held Messages for
-  the Origin in the response.
+  A PollFiles value  contains a manditory RequestIdentifier.  If this
+  is present, requests that the Destination include any held Messages
+  for the Origin in the response.
 
   71. PollFileRequests
   ────────────────────
-  A PollFileRequests value currently does not contain any data.  If
-  this is present, requests that the Destination include any held
+  A PollFileRequests value  contains a manditory RequestIdentifier.
+  If this is present, requests that the Destination include any held
   Messages for the Origin in the response.
 
 
@@ -373,7 +377,12 @@ Contents
   this occurs before the first SignedTLV value, it MUST be handled as
   a framing error.  If this occurs in a SignedTLV value, the
   processing MUST be identical to processing the same Bundle without
-  the SignedTLV value that contains the error.
+  the SignedTLV value that contains the error.  Missing required
+  values, and having values in the wrong order are data errors.
+
+  Note that an unknown type is not an error.  While it's encouraged to
+  log a message indicating that an unknown type is used, any unknown
+  type in any position MUST be ignored and retained.
 
 
 6.  Reply Bundles
