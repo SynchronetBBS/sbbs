@@ -98,20 +98,47 @@ Contents
 
   The following types may be included in a bundle.
 
-  64. Reserved
-  ────────────
-  This type is reserved for a message type that does not yet have a
-  TTS number.
+  64. Message
+  ───────────
+  A Message value has a large number of manditory and optional values.
+  The order is specified here as a list, with M indicating Manditory,
+  O indicating Optional, N indicating Manditory for NetMail, and E
+  indicating Manditory for EchoMail.  If a + is listed after the
+  manditory/optional chracter, indicates that multiple values of that
+  type may be included.
+  M  Origin (TTS-0003)
+  M  Destination (TTS-0003)
+  O+ File (Section 3)
+  O  LegacyAttributes (Section 4)
+  M  Timestamp (TTS-0003)
+  O  TimestampOffset (Section 4)
+  M+ ToUserName (Section 4)
+  M  FromUserName (Section 4)
+  M  Subject (Section 4)
+  M  MessageText (Section 4)
+  E+ Area (Section 4, NOTE: May include description)
+  O  TearLine (Section 4)
+  O  OriginLine (Section 4)
+  O  MessageID (Section 4)
+  O  ReplyTo (Section 4)
+  O  OriginalCharacterSet (Section 4)
+  O  Signature (TTS-0003)
+  O  SeenBy (Section 4)
+  M+ Via (Section 4)
+  O+ AdditionalKludgeLine (Section 4)
 
   65. File
   ────────
   A File value which begins with an optional Filename as defined in
   section 4, followed by an optional Timestamp as defined in TTS‑0003,
-  followed by a required RequestIdentifier as defined in section 4,
+  followed by an optional RequestIdentifier as defined in section 4,
   followed by a required Contents as defined in section 4.
 
   If a timestamp is present, it represents the time of last
   modification of the file.
+
+  If the File is in the top level SignedTLV, the RequestIdentifier
+  MUST be included.  If it is in a Message, it MUST NOT be included.
 
   66. FileRequest
   ───────────────
@@ -220,7 +247,7 @@ Contents
   ─────────────────────
   Contains a number encoded using the same method as the Type and
   Length values as defined by TTS‑0002.  This number MUST be unique
-  for each FileRequest from the Origin to the Destination, and is used
+  for each SignedTLV from the Origin to the Destination, and is used
   to correlate a status or file from the Destination with a specific
   request.
 
@@ -232,6 +259,101 @@ Contents
   that's the size of the signature public key.  This is used so that a
   specific SignedTLV must be accepted by the destination system and to
   prevent replay attacks.
+
+  100. FileAttached
+  ─────────────────
+  Contains a RequestIdentifier of a file that is also in the bundle.
+  The indicated file is attached to the message.
+
+  101. LegacyAttributes
+  ─────────────────────
+  Contains a number encoded the same as the Type and Length values.
+  The number has the same meaning as the AttributeWord in FTS-0001.
+  If anything in here is actually useful, it should have a separate
+  value.
+
+  102. TimestampOffset
+  ────────────────────
+  Contains a number encoded the same as the Type and Length values.
+  If this number is added to the Timestamp, the result will be the
+  local time/date the message was written.
+
+  103. ToUserName
+  ───────────────
+  Contains a UTF-8 string which is a user name on the destination
+  system.
+
+  104. FromUserName
+  ─────────────────
+  Contains a UTF-8 string which is a user name on the origin system.
+
+  105. Subject
+  ────────────
+  Contains a UTF-8 string which is the subject of the message.
+
+  106. MessageText
+  ────────────────
+  Contains a UTF-8 string which is the contents of the message.
+
+  107. Area
+  ─────────
+  Contains an AreaName value optionally followed by an AreaDescription
+  value.
+
+  108. AreaName
+  ─────────────
+  Contains a UTF-8 value which specifies which area the message is in.
+  This likely has a lot of legacy restrictions that I can't find in
+  any official document when used with legacy FTN software.
+
+  109. TearLine
+  ─────────────
+  Contains a UTF-8 value which is "an optional program specifier".
+  There is no "---" prefix in this value.
+
+  110. OriginLine
+  ───────────────
+  Contains a small amount of information about the system where the
+  message originated. The string SHOULD end with the node address in
+  parenthesis.  The " * Origin: " part is not included.
+
+  111. SeenBy
+  ───────────
+  Optional and only barely useful. Contains a Trimmed Collection of
+  addresses as specified in TTS-0004.  This collection is every system
+  that is expected to have received this message.
+
+  112. Via
+  ────────
+  A Via Value contains a required ViaAddress followed by a required
+  Timestamp value.
+
+  113. ViaAddress
+  ───────────────
+  This type contains the 5D address as specified by TTS‑0004.
+  This address identifies a system that processed this message.
+
+  114. MessageID
+  ──────────────
+  Contains a UTF-8 string that uniquely identifies the message on the
+  Origin system.
+
+  115. ReplyTo
+  ────────────
+  Contains a UTF-8 string that was copied from the MessageID of a
+  message that this one is a reply to.
+
+  116. OriginalCharacterSet
+  ─────────────────────────
+  Contains a UTF-8 string that indicates a previous value of the CHRS
+  control paragraph.  The Message will have been converted from this
+  to UTF-8 before it was placed in a bundle.
+
+  117. AdditionalKludgeLine
+  ─────────────────────────
+  Contains a UTF-8 string.  This string represents a control paragraph
+  and would be added to a legacy message. The CTRL-A character is not
+  present.
 
 
 5. Error Handling
