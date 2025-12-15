@@ -1,0 +1,132 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TTS‐0006
+Revision:     1
+Title:        Bundle Exchange Protocol
+Author(s):    Stephen Hurd
+Date:         2025‐12‐14
+══════════════════════════════════════════════════════════════════════
+
+Status of this document
+───────────────────────
+
+  This document is a TITH Technical Standard (TTS) — it specifies
+  the current technical requirements and recommendations for TITH
+  software developers, coordinators and sysops of the Fidonet network
+  and other networks using FTN technology.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+────────
+
+  This document describes the requirements for a TITH mailer.
+
+Contents
+────────
+
+  1.  Introduction
+  2.  Basic Design
+  3.  Bundle Types
+  4.  Error Handling
+
+  A. References
+  B. History
+
+══════════════════════════════════════════════════════════════════════
+
+
+1. Introduction
+───────────────
+
+  FTNs at their core exchange messages, files, and file requests.
+  Historically, this has been done using dial-up connections, and a
+  large amount of infrastructure has been built up around that.  It is
+  much more common however to use the internet to perform these three
+  tasks, with the binkp protocol as implemented in the binkd program
+  far and away the most common method to use.
+
+  While the binkp protocol and binkd programs perform this job very
+  well, the binkp protocol is complex enough that many third parties
+  have introduced subtle standard-breaking behaviour which must be
+  allowed to preserve compatibility with the larger network.
+
+  TITH is therefore defining a new protocol to avoid needing to test
+  against all other implementations and add various work-arounds.
+
+
+2. Terminology
+──────────────
+
+  This section defines some terms used in the rest of the document.
+
+  Client
+  ──────
+  The Client is the software that initiated the connection.  When
+  using TCP with the BSD socket API, this means it's the software that
+  called connect().  For a POTS connection, this is the software that
+  dialed the phone number.
+
+  Server
+  ──────
+  The Server is the software that was connected to.  When using TCP
+  with the BSD socket API, this means it's the software that called
+  accept().  For a POTS system, this is the software that answered the
+  phone call.
+
+
+2. Basic Design
+───────────────
+
+  The design goals of this new protocol are as folows:
+  • The Client is in charge of the connection.  The server only does
+    anything in response to an explicit request by the client.
+  • The Client performs the active close.  For TCP, this means the
+    TIME_WAIT state occurs on the client side.
+  • It is clear when a Server has completely handled a request by
+    the Client.
+  • Anything the Server sends is clearly associated with a Client
+    Request.
+  • A Server or Client may refuse something sent by the remote.  A
+    message will indicate this.
+  • Authentication is not requred by the protocol.  Every separate
+    item will be signed by the origin, and the decision to refuse or
+    accept an item is based on the origin and the signature.
+  • The Client must be able to send all of the bundles it has
+    prepared, and never send another byte.
+
+
+3. Connection Flow
+──────────────────
+
+  For TCP, as soon as the connection is established, the Client is
+  expected to start a single bundle as described in TTS-0005.  If the
+  bundles does not have any Poll values in it (PollMessages,
+  PollFiles, PollFileRequests), it SHOULD send a FIN on the socket.
+  For the BSD socket API, this means calling shutdown() with a how
+  value of SHUT_WR.  If any of the Poll values were present, it should
+  receive a reply bungle from the Server and send a reply bundle in
+  response to that, then shutdown the connection.
+
+  The Server will generate a reply bundle indicating what was accepted
+  or rejected in the corresponding bundle.  It may send the reply
+  while still receiving the bundle from the client, but MUST NOT start
+  the SignedTLV response until it has verified the signature of the
+  SignedTLV in the bundle from the Client.
+
+  Replies may continue to go back and forth until a reply bundle is
+  sent that does not have a Poll value in it.  If the server sends
+  this bundle, it SHOULD try to wait for the client to initialize the
+  close.  If the Client sends this bundle, it SHOULD send a FIN as
+  described above.  If the Client receives this bundle, it SHOULD
+  ensure that a FIN is sent and not a RST.  Since this is the standard
+  behaviour, simply calling close() on the socket should do this.
+
+
+A. References
+─────────────
+
+  [TTS‑0005] "Bundle Format", TITH, 2025‑11‑15
