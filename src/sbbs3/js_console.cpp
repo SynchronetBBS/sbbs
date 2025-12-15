@@ -770,7 +770,7 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 
 	for (i = 0; i < argc; i++) {
 		if (JSVAL_IS_NUMBER(argv[i])) {
-			if (!maxlen) {
+			if (maxlen == 0) {
 				if (!JS_ValueToInt32(cx, argv[i], &maxlen))
 					return JS_FALSE;
 			}
@@ -807,7 +807,7 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	if (!maxlen)
+	if (maxlen < 1)
 		maxlen = 128;
 
 	if ((p = (char *)calloc(1, maxlen + 1)) == NULL)
