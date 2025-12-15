@@ -159,6 +159,8 @@ bool Config_Init(uint16_t Node, struct NodeData *(*getNodeData)(int))
 						break;
 					case 10 : /* BBS Id */
 						Config.BBSID = ato16(pcCurrentPos, "BBS ID", __func__);
+						if (Config.BBSID > MAX_IBBSNODES || Config.BBSID < 1)
+							System_Error("BBSId out of bounds!\n");
 						break;
 					case 11 : /* netmail dir */
 						strlcpy(Config.szNetmailDir, pcCurrentPos, sizeof(Config.szNetmailDir));
