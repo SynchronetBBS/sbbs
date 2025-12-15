@@ -32,6 +32,9 @@ Contents
   1.  Introduction
   2.  Encoding
   3.  Bundle Types
+  4.  Ancillary Types
+  5.  Error Handling
+  6.  Reply Bundles
 
   A. References
   B. History
@@ -81,8 +84,9 @@ Contents
   abandoned.
 
   It is RECOMMENDED that there be no more than two SignedTLV values in
-  each bundle, with the first containing all FileRequest values, and
-  the next containing everything else.  If there are no FileRequest
+  each bundle, with the first containing all FileRequest,
+  PollMessages, PollFiles, and PollFileRequests values, and the next
+  containing everything else.  If there are no FileRequest or Poll
   values, a single SignedTLV SHOULD be used.  The reason for this is
   to allow the destination node to validate the SignedTLV containing
   the FileRequests and start sending them while any Files or Messages
@@ -103,14 +107,11 @@ Contents
   ────────
   A File value which begins with an optional Filename as defined in
   section 4, followed by an optional Timestamp as defined in TTS‑0003,
-  followed by an optional RequestIdentifier as defined in section 4,
+  followed by a required RequestIdentifier as defined in section 4,
   followed by a required Contents as defined in section 4.
 
   If a timestamp is present, it represents the time of last
   modification of the file.
-
-  If a RequestIdentifier is present, indicates that this file is
-  included because of a FileRequest from Destination to Origin.
 
   66. FileRequest
   ───────────────
@@ -136,38 +137,63 @@ Contents
   in there.  I think it's a terrible idea though, and the processors
   written as part of the TITH project won't support them.
 
-  67. NoFile
-  ──────────
-  A NoFile value which contains a manditory RequestIdentifier as
-  defined in section 4, followed by an optional Timestamp as defined
-  by TTS‑0003, followed by a manditory number encoded in the same
-  manner as Type and Length, optionally followed by a UTF‑8 string
-  containing a human‐readable description of why there is no file.
+  67. Rejected
+  ────────────
+  A Rejected value which contains a manditory RequestIdentifier as
+  defined in section 4, followed by a manditory TLVHash as defined in
+  section 4, followed by an optional Timestamp as defined by TTS‑0003,
+  followed by a manditory number encoded in the same manner as Type
+  and Length, optionally followed by a UTF‑8 string containing a
+  human‐readable description of why there is no file.
 
-  This is included because a FileRequest from Destination to Origin
-  did not result in a file being included.
+  This is included because a Message, File, or FileRequest from
+  Destination to Origin was not accepted.
 
   The RequestIdentifier is the the one that was in the original
-  FileRequest.
+  Message, File, or FileRequest.
 
   If a Timestamp is present, indicates an expected time at which the
-  same FileRequest would result in a File.
+  same request would not be Rejected.
 
   The number may have one of the following values:
 
-  1 – Indicates that no file by that name may be requested by the
-      node that send the FileRequest.  This may be due to the file not
-      existing, the file not being requestable, or the file requesting
-      node not having access to the file.
-  2 – Indicates that the request was conditional, and the condition
-      was not met.  For example, if a Timestamp was included in the
-      request, but the last modified time of the requested file
+  1 – Indicates that in the current configuration, the TLV value would
+      always be Rejected.  Including it in a future bundle would also
+      be rejected.
+  2 – Indicates that the TLV was conditional, and the condition was
+      not met.  For example, if a Timestamp was included in a
+      FileRequest, but the last modified time of the requested file
       matches the value of the Timestamp.  If a Timestamp is included
-      in the NoFile value, this is a time after which it is expected
-      that the file will have been updated.
-  3 – Indicates that the node is not willing to send the file at this
-      time.  If a Timestamp is included in the NoFile value, this is
-      a time at which the node expects to be willing to send the file.
+      in the NoFile value, this is a time at which it is expected that
+      TLV value would not be Rejected.
+  3 – Indicates that the node is not willing to accept the TLV value
+      at this time.  If a Timestamp is included in the NoFile value,
+      this is a time at which the node expects to be willing to accept
+      the TLV value.
+
+  68. Accepted
+  ────────────
+  An Accepted value  which contains a manditory RequestIdentifier as
+  defined in section 4, followed by a manditory TLVHash as defined in
+  section 4.
+
+  69. PollMessages
+  ────────────────
+  A PollMessages value currently does not contain any data.  If this
+  is present, requests that the Destination include any held Messages
+  for the Origin in the response.
+
+  70. PollFiles
+  ─────────────
+  A PollFiles value currently does not contain any data.  If this is
+  present, requests that the Destination include any held Messages for
+  the Origin in the response.
+
+  71. PollFileRequests
+  ────────────────────
+  A PollFileRequests value currently does not contain any data.  If
+  this is present, requests that the Destination include any held
+  Messages for the Origin in the response.
 
 
 4. Ancillary Types
@@ -197,6 +223,46 @@ Contents
   for each FileRequest from the Origin to the Destination, and is used
   to correlate a status or file from the Destination with a specific
   request.
+
+  99. TLVHash
+  ───────────
+  Contains a 32-byte hash as generated by the libhydrogen generic hash
+  functions on a TLV object using a context that is the C string
+  "HashTLV" (with trailing NUL).  Thirty-two bytes was chosen because
+  that's the size of the signature public key.  This is used so that a
+  specific SignedTLV must be accepted by the destination system and to
+  prevent replay attacks.
+
+
+5. Error Handling
+─────────────────
+  When processing a bundle, errors can fall into two categories,
+  framing and data.
+
+  A framing error occurs in the TLV parsing where the Type or Length
+  is not properly encoded, or the Value is not long enough.  When a
+  framing error occurs, the software MUST NOT attempt to process past
+  the offset in the bundle where the error occured, and if it occurs
+  inside a SignedTLV, the entire SignedTLV must be rejected.
+  Processing should be the same as if the SignedTLV (if any) and
+  everything after it was not present in the bundle.
+
+  A data error occures because a Value field contains an error.  If
+  this occurs before the first SignedTLV value, it MUST be handled as
+  a framing error.  If this occurs in a SignedTLV value, the
+  processing MUST be identical to processing the same Bundle without
+  the SignedTLV value that contains the error.
+
+
+6.  Reply Bundles
+─────────────────
+
+  Reply bundles are generated in response to other bundles.  For each
+  value in the bundle of the types Message, File, FileRequest,
+  PollMessages, PollFiles, and PollRequests, an Accepted or Rejected
+  value is included in the same order as in the original bundle.  The
+  polled types may also be included.  An Accepted value for a Poll
+  type SHOULD be followed by the types polled if any.
 
 
 A. References
