@@ -1,0 +1,147 @@
+**********************************************************************
+TITH                                              THIS ISN'T THAT HARD
+**********************************************************************
+
+Publication:  TTS‐0007
+Revision:     1
+Title:        Legacy Data Formats and TITH
+Author(s):    Stephen Hurd
+Date:         2025‐12‐16
+══════════════════════════════════════════════════════════════════════
+
+Status of this document
+───────────────────────
+
+  This document is a TITH Technical Standard (TTS) — it specifies
+  the current technical requirements and recommendations for TITH
+  software developers, coordinators and sysops of the Fidonet network
+  and other networks using FTN technology.
+
+  This document is released to the public domain, and may be used,
+  copied or modified for any purpose whatever.
+
+Abstract
+────────
+
+  This document describes how TITH data can be mapped to legacy FTN
+  formats.
+
+Contents
+────────
+
+  1.  Introduction
+
+  A. References
+  B. History
+
+══════════════════════════════════════════════════════════════════════
+
+
+1. Introduction
+───────────────
+
+  Until every single node on all networks use TITH for everything, we
+  will need to be able to translate to and from the legacy formats as
+  used for decades.
+
+  This document specifies how to convert various legacy formats to the
+  corresponding TITH documents.
+
+
+2. NetMail Formats
+──────────────────
+
+  FTN software can usually interact with 4 data formats for NetMail.
+  These are the "Message Text" format specified in FTS-0001, the
+  "Stored Message" format specified in FTS-0001, the "Packed Message"
+  format specified in FTS-0001, and the "Packet" as specified in
+  FTS-0001.  An alternate packet header called "Type-2+" is usually
+  used in Packets, and is specified in FSC-0048.  There are other
+  packet header formats, but Type-2+ has clearly won on FidoNet and
+  FTN software.
+
+  1. Message Text
+  ───────────────
+  Legacy FTN Message Text is a custom 8-bit character set which is an
+  overlay on ASCII.  The following are redefined:
+  0x0D - 'hard' carriage return.  Marks the end of a paragraph.
+  0x8D - 'soft' carriage return.  Equivalent to ASCII NUL.
+  0x0A - linefeed.  Equivalent to ASCII NUL.
+  0x01 - Control Paragraph.  Causes all bytes up to and including the
+         next 0x0D to be interpreted as a control paragraph.
+
+  Any byte with the high bit set (ie: 0x80 and above) with the
+  exception of 0x8D is not defined.  When encountered, TITH software
+  MAY assume it is using whatever 8-bit encoding was most common in
+  their area before Unicode became the norm.
+
+  1.1 Character Sets
+  ──────────────────
+  Poorly defined in FTS-5003 is a terrible way to indicate a character
+  set other than the default one specified above.  Recommended usage
+  of this control paragraph us covered below.
+
+  1.2 Converting from TITH to Legacy
+  ──────────────────────────────────
+  Converting from TITH format to legacy format is relatively
+  straight-forward.  The following are concatenated:
+
+  "\x01CHRS: UTF-8 4\x0d" - this indicates that UTF-8 is used.
+  "\x01MSGID: \"" followed by the full origin address, followed by
+      "\" ", followed by the value of MessageID.  This is included
+      only if MessageID is present.
+  "\x01REPLY: " followed by the value of MessageID, followed by
+      "\x0d". This is included only if ReplyTo is present.
+  MessageText - The original unmodified text of the message.  If the
+      original message did not end with "\x0d", one is appended.
+  "\x01TOPT " followed by the text point number, followed by "\x0d".
+      This is included only if the destination address has a non-zero
+      point component.
+  "\x01FMPT " followed by the text point number, followed by "\x0d".
+      This is included only if the destination address has a non-zero
+      point component.
+  "\x01INTL " followed by the 3D address of the destination node,
+      followed by " ", folowed by a 3D address of the origin node,
+      followed by "\x0d".
+  "\x01TZUTC: 0000\x0d"
+  "\x01Via " followed by the shitty FTN z:N/F[.P][@domain] formatted
+      Address, followed by " ", followed by the timstamp formatted as
+      "@YYYYMMDDHHMMSS.UTC " followed by either the UTF-8 string or
+      "TTS-0007 1" if the string is zero length.  This should be
+      repeated in order for every Via value in the message.
+
+  1.3 Converting from Legacy to TITH
+  ──────────────────────────────────
+  This is a multi-step process, and many of the steps can be expanded
+  to perform optional FTN processing.
+
+  1. If the first bytes are "\x01AREA:" or "AREA:", this is an
+     EchoMail, do not process as described in section 2.
+  2. Scan the entire message for a "\x01CHRS: " control paragraph.  If
+     it is present, and does not indicate UTF-8, convert the entire
+     message from whatever the CHRS line says to UTF-8.  This includes
+     the subject and from/to user names, which aren't part of the
+     message text because why not?
+
+
+  2. Stored Message
+  ─────────────────
+  The Stored Message is not strictly covered by the FidoNet standards,
+  but is rather an intermediary format that was used by the original
+  Fido software.  However, since software supported it, it became the
+  defined generic way to generate and consume message from non-BBS
+  software, especially InterBBS games.  Support for importing from and
+  exporting to this format is expected to be required 
+
+
+A. References
+─────────────
+
+  [FTS-0001] "A Basic FidoNet(r) Techincal Standard", Randy Bush,
+  Pacific Systems Group, 1995‑09‑30
+
+  [FTS-0048] "A Proposed Type-2 Packet Extension", Jan Vroonhof,
+  1990‑10‑21
+
+  [FTS-5003] "Character set definition in Fidonet messages", Peter
+  Krefting (born Karlsson), 2012-04-07
