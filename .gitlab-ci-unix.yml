@@ -1266,7 +1266,7 @@ spec:
     - touch ${CI_PIPELINE_ID}.ci
     - rm -rf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../../..
-    - for dir in */${CI_PROJECT_NAMESPACE}; do if [ -f $dir/${CI_PROJECT_NAME}/${CI_PIPELINE_ID}.ci ]; then rm -rf $dir/; fi; done
+    - if [ "${CI_PROJECT_NAMESPACE}" != "main" ]; then for dir in */${CI_PROJECT_NAMESPACE}; do if [ -f $dir/${CI_PROJECT_NAME}/${CI_PIPELINE_ID}.ci ]; then rm -rf $dir/; fi; done; fi
   variables:
     GIT_STRATEGY: none
   dependencies: []
