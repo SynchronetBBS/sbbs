@@ -1812,6 +1812,10 @@ static FILE *getPacketFP(int16_t DestID)
 
 	// couldn't open file
 	LastCounter = IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex;
+	if (LastCounter < 'a')
+		LastCounter = 'a';
+	if (LastCounter > 'z')
+		LastCounter = 'z';
 
 	if (System.LocalIBBS) {
 		if (Config.NumInboundDirs)
@@ -1836,6 +1840,10 @@ static FILE *getPacketFP(int16_t DestID)
 	strlcat(szFullFileName, szPacketName, sizeof(szFullFileName));
 
 	/* increment for next time */
+	if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex < 'a')
+		IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex = 'a';
+	if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex > 'z')
+		IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex = 'z';
 	IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex++;
 	if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex == 'z' + 1)
 		IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex = 'a';
