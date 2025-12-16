@@ -203,6 +203,7 @@ typedef int64_t uifc_winmode_t;
 #define K_NOSPACE   (1 << 26) /* Don't allow any wsp chars				*/
 #define K_SPACE     (1 << 27) // Allow wsp chars (defeat K_TRIM and K_NOSPACE)
 #define K_CHANGED   (1 << 28) /* Return -1 if string was not changed (w/K_EDIT) */
+#define K_NEGATIVE  (1 << 29) /* Allow negative K_NUMERIC and K_DECIMAL values */
 
 
 /* Extra exit flags */

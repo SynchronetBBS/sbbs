@@ -2498,14 +2498,16 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					}
 					continue;
 			}
-			if (mode & K_NUMBER && !isdigit(ch))
-				continue;
-			if (mode & K_DECIMAL && !isdigit(ch)) {
-				if (ch != '.')
+			if (!((mode & K_NEGATIVE) && ch == '-' && i == 0)) {
+				if (mode & K_NUMBER && !isdigit(ch))
 					continue;
-				if (gotdecimal)
-					continue;
-				gotdecimal = TRUE;
+				if (mode & K_DECIMAL && !isdigit(ch)) {
+					if (ch != '.')
+						continue;
+					if (gotdecimal)
+						continue;
+					gotdecimal = TRUE;
+				}
 			}
 			if (mode & K_ALPHA && !isalpha(ch))
 				continue;
