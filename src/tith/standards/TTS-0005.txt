@@ -130,7 +130,10 @@ Contents
   O+ AdditionalKludgeLine (Section 4)
 
   Note that everything before the Signature value MUST NOT be modified
-  in transit, or the Signature will fail to validate.
+  in transit, or the Signature will fail to validate. If the signature
+  does not validate, the software SHOULD send a message to that effect
+  to the original user and when imported to a BBS, the message SHOULD
+  have an indication that it was modified in transit.
 
   65. File
   ────────
@@ -350,53 +353,49 @@ Contents
 
   113. Via
   ────────
-  A Via Value contains a required ViaAddress followed by a required
+  A Via Value contains a required Address followed by a required
   Timestamp value.
 
-  114. ViaAddress
-  ───────────────
-  This type contains the 5D address as specified by TTS‑0004.
-  This address identifies a system that processed this message.
-
-  115. MessageID
+  114. MessageID
   ──────────────
   Contains a UTF-8 string that uniquely identifies the message on the
   Origin system.
 
-  116. ReplyTo
+  115. ReplyTo
   ────────────
-  Contains a UTF-8 string that was copied from the MessageID of a
-  message that this one is a reply to.
+  Contains a required Address followed by a required UTF-8 string that
+  was copied from the MessageID of a message that this one is a reply
+  to.
 
-  117. OriginalCharacterSet
+  116. OriginalCharacterSet
   ─────────────────────────
   Contains a UTF-8 string that indicates a previous value of the CHRS
   control paragraph.  The Message will have been converted from this
   to UTF-8 before it was placed in a bundle.
 
-  118. AdditionalKludgeLine
+  117. AdditionalKludgeLine
   ─────────────────────────
   Contains a UTF-8 string.  This string represents a control paragraph
   and would be added to a legacy message. The CTRL-A character is not
   present.
 
-  119. ShortDescription
+  118. ShortDescription
   ─────────────────────
   Contains a UTF-8 string which describes the File. This SHOULD be no
   more than 45 characters, and MUST NOT contain newlines.
 
-  120. LongDescriptionLine
+  119. LongDescriptionLine
   ────────────────────────
   Contains a UTF-8 string for each line of a multi-line description.
   Each line SHOULD be no more than 45 characters, and MUST NOT contain
   newlines.
 
-  121. MagicWord
+  120. MagicWord
   ──────────────
   Contains a UTF-8 string indicating a potential alias for requesting
   the file with.
 
-  122. Replaces
+  121. Replaces
   ─────────────
   Contains a UTF-8 string with wildcard characters '*' and '?' to
   select files this replaces. It is expected that configuration around
