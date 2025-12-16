@@ -141,6 +141,10 @@ Contents
       This type contains the text representation of a 5D address as
       specified by TTS‑0004.
 
+  7.  Address
+      This type contains the text representation of a 5D address as
+      specified by TTS‑0004.
+
 
 A. References
 ─────────────
