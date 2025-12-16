@@ -354,7 +354,8 @@ Contents
   113. Via
   ────────
   A Via Value contains a required Address followed by a required
-  Timestamp value.
+  Timestamp value followed by a UTF-8 string which MAY contain the
+  program name and version separated by a space.
 
   114. MessageID
   ──────────────
