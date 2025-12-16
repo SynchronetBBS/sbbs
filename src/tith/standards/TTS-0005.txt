@@ -106,43 +106,59 @@ Contents
   indicating Manditory for EchoMail.  If a + is listed after the
   manditory/optional chracter, indicates that multiple values of that
   type may be included.
+
   M  Origin (TTS-0003)
   M  Destination (TTS-0003)
-  O+ File (Section 3)
-  O  LegacyAttributes (Section 4)
   M  Timestamp (TTS-0003)
-  O  TimestampOffset (Section 4)
   M  ToUserName (Section 4)
   M  FromUserName (Section 4)
   M  Subject (Section 4)
   M  MessageText (Section 4)
-  E  Area (Section 4, NOTE: May include description)
+  E  Area (Section 4)
+  O+ File (Section 3)
+  O  LegacyAttributes (Section 4)
+  O  TimestampOffset (Section 4)
   O  TearLine (Section 4)
   O  OriginLine (Section 4)
   O  MessageID (Section 4)
   O  ReplyTo (Section 4)
   O  OriginalCharacterSet (Section 4)
   O  Signature (TTS-0003)
-  O  SeenBy (Section 4)
+  M  RequestIdentifier (Section 4)
   M+ Via (Section 4)
+  O  SeenBy (Section 4)
   O+ AdditionalKludgeLine (Section 4)
 
   Note that everything before the Signature value MUST NOT be modified
-  in transit, or the Signature will fail to validate.  If the
-  Signature does not 
+  in transit, or the Signature will fail to validate.
 
   65. File
   ────────
-  A File value which begins with an optional Filename as defined in
-  section 4, followed by an optional Timestamp as defined in TTS‑0003,
-  followed by an optional RequestIdentifier as defined in section 4,
-  followed by a required Contents as defined in section 4.
+  A File value has a large number of manditory and optional values.
+  The order is specified here as a list, with M indicating Manditory,
+  O indicating Optional, A indicating manditory for a File inside of a
+  Message, T indicating manditory for a File not inside of a Message,
+  directly inside of a SignedTLV, and F file a file that is part of
+  a distribution network.
+  O  Filename (Section 4)
+  O  Timestamp (TTS-0003)
+  T  RequestIdentifier (Section 4)
+  M  Contents (Section 4)
+  F  Area (Section 4)
+  F  Origin (TTS-0003)
+  O  ShortDescription (Section 4)
+  O+ LongDescriptionLine (Section 4)
+  O  TearLine (Section 4)
+  O  MagicWord (Section 4)
+  O  Replaces (Section 4)
+  O  Signature (TTS-0003)
+  F+ Via (Section 4)
+  F+ SeenBy (Section 4)
 
   If a timestamp is present, it represents the time of last
   modification of the file.
 
-  If the File is in the top level SignedTLV, the RequestIdentifier
-  MUST be included.  If it is in a Message, it MUST NOT be included.
+  The file values were chosen to allow replacing tick files.
 
   66. FileRequest
   ───────────────
@@ -310,54 +326,81 @@ Contents
   This likely has a lot of legacy restrictions that I can't find in
   any official document when used with legacy FTN software.
 
-  109. TearLine
+  109. AreaDescription
+  ────────────────────
+  Contains a UTF-8 value which provides a description of the area for
+  use when automatically adding areas.
+
+  110. TearLine
   ─────────────
   Contains a UTF-8 value which is "an optional program specifier".
   There is no "---" prefix in this value.
 
-  110. OriginLine
+  111. OriginLine
   ───────────────
   Contains a small amount of information about the system where the
   message originated. The string SHOULD end with the node address in
   parenthesis.  The " * Origin: " part is not included.
 
-  111. SeenBy
+  112. SeenBy
   ───────────
   Optional and only barely useful. Contains a Trimmed Collection of
   addresses as specified in TTS-0004.  This collection is every system
   that is expected to have received this message.
 
-  112. Via
+  113. Via
   ────────
   A Via Value contains a required ViaAddress followed by a required
   Timestamp value.
 
-  113. ViaAddress
+  114. ViaAddress
   ───────────────
   This type contains the 5D address as specified by TTS‑0004.
   This address identifies a system that processed this message.
 
-  114. MessageID
+  115. MessageID
   ──────────────
   Contains a UTF-8 string that uniquely identifies the message on the
   Origin system.
 
-  115. ReplyTo
+  116. ReplyTo
   ────────────
   Contains a UTF-8 string that was copied from the MessageID of a
   message that this one is a reply to.
 
-  116. OriginalCharacterSet
+  117. OriginalCharacterSet
   ─────────────────────────
   Contains a UTF-8 string that indicates a previous value of the CHRS
   control paragraph.  The Message will have been converted from this
   to UTF-8 before it was placed in a bundle.
 
-  117. AdditionalKludgeLine
+  118. AdditionalKludgeLine
   ─────────────────────────
   Contains a UTF-8 string.  This string represents a control paragraph
   and would be added to a legacy message. The CTRL-A character is not
   present.
+
+  119. ShortDescription
+  ─────────────────────
+  Contains a UTF-8 string which describes the File. This SHOULD be no
+  more than 45 characters, and MUST NOT contain newlines.
+
+  120. LongDescriptionLine
+  ────────────────────────
+  Contains a UTF-8 string for each line of a multi-line description.
+  Each line SHOULD be no more than 45 characters, and MUST NOT contain
+  newlines.
+
+  121. MagicWord
+  ──────────────
+  Contains a UTF-8 string indicating a potential alias for requesting
+  the file with.
+
+  122. Replaces
+  ─────────────
+  Contains a UTF-8 string with wildcard characters '*' and '?' to
+  select files this replaces. It is expected that configuration around
+  sources and signatures be available.
 
 
 5. Error Handling
