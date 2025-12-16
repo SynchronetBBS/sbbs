@@ -508,6 +508,9 @@ In this menu, you can modify all the connection settings for an entry.
 The exact contents of this menu will vary a bit by connection type, but
 most of the options are the same or silimar.
 
+kbd:[Ctrl+S]::
+Edit the Explicit Sort Value.
+
 Name::
 The name of the entry.
 
@@ -722,6 +725,10 @@ be sorted on.
 
 Pressing enter on a field will toggle if it's reversed (highest to
 lowest) or not.
+
+The Explicit Sort Value exists to manually control the position of entries
+in the list, and can be accessed using :[Ctrl+D]: in the Edit Directory Entry
+menu.
 
 
 ==== Viewing the Scrollback

@@ -53,6 +53,7 @@ struct sort_order_info {
 
 #define SORT_ORDER_REVERSED (1 << 0)
 #define SORT_ORDER_STRING (1 << 1)
+#define DEFAULT_SORT_ORDER_VALUE (0)
 
 static struct sort_order_info sort_order[] = {
 	{
@@ -228,6 +229,12 @@ static struct sort_order_info sort_order[] = {
 		0,
 		offsetof(struct bbslist, term_name),
 		sizeof(((struct bbslist *)NULL)->term_name)
+	},
+	{
+		"Explicit Sort Order",
+		0,
+		offsetof(struct bbslist, sort_order),
+		sizeof(((struct bbslist *)NULL)->sort_order)
 	},
 	{
 		NULL,
@@ -846,6 +853,9 @@ read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsna
 	iniGetSString(section, NULL, "Comment", "", entry->comment, sizeof(entry->comment));
 	entry->type = type;
 	entry->id = id;
+
+	/* Random junk */
+	entry->sort_order = iniGetInt32(section, NULL, "SortOrder", DEFAULT_SORT_ORDER_VALUE);
 }
 
 static bool
@@ -1446,7 +1456,7 @@ build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 	if (isdefault)
 		hblen = strlcpy(helpbuf, "`Edit Default Connection`\n\n", hbsz);
 	else
-		hblen = strlcpy(helpbuf, "`Edit Directory Entry`\n\n", hbsz);
+		hblen = strlcpy(helpbuf, "`Edit Directory Entry`\n\n~ CTRL-S ~ To Edit Explicit Sort Index\n\n", hbsz);
 
 	hblen += strlcat(helpbuf + hblen, "Select item to edit.\n\n", hbsz - hblen);
 
@@ -1885,6 +1895,23 @@ edit_palette(struct bbslist *item)
 	return false;
 }
 
+void
+edit_sort_order(str_list_t inifile, char *itemname, struct bbslist *item)
+{
+	char val[12];
+
+	uifc.helpbuf = "`Explicit Sort Value`\n\n"
+		       "This number is to allow manual overriding of sort order, it is not used\n"
+		       "for any other purpose. The default value is 0.\n";
+
+	// NOTE: No way to enter negative values
+	snprintf(val, sizeof(val), "%d", item->sort_order);
+	if (uifc.input(WIN_MID, 0, 0, "Explicit Sort Value", val, 11, K_NUMBER | K_NEGATIVE | K_EDIT) >= 0) {
+		item->sort_order = atoi(val);
+		iniSetInt32(&inifile, itemname, "SortOrder", item->sort_order, &ini_style);
+	}
+}
+
 int
 edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault)
 {
@@ -1935,9 +1962,11 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		build_edit_list(item, opt, optmap, opts, isdefault, itemname);
 		uifc.changes = 0;
 		uifc.helpbuf = helpbuf;
-		i = uifc.list(WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &copt, &bar,
+		i = uifc.list(WIN_EXTKEYS | WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &copt, &bar,
 		              isdefault ? "Edit Default Connection" : "Edit Directory Entry",
 		              opts);
+		if (i == -2 - CTRL_S && !isdefault)
+			edit_sort_order(inifile, itemname, item);
 		if (i < -1)
 			continue;
 		// Remember, i gets converted to (unsigned) size_t in comparison
@@ -2538,6 +2567,9 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 	static_assert(sizeof(int) == sizeof(uint32_t), "int must be four bytes");
 	if (bbs->palette_size > 0)
 		iniSetIntList(&inifile, bbs->name, "Palette", ",", (int*)bbs->palette, bbs->palette_size, &ini_style);
+	if (bbs->sort_order != DEFAULT_SORT_ORDER_VALUE)
+		iniSetInt32(&inifile, bbs->name, "SortOrder", bbs->sort_order, &ini_style);
+
 	if ((listfile = fopen(listpath, "wb")) != NULL) {
 		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
 		fclose(listfile);
