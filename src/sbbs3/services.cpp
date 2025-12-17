@@ -561,14 +561,14 @@ js_logout(JSContext *cx, uintN argc, jsval *arglist)
 	if (client->user.number < 1)   /* Not logged in */
 		return JS_TRUE;
 
-	rc = JS_SUSPENDREQUEST(cx);
-	if (!logoutuserdat(&scfg, &client->user, time(NULL), client->logintime))
-		errprintf(LOG_ERR, WHERE, "%04d !ERROR in logoutuserdat", client->socket);
-
 	if (client->service->log_level >= LOG_INFO)
 		lprintf(LOG_INFO, "%04d %s Logging out %s"
 		        , client->socket, client->service->protocol, client->user.alias);
-
+	rc = JS_SUSPENDREQUEST(cx);
+	if (chk_ars(&scfg, startup->login_info_save, &client->user, client->client)) {
+		if (!logoutuserdat(&scfg, &client->user, time(NULL), client->logintime))
+			errprintf(LOG_ERR, WHERE, "%04d !ERROR in logoutuserdat", client->socket);
+	}
 	mqtt_user_logout(&mqtt, client->client, client->logintime);
 
 	memset(&client->user, 0, sizeof(client->user));

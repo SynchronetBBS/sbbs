@@ -5026,8 +5026,10 @@ static void ctrl_thread(void* arg)
 	fmutex_close(&mutex_file);
 	if (user.number) {
 		/* Update User Statistics */
-		if (!logoutuserdat(&scfg, &user, time(NULL), logintime))
-			lprintf(LOG_ERR, "%04d <%s> !ERROR in logoutuserdat", sock, user.alias);
+		if (chk_ars(&scfg, startup->login_info_save, &user, &client)) {
+			if (!logoutuserdat(&scfg, &user, time(NULL), logintime))
+				lprintf(LOG_ERR, "%04d <%s> !ERROR in logoutuserdat", sock, user.alias);
+		}
 		mqtt_user_logout(&mqtt, &client, logintime);
 		lprintf(LOG_INFO, "%04d <%s> logged-out", sock, user.alias);
 #ifdef _WIN32

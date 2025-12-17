@@ -1715,8 +1715,10 @@ void http_logoff(http_session_t* session, SOCKET socket, int line)
 	        , socket, session->client.protocol, session->host_ip, session->user.alias, line);
 
 	SAFECOPY(session->username, unknown);
-	if (!logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time))
-		errprintf(LOG_ERR, WHERE, "%04d !ERROR in logoutuserdat", socket);
+	if (chk_ars(&scfg, startup->login_info_save, &session->user, &session->client)) {
+		if (!logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time))
+			errprintf(LOG_ERR, WHERE, "%04d !ERROR in logoutuserdat", socket);
+	}
 	memset(&session->user, 0, sizeof(session->user));
 	SAFECOPY(session->user.alias, unknown);
 	session->last_user_num = session->user.number;
