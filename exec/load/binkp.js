@@ -852,8 +852,12 @@ BinkP.prototype.session = function()
 					default:
 						if (pkt.command < this.command_name.length)
 							tmp = this.command_name[pkt.command];
-						else
-							tmp = 'Unknown Command '+pkt.command;
+						else {
+							if (pkt.command === 11 && this.remove_ver === 'ssh-chatter')
+								tmp = "ssh-chatter message: \""+pkt.data+'"';
+							else
+								tmp = 'Unknown Command '+pkt.command;
+						}
 						log(LOG_ERROR, "Unhandled "+tmp+" command from remote: " + this.remote_addrs);
 						this.sendCmd(this.command.M_ERR, "Unhandled command.");
 				}
