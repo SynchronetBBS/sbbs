@@ -3250,6 +3250,7 @@ bool logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 {
 	char      str[128];
 	time_t    tused;
+	bool      success = true;
 
 	if (user == NULL)
 		return false;
@@ -3260,12 +3261,16 @@ bool logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 	tused = (now - logontime) / 60;
 	user->tlast = (uint)tused;
 
-	putuserdatetime(cfg, user->number, USER_LASTON, (time32_t)now);
-	putuserstr(cfg, user->number, USER_TLAST, ultoa(user->tlast, str, 10));
-	adjustuserval(cfg, user, USER_TIMEON, user->tlast);
-	adjustuserval(cfg, user, USER_TTODAY, user->tlast);
+	if (putuserdatetime(cfg, user->number, USER_LASTON, (time32_t)now) != USER_SUCCESS)
+		success = false;
+	else
+		success = putuserstr(cfg, user->number, USER_TLAST, ultoa(user->tlast, str, 10)) == USER_SUCCESS;
+	if (success) {
+		adjustuserval(cfg, user, USER_TIMEON, user->tlast);
+		adjustuserval(cfg, user, USER_TTODAY, user->tlast);
+	}
 
-	return true;
+	return success;
 }
 
 /****************************************************************************/
