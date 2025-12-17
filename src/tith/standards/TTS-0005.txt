@@ -359,7 +359,7 @@ Contents
 
   114. MessageID
   ──────────────
-  Contains a UTF-8 string that uniquely identifies the message on the
+  Contains a UTF-8 string that uniquely identifies the message and the
   Origin system.
 
   115. ReplyTo
