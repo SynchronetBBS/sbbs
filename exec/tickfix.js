@@ -189,7 +189,7 @@ for(var i = 0; i < area_list.length; i++) {
 	var tag = area_list[i].toLowerCase();
 	area_map[tag] = tickit.iniGetValue(tag, "links", []);
 	var dir_code = tickit.iniGetValue(tag, "dir");
-	if(dir_code)
+	if(dir_code && file_area.dir[dir_code])
 		area_desc[tag] = file_area.dir[dir_code].description;
 }
 var orig_map = JSON.stringify(area_map);
