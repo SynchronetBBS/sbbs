@@ -553,19 +553,25 @@ is_sorting(int chk)
 static int
 intbufcmp(const void *a, const void *b, size_t size)
 {
-#ifdef __BIG_ENDIAN__
-	return memcmp(a, b, size);
-#else
 	int i;
 	const unsigned char *ac = (const unsigned char *)a;
 	const unsigned char *bc = (const unsigned char *)b;
 
+#ifdef __BIG_ENDIAN__
+	for (i = 0; i < size; i++) {
+		bool last = i == 0;
+#else
 	for (i = size - 1; i >= 0; i--) {
-		if (ac[i] != bc[i])
+		bool last = i == size - 1;
+#endif
+		if (ac[i] != bc[i]) {
+			if (last) {
+				return ((signed char)ac[i] - (signed char)bc[i]);
+			}
 			return ac[i] - bc[i];
+		}
 	}
 	return 0;
-#endif
 }
 
 static int
