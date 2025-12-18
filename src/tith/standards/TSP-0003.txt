@@ -2,7 +2,7 @@
 TITH                                              THIS ISN'T THAT HARD
 **********************************************************************
 
-Publication:  TTS‐0007
+Publication:  TSP‐0003
 Revision:     1
 Title:        Legacy Data Formats and TITH
 Author(s):    Stephen Hurd
@@ -30,6 +30,7 @@ Contents
 ────────
 
   1.  Introduction
+  2.  NetMail Formats
 
   A. References
   B. History
@@ -79,7 +80,7 @@ Contents
   ──────────────────
   Poorly defined in FTS-5003 is a terrible way to indicate a character
   set other than the default one specified above.  Recommended usage
-  of this control paragraph us covered below.
+  of this control paragraph is covered below.
 
   1.2 Converting from TITH to Legacy
   ──────────────────────────────────
@@ -87,11 +88,9 @@ Contents
   straight-forward.  The following are concatenated:
 
   "\x01CHRS: UTF-8 4\x0d" - this indicates that UTF-8 is used.
-  "\x01MSGID: \"" followed by the full origin address, followed by
-      "\" ", followed by the value of MessageID.  This is included
-      only if MessageID is present.
-  "\x01REPLY: " followed by the value of MessageID, followed by
-      "\x0d". This is included only if ReplyTo is present.
+  "\x01MID: " followed by the value of MessageID followed by "\x0d"
+  "\x01RTO: " followed by the 5D address in ReplyTo, followed by a
+      space, followed by the string in ReplyTo.
   MessageText - The original unmodified text of the message.  If the
       original message did not end with "\x0d", one is appended.
   "\x01TOPT " followed by the text point number, followed by "\x0d".
@@ -103,7 +102,11 @@ Contents
   "\x01INTL " followed by the 3D address of the destination node,
       followed by " ", folowed by a 3D address of the origin node,
       followed by "\x0d".
-  "\x01TZUTC: 0000\x0d"
+  "\x01TZUTC: " followed by the negative value of TimestampOffset
+      expressed as HHMM.  This is included only if TimestampOffset is
+      present.
+  "\x01" followed by AdditionalKludgeLine followed by "\x0d".  This is
+      repeated for each AdditionalKludgeLine value.
   "\x01Via " followed by the shitty FTN z:N/F[.P][@domain] formatted
       Address, followed by " ", followed by the timstamp formatted as
       "@YYYYMMDDHHMMSS.UTC " followed by either the UTF-8 string or
@@ -113,7 +116,9 @@ Contents
   1.3 Converting from Legacy to TITH
   ──────────────────────────────────
   This is a multi-step process, and many of the steps can be expanded
-  to perform optional FTN processing.
+  to perform optional FTN processing.  When multiple instances of a
+  control paragraph are present, but only one is epxected, parse the
+  first one in the message text.
 
   1. If the first bytes are "\x01AREA:" or "AREA:", this is an
      EchoMail, do not process as described in section 2.
@@ -122,6 +127,24 @@ Contents
      message from whatever the CHRS line says to UTF-8.  This includes
      the subject and from/to user names, which aren't part of the
      message text because why not?
+  3. If a CHRS control paragraph was not present, or indicated a level
+     0 or 1 set, remove any \x8d or \x0a bytes.
+  4. If a CHRS control paragraph was present, and indicated level 2 or
+     above, remove any linefeed characters.
+  5. Using the TOPT, FMPT, INTL, any other control paragraphs you can
+     find that look like they might be useful, and config files,
+     construct a 5D address for the origin and the destination.
+     There's no way to actually do this since there's no standard way
+     to include domains in messages. The DOMAIN and MSGID control
+     paragraphs appear to be the best sources.
+  6. If the message contains a TZUTC control paragraph, parse the time
+     and TZUTC per FTS-4008.  Use this to generate Timestamp and
+     TimestampOffset values.  If the message does not contain a TZUTC
+     value, assume it's in UTC even though it likely isn't.
+  7. Convert any Via control paragraphs into Via values using FTS-4009
+     and TTS-0005.
+  8. For all other control paragraphs, remove the "\x01" and add as
+     an AdditionalKludgeLine value.
 
 
   2. Stored Message
@@ -131,7 +154,135 @@ Contents
   Fido software.  However, since software supported it, it became the
   defined generic way to generate and consume message from non-BBS
   software, especially InterBBS games.  Support for importing from and
-  exporting to this format is expected to be required 
+  exporting to this format is expected to be required.
+
+  2.1 Converting from TITH to Legacy
+  ──────────────────────────────────
+  Truncate the FromUserName value to a maximum of 35 bytes, ensuring
+  that you do not leave fragments of a UTF-8 character, then NUL pad
+  to 36 bytes and write the value.
+
+  Truncate the ToUserName value to a maximum of 35 bytes, ensuring
+  that you do not leave fragments of a UTF-8 character, then NUL pad
+  to 36 bytes and write the value.
+
+  If there are files attached, <TODO> otherwise, truncate the Subject
+  value to a maximum of 71 bytes, ensuring that you do not leave
+  fragments of a UTF-8 character, then NUL pad to 72 bytes and write
+  the value.
+
+  Convert the Timestamp with applied TimestampOffset value into a
+  DateTime as described in FTS-0001. Clamp values to the ranges
+  expresssed there (ie: if the seconds value is 60, convert to 59) and
+  write the value.
+
+  Write two NUL bytes.
+
+  Write the Destination node number as a 16-bit little-endian (least
+  siginificant byte first) binary value.
+
+  Write the Origin node number as a 16-bit little-endian (least
+  siginificant byte first) binary value.
+
+  Write two NUL bytes.
+
+  Write the Origin net number as a 16-bit little-endian (least
+  siginificant byte first) binary value.
+
+  Write the Destination net number as a 16-bit little-endian (least
+  siginificant byte first) binary value.
+
+  Write the Destination zone number as a 16-bit little-endian (least
+  siginificant byte first) binary value.
+
+  Write the Origin zone number as a 16-bit little-endian (least
+  siginificant byte first) binary value.
+
+  Write the Destination point number as a 16-bit little-endian (least
+  siginificant byte first) binary value.
+
+  Write the Origin point number as a 16-bit little-endian (least
+  siginificant byte first) binary value.
+
+  Write two NUL bytes.
+
+  Write the LegacyAttributes (or zero if it is not present) as a
+  16-bit little-endian (least siginificant byte first) binary value.
+
+  Write two NUL bytes.
+
+  Write the Message Text converted as described in this document.
+
+  Write one NUL byte.
+
+  2.2 Converting from Legacy to TITH
+  ──────────────────────────────────
+  Read from offset 190 to the first NUL byte and search for a CHRS
+  control paragraph.  If one is found, it indicates the encoding used
+  for the FromUserName, ToUserName, Subject, DateTime, and Text
+  fields.
+
+  Read a 16-bit little-endian value from offset 186.  Check if bit 4
+  is set.  If it is, the subject contains file specifiers. <TODO>
+
+  Read 36 bytes and strip the first NUL and everything after it.
+  Convert to UTF-8. This is the FromUserName
+
+  Read 36 bytes and strip the first NUL and everything after it.
+  Convert to UTF-8. This is the ToUserName
+
+  Read 72 bytes and strip the first NUL and everything after it.
+  Convert to UTF-8. This is the Sibject
+
+  Read 20 bytes and strip the first NUL and everything after it.
+  Convert to UTF-8. See if you can't figure out a date. FTS-0001 has
+  some suggestions, good luck.
+
+  Ignore two bytes.
+
+  Read two bytes as a 16-bit little-endian (least siginificant byte
+  first) binary value. This is the Destination node number.
+
+  Read two bytes as a 16-bit little-endian (least siginificant byte
+  first) binary value. This is the Origin node number.
+
+  Ignore two bytes.
+
+  Read two bytes as a 16-bit little-endian (least siginificant byte
+  first) binary value. This is the Origin net number.
+
+  Read two bytes as a 16-bit little-endian (least siginificant byte
+  first) binary value. This is the Destination net number.
+
+  Read two bytes as a 16-bit little-endian (least siginificant byte
+  first) binary value. This is the Destination zone number.
+
+  Read two bytes as a 16-bit little-endian (least siginificant byte
+  first) binary value. This is the Origin zone number.
+
+  Read two bytes as a 16-bit little-endian (least siginificant byte
+  first) binary value. This is the Destination point number.
+
+  Read two bytes as a 16-bit little-endian (least siginificant byte
+  first) binary value. This is the Origin point number.
+
+  Ignore two bytes.
+
+  Read two bytes as a 16-bit little-endian (least siginificant byte
+  first) binary value. Logically AND the value with 0x7413. If the
+  result is not zero, this is the LegacyAttributes value.
+
+  Ignore two bytes.
+
+  Read up to the first NUL byte, convert the value as Message Text as
+  described in this document.
+
+  3. Packed Message
+  ─────────────────
+
+  4. Type 2+ Packet
+  ─────────────────
+  
 
 
 A. References
@@ -145,3 +296,10 @@ A. References
 
   [FTS-5003] "Character set definition in Fidonet messages", Peter
   Krefting (born Karlsson), 2012-04-07
+
+  [FTS-0009] "A standard for unique message identifiers and reply
+  chain linkage", jim nutt, 1991-12-17
+
+  [FTS-4008] "Time zone information (TZUTC)", FTSC, 2003-05-16
+
+  [FTS-4009] "Netmail tracking (Via)", FTSC, 2003-05-16
