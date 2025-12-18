@@ -3030,7 +3030,7 @@ void subtract_cdt(scfg_t* cfg, user_t* user, uint64_t amt)
 			mod = amt - user->freecdt;   /* free credits */
 			putuserstr(cfg, user->number, USER_FREECDT, "0");
 			user->freecdt = 0;
-			user->cdt = adjustuserval(cfg, user, USER_FREECDT, -mod);
+			user->cdt = adjustuserval(cfg, user, USER_CDT, -mod);
 		} else {                          /* subtract just free credits */
 			user->freecdt -= amt;
 			putuserstr(cfg, user->number, USER_FREECDT, _ui64toa(user->freecdt, tmp, 10));
