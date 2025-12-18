@@ -61,6 +61,7 @@ DLLEXPORT int   readuserdat(scfg_t*, unsigned user_number, char* userdat, size_t
 DLLEXPORT int   parseuserdat(scfg_t*, char* userdat, user_t*, char* fields[]);
 DLLEXPORT int   getuserdat(scfg_t*, user_t*);   // Fill user_t with user data
 DLLEXPORT int   fgetuserdat(scfg_t*, user_t*, int file);
+DLLEXPORT int   fputuserdat(scfg_t*, user_t*, int file);
 DLLEXPORT bool  format_userdat(scfg_t*, user_t*, char userdat[]);
 DLLEXPORT bool  lockuserdat(int file, unsigned user_number);
 DLLEXPORT bool  unlockuserdat(int file, unsigned user_number);

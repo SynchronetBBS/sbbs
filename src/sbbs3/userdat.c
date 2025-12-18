@@ -813,12 +813,10 @@ bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 }
 
 /****************************************************************************/
-/* Writes into user.number's slot in userbase data in structure 'user'      */
-/* Called from functions newuser, useredit and main                         */
+/* Writes user data to (locked) user record in open userbase file			*/
 /****************************************************************************/
-int putuserdat(scfg_t* cfg, user_t* user)
+int fputuserdat(scfg_t* cfg, user_t* user, int file)
 {
-	int  file;
 	char userdat[USER_RECORD_LINE_LEN];
 
 	if (user == NULL)
@@ -830,38 +828,50 @@ int putuserdat(scfg_t* cfg, user_t* user)
 	if (!format_userdat(cfg, user, userdat))
 		return USER_FORMAT_ERROR;
 
-	if ((file = openuserdat(cfg, /* for_modify: */ true)) < 0)
-		return USER_OPEN_ERROR;
-
-	if (filelength(file) < ((off_t)user->number - 1) * USER_RECORD_LINE_LEN) {
-		close(file);
+	if (filelength(file) < ((off_t)user->number - 1) * USER_RECORD_LINE_LEN)
 		return USER_INVALID_NUM;
-	}
 
-	if (!seekuserdat(file, user->number)) {
-		close(file);
+	if (!seekuserdat(file, user->number))
 		return USER_SEEK_ERROR;
-	}
-	if (!lockuserdat(file, user->number)) {
-		close(file);
-		return USER_LOCK_ERROR;
-	}
 
-	if (write(file, userdat, sizeof(userdat)) != sizeof(userdat)) {
-		unlockuserdat(file, user->number);
-		close(file);
+	if (write(file, userdat, sizeof(userdat)) != sizeof(userdat))
 		return USER_WRITE_ERROR;
-	}
-	unlockuserdat(file, user->number);
-	close(file);
-	dirtyuserdat(cfg, user->number);
 
 	return USER_SUCCESS;
 }
 
 /****************************************************************************/
+/* Writes into user.number's slot in userbase data in structure 'user'      */
+/****************************************************************************/
+int putuserdat(scfg_t* cfg, user_t* user)
+{
+	int  result;
+	int  file;
+
+	if (user == NULL)
+		return USER_INVALID_ARG;
+
+	if (!VALID_CFG(cfg) || !VALID_USER_NUMBER(user->number))
+		return USER_INVALID_ARG;
+
+	if ((file = openuserdat(cfg, /* for_modify: */ true)) < 0)
+		return USER_OPEN_ERROR;
+
+	if (!lockuserdat(file, user->number)) {
+		close(file);
+		return USER_LOCK_ERROR;
+	}
+	result = fputuserdat(cfg, user, file);
+
+	unlockuserdat(file, user->number);
+	close(file);
+	dirtyuserdat(cfg, user->number);
+
+	return result;
+}
+
+/****************************************************************************/
 /* Returns the username in 'str' that corresponds to the 'usernumber'       */
-/* Called from functions everywhere                                         */
 /****************************************************************************/
 char* username(scfg_t* cfg, int usernumber, char *name)
 {
@@ -3248,24 +3258,37 @@ int loginuserdat(scfg_t* cfg, user_t* user, client_t* client, bool use_prot, cha
 /****************************************************************************/
 int logoutuserdat(scfg_t* cfg, user_t* user, time_t logontime)
 {
-	char      str[128];
-	time_t    tused;
+	char      userdat[USER_RECORD_LEN + 1];
+	int       file;
 	int       result;
 
 	if (user == NULL)
 		return USER_INVALID_ARG;
 
-	user->laston = time32(NULL);
+	if ((file = openuserdat(cfg, /* for_modify: */ true)) < 0)
+		return USER_OPEN_ERROR;
 
-	tused = (user->laston - logontime) / 60;
-	user->tlast = (uint)tused;
-
-	if ((result = putuserdatetime(cfg, user->number, USER_LASTON, user->laston)) != USER_SUCCESS)
+	if ((result = readuserdat(cfg, user->number, userdat, sizeof(userdat), file, /* leave_locked: */ true)) != USER_SUCCESS) {
+		close(file);
 		return result;
-	if ((result = putuserstr(cfg, user->number, USER_TLAST, ultoa(user->tlast, str, 10))) != USER_SUCCESS)
-		return result;
-	adjustuserval(cfg, user, USER_TIMEON, user->tlast);
-	adjustuserval(cfg, user, USER_TTODAY, user->tlast);
+	}
+	if ((result = parseuserdat(cfg, userdat, user, NULL)) == USER_SUCCESS) {
+		user->laston = time32(NULL);
+		if (user->laston > logontime)
+			user->tlast = (uint)(user->laston - logontime) / 60;
+		else
+			user->tlast = 0;
+		if (user->timeon + user->tlast >= user->timeon)
+			user->timeon += user->tlast;
+		else
+			user->timeon = UINT_MAX;
+		if (user->ttoday + user->tlast >= user->ttoday)
+			user->ttoday += user->tlast;
+		else
+			user->ttoday = UINT_MAX;
+		result = fputuserdat(cfg, user, file);
+	}
+	close(file);
 
 	return result;
 }
