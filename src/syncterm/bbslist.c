@@ -62,7 +62,7 @@ static struct sort_order_info sort_order[] = {
 		0,
 		0
 	},
-	{
+	{ // 1
 		"Entry Name",
 		SORT_ORDER_STRING,
 		offsetof(struct bbslist, name),
@@ -86,7 +86,7 @@ static struct sort_order_info sort_order[] = {
 		offsetof(struct bbslist, calls),
 		sizeof(((struct bbslist *)NULL)->calls)
 	},
-	{
+	{ // 5
 		"Dialing List",
 		0,
 		offsetof(struct bbslist, type),
@@ -116,7 +116,7 @@ static struct sort_order_info sort_order[] = {
 		offsetof(struct bbslist, password),
 		sizeof(((struct bbslist *)NULL)->password)
 	},
-	{
+	{ // 10
 		"System Password",
 		SORT_ORDER_STRING,
 		offsetof(struct bbslist, syspass),
@@ -176,7 +176,7 @@ static struct sort_order_info sort_order[] = {
 		offsetof(struct bbslist, music),
 		sizeof(((struct bbslist *)NULL)->music)
 	},
-	{
+	{ // 20
 		"Address Family",
 		0,
 		offsetof(struct bbslist, address_family),
@@ -230,7 +230,7 @@ static struct sort_order_info sort_order[] = {
 		offsetof(struct bbslist, term_name),
 		sizeof(((struct bbslist *)NULL)->term_name)
 	},
-	{
+	{ // 29
 		"Explicit Sort Order",
 		0,
 		offsetof(struct bbslist, sort_order),

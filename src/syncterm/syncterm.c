@@ -1648,7 +1648,7 @@ load_settings(struct syncterm_settings *set)
 	set->mdm.com_rate = iniReadLongInt(inifile, "SyncTERM", "ModemComRate", 0);
 
         /* Sort order */
-	sortby = iniReadStringList(inifile, "SyncTERM", "SortOrder", ",", "5,1");
+	sortby = iniReadStringList(inifile, "SyncTERM", "SortOrder", ",", "29,5,1");
 	while ((order = strListRemove(&sortby, 0)) != NULL) {
 		sortorder[i++] = atoi(order);
 		free(order);
