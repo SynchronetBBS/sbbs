@@ -3246,7 +3246,7 @@ int loginuserdat(scfg_t* cfg, user_t* user, client_t* client, bool use_prot, cha
 
 /****************************************************************************/
 /****************************************************************************/
-int logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
+int logoutuserdat(scfg_t* cfg, user_t* user, time_t logontime)
 {
 	char      str[128];
 	time_t    tused;
@@ -3255,13 +3255,12 @@ int logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 	if (user == NULL)
 		return USER_INVALID_ARG;
 
-	if (now == 0)
-		now = time(NULL);
+	user->laston = time32(NULL);
 
-	tused = (now - logontime) / 60;
+	tused = (user->laston - logontime) / 60;
 	user->tlast = (uint)tused;
 
-	if ((result = putuserdatetime(cfg, user->number, USER_LASTON, (time32_t)now)) != USER_SUCCESS)
+	if ((result = putuserdatetime(cfg, user->number, USER_LASTON, user->laston)) != USER_SUCCESS)
 		return result;
 	if ((result = putuserstr(cfg, user->number, USER_TLAST, ultoa(user->tlast, str, 10))) != USER_SUCCESS)
 		return result;

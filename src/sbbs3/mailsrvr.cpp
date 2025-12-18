@@ -1777,7 +1777,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 			if (startup->sound.logout[0] && !sound_muted(&scfg))
 				PlaySound(startup->sound.logout, NULL, SND_ASYNC | SND_FILENAME);
 #endif
-			if ((i = logoutuserdat(&scfg, &user, time(NULL), client.time)) != USER_SUCCESS)
+			if ((i = logoutuserdat(&scfg, &user, client.time)) != USER_SUCCESS)
 				errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d in logoutuserdat", socket, client.protocol, user.alias, i);
 			mqtt_user_logout(&mqtt, &client, client.time);
 		}
@@ -5132,7 +5132,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 		if (startup->sound.logout[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.logout, NULL, SND_ASYNC | SND_FILENAME);
 #endif
-		if ((i = logoutuserdat(&scfg, &relay_user, time(NULL), client.time)) != USER_SUCCESS)
+		if ((i = logoutuserdat(&scfg, &relay_user, client.time)) != USER_SUCCESS)
 			errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d in logoutuserdat", socket, client.protocol, relay_user.alias, i);
 		mqtt_user_logout(&mqtt, &client, client.time);
 	}

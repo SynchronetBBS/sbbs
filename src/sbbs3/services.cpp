@@ -566,7 +566,7 @@ js_logout(JSContext *cx, uintN argc, jsval *arglist)
 		        , client->socket, client->service->protocol, client->user.alias);
 	rc = JS_SUSPENDREQUEST(cx);
 	if (chk_ars(&scfg, startup->login_info_save, &client->user, client->client)) {
-		int i = logoutuserdat(&scfg, &client->user, time(NULL), client->logintime);
+		int i = logoutuserdat(&scfg, &client->user, client->logintime);
 		if (i != USER_SUCCESS)
 			errprintf(LOG_ERR, WHERE, "%04d !ERROR %d in logoutuserdat", client->socket, i);
 	}
@@ -1288,7 +1288,7 @@ static void js_service_thread(void* arg)
 		if (service->log_level >= LOG_INFO)
 			lprintf(LOG_INFO, "%04d %s [%s] Logging out %s"
 			        , socket, service->protocol, client.addr, service_client.user.alias);
-		int i = logoutuserdat(&scfg, &service_client.user, time(NULL), service_client.logintime);
+		int i = logoutuserdat(&scfg, &service_client.user, service_client.logintime);
 		if (i != USER_SUCCESS)
 			errprintf(LOG_ERR, WHERE, "%04d %s [%s] <%s> !ERROR %d in logoutuserdat"
 				, socket, service->protocol, client.addr, service_client.user.alias, i);
