@@ -6,6 +6,8 @@ Allow specifying terminal type for each entry
 Fix RIP popups using current font
 Have |# flush RIP immediately
 Add support for DECSCUSR
+Add support for explicit sort order
+Add default cursor style setting
 
 Version 1.7
 --------------
