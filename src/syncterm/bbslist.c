@@ -1901,7 +1901,7 @@ edit_palette(struct bbslist *item)
 	return false;
 }
 
-void
+bool
 edit_sort_order(str_list_t inifile, char *itemname, struct bbslist *item)
 {
 	char val[12];
@@ -1911,11 +1911,13 @@ edit_sort_order(str_list_t inifile, char *itemname, struct bbslist *item)
 		       "for any other purpose. The default value is 0.\n";
 
 	// NOTE: No way to enter negative values
-	snprintf(val, sizeof(val), "%d", item->sort_order);
+	snprintf(val, sizeof(val), "%" PRId32, item->sort_order);
+	int32_t old_order = item->sort_order;
 	if (uifc.input(WIN_MID, 0, 0, "Explicit Sort Value", val, 11, K_NUMBER | K_NEGATIVE | K_EDIT) >= 0) {
 		item->sort_order = atoi(val);
 		iniSetInt32(&inifile, itemname, "SortOrder", item->sort_order, &ini_style);
 	}
+	return old_order != item->sort_order;
 }
 
 int
@@ -1971,8 +1973,10 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		i = uifc.list(WIN_EXTKEYS | WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &copt, &bar,
 		              isdefault ? "Edit Default Connection" : "Edit Directory Entry",
 		              opts);
-		if (i == -2 - CTRL_S && !isdefault)
-			edit_sort_order(inifile, itemname, item);
+		if (i == -2 - CTRL_S && !isdefault) {
+			if (edit_sort_order(inifile, itemname, item))
+				changed = 1;
+		}
 		if (i < -1)
 			continue;
 		// Remember, i gets converted to (unsigned) size_t in comparison
