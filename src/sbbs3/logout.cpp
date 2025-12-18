@@ -122,7 +122,8 @@ void sbbs_t::logout()
 	if (last_ns_time > 0)
 		putuserdatetime(useron.number, USER_NS_TIME, last_ns_time);
 
-	logoutuserdat(&cfg, &useron, now, logontime);
+	if ((i = logoutuserdat(&cfg, &useron, now, logontime)) != USER_SUCCESS)
+		errormsg(WHERE, ERR_WRITE, "user.tab", i, "updating user record in logoutuserdat");
 
 	getusrsubs();
 	getusrdirs();

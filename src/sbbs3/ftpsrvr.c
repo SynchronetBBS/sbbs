@@ -5027,8 +5027,8 @@ static void ctrl_thread(void* arg)
 	if (user.number) {
 		/* Update User Statistics */
 		if (chk_ars(&scfg, startup->login_info_save, &user, &client)) {
-			if (!logoutuserdat(&scfg, &user, time(NULL), logintime))
-				lprintf(LOG_ERR, "%04d <%s> !ERROR in logoutuserdat", sock, user.alias);
+			if ((i = logoutuserdat(&scfg, &user, time(NULL), logintime)) != USER_SUCCESS)
+				lprintf(LOG_ERR, "%04d <%s> !ERROR %d in logoutuserdat", sock, user.alias, i);
 		}
 		mqtt_user_logout(&mqtt, &client, logintime);
 		lprintf(LOG_INFO, "%04d <%s> logged-out", sock, user.alias);

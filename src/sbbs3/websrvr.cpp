@@ -1716,8 +1716,9 @@ void http_logoff(http_session_t* session, SOCKET socket, int line)
 
 	SAFECOPY(session->username, unknown);
 	if (chk_ars(&scfg, startup->login_info_save, &session->user, &session->client)) {
-		if (!logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time))
-			errprintf(LOG_ERR, WHERE, "%04d !ERROR in logoutuserdat", socket);
+		int i = logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time);
+		if (i != USER_SUCCESS)
+			errprintf(LOG_ERR, WHERE, "%04d !ERROR %d in logoutuserdat", socket, i);
 	}
 	memset(&session->user, 0, sizeof(session->user));
 	SAFECOPY(session->user.alias, unknown);
