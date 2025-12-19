@@ -738,12 +738,14 @@ bool sbbs_t::answer()
 						lprintf(LOG_INFO, "Telnet Location: %s", telnet_location);
 						if (trashcan(telnet_location, "ip-silent")) {
 							hangup();
+							pthread_mutex_unlock(&input_thread_mutex);
 							return false;
 						}
 						if (trashcan(telnet_location, "ip")) {
 							lprintf(LOG_NOTICE, "%04d %s !TELNET LOCATION BLOCKED in ip.can: %s"
 							        , client_socket, client.protocol, telnet_location);
 							hangup();
+							pthread_mutex_unlock(&input_thread_mutex);
 							return false;
 						}
 						SAFECOPY(cid, telnet_location);
