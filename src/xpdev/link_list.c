@@ -101,6 +101,7 @@ int listFreeNodes(link_list_t* list)
 
 bool listFree(link_list_t* list)
 {
+	bool ret = true;
 	if (list == NULL)
 		return false;
 
@@ -110,20 +111,20 @@ bool listFree(link_list_t* list)
 #if defined(LINK_LIST_THREADSAFE)
 
 	if (list->flags & LINK_LIST_MUTEX) {
-		while (pthread_mutex_destroy((pthread_mutex_t*)&list->mutex) == EBUSY)
-			SLEEP(1);
+		if (pthread_mutex_destroy((pthread_mutex_t*)&list->mutex))
+			ret = false;
 		list->flags &= ~LINK_LIST_MUTEX;
 	}
 
 	if (list->flags & LINK_LIST_SEMAPHORE) {
-		while (sem_destroy(&list->sem) == -1 && errno == EBUSY)
-			SLEEP(1);
+		if (sem_destroy(&list->sem) == -1 && errno == EBUSY)
+			ret = false;
 		//list->sem=(sem_t)NULL; /* Removed 08-20-08 - list->sem is never checked and this causes an error with gcc 4.1.2 (ThetaSigma) */
 		list->flags &= ~LINK_LIST_SEMAPHORE;
 	}
 #endif
 
-	return true;
+	return ret;
 }
 
 int listAttach(link_list_t* list)

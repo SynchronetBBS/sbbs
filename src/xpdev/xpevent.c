@@ -47,8 +47,7 @@ CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name)
 	}
 
 	if (pthread_cond_init(&event->gtzero, NULL) != 0) {
-		while (pthread_mutex_destroy(&event->lock) == EBUSY)
-			SLEEP(1);
+		pthread_mutex_destroy(&event->lock);
 		free(event);
 		errno = ENOSPC;
 		return NULL;
@@ -108,6 +107,7 @@ ResetEvent(xpevent_t event)
 BOOL
 CloseEvent(xpevent_t event)
 {
+	BOOL ret = TRUE;
 	if (event == NULL || (event->magic != EVENT_MAGIC)) {
 		errno = EINVAL;
 		return FALSE;
@@ -123,15 +123,15 @@ CloseEvent(xpevent_t event)
 
 	assert_pthread_mutex_unlock(&event->lock);
 
-	while (pthread_mutex_destroy(&event->lock) == EBUSY)
-		SLEEP(1);
-	while (pthread_cond_destroy(&event->gtzero) == EBUSY)
-		SLEEP(1);
+	if (pthread_mutex_destroy(&event->lock))
+		ret = FALSE;
+	if (pthread_cond_destroy(&event->gtzero))
+		ret = FALSE;
 	event->magic = 0;
 
 	free(event);
 
-	return TRUE;
+	return ret;
 }
 
 DWORD
