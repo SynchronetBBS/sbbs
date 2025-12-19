@@ -6142,7 +6142,7 @@ static bool js_setup_cx(http_session_t* session)
 
 	if (session->js_cx == NULL) {  /* Context not yet created, create it now */
 		/* js_initcx() begins a context */
-		if (((session->js_cx = js_initcx(session)) == NULL)) {
+		if ((session->js_cx = js_initcx(session)) == NULL) {
 			lprintf(LOG_WARNING, "%04d %-5s [%s] !ERROR initializing JavaScript context"
 				, session->socket, session->client.protocol, session->host_ip);
 			return false;
