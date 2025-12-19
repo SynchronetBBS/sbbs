@@ -6557,10 +6557,8 @@ void mail_server(void* arg)
 			lprintf(LOG_INFO, "Done waiting for SendMail thread to terminate");
 		}
 		if (!sendmail_running) {
-			while (sem_destroy(&sendmail_wakeup_sem) == -1 && errno == EBUSY) {
-				mswait(1);
-				sem_post(&sendmail_wakeup_sem);
-			}
+			if (sem_destroy(&sendmail_wakeup_sem) == -1)
+				lprintf(LOG_CRIT, "!!!! Failed to destroy sendmail_wakeup_sem (%d), system is unstable", errno);
 		}
 
 		cleanup(0);
