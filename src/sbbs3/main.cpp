@@ -3933,8 +3933,8 @@ sbbs_t::~sbbs_t()
 	listFree(&smb_list);
 
 #ifdef USE_CRYPTLIB
-	while (ssh_mutex_created && pthread_mutex_destroy(&ssh_mutex) == EBUSY)
-		mswait(1);
+	if (ssh_mutex_created && pthread_mutex_destroy(&ssh_mutex))
+		lprintf(LOG_CRIT, "!!!! Failed to destroy ssh_mutex, system is unstable");
 	if (ssh_active) {
 		SetEvent(ssh_active);
 		while ((!CloseEvent(ssh_active)) && errno == EBUSY)
@@ -3942,8 +3942,8 @@ sbbs_t::~sbbs_t()
 		ssh_active = nullptr;
 	}
 #endif
-	while (input_thread_mutex_created && pthread_mutex_destroy(&input_thread_mutex) == EBUSY)
-		mswait(1);
+	if (input_thread_mutex_created && pthread_mutex_destroy(&input_thread_mutex))
+		lprintf(LOG_CRIT, "!!!! Failed to destroy input_thread_mutex, system is unstable");
 
 #if 0 && defined(_WIN32) && defined(_DEBUG) && defined(_MSC_VER)
 	if (!_CrtCheckMemory())

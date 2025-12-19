@@ -6038,8 +6038,8 @@ static void cleanup(int code)
 	mail_set = NULL;
 	terminated = true;
 
-	while (savemsg_mutex_created && pthread_mutex_destroy(&savemsg_mutex) == EBUSY)
-		mswait(1);
+	if (savemsg_mutex_created && pthread_mutex_destroy(&savemsg_mutex))
+		lprintf(LOG_CRIT, "!!!! Failed to destroy savemsg_mutex, system is unstable");
 	savemsg_mutex_created = false;
 
 	update_clients();   /* active_clients is destroyed below */

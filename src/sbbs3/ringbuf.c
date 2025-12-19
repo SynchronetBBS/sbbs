@@ -109,8 +109,8 @@ void RingBufDispose( RingBuf* rb)
 
 #endif
 #ifdef RINGBUF_MUTEX
-	while (pthread_mutex_destroy(&rb->mutex) == EBUSY)
-		SLEEP(1);
+	// Critical error and no way to log or return it. :(
+	pthread_mutex_destroy(&rb->mutex);
 #endif
 	memset(rb, 0, sizeof(RingBuf));
 }
