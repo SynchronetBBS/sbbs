@@ -4097,9 +4097,10 @@ bool check_name(scfg_t* cfg, const char* name)
 		return false;
 	if ((cfg->uq & UQ_NOEXASC) && !str_is_ascii(name))
 		return false;
-
 	len = strlen(name);
 	if (len < 1)
+		return false;
+	if (strstr(name, "  ") != NULL) /* double spaces */
 		return false;
 	if (name[0] <= ' '              /* begins with white-space? */
 	    || name[len - 1] <= ' '       /* ends with white-space */
@@ -4119,16 +4120,25 @@ bool check_name(scfg_t* cfg, const char* name)
 /*************************************************************************/
 bool check_realname(scfg_t* cfg, const char* name)
 {
+	size_t len;
 	if (name == NULL)
 		return false;
-	if (name[0] == 0)
+	len = strlen(name);
+	if (len < 2)
+		return false;
+	if (name[0] <= ' ' || name[len - 1] <= ' ')
 		return false;
 	if (str_has_ctrl(name))
 		return false;
 	if ((cfg->uq & UQ_NOEXASC) && !str_is_ascii(name))
 		return false;
-
-	return (uchar)name[0] < 0x7f && name[1] && IS_ALPHA(name[0]) && strchr(name, ' ');
+	if (!(cfg->uq & UQ_NOSPACEREQ) && strchr(name, ' ') == NULL)
+		return false;
+	if (strstr(name, "  ") != NULL) /* double spaces */
+		return false;
+	if (!IS_ALPHA(name[0]))
+		return false;
+	return true;
 }
 
 /****************************************************************************/

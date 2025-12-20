@@ -2487,6 +2487,9 @@ void sys_cfg(void)
 					         , "Real Name"
 					         , cfg.uq & UQ_REALNAME ? "Yes":"No");
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+					         , "Force Multi-word Real Name"
+					         , cfg.uq & UQ_NOSPACEREQ ? "No":"Yes");
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 					         , "Force Unique Real Name"
 					         , cfg.uq & UQ_DUPREAL ? "Yes":"No");
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
@@ -2550,57 +2553,60 @@ void sys_cfg(void)
 							cfg.uq ^= UQ_REALNAME;
 							break;
 						case 1:
-							cfg.uq ^= UQ_DUPREAL;
+							cfg.uq ^= UQ_NOSPACEREQ;
 							break;
 						case 2:
-							cfg.uq ^= UQ_NOUPRLWR;
+							cfg.uq ^= UQ_DUPREAL;
 							break;
 						case 3:
-							cfg.uq ^= UQ_COMPANY;
+							cfg.uq ^= UQ_NOUPRLWR;
 							break;
 						case 4:
-							cfg.uq ^= UQ_HANDLE;
+							cfg.uq ^= UQ_COMPANY;
 							break;
 						case 5:
-							cfg.uq ^= UQ_DUPHAND;
+							cfg.uq ^= UQ_HANDLE;
 							break;
 						case 6:
-							cfg.uq ^= UQ_NONETMAIL;
+							cfg.uq ^= UQ_DUPHAND;
 							break;
 						case 7:
-							cfg.uq ^= UQ_DUPNETMAIL;
+							cfg.uq ^= UQ_NONETMAIL;
 							break;
 						case 8:
-							cfg.uq ^= UQ_SEX;
+							cfg.uq ^= UQ_DUPNETMAIL;
 							break;
 						case 9:
-							cfg.uq ^= UQ_BIRTH;
+							cfg.uq ^= UQ_SEX;
 							break;
 						case 10:
-							cfg.uq ^= UQ_ADDRESS;
+							cfg.uq ^= UQ_BIRTH;
 							break;
 						case 11:
-							cfg.uq ^= UQ_LOCATION;
+							cfg.uq ^= UQ_ADDRESS;
 							break;
 						case 12:
-							cfg.uq ^= UQ_NOCOMMAS;
+							cfg.uq ^= UQ_LOCATION;
 							break;
 						case 13:
-							cfg.uq ^= UQ_PHONE;
+							cfg.uq ^= UQ_NOCOMMAS;
 							break;
 						case 14:
-							cfg.uq ^= UQ_NOEXASC;
+							cfg.uq ^= UQ_PHONE;
 							break;
 						case 15:
-							cfg.uq ^= UQ_XEDIT;
+							cfg.uq ^= UQ_NOEXASC;
 							break;
 						case 16:
-							cfg.uq ^= UQ_CMDSHELL;
+							cfg.uq ^= UQ_XEDIT;
 							break;
 						case 17:
-							cfg.uq ^= UQ_NODEF;
+							cfg.uq ^= UQ_CMDSHELL;
 							break;
 						case 18:
+							cfg.uq ^= UQ_NODEF;
+							break;
+						case 19:
 							cfg.uq ^= UQ_COLORTERM;
 							break;
 					}

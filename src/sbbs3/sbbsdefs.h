@@ -122,7 +122,7 @@
 #define UQ_REALNAME     (1 << 10) // Ask for real name
 #define UQ_DUPREAL      (1 << 11) // Search for duplicate real names
 #define UQ_COMPANY      (1 << 12) // Ask for company name
-#define UQ_NOEXASC      (1 << 13) // Don't allow ex-ASCII in user text
+#define UQ_NOEXASC      (1 << 13) // Don't allow ex-ASCII in user text (same as K_NOEXASC)
 #define UQ_CMDSHELL     (1 << 14) // Ask for command shell
 #define UQ_XEDIT        (1 << 15) // Ask for external editor
 #define UQ_NODEF        (1 << 16) // Don't ask for default settings
@@ -131,6 +131,7 @@
 #define UQ_NOUPRLWR     (1 << 19) // Don't force upper/lower case strings
 #define UQ_COLORTERM    (1 << 20) // Ask if new user has color terminal
 #define UQ_DUPNETMAIL   (1 << 21) // Don't allow duplicate e-mail address
+#define UQ_NOSPACEREQ   (1 << 22) // Don't require space in real names
 
 #define DEFAULT_NEWUSER_QS (UQ_ALIASES | UQ_LOCATION | UQ_HANDLE | UQ_DUPHAND | UQ_SEX | UQ_BIRTH \
 							| UQ_REALNAME)
