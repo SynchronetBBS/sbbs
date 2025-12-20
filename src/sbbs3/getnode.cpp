@@ -337,7 +337,7 @@ bool sbbs_t::getsmsg(int usernumber, bool clearline)
 		term->clearline();
 	else
 		term->cond_newline();
-	putmsg(buf, P_NOATCODES);
+	putmsg(buf, P_NOATCODES | P_AUTO_UTF8);
 	free(buf);
 
 	return true;
