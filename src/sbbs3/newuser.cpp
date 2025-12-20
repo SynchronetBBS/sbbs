@@ -177,7 +177,7 @@ bool sbbs_t::newuser()
 			bputs(prompt);
 			getstr(useron.alias, LEN_ALIAS, kmode);
 			truncsp(useron.alias);
-			if (!check_name(&cfg, useron.alias)
+			if (!check_name(&cfg, useron.alias, /* unique: */true)
 			    || finduserstr(useron.number, USER_NAME, useron.alias)
 			    || (!(cfg.uq & UQ_ALIASES) && !check_realname(&cfg, useron.alias))) {
 				llprintf(LOG_NOTICE, "N!", "Invalid or duplicate user real name or alias: '%s'", useron.alias);
@@ -194,7 +194,7 @@ bool sbbs_t::newuser()
 			while (online && text[EnterYourRealName][0]) {
 				bputs(text[EnterYourRealName]);
 				getstr(useron.name, LEN_NAME, kmode);
-				if (!check_name(&cfg, useron.name)
+				if (!check_name(&cfg, useron.name, /* unique: */true)
 				    || !check_realname(&cfg, useron.name)
 				    || ((cfg.uq & UQ_DUPREAL)
 				        && finduserstr(useron.number, USER_NAME, useron.name))) {

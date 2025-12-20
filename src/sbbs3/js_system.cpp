@@ -1840,7 +1840,7 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 	JSVALUE_TO_ASTRING(cx, argv[0], alias, LEN_ALIAS + 2, NULL);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	if (!check_name(cfg, alias)) {
+	if (!check_name(cfg, alias, /* unique: */true)) {
 		JS_RESUMEREQUEST(cx, rc);
 		JS_ReportError(cx, "Invalid or duplicate user alias: %s", alias);
 		return JS_FALSE;
@@ -2037,6 +2037,7 @@ js_chkname(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *    argv = JS_ARGV(cx, arglist);
 	char*      str;
 	jsrefcount rc;
+	bool       unique = true;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
@@ -2045,13 +2046,15 @@ js_chkname(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 	}
 	JSVALUE_TO_ASTRING(cx, argv[0], str, (LEN_ALIAS > LEN_NAME)?LEN_ALIAS + 2:LEN_NAME + 2, NULL);
+	if (argc > 1 && JSVAL_IS_BOOLEAN(argv[1]))
+		unique = JSVAL_TO_BOOLEAN(argv[1]);
 
 	js_system_private_t* sys;
 	if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(check_name(sys->cfg, str)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(check_name(sys->cfg, str, unique)));
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
@@ -2409,9 +2412,9 @@ static jsSyncMethodSpec js_system_functions[] = {
 	{"check_syspass",   js_chksyspass,      1,  JSTYPE_BOOLEAN, JSDOCSTR("password")
 	 , JSDOCSTR("Compare the supplied <i>password</i> against the system password and returns <tt>true</tt> if it matches")
 	 , 311},
-	{"check_name",      js_chkname,         1,  JSTYPE_BOOLEAN, JSDOCSTR("name/alias")
+	{"check_name",      js_chkname,         1,  JSTYPE_BOOLEAN, JSDOCSTR("name/alias [,<i>bool</i> unique=true]")
 	 , JSDOCSTR("Check that the provided name/alias string is suitable for a new user account, "
-		        "returns <tt>true</tt> if it is valid")
+		        "returns <tt>true</tt> if it is valid and (optionally) if it is unique")
 	 , 315},
 	{"check_realname",  js_chkrealname,     1,  JSTYPE_BOOLEAN, JSDOCSTR("name")
 	 , JSDOCSTR("Check that the provided real user name string is suitable for a new user account, "

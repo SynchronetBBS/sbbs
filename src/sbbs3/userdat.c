@@ -4086,7 +4086,7 @@ time_t gettimeleft(scfg_t* cfg, user_t* user, time_t starttime)
 /*************************************************************************/
 /* Check a supplied name/alias and see if it's valid by our standards.   */
 /*************************************************************************/
-bool check_name(scfg_t* cfg, const char* name)
+bool check_name(scfg_t* cfg, const char* name, bool unique)
 {
 	char   tmp[512];
 	size_t len;
@@ -4102,12 +4102,13 @@ bool check_name(scfg_t* cfg, const char* name)
 		return false;
 	if (strstr(name, "  ") != NULL) /* double spaces */
 		return false;
+	if (unique && matchuser(cfg, name, true /* sysop_alias */))
+		return false;
 	if (name[0] <= ' '              /* begins with white-space? */
 	    || name[len - 1] <= ' '       /* ends with white-space */
 	    || !IS_ALPHA(name[0])
 	    || !stricmp(name, cfg->sys_id)
 	    || strchr(name, 0xff)
-	    || matchuser(cfg, name, true /* sysop_alias */)
 	    || trashcan(cfg, name, "name")
 	    || alias(cfg, name, tmp) != name
 	    )
