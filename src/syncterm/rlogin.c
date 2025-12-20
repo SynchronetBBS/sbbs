@@ -1,7 +1,5 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id: rlogin.c,v 1.38 2020/06/27 00:04:50 deuce Exp $ */
-
 #include <stdlib.h>
 
 #include "bbslist.h"

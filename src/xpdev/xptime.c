@@ -1,5 +1,3 @@
-/* $Id: xptime.c,v 1.4 2018/02/14 20:44:00 deuce Exp $ */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

@@ -1,7 +1,5 @@
 /* md5.h - header file for md5.c */
 
-/* $Id: md5.h,v 1.7 2019/03/22 21:29:12 rswindell Exp $ */
-
 /* RSA Data Security, Inc., MD5 Message-Digest Algorithm */
 
 /* NOTE: Numerous changes have been made; the following notice is

@@ -1,5 +1,3 @@
-/* $Id: bitmap_con.c,v 1.148 2020/06/27 00:04:44 deuce Exp $ */
-
 #include <assert.h>
 #include <math.h>
 #include <stdarg.h>

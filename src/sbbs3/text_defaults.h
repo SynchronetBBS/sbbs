@@ -1,8 +1,4 @@
-/* text_defaults.h */
-
 /* Synchronet default text strings */
-
-/* $Id: text_defaults.h,v 1.2 2009/01/23 07:29:34 deuce Exp $ */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*

@@ -1,5 +1,3 @@
-/* $Id: unbaja.c,v 1.48 2020/05/26 19:14:37 rswindell Exp $ */
-
 #include <stdio.h>
 #include <string.h>
 

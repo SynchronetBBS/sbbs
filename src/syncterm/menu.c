@@ -1,7 +1,5 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id: menu.c,v 1.67 2020/05/07 18:12:10 deuce Exp $ */
-
 #include <ciolib.h>
 #include <genwrap.h>
 #include <uifc.h>

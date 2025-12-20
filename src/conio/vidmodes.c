@@ -1,5 +1,3 @@
-/* $Id: vidmodes.c,v 1.33 2020/06/27 00:04:45 deuce Exp $ */
-
 #include <stdlib.h>
 #include <stdbool.h>
 

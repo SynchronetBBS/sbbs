@@ -1,7 +1,5 @@
 /* md5.c - RSA Data Security, Inc., MD5 Message-Digest Algorithm */
 
-/* $Id: md5.c,v 1.7 2012/10/23 07:59:36 deuce Exp $ */
-
 /* NOTE: Numerous changes have been made; the following notice is
 included to satisfy legal requirements.
 

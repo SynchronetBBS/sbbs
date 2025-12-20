@@ -24,8 +24,6 @@
  *	Jacques Mattheij
  */
 
-/* $Id: zmodem.h,v 1.55 2018/02/01 08:20:19 deuce Exp $ */
-
 #ifndef _ZMODEM_H
 #define _ZMODEM_H
 

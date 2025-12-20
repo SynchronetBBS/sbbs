@@ -1,7 +1,5 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id: uifcinit.h,v 1.11 2015/02/09 07:34:23 deuce Exp $ */
-
 #ifndef _UIFCINIT_H_
 #define _UIFCINIT_H_
 

@@ -1,7 +1,5 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id: term.c,v 1.387 2020/06/27 00:04:50 deuce Exp $ */
-
 #include <assert.h>
 #include <ciolib.h>
 #include <cterm.h>

@@ -1,7 +1,5 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id: ssh.c,v 1.31 2020/05/28 22:58:26 deuce Exp $ */
-
 #include <assert.h>
 #include <stdlib.h>
 

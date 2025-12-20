@@ -1,7 +1,5 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id: conn_pty.c,v 1.41 2020/05/02 22:52:53 deuce Exp $ */
-
 #ifdef __unix__
 
 #include <signal.h>   // kill()

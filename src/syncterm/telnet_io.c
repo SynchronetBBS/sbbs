@@ -1,7 +1,5 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id: telnet_io.c,v 1.41 2020/05/02 03:09:15 rswindell Exp $ */
-
 #include <stdlib.h>
 #include <string.h>
 

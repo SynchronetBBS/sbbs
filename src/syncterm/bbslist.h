@@ -1,7 +1,5 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id: bbslist.h,v 1.57 2020/06/27 08:27:39 deuce Exp $ */
-
 #ifndef _BBSLIST_H_
 #define _BBSLIST_H_
 

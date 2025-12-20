@@ -1,7 +1,5 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id: syncterm.c,v 1.261 2020/06/27 00:04:50 deuce Exp $ */
-
 #if defined(__APPLE__) && defined(__MACH__)
  #include "DarwinWrappers.h"
 #endif

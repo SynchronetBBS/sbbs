@@ -1,7 +1,5 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-/* $Id: modem.c,v 1.32 2020/06/27 08:27:39 deuce Exp $ */
-
 #include <stdbool.h>
 #include <stdlib.h>
 

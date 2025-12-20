@@ -1,5 +1,3 @@
-/* $Id: xpbeep.h,v 1.16 2020/04/15 15:18:00 deuce Exp $ */
-
 #ifndef _XPBEEP_H_
 #define _XPBEEP_H_
 

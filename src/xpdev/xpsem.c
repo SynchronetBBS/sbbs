@@ -1,6 +1,4 @@
 /*
- * $Id: xpsem.c,v 1.13 2012/01/26 01:44:02 deuce Exp $
- *
  * Copyright (C) 2000 Jason Evans <jasone@freebsd.org>.
  * All rights reserved.
  *
