@@ -108,11 +108,14 @@ var tests = {
 				continue;
 			if(usr.settings & (USER_DELETED|USER_INACTIVE))
 				continue;
-			if(!system.trashcan("name", usr.alias))
-				continue;
-			output.push(format("User #%-4u has a disallowed alias%s"
-				, usr.number
-				, options.verbose ? (': ' + usr.alias) : ''));
+			if(!system.check_name(usr.alias, /* unique: */false))
+				output.push(format("User #%-4u has a disallowed alias%s"
+					, usr.number
+					, options.verbose ? (': ' + usr.alias) : ''));
+			if(!system.check_realname(usr.name))
+				output.push(format("User #%-4u has a disallowed name%s"
+					, usr.number
+					, options.verbose ? (': ' + usr.name) : ''));
 		}
 		return output;
 	},
