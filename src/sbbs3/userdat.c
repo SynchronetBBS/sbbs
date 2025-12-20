@@ -4139,6 +4139,10 @@ bool check_realname(scfg_t* cfg, const char* name)
 		return false;
 	if (!IS_ALPHA(name[0]))
 		return false;
+	if (strchr(name, 0xff))
+		return false;
+	if (trashcan(cfg, name, "name"))
+		return false;
 	return true;
 }
 
