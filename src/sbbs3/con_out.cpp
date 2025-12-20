@@ -27,9 +27,10 @@
 
 char* sbbs_t::auto_utf8(const char* str, int& mode)
 {
+	// If the string starts with a UTF-8 BOM, set P_UTF8 mode and skip the BOM
 	if (strncmp(str, "\xEF\xBB\xBF", 3) == 0) {
 		mode |= P_UTF8;
-		return (char*)str;
+		return (char*)str + 3;
 	}
 	if (mode & P_AUTO_UTF8) {
 		if (!str_is_ascii(str) && utf8_str_is_valid(str))
