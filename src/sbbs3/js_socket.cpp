@@ -3537,7 +3537,6 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "malloc failed");
 		free(protocol);
 		xpms_destroy(set, sock_close_cb, nullptr);
-		free(set);
 		return JS_FALSE;
 	}
 	memset(p, 0, sizeof(js_socket_private_t));
@@ -3555,7 +3554,6 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "JS_SetPrivate failed");
 		xpms_destroy(set, sock_close_cb, nullptr);
 		free(p);
-		free(set);
 		return JS_FALSE;
 	}
 
@@ -3563,7 +3561,6 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "js_DefineSocketOptionsArray failed");
 		xpms_destroy(set, sock_close_cb, nullptr);
 		free(p);
-		free(set);
 		return JS_FALSE;
 	}
 
@@ -3590,7 +3587,6 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 fail:
 	xpms_destroy(set, sock_close_cb, nullptr);
 	free(protocol);
-	free(set);
 	return JS_FALSE;
 }
 
