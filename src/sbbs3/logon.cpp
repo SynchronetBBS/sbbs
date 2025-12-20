@@ -353,9 +353,7 @@ bool sbbs_t::logon()
 						bputs(text[EnterYourCompany]);
 					getstr(useron.name, LEN_NAME, kmode);
 					if (cfg.uq & UQ_ALIASES && cfg.uq & UQ_REALNAME) {
-						if (trashcan(useron.name, "name") || !useron.name[0]
-						    || !strchr(useron.name, ' ')
-						    || strchr(useron.name, 0xff)
+						if (!check_realname(&cfg, useron.name)
 						    || (cfg.uq & UQ_DUPREAL
 						        && finduserstr(useron.number, USER_NAME
 						                       , useron.name, 0, 0)))
