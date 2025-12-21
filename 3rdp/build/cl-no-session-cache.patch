@@ -1,0 +1,10 @@
+--- misc/config.h.orig	2025-12-21 04:04:07.236568000 -0500
++++ misc/config.h	2025-12-21 04:04:35.805202000 -0500
+@@ -68,6 +68,7 @@
+ #define USE_SSH_CTR
+ #define CONFIG_NUM_OBJECTS 16384
+ #define USE_CHACHA20
++#define NO_SESSION_CACHE
+ /****************************************************************************
+ *																			*
+ *						Custom Configuration Profiles						*

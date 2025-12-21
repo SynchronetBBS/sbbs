@@ -110,6 +110,7 @@ set(PATCHES
 	cl-add-psk-flag.patch
 	cl-winapi-needed.patch
 	cl-enable-chacha20.patch
+	cl-no-session-cache.patch
 )
 
 set(SOURCE
