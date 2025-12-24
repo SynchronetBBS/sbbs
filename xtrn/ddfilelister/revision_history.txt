@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.32     2025-12-24   Sanitizes file descriptions that might have control
+                      characters like 0x0C (form feed) or 0x0D (carriage
+                      return) at the end
 2.31     2025-09-30   When doing a file search, don't display "There are no
                       files in.." when no files are found. Also, output a CRLF
                       just before exiting in case of file searching so that the

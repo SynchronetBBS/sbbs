@@ -190,6 +190,9 @@
  *                              ddfilelister.example.ini; sysops can copy it to ddfilelister.ini
  *                              to avoid having it overridden due to an update from the
  *                              repository.
+ * 2025-12-24 Eric oulashin     Version 2.32
+ *                              Sanitizes file descriptions that might have control characters
+ *                              like 0x0C (form feed) or 0x0D (carriage return) at the end
  */
 
 "use strict";
@@ -231,8 +234,8 @@ var gAvatar = load({}, "avatar_lib.js");
 
 
 // Version information
-var LISTER_VERSION = "2.31";
-var LISTER_DATE = "2025-09-30";
+var LISTER_VERSION = "2.32";
+var LISTER_DATE = "2025-12-24";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1115,6 +1118,8 @@ function showFileInfo_ANSI(pFileMetadata)
 
 	// Short file description (ensure we have a string)
 	var shortFileDesc = (typeof(fileMetadata.desc) === "string" ? fileMetadata.desc : "");
+	// Sanitize the description to avoid display issues
+	shortFileDesc = stripBadCharsFromFiledesc(shortFileDesc);
 
 	// The width of the frame to display the file info (including borders).  This
 	// is declared early so that it can be used for string length adjustment.
@@ -1271,6 +1276,8 @@ function showFileInfo_ANSI(pFileMetadata)
 		// since that seems to cause problems with displaying the description in a Frame object.  This
 		// may be a kludge, and perhaps there's a better solution..
 		fileDesc = fileDesc.replace(/^\x01[nN]/, "");
+		// Sanitize the description to avoid display issues
+		fileDesc = stripBadCharsFromFiledesc(fileDesc);
 		// Fix line endings if necessary
 		fileDesc = lfexpand(fileDesc);
 		// Convert any non-Synchronet attribute codes to Synchronet attribute codes
@@ -1352,6 +1359,8 @@ function showFileInfo_noANSI(pFileMetadata)
 
 	// Short file description (ensure we have a string)
 	var shortFileDesc = (typeof(fileMetadata.desc) === "string" ? fileMetadata.desc : "");
+	// Sanitize the description to avoid display issues
+	shortFileDesc = stripBadCharsFromFiledesc(shortFileDesc);
 
 	var labelLen = 16;
 	var lblSep = " : ";
@@ -1424,13 +1433,15 @@ function showFileInfo_noANSI(pFileMetadata)
 	var timesDownloaded = fileMetadata.hasOwnProperty("times_downloaded") ? fileMetadata.times_downloaded : 0;
 	printf(generalFormatStr, "Times downloaded", timesDownloaded);
 	printf(generalFormatStr, "Time to download", secondsToTimeStr(calcDownloadTimeInSeconds(fileMetadata.size)));
-	// Extended description (if available)
+	// Extended description (if available - And sanitize the description to avoid display issues)
 	console.attributes = "N";
 	console.print(gSettings.colors.desc);
 	if (fileMetadata.hasOwnProperty("extdesc"))
 	{
 		console.crlf();
-		console.print(fileMetadata.extdesc);
+		// Sanitize the description to avoid display issues
+		var extFileDesc = stripBadCharsFromFiledesc(fileMetadata.extdesc);
+		console.print(extFileDesc);
 		console.crlf();
 	}
 
@@ -1998,7 +2009,12 @@ function editFileInfo(pFileList, pFileListMenu)
 	retObj.reDrawCmdBar = true;
 	retObj.refreshedSelectedFilesAlready = true;
 
-	console.print("\x01n\r\n\r\n");
+	console.attributes = "N";
+	if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
+		console.gotoxy(1, console.screen_rows);
+	else
+		console.crlf();
+	console.crlf();
 	var msg = format("\x01cEditing file\x01g\x01h: \x01c%s\x01n \x01c(in \x01h%s\x01n\x01c)\x01n", fileMetadata.name, getLibAndDirDesc(fileMetadata.dirCode));
 	console.print(lfexpand(word_wrap(msg), console.screen_columns-1));
 	var newMetadata = {};
@@ -2009,6 +2025,8 @@ function editFileInfo(pFileList, pFileListMenu)
 	var editWidth = console.screen_columns - console.strlen(promptText) - 1;
 	console.mnemonics(promptText);
 	var shortFileDesc = (typeof(fileMetadata.desc) === "string" ? fileMetadata.desc : "");
+	// Sanitize the description to avoid display issues
+	shortFileDesc = stripBadCharsFromFiledesc(shortFileDesc);
 	newMetadata.desc = console.getstr(shortFileDesc, editWidth, K_EDIT|K_LINE|K_NOSPIN); // K_NOCRLF
 	if (console.aborted)
 		return retObj;
@@ -2036,7 +2054,8 @@ function editFileInfo(pFileList, pFileListMenu)
 				if (typeof(extdMetadata.extdesc) === "string")
 				{
 					// An extended file description is usually up to about 45 characters long
-					var descWrapped = word_wrap(extdMetadata.extdesc, 45, null, false).split("\r\n");
+					// Sanitize the description to avoid display issues
+					var descWrapped = word_wrap(stripBadCharsFromFiledesc(extdMetadata.extdesc), 45, null, false).split("\r\n");
 					for (var lineIdx = 0; lineIdx < descWrapped.length; ++lineIdx)
 						outFile.writeln(descWrapped[lineIdx]);
 				}
@@ -2045,7 +2064,7 @@ function editFileInfo(pFileList, pFileListMenu)
 					if (extdMetadata.hasOwnProperty("desc") && typeof(extdMetadata.desc) === "string" && extdMetadata.desc.length > 0)
 					{
 						if (console.yesno("No extended description. Start with short description"))
-							outFile.writeln(extdMetadata.desc);
+							outFile.writeln(stripBadCharsFromFiledesc(extdMetadata.desc));
 						else
 							outFile.writeln("");
 					}
@@ -3518,6 +3537,8 @@ function createFileListMenu(pQuitKeys)
 		}
 		*/
 		var desc = (typeof(gFileList[pIdx].desc) === "string" ? gFileList[pIdx].desc : "");
+		// Sanitize the description to avoid display issues
+		desc = stripBadCharsFromFiledesc(desc);
 		var descIsEmpty = (desc == "" || /^\s+$/.test(desc));
 		// Remove/replace any cursor movement codes in the description, which can corrupt the display
 		desc = removeOrReplaceSyncCursorMovementChars(desc, false);
@@ -5363,6 +5384,8 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 		fileDesc = fileMetadata.desc;
 	if (typeof(fileDesc) != "string")
 		fileDesc = "";
+	// Sanitize the description to avoid display issues
+	fileDesc = stripBadCharsFromFiledesc(fileDesc);
 
 	// This might be overkill, but just in case, convert any non-Synchronet
 	// attribute codes to Synchronet attribute codes in the description.
@@ -6215,4 +6238,21 @@ function getAvatarArray(pUsername)
 		}
 	}
 	return avatarLineArray;
+}
+
+// Removes characters from a file description that may cause issues
+// when being displayed.
+//
+// Parmaeters:
+//  pFileDesc: The file description
+//
+// Return value: The sanitized file description
+function stripBadCharsFromFiledesc(pFileDesc)
+{
+	// Remove any instances of 0x0C control character (form feed)
+	var fileDesc = pFileDesc.replace(/\x0c/g, "");
+	// Remove any instances of 0x0D control character (carriage return) from the end
+	fileDesc = fileDesc.replace(/\x0d+$/, "");
+
+	return fileDesc;
 }
