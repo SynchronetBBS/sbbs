@@ -510,7 +510,7 @@ void fwrite_echostat(FILE* fp, echostat_t* stat)
 	const char* desc = area_desc(stat->tag);
 	fprintf(fp, "[%s]\n", stat->tag);
 	fprintf(fp, "Known = %s\n", stat->known ? "true" : "false");
-	if (desc != NULL)
+	if (desc != NULL && *desc != '\0')
 		fprintf(fp, "Title = %s\n", desc);
 	for (int type = 0; type < ECHOSTAT_MSG_TYPES; type++) {
 		char prefix[32];
@@ -1865,7 +1865,7 @@ void add_areas_from_echolists(FILE* afileout, FILE* nmfile
 						break;
 					}
 					if ((afilein = fopen(cfg.listcfg[j].listpath, "r")) == NULL) {
-						lprintf(LOG_ERR, "ERROR %u (%s) line %d opening %s"
+						lprintf(LOG_ERR, "ERROR %u (%s) line %d opening listpath: %s"
 						        , errno, strerror(errno), __LINE__, cfg.listcfg[j].listpath);
 						fclose(fwdfile);
 						match = true;
@@ -3176,7 +3176,8 @@ const char* area_desc(const char* areatag)
 	for (uint i = 0; i < cfg.listcfgs; i++) {
 		FILE* fp = fopen(cfg.listcfg[i].listpath, "r");
 		if (fp == NULL) {
-			lprintf(LOG_ERR, "ERROR %d (%s) opening %s", errno, strerror(errno), cfg.listcfg[i].listpath);
+			lprintf(LOG_DEBUG, "ERROR %d (%s) opening listpath (%s) to search for area (%s) description"
+				, errno, strerror(errno), cfg.listcfg[i].listpath, areatag);
 			continue;
 		}
 		str_list_t list = strListReadFile(fp, NULL, 0);
@@ -3213,7 +3214,7 @@ void cleanup(void)
 		lprintf(LOG_DEBUG, "Writing %lu areas to %s", (ulong)strListCount(bad_areas), cfg.badareafile);
 		FILE* fp = fopen(cfg.badareafile, "wt");
 		if (fp == NULL) {
-			lprintf(LOG_ERR, "ERROR %d (%s) opening %s", errno, strerror(errno), cfg.badareafile);
+			lprintf(LOG_ERR, "ERROR %d (%s) opening bad area file: %s", errno, strerror(errno), cfg.badareafile);
 		} else {
 			int longest = 0;
 			for (int i = 0; bad_areas[i] != NULL; i++) {
@@ -6021,7 +6022,7 @@ void find_stray_packets(void)
 			lprintf(LOG_DEBUG, "Stray packet already finalized: %s", packet);
 		else {
 			if ((pkt->fp = fopen(pkt->filename, "ab")) == NULL) {
-				lprintf(LOG_ERR, "ERROR %d (%s) opening %s", errno, strerror(errno), pkt->filename);
+				lprintf(LOG_ERR, "ERROR %d (%s) line %d opening %s", errno, strerror(errno), __LINE__, pkt->filename);
 				free(pkt);
 				continue;
 			}
@@ -6829,7 +6830,7 @@ int main(int argc, char **argv)
 #endif
 
 	if ((fidologfile = fopen(cfg.logfile, "a")) == NULL) {
-		fprintf(stderr, "ERROR %u (%s) line %d opening %s\n", errno, strerror(errno), __LINE__, cfg.logfile);
+		fprintf(stderr, "ERROR %u (%s) line %d opening logfile: %s\n", errno, strerror(errno), __LINE__, cfg.logfile);
 		bail(1);
 		return -1;
 	}
