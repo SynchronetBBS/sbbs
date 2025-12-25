@@ -773,6 +773,15 @@ int write_flofile(const char *infile, fidoaddr_t dest, bool bundle, bool use_out
 	if (flo_filename == NULL)
 		return -2;
 
+	if (infile == NULL || infile[0] == '\0') {
+		if (!ftouch(flo_filename)) {
+			lprintf(LOG_ERR, "ERROR %u (%s) line %d touching reduced BSO/FLO file: %s", errno, strerror(errno), __LINE__, flo_filename);
+			return -1;
+		}
+		lprintf(LOG_INFO, "Reduced BSO/FLO file for %s touched: %s", smb_faddrtoa(&dest, NULL), flo_filename);
+		return 0;
+	}
+
 	const char* prefix = "";
 	switch (*infile) {
 		case '#':
@@ -5804,7 +5813,7 @@ void pack_netmail(void)
 				for (token = strtok(filelist, FIDO_FILELIST_SEP); token != NULL; token = strtok(NULL, FIDO_FILELIST_SEP))
 					fprintf(fp, "%s\n", getfname(token));
 				fclose(fp);
-				if (write_flofile(req, addr, /* bundle: */ false, cfg.use_outboxes, /* del_file: */ true, hdr.attr))
+				if (write_flofile(/* Reduced flow file: */NULL, addr, /* bundle: */ false, cfg.use_outboxes, /* del_file: */ true, hdr.attr))
 					continue;
 				netmail_sent(path);
 			}
