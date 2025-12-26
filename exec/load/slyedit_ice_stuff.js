@@ -10,12 +10,12 @@
 if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_NOCRLF");
-	require(js.exec_dir + "SlyEdit_Misc.js", "UPPER_LEFT_SINGLE");
+	require("slyedit_misc.js", "UPPER_LEFT_SINGLE");
 }
 else
 {
 	load("sbbsdefs.js");
-	load(js.exec_dir + "SlyEdit_Misc.js");
+	load("slyedit_misc.js");
 }
 
 // Read the color configuration file

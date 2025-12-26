@@ -43,7 +43,7 @@ if (requireFnExists)
 	require("text.js", "AreYouThere");
 	require("frame.js", "Frame");
 	require("scrollbar.js", "ScrollBar");
-	require(js.exec_dir + "SlyEdit_Misc.js", "gUserSettingsFilename");
+	require("slyedit_misc.js", "gUserSettingsFilename");
 }
 else
 {
@@ -52,7 +52,7 @@ else
 	load("text.js");
 	load("frame.js");
 	load("scrollbar.js");
-	load(js.exec_dir + "SlyEdit_Misc.js");
+	load("slyedit_misc.js");
 }
 
 // Load program settings from SlyEdit.cfg, and load the user configuratio nsettings
@@ -284,9 +284,9 @@ var gSubjScreenLen = 0;
 if (EDITOR_STYLE == "DCT")
 {
 	if (requireFnExists)
-		require(js.exec_dir + "SlyEdit_DCTStuff.js", "DrawQuoteWindowTopBorder_DCTStyle");
+		require("slyedit_dct_stuff.js", "DrawQuoteWindowTopBorder_DCTStyle");
 	else
-		load(js.exec_dir + "SlyEdit_DCTStuff.js");
+		load("slyedit_dct_stuff.js");
 	gEditTop = 6;
 	gQuoteWinTextColor = gConfigSettings.DCTColors.QuoteWinText;
 	gQuoteLineHighlightColor = gConfigSettings.DCTColors.QuoteLineHighlightColor;
@@ -311,9 +311,9 @@ if (EDITOR_STYLE == "DCT")
 else if (EDITOR_STYLE == "ICE")
 {
 	if (requireFnExists)
-		require(js.exec_dir + "SlyEdit_IceStuff.js", "DrawQuoteWindowTopBorder_IceStyle");
+		require("slyedit_ice_stuff.js", "DrawQuoteWindowTopBorder_IceStyle");
 	else
-		load(js.exec_dir + "SlyEdit_IceStuff.js");
+		load("slyedit_ice_stuff.js");
 	gEditTop = 5;
 	gQuoteWinTextColor = gConfigSettings.iceColors.QuoteWinText;
 	gQuoteLineHighlightColor = gConfigSettings.iceColors.QuoteLineHighlightColor;
@@ -5178,7 +5178,7 @@ function doColorSelection(pTxtAttrs, pCurpos, pCurrentWordLength)
 	console.print("\x01cSpecial: \x01w\x01hH:\x01n\x01hHigh Intensity \x01wI:\x01n\x01iBlinking \x01n\x01w\x01hN:\x01nNormal \x01h\x01g" + CENTERED_SQUARE + " \x01n\x01cChoose colors/attributes\x01h\x01g: \x01c");
 	// Get the attribute codes from the user.  Ideally, we'd use console.getkeys(),
 	// but that outputs a CR at the end, which is undesirable.  So instead, we call
-	// getUserInputWithSetOfInputStrs (defined in SlyEdit_Misc.js).
+	// getUserInputWithSetOfInputStrs (defined in slyedit_misc.js).
 	//var key = console.getkeys("KRGYBMCW01234567HIN").toString(); // Outputs a CR..  bad
 	var validKeys = ["KRGYBMCW", // Foreground color codes
 	                 "01234567", // Background color codes
