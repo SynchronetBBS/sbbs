@@ -1119,7 +1119,7 @@ function showFileInfo_ANSI(pFileMetadata)
 	// Short file description (ensure we have a string)
 	var shortFileDesc = (typeof(fileMetadata.desc) === "string" ? fileMetadata.desc : "");
 	// Sanitize the description to avoid display issues
-	shortFileDesc = stripBadCharsFromStr(shortFileDesc);
+	shortFileDesc = stripBadCharsFromStr(shortFileDesc, true);
 
 	// The width of the frame to display the file info (including borders).  This
 	// is declared early so that it can be used for string length adjustment.
@@ -1277,7 +1277,7 @@ function showFileInfo_ANSI(pFileMetadata)
 		// may be a kludge, and perhaps there's a better solution..
 		fileDesc = fileDesc.replace(/^\x01[nN]/, "");
 		// Sanitize the description to avoid display issues
-		fileDesc = stripBadCharsFromStr(fileDesc);
+		fileDesc = stripBadCharsFromStr(fileDesc, true);
 		// Fix line endings if necessary
 		fileDesc = lfexpand(fileDesc);
 		// Convert any non-Synchronet attribute codes to Synchronet attribute codes
@@ -1360,7 +1360,7 @@ function showFileInfo_noANSI(pFileMetadata)
 	// Short file description (ensure we have a string)
 	var shortFileDesc = (typeof(fileMetadata.desc) === "string" ? fileMetadata.desc : "");
 	// Sanitize the description to avoid display issues
-	shortFileDesc = stripBadCharsFromStr(shortFileDesc);
+	shortFileDesc = stripBadCharsFromStr(shortFileDesc, true);
 
 	var labelLen = 16;
 	var lblSep = " : ";
@@ -1440,7 +1440,7 @@ function showFileInfo_noANSI(pFileMetadata)
 	{
 		console.crlf();
 		// Sanitize the description to avoid display issues
-		var extFileDesc = stripBadCharsFromStr(fileMetadata.extdesc);
+		var extFileDesc = stripBadCharsFromStr(fileMetadata.extdesc, true);
 		console.print(extFileDesc);
 		console.crlf();
 	}
@@ -2026,7 +2026,7 @@ function editFileInfo(pFileList, pFileListMenu)
 	console.mnemonics(promptText);
 	var shortFileDesc = (typeof(fileMetadata.desc) === "string" ? fileMetadata.desc : "");
 	// Sanitize the description to avoid display issues
-	shortFileDesc = stripBadCharsFromStr(shortFileDesc);
+	shortFileDesc = stripBadCharsFromStr(shortFileDesc, true);
 	newMetadata.desc = console.getstr(shortFileDesc, editWidth, K_EDIT|K_LINE|K_NOSPIN); // K_NOCRLF
 	if (console.aborted)
 		return retObj;
@@ -2055,7 +2055,7 @@ function editFileInfo(pFileList, pFileListMenu)
 				{
 					// An extended file description is usually up to about 45 characters long
 					// Sanitize the description to avoid display issues
-					var descWrapped = word_wrap(stripBadCharsFromStr(extdMetadata.extdesc), 45, null, false).split("\r\n");
+					var descWrapped = word_wrap(stripBadCharsFromStr(extdMetadata.extdesc, true), 45, null, false).split("\r\n");
 					for (var lineIdx = 0; lineIdx < descWrapped.length; ++lineIdx)
 						outFile.writeln(descWrapped[lineIdx]);
 				}
@@ -2064,7 +2064,7 @@ function editFileInfo(pFileList, pFileListMenu)
 					if (extdMetadata.hasOwnProperty("desc") && typeof(extdMetadata.desc) === "string" && extdMetadata.desc.length > 0)
 					{
 						if (console.yesno("No extended description. Start with short description"))
-							outFile.writeln(stripBadCharsFromStr(extdMetadata.desc));
+							outFile.writeln(stripBadCharsFromStr(extdMetadata.desc, true));
 						else
 							outFile.writeln("");
 					}
@@ -3538,7 +3538,7 @@ function createFileListMenu(pQuitKeys)
 		*/
 		var desc = (typeof(gFileList[pIdx].desc) === "string" ? gFileList[pIdx].desc : "");
 		// Sanitize the description to avoid display issues
-		desc = stripBadCharsFromStr(desc);
+		desc = stripBadCharsFromStr(desc, true);
 		var descIsEmpty = (desc == "" || /^\s+$/.test(desc));
 		// Remove/replace any cursor movement codes in the description, which can corrupt the display
 		desc = removeOrReplaceSyncCursorMovementChars(desc, false);
@@ -5385,7 +5385,7 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 	if (typeof(fileDesc) != "string")
 		fileDesc = "";
 	// Sanitize the description to avoid display issues
-	fileDesc = stripBadCharsFromStr(fileDesc);
+	fileDesc = stripBadCharsFromStr(fileDesc, true);
 
 	// This might be overkill, but just in case, convert any non-Synchronet
 	// attribute codes to Synchronet attribute codes in the description.
@@ -6245,14 +6245,24 @@ function getAvatarArray(pUsername)
 //
 // Parmaeters:
 //  pStr: A string
+//  pRemoveTrailingWhitespace: Boolean - Whether or not to trim trailing
+//                             whitespace (which could include CR/LF
+//                             chars).
 //
 // Return value: The sanitized string
-function stripBadCharsFromStr(pStr)
+function stripBadCharsFromStr(pStr, pRemoveTrailingWhitespace)
 {
 	// Remove control characters except for CR (0xD) and LF (0xA)
 	var str = pStr.replace(/[\x02-\x09\x0B\x0C\x0E-\x1F]/g, "");
-	// Remove any CR/LF characters from the end of the string to
-	// avoid issues with cursor positioning when printing the string
-	str = str.replace(/[\x0D\x0A]+$/, "");
+	if (pRemoveTrailingWhitespace)
+	{
+		// Remove any whitespace characters from the end of the string
+		// (which could include CR/LF characters) to avoid issues with
+		// cursor positioning when printing the string
+		str = truncsp(str);
+		// Remove any CR/LF characters from the end of the string to
+		// avoid issues with cursor positioning when printing the string
+		//str = str.replace(/[\x0D\x0A]+$/, "");
+	}
 	return str;
 }
