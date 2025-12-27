@@ -400,7 +400,7 @@ struct dirent* readdir(DIR* dir)
 		return NULL;
 	if (dir->handle == -1)
 		return NULL;
-	strlcpy(dir->dirent.d_name, dir->finddata.name, sizeof(dir->dirent.d_name) - 1);
+	strlcpy(dir->dirent.d_name, dir->finddata.name, sizeof(dir->dirent.d_name));
 	if (_findnext(dir->handle, &dir->finddata) != 0)
 		dir->end = true;
 	return &dir->dirent;
