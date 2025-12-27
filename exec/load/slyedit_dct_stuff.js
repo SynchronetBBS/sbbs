@@ -10,12 +10,12 @@
 if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_NOCRLF");
-	require(js.exec_dir + "SlyEdit_Misc.js", "CTRL_A");
+	require("slyedit_misc.js", "CTRL_A");
 }
 else
 {
 	load("sbbsdefs.js");
-	load(js.exec_dir + "SlyEdit_Misc.js");
+	load("slyedit_misc.js");
 }
 
 // DCTEdit menu item return values
