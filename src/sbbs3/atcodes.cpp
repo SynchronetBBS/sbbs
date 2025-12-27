@@ -764,9 +764,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		safe_snprintf(str, maxlen, "%c", useron.sex);
 		return str;
 	}
-	if (strcmp(sp, "GENDERS") == 0) {
-		return cfg.new_genders;
-	}
 
 	if (!strcmp(sp, "QWKID"))
 		return cfg.sys_id;
