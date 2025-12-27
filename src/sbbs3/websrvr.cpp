@@ -3339,7 +3339,7 @@ static enum parsed_vpath resolve_vpath(http_session_t* session, char* vpath)
 		return PARSED_VPATH_NONE;
 	if (!loadfile(&scfg, session->file.dir, filename, &session->file, file_detail_index, NULL))
 		return PARSED_VPATH_NONE;
-	strlcpy(vpath, path, MAX_PATH);
+	strlcpy(vpath, path, MAX_PATH + 1);
 	return PARSED_VPATH_FULL;
 }
 
