@@ -819,7 +819,7 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 			free(p);
 			return JS_FALSE;
 		}
-		strlcpy(p, p2, maxlen);
+		strlcpy(p, p2, maxlen + 1);
 		free(p2);
 	}
 
