@@ -1840,6 +1840,57 @@ js_logkey(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_logline(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *    argv = JS_ARGV(cx, arglist);
+	char*      code;
+	char*      str;
+	int        level = LOG_INFO;
+	JSString*  js_str;
+	sbbs_t*    sbbs;
+	jsrefcount rc;
+
+	if (js_argcIsInsufficient(cx, argc, 2))
+		return JS_FALSE;
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+
+	uintN argn = 0;
+
+	if (JSVAL_IS_NUMBER(argv[argn])) {
+		if (!JS_ValueToInt32(cx, argv[argn], &level))
+			return JS_FALSE;
+		argn++;
+	}
+
+	if ((js_str = JS_ValueToString(cx, argv[argn])) == NULL)
+		return JS_FALSE;
+	argn++;
+
+	JSSTRING_TO_MSTRING(cx, js_str, code, NULL);
+	if (code == NULL)
+		return JS_FALSE;
+
+	if ((js_str = JS_ValueToString(cx, argv[argn])) == NULL)
+		return JS_FALSE;
+	argn++;
+
+	JSSTRING_TO_MSTRING(cx, js_str, str, NULL);
+	if (str == NULL)
+		return JS_FALSE;
+
+	rc = JS_SUSPENDREQUEST(cx);
+	sbbs->logline(level, code, str);
+	free(code);
+	free(str);
+	JS_RESUMEREQUEST(cx, rc);
+
+	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+	return JS_TRUE;
+}
+
+
+static JSBool
 js_logstr(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *    argv = JS_ARGV(cx, arglist);
@@ -4980,12 +5031,16 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , 31700
 	},
 	{"log_key",         js_logkey,          1,  JSTYPE_BOOLEAN, JSDOCSTR("key [,comma=false]")
-	 , JSDOCSTR("Log key to node.log (comma optional).")
+	 , JSDOCSTR("Log key to <tt>node.log</tt> file (comma optional).")
 	 , 310
 	},
 	{"log_str",         js_logstr,          1,  JSTYPE_BOOLEAN, JSDOCSTR("text")
-	 , JSDOCSTR("Log string to node.log.")
+	 , JSDOCSTR("Log string to <tt>node.log</tt> file.")
 	 , 310
+	},
+	{"logline",         js_logline,         2,  JSTYPE_BOOLEAN, JSDOCSTR("[level=LOG_INFO], code, text")
+	 , JSDOCSTR("Log string with a 1-2 character search code/prefix to <tt>node.log</tt> file, optionally specifying a priority level.")
+	 , 321
 	},
 	/* users */
 	{"finduser",        js_finduser,        1,  JSTYPE_NUMBER,  JSDOCSTR("username_or_number")
