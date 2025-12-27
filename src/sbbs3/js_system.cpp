@@ -2236,6 +2236,36 @@ js_allowed_fname(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+static JSBool
+js_check_netmail_addr(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *    argv = JS_ARGV(cx, arglist);
+	char*      addr = NULL;
+	jsrefcount rc;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (!JSVAL_IS_STRING(argv[0])) {
+		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+		return JS_TRUE;
+	}
+	js_system_private_t* sys;
+	if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
+		return JS_FALSE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], addr, NULL);
+	if (addr == NULL)
+		return JS_FALSE;
+
+	rc = JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(is_supported_netmail_addr(sys->cfg, addr)));
+	JS_RESUMEREQUEST(cx, rc);
+	free(addr);
+
+	return JS_TRUE;
+}
+
 #endif
 
 static JSBool
@@ -2430,6 +2460,10 @@ static jsSyncMethodSpec js_system_functions[] = {
 	 , JSDOCSTR("Check that the provided string is suitable for a new user password, "
 		        "returns <tt>true</tt> if it meets the system criteria for a user password.<br>"
 				"Does <b>not</b> check the <tt>password.can</tt> file.")
+	 , 321},
+	{"check_netmail_addr", js_check_netmail_addr, 1, JSTYPE_BOOLEAN, JSDOCSTR("address")
+	 , JSDOCSTR("Check if the specified <i>address</i> is in a supported NetMail address format, "
+				"returns <tt>true</tt> if it is supported")
 	 , 321},
 	{"check_filename",  js_chkfname,        1,  JSTYPE_BOOLEAN, JSDOCSTR("filename")
 	 , JSDOCSTR("Verify that the specified <i>filename</i> string is legal and allowed for upload by users "
