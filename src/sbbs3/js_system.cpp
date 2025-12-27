@@ -55,6 +55,7 @@ enum {
 	, SYS_PROP_DATE_VERBAL
 	, SYS_PROP_BIRTHDATE_FMT
 	, SYS_PROP_BIRTHDATE_TEMPLATE
+	, SYS_PROP_PHONENUM_TEMPLATE
 	, SYS_PROP_PWDAYS
 	, SYS_PROP_MINPWLEN
 	, SYS_PROP_MAXPWLEN
@@ -196,6 +197,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SYS_PROP_BIRTHDATE_TEMPLATE:
 			birthdate_template(cfg, str, sizeof str);
 			p = str;
+			break;
+		case SYS_PROP_PHONENUM_TEMPLATE:
+			p = cfg->sys_phonefmt;
 			break;
 		case SYS_PROP_NODES:
 			*vp = INT_TO_JSVAL(cfg->sys_nodes);
@@ -469,6 +473,8 @@ static jsSyncPropertySpec js_system_properties[] = {
 		, JSDOCSTR("User birth date input and display format (MM=Month number, DD=Day of month, YYYY=Year)")},
 	{   "birthdate_template",       SYS_PROP_BIRTHDATE_TEMPLATE, SYSOBJ_FLAGS, 32002
 		, JSDOCSTR("User birth date input template")},
+	{   "phonenumber_template",     SYS_PROP_PHONENUM_TEMPLATE, SYSOBJ_FLAGS, 321
+		, JSDOCSTR("User phone number input template")},
 	{   "pwdays",                   SYS_PROP_PWDAYS,    SYSOBJ_FLAGS,       310
 		, JSDOCSTR("Days between forced user password changes (<tt>0</tt>=<i>never</i>)")},
 	{   "min_password_length",      SYS_PROP_MINPWLEN,  SYSOBJ_FLAGS,       31702
