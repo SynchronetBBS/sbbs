@@ -3043,35 +3043,36 @@ void sys_cfg(void)
 				done = 0;
 				while (!done) {
 					i = 0;
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Login", cfg.login_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Logon", cfg.logon_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Sync", cfg.sync_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Logoff", cfg.logoff_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Logout", cfg.logout_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "New User", cfg.newuser_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "User Config", cfg.usercfg_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Expired User", cfg.expire_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Auto Message", cfg.automsg_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Send Feedback", cfg.feedback_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Chat Section", cfg.chatsec_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Text Section", cfg.textsec_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Xtrn Section", cfg.xtrnsec_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Pre Xtrn", cfg.prextrn_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Post Xtrn", cfg.postxtrn_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Read Mail", cfg.readmail_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Scan Msgs", cfg.scanposts_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Scan Subs", cfg.scansubs_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "List Msgs", cfg.listmsgs_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "List Logons", cfg.logonlist_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "List Users", cfg.userlist_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "List Nodes", cfg.nodelist_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Who's Online", cfg.whosonline_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Private Msg", cfg.privatemsg_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Scan Dirs", cfg.scandirs_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "List Files", cfg.listfiles_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "View File Info", cfg.fileinfo_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Batch Transfer", cfg.batxfer_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-16.16s%s", "Temp Transfer", cfg.tempxfer_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Login", cfg.login_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Logon", cfg.logon_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Sync", cfg.sync_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Logoff", cfg.logoff_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Logout", cfg.logout_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "New User Prompts", cfg.newuser_prompts_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "New User Created", cfg.newuser_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "User Config", cfg.usercfg_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Expired User", cfg.expire_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Auto Message", cfg.automsg_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Send Feedback", cfg.feedback_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Chat Section", cfg.chatsec_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Text Section", cfg.textsec_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Xtrn Section", cfg.xtrnsec_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Pre Xtrn", cfg.prextrn_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Post Xtrn", cfg.postxtrn_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Read Mail", cfg.readmail_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Scan Msgs", cfg.scanposts_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Scan Subs", cfg.scansubs_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Msgs", cfg.listmsgs_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Logons", cfg.logonlist_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Users", cfg.userlist_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Nodes", cfg.nodelist_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Who's Online", cfg.whosonline_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Private Msg", cfg.privatemsg_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Scan Dirs", cfg.scandirs_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Files", cfg.listfiles_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "View File Info", cfg.fileinfo_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Batch Transfer", cfg.batxfer_mod);
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Temp Transfer", cfg.tempxfer_mod);
 					opt[i][0] = 0;
 					uifc.helpbuf =
 						"`Loadable Modules:`\n"
@@ -3080,35 +3081,36 @@ void sys_cfg(void)
 						"automatically loaded and executed during certain Terminal Server\n"
 						"operations.  Command-line arguments may be included for all.\n"
 						"\n"
-						"`Login`          Required module for interactive terminal logins (answer)\n"
-						"`Logon`          Terminal logon procedure (post login/authentication)\n"
-						"`Sync`           Node is periodically synchronized (comm/disk I/O flush)\n"
-						"`Logoff`         Terminal logoff procedure (potentially user-interactive)\n"
-						"`Logout`         Terminal logout procedure (off-line, post-logoff)\n"
-						"`New User`       End of new terminal user registration/creation process\n"
-						"`User Config`    User (e.g. terminal) settings configuration menu\n"
-						"`Expired User`   User account expires (off-line)\n"
-						"`Auto Message`   User chooses to re-read or edit the auto-message\n"
-						"`Send Feedback`  User sending email to a sysop (return error to cancel)\n"
-						"`Chat Section`   User enters chat section/menu\n"
-						"`Text Section`   General text file (add/remove/viewing) section\n"
-						"`Xtrn Section`   External programs (doors) section\n"
-						"`Pre Xtrn`       Executed before external programs (doors) run\n"
-						"`Post Xtrn`      Executed after external programs (doors) run\n"
-						"`Read Mail`      User reads email/netmail\n"
-						"`Scan Msgs`      User reads or scans a message sub-board\n"
-						"`Scan Subs`      User scans one or more sub-boards for msgs\n"
-						"`List Msgs`      User lists msgs from the msg read prompt\n"
-						"`List Logons`    User lists logons ('-y' for yesterday)\n"
-						"`List Users`     User lists the users of the system\n"
-						"`List Nodes`     User lists all nodes\n"
-						"`Who's Online`   User lists the nodes in-use (e.g. `^U` key-press)\n"
-						"`Private Msg`    User sends a private node msg (e.g. `^P` key-press)\n"
-						"`Scan Dirs`      User scans one or more directories for files\n"
-						"`List Files`     User lists files within a file directory\n"
-						"`View File Info` User views detailed information on files in a directory\n"
-						"`Batch Transfer` Batch file transfer menu\n"
-						"`Temp Transfer`  Temporary/archive file transfer menu\n"
+						"`Login`            Required module for interactive terminal logins (auth)\n"
+						"`Logon`            Terminal logon procedure (post login/authentication)\n"
+						"`Sync`             Node is periodically synchronized (comm/disk I/O flush)\n"
+						"`Logoff`           Terminal logoff procedure, potentially user-interactive\n"
+						"`Logout`           Terminal logout procedure, off-line, post-logoff\n"
+						"`New User Prompts` New user registration prompts\n"
+						"`New User Created` End of new user registration/creation process\n"
+						"`User Config`      User (e.g. terminal) settings configuration menu\n"
+						"`Expired User`     User account expires (off-line)\n"
+						"`Auto Message`     User chooses to re-read or edit the auto-message\n"
+						"`Send Feedback`    User sending email to a sysop (return error to cancel)\n"
+						"`Chat Section`     User enters chat section/menu\n"
+						"`Text Section`     General text file (add/remove/viewing) section\n"
+						"`Xtrn Section`     External programs (doors) section\n"
+						"`Pre Xtrn`         Executed before external programs (doors) run\n"
+						"`Post Xtrn`        Executed after external programs (doors) run\n"
+						"`Read Mail`        User reads email/netmail\n"
+						"`Scan Msgs`        User reads or scans a message sub-board\n"
+						"`Scan Subs`        User scans one or more sub-boards for msgs\n"
+						"`List Msgs`        User lists msgs from the msg read prompt\n"
+						"`List Logons`      User lists logons ('-y' for yesterday)\n"
+						"`List Users`       User lists the users of the system\n"
+						"`List Nodes`       User lists all nodes\n"
+						"`Who's Online`     User lists the nodes in-use (e.g. `^U` key-press)\n"
+						"`Private Msg`      User sends a private node msg (e.g. `^P` key-press)\n"
+						"`Scan Dirs`        User scans one or more directories for files\n"
+						"`List Files`       User lists files within a file directory\n"
+						"`View File Info`   User views detailed information on files in a directory\n"
+						"`Batch Transfer`   Batch file transfer menu\n"
+						"`Temp Transfer`    Temporary/archive file transfer menu\n"
 						"\n"
 						"`Note:` JavaScript modules take precedence over Baja modules if both exist\n"
 						"      in your `exec` or `mods` directories.\n"
@@ -3141,98 +3143,102 @@ void sys_cfg(void)
 							           , cfg.logout_mod, sizeof(cfg.logout_mod) - 1, K_EDIT);
 							break;
 						case 5:
+							uifc.input(WIN_MID | WIN_SAV, 0, 0, "New User Prompts Module"
+							           , cfg.newuser_prompts_mod, sizeof(cfg.newuser_prompts_mod) - 1, K_EDIT);
+							break;
+						case 6:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "New User Module"
 							           , cfg.newuser_mod, sizeof(cfg.newuser_mod) - 1, K_EDIT);
 							break;
-						case 6:
+						case 7:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "User Configuration"
 							           , cfg.usercfg_mod, sizeof(cfg.usercfg_mod) - 1, K_EDIT);
 							break;
-						case 7:
+						case 8:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Expired User Module"
 							           , cfg.expire_mod, sizeof(cfg.expire_mod) - 1, K_EDIT);
 							break;
-						case 8:
+						case 9:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Auto Message Module"
 							           , cfg.automsg_mod, sizeof(cfg.automsg_mod) - 1, K_EDIT);
 							break;
-						case 9:
+						case 10:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Send Feedback Module"
 							           , cfg.feedback_mod, sizeof(cfg.feedback_mod) - 1, K_EDIT);
 							break;
-						case 10:
+						case 11:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Chat Section Module"
 							           , cfg.chatsec_mod, sizeof(cfg.chatsec_mod) - 1, K_EDIT);
 							break;
-						case 11:
+						case 12:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Text File Section Module"
 							           , cfg.textsec_mod, sizeof(cfg.textsec_mod) - 1, K_EDIT);
 							break;
-						case 12:
+						case 13:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "External Program Section Module"
 							           , cfg.xtrnsec_mod, sizeof(cfg.xtrnsec_mod) - 1, K_EDIT);
 							break;
-						case 13:
+						case 14:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Pre External Program Module"
 							           , cfg.prextrn_mod, sizeof(cfg.prextrn_mod) - 1, K_EDIT);
 							break;
-						case 14:
+						case 15:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Post External Program Module"
 							           , cfg.postxtrn_mod, sizeof(cfg.postxtrn_mod) - 1, K_EDIT);
 							break;
-						case 15:
+						case 16:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Read Mail Module"
 							           , cfg.readmail_mod, sizeof(cfg.readmail_mod) - 1, K_EDIT);
 							break;
-						case 16:
+						case 17:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Scan Msgs Module"
 							           , cfg.scanposts_mod, sizeof(cfg.scanposts_mod) - 1, K_EDIT);
 							break;
-						case 17:
+						case 18:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Scan Subs Module"
 							           , cfg.scansubs_mod, sizeof(cfg.scansubs_mod) - 1, K_EDIT);
 							break;
-						case 18:
+						case 19:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "List Msgs Module"
 							           , cfg.listmsgs_mod, sizeof(cfg.listmsgs_mod) - 1, K_EDIT);
 							break;
-						case 19:
+						case 20:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "List Logons Module"
 							           , cfg.logonlist_mod, sizeof(cfg.logonlist_mod) - 1, K_EDIT);
 							break;
-						case 20:
+						case 21:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "List Users"
 							           , cfg.userlist_mod, sizeof(cfg.userlist_mod) - 1, K_EDIT);
 							break;
-						case 21:
+						case 22:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "List Nodes Module"
 							           , cfg.nodelist_mod, sizeof(cfg.nodelist_mod) - 1, K_EDIT);
 							break;
-						case 22:
+						case 23:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Who's Online Module"
 							           , cfg.whosonline_mod, sizeof(cfg.whosonline_mod) - 1, K_EDIT);
 							break;
-						case 23:
+						case 24:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Private Message Module"
 							           , cfg.privatemsg_mod, sizeof(cfg.privatemsg_mod) - 1, K_EDIT);
 							break;
-						case 24:
+						case 25:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Scan Dirs Module"
 							           , cfg.scandirs_mod, sizeof(cfg.scandirs_mod) - 1, K_EDIT);
 							break;
-						case 25:
+						case 26:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "List Files Module"
 							           , cfg.listfiles_mod, sizeof(cfg.listfiles_mod) - 1, K_EDIT);
 							break;
-						case 26:
+						case 27:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "View File Information Module"
 							           , cfg.fileinfo_mod, sizeof(cfg.fileinfo_mod) - 1, K_EDIT);
 							break;
-						case 27:
+						case 28:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Batch File Transfer Module"
 							           , cfg.batxfer_mod, sizeof(cfg.batxfer_mod) - 1, K_EDIT);
 							break;
-						case 28:
+						case 29:
 							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Temporary File Transfer Module"
 							           , cfg.tempxfer_mod, sizeof(cfg.tempxfer_mod) - 1, K_EDIT);
 							break;

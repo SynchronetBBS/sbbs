@@ -2399,6 +2399,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 			                            , uptime, server_host_name(), SOCKLIB_DESC /* system */
 			                            , &js_callback              /* js */
 			                            , &startup->js
+				                        , NULL                      /* user */
 			                            , client, sock, -1          /* client */
 			                            , &js_server_props          /* server */
 			                            , js_glob

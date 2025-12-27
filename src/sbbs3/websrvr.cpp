@@ -6105,6 +6105,7 @@ js_initcx(http_session_t *session)
 	                            , SOCKLIB_DESC                  /* system */
 	                            , &session->js_callback         /* js */
 	                            , &startup->js                  /* js */
+		                        , NULL                          /* user */
 	                            , &session->client              /* client */
 	                            , session->socket               /* client */
 	                            , session->is_tls ? session->tls_sess : -1      /* client */

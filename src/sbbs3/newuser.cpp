@@ -34,8 +34,6 @@ bool sbbs_t::newuser()
 	char c, str[512];
 	char tmp[512];
 	int  i;
-	long kmode;
-	bool usa;
 
 	max_socket_inactivity = startup->max_newuser_inactivity;
 	bputs(text[StartingNewUserRegistration]);
@@ -99,11 +97,14 @@ bool sbbs_t::newuser()
 		useron.rest = 0L;
 	}
 
-	kmode = (cfg.uq & UQ_NOEXASC) | K_EDIT | K_AUTODEL | K_TRIM;
-	if (!(cfg.uq & UQ_NOUPRLWR))
-		kmode |= K_UPRLWR;
-
-	while (online) {
+	if (cfg.newuser_prompts_mod[0]) {
+		if (exec_bin(cfg.newuser_prompts_mod, &main_csi) != 0)
+			return false;
+	}
+	else while (online) {
+		int kmode = (cfg.uq & UQ_NOEXASC) | K_EDIT | K_AUTODEL | K_TRIM;
+		if (!(cfg.uq & UQ_NOUPRLWR))
+			kmode |= K_UPRLWR;
 
 		if (autoterm || (text[AutoTerminalQ][0] && yesno(text[AutoTerminalQ]))) {
 			useron.misc |= AUTOTERM;
@@ -267,10 +268,9 @@ bool sbbs_t::newuser()
 		if (!online)
 			return false;
 		if ((cfg.uq & UQ_PHONE) && text[EnterYourPhoneNumber][0]) {
+			bool usa = false;
 			if (text[CallingFromNorthAmericaQ][0])
 				usa = yesno(text[CallingFromNorthAmericaQ]);
-			else
-				usa = false;
 			while (online && text[EnterYourPhoneNumber][0]) {
 				bputs(text[EnterYourPhoneNumber]);
 				if (!usa) {

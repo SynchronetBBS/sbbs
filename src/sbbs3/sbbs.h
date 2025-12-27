@@ -1427,6 +1427,7 @@ extern "C" {
 													,const char* socklib_desc	/* system */
 													,js_callback_t*				/* js */
 													,js_startup_t*				/* js */
+													,user_t* user				/* user */
 													,client_t* client			/* client */
 													,SOCKET client_socket		/* client */
 #ifdef USE_CRYPTLIB

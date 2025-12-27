@@ -256,6 +256,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	section = iniGetParsedSection(sections, "module", /* cut: */ true);
 	SAFECOPY(cfg->logon_mod, iniGetString(section, NULL, "logon", "logon", value));
 	SAFECOPY(cfg->logoff_mod, iniGetString(section, NULL, "logoff", "", value));
+	SAFECOPY(cfg->newuser_prompts_mod, iniGetString(section, NULL, "newuser_prompts", "", value));
 	SAFECOPY(cfg->newuser_mod, iniGetString(section, NULL, "newuser", "newuser", value));
 	SAFECOPY(cfg->usercfg_mod, iniGetString(section, NULL, "usercfg", "", value));
 	SAFECOPY(cfg->login_mod, iniGetString(section, NULL, "login", "login", value));

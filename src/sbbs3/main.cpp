@@ -1446,6 +1446,7 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 		                            , uptime, server_host_name(), SOCKLIB_DESC /* system */
 		                            , &js_callback              /* js */
 		                            , &startup->js
+			                        , &useron
 		                            , client_socket == INVALID_SOCKET ? NULL : &client, client_socket, -1 /* client */
 		                            , &js_server_props          /* server */
 		                            , glob
@@ -1543,6 +1544,7 @@ bool js_CreateCommonObjects(JSContext* js_cx
                                        , const char* socklib_desc   /* system */
                                        , js_callback_t* cb          /* js */
                                        , js_startup_t* js_startup   /* js */
+                                       , user_t* user               /* user */
                                        , client_t* client           /* client */
                                        , SOCKET client_socket       /* client */
                                        , CRYPT_CONTEXT session      /* client */
@@ -1635,7 +1637,7 @@ bool js_CreateCommonObjects(JSContext* js_cx
 			break;
 #endif
 		/* Area Objects */
-		if (!js_CreateUserObjects(js_cx, *glob, cfg, /* user: */ NULL, client, startup == NULL ? NULL :startup->web_file_vpath_prefix, /* subscan: */ NULL, mqtt))
+		if (!js_CreateUserObjects(js_cx, *glob, cfg, user, client, startup == NULL ? NULL :startup->web_file_vpath_prefix, /* subscan: */ NULL, mqtt))
 			break;
 
 		success = true;

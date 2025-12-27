@@ -255,6 +255,7 @@ bool write_main_cfg(scfg_t* cfg)
 		const char* name = "module";
 		iniSetString(&ini, name, "logon", cfg->logon_mod, &ini_style);
 		iniSetString(&ini, name, "logoff", cfg->logoff_mod, &ini_style);
+		iniSetString(&ini, name, "newuser_prompts", cfg->newuser_prompts_mod, &ini_style);
 		iniSetString(&ini, name, "newuser", cfg->newuser_mod, &ini_style);
 		iniSetString(&ini, name, "usercfg", cfg->usercfg_mod, &ini_style);
 		iniSetString(&ini, name, "login", cfg->login_mod, &ini_style);

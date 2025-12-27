@@ -344,6 +344,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		                            , "" /* socklib_desc */
 		                            , &bg->cb /* js */
 		                            , p->startup /* js */
+			                        , NULL /* user */
 		                            , NULL /* client */
 		                            , INVALID_SOCKET /* client_socket */
 		                            , -1 /* client TLS session */
