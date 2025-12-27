@@ -1871,13 +1871,17 @@ js_logline(JSContext *cx, uintN argc, jsval *arglist)
 	if (code == NULL)
 		return JS_FALSE;
 
-	if ((js_str = JS_ValueToString(cx, argv[argn])) == NULL)
+	if ((js_str = JS_ValueToString(cx, argv[argn])) == NULL) {
+		free(code);
 		return JS_FALSE;
+	}
 	argn++;
 
 	JSSTRING_TO_MSTRING(cx, js_str, str, NULL);
-	if (str == NULL)
+	if (str == NULL) {
+		free(code);
 		return JS_FALSE;
+	}
 
 	rc = JS_SUSPENDREQUEST(cx);
 	sbbs->logline(level, code, str);
