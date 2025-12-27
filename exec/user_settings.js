@@ -216,7 +216,7 @@ function display_menu(thisuser)
 		console.add_hotspot('W');
 		console.putmsg(bbs.text(bbs.text.UserDefaultsPassword));
 	}
-	console.putmsg(bbs.text(bbs.text.UserDefaultsWhich));
+	console.putmsg(bbs.text(bbs.text.UserDefaultsWhich), P_SAVEATR);
 	console.add_hotspot('Q');
 
 	return keys;
