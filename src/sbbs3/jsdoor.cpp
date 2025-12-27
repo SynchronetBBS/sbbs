@@ -223,6 +223,7 @@ bool DLLCALL js_CreateCommonObjects(JSContext* js_cx
                                     , const char* socklib_desc      /* system */
                                     , js_callback_t* cb             /* js */
                                     , js_startup_t* js_startup      /* js */
+									, user_t* user                  /* user */
                                     , client_t* client              /* client */
                                     , SOCKET client_socket          /* client */
                                     , CRYPT_CONTEXT session         /* client */
