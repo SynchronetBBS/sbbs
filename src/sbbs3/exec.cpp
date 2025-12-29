@@ -2039,7 +2039,8 @@ bool sbbs_t::select_shell(void)
 		uselect(1, i, text[CommandShellHeading], cfg.shell[i]->name, cfg.shell[i]->ar);
 	if ((i = uselect(0, useron.shell, 0, 0, 0)) >= 0) {
 		useron.shell = i;
-		putuserstr(useron.number, USER_SHELL, cfg.shell[i]->code);
+		if (useron.number > 0)
+			putuserstr(useron.number, USER_SHELL, cfg.shell[i]->code);
 		return true;
 	}
 	return false;
