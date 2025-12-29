@@ -344,20 +344,14 @@ bool sbbs_t::newuser()
 		useron.xedit = i + 1;
 
 	if (cfg.total_xedits && (cfg.uq & UQ_XEDIT) && text[UseExternalEditorQ][0]) {
-		if (yesno(text[UseExternalEditorQ])) {
-			for (i = 0; i < cfg.total_xedits; i++)
-				uselect(1, i, text[ExternalEditorHeading], cfg.xedit[i]->name, cfg.xedit[i]->ar);
-			if ((int)(i = uselect(0, useron.xedit ? useron.xedit - 1 : 0, 0, 0, 0)) >= 0)
-				useron.xedit = i + 1;
-		} else
+		if (yesno(text[UseExternalEditorQ]))
+			select_editor();
+		else
 			useron.xedit = 0;
 	}
 
 	if (cfg.total_shells > 1 && (cfg.uq & UQ_CMDSHELL) && text[CommandShellHeading][0]) {
-		for (i = 0; i < cfg.total_shells; i++)
-			uselect(1, i, text[CommandShellHeading], cfg.shell[i]->name, cfg.shell[i]->ar);
-		if ((int)(i = uselect(0, useron.shell, 0, 0, 0)) >= 0)
-			useron.shell = i;
+		select_shell();
 	}
 
 	if (rlogin_pass[0] && chkpass(rlogin_pass, &useron)) {
