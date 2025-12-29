@@ -1905,34 +1905,14 @@ int sbbs_t::exec(csi_t *csi)
 			csi->logic = select_shell() ? LOGIC_TRUE:LOGIC_FALSE;
 			return 0;
 		case CS_SET_SHELL:
-			csi->logic = LOGIC_TRUE;
-			for (i = 0; i < cfg.total_shells; i++)
-				if (!stricmp(csi->str, cfg.shell[i]->code)
-				    && chk_ar(cfg.shell[i]->ar, &useron, &client))
-					break;
-			if (i < cfg.total_shells) {
-				useron.shell = i;
-				putuserstr(useron.number, USER_SHELL, cfg.shell[i]->code);
-			}
-			else
-				csi->logic = LOGIC_FALSE;
+			csi->logic = set_shell(csi->str) ? LOGIC_TRUE:LOGIC_FALSE;
 			return 0;
 
 		case CS_SELECT_EDITOR:
 			csi->logic = select_editor() ? LOGIC_TRUE:LOGIC_FALSE;
 			return 0;
 		case CS_SET_EDITOR:
-			csi->logic = LOGIC_TRUE;
-			for (i = 0; i < cfg.total_xedits; i++)
-				if (!stricmp(csi->str, cfg.xedit[i]->code)
-				    && chk_ar(cfg.xedit[i]->ar, &useron, &client))
-					break;
-			if (i < cfg.total_xedits) {
-				useron.xedit = i + 1;
-				putuserstr(useron.number, USER_XEDIT, cfg.xedit[i]->code);
-			}
-			else
-				csi->logic = LOGIC_FALSE;
+			csi->logic = set_editor(csi->str) ? LOGIC_TRUE:LOGIC_FALSE;
 			return 0;
 
 		case CS_CLEAR_ABORT:
@@ -2031,6 +2011,24 @@ int sbbs_t::exec(csi_t *csi)
 	}
 }
 
+bool sbbs_t::set_shell(const char* code)
+{
+	for (int i = 0; i < cfg.total_shells; ++i) {
+		if (stricmp(cfg.shell[i]->code, code) == 0 && chk_ar(cfg.shell[i]->ar, &useron, &client)) {
+			useron.shell = i;
+			if (useron.number > 0 && !useron_is_guest())
+				putuserstr(useron.number, USER_SHELL, cfg.shell[i]->code);
+			return true;
+		}
+	}
+	return false;
+}
+
+bool sbbs_t::set_shell(int shell_index)
+{
+	return set_shell(cfg.shell[shell_index]->code);
+}
+
 bool sbbs_t::select_shell(void)
 {
 	int i;
@@ -2039,9 +2037,28 @@ bool sbbs_t::select_shell(void)
 		uselect(1, i, text[CommandShellHeading], cfg.shell[i]->name, cfg.shell[i]->ar);
 	if ((i = uselect(0, useron.shell, 0, 0, 0)) >= 0) {
 		useron.shell = i;
-		if (useron.number > 0)
+		if (useron.number > 0 && !useron_is_guest())
 			putuserstr(useron.number, USER_SHELL, cfg.shell[i]->code);
 		return true;
+	}
+	return false;
+}
+
+bool sbbs_t::set_editor(const char* code)
+{
+	if (code == nullptr || *code == '\0') {
+		useron.xedit = 0;
+		if (useron.number > 0 && !useron_is_guest())
+			putuserstr(useron.number, USER_XEDIT, "");
+		return true;
+	}
+	for (int i = 0; i < cfg.total_xedits; ++i) {
+		if (stricmp(cfg.xedit[i]->code, code) == 0 && chk_ar(cfg.xedit[i]->ar, &useron, &client)) {
+			useron.xedit = i + 1;
+			if (useron.number > 0 && !useron_is_guest())
+				putuserstr(useron.number, USER_XEDIT, cfg.xedit[i]->code);
+			return true;
+		}
 	}
 	return false;
 }
@@ -2054,7 +2071,7 @@ bool sbbs_t::select_editor(void)
 		uselect(1, i, text[ExternalEditorHeading], cfg.xedit[i]->name, cfg.xedit[i]->ar);
 	if ((i = uselect(0, useron.xedit ? (useron.xedit - 1):0, 0, 0, 0)) >= 0) {
 		useron.xedit = i + 1;
-		if (useron.number > 0)
+		if (useron.number > 0 && !useron_is_guest())
 			putuserstr(useron.number, USER_XEDIT, cfg.xedit[i]->code);
 		return true;
 	}

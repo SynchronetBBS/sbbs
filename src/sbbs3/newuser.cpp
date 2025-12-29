@@ -337,11 +337,8 @@ bool sbbs_t::newuser()
 	answertime = time(NULL);      /* could take 10 minutes to get this far */
 
 	/* Default editor (moved here, after terminal type setup Jan-2003) */
-	for (i = 0; i < cfg.total_xedits; i++)
-		if (!stricmp(cfg.xedit[i]->code, cfg.new_xedit) && chk_ar(cfg.xedit[i]->ar, &useron, &client))
-			break;
-	if (i < cfg.total_xedits)
-		useron.xedit = i + 1;
+	if (!set_editor(cfg.new_xedit))
+		set_editor("");
 
 	if (cfg.total_xedits && (cfg.uq & UQ_XEDIT) && text[UseExternalEditorQ][0]) {
 		if (yesno(text[UseExternalEditorQ]))
@@ -349,6 +346,9 @@ bool sbbs_t::newuser()
 		else
 			useron.xedit = 0;
 	}
+
+	if (!set_shell(cfg.new_shell))
+		set_shell(0);
 
 	if (cfg.total_shells > 1 && (cfg.uq & UQ_CMDSHELL) && text[CommandShellHeading][0]) {
 		select_shell();

@@ -730,6 +730,10 @@ public:
 	bool	select_shell(void);
 	bool	select_editor(void);
 
+	bool	set_shell(int shell_index);
+	bool	set_shell(const char* code);
+	bool	set_editor(const char* code);
+
 	void	sys_info(void);
 	void	user_info(void);
 	void	xfer_policy(void);

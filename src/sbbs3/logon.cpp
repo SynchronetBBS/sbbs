@@ -79,14 +79,8 @@ bool sbbs_t::logon()
 			useron.misc |= COLOR;
 		if (!(useron.misc & (NO_EXASCII | PETSCII)) && !yesno(text[ExAsciiTerminalQ]))
 			useron.misc |= NO_EXASCII;
-		for (i = 0; i < cfg.total_xedits; i++)
-			if (!stricmp(cfg.xedit[i]->code, cfg.new_xedit)
-			    && chk_ar(cfg.xedit[i]->ar, &useron, &client))
-				break;
-		if (i < cfg.total_xedits)
-			useron.xedit = i + 1;
-		else
-			useron.xedit = 0;
+		if (!set_editor(cfg.new_xedit))
+			set_editor("");
 		useron.prot = cfg.new_prot;
 		useron.shell = cfg.new_shell;
 		*useron.lang = '\0';
@@ -188,16 +182,8 @@ bool sbbs_t::logon()
 	}
 
 	if (!chk_ar(cfg.shell[useron.shell]->ar, &useron, &client)) {
-		useron.shell = cfg.new_shell;
-		if (!chk_ar(cfg.shell[useron.shell]->ar, &useron, &client)) {
-			for (i = 0; i < cfg.total_shells; i++)
-				if (chk_ar(cfg.shell[i]->ar, &useron, &client))
-					break;
-			if (i == cfg.total_shells)
-				useron.shell = 0;
-			else
-				useron.shell = i;
-		}
+		if (!set_shell(cfg.new_shell))
+			set_shell(0);
 	}
 
 	logon_ml = useron.level;
