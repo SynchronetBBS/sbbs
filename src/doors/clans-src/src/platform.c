@@ -94,12 +94,12 @@ bool isRelative(const char *fname)
 
 bool SameFile(const char *f1, const char *f2)
 {
-	if (strcmp(f1, f2) == 0)
+	if (strcasecmp(f1, f2) == 0)
 		return true;
 	if (isRelative(f1) || isRelative(f2)) {
 		const char *n1 = FileName(f1);
 		const char *n2 = FileName(f2);
-		if (strcmp(n1, n2) == 0)
+		if (strcasecmp(n1, n2) == 0)
 			return true;
 	}
 	return false;
