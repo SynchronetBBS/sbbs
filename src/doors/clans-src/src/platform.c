@@ -94,6 +94,12 @@ bool isRelative(const char *fname)
 
 bool SameFile(const char *f1, const char *f2)
 {
+	/*
+	 * TODO: This assumes the whole path is case-insensitive, but
+	 *       it very well may not be.  Doing this "right" would
+	 *       mean getting a canonical directory name from the OS
+	 *       and comparing that, but I can't be bothered.
+	 */
 	if (strcasecmp(f1, f2) == 0)
 		return true;
 	if (isRelative(f1) || isRelative(f2)) {
