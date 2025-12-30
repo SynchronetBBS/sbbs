@@ -76,6 +76,7 @@ bool sbbs_t::newuser()
 			return false;
 		}
 	}
+	SAFECOPY(useron.alias, rlogin_name);
 
 	/* Sets defaults per sysop config */
 	SAFECOPY(useron.comp, client_name);  /* hostname or CID name */
@@ -168,9 +169,6 @@ bool sbbs_t::newuser()
 		sys_status |= SS_NEWUSER;
 		update_nodeterm();
 
-		if (rlogin_name[0])
-			SAFECOPY(useron.alias, rlogin_name);
-
 		char* prompt = text[EnterYourRealName];
 		if (cfg.uq & UQ_ALIASES)
 			prompt = text[EnterYourAlias];
@@ -211,18 +209,6 @@ bool sbbs_t::newuser()
 			bputs(text[EnterYourCompany]);
 			getstr(useron.name, LEN_NAME, kmode);
 		}
-		if (!useron.alias[0]) {
-			errormsg(WHERE, ERR_CHK, "alias", 0);
-			return false;
-		}
-		if (!useron.name[0])
-			SAFECOPY(useron.name, useron.alias);
-		else if (!(cfg.uq & UQ_DUPREAL) && finduserstr(useron.number, USER_NAME, useron.name) > 0)
-			useron.rest |= FLAG('O'); // Can't post or send netmail using real name (it's a duplicate)
-		if (!online)
-			return false;
-		if (!useron.handle[0])
-			SAFECOPY(useron.handle, useron.alias);
 		while ((cfg.uq & UQ_HANDLE) && online && text[EnterYourHandle][0]) {
 			bputs(text[EnterYourHandle]);
 			if (!getstr(useron.handle, LEN_HANDLE
@@ -332,13 +318,33 @@ bool sbbs_t::newuser()
 		errormsg(WHERE, ERR_CHK, "New user alias (blank)", 0);
 		return false;
 	}
+	if (!check_name(&cfg, useron.alias, /* unique: */true)) {
+		errormsg(WHERE, ERR_CHK, "New user alias (invalid or duplicate)", 0, useron.alias);
+		return false;
+	}
 	if (useron.name[0] == '\0') {
-		lprintf(LOG_WARNING, "New user name blank, using alias");
+		lprintf(LOG_NOTICE, "New user name blank, using alias");
 		SAFECOPY(useron.name, useron.alias);
 	}
+	bool dupe_name = finduserstr(0, USER_NAME, useron.name) > 0;
+	if (!check_name(&cfg, useron.name, /* unique: */true)
+		|| !check_realname(&cfg, useron.name)
+		|| ((cfg.uq & UQ_DUPREAL) && dupe_name)) {
+		errormsg(WHERE, ERR_CHK, "New user name (invalid or duplicate)", 0, useron.name);
+		return false;
+	}
+	if (dupe_name) {
+		lprintf(LOG_NOTICE, "New user real name '%s' is a duplicate, setting O Restriction", useron.name);
+		useron.rest |= FLAG('O'); // Can't post or send netmail using real name (it's a duplicate)
+	}
 	if (useron.handle[0] == '\0') {
-		lprintf(LOG_WARNING, "New user handle blank, using alias");
+		lprintf(LOG_NOTICE, "New user handle blank, using alias");
 		SAFECOPY(useron.handle, useron.alias);
+	}
+	if (((cfg.uq & UQ_DUPHAND) && finduserstr(0, USER_HANDLE, useron.handle))
+	    || trashcan(useron.handle, "name")) {
+		errormsg(WHERE, ERR_CHK, "New user handle (invalid or duplicate)", 0, useron.handle);
+		return false;
 	}
 	llprintf("N", "New user: %s (real name: %s, handle: %s)", useron.alias, useron.name, useron.handle);
 
