@@ -1,5 +1,7 @@
 // New User Registration Prompts module
 
+// At minimum, this script must set user.alias (to a unique, legal user name)
+
 require("text.js", "AutoTerminalQ");
 require("userdefs.js", "USER_AUTOTERM");
 require("sbbsdefs.js", "UQ_ALIASES");
@@ -71,8 +73,7 @@ while(bbs.online && !js.terminated) {
 	bbs.sys_status |= SS_NEWUSER;
 	console.term_updated();
 
-	if (bbs.rlogin_name)
-		SAFECOPY(user.alias, bbs.rlogin_name);
+	user.alias = bbs.rlogin_name;
 
 	var prompt = bbs.text(EnterYourRealName);
 	if (system.newuser_questions & UQ_ALIASES)
@@ -115,10 +116,6 @@ while(bbs.online && !js.terminated) {
 		log(LOG_ERR, "New user alias was blank");
 		exit(1);
 	}
-	if (!user.name)
-		user.name = user.alias;
-	else if (!(system.newuser_questions & UQ_DUPREAL) && system.matchuserdata(U_NAME, user.name) > 0)
-		user.rest |= FLAG('O'); // Can't post or send netmail using real name (it's a duplicate)
 	if (!user.handle)
 		user.handle = user.alias;
 	while ((system.newuser_questions & UQ_HANDLE) && bbs.online && bbs.text(EnterYourHandle)) {
