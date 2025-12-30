@@ -328,9 +328,20 @@ bool sbbs_t::newuser()
 	}
 	if (!online)
 		return false;
-	llprintf("N", "New user: %s", useron.alias);
-	if (!online)
+	if (useron.alias[0] == '\0') {
+		errormsg(WHERE, ERR_CHK, "New user alias (blank)", 0);
 		return false;
+	}
+	if (useron.name[0] == '\0') {
+		lprintf(LOG_WARNING, "New user name blank, using alias");
+		SAFECOPY(useron.name, useron.alias);
+	}
+	if (useron.handle[0] == '\0') {
+		lprintf(LOG_WARNING, "New user handle blank, using alias");
+		SAFECOPY(useron.handle, useron.alias);
+	}
+	llprintf("N", "New user: %s (real name: %s, handle: %s)", useron.alias, useron.name, useron.handle);
+
 	/* Default editor (moved here, after terminal type setup Jan-2003) */
 	if (!set_editor(cfg.new_xedit))
 		set_editor("");
@@ -341,6 +352,8 @@ bool sbbs_t::newuser()
 		if (exec_bin(cfg.newuser_info_mod, &main_csi) != 0)
 			return false;
 	}
+	if (!online)
+		return false;
 	answertime = time(NULL);      /* could take 10 minutes to get this far */
 
 	if (rlogin_pass[0] && chkpass(rlogin_pass, &useron)) {
