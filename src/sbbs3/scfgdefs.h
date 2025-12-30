@@ -620,6 +620,7 @@ typedef struct
 	char			logon_mod[LEN_CMD+1];			/* Logon module */
 	char			logoff_mod[LEN_CMD+1];			/* Logoff module */
 	char			newuser_prompts_mod[LEN_CMD+1];	/* New User Prompts Module */
+	char			newuser_info_mod[LEN_CMD+1];	/* New User Info Module */
 	char			newuser_mod[LEN_CMD+1]; 		/* New User Module */
 	char			login_mod[LEN_CMD+1];			/* Login module */
 	char			logout_mod[LEN_CMD+1];			/* Logout module */

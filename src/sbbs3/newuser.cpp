@@ -331,28 +331,17 @@ bool sbbs_t::newuser()
 	llprintf("N", "New user: %s", useron.alias);
 	if (!online)
 		return false;
-	menu("../sbbs", P_NOABORT | P_NOERROR);
-	menu("../system", P_NOABORT | P_NOERROR);
-	menu("../newuser", P_NOABORT | P_NOERROR);
-	answertime = time(NULL);      /* could take 10 minutes to get this far */
-
 	/* Default editor (moved here, after terminal type setup Jan-2003) */
 	if (!set_editor(cfg.new_xedit))
 		set_editor("");
-
-	if (cfg.total_xedits && (cfg.uq & UQ_XEDIT) && text[UseExternalEditorQ][0]) {
-		if (yesno(text[UseExternalEditorQ]))
-			select_editor();
-		else
-			useron.xedit = 0;
-	}
-
 	if (!set_shell(cfg.new_shell))
 		set_shell(0);
 
-	if (cfg.total_shells > 1 && (cfg.uq & UQ_CMDSHELL) && text[CommandShellHeading][0]) {
-		select_shell();
+	if (cfg.newuser_info_mod[0]) {
+		if (exec_bin(cfg.newuser_info_mod, &main_csi) != 0)
+			return false;
 	}
+	answertime = time(NULL);      /* could take 10 minutes to get this far */
 
 	if (rlogin_pass[0] && chkpass(rlogin_pass, &useron)) {
 		term->newline();
