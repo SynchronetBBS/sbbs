@@ -643,8 +643,8 @@ public:
 			ns_time=0,		/* File new-scan time */
 			last_ns_time=0;	/* Most recent new-file-scan this call */
 	uchar 	action = NODE_MAIN;		/* Current action of user */
-	int 	online = 0; 	/* Remote/Local or not online */
-	int 	sys_status = 0;	/* System Status */
+	std::atomic<int> online{0}; 	/* Remote/Local or not online */
+	std::atomic<int> sys_status{0};	/* System Status */
 	subscan_t* subscan = nullptr;	/* User sub configuration/scan info */
 
 	int64_t	logon_ulb=0,	/* Upload Bytes This Call */
