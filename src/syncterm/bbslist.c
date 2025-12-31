@@ -930,9 +930,9 @@ list_name_check(struct bbslist **list, char *bbsname, int *pos, int useronly)
 
 		if ((listfile = fopen(settings.list_path, "rb")) != NULL) {
 			inifile = iniReadBBSList(listfile, true);
+			fclose(listfile);
 			i = iniSectionExists(inifile, bbsname);
 			strListFree(&inifile);
-			fclose(listfile);
 			return i;
 		}
 		return 0;
@@ -2595,14 +2595,11 @@ del_bbs(char *listpath, struct bbslist *bbs)
 
 	if (safe_mode)
 		return;
-	if ((listfile = fopen(listpath, "rb")) != NULL) {
+	if ((listfile = fopen(listpath, "r+b")) != NULL) {
 		inifile = iniReadBBSList(listfile, bbs->type == USER_BBSLIST);
-		fclose(listfile);
 		iniRemoveSection(&inifile, bbs->name);
-		if ((listfile = fopen(listpath, "wb")) != NULL) {
-			iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
-			fclose(listfile);
-		}
+		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+		fclose(listfile);
 		strListFree(&inifile);
 	}
 }
@@ -3698,9 +3695,9 @@ changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize, const char
 		if (newpass)
 			strlcpy(list_password, newpass, sizeof(list_password));
 		iniWriteEncryptedFile(listfile, inifile, algo, keySize, settings.keyDerivationIterations, list_password, NULL);
+		fclose(listfile);
 		list_algo = algo;
 		list_keysize = keySize;
-		fclose(listfile);
 		iniFreeStringList(inifile);
 	}
 }
