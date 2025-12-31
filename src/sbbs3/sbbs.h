@@ -455,8 +455,8 @@ public:
 	bool	terminated = false;
 
 	client_t client{};
-	SOCKET	client_socket = INVALID_SOCKET;
-	SOCKET	client_socket_dup = INVALID_SOCKET;
+	volatile SOCKET	client_socket = INVALID_SOCKET;
+	volatile SOCKET	client_socket_dup = INVALID_SOCKET;
 	union xp_sockaddr	client_addr{};
 	char	client_name[128]{};
 	char	client_ident[128]{};
@@ -475,18 +475,18 @@ public:
 	sftp_dirdescriptor_t sftp_dirdes[NUM_SFTP_DIRDES] {};
 
 	std::atomic<bool> ssh_mode{false};
-	bool term_output_disabled{};
-	SOCKET passthru_socket=INVALID_SOCKET;
-	bool   passthru_socket_active = false;
+	std::atomic<bool> term_output_disabled{};
+	volatile SOCKET passthru_socket=INVALID_SOCKET;
+	std::atomic<bool> passthru_socket_active{false};
 	void   passthru_socket_activate(bool);
-	bool   passthru_thread_running = false;
+	std::atomic<bool> passthru_thread_running{false};
 
 	scfg_t	cfg{};
 	struct mqtt* mqtt = nullptr;
 	Terminal *term{nullptr};
 
 	int 	rioctl(ushort action); // remote i/o control
-	bool	rio_abortable = false;
+	std::atomic<bool> rio_abortable{false};
 
 	RingBuf	inbuf{};
 	RingBuf	outbuf{};
@@ -494,9 +494,9 @@ public:
 	bool	flush_output(int timeout) { return online && WaitForOutbufEmpty(timeout); }
 	HANDLE	input_thread=nullptr;
 	pthread_mutex_t	input_thread_mutex;
-	bool	input_thread_mutex_created = false;
+	std::atomic<bool> input_thread_mutex_created{false};
 	pthread_mutex_t	ssh_mutex;
-	bool	ssh_mutex_created = false;
+	std::atomic<bool> ssh_mutex_created{false};
 	xpevent_t ssh_active = nullptr;
 
 	#define OUTCOM_RETRY_DELAY		80		// milliseconds
@@ -526,19 +526,19 @@ public:
 	uchar	telnet_last_rxch = 0;
 	char	telnet_location[128]{};
 	char	telnet_terminal[TELNET_TERM_MAXLEN+1]{};
-	int 	telnet_rows = 0;
-	int		telnet_cols = 0;
-	int		telnet_speed = 0;
+	std::atomic<int> telnet_rows{0};
+	std::atomic<int> telnet_cols{0};
+	std::atomic<int> telnet_speed{0};
 
 	xpevent_t	telnet_ack_event;
 
 	time_t	event_time = 0;				// Time of next exclusive event
 	const char*	event_code = "";			// Internal code of next exclusive event
 	bool	is_event_thread = false;
-	bool	event_thread_running = false;
-    bool	output_thread_running = false;
-    bool	input_thread_running = false;
-	bool	terminate_output_thread = false;
+	std::atomic<bool> event_thread_running{false};
+	std::atomic<bool> output_thread_running{false};
+	std::atomic<bool> input_thread_running{false};
+	std::atomic<bool> terminate_output_thread{false};
 	char*	event_running_filename(char* str, size_t sz, int event) {
 		snprintf(str, sz, "%sevent.%s.running", cfg.data_dir, cfg.event[event]->code);
 		return str;
@@ -615,9 +615,9 @@ public:
 	uint	dte_rate=0;		/* Current COM Port (DTE) Rate */
 	time_t 	getkey_last_activity=0;		/* User inactivity timeout reference */
 	uint 	timeleft_warn=0;/* low timeleft warning flag */
-	uint	socket_inactive=0;			// Socket inactivity counter (watchdog), in seconds, incremented by input_thread()
-	uint	max_socket_inactivity=0;	// Socket inactivity limit (in seconds), enforced by input_thread()
-	bool	socket_inactivity_warning_sent=false;
+	std::atomic<uint> socket_inactive{0}; // Socket inactivity counter (watchdog), in seconds, incremented by input_thread()
+	std::atomic<uint> max_socket_inactivity{0};	// Socket inactivity limit (in seconds), enforced by input_thread()
+	std::atomic<bool> socket_inactivity_warning_sent{false};
 	uint	curatr = LIGHTGRAY;     /* Last Attributes requested by attr() */
 	uint	attr_stack[64]{};	/* Saved attributes (stack) */
 	int 	attr_sp = 0;	/* Attribute stack pointer */

@@ -2165,7 +2165,7 @@ void input_thread(void *arg)
 			}
 			if (sbbs->socket_inactive > sbbs->max_socket_inactivity) {
 				lprintf(LOG_NOTICE, "Node %d maximum socket inactivity exceeded: %u seconds"
-				        , sbbs->cfg.node_num, sbbs->max_socket_inactivity);
+				        , sbbs->cfg.node_num, sbbs->max_socket_inactivity.load());
 				sbbs->bputs(text[CallBackWhenYoureThere]);
 				break;
 			}

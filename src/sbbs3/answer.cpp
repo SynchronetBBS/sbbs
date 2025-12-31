@@ -752,7 +752,7 @@ bool sbbs_t::answer()
 					}
 				}
 				if (telnet_speed) {
-					lprintf(LOG_INFO, "Telnet Speed: %u bps", telnet_speed);
+					lprintf(LOG_INFO, "Telnet Speed: %u bps", telnet_speed.load());
 					cur_rate = telnet_speed;
 					cur_cps = telnet_speed / 10;
 				}
