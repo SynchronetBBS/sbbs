@@ -73,8 +73,6 @@ while(bbs.online && !js.terminated) {
 	bbs.sys_status |= SS_NEWUSER;
 	console.term_updated();
 
-	user.alias = bbs.rlogin_name;
-
 	var prompt = bbs.text(EnterYourRealName);
 	if (system.newuser_questions & UQ_ALIASES)
 		prompt = bbs.text(EnterYourAlias);
