@@ -1,0 +1,341 @@
+******************************************
+* What's New in Synchronet Version 3.21b *
+******************************************
+
+General
+~~~~~~~
+o Better config (.ini) file read error detection and reporting
+o Synchronet console (sbbs[.exe]) can accept the ctrl directory as an argument
+  - Consistent with sbbsctrl.exe usage
+o Synchronet control panel (sbbsctrl.exe) can accept path to sbbs.ini argument
+  - Consistent with sbbs[.exe] usage
+o Store/reuse each server's client highwater mark for MQTT publishing
+  - Issue #910
+o Add support to SMBLIB for "Fixed" format message text
+  (e.g. for messages uploaded in raw input mode)
+o Support short (8-char) less ambiguous "verbal" dates in multiple formats
+  for display purposes (e.g. "Jan02'26" instead of "01/02/26")
+o Increase 16-bit unsigned integer statistical user fields to 32-bit
+  increasing maximum values from 65535 to 4.2B
+o Address concurrency issues with user daily statistics/free credit fields
+  - Each user's stats reset date/time stamp now stored in user base/record
+o Support tracking and limiting of user file downloads "per day" - issue #938
+o Track user bytes downloaded (in files) per day
+  - Reflect these stats in drop files that support it:
+    DOOR.SYS, CALLINFO.BBS, and SFDOORS.DAT
+
+Terminal Server
+~~~~~~~~~~~~~~~
+o Newly abstracted (via C++ classes) terminal input/output
+  - Sets the stage for future support for more terminal types
+  - Should see no (or minimal) changes in behavior
+o Send notification messages to recipients of files uploaded - issue #955
+o Allow search by author forward/backward for netmail messages - issue #484
+o Eliminate the "Start with number [n]:" prompt in initial email listing
+o Ctrl-O now temp-toggles pause on/off for users that have pause disabled
+o Improved log file concurrency (protection against corruption)
+o Improved tracking of the terminal server user login/logon state - issue #979
+o Fix cosmetic issue with Logging-out node vstatus display (NodeStatusLogout)
+o Fix word-wrap when viewing messages that contained "pipe codes"
+  (i.e. Renegade, WWIV, Mystic color codes)
+o Set node "interrupt" flag to try to gracefully disconnect user blocking
+  a timed event execution for 30m
+o Disable Celerity "pipe code" parsing when displaying .rip files
+  - Renegade "pipe codes" are supported in .rip files however
+o Improved parsing of invalid @-codes (fixes text/menu/batchxfr.rip)
+o Add node interrupt flag checking to *nix external() execution of stdio progs
+o Support optional ctrl/<terminal-protocol>/text.ini file
+o Modified text and menu files can now be placed in mods/text/
+o Log more details during new user registration process
+o Separate global support for "extra attribute codes" from per sub-board opts
+o If editor doesn't create a file, don't log an error message - issue #914
+o Ensure messages created/edited are always CRLF line-terminated
+o When listing mail messages with no "to" field, display SMTP forward path
+o Don't add CP437 QWKnet tagline glyph when message is explicitly US-ASCII
+o Use FTN charset of "ASCII 1" when the imported message is explicitly ASCII
+o Output multiple inverted question marks for > 1 width UNICODE characters
+  for non-UTF8 terminals
+o Add "exclusive external program" option to timed event configurations
+o When the user has unread personal mail, give a differnet prompt during logon
+o Add New User Prompt toggle option to allow single-word real names
+o Resolve menu/../* to abs-path before checking file existence - issue #918
+o Don't close node.log file stream when invoking command-lines with a '?'
+  prefix - allows JavaScript mods to write to system log using appropriate
+  'bbs' functions
+o New Message Scan
+  - Break scan loop on abort (Ctrl-C) - issue #926
+  - Don't prompt to add sub to new-scan when scanning for polls (to vote on)
+ 
+Web Server
+~~~~~~~~~~
+o New LoginInfoSave option (ARS) to specify which users login info should be
+  saved upon logon/off (default is *all* users)
+o Log output improvements 
+  - Include client protocol (HTTP or HTTPS) and IP address in more log msgs
+  - Include more detail (e.g. send byte count) in "ERROR sending" message
+  - Lower severity of "Executing FastCGI" log message from Info to Debug
+o Improve logging around SSJS-generated error page/sending
+  - Reduce severity (to DEBUG) of "Using SSJS error page" message
+  - Include protocol and IP address and error code in each message
+o Fix max concurrent connections limit - wasn't reliably limiting connections
+o Immediately reject non-TLS connections that exceed concurrent connections
+  limit
+
+FTP Server
+~~~~~~~~~~
+o Allow uploaders to remove files that they uploaded - issue #952
+  
+Mail server
+~~~~~~~~~~~
+o New LoginInfoSave option (ARS) to specify which users login info should be
+  saved upon logon/off (default is *all* users)
+o If SMTP-authenticated, fail subsequent AUTH commands with 503 response
+  - Compliant with RFC 4954: "server MUST reject any further AUTH commands"
+o Ignore (but log an error) when DNSBL server returns address != 127.0.0.x
+  - sbl.spamhaus.org returns 127.255.255.254 when attempting to query using a
+    public/open resolver
+
+@-codes
+~~~~~~~
+o Allow C escape sequences in EXEC: argument, to allow param passing
+  e.g. separate module name from command-line params with \x20 and separate
+  params from eachother with \x20.
+o New @-codes:
+  - NEWMSGS (number of new messages imported/posted to be read)
+  - NEWFILES (number of new files imported/uploaded to be seen)
+  - MAXDL (max files downloaded per day, or "unlimited")
+  - DTODAY (number of files downloaded by user today)
+  - BTODAY (estimated number of bytes downloaded by user today)
+  - DAYBYTES (exact number of bytes downloaded by user today)
+  - USEDCDT (previously DAYBYTES)
+  - UPB (estimated total uploaded bytes)
+  - DLB (estimated todal downloaded bytes)
+  - UCP (upload credit percentage for current directory)
+  - DCP (download credit percentage for current directory)
+  - BYTERATIO (PCBoard compatible alias for UDR)
+  - PSTAT (expands to On|Off text.dat string indicating Pause status)
+  - RAWIO (expands to On|Off text.dat string indicating Raw I/O status)
+  - RAINBOW:ON is an alias for RAINBOW
+  - RAINBOW:OFF turns off rainbow output mode
+  - RAINBOW:RAND picks a random starting color from the rainbow attributes
+  - RAINBOW:<num> picks a specific starting color index from the rainbow
+  - RAINBOW:<attr-list> at least one colon-separator is now required
+
+Text Strings
+~~~~~~~~~~~~
+o UserDownloadsToday
+o NoMoreDownloads
+o ReadYourUnreadMailNowQ
+o UserSentYouFile changed to include filename parameter
+
+Security
+~~~~~~~~
+o Improved TLS and SSH error handling/logging
+o New ARS keyword: DLT (Downloads Today)
+o New option: SCFG->System->Security->Create Self-signed Certificate
+  See issue #881
+o Remove sorbes.net from ctrl/dns_blacklist.cfg as it is has ceased operation
+o Rework part of the "good password" checking algorithm:
+  Require that a good password contain a sequence of unique characters
+  (not repeating, incrementing, or decrementing in ASCII code value) of at
+  least half the configured minimum password length. By default, the minimum
+  password length is 4 chars, so this means a sequence of at least 2 unique
+  characters is required. If the minimum password length is increased by the
+  sysop, so is the minimum required unique sequence length. The
+  "PasswordInvalid" text.dat string is printed when passwords are rejected
+  by this criteria.
+
+  Previously, the following would be rejected by this portion of the algo,
+  this logic has been replaced by the above:
+  - all chars the same (would print the "PasswordInvalid" text.dat string)
+  - first 4 chars are incrementing ("PasswordObvious" string printed)
+  - first 4 chars are decrementing ("PasswordObvious" string printed)
+  but now, a password that starts with "1234" or "abcd" is fine so long as
+  it's longer than that and contains the minimum unique sequence length. This
+  will prevent SBBS from rejecting high quality (e.g. randomly generated or
+  crypto-hashed) passwords that just happen to begin with an incrementing
+  sequence of 4 digits or alpha-characters.
+
+  To enable high quality/entropy password checking, set SCFG->System->Security
+  ->Demand High Quality Password to "Yes".
+  This option defaults to false since the "quality" standard is higher than it
+  used to be and that could be confusing for sysops or users.
+
+SCFG
+~~~~
+o New menu: System->Extra Attribute Codes controls extra attribute
+  support in display files (e.g. menus)
+o New option: System->New User Prompts->Force Multi-word Real Name
+  (default: Yes)
+o New option: System->Security->Demand High Quality Password
+  (defulat: No)
+o New option: External Editors ... Retain Ctrl-A Codes in Quotes
+o New System->Security Options->Security Level Values... "Downloads Per Day"
+  (D/D): defaults to 0/Unlimited for each level
+o System->Short Date Format can be used to select a verbal or numeric date
+  format (of many forms) for displaying short dates
+o Remove external editor option: "Expand LF to CRLF" - no longer needed
+o Each configured sub-board can have each extra attribute type toggled on/off
+o Resolved issue of System menu detecting changes by the sysop
+  (and prompting to Save Changes when exiting) when no changes were actually
+  made, just that DST had been auto-enabled/disabled based on the date
+
+SBBSecho
+~~~~~~~~
+o Auto-enable "EchoList Only" areamgr mode when EchoList Keys are used
+o When netmail is forwarded to an external (netmai/email) address, notify user
+o UTF-8 encode Origin lines in exported messages when appropriate
+o Strip Ctrl-A codes from exported *NetMail* messages
+o Add the "Ignore Packed Foreign NetMail" option to echocfg
+o Support robots that use .msg files directly
+  Each configured robot now has a "Uses MSG File" option (defaults to false)
+o Don't write empty PATH: control line to exported echomail message
+  Points don't normally have any addresses to add to the PATH: line, so
+  (as was pointed out in the FIDOTEST echo), an empty PATH: line would be
+  included in exported echomail messages from points.
+  Although this isn't a violation of FTS-4, it is a violation of its proposed
+  successor: FSC-74: "Blank" path lines shall not be transmitted
+o Don't list REQ (file request) files in flow files per FTS-5005
+o Allow a "max message count" to be specified in AreaMgr "rescan" requests
+  - The -R option (in the subject), can now include a message count (-R=count)
+  - The %RESCAN function (in the body) can now include a message count
+    i.e. %RESCAN [area-tag] [R=<count>]
+o Add "maximum message age" in days option for AreaMgr %RESCAN use
+  - Support for -D=<days> in message subject and D=<days> option in
+    %RESCAN and %RESCAN <area-tag> commands
+  - The -R subject option can be used in combination with the %RESCAN D=
+    option (or vice versa) to both limit the number *and* the age of messages,
+	if desired
+  - Issue #929
+
+Services
+~~~~~~~~
+o Support for LoginInfoSave option (ARS) to specify which users login info
+  should be saved upon logon/off (default is *all* users)
+o nntpservice.js
+  - Fix -mail option
+  - The -mail option now allows user (non-Guest) access to their email
+  - Include sent mail messages in "mail" newsgroup too
+  - Add support for -utf8 option - issue #917
+o gopherservice.js
+  - Send contents of text/gopher_welcome*.msg files in root of gopher map
+    Issue #946
+
+Modules
+~~~~~~~
+o automsg.js
+  - Add meme formatter, make meme format the default (using meme_chooser.js)
+    Set modopts/automsg.ini meme=false to disable this behavior
+o chksetup.js improvements
+  - Compares running version of Synchronet against latest release number
+  - Reports users who's passwords don't meet current requirements
+o email_sec.js
+  - Use the user's chosen sort order for all mail reading modes,
+    including sent mail and unread mail
+o filelist.js
+  - Allow the -utf8 option to work with the -json option
+  - Better application of the -user=name argument
+    Parse it before all other options (e.g. before -all)
+o fileman.js
+  - When editing a file description that doesn't exist, pass a blank string
+o fonts.js
+  - Add 'wantblink' setting (enabled by default) to root section of fonts.ini
+o init-fidonet.js
+  - Add prompt for packet password (optional)
+o login.js
+  - Don't send legacy prompts (NN:, PW:) unless legacy_prompts=true is set
+    in ctrl/modopts/login.ini
+o logon.js
+  - Supports Rlogin terminal="xtrn_sec=<code>" to take users directly
+    to a specified external program section for Rlogins
+  - modopts rlogin_xtrn_logon=false to skip the logon screens for Rlogins
+  - modopts rlogin_xtrn_logoff=false/true/full to control log-off for Rlogins
+o msglist.js
+  - Fix going to a msg number from viewing/reading msgs mod
+  - Set the current node action value appropriately
+  - Add missing -preview option to help output, clean-up other option help
+o newuser.js
+  - Use new user's mailaddr as the reply-to addr for notification email msg
+o newuser_prompts.js
+  - Replaces most of the "hard-coded" new user registration prompts
+  - Configured by default, in SCFG->System->Loadable Modules->New User Prompts
+  - Issue #563
+o newuser_info.js
+  - Replaces most of the "hard-coded" new user info/help screen display logic
+  - Configured by default, in SCFG->System->Loadable Modules->New User Info
+o postmeme.js
+  - New meme-style message poster ("/M" command from default shell main menu)
+o postmsg.js
+  - New -D (date) and -T (time) options
+o purgefiles.js
+  - Add support for -t (testing) and -v (verbose) options
+o rlogin.js
+  - Fix default mode value (should *not* be 10, i.e TG_NODESYNC|TG_CRLF)
+  - Add '-h[pepper]' option to send a salted and hashed password to the server
+  - Add '-H <password>' option, to send specified hashed-password
+o str_cmds.js
+  - Allow string command parameters to line wrap the terminal and log them
+  - Beautify the "help" output - issue #901
+  - Allow ";help command" to work on partially-specified commands
+o tdfiglet.js
+  - New figlet renderer for Synchronet using TheDraw fonts
+  - Supports UTF-8 or CP437 encoded output
+  - Supports ANSI or Ctrl-A encoded output
+o type.js
+  - Use P_CPM_EOF mode flag to stop printing at Ctrl-Z (CP/M and PC/MSDOS EOF)
+o userlist.js
+  - Cosmetic fix: user totals displayed were wrong when not sorting the list
+o viewimsgs.js
+  - When displaying instant messages, auto-detect UTF-8 encoded messages
+o xjs.js
+  - Fix error "creating" log message details (filename and error value)
+  - Throw Error exception rather than just logging errors, better traceability
+o xtrn_sec.js
+  - Allows the use of JS:xtrn_sec @-code in the 'which' prompt string
+  - Support multicolumn xtrn program *section* listing
+    (multicolumn_section_fmt option) - issue #915
+  - Add 'align_prog_list' and 'align_section_list' options
+    For use when multi/singlecolumn_fmt or section_fmt strings don't contain
+	padded integer specifiers (e.g. %3u) - issue #911
+
+JavaScript
+~~~~~~~~~~
+o js.exec() will now execute scripts from the configured mods and exec dir
+o console.getstr() fix: off-by-one bug in use of maxlen argument
+o Returned to SBBS v3.19 bug-compatible console.attributes behavior of
+  silently ignoring Ctrl-A characters in assigned strings
+o msg_area.grp_list[] no longer includes groups with no sub-boards that the
+  user can access - issue #905
+o New function: bbs.logline(level=LOG_INFO, code, string)
+o New 'system' property:
+  - phonenumber_template
+o New 'system' methods:
+  - check_password()
+  - check_realname()
+  - check_netmail_addr()
+o bbs.good_password() renamed to bbs.check_password(), with backward-alias
+o bbs.read_mail() adds option to go directly to viewing messages (not listing)
+o New User class properties:
+  - stats.bytes_downloaded_today
+  - stats.files_downloaded_today
+  - limits.file_downloads_per_day
+o New User class methods:  
+  - can_access_sub()
+  - can_access_dir()
+o New TLS properties to the Socket class:
+  - tls_nameverify (defaults to true)
+  - tls_certverifiy (defaults to true)
+  - tls_client_auth (defaults to false)
+  - tls_enhanced_certcheck (defaults to false)
+  - tls_remote_cert
+
+JSexec
+~~~~~~
+o Only change the terminal/tty state if both the input AND output are TTY
+  so when the output is redirected (e.g. to 'more' or 'less') we don't leave
+  the terminal in a bad state when terminating - issue #999
+
+SEXYZ
+~~~~~
+o Using poll() instead of select() on UNIX-like OSes now
+  supporting socket descriptor values > 1024, issue #445
