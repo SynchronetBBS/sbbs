@@ -356,6 +356,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	bool                use_pipes = false; // NT-compatible console redirection
 	BOOL                success;
 	BOOL                processTerminated = false;
+	bool				input_thread_mutex_locked = false;
 	uint                i;
 	time_t              hungup = 0;
 	HANDLE              rdslot = INVALID_HANDLE_VALUE;
@@ -628,7 +629,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		if (passthru_thread_running)
 			passthru_socket_activate(true);
 		else
-			pthread_mutex_lock(&input_thread_mutex);
+			input_thread_mutex_locked = (pthread_mutex_lock(&input_thread_mutex) == 0);
 	}
 
 	DWORD creation_flags = (mode & EX_NODISPLAY) ? CREATE_NO_WINDOW : CREATE_NEW_CONSOLE;
@@ -652,7 +653,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		if (native && !(mode & (EX_OFFLINE | EX_STDIN))) {
 			if (passthru_thread_running)
 				passthru_socket_activate(false);
-			else
+			else if (input_thread_mutex_locked)
 				pthread_mutex_unlock(&input_thread_mutex);
 		}
 		SetLastError(last_error);   /* Restore LastError */
@@ -917,7 +918,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		if (native && !(mode & EX_STDIN)) {
 			if (passthru_thread_running)
 				passthru_socket_activate(false);
-			else
+			else if (input_thread_mutex_locked)
 				pthread_mutex_unlock(&input_thread_mutex);
 		}
 
@@ -1148,6 +1149,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	BYTE          wwiv_buf[XTRN_IO_BUF_LEN * 2];
 	BYTE          utf8_buf[XTRN_IO_BUF_LEN * 4];
 	bool          wwiv_flag = false;
+	bool          input_thread_mutex_locked = false;
 	char*         p;
 #ifdef PREFER_POLL
 	struct pollfd fds[2];
@@ -1619,7 +1621,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		if (passthru_thread_running)
 			passthru_socket_activate(true);
 		else
-			pthread_mutex_lock(&input_thread_mutex);
+			input_thread_mutex_locked = (pthread_mutex_lock(&input_thread_mutex) == 0);
 	}
 
 	if (!(mode & EX_NOLOG) && pipe(err_pipe) != 0) {
@@ -1733,7 +1735,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			if (!(mode & (EX_STDIN | EX_OFFLINE))) {
 				if (passthru_thread_running)
 					passthru_socket_activate(false);
-				else
+				else if (input_thread_mutex_locked)
 					pthread_mutex_unlock(&input_thread_mutex);
 			}
 			errormsg(WHERE, ERR_EXEC, fullcmdline, 0);
@@ -1758,7 +1760,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			if (!(mode & (EX_STDIN | EX_OFFLINE))) {
 				if (passthru_thread_running)
 					passthru_socket_activate(false);
-				else
+				else if (input_thread_mutex_locked)
 					pthread_mutex_unlock(&input_thread_mutex);
 			}
 			errormsg(WHERE, ERR_EXEC, fullcmdline, 0);
@@ -2072,7 +2074,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		if (!(mode & EX_STDIN)) {
 			if (passthru_thread_running)
 				passthru_socket_activate(false);
-			else
+			else if (input_thread_mutex_locked)
 				pthread_mutex_unlock(&input_thread_mutex);
 		}
 
