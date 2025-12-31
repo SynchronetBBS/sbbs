@@ -106,6 +106,12 @@
  *                            click hotspots have an issue that causes the chooser to
  *                            exit out though - the full sequence for the key for those
  *                            clicks (ESC + ...) might not be captured.
+ * 2025-12-26 Eric Oulashin   Version 1.48 Beta
+ *                            Started working on having the area chooser save the user's
+ *                            last chosen directory for each file library, for when the
+ *                            user switches between libraries (toggaleable w/ a user setting)
+ * 2025-12-31 Eric Oulashin   Version 1.48
+ *                            Releasing this version
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -124,12 +130,14 @@ if (typeof(require) === "function")
 	require("sbbsdefs.js", "K_NOCRLF");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
 	require("DDAreaChooserCommon.js", "getAreaHeirarchy");
+	require("choice_scroll_box.js", "ChoiceScrollbox");
 }
 else
 {
 	load("sbbsdefs.js");
 	load("dd_lightbar_menu.js");
 	load("DDAreaChooserCommon.js");
+	load("choice_scroll_box.js");
 }
 
 // This script requires Synchronet version 3.14 or higher.
@@ -148,8 +156,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.47";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-10-03";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.48";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-12-31";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -265,10 +273,19 @@ function DDFileAreaChooser()
 	// The separator character to use for directory collapsing
 	this.dirCollapseSeparator = ":";
 
+	// User settings
 	this.userSettings = {
 		// Area change sorting for changing to another sub-board: None, Alphabetical, or LatestMsgDate
-		areaChangeSorting: FILE_DIR_SORT_NONE
+		areaChangeSorting: FILE_DIR_SORT_NONE,
+		// When changing to a different file library, whether to remember/use
+		// the last directory in each file library as the currently selected
+		// directory
+		rememberLastDirWhenChangingLib: false
 	};
+	// The user's last chosen directories for each file library. The key is
+	// the library name and the value is the internal code for the user's last
+	// chosen sub-board for that library.
+	this.lastChosenDirsPerLibForUser = {};
 
 	// Set the functions for the object
 	this.ReadConfigFile = DDFileAreaChooser_ReadConfigFile;
@@ -298,6 +315,8 @@ function DDFileAreaChooser()
 
 	// Read the settings from the config file.
 	this.ReadConfigFile();
+	// Read the user settings
+	this.ReadUserSettingsFile();
     
     // lib_list will be set up with a file library/directory structure for
     // the chooser to use to let the user choose a file lib & directory. It
@@ -415,20 +434,32 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 {
 	var chooseLib = (typeof(pChooseLib) === "boolean" ? pChooseLib : true);
 
-	// Start with this.lib_list, which is the topmost file lib/dir structure
+	// Start with this.lib_list, which is the topmost file lib/dir structure.
 	var fileLibStructure = this.lib_list;
+	var libName = "";
 	if (!chooseLib)
 	{
 		for (var i = 0; i < this.lib_list.length; ++i)
 		{
-			if (fileDirStructureHasCurrentUserFileDir(this.lib_list[i]))
+			//if (fileDirStructureHasCurrentUserFileDir(this.lib_list[i], dirCodeOverride, lastChosenDirsObj))
+			if (fileDirStructureHasCurrentUserFileDir(this.lib_list[i], null, null))
 			{
 				if (this.lib_list[i].hasOwnProperty("items"))
 					fileLibStructure = this.lib_list[i].items;
 				break;
 			}
 		}
+
+		// Set libName
+		// This code isn't tested because SelectFileArea() isn't called with pChooseLib
+		// false anymore.
+		if (Array.isArray(fileLibStructure) && fileLibStructure.length > 0)
+		{
+			if (this.lib_list[fileLibStructure[0].topLevelIdx].hasOwnProperty("name"))
+				libName = this.lib_list[fileLibStructure[0].topLevelIdx].name;
+		}
 	}
+
 	var previousFileLibStructures = []; // Will be used like a stack
 	var selectedItemIndexes = [];       // Will be used like a stack
 	var selectedItemIdx = null;
@@ -468,7 +499,7 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 			printf("\x01n%sDirectories of \x01h%s\x01n", this.colors.fileAreaHdr, chosenLibOrSubdirName.substr(0, console.screen_columns - directoriesLabelLen - 1));
 			console.crlf();
 		}
-		var createMenuRet = this.CreateLightbarMenu(fileLibStructure, previousFileLibStructures.length+1, menuTopRow, selectedItemIdx, numItemsWidth);
+		var createMenuRet = this.CreateLightbarMenu(libName, fileLibStructure, previousFileLibStructures.length+1, menuTopRow, selectedItemIdx, numItemsWidth);
 		if (this.useLightbarInterface && console.term_supports(USER_ANSI))
 			numItemsWidth = createMenuRet.itemNumWidth;
 		// If sorting has changed, ensure the menu's selected item is the user's
@@ -476,7 +507,7 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 		if (sortingChanged)
 		{
 			//var screenPosBackup = console.getxy();
-			setMenuIdxWithSelectedFileDir(createMenuRet.menuObj, fileLibStructure);
+			setMenuIdxWithSelectedFileDir(createMenuRet.menuObj, fileLibStructure, null, this.lastChosenDirsPerLibForUser);
 			// TODO: It seems the key help line at the bottom  could disappear in
 			// this situation, so make sure it's still showing
 			writeKeyHelpLine = true;
@@ -594,6 +625,7 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
                 // an 'items' property if it has sub-items or a 'subItemObj' property
 				// if it's a file directory
 				selectedItemIndexes.push(selectedMenuIdx);
+				var selectingTopLevelLib = (previousChosenLibOrSubdirNames.length == 0);
 				previousChosenLibOrSubdirNames.push(chosenLibOrSubdirName);
 				if (fileLibStructure[selectedMenuIdx].hasOwnProperty("items"))
 				{
@@ -611,6 +643,12 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 					}
 					else
 						chosenLibOrSubdirName = fileLibStructure[selectedMenuIdx].name;
+					// Set libName if the user has chosen a file library (at the top level)
+					if (selectingTopLevelLib)
+					{
+						//libName = chosenLibOrSubdirName;
+						libName = fileLibStructure[selectedMenuIdx].shortName;
+					}
 					fileLibStructure = fileLibStructure[selectedMenuIdx].items;
 					menuContinueOn = false;
 				}
@@ -618,6 +656,10 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 				{
 					// The user has selected a file directory
 					bbs.curdir_code = fileLibStructure[selectedMenuIdx].subItemObj.code;
+					// Add to the user's last-used sub-boards dictionary & save the user's settings
+					this.lastChosenDirsPerLibForUser[file_area.dir[bbs.curdir_code].lib_name] = bbs.curdir_code;
+					this.WriteUserSettingsFile();
+					// Don't continue the loops
 					menuContinueOn = false;
 					selectionLoopContinueOn = false;
 				}
@@ -732,7 +774,8 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 							fileLibStructure = previousFileLibStructures.push(fileLibStructure);
 							previousChosenLibOrSubdirNames.push("");
 							fileLibStructure = newMsgAreaStructure;
-							createMenuRet = this.CreateLightbarMenu(newMsgAreaStructure, previousFileLibStructures.length+1, menuTopRow, 0, numItemsWidth);
+							// TODO: libName
+							createMenuRet = this.CreateLightbarMenu(libName, newMsgAreaStructure, previousFileLibStructures.length+1, menuTopRow, 0, numItemsWidth);
 							menu = createMenuRet.menuObj;
 						}
 						else
@@ -965,6 +1008,7 @@ function DDFileAreaChooser_WriteDirListHdr1Line(pLibIdx, pDirIdx, pNumPages, pPa
 // For the DDFileAreaChooser class: Creates a lightbar menu to choose a library/directory.
 //
 // Parameters:
+//  pLibName: The name of the file library (or an empty string if there is none yet)
 //  pDirHeirarchyObj: An object from this.lib_list, which is
 //                    set up with a 'name' property and either
 //                    an 'items' property if it has sub-items
@@ -985,7 +1029,7 @@ function DDFileAreaChooser_WriteDirListHdr1Line(pLibIdx, pDirIdx, pNumPages, pPa
 //               itemNumWidth: The width of the item numbers column
 //               descWidth: The width of the description column
 //               numItemsWidth: The width of the # of items column
-function DDFileAreaChooser_CreateLightbarMenu(pDirHeirarchyObj, pHeirarchyLevel, pMenuTopRow, pSelectedItemIdx, pNumItemsWidth)
+function DDFileAreaChooser_CreateLightbarMenu(pLibName, pDirHeirarchyObj, pHeirarchyLevel, pMenuTopRow, pSelectedItemIdx, pNumItemsWidth)
 {
 	var retObj = {
 		menuObj: null,
@@ -1058,7 +1102,15 @@ function DDFileAreaChooser_CreateLightbarMenu(pDirHeirarchyObj, pHeirarchyLevel,
 		// Also, see which one has the user's current chosen directory so we can set the
 		// current menu item index - And save that index in the menu object for its
 		// reference later.
-		var tmpRetObj = setMenuIdxWithSelectedFileDir(fileDirMenu, pDirHeirarchyObj);
+		var lastChosenDirsObj = null;
+		var dirCodeOverride = null;
+		if (pHeirarchyLevel > 1 && this.userSettings.rememberLastDirWhenChangingLib)
+		{
+			lastChosenDirsObj = this.lastChosenDirsPerLibForUser;
+			if (this.lastChosenDirsPerLibForUser.hasOwnProperty(pLibName))
+				dirCodeOverride = this.lastChosenDirsPerLibForUser[pLibName];
+		}
+		var tmpRetObj = setMenuIdxWithSelectedFileDir(fileDirMenu, pDirHeirarchyObj, dirCodeOverride, lastChosenDirsObj);
 		retObj.allDirs = tmpRetObj.allDirs;
 
 		// Replace the menu's NumItems() function to return the correct number of items
@@ -1072,7 +1124,7 @@ function DDFileAreaChooser_CreateLightbarMenu(pDirHeirarchyObj, pHeirarchyLevel,
 			fileDirMenu.descFieldLen += 3;
 		fileDirMenu.GetItem = function(pItemIdx) {
 			var menuItemObj = this.MakeItemWithRetval(-1);
-			//var showDirMark = fileDirStructureHasCurrentUserFileDir(this.dirHeirarchyObj[pItemIdx]);
+			//var showDirMark = fileDirStructureHasCurrentUserFileDir(this.dirHeirarchyObj[pItemIdx], null, this.lastChosenDirsPerLibForUser);
 			var showDirMark = (pItemIdx == this.idxWithUserSelectedDir);
 			var areaDesc = this.dirHeirarchyObj[pItemIdx].name;
 			var numItems = 0;
@@ -1307,10 +1359,15 @@ function DDFileAreaChooser_ReadUserSettingsFile()
 	var userSettingsFile = new File(gUserSettingsFilename);
 	if (userSettingsFile.open("r"))
 	{
+		// Behavior settings
 		for (var settingName in this.userSettings)
 		{
 			this.userSettings[settingName] = userSettingsFile.iniGetValue("BEHAVIOR", settingName, this.userSettings[settingName]);
 		}
+		// Last chosen directories
+		var lastDirs = userSettingsFile.iniGetObject("LAST_DIRECTORIES");
+		if (lastDirs != null)
+			this.lastChosenDirsPerLibForUser = lastDirs;
 
 		userSettingsFile.close();
 	}
@@ -1330,6 +1387,11 @@ function DDFileAreaChooser_WriteUserSettingsFile()
 		for (var settingName in this.userSettings)
 		{
 			userSettingsFile.iniSetValue("BEHAVIOR", settingName, this.userSettings[settingName]);
+		}
+		// Last chosen directories
+		for (var dirName in this.lastChosenDirsPerLibForUser)
+		{
+			userSettingsFile.iniSetValue("LAST_DIRECTORIES", dirName, this.lastChosenDirsPerLibForUser[dirName]);
 		}
 		userSettingsFile.close();
 		writeSucceeded = true;
@@ -1809,6 +1871,23 @@ function DDFileAreaChooser_DoUserSettings_Scrollable()
 
 	optionBox.setBottomBorderText(bottomBorderText, true, false);
 
+	// Add the options to the option box
+	const checkIdx = 48;
+	const optionFormatStr = "%-" + (checkIdx-1) + "s[ ]";
+
+
+	// When changing to a different file library, whether to remember/use
+	// the last directory in each file library as the currently selected
+	// directory
+	const CHG_LIB_REMEMBER_DIRECTORY_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Remember directory when changing libraries"));
+	if (this.userSettings.rememberLastDirWhenChangingLib)
+		optionBox.chgCharInTextItem(CHG_LIB_REMEMBER_DIRECTORY_OPT_INDEX, checkIdx, CHECK_CHAR);
+
+	// Create an object containing toggle values (true/false) for each option index
+	var optionToggles = {};
+	optionToggles[CHG_LIB_REMEMBER_DIRECTORY_OPT_INDEX] = this.userSettings.rememberLastDirWhenChangingLib;
+
+	// Other options
 	// Sorting option
 	var FILE_DIR_CHANGE_SORTING_OPT_INDEX = optionBox.addTextItem("Sorting");
 
@@ -1818,20 +1897,45 @@ function DDFileAreaChooser_DoUserSettings_Scrollable()
 		var itemIndex = pBox.getChosenTextItemIndex();
 		if (itemIndex > -1)
 		{
-			switch (itemIndex)
+			// If there's an option for the chosen item, then update the text on the
+			// screen depending on whether the option is enabled or not.
+			if (optionToggles.hasOwnProperty(itemIndex))
 			{
-				case FILE_DIR_CHANGE_SORTING_OPT_INDEX:
-					var sortOptMenu = CreateFileDirChangeSortOptMenu(optBoxStartX, optBoxTopRow, optBoxWidth, optBoxHeight, this.areaChooserObj.userSettings.areaChangeSorting);
-					var chosenSortOpt = sortOptMenu.GetVal();
-					console.attributes = "N";
-					if (typeof(chosenSortOpt) === "number")
-						this.areaChooserObj.userSettings.areaChangeSorting = chosenSortOpt;
-					retObj.needWholeScreenRefresh = false;
-					this.drawBorder();
-					this.drawInnerMenu(FILE_DIR_CHANGE_SORTING_OPT_INDEX);
-					break;
-				default:
-					break;
+				// Toggle the option and refresh it on the screen
+				optionToggles[itemIndex] = !optionToggles[itemIndex];
+				if (optionToggles[itemIndex])
+					optionBox.chgCharInTextItem(itemIndex, checkIdx, CHECK_CHAR);
+				else
+					optionBox.chgCharInTextItem(itemIndex, checkIdx, " ");
+				optionBox.refreshItemCharOnScreen(itemIndex, checkIdx);
+
+				// Toggle the setting for the user in global user setting object.
+				switch (itemIndex)
+				{
+					case CHG_LIB_REMEMBER_DIRECTORY_OPT_INDEX:
+						this.areaChooserObj.userSettings.rememberLastDirWhenChangingLib = !this.areaChooserObj.userSettings.rememberLastDirWhenChangingLib;
+						break;
+					default:
+						break;
+				}
+			}
+			else
+			{
+				switch (itemIndex)
+				{
+					case FILE_DIR_CHANGE_SORTING_OPT_INDEX:
+						var sortOptMenu = CreateFileDirChangeSortOptMenu(optBoxStartX, optBoxTopRow, optBoxWidth, optBoxHeight, this.areaChooserObj.userSettings.areaChangeSorting);
+						var chosenSortOpt = sortOptMenu.GetVal();
+						console.attributes = "N";
+						if (typeof(chosenSortOpt) === "number")
+							this.areaChooserObj.userSettings.areaChangeSorting = chosenSortOpt;
+						retObj.needWholeScreenRefresh = false;
+						this.drawBorder();
+						this.drawInnerMenu(FILE_DIR_CHANGE_SORTING_OPT_INDEX);
+						break;
+					default:
+						break;
+				}
 			}
 		}
 	}); // Option box enter key override function
@@ -2408,9 +2512,14 @@ function findNextLibIdxWithDirs(pLibIdx)
 //                    an 'items' property if it has sub-items
 //                    or a 'subItemObj' property if it's a file
 //                    directory
+//  pDirCodeMatchOverride: Optional - If known, this is an internal code of a
+//                         file directory to match (other than bbs.curdir_code)
+//  pLastChosenDirsPerLibForUser: Optional - An object where the keys are the
+//                                file library names and the values are the
+//                                user's last chosen directories for each library.
 //
 // Return value: Whether or not the given structure has the user's currently selected file directory
-function fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj)
+function fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj, pDirCodeMatchOverride, pLastChosenDirsPerLibForUser)
 {
 	var currentUserFileDirFound = false;
 	if (Array.isArray(pDirHeirarchyObj))
@@ -2419,15 +2528,31 @@ function fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj)
 		// Go through the array and call this function again recursively; this function will
 		// return when we get to an actual file directory that is the user's current selection.
 		for (var i = 0; i < pDirHeirarchyObj.length && !currentUserFileDirFound; ++i)
-			currentUserFileDirFound = fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj[i]);
+			currentUserFileDirFound = fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj[i], pDirCodeMatchOverride, pLastChosenDirsPerLibForUser);
 	}
 	else
 	{
 		// This is one of the objects with 'name' and an 'items' or 'subItemObj'
 		if (pDirHeirarchyObj.hasOwnProperty("subItemObj"))
-			currentUserFileDirFound = (bbs.curdir_code == pDirHeirarchyObj.subItemObj.code);
+		{
+			//currentUserFileDirFound = (bbs.curdir_code == pDirHeirarchyObj.subItemObj.code);
+			var dirCodeToLookFor = bbs.curdir_code;
+			if (typeof(pDirCodeMatchOverride) === "string" && pDirCodeMatchOverride.length > 0)
+				dirCodeToLookFor = pDirCodeMatchOverride;
+			currentUserFileDirFound = (dirCodeToLookFor == pDirHeirarchyObj.subItemObj.code);
+		}
 		else if (pDirHeirarchyObj.hasOwnProperty("items"))
-			currentUserFileDirFound = fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj.items);
+		{
+			var dirCodeToLookFor = null;
+			if (typeof(pDirCodeMatchOverride) === "string" && pDirCodeMatchOverride.length > 0)
+				dirCodeToLookFor = pDirCodeMatchOverride;
+			else if (pLastChosenDirsPerLibForUser != null && typeof(pLastChosenDirsPerLibForUser) === "object" && pDirHeirarchyObj.hasOwnProperty("name"))
+			{
+				if (pLastChosenDirsPerLibForUser.hasOwnProperty(pDirHeirarchyObj.name))
+					dirCodeToLookFor = pLastChosenDirsPerLibForUser[pDirHeirarchyObj.name];
+			}
+			currentUserFileDirFound = fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj.items, dirCodeToLookFor, pLastChosenDirsPerLibForUser);
+		}
 	}
 	return currentUserFileDirFound;
 }
@@ -2510,7 +2635,19 @@ function sortHeirarchyRecursive(pHeirarchyArray, pSortOption)
 // Also, see which one has the user's current chosen directory so we can set the
 // current menu item index - And save that index in the menu object for its
 // reference later.
-function setMenuIdxWithSelectedFileDir(pMenuObj, pDirHeirarchyObj)
+//
+// Parameters:
+//  pMenuObj: The DDLightbarMenu object representing the menu
+//  pDirHeirarchyObj: An object from this.lib_list, which is set
+//                    up with a 'name' property and either an
+//                    'items' property if it has sub-items or a
+//                    'subItemObj' property if it's a file directory
+//  pDirCodeMatchOverride: Optional - If known, this is an internal code of a
+//                         file directory to match (other than bbs.curdir_code)
+//  pLastChosenDirsPerLibForUser: Optional - An object where the keys are the
+//                                file library names and the values are the
+//                                user's last chosen directory for each library.
+function setMenuIdxWithSelectedFileDir(pMenuObj, pDirHeirarchyObj, pDirCodeMatchOverride, pLastChosenDirsPerLibForUser)
 {
 	var retObj = {
 		allDirs: true
@@ -2526,7 +2663,7 @@ function setMenuIdxWithSelectedFileDir(pMenuObj, pDirHeirarchyObj)
 			pMenuObj.allDirs = false;
 		}
 		// See if this one has the user's selected file directory
-		if (fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj[i]))
+		if (fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj[i], pDirCodeMatchOverride, pLastChosenDirsPerLibForUser))
 			pMenuObj.idxWithUserSelectedDir = i;
 		// If we've found all we need, then stop going through the array
 		if (!retObj.allDirs && pMenuObj.idxWithUserSelectedDir > -1)
