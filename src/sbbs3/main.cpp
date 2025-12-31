@@ -328,7 +328,7 @@ sbbs_t::log_crypt_error_status_sock(int status, const char *action)
 		if (estr) {
 			if (level < startup->ssh_error_level)
 				level = startup->ssh_error_level;
-			lprintf(level, "%04d SSH %s", client_socket, estr);
+			lprintf(level, "%04d SSH %s", client_socket.load(), estr);
 			free_crypt_attrstr(estr);
 		}
 	}
@@ -1447,7 +1447,7 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 		                            , &js_callback              /* js */
 		                            , &startup->js
 			                        , &useron
-		                            , client_socket == INVALID_SOCKET ? NULL : &client, client_socket, -1 /* client */
+		                            , client_socket == INVALID_SOCKET ? NULL : &client, client_socket.load(), -1 /* client */
 		                            , &js_server_props          /* server */
 		                            , glob
 		                            , mqtt
@@ -2438,7 +2438,7 @@ void sbbs_t::passthru_socket_activate(bool activate)
 		/* Re-set socket options */
 		char err[512];
 		if (set_socket_options(&cfg, client_socket_dup, "passthru", err, sizeof(err)))
-			errprintf(LOG_ERR, WHERE, "%04d !ERROR %s setting passthru socket options", client_socket, err);
+			errprintf(LOG_ERR, WHERE, "%04d !ERROR %s setting passthru socket options", client_socket.load(), err);
 
 		do { // Allow time for the passthru_thread to move any pending socket data to the outbuf
 			SLEEP(100); // Before the node_thread starts sending its own data to the outbuf
@@ -2485,7 +2485,7 @@ void passthru_thread(void* arg)
 				lprintf(LOG_NOTICE, "Node %d passthru connection aborted by peer on receive", sbbs->cfg.node_num);
 			else
 				lprintf(LOG_WARNING, "Node %d !ERROR %d receiving from passthru socket %d"
-				        , sbbs->cfg.node_num, SOCKET_ERRNO, sbbs->passthru_socket);
+				        , sbbs->cfg.node_num, SOCKET_ERRNO, sbbs->passthru_socket.load());
 			break;
 		}
 
@@ -2726,7 +2726,7 @@ void output_thread(void* arg)
 				lprintf(LOG_NOTICE, "%s connection aborted by peer on send", node);
 			else
 				lprintf(LOG_WARNING, "%s !ERROR %d (%s) sending on socket %d"
-				        , node, SOCKET_ERRNO, SOCKET_STRERROR(errmsg, sizeof errmsg), sbbs->client_socket);
+				        , node, SOCKET_ERRNO, SOCKET_STRERROR(errmsg, sizeof errmsg), sbbs->client_socket.load());
 			sbbs->online = false;
 			/* was break; on 4/7/00 */
 			i = buftop - bufbot;    // Pretend we sent it all
@@ -3611,7 +3611,7 @@ bool sbbs_t::init()
 		addr_len = sizeof(addr);
 		if ((result = getsockname(client_socket, &addr.addr, &addr_len)) != 0) {
 			errprintf(LOG_CRIT, WHERE, "%04d %s !ERROR %d (%d) getting local address/port of socket"
-			          , client_socket, client.protocol, result, SOCKET_ERRNO);
+			          , client_socket.load(), client.protocol, result, SOCKET_ERRNO);
 			return false;
 		}
 		inet_addrtop(&addr, local_addr, sizeof(local_addr));
@@ -3619,7 +3619,7 @@ bool sbbs_t::init()
 		SAFEPRINTF(str, "%sclient.ini", cfg.node_dir);
 		FILE* fp = fopen(str, "wt");
 		if (fp != NULL) {
-			fprintf(fp, "sock=%d\n", client_socket);
+			fprintf(fp, "sock=%d\n", client_socket.load());
 			fprintf(fp, "addr=%s\n", client.addr);
 			fprintf(fp, "host=%s\n", client.host);
 			fprintf(fp, "port=%u\n", (uint)client.port);
@@ -4151,7 +4151,7 @@ int sbbs_t::outcom(uchar ch)
 		i++;
 		if (i >= outcom_max_attempts) {          /* timeout - beep flush outbuf */
 			lprintf(LOG_NOTICE, "%04d %s TIMEOUT after %d attempts with %d bytes in transmit buffer (purging)"
-			        , client_socket, __FUNCTION__, i, RingBufFull(&outbuf));
+			        , client_socket.load(), __FUNCTION__, i, RingBufFull(&outbuf));
 			RingBufReInit(&outbuf);
 			_outcom(BEL);
 			return TXBOF;
@@ -5973,7 +5973,7 @@ NO_SSH:
 				}
 
 				lprintf(LOG_DEBUG, "Node %d passthru connect socket %d opened"
-				        , new_node->cfg.node_num, new_node->passthru_socket);
+				        , new_node->cfg.node_num, new_node->passthru_socket.load());
 
 				result = connect(new_node->passthru_socket, (struct sockaddr *)&tmp_addr, tmp_addr_len);
 

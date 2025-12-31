@@ -32,7 +32,7 @@ sbbs_t::set_authresponse(bool activate_ssh)
 {
 	int status;
 
-	lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_AUTHRESPONSE", client_socket);
+	lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_AUTHRESPONSE", client_socket.load());
 	status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_AUTHRESPONSE, activate_ssh);
 	if (cryptStatusError(status)) {
 		log_crypt_error_status_sock(status, "setting auth response");
@@ -250,14 +250,14 @@ bool sbbs_t::answer()
 		pthread_mutex_lock(&ssh_mutex);
 
 		if (startup->options & BBS_OPT_SSH_ANYAUTH) {
-			lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_ACTIVE", client_socket);
+			lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_ACTIVE", client_socket.load());
 			if (cryptStatusError(i = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1))) {
 				log_crypt_error_status_sock(i, "setting session active");
 				activate_ssh = false;
 				// TODO: Add private key here...
 				if (i == CRYPT_ENVELOPE_RESOURCE) {
 					activate_ssh = set_authresponse(true);
-					lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_ACTIVE", client_socket);
+					lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_ACTIVE", client_socket.load());
 					i = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
 					if (cryptStatusError(i)) {
 						log_crypt_error_status_sock(i, "setting session active");
@@ -265,19 +265,19 @@ bool sbbs_t::answer()
 					}
 					else {
 						SetEvent(ssh_active);
-						lprintf(LOG_DEBUG, "%04d SSH SSH_ANYAUTH allowed presented credential", client_socket);
+						lprintf(LOG_DEBUG, "%04d SSH SSH_ANYAUTH allowed presented credential", client_socket.load());
 					}
 				}
 			}
 			else {
 				activate_ssh = true;
 				SetEvent(ssh_active);
-				lprintf(LOG_DEBUG, "%04d SSH SSH_ANYAUTH allowed with no credential", client_socket);
+				lprintf(LOG_DEBUG, "%04d SSH SSH_ANYAUTH allowed with no credential", client_socket.load());
 			}
 		}
 		else {
 			for (ssh_failed = 0; ssh_failed < 3; ssh_failed++) {
-				lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_ACTIVE", client_socket);
+				lprintf(LOG_DEBUG, "%04d SSH Setting attribute: SESSINFO_ACTIVE", client_socket.load());
 				if (cryptStatusError(i = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1))) {
 					log_crypt_error_status_sock(i, "setting session active");
 					activate_ssh = false;
@@ -306,7 +306,7 @@ bool sbbs_t::answer()
 						free_crypt_attrstr(pubkey);
 						pubkey = get_binary_crypt_attribute(ssh_session, CRYPT_SESSINFO_PUBLICKEY, &pubkeysz);
 					}
-					lprintf(LOG_DEBUG, "%04d SSH login: '%s'", client_socket, rlogin_name);
+					lprintf(LOG_DEBUG, "%04d SSH login: '%s'", client_socket.load(), rlogin_name);
 				}
 				else {
 					rlogin_name[0] = 0;
@@ -319,18 +319,18 @@ bool sbbs_t::answer()
 							if (check_pubkey(&cfg, useron.number, pubkey, pubkeysz)) {
 								SAFECOPY(rlogin_pass, tmp);
 								activate_ssh = set_authresponse(true);
-								lprintf(LOG_DEBUG, "%04d SSH Public key authentication successful", client_socket);
+								lprintf(LOG_DEBUG, "%04d SSH Public key authentication successful", client_socket.load());
 								ssh_failed--;
 							}
 							else {
-								lprintf(LOG_DEBUG, "%04d SSH Public key authentication failed", client_socket);
+								lprintf(LOG_DEBUG, "%04d SSH Public key authentication failed", client_socket.load());
 							}
 						}
 						else {
 							if (stricmp(tmp, useron.pass) == 0) {
 								SAFECOPY(rlogin_pass, tmp);
 								activate_ssh = set_authresponse(true);
-								lprintf(LOG_DEBUG, "%04d SSH password authentication successful", client_socket);
+								lprintf(LOG_DEBUG, "%04d SSH password authentication successful", client_socket.load());
 								ssh_failed--;
 							}
 							else if (ssh_failed) {
@@ -346,14 +346,14 @@ bool sbbs_t::answer()
 						}
 					}
 					else {
-						lprintf(LOG_NOTICE, "%04d SSH failed to read user data for %s", client_socket, rlogin_name);
+						lprintf(LOG_NOTICE, "%04d SSH failed to read user data for %s", client_socket.load(), rlogin_name);
 					}
 				}
 				else {
 					if (cfg.sys_misc & SM_ECHO_PW)
-						lprintf(LOG_NOTICE, "%04d SSH !UNKNOWN USER: '%s' (password: %s)", client_socket, rlogin_name, truncsp(tmp));
+						lprintf(LOG_NOTICE, "%04d SSH !UNKNOWN USER: '%s' (password: %s)", client_socket.load(), rlogin_name, truncsp(tmp));
 					else
-						lprintf(LOG_NOTICE, "%04d SSH !UNKNOWN USER: '%s'", client_socket, rlogin_name);
+						lprintf(LOG_NOTICE, "%04d SSH !UNKNOWN USER: '%s'", client_socket.load(), rlogin_name);
 					badlogin(rlogin_name, tmp);
 					// Enable SSH so we can create a new user...
 					activate_ssh = set_authresponse(true);
@@ -396,12 +396,12 @@ bool sbbs_t::answer()
 						 *       I'll just use a five second interpacket gap for now.
 						 */
 						if (waits == 0)
-							lprintf(LOG_DEBUG, "%04d SSH [%s] waiting for channel type.", client_socket, client_ipaddr);
+							lprintf(LOG_DEBUG, "%04d SSH [%s] waiting for channel type.", client_socket.load(), client_ipaddr);
 						waits++;
 						SLEEP(10);
 						waits++;
 						if (waits > 500) {
-							lprintf(LOG_INFO, "%04d SSH [%s] TIMEOUT waiting for channel type.", client_socket, client_ipaddr);
+							lprintf(LOG_INFO, "%04d SSH [%s] TIMEOUT waiting for channel type.", client_socket.load(), client_ipaddr);
 							activate_ssh = false;
 							pthread_mutex_lock(&ssh_mutex);
 							break;
@@ -454,20 +454,20 @@ bool sbbs_t::answer()
 								max_socket_inactivity = startup->max_sftp_inactivity;
 							}
 							else {
-								lprintf(LOG_NOTICE, "%04d Trying to create new user over sftp, disconnecting.", client_socket);
+								lprintf(LOG_NOTICE, "%04d Trying to create new user over sftp, disconnecting.", client_socket.load());
 								badlogin(rlogin_name, rlogin_pass, "SSH", &client_addr, /* delay: */ false);
 								activate_ssh = false;
 							}
 						}
 						else {
-							lprintf(LOG_NOTICE, "%04d SSH [%s] active channel subsystem '%.*s' is not 'sftp' (or SFTP not allowed), disconnecting.", client_socket, client_ipaddr, tnamelen, tname);
+							lprintf(LOG_NOTICE, "%04d SSH [%s] active channel subsystem '%.*s' is not 'sftp' (or SFTP not allowed), disconnecting.", client_socket.load(), client_ipaddr, tnamelen, tname);
 							badlogin(rlogin_name, rlogin_pass, "SSH", &client_addr, /* delay: */ false);
 							// Fail because there's no session.
 							activate_ssh = false;
 						}
 					}
 					else {
-						lprintf(LOG_NOTICE, "%04d SSH [%s] active channel '%.*s' is not 'session' or 'subsystem', disconnecting.", client_socket, client_ipaddr, tnamelen, tname);
+						lprintf(LOG_NOTICE, "%04d SSH [%s] active channel '%.*s' is not 'session' or 'subsystem', disconnecting.", client_socket.load(), client_ipaddr, tnamelen, tname);
 						badlogin(rlogin_name, rlogin_pass, "SSH", &client_addr, /* delay: */ false);
 						// Fail because there's no session.
 						activate_ssh = false;
@@ -490,10 +490,10 @@ bool sbbs_t::answer()
 		}
 		if (!activate_ssh) {
 			int status;
-			lprintf(LOG_NOTICE, "%04d SSH [%s] session establishment failed", client_socket, client_ipaddr);
+			lprintf(LOG_NOTICE, "%04d SSH [%s] session establishment failed", client_socket.load(), client_ipaddr);
 			if (cryptStatusError(status = cryptDestroySession(ssh_session))) {
 				lprintf(LOG_ERR, "%04d SSH ERROR %d destroying Cryptlib Session %d from %s line %d"
-				        , client_socket, status, ssh_session, __FILE__, __LINE__);
+				        , client_socket.load(), status, ssh_session, __FILE__, __LINE__);
 			}
 			ssh_mode = false;
 			pthread_mutex_unlock(&ssh_mutex);
@@ -503,11 +503,11 @@ bool sbbs_t::answer()
 
 		if (cryptStatusOK(cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_WIDTH, &l)) && l > 0) {
 			term->cols = l;
-			lprintf(LOG_DEBUG, "%04d SSH [%s] height %d", client_socket, client.addr, term->cols);
+			lprintf(LOG_DEBUG, "%04d SSH [%s] height %d", client_socket.load(), client.addr, term->cols);
 		}
 		if (cryptStatusOK(cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT, &l)) && l > 0) {
 			term->rows = l;
-			lprintf(LOG_DEBUG, "%04d SSH [%s] height %d", client_socket, client.addr, term->rows);
+			lprintf(LOG_DEBUG, "%04d SSH [%s] height %d", client_socket.load(), client.addr, term->rows);
 		}
 		l = 0;
 		if (cryptStatusOK(cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL, terminal, &l)) && l > 0) {
@@ -515,7 +515,7 @@ bool sbbs_t::answer()
 				terminal[l] = 0;
 			else
 				terminal[sizeof(terminal) - 1] = 0;
-			lprintf(LOG_DEBUG, "%04d SSH [%s] term: %s", client_socket, client.addr, terminal);
+			lprintf(LOG_DEBUG, "%04d SSH [%s] term: %s", client_socket.load(), client.addr, terminal);
 		}
 		pthread_mutex_unlock(&ssh_mutex);
 
@@ -743,7 +743,7 @@ bool sbbs_t::answer()
 						}
 						if (trashcan(telnet_location, "ip")) {
 							lprintf(LOG_NOTICE, "%04d %s !TELNET LOCATION BLOCKED in ip.can: %s"
-							        , client_socket, client.protocol, telnet_location);
+							        , client_socket.load(), client.protocol, telnet_location);
 							hangup();
 							pthread_mutex_unlock(&input_thread_mutex);
 							return false;

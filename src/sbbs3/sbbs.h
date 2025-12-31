@@ -455,8 +455,8 @@ public:
 	bool	terminated = false;
 
 	client_t client{};
-	volatile SOCKET	client_socket = INVALID_SOCKET;
-	volatile SOCKET	client_socket_dup = INVALID_SOCKET;
+	std::atomic<SOCKET> client_socket{INVALID_SOCKET};
+	std::atomic<SOCKET> client_socket_dup{INVALID_SOCKET};
 	union xp_sockaddr	client_addr{};
 	char	client_name[128]{};
 	char	client_ident[128]{};
@@ -476,7 +476,7 @@ public:
 
 	std::atomic<bool> ssh_mode{false};
 	std::atomic<bool> term_output_disabled{};
-	volatile SOCKET passthru_socket=INVALID_SOCKET;
+	std::atomic<SOCKET> passthru_socket{INVALID_SOCKET};
 	std::atomic<bool> passthru_socket_active{false};
 	void   passthru_socket_activate(bool);
 	std::atomic<bool> passthru_thread_running{false};
