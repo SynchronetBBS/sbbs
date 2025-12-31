@@ -2459,6 +2459,7 @@ void passthru_thread(void* arg)
 
 	SetThreadName("sbbs/passthru");
 	thread_up(false /* setuid */);
+	lprintf(LOG_DEBUG, "Node %d passthru thread started", sbbs->cfg.node_num);
 
 	while (sbbs->online && sbbs->passthru_socket != INVALID_SOCKET && !terminate_server) {
 		if (!socket_readable(sbbs->passthru_socket, 1000))
@@ -2510,8 +2511,8 @@ void passthru_thread(void* arg)
 
 			int wr = RingBufWrite(&sbbs->outbuf, bp, rd);
 			if (wr != rd) {
-				errprintf(LOG_ERR, WHERE, "Short-write (%d of %d bytes) from passthru socket to outbuf"
-				          , wr, rd);
+				errprintf(LOG_ERR, WHERE, "Node %d Short-write (%d of %d bytes) from passthru socket to outbuf"
+				          , sbbs->cfg.node_num, wr, rd);
 				break;
 			}
 		} else {
@@ -2526,6 +2527,7 @@ void passthru_thread(void* arg)
 
 	sbbs->passthru_thread_running = false;
 	sbbs->passthru_socket_active = false;
+	lprintf(LOG_DEBUG, "Node %d passthru thread terminated", sbbs->cfg.node_num);
 }
 
 void output_thread(void* arg)
