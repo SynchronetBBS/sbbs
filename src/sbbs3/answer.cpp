@@ -557,8 +557,8 @@ bool sbbs_t::answer()
 							term->rows = telnet_rows;
 					}
 					if (telnet_terminal[0]) {
-						pthread_mutex_unlock(&input_thread_mutex);
 						SAFECOPY(terminal, telnet_terminal);
+						pthread_mutex_unlock(&input_thread_mutex);
 						break;
 					}
 					pthread_mutex_unlock(&input_thread_mutex);
@@ -737,15 +737,15 @@ bool sbbs_t::answer()
 					if (telnet_location[0]) {            /* Telnet Location info provided */
 						lprintf(LOG_INFO, "Telnet Location: %s", telnet_location);
 						if (trashcan(telnet_location, "ip-silent")) {
-							hangup();
 							pthread_mutex_unlock(&input_thread_mutex);
+							hangup();
 							return false;
 						}
 						if (trashcan(telnet_location, "ip")) {
+							pthread_mutex_unlock(&input_thread_mutex);
 							lprintf(LOG_NOTICE, "%04d %s !TELNET LOCATION BLOCKED in ip.can: %s"
 							        , client_socket.load(), client.protocol, telnet_location);
 							hangup();
-							pthread_mutex_unlock(&input_thread_mutex);
 							return false;
 						}
 						SAFECOPY(cid, telnet_location);
