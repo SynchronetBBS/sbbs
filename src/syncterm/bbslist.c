@@ -3165,10 +3165,9 @@ change_settings(int connected)
 								str_list_t inifile = iniReadBBSList(listfile, true);
 								settings.keyDerivationIterations = nval;
 								iniSetInteger(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
-								if (list_algo != INI_CRYPT_ALGO_NONE) {
+								if (list_algo != INI_CRYPT_ALGO_NONE)
 									iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
-									fclose(listfile);
-								}
+								fclose(listfile);
 								iniFreeStringList(inifile);
 							}
 							else {
