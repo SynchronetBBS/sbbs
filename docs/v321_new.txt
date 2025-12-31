@@ -123,10 +123,15 @@ o New @-codes:
 
 Text Strings
 ~~~~~~~~~~~~
-o UserDownloadsToday
 o NoMoreDownloads
 o ReadYourUnreadMailNowQ
+o UserDownloadsToday
 o UserSentYouFile changed to include filename parameter
+o RawMsgInputModeIsNow changed to include RAWIO @-code
+o Changed to accommodate bigger statistical values:
+  - UserTimes
+  - UserLogons
+  - UserEmails
 
 Security
 ~~~~~~~~
