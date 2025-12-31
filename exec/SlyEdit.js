@@ -44,6 +44,7 @@ if (requireFnExists)
 	require("frame.js", "Frame");
 	require("scrollbar.js", "ScrollBar");
 	require("slyedit_misc.js", "gUserSettingsFilename");
+	require("choice_scroll_box.js", "ChoiceScrollbox");
 }
 else
 {
@@ -53,6 +54,7 @@ else
 	load("frame.js");
 	load("scrollbar.js");
 	load("slyedit_misc.js");
+	load("choice_scroll_box.js");
 }
 
 // Load program settings from SlyEdit.cfg, and load the user configuratio nsettings
@@ -6162,6 +6164,17 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	// an option for the user to choose a dictionary.
 	var dictionaryFilenames = getDictionaryFilenames(js.exec_dir);
 
+	// Copy the SlyEdit configuration color settings to ChoiceScrollbox
+	// color settings
+	var choiceBoxSettings = {
+		colors: {
+			listBoxBorder: gConfigSettings.genColors.listBoxBorder,
+			listBoxBorderText: gConfigSettings.genColors.listBoxBorderText,
+			listBoxItemText: gConfigSettings.genColors.listBoxItemText,
+			listBoxItemHighlight: gConfigSettings.genColors.listBoxItemHighlight
+		}
+	};
+
 	// Create the user settings box
 	var optBoxTitle = "Setting                                      Enabled";
 	var optBoxWidth = ChoiceScrollbox_MinWidth();
@@ -6170,7 +6183,7 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	if (optBoxStartX < gEditLeft)
 		optBoxStartX = gEditLeft;
 	var optionBox = new ChoiceScrollbox(optBoxStartX, gEditTop+1, optBoxWidth, optBoxHeight, optBoxTitle,
-	                                    gConfigSettings, false, true);
+	                                    choiceBoxSettings, false, true);
 	optionBox.addInputLoopExitKey(CTRL_U);
 	optionBox.addInputLoopExitKey("?");
 	// Update the bottom help text to be more specific to the user settings box
