@@ -1,0 +1,63 @@
+diff --git a/ctrl/text.dat b/ctrl/text.dat
+index 7a9f5d4c7..623d656df 100644
+--- a/ctrl/text.dat
++++ b/ctrl/text.dat
+@@ -175,7 +175,7 @@
+ 	", ~@All@, or ~@Quit@: "
+ "\1n\1g[\1h%d\1n\1g] %-40.40s  \1h\1c%s\r\n"                  137 SubPtrLstFmt
+ "\r\nSet new-scan pointer for\1\\ @Which@, ~@All@, or ~@Quit@: "  138 WhichOrAll
+-"\r\nRaw Input/Output Mode is now: \1h"                 139 RawMsgInputModeIsNow
++"\r\nRaw Input/Output Mode is now: @RAWIO@\1h"          139 RawMsgInputModeIsNow
+ "OFF"                                                   140 Unused140 /* was OFF */
+ "ON"                                                    141 Unused141 /* was ON */
+ "\r\n\1n\1mPaging \1h%s #%u\1n\1m for private chat\r\n" 142 PagingUser
+@@ -525,15 +525,15 @@
+ "\1n\1cComment %c : \1h%s\r\n"                             427 UeditCommentLine
+ "\1n\1cFirst on  : \1h%-8.8s  \1n\1cExpire    : \1h%-8.8s  "\ 428 UserDates
+ 	"\1n\1cLast on   : \1h%-8.8s  %02u:%02u\r\n"
+-"\1n\1cTime on   : \1h%-5u     \1n\1cToday     : "\          429 UserTimes
+-	"\1h%-5u%-5u\1n\1cLast call : "\
+-	"\1h%-5u%-5u\1n\1cExtra : \1h%u\r\n"
+-"\1n\1cLogons    : \1h%-5u     \1n\1cToday     : "\          430 UserLogons
+-	"\1h%-5u%-5u\1n\1cPosts     : "\
+-	"\1h%-5u%-5u\1n\1cToday : \1h%u\r\n"
+-"\1n\1cE-mails   : \1h%-5u     \1n\1cTo sysop  : "\          431 UserEmails
+-	"\1h%-5u     \1n\1cWaiting   : "\
+-	"\1h%-5u     \1n\1cToday : \1h%u\r\n"
++"\1n\1cTime on   : \1h%-10u\1n\1cToday     : "\          429 UserTimes
++	"\1h%-5u%4u \1n\1cLast call : "\
++	"\1h%-5u%4u \1n\1cExtra : \1h%u\r\n"
++"\1n\1cLogons    : \1h%-10u\1n\1cToday     : "\          430 UserLogons
++	"\1h%-5u%4u \1n\1cPosts     : "\
++	"\1h%-5u%4u \1n\1cToday : \1h%u\r\n"
++"\1n\1cE-mails   : \1h%-10u\1n\1cTo sysop  : "\          431 UserEmails
++	"\1h%-10u\1n\1cWaiting   : "\
++	"\1h%-10u\1n\1cToday : \1h%u\r\n"
+ "\1n\1cNetMail   : \1h%s\r\n"                               432 UserNetMail
+ "\1n\1cUploads   : \1h%9.9s \1n\1cbytes in "\               433 UserUploads
+ 	"\1h%u \1n\1cfiles\r\n"
+@@ -688,7 +688,7 @@
+ "\r\n\r\n\1nCtrl-Key Commands (from most anywhere)\r\n"\ 556 ControlKeyMenu
+     "\r\n\1h^K  \1nThis Menu"\
+ 	"\r\n\1h^C  \1nAbort Current Process"\
+-	"\r\n\1h^O  \1nToggle Pause Prompt Temporarily"\
++	"\r\n\1h^O  \1nToggle Pause Prompt Temporarily\1\\ (currently @PSTAT@)"\
+ 	"\r\n\1h^Z  \1nToggle Raw Input/Output Mode\1\\ (e.g. for ASCII-uploading msg text)"\
+ 	"\r\n\1h^U  \1nList Users Online"\
+ 	"\r\n\1h^P  \1nSend Instant-Messages and Telegrams"\
+@@ -798,7 +798,7 @@
+ "\r\nDownload files in batch queue now"                 646 DownloadBatchQ
+ "\1_\1r\1h\r\nWaiting for Slow Media Device #%u..."        647 WaitingForDeviceN
+ "\1n\1y\1h%s\1n\1c sent you E-mail.\r\n"                   648 UserSentYouMail
+-"\1n\1y\1h%s\1n\1c sent you a file.\r\n"                   649 UserSentYouFile
++"\1n\1y\1h%s\1n\1c sent you a file: \1h%s\r\n"             649 UserSentYouFile
+ "\1n\1y\1h%s\1n\1c read your E-mail on %s.\r\n"              650 UserReadYourMail
+ "\1_\1w\1hNode %2d: \1g%s\1n\1g read your E-mail.\r\n"       651 UserReadYourMailNodeMsg
+ "\r\n@Which@, ~@Quit@, or [%u]: "                           652 JoinWhichGrp
+@@ -1124,3 +1124,6 @@
+ " %c \1g%.10s\1n %c %.127s%c"							   935 QWKTagLineFmt
+ "\1n\r\n\1b\1hQWK Control [\1c%s\1b]: \1g%s\r\n"		   936 QWKControlCommand
+ "Unrecognized Control Command!\1n\r\n"					   937 QWKBadControlCommand
++"You are limited to @MAXDL@ file downloads per day.\r\n"   938 NoMoreDownloads
++"Read your unread mail now"                                939 ReadYourUnreadMailNowQ
++"\1n\1c(\1h%s\1n\1c bytes in \1h%u\1n\1c files today)"     940 UserDownloadsToday
