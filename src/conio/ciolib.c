@@ -98,6 +98,7 @@ CIOLIBEXPORT int ciolib_kbwait(int);
 CIOLIBEXPORT int ciolib_getch(void);
 CIOLIBEXPORT int ciolib_getche(void);
 CIOLIBEXPORT int ciolib_ungetch(int ch);
+CIOLIBEXPORT int ciolib_ungetch_byte(int ch);
 CIOLIBEXPORT void ciolib_gettextinfo(struct text_info *info);
 CIOLIBEXPORT int ciolib_wherex(void);
 CIOLIBEXPORT int ciolib_wherey(void);
@@ -644,9 +645,12 @@ CIOLIBEXPORT int ciolib_getch(void)
 
 	CIOLIB_INIT();
 
-	if(ungot) {
-		ch=ungotch;
-		ungot=false;
+	if (ungot) {
+		ch = ungotch & 0xff;
+		if (ungotch > 0xff)
+			ungotch >>= 8;
+		else
+			ungot=false;
 		return(ch);
 	}
 	return(cio_api.getch());
@@ -695,13 +699,27 @@ CIOLIBEXPORT int ciolib_ungetch(int ch)
 {
 	CIOLIB_INIT();
 
-	if(ungot)
+	if (ungot)
 		return(EOF);
 	if (ch == 0xe0)
 		ch = CIO_KEY_LITERAL_E0;
-	if(cio_api.ungetch)
+	if (cio_api.ungetch)
 		return(cio_api.ungetch(ch));
-	ungotch=ch;
+	ungotch = ch;
+	ungot = true;
+	return(ch);
+}
+
+/*
+ * On success, returns ch, on error, returns EOF
+ */
+CIOLIBEXPORT int ciolib_ungetch_byte(int ch)
+{
+	CIOLIB_INIT();
+
+	if (ungot)
+		return(EOF);
+	ungotch = ch;
 	ungot = true;
 	return(ch);
 }

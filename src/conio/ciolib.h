@@ -460,6 +460,7 @@ CIOLIBEXPORT int ciolib_kbwait(int);
 CIOLIBEXPORT int ciolib_getch(void);
 CIOLIBEXPORT int ciolib_getche(void);
 CIOLIBEXPORT int ciolib_ungetch(int ch);
+CIOLIBEXPORT int ciolib_ungetch_byte(int ch);
 CIOLIBEXPORT void ciolib_gettextinfo(struct text_info *info);
 CIOLIBEXPORT int ciolib_wherex(void);
 CIOLIBEXPORT int ciolib_wherey(void);

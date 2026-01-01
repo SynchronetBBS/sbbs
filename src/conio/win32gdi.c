@@ -1071,7 +1071,7 @@ static int
 kbwaitGot(uint8_t ch, DWORD got)
 {
 	if (got)
-		ciolib_ungetch(ch);
+		ciolib_ungetch_byte(ch);
 	return got;
 }
 
