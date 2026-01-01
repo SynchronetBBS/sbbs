@@ -10,7 +10,7 @@
 if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_NOCRLF");
-	require("slyedit_misc.js", "UPPER_LEFT_SINGLE");
+	require("slyedit_misc.js", "CP437_BOX_DRAWING_UPPER_LEFT_SINGLE");
 }
 else
 {
@@ -97,11 +97,11 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// border line only once, for efficiency).
 	if (typeof(redrawScreen_IceStyle.topBorder) == "undefined")
 	{
-		redrawScreen_IceStyle.topBorder = UPPER_LEFT_SINGLE;
+		redrawScreen_IceStyle.topBorder = CP437_BOX_DRAWING_UPPER_LEFT_SINGLE;
 		var innerWidth = console.screen_columns - 2;
 		for (var i = 0; i < innerWidth; ++i)
-			redrawScreen_IceStyle.topBorder += HORIZONTAL_SINGLE;
-		redrawScreen_IceStyle.topBorder += UPPER_RIGHT_SINGLE;
+			redrawScreen_IceStyle.topBorder += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+		redrawScreen_IceStyle.topBorder += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
 		redrawScreen_IceStyle.topBorder = randomTwoColorString(redrawScreen_IceStyle.topBorder,
 		                                                       gConfigSettings.iceColors.BorderColor1,
 		                                                       gConfigSettings.iceColors.BorderColor2);
@@ -115,7 +115,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	var lineNum = 2;
 	var toNameLineNum = lineNum;
 	console.gotoxy(1, lineNum);
-	console.print("\x01n" + randomTwoColorString(VERTICAL_SINGLE,
+	console.print("\x01n" + randomTwoColorString(CP437_BOX_DRAWINGS_LIGHT_VERTICAL,
 	              gConfigSettings.iceColors.BorderColor1,
 	              gConfigSettings.iceColors.BorderColor2) +
 	              gConfigSettings.iceColors.TopInfoBkgColor + " " +
@@ -145,14 +145,14 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// Time
 	console.print(" ");
 	displayTime_IceStyle();
-	console.print(" " + randomTwoColorString(VERTICAL_SINGLE, gConfigSettings.iceColors.BorderColor1,
+	console.print(" " + randomTwoColorString(CP437_BOX_DRAWINGS_LIGHT_VERTICAL, gConfigSettings.iceColors.BorderColor1,
 	              gConfigSettings.iceColors.BorderColor2));
 
 	// Next line: Subject, time left, insert/overwrite mode
 	var subjectLineNum = ++lineNum;
 	console.gotoxy(1, lineNum);
 	// Subject
-	console.print("\x01n" + randomTwoColorString(VERTICAL_SINGLE,
+	console.print("\x01n" + randomTwoColorString(CP437_BOX_DRAWINGS_LIGHT_VERTICAL,
 	              gConfigSettings.iceColors.BorderColor1,
 	              gConfigSettings.iceColors.BorderColor2) +
 	              gConfigSettings.iceColors.TopInfoBkgColor + " " +
@@ -184,7 +184,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 
 	// Insert/overwrite mode
 	console.print(" " + gConfigSettings.iceColors.EditMode + pInsertMode + " \x01n" +
-	              randomTwoColorString(VERTICAL_SINGLE, gConfigSettings.iceColors.BorderColor1,
+	              randomTwoColorString(CP437_BOX_DRAWINGS_LIGHT_VERTICAL, gConfigSettings.iceColors.BorderColor1,
 	              gConfigSettings.iceColors.BorderColor2));
 
 	// Next line: Top border for the message area and also includes the user #,
@@ -193,18 +193,18 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	if (typeof(redrawScreen_IceStyle.msgAreaBorder) == "undefined")
 	{
 		redrawScreen_IceStyle.msgAreaBorder = "\x01n"
-		                                    + randomTwoColorString(LEFT_T_SINGLE + HORIZONTAL_SINGLE,
+		                                    + randomTwoColorString(CP437_BOX_DRAWING_LIGHT_LEFT_T + CP437_BOX_DRAWING_HORIZONTAL_SINGLE,
 		                                    gConfigSettings.iceColors.BorderColor1,
 		                                    gConfigSettings.iceColors.BorderColor2)
 		                                    // User #, padded with high-black dim block characters,
 		                                    // 5 characters for a screen that's 80 characters wide.
-		                                    + "\x01h" + THIN_RECTANGLE_LEFT + "#\x01k";
+		                                    + "\x01h" + CP437_LEFT_HALF_BLOCK + "#\x01k";
 		fieldWidth = Math.floor(console.screen_columns * (5/80)) - user.number.toString().length;
 		for (var i = 0; i < fieldWidth; ++i)
-			redrawScreen_IceStyle.msgAreaBorder += BLOCK1;
+			redrawScreen_IceStyle.msgAreaBorder += CP437_LIGHT_SHADE;
 		redrawScreen_IceStyle.msgAreaBorder += "\x01c" + user.number
 											+ gConfigSettings.iceColors.BorderColor1
-											+ THIN_RECTANGLE_RIGHT;
+											+ CP437_RIGHT_HALF_BLOCK;
 
 		// The message area name should be centered on the line.  So, based on its
 		// length (up to 35 characters), figure out its starting position before
@@ -217,15 +217,15 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 		// Write border characters up to the message area name start position
 		screenText = "";
 		for (var i = console.strlen(redrawScreen_IceStyle.msgAreaBorder); i < startPos; ++i)
-			screenText += HORIZONTAL_SINGLE;
+			screenText += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
 		redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(screenText,
 																	gConfigSettings.iceColors.BorderColor1,
 																	gConfigSettings.iceColors.BorderColor2);
 
 		// Write the message area name
 		redrawScreen_IceStyle.msgAreaBorder += "\x01h" + gConfigSettings.iceColors.BorderColor1
-		                                    + THIN_RECTANGLE_LEFT + " " + iceText(msgAreaName, "\x01w") + " \x01h"
-		                                    + gConfigSettings.iceColors.BorderColor1 + THIN_RECTANGLE_RIGHT;
+		                                    + CP437_LEFT_HALF_BLOCK + " " + iceText(msgAreaName, "\x01w") + " \x01h"
+		                                    + gConfigSettings.iceColors.BorderColor1 + CP437_RIGHT_HALF_BLOCK;
 
 		// Calculate the field width for the node number field.
 		// For the node # field, use 3 characters for a screen 80 characters wide.
@@ -237,22 +237,22 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 		// the node number.
 		screenText = "";
 		for (var posX = console.strlen(redrawScreen_IceStyle.msgAreaBorder); posX < nodeFieldStartPos; ++posX)
-			screenText += HORIZONTAL_SINGLE;
+			screenText += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
 		redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(screenText,
 																	gConfigSettings.iceColors.BorderColor1,
 																	gConfigSettings.iceColors.BorderColor2);
 
 		// Output the node # field
 		redrawScreen_IceStyle.msgAreaBorder += "\x01h" + gConfigSettings.iceColors.BorderColor1
-		                                    + THIN_RECTANGLE_LEFT + iceText("Node", "\x01w") + "\x01n\x01b:\x01h\x01k";
+		                                    + CP437_LEFT_HALF_BLOCK + iceText("Node", "\x01w") + "\x01n\x01b:\x01h\x01k";
 		fieldWidth -= bbs.node_num.toString().length;
 		for (var i = 0; i < fieldWidth; ++i)
-			redrawScreen_IceStyle.msgAreaBorder += BLOCK1;
+			redrawScreen_IceStyle.msgAreaBorder += CP437_LIGHT_SHADE;
 		redrawScreen_IceStyle.msgAreaBorder += "\x01c" + bbs.node_num
-		                                    + gConfigSettings.iceColors.BorderColor1 + THIN_RECTANGLE_RIGHT;
+		                                    + gConfigSettings.iceColors.BorderColor1 + CP437_RIGHT_HALF_BLOCK;
 
 		// Write the last 2 characters of top border
-		redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(HORIZONTAL_SINGLE + RIGHT_T_SINGLE,
+		redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT,
 		                                                            gConfigSettings.iceColors.BorderColor1,
 		                                                            gConfigSettings.iceColors.BorderColor2);
 	}
@@ -337,28 +337,28 @@ function DisplayTextAreaBottomBorder_IceStyle(pLineNum, pUseQuotes, pEditLeft, p
       // The beginning of this line shows that SlyEdit is registered
       // to the sysop. :)
       DisplayTextAreaBottomBorder_IceStyle.border =
-               randomTwoColorString(LOWER_LEFT_SINGLE + HORIZONTAL_SINGLE,
+               randomTwoColorString(CP437_BOX_DRAWING_LOWER_LEFT_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE,
                                     gConfigSettings.iceColors.BorderColor1,
                                     gConfigSettings.iceColors.BorderColor2)
-             + "\x01h" + gConfigSettings.iceColors.BorderColor1 + THIN_RECTANGLE_LEFT
+             + "\x01h" + gConfigSettings.iceColors.BorderColor1 + CP437_LEFT_HALF_BLOCK
              + iceText("Registered To: " + system.operator.substr(0, 20), "\x01w")
-             + "\x01h" + gConfigSettings.iceColors.BorderColor1 + THIN_RECTANGLE_RIGHT;
+             + "\x01h" + gConfigSettings.iceColors.BorderColor1 + CP437_RIGHT_HALF_BLOCK;
       // Append border characters up until the point we'll have to write the CTRL key
       // help text.
       var screenText = "";
       var endPos = console.screen_columns - console.strlen(ctrlKeyHelp) - 3;
       var textLen = console.strlen(DisplayTextAreaBottomBorder_IceStyle.border);
       for (var i = textLen+1; i < endPos; ++i)
-         screenText += HORIZONTAL_SINGLE;
+         screenText += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
       DisplayTextAreaBottomBorder_IceStyle.border += randomTwoColorString(screenText,
                                                                 gConfigSettings.iceColors.BorderColor1,
                                                                 gConfigSettings.iceColors.BorderColor2);
 
       // CTRL key help and the remaining 2 characters in the border.
       DisplayTextAreaBottomBorder_IceStyle.border += "\x01h" + gConfigSettings.iceColors.BorderColor1
-                  + THIN_RECTANGLE_LEFT + ctrlKeyHelp + gConfigSettings.iceColors.BorderColor1
-                  + THIN_RECTANGLE_RIGHT
-                  + randomTwoColorString(HORIZONTAL_SINGLE + LOWER_RIGHT_SINGLE,
+                  + CP437_LEFT_HALF_BLOCK + ctrlKeyHelp + gConfigSettings.iceColors.BorderColor1
+                  + CP437_RIGHT_HALF_BLOCK
+                  + randomTwoColorString(CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE,
                                          gConfigSettings.iceColors.BorderColor1,
                                          gConfigSettings.iceColors.BorderColor2);
    }
@@ -388,7 +388,7 @@ function DisplayBottomHelpLine_IceStyle(pLineNum, pUsingQuotes, pCtrlQQuote)
 	var screenText = iceText(EDITOR_PROGRAM_NAME + " v", "\x01w") + "\x01c\x01h"
 				   + EDITOR_VERSION.toString() + "   "
 				   + iceText("Copyright", "\x01w") + " \x01c\x01h" + COPYRIGHT_YEAR + " "
-				   + iceText("Eric Oulashin", "\x01w") + " \x01n\x01b" + DOT_CHAR + " "
+				   + iceText("Eric Oulashin", "\x01w") + " \x01n\x01b" + CP437_BULLET_OPERATOR + " "
 				   + iceText("Press ESCape For Help", "\x01w");
 	// Calculate the starting position to center the help text, and front-pad
 	// helpText with that many spaces.
@@ -439,18 +439,18 @@ function DrawQuoteWindowTopBorder_IceStyle(pQuoteWinHeight, pEditLeft, pEditRigh
    // not been defined yet, then build it.
    if (typeof(DrawQuoteWindowTopBorder_IceStyle.border) == "undefined")
    {
-      DrawQuoteWindowTopBorder_IceStyle.border = randomTwoColorString(UPPER_LEFT_VSINGLE_HDOUBLE,
+      DrawQuoteWindowTopBorder_IceStyle.border = randomTwoColorString(P437_BOX_DRAWING_UPPER_LEFT_VSINGLE_HDOUBLE,
                                                               gConfigSettings.iceColors.BorderColor1,
                                                               gConfigSettings.iceColors.BorderColor2)
-                + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
+                + gConfigSettings.iceColors.BorderColor2 + CP437_LEFT_HALF_BLOCK
                 + gConfigSettings.iceColors.QuoteWinBorderTextColor + "Quote Window"
                 + gConfigSettings.iceColors.BorderColor2
-                + THIN_RECTANGLE_RIGHT;
+                + CP437_RIGHT_HALF_BLOCK;
       // The border from here to the end of the line: Random high/low blue
       var screenText = "";
       for (var posX = pEditLeft+16; posX <= pEditRight; ++posX)
-         screenText += HORIZONTAL_DOUBLE;
-      screenText += UPPER_RIGHT_VSINGLE_HDOUBLE;
+         screenText += CP437_BOX_DRAWING_HORIZONTAL_DOUBLE;
+      screenText += CP437_BOX_DRAWING_UPPER_RIGHT_VSINGLE_HDOUBLE;
       DrawQuoteWindowTopBorder_IceStyle.border += randomTwoColorString(screenText,
                                                            gConfigSettings.iceColors.BorderColor1,
                                                            gConfigSettings.iceColors.BorderColor2);
@@ -477,33 +477,33 @@ function DrawQuoteWindowBottomBorder_IceStyle(pEditLeft, pEditRight)
 	if (typeof(DrawQuoteWindowBottomBorder_IceStyle.border) == "undefined")
 	{
 		const quoteHotkeyChar = gUserSettings.ctrlQQuote ? "Q" : "Y";
-		DrawQuoteWindowBottomBorder_IceStyle.border = randomTwoColorString(LOWER_LEFT_VSINGLE_HDOUBLE,
+		DrawQuoteWindowBottomBorder_IceStyle.border = randomTwoColorString(CP437_BOX_DRAWING_LOWER_LEFT_VSINGLE_HDOUBLE,
 		                                                                   gConfigSettings.iceColors.BorderColor1,
 		                                                                   gConfigSettings.iceColors.BorderColor2)
-		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
+		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_LEFT_HALF_BLOCK
 		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + format("^%s/ESC=End", quoteHotkeyChar)
-		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT
-		                                            + gConfigSettings.iceColors.BorderColor1 + HORIZONTAL_DOUBLE
-		                                            + gConfigSettings.iceColors.BorderColor2  + THIN_RECTANGLE_LEFT
+		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_RIGHT_HALF_BLOCK
+		                                            + gConfigSettings.iceColors.BorderColor1 + CP437_BOX_DRAWING_HORIZONTAL_DOUBLE
+		                                            + gConfigSettings.iceColors.BorderColor2  + CP437_LEFT_HALF_BLOCK
 		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + "CR=Accept"
-		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT
-		                                            + gConfigSettings.iceColors.BorderColor1 + HORIZONTAL_DOUBLE
-		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
+		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_RIGHT_HALF_BLOCK
+		                                            + gConfigSettings.iceColors.BorderColor1 + CP437_BOX_DRAWING_HORIZONTAL_DOUBLE
+		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_LEFT_HALF_BLOCK
 		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + "Up/Down/PgUp/PgDn/Home/End=Scroll"
-		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT;
+		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_RIGHT_HALF_BLOCK;
 		                                            /*
 		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + "Up/Down/PgUp/PgDn=Scroll"
-		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT
-		                                            + gConfigSettings.iceColors.BorderColor1 + HORIZONTAL_DOUBLE
-		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_LEFT
+		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_RIGHT_HALF_BLOCK
+		                                            + gConfigSettings.iceColors.BorderColor1 + CP437_BOX_DRAWING_HORIZONTAL_DOUBLE
+		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_LEFT_HALF_BLOCK
 		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + "F/L=First/Last pg"
-		                                            + gConfigSettings.iceColors.BorderColor2 + THIN_RECTANGLE_RIGHT;
+		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_RIGHT_HALF_BLOCK;
 		                                            */
 		// The border from here to the end of the line: Random high/low blue
 		var screenText = "";
 		for (var posX = pEditLeft + 62/*73*/; posX <= pEditRight; ++posX)
-		screenText += HORIZONTAL_DOUBLE;
-		screenText += LOWER_RIGHT_VSINGLE_HDOUBLE;
+		screenText += CP437_BOX_DRAWING_HORIZONTAL_DOUBLE;
+		screenText += CP437_BOX_DRAWING_LOWER_RIGHT_VSINGLE_HDOUBLE;
 		DrawQuoteWindowBottomBorder_IceStyle.border += randomTwoColorString(screenText,
 		gConfigSettings.iceColors.BorderColor1,
 		gConfigSettings.iceColors.BorderColor2);
@@ -910,24 +910,24 @@ function iceStyledPromptText(pText, pHighlight)
    if (gConfigSettings.iceColors.menuOptClassicColors)
    {
       if (pHighlight)
-         styledText = gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT
+         styledText = gConfigSettings.iceColors.SelectedOptionBorderColor + CP437_LEFT_HALF_BLOCK
                     + gConfigSettings.iceColors.SelectedOptionTextColor + pText
-                    + gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_RIGHT;
+                    + gConfigSettings.iceColors.SelectedOptionBorderColor + CP437_RIGHT_HALF_BLOCK;
       else
-         styledText = gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_LEFT
+         styledText = gConfigSettings.iceColors.UnselectedOptionBorderColor + CP437_LEFT_HALF_BLOCK
                     + iceText(pText, "\x01w") + gConfigSettings.iceColors.UnselectedOptionBorderColor
-                    + THIN_RECTANGLE_RIGHT;
+                    + CP437_RIGHT_HALF_BLOCK;
    }
    else
    {
       if (pHighlight)
-         styledText = gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT
+         styledText = gConfigSettings.iceColors.SelectedOptionBorderColor + CP437_LEFT_HALF_BLOCK
                     + "\x01n\x01" + "4\x01h\x01y" + pText.substr(0, 1) + "\x01c" + pText.substr(1) + "\x01n"
-                    + gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_RIGHT;
+                    + gConfigSettings.iceColors.SelectedOptionBorderColor + CP437_RIGHT_HALF_BLOCK;
       else
-         styledText = gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_LEFT
+         styledText = gConfigSettings.iceColors.UnselectedOptionBorderColor + CP437_LEFT_HALF_BLOCK
                     + iceText(pText, "\x01c") + gConfigSettings.iceColors.UnselectedOptionBorderColor
-                    + THIN_RECTANGLE_RIGHT;
+                    + CP437_RIGHT_HALF_BLOCK;
    }
    return styledText;
 }
@@ -942,21 +942,21 @@ function displayIceYesNoText(pYesSelected)
    {
       if (gConfigSettings.iceColors.menuOptClassicColors)
       {
-         console.print(gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT +
+         console.print(gConfigSettings.iceColors.SelectedOptionBorderColor + CP437_LEFT_HALF_BLOCK +
                        gConfigSettings.iceColors.SelectedOptionTextColor + "YES" +
                        gConfigSettings.iceColors.SelectedOptionBorderColor +
-                       THIN_RECTANGLE_RIGHT + gConfigSettings.iceColors.UnselectedOptionBorderColor +
-                       "  " + THIN_RECTANGLE_LEFT + gConfigSettings.iceColors.UnselectedOptionTextColor +
+                       CP437_RIGHT_HALF_BLOCK + gConfigSettings.iceColors.UnselectedOptionBorderColor +
+                       "  " + CP437_LEFT_HALF_BLOCK + gConfigSettings.iceColors.UnselectedOptionTextColor +
                        "NO" + gConfigSettings.iceColors.UnselectedOptionBorderColor +
-                       THIN_RECTANGLE_RIGHT + "\x01n");
+                       CP437_RIGHT_HALF_BLOCK + "\x01n");
       }
       else
       {
-         console.print(gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT +
+         console.print(gConfigSettings.iceColors.SelectedOptionBorderColor + CP437_LEFT_HALF_BLOCK +
                        "\x01n\x01" + "4\x01h\x01yY\x01ces\x01n" + gConfigSettings.iceColors.SelectedOptionBorderColor +
-                       THIN_RECTANGLE_RIGHT + gConfigSettings.iceColors.UnselectedOptionBorderColor +
-                       "  " + THIN_RECTANGLE_LEFT + "\x01n\x01h\x01cN\x01n\x01co" +
-                       gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_RIGHT +
+                       CP437_RIGHT_HALF_BLOCK + gConfigSettings.iceColors.UnselectedOptionBorderColor +
+                       "  " + CP437_LEFT_HALF_BLOCK + "\x01n\x01h\x01cN\x01n\x01co" +
+                       gConfigSettings.iceColors.UnselectedOptionBorderColor + CP437_RIGHT_HALF_BLOCK +
                        "\x01n");
       }
    }
@@ -964,21 +964,21 @@ function displayIceYesNoText(pYesSelected)
    {
       if (gConfigSettings.iceColors.menuOptClassicColors)
       {
-         console.print(gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_LEFT +
+         console.print(gConfigSettings.iceColors.UnselectedOptionBorderColor + CP437_LEFT_HALF_BLOCK +
                        gConfigSettings.iceColors.UnselectedOptionTextColor + "YES" +
-                       gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_RIGHT +
-                       "  " + gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_LEFT +
+                       gConfigSettings.iceColors.UnselectedOptionBorderColor + CP437_RIGHT_HALF_BLOCK +
+                       "  " + gConfigSettings.iceColors.SelectedOptionBorderColor + CP437_LEFT_HALF_BLOCK +
                        gConfigSettings.iceColors.SelectedOptionTextColor + "NO" +
-                       gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_RIGHT +
+                       gConfigSettings.iceColors.SelectedOptionBorderColor + CP437_RIGHT_HALF_BLOCK +
                        "\x01n");
       }
       else
       {
-         console.print(gConfigSettings.iceColors.UnselectedOptionBorderColor + THIN_RECTANGLE_LEFT +
+         console.print(gConfigSettings.iceColors.UnselectedOptionBorderColor + CP437_LEFT_HALF_BLOCK +
                        "\x01n\x01h\x01cY\x01n\x01ces" + gConfigSettings.iceColors.UnselectedOptionBorderColor +
-                       THIN_RECTANGLE_RIGHT + "  " + gConfigSettings.iceColors.SelectedOptionBorderColor +
-                       THIN_RECTANGLE_LEFT + "\x01n\x01" + "4\x01h\x01yN\x01co\x01n" +
-                       gConfigSettings.iceColors.SelectedOptionBorderColor + THIN_RECTANGLE_RIGHT +
+                       CP437_RIGHT_HALF_BLOCK + "  " + gConfigSettings.iceColors.SelectedOptionBorderColor +
+                       CP437_LEFT_HALF_BLOCK + "\x01n\x01" + "4\x01h\x01yN\x01co\x01n" +
+                       gConfigSettings.iceColors.SelectedOptionBorderColor + CP437_RIGHT_HALF_BLOCK +
                        "\x01n");
       }
    }
