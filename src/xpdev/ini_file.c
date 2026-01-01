@@ -3098,9 +3098,11 @@ iniFastParseCmp(const void *a, const void *b)
 			aLonger = true;
 	}
 	cmpLen = aLonger ? secb->name.len : seca->name.len;
-	cmp = strnicmp(seca->name.str, secb->name.str, cmpLen);
-	if (cmp)
-		return cmp;
+	if (cmpLen) {
+		cmp = strnicmp(seca->name.str, secb->name.str, cmpLen);
+		if (cmp)
+			return cmp;
+	}
 	if (abSame)
 		return seca->originalOrder - secb->originalOrder;
 	if (aLonger)
