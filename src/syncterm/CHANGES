@@ -8,6 +8,7 @@ Have |# flush RIP immediately
 Add support for DECSCUSR
 Add support for explicit sort order
 Add default cursor style setting
+Fix Windows Default Connection Settings
 
 Version 1.7
 --------------
