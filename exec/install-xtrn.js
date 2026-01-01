@@ -54,6 +54,7 @@
 //		freq			= frequency of execution
 //		mdays			= days of month (if non-zero) for execution
 //		months			= bit-field representing which months to execute
+//		xtrn            = code of external program to run exclusive to
 //
 // [editor:<code>]
 //		name 			= editor name or description (40 chars max)
