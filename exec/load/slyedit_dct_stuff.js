@@ -111,10 +111,10 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	if (typeof(redrawScreen_DCTStyle.topBorder) == "undefined")
 	{
 		var innerWidth = console.screen_columns - 2;
-		redrawScreen_DCTStyle.topBorder = UPPER_LEFT_SINGLE;
+		redrawScreen_DCTStyle.topBorder = CP437_BOX_DRAWING_UPPER_LEFT_SINGLE;
 		for (var i = 0; i < innerWidth; ++i)
-			redrawScreen_DCTStyle.topBorder += HORIZONTAL_SINGLE;
-		redrawScreen_DCTStyle.topBorder += UPPER_RIGHT_SINGLE;
+			redrawScreen_DCTStyle.topBorder += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+		redrawScreen_DCTStyle.topBorder += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
 		redrawScreen_DCTStyle.topBorder = randomTwoColorString(redrawScreen_DCTStyle.topBorder,
 		                                                       gConfigSettings.DCTColors.TopBorderColor1,
 		                                                       gConfigSettings.DCTColors.TopBorderColor2);
@@ -130,17 +130,17 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	console.gotoxy(1, lineNum);
 	// Calculate the width of the from name field: 28 characters, based
 	// on an 80-column screen width.
-	console.print(randomTwoColorString(VERTICAL_SINGLE, gConfigSettings.DCTColors.TopBorderColor1,
+	console.print(randomTwoColorString(CP437_BOX_DRAWINGS_LIGHT_VERTICAL, gConfigSettings.DCTColors.TopBorderColor1,
 	                                   gConfigSettings.DCTColors.TopBorderColor2) +
 				  " " + gConfigSettings.DCTColors.TopLabelColor + "From " +
 				  gConfigSettings.DCTColors.TopLabelColonColor + ": " +
 				  gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
-				  gConfigSettings.DCTColors.TopFromFillColor + DOT_CHAR + 
+				  gConfigSettings.DCTColors.TopFromFillColor + CP437_BULLET_OPERATOR + 
 				  gConfigSettings.DCTColors.TopFromColor);
 	console.print(gConfigSettings.DCTColors.TopFromFillColor);
 	var fieldWidth = Math.floor(console.screen_columns * (28/80)) - 2;
 	for (var i = 0; i < fieldWidth; ++i)
-		console.print(DOT_CHAR);
+		console.print(CP437_BULLET_OPERATOR);
 	console.print(gConfigSettings.DCTColors.TopInfoBracketColor + "]");
 
 	// Message area
@@ -150,14 +150,14 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	console.print(gConfigSettings.DCTColors.TopLabelColor + "Area" +
 	              gConfigSettings.DCTColors.TopLabelColonColor + ": " +
 	              gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
-	              gConfigSettings.DCTColors.TopAreaFillColor + DOT_CHAR +
+	              gConfigSettings.DCTColors.TopAreaFillColor + CP437_BULLET_OPERATOR +
 	              gConfigSettings.DCTColors.TopAreaColor);
 	console.print(gConfigSettings.DCTColors.TopAreaFillColor);
 	--fieldWidth;
 	for (var i = 0; i < fieldWidth; ++i)
-		console.print(DOT_CHAR);
+		console.print(CP437_BULLET_OPERATOR);
 	console.print(gConfigSettings.DCTColors.TopInfoBracketColor + "] " +
-	              randomTwoColorString(VERTICAL_SINGLE,
+	              randomTwoColorString(CP437_BOX_DRAWINGS_LIGHT_VERTICAL,
 	                                   gConfigSettings.DCTColors.TopBorderColor1,
 	                                   gConfigSettings.DCTColors.TopBorderColor2));
 	var msgAreaX = startX + 8; // For later
@@ -167,16 +167,16 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	console.gotoxy(1, lineNum);
 	// To name
 	fieldWidth = Math.floor(console.screen_columns * (28/80)) - 2;
-	console.print(randomTwoColorString(VERTICAL_SINGLE, gConfigSettings.DCTColors.TopBorderColor1,
+	console.print(randomTwoColorString(CP437_BOX_DRAWINGS_LIGHT_VERTICAL, gConfigSettings.DCTColors.TopBorderColor1,
 	                                   gConfigSettings.DCTColors.TopBorderColor2) +
 				  " " + gConfigSettings.DCTColors.TopLabelColor + "To   " +
 				  gConfigSettings.DCTColors.TopLabelColonColor + ": " +
 				  gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
-				  gConfigSettings.DCTColors.TopToFillColor + DOT_CHAR +
+				  gConfigSettings.DCTColors.TopToFillColor + CP437_BULLET_OPERATOR +
 				  gConfigSettings.DCTColors.TopToColor);
 	console.print(gConfigSettings.DCTColors.TopToFillColor);
 	for (var i = 0; i < fieldWidth; ++i)
-		console.print(DOT_CHAR);
+		console.print(CP437_BULLET_OPERATOR);
 	console.print(gConfigSettings.DCTColors.TopInfoBracketColor + "]");
 
 	// Current time
@@ -184,9 +184,9 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	console.print(gConfigSettings.DCTColors.TopLabelColor + "Time" +
 	              gConfigSettings.DCTColors.TopLabelColonColor + ": " +
 	              gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
-	              gConfigSettings.DCTColors.TopTimeFillColor + DOT_CHAR);
+	              gConfigSettings.DCTColors.TopTimeFillColor + CP437_BULLET_OPERATOR);
 	displayTime_DCTStyle();
-	console.print(gConfigSettings.DCTColors.TopTimeFillColor + DOT_CHAR +
+	console.print(gConfigSettings.DCTColors.TopTimeFillColor + CP437_BULLET_OPERATOR +
 	              gConfigSettings.DCTColors.TopInfoBracketColor + "]");
 
 	// Time left
@@ -197,14 +197,14 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	console.print(gConfigSettings.DCTColors.TopLabelColor + "Left" +
 	              gConfigSettings.DCTColors.TopLabelColonColor + ": " +
 	              gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
-	              gConfigSettings.DCTColors.TopTimeLeftFillColor + DOT_CHAR +
+	              gConfigSettings.DCTColors.TopTimeLeftFillColor + CP437_BULLET_OPERATOR +
 	              gConfigSettings.DCTColors.TopTimeLeftColor + timeStr +
 	              gConfigSettings.DCTColors.TopTimeLeftFillColor);
 	fieldWidth -= (timeStr.length+1);
 	for (var i = 0; i < fieldWidth; ++i)
-		console.print(DOT_CHAR);
+		console.print(CP437_BULLET_OPERATOR);
 	console.print(gConfigSettings.DCTColors.TopInfoBracketColor + "] " +
-	              randomTwoColorString(VERTICAL_SINGLE,
+	              randomTwoColorString(CP437_BOX_DRAWINGS_LIGHT_VERTICAL,
 	              gConfigSettings.DCTColors.TopBorderColor1,
 	              gConfigSettings.DCTColors.TopBorderColor2));
 
@@ -212,19 +212,19 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	var subjLineNum = ++lineNum;
 	console.gotoxy(1, lineNum);
 	fieldWidth = +(console.screen_columns - 15);
-	console.print(randomTwoColorString(LOWER_LEFT_SINGLE, gConfigSettings.DCTColors.TopBorderColor1,
+	console.print(randomTwoColorString(CP437_BOX_DRAWING_LOWER_LEFT_SINGLE, gConfigSettings.DCTColors.TopBorderColor1,
 	                                   gConfigSettings.DCTColors.TopBorderColor1) +
 	                                   " " + gConfigSettings.DCTColors.TopLabelColor + "Subj " +
 	                                   gConfigSettings.DCTColors.TopLabelColonColor + ": " +
 	                                   gConfigSettings.DCTColors.TopInfoBracketColor + "[" +
-	                                   gConfigSettings.DCTColors.TopSubjFillColor + DOT_CHAR +
+	                                   gConfigSettings.DCTColors.TopSubjFillColor + CP437_BULLET_OPERATOR +
 	                                   gConfigSettings.DCTColors.TopSubjColor);
 	console.print(gConfigSettings.DCTColors.TopSubjFillColor);
 	for (var i = 0; i < fieldWidth; ++i)
-		console.print(DOT_CHAR);
-	console.print(DOT_CHAR);
+		console.print(CP437_BULLET_OPERATOR);
+	console.print(CP437_BULLET_OPERATOR);
 	console.print(gConfigSettings.DCTColors.TopInfoBracketColor + "] " +
-	              randomTwoColorString(LOWER_RIGHT_SINGLE,
+	              randomTwoColorString(CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE,
 	              gConfigSettings.DCTColors.TopBorderColor1,
 	              gConfigSettings.DCTColors.TopBorderColor2));
 	
@@ -278,7 +278,7 @@ function refreshSubjectOnScreen_DCTStyle(pX, pY, pLength, pText)
 	console.print("\x01n" + gConfigSettings.DCTColors.TopSubjFillColor);
 	var fieldWidth = pLength - subj.length;
 	for (var i = 0; i < fieldWidth; ++i)
-		console.print(DOT_CHAR);
+		console.print(CP437_BULLET_OPERATOR);
 }
 
 // Displays the top border of the message area, in the style of DCTEdit.
@@ -297,10 +297,10 @@ function displayTextAreaTopBorder_DCTStyle(pLineNum, pEditLeft, pEditRight)
 	{
 		var numHorizontalChars = pEditRight - pEditLeft - 1;
 
-		displayTextAreaTopBorder_DCTStyle.border = UPPER_LEFT_SINGLE;
+		displayTextAreaTopBorder_DCTStyle.border = CP437_BOX_DRAWING_UPPER_LEFT_SINGLE;
 		for (var i = 0; i < numHorizontalChars; ++i)
-			displayTextAreaTopBorder_DCTStyle.border += HORIZONTAL_SINGLE;
-		displayTextAreaTopBorder_DCTStyle.border += UPPER_RIGHT_SINGLE;
+			displayTextAreaTopBorder_DCTStyle.border += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+		displayTextAreaTopBorder_DCTStyle.border += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
 		displayTextAreaTopBorder_DCTStyle.border =
 		randomTwoColorString(displayTextAreaTopBorder_DCTStyle.border,
 		gConfigSettings.DCTColors.EditAreaBorderColor1,
@@ -334,12 +334,12 @@ function DisplayTextAreaBottomBorder_DCTStyle(pLineNum, pUseQuotes, pEditLeft, p
 	{
 		var innerWidth = pEditRight - pEditLeft - 1;
 
-		DisplayTextAreaBottomBorder_DCTStyle.border = LOWER_LEFT_SINGLE;
+		DisplayTextAreaBottomBorder_DCTStyle.border = CP437_BOX_DRAWING_LOWER_LEFT_SINGLE;
 
 		// This loop uses innerWidth-6 to make way for the insert mode
 		// text.
 		for (var i = 0; i < innerWidth-6; ++i)
-			DisplayTextAreaBottomBorder_DCTStyle.border += HORIZONTAL_SINGLE;
+			DisplayTextAreaBottomBorder_DCTStyle.border += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
 		DisplayTextAreaBottomBorder_DCTStyle.border =
 		randomTwoColorString(DisplayTextAreaBottomBorder_DCTStyle.border,
 		gConfigSettings.DCTColors.EditAreaBorderColor1,
@@ -352,7 +352,7 @@ function DisplayTextAreaBottomBorder_DCTStyle(pLineNum, pUseQuotes, pEditLeft, p
 		                                            + "]";
 		// The last 2 border characters
 		DisplayTextAreaBottomBorder_DCTStyle.border +=
-		randomTwoColorString(HORIZONTAL_SINGLE + LOWER_RIGHT_SINGLE,
+		randomTwoColorString(CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE,
 		gConfigSettings.DCTColors.EditAreaBorderColor1,
 		gConfigSettings.DCTColors.EditAreaBorderColor2);
 	}
@@ -374,13 +374,13 @@ function DisplayBottomHelpLine_DCTStyle(pLineNum, pUsingQuotes, pCtrlQQuote)
 {
 	var helpText = gConfigSettings.DCTColors.BottomHelpBrackets
 	             + "[" + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
-	             + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
+	             + gConfigSettings.DCTColors.BottomHelpFill + CP437_BULLET_OPERATOR
 	             + gConfigSettings.DCTColors.BottomHelpKeys + "Z"
 	             + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
 	             + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Save\x01n      "
 	             + gConfigSettings.DCTColors.BottomHelpBrackets + "["
 	             + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
-	             + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
+	             + gConfigSettings.DCTColors.BottomHelpFill + CP437_BULLET_OPERATOR
 	             + gConfigSettings.DCTColors.BottomHelpKeys + "A"
 	             + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
 	             + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Abort";
@@ -392,7 +392,7 @@ function DisplayBottomHelpLine_DCTStyle(pLineNum, pUsingQuotes, pCtrlQQuote)
 		helpText += "\x01n      "
 		         + gConfigSettings.DCTColors.BottomHelpBrackets + "["
 		         + gConfigSettings.DCTColors.BottomHelpKeys + "CTRL"
-		         + gConfigSettings.DCTColors.BottomHelpFill + DOT_CHAR
+		         + gConfigSettings.DCTColors.BottomHelpFill + CP437_BULLET_OPERATOR
 		         + gConfigSettings.DCTColors.BottomHelpKeys + quoteHotkeyChar
 		         + gConfigSettings.DCTColors.BottomHelpBrackets + "]\x01n "
 		         + gConfigSettings.DCTColors.BottomHelpKeyDesc + "Quote";
@@ -451,14 +451,14 @@ function DrawQuoteWindowTopBorder_DCTStyle(pQuoteWinHeight, pEditLeft, pEditRigh
 	if (typeof(DrawQuoteWindowTopBorder_DCTStyle.border) == "undefined")
 	{
 		DrawQuoteWindowTopBorder_DCTStyle.border = gConfigSettings.DCTColors.QuoteWinBorderColor
-		                                         + UPPER_LEFT_SINGLE + HORIZONTAL_SINGLE + " "
+		                                         + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + " "
 		                                         + gConfigSettings.DCTColors.QuoteWinBorderTextColor
 		                                         + "Quote Window " + gConfigSettings.DCTColors.QuoteWinBorderColor;
 		var curLength = console.strlen(DrawQuoteWindowTopBorder_DCTStyle.border);
 		var borderWidth = pEditRight - pEditLeft;
 		for (var i = curLength; i < borderWidth; ++i)
-			DrawQuoteWindowTopBorder_DCTStyle.border += HORIZONTAL_SINGLE;
-		DrawQuoteWindowTopBorder_DCTStyle.border += UPPER_RIGHT_SINGLE;
+			DrawQuoteWindowTopBorder_DCTStyle.border += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+		DrawQuoteWindowTopBorder_DCTStyle.border += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
 	}
 
 	// Draw the top border line
@@ -483,16 +483,16 @@ function DrawQuoteWindowBottomBorder_DCTStyle(pEditLeft, pEditRight)
 		const quoteHotkeyChar = gUserSettings.ctrlQQuote ? "Q" : "Y";
 		var quoteHelpText = gConfigSettings.DCTColors.QuoteWinBorderTextColor
 		                 + "[Enter] Accept" + gConfigSettings.DCTColors.QuoteWinBorderColor
-		                 + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+		                 + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
 		                 + "[^" + quoteHotkeyChar + "/ESC] End" + gConfigSettings.DCTColors.QuoteWinBorderColor
-		                 + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+		                 + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
 		                 + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn/Home/End] Scroll"
-		                 + gConfigSettings.DCTColors.QuoteWinBorderColor + HORIZONTAL_SINGLE
-		                 + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor;
+		                 + gConfigSettings.DCTColors.QuoteWinBorderColor + CP437_BOX_DRAWING_HORIZONTAL_SINGLE
+		                 + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor;
 		                 /*
 		                 + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn] Scroll"
-		                 + gConfigSettings.DCTColors.QuoteWinBorderColor + HORIZONTAL_SINGLE
-		                 + HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+		                 + gConfigSettings.DCTColors.QuoteWinBorderColor + CP437_BOX_DRAWING_HORIZONTAL_SINGLE
+		                 + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
 		                 + "[F/L] First/last page";
 		                 */
 		var helpTextLen = console.strlen(quoteHelpText);
@@ -503,16 +503,16 @@ function DrawQuoteWindowBottomBorder_DCTStyle(pEditLeft, pEditRight)
 
 		// Start creating DrawQuoteWindowBottomBorder_DCTStyle.border with the
 		// bottom border lines, up until helpTextStartX.
-		DrawQuoteWindowBottomBorder_DCTStyle.border = gConfigSettings.DCTColors.QuoteWinBorderColor + LOWER_LEFT_SINGLE;
+		DrawQuoteWindowBottomBorder_DCTStyle.border = gConfigSettings.DCTColors.QuoteWinBorderColor + CP437_BOX_DRAWING_LOWER_LEFT_SINGLE;
 		for (var XPos = pEditLeft+2; XPos < helpTextStartX; ++XPos)
-			DrawQuoteWindowBottomBorder_DCTStyle.border += HORIZONTAL_SINGLE;
+			DrawQuoteWindowBottomBorder_DCTStyle.border += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
 		// Add the help text, then display the rest of the bottom border characters.
 		DrawQuoteWindowBottomBorder_DCTStyle.border += quoteHelpText + gConfigSettings.DCTColors.QuoteWinBorderColor;
 		// Previously, the rightmost column in this loop was pEditRight-2, but now it looks like that was resulting
 		// in this line being 2 characters shorter than it should be.
 		for (var XPos = helpTextStartX + helpTextLen; XPos <= pEditRight; ++XPos)
-			DrawQuoteWindowBottomBorder_DCTStyle.border += HORIZONTAL_SINGLE;
-		DrawQuoteWindowBottomBorder_DCTStyle.border += LOWER_RIGHT_SINGLE;
+			DrawQuoteWindowBottomBorder_DCTStyle.border += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+		DrawQuoteWindowBottomBorder_DCTStyle.border += CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE;
 	}
 
 	// Print the border text on the screen
@@ -556,28 +556,28 @@ function promptYesNo_DCTStyle(pQuestion, pBoxTitle, pDefaultYes, pParamObj, pAlw
 	// Display the question box
 	// Upper-left corner, 1 horizontal line, and "Abort" text
 	console.gotoxy(boxX, boxY);
-	console.print(gConfigSettings.DCTColors.TextBoxBorder + UPPER_LEFT_SINGLE +
-	              HORIZONTAL_SINGLE + " " + gConfigSettings.DCTColors.TextBoxBorderText +
+	console.print(gConfigSettings.DCTColors.TextBoxBorder + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE +
+	              CP437_BOX_DRAWING_HORIZONTAL_SINGLE + " " + gConfigSettings.DCTColors.TextBoxBorderText +
 	              pBoxTitle + gConfigSettings.DCTColors.TextBoxBorder + " ");
 	// Remaining top box border
 	for (var i = pBoxTitle.length + 5; i < boxWidth; ++i)
-		console.print(HORIZONTAL_SINGLE);
-	console.print(UPPER_RIGHT_SINGLE);
+		console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
+	console.print(CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE);
 	// Inner box: Blank
 	var endScreenLine = boxY + boxHeight - 2;
 	for (var screenLine = boxY+1; screenLine < endScreenLine; ++screenLine)
 	{
 		console.gotoxy(boxX, screenLine);
-		console.print(VERTICAL_SINGLE);
+		console.print(CP437_BOX_DRAWINGS_LIGHT_VERTICAL);
 		printf("%" + innerBoxWidth + "s", "");
-		console.print(VERTICAL_SINGLE);
+		console.print(CP437_BOX_DRAWINGS_LIGHT_VERTICAL);
 	}
 	// Bottom box border
 	console.gotoxy(boxX, screenLine);
-	console.print(LOWER_LEFT_SINGLE);
+	console.print(CP437_BOX_DRAWING_LOWER_LEFT_SINGLE);
 	for (var i = 0; i < innerBoxWidth; ++i)
-		console.print(HORIZONTAL_SINGLE);
-	console.print(LOWER_RIGHT_SINGLE);
+		console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
+	console.print(CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE);
 
 	// Prompt the user whether or not to abort: Move the cursor to
 	// the proper location on the screen, output the propmt text,
@@ -691,7 +691,7 @@ function displayTimeRemaining_DCTStyle()
 	              gConfigSettings.DCTColors.TopTimeLeftFillColor);
 	fieldWidth -= (timeStr.length+1);
 	for (var i = 0; i < fieldWidth; ++i)
-		console.print(DOT_CHAR);
+		console.print(CP437_BULLET_OPERATOR);
 }
 
 // Displays & handles the input loop for the DCT style ESC menu.
@@ -729,9 +729,9 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 		console.gotoxy(pItemPositions.fileX, pItemPositions.mainMenuY);
 		if (pHighlightedItemNum == 0)
 		{
-			console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_RIGHT +
+			console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + CP437_RIGHT_HALF_BLOCK +
 			              gConfigSettings.DCTColors.SelectedMenuLabelText + "File" +
-			              gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
+			              gConfigSettings.DCTColors.SelectedMenuLabelBorders + CP437_LEFT_HALF_BLOCK);
 		}
 		else
 			console.print("\x01n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "File\x01n ");
@@ -739,9 +739,9 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 		console.gotoxy(pItemPositions.editX, pItemPositions.mainMenuY);
 		if (pHighlightedItemNum == 1)
 		{
-			console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_RIGHT +
+			console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + CP437_RIGHT_HALF_BLOCK +
 			              gConfigSettings.DCTColors.SelectedMenuLabelText + "Edit" +
-			              gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
+			              gConfigSettings.DCTColors.SelectedMenuLabelBorders + CP437_LEFT_HALF_BLOCK);
 		}
 		else
 			console.print("\x01n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "Edit\x01n ");
@@ -751,9 +751,9 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 			console.gotoxy(pItemPositions.sysopX, pItemPositions.mainMenuY);
 			if (pHighlightedItemNum == 2)
 			{
-				console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_RIGHT +
+				console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + CP437_RIGHT_HALF_BLOCK +
 				              gConfigSettings.DCTColors.SelectedMenuLabelText + "SysOp" +
-				              gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
+				              gConfigSettings.DCTColors.SelectedMenuLabelBorders + CP437_LEFT_HALF_BLOCK);
 			}
 			else
 				console.print("\x01n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "SysOp\x01n ");
@@ -762,9 +762,9 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 		console.gotoxy(pItemPositions.helpX, pItemPositions.mainMenuY);
 		if (pHighlightedItemNum == 3)
 		{
-			console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_RIGHT +
+			console.print(gConfigSettings.DCTColors.SelectedMenuLabelBorders + CP437_RIGHT_HALF_BLOCK +
 			              gConfigSettings.DCTColors.SelectedMenuLabelText + "Help" +
-			              gConfigSettings.DCTColors.SelectedMenuLabelBorders + THIN_RECTANGLE_LEFT);
+			              gConfigSettings.DCTColors.SelectedMenuLabelBorders + CP437_LEFT_HALF_BLOCK);
 		}
 		else
 			console.print("\x01n " + gConfigSettings.DCTColors.UnselectedMenuLabelText + "Help\x01n ");
@@ -1267,9 +1267,9 @@ function DCTMenu_DisplayItem(pItemIndex, pPrintBorders)
    {
       console.gotoxy(this.topLeftX, this.topLeftY + pItemIndex + 1);
       if (this.borderStyle == "single")
-         console.print(this.colors.border + VERTICAL_SINGLE);
+         console.print(this.colors.border + CP437_BOX_DRAWINGS_LIGHT_VERTICAL);
       else if (this.borderStyle == "double")
-         console.print(this.colors.border + VERTICAL_DOUBLE);
+         console.print(this.colors.border + P437_BOX_DRAWINGS_DOUBLE_VERTICAL);
    }
    else
       console.gotoxy(this.topLeftX + 1, this.topLeftY + pItemIndex + 1);
@@ -1298,9 +1298,9 @@ function DCTMenu_DisplayItem(pItemIndex, pPrintBorders)
    if (printBorders)
    {
       if (this.borderStyle == "single")
-         console.print(this.colors.border + VERTICAL_SINGLE);
+         console.print(this.colors.border + CP437_BOX_DRAWINGS_LIGHT_VERTICAL);
       else if (this.borderStyle == "double")
-         console.print(this.colors.border + VERTICAL_DOUBLE);
+         console.print(this.colors.border + P437_BOX_DRAWINGS_DOUBLE_VERTICAL);
    }
 }
 // Displays the DCT menu and enters the input loop.
@@ -1365,17 +1365,17 @@ function DCTMenu_DoInputLoop()
 	var innerWidth = this.width - 2;
 	if (this.borderStyle == "single")
 	{
-		console.print(this.colors.border + UPPER_LEFT_SINGLE);
+		console.print(this.colors.border + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE);
 		for (var i = 0; i < innerWidth; ++i)
-			console.print(HORIZONTAL_SINGLE);
-		console.print(this.colors.border + UPPER_RIGHT_SINGLE);
+			console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
+		console.print(this.colors.border + CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE);
 	}
 	else if (this.borderStyle == "double")
 	{
-		console.print(this.colors.border + UPPER_LEFT_DOUBLE);
+		console.print(this.colors.border + CP437_BOX_DRAWING_UPPER_LEFT_DOUBLE);
 		for (var i = 0; i < innerWidth; ++i)
-			console.print(HORIZONTAL_DOUBLE);
-		console.print(this.colors.border + UPPER_RIGHT_DOUBLE);
+			console.print(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE);
+		console.print(this.colors.border + CP437_BOX_DRAWING_UPPER_RIGHT_DOUBLE);
 	}
 	// If clearSpaceAroundMenu is true, then put a space after the border.
 	if (this.clearSpaceAroundMenu && (this.topLeftX + this.width < console.screen_columns))
@@ -1413,17 +1413,17 @@ function DCTMenu_DoInputLoop()
 	// Draw the bottom border
 	if (this.borderStyle == "single")
 	{
-		console.print(this.colors.border + LOWER_LEFT_SINGLE);
+		console.print(this.colors.border + CP437_BOX_DRAWING_LOWER_LEFT_SINGLE);
 		for (var i = 0; i < innerWidth; ++i)
-			console.print(HORIZONTAL_SINGLE);
-		console.print(LOWER_RIGHT_SINGLE);
+			console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
+		console.print(CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE);
 	}
 	else if (this.borderStyle == "double")
 	{
-		console.print(this.colors.border + LOWER_LEFT_DOUBLE);
+		console.print(this.colors.border + CP437_BOX_DRAWING_LOWER_LEFT_DOUBLE);
 		for (var i = 0; i < innerWidth; ++i)
-			console.print(HORIZONTAL_DOUBLE);
-		console.print(LOWER_RIGHT_DOUBLE);
+			console.print(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE);
+		console.print(CP437_BOX_DRAWING_LOWER_RIGHT_DOUBLE);
 	}
 	// If clearSpaceAroundMenu is true, then put a space after the border.
 	if (this.clearSpaceAroundMenu && (this.topLeftX + this.width < console.screen_columns))
