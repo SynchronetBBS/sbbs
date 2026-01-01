@@ -18,11 +18,13 @@ if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_UPPER");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
+	require("cp437_defs.js", "CP437_BOX_DRAWING_UPPER_LEFT_SINGLE");
 }
 else
 {
 	load("sbbsdefs.js");
 	load("dd_lightbar_menu.js");
+	load("cp437_defs.js");
 }
 
 // We need the deltree() and withoutTrailingSlash() functions
@@ -40,14 +42,6 @@ var gDDArcViewerProgName = "Digital Distortion Archive Viewer";
 var CTRL_M = "\x0d";
 var KEY_ENTER = CTRL_M;
 var ESC_KEY = "\x1b";
-
-// Characters for display
-var UPPER_LEFT_SINGLE = "\xDA";
-var HORIZONTAL_SINGLE = "\xC4";
-var UPPER_RIGHT_SINGLE = "\xBF";
-var VERTICAL_SINGLE = "\xB3";
-var LOWER_LEFT_SINGLE = "\xC0";
-var LOWER_RIGHT_SINGLE = "\xD9";
 
 
 // Determine which slash character to use for paths, depending
@@ -1198,12 +1192,12 @@ function writeFileListHeader(pFilename, pNumFilesLen)
 	if (writeFileListHeader.topHelp3 == undefined)
 	{
 		writeFileListHeader.topHelp3 = gGenConfig.colors.headerSeparatorLine
-		                             + charStr(HORIZONTAL_SINGLE, numFilesLen) + " " + charStr(HORIZONTAL_SINGLE, 8) + " "
-		                             + charStr(HORIZONTAL_SINGLE, 10) + " " + charStr(HORIZONTAL_SINGLE, 5) + " "
-		                             + charStr(HORIZONTAL_SINGLE, console.screen_columns - 32);
+		                             + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, numFilesLen) + " " + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 8) + " "
+		                             + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 10) + " " + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 5) + " "
+		                             + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, console.screen_columns - 32);
 		// Add line characters to the end of the screen.
 		//for (var x = 30; x < console.screen_columns - 2; ++x)
-		//	writeFileListHeader.topHelp3 += HORIZONTAL_SINGLE;
+		//	writeFileListHeader.topHelp3 += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
 		writeFileListHeader.topHelp3 += "\r\n";
 	}
 
@@ -1799,18 +1793,18 @@ function showHelpScreen(pLightbarMode)
 		var width = gDDArcViewerProgName.length + 2;
 		showHelpScreen.progInfoHeader = new Array();
 		// Upper & lower border lines
-		showHelpScreen.progInfoHeader[0] = "\x01c\x01h" + UPPER_LEFT_SINGLE;
-		showHelpScreen.progInfoHeader[2] = LOWER_LEFT_SINGLE;
+		showHelpScreen.progInfoHeader[0] = "\x01c\x01h" + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE;
+		showHelpScreen.progInfoHeader[2] = CP437_BOX_DRAWING_LOWER_LEFT_SINGLE;
 		for (var i = 0; i < width; ++i)
 		{
-			showHelpScreen.progInfoHeader[0] += HORIZONTAL_SINGLE;
-			showHelpScreen.progInfoHeader[2] += HORIZONTAL_SINGLE;
+			showHelpScreen.progInfoHeader[0] += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+			showHelpScreen.progInfoHeader[2] += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
 		}
-		showHelpScreen.progInfoHeader[0] += UPPER_RIGHT_SINGLE;
-		showHelpScreen.progInfoHeader[2] += LOWER_RIGHT_SINGLE;
+		showHelpScreen.progInfoHeader[0] += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
+		showHelpScreen.progInfoHeader[2] += CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE;
 		// Middle section with the program name
-		showHelpScreen.progInfoHeader[1] = VERTICAL_SINGLE + "\x01" + "4\x01y\x01h "
-		                                 + gDDArcViewerProgName + " \x01n\x01c\x01h" + VERTICAL_SINGLE;
+		showHelpScreen.progInfoHeader[1] = CP437_BOX_DRAWINGS_LIGHT_VERTICAL + "\x01" + "4\x01y\x01h "
+		                                 + gDDArcViewerProgName + " \x01n\x01c\x01h" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL;
 		// Version & author information
 		showHelpScreen.progInfoHeader[3] = "\x01n\x01cVersion \x01g" + gDDArcViewerVersion
 		                                 + " \x01w\x01h(\x01b" + gDDArcViewerVerDate + "\x01w)";
@@ -1829,7 +1823,7 @@ function showHelpScreen(pLightbarMode)
 	console.crlf();
 	console.crlf();
 	console.print("The following is a list of the command keys:\r\n");
-	console.print("\x01k\x01h" + charStr(HORIZONTAL_SINGLE, 44));
+	console.print("\x01k\x01h" + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 44));
 	console.crlf();
 	var formatStr = "\x01n\x01c\x01h%5s\x01g: \x01n\x01c%s\r\n";
 	if (pLightbarMode)

@@ -394,6 +394,7 @@ if (typeof(require) === "function")
 	require("mouse_getkey.js", "mouse_getkey");
 	require("userdefs.js", "USER_UTF8");
 	require("utf8_cp437.js", "utf8_cp437");
+	require("cp437_defs.js", "CP437_BOX_DRAWING_UPPER_LEFT_SINGLE");
 }
 else
 {
@@ -401,6 +402,7 @@ else
 	load("mouse_getkey.js");
 	load("userdefs.js");
 	load("utf8_cp437.js");
+	load("cp437_defs.js");
 }
 
 
@@ -417,41 +419,6 @@ var KEY_F3 = "\x01F3";
 var KEY_F4 = "\x01F4";
 var KEY_F5 = "\x01F5";
 
-// Box-drawing/border characters: Single-line
-var UPPER_LEFT_SINGLE = "\xDA";
-var HORIZONTAL_SINGLE = "\xC4";
-var UPPER_RIGHT_SINGLE = "\xBF";
-var VERTICAL_SINGLE = "\xB3";
-var LOWER_LEFT_SINGLE = "\xC0";
-var LOWER_RIGHT_SINGLE = "\xD9";
-var T_SINGLE = "\xC2";
-var LEFT_T_SINGLE = "\xC3";
-var RIGHT_T_SINGLE = "\xB4";
-var BOTTOM_T_SINGLE = "\xC1";
-var CROSS_SINGLE = "\xC5";
-// Box-drawing/border characters: Double-line
-var UPPER_LEFT_DOUBLE = "\xC9";
-var HORIZONTAL_DOUBLE = "\xCD";
-var UPPER_RIGHT_DOUBLE = "\xBB";
-var VERTICAL_DOUBLE = "\xBA";
-var LOWER_LEFT_DOUBLE = "\xC8";
-var LOWER_RIGHT_DOUBLE = "\xBC";
-var T_DOUBLE = "\xCB";
-var LEFT_T_DOUBLE = "\xCC";
-var RIGHT_T_DOUBLE = "\xB9";
-var BOTTOM_T_DOUBLE = "\xCA";
-var CROSS_DOUBLE = "\xCE";
-// Box-drawing/border characters: Vertical single-line with horizontal double-line
-var UPPER_LEFT_VSINGLE_HDOUBLE = "\xD5";
-var UPPER_RIGHT_VSINGLE_HDOUBLE = "\xB8";
-var LOWER_LEFT_VSINGLE_HDOUBLE = "\xD4";
-var LOWER_RIGHT_VSINGLE_HDOUBLE = "\xBE";
-// Other characters
-var CHECK_CHAR = "\xFB";
-var BLOCK1 = "\xB0"; // Dimmest block
-var BLOCK2 = "\xB1";
-var BLOCK3 = "\xB2";
-var BLOCK4 = "\xDB"; // Brightest block
 
 // Border types for a menu
 var BORDER_NONE = 0;
@@ -495,19 +462,19 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	};
 	// Characters to use to draw the border
 	this.borderChars = {
-		upperLeft: UPPER_LEFT_DOUBLE,
-		upperRight: UPPER_RIGHT_DOUBLE,
-		lowerLeft: LOWER_LEFT_DOUBLE,
-		lowerRight: LOWER_RIGHT_DOUBLE,
-		top: HORIZONTAL_DOUBLE,
-		bottom: HORIZONTAL_DOUBLE,
-		left: VERTICAL_DOUBLE,
-		right: VERTICAL_DOUBLE
+		upperLeft: CP437_BOX_DRAWING_UPPER_LEFT_DOUBLE,
+		upperRight: CP437_BOX_DRAWING_UPPER_RIGHT_DOUBLE,
+		lowerLeft: CP437_BOX_DRAWING_LOWER_LEFT_DOUBLE,
+		lowerRight: CP437_BOX_DRAWING_LOWER_RIGHT_DOUBLE,
+		top: CP437_BOX_DRAWING_HORIZONTAL_DOUBLE,
+		bottom: CP437_BOX_DRAWING_HORIZONTAL_DOUBLE,
+		left: CP437_BOX_DRAWINGS_DOUBLE_VERTICAL,
+		right: CP437_BOX_DRAWINGS_DOUBLE_VERTICAL
 	};
 	// Scrollbar information (characters, etc.)
 	this.scrollbarInfo = {
-		blockChar: BLOCK2,
-		BGChar: BLOCK1,
+		blockChar: CP437_MEDIUM_SHADE,
+		BGChar: CP437_LIGHT_SHADE,
 		numSolidScrollBlocks: 0,
 		numNonSolidScrollBlocks: 0,
 		solidBlockLastStartRow: 0
@@ -520,7 +487,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.ampersandHotkeysInItems = true;
 	this.multiSelect = false;
 	this.maxNumSelections = -1; // -1 or 0 means no limit on the number of selections
-	this.multiSelectItemChar = CHECK_CHAR; // The character to display for a selected item in multi-select mode
+	this.multiSelectItemChar = CP437_CHECK_MARK; // The character to display for a selected item in multi-select mode
 	this.enterAndSelectKeysAddsMultiSelectItem = false; // Whether or not enter/select key adds the current item to multi-select
 	this.numberedMode = false;
 	this.itemNumLen = 0; // For the length of the item numbers in numbered mode

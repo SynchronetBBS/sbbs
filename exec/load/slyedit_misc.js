@@ -14,6 +14,7 @@ if (typeof(require) === "function")
 	require("key_defs.js", "CTRL_A");
 	require("userdefs.js", "USER_ANSI");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
+	require("cp437_defs.js", "CP437_BOX_DRAWING_UPPER_LEFT_SINGLE");
 }
 else
 {
@@ -21,6 +22,7 @@ else
 	load("key_defs.js");
 	load("userdefs.js");
 	load("dd_lightbar_menu.js");
+	load("cp437_defs.js");
 }
  
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -30,46 +32,6 @@ else
 var FORE_ATTR = 1; // Foreground color attribute
 var BKG_ATTR = 2;  // Background color attribute
 var SPECIAL_ATTR = 3; // Special attribute
-
-// Box-drawing/border characters: Single-line
-var UPPER_LEFT_SINGLE = "\xDA"; //ASCII 218
-var HORIZONTAL_SINGLE = "\xC4"; //ASCII 196
-var UPPER_RIGHT_SINGLE = "\xBF"; //ASCII 191 // or 170?
-var VERTICAL_SINGLE = "\xB3"; //ASCII 179
-var LOWER_LEFT_SINGLE = "\xC0"; //ASCII 192
-var LOWER_RIGHT_SINGLE = "\xD9"; //ASCII 217
-var T_SINGLE = "\xC2"; //ASCII 194
-var LEFT_T_SINGLE = "\xC3"; //ASCII 195
-var RIGHT_T_SINGLE = "\xB4"; //ASCII 180
-var BOTTOM_T_SINGLE = "\xC1"; //ASCII 193
-var CROSS_SINGLE = "\xC5"; //ASCII 197
-// Box-drawing/border characters: Double-line
-var UPPER_LEFT_DOUBLE = "\xC9"; //ASCII 201
-var HORIZONTAL_DOUBLE = "\xCD"; //ASCII 205
-var UPPER_RIGHT_DOUBLE = "\xBB"; //ASCII 187
-var VERTICAL_DOUBLE = "\xBA"; //ASCII 186
-var LOWER_LEFT_DOUBLE = ascii(200); // "\xCB" is the hex value but wasn't making the correct character
-var LOWER_RIGHT_DOUBLE = "\xBC"; //ASCII 188
-var T_DOUBLE = "\xCB"; //ASCII 203
-var LEFT_T_DOUBLE = "\xCC"; //ASCII 204
-var RIGHT_T_DOUBLE = "\xB9"; //ASCII 185
-var BOTTOM_T_DOUBLE = "\xCA"; //ASCII 202
-var CROSS_DOUBLE = "\xCE"; //ASCII 206
-// Box-drawing/border characters: Vertical single-line with horizontal double-line
-var UPPER_LEFT_VSINGLE_HDOUBLE = "\xD5"; //ASCII 213
-var UPPER_RIGHT_VSINGLE_HDOUBLE = "\xB8"; //ASCII 184
-var LOWER_LEFT_VSINGLE_HDOUBLE = "\xD4"; //ASCII 212
-var LOWER_RIGHT_VSINGLE_HDOUBLE = "\xBE"; //ASCII 190
-// Other special characters
-var DOT_CHAR = "\xF9"; //ASCII 249
-var CHECK_CHAR = "\xFB"; //ASCII 251
-var THIN_RECTANGLE_LEFT = "\xDD"; //ASCII 221
-var THIN_RECTANGLE_RIGHT = "\xDE"; //ASCII 222
-var CENTERED_SQUARE = "\xFE"; //ASCII 254
-var BLOCK1 = "\xB0"; //ASCII 176 // Dimmest block
-var BLOCK2 = "\xB1"; //ASCII 177
-var BLOCK3 = "\xB2"; //ASCII 178
-var BLOCK4 = "\xDB"; //ASCII 219 // Brightest block
 
 // Navigational keys
 var UP_ARROW = "\x18"; //ASCII 24
@@ -1067,22 +1029,22 @@ function displayHelpHeader()
       var headerTextLen = console.strlen(headerText);
 
       // Top border
-      var headerTextStr = "\x01n\x01h\x01c" + UPPER_LEFT_SINGLE;
+      var headerTextStr = "\x01n\x01h\x01c" + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE;
       for (var i = 0; i < headerTextLen + 2; ++i)
-         headerTextStr += HORIZONTAL_SINGLE;
-      headerTextStr += UPPER_RIGHT_SINGLE;
+         headerTextStr += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+      headerTextStr += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
       displayHelpHeader.headerLines.push(headerTextStr);
 
       // Middle line: Header text string
-      headerTextStr = VERTICAL_SINGLE + "\x01" + "4\x01y " + headerText + " \x01n\x01h\x01c"
-                    + VERTICAL_SINGLE;
+      headerTextStr = CP437_BOX_DRAWINGS_LIGHT_VERTICAL + "\x01" + "4\x01y " + headerText + " \x01n\x01h\x01c"
+                    + CP437_BOX_DRAWINGS_LIGHT_VERTICAL;
       displayHelpHeader.headerLines.push(headerTextStr);
 
       // Lower border
-      headerTextStr = LOWER_LEFT_SINGLE;
+      headerTextStr = CP437_BOX_DRAWING_LOWER_LEFT_SINGLE;
       for (var i = 0; i < headerTextLen + 2; ++i)
-         headerTextStr += HORIZONTAL_SINGLE;
-      headerTextStr += LOWER_RIGHT_SINGLE;
+         headerTextStr += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+      headerTextStr += CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE;
       displayHelpHeader.headerLines.push(headerTextStr);
    }
 
@@ -1136,7 +1098,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pTxtR
 			sepChar1 = " ";
 		if ((pKey2.length == 0) && (pDesc2.length == 0))
 			sepChar2 = " ";
-		printf("\x01c\x01h%-13s\x01g" + sepChar1 + " \x01n\x01c%-28s \x01k\x01h" + VERTICAL_SINGLE +
+		printf("\x01c\x01h%-13s\x01g" + sepChar1 + " \x01n\x01c%-28s \x01k\x01h" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL +
 		       " \x01c\x01h%-8s\x01g" + sepChar2 + " \x01n\x01c%s", pKey, pDesc, pKey2, pDesc2);
 		if (pCR)
 			console.crlf();
@@ -1144,7 +1106,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pTxtR
 
 	// Help keys and slash commands
 	printf("\x01n\x01g%-44s  %-33s\r\n", "Help keys", "Slash commands (on blank line)");
-	printf("\x01k\x01h%-44s  %-33s\r\n", charStr(HORIZONTAL_SINGLE, 9), charStr(HORIZONTAL_SINGLE, 30));
+	printf("\x01k\x01h%-44s  %-33s\r\n", charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 9), charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 30));
 	//displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
 	displayCmdKeyFormattedDouble("Ctrl-G", "Input graphic character", "/A", "Abort", true);
 	displayCmdKeyFormattedDouble("Ctrl-L", "Command key list (this list)", "/S", "Save", true);
@@ -1160,7 +1122,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pTxtR
 	printf(" \x01c\x01h%-7s\x01g  \x01n\x01c%s", "", "", "/?", "Show help");
 	console.crlf();
 	// Command/edit keys
-	console.print("\x01n\x01gCommand/edit keys\r\n\x01k\x01h" + charStr(HORIZONTAL_SINGLE, 17) + "\r\n");
+	console.print("\x01n\x01gCommand/edit keys\r\n\x01k\x01h" + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 17) + "\r\n");
 	displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up", true);
 	displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down", true);
 	const quoteHotkey = gUserSettings.ctrlQQuote ? "Ctrl-Q" : "Ctrl-Y";
