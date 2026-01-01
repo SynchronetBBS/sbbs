@@ -70,12 +70,14 @@ var requireFnExists = (typeof(require) === "function");
 if (requireFnExists)
 {
 	require("sbbsdefs.js", "P_NONE");
+	require("cp437_defs.js", "CP437_BOX_DRAWING_UPPER_LEFT_SINGLE");
 	require("json-client.js", "JSONClient");
 	require(js.exec_dir + "lib.js", "getJSONSvcPortFromServicesIni");
 }
 else
 {
 	load("sbbsdefs.js");
+	load("cp437_defs.js");
 	load("json-client.js");
 	load(js.exec_dir + "lib.js");
 }
@@ -85,51 +87,6 @@ else
 // which would run yesnobar.js in sbbs/exec).
 const gScriptExecDir = js.exec_dir;
 
-
-
-// Characters for display
-// Box-drawing/border characters: Single-line
-var UPPER_LEFT_SINGLE = "\xDA";
-var HORIZONTAL_SINGLE = "\xC4";
-var UPPER_RIGHT_SINGLE = "\xBF";
-var VERTICAL_SINGLE = "\xB3";
-var LOWER_LEFT_SINGLE = "\xC0";
-var LOWER_RIGHT_SINGLE = "\xD9";
-var T_SINGLE = "\xC2";
-var LEFT_T_SINGLE = "\xC3";
-var RIGHT_T_SINGLE = "\xB4";
-var BOTTOM_T_SINGLE = "\xC1";
-var CROSS_SINGLE = "\xC5";
-// Box-drawing/border characters: Double-line
-var UPPER_LEFT_DOUBLE = "\xC9";
-var HORIZONTAL_DOUBLE = "\xCD";
-var UPPER_RIGHT_DOUBLE = "\xBB";
-var VERTICAL_DOUBLE = "\xBA";
-var LOWER_LEFT_DOUBLE = "\xC8";
-var LOWER_RIGHT_DOUBLE = "\xBC";
-var T_DOUBLE = "\xCB";
-var LEFT_T_DOUBLE = "\xCC";
-var RIGHT_T_DOUBLE = "\xB9";
-var BOTTOM_T_DOUBLE = "\xCA";
-var CROSS_DOUBLE = "\xCE";
-// Box-drawing/border characters: Vertical single-line with horizontal double-line
-var UPPER_LEFT_VSINGLE_HDOUBLE = "\xD5";
-var UPPER_RIGHT_VSINGLE_HDOUBLE = "\xB8";
-var LOWER_LEFT_VSINGLE_HDOUBLE = "\xD4";
-var LOWER_RIGHT_VSINGLE_HDOUBLE = "\xBE";
-// Other special characters
-var DOT_CHAR = "\xF9";
-var CHECK_CHAR = "\xFB";
-var THIN_RECTANGLE_LEFT = "\xDD";
-var THIN_RECTANGLE_RIGHT = "\xDE";
-var BLOCK1 = "\xB0"; // Dimmest block
-var BLOCK2 = "\xB1";
-var BLOCK3 = "\xB2";
-var BLOCK4 = "\xDB"; // Brightest block
-var MID_BLOCK = "\xDC";
-var TALL_UPPER_MID_BLOCK = "\xFE";
-var UPPER_CENTER_BLOCK = "\xDF";
-var LOWER_CENTER_BLOCK = "\xDC";
 
 
 
@@ -726,7 +683,7 @@ function doMainMenu()
 	console.crlf();
 	console.print("\x01b");
 	for (var i = 0; i < console.screen_columns-1; ++i)
-		console.print(HORIZONTAL_DOUBLE);
+		console.print(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE);
 	console.crlf();
 	console.print("\x01c1\x01y\x01h) \x01bPlay \x01n");
 	console.print("\x01c2\x01y\x01h) \x01bHelp \x01n");
@@ -738,7 +695,7 @@ function doMainMenu()
 	console.print("\x01n");
 	console.print("\x01b");
 	for (var i = 0; i < console.screen_columns-1; ++i)
-		console.print(HORIZONTAL_DOUBLE);
+		console.print(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE);
 	console.crlf();
 	console.print("\x01cYour choice\x01g\x01h: \x01c");
 	var menuAction = ACTION_PLAY;
@@ -1634,7 +1591,7 @@ function showUserScoresArray(pUserScoresArray, pBBSName)
 	console.crlf();
 	console.print("\x01n\x01b");
 	for (var i = 0; i < console.screen_columns-1; ++i)
-		console.print(HORIZONTAL_DOUBLE);
+		console.print(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE);
 	console.crlf();
 	// Print the list of high scores
 	console.print("\x01g");
@@ -1659,7 +1616,7 @@ function showUserScoresArray(pUserScoresArray, pBBSName)
 	}
 	console.print("\x01n\x01b");
 	for (var i = 0; i < console.screen_columns-1; ++i)
-		console.print(HORIZONTAL_DOUBLE);
+		console.print(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE);
 	console.crlf();
 }
 
@@ -1700,21 +1657,21 @@ function showHelpScreen(pCategoryName)
 		var headerTextLen = strip_ctrl(headerText).length;
 
 		// Top border
-		var headerTextStr = "\x01h\x01c" + UPPER_LEFT_SINGLE;
+		var headerTextStr = "\x01h\x01c" + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE;
 		for (var i = 0; i < headerTextLen + 2; ++i)
-			headerTextStr += HORIZONTAL_SINGLE;
-		headerTextStr += UPPER_RIGHT_SINGLE;
+			headerTextStr += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+		headerTextStr += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
 		showHelpScreen.headerLines.push(headerTextStr);
 
 		// Middle line: Header text string
-		headerTextStr = VERTICAL_SINGLE + "\x01n " + headerText + " \x01n\x01h\x01c" + VERTICAL_SINGLE;
+		headerTextStr = CP437_BOX_DRAWINGS_LIGHT_VERTICAL + "\x01n " + headerText + " \x01n\x01h\x01c" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL;
 		showHelpScreen.headerLines.push(headerTextStr);
 
 		// Lower border
-		headerTextStr = LOWER_LEFT_SINGLE;
+		headerTextStr = CP437_BOX_DRAWING_LOWER_LEFT_SINGLE;
 		for (var i = 0; i < headerTextLen + 2; ++i)
-			headerTextStr += HORIZONTAL_SINGLE;
-		headerTextStr += LOWER_RIGHT_SINGLE;
+			headerTextStr += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+		headerTextStr += CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE;
 		showHelpScreen.headerLines.push(headerTextStr);
 	}
 
@@ -1742,7 +1699,7 @@ function showHelpScreen(pCategoryName)
 	console.crlf();
 	console.print("\x01n\x01g");
 	for (var i = 0; i < 9; ++i)
-		console.print(HORIZONTAL_SINGLE);
+		console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
 	console.print("\x01n");
 	console.crlf();
 	helpText = "When starting a game, there can be potentially multiple trivia categories to "
@@ -1873,7 +1830,7 @@ function doSysopMenu()
 		console.crlf();
 		console.attributes = "NB";
 		for (var i = 0; i < console.screen_columns-1; ++i)
-			console.print(HORIZONTAL_DOUBLE);
+			console.print(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE);
 		console.crlf();
 		var validKeys = "1Q"; // Clear high scores, Quit
 		console.print("\x01c1\x01y\x01h) \x01bClear high scores\x01n");
@@ -1887,7 +1844,7 @@ function doSysopMenu()
 			console.crlf();
 			console.attributes = "KH";
 			for (var i = 0; i < 16; ++i)
-				console.print(HORIZONTAL_SINGLE);
+				console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
 			console.attributes = "N";
 			console.crlf();
 			console.print("\x01c2\x01y\x01h) \x01bDelete user (from all systems)\x01n");
@@ -1899,7 +1856,7 @@ function doSysopMenu()
 			console.crlf();
 		console.attributes = "NB";
 		for (var i = 0; i < console.screen_columns-1; ++i)
-			console.print(HORIZONTAL_DOUBLE);
+			console.print(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE);
 		console.attributes = "N";
 		console.crlf();
 		console.print("\x01cYour choice\x01g\x01h: \x01c");
