@@ -56,7 +56,7 @@ o Use FTN charset of "ASCII 1" when the imported message is explicitly ASCII
 o Output multiple inverted question marks for > 1 width UNICODE characters
   for non-UTF8 terminals
 o Add "exclusive external program" option to timed event configurations
-o When the user has unread personal mail, give a differnet prompt during logon
+o When the user has unread personal mail, give a different prompt during logon
 o Add New User Prompt toggle option to allow single-word real names
 o Resolve menu/../* to abs-path before checking file existence - issue #918
 o Don't close node.log file stream when invoking command-lines with a '?'
@@ -99,7 +99,7 @@ o Ignore (but log an error) when DNSBL server returns address != 127.0.0.x
 ~~~~~~~
 o Allow C escape sequences in EXEC: argument, to allow param passing
   e.g. separate module name from command-line params with \x20 and separate
-  params from eachother with \x20.
+  params from each other with \x20.
 o New @-codes:
   - NEWMSGS (number of new messages imported/posted to be read)
   - NEWFILES (number of new files imported/uploaded to be seen)
@@ -109,7 +109,7 @@ o New @-codes:
   - DAYBYTES (exact number of bytes downloaded by user today)
   - USEDCDT (previously DAYBYTES)
   - UPB (estimated total uploaded bytes)
-  - DLB (estimated todal downloaded bytes)
+  - DLB (estimated total downloaded bytes)
   - UCP (upload credit percentage for current directory)
   - DCP (download credit percentage for current directory)
   - BYTERATIO (PCBoard compatible alias for UDR)
@@ -173,7 +173,7 @@ o New menu: System->Extra Attribute Codes controls extra attribute
 o New option: System->New User Prompts->Force Multi-word Real Name
   (default: Yes)
 o New option: System->Security->Demand High Quality Password
-  (defulat: No)
+  (default: No)
 o New option: External Editors ... Retain Ctrl-A Codes in Quotes
 o New System->Security Options->Security Level Values... "Downloads Per Day"
   (D/D): defaults to 0/Unlimited for each level
@@ -188,7 +188,7 @@ o Resolved issue of System menu detecting changes by the sysop
 SBBSecho
 ~~~~~~~~
 o Auto-enable "EchoList Only" areamgr mode when EchoList Keys are used
-o When netmail is forwarded to an external (netmai/email) address, notify user
+o When netmail is forwarded to an external (e.g. email) address, notify user
 o UTF-8 encode Origin lines in exported messages when appropriate
 o Strip Ctrl-A codes from exported *NetMail* messages
 o Add the "Ignore Packed Foreign NetMail" option to echocfg
@@ -233,7 +233,7 @@ o automsg.js
     Set modopts/automsg.ini meme=false to disable this behavior
 o chksetup.js improvements
   - Compares running version of Synchronet against latest release number
-  - Reports users who's passwords don't meet current requirements
+  - Reports users whose passwords don't meet current requirements
 o email_sec.js
   - Use the user's chosen sort order for all mail reading modes,
     including sent mail and unread mail
@@ -283,7 +283,7 @@ o str_cmds.js
   - Beautify the "help" output - issue #901
   - Allow ";help command" to work on partially-specified commands
 o tdfiglet.js
-  - New figlet renderer for Synchronet using TheDraw fonts
+  - New FIGlet renderer for Synchronet using TheDraw fonts
   - Supports UTF-8 or CP437 encoded output
   - Supports ANSI or Ctrl-A encoded output
 o type.js
