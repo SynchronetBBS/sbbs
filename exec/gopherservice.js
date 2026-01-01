@@ -224,140 +224,140 @@ switch(request) {
 }
 
 field = request.split(':');
-switch(field[0]) {
-	case "grp":
-		for(g in msg_area.grp_list) 
-			if(msg_area.grp_list[g].name.toLowerCase()==field[1]) {
-				for(s in msg_area.grp_list[g].sub_list)
-					writeln(prefix
-						+ "1[" + msg_area.grp_list[g].name + "] "
-						+ msg_area.grp_list[g].sub_list[s].description 
-						+ "\tsub:"
-						+ msg_area.grp_list[g].sub_list[s].code.toLowerCase() 
-						+ "\t"
-						+ system.host_name 
-						+ "\t"
-						+ GOPHER_PORT
-						);
-				break;
-			}
-		break;
-	case "lib":
-		for(l in file_area.lib_list) 
-			if(file_area.lib_list[l].name.toLowerCase()==field[1]) {
-				for(d in file_area.lib_list[l].dir_list) {
-					if(file_area.lib_list[l].dir_list[d].can_download
-					&& file_area.lib_list[l].dir_list[d].settings&DIR_FREE)
-						writeln(format(prefix
-							+ "1[%s] %s\tdir:%s\t%s\t%u"
-							,file_area.lib_list[l].name
-							,file_area.lib_list[l].dir_list[d].description
-							,file_area.lib_list[l].dir_list[d].code.toLowerCase()
-							,system.host_name
-							,GOPHER_PORT
-							));
+if(field.length > 1) {
+	switch(field[0]) {
+		case "grp":
+			for(g in msg_area.grp_list) 
+				if(msg_area.grp_list[g].name.toLowerCase()==field[1]) {
+					for(s in msg_area.grp_list[g].sub_list)
+						writeln(prefix
+							+ "1[" + msg_area.grp_list[g].name + "] "
+							+ msg_area.grp_list[g].sub_list[s].description 
+							+ "\tsub:"
+							+ msg_area.grp_list[g].sub_list[s].code.toLowerCase() 
+							+ "\t"
+							+ system.host_name 
+							+ "\t"
+							+ GOPHER_PORT
+							);
+					break;
 				}
+			break;
+		case "lib":
+			for(l in file_area.lib_list) 
+				if(file_area.lib_list[l].name.toLowerCase()==field[1]) {
+					for(d in file_area.lib_list[l].dir_list) {
+						if(file_area.lib_list[l].dir_list[d].can_download
+						&& file_area.lib_list[l].dir_list[d].settings&DIR_FREE)
+							writeln(format(prefix
+								+ "1[%s] %s\tdir:%s\t%s\t%u"
+								,file_area.lib_list[l].name
+								,file_area.lib_list[l].dir_list[d].description
+								,file_area.lib_list[l].dir_list[d].code.toLowerCase()
+								,system.host_name
+								,GOPHER_PORT
+								));
+					}
+					break;
+				}
+			break;
+		case "sub":
+			if(!msg_area.sub[field[1]]) {
+				writeln(log(LOG_NOTICE, "Invalid message area: " + field[1]));
 				break;
 			}
-		break;
-	case "sub":
-		if(!msg_area.sub[field[1]]) {
-			writeln(log(LOG_NOTICE, "Invalid message area: " + field[1]));
-			break;
-		}
-		msgbase = new MsgBase(field[1]);
-		if(msgbase.open!=undefined && msgbase.open()==false) {
-			writeln("!ERROR " + msgbase.last_error);
-			break;
-		}
-
-		if(Number(field[2])) {
-			hdr=msgbase.get_msg_header(false,Number(field[2]));
-			if(hdr==null || hdr.attr&MSG_DELETE)
+			msgbase = new MsgBase(field[1]);
+			if(msgbase.open!=undefined && msgbase.open()==false) {
+				writeln("!ERROR " + msgbase.last_error);
 				break;
-			writeln("Subj : " + hdr.subject);
-			writeln("To   : " + hdr.to);
-			writeln("From : " + hdr.from);
-			writeln("Date : " + system.timestr(hdr.when_written_time));
-			writeln("");
-			body=msgbase.get_msg_body(false,Number(field[2]),true,true)
-			writeln(body);
-			msgbase.close();
-			break;
-		}
-/**
-		msginfo=format("%-25.25s %-25.25s %-25.25s %s"
-				,"Subject"
-				,"From"
-				,"To"
-				,"Date"
-				);
-		writeln(format("0%s\tnull\tnull\tnull\r\n",msginfo));
-**/
-		var hdr_list = msgbase.get_all_msg_headers();
-		first = msgbase.first_msg;
-		for(i=msgbase.last_msg; hdr_list != null && i>=first; i--) {
-			hdr = hdr_list[i];
-			if(hdr==null)
-				continue;
-			if(hdr.attr&MSG_DELETE)
-				continue;
-			date = system.timestr(hdr.when_written_time);
+			}
+
+			if(Number(field[2])) {
+				hdr=msgbase.get_msg_header(false,Number(field[2]));
+				if(hdr==null || hdr.attr&MSG_DELETE)
+					break;
+				writeln("Subj : " + hdr.subject);
+				writeln("To   : " + hdr.to);
+				writeln("From : " + hdr.from);
+				writeln("Date : " + system.timestr(hdr.when_written_time));
+				writeln("");
+				body=msgbase.get_msg_body(false,Number(field[2]),true,true)
+				writeln(body);
+				msgbase.close();
+				break;
+			}
+	/**
 			msginfo=format("%-25.25s %-25.25s %-25.25s %s"
-				,hdr.subject
-				,hdr.from
-				,hdr.to
-				,date
-				);
-			writeln("0" + msginfo + "\tsub:"
-				+ field[1] + ":" + i + "\t"
-				+ system.host_name + "\t"
-				+ GOPHER_PORT
-				);
-		}
-		msgbase.close();
-		break;
-	case "dir":
-		var code=field[1];
-		if((dir = file_area.dir[code]) != undefined) {
-			var files = directory(dir.path + '*');
-			for(i in files) {
-				var fileinfo=format("%-25.25s %10u   %s"
-					,file_getname(files[i])
-					,file_size(files[i])
-					,system.timestr(file_date(files[i]))
+					,"Subject"
+					,"From"
+					,"To"
+					,"Date"
 					);
-				writeln("9" + fileinfo + "\tfile:"
-					+ code + "/" + file_getname(files[i]) + "\t"
+			writeln(format("0%s\tnull\tnull\tnull\r\n",msginfo));
+	**/
+			var hdr_list = msgbase.get_all_msg_headers();
+			first = msgbase.first_msg;
+			for(i=msgbase.last_msg; hdr_list != null && i>=first; i--) {
+				hdr = hdr_list[i];
+				if(hdr==null)
+					continue;
+				if(hdr.attr&MSG_DELETE)
+					continue;
+				date = system.timestr(hdr.when_written_time);
+				msginfo=format("%-25.25s %-25.25s %-25.25s %s"
+					,hdr.subject
+					,hdr.from
+					,hdr.to
+					,date
+					);
+				writeln("0" + msginfo + "\tsub:"
+					+ field[1] + ":" + i + "\t"
 					+ system.host_name + "\t"
 					+ GOPHER_PORT
 					);
 			}
-		}
-		break;
-	case "file":
-		var args=field[1].split('/');
-		var code=args[0];
-		if((dir = file_area.dir[code]) != undefined) {
-			if(dir.can_download	&& dir.settings&DIR_FREE) {
-				var fname = dir.path + file_getname(args[1]);
-				if(file_exists(fname)) {
-					log(LOG_INFO,format("Downloading file: %s (%u bytes)"
-						,fname, file_size(fname)));
-					if(client.socket.sendfile(fname))
-						log(LOG_INFO,"Sent file: " + fname);
-					else
-						log(LOG_NOTICE,"!ERROR sending file: " + fname);
-				}	
+			msgbase.close();
+			break;
+		case "dir":
+			var code=field[1];
+			if((dir = file_area.dir[code]) != undefined) {
+				var files = directory(dir.path + '*');
+				for(i in files) {
+					var fileinfo=format("%-25.25s %10u   %s"
+						,file_getname(files[i])
+						,file_size(files[i])
+						,system.timestr(file_date(files[i]))
+						);
+					writeln("9" + fileinfo + "\tfile:"
+						+ code + "/" + file_getname(files[i]) + "\t"
+						+ system.host_name + "\t"
+						+ GOPHER_PORT
+						);
+				}
 			}
-		}
-		break;
-	case "qwkbulletin":
-		if (field.length == 2) {
+			break;
+		case "file":
+			var args=field[1].split('/');
+			var code=args[0];
+			if((dir = file_area.dir[code]) != undefined) {
+				if(dir.can_download	&& dir.settings&DIR_FREE) {
+					var fname = dir.path + file_getname(args[1]);
+					if(file_exists(fname)) {
+						log(LOG_INFO,format("Downloading file: %s (%u bytes)"
+							,fname, file_size(fname)));
+						if(client.socket.sendfile(fname))
+							log(LOG_INFO,"Sent file: " + fname);
+						else
+							log(LOG_NOTICE,"!ERROR sending file: " + fname);
+					}	
+				}
+			}
+			break;
+		case "qwkbulletin":
 			var fname = backslash(system.text_dir + 'qwk') + field[1];
 			if (file_exists(fname)) client.socket.sendfile(fname);
-		}
-		break;
+			break;
+	}
 }
 
 writeln(".");
