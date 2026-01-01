@@ -113,7 +113,7 @@ while(bbs.online && !js.terminated) {
 	if (!bbs.online)
 		exit(1);
 	if (!user.alias) {
-		log(LOG_NOTICE, "New user alias was blank");
+		log(LOG_ERR, "New user alias was blank");
 		exit(1);
 	}
 	if (!user.handle)
@@ -186,7 +186,7 @@ while(bbs.online && !js.terminated) {
 		console.putmsg(bbs.text(EnterYourGender));
 		var gender = console.getkeys(bbs.atcode("GENDERS"), 0);
 		if (gender) {
-			user.sex = gender;
+			user.gender = gender;
 			break;
 		}
 	}
