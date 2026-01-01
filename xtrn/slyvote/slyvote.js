@@ -209,12 +209,12 @@ const requireFnExists = (typeof(require) === "function");
 if (requireFnExists)
 {
 	require("sbbsdefs.js", "K_UPPER");
-	require("char_defs.js", "UPPER_LEFT_SINGLE");
+	require("cp437_defs.js", "CP437_BOX_DRAWING_UPPER_LEFT_SINGLE");
 }
 else
 {
 	load("sbbsdefs.js");
-	load("char_defs.js");
+	load("cp437_defs.js");
 }
 
 // This script requires Synchronet version 3.17 or higher.
@@ -549,7 +549,7 @@ function ChooseVotingSubBoard(pMsgGrps)
 			console.print(msgGrpText);
 			// Display the "choose a sub-board" text
 			console.gotoxy(drawColRetObj.columnX1+2, listTopRow-1);
-			var chooseASubBoardText = "\x01n\x01b\x01hChoose a sub-board (\x01cESC\x01g/\x01cQ\x01g=\x01n\x01cExit\x01h\x01b)  \x01y\x01h" + CHECK_CHAR + "\x01n\x01c=\x01b\x01hHas polls\x01n";
+			var chooseASubBoardText = "\x01n\x01b\x01hChoose a sub-board (\x01cESC\x01g/\x01cQ\x01g=\x01n\x01cExit\x01h\x01b)  \x01y\x01h" + CP437_CHECK_MARK + "\x01n\x01c=\x01b\x01hHas polls\x01n";
 			console.print(chooseASubBoardText);
 			// Let the user choose a sub-board
 			chosenSubBoard = ChooseVotingSubBoard.subBoardMenus[chosenGrpIdx].GetVal();
@@ -654,7 +654,7 @@ function CreateSubBoardMenu(pGrpIdx, pListTopRow, pDrawColRetObj, pMsgGrps)
 				this.subBoardPollCounts[subCode] = pollCount;
 			}
 			var menuItemObj = this.MakeItemWithRetval(-1);
-			var hasPollsChar = (pollCount ? "\x01y\x01h" + CHECK_CHAR + "\x01n" : " ");
+			var hasPollsChar = (pollCount ? "\x01y\x01h" + CP437_CHECK_MARK + "\x01n" : " ");
 			menuItemObj.text = format("%-" + this.areaNameLen + "s %s", msg_area.sub[subCode].name.substr(0, this.areaNameLen), hasPollsChar);
 			menuItemObj.retval = subCode;
 			return menuItemObj;
@@ -668,7 +668,7 @@ function CreateSubBoardMenu(pGrpIdx, pListTopRow, pDrawColRetObj, pMsgGrps)
 		for (var i = 0; i < pMsgGrps[pGrpIdx].length; ++i)
 		{
 			var subCode = pMsgGrps[pGrpIdx][i];
-			var hasPollsChar = (subBoardHasPolls(subCode) ? "\x01y\x01h" + CHECK_CHAR + "\x01n" : " ");
+			var hasPollsChar = (subBoardHasPolls(subCode) ? "\x01y\x01h" + CP437_CHECK_MARK + "\x01n" : " ");
 			var itemText = format("%-" + areaNameLen + "s %s", msg_area.sub[subCode].name.substr(0, areaNameLen), hasPollsChar);
 			subBoardMenu.Add(itemText, subCode);
 			if (subCode == gSubBoardCode)
@@ -1561,7 +1561,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 					                  optionNum++, pMsgHdr.field_list[fieldI].data.substr(0, voteOptDescLen),
 					                  numVotes, votePercentage);
 					if (numVotes > 0)
-						msgBody += " " + CHECK_CHAR;
+						msgBody += " " + CP437_CHECK_MARK;
 					msgBody += "\r\n";
 					++tallyIdx;
 				}
@@ -1668,7 +1668,7 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 			var validateNotice = "\x01n\x01h\x01yThis is an unvalidated message in a moderated area.  Press "
 							   + gReaderKeys.validateMsg + " to validate it.\r\n\x01g";
 			for (var i = 0; i < 79; ++i)
-				validateNotice += HORIZONTAL_SINGLE;
+				validateNotice += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
 			validateNotice += "\x01n\r\n";
 			msgBody = validateNotice + msgBody;
 		}
@@ -2048,7 +2048,7 @@ function DisplaySlyVoteMainVoteScreen(pClearScr)
 	for (var optNum = 1; optNum <= numMenuOptions; ++optNum)
 	{
 		console.gotoxy(curPos.x, curPos.y++);
-		console.print("\x01" + "7\x01h\x01w" + THIN_RECTANGLE_LEFT + "\x01n\x01k\x01" + "7" + optNum + "\x01n\x01" + "7\x01k\x01h" + THIN_RECTANGLE_RIGHT + "\x01n");
+		console.print("\x01" + "7\x01h\x01w" + CP437_LEFT_HALF_BLOCK + "\x01n\x01k\x01" + "7" + optNum + "\x01n\x01" + "7\x01k\x01h" + CP437_RIGHT_HALF_BLOCK + "\x01n");
 	}
 
 	return retObj;
@@ -2058,8 +2058,8 @@ function DisplayTopScreenBorder()
 {
 	if (typeof(DisplayTopScreenBorder.borderText) !== "string")
 	{
-		DisplayTopScreenBorder.borderText = strRepeat("\x01n\x01b" + MID_BLOCK + "\x01h" + TALL_UPPER_MID_BLOCK + "\x01c" + UPPER_CENTER_BLOCK + "\x01b" + TALL_UPPER_MID_BLOCK, 19);
-		DisplayTopScreenBorder.borderText += "\x01n\x01b" + MID_BLOCK;
+		DisplayTopScreenBorder.borderText = strRepeat("\x01n\x01b" + CP437_LOWER_HALF_BLOCK + "\x01h" + CP437_BLACK_SQUARE + "\x01c" + CP437_UPPER_HALF_BLOCK + "\x01b" + CP437_BLACK_SQUARE, 19);
+		DisplayTopScreenBorder.borderText += "\x01n\x01b" + CP437_LOWER_HALF_BLOCK;
 	}
 
 	console.attributes = "N";
@@ -2073,19 +2073,19 @@ function DisplaySlyVoteText()
 {
 	if (typeof(DisplaySlyVoteText.slyVoteTextLines) === "undefined")
 	{
-		var LOWER_CENTER_BLOCK_2 = strRepeat(LOWER_CENTER_BLOCK, 2);
-		var LOWER_CENTER_BLOCK_3 = strRepeat(LOWER_CENTER_BLOCK, 3);
-		var LOWER_CENTER_BLOCK_4 = strRepeat(LOWER_CENTER_BLOCK, 4);
-		var LOWER_CENTER_BLOCK_5 = strRepeat(LOWER_CENTER_BLOCK, 5);
-		var LOWER_CENTER_BLOCK_7 = strRepeat(LOWER_CENTER_BLOCK, 7);
+		var LOWER_CENTER_BLOCK_2 = strRepeat(CP437_LOWER_HALF_BLOCK, 2);
+		var LOWER_CENTER_BLOCK_3 = strRepeat(CP437_LOWER_HALF_BLOCK, 3);
+		var LOWER_CENTER_BLOCK_4 = strRepeat(CP437_LOWER_HALF_BLOCK, 4);
+		var LOWER_CENTER_BLOCK_5 = strRepeat(CP437_LOWER_HALF_BLOCK, 5);
+		var LOWER_CENTER_BLOCK_7 = strRepeat(CP437_LOWER_HALF_BLOCK, 7);
 		var spaces11 = "           ";
 		DisplaySlyVoteText.slyVoteTextLines = [
-						"\x01" + spaces11 + TINY_DOT,
-						spaces11 + "\x01n\x01h\x01c" + LOWER_CENTER_BLOCK_7 + " \x01n\x01c" + LOWER_CENTER_BLOCK_3 + "  \x01h\x01b" + TINY_DOT + "  \x01n\x01c" + LOWER_CENTER_BLOCK_3 + " " + LOWER_CENTER_BLOCK_3 + " \x01h" + LOWER_CENTER_BLOCK_3 + " " + LOWER_CENTER_BLOCK_3 + " \x01n\x01c" + LOWER_CENTER_BLOCK_7 + " " + LOWER_CENTER_BLOCK_7 + " " + LOWER_CENTER_BLOCK_7 + " \x01h" + TINY_DOT,
-						spaces11 + "\x01n\x01h\x01c" + BLOCK4 + " " + LOWER_CENTER_BLOCK_4 + BLOCK4 + " \x01n\x01c" + BLOCK4 + " " + BLOCK4 + "\x01      " + BLOCK4 + LOWER_CENTER_BLOCK + UPPER_CENTER_BLOCK + BLOCK4 + UPPER_CENTER_BLOCK + LOWER_CENTER_BLOCK + BLOCK4 + " \x01h" + BLOCK4 + " " + BLOCK4 + " " + BLOCK4 + " " + BLOCK4 + " \x01n\x01c" + BLOCK4 + " " + LOWER_CENTER_BLOCK_3 + " " + BLOCK4 + " " + BLOCK4 + LOWER_CENTER_BLOCK_2 + " " + LOWER_CENTER_BLOCK_2 + BLOCK4 + " " + BLOCK4 + " " + LOWER_CENTER_BLOCK_4 + BLOCK4 + "",
-						" \x01h" + TINY_DOT + "         " + BLOCK4 + strRepeat(LOWER_CENTER_BLOCK, 4) + " " + BLOCK4 + " \x01n\x01c" + BLOCK4 + " " + BLOCK4 + LOWER_CENTER_BLOCK_4 + "  " + UPPER_CENTER_BLOCK + BLOCK4 + " " + BLOCK4 + UPPER_CENTER_BLOCK + "  \x01h" + BLOCK4 + LOWER_CENTER_BLOCK + UPPER_CENTER_BLOCK + BLOCK4 + UPPER_CENTER_BLOCK + LOWER_CENTER_BLOCK + BLOCK4 + " \x01n\x01c" + BLOCK4 + " " + BLOCK4 + LOWER_CENTER_BLOCK + BLOCK4 + " " + BLOCK4 + "   " + BLOCK4 + " " + BLOCK4 + "   " + BLOCK4 + " " + LOWER_CENTER_BLOCK_3 + BLOCK4 + LOWER_CENTER_BLOCK,
-						"\x01n       \x01h\x01b" + TINY_DOT + "   \x01c" + BLOCK4 + LOWER_CENTER_BLOCK_5 + BLOCK4 + " \x01n\x01c" + BLOCK4 + LOWER_CENTER_BLOCK_5 + BLOCK4 + " \x01h" + TINY_DOT + " \x01n\x01c" + BLOCK4 + LOWER_CENTER_BLOCK + BLOCK4 + "    \x01h" + UPPER_CENTER_BLOCK + BLOCK4 + LOWER_CENTER_BLOCK + BLOCK4 + UPPER_CENTER_BLOCK + " \x01n\x01b" + TINY_DOT + "\x01c" + BLOCK4 + LOWER_CENTER_BLOCK_5 + BLOCK4 + "   " + BLOCK4 + LOWER_CENTER_BLOCK + BLOCK4 + " \x01h" + TINY_DOT + " \x01n\x01c" + BLOCK4 + LOWER_CENTER_BLOCK_5 + BLOCK4 + "   \x01h\x01b" + TINY_DOT,
-						"\x01n                                          \x01b" + TINY_DOT
+						"\x01" + spaces11 + CP437_MIDDLE_DOT,
+						spaces11 + "\x01n\x01h\x01c" + LOWER_CENTER_BLOCK_7 + " \x01n\x01c" + LOWER_CENTER_BLOCK_3 + "  \x01h\x01b" + CP437_MIDDLE_DOT + "  \x01n\x01c" + LOWER_CENTER_BLOCK_3 + " " + LOWER_CENTER_BLOCK_3 + " \x01h" + LOWER_CENTER_BLOCK_3 + " " + LOWER_CENTER_BLOCK_3 + " \x01n\x01c" + LOWER_CENTER_BLOCK_7 + " " + LOWER_CENTER_BLOCK_7 + " " + LOWER_CENTER_BLOCK_7 + " \x01h" + CP437_MIDDLE_DOT,
+						spaces11 + "\x01n\x01h\x01c" + CP437_FULL_BLOCK + " " + LOWER_CENTER_BLOCK_4 + CP437_FULL_BLOCK + " \x01n\x01c" + CP437_FULL_BLOCK + " " + CP437_FULL_BLOCK + "\x01      " + CP437_FULL_BLOCK + CP437_LOWER_HALF_BLOCK + CP437_UPPER_HALF_BLOCK + CP437_FULL_BLOCK + CP437_UPPER_HALF_BLOCK + CP437_LOWER_HALF_BLOCK + CP437_FULL_BLOCK + " \x01h" + CP437_FULL_BLOCK + " " + CP437_FULL_BLOCK + " " + CP437_FULL_BLOCK + " " + CP437_FULL_BLOCK + " \x01n\x01c" + CP437_FULL_BLOCK + " " + LOWER_CENTER_BLOCK_3 + " " + CP437_FULL_BLOCK + " " + CP437_FULL_BLOCK + LOWER_CENTER_BLOCK_2 + " " + LOWER_CENTER_BLOCK_2 + CP437_FULL_BLOCK + " " + CP437_FULL_BLOCK + " " + LOWER_CENTER_BLOCK_4 + CP437_FULL_BLOCK + "",
+						" \x01h" + CP437_MIDDLE_DOT + "         " + CP437_FULL_BLOCK + strRepeat(CP437_LOWER_HALF_BLOCK, 4) + " " + CP437_FULL_BLOCK + " \x01n\x01c" + CP437_FULL_BLOCK + " " + CP437_FULL_BLOCK + LOWER_CENTER_BLOCK_4 + "  " + CP437_UPPER_HALF_BLOCK + CP437_FULL_BLOCK + " " + CP437_FULL_BLOCK + CP437_UPPER_HALF_BLOCK + "  \x01h" + CP437_FULL_BLOCK + CP437_LOWER_HALF_BLOCK + CP437_UPPER_HALF_BLOCK + CP437_FULL_BLOCK + CP437_UPPER_HALF_BLOCK + CP437_LOWER_HALF_BLOCK + CP437_FULL_BLOCK + " \x01n\x01c" + CP437_FULL_BLOCK + " " + CP437_FULL_BLOCK + CP437_LOWER_HALF_BLOCK + CP437_FULL_BLOCK + " " + CP437_FULL_BLOCK + "   " + CP437_FULL_BLOCK + " " + CP437_FULL_BLOCK + "   " + CP437_FULL_BLOCK + " " + LOWER_CENTER_BLOCK_3 + CP437_FULL_BLOCK + CP437_LOWER_HALF_BLOCK,
+						"\x01n       \x01h\x01b" + CP437_MIDDLE_DOT + "   \x01c" + CP437_FULL_BLOCK + LOWER_CENTER_BLOCK_5 + CP437_FULL_BLOCK + " \x01n\x01c" + CP437_FULL_BLOCK + LOWER_CENTER_BLOCK_5 + CP437_FULL_BLOCK + " \x01h" + CP437_MIDDLE_DOT + " \x01n\x01c" + CP437_FULL_BLOCK + CP437_LOWER_HALF_BLOCK + CP437_FULL_BLOCK + "    \x01h" + CP437_UPPER_HALF_BLOCK + CP437_FULL_BLOCK + CP437_LOWER_HALF_BLOCK + CP437_FULL_BLOCK + CP437_UPPER_HALF_BLOCK + " \x01n\x01b" + CP437_MIDDLE_DOT + "\x01c" + CP437_FULL_BLOCK + LOWER_CENTER_BLOCK_5 + CP437_FULL_BLOCK + "   " + CP437_FULL_BLOCK + CP437_LOWER_HALF_BLOCK + CP437_FULL_BLOCK + " \x01h" + CP437_MIDDLE_DOT + " \x01n\x01c" + CP437_FULL_BLOCK + LOWER_CENTER_BLOCK_5 + CP437_FULL_BLOCK + "   \x01h\x01b" + CP437_MIDDLE_DOT,
+						"\x01n                                          \x01b" + CP437_MIDDLE_DOT
 					];
 	}
 
@@ -2102,16 +2102,16 @@ function DisplayVerAndRegBorders()
 {
 	if (typeof(DisplayVerAndRegBorders.borderLines) === "undefined")
 	{
-		var HORIZONTAL_SINGLE_2 = strRepeat(HORIZONTAL_SINGLE, 2);
-		var HORIZONTAL_SINGLE_3 = strRepeat(HORIZONTAL_SINGLE, 3);
+		var HORIZONTAL_SINGLE_2 = strRepeat(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 2);
+		var HORIZONTAL_SINGLE_3 = strRepeat(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 3);
 		DisplayVerAndRegBorders.borderLines = [
-								"\x01b\x01h" + UPPER_LEFT_SINGLE + HORIZONTAL_SINGLE + "\x01k" + strRepeat(HORIZONTAL_SINGLE, 2) + "\x01b" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE_2 + "\x01h\x01k" + HORIZONTAL_SINGLE_3 + "\x01b" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_2 + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE + "\x01b" + HORIZONTAL_SINGLE_2 + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE_2 + "\x01b" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + UPPER_RIGHT_SINGLE,
-								"\x01n\x01b" + VERTICAL_SINGLE + "\x01n                            \x01k\x01h" + VERTICAL_SINGLE,
-								"\x01b" + LOWER_LEFT_SINGLE + HORIZONTAL_SINGLE_2 + "\x01k" + HORIZONTAL_SINGLE_2 + "\x01n\x01b" + HORIZONTAL_SINGLE_3 + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01b" + HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE + "\x01b" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_2 + "\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE + "\x01b" + HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE_2 + "\x01b" + HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE + "\x01b" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01n\x01b" + LOWER_RIGHT_SINGLE,
-								UPPER_LEFT_SINGLE + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE_3 + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01b" + RIGHT_T_SINGLE + " \x01n\x01bR\x01he\x01n\x01bgistere\x01h\x01kd To: \x01b" + LEFT_T_SINGLE + "\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + UPPER_RIGHT_SINGLE,
-								"\x01n\x01b" + VERTICAL_SINGLE + "\x01n                            \x01b\x01h" + VERTICAL_SINGLE,
-								"\x01n\x01k\x01h" + VERTICAL_SINGLE + "\x01n                            \x01b" + VERTICAL_SINGLE,
-								"\x01h" + LOWER_LEFT_SINGLE + "\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_3 + "\x01k" + HORIZONTAL_SINGLE_2 + "\x01b" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_3 + "\x01k" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_2 + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE + "\x01h\x01k" + HORIZONTAL_SINGLE + "\x01b" + LOWER_RIGHT_SINGLE
+								"\x01b\x01h" + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01k" + strRepeat(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 2) + "\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE_2 + "\x01h\x01k" + HORIZONTAL_SINGLE_3 + "\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_2 + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01b" + HORIZONTAL_SINGLE_2 + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE_2 + "\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE,
+								"\x01n\x01b" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL + "\x01n                            \x01k\x01h" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL,
+								"\x01b" + CP437_BOX_DRAWING_LOWER_LEFT_SINGLE + HORIZONTAL_SINGLE_2 + "\x01k" + HORIZONTAL_SINGLE_2 + "\x01n\x01b" + HORIZONTAL_SINGLE_3 + "\x01h\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_2 + "\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01k" + HORIZONTAL_SINGLE_2 + "\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE,
+								CP437_BOX_DRAWING_UPPER_LEFT_SINGLE + "\x01h\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + HORIZONTAL_SINGLE_3 + "\x01h\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01b" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT + " \x01n\x01bR\x01he\x01n\x01bgistere\x01h\x01kd To: \x01b" + CP437_BOX_DRAWING_LIGHT_LEFT_T + "\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE,
+								"\x01n\x01b" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL + "\x01n                            \x01b\x01h" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL,
+								"\x01n\x01k\x01h" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL + "\x01n                            \x01b" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL,
+								"\x01h" + CP437_BOX_DRAWING_LOWER_LEFT_SINGLE + "\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_3 + "\x01k" + HORIZONTAL_SINGLE_2 + "\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_3 + "\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + HORIZONTAL_SINGLE_2 + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01b" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h\x01k" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01b" + CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE
 					];
 	}
 
@@ -2130,8 +2130,8 @@ function DisplayBottomScreenBorder()
 {
 	if (typeof(DisplayBottomScreenBorder.borderText) !== "string")
 	{
-		DisplayBottomScreenBorder.borderText = " " + strRepeat("\x01n\x01b" + UPPER_CENTER_BLOCK + "\x01h" + TALL_UPPER_MID_BLOCK + "\x01c" + LOWER_CENTER_BLOCK + "\x01b" + TALL_UPPER_MID_BLOCK, 19);
-		DisplayBottomScreenBorder.borderText += "\x01n\x01b" + UPPER_CENTER_BLOCK;
+		DisplayBottomScreenBorder.borderText = " " + strRepeat("\x01n\x01b" + CP437_UPPER_HALF_BLOCK + "\x01h" + CP437_BLACK_SQUARE + "\x01c" + CP437_LOWER_HALF_BLOCK + "\x01b" + CP437_BLACK_SQUARE, 19);
+		DisplayBottomScreenBorder.borderText += "\x01n\x01b" + CP437_UPPER_HALF_BLOCK;
 	}
 	console.attributes = "N";
 	//console.crlf();
@@ -2647,8 +2647,8 @@ function GetDefaultMsgDisplayHdr()
 	// Sub-board name: 34% of console width
 	var msgGrpNameLen = Math.floor(console.screen_columns * 0.2);
 	var subBoardNameLen = Math.floor(console.screen_columns * 0.34);
-	var hdrLine1 = "\x01n\x01h\x01c" + UPPER_LEFT_SINGLE + HORIZONTAL_SINGLE + "\x01n\x01c"
-	             + HORIZONTAL_SINGLE + " \x01h@GRP-L";
+	var hdrLine1 = "\x01n\x01h\x01c" + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01c"
+	             + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + " \x01h@GRP-L";
 	var numChars = msgGrpNameLen - 7;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine1 += "#";
@@ -2659,50 +2659,50 @@ function GetDefaultMsgDisplayHdr()
 	hdrLine1 += "@\x01k";
 	numChars = console.screen_columns - console.strlen(hdrLine1) - 4;
 	for (var i = 0; i < numChars; ++i)
-		hdrLine1 += HORIZONTAL_SINGLE;
-	hdrLine1 += "\x01n\x01c" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\x01h"
-	         + HORIZONTAL_SINGLE + UPPER_RIGHT_SINGLE;
+		hdrLine1 += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+	hdrLine1 += "\x01n\x01c" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h"
+	         + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
 	hdrDisplayLines.push(hdrLine1);
-	var hdrLine2 = "\x01n\x01c" + VERTICAL_SINGLE + "\x01h\x01k" + BLOCK1 + BLOCK2
-	             + BLOCK3 + "\x01gM\x01n\x01gsg#\x01h\x01c: \x01b@MSG_NUM_AND_TOTAL-L";
+	var hdrLine2 = "\x01n\x01c" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL + "\x01h\x01k" + CP437_LIGHT_SHADE + CP437_MEDIUM_SHADE
+	             + CP437_DARK_SHADE + "\x01gM\x01n\x01gsg#\x01h\x01c: \x01b@MSG_NUM_AND_TOTAL-L";
 	numChars = console.screen_columns - 32;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine2 += "#";
-	hdrLine2 += "@\x01n\x01c" + VERTICAL_SINGLE;
+	hdrLine2 += "@\x01n\x01c" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL;
 	hdrDisplayLines.push(hdrLine2);
-	var hdrLine3 = "\x01n\x01h\x01k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
+	var hdrLine3 = "\x01n\x01h\x01k" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL + CP437_LIGHT_SHADE + CP437_MEDIUM_SHADE + CP437_DARK_SHADE
 				 + "\x01gF\x01n\x01grom\x01h\x01c: \x01b@MSG_FROM_AND_FROM_NET-L";
 	numChars = console.screen_columns - 36;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine3 += "#";
-	hdrLine3 += "@\x01k" + VERTICAL_SINGLE;
+	hdrLine3 += "@\x01k" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL;
 	hdrDisplayLines.push(hdrLine3);
-	var hdrLine4 = "\x01n\x01h\x01k" + VERTICAL_SINGLE + BLOCK1 + BLOCK2 + BLOCK3
+	var hdrLine4 = "\x01n\x01h\x01k" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL + CP437_LIGHT_SHADE + CP437_MEDIUM_SHADE + CP437_DARK_SHADE
 	             + "\x01gS\x01n\x01gubj\x01h\x01c: \x01b@MSG_SUBJECT-L";
 	numChars = console.screen_columns - 26;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine4 += "#";
-	hdrLine4 += "@\x01k" + VERTICAL_SINGLE;
+	hdrLine4 += "@\x01k" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL;
 	hdrDisplayLines.push(hdrLine4);
-	var hdrLine5 = "\x01n\x01c" + VERTICAL_SINGLE + "\x01h\x01k" + BLOCK1 + BLOCK2 + BLOCK3
+	var hdrLine5 = "\x01n\x01c" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL + "\x01h\x01k" + CP437_LIGHT_SHADE + CP437_MEDIUM_SHADE + CP437_DARK_SHADE
 	             + "\x01gD\x01n\x01gate\x01h\x01c: \x01b@MSG_DATE-L";
 	//numChars = console.screen_columns - 23;
 	numChars = console.screen_columns - 67;
 	for (var i = 0; i < numChars; ++i)
 		hdrLine5 += "#";
-	//hdrLine5 += "@\x01n\x01c" + VERTICAL_SINGLE;
+	//hdrLine5 += "@\x01n\x01c" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL;
 	hdrLine5 += "@ @MSG_TIMEZONE@\x01n";
 	for (var i = 0; i < 40; ++i)
 		hdrLine5 += " ";
-	hdrLine5 += "\x01n\x01c" + VERTICAL_SINGLE;
+	hdrLine5 += "\x01n\x01c" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL;
 	hdrDisplayLines.push(hdrLine5);
-	var hdrLine6 = "\x01n\x01h\x01c" + BOTTOM_T_SINGLE + HORIZONTAL_SINGLE + "\x01n\x01c"
-	             + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\x01h\x01k";
+	var hdrLine6 = "\x01n\x01h\x01c" + CP437_BOX_DRAWING_LIGHT_BOTTOM_T + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01c"
+	             + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h\x01k";
 	numChars = console.screen_columns - 8;
 	for (var i = 0; i < numChars; ++i)
-		hdrLine6 += HORIZONTAL_SINGLE;
-	hdrLine6 += "\x01n\x01c" + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + "\x01h"
-	         + HORIZONTAL_SINGLE + BOTTOM_T_SINGLE;
+		hdrLine6 += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+	hdrLine6 += "\x01n\x01c" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h"
+	         + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_LIGHT_BOTTOM_T;
 	hdrDisplayLines.push(hdrLine6);
 
 	return hdrDisplayLines;
@@ -3681,9 +3681,9 @@ function DrawVoteColumns(pTopRow, pBottomRow, pColumnX1, pColumnX2)
 	for (var posY = pTopRow; posY <= bottomRow; ++posY)
 	{
 		console.gotoxy(retObj.columnX1, posY);
-		console.print("\x01" + "7\x01h\x01w" + THIN_RECTANGLE_LEFT + "\x01n\x01k\x01" + "7\x01n\x01" + "7\x01k\x01h" + THIN_RECTANGLE_RIGHT + "\x01n");
+		console.print("\x01" + "7\x01h\x01w" + CP437_LEFT_HALF_BLOCK + "\x01n\x01k\x01" + "7\x01n\x01" + "7\x01k\x01h" + CP437_RIGHT_HALF_BLOCK + "\x01n");
 		console.gotoxy(retObj.columnX2, posY);
-		console.print("\x01" + "7\x01h\x01w" + THIN_RECTANGLE_LEFT + "\x01n\x01k\x01" + "7\x01n\x01" + "7\x01k\x01h" + THIN_RECTANGLE_RIGHT + "\x01n");
+		console.print("\x01" + "7\x01h\x01w" + CP437_LEFT_HALF_BLOCK + "\x01n\x01k\x01" + "7\x01n\x01" + "7\x01k\x01h" + CP437_RIGHT_HALF_BLOCK + "\x01n");
 	}
 
 	return retObj;
@@ -3721,7 +3721,7 @@ function DisplayViewingResultsHelpScr(pMsgbase, pSubBoardCode)
 	console.crlf();
 	console.print("Keys");
 	console.crlf();
-	console.print("\x01k\x01h" + strRepeat(HORIZONTAL_SINGLE, 4));
+	console.print("\x01k\x01h" + strRepeat(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 4));
 	console.crlf();
 	var keyHelpLines = ["\x01h\x01cDown\x01g/\x01cup arrow    \x01g: \x01n\x01cScroll the text down\x01g/\x01cup",
 	                    "\x01h\x01cLeft\x01g/\x01cright arrow \x01g: \x01n\x01cGo to the previous\x01g/\x01cnext poll",
@@ -3751,7 +3751,7 @@ function DisplayProgramNameAndVerForHelpScreens()
 	console.gotoxy(posX, 1);
 	console.print("\x01c\x01h" + progName);
 	console.gotoxy(posX, 2);
-	console.print("\x01k" + strRepeat(HORIZONTAL_SINGLE, 7));
+	console.print("\x01k" + strRepeat(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 7));
 	var versionText = "\x01n\x01cVersion \x01g" + SLYVOTE_VERSION + "\x01w\x01h (\x01b" + SLYVOTE_DATE + "\x01w)\x01n";
 	posX = (console.screen_columns/2) - (strip_ctrl(versionText).length/2);
 	console.gotoxy(posX, 3);
