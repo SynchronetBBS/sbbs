@@ -110,8 +110,10 @@ while(bbs.online && !js.terminated) {
 		console.putmsg(bbs.text(EnterYourCompany), P_SAVEATR);
 		user.name = console.getstr(user.name, LEN_NAME, kmode);
 	}
+	if (!bbs.online)
+		exit(1);
 	if (!user.alias) {
-		log(LOG_ERR, "New user alias was blank");
+		log(LOG_NOTICE, "New user alias was blank");
 		exit(1);
 	}
 	if (!user.handle)
