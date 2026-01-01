@@ -3380,13 +3380,14 @@ load_bbslist(struct bbslist **list,
 	*listcount = 0;
 
 	memset(list, 0, listsize);
-	memset(defaults, 0, sizeof(struct bbslist));
+	if (defaults)
+		memset(defaults, 0, sizeof(struct bbslist));
 
 	read_list(listpath, list, defaults, listcount, USER_BBSLIST);
 
 	/* System BBS List */
 	if (stricmp(shared_list, listpath)) /* don't read the same list twice */
-		read_list(shared_list, list, defaults, listcount, SYSTEM_BBSLIST);
+		read_list(shared_list, list, NULL, listcount, SYSTEM_BBSLIST);
 	/* Web lists */
 	if (settings.webgets) {
 		char cache_path[MAX_PATH + 1];
@@ -3399,7 +3400,7 @@ load_bbslist(struct bbslist **list,
 					free(lpath);
 				}
 				else {
-					read_list(lpath, list, defaults, listcount, SYSTEM_BBSLIST);
+					read_list(lpath, list, NULL, listcount, SYSTEM_BBSLIST);
 					free(lpath);
 				}
 			}
