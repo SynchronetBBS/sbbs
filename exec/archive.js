@@ -1,4 +1,5 @@
 // Deal with archive files using Synchronet v3.19 Archive class
+// @format.tab-size 4, @format.use-tabs true
 
 // Install "Viewable File Types" using 'jsexec archive.js install'
 
@@ -21,11 +22,16 @@ if((i = argv.indexOf('-sort')) >= 0) {
 	sort = true;
 	argv.splice(i, 1);
 }
-var fname = argv.shift();
+var fname = [ argv.shift() ];
 
 switch(cmd) {
 	case 'list':
-		list(fname, verbose);
+		fname = fname.concat(argv);
+		for (i in fname) {
+			if (fname.length > 1)
+				writeln(fname[i]);
+			list(fname[i], verbose);
+		}
 		break;
 	case 'json':
 		writeln(JSON.stringify(Archive(fname).list(verbose, argv[0]), null, 4));
@@ -41,7 +47,12 @@ switch(cmd) {
 		print(Archive(fname).read(argv[0]));
 		break;
 	case 'type':
-		print(Archive(fname).type);
+		fname = fname.concat(argv);
+		for (i in fname) {
+			if (fname.length > 1)
+				writeln(fname[i]);
+			print(Archive(fname[i]).type);
+		}
 		break;
 	case 'install':
 		install();
