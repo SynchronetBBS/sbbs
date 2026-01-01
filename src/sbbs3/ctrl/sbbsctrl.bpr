@@ -60,8 +60,9 @@
   <OPTIONS>
     <IDLCFLAGS value="-I..\. -I.. -I$(BCB)\Projects -I..\..\xpdev -I..\..\smblib -I..\..\hash 
       -I$(BCB)\include -I$(BCB)\include\vcl 
-      -I..\..\..\3rdp\win32.release\cryptlib\include -I..\..\comio -I..\..\sftp -src_suffix 
-      cpp -DSBBS -DRINGBUF_MUTEX -DRINGBUF_EVENT -DUSE_CRYPTLIB -D_DEBUG -boa"/>
+      -I..\..\..\3rdp\win32.release\cryptlib\include -I..\..\comio -I..\..\sftp 
+      -src_suffix cpp -DSBBS -DLINK_LIST_THREADSAFE -DRINGBUF_MUTEX 
+      -DRINGBUF_EVENT -DUSE_CRYPTLIB -D_DEBUG -boa"/>
     <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b -k -y -v -vi- -c 
       -tW -tWM"/>
     <PFLAGS value="-$Y+ -$W -$O- -$A8 -v -JPHNE -M"/>
@@ -126,8 +127,8 @@
 IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
-MinorVer=20
-Release=3
+MinorVer=21
+Release=1
 Build=0
 Debug=0
 PreRelease=0
@@ -223,17 +224,18 @@ Item1=
 Item2=
 
 [HistoryLists\hlConditionals]
-Count=10
-Item0=SBBS;RINGBUF_MUTEX;RINGBUF_EVENT;USE_CRYPTLIB;_DEBUG
-Item1=SBBS;RINGBUF_EVENT;RINGBUF_MUTEX;USE_CRYPTLIB;_DEBUG
-Item2=SBBS;RINGBUF_EVENT;RINGBUF_MUTEX;USE_CRYPTLIB
-Item3=SBBS;_DEBUG;RINGBUF_EVENT;RINGBUF_MUTEX;USE_CRYPTLIB
-Item4=SBBS;_DEBUG;RINGBUF_EVENT;RINGBUF_MUTEX
-Item5=SBBS;_DEBUG;RINGBUF_EVENT
-Item6=SBBS;_DEBUG
-Item7=SBBS
-Item8=SBBS;SMB_GETMSGTXT;_DEBUG
-Item9=SBBS;SMB_GETMSGTXT
+Count=11
+Item0=SBBS;LINK_LIST_THREADSAFE;RINGBUF_MUTEX;RINGBUF_EVENT;USE_CRYPTLIB;_DEBUG
+Item1=SBBS;RINGBUF_MUTEX;RINGBUF_EVENT;USE_CRYPTLIB;_DEBUG
+Item2=SBBS;RINGBUF_EVENT;RINGBUF_MUTEX;USE_CRYPTLIB;_DEBUG
+Item3=SBBS;RINGBUF_EVENT;RINGBUF_MUTEX;USE_CRYPTLIB
+Item4=SBBS;_DEBUG;RINGBUF_EVENT;RINGBUF_MUTEX;USE_CRYPTLIB
+Item5=SBBS;_DEBUG;RINGBUF_EVENT;RINGBUF_MUTEX
+Item6=SBBS;_DEBUG;RINGBUF_EVENT
+Item7=SBBS;_DEBUG
+Item8=SBBS
+Item9=SBBS;SMB_GETMSGTXT;_DEBUG
+Item10=SBBS;SMB_GETMSGTXT
 
 [Debugging]
 DebugSourceDirs=$(BCB)\source\vcl
