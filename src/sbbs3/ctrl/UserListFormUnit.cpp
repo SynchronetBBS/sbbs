@@ -70,10 +70,10 @@ void __fastcall TUserListForm::FormShow(TObject *Sender)
         Item->SubItems->Add(user.name);
         Item->SubItems->Add(user.level);
         Item->SubItems->Add((int)getage(&MainForm->cfg,user.birth));
-        if(user.sex<=' ' || user.sex&0x80)  /* garbage? */
+        if(user.gender<=' ' || user.gender&0x80)  /* garbage? */
             str[0]=0;
         else
-            sprintf(str,"%c",user.sex);
+            sprintf(str,"%c",user.gender);
         Item->SubItems->Add(str);
         Item->SubItems->Add(user.location);
         Item->SubItems->Add(user.connection);

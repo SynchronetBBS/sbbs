@@ -169,7 +169,7 @@ G_MODULE_EXPORT void load_user(GtkWidget *wiggy, gpointer data)
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the gender widget\n");
 		else {
-			str[0]=user.sex;
+			str[0]=user.gender;
 			str[1]=0;
 			gtk_entry_set_text(GTK_ENTRY(w),str);
 		}
@@ -892,7 +892,7 @@ G_MODULE_EXPORT void save_user(GtkWidget *wiggy, gpointer data)
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the gender widget\n");
 		else
-			user.sex=*(gtk_entry_get_text(GTK_ENTRY(w)));
+			user.gender=*(gtk_entry_get_text(GTK_ENTRY(w)));
 
 		/* Connection */
 		w=GTK_WIDGET(gtk_builder_get_object(builder, "eConnection"));
@@ -1811,7 +1811,7 @@ G_MODULE_EXPORT void new_user(GtkWidget *wiggy, gpointer data)
 	user.firston=time(NULL);
 	user.laston=time(NULL);	/* must set this or user may be purged prematurely */
 	user.pwmod=time(NULL);
-	user.sex=' ';
+	user.gender=' ';
 	user.prot=cfg.new_prot;
 
 	if(cfg.new_expire)

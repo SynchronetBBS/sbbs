@@ -90,7 +90,7 @@ G_MODULE_EXPORT void update_userlist_item(GtkListStore *lstore, GtkTreeIter *cur
 			return;
 		}
 	}
-	sex[0]=user.sex;
+	sex[0]=user.gender;
 	sex[1]=0;
 	unixtodstr(&cfg, user.firston, first);
 	unixtodstr(&cfg, user.laston, last);

@@ -1434,7 +1434,7 @@ int edit_personal(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Alias       %s",user->alias);
 		sprintf(opt[i++],"Chat Handle %s",user->handle);
 		sprintf(opt[i++],"NetMail     %s",user->netmail);
-		sprintf(opt[i++],"Gender      %c",user->sex);
+		sprintf(opt[i++],"Gender      %c",user->gender);
 		sprintf(opt[i++],"D.O.B.      %s",user->birth);
 		sprintf(opt[i++],"Address     %s",user->address);
 		sprintf(opt[i++],"Location    %s",user->location);
@@ -1484,10 +1484,10 @@ int edit_personal(scfg_t *cfg, user_t *user)
 			case 4:
 				/* Gender */
 				GETUSERDAT(cfg,user);
-				sprintf(onech,"%c",user->sex);
+				sprintf(onech,"%c",user->gender);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Gender",onech,1,K_UPPER|K_ALPHA|K_EDIT);
 				if(uifc.changes) {
-					user->sex=onech[0];
+					user->gender=onech[0];
 					putuserstr(cfg, user->number, USER_GENDER, onech);
 				}
 				break;
@@ -1862,7 +1862,7 @@ int createdefaults(scfg_t* cfg)
 	user.laston=now;
 	user.pwmod=now;
 	user.logontime=now;
-	user.sex=' ';
+	user.gender=' ';
 	user.prot=cfg->new_prot;
 	if(cfg->new_expire)
 		user.expire=now+((long)cfg->new_expire*24L*60L*60L);

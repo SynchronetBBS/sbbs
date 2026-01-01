@@ -156,7 +156,7 @@ void SBBS_User_ListFrame::fillUserList(void)
         UserList->SetItem(item, 3, buf);
         buf.Printf(_("%d"), getage(&App->cfg, user.birth));
         UserList->SetItem(item, 4, buf);
-        buf.Printf(_("%c"), user.sex);
+        buf.Printf(_("%c"), user.gender);
         UserList->SetItem(item, 5, buf);
         UserList->SetItem(item, 6, wxString::From8BitData(user.location));
         UserList->SetItem(item, 7, wxString::From8BitData(user.modem));
