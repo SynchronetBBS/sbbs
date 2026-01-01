@@ -207,9 +207,15 @@
 const requireFnExists = (typeof(require) === "function");
 
 if (requireFnExists)
+{
 	require("sbbsdefs.js", "K_UPPER");
+	require("char_defs.js", "UPPER_LEFT_SINGLE");
+}
 else
+{
 	load("sbbsdefs.js");
+	load("char_defs.js");
+}
 
 // This script requires Synchronet version 3.17 or higher.
 // Exit if the Synchronet version is below the minimum.
@@ -270,51 +276,6 @@ var gAvatar = load({}, "avatar_lib.js");
 // Version information
 var SLYVOTE_VERSION = "1.16";
 var SLYVOTE_DATE = "2024-11-27";
-
-// Characters for display
-// Box-drawing/border characters: Single-line
-var UPPER_LEFT_SINGLE = "\xDA";
-var HORIZONTAL_SINGLE = "\xC4";
-var UPPER_RIGHT_SINGLE = "\xBF";
-var VERTICAL_SINGLE = "\xB3";
-var LOWER_LEFT_SINGLE = "\xC0";
-var LOWER_RIGHT_SINGLE = "\xD9";
-var T_SINGLE = "\xC2";
-var LEFT_T_SINGLE = "\xC3";
-var RIGHT_T_SINGLE = "\xB4";
-var BOTTOM_T_SINGLE = "\xC1";
-var CROSS_SINGLE = "\xC5";
-// Box-drawing/border characters: Double-line
-var UPPER_LEFT_DOUBLE = "\xC9";
-var HORIZONTAL_DOUBLE = "\xCD";
-var UPPER_RIGHT_DOUBLE = "\xBB";
-var VERTICAL_DOUBLE = "\xBA";
-var LOWER_LEFT_DOUBLE = "\xC8";
-var LOWER_RIGHT_DOUBLE = "\xBC";
-var T_DOUBLE = "\xCB";
-var LEFT_T_DOUBLE = "\xCC";
-var RIGHT_T_DOUBLE = "\xB9";
-var BOTTOM_T_DOUBLE = "\xCA";
-var CROSS_DOUBLE = "\xCE";
-// Box-drawing/border characters: Vertical single-line with horizontal double-line
-var UPPER_LEFT_VSINGLE_HDOUBLE = "\xD5";
-var UPPER_RIGHT_VSINGLE_HDOUBLE = "\xB8";
-var LOWER_LEFT_VSINGLE_HDOUBLE = "\xD4";
-var LOWER_RIGHT_VSINGLE_HDOUBLE = "\xBE";
-// Other special characters
-var DOT_CHAR = "\xF9";
-var CHECK_CHAR = "\xFB";
-var THIN_RECTANGLE_LEFT = "\xDD";
-var THIN_RECTANGLE_RIGHT = "\xDE";
-var BLOCK1 = "\xB0"; // Dimmest block
-var BLOCK2 = "\xB1";
-var BLOCK3 = "\xB2";
-var BLOCK4 = "\xDB"; // Brightest block
-var MID_BLOCK = "\xDC";
-var TALL_UPPER_MID_BLOCK = "\xFE";
-var UPPER_CENTER_BLOCK = "\xDF";
-var LOWER_CENTER_BLOCK = "\xDC";
-var TINY_DOT = "\xFA";
 
 // Strings for the various message attributes (used by makeAllAttrStr(),
 // makeMainMsgAttrStr(), makeAuxMsgAttrStr(), and makeNetMsgAttrStr())

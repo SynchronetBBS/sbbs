@@ -18,11 +18,13 @@ if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_UPPER");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
+	require("char_defs.js", "UPPER_LEFT_SINGLE");
 }
 else
 {
 	load("sbbsdefs.js");
 	load("dd_lightbar_menu.js");
+	load("char_defs.js");
 }
 
 // We need the deltree() and withoutTrailingSlash() functions
@@ -40,14 +42,6 @@ var gDDArcViewerProgName = "Digital Distortion Archive Viewer";
 var CTRL_M = "\x0d";
 var KEY_ENTER = CTRL_M;
 var ESC_KEY = "\x1b";
-
-// Characters for display
-var UPPER_LEFT_SINGLE = "\xDA";
-var HORIZONTAL_SINGLE = "\xC4";
-var UPPER_RIGHT_SINGLE = "\xBF";
-var VERTICAL_SINGLE = "\xB3";
-var LOWER_LEFT_SINGLE = "\xC0";
-var LOWER_RIGHT_SINGLE = "\xD9";
 
 
 // Determine which slash character to use for paths, depending

@@ -22,6 +22,8 @@
 
 "use strict";
 
+require("char_defs.js", "HORIZONTAL_SINGLE");
+
 // Returns the minimum width for a ChoiceScrollbox. This
 // is arbitrary for now.
 function ChoiceScrollbox_MinWidth()
@@ -71,9 +73,7 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pCfgObj
 
 	// The default is to add left & right T characters around the top border
 	// text.  But also use pAddTCharsAroundTopText if it's a boolean.
-	var addTopTCharsAroundText = true;
-	if (typeof(pAddTCharsAroundTopText) == "boolean")
-		addTopTCharsAroundText = pAddTCharsAroundTopText;
+	var addTopTCharsAroundText = (typeof(pAddTCharsAroundTopText) === "boolean" ? pAddTCharsAroundTopText : true);
 	// If pReplaceTopTextSpacesWithBorderChars is true, then replace the spaces
 	// in pTopBorderText with border characters.
 	if (pReplaceTopTextSpacesWithBorderChars)
@@ -90,7 +90,7 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pCfgObj
 		var firstStrPart = "";
 		var lastStrPart = "";
 		var numSpaces = 0;
-		while ((firstSpcIdx > -1) && (nonSpcIdx > -1))
+		while (firstSpcIdx > -1 && nonSpcIdx > -1)
 		{
 			firstStrPart = pTopBorderText.substr(startIdx, (firstSpcIdx-startIdx));
 			lastStrPart = pTopBorderText.substr(nonSpcIdx);

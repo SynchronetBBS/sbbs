@@ -70,12 +70,14 @@ var requireFnExists = (typeof(require) === "function");
 if (requireFnExists)
 {
 	require("sbbsdefs.js", "P_NONE");
+	require("char_defs.js", "UPPER_LEFT_SINGLE");
 	require("json-client.js", "JSONClient");
 	require(js.exec_dir + "lib.js", "getJSONSvcPortFromServicesIni");
 }
 else
 {
 	load("sbbsdefs.js");
+	load("char_defs.js");
 	load("json-client.js");
 	load(js.exec_dir + "lib.js");
 }
@@ -85,51 +87,6 @@ else
 // which would run yesnobar.js in sbbs/exec).
 const gScriptExecDir = js.exec_dir;
 
-
-
-// Characters for display
-// Box-drawing/border characters: Single-line
-var UPPER_LEFT_SINGLE = "\xDA";
-var HORIZONTAL_SINGLE = "\xC4";
-var UPPER_RIGHT_SINGLE = "\xBF";
-var VERTICAL_SINGLE = "\xB3";
-var LOWER_LEFT_SINGLE = "\xC0";
-var LOWER_RIGHT_SINGLE = "\xD9";
-var T_SINGLE = "\xC2";
-var LEFT_T_SINGLE = "\xC3";
-var RIGHT_T_SINGLE = "\xB4";
-var BOTTOM_T_SINGLE = "\xC1";
-var CROSS_SINGLE = "\xC5";
-// Box-drawing/border characters: Double-line
-var UPPER_LEFT_DOUBLE = "\xC9";
-var HORIZONTAL_DOUBLE = "\xCD";
-var UPPER_RIGHT_DOUBLE = "\xBB";
-var VERTICAL_DOUBLE = "\xBA";
-var LOWER_LEFT_DOUBLE = "\xC8";
-var LOWER_RIGHT_DOUBLE = "\xBC";
-var T_DOUBLE = "\xCB";
-var LEFT_T_DOUBLE = "\xCC";
-var RIGHT_T_DOUBLE = "\xB9";
-var BOTTOM_T_DOUBLE = "\xCA";
-var CROSS_DOUBLE = "\xCE";
-// Box-drawing/border characters: Vertical single-line with horizontal double-line
-var UPPER_LEFT_VSINGLE_HDOUBLE = "\xD5";
-var UPPER_RIGHT_VSINGLE_HDOUBLE = "\xB8";
-var LOWER_LEFT_VSINGLE_HDOUBLE = "\xD4";
-var LOWER_RIGHT_VSINGLE_HDOUBLE = "\xBE";
-// Other special characters
-var DOT_CHAR = "\xF9";
-var CHECK_CHAR = "\xFB";
-var THIN_RECTANGLE_LEFT = "\xDD";
-var THIN_RECTANGLE_RIGHT = "\xDE";
-var BLOCK1 = "\xB0"; // Dimmest block
-var BLOCK2 = "\xB1";
-var BLOCK3 = "\xB2";
-var BLOCK4 = "\xDB"; // Brightest block
-var MID_BLOCK = "\xDC";
-var TALL_UPPER_MID_BLOCK = "\xFE";
-var UPPER_CENTER_BLOCK = "\xDF";
-var LOWER_CENTER_BLOCK = "\xDC";
 
 
 
