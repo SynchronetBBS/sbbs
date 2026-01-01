@@ -3409,7 +3409,7 @@ js_fmode(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	struct stat st = {0};
+	struct stat st {};
 	if (stat(fname, &st) == 0)
 		mode = st.st_mode;
 	free(fname);

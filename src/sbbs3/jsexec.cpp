@@ -1220,7 +1220,7 @@ extern "C" int main(int argc, char **argv)
 #endif
 	str_list_t       ini = NULL;
 #ifdef __unix__
-	struct sigaction sa = {0};
+	struct sigaction sa {};
 #endif
 
 	confp = stdout;

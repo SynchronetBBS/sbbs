@@ -4343,7 +4343,7 @@ struct fastcgi_data {
 static struct fastcgi_body * fastcgi_read_body(SOCKET sock)
 {
 	char                  padding[255];
-	struct fastcgi_header header = {0};
+	struct fastcgi_header header {};
 	struct fastcgi_body * body;
 
 	if (recv(sock, (char*)&header.len
@@ -5272,7 +5272,7 @@ static bool exec_cgi(http_session_t *session)
 	bool                process_terminated = false;
 	PROCESS_INFORMATION process_info;
 	SECURITY_ATTRIBUTES sa;
-	STARTUPINFO         startup_info = {0};
+	STARTUPINFO         startup_info {};
 	str_list_t          env_list;
 
 	startup_info.cb = sizeof(startup_info);

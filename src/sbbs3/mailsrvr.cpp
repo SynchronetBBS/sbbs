@@ -1002,7 +1002,7 @@ static in_addr_t resolve_ip(const char *inaddr)
 	char*    addr;
 	char     buf[128];
 	struct addrinfo* res;
-	struct addrinfo hints = {0};
+	struct addrinfo hints {};
 	in_addr_t ipa = INADDR_NONE;
 
 	SAFECOPY(buf, inaddr);
@@ -1907,7 +1907,7 @@ static in_addr_t rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, 
 	lprintf(LOG_DEBUG, "%04d %-5s DNSBL Query: %s", sock, prot, name);
 
 	struct addrinfo* res;
-	struct addrinfo hints = {0};
+	struct addrinfo hints {};
 	hints.ai_family = AF_INET;
 	if (getaddrinfo(name, NULL, &hints, &res) != 0)
 		return 0;

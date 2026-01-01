@@ -1532,7 +1532,7 @@ js_get_node(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject*            obj = JS_THIS_OBJECT(cx, arglist);
 	JSObject*            nodeobj;
 	jsval*               argv = JS_ARGV(cx, arglist);
-	node_t               node = {0};
+	node_t               node {};
 	int32                node_num;
 	jsrefcount           rc;
 
