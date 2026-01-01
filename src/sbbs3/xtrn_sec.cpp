@@ -216,7 +216,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , useron.level            /* User main level */
 		              , useron.level            /* User transfer level */
 		              , getbirthmmddyy(&cfg, '/', useron.birth, tmp, sizeof(tmp)) /* User birthday (MM/DD/YY) */
-		              , useron.sex ? useron.sex : '?' /* User sex (M/F) */
+		              , useron.gender ? useron.gender : '?' /* User gender (e.g. M, F) */
 		              , useron.number           /* User number */
 		              , useron.phone);          /* User phone number */
 		lfexpand(str, misc);
@@ -310,7 +310,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , useron.name             /* User real name */
 		              , nulstr                  /* User call sign */
 		              , getage(&cfg, useron.birth) /* User age */
-		              , useron.sex ? useron.sex : '?'); /* User sex (M/F) */
+		              , useron.gender ? useron.gender : '?'); /* User gender (e.g. M, F) */
 		strupr(str);
 		lfexpand(str, misc);
 		fwrite(str, strlen(str), 1, fp);
@@ -574,7 +574,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_MORE;
 		if (term->supports(ANSI))
 			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_ANSI;
-		if (useron.sex == 'F')
+		if (useron.gender == 'F')
 			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_FEMALE;
 		exitinfo.UserInfo.Flags = useron.flags1;
 		exitinfo.UserInfo.TimesPosted = useron.posts;

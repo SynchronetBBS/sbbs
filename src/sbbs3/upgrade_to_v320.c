@@ -333,9 +333,9 @@ static int v31x_parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	user->cols = atoi(str);
 	if (user->cols && user->cols < TERM_COLS_MIN)
 		user->cols = TERM_COLS_MIN;
-	user->sex = userdat[U_SEX];
-	if (!user->sex)
-		user->sex = ' '; /* fix for v1b04 that could save as 0 */
+	user->gender = userdat[U_SEX];
+	if (!user->gender)
+		user->gender = ' '; /* fix for v1b04 that could save as 0 */
 	user->prot = userdat[U_PROT];
 	if (user->prot < ' ')
 		user->prot = ' ';

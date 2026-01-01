@@ -100,7 +100,7 @@ enum {
 	, USER_PROP_REST
 	, USER_PROP_ROWS
 	, USER_PROP_COLS
-	, USER_PROP_SEX
+	, USER_PROP_GENDER
 	, USER_PROP_MISC
 	, USER_PROP_LEECH
 	, USER_PROP_CURSUB
@@ -342,8 +342,8 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case USER_PROP_COLS:
 			val = p->user->cols;
 			break;
-		case USER_PROP_SEX:
-			sprintf(tmp, "%c", p->user->sex);
+		case USER_PROP_GENDER:
+			sprintf(tmp, "%c", p->user->gender);
 			s = tmp;
 			break;
 		case USER_PROP_MISC:
@@ -596,8 +596,8 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			p->user->cols = atoi(str);
 			putuserdec32(scfg, p->user->number, USER_COLS, p->user->cols);
 			break;
-		case USER_PROP_SEX:
-			p->user->sex = toupper(str[0]);
+		case USER_PROP_GENDER:
+			p->user->gender = toupper(str[0]);
 			putuserstr(scfg, p->user->number, USER_GENDER, strupr(str));    /* single char */
 			break;
 		case USER_PROP_CURSUB:
@@ -874,7 +874,7 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{   "modem", USER_PROP_MODEM, 0, /* Alias */ 310},
 	{   "screen_rows", USER_PROP_ROWS, USER_PROP_FLAGS,       310},
 	{   "screen_columns", USER_PROP_COLS, USER_PROP_FLAGS,       31802},
-	{   "gender", USER_PROP_SEX, USER_PROP_FLAGS,       310},
+	{   "gender", USER_PROP_GENDER, USER_PROP_FLAGS,       310},
 	{   "cursub", USER_PROP_CURSUB, USER_PROP_FLAGS,       310},
 	{   "curdir", USER_PROP_CURDIR, USER_PROP_FLAGS,       310},
 	{   "curxtrn", USER_PROP_CURXTRN, USER_PROP_FLAGS,       310},

@@ -1912,7 +1912,7 @@ void getar(char *desc, char *inar)
 					"LEVEL        $         User's level (0-99)\n"
 					"NODE         $         Current node (1-250)\n"
 					"PCR          $         User's post/call ratio (0-100)\n"
-					"SEX          $         User's sex/gender (M or F)\n"
+					"SEX          $         User's sex/gender (e.g. M or F)\n"
 					"TIME         $         Time of day (HH:MM, 00:00-23:59)\n"
 					"TLEFT        $         User's time left online (minutes, 0-255)\n"
 					"TUSED        $         User's time online this call (minutes, 0-255)\n"

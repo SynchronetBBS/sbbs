@@ -2511,10 +2511,10 @@ void sys_cfg(void)
 					         , "Force Unique E-mail/NetMail Address"
 					         , cfg.uq & UQ_DUPNETMAIL ? "Yes":"No");
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
-					         , "Sex (Gender)"
+					         , "Gender"
 					         , cfg.uq & UQ_SEX ? "Yes":"No");
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
-					         , "Birthday"
+					         , "Birth Date"
 					         , cfg.uq & UQ_BIRTH ? "Yes":"No");
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 					         , "Address and Zip Code"

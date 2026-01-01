@@ -163,7 +163,7 @@ int main(int argc, char **argv)
 					}
 					break;
 				case 'G':
-					user.sex = toupper(argv[i][0]);
+					user.gender = toupper(argv[i][0]);
 					break;
 				case 'H':
 					SAFECOPY(user.handle, argv[i]);

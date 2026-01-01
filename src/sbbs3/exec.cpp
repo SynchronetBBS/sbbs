@@ -172,7 +172,7 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 			sysvar_l[sysvar_li] = useron.level;
 			break;
 		case 0x9e70e855:
-			sysvar_l[sysvar_li] = useron.sex;
+			sysvar_l[sysvar_li] = useron.gender;
 			break;
 		case 0x094cc42c:
 			sysvar_l[sysvar_li] = useron.rows;

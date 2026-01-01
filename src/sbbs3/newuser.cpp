@@ -258,7 +258,7 @@ bool sbbs_t::newuser()
 	if (useron.number != 1 && cfg.valuser) {
 		menu("../feedback", P_NOABORT | P_NOERROR);
 		safe_snprintf(str, sizeof(str), text[NewUserFeedbackHdr]
-		              , nulstr, getage(&cfg, useron.birth), useron.sex, useron.birth
+		              , nulstr, getage(&cfg, useron.birth), useron.gender, useron.birth
 		              , useron.name, useron.phone, useron.comp, useron.connection);
 		email(cfg.valuser, str, text[NewUserValEmailSubj], WM_SUBJ_RO | WM_FORCEFWD);
 		if (!useron.fbacks && !useron.emails) {

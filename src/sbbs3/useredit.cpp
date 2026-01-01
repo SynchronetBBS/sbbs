@@ -86,7 +86,7 @@ void sbbs_t::useredit(int usernumber)
 		        , user.level > useron.level ? "XXXXXXXX" : user.name
 		        , user.level > useron.level ? "XXX-XXX-XXXX" : user.phone);
 		bprintf(text[UeditAddressBirthday]
-		        , user.address, getage(&cfg, user.birth), user.sex
+		        , user.address, getage(&cfg, user.birth), user.gender
 		        , format_birthdate(&cfg, user.birth, tmp, sizeof(tmp)));
 		bprintf(text[UeditLocationZipcode], user.location, user.zipcode);
 		bprintf(text[UeditNoteHandle], user.note, user.handle);

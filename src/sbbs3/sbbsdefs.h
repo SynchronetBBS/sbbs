@@ -115,7 +115,7 @@
 #define UQ_PHONE        (1 << 3)  // Ask for phone number
 #define UQ_HANDLE       (1 << 4)  // Ask for chat handle / HAM callsign
 #define UQ_DUPHAND      (1 << 5)  // Search for duplicate handles
-#define UQ_SEX          (1 << 6)  // Ask for sex :)
+#define UQ_SEX          (1 << 6)  // Ask for gender
 #define UQ_BIRTH        (1 << 7)  // Ask for birth date
 #define UQ_UNUSED1      (1 << 8)  // was UQ_COMP
 #define UQ_UNUSED2      (1 << 9)  // was UQ_MC_COMP
@@ -962,7 +962,7 @@ typedef struct {                        // Users information
 	     ipaddr[LEN_IPADDR + 1];        // Last known IP address
 
 	uchar level,                        // Security level
-	      sex,                          // Sex - M or F
+	      gender,                       // Gender, e.g. 'M', 'F', ' ' (unknown)
 	      prot,                         // Default transfer protocol
 	      leech;                        // Leech attempt counter
 

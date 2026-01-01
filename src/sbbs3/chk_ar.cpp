@@ -637,7 +637,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_SEX:
-				if (user->sex != n)
+				if (user->gender != n)
 					result = _not;
 				else
 					result = !_not;

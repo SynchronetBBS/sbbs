@@ -458,7 +458,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	SAFECOPY(user->zipcode, field[USER_ZIPCODE]);
 	SAFECOPY(user->phone, field[USER_PHONE]);
 	SAFECOPY(user->birth, field[USER_BIRTH]);
-	user->sex = *field[USER_GENDER];
+	user->gender = *field[USER_GENDER];
 	SAFECOPY(user->comment, field[USER_COMMENT]);
 	SAFECOPY(user->connection, field[USER_CONNECTION]);
 
@@ -747,7 +747,7 @@ bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	                   , user->zipcode
 	                   , user->phone
 	                   , user->birth
-	                   , user->sex ? user->sex : '?'
+	                   , user->gender ? user->gender : '?'
 	                   , user->comment
 	                   , user->connection
 	                   , user->misc
@@ -2621,7 +2621,7 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 					result = !not;
 				break;
 			case AR_SEX:
-				if (user == NULL || user->sex != n)
+				if (user == NULL || user->gender != n)
 					result = not;
 				else
 					result = !not;
@@ -3476,7 +3476,7 @@ int newuserdefaults(scfg_t* cfg, user_t* user)
 {
 	int i;
 
-	user->sex = ' ';
+	user->gender = ' ';
 
 	/* statistics */
 	user->firston = user->laston = user->pwmod = time32(NULL);
@@ -3642,7 +3642,7 @@ size_t user_field_len(enum user_field fnum)
 		case USER_ZIPCODE:  return sizeof(user.zipcode) - 1;
 		case USER_PHONE:    return sizeof(user.phone) - 1;
 		case USER_BIRTH:    return sizeof(user.birth) - 1;
-		case USER_GENDER:   return sizeof(user.sex);
+		case USER_GENDER:   return sizeof(user.gender);
 		case USER_COMMENT:  return sizeof(user.comment) - 1;
 		case USER_CONNECTION: return sizeof(user.connection) - 1;
 
