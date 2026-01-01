@@ -3210,7 +3210,7 @@ iniFastParseSections(const str_list_t list, bool orderedList)
 		struct fp_section *secb = &ret->sections[i];
 		if (seca->name.len != secb->name.len)
 			continue;
-		cmp = strnicmp(seca->name.str, secb->name.str, seca->name.len);
+		cmp = seca->name.len ? strnicmp(seca->name.str, secb->name.str, seca->name.len) : 0;
 		if (cmp)
 			continue;
 		if (secb->originalOrder > seca->originalOrder) {
@@ -3253,7 +3253,7 @@ iniGetFastPrefixStartCmp(const void *keyPtr, const void *entryPtr)
 	const struct fp_section *fp = entryPtr;
 	bool fpIsShorter = fp->name.len < key->prefix.len;
 	size_t cmpLen = fpIsShorter ? fp->name.len : key->prefix.len;
-	int cmp = strnicmp(key->prefix.str, fp->name.str, cmpLen);
+	int cmp = cmpLen ? strnicmp(key->prefix.str, fp->name.str, cmpLen) : 0;
 
 	if (cmp)
 		return cmp;
@@ -3274,7 +3274,7 @@ iniGetFastPrefixStartCmp(const void *keyPtr, const void *entryPtr)
 	if (fp->name.len < key->prefix.len)
 		return 0;
 	// Doesn't start with prefix, we're good
-	if (strnicmp(fp->name.str, key->prefix.str, key->prefix.len))
+	if (fp->name.str == NULL || strnicmp(fp->name.str, key->prefix.str, key->prefix.len))
 		return 0;
 	// Does start with prefix, previous is a better start
 	return 1;
