@@ -6464,9 +6464,9 @@ function displayUserSettingsHelp(pTopLeftX, pTopLeftY, pWidth, pHeight)
 	for (var lineIdx = 0; lineIdx < pHeight; ++lineIdx)
 	{
 		console.gotoxy(pTopLeftX-1, pTopLeftY+lineIdx);
-		console.print(P437_BOX_DRAWINGS_DOUBLE_VERTICAL);
+		console.print(CP437_BOX_DRAWINGS_DOUBLE_VERTICAL);
 		console.gotoxy(pTopLeftX+pWidth, pTopLeftY+lineIdx);
-		console.print(P437_BOX_DRAWINGS_DOUBLE_VERTICAL);
+		console.print(CP437_BOX_DRAWINGS_DOUBLE_VERTICAL);
 	}
 	console.gotoxy(pTopLeftX-1, pTopLeftY+pHeight);
 	console.print(CP437_BOX_DRAWING_LOWER_LEFT_DOUBLE);

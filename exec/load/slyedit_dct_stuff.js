@@ -1269,7 +1269,7 @@ function DCTMenu_DisplayItem(pItemIndex, pPrintBorders)
       if (this.borderStyle == "single")
          console.print(this.colors.border + CP437_BOX_DRAWINGS_LIGHT_VERTICAL);
       else if (this.borderStyle == "double")
-         console.print(this.colors.border + P437_BOX_DRAWINGS_DOUBLE_VERTICAL);
+         console.print(this.colors.border + CP437_BOX_DRAWINGS_DOUBLE_VERTICAL);
    }
    else
       console.gotoxy(this.topLeftX + 1, this.topLeftY + pItemIndex + 1);
@@ -1300,7 +1300,7 @@ function DCTMenu_DisplayItem(pItemIndex, pPrintBorders)
       if (this.borderStyle == "single")
          console.print(this.colors.border + CP437_BOX_DRAWINGS_LIGHT_VERTICAL);
       else if (this.borderStyle == "double")
-         console.print(this.colors.border + P437_BOX_DRAWINGS_DOUBLE_VERTICAL);
+         console.print(this.colors.border + CP437_BOX_DRAWINGS_DOUBLE_VERTICAL);
    }
 }
 // Displays the DCT menu and enters the input loop.
