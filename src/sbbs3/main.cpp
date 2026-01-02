@@ -2905,9 +2905,8 @@ void event_thread(void* arg)
 		SAFEPRINTF(str, "%stime.dab", sbbs->cfg.ctrl_dir);
 		if ((file = sbbs->nopen(str, O_RDONLY)) != -1) {
 			for (i = 0; i < sbbs->cfg.total_events; i++) {
-				sbbs->cfg.event[i]->last = 0;
 				if (read(file, &sbbs->cfg.event[i]->last, sizeof(sbbs->cfg.event[i]->last)) != sizeof(sbbs->cfg.event[i]->last))
-					sbbs->errormsg(WHERE, ERR_READ, str, sizeof(time32_t));
+					sbbs->cfg.event[i]->last = 0;
 			}
 			close(file);
 		}
@@ -2915,9 +2914,8 @@ void event_thread(void* arg)
 		SAFEPRINTF(str, "%sqnet.dab", sbbs->cfg.ctrl_dir);
 		if ((file = sbbs->nopen(str, O_RDONLY)) != -1) {
 			for (i = 0; i < sbbs->cfg.total_qhubs; i++) {
-				sbbs->cfg.qhub[i]->last = 0;
 				if (read(file, &sbbs->cfg.qhub[i]->last, sizeof(sbbs->cfg.qhub[i]->last)) != sizeof(sbbs->cfg.qhub[i]->last))
-					sbbs->errormsg(WHERE, ERR_READ, str, sizeof(sbbs->cfg.qhub[i]->last));
+					sbbs->cfg.qhub[i]->last = 0;
 			}
 			close(file);
 		}
