@@ -1227,7 +1227,7 @@ extern "C" int main(int argc, char **argv)
 	struct sigaction sa {};
 #endif
 
-#if defined(__aarch64__) && defined(__linux__) && defined(ADDR_COMPAT_LAYOUT)
+#if defined(__aarch64__) && defined(__linux__)
 	personality(ADDR_COMPAT_LAYOUT);
 #endif
 
