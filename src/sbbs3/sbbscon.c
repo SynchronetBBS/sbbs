@@ -35,7 +35,7 @@
 #include <systemd/sd-daemon.h>
 #endif
 #if defined(__aarch64__) && defined(__linux__)
-#include <sys/personality>
+#include <sys/personality.h>
 #endif
 
 /* Synchronet-specific headers */
