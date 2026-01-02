@@ -179,58 +179,6 @@ printf("%d records updated\n", move_laston_address());
 printf("Updating users birthdate field: ");
 printf("%d records updated\n", update_birthdates());
 
-var sbbsecho_cfg = system.ctrl_dir + "sbbsecho.cfg";
-var sbbsecho_ini = system.ctrl_dir + "sbbsecho.ini";
-if(file_exists(sbbsecho_cfg) && !file_exists(sbbsecho_ini)) {
-	printf("Converting %s to %s: ", sbbsecho_cfg, sbbsecho_ini);
-	if(!test)
-		js.exec("sbbsecho_upgrade.js", {});
-}
-
-var binkit_ini = system.ctrl_dir + "binkit.ini";
-if(file_exists(binkit_ini) && file_exists(sbbsecho_ini)) {
-	printf("Merging %s with %s: ", binkit_ini, sbbsecho_ini);
-	if(!test)
-		js.exec("binkit.js", {}, "upgrade");
-}
-
-if(!file_exists(system.data_dir + "sbbslist.json")) {
-	print("Installing SBBSLIST v4 (replacing SBL v3)");
-	if(!test)
-		js.exec("sbbslist.js", {}, "install");
-}
-
-if(!xtrn_area.prog["avatchoo"] && !xtrn_area.event["avat-out"]) {
-	print("Installing Avatars feature");
-	if(!test)
-		js.exec("avatars.js", {}, "install");
-}
-
-print("Installing Logon List Daily Event: " + install_logonlist());
-print("Installing Trashman Monthly Event: " + install_trashman());
-
-print("Updating [General] Text File Section indexes");
-print(update_gfile_indexes() + " indexes updated.");
-
-var src = system.exec_dir + "jsexec.ini";
-var dst = system.ctrl_dir + "jsexec.ini";
-if(file_exists(src) && !file_exists(dst)) {
-	print("Moving " + src + " to " + dst);
-	if(!file_rename(src, dst))
-		alert("Could not move '" + src + "' to '" + dst + "'");
-}
-
-print("Updating (compiling) Baja modules");
-var src_files = directory(system.exec_dir + "*.src");
-for(var i in src_files) {
-	var bin = src_files[i].slice(0, -4) + ".bin";
-	if(file_date(src_files[i]) < file_date(bin))
-		continue;
-	print("Building " + bin);
-	if(!test)
-		system.exec(system.exec_dir + "baja " + src_files[i]);
-}
-
 print("Checking for v3.19 file bases");
 var upgraded = true;
 for(var d in file_area.dir) {
@@ -299,5 +247,57 @@ if(file_exists(system.data_dir + 'user/user.dat') && !file_exists(system.data_di
 	var cmdline = system.exec_dir + "upgrade_to_v320";
 	print("No v3.20 user base found, running " + cmdline);
 	system.exec(cmdline);
+}
+
+var sbbsecho_cfg = system.ctrl_dir + "sbbsecho.cfg";
+var sbbsecho_ini = system.ctrl_dir + "sbbsecho.ini";
+if(file_exists(sbbsecho_cfg) && !file_exists(sbbsecho_ini)) {
+	printf("Converting %s to %s: ", sbbsecho_cfg, sbbsecho_ini);
+	if(!test)
+		js.exec("sbbsecho_upgrade.js", {});
+}
+
+var binkit_ini = system.ctrl_dir + "binkit.ini";
+if(file_exists(binkit_ini) && file_exists(sbbsecho_ini)) {
+	printf("Merging %s with %s: ", binkit_ini, sbbsecho_ini);
+	if(!test)
+		js.exec("binkit.js", {}, "upgrade");
+}
+
+if(!file_exists(system.data_dir + "sbbslist.json")) {
+	print("Installing SBBSLIST v4 (replacing SBL v3)");
+	if(!test)
+		js.exec("sbbslist.js", {}, "install");
+}
+
+if(!xtrn_area.prog["avatchoo"] && !xtrn_area.event["avat-out"]) {
+	print("Installing Avatars feature");
+	if(!test)
+		js.exec("avatars.js", {}, "install");
+}
+
+print("Installing Logon List Daily Event: " + install_logonlist());
+print("Installing Trashman Monthly Event: " + install_trashman());
+
+print("Updating [General] Text File Section indexes");
+print(update_gfile_indexes() + " indexes updated.");
+
+var src = system.exec_dir + "jsexec.ini";
+var dst = system.ctrl_dir + "jsexec.ini";
+if(file_exists(src) && !file_exists(dst)) {
+	print("Moving " + src + " to " + dst);
+	if(!file_rename(src, dst))
+		alert("Could not move '" + src + "' to '" + dst + "'");
+}
+
+print("Updating (compiling) Baja modules");
+var src_files = directory(system.exec_dir + "*.src");
+for(var i in src_files) {
+	var bin = src_files[i].slice(0, -4) + ".bin";
+	if(file_date(src_files[i]) < file_date(bin))
+		continue;
+	print("Building " + bin);
+	if(!test)
+		system.exec(system.exec_dir + "baja " + src_files[i]);
 }
 

@@ -96,7 +96,4 @@ Source: "webv4\*";                                            DestDir: "{app}\we
 Filename: "{app}\ctrl\sbbs.ini"; Section: "Web";      Key: "RootDirectory"; String: "../webv4/root"; Tasks: upgrade_webv4
 
 [Run]
-; The first run of jsexec will fail to load any config files when upgrading from v3.19 or earlier (but perform the .cnf -> .ini conversion)
-; The second run will update config files (e.g. upgrading SBL->SBBSLIST, SBBSecho v2->v3, etc.)
-Filename: "{app}\exec\jsexec"; Parameters: "-U -! update.js"
-Filename: "{app}\exec\jsexec"; Parameters: "-p update.js"
+Filename: "{app}\exec\jsexec"; Parameters: "-U -p update.js"

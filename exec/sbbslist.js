@@ -2231,6 +2231,9 @@ function install()
 	var f = new File(system.ctrl_dir + "xtrn.ini");
 	if(!f.open(f.exists ? 'r+':'w+'))
 		return "Failed to open " + f.name;
+	
+	printf("Removing external program: SBL\r\n");
+	f.iniRemoveSection("prog:MAIN:SBL");
 
 	printf("Adding external program: SBBSLIST\r\n");
 	f.iniSetObject("prog:MAIN:SBBSLIST", sbbslist_cfg);
