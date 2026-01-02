@@ -336,6 +336,9 @@ o New TLS properties to the Socket class:
 
 JSexec
 ~~~~~~
+o New -U (require successful config load) option, -R option is deprecated
+  This new option (-U) is only really needed when invoking update.js to
+  upgrade from Synchronet v3.19 or older to v3.20 or newer
 o Only change the terminal/tty state if both the input AND output are TTY
   so when the output is redirected (e.g. to 'more' or 'less') we don't leave
   the terminal in a bad state when terminating - issue #999
