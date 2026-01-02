@@ -1,6 +1,6 @@
 /* Synchronet v3.15+ update script (to be executed with jsexec) */
 
-const REVISION = "2.0";
+const REVISION = "3.0";
 
 var test = argv.indexOf("-test") >= 0;
 
@@ -132,6 +132,25 @@ function base_filename(fullname)
 	return fullname.slice(0, -ext.length);
 }
 
+function upgrade_to_v319()
+{
+	print("Checking for v3.19 file bases");
+	var upgraded = true;
+	for(var d in file_area.dir) {
+		upgraded = false;
+		dir_idx = directory(file_area.dir[d].data_dir + "*.sid");
+		if(dir_idx && dir_idx.length) {
+			upgraded = true;
+			break;
+		}
+	}
+	if(!upgraded) {
+		var cmdline = system.exec_dir + "upgrade_to_v319";
+		print("No v3.19 file bases found, running " + cmdline);
+		system.exec(cmdline);
+	}
+}
+
 function update_gfile_indexes()
 {
 	var count = 0;
@@ -171,6 +190,72 @@ function update_gfile_indexes()
 	return count;
 }
 
+function upgrade_to_v320()
+{
+	print("Checking for v3.20 config files");
+	var upgraded = true;
+	["main.cnf", "msgs.cnf", "file.cnf", "xtrn.cnf", "chat.cnf"].forEach(function(f) {
+		if(file_date(system.ctrl_dir + f) > file_date(system.ctrl_dir + f.replace('.cnf', '.ini')))
+			upgraded = false;
+	});
+	if(!upgraded) {
+		js.exec("upgrade_to_v320.js", {});
+		alert("Configuration files upgraded, you need to run 'jsexec update.js' again");
+		exit(0);
+	}
+
+	if(file_date(system.ctrl_dir + "attr.cfg") > file_date(system.ctrl_dir + "attr.ini")) {
+		print("attr.cfg -> attr.ini");
+		var f = new File(system.ctrl_dir + "attr.cfg");
+		if(!f.open("r"))
+			alert("Error " + f.error + " opening " + f.name);
+		else {
+			var list = f.readAll();
+			f.close();
+			f = new File(system.ctrl_dir + "attr.ini");
+			if(!f.open("w"))
+				alert("Error " + f.error + " creating " + f.name);
+			else {
+				f.writeln("mnehigh           = " + list.shift());
+				f.writeln("mnelow            = " + list.shift());
+				f.writeln("mnecmd            = " + list.shift());
+				f.writeln("inputline         = " + list.shift());
+				f.writeln("error             = " + list.shift());
+				f.writeln("nodenum           = " + list.shift());
+				f.writeln("nodeuser          = " + list.shift());
+				f.writeln("nodestatus        = " + list.shift());
+				f.writeln("filename          = " + list.shift());
+				f.writeln("filecdt           = " + list.shift());
+				f.writeln("filedesc          = " + list.shift());
+				f.writeln("filelisthdrbox    = " + list.shift());
+				f.writeln("filelistline      = " + list.shift());
+				f.writeln("chatlocal         = " + list.shift());
+				f.writeln("chatremote        = " + list.shift());
+				f.writeln("multichat         = " + list.shift());
+				f.writeln("external          = " + list.shift());
+				f.writeln("votes_full        = " + list.shift());
+				f.writeln("votes_empty       = " + list.shift());
+				f.writeln("progress_complete = " + list.shift());
+				f.writeln("progress_empty    = " + list.shift());
+				f.close();
+			}
+		}
+	}
+
+	print("Checking for v3.20 user base");
+	if(file_exists(system.data_dir + 'user/user.dat') && !file_exists(system.data_dir + 'user/user.tab')) {
+		var cmdline = system.exec_dir + "upgrade_to_v320";
+		print("No v3.20 user base found, running " + cmdline);
+		system.exec(cmdline);
+	}
+
+	print("Installing Logon List Daily Event: " + install_logonlist());
+	print("Installing Trashman Monthly Event: " + install_trashman());
+
+	print("Updating [General] Text File Section indexes");
+	print(update_gfile_indexes() + " indexes updated.");
+}
+
 printf("Synchronet update.js revision %s\n", REVISION);
 printf("Updating exec directory: ");
 printf("%s\n", update_exec_dir() ? "Success" : "FAILURE");
@@ -179,75 +264,8 @@ printf("%d records updated\n", move_laston_address());
 printf("Updating users birthdate field: ");
 printf("%d records updated\n", update_birthdates());
 
-print("Checking for v3.19 file bases");
-var upgraded = true;
-for(var d in file_area.dir) {
-	upgraded = false;
-	dir_idx = directory(file_area.dir[d].data_dir + "*.sid");
-	if(dir_idx && dir_idx.length) {
-		upgraded = true;
-		break;
-	}
-}
-if(!upgraded) {
-	var cmdline = system.exec_dir + "upgrade_to_v319";
-	print("No v3.19 file bases found, running " + cmdline);
-	system.exec(cmdline);
-}
-
-print("Checking for v3.20 config files");
-upgraded = true;
-["main.cnf", "msgs.cnf", "file.cnf", "xtrn.cnf", "chat.cnf"].forEach(function(f) {
-	if(file_date(system.ctrl_dir + f) > file_date(system.ctrl_dir + f.replace('.cnf', '.ini')))
-		upgraded = false;
-});
-if(!upgraded)
-	js.exec("upgrade_to_v320.js", {});
-
-if(file_date(system.ctrl_dir + "attr.cfg") > file_date(system.ctrl_dir + "attr.ini")) {
-	print("attr.cfg -> attr.ini");
-	var f = new File(system.ctrl_dir + "attr.cfg");
-	if(!f.open("r"))
-		alert("Error " + f.error + " opening " + f.name);
-	else {
-		var list = f.readAll();
-		f.close();
-		f = new File(system.ctrl_dir + "attr.ini");
-		if(!f.open("w"))
-			alert("Error " + f.error + " creating " + f.name);
-		else {
-			f.writeln("mnehigh           = " + list.shift());
-			f.writeln("mnelow            = " + list.shift());
-			f.writeln("mnecmd            = " + list.shift());
-			f.writeln("inputline         = " + list.shift());
-			f.writeln("error             = " + list.shift());
-			f.writeln("nodenum           = " + list.shift());
-			f.writeln("nodeuser          = " + list.shift());
-			f.writeln("nodestatus        = " + list.shift());
-			f.writeln("filename          = " + list.shift());
-			f.writeln("filecdt           = " + list.shift());
-			f.writeln("filedesc          = " + list.shift());
-			f.writeln("filelisthdrbox    = " + list.shift());
-			f.writeln("filelistline      = " + list.shift());
-			f.writeln("chatlocal         = " + list.shift());
-			f.writeln("chatremote        = " + list.shift());
-			f.writeln("multichat         = " + list.shift());
-			f.writeln("external          = " + list.shift());
-			f.writeln("votes_full        = " + list.shift());
-			f.writeln("votes_empty       = " + list.shift());
-			f.writeln("progress_complete = " + list.shift());
-			f.writeln("progress_empty    = " + list.shift());
-			f.close();
-		}
-	}
-}
-
-print("Checking for v3.20 user base");
-if(file_exists(system.data_dir + 'user/user.dat') && !file_exists(system.data_dir + 'user/user.tab')) {
-	var cmdline = system.exec_dir + "upgrade_to_v320";
-	print("No v3.20 user base found, running " + cmdline);
-	system.exec(cmdline);
-}
+upgrade_to_v320();
+upgrade_to_v319();
 
 var sbbsecho_cfg = system.ctrl_dir + "sbbsecho.cfg";
 var sbbsecho_ini = system.ctrl_dir + "sbbsecho.ini";
@@ -275,12 +293,6 @@ if(!xtrn_area.prog["avatchoo"] && !xtrn_area.event["avat-out"]) {
 	if(!test)
 		js.exec("avatars.js", {}, "install");
 }
-
-print("Installing Logon List Daily Event: " + install_logonlist());
-print("Installing Trashman Monthly Event: " + install_trashman());
-
-print("Updating [General] Text File Section indexes");
-print(update_gfile_indexes() + " indexes updated.");
 
 var src = system.exec_dir + "jsexec.ini";
 var dst = system.ctrl_dir + "jsexec.ini";
