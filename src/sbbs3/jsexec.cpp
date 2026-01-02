@@ -23,6 +23,10 @@
 #define JAVASCRIPT
 #endif
 
+#if defined(__aarch64__) && defined(__linux__)
+#include <sys/personality.h>
+#endif
+
 #ifdef __unix__
 #define _WITH_GETLINE
 #include <signal.h>
@@ -1221,6 +1225,10 @@ extern "C" int main(int argc, char **argv)
 	str_list_t       ini = NULL;
 #ifdef __unix__
 	struct sigaction sa {};
+#endif
+
+#if defined(__aarch64__) && defined(__linux__) && defined(ADDR_COMPAT_LAYOUT)
+	personality(ADDR_COMPAT_LAYOUT);
 #endif
 
 	confp = stdout;

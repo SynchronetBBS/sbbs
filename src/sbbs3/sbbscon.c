@@ -34,6 +34,9 @@
 #ifdef USE_SYSTEMD
 #include <systemd/sd-daemon.h>
 #endif
+#if defined(__aarch64__) && defined(__linux__)
+#include <sys/personality>
+#endif
 
 /* Synchronet-specific headers */
 #undef SBBS /* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
@@ -1193,6 +1196,10 @@ int main(int argc, char** argv)
 #endif
 #ifdef _THREAD_SUID_BROKEN
 	size_t         conflen;
+#endif
+
+#if defined(__aarch64__) && defined(__linux__) && defined(ADDR_COMPAT_LAYOUT)
+	personality(ADDR_COMPAT_LAYOUT);
 #endif
 
 #ifdef __QNX__
