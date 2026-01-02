@@ -62,8 +62,8 @@ InstallingLabel=Please wait while Setup upgrades [name] on your computer.
 FinishedLabelNoIcons=Setup has finished upgrading [name] on your computer.
 
 [Tasks]
-Name: "upgrade_xtrn"; Description: "Install external programs/scripts (e.g. door games) in the xtrn directory"; GroupDescription: "Upgrade Externals";
-Name: "upgrade_webv4"; Description: "Install ecWebv4 (echicken's Synchronet Web UI) in the webv4 directory"; GroupDescription: "Upgrade Web UI";
+Name: "upgrade_xtrn"; Description: "Programs/scripts (e.g. door games) in the xtrn directory"; GroupDescription: "Upgrade Externals";
+Name: "upgrade_webv4"; Description: "echicken's Synchronet Web UI (ecWebv4) in the webv4 directory"; GroupDescription: "Upgrade Web UI";
 
 [Files]
 Source: "src\sbbs3\ctrl\sbbsctrl.exe";                        DestDir: "{app}\exec";  Flags: ignoreversion
@@ -71,7 +71,7 @@ Source: "src\sbbs3\chat\chat.exe";                            DestDir: "{app}\ex
 Source: "src\sbbs3\useredit\useredit.exe";                    DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "src\sbbs3\msvc.win32.exe.{#release}\*.exe";          DestDir: "{app}\exec";  Flags: ignoreversion; Excludes: "textgen.exe"
 Source: "src\sbbs3\msvc.win32.dll.{#release}\*.dll";          DestDir: "{app}\exec";  Flags: ignoreversion
-Source: "src\sbbs3\msvc.win32.dll.{#release}\sbbsexec.dll";   DestDir: "{sys}";       Flags: ignoreversion
+Source: "src\sbbs3\msvc.win32.dll.{#release}\sbbsexec.dll";   DestDir: "{sys}";
 Source: "src\sbbs3\scfg\msvc.win32.exe.{#release}\scfg.exe";  DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "3rdp\win32.release\nspr\bin\nspr4.dll";       	      DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "3rdp\win32.release\mozjs\bin\mozjs185-1.0.dll";      DestDir: "{app}\exec";  Flags: ignoreversion
@@ -87,7 +87,7 @@ Source: "s:\sbbs\exec\dosxtrn.exe";                           DestDir: "{app}\ex
 Source: "ctrl\text.dat";                                      DestDir: "{app}\ctrl";  Flags: ignoreversion
 Source: "exec\*";   DestDir: "{app}\exec";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "baja.js,menu.js,sbbsedit.js,jsdocs.js,testbuild.js,load\menulib.js"
 Source: "text\*";   DestDir: "{app}\text";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.0??.*,.gitignore"
-Source: "xtrn\*";   DestDir: "{app}\xtrn";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.obj,*.tds,smm,.gitignore"; Tasks: upgrade_xtrn
+Source: "xtrn\*";   DestDir: "{app}\xtrn";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.obj,*.tds,*.o,*.d,smm,.gitignore,gcc.*,bcc.*"; Tasks: upgrade_xtrn
 Source: "docs\*";   DestDir: "{app}\docs";  Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "webv4\*";                                            DestDir: "{app}\webv4"; Flags: ignoreversion recursesubdirs createallsubdirs; Tasks: upgrade_webv4
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
@@ -96,4 +96,6 @@ Source: "webv4\*";                                            DestDir: "{app}\we
 Filename: "{app}\ctrl\sbbs.ini"; Section: "Web";      Key: "RootDirectory"; String: "../webv4/root"; Tasks: upgrade_webv4
 
 [Run]
-Filename: "{app}\exec\jsexec"; Parameters: "-U -p update.js"
+; First time jsexec is run might not load config (when upgrading from v3.19 and earlier)
+Filename: "{app}\exec\jsexec"; Parameters: "-U -! update.js"
+Filename: "{app}\exec\jsexec"; Parameters: "-p update.js"
