@@ -93,15 +93,15 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 		if (read_node_cfg(cfg, error, maxerrlen) == false && req_cfg)
 			return false;
 	}
-	if (read_msgs_cfg(cfg, error, maxerrlen) == false)
+	if (read_msgs_cfg(cfg, error, maxerrlen) == false && req_cfg)
 		return false;
-	if (read_file_cfg(cfg, error, maxerrlen) == false)
+	if (read_file_cfg(cfg, error, maxerrlen) == false && req_cfg)
 		return false;
-	if (read_xtrn_cfg(cfg, error, maxerrlen) == false)
+	if (read_xtrn_cfg(cfg, error, maxerrlen) == false && req_cfg)
 		return false;
-	if (read_chat_cfg(cfg, error, maxerrlen) == false)
+	if (read_chat_cfg(cfg, error, maxerrlen) == false && req_cfg)
 		return false;
-	if (read_attr_cfg(cfg, error, maxerrlen) == false)
+	if (read_attr_cfg(cfg, error, maxerrlen) == false && req_cfg)
 		return false;
 
 	if (text != NULL) {

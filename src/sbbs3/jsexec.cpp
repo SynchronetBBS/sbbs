@@ -80,7 +80,7 @@ bool               pause_on_exit = false;
 bool               pause_on_error = false;
 bool               terminated = false;
 bool               recycled;
-bool               require_cfg = false;
+bool               require_cfg = true;
 int                log_level = DEFAULT_LOG_LEVEL;
 int                err_level = DEFAULT_ERR_LOG_LVL;
 long               umask_val = -1;
@@ -129,7 +129,7 @@ void usage()
 	        "    -c<ctrl_dir>   specify path to CTRL directory\n"
 #else
 	        "    -c<ctrl_dir>   specify path to Synchronet CTRL directory\n"
-	        "    -R             require successful load of configuration files\n"
+	        "    -U             do not require successful load of configuration files\n"
 	        "    -C             do not change the current working directory (to CTRL dir)\n"
 #endif
 #if defined(__unix__)
@@ -1431,6 +1431,9 @@ extern "C" int main(int argc, char **argv)
 				case 'R':
 					require_cfg = true;
 					break;
+				case 'U':
+					require_cfg = false;
+					break;
 				case 'v':
 					banner(statfp);
 					fprintf(statfp, "%s\n", (char *)JS_GetImplementationVersion());
@@ -1492,11 +1495,9 @@ extern "C" int main(int argc, char **argv)
 	fprintf(statfp, "\nLoading configuration files from %s\n", scfg.ctrl_dir);
 	if (!load_cfg(&scfg, text, /* prep: */ true, require_cfg, error, sizeof(error))) {
 		fprintf(errfp, "!ERROR loading configuration files: %s\n", error);
-		if (require_cfg)
-			return do_bail(1);
-		prep_dir(scfg.ctrl_dir, scfg.exec_dir, sizeof(scfg.exec_dir));
-	} else if (error[0] != '\0')
-		lprintf(LOG_WARNING, "!WARNING loading configuration files: %s", error);
+		return do_bail(1);
+	} else if (error[0] != '\0' && require_cfg)
+		fprintf(errfp, "!WARNING loading configuration files: %s\n", error);
 
 	SAFECOPY(scfg.temp_dir, "../temp");
 #endif
