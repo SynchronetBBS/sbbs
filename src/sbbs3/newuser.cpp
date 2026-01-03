@@ -77,6 +77,7 @@ bool sbbs_t::newuser()
 		}
 	}
 	SAFECOPY(useron.alias, rlogin_name);
+	truncsp(useron.alias);
 
 	/* Sets defaults per sysop config */
 	SAFECOPY(useron.comp, client_name);  /* hostname or CID name */
@@ -104,6 +105,7 @@ bool sbbs_t::newuser()
 		return false;
 	if (!online)
 		return false;
+	truncsp(useron.alias);
 	if (useron.alias[0] == '\0') {
 		errormsg(WHERE, ERR_CHK, "New user alias (blank)", 0);
 		return false;
@@ -112,6 +114,7 @@ bool sbbs_t::newuser()
 		errormsg(WHERE, ERR_CHK, "New user alias (invalid or duplicate)", 0, useron.alias);
 		return false;
 	}
+	truncsp(useron.name);
 	if (useron.name[0] == '\0') {
 		lprintf(LOG_NOTICE, "New user name blank, using alias");
 		SAFECOPY(useron.name, useron.alias);
@@ -127,15 +130,23 @@ bool sbbs_t::newuser()
 		lprintf(LOG_NOTICE, "New user real name '%s' is a duplicate, setting O Restriction", useron.name);
 		useron.rest |= FLAG('O'); // Can't post or send netmail using real name (it's a duplicate)
 	}
+	truncsp(useron.handle);
 	if (useron.handle[0] == '\0') {
 		lprintf(LOG_NOTICE, "New user handle blank, using alias");
 		SAFECOPY(useron.handle, useron.alias);
+		truncsp(useron.handle);
 	}
 	if (((cfg.uq & UQ_DUPHAND) && finduserstr(0, USER_HANDLE, useron.handle))
 	    || trashcan(useron.handle, "name")) {
 		errormsg(WHERE, ERR_CHK, "New user handle (invalid or duplicate)", 0, useron.handle);
 		return false;
 	}
+	truncsp(useron.address);
+	truncsp(useron.location);
+	truncsp(useron.zipcode);
+	truncsp(useron.phone);
+	truncsp(useron.birth);
+	truncsp(useron.netmail);
 	llprintf("N", "New user: %s (real name: %s, handle: %s)", useron.alias, useron.name, useron.handle);
 
 	/* Default editor (moved here, after terminal type setup Jan-2003) */
