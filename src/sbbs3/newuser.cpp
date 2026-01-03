@@ -98,6 +98,8 @@ bool sbbs_t::newuser()
 		useron.rest = 0L;
 	}
 
+	sys_status |= SS_NEWUSER;
+
 	if (exec_bin(cfg.newuser_prompts_mod, &main_csi) != 0)
 		return false;
 	if (!online)
