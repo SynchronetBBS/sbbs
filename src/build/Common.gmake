@@ -550,7 +550,7 @@ $(OBJODIR)/%$(OFILE) : %.s $(BUILD_DEPENDS) | $(OBJODIR)
 # Implicit C Compile Rule
 $(OBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS) | $(OBJODIR)
 	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) -std=c11 $(CFLAGS) $(CCFLAGS) -o $@ -c $<
+	$(QUIET)$(CC) -std=c17 $(CFLAGS) $(CCFLAGS) -o $@ -c $<
 
 # Implicit C++ Compile Rule
 $(OBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS) | $(OBJODIR)
@@ -565,7 +565,7 @@ $(MTOBJODIR)/%$(OFILE) : %.s $(BUILD_DEPENDS) | $(OBJODIR)
 # Implicit MT C Compile Rule
 $(MTOBJODIR)/%$(OFILE) : %.c $(BUILD_DEPENDS) | $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) -std=c11 $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -o $@ -c $<
+	$(QUIET)$(CC) -std=c17 $(CFLAGS) $(CCFLAGS) $(MT_CFLAGS) -o $@ -c $<
 
 # Implicit MT C++ Compile Rule
 $(MTOBJODIR)/%$(OFILE) : %.cpp $(BUILD_DEPENDS) | $(MTOBJODIR)
