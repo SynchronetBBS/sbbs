@@ -20,6 +20,7 @@ if (!(system.newuser_questions & UQ_NOUPRLWR))
 
 function ask_to_cancel(msg)
 {
+	console.aborted = false;
 	if (msg) {
 		console.print(msg);
 		console.cond_newline();
@@ -126,6 +127,7 @@ while(bbs.online && !js.terminated) {
 	}
 	if (!user.handle)
 		user.handle = user.alias;
+	user.handle = user.handle.trimRight();
 	while ((system.newuser_questions & UQ_HANDLE) && bbs.online && bbs.text(EnterYourHandle)) {
 		console.putmsg(bbs.text(EnterYourHandle), P_SAVEATR);
 		user.handle = console.getstr(user.handle, LEN_HANDLE
@@ -140,7 +142,7 @@ while(bbs.online && !js.terminated) {
 		} else
 			break;
 	}
-	if (system.newuser_questions & UQ_ADDRESS)
+	if (system.newuser_questions & UQ_ADDRESS) {
 		while (bbs.online && bbs.text(EnterYourAddress)) {       /* Get address and zip code */
 			console.putmsg(bbs.text(EnterYourAddress), P_SAVEATR);
 			user.address = console.getstr(user.address, LEN_ADDRESS, kmode)
@@ -148,6 +150,7 @@ while(bbs.online && !js.terminated) {
 				break;
 			ask_to_cancel(gettext("Sorry, that address is not acceptable"));
 		}
+	}
 	while ((system.newuser_questions & UQ_LOCATION) && bbs.online && bbs.text(EnterYourCityState)) {
 		console.putmsg(bbs.text(EnterYourCityState), P_SAVEATR);
 		user.location = console.getstr(user.location, LEN_LOCATION, kmode)
@@ -157,7 +160,7 @@ while(bbs.online && !js.terminated) {
 		} else if(user.location)
 			break;
 	}
-	if (system.newuser_questions & UQ_ADDRESS)
+	if (system.newuser_questions & UQ_ADDRESS) {
 		while (bbs.online && bbs.text(EnterYourZipCode)) {
 			console.putmsg(bbs.text(EnterYourZipCode), P_SAVEATR);
 			user.zipcode = console.getstr(user.zipcode, LEN_ZIPCODE
@@ -166,6 +169,7 @@ while(bbs.online && !js.terminated) {
 				break;
 			ask_to_cancel();
 		}
+	}
 	if ((system.newuser_questions & UQ_PHONE) && bbs.text(EnterYourPhoneNumber)) {
 		var usa = false;
 		if (bbs.text(CallingFromNorthAmericaQ))
