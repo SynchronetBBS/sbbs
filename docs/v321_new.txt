@@ -311,13 +311,16 @@ o Returned to SBBS v3.19 bug-compatible console.attributes behavior of
   silently ignoring Ctrl-A characters in assigned strings
 o msg_area.grp_list[] no longer includes groups with no sub-boards that the
   user can access - issue #905
-o New function: bbs.logline(level=LOG_INFO, code, string)
+o New 'bbs' methods:
+  - logline(level=LOG_INFO, code, string)
+  - matchuserdata()
 o New 'system' property:
   - phonenumber_template
 o New 'system' methods:
   - check_password()
   - check_realname()
   - check_netmail_addr()
+  - check_birthdate()
 o bbs.good_password() renamed to bbs.check_password(), with backward-alias
 o bbs.read_mail() adds option to go directly to viewing messages (not listing)
 o New User class properties:
