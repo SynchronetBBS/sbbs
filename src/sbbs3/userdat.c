@@ -1005,6 +1005,8 @@ enum birth_field { BIRTH_YEAR, BIRTH_MONTH, BIRTH_DAY };
 
 static int split_birthdate(int value, enum birth_field field)
 {
+	if (value < 1)
+		return 0;
 	switch (field) {
 		case BIRTH_YEAR:
 			if (value < 10000)
