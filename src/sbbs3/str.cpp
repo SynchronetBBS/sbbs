@@ -641,14 +641,20 @@ void sbbs_t::read_sif_dat(char *siffile, char *datfile)
 	free(buf);
 }
 
+static bool is_template_char(char ch)
+{
+	return ch == 'N' || ch == 'A' || ch == '!';
+}
+
 /****************************************************************************/
 /* Get string by template. A=Alpha, N=Number, !=Anything                    */
 /* First character MUST be an A,N or !.                                     */
-/* Modes - K_LINE and K_UPPER are supported.                                */
+/* Modes - K_EDIT, K_LINE and K_UPPER are supported.						*/
 /****************************************************************************/
 size_t sbbs_t::gettmplt(char *strout, const char *templt, int mode)
 {
-	char   ch, str[256];
+	char   ch;
+	char   str[256]{};
 	char   tmplt[128];
 	size_t t = strlen(templt), c = 0;
 
@@ -664,7 +670,7 @@ size_t sbbs_t::gettmplt(char *strout, const char *templt, int mode)
 			attr(BLACK | BG_LIGHTGRAY);
 	}
 	while (c < t) {
-		if (tmplt[c] == 'N' || tmplt[c] == 'A' || tmplt[c] == '!')
+		if (is_template_char(tmplt[c]))
 			outchar(' ');
 		else
 			outchar(tmplt[c]);
@@ -674,25 +680,45 @@ size_t sbbs_t::gettmplt(char *strout, const char *templt, int mode)
 	c = 0;
 	if (mode & K_EDIT) {
 		SAFECOPY(str, strout);
-		bputs(str);
-		c = strlen(str);
+		term->cursor_left(bputs(str));
 	}
 	while ((ch = getkey(mode)) != CR && online && !(sys_status & SS_ABORT)) {
+		if (ch == TAB)  // TAB same as CR (implicitly K_TAB mode)
+			break;
 		if (ch == BS || ch == DEL) {
-			if (!c)
-				continue;
-			for (ch = 1, c--; c; c--, ch++)
-				if (tmplt[c] == 'N' || tmplt[c] == 'A' || tmplt[c] == '!')
+			while (c > 0) {
+				c--;
+				term->cursor_left();
+				if (is_template_char(tmplt[c])) {
+					str[c] = ' ';
+					bputs(" \b");
 					break;
-			term->cursor_left(ch);
-			bputs(" \b");
+				}
+			}
 			continue;
 		}
 		if (ch == CTRL_X) {
 			for (; c; c--) {
 				outchar(BS);
-				if (tmplt[c - 1] == 'N' || tmplt[c - 1] == 'A' || tmplt[c - 1] == '!')
+				if (is_template_char(tmplt[c - 1]))
 					bputs(" \b");
+			}
+			str[0] = '\0';
+		}
+		else if (ch == TERM_KEY_LEFT) {
+			while (c > 0) {
+				c--;
+				term->cursor_left();
+				if(is_template_char(tmplt[c]))
+					break;
+			}
+		}
+		else if (ch == TERM_KEY_RIGHT) {
+			while (c < t && str[c] != '\0') {
+				c++;
+				term->cursor_right();
+				if(is_template_char(tmplt[c]))
+					break;
 			}
 		}
 		else if (c < t) {
@@ -702,13 +728,12 @@ size_t sbbs_t::gettmplt(char *strout, const char *templt, int mode)
 				continue;
 			outchar(ch);
 			str[c++] = ch;
-			while (c < t && tmplt[c] != 'N' && tmplt[c] != 'A' && tmplt[c] != '!') {
+			while (c < t && !is_template_char(tmplt[c])) {
 				str[c] = tmplt[c];
 				outchar(tmplt[c++]);
 			}
 		}
 	}
-	str[c] = 0;
 	attr(LIGHTGRAY);
 	term->newline();
 	if (!(sys_status & SS_ABORT))
