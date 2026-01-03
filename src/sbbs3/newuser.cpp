@@ -300,7 +300,7 @@ bool sbbs_t::newuser()
 		exec_bin(cfg.newuser_mod, &main_csi);
 	user_event(EVENT_NEWUSER);
 	getuseron(WHERE);   // In case event(s) modified user data
-	logline("N+", "Successful new user registration");
+	logline("N+", "New user registration completed");
 
 	return true;
 }

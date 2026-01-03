@@ -23,6 +23,9 @@
 #endif
 
 #include <stdarg.h>
+#ifdef _MSC_VER
+#undef __STDC_NO_ATOMICS__
+#endif
 #include <stdatomic.h>
 #include <stdlib.h>	/* alloca */
 #include <stdio.h>
@@ -505,7 +508,7 @@ CIOLIBEXPORT int initciolib(int mode)
 {
 	pthread_once(&init_initialized, init_mutexes);
 	assert_pthread_mutex_lock(&init_mutex);
-	switch(initialized) {
+	switch((int)initialized) {
 		case 1:
 			assert_pthread_mutex_unlock(&init_mutex);
 			return(0);

@@ -69,11 +69,12 @@ for(var c=0; c < options.login_prompts; c++) {
 
 	// New user application?
 	if(str.toUpperCase()=="NEW") {
-	   if(bbs.newuser()) {
-		   bbs.logon();
-		   exit();
-	   }
-	   continue;
+		if(bbs.newuser()) {
+			bbs.logon();
+			exit();
+		}
+		bbs.logline(LOG_NOTICE, "N-", "New user registration canceled");
+		continue;
 	}
 	// Continue normal login (prompting for password)
 	if(bbs.login(str, legacy_password_prompt + "\x01n\x01c\x01hPassword: \x01w")) {
