@@ -1078,21 +1078,30 @@ int getbirthyear(scfg_t* cfg, const char* birth)
 	return year;
 }
 
+static int int_range(int val, int min, int max)
+{
+	if (val < min)
+		return min;
+	if (val > max)
+		return max;
+	return val;
+}
+
 int getbirthmonth(scfg_t* cfg, const char* birth)
 {
-	return parse_birthdate_field(cfg, birth, BIRTH_MONTH);
+	return int_range(parse_birthdate_field(cfg, birth, BIRTH_MONTH), 1, 12);
 }
 
 int getbirthday(scfg_t* cfg, const char* birth)
 {
-	return parse_birthdate_field(cfg, birth, BIRTH_DAY);
+	return int_range(parse_birthdate_field(cfg, birth, BIRTH_DAY), 1, 31);
 }
 
 bool birthdate_is_valid(scfg_t* cfg, const char* birth)
 {
 	int year = getbirthyear(cfg, birth);
-	int month = getbirthmonth(cfg, birth);
-	int day = getbirthday(cfg, birth);
+	int month = parse_birthdate_field(cfg, birth, BIRTH_MONTH);
+	int day = parse_birthdate_field(cfg, birth, BIRTH_DAY);
 	if (year < 1900 || month < 1 || month > 12 || day < 1 || day > 31)
 		return false;
 	static const int days_in_month[] = {
