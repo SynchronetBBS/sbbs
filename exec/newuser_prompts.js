@@ -1,4 +1,5 @@
 // New User Registration Prompts module
+// for Synchronet v3.21+
 
 // At minimum, this script must set user.alias (to a unique, legal user name)
 
@@ -7,6 +8,8 @@ require("userdefs.js", "USER_AUTOTERM");
 require("sbbsdefs.js", "UQ_ALIASES");
 require("key_desf.js", "KEY_DEL");
 require("gettext.js", "gettext");
+
+"use strict";
 
 const PETSCII_DELETE = CTRL_T;
 const PETSCII_UPPERLOWER = 14;
@@ -60,10 +63,10 @@ while(bbs.online && !js.terminated) {
 	if (user.settings & USER_ANSI) {
 		user.rows = 0; // TERM_ROWS_AUTO
 		user.cols = 0; // TERM_COLS_AUTO
-		if (!(system.newuser_questions & UQ_COLORTERM) || user.settings & (USER_RIP) || console.yesno(bbs.text(ColorTerminalQ)))
+		if (!(system.newuser_questions & UQ_COLORTERM) || (user.settings & USER_RIP) || console.yesno(bbs.text(ColorTerminalQ)))
 			user.settings |= USER_COLOR;
 		else
-			user.settings &= ~USER_COLOR;
+			user.settings &= ~(USER_COLOR | USER_AUTOTERM);
 		if (bbs.text(MouseTerminalQ) && console.yesno(bbs.text(MouseTerminalQ)))
 			user.settings |= USER_MOUSE;
 		else
