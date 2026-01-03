@@ -2266,6 +2266,36 @@ js_check_netmail_addr(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+static JSBool
+js_check_birthdate(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *    argv = JS_ARGV(cx, arglist);
+	char*      date = NULL;
+	jsrefcount rc;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (!JSVAL_IS_STRING(argv[0])) {
+		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+		return JS_TRUE;
+	}
+	js_system_private_t* sys;
+	if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
+		return JS_FALSE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], date, NULL);
+	if (date == NULL)
+		return JS_FALSE;
+
+	rc = JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(birthdate_is_valid(sys->cfg, date)));
+	JS_RESUMEREQUEST(cx, rc);
+	free(date);
+
+	return JS_TRUE;
+}
+
 #endif
 
 static JSBool
@@ -2464,6 +2494,10 @@ static jsSyncMethodSpec js_system_functions[] = {
 	{"check_netmail_addr", js_check_netmail_addr, 1, JSTYPE_BOOLEAN, JSDOCSTR("address")
 	 , JSDOCSTR("Check if the specified <i>address</i> is in a supported NetMail address format, "
 				"returns <tt>true</tt> if it is supported")
+	 , 321},
+	{"check_birthdate", js_check_birthdate, 1, JSTYPE_BOOLEAN, JSDOCSTR("string")
+	 , JSDOCSTR("Check if the specified <i>string</i> is a valid birth date, "
+				"returns <tt>true</tt> if it is valid")
 	 , 321},
 	{"check_filename",  js_chkfname,        1,  JSTYPE_BOOLEAN, JSDOCSTR("filename")
 	 , JSDOCSTR("Verify that the specified <i>filename</i> string is legal and allowed for upload by users "
