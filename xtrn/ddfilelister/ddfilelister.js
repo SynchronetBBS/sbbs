@@ -225,6 +225,7 @@ require("sbbsdefs.js", "K_UPPER");
 require('key_defs.js', 'KEY_UP');
 require("text.js", "Email"); // Text string definitions (referencing text.dat)
 require("dd_lightbar_menu.js", "DDLightbarMenu");
+require("cp437_defs.js", "CP437_BOX_DRAWING_UPPER_LEFT_SINGLE");
 require("frame.js", "Frame");
 require("scrollbar.js", "ScrollBar");
 require("mouse_getkey.js", "mouse_getkey");
@@ -242,16 +243,6 @@ var LISTER_DATE = "2025-12-26";
 // Global variables
 
 var KEY_BACKSPACE = CTRL_H;
-
-// Block characters
-var BLOCK1 = "\xB0"; // Dimmest block
-var BLOCK2 = "\xB1";
-var BLOCK3 = "\xB2";
-var BLOCK4 = "\xDB"; // Brightest block
-var THIN_RECTANGLE_LEFT = "\xDD";
-var THIN_RECTANGLE_RIGHT = "\xDE";
-var RIGHT_T_HDOUBLE_VSINGLE = "\xB5";
-var LEFT_T_HDOUBLE_VSINGLE = "\xcC6";
 
 // For file sizes
 //var BYTES_PER_TB = 1099511627776; // Seems to be too big for JS
@@ -2729,10 +2720,10 @@ function DDFileMenuBar_constructPromptText()
 	var numSolidBlocks = console.screen_columns - numInnerChars - 11;
 	var numSolidBlocksPerSide = Math.floor(numSolidBlocks / 2);
 	// Build the prompt text: Start with the left blocks
-	this.promptText = "\x01n\x01w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4;
+	this.promptText = "\x01n\x01w" + CP437_LIGHT_SHADE + CP437_MEDIUM_SHADE + CP437_DARK_SHADE + CP437_FULL_BLOCK;
 	for (var i = 0; i < numSolidBlocksPerSide; ++i)
-		this.promptText += BLOCK4;
-	this.promptText += THIN_RECTANGLE_LEFT;
+		this.promptText += CP437_FULL_BLOCK;
+	this.promptText += CP437_LEFT_HALF_BLOCK;
 	// Add the menu item text & block characters
 	var menuItemXPos = 6 + numSolidBlocksPerSide; // The X position of the start of item text for each item
 	var maxPromptLineLen = console.screen_columns - 1; // Maximum length of the prompt line
@@ -2764,10 +2755,10 @@ function DDFileMenuBar_constructPromptText()
 		}
 	}
 	// Add the right-side blocks
-	this.promptText += "\x01w" + THIN_RECTANGLE_RIGHT;
+	this.promptText += "\x01w" + CP437_RIGHT_HALF_BLOCK;
 	for (var i = 0; i < numSolidBlocksPerSide; ++i)
-		this.promptText += BLOCK4;
-	this.promptText += BLOCK3 + BLOCK2 + BLOCK1 + "\x01n";
+		this.promptText += CP437_FULL_BLOCK;
+	this.promptText += CP437_DARK_SHADE + CP437_MEDIUM_SHADE + CP437_LIGHT_SHADE + "\x01n";
 }
 // For the DDFileMenuBar class: Gets the text for a prompt item based on its index
 function DDFileMenuBar_getItemTextFromIdx(pIdx)
@@ -2845,7 +2836,7 @@ function DDFileMenuBar_getDDFileMenuBarItemText(pText, pSelected, pWithTrailingB
 		itemText += "\x01" + "6\x01c\x01h" + firstChar + "\x01n\x01" + "6\x01k" + restOfText;
 	itemText += "\x01n";
 	if (withTrailingBlock)
-		itemText += "\x01w" + THIN_RECTANGLE_RIGHT + THIN_RECTANGLE_LEFT + "\x01n";
+		itemText += "\x01w" + CP437_RIGHT_HALF_BLOCK + CP437_LEFT_HALF_BLOCK + "\x01n";
 	return itemText;
 }
 // For the DDFileMenuBar class: Increments to the next menu item and refreshes the
@@ -3335,10 +3326,10 @@ function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride, pNumberedMode)
 	}
 	else
 	{
-		console.print("\x01n\x01w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4 + THIN_RECTANGLE_LEFT);
+		console.print("\x01n\x01w" + CP437_LIGHT_SHADE + CP437_MEDIUM_SHADE + CP437_DARK_SHADE + CP437_FULL_BLOCK + CP437_LEFT_HALF_BLOCK);
 		console.print(libText);
 		// Rightmost area: Display either the number of files if enabled, or "DD File"
-		console.print("\x01w" + THIN_RECTANGLE_RIGHT + "\x01k\x01h" + BLOCK4 + "\x01n\x01w" + THIN_RECTANGLE_LEFT);
+		console.print("\x01w" + CP437_RIGHT_HALF_BLOCK + "\x01k\x01h" + CP437_FULL_BLOCK + "\x01n\x01w" + CP437_LEFT_HALF_BLOCK);
 		console.attributes = "GH";
 		var wasAbleToDisplayNumFiles = false;
 		if (gSettings.displayNumFilesInHeader && dirCode.length > 0)
@@ -3363,17 +3354,17 @@ function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride, pNumberedMode)
 		else
 			console.print("DD File");
 		console.attributes = "NW";
-		console.print(THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1);
+		console.print(CP437_RIGHT_HALF_BLOCK + CP437_FULL_BLOCK + CP437_DARK_SHADE + CP437_MEDIUM_SHADE + CP437_LIGHT_SHADE);
 		console.crlf();
 		// Directory line
-		console.print("\x01n\x01w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4 + THIN_RECTANGLE_LEFT);
+		console.print("\x01n\x01w" + CP437_LIGHT_SHADE + CP437_MEDIUM_SHADE + CP437_DARK_SHADE + CP437_FULL_BLOCK + CP437_LEFT_HALF_BLOCK);
 		console.print(dirText);
 		// Rightmost area: Display "Files" if the number of files was able to be displayed, or "Lister"
-		console.print("\x01w" + THIN_RECTANGLE_RIGHT + "\x01k\x01h" + BLOCK4 + "\x01n\x01w" + THIN_RECTANGLE_LEFT);
+		console.print("\x01w" + CP437_RIGHT_HALF_BLOCK + "\x01k\x01h" + CP437_FULL_BLOCK + "\x01n\x01w" + CP437_LEFT_HALF_BLOCK);
 		console.attributes = "GH";
 		console.print(wasAbleToDisplayNumFiles ? " Files " : "Lister ");
 		console.attributes = "NW";
-		console.print(THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1);
+		console.print(CP437_RIGHT_HALF_BLOCK + CP437_FULL_BLOCK + CP437_DARK_SHADE + CP437_MEDIUM_SHADE + CP437_LIGHT_SHADE);
 		console.attributes = "N";
 
 		// List header
@@ -3413,7 +3404,7 @@ function displayListHdrLine(pMoveToLocationFirst, pNumberedMode)
 	if (pMoveToLocationFirst && console.term_supports(USER_ANSI))
 		console.gotoxy(1, 3);
 
-	var listHdrEndText = THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1;
+	var listHdrEndText = CP437_RIGHT_HALF_BLOCK + CP437_FULL_BLOCK + CP437_DARK_SHADE + CP437_MEDIUM_SHADE + CP437_LIGHT_SHADE;
 	printf(displayListHdrLine.formatStr, "Filename", "Size", "Description", listHdrEndText);
 }
 
@@ -3854,7 +3845,7 @@ function displayTextWithLineBelow(pText, pCenter, pTextColor, pLineColor)
 		var solidLine = "";
 		var textLength = console.strlen(pText);
 		for (var i = 0; i < textLength; ++i)
-			solidLine += HORIZONTAL_SINGLE;
+			solidLine += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
 		console.center(lineColor + solidLine);
 	}
 	else
@@ -3864,7 +3855,7 @@ function displayTextWithLineBelow(pText, pCenter, pTextColor, pLineColor)
 		console.print(lineColor);
 		var textLength = console.strlen(pText);
 		for (var i = 0; i < textLength; ++i)
-			console.print(HORIZONTAL_SINGLE);
+			console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
 		console.crlf();
 	}
 }
@@ -4013,25 +4004,25 @@ function drawBorder(pX, pY, pWidth, pHeight, pColor, pLineStyle, pTitle, pTitleC
 		return;
 
 	var borderChars = {
-		UL: UPPER_LEFT_SINGLE,
-		UR: UPPER_RIGHT_SINGLE,
-		LL: LOWER_LEFT_SINGLE,
-		LR: LOWER_RIGHT_SINGLE,
-		preText: RIGHT_T_SINGLE,
-		postText: LEFT_T_SINGLE,
-		horiz: HORIZONTAL_SINGLE,
-		vert: VERTICAL_SINGLE
+		UL: CP437_BOX_DRAWING_UPPER_LEFT_SINGLE,
+		UR: CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE,
+		LL: CP437_BOX_DRAWING_LOWER_LEFT_SINGLE,
+		LR: CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE,
+		preText: CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT,
+		postText: CP437_BOX_DRAWING_LIGHT_LEFT_T,
+		horiz: CP437_BOX_DRAWING_HORIZONTAL_SINGLE,
+		vert: CP437_BOX_DRAWINGS_LIGHT_VERTICAL
 	};
 	if (typeof(pLineStyle) === "string" && pLineStyle.toUpperCase() == "DOUBLE")
 	{
-		borderChars.UL = UPPER_LEFT_DOUBLE;
-		borderChars.UR = UPPER_RIGHT_DOUBLE;
-		borderChars.LL = LOWER_LEFT_DOUBLE;
-		borderChars.LR = LOWER_RIGHT_DOUBLE;
-		borderChars.preText = RIGHT_T_DOUBLE;
-		borderChars.postText = LEFT_T_DOUBLE
-		borderChars.horiz = HORIZONTAL_DOUBLE;
-		borderChars.vert = VERTICAL_DOUBLE;
+		borderChars.UL = CP437_BOX_DRAWING_UPPER_LEFT_DOUBLE;
+		borderChars.UR = CP437_BOX_DRAWING_UPPER_RIGHT_DOUBLE;
+		borderChars.LL = CP437_BOX_DRAWING_LOWER_LEFT_DOUBLE;
+		borderChars.LR = CP437_BOX_DRAWING_LOWER_RIGHT_DOUBLE;
+		borderChars.preText = CP437_BOX_DRAWING_RIGHT_DOUBLE_T;
+		borderChars.postText = CP437_BOX_DRAWING_LEFT_DOUBLE_T
+		borderChars.horiz = CP437_BOX_DRAWING_HORIZONTAL_DOUBLE;
+		borderChars.vert = CP437_BOX_DRAWINGS_DOUBLE_VERTICAL;
 	}
 
 	// Top border
@@ -4118,7 +4109,7 @@ function drawSeparatorLine(pX, pY, pWidth)
 	console.gotoxy(pX, pY);
 	console.print("\x01n\x01g\x01h");
 	for (var i = 0; i < width; ++i)
-		console.print(HORIZONTAL_SINGLE);
+		console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
 	console.attributes = "N";
 }
 
