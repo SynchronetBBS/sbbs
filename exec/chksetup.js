@@ -96,7 +96,7 @@ var tests = {
 		if(guests != 1)
 			return format("%u guest accounts found, recommended number: 1", guests);
 	},
-	
+
 	check_user_names: function(options)
 	{
 		var output = [];
@@ -112,6 +112,8 @@ var tests = {
 				output.push(format("User #%-4u has a disallowed alias%s"
 					, usr.number
 					, options.verbose ? (': ' + usr.alias) : ''));
+			if(usr.security.restrictions & UFLAG_G)
+				continue;
 			if(!system.check_realname(usr.name))
 				output.push(format("User #%-4u has a disallowed name%s"
 					, usr.number
@@ -119,7 +121,7 @@ var tests = {
 		}
 		return output;
 	},
-	
+
 	check_user_passwords: function(options)
 	{
 		var output = [];
