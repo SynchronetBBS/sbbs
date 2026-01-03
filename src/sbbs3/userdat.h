@@ -89,6 +89,7 @@ DLLEXPORT char* parse_birthdate(scfg_t*, const char* birthdate, char* out, size_
 DLLEXPORT char* format_birthdate(scfg_t*, const char* birthdate, char* out, size_t);
 DLLEXPORT char* birthdate_format(scfg_t*, char* buf, size_t);
 DLLEXPORT char* birthdate_template(scfg_t*, char* buf, size_t);
+DLLEXPORT bool  birthdate_is_valid(scfg_t*, const char* birthdate);
 DLLEXPORT char* username(scfg_t*, int usernumber, char * str);
 DLLEXPORT char* usermailaddr(scfg_t*, char* addr, const char* name);
 DLLEXPORT void  smtp_netmailaddr(scfg_t*, smbmsg_t*, char* name, size_t namelen, char* addr, size_t addrlen);
@@ -187,10 +188,10 @@ DLLEXPORT enum parsed_vpath parse_vpath(scfg_t*, const char* vpath, int* libnum,
 /* user .ini file access */
 DLLEXPORT bool  user_get_property(scfg_t*, unsigned user_number, const char* section, const char* key, char* value, size_t maxlen);
 DLLEXPORT bool  user_set_property(scfg_t*, unsigned user_number, const char* section, const char* key, const char* value);
-DLLEXPORT bool user_set_time_property(scfg_t*, unsigned user_number, const char* section, const char* key, time_t);
+DLLEXPORT bool  user_set_time_property(scfg_t*, unsigned user_number, const char* section, const char* key, time_t);
 
 /* New-message-scan pointer functions: */
-DLLEXPORT bool newmsgs(smb_t*, time_t);
+DLLEXPORT bool  newmsgs(smb_t*, time_t);
 DLLEXPORT bool  getmsgptrs(scfg_t*, user_t*, subscan_t*, void (*progress)(void*, int, int), void* cbdata);
 DLLEXPORT bool  putmsgptrs(scfg_t*, user_t*, subscan_t*);
 DLLEXPORT bool  putmsgptrs_fp(scfg_t*, user_t*, subscan_t*, FILE*);

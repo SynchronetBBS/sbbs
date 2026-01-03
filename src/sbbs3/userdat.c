@@ -1078,23 +1078,31 @@ int getbirthyear(scfg_t* cfg, const char* birth)
 	return year;
 }
 
-static int int_range(int val, int min, int max)
-{
-	if (val < min)
-		return min;
-	if (val > max)
-		return max;
-	return val;
-}
-
 int getbirthmonth(scfg_t* cfg, const char* birth)
 {
-	return int_range(parse_birthdate_field(cfg, birth, BIRTH_MONTH), 1, 12);
+	return parse_birthdate_field(cfg, birth, BIRTH_MONTH);
 }
 
 int getbirthday(scfg_t* cfg, const char* birth)
 {
-	return int_range(parse_birthdate_field(cfg, birth, BIRTH_DAY), 1, 31);
+	return parse_birthdate_field(cfg, birth, BIRTH_DAY);
+}
+
+bool birthdate_is_valid(scfg_t* cfg, const char* birth)
+{
+	int year = getbirthyear(cfg, birth);
+	int month = getbirthmonth(cfg, birth);
+	int day = getbirthday(cfg, birth);
+	if (year < 1900 || month < 1 || month > 12 || day < 1 || day > 31)
+		return false;
+	static const int days_in_month[] = {
+		31, 28, 31, 30, 31, 30,
+		31, 31, 30, 31, 30, 31
+	};
+	// Adjust for leap years
+	if (month == 2 && (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)))
+		return day <= 29;
+	return day <= days_in_month[month - 1];
 }
 
 // Always returns string in MM/DD/YY format
@@ -1160,7 +1168,7 @@ int getage(scfg_t* cfg, const char *birth)
 	if (!VALID_CFG(cfg) || birth == NULL)
 		return 0;
 
-	if (!atoi(birth) || !atoi(birth + 3))  /* Invalid */
+	if (!birthdate_is_valid(cfg, birth))
 		return 0;
 
 	now = time(NULL);
@@ -1172,8 +1180,6 @@ int getage(scfg_t* cfg, const char *birth)
 	int age = (1900 + tm.tm_year) - year;
 	int mon = getbirthmonth(cfg, birth);
 	int day = getbirthday(cfg, birth);
-	if (mon < 1 || mon > 12 || day < 1 || day > 31)
-		return 0;
 	if (mon > tm.tm_mon || (mon == tm.tm_mon && day > tm.tm_mday))
 		age--;
 	return age;
