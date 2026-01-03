@@ -631,12 +631,6 @@ CIOLIBEXPORT int initciolib(int mode)
 CIOLIBEXPORT int ciolib_kbwait(int ms)
 {
 	CIOLIB_INIT();
-	assert_pthread_mutex_lock(&unget_mutex);
-	if(ungot) {
-		assert_pthread_mutex_unlock(&unget_mutex);
-		return(1);
-	}
-	assert_pthread_mutex_unlock(&unget_mutex);
 	if (ciolib_kbhit())
 		return(1);
 	if (cio_api.kbwait)
