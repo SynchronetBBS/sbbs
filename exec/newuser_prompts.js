@@ -80,7 +80,7 @@ while(bbs.online && !js.terminated) {
 		console.putmsg(prompt, P_SAVEATR);
 		user.alias = console.getstr(user.alias, LEN_ALIAS, kmode);
 		if (!system.check_name(user.alias)
-			|| system.matchuserdata(U_NAME, user.alias)
+			|| bbs.matchuserdata(U_NAME, user.alias)
 			|| (!(system.newuser_questions & UQ_ALIASES) && !system.check_realname(user.alias))) {
 			bbs.logline(LOG_NOTICE, "N!", format("Invalid or duplicate user real name or alias: '%s'", user.alias));
 			console.putmsg(bbs.text(YouCantUseThatName));
@@ -97,7 +97,7 @@ while(bbs.online && !js.terminated) {
 			if (!system.check_name(user.name, /* unique: */true)
 				|| !system.check_realname(user.name)
 				|| ((system.newuser_questions & UQ_DUPREAL)
-					&& system.matchuserdata(U_NAME, user.name))) {
+					&& bbs.matchuserdata(U_NAME, user.name))) {
 				bbs.logline(LOG_NOTICE, "N!", format("Invalid or duplicate user real name: '%s'", user.name));
 				console.putmsg(bbs.text(YouCantUseThatName));
 			} else
@@ -125,7 +125,7 @@ while(bbs.online && !js.terminated) {
 		if (!user.handle
 			|| user.handle.indexOf(0xff) >= 0
 			|| ((system.newuser_questions & UQ_DUPHAND)
-				&& system.matchuserdata(U_HANDLE, user.handle))
+				&& bbs.matchuserdata(U_HANDLE, user.handle))
 			|| bbs.trashcan(user.handle, "name")) {
 			bbs.logline(LOG_NOTICE, "N!", format("Invalid or duplicate user handle: '%s'", user.name));
 			console.putmsg(bbs.text(YouCantUseThatName));
@@ -202,7 +202,7 @@ while(bbs.online && !js.terminated) {
 		user.netmail = console.getstr(user.netmail, LEN_NETMAIL, K_EDIT | K_AUTODEL | K_LINE | K_TRIM);
 		if (!user.netmail
 			|| bbs.trashcan(user.netmail, "email")
-			|| ((system.newuser_questions & UQ_DUPNETMAIL) && system.matchuserdata(U_NETMAIL, user.netmail)))
+			|| ((system.newuser_questions & UQ_DUPNETMAIL) && bbs.matchuserdata(U_NETMAIL, user.netmail)))
 			console.putmsg(bbs.text(YouCantUseThatNetmail));
 		else
 			break;
