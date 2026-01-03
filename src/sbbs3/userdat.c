@@ -4121,8 +4121,8 @@ bool check_name(scfg_t* cfg, const char* name, bool unique)
 		return false;
 	if (unique && matchuser(cfg, name, true /* sysop_alias */))
 		return false;
-	if (name[0] <= ' '              /* begins with white-space? */
-	    || name[len - 1] <= ' '       /* ends with white-space */
+	if ((uchar)name[0] <= ' '              /* begins with white-space? */
+	    || (uchar)name[len - 1] <= ' '     /* ends with white-space */
 	    || !IS_ALPHA(name[0])
 	    || !stricmp(name, cfg->sys_id)
 	    || strchr(name, 0xff)
@@ -4144,7 +4144,7 @@ bool check_realname(scfg_t* cfg, const char* name)
 	len = strlen(name);
 	if (len < 2)
 		return false;
-	if (name[0] <= ' ' || name[len - 1] <= ' ')
+	if ((uchar)name[0] <= ' ' || (uchar)name[len - 1] <= ' ')
 		return false;
 	if (str_has_ctrl(name))
 		return false;
