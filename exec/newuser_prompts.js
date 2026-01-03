@@ -6,6 +6,7 @@ require("text.js", "AutoTerminalQ");
 require("userdefs.js", "USER_AUTOTERM");
 require("sbbsdefs.js", "UQ_ALIASES");
 require("key_desf.js", "KEY_DEL");
+require("gettext.js", "gettext");
 
 const PETSCII_DELETE = CTRL_T;
 const PETSCII_UPPERLOWER = 14;
@@ -13,6 +14,16 @@ const PETSCII_UPPERLOWER = 14;
 var kmode = (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL | K_TRIM;
 if (!(system.newuser_questions & UQ_NOUPRLWR))
 	kmode |= K_UPRLWR;
+
+function ask_to_cancel(msg)
+{
+	if (msg) {
+		console.print(msg);
+		console.cond_newline();
+	}
+	if (!console.yesno(gettext("Continue new user registration")))
+		exit(1);
+}
 
 while(bbs.online && !js.terminated) {
 	if (console.autoterm || (bbs.text(AutoTerminalQ) && console.yesno(bbs.text(AutoTerminalQ)))) {
@@ -35,9 +46,7 @@ while(bbs.online && !js.terminated) {
 			user.settings |= (USER_PETSCII | USER_COLOR);
 		else if (bbs.online) {
 			bbs.logline(LOG_NOTICE, "N!", format("Unsupported backspace key received: %02Xh", key));
-			console.putmsg(format(bbs.text(InvalidBackspaceKeyFmt), key, key));
-			if (bbs.text(ContinueQ) && !console.yesno(bbs.text(ContinueQ)))
-				exit(1);
+			ask_to_cancel(format(bbs.text(InvalidBackspaceKeyFmt), key, key));
 		}
 	}
 
@@ -71,7 +80,6 @@ while(bbs.online && !js.terminated) {
 		else
 			user.settings &= ~USER_NO_EXASCII;
 	}
-	bbs.sys_status |= SS_NEWUSER;
 	console.term_updated();
 
 	var prompt = bbs.text(EnterYourRealName);
@@ -84,9 +92,7 @@ while(bbs.online && !js.terminated) {
 			|| bbs.matchuserdata(U_NAME, user.alias)
 			|| (!(system.newuser_questions & UQ_ALIASES) && !system.check_realname(user.alias))) {
 			bbs.logline(LOG_NOTICE, "N!", format("Invalid or duplicate user real name or alias: '%s'", user.alias));
-			console.putmsg(bbs.text(YouCantUseThatName));
-			if (bbs.text(ContinueQ) && !console.yesno(bbs.text(ContinueQ)))
-				exit(1);
+			ask_to_cancel(bbs.text(YouCantUseThatName));
 			continue;
 		}
 		break;
@@ -100,11 +106,9 @@ while(bbs.online && !js.terminated) {
 				|| ((system.newuser_questions & UQ_DUPREAL)
 					&& bbs.matchuserdata(U_NAME, user.name))) {
 				bbs.logline(LOG_NOTICE, "N!", format("Invalid or duplicate user real name: '%s'", user.name));
-				console.putmsg(bbs.text(YouCantUseThatName));
+				ask_to_cancel(bbs.text(YouCantUseThatName));
 			} else
 				break;
-			if (bbs.text(ContinueQ) && !console.yesno(bbs.text(ContinueQ)))
-				exit(1);
 		}
 	}
 	else if (system.newuser_questions & UQ_COMPANY && bbs.text(EnterYourCompany)) {
@@ -129,11 +133,9 @@ while(bbs.online && !js.terminated) {
 				&& bbs.matchuserdata(U_HANDLE, user.handle))
 			|| bbs.trashcan(user.handle, "name")) {
 			bbs.logline(LOG_NOTICE, "N!", format("Invalid or duplicate user handle: '%s'", user.name));
-			console.putmsg(bbs.text(YouCantUseThatName));
+			ask_to_cancel(bbs.text(YouCantUseThatName));
 		} else
 			break;
-		if (bbs.text(ContinueQ) && !console.yesno(bbs.text(ContinueQ)))
-			exit(1);
 	}
 	if (system.newuser_questions & UQ_ADDRESS)
 		while (bbs.online && bbs.text(EnterYourAddress)) {       /* Get address and zip code */
@@ -141,16 +143,15 @@ while(bbs.online && !js.terminated) {
 			user.address = console.getstr(user.address, LEN_ADDRESS, kmode)
 			if (user.address)
 				break;
+			ask_to_cancel(gettext("Sorry, that address is not acceptable"));
 		}
 	while ((system.newuser_questions & UQ_LOCATION) && bbs.online && bbs.text(EnterYourCityState)) {
 		console.putmsg(bbs.text(EnterYourCityState), P_SAVEATR);
 		user.location = console.getstr(user.location, LEN_LOCATION, kmode)
-		if (!user.location)
-			continue;
-		if (!(system.newuser_questions & UQ_NOCOMMAS) && strchr(user.location, ',') == NULL) {
-			console.putmsg(bbs.text(CommaInLocationRequired));
+		if (!(system.newuser_questions & UQ_NOCOMMAS) && user.location.indexOf(',') < 1) {
+			ask_to_cancel(bbs.text(CommaInLocationRequired));
 			user.location = "";
-		} else
+		} else if(user.location)
 			break;
 	}
 	if (system.newuser_questions & UQ_ADDRESS)
@@ -160,6 +161,7 @@ while(bbs.online && !js.terminated) {
 							, K_UPPER | (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL | K_TRIM);
 			if (user.zipcode)
 				break;
+			ask_to_cancel();
 		}
 	if ((system.newuser_questions & UQ_PHONE) && bbs.text(EnterYourPhoneNumber)) {
 		var usa = false;
@@ -170,17 +172,22 @@ while(bbs.online && !js.terminated) {
 			if (!usa) {
 				user.phone = console.getstr(user.phone, LEN_PHONE
 								, K_UPPER | K_LINE | (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL | K_TRIM);
-				if (user.phone.length < 5)
+				if (user.phone.length < 5) {
+					ask_to_cancel(gettext("Sorry, that phone number is not acceptable"));
 					continue;
+				}
 			}
 			else {
 				user.phone = console.gettemplate(system.phonenumber_template, user.phone
 								, K_LINE | (system.newuser_questions & UQ_NOEXASC) | K_EDIT);
-				if (user.phone.length < system.phonenumber_template.length)
+				if (user.phone.length < system.phonenumber_template.length) {
+					ask_to_cancel(gettext("Sorry, that phone number is not acceptable"));
 					continue;
+				}
 			}
 			if (!bbs.trashcan(user.phone, "phone"))
 				break;
+			ask_to_cancel(gettext("Sorry, that phone number is not acceptable"));
 		}
 	}
 	while ((system.newuser_questions & UQ_SEX) && bbs.text(EnterYourGender) && bbs.atcode("GENDERS") && bbs.online) {
@@ -190,6 +197,7 @@ while(bbs.online && !js.terminated) {
 			user.gender = gender;
 			break;
 		}
+		ask_to_cancel();
 	}
 	while ((system.newuser_questions & UQ_BIRTH) && bbs.online && bbs.text(EnterYourBirthday)) {
 		console.putmsg(format(bbs.text(EnterYourBirthday), system.birthdate_format), P_SAVEATR);
@@ -198,6 +206,7 @@ while(bbs.online && !js.terminated) {
 			user.birthdate = birthdate;
 			break;
 		}
+		ask_to_cancel(gettext("Sorry, that birthdate is not acceptable"));
 	}
 	while (!(system.newuser_questions & UQ_NONETMAIL) && bbs.online && bbs.text(EnterNetMailAddress)) {
 		console.putmsg(bbs.text(EnterNetMailAddress));
@@ -205,7 +214,7 @@ while(bbs.online && !js.terminated) {
 		if (!user.netmail
 			|| bbs.trashcan(user.netmail, "email")
 			|| ((system.newuser_questions & UQ_DUPNETMAIL) && bbs.matchuserdata(U_NETMAIL, user.netmail)))
-			console.putmsg(bbs.text(YouCantUseThatNetmail));
+			ask_to_cancel(bbs.text(YouCantUseThatNetmail));
 		else
 			break;
 	}
@@ -216,4 +225,5 @@ while(bbs.online && !js.terminated) {
 
 	if (!bbs.text(UserInfoCorrectQ) || console.yesno(bbs.text(UserInfoCorrectQ)))
 		break;
+	console.print(gettext("Restarting new user registration") + "\r\n");
 }
