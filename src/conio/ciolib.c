@@ -23,6 +23,9 @@
 #endif
 
 #include <stdarg.h>
+#ifdef _MSC_VER
+#undef __STDC_NO_ATOMICS__
+#endif
 #include <stdatomic.h>
 #include <stdlib.h>	/* alloca */
 #include <stdio.h>
