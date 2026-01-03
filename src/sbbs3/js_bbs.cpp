@@ -4694,6 +4694,63 @@ js_select_user(JSContext *cx, uintN argc, jsval *arglist)
 	return JS_TRUE;
 }
 
+static JSBool
+js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *           obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *              argv = JS_ARGV(cx, arglist);
+	char*                p;
+	JSString*            js_str;
+	int32                field = 0;
+	int32                usernumber = 0;
+	int                  len;
+	jsrefcount           rc;
+	BOOL                 match_del = FALSE;
+	BOOL                 match_next = FALSE;
+	uintN                argnum = 2;
+
+	if (js_argcIsInsufficient(cx, argc, 2))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+	if (JSVAL_NULL_OR_VOID(argv[1])) {
+		JS_SET_RVAL(cx, arglist, JSVAL_ZERO);
+		return JS_TRUE;
+	}
+	sbbs_t* sbbs;
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+
+	JS_ValueToInt32(cx, argv[0], &field);
+	rc = JS_SUSPENDREQUEST(cx);
+	len = user_field_len(static_cast<user_field>(field));
+	JS_RESUMEREQUEST(cx, rc);
+	if (len < 1) {
+		JS_ReportError(cx, "Invalid user field: %d", field);
+		return JS_FALSE;
+	}
+
+	if ((js_str = JS_ValueToString(cx, argv[1])) == NULL)
+		return JS_FALSE;
+
+	if (argnum < argc && JSVAL_IS_BOOLEAN(argv[argnum]))
+		JS_ValueToBoolean(cx, argv[argnum++], &match_del);
+	if (argnum < argc && JSVAL_IS_NUMBER(argv[argnum]))
+		JS_ValueToInt32(cx, argv[argnum++], &usernumber);
+	if (argnum < argc && JSVAL_IS_BOOLEAN(argv[argnum]))
+		JS_ValueToBoolean(cx, argv[argnum++], &match_next);
+
+	JSSTRING_TO_ASTRING(cx, js_str, p, 128, NULL);
+	if (p == NULL)
+		return JS_FALSE;
+
+	rc = JS_SUSPENDREQUEST(cx);
+	int result = sbbs->finduserstr(usernumber, static_cast<user_field>(field), p, match_del, match_next);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(result));
+	JS_RESUMEREQUEST(cx, rc);
+	return JS_TRUE;
+}
+
 static jsSyncMethodSpec js_bbs_functions[] = {
 	{"atcode",          js_atcode,          1,  JSTYPE_STRING,  JSDOCSTR("code_string")
 	 , JSDOCSTR("Return @-code value, specified <i>code</i> string does not include @ character delimiters.")
@@ -4896,6 +4953,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , JSDOCSTR("Change to a different user.<br>"
 		"Will prompt for user name or number when none is passed.")
 	 , 310
+	},
+	{"matchuserdata",   js_matchuserdata,   2,  JSTYPE_NUMBER,  JSDOCSTR("field, data [,<i>bool</i> match_del=false] [,<i>number</i> usernumber, <i>bool</i> match_next=false]")
+	 , JSDOCSTR("Search user database for data in a specific field, with progress indication. See <tt>system.matchuserdata()</tt> for more details on usage.")
+	 , 321
 	},
 	{"list_logons",     js_logonlist,       0,  JSTYPE_VOID,    JSDOCSTR("[arguments]")
 	 , JSDOCSTR("Display the logon list (optionally passing arguments to the logon list module).")
