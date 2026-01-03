@@ -1,26 +1,5 @@
-// user settings
-// A javascript replacement for the built in settings which
-// will allow a sysop to do a bit more configuration and
-// add or remove options as they wish.
-
-// *** NOTE - This will only work on Synchronet v3.20 or above!
-
-// This is another example of Nigel's inability to produce
-// good code and should certainly not be used as a template
-// for your own project. The only guarantee I give is that it
-// works, mostly, on my BBS while testing.
-
-// If you want to customize the layout/display, you can use
-// replace_text(nnn,"your text"); for any of the lines. You
-// can find the number to use for nnn in the ctrl/text.dat
-// file. If there's enough interest, I'll look into a template
-// system, whereby you can design your page as a .asc file and
-// then display it.
-
-// Updates and suggestions to:  sysop@endofthelinebbs.com (Email)
-//				sysop@1:124/5016	  (Netmail)
-//				sysop@EOTLBBS		  (QWK)
-//				nelgin on #synchronet	  (irc)
+// User (default) settings/configuration menu
+// for Synchronet v3.21+
 
 "use strict";
 
