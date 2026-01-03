@@ -787,7 +787,8 @@ bool sbbs_t::answer()
 		    && !::trashcan(&cfg, rlogin_name, "name")) {
 			lprintf(LOG_INFO, "%s !UNKNOWN specified username: '%s', starting new user sign-up", client.protocol, rlogin_name);
 			bprintf("%s: %s\r\n", text[UNKNOWN_USER], rlogin_name);
-			newuser();
+			if (!newuser())
+				llprintf(LOG_NOTICE, "N-", "%s !New user registration canceled", client.protocol);
 		}
 
 		if (!useron.number) {    /* manual/regular login */
