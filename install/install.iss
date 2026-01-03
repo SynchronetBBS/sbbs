@@ -84,7 +84,7 @@ Source: "node1\node.ini";                                     DestDir: "{app}\no
 Source: "node1\node.ini";                                     DestDir: "{app}\node3"; Flags: ignoreversion
 Source: "node1\node.ini";                                     DestDir: "{app}\node4"; Flags: ignoreversion
 Source: "exec\*";   DestDir: "{app}\exec";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "baja.js,menu.js,sbbsedit.js,jsdocs.js,testbuild.js,load\menulib.js"
-Source: "ctrl\*";   DestDir: "{app}\ctrl";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.?.cnf,*.?.ini,dsts.*,*.dab,test.ini"
+Source: "ctrl\*";   DestDir: "{app}\ctrl";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.?.cnf,*.?.ini,dsts.*,*.dab,text.ini"
 Source: "text\*";   DestDir: "{app}\text";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.0??.*,.gitignore"
 Source: "xtrn\*";   DestDir: "{app}\xtrn";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.obj,*.tds,*.o,*.d,smm,.gitignore,gcc.*,bcc.*"
 Source: "docs\*";   DestDir: "{app}\docs";  Flags: ignoreversion recursesubdirs createallsubdirs
