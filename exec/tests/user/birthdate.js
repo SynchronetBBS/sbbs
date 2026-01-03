@@ -45,6 +45,6 @@ for (var i in test) {
 	var u = new User;
 	u.birthdate = i;
 	if (u.birthdate != test[i])
-		throw new Error(format("birthdate='%s' produced '%s' instead of expeced: '%s'"
+		throw new Error(format("birthdate='%s' produced '%s' instead of expected: '%s'"
 			,i, u.birthdate, test[i]));
 }
