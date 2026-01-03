@@ -439,7 +439,7 @@ function DrawQuoteWindowTopBorder_IceStyle(pQuoteWinHeight, pEditLeft, pEditRigh
    // not been defined yet, then build it.
    if (typeof(DrawQuoteWindowTopBorder_IceStyle.border) == "undefined")
    {
-      DrawQuoteWindowTopBorder_IceStyle.border = randomTwoColorString(P437_BOX_DRAWING_UPPER_LEFT_VSINGLE_HDOUBLE,
+      DrawQuoteWindowTopBorder_IceStyle.border = randomTwoColorString(CP437_BOX_DRAWING_UPPER_LEFT_VSINGLE_HDOUBLE,
                                                               gConfigSettings.iceColors.BorderColor1,
                                                               gConfigSettings.iceColors.BorderColor2)
                 + gConfigSettings.iceColors.BorderColor2 + CP437_LEFT_HALF_BLOCK
