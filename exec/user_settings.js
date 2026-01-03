@@ -279,19 +279,10 @@ while(bbs.online && !js.terminated) {
 				thisuser.editor = '';
 			}
 			else {
-				var editors=[];
-				var defaulteditor = 0;
-				for (var code in xtrn_area.editor)
-					editors.push(code);
-				for (var i = 0; i < editors.length; i++) {
-					console.uselect(i, bbs.text(bbs.text.ExternalEditorHeading)
-						,xtrn_area.editor[editors[i]].name
-						,xtrn_area.editor[editors[i]].ars);
-					if (editors[i] === thisuser.editor)
-						defaulteditor = i;
+				if (!bbs.select_editor()) {
+					console.print(gettext("Sorry, no external editors are available to you"))
+					console.newline();
 				}
-				if ((i=console.uselect(defaulteditor))>=0)
-					thisuser.editor = editors[i];
 			}
 			break;
 		case 'F':
@@ -301,17 +292,7 @@ while(bbs.online && !js.terminated) {
 			thisuser.settings ^= USER_COLDKEYS;
 			break;
 		case 'K':
-			var defaultshell = 0;
-			for (var i = 0; i < main_cfg.shell.length; i++) {
-				if (!thisuser.compare_ars(main_cfg.shell[i].ars))
-					continue;
-				console.uselect(i,bbs.text(bbs.text.CommandShellHeading),main_cfg.shell[i].name,main_cfg.shell[i].ars);
-				if (main_cfg.shell[i].code === thisuser.command_shell.toUpperCase())
-					defaultshell=i;
-			}
-			if ((i=console.uselect(defaultshell))>=0) {
-				thisuser.command_shell = main_cfg.shell[i].code;
-			}
+			bbs.select_shell();
 			break;
 		case 'I': /* Language */
 		{
