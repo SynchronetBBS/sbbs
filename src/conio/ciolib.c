@@ -508,7 +508,7 @@ CIOLIBEXPORT int initciolib(int mode)
 {
 	pthread_once(&init_initialized, init_mutexes);
 	assert_pthread_mutex_lock(&init_mutex);
-	switch(initialized) {
+	switch((int)initialized) {
 		case 1:
 			assert_pthread_mutex_unlock(&init_mutex);
 			return(0);
