@@ -23,6 +23,7 @@
 #endif
 
 #include <stdarg.h>
+#include <stdatomic.h>
 #include <stdlib.h>	/* alloca */
 #include <stdio.h>
 #if defined(_WIN32)
@@ -88,7 +89,10 @@ CIOLIBEXPORT const char *ciolib_initial_program_name = "CIOLIB";
 CIOLIBEXPORT const char *ciolib_initial_program_class = "CIOLIB";
 CIOLIBEXPORT bool ciolib_swap_mouse_butt45 = false;
 
-static int initialized=0;
+static _Atomic int initialized=0;
+static pthread_once_t init_initialized = PTHREAD_ONCE_INIT;
+static pthread_mutex_t init_mutex;
+static pthread_mutex_t unget_mutex;
 
 CIOLIBEXPORT int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy);
 CIOLIBEXPORT char * ciolib_cgets(char *str);
@@ -490,13 +494,24 @@ CIOLIBEXPORT void suspendciolib(void)
 	initialized=-1;
 }
 
+static void
+init_mutexes(void)
+{
+	assert_pthread_mutex_init(&init_mutex, NULL);
+	assert_pthread_mutex_init(&unget_mutex, NULL);
+}
+
 CIOLIBEXPORT int initciolib(int mode)
 {
+	pthread_once(&init_initialized, init_mutexes);
+	assert_pthread_mutex_lock(&init_mutex);
 	switch(initialized) {
 		case 1:
+			assert_pthread_mutex_unlock(&init_mutex);
 			return(0);
 		case -1:
 			initialized=1;
+			assert_pthread_mutex_unlock(&init_mutex);
 			if(cio_api.resume != NULL)
 				cio_api.resume();
 			ciolib_clrscr();
@@ -505,8 +520,10 @@ CIOLIBEXPORT int initciolib(int mode)
 
 #ifdef WITH_RETRO
 	if (retro_set) {
-		if (!try_retro_init(mode))
+		if (!try_retro_init(mode)) {
+			assert_pthread_mutex_unlock(&init_mutex);
 			return -1;
+		}
 	}
 	else {
 #endif
@@ -569,6 +586,7 @@ CIOLIBEXPORT int initciolib(int mode)
 #endif
 	}
 	if(cio_api.mode==CIOLIB_MODE_AUTO) {
+		assert_pthread_mutex_unlock(&init_mutex);
 		fprintf(stderr,"CIOLIB initialization failed!\n");
 		return(-1);
 	}
@@ -599,6 +617,7 @@ CIOLIBEXPORT int initciolib(int mode)
 			cio_textinfo.normattr=LIGHTGRAY;
 			break;
 	}
+	assert_pthread_mutex_unlock(&init_mutex);
 	ciolib_seticon(ciolib_initial_icon, ciolib_initial_icon_width);
 	ciolib_textattr(cio_textinfo.normattr);
 
@@ -612,8 +631,12 @@ CIOLIBEXPORT int initciolib(int mode)
 CIOLIBEXPORT int ciolib_kbwait(int ms)
 {
 	CIOLIB_INIT();
-	if(ungot)
+	assert_pthread_mutex_lock(&unget_mutex);
+	if(ungot) {
+		assert_pthread_mutex_unlock(&unget_mutex);
 		return(1);
+	}
+	assert_pthread_mutex_unlock(&unget_mutex);
 	if (ciolib_kbhit())
 		return(1);
 	if (cio_api.kbwait)
@@ -633,8 +656,12 @@ CIOLIBEXPORT int ciolib_kbwait(int ms)
 CIOLIBEXPORT int ciolib_kbhit(void)
 {
 	CIOLIB_INIT();
-	if(ungot)
+	assert_pthread_mutex_lock(&unget_mutex);
+	if(ungot) {
+		assert_pthread_mutex_unlock(&unget_mutex);
 		return(1);
+	}
+	assert_pthread_mutex_unlock(&unget_mutex);
 	return(cio_api.kbhit());
 }
 
@@ -645,14 +672,17 @@ CIOLIBEXPORT int ciolib_getch(void)
 
 	CIOLIB_INIT();
 
+	assert_pthread_mutex_lock(&unget_mutex);
 	if (ungot) {
 		ch = ungotch & 0xff;
 		if (ungotch > 0xff)
 			ungotch >>= 8;
 		else
 			ungot=false;
+		assert_pthread_mutex_unlock(&unget_mutex);
 		return(ch);
 	}
+	assert_pthread_mutex_unlock(&unget_mutex);
 	return(cio_api.getch());
 }
 
@@ -663,12 +693,25 @@ CIOLIBEXPORT int ciolib_getche(void)
 
 	CIOLIB_INIT();
 
-	if(ungot) {
-		ch=ungotch;
-		ungot=0;
-		ciolib_putch(ch);
-		return(ch);
+	assert_pthread_mutex_lock(&unget_mutex);
+	if (ungot) {
+		ch = ungotch;
+		ungot = 0;
+		assert_pthread_mutex_unlock(&unget_mutex);
+		if (ch == 0xe0 || ch == 0) {
+			ch |= (ciolib_getch() << 8);
+			/* Eat extended chars - except ESC which is an abort */
+			switch(ch) {
+				case CIO_KEY_LITERAL_E0:
+					ciolib_putch(ch);
+					return(ch);
+				case CIO_KEY_ABORTED:
+					return EOF;
+			}
+		}
 	}
+	else
+		assert_pthread_mutex_unlock(&unget_mutex);
 	if(cio_api.getche)
 		return(cio_api.getche());
 	else {
@@ -699,14 +742,21 @@ CIOLIBEXPORT int ciolib_ungetch(int ch)
 {
 	CIOLIB_INIT();
 
-	if (ungot)
+	assert_pthread_mutex_lock(&unget_mutex);
+	if (ungot) {
+		assert_pthread_mutex_unlock(&unget_mutex);
 		return(EOF);
+	}
 	if (ch == 0xe0)
 		ch = CIO_KEY_LITERAL_E0;
-	if (cio_api.ungetch)
-		return(cio_api.ungetch(ch));
+	if (cio_api.ungetch) {
+		int ret = cio_api.ungetch(ch);
+		assert_pthread_mutex_unlock(&unget_mutex);
+		return ret;
+	}
 	ungotch = ch;
 	ungot = true;
+	assert_pthread_mutex_unlock(&unget_mutex);
 	return(ch);
 }
 
@@ -717,10 +767,14 @@ CIOLIBEXPORT int ciolib_ungetch_byte(int ch)
 {
 	CIOLIB_INIT();
 
-	if (ungot)
+	assert_pthread_mutex_lock(&unget_mutex);
+	if (ungot) {
+		assert_pthread_mutex_unlock(&unget_mutex);
 		return(EOF);
+	}
 	ungotch = ch;
 	ungot = true;
+	assert_pthread_mutex_unlock(&unget_mutex);
 	return(ch);
 }
 
