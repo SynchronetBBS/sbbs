@@ -293,30 +293,10 @@ gdi_handle_wm_sizing(WPARAM wParam, RECT *r)
 	bitmap_get_scaled_win_size(s, &nw, &nh, 0, 0);
 	assert_rwlock_unlock(&vstatlock);
 
-	if (nw != ow) {
-		switch (wParam) {
-			case WMSZ_BOTTOMLEFT:
-			case WMSZ_LEFT:
-			case WMSZ_TOPLEFT:
-				r->left += (nw - ow);
-				break;
-			default:
-				r->right += (nw - ow);
-				break;
-		}
-	}
-	if (nh != oh) {
-		switch (wParam) {
-			case WMSZ_TOP:
-			case WMSZ_TOPLEFT:
-			case WMSZ_TOPRIGHT:
-				r->top += (nh - oh);
-				break;
-			default:
-				r->bottom += (nh - oh);
-				break;
-		}
-	}
+	if (nw != ow)
+		r->right += (nw - ow);
+	if (nh != oh)
+		r->bottom += (nh - oh);
 
 	return TRUE;
 }
