@@ -1505,7 +1505,7 @@ int edit_sys_alias_policy(int page, int total)
 		"false name, handle, or alias, set this option to `Yes`.  If you want all\n"
 		"users on your system to be known only by their real names, select `No`.\n"
 		"\n"
-		"Note: real names are required to consist of more than one word.\n"
+		"Note: real names may be required to consist of more than one word.\n"
 	;
 	if (page)
 		mode = wiz_help(page, total, uifc.helpbuf);
