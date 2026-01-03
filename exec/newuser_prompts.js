@@ -8,6 +8,7 @@ require("sbbsdefs.js", "UQ_ALIASES");
 require("key_desf.js", "KEY_DEL");
 
 const PETSCII_DELETE = CTRL_T;
+const PETSCII_UPPERLOWER = 14;
 
 var kmode = (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL | K_TRIM;
 if (!(system.newuser_questions & UQ_NOUPRLWR))
@@ -62,7 +63,7 @@ while(bbs.online && !js.terminated) {
 
 	if (user.settings & USER_PETSCII) {
 		console.autoterm |= USER_PETSCII;
-		term_out(PETSCII_UPPERLOWER);
+		console.putbyte(PETSCII_UPPERLOWER);
 		console.putmsg(bbs.text(PetTerminalDetected));
 	} else if (!(user.settings & USER_UTF8)) {
 		if (!console.yesno(bbs.text(ExAsciiTerminalQ)))
@@ -192,8 +193,9 @@ while(bbs.online && !js.terminated) {
 	}
 	while ((system.newuser_questions & UQ_BIRTH) && bbs.online && bbs.text(EnterYourBirthday)) {
 		console.putmsg(format(bbs.text(EnterYourBirthday), system.birthdate_format), P_SAVEATR);
-		user.birthdate = console.gettemplate(system.birthdate_template, bbs.atcode("BIRTH"), K_EDIT);
-		if (user.age >= 1 && user.age <= 200) { // TODO: Configurable min/max user age
+		var birthdate = console.gettemplate(system.birthdate_template, bbs.atcode("BIRTH"), K_EDIT);
+		if (system.check_birthdate(birthdate)) {
+			user.birthdate = birthdate;
 			break;
 		}
 	}
