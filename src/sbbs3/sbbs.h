@@ -979,6 +979,8 @@ public:
 	uint	hot_attr = 0;		// Auto-Mouse hot-spot attribute (when non-zero)
 	bool	hungry_hotspots = true;
 
+	stats_t stats{}; // cached statistics
+
 	// Thread-safe std/socket errno description getters
 	char	strerror_buf[256]{};
 	const char* strerror(int errnum) { return safe_strerror(errnum, strerror_buf, sizeof strerror_buf); }
@@ -1088,7 +1090,6 @@ public:
     __attribute__ ((format (printf, 6, 7)))			// 1 is 'this'
 #endif
 	;
-	void	printstatslog(uint node);
 	uint	logonstats(void);
 	void	logoffstats(void);
 	void    register_login(void);

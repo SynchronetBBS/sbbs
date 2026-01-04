@@ -1025,7 +1025,8 @@ typedef struct {                        // System/Node Statistics
 } totals_t;
 
 typedef struct {                        // System/Node Statistics
-	time_t date;                        // When stats were last rolled-over
+	time32_t date;                      // When stats were last rolled-over
+	time32_t last;                      // When stats were last read from disk
 	union {
 		totals_t total;
 		struct { // legacy names

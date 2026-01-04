@@ -304,7 +304,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	uint       ugrp;
 	uint       usub;
 	long       l;
-	stats_t    stats;
 	node_t     node;
 	struct  tm tm;
 
@@ -949,7 +948,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (!strcmp(sp, "TCALLS") || !strcmp(sp, "NUMCALLS")) {
-		getstats(&cfg, 0, &stats);
+		getstats_cached(&cfg, 0, &stats, 5);
 		safe_snprintf(str, maxlen, "%u", stats.logons);
 		return str;
 	}
@@ -2019,7 +2018,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (!strncmp(sp, "STATS.", 6)) {
-		getstats(&cfg, 0, &stats);
+		getstats_cached(&cfg, 0, &stats, 5);
 		sp += 6;
 		if (!strcmp(sp, "LOGONS"))
 			safe_snprintf(str, maxlen, "%u", stats.logons);

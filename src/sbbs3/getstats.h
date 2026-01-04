@@ -39,6 +39,7 @@ DLLEXPORT bool      fwrite_dstats(FILE*, const stats_t*, const char* function);
 DLLEXPORT bool      fwrite_cstats(FILE*, const stats_t*);
 DLLEXPORT void      parse_cstats(str_list_t, stats_t*);
 DLLEXPORT bool      getstats(scfg_t*, uint node, stats_t*);
+DLLEXPORT bool      getstats_cached(scfg_t*, uint node, stats_t*, int duration);
 DLLEXPORT bool      putstats(scfg_t*, uint node, const stats_t*);
 DLLEXPORT uint      getposts(scfg_t*, int subnum);
 DLLEXPORT uint      getnewposts(scfg_t*, int subnum, uint32_t ptr);

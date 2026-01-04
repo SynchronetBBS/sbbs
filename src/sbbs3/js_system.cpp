@@ -33,6 +33,8 @@ typedef struct {
 	struct mqtt* mqtt;
 	int nodefile;
 	int nodegets;
+	int32 stats_cache;
+	stats_t stats;
 } js_system_private_t;
 
 extern JSClass js_system_class;
@@ -112,6 +114,7 @@ enum {
 	, SYS_PROP_CLOCK
 	, SYS_PROP_CLOCK_PER_SEC
 	, SYS_PROP_TIMER
+	, SYS_PROP_STATS_CACHE
 
 	/* filenames */
 	, SYS_PROP_DEVNULL
@@ -366,6 +369,9 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SYS_PROP_TIMER:
 			*vp = DOUBLE_TO_JSVAL(xp_timer());
 			break;
+		case SYS_PROP_STATS_CACHE:
+			*vp = INT_TO_JSVAL(sys->stats_cache);
+			break;
 
 		case SYS_PROP_LOCAL_HOSTNAME:
 			rc = JS_SUSPENDREQUEST(cx);
@@ -427,6 +433,9 @@ static JSBool js_system_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 				return JS_FALSE;
 			}
 			break;
+		case SYS_PROP_STATS_CACHE:
+			JS_ValueToInt32(cx, *vp, &sys->stats_cache);
+			break;
 	}
 #endif
 
@@ -434,168 +443,170 @@ static JSBool js_system_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 }
 
 
-#define SYSOBJ_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY
+#define SYSOBJ_RO_FLAGS JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY
+#define SYSOBJ_RW_FLAGS JSPROP_ENUMERATE | JSPROP_PERMANENT
 
 static jsSyncPropertySpec js_system_properties[] = {
 /*		 name,						tinyid,				flags,				ver	*/
 
 #ifndef JSDOOR
-	{   "name",                     SYS_PROP_NAME,      SYSOBJ_FLAGS,       310
+	{   "name",                     SYS_PROP_NAME,      SYSOBJ_RO_FLAGS,       310
 		, JSDOCSTR("BBS name")},
-	{   "operator",                 SYS_PROP_OP,        SYSOBJ_FLAGS,       310
+	{   "operator",                 SYS_PROP_OP,        SYSOBJ_RO_FLAGS,       310
 		, JSDOCSTR("Operator name")},
-	{   "operator_available",       SYS_PROP_OP_AVAIL,  JSPROP_ENUMERATE,   31801
+	{   "operator_available",       SYS_PROP_OP_AVAIL,  SYSOBJ_RW_FLAGS,       31801
 		, JSDOCSTR("Operator is available for chat")},
-	{   "guru",                     SYS_PROP_GURU,      SYSOBJ_FLAGS,       32000
+	{   "guru",                     SYS_PROP_GURU,      SYSOBJ_RO_FLAGS,       32000
 		, JSDOCSTR("Default Guru (AI) name")},
-	{   "qwk_id",                   SYS_PROP_ID,        SYSOBJ_FLAGS,       310
+	{   "qwk_id",                   SYS_PROP_ID,        SYSOBJ_RO_FLAGS,       310
 		, JSDOCSTR("System QWK-ID (for QWK packets)")},
-	{   "settings",                 SYS_PROP_MISC,      JSPROP_ENUMERATE,   310
+	{   "settings",                 SYS_PROP_MISC,      SYSOBJ_RW_FLAGS,      310
 		, JSDOCSTR("Settings bit-flags (see <tt>SYS_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)")},
-	{   "login_settings",           SYS_PROP_LOGIN,     JSPROP_ENUMERATE,   32000
+	{   "login_settings",           SYS_PROP_LOGIN,     SYSOBJ_RW_FLAGS,      32000
 		, JSDOCSTR("Login control settings bit-flags (see <tt>LOGIN_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)")},
-	{   "inetaddr",                 SYS_PROP_INETADDR,  JSPROP_READONLY,    310  }, /* alias */
-	{   "inet_addr",                SYS_PROP_INETADDR,  SYSOBJ_FLAGS,       311
+	{   "inetaddr",                 SYS_PROP_INETADDR,  JSPROP_READONLY,       310  }, /* alias */
+	{   "inet_addr",                SYS_PROP_INETADDR,  SYSOBJ_RO_FLAGS,       311
 		, JSDOCSTR("Internet address (host or domain name)")},
-	{   "location",                 SYS_PROP_LOCATION,  SYSOBJ_FLAGS,       310
+	{   "location",                 SYS_PROP_LOCATION,  SYSOBJ_RO_FLAGS,       310
 		, JSDOCSTR("Location (city, state)")},
-	{   "timezone",                 SYS_PROP_TIMEZONE,  SYSOBJ_FLAGS,       310
+	{   "timezone",                 SYS_PROP_TIMEZONE,  SYSOBJ_RO_FLAGS,       310
 		, JSDOCSTR("Local timezone in SMB format (use <i>system.zonestr()</i> to get string representation)")},
-	{   "tz_offset",                SYS_PROP_TZ_OFFSET, SYSOBJ_FLAGS,       320
+	{   "tz_offset",                SYS_PROP_TZ_OFFSET, SYSOBJ_RO_FLAGS,       320
 		, JSDOCSTR("Local timezone offset, in minutes, from UTC (negative values represent zones <i>west</i> of UTC, positive values represent zones <i>east</i> of UTC)")},
-	{   "date_format",              SYS_PROP_DATE_FMT,  SYSOBJ_FLAGS,       32002
+	{   "date_format",              SYS_PROP_DATE_FMT,  SYSOBJ_RO_FLAGS,       32002
 		, JSDOCSTR("Date representation (0=Month first, 1=Day first, 2=Year first")},
-	{   "date_separator",           SYS_PROP_DATE_SEP,  SYSOBJ_FLAGS,       32002
+	{   "date_separator",           SYS_PROP_DATE_SEP,  SYSOBJ_RO_FLAGS,       32002
 		, JSDOCSTR("Short (8 character) date field-separator")},
-	{   "date_verbal",              SYS_PROP_DATE_VERBAL, SYSOBJ_FLAGS,     32002
+	{   "date_verbal",              SYS_PROP_DATE_VERBAL, SYSOBJ_RO_FLAGS,     32002
 		, JSDOCSTR("Short date month-name displayed verbally instead of numerically")},
-	{   "birthdate_format",         SYS_PROP_BIRTHDATE_FMT, SYSOBJ_FLAGS,   32002
+	{   "birthdate_format",         SYS_PROP_BIRTHDATE_FMT, SYSOBJ_RO_FLAGS,   32002
 		, JSDOCSTR("User birth date input and display format (MM=Month number, DD=Day of month, YYYY=Year)")},
-	{   "birthdate_template",       SYS_PROP_BIRTHDATE_TEMPLATE, SYSOBJ_FLAGS, 32002
+	{   "birthdate_template",       SYS_PROP_BIRTHDATE_TEMPLATE, SYSOBJ_RO_FLAGS, 32002
 		, JSDOCSTR("User birth date input template")},
-	{   "phonenumber_template",     SYS_PROP_PHONENUM_TEMPLATE, SYSOBJ_FLAGS, 321
+	{   "phonenumber_template",     SYS_PROP_PHONENUM_TEMPLATE, SYSOBJ_RO_FLAGS, 321
 		, JSDOCSTR("User phone number input template")},
-	{   "pwdays",                   SYS_PROP_PWDAYS,    SYSOBJ_FLAGS,       310
+	{   "pwdays",                   SYS_PROP_PWDAYS,    SYSOBJ_RO_FLAGS,       310
 		, JSDOCSTR("Days between forced user password changes (<tt>0</tt>=<i>never</i>)")},
-	{   "min_password_length",      SYS_PROP_MINPWLEN,  SYSOBJ_FLAGS,       31702
+	{   "min_password_length",      SYS_PROP_MINPWLEN,  SYSOBJ_RO_FLAGS,       31702
 		, JSDOCSTR("Minimum number of characters in user passwords")},
-	{   "max_password_length",      SYS_PROP_MAXPWLEN,  SYSOBJ_FLAGS,       31702
+	{   "max_password_length",      SYS_PROP_MAXPWLEN,  SYSOBJ_RO_FLAGS,       31702
 		, JSDOCSTR("Maximum number of characters in user passwords")},
-	{   "deldays",                  SYS_PROP_DELDAYS,   SYSOBJ_FLAGS,       310
+	{   "deldays",                  SYS_PROP_DELDAYS,   SYSOBJ_RO_FLAGS,       310
 		, JSDOCSTR("Days to preserve deleted user records, record will not be reused/overwritten during this period")},
-	{   "autodel",                  SYS_PROP_AUTODEL,   SYSOBJ_FLAGS,       31702
+	{   "autodel",                  SYS_PROP_AUTODEL,   SYSOBJ_RO_FLAGS,       31702
 		, JSDOCSTR("Days of user inactivity before auto-deletion (<tt>0</tt>=<i>disabled</i>), N/A to P-exempt users")},
 
-	{   "last_user",                SYS_PROP_LASTUSER, SYSOBJ_FLAGS,  311
+	{   "last_user",                SYS_PROP_LASTUSER, SYSOBJ_RO_FLAGS,  311
 		, JSDOCSTR("Last user record number in user database (includes deleted and inactive user records)")},
 	{   "lastuser",                 SYS_PROP_LASTUSER, JSPROP_READONLY,   311  },   /* alias */
-	{   "last_useron",              SYS_PROP_LASTUSERON, SYSOBJ_FLAGS,  310
+	{   "last_useron",              SYS_PROP_LASTUSERON, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Name of last user to logoff")},
 	{   "lastuseron",               SYS_PROP_LASTUSERON, JSPROP_READONLY,   310  }, /* alias */
 #endif
-	{   "freediskspace",            SYS_PROP_FREEDISKSPACE, SYSOBJ_FLAGS,  310
+	{   "freediskspace",            SYS_PROP_FREEDISKSPACE, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Amount of free disk space (in bytes)")},
-	{   "freediskspacek",           SYS_PROP_FREEDISKSPACEK, SYSOBJ_FLAGS,  310
+	{   "freediskspacek",           SYS_PROP_FREEDISKSPACEK, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Amount of free disk space (in kibibytes)")},
 
 #ifndef JSDOOR
-	{   "nodes",                    SYS_PROP_NODES,     SYSOBJ_FLAGS,       310
+	{   "nodes",                    SYS_PROP_NODES,     SYSOBJ_RO_FLAGS,       310
 		, JSDOCSTR("Total number of Terminal Server nodes")},
-	{   "last_node",                SYS_PROP_LASTNODE,  SYSOBJ_FLAGS,       310
+	{   "last_node",                SYS_PROP_LASTNODE,  SYSOBJ_RO_FLAGS,       310
 		, JSDOCSTR("Last displayable node number")},
 	{   "lastnode",                 SYS_PROP_LASTNODE,  JSPROP_READONLY,    310  }, /* alias */
 
-	{   "mqtt_enabled",             SYS_PROP_MQTT_ENABLED,  SYSOBJ_FLAGS,   320
+	{   "mqtt_enabled",             SYS_PROP_MQTT_ENABLED,  SYSOBJ_RO_FLAGS,   320
 		, JSDOCSTR("MQTT support (connection to MQTT broker) is enabled")},
 
-	{   "newuser_password",         SYS_PROP_NEW_PASS, SYSOBJ_FLAGS,  310
+	{   "newuser_password",         SYS_PROP_NEW_PASS, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user password (NUP, optional)")},
-	{   "newuser_magic_word",       SYS_PROP_NEW_MAGIC, SYSOBJ_FLAGS,  310
+	{   "newuser_magic_word",       SYS_PROP_NEW_MAGIC, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user magic word (optional)")},
-	{   "newuser_level",            SYS_PROP_NEW_LEVEL, SYSOBJ_FLAGS,  310
+	{   "newuser_level",            SYS_PROP_NEW_LEVEL, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user security level")},
-	{   "newuser_flags1",           SYS_PROP_NEW_FLAGS1, SYSOBJ_FLAGS,  310
+	{   "newuser_flags1",           SYS_PROP_NEW_FLAGS1, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user flag set #1")},
-	{   "newuser_flags2",           SYS_PROP_NEW_FLAGS2, SYSOBJ_FLAGS,  310
+	{   "newuser_flags2",           SYS_PROP_NEW_FLAGS2, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user flag set #2")},
-	{   "newuser_flags3",           SYS_PROP_NEW_FLAGS3, SYSOBJ_FLAGS,  310
+	{   "newuser_flags3",           SYS_PROP_NEW_FLAGS3, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user flag set #3")},
-	{   "newuser_flags4",           SYS_PROP_NEW_FLAGS4, SYSOBJ_FLAGS,  310
+	{   "newuser_flags4",           SYS_PROP_NEW_FLAGS4, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user flag set #4")},
-	{   "newuser_restrictions",     SYS_PROP_NEW_REST, SYSOBJ_FLAGS,  310
+	{   "newuser_restrictions",     SYS_PROP_NEW_REST, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user restriction flags")},
-	{   "newuser_exemptions",       SYS_PROP_NEW_EXEMPT, SYSOBJ_FLAGS,  310
+	{   "newuser_exemptions",       SYS_PROP_NEW_EXEMPT, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user exemption flags")},
-	{   "newuser_credits",          SYS_PROP_NEW_CDT, SYSOBJ_FLAGS,  310
+	{   "newuser_credits",          SYS_PROP_NEW_CDT, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user credits")},
-	{   "newuser_minutes",          SYS_PROP_NEW_MIN, SYSOBJ_FLAGS,  310
+	{   "newuser_minutes",          SYS_PROP_NEW_MIN, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user extra minutes")},
-	{   "newuser_command_shell",    SYS_PROP_NEW_SHELL, SYSOBJ_FLAGS,  310
+	{   "newuser_command_shell",    SYS_PROP_NEW_SHELL, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user default command shell")},
-	{   "newuser_editor",           SYS_PROP_NEW_XEDIT, SYSOBJ_FLAGS,  310
+	{   "newuser_editor",           SYS_PROP_NEW_XEDIT, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user default external editor")},
-	{   "newuser_settings",         SYS_PROP_NEW_MISC, SYSOBJ_FLAGS,  310
+	{   "newuser_settings",         SYS_PROP_NEW_MISC, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user default settings")},
-	{   "newuser_download_protocol", SYS_PROP_NEW_PROT, SYSOBJ_FLAGS,  310
+	{   "newuser_download_protocol", SYS_PROP_NEW_PROT, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user default file transfer protocol (command key)")},
-	{   "newuser_expiration_days",  SYS_PROP_NEW_EXPIRE, SYSOBJ_FLAGS,  310
+	{   "newuser_expiration_days",  SYS_PROP_NEW_EXPIRE, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user expiration days")},
-	{   "newuser_questions",        SYS_PROP_NEW_UQ, SYSOBJ_FLAGS,  310
+	{   "newuser_questions",        SYS_PROP_NEW_UQ, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("New user questions/prompts (see <tt>UQ_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)")},
 
-	{   "expired_level",            SYS_PROP_EXPIRED_LEVEL, SYSOBJ_FLAGS,  310
+	{   "expired_level",            SYS_PROP_EXPIRED_LEVEL, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Expired user security level")},
-	{   "expired_flags1",           SYS_PROP_EXPIRED_FLAGS1, SYSOBJ_FLAGS,  310
+	{   "expired_flags1",           SYS_PROP_EXPIRED_FLAGS1, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Expired user flag set #1")},
-	{   "expired_flags2",           SYS_PROP_EXPIRED_FLAGS2, SYSOBJ_FLAGS,  310
+	{   "expired_flags2",           SYS_PROP_EXPIRED_FLAGS2, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Expired user flag set #2")},
-	{   "expired_flags3",           SYS_PROP_EXPIRED_FLAGS3, SYSOBJ_FLAGS,  310
+	{   "expired_flags3",           SYS_PROP_EXPIRED_FLAGS3, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Expired user flag set #3")},
-	{   "expired_flags4",           SYS_PROP_EXPIRED_FLAGS4, SYSOBJ_FLAGS,  310
+	{   "expired_flags4",           SYS_PROP_EXPIRED_FLAGS4, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Expired user flag set #4")},
-	{   "expired_restrictions",     SYS_PROP_EXPIRED_REST, SYSOBJ_FLAGS,  310
+	{   "expired_restrictions",     SYS_PROP_EXPIRED_REST, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Expired user restriction flags")},
-	{   "expired_exemptions",       SYS_PROP_EXPIRED_EXEMPT, SYSOBJ_FLAGS,  310
+	{   "expired_exemptions",       SYS_PROP_EXPIRED_EXEMPT, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Expired user exemption flags")},
 
 	/* directories */
-	{   "node_dir",                 SYS_PROP_NODE_DIR, SYSOBJ_FLAGS,  310
+	{   "node_dir",                 SYS_PROP_NODE_DIR, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Current node directory")},
 #endif
-	{   "ctrl_dir",                 SYS_PROP_CTRL_DIR, SYSOBJ_FLAGS,  310
+	{   "ctrl_dir",                 SYS_PROP_CTRL_DIR, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Control file directory")},
-	{   "data_dir",                 SYS_PROP_DATA_DIR, SYSOBJ_FLAGS,  310
+	{   "data_dir",                 SYS_PROP_DATA_DIR, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Data file directory")},
-	{   "text_dir",                 SYS_PROP_TEXT_DIR, SYSOBJ_FLAGS,  310
+	{   "text_dir",                 SYS_PROP_TEXT_DIR, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Text file directory")},
-	{   "temp_dir",                 SYS_PROP_TEMP_DIR, SYSOBJ_FLAGS,  310
+	{   "temp_dir",                 SYS_PROP_TEMP_DIR, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Temporary file directory")},
-	{   "exec_dir",                 SYS_PROP_EXEC_DIR, SYSOBJ_FLAGS,  310
+	{   "exec_dir",                 SYS_PROP_EXEC_DIR, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Executable file directory")},
-	{   "mods_dir",                 SYS_PROP_MODS_DIR, SYSOBJ_FLAGS,  310
+	{   "mods_dir",                 SYS_PROP_MODS_DIR, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Modified modules directory (optional)")},
-	{   "logs_dir",                 SYS_PROP_LOGS_DIR, SYSOBJ_FLAGS,  310
+	{   "logs_dir",                 SYS_PROP_LOGS_DIR, SYSOBJ_RO_FLAGS,  310
 		, JSDOCSTR("Log file directory")},
 
 	/* filenames */
-	{   "devnull",                  SYS_PROP_DEVNULL, SYSOBJ_FLAGS,  311
+	{   "devnull",                  SYS_PROP_DEVNULL, SYSOBJ_RO_FLAGS,  311
 		, JSDOCSTR("Platform-specific \"null\" device filename")},
-	{   "temp_path",                SYS_PROP_TEMP_PATH, SYSOBJ_FLAGS,  312
+	{   "temp_path",                SYS_PROP_TEMP_PATH, SYSOBJ_RO_FLAGS,  312
 		, JSDOCSTR("Platform-specific temporary file directory")},
-	{   "cmd_shell",                SYS_PROP_CMD_SHELL, SYSOBJ_FLAGS,  314
+	{   "cmd_shell",                SYS_PROP_CMD_SHELL, SYSOBJ_RO_FLAGS,  314
 		, JSDOCSTR("Platform-specific command processor/shell")},
 
 	/* clock access */
-	{   "clock_ticks",              SYS_PROP_CLOCK, SYSOBJ_FLAGS,  311
+	{   "clock_ticks",              SYS_PROP_CLOCK, SYSOBJ_RO_FLAGS,  311
 		, JSDOCSTR("Amount of elapsed time in clock 'ticks'")},
-	{   "clock_ticks_per_second",   SYS_PROP_CLOCK_PER_SEC, SYSOBJ_FLAGS,  311
+	{   "clock_ticks_per_second",   SYS_PROP_CLOCK_PER_SEC, SYSOBJ_RO_FLAGS,  311
 		, JSDOCSTR("Number of clock ticks per second")},
-	{   "timer",                    SYS_PROP_TIMER, SYSOBJ_FLAGS,  314
+	{   "timer",                    SYS_PROP_TIMER, SYSOBJ_RO_FLAGS,  314
 		, JSDOCSTR("High-resolution timer, in seconds (fractional seconds supported)")},
-
-	{   "local_host_name",          SYS_PROP_LOCAL_HOSTNAME, SYSOBJ_FLAGS,  311
+	{ "stats_cache",              SYS_PROP_STATS_CACHE, SYSOBJ_RW_FLAGS,  321
+		, JSDOCSTR("System statistics cache duration in seconds (default is 5 seconds)")},
+	{   "local_host_name",          SYS_PROP_LOCAL_HOSTNAME, SYSOBJ_RO_FLAGS,  311
 		, JSDOCSTR("Private host name that uniquely identifies this system on the local network")},
-	{   "name_servers",             SYS_PROP_NAME_SERVERS, SYSOBJ_FLAGS,  31802
+	{   "name_servers",             SYS_PROP_NAME_SERVERS, SYSOBJ_RO_FLAGS,  31802
 		, JSDOCSTR("Array of nameservers in use by the system")},
 	/* last */
 	{0}
@@ -634,7 +645,7 @@ static const char* sys_prop_desc[] = {
 
 /* System Stats Propertiess */
 enum {
-	SYSSTAT_PROP_LOGONS
+	  SYSSTAT_PROP_LOGONS
 	, SYSSTAT_PROP_LTODAY
 	, SYSSTAT_PROP_TIMEON
 	, SYSSTAT_PROP_TTODAY
@@ -661,7 +672,6 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval                idval;
 	jsint                tiny;
-	stats_t              stats;
 	int                  i;
 	ulong                l;
 	jsrefcount           rc;
@@ -678,7 +688,7 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	if (tiny < SYSSTAT_PROP_TOTALUSERS) {
 		rc = JS_SUSPENDREQUEST(cx);
-		if (!getstats(cfg, 0, &stats)) {
+		if (!getstats_cached(cfg, 0, &sys->stats, sys->stats_cache)) {
 			JS_RESUMEREQUEST(cx, rc);
 			JS_ReportError(cx, "getstats failure in %s", __FUNCTION__);
 			return JS_FALSE;
@@ -688,40 +698,40 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	switch (tiny) {
 		case SYSSTAT_PROP_LOGONS:
-			*vp = UINT_TO_JSVAL(stats.logons);
+			*vp = UINT_TO_JSVAL(sys->stats.logons);
 			break;
 		case SYSSTAT_PROP_LTODAY:
-			*vp = UINT_TO_JSVAL(stats.ltoday);
+			*vp = UINT_TO_JSVAL(sys->stats.ltoday);
 			break;
 		case SYSSTAT_PROP_TIMEON:
-			*vp = UINT_TO_JSVAL(stats.timeon);
+			*vp = UINT_TO_JSVAL(sys->stats.timeon);
 			break;
 		case SYSSTAT_PROP_TTODAY:
-			*vp = UINT_TO_JSVAL(stats.ttoday);
+			*vp = UINT_TO_JSVAL(sys->stats.ttoday);
 			break;
 		case SYSSTAT_PROP_ULS:
-			*vp = UINT_TO_JSVAL(stats.uls);
+			*vp = UINT_TO_JSVAL(sys->stats.uls);
 			break;
 		case SYSSTAT_PROP_ULB:
-			*vp = DOUBLE_TO_JSVAL((double)stats.ulb);
+			*vp = DOUBLE_TO_JSVAL((double)sys->stats.ulb);
 			break;
 		case SYSSTAT_PROP_DLS:
-			*vp = UINT_TO_JSVAL(stats.dls);
+			*vp = UINT_TO_JSVAL(sys->stats.dls);
 			break;
 		case SYSSTAT_PROP_DLB:
-			*vp = DOUBLE_TO_JSVAL((double)stats.dlb);
+			*vp = DOUBLE_TO_JSVAL((double)sys->stats.dlb);
 			break;
 		case SYSSTAT_PROP_PTODAY:
-			*vp = UINT_TO_JSVAL(stats.ptoday);
+			*vp = UINT_TO_JSVAL(sys->stats.ptoday);
 			break;
 		case SYSSTAT_PROP_ETODAY:
-			*vp = UINT_TO_JSVAL(stats.etoday);
+			*vp = UINT_TO_JSVAL(sys->stats.etoday);
 			break;
 		case SYSSTAT_PROP_FTODAY:
-			*vp = UINT_TO_JSVAL(stats.ftoday);
+			*vp = UINT_TO_JSVAL(sys->stats.ftoday);
 			break;
 		case SYSSTAT_PROP_NUSERS:
-			*vp = UINT_TO_JSVAL(stats.nusers);
+			*vp = UINT_TO_JSVAL(sys->stats.nusers);
 			break;
 
 		case SYSSTAT_PROP_TOTALUSERS:
@@ -764,7 +774,7 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	return TRUE;
 }
 
-#define SYSSTAT_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY
+#define SYSSTAT_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT
 
 static jsSyncPropertySpec js_sysstats_properties[] = {
 /*		 name,						tinyid,						flags,			ver	*/
@@ -1567,6 +1577,7 @@ js_get_node(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "JS_NewObject failure");
 		return JS_FALSE;
 	}
+
 	JS_DefineProperty(cx, nodeobj, "status", INT_TO_JSVAL((int)node.status), NULL, NULL, JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, nodeobj, "vstatus", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, node_vstatus(sys->cfg, &node, str, sizeof str))), NULL, NULL, JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, nodeobj, "errors", INT_TO_JSVAL((int)node.errors), NULL, NULL, JSPROP_ENUMERATE);
@@ -2934,7 +2945,7 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 			return JS_FALSE;
 
 		newobj = JS_DefineObject(cx, obj, "stats", &js_sysstats_class, NULL
-		                         , JSPROP_ENUMERATE | JSPROP_READONLY);
+		                         , JSPROP_ENUMERATE | JSPROP_PERMANENT | JSPROP_READONLY);
 
 		if (newobj == NULL)
 			return JS_FALSE;
@@ -2964,7 +2975,7 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 			return JS_FALSE;
 
 		if (!JS_DefineProperty(cx, obj, "node_list", OBJECT_TO_JSVAL(newobj)
-		                       , NULL, NULL, JSPROP_ENUMERATE))
+		                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_PERMANENT))
 			return JS_FALSE;
 
 		for (i = 0; i < sys->cfg->sys_nodes && i < sys->cfg->sys_lastnode; i++) {
@@ -3057,7 +3068,7 @@ JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
 	char      str[256];
 
 	sysobj = JS_DefineObject(cx, parent, "system", &js_system_class, NULL
-	                         , JSPROP_ENUMERATE | JSPROP_READONLY);
+	                         , JSPROP_ENUMERATE | JSPROP_READONLY | JSPROP_PERMANENT);
 	if (sysobj == NULL)
 		return NULL;
 
@@ -3068,6 +3079,7 @@ JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
 	sys->cfg = cfg;
 	sys->mqtt = mqtt;
 	sys->nodefile = -1;
+	sys->stats_cache = 5;
 
 	if (!JS_SetPrivate(cx, sysobj, sys))
 		return NULL;

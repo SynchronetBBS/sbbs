@@ -124,10 +124,11 @@ bool fread_dstats(FILE* fp, stats_t* stats)
 	memset(stats, 0, sizeof(*stats));
 	if ((ini = iniReadFile(fp)) == NULL)
 		return false;
-	stats->date    = iniGetDateTime(ini, NULL, strStatsDate, 0);
+	stats->date    = (time32_t)iniGetDateTime(ini, NULL, strStatsDate, 0);
 	gettotals(ini, strStatsToday, &stats->today);
 	gettotals(ini, strStatsTotal, &stats->total);
 	iniFreeStringList(ini);
+	stats->last = time32(NULL);
 
 	return true;
 }
@@ -187,10 +188,19 @@ bool getstats(scfg_t* cfg, uint node, stats_t* stats)
 		stats->etoday   = LE_INT(legacy_stats.etoday);
 		stats->ftoday   = LE_INT(legacy_stats.ftoday);
 		stats->nusers   = LE_INT(legacy_stats.nusers);
+		stats->last     = time32(NULL);
 		return rd == sizeof(legacy_stats);
 	}
 	result = fread_dstats(fp, stats);
 	fclose(fp);
+	return result;
+}
+
+bool getstats_cached(scfg_t* cfg, uint node, stats_t* stats, int duration)
+{
+	bool result = true;
+	if (stats->last == 0 || duration < 0 || difftime(time(NULL), stats->last) > duration)
+		result = getstats(cfg, node, stats);
 	return result;
 }
 
@@ -267,7 +277,7 @@ bool putstats(scfg_t* cfg, uint node, const stats_t* stats)
 /****************************************************************************/
 void rolloverstats(stats_t* stats)
 {
-	stats->date = time(NULL);
+	stats->date = time32(NULL);
 	memset(&stats->today, 0, sizeof(stats->today));
 }
 

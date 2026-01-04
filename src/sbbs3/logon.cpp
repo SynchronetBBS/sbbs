@@ -617,7 +617,8 @@ uint sbbs_t::logonstats()
 
 		struct tm tm{};
 		struct tm update_tm{};
-		if (localtime_r(&stats.date, &update_tm) == NULL) {
+		time_t t = stats.date;
+		if (localtime_r(&t, &update_tm) == NULL) {
 			errormsg(WHERE, ERR_CHK, "Daily stats date/time break down", (int)stats.date);
 			return 0;
 		}
@@ -662,7 +663,7 @@ uint sbbs_t::logonstats()
 			if (!fread_dstats(dsts, &stats)) {
 				errormsg(WHERE, ERR_READ, path, i);
 			} else {
-				stats.date = time(NULL);
+				stats.date = time32(NULL);
 				fwrite_cstats(csts, &stats);
 				rolloverstats(&stats);
 				if (!fwrite_dstats(dsts, &stats, __FUNCTION__))
