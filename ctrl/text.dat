@@ -680,7 +680,7 @@
 "UNKNOWN USER"                                          548 UNKNOWN_USER
 "\r\nTime's up.\r\n"                                    549 TimesUp
 "\1_\1w\1hNode %2d: \1g%s\1n\1g logged off\r\n\1n"             550 NodeLoggedOff
-"\1_\1w\1hNode %2d: \1g%s\1n\1g logged on %s\r\n\1n"           551 NodeLoggedOnAtNbps
+"\1_\1w\1hNode %2d: \1g%s\1n\1g logged on via %s\r\n\1n"        551 NodeLoggedOnAtNbps
 "\1n\1b\1h\r\n\r\nLogon Time      : \1c%s\r\n"                  552 TiLogon
 "\1bLocal Time      : \1c%s %s\r\n"                             553 TiNow
 "\1bTime Used       : \1c%s\r\n"                                554 TiTimeon
