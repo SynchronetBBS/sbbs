@@ -120,6 +120,8 @@ o New @-codes:
   - RAINBOW:RAND picks a random starting color from the rainbow attributes
   - RAINBOW:<num> picks a specific starting color index from the rainbow
   - RAINBOW:<attr-list> at least one colon-separator is now required
+  - CLOCK (whole number system timer, typically 1ms interval)
+  - TIMER (highest resolution system timer, real number, fractions of second)
 
 Text Strings
 ~~~~~~~~~~~~
