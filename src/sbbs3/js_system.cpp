@@ -33,7 +33,6 @@ typedef struct {
 	struct mqtt* mqtt;
 	int nodefile;
 	int nodegets;
-	int32 stats_cache;
 	stats_t stats;
 } js_system_private_t;
 
@@ -114,7 +113,7 @@ enum {
 	, SYS_PROP_CLOCK
 	, SYS_PROP_CLOCK_PER_SEC
 	, SYS_PROP_TIMER
-	, SYS_PROP_STATS_CACHE
+	, SYS_PROP_STATS_INTERVAL
 
 	/* filenames */
 	, SYS_PROP_DEVNULL
@@ -369,8 +368,8 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SYS_PROP_TIMER:
 			*vp = DOUBLE_TO_JSVAL(xp_timer());
 			break;
-		case SYS_PROP_STATS_CACHE:
-			*vp = INT_TO_JSVAL(sys->stats_cache);
+		case SYS_PROP_STATS_INTERVAL:
+			*vp = UINT_TO_JSVAL(cfg->stats_interval);
 			break;
 
 		case SYS_PROP_LOCAL_HOSTNAME:
@@ -433,8 +432,8 @@ static JSBool js_system_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 				return JS_FALSE;
 			}
 			break;
-		case SYS_PROP_STATS_CACHE:
-			JS_ValueToInt32(cx, *vp, &sys->stats_cache);
+		case SYS_PROP_STATS_INTERVAL:
+			JS_ValueToECMAUint32(cx, *vp, &sys->cfg->stats_interval);
 			break;
 	}
 #endif
@@ -602,8 +601,8 @@ static jsSyncPropertySpec js_system_properties[] = {
 		, JSDOCSTR("Number of clock ticks per second")},
 	{   "timer",                    SYS_PROP_TIMER, SYSOBJ_RO_FLAGS,  314
 		, JSDOCSTR("High-resolution timer, in seconds (fractional seconds supported)")},
-	{ "stats_cache",              SYS_PROP_STATS_CACHE, SYSOBJ_RW_FLAGS,  321
-		, JSDOCSTR("System statistics cache duration in seconds (default is 5 seconds)")},
+	{   "stats_interval",           SYS_PROP_STATS_INTERVAL, SYSOBJ_RW_FLAGS,  321
+		, JSDOCSTR("System statistics interval (cache duration) in seconds")},
 	{   "local_host_name",          SYS_PROP_LOCAL_HOSTNAME, SYSOBJ_RO_FLAGS,  311
 		, JSDOCSTR("Private host name that uniquely identifies this system on the local network")},
 	{   "name_servers",             SYS_PROP_NAME_SERVERS, SYSOBJ_RO_FLAGS,  31802
@@ -688,7 +687,7 @@ static JSBool js_sysstats_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	if (tiny < SYSSTAT_PROP_TOTALUSERS) {
 		rc = JS_SUSPENDREQUEST(cx);
-		if (!getstats_cached(cfg, 0, &sys->stats, sys->stats_cache)) {
+		if (!getstats_cached(cfg, 0, &sys->stats)) {
 			JS_RESUMEREQUEST(cx, rc);
 			JS_ReportError(cx, "getstats failure in %s", __FUNCTION__);
 			return JS_FALSE;
@@ -3079,7 +3078,6 @@ JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
 	sys->cfg = cfg;
 	sys->mqtt = mqtt;
 	sys->nodefile = -1;
-	sys->stats_cache = 5;
 
 	if (!JS_SetPrivate(cx, sysobj, sys))
 		return NULL;

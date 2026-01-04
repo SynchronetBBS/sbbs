@@ -196,10 +196,10 @@ bool getstats(scfg_t* cfg, uint node, stats_t* stats)
 	return result;
 }
 
-bool getstats_cached(scfg_t* cfg, uint node, stats_t* stats, int duration)
+bool getstats_cached(scfg_t* cfg, uint node, stats_t* stats)
 {
 	bool result = true;
-	if (stats->last == 0 || duration < 0 || difftime(time(NULL), stats->last) > duration)
+	if (stats->last == 0 || difftime(time(NULL), stats->last) >= cfg->stats_interval)
 		result = getstats(cfg, node, stats);
 	return result;
 }

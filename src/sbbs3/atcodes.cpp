@@ -835,6 +835,16 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return birthdate_format(&cfg, str, maxlen);
 	}
 
+	if (strcmp(sp, "CLOCK") == 0) {
+		snprintf(str, maxlen, "%" PRIu64, xp_timer64());
+		return str;
+	}
+
+	if (strcmp(sp, "TIMER") == 0) {
+		snprintf(str, maxlen, "%f", xp_timer());
+		return str;
+	}
+
 	if (strcmp(sp, "GENDERS") == 0)
 		return cfg.new_genders;
 
@@ -948,7 +958,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (!strcmp(sp, "TCALLS") || !strcmp(sp, "NUMCALLS")) {
-		getstats_cached(&cfg, 0, &stats, 5);
+		getstats_cached(&cfg, 0, &stats);
 		safe_snprintf(str, maxlen, "%u", stats.logons);
 		return str;
 	}
@@ -2018,7 +2028,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (!strncmp(sp, "STATS.", 6)) {
-		getstats_cached(&cfg, 0, &stats, 5);
+		getstats_cached(&cfg, 0, &stats);
 		sp += 6;
 		if (!strcmp(sp, "LOGONS"))
 			safe_snprintf(str, maxlen, "%u", stats.logons);

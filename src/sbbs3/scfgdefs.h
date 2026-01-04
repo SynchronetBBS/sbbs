@@ -661,6 +661,8 @@ typedef struct
 	uint			config_backup_level;
 	char**			text;
 
+	uint			stats_interval;		// Statistics read interval in seconds (cache duration)
+
 	// Run-time state information (not configuration)
 
 	struct mqtt_cfg mqtt;

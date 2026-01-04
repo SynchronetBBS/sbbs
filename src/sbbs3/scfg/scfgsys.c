@@ -2678,6 +2678,8 @@ void sys_cfg(void)
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "User Inactivity Warning", str);
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s%" PRIX32, "Control Key Pass-through"
 					         , cfg.ctrlkey_passthru);
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Statistics Interval"
+						, duration_to_vstr(cfg.stats_interval, str, sizeof str));
 					opt[i][0] = 0;
 					uifc.helpbuf =
 						"`System Advanced Options:`\n"
@@ -3035,6 +3037,25 @@ void sys_cfg(void)
 							           , "Control Key Pass-through"
 							           , str, 8, K_UPPER | K_EDIT);
 							cfg.ctrlkey_passthru = strtoul(str, NULL, 16);
+							break;
+						case 21:
+							uifc.helpbuf =
+								"`Statistics Interval:`\n"
+								"\n"
+								"This value is the interval, in seconds, between reads of statistics\n"
+								"files for the purposes of displaying system and node statistics to\n"
+								"users and caching the results for performance.\n"
+								"\n"
+								"A lower value means more current statistics, but more disk I/O. A higher\n"
+								"value means less current statistics, but less disk I/O.\n"
+								"\n"
+								"If unsure, leave this value set to `5`, the default.\n"
+							;
+							duration_to_str(cfg.stats_interval, str, sizeof str);
+							uifc.input(WIN_MID | WIN_SAV, 0, 0
+							           , "Statistics Interval (cache duration)"
+							           , str, 10, K_UPPER | K_EDIT);
+							cfg.stats_interval = (uint)parse_duration(str);
 							break;
 					}
 				}
