@@ -73,7 +73,7 @@ function display_menu(thisuser)
 		keys += 'T';
 		console.add_hotspot('T');
 		console.putmsg(format(bbs.text(bbs.text.UserDefaultsTerminal)
-			,termdesc.type(true, thisuser.number == user.number ? undefined : thisuser)));
+			,termdesc.type(true, (bbs.sys_status & SS_USERON) && thisuser.number == user.number ? undefined : thisuser)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsRows).length) {
 		keys += 'L';
