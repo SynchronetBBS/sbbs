@@ -2063,17 +2063,21 @@ bool sbbs_t::set_editor(const char* code)
 	return false;
 }
 
+// Returns false if no editors were available
 bool sbbs_t::select_editor(void)
 {
 	int i;
 
+	uselect_count = 0;
 	for (i = 0; i < cfg.total_xedits; i++)
 		uselect(1, i, text[ExternalEditorHeading], cfg.xedit[i]->name, cfg.xedit[i]->ar);
+	if (uselect_count < 1)
+		return false;
 	if ((i = uselect(0, useron.xedit ? (useron.xedit - 1):0, 0, 0, 0)) >= 0) {
 		useron.xedit = i + 1;
 		if (useron.number > 0 && !useron_is_guest())
 			putuserstr(useron.number, USER_XEDIT, cfg.xedit[i]->code);
 		return true;
 	}
-	return false;
+	return true;
 }
