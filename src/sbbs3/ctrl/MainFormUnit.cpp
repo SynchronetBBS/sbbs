@@ -1925,7 +1925,9 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 	shutdown_semfiles=semfile_list_init(cfg.ctrl_dir,"shutdown","ctrl");
 	semfile_list_check(&initialized,shutdown_semfiles);
 
-	StatsTimer->Interval = cfg.stats_interval;
+	if(cfg.stats_interval < 1)
+		cfg.stats_interval = 1;
+	StatsTimer->Interval = cfg.stats_interval * 1000;
 
     if(cfg.new_install) {
 		Application->BringToFront();
