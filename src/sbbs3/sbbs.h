@@ -992,7 +992,7 @@ public:
 	bool	menu_exists(const char *code, const char* ext=NULL, char* realpath=NULL);
 
 	int		uselect(bool add, uint n, const char *title, const char *item, const uchar *ar);
-	uint	uselect_total = 0, uselect_num[500]{};
+	uint	uselect_count = 0, uselect_num[500]{};
 
 	int		mselect(const char *title, str_list_t list, unsigned max_selections, const char* item_fmt, const char* selected_str, const char* unselected_str, const char* prompt_fmt);
 

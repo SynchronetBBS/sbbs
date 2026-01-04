@@ -53,37 +53,39 @@ int sbbs_t::uselect(bool add, uint n, const char *title, const char *item, const
 	int  i;
 	uint t, u;
 
-	if (uselect_total >= sizeof(uselect_num) / sizeof(uselect_num[0]))   /* out of bounds */
-		uselect_total = 0;
+	if (uselect_count >= sizeof(uselect_num) / sizeof(uselect_num[0]))   /* out of bounds */
+		uselect_count = 0;
 
 	if (add) {
+		if (item == nullptr)
+			return -1;
 		if (ar && !chk_ar(ar, &useron, &client))
 			return 0;
-		if (!uselect_total)
+		if (uselect_count < 1)
 			bprintf(text[SelectItemHdr], title);
-		uselect_num[uselect_total++] = n;
-		term->add_hotspot(uselect_total);
-		bprintf(text[SelectItemFmt], uselect_total, item);
+		uselect_num[uselect_count++] = n;
+		term->add_hotspot(uselect_count);
+		bprintf(text[SelectItemFmt], uselect_count, item);
 		return 0;
 	}
 
-	if (!uselect_total)
+	if (uselect_count < 1)
 		return -1;
 
-	for (u = 0; u < uselect_total; u++)
+	for (u = 0; u < uselect_count; u++)
 		if (uselect_num[u] == n)
 			break;
-	if (u == uselect_total)
+	if (u == uselect_count)
 		u = 0;
 	snprintf(str, sizeof str, text[SelectItemWhich], u + 1);
 	mnemonics(str);
-	i = getnum(uselect_total);
-	t = uselect_total;
-	uselect_total = 0;
+	i = getnum(uselect_count);
+	t = uselect_count;
+	uselect_count = 0;
 	term->clear_hotspots();
 	if (i < 0)
 		return -1;
-	if (!i) {                    /* User hit ENTER, use default */
+	if (i == 0) {                    // User hit ENTER, use default
 		for (u = 0; u < t; u++)
 			if (uselect_num[u] == n)
 				return uselect_num[u];
