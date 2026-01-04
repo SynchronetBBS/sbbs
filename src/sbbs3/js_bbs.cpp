@@ -4697,7 +4697,6 @@ js_select_user(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *           obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *              argv = JS_ARGV(cx, arglist);
 	char*                p;
 	JSString*            js_str;
