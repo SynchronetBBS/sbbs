@@ -174,10 +174,12 @@ bool sbbs_t::logon()
 		}
 	}
 
+	const int manual_term = ANSI | RIP | PETSCII | UTF8; // Note: don't turn off NO_EXASCII flag (issue #923)
 	if ((useron.misc & AUTOTERM)
 	    // User manually-enabled PETSCII, but they're logging in with an ANSI (auto-detected) terminal (or vice versa)
-	    || ((useron.misc & (PETSCII | ANSI)) != (autoterm & (PETSCII | ANSI)))) {
-		useron.misc &= ~(ANSI | RIP | PETSCII | UTF8); // Note: don't turn off NO_EXASCII flag (issue #923)
+	    || ((useron.misc & manual_term) && (useron.misc & manual_term) != (autoterm & manual_term))
+		|| ((autoterm & UTF8) && !(useron.misc & UTF8))) {
+		useron.misc &= ~manual_term;
 		useron.misc |= (AUTOTERM | autoterm);
 	}
 
