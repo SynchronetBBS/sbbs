@@ -34,7 +34,11 @@ function desc_list()
 
 function select(usr)
 {
+	if (usr === undefined)
+		usr = user;
 	var lang = list();
+	if (lang.length < 1)
+		return;
 	var i;
 	for (i = 0; i < lang.length; ++i) {
 		if (usr.lang == lang[i])
@@ -48,6 +52,8 @@ function select(usr)
 	}
 	if ((j = console.uselect(i)) >= 0)
 		usr.lang = lang[j];
+	if (user.number === usr.number)
+		bbs.load_user_text();
 }
 
 this;
