@@ -43,7 +43,7 @@ while(bbs.online && !js.terminated) {
 
 	if (options.lang === true) {
 		var lang = load({}, "lang.js");
-		if (lang.count() && !console.noyes(gettext("Choose an alternate" + " " + bbs.text(bbs.text.Language).toLowerCase())))
+		if (lang.count() && !console.noyes(gettext("Choose an alternate" + " " + bbs.text(bbs.text.Language).toLowerCase() + "\x01\\")))
 			lang.select();
 	}
 	if ((console.autoterm && options.autoterm !== true)
