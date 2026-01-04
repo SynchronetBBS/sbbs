@@ -74,7 +74,7 @@ char* socklib_version(char* str, size_t size, const char* winsock_ver)
 }
 
 #if defined(SBBS) && !defined(JSDOOR)
-void sbbs_t::ver()
+void sbbs_t::ver(bool verbose)
 {
 	char str[128], compiler[32], os[128], cpu[128];
 #ifdef USE_MOSQUITTO
@@ -89,23 +89,28 @@ void sbbs_t::ver()
 	term->center(str);
 	term->newline();
 
-	DESCRIBE_COMPILER(compiler);
+	if (verbose) {
+		DESCRIBE_COMPILER(compiler);
 
-	snprintf(str, sizeof str, "Revision %c%s %s  "
-	         "SMBLIB %s  %s"
-	         , toupper(REVISION)
-	         , beta_version
-	         , git_date
-	         , smb_lib_ver(), compiler);
+		snprintf(str, sizeof str, "Revision %c%s %s  "
+				 "SMBLIB %s  %s"
+				 , toupper(REVISION)
+				 , beta_version
+				 , git_date
+				 , smb_lib_ver(), compiler);
 
-	term->center(str);
-	term->newline();
+		term->center(str);
+		term->newline();
 
-	term->center("https://gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH);
-	term->newline();
-
+		term->center("https://gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH);
+		term->newline();
+	}
 	snprintf(str, sizeof str, "%s - http://synchro.net", COPYRIGHT_NOTICE);
 	term->center(str);
+
+	if (!verbose)
+		return;
+
 	term->newline();
 
 #ifdef JAVASCRIPT

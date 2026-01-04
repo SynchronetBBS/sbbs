@@ -1274,7 +1274,7 @@ public:
 	bool	purgeuser(int usernumber);
 
 	/* ver.cpp */
-	void	ver(void);
+	void	ver(bool verbose = false);
 
 	/* scansubs.cpp */
 	void	scansubs(int mode);

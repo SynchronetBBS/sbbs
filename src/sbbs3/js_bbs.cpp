@@ -2679,16 +2679,21 @@ js_user_info(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_ver(JSContext *cx, uintN argc, jsval *arglist)
 {
+	jsval*     argv = JS_ARGV(cx, arglist);
 	sbbs_t*    sbbs;
 	jsrefcount rc;
+	bool       verbose = true;
 
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
+	if (argc > 0 && JSVAL_IS_BOOLEAN(argv[0]))
+		verbose = JSVAL_TO_BOOLEAN(argv[0]);
+
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->ver();
+	sbbs->ver(verbose);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
@@ -4927,7 +4932,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , JSDOCSTR("Display current user information.")
 	 , 310
 	},
-	{"ver",             js_ver,             0,  JSTYPE_VOID,    JSDOCSTR("")
+	{"ver",             js_ver,             0,  JSTYPE_VOID,    JSDOCSTR("[verbose=true]")
 	 , JSDOCSTR("Display software version information.")
 	 , 310
 	},
