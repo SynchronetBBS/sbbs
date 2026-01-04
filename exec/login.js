@@ -73,7 +73,8 @@ for(var c=0; c < options.login_prompts; c++) {
 			bbs.logon();
 			exit();
 		}
-		bbs.logline(LOG_NOTICE, "N-", "New user registration canceled");
+		if(typeof bbs.logline == "function")
+			bbs.logline(LOG_NOTICE, "N-", "New user registration canceled");
 		continue;
 	}
 	// Continue normal login (prompting for password)
