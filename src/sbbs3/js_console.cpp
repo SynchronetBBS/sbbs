@@ -58,6 +58,7 @@ enum {
 	, CON_PROP_TELNET_MODE
 	, CON_PROP_GETSTR_OFFSET
 	, CON_PROP_CTRLKEY_PASSTHRU
+	, CON_PROP_USELECT_COUNT
 	/* read only */
 	, CON_PROP_INBUF_LEVEL
 	, CON_PROP_INBUF_SPACE
@@ -207,6 +208,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case CON_PROP_KEYBUF_SPACE:
 			val = sbbs->keybuf_space();
+			break;
+		case CON_PROP_USELECT_COUNT:
+			val = sbbs->uselect_count;
 			break;
 
 		case CON_PROP_YES_KEY:
@@ -388,6 +392,10 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 		case CON_PROP_OUTPUT_RATE:
 			sbbs->term->set_output_rate((enum output_rate)val);
 			break;
+		case CON_PROP_USELECT_COUNT:
+			if ((unsigned)val < sbbs->uselect_count)
+				sbbs->uselect_count = val;
+			break;
 
 		default:
 			return JS_TRUE;
@@ -434,6 +442,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "question", CON_PROP_QUESTION, CON_PROP_FLAGS, 310},
 	{   "getstr_offset", CON_PROP_GETSTR_OFFSET, CON_PROP_FLAGS, 311},
 	{   "ctrlkey_passthru", CON_PROP_CTRLKEY_PASSTHRU, CON_PROP_FLAGS, 310},
+	{   "uselect_count", CON_PROP_USELECT_COUNT, CON_PROP_FLAGS, 321},
 	{   "input_buffer_level", CON_PROP_INBUF_LEVEL, JSPROP_ENUMERATE | JSPROP_READONLY, 312},
 	{   "input_buffer_space", CON_PROP_INBUF_SPACE, JSPROP_ENUMERATE | JSPROP_READONLY, 312},
 	{   "output_buffer_level", CON_PROP_OUTBUF_LEVEL, JSPROP_ENUMERATE | JSPROP_READONLY, 312},
@@ -485,14 +494,15 @@ static const char*        con_prop_desc[] = {
 	, "Current yes/no question (set by yesno and noyes)"
 	, "Cursor position offset for use with <tt>getstr(K_USEOFFSET)</tt>"
 	, "Control key pass-through bit-mask, set bits represent control key combinations "
-	"<i>not</i> handled by <tt>inkey()</tt> method.<br> "
-	"This may optionally be specified as a string of characters. "
-	"The format of this string is [+-][@-_].<br>If neither plus nor minus is "
-	"the first character, the value will be replaced by one constructed "
-	"from the string.<br>A + indicates that characters following will be "
-	"added to the set, and a - indicates they should be removed.<br>"
-	"ex: <tt>console.ctrlkey_passthru=\"-UP+AB\"</tt> will clear CTRL-U and "
-	"CTRL-P and set CTRL-A and CTRL-B."
+		"<i>not</i> handled by <tt>inkey()</tt> method.<br> "
+		"This may optionally be specified as a string of characters. "
+		"The format of this string is [+-][@-_].<br>If neither plus nor minus is "
+		"the first character, the value will be replaced by one constructed "
+		"from the string.<br>A + indicates that characters following will be "
+		"added to the set, and a - indicates they should be removed.<br>"
+		"ex: <tt>console.ctrlkey_passthru=\"-UP+AB\"</tt> will clear CTRL-U and "
+		"CTRL-P and set CTRL-A and CTRL-B."
+	, "Number of items currently enqueued for a user selection prompt (via <tt>uselect()</tt>) - <small>Can be decreased only</small>"
 	, "Number of bytes currently in the input buffer (from the remote client) - <small>READ ONLY</small>"
 	, "Number of bytes available in the input buffer	- <small>READ ONLY</small>"
 	, "Number of bytes currently in the output buffer (from the local server) - <small>READ ONLY</small>"
@@ -2746,15 +2756,16 @@ static jsSyncMethodSpec js_console_functions[] = {
 	 , 310
 	},
 	{"uselect",         js_uselect,         0, JSTYPE_NUMBER,   JSDOCSTR("[<i>number</i> index, title, item] [,ars]")
-	 , JSDOCSTR("User selection menu, first call for each item, then finally with no args (or just the default item index number) to display select menu")
+	 , JSDOCSTR("User selection menu: first call for each item, then finally with no arguments (or just the default item index number) to display a numbered-item selection menu/prompt.<br>"
+				"Returns the index of the selected item or a negative number (e.g. when aborted).  See also the <tt>uselect_count</tt> property.")
 	 , 312
 	},
 	{"saveline",        js_saveline,        0, JSTYPE_BOOLEAN,  JSDOCSTR("")
-	 , JSDOCSTR("Push the current console line of text and attributes to a (local) LIFO list of //saved lines//")
+	 , JSDOCSTR("Push the current console line of text and attributes to a (local) LIFO list of <i>saved lines</i>")
 	 , 310
 	},
 	{"restoreline",     js_restoreline,     0, JSTYPE_BOOLEAN,  JSDOCSTR("")
-	 , JSDOCSTR("Pop the most recently //saved line// of text and attributes and display it on the remote console")
+	 , JSDOCSTR("Pop the most recently <i>saved line</i> of text and attributes and display it on the remote console")
 	 , 310
 	},
 	{"ansi",            js_ansi,            1, JSTYPE_STRING,   JSDOCSTR("attribute [,current_attribute]")
