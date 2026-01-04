@@ -1,4 +1,4 @@
-// New user login module
+// New user logon (post registration) module
 
 load("sbbsdefs.js");
 
@@ -22,12 +22,12 @@ if(options.send_newuser_welcome)	// backwards compatibility hack
 
 console.clear();
 
-if(!user.address.length && user.number>1 && options.survey !== false) {
+if(bbs.online && !user.address.length && user.number>1 && options.survey !== false) {
 	print("\1y\1hWhere did you hear about this BBS?");
 	user.address=console.getstr(30,K_LINE);
 }
 
-if(options.ask_qnet) {
+if(bbs.online && options.ask_qnet) {
 	if(options.qnet_name==undefined)
 		options.qnet_name="DOVE-Net";
 	if(!console.noyes(format("\r\nIs this account to be used for QWK Networking (%s)\1b", options.qnet_name))) {
@@ -63,7 +63,7 @@ function chk_qwk_id(str)
 	return(true);
 }
 
-if(qnet) {
+if(bbs.online && qnet) {
 	alias = user.alias.toUpperCase();
 	while(!chk_qwk_id(alias) && bbs.online) {
 		console.crlf();
@@ -88,7 +88,7 @@ if(qnet) {
 	user.security.exemptions|=UFLAG_D;
 }
 
-if(options.ask_sysop 
+if(bbs.online && options.ask_sysop
 	&& !console.noyes("\r\n\1bAre you a sysop of a \1wSynchronet\1b BBS (unsure, hit '\1wN\1b')")) {
 	user.security.flags1|=UFLAG_S;
 	if(qnet) {
