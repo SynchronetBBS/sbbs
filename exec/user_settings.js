@@ -8,37 +8,8 @@ require("sbbsdefs.js", 'BBS_OPT_AUTO_LOGON');
 require("userdefs.js", 'USER_SPIN');
 require("nodedefs.js", 'NODE_DFLT');
 require("gettext.js", 'gettext');
-var termdesc = load("termdesc.js");
-
-function get_lang_count()
-{
-	return directory(system.ctrl_dir + "text.*.ini").length + 1;
-}
-
-function get_lang_list()
-{
-	var result = [""];
-	var list = directory(system.ctrl_dir + "text.*.ini");
-	const prefix_len = (system.ctrl_dir + "text.").length;
-	for (var i in list) {
-		result.push(list[i].slice(prefix_len, -4));
-	}
-	return result;
-}
-
-function get_lang_desc_list()
-{
-	var result = [bbs.text(bbs.text.LANG, /* default: */true)];
-	var list = directory(system.ctrl_dir + "text.*.ini");
-	for (var i in list) {
-		var f = new File(list[i]);
-		if (!f.open("r"))
-			continue;
-		result.push(f.iniGetValue(null, "LANG", ""));
-		f.close();
-	}
-	return result;
-}
+var termdesc = load({}, "termdesc.js");
+var lang = load({}, "lang.js");
 
 function on_or_off(on)
 {
@@ -49,8 +20,8 @@ function display_menu(thisuser)
 {
 	var keys = 'Q\r';
 
-	const curspin = (thisuser.settings & USER_SPIN) ? bbs.text(On)
-		: (thisuser.settings & USER_NOPAUSESPIN) ? bbs.text(Off) : gettext("Pause Prompt") + " " + bbs.text(Only);
+	const curspin = (thisuser.settings & USER_SPIN) ? bbs.text(bbs.text.On)
+		: (thisuser.settings & USER_NOPAUSESPIN) ? bbs.text(bbs.text.Off) : gettext("Pause Prompt") + " " + bbs.text(bbs.text.Only);
 	for (var i = 0; i < main_cfg.shell.length; i++) {
 		if (main_cfg.shell[i].code === thisuser.command_shell.toUpperCase()) {
 			const cmdshell = main_cfg.shell[i].name;
@@ -68,7 +39,7 @@ function display_menu(thisuser)
 		}
 	}
 	console.clear();
-	console.putmsg(format(bbs.text(UserDefaultsHdr),thisuser.alias,thisuser.number));
+	console.putmsg(format(bbs.text(bbs.text.UserDefaultsHdr),thisuser.alias,thisuser.number));
 	if (bbs.text(bbs.text.UserDefaultsTerminal).length) {
 		keys += 'T';
 		console.add_hotspot('T');
@@ -87,7 +58,7 @@ function display_menu(thisuser)
 		console.add_hotspot('K');
 		console.putmsg(format(bbs.text(bbs.text.UserDefaultsCommandSet), cmdshell));
 	}
-	if (bbs.text(bbs.text.UserDefaultsLanguage).length && get_lang_count() > 1) {
+	if (bbs.text(bbs.text.UserDefaultsLanguage).length && lang.count() > 1) {
 		keys += 'I';
 		console.add_hotspot('I');
 		console.putmsg(format(bbs.text(bbs.text.UserDefaultsLanguage)
@@ -274,23 +245,8 @@ while(bbs.online && !js.terminated) {
 			bbs.select_shell();
 			break;
 		case 'I': /* Language */
-		{
-			var lang = get_lang_list();
-			var i;
-			for (i = 0; i < lang.length; ++i) {
-				if (thisuser.lang == lang[i])
-					break;
-			}
-			if (i >= lang.length)
-				i = 0;
-			var desc = get_lang_desc_list();
-			for (var j = 0; j < desc.length; ++j) {
-				console.uselect(j, bbs.text(bbs.text.Language), desc[j]);
-			}
-			if ((j = console.uselect(i)) >= 0)
-				thisuser.lang = lang[j];
+			lang.select(thisuser);
 			break;
-		}
 		case 'L':
 		{
 			console.putmsg(bbs.text(bbs.text.HowManyColumns));
