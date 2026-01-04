@@ -309,13 +309,17 @@ o js.exec() will now execute scripts from the configured mods and exec dir
 o console.getstr() fix: off-by-one bug in use of maxlen argument
 o Returned to SBBS v3.19 bug-compatible console.attributes behavior of
   silently ignoring Ctrl-A characters in assigned strings
+o New 'console' property:
+  - uselect_count
 o msg_area.grp_list[] no longer includes groups with no sub-boards that the
   user can access - issue #905
 o New 'bbs' methods:
   - logline(level=LOG_INFO, code, string)
   - matchuserdata()
+  - ver() now takes an optional 'verbose' argument (defaults to true)
 o New 'system' property:
   - phonenumber_template
+  - stats_cache
 o New 'system' methods:
   - check_password()
   - check_realname()
