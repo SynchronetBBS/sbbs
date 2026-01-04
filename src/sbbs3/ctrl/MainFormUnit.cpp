@@ -1833,8 +1833,6 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     	UseFileAssociations=Registry->ReadBool("UseFileAssociations");
 	if(Registry->ValueExists("NodeDisplayInterval"))
     	NodeForm->Timer->Interval=Registry->ReadInteger("NodeDisplayInterval")*1000;
-	if(Registry->ValueExists("StatsDisplayInterval"))
-		StatsTimer->Interval=Registry->ReadInteger("StatsDisplayInterval")*1000;
 	if(Registry->ValueExists("ClientDisplayInterval"))
     	ClientForm->Timer->Interval=Registry->ReadInteger("ClientDisplayInterval")*1000;
     if(Registry->ValueExists("ErrorSoundFile"))
@@ -1926,6 +1924,8 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 
 	shutdown_semfiles=semfile_list_init(cfg.ctrl_dir,"shutdown","ctrl");
 	semfile_list_check(&initialized,shutdown_semfiles);
+
+	StatsTimer->Interval = cfg.stats_interval;
 
     if(cfg.new_install) {
 		Application->BringToFront();
