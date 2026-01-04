@@ -83,7 +83,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 	if (mode & K_AUTODEL && str1[0] && !(mode & K_NOECHO)) {
 		ch = getkey(mode | K_GETSTR);
 		attr(atr);
-		if (IS_PRINTABLE(ch) || ch == DEL) {
+		if (IS_PRINTABLE(ch) || ch == DEL || ch == BS) {
 			for (i = 0; i < l; i++)
 				term->backspace();
 			i = l = 0;
