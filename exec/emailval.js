@@ -51,8 +51,6 @@ That's it!
 *******************************************************************************/
 
 // Configure in ctrl/modopts/emailval.ini
-//  should match USER LEVEL settings for your BBS
-//  modify the next two options to match your BBS settings
 
 const module = "emailval";
 var options = load("modopts.js", module);
@@ -73,7 +71,7 @@ require("sbbsdefs.js", 'NET_NONE');
 
 //gets the validation code in use, if any, otherwise sets/returns a new code.
 function GetValidationCode() {
-	var val = bbs.mods.userprops.get(module, "code")
+	var val = bbs.mods.userprops.get(module, "code");
 	if (!val)
 		return SetValidationCode(); //return a new code.
 	
@@ -129,72 +127,84 @@ function SendValidationEmail() {
 
 	msgbase.close();
 	console.print("\1n \r\n\1h\1bValidation code sent to \1n\1h" + user.netmail + "\1h\1b.\1n \r\n");
+	bbs.mods.userprops.set(module, "sent", new Date());
+	bbs.mods.userprops.set(module, "to", user.netmail);
 }
 
 function ChangeEmailAddress() {
 	var val = SetValidationCode(); //resets the last code used.
 
 	console.print("\1n \r\b\1h\1bEnter your email address below.\r\n\1n\1b:\1n ");
-	user.netmail = console.getstr(user.netmail, 60, K_EDIT | K_LINE);
-	console.print("\r\n\1n \r\n");
+	var netmail = console.getstr(user.netmail, LEN_NETMAIL, K_EDIT | K_LINE);
+	if(!system.check_netmail_addr(netmail))
+		alert("Sorry, that is an unsupported netmail address");
+	else
+		user.netmail = netmail;
 }
 
 function EnterValidationCode() {
 	var val = GetValidationCode(); //SHOULD get the validation code sent.
 
-	console.print("\1n \r\b\1h\1bEnter the validation code you were sent below.\r\n\1n\1b:\1n ");
+	console.print(options.entercode || "\1n \r\b\1h\1bEnter the validation code you were sent below.\r\n\1n\1b:\1n ");
 	var valu = console.getstr("", cValCodeLen, K_EDIT | K_UPPER | K_LINE);
-	if (val.toUpperCase() == valu.toUpperCase()) {
-		console.print("\r\n\1n \r\n\1hValidated!\1n \r\n\r\n");
-		if(user.security.level == options.level_before_validation)
+	if (val.toUpperCase() == valu) {
+		console.newline();
+		console.print(options.validated || "\1hValidated!\1n");
+		if(user.security.level < options.level_after_validation)
 			user.security.level = options.level_after_validation;
-		if(options.flags1_after_validation !== undefined)
+		if(options.flags1_after_validation)
 			user.security.flags1 = options.flags1_after_validation;
-		if(options.flags2_after_validation !== undefined)
+		if(options.flags2_after_validation)
 			user.security.flags2 = options.flags2_after_validation;
-		if(options.flags3_after_validation !== undefined)
+		if(options.flags3_after_validation)
 			user.security.flags3 = options.flags3_after_validation;
-		if(options.flags4_after_validation !== undefined)
+		if(options.flags4_after_validation)
 			user.security.flags4 = options.flags4_after_validation;
-		if(options.exemptions_after_validation !== undefined)
+		if(options.exemptions_after_validation)
 			user.security.exemptions = options.exemptions_after_validation;
-		if(options.restrictions_after_validation !== undefined)
+		if(options.restrictions_after_validation)
 			user.security.restrictions = options.restrictions_after_validation;
 		if(options.expiration_after_validation == true) {
 			if(options.expiration_days_after_validation)
 				user.security.expiration_date = time() + options.expiration_days_after_validation * 24 * 60 * 60;
 		} else
 			user.security.expiration_date = 0;
+		user.adjust_credits(options.credits_added_after_validation || 0);
+		user.adjust_minutes(options.minutes_added_after_validation || 0);
 		
 		user.comment = "Email validated on " + (new Date());
+		bbs.mods.userprops.set(module, "validated", new Date());
 	} else {
-		console.print("\r\n\1n \r\n\1h\1rCode doesn't match!\1n \r\n");
+		console.print(options.nomatch || "\r\n\1n \r\n\1h\1rCode doesn't match!\1n \r\n");
 	}
 }
 
 function HangupNow() {
 	console.clear();
-	console.print("\1nGoodbye.\r\n");
+	console.print(options.goodbye || "\1nGoodbye.");
+	console.newline();
 	bbs.hangup();
 }
 
 function CheckValidation() {
-	while (bbs.online && user.security.level == options.level_before_validation) {
+	while (bbs.online
+		&& (user.security.level == options.level_before_validation
+			|| (user.security.level <= options.level_requiring_validation
+				&& !bbs.mods.userprops.get(module, "validated")))) {
 		console.clear();
 		
 		//NOTE: could use bbs.menu("FILENAME") to display an ansi here.
-		console.print("\1h\1bE-mail validation for \1h\1w" + user.alias + " #" + user.number + "\r\n\r\n");
+		console.print("\1h\1bEmail validation for \1h\1w" + user.alias + " #" + user.number + "\r\n\r\n");
 		console.print("\1nYou have created an account with an email address that must be validated.\r\n")
 		console.print("\1n\1b[\1h\1wS\1n\1b] \1h\1bSend validation code to\1n\1c " + user.netmail + "\r\n");
 		console.print("\1n\1b[\1h\1wV\1n\1b] \1h\1bValidate your account\r\n");
 		console.print("\1n\1b[\1h\1wE\1n\1b] \1h\1bEdit/Update email address\r\n");
 		console.print("\1n\1b[\1h\1wH\1n\1b] \1h\1bHangup\r\n");
 		
-		//display prompt.
-		console.print("\r\n\1h\1yYour selection? ");
-		var o = console.getkey().toUpperCase();
+		console.newline();
+		console.print(options.prompt || "\1h\1yYour selection? \1w");
+		var o = console.getkeys("SVEH");
 		
-		console.print("\1n\1h\1c" + o + "\r\n");
 		switch (o) {
 			case "S":
 				SendValidationEmail();
@@ -209,8 +219,6 @@ function CheckValidation() {
 				HangupNow();
 				return;
 				break;
-			default:
-				console.print("\1h\1yInvalid Selection.\r\n");
 		}
 	}
 }
