@@ -245,7 +245,7 @@ while(bbs.online && !js.terminated) {
 			bbs.select_shell();
 			break;
 		case 'I': /* Language */
-			lang.select(thisuser);
+			lang.select((bbs.sys_status & SS_USERON) ? thisuser : user);
 			break;
 		case 'L':
 		{
