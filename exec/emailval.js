@@ -1,4 +1,3 @@
-
 /*******************************************************************************
 Originally based on:
 FILE: emailval.js v0.2
@@ -8,7 +7,7 @@ ON  : 2005-02-14
 TABS: 4 character tabstops.
 
 --------------------------------------------------------------------------------
-This is a simple telnet email validation script.
+This is a simple email validation script.
 
 Installation instructions for emailval.js (requires SBBS 3.12a+)
 
@@ -21,7 +20,7 @@ STEP 2:
 Edit ctrl/modopts.ini in a text editor and edit the following values in the
 [emailval] section (create if it necessary) to match your pre-validation and
 post-validation security levels.
-		level_before_validation (default: 50)
+        level_before_validation (default: 50)
 		level_after_validation (default: 60)
 		flags1_after_validation (default: no change)
 		flags2_after_validation (default: no change)
@@ -51,40 +50,35 @@ or, if using logon.bin/src
 That's it!
 *******************************************************************************/
 
-// TODO: use a user property (see userprops.js) rather than the user's comment
-// to store the secret
+// Configure in ctrl/modopts/emailval.ini
+//  should match USER LEVEL settings for your BBS
+//  modify the next two options to match your BBS settings
 
-// Use the [emailval] section of ctlr/modopts.ini
-// should match USER LEVEL settings for your BBS
-//  modify the next two modopts.ini options to match your BBS settings
-
-var options = load("modopts.js", "emailval");
+const module = "emailval";
+var options = load("modopts.js", module);
 if(!options)
 	options = {};
 if(options.level_before_validation === undefined)
 	options.level_before_validation = 50;
 if(options.level_after_validation === undefined)
 	options.level_after_validation = 60;
-if (typeof options.valid_chars === 'number')
-	options.valid_chars = load("modopts.js", "emailval", "valid_chars", 'ACDEFHJKLMNPQRTUVWXY23456789!@#$%&*');
+options.valid_chars = load("modopts.js", module, "valid_chars", 'ACDEFHJKLMNPQRTUVWXY23456789!@#$%&*');
 
-//other constants, shouldn't need changing.
-var cValChars = options.valid_chars !== undefined ? options.valid_chars :
-    'ACDEFHJKLMNPQRTUVWXY23456789!@#$%&*';
-var cPrevalText = "telvalcode";
-var cValCodeLen = options.code_length !== undefined ? options.code_length : 16;
+if(!bbs.mods.userprops)
+	bbs.mods.userprops = load({}, "userprops.js");
 
-//include SBBS Definition constants
+var cValCodeLen = options.code_length || 16;
+
 require("sbbsdefs.js", 'NET_NONE'); 
 
 //gets the validation code in use, if any, otherwise sets/returns a new code.
 function GetValidationCode() {
-	var val = user.comment;
-	if (val.indexOf(cPrevalText) == -1)
+	var val = bbs.mods.userprops.get(module, "code")
+	if (!val)
 		return SetValidationCode(); //return a new code.
 	
-	//parse/return the existing code.
-	return val.substr(val.indexOf(cPrevalText) + cPrevalText.length + 1, cValCodeLen);
+	// return the existing code.
+	return val;
 }
 
 //sets/returns a new validation code.
@@ -92,9 +86,9 @@ function SetValidationCode() {
 	var val='';
 
 	for (var i=0;i<cValCodeLen;i++)
-		val+=cValChars.substr(parseInt(Math.random() * cValChars.length), 1);
+		val+=options.valid_chars.substr(parseInt(Math.random() * options.valid_chars.length), 1);
 		
-	user.comment = cPrevalText + ":" + val;
+	bbs.mods.userprops.set(module, "code", val);
 	return val;
 }
 
@@ -152,7 +146,8 @@ function EnterValidationCode() {
 	var valu = console.getstr("", cValCodeLen, K_EDIT | K_UPPER | K_LINE);
 	if (val.toUpperCase() == valu.toUpperCase()) {
 		console.print("\r\n\1n \r\n\1hValidated!\1n \r\n\r\n");
-		user.security.level = options.level_after_validation;
+		if(user.security.level == options.level_before_validation)
+			user.security.level = options.level_after_validation;
 		if(options.flags1_after_validation !== undefined)
 			user.security.flags1 = options.flags1_after_validation;
 		if(options.flags2_after_validation !== undefined)
@@ -171,7 +166,7 @@ function EnterValidationCode() {
 		} else
 			user.security.expiration_date = 0;
 		
-		user.comment = cPrevalText + ":" + val + " validated on " + (new Date());
+		user.comment = "Email validated on " + (new Date());
 	} else {
 		console.print("\r\n\1n \r\n\1h\1rCode doesn't match!\1n \r\n");
 	}
@@ -188,7 +183,7 @@ function CheckValidation() {
 		console.clear();
 		
 		//NOTE: could use bbs.menu("FILENAME") to display an ansi here.
-		console.print("\1h\1bTelnet validation for \1h\1w" + user.alias + " #" + user.number + "\r\n\r\n");
+		console.print("\1h\1bE-mail validation for \1h\1w" + user.alias + " #" + user.number + "\r\n\r\n");
 		console.print("\1nYou have created an account with an email address that must be validated.\r\n")
 		console.print("\1n\1b[\1h\1wS\1n\1b] \1h\1bSend validation code to\1n\1c " + user.netmail + "\r\n");
 		console.print("\1n\1b[\1h\1wV\1n\1b] \1h\1bValidate your account\r\n");
