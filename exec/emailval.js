@@ -188,9 +188,8 @@ function HangupNow() {
 
 function CheckValidation() {
 	while (bbs.online
-		&& (user.security.level == options.level_before_validation
-			|| (user.security.level <= options.level_requiring_validation
-				&& !bbs.mods.userprops.get(module, "validated")))) {
+		&& user.security.level == options.level_before_validation
+		&& !bbs.mods.userprops.get(module, "validated")) {
 		console.clear();
 		
 		//NOTE: could use bbs.menu("FILENAME") to display an ansi here.
