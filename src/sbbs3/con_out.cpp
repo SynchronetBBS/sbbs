@@ -758,7 +758,7 @@ int sbbs_t::outchar(char ch)
 	if (ch == FF) {
 		if (term->lncntr > 0 && term->row > 0) {
 			term->lncntr = 0;
-			term->newline();
+			term->newline(); // Legacy behavior: FF does LF first, conditional-LF would have made more sense (but would be a behavior change)
 			if (!(sys_status & SS_PAUSEOFF)) { // Intentionally ignore UPAUSE here
 				pause();
 				while (term->lncntr && online && !(sys_status & SS_ABORT))
