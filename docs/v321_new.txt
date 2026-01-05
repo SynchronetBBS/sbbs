@@ -59,6 +59,8 @@ o Add "exclusive external program" option to timed event configurations
 o When the user has unread personal mail, give a different prompt during logon
 o Add New User Prompt toggle option to allow single-word real names
 o Resolve menu/../* to abs-path before checking file existence - issue #918
+o When text/menu/userinfo.msg exists, it'll be diplayed for user_info()
+  functions, in place of the hard-coded logic/text strings (UserStats, etc)
 o Don't close node.log file stream when invoking command-lines with a '?'
   prefix - allows JavaScript mods to write to system log using appropriate
   'bbs' functions
@@ -100,6 +102,7 @@ o Ignore (but log an error) when DNSBL server returns address != 127.0.0.x
 o Allow C escape sequences in EXEC: argument, to allow param passing
   e.g. separate module name from command-line params with \x20 and separate
   params from each other with \x20.
+o Fixed for large values: TPERC, TPERD, TTODAY, TTOTAL, and TBANKED
 o New @-codes:
   - NEWMSGS (number of new messages imported/posted to be read)
   - NEWFILES (number of new files imported/uploaded to be seen)
@@ -122,6 +125,24 @@ o New @-codes:
   - RAINBOW:<attr-list> at least one colon-separator is now required
   - CLOCK (whole number system timer, typically 1ms interval)
   - TIMER (highest resolution system timer, real number, fractions of second)
+  - TMLAST  (time used last call in [H]H:MM format)
+  - HRLAST  (estimated hours used last call, with 'h' suffix)
+  - LASTTM  (exact time used during last call, with 'm' suffix)
+  - TMTODAY (exact total time used today, with 'm' suffix)
+  - HRTODAY (estimated hours used today, with 'h' suffix)
+  - HRPERD  (estimated hours allowed per day, with 'h' suffix)
+  - HRPERC  (estimated hours allowed per call, with 'h' suffix)
+  - TOTALHR (estimated total time used, in hours, with 'd' or 'h' suffix)
+  - TOTALTM (exact total time used, verbose, with 'm' suffix)  
+  - EXTRAHR (extra time, in estimated hours with 'd' or 'h' suffix)
+  - EXTRATM (extra time, verbose, with 'm' suffix) 
+  - TMBANK  (banked time, verbose, with 'm' suffix)
+  - HRBANK  (banked time, estimated in hours, with 'm' suffix)
+  - CDT     (estimated number of credits, e.g. "4.0G")
+  - CDTPERD (estimated free credits per day, e.g. "5.0G")
+  - CDTUSED (estimated free credits used today, e.g. "1.0G")
+  - CDTLEFT (estimated total credits available to user, e.g. "5.5G")
+  - CDTFREE (estimated remaining free credits, e.g. "0.5G")
 
 Text Strings
 ~~~~~~~~~~~~
@@ -320,7 +341,9 @@ o msg_area.grp_list[] no longer includes groups with no sub-boards that the
 o New 'bbs' methods:
   - logline(level=LOG_INFO, code, string)
   - matchuserdata()
-  - ver() now takes an optional 'verbose' argument (defaults to true)
+o bbs.ver() now takes an optional 'verbose' argument (default: true)
+o bbs.good_password() renamed to bbs.check_password(), with backward-alias
+o bbs.read_mail() adds option to go directly to viewing messages (not listing)
 o New 'system' property:
   - phonenumber_template
   - stats_interval
@@ -329,8 +352,8 @@ o New 'system' methods:
   - check_realname()
   - check_netmail_addr()
   - check_birthdate()
-o bbs.good_password() renamed to bbs.check_password(), with backward-alias
-o bbs.read_mail() adds option to go directly to viewing messages (not listing)
+  - minutestr()
+o system.secondstr() now accepts an optional 'verbose' argument, default: true
 o New User class properties:
   - stats.bytes_downloaded_today
   - stats.files_downloaded_today
