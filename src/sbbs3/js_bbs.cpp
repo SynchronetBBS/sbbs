@@ -4932,7 +4932,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , JSDOCSTR("Display current user information.")
 	 , 310
 	},
-	{"ver",             js_ver,             0,  JSTYPE_VOID,    JSDOCSTR("[verbose=true]")
+	{"ver",             js_ver,             0,  JSTYPE_VOID,    JSDOCSTR("[<i>bool</i> verbose=true]")
 	 , JSDOCSTR("Display software version information.")
 	 , 310
 	},
@@ -5072,7 +5072,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , JSDOCSTR("Scan sub-boards for messages.")
 	 , 310
 	},
-	{"scan_dirs",       js_scandirs,        0,  JSTYPE_VOID,    JSDOCSTR("[<i>number</i> mode=FL_NONE] [,<i>bool<?i> all=false]")
+	{"scan_dirs",       js_scandirs,        0,  JSTYPE_VOID,    JSDOCSTR("[<i>number</i> mode=FL_NONE] [,<i>bool</i> all=false]")
 	 , JSDOCSTR("Scan directories for files.")
 	 , 310
 	},
