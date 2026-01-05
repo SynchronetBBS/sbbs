@@ -973,29 +973,31 @@ char* sbbs_t::unixtodstr(time_t t, char* str)
 
 void sbbs_t::sys_info()
 {
-	char    tmp[128];
-	int     i;
-	stats_t stats;
+	if (!menu("sysinfo", P_NOERROR)) {
+		char    tmp[128];
+		int     i;
+		stats_t stats;
 
-	bputs(text[SiHdr]);
-	getstats(&cfg, 0, &stats);
-	bprintf(text[SiSysName], cfg.sys_name);
-	bprintf(text[SiSysID], cfg.sys_id);  /* QWK ID */
-	for (i = 0; i < cfg.total_faddrs; i++)
-		bprintf(text[SiSysFaddr], smb_faddrtoa(&cfg.faddr[i], tmp));
-	if (cfg.sys_location[0])
-		bprintf(text[SiSysLocation], cfg.sys_location);
-	bprintf(text[TiNow], timestr(now), smb_zonestr(sys_timezone(&cfg), NULL));
-	if (cfg.sys_op[0])
-		bprintf(text[SiSysop], cfg.sys_op);
-	bprintf(text[SiSysNodes], cfg.sys_nodes);
-	if (cfg.node_phone[0])
-		bprintf(text[SiNodePhone], cfg.node_phone);
-	bprintf(text[SiTotalLogons], ultoac(stats.logons, tmp));
-	bprintf(text[SiLogonsToday], ultoac(stats.ltoday, tmp));
-	bprintf(text[SiTotalTime], ultoac(stats.timeon, tmp));
-	bprintf(text[SiTimeToday], ultoac(stats.ttoday, tmp));
-	ver();
+		bputs(text[SiHdr]);
+		getstats(&cfg, 0, &stats);
+		bprintf(text[SiSysName], cfg.sys_name);
+		bprintf(text[SiSysID], cfg.sys_id);  /* QWK ID */
+		for (i = 0; i < cfg.total_faddrs; i++)
+			bprintf(text[SiSysFaddr], smb_faddrtoa(&cfg.faddr[i], tmp));
+		if (cfg.sys_location[0])
+			bprintf(text[SiSysLocation], cfg.sys_location);
+		bprintf(text[TiNow], timestr(now), smb_zonestr(sys_timezone(&cfg), NULL));
+		if (cfg.sys_op[0])
+			bprintf(text[SiSysop], cfg.sys_op);
+		bprintf(text[SiSysNodes], cfg.sys_nodes);
+		if (cfg.node_phone[0])
+			bprintf(text[SiNodePhone], cfg.node_phone);
+		bprintf(text[SiTotalLogons], ultoac(stats.logons, tmp));
+		bprintf(text[SiLogonsToday], ultoac(stats.ltoday, tmp));
+		bprintf(text[SiTotalTime], ultoac(stats.timeon, tmp));
+		bprintf(text[SiTimeToday], ultoac(stats.ttoday, tmp));
+		ver();
+	}
 	const char* fname = "../system";
 	if (menu_exists(fname) && text[ViewSysInfoFileQ][0] && yesno(text[ViewSysInfoFileQ])) {
 		cls();
@@ -1010,13 +1012,12 @@ void sbbs_t::sys_info()
 
 void sbbs_t::user_info()
 {
-	float      f;
-	char       str[128];
-	char       tmp[128];
-	char       tmp2[128];
-	struct  tm tm;
-
 	if (!menu("userinfo", P_NOERROR)) {
+		float      f;
+		char       str[128];
+		char       tmp[128];
+		char       tmp2[128];
+		struct  tm tm;
 
 		bprintf(text[UserStats], useron.alias, useron.number);
 

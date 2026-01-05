@@ -61,6 +61,8 @@ o Add New User Prompt toggle option to allow single-word real names
 o Resolve menu/../* to abs-path before checking file existence - issue #918
 o When text/menu/userinfo.msg exists, it'll be diplayed for user_info()
   functions, in place of the hard-coded logic/text strings (UserStats, etc)
+o When text/menu/sysinfo.msg exists, it'll be diplayed for sys_info()
+  functions, in place of the hard-coded logic/text strings (SiSysName, etc)
 o Don't close node.log file stream when invoking command-lines with a '?'
   prefix - allows JavaScript mods to write to system log using appropriate
   'bbs' functions
