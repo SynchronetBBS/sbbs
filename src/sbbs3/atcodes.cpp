@@ -841,7 +841,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (strcmp(sp, "TIMER") == 0) {
-		snprintf(str, maxlen, "%f", xp_timer());
+		snprintf(str, maxlen, "%f", (double)xp_timer());
 		return str;
 	}
 
