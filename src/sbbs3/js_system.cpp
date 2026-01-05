@@ -473,7 +473,7 @@ static jsSyncPropertySpec js_system_properties[] = {
 	{   "tz_offset",                SYS_PROP_TZ_OFFSET, SYSOBJ_RO_FLAGS,       320
 		, JSDOCSTR("Local timezone offset, in minutes, from UTC (negative values represent zones <i>west</i> of UTC, positive values represent zones <i>east</i> of UTC)")},
 	{   "date_format",              SYS_PROP_DATE_FMT,  SYSOBJ_RO_FLAGS,       32002
-		, JSDOCSTR("Date representation (0=Month first, 1=Day first, 2=Year first")},
+		, JSDOCSTR("Date representation (0=Month first, 1=Day first, 2=Year first)")},
 	{   "date_separator",           SYS_PROP_DATE_SEP,  SYSOBJ_RO_FLAGS,       32002
 		, JSDOCSTR("Short (8 character) date field-separator")},
 	{   "date_verbal",              SYS_PROP_DATE_VERBAL, SYSOBJ_RO_FLAGS,     32002
@@ -1313,15 +1313,43 @@ js_secondstr(JSContext *cx, uintN argc, jsval *arglist)
 	char      str[128];
 	uint32_t  t = 0;
 	JSString* js_str;
+	bool      verbose = true;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 	if (js_argvIsNullOrVoid(cx, argv, 0))
 		return JS_FALSE;
 
+	if (argc > 1 && JSVAL_IS_BOOLEAN(argv[1]))
+		verbose = JSVAL_TO_BOOLEAN(argv[1]);
+
 	JS_ValueToECMAUint32(cx, argv[0], &t);
-	sectostr(t, str);
-	if ((js_str = JS_NewStringCopyZ(cx, str)) == NULL)
+	if ((js_str = JS_NewStringCopyZ(cx, verbose ? sectostr(t, str) : seconds_to_str(t, str))) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	return JS_TRUE;
+}
+
+static JSBool
+js_minutestr(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *   argv = JS_ARGV(cx, arglist);
+	char      str[128];
+	uint32_t  t = 0;
+	JSString* js_str;
+	bool      estimate = false;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+
+	if (argc > 1 && JSVAL_IS_BOOLEAN(argv[1]))
+		estimate = JSVAL_TO_BOOLEAN(argv[1]);
+
+	JS_ValueToECMAUint32(cx, argv[0], &t);
+	if ((js_str = JS_NewStringCopyZ(cx, minutes_to_str(t, str, sizeof str, estimate))) == NULL)
 		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
@@ -2436,9 +2464,12 @@ static jsSyncMethodSpec js_system_functions[] = {
 		        "defaults to current date if <i>time</i> not specified. "
 		        "If <i>time</i> is a string in numeric date format, returns the parsed time_t value as a number.")
 	 , 310},
-	{"secondstr",       js_secondstr,       0,  JSTYPE_STRING,  JSDOCSTR("seconds")
-	 , JSDOCSTR("Convert elapsed time in seconds into a string in <tt>hh:mm:ss</tt> format")
+	{"secondstr",       js_secondstr,       0,  JSTYPE_STRING,  JSDOCSTR("seconds [,<t>bool</t> verbose=true]")
+	 , JSDOCSTR("Convert a duration in seconds into a string in <tt>hh:mm:ss</tt> format")
 	 , 310},
+	{"minutestr",       js_minutestr,       0,  JSTYPE_STRING,  JSDOCSTR("minutes [,<t>bool</t> estimate=false]")
+	 , JSDOCSTR("Convert a duration in minutes into a string in <tt>DDd HHh MMm</tt> or <tt>X.Yh</tt> format")
+	 , 321},
 #ifndef JSDOOR
 	{"spamlog",         js_spamlog,         6,  JSTYPE_BOOLEAN, JSDOCSTR("[protocol, action, reason, host, ip, to, from]")
 	 , JSDOCSTR("Log a suspected SPAM attempt")
