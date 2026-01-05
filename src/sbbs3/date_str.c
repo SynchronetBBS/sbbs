@@ -243,7 +243,7 @@ char* minutes_as_hhmm(uint minutes, char *str, size_t size, bool verbose)
 /****************************************************************************/
 char* minutes_to_str(uint minutes, char* str, size_t size, bool estimate)
 {
-	if (estimate)
+	if (minutes > 60 && estimate)
 		duration_estimate_to_str(minutes * 60, str, size, /* unit (one hour): */ 60 * 60, /* precision: */ 1);
 	else {
 		if (minutes < 60)
