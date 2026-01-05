@@ -909,7 +909,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strncmp(sp, "FILEBYTES:", 10) == 0) {    // Number of bytes in current file directory
+	if (strncmp(sp, "FILEBYTES:", 10) == 0) {    // Number of bytes in specified file directory
 		const char* path = getpath(&cfg, sp + 10);
 		safe_snprintf(str, maxlen, "%" PRIu64, getfilesizetotal(path));
 		return str;
@@ -921,7 +921,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strncmp(sp, "FILEKB:", 7) == 0) {    // Number of kibibytes in current file directory
+	if (strncmp(sp, "FILEKB:", 7) == 0) {    // Number of kibibytes in specified file directory
 		const char* path = getpath(&cfg, sp + 7);
 		safe_snprintf(str, maxlen, "%1.1f", getfilesizetotal(path) / 1024.0);
 		return str;
@@ -1241,11 +1241,17 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return sectostr(timeleft, str) + 1;
 	}
 
-	if (!strcmp(sp, "TPERD"))                /* Synchronet only */
-		return sectostr(cfg.level_timeperday[useron.level], str) + 4;
+	if (strcmp(sp, "TPERD") == 0)
+		return minutes_as_hhmm(cfg.level_timeperday[useron.level], str, maxlen, /* verbose: */ false);
 
-	if (!strcmp(sp, "TPERC"))                /* Synchronet only */
-		return sectostr(cfg.level_timepercall[useron.level], str) + 4;
+	if (strcmp(sp, "TPERC") == 0)
+		return minutes_as_hhmm(cfg.level_timepercall[useron.level], str, maxlen, /* verbose: */ false);
+
+	if (strcmp(sp, "HRPERD") == 0)
+		return minutes_to_str(cfg.level_timeperday[useron.level], str, maxlen, /* estimate: */ true);
+
+	if (strcmp(sp, "HRPERC") == 0)
+		return minutes_to_str(cfg.level_timepercall[useron.level], str, maxlen, /* estimate: */ true);
 
 	if (strcmp(sp, "MPERC") == 0 || strcmp(sp, "TIMELIMIT") == 0) {
 		safe_snprintf(str, maxlen, "%u", cfg.level_timepercall[useron.level]);
@@ -1400,15 +1406,33 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (strcmp(sp, "TTODAY") == 0)
-		return sectostr(useron.ttoday, str) + 3;
+		return minutes_as_hhmm(useron.ttoday, str, maxlen, /* verbose: */ true);
+
+	if (strcmp(sp, "TMTODAY") == 0)
+		return minutes_to_str(useron.ttoday, str, maxlen, /* estimate: */ false);
+
+	if (strcmp(sp, "HRTODAY") == 0)
+		return minutes_to_str(useron.ttoday, str, maxlen, /* estimate: */ true);
 
 	if (strcmp(sp, "TTOTAL") == 0)
-		return sectostr(useron.timeon, str) + 3;
+		return minutes_as_hhmm(useron.timeon, str, maxlen, /* verbose: */ true);
+
+	if (strcmp(sp, "TOTALTM") == 0)
+		return minutes_to_str(useron.timeon, str, maxlen, /* estimate: */ false);
+
+	if (strcmp(sp, "TOTALHR") == 0)
+		return minutes_to_str(useron.timeon, str, maxlen, /* estimate: */ true);
 
 	if (strcmp(sp, "TLAST") == 0) {
 		safe_snprintf(str, maxlen, "%u", useron.tlast);
 		return str;
 	}
+	if (strcmp(sp, "TMLAST") == 0)
+		return minutes_as_hhmm(useron.tlast, str, maxlen, /* verbose: */ false);
+	if (strcmp(sp, "HRLAST") == 0)
+		return minutes_to_str(useron.tlast, str, maxlen, /* estimate: */ true);
+	if (strcmp(sp, "LASTTM") == 0)
+		return minutes_to_str(useron.tlast, str, maxlen, /* estimate: */ false);
 
 	if (strcmp(sp, "MEXTRA") == 0) {
 		safe_snprintf(str, maxlen, "%u", useron.textra);
@@ -1416,15 +1440,26 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (strcmp(sp, "TEXTRA") == 0)
-		return sectostr(useron.textra, str) + 3;
+		return minutes_as_hhmm(useron.textra, str, maxlen, /* verbose: */ true);
+
+	if (strcmp(sp, "EXTRATM") == 0)
+		return minutes_to_str(useron.textra, str, maxlen, /* estimate: */ false);
+
+	if (strcmp(sp, "EXTRAHR") == 0)
+		return minutes_to_str(useron.textra, str, maxlen, /* estimate: */ true);
 
 	if (strcmp(sp, "MBANKED") == 0) {
 		safe_snprintf(str, maxlen, "%" PRIu32, useron.min);
 		return str;
 	}
+	if (strcmp(sp, "HRBANK") == 0)
+		return minutes_to_str(useron.min, str, maxlen, /* estimate: */ true);
 
 	if (strcmp(sp, "TBANKED") == 0)
-		return sectostr(useron.min, str) + 3;
+		return minutes_as_hhmm(useron.min, str, maxlen, /* verbose: */ true);
+
+	if (strcmp(sp, "TMBANK") == 0)
+		return minutes_to_str(useron.min, str, maxlen, /* estimate: */ false);
 
 	if (!strcmp(sp, "MSGLEFT") || !strcmp(sp, "MSGSLEFT")) {
 		safe_snprintf(str, maxlen, "%u", useron.posts);
@@ -1569,6 +1604,16 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
+	if (strcmp(sp, "CDTPERD") == 0) {
+		byte_estimate_to_str(cfg.level_freecdtperday[useron.level], str, maxlen, /* unit: */ 1, /* precision: */ 1);
+		return str;
+	}
+
+	if (strcmp(sp, "CDTUSED") == 0) {
+		byte_estimate_to_str(cfg.level_freecdtperday[useron.level] - useron.freecdt, str, maxlen, /* unit: */ 1, /* precision: */ 1);
+		return str;
+	}
+
 	if (!strcmp(sp, "KBLEFT")) {
 		safe_snprintf(str, maxlen, "%" PRIu64, user_available_credits(&useron) / 1024UL);
 		return str;
@@ -1579,8 +1624,23 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
+	if (strcmp(sp, "CDTLEFT") == 0) {
+		byte_estimate_to_str(user_available_credits(&useron), str, maxlen, /* unit: */ 1, /* precision: */ 1);
+		return str;
+	}
+
 	if (strcmp(sp, "CREDITS") == 0) {
 		safe_snprintf(str, maxlen, "%" PRIu64, useron.cdt);
+		return str;
+	}
+
+	if (strcmp(sp, "CDT") == 0) {
+		byte_estimate_to_str(useron.cdt, str, maxlen, /* unit: */ 1, /* precision: */ 1);
+		return str;
+	}
+
+	if (strcmp(sp, "CDTFREE") == 0) {
+		byte_estimate_to_str(useron.freecdt, str, maxlen, /* unit: */ 1, /* precision: */ 1);
 		return str;
 	}
 
