@@ -1016,48 +1016,51 @@ void sbbs_t::user_info()
 	char       tmp2[128];
 	struct  tm tm;
 
-	bprintf(text[UserStats], useron.alias, useron.number);
+	if (!menu("userinfo", P_NOERROR)) {
 
-	if (localtime32(&useron.laston, &tm) != NULL)
-		bprintf(text[UserDates]
-		        , datestr(useron.firston, str)
-		        , datestr(useron.expire, tmp)
-		        , datestr(useron.laston, tmp2)
-		        , tm.tm_hour, tm.tm_min);
+		bprintf(text[UserStats], useron.alias, useron.number);
 
-	bprintf(text[UserTimes]
-	        , useron.timeon, useron.ttoday
-	        , cfg.level_timeperday[useron.level]
-	        , useron.tlast
-	        , cfg.level_timepercall[useron.level]
-	        , useron.textra);
-	if (useron.posts)
-		f = (float)useron.logons / useron.posts;
-	else
-		f = 0;
-	bprintf(text[UserLogons]
-	        , useron.logons, useron.ltoday
-	        , cfg.level_callsperday[useron.level], useron.posts
-	        , f ? (uint)(100 / f) : useron.posts > useron.logons ? 100 : 0
-	        , useron.ptoday);
-	bprintf(text[UserEmails]
-	        , useron.emails, useron.fbacks
-	        , getmail(&cfg, useron.number, /* Sent: */ FALSE, /* SPAM: */ FALSE), useron.etoday);
-	term->newline();
-	bprintf(text[UserUploads]
-	        , byte_estimate_to_str(useron.ulb, tmp, sizeof(tmp), 1, 1), useron.uls);
-	if (useron.dtoday)
-		snprintf(str, sizeof str, text[UserDownloadsToday]
-			, byte_estimate_to_str(useron.btoday, tmp, sizeof tmp, 1, 1)
-			, useron.dtoday);
-	else
-		str[0] = '\0';
-	bprintf(text[UserDownloads]
-	        , byte_estimate_to_str(useron.dlb, tmp, sizeof(tmp), 1, 1), useron.dls, str);
-	bprintf(text[UserCredits], byte_estimate_to_str(useron.cdt, tmp, sizeof(tmp), 1, 1)
-	        , byte_estimate_to_str(useron.freecdt, tmp2, sizeof(tmp2), 1, 1)
-	        , byte_estimate_to_str(cfg.level_freecdtperday[useron.level], str, sizeof(str), 1, 1));
-	bprintf(text[UserMinutes], ultoac(useron.min, tmp));
+		if (localtime32(&useron.laston, &tm) != NULL)
+			bprintf(text[UserDates]
+					, datestr(useron.firston, str)
+					, datestr(useron.expire, tmp)
+					, datestr(useron.laston, tmp2)
+					, tm.tm_hour, tm.tm_min);
+
+		bprintf(text[UserTimes]
+				, useron.timeon, useron.ttoday
+				, cfg.level_timeperday[useron.level]
+				, useron.tlast
+				, cfg.level_timepercall[useron.level]
+				, useron.textra);
+		if (useron.posts)
+			f = (float)useron.logons / useron.posts;
+		else
+			f = 0;
+		bprintf(text[UserLogons]
+				, useron.logons, useron.ltoday
+				, cfg.level_callsperday[useron.level], useron.posts
+				, f ? (uint)(100 / f) : useron.posts > useron.logons ? 100 : 0
+				, useron.ptoday);
+		bprintf(text[UserEmails]
+				, useron.emails, useron.fbacks
+				, getmail(&cfg, useron.number, /* Sent: */ FALSE, /* SPAM: */ FALSE), useron.etoday);
+		term->newline();
+		bprintf(text[UserUploads]
+				, byte_estimate_to_str(useron.ulb, tmp, sizeof(tmp), 1, 1), useron.uls);
+		if (useron.dtoday)
+			snprintf(str, sizeof str, text[UserDownloadsToday]
+				, byte_estimate_to_str(useron.btoday, tmp, sizeof tmp, 1, 1)
+				, useron.dtoday);
+		else
+			str[0] = '\0';
+		bprintf(text[UserDownloads]
+				, byte_estimate_to_str(useron.dlb, tmp, sizeof(tmp), 1, 1), useron.dls, str);
+		bprintf(text[UserCredits], byte_estimate_to_str(useron.cdt, tmp, sizeof(tmp), 1, 1)
+				, byte_estimate_to_str(useron.freecdt, tmp2, sizeof(tmp2), 1, 1)
+				, byte_estimate_to_str(cfg.level_freecdtperday[useron.level], str, sizeof(str), 1, 1));
+		bprintf(text[UserMinutes], ultoac(useron.min, tmp));
+	}
 }
 
 void sbbs_t::xfer_policy()
