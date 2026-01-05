@@ -1432,7 +1432,7 @@ void __fastcall TMainForm::StatsTimerTick(TObject *Sender)
 	StatsForm->TotalLogons->Caption=AnsiString(stats.logons);
     StatsForm->LogonsToday->Caption=AnsiString(stats.ltoday);
     StatsForm->TotalTimeOn->Caption=AnsiString(minutes_to_str(stats.timeon, str, sizeof str, /* estimate */false));
-    StatsForm->TimeToday->Caption=AnsiString(stats.ttoday);
+    StatsForm->TimeToday->Caption=AnsiString(minutes_to_str(stats.ttoday, str, sizeof str, /* estimate */true));
     StatsForm->TotalEMail->Caption=AnsiString(getmail(&cfg,0,0,0));
 	StatsForm->EMailToday->Caption=AnsiString(stats.etoday);
 	StatsForm->TotalFeedback->Caption=AnsiString(getmail(&cfg,1,0,0));
