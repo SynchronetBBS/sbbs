@@ -195,35 +195,70 @@ char* verbal_datestr(scfg_t* cfg, time_t t, char* str)
 }
 
 /****************************************************************************/
-/* Takes the value 'sec' and makes a string the format HH:MM:SS             */
+/* Takes the value 'seconds' and makes a string in the format HH:MM:SS      */
 /****************************************************************************/
-char* sectostr(uint sec, char *str)
+char* sectostr(uint seconds, char *str)
 {
-	uchar hour, min, sec2;
-
-	hour = (sec / 60) / 60;
-	min = (sec / 60) - (hour * 60);
-	sec2 = sec - ((min + (hour * 60)) * 60);
-	sprintf(str, "%2.2d:%2.2d:%2.2d", hour, min, sec2);
+	sprintf(str, "%02d:%02d:%02d"
+		, seconds / (60 * 60), (seconds % (60 * 60)) / 60, seconds % 60);
 	return str;
 }
 
-/* Returns a shortened version of "HH:MM:SS" formatted seconds value */
-char* seconds_to_str(uint seconds, char* str)
+/****************************************************************************/
+/* skipping leading zeros and colons in the return (pointer) value			*/
+/****************************************************************************/
+static char* skip_zeroes(char* p)
 {
-	char* p = sectostr(seconds, str);
-	while (*p == '0' || *p == ':')
+	while ((*p == '0' || *p == ':') && *(p + 1) != '\0')
 		p++;
 	return p;
 }
 
-/* Returns a duration in minutes into a string */
-char* minutes_to_str(uint min, char* str, size_t size)
+/****************************************************************************/
+/* Returns a shortened version of "HH:MM:SS" formatted seconds value		*/
+/* by skipping leading zeros and colons in the return (pointer) value		*/
+/* The returned string will be at least one character long					*/
+/****************************************************************************/
+char* seconds_to_str(uint seconds, char* str)
 {
-	safe_snprintf(str, size, "%ud %uh %um"
-	              , min / (24 * 60)
-	              , (min % (24 * 60)) / 60
-	              , min % 60);
+	return skip_zeroes(sectostr(seconds, str));
+}
+
+/****************************************************************************/
+/* Takes the value 'minutes' and makes a string in the format HH:MM         */
+/* When not verbose, skips leading zeros and colon in return (pointer) val	*/
+/* The returned string will be at least one character long					*/
+/****************************************************************************/
+char* minutes_as_hhmm(uint minutes, char *str, size_t size, bool verbose)
+{
+	snprintf(str, size, "%02d:%02d", minutes / 60, minutes % 60);
+	if (!verbose)
+		return skip_zeroes(str);
+	return str;
+}
+
+/****************************************************************************/
+/* Format a duration in minutes into a string with one or more suffixes		*/
+/* The returned string will be at least two characters long					*/
+/****************************************************************************/
+char* minutes_to_str(uint minutes, char* str, size_t size, bool estimate)
+{
+	if (estimate)
+		duration_estimate_to_str(minutes * 60, str, size, /* unit (one hour): */ 60 * 60, /* precision: */ 1);
+	else {
+		if (minutes < 60)
+			safe_snprintf(str, size, "%um", minutes);
+		else if (minutes < 24 * 60) {
+			if (minutes % 60 == 0)
+				safe_snprintf(str, size, "%uh", minutes / 60);
+			else
+				safe_snprintf(str, size, "%uh %um", minutes / 60, minutes % 60);
+		} else
+			safe_snprintf(str, size, "%ud %uh %um"
+				, minutes / (24 * 60)
+				, (minutes % (24 * 60)) / 60
+				, minutes % 60);
+	}
 	return str;
 }
 

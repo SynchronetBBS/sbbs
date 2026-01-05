@@ -32,19 +32,20 @@ extern "C" {
 extern const char* wday[];	/* abbreviated weekday names */
 extern const char* mon[];	/* abbreviated month names */
 
-DLLEXPORT char *	date_format(scfg_t*, char* buf, size_t, bool verbal);
-DLLEXPORT char *	date_template(scfg_t*, char* buf, size_t);
-DLLEXPORT char *	zonestr(short zone);
-DLLEXPORT time32_t	dstrtounix(enum date_fmt, const char *str);
-DLLEXPORT char *	unixtodstr(scfg_t*, time32_t, char *str);
-DLLEXPORT char *	datestr(scfg_t*, time_t, char* str);
-DLLEXPORT char *	verbal_datestr(scfg_t*, time_t, char* str);
-DLLEXPORT char *	sectostr(uint sec, char *str);
-DLLEXPORT char *	seconds_to_str(uint, char*);
-DLLEXPORT char *	tm_as_hhmm(scfg_t* cfg, struct tm*, char* buf);
-DLLEXPORT char *	time_as_hhmm(scfg_t* cfg, time_t, char* buf);
-DLLEXPORT char *	timestr(scfg_t* cfg, time32_t, char* str);
-DLLEXPORT char*		minutes_to_str(uint min, char* str, size_t);
+DLLEXPORT char* date_format(scfg_t*, char* buf, size_t, bool verbal);
+DLLEXPORT char* date_template(scfg_t*, char* buf, size_t);
+DLLEXPORT char* zonestr(short zone);
+DLLEXPORT time32_t dstrtounix(enum date_fmt, const char* str);
+DLLEXPORT char* unixtodstr(scfg_t*, time32_t, char* str);
+DLLEXPORT char* datestr(scfg_t*, time_t, char* str);
+DLLEXPORT char* verbal_datestr(scfg_t*, time_t, char* str);
+DLLEXPORT char* sectostr(uint seconds, char*);
+DLLEXPORT char* seconds_to_str(uint, char*);
+DLLEXPORT char* tm_as_hhmm(scfg_t* cfg, struct tm*, char* buf);
+DLLEXPORT char* time_as_hhmm(scfg_t* cfg, time_t, char* buf);
+DLLEXPORT char* timestr(scfg_t* cfg, time32_t, char* str);
+DLLEXPORT char* minutes_as_hhmm(uint minutes, char* str, size_t, bool verbose);
+DLLEXPORT char* minutes_to_str(uint minutes, char* str, size_t, bool estimate);
 
 #ifdef __cplusplus
 }

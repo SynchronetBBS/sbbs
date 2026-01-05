@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 		printf("\n");
 		printf("%10s\n", "===TOTAL===");
 		char sep = ',';
-		printf("%10s : %13s\n", columns[CSTATS_TIMEON], minutes_to_str(total.timeon, str, sizeof(str)));
+		printf("%10s : %13s\n", columns[CSTATS_TIMEON], minutes_to_str(total.timeon, str, sizeof str, /* estimate: */false));
 		printf("%10s : %13s\n", columns[CSTATS_LOGONS], u32toac(total.logons, str, sep));
 		printf("%10s : %13s\n", columns[CSTATS_POSTS], u32toac(total.posts, str, sep));
 		printf("%10s : %13s\n", "Email Sent", u32toac(total.email, str, sep));
