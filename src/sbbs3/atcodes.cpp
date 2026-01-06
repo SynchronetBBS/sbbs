@@ -1118,7 +1118,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (!strcmp(sp, "USERNUM")) {
+	if (strcmp(sp, "USERNUM") == 0 || strcmp(sp, "UN") == 0) {
 		safe_snprintf(str, maxlen, "%u", useron.number);
 		return str;
 	}
