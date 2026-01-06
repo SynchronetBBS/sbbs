@@ -141,7 +141,6 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 	int32_t   l;
 	struct tm tm;
 	struct tm tl;
-	stats_t   stats;
 	uint max_files = user_downloads_per_day(&cfg, &useron);
 
 	char      node_dir[MAX_PATH + 1];
@@ -553,7 +552,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_TRUNC);
 			return;
 		}
-		getstats(&cfg, 0, &stats);
+		getstats_cached(&cfg, 0, &stats);
 		QBBS::exitinfo exitinfo{};
 		exitinfo.BaudRate = (uint16_t)dte_rate;
 		exitinfo.SysInfo.CallCount = stats.logons;

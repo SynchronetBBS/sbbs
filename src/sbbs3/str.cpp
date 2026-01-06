@@ -976,10 +976,9 @@ void sbbs_t::sys_info()
 	if (!menu("sysinfo", P_NOERROR)) {
 		char    tmp[128];
 		int     i;
-		stats_t stats;
 
 		bputs(text[SiHdr]);
-		getstats(&cfg, 0, &stats);
+		getstats_cached(&cfg, 0, &stats);
 		bprintf(text[SiSysName], cfg.sys_name);
 		bprintf(text[SiSysID], cfg.sys_id);  /* QWK ID */
 		for (i = 0; i < cfg.total_faddrs; i++)
@@ -1134,7 +1133,7 @@ void sbbs_t::node_stats(uint node_num)
 	if (!node_num)
 		node_num = cfg.node_num;
 	bprintf(text[NodeStatsHdr], node_num);
-	getstats(&cfg, node_num, &stats);
+	getstats(&cfg, node_num, &stats); // Cannot use cached stats for specific node
 	bprintf(text[StatsTotalLogons], ultoac(stats.logons, tmp));
 	bprintf(text[StatsLogonsToday], ultoac(stats.ltoday, tmp));
 	bprintf(text[StatsTotalTime], ultoac(stats.timeon, tmp));
@@ -1151,10 +1150,9 @@ void sbbs_t::node_stats(uint node_num)
 void sbbs_t::sys_stats(void)
 {
 	char    tmp[128];
-	stats_t stats;
 
 	bputs(text[SystemStatsHdr]);
-	getstats(&cfg, 0, &stats);
+	getstats_cached(&cfg, 0, &stats);
 	bprintf(text[StatsTotalLogons], ultoac(stats.logons, tmp));
 	bprintf(text[StatsLogonsToday], ultoac(stats.ltoday, tmp));
 	bprintf(text[StatsTotalTime], ultoac(stats.timeon, tmp));
