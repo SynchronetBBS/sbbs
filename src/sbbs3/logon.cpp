@@ -490,17 +490,19 @@ bool sbbs_t::logon()
 	mailr = getmail(&cfg, useron.number, /* Sent: */ FALSE, /* attr: */ MSG_READ);
 
 	if (!(cfg.sys_misc & SM_NOSYSINFO)) {
-		bprintf(text[SiSysName], cfg.sys_name);
-		//bprintf(text[SiNodeNumberName],cfg.node_num,cfg.node_name);
-		bprintf(text[LiUserNumberName], useron.number, useron.alias);
-		bprintf(text[LiLogonsToday], useron.ltoday
-		        , cfg.level_callsperday[useron.level]);
-		bprintf(text[LiTimeonToday], useron.ttoday
-		        , cfg.level_timeperday[useron.level] + useron.min);
-		bprintf(text[LiMailWaiting], mailw, mailw - mailr);
-		bprintf(text[LiSysopIs]
-		        , text[sysop_available(&cfg) ? LiSysopAvailable : LiSysopNotAvailable]);
-		term->newline();
+		if (!menu("logoninfo", P_NOERROR)) {
+			bprintf(text[SiSysName], cfg.sys_name);
+			//bprintf(text[SiNodeNumberName],cfg.node_num,cfg.node_name);
+			bprintf(text[LiUserNumberName], useron.number, useron.alias);
+			bprintf(text[LiLogonsToday], useron.ltoday
+					, cfg.level_callsperday[useron.level]);
+			bprintf(text[LiTimeonToday], useron.ttoday
+					, cfg.level_timeperday[useron.level] + useron.min);
+			bprintf(text[LiMailWaiting], mailw, mailw - mailr);
+			bprintf(text[LiSysopIs]
+					, text[sysop_available(&cfg) ? LiSysopAvailable : LiSysopNotAvailable]);
+			term->newline();
+		}
 	}
 
 	if (sys_status & SS_EVENT)
