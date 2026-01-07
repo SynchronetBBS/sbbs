@@ -517,8 +517,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (!strcmp(sp, "UPTIME")) {
 		extern volatile time_t uptime;
 		time_t                 up = 0;
-		now = time(NULL);
-		if (uptime != 0 && now >= uptime)
+		if (uptime != 0 && time(&now) >= uptime)
 			up = now - uptime;
 		char                   days[64] = "";
 		if ((up / (24 * 60 * 60)) >= 2) {
@@ -774,15 +773,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			gmtime_r(&now, &tm);
 		else
 			localtime_r(&now, &tm);
-		if (cfg.sys_misc & SM_MILITARY)
-			safe_snprintf(str, maxlen, "%02d:%02d:%02d"
-			              , tm.tm_hour, tm.tm_min, tm.tm_sec);
-		else
-			safe_snprintf(str, maxlen, "%02d:%02d %s"
-			              , tm.tm_hour == 0 ? 12
-			    : tm.tm_hour > 12 ? tm.tm_hour - 12
-			    : tm.tm_hour, tm.tm_min, tm.tm_hour > 11 ? "pm":"am");
-		return str;
+		return tm_as_hhmmss(&cfg, &tm, str, maxlen);
 	}
 
 	if (!strcmp(sp, "TIMEZONE"))
@@ -899,15 +890,12 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if (strncmp(sp, "FILESIZE:", 9) == 0) {
 		const char* path = getpath(&cfg, sp + 9);
-		byte_estimate_to_str(getfilesizetotal(path), str, maxlen, /* unit: */ 1, /* precision: */ 1);
-		return str;
+		return byte_estimate_to_str(getfilesizetotal(path), str, maxlen, /* unit: */ 1, /* precision: */ 1);
 	}
 
-	if (strcmp(sp, "FILESIZE") == 0) {
-		byte_estimate_to_str(usrlibs ? getfilesizetotal(cfg.dir[usrdir[curlib][curdir[curlib]]]->path) : 0
+	if (strcmp(sp, "FILESIZE") == 0)
+		return byte_estimate_to_str(usrlibs ? getfilesizetotal(cfg.dir[usrdir[curlib][curdir[curlib]]]->path) : 0
 		                     , str, maxlen, /* unit: */ 1, /* precision: */ 1);
-		return str;
-	}
 
 	if (strncmp(sp, "FILEBYTES:", 10) == 0) {    // Number of bytes in specified file directory
 		const char* path = getpath(&cfg, sp + 10);
@@ -1073,10 +1061,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			return get_text(sp + 5);
 	}
 
-	/* NOSTOP */
-
-	/* STOP */
-
 	if (!strcmp(sp, "BELL") || !strcmp(sp, "BEEP"))
 		return "\a";
 
@@ -1225,22 +1209,83 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (!strcmp(sp, "TIMEON") || !strcmp(sp, "TIMEUSED")) {
-		now = time(NULL);
-		safe_snprintf(str, maxlen, "%u", (uint)(now - logontime) / 60);
+	// ----------------------------------------------------------------------
+	// Time "used" this call (doesn't count time earned uploading, etc.)
+	if (strcmp(sp, "TIMEUSED") == 0) { // PCBoard "Total number of minutes used during current call"
+		safe_snprintf(str, maxlen, "%u", timeused() / 60);
+		return str;
+	}
+	if (strcmp(sp, "TMUSED") == 0)
+		return seconds_to_str(timeused(), str);
+
+	if (strcmp(sp, "TUSED") == 0)
+		return sectostr(timeused(), str) + 1; // Legacy truncation when hours > 9
+
+	if (strcmp(sp, "MUSED") == 0)
+		return minutes_to_str(timeused() / 60, str, maxlen, /* estimate: */ false);
+
+	if (strcmp(sp, "HRUSED") == 0)
+		return minutes_to_str(timeused() / 60, str, maxlen, /* estimate: */ true);
+	// ----------------------------------------------------------------------
+
+	// ----------------------------------------------------------------------
+	// Time "online" this call
+	if (strcmp(sp, "TIMEON") == 0) { // Wildcat! "Time on system this call"
+		safe_snprintf(str, maxlen, "%u", timeon() / 60);
 		return str;
 	}
 
-	if (!strcmp(sp, "TUSED")) {              /* Synchronet only */
-		now = time(NULL);
-		return sectostr((uint)(now - logontime), str) + 1;
+	if (strcmp(sp, "TONLINE") == 0)
+		return sectostr(timeon(), str) + 1;  // Legacy truncation when hours > 9
+
+	if (strcmp(sp, "TMONLINE") == 0)
+		return seconds_to_str(timeon(), str);
+
+	if (strcmp(sp, "MONLINE") == 0)
+		return minutes_to_str(timeon() / 60, str, maxlen, /* estimate: */ false);
+
+	if (strcmp(sp, "HRONLINE") == 0)
+		return minutes_to_str(timeon() / 60, str, maxlen, /* estimate: */ true);
+	// ----------------------------------------------------------------------
+
+	// ----------------------------------------------------------------------
+	// Time "remaining" this call
+	if (!strcmp(sp, "MINLEFT") || !strcmp(sp, "LEFT") || !strcmp(sp, "TIMELEFT")) {
+		// TIMELEFT excludes pending download time estimates on PCBoard
+		// Wildcat! LEFT: "Time remaining this call"
+		safe_snprintf(str, maxlen, "%u", gettimeleft() / 60);
+		return str;
 	}
 
-	if (!strcmp(sp, "TLEFT")) {              /* Synchronet only */
-		gettimeleft();
-		return sectostr(timeleft, str) + 1;
+	if (strcmp(sp, "SECLEFT") == 0) {
+		safe_snprintf(str, maxlen, "%u", gettimeleft());
+		return str;
 	}
 
+	if (!strcmp(sp, "TLEFT"))
+		return sectostr(gettimeleft(), str) + 1;  // Legacy truncation when hours > 9
+
+	if (strcmp(sp, "TMLEFT") == 0)
+		return seconds_to_str(gettimeleft(), str);
+
+	if (strcmp(sp, "MLEFT") == 0)
+		return minutes_to_str(gettimeleft() / 60, str, maxlen, /* estimate: */ false);
+
+	if (strcmp(sp, "HRLEFT") == 0)
+		return minutes_to_str(gettimeleft() / 60, str, maxlen, /* estimate: */ true);
+	// ----------------------------------------------------------------------
+
+	// ----------------------------------------------------------------------
+	// Time "allowed" per day/call
+	if (strcmp(sp, "MPERC") == 0 || strcmp(sp, "TIMELIMIT") == 0) { // PCBoard TIMELIMIT: "The daily/session time limit of the caller."
+		safe_snprintf(str, maxlen, "%u", cfg.level_timepercall[useron.level]);	// Example output: "30"
+		return str;
+	}
+
+	if (strcmp(sp, "MPERD") == 0) {
+		safe_snprintf(str, maxlen, "%u", cfg.level_timeperday[useron.level]);
+		return str;
+	}
 	if (strcmp(sp, "TPERD") == 0)
 		return minutes_as_hhmm(cfg.level_timeperday[useron.level], str, maxlen, /* verbose: */ false);
 
@@ -1252,16 +1297,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if (strcmp(sp, "HRPERC") == 0)
 		return minutes_to_str(cfg.level_timepercall[useron.level], str, maxlen, /* estimate: */ true);
-
-	if (strcmp(sp, "MPERC") == 0 || strcmp(sp, "TIMELIMIT") == 0) {
-		safe_snprintf(str, maxlen, "%u", cfg.level_timepercall[useron.level]);
-		return str;
-	}
-
-	if (strcmp(sp, "MPERD") == 0) {
-		safe_snprintf(str, maxlen, "%u", cfg.level_timeperday[useron.level]);
-		return str;
-	}
+	// ----------------------------------------------------------------------
 
 	if (strcmp(sp, "MAXCALLS") == 0) {
 		safe_snprintf(str, maxlen, "%u", cfg.level_callsperday[useron.level]);
@@ -1283,12 +1319,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (!strcmp(sp, "MINLEFT") || !strcmp(sp, "LEFT") || !strcmp(sp, "TIMELEFT")) {
-		gettimeleft();
-		safe_snprintf(str, maxlen, "%u", timeleft / 60);
-		return str;
-	}
-
 	if (!strcmp(sp, "LASTON"))
 		return timestr(useron.laston);
 
@@ -1305,19 +1335,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (!strcmp(sp, "LASTTIMEON")) {
-		memset(&tm, 0, sizeof(tm));
-		localtime32(&useron.laston, &tm);
-		if (cfg.sys_misc & SM_MILITARY)
-			safe_snprintf(str, maxlen, "%02d:%02d:%02d"
-			              , tm.tm_hour, tm.tm_min, tm.tm_sec);
-		else
-			safe_snprintf(str, maxlen, "%02d:%02d %s"
-			              , tm.tm_hour == 0 ? 12
-			    : tm.tm_hour > 12 ? tm.tm_hour - 12
-			    : tm.tm_hour, tm.tm_min, tm.tm_hour > 11 ? "pm":"am");
-		return str;
-	}
+	if (!strcmp(sp, "LASTTIMEON"))
+		return time_as_hhmmss(&cfg, useron.laston, str, maxlen);
 
 	if (!strcmp(sp, "FIRSTON"))
 		return timestr(useron.firston);
@@ -1335,19 +1354,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (!strcmp(sp, "FIRSTTIMEON")) {
-		memset(&tm, 0, sizeof(tm));
-		localtime32(&useron.firston, &tm);
-		if (cfg.sys_misc & SM_MILITARY)
-			safe_snprintf(str, maxlen, "%02d:%02d:%02d"
-			              , tm.tm_hour, tm.tm_min, tm.tm_sec);
-		else
-			safe_snprintf(str, maxlen, "%02d:%02d %s"
-			              , tm.tm_hour == 0 ? 12
-			    : tm.tm_hour > 12 ? tm.tm_hour - 12
-			    : tm.tm_hour, tm.tm_min, tm.tm_hour > 11 ? "pm":"am");
-		return str;
-	}
+	if (!strcmp(sp, "FIRSTTIMEON"))
+		return time_as_hhmmss(&cfg, useron.firston, str, maxlen);
 
 	if (strcmp(sp, "EMAILS") == 0) {
 		safe_snprintf(str, maxlen, "%u", useron.emails);
@@ -1380,10 +1388,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strcmp(sp, "BTODAY") == 0) {
-		byte_estimate_to_str(useron.btoday, str, maxlen, /* unit: */ 1, /* precision: */ 1);
-		return str;
-	}
+	if (strcmp(sp, "BTODAY") == 0)
+		return byte_estimate_to_str(useron.btoday, str, maxlen, /* unit: */ 1, /* precision: */ 1);
 
 	if (strcmp(sp, "KTODAY") == 0) {
 		safe_snprintf(str, maxlen, "%" PRIu64, useron.btoday / 1024);
@@ -1395,34 +1401,45 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strcmp(sp, "MTODAY") == 0) {
-		safe_snprintf(str, maxlen, "%u", useron.ttoday);
-		return str;
-	}
-
-	if (strcmp(sp, "MTOTAL") == 0) {
-		safe_snprintf(str, maxlen, "%u", useron.timeon);
+	// ----------------------------------------------------------------------
+	// Time "used" today (including current call)
+	if (strcmp(sp, "MTODAY") == 0 || strcmp(sp, "TOTALTIME") == 0) { // PCBoard TOTALTIME: "Total number of minutes used during current day."
+		safe_snprintf(str, maxlen, "%u", useron_minutes_today());
 		return str;
 	}
 
 	if (strcmp(sp, "TTODAY") == 0)
-		return minutes_as_hhmm(useron.ttoday, str, maxlen, /* verbose: */ true);
+		return minutes_as_hhmm(useron_minutes_today(), str, maxlen, /* verbose: */ true);
 
 	if (strcmp(sp, "TMTODAY") == 0)
-		return minutes_to_str(useron.ttoday, str, maxlen, /* estimate: */ false);
+		return minutes_to_str(useron_minutes_today(), str, maxlen, /* estimate: */ false);
 
 	if (strcmp(sp, "HRTODAY") == 0)
-		return minutes_to_str(useron.ttoday, str, maxlen, /* estimate: */ true);
+		return minutes_to_str(useron_minutes_today(), str, maxlen, /* estimate: */ true);
+	// ----------------------------------------------------------------------
+
+	// ----------------------------------------------------------------------
+	// Total time "used" (all time)
+	if (strcmp(sp, "MTOTAL") == 0) {
+		safe_snprintf(str, maxlen, "%u", useron_minutes_total());
+		return str;
+	}
 
 	if (strcmp(sp, "TTOTAL") == 0)
-		return minutes_as_hhmm(useron.timeon, str, maxlen, /* verbose: */ true);
+		return minutes_as_hhmm(useron_minutes_total(), str, maxlen, /* verbose: */ true);
+
+	if (strcmp(sp, "TMTOTAL") == 0)
+		return minutes_as_hhmm(useron_minutes_total(), str, maxlen, /* verbose: */ false);
 
 	if (strcmp(sp, "TOTALTM") == 0)
-		return minutes_to_str(useron.timeon, str, maxlen, /* estimate: */ false);
+		return minutes_to_str(useron_minutes_total(), str, maxlen, /* estimate: */ false);
 
 	if (strcmp(sp, "TOTALHR") == 0)
-		return minutes_to_str(useron.timeon, str, maxlen, /* estimate: */ true);
+		return minutes_to_str(useron_minutes_total(), str, maxlen, /* estimate: */ true);
+	// ----------------------------------------------------------------------
 
+	// ----------------------------------------------------------------------
+	// Time "last" session
 	if (strcmp(sp, "TLAST") == 0) {
 		safe_snprintf(str, maxlen, "%u", useron.tlast);
 		return str;
@@ -1433,7 +1450,10 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return minutes_to_str(useron.tlast, str, maxlen, /* estimate: */ true);
 	if (strcmp(sp, "LASTTM") == 0)
 		return minutes_to_str(useron.tlast, str, maxlen, /* estimate: */ false);
+	// ----------------------------------------------------------------------
 
+	// ----------------------------------------------------------------------
+	// Extra time "available"
 	if (strcmp(sp, "MEXTRA") == 0) {
 		safe_snprintf(str, maxlen, "%u", useron.textra);
 		return str;
@@ -1447,7 +1467,10 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if (strcmp(sp, "EXTRAHR") == 0)
 		return minutes_to_str(useron.textra, str, maxlen, /* estimate: */ true);
+	// ----------------------------------------------------------------------
 
+	// ----------------------------------------------------------------------
+	// Time "banked"
 	if (strcmp(sp, "MBANKED") == 0) {
 		safe_snprintf(str, maxlen, "%" PRIu32, useron.min);
 		return str;
@@ -1460,6 +1483,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if (strcmp(sp, "TMBANK") == 0)
 		return minutes_to_str(useron.min, str, maxlen, /* estimate: */ false);
+	// ----------------------------------------------------------------------
 
 	if (!strcmp(sp, "MSGLEFT") || !strcmp(sp, "MSGSLEFT")) {
 		safe_snprintf(str, maxlen, "%u", useron.posts);
@@ -1496,15 +1520,11 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strcmp(sp, "MINSPACE") == 0) {
-		byte_count_to_str(cfg.min_dspace, str, maxlen);
-		return str;
-	}
+	if (strcmp(sp, "MINSPACE") == 0)
+		return byte_count_to_str(cfg.min_dspace, str, maxlen);
 
-	if (strcmp(sp, "UPB") == 0) {
-		byte_estimate_to_str(useron.ulb, str, maxlen, /* unit: */ 1, /* precision: */ 1);
-		return str;
-	}
+	if (strcmp(sp, "UPB") == 0)
+		return byte_estimate_to_str(useron.ulb, str, maxlen, /* unit: */ 1, /* precision: */ 1);
 
 	if (!strcmp(sp, "UPBYTES")) {
 		safe_snprintf(str, maxlen, "%" PRIu64, useron.ulb);
@@ -1521,10 +1541,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strcmp(sp, "DLB") == 0) {
-		byte_estimate_to_str(useron.dlb, str, maxlen, /* unit: */ 1, /* precision: */ 1);
-		return str;
-	}
+	if (strcmp(sp, "DLB") == 0)
+		return byte_estimate_to_str(useron.dlb, str, maxlen, /* unit: */ 1, /* precision: */ 1);
 
 	if (!strcmp(sp, "DLBYTES")) {
 		safe_snprintf(str, maxlen, "%" PRIu64, useron.dlb);
@@ -1604,15 +1622,11 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strcmp(sp, "CDTPERD") == 0) {
-		byte_estimate_to_str(cfg.level_freecdtperday[useron.level], str, maxlen, /* unit: */ 1, /* precision: */ 1);
-		return str;
-	}
+	if (strcmp(sp, "CDTPERD") == 0)
+		return byte_estimate_to_str(cfg.level_freecdtperday[useron.level], str, maxlen, /* unit: */ 1, /* precision: */ 1);
 
-	if (strcmp(sp, "CDTUSED") == 0) {
-		byte_estimate_to_str(cfg.level_freecdtperday[useron.level] - useron.freecdt, str, maxlen, /* unit: */ 1, /* precision: */ 1);
-		return str;
-	}
+	if (strcmp(sp, "CDTUSED") == 0)
+		return byte_estimate_to_str(cfg.level_freecdtperday[useron.level] - useron.freecdt, str, maxlen, /* unit: */ 1, /* precision: */ 1);
 
 	if (!strcmp(sp, "KBLEFT")) {
 		safe_snprintf(str, maxlen, "%" PRIu64, user_available_credits(&useron) / 1024UL);
@@ -1624,25 +1638,19 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strcmp(sp, "CDTLEFT") == 0) {
-		byte_estimate_to_str(user_available_credits(&useron), str, maxlen, /* unit: */ 1, /* precision: */ 1);
-		return str;
-	}
+	if (strcmp(sp, "CDTLEFT") == 0)
+		return byte_estimate_to_str(user_available_credits(&useron), str, maxlen, /* unit: */ 1, /* precision: */ 1);
 
 	if (strcmp(sp, "CREDITS") == 0) {
 		safe_snprintf(str, maxlen, "%" PRIu64, useron.cdt);
 		return str;
 	}
 
-	if (strcmp(sp, "CDT") == 0) {
-		byte_estimate_to_str(useron.cdt, str, maxlen, /* unit: */ 1, /* precision: */ 1);
-		return str;
-	}
+	if (strcmp(sp, "CDT") == 0)
+		return byte_estimate_to_str(useron.cdt, str, maxlen, /* unit: */ 1, /* precision: */ 1);
 
-	if (strcmp(sp, "CDTFREE") == 0) {
-		byte_estimate_to_str(useron.freecdt, str, maxlen, /* unit: */ 1, /* precision: */ 1);
-		return str;
-	}
+	if (strcmp(sp, "CDTFREE") == 0)
+		return byte_estimate_to_str(useron.freecdt, str, maxlen, /* unit: */ 1, /* precision: */ 1);
 
 	if (strcmp(sp, "FREECDT") == 0) {
 		safe_snprintf(str, maxlen, "%" PRIu64, useron.freecdt);
@@ -1682,8 +1690,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (!strcmp(sp, "EXPDAYS")) {
-		now = time(NULL);
-		l = (uint)(useron.expire - now);
+		l = (uint)(useron.expire - time(&now));
 		if (l < 0)
 			l = 0;
 		safe_snprintf(str, maxlen, "%lu", l / (1440L * 60L));
@@ -1704,7 +1711,10 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return nulstr;
 	}
 
-	/* Synchronet Specific */
+	if (strcmp(sp, "LOGOFF") == 0) {
+		logoff();
+		return nulstr;
+	}
 
 	if (!strncmp(sp, "SETSTR:", 7)) {
 		strcpy(main_csi.str, sp + 7);

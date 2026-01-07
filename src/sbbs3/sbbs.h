@@ -668,6 +668,10 @@ public:
 			starttime=0,	/* Time stamp to use for time left calcs */
 			ns_time=0,		/* File new-scan time */
 			last_ns_time=0;	/* Most recent new-file-scan this call */
+	uint    timeon() { int result = (int)(time(&now) - logontime); if (result < 0) result = 0; return result; }
+	uint    timeused() { int result = (int)(time(&now) - starttime); if (result < 0) result = 0; return result; }
+	uint    useron_minutes_today() { return useron.ttoday + (timeon() / 60); }
+	uint    useron_minutes_total() { return useron.timeon + (timeon() / 60); }
 	uchar 	action = NODE_MAIN;		/* Current action of user */
 	std::atomic<int> online{0}; 	/* Remote/Local or not online */
 	std::atomic<int> sys_status{0};	/* System Status */
@@ -1071,6 +1075,7 @@ public:
 
 	/* logout.cpp */
 	void	logout();
+	bool	logoff(bool prompt = false);
 
 	/* newuser.cpp */
 	bool	newuser(void);					/* Get new user							*/

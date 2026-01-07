@@ -20,6 +20,7 @@ o Increase 16-bit unsigned integer statistical user fields to 32-bit
 o Address concurrency issues with user daily statistics/free credit fields
   - Each user's stats reset date/time stamp now stored in user base/record
 o Support tracking and limiting of user file downloads "per day" - issue #938
+o System statistics and mail message counts are now cached (default: for 5s)
 o Track user bytes downloaded (in files) per day
   - Reflect these stats in drop files that support it:
     DOOR.SYS, CALLINFO.BBS, and SFDOORS.DAT
@@ -59,6 +60,10 @@ o Add "exclusive external program" option to timed event configurations
 o When the user has unread personal mail, give a different prompt during logon
 o Add New User Prompt toggle option to allow single-word real names
 o Resolve menu/../* to abs-path before checking file existence - issue #918
+o When text/menu/logoninfo.msg exists, it'll be displayed during logon
+  (when SCFG->System->Toggles->Display Sys Info During Logon is set to "Yes"
+  the default), in place of the hard-coded logic/text strings (SiSysName,
+  LiUserNumberName, etc)
 o When text/menu/userinfo.msg exists, it'll be diplayed for user_info()
   functions, in place of the hard-coded logic/text strings (UserStats, etc)
 o When text/menu/sysinfo.msg exists, it'll be diplayed for sys_info()
@@ -106,6 +111,7 @@ o Allow C escape sequences in EXEC: argument, to allow param passing
   params from each other with \x20.
 o Fixed for large values: TPERC, TPERD, TTODAY, TTOTAL, and TBANKED
 o New @-codes:
+  - UN (alias for USERNUM)
   - NEWMSGS (number of new messages imported/posted to be read)
   - NEWFILES (number of new files imported/uploaded to be seen)
   - MAXDL (max files downloaded per day, or "unlimited")

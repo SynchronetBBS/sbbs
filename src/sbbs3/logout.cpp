@@ -137,7 +137,7 @@ void sbbs_t::logout()
 		char dlb[64];
 		safe_snprintf(tmp, sizeof(tmp), "T:%3u   R:%3u   P:%3u   E:%3u   F:%3u   "
 		              "U:%4s %u   D:%4s %u"
-		              , (uint)(now - logontime) / 60, posts_read, logon_posts
+		              , timeon() / 60, posts_read, logon_posts
 		              , logon_emails, logon_fbacks
 		              , byte_estimate_to_str(logon_ulb, ulb, sizeof(ulb), 1024, /* precision: */ logon_ulb > 1024 * 1024)
 		              , logon_uls
@@ -159,6 +159,22 @@ void sbbs_t::logout()
 	mqtt_user_logout(mqtt, &client, logontime);
 
 	lprintf(LOG_DEBUG, "logout completed");
+}
+
+/****************************************************************************/
+/****************************************************************************/
+bool sbbs_t::logoff(bool prompt)
+{
+	if (!prompt || !noyes(text[LogOffQ])) {
+		if (cfg.logoff_mod[0])
+			exec_bin(cfg.logoff_mod, &main_csi);
+		user_event(EVENT_LOGOFF);
+		menu("logoff");
+		sync();
+		hangup();
+		return true;
+	}
+	return false;
 }
 
 /****************************************************************************/

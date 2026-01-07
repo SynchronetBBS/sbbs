@@ -2102,15 +2102,8 @@ js_logoff(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToBoolean(cx, argv[0], &prompt);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	if (!prompt || !sbbs->noyes(sbbs->text[LogOffQ])) {
-		if (sbbs->cfg.logoff_mod[0])
-			sbbs->exec_bin(sbbs->cfg.logoff_mod, &sbbs->main_csi);
-		sbbs->user_event(EVENT_LOGOFF);
-		sbbs->menu("logoff");
-		sbbs->sync();
-		sbbs->hangup();
+	if (sbbs->logoff(prompt))
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
-	}
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;

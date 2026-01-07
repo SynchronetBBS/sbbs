@@ -298,7 +298,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			bprintf(text[TiLogon], timestr(logontime));
 			bprintf(text[TiNow], timestr(now), smb_zonestr(sys_timezone(&cfg), NULL));
 			bprintf(text[TiTimeon]
-			        , sectostr((uint)(now - logontime), tmp));
+			        , sectostr(timeon(), tmp));
 			bprintf(text[TiTimeLeft]
 			        , sectostr(timeleft, tmp));
 			if (sys_status & SS_EVENT)
