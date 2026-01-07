@@ -842,7 +842,7 @@ void sbbs_t::getdimensions()
 void sbbs_t::ctrl_a(char x)
 {
 	uint       atr = curatr;
-	struct  tm tm;
+	char	   tmp[64];
 
 	if (x && (uchar)x <= CTRL_Z) {    /* Ctrl-A through Ctrl-Z for users with MF only */
 		if (!(useron.flags1 & FLAG(x + 64)))
@@ -925,16 +925,7 @@ void sbbs_t::ctrl_a(char x)
 			term->lncntr = 0;
 			break;
 		case 'T':   /* Time */
-			now = time(NULL);
-			localtime_r(&now, &tm);
-			if (cfg.sys_misc & SM_MILITARY)
-				bprintf("%02u:%02u:%02u"
-				        , tm.tm_hour, tm.tm_min, tm.tm_sec);
-			else
-				bprintf("%02d:%02d %s"
-				        , tm.tm_hour == 0 ? 12
-				    : tm.tm_hour > 12 ? tm.tm_hour - 12
-				    : tm.tm_hour, tm.tm_min, tm.tm_hour > 11 ? "pm":"am");
+			bputs(time_as_hhmmss(&cfg, time(nullptr), tmp, sizeof tmp));
 			break;
 		case 'D':   /* Date */
 			now = time(NULL);

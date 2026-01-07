@@ -278,6 +278,7 @@ char* tm_as_hhmm(scfg_t* cfg, struct tm* tm, char* str)
 }
 
 /****************************************************************************/
+/* Convert time_t to string representation of *localtime* in hh:mm[a|p]		*/
 /* Returns 5 or 6 character string, depending on configuration				*/
 /****************************************************************************/
 char* time_as_hhmm(scfg_t* cfg, time_t t, char* str)
@@ -288,6 +289,35 @@ char* time_as_hhmm(scfg_t* cfg, time_t t, char* str)
 		return str;
 	}
 	return tm_as_hhmm(cfg, &tm, str);
+}
+
+/****************************************************************************/
+/* Returns 8 character string (e.g. hh:mm:ss or hh:mm am/pm)				*/
+/****************************************************************************/
+char* tm_as_hhmmss(scfg_t* cfg, struct tm* tm, char* str, size_t size)
+{
+	if (cfg != NULL && (cfg->sys_misc & SM_MILITARY))
+		snprintf(str, size, "%02d:%02d:02d"
+		        , tm->tm_hour, tm->tm_min, tm->tm_sec);
+	else
+		snprintf(str, size, "%02d:%02d %cm"
+		        , tm->tm_hour > 12 ? tm->tm_hour - 12 : tm->tm_hour == 0 ? 12 : tm->tm_hour
+		        , tm->tm_min, tm->tm_hour >= 12 ? 'p' : 'a');
+	return str;
+}
+
+/****************************************************************************/
+/* Convert time_t to string representation of *localtime* in hh:mm:ss 		*/
+/* or hh:mm am/pm depending on configuration								*/
+/****************************************************************************/
+char* time_as_hhmmss(scfg_t* cfg, time_t t, char* str, size_t size)
+{
+	struct tm tm;
+	if (t == INVALID_TIME || localtime_r(&t, &tm) == NULL) {
+		snprintf(str, size, "??:??:??");
+		return str;
+	}
+	return tm_as_hhmmss(cfg, &tm, str, size);
 }
 
 /****************************************************************************/
