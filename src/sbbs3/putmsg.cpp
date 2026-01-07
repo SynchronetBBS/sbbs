@@ -503,9 +503,24 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					mode &= ~P_NOABORT;
 					continue;
 				}
+				if (memcmp(str + l, "@STOP@", 6) == 0) {  // Wildcat!
+					l += 6;
+					mode &= ~P_NOABORT;
+					continue;
+				}
 				if (memcmp(str + l, "@QOFF@", 6) == 0) {   // Do not allow the display of the file to be aborted (PCBoard)
 					l += 6;
 					mode |= P_NOABORT;
+					continue;
+				}
+				if (memcmp(str + l, "@NOSTOP@", 8) == 0) { // Wildcat!
+					l += 8;
+					mode |= P_NOABORT;
+					continue;
+				}
+				if (memcmp(str + l, "@NOCODE@", 8) == 0) { // Wildcat!
+					l += 8;
+					mode ^= P_NOATCODES;
 					continue;
 				}
 				if (memcmp(str + l, "@LINEDELAY@", 11) == 0) {
