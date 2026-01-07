@@ -1679,7 +1679,7 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 void sbbs_t::automsg()
 {
 	if (cfg.automsg_mod[0])
-		exec_bin(cfg.automsg_mod, &main_csi);
+		exec_mod("auto message", cfg.automsg_mod);
 	else
 		bputs(text[R_AutoMsg]);
 }

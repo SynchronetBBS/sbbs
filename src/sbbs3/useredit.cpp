@@ -732,7 +732,7 @@ void sbbs_t::user_config(user_t* user)
 {
 	char cmdline[256];
 	snprintf(cmdline, sizeof(cmdline), "%s %u", cfg.usercfg_mod, user->number);
-	exec_bin(cmdline, &main_csi);
+	exec_mod("user configuration", cmdline);
 	getuserdat(&cfg, user);
 }
 

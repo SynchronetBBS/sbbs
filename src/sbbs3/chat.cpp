@@ -590,7 +590,7 @@ bool sbbs_t::guru_page(void)
 /****************************************************************************/
 void sbbs_t::chatsection()
 {
-	exec_bin(cfg.chatsec_mod, &main_csi);
+	exec_mod("chat section", cfg.chatsec_mod);
 }
 
 /****************************************************************************/
@@ -1295,7 +1295,7 @@ void sbbs_t::nodemsg()
 		return;
 	nodemsg_inside++;
 	if (cfg.privatemsg_mod[0] != '\0') {
-		exec_bin(cfg.privatemsg_mod, &main_csi);
+		exec_mod("private message", cfg.privatemsg_mod);
 		nodemsg_inside--;
 		return;
 	}

@@ -93,7 +93,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	if (cfg.feedback_mod[0] && to_sysop && !useron_is_sysop()
 	    && (useron.fbacks || usernumber != cfg.valuser)) {
 		main_csi.logic = LOGIC_TRUE;
-		if (exec_bin(cfg.feedback_mod, &main_csi) != 0 || main_csi.logic != LOGIC_TRUE)
+		if (exec_mod("send feedback", cfg.feedback_mod) != 0 || main_csi.logic != LOGIC_TRUE)
 			return false;
 	}
 

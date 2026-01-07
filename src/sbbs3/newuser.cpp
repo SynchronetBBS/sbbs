@@ -101,7 +101,7 @@ bool sbbs_t::newuser()
 
 	sys_status |= SS_NEWUSER;
 
-	if (exec_bin(cfg.newuser_prompts_mod, &main_csi) != 0)
+	if (exec_mod("new user prompts", cfg.newuser_prompts_mod) != 0)
 		return false;
 	if (!online)
 		return false;
@@ -156,7 +156,7 @@ bool sbbs_t::newuser()
 		set_shell(0);
 
 	if (cfg.newuser_info_mod[0]) {
-		if (exec_bin(cfg.newuser_info_mod, &main_csi) != 0)
+		if (exec_mod("new user info", cfg.newuser_info_mod) != 0)
 			return false;
 	}
 	if (!online)
@@ -297,7 +297,7 @@ bool sbbs_t::newuser()
 #endif
 
 	if (cfg.newuser_mod[0])
-		exec_bin(cfg.newuser_mod, &main_csi);
+		exec_mod("new user", cfg.newuser_mod);
 	user_event(EVENT_NEWUSER);
 	getuseron(WHERE);   // In case event(s) modified user data
 	logline("N+", "New user registration completed");

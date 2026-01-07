@@ -435,7 +435,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 
 		scanposts_inside = true;
 		safe_snprintf(cmdline, sizeof(cmdline), "%s %s %u %s", cfg.scanposts_mod, cfg.sub[subnum]->code, mode, find);
-		i = exec_bin(cmdline, &main_csi);
+		i = exec_mod("scan messages", cmdline);
 		scanposts_inside = false;
 		return i;
 	}
@@ -1004,7 +1004,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 					char cmdline[256];
 
 					safe_snprintf(cmdline, sizeof(cmdline), "%s %s %u", cfg.listmsgs_mod, cfg.sub[subnum]->code, mode);
-					exec_bin(cmdline, &main_csi);
+					exec_mod("list messages", cmdline);
 					break;
 				}
 				if ((i64 = get_start_msgnum(&smb, 1)) < 0)
@@ -1672,7 +1672,7 @@ int sbbs_t::listsub(int subnum, int mode, int start, const char* search)
 		char cmdline[256];
 
 		safe_snprintf(cmdline, sizeof(cmdline), "%s %s %u", cfg.listmsgs_mod, cfg.sub[subnum]->code, mode);
-		return exec_bin(cmdline, &main_csi);
+		return exec_mod("list messages", cmdline);
 	}
 
 	if ((i = smb_stack(&smb, SMB_STACK_PUSH)) != 0) {

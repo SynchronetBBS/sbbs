@@ -4825,7 +4825,7 @@ void sbbs_t::daily_maint(void)
 			if (cfg.expire_mod[0]) {
 				useron = user;
 				online = ON_LOCAL;
-				exec_bin(cfg.expire_mod, &main_csi);
+				exec_mod("expired user", cfg.expire_mod);
 				online = false;
 			}
 		}

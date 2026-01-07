@@ -36,7 +36,7 @@ int sbbs_t::xtrn_sec(const char* section)
 		return 1;
 	}
 	SAFEPRINTF2(str, "%s %s", cfg.xtrnsec_mod, section);
-	return exec_bin(str, &main_csi);
+	return exec_mod("external program section", str);
 }
 
 const char *hungupstr = "\1n\1h%s\1n hung up on \1h%s\1n %s\r\n";
@@ -1285,7 +1285,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 
 	if (cfg.prextrn_mod[0] != '\0') {
 		SAFEPRINTF2(str, "%s %s", cfg.prextrn_mod, cfg.xtrn[xtrnnum]->code);
-		if (exec_bin(str, &main_csi) != 0) {
+		if (exec_mod("pre external program execution", str) != 0) {
 			return false;
 		}
 	}
@@ -1490,7 +1490,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 
 	if (cfg.postxtrn_mod[0] != '\0') {
 		SAFEPRINTF2(str, "%s %s", cfg.postxtrn_mod, cfg.xtrn[xtrnnum]->code);
-		exec_bin(str, &main_csi);
+		exec_mod("post external program execution", str);
 	}
 
 	return true;

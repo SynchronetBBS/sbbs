@@ -38,7 +38,7 @@ void sbbs_t::batchmenu()
 
 	if (cfg.batxfer_mod[0] && !batchmenu_inside) {
 		batchmenu_inside = true;
-		exec_bin(cfg.batxfer_mod, &main_csi);
+		exec_mod("batch transfer", cfg.batxfer_mod);
 		batchmenu_inside = false;
 		return;
 	}

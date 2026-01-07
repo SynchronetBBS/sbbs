@@ -31,5 +31,5 @@ int sbbs_t::text_sec()
 		bputs(text[NoTextSections]);
 		return 1;
 	}
-	return exec_bin(cfg.textsec_mod, &main_csi);
+	return exec_mod("text section", cfg.textsec_mod);
 }

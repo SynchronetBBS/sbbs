@@ -157,7 +157,7 @@ void sbbs_t::nodesync(bool clearline)
 	}
 
 	if (cfg.sync_mod[0])
-		exec_bin(cfg.sync_mod, &main_csi);
+		exec_mod("sync", cfg.sync_mod);
 
 	if (thisnode.misc & NODE_INTR) {
 		bputs(text[NodeLocked]);
@@ -354,7 +354,7 @@ int sbbs_t::whos_online(bool listself)
 	node_t node;
 
 	if (cfg.whosonline_mod[0] != '\0') {
-		return exec_bin(cfg.whosonline_mod, &main_csi);
+		return exec_mod("who's online", cfg.whosonline_mod);
 	}
 
 	term->newline();
@@ -383,7 +383,7 @@ void sbbs_t::nodelist(void)
 	node_t node;
 
 	if (cfg.nodelist_mod[0] != '\0') {
-		exec_bin(cfg.nodelist_mod, &main_csi);
+		exec_mod("list nodes", cfg.nodelist_mod);
 		return;
 	}
 

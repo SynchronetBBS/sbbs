@@ -31,7 +31,7 @@ void sbbs_t::temp_xfer()
 		bprintf(text[DirectoryDoesNotExist], "temp (module)");
 		return;
 	}
-	exec_bin(cfg.tempxfer_mod, &main_csi);
+	exec_mod("temp transfer", cfg.tempxfer_mod);
 }
 
 /****************************************************************************/

@@ -798,7 +798,7 @@ bool sbbs_t::answer()
 			sys_status |= SS_PAUSEON;
 			menu("../answer");  // Should use P_NOABORT ?
 			sys_status &= ~SS_PAUSEON;
-			exec_bin(cfg.login_mod, &main_csi);
+			exec_mod("login", cfg.login_mod);
 		} else  /* auto login here */
 			logon();
 	}

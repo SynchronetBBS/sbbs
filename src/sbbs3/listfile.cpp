@@ -55,7 +55,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 
 			listfiles_inside = true;
 			snprintf(cmdline, sizeof(cmdline), "%s %s %u %s", cfg.listfiles_mod, cfg.dir[dirnum]->code, mode, filespec);
-			i = exec_bin(cmdline, &main_csi);
+			i = exec_mod("list files", cmdline);
 			listfiles_inside = false;
 			return i;
 		}
@@ -761,7 +761,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 
 		listfileinfo_inside = true;
 		snprintf(cmdline, sizeof(cmdline), "%s %s %u %s", cfg.fileinfo_mod, cfg.dir[dirnum]->code, mode, filespec);
-		i = exec_bin(cmdline, &main_csi);
+		i = exec_mod("view file info", cmdline);
 		listfileinfo_inside = false;
 		return i;
 	}

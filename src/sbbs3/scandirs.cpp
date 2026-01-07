@@ -36,7 +36,7 @@ void sbbs_t::scandirs(int mode)
 
 		scandirs_inside = true;
 		snprintf(cmdline, sizeof(cmdline), "%s 0 %u", cfg.scandirs_mod, mode);
-		exec_bin(cmdline, &main_csi);
+		exec_mod("scan directories", cmdline);
 		scandirs_inside = false;
 		return;
 	}
@@ -121,7 +121,7 @@ void sbbs_t::scanalldirs(int mode)
 
 		scandirs_inside = true;
 		snprintf(cmdline, sizeof(cmdline), "%s 1 %u", cfg.scandirs_mod, mode);
-		exec_bin(cmdline, &main_csi);
+		exec_mod("scan directories", cmdline);
 		scandirs_inside = false;
 		return;
 	}

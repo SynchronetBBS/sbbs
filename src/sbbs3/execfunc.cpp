@@ -97,7 +97,7 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_LOGOFF:
 			if (text[LogOffQ][0] == 0 || !noyes(text[LogOffQ])) {
 				if (cfg.logoff_mod[0])
-					exec_bin(cfg.logoff_mod, csi);
+					exec_mod("logoff", cfg.logoff_mod);
 				user_event(EVENT_LOGOFF);
 				menu("logoff");
 				sync();

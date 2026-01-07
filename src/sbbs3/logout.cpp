@@ -71,15 +71,13 @@ void sbbs_t::logout()
 
 	if (!online) {       /* NOT re-login */
 		if (cfg.sys_logout.cmd[0] && !(cfg.sys_logout.misc & EVENT_DISABLED)) {      /* execute system logout event */
-			lprintf(LOG_DEBUG, "executing logout event: %s", cfg.sys_logout.cmd);
+			lprintf(LOG_DEBUG, "Executing logout event: %s", cfg.sys_logout.cmd);
 			external(cmdstr(cfg.sys_logout.cmd, nulstr, nulstr, NULL, cfg.sys_logout.misc), EX_OUTL | EX_OFFLINE | cfg.sys_logout.misc);
 		}
 	}
 
-	if (cfg.logout_mod[0]) {
-		lprintf(LOG_DEBUG, "executing logout module: %s", cfg.logout_mod);
-		exec_bin(cfg.logout_mod, &main_csi);
-	}
+	if (cfg.logout_mod[0])
+		exec_mod("logout", cfg.logout_mod);
 	SAFEPRINTF2(path, "%smsgs/%4.4u.msg", cfg.data_dir, useron.number);
 	if (fexistcase(path) && !flength(path))      /* remove any 0 byte message files */
 		fremove(WHERE, path);
@@ -167,7 +165,7 @@ bool sbbs_t::logoff(bool prompt)
 {
 	if (!prompt || !noyes(text[LogOffQ])) {
 		if (cfg.logoff_mod[0])
-			exec_bin(cfg.logoff_mod, &main_csi);
+			exec_mod("logoff", cfg.logoff_mod);
 		user_event(EVENT_LOGOFF);
 		menu("logoff");
 		sync();

@@ -455,7 +455,7 @@ bool sbbs_t::logon()
 	              , useron.number, useron.alias, (sys_status & SS_FASTLOGON) ? "Fast-":"", totallogons, useron.ltoday);
 
 	if (!(sys_status & SS_QWKLOGON) && cfg.logon_mod[0])
-		exec_bin(cfg.logon_mod, &main_csi);
+		exec_mod("logon", cfg.logon_mod);
 
 	if (thisnode.status != NODE_QUIET && (!user_is_sysop(&useron) || cfg.sys_misc & SM_SYSSTAT)) {
 		int file;
@@ -478,7 +478,7 @@ bool sbbs_t::logon()
 	}
 
 	if (cfg.sys_logon.cmd[0] && !(cfg.sys_logon.misc & EVENT_DISABLED)) {                /* execute system logon event */
-		lprintf(LOG_DEBUG, "executing logon event: %s", cfg.sys_logon.cmd);
+		lprintf(LOG_DEBUG, "Executing logon event: %s", cfg.sys_logon.cmd);
 		external(cmdstr(cfg.sys_logon.cmd, nulstr, nulstr, NULL, cfg.sys_logon.misc), EX_STDOUT | cfg.sys_logon.misc); /* EX_SH */
 	}
 

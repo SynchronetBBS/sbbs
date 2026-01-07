@@ -38,7 +38,7 @@ void sbbs_t::scansubs(int mode)
 
 		scansubs_inside = true;
 		safe_snprintf(cmdline, sizeof(cmdline), "%s 0 %u", cfg.scansubs_mod, mode);
-		exec_bin(cmdline, &main_csi);
+		exec_mod("scan sub-boards", cmdline);
 		scansubs_inside = false;
 		return;
 	}
@@ -151,7 +151,7 @@ void sbbs_t::scanallsubs(int mode)
 
 		scansubs_inside = true;
 		safe_snprintf(cmdline, sizeof(cmdline), "%s 1 %u", cfg.scansubs_mod, mode);
-		exec_bin(cmdline, &main_csi);
+		exec_mod("scan sub-boards", cmdline);
 		scansubs_inside = false;
 		return;
 	}

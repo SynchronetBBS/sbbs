@@ -284,7 +284,7 @@ uint sbbs_t::gettimeleft(bool handle_out_of_time)
 				putuserflags(useron.number, USER_EXEMPT, useron.exempt);
 				putuserflags(useron.number, USER_REST, useron.rest);
 				if (cfg.expire_mod[0])
-					exec_bin(cfg.expire_mod, &main_csi);
+					exec_mod("user expired", cfg.expire_mod);
 				term->restoreline();
 				gettimeleft();
 				gettimeleft_inside = 0;

@@ -752,6 +752,7 @@ public:
 	int		exec_msg(csi_t *csi);
 	int		exec_file(csi_t *csi);
 	int		exec_bin(const char *mod, csi_t *csi, const char* startup_dir=NULL);
+	int		exec_mod(const char* name, const char *mod);
 	void	clearvars(csi_t *bin);
 	void	freevars(csi_t *bin);
 	char**	getstrvar(csi_t *bin, uint32_t name);
