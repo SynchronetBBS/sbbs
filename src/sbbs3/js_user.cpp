@@ -26,16 +26,43 @@
 
 #ifdef JAVASCRIPT
 
-typedef struct
+struct user_private_t
 {
-	user_t* user;
-	user_t storage;
-	JSBool cached;
-	client_t* client;
-	struct mqtt* mqtt;
-	int file;               // for fast read operations, only
+	user_t* user {&storage}; // must be first member for compatibility with js_msgbase.cpp
+	user_t storage {};
+	JSBool cached {false};
+	client_t* client {nullptr};
+	struct mqtt* mqtt {nullptr};
+	int file {-1}; // for fast read operations, only
+	scfg_t* cfg;
 
-} private_t;
+	void getuserdat(void)
+	{
+		if (user->number != 0 && !cached) {
+			if (file < 1)
+				file = openuserdat(cfg, /* for_modify: */ false);
+			ushort usernumber = user->number;
+			if (fgetuserdat(cfg, user, file) == 0)
+				cached = true;
+			user->number = usernumber; // Can be zeroed by fgetuserdat() failure
+		}
+	}
+
+	cached_mail_count mail_waiting{cfg, user, false, 0};
+	cached_mail_count mail_read{cfg, user, false, MSG_READ};
+	cached_mail_count mail_unread{cfg, user, false, ~MSG_READ};
+	cached_mail_count mail_pending{cfg, user, true, 0};
+	cached_mail_count spam_waiting{cfg, user, false, MSG_SPAM};
+
+	user_private_t(scfg_t* cfg)
+		: cfg(cfg)
+	{}
+	user_private_t(scfg_t* cfg, user_t user)
+		: storage(user)
+		, cached(user.number == 0 ? false : true)
+		, cfg(cfg)
+	{}
+};
 
 /* User Object Properties */
 enum {
@@ -130,42 +157,24 @@ enum {
 	, USER_PROP_BATDNLST
 };
 
-static void js_getuserdat(scfg_t* scfg, private_t* p)
-{
-	if (p->user->number != 0 && !p->cached) {
-		if (p->file < 1)
-			p->file = openuserdat(scfg, /* for_modify: */ FALSE);
-		ushort usernumber = p->user->number;
-		if (fgetuserdat(scfg, p->user, p->file) == 0)
-			p->cached = TRUE;
-		p->user->number = usernumber; // Can be zeroed by fgetuserdat() failure
-	}
-}
-
 static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	jsval      idval;
-	const char* s = NULL;
+	const char* s = nullptr;
 	char       tmp[128];
 	int64_t    val = 0;
 	jsint      tiny;
 	JSString*  js_str;
-	private_t* p;
+	user_private_t* p;
 	jsrefcount rc;
-	scfg_t*    scfg;
 
-	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
-
-	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (user_private_t*)JS_GetPrivate(cx, obj)) == nullptr)
 		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	js_getuserdat(scfg, p);
-
-	JS_RESUMEREQUEST(cx, rc);
+	p->getuserdat();
 	JS_IdToValue(cx, id, &idval);
 	tiny = JSVAL_TO_INT(idval);
-	rc = JS_SUSPENDREQUEST(cx);
 
 	switch (tiny) {
 		case USER_PROP_NUMBER:
@@ -199,8 +208,8 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			s = p->user->netmail;
 			break;
 		case USER_PROP_EMAIL:
-			s = usermailaddr(scfg, tmp
-			                 , (scfg->inetmail_misc & NMAIL_ALIAS) || (p->user->rest & FLAG('O')) ? p->user->alias : p->user->name);
+			s = usermailaddr(p->cfg, tmp
+			                 , (p->cfg->inetmail_misc & NMAIL_ALIAS) || (p->user->rest & FLAG('O')) ? p->user->alias : p->user->name);
 			break;
 		case USER_PROP_ADDRESS:
 			s = p->user->address;
@@ -221,16 +230,16 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			s = p->user->birth;
 			break;
 		case USER_PROP_BIRTHYEAR:
-			val = getbirthyear(scfg, p->user->birth);
+			val = getbirthyear(p->cfg, p->user->birth);
 			break;
 		case USER_PROP_BIRTHMONTH:
-			val = getbirthmonth(scfg, p->user->birth);
+			val = getbirthmonth(p->cfg, p->user->birth);
 			break;
 		case USER_PROP_BIRTHDAY:
-			val = getbirthday(scfg, p->user->birth);
+			val = getbirthday(p->cfg, p->user->birth);
 			break;
 		case USER_PROP_AGE:
-			val = getage(scfg, p->user->birth);
+			val = getage(p->cfg, p->user->birth);
 			break;
 		case USER_PROP_MODEM:
 			s = p->user->connection;
@@ -367,13 +376,13 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			JS_RESUMEREQUEST(cx, rc);
 			return JS_TRUE; /* intentional early return */
 		case USER_PROP_XEDIT:
-			if (p->user->xedit > 0 && p->user->xedit <= scfg->total_xedits)
-				s = scfg->xedit[p->user->xedit - 1]->code;
+			if (p->user->xedit > 0 && p->user->xedit <= p->cfg->total_xedits)
+				s = p->cfg->xedit[p->user->xedit - 1]->code;
 			else
 				s = ""; /* internal editor */
 			break;
 		case USER_PROP_SHELL:
-			s = scfg->shell[p->user->shell]->code;
+			s = p->cfg->shell[p->user->shell]->code;
 			break;
 		case USER_PROP_QWK:
 			val = p->user->qwk;
@@ -398,43 +407,43 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val = p->user->logontime;
 			break;
 		case USER_PROP_TIMEPERCALL:
-			val = scfg->level_timepercall[p->user->level];
+			val = p->cfg->level_timepercall[p->user->level];
 			break;
 		case USER_PROP_TIMEPERDAY:
-			val = scfg->level_timeperday[p->user->level];
+			val = p->cfg->level_timeperday[p->user->level];
 			break;
 		case USER_PROP_CALLSPERDAY:
-			val = scfg->level_callsperday[p->user->level];
+			val = p->cfg->level_callsperday[p->user->level];
 			break;
 		case USER_PROP_LINESPERMSG:
-			val = scfg->level_linespermsg[p->user->level];
+			val = p->cfg->level_linespermsg[p->user->level];
 			break;
 		case USER_PROP_POSTSPERDAY:
-			val = scfg->level_postsperday[p->user->level];
+			val = p->cfg->level_postsperday[p->user->level];
 			break;
 		case USER_PROP_EMAILPERDAY:
-			val = scfg->level_emailperday[p->user->level];
+			val = p->cfg->level_emailperday[p->user->level];
 			break;
 		case USER_PROP_FREECDTPERDAY:
-			val = scfg->level_freecdtperday[p->user->level];
+			val = p->cfg->level_freecdtperday[p->user->level];
 			break;
 		case USER_PROP_DOWNLOADSPERDAY:
-			val = scfg->level_downloadsperday[p->user->level];
+			val = p->cfg->level_downloadsperday[p->user->level];
 			break;
 		case USER_PROP_MAIL_WAITING:
-			val = getmail(scfg, p->user->number, /* sent? */ FALSE, /* attr: */ 0);
+			val = p->mail_waiting.get();
 			break;
 		case USER_PROP_READ_WAITING:
-			val = getmail(scfg, p->user->number, /* sent? */ FALSE, /* attr: */ MSG_READ);
+			val = p->mail_read.get();
 			break;
 		case USER_PROP_UNREAD_WAITING:
-			val = getmail(scfg, p->user->number, /* sent? */ FALSE, /* attr: */ ~MSG_READ);
+			val = p->mail_unread.get();
 			break;
 		case USER_PROP_SPAM_WAITING:
-			val = getmail(scfg, p->user->number, /* sent? */ FALSE, /* attr: */ MSG_SPAM);
+			val = p->spam_waiting.get();
 			break;
 		case USER_PROP_MAIL_PENDING:
-			val = getmail(scfg, p->user->number, /* sent? */ TRUE, /* SPAM: */ FALSE);
+			val = p->mail_pending.get();
 			break;
 
 		case USER_PROP_CACHED:
@@ -448,10 +457,10 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			return JS_TRUE;    /* intentional early return */
 
 		case USER_PROP_BATUPLST:
-			s = batch_list_name(scfg, p->user->number, XFER_BATCH_UPLOAD, tmp, sizeof tmp);
+			s = batch_list_name(p->cfg, p->user->number, XFER_BATCH_UPLOAD, tmp, sizeof tmp);
 			break;
 		case USER_PROP_BATDNLST:
-			s = batch_list_name(scfg, p->user->number, XFER_BATCH_DOWNLOAD, tmp, sizeof tmp);
+			s = batch_list_name(p->cfg, p->user->number, XFER_BATCH_DOWNLOAD, tmp, sizeof tmp);
 			break;
 
 		default:
@@ -460,8 +469,8 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			return JS_TRUE;
 	}
 	JS_RESUMEREQUEST(cx, rc);
-	if (s != NULL) {
-		if ((js_str = JS_NewStringCopyZ(cx, s)) == NULL)
+	if (s != nullptr) {
+		if ((js_str = JS_NewStringCopyZ(cx, s)) == nullptr)
 			return JS_FALSE;
 		*vp = STRING_TO_JSVAL(js_str);
 	} else
@@ -473,24 +482,20 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
 	jsval      idval;
-	char*      str = NULL;
+	char*      str = nullptr;
 	uint32     val;
 	ulong      usermisc;
 	jsint      tiny;
-	private_t* p;
+	user_private_t* p;
 	int32      usernumber;
 	jsrefcount rc;
-	scfg_t*    scfg;
-	void*      ptr;
 
-	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
-
-	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (user_private_t*)JS_GetPrivate(cx, obj)) == nullptr)
 		return JS_TRUE;
 
-	JSVALUE_TO_MSTRING(cx, *vp, str, NULL);
+	JSVALUE_TO_MSTRING(cx, *vp, str, nullptr);
 	HANDLE_PENDING(cx, str);
-	if (str == NULL)
+	if (str == nullptr)
 		return JS_FALSE;
 
 	JS_IdToValue(cx, id, &idval);
@@ -507,118 +512,123 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			rc = JS_SUSPENDREQUEST(cx);
 			if (usernumber != p->user->number) {
 				p->user->number = (ushort)usernumber;
-				p->cached = FALSE;
+				p->cached = false;
+				p->mail_waiting.reset();
+				p->mail_read.reset();
+				p->mail_unread.reset();
+				p->mail_pending.reset();
+				p->spam_waiting.reset();
 			}
 			break;
 		case USER_PROP_ALIAS:
 			SAFECOPY(p->user->alias, str);
 			/* update user.tab */
-			putuserstr(scfg, p->user->number, USER_ALIAS, str);
+			putuserstr(p->cfg, p->user->number, USER_ALIAS, str);
 
 			/* update name.dat */
-			usermisc = getusermisc(scfg, p->user->number);
+			usermisc = getusermisc(p->cfg, p->user->number);
 			if (!(usermisc & DELETED))
-				putusername(scfg, p->user->number, str);
+				putusername(p->cfg, p->user->number, str);
 			break;
 		case USER_PROP_NAME:
 			SAFECOPY(p->user->name, str);
-			putuserstr(scfg, p->user->number, USER_NAME, str);
+			putuserstr(p->cfg, p->user->number, USER_NAME, str);
 			break;
 		case USER_PROP_HANDLE:
 			SAFECOPY(p->user->handle, str);
-			putuserstr(scfg, p->user->number, USER_HANDLE, str);
+			putuserstr(p->cfg, p->user->number, USER_HANDLE, str);
 			break;
 		case USER_PROP_LANG:
 			SAFECOPY(p->user->lang, str);
-			putuserstr(scfg, p->user->number, USER_LANG, str);
+			putuserstr(p->cfg, p->user->number, USER_LANG, str);
 			break;
 		case USER_PROP_NOTE:
 			SAFECOPY(p->user->note, str);
-			putuserstr(scfg, p->user->number, USER_NOTE, str);
+			putuserstr(p->cfg, p->user->number, USER_NOTE, str);
 			break;
 		case USER_PROP_IPADDR:
 			SAFECOPY(p->user->ipaddr, str);
-			putuserstr(scfg, p->user->number, USER_IPADDR, str);
+			putuserstr(p->cfg, p->user->number, USER_IPADDR, str);
 			break;
 		case USER_PROP_COMP:
 			SAFECOPY(p->user->comp, str);
-			putuserstr(scfg, p->user->number, USER_HOST, str);
+			putuserstr(p->cfg, p->user->number, USER_HOST, str);
 			break;
 		case USER_PROP_COMMENT:
 			SAFECOPY(p->user->comment, str);
-			putuserstr(scfg, p->user->number, USER_COMMENT, str);
+			putuserstr(p->cfg, p->user->number, USER_COMMENT, str);
 			break;
 		case USER_PROP_NETMAIL:
 			SAFECOPY(p->user->netmail, str);
-			putuserstr(scfg, p->user->number, USER_NETMAIL, str);
+			putuserstr(p->cfg, p->user->number, USER_NETMAIL, str);
 			break;
 		case USER_PROP_ADDRESS:
 			SAFECOPY(p->user->address, str);
-			putuserstr(scfg, p->user->number, USER_ADDRESS, str);
+			putuserstr(p->cfg, p->user->number, USER_ADDRESS, str);
 			break;
 		case USER_PROP_LOCATION:
 			SAFECOPY(p->user->location, str);
-			putuserstr(scfg, p->user->number, USER_LOCATION, str);
+			putuserstr(p->cfg, p->user->number, USER_LOCATION, str);
 			break;
 		case USER_PROP_ZIPCODE:
 			SAFECOPY(p->user->zipcode, str);
-			putuserstr(scfg, p->user->number, USER_ZIPCODE, str);
+			putuserstr(p->cfg, p->user->number, USER_ZIPCODE, str);
 			break;
 		case USER_PROP_PHONE:
 			SAFECOPY(p->user->phone, str);
-			putuserstr(scfg, p->user->number, USER_PHONE, str);
+			putuserstr(p->cfg, p->user->number, USER_PHONE, str);
 			break;
 		case USER_PROP_BIRTH:
-			parse_birthdate(scfg, str, p->user->birth, sizeof p->user->birth);
-			putuserstr(scfg, p->user->number, USER_BIRTH, p->user->birth);
+			parse_birthdate(p->cfg, str, p->user->birth, sizeof p->user->birth);
+			putuserstr(p->cfg, p->user->number, USER_BIRTH, p->user->birth);
 			break;
 		case USER_PROP_BIRTHYEAR:
 			if (JS_ValueToECMAUint32(cx, *vp, &val))
-				putuserdec32(scfg, p->user->number, USER_BIRTH, isoDate_create(val, getbirthmonth(scfg, p->user->birth), getbirthday(scfg, p->user->birth)));
+				putuserdec32(p->cfg, p->user->number, USER_BIRTH, isoDate_create(val, getbirthmonth(p->cfg, p->user->birth), getbirthday(p->cfg, p->user->birth)));
 			break;
 		case USER_PROP_BIRTHMONTH:
 			if (JS_ValueToECMAUint32(cx, *vp, &val))
-				putuserdec32(scfg, p->user->number, USER_BIRTH, isoDate_create(getbirthyear(scfg, p->user->birth), val, getbirthday(scfg, p->user->birth)));
+				putuserdec32(p->cfg, p->user->number, USER_BIRTH, isoDate_create(getbirthyear(p->cfg, p->user->birth), val, getbirthday(p->cfg, p->user->birth)));
 			break;
 		case USER_PROP_BIRTHDAY:
 			if (JS_ValueToECMAUint32(cx, *vp, &val))
-				putuserdec32(scfg, p->user->number, USER_BIRTH, isoDate_create(getbirthyear(scfg, p->user->birth), getbirthmonth(scfg, p->user->birth), val));
+				putuserdec32(p->cfg, p->user->number, USER_BIRTH, isoDate_create(getbirthyear(p->cfg, p->user->birth), getbirthmonth(p->cfg, p->user->birth), val));
 			break;
 		case USER_PROP_MODEM:
 			SAFECOPY(p->user->connection, str);
-			putuserstr(scfg, p->user->number, USER_CONNECTION, str);
+			putuserstr(p->cfg, p->user->number, USER_CONNECTION, str);
 			break;
 		case USER_PROP_ROWS:
 			p->user->rows = atoi(str);
-			putuserdec32(scfg, p->user->number, USER_ROWS, p->user->rows);
+			putuserdec32(p->cfg, p->user->number, USER_ROWS, p->user->rows);
 			break;
 		case USER_PROP_COLS:
 			p->user->cols = atoi(str);
-			putuserdec32(scfg, p->user->number, USER_COLS, p->user->cols);
+			putuserdec32(p->cfg, p->user->number, USER_COLS, p->user->cols);
 			break;
 		case USER_PROP_GENDER:
 			p->user->gender = toupper(str[0]);
-			putuserstr(scfg, p->user->number, USER_GENDER, strupr(str));    /* single char */
+			putuserstr(p->cfg, p->user->number, USER_GENDER, strupr(str));    /* single char */
 			break;
 		case USER_PROP_CURSUB:
 			SAFECOPY(p->user->cursub, str);
-			putuserstr(scfg, p->user->number, USER_CURSUB, str);
+			putuserstr(p->cfg, p->user->number, USER_CURSUB, str);
 			break;
 		case USER_PROP_CURDIR:
 			SAFECOPY(p->user->curdir, str);
-			putuserstr(scfg, p->user->number, USER_CURDIR, str);
+			putuserstr(p->cfg, p->user->number, USER_CURDIR, str);
 			break;
 		case USER_PROP_CURXTRN:
 			SAFECOPY(p->user->curxtrn, str);
-			putuserstr(scfg, p->user->number, USER_CURXTRN, str);
+			putuserstr(p->cfg, p->user->number, USER_CURXTRN, str);
 			break;
 		case USER_PROP_XEDIT:
-			p->user->xedit = getxeditnum(scfg, str);
-			putuserstr(scfg, p->user->number, USER_XEDIT, str);
+			p->user->xedit = getxeditnum(p->cfg, str);
+			putuserstr(p->cfg, p->user->number, USER_XEDIT, str);
 			break;
 		case USER_PROP_SHELL:
-			p->user->shell = getshellnum(scfg, str, 0);
-			putuserstr(scfg, p->user->number, USER_SHELL, str);
+			p->user->shell = getshellnum(p->cfg, str, 0);
+			putuserstr(p->cfg, p->user->number, USER_SHELL, str);
 			break;
 		case USER_PROP_MISC:
 		{
@@ -628,7 +638,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				return JS_FALSE;
 			}
 			rc = JS_SUSPENDREQUEST(cx);
-			putusermisc(scfg, p->user->number, p->user->misc = val);
+			putusermisc(p->cfg, p->user->number, p->user->misc = val);
 			/*
 			 * Get sbbs_t pointer.
 			 * If the global has a "bbs" property that is a BBS class object, then the context
@@ -639,9 +649,8 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			if (JS_GetProperty(cx, glob, "bbs", &jsv)) {
 				if (JSVAL_IS_OBJECT(jsv)) {
 					extern JSClass js_bbs_class;
-					if (JS_InstanceOf(cx, JSVAL_TO_OBJECT(jsv), &js_bbs_class, NULL)) {
-						ptr = JS_GetContextPrivate(cx);
-						update_terminal(ptr, p->user);
+					if (JS_InstanceOf(cx, JSVAL_TO_OBJECT(jsv), &js_bbs_class, nullptr)) {
+						update_terminal(p->cfg, p->user);
 					}
 				}
 			}
@@ -653,7 +662,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			putuserqwk(scfg, p->user->number, p->user->qwk = val);
+			putuserqwk(p->cfg, p->user->number, p->user->qwk = val);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_CHAT:
@@ -662,7 +671,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			putuserchat(scfg, p->user->number, p->user->chat = val);
+			putuserchat(p->cfg, p->user->number, p->user->chat = val);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_MAIL:
@@ -671,12 +680,12 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			putusermail(scfg, p->user->number, p->user->mail = val);
+			putusermail(p->cfg, p->user->number, p->user->mail = val);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_TMPEXT:
 			SAFECOPY(p->user->tmpext, str);
-			putuserstr(scfg, p->user->number, USER_TMPEXT, str);
+			putuserstr(p->cfg, p->user->number, USER_TMPEXT, str);
 			break;
 		case USER_PROP_NS_TIME:
 			JS_RESUMEREQUEST(cx, rc);
@@ -684,12 +693,12 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			putuserdatetime(scfg, p->user->number, USER_NS_TIME, p->user->ns_time = val);
+			putuserdatetime(p->cfg, p->user->number, USER_NS_TIME, p->user->ns_time = val);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_PROT:
 			p->user->prot = toupper(str[0]);
-			putuserstr(scfg, p->user->number, USER_PROT, strupr(str)); /* single char */
+			putuserstr(p->cfg, p->user->number, USER_PROT, strupr(str)); /* single char */
 			break;
 		case USER_PROP_LOGONTIME:
 			JS_RESUMEREQUEST(cx, rc);
@@ -697,14 +706,14 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			putuserdatetime(scfg, p->user->number, USER_LOGONTIME, p->user->logontime = val);
+			putuserdatetime(p->cfg, p->user->number, USER_LOGONTIME, p->user->logontime = val);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 
 		/* security properties*/
 		case USER_PROP_PASS:
 			SAFECOPY(p->user->pass, str);
-			putuserstr(scfg, p->user->number, USER_PASS, strupr(str));
+			putuserstr(p->cfg, p->user->number, USER_PASS, strupr(str));
 			break;
 		case USER_PROP_PWMOD:
 			JS_RESUMEREQUEST(cx, rc);
@@ -712,12 +721,12 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			putuserdatetime(scfg, p->user->number, USER_PWMOD, p->user->pwmod = val);
+			putuserdatetime(p->cfg, p->user->number, USER_PWMOD, p->user->pwmod = val);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_LEVEL:
 			p->user->level = atoi(str);
-			putuserdec32(scfg, p->user->number, USER_LEVEL, p->user->level);
+			putuserdec32(p->cfg, p->user->number, USER_LEVEL, p->user->level);
 			break;
 		case USER_PROP_FLAGS1:
 			JS_RESUMEREQUEST(cx, rc);
@@ -730,7 +739,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 					return JS_FALSE;
 				}
 			}
-			putuserflags(scfg, p->user->number, USER_FLAGS1, p->user->flags1 = val);
+			putuserflags(p->cfg, p->user->number, USER_FLAGS1, p->user->flags1 = val);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_FLAGS2:
@@ -744,7 +753,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 					return JS_FALSE;
 				}
 			}
-			putuserflags(scfg, p->user->number, USER_FLAGS2, p->user->flags2 = val);
+			putuserflags(p->cfg, p->user->number, USER_FLAGS2, p->user->flags2 = val);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_FLAGS3:
@@ -758,7 +767,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 					return JS_FALSE;
 				}
 			}
-			putuserflags(scfg, p->user->number, USER_FLAGS3, p->user->flags3 = val);
+			putuserflags(p->cfg, p->user->number, USER_FLAGS3, p->user->flags3 = val);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_FLAGS4:
@@ -772,7 +781,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 					return JS_FALSE;
 				}
 			}
-			putuserflags(scfg, p->user->number, USER_FLAGS4, p->user->flags4 = val);
+			putuserflags(p->cfg, p->user->number, USER_FLAGS4, p->user->flags4 = val);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_EXEMPT:
@@ -786,7 +795,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 					return JS_FALSE;
 				}
 			}
-			putuserflags(scfg, p->user->number, USER_EXEMPT, p->user->exempt = val);
+			putuserflags(p->cfg, p->user->number, USER_EXEMPT, p->user->exempt = val);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_REST:
@@ -800,24 +809,24 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 					return JS_FALSE;
 				}
 			}
-			putuserflags(scfg, p->user->number, USER_REST, p->user->rest = val);
+			putuserflags(p->cfg, p->user->number, USER_REST, p->user->rest = val);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 		case USER_PROP_CDT:
-			p->user->cdt = strtoull(str, NULL, 0);
-			putuserdec64(scfg, p->user->number, USER_CDT, p->user->cdt);
+			p->user->cdt = strtoull(str, nullptr, 0);
+			putuserdec64(p->cfg, p->user->number, USER_CDT, p->user->cdt);
 			break;
 		case USER_PROP_FREECDT:
-			p->user->freecdt = strtoull(str, NULL, 0);
-			putuserdec64(scfg, p->user->number, USER_FREECDT, p->user->freecdt);
+			p->user->freecdt = strtoull(str, nullptr, 0);
+			putuserdec64(p->cfg, p->user->number, USER_FREECDT, p->user->freecdt);
 			break;
 		case USER_PROP_MIN:
-			p->user->min = strtoul(str, NULL, 0);
-			putuserdec32(scfg, p->user->number, USER_MIN, p->user->min);
+			p->user->min = strtoul(str, nullptr, 0);
+			putuserdec32(p->cfg, p->user->number, USER_MIN, p->user->min);
 			break;
 		case USER_PROP_TEXTRA:
-			p->user->textra = (ushort)strtoul(str, NULL, 0);
-			putuserdec32(scfg, p->user->number, USER_TEXTRA, p->user->textra);
+			p->user->textra = (ushort)strtoul(str, nullptr, 0);
+			putuserdec32(p->cfg, p->user->number, USER_TEXTRA, p->user->textra);
 			break;
 		case USER_PROP_EXPIRE:
 			JS_RESUMEREQUEST(cx, rc);
@@ -825,7 +834,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			putuserdatetime(scfg, p->user->number, USER_EXPIRE, p->user->expire = val);
+			putuserdatetime(p->cfg, p->user->number, USER_EXPIRE, p->user->expire = val);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
 
@@ -838,61 +847,62 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 	}
 	free(str);
 	if (!user_is_guest(p->user))
-		p->cached = FALSE;
+		p->cached = false;
 
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
 
-#define USER_PROP_FLAGS JSPROP_ENUMERATE
+#define USER_PROP_FLAGS_A     JSPROP_PERMANENT
+#define USER_PROP_FLAGS_RW    JSPROP_PERMANENT | JSPROP_ENUMERATE
+#define USER_PROP_FLAGS_RO    JSPROP_PERMANENT | JSPROP_ENUMERATE
 
 static jsSyncPropertySpec js_user_properties[] = {
-/*		 name				,tinyid					,flags,					ver	*/
-
-	{   "number", USER_PROP_NUMBER, USER_PROP_FLAGS,       310},
-	{   "alias", USER_PROP_ALIAS, USER_PROP_FLAGS,       310},
-	{   "name", USER_PROP_NAME, USER_PROP_FLAGS,       310},
-	{   "handle", USER_PROP_HANDLE, USER_PROP_FLAGS,       310},
-	{   "lang", USER_PROP_LANG, USER_PROP_FLAGS,       320},
-	{   "note", USER_PROP_NOTE, USER_PROP_FLAGS,       310},
-	{   "ip_address", USER_PROP_IPADDR, USER_PROP_FLAGS,       310},
-	{   "host_name", USER_PROP_COMP, USER_PROP_FLAGS,       310},
-	{   "computer", USER_PROP_COMP, 0, /* Alias */ 310},
-	{   "comment", USER_PROP_COMMENT, USER_PROP_FLAGS,       310},
-	{   "netmail", USER_PROP_NETMAIL, USER_PROP_FLAGS,       310},
-	{   "email", USER_PROP_EMAIL, USER_PROP_FLAGS | JSPROP_READONLY,       310},
-	{   "address", USER_PROP_ADDRESS, USER_PROP_FLAGS,       310},
-	{   "location", USER_PROP_LOCATION, USER_PROP_FLAGS,       310},
-	{   "zipcode", USER_PROP_ZIPCODE, USER_PROP_FLAGS,       310},
-	{   "phone", USER_PROP_PHONE, USER_PROP_FLAGS,       310},
-	{   "birthdate", USER_PROP_BIRTH, USER_PROP_FLAGS,       310},
-	{   "birthyear", USER_PROP_BIRTHYEAR, USER_PROP_FLAGS,       31802},
-	{   "birthmonth", USER_PROP_BIRTHMONTH, USER_PROP_FLAGS,       31802},
-	{   "birthday", USER_PROP_BIRTHDAY, USER_PROP_FLAGS,       31802},
-	{   "age", USER_PROP_AGE, USER_PROP_FLAGS | JSPROP_READONLY,       310},
-	{   "connection", USER_PROP_MODEM, USER_PROP_FLAGS,       310},
-	{   "modem", USER_PROP_MODEM, 0, /* Alias */ 310},
-	{   "screen_rows", USER_PROP_ROWS, USER_PROP_FLAGS,       310},
-	{   "screen_columns", USER_PROP_COLS, USER_PROP_FLAGS,       31802},
-	{   "gender", USER_PROP_GENDER, USER_PROP_FLAGS,       310},
-	{   "cursub", USER_PROP_CURSUB, USER_PROP_FLAGS,       310},
-	{   "curdir", USER_PROP_CURDIR, USER_PROP_FLAGS,       310},
-	{   "curxtrn", USER_PROP_CURXTRN, USER_PROP_FLAGS,       310},
-	{   "editor", USER_PROP_XEDIT, USER_PROP_FLAGS,       310},
-	{   "command_shell", USER_PROP_SHELL, USER_PROP_FLAGS,       310},
-	{   "settings", USER_PROP_MISC, USER_PROP_FLAGS,       310},
-	{   "qwk_settings", USER_PROP_QWK, USER_PROP_FLAGS,       310},
-	{   "chat_settings", USER_PROP_CHAT, USER_PROP_FLAGS,       310},
-	{   "mail_settings", USER_PROP_MAIL, USER_PROP_FLAGS,       320},
-	{   "temp_file_ext", USER_PROP_TMPEXT, USER_PROP_FLAGS,       310},
-	{   "new_file_time", USER_PROP_NS_TIME, USER_PROP_FLAGS,       311},
-	{   "newscan_date", USER_PROP_NS_TIME, 0, /* Alias */ 310},
-	{   "download_protocol", USER_PROP_PROT, USER_PROP_FLAGS,       310},
-	{   "logontime", USER_PROP_LOGONTIME, USER_PROP_FLAGS,       310},
-	{   "cached", USER_PROP_CACHED, USER_PROP_FLAGS,       314},
-	{   "is_sysop", USER_PROP_IS_SYSOP, JSPROP_ENUMERATE | JSPROP_READONLY,  315},
-	{   "batch_upload_list", USER_PROP_BATUPLST, JSPROP_ENUMERATE | JSPROP_READONLY,  320},
-	{   "batch_download_list", USER_PROP_BATDNLST, JSPROP_ENUMERATE | JSPROP_READONLY,  320},
+	//  "name"               , tinyid               , flags              , ver
+	{   "number"             , USER_PROP_NUMBER     , USER_PROP_FLAGS_RW , 310 },
+	{   "alias"              , USER_PROP_ALIAS      , USER_PROP_FLAGS_RW , 310 },
+	{   "name"               , USER_PROP_NAME       , USER_PROP_FLAGS_RW , 310 },
+	{   "handle"             , USER_PROP_HANDLE     , USER_PROP_FLAGS_RW , 310 },
+	{   "lang"               , USER_PROP_LANG       , USER_PROP_FLAGS_RW , 320 },
+	{   "note"               , USER_PROP_NOTE       , USER_PROP_FLAGS_RW , 310 },
+	{   "ip_address"         , USER_PROP_IPADDR     , USER_PROP_FLAGS_RW , 310 },
+	{   "host_name"          , USER_PROP_COMP       , USER_PROP_FLAGS_RW , 310 },
+	{   "computer"           , USER_PROP_COMP       , USER_PROP_FLAGS_A  , 310 },
+	{   "comment"            , USER_PROP_COMMENT    , USER_PROP_FLAGS_RW , 310 },
+	{   "netmail"            , USER_PROP_NETMAIL    , USER_PROP_FLAGS_RW , 310 },
+	{   "email"              , USER_PROP_EMAIL      , USER_PROP_FLAGS_RO , 310 },
+	{   "address"            , USER_PROP_ADDRESS    , USER_PROP_FLAGS_RW , 310 },
+	{   "location"           , USER_PROP_LOCATION   , USER_PROP_FLAGS_RW , 310 },
+	{   "zipcode"            , USER_PROP_ZIPCODE    , USER_PROP_FLAGS_RW , 310 },
+	{   "phone"              , USER_PROP_PHONE      , USER_PROP_FLAGS_RW , 310 },
+	{   "birthdate"          , USER_PROP_BIRTH      , USER_PROP_FLAGS_RW , 310 },
+	{   "birthyear"          , USER_PROP_BIRTHYEAR  , USER_PROP_FLAGS_RW , 31802 },
+	{   "birthmonth"         , USER_PROP_BIRTHMONTH , USER_PROP_FLAGS_RW , 31802 },
+	{   "birthday"           , USER_PROP_BIRTHDAY   , USER_PROP_FLAGS_RW , 31802 },
+	{   "age"                , USER_PROP_AGE        , USER_PROP_FLAGS_RO , 310 },
+	{   "connection"         , USER_PROP_MODEM      , USER_PROP_FLAGS_RW , 310 },
+	{   "modem"              , USER_PROP_MODEM      , USER_PROP_FLAGS_A  , 310 },
+	{   "screen_rows"        , USER_PROP_ROWS       , USER_PROP_FLAGS_RW , 310 },
+	{   "screen_columns"     , USER_PROP_COLS       , USER_PROP_FLAGS_RW , 31802 },
+	{   "gender"             , USER_PROP_GENDER     , USER_PROP_FLAGS_RW , 310 },
+	{   "cursub"             , USER_PROP_CURSUB     , USER_PROP_FLAGS_RW , 310 },
+	{   "curdir"             , USER_PROP_CURDIR     , USER_PROP_FLAGS_RW , 310 },
+	{   "curxtrn"            , USER_PROP_CURXTRN    , USER_PROP_FLAGS_RW , 310 },
+	{   "editor"             , USER_PROP_XEDIT      , USER_PROP_FLAGS_RW , 310 } ,
+	{   "command_shell"      , USER_PROP_SHELL      , USER_PROP_FLAGS_RW , 310 },
+	{   "settings"           , USER_PROP_MISC       , USER_PROP_FLAGS_RW , 310 },
+	{   "qwk_settings"       , USER_PROP_QWK        , USER_PROP_FLAGS_RW , 310 },
+	{   "chat_settings"      , USER_PROP_CHAT       , USER_PROP_FLAGS_RW , 310 },
+	{   "mail_settings"      , USER_PROP_MAIL       , USER_PROP_FLAGS_RW , 320 },
+	{   "temp_file_ext"      , USER_PROP_TMPEXT     , USER_PROP_FLAGS_RW , 310 },
+	{   "new_file_time"      , USER_PROP_NS_TIME    , USER_PROP_FLAGS_RW , 311 },
+	{   "newscan_date"       , USER_PROP_NS_TIME    , USER_PROP_FLAGS_RW , 310 },
+	{   "download_protocol"  , USER_PROP_PROT       , USER_PROP_FLAGS_RW , 310 },
+	{   "logontime"          , USER_PROP_LOGONTIME  , USER_PROP_FLAGS_RW , 310 },
+	{   "cached"             , USER_PROP_CACHED     , USER_PROP_FLAGS_RW , 314 },
+	{   "is_sysop"           , USER_PROP_IS_SYSOP   , USER_PROP_FLAGS_RO , 315 },
+	{   "batch_upload_list"  , USER_PROP_BATUPLST   , USER_PROP_FLAGS_RO , 320 },
+	{   "batch_download_list", USER_PROP_BATDNLST   , USER_PROP_FLAGS_RO , 320 },
 	{0}
 };
 
@@ -940,30 +950,29 @@ static const char*        user_prop_desc[] = {
 	, "User has a System Operator's security level"
 	, "Batch upload list file path/name"
 	, "Batch download list file path/name"
-	, NULL
+	, nullptr
 };
 #endif
 
 
 /* user.security */
 static jsSyncPropertySpec js_user_security_properties[] = {
-/*		 name				,tinyid					,flags,				ver	*/
-
-	{   "password", USER_PROP_PASS, USER_PROP_FLAGS,   310 },
-	{   "password_date", USER_PROP_PWMOD, USER_PROP_FLAGS,   310 },
-	{   "level", USER_PROP_LEVEL, USER_PROP_FLAGS,   310 },
-	{   "flags1", USER_PROP_FLAGS1, USER_PROP_FLAGS,   310 },
-	{   "flags2", USER_PROP_FLAGS2, USER_PROP_FLAGS,   310 },
-	{   "flags3", USER_PROP_FLAGS3, USER_PROP_FLAGS,   310 },
-	{   "flags4", USER_PROP_FLAGS4, USER_PROP_FLAGS,   310 },
-	{   "exemptions", USER_PROP_EXEMPT, USER_PROP_FLAGS,   310 },
-	{   "restrictions", USER_PROP_REST, USER_PROP_FLAGS,   310 },
-	{   "credits", USER_PROP_CDT, USER_PROP_FLAGS,   310 },
-	{   "free_credits", USER_PROP_FREECDT, USER_PROP_FLAGS,   310 },
-	{   "minutes", USER_PROP_MIN, USER_PROP_FLAGS,   310 },
-	{   "extra_time", USER_PROP_TEXTRA, USER_PROP_FLAGS,   310 },
-	{   "expiration_date", USER_PROP_EXPIRE, USER_PROP_FLAGS,   310 },
-	{   "deletion_date", USER_PROP_DELDATE, JSPROP_ENUMERATE | JSPROP_READONLY, 32002 },
+	//  "name"            , tinyid            , flags              , ver
+	{   "password"        , USER_PROP_PASS    , USER_PROP_FLAGS_RW , 310 },
+	{   "password_date"   , USER_PROP_PWMOD   , USER_PROP_FLAGS_RW , 310 },
+	{   "level"           , USER_PROP_LEVEL   , USER_PROP_FLAGS_RW , 310 },
+	{   "flags1"          , USER_PROP_FLAGS1  , USER_PROP_FLAGS_RW , 310 },
+	{   "flags2"          , USER_PROP_FLAGS2  , USER_PROP_FLAGS_RW , 310 },
+	{   "flags3"          , USER_PROP_FLAGS3  , USER_PROP_FLAGS_RW , 310 },
+	{   "flags4"          , USER_PROP_FLAGS4  , USER_PROP_FLAGS_RW , 310 },
+	{   "exemptions"      , USER_PROP_EXEMPT  , USER_PROP_FLAGS_RW , 310 },
+	{   "restrictions"    , USER_PROP_REST    , USER_PROP_FLAGS_RW , 310 },
+	{   "credits"         , USER_PROP_CDT     , USER_PROP_FLAGS_RW , 310 },
+	{   "free_credits"    , USER_PROP_FREECDT , USER_PROP_FLAGS_RW , 310 },
+	{   "minutes"         , USER_PROP_MIN     , USER_PROP_FLAGS_RW , 310 },
+	{   "extra_time"      , USER_PROP_TEXTRA  , USER_PROP_FLAGS_RW , 310 },
+	{   "expiration_date" , USER_PROP_EXPIRE  , USER_PROP_FLAGS_RW , 310 },
+	{   "deletion_date"   , USER_PROP_DELDATE , USER_PROP_FLAGS_RO , 32002 },
 	{0}
 };
 
@@ -985,28 +994,23 @@ static const char*        user_security_prop_desc[] = {
 	, "Extra minutes (for today only)"
 	, "Expiration date/time (time_t format)"
 	, "Deletion date/time (time_t format) - <small>READ ONLY</small>"
-	, NULL
+	, nullptr
 };
 #endif
 
-#undef  USER_PROP_FLAGS
-#define USER_PROP_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY
-
 /* user.limits: These should be READ ONLY by nature */
 static jsSyncPropertySpec js_user_limits_properties[] = {
-/*		 name					,tinyid					,flags,				ver	*/
-
-	{   "time_per_logon", USER_PROP_TIMEPERCALL, USER_PROP_FLAGS,   311 },
-	{   "time_per_day", USER_PROP_TIMEPERDAY, USER_PROP_FLAGS,   311 },
-	{   "logons_per_day", USER_PROP_CALLSPERDAY, USER_PROP_FLAGS,   311 },
-	{   "lines_per_message", USER_PROP_LINESPERMSG, USER_PROP_FLAGS,   311 },
-	{   "email_per_day", USER_PROP_EMAILPERDAY, USER_PROP_FLAGS,   311 },
-	{   "posts_per_day", USER_PROP_POSTSPERDAY, USER_PROP_FLAGS,   311 },
-	{   "free_credits_per_day", USER_PROP_FREECDTPERDAY, USER_PROP_FLAGS,   311 },
-	{   "file_downloads_per_day", USER_PROP_DOWNLOADSPERDAY, USER_PROP_FLAGS,   321 },
+	//  "name"                   , tinyid                    , flags              , ver
+	{   "time_per_logon"         , USER_PROP_TIMEPERCALL     , USER_PROP_FLAGS_RO , 311 },
+	{   "time_per_day"           , USER_PROP_TIMEPERDAY      , USER_PROP_FLAGS_RO , 311 },
+	{   "logons_per_day"         , USER_PROP_CALLSPERDAY     , USER_PROP_FLAGS_RO , 311 },
+	{   "lines_per_message"      , USER_PROP_LINESPERMSG     , USER_PROP_FLAGS_RO , 311 },
+	{   "email_per_day"          , USER_PROP_EMAILPERDAY     , USER_PROP_FLAGS_RO , 311 },
+	{   "posts_per_day"          , USER_PROP_POSTSPERDAY     , USER_PROP_FLAGS_RO , 311 },
+	{   "free_credits_per_day"   , USER_PROP_FREECDTPERDAY   , USER_PROP_FLAGS_RO , 311 },
+	{   "file_downloads_per_day" , USER_PROP_DOWNLOADSPERDAY , USER_PROP_FLAGS_RO , 321 },
 	{0}
 };
-
 
 #ifdef BUILD_JSDOCS
 static const char* user_limits_prop_desc[] = {
@@ -1019,43 +1023,38 @@ static const char* user_limits_prop_desc[] = {
 	, "Messages posted per day"
 	, "Free credits given per day"
 	, "File downloads per day (0=Unlimited)"
-	, NULL
+	, nullptr
 };
 #endif
 
-
-#undef  USER_PROP_FLAGS
-#define USER_PROP_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY
-
 /* user.stats: These should be READ ONLY by nature */
 static jsSyncPropertySpec js_user_stats_properties[] = {
-/*		 name				,tinyid					,flags,					ver	*/
-
-	{   "laston_date", USER_PROP_LASTON, USER_PROP_FLAGS,       310 },
-	{   "firston_date", USER_PROP_FIRSTON, USER_PROP_FLAGS,       310 },
-	{   "total_logons", USER_PROP_LOGONS, USER_PROP_FLAGS,       310 },
-	{   "logons_today", USER_PROP_LTODAY, USER_PROP_FLAGS,       310 },
-	{   "total_timeon", USER_PROP_TIMEON, USER_PROP_FLAGS,       310 },
-	{   "timeon_today", USER_PROP_TTODAY, USER_PROP_FLAGS,       310 },
-	{   "timeon_last_logon", USER_PROP_TLAST, USER_PROP_FLAGS,       310 },
-	{   "total_posts", USER_PROP_POSTS, USER_PROP_FLAGS,       310 },
-	{   "total_emails", USER_PROP_EMAILS, USER_PROP_FLAGS,       310 },
-	{   "total_feedbacks", USER_PROP_FBACKS, USER_PROP_FLAGS,       310 },
-	{   "email_today", USER_PROP_ETODAY, USER_PROP_FLAGS,       310 },
-	{   "posts_today", USER_PROP_PTODAY, USER_PROP_FLAGS,       310 },
-	{   "bytes_downloaded_today", USER_PROP_BTODAY, USER_PROP_FLAGS,	321 },
-	{   "files_downloaded_today", USER_PROP_DTODAY, USER_PROP_FLAGS,	321 },
-	{   "bytes_uploaded", USER_PROP_ULB, USER_PROP_FLAGS,       310 },
-	{   "files_uploaded", USER_PROP_ULS, USER_PROP_FLAGS,       310 },
-	{   "bytes_downloaded", USER_PROP_DLB, USER_PROP_FLAGS,       310 },
-	{   "files_downloaded", USER_PROP_DLS, USER_PROP_FLAGS,       310 },
-	{   "download_cps", USER_PROP_DLCPS, USER_PROP_FLAGS,       320 },
-	{   "leech_attempts", USER_PROP_LEECH, USER_PROP_FLAGS,       310 },
-	{   "mail_waiting", USER_PROP_MAIL_WAITING, USER_PROP_FLAGS,       312 },
-	{   "read_mail_waiting", USER_PROP_READ_WAITING, USER_PROP_FLAGS,       31802 },
-	{   "unread_mail_waiting", USER_PROP_UNREAD_WAITING, USER_PROP_FLAGS,     31802 },
-	{   "spam_waiting", USER_PROP_SPAM_WAITING, USER_PROP_FLAGS,       31802 },
-	{   "mail_pending", USER_PROP_MAIL_PENDING, USER_PROP_FLAGS,       312 },
+	//  "name"                   , tinyid                   , flags              , ver
+	{   "laston_date"            , USER_PROP_LASTON         , USER_PROP_FLAGS_RO , 310 },
+	{   "firston_date"           , USER_PROP_FIRSTON        , USER_PROP_FLAGS_RO , 310 },
+	{   "total_logons"           , USER_PROP_LOGONS         , USER_PROP_FLAGS_RO , 310 },
+	{   "logons_today"           , USER_PROP_LTODAY         , USER_PROP_FLAGS_RO , 310 },
+	{   "total_timeon"           , USER_PROP_TIMEON         , USER_PROP_FLAGS_RO , 310 },
+	{   "timeon_today"           , USER_PROP_TTODAY         , USER_PROP_FLAGS_RO , 310 },
+	{   "timeon_last_logon"      , USER_PROP_TLAST          , USER_PROP_FLAGS_RO , 310 },
+	{   "total_posts"            , USER_PROP_POSTS          , USER_PROP_FLAGS_RO , 310 },
+	{   "total_emails"           , USER_PROP_EMAILS         , USER_PROP_FLAGS_RO , 310 },
+	{   "total_feedbacks"        , USER_PROP_FBACKS         , USER_PROP_FLAGS_RO , 310 },
+	{   "email_today"            , USER_PROP_ETODAY         , USER_PROP_FLAGS_RO , 310 },
+	{   "posts_today"            , USER_PROP_PTODAY         , USER_PROP_FLAGS_RO , 310 },
+	{   "bytes_downloaded_today" , USER_PROP_BTODAY         , USER_PROP_FLAGS_RO , 321 },
+	{   "files_downloaded_today" , USER_PROP_DTODAY         , USER_PROP_FLAGS_RO , 321 },
+	{   "bytes_uploaded"         , USER_PROP_ULB            , USER_PROP_FLAGS_RO , 310 },
+	{   "files_uploaded"         , USER_PROP_ULS            , USER_PROP_FLAGS_RO , 310 },
+	{   "bytes_downloaded"       , USER_PROP_DLB            , USER_PROP_FLAGS_RO , 310 },
+	{   "files_downloaded"       , USER_PROP_DLS            , USER_PROP_FLAGS_RO , 310 },
+	{   "download_cps"           , USER_PROP_DLCPS          , USER_PROP_FLAGS_RO , 320 },
+	{   "leech_attempts"         , USER_PROP_LEECH          , USER_PROP_FLAGS_RO , 310 },
+	{   "mail_waiting"           , USER_PROP_MAIL_WAITING   , USER_PROP_FLAGS_RO , 312 },
+	{   "read_mail_waiting"      , USER_PROP_READ_WAITING   , USER_PROP_FLAGS_RO , 31802 },
+	{   "unread_mail_waiting"    , USER_PROP_UNREAD_WAITING , USER_PROP_FLAGS_RO , 31802 },
+	{   "spam_waiting"           , USER_PROP_SPAM_WAITING   , USER_PROP_FLAGS_RO , 31802 },
+	{   "mail_pending"           , USER_PROP_MAIL_PENDING   , USER_PROP_FLAGS_RO , 312 },
 	{0}
 };
 
@@ -1087,22 +1086,22 @@ static const char* user_stats_prop_desc[] = {
 	, "Number of unread e-mail messages currently waiting in inbox"
 	, "Number of SPAM e-mail messages currently waiting in inbox"
 	, "Number of e-mail messages sent, currently pending deletion"
-	, NULL
+	, nullptr
 };
 #endif
 
 
 static void js_user_finalize(JSContext *cx, JSObject *obj)
 {
-	private_t* p = (private_t*)JS_GetPrivate(cx, obj);
+	user_private_t* p = (user_private_t*)JS_GetPrivate(cx, obj);
 
-	if (p != NULL) {
+	if (p != nullptr) {
 		if (p->file > 0)
 			closeuserdat(p->file);
-		free(p);
+		delete p;
 	}
 
-	JS_SetPrivate(cx, obj, NULL);
+	JS_SetPrivate(cx, obj, nullptr);
 }
 
 /* Utility functions */
@@ -1112,7 +1111,7 @@ static int get_subnum(JSContext* cx, scfg_t* cfg, jsval *argv, int argc)
 
 	if (argc > 0 && JSVAL_IS_STRING(argv[0])) {
 		char * p;
-		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[0]), p, LEN_EXTCODE + 2, NULL);
+		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[0]), p, LEN_EXTCODE + 2, nullptr);
 		subnum = getsubnum(cfg, p);
 	} else if (argc > 0 && JSVAL_IS_NUMBER(argv[0])) {
 		uint32 i;
@@ -1129,7 +1128,7 @@ static int get_dirnum(JSContext* cx, scfg_t* cfg, jsval *argv, int argc)
 
 	if (argc > 0 && JSVAL_IS_STRING(argv[0])) {
 		char *p;
-		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[0]), p, LEN_EXTCODE + 2, NULL);
+		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[0]), p, LEN_EXTCODE + 2, nullptr);
 		dirnum = getdirnum(cfg, p);
 	} else if (argc > 0 && JSVAL_IS_NUMBER(argv[0])) {
 		uint32 i;
@@ -1148,9 +1147,9 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *    argv = JS_ARGV(cx, arglist);
 	uchar*     ar;
-	private_t* p;
+	user_private_t* p;
 	jsrefcount rc;
-	char *     ars = NULL;
+	char *     ars = nullptr;
 	scfg_t*    scfg;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -1162,23 +1161,23 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
-	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
 		return JS_FALSE;
 
-	JSVALUE_TO_MSTRING(cx, argv[0], ars, NULL);
+	JSVALUE_TO_MSTRING(cx, argv[0], ars, nullptr);
 	HANDLE_PENDING(cx, ars);
-	if (ars == NULL)
+	if (ars == nullptr)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	ar = arstr(NULL, ars, scfg, NULL);
+	ar = arstr(nullptr, ars, scfg, nullptr);
 	free(ars);
 
-	js_getuserdat(scfg, p);
+	p->getuserdat();
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(chk_ar(scfg, ar, p->user, p->client)));
 
-	if (ar != NULL)
+	if (ar != nullptr)
 		free(ar);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -1190,14 +1189,14 @@ js_posted_msg(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *    argv = JS_ARGV(cx, arglist);
-	private_t* p;
+	user_private_t* p;
 	uint32     count = 1;
 	jsrefcount rc;
 	scfg_t*    scfg;
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
-	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
 		return JS_FALSE;
 
 	if (argc) {
@@ -1208,7 +1207,7 @@ js_posted_msg(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	js_getuserdat(scfg, p);
+	p->getuserdat();
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_posted_msg(scfg, p->user, count)));
 	JS_RESUMEREQUEST(cx, rc);
@@ -1221,15 +1220,15 @@ js_sent_email(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *    argv = JS_ARGV(cx, arglist);
-	private_t* p;
+	user_private_t* p;
 	uint32     count = 1;
-	JSBool     feedback = FALSE;
+	JSBool     feedback = false;
 	jsrefcount rc;
 	scfg_t*    scfg;
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
-	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
 		return JS_FALSE;
 
 	if (argc) {
@@ -1242,7 +1241,7 @@ js_sent_email(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToBoolean(cx, argv[1], &feedback);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	js_getuserdat(scfg, p);
+	p->getuserdat();
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_sent_email(scfg, p->user, count, feedback)));
 	JS_RESUMEREQUEST(cx, rc);
@@ -1255,17 +1254,17 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *    argv = JS_ARGV(cx, arglist);
-	private_t* p;
+	user_private_t* p;
 	uint32     files = 1;
 	uint32     bytes = 0;
 	jsrefcount rc;
 	scfg_t*    scfg;
 	int        dirnum = INVALID_DIR;
-	char*      fname = NULL;
+	char*      fname = nullptr;
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
-	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
 		return JS_FALSE;
 
 	if (argc > 0 && js_argvIsNullOrVoid(cx, argv, 0))
@@ -1274,14 +1273,14 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 	uintN argn = 0;
 	if (argc > argn && JSVAL_IS_STRING(argv[argn])) {
 		char *p;
-		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[argn]), p, LEN_EXTCODE + 2, NULL);
+		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[argn]), p, LEN_EXTCODE + 2, nullptr);
 		for (dirnum = 0; dirnum < scfg->total_dirs; dirnum++)
 			if (!stricmp(scfg->dir[dirnum]->code, p))
 				break;
 		argn++;
 	}
 	if (argc > argn && JSVAL_IS_STRING(argv[argn])) {
-		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[argn]), fname, MAX_PATH + 1, NULL);
+		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[argn]), fname, MAX_PATH + 1, nullptr);
 		argn++;
 	}
 	if (argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
@@ -1296,8 +1295,8 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	js_getuserdat(scfg, p);
-	if (fname != NULL && dirnum_is_valid(scfg, dirnum)) {
+	p->getuserdat();
+	if (fname != nullptr && dirnum_is_valid(scfg, dirnum)) {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_downloaded_file(scfg, p->user, p->client, dirnum, fname, bytes)));
 		mqtt_file_download(p->mqtt, p->user, dirnum, fname, bytes, p->client);
 	} else {
@@ -1313,7 +1312,7 @@ js_uploaded_file(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *    argv = JS_ARGV(cx, arglist);
-	private_t* p;
+	user_private_t* p;
 	uint32     files = 1;
 	uint32     bytes = 0;
 	jsrefcount rc;
@@ -1321,7 +1320,7 @@ js_uploaded_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
-	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
 		return JS_FALSE;
 
 	if (argc) {
@@ -1338,7 +1337,7 @@ js_uploaded_file(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	js_getuserdat(scfg, p);
+	p->getuserdat();
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_uploaded(scfg, p->user, files, bytes)));
 	JS_RESUMEREQUEST(cx, rc);
@@ -1351,7 +1350,7 @@ js_adjust_credits(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *    argv = JS_ARGV(cx, arglist);
-	private_t* p;
+	user_private_t* p;
 	int32      count = 0;
 	jsrefcount rc;
 	scfg_t*    scfg;
@@ -1363,14 +1362,14 @@ js_adjust_credits(JSContext *cx, uintN argc, jsval *arglist)
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
-	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
 		return JS_FALSE;
 
 	if (!JS_ValueToECMAInt32(cx, argv[0], &count))
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	js_getuserdat(scfg, p);
+	p->getuserdat();
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_adjust_credits(scfg, p->user, count)));
 	JS_RESUMEREQUEST(cx, rc);
@@ -1383,7 +1382,7 @@ js_adjust_minutes(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *    argv = JS_ARGV(cx, arglist);
-	private_t* p;
+	user_private_t* p;
 	int32      count = 0;
 	jsrefcount rc;
 	scfg_t*    scfg;
@@ -1395,14 +1394,14 @@ js_adjust_minutes(JSContext *cx, uintN argc, jsval *arglist)
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
-	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
 		return JS_FALSE;
 
 	if (!JS_ValueToECMAInt32(cx, argv[0], &count))
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	js_getuserdat(scfg, p);
+	p->getuserdat();
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_adjust_minutes(scfg, p->user, count)));
 	JS_RESUMEREQUEST(cx, rc);
@@ -1415,7 +1414,7 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *    argv = JS_ARGV(cx, arglist);
-	private_t* p;
+	user_private_t* p;
 	uint32     start_time = 0;
 	jsrefcount rc;
 	scfg_t*    scfg;
@@ -1428,14 +1427,14 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
-	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
 		return JS_FALSE;
 
 	if (!JS_ValueToECMAUint32(cx, argv[0], &start_time))
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	js_getuserdat(scfg, p);
+	p->getuserdat();
 
 	tl = gettimeleft(scfg, p->user, start_time);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(tl > INT32_MAX ? INT32_MAX : (int32) tl));
@@ -1449,9 +1448,9 @@ js_can_access_sub(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *    argv = JS_ARGV(cx, arglist);
-	private_t* p;
+	user_private_t* p;
 	jsrefcount rc;
-	char* access = NULL;
+	char* access = nullptr;
 	scfg_t*    scfg;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -1461,25 +1460,25 @@ js_can_access_sub(JSContext *cx, uintN argc, jsval *arglist)
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
-	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
 		return JS_FALSE;
 
 	if (argc > 1 && JSVAL_IS_STRING(argv[1])) {
-		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[1]), access, 32, NULL);
+		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[1]), access, 32, nullptr);
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	js_getuserdat(scfg, p);
+	p->getuserdat();
 	int subnum = get_subnum(cx, scfg, argv, argc);
 	bool result = false;
-	if (access == NULL)
-		result = user_can_access_sub(scfg, subnum, p->user, NULL);
+	if (access == nullptr)
+		result = user_can_access_sub(scfg, subnum, p->user, nullptr);
 	else if (stricmp(access, "READ") == 0)
-		result = user_can_read_sub(scfg, subnum, p->user, NULL);
+		result = user_can_read_sub(scfg, subnum, p->user, nullptr);
 	else if (stricmp(access, "POST") == 0)
-		result = user_can_post(scfg, subnum, p->user, NULL, NULL);
+		result = user_can_post(scfg, subnum, p->user, nullptr, nullptr);
 	else if (stricmp(access, "OPERATOR") == 0)
-		result = user_is_subop(scfg, subnum, p->user, NULL);
+		result = user_is_subop(scfg, subnum, p->user, nullptr);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -1491,9 +1490,9 @@ js_can_access_dir(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	jsval *    argv = JS_ARGV(cx, arglist);
-	private_t* p;
+	user_private_t* p;
 	jsrefcount rc;
-	char* access = NULL;
+	char* access = nullptr;
 	scfg_t*    scfg;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
@@ -1503,25 +1502,25 @@ js_can_access_dir(JSContext *cx, uintN argc, jsval *arglist)
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
-	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
 		return JS_FALSE;
 
 	if (argc > 1 && JSVAL_IS_STRING(argv[1])) {
-		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[1]), access, 32, NULL);
+		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[1]), access, 32, nullptr);
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	js_getuserdat(scfg, p);
+	p->getuserdat();
 	int dirnum = get_dirnum(cx, scfg, argv, argc);
 	bool result = false;
-	if (access == NULL)
-		result = user_can_access_dir(scfg, dirnum, p->user, NULL);
+	if (access == nullptr)
+		result = user_can_access_dir(scfg, dirnum, p->user, nullptr);
 	else if (stricmp(access, "DOWNLOAD") == 0)
-		result = user_can_download(scfg, dirnum, p->user, NULL, NULL);
+		result = user_can_download(scfg, dirnum, p->user, nullptr, nullptr);
 	else if (stricmp(access, "UPLOAD") == 0)
-		result = user_can_upload(scfg, dirnum, p->user, NULL, NULL);
+		result = user_can_upload(scfg, dirnum, p->user, nullptr, nullptr);
 	else if (stricmp(access, "OPERATOR") == 0)
-		result = user_is_dirop(scfg, dirnum, p->user, NULL);
+		result = user_is_dirop(scfg, dirnum, p->user, nullptr);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -1533,12 +1532,12 @@ static JSBool
 js_user_close(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
-	private_t* p;
+	user_private_t* p;
 	jsrefcount rc;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
+	if ((p = (user_private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == nullptr)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -1553,7 +1552,7 @@ js_user_close(JSContext *cx, uintN argc, jsval *arglist)
 static jsSyncMethodSpec js_user_functions[] = {
 	{"compare_ars",     js_chk_ar,          1,  JSTYPE_BOOLEAN, JSDOCSTR("requirements")
 	 , JSDOCSTR("Verify and return <tt>true</tt> if user meets the specified access requirements string.<br"
-				"Always returns <tt>true</tt> when passed <tt>null</tt>, <tt>undefined</tt>, or an empty string.<br>"
+				"Always returns <tt>true</tt> when passed <tt>nullptr</tt>, <tt>undefined</tt>, or an empty string.<br>"
 		        "Note: For the current user of the terminal server, use <tt>bbs.compare_ars()</tt> instead.")
 	 , 310},
 	{"adjust_credits",  js_adjust_credits,  1,  JSTYPE_BOOLEAN, JSDOCSTR("count")
@@ -1595,7 +1594,7 @@ static jsSyncMethodSpec js_user_functions[] = {
 
 static JSBool js_user_stats_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
-	char*  name = NULL;
+	char*  name = nullptr;
 	JSBool ret;
 
 	if (id != JSID_VOID && id != JSID_EMPTY) {
@@ -1603,12 +1602,12 @@ static JSBool js_user_stats_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 		JS_IdToValue(cx, id, &idval);
 		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, nullptr);
 			HANDLE_PENDING(cx, name);
 		}
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_user_stats_properties, NULL, NULL, 0);
+	ret = js_SyncResolve(cx, obj, name, js_user_stats_properties, nullptr, nullptr, 0);
 	if (name)
 		free(name);
 	return ret;
@@ -1621,7 +1620,7 @@ static JSBool js_user_stats_enumerate(JSContext *cx, JSObject *obj)
 
 static JSBool js_user_security_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
-	char*  name = NULL;
+	char*  name = nullptr;
 	JSBool ret;
 
 	if (id != JSID_VOID && id != JSID_EMPTY) {
@@ -1629,12 +1628,12 @@ static JSBool js_user_security_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 		JS_IdToValue(cx, id, &idval);
 		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, nullptr);
 			HANDLE_PENDING(cx, name);
 		}
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_user_security_properties, NULL, NULL, 0);
+	ret = js_SyncResolve(cx, obj, name, js_user_security_properties, nullptr, nullptr, 0);
 	if (name)
 		free(name);
 	return ret;
@@ -1647,7 +1646,7 @@ static JSBool js_user_security_enumerate(JSContext *cx, JSObject *obj)
 
 static JSBool js_user_limits_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
-	char*  name = NULL;
+	char*  name = nullptr;
 	JSBool ret;
 
 	if (id != JSID_VOID && id != JSID_EMPTY) {
@@ -1655,12 +1654,12 @@ static JSBool js_user_limits_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 		JS_IdToValue(cx, id, &idval);
 		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, nullptr);
 			HANDLE_PENDING(cx, name);
 		}
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_user_limits_properties, NULL, NULL, 0);
+	ret = js_SyncResolve(cx, obj, name, js_user_limits_properties, nullptr, nullptr, 0);
 	if (name)
 		free(name);
 	return ret;
@@ -1712,12 +1711,12 @@ static JSClass js_user_limits_class = {
 
 static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
-	char*      name = NULL;
+	char*      name = nullptr;
 	JSObject*  newobj;
-	private_t* p;
+	user_private_t* p;
 	JSBool     ret;
 
-	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL)
+	if ((p = (user_private_t*)JS_GetPrivate(cx, obj)) == nullptr)
 		return JS_TRUE;
 
 	if (id != JSID_VOID && id != JSID_EMPTY) {
@@ -1725,17 +1724,17 @@ static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 		JS_IdToValue(cx, id, &idval);
 		if (JSVAL_IS_STRING(idval)) {
-			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
+			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, nullptr);
 			HANDLE_PENDING(cx, name);
 		}
 	}
 
-	if (name == NULL || strcmp(name, "stats") == 0) {
+	if (name == nullptr || strcmp(name, "stats") == 0) {
 		if (name)
 			free(name);
 		/* user.stats */
 		if ((newobj = JS_DefineObject(cx, obj, "stats"
-		                              , &js_user_stats_class, NULL, JSPROP_ENUMERATE | JSPROP_READONLY)) == NULL)
+		                              , &js_user_stats_class, nullptr, USER_PROP_FLAGS_RO)) == nullptr)
 			return JS_FALSE;
 		JS_SetPrivate(cx, newobj, p);
 #ifdef BUILD_JSDOCS
@@ -1747,12 +1746,12 @@ static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 	}
 
-	if (name == NULL || strcmp(name, "security") == 0) {
+	if (name == nullptr || strcmp(name, "security") == 0) {
 		if (name)
 			free(name);
 		/* user.security */
 		if ((newobj = JS_DefineObject(cx, obj, "security"
-		                              , &js_user_security_class, NULL, JSPROP_ENUMERATE | JSPROP_READONLY)) == NULL)
+		                              , &js_user_security_class, nullptr, USER_PROP_FLAGS_RO)) == nullptr)
 			return JS_FALSE;
 		JS_SetPrivate(cx, newobj, p);
 #ifdef BUILD_JSDOCS
@@ -1763,12 +1762,12 @@ static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 			return JS_TRUE;
 	}
 
-	if (name == NULL || strcmp(name, "limits") == 0) {
+	if (name == nullptr || strcmp(name, "limits") == 0) {
 		if (name)
 			free(name);
 		/* user.limits */
 		if ((newobj = JS_DefineObject(cx, obj, "limits"
-		                              , &js_user_limits_class, NULL, JSPROP_ENUMERATE | JSPROP_READONLY)) == NULL)
+		                              , &js_user_limits_class, nullptr, USER_PROP_FLAGS_RO)) == nullptr)
 			return JS_FALSE;
 		JS_SetPrivate(cx, newobj, p);
 #ifdef BUILD_JSDOCS
@@ -1779,7 +1778,7 @@ static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 			return JS_TRUE;
 	}
 
-	ret = js_SyncResolve(cx, obj, name, js_user_properties, js_user_functions, NULL, 0);
+	ret = js_SyncResolve(cx, obj, name, js_user_properties, js_user_functions, nullptr, 0);
 	if (name)
 		free(name);
 	return ret;
@@ -1813,12 +1812,12 @@ js_user_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	int        i;
 	int32      val = 0;
 	user_t     user;
-	private_t* p;
+	user_private_t* p;
 	scfg_t*    scfg;
 
 	scfg = static_cast<scfg_t *>(JS_GetRuntimePrivate(JS_GetRuntime(cx)));
 
-	obj = JS_NewObject(cx, &js_user_class, NULL, NULL);
+	obj = JS_NewObject(cx, &js_user_class, nullptr, nullptr);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 
 	if (argc && (!JS_ValueToInt32(cx, argv[0], &val)))
@@ -1830,14 +1829,7 @@ js_user_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	if ((p = (private_t*)malloc(sizeof(private_t))) == NULL)
-		return JS_FALSE;
-
-	memset(p, 0, sizeof(private_t));
-
-	p->storage = user;
-	p->user = &p->storage;
-	p->cached = (user.number == 0 ? FALSE : TRUE);
+	p = new user_private_t(scfg, user);
 
 	JS_SetPrivate(cx, obj, p);
 
@@ -1848,13 +1840,13 @@ JSObject* js_CreateUserClass(JSContext* cx, JSObject* parent)
 {
 	JSObject* userclass;
 
-	userclass = JS_InitClass(cx, parent, NULL
+	userclass = JS_InitClass(cx, parent, nullptr
 	                         , &js_user_class
 	                         , js_user_constructor
 	                         , 1 /* number of constructor args */
-	                         , NULL /* props, defined in constructor */
-	                         , NULL /* funcs, defined in constructor */
-	                         , NULL, NULL);
+	                         , nullptr /* props, defined in constructor */
+	                         , nullptr /* funcs, defined in constructor */
+	                         , nullptr, nullptr);
 
 	return userclass;
 }
@@ -1863,34 +1855,31 @@ JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, const char* name
                               , user_t* user, client_t* client, bool global_user, struct mqtt* mqtt)
 {
 	JSObject*  userobj;
-	private_t* p;
+	user_private_t* p;
 	jsval      val;
 
-	if (name == NULL)
-		userobj = JS_NewObject(cx, &js_user_class, NULL, parent);
+	if (name == nullptr)
+		userobj = JS_NewObject(cx, &js_user_class, nullptr, parent);
 	else if (JS_GetProperty(cx, parent, name, &val) && val != JSVAL_VOID)
 		userobj = JSVAL_TO_OBJECT(val); /* Return existing user object */
 	else
 		userobj = JS_DefineObject(cx, parent, name, &js_user_class
-		                          , NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
-	if (userobj == NULL)
-		return NULL;
+		                          , nullptr, USER_PROP_FLAGS_RO);
+	if (userobj == nullptr)
+		return nullptr;
 
-	if ((p = static_cast<private_t *>(JS_GetPrivate(cx, userobj))) == NULL) {    /* Uses existing private pointer: Fix memory leak? */
-		if ((p = (private_t*)malloc(sizeof(private_t))) == NULL)
-			return NULL;
-		memset(p, 0, sizeof(private_t));
+	if ((p = static_cast<user_private_t *>(JS_GetPrivate(cx, userobj))) == nullptr) {    /* Uses existing private pointer: Fix memory leak? */
+		p = new user_private_t(static_cast<scfg_t*>(JS_GetRuntimePrivate(JS_GetRuntime(cx))));
 	}
 
 	p->client = client;
 	p->mqtt = mqtt;
-	p->cached = FALSE;
 	p->user = &p->storage;
-	if (user != NULL) {
+	if (user != nullptr) {
 		p->storage = *user;
 		if (global_user)
 			p->user = user;
-		p->cached = TRUE;
+		p->cached = true;
 	}
 
 	JS_SetPrivate(cx, userobj, p);
@@ -1915,13 +1904,13 @@ JSBool
 js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg, user_t* user, client_t* client
                      , const char* web_file_vpath_prefix, subscan_t* subscan, struct mqtt* mqtt)
 {
-	if (js_CreateUserObject(cx, parent, "user", user, client, /* global_user */ TRUE, mqtt) == NULL)
+	if (js_CreateUserObject(cx, parent, "user", user, client, /* global_user */ true, mqtt) == nullptr)
 		return JS_FALSE;
-	if (js_CreateFileAreaObject(cx, parent, cfg, user, client, web_file_vpath_prefix) == NULL)
+	if (js_CreateFileAreaObject(cx, parent, cfg, user, client, web_file_vpath_prefix) == nullptr)
 		return JS_FALSE;
-	if (js_CreateMsgAreaObject(cx, parent, cfg, user, client, subscan) == NULL)
+	if (js_CreateMsgAreaObject(cx, parent, cfg, user, client, subscan) == nullptr)
 		return JS_FALSE;
-	if (js_CreateXtrnAreaObject(cx, parent, cfg, user, client) == NULL)
+	if (js_CreateXtrnAreaObject(cx, parent, cfg, user, client) == nullptr)
 		return JS_FALSE;
 
 	return JS_TRUE;

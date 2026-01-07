@@ -1044,7 +1044,7 @@ void sbbs_t::user_info()
 				, useron.ptoday);
 		bprintf(text[UserEmails]
 				, useron.emails, useron.fbacks
-				, getmail(&cfg, useron.number, /* Sent: */ FALSE, /* SPAM: */ FALSE), useron.etoday);
+				, mail_waiting.get(), useron.etoday);
 		term->newline();
 		bprintf(text[UserUploads]
 				, byte_estimate_to_str(useron.ulb, tmp, sizeof(tmp), 1, 1), useron.uls);

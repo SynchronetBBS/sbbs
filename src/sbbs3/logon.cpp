@@ -486,8 +486,8 @@ bool sbbs_t::logon()
 		return true;
 
 	sys_status |= SS_PAUSEON; /* always force pause on during this section */
-	mailw = getmail(&cfg, useron.number, /* Sent: */ FALSE, /* attr: */ 0);
-	mailr = getmail(&cfg, useron.number, /* Sent: */ FALSE, /* attr: */ MSG_READ);
+	mailw = mail_waiting.get();
+	mailr = mail_read.get();
 
 	if (!(cfg.sys_misc & SM_NOSYSINFO)) {
 		if (!menu("logoninfo", P_NOERROR)) {

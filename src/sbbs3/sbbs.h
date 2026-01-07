@@ -440,6 +440,32 @@ typedef struct sftp_filedes {
 	bool created;        // Basically indicates it's an "upload"
 } *sftp_filedescriptor_t;
 
+class cached_mail_count {
+	scfg_t* cfg;
+	user_t* user;
+	bool sent;
+	int attr;
+	int count{};
+	time_t last{};
+public:
+	cached_mail_count(scfg_t* cfg, user_t* user, bool sent, int attr)
+		: cfg(cfg)
+		, user(user)
+		, sent(sent)
+		, attr(attr)
+	{}
+	int get() {
+		if (last == 0 || difftime(time(nullptr), last) >= cfg->stats_interval) {
+			count = getmail(cfg, user->number, sent, attr);
+			last = time(nullptr);
+		}
+		return count;
+	}
+	void reset() {
+		last = 0;
+	}
+};
+
 class sbbs_t
 {
 
@@ -646,6 +672,12 @@ public:
 	std::atomic<int> online{0}; 	/* Remote/Local or not online */
 	std::atomic<int> sys_status{0};	/* System Status */
 	subscan_t* subscan = nullptr;	/* User sub configuration/scan info */
+
+	cached_mail_count mail_waiting{&cfg, &useron, false, 0};
+	cached_mail_count mail_read{&cfg, &useron, false, MSG_READ};
+	cached_mail_count mail_unread{&cfg, &useron, false, ~MSG_READ};
+	cached_mail_count mail_pending{&cfg, &useron, true, 0};
+	cached_mail_count spam_waiting{&cfg, &useron, false, MSG_SPAM};
 
 	int64_t	logon_ulb=0,	/* Upload Bytes This Call */
 			logon_dlb=0;	/* Download Bytes This Call */

@@ -2028,27 +2028,27 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (!strcmp(sp, "MAILR")) {
-		safe_snprintf(str, maxlen, "%u", getmail(&cfg, useron.number, /* Sent: */ FALSE, /* attr: */ MSG_READ));
+		safe_snprintf(str, maxlen, "%u", mail_read.get());
 		return str;
 	}
 
 	if (!strcmp(sp, "MAILU")) {
-		safe_snprintf(str, maxlen, "%u", getmail(&cfg, useron.number, /* Sent: */ FALSE, /* attr: */ ~MSG_READ));
+		safe_snprintf(str, maxlen, "%u", mail_unread.get());
 		return str;
 	}
 
 	if (!strcmp(sp, "MAILW")) {
-		safe_snprintf(str, maxlen, "%u", getmail(&cfg, useron.number, /* Sent: */ FALSE, /* attr: */ 0));
+		safe_snprintf(str, maxlen, "%u", mail_waiting.get());
 		return str;
 	}
 
 	if (!strcmp(sp, "MAILP")) {
-		safe_snprintf(str, maxlen, "%u", getmail(&cfg, useron.number, /* Sent: */ TRUE, /* attr: */ 0));
+		safe_snprintf(str, maxlen, "%u", mail_pending.get());
 		return str;
 	}
 
 	if (!strcmp(sp, "SPAMW")) {
-		safe_snprintf(str, maxlen, "%u", getmail(&cfg, useron.number, /* Sent: */ FALSE, /* attr: */ MSG_SPAM));
+		safe_snprintf(str, maxlen, "%u", spam_waiting.get());
 		return str;
 	}
 
