@@ -460,7 +460,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_TUSED:
-				if (timeon() / 60 < (long)n)
+				if (timeon() / 60 < n)
 					result = _not;
 				else
 					result = !_not;
