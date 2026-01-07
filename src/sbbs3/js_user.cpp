@@ -650,7 +650,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				if (JSVAL_IS_OBJECT(jsv)) {
 					extern JSClass js_bbs_class;
 					if (JS_InstanceOf(cx, JSVAL_TO_OBJECT(jsv), &js_bbs_class, nullptr)) {
-						update_terminal(p->cfg, p->user);
+						update_terminal(JS_GetContextPrivate(cx), p->user);
 					}
 				}
 			}
