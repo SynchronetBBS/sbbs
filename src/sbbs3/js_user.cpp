@@ -638,19 +638,22 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				return JS_FALSE;
 			}
 			rc = JS_SUSPENDREQUEST(cx);
+			uint32_t org_misc = p->user->misc;
 			putusermisc(p->cfg, p->user->number, p->user->misc = val);
-			/*
-			 * Get sbbs_t pointer.
-			 * If the global has a "bbs" property that is a BBS class object, then the context
-			 * private will be an sbbs_t (ie: running in terminal server)
-			 */
-			jsval jsv;
-			JSObject* glob = JS_GetGlobalObject(cx);
-			if (JS_GetProperty(cx, glob, "bbs", &jsv)) {
-				if (JSVAL_IS_OBJECT(jsv)) {
-					extern JSClass js_bbs_class;
-					if (JS_InstanceOf(cx, JSVAL_TO_OBJECT(jsv), &js_bbs_class, nullptr)) {
-						update_terminal(JS_GetContextPrivate(cx), p->user);
+			if ((org_misc ^ val) & TERM_FLAGS) { // One or more terminal flags changed
+				/*
+				 * Get sbbs_t pointer.
+				 * If the global has a "bbs" property that is a BBS class object, then the context
+				 * private will be an sbbs_t (ie: running in terminal server)
+				 */
+				jsval jsv;
+				JSObject* glob = JS_GetGlobalObject(cx);
+				if (JS_GetProperty(cx, glob, "bbs", &jsv)) {
+					if (JSVAL_IS_OBJECT(jsv)) {
+						extern JSClass js_bbs_class;
+						if (JS_InstanceOf(cx, JSVAL_TO_OBJECT(jsv), &js_bbs_class, nullptr)) {
+							update_terminal(JS_GetContextPrivate(cx), p->user);
+						}
 					}
 				}
 			}
