@@ -1661,7 +1661,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (code_match(sp, "CDTLEFT", &param))
-		return byte_count(user_available_credits(&useron), str, maxlen, param, BYTE_COUNT_VERBAL);
+		return byte_count(static_cast<int64_t>(user_available_credits(&useron)), str, maxlen, param, BYTE_COUNT_VERBAL);
 
 	if (code_match(sp, "CREDITS", &param))
 		return byte_count(useron.cdt, str, maxlen, param, BYTE_COUNT_BYTES);
