@@ -120,7 +120,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 			break;
 		if (sys_status & SS_ABORT || !online)
 			break;
-		if (ch == LF && mode & K_MSG) { /* Down-arrow same as CR */
+		if (ch == TERM_KEY_DOWN && (mode & K_MSG) && history == nullptr) { // Down-arrow same as CR
 			console |= CON_DOWNARROW;
 			break;
 		}
