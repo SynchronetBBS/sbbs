@@ -611,6 +611,9 @@ public:
 	int		node_ext = -1;	/* File handle for node.exb */
 	size_t	batup_total();
 	size_t	batdn_total();
+	int64_t	batdn_bytes();
+	int64_t	batdn_cost();
+	uint	batdn_time();
 
 	/********************************/
 	/* Text Configuration Variables */

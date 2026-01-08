@@ -138,6 +138,9 @@ enum {
 	, BBS_PROP_DOWNLOAD_CPS
 	, BBS_PROP_BATCH_UPLOAD_TOTAL
 	, BBS_PROP_BATCH_DNLOAD_TOTAL
+	, BBS_PROP_BATCH_DNLOAD_BYTES
+	, BBS_PROP_BATCH_DNLOAD_COST
+	, BBS_PROP_BATCH_DNLOAD_TIME
 
 	/* READ ONLY */
 	, BBS_PROP_FILE_NAME
@@ -277,6 +280,9 @@ static const char* bbs_prop_desc[] = {
 	, "Most recent file download rate (in characters/bytes per second)"
 	, "Number of files in batch upload queue"
 	, "Number of files in batch download queue"
+	, "Number of bytes in batch download queue"
+	, "Cost (in credits) to download all files in batch download queue"
+	, "Estimated time (in seconds) to download all files in batch download queue"
 
 	, "Current command shell/module <i>command string</i> value"
 	, NULL
@@ -775,6 +781,15 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case BBS_PROP_BATCH_DNLOAD_TOTAL:
 			val = sbbs->batdn_total();
 			break;
+		case BBS_PROP_BATCH_DNLOAD_BYTES:
+			*vp = DOUBLE_TO_JSVAL((double)sbbs->batdn_bytes());
+			return JS_TRUE;
+		case BBS_PROP_BATCH_DNLOAD_COST:
+			*vp = DOUBLE_TO_JSVAL((double)sbbs->batdn_cost());
+			return JS_TRUE;
+		case BBS_PROP_BATCH_DNLOAD_TIME:
+			val = sbbs->batdn_time();
+			break;
 
 		case BBS_PROP_COMMAND_STR:
 			p = sbbs->main_csi.str;
@@ -1118,6 +1133,9 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{   "download_cps", BBS_PROP_DOWNLOAD_CPS, PROP_READONLY, 320},
 	{   "batch_upload_total", BBS_PROP_BATCH_UPLOAD_TOTAL, PROP_READONLY, 310},
 	{   "batch_dnload_total", BBS_PROP_BATCH_DNLOAD_TOTAL, PROP_READONLY, 310},
+	{   "batch_dnload_bytes", BBS_PROP_BATCH_DNLOAD_BYTES, PROP_READONLY, 321},
+	{   "batch_dnload_cost" , BBS_PROP_BATCH_DNLOAD_COST , PROP_READONLY, 321},
+	{   "batch_dnload_time" , BBS_PROP_BATCH_DNLOAD_TIME , PROP_READONLY, 321},
 
 	{   "command_str", BBS_PROP_COMMAND_STR, JSPROP_ENUMERATE, 314},
 	{0}

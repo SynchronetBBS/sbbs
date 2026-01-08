@@ -652,7 +652,7 @@ void sbbs_t::batch_download(int xfrprot)
 				continue;
 			}
 			iniRemoveSection(&ini, filename);
-			if (cfg.dir[f.dir]->misc & DIR_TFREE && cur_cps)
+			if ((cfg.dir[f.dir]->misc & DIR_TFREE) && cur_cps)
 				starttime += f.size / (ulong)cur_cps;
 			downloadedfile(&f);
 			smb_freefilemem(&f);
@@ -803,6 +803,64 @@ bool sbbs_t::clearbatdl(void)
 bool sbbs_t::clearbatul(void)
 {
 	return batch_list_clear(&cfg, useron.number, XFER_BATCH_UPLOAD);
+}
+
+int64_t sbbs_t::batdn_bytes(void)
+{
+	int64_t total = 0;
+	str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
+	str_list_t filenames = iniGetSectionList(ini, NULL);
+
+	for (size_t i = 0; filenames[i]; ++i) {
+		const char* filename = filenames[i];
+		file_t      f{};
+		if (batch_file_load(&cfg, ini, filename, &f))
+			total += getfilesize(&cfg, &f);
+	}
+	iniFreeStringList(filenames);
+	iniFreeStringList(ini);
+	return total;
+}
+
+int64_t sbbs_t::batdn_cost(void)
+{
+	int64_t total = 0;
+	str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
+	str_list_t filenames = iniGetSectionList(ini, NULL);
+
+	for (size_t i = 0; filenames[i]; ++i) {
+		const char* filename = filenames[i];
+		file_t      f{};
+		if (!batch_file_load(&cfg, ini, filename, &f))
+			continue;
+		if (!download_is_free(&cfg, f.dir, &useron, &client))
+			total += f.cost;
+	}
+	iniFreeStringList(filenames);
+	iniFreeStringList(ini);
+	return total;
+}
+
+uint sbbs_t::batdn_time(void)
+{
+	int64_t total = 0;
+
+	if (cur_cps) {
+		str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
+		str_list_t filenames = iniGetSectionList(ini, NULL);
+
+		for (size_t i = 0; filenames[i]; ++i) {
+			const char* filename = filenames[i];
+			file_t      f{};
+			if (batch_file_load(&cfg, ini, filename, &f))
+				total += getfilesize(&cfg, &f) / cur_cps;
+		}
+		iniFreeStringList(filenames);
+		iniFreeStringList(ini);
+		if (total > UINT_MAX)
+			total = UINT_MAX;
+	}
+	return (uint)total;
 }
 
 size_t sbbs_t::batdn_total(void)
