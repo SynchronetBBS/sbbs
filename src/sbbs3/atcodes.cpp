@@ -246,6 +246,7 @@ static const char* getpath(scfg_t* cfg, const char* path)
 
 // Support duration output formats, examples: 0           90m         100h
 #define DURATION_FULL_HHMMSS           'F' // 00:00:00    01:30:00    100:00:00
+#define DURATION_TRUNCATED_HHMMSS      '!' // 0:00:00     1:30:00     00:00:00
 #define DURATION_MINIMAL_HHMMSS        'A' // 0           1:30:00     100:00:00
 #define DURATION_FULL_HHMM             'T' // 00:00       01:30       100:00
 #define DURATION_MINIMAL_HHMM          'B' // 0           1:30        100:00
@@ -259,6 +260,8 @@ static char* duration(uint seconds, char* str, size_t maxlen, char fmt, char def
 	switch(fmt) {
 		case DURATION_FULL_HHMMSS:
 			return sectostr(seconds, str);
+		case DURATION_TRUNCATED_HHMMSS:
+			return sectostr(seconds, str) + 1; // Legacy truncation when hours > 9
 		case DURATION_MINIMAL_HHMMSS:
 			return seconds_to_str(seconds, str);
 		case DURATION_FULL_HHMM:
@@ -278,6 +281,11 @@ static char* duration(uint seconds, char* str, size_t maxlen, char fmt, char def
 		default:
 			return duration(seconds, str, maxlen, deflt, 0);
 	}
+}
+
+static char* minutes(uint min, char* str, size_t maxlen, char fmt, char deflt)
+{
+	return duration(min * 60, str, maxlen, fmt, deflt);
 }
 
 #define BYTE_COUNT_BYTES		'B' // e.g. "1572864"
@@ -1307,37 +1315,14 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		safe_snprintf(str, maxlen, "%u", timeused() / 60);
 		return str;
 	}
-	if (strcmp(sp, "TMUSED") == 0)
-		return seconds_to_str(timeused(), str);
-
-	if (strcmp(sp, "TUSED") == 0)
-		return sectostr(timeused(), str) + 1; // Legacy truncation when hours > 9
-
-	if (strcmp(sp, "MUSED") == 0)
-		return minutes_to_str(timeused() / 60, str, maxlen, /* estimate: */ false);
-
-	if (strcmp(sp, "HRUSED") == 0)
-		return minutes_to_str(timeused() / 60, str, maxlen, /* estimate: */ true);
+	if (code_match(sp, "TUSED", &param))
+		return duration(timeused(), str, maxlen, param, DURATION_TRUNCATED_HHMMSS);
 	// ----------------------------------------------------------------------
 
 	// ----------------------------------------------------------------------
 	// Time "online" this call
-	if (strcmp(sp, "TIMEON") == 0) { // Wildcat! "Time on system this call"
-		safe_snprintf(str, maxlen, "%u", timeon() / 60);
-		return str;
-	}
-
-	if (strcmp(sp, "TONLINE") == 0)
-		return sectostr(timeon(), str) + 1;  // Legacy truncation when hours > 9
-
-	if (strcmp(sp, "TMONLINE") == 0)
-		return seconds_to_str(timeon(), str);
-
-	if (strcmp(sp, "MONLINE") == 0)
-		return minutes_to_str(timeon() / 60, str, maxlen, /* estimate: */ false);
-
-	if (strcmp(sp, "HRONLINE") == 0)
-		return minutes_to_str(timeon() / 60, str, maxlen, /* estimate: */ true);
+	if (code_match(sp, "TIMEON", &param)) // Wildcat! "Time on system this call"
+		return duration(timeon(), str, maxlen, param, DURATION_MINUTES);
 	// ----------------------------------------------------------------------
 
 	// ----------------------------------------------------------------------
@@ -1348,47 +1333,23 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		safe_snprintf(str, maxlen, "%u", gettimeleft() / 60);
 		return str;
 	}
-
-	if (strcmp(sp, "SECLEFT") == 0) {
-		safe_snprintf(str, maxlen, "%u", gettimeleft());
-		return str;
-	}
-
-	if (!strcmp(sp, "TLEFT"))
-		return sectostr(gettimeleft(), str) + 1;  // Legacy truncation when hours > 9
-
-	if (strcmp(sp, "TMLEFT") == 0)
-		return seconds_to_str(gettimeleft(), str);
-
-	if (strcmp(sp, "MLEFT") == 0)
-		return minutes_to_str(gettimeleft() / 60, str, maxlen, /* estimate: */ false);
-
-	if (strcmp(sp, "HRLEFT") == 0)
-		return minutes_to_str(gettimeleft() / 60, str, maxlen, /* estimate: */ true);
+	if (code_match(sp, "TLEFT", &param))
+		return duration(gettimeleft(), str, maxlen, param, DURATION_TRUNCATED_HHMMSS);
 	// ----------------------------------------------------------------------
 
 	// ----------------------------------------------------------------------
 	// Time "allowed" per day/call
-	if (strcmp(sp, "MPERC") == 0 || strcmp(sp, "TIMELIMIT") == 0) { // PCBoard TIMELIMIT: "The daily/session time limit of the caller."
-		safe_snprintf(str, maxlen, "%u", cfg.level_timepercall[useron.level]);	// Example output: "30"
-		return str;
-	}
+	if (code_match(sp, "MPERC", &param) || code_match(sp, "TIMELIMIT", &param)) // PCBoard TIMELIMIT: "The daily/session time limit of the caller."
+		return minutes(cfg.level_timepercall[useron.level], str, maxlen, param, DURATION_MINUTES);	// Example output: "30"
 
-	if (strcmp(sp, "MPERD") == 0) {
-		safe_snprintf(str, maxlen, "%u", cfg.level_timeperday[useron.level]);
-		return str;
-	}
-	if (strcmp(sp, "TPERD") == 0)
-		return minutes_as_hhmm(cfg.level_timeperday[useron.level], str, maxlen, /* verbose: */ false);
+	if (code_match(sp, "MPERD", &param))
+		return minutes(cfg.level_timeperday[useron.level], str, maxlen, param, DURATION_MINUTES);
 
-	if (strcmp(sp, "TPERC") == 0)
-		return minutes_as_hhmm(cfg.level_timepercall[useron.level], str, maxlen, /* verbose: */ false);
+	if (code_match(sp, "TPERD", &param))
+		return minutes(cfg.level_timeperday[useron.level], str, maxlen, param, DURATION_FULL_HHMM);
 
-	if (strcmp(sp, "HRPERD") == 0)
-		return minutes_to_str(cfg.level_timeperday[useron.level], str, maxlen, /* estimate: */ true);
-
-	if (strcmp(sp, "HRPERC") == 0)
-		return minutes_to_str(cfg.level_timepercall[useron.level], str, maxlen, /* estimate: */ true);
+	if (code_match(sp, "TPERC", &param))
+		return minutes(cfg.level_timepercall[useron.level], str, maxlen, param, DURATION_FULL_HHMM);
 	// ----------------------------------------------------------------------
 
 	if (strcmp(sp, "MAXCALLS") == 0) {
@@ -1480,8 +1441,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strcmp(sp, "BTODAY") == 0)
-		return byte_estimate_to_str(useron.btoday, str, maxlen, /* unit: */ 1, /* precision: */ 1);
+	if (code_match(sp, "BTODAY", &param))
+		return byte_count(useron.btoday, str, maxlen, param, BYTE_COUNT_VERBAL);
 
 	if (strcmp(sp, "KTODAY") == 0) {
 		safe_snprintf(str, maxlen, "%" PRIu64, useron.btoday / 1024);
@@ -1495,86 +1456,44 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	// ----------------------------------------------------------------------
 	// Time "used" today (including current call)
-	if (strcmp(sp, "MTODAY") == 0 || strcmp(sp, "TOTALTIME") == 0) { // PCBoard TOTALTIME: "Total number of minutes used during current day."
-		safe_snprintf(str, maxlen, "%u", useron_minutes_today());
-		return str;
-	}
+	if (code_match(sp, "MTODAY", &param) || code_match(sp, "TOTALTIME", &param)) // PCBoard TOTALTIME: "Total number of minutes used during current day."
+		return minutes(useron_minutes_today(), str, maxlen, param, DURATION_MINUTES);
 
-	if (strcmp(sp, "TTODAY") == 0)
-		return minutes_as_hhmm(useron_minutes_today(), str, maxlen, /* verbose: */ true);
-
-	if (strcmp(sp, "TMTODAY") == 0)
-		return minutes_to_str(useron_minutes_today(), str, maxlen, /* estimate: */ false);
-
-	if (strcmp(sp, "HRTODAY") == 0)
-		return minutes_to_str(useron_minutes_today(), str, maxlen, /* estimate: */ true);
+	if (code_match(sp, "TTODAY", &param))
+		return minutes(useron_minutes_today(), str, maxlen, param, DURATION_FULL_HHMM);
 	// ----------------------------------------------------------------------
 
 	// ----------------------------------------------------------------------
 	// Total time "used" (all time)
-	if (strcmp(sp, "MTOTAL") == 0) {
-		safe_snprintf(str, maxlen, "%u", useron_minutes_total());
-		return str;
-	}
+	if (code_match(sp, "MTOTAL", &param))
+		return minutes(useron_minutes_total(), str, maxlen, param, DURATION_MINUTES);
 
-	if (strcmp(sp, "TTOTAL") == 0)
-		return minutes_as_hhmm(useron_minutes_total(), str, maxlen, /* verbose: */ true);
-
-	if (strcmp(sp, "TMTOTAL") == 0)
-		return minutes_as_hhmm(useron_minutes_total(), str, maxlen, /* verbose: */ false);
-
-	if (strcmp(sp, "TOTALTM") == 0)
-		return minutes_to_str(useron_minutes_total(), str, maxlen, /* estimate: */ false);
-
-	if (strcmp(sp, "TOTALHR") == 0)
-		return minutes_to_str(useron_minutes_total(), str, maxlen, /* estimate: */ true);
+	if (code_match(sp, "TTOTAL", &param))
+		return minutes(useron_minutes_total(), str, maxlen, param, DURATION_FULL_HHMM);
 	// ----------------------------------------------------------------------
 
 	// ----------------------------------------------------------------------
 	// Time "last" session
-	if (strcmp(sp, "TLAST") == 0) {
-		safe_snprintf(str, maxlen, "%u", useron.tlast);
-		return str;
-	}
-	if (strcmp(sp, "TMLAST") == 0)
-		return minutes_as_hhmm(useron.tlast, str, maxlen, /* verbose: */ false);
-	if (strcmp(sp, "HRLAST") == 0)
-		return minutes_to_str(useron.tlast, str, maxlen, /* estimate: */ true);
-	if (strcmp(sp, "LASTTM") == 0)
-		return minutes_to_str(useron.tlast, str, maxlen, /* estimate: */ false);
+	if (code_match(sp, "TLAST", &param))
+		return minutes(useron.tlast, str, maxlen, param, DURATION_MINUTES);
 	// ----------------------------------------------------------------------
 
 	// ----------------------------------------------------------------------
 	// Extra time "available"
-	if (strcmp(sp, "MEXTRA") == 0) {
-		safe_snprintf(str, maxlen, "%u", useron.textra);
-		return str;
-	}
+	if (code_match(sp, "MEXTRA", &param))
+		return minutes(useron.textra, str, maxlen, param, DURATION_MINUTES);
 
-	if (strcmp(sp, "TEXTRA") == 0)
-		return minutes_as_hhmm(useron.textra, str, maxlen, /* verbose: */ true);
-
-	if (strcmp(sp, "EXTRATM") == 0)
-		return minutes_to_str(useron.textra, str, maxlen, /* estimate: */ false);
-
-	if (strcmp(sp, "EXTRAHR") == 0)
-		return minutes_to_str(useron.textra, str, maxlen, /* estimate: */ true);
+	if (code_match(sp, "TEXTRA", &param))
+		return minutes(useron.textra, str, maxlen, param, DURATION_FULL_HHMM);
 	// ----------------------------------------------------------------------
 
 	// ----------------------------------------------------------------------
 	// Time "banked"
-	if (strcmp(sp, "MBANKED") == 0) {
-		safe_snprintf(str, maxlen, "%" PRIu32, useron.min);
-		return str;
-	}
-	if (strcmp(sp, "HRBANK") == 0)
-		return minutes_to_str(useron.min, str, maxlen, /* estimate: */ true);
+	if (code_match(sp, "MBANKED", &param))
+		return minutes(useron.min, str, maxlen, param, DURATION_MINUTES);
 
-	if (strcmp(sp, "TBANKED") == 0)
-		return minutes_as_hhmm(useron.min, str, maxlen, /* verbose: */ true);
-
-	if (strcmp(sp, "TMBANK") == 0)
-		return minutes_to_str(useron.min, str, maxlen, /* estimate: */ false);
+	if (code_match(sp, "TBANKED", &param))
+		return minutes(useron.min, str, maxlen, param, DURATION_FULL_HHMM);
 	// ----------------------------------------------------------------------
 
 	if (!strcmp(sp, "MSGLEFT") || !strcmp(sp, "MSGSLEFT")) {
@@ -1615,26 +1534,27 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strcmp(sp, "MINSPACE") == 0)
 		return byte_count_to_str(cfg.min_dspace, str, maxlen);
 
-	if (strcmp(sp, "UPB") == 0)
-		return byte_estimate_to_str(useron.ulb, str, maxlen, /* unit: */ 1, /* precision: */ 1);
+	if (code_match(sp, "UPB", &param))
+		return byte_count(useron.ulb, str, maxlen, param, BYTE_COUNT_VERBAL);
 
-	if (!strcmp(sp, "UPBYTES")) {
+	if (!strcmp(sp, "UPBYTES")) { // PCBoard: "total number of bytes the user has uploaded" (Example output: 36,928,674)
 		safe_snprintf(str, maxlen, "%" PRIu64, useron.ulb);
 		return str;
 	}
 
-	if (!strcmp(sp, "UPK")) {
+	if (!strcmp(sp, "UPK")) { // Wildcat! "Total upload kilobytes"
 		safe_snprintf(str, maxlen, "%" PRIu64, useron.ulb / 1024L);
 		return str;
 	}
 
-	if (!strcmp(sp, "UPS") || !strcmp(sp, "UPFILES")) {
+	if (!strcmp(sp, "UPS") // Wildcat! "Total number of uploads"
+		|| !strcmp(sp, "UPFILES")) { // PCBoard "total number of files the user has uploaded"
 		safe_snprintf(str, maxlen, "%u", useron.uls);
 		return str;
 	}
 
-	if (strcmp(sp, "DLB") == 0)
-		return byte_estimate_to_str(useron.dlb, str, maxlen, /* unit: */ 1, /* precision: */ 1);
+	if (code_match(sp, "DLB", &param))
+		return byte_count(useron.dlb, str, maxlen, param, BYTE_COUNT_VERBAL);
 
 	if (!strcmp(sp, "DLBYTES")) {
 		safe_snprintf(str, maxlen, "%" PRIu64, useron.dlb);
@@ -1714,11 +1634,11 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strcmp(sp, "CDTPERD") == 0)
-		return byte_estimate_to_str(cfg.level_freecdtperday[useron.level], str, maxlen, /* unit: */ 1, /* precision: */ 1);
+	if (code_match(sp, "CDTPERD", &param))
+		return byte_count(cfg.level_freecdtperday[useron.level], str, maxlen, param, BYTE_COUNT_VERBAL);
 
-	if (strcmp(sp, "CDTUSED") == 0)
-		return byte_estimate_to_str(cfg.level_freecdtperday[useron.level] - useron.freecdt, str, maxlen, /* unit: */ 1, /* precision: */ 1);
+	if (code_match(sp, "CDTUSED", &param))
+		return byte_count(cfg.level_freecdtperday[useron.level] - useron.freecdt, str, maxlen, param, BYTE_COUNT_VERBAL);
 
 	if (!strcmp(sp, "KBLEFT")) {
 		safe_snprintf(str, maxlen, "%" PRIu64, user_available_credits(&useron) / 1024UL);
@@ -1730,24 +1650,14 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strcmp(sp, "CDTLEFT") == 0)
-		return byte_estimate_to_str(user_available_credits(&useron), str, maxlen, /* unit: */ 1, /* precision: */ 1);
+	if (code_match(sp, "CDTLEFT", &param))
+		return byte_count(user_available_credits(&useron), str, maxlen, param, BYTE_COUNT_VERBAL);
 
-	if (strcmp(sp, "CREDITS") == 0) {
-		safe_snprintf(str, maxlen, "%" PRIu64, useron.cdt);
-		return str;
-	}
+	if (code_match(sp, "CREDITS", &param))
+		return byte_count(useron.cdt, str, maxlen, param, BYTE_COUNT_BYTES);
 
-	if (strcmp(sp, "CDT") == 0)
-		return byte_estimate_to_str(useron.cdt, str, maxlen, /* unit: */ 1, /* precision: */ 1);
-
-	if (strcmp(sp, "CDTFREE") == 0)
-		return byte_estimate_to_str(useron.freecdt, str, maxlen, /* unit: */ 1, /* precision: */ 1);
-
-	if (strcmp(sp, "FREECDT") == 0) {
-		safe_snprintf(str, maxlen, "%" PRIu64, useron.freecdt);
-		return str;
-	}
+	if (code_match(sp, "FREECDT", &param))
+		return byte_count(useron.freecdt, str, maxlen, param, BYTE_COUNT_BYTES);
 
 	if (!strcmp(sp, "CONF")) {
 		safe_snprintf(str, maxlen, "%s %s"
@@ -2196,18 +2106,18 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			safe_snprintf(str, maxlen, "%u", stats.logons);
 		else if (!strcmp(sp, "LTODAY"))
 			safe_snprintf(str, maxlen, "%u", stats.ltoday);
-		else if (!strcmp(sp, "TIMEON"))
-			safe_snprintf(str, maxlen, "%u", stats.timeon);
-		else if (!strcmp(sp, "TTODAY"))
-			safe_snprintf(str, maxlen, "%u", stats.ttoday);
+		else if (code_match(sp, "TIMEON", &param))
+			return minutes(stats.timeon, str, maxlen, param, DURATION_MINUTES);
+		else if (code_match(sp, "TTODAY", &param))
+			return minutes(stats.ttoday, str, maxlen, param, DURATION_MINUTES);
 		else if (!strcmp(sp, "ULS"))
 			safe_snprintf(str, maxlen, "%u", stats.uls);
-		else if (!strcmp(sp, "ULB"))
-			safe_snprintf(str, maxlen, "%" PRIu64, stats.ulb);
+		else if (code_match(sp, "ULB", &param))
+			return byte_count(stats.ulb, str, maxlen, param, BYTE_COUNT_BYTES);
 		else if (!strcmp(sp, "DLS"))
 			safe_snprintf(str, maxlen, "%u", stats.dls);
-		else if (!strcmp(sp, "DLB"))
-			safe_snprintf(str, maxlen, "%" PRIu64, stats.dlb);
+		else if (code_match(sp, "DLB", &param))
+			return byte_count(stats.dlb, str, maxlen, param, BYTE_COUNT_BYTES);
 		else if (!strcmp(sp, "PTODAY"))
 			safe_snprintf(str, maxlen, "%u", stats.ptoday);
 		else if (!strcmp(sp, "ETODAY"))
@@ -2582,16 +2492,12 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		if (strcmp(sp, "FILE_UPLOADER") == 0)
 			return (current_file->hdr.attr & MSG_ANONYMOUS) ? text[UNKNOWN_USER]
 			    : (current_file->from == nullptr ? nulstr : current_file->from);
-		if (strcmp(sp, "FILE_BYTES") == 0) {
-			safe_snprintf(str, maxlen, "%" PRIi64, getfilesize(&cfg, current_file));
-			return str;
-		}
+		if (code_match(sp, "FILE_BYTES", &param))
+			return byte_count(getfilesize(&cfg, current_file), str, maxlen, param, BYTE_COUNT_BYTES);
 		if (strcmp(sp, "FILE_SIZE") == 0)
 			return byte_estimate_to_str(getfilesize(&cfg, current_file), str, maxlen, /* units: */ 1024, /* precision: */ 1);
-		if (strcmp(sp, "FILE_CREDITS") == 0) {
-			safe_snprintf(str, maxlen, "%" PRIu64, current_file->cost);
-			return str;
-		}
+		if (code_match(sp, "FILE_CREDITS", &param))
+			return byte_count(current_file->cost, str, maxlen, param, BYTE_COUNT_BYTES);
 		if (strcmp(sp, "FILE_CRC32") == 0) {
 			if ((current_file->file_idx.hash.flags & SMB_HASH_CRC32)
 			    && getfilesize(&cfg, current_file) > 0
@@ -2637,10 +2543,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			safe_snprintf(str, maxlen, "%lu", (ulong)current_file->hdr.times_downloaded);
 			return str;
 		}
-		if (strcmp(sp, "FILE_TIME_TO_DL") == 0) {
-			safe_snprintf(str, maxlen, "%s", sectostr(gettimetodl(&cfg, current_file, cur_cps), tmp));
-			return str;
-		}
+		if (code_match(sp, "FILE_TIME_TO_DL", &param))
+			return duration(gettimetodl(&cfg, current_file, cur_cps), str, maxlen, param, DURATION_FULL_HHMMSS);
 	}
 
 	return get_text(sp);
