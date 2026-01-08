@@ -244,6 +244,83 @@ static const char* getpath(scfg_t* cfg, const char* path)
 	return path;
 }
 
+// Support duration output formats, examples: 0           90m         100h
+#define DURATION_FULL_HHMMSS           'F' // 00:00:00    01:30:00    100:00:00
+#define DURATION_MINIMAL_HHMMSS        'A' // 0           1:30:00     100:00:00
+#define DURATION_FULL_HHMM             'T' // 00:00       01:30       100:00
+#define DURATION_MINIMAL_HHMM          'B' // 0           1:30        100:00
+#define DURATION_FULL_VERBAL           'V' // 0m          1h 30m      4d 4h 0m
+#define DURATION_MINIMAL_VERBAL        'C' // 0m          1.5h        4.2d
+#define DURATION_SECONDS               'S' // 0           5400        360000
+#define DURATION_MINUTES               'M' // 0           90          6000
+
+static char* duration(uint seconds, char* str, size_t maxlen, char fmt, char deflt)
+{
+	switch(fmt) {
+		case DURATION_FULL_HHMMSS:
+			return sectostr(seconds, str);
+		case DURATION_MINIMAL_HHMMSS:
+			return seconds_to_str(seconds, str);
+		case DURATION_FULL_HHMM:
+			return minutes_as_hhmm(seconds / 60, str, maxlen, true);
+		case DURATION_MINIMAL_HHMM:
+			return minutes_as_hhmm(seconds / 60, str, maxlen, false);
+		case DURATION_FULL_VERBAL:
+			return minutes_to_str(seconds / 60, str, maxlen, false);
+		case DURATION_MINIMAL_VERBAL:
+			return minutes_to_str(seconds / 60, str, maxlen, true);
+		case DURATION_SECONDS:
+			snprintf(str, maxlen, "%u", seconds);
+			return str;
+		case DURATION_MINUTES:
+			snprintf(str, maxlen, "%u", seconds / 60);
+			return str;
+		default:
+			return duration(seconds, str, maxlen, deflt, 0);
+	}
+}
+
+#define BYTE_COUNT_BYTES		'B' // e.g. "1572864"
+#define BYTE_COUNT_KB			'K' // e.g. "1536"
+#define BYTE_COUNT_MB			'M' // e.g. "1.5"
+#define BYTE_COUNT_GB			'G' // e.g. "0.01"
+#define BYTE_COUNT_VERBAL		'V' // e.g. "1.5M"
+
+static char* byte_count(int64_t bytes, char* str, size_t maxlen, char fmt, char deflt)
+{
+	switch(fmt) {
+		case BYTE_COUNT_KB:
+			safe_snprintf(str, maxlen, "%" PRId64, bytes / 1024);
+			return str;
+		case BYTE_COUNT_MB:
+			safe_snprintf(str, maxlen, "%1.1f", bytes / (1024.0 * 1024.0));
+			return str;
+		case BYTE_COUNT_GB:
+			safe_snprintf(str, maxlen, "%1.2f", bytes / (1024.0 * 1024.0 * 1024.0));
+			return str;
+		case BYTE_COUNT_VERBAL:
+			return byte_estimate_to_str(bytes, str, maxlen, /* unit: */ 1, /* precision: */ 1);
+		case BYTE_COUNT_BYTES:
+			snprintf(str, maxlen, "%" PRId64, bytes);
+			return str;
+		default:
+			return byte_count(bytes, str, maxlen, deflt, 0);
+	}
+}
+
+static bool code_match(const char* str, const char* code, char* param)
+{
+	size_t len = strlen(code);
+	bool result = (strncmp(str, code, len) == 0 && (str[len] == '\0' || str[len] == ':'));
+	if (result && param != nullptr) {
+		if (str[len] == ':')
+			*param = *(str + len + 1);
+		else
+			*param = '\0';
+	}
+	return result;
+}
+
 const char* sbbs_t::formatted_atcode(const char* sp, char* str, size_t maxlen)
 {
 	char          tmp[128];
@@ -304,6 +381,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	uint       ugrp;
 	uint       usub;
 	long       l;
+	char       param;
 	node_t     node;
 	struct  tm tm;
 
@@ -945,6 +1023,20 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
+	// ----------------------------------------------------------------------
+	// Batch Download Queue
+	if (strcmp(sp, "FFILES") == 0 ) { // PCBoard "Displays the number of files flagged for download"
+		safe_snprintf(str, maxlen, "%u", static_cast<uint>(batdn_total())); // Example output: 58
+		return str;
+	}
+	if (code_match(sp, "FBYTES", &param)) // PCBoard "The number of total bytes flagged for download" Example output: 4892174
+		return byte_count(batdn_bytes(), str, maxlen, param, BYTE_COUNT_BYTES);
+	if (code_match(sp, "FCOST", &param))
+		return byte_count(batdn_cost(), str, maxlen, param, BYTE_COUNT_BYTES);
+	if (code_match(sp, "FTIME", &param))
+		return duration(batdn_time(), str, maxlen, param, DURATION_MINUTES);
+	// ----------------------------------------------------------------------
+
 	if (!strcmp(sp, "TCALLS") || !strcmp(sp, "NUMCALLS")) {
 		getstats_cached(&cfg, 0, &stats);
 		safe_snprintf(str, maxlen, "%u", stats.logons);
@@ -1567,7 +1659,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strcmp(sp, "UDR") == 0 || strcmp(sp, "BYTERATIO") == 0) {
+	if (strcmp(sp, "UDR") == 0 || strcmp(sp, "BYTERATIO") == 0) { // PCBoard BYTERATIO Example Output: "5:1"
 		float f = 0;
 		if (useron.ulb)
 			f = (float)useron.dlb / useron.ulb;
