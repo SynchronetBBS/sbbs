@@ -421,3 +421,6 @@ SEXYZ
 ~~~~~
 o Using poll() instead of select() on UNIX-like OSes now
   supporting socket descriptor values > 1024, issue #445
+o Support for glob matching characters (e.g. "[]") in filenames on *nix
+o ZMODEM interoperability with Tera Term
+  https://github.com/TeraTermProject/teraterm/issues/889
