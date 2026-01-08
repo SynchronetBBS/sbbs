@@ -1327,9 +1327,9 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	// ----------------------------------------------------------------------
 	// Time "remaining" this call
-	if (!strcmp(sp, "MINLEFT") || !strcmp(sp, "LEFT") || !strcmp(sp, "TIMELEFT")) {
-		// TIMELEFT excludes pending download time estimates on PCBoard
-		// Wildcat! LEFT: "Time remaining this call"
+	if (!strcmp(sp, "MINLEFT") // PCBoard "Minutes left on system (includes download time estimates)."
+		|| !strcmp(sp, "LEFT") // Wildcat! "Time remaining this call"
+		|| !strcmp(sp, "TIMELEFT")) { // PCBoard "Minutes left on system (excludes download time estimates)."
 		safe_snprintf(str, maxlen, "%u", gettimeleft() / 60);
 		return str;
 	}
@@ -1339,8 +1339,9 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	// ----------------------------------------------------------------------
 	// Time "allowed" per day/call
-	if (code_match(sp, "MPERC", &param) || code_match(sp, "TIMELIMIT", &param)) // PCBoard TIMELIMIT: "The daily/session time limit of the caller."
-		return minutes(cfg.level_timepercall[useron.level], str, maxlen, param, DURATION_MINUTES);	// Example output: "30"
+	if (code_match(sp, "MPERC", &param)
+		|| code_match(sp, "TIMELIMIT", &param)) // PCBoard "The daily/session time limit of the caller." Example output: "30"
+		return minutes(cfg.level_timepercall[useron.level], str, maxlen, param, DURATION_MINUTES);
 
 	if (code_match(sp, "MPERD", &param))
 		return minutes(cfg.level_timeperday[useron.level], str, maxlen, param, DURATION_MINUTES);
@@ -1375,7 +1376,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (!strcmp(sp, "LASTON"))
 		return timestr(useron.laston);
 
-	if (!strcmp(sp, "LASTDATEON"))
+	if (!strcmp(sp, "LASTDATEON")) // PCBoard "Last date the caller called the system."
 		return datestr(useron.laston);
 
 	if (strncmp(sp, "LASTON:", 7) == 0) {
@@ -1388,7 +1389,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (!strcmp(sp, "LASTTIMEON"))
+	if (!strcmp(sp, "LASTTIMEON")) // PCBoard "Last time the caller called the system."
 		return time_as_hhmmss(&cfg, useron.laston, str, maxlen);
 
 	if (!strcmp(sp, "FIRSTON"))
@@ -1579,7 +1580,16 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strcmp(sp, "UDR") == 0 || strcmp(sp, "BYTERATIO") == 0) { // PCBoard BYTERATIO Example Output: "5:1"
+#if 0
+	if (strcmp(sp, "BYTERATIO") == 0) { // PCBoard BYTERATIO Example Output: "5:1"
+		float f = 0;
+		if (useron.ulb)
+			f = (float)useron.dlb / useron.ulb;
+		safe_snprintf(str, maxlen, "%u", f ? (uint)(100 / f) : 0);
+		return str;
+	}
+#endif
+	if (strcmp(sp, "UDR") == 0) {
 		float f = 0;
 		if (useron.ulb)
 			f = (float)useron.dlb / useron.ulb;
