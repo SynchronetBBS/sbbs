@@ -109,8 +109,48 @@ o Ignore (but log an error) when DNSBL server returns address != 127.0.0.x
 o Allow C escape sequences in EXEC: argument, to allow param passing
   e.g. separate module name from command-line params with \x20 and separate
   params from each other with \x20.
+o Allow time-duration and byte-count format paramters for some @-codes.
+  Currently 8 different time-duration formats are supported and 5 diferent
+  byte-count formats. See https://wiki.synchro.net/custom:atcodes for details
+  Now supporting byte-count format parameters (e.g. ":K", ":M", ":V" suffix):
+  - FILE_BYTES
+  - FILE_CREDITS
+  - FILE_TIME_TO_DL
+  - FREECDT
+  - CREDITS
+  - CDTLEFT
+  - CDTUSED
+  - CDTPERD
+  - DLB
+  - UPB
+  - BTODAY
+  - STATS.ULB
+  - STATS.DLB
+  Now supporting time-duration format parameters: (e.g. ":A", ":V" suffix):
+  - TBANKED
+  - MBANKED
+  - TEXTRA
+  - MEXTRA
+  - TLAST
+  - TTOTAL
+  - MTODAY
+  - TTODAY
+  - MTODAY (aka TOTALTIME)
+  - TPERD
+  - TPERC
+  - MPERD
+  - MPERC (aka TIMELIMIT)
+  - TLEFT
+  - TIMEON
+  - TUSED
+  - STATS.TIMEON
+  - STATS.TTODAY
 o Fixed for large values: TPERC, TPERD, TTODAY, TTOTAL, and TBANKED
 o New @-codes:
+  - NOCODE (disable @-code parsing for remainder of message/file)
+  - LOGOFF (like HANGUP, but more graceful, display logoff messages, etc.)
+  - STOP (Wildcat! alias for PCBoard's QON)
+  - NOSTOP (Wildcat! alias for PCBoard's alias for QOFF)
   - UN (alias for USERNUM)
   - NEWMSGS (number of new messages imported/posted to be read)
   - NEWFILES (number of new files imported/uploaded to be seen)
@@ -123,7 +163,6 @@ o New @-codes:
   - DLB (estimated total downloaded bytes)
   - UCP (upload credit percentage for current directory)
   - DCP (download credit percentage for current directory)
-  - BYTERATIO (PCBoard compatible alias for UDR)
   - PSTAT (expands to On|Off text.dat string indicating Pause status)
   - RAWIO (expands to On|Off text.dat string indicating Raw I/O status)
   - RAINBOW:ON is an alias for RAINBOW
@@ -133,24 +172,13 @@ o New @-codes:
   - RAINBOW:<attr-list> at least one colon-separator is now required
   - CLOCK (whole number system timer, typically 1ms interval)
   - TIMER (highest resolution system timer, real number, fractions of second)
-  - TMLAST  (time used last call in [H]H:MM format)
-  - HRLAST  (estimated hours used last call, with 'h' suffix)
-  - LASTTM  (exact time used during last call, with 'm' suffix)
-  - TMTODAY (exact total time used today, with 'm' suffix)
-  - HRTODAY (estimated hours used today, with 'h' suffix)
-  - HRPERD  (estimated hours allowed per day, with 'h' suffix)
-  - HRPERC  (estimated hours allowed per call, with 'h' suffix)
-  - TOTALHR (estimated total time used, in hours, with 'd' or 'h' suffix)
-  - TOTALTM (exact total time used, verbose, with 'm' suffix)  
-  - EXTRAHR (extra time, in estimated hours with 'd' or 'h' suffix)
-  - EXTRATM (extra time, verbose, with 'm' suffix) 
-  - TMBANK  (banked time, verbose, with 'm' suffix)
-  - HRBANK  (banked time, estimated in hours, with 'm' suffix)
-  - CDT     (estimated number of credits, e.g. "4.0G")
   - CDTPERD (estimated free credits per day, e.g. "5.0G")
   - CDTUSED (estimated free credits used today, e.g. "1.0G")
   - CDTLEFT (estimated total credits available to user, e.g. "5.5G")
-  - CDTFREE (estimated remaining free credits, e.g. "0.5G")
+  - FFILES (number of files in user's batch download queue)
+  - FBYTES (total size of all files in user's batch download queue)
+  - FCOST  (cost, in credits, of all the files in batch download queue)
+  - FTIME  (estimated time to download all the files in batch download queue)
 
 Text Strings
 ~~~~~~~~~~~~
@@ -349,6 +377,10 @@ o msg_area.grp_list[] no longer includes groups with no sub-boards that the
 o New 'bbs' methods:
   - logline(level=LOG_INFO, code, string)
   - matchuserdata()
+o New 'bbs' properties:
+  - batch_dnload_bytes
+  - batch_dnload_cost
+  - batch_dnload_time
 o bbs.ver() now takes an optional 'verbose' argument (default: true)
 o bbs.good_password() renamed to bbs.check_password(), with backward-alias
 o bbs.read_mail() adds option to go directly to viewing messages (not listing)
