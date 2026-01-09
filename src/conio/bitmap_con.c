@@ -973,8 +973,6 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 					else {
 						draw_char_row_fast(&bs, &charstate[vx]);
 					}
-					if (!have_blink && !vstat.no_blink && charstate[vx].afc != charstate[vx].bfc)
-						have_blink = true;
 				}
 				bs.pixeloffset += rsz;
 				if (bs.pixeloffset >= bs.maxpix)
@@ -1259,6 +1257,28 @@ bitmap_draw_from_vmem(int sx, int sy, int ex, int ey, bool locked)
 }
 
 /*
+ * Checks if there's a blinking character anywhere on the screen and sets
+ * have_blink appropriately.
+ */
+static void
+check_blink_locked(void)
+{
+	have_blink = false;
+	if (vstat.no_blink)
+		return;
+
+	struct vmem_cell *vc = vstat.vmem->vmem;
+	size_t cells = vstat.rows * vstat.cols;
+	for (int cell = 0; cell < cells; cell++) {
+		if ((vc->legacy_attr & 0x80) && vc->bg != vc->fg) {
+			have_blink = true;
+			return;
+		}
+		vc++;
+	}
+}
+
+/*
  * Updates any changed cells... blinking, modified flags, and the cursor
  * Is also used (with force = TRUE) to completely redraw the screen from
  * vmem (such as in the case of a font load).
@@ -1315,7 +1335,7 @@ static int update_from_vmem(int force)
 	width=vstat.cols;
 	height=vstat.rows;
 
-	have_blink = false;
+	check_blink_locked();
 	if (force || bitmap_drawn == NULL) {
 		bitmap_draw_from_vmem(1, 1, width, height, false);
 	}
