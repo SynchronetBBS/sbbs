@@ -889,18 +889,20 @@ void sbbs_t::subinfo(int subnum)
 {
 	char str[MAX_PATH + 1];
 
-	bputs(text[SubInfoHdr]);
-	bprintf(text[SubInfoLongName], cfg.sub[subnum]->lname);
-	bprintf(text[SubInfoShortName], cfg.sub[subnum]->sname);
-	bprintf(text[SubInfoQWKName], cfg.sub[subnum]->qwkname);
-	if (cfg.sub[subnum]->maxmsgs)
-		bprintf(text[SubInfoMaxMsgs], cfg.sub[subnum]->maxmsgs);
-	if (cfg.sub[subnum]->misc & SUB_QNET)
-		bprintf(text[SubInfoTagLine], cfg.sub[subnum]->tagline);
-	if (cfg.sub[subnum]->misc & SUB_FIDO)
-		bprintf(text[SubInfoFidoNet]
-		        , cfg.sub[subnum]->origline
-		        , smb_faddrtoa(&cfg.sub[subnum]->faddr, str));
+	if (!menu("subinfo", P_NOERROR)) {
+		bputs(text[SubInfoHdr]);
+		bprintf(text[SubInfoLongName], cfg.sub[subnum]->lname);
+		bprintf(text[SubInfoShortName], cfg.sub[subnum]->sname);
+		bprintf(text[SubInfoQWKName], cfg.sub[subnum]->qwkname);
+		if (cfg.sub[subnum]->maxmsgs)
+			bprintf(text[SubInfoMaxMsgs], cfg.sub[subnum]->maxmsgs);
+		if (cfg.sub[subnum]->misc & SUB_QNET)
+			bprintf(text[SubInfoTagLine], cfg.sub[subnum]->tagline);
+		if (cfg.sub[subnum]->misc & SUB_FIDO)
+			bprintf(text[SubInfoFidoNet]
+					, cfg.sub[subnum]->origline
+					, smb_faddrtoa(&cfg.sub[subnum]->faddr, str));
+	}
 	SAFEPRINTF2(str, "%s%s", cfg.sub[subnum]->data_dir, cfg.sub[subnum]->code);
 	if (menu_exists(str) && yesno(text[SubInfoViewFileQ]))
 		menu(str);
@@ -913,13 +915,15 @@ void sbbs_t::dirinfo(int dirnum)
 {
 	char str[MAX_PATH + 1];
 
-	bputs(text[DirInfoHdr]);
-	bprintf(text[DirInfoLongName], cfg.dir[dirnum]->lname);
-	bprintf(text[DirInfoShortName], cfg.dir[dirnum]->sname);
-	if (cfg.dir[dirnum]->exts[0])
-		bprintf(text[DirInfoAllowedExts], cfg.dir[dirnum]->exts);
-	if (cfg.dir[dirnum]->maxfiles)
-		bprintf(text[DirInfoMaxFiles], cfg.dir[dirnum]->maxfiles);
+	if (!menu("dirinfo", P_NOERROR)) {
+		bputs(text[DirInfoHdr]);
+		bprintf(text[DirInfoLongName], cfg.dir[dirnum]->lname);
+		bprintf(text[DirInfoShortName], cfg.dir[dirnum]->sname);
+		if (cfg.dir[dirnum]->exts[0])
+			bprintf(text[DirInfoAllowedExts], cfg.dir[dirnum]->exts);
+		if (cfg.dir[dirnum]->maxfiles)
+			bprintf(text[DirInfoMaxFiles], cfg.dir[dirnum]->maxfiles);
+	}
 	SAFEPRINTF2(str, "%s%s", cfg.dir[dirnum]->data_dir, cfg.dir[dirnum]->code);
 	if (menu_exists(str) && yesno(text[DirInfoViewFileQ]))
 		menu(str);
