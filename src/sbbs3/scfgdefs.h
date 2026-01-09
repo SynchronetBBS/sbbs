@@ -96,8 +96,8 @@ typedef struct {							/* Transfer Directory Info */
 				op_ar[LEN_ARSTR+1];
 	uint		seqdev, 					/* Sequential access device number */
 				sort;						/* Sort type */
-	uint16_t	maxfiles,					/* Max number of files allowed */
-				maxage, 					/* Max age of files (in days) */
+	uint		maxfiles;					/* Max number of files allowed */
+	uint16_t	maxage, 					/* Max age of files (in days) */
 				up_pct, 					/* Percentage of credits on uloads */
 				dn_pct, 					/* Percentage of credits on dloads */
 				lib,						/* Which library this dir is in */

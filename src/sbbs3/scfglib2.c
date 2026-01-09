@@ -33,7 +33,7 @@ static void read_dir_defaults_cfg(scfg_t* cfg, str_list_t ini, dir_t* dir)
 	SAFECOPY(dir->upload_sem, iniGetString(ini, NULL, "upload_sem", "", value));
 	SAFECOPY(dir->exts, iniGetString(ini, NULL, "extensions", "", value));
 
-	dir->maxfiles = iniGetUInt16(ini, NULL, "max_files", 0);
+	dir->maxfiles = iniGetUInteger(ini, NULL, "max_files", 0);
 	dir->misc = iniGetInt32(ini, NULL, "settings",  DEFAULT_DIR_OPTIONS);
 	dir->seqdev = iniGetUInteger(ini, NULL, "seq_dev", 0);
 	dir->sort = iniGetUInteger(ini, NULL, "sort", 0);
