@@ -377,7 +377,7 @@ void xfer_cfg()
 			"\n"
 			ADDFILES_HELP
 		;
-		i = uifc.list(j, 0, 0, 0, &libs_dflt, &libs_bar, "File Libraries                     Directories", opt);
+		i = uifc.list(j, 0, 0, 0, &libs_dflt, &libs_bar, "File Libraries                                         Directories", opt);
 		if ((signed)i == -1) {
 			j = save_changes(WIN_MID);
 			if (j == -1)

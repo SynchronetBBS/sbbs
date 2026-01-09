@@ -102,9 +102,9 @@
 
 // Lengths of various strings
 #define LEN_GSNAME  15      // Group/Lib short name
-#define LEN_GLNAME  40      // Group/Lib long name
+#define LEN_GLNAME  60      // Group/Lib long name
 #define LEN_SSNAME  25      // Sub/Dir short name
-#define LEN_SLNAME  40      // Sub/Dir long name
+#define LEN_SLNAME  60      // Sub/Dir long name
 
 #define LEN_FLAGSTR 32      // Flag sets are 32-bits each
 

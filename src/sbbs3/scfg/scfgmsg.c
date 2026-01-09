@@ -551,7 +551,7 @@ void msgs_cfg()
 			"subject denominator, you may want to have a separate message group for\n"
 			"those sub-boards for a more organized message structure.\n"
 		;
-		i = uifc.list(mode, 0, 0, 0, &msgs_dflt, &bar, "Message Groups                      Sub-boards", opt);
+		i = uifc.list(mode, 0, 0, 0, &msgs_dflt, &bar, "Message Groups                                          Sub-boards", opt);
 		if (i == -1) {
 			j = save_changes(WIN_MID);
 			if (j == -1)
