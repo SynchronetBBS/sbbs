@@ -244,7 +244,8 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		}
 		else if ((mode & P_PCBOARD)
 		         && str[l] == '@' && str[l + 1] == 'X'
-		         && IS_HEXDIGIT(str[l + 2]) && IS_HEXDIGIT(str[l + 3])) {
+		         && IS_HEXDIGIT(str[l + 2]) && IS_HEXDIGIT(str[l + 3])
+		         && !islower(str[l + 2]) && !islower(str[l + 3])) {
 			uint val = (HEX_CHAR_TO_INT(str[l + 2]) << 4) + HEX_CHAR_TO_INT(str[l + 3]);
 			// @X00 saves the current color and @XFF restores that saved color
 			static uchar save_attr;
@@ -264,7 +265,8 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		}
 		else if ((mode & P_WILDCAT)
 		         && str[l] == '@' && str[l + 3] == '@'
-		         && IS_HEXDIGIT(str[l + 1]) && IS_HEXDIGIT(str[l + 2])) {
+		         && IS_HEXDIGIT(str[l + 1]) && IS_HEXDIGIT(str[l + 2])
+		         && !islower(str[l + 1]) && !islower(str[l + 2])) {
 			attr((HEX_CHAR_TO_INT(str[l + 1]) << 4) + HEX_CHAR_TO_INT(str[l + 2]));
 			// exatr=1;
 			l += 4;
@@ -521,6 +523,16 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				if (memcmp(str + l, "@NOCODE@", 8) == 0) { // Wildcat!
 					l += 8;
 					mode ^= P_NOATCODES;
+					continue;
+				}
+				if (memcmp(str + l, "@XON@", 5) == 0) { // PCBoard "Enables the interpretation of @X color codes."
+					l += 5;
+					mode |= P_PCBOARD;
+					continue;
+				}
+				if (memcmp(str + l, "@XOFF@", 6) == 0) { // PCBoard "Disables the interpretation of @X color codes."
+					l += 6;
+					mode &= ~P_PCBOARD;
 					continue;
 				}
 				if (memcmp(str + l, "@LINEDELAY@", 11) == 0) {
