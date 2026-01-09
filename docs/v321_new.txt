@@ -21,6 +21,8 @@ o Address concurrency issues with user daily statistics/free credit fields
   - Each user's stats reset date/time stamp now stored in user base/record
 o Support tracking and limiting of user file downloads "per day" - issue #938
 o System statistics and mail message counts are now cached (default: for 5s)
+o Increased from 40 to 60 characters the maximum length of descriptions (long
+  name) of message groups and sub-boards and file libraries and directories
 o Track user bytes downloaded (in files) per day
   - Reflect these stats in drop files that support it:
     DOOR.SYS, CALLINFO.BBS, and SFDOORS.DAT
@@ -68,6 +70,10 @@ o When text/menu/userinfo.msg exists, it'll be diplayed for user_info()
   functions, in place of the hard-coded logic/text strings (UserStats, etc)
 o When text/menu/sysinfo.msg exists, it'll be diplayed for sys_info()
   functions, in place of the hard-coded logic/text strings (SiSysName, etc)
+o When text/menu/subinfo.msg exists, it'll be diplayed for sub_info()
+  functions, in place of the hard-coded logic/text strings (SubInfo)
+o When text/menu/dirinfo.msg exists, it'll be diplayed for dir_info()
+  functions, in place of the hard-coded logic/text strings (DirInfo)
 o Don't close node.log file stream when invoking command-lines with a '?'
   prefix - allows JavaScript mods to write to system log using appropriate
   'bbs' functions
@@ -151,10 +157,14 @@ o New @-codes:
   - LOGOFF (like HANGUP, but more graceful, display logoff messages, etc.)
   - STOP (Wildcat! alias for PCBoard's QON)
   - NOSTOP (Wildcat! alias for PCBoard's alias for QOFF)
+  - XON (Turn on PCBoard style color code parsing for current message/file)
+  - XOFF (Turn off PCBoard style color code parsing for current message/file)
   - UN (alias for USERNUM)
   - NEWMSGS (number of new messages imported/posted to be read)
+  - MAXMSGS (max messages for current/open sub-board)
   - NEWFILES (number of new files imported/uploaded to be seen)
   - MAXDL (max files downloaded per day, or "unlimited")
+  - MAXFILES (max files for current directory - or "unlimited")
   - DTODAY (number of files downloaded by user today)
   - BTODAY (estimated number of bytes downloaded by user today)
   - DAYBYTES (exact number of bytes downloaded by user today)
@@ -179,6 +189,14 @@ o New @-codes:
   - FBYTES (total size of all files in user's batch download queue)
   - FCOST  (cost, in credits, of all the files in batch download queue)
   - FTIME  (estimated time to download all the files in batch download queue)
+  - FILETYPES  (allowed file types/extensions for current directory or "All")
+  - DIRV       (virtual directory name for current directory)
+  - DIRVPATH   (virtual path for current directory)
+  - QWKNAME    (QWK conference name for current/open sub-board)
+  - QWKTAG     (QWKnet tagline for current/open sub-board)
+  - FIDOAREA   (FidoNet Area Tag for current/open sub-board)
+  - FIDOORIGIN (FidoNet Origin Line for current/open sub-board)
+  - NEWSGROUP  (Newsgroup Name for current/open sub-board)
 
 Text Strings
 ~~~~~~~~~~~~
