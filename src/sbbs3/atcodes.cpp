@@ -331,7 +331,7 @@ static bool code_match(const char* str, const char* code, char* param)
 
 const char* sbbs_t::formatted_atcode(const char* sp, char* str, size_t maxlen)
 {
-	char          tmp[128];
+	char          tmp[256];
 	char          buf[256];
 	atcode_format fmt;
 
@@ -925,14 +925,22 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strcmp(sp, "GENDERS") == 0)
 		return cfg.new_genders;
 
+	int subnum = current_subnum();
+
 	if (strcmp(sp, "MSGS") == 0) {
-		uint msgs = usrgrps ? getposts(&cfg, usrsub[curgrp][cursub[curgrp]]) : 0;
-		snprintf(str, maxlen, "%u",  msgs);
+		snprintf(str, maxlen, "%u",  subnum_is_valid(subnum) ? getposts(&cfg, subnum) : 0);
 		return str;
 	}
 
 	if (strcmp(sp, "NEWMSGS") == 0) {
-		uint msgs = usrgrps ? getnewposts(&cfg, usrsub[curgrp][cursub[curgrp]], subscan[usrsub[curgrp][cursub[curgrp]]].ptr) : 0;
+		snprintf(str, maxlen, "%u",  subnum_is_valid(subnum) ? getnewposts(&cfg, subnum, subscan[subnum].ptr) : 0);
+		return str;
+	}
+
+	if (strcmp(sp, "MAXMSGS") == 0) {
+		uint msgs = subnum_is_valid(subnum) ? cfg.sub[subnum]->maxmsgs : 0;
+		if (usrgrps && msgs == 0)
+			return text[Unlimited];
 		snprintf(str, maxlen, "%u",  msgs);
 		return str;
 	}
@@ -967,6 +975,27 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strcmp(sp, "FILES") == 0) {  // Number of files in current directory
 		safe_snprintf(str, maxlen, "%u", usrlibs ? getfiles(&cfg, usrdir[curlib][curdir[curlib]]) : 0);
 		return str;
+	}
+
+	if (strcmp(sp, "MAXFILES") == 0) {  // Maximum number of files in current directory
+		uint maxfiles = usrlibs ? cfg.dir[usrdir[curlib][curdir[curlib]]]->maxfiles : 0;
+		if (maxfiles == 0)
+			return text[Unlimited];
+		snprintf(str, maxlen, "%u", maxfiles);
+		return str;
+	}
+
+	if (strcmp(sp, "FILETYPES") == 0) { // Allowed file types in current directory
+		if (usrlibs) {
+			const dir_t* dir = cfg.dir[usrdir[curlib][curdir[curlib]]];
+			if (dir->exts[0] == '\0')
+				return text[All];
+			else {
+				safe_snprintf(str, maxlen, "%s", dir->exts);
+				return str;
+			}
+		}
+		return text[None];
 	}
 
 	if (strcmp(sp, "NEWFILES") == 0) {  // Number of new files in current directory
@@ -1867,25 +1896,11 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return nulstr;
 	}
 
-	if (!strcmp(sp, "GRP")) {
-		if (SMB_IS_OPEN(&smb)) {
-			if (smb.subnum == INVALID_SUB)
-				return "Local";
-			if (subnum_is_valid(smb.subnum))
-				return cfg.grp[cfg.sub[smb.subnum]->grp]->sname;
-		}
-		return usrgrps ? cfg.grp[usrgrp[curgrp]]->sname : nulstr;
-	}
+	if (strcmp(sp, "GRP") == 0)
+		return subnum_is_valid(subnum) ? cfg.grp[cfg.sub[subnum]->grp]->sname : "Local";
 
-	if (!strcmp(sp, "GRPL")) {
-		if (SMB_IS_OPEN(&smb)) {
-			if (smb.subnum == INVALID_SUB)
-				return "Local";
-			if (subnum_is_valid(smb.subnum))
-				return cfg.grp[cfg.sub[smb.subnum]->grp]->lname;
-		}
-		return usrgrps ? cfg.grp[usrgrp[curgrp]]->lname : nulstr;
-	}
+	if (strcmp(sp, "GRPL") == 0)
+		return subnum_is_valid(subnum) ? cfg.grp[cfg.sub[subnum]->grp]->lname : "Local";
 
 	if (!strcmp(sp, "GN")) {
 		if (SMB_IS_OPEN(&smb))
@@ -1914,25 +1929,26 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (!strcmp(sp, "SUB")) {
-		if (SMB_IS_OPEN(&smb)) {
-			if (smb.subnum == INVALID_SUB)
-				return "Mail";
-			else if (subnum_is_valid(smb.subnum))
-				return cfg.sub[smb.subnum]->sname;
-		}
-		return usrgrps ? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->sname : nulstr;
-	}
+	if (strcmp(sp, "SUB") == 0)
+		return subnum_is_valid(subnum) ? cfg.sub[subnum]->sname : "Mail";
 
-	if (!strcmp(sp, "SUBL")) {
-		if (SMB_IS_OPEN(&smb)) {
-			if (smb.subnum == INVALID_SUB)
-				return "Mail";
-			else if (subnum_is_valid(smb.subnum))
-				return cfg.sub[smb.subnum]->lname;
-		}
-		return usrgrps  ? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->lname : nulstr;
-	}
+	if (strcmp(sp, "SUBL") == 0)
+		return subnum_is_valid(subnum) ? cfg.sub[subnum]->lname : "Mail";
+
+	if (strcmp(sp, "QWKNAME") == 0)
+		return subnum_is_valid(subnum) ? cfg.sub[subnum]->qwkname : "Mail";
+
+	if (strcmp(sp, "QWKTAG") == 0)
+		return subnum_is_valid(subnum) ? cfg.sub[subnum]->tagline : "Mail";
+
+	if (strcmp(sp, "FIDOORIGIN") == 0)
+		return subnum_is_valid(subnum) ? cfg.sub[subnum]->origline : nulstr;
+
+	if (strcmp(sp, "FIDOAREA") == 0)
+		return subnum_is_valid(subnum) ? sub_area_tag(&cfg, cfg.sub[subnum], str, maxlen) : nulstr;
+
+	if (strcmp(sp, "NEWSGROUP") == 0)
+		return subnum_is_valid(subnum) ? sub_newsgroup_name(&cfg, cfg.sub[subnum], str, maxlen) : nulstr;
 
 	if (!strcmp(sp, "SN")) {
 		if (SMB_IS_OPEN(&smb))
@@ -1984,6 +2000,16 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if (!strcmp(sp, "DIR"))
 		return usrlibs ? cfg.dir[usrdir[curlib][curdir[curlib]]]->sname :nulstr;
+
+	if (strcmp(sp, "DIRV") == 0)
+		return usrlibs ? cfg.dir[usrdir[curlib][curdir[curlib]]]->vdir :nulstr;
+
+	if (strcmp(sp, "DIRVPATH") == 0) {
+		if (usrlibs < 1)
+			return nulstr;
+		snprintf(str, maxlen, "/%s/", dir_vpath(&cfg, cfg.dir[usrdir[curlib][curdir[curlib]]], tmp, sizeof tmp));
+		return str;
+	}
 
 	if (!strcmp(sp, "DIRL"))
 		return usrlibs ? cfg.dir[usrdir[curlib][curdir[curlib]]]->lname : nulstr;

@@ -720,6 +720,8 @@ public:
 	int		curdirnum = INVALID_DIR;	/* For ARS */
 	uint 	timeleft = 60 * 10;	/* Number of seconds user has left online */
 
+	int current_subnum() {	if (SMB_IS_OPEN(&smb)) return smb.subnum; return usrgrps ? usrsub[curgrp][cursub[curgrp]] : INVALID_SUB; }
+
 	char 	*comspec = nullptr;	/* Pointer to environment variable COMSPEC */
 	char 	cid[LEN_CID+1]{}; /* Caller ID (IP Address) of current caller */
 	char 	*noaccess_str = nullptr;	/* Why access was denied via ARS */
