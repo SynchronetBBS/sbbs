@@ -1077,7 +1077,8 @@ public:
 	bool	answer();
 
 	/* logon.ccp */
-	bool	logon(void);
+	bool	logon();
+	bool	logon_process();
 
 	/* logout.cpp */
 	void	logout();

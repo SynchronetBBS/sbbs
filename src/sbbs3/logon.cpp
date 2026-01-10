@@ -26,10 +26,22 @@
 extern "C" void client_on(SOCKET sock, client_t* client, BOOL update);
 
 /****************************************************************************/
-/* Called once upon each user logging on the board							*/
-/* Returns 1 if user passed logon, 0 if user failed.						*/
+/* Just a wrapper around logon() to handle failure logging and hangup		*/
 /****************************************************************************/
 bool sbbs_t::logon()
+{
+	bool success = logon_process();
+	if (!success) {
+		lprintf(LOG_NOTICE, "Logon process aborted");
+		hangup();
+	}
+	return success;
+}
+
+/****************************************************************************/
+/* Called once upon each user logging on the board							*/
+/****************************************************************************/
+bool sbbs_t::logon_process()
 {
 	char       str[256], c;
 	char       tmp[512];
@@ -91,7 +103,6 @@ bool sbbs_t::logon()
 		bputs(text[NoNodeAccess]);
 		llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Insufficient server access: %s"
 		              , useron.number, useron.alias, startup->login_ars);
-		hangup();
 		return false;
 	}
 
@@ -99,13 +110,11 @@ bool sbbs_t::logon()
 		bputs(text[NoNodeAccess]);
 		llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Insufficient node access: %s"
 		              , useron.number, useron.alias, cfg.node_arstr);
-		hangup();
 		return false;
 	}
 
 	if (!getnodedat(cfg.node_num, &thisnode, true)) {
 		errormsg(WHERE, ERR_LOCK, "nodefile", cfg.node_num);
-		hangup();
 		return false;
 	}
 
@@ -115,13 +124,11 @@ bool sbbs_t::logon()
 			bputs(text[NodeLocked]);
 			llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Locked node logon attempt"
 			              , useron.number, useron.alias);
-			hangup();
 			return false;
 		}
 		bool rmlock = yesno(text[RemoveNodeLockQ]);
 		if (!getnodedat(cfg.node_num, &thisnode, true)) {
 			errormsg(WHERE, ERR_LOCK, "nodefile", cfg.node_num);
-			hangup();
 			return false;
 		}
 		if (rmlock) {
@@ -317,14 +324,12 @@ bool sbbs_t::logon()
 			bputs(text[NoMoreLogons]);
 			llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Out of logons"
 			              , useron.number, useron.alias);
-			hangup();
 			return false;
 		}
 		if (useron.rest & FLAG('L') && useron.ltoday > 1) {
 			bputs(text[R_Logons]);
 			llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Out of logons"
 			              , useron.number, useron.alias);
-			hangup();
 			return false;
 		}
 		kmode = (cfg.uq & UQ_NOEXASC) | K_TRIM;
@@ -441,7 +446,7 @@ bool sbbs_t::logon()
 		}
 	}
 	if (!online) {
-		llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Unsuccessful logon"
+		llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  Unsuccessful logon (disconnected)"
 		              , useron.number, useron.alias);
 		return false;
 	}
@@ -469,8 +474,10 @@ bool sbbs_t::logon()
 	llprintf("++", "(%04u)  %-25s  %sLogon %u - %u"
 	              , useron.number, useron.alias, (sys_status & SS_FASTLOGON) ? "Fast-":"", totallogons, useron.ltoday);
 
-	if (!(sys_status & SS_QWKLOGON) && cfg.logon_mod[0])
-		exec_mod("logon", cfg.logon_mod);
+	if (!(sys_status & SS_QWKLOGON) && cfg.logon_mod[0]) {
+		if (exec_mod("logon", cfg.logon_mod) != 0)
+			return false;
+	}
 
 	if (thisnode.status != NODE_QUIET && (!user_is_sysop(&useron) || cfg.sys_misc & SM_SYSSTAT)) {
 		int file;
@@ -547,10 +554,8 @@ bool sbbs_t::logon()
 			}
 			if (node.status == NODE_INUSE && i != cfg.node_num && node.useron == useron.number
 			    && !useron_is_sysop() && !useron_is_guest()) {
-				llprintf(LOG_NOTICE, "+!", "(%04u)  %-25s  On more than one node at the same time"
-				            , useron.number, useron.alias);
+				llprintf(LOG_NOTICE, "+!", "On more than one node at the same time");
 				bputs(text[UserOnTwoNodes]);
-				hangup();
 				return false;
 			}
 		}
