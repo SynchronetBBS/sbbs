@@ -899,7 +899,7 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{   "mail_settings"      , USER_PROP_MAIL       , USER_PROP_FLAGS_RW , 320 },
 	{   "temp_file_ext"      , USER_PROP_TMPEXT     , USER_PROP_FLAGS_RW , 310 },
 	{   "new_file_time"      , USER_PROP_NS_TIME    , USER_PROP_FLAGS_RW , 311 },
-	{   "newscan_date"       , USER_PROP_NS_TIME    , USER_PROP_FLAGS_RW , 310 },
+	{   "newscan_date"       , USER_PROP_NS_TIME    , USER_PROP_FLAGS_A  , 310 },
 	{   "download_protocol"  , USER_PROP_PROT       , USER_PROP_FLAGS_RW , 310 },
 	{   "logontime"          , USER_PROP_LOGONTIME  , USER_PROP_FLAGS_RW , 310 },
 	{   "cached"             , USER_PROP_CACHED     , USER_PROP_FLAGS_RW , 314 },
