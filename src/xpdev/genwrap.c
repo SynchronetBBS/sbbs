@@ -466,32 +466,49 @@ char* duration_to_vstr(double value, char* str, size_t size)
 	return str;
 }
 
+static void add_suffix(char* str, size_t size, const char* suffix)
+{
+	bool is_word = *(suffix + 1) != '\0';
+	char* plural = is_word ? "s" : "";
+	char* p = strstr(str, ".0");
+	if (p != NULL && *(p + 2) == '\0') // remove trailing ".0"
+		*p = '\0';
+	if (strcmp(str, "1") == 0)
+		plural = "";
+	if (is_word) {
+		strlcat(str, " ", size);
+		strlcat(str, suffix, size);
+		strlcat(str, plural, size);
+	} else
+		strlcat(str, suffix, size);
+}
+
 /* Convert a duration estimate (in seconds) to a string
  * with a single letter multiplier/suffix:
  * (y)ears, (w)eeks, (d)ays, (h)ours, (m)inutes, or (s)econds
  */
 char* duration_estimate_to_str(double value, char* str, size_t size, double unit, int precision)
 {
-	if ((value && fmod(value, one_year) == 0) || (value == 0 && unit == one_year))
-		safe_snprintf(str, size, "%gy", value / one_year);
-	else if (value >= one_year || unit == one_year)
-		safe_snprintf(str, size, "%1.*fy", precision, value / one_year);
-	else if ((value && fmod(value, one_week) == 0) || (value == 0 && unit == one_week))
-		safe_snprintf(str, size, "%gw", value / one_week);
-	else if (unit == one_week) // prefer "90 days" over "12.9 weeks"
-		safe_snprintf(str, size, "%1.*fw", precision, value / one_week);
-	else if ((value && fmod(value, one_day) == 0) || (value == 0 && unit == one_day))
-		safe_snprintf(str, size, "%gd", value / one_day);
-	else if (value >= one_day || unit == one_day)
-		safe_snprintf(str, size, "%1.*fd", precision, value / one_day);
-	else if ((value && fmod(value, one_hour) == 0) || (value == 0 && unit == one_hour))
-		safe_snprintf(str, size, "%gh", value / one_hour);
-	else if (value >= one_hour || unit == one_hour)
-		safe_snprintf(str, size, "%1.*fh", precision, value / one_hour);
-	else if ((value && fmod(value, one_minute) == 0) || (value == 0 && unit == one_minute))
-		safe_snprintf(str, size, "%gm", value / one_minute);
-	else if (value >= one_minute || unit == one_minute)
-		safe_snprintf(str, size, "%1.*fm", precision, value / one_minute);
+	if (value >= one_year || unit == one_year) {
+		safe_snprintf(str, size, "%1.*f", precision, value / one_year);
+		add_suffix(str, size, "y");
+	}
+	else if (unit == one_week) { // prefer "90 days" over "12.9 weeks"
+		safe_snprintf(str, size, "%1.*f", precision, value / one_week);
+		add_suffix(str, size, "w");
+	}
+	else if (value >= one_day || unit == one_day) {
+		safe_snprintf(str, size, "%1.*f", precision, value / one_day);
+		add_suffix(str, size, "d");
+	}
+	else if (value >= one_hour || unit == one_hour) {
+		safe_snprintf(str, size, "%1.*f", precision, value / one_hour);
+		add_suffix(str, size, "h");
+	}
+	else if (value >= one_minute || unit == one_minute) {
+		safe_snprintf(str, size, "%1.*f", precision, value / one_minute);
+		add_suffix(str, size, "m");
+	}
 	else
 		safe_snprintf(str, size, "%gs", value);
 
@@ -504,48 +521,33 @@ char* duration_estimate_to_str(double value, char* str, size_t size, double unit
  */
 char* duration_estimate_to_vstr(double value, char* str, size_t size, double unit, int precision)
 {
-	if ((value && fmod(value, one_year) == 0) || (value == 0 && unit == one_year)) {
+	if (value >= one_year || unit == one_year) {
 		value /= one_year;
-		safe_snprintf(str, size, "%g year%s", value, value == 1 ? "":"s");
-	}
-	else if (value >= one_year || unit == one_year) {
-		value /= one_year;
-		safe_snprintf(str, size, "%1.*f year%s", precision, value, value == 1 ? "":"s");
-	}
-	else if ((value && fmod(value, one_week) == 0) || (value == 0 && unit == one_week)) {
-		value /= one_week;
-		safe_snprintf(str, size, "%g week%s", value, value == 1 ? "":"s");
+		snprintf(str, size, "%1.*f", precision, value);
+		add_suffix(str, size, "year");
 	}
 	else if (unit == one_week) { // prefer "90 days" over "12.9 weeks"
 		value /= one_week;
-		safe_snprintf(str, size, "%1.*f week%s", precision, value, value == 1 ? "":"s");
-	}
-	else if ((value && fmod(value, one_day) == 0) || (value == 0 && unit == one_day)) {
-		value /= one_day;
-		safe_snprintf(str, size, "%g day%s", value, value == 1 ? "":"s");
+		snprintf(str, size, "%1.*f", precision, value);
+		add_suffix(str, size, "week");
 	}
 	else if (value >= one_day || unit == one_day) {
 		value /= one_day;
-		safe_snprintf(str, size, "%1.*f day%s", precision, value, value == 1 ? "":"s");
-	}
-	else if ((value && fmod(value, one_hour) == 0) || (value == 0 && unit == one_hour)) {
-		value /= one_hour;
-		safe_snprintf(str, size, "%g hour%s", value, value == 1 ? "":"s");
+		snprintf(str, size, "%1.*f", precision, value);
+		add_suffix(str, size, "day");
 	}
 	else if (value >= one_hour || unit == one_hour) {
 		value /= one_hour;
-		safe_snprintf(str, size, "%1.*f hour%s", precision, value, value == 1 ? "":"s");
-	}
-	else if ((value && fmod(value, one_minute) == 0) || (value == 0 && unit == one_minute)) {
-		value /= one_minute;
-		safe_snprintf(str, size, "%g minute%s", value, value == 1 ? "":"s");
+		snprintf(str, size, "%1.*f", precision, value);
+		add_suffix(str, size, "hour");
 	}
 	else if (value >= one_minute || unit == one_minute) {
 		value /= one_minute;
-		safe_snprintf(str, size, "%1.*f minute%s", precision, value, value == 1 ? "":"s");
+		snprintf(str, size, "%1.*f", precision, value);
+		add_suffix(str, size, "minute");
 	}
 	else
-		safe_snprintf(str, size, "%g second%s", value, value == 1 ? "":"s");
+		snprintf(str, size, "%g second%s", value, value == 1 ? "":"s");
 
 	return str;
 }
