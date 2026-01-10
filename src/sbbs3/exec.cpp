@@ -773,7 +773,10 @@ int sbbs_t::js_execxtrn(const char *cmd, const char* startup_dir)
 int sbbs_t::exec_mod(const char* name, const char *cmdline)
 {
 	lprintf(LOG_DEBUG, "Executing %s module: %s", name, cmdline);
-	return exec_bin(cmdline, &main_csi);
+	int i = exec_bin(cmdline, &main_csi);
+	if (i != 0)
+		lprintf(LOG_DEBUG, "%s module (%s) returned %d", name, cmdline, i);
+	return i;
 }
 
 /* Important change as of Nov-16-2006, 'cmdline' may contain args */
