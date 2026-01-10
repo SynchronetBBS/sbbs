@@ -8,7 +8,7 @@ and has been online continuously for \y@UPTIME:W@w.
 
 Users    nm:h @TUSER|TL11@w todaynm:h @STATS.NUSERS@w
 Logons   nm:h @STATS.LOGONS|TL11@w todaynm:h @STATS.LTODAY@w
-Time Usednm:h @STATS.TIMEON:V|11@w  todaynm:h @STATS.TTODAY:V@w
+Time Usednm:h @STATS.TIMEON:V|L11@w todaynm:h @STATS.TTODAY:V@w
 Messages nm:h @TMSG|TL11@w todaynm:h @STATS.PTODAY@w
 E-mail   nm:h @MAILW:0|TL11@w todaynm:h @STATS.ETODAY@w
 Feedback nm:h @MAILW:1|TL11@w todaynm:h @STATS.FTODAY@w
