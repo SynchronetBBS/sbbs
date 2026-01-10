@@ -1431,8 +1431,8 @@ void __fastcall TMainForm::StatsTimerTick(TObject *Sender)
 
 	StatsForm->TotalLogons->Caption=AnsiString(stats.logons);
     StatsForm->LogonsToday->Caption=AnsiString(stats.ltoday);
-    StatsForm->TotalTimeOn->Caption=AnsiString(minutes_to_str(stats.timeon, str, sizeof str, /* estimate */false));
-    StatsForm->TimeToday->Caption=AnsiString(minutes_to_str(stats.ttoday, str, sizeof str, /* estimate */true));
+    StatsForm->TotalTimeOn->Caption=AnsiString(minutes_to_str(stats.timeon, str, sizeof str, /* estimate */false, /* verbose */false));
+    StatsForm->TimeToday->Caption=AnsiString(minutes_to_str(stats.ttoday, str, sizeof str, /* estimate */true, /* verbose */false));
     StatsForm->TotalEMail->Caption=AnsiString(getmail(&cfg,0,0,0));
 	StatsForm->EMailToday->Caption=AnsiString(stats.etoday);
 	StatsForm->TotalFeedback->Caption=AnsiString(getmail(&cfg,1,0,0));
@@ -2609,7 +2609,7 @@ void __fastcall TMainForm::DataMenuItemClick(TObject *Sender)
 void __fastcall TMainForm::UpTimerTick(TObject *Sender)
 {
 	char    str[128];
-    char    days[64];
+    char    tmp[64];
     static  time_t start;
     ulong   up;
     static  bool sysop_available;
@@ -2634,12 +2634,6 @@ void __fastcall TMainForm::UpTimerTick(TObject *Sender)
         start=time(NULL);
     up=time(NULL)-start;
 
-    days[0]=0;
-    if((up/(24*60*60))>=2) {
-        sprintf(days,"%u days ",up/(24*60*60));
-        up%=(24*60*60);
-    }
-		
 	for(int i = 0; i <= STATUSBAR_LAST_PANEL; i++) {
 		switch(i) {
 			case 0:
@@ -2661,11 +2655,8 @@ void __fastcall TMainForm::UpTimerTick(TObject *Sender)
 				sprintf(str,"Errors: %u",errors);
 				break;
 			default:
-				sprintf(str,"Up: %s%u:%02u"
-					,days
-					,up/(60*60)
-					,(up/60)%60
-					);
+				sprintf(str,"Up: %s"
+					, minutes_to_str(up / 60, tmp, sizeof tmp, /* estimate */true, /* words */true));
 		}
 		TStatusPanel* panel = MainForm->StatusBar->Panels->Items[i];	
 		

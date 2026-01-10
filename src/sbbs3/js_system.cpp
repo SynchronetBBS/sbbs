@@ -1339,6 +1339,7 @@ js_minutestr(JSContext *cx, uintN argc, jsval *arglist)
 	uint32_t  t = 0;
 	JSString* js_str;
 	bool      estimate = false;
+	bool      words = false;
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
@@ -1348,8 +1349,11 @@ js_minutestr(JSContext *cx, uintN argc, jsval *arglist)
 	if (argc > 1 && JSVAL_IS_BOOLEAN(argv[1]))
 		estimate = JSVAL_TO_BOOLEAN(argv[1]);
 
+	if (argc > 2 && JSVAL_IS_BOOLEAN(argv[2]))
+		words = JSVAL_TO_BOOLEAN(argv[2]);
+
 	JS_ValueToECMAUint32(cx, argv[0], &t);
-	if ((js_str = JS_NewStringCopyZ(cx, minutes_to_str(t, str, sizeof str, estimate))) == NULL)
+	if ((js_str = JS_NewStringCopyZ(cx, minutes_to_str(t, str, sizeof str, estimate, words))) == NULL)
 		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
@@ -2467,8 +2471,8 @@ static jsSyncMethodSpec js_system_functions[] = {
 	{"secondstr",       js_secondstr,       0,  JSTYPE_STRING,  JSDOCSTR("seconds [,<t>bool</t> verbose=true]")
 	 , JSDOCSTR("Convert a duration in seconds into a string in <tt>hh:mm:ss</tt> format")
 	 , 310},
-	{"minutestr",       js_minutestr,       0,  JSTYPE_STRING,  JSDOCSTR("minutes [,<t>bool</t> estimate=false]")
-	 , JSDOCSTR("Convert a duration in minutes into a string in <tt>DDd HHh MMm</tt> or <tt>X.Yh</tt> format")
+	{"minutestr",       js_minutestr,       0,  JSTYPE_STRING,  JSDOCSTR("minutes [,<t>bool</t> estimate=false] [,<t>bool</t> words=false]")
+	 , JSDOCSTR("Convert a duration in minutes into a string in <tt>"DDd HHh MMm"</tt>, <tt>"X.Yh"</tt> or <tt>"X.h hours"</tt> format")
 	 , 321},
 #ifndef JSDOOR
 	{"spamlog",         js_spamlog,         6,  JSTYPE_BOOLEAN, JSDOCSTR("[protocol, action, reason, host, ip, to, from]")

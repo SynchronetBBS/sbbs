@@ -244,16 +244,18 @@ static const char* getpath(scfg_t* cfg, const char* path)
 	return path;
 }
 
-// Support duration output formats, examples: 0           90m         100h
-#define DURATION_FULL_HHMMSS           'F' // 00:00:00    01:30:00    100:00:00
-#define DURATION_TRUNCATED_HHMMSS      '!' // 0:00:00     1:30:00     00:00:00
-#define DURATION_MINIMAL_HHMMSS        'A' // 0           1:30:00     100:00:00
-#define DURATION_FULL_HHMM             'T' // 00:00       01:30       100:00
-#define DURATION_MINIMAL_HHMM          'B' // 0           1:30        100:00
-#define DURATION_FULL_VERBAL           'V' // 0m          1h 30m      4d 4h 0m
-#define DURATION_MINIMAL_VERBAL        'C' // 0m          1.5h        4.2d
-#define DURATION_SECONDS               'S' // 0           5400        360000
-#define DURATION_MINUTES               'M' // 0           90          6000
+// Support duration output formats, examples: 0           90m                100h
+#define DURATION_FULL_HHMMSS           'F' // 00:00:00    01:30:00           100:00:00
+#define DURATION_TRUNCATED_HHMMSS      '!' // 0:00:00     1:30:00            00:00:00
+#define DURATION_MINIMAL_HHMMSS        'A' // 0           1:30:00            100:00:00
+#define DURATION_FULL_HHMM             'T' // 00:00       01:30              100:00
+#define DURATION_MINIMAL_HHMM          'B' // 0           1:30               100:00
+#define DURATION_FULL_VERBAL           'V' // 0m          1h 30m             4d 4h 0m
+#define DURATION_MINIMAL_VERBAL        'C' // 0m          1.5h               4.2d
+#define DURATION_FULL_WORDS            'W' // 0 minutes   1 hour 30 minutes  4 days 4 hours 0 minutes
+#define DURATION_MINIMAL_WORDS         'D' // 0 minutes   1.5 hours          4.2 days
+#define DURATION_SECONDS               'S' // 0           5400               360000
+#define DURATION_MINUTES               'M' // 0           90                 6000
 
 static char* duration(uint seconds, char* str, size_t maxlen, char fmt, char deflt)
 {
@@ -265,13 +267,17 @@ static char* duration(uint seconds, char* str, size_t maxlen, char fmt, char def
 		case DURATION_MINIMAL_HHMMSS:
 			return seconds_to_str(seconds, str);
 		case DURATION_FULL_HHMM:
-			return minutes_as_hhmm(seconds / 60, str, maxlen, true);
+			return minutes_as_hhmm(seconds / 60, str, maxlen, /* verbose: */ true);
 		case DURATION_MINIMAL_HHMM:
-			return minutes_as_hhmm(seconds / 60, str, maxlen, false);
+			return minutes_as_hhmm(seconds / 60, str, maxlen, /* verbose: */ false);
 		case DURATION_FULL_VERBAL:
-			return minutes_to_str(seconds / 60, str, maxlen, false);
+			return minutes_to_str(seconds / 60, str, maxlen, /* estimate: */ false, /* words: */ false);
 		case DURATION_MINIMAL_VERBAL:
-			return minutes_to_str(seconds / 60, str, maxlen, true);
+			return minutes_to_str(seconds / 60, str, maxlen, /* estimate: */ true, /* words: */ false);
+		case DURATION_FULL_WORDS:
+			return minutes_to_str(seconds / 60, str, maxlen, /* estimate: */ false, /* words: */ true);
+		case DURATION_MINIMAL_WORDS:
+			return minutes_to_str(seconds / 60, str, maxlen, /* estimate: */ true, /* words: */ true);
 		case DURATION_SECONDS:
 			snprintf(str, maxlen, "%u", seconds);
 			return str;
@@ -600,22 +606,12 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strcmp(sp, "BUILD_TIME") == 0)
 		return __TIME__;
 
-	if (!strcmp(sp, "UPTIME")) {
+	if (code_match(sp, "UPTIME", &param)) {
 		extern volatile time_t uptime;
 		time_t                 up = 0;
 		if (uptime != 0 && time(&now) >= uptime)
 			up = now - uptime;
-		char                   days[64] = "";
-		if ((up / (24 * 60 * 60)) >= 2) {
-			snprintf(days, sizeof days, "%u days ", (uint)(up / (24L * 60L * 60L)));
-			up %= (24 * 60 * 60);
-		}
-		safe_snprintf(str, maxlen, "%s%u:%02u"
-		              , days
-		              , (uint)(up / (60L * 60L))
-		              , (uint)((up / 60L) % 60L)
-		              );
-		return str;
+		return duration((uint)up, str, maxlen, param, DURATION_MINIMAL_VERBAL);
 	}
 
 	if (!strcmp(sp, "SERVED")) {

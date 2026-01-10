@@ -241,23 +241,48 @@ char* minutes_as_hhmm(uint minutes, char *str, size_t size, bool verbose)
 /* Format a duration in minutes into a string with one or more suffixes		*/
 /* The returned string will be at least two characters long					*/
 /****************************************************************************/
-char* minutes_to_str(uint minutes, char* str, size_t size, bool estimate)
+char* minutes_to_str(uint minutes, char* str, size_t size, bool estimate, bool words)
 {
-	if (minutes > 60 && estimate)
-		duration_estimate_to_str(minutes * 60, str, size, /* unit (one hour): */ 60 * 60, /* precision: */ 1);
-	else {
+	if (minutes > 60 && estimate) {
+		if (words)
+			duration_estimate_to_vstr(minutes * 60, str, size, /* unit (one hour): */ 60 * 60, /* precision: */ 1);
+		else
+			duration_estimate_to_str(minutes * 60, str, size, /* unit (one hour): */ 60 * 60, /* precision: */ 1);
+	} else {
+		const char* m_suffix = "m";
+		const char* h_suffix = "h";
+		const char* d_suffix = "d";
+		const char* plural = "";
+
+		if (words) {
+			m_suffix = " minute";
+			h_suffix = " hour";
+			d_suffix = " day";
+			plural = "s";
+		}
 		if (minutes < 60)
-			safe_snprintf(str, size, "%um", minutes);
+			safe_snprintf(str, size, "%u%s%s"
+				, minutes, m_suffix
+				, minutes == 1 ? "" : plural);
 		else if (minutes < 24 * 60) {
 			if (minutes % 60 == 0)
-				safe_snprintf(str, size, "%uh", minutes / 60);
+				safe_snprintf(str, size, "%u%s%s"
+					, minutes / 60, h_suffix
+					, minutes / 60 == 1 ? "" : plural);
 			else
-				safe_snprintf(str, size, "%uh %um", minutes / 60, minutes % 60);
+				safe_snprintf(str, size, "%u%s%s %u%s%s"
+					, minutes / 60, h_suffix
+					, minutes / 60 == 1 ? "" : plural
+					, minutes % 60, m_suffix
+					, minutes % 60 == 1 ? "" : plural);
 		} else
-			safe_snprintf(str, size, "%ud %uh %um"
-				, minutes / (24 * 60)
-				, (minutes % (24 * 60)) / 60
-				, minutes % 60);
+			safe_snprintf(str, size, "%u%s%s %u%s%s %u%s%s"
+				, minutes / (24 * 60), d_suffix
+				, minutes / (24 * 60) == 1 ? "" : plural
+				, (minutes % (24 * 60)) / 60, h_suffix
+				, ((minutes % (24 * 60)) / 60) == 1 ? "" : plural
+				, minutes % 60, m_suffix
+				, (minutes % 60) == 1 ? "" : plural);
 	}
 	return str;
 }
