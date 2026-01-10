@@ -525,7 +525,7 @@ function Messagemenu()
 		,"T",width
 	);
 	this.add("|Post In "+msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].name,"P",width,undefined,undefined,bbs.compare_ars("REST P"));
-	if(bbs.compare_ars("REST N") && (msg_area.grp_list[bbs.curgrp].sub_list[bbs.crusub] & (SUB_QNET|SUB_PNET|SUB_FIDO)))
+	if (!msg_area.grp_list[bbs.curgrp].sub_list[bbs.crusub].can_post)
 		this.items[6].disabed=true;
 	this.add("Read/Post |Auto-Message","A",width);
 	this.add("|QWK Packet Transfer Menu","Q",width);
