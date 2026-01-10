@@ -331,7 +331,8 @@ bool sbbs_t::logon()
 		if (!(cfg.uq & UQ_NOUPRLWR))
 			kmode |= K_UPRLWR;
 
-		if (!useron_is_guest()) {
+		if (!useron_is_guest()) { // TODO: replace these prompts with a loadable module (reusing parts of newuser_prompts module?)
+
 			if (!useron.name[0] && ((cfg.uq & UQ_ALIASES && cfg.uq & UQ_REALNAME)
 			                        || cfg.uq & UQ_COMPANY))
 				while (online) {
@@ -405,6 +406,20 @@ bool sbbs_t::logon()
 					if (!trashcan(useron.phone, "phone"))
 						break;
 				}
+			}
+			if ((cfg.uq & UQ_SEX) && strchr(cfg.new_genders, useron.gender) == NULL
+				&& text[EnterYourGender][0] && cfg.new_genders[0] != '\0' && online) {
+				bputs(text[EnterYourGender]);
+				long gender = getkeys(cfg.new_genders, 0);
+				if (gender > 0)
+					useron.gender = (char)gender;
+			}
+			while ((cfg.uq & UQ_BIRTH) && !birthdate_is_valid(&cfg, useron.birth) && online && text[EnterYourBirthday][0]) {
+				bprintf(text[EnterYourBirthday], birthdate_format(&cfg, tmp, sizeof tmp));
+				format_birthdate(&cfg, useron.birth, str, sizeof str);
+				birthdate_template(&cfg, tmp, sizeof tmp);
+				if (gettmplt(str, tmp, K_EDIT) == strlen(tmp))
+					parse_birthdate(&cfg, str, useron.birth, sizeof useron.birth);
 			}
 			if (!(cfg.uq & UQ_NONETMAIL) && !useron.netmail[0]) {
 				while (online) {
