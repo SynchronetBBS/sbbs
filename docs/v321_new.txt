@@ -15,7 +15,7 @@ o Add support to SMBLIB for "Fixed" format message text
   (e.g. for messages uploaded in raw input mode)
 o Support short (8-char) less ambiguous "verbal" dates in multiple formats
   for display purposes (e.g. "Jan02'26" instead of "01/02/26")
-o Increase 16-bit unsigned integer statistical user fields to 32-bit
+o Expand 16-bit unsigned integer statistical user fields to 32-bit
   increasing maximum values from 65535 to 4.2B
 o Address concurrency issues with user daily statistics/free credit fields
   - Each user's stats reset date/time stamp now stored in user base/record
@@ -23,6 +23,8 @@ o Support tracking and limiting of user file downloads "per day" - issue #938
 o System statistics and mail message counts are now cached (default: for 5s)
 o Increased from 40 to 60 characters the maximum length of descriptions (long
   name) of message groups and sub-boards and file libraries and directories
+o Increased max files per directory from 65535 to 4.2B (99999 via SCFG)
+  (0/unlimited remains an option)
 o Track user bytes downloaded (in files) per day
   - Reflect these stats in drop files that support it:
     DOOR.SYS, CALLINFO.BBS, and SFDOORS.DAT
@@ -54,6 +56,7 @@ o Separate global support for "extra attribute codes" from per sub-board opts
 o If editor doesn't create a file, don't log an error message - issue #914
 o Ensure messages created/edited are always CRLF line-terminated
 o When listing mail messages with no "to" field, display SMTP forward path
+o Remove superfluous/erroneous ".0" from displayed age of posted messages 
 o Don't add CP437 QWKnet tagline glyph when message is explicitly US-ASCII
 o Use FTN charset of "ASCII 1" when the imported message is explicitly ASCII
 o Output multiple inverted question marks for > 1 width UNICODE characters
@@ -151,6 +154,7 @@ o Allow time-duration and byte-count format paramters for some @-codes.
   - TUSED
   - STATS.TIMEON
   - STATS.TTODAY
+  - UPTIME (now defaults to "minimal verbal" (C) format)
 o Fixed for large values: TPERC, TPERD, TTODAY, TTOTAL, and TBANKED
 o New @-codes:
   - NOCODE (disable @-code parsing for remainder of message/file)
