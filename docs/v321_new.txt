@@ -83,12 +83,12 @@ o Don't close node.log file stream when invoking command-lines with a '?'
 o New Message Scan
   - Break scan loop on abort (Ctrl-C) - issue #926
   - Don't prompt to add sub to new-scan when scanning for polls (to vote on)
- 
+
 Web Server
 ~~~~~~~~~~
 o New LoginInfoSave option (ARS) to specify which users login info should be
   saved upon logon/off (default is *all* users)
-o Log output improvements 
+o Log output improvements
   - Include client protocol (HTTP or HTTPS) and IP address in more log msgs
   - Include more detail (e.g. send byte count) in "ERROR sending" message
   - Lower severity of "Executing FastCGI" log message from Info to Debug
@@ -102,7 +102,7 @@ o Immediately reject non-TLS connections that exceed concurrent connections
 FTP Server
 ~~~~~~~~~~
 o Allow uploaders to remove files that they uploaded - issue #952
-  
+
 Mail server
 ~~~~~~~~~~~
 o New LoginInfoSave option (ARS) to specify which users login info should be
@@ -420,7 +420,7 @@ o New User class properties:
   - stats.bytes_downloaded_today
   - stats.files_downloaded_today
   - limits.file_downloads_per_day
-o New User class methods:  
+o New User class methods:
   - can_access_sub()
   - can_access_dir()
 o New TLS properties to the Socket class:
