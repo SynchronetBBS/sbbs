@@ -334,6 +334,8 @@ o login.js
   - Don't send legacy prompts (NN:, PW:) unless legacy_prompts=true is set
     in ctrl/modopts/login.ini
 o logon.js
+  - Fixed node status upon aborting new user registration process
+  - Moved missing user property checks/prompts here from C++ hard-coded logic
   - Supports Rlogin terminal="xtrn_sec=<code>" to take users directly
     to a specified external program section for Rlogins
   - modopts rlogin_xtrn_logon=false to skip the logon screens for Rlogins
