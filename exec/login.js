@@ -17,9 +17,8 @@ if(options.guest === undefined)
 	options.guest = true;
 
 if(bbs.sys_status & SS_USERON) {
-	// The following 2 lines are only required for "Re-login" capability
+	// Only required for "Re-login" capability
 	bbs.logout();
-	system.node_list[bbs.node_num-1].status = NODE_LOGON;
 }
 var guest = options.guest && system.matchuser("guest");
 
@@ -37,6 +36,8 @@ if(console.max_socket_inactivity > 0 && bbs.node_num == bbs.last_node) {
 }
 
 for(var c=0; c < options.login_prompts; c++) {
+
+	system.node_list[bbs.node_num-1].status = NODE_LOGON;
 
 	// The "node sync" is required for sysop interruption/chat/etc.
 	bbs.nodesync();
