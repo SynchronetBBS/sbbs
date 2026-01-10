@@ -74,7 +74,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		return false;
 	}
 	if ((user.misc & NETMAIL) && (cfg.sys_misc & SM_FWDTONET) && !(mode & WM_NOFWD) && !(useron.rest & FLAG('M'))) {
-		if (is_supported_netmail_addr(&cfg, user.netmail)) {
+		if (netmail_addr_is_supported(&cfg, user.netmail)) {
 			bprintf(text[UserNetMail], user.netmail);
 			if ((mode & WM_FORCEFWD) || yesno(text[ForwardMailQ])) /* Forward to netmail address */
 				return netmail(user.netmail, subj, mode, resmb, remsg);

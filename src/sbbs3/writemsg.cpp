@@ -1461,7 +1461,7 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 		usernumber = finduser(to);
 		if (usernumber < 1)
 			return false;
-	} else if (!is_supported_netmail_addr(&cfg, to)) {
+	} else if (!netmail_addr_is_supported(&cfg, to)) {
 		bprintf(text[InvalidNetMailAddr], to);
 		return false;
 	}

@@ -2301,7 +2301,7 @@ js_check_netmail_addr(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(is_supported_netmail_addr(sys->cfg, addr)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(netmail_addr_is_supported(sys->cfg, addr)));
 	JS_RESUMEREQUEST(cx, rc);
 	free(addr);
 

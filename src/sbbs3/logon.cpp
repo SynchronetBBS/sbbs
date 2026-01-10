@@ -413,7 +413,7 @@ bool sbbs_t::logon()
 					    && !trashcan(useron.netmail, "email"))
 						break;
 				}
-				if (useron.netmail[0] && cfg.sys_misc & SM_FWDTONET && !noyes(text[ForwardMailQ]))
+				if (netmail_addr_is_supported(&cfg, useron.netmail) && (cfg.sys_misc & SM_FWDTONET) && !noyes(text[ForwardMailQ]))
 					useron.misc |= NETMAIL;
 				else
 					useron.misc &= ~NETMAIL;

@@ -1471,7 +1471,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	return true;
 }
 
-extern "C" bool is_supported_netmail_addr(scfg_t* cfg, const char* addr)
+extern "C" bool netmail_addr_is_supported(scfg_t* cfg, const char* addr)
 {
 	const char* p;
 	fidoaddr_t  faddr;

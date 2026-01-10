@@ -1401,7 +1401,7 @@ extern "C" {
 	DLLEXPORT int		qwk_route(scfg_t*, const char *inaddr, char *fulladdr, size_t maxlen);
 
 	/* netmail.cpp */
-	DLLEXPORT bool		is_supported_netmail_addr(scfg_t*, const char* addr);
+	DLLEXPORT bool		netmail_addr_is_supported(scfg_t*, const char* addr);
 
 	/* con_out.cpp */
 	unsigned char		cp437_to_petscii(unsigned char);
