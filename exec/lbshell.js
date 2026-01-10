@@ -357,7 +357,7 @@ function Filemenu()
 {
 	this.items=new Array();
 	// Width of longest line with no dynamic variables
-	var width=0;
+	var width=33;
 	var scantime=system.datestr(bbs.new_file_time);
 	// Expand for scan time line.
 	if(width < 27+scantime.length)
