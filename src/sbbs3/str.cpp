@@ -1437,6 +1437,7 @@ char* sbbs_t::age_of_posted_item(char* buf, size_t max, time_t t)
 		units = text[Months];
 	} else
 		snprintf(value, sizeof value, "%.1f", diff / (60.0 * 60.0 * 24.0 * 365.25));
+	remove_end_substr(value, ".0");
 	safe_snprintf(buf, max, text[AgeOfPostedItem], value, units, past);
 	return buf;
 }

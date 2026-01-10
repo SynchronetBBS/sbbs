@@ -329,6 +329,20 @@ char* truncated_str(char* str, const char* set)
 }
 
 /****************************************************************************/
+/* Truncates the specified substring from the end of the string if it		*/
+/* exists.																	*/
+/****************************************************************************/
+void remove_end_substr(char* str, const char* substr)
+{
+	size_t str_len = strlen(str);
+	size_t sub_len = strlen(substr);
+	if (sub_len == 0 || str_len < sub_len)
+		return;
+	if (strcmp(str + (str_len - sub_len), substr) == 0)
+		*(str + (str_len - sub_len)) = '\0';
+}
+
+/****************************************************************************/
 /* rot13 encoder/decoder - courtesy of Mike Acar							*/
 /****************************************************************************/
 char* rot13(char* str)

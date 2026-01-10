@@ -35,6 +35,7 @@ DLLEXPORT uint32_t  ahtou32(const char* str);   /* Converts ASCII hex to uint32_
 DLLEXPORT int       pstrcmp(const char **str1, const char **str2);  /* Compares pointers to pointers */
 DLLEXPORT int       strsame(const char *str1, const char *str2);    /* Compares number of same chars */
 DLLEXPORT char *    remove_ctrl_a(const char* instr, char* outstr);
+DLLEXPORT void      remove_end_substr(char* str, const char* substr);
 DLLEXPORT char      ctrl_a_to_ascii_char(char code);
 DLLEXPORT char *    truncstr(char* str, const char* set);
 DLLEXPORT char *    truncated_str(char* str, const char* set);
