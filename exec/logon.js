@@ -127,6 +127,29 @@ if(user.security.restrictions&UFLAG_G) {
 		}
 	}
 }
+else { // !Guest
+
+	// Replaces the 3.20 Logon user prompts
+	var prompts = load({}, "user_info_prompts.js", "logon");
+	if(!user.name)
+		prompts.get_name();
+	if((system.newuser_questions & UQ_HANDLE) && !user.handle)
+		prompts.get_handle();
+	if((system.newuser_questions & UQ_ADDRESS) && !user.address)
+		prompts.get_address();
+	if((system.newuser_questions & (UQ_ADDRESS | UQ_LOCATION)) && !user.location)
+		prompts.get_location();
+	if((system.newuser_questions & UQ_ADDRESS) && !user.zipcode)
+		prompts.get_zipcode();
+	if((system.newuser_questions & UQ_PHONE) && !user.phone)
+		prompts.get_phone();
+	if((system.newuser_questions & UQ_SEX) && !user.gender)
+		prompts.get_gender();
+	if((system.newuser_questions & UQ_BIRTH) && !system.check_birthdate(user.birthdate))
+		prompts.get_birthdate();
+	if(!(system.newuser_questions & UQ_NONETMAIL) && !user.netmail)
+		prompts.get_netmail();
+}
 
 // Force split-screen chat on ANSI users
 if(!(user.chat_settings&CHAT_SPLITP) && console.term_supports(USER_ANSI))
