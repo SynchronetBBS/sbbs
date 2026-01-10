@@ -832,6 +832,7 @@ while(bbs.online) {
 					case 'Y':
 						menu_opt(function() {
 							bbs.user_info();
+							console.crlf();
 							console.pause();
 						});
 						break;
@@ -1626,6 +1627,11 @@ function show_filemenu()
 							});
 							break;
 						case 'S':
+							menu_opt(function() {
+								bbs.user_info();
+								console.crlf();
+								console.pause();
+							});
 							break;
 						case KEY_RIGHT:
 							filemenu.erase();
