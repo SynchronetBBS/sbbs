@@ -239,20 +239,20 @@ static jsSyncPropertySpec js_properties[] = {
 #ifdef BUILD_JSDOCS
 static const char* prop_desc[] = {
 	/* New properties go here... */
-	"Full path and filename of JS file executed"
+	"<tt>load()</tt> search path array.<br>For relative load paths (e.g. not beginning with '/' or '\\'), "
+		"the path is assumed to be a sub-directory of the (configurable) mods or exec directories "
+		"and is searched accordingly.<br>"
+		"So, by default, <tt>load(\"somefile.js\")</tt> will search in this order:<tt><ol>"
+		"<li>mods/load/somefile.js"
+		"<li>exec/load/somefile.js"
+		"<li>mods/somefile.js"
+		"<li>exec/somefile.js"
+		"</ol></tt>"
+	, "Full path and filename of JS file executed"
 	, "JS filename executed (with no path)"
 	, "Directory of executed JS file"
-	, "Either the configured startup directory in SCFG (for externals) or the cwd when jsexec is started"
+	, "Either the configured startup directory in SCFG (for externals) or the CWD when jsexec was started"
 	, "Global scope for this script"
-	, "<tt>load()</tt> search path array.<br>For relative load paths (e.g. not beginning with '/' or '\\'), "
-	"the path is assumed to be a sub-directory of the (configurable) mods or exec directories "
-	"and is searched accordingly.<br>"
-	"So, by default, <tt>load(\"somefile.js\")</tt> will search in this order:<tt><ol>"
-	"<li>mods/load/somefile.js"
-	"<li>exec/load/somefile.js"
-	"<li>mods/somefile.js"
-	"<li>exec/somefile.js"
-	"</ol></tt>"
 	, NULL
 };
 #endif
