@@ -93,10 +93,7 @@ bool sbbs_t::newuser()
 		bprintf("Creating sysop account... System password required.\r\n");
 		if (!chksyspass())
 			return false;
-		useron.level = 99;
-		useron.exempt = useron.flags1 = useron.flags2 = 0xffffffffUL;
-		useron.flags3 = useron.flags4 = 0xffffffffUL;
-		useron.rest = 0L;
+		newsysop(&cfg, &useron);
 	}
 
 	sys_status |= SS_NEWUSER;

@@ -67,7 +67,8 @@ DLLEXPORT bool  lockuserdat(int file, unsigned user_number);
 DLLEXPORT bool  unlockuserdat(int file, unsigned user_number);
 DLLEXPORT int   putuserdat(scfg_t*, user_t*);   // Put user_t into user file
 DLLEXPORT int   newuserdat(scfg_t*, user_t*);   // Create new user in user file
-DLLEXPORT int   newuserdefaults(scfg_t*, user_t*);
+DLLEXPORT void  newuserdefaults(scfg_t*, user_t*);
+DLLEXPORT void  newsysop(scfg_t*, user_t*);
 DLLEXPORT uint  matchuser(scfg_t*, const char *str, bool sysop_alias); // Checks for a username match
 DLLEXPORT bool  matchusername(scfg_t*, const char* name, const char* compare);
 DLLEXPORT char* alias(scfg_t*, const char* name, char* buf);

@@ -3489,7 +3489,7 @@ char* alias(scfg_t* cfg, const char* name, char* buf)
 	return p;
 }
 
-int newuserdefaults(scfg_t* cfg, user_t* user)
+void newuserdefaults(scfg_t* cfg, user_t* user)
 {
 	int i;
 
@@ -3533,8 +3533,16 @@ int newuserdefaults(scfg_t* cfg, user_t* user)
 			break;
 	if (i < cfg->total_xedits)
 		user->xedit = i + 1;
+}
 
-	return 0;
+void newsysop(scfg_t* cfg, user_t* user)
+{
+	user->level = 99;
+	user->exempt = user->flags1 = user->flags2 = 0xffffffffUL;
+	user->flags3 = user->flags4 = 0xffffffffUL;
+	user->rest = 0L;
+	SAFECOPY(user->alias, cfg->sys_op);
+	SAFECOPY(user->location, cfg->sys_location);
 }
 
 int newuserdat(scfg_t* cfg, user_t* user)

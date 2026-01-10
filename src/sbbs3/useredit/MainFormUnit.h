@@ -170,6 +170,7 @@ public:		// User declarations
     scfg_t cfg;
     user_t user;
     unsigned int users;
+	char user_filename[MAX_PATH + 1];
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TMainForm *MainForm;

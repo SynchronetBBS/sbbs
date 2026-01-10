@@ -23,6 +23,7 @@
 #include "MainFormUnit.h"
 #include "getctrl.h"
 #include "scfglib.h"
+#include "userdat.h"
 #pragma hdrstop
 //---------------------------------------------------------------------------
 USEFORM("MainFormUnit.cpp", MainForm);
@@ -52,7 +53,16 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR cmd, int)
                 backslash(MainForm->cfg.data_dir);
             } else
                 prep_dir(MainForm->cfg.ctrl_dir, MainForm->cfg.data_dir, sizeof(MainForm->cfg.data_dir));
-            Application->Run();
+			char path[MAX_PATH + 1];
+			snprintf(path, sizeof path, "%suser", MainForm->cfg.data_dir);
+			if(!isdir(path) && mkdir(path) != 0) {
+				snprintf(error, sizeof error, "%s does not exist and cannot create it", path);
+				Application->MessageBox(error, "Error"
+					,MB_OK | MB_ICONEXCLAMATION);
+			} else {
+				userdat_filename(&MainForm->cfg, MainForm->user_filename, sizeof MainForm->user_filename);
+				Application->Run();
+			}
          }
     }
     catch (Exception &exception)

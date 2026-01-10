@@ -59,9 +59,8 @@ void __fastcall TMainForm::PutUserStr(TEdit* Edit, enum user_field fnum, const c
         int retval = putuserstr(&cfg, user.number, fnum, str);
         if(retval != 0) {
             char msg[128];
-            char path[MAX_PATH + 1];
             SAFEPRINTF3(msg, "Error %d writing field %d to user file: %s"
-                ,retval, fnum, userdat_filename(&cfg, path, sizeof(path)));
+                ,retval, fnum, user_filename);
             Application->MessageBox(msg
                 ,"Error"
                 ,MB_OK | MB_ICONEXCLAMATION);
@@ -107,10 +106,10 @@ int __fastcall TMainForm::OpenUserData(bool for_modify)
     int file = openuserdat(&cfg, for_modify);
 	if(file < 0) {
         char msg[256];
-        char path[MAX_PATH + 1];
-        SAFEPRINTF2(msg, "Error %d opening user data file: %s"
-            ,file, userdat_filename(&cfg, path, sizeof(path)));
-        Application->MessageBox(msg, "Error" ,MB_OK | MB_ICONEXCLAMATION);
+		if(fexist(user_filename)) {
+			SAFEPRINTF2(msg, "Error %d opening user data file: %s", file, user_filename);
+			Application->MessageBox(msg, "Error" ,MB_OK | MB_ICONEXCLAMATION);
+		}
 	}
     return file;
 }
@@ -128,9 +127,9 @@ void __fastcall TMainForm::GetUserData(int number)
     int retval = readuserdat(&cfg, number, userdat, sizeof(userdat), file, /* leave_locked: */FALSE);
     close(file);
 	if(retval != 0) {
-        Application->MessageBox("Error reading user file"
-            ,userdat_filename(&cfg, tmp, sizeof(tmp))
-            ,MB_OK | MB_ICONEXCLAMATION);
+		Application->MessageBox("Error reading user file"
+			,user_filename
+			,MB_OK | MB_ICONEXCLAMATION);
         return;
 	}
     user.number = number;
@@ -138,7 +137,7 @@ void __fastcall TMainForm::GetUserData(int number)
 	retval = parseuserdat(&cfg, userdat, &user, fields);
 	if(retval != 0) {
         Application->MessageBox("Error parsing user file"
-            ,userdat_filename(&cfg, tmp, sizeof(tmp))
+            ,user_filename
             ,MB_OK | MB_ICONEXCLAMATION);
         return;
 	}
@@ -310,9 +309,8 @@ void __fastcall TMainForm::PutUserData(int number)
         else
             retval = putusername(&cfg, number, AliasEdit->Text.c_str());
     	if(retval != 0) {
-            char tmp[MAX_PATH + 1];
             Application->MessageBox("Error writing to name index"
-                ,userdat_filename(&cfg, tmp, sizeof(tmp))
+                ,user_filename
                 ,MB_OK | MB_ICONEXCLAMATION);
             return;
     	}
@@ -461,8 +459,8 @@ void __fastcall TMainForm::SaveChanges(void)
 void __fastcall TMainForm::FormShow(TObject *Sender)
 {
     users = lastuser(&cfg);
-    if(users < 1)
-        users = 1;
+	if(users < 1)
+		users = 1;
     ScrollBar->Min = 1;
     ScrollBar->Max = users;
     TotalStaticText->Caption = "of " + AnsiString(users);
@@ -524,16 +522,29 @@ void __fastcall TMainForm::NewUserExecute(TObject *Sender)
         SaveChanges();
 
     ZERO_VAR(user);
-    SAFECOPY(user.alias, "New User");
     newuserdefaults(&cfg, &user);
+	if(lastuser(&cfg))
+		SAFECOPY(user.alias, "New User");
+	else
+		newsysop(&cfg, &user);
 
     // Create the new record
-    newuserdat(&cfg, &user);
+    int retval = newuserdat(&cfg, &user);
+	if (retval != USER_SUCCESS) {
+		char msg[256];
+		snprintf(msg, sizeof msg, "Error %d creating new user in user file: %s"
+			,retval, user_filename);
+		Application->MessageBox(msg
+			,"Error"
+			,MB_OK | MB_ICONEXCLAMATION);
+		return;
+	}
 
     // Set scroll bar and usernumber text
     ScrollBar->Max = lastuser(&cfg);
     ScrollBar->Position = user.number;
     NumberEdit->Text = user.number;
+	GetUserData(user.number);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::DeleteUserExecute(TObject *Sender)
