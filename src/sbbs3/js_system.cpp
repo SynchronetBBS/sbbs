@@ -2472,7 +2472,7 @@ static jsSyncMethodSpec js_system_functions[] = {
 	 , JSDOCSTR("Convert a duration in seconds into a string in <tt>hh:mm:ss</tt> format")
 	 , 310},
 	{"minutestr",       js_minutestr,       0,  JSTYPE_STRING,  JSDOCSTR("minutes [,<t>bool</t> estimate=false] [,<t>bool</t> words=false]")
-	 , JSDOCSTR("Convert a duration in minutes into a string in <tt>"DDd HHh MMm"</tt>, <tt>"X.Yh"</tt> or <tt>"X.h hours"</tt> format")
+	 , JSDOCSTR("Convert a duration in minutes into a string in <tt>'DDd HHh MMm'</tt>, <tt>'X.Yh'</tt> or <tt>'X.h hours'</tt> format")
 	 , 321},
 #ifndef JSDOOR
 	{"spamlog",         js_spamlog,         6,  JSTYPE_BOOLEAN, JSDOCSTR("[protocol, action, reason, host, ip, to, from]")
