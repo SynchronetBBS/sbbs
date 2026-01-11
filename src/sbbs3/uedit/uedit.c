@@ -1816,7 +1816,7 @@ int createdefaults(scfg_t* cfg)
     SAFECOPY(user.handle,"Handle");
     SAFECOPY(user.pass,"PASSWORD");
 
-	newuserdefaults(&cfg, &user);
+	newuserdefaults(cfg, &user);
 
 	if((i=matchuser(cfg,user.alias,FALSE))!=0) {
 	    lprintf("Error!  Default User already in Userfile");
