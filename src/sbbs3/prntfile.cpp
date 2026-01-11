@@ -45,6 +45,8 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 	int   l, length, savcon = console;
 	FILE *stream;
 
+	if (*inpath == '\0')
+		return false;
 	if (FULLPATH(fpath, inpath, sizeof fpath) == NULL)
 		SAFECOPY(fpath, inpath);
 	if ((mode & P_MODS) && cfg.mods_dir[0] != '\0') {
