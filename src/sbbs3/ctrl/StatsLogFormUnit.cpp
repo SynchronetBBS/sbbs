@@ -70,12 +70,12 @@ void __fastcall TStatsLogForm::FormShow(TObject *Sender)
         timestamp-=(24*60*60); /* 1 day less than stamp */
         tm=localtime(&timestamp);
         sprintf(str,"%u/%2.2d/%2.2d T:%5lu   L:%3lu   P:%3lu   "
-            "E:%3lu   F:%3lu   U:%5s %5lu  D:%5s %5lu  N:%3lu"
+            "E:%3lu   F:%3lu   U:%7s/%-5lu D:%7s/%-6lu N:%u"
             ,1900 + tm->tm_year,tm->tm_mon+1,tm->tm_mday
 			,stats.ttoday,stats.ltoday,stats.ptoday,stats.etoday
             ,stats.ftoday
-			,byte_estimate_to_str(stats.ulb, ulbytes, sizeof(ulbytes), 1, 0), stats.uls
-			,byte_estimate_to_str(stats.dlb, dlbytes, sizeof(dlbytes), 1, 0), stats.dls
+			,byte_estimate_to_str(stats.ulb, ulbytes, sizeof(ulbytes), 1024 * 1024, 1), stats.uls
+			,byte_estimate_to_str(stats.dlb, dlbytes, sizeof(dlbytes), 1024 * 1024, 1), stats.dls
 			,stats.nusers
 			);
         Log->Lines->Add(AnsiString(str));
