@@ -53,7 +53,7 @@ object MainForm: TMainForm
           Width = 65
           Height = 21
           AutoSize = False
-          Caption = 'Computer'
+          Caption = 'Host Name'
         end
         object NetmailAddress: TLabel
           Left = 8
