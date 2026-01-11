@@ -209,6 +209,11 @@ void __fastcall TTelnetCfgDlg::SshEnabledCheckBoxClick(TObject *Sender)
     SshInterfaceEdit->Enabled = SshEnabledCheckBox->Checked;
     SshPortLabel->Enabled = SshEnabledCheckBox->Checked;
     SshInterfaceLabel->Enabled = SshEnabledCheckBox->Checked;
+	SshConnectTimeoutLabel->Enabled = SshEnabledCheckBox->Checked;
+	SshConnTimeoutEdit->Enabled = SshEnabledCheckBox->Checked;
+	SFTPEnabledCheckBox->Enabled = SshEnabledCheckBox->Checked;
+	SFTPMaxInactivityLabel->Enabled = SshEnabledCheckBox->Checked;
+	SFTPMaxInactivityEdit->Enabled = SshEnabledCheckBox->Checked;
 }
 //---------------------------------------------------------------------------
 
