@@ -104,7 +104,7 @@ G_MODULE_EXPORT void update_userlist_item(GtkListStore *lstore, GtkTreeIter *cur
 		,6,user.location
 		,7,user.connection
 		,8,user.note
-		,9,user.comp
+		,9,user.host
 		,10,user.phone
 		,11,user.netmail
 		,12,user.logons

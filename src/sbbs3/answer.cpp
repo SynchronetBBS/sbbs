@@ -446,7 +446,7 @@ bool sbbs_t::answer()
 								}
 								SAFECOPY(useron.connection, connection);
 								SAFECOPY(useron.ipaddr, client_ipaddr);
-								SAFECOPY(useron.comp, client_name);
+								SAFECOPY(useron.host, client_name);
 								useron.logons++;
 								putuserdat(&useron);
 								llprintf("++", "(%04u)  %-25s  %s Logon"
@@ -774,7 +774,7 @@ bool sbbs_t::answer()
 		}
 		lprintf(LOG_INFO, "terminal type: %ux%u %s %s", term->cols, term->rows, term_charset(autoterm), terminal);
 		SAFECOPY(client_ipaddr, cid);   /* Over-ride IP address with Caller-ID info */
-		SAFECOPY(useron.comp, client_name);
+		SAFECOPY(useron.host, client_name);
 	}
 
 	update_nodeterm();

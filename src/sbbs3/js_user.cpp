@@ -73,7 +73,7 @@ enum {
 	, USER_PROP_LANG
 	, USER_PROP_NOTE
 	, USER_PROP_IPADDR
-	, USER_PROP_COMP
+	, USER_PROP_HOST
 	, USER_PROP_COMMENT
 	, USER_PROP_NETMAIL
 	, USER_PROP_EMAIL    /* READ ONLY */
@@ -198,8 +198,8 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case USER_PROP_IPADDR:
 			s = p->user->ipaddr;
 			break;
-		case USER_PROP_COMP:
-			s = p->user->comp;
+		case USER_PROP_HOST:
+			s = p->user->host;
 			break;
 		case USER_PROP_COMMENT:
 			s = p->user->comment;
@@ -550,8 +550,8 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			SAFECOPY(p->user->ipaddr, str);
 			putuserstr(p->cfg, p->user->number, USER_IPADDR, str);
 			break;
-		case USER_PROP_COMP:
-			SAFECOPY(p->user->comp, str);
+		case USER_PROP_HOST:
+			SAFECOPY(p->user->host, str);
 			putuserstr(p->cfg, p->user->number, USER_HOST, str);
 			break;
 		case USER_PROP_COMMENT:
@@ -869,8 +869,8 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{   "lang"               , USER_PROP_LANG       , USER_PROP_FLAGS_RW , 320 },
 	{   "note"               , USER_PROP_NOTE       , USER_PROP_FLAGS_RW , 310 },
 	{   "ip_address"         , USER_PROP_IPADDR     , USER_PROP_FLAGS_RW , 310 },
-	{   "host_name"          , USER_PROP_COMP       , USER_PROP_FLAGS_RW , 310 },
-	{   "computer"           , USER_PROP_COMP       , USER_PROP_FLAGS_A  , 310 },
+	{   "host_name"          , USER_PROP_HOST       , USER_PROP_FLAGS_RW , 310 },
+	{   "computer"           , USER_PROP_HOST       , USER_PROP_FLAGS_A  , 310 },
 	{   "comment"            , USER_PROP_COMMENT    , USER_PROP_FLAGS_RW , 310 },
 	{   "netmail"            , USER_PROP_NETMAIL    , USER_PROP_FLAGS_RW , 310 },
 	{   "email"              , USER_PROP_EMAIL      , USER_PROP_FLAGS_RO , 310 },

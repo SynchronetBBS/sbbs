@@ -90,7 +90,7 @@ void sbbs_t::useredit(int usernumber)
 		        , format_birthdate(&cfg, user.birth, tmp, sizeof(tmp)));
 		bprintf(text[UeditLocationZipcode], user.location, user.zipcode);
 		bprintf(text[UeditNoteHandle], user.note, user.handle);
-		bprintf(text[UeditComputerModem], user.comp, user.connection);
+		bprintf(text[UeditComputerModem], user.host, user.connection);
 		bprintf(text[UserIpAddr], user.ipaddr);
 		if (user.netmail[0])
 			bprintf(text[UserNetMail], user.netmail);
@@ -192,10 +192,10 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case 'C':
 				bputs(text[EnterYourComputer]);
-				getstr(user.comp, LEN_HOST, kmode);
+				getstr(user.host, LEN_HOST, kmode);
 				if (sys_status & SS_ABORT)
 					break;
-				putuserstr(user.number, USER_HOST, user.comp);
+				putuserstr(user.number, USER_HOST, user.host);
 				break;
 			case 'D':
 				if (user.misc & DELETED) {

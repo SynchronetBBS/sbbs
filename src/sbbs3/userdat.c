@@ -451,7 +451,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	SAFECOPY(user->lang, field[USER_LANG]);
 	SAFECOPY(user->note, field[USER_NOTE]);
 	SAFECOPY(user->ipaddr, field[USER_IPADDR]);
-	SAFECOPY(user->comp, field[USER_HOST]);
+	SAFECOPY(user->host, field[USER_HOST]);
 	SAFECOPY(user->netmail, field[USER_NETMAIL]);
 	SAFECOPY(user->address, field[USER_ADDRESS]);
 	SAFECOPY(user->location, field[USER_LOCATION]);
@@ -740,7 +740,7 @@ bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	                   , user->handle
 	                   , user->note
 	                   , user->ipaddr
-	                   , user->comp
+	                   , user->host
 	                   , user->netmail
 	                   , user->address
 	                   , user->location
@@ -2671,7 +2671,7 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 				if (client != NULL)
 					p = client->host;
 				else if (user != NULL)
-					p = user->comp;
+					p = user->host;
 				else
 					p = NULL;
 				if (!findstr_in_string(p, (char*)*ptrptr))
@@ -3261,7 +3261,7 @@ int loginuserdat(scfg_t* cfg, user_t* user, client_t* client, bool use_prot, cha
 	if (client != NULL) {
 		if (use_prot)
 			SAFECOPY(user->connection, client->protocol);
-		SAFECOPY(user->comp, client->host);
+		SAFECOPY(user->host, client->host);
 		SAFECOPY(user->ipaddr, client->addr);
 	}
 	user->logontime = time32(NULL);
@@ -3660,7 +3660,7 @@ size_t user_field_len(enum user_field fnum)
 		case USER_HANDLE:   return sizeof(user.handle) - 1;
 		case USER_NOTE:     return sizeof(user.note) - 1;
 		case USER_IPADDR:   return sizeof(user.ipaddr) - 1;
-		case USER_HOST:     return sizeof(user.comp) - 1;
+		case USER_HOST:     return sizeof(user.host) - 1;
 		case USER_NETMAIL:  return sizeof(user.netmail) - 1;
 		case USER_ADDRESS:  return sizeof(user.address) - 1;
 		case USER_LOCATION: return sizeof(user.location) - 1;

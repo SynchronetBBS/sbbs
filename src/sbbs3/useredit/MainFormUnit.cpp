@@ -146,7 +146,7 @@ void __fastcall TMainForm::GetUserData(int number)
     GetUserText(AliasEdit, user.alias);
     GetUserText(NameEdit, user.name);
     GetUserText(HandleEdit, user.handle);
-    GetUserText(ComputerEdit, user.comp);
+    GetUserText(ComputerEdit, user.host);
     GetUserText(NetMailEdit, user.netmail);
     GetUserText(AddressEdit, user.address);
     GetUserText(LocationEdit, user.location);

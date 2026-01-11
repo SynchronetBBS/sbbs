@@ -80,7 +80,7 @@ bool sbbs_t::newuser()
 	truncsp(useron.alias);
 
 	/* Sets defaults per sysop config */
-	SAFECOPY(useron.comp, client_name);  /* hostname or CID name */
+	SAFECOPY(useron.host, client_name);  /* hostname or CID name */
 	SAFECOPY(useron.ipaddr, cid);            /* IP address or CID number */
 	if ((i = finduserstr(0, USER_IPADDR, cid, /* del */ true)) != 0) {    /* Duplicate IP address */
 		SAFEPRINTF2(useron.comment, "Warning: same IP address as user #%d %s"
@@ -269,7 +269,7 @@ bool sbbs_t::newuser()
 		menu("../feedback", P_NOABORT | P_NOERROR);
 		safe_snprintf(str, sizeof(str), text[NewUserFeedbackHdr]
 		              , nulstr, getage(&cfg, useron.birth), useron.gender, useron.birth
-		              , useron.name, useron.phone, useron.comp, useron.connection);
+		              , useron.name, useron.phone, useron.host, useron.connection);
 		email(cfg.valuser, str, text[NewUserValEmailSubj], WM_SUBJ_RO | WM_FORCEFWD);
 		if (!useron.fbacks && !useron.emails) {
 			if (online) {                        /* didn't hang up */

@@ -134,7 +134,7 @@ G_MODULE_EXPORT void load_user(GtkWidget *wiggy, gpointer data)
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the computer widget\n");
 		else
-			gtk_entry_set_text(GTK_ENTRY(w),user.comp);
+			gtk_entry_set_text(GTK_ENTRY(w),user.host);
 
 		/* NetMail */
 		w=GTK_WIDGET(gtk_builder_get_object(builder, "eNetMail"));
@@ -857,7 +857,7 @@ G_MODULE_EXPORT void save_user(GtkWidget *wiggy, gpointer data)
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the computer widget\n");
 		else
-			strcpy(user.comp, gtk_entry_get_text(GTK_ENTRY(w)));
+			strcpy(user.host, gtk_entry_get_text(GTK_ENTRY(w)));
 
 		/* NetMail */
 		w=GTK_WIDGET(gtk_builder_get_object(builder, "eNetMail"));

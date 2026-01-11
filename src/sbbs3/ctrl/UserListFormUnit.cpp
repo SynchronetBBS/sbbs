@@ -77,8 +77,8 @@ void __fastcall TUserListForm::FormShow(TObject *Sender)
         Item->SubItems->Add(str);
         Item->SubItems->Add(user.location);
         Item->SubItems->Add(user.connection);
-        Item->SubItems->Add(user.note);
-        Item->SubItems->Add(user.comp);
+        Item->SubItems->Add(user.ipaddr);
+        Item->SubItems->Add(user.host);
         Item->SubItems->Add(user.phone);
         Item->SubItems->Add(user.netmail);
         Item->SubItems->Add(user.logons);

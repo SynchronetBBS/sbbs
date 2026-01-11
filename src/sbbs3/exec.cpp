@@ -43,7 +43,7 @@ char ** sbbs_t::getstrvar(csi_t *bin, uint32_t name)
 			sysvar_p[sysvar_pi] = (char*)useron.handle;
 			break;
 		case 0xc8cd5fb7:
-			sysvar_p[sysvar_pi] = (char*)useron.comp;
+			sysvar_p[sysvar_pi] = (char*)useron.host;
 			break;
 		case 0xcc7aca99:
 			sysvar_p[sysvar_pi] = (char*)useron.note;
@@ -1685,9 +1685,9 @@ int sbbs_t::exec(csi_t *csi)
 						csi->logic = LOGIC_TRUE;
 						break;
 					case USER_STRING_COMPUTER:
-						SAFECOPY(useron.comp, csi->str);
+						SAFECOPY(useron.host, csi->str);
 						putuserstr(useron.number, USER_HOST
-						           , useron.comp);
+						           , useron.host);
 						csi->logic = LOGIC_TRUE;
 						break;
 					case USER_STRING_NOTE:

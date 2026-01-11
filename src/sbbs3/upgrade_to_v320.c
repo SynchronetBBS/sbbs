@@ -274,7 +274,7 @@ static int v31x_parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	getrec(userdat, U_NAME, LEN31x_NAME, user->name);
 	getrec(userdat, U_HANDLE, LEN31x_HANDLE, user->handle);
 	getrec(userdat, U_NOTE, LEN31x_NOTE, user->note);
-	getrec(userdat, U_COMP, LEN31x_COMP, user->comp);
+	getrec(userdat, U_COMP, LEN31x_COMP, user->host);
 	getrec(userdat, U_COMMENT, LEN31x_COMMENT, user->comment);
 	getrec(userdat, U_NETMAIL, LEN31x_NETMAIL, user->netmail);
 	getrec(userdat, U_ADDRESS, LEN31x_ADDRESS, user->address);

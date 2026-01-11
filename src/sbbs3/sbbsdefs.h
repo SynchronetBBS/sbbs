@@ -944,7 +944,7 @@ typedef struct {                        // Users information
 	     name[LEN_NAME + 1],            // Name - Real
 	     handle[LEN_HANDLE + 1],        // Chat handle
 	     lang[LEN_LANG + 1],            // Language code (blank for default)
-	     comp[LEN_HOST + 1],            // Hostname
+	     host[LEN_HOST + 1],            // Hostname
 	     note[LEN_NOTE + 1],            // Public notice about this user
 	     address[LEN_ADDRESS + 1],      // Street Address
 	     location[LEN_LOCATION + 1],    // Location of user

@@ -1592,7 +1592,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 							break;
 						case 'C':
 							if (sys_status & SS_USERON) {
-								SAFECAT(theanswer, useron.comp);
+								SAFECAT(theanswer, useron.host);
 							} else {
 								SAFECAT(theanswer, "PC Jr.");
 							}

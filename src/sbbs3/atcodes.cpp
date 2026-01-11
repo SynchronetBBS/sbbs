@@ -1264,7 +1264,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (!strcmp(sp, "CPU"))
-		return useron.comp;
+		return useron.host;
 
 	if (!strcmp(sp, "HOST"))
 		return client_name;

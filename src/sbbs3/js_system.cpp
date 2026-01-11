@@ -1914,7 +1914,7 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if (client != NULL) {
 		SAFECOPY(user.connection, client->protocol);
-		SAFECOPY(user.comp, client->host);
+		SAFECOPY(user.host, client->host);
 		SAFECOPY(user.ipaddr, client->addr);
 	}
 
