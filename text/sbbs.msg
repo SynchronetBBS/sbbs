@@ -1,12 +1,12 @@
 @CLS@nhcThis BBS is running...
 @WORDWRAP@
-y .|'''.|                        '||                                      .   
-y ||..  ' .... ..... ...    ....  || ..  ... ..   ...   .. ...    ....  .||.  
-y  ''|||.  '|.  |  ||  || .|   '' ||' ||  ||' ''.|  '|.  ||  || .|...||  ||   
-y.     '||  '|.|   ||  || ||      ||  ||  ||    ||   ||  ||  || ||       ||   
-y|'....|'    '|   .||. ||. '|...'.||. ||..||.    '|..|' .||. ||. '|...'  '|.' 
-y         .. |
-y          ''
+    _________                   .__                                __   
+   /   _____/__.__. ____   ____ |  |_________  ____   ____   _____/  |_ 
+   \_____  <   |  |/    \_/ ___\|  |  \_  __ \/  _ \ /    \_/ __ \   __\
+   /        \___  |   |  \  \___|   Y  \  | \(  <_> )   |  \  ___/|  |  
+  /_______  / ____|___|  /\___  >___|  /__|   \____/|___|  /\___  >__|  
+          \/\/         \/     \/     \/                  \/     \/      
+
 w              Synchronet BBS for @PLATFORM@ - Version @FULL_VER@
 w              @COPYRIGHT@ - http://www.synchro.net
 gh
@@ -19,7 +19,7 @@ Integrated TCP/IP Servers: hong Telnet/RLogin/SSH
                            hong Web (HTTP with server-side JavaScript and CGI)
                            hong Finger, Gopher, and IRC
 h
-Native versions for Windows and Unix-like (e.g. Linux and FreeBSD) platforms
+Native versions for Windows and Unix-like OSes (e.g. Linux, FreeBSD, and macOS)
 n@CLS@--------------------------------------------------------------------------
 hRemembering these keys will help you enjoy your cSynchronetw BBS experience:
 n--------------------------------------------------------------------------
