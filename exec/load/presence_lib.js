@@ -1,9 +1,6 @@
-// $Id: presence_lib.js,v 1.14 2020/08/01 22:06:51 rswindell Exp $
-
 // Library for reporting user presence (e.g. BBS node listings, who's online)
 // Much of the code was derived from src/sbbs3/getnode.cpp: nodelist(), whos_online(), printnodedat()
 
-require("text.js", 'UNKNOWN_USER');
 require("nodedefs.js", 'NODE_INUSE');
 require("sbbsdefs.js", 'USER_DELETED');
 
@@ -32,22 +29,22 @@ function node_connection_desc(node)
 				return " Locally";	/* obsolete */
 				break;
 			case NODE_CONNECTION_TELNET:
-				return bbs.text(NodeConnectionTelnet);
+				return bbs.text(bbs.text.NodeConnectionTelnet);
 				break;
 			case NODE_CONNECTION_RLOGIN:
-				return bbs.text(NodeConnectionRLogin);
+				return bbs.text(bbs.text.NodeConnectionRLogin);
 				break;
 			case NODE_CONNECTION_SSH:
-				return bbs.text(NodeConnectionSSH);
+				return bbs.text(bbs.text.NodeConnectionSSH);
 				break;
 			case NODE_CONNECTION_SFTP:
-				return bbs.text(NodeConnectionSFTP);
+				return bbs.text(bbs.text.NodeConnectionSFTP);
 				break;
 			case NODE_CONNECTION_RAW:
-				return bbs.text(NodeConnectionRaw);
+				return bbs.text(bbs.text.NodeConnectionRaw);
 				break;
 			default:
-				return format(bbs.text(NodeConnectionModem), node.connection);
+				return format(bbs.text(bbs.text.NodeConnectionModem), node.connection);
 				break;
 		}
 	} else {
@@ -168,7 +165,7 @@ function node_status(node, is_sysop, options, num)
 				if(options.username_prefix)
 					output += options.username_prefix;
 				if(js.global.bbs && (misc&NODE_ANON) && !is_sysop)
-					output += bbs.text(UNKNOWN_USER);
+					output += bbs.text(bbs.text.UNKNOWN_USER);
 				else
 					output += user.alias;
 			}
@@ -219,7 +216,7 @@ function node_status(node, is_sysop, options, num)
 				if(options.username_prefix)
 					output += options.username_prefix;
 				if(js.global.bbs && (misc&NODE_ANON) && !is_sysop)
-					output += bbs.text(UNKNOWN_USER);
+					output += bbs.text(bbs.text.UNKNOWN_USER);
 				else
 					output += system.username(node.useron);
 			}

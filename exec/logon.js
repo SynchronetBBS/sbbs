@@ -1,13 +1,10 @@
 // logon.js
 
-// Synchronet v3.1 Default Logon Module
+// Synchronet v3.21 Default Logon Module
 
 // @format.tab-size 4, @format.use-tabs true
 
 "use strict";
-
-//if(user.number == 1)
-//	js.exec("jsdocs.js", {});
 
 require("sbbsdefs.js", 'SS_RLOGIN');
 require("nodedefs.js", 'NODE_QUIET');
@@ -55,7 +52,7 @@ if(user.settings & USER_ICE_COLOR) {
 }
 
 if(options.email_validation == true) {
-	load({}, "emailval.js");
+	js.exec("emailval.js", {});
 	if(!bbs.online)
 		exit();
 }
@@ -130,7 +127,8 @@ if(user.security.restrictions&UFLAG_G) {
 else { // !Guest
 
 	// Replaces the 3.20 Logon user prompts
-	var prompts = load({}, "user_info_prompts.js", "logon");
+	var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js");
+	prompts.operation = "logon";
 	if(!user.name)
 		prompts.get_name();
 	if((system.newuser_questions & UQ_HANDLE) && !user.handle)

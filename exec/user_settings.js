@@ -8,8 +8,11 @@ require("sbbsdefs.js", 'BBS_OPT_AUTO_LOGON');
 require("userdefs.js", 'USER_SPIN');
 require("nodedefs.js", 'NODE_DFLT');
 require("gettext.js", 'gettext');
-var termdesc = load({}, "termdesc.js");
-var lang = load({}, "lang.js");
+var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js");
+var termdesc = bbs.mods.termdesc || load(bbs.mods.termdesc = {}, "termdesc.js");
+var lang = bbs.mods.lang || load(bbs.mods.lang = {}, "lang.js");
+
+prompts.operation = "user settings";
 
 function on_or_off(on)
 {
@@ -270,22 +273,7 @@ while(bbs.online && !js.terminated) {
 			break;
 		}
 		case 'M':
-			console.putmsg(bbs.text(bbs.text.EnterNetMailAddress));
-			var email = console.getstr(thisuser.netmail, LEN_NETMAIL
-				,K_EDIT | K_AUTODEL | K_LINE | K_TRIM)
-			if (email === "" || email === null || console.aborted) {
-				break;
-			}
-			thisuser.netmail = email;
-
-			if (thisuser.netmail.length > 0
-				&& (system.settings & SYS_FWDTONET)
-				&& bbs.text(bbs.text.ForwardMailQ).length > 0
-				&& (((thisuser.settings & USER_NETMAIL) && console.yesno(bbs.text(bbs.text.ForwardMailQ)))
-				|| (!(thisuser.settings & USER_NETMAIL) && !console.noyes(bbs.text(bbs.text.ForwardMailQ)))))
-				thisuser.settings |= USER_NETMAIL;
-			else if (!console.aborted)
-				thisuser.settings &= ~USER_NETMAIL;
+			prompts.get_netmail(thisuser);
 			break;
 		case 'N':
 			thisuser.settings ^= USER_ASK_NSCAN;

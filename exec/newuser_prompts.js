@@ -15,7 +15,7 @@ require("sbbsdefs.js", "UQ_ALIASES");
 require("key_defs.js", "KEY_DEL");
 require("gettext.js", "gettext");
 
-var prompts = load("user_info_prompts.js", "new user registration");
+var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js", "new user registration");
 
 var options = load("modopts.js", "newuser_prompts");
 if(!options)
@@ -25,21 +25,6 @@ if(!options)
 
 const PETSCII_DELETE = CTRL_T;
 const PETSCII_UPPERLOWER = 14;
-
-var kmode = (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL | K_TRIM;
-if (!(system.newuser_questions & UQ_NOUPRLWR))
-	kmode |= K_UPRLWR;
-
-function ask_to_cancel(msg)
-{
-	console.aborted = false;
-	if (msg) {
-		console.print(msg);
-		console.cond_newline();
-	}
-	if (!console.yesno(gettext("Continue new user registration")))
-		exit(1);
-}
 
 while(bbs.online && !js.terminated) {
 
@@ -70,7 +55,7 @@ while(bbs.online && !js.terminated) {
 				user.settings |= (USER_PETSCII | USER_COLOR);
 			else if (bbs.online) {
 				bbs.logline(LOG_NOTICE, "N!", format("Unsupported backspace key received: %02Xh", key));
-				ask_to_cancel(format(bbs.text(bbs.text.InvalidBackspaceKeyFmt), key, key));
+				prompts.ask_to_cancel(format(bbs.text(bbs.text.InvalidBackspaceKeyFmt), key, key));
 			}
 		}
 	}
