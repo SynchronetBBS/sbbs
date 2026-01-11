@@ -105,7 +105,7 @@ bool sbbs_t::answer()
 	char      path[MAX_PATH + 1];
 	int       i, l, in;
 	struct tm tm;
-	max_socket_inactivity = startup->max_login_inactivity;
+	max_socket_inactivity = startup->max_dumbterm_inactivity;
 	useron.number = 0;
 	answertime = logontime = starttime = now = time(NULL);
 	/* Caller ID string is client IP address, by default (may be overridden later) */
@@ -790,6 +790,9 @@ bool sbbs_t::answer()
 			if (!newuser())
 				llprintf(LOG_NOTICE, "N-", "%s !New user registration canceled", client.protocol);
 		}
+
+		if (autoterm != NO_EXASCII)
+			max_socket_inactivity = startup->max_login_inactivity;
 
 		if (!useron.number) {    /* manual/regular login */
 

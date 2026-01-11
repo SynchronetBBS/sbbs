@@ -34,6 +34,9 @@ Terminal Server
 o Newly abstracted (via C++ classes) terminal input/output
   - Sets the stage for future support for more terminal types
   - Should see no (or minimal) changes in behavior
+  - Auto-detects PETSCII terminals connecting to standard TCP ports via
+    Telnet, SSH or RLogin "terminal type" advertisement by client
+o Built-in detection and short-inactivity timeout of dumb terminal/bot logins
 o Send notification messages to recipients of files uploaded - issue #955
 o Allow search by author forward/backward for netmail messages - issue #484
 o Eliminate the "Start with number [n]:" prompt in initial email listing

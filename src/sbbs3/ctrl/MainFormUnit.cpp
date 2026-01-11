@@ -382,7 +382,7 @@ static void bbs_clients(void* p, int clients)
 static void bbs_start(void)
 {
     FILE* fp=fopen(MainForm->ini_file,"r");
-    sbbs_read_ini(fp, MainForm->ini_file
+    bool result = sbbs_read_ini(fp, MainForm->ini_file
         ,&MainForm->global
         ,NULL   ,&MainForm->bbs_startup
         ,NULL   ,NULL
@@ -393,7 +393,13 @@ static void bbs_start(void)
     if(fp!=NULL)
         fclose(fp);
 
-	_beginthread((void(*)(void*))bbs_thread,0,&MainForm->bbs_startup);
+	if(result)
+		_beginthread((void(*)(void*))bbs_thread,0,&MainForm->bbs_startup);
+	else {
+		char err[MAX_PATH*2];
+		SAFEPRINTF(err,"FAILED to read: %s", MainForm->ini_file);
+		Application->MessageBox(err,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+	}
     Application->ProcessMessages();
 }
 
@@ -521,7 +527,7 @@ static void mail_clients(void* p, int clients)
 static void mail_start(void)
 {
     FILE* fp=fopen(MainForm->ini_file,"r");
-    sbbs_read_ini(fp, MainForm->ini_file
+    bool result = sbbs_read_ini(fp, MainForm->ini_file
         ,&MainForm->global
         ,NULL   ,NULL
         ,NULL   ,NULL
@@ -532,7 +538,13 @@ static void mail_start(void)
     if(fp!=NULL)
         fclose(fp);
 
-	_beginthread((void(*)(void*))mail_server,0,&MainForm->mail_startup);
+	if(result)
+		_beginthread((void(*)(void*))mail_server,0,&MainForm->mail_startup);
+	else {
+		char err[MAX_PATH*2];
+		SAFEPRINTF(err,"FAILED to read: %s", MainForm->ini_file);
+		Application->MessageBox(err,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+	}
     Application->ProcessMessages();
 }
 
@@ -616,7 +628,7 @@ static void ftp_clients(void* p, int clients)
 static void ftp_start(void)
 {
     FILE* fp=fopen(MainForm->ini_file,"r");
-    sbbs_read_ini(fp, MainForm->ini_file
+    bool result = sbbs_read_ini(fp, MainForm->ini_file
         ,&MainForm->global
         ,NULL   ,NULL
         ,NULL   ,&MainForm->ftp_startup
@@ -627,7 +639,13 @@ static void ftp_start(void)
     if(fp!=NULL)
         fclose(fp);
 
-	_beginthread((void(*)(void*))ftp_server,0,&MainForm->ftp_startup);
+	if(result)
+		_beginthread((void(*)(void*))ftp_server,0,&MainForm->ftp_startup);
+	else {
+		char err[MAX_PATH*2];
+		SAFEPRINTF(err,"FAILED to read: %s", MainForm->ini_file);
+		Application->MessageBox(err,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+	}
     Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
@@ -684,7 +702,7 @@ static void web_clients(void* p, int clients)
 static void web_start(void)
 {
     FILE* fp=fopen(MainForm->ini_file,"r");
-    sbbs_read_ini(fp, MainForm->ini_file
+    bool result = sbbs_read_ini(fp, MainForm->ini_file
         ,&MainForm->global
         ,NULL   ,NULL
         ,NULL   ,NULL
@@ -695,7 +713,13 @@ static void web_start(void)
     if(fp!=NULL)
         fclose(fp);
 
-	_beginthread((void(*)(void*))web_server,0,&MainForm->web_startup);
+	if(result)
+		_beginthread((void(*)(void*))web_server,0,&MainForm->web_startup);
+	else {
+		char err[MAX_PATH*2];
+		SAFEPRINTF(err,"FAILED to read: %s", MainForm->ini_file);
+		Application->MessageBox(err,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+	}
     Application->ProcessMessages();
 }
 //---------------------------------------------------------------------------
@@ -729,7 +753,7 @@ static void recycle(void* cbdata)
     }
 
     fp=fopen(MainForm->ini_file,"r");
-    sbbs_read_ini(fp, MainForm->ini_file
+    bool result = sbbs_read_ini(fp, MainForm->ini_file
         ,&MainForm->global
         ,NULL   ,bbs
         ,NULL   ,ftp
@@ -739,6 +763,11 @@ static void recycle(void* cbdata)
         );
     if(fp!=NULL)
         fclose(fp);
+	if(!result) {
+		char err[MAX_PATH*2];
+		SAFEPRINTF(err,"FAILED to read: %s", MainForm->ini_file);
+		Application->MessageBox(err,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+	}
 	MainForm->SetControls();
 }
 //---------------------------------------------------------------------------
@@ -747,6 +776,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
 {
     /* Defaults */
     memset(&global,0,sizeof(global));
+	global.size = sizeof global;
     SAFECOPY(global.ctrl_dir,"c:\\sbbs\\ctrl\\");
     global.js.max_bytes=JAVASCRIPT_MAX_BYTES;
     global.js.time_limit=JAVASCRIPT_TIME_LIMIT;
@@ -1147,7 +1177,7 @@ void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
     	return;
 
     FILE* fp=fopen(ini_file,"r");
-    sbbs_read_ini(fp, MainForm->ini_file
+    bool result = sbbs_read_ini(fp, MainForm->ini_file
         ,&MainForm->global
         ,NULL   ,NULL
         ,NULL   ,NULL
@@ -1158,7 +1188,13 @@ void __fastcall TMainForm::ServicesStartExecute(TObject *Sender)
     if(fp!=NULL)
         fclose(fp);
 
-	_beginthread((void(*)(void*))services_thread,0,&services_startup);
+	if(result)
+		_beginthread((void(*)(void*))services_thread,0,&services_startup);
+	else {
+		char err[MAX_PATH*2];
+		SAFEPRINTF(err,"FAILED to read: %s", MainForm->ini_file);
+		Application->MessageBox(err,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+	}
     Application->ProcessMessages();
 }
 
@@ -1859,7 +1895,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         Application->Terminate();
         return;
     }
-    sbbs_read_ini(fp, MainForm->ini_file
+    bool result = sbbs_read_ini(fp, MainForm->ini_file
         ,&global
         ,&SysAutoStart   		,&bbs_startup
         ,&FtpAutoStart 			,&ftp_startup
@@ -1867,8 +1903,15 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         ,&MailAutoStart 	    ,&mail_startup
         ,&ServicesAutoStart     ,&services_startup
         );
-    StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Read " + AnsiString(ini_file);
     fclose(fp);
+	if(!result) {
+		char err[MAX_PATH * 2];
+		sprintf(err,"Failed to read %s",ini_file);
+		Application->MessageBox(err,"ERROR",MB_OK|MB_ICONEXCLAMATION);
+		Application->Terminate();
+        return;
+    }
+	StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Read " + AnsiString(ini_file);
 
     AnsiString CtrlDirectory = AnsiString(global.ctrl_dir);
     if(!FileExists(CtrlDirectory + "main.ini")) {
@@ -3045,7 +3088,7 @@ void __fastcall TMainForm::reload_config(void)
         Application->Terminate();
     }
     FILE* fp=fopen(MainForm->ini_file,"r");
-    sbbs_read_ini(fp, MainForm->ini_file
+    bool result = sbbs_read_ini(fp, MainForm->ini_file
         ,&MainForm->global
         ,NULL   ,&MainForm->bbs_startup
         ,NULL   ,NULL
@@ -3055,8 +3098,11 @@ void __fastcall TMainForm::reload_config(void)
         );
     if(fp!=NULL)
         fclose(fp);
-   	StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Configuration reloaded";
-   	semfile_list_check(&initialized,recycle_semfiles);
+	if(result) {
+		StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Configuration reloaded";
+		semfile_list_check(&initialized,recycle_semfiles);
+	} else
+		StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="FAILED to reload config";
 
     if(sysop_available(&cfg))
     	ChatToggle->Checked=true;

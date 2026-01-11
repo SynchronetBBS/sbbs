@@ -64,6 +64,7 @@ struct startup_sound_settings {
 
 typedef struct {
 
+	size_t size;
 	char ctrl_dir[INI_MAX_VALUE_LEN];
 	char temp_dir[INI_MAX_VALUE_LEN];
 	char host_name[INI_MAX_VALUE_LEN];
@@ -158,6 +159,7 @@ typedef struct {
 	bool usedosemu;
 	char xtrn_term_ansi[32];        /* external ANSI terminal type (e.g. "ansi-bbs") */
 	char xtrn_term_dumb[32];        /* external dumb terminal type (e.g. "dumb") */
+	uint16_t max_dumbterm_inactivity;   // seconds
 	uint16_t max_login_inactivity;      // seconds
 	uint16_t max_newuser_inactivity;    // seconds
 	uint16_t max_session_inactivity;    // seconds

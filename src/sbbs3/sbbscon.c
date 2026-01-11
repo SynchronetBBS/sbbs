@@ -972,14 +972,15 @@ static void read_startup_ini(bool recycle
 		lputs(LOG_WARNING, "Using default initialization values");
 
 	/* We call this function to set defaults, even if there's no .ini file */
-	sbbs_read_ini(fp,
+	if (!sbbs_read_ini(fp,
 	              ini_file,
 	              NULL, /* global_startup */
 	              &run_bbs,       bbs,
 	              &run_ftp,       ftp,
 	              &run_web,       web,
 	              &run_mail,      mail,
-	              &run_services,  services);
+	              &run_services,  services))
+		lprintf(LOG_CRIT, "Internal error reading or initializing startup structures from %s", ini_file);
 
 	/* read/default any sbbscon-specific .ini keys here */
 #if defined(__unix__)

@@ -40,6 +40,7 @@ static const char* strInterfaces = "Interface";
 static const char* strPort = "Port";
 static const char* strMaxClients = "MaxClients";
 static const char* strMaxInactivity = "MaxInactivity";
+static const char* strMaxDumbTermInactivity = "MaxDumbTermInactivity";
 static const char* strMaxLoginInactivity = "MaxLoginInactivity";
 static const char* strMaxNewUserInactivity = "MaxNewUserInactivity";
 static const char* strMaxSessionInactivity = "MaxSessionInactivity";
@@ -264,11 +265,14 @@ static void set_login_attempt_settings(str_list_t* lp, const char* section, stru
 
 static const struct in6_addr wildcard6;
 
-static void get_ini_globals(str_list_t list, global_startup_t* global)
+static bool get_ini_globals(str_list_t list, global_startup_t* global)
 {
 	const char* section = "Global";
 	char        value[INI_MAX_VALUE_LEN];
 	char*       p;
+
+	if (global->size != sizeof *global)
+		return false;
 
 	p = iniGetString(list, section, strCtrlDirectory, nulstr, value);
 	if (*p) {
@@ -308,6 +312,8 @@ static void get_ini_globals(str_list_t list, global_startup_t* global)
 
 	sbbs_get_js_settings(list, section, &global->js, &global->js);
 	sbbs_get_sound_settings(list, section, &global->sound, &global->sound);
+
+	return true;
 }
 
 void sbbs_free_ini(
@@ -345,8 +351,8 @@ void sbbs_free_ini(
 	}
 }
 
-void sbbs_read_ini(
-	FILE*                  fp
+bool sbbs_read_ini(
+	  FILE*                  fp
 	, const char*            ini_fname
 	, global_startup_t*      global
 	, bool*                  run_bbs
@@ -377,6 +383,7 @@ void sbbs_read_ini(
 
 	if (global == NULL) {
 		memset(&global_buf, 0, sizeof(global_buf));
+		global_buf.size = sizeof global_buf;
 		global = &global_buf;
 	}
 
@@ -390,7 +397,8 @@ void sbbs_read_ini(
 
 	list = iniReadFile(fp);
 
-	get_ini_globals(list, global);
+	if (!get_ini_globals(list, global))
+		return false;
 
 	if (global->ctrl_dir[0]) {
 		if (bbs != NULL)
@@ -429,6 +437,9 @@ void sbbs_read_ini(
 		*run_bbs = iniGetBool(list, section, strAutoStart, true);
 
 	if (bbs != NULL) {
+
+		if (bbs->size != sizeof *bbs)
+			return false;
 
 		bbs->outgoing4.s_addr
 		    = iniGetIpAddress(list, section, strOutgoing4, global->outgoing4.s_addr);
@@ -530,6 +541,7 @@ void sbbs_read_ini(
 		bbs->login_attempt = get_login_attempt_settings(list, section, global);
 		bbs->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, 0);
 
+		bbs->max_dumbterm_inactivity = (uint16_t)iniGetDuration(list, section, strMaxDumbTermInactivity, 60);
 		bbs->max_login_inactivity = (uint16_t)iniGetDuration(list, section, strMaxLoginInactivity, 10 * 60);
 		bbs->max_newuser_inactivity = (uint16_t)iniGetDuration(list, section, strMaxNewUserInactivity, 60 * 60);
 		bbs->max_session_inactivity = (uint16_t)iniGetDuration(list, section, strMaxSessionInactivity, 10 * 60);
@@ -545,6 +557,9 @@ void sbbs_read_ini(
 		*run_ftp = iniGetBool(list, section, strAutoStart, true);
 
 	if (ftp != NULL) {
+
+		if (ftp->size != sizeof *ftp)
+			return false;
 
 		ftp->outgoing4.s_addr
 		    = iniGetIpAddress(list, section, strOutgoing4, global->outgoing4.s_addr);
@@ -612,6 +627,9 @@ void sbbs_read_ini(
 		*run_mail = iniGetBool(list, section, strAutoStart, true);
 
 	if (mail != NULL) {
+
+		if (mail->size != sizeof *mail)
+			return false;
 
 		mail->interfaces
 		    = iniGetStringList(list, section, strInterfaces, ",", global_interfaces);
@@ -720,6 +738,9 @@ void sbbs_read_ini(
 
 	if (services != NULL) {
 
+		if (services->size != sizeof *services)
+			return false;
+
 		services->interfaces
 		    = iniGetStringList(list, section, strInterfaces, ",", global_interfaces);
 		services->outgoing4.s_addr
@@ -767,6 +788,9 @@ void sbbs_read_ini(
 		*run_web = iniGetBool(list, section, strAutoStart, false);
 
 	if (web != NULL) {
+
+		if (web->size != sizeof *web)
+			return false;
 
 		web->interfaces
 		    = iniGetStringList(list, section, strInterfaces, ",", global_interfaces);
@@ -848,6 +872,7 @@ void sbbs_read_ini(
 
 	free(global_interfaces);
 	iniFreeStringList(list);
+	return true;
 }
 
 bool sbbs_write_ini(
@@ -884,7 +909,9 @@ bool sbbs_write_ini(
 
 	if (global == NULL) {
 		memset(&global_buf, 0, sizeof(global_buf));
-		get_ini_globals(list, &global_buf);
+		global_buf.size = sizeof global_buf;
+		if (!get_ini_globals(list, &global_buf))
+			return false;
 		global = &global_buf;
 	}
 
@@ -968,6 +995,8 @@ bool sbbs_write_ini(
 			if (!iniSetUInteger(lp, section, "OutbufDrainTimeout", bbs->outbuf_drain_timeout, &style))
 				break;
 			if (!iniSetUInteger(lp, section, strMaxConConn, bbs->max_concurrent_connections, &style))
+				break;
+			if (!iniSetDuration(lp, section, strMaxDumbTermInactivity, bbs->max_dumbterm_inactivity, &style))
 				break;
 			if (!iniSetDuration(lp, section, strMaxLoginInactivity, bbs->max_login_inactivity, &style))
 				break;

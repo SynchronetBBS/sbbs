@@ -35,12 +35,12 @@ extern "C" {
 #endif
 
 void sbbs_get_ini_fname(
-	char* ini_file
+	  char* ini_file
 	, const char* ctrl_dir
 	);
 
-void sbbs_read_ini(
-	FILE*                  fp
+bool sbbs_read_ini(
+	  FILE*                  fp
 	, const char*            ini_fname
 	, global_startup_t*      global
 	, bool*                  run_bbs
@@ -56,7 +56,7 @@ void sbbs_read_ini(
 	);
 
 void sbbs_free_ini(
-	global_startup_t*      global
+	  global_startup_t*      global
 	, bbs_startup_t*         bbs_startup
 	, ftp_startup_t*         ftp_startup
 	, web_startup_t*         web_startup
@@ -65,14 +65,14 @@ void sbbs_free_ini(
 	);
 
 void sbbs_get_js_settings(
-	str_list_t list
+	  str_list_t list
 	, const char* section
 	, js_startup_t* js
 	, js_startup_t* defaults
 	);
 
 bool sbbs_set_js_settings(
-	str_list_t* list
+	  str_list_t* list
 	, const char* section
 	, js_startup_t* js
 	, js_startup_t* defaults
@@ -80,7 +80,7 @@ bool sbbs_set_js_settings(
 	);
 
 bool sbbs_write_ini(
-	FILE*                  fp
+	  FILE*                  fp
 	, scfg_t*                cfg
 	, global_startup_t*      global
 	, bool run_bbs

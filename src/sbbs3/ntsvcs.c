@@ -363,14 +363,18 @@ static void read_ini(sbbs_ntsvc_t* svc)
 	}
 
 	/* We call this function to set defaults, even if there's no .ini file */
-	sbbs_read_ini(fp, ini_file
+	if (!sbbs_read_ini(fp, ini_file
 	              , NULL /* global_startup */
 	              , NULL, bbs_startup
 	              , NULL, ftp_startup
 	              , NULL, web_startup
 	              , NULL, mail_startup
 	              , NULL, services_startup
-	              );
+	              )) {
+		SAFEPRINTF(str, "Internal error reading or initializing startup structures from %s", ini_file);
+		svc_lputs(NULL, LOG_CRIT, str);
+	}
+
 
 	/* close .ini file here */
 	if (fp != NULL)
@@ -1234,14 +1238,17 @@ int main(int argc, char** argv)
 	}
 
 	/* We call this function to set defaults, even if there's no .ini file */
-	sbbs_read_ini(fp, ini_file
+	if (!sbbs_read_ini(fp, ini_file
 	              , NULL /* global_startup */
 	              , &bbs.autostart, NULL
 	              , &ftp.autostart, NULL
 	              , &web.autostart, NULL
 	              , &mail.autostart, NULL
 	              , &services.autostart, NULL
-	              );
+	              )) {
+		SAFEPRINTF(str, "Internal error reading or initializing startup structures from %s", ini_file);
+		svc_lputs(NULL, LOG_CRIT, str);
+	}
 
 	/* close .ini file here */
 	if (fp != NULL)

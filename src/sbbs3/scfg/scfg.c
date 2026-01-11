@@ -2655,7 +2655,7 @@ void bail(int code)
 			if (fp == NULL)
 				uifc.msgf("Error opening %s", cfg.filename);
 			else {
-				sbbs_read_ini(
+				if (!sbbs_read_ini(
 					fp
 					, cfg.filename
 					, &global_startup
@@ -2669,8 +2669,10 @@ void bail(int code)
 					, &mail_startup
 					, &run_services
 					, &services_startup
-					);
-				if (!sbbs_write_ini(
+					))
+					uifc.msgf("Internal error reading %s", cfg.filename);
+				else
+					if (!sbbs_write_ini(
 						fp
 						, &cfg
 						, &global_startup
