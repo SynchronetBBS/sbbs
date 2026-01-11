@@ -116,7 +116,11 @@ function str_cmds(str)
 		if(word=="LIST" || word=="TYPE" || word=="CAT") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
-				console.printfile(get_filename(str), word == "CAT" ? P_NOATCODES : P_CPM_EOF);
+				var pmode = (word == "CAT") ? P_NOATCODES : P_CPM_EOF;
+				if(word == "TYPE")
+					pmode |= P_OPENCLOSE;
+				log("printing " + str);
+				log(console.printfile(get_filename(str), pmode));
 				return;
 			}
 		}
