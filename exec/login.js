@@ -1,6 +1,5 @@
-// login.js
-
-// Login module for Synchronet BBS v3.1
+// Login module for Synchronet BBS v3.21
+// Handles user authentication for terminal clients (e.g. Telnet)
 
 "use strict";
 
@@ -11,25 +10,16 @@ if((options=load("modopts.js","login")) == null)
 	options={email_passwords: true};
 if(!options.login_prompts)
 	options.login_prompts = 10;
-if(!options.inactive_hangup)
-	options.inactive_hangup = 30;	 // seconds
 if(options.guest === undefined)
 	options.guest = true;
 
-if(bbs.sys_status & SS_USERON) {
-	// Only required for "Re-login" capability
+if(bbs.sys_status & SS_USERON)// Only required for "Re-login" capability
 	bbs.logout();
-}
+
 var guest = options.guest && system.matchuser("guest");
 
 if(!bbs.online)
 	exit();
-var inactive_hangup = parseInt(options.inactive_hangup, 10);
-if(inactive_hangup && inactive_hangup < console.max_socket_inactivity
-	&& !(console.autoterm&(USER_ANSI | USER_PETSCII | USER_UTF8))) {
-	console.max_socket_inactivity = inactive_hangup;
-	log(LOG_NOTICE, "terminal not detected, reducing inactivity hang-up timeout to " + console.max_socket_inactivity + " seconds");
-}
 if(console.max_socket_inactivity > 0 && bbs.node_num == bbs.last_node) {
 	console.max_socket_inactivity /= 2;
 	log(LOG_NOTICE, "last node login inactivity timeout reduced to " + console.max_socket_inactivity);
