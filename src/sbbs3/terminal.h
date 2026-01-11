@@ -301,19 +301,14 @@ public:
 		}
 	}
 	virtual void set_output_rate(enum output_rate speed) {}
-	virtual void center(const char *instr, bool msg = false, unsigned columns = 0) {
-		if (columns == 0)
-			columns = cols;
+	virtual void center(const char *instr, int mode = 0) {
 		char *str = strdup(instr);
 		truncsp(str);
 		size_t len = bstrlen(str);
 		carriage_return();
-		if (len < columns)
-			cursor_right((columns - len) / 2);
-		if (msg)
-			sbbs->putmsg(str, P_NONE);
-		else
-			sbbs->bputs(str);
+		if (len < cols)
+			cursor_right((cols - len) / 2);
+		sbbs->bputs(str, mode);
 		free(str);
 		newline();
 	}
