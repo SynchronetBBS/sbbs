@@ -1804,10 +1804,7 @@ int createdefaults(scfg_t* cfg)
 
 {
 	int		i;
-	time_t	now;
 	user_t	user;
-
-	now=time(NULL);
 
 	memset(&user,0,sizeof(user));
 
@@ -1824,7 +1821,7 @@ int createdefaults(scfg_t* cfg)
 	}
 
 	if((i=newuserdat(cfg, &user))!=0) {
-	    lprintf("%s %d", "Error creating Default User.  Error # ",i);
+	    lprintf("Error %d creating New User", i);
 		return(i);
 	}
 	return(i);
