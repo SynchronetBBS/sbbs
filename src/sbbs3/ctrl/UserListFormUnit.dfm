@@ -53,7 +53,7 @@ object UserListForm: TUserListForm
         Width = 57
       end
       item
-        Caption = 'Address'
+        Caption = 'IP Address'
         Width = 81
       end
       item
