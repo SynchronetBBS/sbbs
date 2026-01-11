@@ -3092,7 +3092,9 @@ void event_thread(void* arg)
 			sbbs->cfg.node_num = 0;
 			if (!(startup->options & BBS_OPT_NO_NEWDAY_EVENTS)) {
 				sbbs->event_code = "";
+				sbbs->online = ON_LOCAL;
 				sbbs->logonstats();
+				sbbs->online = false;
 				if (sbbs->sys_status & SS_DAILY)
 					sbbs->daily_maint();
 			}
