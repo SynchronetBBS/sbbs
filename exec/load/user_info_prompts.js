@@ -21,7 +21,7 @@ function ask_to_cancel(msg)
 		console.print(msg);
 		console.cond_newline();
 	}
-	if (!console.yesno(gettext("Continue " + operation)))
+	if (!console.yesno(gettext("Continue " + operation + "\x01\\")))
 		exit(1);
 }
 
@@ -198,7 +198,9 @@ function get_birthdate(user)
 	while (bbs.online && bbs.text(bbs.text.EnterYourBirthday)) {
 		console.putmsg(format(bbs.text(bbs.text.EnterYourBirthday), system.birthdate_format), P_SAVEATR);
 		var birthdate = console.gettemplate(system.birthdate_template, bbs.atcode("BIRTH"), K_EDIT);
-		if (system.check_birthdate(birthdate)) {
+		if (birthdate.length != system.birthdate_template.length)
+			continue;
+		if (typeof system.check_birthdate != "function" || system.check_birthdate(birthdate)) {
 			user.birthdate = birthdate;
 			break;
 		}
@@ -223,7 +225,8 @@ function get_netmail(user)
 		}
 	}
 	user.settings &= ~USER_NETMAIL;
-	if ((system.settings & SYS_FWDTONET) && system.check_netmail_addr(user.netmail)
+	if ((system.settings & SYS_FWDTONET)
+		&& (typeof system.check_netmail_addr != "function" || system.check_netmail_addr(user.netmail))
 		&& bbs.text(bbs.text.ForwardMailQ) && console.yesno(bbs.text(bbs.text.ForwardMailQ)))
 		user.settings |= USER_NETMAIL;
 }

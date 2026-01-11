@@ -141,7 +141,9 @@ else { // !Guest
 		prompts.get_phone();
 	if((system.newuser_questions & UQ_SEX) && !user.gender)
 		prompts.get_gender();
-	if((system.newuser_questions & UQ_BIRTH) && !system.check_birthdate(user.birthdate))
+	if((system.newuser_questions & UQ_BIRTH)
+		&& typeof system.check_birthdate == "function"
+		&& !system.check_birthdate(user.birthdate))
 		prompts.get_birthdate();
 	if(!(system.newuser_questions & UQ_NONETMAIL) && !user.netmail)
 		prompts.get_netmail();
