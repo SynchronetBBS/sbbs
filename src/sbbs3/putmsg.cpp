@@ -472,7 +472,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 						tmp[i++] = str[l++];
 					tmp[i] = 0;
 					truncsp(tmp);
-					term->center(expand_atcodes(tmp, tmp2, sizeof tmp2));
+					term->center(expand_atcodes(tmp, tmp2, sizeof tmp2), mode);
 					if (str[l] == '\r')
 						l++;
 					if (str[l] == '\n')
@@ -489,6 +489,11 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					l += 10;
 					mode |= P_WORDWRAP;
 					return putmsgfrag(str + l, mode, org_cols);
+				}
+				if (memcmp(str + l, "@WRAPOFF@", 9) == 0) {
+					l += 9;
+					// Stray @WRAPOFF@, ignore
+					continue;
 				}
 				if (memcmp(str + l, "@TRUNCATE@", 10) == 0) {
 					l += 10;
