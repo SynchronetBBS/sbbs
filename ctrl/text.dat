@@ -420,7 +420,7 @@
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your birthday (@BDATEFMT@)\1\\: \1w"  345 EnterYourBirthday
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your location\1\\ (e.g. city, state)\1\\: \1w" 346 EnterYourCityState
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your zip (or postal) code\1\\: \1w"   347 EnterYourZipCode
-"\1_\1y\1hClient (Name or Address)\1\\: \1w"                348 EnterYourComputer
+"\1_\1y\1hClient Host Name\1\\: \1w"                       348 EnterYourComputer
 "Are you connecting from \1\\North America"                 349 CallingFromNorthAmericaQ
 "Is the above information correct\1\\"                      350 UserInfoCorrectQ
 "\1bUser #\1c%-4d      \1b: \1c%s\r\n"                      351 LiUserNumberName
@@ -520,7 +520,7 @@
 	"\1h%s\r\n"
 "\1n\1cNote      : \1h%-30.30s  \1n\1cHandle       : "\      425 UeditNoteHandle
 	"\1h%s\r\n"
-"\1n\1cClient    : \1h%-30.30s  \1n\1cProtocol     : "\      426 UeditComputerModem
+"\1n\1cHost Name : \1h%-30.30s  \1n\1cProtocol     : "\      426 UeditComputerModem
 	"\1h%s\r\n"
 "\1n\1cComment %c : \1h%s\r\n"                             427 UeditCommentLine
 "\1n\1cFirst on  : \1h%-8.8s  \1n\1cExpire    : \1h%-8.8s  "\ 428 UserDates
