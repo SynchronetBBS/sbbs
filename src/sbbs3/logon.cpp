@@ -534,7 +534,7 @@ uint sbbs_t::logonstats()
 	if (stats.date > now + (24L * 60L * 60L)) /* More than a day in the future? */
 		errormsg(WHERE, ERR_CHK, "Daily stats date/time stamp", (int)stats.date);
 
-	if (!dates_are_same(now, stats.date)) {
+	if (stats.date < now && !dates_are_same(now, stats.date)) {
 
 		struct tm tm{};
 		struct tm update_tm{};
@@ -565,12 +565,6 @@ uint sbbs_t::logonstats()
 		}
 		close(file);
 		for (i = 0; i <= cfg.sys_nodes; i++) {
-			if (i) {     /* updating a node */
-				if (getnodedat(i, &node, true)) {
-					node.misc |= NODE_EVENT;
-					putnodedat(i, &node);
-				}
-			}
 			dstats_fname(&cfg, i, path, sizeof path);
 			if ((dsts = fopen_dstats(&cfg, i, /* for_write: */ TRUE)) == NULL) /* doesn't have stats yet */
 				continue;
@@ -584,11 +578,21 @@ uint sbbs_t::logonstats()
 			if (!fread_dstats(dsts, &stats)) {
 				errormsg(WHERE, ERR_READ, path, i);
 			} else {
-				stats.date = time32(NULL);
-				fwrite_cstats(csts, &stats);
-				rolloverstats(&stats);
-				if (!fwrite_dstats(dsts, &stats, __FUNCTION__))
-					errormsg(WHERE, ERR_WRITE, path, i);
+				if(stats.date > now || dates_are_same(now, stats.date))
+					lprintf(LOG_NOTICE, "%s already updated on %s", path, timestr(stats.date));
+				else {
+					stats.date = time32(NULL);
+					fwrite_cstats(csts, &stats);
+					rolloverstats(&stats);
+					if (!fwrite_dstats(dsts, &stats, __FUNCTION__))
+						errormsg(WHERE, ERR_WRITE, path, i);
+					if (i) {     /* updating a node */
+						if (getnodedat(i, &node, true)) {
+							node.misc |= NODE_EVENT;
+							putnodedat(i, &node);
+						}
+					}
+				}
 			}
 			fclose_dstats(dsts);
 			fclose_cstats(csts);
