@@ -97,7 +97,7 @@
 "\1n\r\n\1c\xfe \1h\1bReading \1n\1c\xfe %4u\b\b\b\b%s\1\\"\           071 ReadingSub
 	" %4u\b\b\b\b\1h%s \1n\1c(\1h\1`?\1n\1c=Menu) (\1h%u\1n\1c of \1h%u\1n\1c): \1n\1~"
 "\r\nYou didn't post message #%d\r\n"                   072 YouDidntPostMsgN
-"\1?Delete message #%u '%s'"                          073 DeletePostQ
+"\1?Delete message #%u \1\\'%s'"                        073 DeletePostQ
 "\1n\1b[\1h\1wI\1n\1b] \1hAutoLogon via IP address     "\     074 UserDefaultsAutoLogon
 	"\1n\1b: \1c%s\r\n"
 "\1n\r\n\1m%s sent to \1h%s #%u\r\n"                    075 MsgSentToUser
@@ -126,8 +126,8 @@
 "\1_\r\n\1y\1hRemove @Which@: \1n"                            091 RemoveWhichTextFile
 "Delete %s"                                             092 DeleteTextFileQ
 "\1_\r\n\1y\1hEdit @Which@: \1n"                              093 EditWhichTextFile
-"\r\nSearch all groups for new messages"                094 NScanAllGrpsQ
-"\r\nSearch all groups for un-read messages to you"     095 SScanAllGrpsQ
+"\r\nSearch all groups \1\\for new messages"            094 NScanAllGrpsQ
+"\r\nSearch all groups \1\\for un-read messages to you" 095 SScanAllGrpsQ
 "\r\nAre you sure"                                      096 AreYouSureQ
 "\r\n\r\nYou can't chat.\r\n"                           097 R_Chat
 "RE: Feedback\r\n\r\n"                                  098 ReFeedback
@@ -247,8 +247,8 @@
 "\r\n%s bytes free\r\n\r\n"                                 201 DiskNBytesFree
 "\1_\1y\1hFilename: \1n"                                    202 Filename
 "\1/\1r\1hBad filename: '%s'\r\n"                           203 BadFilename
-"Upload '%s' to Sysop directory"                        204 UploadToSysopDirQ
-"Upload '%s' to User directory"                         205 UploadToUserDirQ
+"Upload '%s' to Sysop directory"                            204 UploadToSysopDirQ
+"Upload '%s' to User directory"                             205 UploadToUserDirQ
 "Upload '%s' to %s\1\\ %s"                                  206 UploadToCurDirQ
 "\r\n\1r\1h\1iThat file is already there!\1n\r\n"           207 FileAlreadyThere
 "That file is already on disk.\1\\ Add to data base"        208 FileOnDiskAddQ
@@ -421,7 +421,7 @@
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your location\1\\ (e.g. city, state)\1\\: \1w" 346 EnterYourCityState
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your zip (or postal) code\1\\: \1w"   347 EnterYourZipCode
 "\1_\1y\1hClient (Name or Address)\1\\: \1w"                348 EnterYourComputer
-"Are you connecting from North America"                 349 CallingFromNorthAmericaQ
+"Are you connecting from \1\\North America"                 349 CallingFromNorthAmericaQ
 "Is the above information correct\1\\"                      350 UserInfoCorrectQ
 "\1bUser #\1c%-4d      \1b: \1c%s\r\n"                      351 LiUserNumberName
 "\1bLogons Today    : \1c%-5u \1b(Max \1c%u\1b)\r\n"         352 LiLogonsToday
@@ -441,14 +441,14 @@
 "Read your mail now"                                    362 ReadYourMailNowQ
 "Sorry, the system is closed to new users.\r\n"         363 NoNewUsers
 "New User Password\1\\: "                               364 NewUserPasswordPrompt
-"Use automatic terminal type detection"                 365 AutoTerminalQ
+"Use automatic terminal type \1\\detection"             365 AutoTerminalQ
 "Does your terminal support ANSI"                       366 AnsiTerminalQ
 "Does your terminal display colors"                     367 ColorTerminalQ
 "\1n\1gAre you using \1hRIPterm\1n\1g or a \1hRIPscrip "\     368 RipTerminalQ
 	"\1n\1gcompatible terminal program?\r\n"\
 	"\1h\1wIMPORTANT:\1n\1g If you are not absolutely "\
 	"sure, hit \1h\1w\1iN\1n\1b\1h"
-"Does your terminal support IBM extended ASCII (CP437)"     369 ExAsciiTerminalQ
+"Does your terminal support\1\\ IBM extended ASCII (CP437)"  369 ExAsciiTerminalQ
 "\1nYou can't use that name\1\\ (duplicate or invalid).\r\n" 370 YouCantUseThatName
 "\1l\1-\1gYour password is \1h%s\r\n"                       371 YourPasswordIs
 "\r\n\1_\1w\1hDon't forget and keep it "\                   372 NewUserPasswordVerify
@@ -552,8 +552,8 @@
 "Restore User"                                          442 UeditRestoreQ
 "Activate User"                                         443 UeditActivateQ
 "Delete User"                                           444 UeditDeleteQ
-"User has mail waiting. Read/Delete it"                 445 UeditReadUserMailWQ
-"User has sent mail. Read/Delete it"                    446 UeditReadUserMailSQ
+"User has mail waiting.\1\\ Read/Delete it"             445 UeditReadUserMailWQ
+"User has sent mail.\1\\ Read/Delete it"                446 UeditReadUserMailSQ
 "Deactivate User"                                       447 UeditDeactivateUserQ
 "Change Exemptions"                                     448 ChangeExemptionQ
 "        \1n%s\r\nToggle: "                              449 FlagEditing
@@ -610,7 +610,7 @@
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yTerminal rows "\       497 HowManyRows
 	"[\1wAuto\1y]: \1n"
 "\r\n\1_\1y\1hCurrent Password: \1w"                        498 CurrentPassword
-"Forward personal e-mail to network mail address"       499 ForwardMailQ
+"Forward personal e-mail\1\\ to network mail address"       499 ForwardMailQ
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yNetwork mail address\1\\ "\      500 EnterNetMailAddress
 	"(Example: user@domain)\r\n : "
 "\1n\1l\1gSelect \1h%s\1n\1g:\r\n\r\n"                        501 SelectItemHdr
@@ -764,11 +764,11 @@
 "\1n\1h\1bMax Files   \1n\1b:\1h \1c%u\r\n"                615 DirInfoMaxFiles
 ""                                                         616 DirInfoViewFileQ
 "\1n\r\nNo NetMail allowed.\r\n"                         617 NoNetMailAllowed
-"\r\nIt will cost you %u credits to send NetMail. "\   618 NetMailCostContinueQ
+"\r\nIt will cost you %u credits\1\\ to send NetMail. "\ 618 NetMailCostContinueQ
 	"Continue"
 "\1n\1?\1mNetMail To: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"\  619 NetMailing
 	"From: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"
-"Remove this sub-board from your new-scan list"         620 RemoveFromNewScanQ
+"Remove this sub-board\1\\ from your new-scan list"           620 RemoveFromNewScanQ
 "\r\n~Sub-board: @SUB@,\1\\ ~Group: @GRP@, or ~@All@: "       621 SubGroupOrAll
 "\r\n~Directory: @DIR@,\1\\ ~Library: @LIB@, or ~@All@: "     622 DirLibOrAll
 "\r\n\1_\1y\1hEnter path\1\\: "                        623 EnterPath
@@ -795,7 +795,7 @@
 "\1[\1>"                                                    643 SearchedForDupes
 "\1n\1hYour account will expire in \1r\1i%d\1n\1h days.\r\n"  644 AccountWillExpireInNDays
 "\1n\1r\1h\1iYour account has expired!\1n\r\n"               645 AccountHasExpired
-"\r\nDownload files in batch queue now"                 646 DownloadBatchQ
+"\r\nDownload files\1\\ in batch queue now"                646 DownloadBatchQ
 "\1_\1r\1h\r\nWaiting for Slow Media Device #%u..."        647 WaitingForDeviceN
 "\1n\1y\1h%s\1n\1c sent you E-mail.\r\n"                   648 UserSentYouMail
 "\1n\1y\1h%s\1n\1c sent you a file: \1h%s\r\n"             649 UserSentYouFile
@@ -918,7 +918,7 @@
 "\1n\r\nSorry, you can't read messages on %s %s\r\n"	759 CantReadSub
 "\rSorry, you can't post that message.\1\\ Reason: %s\r\n"	760 CantPostMsg
 "\r\n\1y\1hOperator: \1w"				761 OperatorPrompt
-"Add this sub-board to your new-scan list"         762 AddSubToNewScanQ
+"Add this sub-board\1\\ to your new-scan list"         762 AddSubToNewScanQ
 "\1n\1r\1iWARNING: You are reading messages\1\\ past the last unvalidated message (%u)" 763 UnvalidatedWarning
 "\1n\1hStarting new user registration @ELLIPSIS@\r\n"   764 StartingNewUserRegistration
 "\r\n\r\n\1nCtrl-Key Commands (during line input)\r\n"\ 765 GetStrMenu
@@ -1000,7 +1000,7 @@
 "(mono) "                                                 820 TerminalMonochrome
 "(color) "                                                821 TerminalColor
 "(iCE color) "                                            822 TerminalIceColor
-"Does your terminal display bright background "\          823 IceColorTerminalQ
+"Does your terminal display bright\1\\ background "\      823 IceColorTerminalQ
     "(iCE) colors\r\n    \1n"\
     "(i.e. \1i\1k\x013this text\1n is black on yellow and NOT BLINKING)"
 "Does your terminal support UTF-8"                        824 Utf8TerminalQ
@@ -1012,7 +1012,7 @@
     "on \1h%s \1n\1m%s\r\n" 
 "unlimited"                                               829 Unlimited
 " via raw"						                          830 NodeConnectionRaw
-"Does your terminal support mouse reporting"              831 MouseTerminalQ
+"Does your terminal support\1\\ mouse reporting"          831 MouseTerminalQ
 "(mouse) "                                                832 TerminalMouse
 "->)\xb3(<-<(\xb3)>"                                      833 SpinningCursor0
 "\xb3/\xc4\\"                                             834 SpinningCursor1
@@ -1026,9 +1026,9 @@
 "\xfa\xf9\xfe\xf9"                                        842 SpinningCursor9
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yTerminal columns "\      843 HowManyColumns
 	"[\1wAuto\1y]: \1n"
-"\1[\1n\1mInternet mail sent to \1h%s\1n\r\n"              844 InternetMailSent
-"\1[\1n\1mFido NetMail sent to \1h%s @%s\1n\r\n"           845 FidoNetMailSent
-"\1[\1n\1mQWK NetMail sent to \1h%s (%s)\1n\r\n"           846 QWKNetMailSent
+"\1[\1n\1mInternet mail sent to\1\\ \1h%s\1n\r\n"          844 InternetMailSent
+"\1[\1n\1mFido NetMail sent to\1\\ \1h%s @%s\1n\r\n"       845 FidoNetMailSent
+"\1[\1n\1mQWK NetMail sent to\1\\ \1h%s (%s)\1n\r\n"       846 QWKNetMailSent
 "Messages to you only"                                     847 MsgsToYouOnlyQ
 "To You Only"                                              848 ToYouOnly
 "\r\nEnter number of messages from end,\1\\ ~Date, ~@Quit@, or"\ 849 SetMsgPtrPrompt
@@ -1125,5 +1125,5 @@
 "\1n\r\n\1b\1hQWK Control [\1c%s\1b]: \1g%s\r\n"		   936 QWKControlCommand
 "Unrecognized Control Command!\1n\r\n"					   937 QWKBadControlCommand
 "You are limited to @MAXDL@ file downloads per day.\r\n"   938 NoMoreDownloads
-"Read your unread mail now"                                939 ReadYourUnreadMailNowQ
+"Read your unread mail now\1\\"                            939 ReadYourUnreadMailNowQ
 "\1n\1c(\1h%s\1n\1c bytes in \1h%u\1n\1c files today)"     940 UserDownloadsToday
