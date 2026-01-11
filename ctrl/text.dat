@@ -1039,7 +1039,7 @@
 "A"                                                        853 Unused853
 "All"                                                      854 All
 "List"                                                     855 List
-"%.0s\1n\1mNew e-mail from \1h%s \1n<\1h%s\1n>\r\n"        856 InternetMailReceived
+"%.0s\1n\1mNew e-mail from \1h%s\1\\ \1n<\1h%s\1n>\r\n"    856 InternetMailReceived
 "\1n\1mand it was automatically forwarded to\1\\: \1h%s\1n\r\n" 857 InternetMailForwarded
 "%.0s\1n\1h\1m%s \1n\1msent you NetMail%s\1\\ from \1h%s\1n\r\n" 858 FidoNetMailReceived
 " with attachment"                                         859 WithAttachment
