@@ -33,14 +33,12 @@ if(options.guest_location === undefined || options.guest_location == true)
 if(options.guest_referral === undefined || options.guest_referral === true)
 	options.guest_referral = "\x01y\x01hWhere did you hear about this BBS?\r\n: \x01w";
 if(options.sysop_available) {
-	require("text.js", 'LiSysopAvailable');
 	var list = options.sysop_available.split(',');
-	bbs.replace_text(LiSysopAvailable, list[random(list.length)].trim());
+	bbs.replace_text(bbs.text.LiSysopAvailable, list[random(list.length)].trim());
 }
 if(options.sysop_unavailable) {
-	require("text.js", 'LiSysopNotAvailable');
 	var list = options.sysop_unavailable.split(',');
-	bbs.replace_text(LiSysopNotAvailable, list[random(list.length)].trim());
+	bbs.replace_text(bbs.text.LiSysopNotAvailable, list[random(list.length)].trim());
 }
 
 if(options.eval_first)
@@ -247,7 +245,7 @@ if(options.rlogin_xtrn_menu
 		if (options.rlogin_xtrn_logoff == "full")
 			bbs.logoff(/* prompt: */true);
 		else {
-			if (console.yesno(bbs.text("LogOffQ")))
+			if (console.yesno(bbs.text(bbs.text.LogOffQ)))
 				break;
 		}
 	}

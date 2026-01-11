@@ -4,7 +4,6 @@
 
 require("sbbsdefs.js", 'USER_EXPERT');
 require("nodedefs.js", 'NODE_CHAT');
-require("text.js", 'R_Chat');
 
 // Over-ride these default values by creating/modifying the [chat] section in your ctrl/modopts.ini file
 var options = load("modopts.js", "chat");
@@ -33,13 +32,13 @@ for(var i in irc_channels)
 	irc_channels[i] = irc_channels[i].trim();
 
 if(user.security.restrictions & UFLAG_C) {
-    write(bbs.text(R_Chat));
+    write(bbs.text(bbs.text.R_Chat));
 	exit(0);
 }
 
 function on_or_off(on)
 {
-	return bbs.text(on ? On : Off);
+	return bbs.text(on ? bbs.text.On : bbs.text.Off);
 }
 
 // Set continue point for main menu commands
@@ -55,7 +54,7 @@ while(bbs.online && !console.aborted) {
 	// Update node status
 	bbs.node_action = NODE_CHAT;
 	bbs.nodesync();
-	write(bbs.text(ChatPrompt));
+	write(bbs.text(bbs.text.ChatPrompt));
 
 	var keys = "ACDJPQST?\r";
 	if(options.imsg && user.compare_ars(options.imsg_requirements))
@@ -141,7 +140,7 @@ while(bbs.online && !console.aborted) {
 			break;
 		case 'C':
 			if(!bbs.page_sysop()
-				&& !deny(format(bbs.text(ChatWithGuruInsteadQ), system.guru || "The Guru")))
+				&& !deny(format(bbs.text(bbs.text.ChatWithGuruInsteadQ), system.guru || "The Guru")))
 				bbs.page_guru();
 			break;
 		case 'T':

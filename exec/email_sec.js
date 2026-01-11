@@ -5,9 +5,6 @@
 
 require("sbbsdefs.js", "WM_NONE");
 require("userdefs.js", "USER_EXPERT");
-var text = bbs.mods.text;
-if(!text)
-	text = load(bbs.mods.text = {}, "text.js");
 var userprops = bbs.mods.userprops;
 if(!userprops)
 	userprops = load(bbs.mods.userprops = {}, "userprops.js");
@@ -43,12 +40,12 @@ while(bbs.online) {
 			}
 			break;
 		case 'F':	// Send Feedback
-			bbs.email(/* user # */1, bbs.text(text.ReFeedback));
+			bbs.email(/* user # */1, bbs.text(bbs.text.ReFeedback));
 			break;
 		case 'A':	// Send file attachment
 			wm_mode = WM_FILE;
 		case 'S':	// Send Mail
-			console.putmsg(bbs.text(text.Email));
+			console.putmsg(bbs.text(bbs.text.Email));
 			var name = console.getstr(40, K_TRIM);
 			if(!name)
 				break;
@@ -66,7 +63,7 @@ while(bbs.online) {
 			if(number)
 				bbs.email(number, wm_mode);
 			else
-				console.putmsg(bbs.text(text.UnknownUser));
+				console.putmsg(bbs.text(bbs.text.UnknownUser));
 			break;
 		case 'N':	// Send NetMail
 			var netmail = msg_area.fido_netmail_settings | msg_area.inet_netmail_settings;
@@ -75,7 +72,7 @@ while(bbs.online) {
 				wm_mode = WM_FILE;
 			if(console.aborted)
 				break;
-			console.putmsg(bbs.text(text.EnterNetMailAddress));
+			console.putmsg(bbs.text(bbs.text.EnterNetMailAddress));
 			var addr_list = userprops.get(ini_section, "address", []) || [];
 			var addr = console.getstr(256, K_LINE | K_TRIM, addr_list);
 			if(!addr || console.aborted)

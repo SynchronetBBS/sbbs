@@ -2,7 +2,6 @@
 // Don't forget to include or exclude the blank line after if do
 // (or don't) want a blank line separating message headers and body text
 
-require("text.js", 'MsgAttr');
 require("smbdefs.js", 'MSG_ANONYMOUS');
 require("userdefs.js", 'USER_ANSI');
 
@@ -13,7 +12,7 @@ function show_msgattr(msg_attr, msg_auxattr)
 	var poll = attr&MSG_POLL_VOTE_MASK;
 	var nulstr = "";
 
-	printf(bbs.text(MsgAttr)
+	printf(bbs.text(bbs.text.MsgAttr)
 		,attr&MSG_PRIVATE	? "Private  "   :nulstr
 		,attr&MSG_SPAM		? "SPAM  "      :nulstr
 		,attr&MSG_READ		? "Read  "      :nulstr
@@ -37,32 +36,32 @@ function show_msgattr(msg_attr, msg_auxattr)
 // ported from sbbs_t::show_msghdr():
 function show_msghdr()
 {
-	printf(bbs.text(MsgSubj), bbs.msg_subject);
+	printf(bbs.text(bbs.text.MsgSubj), bbs.msg_subject);
 	if(bbs.msg_attr)
 		show_msgattr(bbs.msg_attr, bbs.msg_auxattr);
 	if(bbs.msg_to && bbs.msg_to.length) {
-		printf(bbs.text(MsgTo), bbs.msg_to);
+		printf(bbs.text(bbs.text.MsgTo), bbs.msg_to);
 		if(bbs.msg_to_net)
-			printf(bbs.text(MsgToNet), bbs.msg_to_net);
+			printf(bbs.text(bbs.text.MsgToNet), bbs.msg_to_net);
 		if(bbs.msg_to_ext)
-			printf(bbs.text(MsgToExt), bbs.msg_to_ext);
+			printf(bbs.text(bbs.text.MsgToExt), bbs.msg_to_ext);
 	}
 	if(!(bbs.msg_attr&MSG_ANONYMOUS) || user.is_sysop) {
-		printf(bbs.text(MsgFrom),bbs.msg_from);
+		printf(bbs.text(bbs.text.MsgFrom),bbs.msg_from);
 		if(bbs.msg_from_ext)
-			printf(bbs.text(MsgFromExt), bbs.msg_from_ext);
+			printf(bbs.text(bbs.text.MsgFromExt), bbs.msg_from_ext);
 		if(bbs.msg_from_net)
-			printf(bbs.text(MsgFromNet), bbs.msg_from_net); 
+			printf(bbs.text(bbs.text.MsgFromNet), bbs.msg_from_net); 
 	}
 	// the bbs.msg_up/down-votes properties don't actually exist (yet), so get their values via @-codes
 	var msg_upvotes = parseInt(bbs.atcode("MSG_UPVOTES"));
 	var msg_downvotes = parseInt(bbs.atcode("MSG_DOWNVOTES"));
 	if(!(bbs.msg_attr&MSG_POLL) && (msg_upvotes || msg_downvotes))
-		printf(bbs.text(MsgVotes)
+		printf(bbs.text(bbs.text.MsgVotes)
 			,msg_upvotes, bbs.atcode("MSG_UPVOTED")
 			,msg_downvotes, bbs.atcode("MSG_DOWNVOTED")
 			,bbs.atcode("MSG_SCORE"));
-	printf(bbs.text(MsgDate), system.timestr(bbs.msg_date), system.zonestr(bbs.msg_timezone), bbs.atcode("MSG_AGE"));
+	printf(bbs.text(bbs.text.MsgDate), system.timestr(bbs.msg_date), system.zonestr(bbs.msg_timezone), bbs.atcode("MSG_AGE"));
 
 	console.crlf();
 }

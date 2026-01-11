@@ -15,9 +15,6 @@
 
 require("sbbsdefs.js", 'EX_STDIO');
 require("nodedefs.js", 'NODE_SYSP');
-var text = bbs.mods.text;
-if(!text)
-	text = bbs.mods.text = load({}, "text.js");
 var presence = bbs.mods.presence_lib;
 if(!presence)
 	presence = bbs.mods.presence_lib = load({}, "presence_lib.js");
@@ -66,8 +63,8 @@ function str_cmds(str)
 		help["AVAIL"] = "Toggle sysop chat availability";
 		if(str=="AVAIL") {
 			system.operator_available = !system.operator_available;
-			write(format(bbs.text(text.LiSysopIs)
-				, bbs.text(system.operator_available ? text.LiSysopAvailable : text.LiSysopNotAvailable)));
+			write(format(bbs.text(bbs.text.LiSysopIs)
+				, bbs.text(system.operator_available ? bbs.text.LiSysopAvailable : bbs.text.LiSysopNotAvailable)));
 			return;
 		}
 
@@ -75,21 +72,21 @@ function str_cmds(str)
 		if(str=="ERR") {
 			var errlog=system.logs_dir+"error.log";
 			if(file_exists(errlog)) {
-				write(bbs.text(text.ErrorLogHdr));
+				write(bbs.text(bbs.text.ErrorLogHdr));
 				console.printfile(errlog);
 				console.aborted = false;
-				if(!console.noyes(bbs.text(text.DeleteErrorLogQ)))
+				if(!console.noyes(bbs.text(bbs.text.DeleteErrorLogQ)))
 					file_remove(errlog);
 			}
 			else {
-				write(format(bbs.text(text.FileDoesNotExist),errlog));
+				write(format(bbs.text(bbs.text.FileDoesNotExist),errlog));
 			}
 			for(i=0;i<system.nodes;i++) {
 				if(system.node_list[i].errors)
 					break;
 			}
 			if(i<system.nodes) {
-				if(!console.noyes(bbs.text(text.ClearErrCounter))) {
+				if(!console.noyes(bbs.text(bbs.text.ClearErrCounter))) {
 					for(i=0;i<system.nodes; i++) {
 						system.node_list[i].errors=0;
 					}
@@ -103,7 +100,7 @@ function str_cmds(str)
 			if(file_exists(system.logs_dir+"guru.log")) {
 				console.printfile(system.logs_dir+"guru.log");
 				console.crlf();
-				if(!console.noyes(bbs.text(text.DeleteGuruLogQ)))
+				if(!console.noyes(bbs.text(bbs.text.DeleteGuruLogQ)))
 					file_remove(system.logs_dir+"guru.log");
 			}
 		}
@@ -576,7 +573,7 @@ function str_cmds(str)
 					k+=l;
 				}
 				if(k>1)
-					printf(bbs.text(text.NFilesListed),k);
+					printf(bbs.text(bbs.text.NFilesListed),k);
 				return;
 			}
 		}
@@ -592,7 +589,7 @@ function str_cmds(str)
 					return;
 			}
 			if(!file_exists(str)) {
-				write(bbs.text(text.FileNotFound));
+				write(bbs.text(bbs.text.FileNotFound));
 				return;
 			}
 			if(!bbs.check_syspass())
