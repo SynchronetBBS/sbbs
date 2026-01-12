@@ -855,8 +855,8 @@ bool ANSI_Terminal::parse_output(char ich) {
 			ansiParser.reset();
 			return true;
 		case ansiState_broken:
-			sbbs->lprintf(LOG_WARNING, "Sent %u-character broken ANSI sequence '%s'"
-				, static_cast<uint>(ansiParser.ansi_sequence.length())
+			sbbs->lprintf(LOG_WARNING, "Sent %zu-character broken ANSI sequence '%s'"
+				, ansiParser.ansi_sequence.length()
 				, ansiParser.ansi_sequence.c_str());
 			ansiParser.reset();
 			return true;
