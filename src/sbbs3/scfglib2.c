@@ -72,7 +72,7 @@ bool read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->leech_sec = iniGetUInt16(ini, ROOT_SECTION, "leech_sec", 0);
 	cfg->file_misc = iniGetInt32(ini, ROOT_SECTION, "settings", 0);
 	cfg->filename_maxlen = iniGetIntInRange(ini, ROOT_SECTION, "filename_maxlen", 8, SMB_FILEIDX_NAMELEN, UINT16_MAX);
-	SAFECOPY(str, iniGetString(ini, ROOT_SECTION, "supported_archive_formats", "zip,z7,tgz", value));
+	SAFECOPY(str, iniGetString(ini, ROOT_SECTION, "supported_archive_formats", "zip,7z,tgz", value));
 	cfg->supported_archive_formats = strListSplit(NULL, str, " ,");
 
 	named_str_list_t** sections = iniParseSections(ini);
