@@ -1127,3 +1127,4 @@
 "You are limited to @MAXDL@ file downloads per day.\r\n"   938 NoMoreDownloads
 "Read your unread mail now\1\\"                            939 ReadYourUnreadMailNowQ
 "\1n\1c(\1h%s\1n\1c bytes in \1h%u\1n\1c files today)"     940 UserDownloadsToday
+"\1n\1h\1?Wide (> 80 column) output mode is now %s.\r\n"   941 WideModeIsNow

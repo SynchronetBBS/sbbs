@@ -71,8 +71,7 @@ static const char* msg_to(smbmsg_t* msg)
 /****************************************************************************/
 int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 {
-	char     str[256], str2[256], done = 0, domsg = 1
-	, *p;
+	char     str[256], str2[256], done = 0, domsg = 1, *p;
 	char     tmp[512];
 	char     savepath[MAX_PATH + 1]{};
 	int      i;
@@ -86,6 +85,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 	mail_t * mail;
 	smbmsg_t msg;
 	char     search_str[128] = "";
+	const char* property_section = "mail";
 
 	if (which == MAIL_SENT)
 		act = NODE_RSML;
@@ -196,6 +196,9 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 	const char* menu_file = (which == MAIL_ALL ? "allmail" : which == MAIL_SENT ? "sentmail" : "mailread");
 	if (useron.misc & RIP)
 		menu(menu_file);
+
+	bool wide = user_get_bool_property(&cfg, useron.number, property_section, "wide", false);
+
 	current_msg = &msg;   /* For MSG_* @-codes and bbs.msg_* property values */
 	while (online && !done) {
 		action = act;
@@ -265,9 +268,10 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 
 		if (domsg && !(sys_status & SS_ABORT)) {
 
-			if (!show_msg(&smb, &msg
-			              , msg.from_ext && msg.idx.from == 1 && !msg.from_net.type
-			        ? 0:P_NOATCODES))
+			int pmode = (msg.from_ext && msg.idx.from == 1 && !msg.from_net.type) ? 0 : P_NOATCODES;
+			if (!wide)
+				pmode |= P_80COLS;
+			if (!show_msg(&smb, &msg, pmode))
 				errormsg(WHERE, "showing", "mail message", msg.hdr.number, smb.last_error);
 			download_msg_attachments(&smb, &msg, which == MAIL_YOUR);
 			if (which == MAIL_YOUR && !(msg.hdr.attr & MSG_READ)) {
@@ -306,7 +310,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 			bprintf(P_ATCODES, text[ReadingAllMail], smb.curmsg + 1, smb.msgs);
 		else
 			bprintf(P_ATCODES, text[ReadingMail], smb.curmsg + 1, smb.msgs);
-		snprintf(str, sizeof str, "ADFLNQRT?<>[]{}()-+/!%c%c%c%c"
+		snprintf(str, sizeof str, "ADFLNQRTW?<>[]{}()-+/!%c%c%c%c"
 		         , TERM_KEY_LEFT
 		         , TERM_KEY_RIGHT
 		         , TERM_KEY_HOME
@@ -330,6 +334,11 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 			case '!':
 				lm_mode ^= LM_REVERSE;
 				domsg = 0;
+				break;
+			case 'W':
+				wide = !wide;
+				user_set_bool_property(&cfg, useron.number, property_section, "wide", wide);
+				bprintf(text[WideModeIsNow], wide ? text[On] : text[Off]);
 				break;
 			case 'A':   /* Auto-reply to last piece */
 			case 'R':
@@ -702,12 +711,11 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 				*/
 				bputs(text[FileToWriteTo]);
 				{
-					const char* section = "mail";
 					const char* key = "savepath";
-					user_get_property(&cfg, useron.number, section, key, savepath, sizeof(savepath) - 1);
+					user_get_property(&cfg, useron.number, property_section, key, savepath, sizeof(savepath) - 1);
 					if (getstr(savepath, sizeof(savepath) - 1, K_EDIT | K_LINE | K_AUTODEL) > 0) {
 						if (msgtotxt(&smb, &msg, savepath, /* header: */ true, /* mode: */ GETMSGTXT_ALL))
-							user_set_property(&cfg, useron.number, section, key, savepath);
+							user_set_property(&cfg, useron.number, property_section, key, savepath);
 					}
 				}
 				break;

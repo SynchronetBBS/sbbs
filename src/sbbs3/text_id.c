@@ -941,4 +941,5 @@ const char* const text_id[]={
 	,"NoMoreDownloads"
 	,"ReadYourUnreadMailNowQ"
 	,"UserDownloadsToday"
+	,"WideModeIsNow"
 };

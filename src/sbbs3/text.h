@@ -957,6 +957,7 @@ enum text {
 	,NoMoreDownloads
 	,ReadYourUnreadMailNowQ
 	,UserDownloadsToday
+	,WideModeIsNow
 
 	,TOTAL_TEXT
 };

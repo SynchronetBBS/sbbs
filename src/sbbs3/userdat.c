@@ -4792,6 +4792,36 @@ bool user_set_time_property(scfg_t* scfg, unsigned user_number, const char* sect
 	return result != NULL;
 }
 
+bool user_get_bool_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, bool deflt)
+{
+	FILE* fp;
+
+	fp = user_ini_open(scfg, user_number, /* for_modify: */ false);
+	if (fp == NULL)
+		return deflt;
+	bool result = iniReadBool(fp, section, key, deflt);
+	iniCloseFile(fp);
+	return result;
+}
+
+bool user_set_bool_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, bool value)
+{
+	FILE*      fp;
+	str_list_t ini;
+
+	fp = user_ini_open(scfg, user_number, /* for_modify: */ true);
+	if (fp == NULL)
+		return false;
+	ini = iniReadFile(fp);
+	ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "", .value_separator = " = " };
+	char*       result = iniSetBool(&ini, section, key, value, &ini_style);
+	iniWriteFile(fp, ini);
+	iniFreeStringList(ini);
+	iniCloseFile(fp);
+	return result != NULL;
+}
+
+
 #endif /* !NO_SOCKET_SUPPORT */
 
 /****************************************************************************/

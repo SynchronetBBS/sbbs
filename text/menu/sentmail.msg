@@ -10,6 +10,7 @@
 €  HCTNB  CNext ten msgsB≥C HNNB  CNext unreadWÇB€
 €  HC@MSGREREAD@NB  CRe-read msg  B≥W HCENC  Edit msg  WÉB€
 €  HCDNB  CDelete msgWÇB≥ HC#NC  GoW Cto msg num B€
-€‹ HCFNB  CForward msg  B≥W HCQNC  Quit readingB ‹€
+€  HCFNB  CForward msg  WB≥ HCQNC  Quit reading  B€
+€‹ HCWNB  CWide toggle  B≥                 ‹€
 €€H4YAnytime: W^UCsers online  W^PCrivate msg 
 Z

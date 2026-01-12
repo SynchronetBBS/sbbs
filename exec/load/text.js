@@ -947,7 +947,8 @@ var QWKBadControlCommand=937;
 var NoMoreDownloads=938;
 var ReadYourUnreadMailNowQ=939;
 var UserDownloadsToday=940;
+var WideModeIsNow=941;
 
-var TOTAL_TEXT=940;
+var TOTAL_TEXT=941;
 
 this;

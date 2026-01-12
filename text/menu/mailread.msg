@@ -11,6 +11,7 @@
 €  HC@MSGREREAD@NB  CRe-read msg  B≥W HC@MSGREPLY@NB  CReply to msg  B€
 €  HCDNB  CDelete msgWÇB≥ HCKNC  Delete allWÉB€
 €  HCFNB  CForward msg  B≥W HC#NC  GoW Cto msg num B€
-€‹ HCVNB  CView SPAMWÉB≥C HQNC  Quit readingB ‹€
+€  HCWNW  CWide toggle  B≥W HCQNC  Quit reading  B€
+€‹ HCVNB  CView SPAMWÉB≥                 ‹€
 €€H4YAnytime: W^UCsers online  W^PCrivate msg 
 Z
