@@ -843,9 +843,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 				break;
 			case '?':
 				menu(menu_file);
-				if (useron_is_sysop() && which == MAIL_SENT)
-					menu("syssmail");
-				else if (useron_is_sysop() && which == MAIL_YOUR)
+				if (useron_is_sysop() && (which == MAIL_SENT || which == MAIL_YOUR))
 					menu("sysmailr");   /* Sysop Mail Read */
 				domsg = 0;
 				break;
