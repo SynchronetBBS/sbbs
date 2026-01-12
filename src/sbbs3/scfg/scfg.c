@@ -2629,12 +2629,12 @@ void bail(int code)
 	else if (forcesave) {
 		FILE*              fp;
 		bool               run_bbs, run_ftp, run_web, run_mail, run_services;
-		global_startup_t   global_startup = {0};
-		bbs_startup_t      bbs_startup = {0};
-		web_startup_t      web_startup = {0};
-		ftp_startup_t      ftp_startup = {0};
-		mail_startup_t     mail_startup = {0};
-		services_startup_t services_startup = {0};
+		global_startup_t   global_startup = { .size  = sizeof global_startup };
+		bbs_startup_t      bbs_startup = { .size = sizeof bbs_startup };
+		web_startup_t      web_startup = { .size = sizeof web_startup };
+		ftp_startup_t      ftp_startup = { .size = sizeof ftp_startup };
+		mail_startup_t     mail_startup = { .size = sizeof mail_startup};
+		services_startup_t services_startup = { .size = sizeof services_startup };
 
 		uifc.pop("Force-saving configuration files...");
 		load_main_cfg(&cfg, error, sizeof(error));
