@@ -40,16 +40,16 @@ void sbbs_t::temp_xfer()
 /****************************************************************************/
 uint sbbs_t::create_filelist(const char *name, int mode)
 {
-	char  str[256];
+	char  tmpfname[MAX_PATH + 1];
 	FILE* fp;
 	int   i, j, d;
 	int   l, k;
 
 	if (online == ON_REMOTE)
 		bprintf(text[CreatingFileList], name);
-	SAFEPRINTF2(str, "%s%s", cfg.temp_dir, name);
-	if ((fp = fopen(str, "ab")) == NULL) {
-		errormsg(WHERE, ERR_OPEN, str, O_CREAT | O_WRONLY | O_APPEND);
+	SAFEPRINTF2(tmpfname, "%s%s", cfg.temp_dir, name);
+	if ((fp = fopen(tmpfname, "ab")) == NULL) {
+		errormsg(WHERE, ERR_OPEN, tmpfname, O_CREAT | O_WRONLY | O_APPEND);
 		return 0;
 	}
 	k = 0;
@@ -60,7 +60,7 @@ uint sbbs_t::create_filelist(const char *name, int mode)
 	for (i = 0; i < usrlibs ; i++)
 		total_dirs += usrdirs[i];
 	for (i = j = d = 0; i < usrlibs; i++) {
-		for (j = 0; j < usrdirs[i]; j++, d++) {
+		for (j = 0; j < usrdirs[i] && !msgabort(); j++, d++) {
 			progress(text[Scanning], d, total_dirs);
 			if (mode & FL_ULTIME /* New-scan */
 			    && (cfg.lib[usrlib[i]]->offline_dir == usrdir[i][j]
@@ -74,6 +74,12 @@ uint sbbs_t::create_filelist(const char *name, int mode)
 		if (j < usrdirs[i])
 			break;
 	}
+	if (msgabort(/* clear */ true)) {
+		fclose(fp);
+		bputs(text[Aborted]);
+		remove(tmpfname);
+		return 0;
+	}
 	progress(text[Done], d, total_dirs);
 	if (k > 1) {
 		fprintf(fp, "\r\n%d Files Listed.\r\n", k);
@@ -84,8 +90,7 @@ uint sbbs_t::create_filelist(const char *name, int mode)
 	else {
 		if (online == ON_REMOTE)
 			bputs(text[NoFiles]);
-		SAFEPRINTF2(str, "%s%s", cfg.temp_dir, name);
-		remove(str);
+		remove(tmpfname);
 	}
 	return k;
 }
@@ -98,16 +103,13 @@ const char* sbbs_t::temp_cmd(int& ex_mode)
 {
 	int i;
 
-	if (!cfg.total_fcomps) {
-		errormsg(WHERE, ERR_CHK, "compressible file types", 0);
-		return nulstr;
-	}
-	for (i = 0; i < cfg.total_fcomps; i++)
+	for (i = 0; i < cfg.total_fcomps; i++) {
 		if (!stricmp(useron.tmpext, cfg.fcomp[i]->ext)
 		    && chk_ar(cfg.fcomp[i]->ar, &useron, &client)) {
 			ex_mode |= cfg.fcomp[i]->ex_mode;
 			return cfg.fcomp[i]->cmd;
 		}
-	ex_mode |= cfg.fcomp[0]->ex_mode;
-	return cfg.fcomp[0]->cmd;
+	}
+	errormsg(WHERE, ERR_CHK, "Unsupported temp archive file type", 0, useron.tmpext);
+	return nulstr;
 }
