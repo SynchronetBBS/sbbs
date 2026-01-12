@@ -167,13 +167,15 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		GetShortPathName(cfg.text_dir, text_dir, sizeof(text_dir));
 		GetShortPathName(cfg.temp_dir, temp_dir, sizeof(temp_dir));
 #elif defined(__linux__)
-		/* These drive mappings must match the Linux/DOSEMU patch in xtrn.cpp: */
-		SAFECOPY(node_dir, DOSEMU_NODE_DIR);
-		SAFECOPY(ctrl_dir, DOSEMU_CTRL_DIR);
-		SAFECOPY(data_dir, DOSEMU_DATA_DIR);
-		SAFECOPY(exec_dir, DOSEMU_EXEC_DIR);
-		SAFECOPY(text_dir, DOSEMU_TEXT_DIR);
-		SAFECOPY(temp_dir, DOSEMU_TEMP_DIR);
+		if (startup->usedosemu) {
+			/* These drive mappings must match the Linux/DOSEMU patch in xtrn.cpp: */
+			SAFECOPY(node_dir, DOSEMU_NODE_DIR);
+			SAFECOPY(ctrl_dir, DOSEMU_CTRL_DIR);
+			SAFECOPY(data_dir, DOSEMU_DATA_DIR);
+			SAFECOPY(exec_dir, DOSEMU_EXEC_DIR);
+			SAFECOPY(text_dir, DOSEMU_TEXT_DIR);
+			SAFECOPY(temp_dir, DOSEMU_TEMP_DIR);
+		}
 #endif
 	}
 
