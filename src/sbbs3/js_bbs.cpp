@@ -2693,6 +2693,7 @@ js_ver(JSContext *cx, uintN argc, jsval *arglist)
 	jsval*     argv = JS_ARGV(cx, arglist);
 	sbbs_t*    sbbs;
 	jsrefcount rc;
+	int        mode = P_80COLS;
 	bool       verbose = true;
 
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
@@ -2700,11 +2701,18 @@ js_ver(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if (argc > 0 && JSVAL_IS_BOOLEAN(argv[0]))
-		verbose = JSVAL_TO_BOOLEAN(argv[0]);
+	uintN argn = 0;
+	if (argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
+		mode = JSVAL_TO_INT(argv[argn]);
+		++argn;
+	}
+	if (argc > argn && JSVAL_IS_BOOLEAN(argv[argn])) {
+		verbose = JSVAL_TO_BOOLEAN(argv[argn]);
+		++argn;
+	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->ver(verbose);
+	sbbs->ver(mode, verbose);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
@@ -4943,7 +4951,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , JSDOCSTR("Display current user information.")
 	 , 310
 	},
-	{"ver",             js_ver,             0,  JSTYPE_VOID,    JSDOCSTR("[<i>bool</i> verbose=true]")
+	{"ver",             js_ver,             0,  JSTYPE_VOID,    JSDOCSTR("[<i>number</i> p_mode=P_80COLS] [,<i>bool</i> verbose=true]")
 	 , JSDOCSTR("Display software version information.")
 	 , 310
 	},

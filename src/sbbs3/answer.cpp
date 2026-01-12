@@ -581,7 +581,7 @@ bool sbbs_t::answer()
 			SAFECOPY(terminal, "PETSCII");
 			term->lncntr = 0;
 			cls();
-			term->center(str);
+			term->center(str, P_80COLS);
 			term_out("\r\n");
 		} else {    /* ANSI+ terminal detection */
 			/*
@@ -612,7 +612,7 @@ bool sbbs_t::answer()
 			i = l = 0;
 			term->row = 0;
 			term->lncntr = 0;
-			term->center(str);
+			term->center(str, P_80COLS);
 
 			while (i++ < 50 && l < (int)sizeof(str) - 1) {     /* wait up to 5 seconds for response */
 				c = incom(100) & 0x7f;

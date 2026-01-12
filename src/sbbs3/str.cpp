@@ -999,7 +999,7 @@ void sbbs_t::sys_info()
 		bprintf(text[SiLogonsToday], ultoac(stats.ltoday, tmp));
 		bprintf(text[SiTotalTime], ultoac(stats.timeon, tmp));
 		bprintf(text[SiTimeToday], ultoac(stats.ttoday, tmp));
-		ver();
+		ver(P_80COLS);
 	}
 	const char* fname = "../system";
 	if (menu_exists(fname) && text[ViewSysInfoFileQ][0] && yesno(text[ViewSysInfoFileQ])) {

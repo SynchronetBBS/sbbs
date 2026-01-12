@@ -114,7 +114,7 @@ struct atcode_format {
 /****************************************************************************/
 /* Returns 0 if invalid @ code. Returns length of @ code if valid.          */
 /****************************************************************************/
-int sbbs_t::show_atcode(const char *instr, JSObject* obj)
+int sbbs_t::show_atcode(const char *instr, uint cols, JSObject* obj)
 {
 	char          str[128], str2[128], *tp, *sp, *p;
 	int           len;
@@ -135,6 +135,9 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 		return 0;
 	if (strcspn(sp, " \t\r\n") != strlen(sp))  // white-space before terminating @
 		return 0;
+
+	if (cols == 0)
+		cols = term->cols;
 
 	if (*sp == '~' && *(sp + 1)) {   // Mouse hot-spot (hungry)
 		sp++;
@@ -175,7 +178,7 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 
 	p = fmt.parse(sp);
 
-	cp = atcode(sp, str2, sizeof(str2), &pmode, fmt.align == fmt.center, obj);
+	cp = atcode(sp, str2, sizeof(str2), &pmode, fmt.align == fmt.center, cols, obj);
 	if (cp == NULL)
 		return 0;
 
@@ -197,11 +200,11 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 		fmt.align = fmt.left;
 
 	if (fmt.truncated && strchr(cp, '\n') == NULL) {
-		if (term->column + fmt.disp_len > term->cols - 1) {
-			if (term->column >= term->cols - 1)
+		if (term->column + fmt.disp_len > cols - 1) {
+			if (term->column >= cols - 1)
 				fmt.disp_len = 0;
 			else
-				fmt.disp_len = (term->cols - 1) - term->column;
+				fmt.disp_len = (cols - 1) - term->column;
 		}
 	}
 	if (pmode & P_UTF8) {
@@ -387,7 +390,7 @@ const char* sbbs_t::formatted_atcode(const char* sp, char* str, size_t maxlen)
 	return str;
 }
 
-const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode, bool centered, JSObject* obj)
+const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode, bool centered, uint cols, JSObject* obj)
 {
 	char       tmp[128];
 	char*      tp = NULL;
@@ -398,6 +401,9 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	char       param;
 	node_t     node;
 	struct  tm tm;
+
+	if (cols == 0)
+		cols = term->cols;
 
 	str[0] = 0;
 
@@ -1139,7 +1145,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		if (margin < 1)
 			margin = 1;
 		c_unescape_str(tmp);
-		while (*tmp && online && term->column < term->cols - margin)
+		while (*tmp && online && term->column < cols - margin)
 			bputs(tmp, P_TRUNCATE);
 		return nulstr;
 	}

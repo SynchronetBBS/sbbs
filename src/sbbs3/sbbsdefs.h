@@ -698,6 +698,7 @@ typedef enum {                       // Values for xtrn_t.event
 #define P_ATCODES   (1 << 20)     // Trusted @-codes in formatted string
 #define P_MODS      (1 << 21)     // Display from mods/text dir, if file is there
 #define P_CENTER    (1 << 22)     // Center the output based on widest line
+#define P_80COLS    (1 << 23)     // Format output for 80-column display
 
 #define P_XATTR_SHIFT 20
 #define P_WILDCAT   (SM_WILDCAT  << P_XATTR_SHIFT)

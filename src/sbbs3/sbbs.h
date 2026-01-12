@@ -1043,8 +1043,8 @@ public:
 	void	redrwstr(char *strin, int i, int l, int mode);
 
 	/* atcodes.cpp */
-	int		show_atcode(const char *code, JSObject* obj = NULL);
-	const char*	atcode(const char* sp, char* str, size_t maxlen, int* pmode = NULL, bool centered = false, JSObject* obj = NULL);
+	int		show_atcode(const char *code, uint cols = 0, JSObject* obj = NULL);
+	const char*	atcode(const char* sp, char* str, size_t maxlen, int* pmode = NULL, bool centered = false, uint cols = 0, JSObject* obj = NULL);
 	const char* formatted_atcode(const char* sp, char* str, size_t maxlen);
 	char* expand_atcodes(const char* src, char* buf, size_t size, const smbmsg_t* msg = NULL);
 
@@ -1319,7 +1319,7 @@ public:
 	bool	purgeuser(int usernumber);
 
 	/* ver.cpp */
-	void	ver(bool verbose = false);
+	void	ver(int p_mode = 0, bool verbose = false);
 
 	/* scansubs.cpp */
 	void	scansubs(int mode);

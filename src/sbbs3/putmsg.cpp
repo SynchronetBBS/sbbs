@@ -97,6 +97,10 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 	str = auto_utf8(str, mode);
 	size_t len = strlen(str);
 
+	uint cols = term->cols;
+	if ((mode & P_80COLS) && cols > 80)
+		cols = 80;
+
 	if (!(mode & P_NOATCODES) && memcmp(str, "@WRAPOFF@", 9) == 0) {
 		mode &= ~P_WORDWRAP;
 		l += 9;
@@ -111,7 +115,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		char *wrapped;
 		if (org_cols < TERM_COLS_MIN)
 			org_cols = TERM_COLS_DEFAULT;
-		if ((wrapped = ::wordwrap((char*)str + l, term->cols - 1, org_cols - 1, /* handle_quotes: */ TRUE, mode)) == NULL)
+		if ((wrapped = ::wordwrap((char*)str + l, cols - 1, org_cols - 1, /* handle_quotes: */ TRUE, mode)) == NULL)
 			errormsg(WHERE, ERR_ALLOC, "wordwrap buffer", 0);
 		else {
 			truncsp_lines(wrapped);
@@ -125,8 +129,8 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 	}
 	if (mode & P_CENTER) {
 		size_t widest = widest_line(str + l);
-		if (widest < term->cols && term->column == 0) {
-			term->cursor_right((term->cols - widest) / 2);
+		if (widest < cols && term->column == 0) {
+			term->cursor_right((cols - widest) / 2);
 			mode |= P_INDENT;
 		}
 	}
@@ -147,7 +151,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			default: // printing char
 				if ((mode & P_INDENT) && term->column < col)
 					term->cursor_right(col - term->column);
-				else if ((mode & P_TRUNCATE) && term->column >= (term->cols - 1)) {
+				else if ((mode & P_TRUNCATE) && term->column >= (cols - 1)) {
 					l++;
 					continue;
 				} else if (mode & P_WRAP) {
@@ -156,7 +160,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 							term->newline();
 						}
 					} else {
-						if (term->column >= (term->cols - 1)) {
+						if (term->column >= (cols - 1)) {
 							term->newline();
 						}
 					}
@@ -465,6 +469,13 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 						l++;
 					continue;
 				}
+				if (memcmp(str + l, "@80COLS@", 8) == 0) {
+					l += 8;
+					if (cols > 80)
+						cols = 80;
+					mode |= P_80COLS;
+					continue;
+				}
 				if (memcmp(str + l, "@CENTER@", 8) == 0) {
 					l += 8;
 					i = 0;
@@ -558,7 +569,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					}
 				}
 				bool was_tos = (term->row == 0);
-				i = show_atcode((char *)str + l, obj);  /* returns 0 if not valid @ code */
+				i = show_atcode((char *)str + l, cols, obj);  /* returns 0 if not valid @ code */
 				l += i;                   /* i is length of code string */
 				if (term->row > 0 && !was_tos && (sys_status & SS_ABORT) && !lines_printed)  /* Aborted at (auto) pause prompt (e.g. due to CLS)? */
 					clearabort();                /* Clear the abort flag (keep displaying the msg/file) */

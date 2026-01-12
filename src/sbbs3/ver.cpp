@@ -74,7 +74,7 @@ char* socklib_version(char* str, size_t size, const char* winsock_ver)
 }
 
 #if defined(SBBS) && !defined(JSDOOR)
-void sbbs_t::ver(bool verbose)
+void sbbs_t::ver(int pmode, bool verbose)
 {
 	char str[128], compiler[32], os[128], cpu[128];
 #ifdef USE_MOSQUITTO
@@ -86,7 +86,7 @@ void sbbs_t::ver(bool verbose)
 #if defined(_DEBUG)
 	strcat(str, "  Debug");
 #endif
-	term->center(str);
+	term->center(str, pmode);
 	term->newline();
 
 	if (verbose) {
@@ -99,14 +99,14 @@ void sbbs_t::ver(bool verbose)
 				 , git_date
 				 , smb_lib_ver(), compiler);
 
-		term->center(str);
+		term->center(str, pmode);
 		term->newline();
 
-		term->center("https://gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH);
+		term->center("https://gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH, pmode);
 		term->newline();
 	}
 	snprintf(str, sizeof str, "%s - http://synchro.net", COPYRIGHT_NOTICE);
-	term->center(str);
+	term->center(str, pmode);
 
 	if (!verbose)
 		return;
@@ -115,7 +115,7 @@ void sbbs_t::ver(bool verbose)
 
 #ifdef JAVASCRIPT
 	if (!(startup->options & BBS_OPT_NO_JAVASCRIPT)) {
-		term->center((char *)JS_GetImplementationVersion());
+		term->center((char *)JS_GetImplementationVersion(), pmode);
 		term->newline();
 	}
 #endif
@@ -129,24 +129,24 @@ void sbbs_t::ver(bool verbose)
 		result = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_STEPPING, &cl_step);
 		(void)result;
 		safe_snprintf(str, sizeof(str), "cryptlib %u.%u.%u (%u)", cl_major, cl_minor, cl_step, CRYPTLIB_VERSION);
-		term->center(str);
+		term->center(str, pmode);
 		term->newline();
 	}
 #endif
 
 	safe_snprintf(str, sizeof str, "%s (%u)", archive_version_string(), ARCHIVE_VERSION_NUMBER);
-	term->center(str);
+	term->center(str, pmode);
 	term->newline();
 
 #ifdef USE_MOSQUITTO
 	SAFECOPY(str, mqtt_libver(tmp, sizeof tmp));
 	safe_snprintf(tmp, sizeof tmp, " (%u)", LIBMOSQUITTO_VERSION_NUMBER);
 	SAFECAT(str, tmp);
-	term->center(str);
+	term->center(str, pmode);
 	term->newline();
 #endif
 
 	safe_snprintf(str, sizeof(str), "%s %s", os_version(os, sizeof(os)), os_cpuarch(cpu, sizeof(cpu)));
-	term->center(str);
+	term->center(str, pmode);
 }
 #endif
