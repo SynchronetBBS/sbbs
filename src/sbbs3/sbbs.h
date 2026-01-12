@@ -1319,7 +1319,7 @@ public:
 	bool	purgeuser(int usernumber);
 
 	/* ver.cpp */
-	void	ver(int p_mode = 0, bool verbose = false);
+	void	ver(int p_mode = P_CENTER | P_80COLS, bool verbose = false);
 
 	/* scansubs.cpp */
 	void	scansubs(int mode);

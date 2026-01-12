@@ -2693,7 +2693,7 @@ js_ver(JSContext *cx, uintN argc, jsval *arglist)
 	jsval*     argv = JS_ARGV(cx, arglist);
 	sbbs_t*    sbbs;
 	jsrefcount rc;
-	int        mode = P_80COLS;
+	int        mode = P_CENTER | P_80COLS;
 	bool       verbose = true;
 
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
@@ -4951,8 +4951,8 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , JSDOCSTR("Display current user information.")
 	 , 310
 	},
-	{"ver",             js_ver,             0,  JSTYPE_VOID,    JSDOCSTR("[<i>number</i> p_mode=P_80COLS] [,<i>bool</i> verbose=true]")
-	 , JSDOCSTR("Display software version information.")
+	{"ver",             js_ver,             0,  JSTYPE_VOID,    JSDOCSTR("[<i>number</i> p_mode=P_CENTER | P_80COLS] [,<i>bool</i> verbose=true]")
+	 , JSDOCSTR("Display BBS software version information.")
 	 , 310
 	},
 	{"sys_stats",       js_sys_stats,       0,  JSTYPE_VOID,    JSDOCSTR("")

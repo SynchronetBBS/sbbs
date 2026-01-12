@@ -301,10 +301,15 @@ public:
 		}
 	}
 	virtual void set_output_rate(enum output_rate speed) {}
-	virtual void center(const char *instr, int mode = 0) {
+
+	virtual uint print_cols(int mode) {
 		uint cols = this->cols;
 		if ((mode & P_80COLS) && cols > 80)
 			cols = 80;
+		return cols;
+	}
+	virtual void center(const char *instr, int mode = 0) {
+		uint cols = print_cols(mode);
 		char *str = strdup(instr);
 		truncsp(str);
 		size_t len = bstrlen(str);

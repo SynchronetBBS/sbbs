@@ -81,13 +81,13 @@ void sbbs_t::ver(int pmode, bool verbose)
 	char tmp[128];
 #endif
 
-	term->newline();
+	term->cond_blankline();
 	strcpy(str, VERSION_NOTICE);
 #if defined(_DEBUG)
 	strcat(str, "  Debug");
 #endif
-	term->center(str, pmode);
-	term->newline();
+	bputs(str, pmode);
+	term->cond_blankline();
 
 	if (verbose) {
 		DESCRIBE_COMPILER(compiler);
@@ -99,24 +99,24 @@ void sbbs_t::ver(int pmode, bool verbose)
 				 , git_date
 				 , smb_lib_ver(), compiler);
 
-		term->center(str, pmode);
-		term->newline();
+		bputs(str, pmode);
+		term->cond_blankline();
 
-		term->center("https://gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH, pmode);
-		term->newline();
+		bputs("https://gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH, pmode);
+		term->cond_blankline();
 	}
 	snprintf(str, sizeof str, "%s - http://synchro.net", COPYRIGHT_NOTICE);
-	term->center(str, pmode);
+	bputs(str, pmode);
 
 	if (!verbose)
 		return;
 
-	term->newline();
+	term->cond_blankline();
 
 #ifdef JAVASCRIPT
 	if (!(startup->options & BBS_OPT_NO_JAVASCRIPT)) {
-		term->center((char *)JS_GetImplementationVersion(), pmode);
-		term->newline();
+		bputs((char *)JS_GetImplementationVersion(), pmode);
+		term->cond_blankline();
 	}
 #endif
 
@@ -129,24 +129,25 @@ void sbbs_t::ver(int pmode, bool verbose)
 		result = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_STEPPING, &cl_step);
 		(void)result;
 		safe_snprintf(str, sizeof(str), "cryptlib %u.%u.%u (%u)", cl_major, cl_minor, cl_step, CRYPTLIB_VERSION);
-		term->center(str, pmode);
-		term->newline();
+		bputs(str, pmode);
+		term->cond_blankline();
 	}
 #endif
 
 	safe_snprintf(str, sizeof str, "%s (%u)", archive_version_string(), ARCHIVE_VERSION_NUMBER);
-	term->center(str, pmode);
-	term->newline();
+	bputs(str, pmode);
+	term->cond_blankline();
 
 #ifdef USE_MOSQUITTO
 	SAFECOPY(str, mqtt_libver(tmp, sizeof tmp));
 	safe_snprintf(tmp, sizeof tmp, " (%u)", LIBMOSQUITTO_VERSION_NUMBER);
 	SAFECAT(str, tmp);
-	term->center(str, pmode);
-	term->newline();
+	bputs(str, pmode);
+	term->cond_blankline();
 #endif
 
 	safe_snprintf(str, sizeof(str), "%s %s", os_version(os, sizeof(os)), os_cpuarch(cpu, sizeof(cpu)));
-	term->center(str, pmode);
+	bputs(str, pmode);
+	term->newline();
 }
 #endif

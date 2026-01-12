@@ -36,6 +36,8 @@ o Newly abstracted (via C++ classes) terminal input/output
   - Should see no (or minimal) changes in behavior
   - Auto-detects PETSCII terminals connecting to standard TCP ports via
     Telnet, SSH or RLogin "terminal type" advertisement by client
+o Formatted output option of specific files and sub-boards for max width 80
+  column display, for better experience on > 80 column terminals
 o Built-in detection and short-inactivity timeout of dumb terminal/bot logins
 o Send notification messages to recipients of files uploaded - issue #955
 o Allow search by author forward/backward for netmail messages - issue #484
@@ -160,6 +162,7 @@ o Allow time-duration and byte-count format paramters for some @-codes.
   - UPTIME (now defaults to "minimal verbal" (C) format)
 o Fixed for large values: TPERC, TPERD, TTODAY, TTOTAL, and TBANKED
 o New @-codes:
+  - 80COLS (display the remaining content formatted for an 80-column screen)
   - NOCODE (disable @-code parsing for remainder of message/file)
   - LOGOFF (like HANGUP, but more graceful, display logoff messages, etc.)
   - STOP (Wildcat! alias for PCBoard's QON)
@@ -395,6 +398,8 @@ JavaScript
 ~~~~~~~~~~
 o js.exec() will now execute scripts from the configured mods and exec dir
 o console.getstr() fix: off-by-one bug in use of maxlen argument
+o console output methods that accept p_mode parameters now support
+  P_CENTER and (new) P_80COLS mode flags
 o Returned to SBBS v3.19 bug-compatible console.attributes behavior of
   silently ignoring Ctrl-A characters in assigned strings
 o New 'console' property:
@@ -408,7 +413,10 @@ o New 'bbs' properties:
   - batch_dnload_bytes
   - batch_dnload_cost
   - batch_dnload_time
-o bbs.ver() now takes an optional 'verbose' argument (default: true)
+o bbs.ver()
+  - now takes an optional 'p_mode' (print mode) argument
+    (default: P_CENTER | P_80COLS)
+  - now takes an optional 'verbose' argument (default: true)
 o bbs.good_password() renamed to bbs.check_password(), with backward-alias
 o bbs.read_mail() adds option to go directly to viewing messages (not listing)
 o New 'system' property:

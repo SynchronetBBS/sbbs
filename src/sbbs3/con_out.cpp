@@ -61,6 +61,13 @@ int sbbs_t::bputs(const char *str, int mode)
 	if (online == ON_LOCAL)  /* script running as event */
 		return lputs(LOG_INFO, str);
 
+	uint cols = term->print_cols(mode);
+	if (mode & P_CENTER) {
+		size_t len = term->bstrlen(str);
+		term->carriage_return();
+		if (len < cols)
+			term->cursor_right((cols - len) / 2);
+	}
 	str = auto_utf8(str, mode);
 	size_t len = strlen(str);
 	while (l < len && online) {
@@ -72,7 +79,7 @@ int sbbs_t::bputs(const char *str, int mode)
 			case CTRL_A:
 				break;
 			default: // printing char
-				if ((mode & P_TRUNCATE) && term->column >= (term->cols - 1)) {
+				if ((mode & P_TRUNCATE) && term->column >= (cols - 1)) {
 					l++;
 					continue;
 				}

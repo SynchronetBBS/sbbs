@@ -97,9 +97,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 	str = auto_utf8(str, mode);
 	size_t len = strlen(str);
 
-	uint cols = term->cols;
-	if ((mode & P_80COLS) && cols > 80)
-		cols = 80;
+	uint cols = term->print_cols(mode);
 
 	if (!(mode & P_NOATCODES) && memcmp(str, "@WRAPOFF@", 9) == 0) {
 		mode &= ~P_WORDWRAP;
