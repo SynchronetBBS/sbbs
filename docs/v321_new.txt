@@ -38,6 +38,8 @@ o Newly abstracted (via C++ classes) terminal input/output
     Telnet, SSH or RLogin "terminal type" advertisement by client
 o Formatted output option of specific files and sub-boards for max width 80
   column display, for better experience on > 80 column terminals
+o Wide (>80 column) terminal users using the built-in mail reading interface
+  can toggle "wide output mode" with the 'W' key.
 o Built-in detection and short-inactivity timeout of dumb terminal/bot logins
 o Send notification messages to recipients of files uploaded - issue #955
 o Allow search by author forward/backward for netmail messages - issue #484
@@ -210,6 +212,7 @@ o New @-codes:
 
 Text Strings
 ~~~~~~~~~~~~
+o WideModeIsNow
 o NoMoreDownloads
 o ReadYourUnreadMailNowQ
 o UserDownloadsToday
