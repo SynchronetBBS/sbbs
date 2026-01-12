@@ -7464,7 +7464,7 @@ void web_server(void* arg)
 		lprintf(LOG_INFO, "Loading configuration files from %s", scfg.ctrl_dir);
 		scfg.size = sizeof(scfg);
 		SAFECOPY(logstr, UNKNOWN_LOAD_ERROR);
-		if (!load_cfg(&scfg, text, /* prep: */ true, /* node: */ false, logstr, sizeof(logstr))) {
+		if (!load_cfg(&scfg, text, TOTAL_TEXT, /* prep: */ true, /* node: */ false, logstr, sizeof(logstr))) {
 			errprintf(LOG_CRIT, WHERE, "!ERROR loading configuration files: %s", logstr);
 			cleanup(1);
 			return;

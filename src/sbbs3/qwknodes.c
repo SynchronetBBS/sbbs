@@ -245,7 +245,7 @@ int main(int argc, char **argv)
 	cfg.size = sizeof(cfg);
 	SAFECOPY(cfg.ctrl_dir, get_ctrl_dir(/* warn: */ TRUE));
 
-	if (!load_cfg(&cfg, /* text: */ NULL, /* prep: */ TRUE, /* node: */ FALSE, str, sizeof(str))) {
+	if (!load_cfg(&cfg, /* text: */ NULL, 0, /* prep: */ TRUE, /* node: */ FALSE, str, sizeof(str))) {
 		printf("\7\n%s\n", str);
 	}
 

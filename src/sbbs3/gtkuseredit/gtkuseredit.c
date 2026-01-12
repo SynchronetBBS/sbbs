@@ -90,7 +90,7 @@ int refresh_globals(void)
 	}
 
     /* Read .cnf files here */
-    if(!load_cfg(&cfg, /* text */NULL, /* prep: */TRUE, /* node: */FALSE, str, sizeof(str))) {
+    if(!load_cfg(&cfg, /* text */NULL, 0, /* prep: */TRUE, /* node: */FALSE, str, sizeof(str))) {
 		fprintf(stderr,"Cannot load configuration data: %s\n", str);
         return(-1);
 	}

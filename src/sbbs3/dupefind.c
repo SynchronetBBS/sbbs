@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 	cfg.size = sizeof(cfg);
 	SAFECOPY(cfg.ctrl_dir, p);
 
-	if (!load_cfg(&cfg, /* text: */ NULL, /* prep: */ TRUE, /* node: */ FALSE, str, sizeof(str))) {
+	if (!load_cfg(&cfg, /* text: */ NULL, 0, /* prep: */ TRUE, /* node: */ FALSE, str, sizeof(str))) {
 		fprintf(stderr, "!ERROR loading configuration files: %s\n", str);
 		return 1;
 	}

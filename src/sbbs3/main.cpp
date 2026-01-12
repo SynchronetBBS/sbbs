@@ -5136,7 +5136,7 @@ void bbs_thread(void* arg)
 		scfg.size = sizeof(scfg);
 		scfg.node_num = startup->first_node;
 		SAFECOPY(logstr, UNKNOWN_LOAD_ERROR);
-		if (!load_cfg(&scfg, text, /* prep: */ true, /* node_req: */ true, logstr, sizeof(logstr))) {
+		if (!load_cfg(&scfg, text, TOTAL_TEXT, /* prep: */ true, /* node_req: */ true, logstr, sizeof(logstr))) {
 			lprintf(LOG_CRIT, "!ERROR loading configuration files: %s", logstr);
 			cleanup(1);
 			return;
@@ -5834,10 +5834,10 @@ NO_SSH:
 				SAFECOPY(cfg->ctrl_dir, startup->ctrl_dir);
 				lprintf(LOG_INFO, "Node %d Loading configuration files from %s", cfg->node_num, cfg->ctrl_dir);
 				SAFECOPY(logstr, UNKNOWN_LOAD_ERROR);
-				if (!load_cfg(cfg, node_text[node_num - 1], /* prep: */ true, /* node_req: */ true, logstr, sizeof(logstr))) {
+				if (!load_cfg(cfg, node_text[node_num - 1], TOTAL_TEXT, /* prep: */ true, /* node_req: */ true, logstr, sizeof(logstr))) {
 					lprintf(LOG_WARNING, "Node %d LOAD ERROR: %s, falling back to Node %d", cfg->node_num, logstr, first_node);
 					cfg->node_num = first_node;
-					if (!load_cfg(cfg, node_text[node_num - 1], /* prep: */ true, /* node: */ true, logstr, sizeof(logstr))) {
+					if (!load_cfg(cfg, node_text[node_num - 1], TOTAL_TEXT, /* prep: */ true, /* node: */ true, logstr, sizeof(logstr))) {
 						lprintf(LOG_CRIT, "!ERROR loading configuration files: %s", logstr);
 						sbbs->bprintf("\r\nFAILED: %s", logstr);
 						client_off(client_socket);

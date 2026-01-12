@@ -1501,7 +1501,7 @@ extern "C" int main(int argc, char **argv)
 		fprintf(errfp, "!ERROR changing directory to: %s\n", scfg.ctrl_dir);
 
 	fprintf(statfp, "\nLoading configuration files from %s\n", scfg.ctrl_dir);
-	if (!load_cfg(&scfg, text, /* prep: */ true, require_cfg, error, sizeof(error))) {
+	if (!load_cfg(&scfg, text, TOTAL_TEXT, /* prep: */ true, require_cfg, error, sizeof(error))) {
 		fprintf(errfp, "!ERROR loading configuration files: %s\n", error);
 		return do_bail(1);
 	} else if (error[0] != '\0' && require_cfg)

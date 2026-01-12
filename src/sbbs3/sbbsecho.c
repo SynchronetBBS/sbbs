@@ -6806,7 +6806,7 @@ int main(int argc, char **argv)
 	printf("\nLoading configuration files from %s\n", scfg.ctrl_dir);
 	scfg.size = sizeof(scfg);
 	SAFECOPY(str, UNKNOWN_LOAD_ERROR);
-	if (!load_cfg(&scfg, text, /* prep: */ true, /* node: */ false, str, sizeof(str))) {
+	if (!load_cfg(&scfg, text, TOTAL_TEXT, /* prep: */ true, /* node: */ false, str, sizeof(str))) {
 		fprintf(stderr, "!ERROR loading configuration files: %s\n", str);
 		bail(1);
 		return -1;

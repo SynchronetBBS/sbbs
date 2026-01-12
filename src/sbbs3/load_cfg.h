@@ -31,7 +31,7 @@
 extern "C" {
 #endif
 
-DLLEXPORT bool      load_cfg(scfg_t*, char* text[], bool prep, bool req_node, char* error, size_t);
+DLLEXPORT bool      load_cfg(scfg_t*, char* text[], size_t total_text, bool prep, bool req_node, char* error, size_t);
 DLLEXPORT void      free_cfg(scfg_t*);
 DLLEXPORT void      free_text(char* text[]);
 DLLEXPORT int       get_text_num(const char* id);

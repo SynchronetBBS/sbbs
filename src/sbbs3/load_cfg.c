@@ -57,7 +57,7 @@ int get_text_num(const char* id)
 /****************************************************************************/
 /* Initializes system and node configuration information and data variables */
 /****************************************************************************/
-bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, size_t maxerrlen)
+bool load_cfg(scfg_t* cfg, char* text[], size_t total_text, bool prep, bool req_cfg, char* error, size_t maxerrlen)
 {
 	int   i;
 	int   line = 0;
@@ -67,6 +67,11 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 	if (cfg->size != sizeof(scfg_t)) {
 		safe_snprintf(error, maxerrlen, "cfg->size (%" PRIu32 ") != sizeof(scfg_t) (%" XP_PRIsize_t "d)"
 		              , cfg->size, sizeof(scfg_t));
+		return false;
+	}
+	if (text != NULL && total_text != TOTAL_TEXT) {
+		safe_snprintf(error, maxerrlen, "total_text (%" XP_PRIsize_t "d) != TOTAL_TEXT (%d)"
+		              , total_text, TOTAL_TEXT);
 		return false;
 	}
 	if (error != NULL)

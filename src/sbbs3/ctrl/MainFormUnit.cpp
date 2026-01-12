@@ -1934,7 +1934,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
 
    	StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Loading configuration...";
-	if(!load_cfg(&cfg, text, /* prep: */TRUE, /* node: */FALSE, error, sizeof(error))) {
+	if(!load_cfg(&cfg, text, TOTAL_TEXT, /* prep: */TRUE, /* node: */FALSE, error, sizeof(error))) {
     	Application->MessageBox(error,"ERROR Loading Configuration"
 	        ,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
@@ -3082,7 +3082,7 @@ void __fastcall TMainForm::reload_config(void)
 	char error[256];
 	SAFECOPY(error,UNKNOWN_LOAD_ERROR);
    	StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Reloading configuration...";
-	if(!load_cfg(&cfg, text, /* prep: */TRUE, /* node: */FALSE, error, sizeof(error))) {
+	if(!load_cfg(&cfg, text, TOTAL_TEXT, /* prep: */TRUE, /* node: */FALSE, error, sizeof(error))) {
     	Application->MessageBox(error,"ERROR Re-loading Configuration"
 	        ,MB_OK|MB_ICONEXCLAMATION);
         Application->Terminate();
