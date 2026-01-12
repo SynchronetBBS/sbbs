@@ -247,6 +247,8 @@ cmdstr NEWS
 	chkfile "%zmenu/logon.*"
 	if_true
 		menu logon
+	else
+		print "No news is good news.\r\n"
 		end_if
 	end_cmd
 

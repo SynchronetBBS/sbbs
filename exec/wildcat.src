@@ -51,8 +51,10 @@ cmdkey N
 	chkfile "../text/menu/logon.*"
 	if_true
 		menu logon
+		pause
+	else
+		print "No news is good news.\r\n"
 		end_if
-	pause
 	end_cmd
 
 cmdkey C
