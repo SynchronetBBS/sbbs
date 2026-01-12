@@ -592,7 +592,7 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 		return(false);
 	}
 	if(xpos+width-1 > console.screen_columns || ypos+height-1 > console.screen_rows) {
-		alert("Attempt to draw outside of screen: " + (xpos+width-1) + "x" + (ypos+height-1)
+		log(LOG_DEBUG, "Attempt to draw outside of screen: " + (xpos+width-1) + "x" + (ypos+height-1)
 			+ format(" > %ux%u", console.screen_columns, console.screen_rows));
 		return(false);
 	}
