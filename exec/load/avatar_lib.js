@@ -272,16 +272,18 @@ function is_enabled(obj)
 }
 
 // Uses Graphic.draw() at an absolute screen coordinate
-function draw(usernum, username, netaddr, above, right, top)
+function draw(usernum, username, netaddr, above, right, top, cols)
 {
 	var avatar = this.read(usernum, username, netaddr, usernum);
 	if(!is_enabled(avatar))
 		return false;
-	return draw_bin(avatar.data, above, right, top);
+	return draw_bin(avatar.data, above, right, top, cols);
 }
 
-function draw_bin(data, above, right, top)
+function draw_bin(data, above, right, top, cols)
 {
+	if(!cols || (cols > console.screen_columns))
+		cols = console.screen_columns;
 	load('graphic.js');
 	var graphic = new Graphic(this.defs.width, this.defs.height);
 	try {
@@ -295,7 +297,7 @@ function draw_bin(data, above, right, top)
 		else if(above)
 			y -= this.defs.height;
 		if(right)
-			x = console.screen_columns - (this.defs.width + 1);
+			x = cols - (this.defs.width + 1);
 		graphic.attr_mask = ~graphic.defs.BLINK;	// Disable blink attribute (consider iCE colors?)
 		graphic.draw(x, y, this.defs.width, this.defs.height);
 		console.gotoxy(pos);

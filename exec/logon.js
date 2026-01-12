@@ -226,7 +226,11 @@ if (!(bbs.sys_status&SS_RLOGIN) || options.rlogin_xtrn_logon !== false) {
 
 	if(options.show_avatar && console.term_supports(USER_ANSI)) {
 		if(options.draw_avatar_above || options.draw_avatar_right)
-			bbs.mods.avatar_lib.draw(user.number, /* name: */null, /* netaddr: */null, options.draw_avatar_above, options.draw_avatar_right);
+			bbs.mods.avatar_lib.draw(user.number
+				, /* name: */null, /* netaddr: */null
+				, options.draw_avatar_above, options.draw_avatar_right
+				, /* top */false
+				, /* columns */ 80);
 		else
 			bbs.mods.avatar_lib.show(user.number);
 		console.attributes = 7;	// Clear the background attribute
