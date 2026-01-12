@@ -304,6 +304,7 @@ object_header("global"		,js.global);
 f.writeln("<ul>");
 document_methods("global"	,js.global);
 properties_header("global"	,js.global);
+docwriteln("<tr><td>" + "user".bold() + "<td>User<td>N/A<td>Instance of the <a href=#User_class>User class</a> representing the current user 'online'</td>");
 docwriteln("<tr><td>" + "argc".bold() + "<td>number<td>N/A<td>Count of arguments passed to the script</td>");
 docwriteln("<tr><td>" + "argv".bold() + "<td>array<td>N/A<td>Array of argument strings (argv.length == argc)</td>");
 docwriteln("<tr><td>" + "errno".bold() + "<td>number<td>3.10h<td>Last system error number</td>");
@@ -316,12 +317,12 @@ document_object("js"		,js);
 if(js.global.system != undefined)		document_object("system"	,system);
 if(js.global.server != undefined) 		document_object("server"	,server);
 if(js.global.client != undefined)		document_object("client"	,client);
-if(js.global.user != undefined)			document_object("user"		,user);
 if(js.global.bbs != undefined)			document_object("bbs"		,bbs);
 if(js.global.console != undefined)		document_object("console"	,console);
 if(js.global.msg_area != undefined)		document_object("msg_area"	,msg_area);
 if(js.global.file_area != undefined)	document_object("file_area"	,file_area);
 if(js.global.xtrn_area != undefined)	document_object("xtrn_area"	,xtrn_area);
+if(js.global.User != undefined)			document_object("User"		,new User, "class");
 if(js.global.MsgBase != undefined)		document_object("MsgBase"	,new MsgBase(msg_area.grp_list[0].sub_list[0].code), "class");
 if(js.global.FileBase != undefined)		document_object("FileBase"	,new FileBase(file_area.lib_list[0].dir_list[0].code), "class");
 if(js.global.File != undefined)			document_object("File"		,new File(system.devnull), "class");
@@ -357,7 +358,6 @@ if(js.global.COM != undefined) {
 if(js.global.conio != undefined) {
 	document_object("conio",js.global.conio);
 }
-if(js.global.uifc != undefined)			document_object("uifc"		,uifc);
 
 if(js.global.CryptContext != undefined) {
 	var cc = new CryptContext(CryptContext.ALGO.AES);
@@ -373,6 +373,9 @@ if(js.global.CryptCert != undefined) {
 		document_object("CryptCert",ccert, "class");
 	}
 }
+// Document "uifc" last since it's only obscure (available in JSexec)
+if(js.global.uifc != undefined)
+	document_object("uifc"		,uifc);
 f.writeln("</ol>");
 
 f.write(body);
