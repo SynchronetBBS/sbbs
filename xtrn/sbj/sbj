@@ -1,1 +1,2 @@
-gcc.linux.x64.exe.debug/sbj
+#!/bin/sh
+. ${SBBSEXEC}unixstub.sh

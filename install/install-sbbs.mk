@@ -63,7 +63,6 @@ SBBSCHOWN	:= $(SBBSUSER):$(SBBSGROUP)
 SBBSDIR	?=	$(shell /bin/pwd)
 export SBBSDIR
 REPODIR		= $(SBBSDIR)/repo
-REPODIR		:::= $(shell realpath $(REPODIR))
 
 # Get OS
 ifndef os

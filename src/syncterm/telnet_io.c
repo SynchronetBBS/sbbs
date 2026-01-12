@@ -85,21 +85,15 @@ update_binary_mode()
 void
 request_telnet_opt(uchar cmd, uchar opt)
 {
-	switch(cmd) {
-		case TELNET_DO:
-		case TELNET_DONT: /* remote option */
-			if (telnet_remote_option[opt] == telnet_opt_ack(cmd))
-				return;                           /* already set in this mode, do nothing */
-			telnet_remote_option[opt] = telnet_opt_ack(cmd);
-			break;
-		case TELNET_WILL:
-		case TELNET_WONT: /* local option */
-			if (telnet_local_option[opt] == telnet_opt_ack(cmd))
-				return;                           /* already set in this mode, do nothing */
-			telnet_local_option[opt] = telnet_opt_ack(cmd);
-			break;
-		default:
-			return;
+	if ((cmd == TELNET_DO) || (cmd == TELNET_DONT)) { /* remote option */
+		if (telnet_remote_option[opt] == telnet_opt_ack(cmd))
+			return;                           /* already set in this mode, do nothing */
+		telnet_remote_option[opt] = telnet_opt_ack(cmd);
+	}
+	else {                                            /* local option */
+		if (telnet_local_option[opt] == telnet_opt_ack(cmd))
+			return;                           /* already set in this mode, do nothing */
+		telnet_local_option[opt] = telnet_opt_ack(cmd);
 	}
 	if (opt == TELNET_BINARY_TX)
 		update_binary_mode();

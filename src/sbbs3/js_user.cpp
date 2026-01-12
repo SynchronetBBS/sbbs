@@ -1836,16 +1836,6 @@ js_user_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SetPrivate(cx, obj, p);
 
-#ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx, obj
-	                      , "Class used to represent a user of the system.  See also the <a href=#global_object_properties>global <tt>user</tt> object</a>, representing current user online."
-	                      , 310);
-	js_DescribeSyncConstructor(cx, obj
-	                           , "To create a new user object: <tt>var u = new User;</tt> or: <tt>var u = new User(<i>number</i>);</tt>");
-	js_CreateArrayOfStrings(cx, obj
-	                        , "_property_desc_list", user_prop_desc, JSPROP_READONLY);
-#endif
-
 	return JS_TRUE;
 }
 
@@ -1896,6 +1886,16 @@ JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, const char* name
 	}
 
 	JS_SetPrivate(cx, userobj, p);
+
+#ifdef BUILD_JSDOCS
+	js_DescribeSyncObject(cx, userobj
+	                      , "Instance of <i>User</i> class, representing current user online"
+	                      , 310);
+	js_DescribeSyncConstructor(cx, userobj
+	                           , "To create a new user object: <tt>var u = new User;</tt> or: <tt>var u = new User(<i>number</i>);</tt>");
+	js_CreateArrayOfStrings(cx, userobj
+	                        , "_property_desc_list", user_prop_desc, JSPROP_READONLY);
+#endif
 
 	return userobj;
 }
