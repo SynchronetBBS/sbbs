@@ -2505,7 +2505,7 @@ static jsSyncMethodSpec js_system_functions[] = {
 	 , 31801},
 	{"newuser",         js_new_user,        1,  JSTYPE_ALIAS },
 	{"new_user",        js_new_user,        1,  JSTYPE_OBJECT,  JSDOCSTR("name/alias [,client object]")
-	 , JSDOCSTR("Create a new user record, returns a new <a href=#User_object>User object</a> representing the new user account, on success.<br>"
+	 , JSDOCSTR("Create a new user record, returns a new <a href=#User_class>User object</a> representing the new user account, on success.<br>"
 		        "returns a numeric error code on failure")
 	 , 310},
 	{"del_user",        js_del_user,        1,  JSTYPE_BOOLEAN, JSDOCSTR("user_number")

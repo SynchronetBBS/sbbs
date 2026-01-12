@@ -538,6 +538,7 @@ UIFCEXPORTVAR char* uifcYesNoOpts[];
 /****************************************************************************/
 int uifcini(uifcapi_t*);    /* Original implementation based on conio		*/
 UIFCEXPORT int uifcinix(uifcapi_t*);    /* Standard I/O implementation		*/
+UIFCEXPORT int uifcindex(uifcapi_t*);   /* Indexing implementation			*/
 UIFCEXPORT int uifcini32(uifcapi_t*);   /* modern implementation			*/
 /****************************************************************************/
 

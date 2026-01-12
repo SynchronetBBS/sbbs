@@ -83,7 +83,7 @@ function LocateTeam()
 	var count=0;
 	var team=db.read(Settings.DB,'teams.'+player.TeamNumber,LOCK_READ);
 	var i;
-	for(i=0;i<team.Members.length; i++) {
+	for(i=0; team && i<team.Members.length; i++) {
 		var otherplayer=players.Get(team.Members[i]);
 		if(otherplayer.Record!=player.Record
 				&& otherplayer.UserNumber!=0
@@ -126,7 +126,7 @@ function CreateTeam()
 	var teamLen=db.read(Settings.DB,'teams.length',LOCK_READ);
 	for(i=1; i<teamLen; i++) {
 		team=db.read(Settings.DB,'teams.'+i,LOCK_READ);
-		if(team.Members.length > 0) {
+		if(team && team.Members.length > 0) {
 			teamNum=i;
 			break;
 		}
@@ -143,7 +143,7 @@ function CreateTeam()
 		teamLen=db.read(Settings.DB,'teams.length',LOCK_READ);
 		for(i=1; i<teamLen; i++) {
 			team=db.read(Settings.DB,'teams.'+i,LOCK_READ);
-			if(team.Members.length > 0 && team.Members[0]==player.Record) {
+			if(team && team.Members.length > 0 && team.Members[0]==player.Record) {
 				teamNum=i;
 				break;
 			}
@@ -174,7 +174,7 @@ function JoinTeam()
 		return(false);
 
 	var team=db.read(Settings.DB,'teams.'+tnum,LOCK_READ);
-	if(team.Members.length > 3) {
+	if(team && team.Members.length > 3) {
 		console.writeln("The Team you picked has a maximum amount of members!");
 		return(false);
 	}
@@ -187,7 +187,7 @@ function JoinTeam()
 	var i;
 	db.lock(Settings.DB,'teams.'+tnum,LOCK_WRITE);
 	team=db.read(Settings.DB,'teams.'+tnum);
-	if(team.Members.length > 3) {
+	if(team && team.Members.length > 3) {
 		console.writeln("The Team you picked has a maximum amount of members!");
 		db.unlock(Settings.DB,'teams.'+tnum);
 		return(false);
@@ -216,7 +216,7 @@ function QuitTeam()
 		db.lock(Settings.DB,'teams.'+teamNum,LOCK_WRITE);
 		var team=db.read(Settings.DB,'teams.'+teamNum);
 		var i;
-		for(i=0; i<team.Members.length; i++) {
+		for(i=0; team && i<team.Members.length; i++) {
 			if(team.Members[i]==player.Record) {
 				team.Members.splice(i,1);
 				i--;
@@ -248,7 +248,7 @@ function TeamTransfer(type)
 
 	var otherplayer=null;
 	var team=db.read(Settings.DB,'teams.'+player.TeamNumber,LOCK_READ);
-	for(i=0;i<team.Members.length; i++) {
+	for(i=0; team && i<team.Members.length; i++) {
 		otherplayer=players.Get(team.Members[i]);
 		if(otherplayer.Sector==player.Sector
 				&& otherplayer.Record!=player.Record
