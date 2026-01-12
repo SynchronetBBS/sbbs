@@ -1,4 +1,4 @@
-@CLS@@TRUNCATE@
+@CLS@@TRUNCATE@@80COLS@
 nhcThis BBS is running...
    _________                   .__                                __
   /   _____/__.__. ____   ____ |  |_________  ____   ____   _____/  |_
@@ -11,7 +11,7 @@
 w@CENTER@@COPYRIGHT@
 gh
 @CENTER@Bulletin Board System Software for the Internet Age
-ng@WRAPOFF@
+ng
     hong UTF-8, CP437/ANSI-BBS and CBM/PETSCII terminal support
     hong Telnet, SSH, and RLogin protocols/clients
     hong SMTP[S]/POP3 inbound and outbound e-mail
