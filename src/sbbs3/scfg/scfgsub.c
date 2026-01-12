@@ -631,6 +631,8 @@ void sub_cfg(int grpnum)
 						         , cfg.sub[i]->pmode & P_MARKUP ? ((cfg.sub[i]->pmode & P_HIDEMARKS)  ? "Hide" : "Yes") : "No");
 						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Word-wrap Messages"
 						         , cfg.sub[i]->n_pmode & P_WORDWRAP ? "No" : "Yes");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Format Output for 80 Columns"
+						         , cfg.sub[i]->pmode & P_80COLS ? "Yes" : "No");
 						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Auto-detect UTF-8 Msgs"
 						         , cfg.sub[i]->pmode & P_AUTO_UTF8 ? "Yes" : "No");
 						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Expand @-codes in Sysop Msgs"
@@ -1164,6 +1166,28 @@ void sub_cfg(int grpnum)
 								else if (n == 1 && !(cfg.sub[i]->n_pmode & P_WORDWRAP)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->n_pmode ^= P_WORDWRAP;
+								}
+								break;
+							case __COUNTER__:
+								n = (cfg.sub[i]->pmode & P_80COLS) ? 0:1;
+								uifc.helpbuf =
+									"`Format Output for 80 Columns:`\n"
+									"\n"
+									"Set this option to `Yes` to enable formatting (e.g. word-wrapping) of\n"
+									"message text for a maximum of 80 columns when displaying messages from\n"
+									"this sub-board on the Terminal Server.\n"
+								;
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Format Output for 80 Columns", uifcYesNoOpts);
+								if (n == -1)
+									break;
+								if (n == 0 && !(cfg.sub[i]->pmode & P_80COLS)) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->pmode ^= P_80COLS;
+								}
+								else if (n == 1 && (cfg.sub[i]->pmode & P_80COLS)) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->pmode ^= P_80COLS;
 								}
 								break;
 							case __COUNTER__:
