@@ -5332,7 +5332,7 @@ JSObject* js_CreateBbsObject(JSContext* cx, JSObject* parent)
 	js_CreateTextProperties(cx, obj);
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx, mods, "Global repository for 3rd party modifications", 312);
+	js_DescribeSyncObject(cx, mods, "Global parent for stock or 3rd party persistently-stored load libraries and their data", 312);
 	js_DescribeSyncObject(cx, obj, "Controls the Terminal Server (traditional BBS) experience", 310);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", bbs_prop_desc, JSPROP_READONLY);
 #endif
