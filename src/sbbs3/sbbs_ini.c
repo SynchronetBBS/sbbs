@@ -397,8 +397,10 @@ bool sbbs_read_ini(
 
 	list = iniReadFile(fp);
 
-	if (!get_ini_globals(list, global))
+	if (!get_ini_globals(list, global)) {
+		iniFreeStringList(list);
 		return false;
+	}
 
 	if (global->ctrl_dir[0]) {
 		if (bbs != NULL)
@@ -438,9 +440,11 @@ bool sbbs_read_ini(
 
 	if (bbs != NULL) {
 
-		if (bbs->size != sizeof *bbs)
+		if (bbs->size != sizeof *bbs) {
+			free(global_interfaces);
+			iniFreeStringList(list);
 			return false;
-
+		}
 		bbs->outgoing4.s_addr
 		    = iniGetIpAddress(list, section, strOutgoing4, global->outgoing4.s_addr);
 		bbs->outgoing6
@@ -558,9 +562,11 @@ bool sbbs_read_ini(
 
 	if (ftp != NULL) {
 
-		if (ftp->size != sizeof *ftp)
+		if (ftp->size != sizeof *ftp) {
+			free(global_interfaces);
+			iniFreeStringList(list);
 			return false;
-
+		}
 		ftp->outgoing4.s_addr
 		    = iniGetIpAddress(list, section, strOutgoing4, global->outgoing4.s_addr);
 		ftp->outgoing6
@@ -628,9 +634,10 @@ bool sbbs_read_ini(
 
 	if (mail != NULL) {
 
-		if (mail->size != sizeof *mail)
-			return false;
-
+		if (mail->size != sizeof *mail) {
+			free(global_interfaces);
+			iniFreeStringList(list);
+		}
 		mail->interfaces
 		    = iniGetStringList(list, section, strInterfaces, ",", global_interfaces);
 		mail->outgoing4.s_addr
@@ -738,9 +745,11 @@ bool sbbs_read_ini(
 
 	if (services != NULL) {
 
-		if (services->size != sizeof *services)
+		if (services->size != sizeof *services) {
+			free(global_interfaces);
+			iniFreeStringList(list);
 			return false;
-
+		}
 		services->interfaces
 		    = iniGetStringList(list, section, strInterfaces, ",", global_interfaces);
 		services->outgoing4.s_addr
@@ -789,9 +798,11 @@ bool sbbs_read_ini(
 
 	if (web != NULL) {
 
-		if (web->size != sizeof *web)
+		if (web->size != sizeof *web) {
+			free(global_interfaces);
+			iniFreeStringList(list);
 			return false;
-
+		}
 		web->interfaces
 		    = iniGetStringList(list, section, strInterfaces, ",", global_interfaces);
 		web->tls_interfaces
