@@ -338,26 +338,33 @@ static const char* server_state_str(enum server_state state)
 	}
 }
 
+bool server_stopped_or_stopping(enum server_state state)
+{
+	return state == SERVER_STOPPED || state == SERVER_STOPPING;
+}
+
+enum server_state bbs_state;
+enum server_state ftp_state;
+enum server_state mail_state;
+enum server_state web_state;
+enum server_state services_state;
+
 static void bbs_set_state(void* p, enum server_state state)
+{
+	bbs_state = state;
+}
+
+static void bbs_set_controls(enum server_state state)
 {
 	TelnetForm->Status->Caption = server_state_str(state);
 	
-	switch(state) {
-		case SERVER_STOPPED:
-			MainForm->TelnetStart->Enabled=true;
-			MainForm->TelnetStop->Enabled=false;
-			MainForm->TelnetRecycle->Enabled=false;
-			MainForm->TelnetPause->Enabled=false;
-			MainForm->TelnetPause->Checked=false;
-			break;
-		case SERVER_READY:
-			MainForm->TelnetStart->Enabled=false;
-			MainForm->TelnetStop->Enabled=true;
-			MainForm->TelnetRecycle->Enabled=true;
-			MainForm->TelnetPause->Enabled=true;
-			MainForm->TelnetPause->Checked=false;
-			break;
-	}
+	MainForm->TelnetStart->Enabled = (state == SERVER_STOPPED);
+	MainForm->TelnetStop->Enabled = (state == SERVER_READY);
+	MainForm->TelnetRecycle->Enabled = (state == SERVER_READY);
+	MainForm->TelnetPause->Enabled = (state == SERVER_READY);
+
+	if (state == SERVER_STOPPED)
+		MainForm->TelnetPause->Checked=false;
 }
 
 static void bbs_clients(void* p, int clients)
@@ -424,24 +431,20 @@ static void services_log_msg(log_msg_t* msg)
 
 static void services_set_state(void* p, enum server_state state)
 {
+	services_state = state;
+}
+
+static void services_set_controls(enum server_state state)
+{
 	ServicesForm->Status->Caption = server_state_str(state);
 	
-	switch(state) {
-		case SERVER_STOPPED:
-			MainForm->ServicesStart->Enabled=true;
-			MainForm->ServicesStop->Enabled=false;
-			MainForm->ServicesRecycle->Enabled=false;
-			MainForm->ServicesPause->Enabled=false;
-			MainForm->ServicesPause->Checked=false;
-			break;
-		case SERVER_READY:
-			MainForm->ServicesStart->Enabled=false;
-			MainForm->ServicesStop->Enabled=true;
-			MainForm->ServicesRecycle->Enabled=true;
-			MainForm->ServicesPause->Enabled=true;
-			MainForm->ServicesPause->Checked=false;
-			break;
-	}
+	MainForm->ServicesStart->Enabled = (state == SERVER_STOPPED);
+	MainForm->ServicesStop->Enabled = (state == SERVER_READY);
+	MainForm->ServicesRecycle->Enabled = (state == SERVER_READY);
+	MainForm->ServicesPause->Enabled = (state == SERVER_READY);
+
+	if (state == SERVER_STOPPED)
+		MainForm->ServicesPause->Checked=false;
 }
 
 static void services_clients(void* p, int clients)
@@ -490,24 +493,20 @@ static void mail_log_msg(log_msg_t* msg)
 
 static void mail_set_state(void* p, enum server_state state)
 {
+	mail_state = state;
+}
+
+static void mail_set_controls(enum server_state state)
+{
 	MailForm->Status->Caption = server_state_str(state);
 	
-	switch(state) {
-		case SERVER_STOPPED:
-			MainForm->MailStart->Enabled=true;
-			MainForm->MailStop->Enabled=false;
-			MainForm->MailRecycle->Enabled=false;
-			MainForm->MailPause->Enabled=false;
-			MainForm->MailPause->Checked=false;
-			break;
-		case SERVER_READY:
-			MainForm->MailStart->Enabled=false;
-			MainForm->MailStop->Enabled=true;
-			MainForm->MailRecycle->Enabled=true;
-			MainForm->MailPause->Enabled=true;
-			MainForm->MailPause->Checked=false;
-			break;
-	}
+	MainForm->MailStart->Enabled = (state == SERVER_STOPPED);
+	MainForm->MailStop->Enabled = (state == SERVER_READY);
+	MainForm->MailRecycle->Enabled = (state == SERVER_READY);
+	MainForm->MailPause->Enabled = (state == SERVER_READY);
+
+	if (state == SERVER_STOPPED)
+		MainForm->MailPause->Checked=false;
 }
 
 static void mail_clients(void* p, int clients)
@@ -591,24 +590,20 @@ static void ftp_log_msg(log_msg_t* msg)
 
 static void ftp_set_state(void* p, enum server_state state)
 {
+	ftp_state = state;
+}
+
+static void ftp_set_controls(enum server_state state)
+{
 	FtpForm->Status->Caption = server_state_str(state);
 	
-	switch(state) {
-		case SERVER_STOPPED:
-			MainForm->FtpStart->Enabled=true;
-			MainForm->FtpStop->Enabled=false;
-			MainForm->FtpRecycle->Enabled=false;
-			MainForm->FtpPause->Enabled=false;
-			MainForm->FtpPause->Checked=false;
-			break;
-		case SERVER_READY:
-			MainForm->FtpStart->Enabled=false;
-			MainForm->FtpStop->Enabled=true;
-			MainForm->FtpRecycle->Enabled=true;
-			MainForm->FtpPause->Enabled=true;
-			MainForm->FtpPause->Checked=false;
-			break;
-	}
+	MainForm->FtpStart->Enabled = (state == SERVER_STOPPED);
+	MainForm->FtpStop->Enabled = (state == SERVER_READY);
+	MainForm->FtpRecycle->Enabled = (state == SERVER_READY);
+	MainForm->FtpPause->Enabled = (state == SERVER_READY);
+
+	if (state == SERVER_STOPPED)
+		MainForm->FtpPause->Checked=false;
 }
 
 static void ftp_clients(void* p, int clients)
@@ -665,24 +660,20 @@ static void web_log_msg(log_msg_t* msg)
 
 static void web_set_state(void* p, enum server_state state)
 {
+	web_state = state;
+}
+
+static void web_set_controls(enum server_state state)
+{
 	WebForm->Status->Caption = server_state_str(state);
 	
-	switch(state) {
-		case SERVER_STOPPED:
-			MainForm->WebStart->Enabled=true;
-			MainForm->WebStop->Enabled=false;
-			MainForm->WebRecycle->Enabled=false;
-			MainForm->WebPause->Enabled=false;
-			MainForm->WebPause->Checked=false;
-			break;
-		case SERVER_READY:
-			MainForm->WebStart->Enabled=false;
-			MainForm->WebStop->Enabled=true;
-			MainForm->WebRecycle->Enabled=true;
-			MainForm->WebPause->Enabled=true;
-			MainForm->WebPause->Checked=false;
-			break;
-	}
+	MainForm->WebStart->Enabled = (state == SERVER_STOPPED);
+	MainForm->WebStop->Enabled = (state == SERVER_READY);
+	MainForm->WebRecycle->Enabled = (state == SERVER_READY);
+	MainForm->WebPause->Enabled = (state == SERVER_READY);
+
+	if (state == SERVER_STOPPED)
+		MainForm->WebPause->Checked=false;
 }
 
 static void web_clients(void* p, int clients)
@@ -1076,14 +1067,25 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 
 	StatusBar->Panels->Items[STATUSBAR_LAST_PANEL]->Text="Terminating servers...";
     time_t start=time(NULL);
-	while( (TelnetStop->Enabled     && !bbsServiceEnabled())
-        || (MailStop->Enabled       && !mailServiceEnabled())
-        || (FtpStop->Enabled        && !ftpServiceEnabled())
-        || (WebStop->Enabled        && !webServiceEnabled())
-    	|| (ServicesStop->Enabled   && !servicesServiceEnabled())) {
-        if(time(NULL)-start>30) {
-			if(Application->MessageBox("Abort wait for servers to terminate?"
-				,"Synchronet Server Still Running", MB_OKCANCEL) == IDOK)
+	str_list_t servers = strListInit();
+	while(1) {
+		strListFreeStrings(servers);
+		if(bbs_state != SERVER_STOPPED      && !bbsServiceEnabled())      strListPush(&servers, "Terminal");
+		if(mail_state != SERVER_STOPPED     && !mailServiceEnabled())     strListPush(&servers, "Mail");
+		if(ftp_state != SERVER_STOPPED      && !ftpServiceEnabled())      strListPush(&servers, "FTP");
+		if(web_state != SERVER_STOPPED      && !webServiceEnabled())      strListPush(&servers, "Web");
+		if(services_state != SERVER_STOPPED && !servicesServiceEnabled()) strListPush(&servers, "Services");
+		int count = strListCount(servers);
+		if(count < 1)
+			break;
+        if(time(NULL)-start > 60) {
+			char tmp[256];
+			AnsiString Servers = AnsiString(" Server") + (count > 1 ? "s" : "");
+			if(Application->MessageBox(
+				 (AnsiString("Abort wait for ") + strListCombine(servers, tmp, sizeof tmp, ", ")
+					+ Servers + " to gracefully terminate?").c_str()
+				,(AnsiString(count) + " Synchronet" + Servers + " Still Running").c_str()
+				, MB_YESNO|MB_ICONSTOP) == IDYES)
 				break;
 			start = time(NULL);
 		}
@@ -1099,12 +1101,13 @@ void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 	NodeForm->Timer->Enabled=false;
 	ClientForm->Timer->Enabled=false;
 }
+
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
 {
 	CanClose=false;
 
-    if(TelnetStop->Enabled && !bbsServiceEnabled()) {
+    if(!server_stopped_or_stopping(bbs_state) && !bbsServiceEnabled()) {
      	if(!terminating && TelnetForm->ProgressBar->Position
 	        && Application->MessageBox("Shut down the Terminal Server?"
         	,"Synchronet Terminal Server In Use", MB_OKCANCEL)!=IDOK)
@@ -1112,7 +1115,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
         TelnetStopExecute(Sender);
 	}
 
-    if(MailStop->Enabled && !mailServiceEnabled()) {
+    if(!server_stopped_or_stopping(mail_state) && !mailServiceEnabled()) {
     	if(!terminating && MailForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the Mail Server?"
         	,"Synchronet Mail Server In Use", MB_OKCANCEL)!=IDOK)
@@ -1120,7 +1123,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
         MailStopExecute(Sender);
     }
 
-    if(FtpStop->Enabled && !ftpServiceEnabled()) {
+    if(!server_stopped_or_stopping(ftp_state) && !ftpServiceEnabled()) {
     	if(!terminating && FtpForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the FTP Server?"
 	       	,"Synchronet FTP Server In Use", MB_OKCANCEL)!=IDOK)
@@ -1128,7 +1131,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
         FtpStopExecute(Sender);
     }
 
-    if(WebStop->Enabled && !webServiceEnabled()) {
+    if(!server_stopped_or_stopping(web_state) && !webServiceEnabled()) {
     	if(!terminating && WebForm->ProgressBar->Position
     		&& Application->MessageBox("Shut down the Web Server?"
 	       	,"Synchronet Web Server In Use", MB_OKCANCEL)!=IDOK)
@@ -1136,7 +1139,7 @@ void __fastcall TMainForm::FormCloseQuery(TObject *Sender, bool &CanClose)
         WebStopExecute(Sender);
     }
 
-    if(ServicesStop->Enabled && !servicesServiceEnabled())
+    if(!server_stopped_or_stopping(services_state) && !servicesServiceEnabled())
 	    ServicesStopExecute(Sender);
 
     CanClose=true;
@@ -3439,6 +3442,12 @@ void __fastcall TMainForm::LogTimerTick(TObject *Sender)
 		if(count)
 			logged_msgs(ServicesForm->Log);
     }
+
+	bbs_set_controls(bbs_state);
+	ftp_set_controls(ftp_state);
+	web_set_controls(web_state);
+	mail_set_controls(mail_state);
+	services_set_controls(services_state);
 }
 //---------------------------------------------------------------------------
 void CheckServiceStatus(
