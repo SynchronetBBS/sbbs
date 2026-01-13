@@ -23,6 +23,13 @@ o Support tracking and limiting of user file downloads "per day" - issue #938
 o System statistics and mail message counts are now cached (default: for 5s)
 o Increased from 40 to 60 characters the maximum length of descriptions (long
   name) of message groups and sub-boards and file libraries and directories
+o User properties (data/user/####.ini) are now exposed to ARS and @-codes
+  - New ARS Keyword PROP[:section]:key to check the truthiness of a property
+  - New @-codes (YESNO and ONOFF) for checking Access Requirement Strings
+    (not just user properties) which may be used to get/display Yes/No or
+    On/Off text strings based on the full ARS comparison
+  - New @-code (PROP[:section]:key) to get/display the *value* of any user
+    property (not just its truthiness)
 o Increased max files per directory from 65535 to 4.2B (99999 via SCFG)
   (0/unlimited remains an option)
 o Track user bytes downloaded (in files) per day
@@ -167,6 +174,9 @@ o New @-codes:
   - 80COLS (display the remaining content formatted for an 80-column screen)
   - NOCODE (disable @-code parsing for remainder of message/file)
   - LOGOFF (like HANGUP, but more graceful, display logoff messages, etc.)
+  - PROP:[section]key (a user property value from data/user/*.ini)
+  - YESNO:ARS (expands to the text.dat string for Yes or No based on ARS)
+  - ONOFF:ARS (expands to the text.dat string for On or Off based on ARS)
   - STOP (Wildcat! alias for PCBoard's QON)
   - NOSTOP (Wildcat! alias for PCBoard's alias for QOFF)
   - XON (Turn on PCBoard style color code parsing for current message/file)
