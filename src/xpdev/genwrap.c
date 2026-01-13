@@ -227,7 +227,7 @@ char c_unescape_char_ptr(const char* str, char** endptr)
 }
 
 /****************************************************************************/
-/* Unescape a C string, in place											*/
+/* Un-escape a C string, in place											*/
 /****************************************************************************/
 char* c_unescape_str(char* str)
 {
@@ -244,6 +244,34 @@ char* c_unescape_str(char* str)
 	while ((ch = *(src++)) != 0) {
 		if (ch == '\\')    /* escape */
 			ch = c_unescape_char_ptr(src, &src);
+		*(dst++) = ch;
+	}
+	*dst = 0;
+	free(buf);
+	return str;
+}
+
+/****************************************************************************/
+/* Un-escape printable characters in a C string, in place					*/
+/****************************************************************************/
+char* c_unescape_printable(char* str)
+{
+	char  ch;
+	char* buf;
+	char* src;
+	char* dst;
+
+	if (str == NULL || (buf = strdup(str)) == NULL)
+		return NULL;
+
+	src = buf;
+	dst = str;
+	while ((ch = *(src++)) != 0) {
+		if (ch == '\\') {   /* escape */
+			ch = c_unescape_char_ptr(src, &src);
+			if (!IS_PRINTABLE(ch))
+				continue;
+		}
 		*(dst++) = ch;
 	}
 	*dst = 0;

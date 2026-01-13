@@ -394,6 +394,7 @@ DLLEXPORT int		safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 DLLEXPORT char*		c_escape_str(const char* src, char* dst, size_t maxlen, bool ctrl_only);
 DLLEXPORT char*		c_escape_char(char ch);
 DLLEXPORT char*		c_unescape_str(char* str);
+DLLEXPORT char*		c_unescape_printable(char* str);
 DLLEXPORT char		c_unescape_char_ptr(const char* str, char** endptr);
 DLLEXPORT char		c_unescape_char(char ch);
 
