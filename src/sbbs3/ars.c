@@ -485,6 +485,10 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				artype = AR_SHELL;
 				i += 4;
 			}
+			else if (!strnicmp(str + i, "PROP", 4)) {
+				artype = AR_PROP;
+				i += 3;
+			}
 
 			if (n != i)        /* one of the above */
 			{
@@ -622,6 +626,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 			case AR_TERM:
 			case AR_LANG:
 			case AR_USERNAME:
+			case AR_PROP:
 				/* String argument */
 				for (n = 0; n < maxlen
 				     && str[i]

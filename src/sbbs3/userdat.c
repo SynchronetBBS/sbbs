@@ -2712,6 +2712,43 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 			case AR_COLS:
 				result = !not;
 				break;
+			case AR_PROP:
+			{
+				char tmp[128];
+				char* section = ROOT_SECTION;
+				SKIP_CHAR((*ptrptr), ':'); // Allow leading colon to be consist with @PROP:section:key@ syntax
+				if (*(*ptrptr) == '[') { // [section]key
+					(*ptrptr)++;
+					i = 0;
+					while (**ptrptr != '\0' && **ptrptr != ']' && i < sizeof(tmp) - 1)
+						tmp[i++] = *(*ptrptr)++;
+					tmp[i] = '\0';
+					if (**ptrptr == ']') {
+						(*ptrptr)++;
+						section = tmp;
+						SKIP_WHITESPACE(*ptrptr);
+					}
+				}
+				else if (strchr((char *)(*ptrptr), ':') != NULL) { // [section:]key
+					i = 0;
+					while (**ptrptr != '\0' && **ptrptr != ':' && i < sizeof(tmp) - 1)
+						tmp[i++] = *(*ptrptr)++;
+					tmp[i] = '\0';
+					if (**ptrptr != '\0') {
+						(*ptrptr)++;
+						section = tmp;
+						SKIP_WHITESPACE(*ptrptr);
+					}
+				}
+				SKIP_CHAR((*ptrptr), ':');
+				if (!user_get_bool_property(cfg, user->number, section, (char*)*ptrptr, false))
+					result = not;
+				else
+					result = !not;
+				while (*(*ptrptr))
+					(*ptrptr)++;
+				break;
+			}
 		}
 	}
 	return result;

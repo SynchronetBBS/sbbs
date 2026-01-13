@@ -118,10 +118,11 @@ enum {                              /* Access requirement binaries */
 	, AR_USERNAME
 	, AR_LANG
 	, AR_DLT    // Downloads today
+	, AR_PROP   // User (Boolean) Property
 };
 
-enum ar_type {
-	AR_BOOL
+enum ar_type { // Access requirement argument types
+	  AR_BOOL
 	, AR_NUM
 	, AR_STRING
 };
@@ -159,6 +160,7 @@ static inline enum ar_type ar_type(int artype)
 		case AR_IP:
 		case AR_USERNAME:
 		case AR_LANG:
+		case AR_PROP:
 			return AR_STRING;
 	}
 	return AR_NUM;

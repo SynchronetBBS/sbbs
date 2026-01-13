@@ -735,6 +735,45 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 					noaccess_val = n;
 				}
 				break;
+			case AR_PROP:
+			{
+				char tmp[128];
+				char* section = ROOT_SECTION;
+				SKIP_CHAR((*ptrptr), ':'); // Allow leading colon to be consist with @PROP:section:key@ syntax
+				if (*(*ptrptr) == '[') { // [section]key
+					(*ptrptr)++;
+					i = 0;
+					while (**ptrptr != '\0' && **ptrptr != ']' && i < sizeof(tmp) - 1)
+						tmp[i++] = *(*ptrptr)++;
+					tmp[i] = '\0';
+					if (**ptrptr == ']') {
+						(*ptrptr)++;
+						section = tmp;
+						SKIP_WHITESPACE(*ptrptr);
+					}
+				}
+				else if (strchr((char *)(*ptrptr), ':') != nullptr) { // [section:]key
+					i = 0;
+					while (**ptrptr != '\0' && **ptrptr != ':' && i < sizeof(tmp) - 1)
+						tmp[i++] = *(*ptrptr)++;
+					tmp[i] = '\0';
+					if (**ptrptr != '\0') {
+						(*ptrptr)++;
+						section = tmp;
+						SKIP_WHITESPACE(*ptrptr);
+					}
+				}
+				SKIP_CHAR((*ptrptr), ':');
+				if (!user_get_bool_property(&cfg, user->number, section, (char*)*ptrptr, false))
+					result = _not;
+				else
+					result = !_not;
+				while (*(*ptrptr))
+					(*ptrptr)++;
+				if (!result)
+					noaccess_str = text[NoAccessUser];
+				break;
+			}
 		}
 	}
 	return result;

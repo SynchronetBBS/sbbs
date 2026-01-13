@@ -423,6 +423,17 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return nulstr;
 	}
 
+	bool yesno = strncmp(sp, "YESNO:", 6) == 0;
+	if (yesno || strncmp(sp, "ONOFF:", 6) == 0) {
+		bool result = false;
+		uchar* ar = arstr(NULL, sp + 6, &cfg, NULL);
+		if (ar != NULL) {
+			result = chk_ar(ar, &useron, &client);
+			free(ar);
+		}
+		return yesno ? text[result ? Yes : No] : text[result ? On : Off];
+	}
+
 	if (strcmp(sp, "HOT") == 0) { // Auto-mouse hot-spot attribute
 		hot_attr = curatr;
 		return nulstr;
@@ -1782,6 +1793,37 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		jsval val;
 		if (JS_GetProperty(js_cx, obj == NULL ? js_glob : obj, sp + 3, &val))
 			JSVALUE_TO_STRBUF(js_cx, val, str, maxlen, NULL);
+		return str;
+	}
+
+	// User Property value
+	if (strncmp(sp, "PROP:", 5) == 0) {
+		sp += 5;
+		char* section = ROOT_SECTION;
+		char tmp[128];
+		if (*sp == '[') { // [section]key
+			SAFECOPY(tmp, sp + 1);
+			char* end = strchr(tmp, ']');
+			if (end != nullptr) {
+				*end = '\0';
+				section = tmp;
+				sp += (end - tmp) + 2;
+			}
+		}
+		else { // section:key
+			SAFECOPY(tmp, sp);
+			char* end = strchr(tmp, ':');
+			if (end != nullptr) {
+				*end = '\0';
+				section = tmp;
+				sp += (end - tmp) + 1;
+			}
+		}
+		char key[128];
+		SKIP_CHAR(sp, ':');
+		SAFECOPY(key, sp);
+		c_unescape_str(key);
+		user_get_property(&cfg, useron.number, section, key, str, maxlen);
 		return str;
 	}
 
