@@ -1822,7 +1822,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		char key[128];
 		SKIP_CHAR(sp, ':');
 		SAFECOPY(key, sp);
-		c_unescape_str(key);
 		user_get_property(&cfg, useron.number, section, key, str, maxlen);
 		return str;
 	}
