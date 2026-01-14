@@ -1131,8 +1131,8 @@ void xfer_cfg()
 							*cfg.dir[j] = cfg.lib[libnum]->dir_defaults;
 							added++;
 						} else {
-							SAFEPRINTF(str, "Duplicate dir: %s", cfg.dir[j]->code_suffix);
-							uifc.msg(str);
+							if (!uifc.confirm("Duplicate dir '%s' could not be imported. Continue?", cfg.dir[j]->code_suffix))
+								break;
 						}
 						if (k == 2) {
 							SAFECOPY(cfg.dir[j]->code_suffix, tmpdir.code_suffix);
