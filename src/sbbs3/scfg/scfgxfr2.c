@@ -1132,7 +1132,7 @@ void xfer_cfg()
 							*cfg.dir[j] = cfg.lib[libnum]->dir_defaults;
 							added++;
 						} else if (prompt_on_dupe) {
-							if (!uifc.confirm("Duplicate dir '%s' dected. Continue?", cfg.dir[j]->code_suffix))
+							if (!uifc.confirm("Duplicate dir '%s' detected. Continue?", cfg.dir[j]->code_suffix))
 								break;
 							prompt_on_dupe = uifc.confirm("Continue to notify/prompt for each duplicate dir found?");
 						}
