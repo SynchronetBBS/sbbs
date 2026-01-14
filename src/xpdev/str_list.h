@@ -100,12 +100,15 @@ DLLEXPORT size_t		strListModifyEach(const str_list_t list, char*(modify(size_t i
 DLLEXPORT bool			strListSwap(const str_list_t, size_t index1, size_t index2);
 
 /* Convenience macros for pushing, popping strings (LIFO stack) */
-#define		strListPush(list, str)	strListAppend(list, str, STR_LIST_LAST_INDEX)
-#define		strListPop(list)		strListRemove(list, STR_LIST_LAST_INDEX)
+#define strListPush(list, str)    strListAppend(list, str, STR_LIST_LAST_INDEX)
+#define strListPushPtr(list, str) strListAnnex(list, str, STR_LIST_LAST_INDEX)
+#define strListPop(list)          strListRemove(list, STR_LIST_LAST_INDEX)
 
 /* Add to an existing or new string list by splitting specified string (str) */
 /* into multiple (non-empty) strings, separated by one or more of the delimit characters */
 DLLEXPORT str_list_t	strListSplit(str_list_t*, char* str, const char* delimit);
+/* Frees the existing list first: */
+DLLEXPORT str_list_t	strListSplitNew(str_list_t*, char* str, const char* delimit);
 
 /* Same as above, but copies str to temporary heap buffer first */
 DLLEXPORT str_list_t	strListSplitCopy(str_list_t*, const char* str, const char* delimit);

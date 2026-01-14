@@ -419,6 +419,12 @@ str_list_t strListSplit(str_list_t* lp, char* str, const char* delimit)
 	return *lp;
 }
 
+str_list_t strListSplitNew(str_list_t* lp, char* str, const char* delimit)
+{
+	strListFreeStrings(*lp);
+	return strListSplit(lp, str, delimit);
+}
+
 str_list_t strListSplitCopy(str_list_t* list, const char* str, const char* delimit)
 {
 	char*      buf;
