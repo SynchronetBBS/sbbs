@@ -106,8 +106,8 @@ static void write_loadable_module(str_list_t* ini, const char* name, struct load
 	char cmd_key[INI_MAX_VALUE_LEN];
 	char ars_key[INI_MAX_VALUE_LEN];
 	const char* section = "module";
-	int    i;
-	size_t ars_count = strListCount(mod.ars);
+	int i;
+	int ars_count = strListCount(mod.ars);
 
 	if (mod.cmd == NULL)
 		return;
@@ -203,37 +203,6 @@ bool write_main_cfg(scfg_t* cfg)
 		iniSetString(&ini, name, "mods", cfg->mods_dir, &ini_style);
 		iniSetString(&ini, name, "logs", cfg->logs_dir, &ini_style);
 	}
-	{
-		const char* name = "newuser";
-		iniSetHexInt(&ini, name, "questions", cfg->uq, &ini_style);
-		iniSetString(&ini, name, "password", cfg->new_pass, &ini_style);
-		iniSetString(&ini, name, "magic_word", cfg->new_magic, &ini_style);
-		iniSetString(&ini, name, "sif", cfg->new_sif, &ini_style);
-		iniSetString(&ini, name, "sof", cfg->new_sof, &ini_style);
-
-		iniSetUInteger(&ini, name, "level", cfg->new_level, &ini_style);
-		iniSetHexInt(&ini, name, "flags1", cfg->new_flags1, &ini_style);
-		iniSetHexInt(&ini, name, "flags2", cfg->new_flags2, &ini_style);
-		iniSetHexInt(&ini, name, "flags3", cfg->new_flags3, &ini_style);
-		iniSetHexInt(&ini, name, "flags4", cfg->new_flags4, &ini_style);
-		iniSetHexInt(&ini, name, "exemptions", cfg->new_exempt, &ini_style);
-		iniSetHexInt(&ini, name, "restrictions", cfg->new_rest, &ini_style);
-		iniSetUInteger(&ini, name, "credits", cfg->new_cdt, &ini_style);
-		iniSetUInteger(&ini, name, "minutes", cfg->new_min, &ini_style);
-		iniSetString(&ini, name, "editor", cfg->new_xedit, &ini_style);
-		iniSetUInteger(&ini, name, "expiration_days", cfg->new_expire, &ini_style);
-		if (cfg->new_shell >= cfg->total_shells)
-			cfg->new_shell = 0;
-		if (cfg->total_shells > 0)
-			iniSetString(&ini, name, "command_shell", cfg->shell[cfg->new_shell]->code, &ini_style);
-		iniSetHexInt(&ini, name, "settings", cfg->new_misc, &ini_style);
-		iniSetHexInt(&ini, name, "chat_settings", cfg->new_chat, &ini_style);
-		iniSetHexInt(&ini, name, "qwk_settings", cfg->new_qwk, &ini_style);
-		SAFEPRINTF(tmp, "%c", cfg->new_prot);
-		iniSetString(&ini, name, "download_protocol", tmp, &ini_style);
-		iniSetUInteger(&ini, name, "msgscan_init", cfg->new_msgscan_init, &ini_style);
-		iniSetString(&ini, name, "gender_options", cfg->new_genders, &ini_style);
-	}
 
 	iniSetString(&ini, "logon_event", "cmd", cfg->sys_logon.cmd, &ini_style);
 	iniSetHexInt(&ini, "logon_event", "settings", cfg->sys_logon.misc, &ini_style);
@@ -245,40 +214,6 @@ bool write_main_cfg(scfg_t* cfg)
 	iniSetHexInt(&ini, "monthly_event", "settings", cfg->sys_monthly.misc, &ini_style);
 	iniSetString(&ini, "weekly_event", "cmd", cfg->sys_weekly.cmd, &ini_style);
 	iniSetHexInt(&ini, "weekly_event", "settings", cfg->sys_weekly.misc, &ini_style);
-
-	{
-		const char* name = "expired";
-		iniSetUInteger(&ini, name, "level", cfg->expired_level, &ini_style);
-		iniSetHexInt(&ini, name, "flags1", cfg->expired_flags1, &ini_style);
-		iniSetHexInt(&ini, name, "flags2", cfg->expired_flags2, &ini_style);
-		iniSetHexInt(&ini, name, "flags3", cfg->expired_flags3, &ini_style);
-		iniSetHexInt(&ini, name, "flags4", cfg->expired_flags4, &ini_style);
-		iniSetHexInt(&ini, name, "exemptions", cfg->expired_exempt, &ini_style);
-		iniSetHexInt(&ini, name, "restrictions", cfg->expired_rest, &ini_style);
-	}
-
-	{
-		const char* name = "MQTT";
-		iniSetBool(&ini, name, "Enabled", cfg->mqtt.enabled, &ini_style);
-		iniSetBool(&ini, name, "Verbose", cfg->mqtt.verbose, &ini_style);
-		iniSetString(&ini, name, "Broker_addr", cfg->mqtt.broker_addr, &ini_style);
-		iniSetUInt16(&ini, name, "Broker_port", cfg->mqtt.broker_port, &ini_style);
-		iniSetInteger(&ini, name, "Protocol_version", cfg->mqtt.protocol_version, &ini_style);
-		iniSetInteger(&ini, name, "Keepalive", cfg->mqtt.keepalive, &ini_style);
-		iniSetInteger(&ini, name, "Publish_QOS", cfg->mqtt.publish_qos, &ini_style);
-		iniSetInteger(&ini, name, "Subscribe_QOS", cfg->mqtt.subscribe_qos, &ini_style);
-		iniSetString(&ini, name, "Username", cfg->mqtt.username, &ini_style);
-		iniSetString(&ini, name, "Password", cfg->mqtt.password, &ini_style);
-		iniSetLogLevel(&ini, name, "LogLevel", cfg->mqtt.log_level, &ini_style);
-		// TLS
-		iniSetInteger(&ini, name, "TLS_mode", cfg->mqtt.tls.mode, &ini_style);
-		iniSetString(&ini, name, "TLS_cafile", cfg->mqtt.tls.cafile, &ini_style);
-		iniSetString(&ini, name, "TLS_certfile", cfg->mqtt.tls.certfile, &ini_style);
-		iniSetString(&ini, name, "TLS_keyfile", cfg->mqtt.tls.keyfile, &ini_style);
-		iniSetString(&ini, name, "TLS_keypass", cfg->mqtt.tls.keypass, &ini_style);
-		iniSetString(&ini, name, "TLS_psk", cfg->mqtt.tls.psk, &ini_style);
-		iniSetString(&ini, name, "TLS_identity", cfg->mqtt.tls.identity, &ini_style);
-	}
 
 	{
 		write_loadable_module(&ini, "logon", cfg->logon_mod);
@@ -314,6 +249,85 @@ bool write_main_cfg(scfg_t* cfg)
 		write_loadable_module(&ini, "tempxfer", cfg->tempxfer_mod);
 	}
 
+	/* Command Shells */
+	strListPush(&ini, "");
+	for (int i = 0; i < cfg->total_shells; i++) {
+		SAFEPRINTF(name, "shell:%s", cfg->shell[i]->code);
+		str_list_t section = strListInit();
+		iniSetString(&section, name, "name", cfg->shell[i]->name, &ini_style);
+		iniSetString(&section, name, "ars", cfg->shell[i]->arstr, &ini_style);
+		iniSetHexInt(&section, name, "settings", cfg->shell[i]->misc, &ini_style);
+		strListMerge(&ini, section);
+		free(section);
+	}
+
+	{
+		const char* name = "MQTT";
+		iniSetBool(&ini, name, "Enabled", cfg->mqtt.enabled, &ini_style);
+		iniSetBool(&ini, name, "Verbose", cfg->mqtt.verbose, &ini_style);
+		iniSetString(&ini, name, "Broker_addr", cfg->mqtt.broker_addr, &ini_style);
+		iniSetUInt16(&ini, name, "Broker_port", cfg->mqtt.broker_port, &ini_style);
+		iniSetInteger(&ini, name, "Protocol_version", cfg->mqtt.protocol_version, &ini_style);
+		iniSetInteger(&ini, name, "Keepalive", cfg->mqtt.keepalive, &ini_style);
+		iniSetInteger(&ini, name, "Publish_QOS", cfg->mqtt.publish_qos, &ini_style);
+		iniSetInteger(&ini, name, "Subscribe_QOS", cfg->mqtt.subscribe_qos, &ini_style);
+		iniSetString(&ini, name, "Username", cfg->mqtt.username, &ini_style);
+		iniSetString(&ini, name, "Password", cfg->mqtt.password, &ini_style);
+		iniSetLogLevel(&ini, name, "LogLevel", cfg->mqtt.log_level, &ini_style);
+		// TLS
+		iniSetInteger(&ini, name, "TLS_mode", cfg->mqtt.tls.mode, &ini_style);
+		iniSetString(&ini, name, "TLS_cafile", cfg->mqtt.tls.cafile, &ini_style);
+		iniSetString(&ini, name, "TLS_certfile", cfg->mqtt.tls.certfile, &ini_style);
+		iniSetString(&ini, name, "TLS_keyfile", cfg->mqtt.tls.keyfile, &ini_style);
+		iniSetString(&ini, name, "TLS_keypass", cfg->mqtt.tls.keypass, &ini_style);
+		iniSetString(&ini, name, "TLS_psk", cfg->mqtt.tls.psk, &ini_style);
+		iniSetString(&ini, name, "TLS_identity", cfg->mqtt.tls.identity, &ini_style);
+	}
+
+	{
+		const char* name = "newuser";
+		iniSetHexInt(&ini, name, "questions", cfg->uq, &ini_style);
+		iniSetString(&ini, name, "password", cfg->new_pass, &ini_style);
+		iniSetString(&ini, name, "magic_word", cfg->new_magic, &ini_style);
+		iniSetString(&ini, name, "sif", cfg->new_sif, &ini_style);
+		iniSetString(&ini, name, "sof", cfg->new_sof, &ini_style);
+
+		iniSetUInteger(&ini, name, "level", cfg->new_level, &ini_style);
+		iniSetHexInt(&ini, name, "flags1", cfg->new_flags1, &ini_style);
+		iniSetHexInt(&ini, name, "flags2", cfg->new_flags2, &ini_style);
+		iniSetHexInt(&ini, name, "flags3", cfg->new_flags3, &ini_style);
+		iniSetHexInt(&ini, name, "flags4", cfg->new_flags4, &ini_style);
+		iniSetHexInt(&ini, name, "exemptions", cfg->new_exempt, &ini_style);
+		iniSetHexInt(&ini, name, "restrictions", cfg->new_rest, &ini_style);
+		iniSetUInteger(&ini, name, "credits", cfg->new_cdt, &ini_style);
+		iniSetUInteger(&ini, name, "minutes", cfg->new_min, &ini_style);
+		iniSetString(&ini, name, "editor", cfg->new_xedit, &ini_style);
+		iniSetUInteger(&ini, name, "expiration_days", cfg->new_expire, &ini_style);
+		if (cfg->new_shell >= cfg->total_shells)
+			cfg->new_shell = 0;
+		if (cfg->total_shells > 0)
+			iniSetString(&ini, name, "command_shell", cfg->shell[cfg->new_shell]->code, &ini_style);
+		iniSetHexInt(&ini, name, "settings", cfg->new_misc, &ini_style);
+		iniSetHexInt(&ini, name, "chat_settings", cfg->new_chat, &ini_style);
+		iniSetHexInt(&ini, name, "qwk_settings", cfg->new_qwk, &ini_style);
+		SAFEPRINTF(tmp, "%c", cfg->new_prot);
+		iniSetString(&ini, name, "download_protocol", tmp, &ini_style);
+		iniSetUInteger(&ini, name, "msgscan_init", cfg->new_msgscan_init, &ini_style);
+		iniSetString(&ini, name, "gender_options", cfg->new_genders, &ini_style);
+	}
+
+	{
+		const char* name = "expired";
+		iniSetUInteger(&ini, name, "level", cfg->expired_level, &ini_style);
+		iniSetHexInt(&ini, name, "flags1", cfg->expired_flags1, &ini_style);
+		iniSetHexInt(&ini, name, "flags2", cfg->expired_flags2, &ini_style);
+		iniSetHexInt(&ini, name, "flags3", cfg->expired_flags3, &ini_style);
+		iniSetHexInt(&ini, name, "flags4", cfg->expired_flags4, &ini_style);
+		iniSetHexInt(&ini, name, "exemptions", cfg->expired_exempt, &ini_style);
+		iniSetHexInt(&ini, name, "restrictions", cfg->expired_rest, &ini_style);
+	}
+
+	strListPush(&ini, "");
 	for (uint i = 0; i < 10; i++) {
 		SAFEPRINTF(name, "valset:%u", i);
 		str_list_t section = strListInit();
@@ -330,6 +344,7 @@ bool write_main_cfg(scfg_t* cfg)
 		free(section);
 	}
 
+	strListPush(&ini, "");
 	for (uint i = 0; i < 100; i++) {
 		SAFEPRINTF(name, "level:%u", i);
 		str_list_t section = strListInit();
@@ -343,17 +358,6 @@ bool write_main_cfg(scfg_t* cfg)
 		iniSetUInteger(&section, name, "expireto", cfg->level_expireto[i], &ini_style);
 		iniSetBytes(&section, name, "freecdtperday", 1, cfg->level_freecdtperday[i], &ini_style);
 		iniSetUInteger(&section, name, "downloadsperday", cfg->level_downloadsperday[i], &ini_style);
-		strListMerge(&ini, section);
-		free(section);
-	}
-
-	/* Command Shells */
-	for (int i = 0; i < cfg->total_shells; i++) {
-		SAFEPRINTF(name, "shell:%s", cfg->shell[i]->code);
-		str_list_t section = strListInit();
-		iniSetString(&section, name, "name", cfg->shell[i]->name, &ini_style);
-		iniSetString(&section, name, "ars", cfg->shell[i]->arstr, &ini_style);
-		iniSetHexInt(&section, name, "settings", cfg->shell[i]->misc, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
