@@ -4784,6 +4784,7 @@ bool user_get_property(scfg_t* scfg, unsigned user_number, const char* section, 
 {
 	FILE* fp;
 	char  buf[INI_MAX_VALUE_LEN];
+	char  keystr[INI_MAX_VALUE_LEN];
 
 	fp = user_ini_open(scfg, user_number, /* for_modify: */ false);
 	if (fp == NULL)
@@ -4792,16 +4793,14 @@ bool user_get_property(scfg_t* scfg, unsigned user_number, const char* section, 
 		section = strdup(section);
 		c_unescape_printable((char*)section);
 	}
-	if (key != NULL) {
-		key = strdup(key);
-		c_unescape_printable((char*)key);
-	}
-	char* result = iniReadValue(fp, section, key, NULL, buf);
+	SAFECOPY(keystr, key);
+	c_unescape_printable(keystr);
+
+	char* result = iniReadValue(fp, section, keystr, NULL, buf);
 	if (result != NULL)
 		safe_snprintf(value, maxlen, "%s", result);
 	iniCloseFile(fp);
 	free((char*)section);
-	free((char*)key);
 	return result != NULL;
 }
 
@@ -4809,6 +4808,7 @@ bool user_set_property(scfg_t* scfg, unsigned user_number, const char* section, 
 {
 	FILE*      fp;
 	str_list_t ini;
+	char       keystr[INI_MAX_VALUE_LEN];
 
 	fp = user_ini_open(scfg, user_number, /* for_modify: */ true);
 	if (fp == NULL)
@@ -4817,18 +4817,16 @@ bool user_set_property(scfg_t* scfg, unsigned user_number, const char* section, 
 		section = strdup(section);
 		c_unescape_printable((char*)section);
 	}
-	if (key != NULL) {
-		key = strdup(key);
-		c_unescape_printable((char*)key);
-	}
+	SAFECOPY(keystr, key);
+	c_unescape_printable(keystr);
+
 	ini = iniReadFile(fp);
 	ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "", .value_separator = " = " };
-	char*       result = iniSetValue(&ini, section, key, value, &ini_style);
+	char* result = iniSetValue(&ini, section, keystr, value, &ini_style);
 	iniWriteFile(fp, ini);
 	iniFreeStringList(ini);
 	iniCloseFile(fp);
 	free((char*)section);
-	free((char*)key);
 	return result != NULL;
 }
 
@@ -4836,6 +4834,7 @@ bool user_set_time_property(scfg_t* scfg, unsigned user_number, const char* sect
 {
 	FILE*      fp;
 	str_list_t ini;
+	char       keystr[INI_MAX_VALUE_LEN];
 
 	fp = user_ini_open(scfg, user_number, /* for_modify: */ true);
 	if (fp == NULL)
@@ -4844,24 +4843,23 @@ bool user_set_time_property(scfg_t* scfg, unsigned user_number, const char* sect
 		section = strdup(section);
 		c_unescape_printable((char*)section);
 	}
-	if (key != NULL) {
-		key = strdup(key);
-		c_unescape_printable((char*)key);
-	}
+	SAFECOPY(keystr, key);
+	c_unescape_printable(keystr);
+
 	ini = iniReadFile(fp);
 	ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "", .value_separator = " = " };
-	char*       result = iniSetDateTime(&ini, section, key, /* include_time */ true, value, &ini_style);
+	char* result = iniSetDateTime(&ini, section, keystr, /* include_time */ true, value, &ini_style);
 	iniWriteFile(fp, ini);
 	iniFreeStringList(ini);
 	iniCloseFile(fp);
 	free((char*)section);
-	free((char*)key);
 	return result != NULL;
 }
 
 bool user_get_bool_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, bool deflt)
 {
 	FILE* fp;
+	char  keystr[INI_MAX_VALUE_LEN];
 
 	fp = user_ini_open(scfg, user_number, /* for_modify: */ false);
 	if (fp == NULL)
@@ -4870,14 +4868,12 @@ bool user_get_bool_property(scfg_t* scfg, unsigned user_number, const char* sect
 		section = strdup(section);
 		c_unescape_printable((char*)section);
 	}
-	if (key != NULL) {
-		key = strdup(key);
-		c_unescape_printable((char*)key);
-	}
+	SAFECOPY(keystr, key);
+	c_unescape_printable(keystr);
+
 	bool result = iniReadBool(fp, section, key, deflt);
 	iniCloseFile(fp);
 	free((char*)section);
-	free((char*)key);
 	return result;
 }
 
@@ -4885,6 +4881,7 @@ bool user_set_bool_property(scfg_t* scfg, unsigned user_number, const char* sect
 {
 	FILE*      fp;
 	str_list_t ini;
+	char       keystr[INI_MAX_VALUE_LEN];
 
 	fp = user_ini_open(scfg, user_number, /* for_modify: */ true);
 	if (fp == NULL)
@@ -4893,18 +4890,16 @@ bool user_set_bool_property(scfg_t* scfg, unsigned user_number, const char* sect
 		section = strdup(section);
 		c_unescape_printable((char*)section);
 	}
-	if (key != NULL) {
-		key = strdup(key);
-		c_unescape_printable((char*)key);
-	}
+	SAFECOPY(keystr, key);
+	c_unescape_printable(keystr);
+
 	ini = iniReadFile(fp);
 	ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "", .value_separator = " = " };
-	char*       result = iniSetBool(&ini, section, key, value, &ini_style);
+	char* result = iniSetBool(&ini, section, keystr, value, &ini_style);
 	iniWriteFile(fp, ini);
 	iniFreeStringList(ini);
 	iniCloseFile(fp);
 	free((char*)section);
-	free((char*)key);
 	return result != NULL;
 }
 
