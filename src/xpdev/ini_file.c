@@ -57,6 +57,11 @@ void iniSetDefaultStyle(ini_style_t style)
 	default_style = style;
 }
 
+static const char* default_sep(const char* sep)
+{
+	return sep == NULL ? "," : sep;
+}
+
 /* These correlate with the LOG_* definitions in syslog.h/gen_defs.h */
 static char* logLevelStringList[]
     = {"Emergency", "Alert", "Critical", "Error", "Warning", "Notice", "Info", "Debug", NULL};
@@ -909,9 +914,7 @@ char* iniSetEnumList(str_list_t* list, const char* section, const char* key
 
 	value[0] = 0;
 
-	if (sep == NULL)
-		sep = ",";
-
+	sep = default_sep(sep);
 	if (val_list != NULL) {
 		name_count = strListCount(names);
 		for (i = 0; i < count; i++) {
@@ -1008,10 +1011,7 @@ char* iniSetStringList(str_list_t* list, const char* section, const char* key
 {
 	char value[INI_MAX_VALUE_LEN];
 
-	if (sep == NULL)
-		sep = ",";
-
-	return iniSetString(list, section, key, strListCombine(val_list, value, sizeof(value), sep), style);
+	return iniSetString(list, section, key, strListCombine(val_list, value, sizeof(value), default_sep(sep)), style);
 }
 
 char* iniSetIntList(str_list_t* list, const char* section, const char* key
@@ -1020,8 +1020,7 @@ char* iniSetIntList(str_list_t* list, const char* section, const char* key
 	unsigned i;
 	char     value[INI_MAX_VALUE_LEN];
 
-	if (sep == NULL)
-		sep = ",";
+	sep = default_sep(sep);
 	for (i = 0; i < count; i++) {
 		if (i) {
 			int len = strlen(value);
@@ -1229,9 +1228,7 @@ static str_list_t splitList(char* list, const char* sep)
 	if ((lp = strListInit()) == NULL)
 		return NULL;
 
-	if (sep == NULL)
-		sep = ",";
-
+	sep = default_sep(sep);
 	token = strtok_r(list, sep, &tmp);
 	while (token != NULL) {
 		SKIP_WHITESPACE(token);
@@ -1276,6 +1273,26 @@ str_list_t iniGetStringList(str_list_t list, const char* section, const char* ke
 	}
 
 	return splitList(value, sep);
+}
+
+str_list_t iniGetSparseStringList(str_list_t list, const char* section, const char* key
+                            , const char* sep, const char* deflt, size_t min_len)
+{
+	char value[INI_MAX_VALUE_LEN];
+	str_list_t result;
+	size_t     count;
+
+	get_value(list, section, key, value, NULL, /* literals_supported: */ true);
+
+	if (*value == 0 /* blank value or missing key */) {
+		if (deflt != NULL)
+			SAFECOPY(value, deflt);
+	}
+
+	result = strListDivide(/* list **/NULL, value, default_sep(sep));
+	for (count = strListCount(result); count < min_len; ++count)
+		strListPush(&result, "");
+	return result;
 }
 
 str_list_t iniFreeStringList(str_list_t list)

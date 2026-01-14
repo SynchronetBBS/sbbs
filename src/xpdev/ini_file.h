@@ -190,6 +190,8 @@ DLLEXPORT char* 		iniGetExistingString(str_list_t, const char* section, const ch
 							,const char* deflt, char* value /* may be NULL */);
 DLLEXPORT str_list_t 	iniGetStringList(str_list_t, const char* section, const char* key
 							,const char* sep, const char* deflt);
+DLLEXPORT str_list_t 	iniGetSparseStringList(str_list_t, const char* section, const char* key
+							,const char* sep, const char* deflt, size_t min_len);
 DLLEXPORT int 			iniGetInteger(str_list_t, const char* section, const char* key
 							,int deflt);
 DLLEXPORT int 			iniGetIntInRange(str_list_t, const char* section, const char* key
