@@ -1642,7 +1642,7 @@ int whichcond(void)
 }
 
 
-void getar(char *desc, char *inar)
+void getar(const char *desc, char *inar)
 {
 	static int curar;
 	char       str[128], ar[128];

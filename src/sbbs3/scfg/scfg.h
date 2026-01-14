@@ -162,7 +162,7 @@ int edit_sys_newuser_fback_policy(int page, int total);
 void reencrypt_keys(const char* old_pass, const char* new_pass);
 bool code_ok(char *str);
 int  bits(long l);
-void getar(char *desc, char *ar);
+void getar(const char *desc, char *ar);
 void* new_item(void* list, size_t size, int index, int* total);
 bool new_sub(int new_subnum, int group_num, sub_t* pasted_sub, long misc);
 bool new_qhub_sub(qhub_t*, int qsubnum, sub_t*, unsigned confnum);
