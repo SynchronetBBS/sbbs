@@ -436,15 +436,15 @@ typedef struct {
 /* Popup a message, maybe wait for the user to hit a key or click button.	*/
 /****************************************************************************/
 	int (*msg)  (const char* str);
-	int (*msgf) (char* fmt, ...);
-	BOOL (*deny) (char* fmt, ...);
-	BOOL (*confirm) (char* fmt, ...);
+	int (*msgf) (const char* fmt, ...);
+	BOOL (*deny) (const char* fmt, ...);
+	BOOL (*confirm) (const char* fmt, ...);
 /****************************************************************************/
 /* Popup/down a status message.												*/
 /* str is the message to display on popup.									*/
 /* if str==NULL, then the the status is to be cleared (popdown).			*/
 /****************************************************************************/
-	void (*pop)  (const char* str);
+	void (*pop)  (const char* str, ...);
 /****************************************************************************/
 /* General menu function.													*/
 /* mode contains WIN_* flags to control display and functionality.			*/

@@ -46,10 +46,10 @@ static int ulist(uifc_winmode_t, int left, int top, int width, int *dflt, int *b
 static int uinput(uifc_winmode_t, int left, int top, const char *prompt, char *str
                   , int len, int kmode);
 static int umsg(const char *str);
-static int umsgf(char *str, ...);
-static BOOL confirm(char *str, ...);
-static BOOL deny(char *str, ...);
-static void upop(const char *str);
+static int umsgf(const char *str, ...);
+static BOOL confirm(const char *str, ...);
+static BOOL deny(const char *str, ...);
+static void upop(const char *str, ...);
 static void sethelp(int line, char* file);
 
 /****************************************************************************/
@@ -369,7 +369,7 @@ int umsg(const char *str)
 }
 
 /* Same as above, using printf-style varargs */
-int umsgf(char* fmt, ...)
+int umsgf(const char* fmt, ...)
 {
 	int     retval = -1;
 	va_list va;
@@ -386,7 +386,7 @@ int umsgf(char* fmt, ...)
 	return retval;
 }
 
-BOOL confirm(char* fmt, ...)
+BOOL confirm(const char* fmt, ...)
 {
 	int     ch;
 	va_list va;
@@ -399,7 +399,7 @@ BOOL confirm(char* fmt, ...)
 	return tolower(ch) != 'n' && ch != EOF;
 }
 
-BOOL deny(char* fmt, ...)
+BOOL deny(const char* fmt, ...)
 {
 	int     ch;
 	va_list va;
@@ -415,14 +415,20 @@ BOOL deny(char* fmt, ...)
 /****************************************************************************/
 /* Status popup/down function, see uifc.h for details.						*/
 /****************************************************************************/
-void upop(const char *str)
+void upop(const char *str, ...)
 {
 	static int len;
 
 	if (str == NULL)
 		printf("\r%*s\r", len, "");
-	else
-		len = printf("\r%s\r", str) - 2;
+	else {
+		putchar('\r');
+		va_list va;
+		va_start(va, str);
+		len = vprintf(str, va);
+		va_end(va);
+		putchar('\r');
+	}
 }
 
 /****************************************************************************/

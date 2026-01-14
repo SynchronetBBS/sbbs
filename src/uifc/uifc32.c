@@ -68,10 +68,10 @@ static int  ulist(uifc_winmode_t, int left, int top, int width, int *dflt, int *
 static int  uinput(uifc_winmode_t, int left, int top, const char *prompt, char *str
                    , int len, int kmode);
 static int  umsg(const char *str);
-static int  umsgf(char *fmt, ...);
-static BOOL confirm(char *fmt, ...);
-static BOOL deny(char *fmt, ...);
-static void upop(const char *str);
+static int  umsgf(const char *fmt, ...);
+static BOOL confirm(const char *fmt, ...);
+static BOOL deny(const char *fmt, ...);
+static void upop(const char *str, ...);
 static void sethelp(int line, char* file);
 static void showbuf(uifc_winmode_t, int left, int top, int width, int height, const char *title
                     , const char *hbuf, int *curp, int *barp);
@@ -2085,7 +2085,7 @@ int  umsg(const char *str)
 }
 
 /* Same as above, using printf-style varargs */
-int umsgf(char* fmt, ...)
+int umsgf(const char* fmt, ...)
 {
 	int     retval = -1;
 	va_list va;
@@ -2101,7 +2101,7 @@ int umsgf(char* fmt, ...)
 	return retval;
 }
 
-static int yesno(int dflt, char* fmt, va_list va)
+static int yesno(int dflt, const char* fmt, va_list va)
 {
 	int   retval;
 	char* buf = NULL;
@@ -2115,7 +2115,7 @@ static int yesno(int dflt, char* fmt, va_list va)
 	return retval;
 }
 
-static BOOL confirm(char* fmt, ...)
+static BOOL confirm(const char* fmt, ...)
 {
 	int     retval;
 
@@ -2126,7 +2126,7 @@ static BOOL confirm(char* fmt, ...)
 	return retval == 0;
 }
 
-static BOOL deny(char* fmt, ...)
+static BOOL deny(const char* fmt, ...)
 {
 	int     retval;
 
@@ -2733,9 +2733,9 @@ char *utimestr(time_t *intime)
 /****************************************************************************/
 /* Status popup/down function, see uifc.h for details.						*/
 /****************************************************************************/
-void upop(const char *instr)
+void upop(const char *instr, ...)
 {
-	char                    str[(MAX_COLS - 7) + 1];
+	char*                   str;
 	static struct vmem_cell sav[MAX_COLS * 3], buf[MAX_COLS * 3];
 	int                     i, j, k;
 	static int              width;
@@ -2746,10 +2746,16 @@ void upop(const char *instr)
 		return;
 	}
 
-	strlcpy(str, instr, sizeof str);
+	va_list va;
+	va_start(va, instr);
+	vasprintf(&str, instr, va);
+	va_end(va);
+
 	width = strlen(str);
-	if (!width)
+	if (!width) {
+		free(str);
 		return;
+	}
 	width += 7;
 	if ((uint)width > api->scrn_width) {
 		str[api->scrn_width - 7] = '\0';
@@ -2777,6 +2783,8 @@ void upop(const char *instr)
 
 	vmem_puttext((api->scrn_width - width + 1) / 2 + 1, (api->scrn_len - 3 + 1) / 2 + 1
 	             , (api->scrn_width + width - 1) / 2 + 1, (api->scrn_len + 3 - 1) / 2 + 1, buf);
+
+	free(str);
 }
 
 /****************************************************************************/
