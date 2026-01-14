@@ -306,6 +306,21 @@ int dirs_in_lib(int libnum)
 	return total;
 }
 
+bool permutate_sname(char* name)
+{
+	const char* set = " _-:.;/+|*=";
+
+	for(const char* s = set; *(s + 1) != '\0'; ++s) {
+		for(char* p = name; *p != '\0'; ++p) {
+			if (*p != *s)
+				continue;
+			*p = *(s + 1);
+			return true;
+		}
+	}
+	return false;
+}
+
 void xfer_cfg()
 {
 	static int   libs_dflt, libs_bar, dflt, bar;
@@ -861,8 +876,8 @@ void xfer_cfg()
 					strcpy(opt[k++], "DIRS.RAW     (Raw)");
 					strcpy(opt[k++], "Directory Listing...");
 					opt[k][0] = 0;
-					k = 0;
-					k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, 0
+					static int import_cur;
+					k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &import_cur, 0
 					              , "Import Area File Format", opt);
 					if (k == -1)
 						break;
@@ -902,7 +917,8 @@ void xfer_cfg()
 					char duplicate_code[LEN_CODE + 1] = "";
 					uint duplicate_codes = 0;   // consecutive duplicate codes
 					bool prompt_on_dupe = true;
-					while (!feof(stream) && cfg.total_dirs < MAX_DIRS) {
+					int dir_count = dirs_in_lib(libnum);
+					while (!feof(stream) && dir_count + added < MAX_OPTS) {
 						if (!fgets(str, sizeof(str), stream))
 							break;
 						truncsp(str);
@@ -940,8 +956,11 @@ void xfer_cfg()
 								p = tp;
 							if ((len = strlen(p)) > LEN_SSNAME)
 								p += len - LEN_SSNAME;
-							SAFECOPY(tmpdir.sname, p);
-							ported++;
+							FIND_ALPHANUMERIC(p);
+							if (*p != '\0')
+								SAFECOPY(tmpdir.sname, p);
+							else
+								SAFECOPY(tmpdir.sname, tmpdir.lname);
 						}
 						else if (k == 2) {
 							if (strnicmp(p, "AREA ", 5))
@@ -959,7 +978,6 @@ void xfer_cfg()
 							SAFECOPY(tmpdir.sname, tmp_code);
 							SAFECOPY(tmpdir.area_tag, tmp_code);
 							SAFECOPY(tmpdir.lname, p);
-							ported++;
 						}
 						else if (k == 1) { // CD-ROM DIRS.TXT (DIRS.WIN) format
 							while (*p == '/' || *p == '\\') p++;
@@ -977,7 +995,6 @@ void xfer_cfg()
 							SAFECOPY(tmpdir.path, p);
 							SAFECOPY(tmpdir.sname, tmp_code);
 							SAFECOPY(tmpdir.lname, *tp == '\0' ? tmp_code : tp);
-							ported++;
 						}
 						else {
 							sprintf(tmpdir.lname, "%.*s", LEN_SLNAME, str);
@@ -1054,7 +1071,6 @@ void xfer_cfg()
 							truncsp(str);
 							tmpdir.dn_pct = atoi(str);
 
-							ported++;
 							while (!feof(stream)
 							       && strcmp(str, "***END-OF-DIR***")) {
 								if (!fgets(str, sizeof(str), stream))
@@ -1071,9 +1087,9 @@ void xfer_cfg()
 						SAFECOPY(tmpdir.code_suffix, prep_code(tmp_code, cfg.lib[libnum]->code_prefix));
 
 						snprintf(path, sizeof path, "%s/%s", cfg.lib[libnum]->parent_path, tmpdir.path);
-						if (fexistcase(path)) {
-							SAFEPRINTF(str, "Not a dir: %s", path);
-							uifc.msg(str);
+						if ((cfg.lib[libnum]->dir_defaults.misc & DIR_FCHK) && !isdir(path)) {
+							if(!uifc.confirm("%s is not a directory. Continue?", path))
+								break;
 							continue;
 						}
 						if (getdircase(path))
@@ -1084,13 +1100,20 @@ void xfer_cfg()
 							attempts = ++duplicate_codes;
 						else
 							duplicate_codes = 0;
+						bool dupe_sname = false;
 						for (j = 0; j < cfg.total_dirs && attempts < (36 * 36 * 36); j++) {
 							if (cfg.dir[j]->lib == libnum) { /* same lib */
 								if (tmpdir.path[0]
 								    && strcmp(cfg.dir[j]->path, tmpdir.path) == 0)  /* same path? overwrite the dir entry */
 									break;
-								if (stricmp(cfg.dir[j]->sname, tmpdir.sname) == 0)
-									break;
+								dupe_sname = stricmp(cfg.dir[j]->sname, tmpdir.sname) == 0;
+								if (dupe_sname) {
+									if (!permutate_sname(tmpdir.sname))
+										break;
+									j = 0;
+									++attempts;
+									continue;
+								}
 							} else {
 								if ((cfg.lib[libnum]->code_prefix[0] || cfg.lib[cfg.dir[j]->lib]->code_prefix[0]))
 									continue;
@@ -1132,9 +1155,13 @@ void xfer_cfg()
 							*cfg.dir[j] = cfg.lib[libnum]->dir_defaults;
 							added++;
 						} else if (prompt_on_dupe) {
-							if (!uifc.confirm("Duplicate dir '%s' detected. Continue?", cfg.dir[j]->code_suffix))
-								break;
-							prompt_on_dupe = uifc.confirm("Continue to notify/prompt for each duplicate dir found?");
+							if (dupe_sname) {
+								if (!uifc.confirm("Duplicate dir name '%s' detected. Continue?", cfg.dir[j]->sname))
+									break;
+							} else
+								if (!uifc.confirm("Duplicate dir code '%s' detected. Continue?", cfg.dir[j]->code_suffix))
+									break;
+							prompt_on_dupe = uifc.confirm("Continue to notify/prompt for each duplicate found?");
 						}
 						if (k == 2) {
 							SAFECOPY(cfg.dir[j]->code_suffix, tmpdir.code_suffix);
@@ -1148,6 +1175,7 @@ void xfer_cfg()
 							cfg.dir[j]->misc = tmpdir.misc;
 							cfg.total_dirs++;
 						}
+						++ported;
 						uifc.changes = 1;
 					}
 					fclose(stream);
@@ -1812,6 +1840,9 @@ void dir_cfg(int libnum)
 		"\n"
 		ADDFILES_HELP
 	;
+
+	SAFECOPY(cfg.lib[libnum]->vdir, cfg.lib[libnum]->sname);
+	pathify(cfg.lib[libnum]->vdir);
 
 	while (1) {
 		if (uifc.changes && cfg.lib[libnum]->sort)
