@@ -38,6 +38,8 @@ o Track user bytes downloaded (in files) per day
 
 Terminal Server
 ~~~~~~~~~~~~~~~
+o Multiple loadable modules may be configured for each loadable module type
+  in SCFG->System->Loadable Modules, individually restrictable via ARS
 o Newly abstracted (via C++ classes) terminal input/output
   - Sets the stage for future support for more terminal types
   - Should see no (or minimal) changes in behavior
