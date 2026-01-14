@@ -1797,6 +1797,71 @@ void newuser_qwk_opts(void)
 	}
 }
 
+bool edit_loadable_module(const char* name, char* cmd, char* ars)
+{
+	char title[128];
+	snprintf(title, sizeof title, "%s Module", name);
+	if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Module Name/Command-line", cmd, LEN_CMD, K_EDIT) < 0)
+		return false;
+	getar(title, ars);
+	return true;
+}
+
+bool cfg_loadable_modules(const char* name, struct loadable_module* mod, int minimum_count)
+{
+	char title[128];
+	int i;
+	int cur = 0, bar = 0;
+	bool changed = false;
+
+	snprintf(title, sizeof title, "%s Modules", name);
+	while (1) {
+		for (i = 0; mod->cmd != NULL && mod->cmd[i] != NULL; ++i)
+			snprintf(opt[i], MAX_OPLN, "%-32.32s %-32.32s", mod->cmd[i], mod->ars[i]);
+		opt[i][0] = 0;
+		uifc_winmode_t wmode = WIN_SAV | WIN_ACT | WIN_INS | WIN_INSACT | WIN_XTR;
+		if (i > minimum_count)
+			wmode |= WIN_DEL;
+		i = uifc.list(wmode, 0, 0, 0, &cur, &bar, title, opt);
+		if (i == -1)
+			return changed;
+		char cmd[LEN_CMD + 1];
+		char ars[LEN_ARSTR + 1];
+		if ((i & MSK_ON) == MSK_INS) {
+			i &= MSK_OFF;
+			SAFECOPY(cmd, "modname");
+			*ars = '\0';
+			if (edit_loadable_module(name, cmd, ars)) {
+				strListInsert(&mod->cmd, cmd, i);
+				strListInsert(&mod->ars, ars, i);
+				changed = true;
+			}
+			continue;
+		}
+		if ((i & MSK_ON) == MSK_DEL) {
+			i &= MSK_OFF;
+			strListFastDelete(mod->cmd, i, 1);
+			strListFastDelete(mod->ars, i, 1);
+			changed = true;
+			continue;
+		}
+		SAFECOPY(cmd, mod->cmd[i]);
+		SAFECOPY(ars, mod->ars[i]);
+		if (edit_loadable_module(name, cmd, ars)) {
+			if (strcmp(cmd, mod->cmd[i]) != 0) {
+				free(mod->cmd[i]);
+				mod->cmd[i] = strdup(cmd);
+				changed = true;
+			}
+			if (strcmp(ars, mod->ars[i]) != 0) {
+				free(mod->ars[i]);
+				mod->ars[i] = strdup(ars);
+				changed = true;
+			}
+		}
+	}
+}
+
 void sys_cfg(void)
 {
 	static int sys_dflt, adv_dflt, tog_dflt, new_dflt;
@@ -1809,6 +1874,7 @@ void sys_cfg(void)
 	char       dstr[9];
 	int        i, j;
 	scfg_t     saved_cfg = cfg;
+	bool       mods_changed = false;
 	char       sys_pass[sizeof(cfg.sys_pass)];
 	SAFECOPY(sys_pass, cfg.sys_pass);
 	while (1) {
@@ -1839,7 +1905,7 @@ void sys_cfg(void)
 			"This menu contains options and sub-menus of options that affect the\n"
 			"entire BBS and the Synchronet Terminal Server in particular.\n"
 		;
-		uifc.changes = memcmp(&saved_cfg, &cfg, sizeof(saved_cfg)) != 0;
+		uifc.changes = mods_changed || memcmp(&saved_cfg, &cfg, sizeof(saved_cfg)) != 0;
 		switch (uifc.list(WIN_ORG | WIN_ACT | WIN_CHE, 0, 0, 0, &sys_dflt, 0
 		                  , "System Configuration", opt)) {
 			case -1:
@@ -3064,37 +3130,38 @@ void sys_cfg(void)
 				done = 0;
 				while (!done) {
 					i = 0;
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Login", cfg.login_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Logon", cfg.logon_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Sync", cfg.sync_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Logoff", cfg.logoff_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Logout", cfg.logout_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "New User Prompts", cfg.newuser_prompts_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "New User Info", cfg.newuser_info_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "New User Created", cfg.newuser_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "User Config", cfg.usercfg_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Expired User", cfg.expire_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Auto Message", cfg.automsg_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Send Feedback", cfg.feedback_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Chat Section", cfg.chatsec_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Text Section", cfg.textsec_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Xtrn Section", cfg.xtrnsec_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Pre Xtrn", cfg.prextrn_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Post Xtrn", cfg.postxtrn_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Read Mail", cfg.readmail_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Scan Msgs", cfg.scanposts_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Scan Subs", cfg.scansubs_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Msgs", cfg.listmsgs_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Logons", cfg.logonlist_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Users", cfg.userlist_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Nodes", cfg.nodelist_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Who's Online", cfg.whosonline_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Private Msg", cfg.privatemsg_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Scan Dirs", cfg.scandirs_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Files", cfg.listfiles_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "View File Info", cfg.fileinfo_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Batch Transfer", cfg.batxfer_mod);
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Temp Transfer", cfg.tempxfer_mod);
+					const char* list_sep = ", ";
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Login", strListCombine(cfg.login_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Logon", strListCombine(cfg.logon_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Sync", strListCombine(cfg.sync_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Logoff", strListCombine(cfg.logoff_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Logout", strListCombine(cfg.logout_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "New User Prompts", strListCombine(cfg.newuser_prompts_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "New User Info", strListCombine(cfg.newuser_info_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "New User Created", strListCombine(cfg.newuser_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "User Config", strListCombine(cfg.usercfg_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Expired User", strListCombine(cfg.expire_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Auto Message", strListCombine(cfg.automsg_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Send Feedback", strListCombine(cfg.feedback_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Chat Section", strListCombine(cfg.chatsec_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Text Section", strListCombine(cfg.textsec_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Xtrn Section", strListCombine(cfg.xtrnsec_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Pre Xtrn", strListCombine(cfg.prextrn_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Post Xtrn", strListCombine(cfg.postxtrn_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Read Mail", strListCombine(cfg.readmail_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Scan Msgs", strListCombine(cfg.scanposts_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Scan Subs", strListCombine(cfg.scansubs_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Msgs", strListCombine(cfg.listmsgs_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Logons", strListCombine(cfg.logonlist_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Users", strListCombine(cfg.userlist_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Nodes", strListCombine(cfg.nodelist_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Who's Online", strListCombine(cfg.whosonline_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Private Msg", strListCombine(cfg.privatemsg_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Scan Dirs", strListCombine(cfg.scandirs_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "List Files", strListCombine(cfg.listfiles_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "View File Info", strListCombine(cfg.fileinfo_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Batch Transfer", strListCombine(cfg.batxfer_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Temp Transfer", strListCombine(cfg.tempxfer_mod.cmd, str, sizeof str, list_sep));
 					opt[i][0] = 0;
 					uifc.helpbuf =
 						"`Loadable Modules:`\n"
@@ -3146,128 +3213,97 @@ void sys_cfg(void)
 							break;
 
 						case 0:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Login Module"
-							           , cfg.login_mod, sizeof(cfg.login_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Login", &cfg.login_mod, 1);
 							break;
 						case 1:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Logon Module"
-							           , cfg.logon_mod, sizeof(cfg.logon_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Logon", &cfg.logon_mod, 0);
 							break;
 						case 2:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Synchronize Module"
-							           , cfg.sync_mod, sizeof(cfg.sync_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Synchronize", &cfg.sync_mod, 0);
 							break;
 						case 3:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Logoff Module"
-							           , cfg.logoff_mod, sizeof(cfg.logoff_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Logoff", &cfg.logoff_mod, 0);
 							break;
 						case 4:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Logout Module"
-							           , cfg.logout_mod, sizeof(cfg.logout_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Logout", &cfg.logout_mod, 0);
 							break;
 						case 5:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "New User Prompts Module"
-							           , cfg.newuser_prompts_mod, sizeof(cfg.newuser_prompts_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("New User Prompts", &cfg.newuser_prompts_mod, 1);
 							break;
 						case 6:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "New User Information Module"
-							           , cfg.newuser_info_mod, sizeof(cfg.newuser_info_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("New User Information", &cfg.newuser_info_mod, 0);
 							break;
 						case 7:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "New User Module"
-							           , cfg.newuser_mod, sizeof(cfg.newuser_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("New User Created", &cfg.newuser_mod, 0);
 							break;
 						case 8:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "User Configuration"
-							           , cfg.usercfg_mod, sizeof(cfg.usercfg_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("User Configuration", &cfg.usercfg_mod, 1);
 							break;
 						case 9:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Expired User Module"
-							           , cfg.expire_mod, sizeof(cfg.expire_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Expired User", &cfg.expire_mod, 0);
 							break;
 						case 10:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Auto Message Module"
-							           , cfg.automsg_mod, sizeof(cfg.automsg_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Auto Message", &cfg.automsg_mod, 0);
 							break;
 						case 11:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Send Feedback Module"
-							           , cfg.feedback_mod, sizeof(cfg.feedback_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Send Feedback", &cfg.feedback_mod, 0);
 							break;
 						case 12:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Chat Section Module"
-							           , cfg.chatsec_mod, sizeof(cfg.chatsec_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Chat Section", &cfg.chatsec_mod, 1);
 							break;
 						case 13:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Text File Section Module"
-							           , cfg.textsec_mod, sizeof(cfg.textsec_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Text File Section", &cfg.textsec_mod, 1);
 							break;
 						case 14:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "External Program Section Module"
-							           , cfg.xtrnsec_mod, sizeof(cfg.xtrnsec_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("External Program Section", &cfg.xtrnsec_mod, 1);
 							break;
 						case 15:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Pre External Program Module"
-							           , cfg.prextrn_mod, sizeof(cfg.prextrn_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Pre External Program", &cfg.prextrn_mod, 0);
 							break;
 						case 16:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Post External Program Module"
-							           , cfg.postxtrn_mod, sizeof(cfg.postxtrn_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Post External Program", &cfg.postxtrn_mod, 0);
 							break;
 						case 17:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Read Mail Module"
-							           , cfg.readmail_mod, sizeof(cfg.readmail_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Read Mail", &cfg.readmail_mod, 0);
 							break;
 						case 18:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Scan Msgs Module"
-							           , cfg.scanposts_mod, sizeof(cfg.scanposts_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Scan Msgs", &cfg.scanposts_mod, 0);
 							break;
 						case 19:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Scan Subs Module"
-							           , cfg.scansubs_mod, sizeof(cfg.scansubs_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Scan Subs", &cfg.scansubs_mod, 0);
 							break;
 						case 20:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "List Msgs Module"
-							           , cfg.listmsgs_mod, sizeof(cfg.listmsgs_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("List Msgs", &cfg.listmsgs_mod, 0);
 							break;
 						case 21:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "List Logons Module"
-							           , cfg.logonlist_mod, sizeof(cfg.logonlist_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("List Logons", &cfg.logonlist_mod, 0);
 							break;
 						case 22:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "List Users"
-							           , cfg.userlist_mod, sizeof(cfg.userlist_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("List Users", &cfg.userlist_mod, 0);
 							break;
 						case 23:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "List Nodes Module"
-							           , cfg.nodelist_mod, sizeof(cfg.nodelist_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("List Nodes", &cfg.nodelist_mod, 0);
 							break;
 						case 24:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Who's Online Module"
-							           , cfg.whosonline_mod, sizeof(cfg.whosonline_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Who's Online", &cfg.whosonline_mod, 0);
 							break;
 						case 25:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Private Message Module"
-							           , cfg.privatemsg_mod, sizeof(cfg.privatemsg_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Private Message", &cfg.privatemsg_mod, 0);
 							break;
 						case 26:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Scan Dirs Module"
-							           , cfg.scandirs_mod, sizeof(cfg.scandirs_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Scan Dirs", &cfg.scandirs_mod, 0);
 							break;
 						case 27:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "List Files Module"
-							           , cfg.listfiles_mod, sizeof(cfg.listfiles_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("List Files", &cfg.listfiles_mod, 0);
 							break;
 						case 28:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "View File Information Module"
-							           , cfg.fileinfo_mod, sizeof(cfg.fileinfo_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("View File Information", &cfg.fileinfo_mod, 0);
 							break;
 						case 29:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Batch File Transfer Module"
-							           , cfg.batxfer_mod, sizeof(cfg.batxfer_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Batch File Transfer", &cfg.batxfer_mod, 0);
 							break;
 						case 30:
-							uifc.input(WIN_MID | WIN_SAV, 0, 0, "Temporary File Transfer Module"
-							           , cfg.tempxfer_mod, sizeof(cfg.tempxfer_mod) - 1, K_EDIT);
+							mods_changed |= cfg_loadable_modules("Temporary File Transfer", &cfg.tempxfer_mod, 0);
 							break;
 					}
 				}

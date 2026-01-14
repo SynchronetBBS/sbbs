@@ -90,10 +90,9 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	action = NODE_SMAL;
 	nodesync();
 
-	if (cfg.feedback_mod[0] && to_sysop && !useron_is_sysop()
-	    && (useron.fbacks || usernumber != cfg.valuser)) {
-		main_csi.logic = LOGIC_TRUE;
-		if (exec_mod("send feedback", cfg.feedback_mod) != 0 || main_csi.logic != LOGIC_TRUE)
+	if (to_sysop && !useron_is_sysop() && (useron.fbacks || usernumber != cfg.valuser)) {
+		bool invoked = false;
+		if (exec_mod("send feedback", cfg.feedback_mod, &invoked) != 0 && invoked)
 			return false;
 	}
 

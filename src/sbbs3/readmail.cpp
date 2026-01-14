@@ -99,15 +99,10 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 	if (cfg.sys_misc & SM_SYSVDELM && (useron_is_sysop() || cfg.sys_misc & SM_USRVDELM))
 		lm_mode |= LM_INCDEL;
 
-	if (cfg.readmail_mod[0] && !readmail_inside) {
-		char cmdline[256];
-
-		readmail_inside = true;
-		safe_snprintf(cmdline, sizeof(cmdline), "%s %d %u %u", cfg.readmail_mod, which, usernumber, lm_mode);
-		int  result = exec_mod("read mail", cmdline);
-		readmail_inside = false;
+	bool invoked;
+	int result = exec_mod("read mail", cfg.readmail_mod, &invoked, "%d %u %u", which, usernumber, lm_mode);
+	if (invoked)
 		return result;
-	}
 
 	if (which == MAIL_SENT && useron.rest & FLAG('K')) {
 		bputs(text[R_ReadSentMail]);
@@ -503,13 +498,10 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 				break;
 			case 'L':     /* List mail */
 				domsg = 0;
-				if (cfg.listmsgs_mod[0]) {
-					char cmdline[256];
-
-					safe_snprintf(cmdline, sizeof(cmdline), "%s %s %d %u %u", cfg.listmsgs_mod, "mail", which, usernumber, lm_mode);
-					exec_mod("list messages", cmdline);
+				bool invoked;
+				exec_mod("list messages", cfg.listmsgs_mod, &invoked, "mail %d %u %u", which, usernumber, lm_mode);
+				if(invoked)
 					break;
-				}
 
 				i64 = get_start_msgnum(&smb, 1);
 				if (i64 < 0)

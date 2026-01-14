@@ -27,11 +27,8 @@
 /*****************************************************************************/
 void sbbs_t::temp_xfer()
 {
-	if (!cfg.tempxfer_mod[0]) {
+	if (exec_mod("temp transfer", cfg.tempxfer_mod) != 0)
 		bprintf(text[DirectoryDoesNotExist], "temp (module)");
-		return;
-	}
-	exec_mod("temp transfer", cfg.tempxfer_mod);
 }
 
 /****************************************************************************/

@@ -36,12 +36,8 @@ void sbbs_t::batchmenu()
 	str_list_t ini;
 	str_list_t filenames;
 
-	if (cfg.batxfer_mod[0] && !batchmenu_inside) {
-		batchmenu_inside = true;
-		exec_mod("batch transfer", cfg.batxfer_mod);
-		batchmenu_inside = false;
+	if (exec_mod("batch transfer", cfg.batxfer_mod) == 0)
 		return;
-	}
 
 	if (batdn_total() < 1 && batup_total() < 1 && cfg.upload_dir == INVALID_DIR) {
 		bputs(text[NoFilesInBatchQueue]);

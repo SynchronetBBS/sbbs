@@ -347,6 +347,12 @@ void prep_cfg(scfg_t* cfg)
 	cfg->prepped = true;  /* data prepared for run-time, DO NOT SAVE TO DISK! */
 }
 
+static void free_loadable_module(struct loadable_module* mod)
+{
+	strListFree(&mod->cmd);
+	strListFree(&mod->ars);
+}
+
 void free_cfg(scfg_t* cfg)
 {
 	if (cfg->prepped) {
@@ -361,6 +367,38 @@ void free_cfg(scfg_t* cfg)
 
 	if (cfg->text != NULL)
 		free_text(cfg->text);
+
+	free_loadable_module(&cfg->logon_mod);
+	free_loadable_module(&cfg->logoff_mod);
+	free_loadable_module(&cfg->newuser_prompts_mod);
+	free_loadable_module(&cfg->newuser_info_mod);
+	free_loadable_module(&cfg->newuser_mod);
+	free_loadable_module(&cfg->login_mod);
+	free_loadable_module(&cfg->logout_mod);
+	free_loadable_module(&cfg->sync_mod);
+	free_loadable_module(&cfg->expire_mod);
+	free_loadable_module(&cfg->textsec_mod);
+	free_loadable_module(&cfg->xtrnsec_mod);
+	free_loadable_module(&cfg->chatsec_mod);
+	free_loadable_module(&cfg->automsg_mod);
+	free_loadable_module(&cfg->feedback_mod);
+	free_loadable_module(&cfg->readmail_mod);
+	free_loadable_module(&cfg->scanposts_mod);
+	free_loadable_module(&cfg->scansubs_mod);
+	free_loadable_module(&cfg->listmsgs_mod);
+	free_loadable_module(&cfg->scandirs_mod);
+	free_loadable_module(&cfg->listfiles_mod);
+	free_loadable_module(&cfg->fileinfo_mod);
+	free_loadable_module(&cfg->nodelist_mod);
+	free_loadable_module(&cfg->whosonline_mod);
+	free_loadable_module(&cfg->privatemsg_mod);
+	free_loadable_module(&cfg->logonlist_mod);
+	free_loadable_module(&cfg->userlist_mod);
+	free_loadable_module(&cfg->usercfg_mod);
+	free_loadable_module(&cfg->prextrn_mod);
+	free_loadable_module(&cfg->postxtrn_mod);
+	free_loadable_module(&cfg->tempxfer_mod);
+	free_loadable_module(&cfg->batxfer_mod);
 }
 
 void free_text(char* text[])

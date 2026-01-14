@@ -50,15 +50,10 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 	if (!tofile) {
 		action = NODE_LFIL;
 		curdirnum = dirnum;
-		if (cfg.listfiles_mod[0] && !listfiles_inside) {
-			char cmdline[256];
-
-			listfiles_inside = true;
-			snprintf(cmdline, sizeof(cmdline), "%s %s %u %s", cfg.listfiles_mod, cfg.dir[dirnum]->code, mode, filespec);
-			i = exec_mod("list files", cmdline);
-			listfiles_inside = false;
+		bool invoked;
+		i = exec_mod("list files", cfg.listfiles_mod, &invoked, "%s %u %s", cfg.dir[dirnum]->code, mode, filespec);
+		if (invoked)
 			return i;
-		}
 	}
 
 	if (!smb_init_dir(&cfg, &smb, dirnum))
@@ -756,15 +751,10 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 	action = NODE_LFIL;
 	curdirnum = dirnum;
 
-	if (cfg.fileinfo_mod[0] && !listfileinfo_inside) {
-		char cmdline[256];
-
-		listfileinfo_inside = true;
-		snprintf(cmdline, sizeof(cmdline), "%s %s %u %s", cfg.fileinfo_mod, cfg.dir[dirnum]->code, mode, filespec);
-		i = exec_mod("view file info", cmdline);
-		listfileinfo_inside = false;
+	bool invoked;
+	i = exec_mod("view file info", cfg.fileinfo_mod, &invoked, "%s %u %s", cfg.dir[dirnum]->code, mode, filespec);
+	if (invoked)
 		return i;
-	}
 
 	if (!smb_init_dir(&cfg, &smb, dirnum))
 		return 0;

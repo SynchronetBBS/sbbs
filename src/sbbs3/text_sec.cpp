@@ -23,13 +23,8 @@
 
 /****************************************************************************/
 /* General Text File Section.                                               */
-/* Returns non-zero on error, 0 otherwise.									*/
 /****************************************************************************/
-int sbbs_t::text_sec()
+void sbbs_t::text_sec()
 {
-	if (!cfg.textsec_mod[0]) {
-		bputs(text[NoTextSections]);
-		return 1;
-	}
-	return exec_mod("text section", cfg.textsec_mod);
+	exec_mod("text section", cfg.textsec_mod);
 }

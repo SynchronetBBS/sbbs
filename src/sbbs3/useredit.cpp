@@ -730,9 +730,7 @@ int sbbs_t::searchdn(char *search, int usernum)
 /****************************************************************************/
 void sbbs_t::user_config(user_t* user)
 {
-	char cmdline[256];
-	snprintf(cmdline, sizeof(cmdline), "%s %u", cfg.usercfg_mod, user->number);
-	exec_mod("user configuration", cmdline);
+	exec_mod("user configuration", cfg.usercfg_mod, /* invoked */nullptr, "%u", user->number);
 	getuserdat(&cfg, user);
 }
 

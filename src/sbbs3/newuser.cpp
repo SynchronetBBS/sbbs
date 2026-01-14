@@ -152,10 +152,9 @@ bool sbbs_t::newuser()
 	if (!set_shell(cfg.new_shell))
 		set_shell(0);
 
-	if (cfg.newuser_info_mod[0]) {
-		if (exec_mod("new user info", cfg.newuser_info_mod) != 0)
-			return false;
-	}
+	bool invoked;
+	if (exec_mod("new user info", cfg.newuser_info_mod, &invoked) != 0 && invoked)
+		return false;
 	if (!online)
 		return false;
 	answertime = time(NULL);      /* could take 10 minutes to get this far */
@@ -293,8 +292,7 @@ bool sbbs_t::newuser()
 	js_create_user_objects(js_cx, js_glob);
 #endif
 
-	if (cfg.newuser_mod[0])
-		exec_mod("new user", cfg.newuser_mod);
+	exec_mod("new user", cfg.newuser_mod);
 	user_event(EVENT_NEWUSER);
 	getuseron(WHERE);   // In case event(s) modified user data
 	logline("N+", "New user registration completed");

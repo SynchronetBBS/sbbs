@@ -757,7 +757,12 @@ public:
 	int		exec_msg(csi_t *csi);
 	int		exec_file(csi_t *csi);
 	int		exec_bin(const char *mod, csi_t *csi, const char* startup_dir=NULL);
-	int		exec_mod(const char* name, const char *mod);
+	int		exec_mod(const char* name, struct loadable_module, bool* invoked = nullptr, const char* fmt = nullptr, ...)
+#if defined(__GNUC__)   // Catch printf-format errors
+    __attribute__ ((format (printf, 5, 6)))
+#endif
+	;
+	str_list_t mod_callstack{};
 	void	clearvars(csi_t *bin);
 	void	freevars(csi_t *bin);
 	char**	getstrvar(csi_t *bin, uint32_t name);
@@ -925,7 +930,6 @@ public:
 
 	/* readmail.cpp */
 	int		readmail(uint usernumber, int which, int lm_mode = 0, bool listmsgs = true);
-	bool	readmail_inside = false;
 	int		searchmail(mail_t*, int start, int msgss, int which, const char *search, const char* order);
 
 	/* bulkmail.cpp */
@@ -1051,7 +1055,7 @@ public:
 	/* getnode.cpp */
 	bool	getsmsg(int usernumber, bool clearline = false);
 	bool	getnmsg(bool clearline = false);
-	int		whos_online(bool listself);/* Lists active nodes, returns active nodes */
+	void	whos_online(bool listself); // Lists active nodes
 	void	nodelist(void);
 	bool	getnodeext(uint number, char * str);
 	bool	getnodedat(uint number, node_t * node, bool lock = false);
@@ -1088,7 +1092,7 @@ public:
 	bool	newuser(void);					/* Get new user							*/
 
 	/* text_sec.cpp */
-	int		text_sec(void);						/* Text sections */
+	void	text_sec(void);						/* Text sections */
 
 	/* readmsgs.cpp */
 	post_t* loadposts(uint32_t *posts, int subnum, uint ptr, int mode, uint *unvalidated_num, uint32_t* visible=NULL);
@@ -1188,15 +1192,12 @@ public:
 	/* listfile.cpp */
 	bool	listfile(file_t*, int dirnum, const char *search, const char letter, size_t namelen);
 	int		listfiles(int dirnum, const char *filespec, FILE* tofile, int mode);
-	bool	listfiles_inside = false;
 	int		listfileinfo(int dirnum, const char *filespec, int mode);
-	bool	listfileinfo_inside = false;
 	void	listfiletofile(file_t*, FILE*);
 	int		batchflagprompt(smb_t*, file_t* bf[], uint row[], int total, int totalfiles);
 
 	/* bat_xfer.cpp */
 	void	batchmenu(void);
-	bool	batchmenu_inside = false;
 	void	batch_add_list(char *list);
 	bool	create_batchup_lst(void);
 	bool	create_batchdn_lst(bool native);
@@ -1221,7 +1222,7 @@ public:
 	char	term_env[256]{};
 
 	/* xtrn_sec.cpp */
-	int		xtrn_sec(const char* section = "");	/* The external program section  */
+	void	xtrn_sec(const char* section = "");	/* The external program section  */
 	void	xtrndat(const char* name, const char* dropdir, uchar type, uint tleft
 				,uint misc);
 	bool	exec_xtrn(uint xtrnnum, bool user_event = false);	/* Executes online external program */
@@ -1323,7 +1324,6 @@ public:
 
 	/* scansubs.cpp */
 	void	scansubs(int mode);
-	bool	scansubs_inside = false;
 	void	scanallsubs(int mode);
 	void	new_scan_cfg(uint misc);
 	void	new_scan_ptr_cfg(void);
@@ -1331,7 +1331,6 @@ public:
 	/* scandirs.cpp */
 	void	scanalldirs(int mode);
 	void	scandirs(int mode);
-	bool	scandirs_inside = false;
 
 	#define nosound()
 	#define checkline()

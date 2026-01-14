@@ -33,15 +33,10 @@ void sbbs_t::scansubs(int mode)
 	uint subs_scanned = 0;
 	bool subj_only = false;
 
-	if (cfg.scansubs_mod[0] && !scansubs_inside) {
-		char cmdline[256];
-
-		scansubs_inside = true;
-		safe_snprintf(cmdline, sizeof(cmdline), "%s 0 %u", cfg.scansubs_mod, mode);
-		exec_mod("scan sub-boards", cmdline);
-		scansubs_inside = false;
+	bool invoked;
+	exec_mod("scan sub-boards", cfg.scansubs_mod, &invoked, "0 %u", mode);
+	if (invoked)
 		return;
-	}
 
 	mnemonics(text[SubGroupOrAll]);
 	SAFEPRINTF2(keys, "%s%c\r", text[SubGroupKeys], all_key());
@@ -146,15 +141,10 @@ void sbbs_t::scanallsubs(int mode)
 	int   total_subs = 0;
 	bool  subj_only = false;
 
-	if (cfg.scansubs_mod[0] && !scansubs_inside) {
-		char cmdline[256];
-
-		scansubs_inside = true;
-		safe_snprintf(cmdline, sizeof(cmdline), "%s 1 %u", cfg.scansubs_mod, mode);
-		exec_mod("scan sub-boards", cmdline);
-		scansubs_inside = false;
+	bool invoked;
+	exec_mod("scan sub-boards", cfg.scansubs_mod, &invoked, "1 %u", mode);
+	if (invoked)
 		return;
-	}
 
 	if (mode & (SCAN_FIND | SCAN_TOYOU)) {
 		if (text[DisplaySubjectsOnlyQ][0])

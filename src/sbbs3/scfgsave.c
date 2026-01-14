@@ -26,6 +26,8 @@
 #include "userdat.h"
 #include "nopen.h"
 
+extern const char* scfg_addr_list_separator;
+
 bool               no_msghdr = false, all_msghdr = false;
 static ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "" };
 
@@ -95,6 +97,32 @@ bool write_node_cfg(scfg_t* cfg)
 	iniFreeStringList(ini);
 
 	return result;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+static void write_loadable_module(str_list_t* ini, const char* name, struct loadable_module mod)
+{
+	char cmd_key[INI_MAX_VALUE_LEN];
+	char ars_key[INI_MAX_VALUE_LEN];
+	const char* section = "module";
+	size_t i;
+	size_t ars_count = strListCount(mod.ars);
+
+	if (mod.cmd == NULL)
+		return;
+
+	for (i = 0; mod.cmd[i] != NULL; ++i) {
+		if (i < 1) {
+			SAFECOPY(cmd_key, name);
+			snprintf(ars_key, sizeof ars_key, "%s.ars", name);
+		} else {
+			snprintf(cmd_key, sizeof cmd_key, "%s.%u", name, i);
+			snprintf(ars_key, sizeof ars_key, "%s.%u.ars", name, i);
+		}
+		iniSetString(ini, section, cmd_key, mod.cmd[i], &ini_style);
+		iniSetString(ini, section, ars_key, ars_count > i ? mod.ars[i] : "", &ini_style);
+	}
 }
 
 /****************************************************************************/
@@ -253,41 +281,37 @@ bool write_main_cfg(scfg_t* cfg)
 	}
 
 	{
-		const char* name = "module";
-		iniSetString(&ini, name, "logon", cfg->logon_mod, &ini_style);
-		iniSetString(&ini, name, "logoff", cfg->logoff_mod, &ini_style);
-		iniSetString(&ini, name, "newuser_prompts", cfg->newuser_prompts_mod, &ini_style);
-		iniSetString(&ini, name, "newuser_info", cfg->newuser_info_mod, &ini_style);
-		iniSetString(&ini, name, "newuser", cfg->newuser_mod, &ini_style);
-		iniSetString(&ini, name, "usercfg", cfg->usercfg_mod, &ini_style);
-		iniSetString(&ini, name, "login", cfg->login_mod, &ini_style);
-		iniSetString(&ini, name, "logout", cfg->logout_mod, &ini_style);
-		iniSetString(&ini, name, "sync", cfg->sync_mod, &ini_style);
-		iniSetString(&ini, name, "expire", cfg->expire_mod, &ini_style);
-		iniSetString(&ini, name, "readmail", cfg->readmail_mod, &ini_style);
-		iniSetString(&ini, name, "scanposts", cfg->scanposts_mod, &ini_style);
-		iniSetString(&ini, name, "scansubs", cfg->scansubs_mod, &ini_style);
-		iniSetString(&ini, name, "listmsgs", cfg->listmsgs_mod, &ini_style);
-		iniSetString(&ini, name, "textsec", cfg->textsec_mod, &ini_style);
-		iniSetString(&ini, name, "chatsec", cfg->chatsec_mod, &ini_style);
-		iniSetString(&ini, name, "automsg", cfg->automsg_mod, &ini_style);
-		iniSetString(&ini, name, "feedback", cfg->feedback_mod, &ini_style);
-		iniSetString(&ini, name, "userlist", cfg->userlist_mod, &ini_style);
-
-		iniSetString(&ini, name, "nodelist", cfg->nodelist_mod, &ini_style);
-		iniSetString(&ini, name, "whosonline", cfg->whosonline_mod, &ini_style);
-		iniSetString(&ini, name, "privatemsg", cfg->privatemsg_mod, &ini_style);
-		iniSetString(&ini, name, "logonlist", cfg->logonlist_mod, &ini_style);
-
-		iniSetString(&ini, name, "xtrnsec", cfg->xtrnsec_mod, &ini_style);
-		iniSetString(&ini, name, "prextrn", cfg->prextrn_mod, &ini_style);
-		iniSetString(&ini, name, "postxtrn", cfg->postxtrn_mod, &ini_style);
-
-		iniSetString(&ini, name, "scandirs", cfg->scandirs_mod, &ini_style);
-		iniSetString(&ini, name, "listfiles", cfg->listfiles_mod, &ini_style);
-		iniSetString(&ini, name, "fileinfo", cfg->fileinfo_mod, &ini_style);
-		iniSetString(&ini, name, "batxfer", cfg->batxfer_mod, &ini_style);
-		iniSetString(&ini, name, "tempxfer", cfg->tempxfer_mod, &ini_style);
+		write_loadable_module(&ini, "logon", cfg->logon_mod);
+		write_loadable_module(&ini, "logoff", cfg->logoff_mod);
+		write_loadable_module(&ini, "newuser_prompts", cfg->newuser_prompts_mod);
+		write_loadable_module(&ini, "newuser_info", cfg->newuser_info_mod);
+		write_loadable_module(&ini, "newuser", cfg->newuser_mod);
+		write_loadable_module(&ini, "usercfg", cfg->usercfg_mod);
+		write_loadable_module(&ini, "login", cfg->login_mod);
+		write_loadable_module(&ini, "logout", cfg->logout_mod);
+		write_loadable_module(&ini, "sync", cfg->sync_mod);
+		write_loadable_module(&ini, "expire", cfg->expire_mod);
+		write_loadable_module(&ini, "readmail", cfg->readmail_mod);
+		write_loadable_module(&ini, "scanposts", cfg->scanposts_mod);
+		write_loadable_module(&ini, "scansubs", cfg->scansubs_mod);
+		write_loadable_module(&ini, "listmsgs", cfg->listmsgs_mod);
+		write_loadable_module(&ini, "textsec", cfg->textsec_mod);
+		write_loadable_module(&ini, "chatsec", cfg->chatsec_mod);
+		write_loadable_module(&ini, "automsg", cfg->automsg_mod);
+		write_loadable_module(&ini, "feedback", cfg->feedback_mod);
+		write_loadable_module(&ini, "userlist", cfg->userlist_mod);
+		write_loadable_module(&ini, "nodelist", cfg->nodelist_mod);
+		write_loadable_module(&ini, "whosonline", cfg->whosonline_mod);
+		write_loadable_module(&ini, "privatemsg", cfg->privatemsg_mod);
+		write_loadable_module(&ini, "logonlist", cfg->logonlist_mod);
+		write_loadable_module(&ini, "xtrnsec", cfg->xtrnsec_mod);
+		write_loadable_module(&ini, "prextrn", cfg->prextrn_mod);
+		write_loadable_module(&ini, "postxtrn", cfg->postxtrn_mod);
+		write_loadable_module(&ini, "scandirs", cfg->scandirs_mod);
+		write_loadable_module(&ini, "listfiles", cfg->listfiles_mod);
+		write_loadable_module(&ini, "fileinfo", cfg->fileinfo_mod);
+		write_loadable_module(&ini, "batxfer", cfg->batxfer_mod);
+		write_loadable_module(&ini, "tempxfer", cfg->tempxfer_mod);
 	}
 
 	for (uint i = 0; i < 10; i++) {
@@ -504,7 +528,7 @@ bool write_msgs_cfg(scfg_t* cfg)
 		str_list_t  addr_list = strListInit();
 		for (int i = 0; i < cfg->total_faddrs; i++)
 			strListPush(&addr_list, smb_faddrtoa(&cfg->faddr[i], tmp));
-		iniSetStringList(&section, name, "addr_list", ",", addr_list, &ini_style);
+		iniSetStringList(&section, name, "addr_list", scfg_addr_list_separator, addr_list, &ini_style);
 		strListFree(&addr_list);
 
 		iniSetString(&section, name, "default_origin", cfg->origline, &ini_style);

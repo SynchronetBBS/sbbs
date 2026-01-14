@@ -373,8 +373,9 @@ bool sbbs_t::logon_process()
 	llprintf("++", "(%04u)  %-25s  %sLogon %u - %u"
 	              , useron.number, useron.alias, (sys_status & SS_FASTLOGON) ? "Fast-":"", totallogons, useron.ltoday);
 
-	if (!(sys_status & SS_QWKLOGON) && cfg.logon_mod[0]) {
-		if (exec_mod("logon", cfg.logon_mod) != 0)
+	if (!(sys_status & SS_QWKLOGON)) {
+		bool invoked;
+		if (exec_mod("logon", cfg.logon_mod, &invoked) != 0 && invoked)
 			return false;
 	}
 

@@ -31,15 +31,10 @@ void sbbs_t::scandirs(int mode)
 	int  s;
 	int  i, k;
 
-	if (cfg.scandirs_mod[0] && !scandirs_inside) {
-		char cmdline[256];
-
-		scandirs_inside = true;
-		snprintf(cmdline, sizeof(cmdline), "%s 0 %u", cfg.scandirs_mod, mode);
-		exec_mod("scan directories", cmdline);
-		scandirs_inside = false;
+	bool invoked;
+	exec_mod("scan directories", cfg.scandirs_mod, &invoked, "0 %u", mode);
+	if (invoked)
 		return;
-	}
 
 	if (!usrlibs)
 		return;
@@ -116,15 +111,10 @@ void sbbs_t::scanalldirs(int mode)
 	int  s;
 	int  i, j, k, d;
 
-	if (cfg.scandirs_mod[0] && !scandirs_inside) {
-		char cmdline[256];
-
-		scandirs_inside = true;
-		snprintf(cmdline, sizeof(cmdline), "%s 1 %u", cfg.scandirs_mod, mode);
-		exec_mod("scan directories", cmdline);
-		scandirs_inside = false;
+	bool invoked;
+	exec_mod("scan directories", cfg.scandirs_mod, &invoked, "1 %u", mode);
+	if (invoked)
 		return;
-	}
 
 	if (!usrlibs)
 		return;

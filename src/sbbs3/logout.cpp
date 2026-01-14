@@ -76,8 +76,7 @@ void sbbs_t::logout()
 		}
 	}
 
-	if (cfg.logout_mod[0])
-		exec_mod("logout", cfg.logout_mod);
+	exec_mod("logout", cfg.logout_mod);
 	SAFEPRINTF2(path, "%smsgs/%4.4u.msg", cfg.data_dir, useron.number);
 	if (fexistcase(path) && !flength(path))      /* remove any 0 byte message files */
 		fremove(WHERE, path);
@@ -164,8 +163,7 @@ void sbbs_t::logout()
 bool sbbs_t::logoff(bool prompt)
 {
 	if (!prompt || !noyes(text[LogOffQ])) {
-		if (cfg.logoff_mod[0])
-			exec_mod("logoff", cfg.logoff_mod);
+		exec_mod("logoff", cfg.logoff_mod);
 		user_event(EVENT_LOGOFF);
 		menu("logoff");
 		sync();

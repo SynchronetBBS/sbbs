@@ -402,6 +402,11 @@ struct mqtt_cfg {
 	} tls;
 };
 
+struct loadable_module {
+	str_list_t cmd;
+	str_list_t ars;
+};
+
 enum date_fmt { MMDDYY, DDMMYY, YYMMDD };
 
 typedef struct
@@ -617,37 +622,37 @@ typedef struct
 	int32_t 		uq; 					/* User Questions */
 	uint32_t		mail_maxcrcs;			/* Dupe checking in e-mail */
 	uint16_t		mail_maxage;			/* Maximum age of e-mail */
-	char			logon_mod[LEN_CMD+1];			/* Logon module */
-	char			logoff_mod[LEN_CMD+1];			/* Logoff module */
-	char			newuser_prompts_mod[LEN_CMD+1];	/* New User Prompts Module */
-	char			newuser_info_mod[LEN_CMD+1];	/* New User Info Module */
-	char			newuser_mod[LEN_CMD+1]; 		/* New User Module */
-	char			login_mod[LEN_CMD+1];			/* Login module */
-	char			logout_mod[LEN_CMD+1];			/* Logout module */
-	char			sync_mod[LEN_CMD+1];			/* Synchronization module */
-	char			expire_mod[LEN_CMD+1];			/* User expiration module */
-	char			textsec_mod[LEN_CMD+1];			/* Text section module */
-	char			xtrnsec_mod[LEN_CMD+1];			/* External Program section module */
-	char			chatsec_mod[LEN_CMD+1];			/* Chat section module */
-	char			automsg_mod[LEN_CMD+1];			/* Auto-message module */
-	char			feedback_mod[LEN_CMD+1];		/* Send feedback to sysop module */
-	char			readmail_mod[LEN_CMD+1];	/* Reading mail module */
-	char			scanposts_mod[LEN_CMD+1];	/* Scanning posts (in a single sub) module */
-	char			scansubs_mod[LEN_CMD+1];	/* Scanning sub-boards module */
-	char			listmsgs_mod[LEN_CMD+1];	/* Listing messages module */
-	char			scandirs_mod[LEN_CMD+1];
-	char			listfiles_mod[LEN_CMD+1];
-	char			fileinfo_mod[LEN_CMD+1];
-	char			nodelist_mod[LEN_CMD+1];
-	char			whosonline_mod[LEN_CMD+1];
-	char			privatemsg_mod[LEN_CMD+1];
-	char			logonlist_mod[LEN_CMD+1];
-	char			userlist_mod[LEN_CMD+1];
-	char			usercfg_mod[LEN_CMD+1];
-    char			prextrn_mod[LEN_CMD+1];			/* External Program pre-execution module */
-    char			postxtrn_mod[LEN_CMD+1];		/* External Program post-execution module */
-	char			tempxfer_mod[LEN_CMD+1];
-	char			batxfer_mod[LEN_CMD+1];
+	struct loadable_module logon_mod;			/* Logon module */
+	struct loadable_module logoff_mod;			/* Logoff module */
+	struct loadable_module newuser_prompts_mod;	/* New User Prompts Module */
+	struct loadable_module newuser_info_mod;	/* New User Info Module */
+	struct loadable_module newuser_mod; 		/* New User Module */
+	struct loadable_module login_mod;			/* Login module */
+	struct loadable_module logout_mod;			/* Logout module */
+	struct loadable_module sync_mod;			/* Synchronization module */
+	struct loadable_module expire_mod;			/* User expiration module */
+	struct loadable_module textsec_mod;			/* Text section module */
+	struct loadable_module xtrnsec_mod;			/* External Program section module */
+	struct loadable_module chatsec_mod;			/* Chat section module */
+	struct loadable_module automsg_mod;			/* Auto-message module */
+	struct loadable_module feedback_mod;		/* Send feedback to sysop module */
+	struct loadable_module readmail_mod;		/* Reading mail module */
+	struct loadable_module scanposts_mod;		/* Scanning posts (in a single sub) module */
+	struct loadable_module scansubs_mod;		/* Scanning sub-boards module */
+	struct loadable_module listmsgs_mod;		/* Listing messages module */
+	struct loadable_module scandirs_mod;
+	struct loadable_module listfiles_mod;
+	struct loadable_module fileinfo_mod;
+	struct loadable_module nodelist_mod;
+	struct loadable_module whosonline_mod;
+	struct loadable_module privatemsg_mod;
+	struct loadable_module logonlist_mod;
+	struct loadable_module userlist_mod;
+	struct loadable_module usercfg_mod;
+    struct loadable_module prextrn_mod;			/* External Program pre-execution module */
+    struct loadable_module postxtrn_mod;		/* External Program post-execution module */
+	struct loadable_module tempxfer_mod;
+	struct loadable_module batxfer_mod;
 	uchar			smb_retry_time; 		/* Seconds to retry on SMBs */
 	uchar			inactivity_warn;		// percentage
 	uint			max_getkey_inactivity;	// Seconds before user inactivity hang-up

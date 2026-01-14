@@ -1294,8 +1294,7 @@ void sbbs_t::nodemsg()
 	if (nodemsg_inside > 1)    /* nested once only */
 		return;
 	nodemsg_inside++;
-	if (cfg.privatemsg_mod[0] != '\0') {
-		exec_mod("private message", cfg.privatemsg_mod);
+	if (exec_mod("private message", cfg.privatemsg_mod) == 0) {
 		nodemsg_inside--;
 		return;
 	}

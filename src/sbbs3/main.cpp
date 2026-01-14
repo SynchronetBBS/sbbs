@@ -3936,6 +3936,8 @@ sbbs_t::~sbbs_t()
 
 	listFree(&smb_list);
 
+	free(mod_callstack); // Don't need to free the strings themselves since they're all const ptrs
+
 #ifdef USE_CRYPTLIB
 	if (ssh_mutex_created && pthread_mutex_destroy(&ssh_mutex))
 		lprintf(LOG_CRIT, "!!!! Failed to destroy ssh_mutex, system is unstable");
@@ -4824,12 +4826,10 @@ void sbbs_t::daily_maint(void)
 			putuserdatetime(user.number, USER_EXPIRE, user.expire);
 			putuserflags(user.number, USER_EXEMPT, user.exempt);
 			putuserflags(user.number, USER_REST, user.rest);
-			if (cfg.expire_mod[0]) {
-				useron = user;
-				online = ON_LOCAL;
-				exec_mod("expired user", cfg.expire_mod);
-				online = false;
-			}
+			useron = user;
+			online = ON_LOCAL;
+			exec_mod("expired user", cfg.expire_mod);
+			online = false;
 		}
 
 		/***********************************************************/

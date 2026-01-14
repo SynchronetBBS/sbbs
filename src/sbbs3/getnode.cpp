@@ -156,8 +156,7 @@ void sbbs_t::nodesync(bool clearline)
 		}
 	}
 
-	if (cfg.sync_mod[0])
-		exec_mod("sync", cfg.sync_mod);
+	exec_mod("sync", cfg.sync_mod);
 
 	if (thisnode.misc & NODE_INTR) {
 		bputs(text[NodeLocked]);
@@ -346,16 +345,14 @@ bool sbbs_t::getsmsg(int usernumber, bool clearline)
 /****************************************************************************/
 /* This function lists users that are online.                               */
 /* If listself is true, it will list the current node.                      */
-/* Returns number of active nodes (not including current node).             */
 /****************************************************************************/
-int sbbs_t::whos_online(bool listself)
+void sbbs_t::whos_online(bool listself)
 {
 	int    i, j;
 	node_t node;
 
-	if (cfg.whosonline_mod[0] != '\0') {
-		return exec_mod("who's online", cfg.whosonline_mod);
-	}
+	if(exec_mod("who's online", cfg.whosonline_mod) == 0)
+		return;
 
 	term->newline();
 	bputs(text[NodeLstHdr]);
@@ -375,17 +372,14 @@ int sbbs_t::whos_online(bool listself)
 	}
 	if (!j)
 		bputs(text[NoOtherActiveNodes]);
-	return j;
 }
 
 void sbbs_t::nodelist(void)
 {
 	node_t node;
 
-	if (cfg.nodelist_mod[0] != '\0') {
-		exec_mod("list nodes", cfg.nodelist_mod);
+	if (exec_mod("list nodes", cfg.nodelist_mod) == 0)
 		return;
-	}
 
 	term->newline();
 	bputs(text[NodeLstHdr]);

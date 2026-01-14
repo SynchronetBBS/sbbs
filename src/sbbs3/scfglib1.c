@@ -28,6 +28,8 @@
 #include "sockwrap.h"    // IPPORT_MQTT
 #include "str_util.h"
 
+const char* scfg_addr_list_separator = ",";
+
 bool allocerr(char* error, size_t maxerrlen, const char* fname, const char *item, size_t size)
 {
 	snprintf(error, maxerrlen, "%s: allocating %u bytes of memory for %s"
@@ -74,6 +76,35 @@ bool read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	iniFreeStringList(ini);
 
 	return result;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+static struct loadable_module read_loadable_mod(scfg_t* cfg, str_list_t ini, const char* name, const char* default_cmd)
+{
+	struct loadable_module mod = {};
+	uint count = 0;
+	char* cmd;
+	char cmd_key[INI_MAX_VALUE_LEN];
+	char ars_key[INI_MAX_VALUE_LEN];
+	char value[INI_MAX_VALUE_LEN];
+
+	while(1) {
+		if (count < 1) {
+			SAFECOPY(cmd_key, name);
+			snprintf(ars_key, sizeof ars_key, "%s.ars", name);
+		} else {
+			snprintf(cmd_key, sizeof cmd_key, "%s.%u", name, count);
+			snprintf(ars_key, sizeof ars_key, "%s.%u.ars", name, count);
+			default_cmd = NULL;
+		}
+		if ((cmd = iniGetString(ini, NULL, cmd_key, default_cmd, value)) == NULL)
+			break;
+		strListPush(&mod.cmd, cmd);
+		strListPush(&mod.ars, iniGetString(ini, NULL, ars_key, "", value));
+		++count;
+	}
+	return mod;
 }
 
 /****************************************************************************/
@@ -255,37 +286,37 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/* Modules */
 	/***********/
 	section = iniGetParsedSection(sections, "module", /* cut: */ true);
-	SAFECOPY(cfg->logon_mod, iniGetString(section, NULL, "logon", "logon", value));
-	SAFECOPY(cfg->logoff_mod, iniGetString(section, NULL, "logoff", "", value));
-	SAFECOPY(cfg->newuser_prompts_mod, iniGetString(section, NULL, "newuser_prompts", "newuser_prompts", value));
-	SAFECOPY(cfg->newuser_info_mod, iniGetString(section, NULL, "newuser_info", "newuser_info", value));
-	SAFECOPY(cfg->newuser_mod, iniGetString(section, NULL, "newuser", "newuser", value));
-	SAFECOPY(cfg->usercfg_mod, iniGetString(section, NULL, "usercfg", "user_settings", value));
-	SAFECOPY(cfg->login_mod, iniGetString(section, NULL, "login", "login", value));
-	SAFECOPY(cfg->logout_mod, iniGetString(section, NULL, "logout", "", value));
-	SAFECOPY(cfg->sync_mod, iniGetString(section, NULL, "sync", "", value));
-	SAFECOPY(cfg->expire_mod, iniGetString(section, NULL, "expire", "", value));
-	SAFECOPY(cfg->readmail_mod, iniGetString(section, NULL, "readmail", "", value));
-	SAFECOPY(cfg->scanposts_mod, iniGetString(section, NULL, "scanposts", "", value));
-	SAFECOPY(cfg->scansubs_mod, iniGetString(section, NULL, "scansubs", "", value));
-	SAFECOPY(cfg->listmsgs_mod, iniGetString(section, NULL, "listmsgs", "", value));
-	SAFECOPY(cfg->textsec_mod, iniGetString(section, NULL, "textsec", "text_sec", value));
-	SAFECOPY(cfg->chatsec_mod, iniGetString(section, NULL, "chatsec", "chat_sec", value));
-	SAFECOPY(cfg->automsg_mod, iniGetString(section, NULL, "automsg", "automsg", value));
-	SAFECOPY(cfg->feedback_mod, iniGetString(section, NULL, "feedback", "", value));
-	SAFECOPY(cfg->xtrnsec_mod, iniGetString(section, NULL, "xtrnsec", "xtrn_sec", value));
-	SAFECOPY(cfg->nodelist_mod, iniGetString(section, NULL, "nodelist", "nodelist", value));
-	SAFECOPY(cfg->userlist_mod, iniGetString(section, NULL, "userlist", "", value));
-	SAFECOPY(cfg->whosonline_mod, iniGetString(section, NULL, "whosonline", "nodelist -active", value));
-	SAFECOPY(cfg->privatemsg_mod, iniGetString(section, NULL, "privatemsg", "privatemsg", value));
-	SAFECOPY(cfg->logonlist_mod, iniGetString(section, NULL, "logonlist", "logonlist", value));
-	SAFECOPY(cfg->prextrn_mod, iniGetString(section, NULL, "prextrn", "prextrn", value));
-	SAFECOPY(cfg->postxtrn_mod, iniGetString(section, NULL, "postxtrn", "postxtrn", value));
-	SAFECOPY(cfg->scandirs_mod, iniGetString(section, NULL, "scandirs", "", value));
-	SAFECOPY(cfg->listfiles_mod, iniGetString(section, NULL, "listfiles", "", value));
-	SAFECOPY(cfg->fileinfo_mod, iniGetString(section, NULL, "fileinfo", "", value));
-	SAFECOPY(cfg->batxfer_mod, iniGetString(section, NULL, "batxfer", "", value));
-	SAFECOPY(cfg->tempxfer_mod, iniGetString(section, NULL, "tempxfer", "tempxfer", value));
+	cfg->logon_mod = read_loadable_mod(cfg, section, "logon", "logon");
+	cfg->logoff_mod= read_loadable_mod(cfg, section, "logoff", "");
+	cfg->newuser_prompts_mod= read_loadable_mod(cfg, section, "newuser_prompts", "newuser_prompts");
+	cfg->newuser_info_mod= read_loadable_mod(cfg, section, "newuser_info", "newuser_info");
+	cfg->newuser_mod= read_loadable_mod(cfg, section, "newuser", "newuser");
+	cfg->usercfg_mod= read_loadable_mod(cfg, section, "usercfg", "user_settings");
+	cfg->login_mod= read_loadable_mod(cfg, section, "login", "login");
+	cfg->logout_mod= read_loadable_mod(cfg, section, "logout", "");
+	cfg->sync_mod= read_loadable_mod(cfg, section, "sync", "");
+	cfg->expire_mod= read_loadable_mod(cfg, section, "expire", "");
+	cfg->readmail_mod= read_loadable_mod(cfg, section, "readmail", "");
+	cfg->scanposts_mod= read_loadable_mod(cfg, section, "scanposts", "");
+	cfg->scansubs_mod= read_loadable_mod(cfg, section, "scansubs", "");
+	cfg->listmsgs_mod= read_loadable_mod(cfg, section, "listmsgs", "");
+	cfg->textsec_mod= read_loadable_mod(cfg, section, "textsec", "text_sec");
+	cfg->chatsec_mod= read_loadable_mod(cfg, section, "chatsec", "chat_sec");
+	cfg->automsg_mod= read_loadable_mod(cfg, section, "automsg", "automsg");
+	cfg->feedback_mod= read_loadable_mod(cfg, section, "feedback", "");
+	cfg->xtrnsec_mod= read_loadable_mod(cfg, section, "xtrnsec", "xtrn_sec");
+	cfg->nodelist_mod= read_loadable_mod(cfg, section, "nodelist", "nodelist");
+	cfg->userlist_mod= read_loadable_mod(cfg, section, "userlist", "");
+	cfg->whosonline_mod= read_loadable_mod(cfg, section, "whosonline", "nodelist -active");
+	cfg->privatemsg_mod= read_loadable_mod(cfg, section, "privatemsg", "privatemsg");
+	cfg->logonlist_mod= read_loadable_mod(cfg, section, "logonlist", "logonlist");
+	cfg->prextrn_mod= read_loadable_mod(cfg, section, "prextrn", "prextrn");
+	cfg->postxtrn_mod= read_loadable_mod(cfg, section, "postxtrn", "postxtrn");
+	cfg->scandirs_mod= read_loadable_mod(cfg, section, "scandirs", "");
+	cfg->listfiles_mod= read_loadable_mod(cfg, section, "listfiles", "");
+	cfg->fileinfo_mod= read_loadable_mod(cfg, section, "fileinfo", "");
+	cfg->batxfer_mod= read_loadable_mod(cfg, section, "batxfer", "");
+	cfg->tempxfer_mod= read_loadable_mod(cfg, section, "tempxfer", "tempxfer");
 
 	/*******************/
 	/* Validation Sets */
@@ -518,7 +549,7 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/* FidoNet */
 	/***********/
 	section = iniGetParsedSection(sections, "fidonet", /* cut: */ true);
-	str_list_t faddr_list = iniGetStringList(section, NULL, "addr_list", ",", "");
+	str_list_t faddr_list = iniGetStringList(section, NULL, "addr_list", scfg_addr_list_separator, "");
 	cfg->total_faddrs = strListCount(faddr_list);
 
 	if ((cfg->faddr = (faddr_t *)malloc(sizeof(faddr_t) * cfg->total_faddrs)) == NULL)

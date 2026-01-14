@@ -430,15 +430,11 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 
 	action = NODE_RMSG;
 	cursubnum = subnum;   /* for ARS */
-	if (cfg.scanposts_mod[0] && !scanposts_inside) {
-		char cmdline[256];
 
-		scanposts_inside = true;
-		safe_snprintf(cmdline, sizeof(cmdline), "%s %s %u %s", cfg.scanposts_mod, cfg.sub[subnum]->code, mode, find);
-		i = exec_mod("scan messages", cmdline);
-		scanposts_inside = false;
+	bool invoked;
+	i = exec_mod("scan messages", cfg.scanposts_mod, &invoked, "%s %u %s", cfg.sub[subnum]->code, mode, find);
+	if (invoked)
 		return i;
-	}
 	find_buf[0] = 0;
 	if (!chk_ar(cfg.sub[subnum]->read_ar, &useron, &client)) {
 		bprintf(text[CantReadSub]
@@ -1000,13 +996,10 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				break;
 			case 'L':   /* List messages */
 				domsg = 0;
-				if (cfg.listmsgs_mod[0]) {
-					char cmdline[256];
-
-					safe_snprintf(cmdline, sizeof(cmdline), "%s %s %u", cfg.listmsgs_mod, cfg.sub[subnum]->code, mode);
-					exec_mod("list messages", cmdline);
+				bool invoked;
+				exec_mod("list messages", cfg.listmsgs_mod, &invoked, "%s %u", cfg.sub[subnum]->code, mode);
+				if (invoked)
 					break;
-				}
 				if ((i64 = get_start_msgnum(&smb, 1)) < 0)
 					break;
 				i = (int)i64;
@@ -1668,11 +1661,11 @@ int sbbs_t::listsub(int subnum, int mode, int start, const char* search)
 	int      lp_mode = LP_BYSELF;
 	post_t * post;
 
-	if ((mode & SCAN_INDEX) && cfg.listmsgs_mod[0]) {
-		char cmdline[256];
-
-		safe_snprintf(cmdline, sizeof(cmdline), "%s %s %u", cfg.listmsgs_mod, cfg.sub[subnum]->code, mode);
-		return exec_mod("list messages", cmdline);
+	if ((mode & SCAN_INDEX)) {
+		bool invoked;
+		i = exec_mod("list messages", cfg.listmsgs_mod, &invoked, "%s %u", cfg.sub[subnum]->code, mode);
+		if (invoked)
+			return i;
 	}
 
 	if ((i = smb_stack(&smb, SMB_STACK_PUSH)) != 0) {

@@ -27,16 +27,9 @@
 /* This is the external programs (doors) section of the bbs                 */
 /* Return 1 if no externals available, 0 otherwise. 						*/
 /****************************************************************************/
-int sbbs_t::xtrn_sec(const char* section)
+void sbbs_t::xtrn_sec(const char* section)
 {
-	char str[MAX_PATH + 1];
-
-	if (cfg.xtrnsec_mod[0] == '\0') {
-		errormsg(WHERE, ERR_CHK, "xtrnsec_mod", 0);
-		return 1;
-	}
-	SAFEPRINTF2(str, "%s %s", cfg.xtrnsec_mod, section);
-	return exec_mod("external program section", str);
+	exec_mod("external program section", cfg.xtrnsec_mod, /* invoked */ nullptr, "%s", section);
 }
 
 const char *hungupstr = "\1n\1h%s\1n hung up on \1h%s\1n %s\r\n";
@@ -1285,12 +1278,9 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		subtract_cdt(&cfg, &useron, cfg.xtrn[xtrnnum]->cost);
 	}
 
-	if (cfg.prextrn_mod[0] != '\0') {
-		SAFEPRINTF2(str, "%s %s", cfg.prextrn_mod, cfg.xtrn[xtrnnum]->code);
-		if (exec_mod("pre external program execution", str) != 0) {
-			return false;
-		}
-	}
+	bool invoked;
+	if (exec_mod("pre external program execution", cfg.prextrn_mod, &invoked, "%s", cfg.xtrn[xtrnnum]->code) != 0 && invoked)
+		return false;
 
 	if (!(cfg.xtrn[xtrnnum]->misc & MULTIUSER)) {
 		for (i = 1; i <= cfg.sys_nodes; i++) {
@@ -1490,10 +1480,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	if (cfg.xtrn[xtrnnum]->misc & XTRN_PAUSE)
 		pause();
 
-	if (cfg.postxtrn_mod[0] != '\0') {
-		SAFEPRINTF2(str, "%s %s", cfg.postxtrn_mod, cfg.xtrn[xtrnnum]->code);
-		exec_mod("post external program execution", str);
-	}
+	exec_mod("post external program execution", cfg.postxtrn_mod, /* invoked */nullptr, "%s", cfg.xtrn[xtrnnum]->code);
 
 	return true;
 }

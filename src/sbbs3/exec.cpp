@@ -770,10 +770,51 @@ int sbbs_t::js_execxtrn(const char *cmd, const char* startup_dir)
 #endif
 
 /* Execute a loadable module */
-int sbbs_t::exec_mod(const char* name, const char *cmdline)
+int sbbs_t::exec_mod(const char* name, struct loadable_module mod, bool* invoked, const char* fmt, ...)
 {
+	va_list argptr;
+	const char* cmd = nullptr;
+
+	if (invoked != NULL)
+		*invoked = false;
+
+	if (strListIndexOf(mod_callstack, name) >= 0) {
+		lprintf(LOG_ERR, "Attempt to recursively execute %s module", name);
+		return -1;
+	}
+
+	size_t ars_count = strListCount(mod.ars);
+	for (size_t i = 0; mod.cmd != nullptr && mod.cmd[i] != nullptr; ++i) {
+		if (mod.cmd[i][0] == '\0')
+			continue;
+		if (i >= ars_count || chk_ars(mod.ars[i], &useron, &client)) {
+			cmd = mod.cmd[i];
+			break;
+		}
+	}
+	if (cmd == nullptr) {
+		if (mod.cmd != NULL && mod.cmd[0] != NULL && mod.cmd[0][0] != '\0')
+			lprintf(LOG_DEBUG, "No user access to %s module", name);
+		return -1;
+	}
+
+	char cmdline[MAX_PATH + 512];
+	if (fmt == nullptr)
+		SAFECOPY(cmdline, cmd);
+	else {
+		char args[512];
+		va_start(argptr, fmt);
+		vsnprintf(args, sizeof args, fmt, argptr);
+		args[sizeof args - 1] = '\0';
+		va_end(argptr);
+		snprintf(cmdline, sizeof cmdline, "%s %s", cmd, args);
+	}
 	lprintf(LOG_DEBUG, "Executing %s module: %s", name, cmdline);
+	strListPushPtr(&mod_callstack, name);
 	int i = exec_bin(cmdline, &main_csi);
+	strListPop(&mod_callstack);
+	if (invoked != NULL)
+		*invoked = true;
 	if (i != 0)
 		lprintf(LOG_DEBUG, "%s module (%s) returned %d", name, cmdline, i);
 	return i;

@@ -182,12 +182,11 @@ void sbbs_t::userlist(int mode)
 	char * line[2500];
 	user_t user;
 
-	if (cfg.userlist_mod[0] != '\0') {
-		char str[128];
-		SAFEPRINTF2(str, "%s %d", cfg.userlist_mod, mode);
-		exec_mod("user list", str);
+	bool invoked;
+	exec_mod("user list", cfg.userlist_mod, &invoked, "%d", mode);
+	if (invoked)
 		return;
-	}
+
 	if (lastuser(&cfg) <= (int)(sizeof(line) / sizeof(line[0])))
 		sort = yesno(text[SortAlphaQ]);
 	if (sort) {
@@ -1175,11 +1174,10 @@ void sbbs_t::logonlist(const char* args)
 {
 	char str[MAX_PATH + 1];
 
-	if (cfg.logonlist_mod[0] != '\0') {
-		SAFEPRINTF2(str, "%s %s", cfg.logonlist_mod, args);
-		exec_mod("list logons", str);
+	bool invoked;
+	exec_mod("list logons", cfg.logonlist_mod, &invoked, "%s", args);
+	if (invoked)
 		return;
-	}
 	SAFEPRINTF(str, "%slogon.lst", cfg.data_dir);
 	if (flength(str) < 1) {
 		bputs("\r\n\r\n");
