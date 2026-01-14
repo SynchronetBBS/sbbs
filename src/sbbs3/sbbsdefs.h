@@ -82,12 +82,8 @@
 /************/
 
 #define MAX_NODES       250
-#define MAX_SUBS        65534
-#define MAX_DIRS        65534
-#define MAX_XTRNS       65534
 
 #define MAX_TEXTDAT_ITEM_LEN    2000
-
 
 #define LEN_DIR     100     // Maximum length of directory paths
 #define LEN_CMD     100     // Maximum length of command lines
