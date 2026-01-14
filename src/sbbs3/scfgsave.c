@@ -106,7 +106,7 @@ static void write_loadable_module(str_list_t* ini, const char* name, struct load
 	char cmd_key[INI_MAX_VALUE_LEN];
 	char ars_key[INI_MAX_VALUE_LEN];
 	const char* section = "module";
-	size_t i;
+	int    i;
 	size_t ars_count = strListCount(mod.ars);
 
 	if (mod.cmd == NULL)
