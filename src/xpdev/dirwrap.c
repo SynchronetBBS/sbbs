@@ -592,23 +592,33 @@ static bool getfilecase(char *path, bool dir)
 #if defined(_WIN32)
 
 	char*              fname;
+	char*              last = lastchar(path);
+	char               lastch = *last;
 	intptr_t           handle;
 	struct _finddata_t f;
 
+	if (IS_PATH_DELIM(lastch))
+		*last = '\0';
 #if 0
 	if (access(path, F_OK) == -1 && !filename_has_wildcard(path))
 		return false;
 #endif
-	if ((handle = _findfirst((char*)path, &f)) == -1)
+	if ((handle = _findfirst(path, &f)) == -1) {
+		*last = lastch;
 		return false;
+	}
 
 	_findclose(handle);
 
-	if (INT_TO_BOOL(f.attrib & _A_SUBDIR) != dir)
+	if (INT_TO_BOOL(f.attrib & _A_SUBDIR) != dir) {
+		*last = lastch;
 		return false;
+	}
 
 	fname = getfname(path);   /* Find filename in path */
 	strcpy(fname, f.name);   /* Correct filename */
+	if (dir)
+		backslash(fname);
 
 	return true;
 
@@ -628,7 +638,10 @@ static bool getfilecase(char *path, bool dir)
 		return true;
 
 	SAFECOPY(globme, path);
-	p = getfname(globme);
+	if (dir && *lastchar(globme) == '/')
+		p = getdirname(globme);
+	else
+		p = getfname(globme);
 	SAFECOPY(fname, p);
 	*p = 0;
 	for (i = 0; fname[i]; i++)  {
@@ -645,15 +658,16 @@ static bool getfilecase(char *path, bool dir)
 	}
 #endif
 
-#if !defined GLOB_ONLYDIR
-	#define GLOB_ONLYDIR 0
+	int flags = GLOB_MARK;
+#if defined GLOB_ONLYDIR
+	if (dir) flags |= GLOB_ONLYDIR;
 #endif
-	if (glob(globme, dir ? GLOB_ONLYDIR : GLOB_MARK, NULL, &glb) != 0)
+	if (glob(globme, flags, NULL, &glb) != 0)
 		return false;
 
 	if (glb.gl_pathc > 0)  {
 		for (i = 0; i < glb.gl_pathc; i++)  {
-			if (*lastchar(glb.gl_pathv[i]) != '/')
+			if ((*lastchar(glb.gl_pathv[i]) == '/') == dir)
 				break;
 		}
 		if (i < glb.gl_pathc)  {
@@ -676,6 +690,8 @@ bool fexistcase(char *path)
 
 bool getdircase(char* path)
 {
+	if (IS_ROOT_DIR(path) && isdir(path))
+		return true;
 	return getfilecase(path, true);
 }
 

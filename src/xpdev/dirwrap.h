@@ -165,7 +165,8 @@ extern "C" {
 
 #if defined(__unix__)
 	#define PATH_DELIM			'/'
-	#define IS_PATH_DELIM(x)	(x=='/')
+	#define IS_PATH_DELIM(x)	((x) == '/')
+	#define IS_ROOT_DIR(p)      ((p)[0] == '/' && (p)[1] == '\0')
 
 	/* These may be pre-defined in paths.h (BSD) */
 	#ifndef _PATH_TMP
@@ -178,7 +179,8 @@ extern "C" {
 #else /* MS-DOS based OS */
 
 	#define PATH_DELIM			'\\'
-	#define IS_PATH_DELIM(x)	((x)=='/' || (x)=='\\')
+	#define IS_PATH_DELIM(x)	((x) == '/' || (x) == '\\')
+	#define IS_ROOT_DIR(p)      (((p)[0] == '/' && (p)[1] == '\0') || ((p)[0] != '\0' && (p)[1] == ':' && IS_PATH_DELIM((p)[2]) && (p)[3] == '\0'))
 	#define _PATH_TMP			getenv("TEMP")
 	#define _PATH_DEVNULL		"NUL"
 
