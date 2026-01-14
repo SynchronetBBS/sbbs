@@ -484,7 +484,9 @@ void xfer_cfg()
 								sprintf(tmp, "%sdirs/", cfg.data_dir);
 							else
 								strcpy(tmp, cfg.dir[j]->data_dir);
+							uifc.pop("Deleting %s/%s ...", tmp, str);
 							delfiles(tmp, str, /* keep: */ 0);
+							uifc.pop(NULL);
 						}
 					}
 				}
@@ -656,7 +658,7 @@ void xfer_cfg()
 					;
 					if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Parent Directory"
 					               , cfg.lib[libnum]->parent_path, sizeof(cfg.lib[libnum]->parent_path) - 1, K_EDIT) > 0)
-						if (!isdir(cfg.lib[libnum]->parent_path))
+						if (!getdircase(cfg.lib[libnum]->parent_path))
 							uifc.msg("Directory doesn't exist");
 					break;
 				case __COUNTER__:
@@ -766,8 +768,8 @@ void xfer_cfg()
 						"\n"
 						FILEGATE_ZXX_HELP_TEXT
 					;
-					k = 0;
-					k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, 0
+					static int export_cur;
+					k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &export_cur, 0
 					              , "Export Area File Format", opt);
 					if (k == -1)
 						break;
@@ -975,14 +977,15 @@ void xfer_cfg()
 						SAFECOPY(tmpdir.code_suffix, prep_code(tmp_code, cfg.lib[libnum]->code_prefix));
 
 						snprintf(path, sizeof path, "%s/%s", cfg.lib[libnum]->parent_path, tmpdir.path);
-						if ((cfg.lib[libnum]->dir_defaults.misc & DIR_FCHK) && !isdir(path)) {
-							if(!uifc.confirm("%s is not a directory. Continue?", path))
-								break;
-							continue;
+						if (cfg.lib[libnum]->dir_defaults.misc & DIR_FCHK) {
+							if (getdircase(path))
+								SAFECOPY(tmpdir.path, path + strlen(cfg.lib[libnum]->parent_path) + 1);
+							else {
+								if(!uifc.confirm("%s is not a directory. Continue?", path))
+									break;
+								continue;
+							}
 						}
-						if (getdircase(path))
-							SAFECOPY(tmpdir.path, path + strlen(cfg.lib[libnum]->parent_path) + 1);
-
 						int attempts = 0;   // attempts to generate a unique internal code
 						if (stricmp(tmpdir.code_suffix, duplicate_code) == 0)
 							attempts = ++duplicate_codes;
@@ -1848,8 +1851,11 @@ void dir_cfg(int libnum)
 					              , str2, uifcYesNoOpts);
 					if (j == -1)
 						continue;
-					if (j == 0)
+					if (j == 0) {
+						uifc.pop("Deleting ...");
 						delfiles(data_dir, str, /* keep: */ 0);
+						uifc.pop(NULL);
+					}
 				}
 			}
 			if (msk == MSK_CUT)
