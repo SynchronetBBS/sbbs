@@ -901,6 +901,7 @@ void xfer_cfg()
 					uifc.pop("Importing Areas...");
 					char duplicate_code[LEN_CODE + 1] = "";
 					uint duplicate_codes = 0;   // consecutive duplicate codes
+					bool prompt_on_dupe = true;
 					while (!feof(stream) && cfg.total_dirs < MAX_DIRS) {
 						if (!fgets(str, sizeof(str), stream))
 							break;
@@ -1130,9 +1131,10 @@ void xfer_cfg()
 							}
 							*cfg.dir[j] = cfg.lib[libnum]->dir_defaults;
 							added++;
-						} else {
-							if (!uifc.confirm("Duplicate dir '%s' could not be imported. Continue?", cfg.dir[j]->code_suffix))
+						} else if (prompt_on_dupe) {
+							if (!uifc.confirm("Duplicate dir '%s' dected. Continue?", cfg.dir[j]->code_suffix))
 								break;
+							prompt_on_dupe = uifc.confirm("Continue to notify/prompt for each duplicate dir found?");
 						}
 						if (k == 2) {
 							SAFECOPY(cfg.dir[j]->code_suffix, tmpdir.code_suffix);
