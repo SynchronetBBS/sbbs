@@ -497,18 +497,22 @@ str_list_t iniCutSection(str_list_t list, const char *section)
 bool iniRemoveSections(str_list_t* list, const char* prefix)
 {
 	str_list_t  sections;
-	const char* section;
+	char*       section;
+	bool        result = true;
 
 	if (list == NULL)
 		return false;
 	sections = iniGetSectionList(*list, prefix);
-	while ((section = strListPop(&sections)) != NULL)
-		if (!iniRemoveSection(list, section))
-			return false;
+	while ((section = strListPop(&sections)) != NULL) {
+		result = iniRemoveSection(list, section);
+		free(section);
+		if (result == false)
+			break;
+	}
 
 	strListFree(&sections);
 
-	return true;
+	return result;
 }
 
 // This sorts comments too, so should not be used on human created/edited files
