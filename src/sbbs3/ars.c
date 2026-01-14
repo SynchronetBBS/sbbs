@@ -42,6 +42,12 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 	uint        maxlen;
 	BOOL        arg_expected = FALSE;
 
+	if (str == NULL) {
+		if (count)
+			(*count) = 0;
+		return NULL;
+	}
+
 	for (i = j = 0; str[i]; i++) {
 		if (str[i] == ' ')
 			continue;
