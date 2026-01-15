@@ -1006,6 +1006,14 @@ function save(file, dircode, filename)
 
 function add_file(filename, dircode)
 {
+	if(system.illegal_filename(filename)) {
+		uifc.msg("Illegal filename: " + filename);
+		return false;
+	}
+	if(!system.allowed_filename(filename)) {
+		uifc.msg("Disallowed filename: " + filename);
+		return false;
+	}
 	var base = new FileBase(dircode);
 	if(!base.open()) {
 		uifc.msg("Unable to open base: " + dircode);
