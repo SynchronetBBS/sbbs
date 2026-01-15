@@ -26,7 +26,7 @@ localdefs.mk
 node2
 node3
 node4
-*.?.cnf
+*.?.ini
 ctrl/recycle
 exec/*.bin
 exec/*.so
