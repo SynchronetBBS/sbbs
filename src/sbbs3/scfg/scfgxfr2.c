@@ -272,12 +272,10 @@ BOOL create_raw_dir_list(char* list_file, char* parent)
 	               , K_EDIT) < 1)
 		return FALSE;
 
-	if (!isdir(path)) {
+	if (!getdircase(path)) { // appends trailing slash if absent
 		uifc.msgf("%s doesn't appear to be a directory", path);
 		return FALSE;
 	}
-	if (parent != NULL && *parent == '\0')
-		strlcpy(parent, path, LEN_DIR);
 
 	k = 1;
 	k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, 0, "Include Empty Directories", uifcYesNoOpts);
@@ -296,7 +294,10 @@ BOOL create_raw_dir_list(char* list_file, char* parent)
 			return FALSE;
 		}
 	}
-	backslash(path);
+
+	if (parent != NULL && *parent == '\0')
+		strlcpy(parent, path, LEN_DIR);
+
 	uifc.pop("Scanning Directories...");
 	append_dir_list(path, path, fp, /* depth: */ 0, /* max_depth: */ k, include_empty_dirs);
 	uifc.pop(NULL);
@@ -890,6 +891,8 @@ void xfer_cfg()
 					uint duplicate_codes = 0;   // consecutive duplicate codes
 					bool prompt_on_dupe = true;
 					int dir_count = dirs_in_lib(libnum);
+					char parent[MAX_PATH + 1];
+					SAFECOPY(parent, backslash(cfg.lib[libnum]->parent_path));
 					while (!feof(stream) && dir_count + added < MAX_OPTS) {
 						if (!fgets(str, sizeof(str), stream))
 							break;
@@ -976,10 +979,10 @@ void xfer_cfg()
 
 						SAFECOPY(tmpdir.code_suffix, prep_code(tmp_code, cfg.lib[libnum]->code_prefix));
 
-						snprintf(path, sizeof path, "%s/%s", cfg.lib[libnum]->parent_path, tmpdir.path);
+						snprintf(path, sizeof path, "%s%s", parent, tmpdir.path);
 						if (cfg.lib[libnum]->dir_defaults.misc & DIR_FCHK) {
 							if (getdircase(path))
-								SAFECOPY(tmpdir.path, path + strlen(cfg.lib[libnum]->parent_path) + 1);
+								SAFECOPY(tmpdir.path, path + strlen(parent));
 							else {
 								if(!uifc.confirm("%s is not a directory. Continue?", path))
 									break;
