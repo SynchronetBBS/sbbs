@@ -254,7 +254,7 @@ static void append_dir_list(const char* parent, const char* dir, FILE* fp, int d
 	globfree(&g);
 }
 
-BOOL create_raw_dir_list(char* list_file, char* parent)
+BOOL create_raw_dir_list(char* list_file, const char* parent)
 {
 	char  path[MAX_PATH + 1];
 	char  fname[MAX_PATH + 1] = "dirs.raw";
@@ -263,18 +263,13 @@ BOOL create_raw_dir_list(char* list_file, char* parent)
 	bool  include_empty_dirs;
 	FILE* fp;
 
-	SAFECOPY(path, list_file);
-	if ((p = getfname(path)) != NULL) {
+	if (parent == NULL) {
+		SAFECOPY(path, list_file);
+		if ((p = getfname(path)) == NULL)
+			return FALSE;
 		SAFECOPY(fname, p);
 		*p = 0;
-	}
-	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Parent Directory", path, sizeof(path) - 1
-	               , K_EDIT) < 1)
-		return FALSE;
-
-	if (!getdircase(path)) { // appends trailing slash if absent
-		uifc.msgf("%s doesn't appear to be a directory", path);
-		return FALSE;
+		parent = path;
 	}
 
 	k = 1;
@@ -289,17 +284,13 @@ BOOL create_raw_dir_list(char* list_file, char* parent)
 	if ((fp = fopen(list_file, "w")) == NULL) {
 		strcpy(list_file, fname);
 		if ((fp = fopen(list_file, "w")) == NULL) {
-			SAFEPRINTF2(path, "Create Failure (%u): %s", errno, list_file);
-			uifc.msg(path);
+			uifc.msgf("Create Failure (%u): %s", errno, list_file);
 			return FALSE;
 		}
 	}
 
-	if (parent != NULL && *parent == '\0')
-		strlcpy(parent, path, LEN_DIR);
-
 	uifc.pop("Scanning Directories...");
-	append_dir_list(path, path, fp, /* depth: */ 0, /* max_depth: */ k, include_empty_dirs);
+	append_dir_list(parent, parent, fp, /* depth: */ 0, /* max_depth: */ k, include_empty_dirs);
 	uifc.pop(NULL);
 	fclose(fp);
 	return TRUE;
@@ -315,7 +306,7 @@ int dirs_in_lib(int libnum)
 	return total;
 }
 
-bool permutate_sname(char* name)
+static bool permutate_sname(char* name)
 {
 	const char* set = " _-:.;/+|*=";
 
@@ -328,6 +319,42 @@ bool permutate_sname(char* name)
 		}
 	}
 	return false;
+}
+
+static char* find_last_fit(char* p, size_t maxlen)
+{
+	size_t len;
+
+	if (p == NULL)
+		return p;
+	/* skip first sub-dir(s) */
+	char* tp = p;
+	while (strlen(tp) > maxlen) {
+		FIND_CHAR(tp, '/');
+		SKIP_CHAR(tp, '/');
+	}
+	if (*tp != '\0')
+		p = tp;
+	if ((len = strlen(p)) > maxlen)
+		p += len - maxlen;
+	FIND_ALPHANUMERIC(p);
+	return p;
+}
+
+static bool get_parent(char* parent, bool required)
+{
+	char path[LEN_DIR + 2];
+
+	SAFECOPY(path, parent);
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Parent Directory", path, LEN_DIR, K_EDIT) < required)
+		return false;
+	if (*path != '\0' && !getdircase(path)) {
+		uifc.msgf("Directory doesn't exist: %s", path);
+		if (required)
+			return false;
+	}
+	strlcpy(parent, path, LEN_DIR);
+	return true;
 }
 
 void xfer_cfg()
@@ -549,8 +576,11 @@ void xfer_cfg()
 			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s", "Long Name", cfg.lib[libnum]->lname);
 			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s", "Short Name", cfg.lib[libnum]->sname);
 			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s", "Internal Code Prefix", cfg.lib[libnum]->code_prefix);
-			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s", "Parent Directory"
-			         , cfg.lib[libnum]->parent_path);
+			if (cfg.lib[libnum]->parent_path[0] == '\0')
+				snprintf(str, sizeof str, "[%sdirs/]", cfg.data_dir);
+			else
+				SAFECOPY(str, cfg.lib[libnum]->parent_path);
+			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s", "Parent Directory", str);
 			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s", "Access Requirements"
 			         , cfg.lib[libnum]->arstr);
 			snprintf(opt[j++], MAX_OPLN, "%-27.27s%s", "Upload Requirements"
@@ -644,23 +674,21 @@ void xfer_cfg()
 					uifc.helpbuf =
 						"`Parent Directory:`\n"
 						"\n"
-						"This an optional path to be used as the physical \"parent\" directory for \n"
-						"all logical directories in this library.  This parent directory will be\n"
-						"used in combination with each directory's `Transfer File Path` to create\n"
-						"the full physical storage path for files in each directory.\n"
+						"This an optional path to be used as the default physical \"parent\"\n"
+						"for logical directories contained within this library.  This path\n"
+						"will be automatically prepended to each directory's `Actual File Path`\n"
+						"(when relative) to create a full/absolute physical storage path for\n"
+						"files in that directory.\n"
 						"\n"
 						"This option is convenient for adding libraries with many directories\n"
 						"that share a common parent directory (e.g. CD-ROMs) and gives you the\n"
-						"option of easily changing the common parent directory location later, if\n"
-						"desired.\n"
+						"option of easily changing the common parent path later, if desired.\n"
 						"\n"
-						"The parent directory is not used for directories with a full/absolute\n"
-						"`Transfer File Path` configured."
+						"The library's `Parent Directory` is not used for any directories of\n"
+						"the library that have been configured with an absolute (not relative)\n"
+						"`Actual File Path`."
 					;
-					if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Parent Directory"
-					               , cfg.lib[libnum]->parent_path, sizeof(cfg.lib[libnum]->parent_path) - 1, K_EDIT) > 0)
-						if (!getdircase(cfg.lib[libnum]->parent_path))
-							uifc.msg("Directory doesn't exist");
+					get_parent(cfg.lib[libnum]->parent_path, /* required: */ false);
 					break;
 				case __COUNTER__:
 					sprintf(str, "%s Library Access", cfg.lib[libnum]->sname);
@@ -695,8 +723,8 @@ void xfer_cfg()
 						"\n"
 						"~ This is an experimental feature. ~"
 					;
-					if (cfg.lib[libnum]->parent_path[0] == '\0') {
-						uifc.msg("A parent directory must be specified to use this feature");
+					if (!isdir(cfg.lib[libnum]->parent_path)) {
+						uifc.msg("A valid parent directory must be specified to use this feature");
 						break;
 					}
 					j = (cfg.lib[libnum]->misc & LIB_DIRS) ? 0 : 1;
@@ -856,32 +884,46 @@ void xfer_cfg()
 					              , "Import Area File Format", opt);
 					if (k == -1)
 						break;
-					else if (k == DIRLIST_CDROM) {
-						SAFECOPY(str, cfg.lib[libnum]->parent_path);
+					char parent_buf[MAX_PATH + 1];
+					SAFECOPY(parent_buf, cfg.lib[libnum]->parent_path);
+					char* parent = parent_buf;
+					if (!get_parent(parent, /* required: */ true))
+						break;
+					if (cfg.lib[libnum]->parent_path[0] == '\0'
+						|| strcmp(parent, cfg.lib[libnum]->parent_path) == 0) {
+						SAFECOPY(cfg.lib[libnum]->parent_path, parent);
+						parent = cfg.lib[libnum]->parent_path;
+					}
+					bool chk_dir_exist = true;
+					if (k == DIRLIST_CDROM) {
+						SAFECOPY(str, parent);
 						backslash(str);
 						SAFECAT(str, "DIRS.TXT");
 					}
-					else if (k == DIRLIST_FIDO)
+					else if (k == DIRLIST_FIDO) {
 						sprintf(str, "FILEGATE.ZXX");
-					else {
-						SAFECOPY(str, cfg.lib[libnum]->parent_path);
+						chk_dir_exist = false;
+					} else {
+						SAFECOPY(str, parent);
 						backslash(str);
 						SAFECAT(str, "dirs.raw");
 					}
 					if (k > DIRLIST_RAW) {
-						if (!create_raw_dir_list(str, cfg.lib[libnum]->parent_path))
+						if (!create_raw_dir_list(str, parent))
 							break;
+						chk_dir_exist = false;
 					} else {
-						if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Filename"
-						               , str, sizeof(str) - 1, K_EDIT) <= 0)
+						if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Filename", str, sizeof(str) - 1, K_EDIT) <= 0)
 							break;
 						if (k == DIRLIST_RAW && !fexistcase(str)) {
-							j = 0;
-							if (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &j, 0
-							              , "File doesn't exist, create it?", uifcYesNoOpts) == 0)
-								create_raw_dir_list(str, NULL);
+							if (uifc.confirm("File doesn't exist, create it?")) {
+								create_raw_dir_list(str, parent);
+								chk_dir_exist = false;
+							}
 						}
 					}
+					if (chk_dir_exist)
+						chk_dir_exist = uifc.confirm("Check for each directory's existence");
 					if ((stream = fnopen(&file, str, O_RDONLY)) == NULL) {
 						uifc.msg("Open Failure");
 						break;
@@ -891,18 +933,17 @@ void xfer_cfg()
 					uint duplicate_codes = 0;   // consecutive duplicate codes
 					bool prompt_on_dupe = true;
 					int dir_count = dirs_in_lib(libnum);
-					char parent[MAX_PATH + 1];
-					SAFECOPY(parent, backslash(cfg.lib[libnum]->parent_path));
+
 					while (!feof(stream) && dir_count + added < MAX_OPTS) {
 						if (!fgets(str, sizeof(str), stream))
 							break;
 						truncsp(str);
-						if (!str[0])
-							continue;
-						tmpdir = cfg.lib[libnum]->dir_defaults;
-
 						p = str;
-						while (*p && *p <= ' ') p++;
+						SKIP_WHITESPACE(p);
+						if (*p == '\0')
+							continue;
+
+						tmpdir = cfg.lib[libnum]->dir_defaults;
 
 						if (k >= DIRLIST_RAW) { /* raw */
 							int len = strlen(p);
@@ -911,31 +952,16 @@ void xfer_cfg()
 							SAFECOPY(tmp_code, p);
 							SAFECOPY(tmpdir.path, p);
 							/* skip first sub-dir(s) */
-							char* tp = p;
-							while ((len = strlen(tp)) > LEN_SLNAME) {
-								FIND_CHAR(tp, '/');
-								SKIP_CHAR(tp, '/');
-							}
-							if (*tp != 0)
-								p = tp;
-							if ((len = strlen(p)) > LEN_SLNAME)
-								p += len - LEN_SLNAME;
-							SAFECOPY(tmpdir.lname, p);
-							/* skip first sub-dir(s) */
-							tp = p;
-							while ((len = strlen(tp)) > LEN_SSNAME) {
-								FIND_CHAR(tp, '/');
-								SKIP_CHAR(tp, '/');
-							}
-							if (*tp != 0)
-								p = tp;
-							if ((len = strlen(p)) > LEN_SSNAME)
-								p += len - LEN_SSNAME;
-							FIND_ALPHANUMERIC(p);
-							if (*p != '\0')
+							char* tp = find_last_fit(p, LEN_SLNAME);
+							if (*tp == '\0')
+								SAFECOPY(tmpdir.lname, p);
+							else
+								SAFECOPY(tmpdir.lname, tp);
+							tp = find_last_fit(p, LEN_SSNAME);
+							if (*tp == '\0')
 								SAFECOPY(tmpdir.sname, p);
 							else
-								SAFECOPY(tmpdir.sname, tmpdir.lname);
+								SAFECOPY(tmpdir.sname, tp);
 						}
 						else if (k == DIRLIST_FIDO) {
 							if (strnicmp(p, "AREA ", 5))
@@ -968,8 +994,12 @@ void xfer_cfg()
 								*lastchar(p) = '\0';
 							SAFECOPY(tmp_code, getfname(p));
 							SAFECOPY(tmpdir.path, p);
-							SAFECOPY(tmpdir.sname, tmp_code);
-							SAFECOPY(tmpdir.lname, *tp == '\0' ? tmp_code : tp);
+							SAFECOPY(tmpdir.lname, *tp == '\0' ? p : tp);
+							tp = find_last_fit(p, LEN_SSNAME);
+							if (*tp == '\0')
+								SAFECOPY(tmpdir.sname, p);
+							else
+								SAFECOPY(tmpdir.sname, tp);
 						}
 
 						if (tmpdir.lname[0] == 0)
@@ -980,15 +1010,18 @@ void xfer_cfg()
 						SAFECOPY(tmpdir.code_suffix, prep_code(tmp_code, cfg.lib[libnum]->code_prefix));
 
 						snprintf(path, sizeof path, "%s%s", parent, tmpdir.path);
-						if (cfg.lib[libnum]->dir_defaults.misc & DIR_FCHK) {
-							if (getdircase(path))
-								SAFECOPY(tmpdir.path, path + strlen(parent));
-							else {
-								if(!uifc.confirm("%s is not a directory. Continue?", path))
-									break;
-								continue;
-							}
+#ifdef _WIN32
+						REPLACE_CHARS(path, '/', '\\', p);
+#endif
+						if (chk_dir_exist && !getdircase(path)) {
+							if(!uifc.confirm("%s is not a directory. Continue?", path))
+								break;
+							continue;
 						}
+						if (parent == cfg.lib[libnum]->parent_path)
+							SAFECOPY(tmpdir.path, path + strlen(parent));
+						else
+							SAFECOPY(tmpdir.path, path);
 						int attempts = 0;   // attempts to generate a unique internal code
 						if (stricmp(tmpdir.code_suffix, duplicate_code) == 0)
 							attempts = ++duplicate_codes;
@@ -1717,18 +1750,18 @@ void dir_cfg(int libnum)
 		"underlying database filenames used for that file area, so change these\n"
 		"values with caution."
 	;
-	char* dir_transfer_path_help =
-		"`Transfer File Path:`\n"
+	char* dir_actual_path_help =
+		"`Actual File Path:`\n"
 		"\n"
 		"This is the physical storage path for files uploaded-to and available\n"
-		"for download-from this directory.\n"
+		"for download-from this logical directory.\n"
 		"\n"
-		"If this setting is blank, the internal-code (lower-cased) is used as the\n"
-		"default directory name.\n"
+		"If this setting is blank, the directory's internal-code (lower-cased)\n"
+		"is used as the default directory name.\n"
 		"\n"
 		"If this value is not a full/absolute path, the parent directory will be\n"
 		"either the library's `Parent Directory` (if set) or the data directory\n"
-		"(e.g. ../data/dirs)\n"
+		"(e.g. ../data/dirs/)\n"
 		"\n"
 		ADDFILES_HELP
 	;
@@ -1815,8 +1848,8 @@ void dir_cfg(int libnum)
 			}
 			SAFECOPY(path, code);
 			strlwr(path);
-			uifc.helpbuf = dir_transfer_path_help;
-			uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Transfer Path", path, LEN_DIR, K_EDIT);
+			uifc.helpbuf = dir_actual_path_help;
+			uifc.input(WIN_MID | WIN_SAV, 0, 0, "Actual File Path (directory)", path, LEN_DIR, K_EDIT);
 
 			if (!new_dir(dirnum[i], libnum))
 				continue;
@@ -1932,11 +1965,11 @@ void dir_cfg(int libnum)
 					SAFECOPY(data_dir, cfg.dir[i]->data_dir);
 				prep_dir(data_dir, path, sizeof(path));
 			}
-			if (strcmp(path, cfg.dir[i]->path) == 0)
-				SAFECOPY(str, path);
+			if (paths_are_same(path, cfg.dir[i]->path))
+				SAFECOPY(str, cfg.dir[i]->path);
 			else
 				SAFEPRINTF(str, "[%s]", path);
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Transfer File Path", str);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Actual File Path", str);
 			if (cfg.dir[i]->maxfiles)
 				sprintf(str, "%u", cfg.dir[i]->maxfiles);
 			else
@@ -2096,8 +2129,8 @@ void dir_cfg(int libnum)
 					getar(str, cfg.dir[i]->ex_arstr);
 					break;
 				case 10:
-					uifc.helpbuf = dir_transfer_path_help;
-					uifc.input(WIN_L2R | WIN_SAV, 0, 17, "Transfer File Path"
+					uifc.helpbuf = dir_actual_path_help;
+					uifc.input(WIN_L2R | WIN_SAV, 0, 17, "Actual File Path (directory)"
 					           , cfg.dir[i]->path, sizeof(cfg.dir[i]->path) - 1, K_EDIT);
 					break;
 				case 11:
