@@ -18,7 +18,7 @@ require("gettext.js", "gettext");
 var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js", "new user registration");
 
 var options = load("modopts.js", "newuser_prompts");
-if(!options)
+if (!options)
 	options = {};
 
 "use strict";
@@ -26,12 +26,24 @@ if(!options)
 const PETSCII_DELETE = CTRL_T;
 const PETSCII_UPPERLOWER = 14;
 
+function confirm(text, yes)
+{
+	if (yes)
+		return console.yesno(text);
+	else
+		return !console.noyes(text);
+}
+
 while(bbs.online && !js.terminated) {
 
 	if (options.lang === true) {
 		var lang = load({}, "lang.js");
 		if (lang.count() && !console.noyes(gettext("Choose an alternate" + " " + bbs.text(bbs.text.Language).toLowerCase() + "\x01\\")))
 			lang.select();
+		if (console.aborted) {
+			prompts.ask_to_cancel();
+			continue;
+		}
 	}
 	if ((console.autoterm && options.autoterm !== true)
 		|| (bbs.text(bbs.text.AutoTerminalQ) && console.yesno(bbs.text(bbs.text.AutoTerminalQ)))) {
@@ -61,7 +73,7 @@ while(bbs.online && !js.terminated) {
 	}
 
 	if (!(user.settings & (USER_AUTOTERM | USER_PETSCII))) {
-		if (bbs.text(bbs.text.AnsiTerminalQ) && console.yesno(bbs.text(bbs.text.AnsiTerminalQ)))
+		if (bbs.text(bbs.text.AnsiTerminalQ) && confirm(bbs.text(bbs.text.AnsiTerminalQ), user.settings & USER_ANSI))
 			user.settings |= USER_ANSI;
 		else
 			user.settings &= ~USER_ANSI;
@@ -70,11 +82,13 @@ while(bbs.online && !js.terminated) {
 	if (user.settings & USER_ANSI) {
 		user.rows = 0; // TERM_ROWS_AUTO
 		user.cols = 0; // TERM_COLS_AUTO
-		if (!(system.newuser_questions & UQ_COLORTERM) || (user.settings & USER_RIP) || console.yesno(bbs.text(bbs.text.ColorTerminalQ)))
+		if (!(system.newuser_questions & UQ_COLORTERM) || (user.settings & USER_RIP)
+			|| confirm(bbs.text(bbs.text.ColorTerminalQ), user.settings & USER_COLOR))
 			user.settings |= USER_COLOR;
 		else
 			user.settings &= ~(USER_COLOR | USER_AUTOTERM);
-		if (options.mouse !== false && bbs.text(bbs.text.MouseTerminalQ) && console.yesno(bbs.text(bbs.text.MouseTerminalQ)))
+		if (options.mouse !== false && bbs.text(bbs.text.MouseTerminalQ)
+			&& confirm(bbs.text(bbs.text.MouseTerminalQ), user.settings & USER_MOUSE))
 			user.settings |= USER_MOUSE;
 		else
 			user.settings &= ~USER_MOUSE;
@@ -85,10 +99,11 @@ while(bbs.online && !js.terminated) {
 		console.putbyte(PETSCII_UPPERLOWER);
 		console.putmsg(bbs.text(bbs.text.PetTerminalDetected));
 	} else if (!(user.settings & USER_UTF8)) {
-		if (options.exascii !== false && !console.yesno(bbs.text(bbs.text.ExAsciiTerminalQ)))
-			user.settings |= USER_NO_EXASCII;
-		else
+		if (options.exascii === false
+			|| confirm(bbs.text(bbs.text.ExAsciiTerminalQ), !(user.settings & USER_NO_EXASCII)))
 			user.settings &= ~USER_NO_EXASCII;
+		else
+			user.settings |= USER_NO_EXASCII;
 	}
 	console.term_updated();
 
@@ -103,24 +118,25 @@ while(bbs.online && !js.terminated) {
 	if (!user.handle)
 		user.handle = user.alias;
 	user.handle = user.handle.trimRight();
-	if(system.newuser_questions & UQ_HANDLE)
+	if (system.newuser_questions & UQ_HANDLE)
 		prompts.get_handle();
-	if(system.newuser_questions & UQ_ADDRESS)
+	if (system.newuser_questions & UQ_ADDRESS)
 		prompts.get_address();
-	if(system.newuser_questions & (UQ_ADDRESS | UQ_LOCATION))
-		prompts.get_location();	
-	if(system.newuser_questions & UQ_ADDRESS)
+	if (system.newuser_questions & (UQ_ADDRESS | UQ_LOCATION))
+		prompts.get_location();
+	if (system.newuser_questions & UQ_ADDRESS)
 		prompts.get_zipcode();
-	if(system.newuser_questions & UQ_PHONE)
+	if (system.newuser_questions & UQ_PHONE)
 		prompts.get_phone();
-	if(system.newuser_questions & UQ_SEX)
+	if (system.newuser_questions & UQ_SEX)
 		prompts.get_gender();
-	if(system.newuser_questions & UQ_BIRTH)
+	if (system.newuser_questions & UQ_BIRTH)
 		prompts.get_birthdate();
-	if(!(system.newuser_questions & UQ_NONETMAIL))
+	if (!(system.newuser_questions & UQ_NONETMAIL))
 		prompts.get_netmail();
 
 	if (!bbs.text(bbs.text.UserInfoCorrectQ) || console.yesno(bbs.text(bbs.text.UserInfoCorrectQ)))
 		break;
+	prompts.ask_to_cancel();
 	console.print(gettext("Restarting new user registration") + "\r\n");
 }
