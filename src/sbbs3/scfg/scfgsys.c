@@ -2422,55 +2422,55 @@ void sys_cfg(void)
 							j = 0;
 							while (1) {
 								i = 0;
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
 								         , "Expert Menu Mode"
 								         , cfg.new_misc & EXPERT ? "Yes":"No");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
 								         , "Screen Pause"
 								         , cfg.new_misc & UPAUSE ? "Yes":"No");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
 								         , "Spinning Cursor"
 								         , cfg.new_misc & SPIN ? "Yes":"No");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
-								         , "Clear Screen"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
+								         , "Clear Screen Between Messages"
 								         , cfg.new_misc & CLRSCRN ? "Yes":"No");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
 								         , "Ask For New Scan"
 								         , cfg.new_misc & ASK_NSCAN ? "Yes":"No");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
 								         , "Ask For Your Msg Scan"
 								         , cfg.new_misc & ASK_SSCAN ? "Yes":"No");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
 								         , "Automatic New File Scan"
 								         , cfg.new_misc & ANFSCAN ? "Yes":"No");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
 								         , "Remember Current Sub-board"
 								         , cfg.new_misc & CURSUB ? "Yes":"No");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
-								         , "Batch Download File Flag"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
+								         , "Batch Download File Flagging"
 								         , cfg.new_misc & BATCHFLAG ? "Yes":"No");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
 								         , "Extended File Descriptions"
 								         , cfg.new_misc & EXTDESC ? "Yes":"No");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
-								         , "Hot Keys"
-								         , cfg.new_misc & COLDKEYS ? "No":"Yes");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
+								         , "Mouse-enabled Terminal"
+								         , cfg.new_misc & MOUSE ? "Yes":"No");
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
 								         , "Auto Hang-up After Xfer"
 								         , cfg.new_misc & AUTOHANG ? "Yes":"No");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
 								         , "Multinode Chat Echo"
 								         , cfg.new_chat & CHAT_ECHO ? "Yes":"No");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
 								         , "Multinode Chat Actions"
 								         , cfg.new_chat & CHAT_ACTION ? "Yes":"No");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
 								         , "Pageable for Chat"
 								         , cfg.new_chat & CHAT_NOPAGE ? "No":"Yes");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
 								         , "Node Activity Messages"
 								         , cfg.new_chat & CHAT_NOACT ? "No":"Yes");
-								snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
+								snprintf(opt[i++], MAX_OPLN, "%-32.32s %-3.3s"
 								         , "Split-Screen Private Chat"
 								         , cfg.new_chat & CHAT_SPLITP ? "Yes":"No");
 								opt[i][0] = 0;
@@ -2510,7 +2510,7 @@ void sys_cfg(void)
 										cfg.new_misc ^= EXTDESC;
 										break;
 									case 10:
-										cfg.new_misc ^= COLDKEYS;
+										cfg.new_misc ^= MOUSE;
 										break;
 									case 11:
 										cfg.new_misc ^= AUTOHANG;
