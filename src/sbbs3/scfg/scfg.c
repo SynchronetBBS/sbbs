@@ -62,14 +62,6 @@ char *          invalid_code =
 	"contain valid DOS filename characters. The code you have entered\n"
 	"contains one or more invalid characters.";
 
-char *num_flags =
-	"`Number of Flags Needed:`\n\n"
-	"If you want users to be required to have all the flags, select `All`.\n"
-	"\n"
-	"If you want users to be required to have any one or more of the flags,\n"
-	"select `One` (Allowed).";
-
-
 void allocfail(uint size)
 {
 	printf("\7Error allocating %u bytes of memory.\n", size);
@@ -1623,9 +1615,11 @@ int whichcond(void)
 	int i;
 
 	i = 0;
-	strcpy(opt[0], "AND (Both/All)");
-	strcpy(opt[1], "OR  (Either/Any)");
-	opt[2][0] = 0;
+	char* opt[] = {
+		"AND (Both/All)",
+	    "OR  (Either/Any)",
+	    NULL
+	};
 	uifc.helpbuf =
 		"`Select Logic for Multiple Requirements:`\n"
 		"\n"
@@ -1651,32 +1645,32 @@ void getar(const char *desc, char *inar)
 	SAFECOPY(ar, inar);
 	while (!done) {
 		len = strlen(ar);
-		if (len >= 30) { /* Needs to be shortened */
+		if (len >= (LEN_ARSTR - 10)) { /* Needs to be shortened */
 			str[0] = 0;
 			n = strlen(ar);
 			for (i = 0; i < n; i++) {       /* Shorten operators */
 				if (!strncmp(ar + i, "AND", 3)) {
-					strcat(str, "&");
+					SAFECAT(str, "&");
 					i += 2;
 				}
 				else if (!strncmp(ar + i, "NOT", 3)) {
-					strcat(str, "!");
+					SAFECAT(str, "!");
 					i += 2;
 				}
 				else if (!strncmp(ar + i, "EQUAL", 5)) {
-					strcat(str, "=");
+					SAFECAT(str, "=");
 					i += 4;
 				}
 				else if (!strncmp(ar + i, "EQUALS", 6)) {
-					strcat(str, "=");
+					SAFECAT(str, "=");
 					i += 5;
 				}
 				else if (!strncmp(ar + i, "EQUAL TO", 8)) {
-					strcat(str, "=");
+					SAFECAT(str, "=");
 					i += 7;
 				}
 				else if (!strncmp(ar + i, "OR", 2)) {
-					strcat(str, "|");
+					SAFECAT(str, "|");
 					i += 1;
 				}
 				else
@@ -1686,20 +1680,20 @@ void getar(const char *desc, char *inar)
 			len = strlen(ar);
 		}
 
-		if (len >= 30) {
+		if (len >= (LEN_ARSTR - 10)) {
 			str[0] = 0;
 			n = strlen(ar);
 			for (i = 0; i < n; i++) {       /* Remove spaces from ! and = */
 				if (!strncmp(ar + i, " ! ", 3)) {
-					strcat(str, "!");
+					SAFECAT(str, "!");
 					i += 2;
 				}
 				else if (!strncmp(ar + i, "= ", 2)) {
-					strcat(str, "=");
+					SAFECAT(str, "=");
 					i++;
 				}
 				else if (!strncmp(ar + i, " = ", 3)) {
-					strcat(str, "=");
+					SAFECAT(str, "=");
 					i += 2;
 				}
 				else
@@ -1709,16 +1703,16 @@ void getar(const char *desc, char *inar)
 			len = strlen(ar);
 		}
 
-		if (len >= 30) {
+		if (len >= (LEN_ARSTR - 10)) {
 			str[0] = 0;
 			n = strlen(ar);
 			for (i = 0; i < n; i++) {       /* Remove spaces from & and | */
 				if (!strncmp(ar + i, " & ", 3)) {
-					strcat(str, " ");
+					SAFECAT(str, " ");
 					i += 2;
 				}
 				else if (!strncmp(ar + i, " | ", 3)) {
-					strcat(str, "|");
+					SAFECAT(str, "|");
 					i += 2;
 				}
 				else
@@ -1728,7 +1722,7 @@ void getar(const char *desc, char *inar)
 			len = strlen(ar);
 		}
 
-		if (len >= 30) {            /* change week days to numbers */
+		if (len >= (LEN_ARSTR - 10)) {            /* change week days to numbers */
 			str[0] = 0;
 			n = strlen(ar);
 			for (i = 0; i < n; i++) {
@@ -1745,108 +1739,108 @@ void getar(const char *desc, char *inar)
 			len = strlen(ar);
 		}
 
-		if (len >= 30) {          /* Shorten parameters */
+		if (len >= (LEN_ARSTR - 10)) {          /* Shorten parameters */
 			str[0] = 0;
 			n = strlen(ar);
 			for (i = 0; i < n; i++) {
 				if (!strncmp(ar + i, "AGE", 3)) {
-					strcat(str, "$A");
+					SAFECAT(str, "$A");
 					i += 2;
 				}
 				else if (!strncmp(ar + i, "BPS", 3)) {
-					strcat(str, "$B");
+					SAFECAT(str, "$B");
 					i += 2;
 				}
 				else if (!strncmp(ar + i, "PCR", 3)) {
-					strcat(str, "$P");
+					SAFECAT(str, "$P");
 					i += 2;
 				}
 				else if (!strncmp(ar + i, "RIP", 3)) {
-					strcat(str, "$*");
+					SAFECAT(str, "$*");
 					i += 2;
 				}
 				else if (!strncmp(ar + i, "SEX", 3)) {
-					strcat(str, "$S");
+					SAFECAT(str, "$S");
 					i += 2;
 				}
 				else if (!strncmp(ar + i, "UDR", 3)) {
-					strcat(str, "$K");
+					SAFECAT(str, "$K");
 					i += 2;
 				}
 				else if (!strncmp(ar + i, "DAY", 3)) {
-					strcat(str, "$W");
+					SAFECAT(str, "$W");
 					i += 2;
 				}
 				else if (!strncmp(ar + i, "ANSI", 4)) {
-					strcat(str, "$[");
+					SAFECAT(str, "$[");
 					i += 3;
 				}
 				else if (!strncmp(ar + i, "UDFR", 4)) {
-					strcat(str, "$D");
+					SAFECAT(str, "$D");
 					i += 3;
 				}
 				else if (!strncmp(ar + i, "FLAG", 4)) {
-					strcat(str, "$F");
+					SAFECAT(str, "$F");
 					i += 3;
 				}
 				else if (!strncmp(ar + i, "NODE", 4)) {
-					strcat(str, "$N");
+					SAFECAT(str, "$N");
 					i += 3;
 				}
 				else if (!strncmp(ar + i, "NULL", 4)) {
-					strcat(str, "$0");
+					SAFECAT(str, "$0");
 					i += 3;
 				}
 				else if (!strncmp(ar + i, "TIME", 4)) {
-					strcat(str, "$T");
+					SAFECAT(str, "$T");
 					i += 3;
 				}
 				else if (!strncmp(ar + i, "USER", 4)) {
-					strcat(str, "$U");
+					SAFECAT(str, "$U");
 					i += 3;
 				}
 				else if (!strncmp(ar + i, "REST", 4)) {
-					strcat(str, "$Z");
+					SAFECAT(str, "$Z");
 					i += 3;
 				}
 				else if (!strncmp(ar + i, "LOCAL", 5)) {
-					strcat(str, "$G");
+					SAFECAT(str, "$G");
 					i += 4;
 				}
 				else if (!strncmp(ar + i, "LEVEL", 5)) {
-					strcat(str, "$L");
+					SAFECAT(str, "$L");
 					i += 4;
 				}
 				else if (!strncmp(ar + i, "TLEFT", 5)) {
-					strcat(str, "$R");
+					SAFECAT(str, "$R");
 					i += 4;
 				}
 				else if (!strncmp(ar + i, "TUSED", 5)) {
-					strcat(str, "$O");
+					SAFECAT(str, "$O");
 					i += 4;
 				}
 				else if (!strncmp(ar + i, "EXPIRE", 6)) {
-					strcat(str, "$E");
+					SAFECAT(str, "$E");
 					i += 5;
 				}
 				else if (!strncmp(ar + i, "CREDIT", 6)) {
-					strcat(str, "$C");
+					SAFECAT(str, "$C");
 					i += 5;
 				}
 				else if (!strncmp(ar + i, "EXEMPT", 6)) {
-					strcat(str, "$X");
+					SAFECAT(str, "$X");
 					i += 5;
 				}
 				else if (!strncmp(ar + i, "RANDOM", 6)) {
-					strcat(str, "$Q");
+					SAFECAT(str, "$Q");
 					i += 5;
 				}
 				else if (!strncmp(ar + i, "LASTON", 6)) {
-					strcat(str, "$Y");
+					SAFECAT(str, "$Y");
 					i += 5;
 				}
 				else if (!strncmp(ar + i, "LOGONS", 6)) {
-					strcat(str, "$V");
+					SAFECAT(str, "$V");
 					i += 5;
 				}
 				else if (!strncmp(ar + i, ":00", 3)) {
@@ -1858,7 +1852,7 @@ void getar(const char *desc, char *inar)
 			SAFECOPY(ar, str);
 			len = strlen(ar);
 		}
-		if (len >= 30) {          /* Remove all spaces and &s */
+		if (len >= (LEN_ARSTR - 10)) {          /* Remove all spaces and &s */
 			str[0] = 0;
 			n = strlen(ar);
 			for (i = 0; i < n; i++)
@@ -1869,21 +1863,20 @@ void getar(const char *desc, char *inar)
 		i = 0;
 		snprintf(opt[i++], MAX_OPLN, "Requirement String (%s)", ar);
 		strcpy(opt[i++], "Clear Requirements");
-		strcpy(opt[i++], "Set Required Level");
-		strcpy(opt[i++], "Set Required Flag");
+		strcpy(opt[i++], "Set Required Terminal Type/Capability");
+		strcpy(opt[i++], "Set Required User Type (e.g. Sysop, Guest)");
+		strcpy(opt[i++], "Set Required Security Level");
+		strcpy(opt[i++], "Set Required Security Flag");
 		strcpy(opt[i++], "Set Required Age");
-		strcpy(opt[i++], "Set Required Sex");
-		strcpy(opt[i++], "Set Required Connect Rate");
+		strcpy(opt[i++], "Set Required Gender");
 		strcpy(opt[i++], "Set Required Post/Call Ratio (percentage)");
 		strcpy(opt[i++], "Set Required Number of Credits");
 		strcpy(opt[i++], "Set Required Upload/Download Byte Ratio (percentage)");
 		strcpy(opt[i++], "Set Required Upload/Download File Ratio (percentage)");
 		strcpy(opt[i++], "Set Required Time of Day");
 		strcpy(opt[i++], "Set Required Day of Week");
-		strcpy(opt[i++], "Set Required Node Number");
 		strcpy(opt[i++], "Set Required User Number");
 		strcpy(opt[i++], "Set Required Time Remaining");
-		strcpy(opt[i++], "Set Required Days Till Expiration");
 		opt[i][0] = 0;
 		uifc.helpbuf =
 			"`Access Requirements:`\n"
@@ -1894,7 +1887,12 @@ void getar(const char *desc, char *inar)
 			"options from this menu to automatically fill in the string for you.\n"
 		;
 		sprintf(str, "%s Requirements", desc);
-		switch (uifc.list(WIN_ACT | WIN_MID | WIN_SAV, 0, 0, 60, &curar, 0, str, opt)) {
+		i = uifc.list(WIN_ACT | WIN_MID | WIN_SAV, 0, 0, 60, &curar, 0, str, opt);
+		if (i > 1 && strlen(ar) >= (LEN_ARSTR - 10)) {
+			uifc.msg("Maximum string length reached");
+			continue;
+		}
+		switch (i) {
 			case -1:
 				done = 1;
 				break;
@@ -1906,17 +1904,20 @@ void getar(const char *desc, char *inar)
 					"NOT          !         Logical negation (i.e. NOT EQUAL)\n"
 					"EQUAL        =         Equality required\n"
 					"OR           |         Either of two or more parameters is required\n"
-					"AGE          $         User's age (years since birth date, 0-255)\n"
-					"BPS          $         User's current connect rate (bps)\n"
-					"FLAG         $         User's flag (A-Z)\n"
-					"LEVEL        $         User's level (0-99)\n"
-					"NODE         $         Current node (1-250)\n"
-					"PCR          $         User's post/call ratio (0-100)\n"
-					"SEX          $         User's sex/gender (e.g. M or F)\n"
-					"TIME         $         Time of day (HH:MM, 00:00-23:59)\n"
-					"TLEFT        $         User's time left online (minutes, 0-255)\n"
-					"TUSED        $         User's time online this call (minutes, 0-255)\n"
-					"USER         $         User's number (1-xxxx)\n"
+					"AGE          $A        User's age (years since birth date, 0-255)\n"
+					"FLAG         $F        User's flag (A-Z)\n"
+					"LEVEL        $L        User's level (0-99)\n"
+					"PCR          $P        User's post/call ratio (0-100)\n"
+					"SEX          $S        User's sex/gender (e.g. M, F)\n"
+					"TIME         $T        Time of day (HH:MM, 00:00-23:59)\n"
+					"TLEFT        $R        User's time left online (minutes, 0-255)\n"
+					"TUSED        $O        User's time online this call (minutes, 0-255)\n"
+					"USER         $U        User's number (1-xxxx)\n"
+					"ANSI         $[        ANSI Terminal in use\n"
+					"COLS                   Terminal columns (e.g. 80)\n"
+					"             ()        Nested requirements (mixing AND and OR logic)\n"
+					"                       `... and a lot more ...`\n"
+					"                       see `https://wiki.synchro.net/access:requirements`\n"
 				;
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Requirement String", ar, LEN_ARSTR
 				           , K_EDIT | K_UPPER);
@@ -1936,21 +1937,80 @@ void getar(const char *desc, char *inar)
 				}
 				break;
 			case 2:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
+				i = 0;
+				snprintf(opt[i++], MAX_OPLN, "ANSI");
+				snprintf(opt[i++], MAX_OPLN, "RIP");
+				snprintf(opt[i++], MAX_OPLN, "PETSCII");
+				snprintf(opt[i++], MAX_OPLN, "ASCII");
+				snprintf(opt[i++], MAX_OPLN, "CP437");
+				snprintf(opt[i++], MAX_OPLN, "UTF8");
+				opt[i][0] = 0;
+				i = 0;
+				uifc.helpbuf =
+					"`Required Terminal Flag:`\n"
+					"\n"
+					"You are being prompted to select a terminal type or capability flag\n"
+					"to be included in this requirement evaluation.\n"
+				;
+				static int term_cur;
+				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &term_cur, 0, "Select Terminal Flag", opt);
+				if (i < 0)
 					break;
+				if (ar[0]) {
+					j = whichcond();
+					if (j == -1)
+						break;
+					if (!j)
+						SAFECAT(ar, " AND ");
+					else
+						SAFECAT(ar, " OR ");
 				}
+				SAFECAT(ar, opt[i]);
+				break;
+			case 3:
+				i = 0;
+				snprintf(opt[i++], MAX_OPLN, "GUEST");
+				snprintf(opt[i++], MAX_OPLN, "SYSOP");
+				snprintf(opt[i++], MAX_OPLN, "QNODE");
+				opt[i][0] = 0;
+				i = 0;
+				uifc.helpbuf =
+					"`Required User Type:`\n"
+					"\n"
+					"You are being prompted to select a user category to be included in this\n"
+					"requirement evaluation.\n"
+					"\n"
+					"`GUEST` = One and only G-restricted account on the system, usually\n"
+					"`SYSOP` = Any user with security level >= 90 or temporary sysop status\n"
+					"`QNODE` = A QWK Network Node account\n"
+				;
+				static int user_type_cur;
+				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &user_type_cur, 0, "Select User Type", opt);
+				if (i < 0)
+					break;
+				if (ar[0]) {
+					j = whichcond();
+					if (j == -1)
+						break;
+					if (!j)
+						SAFECAT(ar, " AND ");
+					else
+						SAFECAT(ar, " OR ");
+				}
+				SAFECAT(ar, opt[i]);
+				break;
+			case 4:
 				i = whichlogic();
 				if (i == -1)
 					break;
 				str[0] = 0;
 				uifc.helpbuf =
-					"`Required Level:`\n"
+					"`Required Security Level:`\n"
 					"\n"
 					"You are being prompted to enter the security level to be used in this\n"
 					"requirement evaluation. The valid range is 0 (zero) through 99.\n"
 				;
-				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Level", str, 2, K_NUMBER);
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Security Level", str, 2, K_NUMBER);
 				if (!str[0])
 					break;
 				if (ar[0]) {
@@ -1958,30 +2018,25 @@ void getar(const char *desc, char *inar)
 					if (j == -1)
 						break;
 					if (!j)
-						strcat(ar, " AND ");
+						SAFECAT(ar, " AND ");
 					else
-						strcat(ar, " OR ");
+						SAFECAT(ar, " OR ");
 				}
-				strcat(ar, "LEVEL ");
+				SAFECAT(ar, "LEVEL ");
 				switch (i) {
 					case 1:
-						strcat(ar, "= ");
+						SAFECAT(ar, "= ");
 						break;
 					case 2:
-						strcat(ar, "NOT = ");
+						SAFECAT(ar, "NOT = ");
 						break;
 					case 3:
-						strcat(ar, "NOT ");
+						SAFECAT(ar, "NOT ");
 						break;
 				}
-				strcat(ar, str);
+				SAFECAT(ar, str);
 				break;
-			case 3:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
-					break;
-				}
-
+			case 5:
 				for (i = 0; i < 4; i++)
 					snprintf(opt[i], MAX_OPLN, "Flag Set #%d", i + 1);
 				opt[i][0] = 0;
@@ -1991,12 +2046,12 @@ void getar(const char *desc, char *inar)
 					break;
 				str[0] = 0;
 				uifc.helpbuf =
-					"`Required Flag:`\n"
+					"`Required Security Flag:`\n"
 					"\n"
 					"You are being prompted to enter the security flag to be used in this\n"
 					"requirement evaluation. The valid range is A through Z.\n"
 				;
-				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Flag (A-Z)", str, 1
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Security Flag (A-Z)", str, 1
 				           , K_UPPER | K_ALPHA);
 				if (!str[0])
 					break;
@@ -2005,20 +2060,16 @@ void getar(const char *desc, char *inar)
 					if (j == -1)
 						break;
 					if (!j)
-						strcat(ar, " AND ");
+						SAFECAT(ar, " AND ");
 					else
-						strcat(ar, " OR ");
+						SAFECAT(ar, " OR ");
 				}
-				strcat(ar, "FLAG ");
+				SAFECAT(ar, "FLAG ");
 				if (i)
-					strcat(ar, ultoa(i + 1, tmp, 10));
-				strcat(ar, str);
+					SAFECAT(ar, ultoa(i + 1, tmp, 10));
+				SAFECAT(ar, str);
 				break;
-			case 4:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
-					break;
-				}
+			case 6:
 				i = whichlogic();
 				if (i == -1)
 					break;
@@ -2037,38 +2088,33 @@ void getar(const char *desc, char *inar)
 					if (j == -1)
 						break;
 					if (!j)
-						strcat(ar, " AND ");
+						SAFECAT(ar, " AND ");
 					else
-						strcat(ar, " OR ");
+						SAFECAT(ar, " OR ");
 				}
-				strcat(ar, "AGE ");
+				SAFECAT(ar, "AGE ");
 				switch (i) {
 					case 1:
-						strcat(ar, "= ");
+						SAFECAT(ar, "= ");
 						break;
 					case 2:
-						strcat(ar, "NOT = ");
+						SAFECAT(ar, "NOT = ");
 						break;
 					case 3:
-						strcat(ar, "NOT ");
+						SAFECAT(ar, "NOT ");
 						break;
 				}
-				strcat(ar, str);
+				SAFECAT(ar, str);
 				break;
-			case 5:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
-					break;
-				}
+			case 7:
 				str[0] = 0;
 				uifc.helpbuf =
-					"`Required Sex:`\n"
+					"`Required Gender:`\n"
 					"\n"
 					"You are being prompted to enter the user's gender to be used in this\n"
-					"requirement evaluation. The valid values are M or F (for male or\n"
-					"female).\n"
+					"requirement evaluation.\n"
 				;
-				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Sex (M or F)", str, 1
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Gender (e.g. M, F, X)", str, 1
 				           , K_UPPER | K_ALPHA);
 				if (!str[0])
 					break;
@@ -2077,64 +2123,14 @@ void getar(const char *desc, char *inar)
 					if (j == -1)
 						break;
 					if (!j)
-						strcat(ar, " AND ");
+						SAFECAT(ar, " AND ");
 					else
-						strcat(ar, " OR ");
+						SAFECAT(ar, " OR ");
 				}
-				strcat(ar, "SEX ");
-				strcat(ar, str);
+				SAFECAT(ar, "SEX ");
+				SAFECAT(ar, str);
 				break;
-			case 6:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
-					break;
-				}
-				i = whichlogic();
-				if (i == -1)
-					break;
-				str[0] = 0;
-				uifc.helpbuf =
-					"`Required Connect Rate (BPS):`\n"
-					"\n"
-					"You are being prompted to enter the connect rate to be used in this\n"
-					"requirement evaluation. The valid range is 300 through 57600.\n"
-				;
-				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Connect Rate (BPS)", str, 5, K_NUMBER);
-				if (!str[0])
-					break;
-				j = atoi(str);
-				if (j >= 300 && j < 30000) {
-					j /= 100;
-					sprintf(str, "%d", j);
-				}
-				if (ar[0]) {
-					j = whichcond();
-					if (j == -1)
-						break;
-					if (!j)
-						strcat(ar, " AND ");
-					else
-						strcat(ar, " OR ");
-				}
-				strcat(ar, "BPS ");
-				switch (i) {
-					case 1:
-						strcat(ar, "= ");
-						break;
-					case 2:
-						strcat(ar, "NOT = ");
-						break;
-					case 3:
-						strcat(ar, "NOT ");
-						break;
-				}
-				strcat(ar, str);
-				break;
-			case 7:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
-					break;
-				}
+			case 8:
 				i = whichlogic();
 				if (i == -1)
 					break;
@@ -2154,29 +2150,25 @@ void getar(const char *desc, char *inar)
 					if (j == -1)
 						break;
 					if (!j)
-						strcat(ar, " AND ");
+						SAFECAT(ar, " AND ");
 					else
-						strcat(ar, " OR ");
+						SAFECAT(ar, " OR ");
 				}
-				strcat(ar, "PCR ");
+				SAFECAT(ar, "PCR ");
 				switch (i) {
 					case 1:
-						strcat(ar, "= ");
+						SAFECAT(ar, "= ");
 						break;
 					case 2:
-						strcat(ar, "NOT = ");
+						SAFECAT(ar, "NOT = ");
 						break;
 					case 3:
-						strcat(ar, "NOT ");
+						SAFECAT(ar, "NOT ");
 						break;
 				}
-				strcat(ar, str);
+				SAFECAT(ar, str);
 				break;
-			case 8:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
-					break;
-				}
+			case 9:
 				i = whichlogic();
 				if (i == -1)
 					break;
@@ -2196,29 +2188,25 @@ void getar(const char *desc, char *inar)
 					if (j == -1)
 						break;
 					if (!j)
-						strcat(ar, " AND ");
+						SAFECAT(ar, " AND ");
 					else
-						strcat(ar, " OR ");
+						SAFECAT(ar, " OR ");
 				}
-				strcat(ar, "CREDIT ");
+				SAFECAT(ar, "CREDIT ");
 				switch (i) {
 					case 1:
-						strcat(ar, "= ");
+						SAFECAT(ar, "= ");
 						break;
 					case 2:
-						strcat(ar, "NOT = ");
+						SAFECAT(ar, "NOT = ");
 						break;
 					case 3:
-						strcat(ar, "NOT ");
+						SAFECAT(ar, "NOT ");
 						break;
 				}
-				strcat(ar, str);
+				SAFECAT(ar, str);
 				break;
-			case 9:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
-					break;
-				}
+			case 10:
 				i = whichlogic();
 				if (i == -1)
 					break;
@@ -2240,29 +2228,25 @@ void getar(const char *desc, char *inar)
 					if (j == -1)
 						break;
 					if (!j)
-						strcat(ar, " AND ");
+						SAFECAT(ar, " AND ");
 					else
-						strcat(ar, " OR ");
+						SAFECAT(ar, " OR ");
 				}
-				strcat(ar, "UDR ");
+				SAFECAT(ar, "UDR ");
 				switch (i) {
 					case 1:
-						strcat(ar, "= ");
+						SAFECAT(ar, "= ");
 						break;
 					case 2:
-						strcat(ar, "NOT = ");
+						SAFECAT(ar, "NOT = ");
 						break;
 					case 3:
-						strcat(ar, "NOT ");
+						SAFECAT(ar, "NOT ");
 						break;
 				}
-				strcat(ar, str);
+				SAFECAT(ar, str);
 				break;
-			case 10:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
-					break;
-				}
+			case 11:
 				i = whichlogic();
 				if (i == -1)
 					break;
@@ -2285,29 +2269,25 @@ void getar(const char *desc, char *inar)
 					if (j == -1)
 						break;
 					if (!j)
-						strcat(ar, " AND ");
+						SAFECAT(ar, " AND ");
 					else
-						strcat(ar, " OR ");
+						SAFECAT(ar, " OR ");
 				}
-				strcat(ar, "UDFR ");
+				SAFECAT(ar, "UDFR ");
 				switch (i) {
 					case 1:
-						strcat(ar, "= ");
+						SAFECAT(ar, "= ");
 						break;
 					case 2:
-						strcat(ar, "NOT = ");
+						SAFECAT(ar, "NOT = ");
 						break;
 					case 3:
-						strcat(ar, "NOT ");
+						SAFECAT(ar, "NOT ");
 						break;
 				}
-				strcat(ar, str);
+				SAFECAT(ar, str);
 				break;
-			case 11:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
-					break;
-				}
+			case 12:
 				i = 0;
 				strcpy(opt[0], "Before");
 				strcpy(opt[1], "After");
@@ -2331,20 +2311,16 @@ void getar(const char *desc, char *inar)
 					if (j == -1)
 						break;
 					if (!j)
-						strcat(ar, " AND ");
+						SAFECAT(ar, " AND ");
 					else
-						strcat(ar, " OR ");
+						SAFECAT(ar, " OR ");
 				}
-				strcat(ar, "TIME ");
+				SAFECAT(ar, "TIME ");
 				if (!i)
-					strcat(ar, "NOT ");
-				strcat(ar, str);
+					SAFECAT(ar, "NOT ");
+				SAFECAT(ar, str);
 				break;
-			case 12:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
-					break;
-				}
+			case 13:
 				i = whichlogic();
 				if (i == -1)
 					break;
@@ -2368,70 +2344,25 @@ void getar(const char *desc, char *inar)
 					if (j == -1)
 						break;
 					if (!j)
-						strcat(ar, " AND ");
+						SAFECAT(ar, " AND ");
 					else
-						strcat(ar, " OR ");
+						SAFECAT(ar, " OR ");
 				}
-				strcat(ar, "DAY ");
+				SAFECAT(ar, "DAY ");
 				switch (i) {
 					case 1:
-						strcat(ar, "= ");
+						SAFECAT(ar, "= ");
 						break;
 					case 2:
-						strcat(ar, "NOT = ");
+						SAFECAT(ar, "NOT = ");
 						break;
 					case 3:
-						strcat(ar, "NOT ");
+						SAFECAT(ar, "NOT ");
 						break;
 				}
-				strcat(ar, str);
-				break;
-			case 13:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
-					break;
-				}
-				i = whichlogic();
-				if (i == -1)
-					break;
-				str[0] = 0;
-				uifc.helpbuf =
-					"`Required Node:`\n"
-					"\n"
-					"You are being prompted to enter the number of a node to be used in this\n"
-					"requirement evaluation. The valid range is 1 through 250.\n"
-				;
-				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Node Number", str, 3, K_NUMBER);
-				if (!str[0])
-					break;
-				if (ar[0]) {
-					j = whichcond();
-					if (j == -1)
-						break;
-					if (!j)
-						strcat(ar, " AND ");
-					else
-						strcat(ar, " OR ");
-				}
-				strcat(ar, "NODE ");
-				switch (i) {
-					case 1:
-						strcat(ar, "= ");
-						break;
-					case 2:
-						strcat(ar, "NOT = ");
-						break;
-					case 3:
-						strcat(ar, "NOT ");
-						break;
-				}
-				strcat(ar, str);
+				SAFECAT(ar, str);
 				break;
 			case 14:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
-					break;
-				}
 				i = whichlogic();
 				if (i == -1)
 					break;
@@ -2450,30 +2381,26 @@ void getar(const char *desc, char *inar)
 					if (j == -1)
 						break;
 					if (!j)
-						strcat(ar, " AND ");
+						SAFECAT(ar, " AND ");
 					else
-						strcat(ar, " OR ");
+						SAFECAT(ar, " OR ");
 				}
-				strcat(ar, "USER ");
+				SAFECAT(ar, "USER ");
 				switch (i) {
 					case 1:
-						strcat(ar, "= ");
+						SAFECAT(ar, "= ");
 						break;
 					case 2:
-						strcat(ar, "NOT = ");
+						SAFECAT(ar, "NOT = ");
 						break;
 					case 3:
-						strcat(ar, "NOT ");
+						SAFECAT(ar, "NOT ");
 						break;
 				}
-				strcat(ar, str);
+				SAFECAT(ar, str);
 				break;
 
 			case 15:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
-					break;
-				}
 				i = whichlogic();
 				if (i == -1)
 					break;
@@ -2493,68 +2420,24 @@ void getar(const char *desc, char *inar)
 					if (j == -1)
 						break;
 					if (!j)
-						strcat(ar, " AND ");
+						SAFECAT(ar, " AND ");
 					else
-						strcat(ar, " OR ");
+						SAFECAT(ar, " OR ");
 				}
-				strcat(ar, "TLEFT ");
+				SAFECAT(ar, "TLEFT ");
 				switch (i) {
 					case 1:
-						strcat(ar, "= ");
+						SAFECAT(ar, "= ");
 						break;
 					case 2:
-						strcat(ar, "NOT = ");
+						SAFECAT(ar, "NOT = ");
 						break;
 					case 3:
-						strcat(ar, "NOT ");
+						SAFECAT(ar, "NOT ");
 						break;
 				}
-				strcat(ar, str);
+				SAFECAT(ar, str);
 				break;
-
-			case 16:
-				if (strlen(ar) >= 30) {
-					uifc.msg("Maximum string length reached");
-					break;
-				}
-				i = whichlogic();
-				if (i == -1)
-					break;
-				str[0] = 0;
-				uifc.helpbuf =
-					"`Required Days Till User Account Expiration:`\n"
-					"\n"
-					"You are being prompted to enter the required number of days till the\n"
-					"user's account will expire.\n"
-				;
-				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Days Till Expiration"
-				           , str, 5, K_NUMBER);
-				if (!str[0])
-					break;
-				if (ar[0]) {
-					j = whichcond();
-					if (j == -1)
-						break;
-					if (!j)
-						strcat(ar, " AND ");
-					else
-						strcat(ar, " OR ");
-				}
-				strcat(ar, "EXPIRE ");
-				switch (i) {
-					case 1:
-						strcat(ar, "= ");
-						break;
-					case 2:
-						strcat(ar, "NOT = ");
-						break;
-					case 3:
-						strcat(ar, "NOT ");
-						break;
-				}
-				strcat(ar, str);
-				break;
-
 		}
 	}
 	sprintf(inar, "%.*s", LEN_ARSTR, ar);
