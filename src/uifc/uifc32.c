@@ -2748,8 +2748,10 @@ void upop(const char *instr, ...)
 
 	va_list va;
 	va_start(va, instr);
-	vasprintf(&str, instr, va);
+	i = vasprintf(&str, instr, va);
 	va_end(va);
+	if (i < 0)
+		return;
 
 	width = strlen(str);
 	if (!width) {
