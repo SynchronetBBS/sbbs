@@ -23,7 +23,7 @@ while(bbs.online && !(console.aborted)) {
 	}
 	bbs.nodesync();
 	console.print("\1n\r\n\xfe \1b\1h" + gettext("Private") + " \1n\xfe ");
-	console.mnemonics("~Telegram, ~Message, ~Chat, ~InterBBS, ~View, or [~@Quit@]: ");
+	console.mnemonics("~Telegram, ~Message, ~Chat,\1\\ ~InterBBS, ~View, or [~@Quit@]: ");
 	bbs.sys_status&=~SS_ABORT;
 	var ch;
 	var keys = "TMCIV\r" + console.quit_key;
