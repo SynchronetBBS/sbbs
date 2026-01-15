@@ -35,6 +35,10 @@ function get_alias(user)
 	while (prompt && bbs.online) {
 		console.putmsg(prompt, P_SAVEATR);
 		var alias = console.getstr(user.alias, LEN_ALIAS, kmode);
+		if (console.aborted) {
+			ask_to_cancel();
+			continue;
+		}
 		if (!system.check_name(alias)
 			|| bbs.matchuserdata(U_NAME, alias)
 			|| (!(system.newuser_questions & UQ_ALIASES) && !system.check_realname(alias))) {
@@ -55,6 +59,10 @@ function get_name(user)
 		while (bbs.online && bbs.text(bbs.text.EnterYourRealName)) {
 			console.putmsg(bbs.text(bbs.text.EnterYourRealName), P_SAVEATR);
 			var name = console.getstr(user.name, LEN_NAME, kmode);
+			if (console.aborted) {
+				ask_to_cancel();
+				continue;
+			}
 			if (!system.check_name(name, /* unique: */true)
 				|| !system.check_realname(name)
 				|| ((system.newuser_questions & UQ_DUPREAL)
@@ -70,6 +78,8 @@ function get_name(user)
 	else if (system.newuser_questions & UQ_COMPANY && bbs.text(bbs.text.EnterYourCompany)) {
 		console.putmsg(bbs.text(bbs.text.EnterYourCompany), P_SAVEATR);
 		user.name = console.getstr(user.name, LEN_NAME, kmode);
+		if (console.aborted)
+			ask_to_cancel();
 	}
 }
 
@@ -79,8 +89,11 @@ function get_handle(user)
 		user = js.global.user;
 	while (bbs.online && bbs.text(bbs.text.EnterYourHandle)) {
 		console.putmsg(bbs.text(bbs.text.EnterYourHandle), P_SAVEATR);
-		var handle = console.getstr(user.handle, LEN_HANDLE
-					, K_LINE | K_EDIT | K_AUTODEL | K_TRIM | (system.newuser_questions & UQ_NOEXASC));
+		var handle = console.getstr(user.handle, LEN_HANDLE, kmode | K_LINE);
+		if (console.aborted) {
+			ask_to_cancel();
+			continue;
+		}
 		if (!handle
 			|| handle.indexOf(0xff) >= 0
 			|| ((system.newuser_questions & UQ_DUPHAND)
@@ -102,6 +115,10 @@ function get_address(user)
 	while (bbs.online && bbs.text(bbs.text.EnterYourAddress)) {
 		console.putmsg(bbs.text(bbs.text.EnterYourAddress), P_SAVEATR);
 		user.address = console.getstr(user.address, LEN_ADDRESS, kmode)
+		if (console.aborted) {
+			ask_to_cancel();
+			continue;
+		}
 		if (user.address)
 			break;
 		ask_to_cancel(gettext("Sorry, that address is not acceptable"));
@@ -115,6 +132,10 @@ function get_location(user)
 	while (bbs.online && bbs.text(bbs.text.EnterYourCityState)) {
 		console.putmsg(bbs.text(bbs.text.EnterYourCityState), P_SAVEATR);
 		var location = console.getstr(user.location, LEN_LOCATION, kmode)
+		if (console.aborted) {
+			ask_to_cancel();
+			continue;
+		}
 		if (!(system.newuser_questions & UQ_NOCOMMAS) && location.indexOf(',') < 1)
 			ask_to_cancel(bbs.text(bbs.text.CommaInLocationRequired));
 		else if(location) {
@@ -130,8 +151,11 @@ function get_zipcode(user)
 		user = js.global.user;
 	while (bbs.online && bbs.text(bbs.text.EnterYourZipCode)) {
 		console.putmsg(bbs.text(bbs.text.EnterYourZipCode), P_SAVEATR);
-		var zipcode = console.getstr(user.zipcode, LEN_ZIPCODE
-						, K_UPPER | (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL | K_TRIM);
+		var zipcode = console.getstr(user.zipcode, LEN_ZIPCODE, kmode | K_UPPER);
+		if (console.aborted) {
+			ask_to_cancel();
+			continue;
+		}
 		if (zipcode) {
 			user.zipcode = zipcode;
 			break;
@@ -152,16 +176,22 @@ function get_phone(user)
 			console.putmsg(bbs.text(bbs.text.EnterYourPhoneNumber));
 			var phone;
 			if (!usa) {
-				phone = console.getstr(user.phone, LEN_PHONE
-								, K_UPPER | K_LINE | (system.newuser_questions & UQ_NOEXASC) | K_EDIT | K_AUTODEL | K_TRIM);
+				phone = console.getstr(user.phone, LEN_PHONE, kmode | K_LINE);
+				if (console.aborted) {
+					ask_to_cancel();
+					continue;
+				}
 				if (phone.length < 5) {
 					ask_to_cancel(gettext("Sorry, that phone number is not acceptable"));
 					continue;
 				}
 			}
 			else {
-				phone = console.gettemplate(system.phonenumber_template, user.phone
-								, K_LINE | (system.newuser_questions & UQ_NOEXASC) | K_EDIT);
+				phone = console.gettemplate(system.phonenumber_template, user.phone, kmode | K_LINE);
+				if (console.aborted) {
+					ask_to_cancel();
+					continue;
+				}
 				if (phone.length < system.phonenumber_template.length) {
 					ask_to_cancel(gettext("Sorry, that phone number is not acceptable"));
 					continue;
@@ -183,6 +213,10 @@ function get_gender(user)
 	while (bbs.text(bbs.text.EnterYourGender) && bbs.atcode("GENDERS") && bbs.online) {
 		console.putmsg(bbs.text(bbs.text.EnterYourGender));
 		var gender = console.getkeys(bbs.atcode("GENDERS"), 0);
+		if (console.aborted) {
+			ask_to_cancel();
+			continue;
+		}
 		if (gender) {
 			user.gender = gender;
 			break;
@@ -198,6 +232,10 @@ function get_birthdate(user)
 	while (bbs.online && bbs.text(bbs.text.EnterYourBirthday)) {
 		console.putmsg(format(bbs.text(bbs.text.EnterYourBirthday), system.birthdate_format), P_SAVEATR);
 		var birthdate = console.gettemplate(system.birthdate_template, bbs.atcode("BIRTH"), K_EDIT);
+		if (console.aborted) {
+			ask_to_cancel();
+			continue;
+		}
 		if (birthdate.length != system.birthdate_template.length)
 			continue;
 		if (typeof system.check_birthdate != "function" || system.check_birthdate(birthdate)) {
@@ -214,7 +252,11 @@ function get_netmail(user)
 		user = js.global.user;
 	while (bbs.online && bbs.text(bbs.text.EnterNetMailAddress)) {
 		console.putmsg(bbs.text(bbs.text.EnterNetMailAddress));
-		var netmail = console.getstr(user.netmail, LEN_NETMAIL, K_EDIT | K_AUTODEL | K_LINE | K_TRIM);
+		var netmail = console.getstr(user.netmail, LEN_NETMAIL, kmode | K_LINE);
+		if (console.aborted) {
+			ask_to_cancel();
+			continue;
+		}
 		if (!netmail
 			|| bbs.trashcan(netmail, "email")
 			|| ((system.newuser_questions & UQ_DUPNETMAIL) && bbs.matchuserdata(U_NETMAIL, netmail)))
