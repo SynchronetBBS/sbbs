@@ -156,19 +156,20 @@
 "\1n\1?\1mSending message to \1h%s\r\n"                121 SendingMessageToUser
 "\r\n\1r\1hNo other active nodes.\1n\r\n"                 122 NoOtherActiveNodes
 "\1?You can't use the external programs.\r\n"             123 R_ExternalPrograms
-"\r\n\1-\1gUsage Statistics for \1h%s #%d\1n\r\n\r\n"       124 UserStats
-"\1-\1gSub-boards of \1h%-40s       \1n\1gPosts"\             125 SubLstHdr
+"\r\n\1-\1gUsage Statistics for \1h%s #%d\1n\r\n\r\n"     124 UserStats
+"\1-\1gSub-boards of \1h%-60.60s \1n\1gMsgs"\             125 SubLstHdr
 	"\r\n\r\n\1h"
-"\1n\1g[\1h%u\1n\1g] %-40s %12s \1h%5u\r\n"                  126 SubLstFmt
-"\r\n\1q\1_\1g\1hMessage Groups\1n\1g                    "\     127 GrpLstHdr
-	"                        Sub-boards\r\n\r\n\1h"
-"\1n\1g[\1h%u\1n\1g] %-40s %12s \1h%4u\r\n"                  128 GrpLstFmt
+"\1n\1g[\1h%u\1n\1g] %-60.60s %.0s\1h%11u\r\n"            126 SubLstFmt
+"\r\n\1q\1_\1g\1hMessage Groups\1n\1g          "\         127 GrpLstHdr
+	"                                           "\
+	"Sub-boards\r\n\r\n\1h"
+"\1n\1g[\1h%u\1n\1g] %-60.60s %.0s\1h%8u\r\n"             128 GrpLstFmt
 "\r\nGroup to configure new message scan or ~@Quit@: "    129 NScanCfgWhichGrp
 "\r\nGroup to configure your message scan or ~@Quit@: "   130 SScanCfgWhichGrp
-"\1l\1-\1gSub-boards of \1h%s:\r\n\r\n\1h"                   131 CfgSubLstHdr
-"\1n\1g[\1h%d\1n\1g] %-40.40s  \1h%s\r\n"                    132 CfgSubLstFmt
-"\1l\1_\1g\1hMessage Groups:\r\n\r\n"                       133 CfgGrpLstHdr
-"\1n\1g[\1h%d\1n\1g] %s\1h\r\n"                              134 CfgGrpLstFmt
+"\1l\1-\1gSub-boards of \1h%s:\r\n\r\n\1h"                131 CfgSubLstHdr
+"\1n\1g[\1h%d\1n\1g] %-40.40s  \1h%s\r\n"                 132 CfgSubLstFmt
+"\1l\1_\1g\1hMessage Groups:\r\n\r\n"                     133 CfgGrpLstHdr
+"\1n\1g[\1h%d\1n\1g] %s\1h\r\n"                           134 CfgGrpLstFmt
 "\r\nSub-board to toggle new message scan"\             135 NScanCfgWhichSub
 	", ~@All@, or ~@Quit@: "
 "\r\nSub-board to toggle your message scan"\            136 SScanCfgWhichSub
@@ -217,14 +218,14 @@
 "SY: "                                                     176 SystemPassword
 "\1?No sysop directory is configured.\r\n"                 177 NoSysopDir
 "\1?You can't upload to the sysop.\r\n"                    178 CantUploadToSysop
-"\1-\1gDirectories of \1h%-40.40s     "\                   179 DirLstHdr
-	"\1n\1gFiles\r\n\r\n\1h"
-"\1n\1g(\1h%u\1n\1g) %-40.40s %12.12s \1h%4u\r\n"             180 DirLstFmt
-"\r\n\1q\1_\1g\1hFile Libraries \1n\1g                   "\     181 LibLstHdr
-	"                       Directories\r\n\r\n\1h"
-"\1n\1g(\1h%u\1n\1g) %-40.40s %12.12s \1h%4u\r\n"             182 LibLstFmt
-"\1n\r\nInvalid NetMail address\1\\: \1h%s\1n\r\n"            183 InvalidNetMailAddr
-"\1_\r\n\1g\1h%s \1n\1gTransfer Policy\r\n\r\n\1n"            184 TransferPolicyHdr
+"\1-\1g\1h%-73.73s \1n\1gFiles\r\n\r\n\1h"                 179 DirLstHdr
+"\1n\1g(\1h%u\1n\1g) %-60.60s %.0s\1h%11u\r\n"             180 DirLstFmt
+"\r\n\1q\1_\1g\1hFile Libraries \1n\1g         "\          181 LibLstHdr
+	"                                           "\
+	"Directories\r\n\r\n\1h"
+"\1n\1g(\1h%u\1n\1g) %-60.60s %.0s \1h%7u\r\n"             182 LibLstFmt
+"\1n\r\nInvalid NetMail address\1\\: \1h%s\1n\r\n"         183 InvalidNetMailAddr
+"\1_\r\n\1g\1h%s \1n\1gTransfer Policy\r\n\r\n\1n"         184 TransferPolicyHdr
 "\1n\1h[\1y\1~%c\1w] \1b%-25s  "                        185 TransferProtLstFmt
 "Initial uploads are rewarded with %d%% of the "\       186 TpUpload
 	"credit value\r\n"
