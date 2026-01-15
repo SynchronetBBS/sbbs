@@ -75,6 +75,29 @@
 #endif
 
 /****************************************************************************/
+/* Handles mixed forward and backslashes									*/
+/* Handles missing trailing slash											*/
+/****************************************************************************/
+bool paths_are_same(const char* path1, const char* path2)
+{
+	size_t i;
+
+	for (i = 0; path1[i] != '\0' && path2[i] != '\0'; ++i) {
+		if (path1[i] == path2[i])
+			continue;
+		if (!IS_PATH_DELIM(path1[i]) || !IS_PATH_DELIM(path2[i]))
+			break;
+	}
+	if (path1[i] == '\0' && path2[i] == '\0')
+		return true;
+	if (path1[i] == '\0' && IS_PATH_DELIM(path2[i]) && path2[i + 1] == '\0')
+		return true;
+	if (path2[i] == '\0' && IS_PATH_DELIM(path1[i]) && path1[i + 1] == '\0')
+		return true;
+	return false;
+}
+
+/****************************************************************************/
 /* Return the filename portion of a full pathname							*/
 /****************************************************************************/
 char* getfname(const char* path)

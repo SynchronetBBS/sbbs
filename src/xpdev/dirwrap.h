@@ -232,7 +232,7 @@ DLLEXPORT char*		backslash(char* path);
 DLLEXPORT bool 		wildmatch(const char *fname, const char *spec, bool path, bool case_sensitive);
 DLLEXPORT bool 		wildmatchi(const char *fname, const char *spec, bool path);
 DLLEXPORT int		mkpath(const char* path);
-
+DLLEXPORT bool      paths_are_same(const char* path1, const char* path2);
 
 #if defined(__unix__)
 DLLEXPORT void _splitpath(const char *path, char *drive, char *dir, 
