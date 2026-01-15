@@ -35,6 +35,16 @@ while(!file_exists(dir.path + file.name) && !js.terminated) {
 	file.name = prompt("File name");
 }
 
+if(system.illegal_filename(file.name)) {
+	alert("File name '" + file.name + "' illegal.");
+	exit(1);
+}
+
+if(!system.allowed_filename(file.name)) {
+	alert("File name '" + file.name + "' not allowed.");
+	exit(1);
+}
+
 if(filebase.get(file.name)) {
 	alert("File '" + file.name + "' already added.");
 	exit(1);

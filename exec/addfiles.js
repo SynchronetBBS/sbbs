@@ -245,6 +245,16 @@ for(var d = 0; d < dir_list.length; d++) {
 				writeln("excluded (ignored)");
 			continue;
 		}
+		if(system.illegal_filename(file.name)) {
+			if(verbosity)
+				writeln("excluded (illegal)");
+			continue;
+		}
+		if(!system.allowed_filename(file.name)) {
+			if(verbosity)
+				writeln("excluded (not allowed)");
+			continue;
+		}
 		file.extdesc = lfexpand(file.extdesc);
 		if(verbosity > 1)
 			writeln(JSON.stringify(file));
