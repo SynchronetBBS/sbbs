@@ -1844,7 +1844,7 @@ bool cfg_loadable_modules(const char* name, struct loadable_module* mod, int top
 	int cur = 0, bar = 0;
 	bool changed = false;
 
-	if (++top > uifc.scrn_len - 10)
+	if (++top > (int)uifc.scrn_len - 10)
 		top = uifc.scrn_len - 10;
 
 	snprintf(title, sizeof title, "%s Modules", name);
