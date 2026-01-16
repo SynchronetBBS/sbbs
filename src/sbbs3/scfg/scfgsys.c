@@ -1800,29 +1800,62 @@ void newuser_qwk_opts(void)
 bool edit_loadable_module(const char* name, char* cmd, char* ars)
 {
 	char title[128];
+	int  i;
+	int  cur = 0, bar = 0;
+	char org_cmd[LEN_CMD + 1];
+	char org_ars[LEN_ARSTR + 1];
+
+	SAFECOPY(org_cmd, cmd);
+	SAFECOPY(org_ars, ars);
 	snprintf(title, sizeof title, "%s Module", name);
-	if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Module Name/Command-line", cmd, LEN_CMD, K_EDIT) < 0)
-		return false;
-	getar(title, ars);
-	return true;
+	while (1) {
+		i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-32.32s %-32.32s", "Name / Command-line", cmd);
+		snprintf(opt[i++], MAX_OPLN, "%-32.32s %-32.32s", "Access Requirements", ars);
+		opt[i][0] = 0;
+		switch(uifc.list(WIN_BOT | WIN_SAV | WIN_ACT | WIN_CHE, 0, 0, 0, &cur, &bar, title, opt)) {
+			case 0:
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Module Name/Command-line", cmd, LEN_CMD, K_EDIT);
+				break;
+			case 1:
+				getar(title, ars);
+				break;
+			case 2:
+				return true;
+			default:
+				if (strcmp(org_cmd, cmd) != 0 || strcmp(org_ars, ars) != 0) {
+					switch(uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, 0, 0, "Save changes", uifcYesNoOpts)) {
+						case 0:
+							return true;
+						case 1:
+							return false;
+					}
+					break;
+				}
+				return false;
+		}
+	}
 }
 
-bool cfg_loadable_modules(const char* name, struct loadable_module* mod, int minimum_count)
+bool cfg_loadable_modules(const char* name, struct loadable_module* mod, int top, int minimum_count)
 {
 	char title[128];
 	int i;
 	int cur = 0, bar = 0;
 	bool changed = false;
 
+	if (++top > uifc.scrn_len - 10)
+		top = uifc.scrn_len - 10;
+
 	snprintf(title, sizeof title, "%s Modules", name);
 	while (1) {
 		for (i = 0; mod->cmd != NULL && mod->cmd[i] != NULL; ++i)
 			snprintf(opt[i], MAX_OPLN, "%-32.32s %-32.32s", mod->cmd[i], mod->ars[i]);
 		opt[i][0] = 0;
-		uifc_winmode_t wmode = WIN_SAV | WIN_ACT | WIN_INS | WIN_INSACT | WIN_XTR;
+		uifc_winmode_t wmode = WIN_RHT | WIN_SAV | WIN_ACT | WIN_INS | WIN_INSACT | WIN_XTR;
 		if (i > minimum_count)
 			wmode |= WIN_DEL;
-		i = uifc.list(wmode, 0, 0, 0, &cur, &bar, title, opt);
+		i = uifc.list(wmode, 2, top, 0, &cur, &bar, title, opt);
 		if (i == -1)
 			return changed;
 		char cmd[LEN_CMD + 1];
@@ -3213,97 +3246,97 @@ void sys_cfg(void)
 							break;
 
 						case 0:
-							mods_changed |= cfg_loadable_modules("Login", &cfg.login_mod, 1);
+							mods_changed |= cfg_loadable_modules("Login", &cfg.login_mod, mod_bar, 1);
 							break;
 						case 1:
-							mods_changed |= cfg_loadable_modules("Logon", &cfg.logon_mod, 0);
+							mods_changed |= cfg_loadable_modules("Logon", &cfg.logon_mod, mod_bar, 0);
 							break;
 						case 2:
-							mods_changed |= cfg_loadable_modules("Synchronize", &cfg.sync_mod, 0);
+							mods_changed |= cfg_loadable_modules("Synchronize", &cfg.sync_mod, mod_bar, 0);
 							break;
 						case 3:
-							mods_changed |= cfg_loadable_modules("Logoff", &cfg.logoff_mod, 0);
+							mods_changed |= cfg_loadable_modules("Logoff", &cfg.logoff_mod, mod_bar, 0);
 							break;
 						case 4:
-							mods_changed |= cfg_loadable_modules("Logout", &cfg.logout_mod, 0);
+							mods_changed |= cfg_loadable_modules("Logout", &cfg.logout_mod, mod_bar, 0);
 							break;
 						case 5:
-							mods_changed |= cfg_loadable_modules("New User Prompts", &cfg.newuser_prompts_mod, 1);
+							mods_changed |= cfg_loadable_modules("New User Prompts", &cfg.newuser_prompts_mod, mod_bar, 1);
 							break;
 						case 6:
-							mods_changed |= cfg_loadable_modules("New User Information", &cfg.newuser_info_mod, 0);
+							mods_changed |= cfg_loadable_modules("New User Information", &cfg.newuser_info_mod, mod_bar, 0);
 							break;
 						case 7:
-							mods_changed |= cfg_loadable_modules("New User Created", &cfg.newuser_mod, 0);
+							mods_changed |= cfg_loadable_modules("New User Created", &cfg.newuser_mod, mod_bar, 0);
 							break;
 						case 8:
-							mods_changed |= cfg_loadable_modules("User Configuration", &cfg.usercfg_mod, 1);
+							mods_changed |= cfg_loadable_modules("User Configuration", &cfg.usercfg_mod, mod_bar, 1);
 							break;
 						case 9:
-							mods_changed |= cfg_loadable_modules("Expired User", &cfg.expire_mod, 0);
+							mods_changed |= cfg_loadable_modules("Expired User", &cfg.expire_mod, mod_bar, 0);
 							break;
 						case 10:
-							mods_changed |= cfg_loadable_modules("Auto Message", &cfg.automsg_mod, 0);
+							mods_changed |= cfg_loadable_modules("Auto Message", &cfg.automsg_mod, mod_bar, 0);
 							break;
 						case 11:
-							mods_changed |= cfg_loadable_modules("Send Feedback", &cfg.feedback_mod, 0);
+							mods_changed |= cfg_loadable_modules("Send Feedback", &cfg.feedback_mod, mod_bar, 0);
 							break;
 						case 12:
-							mods_changed |= cfg_loadable_modules("Chat Section", &cfg.chatsec_mod, 1);
+							mods_changed |= cfg_loadable_modules("Chat Section", &cfg.chatsec_mod, mod_bar, 1);
 							break;
 						case 13:
-							mods_changed |= cfg_loadable_modules("Text File Section", &cfg.textsec_mod, 1);
+							mods_changed |= cfg_loadable_modules("Text File Section", &cfg.textsec_mod, mod_bar, 1);
 							break;
 						case 14:
-							mods_changed |= cfg_loadable_modules("External Program Section", &cfg.xtrnsec_mod, 1);
+							mods_changed |= cfg_loadable_modules("External Program Section", &cfg.xtrnsec_mod, mod_bar, 1);
 							break;
 						case 15:
-							mods_changed |= cfg_loadable_modules("Pre External Program", &cfg.prextrn_mod, 0);
+							mods_changed |= cfg_loadable_modules("Pre External Program", &cfg.prextrn_mod, mod_bar, 0);
 							break;
 						case 16:
-							mods_changed |= cfg_loadable_modules("Post External Program", &cfg.postxtrn_mod, 0);
+							mods_changed |= cfg_loadable_modules("Post External Program", &cfg.postxtrn_mod, mod_bar, 0);
 							break;
 						case 17:
-							mods_changed |= cfg_loadable_modules("Read Mail", &cfg.readmail_mod, 0);
+							mods_changed |= cfg_loadable_modules("Read Mail", &cfg.readmail_mod, mod_bar, 0);
 							break;
 						case 18:
-							mods_changed |= cfg_loadable_modules("Scan Msgs", &cfg.scanposts_mod, 0);
+							mods_changed |= cfg_loadable_modules("Scan Msgs", &cfg.scanposts_mod, mod_bar, 0);
 							break;
 						case 19:
-							mods_changed |= cfg_loadable_modules("Scan Subs", &cfg.scansubs_mod, 0);
+							mods_changed |= cfg_loadable_modules("Scan Subs", &cfg.scansubs_mod, mod_bar, 0);
 							break;
 						case 20:
-							mods_changed |= cfg_loadable_modules("List Msgs", &cfg.listmsgs_mod, 0);
+							mods_changed |= cfg_loadable_modules("List Msgs", &cfg.listmsgs_mod, mod_bar, 0);
 							break;
 						case 21:
-							mods_changed |= cfg_loadable_modules("List Logons", &cfg.logonlist_mod, 0);
+							mods_changed |= cfg_loadable_modules("List Logons", &cfg.logonlist_mod, mod_bar, 0);
 							break;
 						case 22:
-							mods_changed |= cfg_loadable_modules("List Users", &cfg.userlist_mod, 0);
+							mods_changed |= cfg_loadable_modules("List Users", &cfg.userlist_mod, mod_bar, 0);
 							break;
 						case 23:
-							mods_changed |= cfg_loadable_modules("List Nodes", &cfg.nodelist_mod, 0);
+							mods_changed |= cfg_loadable_modules("List Nodes", &cfg.nodelist_mod, mod_bar, 0);
 							break;
 						case 24:
-							mods_changed |= cfg_loadable_modules("Who's Online", &cfg.whosonline_mod, 0);
+							mods_changed |= cfg_loadable_modules("Who's Online", &cfg.whosonline_mod, mod_bar, 0);
 							break;
 						case 25:
-							mods_changed |= cfg_loadable_modules("Private Message", &cfg.privatemsg_mod, 0);
+							mods_changed |= cfg_loadable_modules("Private Message", &cfg.privatemsg_mod, mod_bar, 0);
 							break;
 						case 26:
-							mods_changed |= cfg_loadable_modules("Scan Dirs", &cfg.scandirs_mod, 0);
+							mods_changed |= cfg_loadable_modules("Scan Dirs", &cfg.scandirs_mod, mod_bar, 0);
 							break;
 						case 27:
-							mods_changed |= cfg_loadable_modules("List Files", &cfg.listfiles_mod, 0);
+							mods_changed |= cfg_loadable_modules("List Files", &cfg.listfiles_mod, mod_bar, 0);
 							break;
 						case 28:
-							mods_changed |= cfg_loadable_modules("View File Information", &cfg.fileinfo_mod, 0);
+							mods_changed |= cfg_loadable_modules("View File Information", &cfg.fileinfo_mod, mod_bar, 0);
 							break;
 						case 29:
-							mods_changed |= cfg_loadable_modules("Batch File Transfer", &cfg.batxfer_mod, 0);
+							mods_changed |= cfg_loadable_modules("Batch File Transfer", &cfg.batxfer_mod, mod_bar, 0);
 							break;
 						case 30:
-							mods_changed |= cfg_loadable_modules("Temporary File Transfer", &cfg.tempxfer_mod, 0);
+							mods_changed |= cfg_loadable_modules("Temporary File Transfer", &cfg.tempxfer_mod, mod_bar, 0);
 							break;
 					}
 				}
