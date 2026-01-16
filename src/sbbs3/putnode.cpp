@@ -33,6 +33,7 @@ bool sbbs_t::putnodedat(uint number, node_t* node)
 	int  wr = 0;
 	int  wrerr = 0;
 	int  attempts;
+	bool result = true;
 
 	if (number < 1 || number > cfg.sys_nodes) {
 		errormsg(WHERE, ERR_CHK, "node number", number);
@@ -81,7 +82,36 @@ bool sbbs_t::putnodedat(uint number, node_t* node)
 		return false;
 	}
 
-	return utime(path, NULL) == 0;   /* Update mod time for NFS/smbfs compatibility */
+	if (utime(path, NULL) != 0)   /* Update mod time for NFS/smbfs compatibility */
+		return false;
+
+	// Write to node#/status.ini
+	if (number == cfg.node_num) {
+		str_list_t ini = strListInit();
+		iniSetUInteger(&ini, ROOT_SECTION, "status", node->status, nullptr);
+		iniSetUInteger(&ini, ROOT_SECTION, "errors", node->errors, nullptr);
+		iniSetUInteger(&ini, ROOT_SECTION, "action", node->action, nullptr);
+		iniSetUInteger(&ini, ROOT_SECTION, "useron", node->useron, nullptr);
+		iniSetHexInt(&ini, ROOT_SECTION, "conn", node->connection, nullptr);
+		iniSetHexInt(&ini, ROOT_SECTION, "misc", node->misc, nullptr);
+		iniSetUInteger(&ini, ROOT_SECTION, "aux", node->aux, nullptr);
+		iniSetUInteger(&ini, ROOT_SECTION, "extaux", node->extaux, nullptr);
+		if ((node->status == NODE_INUSE || node->status == NODE_QUIET)
+			&& node->action == NODE_XTRN && xtrnnum_is_valid(&cfg, node->aux - 1))
+			iniSetString(&ini, ROOT_SECTION, "xtrn", cfg.xtrn[node->aux - 1]->code, nullptr);
+
+		snprintf(path, sizeof path, "%sstatus.ini", cfg.node_path[number - 1]);
+		FILE* fp = iniOpenFile(path, /* modify */ true);
+		if (fp == NULL)
+			result = false;
+		else {
+			result = iniWriteFile(fp, ini);
+			iniCloseFile(fp);
+		}
+		strListFree(&ini);
+	}
+
+	return result;
 }
 
 bool sbbs_t::unlocknodedat(uint number)

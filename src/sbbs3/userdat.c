@@ -1632,9 +1632,11 @@ char* node_vstatus(scfg_t* cfg, node_t* node, char* str, size_t size)
 
 char* node_activity(scfg_t* cfg, node_t* node, char* str, size_t size, int num)
 {
-	int    xtrnnum;
 	int    gurunum;
 	user_t user = {0};
+
+	if (num < 1 || num > cfg->sys_nodes)
+		return cfg->text != NULL ? cfg->text[InvalidNode] : "Invalid node";
 
 	if (node->misc & NODE_EXT) {
 		getnodeext(cfg, num, str); // note assuming sizeof str is >= 128
@@ -1659,26 +1661,45 @@ char* node_activity(scfg_t* cfg, node_t* node, char* str, size_t size, int num)
 		case NODE_AMSG:
 			return cfg->text != NULL ? cfg->text[NodeActivityAutoMsg] : "posting auto-message";
 		case NODE_XTRN:
+		{
+			char  path[MAX_PATH + 1];
+			char  value[INI_MAX_VALUE_LEN] = "";
+			int   xtrnnum = -1;
+			char* xtrncode = NULL;
+
 			if (node->aux == 0)
 				return cfg->text != NULL ? cfg->text[NodeActivityXtrnMenu] : "at external program menu";
-			user.number = node->useron;
-			xtrnnum = node->aux - 1;
-			if (getuserdat(cfg, &user) == USER_SUCCESS
-				&& !user_is_guest(&user)) // Multiple simultaneous logons supported, can't rely on user.curxtrn
-				xtrnnum = getxtrnnum(cfg, user.curxtrn);
+
+			snprintf(path, sizeof path, "%sstatus.ini", cfg->node_path[num - 1]);
+			FILE* fp = iniOpenFile(path, /* modify: */ false);
+			if (fp != NULL) {
+				xtrncode = iniReadExistingString(fp, ROOT_SECTION, "xtrn", NULL, value);
+				iniCloseFile(fp);
+			}
+			if (xtrncode != NULL)
+				xtrnnum = getxtrnnum(cfg, xtrncode);
+			if (!xtrnnum_is_valid(cfg, xtrnnum)) {
+				user.number = node->useron;
+				if (getuserdat(cfg, &user) == USER_SUCCESS
+					&& !user_is_guest(&user)) // Multiple simultaneous logons supported, can't rely on user.curxtrn
+					xtrnnum = getxtrnnum(cfg, xtrncode = user.curxtrn);
+				else
+					xtrnnum = node->aux - 1;
+			}
 			if (xtrnnum_is_valid(cfg, xtrnnum))
-				snprintf(str, size, "%s %s"
-				         , cfg->text != NULL ? cfg->text[NodeActivityRunningXtrn] : "running"
-				         , cfg->xtrn[xtrnnum]->name);
-			else if (*user.curxtrn != '\0')
 				snprintf(str, size, "%s external program %s"
 				         , cfg->text != NULL ? cfg->text[NodeActivityRunningXtrn] : "running"
-				         , user.curxtrn);
+				         , cfg->xtrn[xtrnnum]->name);
+			else if (xtrncode != NULL)
+				snprintf(str, size, "%s external program %s"
+				         , cfg->text != NULL ? cfg->text[NodeActivityRunningXtrn] : "running"
+				         , xtrncode);
 			else
 				snprintf(str, size, "%s external program #%d"
 				         , cfg->text != NULL ? cfg->text[NodeActivityRunningXtrn] : "running"
 				         , node->aux);
 			break;
+		}
 		case NODE_DFLT:
 			return cfg->text != NULL ? cfg->text[NodeActivitySettings] : "changing defaults";
 		case NODE_XFER:
