@@ -897,11 +897,11 @@ void xfer_cfg()
 					// 'parent' should be properly (back)slash-terminated at this point
 					bool chk_dir_exist = true;
 					if (k == DIRLIST_CDROM) {
-						snprintf(str, sizeof str, "%s00_INDEX.TXT", parent);
-						if (!fexistcase(str))
-							snprintf(str, sizeof str, "%sDIRS.WIN", parent);
+						snprintf(str, sizeof str, "%sDIRS.WIN", parent);
 						if (!fexistcase(str))
 							snprintf(str, sizeof str, "%sDIRS.TXT", parent);
+						if (!fexistcase(str))
+							snprintf(str, sizeof str, "%s00_INDEX.TXT", parent);
 					}
 					else if (k == DIRLIST_FIDO) {
 						sprintf(str, "FILEGATE.ZXX");
