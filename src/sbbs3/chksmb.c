@@ -151,21 +151,21 @@ int main(int argc, char **argv)
 	uint16_t xlat;
 	uint32_t m;
 	ulong    l, n, size, total = 0, orphan, deleted, headers
-	, *offset, *number, xlaterr
-	, delidx
-	, delhdrblocks, deldatblocks, hdrerr, lockerr, hdrnumerr, hdrlenerr
-	, getbodyerr, gettailerr
-	, hasherr, badhash
-	, acthdrblocks, actdatblocks
-	, dfieldlength, dfieldoffset
-	, dupenum, dupenumhdr, dupeoff, attr, actalloc, types
-	, datactalloc, misnumbered, timeerr, idxofferr, idxerr
-	, subjcrc, fromcrc, tocrc, fname_err
-	, intransit, unvalidated
-	, zeronum, idxzeronum, idxnumerr, packable = 0L, totallzhsaved = 0L
-	, totalmsgs = 0, totallzhmsgs = 0, totaldelmsgs = 0, totalmsgbytes = 0L
-	, lzhblocks, lzhsaved
-	, ctrl_chars;
+		, *offset, *number, xlaterr
+		, delidx
+		, delhdrblocks, deldatblocks, hdrerr, lockerr, hdrnumerr, hdrlenerr
+		, getbodyerr, gettailerr
+		, hasherr, badhash, spam
+		, acthdrblocks, actdatblocks
+		, dfieldlength, dfieldoffset
+		, dupenum, dupenumhdr, dupeoff, attr, actalloc, types
+		, datactalloc, misnumbered, timeerr, idxofferr, idxerr
+		, subjcrc, fromcrc, tocrc, fname_err
+		, intransit, unvalidated
+		, zeronum, idxzeronum, idxnumerr, packable = 0L, totallzhsaved = 0L
+		, totalmsgs = 0, totallzhmsgs = 0, totaldelmsgs = 0, totalmsgbytes = 0L
+		, lzhblocks, lzhsaved
+		, ctrl_chars;
 	ulong         hdr_overlap;
 	off_t         shd_length;
 	ulong         oldest = 0;
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 	hash_t**      hashes;
 	time_t        now = time(NULL);
 
-	fprintf(stderr, "\nCHKSMB v3.20-%s %s/%s SMBLIB %s - Check Synchronet Message/File Base\n"
+	fprintf(stderr, "\nCHKSMB v3.21-%s %s/%s SMBLIB %s - Check Synchronet Message/File Base\n"
 	        , PLATFORM_DESC, GIT_BRANCH, GIT_HASH, smb_lib_ver());
 
 	if (argc < 2) {
@@ -363,6 +363,7 @@ int main(int argc, char **argv)
 		lzhblocks = lzhsaved = acthdrblocks = actdatblocks = 0;
 		getbodyerr = gettailerr = 0;
 		hasherr = badhash = 0;
+		spam = 0;
 		unvalidated = 0;
 		intransit = 0;
 		acthdrblocks = actdatblocks = 0;
@@ -444,7 +445,7 @@ int main(int argc, char **argv)
 					       , msg.hdr.length, smb_getmsghdrlen(&msg));
 				hdrlenerr++;
 			}
-
+			
 			if (msg.hdr.attr & MSG_DELETE)
 				body = tail = NULL;
 			else {
@@ -550,6 +551,8 @@ int main(int argc, char **argv)
 					deldatblocks += smb_datblocks(data_length);
 			}
 			else {
+				if (msg.hdr.attr & MSG_SPAM)
+					++spam;
 				actdatblocks += smb_datblocks(data_length);
 				if (msg.hdr.number > smb.status.last_msg) {
 					fprintf(stderr, "%sOut-Of-Range %s number\n", beep, base_type);
@@ -956,9 +959,15 @@ int main(int argc, char **argv)
 		printf("%-35.35s (=): %lu\n"
 		       , "Active Indexes"
 		       , total - delidx);
-		printf("%-35.35s (=): %lu\n"
+		if (spam)
+			snprintf(str, sizeof str, " (%lu%% SPAM)"
+				,(long)(100.0 / ((float)(headers - deleted) / spam)));
+		else
+			*str = '\0';
+		printf("%-35.35s (=): %lu%s\n"
 		       , "Active Headers"
-		       , headers - deleted);
+		       , headers - deleted
+			   , str);
 		printf("%-35.35s ( ): %-8lu %13s bytes used\n"
 		       , "Active Header Blocks"
 		       , acthdrblocks, ultoac(acthdrblocks * SHD_BLOCK_LEN, str));
@@ -986,6 +995,10 @@ int main(int argc, char **argv)
 		       , "Deleted Data Blocks"
 		       , deldatblocks, ultoac(deldatblocks * SDT_BLOCK_LEN, str));
 		packable += (deldatblocks * SDT_BLOCK_LEN);
+		if (spam)
+			printf("%-35.35s ( ): %lu\n"
+			       , "SPAM-tagged Messages"
+			       , spam);
 		if (oldest)
 			printf("%-35.35s ( ): %lu days (%u max)\n"
 			       , "Oldest Message (import)"
