@@ -259,37 +259,38 @@ src: $(REPODIR)
 run: $(SBBSDIR)/ctrl $(SBBSDIR)/docs $(SBBSDIR)/exec $(SBBSDIR)/text $(SBBSDIR)/web $(SBBSDIR)/webv4 $(SBBSDIR)/xtrn \
 	$(SBBSDIR)/node1 $(SBBSDIR)/node2 $(SBBSDIR)/node3 $(SBBSDIR)/node4
 
-$(SBBSDIR)/ctrl: $(REPODIR)
+
+$(SBBSDIR)/ctrl: $(SBBSDIR) $(REPODIR)
 	cp -r $(REPODIR)/ctrl $(SBBSDIR)
 
-$(SBBSDIR)/docs: $(REPODIR)
+$(SBBSDIR)/docs: $(SBBSDIR) $(REPODIR)
 	$(INSBIN) $(REPODIR)/docs $(SBBSDIR)
 
-$(SBBSDIR)/exec: $(REPODIR)
+$(SBBSDIR)/exec: $(SBBSDIR) $(REPODIR)
 	$(INSBIN) $(REPODIR)/exec $(SBBSDIR)
 
-$(SBBSDIR)/node1: $(REPODIR)
+$(SBBSDIR)/node1: $(SBBSDIR) $(REPODIR)
 	cp -r $(REPODIR)/node1 $@
 
-$(SBBSDIR)/node2: $(REPODIR)
+$(SBBSDIR)/node2: $(SBBSDIR) $(REPODIR)
 	cp -r $(REPODIR)/node1 $@
 
-$(SBBSDIR)/node3: $(REPODIR)
+$(SBBSDIR)/node3: $(SBBSDIR) $(REPODIR)
 	cp -r $(REPODIR)/node1 $@
 
-$(SBBSDIR)/node4: $(REPODIR)
+$(SBBSDIR)/node4: $(SBBSDIR) $(REPODIR)
 	cp -r $(REPODIR)/node1 $@
 
-$(SBBSDIR)/text: $(REPODIR)
+$(SBBSDIR)/text: $(SBBSDIR) $(REPODIR)
 	$(INSBIN) $(REPODIR)/text $(SBBSDIR)
 
-$(SBBSDIR)/web: $(REPODIR)
+$(SBBSDIR)/web: $(SBBSDIR) $(REPODIR)
 	$(INSBIN) $(REPODIR)/web $(SBBSDIR)
 
-$(SBBSDIR)/webv4: $(REPODIR)
+$(SBBSDIR)/webv4: $(SBBSDIR) $(REPODIR)
 	$(INSBIN) $(REPODIR)/webv4 $(SBBSDIR)
 
-$(SBBSDIR)/xtrn: $(REPODIR)
+$(SBBSDIR)/xtrn: $(SBBSDIR) $(REPODIR)
 	$(INSBIN) $(REPODIR)/xtrn $(SBBSDIR)
 
 $(SBBSDIR):
