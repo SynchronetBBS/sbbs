@@ -1933,7 +1933,7 @@ void getar(const char *desc, char *inar)
 				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0, "Are You Sure", uifcYesNoOpts);
 				if (!i) {
 					ar[0] = 0;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 2:
@@ -1966,12 +1966,14 @@ void getar(const char *desc, char *inar)
 						SAFECAT(ar, " OR ");
 				}
 				SAFECAT(ar, opt[i]);
+				uifc.changes = TRUE;
 				break;
 			case 3:
 				i = 0;
-				snprintf(opt[i++], MAX_OPLN, "GUEST");
-				snprintf(opt[i++], MAX_OPLN, "SYSOP");
-				snprintf(opt[i++], MAX_OPLN, "QNODE");
+				const char* user_type[] = { "GUEST", "SYSOP", "QNODE" };
+				snprintf(opt[i++], MAX_OPLN, "Guest");
+				snprintf(opt[i++], MAX_OPLN, "Sysop");
+				snprintf(opt[i++], MAX_OPLN, "QWKnet Node");
 				opt[i][0] = 0;
 				i = 0;
 				uifc.helpbuf =
@@ -1980,9 +1982,9 @@ void getar(const char *desc, char *inar)
 					"You are being prompted to select a user category to be included in this\n"
 					"requirement evaluation.\n"
 					"\n"
-					"`GUEST` = One and only G-restricted account on the system, usually\n"
-					"`SYSOP` = Any user with security level >= 90 or temporary sysop status\n"
-					"`QNODE` = A QWK Network Node account\n"
+					"`Guest`       = One and only G-restricted account on the system, usually\n"
+					"`Sysop`       = Any user with security level >= 90 or temp-sysop status\n"
+					"`QWKnet Node` = A QWK Network Node account\n"
 				;
 				static int user_type_cur;
 				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &user_type_cur, 0, "Select User Type", opt);
@@ -1997,7 +1999,8 @@ void getar(const char *desc, char *inar)
 					else
 						SAFECAT(ar, " OR ");
 				}
-				SAFECAT(ar, opt[i]);
+				SAFECAT(ar, user_type[i]);
+				uifc.changes = TRUE;
 				break;
 			case 4:
 				i = whichlogic();
