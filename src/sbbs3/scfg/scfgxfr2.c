@@ -914,21 +914,29 @@ void xfer_cfg()
 							break;
 						chk_dir_exist = false;
 					} else {
+						filename_prompt:
 						if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Filename", str, sizeof(str) - 1, K_EDIT) <= 0)
 							break;
-						if (!fexistcase(str) && k == DIRLIST_RAW) {
-							if (uifc.confirm("File doesn't exist, create it?")) {
-								create_raw_dir_list(str, parent);
-								chk_dir_exist = false;
+						if (!fexistcase(str)) {
+							if (k == DIRLIST_RAW) {
+								if (uifc.confirm("File doesn't exist, create it?")) {
+									create_raw_dir_list(str, parent);
+									chk_dir_exist = false;
+								} else
+									goto filename_prompt;
+							}
+							else  {
+								uifc.msgf("File does not exist: %s", str);
+								goto filename_prompt;
 							}
 						}
 					}
-					if (chk_dir_exist)
-						chk_dir_exist = uifc.confirm("Check for each directory's existence");
 					if ((stream = fnopen(&file, str, O_RDONLY)) == NULL) {
-						uifc.msg("Open Failure");
+						uifc.msgf("Error %d opening %s", errno, str);
 						break;
 					}
+					if (chk_dir_exist)
+						chk_dir_exist = uifc.confirm("Check for each directory's existence");
 					uifc.pop("Importing Areas...");
 					char duplicate_code[LEN_CODE + 1] = "";
 					uint duplicate_codes = 0;   // consecutive duplicate codes
