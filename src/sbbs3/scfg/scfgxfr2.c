@@ -784,8 +784,8 @@ void xfer_cfg()
 					k = 0;
 					ported = 0;
 					q = uifc.changes;
-					strcpy(opt[k++], "DIRS.TXT     (CD-ROM)");
-					strcpy(opt[k++], "FILEGATE.ZXX (Fido)");
+					strcpy(opt[k++], "CD-ROM    DIRS.TXT");
+					strcpy(opt[k++], "FidoNet   FILEGATE.ZXX");
 					opt[k][0] = 0;
 					uifc.helpbuf =
 						"`Export Area File Format:`\n"
@@ -874,9 +874,9 @@ void xfer_cfg()
 						"\n"
 						FILEGATE_ZXX_HELP_TEXT
 					;
-					strcpy(opt[k++], "DIRS.TXT     (CD-ROM)");
-					strcpy(opt[k++], "FILEGATE.ZXX (Fido)");
-					strcpy(opt[k++], "DIRS.RAW     (Raw)");
+					strcpy(opt[k++], "CD-ROM    DIRS.TXT, DIRS.WIN, 00_INDEX.TXT");
+					strcpy(opt[k++], "FidoNet   FILEGATE.ZXX");
+					strcpy(opt[k++], "Raw       DIRS.RAW");
 					strcpy(opt[k++], "Directory Listing...");
 					opt[k][0] = 0;
 					static int import_cur;
@@ -890,23 +890,24 @@ void xfer_cfg()
 					if (!get_parent(parent, /* required: */ true))
 						break;
 					if (cfg.lib[libnum]->parent_path[0] == '\0'
-						|| strcmp(parent, cfg.lib[libnum]->parent_path) == 0) {
+						|| paths_are_same(parent, cfg.lib[libnum]->parent_path)) {
 						SAFECOPY(cfg.lib[libnum]->parent_path, parent);
 						parent = cfg.lib[libnum]->parent_path;
 					}
+					// 'parent' should be properly (back)slash-terminated at this point
 					bool chk_dir_exist = true;
 					if (k == DIRLIST_CDROM) {
-						SAFECOPY(str, parent);
-						backslash(str);
-						SAFECAT(str, "DIRS.TXT");
+						snprintf(str, sizeof str, "%s%c00_INDEX.TXT", parent);
+						if (!fexistcase(str))
+							snprintf(str, sizeof str, "%sDIRS.WIN", parent);
+						if (!fexistcase(str))
+							snprintf(str, sizeof str, "%sDIRS.TXT", parent);
 					}
 					else if (k == DIRLIST_FIDO) {
 						sprintf(str, "FILEGATE.ZXX");
 						chk_dir_exist = false;
 					} else {
-						SAFECOPY(str, parent);
-						backslash(str);
-						SAFECAT(str, "dirs.raw");
+						snprintf(str, sizeof str, "%sdirs.raw", parent);
 					}
 					if (k > DIRLIST_RAW) {
 						if (!create_raw_dir_list(str, parent))
@@ -915,7 +916,7 @@ void xfer_cfg()
 					} else {
 						if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Filename", str, sizeof(str) - 1, K_EDIT) <= 0)
 							break;
-						if (k == DIRLIST_RAW && !fexistcase(str)) {
+						if (!fexistcase(str) && k == DIRLIST_RAW) {
 							if (uifc.confirm("File doesn't exist, create it?")) {
 								create_raw_dir_list(str, parent);
 								chk_dir_exist = false;
