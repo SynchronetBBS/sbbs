@@ -67,7 +67,7 @@ load("json-sock.js");
 */
 
 function JSONClient(serverAddr,serverPort) {
-	this.VERSION = "$Revision: 1.29 $".replace(/\$/g,'').split(' ')[1];
+	this.VERSION = "1.30";
 	this.serverAddr=serverAddr;
     if(this.serverAddr==undefined) 
 		throw new Error("no host specified");
@@ -350,7 +350,7 @@ function JSONClient(serverAddr,serverPort) {
 	/* package a query and send through the socket */
 	this.send=function(packet) {
 		if(!this.socket.is_connected)
-			throw new Error("socket disconnected 1");
+			throw new Error("socket disconnected");
 		this.socket.sendJSON(packet);
 	}
 
