@@ -137,9 +137,6 @@ bool sbbs_t::logon_process()
 		}
 	}
 
-	if (useron.exempt & FLAG('H'))
-		console |= CON_NO_INACT;
-
 	if ((useron.exempt & FLAG('Q') && useron.misc & QUIET))
 		thisnode.status = NODE_QUIET;
 	else

@@ -148,6 +148,11 @@ void sbbs_t::nodesync(bool clearline)
 				putnodedat(cfg.node_num, &thisnode);
 			}
 		}
+		if (useron.exempt & FLAG('H'))
+			console |= CON_NO_INACT;
+		else
+			console &= ~CON_NO_INACT;
+
 		if (!(sys_status & SS_MOFF)) {
 			if (thisnode.misc & NODE_MSGW)
 				getsmsg(useron.number, clearline);  /* getsmsg clears MSGW flag */
