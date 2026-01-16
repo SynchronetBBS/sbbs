@@ -1662,8 +1662,10 @@ char* node_activity(scfg_t* cfg, node_t* node, char* str, size_t size, int num)
 			if (node->aux == 0)
 				return cfg->text != NULL ? cfg->text[NodeActivityXtrnMenu] : "at external program menu";
 			user.number = node->useron;
-			getuserdat(cfg, &user);
-			xtrnnum = getxtrnnum(cfg, user.curxtrn);
+			xtrnnum = node->aux - 1;
+			if (getuserdat(cfg, &user) == USER_SUCCESS
+				&& !user_is_guest(&user)) // Multiple simultaneous logons supported, can't rely on user.curxtrn
+				xtrnnum = getxtrnnum(cfg, user.curxtrn);
 			if (xtrnnum_is_valid(cfg, xtrnnum))
 				snprintf(str, size, "%s %s"
 				         , cfg->text != NULL ? cfg->text[NodeActivityRunningXtrn] : "running"
