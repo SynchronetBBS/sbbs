@@ -399,7 +399,7 @@ void xfer_opts()
 							cfg.fview[i] = cfg.fview[i + 1];
 							i++;
 						}
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk == MSK_INS) {
@@ -436,7 +436,7 @@ void xfer_opts()
 							*cfg.fview[i] = *cfg.fview[j];
 						}
 						cfg.total_fviews++;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk == MSK_COPY) {
@@ -450,7 +450,7 @@ void xfer_opts()
 							bail(1);
 						}
 						*cfg.fview[i] = savfview;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk != 0)
@@ -534,7 +534,7 @@ void xfer_opts()
 							cfg.ftest[i] = cfg.ftest[i + 1];
 							i++;
 						}
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk == MSK_INS) {
@@ -573,7 +573,7 @@ void xfer_opts()
 							*cfg.ftest[i] = *cfg.ftest[j];
 						}
 						cfg.total_ftests++;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk == MSK_COPY) {
@@ -587,7 +587,7 @@ void xfer_opts()
 							bail(1);
 						}
 						*cfg.ftest[i] = savftest;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk != 0)
@@ -694,7 +694,7 @@ void xfer_opts()
 							cfg.dlevent[i] = cfg.dlevent[i + 1];
 							i++;
 						}
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk == MSK_INS) {
@@ -733,7 +733,7 @@ void xfer_opts()
 							*cfg.dlevent[i] = *cfg.dlevent[j];
 						}
 						cfg.total_dlevents++;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk == MSK_COPY) {
@@ -747,7 +747,7 @@ void xfer_opts()
 							bail(1);
 						}
 						*cfg.dlevent[i] = savdlevent;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk != 0)
@@ -847,7 +847,7 @@ void xfer_opts()
 							cfg.fextr[i] = cfg.fextr[i + 1];
 							i++;
 						}
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk == MSK_INS) {
@@ -885,7 +885,7 @@ void xfer_opts()
 							*cfg.fextr[i] = *cfg.fextr[j];
 						}
 						cfg.total_fextrs++;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk == MSK_COPY) {
@@ -899,7 +899,7 @@ void xfer_opts()
 							bail(1);
 						}
 						*cfg.fextr[i] = savfextr;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk != 0)
@@ -991,7 +991,7 @@ void xfer_opts()
 							cfg.fcomp[i] = cfg.fcomp[i + 1];
 							i++;
 						}
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk == MSK_INS) {
@@ -1028,7 +1028,7 @@ void xfer_opts()
 							*cfg.fcomp[i] = *cfg.fcomp[j];
 						}
 						cfg.total_fcomps++;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk == MSK_COPY) {
@@ -1042,7 +1042,7 @@ void xfer_opts()
 							bail(1);
 						}
 						*cfg.fcomp[i] = savfcomp;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk != 0)
@@ -1140,7 +1140,7 @@ void xfer_opts()
 							cfg.prot[i] = cfg.prot[i + 1];
 							i++;
 						}
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk == MSK_INS) {
@@ -1175,7 +1175,7 @@ void xfer_opts()
 							*cfg.prot[i] = *cfg.prot[j];
 						}
 						cfg.total_prots++;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk == MSK_COPY) {
@@ -1189,7 +1189,7 @@ void xfer_opts()
 							bail(1);
 						}
 						*cfg.prot[i] = savprot;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						continue;
 					}
 					if (msk != 0)
@@ -1288,7 +1288,7 @@ void xfer_opts()
 								if ((l == 0 && !(cfg.prot[i]->misc & PROT_DSZLOG))
 								    || (l == 1 && cfg.prot[i]->misc & PROT_DSZLOG)) {
 									cfg.prot[i]->misc ^= PROT_DSZLOG;
-									uifc.changes = 1;
+									uifc.changes = TRUE;
 								}
 								break;
 							case 9:
@@ -1298,7 +1298,7 @@ void xfer_opts()
 								if ((l == 0 && !(cfg.prot[i]->misc & PROT_SOCKET))
 								    || (l == 1 && cfg.prot[i]->misc & PROT_SOCKET)) {
 									cfg.prot[i]->misc ^= PROT_SOCKET;
-									uifc.changes = 1;
+									uifc.changes = TRUE;
 								}
 								break;
 						}

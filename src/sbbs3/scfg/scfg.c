@@ -1142,7 +1142,7 @@ int save_changes(int mode)
 	if (!uifc.changes)
 		return 2;
 	if (auto_save == true) { /* -y switch used, return "Yes" */
-		uifc.changes = 0;
+		uifc.changes = FALSE;
 		return 0;
 	}
 	uifc.helpbuf =
@@ -1158,7 +1158,7 @@ int save_changes(int mode)
 		uifc.exit_flags &= ~UIFC_XF_QUIT;
 	}
 	else
-		uifc.changes = 0;
+		uifc.changes = FALSE;
 	return i;
 }
 
@@ -1258,7 +1258,7 @@ void txt_cfg()
 			SAFECOPY(cfg.txtsec[i]->name, str);
 			SAFECOPY(cfg.txtsec[i]->code, code);
 			cfg.total_txtsecs++;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_DEL || msk == MSK_CUT) {
@@ -1268,7 +1268,7 @@ void txt_cfg()
 			cfg.total_txtsecs--;
 			for (j = i; j < cfg.total_txtsecs; j++)
 				cfg.txtsec[j] = cfg.txtsec[j + 1];
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_COPY) {
@@ -1277,7 +1277,7 @@ void txt_cfg()
 		}
 		if (msk == MSK_PASTE) {
 			*cfg.txtsec[i] = savtxtsec;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk != 0)
@@ -1456,7 +1456,7 @@ void shell_cfg()
 			SAFECOPY(cfg.shell[i]->name, str);
 			SAFECOPY(cfg.shell[i]->code, code);
 			cfg.total_shells++;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_DEL || msk == MSK_CUT) {
@@ -1466,7 +1466,7 @@ void shell_cfg()
 			cfg.total_shells--;
 			for (j = i; j < cfg.total_shells; j++)
 				cfg.shell[j] = cfg.shell[j + 1];
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_COPY) {
@@ -1475,7 +1475,7 @@ void shell_cfg()
 		}
 		if (msk == MSK_PASTE) {
 			*cfg.shell[i] = savshell;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk != 0)

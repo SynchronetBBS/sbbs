@@ -350,7 +350,7 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *prompt, char *out
 		help();
 	}
 	if (strcmp(outstr, str))
-		api->changes = 1;
+		api->changes = TRUE;
 	if (kmode & K_UPPER)   /* convert to uppercase? */
 		strupr(str);
 	strcpy(outstr, str);

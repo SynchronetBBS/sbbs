@@ -137,7 +137,7 @@ void node_menu()
 			sprintf(tmp, "Node %d Directory", i);
 			uifc.helpbuf = node_path_help;
 			j = uifc.input(WIN_MID | WIN_SAV, 0, 0, tmp, str, 50, K_EDIT);
-			uifc.changes = 0;
+			uifc.changes = FALSE;
 			if (j < 2)
 				continue;
 			truncsp(str);
@@ -246,11 +246,11 @@ void node_cfg()
 				              , "Keep Node File Open", uifcYesNoOpts);
 				if (i == 0 && cfg.node_misc & NM_CLOSENODEDAB) {
 					cfg.node_misc &= ~NM_CLOSENODEDAB;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (i == 1 && !(cfg.node_misc & NM_CLOSENODEDAB)) {
 					cfg.node_misc |= NM_CLOSENODEDAB;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case __COUNTER__:

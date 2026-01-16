@@ -90,7 +90,7 @@ void page_cfg()
 			memset((page_t *)cfg.page[i], 0, sizeof(page_t));
 			SAFECOPY(cfg.page[i]->cmd, str);
 			cfg.total_pages++;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_DEL || msk == MSK_CUT) {
@@ -100,7 +100,7 @@ void page_cfg()
 			cfg.total_pages--;
 			for (j = i; j < cfg.total_pages; j++)
 				cfg.page[j] = cfg.page[j + 1];
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_COPY) {
@@ -109,7 +109,7 @@ void page_cfg()
 		}
 		if (msk == MSK_PASTE) {
 			*cfg.page[i] = savpage;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk != 0)
@@ -258,7 +258,7 @@ void chan_cfg()
 			SAFECOPY(cfg.chan[i]->name, str);
 			SAFECOPY(cfg.chan[i]->code, code);
 			cfg.total_chans++;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_DEL || msk == MSK_CUT) {
@@ -268,7 +268,7 @@ void chan_cfg()
 			cfg.total_chans--;
 			for (j = i; j < cfg.total_chans; j++)
 				cfg.chan[j] = cfg.chan[j + 1];
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_COPY) {
@@ -277,7 +277,7 @@ void chan_cfg()
 		}
 		if (msk == MSK_PASTE) {
 			*cfg.chan[i] = savchan;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk != 0)
@@ -384,11 +384,11 @@ void chan_cfg()
 					              , uifcYesNoOpts);
 					if (!k && !(cfg.chan[i]->misc & CHAN_PW)) {
 						cfg.chan[i]->misc |= CHAN_PW;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 					}
 					else if (k == 1 && cfg.chan[i]->misc & CHAN_PW) {
 						cfg.chan[i]->misc &= ~CHAN_PW;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 					}
 					break;
 				case 5:
@@ -404,11 +404,11 @@ void chan_cfg()
 					              , uifcYesNoOpts);
 					if (!k && !(cfg.chan[i]->misc & CHAN_GURU)) {
 						cfg.chan[i]->misc |= CHAN_GURU;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 					}
 					else if (k == 1 && cfg.chan[i]->misc & CHAN_GURU) {
 						cfg.chan[i]->misc &= ~CHAN_GURU;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 					}
 					break;
 				case 6:
@@ -443,7 +443,7 @@ void chan_cfg()
 					              , "Available Chat Action Sets", opt);
 					if (k == -1)
 						break;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 					cfg.chan[i]->actset = k;
 					break;
 			}
@@ -535,7 +535,7 @@ void chatact_cfg(uint setnum)
 			SAFECOPY(cfg.chatact[chatnum[i]]->out, out);
 			cfg.chatact[chatnum[i]]->actset = setnum;
 			cfg.total_chatacts++;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_DEL || msk == MSK_CUT) {
@@ -545,7 +545,7 @@ void chatact_cfg(uint setnum)
 			cfg.total_chatacts--;
 			for (j = chatnum[i]; j < cfg.total_chatacts && j < MAX_OPTS; j++)
 				cfg.chatact[j] = cfg.chatact[j + 1];
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_COPY) {
@@ -555,7 +555,7 @@ void chatact_cfg(uint setnum)
 		if (msk == MSK_PASTE) {
 			*cfg.chatact[chatnum[i]] = savchatact;
 			cfg.chatact[chatnum[i]]->actset = setnum;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk != 0)
@@ -663,7 +663,7 @@ void guru_cfg()
 			SAFECOPY(cfg.guru[i]->name, str);
 			SAFECOPY(cfg.guru[i]->code, code);
 			cfg.total_gurus++;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_DEL || msk == MSK_CUT) {
@@ -673,7 +673,7 @@ void guru_cfg()
 			cfg.total_gurus--;
 			for (j = i; j < cfg.total_gurus; j++)
 				cfg.guru[j] = cfg.guru[j + 1];
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_COPY) {
@@ -682,7 +682,7 @@ void guru_cfg()
 		}
 		if (msk == MSK_PASTE) {
 			*cfg.guru[i] = savguru;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk != 0)
@@ -818,7 +818,7 @@ void actsets_cfg()
 			memset((actset_t *)cfg.actset[i], 0, sizeof(actset_t));
 			SAFECOPY(cfg.actset[i]->name, str);
 			cfg.total_actsets++;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_DEL || msk == MSK_CUT) {
@@ -828,7 +828,7 @@ void actsets_cfg()
 			cfg.total_actsets--;
 			for (j = i; j < cfg.total_actsets; j++)
 				cfg.actset[j] = cfg.actset[j + 1];
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_COPY) {
@@ -837,7 +837,7 @@ void actsets_cfg()
 		}
 		if (msk == MSK_PASTE) {
 			*cfg.actset[i] = savactset;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk != 0)

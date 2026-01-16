@@ -660,7 +660,7 @@ void msgs_cfg()
 			cfg.total_grps--;
 			for (i = grpnum; i < cfg.total_grps; i++)
 				cfg.grp[i] = cfg.grp[i + 1];
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_COPY) {
@@ -675,7 +675,7 @@ void msgs_cfg()
 				if (cfg.sub[i]->grp == CUT_GROUPNUM)
 					cfg.sub[i]->grp = grpnum;
 			*cfg.grp[grpnum] = savgrp;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk != 0)
@@ -821,7 +821,7 @@ void msgs_cfg()
 								if (template == NULL)
 									template = cfg.sub[j];
 								else if (cfg.sub[j] != template) {
-									uifc.changes = 1;
+									uifc.changes = TRUE;
 									cfg.sub[j]->misc = template->misc;
 									cfg.sub[j]->misc &= ~SUB_TEMPLATE;
 									SAFECOPY(cfg.sub[j]->post_arstr, template->post_arstr);
@@ -1330,11 +1330,11 @@ void msg_opts()
 				              , "Purge Deleted E-mail", opt);
 				if (!i && cfg.sys_misc & SM_DELEMAIL) {
 					cfg.sys_misc &= ~SM_DELEMAIL;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (i == 1 && !(cfg.sys_misc & SM_DELEMAIL)) {
 					cfg.sys_misc |= SM_DELEMAIL;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 7:
@@ -1363,11 +1363,11 @@ void msg_opts()
 				              , "Allow Anonymous E-mail", uifcYesNoOpts);
 				if (!i && !(cfg.sys_misc & SM_ANON_EM)) {
 					cfg.sys_misc |= SM_ANON_EM;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (i == 1 && cfg.sys_misc & SM_ANON_EM) {
 					cfg.sys_misc &= ~SM_ANON_EM;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 9:
@@ -1383,11 +1383,11 @@ void msg_opts()
 				              , "Allow Quoting in E-mail", uifcYesNoOpts);
 				if (!i && !(cfg.sys_misc & SM_QUOTE_EM)) {
 					cfg.sys_misc |= SM_QUOTE_EM;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (i == 1 && cfg.sys_misc & SM_QUOTE_EM) {
 					cfg.sys_misc &= ~SM_QUOTE_EM;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 10:
@@ -1403,11 +1403,11 @@ void msg_opts()
 				              , "Allow File Attachment Uploads in E-mail", uifcYesNoOpts);
 				if (!i && !(cfg.sys_misc & SM_FILE_EM)) {
 					cfg.sys_misc |= SM_FILE_EM;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (i == 1 && cfg.sys_misc & SM_FILE_EM) {
 					cfg.sys_misc &= ~SM_FILE_EM;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 11:
@@ -1424,11 +1424,11 @@ void msg_opts()
 				              , "Allow Forwarding of E-mail to NetMail", uifcYesNoOpts);
 				if (!i && !(cfg.sys_misc & SM_FWDTONET)) {
 					cfg.sys_misc |= SM_FWDTONET;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (i == 1 && cfg.sys_misc & SM_FWDTONET) {
 					cfg.sys_misc &= ~SM_FWDTONET;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 12:
@@ -1444,11 +1444,11 @@ void msg_opts()
 				              , "Kill Read E-mail Automatically", uifcYesNoOpts);
 				if (!i && !(cfg.sys_misc & SM_DELREADM)) {
 					cfg.sys_misc |= SM_DELREADM;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (i == 1 && cfg.sys_misc & SM_DELREADM) {
 					cfg.sys_misc &= ~SM_DELREADM;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 13:
@@ -1464,11 +1464,11 @@ void msg_opts()
 				              , "Receive E-mail by Real Name", uifcYesNoOpts);
 				if (!i && !(cfg.msg_misc & MM_REALNAME)) {
 					cfg.msg_misc |= MM_REALNAME;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (i == 1 && cfg.msg_misc & MM_REALNAME) {
 					cfg.msg_misc &= ~MM_REALNAME;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 14:
@@ -1484,12 +1484,12 @@ void msg_opts()
 				if (n == -1)
 					break;
 				if (!n && !(cfg.msg_misc & MM_EMAILSIG)) {
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 					cfg.msg_misc |= MM_EMAILSIG;
 					break;
 				}
 				if (n == 1 && cfg.msg_misc & MM_EMAILSIG) {
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 					cfg.msg_misc &= ~MM_EMAILSIG;
 				}
 				break;

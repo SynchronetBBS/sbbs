@@ -493,7 +493,7 @@ void tevents_cfg()
 			if (!new_timed_event(i))
 				continue;
 			SAFECOPY(cfg.event[i]->code, str);
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_DEL || msk == MSK_CUT) {
@@ -503,7 +503,7 @@ void tevents_cfg()
 			cfg.total_events--;
 			for (j = i; j < cfg.total_events; j++)
 				cfg.event[j] = cfg.event[j + 1];
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_COPY) {
@@ -514,7 +514,7 @@ void tevents_cfg()
 			if (!new_timed_event(i))
 				continue;
 			*cfg.event[i] = savevent;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk != 0)
@@ -737,7 +737,7 @@ void tevents_cfg()
 							cfg.event[i]->days = 0;
 						else
 							cfg.event[i]->days ^= (1 << k);
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 					}
 					break;
 				case 8:

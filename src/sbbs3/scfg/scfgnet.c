@@ -406,7 +406,7 @@ void net_cfg()
 		i = uifc.list(WIN_ORG | WIN_ACT | WIN_CHE, 0, 0, 0, &net_dflt, 0, "Network Configuration", opt);
 		if (i < 0) // ESC
 			break;
-		uifc.changes = 0;
+		uifc.changes = FALSE;
 		if (!load_main_cfg(&cfg, error, sizeof(error))) {
 			uifc.msgf("ERROR: %s", error);
 			break;
@@ -507,7 +507,7 @@ void net_cfg()
 								SAFECOPY(cfg.qhub[i]->call, "*qnet-ftp %s hub.address YOURPASS");
 								cfg.qhub[i]->node = NODE_ANY;
 								cfg.qhub[i]->days = 0x7f; /* all days */
-								uifc.changes = 1;
+								uifc.changes = TRUE;
 								continue;
 							}
 							if (msk == MSK_DEL) {
@@ -520,7 +520,7 @@ void net_cfg()
 									cfg.qhub[i] = cfg.qhub[i + 1];
 									i++;
 								}
-								uifc.changes = 1;
+								uifc.changes = TRUE;
 								continue;
 							}
 							qhub_edit(i);
@@ -658,7 +658,7 @@ void net_cfg()
 
 								cfg.faddr[i] = newfaddr;
 								cfg.total_faddrs++;
-								uifc.changes = 1;
+								uifc.changes = TRUE;
 								continue;
 							}
 							if (msk == MSK_COPY) {
@@ -673,7 +673,7 @@ void net_cfg()
 									cfg.faddr[i] = cfg.faddr[i + 1];
 									i++;
 								}
-								uifc.changes = 1;
+								uifc.changes = TRUE;
 								continue;
 							}
 							smb_faddrtoa(&cfg.faddr[i], str);
@@ -742,11 +742,11 @@ void net_cfg()
 						i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
 						              , "Allow Users to Send NetMail", uifcYesNoOpts);
 						if (!i && !(cfg.netmail_misc & NMAIL_ALLOW)) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc |= NMAIL_ALLOW;
 						}
 						else if (i == 1 && cfg.netmail_misc & NMAIL_ALLOW) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc &= ~NMAIL_ALLOW;
 						}
 						break;
@@ -761,11 +761,11 @@ void net_cfg()
 						i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
 						              , "Allow Users to Send NetMail File Attachments", uifcYesNoOpts);
 						if (!i && !(cfg.netmail_misc & NMAIL_FILE)) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc |= NMAIL_FILE;
 						}
 						else if (i == 1 && cfg.netmail_misc & NMAIL_FILE) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc &= ~NMAIL_FILE;
 						}
 						break;
@@ -785,11 +785,11 @@ void net_cfg()
 						i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
 						              , "Use Aliases in NetMail", uifcYesNoOpts);
 						if (!i && !(cfg.netmail_misc & NMAIL_ALIAS)) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc |= NMAIL_ALIAS;
 						}
 						else if (i == 1 && cfg.netmail_misc & NMAIL_ALIAS) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc &= ~NMAIL_ALIAS;
 						}
 						break;
@@ -804,11 +804,11 @@ void net_cfg()
 						i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
 						              , "NetMail Defaults to Crash Status", uifcYesNoOpts);
 						if (!i && !(cfg.netmail_misc & NMAIL_CRASH)) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc |= NMAIL_CRASH;
 						}
 						else if (i == 1 && cfg.netmail_misc & NMAIL_CRASH) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc &= ~NMAIL_CRASH;
 						}
 						break;
@@ -823,11 +823,11 @@ void net_cfg()
 						i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
 						              , "NetMail Defaults to Direct Status", uifcYesNoOpts);
 						if (!i && !(cfg.netmail_misc & NMAIL_DIRECT)) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc |= NMAIL_DIRECT;
 						}
 						else if (i == 1 && cfg.netmail_misc & NMAIL_DIRECT) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc &= ~NMAIL_DIRECT;
 						}
 						break;
@@ -842,11 +842,11 @@ void net_cfg()
 						i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
 						              , "NetMail Defaults to Hold Status", uifcYesNoOpts);
 						if (!i && !(cfg.netmail_misc & NMAIL_HOLD)) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc |= NMAIL_HOLD;
 						}
 						else if (i == 1 && cfg.netmail_misc & NMAIL_HOLD) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc &= ~NMAIL_HOLD;
 						}
 						break;
@@ -861,11 +861,11 @@ void net_cfg()
 						i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
 						              , "Kill NetMail After it is Sent", uifcYesNoOpts);
 						if (!i && !(cfg.netmail_misc & NMAIL_KILL)) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc |= NMAIL_KILL;
 						}
 						else if (i == 1 && cfg.netmail_misc & NMAIL_KILL) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc &= ~NMAIL_KILL;
 						}
 						break;
@@ -894,11 +894,11 @@ void net_cfg()
 						i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
 						              , "Allow Senders of NetMail to Choose the Source Address", uifcYesNoOpts);
 						if (!i && !(cfg.netmail_misc & NMAIL_CHSRCADDR)) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc |= NMAIL_CHSRCADDR;
 						}
 						else if (i == 1 && cfg.netmail_misc & NMAIL_CHSRCADDR) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.netmail_misc &= ~NMAIL_CHSRCADDR;
 						}
 						break;
@@ -991,11 +991,11 @@ void net_cfg()
 						i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
 						              , "Allow Users to Send E-mail", uifcYesNoOpts);
 						if (!i && !(cfg.inetmail_misc & NMAIL_ALLOW)) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.inetmail_misc |= NMAIL_ALLOW;
 						}
 						else if (i == 1 && cfg.inetmail_misc & NMAIL_ALLOW) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.inetmail_misc &= ~NMAIL_ALLOW;
 						}
 						break;
@@ -1010,11 +1010,11 @@ void net_cfg()
 						i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
 						              , "Allow Users to Send E-mail with File Attachments", uifcYesNoOpts);
 						if (!i && !(cfg.inetmail_misc & NMAIL_FILE)) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.inetmail_misc |= NMAIL_FILE;
 						}
 						else if (i == 1 && cfg.inetmail_misc & NMAIL_FILE) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.inetmail_misc &= ~NMAIL_FILE;
 						}
 						break;
@@ -1034,11 +1034,11 @@ void net_cfg()
 						i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
 						              , "Use Aliases in Internet E-mail", uifcYesNoOpts);
 						if (!i && !(cfg.inetmail_misc & NMAIL_ALIAS)) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.inetmail_misc |= NMAIL_ALIAS;
 						}
 						else if (i == 1 && cfg.inetmail_misc & NMAIL_ALIAS) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.inetmail_misc &= ~NMAIL_ALIAS;
 						}
 						break;
@@ -1053,11 +1053,11 @@ void net_cfg()
 						i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
 						              , "Kill Internet E-mail After it is Sent", uifcYesNoOpts);
 						if (!i && !(cfg.inetmail_misc & NMAIL_KILL)) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.inetmail_misc |= NMAIL_KILL;
 						}
 						else if (i == 1 && cfg.inetmail_misc & NMAIL_KILL) {
-							uifc.changes = 1;
+							uifc.changes = TRUE;
 							cfg.inetmail_misc &= ~NMAIL_KILL;
 						}
 						break;
@@ -1253,7 +1253,7 @@ void qhub_edit(int num)
 				break;
 			case __COUNTER__:
 				cfg.qhub[num]->enabled = !cfg.qhub[num]->enabled;
-				uifc.changes = 1;
+				uifc.changes = TRUE;
 				break;
 			case __COUNTER__:
 				uifc.helpbuf =
@@ -1279,7 +1279,7 @@ void qhub_edit(int num)
 				break;
 			case __COUNTER__:
 				cfg.qhub[num]->misc ^= QHUB_NATIVE;
-				uifc.changes = 1;
+				uifc.changes = TRUE;
 				break;
 			case __COUNTER__:
 				if (cfg.qhub[num]->node == NODE_ANY)
@@ -1318,7 +1318,7 @@ void qhub_edit(int num)
 					if (i == -1)
 						break;
 					cfg.qhub[num]->days ^= (1 << i);
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case __COUNTER__:
@@ -1380,23 +1380,23 @@ void qhub_edit(int num)
 				break;
 			case __COUNTER__:
 				cfg.qhub[num]->misc ^= QHUB_NOKLUDGES;
-				uifc.changes = 1;
+				uifc.changes = TRUE;
 				break;
 			case __COUNTER__:
 				cfg.qhub[num]->misc ^= QHUB_NOVOTING;
-				uifc.changes = 1;
+				uifc.changes = TRUE;
 				break;
 			case __COUNTER__:
 				cfg.qhub[num]->misc ^= QHUB_NOHEADERS;
-				uifc.changes = 1;
+				uifc.changes = TRUE;
 				break;
 			case __COUNTER__:
 				cfg.qhub[num]->misc ^= QHUB_UTF8;
-				uifc.changes = 1;
+				uifc.changes = TRUE;
 				break;
 			case __COUNTER__:
 				cfg.qhub[num]->misc ^= QHUB_EXT;
-				uifc.changes = 1;
+				uifc.changes = TRUE;
 				break;
 			case __COUNTER__:
 				i = cfg.qhub[num]->misc & QHUB_CTRL_A;
@@ -1405,7 +1405,7 @@ void qhub_edit(int num)
 					i = 0;
 				cfg.qhub[num]->misc &= ~QHUB_CTRL_A;
 				cfg.qhub[num]->misc |= i;
-				uifc.changes = 1;
+				uifc.changes = TRUE;
 				break;
 			case __COUNTER__:
 				qhub_adv_edit(cfg.qhub[num]);
@@ -1518,7 +1518,7 @@ void qhub_sub_edit(uint num)
 				cfg.qhub[num]->mode[j] = QHUB_RETCTLA;
 			else
 				cfg.qhub[num]->mode[j] = QHUB_EXPCTLA;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			k++;
 			bar++;
 			continue;
@@ -1532,7 +1532,7 @@ void qhub_sub_edit(uint num)
 				cfg.qhub[num]->conf[j] = cfg.qhub[num]->conf[j + 1];
 				j++;
 			}
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		l = 0;
@@ -1581,7 +1581,7 @@ void qhub_sub_edit(uint num)
 				m = getsub();
 				if (m != -1) {
 					cfg.qhub[num]->sub[j] = cfg.sub[m];
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 			}
 			else if (l == 1) {
@@ -1601,7 +1601,7 @@ void qhub_sub_edit(uint num)
 				uifc.helpbuf = qwk_ctrl_a_help;
 				m = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &m, 0
 				              , "Ctrl-A Codes", opt);
-				uifc.changes = 1;
+				uifc.changes = TRUE;
 				if (!m)
 					cfg.qhub[num]->mode[j] = QHUB_STRIP;
 				else if (m == 1)

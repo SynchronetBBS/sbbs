@@ -558,17 +558,17 @@ int edit_sys_delmsg_policy(int page, int total)
 	if (!i && (cfg.sys_misc & (SM_USRVDELM | SM_SYSVDELM))
 	    != (SM_USRVDELM | SM_SYSVDELM)) {
 		cfg.sys_misc |= (SM_USRVDELM | SM_SYSVDELM);
-		uifc.changes = 1;
+		uifc.changes = TRUE;
 	}
 	else if (i == 1 && cfg.sys_misc & (SM_USRVDELM | SM_SYSVDELM)) {
 		cfg.sys_misc &= ~(SM_USRVDELM | SM_SYSVDELM);
-		uifc.changes = 1;
+		uifc.changes = TRUE;
 	}
 	else if (i == 2 && (cfg.sys_misc & (SM_USRVDELM | SM_SYSVDELM))
 	         != SM_SYSVDELM) {
 		cfg.sys_misc |= SM_SYSVDELM;
 		cfg.sys_misc &= ~SM_USRVDELM;
-		uifc.changes = 1;
+		uifc.changes = TRUE;
 	}
 	return i;
 }

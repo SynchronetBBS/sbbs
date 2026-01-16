@@ -552,7 +552,7 @@ void xfer_cfg()
 			cfg.total_libs--;
 			for (i = libnum; i < cfg.total_libs; i++)
 				cfg.lib[i] = cfg.lib[i + 1];
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_COPY) {
@@ -567,7 +567,7 @@ void xfer_cfg()
 				if (cfg.dir[i]->lib == CUT_LIBNUM)
 					cfg.dir[i]->lib = libnum;
 			*cfg.lib[libnum] = savlib;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		done = 0;
@@ -1110,7 +1110,7 @@ void xfer_cfg()
 							cfg.total_dirs++;
 						}
 						++ported;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 					}
 					fclose(stream);
 					if (ported && cfg.lib[libnum]->sort)
@@ -1218,11 +1218,11 @@ void dir_toggle_options(dir_t* dir)
 				              , "Check for File Existence When Listing", uifcYesNoOpts);
 				if (n == 0 && !(dir->misc & DIR_FCHK)) {
 					dir->misc |= DIR_FCHK;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && (dir->misc & DIR_FCHK)) {
 					dir->misc &= ~DIR_FCHK;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 1:
@@ -1244,7 +1244,7 @@ void dir_toggle_options(dir_t* dir)
 				              , uifcYesNoOpts);
 				if (n == 0) {
 					if (!dir->seqdev) {
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						strcpy(str, "1");
 					}
 					else
@@ -1256,7 +1256,7 @@ void dir_toggle_options(dir_t* dir)
 				}
 				else if (n == 1 && dir->seqdev) {
 					dir->seqdev = 0;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 2:
@@ -1271,11 +1271,11 @@ void dir_toggle_options(dir_t* dir)
 				              , "Force Content Ratings in Descriptions", uifcYesNoOpts);
 				if (n == 0 && !(dir->misc & DIR_RATE)) {
 					dir->misc |= DIR_RATE;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && (dir->misc & DIR_RATE)) {
 					dir->misc &= ~DIR_RATE;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 3:
@@ -1291,11 +1291,11 @@ void dir_toggle_options(dir_t* dir)
 				              , "Include Upload Date in Descriptions", uifcYesNoOpts);
 				if (n == 0 && !(dir->misc & DIR_ULDATE)) {
 					dir->misc |= DIR_ULDATE;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && (dir->misc & DIR_ULDATE)) {
 					dir->misc &= ~DIR_ULDATE;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 4:
@@ -1310,11 +1310,11 @@ void dir_toggle_options(dir_t* dir)
 				              , "Ask for Multiple File Numberings", uifcYesNoOpts);
 				if (n == 0 && !(dir->misc & DIR_MULT)) {
 					dir->misc |= DIR_MULT;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && (dir->misc & DIR_MULT)) {
 					dir->misc &= ~DIR_MULT;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 5:
@@ -1329,11 +1329,11 @@ void dir_toggle_options(dir_t* dir)
 				              , "Search for Duplicate Filenames", uifcYesNoOpts);
 				if (n == 0 && !(dir->misc & DIR_DUPES)) {
 					dir->misc |= DIR_DUPES;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && (dir->misc & DIR_DUPES)) {
 					dir->misc &= ~DIR_DUPES;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 6:
@@ -1353,11 +1353,11 @@ void dir_toggle_options(dir_t* dir)
 				              , "Search for New files", uifcYesNoOpts);
 				if (n == 0 && dir->misc & DIR_NOSCAN) {
 					dir->misc &= ~DIR_NOSCAN;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && !(dir->misc & DIR_NOSCAN)) {
 					dir->misc |= DIR_NOSCAN;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 7:
@@ -1373,11 +1373,11 @@ void dir_toggle_options(dir_t* dir)
 				              , "Search for Auto-ADDFILES", uifcYesNoOpts);
 				if (n == 0 && dir->misc & DIR_NOAUTO) {
 					dir->misc &= ~DIR_NOAUTO;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && !(dir->misc & DIR_NOAUTO)) {
 					dir->misc |= DIR_NOAUTO;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 8:
@@ -1393,11 +1393,11 @@ void dir_toggle_options(dir_t* dir)
 				              , "Import FILE_ID.DIZ and DESC.SDI", uifcYesNoOpts);
 				if (n == 0 && !(dir->misc & DIR_DIZ)) {
 					dir->misc |= DIR_DIZ;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && (dir->misc & DIR_DIZ)) {
 					dir->misc &= ~DIR_DIZ;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 9:
@@ -1412,11 +1412,11 @@ void dir_toggle_options(dir_t* dir)
 				              , "Downloads are Free", uifcYesNoOpts);
 				if (n == 0 && !(dir->misc & DIR_FREE)) {
 					dir->misc |= DIR_FREE;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && (dir->misc & DIR_FREE)) {
 					dir->misc &= ~DIR_FREE;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 10:
@@ -1431,11 +1431,11 @@ void dir_toggle_options(dir_t* dir)
 				              , "Free Download Time", uifcYesNoOpts);
 				if (n == 0 && !(dir->misc & DIR_TFREE)) {
 					dir->misc |= DIR_TFREE;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && (dir->misc & DIR_TFREE)) {
 					dir->misc &= ~DIR_TFREE;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 11:
@@ -1450,11 +1450,11 @@ void dir_toggle_options(dir_t* dir)
 				              , "Deduct Upload Time", uifcYesNoOpts);
 				if (n == 0 && !(dir->misc & DIR_ULTIME)) {
 					dir->misc |= DIR_ULTIME;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && (dir->misc & DIR_ULTIME)) {
 					dir->misc &= ~DIR_ULTIME;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 12:
@@ -1469,11 +1469,11 @@ void dir_toggle_options(dir_t* dir)
 				              , "Give Credit for Uploads", uifcYesNoOpts);
 				if (n == 0 && !(dir->misc & DIR_CDTUL)) {
 					dir->misc |= DIR_CDTUL;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && (dir->misc & DIR_CDTUL)) {
 					dir->misc &= ~DIR_CDTUL;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 13:
@@ -1488,11 +1488,11 @@ void dir_toggle_options(dir_t* dir)
 				              , "Give Uploader Credit for Downloads", uifcYesNoOpts);
 				if (n == 0 && !(dir->misc & DIR_CDTDL)) {
 					dir->misc |= DIR_CDTDL;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && (dir->misc & DIR_CDTDL)) {
 					dir->misc &= ~DIR_CDTDL;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 14:
@@ -1507,11 +1507,11 @@ void dir_toggle_options(dir_t* dir)
 				              , "Credit Uploader with Minutes", uifcYesNoOpts);
 				if (n == 0 && !(dir->misc & DIR_CDTMIN)) {
 					dir->misc |= DIR_CDTMIN;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && dir->misc & DIR_CDTMIN) {
 					dir->misc &= ~DIR_CDTMIN;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 15:
@@ -1526,10 +1526,10 @@ void dir_toggle_options(dir_t* dir)
 				              , "Send Download Notifications", uifcYesNoOpts);
 				if (n == 1 && !(dir->misc & DIR_QUIET)) {
 					dir->misc |= DIR_QUIET;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				} else if (n == 0 && dir->misc & DIR_QUIET) {
 					dir->misc &= ~DIR_QUIET;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 16:
@@ -1551,16 +1551,16 @@ void dir_toggle_options(dir_t* dir)
 				    != DIR_ANON) {
 					dir->misc |= DIR_ANON;
 					dir->misc &= ~DIR_AONLY;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && dir->misc & (DIR_ANON | DIR_AONLY)) {
 					dir->misc &= ~(DIR_ANON | DIR_AONLY);
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 2 && (dir->misc & (DIR_ANON | DIR_AONLY))
 				         != (DIR_ANON | DIR_AONLY)) {
 					dir->misc |= (DIR_ANON | DIR_AONLY);
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 17:
@@ -1578,11 +1578,11 @@ void dir_toggle_options(dir_t* dir)
 				              , uifcYesNoOpts);
 				if (n == 0 && !(dir->misc & DIR_SINCEDL)) {
 					dir->misc |= DIR_SINCEDL;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && (dir->misc & DIR_SINCEDL)) {
 					dir->misc &= ~DIR_SINCEDL;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 18:
@@ -1599,11 +1599,11 @@ void dir_toggle_options(dir_t* dir)
 				              , uifcYesNoOpts);
 				if (n == 0 && !(dir->misc & DIR_MOVENEW)) {
 					dir->misc |= DIR_MOVENEW;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				else if (n == 1 && (dir->misc & DIR_MOVENEW)) {
 					dir->misc &= ~DIR_MOVENEW;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 19:
@@ -1620,10 +1620,10 @@ void dir_toggle_options(dir_t* dir)
 				              , uifcYesNoOpts);
 				if (n == 1 && !(dir->misc & DIR_NOSTAT)) {
 					dir->misc |= DIR_NOSTAT;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				} else if (n == 0 && dir->misc & DIR_NOSTAT) {
 					dir->misc &= ~DIR_NOSTAT;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 20:
@@ -1644,11 +1644,11 @@ void dir_toggle_options(dir_t* dir)
 				if (n == 0 && dir->misc & DIR_NOHASH) {
 					dir->misc &= ~DIR_NOHASH;
 					dir->cfg_modified = true;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				} else if (n == 1 && !(dir->misc & DIR_NOHASH)) {
 					dir->misc |= DIR_NOHASH;
 					dir->cfg_modified = true;
-					uifc.changes = 1;
+					uifc.changes = TRUE;
 				}
 				break;
 			case 21:
@@ -1869,7 +1869,7 @@ void dir_cfg(int libnum)
 			SAFECOPY(cfg.dir[dirnum[i]]->lname, str);
 			SAFECOPY(cfg.dir[dirnum[i]]->sname, str2);
 			SAFECOPY(cfg.dir[dirnum[i]]->path, path);
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_DEL || msk == MSK_CUT) {
@@ -1909,7 +1909,7 @@ void dir_cfg(int libnum)
 			cfg.total_dirs--;
 			for (j = dirnum[i]; j < cfg.total_dirs; j++)
 				cfg.dir[j] = cfg.dir[j + 1];
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		if (msk == MSK_COPY) {
@@ -1921,7 +1921,7 @@ void dir_cfg(int libnum)
 				continue;
 			*cfg.dir[dirnum[i]] = savdir;
 			cfg.dir[dirnum[i]]->lib = libnum;
-			uifc.changes = 1;
+			uifc.changes = TRUE;
 			continue;
 		}
 		i = dirnum[dflt];
@@ -2359,7 +2359,7 @@ void dir_defaults_cfg(int libnum)
 					for (int j = 0; j < cfg.total_dirs; j++) {
 						if (cfg.dir[j]->lib != libnum)
 							continue;
-						uifc.changes = 1;
+						uifc.changes = TRUE;
 						cfg.dir[j]->misc        = dir->misc;
 						cfg.dir[j]->maxfiles    = dir->maxfiles;
 						cfg.dir[j]->maxage      = dir->maxage;
