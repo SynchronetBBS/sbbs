@@ -212,7 +212,7 @@ int fixsmb(char* sub)
 		i = smb_getmsghdr(&smb, &msg);
 		smb_unlockmsghdr(&smb, &msg);
 		if (i != SMB_SUCCESS) {
-			if ((smb.status.attr & SMB_HYPERALLOC) || (i != SMB_ERR_HDR_ID))
+			if ((l == smb.status.header_offset) || (smb.status.attr & SMB_HYPERALLOC) || (i != SMB_ERR_HDR_ID))
 				printf("\n(%06lX) smb_getmsghdr returned %d:\n%s\n", l, i, smb.last_error);
 			continue;
 		}
