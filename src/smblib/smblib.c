@@ -197,6 +197,13 @@ int smb_lock(smb_t* smb)
 		SLEEP(smb->retry_delay);
 	}
 	close(file);
+
+	SLEEP(smb->retry_delay);
+	if (access(path, 0) != 0) {
+		safe_snprintf(smb->last_error, sizeof smb->last_error
+			, "%s %s was unexpectedly removed after creation", __FUNCTION__, path);
+		return SMB_ERR_LOCK;
+	}
 	return SMB_SUCCESS;
 }
 
