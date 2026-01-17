@@ -1288,10 +1288,12 @@ static void js_service_thread(void* arg)
 		if (service->log_level >= LOG_INFO)
 			lprintf(LOG_INFO, "%04d %s [%s] Logging out %s"
 			        , socket, service->protocol, client.addr, service_client.user.alias);
-		int i = logoutuserdat(&scfg, &service_client.user, service_client.logintime);
-		if (i != USER_SUCCESS)
-			errprintf(LOG_ERR, WHERE, "%04d %s [%s] <%s> !ERROR %d in logoutuserdat"
-				, socket, service->protocol, client.addr, service_client.user.alias, i);
+		if (chk_ars(&scfg, startup->login_info_save, &service_client.user, &client)) {
+			int i = logoutuserdat(&scfg, &service_client.user, service_client.logintime);
+			if (i != USER_SUCCESS)
+				errprintf(LOG_ERR, WHERE, "%04d %s [%s] <%s> !ERROR %d in logoutuserdat"
+					, socket, service->protocol, client.addr, service_client.user.alias, i);
+		}
 #ifdef _WIN32
 		if (startup->sound.logout[0] && !sound_muted(&scfg)
 		    && !(service->options & BBS_OPT_MUTE))
