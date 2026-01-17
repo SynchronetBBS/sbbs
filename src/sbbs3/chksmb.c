@@ -125,9 +125,10 @@ void print_hash(hash_t* hash)
 char *usage = "\nusage: chksmb [-opts] <path/to/base[.shd]> [...]\n"
               "\n"
               " opts:\n"
+              "       l - lock message/file base\n"
               "       b - beep on error\n"
               "       s - stop after errored message/file base\n"
-              "       p - pause after errored messsage/file base\n"
+              "       p - pause after errored message/file base\n"
               "       h - don't check hash file\n"
               "       a - don't check allocation files\n"
               "       t - don't check translation strings\n"
@@ -143,11 +144,12 @@ int main(int argc, char **argv)
 	char*    body;
 	char*    tail;
 	int      h, i, j, x, y, lzh, errors, errlast;
-	BOOL     stop_on_error = FALSE, pause_on_error = FALSE, chkxlat = TRUE, chkalloc = TRUE, chkhash = TRUE
-	, lzhmsg, extinfo = FALSE, msgerr;
+	BOOL     stop_on_error = FALSE, pause_on_error = FALSE, chkxlat = TRUE, chkalloc = TRUE, chkhash = TRUE;
+	BOOL     lzhmsg, extinfo = FALSE, msgerr;
 	BOOL     chk_msgids = TRUE;
 	BOOL     chk_subjcrc = TRUE;
 	BOOL     chk_namecrc = TRUE;
+	BOOL     lock_base = FALSE;
 	uint16_t xlat;
 	uint32_t m;
 	ulong    l, n, size, total = 0, orphan, deleted, headers
@@ -209,6 +211,8 @@ int main(int argc, char **argv)
 					case 'b':
 						beep = "\a";
 						break;
+					case 'l':
+						lock_base = TRUE;
 					case 'p':
 						pause_on_error = TRUE;
 						break;
@@ -263,7 +267,11 @@ int main(int argc, char **argv)
 			errors++;
 			continue;
 		}
-
+		if (lock_base && (i = smb_lock(&smb)) != SMB_SUCCESS) {
+			printf("smb_lock returned %d: %s\n", i, smb.last_error);
+			errors++;
+			continue;
+		}
 		const char* base_type = (smb.status.attr & SMB_FILE_DIRECTORY) ? "File" : "Message";
 
 		/* File size sanity checks here: */

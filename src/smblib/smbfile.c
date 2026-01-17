@@ -399,7 +399,7 @@ int smb_removefile(smb_t* smb, smbfile_t* file)
 		return SMB_ERR_HDR_FIELD;
 	}
 
-	if (!smb->locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
+	if (!smb->smbhdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
 
 	file->hdr.attr |= MSG_DELETE;

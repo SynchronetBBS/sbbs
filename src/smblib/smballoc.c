@@ -151,7 +151,7 @@ int smb_freemsgdat(smb_t* smb, off_t offset, uint length, uint16_t refs)
 	if (flen < sizeof(uint16_t))
 		return 0;   // Nothing to do
 
-	if (!smb->locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
+	if (!smb->smbhdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
 
 	clearerr(smb->sda_fp);
@@ -275,7 +275,7 @@ int smb_incmsg_dfields(smb_t* smb, smbmsg_t* msg, uint16_t refs)
 		da_opened = true;
 	}
 
-	if (!smb->locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
+	if (!smb->smbhdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
 
 	for (x = 0; x < msg->hdr.total_dfields; x++) {

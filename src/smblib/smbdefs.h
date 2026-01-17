@@ -683,9 +683,10 @@ typedef struct {                /* Message/File base */
 	uint32_t retry_time;        /* Maximum number of seconds to retry opens/locks */
 	uint32_t retry_delay;       /* Time-slice yield (milliseconds) while retrying */
 	smbstatus_t status;         /* Status header record */
-	bool locked;                /* SMB header is locked */
-	bool continue_on_error;                 /* Attempt recovery after some normally fatal errors */
-	char last_error[MAX_PATH * 2];          /* Last error message */
+	bool smbhdr_locked;         /* SMB header is locked */
+	bool is_locked;             /* Message base is currently locked by this process/instance */
+	bool continue_on_error;     /* Attempt recovery after some normally fatal errors */
+	char last_error[MAX_PATH * 2];  /* Last error message */
 
 	/* Private member variables (not initialized by or used by smblib) */
 	union {

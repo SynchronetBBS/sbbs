@@ -452,11 +452,11 @@ extern "C" int savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client,
 	}
 
 	/* Lock the msgbase early to preserve our message number (used in MSG-IDs) */
-	if (!smb->locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
+	if (!smb->smbhdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
 
 	if (filelength(fileno(smb->shd_fp)) > 0 && (i = smb_getstatus(smb)) != SMB_SUCCESS) {
-		if (smb->locked)
+		if (smb->smbhdr_locked)
 			smb_unlocksmbhdr(smb);
 		return i;
 	}

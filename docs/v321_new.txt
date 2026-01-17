@@ -13,6 +13,7 @@ o Store/reuse each server's client highwater mark for MQTT publishing
   - Issue #910
 o Add support to SMBLIB for "Fixed" format message text
   (e.g. for messages uploaded in raw input mode)
+o Better support for maintaining/rebuilding message base indexes while in-use
 o Support short (8-char) less ambiguous "verbal" dates in multiple formats
   for display purposes (e.g. "Jan02'26" instead of "01/02/26")
 o Expand 16-bit unsigned integer statistical user fields to 32-bit
@@ -38,6 +39,8 @@ o Track user bytes downloaded (in files) per day
 
 Terminal Server
 ~~~~~~~~~~~~~~~
+o New node*/status.ini file to report current node status with more accurate
+  representation of the current external program being executed, if any
 o Multiple loadable modules may be configured for each loadable module type
   in SCFG->System->Loadable Modules, individually restrictable via ARS
 o Newly abstracted (via C++ classes) terminal input/output
@@ -274,6 +277,8 @@ o New menu: System->Extra Attribute Codes controls extra attribute
   support in display files (e.g. menus)
 o New option: System->New User Prompts->Force Multi-word Real Name
   (default: Yes)
+o New Option: System->New User Values->Toggles->Mouse-enabled Terminal
+  (Defualt: No)
 o New option: System->Security->Demand High Quality Password
   (default: No)
 o New Option: System->Advanced->Statistics Interval (cache duration)
@@ -281,10 +286,13 @@ o New Option: System->Advanced->Statistics Interval (cache duration)
 o New option: External Editors ... Retain Ctrl-A Codes in Quotes
 o New System->Security Options->Security Level Values... "Downloads Per Day"
   (D/D): defaults to 0/Unlimited for each level
+o System->Loadable Modules now allows multiple modules to be configured per
+  "Loadable Module" type, restricting access based on Access Requirements (ARS)
 o System->Short Date Format can be used to select a verbal or numeric date
   format (of many forms) for displaying short dates
 o Remove external editor option: "Expand LF to CRLF" - no longer needed
 o Each configured sub-board can have each extra attribute type toggled on/off
+o Access Requirements editing menu updated to include terminal and user types
 o Resolved issue of System menu detecting changes by the sysop
   (and prompting to Save Changes when exiting) when no changes were actually
   made, just that DST had been auto-enabled/disabled based on the date

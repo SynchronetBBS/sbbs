@@ -59,7 +59,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 			return retval;
 	}
 
-	if (!smb->locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
+	if (!smb->smbhdr_locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return SMB_ERR_LOCK;
 
 	msg->hdr.total_dfields = 0;
@@ -304,7 +304,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 	if (retval != SMB_SUCCESS)
 		smb_freemsg_dfields(smb, msg, 1);
 
-	if (smb->locked)
+	if (smb->smbhdr_locked)
 		smb_unlocksmbhdr(smb);
 	FREE_AND_NULL(lzhbuf);
 	FREE_LIST(hashes, n);

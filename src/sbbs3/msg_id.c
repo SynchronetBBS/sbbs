@@ -34,7 +34,7 @@ static ulong msg_number(smbmsg_t* msg)
 
 uint32_t get_new_msg_number(smb_t* smb)
 {
-	bool locked = smb->locked;
+	bool locked = smb->smbhdr_locked;
 
 	if (!locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
 		return 0;
