@@ -52,44 +52,40 @@ void sort_index(smb_t* smb)
 	printf("Sorting index... ");
 	if ((idxbuf = malloc(idxreclen * smb->status.total_msgs)) == NULL) {
 		perror("malloc");
-		return;
+		exit(1);
 	}
 
 	rewind(smb->sid_fp);
 	for (l = 0; l < smb->status.total_msgs; l++)
 		if (smb_fread(smb, idxbuf + (l * idxreclen), idxreclen, smb->sid_fp) != idxreclen) {
 			perror("reading index");
-			break;
+			exit(1);
 		}
 
 	qsort(idxbuf, l, idxreclen
 	      , (int (*)(const void*, const void*)) compare_index);
 
 	rewind(smb->sid_fp);
-	if (chsize(fileno(smb->sid_fp), 0L) != 0)         /* Truncate the index */
+	if (chsize(fileno(smb->sid_fp), 0L) != 0) {        /* Truncate the index */
 		perror("truncating index");
+		exit(1);
+	}
 
 	printf("\nRe-writing index... \n");
 	smb->status.total_msgs = l;
 	for (l = 0; l < smb->status.total_msgs; l++) {
 		if (smb_fwrite(smb, idxbuf + (l * idxreclen), idxreclen, smb->sid_fp) != idxreclen) {
 			perror("writing index");
-			break;
+			exit(1);
 		}
 	}
 	free(idxbuf);
 	printf("\n");
 }
 
-bool we_locked_the_base = false;
-
-void unlock_msgbase(void)
+void close_msgbase(void)
 {
-	int i;
-	if (we_locked_the_base && smb_islocked(&smb) && (i = smb_unlock(&smb)) != 0)
-		printf("smb_unlock returned %d: %s\n", i, smb.last_error);
-	else
-		we_locked_the_base = false;
+	smb_close(&smb);
 }
 
 int fixsmb(char* sub)
@@ -131,18 +127,15 @@ int fixsmb(char* sub)
 		printf("smb_lock returned %d: %s\n", i, smb.last_error);
 		exit(1);
 	}
-	we_locked_the_base = true;
 
 	if ((i = smb_locksmbhdr(&smb)) != 0) {
-		smb_close(&smb);
 		printf("smb_locksmbhdr returned %d: %s\n", i, smb.last_error);
 		exit(1);
 	}
 
 	if ((i = smb_getstatus(&smb)) != 0) {
-		smb_unlocksmbhdr(&smb);
-		smb_close(&smb);
 		printf("smb_getstatus returned %d: %s\n", i, smb.last_error);
+		smb_unlocksmbhdr(&smb);
 		exit(1);
 	}
 
@@ -151,28 +144,32 @@ int fixsmb(char* sub)
 	if (!(smb.status.attr & SMB_HYPERALLOC)) {
 
 		if ((i = smb_open_ha(&smb)) != 0) {
-			smb_close(&smb);
 			printf("smb_open_ha returned %d: %s\n", i, smb.last_error);
 			exit(1);
 		}
 
 		if ((i = smb_open_da(&smb)) != 0) {
-			smb_close(&smb);
 			printf("smb_open_da returned %d: %s\n", i, smb.last_error);
 			exit(1);
 		}
 
 		rewind(smb.sha_fp);
-		if (chsize(fileno(smb.sha_fp), 0L) != 0)      /* Truncate the header allocation file */
+		if (chsize(fileno(smb.sha_fp), 0L) != 0) {    /* Truncate the header allocation file */
 			perror("truncating sha file");
+			exit(1);
+		}
 		rewind(smb.sda_fp);
-		if (chsize(fileno(smb.sda_fp), 0L) != 0)      /* Truncate the data allocation file */
+		if (chsize(fileno(smb.sda_fp), 0L) != 0) {    /* Truncate the data allocation file */
 			perror("truncating sda file");
+			exit(1);
+		}
 	}
 
 	rewind(smb.sid_fp);
-	if (chsize(fileno(smb.sid_fp), 0L) != 0)      /* Truncate the index */
+	if (chsize(fileno(smb.sid_fp), 0L) != 0) {     /* Truncate the index */
 		perror("truncating sid file");
+		exit(1);
+	}
 
 	if (renumber || rehash) {
 		printf("Truncating hash file (due to renumbering/rehashing)\n");
@@ -180,8 +177,10 @@ int fixsmb(char* sub)
 			printf("smb_open_hash returned %d: %s\n", i, smb.last_error);
 			exit(1);
 		}
-		if (chsize(fileno(smb.hash_fp), 0L) != 0)
+		if (chsize(fileno(smb.hash_fp), 0L) != 0) {
 			perror("truncating hash file");
+			exit(1);
+		}
 	}
 
 	if (!(smb.status.attr & SMB_HYPERALLOC)) {
@@ -234,7 +233,7 @@ int fixsmb(char* sub)
 			total++;
 			if ((numbers = realloc_or_free(numbers, total * sizeof(*numbers))) == NULL) {
 				fprintf(stderr, "realloc failure: %lu\n", total * sizeof(*numbers));
-				return EXIT_FAILURE;
+				exit(EXIT_FAILURE);
 			}
 			numbers[total - 1] = msg.hdr.number;
 		}
@@ -320,7 +319,6 @@ int fixsmb(char* sub)
 	smb_unlocksmbhdr(&smb);
 	printf("Closing message base.\n");
 	smb_close(&smb);
-	unlock_msgbase();
 	printf("Done.\n");
 	FREE_AND_NULL(numbers);
 	return 0;
@@ -332,7 +330,7 @@ int main(int argc, char **argv)
 	str_list_t list;
 	int        retval = EXIT_SUCCESS;
 
-	printf("\nFIXSMB v3.20-%s %s/%s SMBLIB %s - Rebuild Synchronet Message Base\n\n"
+	printf("\nFIXSMB v3.21-%s %s/%s SMBLIB %s - Rebuild Synchronet Message Base\n\n"
 	       , PLATFORM_DESC, GIT_BRANCH, GIT_HASH, smb_lib_ver());
 
 	list = strListInit();
@@ -356,7 +354,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	atexit(unlock_msgbase);
+	atexit(close_msgbase);
 
 	for (i = 0; list[i] != NULL && retval == EXIT_SUCCESS; i++)
 		retval = fixsmb(list[i]);
