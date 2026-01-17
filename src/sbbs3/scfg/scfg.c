@@ -72,8 +72,6 @@ enum import_list_type determine_msg_list_type(const char* path)
 {
 	const char* fname = getfname(path);
 
-	if (stricmp(fname, "subs.txt") == 0)
-		return IMPORT_LIST_TYPE_SUBS_TXT;
 	if (stricmp(fname, "areas.bbs") == 0)
 		return IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS;
 	if (stricmp(fname, "control.dat") == 0)
@@ -1332,14 +1330,16 @@ void txt_cfg()
 						"abbreviation of the name.\n"
 					;
 					if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Internal Code (unique)"
-					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED) < 1)
+					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED | K_FIND) < 1)
 						break;
 					if (textsec_is_valid(&cfg, gettextsec(&cfg, str))) {
 						uifc.msg(strDuplicateCode);
 						break;
 					}
-					if (code_ok(str))
+					if (code_ok(str)) {
 						SAFECOPY(cfg.txtsec[i]->code, str);
+						uifc.changes = TRUE;
+					}
 					else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCode);
@@ -1560,14 +1560,16 @@ void shell_cfg()
 						"located in your `exec` or `mods` directories.\n"
 					;
 					if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Internal Code (unique)"
-					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED) < 1)
+					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED | K_FIND) < 1)
 						break;
 					if (shellnum_is_valid(&cfg, getshellnum(&cfg, str, -1))) {
 						uifc.msg(strDuplicateCode);
 						break;
 					}
-					if (code_ok(str))
+					if (code_ok(str)) {
 						SAFECOPY(cfg.shell[i]->code, str);
+						uifc.changes = TRUE;
+					}
 					else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCode);

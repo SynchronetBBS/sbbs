@@ -1275,14 +1275,16 @@ void xtrn_cfg(int section)
 					;
 					SAFECOPY(str, cfg.xtrn[i]->code);
 					if (uifc.input(WIN_MID | WIN_SAV, 0, 10, "Internal Code"
-					           , str, LEN_CODE, K_UPPER | K_EDIT | K_NOSPACE | K_CHANGED) < 1)
+					           , str, LEN_CODE, K_UPPER | K_EDIT | K_NOSPACE | K_CHANGED | K_FIND) < 1)
 						break;
 					if (xtrnnum_is_valid(&cfg, getxtrnnum(&cfg, str))) {
 						uifc.msg(strDuplicateCode);
 						break;
 					}
-					if (code_ok(str))
+					if (code_ok(str)) {
 						SAFECOPY(cfg.xtrn[i]->code, str);
+						uifc.changes = TRUE;
+					}
 					else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCode);
@@ -2443,14 +2445,16 @@ void xtrnsec_cfg()
 						"abbreviation of the name.\n"
 					;
 					if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Internal Code (unique)"
-					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED) < 1)
+					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED | K_FIND) < 1)
 							break;
 					if (xtrnsec_is_valid(&cfg, getxtrnsec(&cfg, str))) {
 						uifc.msg(strDuplicateCode);
 						break;
 					}
-					if (code_ok(str))
+					if (code_ok(str)) {
 						SAFECOPY(cfg.xtrnsec[i]->code, str);
+						uifc.changes = TRUE;
+					}
 					else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCode);

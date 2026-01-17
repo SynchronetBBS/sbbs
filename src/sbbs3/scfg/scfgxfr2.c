@@ -346,7 +346,7 @@ static bool get_parent(char* parent, bool required)
 	char path[LEN_DIR + 2];
 
 	SAFECOPY(path, parent);
-	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Parent Directory", path, LEN_DIR, K_EDIT) < required)
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Parent Directory", path, LEN_DIR, K_EDIT | K_FIND) < required)
 		return false;
 	if (*path != '\0' && !getdircase(path)) {
 		uifc.msgf("Directory doesn't exist: %s", path);
@@ -363,7 +363,7 @@ void xfer_cfg()
 	char         str[256], done = 0, *p;
 	char         path[MAX_PATH + 1];
 	char         tmp_code[MAX_PATH + 1];
-	int          file, j, k, q;
+	int          file, j, k;
 	int          i;
 	long         ported, added;
 	static lib_t savlib;
@@ -641,11 +641,13 @@ void xfer_cfg()
 					uifc.helpbuf = lib_short_name_help;
 					SAFECOPY(str, cfg.lib[libnum]->sname);
 					if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Name to use for Prompts"
-					               , str, LEN_GSNAME, K_EDIT | K_CHANGED) > 0) {
+					               , str, LEN_GSNAME, K_EDIT | K_CHANGED | K_FIND) > 0) {
 						if (libnum_is_valid(&cfg, getlibnum_from_name(&cfg, str)))
 							uifc.msg(strDuplicateLibName);
-						else
+						else {
 							SAFECOPY(cfg.lib[libnum]->sname, str);
+							uifc.changes = TRUE;
+						}
 					}
 					break;
 				case __COUNTER__:
@@ -654,7 +656,7 @@ void xfer_cfg()
 					SAFECOPY(code_prefix, cfg.lib[libnum]->code_prefix);
 					uifc.helpbuf = lib_code_prefix_help;
 					if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Internal Code Prefix"
-					               , code_prefix, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED) < 0)
+					               , code_prefix, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED | K_FIND) < 0)
 						continue;
 					if (code_prefix_exists(code_prefix))
 						uifc.msg(strDuplicateCodePrefix);
@@ -664,6 +666,7 @@ void xfer_cfg()
 							if (cfg.dir[j]->lib == libnum)
 								cfg.dir[j]->cfg_modified = true;
 						}
+						uifc.changes = TRUE;
 					} else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCodePrefix);
@@ -783,7 +786,6 @@ void xfer_cfg()
 			"Distribution Network (e.g. Fidonet).\n"
 					k = 0;
 					ported = 0;
-					q = uifc.changes;
 					strcpy(opt[k++], "CD-ROM    DIRS.TXT");
 					strcpy(opt[k++], "FidoNet   FILEGATE.ZXX");
 					opt[k][0] = 0;
@@ -810,17 +812,20 @@ void xfer_cfg()
 					else if (k == DIRLIST_FIDO)
 						snprintf(str, sizeof str, "FILEGATE.ZXX");
 					if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Filename"
-					               , str, sizeof(str) - 1, K_EDIT) <= 0) {
-						uifc.changes = q;
+					               , str, sizeof(str) - 1, K_EDIT | K_FIND) <= 0) {
 						break;
 					}
-					if (fexist(str)) {
+					if (getdircase(str)) {
+						uifc.msgf("Directory exists: %s", str);
+						break;
+					}
+					if (fexistcase(str)) {
+						snprintf(tmp, sizeof tmp, "File exists: %s", str);
 						strcpy(opt[0], "Overwrite");
 						strcpy(opt[1], "Append");
 						opt[2][0] = 0;
 						j = 0;
-						j = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &j, 0
-						              , "File Exists", opt);
+						j = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &j, 0, tmp, opt);
 						if (j == -1)
 							break;
 						if (j == 0)
@@ -831,7 +836,7 @@ void xfer_cfg()
 					else
 						j = O_WRONLY | O_CREAT;
 					if ((stream = fnopen(&file, str, j | O_TEXT)) == NULL) {
-						uifc.msg("Open Failure");
+						uifc.msgf("Error %d opening %s", errno, str);
 						break;
 					}
 					uifc.pop("Exporting Areas...");
@@ -850,7 +855,6 @@ void xfer_cfg()
 					uifc.pop(NULL);
 					sprintf(str, "%lu File Areas Exported Successfully", ported);
 					uifc.msg(str);
-					uifc.changes = q;
 					break;
 
 				case __COUNTER__:
@@ -2044,7 +2048,7 @@ void dir_cfg(int libnum)
 					uifc.helpbuf = dir_code_help;
 					SAFECOPY(str, cfg.dir[i]->code_suffix);
 					if (uifc.input(WIN_L2R | WIN_SAV, 0, 17, "Internal Code Suffix (unique)"
-					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED) < 1)
+					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED | K_FIND) < 1)
 						break;
 					SAFEPRINTF2(tmp, "%s%s", cfg.lib[cfg.dir[i]->lib]->code_prefix, str);
 					if (getdirnum(&cfg, tmp) >= 0)
@@ -2052,6 +2056,7 @@ void dir_cfg(int libnum)
 					else if (code_ok(str)) {
 						SAFECOPY(cfg.dir[i]->code_suffix, str);
 						cfg.dir[i]->cfg_modified = true;
+						uifc.changes = TRUE;
 					}
 					else {
 						uifc.helpbuf = invalid_code;
