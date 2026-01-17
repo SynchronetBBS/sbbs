@@ -2628,6 +2628,7 @@ bool mimehdr_value_decode(char* str, smbmsg_t* msg)
 				}
 				else if (encoding == 'B'
 				         && b64_decode(tmp, sizeof(tmp), tmp, strlen(tmp)) > 0) { // base64
+					strip_ctrl(tmp, tmp);
 					if (charset == MIMEHDR_CHARSET_UTF8 && !str_is_ascii(tmp) && utf8_str_is_valid(tmp))
 						msg->hdr.auxattr |= MSG_HFIELDS_UTF8;
 					p = tmp;
