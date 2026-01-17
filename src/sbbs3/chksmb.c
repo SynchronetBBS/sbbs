@@ -213,6 +213,7 @@ int main(int argc, char **argv)
 						break;
 					case 'l':
 						lock_base = TRUE;
+						break;
 					case 'p':
 						pause_on_error = TRUE;
 						break;
