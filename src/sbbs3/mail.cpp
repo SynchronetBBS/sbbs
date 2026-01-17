@@ -35,8 +35,8 @@ int sbbs_t::delmail(uint usernumber, int which)
 	int       removed = 0;
 
 	now = time(NULL);
-	if (!smb_islocked(&smb)) {
-		errormsg(WHERE, ERR_CHK, smb.file, 0, "is not locked");
+	if (!smb.is_locked) {
+		errormsg(WHERE, ERR_CHK, smb.file, 0, "was not locked by us");
 		return 0;
 	}
 	if ((i = smb_getstatus(&smb)) != 0) {
