@@ -23,7 +23,7 @@
 
 /****************************************************************************/
 /* Removes all mail messages for usernumber that have been marked 'deleted' */
-/* smb_locksmbhdr() should be called prior to this function 				*/
+/* smb_lock() should be called prior to this function 						*/
 /* Returns the number of messages removed									*/
 /****************************************************************************/
 int sbbs_t::delmail(uint usernumber, int which)
@@ -35,6 +35,10 @@ int sbbs_t::delmail(uint usernumber, int which)
 	int       removed = 0;
 
 	now = time(NULL);
+	if (!smb_islocked(&smb)) {
+		errormsg(WHERE, ERR_CHK, smb.file, 0, "is not locked");
+		return 0;
+	}
 	if ((i = smb_getstatus(&smb)) != 0) {
 		errormsg(WHERE, ERR_READ, smb.file, i, smb.last_error);
 		return 0;
@@ -215,8 +219,10 @@ int sbbs_t::delallmail(uint usernumber, int which, bool permanent, int lm_mode)
 
 	if (msgs)
 		free(mail);
-	if (deleted && (permanent || (cfg.sys_misc & SM_DELEMAIL)))
+	if (deleted && (permanent || (cfg.sys_misc & SM_DELEMAIL)) && smb_lock(&smb) == SMB_SUCCESS) {
 		delmail(usernumber, MAIL_ANY);
+		smb_unlock(&smb);
+	}
 	smb_unlocksmbhdr(&smb);
 	smb_close(&smb);
 	smb_stack(&smb, SMB_STACK_POP);

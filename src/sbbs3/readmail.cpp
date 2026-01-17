@@ -861,10 +861,12 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 	/***************************************/
 
 	if (cfg.sys_misc & SM_DELEMAIL) {
-		if ((i = smb_locksmbhdr(&smb)) != 0)             /* Lock the base, so nobody */
+		if ((i = smb_lock(&smb)) != SMB_SUCCESS)             /* Lock the base, so nobody */
 			errormsg(WHERE, ERR_LOCK, smb.file, i, smb.last_error); /* messes with the index */
-		else
+		else {
 			delmail(usernumber, which);
+			smb_unlock(&smb);
+		}
 	}
 
 	smb_close(&smb);

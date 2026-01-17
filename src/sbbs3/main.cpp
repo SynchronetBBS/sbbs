@@ -4854,10 +4854,12 @@ void sbbs_t::daily_maint(void)
 		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
 	else {
 		if (filelength(fileno(smb.shd_fp)) > 0) {
-			if ((i = smb_locksmbhdr(&smb)) != 0)
+			if ((i = smb_lock(&smb)) != SMB_SUCCESS)
 				errormsg(WHERE, ERR_LOCK, smb.file, i, smb.last_error);
-			else
+			else {
 				lprintf(LOG_INFO, "DAILY: Removed %d e-mail messages", delmail(0, MAIL_ALL));
+				smb_unlock(&smb);
+			}
 		}
 		smb_close(&smb);
 	}

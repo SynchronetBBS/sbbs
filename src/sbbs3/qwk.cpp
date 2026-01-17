@@ -368,8 +368,10 @@ void sbbs_t::qwk_success(uint msgcnt, char bi, char prepack)
 			smb_unlockmsghdr(&smb, &msg);
 		}
 
-		if (deleted && cfg.sys_misc & SM_DELEMAIL)
+		if (deleted && (cfg.sys_misc & SM_DELEMAIL) && smb_lock(&smb) == SMB_SUCCESS) {
 			delmail(useron.number, MAIL_YOUR);
+			smb_unlock(&smb);
+		}
 		smb_close(&smb);
 		if (msgs)
 			free(mail);

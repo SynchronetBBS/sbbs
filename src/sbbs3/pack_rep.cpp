@@ -366,8 +366,10 @@ bool sbbs_t::pack_rep(uint hubnum)
 			smb_freemsgmem(&msg);
 		}
 
-		if (deleted && cfg.sys_misc & SM_DELEMAIL)
+		if (deleted && (cfg.sys_misc & SM_DELEMAIL) && smb_lock(&smb) == SMB_SUCCESS) {
 			delmail(0, MAIL_YOUR);
+			smb_unlock(&smb);
+		}
 		smb_close(&smb);
 		if (mailmsgs)
 			free(mail);

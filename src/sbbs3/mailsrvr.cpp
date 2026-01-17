@@ -1420,7 +1420,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 		mail = loadmail(&smb, &msgs, user.number, MAIL_YOUR, lm_mode);
 		lprintf(LOG_DEBUG, "%04d %-5s <%s> Loaded %lu messages", socket, client.protocol, user.alias, (ulong)msgs);
 
-		for (l = bytes = 0; l < msgs; l++) {
+		for (l = bytes = 0; l < msgs && !smb_islocked(&smb); l++) {
 			msg.hdr.number = mail[l].number;
 			if ((i = smb_getmsgidx(&smb, &msg)) != SMB_SUCCESS) {
 				errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) getting message index"
@@ -1458,6 +1458,11 @@ static bool pop3_client_thread(pop3_t* pop3)
 			truncsp(buf);
 			if (startup->options & MAIL_OPT_DEBUG_POP3)
 				lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, client.protocol, buf);
+			if (smb_islocked(&smb)) {
+				lprintf(LOG_WARNING, "%04d %-5s [%s] <%s> !MAIL BASE LOCKED: %s", socket, client.protocol, host_ip, user.alias, smb.last_error);
+				sockprintf(socket, client.protocol, session, "-ERR database locked, try again later");
+				break;
+			}
 			if (!stricmp(buf, "NOOP")) {
 				sockprintf(socket, client.protocol, session, "+OK");
 				continue;
@@ -1483,7 +1488,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 					sockprintf(socket, client.protocol, session, "-ERR %d locking message base", i);
 					continue;
 				}
-				for (l = 0; l < msgs; l++) {
+				for (l = 0; l < msgs && !smb_islocked(&smb); l++) {
 					msg.hdr.number = mail[l].number;
 					if ((i = smb_getmsgidx(&smb, &msg)) != SMB_SUCCESS) {
 						errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) getting message index"
@@ -1565,7 +1570,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 				}
 				/* List ALL messages */
 				sockprintf(socket, client.protocol, session, "+OK %u messages (%lu bytes)", msgs, bytes);
-				for (l = 0; l < msgs; l++) {
+				for (l = 0; l < msgs && !smb_islocked(&smb); l++) {
 					msg.hdr.number = mail[l].number;
 					if ((i = smb_getmsgidx(&smb, &msg)) != SMB_SUCCESS) {
 						errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) getting message index"
@@ -1676,7 +1681,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 					lprintf(LOG_DEBUG, "%04d %-5s <%s> message transfer complete (%lu lines) from %s"
 					        , socket, client.protocol, user.alias, lines_sent, msg.from);
 
-					if (!(startup->options & MAIL_OPT_NO_READ_POP3)) {
+					if (!(startup->options & MAIL_OPT_NO_READ_POP3) && !smb_islocked(&smb)) {
 						if ((i = smb_locksmbhdr(&smb)) != SMB_SUCCESS) {
 							errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) locking message base"
 							          , socket, client.protocol, user.alias, i, smb.last_error);
@@ -3163,12 +3168,6 @@ static bool smtp_client_thread(smtp_t* smtp)
 	}
 
 	SAFEPRINTF(smb.file, "%smail", scfg.data_dir);
-	if (smb_islocked(&smb)) {
-		lprintf(LOG_WARNING, "%04d %-5s [%s] !MAIL BASE LOCKED: %s"
-		        , socket, client.protocol, host_ip, smb.last_error);
-		sockprintf(socket, client.protocol, session, smtp_error, "mail base locked");
-		return false;
-	}
 	SAFEPRINTF(spam.file, "%sspam", scfg.data_dir);
 	spam.retry_time = scfg.smb_retry_time;
 	spam.subnum = INVALID_SUB;
@@ -3234,6 +3233,12 @@ static bool smtp_client_thread(smtp_t* smtp)
 			fprintf(spy, "%s\n", buf);
 		if (relay_user.number == 0 && dnsbl_result.s_addr && startup->options & MAIL_OPT_DNSBL_THROTTLE)
 			mswait(DNSBL_THROTTLE_VALUE);
+		if (smb_islocked(&smb)) {
+			lprintf(LOG_WARNING, "%04d %-5s %s !MAIL BASE LOCKED: %s"
+					, socket, client.protocol, client_id, smb.last_error);
+			sockprintf(socket, client.protocol, session, smtp_error, "mail base locked");
+			break;
+		}
 		if (state >= SMTP_STATE_DATA_HEADER) {
 			if (!strcmp(buf, ".")) {
 
@@ -5640,8 +5645,10 @@ static void sendmail_thread(void* arg)
 		SAFEPRINTF(smb.file, "%smail", scfg.data_dir);
 		smb.retry_time = scfg.smb_retry_time;
 		smb.subnum = INVALID_SUB;
-		if ((i = smb_open(&smb)) != SMB_SUCCESS)
+		if ((i = smb_open(&smb)) != SMB_SUCCESS) {
+			lprintf(LOG_DEBUG, "0000 SEND ERROR %d (%s) opening: %s", i, smb.last_error, smb.file);
 			continue;
+		}
 		if ((i = smb_locksmbhdr(&smb)) != SMB_SUCCESS)
 			continue;
 		i = smb_getstatus(&smb);
@@ -5655,7 +5662,7 @@ static void sendmail_thread(void* arg)
 		last_msg = smb.status.last_msg;
 		last_scan = time(NULL);
 		mail = loadmail(&smb, &msgs, /* to network */ 0, MAIL_YOUR, 0);
-		for (u = 0; u < msgs; u++) {
+		for (u = 0; u < msgs && !smb_islocked(&smb); u++) {
 			if (active_sendmail != 0)
 				active_sendmail = 0, update_clients();
 
