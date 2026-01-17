@@ -149,7 +149,6 @@ int main(int argc, char **argv)
 	BOOL     chk_msgids = TRUE;
 	BOOL     chk_subjcrc = TRUE;
 	BOOL     chk_namecrc = TRUE;
-	BOOL     lock_base = FALSE;
 	uint16_t xlat;
 	uint32_t m;
 	ulong    l, n, size, total = 0, orphan, deleted, headers
@@ -211,9 +210,6 @@ int main(int argc, char **argv)
 					case 'b':
 						beep = "\a";
 						break;
-					case 'l':
-						lock_base = TRUE;
-						break;
 					case 'p':
 						pause_on_error = TRUE;
 						break;
@@ -268,7 +264,7 @@ int main(int argc, char **argv)
 			errors++;
 			continue;
 		}
-		if (lock_base && (i = smb_lock(&smb)) != SMB_SUCCESS) {
+		if ((i = smb_lock(&smb)) != SMB_SUCCESS) {
 			printf("smb_lock returned %d: %s\n", i, smb.last_error);
 			errors++;
 			continue;
