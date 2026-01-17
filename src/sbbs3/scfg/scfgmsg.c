@@ -1215,6 +1215,8 @@ void msg_opts()
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Users Can View Deleted Messages"
 		         , cfg.sys_misc & SM_USRVDELM ? "Yes" : cfg.sys_misc & SM_SYSVDELM
 		        ? "Sysops Only":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "MailBase Storage Method"
+		         , cfg.sys_misc & SM_FASTMAIL ? "Fast Allocation" : "Self-packing");
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%hu", "Days of New Messages for Guest", cfg.guest_msgscan_init);
 		opt[i][0] = 0;
 		uifc.helpbuf =
@@ -1497,6 +1499,35 @@ void msg_opts()
 				edit_sys_delmsg_policy(false, false);
 				break;
 			case 16:
+				n = (cfg.sys_misc & SM_FASTMAIL) ? 1:0;
+				strcpy(opt[0], "Self-packing");
+				strcpy(opt[1], "Fast Allocation");
+				opt[2][0] = 0;
+				uifc.helpbuf =
+					"`MailBase Storage Method:`\n"
+					"\n"
+					"To have all new mail message headers and data `appended` to the existing\n"
+					"data/mail.shd and .sdt files (for performance and reliability reasons)\n"
+					"set this option to `Fast Allocation`, but know that you will need to\n"
+					"periodically pack the MailBase (using `'smbutil p'`) to keep its files\n"
+					"from infinitely growing in size.\n"
+					"\n"
+					"The default and normally-recommended setting is `Self-packing`.\n"
+				;
+				n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+				              , "Mailbase Storage Method", opt);
+				if (n < 0)
+					break;
+				if (n == 0 && (cfg.sys_misc & SM_FASTMAIL)) {
+					uifc.changes = TRUE;
+					cfg.sys_misc &= ~SM_FASTMAIL;
+				}
+				else if (n == 1 && !(cfg.sys_misc & SM_FASTMAIL)) {
+					uifc.changes = TRUE;
+					cfg.sys_misc |= SM_FASTMAIL;
+				}
+				break;
+			case 17:
 				uifc.helpbuf =
 					"`Days of New Messages for Guest:`\n"
 					"\n"
