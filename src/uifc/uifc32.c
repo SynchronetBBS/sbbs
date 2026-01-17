@@ -2529,8 +2529,10 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 	str[j] = 0;
 	if (mode & K_EDIT)
 	{
-		if (!(mode & K_FIND) && strcmp(outstr, str))
-			api->changes = TRUE;
+		if (strcmp(outstr, str) != 0) {
+			if (!(mode & K_FIND))
+				api->changes = TRUE;
+		}
 		else if (mode & K_CHANGED)
 			j = -1;
 	}
