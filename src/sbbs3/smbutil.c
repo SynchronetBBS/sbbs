@@ -19,7 +19,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#define SMBUTIL_VER "3.20"
+#define SMBUTIL_VER "3.21"
 char        compiler[32];
 
 const char *wday[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
@@ -1206,7 +1206,7 @@ void packmsgs(ulong packable)
 		ZERO_VAR(msg);
 		fseek(smb.sid_fp, l * idxreclen, SEEK_SET);
 		printf("%lu of %" PRIu32 "\r", l + 1, smb.status.total_msgs);
-		if (!fread(&msg.idx, sizeof(msg.idx), 1, smb.sid_fp))
+		if (!fread(&msg.idx, idxreclen, 1, smb.sid_fp))
 			break;
 		if (msg.idx.attr & MSG_DELETE) {
 			printf("\nDeleted index %lu: msg number %lu\n", l, (ulong) msg.idx.number);
@@ -1305,8 +1305,7 @@ void packmsgs(ulong packable)
 		} else {
 			msg.idx.offset = (uint32_t)offset;
 			smb_init_idx(&smb, &msg);
-			fseek(tmp_sid, l * idxreclen, SEEK_SET);
-			fwrite(&msg.idx, 1, sizeof(msg.idx), tmp_sid);
+			fwrite(&msg.idx, 1, idxreclen, tmp_sid);
 
 			/* Write the new header entry */
 			fseek(tmp_shd, msg.idx.offset, SEEK_SET);
