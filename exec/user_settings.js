@@ -232,7 +232,7 @@ while(bbs.online && !js.terminated) {
 				thisuser.editor = '';
 			}
 			else {
-				if (!bbs.select_editor()) {
+				if (!bbs.select_editor(thisuser)) {
 					console.print(gettext("Sorry, no external editors are available to you"))
 					console.newline();
 				}
@@ -245,7 +245,7 @@ while(bbs.online && !js.terminated) {
 			thisuser.settings ^= USER_COLDKEYS;
 			break;
 		case 'K':
-			bbs.select_shell();
+			bbs.select_shell(thisuser);
 			break;
 		case 'I': /* Language */
 			lang.select((bbs.sys_status & SS_USERON) ? thisuser : user);

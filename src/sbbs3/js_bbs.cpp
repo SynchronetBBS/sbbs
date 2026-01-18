@@ -4598,16 +4598,25 @@ js_getnstime(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_select_shell(JSContext *cx, uintN argc, jsval *arglist)
 {
+	jsval *    argv = JS_ARGV(cx, arglist);
 	sbbs_t*    sbbs;
 	jsrefcount rc;
 
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	user_t* user = &sbbs->useron;
+	if (argc > 0 && JSVAL_IS_OBJECT(argv[0])) {
+		JSObject* obj = JSVAL_TO_OBJECT(argv[0]);
+		if (obj == nullptr)
+			return JS_FALSE;
+		JSClass* cl = JS_GetClass(cx, obj);
+		if (cl != nullptr && strcmp(cl->name, "User") == 0)
+			user = *(user_t **)(JS_GetPrivate(cx, obj));
+	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->select_shell()));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->select_shell(user)));
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -4615,16 +4624,25 @@ js_select_shell(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_select_editor(JSContext *cx, uintN argc, jsval *arglist)
 {
+	jsval *    argv = JS_ARGV(cx, arglist);
 	sbbs_t*    sbbs;
 	jsrefcount rc;
 
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	user_t* user = &sbbs->useron;
+	if (argc > 0 && JSVAL_IS_OBJECT(argv[0])) {
+		JSObject* obj = JSVAL_TO_OBJECT(argv[0]);
+		if (obj == nullptr)
+			return JS_FALSE;
+		JSClass* cl = JS_GetClass(cx, obj);
+		if (cl != nullptr && strcmp(cl->name, "User") == 0)
+			user = *(user_t **)(JS_GetPrivate(cx, obj));
+	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->select_editor()));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->select_editor(user)));
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -5244,11 +5262,11 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , JSDOCSTR("Confirm or change a new-scan time, returns the new new-scan time value (<i>time_t</i> format).")
 	 , 310
 	},
-	{"select_shell",    js_select_shell,    0,  JSTYPE_BOOLEAN, JSDOCSTR("")
+	{"select_shell",    js_select_shell,    0,  JSTYPE_BOOLEAN, JSDOCSTR("[<i>User</i> user=<i>current</i>]")
 	 , JSDOCSTR("Prompt user to select a new command shell.")
 	 , 310
 	},
-	{"select_editor",   js_select_editor,   0,  JSTYPE_BOOLEAN, JSDOCSTR("")
+	{"select_editor",   js_select_editor,   0,  JSTYPE_BOOLEAN, JSDOCSTR("[<i>User</i> user=<i>current</i>]")
 	 , JSDOCSTR("Prompt user to select a new external message editor.")
 	 , 310
 	},

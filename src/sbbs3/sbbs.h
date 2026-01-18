@@ -774,8 +774,8 @@ public:
 	bool	ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool dir=false);
 	SOCKET	ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN*);
 
-	bool	select_shell(void);
-	bool	select_editor(void);
+	bool	select_shell(user_t*);
+	bool	select_editor(user_t*);
 
 	bool	set_shell(int shell_index);
 	bool	set_shell(const char* code);

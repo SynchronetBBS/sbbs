@@ -1953,14 +1953,14 @@ int sbbs_t::exec(csi_t *csi)
 			term->restoreline();
 			return 0;
 		case CS_SELECT_SHELL:
-			csi->logic = select_shell() ? LOGIC_TRUE:LOGIC_FALSE;
+			csi->logic = select_shell(&useron) ? LOGIC_TRUE:LOGIC_FALSE;
 			return 0;
 		case CS_SET_SHELL:
 			csi->logic = set_shell(csi->str) ? LOGIC_TRUE:LOGIC_FALSE;
 			return 0;
 
 		case CS_SELECT_EDITOR:
-			csi->logic = select_editor() ? LOGIC_TRUE:LOGIC_FALSE;
+			csi->logic = select_editor(&useron) ? LOGIC_TRUE:LOGIC_FALSE;
 			return 0;
 		case CS_SET_EDITOR:
 			csi->logic = set_editor(csi->str) ? LOGIC_TRUE:LOGIC_FALSE;
@@ -2080,16 +2080,16 @@ bool sbbs_t::set_shell(int shell_index)
 	return set_shell(cfg.shell[shell_index]->code);
 }
 
-bool sbbs_t::select_shell(void)
+bool sbbs_t::select_shell(user_t* user)
 {
 	int i;
 
 	for (i = 0; i < cfg.total_shells; i++)
-		uselect(1, i, text[CommandShellHeading], cfg.shell[i]->name, cfg.shell[i]->ar);
-	if ((i = uselect(0, useron.shell, 0, 0, 0)) >= 0) {
-		useron.shell = i;
-		if (useron.number > 0 && !useron_is_guest())
-			putuserstr(useron.number, USER_SHELL, cfg.shell[i]->code);
+		uselect(1, i, text[CommandShellHeading], cfg.shell[i]->name, user == &useron ? cfg.shell[i]->ar : nullptr);
+	if ((i = uselect(0, user->shell, 0, 0, 0)) >= 0) {
+		user->shell = i;
+		if (user->number > 0 && !user_is_guest(user))
+			putuserstr(user->number, USER_SHELL, cfg.shell[i]->code);
 		return true;
 	}
 	return false;
@@ -2115,19 +2115,19 @@ bool sbbs_t::set_editor(const char* code)
 }
 
 // Returns false if no editors were available
-bool sbbs_t::select_editor(void)
+bool sbbs_t::select_editor(user_t* user)
 {
 	int i;
 
 	uselect_count = 0;
 	for (i = 0; i < cfg.total_xedits; i++)
-		uselect(1, i, text[ExternalEditorHeading], cfg.xedit[i]->name, cfg.xedit[i]->ar);
+		uselect(1, i, text[ExternalEditorHeading], cfg.xedit[i]->name, user == &useron ? cfg.xedit[i]->ar : nullptr);
 	if (uselect_count < 1)
 		return false;
-	if ((i = uselect(0, useron.xedit ? (useron.xedit - 1):0, 0, 0, 0)) >= 0) {
-		useron.xedit = i + 1;
-		if (useron.number > 0 && !useron_is_guest())
-			putuserstr(useron.number, USER_XEDIT, cfg.xedit[i]->code);
+	if ((i = uselect(0, user->xedit ? (user->xedit - 1):0, 0, 0, 0)) >= 0) {
+		user->xedit = i + 1;
+		if (user->number > 0 && !user_is_guest(user))
+			putuserstr(user->number, USER_XEDIT, cfg.xedit[i]->code);
 		return true;
 	}
 	return true;
