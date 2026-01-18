@@ -374,6 +374,8 @@ bool sbbs_t::logon_process()
 		bool invoked;
 		if (exec_mod("logon", cfg.logon_mod, &invoked) != 0 && invoked)
 			return false;
+		if (!online)
+			return false;
 	}
 
 	if (thisnode.status != NODE_QUIET && (!user_is_sysop(&useron) || cfg.sys_misc & SM_SYSSTAT)) {
@@ -399,6 +401,8 @@ bool sbbs_t::logon_process()
 	if (cfg.sys_logon.cmd[0] && !(cfg.sys_logon.misc & EVENT_DISABLED)) {                /* execute system logon event */
 		lprintf(LOG_DEBUG, "Executing logon event: %s", cfg.sys_logon.cmd);
 		external(cmdstr(cfg.sys_logon.cmd, nulstr, nulstr, NULL, cfg.sys_logon.misc), EX_STDOUT | cfg.sys_logon.misc); /* EX_SH */
+		if (!online)
+			return false;
 	}
 
 	if (sys_status & SS_QWKLOGON)
