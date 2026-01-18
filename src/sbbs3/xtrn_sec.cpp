@@ -1424,6 +1424,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	}
 
 	start = time(NULL);
+	auto saved_max_socket_inactivity = max_socket_inactivity.load();
 	if (cfg.xtrn[xtrnnum]->max_inactivity > 0)
 		max_socket_inactivity = cfg.xtrn[xtrnnum]->max_inactivity;
 
@@ -1443,7 +1444,8 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		external(cmdstr(cfg.xtrn[xtrnnum]->clean, drop_file, startup_dir, NULL, mode)
 		         , mode & ~(EX_STDIN | EX_CONIO), cfg.xtrn[xtrnnum]->path);
 	}
-	max_socket_inactivity = startup->max_session_inactivity;
+	if (cfg.xtrn[xtrnnum]->max_inactivity > 0)
+		max_socket_inactivity = saved_max_socket_inactivity;
 	/* Re-open the logfile */
 	if (logfile_fp == NULL) {
 		SAFEPRINTF(str, "%snode.log", cfg.node_dir);
