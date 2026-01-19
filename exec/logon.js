@@ -68,8 +68,17 @@ if ((options.rlogin_auto_xtrn) && (bbs.sys_status & SS_RLOGIN) && (console.termi
 //Disable spinning cursor at pause prompts
 //bbs.node_settings|=NM_NOPAUSESPIN	
 
+var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js");
+prompts.operation = "logon";
+
 if(user.security.restrictions&UFLAG_G) {
 	console.cond_newline();
+	if (system.version_hex >= 0x32100) { // Replaces the 3.20 Guest Logon user prompts
+		var guest_options = load("modopts.js", "logon:guest_prompts");
+		if(!guest_options)
+			guest_options = {};
+		prompts.get_terminal(user, guest_options);
+	}
 	while(options.guest_name && bbs.online) {
 		write(options.guest_name);
 		const name = console.getstr(LEN_NAME,K_UPRLWR);
@@ -125,8 +134,6 @@ if(user.security.restrictions&UFLAG_G) {
 else { // !Guest
 
 	// Replaces the 3.20 Logon user prompts
-	var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js");
-	prompts.operation = "logon";
 	if(!user.name)
 		prompts.get_name();
 	if((system.newuser_questions & UQ_HANDLE) && !user.handle)
@@ -148,6 +155,9 @@ else { // !Guest
 	if(!(system.newuser_questions & UQ_NONETMAIL) && !user.netmail)
 		prompts.get_netmail();
 }
+
+if(!bbs.online)
+	exit(1);
 
 // Force split-screen chat on ANSI users
 if(!(user.chat_settings&CHAT_SPLITP) && console.term_supports(USER_ANSI))
@@ -205,6 +215,9 @@ if (!(bbs.sys_status&SS_RLOGIN) || options.rlogin_xtrn_logon !== false) {
 			console.crlf();
 		}
 	}
+
+	if(!bbs.online)
+		exit(1);
 
 	// Last few callers
 	console.aborted=false;
