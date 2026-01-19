@@ -82,17 +82,6 @@ bool sbbs_t::logon_process()
 		useron.cols = TERM_COLS_AUTO;
 		useron.misc &= ~TERM_FLAGS;
 		useron.misc |= autoterm;
-		if (!(useron.misc & (ANSI | PETSCII)) && text[AnsiTerminalQ][0] && yesno(text[AnsiTerminalQ]))
-			useron.misc |= ANSI;
-		if ((useron.misc & ANSI) && text[MouseTerminalQ][0] && confirm(text[MouseTerminalQ], useron.misc & MOUSE))
-			useron.misc |= MOUSE;
-		else
-			useron.misc &= ~MOUSE;
-		if ((useron.misc & RIP) || !(cfg.uq & UQ_COLORTERM)
-		    || (useron.misc & (ANSI | PETSCII) && yesno(text[ColorTerminalQ])))
-			useron.misc |= COLOR;
-		if (!(useron.misc & (NO_EXASCII | PETSCII)) && !yesno(text[ExAsciiTerminalQ]))
-			useron.misc |= NO_EXASCII;
 		if (!set_editor(cfg.new_xedit))
 			set_editor("");
 		useron.prot = cfg.new_prot;
