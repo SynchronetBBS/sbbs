@@ -2929,8 +2929,14 @@ bool unpack_bundle(const char* inbound)
 	char          path[MAX_PATH + 1];
 	char          fname[MAX_PATH + 1];
 	int           day_of_week = 0;
+	int           days_checked = 0;
 	static glob_t g;
 	static size_t gi;
+	time_t        now = time(NULL);
+	struct tm*    tm;
+
+	if ((tm = localtime(&now)) != NULL)
+		day_of_week = (tm->tm_wday + 1) % 7; // Start the file search with 6 days ago
 
 	while (!terminated) {
 		if (gi >= g.gl_pathc) {
@@ -2939,10 +2945,12 @@ bool unpack_bundle(const char* inbound)
 #else // case insensitive file system
 			const char* week[] = { "SU", "MO", "TU", "WE", "TH", "FR", "SA" };
 #endif
-			if (day_of_week >= sizeof week / sizeof week[0])
+			if (days_checked >= 7)
 				break;
 			SAFEPRINTF2(path, "%s*.%s?", inbound, week[day_of_week]);
 			day_of_week++;
+			day_of_week %= 7;
+			++days_checked;
 			gi = 0;
 			globfree(&g);
 			glob(path, 0, NULL, &g);
