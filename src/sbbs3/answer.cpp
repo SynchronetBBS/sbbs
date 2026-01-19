@@ -801,7 +801,7 @@ bool sbbs_t::answer()
 			sys_status |= SS_PAUSEON;
 			menu("../answer");  // Should use P_NOABORT ?
 			sys_status &= ~SS_PAUSEON;
-			if ((i = exec_mod("login", cfg.login_mod)) != 0)
+			if (online && (i = exec_mod("login", cfg.login_mod)) != 0)
 				lprintf(LOG_ERR, "Error %d executing login module", i);
 		} else  /* auto login here */
 			logon();
