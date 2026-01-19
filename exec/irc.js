@@ -38,7 +38,6 @@ if(options && options.utf8_support === false)
 	utf8_support = false;
 if(utf8_support)
 	pmode |= P_UTF8;
-log("utf8_support: " + utf8_support);
 
 // Commands to send...
 var client_cmds = {
