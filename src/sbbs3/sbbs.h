@@ -1149,7 +1149,7 @@ public:
 	bool	chk_ars(const char * str, user_t* user, client_t* client);
 	bool	ar_exp(const uchar ** ptrptr, user_t*, client_t*);
 	void	daily_maint(void);
-	bool	backup(const char* fname, int backup_level, bool rename);
+	int64_t	backup(const char* fname, int backup_level, bool rename);
 
 	/* upload.cpp */
 	bool	uploadfile(file_t* f);

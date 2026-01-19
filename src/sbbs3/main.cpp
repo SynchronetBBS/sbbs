@@ -4687,13 +4687,17 @@ void node_thread(void* arg)
 	thread_down();
 }
 
-bool sbbs_t::backup(const char* fname, int backup_level, bool rename)
+// This version of backup() returns the size of the file backed-up
+int64_t sbbs_t::backup(const char* fname, int backup_level, bool rename)
 {
-	if (!fexist(fname))
-		return false;
+	int64_t bytes = flength(fname);
+	if (bytes < 0)
+		return 0;
 
-	lprintf(LOG_DEBUG, "Backing-up %s (%u bytes)", fname, (int)flength(fname));
-	return ::backup(fname, backup_level, rename) ? true : false;
+	lprintf(LOG_DEBUG, "Backing-up %s (%" PRId64 " bytes)", fname, bytes);
+	if (!backup(fname, backup_level, rename))
+		return false;
+	return bytes;
 }
 
 void sbbs_t::daily_maint(void)
@@ -4716,15 +4720,17 @@ void sbbs_t::daily_maint(void)
 	}
 
 	if (cfg.user_backup_level) {
-		lputs(LOG_INFO, "DAILY: Backing-up user data...");
+		lputs(LOG_DEBUG, "DAILY: Backing-up user data...");
 		SAFEPRINTF(str, "%suser/" USER_DATA_FILENAME, cfg.data_dir);
-		backup(str, cfg.user_backup_level, false);
+		int64_t bytes = backup(str, cfg.user_backup_level, false);
 		SAFEPRINTF(str, "%suser/name.dat", cfg.data_dir);
-		backup(str, cfg.user_backup_level, false);
+		bytes += backup(str, cfg.user_backup_level, false);
+		lprintf(LOG_INFO, "DAILY: Backed-up %s bytes of user data"
+			, byte_estimate_to_str(bytes, str, sizeof str, 1024 * 1024, 1));
 	}
 
 	if (cfg.mail_backup_level) {
-		lputs(LOG_INFO, "DAILY: Backing-up mail data...");
+		lputs(LOG_DEBUG, "DAILY: Backing-up mail data...");
 		smb_t mail;
 		int result = smb_open_sub(&cfg, &mail, INVALID_SUB);
 		if (result != SMB_SUCCESS)
@@ -4735,21 +4741,23 @@ void sbbs_t::daily_maint(void)
 				errprintf(LOG_ERR, WHERE, "ERROR %d (%s) locking mail base", result, mail.last_error);
 			else {
 				SAFEPRINTF(str, "%smail.shd", cfg.data_dir);
-				backup(str, cfg.mail_backup_level, false);
+				int64_t bytes = backup(str, cfg.mail_backup_level, false);
 				SAFEPRINTF(str, "%smail.sha", cfg.data_dir);
-				backup(str, cfg.mail_backup_level, false);
+				bytes += backup(str, cfg.mail_backup_level, false);
 				SAFEPRINTF(str, "%smail.sdt", cfg.data_dir);
-				backup(str, cfg.mail_backup_level, false);
+				bytes += backup(str, cfg.mail_backup_level, false);
 				SAFEPRINTF(str, "%smail.sda", cfg.data_dir);
-				backup(str, cfg.mail_backup_level, false);
+				bytes += backup(str, cfg.mail_backup_level, false);
 				SAFEPRINTF(str, "%smail.sid", cfg.data_dir);
-				backup(str, cfg.mail_backup_level, false);
+				bytes += backup(str, cfg.mail_backup_level, false);
 				SAFEPRINTF(str, "%smail.sch", cfg.data_dir);
-				backup(str, cfg.mail_backup_level, false);
+				bytes += backup(str, cfg.mail_backup_level, false);
 				SAFEPRINTF(str, "%smail.hash", cfg.data_dir);
-				backup(str, cfg.mail_backup_level, false);
+				bytes += backup(str, cfg.mail_backup_level, false);
 				SAFEPRINTF(str, "%smail.ini", cfg.data_dir);
-				backup(str, cfg.mail_backup_level, false);
+				bytes += backup(str, cfg.mail_backup_level, false);
+				lprintf(LOG_INFO, "DAILY: Backed-up %s bytes of mail data"
+					, byte_estimate_to_str(bytes, str, sizeof str, 1024 * 1024, 1));
 				result = smb_unlock(&mail);
 				if (result != SMB_SUCCESS)
 					errprintf(LOG_ERR, WHERE, "ERROR %d (%s) unlocking mail base", result, mail.last_error);
