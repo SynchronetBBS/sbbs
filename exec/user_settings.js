@@ -47,7 +47,8 @@ function display_menu(thisuser)
 		keys += 'T';
 		console.add_hotspot('T');
 		console.putmsg(format(bbs.text(bbs.text.UserDefaultsTerminal)
-			,termdesc.type(true, (bbs.sys_status & SS_USERON) && thisuser.number == user.number ? undefined : thisuser)));
+			,termdesc.type(true, (bbs.sys_status & SS_USERON)
+				&& (thisuser.number == user.number && !user_is_guest) ? undefined : thisuser)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsRows).length) {
 		keys += 'L';
@@ -164,7 +165,7 @@ function display_menu(thisuser)
 	}
 	if (bbs.text(bbs.text.UserDefaultsPassword).length
 		&& (system.settings & SYS_PWEDIT)
-		&& !(thisuser.security.restrictions & UFLAG_G)) {
+		&& !(user_is_guest)) {
 		keys += 'W';
 		console.add_hotspot('W');
 		console.putmsg(bbs.text(bbs.text.UserDefaultsPassword));
@@ -180,6 +181,7 @@ var file_cfg = cfglib.read("file.ini");
 var main_cfg = cfglib.read("main.ini");
 
 var thisuser = new User(argv[0] || user.number);
+var user_is_guest = (thisuser.security.restrictions & UFLAG_G);
 
 const userSigFilename = system.data_dir + "user/" + format("%04d.sig", thisuser.number);
 const PETSCII_DELETE = '\x14';
@@ -237,7 +239,7 @@ while(bbs.online && !js.terminated) {
 					console.newline();
 				}
 			}
-			if (thisuser.number === user.number && (user.security.restrictions & UFLAG_G))
+			if (thisuser.number === user.number && user_is_guest)
 				user.editor = thisuser.editor;
 			break;
 		case 'F':
@@ -248,11 +250,11 @@ while(bbs.online && !js.terminated) {
 			break;
 		case 'K':
 			bbs.select_shell(thisuser);
-			if (thisuser.number === user.number && (user.security.restrictions & UFLAG_G))
+			if (thisuser.number === user.number && user_is_guest)
 				user.command_shell = thisuser.command_shell;
 			break;
 		case 'I': /* Language */
-			lang.select((bbs.sys_status & SS_USERON) ? thisuser : user);
+			lang.select(thisuser.number === user.number ? user : thisuser);
 			break;
 		case 'L':
 		{
