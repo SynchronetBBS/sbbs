@@ -1002,6 +1002,7 @@ public:
 	char	question[MAX_TEXTDAT_ITEM_LEN+1]{};
 	bool	yesno(const char *str, int mode = 0);
 	bool	noyes(const char *str, int mode = 0);
+	bool	confirm(const char* str, bool dflt, int mode = 0) { return dflt ? yesno(str, mode) : !noyes(str, mode); };
 	bool	pause_inside = false;
 	bool	pause(bool set_abort = true);
 	const char*	mnestr = nullptr;
