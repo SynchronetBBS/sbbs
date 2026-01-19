@@ -237,6 +237,8 @@ while(bbs.online && !js.terminated) {
 					console.newline();
 				}
 			}
+			if (thisuser.number === user.number && (user.security.restrictions & UFLAG_G))
+				user.editor = thisuser.editor;
 			break;
 		case 'F':
 			thisuser.settings ^= USER_ANFSCAN;
@@ -246,6 +248,8 @@ while(bbs.online && !js.terminated) {
 			break;
 		case 'K':
 			bbs.select_shell(thisuser);
+			if (thisuser.number === user.number && (user.security.restrictions & UFLAG_G))
+				user.command_shell = thisuser.command_shell;
 			break;
 		case 'I': /* Language */
 			lang.select((bbs.sys_status & SS_USERON) ? thisuser : user);
