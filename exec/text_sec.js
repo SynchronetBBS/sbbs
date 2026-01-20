@@ -40,6 +40,18 @@ function read_list(sec)
 	return list;
 }
 
+function read_mode(sec, dflt)
+{
+	if(typeof dflt !== "string")
+		dflt = "P_CPM_EOF";
+	var f = new File(txtsec_data(sec) + ".ini");
+	if(!f.open("rt"))
+		return dflt;
+	var mode = f.iniGetValue(null, "mode", dflt);
+	f.close();
+	return mode;
+}
+
 function write_list(sec, list)
 {
 	var f = new File(txtsec_data(sec) + ".ini");
@@ -118,7 +130,7 @@ while(bbs.online) {
 						break;
 					i--;
 				}
-				var fname;
+				var fname = '';
 				var files = directory(backslash(txtsec_data(usrsec[cursec])) + "*");
 				for(var f = 0; f < files.length; f++) {
 					var match = false;
@@ -198,18 +210,17 @@ while(bbs.online) {
 						alert("Sorry, you can't read that file");
 						break;
 					}
-					var mode = P_CPM_EOF;
-					if(list[cmd].mode !== undefined)
-						mode = eval(list[cmd].mode);
+					var mode = read_mode(usrsec[cursec], list[cmd].mode);
+					log("mode = " + mode);
 					if(list[cmd].petscii_graphics)
 						console.putbyte(142);
 					if(console.term_supports(USER_RIP))
 						console.write("\x02|*\r\n");
 					var fpath = get_fpath(usrsec[cursec], list[cmd].name);
 					if(list[cmd].tail)
-						console.printtail(fpath, list[cmd].tail, mode);
+						console.printtail(fpath, list[cmd].tail, eval(mode));
 					else
-						console.printfile(fpath, mode);
+						console.printfile(fpath, eval(mode));
 					log(LOG_INFO, "read text file: " + fpath);
 					console.pause();
 					if(console.term_supports(USER_RIP))
