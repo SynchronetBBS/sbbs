@@ -33,7 +33,7 @@ function get_fpath(sec, fname)
 function read_list(sec)
 {
 	var f = new File(txtsec_data(sec) + ".ini");
-	if(!f.open("rt"))
+	if(!f.open("r"))
 		return [];
 	var list = f.iniGetAllObjects();
 	f.close();
@@ -45,7 +45,7 @@ function read_mode(sec, dflt)
 	if(typeof dflt !== "string")
 		dflt = "P_CPM_EOF";
 	var f = new File(txtsec_data(sec) + ".ini");
-	if(!f.open("rt"))
+	if(!f.open("r"))
 		return dflt;
 	var mode = f.iniGetValue(null, "mode", dflt);
 	f.close();
@@ -55,8 +55,9 @@ function read_mode(sec, dflt)
 function write_list(sec, list)
 {
 	var f = new File(txtsec_data(sec) + ".ini");
-	if(!f.open("w+t"))
+	if(!f.open(f.exists ? 'r+':'w+'))
 		return false;
+	f.iniRemoveSections();
 	f.iniSetAllObjects(list);
 	f.close();
 	return true;
@@ -157,7 +158,7 @@ while(bbs.online) {
 						if(!(console.editfile(path)))
 							break;
 				}
-				console.printfile(path);
+				console.printfile(path, eval(read_mode(usrsec[cursec])));
 				console.crlf();
 				console.print(bbs.text(AddTextFileDesc));
 				var desc = console.getstr(file_getname(path), 70, K_EDIT|K_LINE|K_TRIM|K_AUTODEL);
@@ -211,7 +212,6 @@ while(bbs.online) {
 						break;
 					}
 					var mode = read_mode(usrsec[cursec], list[cmd].mode);
-					log("mode = " + mode);
 					if(list[cmd].petscii_graphics)
 						console.putbyte(142);
 					if(console.term_supports(USER_RIP))
