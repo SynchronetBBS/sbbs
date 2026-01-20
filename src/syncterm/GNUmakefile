@@ -240,7 +240,7 @@ dpkgdirs:
 	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/64x64/apps
 	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/256x256/apps
 	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps
-	${QUIET}-mkdir -p dpkg${DESTDIR}${MANPREFIX}/share/man/man1
+	${QUIET}-mkdir -p dpkg${DESTDIR}${MANPREFIX}/man/man1
 	${QUIET}-mkdir -p dpkg/DEBIAN
 
 dpkg-control: dpkg-control.in
