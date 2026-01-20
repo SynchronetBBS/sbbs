@@ -488,7 +488,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			memset(rainbow, 0, sizeof rainbow);
 			parse_attr_str_list(rainbow, LEN_RAINBOW, sp + 8);
 		}
-		else if (isdigit(*(sp + 8))) {
+		else if (IS_DIGIT(*(sp + 8))) {
 			int idx = atoi(sp + 8);
 			if (idx < 0)
 				rainbow_index = -1;

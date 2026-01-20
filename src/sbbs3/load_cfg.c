@@ -42,7 +42,7 @@ char *  readtext(int *line, FILE *stream, long dflt);
 int get_text_num(const char* id)
 {
 	int i;
-	if (isdigit(*id)) {
+	if (IS_DIGIT(*id)) {
 		i = atoi(id);
 		if (i < 1)
 			return TOTAL_TEXT;
