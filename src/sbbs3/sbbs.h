@@ -650,6 +650,7 @@ public:
 	uint	curatr = LIGHTGRAY;     /* Last Attributes requested by attr() */
 	uint	attr_stack[64]{};	/* Saved attributes (stack) */
 	int 	attr_sp = 0;	/* Attribute stack pointer */
+	uint	saved_pcb_attr{LIGHTGRAY};
 	uint	mneattr_low = LIGHTGRAY;
 	uint	mneattr_high = LIGHTGRAY;
 	uint	mneattr_cmd = LIGHTGRAY;

@@ -83,7 +83,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 	char                 tmp2[256];
 	char                 path[MAX_PATH + 1];
 	char*                str = (char*)buf;
-	bool                 exatr = false;
+	bool                 exatr = false; // attributes should be reset to default (lightgray) before newline
 	char                 mark = '\0';
 	int                  i;
 	unsigned             col = term->column;
@@ -251,19 +251,17 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		         && !islower(str[l + 2]) && !islower(str[l + 3])) {
 			uint val = (HEX_CHAR_TO_INT(str[l + 2]) << 4) + HEX_CHAR_TO_INT(str[l + 3]);
 			// @X00 saves the current color and @XFF restores that saved color
-			static uchar save_attr;
 			switch (val) {
 				case 0x00:
-					save_attr = curatr;
+					saved_pcb_attr = curatr;
 					break;
 				case 0xff:
-					attr(save_attr);
+					attr(saved_pcb_attr);
 					break;
 				default:
 					attr(val);
 					break;
 			}
-			exatr = true;
 			l += 4;
 		}
 		else if ((mode & P_WILDCAT)
@@ -271,7 +269,6 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		         && IS_HEXDIGIT(str[l + 1]) && IS_HEXDIGIT(str[l + 2])
 		         && !islower(str[l + 1]) && !islower(str[l + 2])) {
 			attr((HEX_CHAR_TO_INT(str[l + 1]) << 4) + HEX_CHAR_TO_INT(str[l + 2]));
-			// exatr=true;
 			l += 4;
 		}
 		else if ((mode & P_RENEGADE)
@@ -593,14 +590,18 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				else
 					skip = print_utf8_as_cp437(str + l, len - l);
 			} else if (str[l] == '\r' && str[l + 1] == '\n') {
-				if (exatr)
+				if (exatr) {
 					attr(LIGHTGRAY);
+					exatr = false;
+				}
 				term->newline();
 				++lines_printed;
 				skip++;
 			} else if (str[l] == '\n') {
-				if (exatr)
+				if (exatr) {
 					attr(LIGHTGRAY);
+					exatr = false;
+				}
 				term->newline();
 				++lines_printed;
 			} else {
