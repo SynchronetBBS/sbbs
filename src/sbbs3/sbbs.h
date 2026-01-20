@@ -394,6 +394,7 @@ typedef struct js_callback {
 	uint32_t		offline_counter;
 	int32			next_eid;
 	JSBool			auto_terminate;
+	bool			auto_terminated;
 	JSBool			keepGoing;
 	bool			bg;
 	bool			events_supported;

@@ -268,6 +268,7 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 	if (cb->auto_terminate) {
 		for (top_cb = cb; top_cb; top_cb = top_cb->parent_cb) {
 			if (top_cb->terminated != NULL && *top_cb->terminated) {
+				top_cb->auto_terminated = true;
 				JS_ReportWarning(cx, "Terminated");
 				cb->counter = 0;
 				return JS_FALSE;
