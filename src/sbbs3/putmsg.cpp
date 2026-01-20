@@ -83,14 +83,13 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 	char                 tmp2[256];
 	char                 path[MAX_PATH + 1];
 	char*                str = (char*)buf;
-	uchar                exatr = 0;
+	bool                 exatr = false;
 	char                 mark = '\0';
 	int                  i;
 	unsigned             col = term->column;
 	uint                 l = 0;
 	uint                 lines_printed = 0;
 	struct mouse_hotspot hot_spot = {};
-	bool                 lfisnl;
 
 	hot_attr = 0;
 	hungry_hotspots = true;
@@ -156,10 +155,12 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					if (org_cols) {
 						if (term->column > (org_cols - 1)) {
 							term->newline();
+							++lines_printed;
 						}
 					} else {
 						if (term->column >= (cols - 1)) {
 							term->newline();
+							++lines_printed;
 						}
 					}
 				}
@@ -262,7 +263,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					attr(val);
 					break;
 			}
-			exatr = 1;
+			exatr = true;
 			l += 4;
 		}
 		else if ((mode & P_WILDCAT)
@@ -270,7 +271,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		         && IS_HEXDIGIT(str[l + 1]) && IS_HEXDIGIT(str[l + 2])
 		         && !islower(str[l + 1]) && !islower(str[l + 2])) {
 			attr((HEX_CHAR_TO_INT(str[l + 1]) << 4) + HEX_CHAR_TO_INT(str[l + 2]));
-			// exatr=1;
+			// exatr=true;
 			l += 4;
 		}
 		else if ((mode & P_RENEGADE)
@@ -285,7 +286,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			else
 				i |= (curatr & 0xf0);   /* leave background alone */
 			attr(i);
-			exatr = 1;
+			exatr = true;
 			l += 3;   /* Skip |xx */
 		}
 		else if ((mode & P_CELERITY)
@@ -343,12 +344,12 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					attr((curatr & 0x07) << 4);
 					break;
 			}
-			exatr = 1;
+			exatr = true;
 			l += 2;   /* Skip |x */
 		}  /* Skip second digit if it exists */
 		else if ((mode & P_WWIV)
 		         && str[l] == CTRL_C && IS_DIGIT(str[l + 1])) {
-			exatr = 1;
+			exatr = true;
 			switch (str[l + 1]) {
 				default:
 					attr(LIGHTGRAY);
@@ -384,15 +385,6 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			l += 2;
 		}
 		else {
-			lfisnl = false;
-			if (!(mode & P_PETSCII) && str[l] == '\n') {
-				if (exatr)   /* clear at newline for extra attr codes */
-					attr(LIGHTGRAY);
-				if (l == 0 || str[l - 1] != '\r')  /* expand sole LF to CR/LF */
-					lfisnl = true;
-				lines_printed++;
-			}
-
 			/*
 			 * ansi escape sequence:
 			 * Strip broken sequences
@@ -601,10 +593,16 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				else
 					skip = print_utf8_as_cp437(str + l, len - l);
 			} else if (str[l] == '\r' && str[l + 1] == '\n') {
+				if (exatr)
+					attr(LIGHTGRAY);
 				term->newline();
+				++lines_printed;
 				skip++;
-			} else if (str[l] == '\n' && lfisnl) {
+			} else if (str[l] == '\n') {
+				if (exatr)
+					attr(LIGHTGRAY);
 				term->newline();
+				++lines_printed;
 			} else {
 				uint atr = curatr;
 				outchar(str[l]);
