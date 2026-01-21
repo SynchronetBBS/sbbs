@@ -233,6 +233,7 @@ o New @-codes:
   - ADDR2      (alias for FROM)
   - LASTCALL   (date/time of last logoff of this sbbs instance)
   - LASTCALL:t (custom strftime-formatted output of the above date/time)
+  - OPTEXT     (current value of bbs.optext property, writable via JavaScript)
 
 Text Strings
 ~~~~~~~~~~~~
@@ -240,12 +241,53 @@ o WideModeIsNow
 o NoMoreDownloads
 o ReadYourUnreadMailNowQ
 o UserDownloadsToday
+o NodeLoggedOnAtNbps added "via "
 o UserSentYouFile changed to include filename parameter
+o UserDefaultsPassword changed to include '%s' argument (for "or SSH Keys")
 o RawMsgInputModeIsNow changed to include RAWIO @-code
+o Changed to accommodate 40 column terminals better (w/Cond-Linecont):
+  - InternetMailReceived
+  - DeletePostQ
+  - NScanAllGrpsQ
+  - SScanAllGrpsQ
+  - CallingFromNorthAmericaQ
+  - AutoTerminalQ
+  - UeditReadUserMailWQ
+  - UeditReadUserMailSQ
+  - ForwardMailQ
+  - NetMailCostContinueQ
+  - DownloadBatchQ
+  - AddSubToNewScanQ
+  - IceColorTerminalQ
+  - MouseTerminalQ
+  - InternetMailSent
+  - FidoNetMailSent
+  - QWKNetMailSent
+  - ReadYourUnreadMailNowQ
+o Changed to refer to user's host name as such, not computer or client:
+  - EnterYourComputer
+  - UeditComputerModem
 o Changed to accommodate bigger statistical values:
   - UserTimes
   - UserLogons
   - UserEmails
+o Changed to accommodate bigger (60-char) group/lib/dir/sub descriptions:
+  - SubLstHdr
+  - SubLstFmt
+  - GrpLstHdr
+  - GrpLstFmt
+  - DirLstHdr
+  - DirLstFmt
+  - LibLstHdr
+  - LibLstFmt
+  - SubInfoLongName
+  - SubInfoShortName
+  - SubInfoQWKName
+  - SubInfoMaxMsgs
+  - DirInfoLongName
+  - DirInfoShortName
+  - DirInfoAllowedExts
+  - DirInfoMaxFiles
 
 Security
 ~~~~~~~~
@@ -359,6 +401,8 @@ o automsg.js
 o chksetup.js improvements
   - Compares running version of Synchronet against latest release number
   - Reports users whose passwords don't meet current requirements
+o default.js
+  - New /M command to post a message in "meme format"
 o email_sec.js
   - Use the user's chosen sort order for all mail reading modes,
     including sent mail and unread mail
@@ -460,6 +504,7 @@ o New 'bbs' properties:
   - batch_dnload_bytes
   - batch_dnload_cost
   - batch_dnload_time
+  - optext (see OPTEXT @-code)
 o bbs.ver()
   - now takes an optional 'p_mode' (print mode) argument
     (default: P_CENTER | P_80COLS)
