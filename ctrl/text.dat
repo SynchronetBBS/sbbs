@@ -601,7 +601,7 @@
 "\1n\1b[\1h\1wM\1n\1b] \1hForward E-mail to NetMail    \1n\1b: \1c%s\1\\ \1b(\1c%.37s\1b)\r\n"   488 UserDefaultsNetMail
 "\1n\1b[\1h\1wK\1n\1b] \1hCommand Shell                \1n\1b\1\\: \1c%s\r\n"   489 UserDefaultsCommandSet
 "\1n\1b[\1h\1wD\1n\1b] \1hDefault to Quiet Mode        \1n\1b: \1c%s\r\n"   490 UserDefaultsQuiet
-"\1n\1b[\1h\1wW\1n\1b] \1hChange Password or Signature\r\n"               491 UserDefaultsPassword
+"\1n\1b[\1h\1wW\1n\1b] \1hChange Password%s or Signature\r\n"               491 UserDefaultsPassword
 "\1n\1b[\1h\1wA\1n\1b] \1hTemporary/QWK Archive Type   \1n\1b: \1c%s\r\n"   492 UserDefaultsArcType
 "\1n\1b[\1h\1wZ\1n\1b] \1hDefault Download Protocol    \1n\1b\1\\: \1c%s "\ 493 UserDefaultsProtocol
 	"\1b%s\r\n"
