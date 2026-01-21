@@ -4720,7 +4720,7 @@ void sbbs_t::daily_maint(void)
 		}
 	}
 
-	if (cfg.user_backup_level) {
+	if (cfg.user_backup_level && lastuser(&cfg) > 0) {
 		lputs(LOG_DEBUG, "DAILY: Backing-up user data...");
 		SAFEPRINTF(str, "%suser/" USER_DATA_FILENAME, cfg.data_dir);
 		int64_t bytes = backup(str, cfg.user_backup_level, false);
@@ -4730,7 +4730,7 @@ void sbbs_t::daily_maint(void)
 			, byte_estimate_to_str(bytes, str, sizeof str, 1024 * 1024, 1));
 	}
 
-	if (cfg.mail_backup_level) {
+	if (cfg.mail_backup_level && getmail(&cfg, 0, false, /* attr: */ 0) > 0) {
 		lputs(LOG_DEBUG, "DAILY: Backing-up mail data...");
 		smb_t mail;
 		int result = smb_open_sub(&cfg, &mail, INVALID_SUB);
