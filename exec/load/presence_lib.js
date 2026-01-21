@@ -54,6 +54,7 @@ function node_connection_desc(node)
 		else
 			return format(' at %ubps', node.connection);
 	}
+	return null;
 }
 
 // Returns a string representation of the node "misc" flags

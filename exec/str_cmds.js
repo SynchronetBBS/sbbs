@@ -279,7 +279,7 @@ function str_cmds(str)
 			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
-				write("\r\n\001h\001rInvalid Node!");
+				write("\r\n\x01h\x01rInvalid Node!");
 			else {
 				if(system.node_list[i].status==NODE_WFC)
 					system.node_list[i].status=NODE_OFFLINE;
@@ -297,7 +297,7 @@ function str_cmds(str)
 			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
-				write("\r\n\001h\001rInvalid Node!");
+				write("\r\n\x01h\x01rInvalid Node!");
 			else {
 				system.node_list[i].misc^=NODE_RRUN;
 				display_node(i+1);
@@ -389,7 +389,7 @@ function str_cmds(str)
 						js.exec('mqtt_spy.js', this, parseInt(get_nodenum(str)));
 					else
 						bbs.spy(parseInt(get_nodenum(str)));
-					write("\1n\r\nSpy session complete.\r\n");
+					write("\x01n\r\nSpy session complete.\r\n");
 				}
 				catch (e) {}
 			}
@@ -653,7 +653,7 @@ function str_cmds(str)
 			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
-				write("\r\n\001h\001rInvalid Node!");
+				write("\r\n\x01h\x01rInvalid Node!");
 			else {
 				system.node_list[i].misc^=NODE_LOCK;
 				display_node(i+1);
@@ -671,7 +671,7 @@ function str_cmds(str)
 			if(!i) i=bbs.node_num;
 			i--;
 			if(i<0 || i>=system.nodes)
-				write("\r\n\001h\001rInvalid Node!");
+				write("\r\n\x01h\x01rInvalid Node!");
 			else {
 				system.node_list[i].misc^=NODE_INTR;
 				display_node(i+1);
@@ -751,7 +751,7 @@ function str_cmds(str)
 				var sub = grp.sub_list[s];
 				if(sub.name.toLowerCase().indexOf(str) >= 0
 					|| sub.description.toLowerCase().indexOf(str) >= 0) {
-					writeln(format("\1n[\1h%u\1n] %-15s [\1h%2u\1n] %s"
+					writeln(format("\x01n[\x01h%u\x01n] %-15s [\x01h%2u\x01n] %s"
 						,g + 1, grp.name
 						,s + 1, sub.description));
 					}
@@ -769,7 +769,7 @@ function str_cmds(str)
 				var dir = lib.dir_list[s];
 				if(dir.name.toLowerCase().indexOf(str) >= 0
 					|| dir.description.toLowerCase().indexOf(str) >= 0) {
-					writeln(format("\1n[\1h%u\1n] %-15s [\1h%2u\1n] %s"
+					writeln(format("\x01n[\x01h%u\x01n] %-15s [\x01h%2u\x01n] %s"
 						,g + 1, lib.name
 						,s + 1, dir.description));
 					}

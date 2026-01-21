@@ -42,7 +42,7 @@ if(!msgbase.open()) {
         exit();
 }
 
-print("\1n\1h\1b\r\nPosting Poll to sub-board: \1w" + basecode);
+print("\x01n\x01h\x01b\r\nPosting Poll to sub-board: \x01w" + basecode);
 
 var poll = { field_list: [] };
 if(!(poll.subject = prompt("Poll question")))
@@ -50,7 +50,7 @@ if(!(poll.subject = prompt("Poll question")))
 
 var comments = 0;
 var comment;
-while(comment = prompt("Comment [done]")) {
+while((comment = prompt("Comment [done]"))) {
 	if(js.global.bbs && comments >= user.limits.lines_per_message)
 		break;
 	poll.field_list.push({ type: SMB_COMMENT, data: comment});

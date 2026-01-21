@@ -44,16 +44,17 @@ if(this.argc) {
 	for(i=0; i<argc; i++) {
 		if(argv[i].toLowerCase()=="-l") {
 			console.clear(LIGHTGRAY);
-			writeln("\1hInter-BBS Active Users:");
+			writeln("\x01hInter-BBS Active Users:");
 			var timeout = 2500;
 			var sent = lib.request_active_users();
 			if(parseInt(argv[i+1]))
 				timeout = parseInt(argv[i+1]);
 			function poll_callback(loop)
 			{
-				printf("%c\1[", "/-\\|"[loop%4]);
+				printf("%c\x01[", "/-\\|"[loop%4]);
 				if(console.inkey(0))
 					return true;
+				return false;
 			}
 			lib.poll_systems(sent, 0.25, timeout, poll_callback);
 			list_users();
@@ -68,7 +69,7 @@ if(this.argc) {
 
 function print_header(sys)
 {
-	printf("\1n\1c%-28.28s\1h%-37.37s\1h\1gTime   Age Sex\r\n", sys.name, sys.host);
+	printf("\x01n\x01c%-28.28s\x01h%-37.37s\x01h\x01gTime   Age Sex\r\n", sys.name, sys.host);
 }
 
 function list_user(user, sys)
@@ -80,7 +81,7 @@ function list_user(user, sys)
 		action += " (P)";
 	else if(user.msg_waiting)
 		action += " (M)";
-	print(format("\1h\1y %-28.28s\1n\1g%-33.33s%9s %3s %3s"
+	print(format("\x01h\x01y %-28.28s\x01n\x01g%-33.33s%9s %3s %3s"
 		,user.name
 		,action
 		,system.secondstr(user.timeon)
@@ -106,7 +107,7 @@ function send_msg(dest, msg)
 {
 	var result = lib.send_msg(dest, msg, user[options.from_user_prop]);
 	if(result == true)
-		print("\1nMessage sent to: \1h" + dest + "\1n successfully");
+		print("\x01nMessage sent to: \x01h" + dest + "\x01n successfully");
 	else
 		alert(result);
 }
@@ -117,9 +118,9 @@ function getmsg()
 	var msg="";
 	const max_lines = 5;
 
-	printf("\1n\1g\1h%lu\1n\1g lines maximum (blank line sends, Ctrl-C to abort)\r\n",max_lines);
+	printf("\x01n\x01g\x01h%lu\x01n\x01g lines maximum (blank line sends, Ctrl-C to abort)\r\n",max_lines);
 	while(bbs.online && lines<max_lines) {
-		console.print("\1n: \1h");
+		console.print("\x01n: \x01h");
 		mode=0;
 		if(lines+1<max_lines)
 			mode|=K_WRAP;
@@ -180,7 +181,7 @@ function logon_callback(user, sys)
 function logoff_callback(user, sys)
 {
 	console.clearline();
-	print(format("\1n\1h\1y%s \1n\1glogged-off \1h\1w%s\1n", user.name, sys.name));
+	print(format("\x01n\x01h\x01y%s \x01n\x01glogged-off \x01h\x01w%s\x01n", user.name, sys.name));
 	console.line_counter=0;	// defeat pause
 }
 
@@ -188,8 +189,8 @@ prompt:
 while(bbs.online) {
 	console.line_counter=0;	// defeat pause
 	console.clearline();
-	console.print("\1n\xfe \1h\1bInterBBS \1n\xfe ");
-	console.mnemonics("Anyone: ~Telegram,\1\\ Active-Users: ~Message/~List, or ~@Quit@: ");
+	console.print("\x01n\xfe \x01h\x01bInterBBS \x01n\xfe ");
+	console.mnemonics("Anyone: ~Telegram,\x01\\ Active-Users: ~Message/~List, or ~@Quit@: ");
 	console.aborted = false;
 	var key;
 	var last_request = 0;
@@ -219,14 +220,14 @@ while(bbs.online) {
 	}
 	switch(key) {
 		case 'L':
-			print("\1h\1cList\r\n");
+			print("\x01h\x01cList\r\n");
 			list_users();
 			break;
 		case 'T':
-			printf("\1h\1cTelegram\r\n\r\n");
+			printf("\x01h\x01cTelegram\r\n\r\n");
 			var addr_list = userprops.get(lib.props_sent, "address", []);
 			var last_send = userprops.get(lib.props_sent, "localtime");
-			printf("\1n\1h\1yDestination (user@hostname): \1w");
+			printf("\x01n\x01h\x01yDestination (user@hostname): \x01w");
 			dest=console.getstr(get_default_dest(addr_list, last_send),64,K_EDIT|K_AUTODEL, addr_list);
 			if(dest==null || dest=='' || console.aborted) {
 				console.aborted = false;
@@ -242,7 +243,7 @@ while(bbs.online) {
 			console.crlf();
 			break;
 		case 'M':
-			print("\1h\1cMessage\r\n");
+			print("\x01h\x01cMessage\r\n");
 			var imsg_user = imsg_user_list();
 			if(!imsg_user.length) {
 				alert("No active users!\r\n");
@@ -250,7 +251,7 @@ while(bbs.online) {
 			}
 			done=false;
 			while(bbs.online && !done && !console.aborted && imsg_user[last_user]) {
-				printf("\1[\1n\1h\x11\1n-[\1hQ\1nuit/\1hA\1nll]-\1h\x10 \1y%-25s \1c%s\1>"
+				printf("\x01[\x01n\x01h\x11\x01n-[\x01hQ\x01nuit/\x01hA\x01nll]-\x01h\x10 \x01y%-25s \x01c%s\x01>"
 					,imsg_user[last_user].name,imsg_user[last_user].bbs);
 				switch(console.getkey(K_UPPER|K_NOECHO)) {
 					case '+':
@@ -276,14 +277,14 @@ while(bbs.online) {
 						break;
 					case '\x1b':	/* ESC */
 					case 'Q':
-						printf("\r\1>");
+						printf("\r\x01>");
 						done=true;
 						break;
 					case '\r':
 						done=true;
 						dest=format("%s@%s"
 							,imsg_user[last_user].name,imsg_user[last_user].host);
-						printf("\r\1n\1cSending message to \1h%s\1>\r\n",dest);
+						printf("\r\x01n\x01cSending message to \x01h%s\x01>\r\n",dest);
 						if((msg=getmsg())=='')
 							break;
 						send_msg(dest, msg);
@@ -291,13 +292,13 @@ while(bbs.online) {
 						break;
 					case 'A':
 						done=true;
-						printf("\r\1n\1cSending message to \1h%s (%u users)\1>\r\n", "All", imsg_user.length);
+						printf("\r\x01n\x01cSending message to \x01h%s (%u users)\x01>\r\n", "All", imsg_user.length);
 						if((msg=getmsg())=='')
 							break;
 						for(var u in imsg_user) {
 							dest=format("%s@%s"
 								,imsg_user[u].name,imsg_user[u].host);
-							printf("\r\1n\1cSending message: \1h%s\1>\r\n", dest);
+							printf("\r\x01n\x01cSending message: \x01h%s\x01>\r\n", dest);
 							send_msg(dest, msg);
 						}
 						console.crlf();
@@ -306,7 +307,7 @@ while(bbs.online) {
 			}
 			break;
 		default:
-			console.putmsg("\1h\1c@Quit@");
+			console.putmsg("\x01h\x01c@Quit@");
 			break prompt;
 	}
 }

@@ -49,7 +49,7 @@ if(user.settings & USER_ICE_COLOR) {
 	cterm.bright_background(true);
 }
 
-if(options.email_validation == true) {
+if(options.email_validation !== undefined && options.email_validation === true) {
 	js.exec("emailval.js", {});
 	if(!bbs.online)
 		exit();

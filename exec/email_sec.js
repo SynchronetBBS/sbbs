@@ -16,7 +16,7 @@ while(bbs.online) {
 	if(!(user.settings & USER_EXPERT))
 		bbs.menu("e-mail");
 	bbs.nodesync();
-	console.print("\r\n\1_\1y\1hE-mail: \1n");
+	console.print("\r\n\x01_\x01y\x01hE-mail: \x01n");
 	var wm_mode = WM_NONE;
 	var cmdkeys = "LSARUFNKQ?\r";
 	var key = console.getkeys(cmdkeys,K_UPPER);

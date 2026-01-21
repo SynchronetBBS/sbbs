@@ -1,17 +1,17 @@
 function html2asc(buf, mono, footnotes)
 {
-	var NORMAL			="\1N";
-	var HEADING1		="\1H\1Y";
-	var HEADING2		="\1H\1C";
-	var HEADING3		="\1H\1M";
-	var HEADING4		="\1H\1G";
-	var HEADING5		="\1H\1B";
-	var HEADING6		="\1H\1R";
-	var BOLD			="\1N\1H";
-	var ITALIC			="\1N\1C";
-	var UNDERLINE		="\1N\1B";
-	var STRIKE_THROUGH	="\1N\1K\x017";
-	var LIST_ITEM 		="\1N\r\n    \1H\1Wo \1G";
+	var NORMAL			="\x01N";
+	var HEADING1		="\x01H\x01Y";
+	var HEADING2		="\x01H\x01C";
+	var HEADING3		="\x01H\x01M";
+	var HEADING4		="\x01H\x01G";
+	var HEADING5		="\x01H\x01B";
+	var HEADING6		="\x01H\x01R";
+	var BOLD			="\x01N\x01H";
+	var ITALIC			="\x01N\x01C";
+	var UNDERLINE		="\x01N\x01B";
+	var STRIKE_THROUGH	="\x01N\x01K\x017";
+	var LIST_ITEM 		="\x01N\r\n    \x01H\x01Wo \x01G";
 	var links			=[];
 	var i;
 

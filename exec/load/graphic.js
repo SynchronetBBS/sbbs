@@ -429,66 +429,66 @@ Graphic.prototype.ctrl_a_sequence = function(attr, curattr)
 	var str = '';
 	if(((curattr&this.defs.BLINK) && !(attr&this.defs.BLINK)) 
 		|| ((curattr&this.defs.HIGH) && !(attr&this.defs.HIGH))) {
-		str += "\1N";
+		str += "\x01N";
 		curattr = this.defs.LIGHTGRAY;
 	}
 	if((attr&0xf0) != (curattr&0xf0)) {
 		if((attr&this.defs.BLINK) && !(curattr&this.defs.BLINK))
-			str += "\1I";
+			str += "\x01I";
 		switch(attr&0x70) {
 			case 0:
-				str += "\1" + "0";
+				str += "\x01" + "0";
 				break;
 			case this.defs.BG_RED:
-				str += "\1" + "1";
+				str += "\x01" + "1";
 				break;
 			case this.defs.BG_GREEN:
-				str += "\1" + "2";
+				str += "\x01" + "2";
 				break;
 			case this.defs.BG_BROWN:
-				str += "\1" + "3";
+				str += "\x01" + "3";
 				break;
 			case this.defs.BG_BLUE:
-				str += "\1" + "4";
+				str += "\x01" + "4";
 				break;
 			case this.defs.BG_MAGENTA:
-				str += "\1" + "5";
+				str += "\x01" + "5";
 				break;
 			case this.defs.BG_CYAN:
-				str += "\1" + "6";
+				str += "\x01" + "6";
 				break;
 			case this.defs.BG_LIGHTGRAY:
-				str += "\1" + "7";
+				str += "\x01" + "7";
 				break;
 		}
 	}
 	if((attr&0x0f) != (curattr&0x0f)) {
 		if((attr&this.defs.HIGH) && !(curattr&this.defs.HIGH))
-			str += "\1H";
+			str += "\x01H";
 		switch(attr&0x07) {
 			case this.defs.BLACK:
-				str += "\1K";
+				str += "\x01K";
 				break;
 			case this.defs.RED:
-				str += "\1R";
+				str += "\x01R";
 				break;
 			case this.defs.GREEN:
-				str += "\1G";
+				str += "\x01G";
 				break;
 			case this.defs.BROWN:
-				str += "\1Y";
+				str += "\x01Y";
 				break;
 			case this.defs.BLUE:
-				str += "\1B";
+				str += "\x01B";
 				break;
 			case this.defs.MAGENTA:
-				str += "\1M";
+				str += "\x01M";
 				break;
 			case this.defs.CYAN:
-				str += "\1C";
+				str += "\x01C";
 				break;
 			case this.defs.LIGHTGRAY:
-				str += "\1W";
+				str += "\x01W";
 				break;
 		}
 	}
@@ -509,7 +509,7 @@ Object.defineProperty(Graphic.prototype, "MSG", {
 				msg += this.ctrl_a_sequence(this.data[x][y].attr, curattr);
             	curattr = this.data[x][y].attr;
             	ch = this.data[x][y].ch;
-				if(ch == '\1')	// Convert a Ctrl-A char to a Ctrl-AA (escaped)
+				if(ch == '\x01')	// Convert a Ctrl-A char to a Ctrl-AA (escaped)
 					ch += 'A';
 				else if (this.illegal_characters.indexOf(ascii(ch)) >= 0) {
 					if (this.doorway_mode)
@@ -519,7 +519,7 @@ Object.defineProperty(Graphic.prototype, "MSG", {
 				}
                 msg += ch;
         	}
-			msg += '\1N\r\n';
+			msg += '\x01N\r\n';
 			curattr = this.defs.LIGHTGRAY;
     	}
     	return msg;
@@ -832,10 +832,10 @@ Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 		
 		ch=txt[p++];
 		switch(ch) {
-			case '\1':		/* CTRL-A code */
+			case '\x01':		/* CTRL-A code */
 				ch=txt[p++].toUpperCase();
 				switch(ch) {
-					case '\1':	/* A "real" ^A code */
+					case '\x01':	/* A "real" ^A code */
 						this.data[x][y].ch=ch;
 						this.data[x][y].attr=curattr;
 						x++;
@@ -926,7 +926,7 @@ Graphic.prototype.putmsg = function(xpos, ypos, txt, attr, scroll)
 						}
 				}
 				break;
-			case '\7':		/* Beep */
+			case '\x07':		/* Beep */
 				break;
 			case '\r':
 				x=0;

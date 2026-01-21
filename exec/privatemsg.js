@@ -22,8 +22,8 @@ while(bbs.online && !(console.aborted)) {
 		break; 
 	}
 	bbs.nodesync();
-	console.print("\1n\r\n\xfe \1b\1h" + gettext("Private") + " \1n\xfe ");
-	console.mnemonics("~Telegram, ~Message, ~Chat,\1\\ ~InterBBS, ~View, or [~@Quit@]: ");
+	console.print("\x01n\r\n\xfe \x01b\x01h" + gettext("Private") + " \x01n\xfe ");
+	console.mnemonics("~Telegram, ~Message, ~Chat,\x01\\ ~InterBBS, ~View, or [~@Quit@]: ");
 	bbs.sys_status&=~SS_ABORT;
 	var ch;
 	var keys = "TMCIV\r" + console.quit_key;
@@ -74,7 +74,7 @@ while(bbs.online && !(console.aborted)) {
 				shown++;
 			}
 			var web_users = presence.web_users();
-			for(w = 0; w < web_users.length; w++) {
+			for(var w = 0; w < web_users.length; w++) {
 				var web_user = web_users[w];
 				if(web_user.do_not_disturb)
 					continue;
@@ -125,7 +125,7 @@ while(bbs.online && !(console.aborted)) {
 			write(format(bbs.text(SendingTelegramToUser), user_name, user_num));
 			var msg = [];
 			while(msg.length < 5) {
-				write("\1n: \1h");
+				write("\x01n: \x01h");
 				var line = console.getstr(70, msg.length < 4 ? (K_WRAP|K_MSG) : K_MSG);
 				if(!line)
 					break;

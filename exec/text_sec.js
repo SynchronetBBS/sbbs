@@ -40,14 +40,12 @@ function read_list(sec)
 	return list;
 }
 
-function read_mode(sec, dflt)
+function read_mode(sec)
 {
-	if(typeof dflt !== "string")
-		dflt = "P_CPM_EOF";
 	var f = new File(txtsec_data(sec) + ".ini");
 	if(!f.open("r"))
 		return dflt;
-	var mode = f.iniGetValue(null, "mode", dflt);
+	var mode = f.iniGetValue(null, "mode", "P_CPM_EOF");
 	f.close();
 	return mode;
 }
@@ -207,11 +205,11 @@ while(bbs.online) {
 					prev = cmd;
 					cmd--;
 					console.attributes = LIGHTGRAY;
-					if(!bbs.compare_ars(list[cmd].ars)) {
+					if(list[cmd].ars !== undefined && !bbs.compare_ars(list[cmd].ars)) {
 						alert("Sorry, you can't read that file");
 						break;
 					}
-					var mode = read_mode(usrsec[cursec], list[cmd].mode);
+					var mode = list[cmd].mode || read_mode(usrsec[cursec]);
 					if(list[cmd].petscii_graphics)
 						console.putbyte(142);
 					if(console.term_supports(USER_RIP))

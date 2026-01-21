@@ -245,7 +245,7 @@ while(bbs.online && !js.terminated) {
 		console.newline();
 		continue;
 	}
-	if(bbs.compare_ars(menu_cmd.ars)) {
+	if(menu_cmd.ars === undefined || bbs.compare_ars(menu_cmd.ars)) {
 		if(menu_cmd.msg)
 			console.print(menu_cmd.msg);
 		if(menu_cmd.eval)

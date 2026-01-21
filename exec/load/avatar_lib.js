@@ -193,9 +193,9 @@ function read_netuser(username, netaddr)
 	return obj;
 }
 
-function read(usernum, username, netaddr, bbsid)
+function read(usernumber, username, netaddr, bbsid)
 {
-	var usernum = parseInt(usernum, 10);
+	var usernum = parseInt(usernumber, 10);
 	if(!usernum && !username)
 		return false;
 	var obj = cache_get(usernum >= 1 ? usernum : username, netaddr);

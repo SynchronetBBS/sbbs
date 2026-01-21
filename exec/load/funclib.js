@@ -98,126 +98,126 @@ function getColor(color)
 	switch(color)
 	{
 		case "BLACK":
-		case "\1K":
+		case "\x01K":
 			return BLACK;
 		case BLACK:
-			return "\1K";
+			return "\x01K";
 		case "BLUE":
-		case "\1B":
+		case "\x01B":
 			return BLUE;
 		case BLUE:
-			return "\1B";
+			return "\x01B";
 		case "CYAN":
-		case "\1C":
+		case "\x01C":
 			return CYAN;
 		case CYAN:
-			return "\1C";
+			return "\x01C";
 		case "RED":
-		case "\1R":
+		case "\x01R":
 			return RED;
 		case RED:
-			return "\1R";
+			return "\x01R";
 		case "GREEN":
-		case "\1G":
+		case "\x01G":
 			return GREEN;
 		case GREEN:
-			return "\1G";
+			return "\x01G";
 		case "BROWN":
-		case "\1Y":
+		case "\x01Y":
 			return BROWN;
 		case BROWN:
-			return "\1Y";
+			return "\x01Y";
 		case "MAGENTA":
-		case "\1M":
+		case "\x01M":
 			return MAGENTA;
 		case MAGENTA:
-			return "\1M";
+			return "\x01M";
 		case "BG_BLACK":
-		case "\0010":
+		case "\x010":
 			return BG_BLACK;
 		case BG_BLACK:
-			return "\0010";
+			return "\x010";
 		case "BG_BLUE":
-		case "\0014":
+		case "\x014":
 			return BG_BLUE;
 		case BG_BLUE:
-			return "\0014";
+			return "\x014";
 		case "BG_CYAN":
-		case "\0016":
+		case "\x016":
 			return BG_CYAN;
 		case BG_CYAN:
-			return "\0016";
+			return "\x016";
 		case "BG_RED":
-		case "\0011":
+		case "\x011":
 			return BG_RED;
 		case BG_RED:
-			return "\0011";
+			return "\x011";
 		case "BG_GREEN":
-		case "\0012":
+		case "\x012":
 			return BG_GREEN;
 		case BG_GREEN:
-			return "\0012";
+			return "\x012";
 		case "BG_BROWN":
-		case "\0013":
+		case "\x013":
 			return BG_BROWN;
 		case BG_BROWN:
-			return "\0013";
+			return "\x013";
 		case "BG_MAGENTA":
-		case "\0015":
+		case "\x015":
 			return BG_MAGENTA;
 		case BG_MAGENTA:
-			return "\0015";
+			return "\x015";
 		case "BG_LIGHTGRAY":
-		case "\0017":
+		case "\x017":
 			return BG_LIGHTGRAY;
 		case BG_LIGHTGRAY:
-			return "\0017";
+			return "\x017";
 		case "WHITE":
-		case "\1W\1H":
+		case "\x01W\x01H":
 			return WHITE;
 		case WHITE:
-			return "\1W\1H";
+			return "\x01W\x01H";
 		case "LIGHTCYAN":
-		case "\1C\1H":
+		case "\x01C\x01H":
 			return LIGHTCYAN;
 		case LIGHTCYAN:
-			return "\1C\1H";
+			return "\x01C\x01H";
 		case "LIGHTRED":
-		case "\1R\1H":
+		case "\x01R\x01H":
 			return LIGHTRED;
 		case LIGHTRED:
-			return "\1R\1H";
+			return "\x01R\x01H";
 		case "LIGHTGREEN":
-		case "\1G\1H":
+		case "\x01G\x01H":
 			return LIGHTGREEN;
 		case LIGHTGREEN:
-			return "\1G\1H";
+			return "\x01G\x01H";
 		case "LIGHTBLUE":
-		case "\1B\1H":
+		case "\x01B\x01H":
 			return LIGHTBLUE;
 		case LIGHTBLUE:
-			return "\1B\1H";
+			return "\x01B\x01H";
 		case "YELLOW":
-		case "\1Y\1H":
+		case "\x01Y\x01H":
 			return YELLOW;
 		case YELLOW:
-			return "\1Y\1H";
+			return "\x01Y\x01H";
 		case "LIGHTMAGENTA":
-		case "\1M\1H":
+		case "\x01M\x01H":
 			return LIGHTMAGENTA;
 		case LIGHTMAGENTA:
-			return "\1M\1H";
+			return "\x01M\x01H";
 		case "LIGHTGRAY":
-		case "\1N":
-		case "\1W":
+		case "\x01N":
+		case "\x01W":
 			return LIGHTGRAY;
 		case LIGHTGRAY:
-			return "\1W";
+			return "\x01W";
 		case "DARKGRAY":
-		case "\1K\1H":
+		case "\x01K\x01H":
 			return DARKGRAY;
 		case DARKGRAY:
-			return "\1K\1H";
+			return "\x01K\x01H";
 		default:
 			return ANSI_NORMAL;
 	}
@@ -545,30 +545,30 @@ function logStamp(msg)
 }
 
 function pipeToCtrlA(str) {
-	str = str.replace(/\|00/g, "\1N\1K");
-	str = str.replace(/\|01/g, "\1N\1B");
-	str = str.replace(/\|02/g, "\1N\1G");
-	str = str.replace(/\|03/g, "\1N\1C");
-	str = str.replace(/\|04/g, "\1N\1R");
-	str = str.replace(/\|05/g, "\1N\1M");
-	str = str.replace(/\|06/g, "\1N\1Y");
-	str = str.replace(/\|07/g, "\1N\1W");
-	str = str.replace(/\|08/g, "\1H\1K");
-	str = str.replace(/\|09/g, "\1H\1B");
-	str = str.replace(/\|10/g, "\1H\1G");
-	str = str.replace(/\|11/g, "\1H\1C");
-	str = str.replace(/\|12/g, "\1H\1R");
-	str = str.replace(/\|13/g, "\1H\1M");
-	str = str.replace(/\|14/g, "\1H\1Y");
-	str = str.replace(/\|15/g, "\1H\1W");
-	str = str.replace(/\|16/g, "\1" + 0);
-	str = str.replace(/\|17/g, "\1" + 4);
-	str = str.replace(/\|18/g, "\1" + 2);
-	str = str.replace(/\|19/g, "\1" + 6);
-	str = str.replace(/\|20/g, "\1" + 1);
-	str = str.replace(/\|21/g, "\1" + 5);
-	str = str.replace(/\|22/g, "\1" + 3);
-	str = str.replace(/\|23/g, "\1" + 7);
+	str = str.replace(/\|00/g, "\x01N\x01K");
+	str = str.replace(/\|01/g, "\x01N\x01B");
+	str = str.replace(/\|02/g, "\x01N\x01G");
+	str = str.replace(/\|03/g, "\x01N\x01C");
+	str = str.replace(/\|04/g, "\x01N\x01R");
+	str = str.replace(/\|05/g, "\x01N\x01M");
+	str = str.replace(/\|06/g, "\x01N\x01Y");
+	str = str.replace(/\|07/g, "\x01N\x01W");
+	str = str.replace(/\|08/g, "\x01H\x01K");
+	str = str.replace(/\|09/g, "\x01H\x01B");
+	str = str.replace(/\|10/g, "\x01H\x01G");
+	str = str.replace(/\|11/g, "\x01H\x01C");
+	str = str.replace(/\|12/g, "\x01H\x01R");
+	str = str.replace(/\|13/g, "\x01H\x01M");
+	str = str.replace(/\|14/g, "\x01H\x01Y");
+	str = str.replace(/\|15/g, "\x01H\x01W");
+	str = str.replace(/\|16/g, "\x01" + 0);
+	str = str.replace(/\|17/g, "\x01" + 4);
+	str = str.replace(/\|18/g, "\x01" + 2);
+	str = str.replace(/\|19/g, "\x01" + 6);
+	str = str.replace(/\|20/g, "\x01" + 1);
+	str = str.replace(/\|21/g, "\x01" + 5);
+	str = str.replace(/\|22/g, "\x01" + 3);
+	str = str.replace(/\|23/g, "\x01" + 7);
 	return str;
 }
 
@@ -621,14 +621,14 @@ function colorPicker(x, y, frame, attr) {
 	palette.open();
 
 	for(var c = 0; c < fgColours.length; c++) {
-		var ch = (c == 0) ? "\1h\1w" + ascii(250) : ascii(219);
+		var ch = (c == 0) ? "\x01h\x01w" + ascii(250) : ascii(219);
 		subPalette.attr = fgColours[c];
 		subPalette.putmsg(ch + ch);
 		subPalette.attr = 0;
 	}
 	subPalette.gotoxy(1, 3);
 	for(var c  = 0; c < bgColours.length; c++) {
-		var ch = (c == 0) ? "\1h\1w" + ascii(250) : " ";
+		var ch = (c == 0) ? "\x01h\x01w" + ascii(250) : " ";
 		subPalette.attr = bgColours[c];
 		subPalette.putmsg(ch + ch + ch + ch);
 		subPalette.attr = 0;

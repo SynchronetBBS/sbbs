@@ -294,12 +294,12 @@ function Scrollbar(x,y,length,orientation,color)
 	this.drawVert=function(s,f)
 	{
 		console.gotoxy(this);
-		console.putmsg('\1n' + this.color + ascii(30),P_SAVEATR);
+		console.putmsg('\x01n' + this.color + ascii(30),P_SAVEATR);
 		var ch='\xB0';
 		for(var i=1;i<=this.length;i++)	{
 			console.gotoxy(this.x,this.y+i);
 			if(i == s)
-				ch='\1h\xDB';
+				ch='\x01h\xDB';
 			else if(i > f)
 				ch='\xB0';
 			console.putmsg(ch,P_SAVEATR);
@@ -314,10 +314,10 @@ function Scrollbar(x,y,length,orientation,color)
 			f--;
 		}
 		console.gotoxy(this);
-		console.putmsg('\1n' + this.color + ascii(17),P_SAVEATR);
+		console.putmsg('\x01n' + this.color + ascii(17),P_SAVEATR);
 		for(i=1;i<=this.length;i++)	{
 			if(i == s)
-				ch='\1h\xDB';
+				ch='\x01h\xDB';
 			else if(i == f+1)
 				ch='\xB0';
 			console.putmsg(ch,P_SAVEATR);

@@ -25,7 +25,9 @@ if(!options.max_line_len)
 	options.max_line_len = 76;
 if(options.backup_level === undefined)
 	options.backup_level = 10;
-if(options.meme !== false) {
+if(options.meme === undefined)
+	options.meme = true;
+if(options.meme) {
 	options.max_line_len = 39;
 	options.line_fmt = "%s ";
 }

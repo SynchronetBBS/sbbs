@@ -436,6 +436,7 @@ function redefine_palette(palette, bits)
 	str += "\x1b\\";
 //	log(LOG_DEBUG, "CTerm New palette: " + str);
 	console.write(str);
+	return true;
 }
 
 // Scale from 6-bit to 8-bit RGB color channel

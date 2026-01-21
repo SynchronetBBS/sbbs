@@ -57,6 +57,7 @@ function fonts(key)
 				log(LOG_WARNING, "Failed to activate font: " + cterm.font_styles[p]);
 		}
 	}
+	return true;
 }
 
 if(bbs.online && cterm.supports_fonts() != false)

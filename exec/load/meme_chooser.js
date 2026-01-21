@@ -87,6 +87,7 @@ function main(text, options)
 		else
 			console.beep();
 	}
+	return null;
 }
 
 main.apply(null, argv);

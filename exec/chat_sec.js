@@ -57,11 +57,11 @@ while(bbs.online && !console.aborted) {
 	write(bbs.text(bbs.text.ChatPrompt));
 
 	var keys = "ACDJPQST?\r";
-	if(options.imsg && user.compare_ars(options.imsg_requirements))
+	if(options.imsg && (options.imsg_requirements === undefined || user.compare_ars(options.imsg_requirements)))
 		keys += "I";
-	if(options.irc && user.compare_ars(options.irc_requirements))
+	if(options.irc && (options.irc_requirements === undefined || user.compare_ars(options.irc_requirements)))
 		keys += "R";
-	if(options.finger && user.compare_ars(options.finger_requirements))
+	if(options.finger && (options.finger_requirements === undefined || user.compare_ars(options.finger_requirements)))
 		keys += "F";
 	switch(console.getkeys(keys, K_UPPER)) {
 		case "S":
