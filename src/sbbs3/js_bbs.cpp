@@ -829,15 +829,15 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 	JS_IdToValue(cx, id, &idval);
 	tiny = JSVAL_TO_INT(idval);
 
-	if (JSVAL_IS_NUMBER(*vp) || JSVAL_IS_BOOLEAN(*vp)) {
-		if (!JS_ValueToECMAUint32(cx, *vp, &val))
-			return JS_FALSE;
-	}
-	else if (JSVAL_IS_STRING(*vp)) {
+	if (JSVAL_IS_STRING(*vp) || tiny == BBS_PROP_OPTEXT) {
 		if ((js_str = JS_ValueToString(cx, *vp)) == NULL)
 			return JS_FALSE;
 		JSSTRING_TO_MSTRING(cx, js_str, p, NULL);
 		HANDLE_PENDING(cx, p);
+	}
+	else if (JSVAL_IS_NUMBER(*vp) || JSVAL_IS_BOOLEAN(*vp)) {
+		if (!JS_ValueToECMAUint32(cx, *vp, &val))
+			return JS_FALSE;
 	}
 
 	switch (tiny) {
@@ -1003,13 +1003,11 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 			break;
 
 		default:
-			if (p)
-				free(p);
+			free(p);
 			return JS_TRUE;
 	}
 
-	if (p)
-		free(p);
+	free(p);
 
 	if (sbbs->usrgrps)
 		sbbs->cursubnum = sbbs->usrsub[sbbs->curgrp][sbbs->cursub[sbbs->curgrp]];   /* Used for ARS */
@@ -1372,8 +1370,7 @@ js_exec(JSContext *cx, uintN argc, jsval *arglist)
 	rc = JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->external(cstr, mode, p_startup_dir)));
 	free(cstr);
-	if (p_startup_dir)
-		free(p_startup_dir);
+	free(p_startup_dir);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
@@ -3943,8 +3940,7 @@ js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc = JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->listfiles(dirnum, fspec, 0 /* tofile */, mode)));
-	if (afspec)
-		free(afspec);
+	free(afspec);
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -4702,8 +4698,7 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->chk_ar(ar, &sbbs->useron, &sbbs->client)));
 
-	if (ar != NULL)
-		free(ar);
+	free(ar);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
@@ -5318,8 +5313,7 @@ static JSBool js_bbs_resolve(JSContext *cx, JSObject *obj, jsid id)
 	}
 
 	ret = js_SyncResolve(cx, obj, name, js_bbs_properties, js_bbs_functions, NULL, 0);
-	if (name)
-		free(name);
+	free(name);
 	return ret;
 }
 
