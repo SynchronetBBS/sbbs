@@ -225,7 +225,7 @@ require("sbbsdefs.js", "K_UPPER");
 require('key_defs.js', 'KEY_UP');
 require("text.js", "Email"); // Text string definitions (referencing text.dat)
 require("dd_lightbar_menu.js", "DDLightbarMenu");
-require("cp437_defs.js", "CP437_BOX_DRAWING_UPPER_LEFT_SINGLE");
+require("cp437_defs.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
 require("frame.js", "Frame");
 require("scrollbar.js", "ScrollBar");
 require("mouse_getkey.js", "mouse_getkey");
@@ -3845,7 +3845,7 @@ function displayTextWithLineBelow(pText, pCenter, pTextColor, pLineColor)
 		var solidLine = "";
 		var textLength = console.strlen(pText);
 		for (var i = 0; i < textLength; ++i)
-			solidLine += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+			solidLine += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		console.center(lineColor + solidLine);
 	}
 	else
@@ -3855,7 +3855,7 @@ function displayTextWithLineBelow(pText, pCenter, pTextColor, pLineColor)
 		console.print(lineColor);
 		var textLength = console.strlen(pText);
 		for (var i = 0; i < textLength; ++i)
-			console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
+			console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
 		console.crlf();
 	}
 }
@@ -4004,24 +4004,24 @@ function drawBorder(pX, pY, pWidth, pHeight, pColor, pLineStyle, pTitle, pTitleC
 		return;
 
 	var borderChars = {
-		UL: CP437_BOX_DRAWING_UPPER_LEFT_SINGLE,
-		UR: CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE,
-		LL: CP437_BOX_DRAWING_LOWER_LEFT_SINGLE,
-		LR: CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE,
+		UL: CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE,
+		UR: CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE,
+		LL: CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE,
+		LR: CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE,
 		preText: CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT,
-		postText: CP437_BOX_DRAWING_LIGHT_LEFT_T,
-		horiz: CP437_BOX_DRAWING_HORIZONTAL_SINGLE,
+		postText: CP437_BOX_DRAWINGS_LIGHT_LEFT_T,
+		horiz: CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE,
 		vert: CP437_BOX_DRAWINGS_LIGHT_VERTICAL
 	};
 	if (typeof(pLineStyle) === "string" && pLineStyle.toUpperCase() == "DOUBLE")
 	{
-		borderChars.UL = CP437_BOX_DRAWING_UPPER_LEFT_DOUBLE;
-		borderChars.UR = CP437_BOX_DRAWING_UPPER_RIGHT_DOUBLE;
-		borderChars.LL = CP437_BOX_DRAWING_LOWER_LEFT_DOUBLE;
-		borderChars.LR = CP437_BOX_DRAWING_LOWER_RIGHT_DOUBLE;
-		borderChars.preText = CP437_BOX_DRAWING_RIGHT_DOUBLE_T;
-		borderChars.postText = CP437_BOX_DRAWING_LEFT_DOUBLE_T
-		borderChars.horiz = CP437_BOX_DRAWING_HORIZONTAL_DOUBLE;
+		borderChars.UL = CP437_BOX_DRAWINGS_UPPER_LEFT_DOUBLE;
+		borderChars.UR = CP437_BOX_DRAWINGS_UPPER_RIGHT_DOUBLE;
+		borderChars.LL = CP437_BOX_DRAWINGS_LOWER_LEFT_DOUBLE;
+		borderChars.LR = CP437_BOX_DRAWINGS_LOWER_RIGHT_DOUBLE;
+		borderChars.preText = CP437_BOX_DRAWINGS_RIGHT_DOUBLE_T;
+		borderChars.postText = CP437_BOX_DRAWINGS_LEFT_DOUBLE_T
+		borderChars.horiz = CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE;
 		borderChars.vert = CP437_BOX_DRAWINGS_DOUBLE_VERTICAL;
 	}
 
@@ -4109,7 +4109,7 @@ function drawSeparatorLine(pX, pY, pWidth)
 	console.gotoxy(pX, pY);
 	console.print("\x01n\x01g\x01h");
 	for (var i = 0; i < width; ++i)
-		console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
+		console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
 	console.attributes = "N";
 }
 

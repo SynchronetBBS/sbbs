@@ -22,7 +22,7 @@
 
 "use strict";
 
-require("cp437_defs.js", "CP437_BOX_DRAWING_HORIZONTAL_SINGLE");
+require("cp437_defs.js", "CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE");
 
 // Returns the minimum width for a ChoiceScrollbox. This
 // is arbitrary for now.
@@ -99,7 +99,7 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pCfgObj
 			{
 				pTopBorderText = firstStrPart + "\x01n" + pCfgObj.colors.listBoxBorder;
 				for (var i = 0; i < numSpaces; ++i)
-					pTopBorderText += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+					pTopBorderText += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 				pTopBorderText += "\x01n" + pCfgObj.colors.listBoxBorderText + lastStrPart;
 			}
 
@@ -149,34 +149,34 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pCfgObj
 	var maxTopBorderTextLen = innerBorderWidth - (pAddTCharsAroundTopText ? 21 : 19);
 	if (console.strlen(pTopBorderText) > maxTopBorderTextLen)
 		pTopBorderText = pTopBorderText.substr(0, maxTopBorderTextLen);
-	this.topBorder = "\x01n" + pCfgObj.colors.listBoxBorder + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE;
+	this.topBorder = "\x01n" + pCfgObj.colors.listBoxBorder + CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE;
 	if (addTopTCharsAroundText)
 		this.topBorder += CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT;
 	this.topBorder += "\x01n" + pCfgObj.colors.listBoxBorderText
 	               + pTopBorderText + "\x01n" + pCfgObj.colors.listBoxBorder;
 	if (addTopTCharsAroundText)
-		this.topBorder += CP437_BOX_DRAWING_LIGHT_LEFT_T;
+		this.topBorder += CP437_BOX_DRAWINGS_LIGHT_LEFT_T;
 	const topBorderTextLen = console.strlen(pTopBorderText);
 	var numHorizBorderChars = innerBorderWidth - topBorderTextLen - 20;
 	if (addTopTCharsAroundText)
 		numHorizBorderChars -= 2;
 	for (var i = 0; i <= numHorizBorderChars; ++i)
-		this.topBorder += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+		this.topBorder += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 	this.topBorder += CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT + "\x01n" + pCfgObj.colors.listBoxBorderText
-	               + "Page    1 of    1" + "\x01n" + pCfgObj.colors.listBoxBorder + CP437_BOX_DRAWING_LIGHT_LEFT_T
-	               + CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
+	               + "Page    1 of    1" + "\x01n" + pCfgObj.colors.listBoxBorder + CP437_BOX_DRAWINGS_LIGHT_LEFT_T
+	               + CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE;
 
 	// Bottom border string
 	this.btmBorderNavText = "\x01n\x01h\x01c" + UP_ARROW + "\x01b, \x01c" + DOWN_ARROW + "\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
 	                      + "\x01cF\x01y)\x01birst, \x01cL\x01y)\x01bast, \x01cHOME\x01b, \x01cEND\x01b, \x01cEnter\x01y=\x01bSelect, "
 	                      + "\x01cESC\x01n\x01c/\x01h\x01cQ\x01y=\x01bEnd";
-	this.bottomBorder = "\x01n" + pCfgObj.colors.listBoxBorder + CP437_BOX_DRAWING_LOWER_LEFT_SINGLE
+	this.bottomBorder = "\x01n" + pCfgObj.colors.listBoxBorder + CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE
 	                  + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT + this.btmBorderNavText + "\x01n" + pCfgObj.colors.listBoxBorder
-	                  + CP437_BOX_DRAWING_LIGHT_LEFT_T;
+	                  + CP437_BOX_DRAWINGS_LIGHT_LEFT_T;
 	var numCharsRemaining = this.dimensions.width - console.strlen(this.btmBorderNavText) - 6;
 	for (var i = 0; i < numCharsRemaining; ++i)
-		this.bottomBorder += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-	this.bottomBorder += CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE;
+		this.bottomBorder += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+	this.bottomBorder += CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE;
 
 	// Item format strings
 	this.listIemFormatStr = "\x01n" + pCfgObj.colors.listBoxItemText + "%-"
@@ -413,14 +413,14 @@ function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooL
 	var maxWidth = this.dimensions.width - 2; // -2 for the corner characters
 	if (pAddTChars)
 		maxWidth -= 2; // -2 for the T characters
-	this.bottomBorder = "\x01n" + this.programCfgObj.colors.listBoxBorder + CP437_BOX_DRAWING_LOWER_LEFT_SINGLE;
+	this.bottomBorder = "\x01n" + this.programCfgObj.colors.listBoxBorder + CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE;
 	if (pCenter)
 	{
 		var numCharsToAdd = Math.floor(maxWidth / 2) - Math.floor(console.strlen(pText)/2);
 		if (numCharsToAdd > 0)
 		{
 			for (var i = 0; i < numCharsToAdd; ++i)
-				this.bottomBorder += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+				this.bottomBorder += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		}
 	}
 	if (pAddTChars)
@@ -429,11 +429,11 @@ function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooL
 		this.bottomBorder += "\x01n";
 	this.bottomBorder += pText + "\x01n" + this.programCfgObj.colors.listBoxBorder;
 	if (pAddTChars)
-		this.bottomBorder += CP437_BOX_DRAWING_LIGHT_LEFT_T;
+		this.bottomBorder += CP437_BOX_DRAWINGS_LIGHT_LEFT_T;
 	var numCharsRemaining = this.dimensions.width - console.strlen(this.bottomBorder) - 1; // - 3
 	for (var i = 0; i < numCharsRemaining; ++i)
-		this.bottomBorder += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-	this.bottomBorder += CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE;
+		this.bottomBorder += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+	this.bottomBorder += CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE;
 }
 function ChoiceScrollbox_DrawBorder()
 {

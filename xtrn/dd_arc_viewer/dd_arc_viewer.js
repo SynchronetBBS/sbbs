@@ -18,7 +18,7 @@ if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_UPPER");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
-	require("cp437_defs.js", "CP437_BOX_DRAWING_UPPER_LEFT_SINGLE");
+	require("cp437_defs.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
 }
 else
 {
@@ -1192,12 +1192,12 @@ function writeFileListHeader(pFilename, pNumFilesLen)
 	if (writeFileListHeader.topHelp3 == undefined)
 	{
 		writeFileListHeader.topHelp3 = gGenConfig.colors.headerSeparatorLine
-		                             + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, numFilesLen) + " " + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 8) + " "
-		                             + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 10) + " " + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 5) + " "
-		                             + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, console.screen_columns - 32);
+		                             + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, numFilesLen) + " " + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 8) + " "
+		                             + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 10) + " " + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 5) + " "
+		                             + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, console.screen_columns - 32);
 		// Add line characters to the end of the screen.
 		//for (var x = 30; x < console.screen_columns - 2; ++x)
-		//	writeFileListHeader.topHelp3 += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+		//	writeFileListHeader.topHelp3 += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		writeFileListHeader.topHelp3 += "\r\n";
 	}
 
@@ -1793,15 +1793,15 @@ function showHelpScreen(pLightbarMode)
 		var width = gDDArcViewerProgName.length + 2;
 		showHelpScreen.progInfoHeader = new Array();
 		// Upper & lower border lines
-		showHelpScreen.progInfoHeader[0] = "\x01c\x01h" + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE;
-		showHelpScreen.progInfoHeader[2] = CP437_BOX_DRAWING_LOWER_LEFT_SINGLE;
+		showHelpScreen.progInfoHeader[0] = "\x01c\x01h" + CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE;
+		showHelpScreen.progInfoHeader[2] = CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE;
 		for (var i = 0; i < width; ++i)
 		{
-			showHelpScreen.progInfoHeader[0] += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-			showHelpScreen.progInfoHeader[2] += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+			showHelpScreen.progInfoHeader[0] += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+			showHelpScreen.progInfoHeader[2] += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		}
-		showHelpScreen.progInfoHeader[0] += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
-		showHelpScreen.progInfoHeader[2] += CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE;
+		showHelpScreen.progInfoHeader[0] += CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE;
+		showHelpScreen.progInfoHeader[2] += CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE;
 		// Middle section with the program name
 		showHelpScreen.progInfoHeader[1] = CP437_BOX_DRAWINGS_LIGHT_VERTICAL + "\x01" + "4\x01y\x01h "
 		                                 + gDDArcViewerProgName + " \x01n\x01c\x01h" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL;
@@ -1823,7 +1823,7 @@ function showHelpScreen(pLightbarMode)
 	console.crlf();
 	console.crlf();
 	console.print("The following is a list of the command keys:\r\n");
-	console.print("\x01k\x01h" + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 44));
+	console.print("\x01k\x01h" + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 44));
 	console.crlf();
 	var formatStr = "\x01n\x01c\x01h%5s\x01g: \x01n\x01c%s\r\n";
 	if (pLightbarMode)

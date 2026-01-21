@@ -10,7 +10,7 @@
 if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_NOCRLF");
-	require("slyedit_misc.js", "CP437_BOX_DRAWING_UPPER_LEFT_SINGLE");
+	require("slyedit_misc.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
 }
 else
 {
@@ -97,11 +97,11 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// border line only once, for efficiency).
 	if (typeof(redrawScreen_IceStyle.topBorder) == "undefined")
 	{
-		redrawScreen_IceStyle.topBorder = CP437_BOX_DRAWING_UPPER_LEFT_SINGLE;
+		redrawScreen_IceStyle.topBorder = CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE;
 		var innerWidth = console.screen_columns - 2;
 		for (var i = 0; i < innerWidth; ++i)
-			redrawScreen_IceStyle.topBorder += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-		redrawScreen_IceStyle.topBorder += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
+			redrawScreen_IceStyle.topBorder += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+		redrawScreen_IceStyle.topBorder += CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE;
 		redrawScreen_IceStyle.topBorder = randomTwoColorString(redrawScreen_IceStyle.topBorder,
 		                                                       gConfigSettings.iceColors.BorderColor1,
 		                                                       gConfigSettings.iceColors.BorderColor2);
@@ -193,7 +193,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	if (typeof(redrawScreen_IceStyle.msgAreaBorder) == "undefined")
 	{
 		redrawScreen_IceStyle.msgAreaBorder = "\x01n"
-		                                    + randomTwoColorString(CP437_BOX_DRAWING_LIGHT_LEFT_T + CP437_BOX_DRAWING_HORIZONTAL_SINGLE,
+		                                    + randomTwoColorString(CP437_BOX_DRAWINGS_LIGHT_LEFT_T + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE,
 		                                    gConfigSettings.iceColors.BorderColor1,
 		                                    gConfigSettings.iceColors.BorderColor2)
 		                                    // User #, padded with high-black dim block characters,
@@ -217,7 +217,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 		// Write border characters up to the message area name start position
 		screenText = "";
 		for (var i = console.strlen(redrawScreen_IceStyle.msgAreaBorder); i < startPos; ++i)
-			screenText += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+			screenText += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(screenText,
 																	gConfigSettings.iceColors.BorderColor1,
 																	gConfigSettings.iceColors.BorderColor2);
@@ -237,7 +237,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 		// the node number.
 		screenText = "";
 		for (var posX = console.strlen(redrawScreen_IceStyle.msgAreaBorder); posX < nodeFieldStartPos; ++posX)
-			screenText += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+			screenText += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(screenText,
 																	gConfigSettings.iceColors.BorderColor1,
 																	gConfigSettings.iceColors.BorderColor2);
@@ -252,7 +252,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 		                                    + gConfigSettings.iceColors.BorderColor1 + CP437_RIGHT_HALF_BLOCK;
 
 		// Write the last 2 characters of top border
-		redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT,
+		redrawScreen_IceStyle.msgAreaBorder += randomTwoColorString(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT,
 		                                                            gConfigSettings.iceColors.BorderColor1,
 		                                                            gConfigSettings.iceColors.BorderColor2);
 	}
@@ -337,7 +337,7 @@ function DisplayTextAreaBottomBorder_IceStyle(pLineNum, pUseQuotes, pEditLeft, p
       // The beginning of this line shows that SlyEdit is registered
       // to the sysop. :)
       DisplayTextAreaBottomBorder_IceStyle.border =
-               randomTwoColorString(CP437_BOX_DRAWING_LOWER_LEFT_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE,
+               randomTwoColorString(CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE,
                                     gConfigSettings.iceColors.BorderColor1,
                                     gConfigSettings.iceColors.BorderColor2)
              + "\x01h" + gConfigSettings.iceColors.BorderColor1 + CP437_LEFT_HALF_BLOCK
@@ -349,7 +349,7 @@ function DisplayTextAreaBottomBorder_IceStyle(pLineNum, pUseQuotes, pEditLeft, p
       var endPos = console.screen_columns - console.strlen(ctrlKeyHelp) - 3;
       var textLen = console.strlen(DisplayTextAreaBottomBorder_IceStyle.border);
       for (var i = textLen+1; i < endPos; ++i)
-         screenText += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+         screenText += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
       DisplayTextAreaBottomBorder_IceStyle.border += randomTwoColorString(screenText,
                                                                 gConfigSettings.iceColors.BorderColor1,
                                                                 gConfigSettings.iceColors.BorderColor2);
@@ -358,7 +358,7 @@ function DisplayTextAreaBottomBorder_IceStyle(pLineNum, pUseQuotes, pEditLeft, p
       DisplayTextAreaBottomBorder_IceStyle.border += "\x01h" + gConfigSettings.iceColors.BorderColor1
                   + CP437_LEFT_HALF_BLOCK + ctrlKeyHelp + gConfigSettings.iceColors.BorderColor1
                   + CP437_RIGHT_HALF_BLOCK
-                  + randomTwoColorString(CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE,
+                  + randomTwoColorString(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE,
                                          gConfigSettings.iceColors.BorderColor1,
                                          gConfigSettings.iceColors.BorderColor2);
    }
@@ -439,7 +439,7 @@ function DrawQuoteWindowTopBorder_IceStyle(pQuoteWinHeight, pEditLeft, pEditRigh
    // not been defined yet, then build it.
    if (typeof(DrawQuoteWindowTopBorder_IceStyle.border) == "undefined")
    {
-      DrawQuoteWindowTopBorder_IceStyle.border = randomTwoColorString(CP437_BOX_DRAWING_UPPER_LEFT_VSINGLE_HDOUBLE,
+      DrawQuoteWindowTopBorder_IceStyle.border = randomTwoColorString(CP437_BOX_DRAWINGS_UPPER_LEFT_VSINGLE_HDOUBLE,
                                                               gConfigSettings.iceColors.BorderColor1,
                                                               gConfigSettings.iceColors.BorderColor2)
                 + gConfigSettings.iceColors.BorderColor2 + CP437_LEFT_HALF_BLOCK
@@ -449,8 +449,8 @@ function DrawQuoteWindowTopBorder_IceStyle(pQuoteWinHeight, pEditLeft, pEditRigh
       // The border from here to the end of the line: Random high/low blue
       var screenText = "";
       for (var posX = pEditLeft+16; posX <= pEditRight; ++posX)
-         screenText += CP437_BOX_DRAWING_HORIZONTAL_DOUBLE;
-      screenText += CP437_BOX_DRAWING_UPPER_RIGHT_VSINGLE_HDOUBLE;
+         screenText += CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE;
+      screenText += CP437_BOX_DRAWINGS_UPPER_RIGHT_VSINGLE_HDOUBLE;
       DrawQuoteWindowTopBorder_IceStyle.border += randomTwoColorString(screenText,
                                                            gConfigSettings.iceColors.BorderColor1,
                                                            gConfigSettings.iceColors.BorderColor2);
@@ -477,24 +477,24 @@ function DrawQuoteWindowBottomBorder_IceStyle(pEditLeft, pEditRight)
 	if (typeof(DrawQuoteWindowBottomBorder_IceStyle.border) == "undefined")
 	{
 		const quoteHotkeyChar = gUserSettings.ctrlQQuote ? "Q" : "Y";
-		DrawQuoteWindowBottomBorder_IceStyle.border = randomTwoColorString(CP437_BOX_DRAWING_LOWER_LEFT_VSINGLE_HDOUBLE,
+		DrawQuoteWindowBottomBorder_IceStyle.border = randomTwoColorString(CP437_BOX_DRAWINGS_LOWER_LEFT_VSINGLE_HDOUBLE,
 		                                                                   gConfigSettings.iceColors.BorderColor1,
 		                                                                   gConfigSettings.iceColors.BorderColor2)
 		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_LEFT_HALF_BLOCK
 		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + format("^%s/ESC=End", quoteHotkeyChar)
 		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_RIGHT_HALF_BLOCK
-		                                            + gConfigSettings.iceColors.BorderColor1 + CP437_BOX_DRAWING_HORIZONTAL_DOUBLE
+		                                            + gConfigSettings.iceColors.BorderColor1 + CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE
 		                                            + gConfigSettings.iceColors.BorderColor2  + CP437_LEFT_HALF_BLOCK
 		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + "CR=Accept"
 		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_RIGHT_HALF_BLOCK
-		                                            + gConfigSettings.iceColors.BorderColor1 + CP437_BOX_DRAWING_HORIZONTAL_DOUBLE
+		                                            + gConfigSettings.iceColors.BorderColor1 + CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE
 		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_LEFT_HALF_BLOCK
 		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + "Up/Down/PgUp/PgDn/Home/End=Scroll"
 		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_RIGHT_HALF_BLOCK;
 		                                            /*
 		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + "Up/Down/PgUp/PgDn=Scroll"
 		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_RIGHT_HALF_BLOCK
-		                                            + gConfigSettings.iceColors.BorderColor1 + CP437_BOX_DRAWING_HORIZONTAL_DOUBLE
+		                                            + gConfigSettings.iceColors.BorderColor1 + CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE
 		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_LEFT_HALF_BLOCK
 		                                            + gConfigSettings.iceColors.QuoteWinBorderTextColor + "F/L=First/Last pg"
 		                                            + gConfigSettings.iceColors.BorderColor2 + CP437_RIGHT_HALF_BLOCK;
@@ -502,8 +502,8 @@ function DrawQuoteWindowBottomBorder_IceStyle(pEditLeft, pEditRight)
 		// The border from here to the end of the line: Random high/low blue
 		var screenText = "";
 		for (var posX = pEditLeft + 62/*73*/; posX <= pEditRight; ++posX)
-		screenText += CP437_BOX_DRAWING_HORIZONTAL_DOUBLE;
-		screenText += CP437_BOX_DRAWING_LOWER_RIGHT_VSINGLE_HDOUBLE;
+		screenText += CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE;
+		screenText += CP437_BOX_DRAWINGS_LOWER_RIGHT_VSINGLE_HDOUBLE;
 		DrawQuoteWindowBottomBorder_IceStyle.border += randomTwoColorString(screenText,
 		gConfigSettings.iceColors.BorderColor1,
 		gConfigSettings.iceColors.BorderColor2);
