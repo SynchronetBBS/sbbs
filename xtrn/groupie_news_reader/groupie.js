@@ -51,7 +51,7 @@ if (system.version_num < 32000)
 require("sbbsdefs.js", "K_NOCRLF");
 require("nntp_client_lib.js", "NNTPClient");
 require("key_defs.js", "CTRL_H");
-require("cp437_defs.js", "CP437_BOX_DRAWING_UPPER_LEFT_SINGLE");
+require("cp437_defs.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
 require("choice_scroll_box.js", "ChoiceScrollbox");
 require("dd_lightbar_menu.js", "DDLightbarMenu");
 require("frame.js", "Frame");
@@ -3032,7 +3032,7 @@ function GetDefaultDisplayHdrLines()
 	hdrLines[4] = "\x01n" + gSettings.colors.msgHdrDateColor + hdrLines[4];
 	hdrLines.push("\x01n\x01c\x01h");
 	for (var i = 0; i < console.screen_columns; ++i)
-		hdrLines[5] += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+		hdrLines[5] += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 	hdrLines[5] += "\x01n";
 	return hdrLines;
 }
@@ -4437,7 +4437,7 @@ function displayReaderHelp(pNewsgroupName, pScrollable)
 	console.crlf();
 	console.print("\x01h\x01k");
 	for (var i = 0; i < 25; ++i)
-		console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
+		console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
 	console.crlf();
 	var keyHelpLines = [];
 	if (pScrollable)
@@ -4544,7 +4544,7 @@ function getTextWithLineBelow(pText, pCenter, pFieldWidth, pTextColor, pLineColo
 		theText += "\r\n";
 		theText += frontPadding + lineColor;
 		for (var i = 0; i < textLength; ++i)
-			theText += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+			theText += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		theText += "\x01n";
 	}
 	else
@@ -4552,7 +4552,7 @@ function getTextWithLineBelow(pText, pCenter, pFieldWidth, pTextColor, pLineColo
 		theText = textColor + pText + "\x01n\r\n";
 		theText += lineColor;
 		for (var i = 0; i < textLength; ++i)
-			theText += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+			theText += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		theText += "\x01n";
 	}
 	theText += "\r\n";

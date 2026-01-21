@@ -394,7 +394,8 @@ if (typeof(require) === "function")
 	require("mouse_getkey.js", "mouse_getkey");
 	require("userdefs.js", "USER_UTF8");
 	require("utf8_cp437.js", "utf8_cp437");
-	require("cp437_defs.js", "CP437_BOX_DRAWING_UPPER_LEFT_SINGLE");
+	//require("cp437_defs.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
+	require("cp437_defs.js", "CP437_MEDIUM_SHADE");
 }
 else
 {
@@ -462,12 +463,12 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	};
 	// Characters to use to draw the border
 	this.borderChars = {
-		upperLeft: CP437_BOX_DRAWING_UPPER_LEFT_DOUBLE,
-		upperRight: CP437_BOX_DRAWING_UPPER_RIGHT_DOUBLE,
-		lowerLeft: CP437_BOX_DRAWING_LOWER_LEFT_DOUBLE,
-		lowerRight: CP437_BOX_DRAWING_LOWER_RIGHT_DOUBLE,
-		top: CP437_BOX_DRAWING_HORIZONTAL_DOUBLE,
-		bottom: CP437_BOX_DRAWING_HORIZONTAL_DOUBLE,
+		upperLeft: CP437_BOX_DRAWINGS_UPPER_LEFT_DOUBLE,
+		upperRight: CP437_BOX_DRAWINGS_UPPER_RIGHT_DOUBLE,
+		lowerLeft: CP437_BOX_DRAWINGS_LOWER_LEFT_DOUBLE,
+		lowerRight: CP437_BOX_DRAWINGS_LOWER_RIGHT_DOUBLE,
+		top: CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE,
+		bottom: CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE,
 		left: CP437_BOX_DRAWINGS_DOUBLE_VERTICAL,
 		right: CP437_BOX_DRAWINGS_DOUBLE_VERTICAL
 	};

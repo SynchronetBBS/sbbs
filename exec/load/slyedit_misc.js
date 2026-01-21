@@ -14,7 +14,7 @@ if (typeof(require) === "function")
 	require("key_defs.js", "CTRL_A");
 	require("userdefs.js", "USER_ANSI");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
-	require("cp437_defs.js", "CP437_BOX_DRAWING_UPPER_LEFT_SINGLE");
+	require("cp437_defs.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
 }
 else
 {
@@ -1029,10 +1029,10 @@ function displayHelpHeader()
       var headerTextLen = console.strlen(headerText);
 
       // Top border
-      var headerTextStr = "\x01n\x01h\x01c" + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE;
+      var headerTextStr = "\x01n\x01h\x01c" + CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE;
       for (var i = 0; i < headerTextLen + 2; ++i)
-         headerTextStr += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-      headerTextStr += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
+         headerTextStr += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+      headerTextStr += CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE;
       displayHelpHeader.headerLines.push(headerTextStr);
 
       // Middle line: Header text string
@@ -1041,10 +1041,10 @@ function displayHelpHeader()
       displayHelpHeader.headerLines.push(headerTextStr);
 
       // Lower border
-      headerTextStr = CP437_BOX_DRAWING_LOWER_LEFT_SINGLE;
+      headerTextStr = CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE;
       for (var i = 0; i < headerTextLen + 2; ++i)
-         headerTextStr += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-      headerTextStr += CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE;
+         headerTextStr += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+      headerTextStr += CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE;
       displayHelpHeader.headerLines.push(headerTextStr);
    }
 
@@ -1106,7 +1106,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pTxtR
 
 	// Help keys and slash commands
 	printf("\x01n\x01g%-44s  %-33s\r\n", "Help keys", "Slash commands (on blank line)");
-	printf("\x01k\x01h%-44s  %-33s\r\n", charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 9), charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 30));
+	printf("\x01k\x01h%-44s  %-33s\r\n", charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 9), charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 30));
 	//displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
 	displayCmdKeyFormattedDouble("Ctrl-G", "Input graphic character", "/A", "Abort", true);
 	displayCmdKeyFormattedDouble("Ctrl-L", "Command key list (this list)", "/S", "Save", true);
@@ -1122,7 +1122,7 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pTxtR
 	printf(" \x01c\x01h%-7s\x01g  \x01n\x01c%s", "", "", "/?", "Show help");
 	console.crlf();
 	// Command/edit keys
-	console.print("\x01n\x01gCommand/edit keys\r\n\x01k\x01h" + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 17) + "\r\n");
+	console.print("\x01n\x01gCommand/edit keys\r\n\x01k\x01h" + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 17) + "\r\n");
 	displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up", true);
 	displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down", true);
 	const quoteHotkey = gUserSettings.ctrlQQuote ? "Ctrl-Q" : "Ctrl-Y";

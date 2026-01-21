@@ -386,7 +386,7 @@ if (system.version_num < 31800)
 }
 
 require("sbbsdefs.js", "K_UPPER");
-require("cp437_defs.js", "CP437_BOX_DRAWING_UPPER_LEFT_SINGLE");
+require("cp437_defs.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
 require("text.js", "Email"); // Text string definitions (referencing text.dat)
 require("utf8_cp437.js", "utf8_cp437");
 require("userdefs.js", "USER_UTF8");
@@ -1496,8 +1496,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		// Sub-board name: 34% of console width
 		var msgGrpNameLen = Math.floor(console.screen_columns * 0.2);
 		var subBoardNameLen = Math.floor(console.screen_columns * 0.34);
-		var hdrLine1 = "\x01n\x01h\x01c" + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01c"
-		             + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + " \x01h@GRP-L";
+		var hdrLine1 = "\x01n\x01h\x01c" + CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + "\x01n\x01c"
+		             + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + " \x01h@GRP-L";
 		var numChars = msgGrpNameLen - 7;
 		for (var i = 0; i < numChars; ++i)
 			hdrLine1 += "#";
@@ -1508,9 +1508,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		hdrLine1 += "@\x01k";
 		numChars = console.screen_columns - console.strlen(hdrLine1) - 4;
 		for (var i = 0; i < numChars; ++i)
-			hdrLine1 += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-		hdrLine1 += "\x01n\x01c" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h"
-		         + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
+			hdrLine1 += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+		hdrLine1 += "\x01n\x01c" + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + "\x01h"
+		         + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE;
 		this.enhMsgHeaderLines.push(hdrLine1);
 		this.enhMsgHeaderLinesToReadingUser.push(hdrLine1);
 		var hdrLine2 = "\x01n\x01c" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL + "\x01h\x01k" + CP437_LIGHT_SHADE + CP437_MEDIUM_SHADE
@@ -1553,13 +1553,13 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		hdrLine6 += "\x01n\x01c" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL;
 		this.enhMsgHeaderLines.push(hdrLine6);
 		this.enhMsgHeaderLinesToReadingUser.push(hdrLine6);
-		var hdrLine7 = "\x01n\x01h\x01c" + CP437_BOX_DRAWING_LIGHT_BOTTOM_T + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01n\x01c"
-		             + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h\x01k";
+		var hdrLine7 = "\x01n\x01h\x01c" + CP437_BOX_DRAWINGS_LIGHT_BOTTOM_T + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + "\x01n\x01c"
+		             + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + "\x01h\x01k";
 		numChars = console.screen_columns - 8;
 		for (var i = 0; i < numChars; ++i)
-			hdrLine7 += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-		hdrLine7 += "\x01n\x01c" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h"
-		         + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_LIGHT_BOTTOM_T;
+			hdrLine7 += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+		hdrLine7 += "\x01n\x01c" + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + "\x01h"
+		         + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_LIGHT_BOTTOM_T;
 		this.enhMsgHeaderLines.push(hdrLine7);
 		this.enhMsgHeaderLinesToReadingUser.push(hdrLine7);
 	}
@@ -8510,7 +8510,7 @@ function DigDistMsgReader_EnhReaderPrepLast2LinesForPrompt()
 	console.gotoxy(promptPos.x, promptPos.y-1);
 	console.print("\x01n" + this.colors.enhReaderPromptSepLineColor);
 	for (var lineCounter = 0; lineCounter < this.msgAreaWidth; ++lineCounter)
-		console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
+		console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
 	// Clear the inside of the message area, so as not to overwrite
 	// the scrollbar character
 	console.attributes = "N";
@@ -10325,9 +10325,9 @@ function DigDistMsgReader_DisplaySyncMsgHeader(pMsgHdr)
 		// Generate a string describing the message attributes, then output the default
 		// header.
 		var allMsgAttrStr = makeAllMsgAttrStr(pMsgHdr);
-		console.print("\x01n\x01w" + charStr(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE, 78));
+		console.print("\x01n\x01w" + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE, 78));
 		console.crlf();
-		var horizSingleFive = charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 5);
+		var horizSingleFive = charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 5);
 		console.print("\x01n\x01w" + horizSingleFive + "\x01cFrom\x01w\x01h: \x01b" + pMsgHdr.from.substr(0, console.screen_columns-12), printMode);
 		console.crlf();
 		console.print("\x01n\x01w" + horizSingleFive + "\x01cTo  \x01w\x01h: \x01b" + pMsgHdr.to.substr(0, console.screen_columns-12), printMode);
@@ -11937,7 +11937,7 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 	console.crlf();
 	console.print("\x01h\x01k");
 	for (var i = 0; i < 25; ++i)
-		console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
+		console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
 	console.crlf();
 	var keyHelpLines = ["\x01h\x01cDown\x01g/\x01cup arrow    \x01g: \x01n\x01cScroll down\x01g/\x01cup in the message",
 	                    "\x01h\x01cLeft\x01g/\x01cright arrow \x01g: \x01n\x01cGo to the previous\x01g/\x01cnext message",
@@ -12110,8 +12110,8 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		{
 			var voteInfo = getMsgUpDownvotesAndScore(pMsgHdr);
 			//var voteInfo = getMsgUpDownvotesAndScore(hdrWithVotes);
-			var voteStatsTxt = "\x01n\x01c" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT + "\x01h\x01gS\x01n\x01gcore\x01h\x01c: \x01b" + voteInfo.voteScore + " (+" + voteInfo.upvotes + ", -" + voteInfo.downvotes + ")\x01n\x01c" + CP437_BOX_DRAWING_LIGHT_LEFT_T;
-			enhHdrLines[6] = enhHdrLines[6].substring(0, 10) + "\x01n\x01c" + voteStatsTxt + "\x01n\x01c" + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + "\x01h\x01k" + enhHdrLines[6].substring(17 + strip_ctrl(voteStatsTxt).length);
+			var voteStatsTxt = "\x01n\x01c" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT + "\x01h\x01gS\x01n\x01gcore\x01h\x01c: \x01b" + voteInfo.voteScore + " (+" + voteInfo.upvotes + ", -" + voteInfo.downvotes + ")\x01n\x01c" + CP437_BOX_DRAWINGS_LIGHT_LEFT_T;
+			enhHdrLines[6] = enhHdrLines[6].substring(0, 10) + "\x01n\x01c" + voteStatsTxt + "\x01n\x01c" + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + "\x01h\x01k" + enhHdrLines[6].substring(17 + strip_ctrl(voteStatsTxt).length);
 		}
 
 		// If this is a personal email that has been replied to, then
@@ -12513,7 +12513,7 @@ function DigDistMsgReader_DisplayEnhReaderError(pErrorMsg, pMessageLines, pTopLi
    console.gotoxy(promptPos.x, promptPos.y-1);
    console.print("\x01n" + this.colors.enhReaderPromptSepLineColor);
    for (var lineCounter = 0; lineCounter < this.msgAreaWidth; ++lineCounter)
-      console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
+      console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
    // Clear the inside of the message area, so as not to overwrite
    // the scrollbar character
    console.attributes = "N";
@@ -12599,7 +12599,7 @@ function DigDistMsgReader_EnhReaderPromptYesNo(pQuestion, pMessageLines, pTopLin
 	console.gotoxy(promptPos.x, promptPos.y-1);
 	console.print("\x01n" + this.colors.enhReaderPromptSepLineColor);
 	for (var lineCounter = 0; lineCounter < this.msgAreaWidth; ++lineCounter)
-	console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
+	console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
 	// Clear the inside of the message area, so as not to overwrite
 	// the scrollbar character
 	console.attributes = "N";
@@ -15077,12 +15077,12 @@ function CreateSubBoardChangeSortOptMenu(pX, pY, pWidth, pHeight, pCurrentSortSe
 	sortOptMenu.borderEnabled = true;
 	sortOptMenu.colors.borderColor = "\x01n\x01b";
 	sortOptMenu.borderChars = {
-		upperLeft: CP437_BOX_DRAWING_UPPER_LEFT_DOUBLE,
-		upperRight: CP437_BOX_DRAWING_UPPER_RIGHT_DOUBLE,
-		lowerLeft: CP437_BOX_DRAWING_LOWER_LEFT_DOUBLE,
-		lowerRight: CP437_BOX_DRAWING_LOWER_RIGHT_DOUBLE,
-		top: CP437_BOX_DRAWING_HORIZONTAL_DOUBLE,
-		bottom: CP437_BOX_DRAWING_HORIZONTAL_DOUBLE,
+		upperLeft: CP437_BOX_DRAWINGS_UPPER_LEFT_DOUBLE,
+		upperRight: CP437_BOX_DRAWINGS_UPPER_RIGHT_DOUBLE,
+		lowerLeft: CP437_BOX_DRAWINGS_LOWER_LEFT_DOUBLE,
+		lowerRight: CP437_BOX_DRAWINGS_LOWER_RIGHT_DOUBLE,
+		top: CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE,
+		bottom: CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE,
 		left: CP437_BOX_DRAWINGS_DOUBLE_VERTICAL,
 		right: CP437_BOX_DRAWINGS_DOUBLE_VERTICAL
 	};
@@ -15824,7 +15824,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 				var grpDesc = msg_area.grp_list[grpIdx].name;
 				if (msg_area.grp_list[grpIdx].name != msg_area.grp_list[grpIdx].description)
 					grpDesc += " - " + msg_area.grp_list[grpIdx].description;
-				var menuItemText = "\x01n" + this.colors.indexMenuSeparatorLine + charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, 5);
+				var menuItemText = "\x01n" + this.colors.indexMenuSeparatorLine + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 5);
 				menuItemText += "\x01n" + this.colors.indexMenuSeparatorText + " ";
 				menuItemText += grpDesc;
 				var menuItemLen = console.strlen(menuItemText);
@@ -15832,7 +15832,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 				{
 					menuItemText += " \x01n" + this.colors.indexMenuSeparatorLine;
 					var numChars = this.indexedModeMenu.size.width - menuItemLen - 1;
-					menuItemText += charStr(CP437_BOX_DRAWING_HORIZONTAL_SINGLE, numChars);
+					menuItemText += charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, numChars);
 				}
 				menuItemText = skipsp(truncsp(menuItemText)); // Trim leading & trailing whitespace
 				this.indexedModeMenu.Add(menuItemText, null, null, false); // Not selectable
@@ -18114,7 +18114,7 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 			var validateNotice = "\x01n\x01h\x01yThis is an unvalidated message in a moderated area.  Press "
 							   + this.enhReaderKeys.validateMsg + " to validate it.\r\n\x01g";
 			for (var i = 0; i < 79; ++i)
-				validateNotice += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+				validateNotice += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 			validateNotice += "\x01n\r\n";
 			retObj.msgBody = validateNotice + retObj.msgBody;
 		}
@@ -18767,7 +18767,7 @@ function displayTextWithLineBelow(pText, pCenter, pTextColor, pLineColor)
 		var solidLine = "";
 		var textLength = console.strlen(pText);
 		for (var i = 0; i < textLength; ++i)
-			solidLine += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+			solidLine += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		console.center(lineColor + solidLine);
 	}
 	else
@@ -18777,7 +18777,7 @@ function displayTextWithLineBelow(pText, pCenter, pTextColor, pLineColor)
 		console.print(lineColor);
 		var textLength = console.strlen(pText);
 		for (var i = 0; i < textLength; ++i)
-			console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
+			console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
 		console.crlf();
 	}
 }
@@ -23213,10 +23213,10 @@ function quickValidateLocalUser(pUsername, pUseANSI, pQuickValSetIdx)
 			// Top border
 			var screenRow = valSetMenu.pos.y - 4;
 			console.gotoxy(valSetMenu.pos.x-1, screenRow);
-			console.print(CP437_BOX_DRAWING_UPPER_LEFT_DOUBLE);
+			console.print(CP437_BOX_DRAWINGS_UPPER_LEFT_DOUBLE);
 			for (var i = 0; i < valSetMenu.size.width; ++i)
-				console.print(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE);
-			console.print(CP437_BOX_DRAWING_UPPER_RIGHT_DOUBLE);
+				console.print(CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE);
+			console.print(CP437_BOX_DRAWINGS_UPPER_RIGHT_DOUBLE);
 			// Side border characters
 			screenRow = valSetMenu.pos.y - 3;
 			var height = valSetMenu.size.height + 3;
@@ -23231,10 +23231,10 @@ function quickValidateLocalUser(pUsername, pUseANSI, pQuickValSetIdx)
 			// Bottom border characters
 			screenRow = valSetMenu.pos.y+valSetMenu.size.height;
 			console.gotoxy(valSetMenu.pos.x-1, screenRow);
-			console.print(CP437_BOX_DRAWING_LOWER_LEFT_DOUBLE);
+			console.print(CP437_BOX_DRAWINGS_LOWER_LEFT_DOUBLE);
 			for (var i = 0; i < valSetMenu.size.width; ++i)
-				console.print(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE);
-			console.print(CP437_BOX_DRAWING_LOWER_RIGHT_DOUBLE);
+				console.print(CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE);
+			console.print(CP437_BOX_DRAWINGS_LOWER_RIGHT_DOUBLE);
 			console.attributes = "N";
 
 			console.gotoxy(menuX, menuY-3);
@@ -23978,24 +23978,24 @@ function drawBorder(pX, pY, pWidth, pHeight, pColor, pLineStyle, pTitle, pTitleC
 		return;
 
 	var borderChars = {
-		UL: CP437_BOX_DRAWING_UPPER_LEFT_SINGLE,
-		UR: CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE,
-		LL: CP437_BOX_DRAWING_LOWER_LEFT_SINGLE,
-		LR: CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE,
+		UL: CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE,
+		UR: CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE,
+		LL: CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE,
+		LR: CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE,
 		preText: CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT,
-		postText: CP437_BOX_DRAWING_LIGHT_LEFT_T,
-		horiz: CP437_BOX_DRAWING_HORIZONTAL_SINGLE,
+		postText: CP437_BOX_DRAWINGS_LIGHT_LEFT_T,
+		horiz: CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE,
 		vert: CP437_BOX_DRAWINGS_LIGHT_VERTICAL
 	};
 	if (typeof(pLineStyle) === "string" && pLineStyle.toUpperCase() == "DOUBLE")
 	{
-		borderChars.UL = CP437_BOX_DRAWING_UPPER_LEFT_DOUBLE;
-		borderChars.UR = CP437_BOX_DRAWING_UPPER_RIGHT_DOUBLE;
-		borderChars.LL = CP437_BOX_DRAWING_LOWER_LEFT_DOUBLE;
-		borderChars.LR = CP437_BOX_DRAWING_LOWER_RIGHT_DOUBLE;
-		borderChars.preText = CP437_BOX_DRAWING_RIGHT_DOUBLE_T;
-		borderChars.postText = CP437_BOX_DRAWING_LEFT_DOUBLE_T
-		borderChars.horiz = CP437_BOX_DRAWING_HORIZONTAL_DOUBLE;
+		borderChars.UL = CP437_BOX_DRAWINGS_UPPER_LEFT_DOUBLE;
+		borderChars.UR = CP437_BOX_DRAWINGS_UPPER_RIGHT_DOUBLE;
+		borderChars.LL = CP437_BOX_DRAWINGS_LOWER_LEFT_DOUBLE;
+		borderChars.LR = CP437_BOX_DRAWINGS_LOWER_RIGHT_DOUBLE;
+		borderChars.preText = CP437_BOX_DRAWINGS_RIGHT_DOUBLE_T;
+		borderChars.postText = CP437_BOX_DRAWINGS_LEFT_DOUBLE_T
+		borderChars.horiz = CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE;
 		borderChars.vert = CP437_BOX_DRAWINGS_DOUBLE_VERTICAL;
 	}
 

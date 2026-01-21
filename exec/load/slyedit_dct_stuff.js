@@ -111,10 +111,10 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	if (typeof(redrawScreen_DCTStyle.topBorder) == "undefined")
 	{
 		var innerWidth = console.screen_columns - 2;
-		redrawScreen_DCTStyle.topBorder = CP437_BOX_DRAWING_UPPER_LEFT_SINGLE;
+		redrawScreen_DCTStyle.topBorder = CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE;
 		for (var i = 0; i < innerWidth; ++i)
-			redrawScreen_DCTStyle.topBorder += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-		redrawScreen_DCTStyle.topBorder += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
+			redrawScreen_DCTStyle.topBorder += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+		redrawScreen_DCTStyle.topBorder += CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE;
 		redrawScreen_DCTStyle.topBorder = randomTwoColorString(redrawScreen_DCTStyle.topBorder,
 		                                                       gConfigSettings.DCTColors.TopBorderColor1,
 		                                                       gConfigSettings.DCTColors.TopBorderColor2);
@@ -212,7 +212,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	var subjLineNum = ++lineNum;
 	console.gotoxy(1, lineNum);
 	fieldWidth = +(console.screen_columns - 15);
-	console.print(randomTwoColorString(CP437_BOX_DRAWING_LOWER_LEFT_SINGLE, gConfigSettings.DCTColors.TopBorderColor1,
+	console.print(randomTwoColorString(CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE, gConfigSettings.DCTColors.TopBorderColor1,
 	                                   gConfigSettings.DCTColors.TopBorderColor1) +
 	                                   " " + gConfigSettings.DCTColors.TopLabelColor + "Subj " +
 	                                   gConfigSettings.DCTColors.TopLabelColonColor + ": " +
@@ -224,7 +224,7 @@ function redrawScreen_DCTStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 		console.print(CP437_BULLET_OPERATOR);
 	console.print(CP437_BULLET_OPERATOR);
 	console.print(gConfigSettings.DCTColors.TopInfoBracketColor + "] " +
-	              randomTwoColorString(CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE,
+	              randomTwoColorString(CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE,
 	              gConfigSettings.DCTColors.TopBorderColor1,
 	              gConfigSettings.DCTColors.TopBorderColor2));
 	
@@ -297,10 +297,10 @@ function displayTextAreaTopBorder_DCTStyle(pLineNum, pEditLeft, pEditRight)
 	{
 		var numHorizontalChars = pEditRight - pEditLeft - 1;
 
-		displayTextAreaTopBorder_DCTStyle.border = CP437_BOX_DRAWING_UPPER_LEFT_SINGLE;
+		displayTextAreaTopBorder_DCTStyle.border = CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE;
 		for (var i = 0; i < numHorizontalChars; ++i)
-			displayTextAreaTopBorder_DCTStyle.border += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-		displayTextAreaTopBorder_DCTStyle.border += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
+			displayTextAreaTopBorder_DCTStyle.border += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+		displayTextAreaTopBorder_DCTStyle.border += CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE;
 		displayTextAreaTopBorder_DCTStyle.border =
 		randomTwoColorString(displayTextAreaTopBorder_DCTStyle.border,
 		gConfigSettings.DCTColors.EditAreaBorderColor1,
@@ -334,12 +334,12 @@ function DisplayTextAreaBottomBorder_DCTStyle(pLineNum, pUseQuotes, pEditLeft, p
 	{
 		var innerWidth = pEditRight - pEditLeft - 1;
 
-		DisplayTextAreaBottomBorder_DCTStyle.border = CP437_BOX_DRAWING_LOWER_LEFT_SINGLE;
+		DisplayTextAreaBottomBorder_DCTStyle.border = CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE;
 
 		// This loop uses innerWidth-6 to make way for the insert mode
 		// text.
 		for (var i = 0; i < innerWidth-6; ++i)
-			DisplayTextAreaBottomBorder_DCTStyle.border += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+			DisplayTextAreaBottomBorder_DCTStyle.border += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		DisplayTextAreaBottomBorder_DCTStyle.border =
 		randomTwoColorString(DisplayTextAreaBottomBorder_DCTStyle.border,
 		gConfigSettings.DCTColors.EditAreaBorderColor1,
@@ -352,7 +352,7 @@ function DisplayTextAreaBottomBorder_DCTStyle(pLineNum, pUseQuotes, pEditLeft, p
 		                                            + "]";
 		// The last 2 border characters
 		DisplayTextAreaBottomBorder_DCTStyle.border +=
-		randomTwoColorString(CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE,
+		randomTwoColorString(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE,
 		gConfigSettings.DCTColors.EditAreaBorderColor1,
 		gConfigSettings.DCTColors.EditAreaBorderColor2);
 	}
@@ -451,14 +451,14 @@ function DrawQuoteWindowTopBorder_DCTStyle(pQuoteWinHeight, pEditLeft, pEditRigh
 	if (typeof(DrawQuoteWindowTopBorder_DCTStyle.border) == "undefined")
 	{
 		DrawQuoteWindowTopBorder_DCTStyle.border = gConfigSettings.DCTColors.QuoteWinBorderColor
-		                                         + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + " "
+		                                         + CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + " "
 		                                         + gConfigSettings.DCTColors.QuoteWinBorderTextColor
 		                                         + "Quote Window " + gConfigSettings.DCTColors.QuoteWinBorderColor;
 		var curLength = console.strlen(DrawQuoteWindowTopBorder_DCTStyle.border);
 		var borderWidth = pEditRight - pEditLeft;
 		for (var i = curLength; i < borderWidth; ++i)
-			DrawQuoteWindowTopBorder_DCTStyle.border += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-		DrawQuoteWindowTopBorder_DCTStyle.border += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
+			DrawQuoteWindowTopBorder_DCTStyle.border += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+		DrawQuoteWindowTopBorder_DCTStyle.border += CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE;
 	}
 
 	// Draw the top border line
@@ -483,16 +483,16 @@ function DrawQuoteWindowBottomBorder_DCTStyle(pEditLeft, pEditRight)
 		const quoteHotkeyChar = gUserSettings.ctrlQQuote ? "Q" : "Y";
 		var quoteHelpText = gConfigSettings.DCTColors.QuoteWinBorderTextColor
 		                 + "[Enter] Accept" + gConfigSettings.DCTColors.QuoteWinBorderColor
-		                 + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+		                 + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
 		                 + "[^" + quoteHotkeyChar + "/ESC] End" + gConfigSettings.DCTColors.QuoteWinBorderColor
-		                 + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+		                 + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
 		                 + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn/Home/End] Scroll"
-		                 + gConfigSettings.DCTColors.QuoteWinBorderColor + CP437_BOX_DRAWING_HORIZONTAL_SINGLE
-		                 + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor;
+		                 + gConfigSettings.DCTColors.QuoteWinBorderColor + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE
+		                 + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor;
 		                 /*
 		                 + "[" + UP_ARROW + "/" + DOWN_ARROW + "/PgUp/PgDn] Scroll"
-		                 + gConfigSettings.DCTColors.QuoteWinBorderColor + CP437_BOX_DRAWING_HORIZONTAL_SINGLE
-		                 + CP437_BOX_DRAWING_HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
+		                 + gConfigSettings.DCTColors.QuoteWinBorderColor + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE
+		                 + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + gConfigSettings.DCTColors.QuoteWinBorderTextColor
 		                 + "[F/L] First/last page";
 		                 */
 		var helpTextLen = console.strlen(quoteHelpText);
@@ -503,16 +503,16 @@ function DrawQuoteWindowBottomBorder_DCTStyle(pEditLeft, pEditRight)
 
 		// Start creating DrawQuoteWindowBottomBorder_DCTStyle.border with the
 		// bottom border lines, up until helpTextStartX.
-		DrawQuoteWindowBottomBorder_DCTStyle.border = gConfigSettings.DCTColors.QuoteWinBorderColor + CP437_BOX_DRAWING_LOWER_LEFT_SINGLE;
+		DrawQuoteWindowBottomBorder_DCTStyle.border = gConfigSettings.DCTColors.QuoteWinBorderColor + CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE;
 		for (var XPos = pEditLeft+2; XPos < helpTextStartX; ++XPos)
-			DrawQuoteWindowBottomBorder_DCTStyle.border += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+			DrawQuoteWindowBottomBorder_DCTStyle.border += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		// Add the help text, then display the rest of the bottom border characters.
 		DrawQuoteWindowBottomBorder_DCTStyle.border += quoteHelpText + gConfigSettings.DCTColors.QuoteWinBorderColor;
 		// Previously, the rightmost column in this loop was pEditRight-2, but now it looks like that was resulting
 		// in this line being 2 characters shorter than it should be.
 		for (var XPos = helpTextStartX + helpTextLen; XPos <= pEditRight; ++XPos)
-			DrawQuoteWindowBottomBorder_DCTStyle.border += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-		DrawQuoteWindowBottomBorder_DCTStyle.border += CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE;
+			DrawQuoteWindowBottomBorder_DCTStyle.border += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+		DrawQuoteWindowBottomBorder_DCTStyle.border += CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE;
 	}
 
 	// Print the border text on the screen
@@ -556,13 +556,13 @@ function promptYesNo_DCTStyle(pQuestion, pBoxTitle, pDefaultYes, pParamObj, pAlw
 	// Display the question box
 	// Upper-left corner, 1 horizontal line, and "Abort" text
 	console.gotoxy(boxX, boxY);
-	console.print(gConfigSettings.DCTColors.TextBoxBorder + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE +
-	              CP437_BOX_DRAWING_HORIZONTAL_SINGLE + " " + gConfigSettings.DCTColors.TextBoxBorderText +
+	console.print(gConfigSettings.DCTColors.TextBoxBorder + CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE +
+	              CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + " " + gConfigSettings.DCTColors.TextBoxBorderText +
 	              pBoxTitle + gConfigSettings.DCTColors.TextBoxBorder + " ");
 	// Remaining top box border
 	for (var i = pBoxTitle.length + 5; i < boxWidth; ++i)
-		console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
-	console.print(CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE);
+		console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
+	console.print(CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE);
 	// Inner box: Blank
 	var endScreenLine = boxY + boxHeight - 2;
 	for (var screenLine = boxY+1; screenLine < endScreenLine; ++screenLine)
@@ -574,10 +574,10 @@ function promptYesNo_DCTStyle(pQuestion, pBoxTitle, pDefaultYes, pParamObj, pAlw
 	}
 	// Bottom box border
 	console.gotoxy(boxX, screenLine);
-	console.print(CP437_BOX_DRAWING_LOWER_LEFT_SINGLE);
+	console.print(CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE);
 	for (var i = 0; i < innerBoxWidth; ++i)
-		console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
-	console.print(CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE);
+		console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
+	console.print(CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE);
 
 	// Prompt the user whether or not to abort: Move the cursor to
 	// the proper location on the screen, output the propmt text,
@@ -1365,17 +1365,17 @@ function DCTMenu_DoInputLoop()
 	var innerWidth = this.width - 2;
 	if (this.borderStyle == "single")
 	{
-		console.print(this.colors.border + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE);
+		console.print(this.colors.border + CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE);
 		for (var i = 0; i < innerWidth; ++i)
-			console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
-		console.print(this.colors.border + CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE);
+			console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
+		console.print(this.colors.border + CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE);
 	}
 	else if (this.borderStyle == "double")
 	{
-		console.print(this.colors.border + CP437_BOX_DRAWING_UPPER_LEFT_DOUBLE);
+		console.print(this.colors.border + CP437_BOX_DRAWINGS_UPPER_LEFT_DOUBLE);
 		for (var i = 0; i < innerWidth; ++i)
-			console.print(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE);
-		console.print(this.colors.border + CP437_BOX_DRAWING_UPPER_RIGHT_DOUBLE);
+			console.print(CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE);
+		console.print(this.colors.border + CP437_BOX_DRAWINGS_UPPER_RIGHT_DOUBLE);
 	}
 	// If clearSpaceAroundMenu is true, then put a space after the border.
 	if (this.clearSpaceAroundMenu && (this.topLeftX + this.width < console.screen_columns))
@@ -1413,17 +1413,17 @@ function DCTMenu_DoInputLoop()
 	// Draw the bottom border
 	if (this.borderStyle == "single")
 	{
-		console.print(this.colors.border + CP437_BOX_DRAWING_LOWER_LEFT_SINGLE);
+		console.print(this.colors.border + CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE);
 		for (var i = 0; i < innerWidth; ++i)
-			console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
-		console.print(CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE);
+			console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
+		console.print(CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE);
 	}
 	else if (this.borderStyle == "double")
 	{
-		console.print(this.colors.border + CP437_BOX_DRAWING_LOWER_LEFT_DOUBLE);
+		console.print(this.colors.border + CP437_BOX_DRAWINGS_LOWER_LEFT_DOUBLE);
 		for (var i = 0; i < innerWidth; ++i)
-			console.print(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE);
-		console.print(CP437_BOX_DRAWING_LOWER_RIGHT_DOUBLE);
+			console.print(CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE);
+		console.print(CP437_BOX_DRAWINGS_LOWER_RIGHT_DOUBLE);
 	}
 	// If clearSpaceAroundMenu is true, then put a space after the border.
 	if (this.clearSpaceAroundMenu && (this.topLeftX + this.width < console.screen_columns))
