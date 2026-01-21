@@ -10,12 +10,13 @@ var BUILDINGS = {
 	"H": { char: "\x7F", cost: 10, name: "Housing ", shadow: "+15 PopCap", land: true, sea: false },
 	"F": { char: "\xB1", cost: 20, name: "Farm    ", shadow: "+2 Food/t", land: true, sea: false },
 	"I": { char: "\xDC", cost: 50, name: "Industry", shadow: "+5 Gold/t", land: true, sea: false },
-	"B": { char: "\xE0", cost: 25, name: "PT Boat ", shadow: "Patrols", land: false, sea: true },
+	"B": { char: "\x1E", cost: 25, name: "PT Boat ", shadow: "Patrols", land: false, sea: true },
 	"S": { char: "\x15", cost: 100, name: "School  ", shadow: "-Rebels", land: true, sea: false },
 	"R": { char: "\xCD", cost: 15, name: "Bridge  ", shadow: "Transit", land: true, sea: true },
-	"T": { char: "\x11", cost: 40, name: "Trawler ", shadow: "Fish Catch", land: false, sea: true },
+	"T": { char: "\xCF", cost: 40, name: "Trawler ", shadow: "Fish Catch", land: false, sea: true },
 	"C": { char: "\xFE", cost: 250, name: "Cmd Ctr ", shadow: "Radar/Def", land: true, sea: false }
 };
+var MAX_FISH = 8;
 var Utopia = {
 	state: {
 		running: true,
@@ -29,7 +30,7 @@ var Utopia = {
 		martialLaw: 0,
 		cursor: { x: 30, y: 11 },
 		msg: "\x01h\x01wGovernor Online.",
-		fish: { x: -1, y: -1 },
+		fishPool: [],
 		merchant: { x: -1, y: 0, active: false },
 		pirate: { x: -1, y: 0, active: false },
 		storm: { x: -1, y: 0, active: false },
@@ -40,13 +41,12 @@ var Utopia = {
 };
 // --- CORE UTILITIES ---
 Utopia.spawnFish = function() {
-	for (var i = 0; i < 100; i++) {
-		var rx = Math.floor(Math.random() * 60),
-			ry = Math.floor(Math.random() * 22);
-		if (this.map[ry][rx] === 0) {
-			this.state.fish.x = rx;
-			this.state.fish.y = ry;
-			return;
+	while (this.state.fishPool.length < MAX_FISH) {
+		var rx = Math.floor(Math.random() * 60);
+		var ry = Math.floor(Math.random() * 22);
+		// Only spawn in water (0) and not on a building
+		if (this.map[ry][rx] === 0 && !this.bldgMap[ry][rx]) {
+			this.state.fishPool.push({ x: rx, y: ry });
 		}
 	}
 };
@@ -57,16 +57,19 @@ Utopia.drawCell = function(x, y, isCursor) {
 	var isLand = (this.map[y][x] === 1);
 	var attr = isLand ? (BG_GREEN | BLACK) : (BG_BLUE | LIGHTBLUE);
 	var char = isLand ? " " : "\xF7";
-	if (this.state.fish.x === x && this.state.fish.y === y) {
-		char = "\xCF";
-		attr = (BG_BLUE | CYAN | HIGH);
+	// Check Fish Pool
+	for (var i = 0; i < this.state.fishPool.length; i++) {
+		if (this.state.fishPool[i].x === x && this.state.fishPool[i].y === y) {
+			char = "\xE0";
+			attr = (BG_BLUE | CYAN | HIGH);
+		}
 	}
 	if (this.state.merchant.active && Math.floor(this.state.merchant.x) === x && Math.floor(this.state.merchant.y) === y) {
-		char = "M";
+		char = "$";
 		attr = BG_BLUE | YELLOW | HIGH;
 	}
 	if (this.state.pirate.active && Math.floor(this.state.pirate.x) === x && Math.floor(this.state.pirate.y) === y) {
-		char = "P";
+		char = "\x9E";
 		attr = BG_BLUE | RED | HIGH;
 	}
 	if (this.state.storm.active) {
@@ -150,7 +153,6 @@ Utopia.handlePatrols = function() {
 	}
 };
 Utopia.moveEntities = function() {
-	var oldFish = { x: this.state.fish.x, y: this.state.fish.y };
 	var oldMerc = {
 		x: Math.floor(this.state.merchant.x),
 		y: Math.floor(this.state.merchant.y),
@@ -168,26 +170,46 @@ Utopia.moveEntities = function() {
 	};
 	this.handlePatrols();
 	// Fish
-	if (Math.random() < 0.4) {
-		var nx = this.state.fish.x + (Math.random() > 0.5 ? 1 : -1),
-			ny = this.state.fish.y + (Math.random() > 0.5 ? 1 : -1);
-		if (nx < 1 || nx > 58 || ny < 1 || ny > 20) {
-			if (Math.random() < 0.1) {
-				this.forceScrub(this.state.fish.x, this.state.fish.y, 1);
-				this.spawnFish();
+	// Iterate backwards through the fish pool so we can safely remove caught fish
+	for (var i = this.state.fishPool.length - 1; i >= 0; i--) {
+		var f = this.state.fishPool[i];
+		var oldX = f.x,
+			oldY = f.y;
+		if (Math.random() < 0.4) {
+			var nx = f.x + (Math.random() > 0.5 ? 1 : -1);
+			var ny = f.y + (Math.random() > 0.5 ? 1 : -1);
+			// If fish leaves map, remove it
+			if (nx < 0 || nx > 59 || ny < 0 || ny > 21) {
+				this.state.fishPool.splice(i, 1);
+				this.drawCell(oldX, oldY, false);
+				continue;
+			}
+			// Move if target is water
+			if (this.map[ny][nx] === 0) {
+				f.x = nx;
+				f.y = ny;
+				this.drawCell(oldX, oldY, false);
+				this.drawCell(f.x, f.y, false);
+				// Check for Trawlers nearby
+				for (var dx = -1; dx <= 1; dx++) {
+					for (var dy = -1; dy <= 1; dy++) {
+						var tx = f.x + dx,
+							ty = f.y + dy;
+						if (ty >= 0 && ty < 22 && tx >= 0 && tx < 60) {
+							if (this.bldgMap[ty][tx] === "T") {
+								this.state.food += 25;
+								this.state.msg = "\x01h\x01gFish Trawled!";
+								this.state.fishPool.splice(i, 1); // Fish is caught
+								break;
+							}
+						}
+					}
+				}
 			}
 		}
-		else if (this.map[ny][nx] === 0) {
-			this.state.fish.x = nx;
-			this.state.fish.y = ny;
-			for (var dx = -1; dx <= 1; dx++)
-				for (var dy = -1; dy <= 1; dy++)
-					if (this.bldgMap[ny + dy] && this.bldgMap[ny + dy][nx + dx] === "T") {
-						this.state.food += 25;
-						this.state.msg = "\x01h\x01gFish Trawled!";
-					}
-		}
 	}
+	// Replenish the pool
+	this.spawnFish();
 	// Merchant (West to East)
 	if (this.state.merchant.active) {
 		this.state.merchant.x += 0.5;
@@ -262,7 +284,6 @@ Utopia.moveEntities = function() {
 		this.state.storm.y = 1 + Math.floor(Math.random() * 18);
 	}
 	// Redraw
-	this.drawCell(oldFish.x, oldFish.y, false);
 	if (oldMerc.active) this.drawCell(oldMerc.x, oldMerc.y, false);
 	if (oldPirate.active) this.drawCell(oldPirate.x, oldPirate.y, false);
 	if (oldStorm.active)
@@ -276,7 +297,6 @@ Utopia.moveEntities = function() {
 		for (var dx = -1; dx <= 1; dx++)
 			for (var dy = -1; dy <= 1; dy++) this.drawCell(nsx + dx, nsy + dy, false);
 	}
-	this.drawCell(this.state.fish.x, this.state.fish.y, false);
 	console.flush();
 };
 // --- SCORING & UI ---
