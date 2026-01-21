@@ -6,8 +6,8 @@ LDFLAGS	+=	-pthread
 ifdef DEBUG
  CFLAGS	+=	-g -O0 -Wall -pedantic -Wconversion -Wextra -Wno-format-truncation
 else
- CFLAGS	+=	-Oz -flto
- LDFLAGS+=	-Oz -flto -fwhole-program -s
+ CFLAGS	+=	-Os -flto
+ LDFLAGS+=	-Os -flto -fwhole-program -s
 endif
 
 XSI_CFLAGS := $(CFLAGS) -D_XOPEN_SOURCE=500
