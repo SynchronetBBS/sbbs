@@ -46,7 +46,7 @@ uint sbbs_t::finduser(const char* name, bool silent_failure)
 		if (buf[0] && strcmp(buf, "DELETED USER"))
 			return i;
 	}
-	SAFEPRINTF(path, "%suser/name.dat", cfg.data_dir);
+	SAFEPRINTF(path, "%suser/" USER_INDEX_FILENAME, cfg.data_dir);
 	if (flength(path) < 1L)
 		return 0;
 	if ((stream = fnopen(&file, path, O_RDONLY)) == NULL) {

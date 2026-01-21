@@ -4724,7 +4724,7 @@ void sbbs_t::daily_maint(void)
 		lputs(LOG_DEBUG, "DAILY: Backing-up user data...");
 		SAFEPRINTF(str, "%suser/" USER_DATA_FILENAME, cfg.data_dir);
 		int64_t bytes = backup(str, cfg.user_backup_level, false);
-		SAFEPRINTF(str, "%suser/name.dat", cfg.data_dir);
+		SAFEPRINTF(str, "%suser/" USER_INDEX_FILENAME, cfg.data_dir);
 		bytes += backup(str, cfg.user_backup_level, false);
 		lprintf(LOG_INFO, "DAILY: Backed-up %s bytes of user data"
 			, byte_estimate_to_str(bytes, str, sizeof str, 1024 * 1024, 1));

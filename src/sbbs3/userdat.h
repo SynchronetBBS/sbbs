@@ -34,6 +34,8 @@
 #define USER_DATA_FILENAME      "user.tab"
 #define USER_RECORD_LINE_LEN    1000                    // includes LF terminator
 #define USER_RECORD_LEN         (USER_RECORD_LINE_LEN - 1)  // does not include LF
+#define USER_INDEX_FILENAME     "name.dat"
+#define USER_INDEX_RECORD_LEN   (LEN_ALIAS + 2)
 
 // API function return values
 #define USER_SUCCESS            0
