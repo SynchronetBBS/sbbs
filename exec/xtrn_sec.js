@@ -314,7 +314,6 @@ function external_section_menu()
 					console.crlf();
 				}
 			}
-2
 			bbs.menu("xtrn_sec_tail", P_NOERROR);
 			
 			bbs.node_sync();
