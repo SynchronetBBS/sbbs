@@ -5087,7 +5087,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	 , JSDOCSTR("Copy a file from one directory or filename to another")
 	 , 311},
 	{"file_backup",     js_backup,          1,  JSTYPE_BOOLEAN, JSDOCSTR("path/filename [,level=5] [,rename=false]")
-	 , JSDOCSTR("Backup the specified <i>filename</i> as <tt>filename.<i>number</i>.extension</tt> "
+	 , JSDOCSTR("Back up the specified <i>filename</i> as <tt>filename.<i>number</i>.extension</tt> "
 		        "where <i>number</i> is the backup number 0 through <i>level</i>-1 "
 		        "(default backup <i>level</i> is 5), "
 		        "if <i>rename</i> is <tt>true</tt>, the original file is renamed instead of copied "
