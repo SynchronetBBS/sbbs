@@ -4708,6 +4708,7 @@ void sbbs_t::daily_maint(void)
 	uint i;
 	uint usernum;
 	uint lastusernum;
+	int  mail;
 	user_t user;
 
 	lputs(LOG_INFO, "DAILY: System maintenance begun");
@@ -4720,17 +4721,18 @@ void sbbs_t::daily_maint(void)
 		}
 	}
 
-	if (cfg.user_backup_level && lastuser(&cfg) > 0) {
+	if (cfg.user_backup_level && (lastusernum = lastuser(&cfg)) > 0) {
 		lputs(LOG_DEBUG, "DAILY: Backing-up user data...");
 		SAFEPRINTF(str, "%suser/" USER_DATA_FILENAME, cfg.data_dir);
 		int64_t bytes = backup(str, cfg.user_backup_level, false);
 		SAFEPRINTF(str, "%suser/" USER_INDEX_FILENAME, cfg.data_dir);
 		bytes += backup(str, cfg.user_backup_level, false);
-		lprintf(LOG_INFO, "DAILY: Backed-up %s bytes of user data"
-			, byte_estimate_to_str(bytes, str, sizeof str, 1024 * 1024, 1));
+		lprintf(LOG_INFO, "DAILY: Backed-up %s bytes of user data (%u users)"
+			, byte_estimate_to_str(bytes, str, sizeof str, 1024 * 1024, 1)
+			, lastusernum);
 	}
 
-	if (cfg.mail_backup_level && getmail(&cfg, 0, false, /* attr: */ 0) > 0) {
+	if (cfg.mail_backup_level && (mail = getmail(&cfg, 0, false, /* attr: */ 0)) > 0) {
 		lputs(LOG_DEBUG, "DAILY: Backing-up mail data...");
 		smb_t mail;
 		int result = smb_open_sub(&cfg, &mail, INVALID_SUB);
@@ -4757,8 +4759,9 @@ void sbbs_t::daily_maint(void)
 				bytes += backup(str, cfg.mail_backup_level, false);
 				SAFEPRINTF(str, "%smail.ini", cfg.data_dir);
 				bytes += backup(str, cfg.mail_backup_level, false);
-				lprintf(LOG_INFO, "DAILY: Backed-up %s bytes of mail data"
-					, byte_estimate_to_str(bytes, str, sizeof str, 1024 * 1024, 1));
+				lprintf(LOG_INFO, "DAILY: Backed-up %s bytes of mail data (%u messages)"
+					, byte_estimate_to_str(bytes, str, sizeof str, 1024 * 1024, 1)
+					, mail);
 				result = smb_unlock(&mail);
 				if (result != SMB_SUCCESS)
 					errprintf(LOG_ERR, WHERE, "ERROR %d (%s) unlocking mail base", result, mail.last_error);
