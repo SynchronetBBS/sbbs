@@ -45,7 +45,6 @@ void sbbs_t::logout()
 		return;
 	}
 	lprintf(LOG_INFO, "logout initiated");
-	SAFECOPY(lastuseron, useron.alias); // TODO: race condition here
 	if (!online && getnodedat(cfg.node_num, &node, /* lock: */ true)) {
 		node.status = NODE_LOGOUT;
 		putnodedat(cfg.node_num, &node);
@@ -56,8 +55,8 @@ void sbbs_t::logout()
 		clearbatdl();
 	}
 
-	if (sys_status & SS_USERON && thisnode.status != NODE_QUIET && !(useron.rest & FLAG('Q')) && user_login_state == user_logged_on)
-		for (i = 1; i <= cfg.sys_nodes; i++)
+	if (sys_status & SS_USERON && thisnode.status != NODE_QUIET && !(useron.rest & FLAG('Q')) && user_login_state == user_logged_on) {
+		for (i = 1; i <= cfg.sys_nodes; i++) {
 			if (i != cfg.node_num) {
 				getnodedat(i, &node);
 				if ((node.status == NODE_INUSE || node.status == NODE_QUIET)
@@ -68,6 +67,12 @@ void sbbs_t::logout()
 					            ? text[UNKNOWN_USER] : useron.alias));
 				}
 			}
+		}
+		if (!useron_is_sysop() || (cfg.sys_misc & SM_SYSSTAT)) {
+			SAFECOPY(lastuseron, useron.alias); // TODO: race condition here
+			laston_time = now;
+		}
+	}
 
 	if (!online) {       /* NOT re-login */
 		if (cfg.sys_logout.cmd[0] && !(cfg.sys_logout.misc & EVENT_DISABLED)) {      /* execute system logout event */

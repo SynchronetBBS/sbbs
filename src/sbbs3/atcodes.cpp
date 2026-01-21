@@ -400,7 +400,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	long       l;
 	char       param;
 	node_t     node;
-	struct  tm tm;
+	struct  tm tm{};
 
 	if (cols == 0)
 		cols = term->cols;
@@ -854,7 +854,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		safe_snprintf(str, maxlen, "%c", useron.prot);
 		return str;
 	}
-	if (strcmp(sp, "PROTNAME") == 0)
+	if (strcmp(sp, "PROTNAME") == 0 || strcmp(sp, "PROTOCOL") == 0)
 		return protname(useron.prot);
 
 	if (strcmp(sp, "SEX") == 0 || strcmp(sp, "GENDER") == 0) {
@@ -867,7 +867,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if (!strcmp(sp, "TIME") || !strcmp(sp, "SYSTIME") || !strcmp(sp, "TIME_UTC")) {
 		now = time(NULL);
-		memset(&tm, 0, sizeof(tm));
 		if (strcmp(sp, "TIME_UTC") == 0)
 			gmtime_r(&now, &tm);
 		else
@@ -889,7 +888,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		SAFECOPY(tmp, sp + 5);
 		c_unescape_str(tmp);
 		now = time(NULL);
-		memset(&tm, 0, sizeof(tm));
 		localtime_r(&now, &tm);
 		strftime(str, maxlen, tmp, &tm);
 		return str;
@@ -899,7 +897,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		SAFECOPY(tmp, sp + 4);
 		c_unescape_str(tmp);
 		now = time(NULL);
-		memset(&tm, 0, sizeof(tm));
 		gmtime_r(&now, &tm);
 		strftime(str, maxlen, tmp, &tm);
 		return str;
@@ -1097,6 +1094,17 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	    || !strcmp(sp, "LASTCALLERSYSTEM"))
 		return lastuseron;
 
+	if (strcmp(sp, "LASTCALL") == 0)  // Wildcat "Last call to this node Date/Time"
+		return timestr(laston_time);
+
+	if (strncmp(sp, "LASTCALL:", 9) == 0) {
+		SAFECOPY(tmp, sp + 9);
+		c_unescape_str(tmp);
+		localtime_r(&laston_time, &tm);
+		strftime(str, maxlen, tmp, &tm);
+		return str;
+	}
+
 	if (!strcmp(sp, "CLS") || !strcmp(sp, "CLEAR")) {
 		cls();
 		return nulstr;
@@ -1212,8 +1220,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return timestr(event_time);
 	}
 
-	/* LASTCALL */
-
 	if (strcmp(sp, "NODE_USER") == 0)
 		return thisnode.misc & NODE_ANON ? text[UNKNOWN_USER] : useron.alias;
 
@@ -1256,7 +1262,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (!strcmp(sp, "ADDR1"))
 		return useron.address;
 
-	if (!strcmp(sp, "FROM"))
+	if (strcmp(sp, "FROM") == 0 || strcmp(sp, "ADDR2") == 0)
 		return useron.location;
 
 	if (!strcmp(sp, "CITY")) {
@@ -1295,7 +1301,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strncmp(sp, "BDATE:", 6) == 0 || strncmp(sp, "BIRTH:", 6) == 0) {
 		SAFECOPY(tmp, sp + 6);
 		c_unescape_str(tmp);
-		memset(&tm, 0, sizeof(tm));
 		tm.tm_year = getbirthyear(&cfg, useron.birth) - 1900;
 		tm.tm_mon = getbirthmonth(&cfg, useron.birth) - 1;
 		tm.tm_mday = getbirthday(&cfg, useron.birth);
@@ -1326,7 +1331,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strncmp(sp, "PWDATE:", 7) == 0) {
 		SAFECOPY(tmp, sp + 7);
 		c_unescape_str(tmp);
-		memset(&tm, 0, sizeof(tm));
 		time_t date = useron.pwmod;
 		localtime_r(&date, &tm);
 		strftime(str, maxlen, tmp, &tm);
@@ -1344,7 +1348,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strncmp(sp, "SINCE:", 6) == 0) {
 		SAFECOPY(tmp, sp + 6);
 		c_unescape_str(tmp);
-		memset(&tm, 0, sizeof(tm));
 		time_t date = useron.firston;
 		localtime_r(&date, &tm);
 		strftime(str, maxlen, tmp, &tm);
@@ -1424,7 +1427,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strncmp(sp, "LASTON:", 7) == 0) {
 		SAFECOPY(tmp, sp + 7);
 		c_unescape_str(tmp);
-		memset(&tm, 0, sizeof(tm));
 		time_t date = useron.laston;
 		localtime_r(&date, &tm);
 		strftime(str, maxlen, tmp, &tm);
@@ -1443,7 +1445,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strncmp(sp, "FIRSTON:", 8) == 0) {
 		SAFECOPY(tmp, sp + 8);
 		c_unescape_str(tmp);
-		memset(&tm, 0, sizeof(tm));
 		time_t date = useron.firston;
 		localtime_r(&date, &tm);
 		strftime(str, maxlen, tmp, &tm);
@@ -1653,7 +1654,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strncmp(sp, "LASTNEW:", 8) == 0) {
 		SAFECOPY(tmp, sp + 8);
 		c_unescape_str(tmp);
-		memset(&tm, 0, sizeof(tm));
 		time_t date = ns_time;
 		localtime_r(&date, &tm);
 		strftime(str, maxlen, tmp, &tm);
@@ -1736,7 +1736,6 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			return nulstr;
 		SAFECOPY(tmp, sp + 8);
 		c_unescape_str(tmp);
-		memset(&tm, 0, sizeof(tm));
 		time_t date = useron.expire;
 		localtime_r(&date, &tm);
 		strftime(str, maxlen, tmp, &tm);

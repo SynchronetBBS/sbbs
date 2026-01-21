@@ -95,6 +95,7 @@ static bool                event_thread_blocked;
 static protected_uint32_t  node_threads_running;
 static volatile uint32_t   client_highwater = 0;
 
+time_t                     laston_time;
 char                       lastuseron[LEN_ALIAS + 1]; /* Name of user last online */
 RingBuf*                   node_inbuf[MAX_NODES];
 SOCKET                     spy_socket[MAX_NODES];

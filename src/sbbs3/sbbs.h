@@ -1673,6 +1673,7 @@ extern "C" {
 #endif /* SBBS */
 
 extern char lastuseron[LEN_ALIAS+1];  /* Name of user last online */
+extern time_t laston_time;
 
 #ifdef __cplusplus
 }
