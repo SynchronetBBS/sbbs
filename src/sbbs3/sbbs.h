@@ -731,6 +731,7 @@ public:
 	int		errorlevel = 0;	/* Error level of external program */
 
 	csi_t	main_csi{};		/* Main Command Shell Image */
+	char    optext[256]{}; // See bbs.optext property and OPTEXT @-code
 
 	const smbmsg_t*	current_msg = nullptr;	/* For message header @-codes */
 	const char*	current_msg_subj = nullptr;

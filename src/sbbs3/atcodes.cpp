@@ -1795,6 +1795,9 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
+	if (strcmp(sp, "OPTEXT") == 0)
+		return optext;
+
 	// User Property value
 	if (strncmp(sp, "PROP:", 5) == 0) {
 		sp += 5;

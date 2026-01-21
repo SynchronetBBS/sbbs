@@ -156,6 +156,7 @@ enum {
 	, BBS_PROP_FILE_TIMES_DLED
 
 	, BBS_PROP_COMMAND_STR
+	, BBS_PROP_OPTEXT
 };
 
 #ifdef BUILD_JSDOCS
@@ -284,7 +285,8 @@ static const char* bbs_prop_desc[] = {
 	, "Cost (in credits) to download all files in batch download queue"
 	, "Estimated time (in seconds) to download all files in batch download queue"
 
-	, "Current command shell/module <i>command string</i> value"
+	, "Current command shell/module <i>command string</i> value (see <tt>STR</tt> @-code)"
+	, "Optional text string to be displayed to user in a menu/text file (see <tt>OPTEXT</tt> @-code)"
 	, NULL
 };
 #endif
@@ -794,6 +796,9 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case BBS_PROP_COMMAND_STR:
 			p = sbbs->main_csi.str;
 			break;
+		case BBS_PROP_OPTEXT:
+			p = sbbs->optext;
+			break;
 
 		default:
 			return JS_TRUE;
@@ -992,6 +997,10 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 			if (p != NULL)
 				strlcpy(sbbs->main_csi.str, p, 1024);
 			break;
+		case BBS_PROP_OPTEXT:
+			if (p != NULL)
+				strlcpy(sbbs->optext, p, sizeof sbbs->optext);
+			break;
 
 		default:
 			if (p)
@@ -1138,6 +1147,7 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{   "batch_dnload_time" , BBS_PROP_BATCH_DNLOAD_TIME , PROP_READONLY, 321},
 
 	{   "command_str", BBS_PROP_COMMAND_STR, JSPROP_ENUMERATE, 314},
+	{   "optext", BBS_PROP_OPTEXT, JSPROP_ENUMERATE, 321},
 	{0}
 };
 
