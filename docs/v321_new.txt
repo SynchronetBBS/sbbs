@@ -20,6 +20,9 @@ o Expand 16-bit unsigned integer statistical user fields to 32-bit
   increasing maximum values from 65535 to 4.2B
 o Address concurrency issues with user daily statistics/free credit fields
   - Each user's stats reset date/time stamp now stored in user base/record
+o Improvements to daily backups of mail and user data
+  - Don't back up files when empty
+  - Log the total bytes and items (users and messages) backed up
 o Support tracking and limiting of user file downloads "per day" - issue #938
 o System statistics and mail message counts are now cached (default: for 5s)
 o Increased from 40 to 60 characters the maximum length of descriptions (long
@@ -75,12 +78,14 @@ o Separate global support for "extra attribute codes" from per sub-board opts
 o If editor doesn't create a file, don't log an error message - issue #914
 o Ensure messages created/edited are always CRLF line-terminated
 o When listing mail messages with no "to" field, display SMTP forward path
-o Remove superfluous/erroneous ".0" from displayed age of posted messages 
+o Remove superfluous/erroneous ".0" from displayed age of posted messages
+o When printing display files that use PCBoard color codes,
+  don't reset attributes (to lightgrey) at the end of each line
 o Don't add CP437 QWKnet tagline glyph when message is explicitly US-ASCII
 o Use FTN charset of "ASCII 1" when the imported message is explicitly ASCII
 o Output multiple inverted question marks for > 1 width UNICODE characters
   for non-UTF8 terminals
-o Add "exclusive external program" option to timed event configurations
+o Add "exclusive external program" option to timed event configurations in SCFG
 o When the user has unread personal mail, give a different prompt during logon
 o Add New User Prompt toggle option to allow single-word real names
 o Resolve menu/../* to abs-path before checking file existence - issue #918
@@ -224,6 +229,10 @@ o New @-codes:
   - FIDOAREA   (FidoNet Area Tag for current/open sub-board)
   - FIDOORIGIN (FidoNet Origin Line for current/open sub-board)
   - NEWSGROUP  (Newsgroup Name for current/open sub-board)
+  - PROTOCOL   (alias for PROTNAME)
+  - ADDR2      (alias for FROM)
+  - LASTCALL   (date/time of last logoff of this sbbs instance)
+  - LASTCALL:t (custom strftime-formatted output of the above date/time)
 
 Text Strings
 ~~~~~~~~~~~~
@@ -284,6 +293,9 @@ o New option: System->Security->Demand High Quality Password
 o New Option: System->Advanced->Statistics Interval (cache duration)
   (default: 5 seconds)
 o New option: External Editors ... Retain Ctrl-A Codes in Quotes
+o New option: Message Options->MailBase Storage Method (default: Self-packing)
+  allows sysop to choose "Fast Allocation" Storage Method if needed/preferred
+  but requires periodic MailBase packing to keep manage disk usage/free space
 o New System->Security Options->Security Level Values... "Downloads Per Day"
   (D/D): defaults to 0/Unlimited for each level
 o System->Loadable Modules now allows multiple modules to be configured per
@@ -299,6 +311,7 @@ o Resolved issue of System menu detecting changes by the sysop
 
 SBBSecho
 ~~~~~~~~
+o Extracts/imports inbound bundles starting from 6 days ago, not always Sunday
 o Auto-enable "EchoList Only" areamgr mode when EchoList Keys are used
 o When netmail is forwarded to an external (e.g. email) address, notify user
 o UTF-8 encode Origin lines in exported messages when appropriate
@@ -364,6 +377,8 @@ o login.js
     in ctrl/modopts/login.ini
 o logon.js
   - Fixed node status upon aborting new user registration process
+  - Moved terminal-related prompts for Guest here from C++ hard-coded logic
+    (can prompt Guests for an alternate language during logon as well)
   - Moved missing user property checks/prompts here from C++ hard-coded logic
   - Supports Rlogin terminal="xtrn_sec=<code>" to take users directly
     to a specified external program section for Rlogins
@@ -396,12 +411,21 @@ o str_cmds.js
   - Allow string command parameters to line wrap the terminal and log them
   - Beautify the "help" output - issue #901
   - Allow ";help command" to work on partially-specified commands
+o tempxfer.js
+  - Major useability improvements
+o text_sec.js
+  - Support per-section and per-document print mode flag override
+    Sysop must hand-edit the data/text/*.ini file, for now, to use this feature
+    Set "mode=P_* [| P_*]" in root or file-sections of text/*.ini file
+    See load/sbbsdefs.js for possible values
 o tdfiglet.js
   - New FIGlet renderer for Synchronet using TheDraw fonts
   - Supports UTF-8 or CP437 encoded output
   - Supports ANSI or Ctrl-A encoded output
 o type.js
   - Use P_CPM_EOF mode flag to stop printing at Ctrl-Z (CP/M and PC/MSDOS EOF)
+o user_settings.js
+  - Add ability to add/edit/delete SSH keys
 o userlist.js
   - Cosmetic fix: user totals displayed were wrong when not sorting the list
 o viewimsgs.js
@@ -453,6 +477,7 @@ o New 'system' methods:
   - minutestr()
 o system.secondstr() now accepts an optional 'verbose' argument, default: true
 o New User class properties:
+  - is_guest
   - stats.bytes_downloaded_today
   - stats.files_downloaded_today
   - limits.file_downloads_per_day
