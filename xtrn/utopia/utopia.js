@@ -1,0 +1,546 @@
+"use strict";
+load("sbbsdefs.js");
+// --- CONFIG & FILES ---
+var INTRO_FILE = js.exec_dir + "utopia_intro.txt";
+var HELP_FILE = js.exec_dir + "utopia_help.txt";
+var SAVE_FILE = js.exec_dir + "utopia_save_" + user.alias.replace(/\W/g, '') + ".json";
+var SCORE_FILE = js.exec_dir + "utopia_scores.json";
+var BASE_DESTRUCTION_COST = 5;
+var BUILDINGS = {
+	"H": { char: "\x7F", cost: 10, name: "Housing ", shadow: "+15 PopCap", land: true, sea: false },
+	"F": { char: "\xB1", cost: 20, name: "Farm    ", shadow: "+2 Food/t", land: true, sea: false },
+	"I": { char: "\xDC", cost: 50, name: "Industry", shadow: "+5 Gold/t", land: true, sea: false },
+	"B": { char: "\xE0", cost: 25, name: "PT Boat ", shadow: "Patrols", land: false, sea: true },
+	"S": { char: "\x15", cost: 100, name: "School  ", shadow: "-Rebels", land: true, sea: false },
+	"R": { char: "\xCD", cost: 15, name: "Bridge  ", shadow: "Transit", land: true, sea: true },
+	"T": { char: "\x11", cost: 40, name: "Trawler ", shadow: "Fish Catch", land: false, sea: true },
+	"C": { char: "\xFE", cost: 250, name: "Cmd Ctr ", shadow: "Radar/Def", land: true, sea: false }
+};
+var Utopia = {
+	state: {
+		running: true,
+		turnsLeft: 500,
+		lastTick: system.timer,
+		gold: 500,
+		food: 500,
+		pop: 20,
+		popCap: 25,
+		rebels: 0,
+		martialLaw: 0,
+		cursor: { x: 30, y: 11 },
+		msg: "\x01h\x01wGovernor Online.",
+		fish: { x: -1, y: -1 },
+		merchant: { x: -1, y: 0, active: false },
+		pirate: { x: -1, y: 0, active: false },
+		storm: { x: -1, y: 0, active: false },
+		stats: { piratesSunk: 0, tradesWon: 0, boatsLost: 0 }
+	},
+	map: [],
+	bldgMap: []
+};
+// --- CORE UTILITIES ---
+Utopia.spawnFish = function() {
+	for (var i = 0; i < 100; i++) {
+		var rx = Math.floor(Math.random() * 60),
+			ry = Math.floor(Math.random() * 22);
+		if (this.map[ry][rx] === 0) {
+			this.state.fish.x = rx;
+			this.state.fish.y = ry;
+			return;
+		}
+	}
+};
+Utopia.drawCell = function(x, y, isCursor) {
+	x = Math.floor(x);
+	y = Math.floor(y);
+	if (x < 0 || x >= 60 || y < 0 || y >= 22) return;
+	var isLand = (this.map[y][x] === 1);
+	var attr = isLand ? (BG_GREEN | BLACK) : (BG_BLUE | LIGHTBLUE);
+	var char = isLand ? " " : "\xF7";
+	if (this.state.fish.x === x && this.state.fish.y === y) {
+		char = "\xCF";
+		attr = (BG_BLUE | CYAN | HIGH);
+	}
+	if (this.state.merchant.active && Math.floor(this.state.merchant.x) === x && Math.floor(this.state.merchant.y) === y) {
+		char = "M";
+		attr = BG_BLUE | YELLOW | HIGH;
+	}
+	if (this.state.pirate.active && Math.floor(this.state.pirate.x) === x && Math.floor(this.state.pirate.y) === y) {
+		char = "P";
+		attr = BG_BLUE | RED | HIGH;
+	}
+	if (this.state.storm.active) {
+		var sx = Math.floor(this.state.storm.x),
+			sy = Math.floor(this.state.storm.y);
+		if ((x === sx && y === sy) || (x === sx && Math.abs(y - sy) === 1) || (y === sy && Math.abs(x - sx) === 1)) {
+			char = "\xDB";
+			attr = BG_BLACK | WHITE | HIGH;
+		}
+	}
+	if (this.bldgMap[y][x]) {
+		char = BUILDINGS[this.bldgMap[y][x]].char;
+		attr = isLand ? (BG_GREEN | WHITE | HIGH) : (BG_BLUE | WHITE | HIGH);
+	}
+	if (isCursor) {
+		attr = BG_RED | WHITE | BLINK;
+		if (this.bldgMap[y][x]) char = BUILDINGS[this.bldgMap[y][x]].char;
+	}
+	console.gotoxy(x + 1, y + 1);
+	console.attributes = attr;
+	console.write(char);
+};
+Utopia.forceScrub = function(x, y, size) {
+	var radius = size || 1;
+	for (var dx = -radius; dx <= radius; dx++) {
+		for (var dy = -radius; dy <= radius; dy++) this.drawCell(x + dx, y + dy, false);
+	}
+};
+// --- SIMULATION ---
+Utopia.handlePopulation = function() {
+	this.state.food = Math.max(0, this.state.food - Math.floor(this.state.pop / 5));
+	if (this.state.turnsLeft % 5 === 0) {
+		if (this.state.food > this.state.pop && this.state.pop < this.state.popCap) {
+			var growth = Math.floor(Math.random() * 3) + 1;
+			this.state.pop = Math.min(this.state.popCap, this.state.pop + growth);
+			this.state.msg = "\x01h\x01gPopulation Growth!";
+		}
+		else if (this.state.food <= 0 && this.state.pop > 5) {
+			this.state.pop -= Math.floor(Math.random() * 2) + 1;
+			this.state.msg = "\x01h\x01rFAMINE!";
+		}
+	}
+	if (this.state.food > 0) this.state.gold += Math.floor(this.state.pop / 10);
+};
+Utopia.handlePatrols = function() {
+	if (!this.state.pirate.active) return;
+	var px = Math.floor(this.state.pirate.x),
+		py = Math.floor(this.state.pirate.y);
+	for (var y = 0; y < 22; y++) {
+		for (var x = 0; x < 60; x++) {
+			if (this.bldgMap[y][x] === "B") {
+				var dist = Math.sqrt(Math.pow(x - px, 2) + Math.pow(y - py, 2));
+				if (dist < 10) {
+					var nx = x + (px > x ? 1 : (px < x ? -1 : 0)),
+						ny = y + (py > y ? 1 : (py < y ? -1 : 0));
+					if (ny >= 0 && ny < 22 && nx >= 0 && nx < 60 && this.map[ny][nx] === 0 && !this.bldgMap[ny][nx]) {
+						this.bldgMap[ny][nx] = "B";
+						this.bldgMap[y][x] = null;
+						this.drawCell(x, y, false);
+						this.drawCell(nx, ny, false);
+					}
+					if (Math.abs(nx - px) <= 1 && Math.abs(ny - py) <= 1) {
+						if (Math.random() < 0.7) {
+							this.state.pirate.active = false;
+							this.state.stats.piratesSunk++;
+							this.state.msg = "\x01h\x01bPT BOAT SANK PIRATE!";
+							this.forceScrub(px, py, 1);
+						}
+						else {
+							this.bldgMap[ny][nx] = null;
+							this.state.stats.boatsLost++;
+							this.state.msg = "\x01h\x01rPT BOAT SUNK IN BATTLE!";
+							this.drawCell(nx, ny, false);
+						}
+						return;
+					}
+					return;
+				}
+			}
+		}
+	}
+};
+Utopia.moveEntities = function() {
+	var oldFish = { x: this.state.fish.x, y: this.state.fish.y };
+	var oldMerc = {
+		x: Math.floor(this.state.merchant.x),
+		y: Math.floor(this.state.merchant.y),
+		active: this.state.merchant.active
+	};
+	var oldPirate = {
+		x: Math.floor(this.state.pirate.x),
+		y: Math.floor(this.state.pirate.y),
+		active: this.state.pirate.active
+	};
+	var oldStorm = {
+		x: Math.floor(this.state.storm.x),
+		y: Math.floor(this.state.storm.y),
+		active: this.state.storm.active
+	};
+	this.handlePatrols();
+	// Fish
+	if (Math.random() < 0.4) {
+		var nx = this.state.fish.x + (Math.random() > 0.5 ? 1 : -1),
+			ny = this.state.fish.y + (Math.random() > 0.5 ? 1 : -1);
+		if (nx < 1 || nx > 58 || ny < 1 || ny > 20) {
+			if (Math.random() < 0.1) {
+				this.forceScrub(this.state.fish.x, this.state.fish.y, 1);
+				this.spawnFish();
+			}
+		}
+		else if (this.map[ny][nx] === 0) {
+			this.state.fish.x = nx;
+			this.state.fish.y = ny;
+			for (var dx = -1; dx <= 1; dx++)
+				for (var dy = -1; dy <= 1; dy++)
+					if (this.bldgMap[ny + dy] && this.bldgMap[ny + dy][nx + dx] === "T") {
+						this.state.food += 25;
+						this.state.msg = "\x01h\x01gFish Trawled!";
+					}
+		}
+	}
+	// Merchant (West to East)
+	if (this.state.merchant.active) {
+		this.state.merchant.x += 0.5;
+		this.state.gold += 1;
+		var mx = Math.floor(this.state.merchant.x),
+			my = Math.floor(this.state.merchant.y);
+		if (mx >= 59) {
+			this.state.merchant.active = false;
+			this.state.gold += 150;
+			this.state.stats.tradesWon++;
+			this.state.msg = "\x01h\x01yTrade Bonus!";
+			this.forceScrub(mx, my, 1);
+		}
+		else if (this.map[my][mx] === 1) {
+			this.state.merchant.active = false;
+			this.forceScrub(mx, my, 1);
+		}
+	}
+	else if (Math.random() < 0.03) {
+		var ry = Math.floor(Math.random() * 20);
+		if (this.map[ry][0] === 0) {
+			this.state.merchant.active = true;
+			this.state.merchant.x = 0;
+			this.state.merchant.y = ry;
+		}
+	}
+	// Pirate (East to West)
+	if (this.state.pirate.active) {
+		this.state.pirate.x -= 0.6;
+		var px = Math.floor(this.state.pirate.x),
+			py = Math.floor(this.state.pirate.y);
+		if (this.state.merchant.active && Math.abs(px - Math.floor(this.state.merchant.x)) <= 1 && Math.abs(py - Math.floor(this.state.merchant.y)) <= 1) {
+			this.state.merchant.active = false;
+			this.state.msg = "\x01h\x01rMerchant Sunk!";
+			this.forceScrub(Math.floor(this.state.merchant.x), Math.floor(this.state.merchant.y), 1);
+		}
+		if (px <= 0) {
+			this.state.gold = Math.max(0, this.state.gold - 100);
+			this.state.pirate.active = false;
+			this.forceScrub(0, py, 1);
+		}
+		else if (this.map[py][px] === 1) {
+			this.state.pirate.active = false;
+			this.forceScrub(px, py, 1);
+		}
+	}
+	else if (Math.random() < 0.02) {
+		var ry = Math.floor(Math.random() * 20);
+		if (this.map[ry][59] === 0) {
+			this.state.pirate.active = true;
+			this.state.pirate.x = 59;
+			this.state.pirate.y = ry;
+		}
+	}
+	// Storm
+	if (this.state.storm.active) {
+		this.state.storm.x -= 0.5;
+		var sx = Math.floor(this.state.storm.x),
+			sy = Math.floor(this.state.storm.y);
+		if (sx < 1) {
+			this.state.storm.active = false;
+			this.forceScrub(0, sy, 2);
+		}
+		else if (this.bldgMap[sy][sx]) {
+			this.bldgMap[sy][sx] = null;
+			this.state.msg = "\x01h\x01rSTORM DAMAGE!";
+		}
+	}
+	else if (Math.random() < 0.01) {
+		this.state.storm.active = true;
+		this.state.storm.x = 58;
+		this.state.storm.y = 1 + Math.floor(Math.random() * 18);
+	}
+	// Redraw
+	this.drawCell(oldFish.x, oldFish.y, false);
+	if (oldMerc.active) this.drawCell(oldMerc.x, oldMerc.y, false);
+	if (oldPirate.active) this.drawCell(oldPirate.x, oldPirate.y, false);
+	if (oldStorm.active)
+		for (var dx = -1; dx <= 1; dx++)
+			for (var dy = -1; dy <= 1; dy++) this.drawCell(oldStorm.x + dx, oldStorm.y + dy, false);
+	if (this.state.merchant.active) this.drawCell(this.state.merchant.x, this.state.merchant.y, false);
+	if (this.state.pirate.active) this.drawCell(this.state.pirate.x, this.state.pirate.y, false);
+	if (this.state.storm.active) {
+		var nsx = Math.floor(this.state.storm.x),
+			nsy = Math.floor(this.state.storm.y);
+		for (var dx = -1; dx <= 1; dx++)
+			for (var dy = -1; dy <= 1; dy++) this.drawCell(nsx + dx, nsy + dy, false);
+	}
+	this.drawCell(this.state.fish.x, this.state.fish.y, false);
+	console.flush();
+};
+// --- SCORING & UI ---
+Utopia.calculateScore = function() {
+	return (this.state.pop * 10) + Math.floor(this.state.gold / 10) + this.state.food - (this.state.rebels * 5);
+};
+Utopia.getRank = function() {
+	var score = this.calculateScore();
+	if (this.state.stats.piratesSunk >= 10) return "Grand Admiral";
+	if (this.state.stats.tradesWon >= 10) return "Merchant Prince";
+	if (score > 5000) return "Utopian Visionary";
+	if (this.state.pop > 200) return "Metropolitan Governor";
+	return "Local Magistrate";
+};
+Utopia.drawUI = function() {
+	var lx = 62;
+	console.gotoxy(lx, 1);
+	console.attributes = (this.state.martialLaw > 0 ? BG_RED | WHITE | HIGH : BG_BLACK | CYAN);
+	console.putmsg("--- LEGEND ---");
+	var keys = ["H", "F", "I", "B", "S", "R", "T", "C"];
+	for (var i = 0; i < keys.length; i++) {
+		console.gotoxy(lx, 2 + i);
+		console.attributes = BG_BLACK | CYAN;
+		console.putmsg("\x01h\x01w" + BUILDINGS[keys[i]].char + " \x01n" + BUILDINGS[keys[i]].name);
+	}
+	console.gotoxy(lx, 11);
+	console.putmsg("\x01h\x01wREBELS: " + this.state.rebels + "%");
+	console.gotoxy(lx, 12);
+	console.putmsg("\x01h\x01wD-COST: \x01y$" + (BASE_DESTRUCTION_COST + Math.floor(this.state.rebels / 2)));
+	console.gotoxy(lx, 13);
+	console.putmsg("\x01h\x01wM-LAW:  " + (this.state.martialLaw > 0 ? "\x01h\x01rON " : "\x01n\x01kOFF"));
+	console.gotoxy(1, 23);
+	console.attributes = BG_BLACK | LIGHTGRAY;
+	console.putmsg(format("\x01h\x01yGOLD:\x01n %-5d \x01h\x01gFOOD:\x01n %-5d \x01h\x01wPOP:\x01n %d/%d \x01h\x01cTURNS:\x01n %d", this.state.gold, this.state.food, this.state.pop, this.state.popCap, this.state.turnsLeft));
+	console.cleartoeol();
+	console.gotoxy(1, 24);
+	var hasB = !!(this.bldgMap[this.state.cursor.y][this.state.cursor.x]);
+	var dStr = hasB ? "\x01h\x01w[D]estroy" : "\x01n\x01k[D]estroy";
+	console.putmsg("\x01h\x01w[B]uild " + dStr + " \x01h\x01w[M]Law [Q]uit [?]Help | " + this.state.msg);
+	console.cleartoeol();
+};
+Utopia.showBuildMenu = function() {
+	var menuX = 12,
+		menuY = 5;
+	for (var i = 0; i < 11; i++) {
+		console.gotoxy(menuX, menuY + i);
+		console.attributes = BG_LIGHTGRAY | BLACK;
+		console.write("                                              ");
+	}
+	var keys = ["H", "F", "I", "B", "S", "R", "T", "C"];
+	console.gotoxy(menuX + 2, menuY + 1);
+	console.putmsg("\x01h\x01bCONSTRUCTION MENU");
+	for (var i = 0; i < keys.length; i++) {
+		var b = BUILDINGS[keys[i]];
+		console.gotoxy(menuX + 2, menuY + 2 + i);
+		console.putmsg(format("\x01h\x01b(%s)\x01n %-10s \x01h\x01g$%3d \x01n\x01k\xAF \x01b%s", keys[i], b.name, b.cost, b.shadow));
+	}
+	var cmd = console.getkey(K_UPPER | K_NOSPIN);
+	for (var y = 0; y < 22; y++)
+		for (var x = 0; x < 60; x++) this.drawCell(x, y, (x === this.state.cursor.x && y === this.state.cursor.y));
+	if (BUILDINGS[cmd]) {
+		var b = BUILDINGS[cmd],
+			ter = this.map[this.state.cursor.y][this.state.cursor.x];
+		if (this.bldgMap[this.state.cursor.y][this.state.cursor.x]) this.state.msg = "Occupied!";
+		else if (!((ter === 1 && b.land) || (ter === 0 && b.sea))) this.state.msg = "Wrong Terrain!";
+		else if (this.state.gold < b.cost) this.state.msg = "Low Gold!";
+		else {
+			this.state.gold -= b.cost;
+			this.bldgMap[this.state.cursor.y][this.state.cursor.x] = cmd;
+			if (cmd === "H") this.state.popCap += 15;
+			this.drawCell(this.state.cursor.x, this.state.cursor.y, true);
+		}
+	}
+	this.drawUI();
+};
+Utopia.saveHighScore = function() {
+	var score = this.calculateScore(),
+		scores = [];
+	if (file_exists(SCORE_FILE)) {
+		var f = new File(SCORE_FILE);
+		if (f.open("r")) {
+			scores = JSON.parse(f.read());
+			f.close();
+		}
+	}
+	scores.push({ name: user.alias, score: score, pop: this.state.pop, date: new Date().toLocaleDateString() });
+	scores.sort(function(a, b) { return b.score - a.score; });
+	var f = new File(SCORE_FILE);
+	if (f.open("w")) {
+		f.write(JSON.stringify(scores.slice(0, 10)));
+		f.close();
+	}
+};
+Utopia.showHighScores = function() {
+	console.clear();
+	console.putmsg("\x01h\x01y--- UTOPIA HALL OF FAME ---\r\n\r\nRank  Governor             Score    Pop    Date\r\n\x01n\x01b--------------------------------------------------\r\n");
+	if (file_exists(SCORE_FILE)) {
+		var f = new File(SCORE_FILE);
+		if (f.open("r")) {
+			var s = JSON.parse(f.read());
+			f.close();
+			for (var i = 0; i < s.length; i++) console.putmsg(format("\x01h\x01w#%-2d   \x01n%-20s \x01h\x01g%-8d \x01n%-6d %s\r\n", i + 1, s[i].name, s[i].score, s[i].pop, s[i].date));
+		}
+	}
+	console.putmsg("\r\nAny key to return...");
+	console.getkey();
+};
+Utopia.finishGame = function() {
+	this.saveHighScore();
+	console.clear();
+	console.putmsg("\x01h\x01y--- FINAL GOVERNOR'S REPORT ---\r\n\r\n");
+	console.putmsg("\x01h\x01wCareer Title:   \x01c" + this.getRank() + "\r\n");
+	console.putmsg("\x01h\x01wTotal Score:   \x01g" + this.calculateScore() + "\r\n\r\n");
+	console.putmsg("\x01h\x01wSTATISTICS:\r\n");
+	console.putmsg("\x01n\x01g- Trade Missions Success: " + this.state.stats.tradesWon + "\r\n");
+	console.putmsg("\x01n\x01r- Pirate Ships Sunk:      " + this.state.stats.piratesSunk + "\r\n");
+	console.putmsg("\x01n\x01m- PT Boats Lost:          " + this.state.stats.boatsLost + "\r\n");
+	console.putmsg("\r\n\x01h\x01wPress any key for High Scores...");
+	console.getkey();
+	this.showHighScores();
+	if (file_exists(SAVE_FILE)) file_remove(SAVE_FILE);
+	this.state.running = false;
+};
+// --- RUNTIME ---
+try {
+	if (file_exists(INTRO_FILE)) {
+		console.clear();
+		console.printfile(INTRO_FILE, P_PCBOARD);
+		console.pause();
+	}
+	var saveF = new File(SAVE_FILE);
+	if (saveF.exists && saveF.open("r")) {
+		var s = JSON.parse(saveF.read());
+		Utopia.state = s.state;
+		Utopia.map = s.map;
+		Utopia.bldgMap = s.bldgMap;
+		saveF.close();
+	}
+	else {
+		for (var y = 0; y < 22; y++) {
+			Utopia.map[y] = [];
+			Utopia.bldgMap[y] = [];
+			for (var x = 0; x < 60; x++) {
+				Utopia.map[y][x] = 0;
+				Utopia.bldgMap[y][x] = null;
+			}
+		}
+		for (var i = 0; i < 3; i++) {
+			var cx = 10 + (i * 20),
+				cy = 11;
+			for (var n = 0; n < 300; n++) {
+				if (cy >= 0 && cy < 22 && cx >= 0 && cx < 60) Utopia.map[cy][
+					cx
+				] = 1;
+				cx += Math.floor(Math.random() * 3) - 1;
+				cy += Math.floor(Math.random() * 3) - 1;
+				if (cx < 2) cx = 2;
+				if (cx > 57) cx = 57;
+				if (cy < 2) cy = 2;
+				if (cy > 19) cy = 19;
+			}
+		}
+		Utopia.spawnFish();
+	}
+	console.clear();
+	for (var y = 0; y < 22; y++)
+		for (var x = 0; x < 60; x++) Utopia.drawCell(x, y, (x === Utopia.state.cursor.x && y === Utopia.state.cursor.y));
+	Utopia.drawUI();
+	while (Utopia.state.running && !js.terminated) {
+		if (system.timer - Utopia.state.lastTick >= 2) {
+			if (Utopia.state.turnsLeft > 0) {
+				Utopia.state.turnsLeft--;
+				for (var y = 0; y < 22; y++)
+					for (var x = 0; x < 60; x++) {
+						var b = Utopia.bldgMap[y][x];
+						if (b === "F") Utopia.state.food += 2;
+						if (b === "I") Utopia.state.gold += 5;
+						if (b === "S" && Math.random() < 0.1) Utopia.state.rebels = Math.max(0, Utopia.state.rebels - 1);
+					}
+				Utopia.handlePopulation();
+				Utopia.moveEntities();
+				if (Utopia.state.martialLaw > 0) {
+					Utopia.state.martialLaw--;
+					Utopia.state.rebels = Math.max(0, Utopia.state.rebels - 2);
+				}
+				else if (Math.random() < 0.08) Utopia.state.rebels = Math.min(100, Utopia.state.rebels + 1);
+			}
+			else { Utopia.state.msg = "\x01h\x01rTIME IS UP! [Q]uit to score."; }
+			Utopia.state.lastTick = system.timer;
+			Utopia.drawUI();
+		}
+		var k = console.inkey(K_NOECHO | K_NOSPIN, 100);
+		if (k) {
+			var key = k.toUpperCase(),
+				oX = Utopia.state.cursor.x,
+				oY = Utopia.state.cursor.y;
+			if (k === KEY_UP && Utopia.state.cursor.y > 0) Utopia.state.cursor.y--;
+			if (k === KEY_DOWN && Utopia.state.cursor.y < 21) Utopia.state.cursor.y++;
+			if (k === KEY_LEFT && Utopia.state.cursor.x > 0) Utopia.state.cursor.x--;
+			if (k === KEY_RIGHT && Utopia.state.cursor.x < 59) Utopia.state.cursor.x++;
+			if (key === 'B' && Utopia.state.turnsLeft > 0) Utopia.showBuildMenu();
+			if (key === 'M' && Utopia.state.martialLaw === 0) {
+				Utopia.state.martialLaw = 30;
+				Utopia.state.msg = "MARTIAL LAW!";
+			}
+			if (key === '?' || key === 'H') {
+				if (file_exists(HELP_FILE)) {
+					console.clear();
+					console.printfile(HELP_FILE, P_PCBOARD);
+					console.pause();
+				}
+				console.clear();
+				for (var y = 0; y < 22; y++)
+					for (var x = 0; x < 60; x++) Utopia.drawCell(x, y, (x === Utopia.state.cursor.x && y === Utopia.state.cursor.y));
+				Utopia.drawUI();
+			}
+			if (key === 'Q') {
+				console.gotoxy(1, 24);
+				if (Utopia.state.turnsLeft <= 0) {
+					console.write(" [F]inish & Score | [V]iew Hall of Fame ");
+					var choice = console.getkey(K_UPPER);
+					if (choice === 'F') Utopia.finishGame();
+					if (choice === 'V') {
+						Utopia.showHighScores();
+						console.clear();
+						for (var y = 0; y < 22; y++)
+							for (var x = 0; x < 60; x++) Utopia.drawCell(x, y, (x === Utopia.state.cursor.x && y === Utopia.state.cursor.y));
+						Utopia.drawUI();
+					}
+				}
+				else {
+					console.write(" [S]ave Game | [F]inish & Score | [V]iew Hall of Fame ");
+					var choice = console.getkey(K_UPPER);
+					if (choice === 'S') {
+						var sf = new File(SAVE_FILE);
+						sf.open("w");
+						sf.write(JSON.stringify(Utopia));
+						sf.close();
+						Utopia.state.running = false;
+					}
+					if (choice === 'F') Utopia.finishGame();
+					if (choice === 'V') {
+						Utopia.showHighScores();
+						console.clear();
+						for (var y = 0; y < 22; y++)
+							for (var x = 0; x < 60; x++) Utopia.drawCell(x, y, (x === Utopia.state.cursor.x && y === Utopia.state.cursor.y));
+						Utopia.drawUI();
+					}
+				}
+			}
+			if (key === 'D' && Utopia.bldgMap[Utopia.state.cursor.y][Utopia.state.cursor.x]) {
+				var dc = BASE_DESTRUCTION_COST + Math.floor(Utopia.state.rebels / 2);
+				if (Utopia.state.gold >= dc) {
+					Utopia.state.gold -= dc;
+					Utopia.bldgMap[Utopia.state.cursor.y][Utopia.state.cursor.x] = null;
+					Utopia.drawCell(Utopia.state.cursor.x, Utopia.state.cursor.y, true);
+				}
+			}
+			if (oX !== Utopia.state.cursor.x || oY !== Utopia.state.cursor.y) {
+				Utopia.drawCell(oX, oY, false);
+				Utopia.drawCell(Utopia.state.cursor.x, Utopia.state.cursor.y, true);
+				Utopia.drawUI();
+			}
+		}
+	}
+}
+catch (e) { log(LOG_ERROR, "Utopia Error: " + e.message); }
