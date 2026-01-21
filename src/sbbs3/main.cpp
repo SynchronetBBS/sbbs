@@ -4696,7 +4696,7 @@ int64_t sbbs_t::backup(const char* fname, int backup_level, bool rename)
 		return 0;
 
 	lprintf(LOG_DEBUG, "Backing-up %s (%" PRId64 " bytes)", fname, bytes);
-	if (!backup(fname, backup_level, rename))
+	if (!::backup(fname, backup_level, rename))
 		return false;
 	return bytes;
 }
