@@ -559,8 +559,8 @@ typedef struct {
 	CRYPT_SESSION ctrl_sess;
 	SOCKET* data_sock;
 	CRYPT_SESSION* data_sess;
-	BOOL* inprogress;
-	BOOL* aborted;
+	volatile BOOL* inprogress;
+	volatile BOOL* aborted;
 	BOOL delfile;
 	BOOL tmpfile;
 	BOOL credits;
@@ -1216,7 +1216,7 @@ static BOOL start_tls(SOCKET *sock, CRYPT_SESSION *sess, BOOL resp)
 }
 
 static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ctrl_sess, SOCKET pasv_sock, CRYPT_SESSION pasv_sess, SOCKET* data_sock
-                     , CRYPT_SESSION *data_sess, char* filename, off_t filepos, BOOL* inprogress, BOOL* aborted
+                     , CRYPT_SESSION *data_sess, char* filename, off_t filepos, volatile BOOL* inprogress, volatile BOOL* aborted
                      , BOOL delfile, BOOL tmpfile
                      , time_t* lastactive
                      , user_t* user
@@ -2206,8 +2206,8 @@ static void ctrl_thread(void* arg)
 	BOOL              tmpfile;
 	BOOL              credits;
 	BOOL              filedat = FALSE;
-	BOOL              transfer_inprogress;
-	BOOL              transfer_aborted;
+	volatile BOOL     transfer_inprogress;
+	volatile BOOL     transfer_aborted;
 	BOOL              sysop = FALSE;
 	BOOL              local_fsys = FALSE;
 	BOOL              alias_dir;
