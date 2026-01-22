@@ -187,6 +187,7 @@ var   K_NUL         =(1<<25);   /* Return null instead of "" upon timeout   */
 var   K_UTF8		=(1<<26);	/* Don't translate UTF-8 input to CP437 	*/
 var   K_RIGHTEXIT   =(1<<27);   /* Allow exit by arrowing right				*/
 var   K_LINEWRAP    =(1<<29);   /* Allow string input to wrap the terminal  */
+var   K_EXTKEYS     =(1<<30);   /* Used w/K_CTRLKEYS get extended key xlats */
 					    		/********************************************/
 var   K_WRAP = K_WORDWRAP;
 

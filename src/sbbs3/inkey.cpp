@@ -126,6 +126,10 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 		if (cfg.ctrlkey_passthru & (1 << ch))    /*  flagged as passthru? */
 			return ch;                    /* do not handle here */
 		return handle_ctrlkey(ch, mode);
+	} else if (ch == ESC && (mode & K_EXTKEYS)) {
+		char key = ch;
+		if (term->parse_input_sequence(key, mode))
+			return key;
 	}
 
 	/* Translate (not control character) input into CP437 */
