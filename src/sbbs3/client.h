@@ -35,7 +35,7 @@ typedef struct {
 	time32_t time;          /* connect time */
 	char protocol[32];          /* protocol description */
 	char user[32];          /* user name */
-	uint32_t usernum;       /* user number (authenticated when non-zero) */
+	int32_t usernum;        /* user number (authenticated when non-zero) */
 } client_t;
 
 

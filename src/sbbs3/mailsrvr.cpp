@@ -2097,7 +2097,7 @@ static void signal_smtp_sem(void)
 /*****************************************************************************/
 static char* mailcmdstr(char* instr, char* msgpath, char* newpath, char* logpath
                         , char* lstpath, char* errpath
-                        , char* host, char* ip, uint usernum
+                        , char* host, char* ip, int usernum
                         , char* rcpt_addr
                         , char* sender, char* sender_addr, char* reverse_path, char* cmd)
 {
@@ -2187,7 +2187,7 @@ static char* mailcmdstr(char* instr, char* msgpath, char* newpath, char* logpath
 					strcat(cmd, str);
 					break;
 				case 'U':   /* User number */
-					SAFEPRINTF(str, "%u", usernum);
+					SAFEPRINTF(str, "%d", usernum);
 					strcat(cmd, str);
 					break;
 				default:    /* unknown specification */
@@ -2820,7 +2820,7 @@ static int chk_received_hdr(SOCKET socket, const char* prot, const char *buf, IN
 	return dnsbl_result->s_addr;
 }
 
-static bool checktag(scfg_t *scfg, char *tag, uint usernum)
+static bool checktag(scfg_t *scfg, char *tag, int usernum)
 {
 	char fname[MAX_PATH + 1];
 
@@ -2845,12 +2845,12 @@ static bool smtp_splittag(char *in, char **name, char **tag)
 	return false;
 }
 
-static uint smtp_matchuser(scfg_t *scfg, char *str, bool aliases, bool datdupe)
+static int smtp_matchuser(scfg_t *scfg, char *str, bool aliases, bool datdupe)
 {
 	char *user = strdup(str);
 	char *name;
 	char *tag = NULL;
-	uint  usernum = 0;
+	int  usernum = 0;
 
 	if (!user)
 		return 0;
@@ -2867,7 +2867,7 @@ static uint smtp_matchuser(scfg_t *scfg, char *str, bool aliases, bool datdupe)
 		goto end;
 
 	if (checktag(scfg, tag, usernum))
-		usernum = UINT_MAX;
+		usernum = INT_MAX;
 
 end:
 	free(user);
@@ -2956,7 +2956,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	ushort            hfield_type;
 	ushort            nettype;
 	ushort            agent;
-	uint              usernum;
+	int               usernum;
 	ulong             lines = 0;
 	ulong             hdr_lines = 0;
 	ulong             hdr_len = 0;
@@ -4940,7 +4940,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 					        , socket, client.protocol, client_id, startup->default_user);
 			}
 
-			if (usernum == UINT_MAX) {
+			if (usernum == INT_MAX) {
 				lprintf(LOG_INFO, "%04d %-5s %s Blocked tag: %s", socket, client.protocol, client_id, rcpt_to);
 				sockprintf(socket, client.protocol, session, "550 Unknown User: %s", rcpt_to);
 				continue;

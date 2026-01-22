@@ -38,7 +38,7 @@
 #include "dat_rec.h"
 
 #define VALID_CFG(cfg)  (cfg != NULL && cfg->size == sizeof(scfg_t))
-#define VALID_USER_NUMBER(n) ((n) >= 1)
+#define VALID_USER_NUMBER(n) ((n) >= 1 && (n) <= USER_MAX_NUM)
 #define VALID_USER_FIELD(n) ((n) >= 0 && (n) < USER_FIELD_COUNT)
 
 #define USER_FIELD_SEPARATOR '\t'
@@ -52,7 +52,13 @@ char* userdat_filename(scfg_t* cfg, char* path, size_t size)
 	return path;
 }
 
-char* msgptrs_filename(scfg_t* cfg, unsigned user_number, char* path, size_t size)
+char* useridx_filename(scfg_t* cfg, char* path, size_t size)
+{
+	safe_snprintf(path, size, "%suser/" USER_INDEX_FILENAME, cfg->data_dir);
+	return path;
+}
+
+char* msgptrs_filename(scfg_t* cfg, int user_number, char* path, size_t size)
 {
 	safe_snprintf(path, size, "%suser/%4.4u.subs", cfg->data_dir, user_number);
 	return path;
@@ -76,7 +82,7 @@ void split_userdat(char *userdat, char* field[])
 /* Makes dots and underscores synonymous with spaces for comparisons		*/
 /* Returns the number of the perfect matched username or 0 if no match		*/
 /****************************************************************************/
-uint matchuser(scfg_t* cfg, const char *name, bool sysop_alias)
+int matchuser(scfg_t* cfg, const char *name, bool sysop_alias)
 {
 	int   file, c;
 	char  dat[LEN_ALIAS + 2];
@@ -152,7 +158,7 @@ bool matchusername(scfg_t* cfg, const char* name, const char* comp)
 // Given a login-ID (user number, alias, or real name), return the user
 // number or 0 on failure
 /****************************************************************************/
-uint find_login_id(scfg_t* cfg, const char* user_id)
+int find_login_id(scfg_t* cfg, const char* user_id)
 {
 	uint usernum;
 
@@ -312,17 +318,19 @@ int closeuserdat(int file)
 	return close(file);
 }
 
-off_t userdatoffset(unsigned user_number)
+off_t userdatoffset(int user_number)
 {
 	return (user_number - 1) * USER_RECORD_LINE_LEN;
 }
 
-bool seekuserdat(int file, unsigned user_number)
+bool seekuserdat(int file, int user_number)
 {
+	if (!VALID_USER_NUMBER(user_number))
+		return false;
 	return lseek(file, userdatoffset(user_number), SEEK_SET) == userdatoffset(user_number);
 }
 
-bool lockuserdat(int file, unsigned user_number)
+bool lockuserdat(int file, int user_number)
 {
 	if (!VALID_USER_NUMBER(user_number))
 		return false;
@@ -336,7 +344,7 @@ bool lockuserdat(int file, unsigned user_number)
 	return attempt < LOOP_USERDAT;
 }
 
-bool unlockuserdat(int file, unsigned user_number)
+bool unlockuserdat(int file, int user_number)
 {
 	if (!VALID_USER_NUMBER(user_number))
 		return false;
@@ -349,7 +357,7 @@ bool unlockuserdat(int file, unsigned user_number)
 /* buffer of USER_RECORD_LINE_LEN in size.									*/
 /* Returns 0 on success.													*/
 /****************************************************************************/
-int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, size_t size, int infile, bool leave_locked)
+int readuserdat(scfg_t* cfg, int user_number, char* userdat, size_t size, int infile, bool leave_locked)
 {
 	int file;
 
@@ -364,7 +372,7 @@ int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, size_t size, i
 			return USER_OPEN_ERROR;
 	}
 
-	if (user_number > (unsigned)(filelength(file) / USER_RECORD_LINE_LEN)) {
+	if (user_number > filelength(file) / USER_RECORD_LINE_LEN) {
 		if (file != infile)
 			close(file);
 		return USER_INVALID_NUM;    /* no such user record */
@@ -426,7 +434,7 @@ static time32_t parse_usertime(const char* str)
 /****************************************************************************/
 int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 {
-	unsigned user_number;
+	int user_number;
 
 	if (user == NULL)
 		return USER_INVALID_ARG;
@@ -599,7 +607,7 @@ static void dirtyuserdat(scfg_t* cfg, uint usernumber)
 /****************************************************************************/
 /* Returns first node number user is using or 0 if none						*/
 /****************************************************************************/
-int user_is_online(scfg_t* cfg, uint usernumber)
+int user_is_online(scfg_t* cfg, int usernumber)
 {
 	int    i;
 	int    file = -1;
@@ -1875,12 +1883,12 @@ void printnodedat(scfg_t* cfg, uint number, node_t* node)
 }
 
 /****************************************************************************/
-uint finduserstr(scfg_t* cfg, uint usernumber, enum user_field fnum
+int finduserstr(scfg_t* cfg, int usernumber, enum user_field fnum
                  , const char* str, bool del, bool next, void (*progress)(void*, int, int), void* cbdata)
 {
 	int  file;
 	int  unum;
-	uint found = 0;
+	int found = 0;
 
 	if (!VALID_CFG(cfg) || str == NULL)
 		return 0;
@@ -2390,7 +2398,7 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 			case AR_USER:
 				if (user == NULL
 				    || (equal && user->number != i)
-				    || (!equal && user->number < i))
+				    || (!equal && user->number < (int)i))
 					result = not;
 				else
 					result = !not;
@@ -4009,7 +4017,7 @@ uint user_downloads_per_day(scfg_t* cfg, user_t* user)
 /* 'reason' is an (optional) pointer to a text.dat item number				*/
 /* usernumber==0 for netmail												*/
 /****************************************************************************/
-bool user_can_send_mail(scfg_t* cfg, enum smb_net_type net_type, uint usernumber, user_t* user, uint* reason)
+bool user_can_send_mail(scfg_t* cfg, enum smb_net_type net_type, int usernumber, user_t* user, uint* reason)
 {
 	if (reason != NULL)
 		*reason = R_Email;
@@ -4795,7 +4803,7 @@ bool set_sound_muted(scfg_t* scfg, bool muted)
 /* user .ini file get/set functions */
 /************************************/
 
-static FILE* user_ini_open(scfg_t* scfg, unsigned user_number, bool for_modify)
+static FILE* user_ini_open(scfg_t* scfg, int user_number, bool for_modify)
 {
 	char path[MAX_PATH + 1];
 
@@ -4803,7 +4811,7 @@ static FILE* user_ini_open(scfg_t* scfg, unsigned user_number, bool for_modify)
 	return iniOpenFile(path, for_modify);
 }
 
-bool user_get_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, char* value, size_t maxlen)
+bool user_get_property(scfg_t* scfg, int user_number, const char* section, const char* key, char* value, size_t maxlen)
 {
 	FILE* fp;
 	char  buf[INI_MAX_VALUE_LEN];
@@ -4827,7 +4835,7 @@ bool user_get_property(scfg_t* scfg, unsigned user_number, const char* section, 
 	return result != NULL;
 }
 
-bool user_set_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, const char* value)
+bool user_set_property(scfg_t* scfg, int user_number, const char* section, const char* key, const char* value)
 {
 	FILE*      fp;
 	str_list_t ini;
@@ -4853,7 +4861,7 @@ bool user_set_property(scfg_t* scfg, unsigned user_number, const char* section, 
 	return result != NULL;
 }
 
-bool user_set_time_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, time_t value)
+bool user_set_time_property(scfg_t* scfg, int user_number, const char* section, const char* key, time_t value)
 {
 	FILE*      fp;
 	str_list_t ini;
@@ -4879,7 +4887,7 @@ bool user_set_time_property(scfg_t* scfg, unsigned user_number, const char* sect
 	return result != NULL;
 }
 
-bool user_get_bool_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, bool deflt)
+bool user_get_bool_property(scfg_t* scfg, int user_number, const char* section, const char* key, bool deflt)
 {
 	FILE* fp;
 	char  keystr[INI_MAX_VALUE_LEN];
@@ -4900,7 +4908,7 @@ bool user_get_bool_property(scfg_t* scfg, unsigned user_number, const char* sect
 	return result;
 }
 
-bool user_set_bool_property(scfg_t* scfg, unsigned user_number, const char* section, const char* key, bool value)
+bool user_set_bool_property(scfg_t* scfg, int user_number, const char* section, const char* key, bool value)
 {
 	FILE*      fp;
 	str_list_t ini;

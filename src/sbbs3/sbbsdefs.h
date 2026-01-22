@@ -918,7 +918,7 @@ enum COLORS {
 /********************/
 
 typedef struct {                        // Users information
-	ushort number;                      // Number
+	int    number;                      // Number
 	uint   uls,                         // Number of uploads
 	       dls,                         // Number of downloads
 	       posts,                       // Number of posts
