@@ -784,11 +784,13 @@ static void send_thread(void* arg)
 				f.hdr.last_downloaded = time32(NULL);
 				updatefile(&scfg, &f, NULL);
 
-				lprintf(LOG_INFO, "%04d <%s> DATA downloaded: %s (%u times total)"
+				lprintf(LOG_INFO, "%04d <%s> DATA downloaded: %s (%u times total, %u files in %s bytes today)"
 				        , xfer.ctrl_sock
 				        , xfer.user->alias
 				        , xfer.filename
-				        , f.hdr.times_downloaded);
+				        , f.hdr.times_downloaded
+						, xfer.user->dtoday + 1
+						, byte_estimate_to_str(xfer.user->btoday + total, tmp, sizeof tmp, 1, 1));
 				/**************************/
 				/* Update Uploader's Info */
 				/**************************/
@@ -2146,6 +2148,7 @@ static void ctrl_thread(void* arg)
 	unsigned          mlsx_feats = (MLSX_TYPE | MLSX_PERM | MLSX_SIZE | MLSX_MODIFY | MLSX_OWNER | MLSX_UNIQUE | MLSX_CREATE);
 	char              buf[512];
 	char              str[128];
+	char              tmp[128];
 	char              uniq[33];
 	char              owner[33];
 	char              error[256];
@@ -3582,8 +3585,8 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				/* RETR */
-				lprintf(LOG_INFO, "%04d <%s> downloading: %s (%" PRIdOFF " bytes) in %s mode"
-				        , sock, user.alias, fname, flength(fname)
+				lprintf(LOG_INFO, "%04d <%s> downloading: %s (%s bytes) in %s mode"
+				        , sock, user.alias, fname, byte_estimate_to_str(flength(fname), tmp, sizeof tmp, 1, 1)
 				        , mode);
 				sockprintf(sock, sess, "150 Opening BINARY mode data connection for file transfer.");
 				filexfer(&data_addr, sock, sess, pasv_sock, pasv_sess, &data_sock, &data_sess, fname, filepos
@@ -4388,8 +4391,8 @@ static void ctrl_thread(void* arg)
 				delfile = TRUE;
 				credits = FALSE;
 				if (!getsize && !getdate)
-					lprintf(LOG_INFO, "%04d <%s> downloading QWK packet (%" PRIdOFF " bytes) in %s mode"
-					        , sock, user.alias, file_size
+					lprintf(LOG_INFO, "%04d <%s> downloading QWK packet (%s bytes) in %s mode"
+					        , sock, user.alias, byte_estimate_to_str(file_size, tmp, sizeof tmp, 1, 1)
 					        , mode);
 				/* ASCII Index File */
 			} else if (startup->options & FTP_OPT_INDEX_FILE
@@ -4523,10 +4526,12 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 
+				uint reason = R_Download;
 				if (!getsize && !getdate && !delecmd
-				    && !user_can_download(&scfg, dir, &user, &client, /* reason */ NULL)) {
-					lprintf(LOG_WARNING, "%04d <%s> has insufficient access to download from /%s/%s"
+				    && !user_can_download(&scfg, dir, &user, &client, &reason)) {
+					lprintf(LOG_WARNING, "%04d <%s> has insufficient access (reason: %u) to download from /%s/%s"
 					        , sock, user.alias
+					        , reason + 1
 					        , scfg.lib[scfg.dir[dir]->lib]->vdir
 					        , scfg.dir[dir]->vdir);
 					sockprintf(sock, sess, "550 Insufficient access.");
@@ -4593,8 +4598,8 @@ static void ctrl_thread(void* arg)
 					if (fexistcase(fname)) {
 						success = TRUE;
 						if (!getsize && !getdate && !delecmd)
-							lprintf(LOG_INFO, "%04d <%s> downloading: %s (%" PRIdOFF " bytes) in %s mode"
-							        , sock, user.alias, fname, flength(fname)
+							lprintf(LOG_INFO, "%04d <%s> downloading: %s (%s bytes) in %s mode"
+							        , sock, user.alias, fname, byte_estimate_to_str(flength(fname), tmp, sizeof tmp, 1, 1)
 							        , mode);
 					}
 				}
