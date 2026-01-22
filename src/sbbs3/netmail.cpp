@@ -114,6 +114,11 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	}
 	lookup_netuser(to);
 
+	if (!netmail_addr_is_supported(&cfg, to)) {
+		bprintf(text[InvalidNetMailAddr], to);
+		return false;
+	}
+
 	net_type = smb_netaddr_type(to);
 
 	lprintf(LOG_DEBUG, "parsed net type of '%s' is %s", to, smb_nettype((enum smb_net_type)net_type));
