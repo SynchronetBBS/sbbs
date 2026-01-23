@@ -237,7 +237,7 @@ while(bbs.online && !js.terminated) {
 			}
 			else {
 				if (!bbs.select_editor(thisuser)) {
-					console.print(gettext("Sorry, no external editors are available to you"))
+					console.print(gettext("Sorry, no external editors are available to you", "no_extrnal_editors"))
 					console.newline();
 				}
 			}
@@ -472,7 +472,7 @@ while(bbs.online && !js.terminated) {
 		case 'Z':
 			var keylist = console.quit_key;
 			console.newline();
-			console.print(gettext("Choose a default file transfer protocol (or [ENTER] for None):"));
+			console.print(gettext("Choose a default file transfer protocol (or [ENTER] for None):", "choose_protocol_or_none"));
 			console.newline(2);
 			keylist += bbs.xfer_prot_menu();
 			console.mnemonics(bbs.text(bbs.text.ProtocolOrQuit));
