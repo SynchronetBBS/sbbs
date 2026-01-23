@@ -69,7 +69,7 @@
  * Other Flags - Any flags that are not included in another field.
  *               The U flag is not present.
  * 
- * This processor allows overriding fieds 3, 4, and 5 (Node Name, Location,
+ * This processor allows overriding fields 3, 4, and 5 (Node Name, Location,
  * and Sysop Name) via a netmail from Sysop Name at the node. Note that once
  * you update the Sysop Name field, you must use the new Sysop Name for
  * further updates.
