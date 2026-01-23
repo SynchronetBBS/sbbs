@@ -34,6 +34,8 @@ function gettext(orig, key) {
 		text = get_text_from_ini("text.ini", orig, key);
 	if (text === undefined)
 		text = orig;
+	if (key === undefined && orig.length > 0 && orig.indexOf(':') == orig.length - 1)
+		log(LOG_WARNING, "gettext() called with a value ending in colon: '" + orig + "'");
 	return gettext_cache[key || orig] = text;
 }
 
