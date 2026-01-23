@@ -4066,11 +4066,11 @@ function displayProgramInfoBox(pCurpos)
 	// Draw the box border
 	console.gotoxy(boxTopLeftX, boxTopLeftY);
 	console.print("\x01n" + borderBGColor);
-	console.print(CP437_BOX_DRAWING_UPPER_LEFT_SINGLE);
+	console.print(CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE);
 	var innerWidth = boxWidth - 2;
 	for (var i = 0; i < innerWidth; ++i)
-		console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
-	console.print(CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE);
+		console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
+	console.print(CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE);
 	var innerHeight = boxHeight - 2;
 	for (var i = 0; i < innerHeight; ++i)
 	{
@@ -4080,10 +4080,10 @@ function displayProgramInfoBox(pCurpos)
 		console.print(CP437_BOX_DRAWINGS_LIGHT_VERTICAL);
 	}
 	console.gotoxy(boxTopLeftX, boxTopLeftY+boxHeight-1);
-	console.print(CP437_BOX_DRAWING_LOWER_LEFT_SINGLE);
+	console.print(CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE);
 	for (var i = 0; i < innerWidth; ++i)
-		console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
-	console.print(CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE);
+		console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
+	console.print(CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE);
 	console.gotoxy(boxTopLeftX+1, boxTopLeftY+1);
 	var boxWidthFillFormatStr = "%" + innerWidth + "s";
 	printf(boxWidthFillFormatStr, "");
@@ -4982,22 +4982,22 @@ function inputWordCorrection(pMisspelledWord, pCurpos, pEditLineIdx)
 	var maxInputLen = txtBoxWidth - 2;
 
 	// Draw the top border of the input box
-	var borderLine = "\x01n\x01g" + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT;
+	var borderLine = "\x01n\x01g" + CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT;
 	borderLine += "\x01b\x01h" + pMisspelledWord.substr(0, txtBoxWidth-4);
-	borderLine += "\x01n\x01g" + CP437_BOX_DRAWING_LIGHT_LEFT_T;
+	borderLine += "\x01n\x01g" + CP437_BOX_DRAWINGS_LIGHT_LEFT_T;
 	var remainingWidth = txtBoxWidth - console.strlen(borderLine) - 1;
 	for (var i = 0; i < remainingWidth; ++i)
-		borderLine += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-	borderLine += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE + "\x01n";
+		borderLine += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+	borderLine += CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE + "\x01n";
 	console.gotoxy(txtBoxX, txtBoxY);
 	console.print(borderLine);
 	// Draw the bottom border of the input box
-	borderLine = "\x01g" + CP437_BOX_DRAWING_LOWER_LEFT_SINGLE + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT;
-	borderLine += "\x01c\x01hEnter\x01y=\x01bNo change\x01n\x01g" + CP437_BOX_DRAWING_LIGHT_LEFT_T + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT + "\x01H\x01cCtrl-C\x01n\x01c/\x01hESC\x01y=\x01bEnd\x01n\x01g" + CP437_BOX_DRAWING_LIGHT_LEFT_T;
+	borderLine = "\x01g" + CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT;
+	borderLine += "\x01c\x01hEnter\x01y=\x01bNo change\x01n\x01g" + CP437_BOX_DRAWINGS_LIGHT_LEFT_T + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT + "\x01H\x01cCtrl-C\x01n\x01c/\x01hESC\x01y=\x01bEnd\x01n\x01g" + CP437_BOX_DRAWINGS_LIGHT_LEFT_T;
 	var remainingWidth = txtBoxWidth - console.strlen(borderLine) - 1;
 	for (var i = 0; i < remainingWidth; ++i)
-		borderLine += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-	borderLine += CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE + "\x01n";
+		borderLine += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+	borderLine += CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE + "\x01n";
 	console.gotoxy(txtBoxX, txtBoxY+2);
 	console.print(borderLine);
 	// Draw the side borders
@@ -5225,12 +5225,12 @@ function doColorSelection(pTxtAttrs, pCurpos, pCurrentWordLength)
 function drawInitialCrossPostSelBoxTopBorder(pTopLeft, pWidth, pBorderColor, pTextColor)
 {
   console.gotoxy(pTopLeft);
-  console.print(pBorderColor + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT +
+  console.print(pBorderColor + CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT +
                 pTextColor + "Cross-posting: Choose group" +
-                pBorderColor + CP437_BOX_DRAWING_LIGHT_LEFT_T);
+                pBorderColor + CP437_BOX_DRAWINGS_LIGHT_LEFT_T);
   var len = pWidth - 31;
   for (var i = 0; i < len; ++i)
-    console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
+    console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
 }
 // For the cross-posting UI: Draws the initial bottom border of
 // the selection box
@@ -5255,14 +5255,14 @@ function drawInitialCrossPostSelBoxBottomBorder(pBottomLeft, pWidth, pBorderColo
 	border += " \x01cCtrl-C\x01n\x01c/\x01hQ\x01y=\x01bAbort \x01c?";
 	if (!pMsgSubs)
 		border += "\x01y=\x01bHelp";
-	border += "\x01n" + pBorderColor + CP437_BOX_DRAWING_LIGHT_LEFT_T;
+	border += "\x01n" + pBorderColor + CP437_BOX_DRAWINGS_LIGHT_LEFT_T;
 	var numCharsToAdd = Math.floor(maxWidth / 2) - Math.floor(console.strlen(border)/2);
 	for (var i = 0; i < numCharsToAdd; ++i)
-		border = CP437_BOX_DRAWING_HORIZONTAL_SINGLE + border;
+		border = CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + border;
 	numCharsToAdd = maxWidth - console.strlen(border);
 	for (var i = 0; i < numCharsToAdd; ++i)
-		border += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-	border = pBorderColor + CP437_BOX_DRAWING_LOWER_LEFT_SINGLE + border + CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE;
+		border += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+	border = pBorderColor + CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE + border + CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE;
 	console.print(border);
 }
 // Displays help text for cross-posting, for use in cross-post selection mode.
@@ -5380,12 +5380,12 @@ function doCrossPosting(pOriginalCurpos)
 		// Re-write the border characters to overwrite the message group name
 		grpDesc = msg_area.grp_list[pGrpIndex].description.substr(0, pSelBoxInnerWidth-25);
 		// Write the updated border character(s)
-		console.print("\x01n" + gConfigSettings.genColors.listBoxBorder + CP437_BOX_DRAWING_LIGHT_LEFT_T);
+		console.print("\x01n" + gConfigSettings.genColors.listBoxBorder + CP437_BOX_DRAWINGS_LIGHT_LEFT_T);
 		if (grpDesc.length > 3)
 		{
 			var numChars = grpDesc.length - 3;
 			for (var i = 0; i < numChars; ++i)
-				console.print(CP437_BOX_DRAWING_HORIZONTAL_SINGLE);
+				console.print(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
 		}
 	}
 
@@ -5448,7 +5448,7 @@ function doCrossPosting(pOriginalCurpos)
 	gConfigSettings.genColors.listBoxBorder,
 	gConfigSettings.genColors.listBoxBorderText);
 	// Side borders
-	console.print(CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE);
+	console.print(CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE);
 	for (var row = selBoxUpperLeft.y+1; row < selBoxLowerRight.y; ++row)
 	{
 		console.gotoxy(selBoxUpperLeft.x, row);
@@ -5974,31 +5974,31 @@ function listTextReplacements()
 	if (typeof(listTextReplacements.topBorder) == "undefined")
 	{
 		listTextReplacements.topBorder = "\x01n" + gConfigSettings.genColors.listBoxBorder
-		                               + CP437_BOX_DRAWING_UPPER_LEFT_SINGLE + "\x01n" + gConfigSettings.genColors.listBoxBorderText + "Text"
+		                               + CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE + "\x01n" + gConfigSettings.genColors.listBoxBorderText + "Text"
 		                               + "\x01n" + gConfigSettings.genColors.listBoxBorder;
 		for (var i = 0; i < (txtWidth-3); ++i)
-			listTextReplacements.topBorder += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+			listTextReplacements.topBorder += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		listTextReplacements.topBorder += "\x01n" + gConfigSettings.genColors.listBoxBorderText
 		                               + "Replacement" + "\x01n" + gConfigSettings.genColors.listBoxBorder;
 		for (var i = 0; i < (txtWidth-11); ++i)
-			listTextReplacements.topBorder += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
-		listTextReplacements.topBorder += CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE;
+			listTextReplacements.topBorder += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+		listTextReplacements.topBorder += CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE;
 	}
 	boxInfo.width = console.strlen(listTextReplacements.topBorder);
 	if (typeof(listTextReplacements.bottomBorder) == "undefined")
 	{
 		var numReplacementsStr = "Total: " + listTextReplacements.txtReplacementArr.length;
 		listTextReplacements.bottomBorder = "\x01n" + gConfigSettings.genColors.listBoxBorder
-		                                  + CP437_BOX_DRAWING_LOWER_LEFT_SINGLE + "\x01n" + gConfigSettings.genColors.listBoxBorderText
+		                                  + CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE + "\x01n" + gConfigSettings.genColors.listBoxBorderText
 		                                  + UP_ARROW + ", " + DOWN_ARROW + ", ESC/Ctrl-T/C=Close" + "\x01n"
 		                                  + gConfigSettings.genColors.listBoxBorder;
 		var maxNumChars = boxInfo.width - numReplacementsStr.length - 28;
 		for (var i = 0; i < maxNumChars; ++i)
-			listTextReplacements.bottomBorder += CP437_BOX_DRAWING_HORIZONTAL_SINGLE;
+			listTextReplacements.bottomBorder += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		listTextReplacements.bottomBorder += CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT + "\x01n"
 		                                  + gConfigSettings.genColors.listBoxBorderText + numReplacementsStr + "\x01n"
-		                                  + gConfigSettings.genColors.listBoxBorder + CP437_BOX_DRAWING_LIGHT_LEFT_T;
-		listTextReplacements.bottomBorder += CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE;
+		                                  + gConfigSettings.genColors.listBoxBorder + CP437_BOX_DRAWINGS_LIGHT_LEFT_T;
+		listTextReplacements.bottomBorder += CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE;
 	}
 	// printf format strings for the list
 	if (typeof(listTextReplacements.listFormatStr) == "undefined")
@@ -6080,7 +6080,7 @@ function listTextReplacements()
 			console.gotoxy(pageNumTxtStartX, boxInfo.topLeftY);
 			console.print("\x01n" + gConfigSettings.genColors.listBoxBorder + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT);
 			printf("\x01n" + gConfigSettings.genColors.listBoxBorderText + "Page %4d of %4d", pageNum+1, numPages);
-			console.print("\x01n" + gConfigSettings.genColors.listBoxBorder + CP437_BOX_DRAWING_LIGHT_LEFT_T);
+			console.print("\x01n" + gConfigSettings.genColors.listBoxBorder + CP437_BOX_DRAWINGS_LIGHT_LEFT_T);
 
 			// Just for sane appearance: Move the cursor to the first character of
 			// the first row and make it the color for the text replacements.
@@ -6425,12 +6425,12 @@ function doUserDictionaryLanguageSelection(pBoxTopLeftX, pBoxTopLeftY, pBoxWidth
 	dictMenu.multiSelect = true;
 	dictMenu.borderEnabled = true;
 	dictMenu.SetBorderChars({
-		upperLeft: CP437_BOX_DRAWING_UPPER_LEFT_SINGLE,
-		upperRight: CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE,
-		lowerLeft: CP437_BOX_DRAWING_LOWER_LEFT_SINGLE,
-		lowerRight: CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE,
-		top: CP437_BOX_DRAWING_HORIZONTAL_SINGLE,
-		bottom: CP437_BOX_DRAWING_HORIZONTAL_SINGLE,
+		upperLeft: CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE,
+		upperRight: CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE,
+		lowerLeft: CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE,
+		lowerRight: CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE,
+		top: CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE,
+		bottom: CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE,
 		left: CP437_BOX_DRAWINGS_LIGHT_VERTICAL,
 		right: CP437_BOX_DRAWINGS_LIGHT_VERTICAL
 	});
@@ -6457,10 +6457,10 @@ function displayUserSettingsHelp(pTopLeftX, pTopLeftY, pWidth, pHeight)
 	// Draw a border around the frame object
 	console.gotoxy(pTopLeftX-1, pTopLeftY-1);
 	console.attributes = "HB";
-	console.print(CP437_BOX_DRAWING_UPPER_LEFT_DOUBLE);
+	console.print(CP437_BOX_DRAWINGS_UPPER_LEFT_DOUBLE);
 	for (var i = 0; i < pWidth; ++i)
-		console.print(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE);
-	console.print(CP437_BOX_DRAWING_UPPER_RIGHT_DOUBLE);
+		console.print(CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE);
+	console.print(CP437_BOX_DRAWINGS_UPPER_RIGHT_DOUBLE);
 	for (var lineIdx = 0; lineIdx < pHeight; ++lineIdx)
 	{
 		console.gotoxy(pTopLeftX-1, pTopLeftY+lineIdx);
@@ -6469,10 +6469,10 @@ function displayUserSettingsHelp(pTopLeftX, pTopLeftY, pWidth, pHeight)
 		console.print(CP437_BOX_DRAWINGS_DOUBLE_VERTICAL);
 	}
 	console.gotoxy(pTopLeftX-1, pTopLeftY+pHeight);
-	console.print(CP437_BOX_DRAWING_LOWER_LEFT_DOUBLE);
+	console.print(CP437_BOX_DRAWINGS_LOWER_LEFT_DOUBLE);
 	for (var i = 0; i < pWidth; ++i)
-		console.print(CP437_BOX_DRAWING_HORIZONTAL_DOUBLE);
-	console.print(CP437_BOX_DRAWING_LOWER_RIGHT_DOUBLE);
+		console.print(CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE);
+	console.print(CP437_BOX_DRAWINGS_LOWER_RIGHT_DOUBLE);
 
 	// Create the frame object
 	var frameObj = new Frame(pTopLeftX, pTopLeftY, pWidth, pHeight, BG_BLACK);
@@ -6558,16 +6558,16 @@ function doTaglineSelection()
 	taglineMenu.colors.selectedItemColor = "\x01n\x01w\x01h\x01" + "4";
 	taglineMenu.borderEnabled = true;
 	taglineMenu.SetBorderChars({
-		upperLeft: CP437_BOX_DRAWING_UPPER_LEFT_SINGLE,
-		upperRight: CP437_BOX_DRAWING_UPPER_RIGHT_SINGLE,
-		lowerLeft: CP437_BOX_DRAWING_LOWER_LEFT_SINGLE,
-		lowerRight: CP437_BOX_DRAWING_LOWER_RIGHT_SINGLE,
-		top: CP437_BOX_DRAWING_HORIZONTAL_SINGLE,
-		bottom: CP437_BOX_DRAWING_HORIZONTAL_SINGLE,
+		upperLeft: CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE,
+		upperRight: CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE,
+		lowerLeft: CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE,
+		lowerRight: CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE,
+		top: CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE,
+		bottom: CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE,
 		left: CP437_BOX_DRAWINGS_LIGHT_VERTICAL,
 		right: CP437_BOX_DRAWINGS_LIGHT_VERTICAL
 	});
-	taglineMenu.topBorderText = "\x01n\x01g" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT + "\x01b\x01hTaglines\x01n\x01g" + CP437_BOX_DRAWING_LIGHT_LEFT_T;
+	taglineMenu.topBorderText = "\x01n\x01g" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL_AND_LEFT + "\x01b\x01hTaglines\x01n\x01g" + CP437_BOX_DRAWINGS_LIGHT_LEFT_T;
 	taglineMenu.bottomBorderText = "\x01n\x01h\x01c"+ UP_ARROW + "\x01b, \x01c"+ DOWN_ARROW + "\x01b, \x01cPgUp\x01b/\x01cPgDn\x01b, "
 	                     + "\x01cF\x01y)\x01birst, \x01cL\x01y)\x01bast, \x01cHOME\x01b, \x01cEND\x01b, \x01cEnter\x01y=\x01bSelect, "
 	                     + "\x01cR\x01y)\x01bandom, \x01cESC\x01n\x01c/\x01h\x01cQ\x01y=\x01bEnd";
