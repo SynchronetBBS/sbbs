@@ -1,9 +1,14 @@
+// Synchronet Utopia
+// Inspired by the Intellivision game of the same name
+// Original code and basic design by Google Gemini
+
 "use strict";
 load("sbbsdefs.js");
 // --- CONFIG & FILES ---
 var INTRO_FILE = js.exec_dir + "utopia_intro.txt";
 var HELP_FILE = js.exec_dir + "utopia_help.txt";
-var SAVE_FILE = js.exec_dir + "utopia_save_" + user.alias.replace(/\W/g, '') + ".json";
+var SAVE_FILE = system.data_dir + format("user/%04u.utopia", user.number);
+var DEBUG_FILE = js.exec_dir + "utopia_debug.json";
 var SCORE_FILE = js.exec_dir + "utopia_scores.json";
 
 var MAX_TURNS = 500;
@@ -21,6 +26,7 @@ var MERCHANT_PORT_BONUS = 25;
 var MERCHANT_TRADE_BONUS = 250;
 var PIRATE_GOLD_VALUE = 250;
 var FISH_PER_SCHOOL = 25
+var FISH_CATCH_MAX  = 3;
 var FISH_FOOD_VALUE = 2;
 var FISH_GOLD_VALUE = 1;
 var FISH_CATCH_POTENTIAL = 0.1;
@@ -65,13 +71,13 @@ var ITEM_SCHOOL   = "S";
 var ITEM_BRIDGE   = "B";
 var ITEM_TRAWLER  = "T";
 var ITEM = {};
-ITEM[ITEM_CROPS]   ={ name: "Crops",   char: "\xB1", cost:  3, max_damage:  75, shadow: "+2 Food/t", land: true, sea: false, attr: BROWN };
+ITEM[ITEM_CROPS]   ={ name: "Crops",   char: "\xB1", cost:  3, max_damage:  75, shadow: "Food per Turn/Round", land: true, sea: false, attr: BROWN };
 ITEM[ITEM_TRAWLER] ={ name: "Trawler", char: "\x1E", cost: 25, max_damage: 150, shadow: "Catch Fish", land: false, sea: true, attr: YELLOW | HIGH };
-ITEM[ITEM_HOUSE]   ={ name: "Housing", char: "\x7F", cost: 50, max_damage: 300, shadow: "+15 PopCap", land: true, sea: false };
-ITEM[ITEM_INDUSTRY]={ name: "Industry",char: "\xDB", cost: 75, max_damage: 350, shadow: "+5 Gold/t", land: true, sea: false, attr: LIGHTGRAY };
-ITEM[ITEM_PTBOAT]  ={ name: "PT Boat", char: "\x1E", cost: 50, max_damage:   0, shadow: "Patrols", land: false, sea: true, attr: MAGENTA|HIGH };
-ITEM[ITEM_SCHOOL]  ={ name: "School",  char: "\x15", cost: 75, max_damage: 350, shadow: "-Rebels", land: true, sea: false };
-ITEM[ITEM_BRIDGE]  ={ name: "Bridge",  char: "\xCE", cost: 50, max_damage: 400, shadow: "Transit", land: true, sea: true };
+ITEM[ITEM_HOUSE]   ={ name: "Housing", char: "\x7F", cost: 50, max_damage: 300, shadow: HOUSE_CAPACITY + " Population Cap", land: true, sea: false };
+ITEM[ITEM_INDUSTRY]={ name: "Industry",char: "\xDB", cost: 75, max_damage: 350, shadow: "Taxes and Ports", land: true, sea: false, attr: LIGHTGRAY };
+ITEM[ITEM_PTBOAT]  ={ name: "PT Boat", char: "\x1E", cost: 50, max_damage: 300, shadow: "Patrols", land: false, sea: true, attr: MAGENTA|HIGH };
+ITEM[ITEM_SCHOOL]  ={ name: "School",  char: "\x15", cost: 75, max_damage: 350, shadow: "Reduce Rebels", land: true, sea: false };
+ITEM[ITEM_BRIDGE]  ={ name: "Bridge",  char: "\xCE", cost: 50, max_damage: 400, shadow: "Expansion", land: true, sea: true };
 var MAX_FISH = 8;
 var MAP_WIDTH = 60;
 var MAP_HEIGHT = 22;
@@ -90,8 +96,9 @@ var LAND_W = 5;
 var Utopia = {
 	tick: 0,
 	state: {
-		running: true,
-		turn: 1,
+		started: false,
+		in_progress: false,
+		turn: 0,
 		gold: 100,
 		food: 100,
 		pop: 5,
@@ -125,7 +132,12 @@ function xy_str(x, y) {
 
 // --- CORE UTILITIES ---
 
-Utopia.debugLog = function(msg) { log("Utopia: " + msg); }
+var debug_enabled = argv.indexOf("-debug") >= 0;
+
+Utopia.debugLog = function(msg) {
+	if(debug_enabled)
+		log("Utopia: " + msg);
+}
 
 Utopia.log = function(msg) {
 	this.debugLog(msg);
@@ -144,7 +156,9 @@ Utopia.spawnFish = function() {
 			x = Math.floor(Math.random() * MAP_WIDTH);
 			y = Math.floor(Math.random() * MAP_HEIGHT);
 		}
-		if (this.map[y][x] === WATER && !this.items[y][x])
+		if (this.map[y][x] === WATER
+			&& !this.items[y][x]
+			&& this.pathBetween(x, y, 0, 0, WATER))
 			this.state.fishPool.push({ x: x, y: y, count: FISH_PER_SCHOOL });
 	}
 };
@@ -152,15 +166,13 @@ Utopia.spawnFish = function() {
 Utopia.assessItems = function() {
 	for (var i in ITEM) {
 		ITEM[i].count = 0;
-		ITEM[i].damage = 0;
+		ITEM[i].total_damage = 0;
 	}
 	var count = 0;
 	for (var y = 0; y < MAP_HEIGHT; y++) {
 		for (var x = 0; x < MAP_WIDTH; x++) {
 			var item = this.items[y][x];
 			if (!item)
-				continue;
-			if (item == ITEM_PTBOAT) // These are mobile, so don't track damage
 				continue;
 			this.damage[y][x]++; // age/drought
 			if (item == ITEM_TRAWLER && this.onWave(x, y))
@@ -175,8 +187,8 @@ Utopia.assessItems = function() {
 				this.destroyItem(x, y);
 				continue;
 			} else {
-				if (this.pathToHomeland(x, y)) {
-					ITEM[item].damage += this.damage[y][x];
+				if (!this.isLand(x, y) || this.pathToHomeland(x, y)) {
+					ITEM[item].total_damage += this.damage[y][x];
 					ITEM[item].count++;
 				}
 			}
@@ -328,13 +340,14 @@ Utopia.drawCell = function(x, y, more_attr) {
 		var rx = Math.floor(this.state.rain.x),
 			ry = Math.floor(this.state.rain.y);
 		if (y == ry && Math.abs(x - rx) <= 2) {
-			attr |= LIGHTGRAY;
-			attr &= ~HIGH;
-			char = "\xB2";
-		} else if (y == ry + 1 && Math.abs(x - rx) <= 2) {
+			attr = HIGH | BG_LIGHTGRAY;
 			char = "\xB1";
-			attr |= LIGHTGRAY | BLINK;
-			attr &= ~HIGH;
+		} else if (y == ry + 1 && Math.abs(x - rx) <= 2) {
+			char = (this.tick & 1) ? "\xB0" : "\xB2";
+			attr &= ~(HIGH | BLINK);
+			attr |= LIGHTGRAY;
+			if (this.tick & 1)
+				attr = (attr >> 4) | ((attr & 0x0f) << 4);
 		}
 	}
 	if (this.state.storm.active) {
@@ -423,8 +436,6 @@ Utopia.handleRainfall = function() {
 			var item = this.items[y][x];
 			if (!item)
 				continue;
-			if (item == ITEM_PTBOAT)
-				continue;
 			if (Math.abs(sx - x) <= 1 && Math.abs(sy - y) <= 1) {
 				var msg = "Storm Damage";
 				var damage = STORM_DAMAGE;
@@ -449,7 +460,7 @@ Utopia.handleRainfall = function() {
 Utopia.itemHealth = function(item) {
 	if (ITEM[item].count == undefined || ITEM[item].count < 1)
 		return 0;
-	var health = (ITEM[item].count * ITEM[item].max_damage) - ITEM[item].damage;
+	var health = (ITEM[item].count * ITEM[item].max_damage) - ITEM[item].total_damage;
 	return health / (ITEM[item].count * ITEM[item].max_damage);
 }
 
@@ -538,10 +549,24 @@ Utopia.onWave = function(x, y) {
 	return false;
 }
 
-Utopia.handlePatrols = function() {
+Utopia.moveItem = function(ox, oy, nx, ny) {
+	this.debugLog("Moving '" + this.items[oy][ox] + "' at " + xy_str(ox, oy) + " with " + this.damage[oy][ox] + " damage");
+	this.items[ny][nx] = this.items[oy][ox];
+	this.damage[ny][nx] = this.damage[oy][ox];
+	this.destroyItem(ox, oy);
+	this.debugLog("After destroy '" + this.items[oy][ox] + "' at " + xy_str(ox, oy) + " with " + this.damage[oy][ox] + " damage");
+	this.debugLog("New location '" + this.items[ny][nx] + "' at " + xy_str(nx, ny) + " with " + this.damage[ny][nx] + " damage");
+	this.drawCell(ox, oy);
+	this.drawCell(nx, ny);
+	return true;
+}
+
+Utopia.handlePiracy = function() {
 	if (!this.state.pirate.active) return;
 	var px = Math.floor(this.state.pirate.x),
 		py = Math.floor(this.state.pirate.y);
+	var ptboat_moved = false;
+	var pirate_moved = false;
 	for (var y = 0; y < MAP_HEIGHT; y++) {
 		for (var x = 0; x < MAP_WIDTH; x++) {
 			if (this.items[y][x] === ITEM_PTBOAT) { // PT Boat pursues Pirate
@@ -549,12 +574,10 @@ Utopia.handlePatrols = function() {
 				if (dist < 10) {
 					var nx = x + (px > x ? 1 : (px < x ? -1 : 0)),
 						ny = y + (py > y ? 1 : (py < y ? -1 : 0));
-					if (ny >= 0 && ny < MAP_HEIGHT && nx >= 0 && nx < MAP_WIDTH
+					if (!ptboat_moved
+						&& ny >= 0 && ny < MAP_HEIGHT && nx >= 0 && nx < MAP_WIDTH
 						&& this.map[ny][nx] === 0 && !this.items[ny][nx]) {
-						this.items[ny][nx] = ITEM_PTBOAT;
-						this.items[y][x] = null;
-						this.drawCell(x, y);
-						this.drawCell(nx, ny);
+						ptboat_moved = this.moveItem(x, y, nx, ny);
 					}
 					if (Math.abs(nx - px) <= 1 && Math.abs(ny - py) <= 1) {
 						if (Math.random() < 0.7) {
@@ -572,20 +595,21 @@ Utopia.handlePatrols = function() {
 							this.pendingUpdate.push({ x: nx, y: ny});
 						}
 					} 
-					return;
 				}
 			} // Pirate pursues Trawler
-			else if (x <= this.state.pirate.x && this.items[y][x] === "T") {
+			else if (x <= this.state.pirate.x && this.items[y][x] === ITEM_TRAWLER) {
 				var dist = Math.sqrt(Math.pow(x - px, 2) + Math.pow(y - py, 2));
 				if (dist < 10) {
 					var nx = px + (x > px ? 1 : (x < px ? -1 : 0)),
 						ny = py + (y > py ? 1 : (y < py ? -1 : 0));
-					if (ny >= 0 && ny < MAP_HEIGHT && nx >= 0 && nx < MAP_WIDTH
+					if (!pirate_moved
+						&& ny >= 0 && ny < MAP_HEIGHT && nx >= 0 && nx < MAP_WIDTH
 						&& this.map[ny][nx] === 0 && !this.items[ny][nx]) {
 						this.state.pirate.x = nx;
 						this.state.pirate.y = ny;
 						this.drawCell(x, y);
 						this.drawCell(px, py);
+						pirate_moved = true;
 					}
 					if (Math.abs(nx - x) <= 1 && Math.abs(ny - y) <= 1 && Math.random() < 0.7) {
 						this.drawCell(x, y, BLINK);
@@ -600,7 +624,9 @@ Utopia.handlePatrols = function() {
 		}
 	}
 	// Pirate pursues Merchant ship
-	if (this.state.merchant.active && this.state.merchant.x <= this.state.pirate.x) {
+	if (this.state.merchant.active
+		&& this.state.merchant.x <= this.state.pirate.x
+		&& !pirate_moved) {
 		var mx = Math.floor(this.state.merchant.x);
 		var my = Math.floor(this.state.merchant.y);
 		var px = Math.floor(this.state.pirate.x);
@@ -616,7 +642,42 @@ Utopia.handlePatrols = function() {
 				this.drawCell(mx, my);
 				this.drawCell(px, py);
 			}
-			return;
+		}
+	}
+};
+
+// Trawlers pursue fish
+Utopia.moveTrawlers = function() {
+	if (ITEM[ITEM_TRAWLER].count < 1 || this.state.fishPool.length < 1)
+		return;
+	for (var y = 0; y < MAP_HEIGHT; y++) {
+		for (var x = 0; x < MAP_WIDTH; x++) {
+			if (this.items[y][x] !== ITEM_TRAWLER)
+				continue;
+			var fish = [];
+			for (var i = 0; i < this.state.fishPool.length; ++i) {
+				var f = this.state.fishPool[i];
+				var dist = Math.sqrt(Math.pow(x - f.x, 2) + Math.pow(y - f.y, 2));
+				if (dist >= 10)
+					continue;
+				f = { dist: dist, x: f.x, y: f.y };
+//				this.debugLog("fish nearby: " + JSON.stringify(f));
+				fish.push(f);
+			}
+			if (!fish.length)
+				continue;
+			fish.sort(function (a, b) { return b.dist - a.dist; });
+			var f = fish.pop();
+			this.debugLog("closest fish: " + JSON.stringify(f));
+			if (f.dist < 2)
+				continue;
+			var nx = x + (f.x > x ? 1 : (f.x < x ? -1 : 0)),
+				ny = y + (f.y > y ? 1 : (f.y < y ? -1 : 0));
+			if (ny >= 0 && ny < MAP_HEIGHT && nx >= 0 && nx < MAP_WIDTH
+				&& this.map[ny][nx] === 0 && !this.items[ny][nx]) {
+				this.moveItem(x, y, nx, ny);
+				return; // NOTE: only moves ONE trawler per turn
+			}
 		}
 	}
 };
@@ -811,7 +872,7 @@ function compareXY(a, b) {
 		, Math.abs(Math.floor(a.y) - Math.floor(b.y)));
 }
 
-Utopia.pathBetween = function(a, b) {
+Utopia.pathBetween = function(a, b, type) {
 	if (compareXY(a, b) == 0)
 		return true;
 	var visited = {};
@@ -836,9 +897,14 @@ Utopia.pathBetween = function(a, b) {
 			var nx = cx + dirs[i][0],
 				ny = cy + dirs[i][1];
 			if (nx >= 0 && nx < MAP_WIDTH && ny >= 0 && ny < MAP_HEIGHT) {
-				// Path can travel through Land OR Bridges
-				if (this.map[ny][nx] !== WATER || this.items[ny][nx] === ITEM_BRIDGE)
-					stack.push([nx, ny]);
+				if (type == WATER) {
+					if (this.map[ny][nx] == WATER)
+						stack.push([nx, ny]);
+				} else {
+					// Path can travel through Land OR Bridges
+					if (this.map[ny][nx] !== WATER || this.items[ny][nx] === ITEM_BRIDGE)
+						stack.push([nx, ny]);
+				}
 			}
 		}
 	}
@@ -850,7 +916,7 @@ Utopia.pathToHomeland = function(x, y) {
 		return this.isLand(x, y);
 	if (typeof x != "object")
 		x = { x: x, y: y};
-	return this.pathBetween(x, this.state.homeland);
+	return this.pathBetween(x, this.state.homeland, LAND);
 }
 
 Utopia.handleWeather = function() {
@@ -962,7 +1028,8 @@ Utopia.handleWeather = function() {
 }
 
 Utopia.moveEntities = function() {
-	this.handlePatrols();
+	this.handlePiracy();
+	this.moveTrawlers();
 	var oldMerc = {
 		x: Math.floor(this.state.merchant.x),
 		y: Math.floor(this.state.merchant.y),
@@ -1007,7 +1074,7 @@ Utopia.moveEntities = function() {
 					ty = f.y + dy;
 				if (ty >= 0 && ty < MAP_HEIGHT && tx >= 0 && tx < MAP_WIDTH) {
 					if (this.items[ty][tx] === ITEM_TRAWLER && Math.random() < FISH_CATCH_POTENTIAL) {
-						var count = 1 + random(3);
+						var count = 1 + random(FISH_CATCH_MAX);
 						this.state.food += FISH_FOOD_VALUE * count;
 						this.state.gold += FISH_GOLD_VALUE * count;
 						this.drawCell(f.x, f.y, BLINK);
@@ -1148,7 +1215,7 @@ Utopia.drawUI = function(legend) {
 	var ly = 1;
 	if (legend) {
 		console.gotoxy(lx, ly++);
-		console.putmsg(" -Items-  -Health-");
+		console.putmsg("  Items     Health");
 		for (var i in ITEM) {
 			console.gotoxy(lx, ly++);
 			var item = ITEM[i];
@@ -1160,7 +1227,11 @@ Utopia.drawUI = function(legend) {
 	var ly = 2;
 	console.attributes = WHITE | HIGH;
 	for (var i in ITEM) {
-		console.gotoxy(lx + 13, ly++);
+		if (ITEM[i].count) {
+			console.gotoxy(lx + 11, ly);
+			console.print(format("%3u", ITEM[i].count));
+		}
+		console.gotoxy(lx + 15, ly++);
 		if (!ITEM[i].max_damage)
 			console.print(" N/A");
 		else
@@ -1198,12 +1269,12 @@ Utopia.drawUI = function(legend) {
 		"\x01n\x01h\x01wPop:\x01n%4d/%s%-5d " +
 		"\x01n\x01h\x01wReb:%s %d%%  " +
 		"\x01n\x01h\x01cTurn:%s %1.1f/%d\x01>"
-		, this.state.gold < 100 ? "\x01r\x01i" : "\x01n"
+		, this.state.gold < this.state.popCap ? "\x01r\x01i" : "\x01n"
 		, this.state.gold
-		, this.state.food < this.state.pop ? "\x01r\x01i" : "\x01n"
+		, this.state.started && this.state.food < this.state.pop ? "\x01r\x01i" : "\x01n"
 		, this.state.food
 		, this.state.pop
-		, this.state.pop >= this.state.popCap ? "\x01r\x01i" : "\x01n"
+		, this.state.started && this.state.pop >= this.state.popCap ? "\x01r\x01i" : "\x01n"
 		, this.state.popCap
 		, this.state.rebels >= 50 ? "\x01r\x01i" : "\x01n"
 		, this.state.rebels
@@ -1217,6 +1288,10 @@ Utopia.drawUI = function(legend) {
 
 Utopia.buildItem = function(cmd) {
 	var item = ITEM[cmd];
+	if (!item) {
+		this.debugLog("buildItem() called with " + typeof item + ": " + item);
+		return false;
+	}
 	var ter = this.map[this.state.cursor.y][this.state.cursor.x];
 	if (this.items[this.state.cursor.y][this.state.cursor.x]) {
 		this.state.msg = "Occupied!";
@@ -1263,10 +1338,11 @@ Utopia.buildItem = function(cmd) {
 Utopia.destroyItem = function(x, y) {
 	var item = this.items[y][x];
 	if (!item) {
-		this.debugLog("No item at " + xy_str(x, y));
+		this.debugLog("No item to destroy at " + xy_str(x, y));
 		return false;
 	}
-	this.items[y][x] = null;
+	this.items[y][x] = "";
+	this.damage[y][x] = 0;
 	if (item == ITEM_BRIDGE)
 		this.refreshScreen(false);
 	return true;
@@ -1275,13 +1351,14 @@ Utopia.destroyItem = function(x, y) {
 Utopia.showBuildMenu = function() {
 	var menuX = 12,
 		menuY = 5;
-	for (var i = 0; i < 11; i++) {
+	for (var i = 0; i < 13; i++) {
 		console.gotoxy(menuX, menuY + i);
 		console.attributes = BG_BLACK | LIGHTGRAY;
 		console.write("                                              ");
 	}
+	menuY++
 	console.gotoxy(menuX + 2, menuY++);
-	console.putmsg("\x01h\x01bCONSTRUCTION MENU");
+	console.putmsg("\x01h\x01bBuy and Build an Item");
 	menuY++
 	for (var i in ITEM) {
 		var item = ITEM[i];
@@ -1298,11 +1375,16 @@ Utopia.showBuildMenu = function() {
 	for (var y = 0; y < MAP_HEIGHT; y++)
 		for (var x = 0; x < MAP_WIDTH; x++)
 			this.drawCell(x, y);
+	var success = false;
 	if (cmd == ' ')
-		this.buildItem(this.state.lastbuilt);
+		success = this.buildItem(this.state.lastbuilt);
 	else if (ITEM[cmd])
-		this.buildItem(cmd);
+		success = this.buildItem(cmd);
 	this.drawUI();
+	if (success) {
+		this.state.started = true;
+		this.state.in_progress = true;
+	}
 };
 
 Utopia.saveHighScore = function(title) {
@@ -1343,6 +1425,7 @@ Utopia.showHighScores = function() {
 };
 
 Utopia.finishGame = function() {
+	this.state.in_progress = false;
 	var score = this.calculateScore();
 	var title = this.getRank() + " and " + this.getRetirementTitle(score);
 	console.clear();
@@ -1368,8 +1451,6 @@ Utopia.finishGame = function() {
 	this.saveHighScore(title);
 	console.getkey();
 	this.showHighScores();
-	if (file_exists(SAVE_FILE)) file_remove(SAVE_FILE);
-	this.state.running = false;
 };
 
 Utopia.handleOperatorCommand = function(key) {
@@ -1401,11 +1482,17 @@ Utopia.handleOperatorCommand = function(key) {
 		case CTRL_S:
 			this.saveGame();
 			break;
+		case CTRL_T:
+			this.saveGame('\t');
+			break;
+		case CTRL_D:
+			this.debugGame(["damage"]);
+			break;
 	}
 	this.drawUI();
 }
 
-Utopia.saveGame = function() {
+Utopia.saveGame = function(space) {
 	var sf = new File(SAVE_FILE);
 	if (sf.open("w")) {
 		sf.write(JSON.stringify({
@@ -1413,12 +1500,30 @@ Utopia.saveGame = function() {
 			map: this.map,
 			items: this.items,
 			damage: this.damage
-		}, null, 4 ));
+		}, null, space));
 		sf.close();
 		this.debugLog("Saved game data to " + SAVE_FILE);
 		return true;
 	}
+	log(LOG_WARNING, "Failed to save game data to " + SAVE_FILE);
 	return false;
+}
+
+Utopia.debugGame = function(replacer, space) {
+	var sf = new File(DEBUG_FILE);
+	if (sf.open("w")) {
+		sf.write(JSON.stringify(this, replacer, space));
+		sf.close();
+		this.debugLog("Saved game debug to " + DEBUG_FILE);
+		return true;
+	}
+	log(LOG_WARNING, "Failed to save game data to " + DEBUG_FILE);
+	return false;
+}
+
+Utopia.removeSavedGame = function() {
+	if (file_exists(SAVE_FILE) && file_remove(SAVE_FILE))
+		this.debugLog("Saved game data removed: " + SAVE_FILE);
 }
 
 Utopia.handleQuit = function() {
@@ -1438,10 +1543,11 @@ Utopia.handleQuit = function() {
     if (choice === 'S' && canSave) {
 		if (this.saveGame()) 
 			console.putmsg("\r\n\x01h\x01gGame Saved. ");
-		this.state.running = false;
 		console.putmsg("See you next time, Governor!");
+		return true;
     } else if (choice === 'F') {
         this.finishGame();
+		return true;
     } else if (choice === 'V') {
         this.showHighScores();
         this.refreshScreen(); // Redraw map after returning from high scores
@@ -1449,32 +1555,40 @@ Utopia.handleQuit = function() {
         this.state.msg = "Welcome back.";
         this.drawUI();
     }
+	return false;
 };
 
 // --- RUNTIME ---
-try {
+Utopia.run = function() {
 	if (file_exists(INTRO_FILE)) {
 		console.clear();
 		console.printfile(INTRO_FILE, P_PCBOARD);
 		console.pause();
 	}
+	var game_restored = false;
 	var saveF = new File(SAVE_FILE);
 	if (saveF.exists && saveF.open("r")) {
-		var s = JSON.parse(saveF.read());
-		Utopia.state = s.state;
-		Utopia.map = s.map;
-		Utopia.items = s.items;
-		Utopia.damage = s.damage;
+		try {
+			var s = JSON.parse(saveF.read());
+			this.state = s.state;
+			this.map = s.map;
+			this.items = s.items;
+			this.damage = s.damage;
+			game_restored = true;
+		} catch(e) {
+			log(LOG_WARNING, e + ": " + SAVEFILE);
+		}
 		saveF.close();
 	}
-	else {
+	if (!game_restored) {
 		for (var y = 0; y < MAP_HEIGHT; y++) {
-			Utopia.map[y] = [];
-			Utopia.items[y] = [];
-			Utopia.damage[y] = [];
+			this.map[y] = [];
+			this.items[y] = [];
+			this.damage[y] = [];
 			for (var x = 0; x < MAP_WIDTH; x++) {
-				Utopia.map[y][x] = WATER;
-				Utopia.items[y][x] = null;
+				this.map[y][x] = WATER;
+				this.items[y][x] = "";
+				this.damage[y][x] = 0;
 			}
 		}
 		for (var i = 0; i < 3; i++) {
@@ -1482,7 +1596,7 @@ try {
 			var cy = 11;
 			for (var n = 0; n < 300; n++) {
 				if (cy >= 0 && cy < MAP_HEIGHT && cx >= 0 && cx < MAP_WIDTH)
-					Utopia.map[cy][cx] = LAND;
+					this.map[cy][cx] = LAND;
 				cx += Math.floor(Math.random() * 3) - 1;
 				cy += Math.floor(Math.random() * 3) - 1;
 				if (cx < 2) cx = 2;
@@ -1495,53 +1609,56 @@ try {
 		// Rough up the edges of land masses
 		for (var y = 2; y < MAP_BOTTOM_ROW - 1; ++y) {
 			for (x = 2; x < MAP_RIGHT_COL - 1; ++x) {
-				if (Utopia.map[y][x] === WATER)
+				if (this.map[y][x] === WATER)
 					continue;
 				switch (random(5)) {
 					case 0:
-						if (Utopia.map[y - 1][x] == WATER) {
-							Utopia.map[y][x] = LAND_N;
+						if (this.map[y - 1][x] == WATER) {
+							this.map[y][x] = LAND_N;
 							break;
 						}
 					case 1:
-						if (Utopia.map[y + 1][x] == WATER) {
-							Utopia.map[y][x] = LAND_S;
+						if (this.map[y + 1][x] == WATER) {
+							this.map[y][x] = LAND_S;
 							break;
 						}
 					case 2:
-						if (Utopia.map[y][x + 1] == WATER) {
-							Utopia.map[y][x] = LAND_E;
+						if (this.map[y][x + 1] == WATER) {
+							this.map[y][x] = LAND_E;
 							break;
 						}
 					case 3:
-						if (Utopia.map[y][x - 1] == WATER) {
-							Utopia.map[y][x] = LAND_W;
+						if (this.map[y][x - 1] == WATER) {
+							this.map[y][x] = LAND_W;
 							break;
 						}
 				}
 			}
 		}
-		Utopia.spawnFish();
+		this.spawnFish();
 	}
-	Utopia.refreshScreen();
+	this.refreshScreen();
 	var lastTick = system.timer;
-	while (Utopia.state.running && !js.terminated) {
+	while (bbs.online && !js.terminated) {
 		if (system.timer - lastTick >= TICK_INTERVAL) {
-			if (Utopia.state.turn < MAX_TURNS) {
-				Utopia.handleWeather();
-				Utopia.handleRainfall();
-				if (Utopia.tick % TURN_INTERVAL == 0) {
-					Utopia.state.turn++;
-					Utopia.handleEconomics();
-					Utopia.handlePendingUpdates();
-					Utopia.moveEntities();
-					Utopia.drawUI();
+			if (this.state.in_progress) {
+				if (this.state.turn < MAX_TURNS) {
+					this.handleWeather();
+					this.handleRainfall();
+					if (this.tick % TURN_INTERVAL == 0) {
+						this.state.turn++;
+						this.handleEconomics();
+						this.handlePendingUpdates();
+						this.moveEntities();
+						this.drawUI();
+					}
+					this.tick++;
 				}
-				Utopia.tick++;
-			}
-			else {
-				Utopia.state.msg = "\x01h\x01rTIME IS UP! [Q]uit to score.";
-				Utopia.drawUI();
+				else {
+					this.state.msg = "\x01h\x01rTIME IS UP! [Q]uit to score.";
+					this.state.in_progress = false;
+					this.drawUI();
+				}
 			}
 			lastTick = system.timer;
 		}
@@ -1549,54 +1666,54 @@ try {
 		if (!k)
 			continue;
 		var key = k.toUpperCase();
-		var cursor = { x: Utopia.state.cursor.x, y: Utopia.state.cursor.y };
+		var cursor = { x: this.state.cursor.x, y: this.state.cursor.y };
 
 		switch (key) {
 			case KEY_UP:
-				if (Utopia.state.cursor.y > 0)
-					Utopia.state.cursor.y--;
+				if (this.state.cursor.y > 0)
+					this.state.cursor.y--;
 				break;
 			case KEY_DOWN:
-				if (Utopia.state.cursor.y < MAP_BOTTOM_ROW)
-					Utopia.state.cursor.y++;
+				if (this.state.cursor.y < MAP_BOTTOM_ROW)
+					this.state.cursor.y++;
 				break;
 			case KEY_LEFT:
-				if (Utopia.state.cursor.x > 0)
-					Utopia.state.cursor.x--;
+				if (this.state.cursor.x > 0)
+					this.state.cursor.x--;
 				break;
 			case KEY_RIGHT:
-				if (Utopia.state.cursor.x < MAP_RIGHT_COL)
-					Utopia.state.cursor.x++;
+				if (this.state.cursor.x < MAP_RIGHT_COL)
+					this.state.cursor.x++;
 				break;
 			case CTRL_R:
-				Utopia.refreshScreen();
+				this.refreshScreen();
 				break;
 			case 'B':
-				if (Utopia.state.turn < MAX_TURNS)
-					Utopia.showBuildMenu();
+				if (!this.state.started || this.state.in_progress)
+					this.showBuildMenu();
 				break;
 			case ' ':
-				if (Utopia.state.turn < MAX_TURNS) {
-					if (Utopia.state.lastbuilt)
-						Utopia.buildItem(Utopia.state.lastbuilt);
+				if (this.state.in_progress) {
+					if (this.state.lastbuilt)
+						this.buildItem(this.state.lastbuilt);
 					else
-						Utopia.showBuildMenu();
+						this.showBuildMenu();
 				}
 				break;
 			case 'M':
-				if (Utopia.state.martialLaw === 0) {
-					Utopia.state.martialLaw = 30;
-					Utopia.log("MARTIAL LAW!");
+				if (this.state.martialLaw === 0) {
+					this.state.martialLaw = 30;
+					this.log("MARTIAL LAW!");
 				}
 				break;
 			case 'L':
 				console.clear(LIGHTGRAY);
-				for (var i = 0; i < Utopia.state.log.length && !console.aborted; ++i) {
-					var entry = Utopia.state.log[i];
+				for (var i = 0; i < this.state.log.length && !console.aborted; ++i) {
+					var entry = this.state.log[i];
 					console.attributes = LIGHTGRAY;
 					console.print(format("T-%4.1f: %s\r\n", entry.turn / 10, entry.msg));
 				}
-				Utopia.refreshScreen();
+				this.refreshScreen();
 				break;
 			case '?':
 			case 'H':
@@ -1605,22 +1722,23 @@ try {
 					console.printfile(HELP_FILE, P_PCBOARD);
 					console.pause();
 				}
-				Utopia.refreshScreen();
+				this.refreshScreen();
 				break;
 			case 'Q':
-				Utopia.handleQuit();
+				if (this.handleQuit())
+					return;
 				continue;
 			case 'D':
-				if (Utopia.items[Utopia.state.cursor.y][Utopia.state.cursor.x]) {
-					var dc = BASE_DESTRUCTION_COST + Math.floor(Utopia.state.rebels / 2);
-					if (Utopia.state.gold >= dc) {
-						Utopia.state.gold -= dc;
-						Utopia.log("\x01m\x01hDemolished "
-							+ ITEM[Utopia.items[Utopia.state.cursor.y][Utopia.state.cursor.x]].name
+				if (this.items[this.state.cursor.y][this.state.cursor.x]) {
+					var dc = BASE_DESTRUCTION_COST + Math.floor(this.state.rebels / 2);
+					if (this.state.gold >= dc) {
+						this.state.gold -= dc;
+						this.log("\x01m\x01hDemolished "
+							+ ITEM[this.items[this.state.cursor.y][this.state.cursor.x]].name
 							+ " for $" + dc);
-						Utopia.destroyItem(Utopia.state.cursor.x, Utopia.state.cursor.y);
-						Utopia.drawCell(Utopia.state.cursor.x, Utopia.state.cursor.y);
-						Utopia.drawUI();
+						this.destroyItem(this.state.cursor.x, this.state.cursor.y);
+						this.drawCell(this.state.cursor.x, this.state.cursor.y);
+						this.drawUI();
 					}
 				}
 				break;
@@ -1632,17 +1750,24 @@ try {
 				break;
 			default:
 				if (user.is_sysop)
-					Utopia.handleOperatorCommand(key);
+					this.handleOperatorCommand(key);
 				break;
 		}
-		if (compareXY(Utopia.state.cursor, cursor) != 0) {
-			Utopia.drawCell(cursor.x, cursor.y);
-			Utopia.drawCell(Utopia.state.cursor.x, Utopia.state.cursor.y);
-			Utopia.drawUI();
+		if (compareXY(this.state.cursor, cursor) != 0) {
+			this.drawCell(cursor.x, cursor.y);
+			this.drawCell(this.state.cursor.x, this.state.cursor.y);
+			this.drawUI();
 		}
 	}
 }
-catch (e) {
+
+try {
+	Utopia.run();
+} catch (e) {
 	console.newline();
 	log(LOG_WARNING, alert("Utopia Error: " + e.message + " line " + e.lineNumber));
 }
+if (Utopia.state.in_progress)
+	Utopia.saveGame();
+else
+	Utopia.removeSavedGame();
