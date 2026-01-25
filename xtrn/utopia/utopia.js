@@ -5,54 +5,84 @@
 "use strict";
 load("sbbsdefs.js");
 // --- CONFIG & FILES ---
-var INTRO_FILE = js.exec_dir + "utopia_intro.txt";
-var HELP_FILE = js.exec_dir + "utopia_help.txt";
-var SAVE_FILE = system.data_dir + format("user/%04u.utopia", user.number);
-var DEBUG_FILE = js.exec_dir + "utopia_debug.json";
-var SCORE_FILE = js.exec_dir + "utopia_scores.json";
+const INTRO_FILE = js.exec_dir + "utopia_intro.txt";
+const HELP_FILE = js.exec_dir + "utopia_help.txt";
+const SAVE_FILE = system.data_dir + format("user/%04u.utopia", user.number);
+const DEBUG_FILE = js.exec_dir + "utopia_debug.json";
+const SCORE_FILE = js.exec_dir + "utopia_scores.json";
 
-var MAX_TURNS = 500;
-var TICK_INTERVAL = 0.5;
-var TURN_INTERVAL = 4.0;
-var ROUND_INTERVAL = 10;
-var PIRATE_SPEED = 0.6;
-var MERCHANT_SPEED = 0.5;
+const ITEM_HOUSE    = "H";
+const ITEM_CROPS    = "C";
+const ITEM_INDUSTRY = "I";
+const ITEM_PTBOAT   = "P";
+const ITEM_SCHOOL   = "S";
+const ITEM_BRIDGE   = "B";
+const ITEM_TRAWLER  = "T";
 
-// Economics
-var HOUSE_CAPACITY = 50;
-var POPULATION_INTERVAL = 5;
-var MERCHANT_GOLD_VALUE = 1;
-var MERCHANT_PORT_BONUS = 25;
-var MERCHANT_TRADE_BONUS = 250;
-var PIRATE_GOLD_VALUE = 250;
-var FISH_PER_SCHOOL = 25
-var FISH_CATCH_MAX  = 3;
-var FISH_FOOD_VALUE = 2;
-var FISH_GOLD_VALUE = 1;
-var FISH_CATCH_POTENTIAL = 0.1;
-var RAIN_GOLD_VALUE = 1;
-var BASE_DESTRUCTION_COST = 5;
-// (per-round)
-var POP_TAX_MULTIPLE = 0.10;
-var LAND_TAX_MULTIPLE = 0.50;
-var FISH_TAX_MULTIPLE = 2.00;
-var INDUSTRY_TAX_MULTIPLE = 4;
-var SCHOOL_COST_MULTIPLE = 2;
-var FISH_FOOD_MULTIPLE = 1;
-var CROP_FOOD_MULTIPLE = 1.5;
-// (per-turn)
-var CROP_FOOD_PER_TURN = 0.25;
-var TRAWLER_FOOD_PER_TURN = 0.5;
+var rules = {
+	max_turns: 500,
+	turn_interval: 4.0,
+	round_interval: 10,
+	pirate_speed: 0.6,
+	merchant_speed: 0.5,
 
-// Weather
-var RAIN_HEALING = 20;
-var RAIN_POTENTIAL = 0.05;
-var STORM_POTENTIAL = 0.005;
-var STORM_DAMAGE = 10;
-var WAVE_POTENTIAL = 0.10;
-var WAVE_MIN_WIDTH = 7;
+	// Economics
+	house_capacity: 50,
+	population_interval: 5,
+	merchant_gold_value: 1,
+	merchant_port_bonus: 25,
+	merchant_trade_bonus: 250,
+	pirate_gold_value: 250,
+	max_fish: 8,
+	fish_per_school: 25,
+	fish_catch_max : 3,
+	fish_food_value: 2,
+	fish_gold_value: 1,
+	fish_catch_potential: 0.1,
+	rain_gold_value: 1,
+	base_destruction_cost: 5,
+	// (per-round)
+	pop_tax_multiple: 0.10,
+	land_tax_multiple: 0.50,
+	fish_tax_multiple: 2.00,
+	industry_tax_multiple: 4,
+	school_cost_multiple: 2,
+	fish_food_multiple: 1,
+	crop_food_multiple: 1.5,
+	// (per-turn)
+	crop_food_per_turn: 0.25,
+	trawler_food_per_turn: 0.5,
+
+	// Weather
+	rain_healing: 20,
+	rain_potential: 0.05,
+	storm_potential: 0.005,
+	storm_damage: 10,
+	wave_potential: 0.10,
+	wave_min_width: 7,
+
+	item: {
+		"C": { cost:  3, max_damage:  75, land: true, sea: false },
+		"T": { cost: 25, max_damage: 150, land: false, sea: true },
+		"H": { cost: 50, max_damage: 300, land: true, sea: false },
+		"I": { cost: 75, max_damage: 350, land: true, sea: false },
+		"P": { cost: 50, max_damage: 300, land: false, sea: true },
+		"S": { cost: 75, max_damage: 350, land: true, sea: false },
+		"B": { cost: 50, max_damage: 400, land: true, sea: true  },
+	}
+}
+
+var item_list = {};
+item_list[ITEM_CROPS]   ={ name: "Crops",   char: "\xB1", shadow: "Food per Turn/Round", attr: BROWN };
+item_list[ITEM_TRAWLER] ={ name: "Trawler", char: "\x1E", shadow: "Catch Fish", attr: YELLOW | HIGH };
+item_list[ITEM_HOUSE]   ={ name: "Housing", char: "\x7F", shadow: rules.house_capacity + " Population Cap" };
+item_list[ITEM_INDUSTRY]={ name: "Industry",char: "\xDB", shadow: "Taxes and Ports", attr: LIGHTGRAY };
+item_list[ITEM_PTBOAT]  ={ name: "PT Boat", char: "\x1E", shadow: "Patrols", attr: MAGENTA|HIGH };
+item_list[ITEM_SCHOOL]  ={ name: "School",  char: "\x15", shadow: "Reduce Rebels" };
+item_list[ITEM_BRIDGE]  ={ name: "Bridge",  char: "\xCE", shadow: "Expansion" };
 
 // Cosmetics
+var TICK_INTERVAL = 0.5;
 var CHAR_WATER    = "\xF7";
 var CHAR_WAVE     = "~";
 var CHAR_LAND     = " ";
@@ -63,22 +93,6 @@ var CHAR_LAND_W   = "\xDD";
 var CHAR_PIRATE   = "\x9E";
 var CHAR_FISH     = "\"";
 var CHAR_MERCHANT = "$";
-var ITEM_HOUSE    = "H";
-var ITEM_CROPS    = "C";
-var ITEM_INDUSTRY = "I";
-var ITEM_PTBOAT   = "P";
-var ITEM_SCHOOL   = "S";
-var ITEM_BRIDGE   = "B";
-var ITEM_TRAWLER  = "T";
-var ITEM = {};
-ITEM[ITEM_CROPS]   ={ name: "Crops",   char: "\xB1", cost:  3, max_damage:  75, shadow: "Food per Turn/Round", land: true, sea: false, attr: BROWN };
-ITEM[ITEM_TRAWLER] ={ name: "Trawler", char: "\x1E", cost: 25, max_damage: 150, shadow: "Catch Fish", land: false, sea: true, attr: YELLOW | HIGH };
-ITEM[ITEM_HOUSE]   ={ name: "Housing", char: "\x7F", cost: 50, max_damage: 300, shadow: HOUSE_CAPACITY + " Population Cap", land: true, sea: false };
-ITEM[ITEM_INDUSTRY]={ name: "Industry",char: "\xDB", cost: 75, max_damage: 350, shadow: "Taxes and Ports", land: true, sea: false, attr: LIGHTGRAY };
-ITEM[ITEM_PTBOAT]  ={ name: "PT Boat", char: "\x1E", cost: 50, max_damage: 300, shadow: "Patrols", land: false, sea: true, attr: MAGENTA|HIGH };
-ITEM[ITEM_SCHOOL]  ={ name: "School",  char: "\x15", cost: 75, max_damage: 350, shadow: "Reduce Rebels", land: true, sea: false };
-ITEM[ITEM_BRIDGE]  ={ name: "Bridge",  char: "\xCE", cost: 50, max_damage: 400, shadow: "Expansion", land: true, sea: true };
-var MAX_FISH = 8;
 var MAP_WIDTH = 60;
 var MAP_HEIGHT = 22;
 var MAP_LEFT_COL = 0;
@@ -93,34 +107,33 @@ var LAND_N = 2;
 var LAND_S = 3;
 var LAND_E = 4;
 var LAND_W = 5;
-var Utopia = {
-	tick: 0,
-	state: {
-		started: false,
-		in_progress: false,
-		turn: 0,
-		gold: 100,
-		food: 100,
-		pop: 5,
-		popCap: 0,
-		rebels: 0,
-		martialLaw: 0,
-		cursor: { x: MAP_MID_COL, y: MAP_MID_ROW },
-		msg: "\x01h\x01wWelcome Governor. Build to claim your homeland!",
-		log: [],
-		fishPool: [],
-		merchant: { x: -1, y: 0, active: false },
-		pirate: { x: -1, y: 0, active: false },
-		storm: { x: -1, y: 0, active: false },
-		rain: { x: -1, y: 0, active: false },
-		waves: [],
-		stats: { piratesSunk: 0, piratesEscaped: 0, intlTrades: 0, portTrades: 0, boatsLost: 0, trawlersSunk: 0 }
-	},
-	map: [],
-	items: [],
-	damage: [],
-	pendingUpdate: [],
+
+var tick = 0;
+var state = {
+	started: false,
+	in_progress: false,
+	turn: 0,
+	gold: 100,
+	food: 100,
+	pop: 5,
+	popCap: 0,
+	rebels: 0,
+	martialLaw: 0,
+	cursor: { x: MAP_MID_COL, y: MAP_MID_ROW },
+	msg: "\x01h\x01wWelcome Governor. Build to claim your homeland!",
+	log: [],
+	fishPool: [],
+	merchant: { x: -1, y: 0, active: false },
+	pirate: { x: -1, y: 0, active: false },
+	storm: { x: -1, y: 0, active: false },
+	rain: { x: -1, y: 0, active: false },
+	waves: [],
+	stats: { piratesSunk: 0, piratesEscaped: 0, intlTrades: 0, portTrades: 0, boatsLost: 0, trawlersSunk: 0 }
 };
+var map = [];
+var items = [];
+var damage = [];
+var pendingUpdate = [];
 
 function xy_str(x, y) {
 	if (typeof x == "object") {
@@ -134,94 +147,102 @@ function xy_str(x, y) {
 
 var debug_enabled = argv.indexOf("-debug") >= 0;
 
-Utopia.debugLog = function(msg) {
+var debugLog = function(msg) {
 	if(debug_enabled)
-		log("Utopia: " + msg);
+		js.global.log("Utopia: " + msg);
 }
 
-Utopia.log = function(msg) {
-	this.debugLog(msg);
-	this.state.log.push({turn: this.state.turn, msg: msg });
-	this.state.msg = msg;
+var log = function(msg) {
+	debugLog(msg);
+	state.log.push({turn: state.turn, msg: msg });
+	state.msg = msg;
 }
 
-Utopia.spawnFish = function() {
-	while (this.state.fishPool.length < MAX_FISH) {
+var cellIsLand = function(x, y) {
+	if (typeof x == "object") {
+		y = x.y;
+		x = x.x;
+	}
+	return map[y][x] !== WATER;
+};
+
+var spawnFish = function() {
+	while (state.fishPool.length < rules.max_fish) {
 		var x, y;
-		if (this.state.fishPool.length & Math.random() < 0.3) {
-			var f = this.state.fishPool[random(this.state.fishPool.length)];
+		if (state.fishPool.length & Math.random() < 0.3) {
+			var f = state.fishPool[random(state.fishPool.length)];
 			x = f.x;
 			y = f.y;
 		} else {
 			x = Math.floor(Math.random() * MAP_WIDTH);
 			y = Math.floor(Math.random() * MAP_HEIGHT);
 		}
-		if (this.map[y][x] === WATER
-			&& !this.items[y][x]
-			&& this.pathBetween(x, y, 0, 0, WATER))
-			this.state.fishPool.push({ x: x, y: y, count: FISH_PER_SCHOOL });
+		if (map[y][x] === WATER
+			&& !items[y][x]
+			&& pathBetween(x, y, 0, 0, WATER))
+			state.fishPool.push({ x: x, y: y, count: rules.fish_per_school });
 	}
 };
 
-Utopia.assessItems = function() {
-	for (var i in ITEM) {
-		ITEM[i].count = 0;
-		ITEM[i].total_damage = 0;
+var assessItems = function() {
+	for (var i in item_list) {
+		item_list[i].count = 0;
+		item_list[i].total_damage = 0;
 	}
 	var count = 0;
 	for (var y = 0; y < MAP_HEIGHT; y++) {
 		for (var x = 0; x < MAP_WIDTH; x++) {
-			var item = this.items[y][x];
+			var item = items[y][x];
 			if (!item)
 				continue;
-			this.damage[y][x]++; // age/drought
-			if (item == ITEM_TRAWLER && this.onWave(x, y))
-				this.damage[y][x]++;
-			if (this.damage[y][x] > ITEM[item].max_damage) {
+			damage[y][x]++; // age/drought
+			if (item == ITEM_TRAWLER && onWave(x, y))
+				damage[y][x]++;
+			if (damage[y][x] > rules.item[item].max_damage) {
 				var cause = "Age";
 				if (item == ITEM_CROPS)
 					cause = "Drought"
-				this.log(ITEM[item].name + " Lost to Damage/" + cause);
-				this.drawCell(x, y, BLINK);
-				this.pendingUpdate.push({ x: x, y: y});				
-				this.destroyItem(x, y);
+				log(item_list[item].name + " Lost to Damage/" + cause);
+				drawCell(x, y, BLINK);
+				pendingUpdate.push({ x: x, y: y});
+				destroyItem(x, y);
 				continue;
 			} else {
-				if (!this.isLand(x, y) || this.pathToHomeland(x, y)) {
-					ITEM[item].total_damage += this.damage[y][x];
-					ITEM[item].count++;
+				if (!cellIsLand(x, y) || pathToHomeland(x, y)) {
+					item_list[item].total_damage += damage[y][x];
+					item_list[item].count++;
 				}
 			}
 		}
 	}
 }
 
-Utopia.assessLand = function() {
+var assessLand = function() {
 	var count = 0;
 	for (var y = 0; y < MAP_HEIGHT; y++) {
 		for (var x = 0; x < MAP_WIDTH; x++) {
-			if (this.isLand(x, y) && this.pathToHomeland(x, y))
+			if (cellIsLand(x, y) && pathToHomeland(x, y))
 				++count;
 		}
 	}
 	return count;
 }
 
-Utopia.refreshMap = function()
+var refreshMap = function()
 {
 	for (var y = 0; y < MAP_HEIGHT; y++)
 		for (var x = 0; x < MAP_WIDTH; x++)
-			this.drawCell(x, y);
+			drawCell(x, y);
 }
 
-Utopia.refreshScreen = function(cls) {
+var refreshScreen = function(cls) {
 	if (cls !== false)
 		console.clear(LIGHTGRAY);
-	this.refreshMap();
-	this.drawUI(/* legend: */true);
+	refreshMap();
+	drawUI(/* legend: */true);
 }
 
-Utopia.landChar = function(char)
+var landChar = function(char)
 {
 	switch (char) {
 		default:
@@ -233,45 +254,37 @@ Utopia.landChar = function(char)
 	}
 }
 
-Utopia.isLand = function(x, y) {
-	if (typeof x == "object") {
-		y = x.y;
-		x = x.x;
-	}
-	return this.map[y][x] !== WATER;
-};
-
-Utopia.drawCell = function(x, y, more_attr) {
+var drawCell = function(x, y, more_attr) {
 	x = Math.floor(x);
 	y = Math.floor(y);
 	if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return;
-	if (this.map[y] === undefined)
+	if (map[y] === undefined)
 		return;
-	var isLand = this.isLand(x, y);
-	var homeland = isLand ? this.state.homeland && this.pathToHomeland(x, y) : true;
+	var isLand = cellIsLand(x, y);
+	var homeland = isLand ? state.homeland && pathToHomeland(x, y) : true;
 	var bg_attr = isLand ? (homeland ? BG_GREEN : BG_CYAN) : BG_BLUE;
 	var attr = isLand ? (BLUE | bg_attr) : (LIGHTBLUE | bg_attr);
-	var char = isLand ? this.landChar(this.map[y][x]) : CHAR_WATER;
-	if (!isLand && this.onWave(x, y))
+	var char = isLand ? landChar(map[y][x]) : CHAR_WATER;
+	if (!isLand && onWave(x, y))
 		char = CHAR_WAVE;
 	// Check Fish Pool
-	for (var i = 0; i < this.state.fishPool.length; i++) {
-		if (this.state.fishPool[i].x === x && this.state.fishPool[i].y === y) {
+	for (var i = 0; i < state.fishPool.length; i++) {
+		if (state.fishPool[i].x === x && state.fishPool[i].y === y) {
 			char = CHAR_FISH;
 			attr = (BG_BLUE | GREEN | HIGH);
 		}
 	}
-	if (this.state.merchant.active && Math.floor(this.state.merchant.x) === x && Math.floor(this.state.merchant.y) === y) {
+	if (state.merchant.active && Math.floor(state.merchant.x) === x && Math.floor(state.merchant.y) === y) {
 		char = CHAR_MERCHANT;
 		attr = BG_BLUE | YELLOW | HIGH;
 	}
-	if (this.state.pirate.active && Math.floor(this.state.pirate.x) === x && Math.floor(this.state.pirate.y) === y) {
+	if (state.pirate.active && Math.floor(state.pirate.x) === x && Math.floor(state.pirate.y) === y) {
 		char = CHAR_PIRATE;
 		attr = BG_BLUE | RED | HIGH;
 	}
-	if (this.items[y][x]) {
-		var item = ITEM[this.items[y][x]];
-		if (this.items[y][x] == ITEM_INDUSTRY && this.map[y][x] !== LAND) {
+	if (items[y][x]) {
+		var item = item_list[items[y][x]];
+		if (items[y][x] == ITEM_INDUSTRY && map[y][x] !== LAND) {
 			attr = BLUE | BG_LIGHTGRAY;
 		} else {
 			char = item.char;
@@ -281,23 +294,23 @@ Utopia.drawCell = function(x, y, more_attr) {
 				attr = WHITE | HIGH;
 			attr |= bg_attr;
 		}
-		if (this.items[y][x] == ITEM_BRIDGE) {
+		if (items[y][x] == ITEM_BRIDGE) {
 			var BIT_NORTH = (1<<0);
 			var BIT_SOUTH = (1<<1);
 			var BIT_EAST  = (1<<2);
 			var BIT_WEST  = (1<<3);
 			var b = 0;
-			if (this.items[y - 1][x] == ITEM_BRIDGE) b |= BIT_NORTH;
-			if (this.items[y + 1][x] == ITEM_BRIDGE) b |= BIT_SOUTH;
-			if (this.items[y][x + 1] == ITEM_BRIDGE) b |= BIT_EAST;
-			if (this.items[y][x - 1] == ITEM_BRIDGE) b |= BIT_WEST;
-			if (this.map[y][x] == WATER) {
-				if (this.map[y - 1][x] != WATER) b |= BIT_NORTH;
-				if (this.map[y + 1][x] != WATER) b |= BIT_SOUTH;
-				if (this.map[y][x + 1] != WATER) b |= BIT_EAST;
-				if (this.map[y][x - 1] != WATER) b |= BIT_WEST;
+			if (items[y - 1][x] == ITEM_BRIDGE) b |= BIT_NORTH;
+			if (items[y + 1][x] == ITEM_BRIDGE) b |= BIT_SOUTH;
+			if (items[y][x + 1] == ITEM_BRIDGE) b |= BIT_EAST;
+			if (items[y][x - 1] == ITEM_BRIDGE) b |= BIT_WEST;
+			if (map[y][x] == WATER) {
+				if (map[y - 1][x] != WATER) b |= BIT_NORTH;
+				if (map[y + 1][x] != WATER) b |= BIT_SOUTH;
+				if (map[y][x + 1] != WATER) b |= BIT_EAST;
+				if (map[y][x - 1] != WATER) b |= BIT_WEST;
 			}
-//			this.debugLog(format("bridge at %d/%d = 0x%02X", x, y, b));
+//			debugLog(format("bridge at %d/%d = 0x%02X", x, y, b));
 			switch (b) {
 				case BIT_NORTH | BIT_SOUTH | BIT_WEST:
 					char = "\xB9";
@@ -336,29 +349,29 @@ Utopia.drawCell = function(x, y, more_attr) {
 			}
 		}
 	}
-	if (this.state.rain.active) {
-		var rx = Math.floor(this.state.rain.x),
-			ry = Math.floor(this.state.rain.y);
+	if (state.rain.active) {
+		var rx = Math.floor(state.rain.x),
+			ry = Math.floor(state.rain.y);
 		if (y == ry && Math.abs(x - rx) <= 2) {
 			attr = HIGH | BG_LIGHTGRAY;
 			char = "\xB1";
 		} else if (y == ry + 1 && Math.abs(x - rx) <= 2) {
-			char = (this.tick & 1) ? "\xB0" : "\xB2";
+			char = (tick & 1) ? "\xB0" : "\xB2";
 			attr &= ~(HIGH | BLINK);
 			attr |= LIGHTGRAY;
-			if (this.tick & 1)
+			if (tick & 1)
 				attr = (attr >> 4) | ((attr & 0x0f) << 4);
 		}
 	}
-	if (this.state.storm.active) {
-		var sx = Math.floor(this.state.storm.x),
-			sy = Math.floor(this.state.storm.y);
+	if (state.storm.active) {
+		var sx = Math.floor(state.storm.x),
+			sy = Math.floor(state.storm.y);
 		if (x === sx && y === sy) {
 			char = "\xDB";
 			attr |= WHITE | HIGH;
 		} else if (Math.abs(y - sy) <= 1 && Math.abs(x - sx) <= 1) {
 //			char = "\xB0";
-			switch (this.tick % 4) {
+			switch (tick % 4) {
 				case 0:
 					if (x === sx)
 						char = "\xB2";
@@ -391,10 +404,10 @@ Utopia.drawCell = function(x, y, more_attr) {
 			attr |= WHITE | HIGH;
 		}
 	}
-	if (x == this.state.cursor.x && y == this.state.cursor.y) {
+	if (x == state.cursor.x && y == state.cursor.y) {
 		attr = BG_RED | WHITE | BLINK;
-//		if (this.items[y][x])
-//			char = ITEM[this.items[y][x]].char;
+//		if (items[y][x])
+//			char = item_list[items[y][x]].char;
 	}
 	else
 		attr |= more_attr;
@@ -403,220 +416,220 @@ Utopia.drawCell = function(x, y, more_attr) {
 	console.write(char);
 };
 
-Utopia.drawRow = function(start, y) {
+var drawRow = function(start, y) {
 	for (var x = Math.max(0, start); x <= MAP_RIGHT_COL; ++x)
-		this.drawCell(x, y);
+		drawCell(x, y);
 };
 
-Utopia.forceScrub = function(x, y, size) {
+var forceScrub = function(x, y, size) {
 	var radius = size || 1;
 	for (var dx = -radius; dx <= radius; dx++) {
 		for (var dy = -radius; dy <= radius; dy++)
-			this.drawCell(x + dx, y + dy);
+			drawCell(x + dx, y + dy);
 	}
 };
 
-Utopia.handlePendingUpdates = function() {
-	while (this.pendingUpdate.length) { // Erase the caught fish, sunk boats, etc.
-		var cell = this.pendingUpdate.pop();
-		this.drawCell(cell.x, cell.y);
+var handlePendingUpdates = function() {
+	while (pendingUpdate.length) { // Erase the caught fish, sunk boats, etc.
+		var cell = pendingUpdate.pop();
+		drawCell(cell.x, cell.y);
 	}
 }
 
 // --- SIMULATION ---
-Utopia.handleRainfall = function() {
-	if (!this.state.storm.active && !this.state.rain.active)
+var handleRainfall = function() {
+	if (!state.storm.active && !state.rain.active)
 		return;
-	var sx = Math.floor(this.state.storm.x),
-		sy = Math.floor(this.state.storm.y);
-	var rx = Math.floor(this.state.rain.x),
-		ry = Math.floor(this.state.rain.y);
+	var sx = Math.floor(state.storm.x),
+		sy = Math.floor(state.storm.y);
+	var rx = Math.floor(state.rain.x),
+		ry = Math.floor(state.rain.y);
 	for (var y = 0; y < MAP_HEIGHT; y++) {
 		for (var x = 0; x < MAP_WIDTH; x++) {
-			var item = this.items[y][x];
+			var item = items[y][x];
 			if (!item)
 				continue;
 			if (Math.abs(sx - x) <= 1 && Math.abs(sy - y) <= 1) {
 				var msg = "Storm Damage";
-				var damage = STORM_DAMAGE;
+				var dd = rules.storm_damage;
 				if (item == ITEM_CROPS) {
 					msg = "Rainfall";
-					damage = -RAIN_HEALING;
-					this.state.gold += RAIN_GOLD_VALUE;
+					dd = -rules.rain_healing;
+					state.gold += rules.rain_gold_value;
 				}
-				this.damage[y][x] = Math.max(0, this.damage[y][x] + damage);
-				this.state.msg = ITEM[item].name + " received " + msg;
+				damage[y][x] = Math.max(0, damage[y][x] + dd);
+				state.msg = item_list[item].name + " received " + msg;
 			} else if (Math.abs(rx - x) <= 3 && Math.abs(ry - y) <= 1) {
 				if (item == ITEM_CROPS) {
-					this.damage[y][x] = Math.max(0, this.damage[y][x] - RAIN_HEALING);
-					this.state.gold += RAIN_GOLD_VALUE;
-					this.state.msg = ITEM[item].name + " received Rainfall";
+					damage[y][x] = Math.max(0, damage[y][x] - rules.rain_healing);
+					state.gold += rules.rain_gold_value;
+					state.msg = item_list[item].name + " received Rainfall";
 				}
 			}
 		}
 	}
 }
 
-Utopia.itemHealth = function(item) {
-	if (ITEM[item].count == undefined || ITEM[item].count < 1)
+var itemHealth = function(item) {
+	if (item_list[item].count == undefined || item_list[item].count < 1)
 		return 0;
-	var health = (ITEM[item].count * ITEM[item].max_damage) - ITEM[item].total_damage;
-	return health / (ITEM[item].count * ITEM[item].max_damage);
+	var health = (item_list[item].count * rules.item[item].max_damage) - item_list[item].total_damage;
+	return health / (item_list[item].count * rules.item[item].max_damage);
 }
 
-Utopia.handleEconomics = function() {
-	this.assessItems();
-	this.state.popCap = ITEM[ITEM_HOUSE].count * HOUSE_CAPACITY;
-	if (Math.random() < ITEM[ITEM_SCHOOL].count * 0.1)
-		this.state.rebels = Math.max(0, this.state.rebels - 1);	
+var handleEconomics = function() {
+	assessItems();
+	state.popCap = item_list[ITEM_HOUSE].count * rules.house_capacity;
+	if (Math.random() < item_list[ITEM_SCHOOL].count * 0.1)
+		state.rebels = Math.max(0, state.rebels - 1);
 
 	// Food adjustments PER TURN
-	this.state.food += Math.floor(ITEM[ITEM_TRAWLER].count * this.itemHealth(ITEM_TRAWLER) * TRAWLER_FOOD_PER_TURN);
-	this.state.food += Math.floor(ITEM[ITEM_CROPS].count * this.itemHealth(ITEM_CROPS) * CROP_FOOD_PER_TURN);
-	this.state.food = Math.max(0, this.state.food - Math.floor(this.state.pop / 5));
-	if (this.state.turn % POPULATION_INTERVAL === 0) {
-		if (this.state.food > this.state.pop && this.state.pop < this.state.popCap) {
-			var before = this.state.pop;
+	state.food += Math.floor(item_list[ITEM_TRAWLER].count * itemHealth(ITEM_TRAWLER) * rules.trawler_food_per_turn);
+	state.food += Math.floor(item_list[ITEM_CROPS].count * itemHealth(ITEM_CROPS) * rules.crop_food_per_turn);
+	state.food = Math.max(0, state.food - Math.floor(state.pop / 5));
+	if (state.turn % rules.population_interval === 0) {
+		if (state.food > state.pop && state.pop < state.popCap) {
+			var before = state.pop;
 			var growth = Math.floor(Math.random() * 3) + 1;
-			this.state.pop = Math.min(this.state.popCap, this.state.pop + growth);
-			this.log("\x01h\x01gPopulation Increase from " + before + " to " + this.state.pop);
+			state.pop = Math.min(state.popCap, state.pop + growth);
+			log("\x01h\x01gPopulation Increase from " + before + " to " + state.pop);
 		}
-		else if (this.state.food <= 0 && this.state.pop > 5) {
-			this.state.pop -= Math.floor(Math.random() * 2) + 1;
-			this.log("\x01h\x01rFAMINE!");
+		else if (state.food <= 0 && state.pop > 5) {
+			state.pop -= Math.floor(Math.random() * 2) + 1;
+			log("\x01h\x01rFAMINE!");
 		}
 	}
 
-	if (this.state.turn % ROUND_INTERVAL === 0) {
+	if (state.turn % rules.round_interval === 0) {
 		// Gold adjustments
-		var fishtax = Math.floor(ITEM[ITEM_TRAWLER].count * FISH_TAX_MULTIPLE)
-		var indutax = Math.floor(ITEM[ITEM_INDUSTRY].count * INDUSTRY_TAX_MULTIPLE); // TODO: More as well-being of people increases.
-		var education = Math.floor(ITEM[ITEM_SCHOOL].count * SCHOOL_COST_MULTIPLE);
+		var fishtax = Math.floor(item_list[ITEM_TRAWLER].count * rules.fish_tax_multiple)
+		var indutax = Math.floor(item_list[ITEM_INDUSTRY].count * rules.industry_tax_multiple); // TODO: More as well-being of people increases.
+		var education = Math.floor(item_list[ITEM_SCHOOL].count * rules.school_cost_multiple);
 
 		var poptax = 0;
 		// Food adjustments PER ROUND
-		var fish = Math.floor(ITEM[ITEM_TRAWLER].count * FISH_FOOD_MULTIPLE);
-		var crops = Math.floor(ITEM[ITEM_CROPS].count * CROP_FOOD_MULTIPLE);
+		var fish = Math.floor(item_list[ITEM_TRAWLER].count * rules.fish_food_multiple);
+		var crops = Math.floor(item_list[ITEM_CROPS].count * rules.crop_food_multiple);
 		var food = fish + crops;
-		this.state.food += food;
-		if (this.state.food > 0)
-			poptax = Math.floor(this.state.pop * POP_TAX_MULTIPLE);
-        this.state.rebels = Math.max(0, this.state.rebels - (ITEM[ITEM_SCHOOL].count * 2));
-        if (this.state.food < this.state.pop) {
-			this.state.rebels += 5;
-			this.state.pop--;
+		state.food += food;
+		if (state.food > 0)
+			poptax = Math.floor(state.pop * rules.pop_tax_multiple);
+        state.rebels = Math.max(0, state.rebels - (item_list[ITEM_SCHOOL].count * 2));
+        if (state.food < state.pop) {
+			state.rebels += 5;
+			state.pop--;
 		}
-		var landtax = Math.floor(this.assessLand() * LAND_TAX_MULTIPLE);
-		this.debugLog(format("Revenue $(fish: %u, ind: %u, pop: %u, land: %u), " +
+		var landtax = Math.floor(assessLand() * rules.land_tax_multiple);
+		debugLog(format("Revenue $(fish: %u, ind: %u, pop: %u, land: %u), " +
 			"Costs $(edu: %u), Food (fish: %u, crops: %u)"
 			, fishtax, indutax, poptax, landtax, education
 			, fish, crops));
 		var revenue = (fishtax + indutax + poptax + landtax) - education;
-		this.log(format("\x01y\x01hRound surplus: $\x01w%u\x01y Revenue and \x01w%u\x01y Food "
+		log(format("\x01y\x01hRound surplus: $\x01w%u\x01y Revenue and \x01w%u\x01y Food "
 			, revenue, food));
-		this.state.gold += revenue;
-        var netFood = this.state.food - (this.state.pop / 2);
+		state.gold += revenue;
+        var netFood = state.food - (state.pop / 2);
         if (netFood < 0) {
-            this.state.pop = Math.max(5, this.state.pop - 5);
-            this.state.rebels = Math.min(100, this.state.rebels + 10);
-            this.log("\x01h\x01rSTARVATION! Rebels rising!");
-        } else if (this.state.pop > this.state.popCap) {
-            this.state.rebels = Math.min(100, this.state.rebels + 10);
-            this.log("\x01h\x01rHOUSING CRISIS! Rebels rising!");
+            state.pop = Math.max(5, state.pop - 5);
+            state.rebels = Math.min(100, state.rebels + 10);
+            log("\x01h\x01rSTARVATION! Rebels rising!");
+        } else if (state.pop > state.popCap) {
+            state.rebels = Math.min(100, state.rebels + 10);
+            log("\x01h\x01rHOUSING CRISIS! Rebels rising!");
 		}
 	}
-	if (this.state.martialLaw > 0) {
-		this.state.martialLaw--;
-		this.state.rebels = Math.max(0, this.state.rebels - 2);
+	if (state.martialLaw > 0) {
+		state.martialLaw--;
+		state.rebels = Math.max(0, state.rebels - 2);
 	}
 	else if (Math.random() < 0.08)
-		this.state.rebels = Math.min(100, this.state.rebels + 1);
+		state.rebels = Math.min(100, state.rebels + 1);
 
 };
 
-Utopia.onWave = function(x, y) {
+var onWave = function(x, y) {
 	if (typeof x == "object") {
 		y = x.y;
 		x = x.x;
 	}
 	x = Math.floor(x);
 	y = Math.floor(y);
-	for (var i = 0; i < this.state.waves.length; ++i) {
-		var wave = this.state.waves[i];
+	for (var i = 0; i < state.waves.length; ++i) {
+		var wave = state.waves[i];
 		if (y == wave.y && x <= wave.x && wave.x - x < wave.length)
 			return true;
 	}
 	return false;
 }
 
-Utopia.moveItem = function(ox, oy, nx, ny) {
-	this.debugLog("Moving '" + this.items[oy][ox] + "' at " + xy_str(ox, oy) + " with " + this.damage[oy][ox] + " damage");
-	this.items[ny][nx] = this.items[oy][ox];
-	this.damage[ny][nx] = this.damage[oy][ox];
-	this.destroyItem(ox, oy);
-	this.debugLog("After destroy '" + this.items[oy][ox] + "' at " + xy_str(ox, oy) + " with " + this.damage[oy][ox] + " damage");
-	this.debugLog("New location '" + this.items[ny][nx] + "' at " + xy_str(nx, ny) + " with " + this.damage[ny][nx] + " damage");
-	this.drawCell(ox, oy);
-	this.drawCell(nx, ny);
+var moveItem = function(ox, oy, nx, ny) {
+	debugLog("Moving '" + items[oy][ox] + "' at " + xy_str(ox, oy) + " with " + damage[oy][ox] + " damage");
+	items[ny][nx] = items[oy][ox];
+	damage[ny][nx] = damage[oy][ox];
+	destroyItem(ox, oy);
+	debugLog("After destroy '" + items[oy][ox] + "' at " + xy_str(ox, oy) + " with " + damage[oy][ox] + " damage");
+	debugLog("New location '" + items[ny][nx] + "' at " + xy_str(nx, ny) + " with " + damage[ny][nx] + " damage");
+	drawCell(ox, oy);
+	drawCell(nx, ny);
 	return true;
 }
 
-Utopia.handlePiracy = function() {
-	if (!this.state.pirate.active) return;
-	var px = Math.floor(this.state.pirate.x),
-		py = Math.floor(this.state.pirate.y);
+var handlePiracy = function() {
+	if (!state.pirate.active) return;
+	var px = Math.floor(state.pirate.x),
+		py = Math.floor(state.pirate.y);
 	var ptboat_moved = false;
 	var pirate_moved = false;
 	for (var y = 0; y < MAP_HEIGHT; y++) {
 		for (var x = 0; x < MAP_WIDTH; x++) {
-			if (this.items[y][x] === ITEM_PTBOAT) { // PT Boat pursues Pirate
+			if (items[y][x] === ITEM_PTBOAT) { // PT Boat pursues Pirate
 				var dist = Math.sqrt(Math.pow(x - px, 2) + Math.pow(y - py, 2));
 				if (dist < 10) {
 					var nx = x + (px > x ? 1 : (px < x ? -1 : 0)),
 						ny = y + (py > y ? 1 : (py < y ? -1 : 0));
 					if (!ptboat_moved
 						&& ny >= 0 && ny < MAP_HEIGHT && nx >= 0 && nx < MAP_WIDTH
-						&& this.map[ny][nx] === 0 && !this.items[ny][nx]) {
-						ptboat_moved = this.moveItem(x, y, nx, ny);
+						&& map[ny][nx] === 0 && !items[ny][nx]) {
+						ptboat_moved = moveItem(x, y, nx, ny);
 					}
 					if (Math.abs(nx - px) <= 1 && Math.abs(ny - py) <= 1) {
 						if (Math.random() < 0.7) {
-							this.drawCell(px, py, BLINK);
-							this.state.pirate.active = false;
-							this.state.stats.piratesSunk++;
-							this.log("\x01h\x01bPirate ship sunk by PT Boat!");
-							this.pendingUpdate.push({ x: px, y: py});
+							drawCell(px, py, BLINK);
+							state.pirate.active = false;
+							state.stats.piratesSunk++;
+							log("\x01h\x01bPirate ship sunk by PT Boat!");
+							pendingUpdate.push({ x: px, y: py});
 						}
 						else {
-							this.drawCell(nx, ny, BLINK);
-							this.destroyItem(nx, ny);
-							this.state.stats.boatsLost++;
-							this.log("\x01h\x01rPT Boat sunk by Pirates!");
-							this.pendingUpdate.push({ x: nx, y: ny});
+							drawCell(nx, ny, BLINK);
+							destroyItem(nx, ny);
+							state.stats.boatsLost++;
+							log("\x01h\x01rPT Boat sunk by Pirates!");
+							pendingUpdate.push({ x: nx, y: ny});
 						}
 					} 
 				}
 			} // Pirate pursues Trawler
-			else if (x <= this.state.pirate.x && this.items[y][x] === ITEM_TRAWLER) {
+			else if (x <= state.pirate.x && items[y][x] === ITEM_TRAWLER) {
 				var dist = Math.sqrt(Math.pow(x - px, 2) + Math.pow(y - py, 2));
 				if (dist < 10) {
 					var nx = px + (x > px ? 1 : (x < px ? -1 : 0)),
 						ny = py + (y > py ? 1 : (y < py ? -1 : 0));
 					if (!pirate_moved
 						&& ny >= 0 && ny < MAP_HEIGHT && nx >= 0 && nx < MAP_WIDTH
-						&& this.map[ny][nx] === 0 && !this.items[ny][nx]) {
-						this.state.pirate.x = nx;
-						this.state.pirate.y = ny;
-						this.drawCell(x, y);
-						this.drawCell(px, py);
+						&& map[ny][nx] === 0 && !items[ny][nx]) {
+						state.pirate.x = nx;
+						state.pirate.y = ny;
+						drawCell(x, y);
+						drawCell(px, py);
 						pirate_moved = true;
 					}
 					if (Math.abs(nx - x) <= 1 && Math.abs(ny - y) <= 1 && Math.random() < 0.7) {
-						this.drawCell(x, y, BLINK);
-						this.destroyItem(x, y);
-						this.state.stats.trawlersSunk++;
-						this.log("\x01h\x01rTrawler sunk by Pirates!");
-						this.pendingUpdate.push({ x: nx, y: ny});
+						drawCell(x, y, BLINK);
+						destroyItem(x, y);
+						state.stats.trawlersSunk++;
+						log("\x01h\x01rTrawler sunk by Pirates!");
+						pendingUpdate.push({ x: nx, y: ny});
 					}
 					return;
 				}
@@ -624,76 +637,76 @@ Utopia.handlePiracy = function() {
 		}
 	}
 	// Pirate pursues Merchant ship
-	if (this.state.merchant.active
-		&& this.state.merchant.x <= this.state.pirate.x
+	if (state.merchant.active
+		&& state.merchant.x <= state.pirate.x
 		&& !pirate_moved) {
-		var mx = Math.floor(this.state.merchant.x);
-		var my = Math.floor(this.state.merchant.y);
-		var px = Math.floor(this.state.pirate.x);
-		var py = Math.floor(this.state.pirate.y);
+		var mx = Math.floor(state.merchant.x);
+		var my = Math.floor(state.merchant.y);
+		var px = Math.floor(state.pirate.x);
+		var py = Math.floor(state.pirate.y);
 		var dist = Math.sqrt(Math.pow(mx - px, 2) + Math.pow(my - py, 2));
-		if (dist < 10 && !this.onWave(this.state.pirate)) {
+		if (dist < 10 && !onWave(state.pirate)) {
 			var nx = px + (mx > px ? 1 : (mx < px ? -1 : 0)),
 				ny = py + (my > py ? 1 : (my < py ? -1 : 0));
 			if (ny >= 0 && ny < MAP_HEIGHT && nx >= 0 && nx < MAP_WIDTH
-				&& this.map[ny][nx] === 0 && !this.items[ny][nx]) {
-				this.state.pirate.x = nx;
-				this.state.pirate.y = ny;
-				this.drawCell(mx, my);
-				this.drawCell(px, py);
+				&& map[ny][nx] === 0 && !items[ny][nx]) {
+				state.pirate.x = nx;
+				state.pirate.y = ny;
+				drawCell(mx, my);
+				drawCell(px, py);
 			}
 		}
 	}
 };
 
 // Trawlers pursue fish
-Utopia.moveTrawlers = function() {
-	if (ITEM[ITEM_TRAWLER].count < 1 || this.state.fishPool.length < 1)
+var moveTrawlers = function() {
+	if (item_list[ITEM_TRAWLER].count < 1 || state.fishPool.length < 1)
 		return;
 	for (var y = 0; y < MAP_HEIGHT; y++) {
 		for (var x = 0; x < MAP_WIDTH; x++) {
-			if (this.items[y][x] !== ITEM_TRAWLER)
+			if (items[y][x] !== ITEM_TRAWLER)
 				continue;
 			var fish = [];
-			for (var i = 0; i < this.state.fishPool.length; ++i) {
-				var f = this.state.fishPool[i];
+			for (var i = 0; i < state.fishPool.length; ++i) {
+				var f = state.fishPool[i];
 				var dist = Math.sqrt(Math.pow(x - f.x, 2) + Math.pow(y - f.y, 2));
 				if (dist >= 10)
 					continue;
 				f = { dist: dist, x: f.x, y: f.y };
-//				this.debugLog("fish nearby: " + JSON.stringify(f));
+//				debugLog("fish nearby: " + JSON.stringify(f));
 				fish.push(f);
 			}
 			if (!fish.length)
 				continue;
 			fish.sort(function (a, b) { return b.dist - a.dist; });
 			var f = fish.pop();
-			this.debugLog("closest fish: " + JSON.stringify(f));
+			debugLog("closest fish: " + JSON.stringify(f));
 			if (f.dist < 2)
 				continue;
 			var nx = x + (f.x > x ? 1 : (f.x < x ? -1 : 0)),
 				ny = y + (f.y > y ? 1 : (f.y < y ? -1 : 0));
 			if (ny >= 0 && ny < MAP_HEIGHT && nx >= 0 && nx < MAP_WIDTH
-				&& this.map[ny][nx] === 0 && !this.items[ny][nx]) {
-				this.moveItem(x, y, nx, ny);
+				&& map[ny][nx] === 0 && !items[ny][nx]) {
+				moveItem(x, y, nx, ny);
 				return; // NOTE: only moves ONE trawler per turn
 			}
 		}
 	}
 };
 
-Utopia.checkMutiny = function() {
+var checkMutiny = function() {
 	// Only happens if rebels are high and a pirate isn't already active
-	if (this.state.rebels > 50 && !this.state.pirate.active) {
+	if (state.rebels > 50 && !state.pirate.active) {
 		// Chance increases as rebels approach 100%
-		var mutinyChance = (this.state.rebels - 50) / 500;
+		var mutinyChance = (state.rebels - 50) / 500;
 		if (Math.random() < mutinyChance) {
 
 			// Find all PT Boats
 			var boats = [];
 			for (var y = 0; y < MAP_HEIGHT; y++) {
 				for (var x = 0; x < MAP_WIDTH; x++) {
-                    if (this.items[y][x] === ITEM_PTBOAT)
+                    if (items[y][x] === ITEM_PTBOAT)
 						boats.push({x: x, y: y});
                 }
             }
@@ -701,84 +714,84 @@ Utopia.checkMutiny = function() {
                 var target = boats[Math.floor(Math.random() * boats.length)];
 
                 // The Mutiny occurs
-				this.destroyItem(target.x, target.y);
-                this.state.pirate.active = true;
-                this.state.pirate.x = target.x;
-                this.state.pirate.y = target.y;
-                this.log("\x01h\x01rMUTINY! Rebels stole a PT Boat!");
-                this.state.stats.boatsLost++;
+				destroyItem(target.x, target.y);
+                state.pirate.active = true;
+                state.pirate.x = target.x;
+                state.pirate.y = target.y;
+                log("\x01h\x01rMUTINY! Rebels stole a PT Boat!");
+                state.stats.boatsLost++;
                 // Visual update
-                this.drawCell(target.x, target.y);
+                drawCell(target.x, target.y);
                 console.beep(); // Alert the governor!
             }
         }
     }
 };
 
-Utopia.spawnMerchant = function() {
+var spawnMerchant = function() {
 	var ry = Math.floor(Math.random() * 20);
-	if (this.map[ry][0] === WATER) {
-		this.state.merchant = {
+	if (map[ry][0] === WATER) {
+		state.merchant = {
 			active: true,
 			x: 0, y: ry,
 			moves: [],
 		};
-		this.debugLog("Merchant spawned at row " + ry);
-		this.drawCell(0, ry);
-		this.state.msg = "\x01g\x01hA Merchant Voyage Has Begun"
+		debugLog("Merchant spawned at row " + ry);
+		drawCell(0, ry);
+		state.msg = "\x01g\x01hA Merchant Voyage Has Begun"
 		return true;
 	}
-	this.debugLog("Could NOT spawn merchant at row " + ry);
+	debugLog("Could NOT spawn merchant at row " + ry);
 	return true;
 }
 
-Utopia.spawnPirate = function() {
+var spawnPirate = function() {
 	var ry = Math.floor(Math.random() * 20);
-	if (this.map[ry][MAP_RIGHT_COL] === WATER) {
-		this.state.pirate = {
+	if (map[ry][MAP_RIGHT_COL] === WATER) {
+		state.pirate = {
 			active: true,
 			x: MAP_RIGHT_COL,	y: ry,
 			moves: []
 
 		};
-		this.debugLog("Pirate spawned at row " + ry);
-		this.drawCell(this.state.pirate.x, ry);
-		this.state.msg = "\x01r\x01hArgh! Be Wary Matey!";
+		debugLog("Pirate spawned at row " + ry);
+		drawCell(state.pirate.x, ry);
+		state.msg = "\x01r\x01hArgh! Be Wary Matey!";
 		return true;
 	}
-	this.debugLog("Could NOT spawn pirate at row " + ry);
+	debugLog("Could NOT spawn pirate at row " + ry);
 	return false;
 }
 
-Utopia.spawnStorm = function() {
-	this.state.storm.active = true;
-	this.state.storm.x = MAP_RIGHT_COL;
-	this.state.storm.y = (MAP_MID_ROW / 2) + Math.floor(Math.random() * (MAP_HEIGHT * 0.60));
-	this.state.storm.bias = (Math.random() - Math.random()) * 1.5;
-	this.state.msg = "\x01n\x01hSevere Storm Warning!";
-	this.debugLog("storm spawned at row " + this.state.storm.y
-		+ " with bias " + this.state.storm.bias);
+var spawnStorm = function() {
+	state.storm.active = true;
+	state.storm.x = MAP_RIGHT_COL;
+	state.storm.y = (MAP_MID_ROW / 2) + Math.floor(Math.random() * (MAP_HEIGHT * 0.60));
+	state.storm.bias = (Math.random() - Math.random()) * 1.5;
+	state.msg = "\x01n\x01hSevere Storm Warning!";
+	debugLog("storm spawned at row " + state.storm.y
+		+ " with bias " + state.storm.bias);
 }
 
-Utopia.spawnRain = function() {
-	this.state.rain.active = true;
-	this.state.rain.y = -1;
-	this.state.rain.x = 3 + Math.floor(Math.random() * (MAP_WIDTH - 3));
-	this.state.rain.bias = (Math.random() - Math.random()) * 3.0;
-	this.debugLog("rain spawned at column " + this.state.rain.x
-		+ " with bias " + this.state.rain.bias);
+var spawnRain = function() {
+	state.rain.active = true;
+	state.rain.y = -1;
+	state.rain.x = 3 + Math.floor(Math.random() * (MAP_WIDTH - 3));
+	state.rain.bias = (Math.random() - Math.random()) * 3.0;
+	debugLog("rain spawned at column " + state.rain.x
+		+ " with bias " + state.rain.bias);
 }
 
-Utopia.spawnWave = function() {
+var spawnWave = function() {
 	var newWave = {
 		x: Math.floor(Math.random() * MAP_WIDTH * 0.75),
 		y: Math.floor(Math.random() * MAP_HEIGHT),
 		length: 1
 	};
-	if (this.map[newWave.y][newWave.x] != WATER)
+	if (map[newWave.y][newWave.x] != WATER)
 		newWave.x = -1;
-	this.state.waves.push(newWave);
-//	this.debugLog("wave spawned at " + xy_str(newWave) + " with length " + newWave.length);
+	state.waves.push(newWave);
+//	debugLog("wave spawned at " + xy_str(newWave) + " with length " + newWave.length);
 	return true;
 }
 
@@ -789,8 +802,8 @@ function count(arr, val) {
 	return total;
 }
 
-Utopia.avoidStuff = function(ship, x, y, eastward, objects) {
-//	this.debugLog((eastward ? "merchant" : "pirate") + " avoiding land from " + x + " x " + y);
+var avoidStuff = function(ship, x, y, eastward, objects) {
+//	debugLog((eastward ? "merchant" : "pirate") + " avoiding land from " + x + " x " + y);
 
 	if (ship.moves.length >= 20 || y <= 0 || y >= MAP_BOTTOM_ROW)
 		return false;
@@ -827,11 +840,11 @@ Utopia.avoidStuff = function(ship, x, y, eastward, objects) {
 			moves.push("N");
 		moves.push("E");
 	}
-//	this.debugLog((eastward ? "merchant" : "pirate") + " considering moves " + moves
+//	debugLog((eastward ? "merchant" : "pirate") + " considering moves " + moves
 //		+ " from " + x + " x " + y);
 	var move;
 	while ((move = moves.shift()) != undefined) {
-//		this.debugLog((eastward ? "merchant" : "pirate") + " considering move " + move
+//		debugLog((eastward ? "merchant" : "pirate") + " considering move " + move
 //			+ " from " + x + " x " + y);
 		var nx = x, ny = y;
 		switch(move) {
@@ -858,7 +871,7 @@ Utopia.avoidStuff = function(ship, x, y, eastward, objects) {
 				--nx;
 				break;
 		}
-		if (this.map[ny][nx] == WATER && (!objects || !objects[ny][nx])) {
+		if (map[ny][nx] == WATER && (!objects || !objects[ny][nx])) {
 			ship.y = ny;
 			ship.x = nx;
 			return ship.moves.push(move);
@@ -872,7 +885,7 @@ function compareXY(a, b) {
 		, Math.abs(Math.floor(a.y) - Math.floor(b.y)));
 }
 
-Utopia.pathBetween = function(a, b, type) {
+var pathBetween = function(a, b, type) {
 	if (compareXY(a, b) == 0)
 		return true;
 	var visited = {};
@@ -898,11 +911,11 @@ Utopia.pathBetween = function(a, b, type) {
 				ny = cy + dirs[i][1];
 			if (nx >= 0 && nx < MAP_WIDTH && ny >= 0 && ny < MAP_HEIGHT) {
 				if (type == WATER) {
-					if (this.map[ny][nx] == WATER)
+					if (map[ny][nx] == WATER)
 						stack.push([nx, ny]);
 				} else {
 					// Path can travel through Land OR Bridges
-					if (this.map[ny][nx] !== WATER || this.items[ny][nx] === ITEM_BRIDGE)
+					if (map[ny][nx] !== WATER || items[ny][nx] === ITEM_BRIDGE)
 						stack.push([nx, ny]);
 				}
 			}
@@ -911,160 +924,160 @@ Utopia.pathBetween = function(a, b, type) {
 	return false;
 }
 
-Utopia.pathToHomeland = function(x, y) {
-	if (!this.state.homeland)
-		return this.isLand(x, y);
+var pathToHomeland = function(x, y) {
+	if (!state.homeland)
+		return cellIsLand(x, y);
 	if (typeof x != "object")
 		x = { x: x, y: y};
-	return this.pathBetween(x, this.state.homeland, LAND);
+	return pathBetween(x, state.homeland, LAND);
 }
 
-Utopia.handleWeather = function() {
+var handleWeather = function() {
 	var oldStorm = {
-		x: Math.floor(this.state.storm.x),
-		y: Math.floor(this.state.storm.y),
-		active: this.state.storm.active
+		x: Math.floor(state.storm.x),
+		y: Math.floor(state.storm.y),
+		active: state.storm.active
 	};
 	var oldRain = {
-		x: Math.floor(this.state.rain.x),
-		y: Math.floor(this.state.rain.y),
-		active: this.state.rain.active
+		x: Math.floor(state.rain.x),
+		y: Math.floor(state.rain.y),
+		active: state.rain.active
 	};
 
 	// Storms (E->W)
-	if (this.state.storm.active) {
-		var ox = this.state.storm.x;
-		this.state.storm.x -= Math.random() * 1.5;
-		if (Math.floor(ox) != Math.floor(this.state.storm.x)) {
+	if (state.storm.active) {
+		var ox = state.storm.x;
+		state.storm.x -= Math.random() * 1.5;
+		if (Math.floor(ox) != Math.floor(state.storm.x)) {
 			if (Math.random() < 0.5)
-				this.state.storm.y += this.state.storm.bias;
+				state.storm.y += state.storm.bias;
 		}
-		var sx = Math.floor(this.state.storm.x),
-			sy = Math.floor(this.state.storm.y);
+		var sx = Math.floor(state.storm.x),
+			sy = Math.floor(state.storm.y);
 		if (sx < 0 || sy < 0 || sy > MAP_BOTTOM_ROW) {
-			this.state.storm.active = false;
-			this.forceScrub(0, sy, 2);
+			state.storm.active = false;
+			forceScrub(0, sy, 2);
 		}
-		else if (this.items[sy][sx]) {
-			this.log("\x01h\x01rStorm Destroyed " + ITEM[this.items[sy][sx]].name + "!");
-			this.destroyItem(sx, sy);
+		else if (items[sy][sx]) {
+			log("\x01h\x01rStorm Destroyed " + item_list[items[sy][sx]].name + "!");
+			destroyItem(sx, sy);
 		}
-		else if (this.state.merchant.active
-			&& compareXY(this.state.merchant, this.state.storm) == 0) {
-			this.log("\x01h\x01rStorm destroyed Merchant ship!");
-			this.state.merchant.active = false;
+		else if (state.merchant.active
+			&& compareXY(state.merchant, state.storm) == 0) {
+			log("\x01h\x01rStorm destroyed Merchant ship!");
+			state.merchant.active = false;
 		}
-		else if (this.state.pirate.active
-			&& compareXY(this.state.pirate, this.state.storm) == 0) {
-			this.log("\x01h\x01gStorm destroyed Pirate ship!");
-			this.state.pirate.active = false;
+		else if (state.pirate.active
+			&& compareXY(state.pirate, state.storm) == 0) {
+			log("\x01h\x01gStorm destroyed Pirate ship!");
+			state.pirate.active = false;
 		}
 	}
-	else if (Math.random() < STORM_POTENTIAL)
-		this.spawnStorm();
+	else if (Math.random() < rules.storm_potential)
+		spawnStorm();
 
 	// Redraw Storm
 	if (oldStorm.active)
 		for (var dx = -1; dx <= 1; dx++)
 			for (var dy = -1; dy <= 1; dy++)
-				this.drawCell(oldStorm.x + dx, oldStorm.y + dy);
-	if (this.state.storm.active) {
-		var nsx = Math.floor(this.state.storm.x),
-			nsy = Math.floor(this.state.storm.y);
+				drawCell(oldStorm.x + dx, oldStorm.y + dy);
+	if (state.storm.active) {
+		var nsx = Math.floor(state.storm.x),
+			nsy = Math.floor(state.storm.y);
 		for (var dx = -1; dx <= 1; dx++)
 			for (var dy = -1; dy <= 1; dy++)
-				this.drawCell(nsx + dx, nsy + dy);
+				drawCell(nsx + dx, nsy + dy);
 	}
 
 	// Rain clouds (N->S)
-	if (this.state.rain.active) {
-		var oy = this.state.rain.y;
-		this.state.rain.y += Math.random() * 1.5;
-		if (Math.floor(oy) != Math.floor(this.state.rain.y)) {
+	if (state.rain.active) {
+		var oy = state.rain.y;
+		state.rain.y += Math.random() * 1.5;
+		if (Math.floor(oy) != Math.floor(state.rain.y)) {
 			if (Math.random() < 0.5)
-				this.state.rain.x += this.state.rain.bias;
+				state.rain.x += state.rain.bias;
 		}
-		var rx = Math.floor(this.state.rain.x),
-			ry = Math.floor(this.state.rain.y);
+		var rx = Math.floor(state.rain.x),
+			ry = Math.floor(state.rain.y);
 		if (ry >= MAP_BOTTOM_ROW || rx < 0 || rx > MAP_RIGHT_COL) {
-			this.state.rain.active = false;
-			this.forceScrub(0, Math.floor(ry), 2);
+			state.rain.active = false;
+			forceScrub(0, Math.floor(ry), 2);
 		}
 	}
-	else if (Math.random() < RAIN_POTENTIAL)
-		this.spawnRain();
+	else if (Math.random() < rules.rain_potential)
+		spawnRain();
 
 	// Redraw Rain
 	if (oldRain.active)
 		for (var dx = -2; dx <= 2; dx++)
 			for (var dy = 0; dy <= 1; dy++)
-				this.drawCell(oldRain.x + dx, oldRain.y + dy);
-	if (this.state.rain.active) {
-		var nrx = Math.floor(this.state.rain.x),
-			nry = Math.floor(this.state.rain.y);
+				drawCell(oldRain.x + dx, oldRain.y + dy);
+	if (state.rain.active) {
+		var nrx = Math.floor(state.rain.x),
+			nry = Math.floor(state.rain.y);
 		for (var dx = -2; dx <= 2; dx++)
 			for (var dy = 0; dy <= 1; dy++)
-				this.drawCell(nrx + dx, nry + dy);
+				drawCell(nrx + dx, nry + dy);
 	}
 
 	// Waves (W->E)
-	for (var i = this.state.waves.length - 1; i >= 0; i--) {
-		var wave = this.state.waves[i];
-		if (this.map[wave.y][wave.x + 1] !== WATER)
+	for (var i = state.waves.length - 1; i >= 0; i--) {
+		var wave = state.waves[i];
+		if (map[wave.y][wave.x + 1] !== WATER)
 			wave.length--;
 		else {
 			wave.x++;
-			if (wave.length < WAVE_MIN_WIDTH || Math.random() < 0.1)
+			if (wave.length < rules.wave_min_width || Math.random() < 0.1)
 				wave.length++;
 			else if (Math.random() < 0.1)
 				wave.length--;
 		}
 		if (wave.length < 1 || wave.x - wave.length >= MAP_RIGHT_COL)
-			this.state.waves.splice(i, 1);
-		this.drawRow(wave.x - (wave.length + 1), wave.y);
+			state.waves.splice(i, 1);
+		drawRow(wave.x - (wave.length + 1), wave.y);
 	}
-	if (this.state.waves.length < 1 || Math.random() < WAVE_POTENTIAL)
-		this.spawnWave();
+	if (state.waves.length < 1 || Math.random() < rules.wave_potential)
+		spawnWave();
 }
 
-Utopia.moveEntities = function() {
-	this.handlePiracy();
-	this.moveTrawlers();
+var moveEntities = function() {
+	handlePiracy();
+	moveTrawlers();
 	var oldMerc = {
-		x: Math.floor(this.state.merchant.x),
-		y: Math.floor(this.state.merchant.y),
-		active: this.state.merchant.active
+		x: Math.floor(state.merchant.x),
+		y: Math.floor(state.merchant.y),
+		active: state.merchant.active
 	};
 	var oldPirate = {
-		x: Math.floor(this.state.pirate.x),
-		y: Math.floor(this.state.pirate.y),
-		active: this.state.pirate.active
+		x: Math.floor(state.pirate.x),
+		y: Math.floor(state.pirate.y),
+		active: state.pirate.active
 	};
 	// Fish
 	// Iterate backwards through the fish pool so we can safely remove caught fish
-	for (var i = this.state.fishPool.length - 1; i >= 0; i--) {
-		var f = this.state.fishPool[i];
+	for (var i = state.fishPool.length - 1; i >= 0; i--) {
+		var f = state.fishPool[i];
 		if (f.count < 1) {
-			this.state.fishPool.splice(i, 1); // Fish are all gone
+			state.fishPool.splice(i, 1); // Fish are all gone
 			continue;
 		}
-		if (this.items[f.y][f.x] || Math.random() < 0.4) {
+		if (items[f.y][f.x] || Math.random() < 0.4) {
 			var oldX = f.x,
 				oldY = f.y;
 			var nx = f.x + (random(3) - 1);
 			var ny = f.y + (random(3) - 1);
 			// If fish leaves map, remove it
 			if (nx < 0 || nx > MAP_RIGHT_COL || ny < 0 || ny > MAP_BOTTOM_ROW) {
-				this.state.fishPool.splice(i, 1);
-				this.drawCell(oldX, oldY);
+				state.fishPool.splice(i, 1);
+				drawCell(oldX, oldY);
 				continue;
 			}
 			// Move if target is water
-			if (this.map[ny][nx] === WATER) {
+			if (map[ny][nx] === WATER) {
 				f.x = nx;
 				f.y = ny;
-				this.drawCell(oldX, oldY);
-				this.drawCell(f.x, f.y);
+				drawCell(oldX, oldY);
+				drawCell(f.x, f.y);
 			}
 		}
 		// Check for Trawlers nearby
@@ -1073,18 +1086,18 @@ Utopia.moveEntities = function() {
 				var tx = f.x + dx,
 					ty = f.y + dy;
 				if (ty >= 0 && ty < MAP_HEIGHT && tx >= 0 && tx < MAP_WIDTH) {
-					if (this.items[ty][tx] === ITEM_TRAWLER && Math.random() < FISH_CATCH_POTENTIAL) {
-						var count = 1 + random(FISH_CATCH_MAX);
-						this.state.food += FISH_FOOD_VALUE * count;
-						this.state.gold += FISH_GOLD_VALUE * count;
-						this.drawCell(f.x, f.y, BLINK);
-						this.pendingUpdate.push(f);
-						this.log("\x01h\x01gCaught " + count + " fish!");
+					if (items[ty][tx] === ITEM_TRAWLER && Math.random() < rules.fish_catch_potential) {
+						var count = 1 + random(rules.fish_catch_max);
+						state.food += rules.fish_food_value * count;
+						state.gold += rules.fish_gold_value * count;
+						drawCell(f.x, f.y, BLINK);
+						pendingUpdate.push(f);
+						log("\x01h\x01gCaught " + count + " fish!");
 						f.count -= count;
 						if (f.count < 1)
-							this.state.fishPool.splice(i, 1); // Fish is caught
+							state.fishPool.splice(i, 1); // Fish is caught
 						else
-							this.debugLog(JSON.stringify(f));
+							debugLog(JSON.stringify(f));
 						break;
 					}
 				}
@@ -1092,103 +1105,103 @@ Utopia.moveEntities = function() {
 		}
 	}
 	// Replenish the pool
-	this.spawnFish();
+	spawnFish();
 
 	// Merchant (West to East)
-	if (this.state.merchant.active) {
-		if (this.onWave(this.state.merchant))
-			this.state.merchant.x += MERCHANT_SPEED * 2;
+	if (state.merchant.active) {
+		if (onWave(state.merchant))
+			state.merchant.x += rules.merchant_speed * 2;
 		else
-			this.state.merchant.x += MERCHANT_SPEED;
-		this.state.gold += MERCHANT_GOLD_VALUE;
-		var mx = Math.floor(this.state.merchant.x),
-			my = Math.floor(this.state.merchant.y);
-		if (mx >= MAP_RIGHT_COL || this.items[my][mx] == ITEM_INDUSTRY) {
-			this.state.merchant.active = false;
+			state.merchant.x += rules.merchant_speed;
+		state.gold += rules.merchant_gold_value;
+		var mx = Math.floor(state.merchant.x),
+			my = Math.floor(state.merchant.y);
+		if (mx >= MAP_RIGHT_COL || items[my][mx] == ITEM_INDUSTRY) {
+			state.merchant.active = false;
 			if (mx >= MAP_RIGHT_COL) {
-				this.state.gold += MERCHANT_TRADE_BONUS;
-				this.log("\x01h\x01yInternational Trade Successful! +$" + MERCHANT_TRADE_BONUS);
-				this.state.stats.intlTrades++;
+				state.gold += rules.merchant_trade_bonus;
+				log("\x01h\x01yInternational Trade Successful! +$" + rules.merchant_trade_bonus);
+				state.stats.intlTrades++;
 			} else {
-				this.state.gold += MERCHANT_PORT_BONUS;
-				this.log("\x01h\x01yPort Trade Successful! +$" + MERCHANT_PORT_BONUS);
-				this.state.stats.portTrades++;
+				state.gold += rules.merchant_port_bonus;
+				log("\x01h\x01yPort Trade Successful! +$" + rules.merchant_port_bonus);
+				state.stats.portTrades++;
 			}
-			this.forceScrub(mx, my, 1);
+			forceScrub(mx, my, 1);
 		}
-		else if (this.map[my][mx] !== WATER || this.items[my][mx]) {
+		else if (map[my][mx] !== WATER || items[my][mx]) {
 			// Try to move up or down around a coast line
-			if (!this.avoidStuff(this.state.merchant, mx - 1, my, /* eastward: */true, this.items)) {
-				this.debugLog("Merchant beached at " + mx + " x " + my);
-				this.state.merchant.active = false;
-				this.forceScrub(mx, my, 1);
+			if (!avoidStuff(state.merchant, mx - 1, my, /* eastward: */true, items)) {
+				debugLog("Merchant beached at " + mx + " x " + my);
+				state.merchant.active = false;
+				forceScrub(mx, my, 1);
 			} else
-				this.debugLog("Merchant successfully avoided stuff by moving to " + xy_str(this.state.merchant));
-//			this.debugLog("Merchant moves: " + this.state.merchant.moves);
+				debugLog("Merchant successfully avoided stuff by moving to " + xy_str(state.merchant));
+//			debugLog("Merchant moves: " + state.merchant.moves);
 		}
 	}
 	else if (Math.random() < 0.03)
-		this.spawnMerchant();
+		spawnMerchant();
 
 	// Pirate (East to West)
-	if (this.state.pirate.active) {
-		if (this.onWave(this.state.pirate))
-			this.state.pirate.x -= PIRATE_SPEED / 2;
+	if (state.pirate.active) {
+		if (onWave(state.pirate))
+			state.pirate.x -= rules.pirate_speed / 2;
 		else
-			this.state.pirate.x -= PIRATE_SPEED;
-		var px = Math.floor(this.state.pirate.x),
-			py = Math.floor(this.state.pirate.y);
-		if (this.state.merchant.active
-			&& Math.abs(px - Math.floor(this.state.merchant.x)) <= 1
-			&& Math.abs(py - Math.floor(this.state.merchant.y)) <= 1) {
-			this.state.merchant.active = false;
-			this.log("\x01h\x01rMerchant ship sunk by Pirates!");
-			this.forceScrub(Math.floor(this.state.merchant.x), Math.floor(this.state.merchant.y), 1);
+			state.pirate.x -= rules.pirate_speed;
+		var px = Math.floor(state.pirate.x),
+			py = Math.floor(state.pirate.y);
+		if (state.merchant.active
+			&& Math.abs(px - Math.floor(state.merchant.x)) <= 1
+			&& Math.abs(py - Math.floor(state.merchant.y)) <= 1) {
+			state.merchant.active = false;
+			log("\x01h\x01rMerchant ship sunk by Pirates!");
+			forceScrub(Math.floor(state.merchant.x), Math.floor(state.merchant.y), 1);
 		}
 		if (px <= 0) {
-			this.state.gold = Math.max(0, this.state.gold - PIRATE_GOLD_VALUE);
-			this.state.pirate.active = false;
-			this.log("\x01h\x01rPirates Escaped with Loot! -$" + PIRATE_GOLD_VALUE);
-			this.forceScrub(0, py, 1);
+			state.gold = Math.max(0, state.gold - rules.pirate_gold_value);
+			state.pirate.active = false;
+			log("\x01h\x01rPirates Escaped with Loot! -$" + rules.pirate_gold_value);
+			forceScrub(0, py, 1);
 		}
-		else if (this.map[py][px] !== WATER) {
+		else if (map[py][px] !== WATER) {
 			// Try to move up or down around a coast line
-			if (!this.avoidStuff(this.state.pirate, px + 1, py, /* eastward: */false)) {
-				this.debugLog("Pirate beached at " + px + " x " + py);
-				this.state.pirate.active = false;
-				this.forceScrub(px, py, 1);
+			if (!avoidStuff(state.pirate, px + 1, py, /* eastward: */false)) {
+				debugLog("Pirate beached at " + px + " x " + py);
+				state.pirate.active = false;
+				forceScrub(px, py, 1);
 			}
-//			this.debugLog("Pirate moves: " + this.state.pirate.moves);
+//			debugLog("Pirate moves: " + state.pirate.moves);
 		}
 	}
 	else if (Math.random() < 0.02)
-		this.spawnPirate();
+		spawnPirate();
 
 	// Check for Rebel uprisings
-	this.checkMutiny();
+	checkMutiny();
 
 	// Redraw
-	if (oldMerc.active) this.drawCell(oldMerc.x, oldMerc.y);
-	if (oldPirate.active) this.drawCell(oldPirate.x, oldPirate.y);
-	if (this.state.merchant.active) this.drawCell(this.state.merchant.x, this.state.merchant.y);
-	if (this.state.pirate.active) this.drawCell(this.state.pirate.x, this.state.pirate.y);
+	if (oldMerc.active) drawCell(oldMerc.x, oldMerc.y);
+	if (oldPirate.active) drawCell(oldPirate.x, oldPirate.y);
+	if (state.merchant.active) drawCell(state.merchant.x, state.merchant.y);
+	if (state.pirate.active) drawCell(state.pirate.x, state.pirate.y);
 	console.flush();
 };
 
 // --- SCORING & UI ---
-Utopia.calculateScore = function() {
-	return (this.state.pop * 10)
-			+ Math.floor(this.state.gold / 10)
-			+ Math.floor(this.state.food) - (this.state.rebels * 5);
+var calculateScore = function() {
+	return (state.pop * 10)
+			+ Math.floor(state.gold / 10)
+			+ Math.floor(state.food) - (state.rebels * 5);
 };
 
-Utopia.getRank = function() {
-	if (this.state.stats.piratesSunk >= 10) return "Grand Admiral";
-	if (this.state.stats.intoTrades >= 10) return "Merchant Prince";
-	if (this.state.stats.portTrades >= 10) return "Port Authority";
-	if (this.state.pop > 200) return "Metropolitan Visionary";
-	if (this.state.food > 5000) return "Harvester of Bounty";
-	if (this.state.gold > 5000) return "Hoarder of Treasures";
+var getRank = function() {
+	if (state.stats.piratesSunk >= 10) return "Grand Admiral";
+	if (state.stats.intoTrades >= 10) return "Merchant Prince";
+	if (state.stats.portTrades >= 10) return "Port Authority";
+	if (state.pop > 200) return "Metropolitan Visionary";
+	if (state.food > 5000) return "Harvester of Bounty";
+	if (state.gold > 5000) return "Hoarder of Treasures";
 	return "Local Magistrate";
 };
 
@@ -1202,7 +1215,7 @@ var TITLES = [
     { min: 0,     name: "Despotic Exile" },
 ];
 
-Utopia.getRetirementTitle = function(score) {
+var getRetirementTitle = function(score) {
     for (var i = 0; i < TITLES.length; i++) {
         if (score >= TITLES[i].min)
 			return TITLES[i].name;
@@ -1210,15 +1223,15 @@ Utopia.getRetirementTitle = function(score) {
     return "Absentee Administrator";
 };
 
-Utopia.drawUI = function(legend) {
+var drawUI = function(legend) {
 	var lx = 62;
 	var ly = 1;
 	if (legend) {
 		console.gotoxy(lx, ly++);
 		console.putmsg("  Items     Health");
-		for (var i in ITEM) {
+		for (var i in item_list) {
 			console.gotoxy(lx, ly++);
-			var item = ITEM[i];
+			var item = item_list[i];
 			console.attributes = item.attr || (WHITE | HIGH);
 			console.print(item.char + " \x01n" + item.name);
 		}
@@ -1226,21 +1239,21 @@ Utopia.drawUI = function(legend) {
 	// Item health
 	var ly = 2;
 	console.attributes = WHITE | HIGH;
-	for (var i in ITEM) {
-		if (ITEM[i].count) {
+	for (var i in item_list) {
+		if (item_list[i].count) {
 			console.gotoxy(lx + 11, ly);
-			console.print(format("%3u", ITEM[i].count));
+			console.print(format("%3u", item_list[i].count));
 		}
 		console.gotoxy(lx + 15, ly++);
-		if (!ITEM[i].max_damage)
+		if (!rules.item[i].max_damage)
 			console.print(" N/A");
 		else
-			console.print(format("%3u%%", 100.0 * this.itemHealth(i)));
+			console.print(format("%3u%%", 100.0 * itemHealth(i)));
 	}
 
 	var build_attr = "";
 	var demo_attr = "";
-	if (this.items[this.state.cursor.y][this.state.cursor.x])
+	if (items[state.cursor.y][state.cursor.x])
 		demo_attr = "\x01h";
 	else
 		build_attr = "\x01h";
@@ -1249,16 +1262,16 @@ Utopia.drawUI = function(legend) {
 	console.putmsg("\x01n[" + demo_attr + "D\x01n]emolish\x01>");
 	console.gotoxy(lx, ly++);
 	console.putmsg("\x01n[" + build_attr + "B\x01n]uild an Item");
-	if (this.state.lastbuilt) {
+	if (state.lastbuilt) {
 		console.gotoxy(lx, ly++);
-		console.putmsg("\x01n[" + build_attr + "SPACE\x01n] " + ITEM[this.state.lastbuilt].name + "\x01>");
+		console.putmsg("\x01n[" + build_attr + "SPACE\x01n] " + item_list[state.lastbuilt].name + "\x01>");
 	}
 	console.gotoxy(lx, ly++);
 	console.putmsg("\x01n[\x01h+\x01n/\x01h-\x01n] Adjust Speed\x01>");
 	console.gotoxy(lx, ly++);
 	console.putmsg("\x01n[\x01hL\x01n]og of Msgs\x01>");
 	console.gotoxy(lx, ly++);
-	console.putmsg("\x01n[\x01hM\x01n]artial Law: " + (this.state.martialLaw > 0 ? "\x01h\x01rON " : "\x01nOFF")  + "\x01>");
+	console.putmsg("\x01n[\x01hM\x01n]artial Law: " + (state.martialLaw > 0 ? "\x01h\x01rON " : "\x01nOFF")  + "\x01>");
 	console.gotoxy(lx, ly++);
 	console.putmsg("\x01n[\x01hQ\x01n]uit\x01>");
 	console.gotoxy(1, 23);
@@ -1269,86 +1282,86 @@ Utopia.drawUI = function(legend) {
 		"\x01n\x01h\x01wPop:\x01n%4d/%s%-5d " +
 		"\x01n\x01h\x01wReb:%s %d%%  " +
 		"\x01n\x01h\x01cTurn:%s %1.1f/%d\x01>"
-		, this.state.gold < this.state.popCap ? "\x01r\x01i" : "\x01n"
-		, this.state.gold
-		, this.state.started && this.state.food < this.state.pop ? "\x01r\x01i" : "\x01n"
-		, this.state.food
-		, this.state.pop
-		, this.state.started && this.state.pop >= this.state.popCap ? "\x01r\x01i" : "\x01n"
-		, this.state.popCap
-		, this.state.rebels >= 50 ? "\x01r\x01i" : "\x01n"
-		, this.state.rebels
-		, this.state.turn / 10 >= (MAX_TURNS - 1) / 10 ? "\x01r" : "\x01n"
-		, this.state.turn / 10, MAX_TURNS / 10));
+		, state.gold < state.popCap ? "\x01r\x01i" : "\x01n"
+		, state.gold
+		, state.started && state.food < state.pop ? "\x01r\x01i" : "\x01n"
+		, state.food
+		, state.pop
+		, state.started && state.pop >= state.popCap ? "\x01r\x01i" : "\x01n"
+		, state.popCap
+		, state.rebels >= 50 ? "\x01r\x01i" : "\x01n"
+		, state.rebels
+		, state.turn / 10 >= (rules.max_turns - 1) / 10 ? "\x01r" : "\x01n"
+		, state.turn / 10, rules.max_turns / 10));
 	console.cleartoeol();
 	console.gotoxy(1, 24);
-	console.putmsg("\x01n\x01hMsg: " + this.state.msg);
+	console.putmsg("\x01n\x01hMsg: " + state.msg);
 	console.cleartoeol();
 };
 
-Utopia.buildItem = function(cmd) {
-	var item = ITEM[cmd];
+var buildItem = function(cmd) {
+	var item = item_list[cmd];
 	if (!item) {
-		this.debugLog("buildItem() called with " + typeof item + ": " + item);
+		debugLog("buildItem() called with " + typeof item + ": " + item);
 		return false;
 	}
-	var ter = this.map[this.state.cursor.y][this.state.cursor.x];
-	if (this.items[this.state.cursor.y][this.state.cursor.x]) {
-		this.state.msg = "Occupied!";
+	var ter = map[state.cursor.y][state.cursor.x];
+	if (items[state.cursor.y][state.cursor.x]) {
+		state.msg = "Occupied!";
 		return false;
 	}
-	if (!((ter !== WATER && item.land) || (ter === WATER && item.sea))) {
-		this.state.msg = "Wrong Terrain!";
+	if (!((ter !== WATER && rules.item[cmd].land) || (ter === WATER && rules.item[cmd].sea))) {
+		state.msg = "Wrong Terrain!";
 		return false;
 	}
-	if (!this.pathToHomeland(this.state.cursor)) {
-		this.state.msg = "No connection to Homeland!";
+	if (!pathToHomeland(state.cursor)) {
+		state.msg = "No connection to Homeland!";
 		return false;
 	}
 	if (cmd == ITEM_BRIDGE) {
-		if (this.state.cursor.y < 1 
-			|| this.state.cursor.x < 1
-			|| this.state.cursor.y >= MAP_BOTTOM_ROW
-			|| this.state.cursor.x >= MAP_RIGHT_COL) {
-			this.state.msg = "Cannot build " + item.name + " there";
+		if (state.cursor.y < 1
+			|| state.cursor.x < 1
+			|| state.cursor.y >= MAP_BOTTOM_ROW
+			|| state.cursor.x >= MAP_RIGHT_COL) {
+			state.msg = "Cannot build " + item.name + " there";
 			return false;
 		}
 	}
-	if (this.state.gold < item.cost) {
-		this.state.msg = "Need $" + item.cost + " to buy " + item.name;
+	if (state.gold < rules.item[cmd].cost) {
+		state.msg = "Need $" + item.cost + " to buy " + item.name;
 		return false;
 	}
-	this.state.gold -= item.cost;
-	this.items[this.state.cursor.y][this.state.cursor.x] = cmd;
-	this.damage[this.state.cursor.y][this.state.cursor.x] = 0;
-	this.forceScrub(this.state.cursor.x, this.state.cursor.y, 1);
-	this.state.lastbuilt = cmd;
-	var msg = "Built " + item.name + " -$" + item.cost;
-	if (ter != WATER && !this.state.homeland) {
-		this.state.homeland = { x: this.state.cursor.x, y: this.state.cursor.y };
+	state.gold -= rules.item[cmd].cost;
+	items[state.cursor.y][state.cursor.x] = cmd;
+	damage[state.cursor.y][state.cursor.x] = 0;
+	forceScrub(state.cursor.x, state.cursor.y, 1);
+	state.lastbuilt = cmd;
+	var msg = "Built " + item.name + " -$" + rules.item[cmd].cost;
+	if (ter != WATER && !state.homeland) {
+		state.homeland = { x: state.cursor.x, y: state.cursor.y };
 		msg += " and Homeland Claimed!";
-		this.refreshMap();
+		refreshMap();
 	}
 	else if (cmd == ITEM_BRIDGE)
-		this.refreshMap();
-	this.log(msg);
+		refreshMap();
+	log(msg);
 	return true;
 }
 
-Utopia.destroyItem = function(x, y) {
-	var item = this.items[y][x];
+var destroyItem = function(x, y) {
+	var item = items[y][x];
 	if (!item) {
-		this.debugLog("No item to destroy at " + xy_str(x, y));
+		debugLog("No item to destroy at " + xy_str(x, y));
 		return false;
 	}
-	this.items[y][x] = "";
-	this.damage[y][x] = 0;
+	items[y][x] = "";
+	damage[y][x] = 0;
 	if (item == ITEM_BRIDGE)
-		this.refreshScreen(false);
+		refreshScreen(false);
 	return true;
 }
 
-Utopia.showBuildMenu = function() {
+var showBuildMenu = function() {
 	var menuX = 12,
 		menuY = 5;
 	for (var i = 0; i < 13; i++) {
@@ -1360,35 +1373,35 @@ Utopia.showBuildMenu = function() {
 	console.gotoxy(menuX + 2, menuY++);
 	console.putmsg("\x01h\x01bBuy and Build an Item");
 	menuY++
-	for (var i in ITEM) {
-		var item = ITEM[i];
+	for (var i in item_list) {
+		var item = item_list[i];
 		console.gotoxy(menuX + 2, menuY++);
 		console.putmsg(format("\x01h\x01b(%s)\x01n %-10s \x01h\x01g$%3d \x01b\xAF \x01h%s"
-			, i, item.name, item.cost, item.shadow));
+			, i, item.name, rules.item[i].cost, item.shadow));
 	}
-	if (this.state.lastbuilt) {
+	if (state.lastbuilt) {
 		console.gotoxy(menuX + 2, ++menuY);
-		console.putmsg("Last built: " + ITEM[this.state.lastbuilt].name);
+		console.putmsg("Last built: " + item_list[state.lastbuilt].name);
 		console.putmsg(" (SPACE to build again)");
 	}
 	var cmd = console.getkey(K_UPPER | K_NOSPIN);
 	for (var y = 0; y < MAP_HEIGHT; y++)
 		for (var x = 0; x < MAP_WIDTH; x++)
-			this.drawCell(x, y);
+			drawCell(x, y);
 	var success = false;
 	if (cmd == ' ')
-		success = this.buildItem(this.state.lastbuilt);
-	else if (ITEM[cmd])
-		success = this.buildItem(cmd);
-	this.drawUI();
+		success = buildItem(state.lastbuilt);
+	else if (item_list[cmd])
+		success = buildItem(cmd);
+	drawUI();
 	if (success) {
-		this.state.started = true;
-		this.state.in_progress = true;
+		state.started = true;
+		state.in_progress = true;
 	}
 };
 
-Utopia.saveHighScore = function(title) {
-	var score = this.calculateScore(),
+var saveHighScore = function(title) {
+	var score = calculateScore(),
 		scores = [];
 	if (file_exists(SCORE_FILE)) {
 		var f = new File(SCORE_FILE);
@@ -1397,7 +1410,7 @@ Utopia.saveHighScore = function(title) {
 			f.close();
 		}
 	}
-	scores.push({ name: user.alias, score: score, title: title, pop: this.state.pop, date: Date.now() / 1000 });
+	scores.push({ name: user.alias, score: score, title: title, pop: state.pop, date: Date.now() / 1000 });
 	scores.sort(function(a, b) { return b.score - a.score; });
 	var f = new File(SCORE_FILE);
 	if (f.open("w")) {
@@ -1406,7 +1419,7 @@ Utopia.saveHighScore = function(title) {
 	}
 };
 
-Utopia.showHighScores = function() {
+var showHighScores = function() {
 	console.clear();
 	console.putmsg("\x01h\x01y--- UTOPIA HALL OF FAME ---\r\n\r\nRank  Governor                  Score    Pop    Date\r\n" +
 		"\x01n\x01b--------------------------------------------------\r\n");
@@ -1424,10 +1437,10 @@ Utopia.showHighScores = function() {
 	console.getkey();
 };
 
-Utopia.finishGame = function() {
-	this.state.in_progress = false;
-	var score = this.calculateScore();
-	var title = this.getRank() + " and " + this.getRetirementTitle(score);
+var finishGame = function() {
+	state.in_progress = false;
+	var score = calculateScore();
+	var title = getRank() + " and " + getRetirementTitle(score);
 	console.clear();
 	console.putmsg("\x01h\x01y--- FINAL GOVERNOR'S REPORT ---\r\n\r\n");
 	console.putmsg("\x01h\x01wTotal Score:    \x01y" + score + "\r\n");
@@ -1435,103 +1448,103 @@ Utopia.finishGame = function() {
 	console.newline();
 
 	console.putmsg("\x01h\x01wSTATISTICS:\r\n");
-	console.putmsg("\x01h\x01w- Final Population:    " + this.state.pop + "\r\n");
-	console.putmsg("\x01h\x01g- Final Food Store:    " + this.state.food + "\r\n");
-	console.putmsg("\x01h\x01c- Treasury Gold:       " + this.state.gold + "\r\n");
-	console.putmsg("\x01h\x01r- Rebel Unrest:        " + this.state.rebels + "%\r\n");
-	console.putmsg("\x01n\x01g- Port Trades:         " + this.state.stats.portTrades + "\r\n");
-	console.putmsg("\x01n\x01g- Internationl Trades: " + this.state.stats.intlTrades + "\r\n");
-	console.putmsg("\x01h\x01m- Pirates Defeated:    " + this.state.stats.piratesSunk + "\r\n");
-	console.putmsg("\x01h\x01m- Pirates Absconded:   " + this.state.stats.piratesEscaped + "\r\n");
-	console.putmsg("\x01n\x01m- PT Boats Lost:       " + this.state.stats.boatsLost + "\r\n");
-	console.putmsg("\x01n\x01m- Trawlers Lost:       " + this.state.stats.trawlersSunk + "\r\n");
+	console.putmsg("\x01h\x01w- Final Population:    " + state.pop + "\r\n");
+	console.putmsg("\x01h\x01g- Final Food Store:    " + state.food + "\r\n");
+	console.putmsg("\x01h\x01c- Treasury Gold:       " + state.gold + "\r\n");
+	console.putmsg("\x01h\x01r- Rebel Unrest:        " + state.rebels + "%\r\n");
+	console.putmsg("\x01n\x01g- Port Trades:         " + state.stats.portTrades + "\r\n");
+	console.putmsg("\x01n\x01g- Internationl Trades: " + state.stats.intlTrades + "\r\n");
+	console.putmsg("\x01h\x01m- Pirates Defeated:    " + state.stats.piratesSunk + "\r\n");
+	console.putmsg("\x01h\x01m- Pirates Absconded:   " + state.stats.piratesEscaped + "\r\n");
+	console.putmsg("\x01n\x01m- PT Boats Lost:       " + state.stats.boatsLost + "\r\n");
+	console.putmsg("\x01n\x01m- Trawlers Lost:       " + state.stats.trawlersSunk + "\r\n");
 	console.newline();
 
 	console.putmsg("\x01h\x01wPress any key for High Scores...");
-	this.saveHighScore(title);
+	saveHighScore(title);
 	console.getkey();
-	this.showHighScores();
+	showHighScores();
 };
 
-Utopia.handleOperatorCommand = function(key) {
+var handleOperatorCommand = function(key) {
 	switch (key) {
 		case '*':
-			MAX_TURNS += 100;
+			rules.max_turns += 100;
 			break;
 		case '&':
-			this.state.food += 100;
+			state.food += 100;
 			break;
 		case '#':
-			this.state.gold += 100;
+			state.gold += 100;
 			break;
 		case '$':
-			this.spawnMerchant();
+			spawnMerchant();
 			break;
 		case '!':
-			this.spawnPirate();
+			spawnPirate();
 			break;
 		case '%':
-			this.spawnStorm();
+			spawnStorm();
 			break;
 		case '"':
-			this.spawnRain();
+			spawnRain();
 			break;
 		case '>':
-			this.spawnWave();
+			spawnWave();
 			break;
 		case CTRL_S:
-			this.saveGame();
+			saveGame();
 			break;
 		case CTRL_T:
-			this.saveGame('\t');
+			saveGame('\t');
 			break;
 		case CTRL_D:
-			this.debugGame(["damage"]);
+			debugGame(["damage"]);
 			break;
 	}
-	this.drawUI();
+	drawUI();
 }
 
-Utopia.saveGame = function(space) {
+var saveGame = function(space) {
 	var sf = new File(SAVE_FILE);
 	if (sf.open("w")) {
 		sf.write(JSON.stringify({
-			state: this.state,
-			map: this.map,
-			items: this.items,
-			damage: this.damage
+			state: state,
+			map: map,
+			items: items,
+			damage: damage
 		}, null, space));
 		sf.close();
-		this.debugLog("Saved game data to " + SAVE_FILE);
+		debugLog("Saved game data to " + SAVE_FILE);
 		return true;
 	}
-	log(LOG_WARNING, "Failed to save game data to " + SAVE_FILE);
+	js.global.log(LOG_WARNING, "Failed to save game data to " + SAVE_FILE);
 	return false;
 }
 
-Utopia.debugGame = function(replacer, space) {
+var debugGame = function(replacer, space) {
 	var sf = new File(DEBUG_FILE);
 	if (sf.open("w")) {
 		sf.write(JSON.stringify(this, replacer, space));
 		sf.close();
-		this.debugLog("Saved game debug to " + DEBUG_FILE);
+		debugLog("Saved game debug to " + DEBUG_FILE);
 		return true;
 	}
-	log(LOG_WARNING, "Failed to save game data to " + DEBUG_FILE);
+	js.global.log(LOG_WARNING, "Failed to save game data to " + DEBUG_FILE);
 	return false;
 }
 
-Utopia.removeSavedGame = function() {
+var removeSavedGame = function() {
 	if (file_exists(SAVE_FILE) && file_remove(SAVE_FILE))
-		this.debugLog("Saved game data removed: " + SAVE_FILE);
+		debugLog("Saved game data removed: " + SAVE_FILE);
 }
 
-Utopia.handleQuit = function() {
+var handleQuit = function() {
     console.gotoxy(1, 24);
     console.cleartoeol();
 
     var prompt = "";
-    var canSave = (this.state.turn < MAX_TURNS);
+    var canSave = (state.turn < rules.max_turns);
 
     if (canSave)
         prompt += "\x01h\x01w[S]ave | "
@@ -1541,25 +1554,25 @@ Utopia.handleQuit = function() {
     var choice = console.getkey(K_UPPER);
 
     if (choice === 'S' && canSave) {
-		if (this.saveGame()) 
+		if (saveGame())
 			console.putmsg("\r\n\x01h\x01gGame Saved. ");
 		console.putmsg("See you next time, Governor!");
 		return true;
     } else if (choice === 'F') {
-        this.finishGame();
+        finishGame();
 		return true;
     } else if (choice === 'V') {
-        this.showHighScores();
-        this.refreshScreen(); // Redraw map after returning from high scores
+        showHighScores();
+        refreshScreen(); // Redraw map after returning from high scores
     } else if (choice === 'C') {
-        this.state.msg = "Welcome back.";
-        this.drawUI();
+        state.msg = "Welcome back.";
+        drawUI();
     }
 	return false;
 };
 
 // --- RUNTIME ---
-Utopia.run = function() {
+function main () {
 	if (file_exists(INTRO_FILE)) {
 		console.clear();
 		console.printfile(INTRO_FILE, P_PCBOARD);
@@ -1570,25 +1583,25 @@ Utopia.run = function() {
 	if (saveF.exists && saveF.open("r")) {
 		try {
 			var s = JSON.parse(saveF.read());
-			this.state = s.state;
-			this.map = s.map;
-			this.items = s.items;
-			this.damage = s.damage;
+			state = s.state;
+			map = s.map;
+			items = s.items;
+			damage = s.damage;
 			game_restored = true;
 		} catch(e) {
-			log(LOG_WARNING, e + ": " + SAVEFILE);
+			js.global.log(LOG_WARNING, e + ": " + SAVEFILE);
 		}
 		saveF.close();
 	}
 	if (!game_restored) {
 		for (var y = 0; y < MAP_HEIGHT; y++) {
-			this.map[y] = [];
-			this.items[y] = [];
-			this.damage[y] = [];
+			map[y] = [];
+			items[y] = [];
+			damage[y] = [];
 			for (var x = 0; x < MAP_WIDTH; x++) {
-				this.map[y][x] = WATER;
-				this.items[y][x] = "";
-				this.damage[y][x] = 0;
+				map[y][x] = WATER;
+				items[y][x] = "";
+				damage[y][x] = 0;
 			}
 		}
 		for (var i = 0; i < 3; i++) {
@@ -1596,7 +1609,7 @@ Utopia.run = function() {
 			var cy = 11;
 			for (var n = 0; n < 300; n++) {
 				if (cy >= 0 && cy < MAP_HEIGHT && cx >= 0 && cx < MAP_WIDTH)
-					this.map[cy][cx] = LAND;
+					map[cy][cx] = LAND;
 				cx += Math.floor(Math.random() * 3) - 1;
 				cy += Math.floor(Math.random() * 3) - 1;
 				if (cx < 2) cx = 2;
@@ -1609,55 +1622,55 @@ Utopia.run = function() {
 		// Rough up the edges of land masses
 		for (var y = 2; y < MAP_BOTTOM_ROW - 1; ++y) {
 			for (x = 2; x < MAP_RIGHT_COL - 1; ++x) {
-				if (this.map[y][x] === WATER)
+				if (map[y][x] === WATER)
 					continue;
 				switch (random(5)) {
 					case 0:
-						if (this.map[y - 1][x] == WATER) {
-							this.map[y][x] = LAND_N;
+						if (map[y - 1][x] == WATER) {
+							map[y][x] = LAND_N;
 							break;
 						}
 					case 1:
-						if (this.map[y + 1][x] == WATER) {
-							this.map[y][x] = LAND_S;
+						if (map[y + 1][x] == WATER) {
+							map[y][x] = LAND_S;
 							break;
 						}
 					case 2:
-						if (this.map[y][x + 1] == WATER) {
-							this.map[y][x] = LAND_E;
+						if (map[y][x + 1] == WATER) {
+							map[y][x] = LAND_E;
 							break;
 						}
 					case 3:
-						if (this.map[y][x - 1] == WATER) {
-							this.map[y][x] = LAND_W;
+						if (map[y][x - 1] == WATER) {
+							map[y][x] = LAND_W;
 							break;
 						}
 				}
 			}
 		}
-		this.spawnFish();
+		spawnFish();
 	}
-	this.refreshScreen();
+	refreshScreen();
 	var lastTick = system.timer;
 	while (bbs.online && !js.terminated) {
 		if (system.timer - lastTick >= TICK_INTERVAL) {
-			if (this.state.in_progress) {
-				if (this.state.turn < MAX_TURNS) {
-					this.handleWeather();
-					this.handleRainfall();
-					if (this.tick % TURN_INTERVAL == 0) {
-						this.state.turn++;
-						this.handleEconomics();
-						this.handlePendingUpdates();
-						this.moveEntities();
-						this.drawUI();
+			if (state.in_progress) {
+				if (state.turn < rules.max_turns) {
+					handleWeather();
+					handleRainfall();
+					if (tick % rules.turn_interval == 0) {
+						state.turn++;
+						handleEconomics();
+						handlePendingUpdates();
+						moveEntities();
+						drawUI();
 					}
-					this.tick++;
+					tick++;
 				}
 				else {
-					this.state.msg = "\x01h\x01rTIME IS UP! [Q]uit to score.";
-					this.state.in_progress = false;
-					this.drawUI();
+					state.msg = "\x01h\x01rTIME IS UP! [Q]uit to score.";
+					state.in_progress = false;
+					drawUI();
 				}
 			}
 			lastTick = system.timer;
@@ -1666,54 +1679,54 @@ Utopia.run = function() {
 		if (!k)
 			continue;
 		var key = k.toUpperCase();
-		var cursor = { x: this.state.cursor.x, y: this.state.cursor.y };
+		var cursor = { x: state.cursor.x, y: state.cursor.y };
 
 		switch (key) {
 			case KEY_UP:
-				if (this.state.cursor.y > 0)
-					this.state.cursor.y--;
+				if (state.cursor.y > 0)
+					state.cursor.y--;
 				break;
 			case KEY_DOWN:
-				if (this.state.cursor.y < MAP_BOTTOM_ROW)
-					this.state.cursor.y++;
+				if (state.cursor.y < MAP_BOTTOM_ROW)
+					state.cursor.y++;
 				break;
 			case KEY_LEFT:
-				if (this.state.cursor.x > 0)
-					this.state.cursor.x--;
+				if (state.cursor.x > 0)
+					state.cursor.x--;
 				break;
 			case KEY_RIGHT:
-				if (this.state.cursor.x < MAP_RIGHT_COL)
-					this.state.cursor.x++;
+				if (state.cursor.x < MAP_RIGHT_COL)
+					state.cursor.x++;
 				break;
 			case CTRL_R:
-				this.refreshScreen();
+				refreshScreen();
 				break;
 			case 'B':
-				if (!this.state.started || this.state.in_progress)
-					this.showBuildMenu();
+				if (!state.started || state.in_progress)
+					showBuildMenu();
 				break;
 			case ' ':
-				if (this.state.in_progress) {
-					if (this.state.lastbuilt)
-						this.buildItem(this.state.lastbuilt);
+				if (state.in_progress) {
+					if (state.lastbuilt)
+						buildItem(state.lastbuilt);
 					else
-						this.showBuildMenu();
+						showBuildMenu();
 				}
 				break;
 			case 'M':
-				if (this.state.martialLaw === 0) {
-					this.state.martialLaw = 30;
-					this.log("MARTIAL LAW!");
+				if (state.martialLaw === 0) {
+					state.martialLaw = 30;
+					log("MARTIAL LAW!");
 				}
 				break;
 			case 'L':
 				console.clear(LIGHTGRAY);
-				for (var i = 0; i < this.state.log.length && !console.aborted; ++i) {
-					var entry = this.state.log[i];
+				for (var i = 0; i < state.log.length && !console.aborted; ++i) {
+					var entry = state.log[i];
 					console.attributes = LIGHTGRAY;
 					console.print(format("T-%4.1f: %s\r\n", entry.turn / 10, entry.msg));
 				}
-				this.refreshScreen();
+				refreshScreen();
 				break;
 			case '?':
 			case 'H':
@@ -1722,23 +1735,23 @@ Utopia.run = function() {
 					console.printfile(HELP_FILE, P_PCBOARD);
 					console.pause();
 				}
-				this.refreshScreen();
+				refreshScreen();
 				break;
 			case 'Q':
-				if (this.handleQuit())
+				if (handleQuit())
 					return;
 				continue;
 			case 'D':
-				if (this.items[this.state.cursor.y][this.state.cursor.x]) {
-					var dc = BASE_DESTRUCTION_COST + Math.floor(this.state.rebels / 2);
-					if (this.state.gold >= dc) {
-						this.state.gold -= dc;
-						this.log("\x01m\x01hDemolished "
-							+ ITEM[this.items[this.state.cursor.y][this.state.cursor.x]].name
+				if (items[state.cursor.y][state.cursor.x]) {
+					var dc = rules.base_destruction_cost + Math.floor(state.rebels / 2);
+					if (state.gold >= dc) {
+						state.gold -= dc;
+						log("\x01m\x01hDemolished "
+							+ item_list[items[state.cursor.y][state.cursor.x]].name
 							+ " for $" + dc);
-						this.destroyItem(this.state.cursor.x, this.state.cursor.y);
-						this.drawCell(this.state.cursor.x, this.state.cursor.y);
-						this.drawUI();
+						destroyItem(state.cursor.x, state.cursor.y);
+						drawCell(state.cursor.x, state.cursor.y);
+						drawUI();
 					}
 				}
 				break;
@@ -1750,24 +1763,24 @@ Utopia.run = function() {
 				break;
 			default:
 				if (user.is_sysop)
-					this.handleOperatorCommand(key);
+					handleOperatorCommand(key);
 				break;
 		}
-		if (compareXY(this.state.cursor, cursor) != 0) {
-			this.drawCell(cursor.x, cursor.y);
-			this.drawCell(this.state.cursor.x, this.state.cursor.y);
-			this.drawUI();
+		if (compareXY(state.cursor, cursor) != 0) {
+			drawCell(cursor.x, cursor.y);
+			drawCell(state.cursor.x, state.cursor.y);
+			drawUI();
 		}
 	}
 }
 
 try {
-	Utopia.run();
+	main();
 } catch (e) {
 	console.newline();
-	log(LOG_WARNING, alert("Utopia Error: " + e.message + " line " + e.lineNumber));
+	js.global.log(LOG_WARNING, alert("Utopia Error: " + e.message + " line " + e.lineNumber));
 }
-if (Utopia.state.in_progress)
-	Utopia.saveGame();
+if (state.in_progress)
+	saveGame();
 else
-	Utopia.removeSavedGame();
+	removeSavedGame();
