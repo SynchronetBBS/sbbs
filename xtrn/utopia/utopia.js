@@ -61,6 +61,7 @@ var rules = {
 	trawler_food_per_turn: 0.5,
 	rebels_decrement_potential: 0.1,
 	rebels_increase_potential: 0.08,
+	rebels_mutiny_theshold: 50,
 
 	// Weather
 	rain_speed: 1.3,
@@ -88,14 +89,14 @@ var rules = {
 }
 
 var item_list = {};
-item_list[ITEM_CROPS]   ={ name: "Crops"    ,char: "\xB1", shadow: "Food per Turn/Round", attr: BROWN };
+item_list[ITEM_CROPS]   ={ name: "Crops"    ,char: "\xB1", shadow: "Grow Food", attr: BROWN };
 item_list[ITEM_TRAWLER] ={ name: "Trawler"  ,char: "\x1E", shadow: "Catch Fish", attr: YELLOW | HIGH };
 item_list[ITEM_HOUSE]   ={ name: "Housing"  ,char: "\x7F", shadow: rules.house_capacity + " Population Cap" };
 item_list[ITEM_DOCK]    ={ name: "Dock"     ,char: "\xDB", shadow: "Build Boats and Trade", attr: CYAN | HIGH };
 item_list[ITEM_INDUSTRY]={ name: "Industry" ,char: "\xDB", shadow: "Income", attr: LIGHTGRAY };
-item_list[ITEM_PTBOAT]  ={ name: "PT Boat"  ,char: "\x1E", shadow: "Patrols", attr: MAGENTA | HIGH };
+item_list[ITEM_PTBOAT]  ={ name: "PT Boat"  ,char: "\x1E", shadow: "Patrol and Protect", attr: MAGENTA | HIGH };
 item_list[ITEM_SCHOOL]  ={ name: "School"   ,char: "\x15", shadow: "Reduce Rebels" };
-item_list[ITEM_BRIDGE]  ={ name: "Bridge"   ,char: "\xCE", shadow: "Expansion" };
+item_list[ITEM_BRIDGE]  ={ name: "Bridge"   ,char: "\xCE", shadow: "Expand Land and Docks" };
 
 // Cosmetics
 var TICK_INTERVAL = 0.5;
@@ -757,7 +758,7 @@ var moveTrawlers = function() {
 
 var checkMutiny = function() {
 	// Only happens if rebels are high and a pirate isn't already active
-	if (state.rebels > 50 && !state.pirate.active) {
+	if (state.rebels > rules.rebels_mutiny_theshold && !state.pirate.active) {
 		// Chance increases as rebels approach 100%
 		var mutinyChance = (state.rebels - 50) / 500;
 		if (Math.random() < mutinyChance) {
@@ -1805,7 +1806,7 @@ function main () {
 			}
 			lastTick = system.timer;
 		}
-		var k = console.inkey(K_CTRLKEYS | K_EXTKEYS, 100);
+		var k = console.inkey(K_EXTKEYS, 500 * TICK_INTERVAL);
 		if (!k)
 			continue;
 		var key = k.toUpperCase();
@@ -1832,6 +1833,7 @@ function main () {
 				refreshScreen(true);
 				break;
 			case KEY_INSERT:
+			case '\r':
 				if (!state.started || state.in_progress)
 					showBuildMenu();
 				break;
