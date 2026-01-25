@@ -667,7 +667,7 @@ typedef enum {                       // Values for xtrn_t.event
 #define K_UTF8      (1 << 26)     // Don't translate UTF-8 input into CP437
 #define K_RIGHTEXIT (1 << 27)     // Allow exit by arrowing right
 #define K_LINEWRAP  (1 << 29)     // Allow string input to wrap the terminal
-#define K_EXTKEYS   (1 << 30)     // Used with K_CTRLKEYS, inkey() still performs extended (e.g. arrow) key translations
+#define K_EXTKEYS   (1 << 30)     // Like K_CTRLKEYS, but inkey() still performs extended (e.g. arrow) key translations
 
 // Bits in 'mode' for putmsg and printfile
 #define P_NONE      0             // No mode flags

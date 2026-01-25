@@ -122,7 +122,7 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 	getkey_last_activity = time(NULL);
 
 	/* Is this a control key */
-	if (!(mode & K_CTRLKEYS) && ch < ' ') {
+	if (!(mode & (K_CTRLKEYS | K_EXTKEYS)) && ch < ' ') {
 		if (cfg.ctrlkey_passthru & (1 << ch))    /*  flagged as passthru? */
 			return ch;                    /* do not handle here */
 		return handle_ctrlkey(ch, mode);
