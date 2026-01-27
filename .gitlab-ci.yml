@@ -139,7 +139,7 @@ include:
     - cd ../../src/sbbs3
     - .\release.bat
     - cd ctrl
-    - .\build.bat
+    - .\build.bat -maxCpuCount:2
     - cd ../chat
     - .\build.bat
     - cd ../useredit
