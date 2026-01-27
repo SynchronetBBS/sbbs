@@ -5162,35 +5162,37 @@ void bbs_thread(void* arg)
 		// Validate the userbase file sizes
 		char userdat[MAX_PATH + 1];
 		userdat_filename(&scfg, userdat, sizeof userdat);
-		lprintf(LOG_DEBUG, "Validating userbase: %s", userdat);
-		off_t userdat_len = flength(userdat);
-		if ((userdat_len % USER_RECORD_LINE_LEN) != 0) {
-			lprintf(LOG_CRIT, "User data (%s) length (%" PRIdOFF ") not evenly-divisible by record length (%u), corruption suspected"
-				, userdat, userdat_len, USER_RECORD_LINE_LEN);
-			cleanup(1);
-			return;
+		if (fexist(userdat)) {
+			lprintf(LOG_DEBUG, "Validating userbase: %s", userdat);
+			off_t userdat_len = flength(userdat);
+			if ((userdat_len % USER_RECORD_LINE_LEN) != 0) {
+				lprintf(LOG_CRIT, "User data (%s) length (%" PRIdOFF ") not evenly-divisible by record length (%u), corruption suspected"
+					, userdat, userdat_len, USER_RECORD_LINE_LEN);
+				cleanup(1);
+				return;
+			}
+			int user_count = (int)(userdat_len / USER_RECORD_LINE_LEN);
+			if (user_count > USER_MAX_NUM) {
+				lprintf(LOG_CRIT, "User data (%s) has %d users, corruption suspected", userdat, user_count);
+				cleanup(1);
+				return;
+			}
+			char useridx[MAX_PATH + 1];
+			off_t useridx_len = flength(useridx_filename(&scfg, useridx, sizeof useridx));
+			if ((useridx_len % USER_INDEX_RECORD_LEN) != 0) {
+				lprintf(LOG_CRIT, "User index (%s) length (%" PRIdOFF ") not evenly-divisible by record length (%u), corruption suspected"
+					, useridx, useridx_len, USER_INDEX_RECORD_LEN);
+				cleanup(1);
+				return;
+			}
+			if ((useridx_len / USER_INDEX_RECORD_LEN) != user_count) {
+				lprintf(LOG_CRIT, "User index (%s) length (%" PRIdOFF ") does not match expected length (%u), corruption suspected"
+					, useridx, useridx_len, user_count * USER_INDEX_RECORD_LEN);
+				cleanup(1);
+				return;
+			}
+			lprintf(LOG_INFO, "Userbase has %d total users, %d active", user_count, total_users(&scfg));
 		}
-		int user_count = (int)(userdat_len / USER_RECORD_LINE_LEN);
-		if (user_count > USER_MAX_NUM) {
-			lprintf(LOG_CRIT, "User data (%s) has %d users, corruption suspected", userdat, user_count);
-			cleanup(1);
-			return;
-		}
-		char useridx[MAX_PATH + 1];
-		off_t useridx_len = flength(useridx_filename(&scfg, useridx, sizeof useridx));
-		if ((useridx_len % USER_INDEX_RECORD_LEN) != 0) {
-			lprintf(LOG_CRIT, "User index (%s) length (%" PRIdOFF ") not evenly-divisible by record length (%u), corruption suspected"
-				, useridx, useridx_len, USER_INDEX_RECORD_LEN);
-			cleanup(1);
-			return;
-		}
-		if ((useridx_len / USER_INDEX_RECORD_LEN) != user_count) {
-			lprintf(LOG_CRIT, "User index (%s) length (%" PRIdOFF ") does not match expected length (%u), corruption suspected"
-				, useridx, useridx_len, user_count * USER_INDEX_RECORD_LEN);
-			cleanup(1);
-			return;
-		}
-		lprintf(LOG_INFO, "Userbase has %d total users, %d active", user_count, total_users(&scfg));
 
 		if (scfg.total_shells < 1) {
 			lprintf(LOG_CRIT, "At least one command shell must be configured (e.g. in SCFG->Command Shells)");
