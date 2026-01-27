@@ -304,7 +304,7 @@ var landChar = function(char)
 	}
 }
 
-var drawCell = function(x, y, more_attr, no_gotoxy) {
+var drawCell = function(x, y, more_attr, move_cursor) {
 	x = Math.floor(x);
 	y = Math.floor(y);
 	if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT)
@@ -462,7 +462,7 @@ var drawCell = function(x, y, more_attr, no_gotoxy) {
 	}
 	else if (more_attr !== undefined)
 		attr |= more_attr;
-	if (!no_gotoxy)
+	if (move_cursor !== false)
 		console.gotoxy(x + 1, y + 1);
 	console.attributes = attr;
 	console.write(char);
@@ -474,7 +474,7 @@ var drawRow = function(start, y, length) {
 	var x = Math.max(0, start);
 	console.gotoxy(x + 1, y + 1);
 	for (; x <= end; ++x)
-		drawCell(x, y, undefined, /* Optimized x/y */true);
+		drawCell(x, y, undefined, /* move cursor */false);
 };
 
 var forceScrub = function(x, y, size) {
@@ -694,6 +694,10 @@ function shuffleArray(array) {
     }
 }
 
+function itemAt(x, y) {
+	return itemMap[y][x];
+}
+
 function moveItem1rand(x, y, ter, diagonal) {
 	var options = [
 			{x:x, y:y - 1},
@@ -717,7 +721,12 @@ function moveItem1rand(x, y, ter, diagonal) {
 			continue;
 		if (cellIsOccupied(nx, ny))
 			continue;
-		return moveItem(x, y, nx, ny);
+		var moved = moveItem(x, y, nx, ny);
+		if (moved) {
+			debugLog("Moved item " + itemAt(nx, ny) + " randomly from " +
+				xy_str(x, y) + " to " + xy_str(nx, ny));
+			return true;
+		}
 	}
 	return false;
 }
@@ -767,10 +776,10 @@ function handlePatrols() {
 		}
 		target.sort(function (a, b) { return b.dist - a.dist; });
 		// Pirate > Merchant > Trawlers
-		var pdist = objDist(boat, state.pirate)
-		var mdist = objDist(boat, state.merchant);
+		var pdist = state.pirate.active ? objDist(boat, state.pirate) : Infinity;
 		if (state.merchant.active) {
-			if (mdist < 3 && pdist > 6) // close enough, don't block the merchant!
+			var mdist = objDist(boat, state.merchant);
+			if (mdist < 3 && pdist > 10) // close enough, don't block the merchant!
 				continue;
 			target.push({ x:Math.floor(state.merchant.x), y:Math.floor(state.merchant.y), dist:mdist});
 		}
@@ -1430,7 +1439,7 @@ var moveEntities = function() {
 	if (oldPirate.active) drawCell(oldPirate.x, oldPirate.y);
 	if (state.merchant.active) drawCell(state.merchant.x, state.merchant.y);
 	if (state.pirate.active) drawCell(state.pirate.x, state.pirate.y);
-	console.flush();
+//	console.flush();
 };
 
 // --- SCORING & UI ---
@@ -1672,8 +1681,7 @@ var showBuildMenu = function() {
 	hideCursor();
 	var cmd = console.getkey(K_UPPER | K_NOSPIN);
 	for (var y = 0; y < MAP_HEIGHT; y++)
-		for (var x = 0; x < MAP_WIDTH; x++)
-			drawCell(x, y);
+		drawRow(/* starting at x */0, y);
 	var success = false;
 	if (cmd == ' ')
 		success = buildItem(state.lastbuilt);
@@ -1863,6 +1871,10 @@ var handleQuit = function() {
 
 // --- RUNTIME ---
 function main () {
+	if (console.optimize_gotoxy !== undefined) {
+		js.on_exit("console.optimize_gotoxy = " + console.optimize_gotoxy);
+		console.optimize_gotoxy = true;
+	}
 	if (file_exists(INTRO_FILE)) {
 		console.clear();
 		console.printfile(INTRO_FILE, P_PCBOARD);
