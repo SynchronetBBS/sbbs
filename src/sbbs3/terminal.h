@@ -66,6 +66,7 @@ public:
 	enum output_rate cur_output_rate{output_rate_unlimited};
 	unsigned mouse_mode{MOUSE_MODE_OFF};            // Mouse reporting mode flags
 	bool pause_hotspot{false};
+	bool optimize_gotoxy{false};
 	bool suspend_lbuf{0};
 	link_list_t *mouse_hotspots{nullptr};
 

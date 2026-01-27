@@ -58,6 +58,7 @@ enum {
 	, CON_PROP_TELNET_MODE
 	, CON_PROP_GETSTR_OFFSET
 	, CON_PROP_CTRLKEY_PASSTHRU
+	, CON_PROP_OPTIMIZE_GOTOXY
 	, CON_PROP_USELECT_COUNT
 	/* read only */
 	, CON_PROP_INBUF_LEVEL
@@ -208,6 +209,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case CON_PROP_KEYBUF_SPACE:
 			val = sbbs->keybuf_space();
+			break;
+		case CON_PROP_OPTIMIZE_GOTOXY:
+			val = sbbs->term->optimize_gotoxy;
 			break;
 		case CON_PROP_USELECT_COUNT:
 			val = sbbs->uselect_count;
@@ -392,6 +396,9 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 		case CON_PROP_OUTPUT_RATE:
 			sbbs->term->set_output_rate((enum output_rate)val);
 			break;
+		case CON_PROP_OPTIMIZE_GOTOXY:
+			sbbs->term->optimize_gotoxy = val;
+			break;
 		case CON_PROP_USELECT_COUNT:
 			if ((unsigned)val < sbbs->uselect_count)
 				sbbs->uselect_count = val;
@@ -442,6 +449,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "question", CON_PROP_QUESTION, CON_PROP_FLAGS, 310},
 	{   "getstr_offset", CON_PROP_GETSTR_OFFSET, CON_PROP_FLAGS, 311},
 	{   "ctrlkey_passthru", CON_PROP_CTRLKEY_PASSTHRU, CON_PROP_FLAGS, 310},
+	{   "optimize_gotoxy", CON_PROP_OPTIMIZE_GOTOXY, CON_PROP_FLAGS, 321},
 	{   "uselect_count", CON_PROP_USELECT_COUNT, CON_PROP_FLAGS, 321},
 	{   "input_buffer_level", CON_PROP_INBUF_LEVEL, JSPROP_ENUMERATE | JSPROP_READONLY, 312},
 	{   "input_buffer_space", CON_PROP_INBUF_SPACE, JSPROP_ENUMERATE | JSPROP_READONLY, 312},
@@ -502,6 +510,7 @@ static const char*        con_prop_desc[] = {
 		"added to the set, and a - indicates they should be removed.<br>"
 		"ex: <tt>console.ctrlkey_passthru=\"-UP+AB\"</tt> will clear CTRL-U and "
 		"CTRL-P and set CTRL-A and CTRL-B."
+	, "Set to <tt>true</tt> to avoid sending redundant cursor position changes to the terminal"
 	, "Number of items currently enqueued for a user selection prompt (via <tt>uselect()</tt>) - <small>Can be decreased only</small>"
 	, "Number of bytes currently in the input buffer (from the remote client) - <small>READ ONLY</small>"
 	, "Number of bytes available in the input buffer	- <small>READ ONLY</small>"

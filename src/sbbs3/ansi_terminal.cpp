@@ -424,6 +424,10 @@ bool ANSI_Terminal::getxy(unsigned* x, unsigned* y)
 
 bool ANSI_Terminal::gotoxy(unsigned x, unsigned y)
 {
+	if (optimize_gotoxy && y == row + 1 && x == column + 1) {
+//		lprintf(LOG_DEBUG, "Optimized-out redundant gotoxy(%d, %d)", x, y);
+		return true;
+	}
 	if (x == 0)
 		x = 1;
 	if (y == 0)
