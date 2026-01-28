@@ -154,12 +154,12 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				} else if (mode & P_WRAP) {
 					if (org_cols) {
 						if (term->column > (org_cols - 1)) {
-							term->newline();
+							term->newline(1, /* no_bg_attr */true);
 							++lines_printed;
 						}
 					} else {
 						if (term->column >= (cols - 1)) {
-							term->newline();
+							term->newline(1, /* no_bg_attr */true);
 							++lines_printed;
 						}
 					}
@@ -599,7 +599,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					attr(LIGHTGRAY);
 					exatr = false;
 				}
-				term->newline();
+				term->newline(1, /* no_bg_attr */(mode & P_WRAP));
 				++lines_printed;
 				skip++;
 			} else if (str[l] == '\n') {
@@ -607,7 +607,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					attr(LIGHTGRAY);
 					exatr = false;
 				}
-				term->newline();
+				term->newline(1, /* no_bg_attr */(mode & P_WRAP));
 				++lines_printed;
 			} else {
 				uint atr = curatr;

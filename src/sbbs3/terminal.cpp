@@ -253,7 +253,7 @@ void Terminal::set_column(unsigned val) {
 
 void Terminal::cond_newline() {
 	if (column > 0)
-		newline();
+		newline(1, /* no_bg_attr */true);
 }
 
 void Terminal::cond_blankline() {

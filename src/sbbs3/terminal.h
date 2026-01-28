@@ -255,14 +255,19 @@ public:
 		}
 	}
 
-	virtual void newline(unsigned count = 1) {
+	virtual void newline(unsigned count = 1, bool no_bg_attr = false) {
 		// TODO: Original version did not increment row or lncntr
 		//       It recursed through outchar()
+		int saved_attr = curatr;
+		if (no_bg_attr && (curatr & BG_LIGHTGRAY)) { // Don't allow background colors to bleed when scrolling
+			sbbs->attr(LIGHTGRAY);
+		}
 		for (unsigned i = 0; i < count; i++) {
 			carriage_return();
 			line_feed();
 			sbbs->check_pause();
 		}
+		sbbs->attr(saved_attr);
 	}
 
 	virtual void clearscreen() {
