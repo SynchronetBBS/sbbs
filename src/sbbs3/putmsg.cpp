@@ -483,6 +483,11 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					l += 9;
 					continue;
 				}
+				if (memcmp(str + l, "@WRAP@", 6) == 0) {
+					l += 6;
+					mode |= P_WRAP;
+					continue;
+				}
 				if (memcmp(str + l, "@WORDWRAP@", 10) == 0) {
 					l += 10;
 					mode |= P_WORDWRAP;
@@ -490,7 +495,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				}
 				if (memcmp(str + l, "@WRAPOFF@", 9) == 0) {
 					l += 9;
-					// Stray @WRAPOFF@, ignore
+					mode &= ~P_WRAP;
 					continue;
 				}
 				if (memcmp(str + l, "@TRUNCATE@", 10) == 0) {
