@@ -22,7 +22,6 @@
 #include "filewrap.h"
 
 // Saves and restores current file position
-// Note: Does not support comments
 bool sauce_fread_record(FILE* fp, sauce_record_t* record)
 {
 	off_t offset = ftello(fp);
@@ -37,6 +36,21 @@ bool sauce_fread_record(FILE* fp, sauce_record_t* record)
 	              && memcmp(record->id, SAUCE_ID, SAUCE_LEN_ID) == 0
 	              && memcmp(record->ver, SAUCE_VERSION, SAUCE_LEN_VERSION) == 0;
 
+	if (result == true) {
+		int blklen = sizeof(*record) + 1;
+		if (record->comments > 0)
+			blklen += SAUCE_LEN_ID + (record->comments * SAUCE_LEN_COMMENT);
+		if (fseeko(fp, -blklen, SEEK_END) != 0)
+			result = false;
+		else if (fgetc(fp) != SAUCE_SEPARATOR)
+			result = false;
+		else if (record->comments > 0) {
+			char comment_id[SAUCE_LEN_ID] = "";
+			if (fread(comment_id, sizeof comment_id, 1, fp) != 1
+				|| memcmp(comment_id, SAUCE_COMMENT_BLOCK_ID, SAUCE_LEN_ID) != 0)
+				result = false;
+		}
+	}
 	(void)fseeko(fp, offset, SEEK_SET);
 	return result;
 }
