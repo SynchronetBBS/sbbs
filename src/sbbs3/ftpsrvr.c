@@ -2342,7 +2342,7 @@ static void ctrl_thread(void* arg)
 	/* For PASV mode */
 	addr_len = sizeof(pasv_addr);
 	if ((result = getsockname(sock, &pasv_addr.addr, &addr_len)) != 0) {
-		lprintf(LOG_CRIT, "%04d !ERROR %d (%d) getting address/por of socket", sock, result, SOCKET_ERRNO);
+		lprintf(LOG_CRIT, "%04d !ERROR %d (%d) getting address/port of socket", sock, result, SOCKET_ERRNO);
 		sockprintf(sock, sess, "425 Error %d getting address/port", SOCKET_ERRNO);
 		ftp_close_socket(&sock, &sess, __LINE__);
 		thread_down();
