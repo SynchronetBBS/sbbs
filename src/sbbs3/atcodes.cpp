@@ -1860,7 +1860,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (!strncmp(sp, "INCLUDE:", 8)) {
-		printfile(cmdstr(sp + 8, nulstr, nulstr, str), P_NOCRLF | P_SAVEATR | P_MODS);
+		printfile(cmdstr(sp + 8, nulstr, nulstr, str), P_OPENCLOSE | P_NOCRLF | P_SAVEATR | P_MODS);
 		return nulstr;
 	}
 
