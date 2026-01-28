@@ -424,14 +424,27 @@ bool ANSI_Terminal::getxy(unsigned* x, unsigned* y)
 
 bool ANSI_Terminal::gotoxy(unsigned x, unsigned y)
 {
-	if (optimize_gotoxy && y == row + 1 && x == column + 1) {
-//		lprintf(LOG_DEBUG, "Optimized-out redundant gotoxy(%d, %d)", x, y);
-		return true;
-	}
 	if (x == 0)
 		x = 1;
 	if (y == 0)
 		y = 1;
+	if (optimize_gotoxy) {
+		if (y == row + 1 && x == column + 1) {
+			return true;
+		}
+		if (y == row + 1 && x == 1) {
+			carriage_return();
+			return true;
+		}
+		if (x == column + 1 && y > row + 1 && y - (row + 1) <= 6) {
+			line_feed(y - (row + 1));
+			return true;
+		}
+		if (x == 1 && y == 1) {
+			cursor_home();
+			return true;
+		}
+	}
 	sbbs->term_printf("\x1b[%d;%dH", y, x);
 	return true;
 }
@@ -931,6 +944,7 @@ bool ANSI_Terminal::stuff_str(char& ch, const char *str, bool skipctlcheck)
 	bool ret = false;
 	if (!skipctlcheck) {
 		if (str[0] < 32) {
+			ch = str[0];
 			ret = true;
 			end = &str[1];
 		}
