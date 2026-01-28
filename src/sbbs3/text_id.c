@@ -942,4 +942,7 @@ const char* const text_id[]={
 	,"ReadYourUnreadMailNowQ"
 	,"UserDownloadsToday"
 	,"WideModeIsNow"
+	,"SeekingFile"
+	,"SeekingFileDone"
+	,"SeekPrompt"
 };

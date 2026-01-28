@@ -73,7 +73,7 @@ function str_cmds(str)
 			var errlog=system.logs_dir+"error.log";
 			if(file_exists(errlog)) {
 				write(bbs.text(bbs.text.ErrorLogHdr));
-				console.printfile(errlog);
+				console.printfile(errlog, P_NOATCODES | P_SEEK);
 				console.aborted = false;
 				if(!console.noyes(bbs.text(bbs.text.DeleteErrorLogQ)))
 					file_remove(errlog);
@@ -98,7 +98,7 @@ function str_cmds(str)
 		help["GURU"] = "Display and optionally clear current guru log";
 		if(str=="GURU") {
 			if(file_exists(system.logs_dir+"guru.log")) {
-				console.printfile(system.logs_dir+"guru.log");
+				console.printfile(system.logs_dir+"guru.log", P_NOATCODES | P_SEEK);
 				console.crlf();
 				if(!console.noyes(bbs.text(bbs.text.DeleteGuruLogQ)))
 					file_remove(system.logs_dir+"guru.log");
@@ -119,8 +119,10 @@ function str_cmds(str)
 				var pmode = (word == "CAT") ? P_NOATCODES : P_CPM_EOF;
 				if(word == "TYPE")
 					pmode |= P_OPENCLOSE;
-				log("printing " + str);
-				log(console.printfile(get_filename(str), pmode));
+				else
+					pmode |= P_SEEK;
+				log("printing " + (str = get_filename(str)));
+				console.printfile(str, pmode);
 				return;
 			}
 		}
@@ -155,7 +157,8 @@ function str_cmds(str)
 		if(word=="EDIT") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
-				console.editfile(get_filename(str));
+				log("editing " + (str = get_filename(str)));
+				console.editfile(str);
 			}
 		}
 
@@ -163,7 +166,7 @@ function str_cmds(str)
 		if(str=="LOG") {
 			if(bbs.check_syspass()) {
 				str=system.logs_dir+strftime("logs/%m%d%y.log",time());
-				console.printfile(str);
+				console.printfile(str, P_NOATCODES);
 			}
 			return;
 		}
@@ -172,7 +175,7 @@ function str_cmds(str)
 		if(str=="YLOG") {
 			if(bbs.check_syspass()) {
 				str=system.logs_dir+strftime("logs/%m%d%y.log",time()-24*60*60);
-				console.printfile(str);
+				console.printfile(str, P_NOATCODES);
 			}
 			return;
 		}
@@ -706,14 +709,14 @@ function str_cmds(str)
 			var plan=format("%suser/%04d.plan",system.data_dir,user.number);
 			if(file_exists(plan)) {
 				if(console.yesno("Display current .plan"))
-					console.printfile(plan);
+					console.printfile(plan, P_NOATCODES);
 				if(!console.noyes("Delete current .plan"))
 					file_remove(plan);
 			}
 			if(console.yesno("Edit/Create .plan")) {
 				console.editfile(plan);
 				if(file_exists(plan))
-					console.printfile(plan);
+					console.printfile(plan, P_NOATCODES);
 			}
 		}
 
@@ -726,7 +729,7 @@ function str_cmds(str)
 			userSigFilename += ".sig";
 			if (file_exists(userSigFilename)) {
 				if (console.yesno(bbs.text(bbs.text.ViewSignatureQ)))
-					console.printfile(userSigFilename);
+					console.printfile(userSigFilename, P_NOATCODES);
 			}
 			if (console.yesno(bbs.text(bbs.text.CreateEditSignatureQ)))
 				console.editfile(userSigFilename);

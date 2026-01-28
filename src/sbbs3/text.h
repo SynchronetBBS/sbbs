@@ -958,6 +958,9 @@ enum text {
 	,ReadYourUnreadMailNowQ
 	,UserDownloadsToday
 	,WideModeIsNow
+	,SeekingFile
+	,SeekingFileDone
+	,SeekPrompt
 
 	,TOTAL_TEXT
 };

@@ -194,29 +194,28 @@ var   K_WRAP = K_WORDWRAP;
 						    	/********************************************/
     							/* Bits in 'mode' for putmsg and printfile  */
 							    /********************************************/
-var   P_NONE		=0;			/* No special behavior						*/
-var   P_NOABORT  	=(1<<0);	/* Disallows abortion of a message          */
-var   P_SAVEATR		=(1<<1);	/* Save the new current attributes after	*/
-					    		/* msg has printed							*/
-var   P_NOATCODES	=(1<<2);	/* Don't allow @ codes                      */
-var   P_OPENCLOSE	=(1<<3);	/* Open and close the file					*/
-var   P_NOPAUSE		=(1<<4);	/* Disable screen pause						*/
-var   P_HTML		=(1<<5);	/* Message is HTML							*/
-var   P_NOCRLF		=(1<<6);	/* Don't prepend a CRLF	in printfile()		*/
-var   P_WORDWRAP	=(1<<7);	/* Word-wrap long lines for user's terminal	*/
-var   P_CPM_EOF		=(1<<8);	/* Treat Ctrl-Z as End-of-file				*/
-var   P_TRUNCATE    =(1<<9);    /* Truncate (don't display) long lines      */
-var   P_NOERROR     =(1<<10);   /* Don't report error if file doesn't exist */
-var   P_PETSCII     =(1<<11);   /* Message is native PETSCII                */
-var   P_WRAP        =(1<<12);   /* Wrap/split long-lines, ungracefully      */
-var   P_UTF8        =(1<<13);	/* Message is UTF-8 encoded                 */
-var   P_AUTO_UTF8	=(1<<14);	/* Message may be UTF-8, auto-detect		*/
-var   P_NOXATTRS	=(1<<15);	/* No "Extra Attribute Codes" supported		*/
-var   P_MARKUP		=(1<<16);	/* Support StyleCodes/Rich/StructuredText	*/
-var   P_HIDEMARKS	=(1<<17);	/* Hide the mark-up tags					*/
-var   P_REMOTE		=(1<<18);	/* Only print when online == ON_REMOTE		*/
-var   P_INDENT		=(1<<19);	/* Indent lines to current cursor column	*/
-var   P_ATCODES		=(1<<20);	/* Trusted @-codes in formatted string		*/
+var   P_NONE		=0;			// No special behavior
+var   P_NOABORT  	=(1<<0);	// Disallows abortion of a message
+var   P_SAVEATR		=(1<<1);	// Save the new current attributes after msg has printed
+var   P_NOATCODES	=(1<<2);	// Don't allow @ codes
+var   P_OPENCLOSE	=(1<<3);	// Open and close the file (for smaller files)
+var   P_NOPAUSE		=(1<<4);	// Disable screen pause
+var   P_SEEK 		=(1<<5);	// Support jumping around via Home/End/PgUp/Dn, etc.
+var   P_NOCRLF		=(1<<6);	// Don't prepend a CRLF	in printfile()
+var   P_WORDWRAP	=(1<<7);	// Word-wrap long lines for user's terminal
+var   P_CPM_EOF		=(1<<8);	// Treat Ctrl-Z as End-of-file
+var   P_TRUNCATE    =(1<<9);    // Truncate (don't display) long lines
+var   P_NOERROR     =(1<<10);   // Don't report error if file doesn't exist
+var   P_PETSCII     =(1<<11);   // Message is native PETSCII
+var   P_WRAP        =(1<<12);   // Wrap/split long-lines, ungracefully
+var   P_UTF8        =(1<<13);	// Message is UTF-8 encoded
+var   P_AUTO_UTF8	=(1<<14);	// Message may be UTF-8, auto-detect
+var   P_NOXATTRS	=(1<<15);	// No "Extra Attribute Codes" supported
+var   P_MARKUP		=(1<<16);	// Support StyleCodes/Rich/StructuredText
+var   P_HIDEMARKS	=(1<<17);	// Hide the mark-up tags
+var   P_REMOTE		=(1<<18);	// Only print when online == ON_REMOTE
+var   P_INDENT		=(1<<19);	// Indent lines to current cursor column
+var   P_ATCODES		=(1<<20);	// Trusted @-codes in formatted string
 var   P_MODS        =(1<<21);   // Display from mods/text dir, if file is there
 var   P_CENTER      =(1<<22);   // Center the output based on widest line
 var   P_80COLS      =(1<<23);   // Format the output for 80-column display

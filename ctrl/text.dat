@@ -1129,3 +1129,12 @@
 "Read your unread mail now\1\\"                            939 ReadYourUnreadMailNowQ
 "\1n\1c(\1h%s\1n\1c bytes in \1h%u\1n\1c files today)"     940 UserDownloadsToday
 "\1n\1h\1?Wide (> 80 column) output mode is now %s.\r\n"   941 WideModeIsNow
+"\1n\1hSeeking @ELLIPSIS@\1n"                              942 SeekingFile
+"\1n\1[\1>"                                                862 SeekingFileDone
+"\1n\1r\1h[\1wSeek: \1r"\                                  863 SeekPrompt
+	"@~Home~\\x02@\1w/\1r"\
+	"@~End~\\x05@\1w/\1r"\
+	"@~PgUp~\\x10@\1w/\1r"\
+	"@~PgDn~\\x0e@\1w/\1r"\
+	"@~Up~\\x1e@\1w/\1r"\
+	"@~Dn~\\x0a@\1r] "
