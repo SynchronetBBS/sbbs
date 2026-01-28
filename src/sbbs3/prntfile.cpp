@@ -224,11 +224,16 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 						break;
 					case TERM_KEY_END:
 					{
+						if (lines < 1)
+							break;
 						bputs(text[SeekingFile]);
-						fseeko(stream, offset[lines - 1], SEEK_SET);
+						if (fseeko(stream, offset[lines - 1], SEEK_SET) != 0) {
+							errormsg(WHERE, ERR_SEEK, fpath, static_cast<int>(offset[lines - 1]));
+							break;
+						}
 						if (fgets(buf, length + 1, stream) == NULL)
 							break;
-						off_t lastline = lines - 1;
+						size_t lastline = lines - 1;
 						while (!feof(stream) && !msgabort()) {
 							o = ftello(stream);
 							if (fgets(buf, length + 1, stream) == NULL)
@@ -259,8 +264,14 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 						nextline = line + 1;
 						break;
 				}
-				if (nextline != line + 1 && nextline < lines)
-					fseeko(stream, offset[nextline], 0);
+				if (offset == nullptr)
+					break;
+				if (nextline != line + 1 && nextline < lines) {
+					if (fseeko(stream, offset[nextline], 0) != 0) {
+						errormsg(WHERE, ERR_SEEK, fpath, static_cast<int>(offset[nextline]));
+						break;
+					}
+				}
 				line = nextline;
 			}
 			else
