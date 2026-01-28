@@ -150,7 +150,7 @@ void Terminal::inc_row(unsigned count) {
 }
 
 // TODO: ANSI does *not* specify what happens at the end of a line, and
-//       there are at least three common behaviours (in decresing order
+//       there are at least three common behaviours (in decreasing order
 //       of popularity):
 //       1) Do the DEC Last Column Flag thing where it hangs out in the
 //          last column until a printing character is received, then
@@ -169,7 +169,7 @@ void Terminal::inc_row(unsigned count) {
 //       the behaviour is well established.
 //
 //       We can easily emulate #2 if we know if #1 or #3 is currently
-//       occuring.  It's possible to emulate #1 with #2 as long as
+//       occurring.  It's possible to emulate #1 with #2 as long as
 //       insert character is available, though it's trickier.
 //
 //       The problem with emulating #2 is that it scrolls the screen when
