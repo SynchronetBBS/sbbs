@@ -2199,7 +2199,7 @@ static void ctrl_thread(void* arg)
 	ulong             l;
 	ulong             login_attempts = 0;
 	uint64_t          avail; /* disk space */
-	ulong             count;
+	uint              count;
 	BOOL              detail;
 	BOOL              success;
 	BOOL              getdate;
