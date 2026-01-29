@@ -6,9 +6,11 @@
 load("sbbsdefs.js");
 
 // --- CONFIG & FILES ---
+const MAPS_CFG_FILE = js.exec_dir + "maps.ini";
 const INTRO_FILE = js.exec_dir + "utopia_intro.txt";
 const HELP_FILE = js.exec_dir + "utopia_help.txt";
 const SAVE_FILE = system.data_dir + format("user/%04u.utopia", user.number);
+const MAP_FILE = js.exec_dir + "map.json";
 const DEBUG_FILE = js.exec_dir + "utopia_debug.json";
 const SCORE_FILE = js.exec_dir + "utopia_scores.json";
 
@@ -23,6 +25,7 @@ const ITEM_BRIDGE   = "B";
 const ITEM_TRAWLER  = "T";
 
 var rules = {
+	name: "Challenging",
 	max_turns: 500,
 	turn_interval: 4.0,
 	round_interval: 10,
@@ -35,16 +38,19 @@ var rules = {
 	initial_food: 100,
 	house_capacity: 50,
 	population_interval: 5,
+	merchant_gold: 250,
 	merchant_gold_value: 1,
+	merchant_dock_interval: 10,
 	merchant_dock_bonus: 25,
-	merchant_trade_bonus: 250,
-	pirate_gold_value: 250,
+	pirate_gold: 250,
+	pirate_escape_penalty: 100,
 	max_fish: 8,
 	fish_per_school: 25,
 	fish_food_value: 2,
 	fish_gold_value: 1,
 	fish_catch_potential: 0.1,
 	fish_catch_max : 3,
+	fish_school_potential: 0.3,
 	rain_gold_value: 1,
 	demo_base_cost: 5,
 	demo_rebels_multiplier: 0.5,
@@ -53,7 +59,7 @@ var rules = {
 	// (per-round)
 	industry_income_multiple: 4,
 	pop_tax_multiple: 0.10,
-	land_tax_multiple: 0.25,
+	land_tax_multiple: 0.15,
 	rebels_decrease_multiplier: 2,
 	// (per-turn)
 	rebels_decrement_potential: 0.1,
@@ -69,9 +75,6 @@ var rules = {
 	storm_damage: 10,
 	wave_potential: 0.10,
 	wave_min_width: 7,
-
-	// Nature
-	fish_school_potential: 0.3,
 
 	item: {
 		"C": { cost:  5, max_damage:  75, tax:  0.10, food_turn: 0.50, food_round: 1,   land: true,  sea: false },
@@ -90,7 +93,7 @@ var item_list = {};
 item_list[ITEM_CROPS]   ={ name: "Crops"    ,char: "\xB1", shadow: "Food and Materials", attr: LIGHTGREEN };
 item_list[ITEM_ANIMALS] ={ name: "Animals"  ,char: "\xB1", shadow: "Meat and Dairy", attr: BROWN };
 item_list[ITEM_TRAWLER] ={ name: "Trawler"  ,char: "\x1E", shadow: "Catch Fish", attr: YELLOW | HIGH };
-item_list[ITEM_HOUSE]   ={ name: "Housing"  ,char: "\xF0", shadow: rules.house_capacity + " Population Cap" };
+item_list[ITEM_HOUSE]   ={ name: "Housing"  ,char: "\xF6", shadow: rules.house_capacity + " Population Cap" };
 item_list[ITEM_DOCK]    ={ name: "Dock"     ,char: "\xDB", shadow: "Build Boats and Trade", attr: CYAN | HIGH };
 item_list[ITEM_INDUSTRY]={ name: "Industry" ,char: "\xDB", shadow: "Income", attr: LIGHTGRAY };
 item_list[ITEM_PTBOAT]  ={ name: "PT Boat"  ,char: "\x1E", shadow: "Patrol and Protect", attr: MAGENTA | HIGH };
@@ -99,18 +102,20 @@ item_list[ITEM_BRIDGE]  ={ name: "Bridge"   ,char: "\xCE", shadow: "Expand Land 
 
 // Cosmetics
 var TICK_INTERVAL = 0.5;
-var CHAR_WATER    = "\xF7";
+var CHAR_WATER    = " "; //"\xF7";
 var CHAR_WAVE     = "~";
 var CHAR_LAND     = " ";
 var CHAR_LAND_N   = "\xDF";
 var CHAR_LAND_S   = "\xDC";
 var CHAR_LAND_E   = "\xDE";
 var CHAR_LAND_W   = "\xDD";
-var CHAR_PIRATE   = "\x9E";
+var CHAR_PIRATE   = "\xF3";
+var CHAR_PIRATAIL = "\xF0";
 var CHAR_FISH     = "\"";
-var CHAR_MERCHANT = "$";
+var CHAR_MERCHANT = "\xF2";
+var CHAR_MERCTAIL = "\xF1";
 var MAP_WIDTH = 60;
-var MAP_HEIGHT = 22;
+var MAP_HEIGHT = 20;
 var MAP_LEFT_COL = 0;
 var MAP_TOP_ROW = 0;
 var MAX_ALERTS  = 5;
@@ -118,6 +123,7 @@ var MAP_MID_COL = (MAP_WIDTH / 2);
 var MAP_MID_ROW = (MAP_HEIGHT / 2);
 var MAP_RIGHT_COL = (MAP_WIDTH - 1);
 var MAP_BOTTOM_ROW = (MAP_HEIGHT - 1);
+var MAX_MSGS = 3;
 var WATER = 0;
 var LAND = 1;
 var LAND_N = 2;
@@ -138,10 +144,10 @@ var state = {
 	martialLaw: 0,
 	cursor: { x: MAP_MID_COL, y: MAP_MID_ROW },
 	log: [],
-	msg: "\x01h\x01wWelcome Governor.  Build to claim your homeland!",
+	msg: [ {txt:"\x01h\x01wWelcome Governor.  Build to claim your homeland!" }],
 	fishPool: [],
-	merchant: { x: -1, y: 0, active: false },
-	pirate: { x: -1, y: 0, active: false },
+	merchant: { x: -1, y: 0, active: false, gold: 0 },
+	pirate: { x: -1, y: 0, active: false, gold: 0 },
 	storm: { x: -1, y: 0, active: false },
 	rain: { x: -1, y: 0, active: false },
 	waves: [],
@@ -169,16 +175,38 @@ var debugLog = function(msg) {
 		js.global.log("Utopia: " + msg);
 }
 
+function pushMsg(msg) {
+	if (state.msg.length > 0 && state.msg[state.msg.length - 1].txt == msg) {
+		if (state.msg[state.msg.length - 1].repeat === undefined)
+			state.msg[state.msg.length - 1].repeat = 1;
+		else
+			state.msg[state.msg.length - 1].repeat++;
+	} else {
+		state.msg.push({ txt: msg });
+		while(state.msg.length > MAX_MSGS)
+			state.msg.shift();
+	}
+}
+
+
 var alert = function(msg) {
 	debugLog(msg);
-	state.msg = "\x01n\x01h\x01cAlert: \x01h" + msg;
+	pushMsg("\x01n\x01h\x01cAlert: \x01h" + msg);
 }
 
 var announce = function(msg) {
 	debugLog(msg);
-	state.msg = "\x01n\x01h\x01yNews: \x01w" + msg;
+	pushMsg("\x01n\x01h\x01yNews: \x01w" + msg);
 	state.log.push({ turn: state.turn, msg: msg });
 }
+
+var cellIsWater = function(x, y) {
+	if (typeof x == "object") {
+		y = x.y;
+		x = x.x;
+	}
+	return map[y][x] === WATER;
+};
 
 var cellIsLand = function(x, y) {
 	if (typeof x == "object") {
@@ -187,6 +215,10 @@ var cellIsLand = function(x, y) {
 	}
 	return map[y][x] !== WATER;
 };
+
+function cellOnMap(x, y) {
+	return x >= MAP_LEFT_COL && x <= MAP_RIGHT_COL && y >= MAP_TOP_ROW && y <= MAP_BOTTOM_ROW;
+}
 
 function itemIsBoat(item) {
 	return item  == ITEM_TRAWLER || item == ITEM_PTBOAT;
@@ -222,7 +254,8 @@ var spawnFish = function() {
 			x = Math.floor(Math.random() * MAP_WIDTH);
 			y = Math.floor(Math.random() * MAP_HEIGHT);
 		}
-		if (map[y][x] === WATER
+//		debugLog("trying to spawn fish at " + xy_str(x, y));
+		if (cellIsWater(x, y)
 			&& !cellIsOccupied(x, y)
 			&& pathBetween({x:x, y:y}, {x:0, y:0}, WATER))
 			state.fishPool.push({ x: x, y: y, count: rules.fish_per_school });
@@ -307,7 +340,7 @@ var landChar = function(char)
 var drawCell = function(x, y, more_attr, move_cursor) {
 	x = Math.floor(x);
 	y = Math.floor(y);
-	if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT)
+	if (!cellOnMap(x, y))
 		return false;
 	if (map[y] === undefined)
 		return false;
@@ -325,13 +358,21 @@ var drawCell = function(x, y, more_attr, move_cursor) {
 			attr = (BG_BLUE | GREEN | HIGH);
 		}
 	}
-	if (state.merchant.active && Math.floor(state.merchant.x) === x && Math.floor(state.merchant.y) === y) {
-		char = CHAR_MERCHANT;
-		attr = BG_BLUE | YELLOW | HIGH;
+	if (state.merchant.active) {
+		var front = Math.floor(state.merchant.x) === x && Math.floor(state.merchant.y) === y;
+		var tail = Math.floor(state.merchant.x) - 1 === x && Math.floor(state.merchant.y) === y;
+		if (front || tail) {
+			char = front ? CHAR_MERCHANT : CHAR_MERCTAIL;
+			attr = BG_BLUE | YELLOW | HIGH;
+		}
 	}
-	if (state.pirate.active && Math.floor(state.pirate.x) === x && Math.floor(state.pirate.y) === y) {
-		char = CHAR_PIRATE;
-		attr = BG_BLUE | RED | HIGH;
+	if (state.pirate.active) {
+		var front = Math.floor(state.pirate.x) === x && Math.floor(state.pirate.y) === y;
+		var tail = Math.floor(state.pirate.x) + 1 === x && Math.floor(state.pirate.y) === y;
+		if (front || tail) {
+			char = front ? CHAR_PIRATE : CHAR_PIRATAIL;
+			attr = BG_BLUE | RED | HIGH;
+		}
 	}
 	if (itemMap[y][x]) {
 		var item = item_list[itemMap[y][x]];
@@ -355,7 +396,7 @@ var drawCell = function(x, y, more_attr, move_cursor) {
 			if (itemMap[y + 1][x] == ITEM_BRIDGE) b |= BIT_SOUTH;
 			if (itemMap[y][x + 1] == ITEM_BRIDGE) b |= BIT_EAST;
 			if (itemMap[y][x - 1] == ITEM_BRIDGE) b |= BIT_WEST;
-			if (map[y][x] == WATER) {
+			if (cellIsWater(x, y)) {
 				if (map[y - 1][x] != WATER) b |= BIT_NORTH;
 				if (map[y + 1][x] != WATER) b |= BIT_SOUTH;
 				if (map[y][x + 1] != WATER) b |= BIT_EAST;
@@ -562,7 +603,7 @@ var handleEconomics = function() {
 			var before = state.pop;
 			var growth = Math.floor(Math.random() * 3) + 1;
 			state.pop = Math.min(state.popCap, state.pop + growth);
-			announce("\x01h\x01gPopulation Increase from " + before + " to " + state.pop);
+			announce("\x01h\x01gPopulation Increase from \x01w" + before + "\x01g to \x01w" + state.pop);
 		}
 		else if (state.food <= 0 && state.pop > 5) {
 			state.pop -= Math.floor(Math.random() * 2) + 1;
@@ -715,7 +756,7 @@ function moveItem1rand(x, y, ter, diagonal) {
 	for (var i = 0; i < options.length; ++i) {
 		var nx = options[i].x;
 		var ny = options[i].y;
-		if (nx < 0 || nx >= MAP_RIGHT_COL || ny < 0 || ny >= MAP_BOTTOM_ROW)
+		if (!cellOnMap(nx, ny))
 			continue;
 		if (cellIsLand(nx, ny) != ter)
 			continue;
@@ -791,13 +832,13 @@ function handlePatrols() {
 			debugLog("PT Boat at " + xy_str(boat) + " next closest target at " + xy_str(t) + " at distance " + Math.floor(t.dist));
 			var nx = boat.x + (t.x > boat.x ? 1 : (t.x < boat.x ? -1 : 0)),
 				ny = boat.y + (t.y > boat.y ? 1 : (t.y < boat.y ? -1 : 0));
-			if (ny >= 0 && ny < MAP_HEIGHT && nx >= 0 && nx < MAP_WIDTH) {
+			if (cellOnMap(nx, ny)) {
 				if (itemMap[ny][nx] == ITEM_PTBOAT) // Another PT boat in the way? Look elsewhere
 					continue;
 				var ti = findItemAtCoord(trawlers, t);
 				if (ti >= 0) // Let's not have multiple PT boats chase the same trawler
 					trawlers.splice(ti, 1);
-				if (map[ny][nx] === WATER && !cellIsOccupied(nx, ny))
+				if (cellIsWater(nx, ny) && !cellIsOccupied(nx, ny))
 					moved = moveItem(boat.x, boat.y, nx, ny);
 			}
 		}
@@ -817,12 +858,13 @@ var handlePiracy = function() {
 				if (cellIsAdjacent({x:x, y:y}, state.pirate)) {
 					// TODO use health of PT boat in equation
 					if (Math.random() < rules.ptboat_sink_pirate_potential) {
-						if (!drawCell(px, py, BLINK))
-							logDebug("Couldn't redraw sunk pirate cell!?!?");
+						drawCell(px, py, BLINK);
+						drawCell(px + 1, py, BLINK);
 						state.pirate.active = false;
 						state.stats.piratesSunk++;
 						announce("\x01h\x01bPirate ship sunk by PT Boat!");
 						pendingUpdate.push({ x: px, y: py});
+						pendingUpdate.push({ x: px + 1, y: py});
 					}
 					else {
 						drawCell(x, y, BLINK);
@@ -839,13 +881,16 @@ var handlePiracy = function() {
 				if (dist < 10) {
 					var nx = px + (x > px ? 1 : (x < px ? -1 : 0)),
 						ny = py + (y > py ? 1 : (y < py ? -1 : 0));
+//					debugLog("trying to move pirate to " + xy_str(nx, ny));
 					if (!pirate_moved
-						&& ny >= 0 && ny < MAP_HEIGHT && nx >= 0 && nx < MAP_WIDTH
-						&& map[ny][nx] === 0 && !itemMap[ny, nx]) { // Can't use cellIsOccupied here
+						&& cellOnMap(nx, ny)
+						&& cellIsWater(nx, ny) && !itemAt(nx, ny)) { // Can't use cellIsOccupied here
 						state.pirate.x = nx;
 						state.pirate.y = ny;
-						drawCell(x, y);
+						drawCell(nx, ny);
+						drawCell(nx + 1, ny);
 						drawCell(px, py);
+						drawCell(px + 1, py);
 						pirate_moved = true;
 					}
 					// TODO use health of trawler in equation
@@ -873,12 +918,13 @@ var handlePiracy = function() {
 		if (dist < 10 && !onWave(state.pirate)) {
 			var nx = px + (mx > px ? 1 : (mx < px ? -1 : 0)),
 				ny = py + (my > py ? 1 : (my < py ? -1 : 0));
-			if (ny >= 0 && ny < MAP_HEIGHT && nx >= 0 && nx < MAP_WIDTH
-				&& map[ny][nx] === 0 && !cellIsOccupied(nx, ny)) {
+			if (cellOnMap(nx, ny) && !cellIsLand(nx, ny) && !cellIsOccupied(nx, ny)) {
 				state.pirate.x = nx;
 				state.pirate.y = ny;
-				drawCell(mx, my);
+				drawCell(nx, ny);
+				drawCell(nx + 1, ny);
 				drawCell(px, py);
+				drawCell(px + 1, py);
 			}
 		}
 	}
@@ -908,8 +954,7 @@ var moveTrawlers = function() {
 				continue;
 			var nx = trawler.x + (f.x > trawler.x ? 1 : (f.x < trawler.x ? -1 : 0)),
 				ny = trawler.y + (f.y > trawler.y ? 1 : (f.y < trawler.y ? -1 : 0));
-			if (ny >= 0 && ny < MAP_HEIGHT && nx >= 0 && nx < MAP_WIDTH
-				&& map[ny][nx] === WATER && !cellIsOccupied(nx, ny))
+			if (cellOnMap(nx, ny) && !cellIsLand(nx, ny) && !cellIsOccupied(nx, ny))
 				moved = moveItem(trawler.x, trawler.y, nx, ny);
 		}
 		if (!moved)
@@ -952,10 +997,13 @@ var checkMutiny = function() {
 
 var spawnMerchant = function() {
 	var ry = Math.floor(Math.random() * 20);
-	if (map[ry][0] === WATER) {
+//	debugLog("trying totrying to spawn merchant at " + xy_str(0, ry));
+	if (cellIsWater(0, ry)) { // What if cell is occupied by boat?
 		state.merchant = {
 			active: true,
 			x: 0, y: ry,
+			gold: rules.merchant_gold,
+			last_dock: 0,
 			moves: [],
 		};
 		debugLog("Merchant spawned at row " + ry);
@@ -969,10 +1017,12 @@ var spawnMerchant = function() {
 
 var spawnPirate = function() {
 	var ry = Math.floor(Math.random() * 20);
-	if (map[ry][MAP_RIGHT_COL] === WATER) {
+//	debugLog("trying to spawn pirate at " + xy_str(0, ry));
+	if (cellIsWater(MAP_RIGHT_COL, ry)) { // What if cell is occupied by boat?
 		state.pirate = {
 			active: true,
 			x: MAP_RIGHT_COL,	y: ry,
+			gold: rules.pirate_gold,
 			moves: []
 
 		};
@@ -987,8 +1037,8 @@ var spawnPirate = function() {
 
 var spawnStorm = function() {
 	state.storm.active = true;
-	state.storm.x = MAP_RIGHT_COL;
-	state.storm.y = (MAP_MID_ROW / 2) + Math.floor(Math.random() * (MAP_HEIGHT * 0.60));
+	state.storm.x = MAP_RIGHT_COL + 1;
+	state.storm.y = Math.floor((MAP_MID_ROW / 2) + (Math.random() * (MAP_HEIGHT * 0.60)));
 	state.storm.bias = (Math.random() - Math.random()) * 1.5;
 	alert("\x01n\x01hSevere storm warning!");
 	debugLog("storm spawned at row " + state.storm.y
@@ -1025,9 +1075,9 @@ function count(arr, val) {
 }
 
 var avoidStuff = function(ship, x, y, eastward, objects) {
-//	debugLog((eastward ? "merchant" : "pirate") + " avoiding land from " + x + " x " + y);
+	debugLog((eastward ? "merchant" : "pirate") + " avoiding land from " + x + " x " + y);
 
-	if (ship.moves.length >= 20 || y <= 0 || y >= MAP_BOTTOM_ROW)
+	if (ship.moves.length >= 20)
 		return false;
 
 	var moves = [];
@@ -1093,7 +1143,12 @@ var avoidStuff = function(ship, x, y, eastward, objects) {
 				--nx;
 				break;
 		}
-		if (map[ny][nx] == WATER && (!objects || !objects[ny][nx])) {
+		if (ny < MAP_TOP_ROW || ny > MAP_BOTTOM_ROW)
+			continue;
+		if (nx < MAP_LEFT_COL || nx > MAP_RIGHT_COL)
+			continue;
+		debugLog("avoiding stuff at " + xy_str(nx, ny));
+		if (cellIsWater(nx, ny) && (!objects || !objects[ny][nx])) {
 			ship.y = ny;
 			ship.x = nx;
 			return ship.moves.push(move);
@@ -1141,7 +1196,7 @@ var pathBetween = function(a, b, ter) {
 		for (var i = 0; i < dirs.length; i++) {
 			var nx = cx + dirs[i][0],
 				ny = cy + dirs[i][1];
-			if (nx >= 0 && nx < MAP_WIDTH && ny >= 0 && ny < MAP_HEIGHT) {
+			if (cellOnMap(nx, ny)) {
 				if (coord_search) {
 					if (ter == WATER) {
 						if (map[ny][nx] == WATER)
@@ -1201,7 +1256,7 @@ var handleWeather = function() {
 		}
 		var sx = Math.floor(state.storm.x),
 			sy = Math.floor(state.storm.y);
-		if (sx < 0 || sy < 0 || sy > MAP_BOTTOM_ROW) {
+		if (sx < MAP_LEFT_COL || sy < MAP_TOP_ROW || sy > MAP_BOTTOM_ROW) {
 			state.storm.active = false;
 			forceScrub(0, sy, 2);
 		}
@@ -1246,7 +1301,8 @@ var handleWeather = function() {
 		}
 		var rx = Math.floor(state.rain.x),
 			ry = Math.floor(state.rain.y);
-		if (ry >= MAP_BOTTOM_ROW || rx < 0 || rx > MAP_RIGHT_COL) {
+		// rain storm purposely starts at y=-1, so don't use cellOnMap() here
+		if (ry > MAP_BOTTOM_ROW || rx < MAP_LEFT_COL || rx > MAP_RIGHT_COL) {
 			state.rain.active = false;
 			forceScrub(0, Math.floor(ry), 2);
 		}
@@ -1274,9 +1330,9 @@ var handleWeather = function() {
 			wave.length--;
 		else {
 			wave.x++;
-			if (wave.length < rules.wave_min_width || Math.random() < 0.2)
+			if (wave.length < rules.wave_min_width || Math.random() < 0.3)
 				wave.length++;
-			else if (Math.random() < 0.15)
+			else if (wave.length > rules.wave_min_width && Math.random() < 0.3)
 				wave.length--;
 		}
 		if (wave.length < 1 || wave.x - wave.length >= MAP_RIGHT_COL)
@@ -1315,13 +1371,14 @@ var moveEntities = function() {
 			var nx = f.x + (random(3) - 1);
 			var ny = f.y + (random(3) - 1);
 			// If fish leaves map, remove it
-			if (nx < 0 || nx > MAP_RIGHT_COL || ny < 0 || ny > MAP_BOTTOM_ROW) {
+			if (!cellOnMap(nx, ny)) {
 				state.fishPool.splice(i, 1);
 				drawCell(oldX, oldY);
 				continue;
 			}
 			// Move if target is water
-			if (map[ny][nx] === WATER) {
+//			debugLog("trying to move fish to " + xy_str(nx, ny));
+			if (cellIsWater(nx, ny)) {
 				f.x = nx;
 				f.y = ny;
 				drawCell(oldX, oldY);
@@ -1333,8 +1390,8 @@ var moveEntities = function() {
 			for (var dy = -1; dy <= 1; dy++) {
 				var tx = f.x + dx,
 					ty = f.y + dy;
-				if (ty >= 0 && ty < MAP_HEIGHT && tx >= 0 && tx < MAP_WIDTH) {
-					if (itemMap[ty][tx] === ITEM_TRAWLER && Math.random() < rules.fish_catch_potential) {
+				if (cellOnMap(tx, ty)) {
+					if (itemAt(tx, ty) === ITEM_TRAWLER && Math.random() < rules.fish_catch_potential) {
 						var count = 1 + random(rules.fish_catch_max);
 						state.food += rules.fish_food_value * count;
 						if (!state.martialLaw)
@@ -1366,31 +1423,43 @@ var moveEntities = function() {
 			state.gold += rules.merchant_gold_value;
 		var mx = Math.floor(state.merchant.x),
 			my = Math.floor(state.merchant.y);
-		if (mx >= MAP_RIGHT_COL || pathToDock(mx, my)) {
+		if (mx > MAP_RIGHT_COL) {
 			state.merchant.active = false;
-			if (mx >= MAP_RIGHT_COL) {
-				if (!state.martialLaw) {
-					state.gold += rules.merchant_trade_bonus;
-					announce("\x01h\x01yInternational Trade Successful! +$" + rules.merchant_trade_bonus);
-					state.stats.intlTrades++;
-				}
-			} else {
-				if (!state.martialLaw) {
-					state.gold += rules.merchant_dock_bonus;
-					announce("\x01h\x01yDock Trade Successful! +$" + rules.merchant_dock_bonus);
-					state.stats.dockTrades++;
-				}
+			if (!state.martialLaw && state.merchant.gold > 0) {
+				state.gold += state.merchant.gold;
+				announce("\x01h\x01yInternational Trade Successful! +$" + state.merchant.gold);
+				state.stats.intlTrades++;
 			}
 			forceScrub(mx, my, 1);
 		}
-		else if (map[my][mx] !== WATER || itemMap[my][mx]) { // Can't use cellIsOccupied here
+		else if (cellIsWater(mx, my) && !itemAt(mx, my) && pathToDock(mx, my)) {
+			if (!state.martialLaw && state.merchant.gold && state.turn - state.merchant.last_dock > rules.merchant_dock_interval) {
+				var amt = Math.min(state.merchant.gold, rules.merchant_dock_bonus);
+				state.gold += amt;
+				announce("\x01h\x01yMerchant Docked and Traded Successfulfly! +$" + amt);
+				state.stats.dockTrades++;
+				state.merchant.gold -= amt;
+				if (state.merchant.gold < 1) {
+					state.merchant.active = false;
+					forceScrub(mx, my, 1);
+				} else {
+					drawCell(mx, my, BLINK);
+					drawCell(mx - 1, my, BLINK);
+					pendingUpdate.push(state.merchant.x, state.merchant.y);
+					pendingUpdate.push(state.merchant.x - 1, state.merchant.y);
+					state.merchant.last_dock = state.turn;
+				}
+			}
+		}
+		else if (cellIsLand(mx, my) || itemAt(mx, my)) { // Can't use cellIsOccupied here
 			// Try to move up or down around a coast line
 			if (!avoidStuff(state.merchant, mx - 1, my, /* eastward: */true, itemMap)) {
 				debugLog("MERCHANT BEACHED at " + mx + " x " + my);
 				state.merchant.active = false;
-				forceScrub(mx, my, 1);
 			} else
-				debugLog("Merchant successfully avoided stuff by moving to " + xy_str(state.merchant));
+				debugLog("Merchant successfully avoided stuff by moving from " 
+					+ xy_str(mx - 1, my) + " to " + xy_str(state.merchant));
+			forceScrub(mx - 1, my, 1);
 //			debugLog("Merchant moves: " + state.merchant.moves);
 		}
 	}
@@ -1405,6 +1474,7 @@ var moveEntities = function() {
 			state.pirate.x -= rules.pirate_speed;
 		var px = Math.floor(state.pirate.x),
 			py = Math.floor(state.pirate.y);
+		debugLog("trying to move pirate to " + xy_str(px, py));
 		if (state.merchant.active
 			&& Math.abs(px - Math.floor(state.merchant.x)) <= 1
 			&& Math.abs(py - Math.floor(state.merchant.y)) <= 1) {
@@ -1412,16 +1482,19 @@ var moveEntities = function() {
 			announce("\x01h\x01rMerchant ship sunk by Pirates!");
 			forceScrub(Math.floor(state.merchant.x), Math.floor(state.merchant.y), 1);
 		}
-		if (px <= 0) {
-			state.gold = Math.max(0, state.gold - rules.pirate_gold_value);
+		if (px < MAP_LEFT_COL) {
 			state.pirate.active = false;
-			announce("\x01h\x01rPirates Escaped with Loot! -$" + rules.pirate_gold_value);
+			if (state.pirate.gold > 0) {
+				state.gold = Math.max(0, state.gold - rules.pirate_escape_penalty);
+				announce("\x01h\x01rPirates Escaped with Loot ($" + state.pirate.gold + ") penalized -$" + rules.pirate_escape_penalty);
+			}
 			forceScrub(0, py, 1);
 		}
-		else if (map[py][px] !== WATER) {
+		else if (!cellIsWater(px, py)) {
+			debugLog(xy_str(px, py) + " is not water: " + map[py][px]);
 			// Try to move up or down around a coast line
 			if (!avoidStuff(state.pirate, px + 1, py, /* eastward: */false)) {
-				debugLog("PIRATE BEACHED at " + px + " x " + py);
+				debugLog("PIRATE BEACHED at " + px + " x " + py + " after " + state.pirate.moves.length + " moves");
 				state.pirate.active = false;
 				forceScrub(px, py, 1);
 			}
@@ -1435,10 +1508,10 @@ var moveEntities = function() {
 	checkMutiny();
 
 	// Redraw
-	if (oldMerc.active) drawCell(oldMerc.x, oldMerc.y);
-	if (oldPirate.active) drawCell(oldPirate.x, oldPirate.y);
-	if (state.merchant.active) drawCell(state.merchant.x, state.merchant.y);
-	if (state.pirate.active) drawCell(state.pirate.x, state.pirate.y);
+	if (oldMerc.active) forceScrub(oldMerc.x, oldMerc.y, 1);
+	if (oldPirate.active) forceScrub(oldPirate.x, oldPirate.y, 1);
+	if (state.merchant.active) forceScrub(state.merchant.x, state.merchant.y, 1);
+	if (state.pirate.active) forceScrub(state.pirate.x, state.pirate.y, 1);
 //	console.flush();
 };
 
@@ -1555,8 +1628,8 @@ var drawUI = function(legend) {
 	console.gotoxy(lx, ly++);
 	console.putmsg("\x01n[\x01hH\x01n]elp\x01>");
 	console.gotoxy(lx, ly++);
-	console.putmsg("\x01n[\x01hQ\x01n]uit\x01>");
-	console.gotoxy(1, 23);
+	console.putmsg("\x01n[\x01hQ\x01n]uit/Pause Game\x01>");
+	console.gotoxy(1, MAP_HEIGHT + 1);
 	console.attributes = BG_BLACK | LIGHTGRAY;
 	var gold = state.gold > 999 ? format("%1.1fK", state.gold / 1000) : state.gold;
 	var food = state.food > 999 ? format("%1.1fK", state.food / 1000) : state.food;
@@ -1578,9 +1651,15 @@ var drawUI = function(legend) {
 		, state.turn / 10 >= (rules.max_turns - 1) / 10 ? "\x01r" : "\x01n"
 		, state.turn / 10, rules.max_turns / 10));
 	console.cleartoeol();
-	console.gotoxy(1, 24);
-	if (state.msg) {
-		console.putmsg("\x01n\x01h" + state.msg);
+	var msg_index = 0;
+	for (var i = 0; i < MAX_MSGS; ++i) {
+		console.gotoxy(1, MAP_HEIGHT + 2 + i);
+		if (state.msg.length >= MAX_MSGS - i) {
+			console.putmsg("\x01n\x01h" + state.msg[msg_index].txt);
+			if (state.msg[msg_index].repeat > 0)
+				console.print(" [x" + (state.msg[msg_index].repeat + 1) + "]");
+			msg_index++;
+		}
 		console.cleartoeol();
 	}
 	hideCursor();
@@ -1601,6 +1680,15 @@ var buildItem = function(type) {
 		alert("Wrong terrain to build " + item.name);
 		return false;
 	}
+	if (type == ITEM_DOCK) {
+		if (map[state.cursor.y][state.cursor.x - 1] != WATER
+			&& map[state.cursor.y][state.cursor.x + 1] != WATER
+			&& map[state.cursor.y - 1][state.cursor.x] != WATER
+			&& map[state.cursor.y + 1][state.cursor.x] != WATER) {
+			alert("Docks should be built near water");
+			return false;
+		}
+	}
 	if (itemIsBoat(type)) {
 		if (!pathToDock(state.cursor)) {
 			alert("Need a nearby Dock or Pier to build " + item.name);
@@ -1611,10 +1699,7 @@ var buildItem = function(type) {
 		return false;
 	}
 	if (type == ITEM_BRIDGE) {
-		if (state.cursor.y < 1
-			|| state.cursor.x < 1
-			|| state.cursor.y >= MAP_BOTTOM_ROW
-			|| state.cursor.x >= MAP_RIGHT_COL) {
+		if (!cellOnMap(state.cursor.x, state.cursor.y)) {
 			alert("Cannot build " + item.name + " there");
 			return false;
 		}
@@ -1795,10 +1880,43 @@ var handleOperatorCommand = function(key) {
 			saveGame('\t');
 			break;
 		case CTRL_D:
-			debugGame(["damage"]);
+			dumpObj(map, MAP_FILE);
 			break;
 	}
-	drawUI();
+	if (state.in_progress) {
+		drawUI();
+		return;
+	}
+	switch (key) {
+		case ',':
+			map[state.cursor.y][state.cursor.x] = WATER;
+			drawCell(state.cursor.x, state.cursor.y);
+			break;
+		case 'N':
+			map[state.cursor.y][state.cursor.x] = LAND_N;
+			drawCell(state.cursor.x, state.cursor.y);
+			break;
+		case 'S':
+			map[state.cursor.y][state.cursor.x] = LAND_S;
+			drawCell(state.cursor.x, state.cursor.y);
+			break;
+		case 'E':
+			map[state.cursor.y][state.cursor.x] = LAND_E;
+			drawCell(state.cursor.x, state.cursor.y);
+			break;
+		case 'W':
+			map[state.cursor.y][state.cursor.x] = LAND_W;
+			drawCell(state.cursor.x, state.cursor.y);
+			break;
+		case '/':
+			map[state.cursor.y][state.cursor.x] = LAND;
+			drawCell(state.cursor.x, state.cursor.y);
+			break;
+		case CTRL_O:
+			loadMap(MAP_FILE);
+			refreshMap();
+			break;
+	}
 }
 
 var saveGame = function(space) {
@@ -1819,15 +1937,15 @@ var saveGame = function(space) {
 	return false;
 }
 
-var debugGame = function(replacer, space) {
-	var sf = new File(DEBUG_FILE);
+var dumpObj = function(obj, filename, replacer, space) {
+	var sf = new File(filename);
 	if (sf.open("w")) {
-		sf.write(JSON.stringify(this, replacer, space));
+		sf.write(JSON.stringify(obj, replacer, space));
 		sf.close();
-		debugLog("Saved game debug to " + DEBUG_FILE);
+		debugLog("Saved game debug to " + sf.name);
 		return true;
 	}
-	js.global.log(LOG_WARNING, "Failed to save game data to " + DEBUG_FILE);
+	js.global.log(LOG_WARNING, "Failed to save game data to " + sf.name);
 	return false;
 }
 
@@ -1840,34 +1958,118 @@ var handleQuit = function() {
     console.gotoxy(1, 24);
     console.cleartoeol();
 
-    var prompt = "";
-    var canSave = (state.turn < rules.max_turns);
+    var prompt = "\x01n\x01h\x01rQuit? \x01n";
 
-    if (canSave)
-        prompt += "\x01h\x01w[S]ave | "
-	prompt += "\x01h\x01w[F]inish & Score | [A]bort Game | [V]iew Hall of Fame | [C]ontinue: ";
+    if (state.in_progress)
+        prompt += "\x01h\x01w[S]ave Game | "
+	if (state.started)
+		prompt += "\x01h\x01w[F]inish Game | ";
+	prompt += "[A]bandon Game | [C]ontinue Game";
 
     console.putmsg(prompt);
     var choice = console.getkey(K_UPPER);
 
-    if (choice === 'S' && canSave) {
+    if (choice === 'S' && state.in_progress) {
 		console.putmsg("\r\x01n\x01hSee you next time, Governor!\x01n\x01>");
 		return true;
 	} else if (choice === 'A') {
 		state.in_progress = false;
 		return true;
-    } else if (choice === 'F') {
+    } else if (choice === 'F' && state.started) {
         finishGame();
 		return true;
     } else if (choice === 'V') {
         showHighScores();
         refreshScreen(); // Redraw map after returning from high scores
-    } else if (choice === 'C') {
-        state.msg = "Welcome back."; // Not an alert
+    } else {
+//        pushMsg("Welcome back, Governor!"); // Not an alert
         drawUI();
     }
 	return false;
 };
+
+function loadMap(filename) {
+	var success = false;
+	var mapF = new File(filename);
+	if (mapF.exists && mapF.open("r")) {
+		try {
+			map = JSON.parse(mapF.read());
+			success = true;
+		} catch(e) {
+			js.global.log(LOG_WARNING, e + ": " + mapF.name);
+		}
+		mapF.close();
+	} else
+		log(LOG_WARNING, "Error opening " + filename);
+	return success;
+}
+
+function genMap() {
+
+	for (var y = 0; y < MAP_HEIGHT; y++) {
+		map[y] = [];
+		for (var x = 0; x < MAP_WIDTH; x++) {
+			map[y][x] = WATER;
+		}
+	}
+
+	for (var i = 0; i < 3; i++) {
+		var cx = 10 + (i * 20)
+		var cy = 11;
+		for (var n = 0; n < 300; n++) {
+			if (cellOnMap(cx, cy))
+				map[cy][cx] = LAND;
+			cx += Math.floor(Math.random() * 3) - 1;
+			cy += Math.floor(Math.random() * 3) - 1;
+			if (cx < 2) cx = 2;
+			if (cx > MAP_RIGHT_COL -3 ) cx = MAP_RIGHT_COL - 3;
+			if (cy < 2) cy = 2;
+			if (cy > MAP_BOTTOM_ROW - 3) cy = MAP_BOTTOM_ROW - 3;
+		}
+	}
+
+	// Rough up the edges of land masses
+	for (var y = 2; y < MAP_BOTTOM_ROW - 1; ++y) {
+		for (var x = 2; x < MAP_RIGHT_COL - 1; ++x) {
+			if (map[y][x] === WATER)
+				continue;
+			switch (random(5)) {
+				case 0:
+					if (map[y - 1][x] == WATER) {
+						map[y][x] = LAND_N;
+						break;
+					}
+				case 1:
+					if (map[y + 1][x] == WATER) {
+						map[y][x] = LAND_S;
+						break;
+					}
+				case 2:
+					if (map[y][x + 1] == WATER) {
+						map[y][x] = LAND_E;
+						break;
+					}
+				case 3:
+					if (map[y][x - 1] == WATER) {
+						map[y][x] = LAND_W;
+						break;
+					}
+			}
+		}
+	}
+}
+
+function getMaps()
+{
+	var f = new File(MAPS_CFG_FILE);
+	if (!f.open("r")) {
+		log(LOG_WARNING, "Error " + f.error + " opening " + f.name);
+		return null;
+	}
+	var maps = f.iniGetAllObjects();
+	f.close();
+	return maps;
+}
 
 // --- RUNTIME ---
 function main () {
@@ -1897,59 +2099,27 @@ function main () {
 	}
 	if (!game_restored) {
 		for (var y = 0; y < MAP_HEIGHT; y++) {
-			map[y] = [];
 			itemMap[y] = [];
 			damageMap[y] = [];
 			for (var x = 0; x < MAP_WIDTH; x++) {
-				map[y][x] = WATER;
 				itemMap[y][x] = "";
 				damageMap[y][x] = 0;
 			}
 		}
-		for (var i = 0; i < 3; i++) {
-			var cx = 10 + (i * 20)
-			var cy = 11;
-			for (var n = 0; n < 300; n++) {
-				if (cy >= 0 && cy < MAP_HEIGHT && cx >= 0 && cx < MAP_WIDTH)
-					map[cy][cx] = LAND;
-				cx += Math.floor(Math.random() * 3) - 1;
-				cy += Math.floor(Math.random() * 3) - 1;
-				if (cx < 2) cx = 2;
-				if (cx > 57) cx = 57;
-				if (cy < 2) cy = 2;
-				if (cy > 19) cy = 19;
-			}
+		var map_file;
+		var maps = getMaps();
+		if (maps) {
+			var i =0;
+			for (i = 0; i < maps.length; ++i)
+				console.uselect(i, "Map", maps[i].desc);
+			console.uselect(i, "", "Randomly Generated");
+			var choice = console.uselect();
+			log("choice = " + choice);
+			if (choice >= 0 && choice < maps.length)
+				map_file = js.exec_dir + maps[choice].name;
 		}
-
-		// Rough up the edges of land masses
-		for (var y = 2; y < MAP_BOTTOM_ROW - 1; ++y) {
-			for (x = 2; x < MAP_RIGHT_COL - 1; ++x) {
-				if (map[y][x] === WATER)
-					continue;
-				switch (random(5)) {
-					case 0:
-						if (map[y - 1][x] == WATER) {
-							map[y][x] = LAND_N;
-							break;
-						}
-					case 1:
-						if (map[y + 1][x] == WATER) {
-							map[y][x] = LAND_S;
-							break;
-						}
-					case 2:
-						if (map[y][x + 1] == WATER) {
-							map[y][x] = LAND_E;
-							break;
-						}
-					case 3:
-						if (map[y][x - 1] == WATER) {
-							map[y][x] = LAND_W;
-							break;
-						}
-				}
-			}
-		}
+		if (!map_file || !loadMap(map_file))
+			genMap();
 		spawnFish();
 	}
 	refreshScreen(true);
@@ -1987,21 +2157,61 @@ function main () {
 		var cursor = { x: state.cursor.x, y: state.cursor.y };
 
 		switch (key) {
+			case KEY_HOME:
+				state.cursor.x = MAP_LEFT_COL;
+				break;
+			case KEY_END:
+				state.cursor.x = MAP_RIGHT_COL;
+				break;
+			case '8':
 			case KEY_UP:
-				if (state.cursor.y > 0)
+				if (state.cursor.y > MAP_TOP_ROW)
 					state.cursor.y--;
 				break;
+			case '2':
 			case KEY_DOWN:
 				if (state.cursor.y < MAP_BOTTOM_ROW)
 					state.cursor.y++;
 				break;
+			case '4':
 			case KEY_LEFT:
-				if (state.cursor.x > 0)
+				if (state.cursor.x > MAP_TOP_ROW)
 					state.cursor.x--;
 				break;
+			case '6':
 			case KEY_RIGHT:
 				if (state.cursor.x < MAP_RIGHT_COL)
 					state.cursor.x++;
+				break;
+			case '7':
+				if (state.cursor.y > MAP_TOP_ROW && state.cursor.x > MAP_LEFT_COL) {
+					state.cursor.y--;
+					state.cursor.x--;
+				}
+				break;
+			case '9':
+				if (state.cursor.y > MAP_TOP_ROW && state.cursor.x < MAP_RIGHT_COL) {
+					state.cursor.y--;
+					state.cursor.x++;
+				}
+				break;
+			case '1':
+				if (state.cursor.y < MAP_BOTTOM_ROW && state.cursor.x > MAP_LEFT_COL) {
+					state.cursor.y++;
+					state.cursor.x--;
+				}
+				break;
+			case '3':
+				if (state.cursor.y < MAP_BOTTOM_ROW && state.cursor.x < MAP_RIGHT_COL) {
+					state.cursor.y++;
+					state.cursor.x++;
+				}
+				break;
+			case KEY_PAGEUP:
+				state.cursor.y = MAP_TOP_ROW;
+				break;
+			case KEY_PAGEDN:
+				state.cursor.y = MAP_BOTTOM_ROW;
 				break;
 			case CTRL_R:
 				refreshScreen(true);
@@ -2009,6 +2219,7 @@ function main () {
 			case CTRL_U:
 				refreshMap();
 				break;
+			case '0':
 			case KEY_INSERT:
 			case '\r':
 				if (!state.started || state.in_progress)
@@ -2046,18 +2257,11 @@ function main () {
 				}
 				refreshScreen();
 				break;
-			case 'P':
-				console.attributes = LIGHTGRAY;
-				console.gotoxy(MAP_RIGHT_COL + 2, 24);
-				console.print(bbs.text("Pause"));
-				console.cleartoeol();
-				console.getkey();
-				drawUI();
-				continue;
 			case 'Q':
 				if (handleQuit())
 					return;
 				continue;
+			case '.':
 			case KEY_DEL:
 				if (itemMap[state.cursor.y][state.cursor.x]) {
 					var dc = itemDemoCost(itemMap[state.cursor.y][state.cursor.x]);
