@@ -31,6 +31,24 @@
 #define PRINTFILE_MAX_FILE_LEN (2 * 1024 * 1024)
 #endif
 
+
+/****************************************************************************/
+/* Reads (and discards) any '\n' following a terminating '\r'				*/
+/****************************************************************************/
+char* fgetline(char* s, int size, FILE* stream)
+{
+	if (fgets(s, size, stream) == NULL)
+		return NULL;
+	if (*lastchar(s) == '\r') {
+		if (fgetc(stream) != '\n') {
+			if (fseeko(stream, -1, SEEK_CUR) != 0) {
+				return NULL;
+			}
+		}
+	}
+	return s;
+}
+
 /****************************************************************************/
 /* Prints a file remotely and locally, interpreting ^A sequences, checks    */
 /* for pauses, aborts and ANSI. 'str' is the path of the file to print      */
@@ -157,33 +175,35 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 		if (!pause_enabled())
 			mode &= ~P_SEEK;
 
+		int rdlen = length;
 		if (mode & P_SEEK) {
 			mode |= P_NOPAUSE;
-			if (length > (int)term->cols)
-				length = (int)term->cols;
+			if (rdlen > (int)term->cols)
+				rdlen = (int)term->cols;
 		}
 		if (!(mode & P_SAVEATR))
 			attr(LIGHTGRAY);
 		if (mode & P_NOPAUSE)
 			sys_status |= SS_PAUSEOFF;
 
-		if (length > PRINTFILE_MAX_LINE_LEN)
-			length = PRINTFILE_MAX_LINE_LEN;
-		if ((buf = (char*)malloc(length + 1L)) == NULL) {
+		if (rdlen > PRINTFILE_MAX_LINE_LEN)
+			rdlen = PRINTFILE_MAX_LINE_LEN;
+		if ((buf = (char*)malloc(rdlen + 1L)) == NULL) {
 			fclose(stream);
-			errormsg(WHERE, ERR_ALLOC, fpath, length + 1L);
+			errormsg(WHERE, ERR_ALLOC, fpath, rdlen + 1L);
 			return false;
 		}
 
+		uint lncntr = 0; // term->lncntr doesn't increment for initial blank lines
 		ansiParser.reset();
 		while (!feof(stream) && !msgabort()) {
 			off_t o = ftello(stream);
-			if (fgets(buf, length + 1, stream) == NULL)
+			if (fgetline(buf, rdlen + 1, stream) == NULL)
 				break;
-			truncsp(buf);
+			truncnl(buf);
 			if ((mode & P_SEEK) && line == lines) {
 				++lines;
-				if ((offset = static_cast<off_t*>(realloc_or_free(offset, lines * sizeof *offset))) == nullptr) {
+				if ((offset = static_cast<off_t *>(realloc_or_free(offset, lines * sizeof *offset))) == nullptr) {
 					errormsg(WHERE, ERR_ALLOC, fpath, lines * sizeof *offset);
 					break;
 				}
@@ -193,12 +213,14 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 				utf8_normalize_str(buf);
 			if (putmsgfrag(buf, mode, org_cols, obj) != '\0') // early-EOF?
 				break;
-			if (*buf == '\0' || term->column)
+			if (*buf == '\0' || term->column > 0)
 				term->newline();
-			if ((mode & P_SEEK) && (term->lncntr == term->rows - 1 || key == TERM_KEY_DOWN)) {
-				term->lncntr = 0;
+			++lncntr;
+			if ((mode & P_SEEK) && (lncntr == term->rows - 1 || key == TERM_KEY_DOWN)) {
+				lncntr = 0;
 				int curatr = term->curatr;
-				bputs(text[SeekPrompt]);
+				double progress = (double)length / ftell(stream);
+				bprintf(P_ATCODES, text[SeekPrompt], (int)(progress ? (100.0 / progress) : 0));
 				auto nextline = line;
 				key = getkey(kmode);
 				if (key == no_key() || key == quit_key())
@@ -231,12 +253,12 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 							errormsg(WHERE, ERR_SEEK, fpath, static_cast<int>(offset[lines - 1]));
 							break;
 						}
-						if (fgets(buf, length + 1, stream) == NULL)
+						if (fgetline(buf, rdlen + 1, stream) == NULL)
 							break;
 						size_t lastline = lines - 1;
 						while (!feof(stream) && !msgabort()) {
 							o = ftello(stream);
-							if (fgets(buf, length + 1, stream) == NULL)
+							if (fgetline(buf, rdlen + 1, stream) == NULL)
 								break;
 							++lastline;
 							if (lastline >= lines) {
@@ -249,10 +271,10 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 							}
 						}
 						bputs(text[SeekingFileDone]);
-						if (lines <= term->rows -1)
+						if (lines <= term->rows - 1)
 							nextline = 0;
 						else
-							nextline = lines - (term->rows -1);
+							nextline = lines - (term->rows - 1);
 						break;
 					}
 					case TERM_KEY_PAGEDN:

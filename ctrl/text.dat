@@ -1131,7 +1131,7 @@
 "\1n\1h\1?Wide (> 80 column) output mode is now %s.\r\n"   941 WideModeIsNow
 "\1n\1hSeeking @ELLIPSIS@\1n"                              942 SeekingFile
 "\1n\1[\1>"                                                862 SeekingFileDone
-"\1n\1r\1h[\1wSeek: \1r"\                                  863 SeekPrompt
+"\1n\1r\1h%3d%% [\1wSeek: \1r"\                            863 SeekPrompt
 	"@~Home~\\x02@\1w/\1r"\
 	"@~End~\\x05@\1w/\1r"\
 	"@~PgUp~\\x10@\1w/\1r"\
