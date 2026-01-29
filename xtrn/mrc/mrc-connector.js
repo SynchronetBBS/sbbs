@@ -28,7 +28,7 @@ f = undefined;
 if (!settings.ssl)
 	settings.ssl=false;
 
-const PROTOCOL_VERSION = '1.3.4';
+const PROTOCOL_VERSION = '1.3.5';
 const MAX_LINE = 512;
 const FROM_SITE = system.name.replace(/ /g, "_");
 const SYSTEM_NAME = system_info.system_name || system.name;
