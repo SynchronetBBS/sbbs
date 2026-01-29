@@ -853,7 +853,7 @@ static void send_thread(void* arg)
 	}
 
 	fclose(fp);
-	if (ftp_set != NULL && !terminate_server)
+	if (ftp_set != NULL)
 		*xfer.inprogress = FALSE;
 	if (xfer.tmpfile) {
 		if (!(startup->options & FTP_OPT_KEEP_TEMP_FILES))
@@ -1148,7 +1148,7 @@ static void receive_thread(void* arg)
 		sockprintf(xfer.ctrl_sock, xfer.ctrl_sess, "226 Upload complete (%lu cps).", cps);
 	}
 
-	if (ftp_set != NULL && !terminate_server)
+	if (ftp_set != NULL)
 		*xfer.inprogress = FALSE;
 
 	thread_down();
@@ -4999,7 +4999,7 @@ static void ctrl_thread(void* arg)
 		lprintf(LOG_DEBUG, "%04d Waiting for transfer to complete...", sock);
 		count = 0;
 		while (transfer_inprogress == TRUE) {
-			if (ftp_set == NULL || terminate_server) {
+			if (ftp_set == NULL) {
 				mswait(2000);   /* allow xfer threads to terminate */
 				break;
 			}
@@ -5019,9 +5019,10 @@ static void ctrl_thread(void* arg)
 				}
 			}
 			if (count && (count % 60) == 0)
-				lprintf(LOG_WARNING, "%04d Still waiting for transfer to complete "
-				        "(count=%lu, aborted=%d, lastactive=%" PRIX64 ") ..."
-				        , sock, count, transfer_aborted, (uint64_t)lastactive);
+				lprintf(LOG_WARNING, "%04d Still waiting (%us) for transfer to complete "
+				        "(aborted=%d, lastactive=%" PRId64 "s, max_inactivity=%us) ..."
+				        , sock, count, transfer_aborted, (uint64_t)(time(NULL)-lastactive)
+						, startup->max_inactivity);
 			count++;
 			mswait(1000);
 		}
@@ -5301,7 +5302,7 @@ void ftp_server(void* arg)
 			lprintf(LOG_DEBUG, "Passive Port High: %u", startup->pasv_port_high);
 		}
 
-		lprintf(LOG_DEBUG, "Maximum inactivity: %d seconds", startup->max_inactivity);
+		lprintf(LOG_DEBUG, "Maximum inactivity: %u seconds", startup->max_inactivity);
 
 		update_clients();
 
