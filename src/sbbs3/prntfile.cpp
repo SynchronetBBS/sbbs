@@ -178,7 +178,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 		int rdlen = length;
 		if (mode & P_SEEK) {
 			mode |= P_NOPAUSE;
-			if (rdlen > (int)term->cols)
+			if (rdlen > (int)term->cols && !(mode & P_TRUNCATE))
 				rdlen = (int)term->cols;
 		}
 		if (!(mode & P_SAVEATR))
