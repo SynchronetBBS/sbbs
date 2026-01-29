@@ -125,6 +125,7 @@ static
 bool _fmutex_open(fmutex_t* fm, const char* text, long max_age, bool auto_remove)
 {
 	size_t len;
+	time_t now;
 #if !defined(NO_SOCKET_SUPPORT)
 	char   hostname[128];
 #endif
@@ -135,9 +136,10 @@ bool _fmutex_open(fmutex_t* fm, const char* text, long max_age, bool auto_remove
 
 	if (fm == NULL)
 		return false;
+	now = time(NULL);
 	fm->fd = -1;
 	fm->time = fdate(fm->name);
-	if (max_age > 0 && fm->time != -1 && (time(NULL) - fm->time) > max_age) {
+	if (max_age > 0 && fm->time != -1 && now > fm->time && (now - fm->time) > max_age) {
 		if (remove(fm->name) != 0)
 			return false;
 	}
