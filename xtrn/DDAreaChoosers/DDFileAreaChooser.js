@@ -131,6 +131,7 @@ if (typeof(require) === "function")
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
 	require("DDAreaChooserCommon.js", "getAreaHeirarchy");
 	require("choice_scroll_box.js", "ChoiceScrollbox");
+	require("cp437_defs.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
 }
 else
 {
@@ -138,6 +139,7 @@ else
 	load("dd_lightbar_menu.js");
 	load("DDAreaChooserCommon.js");
 	load("choice_scroll_box.js");
+	load("cp437_defs.js");
 }
 
 // This script requires Synchronet version 3.14 or higher.
@@ -1881,7 +1883,7 @@ function DDFileAreaChooser_DoUserSettings_Scrollable()
 	// directory
 	const CHG_LIB_REMEMBER_DIRECTORY_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Remember directory when changing libraries"));
 	if (this.userSettings.rememberLastDirWhenChangingLib)
-		optionBox.chgCharInTextItem(CHG_LIB_REMEMBER_DIRECTORY_OPT_INDEX, checkIdx, CHECK_CHAR);
+		optionBox.chgCharInTextItem(CHG_LIB_REMEMBER_DIRECTORY_OPT_INDEX, checkIdx, CP437_CHECK_MARK);
 
 	// Create an object containing toggle values (true/false) for each option index
 	var optionToggles = {};
@@ -1904,7 +1906,7 @@ function DDFileAreaChooser_DoUserSettings_Scrollable()
 				// Toggle the option and refresh it on the screen
 				optionToggles[itemIndex] = !optionToggles[itemIndex];
 				if (optionToggles[itemIndex])
-					optionBox.chgCharInTextItem(itemIndex, checkIdx, CHECK_CHAR);
+					optionBox.chgCharInTextItem(itemIndex, checkIdx, CP437_CHECK_MARK);
 				else
 					optionBox.chgCharInTextItem(itemIndex, checkIdx, " ");
 				optionBox.refreshItemCharOnScreen(itemIndex, checkIdx);
@@ -2053,14 +2055,14 @@ function CreateFileDirChangeSortOptMenu(pX, pY, pWidth, pHeight, pCurrentSortSet
 	sortOptMenu.borderEnabled = true;
 	sortOptMenu.colors.borderColor = "\x01n\x01b";
 	sortOptMenu.borderChars = {
-		upperLeft: UPPER_LEFT_DOUBLE,
-		upperRight: UPPER_RIGHT_DOUBLE,
-		lowerLeft: LOWER_LEFT_DOUBLE,
-		lowerRight: LOWER_RIGHT_DOUBLE,
-		top: HORIZONTAL_DOUBLE,
-		bottom: HORIZONTAL_DOUBLE,
-		left: VERTICAL_DOUBLE,
-		right: VERTICAL_DOUBLE
+		upperLeft: CP437_BOX_DRAWINGS_UPPER_LEFT_DOUBLE,
+		upperRight: CP437_BOX_DRAWINGS_UPPER_RIGHT_DOUBLE,
+		lowerLeft: CP437_BOX_DRAWINGS_LOWER_LEFT_DOUBLE,
+		lowerRight: CP437_BOX_DRAWINGS_LOWER_RIGHT_DOUBLE,
+		top: CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE,
+		bottom: CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE,
+		left: CP437_BOX_DRAWINGS_DOUBLE_VERTICAL,
+		right: CP437_BOX_DRAWINGS_DOUBLE_VERTICAL
 	};
 	sortOptMenu.topBorderText = "File area change sorting";
 	sortOptMenu.Add("None", FILE_DIR_SORT_NONE);
