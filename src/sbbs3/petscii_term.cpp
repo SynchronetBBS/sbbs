@@ -302,8 +302,10 @@ void PETSCII_Terminal::cleartoeol()
 {
 	unsigned s;
 	s = column;
-	while (++s <= cols && sbbs->online)
-		sbbs->term_out(" \x14");
+	while (++s <= cols && sbbs->online) {
+		sbbs->term_out(" ");
+		cursor_left();
+	}
 }
 
 void PETSCII_Terminal::clearline()
