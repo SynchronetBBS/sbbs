@@ -159,8 +159,8 @@ function MRC_Session(host, port, user, pass, alias) {
                     emit('nicks', state.nicks);
                 }
             } 
-        } else if (msg.to_user == '' || user.toLowerCase() == msg.to_user.toLowerCase()) {            
-            if (user.toLowerCase() == msg.to_user.toLowerCase()) {
+        } else if (msg.to_user == '' || user.toLowerCase().replace(/\s/g, '_') == msg.to_user.toLowerCase()) {            
+            if (user.toLowerCase().replace(/\s/g, '_') == msg.to_user.toLowerCase()) { // fix for incoming DirectMsg it user's name contains a space which the client replaced with an underscore
                 state.last_private_msg_from = msg.from_user;
             }            
             if (msg.to_room == '' || msg.to_room == state.room) {
