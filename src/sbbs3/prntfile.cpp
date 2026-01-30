@@ -33,20 +33,36 @@
 
 
 /****************************************************************************/
-/* Reads (and discards) any '\n' following a terminating '\r'				*/
+/* like fgets(), excepts discards all carriage-returns						*/
+/* and if cols is non-zero, stops reading when displayed width >= cols		*/
 /****************************************************************************/
-char* fgetline(char* s, int size, FILE* stream)
+char* sbbs_t::fgetline(char* s, int size, int cols, FILE* stream)
 {
-	if (fgets(s, size, stream) == NULL)
-		return NULL;
-	if (*lastchar(s) == '\r') {
-		if (fgetc(stream) != '\n') {
-			if (fseeko(stream, -1, SEEK_CUR) != 0) {
+	int len = 0;
+
+	memset(s, 0, size);
+
+	while(len < size) {
+		int ch = fgetc(stream);
+		if (ch == EOF)
+			break;
+		if (ch == '\r')
+			continue;
+		s[len++] = ch;
+		if (ch == '\n')
+			break;
+		if (cols && (int)term->bstrlen(s) >= cols) {
+			ch = fgetc(stream);
+			if (ch == '\r')
+				ch = fgetc(stream);
+			if (ch == EOF || ch == '\n')
+				break;
+			if (fseek(stream, -1, SEEK_CUR) != 0)
 				return NULL;
-			}
+			break;
 		}
 	}
-	return s;
+	return len ? s : NULL;
 }
 
 /****************************************************************************/
@@ -175,30 +191,27 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 		if (!pause_enabled())
 			mode &= ~P_SEEK;
 
-		int rdlen = length;
-		if (mode & P_SEEK) {
+		if (mode & P_SEEK)
 			mode |= P_NOPAUSE;
-			if (rdlen > (int)term->cols && !(mode & P_TRUNCATE))
-				rdlen = (int)term->cols;
-		}
 		if (!(mode & P_SAVEATR))
 			attr(LIGHTGRAY);
 		if (mode & P_NOPAUSE)
 			sys_status |= SS_PAUSEOFF;
 
-		if (rdlen > PRINTFILE_MAX_LINE_LEN)
-			rdlen = PRINTFILE_MAX_LINE_LEN;
-		if ((buf = (char*)malloc(rdlen + 1L)) == NULL) {
+		if (length > PRINTFILE_MAX_LINE_LEN)
+			length = PRINTFILE_MAX_LINE_LEN;
+		if ((buf = (char*)malloc(length + 1L)) == NULL) {
 			fclose(stream);
-			errormsg(WHERE, ERR_ALLOC, fpath, rdlen + 1L);
+			errormsg(WHERE, ERR_ALLOC, fpath, length + 1L);
 			return false;
 		}
 
 		uint lncntr = 0; // term->lncntr doesn't increment for initial blank lines
 		ansiParser.reset();
+		int cols = (mode & P_SEEK) ? term->cols : 0;
 		while (!feof(stream) && !msgabort()) {
 			off_t o = ftello(stream);
-			if (fgetline(buf, rdlen + 1, stream) == NULL)
+			if (fgetline(buf, length + 1, cols, stream) == NULL)
 				break;
 			truncnl(buf);
 			if ((mode & P_SEEK) && line == lines) {
@@ -253,12 +266,12 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 							errormsg(WHERE, ERR_SEEK, fpath, static_cast<int>(offset[lines - 1]));
 							break;
 						}
-						if (fgetline(buf, rdlen + 1, stream) == NULL)
+						if (fgetline(buf, length + 1, cols, stream) == NULL)
 							break;
 						size_t lastline = lines - 1;
 						while (!feof(stream) && !msgabort()) {
 							o = ftello(stream);
-							if (fgetline(buf, rdlen + 1, stream) == NULL)
+							if (fgetline(buf, length + 1, cols, stream) == NULL)
 								break;
 							++lastline;
 							if (lastline >= lines) {

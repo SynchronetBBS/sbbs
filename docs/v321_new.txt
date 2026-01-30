@@ -42,6 +42,10 @@ o Track user bytes downloaded (in files) per day
 
 Terminal Server
 ~~~~~~~~~~~~~~~
+o New "seek" mode available when viewing files allows jumping around with
+  extended keys (e.g. home, end, page up/down, arrow keys) without relying on
+  terminal scroll-back (see/use new P_SEEK mode with console.printfile()
+  and (the new) printfile.js
 o New node*/status.ini file to report current node status with more accurate
   representation of the current external program being executed, if any
 o Multiple loadable modules may be configured for each loadable module type
@@ -182,6 +186,7 @@ o Allow time-duration and byte-count format paramters for some @-codes.
 o Fixed for large values: TPERC, TPERD, TTODAY, TTOTAL, and TBANKED
 o New @-codes:
   - 80COLS (display the remaining content formatted for an 80-column screen)
+  - WRAP   (ungracefully-wrap any lines longer than the display width)
   - NOCODE (disable @-code parsing for remainder of message/file)
   - LOGOFF (like HANGUP, but more graceful, display logoff messages, etc.)
   - PROP:[section]key (a user property value from data/user/*.ini)
@@ -237,12 +242,16 @@ o New @-codes:
 
 Text Strings
 ~~~~~~~~~~~~
-o WideModeIsNow
-o NoMoreDownloads
-o ReadYourUnreadMailNowQ
-o UserDownloadsToday
-o NodeLoggedOnAtNbps added "via "
-o UserSentYouFile changed to include filename parameter
+o Newly added:
+  - WideModeIsNow
+  - NoMoreDownloads
+  - ReadYourUnreadMailNowQ
+  - UserDownloadsToday
+  - NodeLoggedOnAtNbps added "via "
+  - UserSentYouFile changed to include filename parameter
+  - SeekingFile
+  - SeekingFileDone
+  - SeekPrompt
 o UserDefaultsPassword changed to include '%s' argument (for "or SSH Keys")
 o RawMsgInputModeIsNow changed to include RAWIO @-code
 o Changed to accommodate 40 column terminals better (w/Cond-Linecont):
@@ -445,6 +454,8 @@ o postmeme.js
   - New meme-style message poster ("/M" command from default shell main menu)
 o postmsg.js
   - New -D (date) and -T (time) options
+o printfile.js
+  - Small wrapper for console.printfile(), to replace use of type.js
 o purgefiles.js
   - Add support for -t (testing) and -v (verbose) options
 o rlogin.js
@@ -489,11 +500,16 @@ JavaScript
 ~~~~~~~~~~
 o js.exec() will now execute scripts from the configured mods and exec dir
 o console.getstr() fix: off-by-one bug in use of maxlen argument
+o New console.inkey() mode flag: K_EXTKEYS can be used instead of K_CTRLKEYS to
+  get all control key input, but *with* extended key translations (e.g. arrows,
+  home, end, page-up/down, etc.) and without messing with (modifying/restoring)
+  console.ctrlkey_passthru
 o console output methods that accept p_mode parameters now support
   P_CENTER and (new) P_80COLS mode flags
 o Returned to SBBS v3.19 bug-compatible console.attributes behavior of
   silently ignoring Ctrl-A characters in assigned strings
 o New 'console' property:
+  - optimize_gotoxy
   - uselect_count
 o msg_area.grp_list[] no longer includes groups with no sub-boards that the
   user can access - issue #905

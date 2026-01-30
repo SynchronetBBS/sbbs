@@ -1037,6 +1037,7 @@ public:
 	const char* socket_strerror(int errnum) { return ::socket_strerror(errnum, strerror_buf, sizeof strerror_buf); }
 
 	/* prntfile.cpp */
+	char*	fgetline(char* s, int size, int cols, FILE*);
 	bool	printfile(const char* fname, int mode, int org_cols = 0, JSObject* obj = NULL);
 	bool	printtail(const char* fname, int lines, int mode, int org_cols = 0, JSObject* obj = NULL);
 	bool	menu(const char *code, int mode = 0, JSObject* obj = NULL);
