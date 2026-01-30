@@ -290,7 +290,7 @@ function printcolor(color) {
 	var out = "";
 
     if (this.opt == undefined || !opt.ansi) {
-		var fgcolors = ["K", "B", "G", "C", "R", "M", "Y", "W", "HK", "HB", "HG", "HC", "HR", "HM", "HY", "HW"]; // Normal/Bright
+		var fgcolors = ["-K", "-B", "-G", "-C", "-R", "-M", "-Y", "-W", "HK", "HB", "HG", "HC", "HR", "HM", "HY", "HW"]; // Normal/Bright
 		var bgcolors = ["0", "4", "2", "6", "1", "5", "3", "7"]; // Backgrounds (normal only for 8 colors)
 		out += "\x01" + fgcolors[fg].split("").join("\x01");
 		out += "\x01" + bgcolors[bg];
