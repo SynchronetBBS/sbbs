@@ -76,6 +76,9 @@
 //      keys            = comma-separated list of keys to add/update in .ini
 //      values          = list of values to eval() and assign to keys[]
 //                        Note: string values must be enclosed in quotes!
+//
+// [copy:<filename>]
+//      dest            = filename to copy to
 
 // Additionally, each section can have the following optional keys that are
 // only used by this script (i.e. not written to any configuration files):
@@ -97,7 +100,7 @@
 
 "use strict";
 
-const REVISION = "3.20a";
+const REVISION = "3.21a";
 const ini_fname = "install-xtrn.ini";
 
 load("sbbsdefs.js");
@@ -398,6 +401,32 @@ function install(ini_fname)
 			result = file.iniSetValue(item.section, item.keys[k], value);
 		}
 		file.close();
+		if(required && result !== true)
+			return false;
+		if(item.last === true)
+			break;
+		done = Boolean(item.done);
+	}
+
+	var list = ini_file.iniGetAllObjects("filename", "copy:");
+	for (var i = 0; i < list.length && !done; i++) {
+		var item = list[i];
+		var result = false;
+		var src = file_getcase(startup_dir + item.filename);
+		if (!src)
+			alert("Copy source file does not exist: " + startup_dir + item.filename);
+		else {
+			var dest = file_getcase(startup_dir + item.dest);
+			if (dest) {
+				if (!item.overwrite) {
+					var msg = "Copy destination file already exists: " + dest;
+					if(options.auto || deny(msg + ", continue"))
+						return msg;
+				}
+			} else
+				dest = startup_dir + item.dest
+			result = file_copy(src, dest);
+		}
 		if(required && result !== true)
 			return false;
 		if(item.last === true)
