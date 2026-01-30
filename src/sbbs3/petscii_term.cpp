@@ -253,6 +253,7 @@ bool PETSCII_Terminal::restore_cursor_pos() {
 
 void PETSCII_Terminal::carriage_return()
 {
+	lastcrcol = column;
 	cursor_left(column);
 }
 
