@@ -948,7 +948,10 @@ var NoMoreDownloads=938;
 var ReadYourUnreadMailNowQ=939;
 var UserDownloadsToday=940;
 var WideModeIsNow=941;
+var SeekingFile=942;
+var SeekingFileDone=943;
+var SeekPrompt=944;
 
-var TOTAL_TEXT=941;
+var TOTAL_TEXT=944;
 
 this;
