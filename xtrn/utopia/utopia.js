@@ -6,8 +6,12 @@
 load("sbbsdefs.js");
 
 // --- CONFIG & FILES ---
-const MAPS_CFG_FILE = js.exec_dir + "maps.ini";
-const INTRO_FILE = js.exec_dir + "utopia_intro.txt";
+var settings = {
+	intro_msg: js.exec_dir + "intro.msg",
+	map_list: js.exec_dir + "maps.ini",
+	tick_interval: 0.5,
+}
+
 const HELP_FILE = js.exec_dir + "utopia_help.txt";
 const SAVE_FILE = system.data_dir + format("user/%04u.utopia", user.number);
 const MAP_FILE = js.exec_dir + "map.json";
@@ -43,10 +47,10 @@ var rules = {
 	merchant_dock_interval: 10,
 	merchant_dock_bonus: 25,
 	pirate_gold: 250,
-	pirate_escape_penalty: 100,
+	pirate_escape_penalty: 0.5,
 	max_fish: 8,
 	fish_per_school: 25,
-	fish_food_value: 2,
+	fish_food_value: 5,
 	fish_gold_value: 1,
 	fish_catch_potential: 0.1,
 	fish_catch_max : 3,
@@ -101,7 +105,6 @@ item_list[ITEM_SCHOOL]  ={ name: "School"   ,char: "\x15", shadow: "Reduce Rebel
 item_list[ITEM_BRIDGE]  ={ name: "Bridge"   ,char: "\xCE", shadow: "Expand Land and Docks" };
 
 // Cosmetics
-var TICK_INTERVAL = 0.5;
 var CHAR_WATER    = " "; //"\xF7";
 var CHAR_WAVE     = "~";
 var CHAR_LAND     = " ";
@@ -144,7 +147,7 @@ var state = {
 	martialLaw: 0,
 	cursor: { x: MAP_MID_COL, y: MAP_MID_ROW },
 	log: [],
-	msg: [ {txt:"\x01h\x01wWelcome Governor.  Build to claim your homeland!" }],
+	msg: [],
 	fishPool: [],
 	merchant: { x: -1, y: 0, active: false, gold: 0 },
 	pirate: { x: -1, y: 0, active: false, gold: 0 },
@@ -981,10 +984,11 @@ var checkMutiny = function() {
                 var target = boats[Math.floor(Math.random() * boats.length)];
 
                 // The Mutiny occurs
-				destroyItem(target.x, target.y);
                 state.pirate.active = true;
                 state.pirate.x = target.x;
                 state.pirate.y = target.y;
+				state.pirate.gold = rules.pirate_gold * itemHealth({ x:target.x, y:target.y });
+				destroyItem(target.x, target.y);
                 announce("\x01h\x01rMUTINY! Rebels stole a PT Boat!");
                 state.stats.boatsLost++;
                 // Visual update
@@ -1393,12 +1397,12 @@ var moveEntities = function() {
 				if (cellOnMap(tx, ty)) {
 					if (itemAt(tx, ty) === ITEM_TRAWLER && Math.random() < rules.fish_catch_potential) {
 						var count = 1 + random(rules.fish_catch_max);
-						state.food += rules.fish_food_value * count;
+						state.food += Math.floor(rules.fish_food_value * count);
 						if (!state.martialLaw)
-							state.gold += rules.fish_gold_value * count;
+							state.gold += Math.floor(rules.fish_gold_value * count);
 						drawCell(f.x, f.y, BLINK);
 						pendingUpdate.push(f);
-//						alert("\x01h\x01gCaught " + count + " fish!");
+						alert("\x01h\x01gFish caught!");
 						f.count -= count;
 						if (f.count < 1)
 							state.fishPool.splice(i, 1); // Fish is caught
@@ -1485,8 +1489,9 @@ var moveEntities = function() {
 		if (px < MAP_LEFT_COL) {
 			state.pirate.active = false;
 			if (state.pirate.gold > 0) {
-				state.gold = Math.max(0, state.gold - rules.pirate_escape_penalty);
-				announce("\x01h\x01rPirates Escaped with Loot ($" + state.pirate.gold + ") penalized -$" + rules.pirate_escape_penalty);
+				var penalty = state.pirate.gold * rules.pirate_escape_penalty;
+				state.gold = Math.max(0, state.gold - penalty);
+				announce("\x01h\x01rPirates Escaped with Loot ($" + state.pirate.gold + ") penalized -$\x01w" + penalty);
 			}
 			forceScrub(0, py, 1);
 		}
@@ -1848,40 +1853,39 @@ var finishGame = function() {
 };
 
 var handleOperatorCommand = function(key) {
-	switch (key) {
-		case '*':
-			rules.max_turns += 100;
-			break;
-		case '&':
-			state.food += 100;
-			break;
-		case '#':
-			state.gold += 100;
-			break;
-		case '$':
-			spawnMerchant();
-			break;
-		case '!':
-			spawnPirate();
-			break;
-		case '%':
-			spawnStorm();
-			break;
-		case '"':
-			spawnRain();
-			break;
-		case '>':
-			spawnWave();
-			break;
-		case CTRL_S:
-			saveGame();
-			break;
-		case CTRL_T:
-			saveGame('\t');
-			break;
-		case CTRL_D:
-			dumpObj(map, MAP_FILE);
-			break;
+	if (debug_enabled) {
+		switch (key) {
+			case '*':
+				rules.max_turns += 100;
+				break;
+			case '&':
+				state.food += 100;
+				break;
+			case '#':
+				state.gold += 100;
+				break;
+			case '$':
+				spawnMerchant();
+				break;
+			case '!':
+				spawnPirate();
+				break;
+			case '%':
+				spawnStorm();
+				break;
+			case '"':
+				spawnRain();
+				break;
+			case '>':
+				spawnWave();
+				break;
+			case CTRL_S:
+				saveGame();
+				break;
+			case CTRL_T:
+				saveGame('\t');
+				break;
+		}
 	}
 	if (state.in_progress) {
 		drawUI();
@@ -1891,30 +1895,44 @@ var handleOperatorCommand = function(key) {
 		case ',':
 			map[state.cursor.y][state.cursor.x] = WATER;
 			drawCell(state.cursor.x, state.cursor.y);
+			state.cursor.x++;
 			break;
 		case 'N':
 			map[state.cursor.y][state.cursor.x] = LAND_N;
 			drawCell(state.cursor.x, state.cursor.y);
+			state.cursor.x++;
 			break;
 		case 'S':
 			map[state.cursor.y][state.cursor.x] = LAND_S;
 			drawCell(state.cursor.x, state.cursor.y);
+			state.cursor.x++;
 			break;
 		case 'E':
 			map[state.cursor.y][state.cursor.x] = LAND_E;
 			drawCell(state.cursor.x, state.cursor.y);
+			state.cursor.x++;
 			break;
 		case 'W':
 			map[state.cursor.y][state.cursor.x] = LAND_W;
 			drawCell(state.cursor.x, state.cursor.y);
+			state.cursor.x++;
 			break;
 		case '/':
 			map[state.cursor.y][state.cursor.x] = LAND;
 			drawCell(state.cursor.x, state.cursor.y);
+			state.cursor.x++;
+			break;
+		case CTRL_X:
+			state.fishPool.length = 0;
+			clearMap();
+			refreshMap();
 			break;
 		case CTRL_O:
 			loadMap(MAP_FILE);
 			refreshMap();
+			break;
+		case CTRL_D:
+			dumpObj(map, MAP_FILE);
 			break;
 	}
 }
@@ -1958,13 +1976,13 @@ var handleQuit = function() {
     console.gotoxy(1, 24);
     console.cleartoeol();
 
-    var prompt = "\x01n\x01h\x01rQuit? \x01n";
+    var prompt = "\x01n\x01h\x01rQuit? ";
 
     if (state.in_progress)
-        prompt += "\x01h\x01w[S]ave Game | "
+        prompt += "\x01c[\x01wS\x01c]ave Game \x01n\x01r|\x01h "
 	if (state.started)
-		prompt += "\x01h\x01w[F]inish Game | ";
-	prompt += "[A]bandon Game | [C]ontinue Game";
+		prompt += "\x01c[\x01wF\x01c]inish Game \x01n\x01r|\x01h ";
+	prompt += "\x01r[\x01wA\x01r]bandon Game \x01c\x01n\x01r|\x01h \x01c[\x01wC\x01c]ontinue Game";
 
     console.putmsg(prompt);
     var choice = console.getkey(K_UPPER);
@@ -1974,6 +1992,7 @@ var handleQuit = function() {
 		return true;
 	} else if (choice === 'A') {
 		state.in_progress = false;
+		console.putmsg("\r\x01n\x01hSorry to see you leave, play again soon!\x01n\x01>");
 		return true;
     } else if (choice === 'F' && state.started) {
         finishGame();
@@ -2004,15 +2023,17 @@ function loadMap(filename) {
 	return success;
 }
 
-function genMap() {
-
+function clearMap() {
 	for (var y = 0; y < MAP_HEIGHT; y++) {
 		map[y] = [];
 		for (var x = 0; x < MAP_WIDTH; x++) {
 			map[y][x] = WATER;
 		}
 	}
+}
 
+function genMap() {
+	clearMap();
 	for (var i = 0; i < 3; i++) {
 		var cx = 10 + (i * 20)
 		var cy = 11;
@@ -2061,7 +2082,7 @@ function genMap() {
 
 function getMaps()
 {
-	var f = new File(MAPS_CFG_FILE);
+	var f = new File(settings.map_list);
 	if (!f.open("r")) {
 		log(LOG_WARNING, "Error " + f.error + " opening " + f.name);
 		return null;
@@ -2073,18 +2094,29 @@ function getMaps()
 
 // --- RUNTIME ---
 function main () {
+	var settingsF = new File(js.exec_dir + "settings.ini");
+	if (settingsF.open("r")) {
+		var ini = settingsF.iniGetObject();
+		settingsF.close();
+		if (ini.map_list)
+			settings.map_list = js.exec_dir + ini.map_list;
+		if (ini.intro_msg)
+			settings.intro_msg = js.exec_dir + ini.intro_msg;
+		if (ini.tick_rate)
+			settings.tick_rate = ini.tick_rate;
+	}
+
 	if (console.optimize_gotoxy !== undefined) {
 		js.on_exit("console.optimize_gotoxy = " + console.optimize_gotoxy);
 		console.optimize_gotoxy = true;
 	}
-	if (file_exists(INTRO_FILE)) {
+	if (file_exists(settings.intro_msg)) {
 		console.clear();
-		console.printfile(INTRO_FILE, P_PCBOARD);
-		console.pause();
+		console.printfile(settings.intro_msg, P_PCBOARD);
 	}
 	var game_restored = false;
 	var saveF = new File(SAVE_FILE);
-	if (saveF.exists && saveF.open("r")) {
+	if (saveF.open("r")) {
 		try {
 			var s = JSON.parse(saveF.read());
 			state = s.state;
@@ -2111,22 +2143,28 @@ function main () {
 		if (maps) {
 			var i =0;
 			for (i = 0; i < maps.length; ++i)
-				console.uselect(i, "Map", maps[i].desc);
+				console.uselect(i, "Map to Play", maps[i].desc);
 			console.uselect(i, "", "Randomly Generated");
 			var choice = console.uselect();
-			log("choice = " + choice);
-			if (choice >= 0 && choice < maps.length)
+			if (choice < 0)
+				return;
+			if (choice < maps.length) {
 				map_file = js.exec_dir + maps[choice].name;
+				state.map_name = maps[choice].desc;
+			}
 		}
-		if (!map_file || !loadMap(map_file))
+		if (!map_file || !loadMap(map_file)) {
+			state.map_name = "Random Islands";
 			genMap();
+		}
 		spawnFish();
+		pushMsg("\x01h\x01wWelcome to the " + state.map_name + ", Governor.  Build to claim your homeland!");
 	}
 	refreshScreen(true);
 	var lastTick = system.timer;
 	while (bbs.online && !js.terminated) {
 		console.aborted = false;
-		if (system.timer - lastTick >= TICK_INTERVAL) {
+		if (system.timer - lastTick >= settings.tick_interval) {
 			if (state.in_progress) {
 				if (state.turn < rules.max_turns) {
 					handleWeather();
@@ -2142,14 +2180,14 @@ function main () {
 					tick++;
 				}
 				else {
-					alert("\x01h\x01rTIME IS UP! [Q]uit to score.");
+					alert("\x01h\x01rYour term as Governor is over, [\x01wQ\x01r]uit to see your score.");
 					state.in_progress = false;
 					drawUI();
 				}
 			}
 			lastTick = system.timer;
 		}
-		var k = console.inkey(K_EXTKEYS, 500 * TICK_INTERVAL);
+		var k = console.inkey(K_EXTKEYS, 500 * settings.tick_interval);
 		if (!k)
 			continue;
 		console.aborted = false;
@@ -2227,14 +2265,15 @@ function main () {
 				break;
 			case ' ':
 				if (state.in_progress) {
-					if (state.lastbuilt)
-						buildItem(state.lastbuilt);
-					else
+					if (state.lastbuilt) {
+						if (buildItem(state.lastbuilt) && state.cursor.x < MAP_RIGHT_COL)
+							++state.cursor.x;
+					} else
 						showBuildMenu();
 				}
 				break;
 			case 'M':
-				if (state.martialLaw === 0) {
+				if (state.in_progress && state.martialLaw === 0) {
 					state.martialLaw = rules.martial_law_length;
 					announce("MARTIAL LAW!");
 				}
@@ -2263,7 +2302,7 @@ function main () {
 				continue;
 			case '.':
 			case KEY_DEL:
-				if (itemMap[state.cursor.y][state.cursor.x]) {
+				if (state.in_progress && itemMap[state.cursor.y][state.cursor.x]) {
 					var dc = itemDemoCost(itemMap[state.cursor.y][state.cursor.x]);
 					if (state.gold >= dc) {
 						state.gold -= dc;
@@ -2280,10 +2319,10 @@ function main () {
 				}
 				break;
 			case '+':
-				TICK_INTERVAL /= 2;
+				settings.tick_interval /= 2;
 				break;
 			case '-':
-				TICK_INTERVAL *= 2;
+				settings.tick_interval *= 2;
 				break;
 			default:
 				if (user.is_sysop)
