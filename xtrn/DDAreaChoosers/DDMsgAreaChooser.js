@@ -2437,7 +2437,7 @@ function DDMsgAreaChooser_DoUserSettings_Scrollable()
 	// sub-board
 	const CHG_GRP_REMEMBER_SUB_BOARD_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Remember sub-boards when changing groups"));
 	if (this.userSettings.rememberLastSubBoardWhenChangingGrp)
-		optionBox.chgCharInTextItem(CHG_GRP_REMEMBER_SUB_BOARD_OPT_INDEX, checkIdx, CHECK_CHAR);
+		optionBox.chgCharInTextItem(CHG_GRP_REMEMBER_SUB_BOARD_OPT_INDEX, checkIdx, CP437_CHECK_MARK);
 
 	// Create an object containing toggle values (true/false) for each option index
 	var optionToggles = {};
@@ -2460,7 +2460,7 @@ function DDMsgAreaChooser_DoUserSettings_Scrollable()
 				// Toggle the option and refresh it on the screen
 				optionToggles[itemIndex] = !optionToggles[itemIndex];
 				if (optionToggles[itemIndex])
-					optionBox.chgCharInTextItem(itemIndex, checkIdx, CHECK_CHAR);
+					optionBox.chgCharInTextItem(itemIndex, checkIdx, CP437_CHECK_MARK);
 				else
 					optionBox.chgCharInTextItem(itemIndex, checkIdx, " ");
 				optionBox.refreshItemCharOnScreen(itemIndex, checkIdx);
@@ -2626,14 +2626,14 @@ function CreateSubBoardChangeSortOptMenu(pX, pY, pWidth, pHeight, pCurrentSortSe
 	sortOptMenu.borderEnabled = true;
 	sortOptMenu.colors.borderColor = "\x01n\x01b";
 	sortOptMenu.borderChars = {
-		upperLeft: UPPER_LEFT_DOUBLE,
-		upperRight: UPPER_RIGHT_DOUBLE,
-		lowerLeft: LOWER_LEFT_DOUBLE,
-		lowerRight: LOWER_RIGHT_DOUBLE,
-		top: HORIZONTAL_DOUBLE,
-		bottom: HORIZONTAL_DOUBLE,
-		left: VERTICAL_DOUBLE,
-		right: VERTICAL_DOUBLE
+		upperLeft: CP437_BOX_DRAWINGS_UPPER_LEFT_DOUBLE,
+		upperRight: CP437_BOX_DRAWINGS_UPPER_RIGHT_DOUBLE,
+		lowerLeft: CP437_BOX_DRAWINGS_LOWER_LEFT_DOUBLE,
+		lowerRight: CP437_BOX_DRAWINGS_LOWER_RIGHT_DOUBLE,
+		top: CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE,
+		bottom: CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE,
+		left: CP437_BOX_DRAWINGS_DOUBLE_VERTICAL,
+		right: CP437_BOX_DRAWINGS_DOUBLE_VERTICAL
 	};
 	sortOptMenu.topBorderText = "Sub-board change sorting";
 	sortOptMenu.Add("None", SUB_BOARD_SORT_NONE);
