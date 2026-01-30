@@ -119,7 +119,7 @@ bool sbbs_t::newuser()
 	bool dupe_name = finduserstr(0, USER_NAME, useron.name) > 0;
 	if (!check_name(&cfg, useron.name, /* unique: */true)
 		|| !check_realname(&cfg, useron.name)
-		|| ((cfg.uq & UQ_DUPREAL) && dupe_name)) {
+		|| ((cfg.uq & UQ_ALIASES) && (cfg.uq & UQ_REALNAME) && (cfg.uq & UQ_DUPREAL) && dupe_name)) {
 		errormsg(WHERE, ERR_CHK, "New user name (invalid or duplicate)", 0, useron.name);
 		return false;
 	}
@@ -133,7 +133,7 @@ bool sbbs_t::newuser()
 		SAFECOPY(useron.handle, useron.alias);
 		truncsp(useron.handle);
 	}
-	if (((cfg.uq & UQ_DUPHAND) && finduserstr(0, USER_HANDLE, useron.handle))
+	if (((cfg.uq & UQ_HANDLE) && (cfg.uq & UQ_DUPHAND) && finduserstr(0, USER_HANDLE, useron.handle))
 	    || trashcan(useron.handle, "name")) {
 		errormsg(WHERE, ERR_CHK, "New user handle (invalid or duplicate)", 0, useron.handle);
 		return false;
