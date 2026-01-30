@@ -341,17 +341,35 @@ public:
 				str++;
 				if (*str == 0 || *str == 'Z')    // EOF
 					break;
-				if (*str == '[') // CR
-					count = 0;
+				if (*str == '[') { // CR
+					size_t next = bstrlen(str + 1, mode);
+					if (next > count)
+						count = next;
+					break;
+				}
+				if (*str == ']') // LF
+					break;
 				else if (*str == '<' && count) // ND-Backspace
 					count--;
+				else if (*str == '/' && count) // Conditional newline
+					break;
 			} else if (((*str) & 0x80) && (mode & P_UTF8)) {
 				enum unicode_codepoint codepoint = UNICODE_UNDEFINED;
 				len = utf8_getc(str, end - str, &codepoint);
 				if (len < 1)
 					break;
 				count += unicode_width(codepoint, sbbs->unicode_zerowidth);
-			} else
+			} else if (*str == '\b') {
+				if (count)
+					count--;
+			} else if (*str == '\r') {
+				size_t next = bstrlen(str + 1, mode);
+				if (next > count)
+					count = next;
+				break;
+			} else if (*str == '\n')
+				break;
+			else
 				count++;
 			str += len;
 		}
