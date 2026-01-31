@@ -161,7 +161,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 			errormsg(WHERE, ERR_ALLOC, fpath, length + 1L);
 			return false;
 		}
-		l = read(file, buf, length);
+		l = fread(buf, 1, length, stream);
 		fclose(stream);
 		if (l != length)
 			errormsg(WHERE, ERR_READ, fpath, length);
