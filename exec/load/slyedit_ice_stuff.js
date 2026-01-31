@@ -122,7 +122,9 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	              gConfigSettings.iceColors.TopLabelColor + "TO" +
 	              gConfigSettings.iceColors.TopLabelColonColor + ": " +
 	              gConfigSettings.iceColors.TopToColor);
-	var fieldWidth = Math.floor(console.screen_columns * (29/80));
+	//var fieldWidth = Math.floor(console.screen_columns * (29/80));
+	const toFieldLenFor80Cols = 29;
+	var fieldWidth = Math.floor(console.screen_columns * (toFieldLenFor80Cols/80));
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(" ");
 
@@ -131,6 +133,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	console.print(" " + gConfigSettings.iceColors.TopLabelColor + "FROM" +
 	              gConfigSettings.iceColors.TopLabelColonColor + ": " +
 	              gConfigSettings.iceColors.TopFromColor);
+	const fromNameXPos = console.getxy().x; // Save this for later
 	for (var i = 0; i < fieldWidth; ++i)
 		console.print(" ");
 	// More spaces until the time location
@@ -141,6 +144,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 		console.print(" ");
 		++curpos.x;
 	}
+	const fromFieldLenFor80Cols = curpos.x - fromNameXPos;
 
 	// Time
 	console.print(" ");
@@ -267,19 +271,25 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	// TODO: Doing a substr() on UTF-8 strings seems to result in them being shorter
 	// than intended if there are multi-byte characters.
 	// To name
-	console.gotoxy(7, toNameLineNum);
+	const toNameXPos = 7;
+	console.gotoxy(toNameXPos, toNameLineNum);
 	console.print("\x01n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopToColor);
-	var toName = gToName.substr(0, Math.floor(console.screen_columns * (29/80)));
+	var toName = gToName.substr(0, Math.floor(console.screen_columns * (toFieldLenFor80Cols/80)));
 	console.print(toName, P_AUTO_UTF8);
 	// From name
-	console.gotoxy(43, fromNameLineNum);
+	console.gotoxy(fromNameXPos, fromNameLineNum);
 	console.print("\x01n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopFromColor);
-	var fromName = gFromName.substr(0, Math.floor(console.screen_columns * (29/80)));
+	var fromName = gFromName.substr(0, Math.floor(console.screen_columns * (fromFieldLenFor80Cols/80)));
+	// Temporary
+	//fromName = format("%-" + (fromFieldLenFor80Cols-1) + "s|", gFromName.substr(0, Math.floor(console.screen_columns * (fromFieldLenFor80Cols/80))));
+	// End Temporary
 	console.print(fromName, P_AUTO_UTF8);
 	// Subject
-	console.gotoxy(12, subjectLineNum);
+	const subjXPos = 12;
+	console.gotoxy(subjXPos, subjectLineNum);
 	console.print("\x01n" + gConfigSettings.iceColors.TopInfoBkgColor + gConfigSettings.iceColors.TopSubjectColor);
-	var subj = gMsgSubj.substr(0, Math.floor(console.screen_columns * (54/80)));
+	const subjFieldLenFor80Cols = 54;
+	var subj = gMsgSubj.substr(0, Math.floor(console.screen_columns * (subjFieldLenFor80Cols/80)));
 	console.print(subj, P_AUTO_UTF8);
 
 	// Display the bottom message area border and help line

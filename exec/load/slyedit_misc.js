@@ -64,7 +64,7 @@ var ESC_MENU_SPELL_CHECK = 13;
 var ESC_MENU_INSERT_MEME = 14;
 
 
-var COPYRIGHT_YEAR = 2025;
+var COPYRIGHT_YEAR = 2026;
 
 // Store the full path & filename of the Digital Distortion Message
 // Lister, since it will be used more than once.
