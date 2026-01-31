@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.92e
-                        Release date: 2025-11-11
+                              Version 1.92f
+                        Release date: 2026-01-30
 
                                   by
 
@@ -1011,6 +1011,8 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.92f    2026-01-30   Fix for the 'from' name location when using a wide
+                      terminal (> 80 columns)
 1.92e    2025-11-11   When loading user settings, if the settings object is null
                       or invalid for some reason, ensure it's an object. This
                       this should fix GiitLab issue #1006, filed by Fernando
