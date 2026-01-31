@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.97g    2026-01-31   Bug fix: this.msgAreaList_lastImportedMsg_showImportTime
+                      was being used in some functions where it didn't exist
+                      anymore
 1.97f    2025-10-28   When reading a message, the sub-board information can now
                       be displayed by pressing S.
 1.97e    2025-09-07   Fix: When listing messages in lightbar mode in reverse
