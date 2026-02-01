@@ -127,7 +127,8 @@ var CHAR_LAND_E   = "\xDE";
 var CHAR_LAND_W   = "\xDD";
 var CHAR_PIRATE   = "\xF3";
 var CHAR_PIRATAIL = "\xF0";
-var CHAR_FISH     = "\xFA";
+var CHAR_FISH1    = "\xFA";
+var CHAR_FISH2    = "\xF9";
 var CHAR_MERCHANT = "\xF2";
 var CHAR_MERCTAIL = "\xF1";
 var MAP_WIDTH = 60;
@@ -398,7 +399,9 @@ var drawCell = function(x, y, more_attr, move_cursor) {
 	// Check Fish Pool
 	for (var i = 0; i < state.fishPool.length; i++) {
 		if (state.fishPool[i].x === x && state.fishPool[i].y === y) {
-			char = CHAR_FISH;
+			char = Math.random() < 0.5 ? CHAR_FISH1 : CHAR_FISH2;
+			if ((x ^ state.turn) & 1)
+				attr = HIGH | BLACK | bg_attr;
 		}
 	}
 	if (state.merchant.active) {
@@ -1742,7 +1745,7 @@ var drawUI = function(legend) {
 	ly = Object.keys(item_list).length + 2;
 	console.gotoxy(lx, ly++);
 	if (state.in_progress && item_key)
-		console.putmsg("\x01n[" + demo_attr + "DEL\x01n] Demolish " + demo_cost);
+		console.putmsg("\x01n[" + demo_attr + "Del\x01n] Demolish " + demo_cost);
 	else if (state.pirate.active && cellIsSame(state.cursor, state.pirate))
 		console.putmsg(" \x01r\x01hPirate w/$\x01w" + state.pirate.gold);
 	else if (state.merchant.active && cellIsSame(state.cursor, state.merchant))
@@ -1752,12 +1755,11 @@ var drawUI = function(legend) {
 	cond_cleartoeol();
 
 	console.gotoxy(lx, ly++);
-	if (state.in_progress)
-		console.putmsg("\x01n[" + build_attr + "INS\x01n] Build Item");
+	console.putmsg("\x01n[" + build_attr + "Enter\x01n] Build Item");
 	console.cleartoeol();
 	console.gotoxy(lx, ly++);
 	if (state.in_progress && state.lastbuilt)
-		console.putmsg("\x01n[" + build_attr + "SPC\x01n] " + item_list[state.lastbuilt].name
+		console.putmsg("\x01n[" + build_attr + "Spc\x01n] " + item_list[state.lastbuilt].name
 			+ " \x01y\x01h$" + rules.item[state.lastbuilt].cost);
 	cond_cleartoeol();
 	console.gotoxy(lx, ly++);
