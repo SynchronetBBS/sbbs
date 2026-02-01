@@ -36,8 +36,9 @@
 #define QM_MSGID    (1 << 10) /* Include @MSGID and @REPLY kludges */
 #define QM_REPLYTO  (1 << 11) /* Include @REPLYTO kludge */
 #define QM_EXT      (1 << 13) /* QWK Extended (QWKE) mode (same as QWK_EXT and QHUB_EXT) */
-#define QM_UTF8     (1 << 18) /* Include UTF-8 characters */
-#define QM_WORDWRAP (1 << 19) /* Word-wrap message text */
+#define QM_UTF8     (1 << 18) /* Include UTF-8 characters in exported messages */
+#define QM_WORDWRAP (1 << 19) /* Word-wrap exported message text */
+#define QM_MIME     (1 << 20) /* MIME-decode exported message text */
 
 float   ltomsbin(int32_t val);
 bool    route_circ(char *via, char *id);

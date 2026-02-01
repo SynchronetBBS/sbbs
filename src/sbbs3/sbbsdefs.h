@@ -422,25 +422,26 @@ typedef enum {                       // Values for xtrn_t.event
 #define XTRN_CONIO      (1U << 31)    // Intercept Windows Console I/O (Drwy)
 
 // Bits in user.qwk
-#define QWK_FILES   (1 << 0)          // Include new files list
-#define QWK_EMAIL   (1 << 1)          // Include unread e-mail
-#define QWK_ALLMAIL (1 << 2)          // Include ALL e-mail
-#define QWK_DELMAIL (1 << 3)          // Delete e-mail after download
-#define QWK_BYSELF  (1 << 4)          // Include messages from self
-#define QWK_UNUSED  (1 << 5)          // Currently unused
-#define QWK_EXPCTLA (1 << 6)          // Expand ctrl-a codes to ascii
-#define QWK_RETCTLA (1 << 7)          // Retain ctrl-a codes
-#define QWK_ATTACH  (1 << 8)          // Include file attachments
-#define QWK_NOINDEX (1 << 9)          // Do not create index files in QWK
-#define QWK_TZ      (1 << 10)         // Include "@TZ" time zone in msgs
-#define QWK_VIA     (1 << 11)         // Include "@VIA" seen-bys in msgs
-#define QWK_NOCTRL  (1 << 12)         // No extraneous control files
-#define QWK_EXT     (1 << 13)         // QWK Extended (QWKE) format
-#define QWK_MSGID   (1 << 14)         // Include "@MSGID" in msgs
-#define QWK_HEADERS (1 << 16)         // Include HEADERS.DAT file
-#define QWK_VOTING  (1 << 17)         // Include VOTING.DAT
-#define QWK_UTF8    (1 << 18)         // Include UTF-8 characters
-#define QWK_WORDWRAP (1 << 19)        // Word-wrap message text
+#define QWK_FILES       (1 << 0)      // Include new files list
+#define QWK_EMAIL       (1 << 1)      // Include unread e-mail
+#define QWK_ALLMAIL     (1 << 2)      // Include ALL e-mail
+#define QWK_DELMAIL     (1 << 3)      // Delete e-mail after download
+#define QWK_BYSELF      (1 << 4)      // Include messages from self
+#define QWK_UNUSED      (1 << 5)      // Currently unused
+#define QWK_EXPCTLA     (1 << 6)      // Expand ctrl-a codes to ascii
+#define QWK_RETCTLA     (1 << 7)      // Retain ctrl-a codes
+#define QWK_ATTACH      (1 << 8)      // Include file attachments
+#define QWK_NOINDEX     (1 << 9)      // Do not create index files in QWK
+#define QWK_TZ          (1 << 10)     // Include "@TZ" time zone in msgs
+#define QWK_VIA         (1 << 11)     // Include "@VIA" seen-bys in msgs
+#define QWK_NOCTRL      (1 << 12)     // No extraneous control files
+#define QWK_EXT         (1 << 13)     // QWK Extended (QWKE) format
+#define QWK_MSGID       (1 << 14)     // Include "@MSGID" in msgs
+#define QWK_HEADERS     (1 << 16)     // Include HEADERS.DAT file
+#define QWK_VOTING      (1 << 17)     // Include VOTING.DAT
+#define QWK_UTF8        (1 << 18)     // Include UTF-8 characters
+#define QWK_WORDWRAP    (1 << 19)     // Word-wrap message text
+#define QWK_MIME        (1 << 20)     // Include MIME-encoded message text
 
 #define QWK_DEFAULT (QWK_FILES | QWK_ATTACH | QWK_EMAIL | QWK_DELMAIL)
 
@@ -453,7 +454,9 @@ typedef enum {                       // Values for xtrn_t.event
 #define QHUB_NOHEADERS  (1 << 16)     // Don't include HEADERS.DAT
 #define QHUB_NOVOTING   (1 << 17)     // Don't include VOTING.DAT
 #define QHUB_UTF8       (1 << 18)     // Include UTF-8 characters
-#define QHUB_NATIVE     (1 << 19)     // Native call-out script
+#define QHUB_WORDWRAP   (1 << 19)     // Word-wrap message text
+#define QHUB_MIME       (1 << 20)     // Include MIME-encoded message text
+#define QHUB_NATIVE     (1 << 31)     // Native call-out script
 
 // Bits in user.chat
 #define CHAT_ECHO   (1 << 0)  // Multinode chat echo
