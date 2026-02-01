@@ -243,7 +243,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 	}
 
 	uint getmsgtxt_mode = GETMSGTXT_ALL;
-	if (!(mode & QM_TO_QNET))  // Get just the plain-text portion of MIME-encoded messages
+	if (!(mode & QM_MIME))  // Get just the plain-text portion of MIME-encoded messages
 		getmsgtxt_mode |= GETMSGTXT_PLAIN;
 	buf = smb_getmsgtxt(smb, msg, getmsgtxt_mode);
 	if (!buf)

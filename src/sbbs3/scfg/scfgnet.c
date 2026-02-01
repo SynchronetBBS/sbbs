@@ -1142,31 +1142,33 @@ void qhub_edit(int num)
 
 	while (!done) {
 		i = 0;
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Hub System ID", cfg.qhub[num]->id);
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Enabled", cfg.qhub[num]->enabled ? "Yes":"No");
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Archive Format", cfg.qhub[num]->fmt);
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Call-out Command Line", cfg.qhub[num]->call);
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Native Call-out Command", cfg.qhub[num]->misc & QHUB_NATIVE ? "Yes":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Hub System ID", cfg.qhub[num]->id);
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Enabled", cfg.qhub[num]->enabled ? "Yes":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Archive Format", cfg.qhub[num]->fmt);
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Call-out Command Line", cfg.qhub[num]->call);
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Native Call-out Command", cfg.qhub[num]->misc & QHUB_NATIVE ? "Yes":"No");
 		if (cfg.qhub[num]->node == NODE_ANY)
 			SAFECOPY(str, "Any");
 		else
 			SAFEPRINTF(str, "%u", cfg.qhub[num]->node);
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Call-out Node", str);
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Call-out Days", daystr(cfg.qhub[num]->days));
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Call-out Node", str);
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Call-out Days", daystr(cfg.qhub[num]->days));
 		if (cfg.qhub[num]->freq) {
 			sprintf(str, "%u times a day", 1440 / cfg.qhub[num]->freq);
-			snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Call-out Frequency", str);
+			snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Call-out Frequency", str);
 		}
 		else {
 			sprintf(str, "%2.2u:%2.2u", cfg.qhub[num]->time / 60, cfg.qhub[num]->time % 60);
-			snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Call-out Time", str);
+			snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Call-out Time", str);
 		}
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Include Kludge Lines", cfg.qhub[num]->misc & QHUB_NOKLUDGES ? "No":"Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Include VOTING.DAT File", cfg.qhub[num]->misc & QHUB_NOVOTING ? "No":"Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Include HEADERS.DAT File", cfg.qhub[num]->misc & QHUB_NOHEADERS ? "No":"Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Include UTF-8 Characters", cfg.qhub[num]->misc & QHUB_UTF8 ? "Yes":"No");
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Extended (QWKE) Packets", cfg.qhub[num]->misc & QHUB_EXT ? "Yes":"No");
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Exported Ctrl-A Codes"
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Include Kludge Lines", cfg.qhub[num]->misc & QHUB_NOKLUDGES ? "No":"Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Include VOTING.DAT File", cfg.qhub[num]->misc & QHUB_NOVOTING ? "No":"Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Include HEADERS.DAT File", cfg.qhub[num]->misc & QHUB_NOHEADERS ? "No":"Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Include UTF-8 Characters", cfg.qhub[num]->misc & QHUB_UTF8 ? "Yes":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Include MIME-encoded Text", cfg.qhub[num]->misc & QHUB_MIME ? "Yes":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Word-wrap Exported Messages", cfg.qhub[num]->misc & QHUB_WORDWRAP ? "Yes":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Extended (QWKE) Packets", cfg.qhub[num]->misc & QHUB_EXT ? "Yes":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-30.30s%s", "Exported Ctrl-A Codes"
 		         , cfg.qhub[num]->misc & QHUB_EXPCTLA ? "Expand" : cfg.qhub[num]->misc & QHUB_RETCTLA ? "Leave in" : "Strip");
 		strcpy(opt[i++], "Advanced Options...");
 		strcpy(opt[i++], "Import Conferences...");
@@ -1392,6 +1394,14 @@ void qhub_edit(int num)
 				break;
 			case __COUNTER__:
 				cfg.qhub[num]->misc ^= QHUB_UTF8;
+				uifc.changes = TRUE;
+				break;
+			case __COUNTER__:
+				cfg.qhub[num]->misc ^= QHUB_MIME;
+				uifc.changes = TRUE;
+				break;
+			case __COUNTER__:
+				cfg.qhub[num]->misc ^= QHUB_WORDWRAP;
 				uifc.changes = TRUE;
 				break;
 			case __COUNTER__:

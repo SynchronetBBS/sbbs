@@ -155,7 +155,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 			}
 
 			mode = QM_TO_QNET | QM_REP;
-			mode |= (cfg.qhub[hubnum]->misc & (QHUB_EXT | QHUB_CTRL_A | QHUB_UTF8));
+			mode |= (cfg.qhub[hubnum]->misc & (QHUB_EXT | QHUB_CTRL_A | QHUB_UTF8 | QHUB_WORDWRAP | QHUB_MIME));
 			/* For an unclear reason, kludge lines (including @VIA and @TZ) were not included in NetMail previously */
 			if (!(cfg.qhub[hubnum]->misc & QHUB_NOHEADERS))
 				mode |= (QM_VIA | QM_TZ | QM_MSGID | QM_REPLYTO);

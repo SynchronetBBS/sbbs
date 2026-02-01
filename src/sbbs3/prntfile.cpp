@@ -144,7 +144,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 	struct sauce_charinfo sauce{};
 	if (sauce_fread_charinfo(stream, /* type */nullptr, &sauce)) {
 		mode |= P_CPM_EOF;
-		if (org_cols == 0 && sauce.width > TERM_COLS_MIN) {
+		if (org_cols == 0 && sauce.width >= TERM_COLS_MIN && sauce.width <= TERM_COLS_MAX) {
 			org_cols = sauce.width;
 			mode |= P_WRAP;
 		}
@@ -161,7 +161,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 			errormsg(WHERE, ERR_ALLOC, fpath, length + 1L);
 			return false;
 		}
-		l = read(file, buf, length);
+		l = fread(buf, 1, length, stream);
 		fclose(stream);
 		if (l != length)
 			errormsg(WHERE, ERR_READ, fpath, length);

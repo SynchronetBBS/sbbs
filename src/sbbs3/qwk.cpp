@@ -486,6 +486,9 @@ void sbbs_t::qwk_sec()
 				term->add_hotspot('U');
 				bprintf(text[QWKSettingsUtf8]
 				        , useron.qwk & QWK_UTF8 ? text[Yes]:text[No]);
+				term->add_hotspot('G');
+				bprintf(text[QWKSettingsMIME]
+				        , useron.qwk & QWK_MIME ? text[Yes]:text[No]);
 				term->add_hotspot('W');
 				bprintf(text[QWKSettingsWrapText]
 				        , useron.qwk & QWK_WORDWRAP ? text[Yes]:text[No]);
@@ -494,7 +497,7 @@ void sbbs_t::qwk_sec()
 				        , useron.qwk & QWK_EXT ? text[Yes]:text[No]);
 				bputs(text[QWKSettingsWhich]);
 				term->add_hotspot('Q');
-				ch = (char)getkeys("AEDFHIOPQTUYMNCXZVW", 0);
+				ch = (char)getkeys("AEDFGHIOPQTUYMNCXZVW", 0);
 				if (sys_status & SS_ABORT || !ch || ch == 'Q' || !online)
 					break;
 				switch (ch) {
@@ -574,6 +577,9 @@ void sbbs_t::qwk_sec()
 						break;
 					case 'W':
 						useron.qwk ^= QWK_WORDWRAP;
+						break;
+					case 'G':
+						useron.qwk ^= QWK_MIME;
 						break;
 					case 'X':   /* QWKE */
 						useron.qwk ^= QWK_EXT;
