@@ -232,7 +232,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 			if ((mode & P_SEEK) && (lncntr == term->rows - 1 || key == TERM_KEY_DOWN)) {
 				lncntr = 0;
 				int curatr = term->curatr;
-				double progress = (double)length / ftell(stream);
+				double progress = (double)filelength(file) / ftell(stream);
 				bprintf(P_ATCODES, text[SeekPrompt], (int)(progress ? (100.0 / progress) : 0));
 				auto nextline = line;
 				key = getkey(kmode);
