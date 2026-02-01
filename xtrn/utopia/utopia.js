@@ -52,12 +52,13 @@ var rules = {
 	pirate_land_attack_damage: 50,
 	pirate_gold: 125,
 	pirate_escape_penalty_multiplier: 0.5,
-	max_fish: 8,
+	fish_pool_max: 8,
 	fish_per_school: 25,
 	fish_food_value: 5,
 	fish_gold_value: 1,
-	fish_catch_potential: 0.1,
-	fish_catch_max : 3,
+	fish_catch_potential: 0.2,
+	fish_catch_max: 5,
+	fish_spawn_potential: 0.5,
 	fish_school_potential: 0.3,
 	rain_gold_value: 1,
 	demo_base_cost: 5,
@@ -90,10 +91,10 @@ var rules = {
 	wave_min_width: 7,
 
 	item: {
-		"C": { cost:  5, max_damage:  75, tax:  0.10, food_turn: 0.50, food_round: 1,   land: true,  sea: false },
-		"A": { cost: 30, max_damage: 150, tax:  0.10, food_turn: 0.25, food_round: 5,   land: true,  sea: false },
-		"T": { cost: 25, max_damage: 150, tax:  0.25, food_turn: 0.25, food_round: 1,   land: false, sea: true  },
-		"P": { cost: 50, max_damage: 300, tax:  0.25,                                   land: false, sea: true },
+		"C": { cost:  5, max_damage: 100, tax:  0.10, food_turn: 0.90, food_round: 1,   land: true,  sea: false },
+		"A": { cost: 20, max_damage: 500, tax:  0.10, food_turn: 0.10, food_round: 4,   land: true,  sea: false },
+		"T": { cost: 25, max_damage: 200, tax:  0.25, food_turn: 0.50, food_round: 5,   land: false, sea: true  },
+		"P": { cost: 50, max_damage: 300, tax:  0.25,                                   land: false, sea: true  },
 		"V": { cost: 50, max_damage: 300, tax:  0.25, cap: 50,                          land: true,  sea: false },
 		"D": { cost: 75, max_damage: 350, tax:  1.00, cap: 2,                           land: true,  sea: false },
 		"I": { cost: 75, max_damage: 350, tax:  1.00, cap: 1,                           land: true,  sea: false },
@@ -263,10 +264,14 @@ function cellIsAdjacent(a, b) {
 }
 
 function itemIsAdjacent(obj, item) {
-	for (var dx = -1; dx <= 1; dx++)
-		for (var dy = -1; dy <= 1; dy++)
-			if (itemAt(Math.floor(obj.x) + dx, Math.floor(obj.y) + dy) == item)
+	for (var dx = -1; dx <= 1; dx++) {
+		for (var dy = -1; dy <= 1; dy++) {
+			var x = Math.floor(obj.x) + dx;
+			var y = Math.floor(obj.y) + dy;
+			if (cellOnMap(x,y ) && itemAt(x, y) == item)
 				return true;
+		}
+	}
 	return false;
 }
 
@@ -277,9 +282,9 @@ function itemDemoCost(item) {
 }
 
 var spawnFish = function() {
-	while (state.fishPool.length < rules.max_fish) {
+	if (state.fishPool.length < rules.fish_pool_max && Math.random() < rules.fish_spawn_potential) {
 		var x, y;
-		if (state.fishPool.length & Math.random() < rules.fish_school_potential) {
+		if (state.fishPool.length && Math.random() < rules.fish_school_potential) {
 			var f = state.fishPool[random(state.fishPool.length)];
 			x = f.x;
 			y = f.y;
@@ -640,12 +645,16 @@ var handleEconomics = function() {
 
 	state.popCap = 0;
 	// Food adjustments and Population Cap PER TURN
+	var add_food = 0;
 	for (i in item_list) {
-		if (rules.item[i].food_turn)
-			state.food += Math.floor(item_list[i].count * itemHealth(i) * rules.item[i].food_turn);
+		if (rules.item[i].food_turn) {
+			add_food += item_list[i].count * rules.item[i].food_turn * 0.5;
+			add_food += item_list[i].count * rules.item[i].food_turn * 0.5 * itemHealth(i);
+		}
 		if (rules.item[i].cap)
 			state.popCap += item_list[i].count * rules.item[i].cap;
 	}
+	state.food += Math.floor(add_food);
 	state.food = Math.max(0, state.food - Math.floor(state.pop / 5));
 	if (state.turn % rules.population_interval === 0) {
 		if (state.food > state.pop && state.pop < state.popCap) {
@@ -921,7 +930,7 @@ var handlePiracy = function() {
 						pendingUpdate.push({ x: px + 1, y: py});
 						return;
 					}
-					if (!itemIsAdjactent({x:x, y:y}, ITEM_FORT)) {
+					if (!itemIsAdjacent({x:x, y:y}, ITEM_FORT)) {
 						drawCell(x, y, BLINK);
 						destroyItem(x, y);
 						var plunder = Math.floor(rules.item[ITEM_PTBOAT].cost * health);
@@ -1223,8 +1232,11 @@ var avoidStuff = function(ship, eastward, objects) {
 			continue;
 		debugLog("attempt to avoid stuff with " + key + " move to " + xy_str(nx, ny));
 		if (cellIsWater(nx, ny) && (!objects || !objects[ny][nx])) {
-			debugLog("successfull avoidance via " + key + " move to " + xy_str(nx, ny));
-			ship.moves[key] = 1;
+			debugLog("successful avoidance via " + key + " move to " + xy_str(nx, ny));
+			if (ship.moves[key])
+				ship.moves[key]++;
+			else
+				ship.moves[key] = 1;
 			ship.y = ny;
 			ship.x = nx;
 			return true;
@@ -1550,7 +1562,7 @@ var moveEntities = function() {
 				alert("Merchant ship run aground and sunk");
 				if (debug_enabled) console.getkey();
 				state.merchant.active = false;
-			} else {
+			} else {+
 				debugLog("Merchant successfully avoided stuff by moving from " 
 					+ xy_str(state.merchant) + " to " + xy_str(nx, ny));
 			}
@@ -1880,6 +1892,7 @@ var buildItem = function(type) {
 }
 
 function damageItem(x, y, cause, count) {
+	debugLog(cause + " damaging item at " + xy_str(x, y));
 	var item = itemAt(x,y);
 	var msg = cause + " damaged ";
 	damageMap[y][x] += (count || 1);
@@ -1906,14 +1919,14 @@ var destroyItem = function(x, y) {
 }
 
 var showBuildMenu = function() {
-	var menuX = 8,
+	var menuX = 6,
 		menuY = 3;
 
 	console.aborted = false;
 	for (var i = 0; i < 16; i++) {
 		console.gotoxy(menuX, menuY + i);
 		console.attributes = BG_BLACK | LIGHTGRAY;
-		console.write(format("%48s", ""));
+		console.write(format("%50s", ""));
 	}
 	menuY++
 	console.gotoxy(menuX + 2, menuY++);
@@ -1926,7 +1939,7 @@ var showBuildMenu = function() {
 			, i, item.name, rules.item[i].cost, item.shadow));
 	}
 	if (state.lastbuilt) {
-		console.gotoxy(menuX + 2, ++menuY);
+		console.gotoxy(menuX + 4, ++menuY);
 		console.putmsg("Last built: \x01h" + item_list[state.lastbuilt].name);
 		console.putmsg("\x01n (SPACE to build again)");
 	}
