@@ -295,6 +295,10 @@
  * 2025-10-28 Eric Oulashin     Version 1.97f
  *                              When reading a message, the sub-board information can
  *                              now be displayed by pressing S.
+ * 2026-01-31 Eric Oulashin     Version 1.97g
+ *                              Bug fix: this.msgAreaList_lastImportedMsg_showImportTime
+ *                              was being used in some functions where it didn't exist
+ *                              anymore
  */
 
 "use strict";
@@ -404,8 +408,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.97f";
-var READER_DATE = "2025-10-28";
+var READER_VERSION = "1.97g";
+var READER_DATE = "2026-01-31";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -2852,7 +2856,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 						
 						// Newer - Seems like it's not working as well:
 						/*
-						var latestPostInfo = getLatestPostTimestampAndNumNewMsgs(this.subBoardCode, msgbase);
+						var latestPostInfo = getLatestPostTimestampAndNumNewMsgs(this.subBoardCode, this.msgAreaList_lastImportedMsg_showImportTime, msgbase);
 						if (latestPostInfo.numNewMsgs > 0)
 						{
 							var startMsgIdx = totalNumMsgs > 0 ? totalNumMsgs - latestPostInfo.numNewMsgs : 0;
@@ -15573,7 +15577,7 @@ function DigDistMsgReader_DoIndexedMode(pScanScope, pNewscanOnly)
 			// If the number of new messages has changed (due to reading the sub-board),
 			// then empty the header caches so that we'll fully populate them next time
 			// the user chooses the same sub-board
-			var latestPostInfo = getLatestPostTimestampAndNumNewMsgs(indexRetObj.chosenSubCode);
+			var latestPostInfo = getLatestPostTimestampAndNumNewMsgs(indexRetObj.chosenSubCode, this.msgAreaList_lastImportedMsg_showImportTime, null);
 			if (latestPostInfo.numNewMsgs != origNumNewMessages)
 			{
 				this.hdrsForCurrentSubBoard = [];
@@ -15737,7 +15741,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 	}
 
 	// Set text widths for the menu items
-	var newMsgWidthObj = findWidestNumMsgsAndNumNewMsgs(scanScope, newScanOnly, writeStatusText);
+	var newMsgWidthObj = findWidestNumMsgsAndNumNewMsgs(scanScope, newScanOnly, this.msgAreaList_lastImportedMsg_showImportTime, writeStatusText);
 	var numMsgsWidth = newMsgWidthObj.widestNumMsgs;
 	var numNewMsgsWidth = newMsgWidthObj.widestNumNewMsgs;
 	// Ensure the column widths for the last few columns (after description) are wide enough
@@ -16193,7 +16197,7 @@ function DigDistMsgReader_GetIndexedModeSubBoardMenuItemTextAndInfo(pSubCode)
 
 	// posts: number of messages currently posted to this sub-board (introduced in v3.18c)
 	var totalNumMsgsInSub = msg_area.sub[pSubCode].posts;
-	var latestPostInfo = getLatestPostTimestampAndNumNewMsgs(pSubCode);
+	var latestPostInfo = getLatestPostTimestampAndNumNewMsgs(pSubCode, this.msgAreaList_lastImportedMsg_showImportTime, null);
 	var lastPostDate = strftime("%Y-%m-%d", latestPostInfo.latestMsgTimestamp);
 	var subDesc = (latestPostInfo.numNewMsgs > 0 ? "NEW " : "    ");
 	subDesc += msg_area.sub[pSubCode].name;
@@ -16346,6 +16350,8 @@ function DigDistMsgReader_ScrollableModeAreYouThereWarning()
 //              This would be SCAN_SCOPE_SUB_BOARD, SCAN_SCOPE_GROUP, or SCAN_SCOPE_ALL.
 //  pForNewscanOnly: Boolean: Whether or not to only check sub-boards in the user's newscan configuration.
 //                   Defaults to false.
+//  pLastImportedMsgShowImportTime: Boolean - Whether or not to use import time for the latest
+//                                  imported message
 //  pDisplayStatusDots: Optional boolean - Whether or not to display status dots while this is running.
 //                      Defaults to false.
 //
@@ -16353,7 +16359,7 @@ function DigDistMsgReader_ScrollableModeAreYouThereWarning()
 //               widestNumMsgs: The biggest length of the number of messages in the sub-boards
 //               widestNumNewMsgs: The biggest length of the number of new (unread) messages in the sub-boards
 //               numSubBoards: The number of sub-boards in the newscan
-function findWidestNumMsgsAndNumNewMsgs(pScanScope, pForNewscanOnly, pDisplayStatusDots)
+function findWidestNumMsgsAndNumNewMsgs(pScanScope, pForNewscanOnly, pLastImportedMsgShowImportTime, pDisplayStatusDots)
 {
 	var retObj = {
 		widestNumMsgs: 0,
@@ -16387,7 +16393,7 @@ function findWidestNumMsgsAndNumNewMsgs(pScanScope, pForNewscanOnly, pDisplaySta
 			var totalNumMsgsInSubLen = totalNumMsgsInSub.toString().length;
 			if (totalNumMsgsInSubLen > retObj.widestNumMsgs)
 				retObj.widestNumMsgs = totalNumMsgsInSubLen;
-			var latestPostInfo = getLatestPostTimestampAndNumNewMsgs(msg_area.grp_list[grpIdx].sub_list[subIdx].code);
+			var latestPostInfo = getLatestPostTimestampAndNumNewMsgs(msg_area.grp_list[grpIdx].sub_list[subIdx].code, pLastImportedMsgShowImportTime, null);
 			var numNewMessagesInSubLen = latestPostInfo.numNewMsgs.toString().length;
 			if (numNewMessagesInSubLen > retObj.widestNumNewMsgs)
 				retObj.widestNumNewMsgs = numNewMessagesInSubLen;
@@ -16405,12 +16411,14 @@ function findWidestNumMsgsAndNumNewMsgs(pScanScope, pForNewscanOnly, pDisplaySta
 //
 // Parameters:
 //  pSubCode: The internal code of a sub-board to check
+//  pLastImportedMsgShowImportTime: Whether or not to use import time for the
+//                                  latest imported message (boolean)
 //  pMsgbase: Optional - A MsgBase object, if the messagebase is already open
 //
 // Return value: An object with the following properties:
 //               latestMsgTimestamp: The timestamp of the latest post in the sub-board
 //               numnewMsgs: The number of new messages (unread to the user) in the sub-board
-function getLatestPostTimestampAndNumNewMsgs(pSubCode, pMsgbase)
+function getLatestPostTimestampAndNumNewMsgs(pSubCode, pLastImportedMsgShowImportTime, pMsgbase)
 {
 	var retObj = {
 		latestMsgTimestamp: 0,
@@ -16420,7 +16428,7 @@ function getLatestPostTimestampAndNumNewMsgs(pSubCode, pMsgbase)
 	var msgbase = null;
 	var msgbaseIsOpen = false;
 	var msgBaseOpenedHere = false;
-	if (typeof(pMsgbase) === "object" && typeof(pMsgbase.get_msg_body) === "function")
+	if (pMsgbase != null && typeof(pMsgbase) === "object" && typeof(pMsgbase.get_msg_body) === "function")
 	{
 		msgbase = pMsgbase;
 		msgbaseIsOpen = pMsgbase.is_open;
@@ -16436,7 +16444,7 @@ function getLatestPostTimestampAndNumNewMsgs(pSubCode, pMsgbase)
 	//if (msgbase.open())
 	if (msgbaseIsOpen)
 	{
-		retObj.latestMsgTimestamp = getLatestPostTimeWithMsgbase(msgbase, pSubCode);
+		retObj.latestMsgTimestamp = getLatestPostTimeWithMsgbase(msgbase, pLastImportedMsgShowImportTime, pSubCode);
 		var totalNumMsgs = msgbase.total_msgs;
 		// scan_ptr: user's current new message scan pointer (highest-read message number)
 		if (typeof(msg_area.sub[pSubCode].scan_ptr) === "number")
@@ -23048,7 +23056,7 @@ function replaceAtCodesAndRemoveCRLFs(pText)
 	return formattedText;
 }
 
-function getLatestPostTimeWithMsgbase(pMsgbase, pSubCode)
+function getLatestPostTimeWithMsgbase(pMsgbase, pLastImportedMsgShowImportTime, pSubCode)
 {
 	if (typeof(pMsgbase) !== "object")
 		return 0;
@@ -23066,7 +23074,8 @@ function getLatestPostTimeWithMsgbase(pMsgbase, pSubCode)
 			// but that doesn't seem to be the case:
 			msgHeader = pMsgbase.get_msg_header(true, --msgIdx, true, true);
 		}
-		if (this.msgAreaList_lastImportedMsg_showImportTime)
+		var lastImportedMsgShowImportTime = (typeof(pLastImportedMsgShowImportTime) === "boolean" ? pLastImportedMsgShowImportTime : false);
+		if (lastImportedMsgShowImportTime)
 			latestMsgTimestamp = msgHeader.when_imported_time;
 		else
 		{
@@ -24158,3 +24167,55 @@ function writeWithPause(pX, pY, pText, pPauseMS, pClearLineAttrib, pClearLineAft
 		console.cleartoeol(clearLineAttrib);
 	}
 }
+
+// Temporary
+function logStackTrace(levels) {
+    var callstack = [];
+    var isCallstackPopulated = false;
+    try {
+        i.dont.exist += 0; //doesn't exist- that's the point
+    } catch (e) {
+        if (e.stack) { //Firefox / chrome
+            var lines = e.stack.split('\n');
+            for (var i = 0, len = lines.length; i < len; i++) {
+                    callstack.push(lines[i]);
+            }
+            //Remove call to logStackTrace()
+            callstack.shift();
+            isCallstackPopulated = true;
+        }
+        else if (window.opera && e.message) { //Opera
+            var lines = e.message.split('\n');
+            for (var i = 0, len = lines.length; i < len; i++) {
+                if (lines[i].match(/^\s*[A-Za-z0-9\-_\$]+\(/)) {
+                    var entry = lines[i];
+                    //Append next line also since it has the file info
+                    if (lines[i + 1]) {
+                        entry += " at " + lines[i + 1];
+                        i++;
+                    }
+                    callstack.push(entry);
+                }
+            }
+            //Remove call to logStackTrace()
+            callstack.shift();
+            isCallstackPopulated = true;
+        }
+    }
+    if (!isCallstackPopulated) { //IE and Safari
+        var currentFunction = arguments.callee.caller;
+        while (currentFunction) {
+            var fn = currentFunction.toString();
+            var fname = fn.substring(fn.indexOf("function") + 8, fn.indexOf("(")) || "anonymous";
+            callstack.push(fname);
+            currentFunction = currentFunction.caller;
+        }
+    }
+    if (levels) {
+        console.print(callstack.slice(0, levels).join("\r\n"));
+    }
+    else {
+        console.print(callstack.join("\r\n"));
+    }
+}
+// End Temporary
