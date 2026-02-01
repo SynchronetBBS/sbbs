@@ -36,7 +36,7 @@ var tests = {
 		try {
 			var contents = http_request.Get(url);
 		} catch(e) {
-			return e.message;
+			return format("http_request.Get(%s) error: ", url) + e.message;
 		}
 		try {
 			var obj = JSON.parse(contents);
@@ -108,13 +108,13 @@ var tests = {
 				continue;
 			if(usr.settings & (USER_DELETED|USER_INACTIVE))
 				continue;
-			if(!system.check_name(usr.alias, /* unique: */false))
+			if(system.version_num > 32100 && !system.check_name(usr.alias, /* unique: */false))
 				output.push(format("User #%-4u has a disallowed alias%s"
 					, usr.number
 					, options.verbose ? (': ' + usr.alias) : ''));
 			if(usr.security.restrictions & UFLAG_G)
 				continue;
-			if(!system.check_realname(usr.name))
+			if(typeof system.check_realname === "function" && !system.check_realname(usr.name))
 				output.push(format("User #%-4u has a disallowed name%s"
 					, usr.number
 					, options.verbose ? (': ' + usr.name) : ''));
@@ -159,7 +159,7 @@ var tests = {
 					, usr.number
 					, password.length
 					, system.max_password_length));
-			else if(!system.check_password(password))
+			else if(typeof system.check_password === "function" && !system.check_password(password))
 				output.push(format("User #%-4u has a low quality password%s"
 					, usr.number
 					, options.verbose ? (': ' + password) : ''));
