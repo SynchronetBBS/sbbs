@@ -3417,45 +3417,41 @@ static short fmsgzone(const char* p)
 	return val;
 }
 
-char* getfmsg(FILE* stream, ulong* outlen)
+// Reads stored or packed message text from file
+// discarding (ignoring) any LFs, stopping at first NUL
+char* getfmsg(FILE* stream, size_t* outlen)
 {
-	uchar* fbuf;
+	char*  fbuf = NULL;
 	int    ch;
-	off_t  start;
-	ulong  l, length;
+	size_t  length = 0;
 
-	length = 0L;
-	start = ftello(stream);                       /* Beginning of Message */
-	if (start < 0) {
-		lprintf(LOG_ERR, "ERROR %d line %d getting file offset", errno, __LINE__);
-		return NULL;
-	}
-	while (1) {
+	while (!feof(stream)) {
 		ch = fgetc(stream);                       /* Look for Terminating NULL */
 		if (ch == 0 || ch == EOF)                    /* Found end of message */
 			break;
-		length++;                               /* Increment the Length */
+		if (ch == '\n') // FTS-1: "All  linefeeds, 0AH, should be ignored."
+			continue;
+		if ((fbuf = realloc_or_free(fbuf, length + 1)) == NULL) {
+			lprintf(LOG_ERR, "ERROR line %d allocating %lu bytes of memory", __LINE__, length + 1);
+			bail(1);
+			return NULL;
+		}
+		fbuf[length++] = ch;
 	}
 
-	if ((fbuf = malloc(length + 1)) == NULL) {
+	while (length && (uchar)fbuf[length - 1] <= ' ')    /* truncate white-space and ctrl chars */
+		length--;
+
+	if ((fbuf = realloc_or_free(fbuf, length + 1)) == NULL) {
 		lprintf(LOG_ERR, "ERROR line %d allocating %lu bytes of memory", __LINE__, length + 1);
 		bail(1);
 		return NULL;
 	}
-
-	(void)fseeko(stream, start, SEEK_SET);
-	for (l = 0; l < length; l++)
-		fbuf[l] = (uchar)fgetc(stream);
-	if (ch == 0)
-		(void)fgetc(stream);        /* Read NULL */
-
-	while (length && fbuf[length - 1] <= ' ')    /* truncate white-space */
-		length--;
 	fbuf[length] = '\0';
 
 	if (outlen)
 		*outlen = length;
-	return (char*)fbuf;
+	return fbuf;
 }
 
 #define MAX_TAILLEN 1024
@@ -3767,12 +3763,14 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum, bool* f
 			while (l < length && fbuf[l] != '\r') l++;
 			continue;
 		}
-		if (ch == '\n')
-			continue;
-		if (cr && (!strncmp(fbuf + l, "--- ", 4)
-		           || !strncmp(fbuf + l, "---\r", 4)
-		           || !strncmp(fbuf + l, "-- \r", 4)))
-			done = true;           /* tear line and down go into tail */
+		if (cr && (strncmp(fbuf + l, "--- ", 4) == 0
+			    || strncmp(fbuf + l, "---\r", 4) == 0
+			    || strncmp(fbuf + l, "-- \r", 4) == 0)) {
+			if (   strstr(fbuf + l + 4, "\r--- ") == NULL
+			    && strstr(fbuf + l + 4, "\r---\r") == NULL
+			    && strstr(fbuf + l + 4, "\r-- \r") == NULL)
+				done = true;           /* (last) tear line and down go into tail */
+		}
 		else if (cr && !strncmp(fbuf + l, " * Origin: ", 11) && subnum != INVALID_SUB) {
 			p = (char*)fbuf + l + 11;
 			while (*p && *p != '\r') p++; /* Find CR */
