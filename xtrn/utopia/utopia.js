@@ -100,7 +100,7 @@ var rules = {
 		"C": { cost:  5, max_damage: 100, tax:  0.10, food_turn: 0.90, food_round: 1,   land: true,  sea: false },
 		"A": { cost: 20, max_damage: 500, tax:  0.10, food_turn: 0.10, food_round: 4,   land: true,  sea: false },
 		"T": { cost: 25, max_damage: 200, tax:  0.25, food_turn: 0.50, food_round: 5,   land: false, sea: true  },
-		"P": { cost: 50, max_damage: 300, tax:  0.25,                                   land: false, sea: true  },
+		"P": { cost:100, max_damage: 300, tax:  0.25,                                   land: false, sea: true  },
 		"V": { cost: 50, max_damage: 300, tax:  0.25, cap: 50,                          land: true,  sea: false },
 		"D": { cost: 75, max_damage: 350, tax:  1.00, cap: 2,                           land: true,  sea: false },
 		"I": { cost: 75, max_damage: 350, tax:  1.00, cap: 1,                           land: true,  sea: false },
@@ -1903,7 +1903,9 @@ function buildItem(type) {
 	}
 	else if (type == ITEM_BRIDGE)
 		refreshMap();
-	announce(msg);
+	alert(msg);
+	state.started = true;
+	state.in_progress = true;
 	drawUI();
 	return true;
 }
@@ -1969,11 +1971,8 @@ function showBuildMenu() {
 		success = buildItem(state.lastbuilt);
 	else if (item_list[cmd])
 		success = buildItem(cmd);
-	drawUI();
-	if (success) {
-		state.started = true;
-		state.in_progress = true;
-	}
+	if (!success)
+		drawUI();
 };
 
 function saveHighScore(title) {
@@ -2535,6 +2534,10 @@ function main () {
 				state.tick_interval *= 2;
 				break;
 			default:
+				if ((!state.started || state.in_progress) && item_list[key]) {
+					buildItem(key);
+					break;
+				}
 				if (user.is_sysop)
 					handleOperatorCommand(key);
 				break;
