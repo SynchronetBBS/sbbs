@@ -1906,7 +1906,6 @@ function buildItem(type) {
 	alert(msg);
 	state.started = true;
 	state.in_progress = true;
-	drawUI();
 	return true;
 }
 
@@ -1966,13 +1965,11 @@ function showBuildMenu() {
 	var cmd = console.getkey(K_UPPER | K_NOSPIN);
 	for (var y = 0; y < MAP_HEIGHT; y++)
 		drawRow(/* starting at x */0, y);
-	var success = false;
 	if (cmd == ' ')
-		success = buildItem(state.lastbuilt);
+		buildItem(state.lastbuilt);
 	else if (item_list[cmd])
-		success = buildItem(cmd);
-	if (!success)
-		drawUI();
+		buildItem(cmd);
+	drawUI();
 };
 
 function saveHighScore(title) {
@@ -2475,6 +2472,7 @@ function main () {
 				if (state.in_progress) {
 					if (state.lastbuilt) {
 						buildItem(state.lastbuilt)
+						drawUI();
 						if(state.cursor.x < MAP_RIGHT_COL)
 							++state.cursor.x;
 					} else
@@ -2536,6 +2534,7 @@ function main () {
 			default:
 				if ((!state.started || state.in_progress) && item_list[key]) {
 					buildItem(key);
+					drawUI();
 					break;
 				}
 				if (user.is_sysop)
