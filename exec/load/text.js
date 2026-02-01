@@ -951,7 +951,8 @@ var WideModeIsNow=941;
 var SeekingFile=942;
 var SeekingFileDone=943;
 var SeekPrompt=944;
+var QWKSettingsMIME=945;
 
-var TOTAL_TEXT=944;
+var TOTAL_TEXT=945;
 
 this;
