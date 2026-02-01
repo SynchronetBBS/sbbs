@@ -582,7 +582,6 @@ bool sbbs_t::answer()
 			term->lncntr = 0;
 			cls();
 			term->center(str, P_80COLS);
-			term_out("\r\n");
 		} else {    /* ANSI+ terminal detection */
 			/*
 			 * TODO: Once this merges, it would be good to split the "ANSI detection"
