@@ -25,7 +25,9 @@ if(!file.open("r", true)) {
 	writeln("!ERROR "+file.error+" opening "+ file.name);
 	exit(1);
 }
-file.readln(); // First line is not used (mode?)
+var p_mode = file.readln();
+if (p_mode)
+	p_mode = eval(p_mode);
 bull = file.readAll();
 file.close();
 
@@ -57,11 +59,11 @@ while(bbs.online && !js.terminated) {
 		var ext = file_getext(fname);
 		var success = false;
 		if(ext == ".*")
-			success = bbs.menu(fname.slice(0, -2));
+			success = bbs.menu(fname.slice(0, -2), p_mode);
 		else if(fname.search(/\.htm/)!=-1)
-			success = load(new Object, "typehtml.js", "-color", fname);
+			success = load(new Object, "typehtml.js", "-color", fname);		
 		else
-			success = load(new Object, "typeasc.js", fname, "BullsEye Bulletin #"+b);
+			success = console.printfile(fname, p_mode);
 		if(success)
 			log("viewed bulletin #" + b + ": "+fname);
 		else
