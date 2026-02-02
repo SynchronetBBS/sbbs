@@ -8,8 +8,8 @@ load("sbbsdefs.js");
 // --- CONFIG & FILES ---
 var settings = {
 	intro_msg: js.exec_dir + "intro.msg",
-	map_list: js.exec_dir + "maps.ini",
 	tick_interval: 0.5,
+	rules_list: [],
 }
 
 const HELP_FILE = js.exec_dir + "help.msg";
@@ -43,6 +43,10 @@ var rules = {
 	initial_gold: 150,
 	initial_food: 100,
 	population_interval: 5,
+	industry_pollution_multiple: 0.25,
+	animals_pollution_multiple: 0.25,
+	boat_pollution_multiple: 0.01,
+	crops_pollution_reduction: 0.5,
 	hospital_pop_increase_multiplier: 5.0,
 	merchant_spawn_potential: 0.03,
 	merchant_gold: 250,
@@ -52,6 +56,7 @@ var rules = {
 	pirate_spawn_potential: 0.02,
 	pirate_land_attack_interval: 10,
 	pirate_land_attack_damage: 50,
+	pirate_sea_attack_damage: 50,
 	pirate_gold: 125,
 	pirate_escape_penalty_multiplier: 0.5,
 	fish_pool_min: 5,
@@ -69,7 +74,6 @@ var rules = {
 	demo_rebels_multiplier: 0.5,
 	demo_item_cost_multiplier: 0.5,
 	ptboat_sink_pirate_potential: 0.9,
-	pirate_sink_trawler_potential: 0.7,
 	pirate_merchant_plunder_multiplier: 0.5,
 	sunk_pirate_reward_multiplier: 0.5,
 	// (per-round)
@@ -367,7 +371,7 @@ function refreshScreen(cls) {
 	if (cls === true)
 		console.clear(LIGHTGRAY);
 	refreshMap();
-	drawUI(/* legend: */true);
+	drawUI(/* verbosity: */2);
 }
 
 function cellContainsFish(obj) {
@@ -673,6 +677,15 @@ function handleEconomics() {
 			state.pop -= Math.floor(Math.random() * 2) + 1;
 			alert("\x01h\x01rFAMINE!");
 		}
+		var pollution = (item_list[ITEM_INDUSTRY].count * rules.industry_pollution_multiple)
+			          + (item_list[ITEM_ANIMALS].count * rules.animals_pollution_multiple)
+					  + (item_list[ITEM_TRAWLER].count * rules.boat_pollution_multiple)
+					  + (item_list[ITEM_PTBOAT].count * rules.boat_pollution_multiple);
+		pollution -= item_list[ITEM_CROPS].count * rules.crops_pollution_reduction;
+		if (pollution > 0) {
+			state.pop -= Math.floor(Math.random() * 2) + 1;
+			alert("\x01h\x01rPOLLUTION!");
+		}
 	}
 
 	if (state.turn % rules.round_interval === 0) {
@@ -708,7 +721,7 @@ function handleEconomics() {
 			state.pop--;
 		}
 		if (state.martialLaw) {
-			announce(format("\x01h\x01hMATIAL LAW \x01yRound costs: -$\x01w%u\x01y and +\x01w%u\x01y Food"
+			announce(format("\x01h\x01hMATIAL LAW \x01yRound costs: -\x01w$%u\x01y and +\x01w%u\x01y Food"
 				, costs, add_food));
 			state.gold -= costs;
 		} else {
@@ -931,7 +944,7 @@ function pirateAttack() {
 					state.merchant.active = false;
 					var plunder  = Math.floor(state.merchant.gold * rules.pirate_merchant_plunder_multiplier);
 					state.pirate.gold += plunder ;
-					announce("\x01h\x01rMerchant ship sunk by Pirates!  Pirates plundered $\x01w" + plunder);
+					announce("\x01h\x01rMerchant ship sunk by Pirates!  Pirates plundered \x01w$" + plunder);
 					forceScrub(Math.floor(state.merchant.x), Math.floor(state.merchant.y), 1);
 				}
 				return true;
@@ -949,47 +962,37 @@ function pirateAttack() {
 					var reward = 0;
 					if (state.pirate.gold > 0)
 						reward = Math.floor(state.pirate.gold * rules.sunk_pirate_reward_multiplier);
-					announce("\x01h\x01bPirate ship sunk by PT Boat! Reward: $\x01w" + reward);
+					announce("\x01h\x01bPirate ship sunk by PT Boat! Reward: \x01w$" + reward);
 					state.gold += reward;
 					pendingUpdate.push({ x: px, y: py});
 					pendingUpdate.push({ x: px + 1, y: py});
 					return true;
 				}
 				if (!fort_protected) {
-					drawCell(x, y, BLINK);
-					destroyItem(x, y);
-					var plunder = Math.floor(rules.item[ITEM_PTBOAT].cost * (0.5 + (0.5 * health)));
-					state.pirate.gold += plunder;
-					state.stats.boatsLost++;
-					announce("\x01h\x01rPT Boat sunk by Pirates!  Pirates plundered $\x01w" + plunder);
-					pendingUpdate.push({ x:x, y:y});
+					if (damageItem(x, y)) {
+						var plunder = Math.floor(rules.item[ITEM_PTBOAT].cost * (0.5 + (0.5 * health)));
+						state.pirate.gold += plunder;
+						state.stats.boatsLost++;
+						announce("\x01h\x01rPirates plundered \x01w$" + plunder + "\x01r from " + item_list[item].name);
+					}
 					return true;
 				}
 				continue;
 			}
-			if (cellIsLand(x, y)) {
-				if ((state.turn - state.pirate.last_attack) >= rules.pirate_land_attack_interval) {
-					if (fort_protected)
-						alert("Pirate attack on " + item_list[item].name + " thwarted by Fort defense!");
-					else
-						damageItem(x, y, "Pirate attack", rules.pirate_land_attack_damage);
-					state.pirate.last_attack = state.turn;
-					return true;
-				}
-				continue;
-			}
-			// Water items
-			if (item == ITEM_TRAWLER) {
+			var isLand = cellIsLand(x, y);
+			if (!isLand || (state.turn - state.pirate.last_attack) >= rules.pirate_land_attack_interval) {
 				if (fort_protected)
 					alert("Pirate attack on " + item_list[item].name + " thwarted by Fort defense!");
-				else  if (Math.random() < rules.pirate_sink_trawler_potential) {
-					var plunder = Math.floor(rules.item[ITEM_TRAWLER].cost * (0.5 + (0.5 * itemHealth({ x:x, y:y }))));
-					state.pirate.gold += plunder
-					drawCell(x, y, BLINK);
-					destroyItem(x, y);
-					state.stats.trawlersSunk++;
-					announce("\x01h\x01rTrawler sunk by Pirates!  Pirates plundered $\x01w" + plunder);
-					pendingUpdate.push({ x:x, y:y});
+				else {
+					var damage = isLand ? rules.pirate_land_attack_damage : rules.pirate_sea_attack_damage;
+					var plunder = Math.floor(rules.item[item].cost * (0.5 + (0.5 * itemHealth({ x:x, y:y }))));
+					if (damageItem(x, y, "Pirate attack", damage)) {
+						state.pirate.gold += plunder
+						if (item == ITEM_TRAWLER)
+							state.stats.trawlersSunk++;
+						announce("\x01h\x01rPirates plundered \x01w$" + plunder + "\x01r from " + item_list[item].name);
+					}
+					state.pirate.last_attack = state.turn;
 				}
 				return true;
 			}
@@ -1031,7 +1034,7 @@ function moveTrawlers() {
 
 function checkMutiny() {
 	// Only happens if rebels are high and a pirate isn't already active
-	if (state.rebels > rules.rebels_mutiny_theshold && !state.pirate.active) {
+	if (!state.martialLaw && state.rebels > rules.rebels_mutiny_theshold && !state.pirate.active) {
 		// Chance increases as rebels approach 100%
 		var mutinyChance = (state.rebels - rules.rebels_mutiny_theshold) / (rules.rebels_mutiny_theshold * 10);
 		if (Math.random() < mutinyChance) {
@@ -1662,7 +1665,7 @@ function movePirate() {
 		if (state.pirate.gold > 0) {
 			var penalty = Math.floor(state.pirate.gold * rules.pirate_escape_penalty_multiplier);
 			state.gold = Math.max(0, state.gold - penalty);
-			announce("\x01h\x01rPirates Escaped with Loot ($" + state.pirate.gold + ") penalized -$\x01w" + penalty);
+			announce("\x01h\x01rPirates Escaped with Loot ($" + state.pirate.gold + ") penalized -\x01w$" + penalty);
 		}
 		forceScrub(0, py, 1);
 		return true;
@@ -1744,14 +1747,20 @@ function cond_cleartoeol() {
 	if (console.current_column) console.cleartoeol();
 }
 
-function drawUI(legend) {
+var last_gold;
+var last_food;
+var last_pop;
+var last_cap;
+var last_reb;
+
+function drawUI(verbose) {
 	var lx = 62;
 	var ly = 1;
 
 	console.aborted = false;
 	var item_key = itemMap[state.cursor.y][state.cursor.x];
 
-	if (legend) {
+	if (verbose > 1) {
 		console.gotoxy(lx, ly++);
 		console.attributes = LIGHTGRAY;
 		console.putmsg("  Items     Health");
@@ -1806,9 +1815,9 @@ function drawUI(legend) {
 	ly = Object.keys(item_list).length + 2;
 	console.gotoxy(lx, ly++);
 	if (state.pirate.active && cellIsSame(state.cursor, state.pirate))
-		console.putmsg(" \x01r\x01hPirate w/$\x01w" + state.pirate.gold);
+		console.putmsg(" \x01r\x01hPirate w/\x01w$" + state.pirate.gold);
 	else if (state.merchant.active && cellIsSame(state.cursor, state.merchant))
-		console.putmsg(" \x01y\x01hMerchant w/$\x01w" + state.merchant.gold);
+		console.putmsg(" \x01y\x01hMerchant w/\x01w$" + state.merchant.gold);
 	else if (cellContainsFish(state.cursor))
 		console.putmsg("  \x01g\x01hSigns of Fish");
 	cond_cleartoeol();
@@ -1845,38 +1854,85 @@ function drawUI(legend) {
 		console.putmsg("/Pause Game");
 	console.cleartoeol();
 
-	console.gotoxy(1, MAP_HEIGHT + 1);
-	console.attributes = BG_BLACK | LIGHTGRAY;
-	var gold = state.gold > 999 ? format("%1.1fK", state.gold / 1000) : state.gold;
-	var food = state.food > 999 ? format("%1.1fK", state.food / 1000) : state.food;
-	console.putmsg(format(
-		"\x01n\x01h\x01yGold:%s %s " +
-		"\x01n\x01h\x01gFood:%s %s " +
-		"\x01n\x01h\x01wPop:\x01n%4d/%s%-5d " +
-		"\x01n\x01h\x01wReb:%s %d%%  " +
-		"\x01n\x01h\x01cRnd:%s %4.1f/%d\x01>"
-		, state.gold < state.popCap ? "\x01r\x01i" : "\x01n"
-		, gold
-		, state.started && state.food < state.pop ? "\x01r\x01i" : "\x01n"
-		, food
-		, state.pop
-		, state.started && state.pop >= state.popCap ? "\x01r\x01i" : "\x01n"
-		, state.popCap
-		, state.rebels >= 50 ? "\x01r\x01i" : "\x01n"
-		, state.rebels
-		, state.turn / 10 >= (rules.max_turns - 1) / 10 ? "\x01r" : "\x01n"
-		, state.turn / 10, rules.max_turns / 10));
-	console.cleartoeol();
-	var msg_index = 0;
-	for (var i = 0; i < MAX_MSGS; ++i) {
-		console.gotoxy(1, MAP_HEIGHT + 2 + i);
-		if (state.msg.length >= MAX_MSGS - i) {
-			console.putmsg("\x01n\x01h" + state.msg[msg_index].txt);
-			if (state.msg[msg_index].repeat > 0)
-				console.print(" [x" + (state.msg[msg_index].repeat + 1) + "]");
-			msg_index++;
+	if (verbose) {
+
+		console.gotoxy(1, MAP_HEIGHT + 1);
+		console.attributes = BG_BLACK | LIGHTGRAY;
+		const up_arrow = "\x01-\x01g\x18";
+		const dn_arrow = "\x01-\x01r\x19";
+		var gold_dir = " ";
+		if (last_gold !== undefined) {
+			if (state.gold > last_gold)
+				gold_dir = up_arrow;
+			else if (state.gold < last_gold)
+				gold_dir = dn_arrow;
 		}
+		var food_dir = " ";
+		if (last_food !== undefined) {
+			if (state.food > last_food)
+				food_dir = up_arrow;
+			else if (state.food < last_food)
+				food_dir = dn_arrow;
+		}
+		var pop_dir = " ";
+		if (last_pop !== undefined) {
+			if (state.pop > last_pop)
+				pop_dir = up_arrow;
+			else if (state.pop < last_pop)
+				pop_dir = dn_arrow;
+		}
+		var cap_dir = " ";
+		if (last_cap !== undefined) {
+			if (state.popCap > last_cap)
+				cap_dir = up_arrow;
+			else if (state.popCap < last_cap)
+				cap_dir = dn_arrow;
+		}
+		var reb_dir = " ";
+		if (last_reb !== undefined) {
+			if (state.reb > last_reb)
+				reb_dir = up_arrow;
+			else if (state.reb < last_reb)
+				reb_dir = dn_arrow;
+		}
+		var gold = state.gold > 999 ? format("%1.1fK", state.gold / 1000) : state.gold;
+		var food = state.food > 999 ? format("%1.1fK", state.food / 1000) : state.food;
+		var pop = state.pop > 999 ? format("%1.1fK", state.pop / 1000) : state.pop;
+		var popCap = state.popCap > 999 ? format("%1.1fK", state.popCap / 1000) : state.popCap;
+		console.putmsg(format(
+			"\x01n\x01h\x01yGold: %s%s%s " +
+			"\x01n\x01h\x01gFood: %s%s%s " +
+			"\x01n\x01h\x01wPop:%s\x01n%s/%s%s%s " +
+			"\x01n\x01h\x01wReb: %s%2d%%%s  " +
+			"\x01n\x01h\x01cRnd: %s%4.1f/%d\x01>"
+			, state.gold < state.popCap ? "\x01r\x01i" : "\x01n"
+			, gold
+			, gold_dir
+			, state.started && state.food < state.pop ? "\x01r\x01i" : "\x01n"
+			, food
+			, food_dir
+			, pop_dir
+			, pop
+			, state.started && state.pop >= state.popCap ? "\x01r\x01i" : "\x01n"
+			, popCap
+			, cap_dir
+			, state.rebels >= 50 ? "\x01r\x01i" : "\x01n"
+			, state.rebels
+			, reb_dir
+			, state.turn / 10 >= (rules.max_turns - 1) / 10 ? "\x01r" : "\x01n"
+			, state.turn / 10, rules.max_turns / 10));
 		console.cleartoeol();
+		var msg_index = 0;
+		for (var i = 0; i < MAX_MSGS; ++i) {
+			console.gotoxy(1, MAP_HEIGHT + 2 + i);
+			if (state.msg.length >= MAX_MSGS - i) {
+				console.putmsg("\x01n\x01h" + state.msg[msg_index].txt);
+				if (state.msg[msg_index].repeat > 0)
+					console.print(" [x" + (state.msg[msg_index].repeat + 1) + "]");
+				msg_index++;
+			}
+			console.cleartoeol();
+		}
 	}
 	hideCursor();
 };
@@ -1944,6 +2000,7 @@ function buildItem(type) {
 }
 
 function damageItem(x, y, cause, count) {
+	var destroyed = false;
 	debugLog(cause + " damaging item at " + xy_str(x, y));
 	var item = itemAt(x,y);
 	var msg = cause + " damaged ";
@@ -1952,9 +2009,10 @@ function damageItem(x, y, cause, count) {
 		msg += "and destroyed ";
 		drawCell(x, y, BLINK);
 		pendingUpdate.push({ x: x, y: y});
-		destroyItem(x, y);
+		destroyed = destroyItem(x, y);
 	}
 	alert(msg + item_list[item].name + "!");
+	return destroyed;
 }
 
 function destroyItem(x, y) {
@@ -2089,89 +2147,93 @@ function handleOperatorCommand(key) {
 		switch (key) {
 			case '*':
 				rules.max_turns += 100;
-				break;
+				return true;
 			case '&':
 				state.food += 100;
-				break;
+				return true;
 			case '#':
 				state.gold += 100;
-				break;
+				return true;
 			case '$':
 				spawnMerchant();
 				refreshMap();
-				break;
+				return true;
 			case '!':
 				spawnPirate();
 				refreshMap();
-				break;
+				return true;
 			case '%':
 				spawnStorm();
 				refreshMap();
-				break;
+				return true;
 			case '"':
 				spawnRain();
 				refreshMap();
-				break;
+				return true;
 			case '>':
 				spawnWave();
 				refreshMap();
-				break;
+				return true;
 			case CTRL_S:
 				saveGame();
-				break;
+				return true;
 			case CTRL_T:
 				saveGame('\t');
-				break;
+				return true;
+			case CTRL_Z:
+				dumpObj(rules, js.exec_dir + "rules.json", null, "\t");
+				return true;
 		}
 	}
 	if (state.in_progress) {
 		drawUI();
-		return;
+		return false;
 	}
 	switch (key) {
 		case ',':
 			map[state.cursor.y][state.cursor.x] = WATER;
 			drawCell(state.cursor.x, state.cursor.y);
 			state.cursor.x++;
-			break;
+			return true;
 		case 'N':
 			map[state.cursor.y][state.cursor.x] = LAND_N;
 			drawCell(state.cursor.x, state.cursor.y);
 			state.cursor.x++;
-			break;
+			return true;
 		case 'S':
 			map[state.cursor.y][state.cursor.x] = LAND_S;
 			drawCell(state.cursor.x, state.cursor.y);
 			state.cursor.x++;
-			break;
+			return true;
 		case 'E':
 			map[state.cursor.y][state.cursor.x] = LAND_E;
 			drawCell(state.cursor.x, state.cursor.y);
 			state.cursor.x++;
-			break;
+			return true;
 		case 'W':
 			map[state.cursor.y][state.cursor.x] = LAND_W;
 			drawCell(state.cursor.x, state.cursor.y);
 			state.cursor.x++;
-			break;
+			return true;
 		case '/':
 			map[state.cursor.y][state.cursor.x] = LAND;
 			drawCell(state.cursor.x, state.cursor.y);
 			state.cursor.x++;
-			break;
+			return true;
 		case CTRL_X:
 			state.fishPool.length = 0;
 			clearMap();
 			refreshMap();
-			break;
+			return true;
 		case CTRL_O:
 			loadMap(MAP_FILE);
 			refreshMap();
-			break;
+			return true;
 		case CTRL_D:
 			dumpObj(map, MAP_FILE);
-			break;
+			return true;
 	}
+	return false;
 }
 
 function saveGame(space) {
@@ -2180,6 +2242,7 @@ function saveGame(space) {
 		sf.write(JSON.stringify({
 			state: state,
 			map: map,
+			rules: rules,
 			itemMap: itemMap,
 			damageMap: damageMap
 		}, null, space));
@@ -2318,16 +2381,18 @@ function genMap() {
 	}
 }
 
-function getMaps()
-{
-	var f = new File(settings.map_list);
-	if (!f.open("r")) {
-		log(LOG_WARNING, "Error " + f.error + " opening " + f.name);
-		return null;
+function loadRules(filename) {
+	var f = new File(js.exec_dir + filename);
+	if (!f.open("r"))
+		return false;
+	var result = false;
+	try {
+		result = JSON.parse(f.read());
+	} catch (e) {
+		js.global.log(LOG_WARNING, e + ": " + f.name);
 	}
-	var maps = f.iniGetAllObjects();
 	f.close();
-	return maps;
+	return result;
 }
 
 // --- RUNTIME ---
@@ -2335,9 +2400,9 @@ function main () {
 	var settingsF = new File(js.exec_dir + "settings.ini");
 	if (settingsF.open("r")) {
 		var ini = settingsF.iniGetObject();
+		settings.map_list = settingsF.iniGetAllObjects("filename", "map:");
+		settings.rules_list = settingsF.iniGetAllObjects("filename", "rules:");
 		settingsF.close();
-		if (ini.map_list)
-			settings.map_list = js.exec_dir + ini.map_list;
 		if (ini.intro_msg)
 			settings.intro_msg = js.exec_dir + ini.intro_msg;
 		if (ini.tick_interval)
@@ -2356,6 +2421,7 @@ function main () {
 			var s = JSON.parse(saveF.read());
 			state = s.state;
 			map = s.map;
+			rules = s.rules;
 			itemMap = s.itemMap;
 			damageMap = s.damageMap;
 			game_restored = true;
@@ -2378,26 +2444,42 @@ function main () {
 			}
 		}
 		var map_file;
-		var maps = getMaps();
-		if (maps) {
+		var maps = settings.map_list;
+		if (maps && maps.length) {
 			var i =0;
 			for (i = 0; i < maps.length; ++i)
-				console.uselect(i, "Map to Play", maps[i].desc);
+				console.uselect(i, "Map to Play", maps[i].name);
 			console.uselect(i, "", "Randomly Generated");
 			var choice = console.uselect();
 			if (choice < 0)
 				return;
 			if (choice < maps.length) {
-				map_file = js.exec_dir + maps[choice].name;
-				state.map_name = maps[choice].desc;
+				map_file = js.exec_dir + maps[choice].filename;
+				state.map_name = maps[choice].name;
 			}
 		}
 		if (!map_file || !loadMap(map_file)) {
 			state.map_name = "Random Islands";
 			genMap();
 		}
+		if (settings.rules_list && settings.rules_list.length) {
+			var i =0;
+			for (i = 0; i < settings.rules_list.length; ++i)
+				console.uselect(i, "Rules to Play By", settings.rules_list[i].name);
+			console.uselect(i, "", rules.name);
+			var choice = console.uselect();
+			if (choice < 0)
+				return;
+			if (choice < settings.rules_list.length) {
+				var new_rules = loadRules(settings.rules_list[choice].filename);
+				if (new_rules)
+					rules = new_rules;
+			}
+		}
 		spawnFish();
-		pushMsg("\x01h\x01wWelcome to the " + state.map_name + ", Governor.  Build to claim your homeland!");
+		pushMsg("Welcome to the " + state.map_name + ", Governor.");
+		pushMsg("Playing by " + rules.name + " rules...");
+		pushMsg("Build to claim your homeland!");
 	}
 	refreshScreen(true);
 	var lastTick = system.timer;
@@ -2413,7 +2495,12 @@ function main () {
 						handlePendingUpdates();
 						handleEconomics();
 						moveEntities();
-						drawUI();
+						drawUI(/* verbosity */1);
+						last_gold = state.gold;
+						last_food = state.food;
+						last_pop = state.pop;
+						last_cap = state.popCap;
+						last_reb = state.rebels;
 					} else
 						hideCursor();
 					tick++;
@@ -2421,7 +2508,7 @@ function main () {
 				else {
 					alert("\x01h\x01rYour term as Governor is over, [\x01wQ\x01r]uit to see your score.");
 					state.in_progress = false;
-					drawUI();
+					drawUI(/* verbosity */1);
 				}
 			}
 			lastTick = system.timer;
@@ -2493,9 +2580,6 @@ function main () {
 			case CTRL_R:
 				refreshScreen(true);
 				break;
-			case CTRL_U:
-				refreshMap();
-				break;
 			case '0':
 			case KEY_INSERT:
 			case '\r':
@@ -2532,14 +2616,16 @@ function main () {
 			case 'H':
 				if (file_exists(HELP_FILE)) {
 					console.clear();
-					console.printfile(HELP_FILE, P_PCBOARD);
+					console.printfile(HELP_FILE, P_SEEK | P_PCBOARD | P_MARKUP | P_HIDEMARKS);
+					console.attributes = LIGHTGRAY;
 					console.pause();
 				}
-				refreshScreen();
+				refreshScreen(true);
 				break;
 			case 'Q':
 				if (handleQuit())
 					return;
+				drawUI(2);
 				continue;
 			case '.':
 			case KEY_DEL:
@@ -2572,7 +2658,12 @@ function main () {
 					break;
 				}
 				if (user.is_sysop)
-					handleOperatorCommand(key);
+					if (handleOperatorCommand(key))
+						break;
+				if (console.handle_ctrlkey(key)) {
+					console.pause();
+					refreshScreen(true);
+				}
 				break;
 		}
 		if (compareXY(state.cursor, cursor) != 0) {
