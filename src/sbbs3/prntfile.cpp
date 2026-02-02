@@ -229,7 +229,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 			if (*buf == '\0' || term->column > 0)
 				term->newline();
 			++lncntr;
-			if ((mode & P_SEEK) && (lncntr == term->rows - 1 || key == TERM_KEY_DOWN)) {
+			if ((mode & P_SEEK) && (lncntr == term->rows - 1 || key == TERM_KEY_DOWN || key == '\r')) {
 				lncntr = 0;
 				int curatr = term->curatr;
 				double progress = (double)filelength(file) / ftell(stream);
@@ -251,6 +251,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 						else
 							nextline = line - (term->rows - 1);
 						break;
+					case 'B':
 					case TERM_KEY_PAGEUP:
 						if (line <= ((term->rows - 1) * 2) - 1)
 							nextline = 0;
