@@ -7191,10 +7191,11 @@ static void cleanup(int code)
 #endif
 
 	thread_down();
-	if (terminate_server || code)
+	if (terminate_server || code) {
 		lprintf(LOG_INFO, "#### Web Server thread terminated (%lu clients served, %u concurrently)"
 		        , served, client_highwater);
-	set_state(SERVER_STOPPED);
+		set_state(SERVER_STOPPED);
+	}
 	mqtt_shutdown(&mqtt);
 	if (startup != NULL && startup->terminated != NULL)
 		startup->terminated(startup->cbdata, code);
