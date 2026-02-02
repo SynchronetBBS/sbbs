@@ -716,7 +716,7 @@ function handleEconomics() {
 			debugLog("Income $" + income + " Taxes: $" + taxes + " PopTax: $" +
 				poptax + " LandTax: $" + landtax + " and Costs: $" + costs);
 			var revenue = (income + taxes + poptax + landtax) - costs;
-			announce(format("\x01y\x01hRound surplus: +$\x01w%u\x01y and +\x01w%u\x01y Food"
+			announce(format("\x01y\x01hRound surplus: +\x01w$%u\x01y and +\x01w%u\x01y Food"
 				, revenue, add_food));
 			state.gold += revenue;
 		}
@@ -911,100 +911,91 @@ function handlePatrols() {
 	}
 }
 
-function handlePiracy() {
-	if (!state.pirate.active) return;
+function pirateAttack() {
+	if (!state.pirate.active)
+		return false;
 	var px = Math.floor(state.pirate.x),
 		py = Math.floor(state.pirate.y);
-	var pirate_moved = false;
-	for (var y = 0; y < MAP_HEIGHT; y++) {
-		for (var x = 0; x < MAP_WIDTH; x++) {
-			if (itemMap[y][x] === ITEM_PTBOAT) { // PT Boat pursues Pirate
-				if (cellIsAdjacent({x:x, y:y}, state.pirate)) {
-					var health = itemHealth({ x:x, y:y });
-					if (Math.random() < rules.ptboat_sink_pirate_potential * (0.5 + (0.5 * health))) {
-						drawCell(px, py, BLINK);
-						drawCell(px + 1, py, BLINK);
-						state.pirate.active = false;
-						state.stats.piratesSunk++;
-						var reward = 0;
-						if (state.pirate.gold > 0)
-							reward = Math.floor(state.pirate.gold * rules.sunk_pirate_reward_multiplier);
-						announce("\x01h\x01bPirate ship sunk by PT Boat! Reward: $\x01w" + reward);
-						state.gold += reward;
-						pendingUpdate.push({ x: px, y: py});
-						pendingUpdate.push({ x: px + 1, y: py});
-						return;
-					}
-					if (!itemIsAdjacent({x:x, y:y}, ITEM_FORT)) {
-						drawCell(x, y, BLINK);
-						destroyItem(x, y);
-						var plunder = Math.floor(rules.item[ITEM_PTBOAT].cost * (0.5 + (0.5 * health)));
-						state.pirate.gold += plunder;
-						state.stats.boatsLost++;
-						announce("\x01h\x01rPT Boat sunk by Pirates!  Pirates plundered $\x01w" + plunder);
-						pendingUpdate.push({ x:x, y:y});
-						return;
-					}
+
+	if (onWave(px, py))
+		return false;
+
+	// Search surrounding (9 including own) cell
+	for (var y = Math.max(py - 1, MAP_TOP_ROW); y <= Math.min(py + 1, MAP_BOTTOM_ROW); y++) {
+		for (var x = Math.max(px - 1, MAP_LEFT_COL); x <= Math.min(px + 1, MAP_RIGHT_COL); x++) {
+			var fort_protected = itemIsAdjacent({x:x, y:y}, ITEM_FORT);
+			if (state.merchant.active && state.merchant.x == x && state.merchant.y == y) {
+				if (fort_protected)
+					alert("Pirate attack on Merchat ship thwarted by Fort defense!");
+				else {
+					state.merchant.active = false;
+					var plunder  = Math.floor(state.merchant.gold * rules.pirate_merchant_plunder_multiplier);
+					state.pirate.gold += plunder ;
+					announce("\x01h\x01rMerchant ship sunk by Pirates!  Pirates plundered $\x01w" + plunder);
+					forceScrub(Math.floor(state.merchant.x), Math.floor(state.merchant.y), 1);
 				}
-			} // Pirate pursues Trawler (closest to left/top) :-(
-			else if (x <= state.pirate.x && itemMap[y][x] === ITEM_TRAWLER) {
-				var dist = Math.sqrt(Math.pow(x - px, 2) + Math.pow(y - py, 2));
-				if (dist < 10) {
-					var nx = px + (x > px ? 1 : (x < px ? -1 : 0)),
-						ny = py + (y > py ? 1 : (y < py ? -1 : 0));
-//					debugLog("trying to move pirate to " + xy_str(nx, ny));
-					if (!pirate_moved
-						&& cellOnMap(nx, ny)
-						&& cellIsWater(nx, ny) && !itemAt(nx, ny)) { // Can't use cellIsOccupied here
-						state.pirate.x = nx;
-						state.pirate.y = ny;
-						drawCell(nx, ny);
-						drawCell(nx + 1, ny);
-						drawCell(px, py);
-						drawCell(px + 1, py);
-						pirate_moved = true;
-					}
-					if (Math.abs(nx - x) <= 1 && Math.abs(ny - y) <= 1 && Math.random() < rules.pirate_sink_trawler_potential) {
-						if (itemIsAdjacent({x:nx, y:ny}, ITEM_FORT)) {
-							alert("Pirate attack on Trawler thwarted by Fort defense!");
-						} else {
-							var plunder = Math.floor(rules.item[ITEM_TRAWLER].cost * (0.5 + (0.5 * itemHealth({ x:x, y:y }))));
-							state.pirate.gold += plunder
-							drawCell(x, y, BLINK);
-							destroyItem(x, y);
-							state.stats.trawlersSunk++;
-							announce("\x01h\x01rTrawler sunk by Pirates!  Pirates plundered $\x01w" + plunder);
-							pendingUpdate.push({ x: nx, y: ny});
-						}
-					}
-					return;
+				return true;
+			}
+			var item = itemAt(x, y);
+			if (!item)
+				continue;
+			if (item == ITEM_PTBOAT) { // PT Boat / Pirate conflict
+				var health = itemHealth({ x:x, y:y });
+				if (Math.random() < rules.ptboat_sink_pirate_potential * (0.5 + (0.5 * health))) {
+					drawCell(px, py, BLINK);
+					drawCell(px + 1, py, BLINK);
+					state.pirate.active = false;
+					state.stats.piratesSunk++;
+					var reward = 0;
+					if (state.pirate.gold > 0)
+						reward = Math.floor(state.pirate.gold * rules.sunk_pirate_reward_multiplier);
+					announce("\x01h\x01bPirate ship sunk by PT Boat! Reward: $\x01w" + reward);
+					state.gold += reward;
+					pendingUpdate.push({ x: px, y: py});
+					pendingUpdate.push({ x: px + 1, y: py});
+					return true;
 				}
+				if (!fort_protected) {
+					drawCell(x, y, BLINK);
+					destroyItem(x, y);
+					var plunder = Math.floor(rules.item[ITEM_PTBOAT].cost * (0.5 + (0.5 * health)));
+					state.pirate.gold += plunder;
+					state.stats.boatsLost++;
+					announce("\x01h\x01rPT Boat sunk by Pirates!  Pirates plundered $\x01w" + plunder);
+					pendingUpdate.push({ x:x, y:y});
+					return true;
+				}
+				continue;
+			}
+			if (cellIsLand(x, y)) {
+				if ((state.turn - state.pirate.last_attack) >= rules.pirate_land_attack_interval) {
+					if (fort_protected)
+						alert("Pirate attack on " + item_list[item].name + " thwarted by Fort defense!");
+					else
+						damageItem(x, y, "Pirate attack", rules.pirate_land_attack_damage);
+					state.pirate.last_attack = state.turn;
+					return true;
+				}
+				continue;
+			}
+			// Water items
+			if (item == ITEM_TRAWLER) {
+				if (fort_protected)
+					alert("Pirate attack on " + item_list[item].name + " thwarted by Fort defense!");
+				else  if (Math.random() < rules.pirate_sink_trawler_potential) {
+					var plunder = Math.floor(rules.item[ITEM_TRAWLER].cost * (0.5 + (0.5 * itemHealth({ x:x, y:y }))));
+					state.pirate.gold += plunder
+					drawCell(x, y, BLINK);
+					destroyItem(x, y);
+					state.stats.trawlersSunk++;
+					announce("\x01h\x01rTrawler sunk by Pirates!  Pirates plundered $\x01w" + plunder);
+					pendingUpdate.push({ x:x, y:y});
+				}
+				return true;
 			}
 		}
 	}
-	// Pirate pursues Merchant ship
-	if (state.merchant.active
-		&& state.merchant.x <= state.pirate.x
-		&& !pirate_moved) {
-		var mx = Math.floor(state.merchant.x);
-		var my = Math.floor(state.merchant.y);
-		var px = Math.floor(state.pirate.x);
-		var py = Math.floor(state.pirate.y);
-		var dist = Math.sqrt(Math.pow(mx - px, 2) + Math.pow(my - py, 2));
-		if (dist < 10 && !onWave(state.pirate)) {
-			var nx = px + (mx > px ? 1 : (mx < px ? -1 : 0)),
-				ny = py + (my > py ? 1 : (my < py ? -1 : 0));
-			if (cellOnMap(nx, ny) && !cellIsLand(nx, ny) && !cellIsOccupied(nx, ny)) {
-				state.pirate.x = nx;
-				state.pirate.y = ny;
-				drawCell(nx, ny);
-				drawCell(nx + 1, ny);
-				drawCell(px, py);
-				drawCell(px + 1, py);
-			}
-		}
-	}
-};
+}
 
 // Trawlers pursue fish
 function moveTrawlers() {
@@ -1582,92 +1573,135 @@ function moveMerchant()
 }
 
 function movePirate() {
+	if (!state.pirate.active) {
+		if (Math.random() < rules.pirate_spawn_potential)
+			return spawnPirate();
+		return false;
+	}
+
+	if (!onWave(state.pirate)) {
+		var px = Math.floor(state.pirate.x);
+		var py = Math.floor(state.pirate.y);
+
+		// Pirate pursues Merchant ship (to the West, North, or South)
+		if (state.merchant.active && state.merchant.x <= px) {
+			var mx = Math.floor(state.merchant.x);
+			var my = Math.floor(state.merchant.y);
+			var dist = Math.sqrt(Math.pow(mx - px, 2) + Math.pow(my - py, 2));
+			if (dist < 10) {
+				var nx = px + (mx > px ? 1 : (mx < px ? -1 : 0)),
+					ny = py + (my > py ? 1 : (my < py ? -1 : 0));
+				if (cellOnMap(nx, ny) && !cellIsLand(nx, ny) && !cellIsOccupied(nx, ny)) {
+					state.pirate.x = nx;
+					state.pirate.y = ny;
+					drawCell(nx, ny);
+					drawCell(nx + 1, ny);
+					drawCell(px, py);
+					drawCell(px + 1, py);
+					return true;
+				}
+			}
+		}
+
+		// Pirate pursues nearest Trawler (to the West, North, or South)
+		var trawlers = getArrayOfItems(ITEM_TRAWLER);
+		if (trawlers.length) {
+			var target = [];
+			for (var t = 0; t < trawlers.length; ++t) {
+				var trawler = trawlers[t];
+				var dist = objDist(state.pirate, trawler);
+				debugLog("Trawler " + xy_str(trawler) + " dist from pirate: " + dist);
+				if (trawler.x > px || dist > 15) // too far away
+					continue;
+				target.push({ x:trawler.x, y:trawler.y, dist: dist });
+			}
+			if (target.length) {
+				target.sort(function (a, b) { return b.dist - a.dist; });
+				var t = target.pop();
+				var nx = px + (t.x > px ? 1 : (t.x < px ? -1 : 0)),
+					ny = py + (t.y > py ? 1 : (t.y < py ? -1 : 0));
+				debugLog("Pirate pursuing trawler at " + xy_str(t) + " by moving to " + xy_str(nx, ny));
+				if (cellIsWater(nx, ny) && !state.pirate.blocked[xy_pair(nx, ny)] && !itemAt(nx, ny)) {
+					state.pirate.x = nx;
+					state.pirate.y = ny;
+					drawCell(nx, ny);
+					drawCell(nx + 1, ny);
+					drawCell(px, py);
+					drawCell(px + 1, py);
+					return true;
+				}
+				debugLog(xy_str(nx, ny) + " blocking pirate move");
+			}
+		}
+	}
+
+	// Pirate general hunt/escape progress (East to West)
+
 	var oldPirate = {
 		x: Math.floor(state.pirate.x),
 		y: Math.floor(state.pirate.y),
-		active: state.pirate.active
 	};
 
-	// Pirate (East to West)
-	if (state.pirate.active) {
-		var move_key = xy_pair(state.pirate) + "W";
-		var nx = state.pirate.x;
-		var ny = state.pirate.y;
-		if (onWave(state.pirate))
-			nx -= rules.pirate_speed / 2;
-		else
-			nx -= rules.pirate_speed;
-		var px = Math.floor(nx),
-			py = Math.floor(ny);
-		debugLog("trying to move pirate from " + xy_str(state.pirate));
-		if (cellIsSame(state.pirate, {x:nx, y:ny})) { // fractional move
-			state.pirate.x = nx;
-			state.pirate.y = ny;
-		}
-		else if (state.merchant.active
-			&& Math.abs(px - Math.floor(state.merchant.x)) <= 1
-			&& Math.abs(py - Math.floor(state.merchant.y)) <= 1) {
-			if (itemIsAdjacent(state.merchant, ITEM_FORT)) {
-				alert("Pirate attack on Merchat ship thwarted by Fort defense!");
-			} else {
-				state.merchant.active = false;
-				var plunder  = Math.floor(state.merchant.gold * rules.pirate_merchant_plunder_multiplier);
-				state.pirate.gold += plunder ;
-				announce("\x01h\x01rMerchant ship sunk by Pirates!  Pirates plundered $\x01w" + plunder);
-				forceScrub(Math.floor(state.merchant.x), Math.floor(state.merchant.y), 1);
-			}
-		}
-		else if (px < MAP_LEFT_COL) {
-			state.pirate.active = false;
-			if (state.pirate.gold > 0) {
-				var penalty = Math.floor(state.pirate.gold * rules.pirate_escape_penalty_multiplier);
-				state.gold = Math.max(0, state.gold - penalty);
-				announce("\x01h\x01rPirates Escaped with Loot ($" + state.pirate.gold + ") penalized -$\x01w" + penalty);
-			}
-			forceScrub(0, py, 1);
-		}
-		else if (!cellIsWater(px, py)
-			|| state.pirate.blocked[xy_pair(px, py)]
-			|| state.pirate.moves[move_key]) {
-			if (itemAt(px, py) && !itemIsAdjacent({x:px, y:py}, ITEM_FORT)
-				&& state.turn - state.pirate.last_attack >= rules.pirate_land_attack_interval) {
-				damageItem(px, py, "Pirate attack", rules.pirate_land_attack_damage);
-				state.pirate.last_attack = state.turn;
-			}
-//			debugLog(xy_str(px, py) + " is not water: " + map[py][px]);
-			// Try to move up or down around a coast line
-			if (!avoidStuff(state.pirate, /* eastward: */false)) {
-				debugLog("PIRATE BEACHED at " + xy_str(state.pirate) + " after moves " + JSON.stringify(state.pirate.moves));
-				alert("Pirate ship run aground and sunk");
-				if (debug_enabled) console.getkey();
-				state.pirate.active = false;
-				forceScrub(px, py, 1);
-			}
-			debugLog("Pirate moves: " + JSON.stringify(state.pirate.moves));
-		}
-		else {
-			state.pirate.moves[move_key] = 1;
-			state.pirate.x = nx;
-			state.pirate.y = ny;
-			debugLog("pirate move succesfully to open water at " + xy_str(state.pirate));
-		}
+	var move_key = xy_pair(state.pirate) + "W";
+	var nx = state.pirate.x;
+	var ny = state.pirate.y;
+	if (onWave(state.pirate))
+		nx -= rules.pirate_speed / 2;
+	else
+		nx -= rules.pirate_speed;
+	var px = Math.floor(nx),
+		py = Math.floor(ny);
+	debugLog("trying to move pirate from " + xy_str(state.pirate));
+	if (cellIsSame(state.pirate, {x:nx, y:ny})) { // fractional move
+		state.pirate.x = nx;
+		state.pirate.y = ny;
+		return false;
 	}
-	else if (Math.random() < rules.pirate_spawn_potential)
-		spawnPirate();
+	if (px < MAP_LEFT_COL) {
+		state.pirate.active = false;
+		if (state.pirate.gold > 0) {
+			var penalty = Math.floor(state.pirate.gold * rules.pirate_escape_penalty_multiplier);
+			state.gold = Math.max(0, state.gold - penalty);
+			announce("\x01h\x01rPirates Escaped with Loot ($" + state.pirate.gold + ") penalized -$\x01w" + penalty);
+		}
+		forceScrub(0, py, 1);
+		return true;
+	}
+	if (!cellIsWater(px, py)
+		|| state.pirate.blocked[xy_pair(px, py)]
+		|| state.pirate.moves[move_key]) {
+//			debugLog(xy_str(px, py) + " is not water: " + map[py][px]);
+		// Try to move up or down around a coast line
+		if (!avoidStuff(state.pirate, /* eastward: */false)) {
+			debugLog("PIRATE BEACHED at " + xy_str(state.pirate) + " after moves " + JSON.stringify(state.pirate.moves));
+			alert("Pirate ship run aground and sunk");
+			if (debug_enabled) console.getkey();
+			state.pirate.active = false;
+			forceScrub(px, py, 1);
+		}
+		debugLog("Pirate moves: " + JSON.stringify(state.pirate.moves));
+	}
+	else {
+		state.pirate.moves[move_key] = 1;
+		state.pirate.x = nx;
+		state.pirate.y = ny;
+		debugLog("pirate move succesfully to open water at " + xy_str(state.pirate));
+	}
 
 	// Redraw
-	if (oldPirate.active) forceScrub(oldPirate.x, oldPirate.y, 1);
-	if (state.pirate.active) forceScrub(state.pirate.x, state.pirate.y, 1);
+	forceScrub(oldPirate.x, oldPirate.y, 1);
+	if (state.pirate.active)
+		forceScrub(state.pirate.x, state.pirate.y, 1);
 }
 
 function moveEntities() {
 	handlePatrols();
-	handlePiracy();
+	if (!pirateAttack())
+		movePirate();
 	moveTrawlers();
 	moveFish();
 	spawnFish(); // Replenish the pool
 	moveMerchant();
-	movePirate();
 	checkMutiny(); // Check for Rebel uprisings
 };
 
@@ -1766,7 +1800,7 @@ function drawUI(legend) {
 	var demo_cost = "";
 	if (item_key) {
 		demo_attr = "\x01h";
-		demo_cost = "\x01y\x01h$" + itemDemoCost(item_key);
+		demo_cost = "\x01r\x01h$" + itemDemoCost(item_key);
 	} else
 		build_attr = "\x01h";
 	ly = Object.keys(item_list).length + 2;
@@ -1784,7 +1818,7 @@ function drawUI(legend) {
 		console.putmsg("\x01n[" + demo_attr + "Del\x01n] Demolish " + demo_cost);
 	else
 		console.putmsg("\x01n[" + build_attr + "Enter\x01n] Build Item");
-	console.cleartoeol();
+	cond_cleartoeol();
 	console.gotoxy(lx, ly++);
 	if (state.in_progress && !item_key && state.lastbuilt)
 		console.putmsg("\x01n[" + build_attr + "Spc\x01n] " + item_list[state.lastbuilt].name
@@ -1820,7 +1854,7 @@ function drawUI(legend) {
 		"\x01n\x01h\x01gFood:%s %s " +
 		"\x01n\x01h\x01wPop:\x01n%4d/%s%-5d " +
 		"\x01n\x01h\x01wReb:%s %d%%  " +
-		"\x01n\x01h\x01cTurn:%s %1.1f/%d\x01>"
+		"\x01n\x01h\x01cRnd:%s %4.1f/%d\x01>"
 		, state.gold < state.popCap ? "\x01r\x01i" : "\x01n"
 		, gold
 		, state.started && state.food < state.pop ? "\x01r\x01i" : "\x01n"
@@ -2487,10 +2521,10 @@ function main () {
 				break;
 			case 'L':
 				console.clear(LIGHTGRAY);
-				for (var i = 0; i < state.log.length && !console.aborted; ++i) {
+				for (var i = state.log.length - 1; i >= 0  && !console.aborted; --i) {
 					var entry = state.log[i];
 					console.attributes = LIGHTGRAY;
-					console.print(format("T-%4.1f: %s\r\n", entry.turn / 10, entry.msg));
+					console.print(format("R-%4.1f: %s\r\n", entry.turn / 10, entry.msg));
 				}
 				refreshScreen(true);
 				break;
