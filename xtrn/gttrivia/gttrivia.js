@@ -36,7 +36,10 @@ Date       Author            Description
                              Allow showing help when playing a game by entering ?
 2024-03-29 Eric Oulashin     Version 1.05
                              Ensure the correct script startup directory is always used (make
-							 a copy of js.exec_dir on startup, since js.exec_dir could change)
+                             a copy of js.exec_dir on startup, since js.exec_dir could change)
+2026-02-03 Eric Oulashin     Version 1.06
+                             To quit out of a question set, the user can now use /Q, /QUIT, or
+                             /EXIT (not simply Q, as that could be an answer to a question).
 */
 
 "use strict";
@@ -62,8 +65,8 @@ if (system.version_num < 31500)
 }
 
 // Version information
-var GAME_VERSION = "1.05";
-var GAME_VER_DATE = "2024-03-29";
+var GAME_VERSION = "1.06";
+var GAME_VER_DATE = "2026-02-03";
 
 // Load required .js libraries
 var requireFnExists = (typeof(require) === "function");
@@ -304,7 +307,7 @@ function playTrivia()
 	// numPoints
 	console.print("\x01n\x01gWill ask up to \x01h" + gSettings.behavior.numQuestionsPerPlay + "\x01n\x01g questions.\x01n");
 	console.crlf();
-	console.print("\x01n\x01gYou can answer \x01hQ\x01n\x01g at any time to quit.\x01n");
+	console.print("\x01n\x01gYou can answer \x01h/Q\x01n\x01g, \x01h/QUIT\x01n\x01g, or \x01h/EXIT\x01n\x01g at any time to quit.\x01n");
 	console.crlf();
 	var userPoints = 0;
 	var maxNumQuestions = gSettings.behavior.numQuestionsPerPlay;
@@ -1063,8 +1066,8 @@ function checkUserResponse(pAnswer, pUserInput, pCategoryName)
 		return retObj;
 
 	var userInputUpper = pUserInput.toUpperCase(); // For case-insensitive matching
-	
-	if (userInputUpper == "Q")
+
+	if (userInputUpper == "/Q" || userInputUpper == "/QUIT" || userInputUpper == "/EXIT")
 	{
 		retObj.userChoseQuit = true;
 		return retObj;
@@ -1711,8 +1714,8 @@ function showHelpScreen(pCategoryName)
 		helpText += gSettings.behavior.numTriesPerQuestion + " chances ";
 	else
 		helpText += "1 chance ";
-	helpText += "to answer the question correctly.  At any time, you an answer Q to quit out of the "
-	         + "question set.  ";
+	helpText += "to answer the question correctly.  To quit out of the question set, you an answer /Q, "
+	         + "/QUIT or /EXIT.  ";
 	if (gSettings.behavior.numTriesPerQuestion > 1)
 	{
 		helpText += "Each time you answer incorrectly, a clue will be given.  The first clue is a "

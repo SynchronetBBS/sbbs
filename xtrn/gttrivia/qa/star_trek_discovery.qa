@@ -1,0 +1,798 @@
+-- QA metadata begin
+{
+    "category_name": "Star Trek: Discovery"
+}
+-- QA metadata end
+
+In what season did the Discovery episode 'The Vulcan Hello' air?
+-- Answer metadata begin
+{
+    "answers": [
+        "1",
+        "one"
+    ]
+}
+-- Answer metadata end
+10
+
+In what season did the Discovery episode 'Battle at the Binary Stars' air?
+-- Answer metadata begin
+{
+    "answers": [
+        "1",
+        "one"
+    ]
+}
+-- Answer metadata end
+10
+
+In what season did the Discovery episode 'Brother' air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2",
+        "two"
+    ]
+}
+-- Answer metadata end
+10
+
+In what season did the Discovery episode 'New Eden' air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2",
+        "two"
+    ]
+}
+-- Answer metadata end
+10
+
+In what season did the Discovery episode 'That Hope Is You' air?
+-- Answer metadata begin
+{
+    "answers": [
+        "3",
+        "three"
+    ]
+}
+-- Answer metadata end
+10
+
+In what season did the Discovery episode 'Kobayashi Maru' air?
+-- Answer metadata begin
+{
+    "answers": [
+        "4",
+        "four"
+    ]
+}
+-- Answer metadata end
+10
+
+Who played Michael Burnham on Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Sonequa Martin-Green",
+        "Sonequa MartinGreen",
+        "Sonequa Martin Green"
+    ],
+    "answerFact": "Burnham was Spock's adoptive sister."
+}
+-- Answer metadata end
+10
+
+What is Michael Burnham's position on Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Science Officer",
+        "sciance Officer"
+    ],
+    "answerFact": "Burnham was Spock's adoptive sister."
+}
+-- Answer metadata end
+10
+
+Who played Saru on Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Doug Jones"
+    ],
+    "answerFact": "Saru was a Kelpien."
+}
+-- Answer metadata end
+10
+
+What is Saru's position on Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Science Officer",
+        "sciance Officer"
+    ],
+    "answerFact": "Saru was a Kelpien."
+}
+-- Answer metadata end
+10
+
+Who played Paul Stamets on Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Anthony Rapp"
+    ],
+    "answerFact": "Stamets worked on the spore drive."
+}
+-- Answer metadata end
+10
+
+What is Paul Stamets's position on Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Engineer"
+    ],
+    "answerFact": "Stamets worked on the spore drive."
+}
+-- Answer metadata end
+10
+
+Who played Sylvia Tilly on Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Mary Wiseman"
+    ],
+    "answerFact": "Tilly was a cadet."
+}
+-- Answer metadata end
+10
+
+What is Sylvia Tilly's position on Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Cadet"
+    ],
+    "answerFact": "Tilly was a cadet."
+}
+-- Answer metadata end
+10
+
+Who played Ash Tyler on Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Shazad Latif"
+    ],
+    "answerFact": "Tyler was later revealed to be Voq."
+}
+-- Answer metadata end
+10
+
+What is Ash Tyler's position on Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Security Officer"
+    ],
+    "answerFact": "Tyler was later revealed to be Voq."
+}
+-- Answer metadata end
+10
+
+In what year did the Discovery episode 'The Vulcan Hello' first air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2017"
+    ]
+}
+-- Answer metadata end
+10
+
+In what year did the Discovery episode 'Battle at the Binary Stars' first air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2017"
+    ]
+}
+-- Answer metadata end
+10
+
+In what year did the Discovery episode 'Brother' first air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2018"
+    ]
+}
+-- Answer metadata end
+10
+
+In what year did the Discovery episode 'New Eden' first air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2018"
+    ]
+}
+-- Answer metadata end
+10
+
+In what year did the Discovery episode 'That Hope Is You' first air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2019"
+    ]
+}
+-- Answer metadata end
+10
+
+In what year did the Discovery episode 'Kobayashi Maru' first air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2020"
+    ]
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Discovery character did Sonequa Martin-Green play?
+-- Answer metadata begin
+{
+    "answers": [
+        "Michael Burnham"
+    ],
+    "answerFact": "Burnham was Spock's adoptive sister."
+}
+-- Answer metadata end
+10
+
+Who portrayed Michael Burnham in Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Sonequa Martin-Green",
+        "Sonequa MartinGreen",
+        "Sonequa Martin Green"
+    ],
+    "answerFact": "Burnham was Spock's adoptive sister."
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Discovery character did Doug Jones play?
+-- Answer metadata begin
+{
+    "answers": [
+        "Saru"
+    ],
+    "answerFact": "Saru was a Kelpien."
+}
+-- Answer metadata end
+10
+
+Who portrayed Saru in Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Doug Jones"
+    ],
+    "answerFact": "Saru was a Kelpien."
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Discovery character did Anthony Rapp play?
+-- Answer metadata begin
+{
+    "answers": [
+        "Paul Stamets"
+    ],
+    "answerFact": "Stamets worked on the spore drive."
+}
+-- Answer metadata end
+10
+
+Who portrayed Paul Stamets in Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Anthony Rapp"
+    ],
+    "answerFact": "Stamets worked on the spore drive."
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Discovery character did Mary Wiseman play?
+-- Answer metadata begin
+{
+    "answers": [
+        "Sylvia Tilly"
+    ],
+    "answerFact": "Tilly was a cadet."
+}
+-- Answer metadata end
+10
+
+Who portrayed Sylvia Tilly in Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Mary Wiseman"
+    ],
+    "answerFact": "Tilly was a cadet."
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Discovery character did Shazad Latif play?
+-- Answer metadata begin
+{
+    "answers": [
+        "Ash Tyler"
+    ],
+    "answerFact": "Tyler was later revealed to be Voq."
+}
+-- Answer metadata end
+10
+
+Who portrayed Ash Tyler in Star Trek: Discovery?
+-- Answer metadata begin
+{
+    "answers": [
+        "Shazad Latif"
+    ],
+    "answerFact": "Tyler was later revealed to be Voq."
+}
+-- Answer metadata end
+10
+
+What was episode 1 of Discovery season 1?
+-- Answer metadata begin
+{
+    "answers": [
+        "The Vulcan Hello",
+        "The Vulcun Hello"
+    ]
+}
+-- Answer metadata end
+10
+
+What was episode 2 of Discovery season 1?
+-- Answer metadata begin
+{
+    "answers": [
+        "Battle at the Binary Stars"
+    ]
+}
+-- Answer metadata end
+10
+
+What was episode 1 of Discovery season 2?
+-- Answer metadata begin
+{
+    "answers": [
+        "Brother"
+    ]
+}
+-- Answer metadata end
+10
+
+What was episode 2 of Discovery season 2?
+-- Answer metadata begin
+{
+    "answers": [
+        "New Eden"
+    ]
+}
+-- Answer metadata end
+10
+
+What was episode 1 of Discovery season 3?
+-- Answer metadata begin
+{
+    "answers": [
+        "That Hope Is You"
+    ]
+}
+-- Answer metadata end
+10
+
+What was episode 1 of Discovery season 4?
+-- Answer metadata begin
+{
+    "answers": [
+        "Kobayashi Maru"
+    ]
+}
+-- Answer metadata end
+10
+
+What Discovery episode came immediately after The Vulcan Hello?
+-- Answer metadata begin
+{
+    "answers": [
+        "Battle at the Binary Stars"
+    ]
+}
+-- Answer metadata end
+10
+
+What Discovery episode came immediately after Battle at the Binary Stars?
+-- Answer metadata begin
+{
+    "answers": [
+        "Brother"
+    ]
+}
+-- Answer metadata end
+10
+
+What Discovery episode came immediately before Battle at the Binary Stars?
+-- Answer metadata begin
+{
+    "answers": [
+        "The Vulcan Hello",
+        "The Vulcun Hello"
+    ]
+}
+-- Answer metadata end
+10
+
+What Discovery episode came immediately after Brother?
+-- Answer metadata begin
+{
+    "answers": [
+        "New Eden"
+    ]
+}
+-- Answer metadata end
+10
+
+What Discovery episode came immediately before Brother?
+-- Answer metadata begin
+{
+    "answers": [
+        "Battle at the Binary Stars"
+    ]
+}
+-- Answer metadata end
+10
+
+What Discovery episode came immediately after New Eden?
+-- Answer metadata begin
+{
+    "answers": [
+        "That Hope Is You"
+    ]
+}
+-- Answer metadata end
+10
+
+What Discovery episode came immediately before New Eden?
+-- Answer metadata begin
+{
+    "answers": [
+        "Brother"
+    ]
+}
+-- Answer metadata end
+10
+
+What Discovery episode came immediately after That Hope Is You?
+-- Answer metadata begin
+{
+    "answers": [
+        "Kobayashi Maru"
+    ]
+}
+-- Answer metadata end
+10
+
+What Discovery episode came immediately before That Hope Is You?
+-- Answer metadata begin
+{
+    "answers": [
+        "New Eden"
+    ]
+}
+-- Answer metadata end
+10
+
+What Discovery episode came immediately before Kobayashi Maru?
+-- Answer metadata begin
+{
+    "answers": [
+        "That Hope Is You"
+    ]
+}
+-- Answer metadata end
+10
+
+What happened in the Discovery episode The Vulcan Hello?
+-- Answer metadata begin
+{
+    "answers": [
+        "the events of The Vulcan Hello",
+        "the events of The Vulcun Hello"
+    ]
+}
+-- Answer metadata end
+10
+
+What happened in the Discovery episode Battle at the Binary Stars?
+-- Answer metadata begin
+{
+    "answers": [
+        "the events of Battle at the Binary Stars"
+    ]
+}
+-- Answer metadata end
+10
+
+What happened in the Discovery episode Brother?
+-- Answer metadata begin
+{
+    "answers": [
+        "the events of Brother"
+    ]
+}
+-- Answer metadata end
+10
+
+What happened in the Discovery episode New Eden?
+-- Answer metadata begin
+{
+    "answers": [
+        "the events of New Eden"
+    ]
+}
+-- Answer metadata end
+10
+
+What happened in the Discovery episode That Hope Is You?
+-- Answer metadata begin
+{
+    "answers": [
+        "the events of That Hope Is You"
+    ]
+}
+-- Answer metadata end
+10
+
+What happened in the Discovery episode Kobayashi Maru?
+-- Answer metadata begin
+{
+    "answers": [
+        "the events of Kobayashi Maru"
+    ]
+}
+-- Answer metadata end
+10
+
+How many seasons did Star Trek: Discovery run?
+-- Answer metadata begin
+{
+    "answers": [
+        "4",
+        "four"
+    ],
+    "answerFact": "Star Trek: Discovery ran for 4 seasons."
+}
+-- Answer metadata end
+10
+
+How many episodes did Star Trek: Discovery have?
+-- Answer metadata begin
+{
+    "answers": [
+        "6",
+        "six"
+    ],
+    "answerFact": "Star Trek: Discovery had 6 episodes."
+}
+-- Answer metadata end
+10
+
+What drive did Discovery use?
+-- Answer metadata begin
+{
+    "answers": [
+        "Spore drive"
+    ],
+    "answerFact": "The spore drive allowed instant travel."
+}
+-- Answer metadata end
+10
+
+What was the 1th episode of Star Trek: Discovery in airdate order?
+-- Answer metadata begin
+{
+    "answers": [
+        "The Vulcan Hello",
+        "The Vulcun Hello"
+    ]
+}
+-- Answer metadata end
+10
+
+What was the 2th episode of Star Trek: Discovery in airdate order?
+-- Answer metadata begin
+{
+    "answers": [
+        "Battle at the Binary Stars"
+    ]
+}
+-- Answer metadata end
+10
+
+What was the 3th episode of Star Trek: Discovery in airdate order?
+-- Answer metadata begin
+{
+    "answers": [
+        "Brother"
+    ]
+}
+-- Answer metadata end
+10
+
+What was the 4th episode of Star Trek: Discovery in airdate order?
+-- Answer metadata begin
+{
+    "answers": [
+        "New Eden"
+    ]
+}
+-- Answer metadata end
+10
+
+What was the 5th episode of Star Trek: Discovery in airdate order?
+-- Answer metadata begin
+{
+    "answers": [
+        "That Hope Is You"
+    ]
+}
+-- Answer metadata end
+10
+
+What was the 6th episode of Star Trek: Discovery in airdate order?
+-- Answer metadata begin
+{
+    "answers": [
+        "Kobayashi Maru"
+    ]
+}
+-- Answer metadata end
+10
+
+Which season of Discovery contained the episode The Vulcan Hello?
+-- Answer metadata begin
+{
+    "answers": [
+        "1",
+        "one"
+    ]
+}
+-- Answer metadata end
+10
+
+Which season of Discovery contained the episode Battle at the Binary Stars?
+-- Answer metadata begin
+{
+    "answers": [
+        "1",
+        "one"
+    ]
+}
+-- Answer metadata end
+10
+
+Which season of Discovery contained the episode Brother?
+-- Answer metadata begin
+{
+    "answers": [
+        "2",
+        "two"
+    ]
+}
+-- Answer metadata end
+10
+
+Which season of Discovery contained the episode New Eden?
+-- Answer metadata begin
+{
+    "answers": [
+        "2",
+        "two"
+    ]
+}
+-- Answer metadata end
+10
+
+Which season of Discovery contained the episode That Hope Is You?
+-- Answer metadata begin
+{
+    "answers": [
+        "3",
+        "three"
+    ]
+}
+-- Answer metadata end
+10
+
+Which season of Discovery contained the episode Kobayashi Maru?
+-- Answer metadata begin
+{
+    "answers": [
+        "4",
+        "four"
+    ]
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Discovery main character was played by Sonequa Martin-Green?
+-- Answer metadata begin
+{
+    "answers": [
+        "Michael Burnham"
+    ],
+    "answerFact": "Burnham was Spock's adoptive sister."
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Discovery main character was played by Doug Jones?
+-- Answer metadata begin
+{
+    "answers": [
+        "Saru"
+    ],
+    "answerFact": "Saru was a Kelpien."
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Discovery main character was played by Anthony Rapp?
+-- Answer metadata begin
+{
+    "answers": [
+        "Paul Stamets"
+    ],
+    "answerFact": "Stamets worked on the spore drive."
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Discovery main character was played by Mary Wiseman?
+-- Answer metadata begin
+{
+    "answers": [
+        "Sylvia Tilly"
+    ],
+    "answerFact": "Tilly was a cadet."
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Discovery main character was played by Shazad Latif?
+-- Answer metadata begin
+{
+    "answers": [
+        "Ash Tyler"
+    ],
+    "answerFact": "Tyler was later revealed to be Voq."
+}
+-- Answer metadata end
+10
+
