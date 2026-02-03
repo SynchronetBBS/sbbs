@@ -1,6 +1,6 @@
                    Digital Distortion Upload Processor
-                              Version 1.06
-                        Release date: 2023-08-08
+                              Version 1.08
+                        Release date: 2026-02-02
 
                                   by
 
@@ -22,7 +22,6 @@ Contents
 4. Installation and Setup
 5. Main configuration file
 6. Archive file type configuration file
-7. Revision History
 
 
 1. Disclaimer
@@ -349,9 +348,3 @@ in D:\sbbs, the temp directory is D:\sbbs\node1\DDUploadProcessor_Temp, and
 the extract command will be translated to the following:
 unzip.exe -qq -o D:\Files\someArchive.zip -d D:\sbbs\node1\DDUploadProcessor_Temp
 
-
-7. Revision History
-===================
-Version  Date         Description
--------  ----         -----------
-1.00     2009-12-29   First general public release
