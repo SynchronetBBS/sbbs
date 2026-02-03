@@ -1826,10 +1826,10 @@ static void cleanup(int code)
 	if (terminated || code) {
 		lprintf(LOG_INFO, "#### Services thread terminated (%lu clients served, %u concurrently)", served, client_highwater);
 		set_state(SERVER_STOPPED);
+		if (startup != NULL && startup->terminated != NULL)
+			startup->terminated(startup->cbdata, code);
 	}
 	mqtt_shutdown(&mqtt);
-	if (startup != NULL && startup->terminated != NULL)
-		startup->terminated(startup->cbdata, code);
 }
 
 const char* services_ver(void)
@@ -2524,13 +2524,12 @@ void services_thread(void* arg)
 			lprintf(LOG_INFO, "0000 Done waiting for static services to terminate");
 		}
 
-		cleanup(0);
 		if (!terminated) {
 			lprintf(LOG_INFO, "Recycling server...");
-			mswait(2000);
 			if (startup->recycle != NULL)
 				startup->recycle(startup->cbdata);
 		}
+		cleanup(0);
 
 	} while (!terminated);
 }

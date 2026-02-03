@@ -3,6 +3,9 @@
 // Original code and basic design by Google Gemini
 
 "use strict";
+
+const VERSION = "0.01";
+
 require("sbbsdefs.js", "K_EXTKEYS");
 
 var json_lines = (bbs.mods.json_lines || load(bbs.mods.json_lines = {}, "json_lines.js"));
@@ -172,9 +175,9 @@ var state = {
 	started: false,
 	in_progress: false,
 	turn: 0,
-	gold: rules.initial_gold,
-	food: rules.initial_food,
-	pop: rules.initial_pop,
+	gold: 0,
+	food: 0,
+	pop: 0,
 	popCap: 0,
 	rebels: 0,
 	martialLaw: 0,
@@ -192,6 +195,7 @@ var state = {
 var map = [];
 var itemMap = [];
 var damageMap = [];
+var homelandMap = [];
 var pendingUpdate = [];
 
 function xy_str(x, y) {
@@ -358,6 +362,14 @@ function assessItems(add_damage) {
 				item_list[item].count++;
 			}
 		}
+	}
+}
+
+function assessHomeland() {
+	for (var y = 0; y < MAP_HEIGHT; y++) {
+		homelandMap[y] = [];
+		for (var x = 0; x < MAP_WIDTH; x++)
+			homelandMap[y][x] = state.homeland && cellIsLand(x, y) && findPathToHomeland(x, y);
 	}
 }
 
@@ -840,6 +852,11 @@ function itemAt(x, y) {
 	return itemMap[y][x];
 }
 
+function nonBridgeItemAt(x, y) {
+	var item = itemAt(x, y);
+	return item && item != ITEM_BRIDGE;
+}
+
 function moveItem1rand(x, y, ter, diagonal) {
 	var options = [
 			{x:x, y:y - 1},
@@ -1003,12 +1020,11 @@ function pirateAttack() {
 				}
 				continue;
 			}
-			var isLand = cellIsLand(x, y);
-			if (!isLand || (state.turn - state.pirate.last_attack) >= rules.pirate_land_attack_interval) {
+			if (item == ITEM_TRAWLER || (state.turn - state.pirate.last_attack) >= rules.pirate_land_attack_interval) {
 				if (fort_protected)
 					alert("Pirate attack on " + item_list[item].name + " thwarted by Fort defense!");
 				else {
-					var damage = isLand ? rules.pirate_land_attack_damage : rules.pirate_sea_attack_damage;
+					var damage = item == ITEM_TRAWLER ? rules.pirate_sea_attack_damage : rules.pirate_land_attack_damage;
 					var plunder = Math.floor(rules.item[item].cost * (0.5 + (0.5 * itemHealth({ x:x, y:y }))));
 					if (damageItem(x, y, "Pirate attack", damage)) {
 						state.pirate.gold += plunder
@@ -1351,12 +1367,22 @@ function pathBetween(a, b, ter) {
 	return false;
 }
 
-function pathToHomeland(x, y) {
+function findPathToHomeland(x, y) {
 	if (!state.homeland)
 		return cellIsLand(x, y);
 	if (typeof x != "object")
 		x = { x: x, y: y };
 	return pathBetween(x, state.homeland, LAND);
+}
+
+function pathToHomeland(x, y) {
+	if (!state.homeland)
+		return cellIsLand(x, y);
+	if (typeof x == "object") {
+		y = x.y;
+		x = x.x;
+	}
+	return homelandMap[y][x];
 }
 
 function pathToDock(x, y) {
@@ -1589,7 +1615,7 @@ function moveMerchant()
 				}
 			}
 		}
-		else if (cellIsLand(mx, my) || itemAt(mx, my) // Can't use cellIsOccupied here
+		else if (cellIsLand(mx, my) || nonBridgeItemAt(mx, my) // Can't use cellIsOccupied here
 			|| state.merchant.blocked[xy_pair(mx, my)]
 			|| state.merchant.moves[move_key]) { // Don't repeat any move already made
 			debugLog("Merchant trying to avoid stuff from " + xy_str(state.merchant));
@@ -2014,12 +2040,15 @@ function buildItem(type) {
 			alert("Need a nearby Dock or Pier to build " + item.name);
 			return false;
 		}
-	} else if (!pathToHomeland(state.cursor)) {
+	} else if (!findPathToHomeland(state.cursor)) {
 		alert("No connection to Homeland (build a bridge?)");
 		return false;
 	}
 	if (type == ITEM_BRIDGE) {
-		if (!cellOnMap(state.cursor.x, state.cursor.y)) {
+		if (state.cursor.y < 1
+			|| state.cursor.x < 1
+			|| state.cursor.y >= MAP_BOTTOM_ROW
+			|| state.cursor.x >= MAP_RIGHT_COL) { // Keep bridges away from edges
 			alert("Cannot build " + item.name + " there");
 			return false;
 		}
@@ -2037,10 +2066,13 @@ function buildItem(type) {
 	if (ter != WATER && !state.homeland) {
 		state.homeland = { x: state.cursor.x, y: state.cursor.y };
 		msg += " and Homeland claimed!";
+		assessHomeland();
 		refreshMap();
 	}
-	else if (type == ITEM_BRIDGE)
+	else if (type == ITEM_BRIDGE) {
+		assessHomeland();
 		refreshMap();
+	}
 	alert(msg);
 	state.started = true;
 	state.in_progress = true;
@@ -2073,8 +2105,10 @@ function destroyItem(x, y) {
 	}
 	itemMap[y][x] = "";
 	damageMap[y][x] = 0;
-	if (item == ITEM_BRIDGE)
+	if (item == ITEM_BRIDGE) {
+		assessHomeland();
 		refreshScreen(false);
+	}
 	return true;
 }
 
@@ -2114,8 +2148,19 @@ function showBuildMenu() {
 	drawUI();
 };
 
+function version_hash() {
+	var f = new File(js.exec_path);
+	if (!f.open("r"))
+		return null;
+	var contents = f.read();
+	f.close();
+	return sha1_calc(contents.replace(/\r/g, ''));
+}
+
 function saveHighScore(title) {
 	json_lines.add(SCORE_FILE, {
+		ver: VERSION,
+		ver_hash: version_hash(),
 		name: user.alias,
 		score: calculateScore(),
 		title: title,
@@ -2285,6 +2330,8 @@ function saveGame(space) {
 	var sf = new File(SAVE_FILE);
 	if (sf.open("w")) {
 		sf.write(JSON.stringify({
+			ver: VERSION,
+			ver_hash: version_hash(),
 			state: state,
 			map: map,
 			rules: rules,
@@ -2462,6 +2509,18 @@ function main () {
 		if (ini.tick_interval)
 			settings.tick_interval = ini.tick_interval;
 	}
+
+	// Initialize the map and associated arrays
+	for (var y = 0; y < MAP_HEIGHT; y++) {
+		itemMap[y] = [];
+		damageMap[y] = [];
+		homelandMap[y] = [];
+		for (var x = 0; x < MAP_WIDTH; x++) {
+			itemMap[y][x] = "";
+			damageMap[y][x] = 0;
+			homelandMap[y][x] = 0;
+		}
+	}
 	state.tick_interval = settings.tick_interval;
 
 	if (console.optimize_gotoxy !== undefined) {
@@ -2488,14 +2547,6 @@ function main () {
 		if (file_exists(settings.intro_msg)) {
 			console.clear();
 			console.printfile(settings.intro_msg, P_PCBOARD);
-		}
-		for (var y = 0; y < MAP_HEIGHT; y++) {
-			itemMap[y] = [];
-			damageMap[y] = [];
-			for (var x = 0; x < MAP_WIDTH; x++) {
-				itemMap[y][x] = "";
-				damageMap[y][x] = 0;
-			}
 		}
 		var map_file;
 		var maps = settings.map_list;
@@ -2545,11 +2596,15 @@ function main () {
 				}
 			}
 		}
+		state.gold = rules.initial_gold;
+		state.food = rules.initial_food;
+		state.pop = rules.initial_pop;
 		spawnFish();
 		pushMsg("\x01cWelcome to the \x01ySynchronet UTOPIA\x01w " + state.map_name + "\x01c, Governor.");
 		pushMsg("\x01cPlaying by \x01w" + rules.name + "\x01c rules...");
 		pushMsg("\x01wBuild\x01c to claim your homeland!");
 	}
+	assessHomeland();
 	refreshScreen(true);
 	var lastTick = system.timer;
 	while (bbs.online && !js.terminated) {

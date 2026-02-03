@@ -5122,10 +5122,10 @@ static void cleanup(int code, int line)
 	if (terminate_server || code) {
 		lprintf(LOG_INFO, "#### FTP Server thread terminated (%lu clients served, %u concurrently)", served, client_highwater);
 		set_state(SERVER_STOPPED);
+		if (startup != NULL && startup->terminated != NULL)
+			startup->terminated(startup->cbdata, code);
 	}
 	mqtt_shutdown(&mqtt);
-	if (startup != NULL && startup->terminated != NULL)
-		startup->terminated(startup->cbdata, code);
 }
 
 const char* ftp_ver(void)
@@ -5448,14 +5448,12 @@ void ftp_server(void* arg)
 			lprintf(LOG_INFO, "0000 Done waiting for active clients to disconnect");
 		}
 
-		cleanup(0, __LINE__);
-
 		if (!terminate_server) {
 			lprintf(LOG_INFO, "Recycling server...");
-			mswait(2000);
 			if (startup->recycle != NULL)
 				startup->recycle(startup->cbdata);
 		}
+		cleanup(0, __LINE__);
 
 	} while (!terminate_server);
 
