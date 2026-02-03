@@ -172,9 +172,9 @@ var state = {
 	started: false,
 	in_progress: false,
 	turn: 0,
-	gold: rules.initial_gold,
-	food: rules.initial_food,
-	pop: rules.initial_pop,
+	gold: 0,
+	food: 0,
+	pop: 0,
 	popCap: 0,
 	rebels: 0,
 	martialLaw: 0,
@@ -2545,6 +2545,9 @@ function main () {
 				}
 			}
 		}
+		state.gold = rules.initial_gold;
+		state.food = rules.initial_food;
+		state.pop = rules.initial_pop;
 		spawnFish();
 		pushMsg("\x01cWelcome to the \x01ySynchronet UTOPIA\x01w " + state.map_name + "\x01c, Governor.");
 		pushMsg("\x01cPlaying by \x01w" + rules.name + "\x01c rules...");
