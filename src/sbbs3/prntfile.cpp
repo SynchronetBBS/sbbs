@@ -302,7 +302,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 				}
 				if (offset == nullptr)
 					break;
-				if (nextline != line + 1 && nextline < lines) {
+				if ((key == TERM_KEY_END || nextline != line + 1) && nextline < lines) {
 					if (fseeko(stream, offset[nextline], 0) != 0) {
 						errormsg(WHERE, ERR_SEEK, fpath, static_cast<int>(offset[nextline]));
 						break;
