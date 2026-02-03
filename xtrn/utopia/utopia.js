@@ -369,7 +369,8 @@ function assessHomeland() {
 	for (var y = 0; y < MAP_HEIGHT; y++) {
 		homelandMap[y] = [];
 		for (var x = 0; x < MAP_WIDTH; x++)
-			homelandMap[y][x] = state.homeland && cellIsLand(x, y) && findPathToHomeland(x, y);
+			homelandMap[y][x] = state.homeland && cellIsLand(x, y)
+				&& ((x > 0 && homelandMap[y][x - 1]) || (y > 0 && homelandMap[y - 1][x]) || findPathToHomeland(x, y));
 	}
 }
 
