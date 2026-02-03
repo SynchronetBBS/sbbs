@@ -7195,10 +7195,10 @@ static void cleanup(int code)
 		lprintf(LOG_INFO, "#### Web Server thread terminated (%lu clients served, %u concurrently)"
 		        , served, client_highwater);
 		set_state(SERVER_STOPPED);
+		if (startup != NULL && startup->terminated != NULL)
+			startup->terminated(startup->cbdata, code);
 	}
 	mqtt_shutdown(&mqtt);
-	if (startup != NULL && startup->terminated != NULL)
-		startup->terminated(startup->cbdata, code);
 }
 
 const char* web_ver(void)
@@ -7764,14 +7764,12 @@ void web_server(void* arg)
 			lprintf(LOG_INFO, "Done waiting for HTTP logging thread to terminate");
 		}
 
-		cleanup(0);
-
 		if (!terminate_server) {
 			lprintf(LOG_INFO, "Recycling server...");
-			mswait(2000);
 			if (startup->recycle != NULL)
 				startup->recycle(startup->cbdata);
 		}
+		cleanup(0);
 
 	} while (!terminate_server);
 

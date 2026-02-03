@@ -6091,10 +6091,10 @@ static void cleanup(int code)
 
 		lprintf(LOG_INFO, "#### Mail Server thread terminated (%s)", str);
 		set_state(SERVER_STOPPED);
+		if (startup != NULL && startup->terminated != NULL)
+			startup->terminated(startup->cbdata, code);
 	}
 	mqtt_shutdown(&mqtt);
-	if (startup != NULL && startup->terminated != NULL)
-		startup->terminated(startup->cbdata, code);
 }
 
 const char* mail_ver(void)
@@ -6570,14 +6570,12 @@ void mail_server(void* arg)
 				lprintf(LOG_CRIT, "!!!! Failed to destroy sendmail_wakeup_sem (%d), system is unstable", errno);
 		}
 
-		cleanup(0);
-
 		if (!terminate_server) {
 			lprintf(LOG_INFO, "Recycling server...");
-			mswait(2000);
 			if (startup->recycle != NULL)
 				startup->recycle(startup->cbdata);
 		}
+		cleanup(0);
 
 	} while (!terminate_server);
 
