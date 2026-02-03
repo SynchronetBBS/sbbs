@@ -338,14 +338,6 @@ function processFile(pFilename)
 						console.print(gFailStrWithNewline);
 						log(LOG_ERR, "File extract error: " + errorStr);
 						console.print("\x01n\x01y\x01hWarning: \x01n\x01w\x01h Unable to extract to work dir.\x01n\r\n");
-						// Temporary
-						if (user.is_sysop)
-						{
-							console.attributes = "N";
-							printf("File extract error: %s\r\n", errorStr);
-							console.pause();
-						}
-						// End Temporary
 						retval = -2;
 					}
 				}
