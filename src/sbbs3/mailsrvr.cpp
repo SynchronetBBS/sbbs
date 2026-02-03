@@ -6090,8 +6090,8 @@ static void cleanup(int code)
 			sprintf(str + strlen(str), ", %u concurrent clients", client_highwater);
 
 		lprintf(LOG_INFO, "#### Mail Server thread terminated (%s)", str);
+		set_state(SERVER_STOPPED);
 	}
-	set_state(SERVER_STOPPED);
 	mqtt_shutdown(&mqtt);
 	if (startup != NULL && startup->terminated != NULL)
 		startup->terminated(startup->cbdata, code);

@@ -4978,9 +4978,10 @@ static void cleanup(int code)
 	protected_uint32_destroy(ssh_sessions);
 
 	thread_down();
-	if (terminate_server || code)
+	if (terminate_server || code) {
 		lprintf(LOG_INFO, "Terminal Server thread terminated (%u clients served)", served);
-	set_state(SERVER_STOPPED);
+		set_state(SERVER_STOPPED);
+	}
 	mqtt_shutdown(&mqtt);
 	if (startup->terminated != NULL)
 		startup->terminated(startup->cbdata, code);

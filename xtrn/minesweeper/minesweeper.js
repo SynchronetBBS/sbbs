@@ -1475,7 +1475,7 @@ function play()
 				mouse_enable(false);
 				console.line_counter = 0;
 				console.clear();
-				console.printfile(help_file);
+				console.printfile(help_file, P_SEEK);
 				if(console.line_counter)
 					console.pause();
 				console.clear();

@@ -85,6 +85,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 	char*                str = (char*)buf;
 	bool                 exatr = false; // attributes should be reset to default (lightgray) before newline
 	char                 mark = '\0';
+	int                  inverse_high = 0;
 	int                  i;
 	unsigned             col = term->column;
 	uint                 l = 0;
@@ -200,8 +201,12 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 							attr(curatr ^ (HIGH | BLINK));
 							break;
 						case '#':
-							attr(((curatr & 0x0f) << 4) | ((curatr & 0xf0) >> 4));
+						{
+							int high = inverse_high ? 0 : (curatr & HIGH);
+							attr(((curatr & 0x07) << 4) | ((curatr & 0x70) >> 4) | inverse_high);
+							inverse_high = high;
 							break;
+						}
 					}
 					if (mark != 0 && !(mode & P_HIDEMARKS))
 						outchar(str[l]);

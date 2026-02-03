@@ -3007,7 +3007,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 		        "<br><b>Note:</b> this method does not remove unreferenced keys from an existing section. "
 		        "If your intention is to <i>replace</i> an existing section, use the <tt>iniRemoveSection</tt> function first." )
 	 , 312},
-	{"iniGetAllObjects", js_iniGetAllObjects, 1,  JSTYPE_ARRAY,   JSDOCSTR("[<i>string</i> name_property] [,<i>bool</i> prefix=<i>none</i>] [,<i>bool</i> lowercase=false] "
+	{"iniGetAllObjects", js_iniGetAllObjects, 1,  JSTYPE_ARRAY,   JSDOCSTR("[<i>string</i> name_property] [,<i>string</i> prefix=<i>none</i>] [,<i>bool</i> lowercase=false] "
 		                                                                   "[,blanks=false]")
 	 , JSDOCSTR("Parse all sections from a .ini file and return all (non-<i>root</i>) sections "
 		        "in an array of objects with each section's keys (optionally lowercased) as properties of each object.<br>"
