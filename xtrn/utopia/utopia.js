@@ -1,22 +1,24 @@
-// Synchronet Utopia
+// Synchronet UTOPIA
 // Inspired by the Intellivision game of the same name
 // Original code and basic design by Google Gemini
 
 "use strict";
-load("sbbsdefs.js");
+require("sbbsdefs.js", "K_EXTKEYS");
+
+var json_lines = (bbs.mods.json_lines || load(bbs.mods.json_lines = {}, "json_lines.js"));
 
 // --- CONFIG & FILES ---
 var settings = {
 	intro_msg: js.exec_dir + "intro.msg",
 	tick_interval: 0.5,
-	rules_list: [],
+	rules_list: []
 }
 
 const HELP_FILE = js.exec_dir + "help.msg";
 const SAVE_FILE = system.data_dir + format("user/%04u.utopia", user.number);
 const MAP_FILE = js.exec_dir + "map.json";
 const DEBUG_FILE = js.exec_dir + "debug.json";
-const SCORE_FILE = js.exec_dir + "scores.json";
+const SCORE_FILE = js.exec_dir + "scores.jsonl";
 
 const ITEM_VILLAS   = "V";
 const ITEM_HOSPITAL = "H";
@@ -315,7 +317,7 @@ function spawnFish() {
 	}
 };
 
-function assessItems() {
+function assessItems(add_damage) {
 	for (var i in item_list) {
 		item_list[i].count = 0;
 		item_list[i].total_damage = 0;
@@ -326,23 +328,24 @@ function assessItems() {
 			var item = itemMap[y][x];
 			if (!item)
 				continue;
-			damageMap[y][x]++; // age/drought
-			if (item == ITEM_TRAWLER && onWave(x, y))
-				damageMap[y][x]++;
-			if (damageMap[y][x] > rules.item[item].max_damage) {
-				var cause = "Age";
-				if (item == ITEM_CROPS)
-					cause = "Drought"
-				alert(item_list[item].name + " Lost to Damage/" + cause);
-				drawCell(x, y, BLINK);
-				pendingUpdate.push({ x: x, y: y});
-				destroyItem(x, y);
-				continue;
-			} else {
-				if (!cellIsLand(x, y) || pathToHomeland(x, y)) {
-					item_list[item].total_damage += damageMap[y][x];
-					item_list[item].count++;
+			if (add_damage) {
+				damageMap[y][x]++; // age/drought
+				if (item == ITEM_TRAWLER && onWave(x, y))
+					damageMap[y][x]++;
+				if (damageMap[y][x] > rules.item[item].max_damage) {
+					var cause = "Age";
+					if (item == ITEM_CROPS)
+						cause = "Drought"
+					alert(item_list[item].name + " Lost to Damage/" + cause);
+					drawCell(x, y, BLINK);
+					pendingUpdate.push({ x: x, y: y});
+					destroyItem(x, y);
+					continue;
 				}
+			}
+			if (!cellIsLand(x, y) || pathToHomeland(x, y)) {
+				item_list[item].total_damage += damageMap[y][x];
+				item_list[item].count++;
 			}
 		}
 	}
@@ -654,7 +657,7 @@ function itemHealth(item) {
 }
 
 function handleEconomics() {
-	assessItems();
+	assessItems(/* add damage: */true);
 	if (Math.random() < item_list[ITEM_SCHOOL].count * rules.rebel_decrement_potential)
 		state.rebels = Math.max(0, state.rebels - 1);
 
@@ -1777,6 +1780,10 @@ function cond_cleartoeol() {
 	if (console.current_column) console.cleartoeol();
 }
 
+function abbrevNum(val) {
+	return val > 999 ? format("%1.1fK", val / 1000) : val;
+}
+
 var last_gold;
 var last_food;
 var last_pop;
@@ -1925,10 +1932,10 @@ function drawUI(verbose) {
 			else if (state.rebels < last_reb)
 				reb_dir = "\x01-\x01g\x19";
 		}
-		var gold = state.gold > 999 ? format("%1.1fK", state.gold / 1000) : state.gold;
-		var food = state.food > 999 ? format("%1.1fK", state.food / 1000) : state.food;
-		var pop = state.pop > 999 ? format("%1.1fK", state.pop / 1000) : state.pop;
-		var popCap = state.popCap > 999 ? format("%1.1fK", state.popCap / 1000) : state.popCap;
+		var gold = abbrevNum(state.gold);
+		var food = abbrevNum(state.food);
+		var pop = abbrevNum(state.pop);
+		var popCap = abbrevNum(state.popCap);
 		console.putmsg(format(
 			"\x01n\x01h\x01yGold: %s%s%s " +
 			"\x01n\x01h\x01gFood: %s%s%s " +
@@ -2026,6 +2033,7 @@ function buildItem(type) {
 	alert(msg);
 	state.started = true;
 	state.in_progress = true;
+	assessItems(/* add damage: */false);
 	return true;
 }
 
@@ -2096,18 +2104,9 @@ function showBuildMenu() {
 };
 
 function saveHighScore(title) {
-	var score = calculateScore(),
-		scores = [];
-	if (file_exists(SCORE_FILE)) {
-		var f = new File(SCORE_FILE);
-		if (f.open("r")) {
-			scores = JSON.parse(f.read());
-			f.close();
-		}
-	}
-	scores.push({
+	json_lines.add(SCORE_FILE, {
 		name: user.alias,
-		score: score,
+		score: calculateScore(),
 		title: title,
 		pop: state.pop,
 		date: Date.now() / 1000,
@@ -2116,30 +2115,29 @@ function saveHighScore(title) {
 		rules: rules.name,
 		rules_hash: sha1_calc(JSON.stringify(rules)),
 		});
-	scores.sort(function(a, b) { return b.score - a.score; });
-	var f = new File(SCORE_FILE);
-	if (f.open("w")) {
-		f.write(JSON.stringify(scores.slice(0, 10)));
-		f.close();
-	}
 };
 
-function showHighScores() {
+function firstWord(str) {
+	var i = str.indexOf(' ');
+	if (i > 0)
+		return str.slice(0, i);
+	return str;
+}
+
+function showHighScores(return_to) {
 	console.aborted = false;
 	console.clear();
-	console.putmsg("\x01h\x01y--- UTOPIA HALL OF FAME ---\r\n\r\nRank  Governor                  Score    Pop    Date\r\n" +
-		"\x01n\x01b--------------------------------------------------\r\n");
-	if (file_exists(SCORE_FILE)) {
-		var f = new File(SCORE_FILE);
-		if (f.open("r")) {
-			var s = JSON.parse(f.read());
-			f.close();
-			for (var i = 0; i < s.length; i++)
-				console.putmsg(format("\x01h\x01w#%-2d   \x01n%-25s \x01h\x01g%-8d \x01n%-6d %s\r\n"
-					, i + 1, s[i].name, s[i].score, s[i].pop, system.datestr(s[i].date)));
-		}
-	}
-	console.putmsg("\r\nAny key to return to " + system.name + " ...");
+	console.putmsg("\x01h\x01y--- Synchronet UTOPIA Hall Of Fame ---\r\n\r\n" +
+		"Rank  Governor                  Rules        Map       Score    Pop    Date\r\n\x01n\x01b" +
+		"-------------------------------------------------------------------------------\r\n");
+	var s = json_lines.get(SCORE_FILE);
+	if(typeof s != 'object')
+		s = [];
+	s.sort(function(a, b) { return a.rules.localeCompare(b.rules) || b.score - a.score; });
+	for (var i = 0; i < Math.min(s.length, 20); i++)
+		console.putmsg(format("\x01h\x01w#%-2d   \x01n%-25s %-12.12s %-9.9s \x01h\x01g%-8u \x01n%-6s %s\r\n"
+			, i + 1, s[i].name, s[i].rules, firstWord(s[i].map), s[i].score, abbrevNum(s[i].pop), system.datestr(s[i].date)));
+	console.putmsg("\r\nAny key to return to " + return_to + " ...");
 	console.getkey();
 };
 
@@ -2170,7 +2168,7 @@ function finishGame() {
 	console.putmsg("\x01h\x01wPress any key for High Scores...");
 	saveHighScore(title);
 	console.getkey();
-	showHighScores();
+	showHighScores(system.name);
 };
 
 function handleOperatorCommand(key) {
@@ -2310,10 +2308,10 @@ function handleQuit() {
     var prompt = "\x01n\x01h\x01rQuit? ";
 
     if (state.in_progress)
-        prompt += "\x01c[\x01wS\x01c]ave Game \x01n\x01r|\x01h "
+        prompt += "\x01c[\x01wS\x01c]ave \x01n\x01r|\x01h "
 	if (state.started)
-		prompt += "\x01c[\x01wF\x01c]inish Game \x01n\x01r|\x01h ";
-	prompt += "\x01r[\x01wA\x01r]bandon Game \x01c\x01n\x01r|\x01h \x01c[\x01wC\x01c]ontinue Game";
+		prompt += "\x01c[\x01wF\x01c]inish \x01n\x01r|\x01h ";
+	prompt += "\x01r[\x01wA\x01r]bandon \x01n\x01r|\x01h \x01c[\x01wC\x01c]ontinue \x01n\x01r|\x01h \x01c[\x01wV\x01c]iew High Scores";
 
     console.putmsg(prompt);
 	console.cleartoeol();
@@ -2330,8 +2328,8 @@ function handleQuit() {
         finishGame();
 		return true;
     } else if (choice === 'V') {
-        showHighScores();
-        refreshScreen(); // Redraw map after returning from high scores
+        showHighScores("the game");
+        refreshScreen(true); // Redraw map after returning from high scores
     } else {
 //        pushMsg("Welcome back, Governor!"); // Not an alert
         drawUI();
@@ -2477,11 +2475,15 @@ function main () {
 		var map_file;
 		var maps = settings.map_list;
 		if (maps && maps.length) {
+			var dflt = maps.length;
 			var i =0;
-			for (i = 0; i < maps.length; ++i)
+			for (i = 0; i < maps.length; ++i) {
 				console.uselect(i, "Map to Play", maps[i].name);
+				if (maps[i].default)
+					dflt = i;
+			}
 			console.uselect(i, "", "Randomly Generated");
-			var choice = console.uselect();
+			var choice = console.uselect(dflt);
 			if (choice < 0)
 				return;
 			if (choice < maps.length) {
@@ -2494,23 +2496,34 @@ function main () {
 			genMap();
 		}
 		if (settings.rules_list && settings.rules_list.length) {
+			var dflt = settings.rules_list.length;
 			var i =0;
-			for (i = 0; i < settings.rules_list.length; ++i)
+			for (i = 0; i < settings.rules_list.length; ++i) {
 				console.uselect(i, "Rules to Play By", settings.rules_list[i].name);
+				if (settings.rules_list[i].default)
+					dflt = i;
+			}
 			console.uselect(i, "", rules.name);
-			var choice = console.uselect();
+			var choice = console.uselect(dflt);
 			if (choice < 0)
 				return;
 			if (choice < settings.rules_list.length) {
 				var new_rules = loadRules(settings.rules_list[choice].filename);
-				if (new_rules)
-					rules = new_rules;
+				if (new_rules) {
+					for (var i in new_rules) {
+						if (i == "item") {
+							for (var j in new_rules.item)
+								rules.item[j] = new_rules.item[j];
+						} else
+							rules[i] = new_rules[i];
+					}
+				}
 			}
 		}
 		spawnFish();
-		pushMsg("Welcome to the " + state.map_name + ", Governor.");
-		pushMsg("Playing by " + rules.name + " rules...");
-		pushMsg("Build to claim your homeland!");
+		pushMsg("\x01cWelcome to the \x01ySynchronet UTOPIA\x01w " + state.map_name + "\x01c, Governor.");
+		pushMsg("\x01cPlaying by \x01w" + rules.name + "\x01c rules...");
+		pushMsg("\x01wBuild\x01c to claim your homeland!");
 	}
 	refreshScreen(true);
 	var lastTick = system.timer;
@@ -2614,18 +2627,20 @@ function main () {
 			case '0':
 			case KEY_INSERT:
 			case '\r':
-				if (!state.started || state.in_progress)
+				if (!state.started || state.in_progress) {
 					showBuildMenu();
+					drawUI(1);
+				}
 				break;
 			case ' ':
 				if (state.in_progress) {
 					if (state.lastbuilt) {
 						buildItem(state.lastbuilt)
-						drawUI();
 						if(state.cursor.x < MAP_RIGHT_COL)
 							++state.cursor.x;
 					} else
 						showBuildMenu();
+					drawUI(1);
 				}
 				break;
 			case 'M':
@@ -2685,7 +2700,7 @@ function main () {
 			default:
 				if ((!state.started || state.in_progress) && item_list[key]) {
 					buildItem(key);
-					drawUI();
+					drawUI(1);
 					break;
 				}
 				if (user.is_sysop)
