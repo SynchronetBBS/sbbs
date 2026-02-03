@@ -142,6 +142,7 @@ var CHAR_LAND_N   = "\xDF";
 var CHAR_LAND_S   = "\xDC";
 var CHAR_LAND_E   = "\xDE";
 var CHAR_LAND_W   = "\xDD";
+var CHAR_ROCKS    = "\xB0";
 var CHAR_PIRATE   = "\xF3";
 var CHAR_PIRATAIL = "\xF0";
 var CHAR_FISH1    = "\xFA";
@@ -158,12 +159,13 @@ var MAP_MID_ROW = (MAP_HEIGHT / 2);
 var MAP_RIGHT_COL = (MAP_WIDTH - 1);
 var MAP_BOTTOM_ROW = (MAP_HEIGHT - 1);
 var MAX_MSGS = 3;
-var WATER = 0;
-var LAND = 1;
+var WATER  = 0;
+var LAND   = 1;
 var LAND_N = 2;
 var LAND_S = 3;
 var LAND_E = 4;
 var LAND_W = 5;
+var ROCKS  = 6;
 
 var tick = 0;
 var state = {
@@ -291,6 +293,14 @@ function itemIsAdjacent(obj, item) {
 	return false;
 }
 
+function terIsAdjacent(x, y, ter) {
+	for (var dx = -1; dx <= 1; dx++)
+		for (var dy = -1; dy <= 1; dy++)
+			if (map[y + dy][x + dx] === ter)
+				return true;
+	return false;
+}
+
 function itemDemoCost(item) {
 	return Math.floor(rules.demo_base_cost
 		+ Math.floor(state.rebels * rules.demo_rebel_multiplier)
@@ -397,6 +407,7 @@ function landChar(char)
 {
 	switch (char) {
 		default:
+		case ROCKS:  return CHAR_ROCKS;
 		case LAND:   return CHAR_LAND;
 		case LAND_N: return CHAR_LAND_N;
 		case LAND_S: return CHAR_LAND_S;
@@ -2249,6 +2260,11 @@ function handleOperatorCommand(key) {
 			drawCell(state.cursor.x, state.cursor.y);
 			state.cursor.x++;
 			return true;
+		case '\\':
+			map[state.cursor.y][state.cursor.x] = ROCKS;
+			drawCell(state.cursor.x, state.cursor.y);
+			state.cursor.x++;
+			return true;
 		case CTRL_X:
 			state.fishPool.length = 0;
 			clearMap();
@@ -2384,27 +2400,36 @@ function genMap() {
 		for (var x = 2; x < MAP_RIGHT_COL - 1; ++x) {
 			if (map[y][x] === WATER)
 				continue;
-			switch (random(5)) {
+			switch (random(4)) {
 				case 0:
-					if (map[y - 1][x] == WATER) {
-						map[y][x] = LAND_N;
-						break;
-					}
+					continue;
 				case 1:
-					if (map[y + 1][x] == WATER) {
-						map[y][x] = LAND_S;
+					if (terIsAdjacent(x, y, WATER))
+						map[y][x] = ROCKS;
+					continue;
+			}
+			var opt = [0, 1, 2, 3];
+			while(opt.length && map[y][x] == LAND) {
+				var i = random(opt.length);
+				switch(opt[i]) {
+					case 0:
+						if (map[y - 1][x] == WATER)
+							map[y][x] = LAND_N;
 						break;
-					}
-				case 2:
-					if (map[y][x + 1] == WATER) {
-						map[y][x] = LAND_E;
+					case 1:
+						if (map[y + 1][x] == WATER)
+							map[y][x] = LAND_S;
 						break;
-					}
-				case 3:
-					if (map[y][x - 1] == WATER) {
-						map[y][x] = LAND_W;
+					case 2:
+						if (map[y][x + 1] == WATER)
+							map[y][x] = LAND_E;
 						break;
-					}
+					case 3:
+						if (map[y][x - 1] == WATER)
+							map[y][x] = LAND_W;
+						break;
+				}
+				opt.splice(i, 1);
 			}
 		}
 	}
@@ -2698,14 +2723,14 @@ function main () {
 				state.tick_interval *= 2;
 				break;
 			default:
+				if (user.is_sysop)
+					if (handleOperatorCommand(key))
+						break;
 				if ((!state.started || state.in_progress) && item_list[key]) {
 					buildItem(key);
 					drawUI(1);
 					break;
 				}
-				if (user.is_sysop)
-					if (handleOperatorCommand(key))
-						break;
 				if (console.handle_ctrlkey(key)) {
 					console.pause();
 					refreshScreen(true);
