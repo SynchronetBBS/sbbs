@@ -291,17 +291,18 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	smb_dfield(&msg, TEXT_BODY, length);
 
 	i = smb_addmsghdr(&smb, &msg, smb_storage_mode(&cfg, &smb)); // calls smb_unlocksmbhdr()
-	if (i == SMB_SUCCESS && remsg != NULL)
-		smb_updatethread(&smb, remsg, msg.hdr.number);
+	if (i == SMB_SUCCESS) {
+		if (remsg != NULL)
+			smb_updatethread(&smb, remsg, msg.hdr.number);
+	} else {
+		errormsg(WHERE, ERR_WRITE, smb.file, i, smb.last_error);
+		smb_freemsgdat(&smb, offset, length, 1);
+	}
 	smb_close(&smb);
 	smb_stack(&smb, SMB_STACK_POP);
-
 	smb_freemsgmem(&msg);
-	if (i != SMB_SUCCESS) {
-		smb_freemsgdat(&smb, offset, length, 1);
-		errormsg(WHERE, ERR_WRITE, smb.file, i, smb.last_error);
+	if (i != SMB_SUCCESS)
 		return false;
-	}
 
 	if (usernumber == 1)
 		logon_fbacks++;

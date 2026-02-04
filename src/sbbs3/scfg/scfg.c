@@ -864,8 +864,14 @@ USAGE:
 				free_main_cfg(&cfg);
 				break;
 			case 2:
+				if (!load_main_cfg(&cfg, error, sizeof(error))) {
+					SAFEPRINTF(errormsg, "ERROR: %s", error);
+					uifc.msg(errormsg);
+					break;
+				}
 				set_cfg_filename(hostname);
 				server_cfg();
+				free_main_cfg(&cfg);
 				break;
 			case 3:
 				net_cfg();

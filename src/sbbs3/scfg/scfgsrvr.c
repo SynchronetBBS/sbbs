@@ -1018,9 +1018,13 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Content Root Directory", startup.root_dir);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Error Sub-directory", startup.error_dir);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Virtual Host Support", startup.options & WEB_OPT_VIRTUAL_HOSTS ? "Yes" : "No");
-		SAFECOPY(str, startup.logfile_base);
-		if (*str == '\0')
-			SAFEPRINTF(str, "[%slogs/http-*]", cfg.logs_dir);
+		const char* host = "";
+		if ((startup.options & WEB_OPT_VIRTUAL_HOSTS) && !(startup.options & WEB_OPT_ONE_HTTP_LOG))
+			host = "<host>-";
+		if (*startup.logfile_base == '\0')
+			snprintf(str, sizeof str, "[%slogs/http-%s<date>.log]", cfg.logs_dir, host);
+		else
+			snprintf(str, sizeof str, "%s-%s<date>.log", startup.logfile_base, host);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Access Logging", startup.options & WEB_OPT_HTTP_LOGGING ? str : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
@@ -1096,6 +1100,14 @@ static void websrvr_cfg(void)
 					startup.options |= WEB_OPT_HTTP_LOGGING;
 					uifc.input(WIN_MID | WIN_SAV, 0, 0, "Base path/filename (blank = default)"
 					           , startup.logfile_base, sizeof(startup.logfile_base) - 1, K_EDIT);
+					if (startup.options & WEB_OPT_VIRTUAL_HOSTS) {
+						i = (startup.options & WEB_OPT_ONE_HTTP_LOG) ? 0 : 1;
+						i = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &i, 0, "Use Single Log File for All Virtual Hosts", uifcYesNoOpts);
+						if (i == 0)
+							startup.options |= WEB_OPT_ONE_HTTP_LOG;
+						else if (i == 1)
+							startup.options &= ~WEB_OPT_ONE_HTTP_LOG;
+					}
 				} else if (i == 1)
 					startup.options &= ~WEB_OPT_HTTP_LOGGING;
 				break;
