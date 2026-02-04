@@ -1,6 +1,6 @@
                                Good Time Trivia
-                                 Version 1.05
-                           Release date: 2024-03-29
+                                 Version 1.06
+                           Release date: 2026-02-04
 
                                      by
 
@@ -25,6 +25,7 @@ Contents
 5. Optional: Configuring your BBS to host player scores
    - Only do this if you would prefer to host scores on your BBS rather than
      using the inter-BBS scores hosted on Digital Distortion
+6. dump_questions.js
 
 
 1. Disclaimer
@@ -120,33 +121,44 @@ of the following files and directories:
 1. gttrivia.js            The Good Time Trivia script (this is the script to
                           run)
 
-2. gttrivia.ini           The configuration file (in INI format)
+2. gttrivia.example.ini   The configuration file (in INI format). This is an
+                          example configuration file; to make your own changes
+                          to your configuration, it is recommended that you
+                          copy this file to gttrivia.ini and make your changes
+                          in gttrivia.ini.
 
 3. gttrivia.asc           The logo/startup screen to be shown to the user.
                           This is in Synchronet attribute code format.
 
 4. install-xtrn.ini       A configuration file for automated installation into
                           Synchronet's external programs section; for use with
-						  install-xtrn.js.  This is optional.
+                          install-xtrn.js.  This is optional.
 
-5. qa                     This is a subdirectory that contains the trivia
+5. dump_questions.js      This is a script that will load a .qa file and write
+                          out all the questions & their information. This is
+                          meant to be run on the server with jsexec. This is
+                          mainly for debugging & informational purposes. See
+                          section "6. dump_questions.js" for more information
+                          on using this script.
+
+6. qa                     This is a subdirectory that contains the trivia
                           question & answer files.  Each file contains a
-						  collection of questions, answers, and number of
-						  points for each question.  Each filename must have
-						  the general format of category_name.qa, where
-						  category_name is the name of the category of
-						  questions (underscores are required between each
-						  word).  The filename extension must be .qa .
+                          collection of questions, answers, and number of
+                          points for each question.  Each filename must have
+                          the general format of category_name.qa, where
+                          category_name is the name of the category of
+                          questions (underscores are required between each
+                          word).  The filename extension must be .qa .
 
-6. server                 This directory contains a couple scripts that are
+7. server                 This directory contains a couple scripts that are
                           used if you enable the gttrivia JSON database (for
-						  hosting game scores on a Synchronet BBS so that scores
-						  from players on multiple BBSes can be hosted and
-						  displayed).  As of this writing, I host scores for
-						  Good Time Trivia on my BBS (Digital Distortion), so
-						  unless you really want to do your own score hosting,
-						  you can have your installation of the game read
-						  inter-BBS scores from Digital Distortion.
+                          hosting game scores on a Synchronet BBS so that scores
+                          from players on multiple BBSes can be hosted and
+                          displayed).  As of this writing, I host scores for
+                          Good Time Trivia on my BBS (Digital Distortion), so
+                          unless you really want to do your own score hosting,
+                          you can have your installation of the game read
+                          inter-BBS scores from Digital Distortion.
 
 
 The trivia category files (in the qa directory, with filenames ending in .qa)
@@ -158,7 +170,7 @@ category_name: The name of the category (if different from simple parsing of
                the filename)
 ARS: Optional - An ARS security string to restrict access to the question set.
      This overrides any setting for the question set in the [CATEGORY_ARS]
-	 section in gttrivia.ini.
+     section in gttrivia.ini.
 
 This JSON must be between two lines:
 -- QA metadata begin
@@ -187,6 +199,14 @@ What color is the sky?
 Blue
 5
 
+Text within the question can be emphasized with ** characters around it. For
+example:
+What color is the **sky**?
+In that question, the word "sky" will be emphasized when printed (and the **
+characters around it will not be printed).  The colors/attributes for emphasized
+text in questions can be set using the questionEmphasizedText setting in the
+color settings.
+
 Alternately, the answer can be specified via JSON (JavaScript Object Notation)
 with multiple acceptable answers, and optionally a fact about the answer. When
 JSON is specified for the answer, there need to be two text lines to specify
@@ -208,7 +228,30 @@ How many sides does a square have?
 5
 
 
-An example of a question specifying an answer with a fact specified:
+An example of a question specifying an answer with a fact specified (note that
+it's a string in an array with the property name "answerFacts"):
+Who's picture is on the US $50 bill?
+-- Answer metadata begin
+{
+    "answers": ["Ulysses Grant", "Ulysses S. Grant", "Ulysses S Grant"],
+	"answerFacts": ["The US capitol building is on the other side of the $50 bill"]
+}
+-- Answer metadata end
+5
+
+Since "answerFacts" is an array, it can contain multiple facts:
+Who's picture is on the US $50 bill?
+-- Answer metadata begin
+{
+    "answers": ["Ulysses Grant", "Ulysses S. Grant", "Ulysses S Grant"],
+	"answerFacts": ["The US capitol building is on the other side of the $50 bill",
+	                "The numeral "50" in the lower right corner shifts from copper to green as the angle changes."]
+}
+-- Answer metadata end
+5
+
+A property with the name "answerFact" (not plural) is also supported, and this can be a
+string or an array of strings:
 Who's picture is on the US $50 bill?
 -- Answer metadata begin
 {
@@ -313,24 +356,24 @@ maxNumPlayerScoresToDisplay       The maximum number of player scores to display
 
 scoresMsgSubBoardsForPosting      This can be used to specify a comma-separated
                                   list of internal sub-board codes for the game
-								  to post user scores in, if you want your user
-								  scores to be shared. In case the remote BBS
-								  in the REMOTE_SERVER setting can't be reached
-								  or there is no remote BBS configured, the game
-								  will post scores in the sub-board(s) specified
-								  here. You can specify more than one sub-board
-								  code in case there are multiple BBSes that
-								  host scores for this game.
-								  Note that this setting is empty by default,
-								  because internal sub-board codes are probably
-								  different on each BBS. Digital Distortion is
-								  set up to host scores for this game, and if
-								  your BBS is connected to Dove-Net, it is
-								  recommended to use your BBS's internal code
-								  code for the Dove-Net Synchronet Data
-								  sub-board here. FSXNet also has an InterBBS
-								  Data area that might be used for conveying
-								  game scores to a host BBS.
+                                  to post user scores in, if you want your user
+                                  scores to be shared. In case the remote BBS
+                                  in the REMOTE_SERVER setting can't be reached
+                                  or there is no remote BBS configured, the game
+                                  will post scores in the sub-board(s) specified
+                                  here. You can specify more than one sub-board
+                                  code in case there are multiple BBSes that
+                                  host scores for this game.
+                                  Note that this setting is empty by default,
+                                  because internal sub-board codes are probably
+                                  different on each BBS. Digital Distortion is
+                                  set up to host scores for this game, and if
+                                  your BBS is connected to Dove-Net, it is
+                                  recommended to use your BBS's internal code
+                                  code for the Dove-Net Synchronet Data
+                                  sub-board here. FSXNet also has an InterBBS
+                                  Data area that might be used for conveying
+                                  game scores to a host BBS.
 
 [COLORS] section
 ----------------
@@ -355,6 +398,8 @@ categoryNumInput                  User input for the category number
 questionHdr                       Header text for the trivia questions
 questionHdrNum                    Numbers in the trivia question header text
 question                          Trivia question
+questionEmphasizedText            Emphasized text (i.e., **emphasized**) in
+                                  trivia questions
 answerPrompt                      Prompt text for trivia answers
 answerPromptSep                   Separator text in trivia answer prompt
 answerInput                       User input for trivia answers
@@ -388,11 +433,11 @@ Setting                           Description
 -------                           -----------
 server                            The server hostname/IP address.  The default
                                   value can be used if you want to use Digital
-								  Distortion BBS.
+                                  Distortion BBS.
 
 port                              The port number to use to connect to the
                                   remote host.  The default value is set for
-								  Digital Distortion.
+                                  Digital Distortion.
 
 [SERVER] section
 ----------------
@@ -402,20 +447,20 @@ Setting                           Description
 -------                           -----------
 deleteScoresOlderThanDays         The number of days to keep old player scores.
                                   The background service will remove player
-								  scores older than this number of days.
+                                  scores older than this number of days.
 
 scoresMsgSubBoardsForReading      This can be used to specify a comma-separated
                                   list of internal sub-board codes for the game
-								  to read user scores from, for client BBSes
-								  that post their game scores there. See section
-								  5 (Optional: Configuring your BBS to host
-								  player scores) for information on adding an
-								  event in SCFG to periodically read scores
-								  from the sub-board(s) if you want to host game
-								  scores on your BBS. By default, the game is
-								  set up to post scores to Digital Distortion,
-								  so you may choose to view the scores there or
-								  host scores yourself.
+                                  to read user scores from, for client BBSes
+                                  that post their game scores there. See section
+                                  5 (Optional: Configuring your BBS to host
+                                  player scores) for information on adding an
+                                  event in SCFG to periodically read scores
+                                  from the sub-board(s) if you want to host game
+                                  scores on your BBS. By default, the game is
+                                  set up to post scores to Digital Distortion,
+                                  so you may choose to view the scores there or
+                                  host scores yourself.
 
 
 5. Optional: Configuring your BBS to host player scores
@@ -492,3 +537,47 @@ for Good Time Trivia scores import):
 The number of times per day is up to you, but it would probably be beneficial
 for this to happen frequently so that scores are kept up to date. In the above
 example, 96 times per day would mean it would run every 15 minutes.
+
+
+6. dump_questions.js
+====================
+dump_questions.js is a utility script, meant to be run on your BBS machine using
+jsexec, which will read one of the .qa files and write out all the questions and
+their information.
+
+The general syntax of running this script is as follows:
+
+jsexec dump_questions.js <qa_filename>
+
+You can also leave off the .js filename extension:
+
+jsexec dump_questions <qa_filename>
+
+<qa_filename> is the name of one of the .qa files.  Assuming you run the script
+from the gttrivia directory, you can specify just the name of one of the .qa
+files (leaving out the full path), and the script will look in the qa directory
+if the .qa file doesn't exist in the current directory.
+
+For exmple, if you run it with just "general.qa", it will look for qa/general.qa
+and read it:
+
+jsexec dump_questions.js general.qa
+
+If running in the gttrivia directory, you can also specify the qa directory if
+you want to:
+
+Linux:
+jsexec dump_questions.js ./qa/general.qa
+
+Windows:
+jsexec dump_questions.js qa\general.qa
+
+
+You can also change directory to the qa directory and run it from there,
+specifying one of the filenames in there:
+
+cd qa
+jsexec ../dump_questions.js general.qa
+
+In Windows, you may need to use a \ rather than a /.
+

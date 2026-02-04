@@ -4,6 +4,18 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.06     2026-02-04   To quit out of a question set, the user can now use /Q,
+                      /QUIT, or /EXIT (not simply Q, as that could be an answer
+                      to a question).
+                      "answerFact" in the .qa files can now be an array (or a
+                      string) and it can also be called "answerFacts", which is
+                      to be an array of strings. For an array of facts, a random
+                      one will be chosen during play.
+                      Text within questions can be emphasized by putting **
+                      characters around the section of text to be emphasized.
+                      New utility script, dump_questions.js, for writing out
+                      all the questions & their information from a .qa file.
+                      New color setting: questionEmphasizedText
 1.05     2024-03-29   Ensure the correct script startup directory is always used
                       (make a copy of js.exec_dir on startup, since js.exec_dir
                       could change)
