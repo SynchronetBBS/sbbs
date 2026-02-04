@@ -113,7 +113,7 @@ var rules = {
 		"C": { cost:  5, max_damage: 100, tax:  0.10, food_turn: 0.90, food_round: 1,   land: true,  sea: false },
 		"A": { cost: 20, max_damage: 500, tax:  0.10, food_turn: 0.10, food_round: 4,   land: true,  sea: false },
 		"T": { cost: 25, max_damage: 200, tax:  0.25, food_turn: 0.50, food_round: 5,   land: false, sea: true  },
-		"P": { cost:100, max_damage: 300, tax:  0.25,                                   land: false, sea: true  },
+		"P": { cost:100, max_damage: 300, tax: -0.75,                                   land: false, sea: true  },
 		"V": { cost: 50, max_damage: 300, tax:  0.25, cap: 50,                          land: true,  sea: false },
 		"D": { cost: 75, max_damage: 350, tax:  1.00, cap: 2,                           land: true,  sea: false },
 		"I": { cost: 75, max_damage: 350, tax:  1.00, cap: 1,                           land: true,  sea: false },
@@ -253,7 +253,7 @@ function cellIsWater(x, y) {
 		y = x.y;
 		x = x.x;
 	}
-	return map[y][x] === WATER;
+	return cellOnMap(x, y) && map[y][x] === WATER;
 };
 
 function cellIsLand(x, y) {
@@ -800,11 +800,11 @@ function onWave(x, y) {
 }
 
 // Does not include fish
-function cellIsOccupied(x, y)
+function cellIsOccupied(x, y, nonPirate)
 {
 	if (itemMap[y][x])
 		return true;
-	if (state.pirate.active && cellIsSame({x:x, y:y}, state.pirate))
+	if (!nonPirate && state.pirate.active && cellIsSame({x:x, y:y}, state.pirate))
 		return true;
 	if (state.merchant.active && cellIsSame({x:x, y:y}, state.merchant))
 		return true;
@@ -949,17 +949,40 @@ function handlePatrols() {
 		var t;
 		while ((t = target.pop()) && !moved) {
 			debugLog("PT Boat at " + xy_str(boat) + " next closest target at " + xy_str(t) + " at distance " + Math.floor(t.dist));
+			if (t.dist < 1) {
+				moved = true;
+				break;
+			}
 			var nx = boat.x + (t.x > boat.x ? 1 : (t.x < boat.x ? -1 : 0)),
 				ny = boat.y + (t.y > boat.y ? 1 : (t.y < boat.y ? -1 : 0));
-			if (cellOnMap(nx, ny)) {
-				if (itemMap[ny][nx] == ITEM_PTBOAT) // Another PT boat in the way? Look elsewhere
+			if (cellIsWater(nx, ny)) {
+				if (itemMap[ny][nx] == ITEM_PTBOAT) { // Another PT boat in the way? Look elsewhere
+					debugLog("Giving way to another PT Boat at " + xy_str(nx, ny));
 					continue;
+				}
 				var ti = findItemAtCoord(trawlers, t);
 				if (ti >= 0) // Let's not have multiple PT boats chase the same trawler
 					trawlers.splice(ti, 1);
-				if (cellIsWater(nx, ny) && !cellIsOccupied(nx, ny))
+				debugLog("PT Boat chasing direct " + xy_str(nx, ny));
+				if (!cellIsOccupied(nx, ny, /* non-pirate */true))
 					moved = moveItem(boat.x, boat.y, nx, ny);
 			}
+			if (!moved && t.x != boat.x) {
+				nx = boat.x + (t.x > boat.x ? 1 : -1);
+				ny = boat.y;
+				debugLog("PT Boat chasing horizontal to " + xy_str(nx, ny));
+				if (cellIsWater(nx, ny) && !cellIsOccupied(nx, ny, /* non-pirate */true))
+					moved = moveItem(boat.x, boat.y, nx, ny);
+			}
+			if (!moved && t.y != boat.y) {
+				nx = boat.x;
+				ny = boat.y + (t.y > boat.y ? 1 : -1);
+				debugLog("PT Boat chasing vertical to " + xy_str(nx, ny));
+				if (cellIsWater(nx, ny) && !cellIsOccupied(nx, ny, /* non-pirate */true))
+					moved = moveItem(boat.x, boat.y, nx, ny);
+			}
+			if (!moved)
+				debugLog("No move made :-(");
 		}
 		if (!moved)
 			moveItem1rand(boat.x, boat.y, WATER, /* diagonal */true);
@@ -972,25 +995,12 @@ function pirateAttack() {
 	var px = Math.floor(state.pirate.x),
 		py = Math.floor(state.pirate.y);
 
-	if (onWave(px, py))
-		return false;
+	var wave = onWave(px, py);
 
 	// Search surrounding (9 including own) cell
 	for (var y = Math.max(py - 1, MAP_TOP_ROW); y <= Math.min(py + 1, MAP_BOTTOM_ROW); y++) {
 		for (var x = Math.max(px - 1, MAP_LEFT_COL); x <= Math.min(px + 1, MAP_RIGHT_COL); x++) {
 			var fort_protected = itemIsAdjacent({x:x, y:y}, ITEM_FORT);
-			if (state.merchant.active && state.merchant.x == x && state.merchant.y == y) {
-				if (fort_protected)
-					alert("Pirate attack on Merchat ship thwarted by Fort defense!");
-				else {
-					state.merchant.active = false;
-					var plunder  = Math.floor(state.merchant.gold * rules.pirate_merchant_plunder_multiplier);
-					state.pirate.gold += plunder ;
-					announce("\x01h\x01rMerchant ship sunk by Pirates!  Pirates plundered \x01w$" + plunder);
-					forceScrub(Math.floor(state.merchant.x), Math.floor(state.merchant.y), 1);
-				}
-				return true;
-			}
 			var item = itemAt(x, y);
 			if (!item)
 				continue;
@@ -1010,7 +1020,7 @@ function pirateAttack() {
 					pendingUpdate.push({ x: px + 1, y: py});
 					return true;
 				}
-				if (!fort_protected) {
+				if (!wave && !fort_protected) {
 					if (damageItem(x, y, "Pirate attack", rules.pirate_sea_attack_damage)) {
 						var plunder = Math.floor(rules.item[ITEM_PTBOAT].cost * (0.5 + (0.5 * health)));
 						state.pirate.gold += plunder;
@@ -1020,6 +1030,20 @@ function pirateAttack() {
 					return true;
 				}
 				continue;
+			}
+			if (wave)
+				continue;
+			if (state.merchant.active && state.merchant.x == x && state.merchant.y == y) {
+				if (fort_protected)
+					alert("Pirate attack on Merchat ship thwarted by Fort defense!");
+				else {
+					state.merchant.active = false;
+					var plunder  = Math.floor(state.merchant.gold * rules.pirate_merchant_plunder_multiplier);
+					state.pirate.gold += plunder ;
+					announce("\x01h\x01rMerchant ship sunk by Pirates!  Pirates plundered \x01w$" + plunder);
+					forceScrub(Math.floor(state.merchant.x), Math.floor(state.merchant.y), 1);
+				}
+				return true;
 			}
 			if (item == ITEM_TRAWLER || (state.turn - state.pirate.last_attack) >= rules.pirate_land_attack_interval) {
 				if (fort_protected)
@@ -1692,19 +1716,21 @@ function movePirate() {
 			if (target.length) {
 				target.sort(function (a, b) { return b.dist - a.dist; });
 				var t = target.pop();
-				var nx = px + (t.x > px ? 1 : (t.x < px ? -1 : 0)),
-					ny = py + (t.y > py ? 1 : (t.y < py ? -1 : 0));
-				debugLog("Pirate pursuing trawler at " + xy_str(t) + " by moving to " + xy_str(nx, ny));
-				if (cellIsWater(nx, ny) && !state.pirate.blocked[xy_pair(nx, ny)] && !itemAt(nx, ny)) {
-					state.pirate.x = nx;
-					state.pirate.y = ny;
-					drawCell(nx, ny);
-					drawCell(nx + 1, ny);
-					drawCell(px, py);
-					drawCell(px + 1, py);
-					return true;
+				if (t.dist >= 2) {
+					var nx = px + (t.x > px ? 1 : (t.x < px ? -1 : 0)),
+						ny = py + (t.y > py ? 1 : (t.y < py ? -1 : 0));
+					debugLog("Pirate pursuing trawler at " + xy_str(t) + " by moving to " + xy_str(nx, ny));
+					if (cellIsWater(nx, ny) && !state.pirate.blocked[xy_pair(nx, ny)] && !itemAt(nx, ny)) {
+						state.pirate.x = nx;
+						state.pirate.y = ny;
+						drawCell(nx, ny);
+						drawCell(nx + 1, ny);
+						drawCell(px, py);
+						drawCell(px + 1, py);
+						return true;
+					}
+					debugLog(xy_str(nx, ny) + " blocking pirate move");
 				}
-				debugLog(xy_str(nx, ny) + " blocking pirate move");
 			}
 		}
 	}
