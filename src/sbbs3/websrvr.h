@@ -91,7 +91,7 @@ static struct init_field web_init_fields[] = {
 #define WEB_OPT_HSTS_SAFE           (1 << 8)  /* All URLs can be served over HTTPS*/
 #define WEB_OPT_NO_HTTP             (1 << 9)  /* Disable HTTP support				*/
 #define WEB_OPT_NO_FILEBASE         (1 << 10) /* Disable FileBase support			*/
-#define WEB_OPT_ONE_HTTP_LOG        (1 << 11) /* Don't use requested-host in log filenames */
+#define WEB_OPT_ONE_HTTP_LOG        (1 << 12) /* Don't use requested-host in log filenames */
 
 /* web_startup_t.options bits that require re-init/recycle when changed */
 #define WEB_INIT_OPTS   (WEB_OPT_HTTP_LOGGING)
