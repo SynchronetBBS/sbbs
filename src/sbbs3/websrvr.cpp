@@ -7267,7 +7267,7 @@ void http_logging_thread(void* arg)
 			continue;
 		}
 		SAFECOPY(newfilename, base);
-		if ((startup->options & WEB_OPT_VIRTUAL_HOSTS) && ld->vhost != NULL) {
+		if ((startup->options & WEB_OPT_VIRTUAL_HOSTS) && !(startup->options & WEB_OPT_ONE_HTTP_LOG) && ld->vhost != NULL) {
 			char  vhost[128];
 			SAFECOPY(vhost, ld->vhost);
 #ifdef _WIN32
