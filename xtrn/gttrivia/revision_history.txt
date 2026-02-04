@@ -4,6 +4,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.06     2026-02-03   To quit out of a question set, the user can now use /Q,
+                      /QUIT, or /EXIT (not simply Q, as that could be an answer
+                      to a question).
 1.05     2024-03-29   Ensure the correct script startup directory is always used
                       (make a copy of js.exec_dir on startup, since js.exec_dir
                       could change)

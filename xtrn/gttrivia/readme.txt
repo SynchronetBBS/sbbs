@@ -1,6 +1,6 @@
                                Good Time Trivia
-                                 Version 1.05
-                           Release date: 2024-03-29
+                                 Version 1.06
+                           Release date: 2026-02-03
 
                                      by
 
