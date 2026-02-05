@@ -650,15 +650,14 @@ function getFilenameExtension(pFilename, pFileTypeCfg)
 	if (typeof(pFileTypeCfg) === "object")
 	{
 		var dotIdx = filenameUpper.indexOf(".");
-		var continueOn = true;
-		while (dotIdx > -1 && continueOn)
+		while (dotIdx > -1)
 		{
 			var nextIdx = dotIdx + 1;
 			var ext = filenameUpper.substring(nextIdx);
 			if (pFileTypeCfg.hasOwnProperty(ext))
 			{
 				filenameExt = filenameUpper.substring(nextIdx);
-				continueOn = false;
+				break;
 			}
 			else
 				dotIdx = filenameUpper.indexOf(".", nextIdx);
@@ -671,12 +670,7 @@ function getFilenameExtension(pFilename, pFileTypeCfg)
 		if (/.TAR.GZ$/.test(filenameUpper))
 			filenameExt = "TAR.GZ";
 		else
-		{
-			// Look for the last period in filenameUpper
-			var dotIndex = filenameUpper.lastIndexOf(".");
-			if (dotIndex > -1)
-				filenameExt = filenameUpper.substr(dotIndex+1);
-		}
+			filenameExt = file_getext(pFilename);
 	}
 	return filenameExt;
 }
