@@ -10,44 +10,52 @@ else
 	load("gttrivia_common.js");
 
 
-writeln("");
-
 if (argc == 0)
 {
-	writeln("Usage: dump_questions.js <qa_filename>");
 	writeln("");
+	printUsage();
 	exit(0);
 }
 
-var qaFilename = argv[0];
-if (/^\.[\\\/]/.test(qaFilename))
-	qaFilename = js.exec_dir + qaFilename.substring(2);
-if (!file_exists(qaFilename))
+// Parse command-line arguments
+var gOpts = parseCmdLineArgs(argv);
+if (gOpts.exitNow)
+	exit(0);
+
+
+// Make sure the file exists & we know where it is
+if (/^\.[\\\/]/.test(gOpts.qaFilename))
+	gOpts.qaFilename = js.exec_dir + gOpts.qaFilename.substring(2);
+if (!file_exists(gOpts.qaFilename))
 {
-	var fullPath = js.exec_dir + "qa/" + file_getname(qaFilename);
+	var fullPath = js.exec_dir + "qa/" + file_getname(gOpts.qaFilename);
 	if (file_exists(fullPath))
-		qaFilename = fullPath;
+		gOpts.qaFilename = fullPath;
 	else
 	{
-		var filenameInQaDir = fullpath("qa/" + file_getname(qaFilename));
+		var filenameInQaDir = fullpath("qa/" + file_getname(gOpts.qaFilename));
 		if (file_exists(filenameInQaDir))
-			qaFilename = filenameInQaDir;
+			gOpts.qaFilename = filenameInQaDir;
 	}
 }
-if (!file_exists(qaFilename))
+if (!file_exists(gOpts.qaFilename))
 {
 	writeln("* The specified file doesn't exist");
 	writeln("");
 	exit(0);
 }
 
-writeln("Question file: " + file_getname(qaFilename));
+
+// Do the dump
+writeln("Question file: " + file_getname(gOpts.qaFilename));
 writeln("Full path:");
-writeln(qaFilename);
+writeln(gOpts.qaFilename);
 writeln("");
 
-var questions = parseQAFile(qaFilename);
+var questions = parseQAFile(gOpts.qaFilename);
 printf("There are %d questions.\n\n", questions.length);
+if (gOpts.onlyCountQuestions)
+	exit(0);
 for (var questionIdx = 0; questionIdx < questions.length; ++questionIdx)
 {
 	var questionObj = questions[questionIdx];
@@ -71,5 +79,63 @@ for (var questionIdx = 0; questionIdx < questions.length; ++questionIdx)
 			printf(" %s\n", questionObj.answerFacts[i]);
 	}
 
+	writeln("");
+}
+
+
+
+
+///////////////////////////////////////////////////////////
+// Functions
+
+// Parses command-line arguments.
+function parseCmdLineArgs(pArgv)
+{
+	var retObj = {
+		exitNow: false,
+		onlyCountQuestions: false,
+		qaFilename: ""
+	};
+
+	if (pArgv.length == 0)
+	{
+		retObj.exitNow = true;
+		return retObj;
+	}
+
+	for (var i = 0; i < pArgv.length; ++i)
+	{
+		if (pArgv[i].length == 0)
+			continue;
+		if (pArgv[i].indexOf("-") == 0)
+		{
+			if (pArgv[i] == "-cq" || pArgv[i] == "-cq")
+				retObj.onlyCountQuestions = true;
+		}
+		else
+			retObj.qaFilename = argv[i];
+	}
+
+	if (retObj.qaFilename.length == 0)
+	{
+		retObj.exitNow = true;
+		writeln("");
+		writeln("* The filename is not specified.");
+		writeln("");
+		printUsage()
+	}
+
+	return retObj;
+}
+
+// Prints the script's command-line usage'
+function printUsage()
+{
+	writeln("usage: dump_questions.js [<switches>...] <qa_filename>");
+	writeln("");
+	writeln("<Switches>");
+	writeln("  -cq: Only count questions");
+	writeln("");
+	writeln("<qa_filename> is the name of a .qa (question) file.")
 	writeln("");
 }

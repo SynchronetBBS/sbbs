@@ -547,11 +547,16 @@ their information.
 
 The general syntax of running this script is as follows:
 
-jsexec dump_questions.js <qa_filename>
+jsexec dump_questions.js [<switches>...] <qa_filename>
 
-You can also leave off the .js filename extension:
+<Switches>
+  -cq: Only count questions
 
-jsexec dump_questions <qa_filename>
+<qa_filename> is the name of a .qa (question) file.
+
+
+
+You can also leave off the .js filename extension when running it with jsexec.
 
 <qa_filename> is the name of one of the .qa files.  Assuming you run the script
 from the gttrivia directory, you can specify just the name of one of the .qa
@@ -581,3 +586,5 @@ jsexec ../dump_questions.js general.qa
 
 In Windows, you may need to use a \ rather than a /.
 
+If you want to only have it output the number of questions, you can use the -cq
+switch.
