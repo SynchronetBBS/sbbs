@@ -1,0 +1,733 @@
+-- QA metadata begin
+{
+    "category_name": "Star Trek: Lower Decks"
+}
+-- QA metadata end
+
+In what season did the Lower Decks episode 'Second Contact' air?
+-- Answer metadata begin
+{
+    "answers": [
+        "1",
+        "one"
+    ]
+}
+-- Answer metadata end
+10
+
+In what season did the Lower Decks episode 'Envoys' air?
+-- Answer metadata begin
+{
+    "answers": [
+        "1",
+        "one"
+    ]
+}
+-- Answer metadata end
+10
+
+In what season did the Lower Decks episode 'Strange Energies' air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2",
+        "two"
+    ]
+}
+-- Answer metadata end
+10
+
+In what season did the Lower Decks episode 'Kayshon' air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2",
+        "two"
+    ]
+}
+-- Answer metadata end
+10
+
+In what season did the Lower Decks episode 'Grounded' air?
+-- Answer metadata begin
+{
+    "answers": [
+        "3",
+        "three"
+    ]
+}
+-- Answer metadata end
+10
+
+In what season did the Lower Decks episode 'Twovix' air?
+-- Answer metadata begin
+{
+    "answers": [
+        "4",
+        "four"
+    ]
+}
+-- Answer metadata end
+10
+
+Who played Beckett Mariner on Star Trek: Lower Decks?
+-- Answer metadata begin
+{
+    "answers": [
+        "Tawny Newsome"
+    ],
+    "answerFact": "Mariner was a troublemaker."
+}
+-- Answer metadata end
+10
+
+What is Beckett Mariner's position on Star Trek: Lower Decks?
+-- Answer metadata begin
+{
+    "answers": [
+        "Ensign"
+    ],
+    "answerFact": "Mariner was a troublemaker."
+}
+-- Answer metadata end
+10
+
+Who played Brad Boimler on Star Trek: Lower Decks?
+-- Answer metadata begin
+{
+    "answers": [
+        "Jack Quaid"
+    ],
+    "answerFact": "Boimler was a rule-follower."
+}
+-- Answer metadata end
+10
+
+What is Brad Boimler's position on Star Trek: Lower Decks?
+-- Answer metadata begin
+{
+    "answers": [
+        "Ensign"
+    ],
+    "answerFact": "Boimler was a rule-follower."
+}
+-- Answer metadata end
+10
+
+Who played Tendi on Star Trek: Lower Decks?
+-- Answer metadata begin
+{
+    "answers": [
+        "Noel Wells"
+    ],
+    "answerFact": "Tendi was a Orion."
+}
+-- Answer metadata end
+10
+
+What is Tendi's position on Star Trek: Lower Decks?
+-- Answer metadata begin
+{
+    "answers": [
+        "Ensign"
+    ],
+    "answerFact": "Tendi was a Orion."
+}
+-- Answer metadata end
+10
+
+Who played Rutherford on Star Trek: Lower Decks?
+-- Answer metadata begin
+{
+    "answers": [
+        "Eugene Cordero"
+    ],
+    "answerFact": "Rutherford had a cybernetic implant."
+}
+-- Answer metadata end
+10
+
+What is Rutherford's position on Star Trek: Lower Decks?
+-- Answer metadata begin
+{
+    "answers": [
+        "Ensign"
+    ],
+    "answerFact": "Rutherford had a cybernetic implant."
+}
+-- Answer metadata end
+10
+
+In what year did the Lower Decks episode 'Second Contact' first air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2020"
+    ]
+}
+-- Answer metadata end
+10
+
+In what year did the Lower Decks episode 'Envoys' first air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2020"
+    ]
+}
+-- Answer metadata end
+10
+
+In what year did the Lower Decks episode 'Strange Energies' first air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2021"
+    ]
+}
+-- Answer metadata end
+10
+
+In what year did the Lower Decks episode 'Kayshon' first air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2021"
+    ]
+}
+-- Answer metadata end
+10
+
+In what year did the Lower Decks episode 'Grounded' first air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2022"
+    ]
+}
+-- Answer metadata end
+10
+
+In what year did the Lower Decks episode 'Twovix' first air?
+-- Answer metadata begin
+{
+    "answers": [
+        "2023"
+    ]
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Lower Decks character did Tawny Newsome play?
+-- Answer metadata begin
+{
+    "answers": [
+        "Beckett Mariner"
+    ],
+    "answerFact": "Mariner was a troublemaker."
+}
+-- Answer metadata end
+10
+
+Who portrayed Beckett Mariner in Star Trek: Lower Decks?
+-- Answer metadata begin
+{
+    "answers": [
+        "Tawny Newsome"
+    ],
+    "answerFact": "Mariner was a troublemaker."
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Lower Decks character did Jack Quaid play?
+-- Answer metadata begin
+{
+    "answers": [
+        "Brad Boimler"
+    ],
+    "answerFact": "Boimler was a rule-follower."
+}
+-- Answer metadata end
+10
+
+Who portrayed Brad Boimler in Star Trek: Lower Decks?
+-- Answer metadata begin
+{
+    "answers": [
+        "Jack Quaid"
+    ],
+    "answerFact": "Boimler was a rule-follower."
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Lower Decks character did Noel Wells play?
+-- Answer metadata begin
+{
+    "answers": [
+        "Tendi"
+    ],
+    "answerFact": "Tendi was a Orion."
+}
+-- Answer metadata end
+10
+
+Who portrayed Tendi in Star Trek: Lower Decks?
+-- Answer metadata begin
+{
+    "answers": [
+        "Noel Wells"
+    ],
+    "answerFact": "Tendi was a Orion."
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Lower Decks character did Eugene Cordero play?
+-- Answer metadata begin
+{
+    "answers": [
+        "Rutherford"
+    ],
+    "answerFact": "Rutherford had a cybernetic implant."
+}
+-- Answer metadata end
+10
+
+Who portrayed Rutherford in Star Trek: Lower Decks?
+-- Answer metadata begin
+{
+    "answers": [
+        "Eugene Cordero"
+    ],
+    "answerFact": "Rutherford had a cybernetic implant."
+}
+-- Answer metadata end
+10
+
+What was episode 1 of Lower Decks season 1?
+-- Answer metadata begin
+{
+    "answers": [
+        "Second Contact"
+    ]
+}
+-- Answer metadata end
+10
+
+What was episode 2 of Lower Decks season 1?
+-- Answer metadata begin
+{
+    "answers": [
+        "Envoys"
+    ]
+}
+-- Answer metadata end
+10
+
+What was episode 1 of Lower Decks season 2?
+-- Answer metadata begin
+{
+    "answers": [
+        "Strange Energies"
+    ]
+}
+-- Answer metadata end
+10
+
+What was episode 2 of Lower Decks season 2?
+-- Answer metadata begin
+{
+    "answers": [
+        "Kayshon"
+    ]
+}
+-- Answer metadata end
+10
+
+What was episode 1 of Lower Decks season 3?
+-- Answer metadata begin
+{
+    "answers": [
+        "Grounded"
+    ]
+}
+-- Answer metadata end
+10
+
+What was episode 1 of Lower Decks season 4?
+-- Answer metadata begin
+{
+    "answers": [
+        "Twovix"
+    ]
+}
+-- Answer metadata end
+10
+
+What Lower Decks episode came immediately after Second Contact?
+-- Answer metadata begin
+{
+    "answers": [
+        "Envoys"
+    ]
+}
+-- Answer metadata end
+10
+
+What Lower Decks episode came immediately after Envoys?
+-- Answer metadata begin
+{
+    "answers": [
+        "Strange Energies"
+    ]
+}
+-- Answer metadata end
+10
+
+What Lower Decks episode came immediately before Envoys?
+-- Answer metadata begin
+{
+    "answers": [
+        "Second Contact"
+    ]
+}
+-- Answer metadata end
+10
+
+What Lower Decks episode came immediately after Strange Energies?
+-- Answer metadata begin
+{
+    "answers": [
+        "Kayshon"
+    ]
+}
+-- Answer metadata end
+10
+
+What Lower Decks episode came immediately before Strange Energies?
+-- Answer metadata begin
+{
+    "answers": [
+        "Envoys"
+    ]
+}
+-- Answer metadata end
+10
+
+What Lower Decks episode came immediately after Kayshon?
+-- Answer metadata begin
+{
+    "answers": [
+        "Grounded"
+    ]
+}
+-- Answer metadata end
+10
+
+What Lower Decks episode came immediately before Kayshon?
+-- Answer metadata begin
+{
+    "answers": [
+        "Strange Energies"
+    ]
+}
+-- Answer metadata end
+10
+
+What Lower Decks episode came immediately after Grounded?
+-- Answer metadata begin
+{
+    "answers": [
+        "Twovix"
+    ]
+}
+-- Answer metadata end
+10
+
+What Lower Decks episode came immediately before Grounded?
+-- Answer metadata begin
+{
+    "answers": [
+        "Kayshon"
+    ]
+}
+-- Answer metadata end
+10
+
+What Lower Decks episode came immediately before Twovix?
+-- Answer metadata begin
+{
+    "answers": [
+        "Grounded"
+    ]
+}
+-- Answer metadata end
+10
+
+What happened in the Lower Decks episode Second Contact?
+-- Answer metadata begin
+{
+    "answers": [
+        "the events of Second Contact"
+    ]
+}
+-- Answer metadata end
+10
+
+What happened in the Lower Decks episode Envoys?
+-- Answer metadata begin
+{
+    "answers": [
+        "the events of Envoys"
+    ]
+}
+-- Answer metadata end
+10
+
+What happened in the Lower Decks episode Strange Energies?
+-- Answer metadata begin
+{
+    "answers": [
+        "the events of Strange Energies"
+    ]
+}
+-- Answer metadata end
+10
+
+What happened in the Lower Decks episode Kayshon?
+-- Answer metadata begin
+{
+    "answers": [
+        "the events of Kayshon"
+    ]
+}
+-- Answer metadata end
+10
+
+What happened in the Lower Decks episode Grounded?
+-- Answer metadata begin
+{
+    "answers": [
+        "the events of Grounded"
+    ]
+}
+-- Answer metadata end
+10
+
+What happened in the Lower Decks episode Twovix?
+-- Answer metadata begin
+{
+    "answers": [
+        "the events of Twovix"
+    ]
+}
+-- Answer metadata end
+10
+
+How many seasons did Star Trek: Lower Decks run?
+-- Answer metadata begin
+{
+    "answers": [
+        "4",
+        "four"
+    ],
+    "answerFact": "Star Trek: Lower Decks ran for 4 seasons."
+}
+-- Answer metadata end
+10
+
+How many episodes did Star Trek: Lower Decks have?
+-- Answer metadata begin
+{
+    "answers": [
+        "6",
+        "six"
+    ],
+    "answerFact": "Star Trek: Lower Decks had 6 episodes."
+}
+-- Answer metadata end
+10
+
+What style is Lower Decks?
+-- Answer metadata begin
+{
+    "answers": [
+        "Animated"
+    ],
+    "answerFact": "Lower Decks is an animated comedy."
+}
+-- Answer metadata end
+10
+
+What was the 1th episode of Star Trek: Lower Decks in airdate order?
+-- Answer metadata begin
+{
+    "answers": [
+        "Second Contact"
+    ]
+}
+-- Answer metadata end
+10
+
+What was the 2th episode of Star Trek: Lower Decks in airdate order?
+-- Answer metadata begin
+{
+    "answers": [
+        "Envoys"
+    ]
+}
+-- Answer metadata end
+10
+
+What was the 3th episode of Star Trek: Lower Decks in airdate order?
+-- Answer metadata begin
+{
+    "answers": [
+        "Strange Energies"
+    ]
+}
+-- Answer metadata end
+10
+
+What was the 4th episode of Star Trek: Lower Decks in airdate order?
+-- Answer metadata begin
+{
+    "answers": [
+        "Kayshon"
+    ]
+}
+-- Answer metadata end
+10
+
+What was the 5th episode of Star Trek: Lower Decks in airdate order?
+-- Answer metadata begin
+{
+    "answers": [
+        "Grounded"
+    ]
+}
+-- Answer metadata end
+10
+
+What was the 6th episode of Star Trek: Lower Decks in airdate order?
+-- Answer metadata begin
+{
+    "answers": [
+        "Twovix"
+    ]
+}
+-- Answer metadata end
+10
+
+Which season of Lower Decks contained the episode Second Contact?
+-- Answer metadata begin
+{
+    "answers": [
+        "1",
+        "one"
+    ]
+}
+-- Answer metadata end
+10
+
+Which season of Lower Decks contained the episode Envoys?
+-- Answer metadata begin
+{
+    "answers": [
+        "1",
+        "one"
+    ]
+}
+-- Answer metadata end
+10
+
+Which season of Lower Decks contained the episode Strange Energies?
+-- Answer metadata begin
+{
+    "answers": [
+        "2",
+        "two"
+    ]
+}
+-- Answer metadata end
+10
+
+Which season of Lower Decks contained the episode Kayshon?
+-- Answer metadata begin
+{
+    "answers": [
+        "2",
+        "two"
+    ]
+}
+-- Answer metadata end
+10
+
+Which season of Lower Decks contained the episode Grounded?
+-- Answer metadata begin
+{
+    "answers": [
+        "3",
+        "three"
+    ]
+}
+-- Answer metadata end
+10
+
+Which season of Lower Decks contained the episode Twovix?
+-- Answer metadata begin
+{
+    "answers": [
+        "4",
+        "four"
+    ]
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Lower Decks main character was played by Tawny Newsome?
+-- Answer metadata begin
+{
+    "answers": [
+        "Beckett Mariner"
+    ],
+    "answerFact": "Mariner was a troublemaker."
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Lower Decks main character was played by Jack Quaid?
+-- Answer metadata begin
+{
+    "answers": [
+        "Brad Boimler"
+    ],
+    "answerFact": "Boimler was a rule-follower."
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Lower Decks main character was played by Noel Wells?
+-- Answer metadata begin
+{
+    "answers": [
+        "Tendi"
+    ],
+    "answerFact": "Tendi was a Orion."
+}
+-- Answer metadata end
+10
+
+Which Star Trek: Lower Decks main character was played by Eugene Cordero?
+-- Answer metadata begin
+{
+    "answers": [
+        "Rutherford"
+    ],
+    "answerFact": "Rutherford had a cybernetic implant."
+}
+-- Answer metadata end
+10
+
