@@ -36,7 +36,16 @@ Date       Author            Description
                              Allow showing help when playing a game by entering ?
 2024-03-29 Eric Oulashin     Version 1.05
                              Ensure the correct script startup directory is always used (make
-							 a copy of js.exec_dir on startup, since js.exec_dir could change)
+                             a copy of js.exec_dir on startup, since js.exec_dir could change)
+2026-02-04 Eric Oulashin     Version 1.06
+                             To quit out of a question set, the user can now use /Q, /QUIT, or
+                             /EXIT (not simply Q, as that could be an answer to a question).
+                             Also, "answerFact" in the .qa files can now be an array (or a string)
+                             and it can also be called "answerFacts", which is to be an array of strings.
+                             For an array of facts, a random one will be chosen during play.
+                             Text within questions can be emphasized by putting ** characters around
+                             the section of text to be emphasized.
+                             New color setting: questionEmphasizedText
 */
 
 "use strict";
@@ -62,10 +71,11 @@ if (system.version_num < 31500)
 }
 
 // Version information
-var GAME_VERSION = "1.05";
-var GAME_VER_DATE = "2024-03-29";
+var GAME_VERSION = "1.06";
+var GAME_VER_DATE = "2026-02-04";
 
 // Load required .js libraries
+// Only the getAttrsBeforeStrIdx() function from dd_lightbar_menu.js is used
 var requireFnExists = (typeof(require) === "function");
 if (requireFnExists)
 {
@@ -73,6 +83,8 @@ if (requireFnExists)
 	require("cp437_defs.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
 	require("json-client.js", "JSONClient");
 	require(js.exec_dir + "lib.js", "getJSONSvcPortFromServicesIni");
+	require("dd_lightbar_menu.js", "getAttrsBeforeStrIdx");
+	require("gttrivia_common.js", "parseQAFile");
 }
 else
 {
@@ -80,6 +92,8 @@ else
 	load("cp437_defs.js");
 	load("json-client.js");
 	load(js.exec_dir + "lib.js");
+	load("dd_lightbar_menu.js");
+	load("gttrivia_common.js");
 }
 
 // Make a copy of js.exec_dir.  js.exec_dir could be changed indirectly
@@ -304,7 +318,7 @@ function playTrivia()
 	// numPoints
 	console.print("\x01n\x01gWill ask up to \x01h" + gSettings.behavior.numQuestionsPerPlay + "\x01n\x01g questions.\x01n");
 	console.crlf();
-	console.print("\x01n\x01gYou can answer \x01hQ\x01n\x01g at any time to quit.\x01n");
+	console.print("\x01n\x01gYou can answer \x01h/Q\x01n\x01g, \x01h/QUIT\x01n\x01g, or \x01h/EXIT\x01n\x01g at any time to quit.\x01n");
 	console.crlf();
 	var userPoints = 0;
 	var maxNumQuestions = gSettings.behavior.numQuestionsPerPlay;
@@ -312,6 +326,7 @@ function playTrivia()
 		maxNumQuestions = QAArray.length;
 	var continueQuestioning = true;
 	var questionColor = attrCodeStr(gSettings.colors.question);
+	var questionEmphasizedTextColor = attrCodeStr(gSettings.colors.questionEmphasizedText);
 	var questionHdrColor = attrCodeStr(gSettings.colors.questionHdr);
 	var questionHdrNumColor = attrCodeStr(gSettings.colors.questionHdrNum);
 	var answerWhenIncorrectColor = attrCodeStr(gSettings.colors.answerAfterIncorrect);
@@ -329,7 +344,9 @@ function playTrivia()
 			// Print the question
 			console.print(questionNumTxt);
 			console.crlf();
-			printWithWordWrap(questionColor, QAArray[i].question);
+			//printWithWordWrap(questionColor, QAArray[i].question); // This was the original
+			var questionWithAnyEmphasisApplied = applyEmphasis(questionColor + QAArray[i].question, questionEmphasizedTextColor);
+			printWithWordWrap(null, questionWithAnyEmphasisApplied);
 			console.attributes = "N" + gSettings.colors.questionHdr;
 			console.print("# points: ");
 			console.attributes = "N" + gSettings.colors.questionHdrNum;
@@ -404,7 +421,22 @@ function playTrivia()
 			printWithWordWrap(answerWhenIncorrectColor, theCorrectAnswer);
 			console.attributes = "N";
 		}
-		if (QAArray[i].hasOwnProperty("answerFact") && typeof(QAArray[i].answerFact) === "string" && QAArray[i].answerFact.length > 0)
+		// Answer fact(s)
+		if (QAArray[i].hasOwnProperty("answerFacts") && Array.isArray(QAArray[i].answerFacts) && QAArray[i].answerFacts.length > 0)
+		{
+			console.crlf();
+			console.attributes = "N" + gSettings.colors.questionHdr;
+			console.print("Fact:");
+			console.crlf();
+			var factIdx = random(QAArray[i].answerFacts.length);
+			printWithWordWrap(attrCodeStr("N" + gSettings.colors.answerFact), QAArray[i].answerFacts[factIdx], true);
+			console.crlf();
+		}
+		// This next 'else if' block should be unnecessary now. If there are facts, they should be read into
+		// an array called answerFacts rather than answerFact. "answerFact" is still supported in the .qa
+		// files but would be read into an "answerFacts" array with one string. answerFacts is now supported
+		// in the .qa files too.
+		else if (QAArray[i].hasOwnProperty("answerFact") && typeof(QAArray[i].answerFact) === "string" && QAArray[i].answerFact.length > 0)
 		{
 			console.crlf();
 			console.attributes = "N" + gSettings.colors.questionHdr;
@@ -500,6 +532,7 @@ function loadSettings()
 			questionHdr: "M",
 			questionHdrNum: "CH",
 			question: "BH",
+			questionEmphasizedText: "MH",
 			answerPrompt: "C",
 			answerPromptSep: "GH",
 			answerInput: "CH",
@@ -512,6 +545,14 @@ function loadSettings()
 		}
 	};
 	var cfgFileName = genFullPathCfgFilename("gttrivia.ini", gScriptExecDir);
+	// If the configuration file hasn't been found, look to see if there's a gttrivia.example.ini file
+	// available in the same directory as the script
+	if (!file_exists(cfgFileName))
+	{
+		var exampleFileName = file_cfgname(js.exec_dir, "gttrivia.example.ini");
+		if (file_exists(exampleFileName))
+			cfgFileName = exampleFileName;
+	}
 	var iniFile = new File(cfgFileName);
 	if (iniFile.open("r"))
 	{
@@ -718,298 +759,6 @@ function doMainMenu()
 	return menuAction;
 }
 
-// Gets the list of the Q&A files in the qa subdirectory in the .js script's directory.
-//
-// Return value: An array of objects with the following properties:
-//               sectionName: The name of the trivia section
-//               filename: The fully-pathed filename of the file containing the questions, answers, and # points for the trivia section
-function getQACategoriesAndFilenames()
-{
-	var sectionsAndFilenames = [];
-	var QAFilenames = directory(gScriptExecDir + "qa/*.qa");
-	for (var i = 0; i < QAFilenames.length; ++i)
-	{
-		// Get the section name - Start by removing the .qa filename extension
-		var filenameExtension = file_getext(QAFilenames[i]);
-		// sectionName is the filename without the extension, but the section name can also be specified by
-		// JSON metadata in the Q&A file
-		var sectionName = file_getname(QAFilenames[i]);
-		var charIdx = sectionName.lastIndexOf(".");
-		if (charIdx > -1)
-			sectionName = sectionName.substring(0, charIdx);
-
-		// Open the file to see if it has a JSON metadata section specifying a section name, etc.
-		// Note: If its metadata has an "ars" setting, then we'll use that instead of
-		// any ARS setting that may be in gttrivia.ini for this section.
-		var sectionARS = null;
-		var QAFile = new File(QAFilenames[i]);
-		if (QAFile.open("r"))
-		{
-			var fileMetadataStr = "";
-			var readingFileMetadata = false;
-			var haveSeenAllFileMetadata = false;
-			while (!QAFile.eof && !haveSeenAllFileMetadata)
-			{
-				var fileLine = QAFile.readln(2048);
-				// I've seen some cases where readln() doesn't return a string
-				if (typeof(fileLine) !== "string")
-					continue;
-				fileLine = fileLine.trim();
-				if (fileLine.length == 0)
-					continue;
-
-				//-- QA metadata begin" and "-- QA metadata end"
-				if (fileLine === "-- QA metadata begin")
-				{
-					fileMetadataStr = "";
-					readingFileMetadata = true;
-					continue;
-				}
-				else if (fileLine === "-- QA metadata end")
-				{
-					readingFileMetadata = false;
-					haveSeenAllFileMetadata = true;
-					continue;
-				}
-				else if (readingFileMetadata)
-					fileMetadataStr += fileLine + " ";
-			}
-			QAFile.close();
-
-			// If we've read all the file metadata lines, then parse it & use the metadata.
-			if (haveSeenAllFileMetadata && fileMetadataStr.length > 0)
-			{
-				try
-				{
-					var fileMetadataObj = JSON.parse(fileMetadataStr);
-					if (typeof(fileMetadataObj) === "object")
-					{
-						if (fileMetadataObj.hasOwnProperty("category_name") && typeof(fileMetadataObj.category_name) === "string")
-							sectionName = fileMetadataObj.category_name;
-						if (fileMetadataObj.hasOwnProperty("ARS") && typeof(fileMetadataObj.ARS) === "string")
-							sectionARS = fileMetadataObj.ARS;
-					}
-				}
-				catch (error) {}
-			}
-		}
-
-		// See if there is an ARS string for this in the configuration, and if so,
-		// only add it if the ARS string passes for the user.
-		var addThisSection = true;
-		if (typeof(sectionARS) === "string")
-			addThisSection = bbs.compare_ars(sectionARS);
-		else if (gSettings.category_ars.hasOwnProperty(sectionName))
-			addThisSection = bbs.compare_ars(gSettings.category_ars[sectionName]);
-		// Add this section/category, if allowed
-		if (addThisSection)
-		{
-			// Capitalize the first letters of the words in the section name, and replace underscores with spaces
-			var wordsArr = sectionName.split("_");
-			for (var wordI = 0; wordI < wordsArr.length; ++wordI)
-				wordsArr[wordI] = wordsArr[wordI].charAt(0).toUpperCase() + wordsArr[wordI].substr(1);
-			sectionName = wordsArr.join(" ");
-			sectionsAndFilenames.push({
-				sectionName: sectionName,
-				filename: QAFilenames[i]
-			});
-		}
-	}
-	return sectionsAndFilenames;
-}
-
-// TODO: Put the next 3 functions into a common JS library for use with this and
-// qa_edit.js?
-// Parses a Q&A file with questions and answers
-//
-// Parameters:
-//  pQAFilenameFullPath: The full path & filename of the trivia Q&A file to read
-//
-// Return value: An array of objects containing the following properties:
-//               question: The trivia question
-//               answer: The answer to the trivia question
-//               numPoints: The number of points to award for the correct answer
-function parseQAFile(pQAFilenameFullPath)
-{
-	if (!file_exists(pQAFilenameFullPath))
-		return [];
-
-	// Open the file and parse it.  Each line has:
-	// question,answer,points
-	var QA_Array = [];
-	var QAFile = new File(pQAFilenameFullPath);
-	if (QAFile.open("r"))
-	{
-		var inFileMetadata = false; // Whether or not we're in the file metadata question (we'll skip all of this for the questions & answers)
-		var theQuestion = "";
-		var theAnswer = "";
-		var theNumPoints = -1;
-		var readingAnswerMetadata = false;
-		var doneReadintAnswerMetadata = false; // For immediately after done reading answer JSON
-		var answerIsJSON = false;
-		var component = "Q"; // Q/A/P for question, answer, points
-		while (!QAFile.eof)
-		{
-			var fileLine = QAFile.readln(2048);
-			// I've seen some cases where readln() doesn't return a string
-			if (typeof(fileLine) !== "string")
-				continue;
-			fileLine = fileLine.trim();
-			if (fileLine.length == 0)
-				continue;
-
-			// Skip any file metadata lines (those are read in getQACategoriesAndFilenames())
-			if (fileLine === "-- QA metadata begin")
-			{
-				inFileMetadata = true;
-				continue;
-			}
-			else if (fileLine === "-- QA metadata end")
-			{
-				inFileMetadata = false;
-				continue;
-			}
-			if (inFileMetadata)
-				continue;
-
-			if (theQuestion.length > 0 && theAnswer.length > 0 && theNumPoints > -1)
-			{
-				addQAToArray(QA_Array, theQuestion, theAnswer, theNumPoints, answerIsJSON);
-				theQuestion = "";
-				theAnswer = "";
-				theNumPoints = -1;
-				readingAnswerMetadata = false;
-				doneReadintAnswerMetadata = false;
-				answerIsJSON = false;
-				component = "Q";
-			}
-
-			if (component === "Q")
-			{
-				theQuestion = fileLine;
-				component = "A"; // Next, set answer
-			}
-			else if (component === "A")
-			{
-				// Possible JSON for multiple answers
-				if (fileLine === "-- Answer metadata begin")
-				{
-					readingAnswerMetadata = true;
-					answerIsJSON = true;
-					theAnswer = "";
-					continue;
-				}
-				else if (fileLine === "-- Answer metadata end")
-				{
-					readingAnswerMetadata = false;
-					doneReadintAnswerMetadata = true;
-				}
-				if (readingAnswerMetadata)
-					theAnswer += fileLine + " ";
-				else
-				{
-					if (doneReadintAnswerMetadata)
-						doneReadintAnswerMetadata = false;
-					else
-						theAnswer = fileLine;
-					component = "P"; // Next, set points
-				}
-			}
-			else if (component === "P")
-			{
-				theNumPoints = +(fileLine);
-				if (theNumPoints < 1)
-					theNumPoints = 10;
-				component = "Q"; // Next, set question
-			}
-
-			// Older: Each line in the format question,answer,numPoints
-			/*
-			// Questions might have commas in them, so we can't just blindly split on commas like this:
-			//var lineParts = fileLine.split(",");
-			// Find the first & last indexes of a comma in the line
-			var lastCommaIdx = fileLine.lastIndexOf(",");
-			var firstCommaIdx = (lastCommaIdx > -1 ? fileLine.lastIndexOf(",", lastCommaIdx-1) : -1);
-			if (firstCommaIdx > -1 && lastCommaIdx > -1)
-			{
-				QA_Array.push({
-					question: fileLine.substring(0, firstCommaIdx),
-					answer: fileLine.substring(firstCommaIdx+1, lastCommaIdx),
-					numPoints: +(fileLine.substring(lastCommaIdx+1))
-				});
-			}
-			*/
-		}
-		QAFile.close();
-		// Ensure we've added the last question & answer, if there is one
-		if (theQuestion.length > 0 && theAnswer.length > 0 && theNumPoints > -1)
-			addQAToArray(QA_Array, theQuestion, theAnswer, theNumPoints, answerIsJSON);
-	}
-	return QA_Array;
-}
-// QA object constructor
-function QA(pQuestion, pAnswer, pNumPoints, pAnswerFact)
-{
-	this.question = pQuestion;
-	this.answer = pAnswer;
-	this.numPoints = pNumPoints;
-	if (this.numPoints < 1)
-		this.numPoints = 10;
-	if (typeof(pAnswerFact) === "string" && pAnswerFact.length > 0)
-		this.answerFact = pAnswerFact;
-}
-// Helper for parseQAFile(): Adds a question, answer, and # points to the Q&A array
-//
-// Parameters:
-//  QA_Array (INOUT): The array to add the Q/A/Point sets to
-//  theQuestion: The question (string)
-//  theAnswer: The answer (string)
-//  theNumPoints: The number of points to award (number)
-//  answerIsJSON: Boolean - Whether or not theAnswer is in JSON format or not (if JSON, it contains
-//                multiple possible answers)
-function addQAToArray(QA_Array, theQuestion, theAnswer, theNumPoints, answerIsJSON)
-{
-	// If the answer is a JSON object, then there may be multiple acceptable answers specified
-	var addAnswer = true;
-	var answerFact = null;
-	if (answerIsJSON)
-	{
-		try
-		{
-			var answerObj = JSON.parse(theAnswer);
-			if (typeof(answerObj) === "object")
-			{
-				if (answerObj.hasOwnProperty("answers") && Array.isArray(answerObj.answers) && answerObj.answers.length > 0)
-				{
-					// Make sure all answers in the array are non-zero length
-					theAnswer = [];
-					for (var i = 0; i < answerObj.answers.length; ++i)
-					{
-						if (answerObj.answers[i].length > 0)
-							theAnswer.push(answerObj.answers[i]);
-					}
-					// theAnswer is an array
-					addAnswer = (theAnswer.length > 0);
-				}
-				else if (answerObj.hasOwnProperty("answer") && typeof(answerObj.answer) === "string" && answerObj.answer.length > 0)
-					theAnswer = answerObj.answer;
-				else
-					addAnswer = false;
-				if (answerObj.hasOwnProperty("answerFact") && answerObj.answerFact.length > 0)
-					answerFact = answerObj.answerFact;
-			}
-			else
-				addAnswer = false;
-		}
-		catch (error)
-		{
-			addAnswer = false;
-		}
-	}
-	if (addAnswer) // Note: theAnswer is converted to an object if it's JSON
-		QA_Array.push(new QA(theQuestion, theAnswer, +theNumPoints, answerFact));
-}
-
 // Shuffles an array
 //
 // Parameters:
@@ -1063,8 +812,8 @@ function checkUserResponse(pAnswer, pUserInput, pCategoryName)
 		return retObj;
 
 	var userInputUpper = pUserInput.toUpperCase(); // For case-insensitive matching
-	
-	if (userInputUpper == "Q")
+
+	if (userInputUpper == "/Q" || userInputUpper == "/QUIT" || userInputUpper == "/EXIT")
 	{
 		retObj.userChoseQuit = true;
 		return retObj;
@@ -1711,8 +1460,8 @@ function showHelpScreen(pCategoryName)
 		helpText += gSettings.behavior.numTriesPerQuestion + " chances ";
 	else
 		helpText += "1 chance ";
-	helpText += "to answer the question correctly.  At any time, you an answer Q to quit out of the "
-	         + "question set.  ";
+	helpText += "to answer the question correctly.  To quit out of the question set, you an answer /Q, "
+	         + "/QUIT or /EXIT.  ";
 	if (gSettings.behavior.numTriesPerQuestion > 1)
 	{
 		helpText += "Each time you answer incorrectly, a clue will be given.  The first clue is a "
@@ -2258,6 +2007,43 @@ function trimSpaces(pString, pLeading, pMultiple, pTrailing)
 		pString = pString.replace(/(\s*$)/gi,"");
 
 	return pString;
+}
+
+// Applies emphasis to parts of a string that are between ** marks
+//
+// Parameters:
+//  pText: The text to apply emphasis to
+//  pEmphAttr: The attribute codes (without the ctrl character) for emphasized text
+//
+// Return value: The updated text string with emphasis attributes applied
+function applyEmphasis(pText, pEmphAttr)
+{
+	if (typeof(pText) !== "string")
+		return "";
+	if (typeof(pEmphAttr) !== "string")
+		return pText;
+
+	var idx1 = pText.indexOf("**");
+	if (idx1 == -1)
+		return pText;
+	var idx2 = pText.indexOf("**", idx1+2);
+	if (idx2 == -1)
+		return pText;
+
+	const empthAttrs = attrCodeStr(pEmphAttr);
+	var text = pText;
+	while (idx1 > -1 && idx2 > idx1)
+	{
+		var originalAttrs = getAttrsBeforeStrIdx(text, idx1);
+		var remainingTxtIdx = idx2 + 2;
+		var preText = text.substring(0, idx1);
+		var innerText = "\x01n" + empthAttrs + strip_ctrl(text.substring(idx1+2, idx2));
+		var postText = originalAttrs + text.substring(remainingTxtIdx);
+		text = preText + innerText + postText;
+		idx1 = text.indexOf("**", remainingTxtIdx);
+		idx2 = (idx1 > -1 ? text.indexOf("**", idx1+2) : -1);
+	}
+	return text;
 }
 
 // Parses command-line arguments.  Returns an object with settings/actions specified.
