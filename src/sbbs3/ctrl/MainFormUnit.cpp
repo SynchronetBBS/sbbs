@@ -212,7 +212,7 @@ static void client_add(void* p, bool add)
     	clients--;
 }
 
-static void client_on(void* p, bool on, int sock, client_t* client, bool update)
+static void client_change(bool on, int sock, client_t* client, bool update)
 {
     char    str[128];
     int     i,j;
@@ -271,6 +271,27 @@ static void client_on(void* p, bool on, int sock, client_t* client, bool update)
 		}
 	} catch(...) {}
     ReleaseMutex(ClientForm->ListMutex);
+}
+
+link_list_t client_change_list;
+
+struct client_change {
+	int sock;
+	bool on;
+	bool update;
+	client_t client;
+};
+
+static void client_on(void* p, bool on, int sock, client_t* client, bool update)
+{
+	struct client_change cc = {};
+
+	cc.on = on;
+	cc.sock = sock;
+	if (client != NULL)
+		cc.client = *client;
+	cc.update = update;
+	listAddNodeData(&client_change_list, &cc, sizeof cc, sock, LAST_NODE);
 }
 
 static int lputs(void* p, int level, const char *str)
@@ -948,6 +969,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
     listInit(&web_log_list, LINK_LIST_MUTEX);
     listInit(&mail_log_list, LINK_LIST_MUTEX);
     listInit(&services_log_list, LINK_LIST_MUTEX);
+	listInit(&client_change_list, LINK_LIST_MUTEX);
 
     TelnetPause->DisableIfNoHandler=false;
     MailPause->DisableIfNoHandler=false;
@@ -3448,6 +3470,12 @@ void __fastcall TMainForm::LogTimerTick(TObject *Sender)
 	web_set_controls(web_state);
 	mail_set_controls(mail_state);
 	services_set_controls(services_state);
+
+	struct client_change* cc;
+	while((cc = (struct client_change*)listShiftNode(&client_change_list)) != NULL) {
+		client_change(cc->on, cc->sock, &cc->client, cc->update);
+		free(cc);
+	}
 }
 //---------------------------------------------------------------------------
 void CheckServiceStatus(
