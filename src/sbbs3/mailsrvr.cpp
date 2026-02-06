@@ -47,6 +47,7 @@
 #include "mxlookup.h"
 #include "ssl.h"
 #include "cryptlib.h"
+#include "trashcan.hpp"
 #include "git_branch.h"
 #include "git_hash.h"
 

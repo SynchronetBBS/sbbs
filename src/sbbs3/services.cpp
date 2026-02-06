@@ -47,6 +47,7 @@
 #include "js_socket.h"
 #include "multisock.h"
 #include "ssl.h"
+#include "trashcan.hpp"
 #include "git_branch.h"
 #include "git_hash.h"
 

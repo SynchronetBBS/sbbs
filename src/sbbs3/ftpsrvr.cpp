@@ -43,6 +43,7 @@
 #include "xpprintf.h"       // vasprintf
 #include "md5.h"
 #include "sauce.h"
+#include "trashcan.hpp"
 #include "git_branch.h"
 #include "git_hash.h"
 

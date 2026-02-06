@@ -72,6 +72,7 @@
 #include "xpmap.h"
 #include "xpprintf.h"
 #include "ratelimit.hpp"
+#include "trashcan.hpp"
 
 static const char*  server_name = "Synchronet Web Server";
 static const char*  server_abbrev = "web";
