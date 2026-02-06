@@ -32,6 +32,8 @@
  * 2025-08-11 Eric Oulashin     Version 1.07
  *                              Supports .example.cfg configuration filenames. Also allows
  *                              reading the configuration file from sbbs/mods or sbbs/ctrl.
+ * 2026-02-02 Eric Oulashin     Version 1.08
+ *                              More robust filename extension matching
  */
 
 /* Command-line arguments:
@@ -53,8 +55,8 @@ if (system.version_num < 31400)
 load(js.exec_dir + "ddup_cleanup.js");
 
 // Version information
-var gDDUPVersion = "1.07";
-var gDDUPVerDate = "2025-08-11";
+var gDDUPVersion = "1.06";
+var gDDUPVerDate = "2026-02-02";
 
 // Store whether or not this is running in Windows
 var gRunningInWindows = /^WIN/.test(system.platform.toUpperCase());
@@ -267,8 +269,8 @@ function processFile(pFilename)
 	// Look for the file extension in gFileTypeCfg to get the file scan settings.
 	// If the file extension is not there, then go ahead and scan it (to be on the
 	// safe side).
-	var filenameExtension = getFilenameExtension(pFilename);
-	if (typeof(gFileTypeCfg[filenameExtension]) != "undefined")
+	var filenameExtension = getFilenameExtension(pFilename, gFileTypeCfg);
+	if (gFileTypeCfg.hasOwnProperty(filenameExtension) && typeof(gFileTypeCfg[filenameExtension]) === "object")
 	{
 		if (gFileTypeCfg[filenameExtension].scanOption == "scan")
 		{
@@ -334,7 +336,7 @@ function processFile(pFilename)
 					else
 					{
 						console.print(gFailStrWithNewline);
-						// Scan the files in the work directory.
+						log(LOG_ERR, "File extract error: " + errorStr);
 						console.print("\x01n\x01y\x01hWarning: \x01n\x01w\x01h Unable to extract to work dir.\x01n\r\n");
 						retval = -2;
 					}
@@ -638,24 +640,39 @@ function trimSpaces(pString, pLeading, pMultiple, pTrailing)
 //
 // Parameters:
 //  pFilename: The name of a file
+//  pFileTypeCfg: The file type configuration object (extensions can be matched with this object)
 //
 // Return value: The filename's extension, or blank if there is none.
-function getFilenameExtension(pFilename)
+function getFilenameExtension(pFilename, pFileTypeCfg)
 {
-   const filenameUpper = pFilename.toUpperCase();
-   var filenameExt = "";
-   // Special case for .tar.gz - Report tar.gz as an extension
-   // rather than just gz
-   if (/.TAR.GZ$/.test(filenameUpper))
-      filenameExt = "TAR.GZ";
-   else
-   {
-      // Look for the last period in filenameUpper
-      var dotIndex = filenameUpper.lastIndexOf(".");
-      if (dotIndex > -1)
-         filenameExt = filenameUpper.substr(dotIndex+1);
-   }
-   return filenameExt;
+	const filenameUpper = pFilename.toUpperCase();
+	var filenameExt = "";
+	if (typeof(pFileTypeCfg) === "object")
+	{
+		var dotIdx = filenameUpper.indexOf(".");
+		while (dotIdx > -1)
+		{
+			var nextIdx = dotIdx + 1;
+			var ext = filenameUpper.substring(nextIdx);
+			if (pFileTypeCfg.hasOwnProperty(ext))
+			{
+				filenameExt = filenameUpper.substring(nextIdx);
+				break;
+			}
+			else
+				dotIdx = filenameUpper.indexOf(".", nextIdx);
+		}
+	}
+	else
+	{
+		// Special case for .tar.gz - Report tar.gz as an extension
+		// rather than just gz
+		if (/.TAR.GZ$/.test(filenameUpper))
+			filenameExt = "TAR.GZ";
+		else
+			filenameExt = file_getext(pFilename);
+	}
+	return filenameExt;
 }
 
 // This function returns just the filename from the end of a full path, regardless
@@ -797,7 +814,7 @@ function extractFileToDir(pFilename, pWorkDir)
 	//if (!file_exists(pWorkDir))
 	//   return ("The work directory doesn't exist.");
 
-	var filenameExt = getFilenameExtension(pFilename);
+	var filenameExt = getFilenameExtension(pFilename, gFileTypeCfg);
 	// Return with errors if there are problems.
 	if (filenameExt.length == 0)
 		return ("Can't extract (no file extension).");
@@ -850,7 +867,7 @@ function extractFileToDir(pFilename, pWorkDir)
 	{
 		// If the file has an extract command, then extract it to a
 		// temp directory in the work directory.
-		filenameExt = getFilenameExtension(files[i]);
+		filenameExt = getFilenameExtension(files[i], gFileTypeCfg);
 		if ((typeof(gFileTypeCfg[filenameExt]) != "undefined") && ((gFileTypeCfg[filenameExt].extractCmd != "")))
 		{
 			// Create the temp directory and extract the file there.
