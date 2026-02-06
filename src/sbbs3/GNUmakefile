@@ -179,7 +179,7 @@ endif
 # FTP Server Link Rule
 $(FTPSRVR): $(MTOBJODIR)/ftpsrvr.o
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(MTOBJODIR)/ftpsrvr.o $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs
+	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) $(MTOBJODIR)/ftpsrvr.o $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs
 
 # Mail Server Link Rule
 $(MAILSRVR): $(MAIL_OBJS)
