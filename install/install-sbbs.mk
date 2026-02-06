@@ -43,8 +43,10 @@ endif
 
 ifdef SYMLINK
  INSBIN	:=	ln -sf
+ INSTALL :=	symlinks
 else
  INSBIN	:=	cp -r
+ INSTALL :=	install
 endif
 
 ifdef bcc
@@ -197,48 +199,7 @@ syncview:
 
 install: build
 	@echo Installing to $(SBBSDIR)
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/readsauce $(SBBSDIR)/exec/readsauce
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/dupefind $(SBBSDIR)/exec/dupefind
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/qwknodes $(SBBSDIR)/exec/qwknodes
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/asc2ans $(SBBSDIR)/exec/asc2ans
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/ans2asc $(SBBSDIR)/exec/ans2asc
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/jsexec $(SBBSDIR)/exec/jsexec
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/baja $(SBBSDIR)/exec/baja
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/unbaja $(SBBSDIR)/exec/unbaja
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/slog $(SBBSDIR)/exec/slog
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/node $(SBBSDIR)/exec/node
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/chksmb $(SBBSDIR)/exec/chksmb
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/fixsmb $(SBBSDIR)/exec/fixsmb
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/makeuser $(SBBSDIR)/exec/makeuser
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/smbutil $(SBBSDIR)/exec/smbutil
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/sbbs $(SBBSDIR)/exec/sbbs
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/sbbsecho $(SBBSDIR)/exec/sbbsecho
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/pktdump $(SBBSDIR)/exec/pktdump
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/fmsgdump $(SBBSDIR)/exec/fmsgdump
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/sexyz $(SBBSDIR)/exec/sexyz
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/echocfg $(SBBSDIR)/exec/echocfg
-	$(INSBIN) $(REPODIR)/src/sbbs3/scfg/$(CCPRE).$(machine).exe.$(BUILDPATH)/scfg $(SBBSDIR)/exec/scfg
-	$(INSBIN) $(REPODIR)/src/sbbs3/umonitor/$(CCPRE).$(machine).exe.$(BUILDPATH)/umonitor $(SBBSDIR)/exec/umonitor
-	$(INSBIN) $(REPODIR)/src/sbbs3/uedit/$(CCPRE).$(machine).exe.$(BUILDPATH)/uedit $(SBBSDIR)/exec/uedit
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/upgrade_to_v319 $(SBBSDIR)/exec/upgrade_to_v319
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/upgrade_to_v320 $(SBBSDIR)/exec/upgrade_to_v320
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libsbbs.so $(SBBSDIR)/exec/libsbbs.so
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libftpsrvr.so $(SBBSDIR)/exec/libftpsrvr.so
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libmailsrvr.so $(SBBSDIR)/exec/libmailsrvr.so
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libservices.so $(SBBSDIR)/exec/libservices.so
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).lib.$(BUILDPATH)/libwebsrvr.so $(SBBSDIR)/exec/libwebsrvr.so
-ifdef USE_GLADE
-	$(INSBIN) $(REPODIR)/src/sbbs3/gtkuseredit/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkuseredit $(SBBSDIR)/exec/gtkuseredit
-	$(INSBIN) $(REPODIR)/src/sbbs3/gtkuseredit/gtkuseredit.glade $(SBBSDIR)/exec/gtkuseredit.glade
-	$(INSBIN) $(REPODIR)/src/sbbs3/gtkmonitor/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkmonitor $(SBBSDIR)/exec/gtkmonitor
-	$(INSBIN) $(REPODIR)/src/sbbs3/gtkmonitor/gtkmonitor.glade $(SBBSDIR)/exec/gtkmonitor.glade
-	$(INSBIN) $(REPODIR)/src/sbbs3/gtkmonitor/pixmaps/stock_help-chat.png $(SBBSDIR)/exec/stock_help-chat.png
-	$(INSBIN) $(REPODIR)/src/sbbs3/gtkmonitor/pixmaps/stock_mail-send.png $(SBBSDIR)/exec/stock_mail-send.png
-	$(INSBIN) $(REPODIR)/src/sbbs3/gtkchat/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkchat $(SBBSDIR)/exec/gtkchat
-	$(INSBIN) $(REPODIR)/src/sbbs3/gtkuserlist/$(CCPRE).$(machine).exe.$(BUILDPATH)/gtkuserlist $(SBBSDIR)/exec/gtkuserlist
-	$(INSBIN) $(REPODIR)/src/sbbs3/gtkuserlist/gtkuserlist.glade $(SBBSDIR)/exec/gtkuserlist.glade
-endif
-	$(INSBIN) $(REPODIR)/src/sbbs3/syncview/$(CCPRE).$(machine).exe.$(BUILDPATH)/syncview $(SBBSDIR)/exec/syncview
+	SBBSEXEC=$(SBBSDIR)/exec $(MAKE) -C $(REPODIR)/src/sbbs3 $(MKFLAGS) $(INSTALL)
 	$(INSBIN) $(REPODIR)/src/sexpots/$(CCPRE).$(machine).exe.$(BUILDPATH)/sexpots $(SBBSDIR)/exec/sexpots
 ifndef SETCAP
 	-chown -R $(SBBSCHOWN) $(SBBSDIR)
