@@ -69,6 +69,10 @@ static str_list_t          shutdown_semfiles;
 static protected_uint32_t  threads_pending_start;
 static struct mqtt         mqtt;
 
+static trashCan*           ip_can = nullptr;
+static trashCan*           ip_silent_can = nullptr;
+static trashCan*           host_can = nullptr;
+
 struct service_t {
 	/* These are sysop-configurable */
 	uint32_t interface_addr;
@@ -1130,7 +1134,7 @@ static void js_service_thread(void* arg)
 	}
 
 	struct trash trash;
-	if (trashcan2(&scfg, host_name, NULL, "host", &trash)) {
+	if (host_can->listed(host_name, nullptr, &trash)) {
 		if (!trash.quiet && service->log_level >= LOG_NOTICE) {
 			char details[128];
 			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
@@ -1551,7 +1555,7 @@ static void native_service_thread(void* arg)
 	}
 
 	struct trash trash;
-	if (trashcan2(&scfg, host_name, NULL, "host", &trash)) {
+	if (host_can->listed(host_name, nullptr, &trash)) {
 		if (!trash.quiet) {
 			char details[128];
 			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
@@ -1806,6 +1810,10 @@ static void cleanup(int code)
 	services = 0;
 
 	free_cfg(&scfg);
+
+	delete ip_can, ip_can = nullptr;
+	delete ip_silent_can, ip_silent_can = nullptr;
+	delete host_can, host_can = nullptr;
 
 	semfile_list_free(&pause_semfiles);
 	semfile_list_free(&recycle_semfiles);
@@ -2129,6 +2137,10 @@ void services_thread(void* arg)
 			}
 		}
 
+		ip_can = new trashCan(&scfg, "ip");
+		ip_silent_can = new trashCan(&scfg, "ip-silent");
+		host_can = new trashCan(&scfg, "host");
+
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles = semfile_list_init(scfg.ctrl_dir, "shutdown", "services");
 		pause_semfiles = semfile_list_init(scfg.ctrl_dir, "pause", "services");
@@ -2379,7 +2391,7 @@ void services_thread(void* arg)
 						inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 					}
 
-					if (trashcan(&scfg, host_ip, "ip-silent")) {
+					if (ip_silent_can->listed(host_ip)) {
 						FREE_AND_NULL(udp_buf);
 						close_socket(client_socket);
 						continue;
@@ -2427,7 +2439,7 @@ void services_thread(void* arg)
 						continue;
 					}
 					struct trash trash;
-					if (trashcan2(&scfg, host_ip, NULL, "ip", &trash)) {
+					if (ip_can->listed(host_ip, nullptr, &trash)) {
 						if (!trash.quiet) {
 							char details[128];
 							lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can %s"

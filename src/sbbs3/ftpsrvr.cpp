@@ -93,6 +93,10 @@ static str_list_t         recycle_semfiles;
 static str_list_t         shutdown_semfiles;
 static link_list_t        current_connections;
 
+static trashCan*          ip_can = nullptr;
+static trashCan*          ip_silent_can = nullptr;
+static trashCan*          host_can = nullptr;
+
 #ifdef SOCKET_DEBUG
 static BYTE               socket_debug[0x10000] = {0};
 
@@ -326,9 +330,9 @@ static int ftp_close_socket(SOCKET* sock, CRYPT_SESSION *sess, int line)
 
 
 #if defined(__GNUC__)   // Catch printf-format errors with sockprintf
-static int sockprintf(SOCKET sock, CRYPT_SESSION sess, char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
+static int sockprintf(SOCKET sock, CRYPT_SESSION sess, const char *fmt, ...) __attribute__ ((format (printf, 3, 4)));
 #endif
-static int sockprintf(SOCKET sock, CRYPT_SESSION sess, char *fmt, ...)
+static int sockprintf(SOCKET sock, CRYPT_SESSION sess, const char *fmt, ...)
 {
 	int     len;
 	int     maxlen;
@@ -1486,7 +1490,7 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 {
 	char* p;
 	char* tp;
-	char* fname = "";
+	const char* fname = "";
 	char  line[512];
 	char  alias[512];
 	char  aliasfile[MAX_PATH + 1];
@@ -1779,7 +1783,7 @@ void ftp_printfile(SOCKET sock, CRYPT_SESSION sess, const char* name, unsigned c
 	}
 }
 
-static BOOL ftp_hacklog(char* prot, char* user, char* text, char* host, union xp_sockaddr* addr)
+static BOOL ftp_hacklog(const char* prot, char* user, char* text, char* host, union xp_sockaddr* addr)
 {
 #ifdef _WIN32
 	if (startup->sound.hack[0] && !sound_muted(&scfg))
@@ -1830,7 +1834,7 @@ static BOOL badlogin(SOCKET sock, CRYPT_SESSION sess, ulong* login_attempts
 	return FALSE;
 }
 
-static char* ftp_tmpfname(char* fname, char* ext, SOCKET sock)
+static char* ftp_tmpfname(char* fname, const char* ext, SOCKET sock)
 {
 	safe_snprintf(fname, MAX_PATH, "%sSBBS_FTP.%x%x%x%lx.%s"
 	              , scfg.temp_dir, getpid(), sock, rand(), (ulong)clock(), ext);
@@ -2158,8 +2162,8 @@ static void ctrl_thread(void* arg)
 	char*             tp;
 	char*             dp;
 	char*             ap;
-	char*             filespec;
-	char*             mode = "active";
+	const char*       filespec;
+	const char*       mode = "active";
 	char              old_char;
 	char              password[64];
 	char              fname[MAX_PATH + 1];
@@ -2318,7 +2322,7 @@ static void ctrl_thread(void* arg)
 	}
 
 	struct trash trash;
-	if (trashcan2(&scfg, host_ip, NULL, "ip", &trash)) {
+	if (ip_can->listed(host_ip, nullptr, &trash)) {
 		if (!trash.quiet) {
 			char details[128];
 			lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in ip.can %s", sock, host_ip, trash_details(&trash, details, sizeof details));
@@ -2328,7 +2332,7 @@ static void ctrl_thread(void* arg)
 		thread_down();
 		return;
 	}
-	if (trashcan2(&scfg, host_name, NULL, "host", &trash)) {
+	if (host_can->listed(host_name, nullptr, &trash)) {
 		if (!trash.quiet) {
 			char details[128];
 			lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in host.can: %s %s", sock, host_ip, host_name, trash_details(&trash, details, sizeof details));
@@ -5095,6 +5099,10 @@ static void cleanup(int code, int line)
 	free_cfg(&scfg);
 	free_text(text);
 
+	delete ip_can, ip_can = nullptr;
+	delete ip_silent_can, ip_silent_can = nullptr;
+	delete host_can, host_can = nullptr;
+
 	semfile_list_free(&pause_semfiles);
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
@@ -5322,6 +5330,10 @@ void ftp_server(void* arg)
 		 */
 		xpms_add_list(ftp_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "FTP Server", &terminate_server, ftp_open_socket_cb, startup->seteuid, NULL);
 
+		ip_can = new trashCan(&scfg, "ip");
+		ip_silent_can = new trashCan(&scfg, "ip-silent");
+		host_can = new trashCan(&scfg, "host");
+
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles = semfile_list_init(scfg.ctrl_dir, "shutdown", server_abbrev);
 		pause_semfiles = semfile_list_init(scfg.ctrl_dir, "pause", server_abbrev);
@@ -5398,7 +5410,7 @@ void ftp_server(void* arg)
 				}
 			}
 
-			if (trashcan(&scfg, client_ip, "ip-silent")) {
+			if (ip_silent_can->listed(client_ip)) {
 				ftp_close_socket(&client_socket, &none, __LINE__);
 				continue;
 			}

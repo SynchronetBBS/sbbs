@@ -137,6 +137,9 @@ static named_string_t**   xjs_handlers;
 static named_string_t**   alias_list; // request path aliases
 
 static rateLimiter*       request_rate_limiter = nullptr;
+static trashCan*          ip_can = nullptr;
+static trashCan*          ip_silent_can = nullptr;
+static trashCan*          host_can = nullptr;
 
 /* Logging stuff */
 link_list_t               log_list;
@@ -6916,7 +6919,7 @@ void http_session_thread(void* arg)
 		     && host->h_aliases[i] != NULL; i++)
 			lprintf(LOG_INFO, "%04d HostAlias: %s", session.socket, host->h_aliases[i]);
 #endif
-		if (host_name[0] && trashcan2(&scfg, host_name, NULL, "host", &trash)) {
+		if (host_name[0] && host_can->listed(host_name, nullptr, &trash)) {
 			if (!trash.quiet) {
 				char details[128];
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in host.can: %s %s"
@@ -6941,7 +6944,7 @@ void http_session_thread(void* arg)
 	ulong           banned = loginBanned(&scfg, startup->login_attempt_list, session.socket, host_name, startup->login_attempt, &attempted);
 
 	/* host_ip wasn't defined in http_session_thread */
-	if (banned || trashcan2(&scfg, session.host_ip, NULL, "ip", &trash)) {
+	if (banned || ip_can->listed(session.host_ip, nullptr, &trash)) {
 		if (banned) {
 			char ban_duration[128];
 			lprintf(LOG_NOTICE, "%04d %-5s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
@@ -7205,8 +7208,10 @@ static void cleanup(int code)
 		lprintf(LOG_ERR, "0000 !WSACleanup ERROR %d", SOCKET_ERRNO);
 #endif
 
-	delete request_rate_limiter;
-	request_rate_limiter = nullptr;
+	delete request_rate_limiter, request_rate_limiter = nullptr;
+	delete ip_can, ip_can = nullptr;
+	delete ip_silent_can, ip_silent_can = nullptr;
+	delete host_can, host_can = nullptr;
 
 	thread_down();
 	if (terminate_server || code) {
@@ -7548,8 +7553,6 @@ void web_server(void* arg)
 		}
 		lprintf(LOG_DEBUG, "Web Server socket set created");
 
-		request_rate_limiter = new rateLimiter(startup->max_requests_per_period, startup->request_rate_limit_period);
-
 		/*
 		 * Add interfaces
 		 */
@@ -7562,6 +7565,11 @@ void web_server(void* arg)
 			else
 				xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", &terminate_server, open_socket, startup->seteuid, (void*)"TLS");
 		}
+
+		request_rate_limiter = new rateLimiter(startup->max_requests_per_period, startup->request_rate_limit_period);
+		ip_can = new trashCan(&scfg, "ip");
+		ip_silent_can = new trashCan(&scfg, "ip-silent");
+		host_can = new trashCan(&scfg, "host");
 
 		listInit(&log_list, /* flags */ LINK_LIST_MUTEX | LINK_LIST_SEMAPHORE);
 		if (startup->options & WEB_OPT_HTTP_LOGGING) {
@@ -7691,7 +7699,7 @@ void web_server(void* arg)
 				}
 			}
 
-			if (trashcan(&scfg, host_ip, "ip-silent")) {
+			if (ip_silent_can->listed(host_ip)) {
 				close_socket(&client_socket);
 				continue;
 			}

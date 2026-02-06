@@ -99,6 +99,10 @@ static bool               savemsg_mutex_created = false;
 static pthread_mutex_t    savemsg_mutex;
 static struct mqtt        mqtt;
 
+static trashCan*          ip_can = nullptr;
+static trashCan*          ip_silent_can = nullptr;
+static trashCan*          host_can = nullptr;
+
 static const char*        servprot_smtp = "SMTP";
 static const char*        servprot_submission = "SMTP";
 static const char*        servprot_submissions = "SMTPS";
@@ -1188,7 +1192,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 		return false;
 	}
 	struct trash trash;
-	if (trashcan2(&scfg, host_ip, NULL, "ip", &trash)) {
+	if (ip_can->listed(host_ip, nullptr, &trash)) {
 		if (!trash.quiet) {
 			char details[128];
 			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in ip.can %s", socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details));
@@ -1196,7 +1200,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 		sockprintf(socket, client.protocol, session, "-ERR Access denied.");
 		return false;
 	}
-	if (trashcan2(&scfg, host_name, NULL, "host", &trash)) {
+	if (host_can->listed(host_name, nullptr, &trash)) {
 		if (!trash.quiet) {
 			char details[128];
 			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in host.can: %s %s"
@@ -3129,7 +3133,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			return false;
 		}
 		struct trash trash;
-		if (trashcan2(&scfg, host_ip, NULL, "ip", &trash)) {
+		if (ip_can->listed(host_ip, nullptr, &trash)) {
 			++stats.sessions_refused;
 			if (!trash.quiet) {
 				char details[128];
@@ -3139,7 +3143,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			sockprintf(socket, client.protocol, session, "550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
 			return false;
 		}
-		if (trashcan2(&scfg, host_name, NULL, "host", &trash)) {
+		if (host_can->listed(host_name, nullptr, &trash)) {
 			++stats.sessions_refused;
 			if (!trash.quiet) {
 				char details[128];
@@ -6061,6 +6065,10 @@ static void cleanup(int code)
 	else
 		protected_uint32_destroy(active_clients);
 
+	delete ip_can, ip_can = nullptr;
+	delete ip_silent_can, ip_silent_can = nullptr;
+	delete host_can, host_can = nullptr;
+
 #ifdef _WINSOCKAPI_
 	if (WSAInitialized && WSACleanup() != 0)
 		lprintf(LOG_ERR, "0000 !WSACleanup ERROR %d", SOCKET_ERRNO);
@@ -6378,6 +6386,10 @@ void mail_server(void* arg)
 				lprintf(LOG_INFO, "POP3S No extra interfaces listening");
 		}
 
+		ip_can = new trashCan(&scfg, "ip");
+		ip_silent_can = new trashCan(&scfg, "ip-silent");
+		host_can = new trashCan(&scfg, "host");
+
 		sem_init(&sendmail_wakeup_sem, 0, 0);
 
 		if (!(startup->options & MAIL_OPT_NO_SENDMAIL)) {
@@ -6466,7 +6478,7 @@ void mail_server(void* arg)
 					}
 				}
 
-				if (trashcan(&scfg, host_ip, "ip-silent")) {
+				if (ip_silent_can->listed(host_ip)) {
 					mail_close_socket(&client_socket, &session);
 					stats.connections_ignored++;
 					continue;

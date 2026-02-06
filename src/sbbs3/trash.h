@@ -24,6 +24,7 @@
 #include <time.h>
 #include "scfgdefs.h"
 #include "str_list.h"
+#include "findstr.h"
 #include "dllexport.h"
 
 #define strIpFilterExemptConfigFile "ipfilter_exempt.cfg"
@@ -59,6 +60,37 @@ DLLEXPORT str_list_t list_of_twits(scfg_t*);
 
 #ifdef __cplusplus
 }
+
+#include <mutex>
+
+class trashCan {
+	public:
+		trashCan(scfg_t* cfg, const char* name) {
+			trashcan_fname(cfg, name, fname, sizeof fname);
+		}
+		~trashCan() {
+			strListFree(&list);
+		}
+		time_t time{};
+		unsigned int read_count{};
+		bool listed(const char* str1, const char* str2 = nullptr, struct trash* details = nullptr) {
+			const std::lock_guard<std::mutex> lock(mutex);
+			time_t latest = fdate(fname);
+			if (latest > time) {
+				strListFree(&list);
+				list = findstr_list(fname);
+				time = latest;
+				++read_count;
+			}
+			bool result = trash_in_list(str1, str2, list, details);
+			return result;
+		}
+	private:
+		char fname[MAX_PATH + 1];
+		str_list_t list{};
+		std::mutex mutex;
+};
+
 #endif
 
 #endif  /* Don't add anything after this line */
