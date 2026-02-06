@@ -2,7 +2,7 @@ Revision History for Digital Distortion Upload Processor
 ========================================================
 Version  Date         Description
 -------  ----         -----------
-1.08     2026-02-02   More robust filename extension matching based on what's
+1.08     2026-02-05   More robust filename extension matching based on what's
                       in ddup_file_types.cfg
 1.07     2025-08-11   Supports .example.cfg configuration filenames. Also allows
                       reading the configuration file from sbbs/mods or sbbs/ctrl

@@ -1,6 +1,6 @@
                    Digital Distortion Upload Processor
                               Version 1.08
-                        Release date: 2026-02-02
+                        Release date: 2026-02-05
 
                                   by
 
