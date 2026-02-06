@@ -19,7 +19,6 @@
 
 #include <unordered_map>
 #include <deque>
-#include <chrono>
 
 class rateLimiter {
 
@@ -32,9 +31,9 @@ class rateLimiter {
 		if (maxRequests == 0 || timeWindowSeconds == 0)
 			return true;
 		auto& requestTimes = clientRequestTimes[clientId];
-		auto now = std::chrono::steady_clock::now();
+		auto now = time(NULL);
 		// Remove timestamps that are outside the time window
-		while (!requestTimes.empty() && std::chrono::duration_cast<std::chrono::seconds>(now - requestTimes.front()).count() >= timeWindowSeconds) {
+		while (!requestTimes.empty() && now - requestTimes.front() >= timeWindowSeconds) {
 			requestTimes.pop_front();
 		}
 		if (requestTimes.size() < maxRequests) {
@@ -45,10 +44,10 @@ class rateLimiter {
 		}
 	}
 	void cleanup() {
-		auto now = std::chrono::steady_clock::now();
+		auto now = time(NULL);
 		for (auto it = clientRequestTimes.begin(); it != clientRequestTimes.end();) {
 			auto& requestTimes = it->second;
-			while (!requestTimes.empty() && std::chrono::duration_cast<std::chrono::seconds>(now - requestTimes.front()).count() >= timeWindowSeconds) {
+			while (!requestTimes.empty() && now - requestTimes.front() >= timeWindowSeconds) {
 				requestTimes.pop_front();
 			}
 			if (requestTimes.empty()) {
@@ -59,5 +58,5 @@ class rateLimiter {
 		}
 	}
 private:
-	std::unordered_map<std::string, std::deque<std::chrono::steady_clock::time_point>> clientRequestTimes;
+	std::unordered_map<std::string, std::deque<time_t>> clientRequestTimes;
 };
