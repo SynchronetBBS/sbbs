@@ -184,12 +184,12 @@ $(FTPSRVR): $(MTOBJODIR)/ftpsrvr.o
 # Mail Server Link Rule
 $(MAILSRVR): $(MAIL_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(MAIL_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs
+	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) $(MAIL_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs
 
 # Web Server Link Rule
 $(WEBSRVR): $(WEB_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(WEB_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ $(ENCODE_LIBS) -lsbbs $(XPDEV-MT_LIBS)
+	$(QUIET)$(MKSHPPLIB) $(LDFLAGS) $(WEB_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ $(ENCODE_LIBS) -lsbbs $(XPDEV-MT_LIBS)
 
 # Services Link Rule
 $(SERVICES): $(SERVICE_OBJS)
