@@ -1227,7 +1227,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
                      , BOOL receiving
                      , BOOL credits
                      , BOOL append
-                     , char* desc, BOOL protected)
+                     , char* desc, BOOL protect)
 {
 	int               result;
 	ulong             l;
@@ -1310,7 +1310,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 			lprintf(LOG_DEBUG, "%04d <%s> DATA socket %d connected to %s port %u"
 			        , ctrl_sock, user->alias, *data_sock, host_ip, inet_addrport(addr));
 
-		if (protected) {
+		if (protect) {
 			if (start_tls(data_sock, data_sess, FALSE) || *data_sess == -1) {
 				lprintf(LOG_DEBUG, "%04d <%s> !DATA ERROR activating TLS"
 				        , ctrl_sock, user->alias);
@@ -1366,7 +1366,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 		if (startup->options & FTP_OPT_DEBUG_DATA)
 			lprintf(LOG_DEBUG, "%04d <%s> PASV DATA socket %d connected to %s port %u"
 			        , ctrl_sock, user->alias, *data_sock, host_ip, inet_addrport(addr));
-		if (protected) {
+		if (protect) {
 			if (start_tls(data_sock, data_sess, FALSE) || *data_sess == -1) {
 				lprintf(LOG_WARNING, "%04d <%s> PASV !DATA ERROR starting TLS", pasv_sock, user->alias);
 				sockprintf(ctrl_sock, ctrl_sess, "425 Error negotiating TLS");
@@ -1390,7 +1390,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 			break;
 		}
 
-		if ((xfer = malloc(sizeof(xfer_t))) == NULL) {
+		if ((xfer = static_cast<xfer_t *>(malloc(sizeof(xfer_t)))) == NULL) {
 			lprintf(LOG_CRIT, "%04d <%s> !DATA MALLOC FAILURE LINE %d", ctrl_sock, user->alias, __LINE__);
 			sockprintf(ctrl_sock, ctrl_sess, "425 MALLOC FAILURE");
 			break;
@@ -3891,7 +3891,7 @@ static void ctrl_thread(void* arg)
 					time_t  start = time(NULL);
 					size_t  file_count = 0;
 					file_t* file_list = loadfiles(&smb
-					                              , /* filespec */ NULL, /* time: */ 0, file_detail_normal, scfg.dir[dir]->sort, &file_count);
+					                              , /* filespec */ NULL, /* time: */ 0, file_detail_normal, static_cast<file_sort>(scfg.dir[dir]->sort), &file_count);
 					for (size_t i = 0; i < file_count; i++) {
 						file_t* f = &file_list[i];
 						if (cmd[3] != 'D' && strcmp(f->name, mls_fname) != 0)
@@ -4199,7 +4199,7 @@ static void ctrl_thread(void* arg)
 				time_t  start = time(NULL);
 				size_t  file_count = 0;
 				file_t* file_list = loadfiles(&smb
-				                              , filespec, /* time: */ 0, file_detail_normal, scfg.dir[dir]->sort, &file_count);
+				                              , filespec, /* time: */ 0, file_detail_normal, static_cast<file_sort>(scfg.dir[dir]->sort), &file_count);
 				for (size_t i = 0; i < file_count; i++) {
 					file_t* f = &file_list[i];
 					if (detail) {
@@ -4500,7 +4500,7 @@ static void ctrl_thread(void* arg)
 						time_t  start = time(NULL);
 						size_t  file_count = 0;
 						file_t* file_list = loadfiles(&smb
-						                              , /* filespec */ NULL, /* time: */ 0, file_detail_normal, scfg.dir[dir]->sort, &file_count);
+						                              , /* filespec */ NULL, /* time: */ 0, file_detail_normal, static_cast<file_sort>(scfg.dir[dir]->sort), &file_count);
 						for (size_t i = 0; i < file_count; i++) {
 							file_t* f = &file_list[i];
 							fprintf(fp, "%-*s %s\r\n", INDEX_FNAME_LEN
@@ -5411,7 +5411,7 @@ void ftp_server(void* arg)
 				continue;
 			}
 
-			if ((ftp = malloc(sizeof(ftp_t))) == NULL) {
+			if ((ftp = static_cast<ftp_t*>(malloc(sizeof(ftp_t)))) == NULL) {
 				lprintf(LOG_CRIT, "%04d !ERROR allocating %d bytes of memory for ftp_t"
 				        , client_socket, (int)sizeof(ftp_t));
 				sockprintf(client_socket, -1, "421 System error, please try again later.");
