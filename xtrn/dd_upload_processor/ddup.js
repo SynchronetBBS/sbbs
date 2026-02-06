@@ -32,7 +32,7 @@
  * 2025-08-11 Eric Oulashin     Version 1.07
  *                              Supports .example.cfg configuration filenames. Also allows
  *                              reading the configuration file from sbbs/mods or sbbs/ctrl.
- * 2026-02-02 Eric Oulashin     Version 1.08
+ * 2026-02-05 Eric Oulashin     Version 1.08
  *                              More robust filename extension matching
  */
 
@@ -56,7 +56,7 @@ load(js.exec_dir + "ddup_cleanup.js");
 
 // Version information
 var gDDUPVersion = "1.06";
-var gDDUPVerDate = "2026-02-02";
+var gDDUPVerDate = "2026-02-05";
 
 // Store whether or not this is running in Windows
 var gRunningInWindows = /^WIN/.test(system.platform.toUpperCase());
@@ -266,88 +266,80 @@ function processFile(pFilename)
 
 	var retval = 0;
 
-	// Look for the file extension in gFileTypeCfg to get the file scan settings.
-	// If the file extension is not there, then go ahead and scan it (to be on the
-	// safe side).
+	// See if we should scan the file, based on the scan setting for the
+	// filename extension. If we are to scan it, then do so.
 	var filenameExtension = getFilenameExtension(pFilename, gFileTypeCfg);
+	var scanIt = true;
 	if (gFileTypeCfg.hasOwnProperty(filenameExtension) && typeof(gFileTypeCfg[filenameExtension]) === "object")
 	{
-		if (gFileTypeCfg[filenameExtension].scanOption == "scan")
+		scanIt = (gFileTypeCfg[filenameExtension].scanOption == "scan");
+	}
+	if (scanIt)
+	{
+		// Create the base work directory for this script in the node dir.
+		// And just in case that dir already exists, remove it before
+		// creating it.
+		var baseWorkDir = system.node_dir + "DDUploadProcessor_Temp";
+		deltree(baseWorkDir + "/");
+		if (!mkdir(baseWorkDir))
 		{
-			// - If the file has an extract command, then:
-			//   Extract the file to a temporary directory in the node dir
-			//   For each file in the directory:
-			//     If it's a subdir
-			//        Recurse into it
-			//     else
-			//        Scan it for viruses
-			//        If non-zero retval
-			//           Return with error code
-			var filespec = pFilename;
-			if (gFileTypeCfg[filenameExtension].extractCmd.length > 0)
-			{
-				// Create the base work directory for this script in the node dir.
-				// And just in case that dir already exists, remove it before
-				// creating it.
-				var baseWorkDir = system.node_dir + "DDUploadProcessor_Temp";
-				deltree(baseWorkDir + "/");
-				if (!mkdir(baseWorkDir))
-				{
-					console.print("\x01n\x01y\x01hWarning: \x01n\x01w\x01h Unable to create the work dir.\x01n\r\n");
-					retval = -1;
-				}
-				
-				// If all is okay, then create the directory in the temporary work dir.
-				var workDir = baseWorkDir + "/" + justFilename + "_temp";
-				if (retval == 0)
-				{
-					deltree(workDir + "/");
-					if (!mkdir(workDir))
-					{
-						console.print("\x01n\x01y\x01hWarning: \x01n\x01w\x01h Unable to create a dir in the temporary work dir.\x01n\r\n");
-						retval = -1;
-					}
-				}
+			console.print("\x01n\x01y\x01hWarning: \x01n\x01w\x01h Unable to create the work dir.\x01n\r\n");
+			retval = -1;
+		}
 
-				// If all is okay, we can now process the file.
-				if (retval == 0)
+		// If all is okay, then create the directory in the temporary work dir.
+		var workDir = baseWorkDir + "/" + justFilename + "_temp";
+		if (retval == 0)
+		{
+			deltree(workDir + "/");
+			if (!mkdir(workDir))
+			{
+				console.print("\x01n\x01y\x01hWarning: \x01n\x01w\x01h Unable to create a dir in the temporary work dir.\x01n\r\n");
+				retval = -1;
+			}
+		}
+
+		// If all is okay, we can now process the file.
+		if (retval == 0)
+		{
+			// Try to extract the file to the work directory
+			printf(gStatusPrintfStr, "\x01m\x01h", "Extracting the file...");
+			console.crlf();
+			var errorStr = extractFileToDir(pFilename, workDir);
+			if (errorStr.length == 0)
+			{
+				// Temproary
+				if (user.is_sysop)
 				{
-					// Extract the file to the work directory
-					printf(gStatusPrintfStr, "\x01m\x01h", "Extracting the file...");
-					console.crlf();
-					var errorStr = extractFileToDir(pFilename, workDir);
-					if (errorStr.length == 0)
-					{
-						// Scan the files in the work directory.
-						printf(gStatusPrintfStr, "\x01r", "Scanning files inside the archive for viruses...");
-						var retObj = scanFilesInDir(workDir);
-						retval = retObj.returnCode;
-						if (retObj.returnCode == 0)
-							console.print(gOKStrWithNewline);
-						else
-						{
-							console.print(gFailStrWithNewline);
-							console.print("\x01n\x01y\x01hVirus scan failed.\x01n\r\n");
-							log(LOG_WARNING, format("File (%s) uploaded by %s failed virus scan:", pFilename, user.alias));
-							for (var index = 0; index < retObj.cmdOutput.length; ++index)
-								log(LOG_WARNING, retObj.cmdOutput[index]);
-						}
-					}
-					else
-					{
-						console.print(gFailStrWithNewline);
-						log(LOG_ERR, "File extract error: " + errorStr);
-						console.print("\x01n\x01y\x01hWarning: \x01n\x01w\x01h Unable to extract to work dir.\x01n\r\n");
-						retval = -2;
-					}
+					console.attributes = "N";
+					printf("Extracted to %s\r\n", workDir);
+					var filenames = directory(workDir + "/*");
+					printf("# files: %d\r\n", filenames.length);
+					for (var fileI = 0; fileI < filenames.length; ++fileI)
+						printf("%s\r\n", filenames[fileI]);
+					//console.pause();
 				}
-				// Remove the work directory.
-				deltree(baseWorkDir + "/");
+				// End Temporary
+				// Scan the files in the work directory.
+				printf(gStatusPrintfStr, "\x01r", "Scanning files inside the archive for viruses...");
+				var retObj = scanFilesInDir(workDir);
+				retval = retObj.returnCode;
+				if (retObj.returnCode == 0)
+					console.print(gOKStrWithNewline);
+				else
+				{
+					console.print(gFailStrWithNewline);
+					console.print("\x01n\x01y\x01hVirus scan failed.\x01n\r\n");
+					log(LOG_WARNING, format("File (%s) uploaded by %s failed virus scan:", pFilename, user.alias));
+					for (var index = 0; index < retObj.cmdOutput.length; ++index)
+						log(LOG_WARNING, retObj.cmdOutput[index]);
+				}
 			}
 			else
 			{
-				// The file has no extract command, so just scan it.
-				printf(gStatusPrintfStr, "\x01b\x01h", "Scanning...");
+				// Failed to extract the file, so just scan it
+				log(LOG_ERR, format("Failed to extract '%s': %s", pFilename, errorStr));
+				printf(gStatusPrintfStr, "\x01b\x01h", "Failed to extract; scanning just the file...");
 				var scanCmd = gGenCfg.scanCmd.replace("%FILESPEC%", "\"" + fixPathSlashes(pFilename) + "\"");
 				// Run the scan command and capture its output, in case the scan fails.
 				var retObj = runExternalCmdWithOutput(scanCmd);
@@ -362,28 +354,16 @@ function processFile(pFilename)
 					for (var index = 0; index < retObj.cmdOutput.length; ++index)
 						log(LOG_WARNING, retObj.cmdOutput[index]);
 				}
+				/*
+				log(LOG_ERR, "File extr*act error: " + errorStr);
+				console.print("\x01n\x01y\x01hWarning: \x01n\x01w\x01h Unable to extract to work dir.\x01n\r\n");
+				retval = -2;
+				*/
 			}
 		}
-		else if (gFileTypeCfg[filenameExtension].scanOption == "always fail")
-			exitCode = 10;
-	}
-	else
-	{
-		// There's nothing configured for the file's extension, so just scan it.
-		printf(gStatusPrintfStr, "\x01r", "Scanning...");
-		var scanCmd = gGenCfg.scanCmd.replace("%FILESPEC%", "\"" + fixPathSlashes(pFilename) + "\"");
-		var retObj = runExternalCmdWithOutput(scanCmd);
-		retval = retObj.returnCode;
-		if (retObj.returnCode == 0)
-			console.print(gOKStrWithNewline);
-		else
-		{
-			console.print(gFailStrWithNewline);
-			console.print("\x01n\x01y\x01hVirus scan failed.\x01n\r\n");
-			log(LOG_WARNING, format("File (%s) uploaded by %s failed virus scan:", pFilename, user.alias));
-			for (var index = 0; index < retObj.cmdOutput.length; ++index)
-				log(LOG_WARNING, retObj.cmdOutput[index]);
-		}
+
+		// Remove the work directory.
+		deltree(baseWorkDir + "/");
 	}
 
 	return retval;
@@ -814,16 +794,9 @@ function extractFileToDir(pFilename, pWorkDir)
 	//if (!file_exists(pWorkDir))
 	//   return ("The work directory doesn't exist.");
 
-	var filenameExt = getFilenameExtension(pFilename, gFileTypeCfg);
-	// Return with errors if there are problems.
-	if (filenameExt.length == 0)
-		return ("Can't extract (no file extension).");
-	if (typeof(gFileTypeCfg[filenameExt]) == "undefined")
-		return ("Can't extract " + getFilenameFromPath(pFilename) + " (I don't know how).");
-	if (gFileTypeCfg[filenameExt].extractCmd == "")
-		return ("Can't extract " + getFilenameFromPath(pFilename) + " (I don't know how).");
-
 	var retval = "";
+
+	var filenameExt = ""; // Will be used if Synchronet's Archive support can't extract it
 
 	// Extract the file to the work directory.
 	// If the Archive class is available (added in Synchronet 3.19), then
@@ -851,12 +824,25 @@ function extractFileToDir(pFilename, pWorkDir)
 	}
 	if (!builtInExtractSucceeded)
 	{
-		var extractCmd = gFileTypeCfg[filenameExt].extractCmd.replace("%FILENAME%", "\"" + fixPathSlashes(pFilename) + "\"");
-		extractCmd = extractCmd.replace("%FILESPEC% ", "");
-		extractCmd = extractCmd.replace("%TO_DIR%", "\"" + fixPathSlashes(pWorkDir) + "\"");
-		var retCode = system.exec(extractCmd);
-		if (retCode != 0)
-			return ("Extract failed with exit code " + retCode);
+		filenameExt = getFilenameExtension(pFilename, gFileTypeCfg);
+		// Return with errors if there are problems.
+		if (filenameExt.length == 0)
+			return ("Can't extract (no file extension).");
+		if (typeof(gFileTypeCfg[filenameExt]) == "undefined")
+			return ("Can't extract " + getFilenameFromPath(pFilename) + " (I don't know how).");
+		if (gFileTypeCfg[filenameExt].extractCmd == "")
+			return ("Can't extract " + getFilenameFromPath(pFilename) + " (I don't know how).");
+		if (gFileTypeCfg.hasOwnProperty(filenameExt) && gFileTypeCfg[filenameExt].extractCmd.length > 0)
+		{
+			var extractCmd = gFileTypeCfg[filenameExt].extractCmd.replace("%FILENAME%", "\"" + fixPathSlashes(pFilename) + "\"");
+			extractCmd = extractCmd.replace("%FILESPEC% ", "");
+			extractCmd = extractCmd.replace("%TO_DIR%", "\"" + fixPathSlashes(pWorkDir) + "\"");
+			var retCode = system.exec(extractCmd);
+			if (retCode != 0)
+				return ("Extract failed with exit code " + retCode);
+		}
+		else
+			return("Synchronet failed to extract & no configured extraction command for " + filenameExt);
 	}
 	//   For each file in the work directory:
 	//     If the file has an extract command
@@ -967,7 +953,6 @@ function runExternalCmdWithOutput(pCommand)
 	{
 		// Write a Windows batch file to run the command
 		scriptFilename = fixPathSlashes(system.node_dir + "DDUP_ScanCmd.bat");
-		//console.print(":" + scriptFilename + ":\r\n\x01p"); // Temporary (for debugging)
 		var scriptFile = new File(scriptFilename);
 		if (scriptFile.open("w"))
 		{
