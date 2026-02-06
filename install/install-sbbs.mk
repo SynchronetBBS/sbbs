@@ -152,7 +152,7 @@ build: localdefs binaries baja externals
 localdefs: src
 	echo $(MKFLAGS) | tr ' ' '\n' > $(REPODIR)/src/build/localdefs.mk
 
-binaries:	sbbs3 gtkuseredit gtkchat gtkmonitor gtkuserlist syncview sexpots
+binaries:	sbbs3 gtkutils syncview sexpots
 
 externals:	sbj dpoker tbd
 
@@ -174,24 +174,9 @@ dpoker:	run
 tbd:	run
 	$(MAKE) -C $(SBBSDIR)/xtrn/tbd $(MKFLAGS) SRC_ROOT=$(REPODIR)/src XPDEV=$(REPODIR)/src/xpdev/
 
-gtkuseredit:	src
+gtkutils:	src
 ifdef USE_GLADE
-	$(MAKE) -C $(REPODIR)/src/sbbs3/gtkuseredit $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
-endif
-
-gtkchat:	src
-ifdef USE_GLADE
-	$(MAKE) -C $(REPODIR)/src/sbbs3/gtkchat $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
-endif
-
-gtkmonitor:	src
-ifdef USE_GLADE
-	$(MAKE) -C $(REPODIR)/src/sbbs3/gtkmonitor $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
-endif
-
-gtkuserlist:	src
-ifdef USE_GLADE
-	$(MAKE) -C $(REPODIR)/src/sbbs3/gtkuserlist $(MKFLAGS) SBBS_SRC=$(REPODIR)/src/sbbs3/ XPDEV=$(REPODIR)/src/xpdev/
+	$(MAKE) -C $(REPODIR)/src/sbbs3 $(MKFLAGS) gtkutils
 endif
 
 syncview:
