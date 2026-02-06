@@ -46,6 +46,8 @@ static const char* strMaxNewUserInactivity = "MaxNewUserInactivity";
 static const char* strMaxSessionInactivity = "MaxSessionInactivity";
 static const char* strMaxSFTPInactivity = "MaxSFTPInactivity";
 static const char* strMaxConConn = "MaxConcurrentConnections";
+static const char* strMaxRequestPerPeriod = "MaxRequestsPerPeriod";
+static const char* strRequestRateLimitPeriod = "RequestRateLimitPeriod";
 static const char* strHostName = "HostName";
 static const char* strLogLevel = "LogLevel";
 static const char* strEventLogLevel = "EventLogLevel";
@@ -877,6 +879,8 @@ bool sbbs_read_ini(
 		web->bind_retry_delay = iniGetInteger(list, section, strBindRetryDelay, global->bind_retry_delay);
 		web->login_attempt = get_login_attempt_settings(list, section, global);
 		web->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, WEB_DEFAULT_MAX_CON_CONN);
+		web->max_requests_per_period = iniGetUInteger(list, section, strMaxRequestPerPeriod, 0);
+		web->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
 		SAFECOPY(web->proxy_ip_header
 		         , iniGetString(list, section, "RemoteIPHeader", nulstr, value));
 	}
@@ -1499,6 +1503,10 @@ bool sbbs_write_ini(
 			if (!iniSetUInteger(lp, section, "OutbufDrainTimeout", web->outbuf_drain_timeout, &style))
 				break;
 			if (!iniSetUInteger(lp, section, strMaxConConn, web->max_concurrent_connections, &style))
+				break;
+			if (!iniSetUInteger(lp, section, strMaxRequestPerPeriod, web->max_requests_per_period, &style))
+				break;
+			if (!iniSetUInteger(lp, section, strRequestRateLimitPeriod, web->request_rate_limit_period, &style))
 				break;
 			if (!iniSetString(lp, section, "RemoteIPHeader", web->proxy_ip_header, &style))
 				break;

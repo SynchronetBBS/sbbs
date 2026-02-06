@@ -71,6 +71,7 @@
 #include "xpendian.h"
 #include "xpmap.h"
 #include "xpprintf.h"
+#include "ratelimit.hpp"
 
 static const char*  server_name = "Synchronet Web Server";
 static const char*  server_abbrev = "web";
@@ -134,6 +135,8 @@ static named_string_t**   mime_types;
 static named_string_t**   cgi_handlers;
 static named_string_t**   xjs_handlers;
 static named_string_t**   alias_list; // request path aliases
+
+static rateLimiter*       request_rate_limiter = nullptr;
 
 /* Logging stuff */
 link_list_t               log_list;
@@ -3473,7 +3476,7 @@ static bool get_req(http_session_t * session, char *request_line)
 
 	req_line[0] = 0;
 	if (request_line == NULL) {
-		/* Eat leaing blank lines... as apache does...
+		/* Eat leading blank lines... as Apache does...
 		 * "This is a legacy issue. The CERN webserver required POST data to have an extra
 		 * CRLF following it. Thus many clients send an extra CRLF that is not included in the
 		 * Content-Length of the request. Apache works around this problem by eating any empty
@@ -3507,15 +3510,27 @@ static bool get_req(http_session_t * session, char *request_line)
 				get_request_headers(session);
 			}
 			if (!is_legal_host(session->req.host, true)) {
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] Illegal host in request: %s"
+					, session->socket, session->client.protocol, session->host_ip, session->req.host);
 				send_error(session, __LINE__, "400 Bad Request");
 				return false;
 			}
 			if (!is_legal_host(session->req.vhost, false)) {
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] Illegal vhost in request: %s"
+					, session->socket, session->client.protocol, session->host_ip, session->req.vhost);
 				send_error(session, __LINE__, "400 Bad Request");
 				return false;
 			}
 			if (!is_legal_path(session->req.physical_path)) {
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] Illegal path in request: %s"
+					, session->socket, session->client.protocol, session->host_ip, session->req.physical_path);
 				send_error(session, __LINE__, "400 Bad Request");
+				return false;
+			}
+			if (request_rate_limiter->allowRequest(session->host_ip) == false) {
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] Too many requests per rate limit (%u over %us)"
+					, session->socket, session->client.protocol, session->host_ip, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds);
+				send_error(session, __LINE__, error_429);
 				return false;
 			}
 			enum get_fullpath fullpath_valid = get_fullpath(session);
@@ -7190,6 +7205,9 @@ static void cleanup(int code)
 		lprintf(LOG_ERR, "0000 !WSACleanup ERROR %d", SOCKET_ERRNO);
 #endif
 
+	delete request_rate_limiter;
+	request_rate_limiter = nullptr;
+
 	thread_down();
 	if (terminate_server || code) {
 		lprintf(LOG_INFO, "#### Web Server thread terminated (%lu clients served, %u concurrently)"
@@ -7530,6 +7548,8 @@ void web_server(void* arg)
 		}
 		lprintf(LOG_DEBUG, "Web Server socket set created");
 
+		request_rate_limiter = new rateLimiter(startup->max_requests_per_period, startup->request_rate_limit_period);
+
 		/*
 		 * Add interfaces
 		 */
@@ -7617,6 +7637,7 @@ void web_server(void* arg)
 				SLEEP(startup->sem_chk_freq * 1000);
 				continue;
 			}
+			request_rate_limiter->cleanup();
 			/* signal caller that we've started up successfully */
 			set_state(SERVER_READY);
 
