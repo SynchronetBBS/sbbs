@@ -7603,6 +7603,7 @@ void web_server(void* arg)
 		lprintf(LOG_INFO, "Web Server thread started");
 		mqtt_client_max(&mqtt, startup->max_clients);
 
+		time_t last_rate_limit_report = time(NULL);
 		while (!terminate_server) {
 			YIELD();
 			/* check for re-cycle/shutdown/pause semaphores */
@@ -7647,7 +7648,17 @@ void web_server(void* arg)
 				SLEEP(startup->sem_chk_freq * 1000);
 				continue;
 			}
-			request_rate_limiter->cleanup();
+			if (startup->max_requests_per_period > 0 && startup->request_rate_limit_period > 0
+				&& time(NULL) - last_rate_limit_report >= startup->sem_chk_freq) {
+				last_rate_limit_report = time(NULL);
+				request_rate_limiter->cleanup();
+				size_t most_active_count = 0;
+				std::string most_active = request_rate_limiter->most_active(&most_active_count);
+				lprintf(LOG_DEBUG, "Rate limiting clients=%zu, requests=%zu, current-most-active=%s (%zu), highest=%s (%u) on %.24s"
+					, request_rate_limiter->client_count(), request_rate_limiter->total(), most_active.c_str(), most_active_count
+					, request_rate_limiter->currHighwater.client.c_str(), request_rate_limiter->currHighwater.count
+					, ctime_r(&request_rate_limiter->currHighwater.time, logstr));
+			}
 			/* signal caller that we've started up successfully */
 			set_state(SERVER_READY);
 
