@@ -1,3 +1,5 @@
+// Rate Limiter
+
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
  * @format.use-tabs true	(see http://www.synchro.net/ptsc_hdr.html)		*
@@ -27,6 +29,12 @@ class rateLimiter {
 		: maxRequests(maxRequests), timeWindowSeconds(timeWindowSeconds) {}
 	unsigned int maxRequests;
 	unsigned int timeWindowSeconds;
+	struct {
+		std::string client{};
+		unsigned int count{};
+		time_t time{};
+	} currHighwater, prevHighwater;
+	unsigned int disallowed{};
 	bool allowRequest(const std::string& clientId) {
 		if (maxRequests == 0 || timeWindowSeconds == 0)
 			return true;
@@ -36,19 +44,30 @@ class rateLimiter {
 		while (!requestTimes.empty() && now - requestTimes.front() >= timeWindowSeconds) {
 			requestTimes.pop_front();
 		}
-		if (requestTimes.size() < maxRequests) {
+		size_t count = requestTimes.size();
+		if (count < maxRequests) {
 			requestTimes.push_back(now);
+			if (++count >= currHighwater.count) {
+				if (currHighwater.count > 0 && currHighwater.client != clientId)
+					prevHighwater = currHighwater;
+				currHighwater.count = count;
+				currHighwater.client = clientId;
+				currHighwater.time = now;
+			}
 			return true; // Allow the request
 		} else {
+			++disallowed;
 			return false; // Rate limit exceeded
 		}
 	}
-	void cleanup() {
+	size_t cleanup() {
+		size_t removed = 0;
 		auto now = time(NULL);
 		for (auto it = clientRequestTimes.begin(); it != clientRequestTimes.end();) {
 			auto& requestTimes = it->second;
 			while (!requestTimes.empty() && now - requestTimes.front() >= timeWindowSeconds) {
 				requestTimes.pop_front();
+				++removed;
 			}
 			if (requestTimes.empty()) {
 				it = clientRequestTimes.erase(it); // Remove client if no recent requests
@@ -56,6 +75,28 @@ class rateLimiter {
 				++it;
 			}
 		}
+		return removed;
+	}
+	size_t client_count() { return clientRequestTimes.size(); }
+	size_t total() {
+		size_t total = 0;
+		for (auto it = clientRequestTimes.begin(); it != clientRequestTimes.end(); ++it)
+			total += it->second.size();
+		return total;
+	}
+	std::string most_active(size_t* count) {
+		size_t max = 0;
+		std::string client;
+		for (auto it = clientRequestTimes.begin(); it != clientRequestTimes.end(); ++it) {
+			size_t cc = it->second.size();
+			if (cc > max) {
+				max = cc;
+				client = it->first;
+			}
+		}
+		if (count != nullptr)
+			*count = max;
+		return client;
 	}
 private:
 	std::unordered_map<std::string, std::deque<time_t>> clientRequestTimes;
