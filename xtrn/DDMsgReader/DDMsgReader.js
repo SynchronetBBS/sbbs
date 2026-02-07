@@ -299,6 +299,9 @@
  *                              Bug fix: this.msgAreaList_lastImportedMsg_showImportTime
  *                              was being used in some functions where it didn't exist
  *                              anymore
+ * 2026-02-07 Eric Oulashin     Version 1.97h
+ *                              Small refactoring in ReplyToMsg() related to the
+ *                              MsgBase object; no functional change
  */
 
 "use strict";
@@ -408,8 +411,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.97g";
-var READER_DATE = "2026-01-31";
+var READER_VERSION = "1.97h";
+var READER_DATE = "2026-02-07";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -11454,10 +11457,10 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 	// the node directory to allow the user to quote the original message.
 	// TODO: Handle things when reading another user's email (for the sysop) - "mail" as a sub-board code might
 	// not work
+	var quoteFile = null;
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (msgbase.open())
 	{
-		var quoteFile = null;
 		if (this.CanQuote())
 		{
 			// Get the user's setting for whether or not to wrap quote lines (and how long) from
@@ -11549,8 +11552,11 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			// its getCurMsgInfo() function in SlyEdit_Misc.js.
 			//bbs.smb_sub_code = this.subBoardCode;
 			/*
-			bbs.smb_last_msg = msgbase.last_msg;
-			bbs.smb_total_msgs = msgbase.total_msgs;
+			if (msgbase.is_open)
+			{
+				bbs.smb_last_msg = msgbase.last_msg;
+				bbs.smb_total_msgs = msgbase.total_msgs;
+			}
 			*/
 		}
 		catch (e)
@@ -11564,21 +11570,24 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			// - The total number of messages in the sub-board
 			// - The number of the message being read
 			// - The current sub-board code
-			var msgBaseInfoFile = new File(msgbaseInfoDropFileName);
-			if (msgBaseInfoFile.open("w"))
+			if (msgbase.is_open)
 			{
-				msgBaseInfoFile.writeln(msgbase.last_msg.toString()); // Highest message #
-				msgBaseInfoFile.writeln(this.NumMessages(msgbase).toString()); // Total # messages
-				// Message number (Note: For SlyEdit, requires SlyEdit 1.27 or newer).
-				msgBaseInfoFile.writeln(pMsgHdr.number.toString()); // # of the message being read (New: 2013-05-14)
-				msgBaseInfoFile.writeln(this.subBoardCode); // Sub-board code
-				msgBaseInfoFile.close();
+				var msgBaseInfoFile = new File(msgbaseInfoDropFileName);
+				if (msgBaseInfoFile.open("w"))
+				{
+					msgBaseInfoFile.writeln(msgbase.last_msg.toString()); // Highest message #
+					msgBaseInfoFile.writeln(this.NumMessages(msgbase).toString()); // Total # messages
+					// Message number (Note: For SlyEdit, requires SlyEdit 1.27 or newer).
+					msgBaseInfoFile.writeln(pMsgHdr.number.toString()); // # of the message being read (New: 2013-05-14)
+					msgBaseInfoFile.writeln(this.subBoardCode); // Sub-board code
+					msgBaseInfoFile.close();
+				}
 			}
 		}
 
 		// Store the current total number of messages so that we can search new
 		// messages if needed after the message is posted
-		var numMessagesBefore = msgbase.total_msgs;
+		var numMessagesBefore = (msgbase.is_open ? msgbase.total_msgs : 0);
 
 		// Let the user post the message.  Then, delete the message base info
 		// file.  To be safe, and to ensure the messagebase object gets refreshed
@@ -11592,7 +11601,6 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		// 2016-08-26: Updated to not close the messagebase because a private
 		// reply on a networked sub-board needs to be able to get a message
 		// header with fields expanded.
-		msgbase.close();
 		if (replyPrivately)
 		{
 			var privReplRetObj = this.DoPrivateReply(pMsgHdr, pMsgIdx, replyMode);
@@ -11617,13 +11625,12 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			if (!file_remove(msgbaseInfoDropFileName))
 				log(LOG_ERROR, "Failed to remove " + msgbaseInfoDropFileName);
 		}
-		var msgbaseReOpened = msgbase.open();
 
 		// If the user replied to the message and a message search was done that
 		// would populate the search results, then search the last messages to
 		// include the user's reply in the message matches or other new messages
 		// that may have been posted that match the user's search.
-		if (retObj.postSucceeded && msgbaseReOpened && (msgbase.total_msgs > numMessagesBefore))
+		if (retObj.postSucceeded && msgbase.is_open && (msgbase.total_msgs > numMessagesBefore))
 		{
 			// If doing a newscan and the user setting for only showing new messages during a newscan
 			// is enabled, then get the last message header (which should be the message the user
@@ -11672,7 +11679,8 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 	if (quoteFile != null)
 		quoteFile.remove();
 
-	msgbase.close();
+	if (msgbase.is_open)
+		msgbase.close();
 
 	return retObj;
 }
@@ -18082,7 +18090,7 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 		//if (user.is_sysop) console.print(retObj.msgBody + "\r\n\x01p"); // Temporary
 		// TODO: It seems ESC codes are being stripped
 		var startIdx = retObj.msgBody.indexOf("\x1bP0;0;0q\"1;1;");
-		if (user.is_sysop) console.print("\x01n\r\nstartIdx: " + startIdx + "\r\n\x01p"); // Temporary
+		//if (user.is_sysop) console.print("\x01n\r\nstartIdx: " + startIdx + "\r\n\x01p"); // Temporary
 		if (startIdx > -1)
 		{
 			var endIdx = retObj.msgBody.indexOf(KEY_ESC + "\\", startIdx+1);
@@ -24167,55 +24175,3 @@ function writeWithPause(pX, pY, pText, pPauseMS, pClearLineAttrib, pClearLineAft
 		console.cleartoeol(clearLineAttrib);
 	}
 }
-
-// Temporary
-function logStackTrace(levels) {
-    var callstack = [];
-    var isCallstackPopulated = false;
-    try {
-        i.dont.exist += 0; //doesn't exist- that's the point
-    } catch (e) {
-        if (e.stack) { //Firefox / chrome
-            var lines = e.stack.split('\n');
-            for (var i = 0, len = lines.length; i < len; i++) {
-                    callstack.push(lines[i]);
-            }
-            //Remove call to logStackTrace()
-            callstack.shift();
-            isCallstackPopulated = true;
-        }
-        else if (window.opera && e.message) { //Opera
-            var lines = e.message.split('\n');
-            for (var i = 0, len = lines.length; i < len; i++) {
-                if (lines[i].match(/^\s*[A-Za-z0-9\-_\$]+\(/)) {
-                    var entry = lines[i];
-                    //Append next line also since it has the file info
-                    if (lines[i + 1]) {
-                        entry += " at " + lines[i + 1];
-                        i++;
-                    }
-                    callstack.push(entry);
-                }
-            }
-            //Remove call to logStackTrace()
-            callstack.shift();
-            isCallstackPopulated = true;
-        }
-    }
-    if (!isCallstackPopulated) { //IE and Safari
-        var currentFunction = arguments.callee.caller;
-        while (currentFunction) {
-            var fn = currentFunction.toString();
-            var fname = fn.substring(fn.indexOf("function") + 8, fn.indexOf("(")) || "anonymous";
-            callstack.push(fname);
-            currentFunction = currentFunction.caller;
-        }
-    }
-    if (levels) {
-        console.print(callstack.slice(0, levels).join("\r\n"));
-    }
-    else {
-        console.print(callstack.join("\r\n"));
-    }
-}
-// End Temporary

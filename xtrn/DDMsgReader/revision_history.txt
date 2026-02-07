@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.97h    2026-02-07   Small refactoring in the ReplyToMsg() function related to
+                      the MsgBase object; no functional change
 1.97g    2026-01-31   Bug fix: this.msgAreaList_lastImportedMsg_showImportTime
                       was being used in some functions where it didn't exist
                       anymore
