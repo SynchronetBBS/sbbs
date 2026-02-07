@@ -5331,9 +5331,9 @@ void ftp_server(void* arg)
 		 */
 		xpms_add_list(ftp_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "FTP Server", &terminate_server, ftp_open_socket_cb, startup->seteuid, NULL);
 
-		ip_can = new trashCan(&scfg, "ip");
-		ip_silent_can = new trashCan(&scfg, "ip-silent");
-		host_can = new trashCan(&scfg, "host");
+		ip_can = new trashCan(&scfg, "ip", startup->sem_chk_freq);
+		ip_silent_can = new trashCan(&scfg, "ip-silent", startup->sem_chk_freq);
+		host_can = new trashCan(&scfg, "host", startup->sem_chk_freq);
 
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles = semfile_list_init(scfg.ctrl_dir, "shutdown", server_abbrev);

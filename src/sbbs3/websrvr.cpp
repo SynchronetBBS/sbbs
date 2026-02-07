@@ -7568,9 +7568,9 @@ void web_server(void* arg)
 		}
 
 		request_rate_limiter = new rateLimiter(startup->max_requests_per_period, startup->request_rate_limit_period);
-		ip_can = new trashCan(&scfg, "ip");
-		ip_silent_can = new trashCan(&scfg, "ip-silent");
-		host_can = new trashCan(&scfg, "host");
+		ip_can = new trashCan(&scfg, "ip", startup->sem_chk_freq);
+		ip_silent_can = new trashCan(&scfg, "ip-silent", startup->sem_chk_freq);
+		host_can = new trashCan(&scfg, "host", startup->sem_chk_freq);
 
 		listInit(&log_list, /* flags */ LINK_LIST_MUTEX | LINK_LIST_SEMAPHORE);
 		if (startup->options & WEB_OPT_HTTP_LOGGING) {

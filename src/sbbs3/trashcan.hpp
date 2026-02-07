@@ -27,7 +27,7 @@
 
 class trashCan {
 	public:
-		trashCan(scfg_t* cfg, const char* name) {
+		trashCan(scfg_t* cfg, const char* name, uint chk_interval = 10) :  chk_interval(chk_interval) {
 			trashcan_fname(cfg, name, fname, sizeof fname);
 		}
 		~trashCan() {
@@ -36,11 +36,11 @@ class trashCan {
 		time_t timestamp{};
 		unsigned int read_count{};
 		unsigned int total_found{};
-		time_t min_interval{ 10 }; // seconds
+		time_t chk_interval; // seconds
 		bool listed(const char* str1, const char* str2 = nullptr, struct trash* details = nullptr) {
 			const std::lock_guard<std::mutex> lock(mutex);
 			time_t now = time(NULL);
-			if ((now - lastftime_check) >= min_interval) {
+			if ((now - lastftime_check) >= chk_interval) {
 				lastftime_check = now;
 				time_t latest = fdate(fname);
 				if (latest > timestamp) {

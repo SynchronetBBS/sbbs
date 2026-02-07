@@ -6387,9 +6387,9 @@ void mail_server(void* arg)
 				lprintf(LOG_INFO, "POP3S No extra interfaces listening");
 		}
 
-		ip_can = new trashCan(&scfg, "ip");
-		ip_silent_can = new trashCan(&scfg, "ip-silent");
-		host_can = new trashCan(&scfg, "host");
+		ip_can = new trashCan(&scfg, "ip", startup->sem_chk_freq);
+		ip_silent_can = new trashCan(&scfg, "ip-silent", startup->sem_chk_freq);
+		host_can = new trashCan(&scfg, "host", startup->sem_chk_freq);
 
 		sem_init(&sendmail_wakeup_sem, 0, 0);
 
