@@ -1029,6 +1029,11 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
+		if (startup.max_requests_per_period < 1 || startup.request_rate_limit_period < 1)
+			SAFECOPY(str, strDisabled);
+		else
+			snprintf(str, sizeof str, "%u per %s", startup.max_requests_per_period, duration_to_vstr(startup.request_rate_limit_period, tmp, sizeof tmp));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Requests", str);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Authentication Methods", startup.default_auth_list);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
@@ -1127,31 +1132,41 @@ static void websrvr_cfg(void)
 					startup.max_concurrent_connections = atoi(str);
 				break;
 			case 13:
+				SAFECOPY(str, maximum(startup.max_requests_per_period));
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Requests (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
+					startup.max_requests_per_period = atoi(str);
+				if (startup.max_requests_per_period < 1)
+					break;
+				duration_to_vstr(startup.request_rate_limit_period, str, sizeof str);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Request Rate Limit Period", str, 10, K_EDIT) > 0)
+					startup.request_rate_limit_period = (uint)parse_duration(str);
+				break;
+			case 14:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Authentication Methods"
 				           , startup.default_auth_list, sizeof(startup.default_auth_list) - 1, K_EDIT);
 				break;
-			case 14:
+			case 15:
 				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Output Buffer Drain Timeout (milliseconds)"
 				               , str, 5, K_NUMBER | K_EDIT) > 0)
 					startup.outbuf_drain_timeout = atoi(str);
 				break;
-			case 15:
+			case 16:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 16:
+			case 17:
 				websrvr_cgi_cfg(&startup);
 				break;
-			case 17:
+			case 18:
 				websrvr_filebase_cfg(&startup);
 				break;
-			case 18:
+			case 19:
 				getar("Web Server Login", startup.login_ars);
 				break;
-			case 19:
+			case 20:
 				js_startup_cfg(&startup.js);
 				break;
-			case 20:
+			case 21:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
@@ -1248,6 +1263,11 @@ static void ftpsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
+		if (startup.max_requests_per_period < 1 || startup.request_rate_limit_period < 1)
+			SAFECOPY(str, strDisabled);
+		else
+			snprintf(str, sizeof str, "%u per %s", startup.max_requests_per_period, duration_to_vstr(startup.request_rate_limit_period, tmp, sizeof tmp));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Requests", str);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Sysop File System Access", startup.options & FTP_OPT_NO_LOCAL_FSYS ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Allow Bounce Transfers", startup.options & FTP_OPT_ALLOW_BOUNCE ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
@@ -1347,18 +1367,28 @@ static void ftpsrvr_cfg(void)
 					startup.max_concurrent_connections = atoi(str);
 				break;
 			case 12:
-				startup.options ^= FTP_OPT_NO_LOCAL_FSYS;
+				SAFECOPY(str, maximum(startup.max_requests_per_period));
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Requests (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
+					startup.max_requests_per_period = atoi(str);
+				if (startup.max_requests_per_period < 1)
+					break;
+				duration_to_vstr(startup.request_rate_limit_period, str, sizeof str);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Request Rate Limit Period", str, 10, K_EDIT) > 0)
+					startup.request_rate_limit_period = (uint)parse_duration(str);
 				break;
 			case 13:
-				startup.options ^= FTP_OPT_ALLOW_BOUNCE;
+				startup.options ^= FTP_OPT_NO_LOCAL_FSYS;
 				break;
 			case 14:
-				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
+				startup.options ^= FTP_OPT_ALLOW_BOUNCE;
 				break;
 			case 15:
-				getar("FTP Server Login", startup.login_ars);
+				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			case 16:
+				getar("FTP Server Login", startup.login_ars);
+				break;
+			case 17:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
@@ -1714,6 +1744,11 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Recipients Per Message", maximum(startup.max_recipients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Messages Waiting", maximum(startup.max_msgs_waiting));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s bytes", "Max Receive Message Size", byte_count_to_str(startup.max_msg_size, tmp, sizeof(tmp)));
+		if (startup.max_requests_per_period < 1 || startup.request_rate_limit_period < 1)
+			SAFECOPY(str, strDisabled);
+		else
+			snprintf(str, sizeof str, "%u per %s", startup.max_requests_per_period, duration_to_vstr(startup.request_rate_limit_period, tmp, sizeof tmp));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Requests", str);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Post Recipient", startup.post_to);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Default Recipient", startup.default_user);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Receive By Sysop Aliases", startup.options & MAIL_OPT_ALLOW_SYSOP_ALIASES ? "Yes" : "No");
@@ -1833,32 +1868,42 @@ static void mailsrvr_cfg(void)
 					startup.max_msg_size = (uint32_t)parse_byte_count(str, 1);
 				break;
 			case 16:
+				SAFECOPY(str, maximum(startup.max_requests_per_period));
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Requests (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
+					startup.max_requests_per_period = atoi(str);
+				if (startup.max_requests_per_period < 1)
+					break;
+				duration_to_vstr(startup.request_rate_limit_period, str, sizeof str);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Request Rate Limit Period", str, 10, K_EDIT) > 0)
+					startup.request_rate_limit_period = (uint)parse_duration(str);
+				break;
+			case 17:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Override Recipient of SMTP Posts"
 						   , startup.post_to, sizeof startup.post_to -1, K_EDIT);
 				break;
-			case 17:
+			case 18:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Default Recipient (user alias)"
 				           , startup.default_user, sizeof(startup.default_user) - 1, K_EDIT);
 				break;
-			case 18:
+			case 19:
 				startup.options ^= MAIL_OPT_ALLOW_SYSOP_ALIASES;
 				break;
-			case 19:
+			case 20:
 				startup.options ^= MAIL_OPT_NO_NOTIFY;
 				break;
-			case 20:
+			case 21:
 				startup.notify_offline_users = !startup.notify_offline_users;
 				break;
-			case 21:
+			case 22:
 				startup.options ^= MAIL_OPT_ALLOW_RELAY;
 				break;
-			case 22:
+			case 23:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 23:
+			case 24:
 				startup.options ^= MAIL_OPT_DNSBL_CHKRECVHDRS;
 				break;
-			case 24:
+			case 25:
 				i = 0;
 				strcpy(opt[i++], "Refuse Session");
 				strcpy(opt[i++], "Silently Ignore");
@@ -1894,30 +1939,30 @@ static void mailsrvr_cfg(void)
 				else
 					startup.options &= ~MAIL_OPT_DNSBL_THROTTLE;
 				break;
-			case 25:
+			case 26:
 				startup.options ^= MAIL_OPT_DNSBL_SPAMHASH;
 				break;
-			case 26:
+			case 27:
 				startup.options ^= MAIL_OPT_KILL_READ_SPAM;
 				break;
-			case 27:
+			case 28:
 				SAFECOPY(str, duration(startup.spam_block_duration, false, strInfinite));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Lifetime of ban of SPAM-bait taker IP", str, 8, K_EDIT) > 0)
 					startup.spam_block_duration = (uint)parse_duration(str);
 				break;
-			case 28:
+			case 29:
 				sendmail_cfg(&startup);
 				break;
-			case 29:
+			case 30:
 				getar("Mail Server Login", startup.login_ars);
 				break;
-			case 30:
+			case 31:
 				getar("Mail Archive", startup.archive_ars);
 				break;
-			case 31:
+			case 32:
 				js_startup_cfg(&startup.js);
 				break;
-			case 32:
+			case 33:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
