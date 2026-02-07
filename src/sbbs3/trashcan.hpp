@@ -1,4 +1,4 @@
-/* Synchronet client/content-filtering (trashcan/twit) functions */
+/* Synchronet *cached* client/content-filtering (trashcan/twit) class */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -27,30 +27,41 @@
 
 class trashCan {
 	public:
-		trashCan(scfg_t* cfg, const char* name, uint chk_interval = 10) :  chk_interval(chk_interval) {
+		trashCan(scfg_t* cfg, const char* name, uint fchk_interval = 10)
+			: fchk_interval(fchk_interval), cached(cfg->cache_filter_files) {
 			trashcan_fname(cfg, name, fname, sizeof fname);
 		}
 		~trashCan() {
 			strListFree(&list);
 		}
-		time_t timestamp{};
-		unsigned int read_count{};
-		unsigned int total_found{};
-		time_t chk_interval; // seconds
+		std::atomic<uint> fread_count{};
+		std::atomic<uint> total_found{};
 		bool listed(const char* str1, const char* str2 = nullptr, struct trash* details = nullptr) {
-			const std::lock_guard<std::mutex> lock(mutex);
-			time_t now = time(NULL);
-			if ((now - lastftime_check) >= chk_interval) {
-				lastftime_check = now;
-				time_t latest = fdate(fname);
-				if (latest > timestamp) {
-					strListFree(&list);
-					list = findstr_list(fname);
-					timestamp = latest;
-					++read_count;
+			bool result;
+			time_t now = time(nullptr);
+			if (cached) {
+				const std::lock_guard<std::mutex> lock(mutex);
+				if ((now - lastftime_check) >= fchk_interval) {
+					lastftime_check = now;
+					time_t latest = fdate(fname);
+					if (latest > timestamp) {
+						strListFree(&list);
+						list = findstr_list(fname);
+						timestamp = latest;
+						++fread_count;
+					}
+				}
+				result = trash_in_list(str1, str2, list, details);
+			} else {
+				char str[FINDSTR_MAX_LINE_LEN + 1];
+				result = find2strs(str1, str2, fname, str);
+				++fread_count;
+				if (details != nullptr) {
+					if (trash_parse_details(str, details, nullptr, 0)
+						&& details->expires && details->expires <= now)
+						result = false;
 				}
 			}
-			bool result = trash_in_list(str1, str2, list, details);
 			if (result)
 				++total_found;
 			return result;
@@ -60,6 +71,9 @@ class trashCan {
 		str_list_t list{};
 		std::mutex mutex;
 		time_t lastftime_check{};
+		time_t timestamp{};
+		time_t fchk_interval; // seconds
+		bool cached;
 };
 
 #endif  /* Don't add anything after this line */

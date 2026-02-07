@@ -2779,6 +2779,7 @@ void sys_cfg(void)
 					         , cfg.ctrlkey_passthru);
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Statistics Interval"
 						, duration_to_vstr(cfg.stats_interval, str, sizeof str));
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Cache Filter Files", cfg.cache_filter_files ? "Yes" : "No");
 					opt[i][0] = 0;
 					uifc.helpbuf =
 						"`System Advanced Options:`\n"
@@ -3155,6 +3156,26 @@ void sys_cfg(void)
 							           , "Statistics Interval (cache duration)"
 							           , str, 10, K_UPPER | K_EDIT);
 							cfg.stats_interval = (uint)parse_duration(str);
+							break;
+						case 22:
+							uifc.helpbuf =
+								"`Cache Filter Files:`\n"
+								"\n"
+								"Some filter files (e.g. `text/*.can`) are frequently checked (e.g. upon\n"
+								"every incoming TCP connection) and these files can become quite large.\n"
+								"Caching these file contents in memory may dramatically speed up these\n"
+								"checks and reduce redundant disk I/O.\n"
+								"\n"
+								"Setting this option to `Yes` enables caching of filter files, using more\n"
+								"memory.  Setting it to `No` disables caching of filter files, increasing\n"
+								"disk I/O operations.\n"
+								"\n"
+								"If unsure, leave this value set to `Yes`, the default.\n"
+							;
+							i = cfg.cache_filter_files ? 0 : 1;
+							i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Cache Filter Files", uifcYesNoOpts);
+							if (i == uifcYes || i == uifcNo)
+								cfg.cache_filter_files = (i == uifcYes);
 							break;
 					}
 				}
