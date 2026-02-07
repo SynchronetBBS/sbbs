@@ -626,6 +626,9 @@ bool sbbs_read_ini(
 		ftp->bind_retry_delay = iniGetInteger(list, section, strBindRetryDelay, global->bind_retry_delay);
 		ftp->login_attempt = get_login_attempt_settings(list, section, global);
 		ftp->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, 0);
+		ftp->max_requests_per_period = iniGetUInteger(list, section, strMaxRequestPerPeriod, 0);
+		ftp->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
+
 	}
 
 	/***********************************************************************/
@@ -735,6 +738,8 @@ bool sbbs_read_ini(
 		mail->bind_retry_delay = iniGetInteger(list, section, strBindRetryDelay, global->bind_retry_delay);
 		mail->login_attempt = get_login_attempt_settings(list, section, global);
 		mail->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, 0);
+		mail->max_requests_per_period = iniGetUInteger(list, section, strMaxRequestPerPeriod, 0);
+		mail->request_rate_limit_period = iniGetUInteger(list, section, strRequestRateLimitPeriod, 60 * 60);
 		mail->spam_block_duration = (uint)iniGetDuration(list, section, "SpamBlockDuration", 0);
 		mail->notify_offline_users = iniGetBool(list, section, "NotifyOfflineUsers", false);
 	}
@@ -1120,6 +1125,10 @@ bool sbbs_write_ini(
 				break;
 			if (!iniSetUInteger(lp, section, strMaxConConn, ftp->max_concurrent_connections, &style))
 				break;
+			if (!iniSetUInteger(lp, section, strMaxRequestPerPeriod, ftp->max_requests_per_period, &style))
+				break;
+			if (!iniSetUInteger(lp, section, strRequestRateLimitPeriod, ftp->request_rate_limit_period, &style))
+				break;
 			if (!iniSetDuration(lp, section, "QwkTimeout", ftp->qwk_timeout, &style))
 				break;
 			if (!iniSetBytes(lp, section, "MinFileSize", 1, ftp->min_fsize, &style))
@@ -1251,6 +1260,10 @@ bool sbbs_write_ini(
 			if (!iniSetDuration(lp, section, "ConnectTimeout", mail->connect_timeout, &style))
 				break;
 			if (!iniSetUInteger(lp, section, strMaxConConn, mail->max_concurrent_connections, &style))
+				break;
+			if (!iniSetUInteger(lp, section, strMaxRequestPerPeriod, mail->max_requests_per_period, &style))
+				break;
+			if (!iniSetUInteger(lp, section, strRequestRateLimitPeriod, mail->request_rate_limit_period, &style))
 				break;
 
 			if (strcmp(mail->host_name, global->host_name) == 0

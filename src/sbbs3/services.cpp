@@ -47,7 +47,7 @@
 #include "js_socket.h"
 #include "multisock.h"
 #include "ssl.h"
-#include "trashcan.hpp"
+#include "filterfile.hpp"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -1138,8 +1138,8 @@ static void js_service_thread(void* arg)
 	if (host_can->listed(host_name, nullptr, &trash)) {
 		if (!trash.quiet && service->log_level >= LOG_NOTICE) {
 			char details[128];
-			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
-			        , socket, service->protocol, client.addr, host_name, trash_details(&trash, details, sizeof details));
+			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s: %s %s"
+			        , socket, service->protocol, client.addr, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
 		}
 		close_socket(socket);
 		protected_uint32_adjust(service->clients, -1);
@@ -1559,8 +1559,8 @@ static void native_service_thread(void* arg)
 	if (host_can->listed(host_name, nullptr, &trash)) {
 		if (!trash.quiet) {
 			char details[128];
-			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
-					, socket, service->protocol, client.addr, host_name, trash_details(&trash, details, sizeof details));
+			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s: %s %s"
+					, socket, service->protocol, client.addr, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
 		}
 		close_socket(socket);
 		protected_uint32_adjust(service->clients, -1);
@@ -1812,10 +1812,6 @@ static void cleanup(int code)
 
 	free_cfg(&scfg);
 
-	delete ip_can, ip_can = nullptr;
-	delete ip_silent_can, ip_silent_can = nullptr;
-	delete host_can, host_can = nullptr;
-
 	semfile_list_free(&pause_semfiles);
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
@@ -1833,11 +1829,17 @@ static void cleanup(int code)
 
 	thread_down();
 	if (terminated || code) {
-		lprintf(LOG_INFO, "#### Services thread terminated (%lu clients served, %u concurrently)", served, client_highwater);
+		lprintf(LOG_INFO, "#### Services thread terminated (%lu clients served, %u concurrently, denied: %u due to IP address, %u due to hostname)"
+		        , served, client_highwater, ip_can->total_found.load() + ip_silent_can->total_found.load(), host_can->total_found.load());
 		set_state(SERVER_STOPPED);
 		if (startup != NULL && startup->terminated != NULL)
 			startup->terminated(startup->cbdata, code);
 	}
+
+	delete ip_can, ip_can = nullptr;
+	delete ip_silent_can, ip_silent_can = nullptr;
+	delete host_can, host_can = nullptr;
+
 	mqtt_shutdown(&mqtt);
 }
 
@@ -2443,8 +2445,8 @@ void services_thread(void* arg)
 					if (ip_can->listed(host_ip, nullptr, &trash)) {
 						if (!trash.quiet) {
 							char details[128];
-							lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can %s"
-									, client_socket, service[i].protocol, host_ip, trash_details(&trash, details, sizeof details));
+							lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s %s"
+									, client_socket, service[i].protocol, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
 						}
 						FREE_AND_NULL(udp_buf);
 						close_socket(client_socket);

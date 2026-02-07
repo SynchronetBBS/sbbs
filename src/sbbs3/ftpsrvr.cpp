@@ -43,7 +43,8 @@
 #include "xpprintf.h"       // vasprintf
 #include "md5.h"
 #include "sauce.h"
-#include "trashcan.hpp"
+#include "filterfile.hpp"
+#include "ratelimit.hpp"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -94,6 +95,7 @@ static str_list_t         recycle_semfiles;
 static str_list_t         shutdown_semfiles;
 static link_list_t        current_connections;
 
+static rateLimiter*       request_rate_limiter = nullptr;
 static trashCan*          ip_can = nullptr;
 static trashCan*          ip_silent_can = nullptr;
 static trashCan*          host_can = nullptr;
@@ -2326,7 +2328,7 @@ static void ctrl_thread(void* arg)
 	if (ip_can->listed(host_ip, nullptr, &trash)) {
 		if (!trash.quiet) {
 			char details[128];
-			lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in ip.can %s", sock, host_ip, trash_details(&trash, details, sizeof details));
+			lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in %s %s", sock, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
 		}
 		sockprintf(sock, sess, "550 Access denied.");
 		ftp_close_socket(&sock, &sess, __LINE__);
@@ -2336,7 +2338,7 @@ static void ctrl_thread(void* arg)
 	if (host_can->listed(host_name, nullptr, &trash)) {
 		if (!trash.quiet) {
 			char details[128];
-			lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in host.can: %s %s", sock, host_ip, host_name, trash_details(&trash, details, sizeof details));
+			lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in %s: %s %s", sock, host_ip, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
 		}
 		sockprintf(sock, sess, "550 Access denied.");
 		ftp_close_socket(&sock, &sess, __LINE__);
@@ -2430,6 +2432,12 @@ static void ctrl_thread(void* arg)
 		}
 		if (!(*cmd))
 			continue;
+		if (request_rate_limiter->allowRequest(host_ip) == false) {
+			lprintf(LOG_NOTICE, "%04d <%s> Too many requests per rate limit (%u over %us)"
+				, sock, user.number ? user.alias : host_ip, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds);
+			sockprintf(sock, sess, "421 Too many requests, try again later.");
+			break;
+		}
 		if (startup->options & FTP_OPT_DEBUG_RX)
 			lprintf(LOG_DEBUG, "%04d <%s> RX%s: %s", sock, user.number ? user.alias : host_ip, sess == -1 ? "" : "S", cmd);
 		if (!stricmp(cmd, "NOOP")) {
@@ -5100,10 +5108,6 @@ static void cleanup(int code, int line)
 	free_cfg(&scfg);
 	free_text(text);
 
-	delete ip_can, ip_can = nullptr;
-	delete ip_silent_can, ip_silent_can = nullptr;
-	delete host_can, host_can = nullptr;
-
 	semfile_list_free(&pause_semfiles);
 	semfile_list_free(&recycle_semfiles);
 	semfile_list_free(&shutdown_semfiles);
@@ -5129,11 +5133,18 @@ static void cleanup(int code, int line)
 
 	thread_down();
 	if (terminate_server || code) {
-		lprintf(LOG_INFO, "#### FTP Server thread terminated (%lu clients served, %u concurrently)", served, client_highwater);
+		lprintf(LOG_INFO, "#### FTP Server thread terminated (%lu clients served, %u concurrently, denied: %u due to rate limit, %u due to IP address, %u due to hostname)"
+		        , served, client_highwater, request_rate_limiter->disallowed.load(), ip_can->total_found.load() + ip_silent_can->total_found.load(), host_can->total_found.load());
 		set_state(SERVER_STOPPED);
 		if (startup != NULL && startup->terminated != NULL)
 			startup->terminated(startup->cbdata, code);
 	}
+
+	delete request_rate_limiter, request_rate_limiter = nullptr;
+	delete ip_can, ip_can = nullptr;
+	delete ip_silent_can, ip_silent_can = nullptr;
+	delete host_can, host_can = nullptr;
+
 	mqtt_shutdown(&mqtt);
 }
 
@@ -5331,6 +5342,7 @@ void ftp_server(void* arg)
 		 */
 		xpms_add_list(ftp_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "FTP Server", &terminate_server, ftp_open_socket_cb, startup->seteuid, NULL);
 
+		request_rate_limiter = new rateLimiter(startup->max_requests_per_period, startup->request_rate_limit_period);
 		ip_can = new trashCan(&scfg, "ip", startup->sem_chk_freq);
 		ip_silent_can = new trashCan(&scfg, "ip-silent", startup->sem_chk_freq);
 		host_can = new trashCan(&scfg, "host", startup->sem_chk_freq);

@@ -44,6 +44,8 @@ typedef struct {
 	int64_t min_fsize;          /* Minimum file size accepted for upload */
 	int64_t max_fsize;          /* Maximum file size accepted for upload (0=unlimited) */
 	uint max_concurrent_connections;
+	uint max_requests_per_period;
+	uint request_rate_limit_period;
 	char index_file_name[64];
 	char login_info_save[INI_MAX_VALUE_LEN];
 

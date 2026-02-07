@@ -1,4 +1,4 @@
-/* Synchronet *cached* client/content-filtering (trashcan/twit) class */
+/* Synchronet *cached* client/content-filtering (trashcan/twit) file classes */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -19,23 +19,28 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef TRASH_HPP_
-#define TRASH_HPP_
+#ifndef FILTERFILE_HPP_
+#define FILTERFILE_HPP_
 #include "trash.h"
+#include <atomic>
 #include <mutex>
 #include <time.h>
 
-class trashCan {
+class filterFile {
 	public:
-		trashCan(scfg_t* cfg, const char* name, uint fchk_interval = 10)
+		filterFile(scfg_t* cfg, const char* fname, uint fchk_interval = 10)
 			: fchk_interval(fchk_interval), cached(cfg->cache_filter_files) {
-			trashcan_fname(cfg, name, fname, sizeof fname);
+			strlcpy(this->fname, fname, sizeof this->fname);
 		}
-		~trashCan() {
+		filterFile() = default;
+		~filterFile() {
 			strListFree(&list);
 		}
 		std::atomic<uint> fread_count{};
 		std::atomic<uint> total_found{};
+		time_t fchk_interval; // seconds
+		bool cached;
+		char fname[MAX_PATH + 1];
 		bool listed(const char* str1, const char* str2 = nullptr, struct trash* details = nullptr) {
 			bool result;
 			time_t now = time(nullptr);
@@ -67,13 +72,20 @@ class trashCan {
 			return result;
 		}
 	private:
-		char fname[MAX_PATH + 1];
 		str_list_t list{};
 		std::mutex mutex;
 		time_t lastftime_check{};
 		time_t timestamp{};
-		time_t fchk_interval; // seconds
-		bool cached;
+
+};
+
+class trashCan : public filterFile {
+	public:
+		trashCan(scfg_t* cfg, const char* name, uint fchk_interval = 10) {
+			trashcan_fname(cfg, name, filterFile::fname, sizeof filterFile::fname);
+			filterFile::fchk_interval = fchk_interval;
+			filterFile::cached  = cfg->cache_filter_files;
+		}
 };
 
 #endif  /* Don't add anything after this line */

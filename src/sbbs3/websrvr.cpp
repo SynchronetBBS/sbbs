@@ -72,7 +72,7 @@
 #include "xpmap.h"
 #include "xpprintf.h"
 #include "ratelimit.hpp"
-#include "trashcan.hpp"
+#include "filterfile.hpp"
 
 static const char*  server_name = "Synchronet Web Server";
 static const char*  server_abbrev = "web";
@@ -6923,8 +6923,8 @@ void http_session_thread(void* arg)
 		if (host_name[0] && host_can->listed(host_name, nullptr, &trash)) {
 			if (!trash.quiet) {
 				char details[128];
-				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in host.can: %s %s"
-						, session.socket, session.client.protocol, session.host_ip, host_name, trash_details(&trash, details, sizeof details));
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s: %s %s"
+						, session.socket, session.client.protocol, session.host_ip, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
 			}
 			close_session_socket(&session);
 			sem_wait(&session.output_thread_terminated);
@@ -6954,8 +6954,8 @@ void http_session_thread(void* arg)
 			        , duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
 		} else if (!trash.quiet) {
 			char details[128];
-			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in ip.can %s"
-			        , session.socket, session.client.protocol, session.host_ip, trash_details(&trash, details, sizeof details));
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s %s"
+			        , session.socket, session.client.protocol, session.host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
 		}
 		close_session_socket(&session);
 		sem_wait(&session.output_thread_terminated);
@@ -7209,19 +7209,20 @@ static void cleanup(int code)
 		lprintf(LOG_ERR, "0000 !WSACleanup ERROR %d", SOCKET_ERRNO);
 #endif
 
+	thread_down();
+	if (terminate_server || code) {
+		lprintf(LOG_INFO, "#### Web Server thread terminated (%lu clients served, %u concurrently, denied: %u due to rate limit, %u due to IP address, %u due to hostname)"
+		        , served, client_highwater, request_rate_limiter->disallowed.load(), ip_can->total_found.load() + ip_silent_can->total_found.load(), host_can->total_found.load());
+		set_state(SERVER_STOPPED);
+		if (startup != NULL && startup->terminated != NULL)
+			startup->terminated(startup->cbdata, code);
+	}
+
 	delete request_rate_limiter, request_rate_limiter = nullptr;
 	delete ip_can, ip_can = nullptr;
 	delete ip_silent_can, ip_silent_can = nullptr;
 	delete host_can, host_can = nullptr;
 
-	thread_down();
-	if (terminate_server || code) {
-		lprintf(LOG_INFO, "#### Web Server thread terminated (%lu clients served, %u concurrently)"
-		        , served, client_highwater);
-		set_state(SERVER_STOPPED);
-		if (startup != NULL && startup->terminated != NULL)
-			startup->terminated(startup->cbdata, code);
-	}
 	mqtt_shutdown(&mqtt);
 }
 

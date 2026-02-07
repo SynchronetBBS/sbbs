@@ -21,6 +21,7 @@
 
 #include <unordered_map>
 #include <deque>
+#include <atomic>
 
 class rateLimiter {
 
@@ -34,7 +35,7 @@ class rateLimiter {
 		unsigned int count{};
 		time_t time{};
 	} currHighwater, prevHighwater;
-	unsigned int disallowed{};
+	std::atomic<uint> disallowed{};
 	bool allowRequest(const std::string& clientId) {
 		if (maxRequests == 0 || timeWindowSeconds == 0)
 			return true;

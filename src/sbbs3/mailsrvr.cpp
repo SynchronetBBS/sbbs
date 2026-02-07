@@ -47,7 +47,8 @@
 #include "mxlookup.h"
 #include "ssl.h"
 #include "cryptlib.h"
-#include "trashcan.hpp"
+#include "filterfile.hpp"
+#include "ratelimit.hpp"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -100,9 +101,11 @@ static bool               savemsg_mutex_created = false;
 static pthread_mutex_t    savemsg_mutex;
 static struct mqtt        mqtt;
 
+static rateLimiter*       request_rate_limiter = nullptr;
 static trashCan*          ip_can = nullptr;
 static trashCan*          ip_silent_can = nullptr;
 static trashCan*          host_can = nullptr;
+static filterFile*        spam_block = nullptr;
 
 static const char*        servprot_smtp = "SMTP";
 static const char*        servprot_submission = "SMTP";
@@ -115,7 +118,6 @@ struct {
 	volatile ulong errors;
 	volatile ulong crit_errors;
 	volatile ulong connections_exceeded;
-	volatile ulong connections_ignored;
 	volatile ulong connections_refused;
 	volatile ulong connections_served;
 	volatile ulong pop3_served;
@@ -1196,7 +1198,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 	if (ip_can->listed(host_ip, nullptr, &trash)) {
 		if (!trash.quiet) {
 			char details[128];
-			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in ip.can %s", socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details));
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s %s", socket, client.protocol, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
 		}
 		sockprintf(socket, client.protocol, session, "-ERR Access denied.");
 		return false;
@@ -1204,8 +1206,8 @@ static bool pop3_client_thread(pop3_t* pop3)
 	if (host_can->listed(host_name, nullptr, &trash)) {
 		if (!trash.quiet) {
 			char details[128];
-			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in host.can: %s %s"
-					, socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details));
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s: %s %s"
+					, socket, client.protocol, host_ip, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
 		}
 		sockprintf(socket, client.protocol, session, "-ERR Access denied.");
 		return false;
@@ -1463,6 +1465,12 @@ static bool pop3_client_thread(pop3_t* pop3)
 			truncsp(buf);
 			if (startup->options & MAIL_OPT_DEBUG_POP3)
 				lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, client.protocol, buf);
+			if (request_rate_limiter->allowRequest(host_ip) == false) {
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> Too many requests per rate limit (%u over %us)"
+					, socket, client.protocol, host_ip, user.alias, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds);
+				sockprintf(socket, client.protocol, session, "-ERR too many requests, try again later");
+				break;
+			}
 			if (smb_islocked(&smb)) {
 				lprintf(LOG_WARNING, "%04d %-5s [%s] <%s> !MAIL BASE LOCKED: %s", socket, client.protocol, host_ip, user.alias, smb.last_error);
 				sockprintf(socket, client.protocol, session, "-ERR database locked, try again later");
@@ -2939,7 +2947,6 @@ static bool smtp_client_thread(smtp_t* smtp)
 	char              domain_list[MAX_PATH + 1];
 	char              spam_bait[MAX_PATH + 1];
 	bool              spam_bait_result = false;
-	char              spam_block[MAX_PATH + 1];
 	char              spam_block_exemptions[MAX_PATH + 1];
 	bool              spam_block_exempt = false;
 	char              host_name[128];
@@ -3110,7 +3117,6 @@ static bool smtp_client_thread(smtp_t* smtp)
 	SAFECOPY(hello_name, host_name);
 
 	SAFEPRINTF(spam_bait, "%sspambait.cfg", scfg.ctrl_dir);
-	SAFEPRINTF(spam_block, "%sspamblock.cfg", scfg.ctrl_dir);
 	SAFEPRINTF(spam_block_exemptions, "%sspamblock_exempt.cfg", scfg.ctrl_dir);
 
 	if (strcmp(server_ip, host_ip) == 0) {
@@ -3127,29 +3133,27 @@ static bool smtp_client_thread(smtp_t* smtp)
 		}
 
 		spam_block_exempt = find2strs(host_ip, host_name, spam_block_exemptions, NULL);
-		if (!spam_block_exempt && findstr(host_ip, spam_block)) {
-			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s (%lu total)"
-			        , socket, client.protocol, host_ip, spam_block, ++stats.sessions_refused);
+		if (!spam_block_exempt && spam_block->listed(host_ip)) {
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s (%u total)"
+			        , socket, client.protocol, host_ip, spam_block->fname, spam_block->total_found.load());
 			sockprintf(socket, client.protocol, session, "550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
 			return false;
 		}
 		struct trash trash;
 		if (ip_can->listed(host_ip, nullptr, &trash)) {
-			++stats.sessions_refused;
 			if (!trash.quiet) {
 				char details[128];
-				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in ip.can %s (%lu total)"
-						, socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details), stats.sessions_refused);
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s %s (%u total)"
+						, socket, client.protocol, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details), ip_can->total_found.load());
 			}
 			sockprintf(socket, client.protocol, session, "550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
 			return false;
 		}
 		if (host_can->listed(host_name, nullptr, &trash)) {
-			++stats.sessions_refused;
 			if (!trash.quiet) {
 				char details[128];
-				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in host.can: %s %s (%lu total)"
-						, socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details), stats.sessions_refused);
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s: %s %s (%u total)"
+						, socket, client.protocol, host_ip, host_can->fname, host_name, trash_details(&trash, details, sizeof details), host_can->total_found.load());
 			}
 			sockprintf(socket, client.protocol, session, "550 CLIENT HOSTNAME BLOCKED: %s", host_name);
 			return false;
@@ -4163,6 +4167,12 @@ static bool smtp_client_thread(smtp_t* smtp)
 			hdr_lines++;
 			continue;
 		}
+		if (request_rate_limiter->allowRequest(host_ip) == false) {
+			lprintf(LOG_NOTICE, "%04d %-5s %s Too many requests per rate limit (%u over %us)"
+				, socket, client.protocol, client_id, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds);
+			sockprintf(socket, client.protocol, session, "421 too many requests, try again later");
+			break;
+		}
 		if (strlen(buf) > SMTP_MAX_CMD_LEN) {
 			lprintf(LOG_NOTICE, "%04d %-5s %s sent an ILLEGALLY-LONG command line (%d chars > %d): '%s'"
 			        , socket, client.protocol, client_id, (int)strlen(buf), SMTP_MAX_CMD_LEN, buf);
@@ -4657,8 +4667,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 					strcpy(tmp, "IGNORED");
 					if (dnsbl_result.s_addr == 0                       /* Don't double-filter */
 					    && !spam_block_exempt)  {
-						lprintf(LOG_NOTICE, "%04d %-5s !BLOCKING IP ADDRESS: %s in %s", socket, client.protocol, client_id, spam_block);
-						filter_ip(&scfg, client.protocol, reason, host_name, host_ip, reverse_path, spam_block, startup->spam_block_duration);
+						lprintf(LOG_NOTICE, "%04d %-5s !BLOCKING IP ADDRESS: %s in %s", socket, client.protocol, client_id, spam_block->fname);
+						filter_ip(&scfg, client.protocol, reason, host_name, host_ip, reverse_path, spam_block->fname, startup->spam_block_duration);
 						strcat(tmp, " and BLOCKED");
 					}
 					spamlog(&scfg, &mqtt, client.protocol, tmp, "Attempted recipient in SPAM BAIT list"
@@ -6066,10 +6076,6 @@ static void cleanup(int code)
 	else
 		protected_uint32_destroy(active_clients);
 
-	delete ip_can, ip_can = nullptr;
-	delete ip_silent_can, ip_silent_can = nullptr;
-	delete host_can, host_can = nullptr;
-
 #ifdef _WINSOCKAPI_
 	if (WSAInitialized && WSACleanup() != 0)
 		lprintf(LOG_ERR, "0000 !WSACleanup ERROR %d", SOCKET_ERRNO);
@@ -6082,8 +6088,14 @@ static void cleanup(int code)
 			sprintf(str + strlen(str), ", %lu exceeded max", stats.connections_exceeded);
 		if (stats.connections_refused)
 			sprintf(str + strlen(str), ", %lu refused", stats.connections_refused);
-		if (stats.connections_ignored)
-			sprintf(str + strlen(str), ", %lu ignored", stats.connections_refused);
+		if (host_can->total_found)
+			sprintf(str + strlen(str), ", %u host-filtered", host_can->total_found.load());
+		if (ip_can->total_found)
+			sprintf(str + strlen(str), ", %u ip-filtered", ip_can->total_found.load());
+		if (ip_silent_can->total_found)
+			sprintf(str + strlen(str), ", %u ip-ignored", ip_silent_can->total_found.load());
+		if (spam_block->total_found)
+			sprintf(str + strlen(str), ", %u spam-blocked", spam_block->total_found.load());
 		if (stats.sessions_refused)
 			sprintf(str + strlen(str), ", %lu sessions refused", stats.sessions_refused);
 		sprintf(str + strlen(str), ", %lu messages received", stats.msgs_received);
@@ -6097,12 +6109,21 @@ static void cleanup(int code)
 			sprintf(str + strlen(str), ", %lu critical", stats.crit_errors);
 		if (client_highwater > 1)
 			sprintf(str + strlen(str), ", %u concurrent clients", client_highwater);
+		if (request_rate_limiter->disallowed)
+			sprintf(str + strlen(str), ", %u rate-limited-requests", request_rate_limiter->disallowed.load());
 
 		lprintf(LOG_INFO, "#### Mail Server thread terminated (%s)", str);
 		set_state(SERVER_STOPPED);
 		if (startup != NULL && startup->terminated != NULL)
 			startup->terminated(startup->cbdata, code);
 	}
+
+	delete request_rate_limiter, request_rate_limiter = nullptr;
+	delete ip_can, ip_can = nullptr;
+	delete ip_silent_can, ip_silent_can = nullptr;
+	delete host_can, host_can = nullptr;
+	delete spam_block, spam_block = nullptr;
+
 	mqtt_shutdown(&mqtt);
 }
 
@@ -6387,9 +6408,12 @@ void mail_server(void* arg)
 				lprintf(LOG_INFO, "POP3S No extra interfaces listening");
 		}
 
+		request_rate_limiter = new rateLimiter(startup->max_requests_per_period, startup->request_rate_limit_period);
 		ip_can = new trashCan(&scfg, "ip", startup->sem_chk_freq);
 		ip_silent_can = new trashCan(&scfg, "ip-silent", startup->sem_chk_freq);
 		host_can = new trashCan(&scfg, "host", startup->sem_chk_freq);
+		SAFEPRINTF(path, "%sspamblock.cfg", scfg.ctrl_dir);
+		spam_block = new filterFile(&scfg, path, startup->sem_chk_freq);
 
 		sem_init(&sendmail_wakeup_sem, 0, 0);
 
@@ -6481,7 +6505,6 @@ void mail_server(void* arg)
 
 				if (ip_silent_can->listed(host_ip)) {
 					mail_close_socket(&client_socket, &session);
-					stats.connections_ignored++;
 					continue;
 				}
 
