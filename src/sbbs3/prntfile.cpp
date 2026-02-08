@@ -226,7 +226,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 				utf8_normalize_str(buf);
 			if (putmsgfrag(buf, mode, org_cols, obj) != '\0') // early-EOF?
 				break;
-			if (*buf == '\0' || term->column > 0)
+			if (term->bstrlen(buf, mode) < 1 || term->column > 0)
 				term->newline();
 			++lncntr;
 			if ((mode & P_SEEK) && (lncntr == term->rows - 1 || key == TERM_KEY_DOWN || key == '\r')) {
