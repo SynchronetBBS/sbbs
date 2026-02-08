@@ -353,6 +353,16 @@ public:
 					count--;
 				else if (*str == '/' && count) // Conditional newline
 					break;
+			} else if ((mode & P_PCBOARD) && *str == '@' && *(str + 1) == 'X' && IS_UPPERHEXDIGIT(*(str + 2)) && IS_UPPERHEXDIGIT(*(str + 3))) {
+				len = 4;
+			} else if ((mode & P_WILDCAT) && *str == '@' && IS_UPPERHEXDIGIT(*(str + 1)) && IS_UPPERHEXDIGIT(*(str + 2)) && *(str + 3) == '@') {
+				len = 4;
+			} else if ((mode & P_RENEGADE) && *str == '|' && IS_DIGIT(*(str + 1)) && IS_DIGIT(*(str + 2))) {
+				len = 3;
+			} else if ((mode & P_CELERITY) && *str == '|' && IS_ALPHA(*(str + 1))) {
+				len = 2;
+			} else if ((mode & P_WWIV) && *str == CTRL_C && IS_DIGIT(*(str + 1))) {
+				len = 2;
 			} else if (((*str) & 0x80) && (mode & P_UTF8)) {
 				enum unicode_codepoint codepoint = UNICODE_UNDEFINED;
 				len = utf8_getc(str, end - str, &codepoint);
