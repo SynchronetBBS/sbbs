@@ -499,6 +499,7 @@ typedef struct {
 #define IS_PRINTABLE(c)					isprint((unsigned char)(c))
 #define IS_DIGIT(c)						isdigit((unsigned char)(c))
 #define IS_HEXDIGIT(c)					isxdigit((unsigned char)(c))
+#define IS_UPPERHEXDIGIT(c)				(((c) >= '0' && (c) <= '9') || ((c) >= 'A' && (c) <= 'F'))
 #define IS_OCTDIGIT(c)					((c) >= '0' && (c) <= '7')
 #define SKIP_WHITESPACE(p)              while((p) && *(p) && IS_WHITESPACE(*(p)))        (p)++;
 #define FIND_WHITESPACE(p)              while((p) && *(p) && !IS_WHITESPACE(*(p)))       (p)++;
