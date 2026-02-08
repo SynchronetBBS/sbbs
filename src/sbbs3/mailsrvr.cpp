@@ -105,6 +105,7 @@ static rateLimiter*       request_rate_limiter = nullptr;
 static trashCan*          ip_can = nullptr;
 static trashCan*          ip_silent_can = nullptr;
 static trashCan*          host_can = nullptr;
+static filterFile*        host_exempt = nullptr;
 static filterFile*        spam_block = nullptr;
 
 static const char*        servprot_smtp = "SMTP";
@@ -1465,7 +1466,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 			truncsp(buf);
 			if (startup->options & MAIL_OPT_DEBUG_POP3)
 				lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, client.protocol, buf);
-			if (request_rate_limiter->allowRequest(host_ip) == false) {
+			if (!host_exempt->listed(host_ip, host_name) && request_rate_limiter->allowRequest(host_ip) == false) {
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> Too many requests per rate limit (%u over %us)"
 					, socket, client.protocol, host_ip, user.alias, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds);
 				sockprintf(socket, client.protocol, session, "-ERR too many requests, try again later");
@@ -4167,7 +4168,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			hdr_lines++;
 			continue;
 		}
-		if (request_rate_limiter->allowRequest(host_ip) == false) {
+		if (!host_exempt->listed(host_ip, host_name) && request_rate_limiter->allowRequest(host_ip) == false) {
 			lprintf(LOG_NOTICE, "%04d %-5s %s Too many requests per rate limit (%u over %us)"
 				, socket, client.protocol, client_id, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds);
 			sockprintf(socket, client.protocol, session, "421 too many requests, try again later");
@@ -6118,10 +6119,10 @@ static void cleanup(int code)
 			startup->terminated(startup->cbdata, code);
 	}
 
-	delete request_rate_limiter, request_rate_limiter = nullptr;
 	delete ip_can, ip_can = nullptr;
 	delete ip_silent_can, ip_silent_can = nullptr;
 	delete host_can, host_can = nullptr;
+	delete host_exempt, host_exempt = nullptr;
 	delete spam_block, spam_block = nullptr;
 
 	mqtt_shutdown(&mqtt);
@@ -6212,6 +6213,7 @@ void mail_server(void* arg)
 
 	SetThreadName("sbbs/mailServer");
 	protected_uint32_init(&thread_count, 0);
+	request_rate_limiter = new rateLimiter(startup->max_requests_per_period, startup->request_rate_limit_period);
 
 	do {
 		listInit(&current_logins, LINK_LIST_MUTEX);
@@ -6408,12 +6410,14 @@ void mail_server(void* arg)
 				lprintf(LOG_INFO, "POP3S No extra interfaces listening");
 		}
 
-		request_rate_limiter = new rateLimiter(startup->max_requests_per_period, startup->request_rate_limit_period);
+		request_rate_limiter->maxRequests = startup->max_requests_per_period;
+		request_rate_limiter->timeWindowSeconds = startup->request_rate_limit_period;
+
 		ip_can = new trashCan(&scfg, "ip", startup->sem_chk_freq);
 		ip_silent_can = new trashCan(&scfg, "ip-silent", startup->sem_chk_freq);
 		host_can = new trashCan(&scfg, "host", startup->sem_chk_freq);
-		SAFEPRINTF(path, "%sspamblock.cfg", scfg.ctrl_dir);
-		spam_block = new filterFile(&scfg, path, startup->sem_chk_freq);
+		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile, startup->sem_chk_freq);
+		spam_block = new filterFile(&scfg, "spamblock.cfg", startup->sem_chk_freq);
 
 		sem_init(&sendmail_wakeup_sem, 0, 0);
 
@@ -6442,6 +6446,8 @@ void mail_server(void* arg)
 		lprintf(LOG_INFO, "Mail Server thread started");
 		mqtt_client_max(&mqtt, startup->max_clients);
 
+		char rate_limit_report[256]{};
+		time_t last_rate_limit_report = time(NULL);
 		while (!terminated && !terminate_server) {
 			YIELD();
 
@@ -6472,6 +6478,23 @@ void mail_server(void* arg)
 				set_state(SERVER_PAUSED);
 				SLEEP(startup->sem_chk_freq * 1000);
 				continue;
+			}
+			if (startup->max_requests_per_period > 0 && startup->request_rate_limit_period > 0
+				&& time(NULL) - last_rate_limit_report >= startup->sem_chk_freq) {
+				last_rate_limit_report = time(NULL);
+				request_rate_limiter->cleanup();
+				size_t most_active_count = 0;
+				std::string most_active = request_rate_limiter->most_active(&most_active_count);
+				char tmp[128], tmp2[128];
+				snprintf(str, sizeof str, "Rate limiting current; clients=%zu, requests=%zu, most-active=%s (%zu), highest: %s (%u) on %s, limited: %u, last: %s on %s"
+					, request_rate_limiter->client_count(), request_rate_limiter->total(), most_active.c_str(), most_active_count
+					, request_rate_limiter->currHighwater.client.c_str(), request_rate_limiter->currHighwater.count
+					, timestr(&scfg, (time32_t)request_rate_limiter->currHighwater.time, tmp), request_rate_limiter->disallowed.load()
+					, request_rate_limiter->lastLimited.client.c_str(), timestr(&scfg, (time32_t)request_rate_limiter->lastLimited.time, tmp2));
+				if (strcmp(str, rate_limit_report) != 0) {
+					SAFECOPY(rate_limit_report, str);
+					lprintf(LOG_DEBUG, "%s", rate_limit_report);
+				}
 			}
 			/* signal caller that we've started up successfully */
 			set_state(SERVER_READY);
@@ -6616,4 +6639,5 @@ void mail_server(void* arg)
 	} while (!terminate_server);
 
 	protected_uint32_destroy(thread_count);
+	delete request_rate_limiter, request_rate_limiter = nullptr;
 }

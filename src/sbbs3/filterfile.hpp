@@ -30,7 +30,10 @@ class filterFile {
 	public:
 		filterFile(scfg_t* cfg, const char* fname, uint fchk_interval = 10)
 			: fchk_interval(fchk_interval), cached(cfg->cache_filter_files) {
-			strlcpy(this->fname, fname, sizeof this->fname);
+			if (getfname(fname) == fname)
+				snprintf(this->fname, sizeof this->fname, "%s%s", cfg->ctrl_dir, fname);
+			else
+				strlcpy(this->fname, fname, sizeof this->fname);
 		}
 		filterFile() = default;
 		~filterFile() {

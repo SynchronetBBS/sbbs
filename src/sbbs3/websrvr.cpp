@@ -141,6 +141,7 @@ static rateLimiter*       request_rate_limiter = nullptr;
 static trashCan*          ip_can = nullptr;
 static trashCan*          ip_silent_can = nullptr;
 static trashCan*          host_can = nullptr;
+static filterFile*        host_exempt = nullptr;
 
 /* Logging stuff */
 link_list_t               log_list;
@@ -3531,7 +3532,7 @@ static bool get_req(http_session_t * session, char *request_line)
 				send_error(session, __LINE__, "400 Bad Request");
 				return false;
 			}
-			if (request_rate_limiter->allowRequest(session->host_ip) == false) {
+			if (!host_exempt->listed(session->host_ip, session->host_name) && request_rate_limiter->allowRequest(session->host_ip) == false) {
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] Too many requests per rate limit (%u over %us)"
 					, session->socket, session->client.protocol, session->host_ip, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds);
 				send_error(session, __LINE__, error_429);
@@ -7218,10 +7219,10 @@ static void cleanup(int code)
 			startup->terminated(startup->cbdata, code);
 	}
 
-	delete request_rate_limiter, request_rate_limiter = nullptr;
 	delete ip_can, ip_can = nullptr;
 	delete ip_silent_can, ip_silent_can = nullptr;
 	delete host_can, host_can = nullptr;
+	delete host_exempt, host_exempt = nullptr;
 
 	mqtt_shutdown(&mqtt);
 }
@@ -7413,6 +7414,7 @@ void web_server(void* arg)
 	startup->shutdown_now = false;
 	terminate_server = false;
 	protected_uint32_init(&thread_count, 0);
+	request_rate_limiter = new rateLimiter(startup->max_requests_per_period, startup->request_rate_limit_period);
 
 	do {
 		listInit(&current_connections, LINK_LIST_MUTEX);
@@ -7568,10 +7570,13 @@ void web_server(void* arg)
 				xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", &terminate_server, open_socket, startup->seteuid, (void*)"TLS");
 		}
 
-		request_rate_limiter = new rateLimiter(startup->max_requests_per_period, startup->request_rate_limit_period);
+		request_rate_limiter->maxRequests = startup->max_requests_per_period;
+		request_rate_limiter->timeWindowSeconds = startup->request_rate_limit_period;
+
 		ip_can = new trashCan(&scfg, "ip", startup->sem_chk_freq);
 		ip_silent_can = new trashCan(&scfg, "ip-silent", startup->sem_chk_freq);
 		host_can = new trashCan(&scfg, "host", startup->sem_chk_freq);
+		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile, startup->sem_chk_freq);
 
 		listInit(&log_list, /* flags */ LINK_LIST_MUTEX | LINK_LIST_SEMAPHORE);
 		if (startup->options & WEB_OPT_HTTP_LOGGING) {
@@ -7603,6 +7608,7 @@ void web_server(void* arg)
 		lprintf(LOG_INFO, "Web Server thread started");
 		mqtt_client_max(&mqtt, startup->max_clients);
 
+		char rate_limit_report[256]{};
 		time_t last_rate_limit_report = time(NULL);
 		while (!terminate_server) {
 			YIELD();
@@ -7654,10 +7660,18 @@ void web_server(void* arg)
 				request_rate_limiter->cleanup();
 				size_t most_active_count = 0;
 				std::string most_active = request_rate_limiter->most_active(&most_active_count);
-				lprintf(LOG_DEBUG, "Rate limiting clients=%zu, requests=%zu, current-most-active=%s (%zu), highest=%s (%u) on %.24s"
+				char str[sizeof rate_limit_report];
+				char tmp[128];
+				snprintf(str, sizeof str, "Rate limiting current: clients=%zu, requests=%zu, most-active=%s (%zu), highest: %s (%u) on %s, limited: %u, last: %s on %s"
 					, request_rate_limiter->client_count(), request_rate_limiter->total(), most_active.c_str(), most_active_count
 					, request_rate_limiter->currHighwater.client.c_str(), request_rate_limiter->currHighwater.count
-					, ctime_r(&request_rate_limiter->currHighwater.time, logstr));
+					, timestr(&scfg, (time32_t)request_rate_limiter->currHighwater.time, logstr)
+					, request_rate_limiter->disallowed.load()
+					, request_rate_limiter->lastLimited.client.c_str(), timestr(&scfg, (time32_t)request_rate_limiter->lastLimited.time, tmp));
+				if (strcmp(str, rate_limit_report) != 0) {
+					SAFECOPY(rate_limit_report, str);
+					lprintf(LOG_DEBUG, "%s", rate_limit_report);
+				}
 			}
 			/* signal caller that we've started up successfully */
 			set_state(SERVER_READY);
@@ -7819,4 +7833,5 @@ void web_server(void* arg)
 	} while (!terminate_server);
 
 	protected_uint32_destroy(thread_count);
+	delete request_rate_limiter, request_rate_limiter = nullptr;
 }

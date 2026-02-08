@@ -99,6 +99,7 @@ static rateLimiter*       request_rate_limiter = nullptr;
 static trashCan*          ip_can = nullptr;
 static trashCan*          ip_silent_can = nullptr;
 static trashCan*          host_can = nullptr;
+static filterFile*        host_exempt = nullptr;
 
 #ifdef SOCKET_DEBUG
 static BYTE               socket_debug[0x10000] = {0};
@@ -2432,12 +2433,6 @@ static void ctrl_thread(void* arg)
 		}
 		if (!(*cmd))
 			continue;
-		if (request_rate_limiter->allowRequest(host_ip) == false) {
-			lprintf(LOG_NOTICE, "%04d <%s> Too many requests per rate limit (%u over %us)"
-				, sock, user.number ? user.alias : host_ip, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds);
-			sockprintf(sock, sess, "421 Too many requests, try again later.");
-			break;
-		}
 		if (startup->options & FTP_OPT_DEBUG_RX)
 			lprintf(LOG_DEBUG, "%04d <%s> RX%s: %s", sock, user.number ? user.alias : host_ip, sess == -1 ? "" : "S", cmd);
 		if (!stricmp(cmd, "NOOP")) {
@@ -2771,6 +2766,14 @@ static void ctrl_thread(void* arg)
 			destroy_session(lprintf, sess);
 			sess = -1;
 			continue;
+		}
+
+		// FTP is a chatty protocol, so check rate limit after the initial login sequence (after USER/PASS)
+		if (!host_exempt->listed(host_ip, host_name) && request_rate_limiter->allowRequest(host_ip) == false) {
+			lprintf(LOG_NOTICE, "%04d <%s> Too many requests per rate limit (%u over %us)"
+				, sock, user.number ? user.alias : host_ip, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds);
+			sockprintf(sock, sess, "421 Too many requests, try again later.");
+			break;
 		}
 
 		if (!user.number) {
@@ -5140,10 +5143,10 @@ static void cleanup(int code, int line)
 			startup->terminated(startup->cbdata, code);
 	}
 
-	delete request_rate_limiter, request_rate_limiter = nullptr;
 	delete ip_can, ip_can = nullptr;
 	delete ip_silent_can, ip_silent_can = nullptr;
 	delete host_can, host_can = nullptr;
+	delete host_exempt, host_exempt = nullptr;
 
 	mqtt_shutdown(&mqtt);
 }
@@ -5217,6 +5220,7 @@ void ftp_server(void* arg)
 	startup->shutdown_now = FALSE;
 	terminate_server = FALSE;
 	protected_uint32_init(&thread_count, 0);
+	request_rate_limiter = new rateLimiter(startup->max_requests_per_period, startup->request_rate_limit_period);
 
 	do {
 		listInit(&current_connections, LINK_LIST_MUTEX);
@@ -5342,10 +5346,13 @@ void ftp_server(void* arg)
 		 */
 		xpms_add_list(ftp_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "FTP Server", &terminate_server, ftp_open_socket_cb, startup->seteuid, NULL);
 
-		request_rate_limiter = new rateLimiter(startup->max_requests_per_period, startup->request_rate_limit_period);
+		request_rate_limiter->maxRequests = startup->max_requests_per_period;
+		request_rate_limiter->timeWindowSeconds = startup->request_rate_limit_period;
+
 		ip_can = new trashCan(&scfg, "ip", startup->sem_chk_freq);
 		ip_silent_can = new trashCan(&scfg, "ip-silent", startup->sem_chk_freq);
 		host_can = new trashCan(&scfg, "host", startup->sem_chk_freq);
+		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile, startup->sem_chk_freq);
 
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles = semfile_list_init(scfg.ctrl_dir, "shutdown", server_abbrev);
@@ -5362,6 +5369,8 @@ void ftp_server(void* arg)
 		lprintf(LOG_INFO, "FTP Server thread started");
 		mqtt_client_max(&mqtt, startup->max_clients);
 
+		char rate_limit_report[256]{};
+		time_t last_rate_limit_report = time(NULL);
 		while (ftp_set != NULL && !terminate_server) {
 			YIELD();
 			if (!(startup->options & FTP_OPT_NO_RECYCLE) && protected_uint32_value(thread_count) <= 1) {
@@ -5390,6 +5399,24 @@ void ftp_server(void* arg)
 				set_state(SERVER_PAUSED);
 				SLEEP(startup->sem_chk_freq * 1000);
 				continue;
+			}
+
+			if (startup->max_requests_per_period > 0 && startup->request_rate_limit_period > 0
+				&& time(NULL) - last_rate_limit_report >= startup->sem_chk_freq) {
+				last_rate_limit_report = time(NULL);
+				request_rate_limiter->cleanup();
+				size_t most_active_count = 0;
+				std::string most_active = request_rate_limiter->most_active(&most_active_count);
+				char tmp[128], tmp2[128];
+				snprintf(str, sizeof str, "Rate limiting current: clients=%zu, requests=%zu, most-active=%s (%zu), highest: %s (%u) on %s, limited: %u, last: %s on %s"
+					, request_rate_limiter->client_count(), request_rate_limiter->total(), most_active.c_str(), most_active_count
+					, request_rate_limiter->currHighwater.client.c_str(), request_rate_limiter->currHighwater.count
+					, timestr(&scfg, (time32_t)request_rate_limiter->currHighwater.time, tmp), request_rate_limiter->disallowed.load()
+					, request_rate_limiter->lastLimited.client.c_str(), timestr(&scfg, (time32_t)request_rate_limiter->lastLimited.time, tmp2));
+				if (strcmp(str, rate_limit_report) != 0) {
+					SAFECOPY(rate_limit_report, str);
+					lprintf(LOG_DEBUG, "%s", rate_limit_report);
+				}
 			}
 			/* signal caller that we've started up successfully */
 			set_state(SERVER_READY);
@@ -5483,4 +5510,5 @@ void ftp_server(void* arg)
 	} while (!terminate_server);
 
 	protected_uint32_destroy(thread_count);
+	delete request_rate_limiter, request_rate_limiter = nullptr;
 }
