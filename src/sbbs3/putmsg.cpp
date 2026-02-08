@@ -252,8 +252,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		}
 		else if ((mode & P_PCBOARD)
 		         && str[l] == '@' && str[l + 1] == 'X'
-		         && IS_HEXDIGIT(str[l + 2]) && IS_HEXDIGIT(str[l + 3])
-		         && !islower(str[l + 2]) && !islower(str[l + 3])) {
+		         && IS_UPPERHEXDIGIT(str[l + 2]) && IS_UPPERHEXDIGIT(str[l + 3])) {
 			uint val = (HEX_CHAR_TO_INT(str[l + 2]) << 4) + HEX_CHAR_TO_INT(str[l + 3]);
 			// @X00 saves the current color and @XFF restores that saved color
 			switch (val) {
@@ -271,8 +270,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		}
 		else if ((mode & P_WILDCAT)
 		         && str[l] == '@' && str[l + 3] == '@'
-		         && IS_HEXDIGIT(str[l + 1]) && IS_HEXDIGIT(str[l + 2])
-		         && !islower(str[l + 1]) && !islower(str[l + 2])) {
+		         && IS_UPPERHEXDIGIT(str[l + 1]) && IS_UPPERHEXDIGIT(str[l + 2])) {
 			attr((HEX_CHAR_TO_INT(str[l + 1]) << 4) + HEX_CHAR_TO_INT(str[l + 2]));
 			l += 4;
 		}
