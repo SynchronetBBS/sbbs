@@ -4,7 +4,7 @@
 
 "use strict";
 
-const VERSION = "0.01";
+const VERSION = "0.02";
 
 require("sbbsdefs.js", "K_EXTKEYS");
 
@@ -50,11 +50,16 @@ var rules = {
 	initial_food: 100,
 	min_pop: 5,
 	pop_change_interval: 5,
+	pop_max_pct_increase: 3,
+	famine_pop_max_pct_decrease: 2,
 	industry_pollution_multiple: 0.25,
 	animals_pollution_multiple: 0.25,
 	boat_pollution_multiple: 0.01,
 	crops_pollution_reduction: 0.5,
+	pollution_pop_decrease_threshold: 0.5,
+	pollution_pop_max_pct_decrease: 2,
 	hospital_pop_increase_multiplier: 5.0,
+	hospital_pop_max_pct_decrease: 3,
 	merchant_spawn_potential: 0.03,
 	merchant_gold: 250,
 	merchant_turn_gold_value: 1,
@@ -66,6 +71,8 @@ var rules = {
 	pirate_sea_attack_damage: 50,
 	pirate_gold: 125,
 	pirate_escape_penalty_multiplier: 0.5,
+	pirate_max_pursuit_dist: 15,
+	trawler_max_pursuit_dist: 10, // pursuing fish
 	fish_pool_min: 5,
 	fish_pool_max: 10,
 	fish_per_school: 25,
@@ -80,6 +87,7 @@ var rules = {
 	demo_base_cost: 5,
 	demo_rebel_multiplier: 0.5,
 	demo_item_cost_multiplier: 0.5,
+	ptboat_max_pursuit_dist: 15,
 	ptboat_sink_pirate_potential: 0.9,
 	pirate_merchant_plunder_multiplier: 0.5,
 	sunk_pirate_reward_multiplier: 0.5,
@@ -90,12 +98,15 @@ var rules = {
 	rebel_education_multiplier: 2,
 	rebel_starvation_increase: 10,
 	rebel_underhoused_increase: 10,
+	rebel_undereducated_increase: 5,
+	hospital_support_pop: 300,
 	// (per-turn)
 	rebel_decrement_potential: 0.1,
 	rebel_increase_potential: 0.08,
 	rebel_mutiny_theshold: 50,
 	rebel_attack_theshold: 40,
 	rebel_attack_damage: 50,
+	martial_law_rebel_decrease: 2,
 
 	// Weather
 	rain_speed: 1.3,
@@ -118,9 +129,9 @@ var rules = {
 		"D": { cost: 75, max_damage: 350, tax:  1.00, cap: 2,                           land: true,  sea: false },
 		"I": { cost: 75, max_damage: 350, tax:  1.00, cap: 1,                           land: true,  sea: false },
 		"B": { cost: 50, max_damage: 400, tax: -1.00,                                   land: true,  sea: true  },
-		"S": { cost: 75, max_damage: 350, tax: -2.50,                                   land: true,  sea: false },
+		"S": { cost: 75, max_damage: 350, tax: -2.50, edu: 150,                         land: true,  sea: false },
 		"H": { cost:100, max_damage: 400, tax: -3.00, cap: 3,                           land: true,  sea: false },
-		"F": { cost:150, max_damage: 500, tax: -5.00, cap: 10,                          land: true,  sea: false },
+		"F": { cost:150, max_damage: 500, tax: -5.00, cap: 10, edu: 15,                 land: true,  sea: false },
 	}
 }
 
@@ -134,7 +145,7 @@ item_list[ITEM_DOCK]    ={ name: "Dock"     ,char: "\xDB", shadow: "Build Boats 
 item_list[ITEM_BRIDGE]  ={ name: "Bridge"   ,char: "\xCE", shadow: "Expand Land & Docks" };
 item_list[ITEM_INDUSTRY]={ name: "Industry" ,char: "\xDB", shadow: "Generate Income", attr: LIGHTGRAY };
 item_list[ITEM_SCHOOL]  ={ name: "School"   ,char: "\x15", shadow: "Reduce Rebels" };
-item_list[ITEM_HOSPITAL]={ name: "Hospital" ,char: "\xC5", shadow: "Promote Health & Births", attr: RED | BG_LIGHTGRAY };
+item_list[ITEM_HOSPITAL]={ name: "Hospital" ,char: "\xD8", shadow: "Promote Health & Births", attr: RED | BG_LIGHTGRAY };
 item_list[ITEM_FORT]    ={ name: "Fortress" ,char: "\xE3", shadow: "Defend Properties", attr: BLACK | HIGH };
 
 // Cosmetics
@@ -686,37 +697,51 @@ function handleEconomics() {
 		state.rebels = Math.max(0, state.rebels - 1);
 
 	state.popCap = 0;
-	// Food adjustments and Population Cap PER TURN
+	var initial_pop = state.pop;
+	// Food, Education adjustments and Population Cap PER TURN
+	var edu = 0;
 	var add_food = 0;
 	for (i in item_list) {
 		if (rules.item[i].food_turn)
 			add_food += item_list[i].count * rules.item[i].food_turn * (0.5 + (0.5 * itemHealth(i)));
 		if (rules.item[i].cap)
 			state.popCap += item_list[i].count * rules.item[i].cap;
+		if (rules.item[i].edu)
+			edu += item_list[i].count * rules.item[i].edu;
 	}
 	state.food += Math.floor(add_food);
 	state.food = Math.max(0, state.food - Math.floor(state.pop / 5));
 	if (state.turn % rules.pop_change_interval === 0) {
 		if (state.food > state.pop && state.pop < state.popCap) {
 			var before = state.pop;
-			var growth = Math.floor(Math.random() * 3) + 1; // Betweeen 1 and 3
+			var growth = Math.ceil(state.pop * (Math.floor(Math.random() * rules.pop_max_pct_increase) + 1) * 0.01);
 			growth += Math.floor(item_list[ITEM_HOSPITAL].count * rules.hospital_pop_increase_multiplier);
 			state.pop = Math.min(state.popCap, state.pop + growth);
 			announce("\x01h\x01gPopulation Increase from \x01w" + before + "\x01g to \x01w" + state.pop);
 		}
 		else if (state.food <= 0 && state.pop > rules.min_pop) {
-			state.pop -= Math.floor(Math.random() * 2) + 1;
-			alert("\x01h\x01rFAMINE!");
+			var lost = Math.ceil(state.pop * (Math.floor(Math.random() * rules.famine_pop_max_pct_decrease) + 1) * 0.01);
+			state.pop -= lost;
+			announce("\x01h\x01rFamine causes " + lost + " deaths!");
 		}
 		if (state.pop > rules.min_pop) {
-			var pollution = (item_list[ITEM_INDUSTRY].count * rules.industry_pollution_multiple)
-						  + (item_list[ITEM_ANIMALS].count * rules.animals_pollution_multiple)
-						  + (item_list[ITEM_TRAWLER].count * rules.boat_pollution_multiple)
-						  + (item_list[ITEM_PTBOAT].count * rules.boat_pollution_multiple);
-			pollution -= item_list[ITEM_CROPS].count * rules.crops_pollution_reduction;
-			if (pollution > 0) {
-				state.pop -= Math.floor(Math.random() * 2) + 1;
-				alert("\x01h\x01rPOLLUTION!");
+			if (random(2) == 0) {
+				var pollution = (item_list[ITEM_INDUSTRY].count * rules.industry_pollution_multiple)
+							  + (item_list[ITEM_ANIMALS].count * rules.animals_pollution_multiple)
+							  + (item_list[ITEM_TRAWLER].count * rules.boat_pollution_multiple)
+							  + (item_list[ITEM_PTBOAT].count * rules.boat_pollution_multiple);
+				pollution -= item_list[ITEM_CROPS].count * rules.crops_pollution_reduction;
+				if (pollution > rules.pollution_pop_decrease_threshold) {
+					var lost = Math.ceil(state.pop * (Math.floor(Math.random() * rules.pollution_pop_max_pct_decrease) + 1) * 0.01);
+					state.pop -= lost;
+					announce("\x01h\x01rUnhealthy " + (random(2) ? "air" : "water") + " suspected in " + lost + " premature deaths!");
+				}
+			} else {
+				if (state.pop > item_list[ITEM_HOSPITAL].count * rules.hospital_support_pop) {
+					var lost = Math.ceil(state.pop * (Math.floor(Math.random() * rules.hospital_pop_max_pct_decrease) + 1) * 0.01);
+					state.pop -= lost;
+					announce("\x01h\x01rUnhealthy conditions lead to " + lost + " fatalities!");
+				}
 			}
 		}
 	}
@@ -774,13 +799,16 @@ function handleEconomics() {
         } else if (state.pop > state.popCap) {
             state.rebels = Math.min(100, state.rebels + rules.rebel_underhoused_increase);
             alert("\x01h\x01rHOUSING CRISIS! Rebels rising ...");
+		} else if (state.pop > edu) {
+			alert("\x01h\x01rUnder-educated youth are getting rebellious!");
+			state.rebels = Math.min(100, state.rebels + rules.rebel_undereducated_increase);
 		}
 	}
 	if (state.martialLaw > 0) {
 		state.martialLaw--;
-		state.rebels = Math.max(0, state.rebels - 2);
+		state.rebels = Math.max(0, state.rebels - rules.martial_law_rebel_decrease);
 	}
-	else if (Math.random() < rules.rebel_increase_potential)
+	else if (initial_pop > state.pop || Math.random() < rules.rebel_increase_potential)
 		state.rebels = Math.min(100, state.rebels + 1);
 };
 
@@ -928,7 +956,7 @@ function handlePatrols() {
 		for (var t = 0; t < trawlers.length; ++t) {
 			var trawler = trawlers[t];
 			var dist = objDist(boat, trawler);
-			if (dist > 15) // too far away
+			if (dist > rules.ptboat_max_pursuit_dist) // too far away
 				continue;
 			if (dist < 3) // close enough
 				continue;
@@ -1074,7 +1102,7 @@ function moveTrawlers() {
 		for (var fi = 0; fi < state.fishPool.length; ++fi) {
 			var f = state.fishPool[fi];
 			var dist = objDist(trawler, f);
-			if (dist > 10) // too far away
+			if (dist > rules.trawler_max_pursuit_dist) // too far away
 				continue;
 			f = { dist: dist, x: f.x, y: f.y };
 //				debugLog("fish nearby: " + JSON.stringify(f));
@@ -1613,7 +1641,7 @@ function moveMerchant()
 			state.merchant.active = false;
 			if (!state.martialLaw && state.merchant.gold > 0) {
 				state.gold += state.merchant.gold;
-				announce("\x01h\x01yInternational Trade Successful! +$" + state.merchant.gold);
+				announce("\x01h\x01yInternational Trade Successful! +\x01w$" + state.merchant.gold);
 				state.stats.intlTrades++;
 			}
 			forceScrub(mx, my, 1);
@@ -1625,7 +1653,7 @@ function moveMerchant()
 			if (!state.martialLaw && state.merchant.gold && state.turn - state.merchant.last_dock >= rules.merchant_dock_interval) {
 				var amt = Math.min(state.merchant.gold, rules.merchant_dock_bonus);
 				state.gold += amt;
-				announce("\x01h\x01yMerchant Docked and Traded Successfulfly! +$" + amt);
+				announce("\x01h\x01yMerchant Docked and Traded Successfulfly! +\x01w$" + amt);
 				state.stats.dockTrades++;
 				state.merchant.gold -= amt;
 				if (state.merchant.gold < 1) {
@@ -1686,7 +1714,7 @@ function movePirate() {
 			var mx = Math.floor(state.merchant.x);
 			var my = Math.floor(state.merchant.y);
 			var dist = Math.sqrt(Math.pow(mx - px, 2) + Math.pow(my - py, 2));
-			if (dist < 10) {
+			if (dist <= rules.pirate_max_pursuit_dist) {
 				var nx = px + (mx > px ? 1 : (mx < px ? -1 : 0)),
 					ny = py + (my > py ? 1 : (my < py ? -1 : 0));
 				if (cellOnMap(nx, ny) && !cellIsLand(nx, ny) && !cellIsOccupied(nx, ny)) {
@@ -1709,7 +1737,7 @@ function movePirate() {
 				var trawler = trawlers[t];
 				var dist = objDist(state.pirate, trawler);
 				debugLog("Trawler " + xy_str(trawler) + " dist from pirate: " + dist);
-				if (trawler.x > px || dist > 15) // too far away
+				if (trawler.x > px || dist > rules.pirate_max_pursuit_dist) // too far away
 					continue;
 				target.push({ x:trawler.x, y:trawler.y, dist: dist });
 			}
@@ -1814,11 +1842,12 @@ function calculateScore() {
 
 function getRank() {
 	if (state.stats.piratesSunk >= 10) return "Grand Admiral";
-	if (state.stats.intoTrades >= 10) return "Merchant Prince";
-	if (state.stats.dockTrades >= 10) return "Port Authority";
-	if (state.pop > 200) return "Metropolitan Visionary";
-	if (state.food > 5000) return "Harvester of Bounty";
-	if (state.gold > 5000) return "Hoarder of Treasures";
+	if (state.stats.intlTrades  >= 10) return "Merchant Prince";
+	if (state.stats.dockTrades  >= 10) return "Port Authority";
+	if (state.pop  >=  1000) return "Metropolitan Visionary";
+	if (state.food >= 10000) return "Harvester of Bounty";
+	if (state.gold >= 10000) return "Hoarder of Treasures";
+	if (state.rebels >=  50) return "Dictator of Deplorables";
 	return "Local Magistrate";
 };
 
@@ -1887,7 +1916,7 @@ function drawUI(verbose) {
 		console.cleartoeol();
 		if (!item_key && item_list[i].count)
 			console.print(format("%3ux", item_list[i].count));
-		if (!item_key || i == item_key) {
+		if ((!item_key && item_list[i].count) || i == item_key) {
 			console.gotoxy(lx + 15, ly);
 			if (!rules.item[i].max_damage)
 				console.print(" N/A");
@@ -2151,7 +2180,7 @@ function showBuildMenu() {
 	}
 	menuY++
 	console.gotoxy(menuX + 2, menuY++);
-	console.putmsg("\x01h\x01bBuy and Build an Item");
+	console.putmsg(format("\x01h\x01w\xfe \x01bBuy and Build an Item \x01w\xfe \x01n\x01gRules: \x01h%-11.11s \x01w\xfe", rules.name));
 	menuY++
 	for (var i in item_list) {
 		var item = item_list[i];
@@ -2398,10 +2427,10 @@ function handleQuit() {
     var prompt = "\x01n\x01h\x01rQuit? ";
 
     if (state.in_progress)
-        prompt += "\x01c[\x01wS\x01c]ave \x01n\x01r|\x01h "
+        prompt += "\x01c[\x01wS\x01c]ave \x01n\x01r\xF9\x01h "
 	if (state.started)
-		prompt += "\x01c[\x01wF\x01c]inish \x01n\x01r|\x01h ";
-	prompt += "\x01r[\x01wA\x01r]bandon \x01n\x01r|\x01h \x01c[\x01wC\x01c]ontinue \x01n\x01r|\x01h \x01c[\x01wV\x01c]iew High Scores";
+		prompt += "\x01c[\x01wF\x01c]inish \x01n\x01r\xF9\x01h ";
+	prompt += "\x01r[\x01wA\x01r]bandon \x01n\x01r\xF9\x01h \x01c[\x01wC\x01c]ontinue \x01n\x01r\xF9\x01h \x01c[\x01wV\x01c]iew High Scores";
 
     console.putmsg(prompt);
 	console.cleartoeol();
@@ -2448,6 +2477,20 @@ function clearMap() {
 		map[y] = [];
 		for (var x = 0; x < MAP_WIDTH; x++) {
 			map[y][x] = WATER;
+		}
+	}
+}
+
+function initMap() {
+	// Initialize the map and associated arrays
+	for (var y = 0; y < MAP_HEIGHT; y++) {
+		itemMap[y] = [];
+		damageMap[y] = [];
+		homelandMap[y] = [];
+		for (var x = 0; x < MAP_WIDTH; x++) {
+			itemMap[y][x] = "";
+			damageMap[y][x] = 0;
+			homelandMap[y][x] = 0;
 		}
 	}
 }
@@ -2537,17 +2580,6 @@ function main () {
 			settings.tick_interval = ini.tick_interval;
 	}
 
-	// Initialize the map and associated arrays
-	for (var y = 0; y < MAP_HEIGHT; y++) {
-		itemMap[y] = [];
-		damageMap[y] = [];
-		homelandMap[y] = [];
-		for (var x = 0; x < MAP_WIDTH; x++) {
-			itemMap[y][x] = "";
-			damageMap[y][x] = 0;
-			homelandMap[y][x] = 0;
-		}
-	}
 	state.tick_interval = settings.tick_interval;
 
 	if (console.optimize_gotoxy !== undefined) {
@@ -2559,18 +2591,22 @@ function main () {
 	if (saveF.open("r")) {
 		try {
 			var s = JSON.parse(saveF.read());
-			state = s.state;
-			map = s.map;
-			rules = s.rules;
-			itemMap = s.itemMap;
-			damageMap = s.damageMap;
-			game_restored = true;
+			if (s.ver == VERSION) {
+				initMap();
+				state = s.state;
+				map = s.map;
+				rules = s.rules;
+				itemMap = s.itemMap;
+				damageMap = s.damageMap;
+				game_restored = true;
+			}
 		} catch(e) {
 			js.global.log(LOG_WARNING, e + ": " + SAVE_FILE);
 		}
 		saveF.close();
 	}
 	if (!game_restored) {
+		initMap();
 		if (file_exists(settings.intro_msg)) {
 			console.clear();
 			console.printfile(settings.intro_msg, P_PCBOARD);
@@ -2827,7 +2863,7 @@ function main () {
 				|| (state.pirate.active
 					&& (cellIsSame(state.cursor, state.pirate) || cellIsSame(cursor, state.pirate)))
 				|| (state.merchant.active
-					&& (cellIsSame(state.cursor, state.merchant) || cellIsSame(cursor, state.merchant))));
+					&& (cellIsSame(state.cursor, state.merchant) || cellIsSame(cursor, state.merchant))) ? 2 : 0);
 		}
 	}
 }

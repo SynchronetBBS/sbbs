@@ -1,58 +1,58 @@
 @X1E@CLEAR@@CENTER@Synchronet Utopia
-@CENTER@~~~~~~~~~~~~~~~~~
-@CENTER@by Rob Swindell (digital man)
+@X1E@FILL:-@
+@X1E@CENTER@by Rob Swindell (digital man)
 
 #Can you build a better Utopian society?#
 
-This game is a single-player stategy/simulation heavily inspired by the
+This game is a single-player civilization simulation heavily inspired by the
 multi-player Mattel Electronics game designed and programmed by Don Daglow for
 the Intellivision gaming console.  The original "Utopia" could be played single
 player as well, but its real shine came from the head-to-head (or rather
 side-by-side) competition it encouraged between two friends sharing a small TV.
 For now at least, "Synchronet Utopia" is strictly single player - though other
 BBS users can play concurrently, they'll be playing their own maps with their
-choice of difficulty/rules.
+choice of rules/difficulty.
 
 *Synchronet Utopia* can be played with a randomly-generated map or a predesigned
 map.  The game comes with a couple of maps and your sysop may have have added
 or created some of their own.  When starting the game, you are initially
 prompted to choose which map to play, if there are multiple to choose from:
 
-Select Map to Play:
+@X1FSelect Map to Play:
 
   1: Classic Islands
   2: Hawaiian Islands
   3: Randomly Generated
 
-Which, Quit or [1]: 
+Which, Quit or [1]: @X1E
 
 After choosing a map, you will then be prompted to choose which rules to play
 by, again, only if there are multiple options to choose from:
 
-Select Rules to Play By:
+@X1FSelect Rules to Play By:
 
   1: Easy
   2: Challenging
 
-Which, Quit or [1]:
+Which, Quit or [1]: @X1E
 
 After a map and set of rules are selected, you will be welcomed with the
 display of a map covering the majority of an 80x24 terminal screen.  To the
 right of this map is a legend of buildable items along with the average health
-of the items of each type that have been already built (initially, all 0%):
+of the items of each type that have been already built:
 
-                                Items     Health
-                              ± Crops          0%
-                              ± Animals        0%
-                               Trawler        0%
-                               PT Boat        0%
-                              ц Villas         0%
-                              Ы Dock           0%
-                              О Bridge         0%
-                              Ы Industry       0%
-                               School         0%
-                              Е Hospital       0%
-                              г Fortress       0%
+                                  *Items*
+                                @X1A±@X1F Crops
+                                @X16±@X1F Animals
+                                 Trawler
+                                @X15@X1F PT Boat
+                                @X1Fц@X1F Villas
+                                @X1FЫ@X1F Dock
+                                @X1FО@X1F Bridge
+                                @X17Ы@X1F Industry
+                                @X1F@X1F School
+                                @X74Ш@X1F Hospital
+                                @X18г@X1F Fortress@X1E
 
 You start the game by moving the cursor (the red block in the middle of the
 map) with your arrow keys to a land mass of your choosing and building a
@@ -121,7 +121,7 @@ need food.  A lot of food.
 Speaking of Docks, you can extend a Dock (e.g. for building boats closer to
 fish in open waters) by building a "pier" with Bridge segments.
 
-#Back to food:#
+#Food#
 
 Unlike the real world, you can't just directly turn money (Gold) into food. You
 must grow, raise, catch, and harvest the food used to feed your people.  You
@@ -131,15 +131,19 @@ round to maintain, but educated people are less likely to rebel and healthy
 people are more likely to stay alive and procreate, thus increasing the
 population.  The needs of the people multiply with the size of the population.
 
-Keep an eye on your percentage of rebels.  More rebels means higher costs of
-demolition (intentionally destroying any built item with the Delete key) and
-the risk of a Mutiny (rebels turning a PT Boat into a dangerous Pirate ship).
-Lack of food, housing, and education are factors in an increasing rebellion.
-Under extreme rebellion, you can declare Martial Law, and for a limited amount
-of time all your productivity will go towards reducing the dangers and quantity
-of the rebels; no revenues will be collected while under martial law.
+#Rebels#
 
-#Pirates you say?#
+Keep an eye on your percentage of rebels, your invisible "enemies within".
+More rebels means a higher likelihood of vandalism of properties, elevated
+demolition costs (intentionally destroying of any built item with the Delete
+key) and the risk of a Mutiny (rebels turning a PT Boat into a dangerous Pirate
+ship).  Lack of food, housing, healthcare, and education are factors in an
+increasing rebellion.  Under extreme rebellion, you can declare Martial Law,
+and for a limited amount of time all your productivity will go towards reducing
+the dangers and quantity of the rebels; no revenues will be collected while
+under martial law.
+
+@X1Cур@X1E #Pirates you say?# @X1Cур@X1E
 
 Yes, pirates can invade your Utopia at any time.  The pirates usually approach
 from the eastern horizon.  While pirates most often attack other ships
@@ -152,7 +156,7 @@ to the north, south, and west.  While pirates are normally a bit faster than
 Merchants (and very fast when pursuing their prey), they are slowed and subdued
 by easterly currents.
 
-#Merchants#
+ст #Merchants# ст
 
 Merchant ships will appear on occasion out of the west.  Slow and vulnerable,
 Merchant ships are aided by westerly waves.  For every turn that a Merchant is
@@ -163,25 +167,25 @@ occasions, you will be rewarded handsomely.
 
 #Gameplay Tips#
 
-- Moving the cursor over an item will show its current health in the legend
-- Moving the cursor over a Merchant or Pirate ship will show its purse value
-- Most items can be built immediately by pressing the corresponding build menu
+щ Moving the cursor over an item will show its current health in the legend
+щ Moving the cursor over a Merchant or Pirate ship will show its purse value
+щ Most items can be built immediately by pressing the corresponding build menu
   key (e.g. 'V' for Villas), without needing to pull up the Build Item menu
-- The SPACE BAR will repeat an attempt of the previously successful item-build
+щ The SPACE BAR will repeat an attempt of the previously successful item-build
   and move the cursor to the right - useful for fast build-outs
-- The [Q]uit key can also be used to pause the game in-progress
-- The '+' and '-' keys can be used to adjust the speed of the clock
-- Alerts may fly by, but if you think you missed an important News bulletin,
+щ The [Q]uit key can also be used to pause the game in-progress
+щ The '+' and '-' keys can be used to adjust the speed of the clock
+щ Alerts may fly by, but if you think you missed an important News bulletin,
   use the 'L' key to view the log of news in reverse chronological order
-- You can move the cursor with the arrow keys, Home, End, PageUp, and PageDown
+щ You can move the cursor with the arrow keys, Home, End, PageUp, and PageDown
   keys as well as the number keys (e.g. on the keypad) for all directions
   including diagonals
-- For convenience, the INSert, Ctrl-V and '0' keys may also be used to pull up
+щ For convenience, the INSert, Ctrl-V and '0' keys may also be used to pull up
   the build menu
-- The '.' key may also be used to demolish an item
-- The Ctrl-R key can be used to refresh the screen if needed
+щ The '.' key may also be used to demolish an item
+щ The Ctrl-R key can be used to refresh the screen if needed
 
 #Finally#
 
-So now that you're prepared to take office as governor, what say you girl or
-boy, can you do better?
+So now that you're prepared to take office as governor, what say you, girl or
+boy, how will you rule?

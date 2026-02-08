@@ -33,7 +33,7 @@
 		"P": {
 			"cost": 60,
 			"max_damage": 600,
-			"tax": 0.25,
+			"tax": -0.75,
 			"land": false,
 			"sea": true
 		},
@@ -72,6 +72,7 @@
 			"cost": 50,
 			"max_damage": 500,
 			"tax": -2.5,
+			"edu": 250,
 			"land": true,
 			"sea": false
 		},
@@ -88,6 +89,7 @@
 			"max_damage": 750,
 			"tax": -5,
 			"cap": 10,
+			"edu": 50,
 			"land": true,
 			"sea": false
 		}
