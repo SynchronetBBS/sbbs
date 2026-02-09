@@ -7324,11 +7324,12 @@ void http_logging_thread(void* arg)
 			while (lock(fileno(logfile), 0, 1) && !terminate_http_logging_thread) {
 				SLEEP(10);
 			}
-			const char* host = ((startup->options & WEB_OPT_VIRTUAL_HOSTS) && (startup->options & WEB_OPT_ONE_HTTP_LOG) && ld->vhost != NULL) ? ld->vhost : ld->hostname;
-			if (host == NULL || host[0] == 0)
-				host = "-";
-			fprintf(logfile, "%s %s %s [%s] \"%s\" %d %s \"%s\" \"%s\"\n"
-			        , host
+			char vhost[128]{};
+			if ((startup->options & WEB_OPT_VIRTUAL_HOSTS) && (startup->options & WEB_OPT_ONE_HTTP_LOG))
+				snprintf(vhost, sizeof vhost, "%s ", ld->vhost != NULL && *ld->vhost ? ld->vhost : "-");
+			fprintf(logfile, "%s%s %s %s [%s] \"%s\" %d %s \"%s\" \"%s\"\n"
+					, vhost
+			        , ld->hostname?(ld->hostname[0]?ld->hostname:"-"):"-"
 			        , ld->ident?(ld->ident[0]?ld->ident:"-"):"-"
 			        , ld->user?(ld->user[0]?ld->user:"-"):"-"
 			        , timestr
