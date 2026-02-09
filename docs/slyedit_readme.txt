@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.92f
-                        Release date: 2026-01-30
+                              Version 1.92g
+                        Release date: 2026-02-08
 
                                   by
 
@@ -1011,6 +1011,10 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.92g    2026-02-08   Fix: For Ice mode, when the user changes their quote
+                      hotkey (Ctrl-Q or Ctrl-Y), refresh the hotkey displayed
+                      in the bottom edit border so that it shows the correct
+                      hotkey
 1.92f    2026-01-30   Fix for the 'from' name location when using a wide
                       terminal (> 80 columns)
 1.92e    2025-11-11   When loading user settings, if the settings object is null

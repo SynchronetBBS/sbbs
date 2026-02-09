@@ -8,12 +8,18 @@
  *
  */
 
-"use strict";
+// TODO: When the user changes their quote hotkey setting & closes the
+// user settings dialog, for optimal screen refreshing, update only the
+// portion of the line showing the quote hotkey rather than re-drawing
+// the entire line. As a starting point, see the code for
+// "case USER_SETTINGS_KEY:" in the doInputLoop() function.
 
 /* Command-line arguments:
- 1 (argv[0]): Filename to read/edit
+ 1 * (argv[0]): Filename to read/edit
  2 (argv[1]): Editor mode ("DCT", "ICE", or "RANDOM")
-*/
+ */
+
+"use strict";
 
 // EDITOR_STYLE: Can be changed to mimic the look of DCT Edit or IceEdit.
 // The following are supported:
@@ -102,8 +108,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.92f";
-var EDITOR_VER_DATE = "2026-01-30";
+var EDITOR_VERSION = "1.92g";
+var EDITOR_VER_DATE = "2026-02-08";
 
 
 // Program variables
@@ -2031,12 +2037,27 @@ function doEditLoop()
 				if (userSettingsRetObj.ctrlQQuoteOptChanged)
 				{
 					QUOTE_KEY = gUserSettings.ctrlQQuote ? CTRL_Q : CTRL_Y;
-					// If we have quote lines and the UI style is DCT, then refresh the key
-					// help line at the bottom of the screen, which includes the quote hotkey
-					// in this case
-					if (gUseQuotes && EDITOR_STYLE == "DCT")
+					if (gUseQuotes)
 					{
-						fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
+						// If the UI style is DCT, then refresh the key help line at
+						// the bottom of the screen; otherwise (Ice mode), refresh
+						// the edit area bottom border. These lines include the quote
+						// hotkey.
+						if (EDITOR_STYLE == "DCT")
+						{
+							// TODO: For optimal screen refreshing, update only the
+							// portion of the line showing the quote hotkey rather than
+							// re-drawing the entire line
+							fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
+						}
+						else
+						{
+							// The last 'true' parameter makes the function update only
+							// the quote character on the scren (don't re-draw the entire line).
+							fpDisplayTextAreaBottomBorder(gEditBottom+1, gUseQuotes, gEditLeft, gEditRight,
+							                              gInsertMode, gConfigSettings.allowColorSelection,
+							                              gUserSettings.ctrlQQuote, true);
+						}
 						console.gotoxy(curpos);
 					}
 				}
@@ -3452,7 +3473,7 @@ function doQuoteSelection(pCurpos, pCurrentWordLength, pQuoteKey)
 	// Draw the bottom edit border to erase the bottom border of the
 	// quote window.
 	fpDisplayTextAreaBottomBorder(gEditBottom+1, gUseQuotes, gEditLeft, gEditRight,
-	                              gInsertMode, gConfigSettings.allowColorSelection);
+	                              gInsertMode, gConfigSettings.allowColorSelection, gUserSettings.ctrlQQuote);
 
 	// Make sure the color is correct for editing.
 	console.print(chooseEditColor());
@@ -5199,7 +5220,7 @@ function doColorSelection(pTxtAttrs, pCurpos, pCurrentWordLength)
 	var screenYDiff = colorSelTopLine - originalScreenY;
 	displayEditLines(colorSelTopLine, gEditLinesIndex + screenYDiff, gEditBottom, true, true);
 	fpDisplayTextAreaBottomBorder(gEditBottom+1, gUseQuotes, gEditLeft, gEditRight,
-	                              gInsertMode, gConfigSettings.allowColorSelection);
+	                              gInsertMode, gConfigSettings.allowColorSelection, gUserSettings.ctrlQQuote);
 	fpDisplayBottomHelpLine(console.screen_rows, gUseQuotes, gUserSettings.ctrlQQuote);
 
 	// Move the cursor to where it should be before returning
