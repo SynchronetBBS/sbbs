@@ -99,7 +99,8 @@ var rules = {
 	rebel_education_multiplier: 2,
 	rebel_starvation_increase: 10,
 	rebel_underhoused_increase: 10,
-	rebel_undereducated_increase: 5,
+	rebel_undereducated_increase: 7,
+	unhealthy_pop_decrease_threshold: 25,
 	hospital_support_pop: 300,
 	// (per-turn)
 	rebel_decrement_potential: 0.1,
@@ -752,7 +753,8 @@ function handleEconomics() {
 					announce("\x01h\x01rUnhealthy " + (random(2) ? "air" : "water") + " suspected in " + lost + " premature deaths!");
 				}
 			} else {
-				if (state.pop > item_list[ITEM_HOSPITAL].count * rules.hospital_support_pop) {
+				if (state.pop > rules.unhealthy_pop_decrease_threshold
+					&& state.pop > item_list[ITEM_HOSPITAL].count * rules.hospital_support_pop) {
 					var lost = Math.ceil(state.pop * (Math.floor(Math.random() * rules.hospital_pop_max_pct_decrease) + 1) * 0.01);
 					state.pop -= lost;
 					announce("\x01h\x01rUnhealthy conditions lead to " + lost + " fatalities!");
@@ -1039,8 +1041,10 @@ function handlePatrols() {
 
 function pirateAttack() {
 
+next_pirate:
 	for (var pi = state.pirate.length - 1; pi >= 0; --pi) {
 		var pirate = state.pirate[pi];
+		pirate.attack = false;
 		var px = Math.floor(pirate.x),
 			py = Math.floor(pirate.y);
 
@@ -1065,9 +1069,10 @@ function pirateAttack() {
 						pendingUpdate.push({ x: px, y: py});
 						pendingUpdate.push({ x: px + 1, y: py});
 						state.pirate.splice(pi, 1);
-						continue;
+						continue next_pirate;
 					}
 					if (!wave && !fort_protected) {
+						pirate.attack = true;
 						if (damageItem(x, y, "Pirate attack", rules.pirate_sea_attack_damage)) {
 							var plunder = Math.floor(rules.item[ITEM_PTBOAT].cost * (0.5 + (0.5 * health)));
 							pirate.gold += plunder;
@@ -1075,11 +1080,12 @@ function pirateAttack() {
 							announce("\x01h\x01rPirates plundered \x01w$" + plunder + "\x01r from " + item_list[item].name);
 						}
 					}
-					continue;
+					continue next_pirate;
 				}
 				if (wave)
 					continue;
 				if (state.merchant.active && cellIsSame(state.merchant, {x:x, y:y})) {
+					pirate.attack = true;
 					if (fort_protected)
 						alert("Pirate attack on Merchat ship thwarted by Fort defense!");
 					else {
@@ -1090,11 +1096,13 @@ function pirateAttack() {
 						state.stats.merchantsSunk++;
 						forceScrub(Math.floor(state.merchant.x), Math.floor(state.merchant.y), 1);
 					}
-					continue;
+					continue next_pirate;
 				}
-				if (!item)
+				if (!item || item == ITEM_FORT)
 					continue;
 				if (item == ITEM_TRAWLER || (state.turn - pirate.last_attack) >= rules.pirate_land_attack_interval) {
+					pirate.attack = true;
+					pirate.last_attack = state.turn;
 					if (fort_protected)
 						alert("Pirate attack on " + item_list[item].name + " thwarted by Fort defense!");
 					else {
@@ -1106,8 +1114,8 @@ function pirateAttack() {
 								state.stats.trawlersSunk++;
 							announce("\x01h\x01rPirates plundered \x01w$" + plunder + "\x01r from " + item_list[item].name);
 						}
-						pirate.last_attack = state.turn;
 					}
+					continue next_pirate;
 				}
 			}
 		}
@@ -1727,6 +1735,9 @@ function movePirate() {
 	for (var pi = state.pirate.length - 1; pi >= 0; --pi) {
 		var pirate = state.pirate[pi];
 
+		if (pirate.attack)
+			continue;
+
 		if (!onWave(pirate)) {
 			var px = Math.floor(pirate.x);
 			var py = Math.floor(pirate.y);
@@ -1868,18 +1879,22 @@ function calculateScore() {
 };
 
 function getRank() {
-	if (state.stats.piratesSunk >= 10) return "Grand Admiral";
-	if (state.stats.intlTrades  >= 10) return "Merchant Prince";
-	if (state.stats.dockTrades  >= 10) return "Port Authority";
-	if (state.pop  >=  1000) return "Metropolitan Visionary";
-	if (state.food >= 10000) return "Harvester of Bounty";
-	if (state.gold >= 10000) return "Hoarder of Treasures";
-	if (state.rebels >=  50) return "Dictator of Deplorables";
+	if (state.rebels            >=     90) return "Minister of Madness";
+	if (state.rebels            >=     75) return "Mayor of Mayhem";
+	if (state.rebels            >=     50) return "Dictator of Deplorables";
+	if (state.stats.piratesSunk >=     10) return "Grand Admiral";
+	if (state.stats.intlTrades  >=     10) return "Merchant Prince";
+	if (state.stats.dockTrades  >=     10) return "Port Authority";
+	if (state.pop               >=   1000) return "Metropolitan Visionary";
+	if (state.food              >= 100000) return "Harvester of Bounty";
+	if (state.gold              >= 100000) return "Hoarder of Treasures";
 	return "Local Magistrate";
 };
 
 var TITLES = [
-    { min: 10000, name: "Deity of the Archipelago" },
+	{ min: 50000, name: "Deity of the Archipelago" },
+	{ min: 20000, name: "Loveable Luminary" },
+    { min: 10000, name: "Pioneer of Patriots" },
     { min: 7500,  name: "Father of Freedom" },
     { min: 5000,  name: "Founder of Nations" },
     { min: 3000,  name: "Benevolent Governor" },
@@ -1919,8 +1934,8 @@ function drawUI(verbose) {
 
 	if (verbose > 1) {
 		console.gotoxy(lx, ly++);
+		console.putmsg("\x01n\x01c  Items     Health");
 		console.attributes = LIGHTGRAY;
-		console.putmsg("  Items     Health");
 		for (var i in item_list) {
 			console.gotoxy(lx, ly++);
 			var item = item_list[i];
@@ -2208,12 +2223,12 @@ function showBuildMenu() {
 	}
 	menuY++
 	console.gotoxy(menuX + 2, menuY++);
-	console.putmsg(format("\x01h\x01w\xfe \x01bBuy and Build an Item \x01w\xfe \x01n\x01gRules: \x01h%-11.11s \x01w\xfe", rules.name));
+	console.putmsg(format("\x01h\x01b\xfe \x01wBuy and Build an Item \x01b\xfe \x01n\x01cRules: \x01h%-11.11s \x01w\xfe", rules.name));
 	menuY++
 	for (var i in item_list) {
 		var item = item_list[i];
 		console.gotoxy(menuX + 2, menuY++);
-		console.putmsg(format("\x01h\x01b(%s)\x01n %-10s \x01h\x01g$%3d \x01b\xAF \x01h%s"
+		console.putmsg(format("\x01h\x01b(\x01w%s\x01b)\x01n %-10s \x01h\x01g$\x01w%3d \x01b\xAF \x01c%s"
 			, i, item.name, rules.item[i].cost, item.shadow));
 	}
 	if (state.lastbuilt) {
