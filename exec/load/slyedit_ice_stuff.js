@@ -293,7 +293,7 @@ function redrawScreen_IceStyle(pEditLeft, pEditRight, pEditTop, pEditBottom, pEd
 	console.print(subj, P_AUTO_UTF8);
 
 	// Display the bottom message area border and help line
-	DisplayTextAreaBottomBorder_IceStyle(pEditBottom + 1, pUseQuotes);
+	DisplayTextAreaBottomBorder_IceStyle(pEditBottom + 1, pUseQuotes, null, null, null, null, gUserSettings.ctrlQQuote);
 	DisplayBottomHelpLine_IceStyle(console.screen_rows, pUseQuotes, pCtrlQQuote);
 
 	// Go to the start of the edit area
@@ -318,69 +318,91 @@ function refreshSubjectOnScreen_IceStyle(pX, pY, pLength, pText)
 //  pLineNum: The line number on the screen where the text should be placed
 //  pUseQuotes: Whether or not message quoting is enabled
 //  pCanChgMsgColor: Whether or not changing the text color is allowed
-// The following parameters are not used; this is here to match the function signature of DCTEdit version.
-//  pEditLeft
-//  pEditRight
-//  pInsertMode
+//  pEditLeft: Not used
+//  pEditRightt: Not used
+//  pInsertMode: Not used
+//  pCanChgMsgColor: Not used
+//  pCtrlQQuote: Boolean - Whether or not we're using Ctrl-Q to quote (if not, using Ctrl-Y).
+//  pUpdateOnlyQuoteKeyChar: Optional boolean - Whether or not to only update the quote character in the line.
+//                           Defaults to false.
 function DisplayTextAreaBottomBorder_IceStyle(pLineNum, pUseQuotes, pEditLeft, pEditRight,
-                                               pInsertMode, pCanChgMsgColor)
+                                              pInsertMode, pCanChgMsgColor, pCtrlQQuote, pUpdateOnlyQuoteKeyChar)
 {
-   // The border will use random bright/normal colors.  The colors
-   // should stay the same each time we draw it, so a "static"
-   // variable is used for the border text.  If that variable has
-   // not been defined yet, then build it.
-   if (typeof(DisplayTextAreaBottomBorder_IceStyle.border) == "undefined")
-   {
-      // Build the string of CTRL key combinations that will be displayed
-      var ctrlKeyHelp = "\x01n" + gConfigSettings.iceColors.KeyInfoLabelColor
-                      + "CTRL \x01n\x01h\x01b(\x01n\x01wA\x01h\x01b)\x01n"
-                      + gConfigSettings.iceColors.KeyInfoLabelColor + "Abort";
-      if (pUseQuotes)
-      {
-         ctrlKeyHelp += " \x01n\x01h\x01b(\x01n\x01wQ\x01h\x01b)\x01n"
-                      + gConfigSettings.iceColors.KeyInfoLabelColor + "Quote";
-      }
-      ctrlKeyHelp += " \x01n\x01h\x01b(\x01n\x01wZ\x01h\x01b)\x01n"
-                   + gConfigSettings.iceColors.KeyInfoLabelColor + "Save";
+	var quoteKeyChar = pCtrlQQuote ? "Q" : "Y";
+	// The border will use random bright/normal colors.  The colors
+	// should stay the same each time we draw it, so a "static"
+	// variable is used for the border text.  If that variable has
+	// not been defined yet, then build it.
+	if (typeof(DisplayTextAreaBottomBorder_IceStyle.border) == "undefined")
+	{
+		// Build the string of CTRL key combinations that will be displayed
+		var ctrlKeyHelp = "\x01n" + gConfigSettings.iceColors.KeyInfoLabelColor
+		                + "CTRL \x01n\x01h\x01b(\x01n\x01wA\x01h\x01b)\x01n"
+		                + gConfigSettings.iceColors.KeyInfoLabelColor + "Abort";
+		if (pUseQuotes)
+		{
+			ctrlKeyHelp += " \x01n\x01h\x01b(\x01n\x01w" + quoteKeyChar + "\x01h\x01b)\x01n"
+			            + gConfigSettings.iceColors.KeyInfoLabelColor + "Quote";
+		}
+		ctrlKeyHelp += " \x01n\x01h\x01b(\x01n\x01wZ\x01h\x01b)\x01n" + gConfigSettings.iceColors.KeyInfoLabelColor + "Save";
 
-      // Start the border text with the first 2 border characters
-      // The beginning of this line shows that SlyEdit is registered
-      // to the sysop. :)
-      DisplayTextAreaBottomBorder_IceStyle.border =
-               randomTwoColorString(CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE,
-                                    gConfigSettings.iceColors.BorderColor1,
-                                    gConfigSettings.iceColors.BorderColor2)
-             + "\x01h" + gConfigSettings.iceColors.BorderColor1 + CP437_LEFT_HALF_BLOCK
-             + iceText("Registered To: " + system.operator.substr(0, 20), "\x01w")
-             + "\x01h" + gConfigSettings.iceColors.BorderColor1 + CP437_RIGHT_HALF_BLOCK;
-      // Append border characters up until the point we'll have to write the CTRL key
-      // help text.
-      var screenText = "";
-      var endPos = console.screen_columns - console.strlen(ctrlKeyHelp) - 3;
-      var textLen = console.strlen(DisplayTextAreaBottomBorder_IceStyle.border);
-      for (var i = textLen+1; i < endPos; ++i)
-         screenText += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
-      DisplayTextAreaBottomBorder_IceStyle.border += randomTwoColorString(screenText,
-                                                                gConfigSettings.iceColors.BorderColor1,
-                                                                gConfigSettings.iceColors.BorderColor2);
+		// Start the border text with the first 2 border characters
+		// The beginning of this line shows that SlyEdit is registered
+		// to the sysop. :)
+		DisplayTextAreaBottomBorder_IceStyle.border =
+			randomTwoColorString(CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE,
+			                     gConfigSettings.iceColors.BorderColor1,
+			                     gConfigSettings.iceColors.BorderColor2)
+		    + "\x01h" + gConfigSettings.iceColors.BorderColor1 + CP437_LEFT_HALF_BLOCK
+		    + iceText("Registered To: " + system.operator.substr(0, 20), "\x01w")
+		    + "\x01h" + gConfigSettings.iceColors.BorderColor1 + CP437_RIGHT_HALF_BLOCK;
+		// Append border characters up until the point we'll have to write the CTRL key
+		// help text.
+		var screenText = "";
+		var endPos = console.screen_columns - console.strlen(ctrlKeyHelp) - 3;
+		var textLen = console.strlen(DisplayTextAreaBottomBorder_IceStyle.border);
+		for (var i = textLen+1; i < endPos; ++i)
+			screenText += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
+		DisplayTextAreaBottomBorder_IceStyle.border += randomTwoColorString(screenText,
+													gConfigSettings.iceColors.BorderColor1,
+													gConfigSettings.iceColors.BorderColor2);
 
-      // CTRL key help and the remaining 2 characters in the border.
-      DisplayTextAreaBottomBorder_IceStyle.border += "\x01h" + gConfigSettings.iceColors.BorderColor1
-                  + CP437_LEFT_HALF_BLOCK + ctrlKeyHelp + gConfigSettings.iceColors.BorderColor1
-                  + CP437_RIGHT_HALF_BLOCK
-                  + randomTwoColorString(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE,
-                                         gConfigSettings.iceColors.BorderColor1,
-                                         gConfigSettings.iceColors.BorderColor2);
-   }
+		// CTRL key help and the remaining 2 characters in the border.
+		DisplayTextAreaBottomBorder_IceStyle.border += "\x01h" + gConfigSettings.iceColors.BorderColor1
+			+ CP437_LEFT_HALF_BLOCK + ctrlKeyHelp + gConfigSettings.iceColors.BorderColor1
+			+ CP437_RIGHT_HALF_BLOCK
+			+ randomTwoColorString(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE,
+								gConfigSettings.iceColors.BorderColor1,
+								gConfigSettings.iceColors.BorderColor2);
 
-   // Display the border line on the screen
-   // If pLineNum is not specified, then default to the 2nd to the last
+		// Store the horizontal position of the quote key char in the line, for optimal
+		// screen refreshing when necessary
+		var lineTextNoAttrs = strip_ctrl(DisplayTextAreaBottomBorder_IceStyle.border);
+		var textToSearch = "(" + quoteKeyChar + ")Quote";
+		DisplayTextAreaBottomBorder_IceStyle.quoteKeyCharXPos = lineTextNoAttrs.indexOf(textToSearch);
+		if (DisplayTextAreaBottomBorder_IceStyle.quoteKeyCharXPos > -1)
+			DisplayTextAreaBottomBorder_IceStyle.quoteKeyCharXPos += 2;
+	}
+
+	var updateOnlyQuoteChar = (typeof(pUpdateOnlyQuoteKeyChar) === "boolean" ? pUpdateOnlyQuoteKeyChar : false);
+
+	// Display the border line on the screen
+	// If pLineNum is not specified, then default to the 2nd to the last
 	// line on the screen.
 	var lineNum = console.screen_rows-1;
 	if ((typeof(pLineNum) != "undefined") && (pLineNum != null))
 		lineNum = pLineNum;
-   console.gotoxy(1, lineNum);
-   console.print(DisplayTextAreaBottomBorder_IceStyle.border);
+	if (updateOnlyQuoteChar && DisplayTextAreaBottomBorder_IceStyle.quoteKeyCharXPos > -1)
+	{
+		console.attributes = "N";
+		console.gotoxy(DisplayTextAreaBottomBorder_IceStyle.quoteKeyCharXPos, lineNum);
+		console.print(quoteKeyChar);
+	}
+	else
+	{
+		console.gotoxy(1, lineNum);
+		console.print(DisplayTextAreaBottomBorder_IceStyle.border);
+	}
 }
 
 // Displays the second (lower) help line for the bottom of the screen,

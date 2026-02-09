@@ -323,8 +323,10 @@ function displayTextAreaTopBorder_DCTStyle(pLineNum, pEditLeft, pEditRight)
 //  pEditRight: The rightmost edit area column on the screen
 //  pInsertMode: The insert mode ("INS" or "OVR")
 //  pCanChgMsgColor: Whether or not changing the text color is allowed
+//  pCtrlQQuote: Boolean - Whether or not we're using Ctrl-Q to quote (if not, using Ctrl-Y).
+//               Not used; only to match the Ice-style function.
 function DisplayTextAreaBottomBorder_DCTStyle(pLineNum, pUseQuotes, pEditLeft, pEditRight,
-                                               pInsertMode, pCanChgMsgColor)
+                                               pInsertMode, pCanChgMsgColor, pCtrlQQuote)
 {
 	// The border will use random bright/normal colors.  The colors
 	// should stay the same each time we draw it, so a "static"
