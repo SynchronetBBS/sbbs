@@ -943,6 +943,35 @@ bool parse_origin(const char* fmsgbuf, fmsghdr_t* hdr)
 	return true;
 }
 
+// See issue #1066 <sigh>
+bool parse_msgid(const char* fmsgbuf, fmsghdr_t* hdr)
+{
+	char* msgid;
+	if ((msgid = parse_control_line(fmsgbuf, "MSGID:")) == NULL)
+		return false;
+	char* p = msgid;
+	if (smb_get_net_type_by_addr(p) != NET_FIDO) {
+		p = strchr(msgid, '@');
+		if (p == NULL || smb_get_net_type_by_addr(p + 1) != NET_FIDO) {
+			free(msgid);
+			return false;
+		}
+		++p;
+	}
+
+	fidoaddr_t addr = smb_atofaddr(NULL, p);
+	if (addr.zone == 0 || faddr_contains_wildcard(&addr)) {
+		free(msgid);
+		return false;
+	}
+	hdr->origzone   = addr.zone;
+	hdr->orignet    = addr.net;
+	hdr->orignode   = addr.node;
+	hdr->origpoint  = addr.point;
+	free(msgid);
+	return true;
+}
+
 bool parse_pkthdr(const fpkthdr_t* hdr, fidoaddr_t* orig_addr, fidoaddr_t* dest_addr, enum pkt_type* pkt_type)
 {
 	fidoaddr_t    orig;
@@ -6241,9 +6270,14 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				break;
 			}
 
-			if (!parse_origin(fmsgbuf, &hdr))
+			if (!parse_origin(fmsgbuf, &hdr)) {
 				lprintf(LOG_WARNING, "%s: Failed to parse Origin Line in message from %s (%s) in packet from %s: %s"
 				        , areatag, hdr.from, fmsghdr_srcaddr_str(&hdr), smb_faddrtoa(&pkt_orig, NULL), packet);
+				if (!parse_msgid(fmsgbuf, &hdr)) {
+					lprintf(LOG_WARNING, "%s: Failed to parse MSGID in message from %s (%s) in packet from %s: %s"
+							, areatag, hdr.from, fmsghdr_srcaddr_str(&hdr), smb_faddrtoa(&pkt_orig, NULL), packet);
+				}
+			}
 
 			new_echostat_msg(stat, ECHOSTAT_MSG_RECEIVED, fidomsg_to_echostat_msg(&hdr, &pkt_orig, fmsgbuf));
 
