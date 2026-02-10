@@ -120,7 +120,9 @@ static str_list_t          clear_attempts_semfiles;
 static link_list_t         current_logins;
 static link_list_t         current_connections;
 
+static trashCan*           ip_can = nullptr;
 static trashCan*           ip_silent_can = nullptr;
+static trashCan*           host_can = nullptr;
 static filterFile*         host_exempt = nullptr;
 
 #ifdef _THREAD_SUID_BROKEN
@@ -4990,7 +4992,9 @@ static void cleanup(int code)
 			startup->terminated(startup->cbdata, code);
 	}
 
+	delete ip_can, ip_can = nullptr;
 	delete ip_silent_can, ip_silent_can = nullptr;
+	delete host_can, host_can = nullptr;
 	delete host_exempt, host_exempt = nullptr;
 
 	mqtt_shutdown(&mqtt);
@@ -5417,7 +5421,9 @@ void bbs_thread(void* arg)
 NO_SSH:
 #endif
 
+		ip_can = new trashCan(&scfg, "ip", startup->sem_chk_freq);
 		ip_silent_can = new trashCan(&scfg, "ip-silent", startup->sem_chk_freq);
+		host_can = new trashCan(&scfg, "host", startup->sem_chk_freq);
 		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile, startup->sem_chk_freq);
 
 		sbbs_t* sbbs = new sbbs_t(0, &server_addr, sizeof(server_addr)
@@ -5705,10 +5711,11 @@ NO_SSH:
 			update_terminal(sbbs);
 			// TODO: Plain text output in SSH socket
 			struct trash trash;
-			if (sbbs->trashcan(host_ip, "ip", &trash)) {
+			if (!host_exempt->listed(host_ip, host_name) && ip_can->listed(host_ip, nullptr, &trash)) {
 				if (!trash.quiet) {
 					char details[128];
-					lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can %s", client_socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details));
+					lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s %s", client_socket, client.protocol, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
+					sbbs->trashcan_msg("ip");
 				}
 				close_socket(client_socket);
 				continue;
@@ -5788,11 +5795,12 @@ NO_SSH:
 				lprintf(LOG_INFO, "%04d %s [%s] Hostname: %s", client_socket, client.protocol, host_ip, host_name);
 			}
 
-			if (sbbs->trashcan(host_name, "host", &trash)) {
+			if (!host_exempt->listed(host_ip, host_name) && host_can->listed(host_name, nullptr, &trash)) {
 				if (!trash.quiet) {
 					char details[128];
-					lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
-							, client_socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details));
+					lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s: %s %s"
+							, client_socket, client.protocol, host_ip, host_name, host_can->fname, trash_details(&trash, details, sizeof details));
+					sbbs->trashcan_msg("host");
 				}
 				SSH_END(client_socket);
 				close_socket(client_socket);

@@ -931,16 +931,24 @@ void sbbs_t::dirinfo(int dirnum)
 /****************************************************************************/
 /* Searches the file <name>.can in the TEXT directory for matches			*/
 /* Returns TRUE if found in list, FALSE if not.								*/
-/* Displays bad<name>.msg in text directory if found.						*/
 /****************************************************************************/
 bool sbbs_t::trashcan(const char *insearchof, const char *name, struct trash* trash)
 {
-	char str[MAX_PATH + 1];
-
 	if (!::trashcan2(&cfg, insearchof, NULL, name, trash))
 		return false;
 	if (trash != nullptr && trash->quiet)
 		return true;
+	trashcan_msg(name);
+	return true;
+}
+
+/****************************************************************************/
+/* Displays bad<name>.msg in text directory if found.						*/
+/****************************************************************************/
+void sbbs_t::trashcan_msg(const char* name)
+{
+	char str[MAX_PATH + 1];
+
 	snprintf(str, sizeof str, "%sbad%s.msg", cfg.text_dir, name);
 	if (cfg.mods_dir[0] != '\0') {
 		char modpath[MAX_PATH + 1];
@@ -952,7 +960,6 @@ bool sbbs_t::trashcan(const char *insearchof, const char *name, struct trash* tr
 		printfile(str, 0);
 		flush_output(500); // give time for tx buffer to clear before disconnect
 	}
-	return true;
 }
 
 char* sbbs_t::timestr(time_t intime)

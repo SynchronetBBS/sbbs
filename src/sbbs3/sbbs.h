@@ -871,6 +871,7 @@ public:
 	void	subinfo(int subnum);
 	void	dirinfo(int dirnum);
 	bool	trashcan(const char *insearch, const char *name, struct trash* trash = NULL);
+	void	trashcan_msg(const char* name);
 	void	time_bank(void);
 	bool	change_user(const char* username = nullptr);
 
