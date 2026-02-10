@@ -4,7 +4,7 @@
 
 "use strict";
 
-const VERSION = "0.06";
+const VERSION = "0.07";
 
 require("sbbsdefs.js", "K_EXTKEYS");
 
@@ -179,6 +179,7 @@ var MAP_MID_ROW = (MAP_HEIGHT / 2);
 var MAP_RIGHT_COL = (MAP_WIDTH - 1);
 var MAP_BOTTOM_ROW = (MAP_HEIGHT - 1);
 var MAX_MSGS = 3;
+var LEGEND_COL = 62;
 var WATER  = 0;
 var LAND   = 1;
 var LAND_N = 2;
@@ -1940,7 +1941,7 @@ var last_cap;
 var last_reb;
 
 function drawUI(verbose) {
-	var lx = 62;
+	var lx = LEGEND_COL;
 	var ly = 1;
 
 	console.aborted = false;
@@ -2198,8 +2199,11 @@ function buildItem(type) {
 		assessHomeland();
 		refreshMap();
 	}
-	drawUI(/* verbosity: */1);
 	alert(msg);
+	++state.stats[type].built;
+	if (itemIsBoat(type) && state.stats[type].built == 1)
+		alert("\x01n\x01c(\x01hL\x01n\x01c)ift anchor to \x01h" + (type == ITEM_PTBOAT ? "patrol/persue/escort" : "trawl for fish"));
+	drawUI(/* verbosity: */1);
 	state.started = true;
 	state.in_progress = true;
 	assessItems(/* add damage: */false);
@@ -2500,22 +2504,45 @@ function removeSavedGame() {
 }
 
 function handleQuit() {
-    console.gotoxy(1, 24);
-    console.cleartoeol();
-
-    var prompt = "\x01n\x01h\x01rQuit? ";
-
-    if (state.in_progress)
-        prompt += "\x01c[\x01wS\x01c]ave \x01n\x01r\xF9\x01h "
-	if (state.started)
-		prompt += "\x01c[\x01wF\x01c]inish \x01n\x01r\xF9\x01h ";
-	prompt += "\x01r[\x01wA\x01r]bandon \x01n\x01r\xF9\x01h \x01c[\x01wC\x01c]ontinue \x01n\x01r\xF9\x01h \x01c[\x01wV\x01c]iew High Scores";
-
-    console.putmsg(prompt);
+	var y = 13;
+	console.gotoxy(LEGEND_COL, y++);
 	console.cleartoeol();
-    var choice = console.getkey(K_UPPER);
 
-    if (choice === 'S' && state.in_progress) {
+	console.gotoxy(LEGEND_COL, y++);
+	console.print("\x01n\x01h\x01rQuit?");
+	console.cleartoeol();
+	console.gotoxy(LEGEND_COL, y++);
+	console.cleartoeol();
+
+	if (state.in_progress) {
+		console.gotoxy(LEGEND_COL, y++);
+		console.print("\x01c[\x01wS\x01c]ave");
+		console.cleartoeol();
+	}
+	if (state.started) {
+		console.gotoxy(LEGEND_COL, y++);
+		console.print("\x01c[\x01wF\x01c]inish");
+		console.cleartoeol();
+	}
+	console.gotoxy(LEGEND_COL, y++);
+	console.print("\x01r[\x01wA\x01r]bandon");
+	console.cleartoeol();
+	console.gotoxy(LEGEND_COL, y++);
+	console.print("\x01c[\x01wC\x01c]ontinue");
+	console.cleartoeol();
+	console.gotoxy(LEGEND_COL, y++);
+	console.print("\x01c[\x01wV\x01c]iew High Scores");
+	console.cleartoeol();
+
+	while (y <= MAP_BOTTOM_ROW + 1) {
+		console.gotoxy(LEGEND_COL, y++);
+		console.cleartoeol();
+	}
+
+	hideCursor();
+	var choice = console.getkey(K_UPPER);
+	console.gotoxy(1, 24);
+	if (choice === 'S' && state.in_progress) {
 		console.putmsg("\r\x01n\x01hSee you next time, Governor!  Returning to " + system.name + " ...\x01n\x01>");
 		return true;
 	} else if (choice === 'A') {
@@ -2523,15 +2550,15 @@ function handleQuit() {
 		console.putmsg("\r\x01n\x01hSorry to see you leave, play again soon!  Returning to " + system.name + " ...\x01n\x01>");
 		return true;
     } else if (choice === 'F' && state.started) {
-        finishGame();
+		finishGame();
 		return true;
     } else if (choice === 'V') {
-        showHighScores("the game");
-        refreshScreen(true); // Redraw map after returning from high scores
+		showHighScores("the game");
+		refreshScreen(true); // Redraw map after returning from high scores
     } else {
 //        pushMsg("Welcome back, Governor!"); // Not an alert
-        drawUI();
-    }
+		drawUI();
+	}
 	return false;
 };
 
@@ -2744,6 +2771,9 @@ function main () {
 		state.gold = rules.initial_gold;
 		state.food = rules.initial_food;
 		state.pop = rules.initial_pop;
+		state.stats = {};
+		for (var i in item_list)
+			state.stats[i] = { built: 0 };
 		spawnFish();
 		pushMsg("\x01cWelcome to the \x01ySynchronet UTOPIA\x01w " + state.map_name + "\x01c, Governor.");
 		pushMsg("\x01cPlaying by \x01w" + rules.name + "\x01c rules...");
