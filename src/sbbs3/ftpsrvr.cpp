@@ -5441,7 +5441,7 @@ void ftp_server(void* arg)
 				int  ip_len = strlen(client_ip) + 1;
 				uint connections = listCountMatches(&current_connections, client_ip, ip_len);
 				if (connections >= startup->max_concurrent_connections
-				    && !is_host_exempt(&scfg, client_ip, /* host_name */ NULL)) {
+				    && !host_is_exempt(&scfg, client_ip, /* host_name */ NULL)) {
 					lprintf(LOG_NOTICE, "%04d [%s] !Maximum concurrent connections (%u) exceeded"
 					        , client_socket, client_ip, startup->max_concurrent_connections);
 					sockprintf(client_socket, -1, "421 Maximum connections (%u) exceeded", startup->max_concurrent_connections);

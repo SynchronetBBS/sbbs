@@ -1297,7 +1297,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 							break;
 						case 'T':   /* Twit-list the sender */
 							domsg = false;
-							if (is_twit(&cfg, msg.from)) {
+							if (name_is_twit(&cfg, msg.from)) {
 								bprintf("\r\n%s is already twit-listed!\r\n", msg.from);
 								break;
 							}

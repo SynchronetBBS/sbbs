@@ -6517,7 +6517,7 @@ void mail_server(void* arg)
 					int logins = listCountMatches(&current_logins, host_ip, ip_len);
 
 					if (connections - logins >= (int)startup->max_concurrent_connections
-					    && !is_host_exempt(&scfg, host_ip, /* host_name */ NULL)) {
+					    && !host_is_exempt(&scfg, host_ip, /* host_name */ NULL)) {
 						lprintf(LOG_NOTICE, "%04d %-5s [%s] !Maximum concurrent connections without login (%u) exceeded (%lu total)"
 						        , client_socket, servprot, host_ip, startup->max_concurrent_connections, ++stats.connections_exceeded);
 						sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "Maximum connections exceeded");

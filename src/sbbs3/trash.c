@@ -141,7 +141,7 @@ str_list_t trashcan_list(scfg_t* cfg, const char* name)
 }
 
 /****************************************************************************/
-bool is_host_exempt(scfg_t* cfg, const char* ip_addr, const char* host_name)
+bool host_is_exempt(scfg_t* cfg, const char* ip_addr, const char* host_name)
 {
 	char exempt[MAX_PATH + 1];
 
@@ -198,7 +198,7 @@ bool filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 	return true;
 }
 
-bool is_twit(scfg_t* cfg, const char* name)
+bool name_is_twit(scfg_t* cfg, const char* name)
 {
 	char path[MAX_PATH + 1];
 	return findstr(name, twitlist_fname(cfg, path, sizeof path));

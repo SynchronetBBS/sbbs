@@ -5655,7 +5655,7 @@ NO_SSH:
 				int logins = listCountMatches(&current_logins, host_ip, ip_len);
 
 				if (connections - logins >= (int)startup->max_concurrent_connections
-				    && !is_host_exempt(&scfg, host_ip, /* host_name */ NULL)) {
+				    && !host_is_exempt(&scfg, host_ip, /* host_name */ NULL)) {
 					lprintf(LOG_NOTICE, "%04d %s !Maximum concurrent connections without login (%u) reached from host: %s"
 					        , client_socket, client.protocol, startup->max_concurrent_connections, host_ip);
 					close_socket(client_socket);
