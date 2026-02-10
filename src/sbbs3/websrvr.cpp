@@ -7663,12 +7663,13 @@ void web_server(void* arg)
 				std::string most_active = request_rate_limiter->most_active(&most_active_count);
 				char str[sizeof rate_limit_report];
 				char tmp[128];
-				snprintf(str, sizeof str, "Rate limiting current: clients=%zu, requests=%zu, most-active=%s (%zu), highest: %s (%u) on %s, limited: %u, last: %s on %s"
+				snprintf(str, sizeof str, "Rate limiting current: clients=%zu, requests=%zu, most-active=%s (%zu), highest: %s (%u) on %s, limited: %u, last: %s on %s (repeat: %u)"
 					, request_rate_limiter->client_count(), request_rate_limiter->total(), most_active.c_str(), most_active_count
 					, request_rate_limiter->currHighwater.client.c_str(), request_rate_limiter->currHighwater.count
 					, timestr(&scfg, (time32_t)request_rate_limiter->currHighwater.time, logstr)
 					, request_rate_limiter->disallowed.load()
-					, request_rate_limiter->lastLimited.client.c_str(), timestr(&scfg, (time32_t)request_rate_limiter->lastLimited.time, tmp));
+					, request_rate_limiter->lastLimited.client.c_str(), timestr(&scfg, (time32_t)request_rate_limiter->lastLimited.time, tmp)
+					, request_rate_limiter->repeat.load());
 				if (strcmp(str, rate_limit_report) != 0) {
 					SAFECOPY(rate_limit_report, str);
 					lprintf(LOG_DEBUG, "%s", rate_limit_report);

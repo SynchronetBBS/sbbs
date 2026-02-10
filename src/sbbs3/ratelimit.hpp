@@ -36,6 +36,7 @@ class rateLimiter {
 		time_t time{};
 	} currHighwater, prevHighwater, lastLimited;
 	std::atomic<uint> disallowed{};
+	std::atomic<uint> repeat{};
 	bool allowRequest(const std::string& clientId) {
 		if (maxRequests == 0 || timeWindowSeconds == 0)
 			return true;
@@ -57,7 +58,12 @@ class rateLimiter {
 			}
 			return true; // Allow the request
 		} else {
-			lastLimited.client = clientId;
+			if (lastLimited.client == clientId)
+				++repeat;
+			else {
+				lastLimited.client = clientId;
+				repeat = 0;
+			}
 			lastLimited.count = count;
 			lastLimited.time = now;
 			++disallowed;
