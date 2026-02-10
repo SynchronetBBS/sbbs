@@ -119,7 +119,8 @@ All items can benefit from the protection of Forts.  And of course, the people
 need food.  A lot of food.
 
 Speaking of Docks, you can extend a Dock (e.g. for building boats closer to
-fish in open waters) by building a "pier" with Bridge segments.
+fish in open waters) by building a "pier" with Bridge segments.  Trawlers and
+PT Boats cannot sail under bridges/piers.
 
 #Food#
 
@@ -169,6 +170,8 @@ occasions, you will be rewarded handsomely.
 
 ù Moving the cursor over an item will show its current health in the legend
 ù Moving the cursor over a Merchant or Pirate ship will show its purse value
+ù PT Boats and Trawlers are anchored when they are built, use the 'L' key to
+  lift (weigh) the anchor and set sail; the anchor can be (L)owered again later
 ù Most items can be built immediately by pressing the corresponding build menu
   key (e.g. 'V' for Villas), without needing to pull up the Build Item menu
 ù The SPACE BAR will repeat an attempt of the previously successful item-build
@@ -176,7 +179,7 @@ occasions, you will be rewarded handsomely.
 ù The [Q]uit key can also be used to pause the game in-progress
 ù The '+' and '-' keys can be used to adjust the speed of the clock
 ù Alerts may fly by, but if you think you missed an important News bulletin,
-  use the 'L' key to view the log of news in reverse chronological order
+  use the 'N' key to view all the news reports in reverse chronological order
 ù You can move the cursor with the arrow keys, Home, End, PageUp, and PageDown
   keys as well as the number keys (e.g. on the keypad) for all directions
   including diagonals
@@ -184,6 +187,7 @@ occasions, you will be rewarded handsomely.
   the build menu
 ù The '.' key may also be used to demolish an item
 ù The Ctrl-R key can be used to refresh the screen if needed
+ù The Ctrl-A key can be used to mute and un-mute audio from the game
 
 #Finally#
 
