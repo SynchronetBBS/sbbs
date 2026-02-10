@@ -2,6 +2,8 @@
 	"name": "Easy",
 	"initial_gold": 500,
 	"initial_food": 250,
+	"fish_food_value": 12,
+	"fish_catch_max": 10,
 	"item": {
 		"C": {
 			"cost": 3,
