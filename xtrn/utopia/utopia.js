@@ -105,8 +105,8 @@ var rules = {
 	// (per-turn)
 	rebel_decrement_potential: 0.1,
 	rebel_increase_potential: 0.08,
-	rebel_mutiny_theshold: 50,
-	rebel_attack_theshold: 40,
+	rebel_mutiny_threshold: 50,
+	rebel_attack_threshold: 40,
 	rebel_attack_damage: 50,
 	martial_law_rebel_decrease: 2,
 
@@ -973,33 +973,31 @@ function handlePatrols() {
 		for (var t = 0; t < trawlers.length; ++t) {
 			var trawler = trawlers[t];
 			var dist = objDist(boat, trawler);
-			if (dist > rules.ptboat_max_pursuit_dist) // too far away
-				continue;
-			if (dist < 3) // close enough
-				continue;
-			target.push({ x:trawler.x, y:trawler.y, dist: dist });
+			target.push({ x:trawler.x, y:trawler.y, priority: 2, dist: dist });
 		}
-		target.sort(function (a, b) { return b.dist - a.dist; });
-
-		// Pirate > Merchant > Trawlers
 		if (state.merchant.active) {
-			var mdist = objDist(boat, state.merchant);
-			target.push({ x:Math.floor(state.merchant.x), y:Math.floor(state.merchant.y), dist:mdist});
+			var mx = Math.floor(state.merchant.x);
+			var my = Math.floor(state.merchant.y);
+			if (my == boat.y && mx > boat.x)
+				mx--; // Don't step on the back half of the Merchant ship
+			var dist = objDist(boat, {x:mx, y:my});
+			target.push({ x:mx, y:my, priority: 1, dist:dist});
 		}
 		for (var pi = 0; pi < state.pirate.length; ++pi) {
 			var pirate = state.pirate[pi];
 			var dist = objDist(boat, pirate);
-			if (dist > rules.ptboat_max_pursuit_dist) // too far away
-				continue;
-			if (dist < 3) // close enough
-				continue;
-			target.push({ x:pirate.x, y:pirate.y, dist: dist });
+			target.push({ x:pirate.x, y:pirate.y, priority: 0, dist: dist });
 		}
+		target.sort(function (a, b) { if (a.priority == b.priority) return b.dist - a.dist; return b.priority - a.priority; });
 		var moved = false;
 		var t;
 		while ((t = target.pop()) && !moved) {
-			debugLog("PT Boat at " + xy_str(boat) + " next closest target at " + xy_str(t) + " at distance " + Math.floor(t.dist));
-			if (t.dist < 1) {
+			if (t.dist > rules.ptboat_max_pursuit_dist) // too far away
+				continue;
+			debugLog("PT Boat at " + xy_str(boat) + " next closest target at " + xy_str(t)
+				+ " priority " + t.priority
+				+ " at distance " + Math.floor(t.dist));
+			if (t.dist < 2) {
 				moved = true;
 				break;
 			}
@@ -1034,8 +1032,10 @@ function handlePatrols() {
 			if (!moved)
 				debugLog("No move made :-(");
 		}
-		if (!moved)
+		if (!moved) {
+			debugLog("PT Boat considering random move");
 			moveItem1rand(boat.x, boat.y, WATER, /* diagonal */true);
+		}
 	}
 }
 
@@ -1159,9 +1159,9 @@ function handleRebels() {
 	if (state.martialLaw)
 		return;
 	// Only happens if rebels are high and a pirate isn't already active
-	if (state.rebels > rules.rebel_mutiny_theshold && !state.pirate.length) {
+	if (state.rebels > rules.rebel_mutiny_threshold && !state.pirate.length) {
 		// Chance increases as rebels approach 100%
-		var mutinyChance = (state.rebels - rules.rebel_mutiny_theshold) / (rules.rebel_mutiny_theshold * 10);
+		var mutinyChance = (state.rebels - rules.rebel_mutiny_threshold) / (rules.rebel_mutiny_threshold * 10);
 		if (Math.random() < mutinyChance) {
 
 			// Find all PT Boats
@@ -1189,9 +1189,9 @@ function handleRebels() {
             }
         }
     }
-	if (state.rebels > rules.rebel_attack_theshold) {
+	if (state.rebels > rules.rebel_attack_threshold) {
 		// Chance increases as rebels approach 100%
-		var attackChance = (state.rebels - rules.rebel_attack_theshold) / (rules.rebel_attack_theshold * 10);
+		var attackChance = (state.rebels - rules.rebel_attack_threshold) / (rules.rebel_attack_threshold * 10);
 		if (Math.random() < attackChance) {
 			var items = getArrayOfItems();
 			if (items.length) {
@@ -1998,7 +1998,7 @@ function drawUI(verbose) {
 	console.gotoxy(lx, ly++);
 	if (state.in_progress && item_key)
 		console.putmsg("\x01n[" + demo_attr + "Del\x01n] Demolish " + demo_cost);
-	else
+	else if (!state.started || state.in_progress)
 		console.putmsg("\x01n[" + build_attr + "Enter\x01n] Build Item");
 	cond_cleartoeol();
 	console.gotoxy(lx, ly++);
@@ -2076,12 +2076,12 @@ function drawUI(verbose) {
 			"\x01n\x01h\x01yGold: %s%s%s " +
 			"\x01n\x01h\x01gFood: %s%s%s " +
 			"\x01n\x01h\x01wPop:%s\x01n%s/%s%s%s " +
-			"\x01n\x01h\x01wReb: %s%2d%%%s  " +
+			"\x01n\x01h\x01wReb: %s%2d%%%s " +
 			"\x01n\x01h\x01cRnd: %s%4.1f/%d\x01>"
-			, state.gold < state.popCap ? "\x01r\x01i" : "\x01n"
+			, state.gold < state.popCap ? "\x01r" : "\x01n"
 			, gold
 			, gold_dir
-			, state.started && state.food < state.pop ? "\x01h\x01r\x01i" : "\x01n"
+			, state.started && state.food < state.pop ? (state.food < state.pop / 2 ? "\x01h\x01r\x01i" : "\x01h\x01r") : "\x01n"
 			, food
 			, food_dir
 			, pop_dir
@@ -2089,7 +2089,8 @@ function drawUI(verbose) {
 			, state.started && state.pop >= state.popCap ? "\x01r\x01i" : "\x01n"
 			, popCap
 			, cap_dir
-			, state.rebels >= 50 ? "\x01r\x01i" : "\x01n"
+			, state.rebels >= rules.rebel_attack_threshold
+				? (state.rebels >= rules.rebel_mutiny_threshold ? "\x01r\x01i" : "\x01r") : "\x01n"
 			, state.rebels
 			, reb_dir
 			, state.turn / 10 >= (rules.max_turns - 1) / 10 ? "\x01r" : "\x01n"
@@ -2172,6 +2173,7 @@ function buildItem(type) {
 		assessHomeland();
 		refreshMap();
 	}
+	drawUI(/* verbosity: */1);
 	alert(msg);
 	state.started = true;
 	state.in_progress = true;
@@ -2409,6 +2411,12 @@ function handleOperatorCommand(key) {
 			map[state.cursor.y][state.cursor.x] = ROCKS;
 			drawCell(state.cursor.x, state.cursor.y);
 			state.cursor.x++;
+			return true;
+		case CTRL_W:
+			for (var x = MAP_RIGHT_COL; x > state.cursor.x; --x)
+				map[state.cursor.y][x] = map[state.cursor.y][x - 1];
+			map[state.cursor.y][state.cursor.x] = WATER;
+			drawRow(state.cursor.x, state.cursor.y);
 			return true;
 		case CTRL_X:
 			state.fishPool.length = 0;
