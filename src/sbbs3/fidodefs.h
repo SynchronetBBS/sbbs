@@ -25,8 +25,7 @@
 #include "gen_defs.h"
 
 #define FIDO_TLD        ".fidonet"  /* Fake top-level domain for gating netmail through SMTP  */
-#define FIDO_ORIGIN_PREFIX_FORM_1   "\r * Origin: "
-#define FIDO_ORIGIN_PREFIX_FORM_2   "\n * Origin: "
+#define FIDO_ORIGIN_PREFIX  "\r * Origin: "
 #define FIDO_FILELIST_SEP   " ,"        /* FTS-1 */
 #define FIDO_PING_NAME      "PING"      /* 'To' username for PING netmail (FTS-5001) */
 #define FIDO_AREAMGR_NAME   "AreaFix"   /* De-facto pseudo-standard */

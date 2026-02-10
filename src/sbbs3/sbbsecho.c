@@ -925,9 +925,7 @@ bool parse_origin(const char* fmsgbuf, fmsghdr_t* hdr)
 	char*      p;
 	fidoaddr_t origaddr;
 
-	if ((p = strstr(fmsgbuf, FIDO_ORIGIN_PREFIX_FORM_1)) == NULL)
-		p = strstr(fmsgbuf, FIDO_ORIGIN_PREFIX_FORM_2);
-	if (p == NULL)
+	if ((p = strstr(fmsgbuf, FIDO_ORIGIN_PREFIX)) == NULL)
 		return false;
 
 	p += FIDO_ORIGIN_PREFIX_LEN;
@@ -4200,16 +4198,12 @@ void gen_psb(addrlist_t *seenbys, addrlist_t *paths, const char *inbuf, uint16_t
 
 	if (!inbuf)
 		return;
-	fbuf = strstr(inbuf, FIDO_ORIGIN_PREFIX_FORM_1);
-	if (!fbuf)
-		fbuf = strstr(inbuf, FIDO_ORIGIN_PREFIX_FORM_2);
+	fbuf = strstr(inbuf, FIDO_ORIGIN_PREFIX);
 	if (!fbuf)
 		fbuf = inbuf;
 	FREE_AND_NULL(seenbys->addr);
 	addr.zone = addr.net = addr.node = addr.point = seenbys->addrs = 0;
 	p = strstr(fbuf, "\rSEEN-BY:");
-	if (!p)
-		p = strstr(fbuf, "\nSEEN-BY:");
 	if (p) {
 		while (1) {
 			snprintf(str, sizeof str, "%-.100s", p + 10);
@@ -4251,8 +4245,6 @@ void gen_psb(addrlist_t *seenbys, addrlist_t *paths, const char *inbuf, uint16_t
 				++i;
 			}
 			p1 = strstr(p + 10, "\rSEEN-BY:");
-			if (!p1)
-				p1 = strstr(p + 10, "\nSEEN-BY:");
 			if (!p1)
 				break;
 			p = p1;
@@ -4360,9 +4352,7 @@ void strip_psb(char *inbuf)
 
 	if (!inbuf)
 		return;
-	fbuf = strstr(inbuf, FIDO_ORIGIN_PREFIX_FORM_1);
-	if (!fbuf)
-		fbuf = strstr(inbuf, FIDO_ORIGIN_PREFIX_FORM_2);
+	fbuf = strstr(inbuf, FIDO_ORIGIN_PREFIX);
 	if (!fbuf)
 		fbuf = inbuf;
 	if ((p = strstr(fbuf, "\rSEEN-BY:")) != NULL)
@@ -5895,7 +5885,7 @@ void pack_netmail(void)
 			if (hdr.attr & FIDO_FILE) {
 				// Parse Kill-File-Sent (KFS) from FLAGS from control paragraph (kludge line) within msg body
 				const char* flags = strstr(fmsgbuf, "\1FLAGS ");
-				if (flags != NULL && flags != fmsgbuf && *(flags - 1) != '\r' && *(flags - 1) != '\n')
+				if (flags != NULL && flags != fmsgbuf && *(flags - 1) != '\r')
 					flags = NULL;
 				const char* kfs = NULL;
 				if (flags != NULL) {
