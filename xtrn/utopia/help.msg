@@ -1,7 +1,7 @@
-@X1E@CLEAR@@CENTER@Synchronet Utopia
-@X1E@FILL:-@
-@X1E@CENTER@by Rob Swindell (digital man)
-
+@X1F@CLEAR@@CENTER@Synchronet Utopia
+@X1E@FILL:\xC4@
+@X17@CENTER@by Rob Swindell (digital man)
+@X13
 #Can you build a better Utopian society?#
 
 This game is a single-player civilization simulation heavily inspired by the
@@ -24,7 +24,7 @@ prompted to choose which map to play, if there are multiple to choose from:
   2: Hawaiian Islands
   3: Randomly Generated
 
-Which, Quit or [1]: @X1E
+Which, Quit or [1]: @X13
 
 After choosing a map, you will then be prompted to choose which rules to play
 by, again, only if there are multiple options to choose from:
@@ -34,7 +34,7 @@ by, again, only if there are multiple options to choose from:
   1: Easy
   2: Challenging
 
-Which, Quit or [1]: @X1E
+Which, Quit or [1]: @X13
 
 After a map and set of rules are selected, you will be welcomed with the
 display of a map covering the majority of an 80x24 terminal screen.  To the
@@ -44,7 +44,7 @@ of the items of each type that have been already built:
                                   *Items*
                                 @X1A±@X1F Crops
                                 @X16±@X1F Animals
-                                 Trawler
+                                @X1E@X1F Trawler
                                 @X15@X1F PT Boat
                                 @X1Fö@X1F Villas
                                 @X1FÛ@X1F Dock
@@ -52,7 +52,7 @@ of the items of each type that have been already built:
                                 @X17Û@X1F Industry
                                 @X1F@X1F School
                                 @X74Ø@X1F Hospital
-                                @X18ã@X1F Fortress@X1E
+                                @X18ã@X1F Fortress@X13
 
 You start the game by moving the cursor (the red block in the middle of the
 map) with your arrow keys to a land mass of your choosing and building a
@@ -144,7 +144,7 @@ and for a limited amount of time all your productivity will go towards reducing
 the dangers and quantity of the rebels; no revenues will be collected while
 under martial law.
 
-@X1Cóð@X1E #Pirates you say?# @X1Cóð@X1E
+@X1Cóð@X13 #Pirates you say?# @X1Cóð@X13
 
 Yes, pirates can invade your Utopia at any time.  The pirates usually approach
 from the eastern horizon.  While pirates most often attack other ships
@@ -157,7 +157,7 @@ to the north, south, and west.  While pirates are normally a bit faster than
 Merchants (and very fast when pursuing their prey), they are slowed and subdued
 by easterly currents.
 
-ñò #Merchants# ñò
+@X1Eñò@X13 #Merchants# @X1Eñò@X13
 
 Merchant ships will appear on occasion out of the west.  Slow and vulnerable,
 Merchant ships are aided by westerly waves.  For every turn that a Merchant is
