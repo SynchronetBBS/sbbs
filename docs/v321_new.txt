@@ -4,6 +4,11 @@
 
 General
 ~~~~~~~
+o Filter files (i.e. ip[-silent].can, host.can) and related config files
+  (i.e. ipfilter_exempt.cfg, spamblock.cfg) are now cached in memory by
+  default
+o Hosts listed in ipfilter_exempt.cfg are now exempt from any filtering from
+  ip[-silent].can and host.can
 o Better config (.ini) file read error detection and reporting
 o Synchronet console (sbbs[.exe]) can accept the ctrl directory as an argument
   - Consistent with sbbsctrl.exe usage
@@ -27,6 +32,9 @@ o Support tracking and limiting of user file downloads "per day" - issue #938
 o System statistics and mail message counts are now cached (default: for 5s)
 o Increased from 40 to 60 characters the maximum length of descriptions (long
   name) of message groups and sub-boards and file libraries and directories
+o The SCFG->Networks->Internet E-Mail and FidoNet "Allow Sending of ..."
+  options now apply to sysops as well as users; sysops are not automatically
+  exempt from this setting
 o User properties (data/user/####.ini) are now exposed to ARS and @-codes
   - New ARS Keyword PROP[:section]:key to check the truthiness of a property
   - New @-codes (YESNO and ONOFF) for checking Access Requirement Strings
@@ -46,6 +54,8 @@ o New "seek" mode available when viewing files allows jumping around with
   extended keys (e.g. home, end, page up/down, arrow keys) without relying on
   terminal scroll-back (see/use new P_SEEK mode with console.printfile()
   and (the new) printfile.js
+o Use SAUCE record embedded in display files (e.g. *.ANS, *.MSG), when present,
+  to automatically determine expected display width (in columns)
 o New node*/status.ini file to report current node status with more accurate
   representation of the current external program being executed, if any
 o Multiple loadable modules may be configured for each loadable module type
@@ -114,6 +124,9 @@ o New Message Scan
 
 Web Server
 ~~~~~~~~~~
+o New configurable request rate limiter (rate limited per client IP address)
+o New option to log all Virtual Hosts to one http access log file and include
+  the vhost (in addition to the client ip/hostname) in the log messages
 o New LoginInfoSave option (ARS) to specify which users login info should be
   saved upon logon/off (default is *all* users)
 o Log output improvements
@@ -129,10 +142,13 @@ o Immediately reject non-TLS connections that exceed concurrent connections
 
 FTP Server
 ~~~~~~~~~~
+o New configurable request rate limiter (rate limited per client IP address)
 o Allow uploaders to remove files that they uploaded - issue #952
 
 Mail server
 ~~~~~~~~~~~
+o New configurable request rate limiter (rate limited per client IP address)
+o Strip control chars from "B" mime-encoded words in incoming header fields
 o New LoginInfoSave option (ARS) to specify which users login info should be
   saved upon logon/off (default is *all* users)
 o If SMTP-authenticated, fail subsequent AUTH commands with 503 response
@@ -343,6 +359,10 @@ o New option: System->Security->Demand High Quality Password
   (default: No)
 o New Option: System->Advanced->Statistics Interval (cache duration)
   (default: 5 seconds)
+o New Option: System->Advanced->Cache Filter Files (default: Yes)
+o New Option: System->Servers->[Web|FTP|Mail] Servers->Limit Rate of Requests
+o New Option: Networks->QWK->Hubs... Include MIME-encoded Text (default: No)
+  ... and Word-wrap Exported Messages (default: No)
 o New option: External Editors ... Retain Ctrl-A Codes in Quotes
 o New option: Message Options->MailBase Storage Method (default: Self-packing)
   allows sysop to choose "Fast Allocation" Storage Method if needed/preferred
@@ -455,7 +475,7 @@ o postmeme.js
 o postmsg.js
   - New -D (date) and -T (time) options
 o printfile.js
-  - Small wrapper for console.printfile(), to replace use of type.js
+  - Small wrapper for console.printfile(), to replace use of type[asc].js
 o purgefiles.js
   - Add support for -t (testing) and -v (verbose) options
 o rlogin.js
@@ -469,10 +489,12 @@ o str_cmds.js
 o tempxfer.js
   - Major useability improvements
 o text_sec.js
-  - Support per-section and per-document print mode flag override
+  - Support per-section and per-document print mode flag
     Sysop must hand-edit the data/text/*.ini file, for now, to use this feature
     Set "mode=P_* [| P_*]" in root or file-sections of text/*.ini file
     See load/sbbsdefs.js for possible values
+  - Support per-section and per-document print columns
+    Set "cols=<columns>" in root or file-sections of text/*.ini file
 o tdfiglet.js
   - New FIGlet renderer for Synchronet using TheDraw fonts
   - Supports UTF-8 or CP437 encoded output
@@ -506,6 +528,9 @@ o New console.inkey() mode flag: K_EXTKEYS can be used instead of K_CTRLKEYS to
   console.ctrlkey_passthru
 o console output methods that accept p_mode parameters now support
   P_CENTER and (new) P_80COLS mode flags
+o console.strlen() method now calculates display length more accurately when
+  using advanced Ctrl-A codes, embedded CR or LF and extra attribute/color
+  codes (e.g. PCBoard, Wildcat, etc.)
 o Returned to SBBS v3.19 bug-compatible console.attributes behavior of
   silently ignoring Ctrl-A characters in assigned strings
 o New 'console' property:
