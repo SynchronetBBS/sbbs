@@ -1186,32 +1186,34 @@ static bool pop3_client_thread(pop3_t* pop3)
 		}
 	}
 
-	ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, host_name, startup->login_attempt, &attempted);
-	if (banned) {
-		char ban_duration[128];
-		lprintf(LOG_NOTICE, "%04d %-5s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
-		        , socket, client.protocol, host_ip, attempted.count - attempted.dupes, attempted.user
-		        , duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
-		sockprintf(socket, client.protocol, session, "-ERR Access denied.");
-		return false;
-	}
-	struct trash trash;
-	if (ip_can->listed(host_ip, nullptr, &trash)) {
-		if (!trash.quiet) {
-			char details[128];
-			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s %s", socket, client.protocol, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
+	if (!host_exempt->listed(host_ip, host_name)) {
+		ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, host_name, startup->login_attempt, &attempted);
+		if (banned) {
+			char ban_duration[128];
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
+					, socket, client.protocol, host_ip, attempted.count - attempted.dupes, attempted.user
+					, duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
+			sockprintf(socket, client.protocol, session, "-ERR Access denied.");
+			return false;
 		}
-		sockprintf(socket, client.protocol, session, "-ERR Access denied.");
-		return false;
-	}
-	if (host_can->listed(host_name, nullptr, &trash)) {
-		if (!trash.quiet) {
-			char details[128];
-			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s: %s %s"
-					, socket, client.protocol, host_ip, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
+		struct trash trash;
+		if (ip_can->listed(host_ip, nullptr, &trash)) {
+			if (!trash.quiet) {
+				char details[128];
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s %s", socket, client.protocol, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
+			}
+			sockprintf(socket, client.protocol, session, "-ERR Access denied.");
+			return false;
 		}
-		sockprintf(socket, client.protocol, session, "-ERR Access denied.");
-		return false;
+		if (host_can->listed(host_name, nullptr, &trash)) {
+			if (!trash.quiet) {
+				char details[128];
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s: %s %s"
+						, socket, client.protocol, host_ip, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
+			}
+			sockprintf(socket, client.protocol, session, "-ERR Access denied.");
+			return false;
+		}
 	}
 
 	/* Initialize client display */
@@ -3123,7 +3125,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	if (strcmp(server_ip, host_ip) == 0) {
 		/* local connection */
 		dnsbl_result.s_addr = 0;
-	} else {
+	} else if (!host_exempt->listed(host_ip, host_name)) {
 		ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, host_name, startup->login_attempt, &attempted);
 		if (banned) {
 			char ban_duration[128];
@@ -6511,24 +6513,26 @@ void mail_server(void* arg)
 
 				inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 
-				if (startup->max_concurrent_connections > 0) {
-					int ip_len = strlen(host_ip) + 1;
-					int connections = listCountMatches(&current_connections, host_ip, ip_len);
-					int logins = listCountMatches(&current_logins, host_ip, ip_len);
+				if (!host_exempt->listed(host_ip, nullptr)) {
 
-					if (connections - logins >= (int)startup->max_concurrent_connections
-					    && !host_is_exempt(&scfg, host_ip, /* host_name */ NULL)) {
-						lprintf(LOG_NOTICE, "%04d %-5s [%s] !Maximum concurrent connections without login (%u) exceeded (%lu total)"
-						        , client_socket, servprot, host_ip, startup->max_concurrent_connections, ++stats.connections_exceeded);
-						sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "Maximum connections exceeded");
+					if (startup->max_concurrent_connections > 0) {
+						int ip_len = strlen(host_ip) + 1;
+						int connections = listCountMatches(&current_connections, host_ip, ip_len);
+						int logins = listCountMatches(&current_logins, host_ip, ip_len);
+
+						if (connections - logins >= (int)startup->max_concurrent_connections) {
+							lprintf(LOG_NOTICE, "%04d %-5s [%s] !Maximum concurrent connections without login (%u) exceeded (%lu total)"
+									, client_socket, servprot, host_ip, startup->max_concurrent_connections, ++stats.connections_exceeded);
+							sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "Maximum connections exceeded");
+							mail_close_socket(&client_socket, &session);
+							continue;
+						}
+					}
+
+					if (ip_silent_can->listed(host_ip)) {
 						mail_close_socket(&client_socket, &session);
 						continue;
 					}
-				}
-
-				if (ip_silent_can->listed(host_ip)) {
-					mail_close_socket(&client_socket, &session);
-					continue;
 				}
 
 				if (protected_uint32_value(active_clients) >= startup->max_clients) {

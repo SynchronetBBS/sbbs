@@ -2313,38 +2313,40 @@ static void ctrl_thread(void* arg)
 		lprintf(LOG_INFO, "%04d [%s] Hostname: %s", sock, host_ip, host_name);
 	}
 
-	ulong banned = loginBanned(&scfg, startup->login_attempt_list, sock, host_name, startup->login_attempt, &attempted);
-	if (banned) {
-		char ban_duration[128];
-		lprintf(LOG_NOTICE, "%04d [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
-		        , sock, host_ip, attempted.count - attempted.dupes, attempted.user
-		        , duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
-		sockprintf(sock, sess, "550 Access denied.");
-		ftp_close_socket(&sock, &sess, __LINE__);
-		thread_down();
-		return;
-	}
+	if (!host_exempt->listed(host_ip, host_name)) {
+		ulong banned = loginBanned(&scfg, startup->login_attempt_list, sock, host_name, startup->login_attempt, &attempted);
+		if (banned) {
+			char ban_duration[128];
+			lprintf(LOG_NOTICE, "%04d [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
+					, sock, host_ip, attempted.count - attempted.dupes, attempted.user
+					, duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
+			sockprintf(sock, sess, "550 Access denied.");
+			ftp_close_socket(&sock, &sess, __LINE__);
+			thread_down();
+			return;
+		}
 
-	struct trash trash;
-	if (ip_can->listed(host_ip, nullptr, &trash)) {
-		if (!trash.quiet) {
-			char details[128];
-			lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in %s %s", sock, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
+		struct trash trash;
+		if (ip_can->listed(host_ip, nullptr, &trash)) {
+			if (!trash.quiet) {
+				char details[128];
+				lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in %s %s", sock, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
+			}
+			sockprintf(sock, sess, "550 Access denied.");
+			ftp_close_socket(&sock, &sess, __LINE__);
+			thread_down();
+			return;
 		}
-		sockprintf(sock, sess, "550 Access denied.");
-		ftp_close_socket(&sock, &sess, __LINE__);
-		thread_down();
-		return;
-	}
-	if (host_can->listed(host_name, nullptr, &trash)) {
-		if (!trash.quiet) {
-			char details[128];
-			lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in %s: %s %s", sock, host_ip, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
+		if (host_can->listed(host_name, nullptr, &trash)) {
+			if (!trash.quiet) {
+				char details[128];
+				lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in %s: %s %s", sock, host_ip, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
+			}
+			sockprintf(sock, sess, "550 Access denied.");
+			ftp_close_socket(&sock, &sess, __LINE__);
+			thread_down();
+			return;
 		}
-		sockprintf(sock, sess, "550 Access denied.");
-		ftp_close_socket(&sock, &sess, __LINE__);
-		thread_down();
-		return;
 	}
 
 	/* For PASV mode */
@@ -5437,22 +5439,24 @@ void ftp_server(void* arg)
 
 			inet_addrtop(&client_addr, client_ip, sizeof(client_ip));
 
-			if (startup->max_concurrent_connections > 0) {
-				int  ip_len = strlen(client_ip) + 1;
-				uint connections = listCountMatches(&current_connections, client_ip, ip_len);
-				if (connections >= startup->max_concurrent_connections
-				    && !host_is_exempt(&scfg, client_ip, /* host_name */ NULL)) {
-					lprintf(LOG_NOTICE, "%04d [%s] !Maximum concurrent connections (%u) exceeded"
-					        , client_socket, client_ip, startup->max_concurrent_connections);
-					sockprintf(client_socket, -1, "421 Maximum connections (%u) exceeded", startup->max_concurrent_connections);
+			if (!host_exempt->listed(client_ip)) {
+
+				if (startup->max_concurrent_connections > 0) {
+					int  ip_len = strlen(client_ip) + 1;
+					uint connections = listCountMatches(&current_connections, client_ip, ip_len);
+					if (connections >= startup->max_concurrent_connections) {
+						lprintf(LOG_NOTICE, "%04d [%s] !Maximum concurrent connections (%u) exceeded"
+								, client_socket, client_ip, startup->max_concurrent_connections);
+						sockprintf(client_socket, -1, "421 Maximum connections (%u) exceeded", startup->max_concurrent_connections);
+						ftp_close_socket(&client_socket, &none, __LINE__);
+						continue;
+					}
+				}
+
+				if (ip_silent_can->listed(client_ip)) {
 					ftp_close_socket(&client_socket, &none, __LINE__);
 					continue;
 				}
-			}
-
-			if (ip_silent_can->listed(client_ip)) {
-				ftp_close_socket(&client_socket, &none, __LINE__);
-				continue;
 			}
 
 			if (protected_uint32_value(active_clients) >= startup->max_clients) {

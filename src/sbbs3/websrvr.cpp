@@ -6921,7 +6921,7 @@ void http_session_thread(void* arg)
 		     && host->h_aliases[i] != NULL; i++)
 			lprintf(LOG_INFO, "%04d HostAlias: %s", session.socket, host->h_aliases[i]);
 #endif
-		if (host_name[0] && host_can->listed(host_name, nullptr, &trash)) {
+		if (host_name[0] && !host_exempt->listed(host_name, nullptr) && host_can->listed(host_name, nullptr, &trash)) {
 			if (!trash.quiet) {
 				char details[128];
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s: %s %s"
@@ -6942,28 +6942,30 @@ void http_session_thread(void* arg)
 		SAFECOPY(host_name, STR_NO_HOSTNAME);
 	}
 
-	login_attempt_t attempted;
-	ulong           banned = loginBanned(&scfg, startup->login_attempt_list, session.socket, host_name, startup->login_attempt, &attempted);
+	if (!host_exempt->listed(session.host_ip, session.host_name)) {
+		login_attempt_t attempted;
+		ulong           banned = loginBanned(&scfg, startup->login_attempt_list, session.socket, host_name, startup->login_attempt, &attempted);
 
-	/* host_ip wasn't defined in http_session_thread */
-	if (banned || ip_can->listed(session.host_ip, nullptr, &trash)) {
-		if (banned) {
-			char ban_duration[128];
-			lprintf(LOG_NOTICE, "%04d %-5s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
-			        , session.socket, session.client.protocol
-			        , session.host_ip, attempted.count - attempted.dupes, attempted.user
-			        , duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
-		} else if (!trash.quiet) {
-			char details[128];
-			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s %s"
-			        , session.socket, session.client.protocol, session.host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
+		/* host_ip wasn't defined in http_session_thread */
+		if (banned || ip_can->listed(session.host_ip, nullptr, &trash)) {
+			if (banned) {
+				char ban_duration[128];
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
+						, session.socket, session.client.protocol
+						, session.host_ip, attempted.count - attempted.dupes, attempted.user
+						, duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
+			} else if (!trash.quiet) {
+				char details[128];
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s %s"
+						, session.socket, session.client.protocol, session.host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
+			}
+			close_session_socket(&session);
+			sem_wait(&session.output_thread_terminated);
+			sem_destroy(&session.output_thread_terminated);
+			RingBufDispose(&session.outbuf);
+			thread_down();
+			return;
 		}
-		close_session_socket(&session);
-		sem_wait(&session.output_thread_terminated);
-		sem_destroy(&session.output_thread_terminated);
-		RingBufDispose(&session.outbuf);
-		thread_down();
-		return;
 	}
 
 	client_count = protected_uint32_adjust_fetch(&active_clients, 1);
@@ -7005,7 +7007,7 @@ void http_session_thread(void* arg)
 	} else {
 		uint connections = listCountMatches(&current_connections, session.host_ip, strlen(session.host_ip) + 1);
 		if (startup->max_concurrent_connections > 0 && connections > startup->max_concurrent_connections
-		    && !host_is_exempt(&scfg, session.host_ip, /* host_name */ nullptr)) {
+		    && !host_exempt->listed(session.host_ip, nullptr)) {
 			lprintf(LOG_NOTICE, "%04d %-5s [%s] !Maximum concurrent connections (%u) exceeded"
 			        , socket, session.client.protocol, session.host_ip, startup->max_concurrent_connections);
 			send_error(&session, __LINE__, error_429);
@@ -7712,25 +7714,27 @@ void web_server(void* arg)
 
 			inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 
-			if (session->is_tls == false && startup->max_concurrent_connections > 0) {
-				int ip_len = strlen(host_ip) + 1;
-				uint connections = listCountMatches(&current_connections, host_ip, ip_len);
-				if(connections >= startup->max_concurrent_connections
-					&& !host_is_exempt(&scfg, host_ip, /* host_name */ nullptr)) {
-					lprintf(LOG_NOTICE, "%04d HTTP [%s] !Maximum concurrent connections (%u) exceeded"
-						,client_socket, host_ip, startup->max_concurrent_connections);
-					static int len_429;
-					if (len_429 < 1)
-						len_429 = strlen(error_429);
-					sendsocket(client_socket, error_429, len_429);
+			if (!host_exempt->listed(host_ip, nullptr)) {
+
+				if (session->is_tls == false && startup->max_concurrent_connections > 0) {
+					int ip_len = strlen(host_ip) + 1;
+					uint connections = listCountMatches(&current_connections, host_ip, ip_len);
+					if(connections >= startup->max_concurrent_connections) {
+						lprintf(LOG_NOTICE, "%04d HTTP [%s] !Maximum concurrent connections (%u) exceeded"
+							,client_socket, host_ip, startup->max_concurrent_connections);
+						static int len_429;
+						if (len_429 < 1)
+							len_429 = strlen(error_429);
+						sendsocket(client_socket, error_429, len_429);
+						close_socket(&client_socket);
+						continue;
+					}
+				}
+
+				if (ip_silent_can->listed(host_ip)) {
 					close_socket(&client_socket);
 					continue;
 				}
-			}
-
-			if (ip_silent_can->listed(host_ip)) {
-				close_socket(&client_socket);
-				continue;
 			}
 
 			uint32_t client_count = protected_uint32_value(active_clients);

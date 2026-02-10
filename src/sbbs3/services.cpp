@@ -73,6 +73,7 @@ static struct mqtt         mqtt;
 static trashCan*           ip_can = nullptr;
 static trashCan*           ip_silent_can = nullptr;
 static trashCan*           host_can = nullptr;
+static filterFile*         host_exempt = nullptr;
 
 struct service_t {
 	/* These are sysop-configurable */
@@ -1134,17 +1135,19 @@ static void js_service_thread(void* arg)
 			        , socket, service->protocol, client.addr, host_name);
 	}
 
-	struct trash trash;
-	if (host_can->listed(host_name, nullptr, &trash)) {
-		if (!trash.quiet && service->log_level >= LOG_NOTICE) {
-			char details[128];
-			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s: %s %s"
-			        , socket, service->protocol, client.addr, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
+	if (!host_exempt->listed(host_name, nullptr)) {
+		struct trash trash;
+		if (host_can->listed(host_name, nullptr, &trash)) {
+			if (!trash.quiet && service->log_level >= LOG_NOTICE) {
+				char details[128];
+				lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s: %s %s"
+						, socket, service->protocol, client.addr, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
+			}
+			close_socket(socket);
+			protected_uint32_adjust(service->clients, -1);
+			thread_down();
+			return;
 		}
-		close_socket(socket);
-		protected_uint32_adjust(service->clients, -1);
-		thread_down();
-		return;
 	}
 
 	service_client.tls_sess = -1;
@@ -1555,19 +1558,20 @@ static void native_service_thread(void* arg)
 #endif
 	}
 
-	struct trash trash;
-	if (host_can->listed(host_name, nullptr, &trash)) {
-		if (!trash.quiet) {
-			char details[128];
-			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s: %s %s"
-					, socket, service->protocol, client.addr, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
+	if (!host_exempt->listed(host_name, nullptr)) {
+		struct trash trash;
+		if (host_can->listed(host_name, nullptr, &trash)) {
+			if (!trash.quiet) {
+				char details[128];
+				lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s: %s %s"
+						, socket, service->protocol, client.addr, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
+			}
+			close_socket(socket);
+			protected_uint32_adjust(service->clients, -1);
+			thread_down();
+			return;
 		}
-		close_socket(socket);
-		protected_uint32_adjust(service->clients, -1);
-		thread_down();
-		return;
 	}
-
 
 #if 0   /* Need to export from SBBS.DLL */
 	identity = NULL;
@@ -1839,6 +1843,7 @@ static void cleanup(int code)
 	delete ip_can, ip_can = nullptr;
 	delete ip_silent_can, ip_silent_can = nullptr;
 	delete host_can, host_can = nullptr;
+	delete host_exempt, host_exempt = nullptr;
 
 	mqtt_shutdown(&mqtt);
 }
@@ -2143,6 +2148,7 @@ void services_thread(void* arg)
 		ip_can = new trashCan(&scfg, "ip", startup->sem_chk_freq);
 		ip_silent_can = new trashCan(&scfg, "ip-silent", startup->sem_chk_freq);
 		host_can = new trashCan(&scfg, "host", startup->sem_chk_freq);
+		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile, startup->sem_chk_freq);
 
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles = semfile_list_init(scfg.ctrl_dir, "shutdown", "services");
@@ -2394,7 +2400,7 @@ void services_thread(void* arg)
 						inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 					}
 
-					if (ip_silent_can->listed(host_ip)) {
+					if (!host_exempt->listed(host_ip, nullptr) && ip_silent_can->listed(host_ip)) {
 						FREE_AND_NULL(udp_buf);
 						close_socket(client_socket);
 						continue;
@@ -2430,27 +2436,29 @@ void services_thread(void* arg)
 						continue;
 					}
 
-					login_attempt_t attempted;
-					ulong           banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, /* host_name: */ NULL, startup->login_attempt, &attempted);
-					if (banned) {
-						char ban_duration[128];
-						lprintf(LOG_NOTICE, "%04d [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
-						        , client_socket, host_ip, attempted.count - attempted.dupes, attempted.user
-						        , duration_estimate_to_str(banned, ban_duration, sizeof ban_duration, 1, 1));
-						FREE_AND_NULL(udp_buf);
-						close_socket(client_socket);
-						continue;
-					}
-					struct trash trash;
-					if (ip_can->listed(host_ip, nullptr, &trash)) {
-						if (!trash.quiet) {
-							char details[128];
-							lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s %s"
-									, client_socket, service[i].protocol, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
+					if (!host_exempt->listed(host_ip, nullptr)) {
+						login_attempt_t attempted;
+						ulong           banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, /* host_name: */ NULL, startup->login_attempt, &attempted);
+						if (banned) {
+							char ban_duration[128];
+							lprintf(LOG_NOTICE, "%04d [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
+									, client_socket, host_ip, attempted.count - attempted.dupes, attempted.user
+									, duration_estimate_to_str(banned, ban_duration, sizeof ban_duration, 1, 1));
+							FREE_AND_NULL(udp_buf);
+							close_socket(client_socket);
+							continue;
 						}
-						FREE_AND_NULL(udp_buf);
-						close_socket(client_socket);
-						continue;
+						struct trash trash;
+						if (ip_can->listed(host_ip, nullptr, &trash)) {
+							if (!trash.quiet) {
+								char details[128];
+								lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s %s"
+										, client_socket, service[i].protocol, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
+							}
+							FREE_AND_NULL(udp_buf);
+							close_socket(client_socket);
+							continue;
+						}
 					}
 
 	#ifdef _WIN32

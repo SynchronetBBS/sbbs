@@ -31,6 +31,7 @@
 #include "ssl.h"
 #include "ver.h"
 #include "eventwrap.h"
+#include "filterfile.hpp"
 #include <multisock.h>
 #include <limits.h>     // HOST_NAME_MAX
 
@@ -118,6 +119,10 @@ static str_list_t          shutdown_semfiles;
 static str_list_t          clear_attempts_semfiles;
 static link_list_t         current_logins;
 static link_list_t         current_connections;
+
+static trashCan*           ip_silent_can = nullptr;
+static filterFile*         host_exempt = nullptr;
+
 #ifdef _THREAD_SUID_BROKEN
 int                        thread_suid_broken = true; /* NPTL is no longer broken */
 #endif
@@ -4984,6 +4989,10 @@ static void cleanup(int code)
 		if (startup->terminated != NULL)
 			startup->terminated(startup->cbdata, code);
 	}
+
+	delete ip_silent_can, ip_silent_can = nullptr;
+	delete host_exempt, host_exempt = nullptr;
+
 	mqtt_shutdown(&mqtt);
 }
 
@@ -5408,6 +5417,9 @@ void bbs_thread(void* arg)
 NO_SSH:
 #endif
 
+		ip_silent_can = new trashCan(&scfg, "ip-silent", startup->sem_chk_freq);
+		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile, startup->sem_chk_freq);
+
 		sbbs_t* sbbs = new sbbs_t(0, &server_addr, sizeof(server_addr)
 		                          , "Terminal Server", ts_set->socks[0].sock, &scfg, text, NULL);
 		if (sbbs->init() == false) {
@@ -5623,7 +5635,7 @@ NO_SSH:
 
 			inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 
-			if (trashcan(&scfg, host_ip, "ip-silent")) {
+			if (!host_exempt->listed(host_ip, nullptr) && ip_silent_can->listed(host_ip)) {
 				close_socket(client_socket);
 				continue;
 			}
@@ -5649,13 +5661,12 @@ NO_SSH:
 			lprintf(LOG_INFO, "%04d %s [%s] Connection accepted on %s port %u from port %u"
 			        , client_socket, client.protocol, host_ip, local_ip, inet_addrport(&local_addr), inet_addrport(&client_addr));
 
-			if (startup->max_concurrent_connections > 0) {
+			if (!host_exempt->listed(host_ip, nullptr) && startup->max_concurrent_connections > 0) {
 				int ip_len = strlen(host_ip) + 1;
 				int connections = listCountMatches(&current_connections, host_ip, ip_len);
 				int logins = listCountMatches(&current_logins, host_ip, ip_len);
 
-				if (connections - logins >= (int)startup->max_concurrent_connections
-				    && !host_is_exempt(&scfg, host_ip, /* host_name */ NULL)) {
+				if (connections - logins >= (int)startup->max_concurrent_connections) {
 					lprintf(LOG_NOTICE, "%04d %s !Maximum concurrent connections without login (%u) reached from host: %s"
 					        , client_socket, client.protocol, startup->max_concurrent_connections, host_ip);
 					close_socket(client_socket);
@@ -5674,15 +5685,17 @@ NO_SSH:
 			if (!ssh)
 				sbbs->online = ON_REMOTE;
 
-			login_attempt_t attempted;
-			uint banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, /* host_name: */ NULL, startup->login_attempt, &attempted);
-			if (banned) {
-				char ban_duration[128];
-				lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts%s%s) - remaining: %s"
-				        , client_socket, client.protocol, host_ip, attempted.count - attempted.dupes
-				        , attempted.user[0] ? ", last: " : "", attempted.user, duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
-				close_socket(client_socket);
-				continue;
+			if (!host_exempt->listed(host_ip, nullptr)) {
+				login_attempt_t attempted;
+				uint banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, /* host_name: */ NULL, startup->login_attempt, &attempted);
+				if (banned) {
+					char ban_duration[128];
+					lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts%s%s) - remaining: %s"
+							, client_socket, client.protocol, host_ip, attempted.count - attempted.dupes
+							, attempted.user[0] ? ", last: " : "", attempted.user, duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
+					close_socket(client_socket);
+					continue;
+				}
 			}
 			if (inet_addrport(&local_addr) == startup->pet40_port || inet_addrport(&local_addr) == startup->pet80_port) {
 				sbbs->autoterm = PETSCII;

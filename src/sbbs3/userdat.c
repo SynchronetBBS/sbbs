@@ -4477,7 +4477,6 @@ ulong loginFailure(link_list_t* list, const union xp_sockaddr* addr, const char*
 ulong loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock, const char* host_name
                   , struct login_attempt_settings settings, login_attempt_t* details)
 {
-	char              ip_addr[128];
 	char              name[(LEN_ALIAS * 2) + 1];
 	list_node_t*      node;
 	login_attempt_t*  attempt;
@@ -4486,9 +4485,6 @@ ulong loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock, const char* host_
 	union xp_sockaddr client_addr;
 	union xp_sockaddr server_addr;
 	socklen_t         addr_len;
-	char              exempt[MAX_PATH + 1];
-
-	SAFEPRINTF2(exempt, "%s%s", cfg->ctrl_dir, strIpFilterExemptConfigFile);
 
 	if (list == NULL)
 		return 0;
@@ -4503,10 +4499,6 @@ ulong loginBanned(scfg_t* cfg, link_list_t* list, SOCKET sock, const char* host_
 
 	/* Don't ban connections from the server back to itself */
 	if (inet_addrmatch(&server_addr, &client_addr))
-		return 0;
-
-	if (inet_addrtop(&client_addr, ip_addr, sizeof(ip_addr)) != NULL
-	    && find2strs(ip_addr, host_name, exempt, NULL))
 		return 0;
 
 	if (!listLock(list))
