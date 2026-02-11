@@ -302,6 +302,14 @@
  * 2026-02-07 Eric Oulashin     Version 1.97h
  *                              Small refactoring in ReplyToMsg() related to the
  *                              MsgBase object; no functional change
+ * 2026-02-11 Eric Oulashin     Version 1.97i
+ *                              Commented out calls to bbs.scan_msgs() and bbs.scan_subs()
+ *                              for now.  They were there to support reverting to stock
+ *                              Synchronet functionality for modes not yet implemented,
+ *                              but it's best to avoid that (due to recursive module
+ *                              loading).  I'll need to look into how those modes work in
+ *                              the stock Synchronet reader in order to replicate it with
+ *                              DDMsgReader.
  */
 
 "use strict";
@@ -411,8 +419,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.97h";
-var READER_DATE = "2026-02-07";
+var READER_VERSION = "1.97i";
+var READER_DATE = "2026-02-11";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1569,6 +1577,25 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		         + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_LIGHT_BOTTOM_T;
 		this.enhMsgHeaderLines.push(hdrLine7);
 		this.enhMsgHeaderLinesToReadingUser.push(hdrLine7);
+		/*
+		// Temporary
+		if (console.term_supports(USER_RIP) && user.is_sysop)
+		{
+			this.enhMsgHeaderLines = [];
+			var areaInfo = "@GRP-L";
+			var numChars = msgGrpNameLen - 7;
+			for (var i = 0; i < numChars; ++i)
+				areaInfo += "#";
+				areaInfo += "@ @SUB-L";
+			numChars = subBoardNameLen - 7;
+			for (var i = 0; i < numChars; ++i)
+				areaInfo += "#";
+			//this.enhMsgHeaderLines.push("!|1U0707HL0P0000<>" + areaInfo + "<>|c0F|S0107");
+			this.enhMsgHeaderLines.push("!|1K|w0010271610|W0|=00000001|1B0000020PX4050E000F080700000000000000");
+			this.enhMsgHeaderLines.push("!|1U0707HL0P0000<>RIP<>|c0F|S0107");
+		}
+		// End Temporary
+		*/
 	}
 	else
 	{
@@ -12072,6 +12099,19 @@ function DigDistMsgReader_DisplayEnhancedMsgHdr(pMsgHdr, pDisplayMsgNum, pStartS
 		return;
 	if ((enhMsgHdrLines.length == 0) || (this.enhMsgHeaderWidth == 0))
 		return;
+	/*
+	// Temporary
+	if (console.term_supports(USER_RIP) && user.is_sysop)
+	{
+		for (var i = 0; i < enhMsgHdrLines.length; ++i)
+		{
+			printf("%s\r\n", enhMsgHdrLines[i]);
+			//console.putmsg(enhMsgHdrLines[i], pMsgHdr);
+		}
+		return;
+	}
+	// End Temporary
+	*/
 	
 	// Create a formatted date & time string.  Adjust the message's time to
 	// the BBS local time zone if possible.
@@ -20367,11 +20407,29 @@ function parseLoadableModuleArgs(argv)
 			// TODO: SCAN_CONT and SCAN_BACK could be used along with SCAN_NEW
 			// SCAN_CONT: Continuous message scanning
 			// SCAN_BACK: Display most recent message if none new
+			// Stock Synchronet functionality for continuous & back newscan
+			// We could call bbs.scan_subs(scanMode, scanAllSubs) here for
+			// stock functionality (Synchronet has protections against
+			// resursive module loading), but it's not recommended
 			if (Boolean(scanMode & SCAN_CONT) || Boolean(scanMode & SCAN_BACK))
 			{
-				// Stock Synchronet functionality for continuous & back newscan
+				var logMsg = "DDMsgReader used as a module with params not implemented yet (1)";
+				if (Boolean(scanMode & SCAN_CONT))
+					logMsg += "; scan mode: SCAN_CONT";
+				if (Boolean(scanMode & SCAN_BACK))
+					logMsg += "; scan mode: SCAN_BACK";
+				logMsg += format("; would call bbs.scan_subs(%d, %s)", scanMode, scanAllSubs ? "true" : "false");
+				log(LOG_WARNING, logMsg);
+				console.print("\x01n\x01y\x01h* \x01wDDMsgReader used as a module with mode not implemented yet (1)");
+				if (Boolean(scanMode & SCAN_CONT))
+					console.print("; SCAN_CONT");
+				if (Boolean(scanMode & SCAN_BACK))
+					console.print("; SCAN_BACK");
+				console.print("\x01n\r\n\x01p");
+				/*
 				bbs.scan_subs(scanMode, scanAllSubs);
 				argVals.exitNow = true;
+				*/
 			}
 		}
 		//else if (((scanMode & SCAN_TOYOU) == SCAN_TOYOU) || ((scanMode & SCAN_UNREAD) == SCAN_UNREAD))
@@ -20391,8 +20449,26 @@ function parseLoadableModuleArgs(argv)
 		}
 		else
 		{
+			// We could call bbs.scan_subs(scanMode, scanAllSubs) here for
+			// stock functionality (Synchronet has protections against
+			// resursive module loading), but it's not recommended
+			var logMsg = "DDMsgReader used as a module with params not implemented yet (2)";
+			if (Boolean(scanMode & SCAN_CONT))
+				logMsg += "; scan mode: SCAN_CONT";
+			if (Boolean(scanMode & SCAN_BACK))
+				logMsg += "; scan mode: SCAN_BACK";
+			logMsg += format("; would call bbs.scan_subs(%d, %s)", scanMode, scanAllSubs ? "true" : "false");
+			log(LOG_WARNING, logMsg);
+			console.print("\x01n\x01y\x01h* \x01wDDMsgReader used as a module with mode not implemented yet (2)");
+			if (Boolean(scanMode & SCAN_CONT))
+				console.print("; SCAN_CONT");
+			if (Boolean(scanMode & SCAN_BACK))
+				console.print("; SCAN_BACK");
+			console.print("\x01n\r\n\x01p");
+			/*
 			// Stock Synchronet functionality.  Includes SCAN_CONT and SCAN_BACK.
 			bbs.scan_subs(scanMode, scanAllSubs);
+			*/
 			argVals.exitNow = true;
 		}
 	}
@@ -20424,14 +20500,24 @@ function parseLoadableModuleArgs(argv)
 			if (argv.length == 3 && argv[2] != "")
 				argVals.searchtext = argv[2];
 		}
-		// Some modes that the Digital Distortion Message Reader doesn't handle yet: Use
-		// Synchronet's stock behavior.
+		// Some modes that the Digital Distortion Message Reader doesn't handle yet
+		// We could call bbs.scan_msgs()) here for stock functionality (Synchronet
+		// has protections against resursive module loading), but it's not recommended
 		else
 		{
+			printf("DDMsgReader mode not implemented yet; module loaded with " + argv);
 			if (argv.length == 3)
-				bbs.scan_msgs(arg1Lower, scanMode, argv[2]);
+			{
+				//bbs.scan_msgs(arg1Lower, scanMode, argv[2]);
+				log(LOG_WARNING, "DDMsgReader used as a module with params not implemented yet  (3); bbs.scan_msgs()? %s, %d, %s", arg1Lower, scanMode, argv[2]);
+				console.print("\x01n\x01y\x01h* \x01wDDMsgReader used as a module with mode not implemented yet (3)\x01n\r\n\x01p");
+			}
 			else
-				bbs.scan_msgs(arg1Lower, scanMode);
+			{
+				//bbs.scan_msgs(arg1Lower, scanMode);
+				log(LOG_WARNING, "DDMsgReader used as a module with params not implemented yet  (4); bbs.scan_msgs()? %s, %d", arg1Lower, scanMode);
+				console.print("\x01n\x01y\x01h* \x01wDDMsgReader used as a module with mode not implemented yet (4)\x01n\r\n\x01p");
+			}
 			argVals.exitNow = true;
 		}
 	}
