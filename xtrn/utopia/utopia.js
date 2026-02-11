@@ -66,7 +66,7 @@ var rules = {
 	merchant_turn_gold_value: 1,
 	merchant_dock_interval: 10,
 	merchant_dock_bonus: 25,
-	max_pirates: 2,
+	max_pirates: 3,
 	pirate_spawn_potential: 0.02,
 	pirate_land_attack_interval: 10,
 	pirate_land_attack_damage: 50,
@@ -209,7 +209,6 @@ var state = {
 	storm: { x: -1, y: 0, active: false },
 	rain: { x: -1, y: 0, active: false },
 	waves: [],
-	stats: { merchantsSunk: 0, piratesSunk: 0, piratesEscaped: 0, intlTrades: 0, dockTrades: 0, boatsLost: 0, trawlersSunk: 0 }
 };
 var map = [];
 var itemMap = [];
@@ -263,12 +262,12 @@ function alarm() {
 
 function alert(msg) {
 	debugLog(msg);
-	pushMsg("\x01n\x01h\x01cAlert: \x01h" + msg);
+	pushMsg("\x01n\x01h\x01cAlert\x01k: \x01w" + msg);
 }
 
 function announce(msg) {
 	debugLog(msg);
-	pushMsg("\x01n\x01h\x01yNews: \x01w" + msg);
+	pushMsg("\x01n\x01h\x01yNews\x01k: \x01w" + msg);
 	state.log.push({ turn: state.turn, msg: msg });
 }
 
@@ -1084,7 +1083,7 @@ next_pirate:
 						if (damageItem(x, y, "Pirate attack", rules.pirate_sea_attack_damage)) {
 							var plunder = Math.floor(rules.item[ITEM_PTBOAT].cost * (0.5 + (0.5 * health)));
 							pirate.gold += plunder;
-							state.stats.boatsLost++;
+							state.stats[ITEM_PTBOAT].sunk++;
 							announce("\x01h\x01rPirates plundered \x01w$" + plunder + "\x01r from " + item_list[item].name);
 						}
 					}
@@ -1119,7 +1118,7 @@ next_pirate:
 						if (damageItem(x, y, "Pirate attack", damage)) {
 							pirate.gold += plunder
 							if (item == ITEM_TRAWLER)
-								state.stats.trawlersSunk++;
+								state.stats[ITEM_TRAWLER].sunk++;
 							announce("\x01h\x01rPirates plundered \x01w$" + plunder + "\x01r from " + item_list[item].name);
 						}
 					}
@@ -1193,7 +1192,7 @@ function handleRebels() {
 					destroyItem(target.x, target.y);
 					alarm();
 					announce("\x01h\x01rMUTINY! Rebels stole a PT Boat!");
-					state.stats.boatsLost++;
+					state.stats.mutinies++;
 					// Visual update
 					forceScrub(target.x, target.y, 1);
 					return true;
@@ -1837,6 +1836,7 @@ function movePirate() {
 			if (pirate.gold > 0) {
 				var penalty = Math.floor(pirate.gold * rules.pirate_escape_penalty_multiplier);
 				state.gold = Math.max(0, state.gold - penalty);
+				state.stats.piratesEscaped++;
 				announce("\x01h\x01rPirates escaped with loot ($" + pirate.gold + ") penalized -\x01w$" + penalty);
 			}
 			state.pirate.splice(pi, 1);
@@ -2093,11 +2093,11 @@ function drawUI(verbose) {
 		if (state.turn % 10 == 0)
 			turn = state.turn / 10;
 		console.putmsg(format(
-			"\x01n\x01h\x01yGold: %s%s%s " +
-			"\x01n\x01h\x01gFood: %s%s%s " +
-			"\x01n\x01h\x01wPop:%s\x01n%s/%s%s%s " +
-			"\x01n\x01h\x01wReb: %s%2d%%%s " +
-			"\x01n\x01h\x01cRnd: %s%s/%d\x01>"
+			"\x01n\x01h\x01yGold\x01h\x01k: %s%s%s " +
+			"\x01n\x01h\x01gFood\x01h\x01k: %s%s%s " +
+			"\x01n\x01h\x01wPop\x01h\x01k:%s\x01n%s\x01h\x01k/%s%s%s " +
+			"\x01n\x01h\x01wReb\x01h\x01k: %s%2d%%%s " +
+			"\x01n\x01h\x01cRnd\x01h\x01k: %s%s\x01h\x01k/\x01n%d\x01>"
 			, state.gold < state.popCap ? "\x01r" : "\x01n"
 			, gold
 			, gold_dir
@@ -2349,8 +2349,8 @@ function finishGame() {
 	console.putmsg("\x01n\x01g- Merchants Sunk:      " + state.stats.merchantsSunk + "\r\n");
 	console.putmsg("\x01h\x01m- Pirates Defeated:    " + state.stats.piratesSunk + "\r\n");
 	console.putmsg("\x01h\x01m- Pirates Absconded:   " + state.stats.piratesEscaped + "\r\n");
-	console.putmsg("\x01n\x01m- PT Boats Lost:       " + state.stats.boatsLost + "\r\n");
-	console.putmsg("\x01n\x01m- Trawlers Lost:       " + state.stats.trawlersSunk + "\r\n");
+	console.putmsg("\x01n\x01m- PT Boats Lost:       " + (state.stats[ITEM_PTBOAT].sunk + state.stats.mutinies) + "\r\n");
+	console.putmsg("\x01n\x01m- Trawlers Lost:       " + state.stats[ITEM_TRAWLER].sunk + "\r\n");
 	console.newline();
 
 	console.putmsg("\x01h\x01wPress any key for High Scores...");
@@ -2771,9 +2771,9 @@ function main () {
 		state.gold = rules.initial_gold;
 		state.food = rules.initial_food;
 		state.pop = rules.initial_pop;
-		state.stats = {};
+		state.stats = { merchantsSunk: 0, piratesSunk: 0, piratesEscaped: 0, intlTrades: 0, dockTrades: 0, mutinies: 0 };
 		for (var i in item_list)
-			state.stats[i] = { built: 0 };
+			state.stats[i] = { built: 0, sunk: 0 };
 		spawnFish();
 		pushMsg("\x01cWelcome to the \x01ySynchronet UTOPIA\x01w " + state.map_name + "\x01c, Governor.");
 		pushMsg("\x01cPlaying by \x01w" + rules.name + "\x01c rules...");

@@ -4,6 +4,7 @@
 	"initial_food": 250,
 	"fish_food_value": 12,
 	"fish_catch_max": 10,
+	"max_pirates": 2,
 	"item": {
 		"C": {
 			"cost": 3,
