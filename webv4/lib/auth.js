@@ -226,7 +226,8 @@ function is_user() {
     	var gn = system.matchuser(settings.guest);
     	if (gn > 0) {
     		var gu = new User(gn);
-    		login(gu.alias, gu.security.password);
+    		if (!login(gu.alias, gu.security.password))
+			exit();
         gu = undefined;
     	} else {
     		// Otherwise just kill the script, for security's sake
