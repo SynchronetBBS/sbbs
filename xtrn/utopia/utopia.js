@@ -2202,7 +2202,7 @@ function buildItem(type) {
 	alert(msg);
 	++state.stats[type].built;
 	if (itemIsBoat(type) && state.stats[type].built == 1)
-		alert("\x01n\x01c(\x01hL\x01n\x01c)ift anchor to \x01h" + (type == ITEM_PTBOAT ? "patrol/persue/escort" : "trawl for fish"));
+		alert("\x01n\x01c(\x01hL\x01n\x01c)ift anchor to \x01h" + (type == ITEM_PTBOAT ? "patrol/pursue/escort" : "trawl for fish"));
 	drawUI(/* verbosity: */1);
 	state.started = true;
 	state.in_progress = true;
