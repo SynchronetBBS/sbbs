@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.92g
-                        Release date: 2026-02-08
+                              Version 1.93
+                        Release date: 2026-02-11
 
                                   by
 
@@ -238,6 +238,12 @@ Ctrl-U       : Your user settings           � Ctrl-C  : Cross-post selection
 Ctrl-K       : Change text color            � Ctrl-R  : Spell checker
 Ctrl-O       : Import a file                � Ctrl-X  : Export to file
 
+
+A couple notes on the help screen:
+- The key help (as shown above) will be shown in a scrollable window
+- If the user's terminal supports RIP, SlyEdit will display a RIP header
+  above the help (rather than an ANSI header). RIP support is still in its
+  initial stages, and I'm not sure where else to make use of RIP yet in SlyEdit.
 
 
 
@@ -1011,6 +1017,20 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.93     2026-02-11   Made the command key help screen use a scrolling window
+                      (frame) so that the user can scroll it up & down. The
+                      command key help screen can be shown with Ctrl-L. Also,
+                      typing /? on an empty line and pressing enter will show
+                      program help, which is basically the same screen but with
+                      the SlyEdit version & a couple lines of information above
+                      the scrollable key help window.
+                      Also, an initial attempt at displaying a RIP header at
+                      the top of the aforementioned program info & key help
+                      screens.
+1.92h    2026-02-10   Command list help now scrolls; also, minimal (and
+                      experimental) RIP support - displays a RIP header above
+                      the command list help if the user's terminal supports
+                      RIP
 1.92g    2026-02-08   Fix: For Ice mode, when the user changes their quote
                       hotkey (Ctrl-Q or Ctrl-Y), refresh the hotkey displayed
                       in the bottom edit border so that it shows the correct
