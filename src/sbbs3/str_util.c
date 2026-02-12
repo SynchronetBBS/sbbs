@@ -621,11 +621,13 @@ char* replace_named_values(const char* src
 			for (i = 0; string_list[i].name != NULL /* terminator */; i++) {
 				name_len = strlen(string_list[i].name);
 				if (cmp(src, string_list[i].name, name_len) == 0) {
-					value_len = strlen(string_list[i].value);
-					if ((p - buf) + value_len > buflen - 1)  /* buffer overflow? */
-						value_len = (buflen - 1) - (p - buf); /* truncate value */
-					memcpy(p, string_list[i].value, value_len);
-					p += value_len;
+					if (string_list[i].value != NULL) {
+						value_len = strlen(string_list[i].value);
+						if ((p - buf) + value_len > buflen - 1)  /* buffer overflow? */
+							value_len = (buflen - 1) - (p - buf); /* truncate value */
+						memcpy(p, string_list[i].value, value_len);
+						p += value_len;
+					}
 					src += name_len;
 					break;
 				}
