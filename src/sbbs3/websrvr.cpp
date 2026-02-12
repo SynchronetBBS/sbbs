@@ -156,6 +156,7 @@ struct log_data {
 	int status;
 	off_t size;
 	struct tm completed;
+	client_t client;
 };
 
 enum auth_type {
@@ -1140,6 +1141,7 @@ static void close_request(http_session_t * session)
 	if (session->req.ld != NULL) {
 		now = time(NULL);
 		localtime_r(&now, &session->req.ld->completed);
+		session->req.ld->client = session->client;
 		listPushNode(&log_list, session->req.ld);
 		session->req.ld = NULL;
 	}
@@ -7251,6 +7253,40 @@ const char* web_ver(void)
 	return ver;
 }
 
+static char* clf_str(char* str)
+{
+	if (str == nullptr || *str == '\0')
+		return (char*)"-";
+	return str;
+}
+
+void format_log_line(char* buf, size_t buflen, const char* fmt, struct log_data* ld, char* timestr, char* sizestr)
+{
+	named_string_t str_vars[] = {
+		{ (char*)"a", ld->client.addr },
+		{ (char*)"H", ld->client.protocol },
+		{ (char*)"b", sizestr },
+		{ (char*)"t", timestr },
+		{ (char*)"h", clf_str(ld->hostname) },
+		{ (char*)"l", clf_str(ld->ident) },
+		{ (char*)"u", clf_str(ld->user) },
+		{ (char*)"r", clf_str(ld->request) },
+		{ (char*)"v", clf_str(ld->vhost) },
+		{ (char*)"{Referer}i", ld->referrer }, // sic
+		{ (char*)"{User-agent}i", ld->agent },
+		{ nullptr, nullptr }
+	};
+
+	named_long_t int_vars[] = {
+		{ (char*)"B", (long)ld->size },
+		{ (char*)"s", (long)ld->status },
+		{ (char*)"{remote}p", ld->client.port },
+		{ nullptr },
+	};
+
+	replace_named_values(fmt, buf, buflen, "%", str_vars, int_vars, /* case-sensitive: */false);
+}
+
 void http_logging_thread(void* arg)
 {
 	char  base[MAX_PATH + 1];
@@ -7274,8 +7310,6 @@ void http_logging_thread(void* arg)
 
 	while (!terminate_http_logging_thread) {
 		struct log_data *ld;
-		char             timestr[128];
-		char             sizestr[100];
 
 		if (!listSemTryWait(&log_list)) {
 			if (logfile != NULL)
@@ -7317,8 +7351,13 @@ void http_logging_thread(void* arg)
 				lprintf(LOG_INFO, "Web Server access-log file is now: %s", filename);
 		}
 		if (logfile != NULL && ld->status) {
-			sprintf(sizestr, "%" PRIdOFF, ld->size);
-			strftime(timestr, sizeof(timestr), "%d/%b/%Y:%H:%M:%S %z", &ld->completed);
+			char timestr[128];
+			char sizestr[100] = "-";
+
+			if (ld->size > 0)
+				snprintf(sizestr, sizeof sizestr, "%" PRIdOFF, ld->size);
+
+			strftime(timestr, sizeof timestr, "[%d/%b/%Y:%H:%M:%S %z]", &ld->completed);
 			/*
 				* In case of a termination, do no block for a lock... just discard
 				* the output.
@@ -7326,20 +7365,29 @@ void http_logging_thread(void* arg)
 			while (lock(fileno(logfile), 0, 1) && !terminate_http_logging_thread) {
 				SLEEP(10);
 			}
-			char vhost[128]{};
-			if ((startup->options & WEB_OPT_VIRTUAL_HOSTS) && (startup->options & WEB_OPT_ONE_HTTP_LOG))
-				snprintf(vhost, sizeof vhost, "%s ", ld->vhost != NULL && *ld->vhost ? ld->vhost : "-");
-			fprintf(logfile, "%s%s %s %s [%s] \"%s\" %d %s \"%s\" \"%s\"\n"
-					, vhost
-			        , ld->hostname?(ld->hostname[0]?ld->hostname:"-"):"-"
-			        , ld->ident?(ld->ident[0]?ld->ident:"-"):"-"
-			        , ld->user?(ld->user[0]?ld->user:"-"):"-"
-			        , timestr
-			        , ld->request?(ld->request[0]?ld->request:"-"):"-"
-			        , ld->status
-			        , ld->size?sizestr:"-"
-			        , ld->referrer?(ld->referrer[0]?ld->referrer:"-"):"-"
-			        , ld->agent?(ld->agent[0]?ld->agent:"-"):"-");
+			if (startup->custom_log_fmt[0] != '\0') {
+				/* Custom log format */
+				char logline[2048];
+				format_log_line(logline, sizeof logline, startup->custom_log_fmt, ld, timestr, sizestr);
+				fprintf(logfile, "%s\n", logline);
+			}
+			else {
+				char vhost[256]{};
+				if ((startup->options & WEB_OPT_VIRTUAL_HOSTS) && (startup->options & WEB_OPT_ONE_HTTP_LOG))
+					SAFECOPY(vhost, clf_str(ld->vhost));
+				fprintf(logfile, "%s%s%s %s %s %s \"%s\" %d %s \"%s\" \"%s\"\n"
+						, vhost, *vhost ? " " : ""
+						, clf_str(ld->hostname)
+						, clf_str(ld->ident)
+						, clf_str(ld->user)
+						, timestr
+						, clf_str(ld->request)
+						, ld->status
+						, sizestr
+						, clf_str(ld->referrer)
+						, clf_str(ld->agent)
+				);
+			}
 			unlock(fileno(logfile), 0, 1);
 		}
 		FREE_AND_NULL(ld->hostname);

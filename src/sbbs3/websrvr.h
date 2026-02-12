@@ -63,6 +63,7 @@ typedef struct {
 	uint outbuf_drain_timeout;
 	char login_info_save[INI_MAX_VALUE_LEN];
 	char proxy_ip_header[128];
+	char custom_log_fmt[INI_MAX_VALUE_LEN];
 
 	/* JavaScript operating parameters */
 	js_startup_t js;

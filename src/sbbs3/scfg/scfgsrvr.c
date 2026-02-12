@@ -1026,6 +1026,8 @@ static void websrvr_cfg(void)
 		else
 			snprintf(str, sizeof str, "%s-%s<date>.log", startup.logfile_base, host);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Access Logging", startup.options & WEB_OPT_HTTP_LOGGING ? str : strDisabled);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Access Log Format"
+			, startup.options & WEB_OPT_HTTP_LOGGING ? (*startup.custom_log_fmt ? startup.custom_log_fmt : "<Combined Log Format>") : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
@@ -1100,7 +1102,7 @@ static void websrvr_cfg(void)
 				break;
 			case 9:
 				i = startup.options & WEB_OPT_HTTP_LOGGING ? 0 : 1;
-				i = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &i, 0, "Log Requests to Files in Combined Log Format", uifcYesNoOpts);
+				i = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &i, 0, "Log Requests to HTTP Access Log", uifcYesNoOpts);
 				if (i == 0) {
 					startup.options |= WEB_OPT_HTTP_LOGGING;
 					uifc.input(WIN_MID | WIN_SAV, 0, 0, "Base path/filename (blank = default)"
@@ -1117,21 +1119,26 @@ static void websrvr_cfg(void)
 					startup.options &= ~WEB_OPT_HTTP_LOGGING;
 				break;
 			case 10:
+				if (startup.options & WEB_OPT_HTTP_LOGGING)
+					uifc.input(WIN_MID | WIN_SAV, 0, 0, "Log Format (blank for Combined Log Format)"
+						, startup.custom_log_fmt, sizeof(startup.custom_log_fmt) - 1, K_EDIT);
+				break;
+			case 11:
 				SAFECOPY(str, maximum(startup.max_clients));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Client Count (0=Unlimited)", str, 10, K_EDIT) > 0)
 					startup.max_clients = atoi(str);
 				break;
-			case 11:
+			case 12:
 				SAFECOPY(str, duration(startup.max_inactivity, false, strDefault));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
 					startup.max_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 12:
+			case 13:
 				SAFECOPY(str, maximum(startup.max_concurrent_connections));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Concurrent Connections (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
 					startup.max_concurrent_connections = atoi(str);
 				break;
-			case 13:
+			case 14:
 				SAFECOPY(str, maximum(startup.max_requests_per_period));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Requests (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
 					startup.max_requests_per_period = atoi(str);
@@ -1141,32 +1148,32 @@ static void websrvr_cfg(void)
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Request Rate Limit Period", str, 10, K_EDIT) > 0)
 					startup.request_rate_limit_period = (uint)parse_duration(str);
 				break;
-			case 14:
+			case 15:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Authentication Methods"
 				           , startup.default_auth_list, sizeof(startup.default_auth_list) - 1, K_EDIT);
 				break;
-			case 15:
+			case 16:
 				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Output Buffer Drain Timeout (milliseconds)"
 				               , str, 5, K_NUMBER | K_EDIT) > 0)
 					startup.outbuf_drain_timeout = atoi(str);
 				break;
-			case 16:
+			case 17:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 17:
+			case 18:
 				websrvr_cgi_cfg(&startup);
 				break;
-			case 18:
+			case 19:
 				websrvr_filebase_cfg(&startup);
 				break;
-			case 19:
+			case 20:
 				getar("Web Server Login", startup.login_ars);
 				break;
-			case 20:
+			case 21:
 				js_startup_cfg(&startup.js);
 				break;
-			case 21:
+			case 22:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
