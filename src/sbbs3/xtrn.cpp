@@ -1503,8 +1503,9 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			{NULL, NULL}
 		};
 
-		named_int_t    externalbat_int_replacements[] = {
+		named_long_t    externalbat_int_replacements[] = {
 			{(char*)"SBBSNNUM", cfg.node_num },
+			{NULL}
 		};
 
 		while (!feof(externalbatfp)) {
@@ -1599,8 +1600,9 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			{(char*)"RUNTYPE", (char *)runtype},
 			{NULL, NULL}
 		};
-		named_int_t    de_ini_int_replacements[] = {
+		named_long_t    de_ini_int_replacements[] = {
 			{(char*)"NNUM", cfg.node_num },
+			{NULL}
 		};
 		replace_named_values(de_launch_cmd, fullcmdline, sizeof(fullcmdline), (char*)"$",
 		                     de_ini_replacements, de_ini_int_replacements, FALSE);

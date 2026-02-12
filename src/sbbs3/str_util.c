@@ -590,7 +590,7 @@ char* replace_named_values(const char* src
                            , size_t buflen /* includes '\0' terminator */
                            , const char* escape_seq
                            , named_string_t* string_list
-                           , named_int_t* int_list
+                           , named_long_t* int_list
                            , bool case_sensitive)
 {
 	char   val[32];
@@ -637,7 +637,7 @@ char* replace_named_values(const char* src
 			for (i = 0; int_list[i].name != NULL /* terminator */; i++) {
 				name_len = strlen(int_list[i].name);
 				if (cmp(src, int_list[i].name, name_len) == 0) {
-					SAFEPRINTF(val, "%d", int_list[i].value);
+					SAFEPRINTF(val, "%ld", int_list[i].value);
 					value_len = strlen(val);
 					if ((p - buf) + value_len > buflen - 1)  /* buffer overflow? */
 						value_len = (buflen - 1) - (p - buf); /* truncate value */
