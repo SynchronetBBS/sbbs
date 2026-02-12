@@ -71,7 +71,7 @@ static const char* msg_to(smbmsg_t* msg)
 /****************************************************************************/
 int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 {
-	char     str[256], str2[256], done = 0, domsg = 1, *p;
+	char     str[256], str2[256], done = 0, domsg = 1;
 	char     tmp[512];
 	char     savepath[MAX_PATH + 1]{};
 	int      i;
@@ -376,13 +376,12 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 				SAFECOPY(str2, format_text(text_num, msghdr_field(&msg, msg.subj), msghdr_field(&msg, msg.from, tmp)
 				                           , timestr(smb_time(msg.hdr.when_written))));
 
-				p = strrchr(str, '@');
-				if (p) {                             /* name @addr */
+				if (netmail_addr_is_supported(&cfg, str)) {                             /* name @addr */
 					replied = netmail(str, msg.subj, WM_NONE, &smb, &msg);
 					SAFEPRINTF(str2, text[DeleteMailQ], msghdr_field(&msg, msg.from));
 				}
 				else {
-					if (!msg.from_net.type && !stricmp(str, msg.from))
+					if (text_num == Regarding && msg.idx.from)
 						replied = email(msg.idx.from, str2, msg.subj, WM_NONE, &smb, &msg);
 					else if (!stricmp(str, "SYSOP"))
 						replied = email(1, str2, msg.subj, WM_NONE, &smb, &msg);
