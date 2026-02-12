@@ -7,6 +7,7 @@
 // @format.tab-size 4, @format.use-tabs true
 
 require("sbbsdefs.js", "P_NOERROR");
+require("gettext.js", 'gettext');
 
 "use strict";
 
@@ -42,7 +43,8 @@ if(bull.length < 1) {
 
 while(bbs.online && !js.terminated) {
 	if(bbs.menu("../bullseye", P_NOERROR)) {
-		console.mnemonics("\r\nEnter number of bulletin or [~Quit]: ");
+	console.newline();
+	console.mnemonics(gettext("Enter number of bulletin or [~Quit]: ", "choose_bulletin"));
 		b = console.getnum(bull.length);
 	} else {
 		for(i = 0; i < bull.length; ++i)
