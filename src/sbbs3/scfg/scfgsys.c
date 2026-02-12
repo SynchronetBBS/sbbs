@@ -21,6 +21,8 @@
 #include "ssl.h"
 #include "ciolib.h" // CIO_KEY_*
 
+extern char* strDisabled;
+
 static int wiz_help(int page, int total, const char* buf)
 {
 	wizard_msg(page, total, buf);
@@ -2779,7 +2781,8 @@ void sys_cfg(void)
 					         , cfg.ctrlkey_passthru);
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Statistics Interval"
 						, duration_to_vstr(cfg.stats_interval, str, sizeof str));
-					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Cache Filter Files", cfg.cache_filter_files ? "Yes" : "No");
+					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Cache Filter Files"
+						, cfg.cache_filter_files > 0 ? duration_to_vstr(cfg.cache_filter_files, str, sizeof str) : strDisabled);
 					opt[i][0] = 0;
 					uifc.helpbuf =
 						"`System Advanced Options:`\n"
@@ -3146,10 +3149,10 @@ void sys_cfg(void)
 								"files for the purposes of displaying system and node statistics to\n"
 								"users and caching the results for performance.\n"
 								"\n"
-								"A lower value means more current statistics, but more disk I/O. A higher\n"
-								"value means less current statistics, but less disk I/O.\n"
+								"A lower value means more current statistics, but more disk I/O.\n"
+								"A higher value means less current statistics, but less disk I/O.\n"
 								"\n"
-								"If unsure, leave this value set to `5`, the default.\n"
+								"If unsure, leave this value set to `5s`, the default.\n"
 							;
 							duration_to_str(cfg.stats_interval, str, sizeof str);
 							uifc.input(WIN_MID | WIN_SAV, 0, 0
@@ -3166,16 +3169,23 @@ void sys_cfg(void)
 								"Caching these file contents in memory may dramatically speed up these\n"
 								"checks and reduce redundant disk I/O.\n"
 								"\n"
-								"Setting this option to `Yes` enables caching of filter files, using more\n"
-								"memory.  Setting it to `No` disables caching of filter files, increasing\n"
-								"disk I/O operations.\n"
+								"This value determines the interval, in seconds, between checks for\n"
+								"changes to filter files.  If a change is detected, the file's cache will\n"
+								"be refreshed.  Setting this value to a lower value means changes to\n"
+								"filter files will be detected and applied more quickly, but with more\n"
+								"disk I/O.  Setting this value to a higher value means changes to filter\n"
+								"files will be detected and applied less quickly, but with less disk I/O.\n"
 								"\n"
-								"If unsure, leave this value set to `Yes`, the default.\n"
+								"Setting this value to `0` disables caching of filter files entirely,\n"
+								"using less memory, but increasing disk I/O operations.\n"
+								"\n"
+								"If unsure, leave this value set to `5s`, the default.\n"
 							;
-							i = cfg.cache_filter_files ? 0 : 1;
-							i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Cache Filter Files", uifcYesNoOpts);
-							if (i == uifcYes || i == uifcNo)
-								cfg.cache_filter_files = (i == uifcYes);
+							duration_to_str(cfg.cache_filter_files, str, sizeof str);
+							uifc.input(WIN_MID | WIN_SAV, 0, 0
+							           , "Filter File Cache Duration"
+							           , str, 10, K_UPPER | K_EDIT);
+							cfg.cache_filter_files = (uint)parse_duration(str);
 							break;
 					}
 				}

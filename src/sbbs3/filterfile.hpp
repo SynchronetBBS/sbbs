@@ -28,8 +28,8 @@
 
 class filterFile {
 	public:
-		filterFile(scfg_t* cfg, const char* fname, uint fchk_interval = 10)
-			: fchk_interval(fchk_interval), cached(cfg->cache_filter_files) {
+		filterFile(scfg_t* cfg, const char* fname)
+			: fchk_interval(cfg->cache_filter_files) {
 			if (getfname(fname) == fname)
 				snprintf(this->fname, sizeof this->fname, "%s%s", cfg->ctrl_dir, fname);
 			else
@@ -42,12 +42,11 @@ class filterFile {
 		std::atomic<uint> fread_count{};
 		std::atomic<uint> total_found{};
 		time_t fchk_interval; // seconds
-		bool cached;
 		char fname[MAX_PATH + 1];
 		bool listed(const char* str1, const char* str2 = nullptr, struct trash* details = nullptr) {
 			bool result;
 			time_t now = time(nullptr);
-			if (cached) {
+			if (fchk_interval) {
 				const std::lock_guard<std::mutex> lock(mutex);
 				if ((now - lastftime_check) >= fchk_interval) {
 					lastftime_check = now;
@@ -84,10 +83,9 @@ class filterFile {
 
 class trashCan : public filterFile {
 	public:
-		trashCan(scfg_t* cfg, const char* name, uint fchk_interval = 10) {
+		trashCan(scfg_t* cfg, const char* name) {
 			trashcan_fname(cfg, name, filterFile::fname, sizeof filterFile::fname);
-			filterFile::fchk_interval = fchk_interval;
-			filterFile::cached  = cfg->cache_filter_files;
+			filterFile::fchk_interval = cfg->cache_filter_files;
 		}
 };
 

@@ -181,7 +181,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->erruser = iniGetUInteger(ini, ROOT_SECTION, "erruser", 0);
 	cfg->errlevel = (uchar)iniGetUInteger(ini, ROOT_SECTION, "errlevel", LOG_CRIT);
 	cfg->stats_interval = iniGetUInteger(ini, ROOT_SECTION, "stats_interval", 5);
-	cfg->cache_filter_files = iniGetBool(ini, ROOT_SECTION, "cache_filter_files", true);
+	cfg->cache_filter_files = iniGetUInteger(ini, ROOT_SECTION, "cache_filter_files", 5);
 
 	// fixed events
 	SAFECOPY(cfg->sys_logon.cmd, iniGetString(ini, "logon_event", "cmd", "", value));

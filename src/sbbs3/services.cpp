@@ -2145,10 +2145,10 @@ void services_thread(void* arg)
 			}
 		}
 
-		ip_can = new trashCan(&scfg, "ip", startup->sem_chk_freq);
-		ip_silent_can = new trashCan(&scfg, "ip-silent", startup->sem_chk_freq);
-		host_can = new trashCan(&scfg, "host", startup->sem_chk_freq);
-		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile, startup->sem_chk_freq);
+		ip_can = new trashCan(&scfg, "ip");
+		ip_silent_can = new trashCan(&scfg, "ip-silent");
+		host_can = new trashCan(&scfg, "host");
+		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile);
 
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles = semfile_list_init(scfg.ctrl_dir, "shutdown", "services");

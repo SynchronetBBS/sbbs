@@ -667,7 +667,7 @@ typedef struct
 	char**			text;
 
 	uint			stats_interval;		// Statistics read interval in seconds (cache duration)
-	bool			cache_filter_files;
+	uint			cache_filter_files;
 
 	// Run-time state information (not configuration)
 

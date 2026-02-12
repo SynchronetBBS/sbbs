@@ -5421,10 +5421,10 @@ void bbs_thread(void* arg)
 NO_SSH:
 #endif
 
-		ip_can = new trashCan(&scfg, "ip", startup->sem_chk_freq);
-		ip_silent_can = new trashCan(&scfg, "ip-silent", startup->sem_chk_freq);
-		host_can = new trashCan(&scfg, "host", startup->sem_chk_freq);
-		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile, startup->sem_chk_freq);
+		ip_can = new trashCan(&scfg, "ip");
+		ip_silent_can = new trashCan(&scfg, "ip-silent");
+		host_can = new trashCan(&scfg, "host");
+		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile);
 
 		sbbs_t* sbbs = new sbbs_t(0, &server_addr, sizeof(server_addr)
 		                          , "Terminal Server", ts_set->socks[0].sock, &scfg, text, NULL);
