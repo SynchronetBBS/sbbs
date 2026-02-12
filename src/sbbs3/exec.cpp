@@ -779,7 +779,8 @@ int sbbs_t::exec_mod(const char* name, struct loadable_module mod, bool* invoked
 		*invoked = false;
 
 	if (strListIndexOf(mod_callstack, name) >= 0) {
-		lprintf(LOG_ERR, "Attempt to recursively execute %s module", name);
+		if (invoked == nullptr)
+			lprintf(LOG_ERR, "Attempt to recursively execute %s module", name);
 		return -1;
 	}
 
