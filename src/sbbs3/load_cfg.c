@@ -448,7 +448,7 @@ int md(const char* inpath)
 }
 
 /****************************************************************************/
-/* Reads in ATTR.CFG and initializes the associated variables               */
+/* Reads in attr.ini and initializes the associated variables               */
 /****************************************************************************/
 bool read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
