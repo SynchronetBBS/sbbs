@@ -15,6 +15,8 @@ if (typeof(require) === "function")
 	require("userdefs.js", "USER_ANSI");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
 	require("cp437_defs.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
+	require("frame.js", "Frame");
+	require("scrollbar.js", "ScrollBar");
 }
 else
 {
@@ -23,8 +25,13 @@ else
 	load("userdefs.js");
 	load("dd_lightbar_menu.js");
 	load("cp437_defs.js");
+	load("frame.js");
+	load("scrollbar.js");
 }
- 
+
+var COPYRIGHT_YEAR = 2026;
+
+
 // Note: These variables are declared with "var" instead of "const" to avoid
 // multiple declaration errors when this file is loaded more than once.
 
@@ -63,8 +70,7 @@ var ESC_MENU_USER_SETTINGS = 12;
 var ESC_MENU_SPELL_CHECK = 13;
 var ESC_MENU_INSERT_MEME = 14;
 
-
-var COPYRIGHT_YEAR = 2026;
+var RIP_START_SEQ = "!|R"; // RIP start sequence
 
 // Store the full path & filename of the Digital Distortion Message
 // Lister, since it will be used more than once.
@@ -1057,7 +1063,6 @@ function displayHelpHeader()
 //
 // Parameters:
 //  pDisplayHeader: Whether or not to display the help header.
-//  pClear: Whether or not to clear the screen first
 //  pPause: Whether or not to pause at the end
 //  pCanCrossPost: Whether or not cross-posting is enabled
 //  pTxtReplacments: Whether or not the text replacements feature is enabled
@@ -1065,74 +1070,157 @@ function displayHelpHeader()
 //  pSpellCheck: Whether or not spell check is allowed
 //  pCanChangeColor: Whether or not changing text color is allowed
 //  pCanChangeSubject: Whether or not changing the subject is allowed
-function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pTxtReplacments,
-                            pUserSettings, pSpellCheck, pCanChangeColor, pCanChangeSubject)
+//  pClearScrFirst: Optional - Whether or not to clear the screen first. Defaults to true.
+//  pNumAdditionalLinesFromTop: Optional - The number of lines from the top row to
+//                              start at (i.e., of some other information has already
+//                              been displayed). Defaults to 0.
+function displayCommandList(pDisplayHeader, pPause, pCanCrossPost, pTxtReplacments,
+                            pUserSettings, pSpellCheck, pCanChangeColor, pCanChangeSubject,
+                            pClearScrFirst, pNumAdditionalLinesFromTop)
 {
-	if (pClear)
+	var clearScrFirst = (typeof(pClearScrFirst) === "boolean" ? pClearScrFirst : true);
+	if (clearScrFirst)
+	{
+		console.line_counter = 0;
 		console.clear("\x01n");
+	}
+
+	var numAdditionalLinesFromTop = (typeof(pNumAdditionalLinesFromTop) === "number" && pNumAdditionalLinesFromTop >= 0 ? pNumAdditionalLinesFromTop : 0);
+
+	var scrollTopRow = 2 + numAdditionalLinesFromTop;
 	if (pDisplayHeader)
 	{
-		displayHelpHeader();
-		console.crlf();
+		if (console.term_supports(USER_RIP))
+		{
+			var headerText = format("%s Help (%s mode)", EDITOR_PROGRAM_NAME, EDITOR_STYLE == "DCT" ? "DCT" : "Ice");
+			console.crlf(); // A new set of RIP commands needs to be on its own line
+			// RIP text color values:
+			/*
+			 Value   Color
+			 -------------------------------------------------------
+			 00      Black (00 is always the background color)
+			 01      Blue
+			 02      Green
+			 03      Cyan
+			 04      Red
+			 05      Magenta
+			 06      Brown
+			 07      Light Gray
+			 08      Dark Gray
+			 09      Light Blue
+			 0A      Light Green
+			 0B      Light Cyan
+			 0C      Light Red
+			 0D      Light Magenta
+			 0E      Yellow
+			 0F      White
+			 */
+			var rip = RIPTitleBar(
+				1,      // attribute slot
+				//7, 7,   // bar position
+				1, 1,   // bar position
+				1,      // line style
+				"0000", // pen
+				headerText,
+				"01",   // Text color (blue)
+				//7, 7,   // text position
+				60, 9    // text position
+			);
+			rip = rip.replace(/~$/, "");
+			console.print(RIP_START_SEQ);
+			console.print(rip + "\r\n");
+			scrollTopRow += 4;
+		}
+		else
+		{
+			scrollTopRow = 5 + numAdditionalLinesFromTop;
+			displayHelpHeader();
+		}
 	}
 
-	// This function displays a key and its description with formatting & colors.
-	//
-	// Parameters:
-	//  pKey: The key description
-	//  pDesc: The description of the key's function
-	//  pCR: Whether or not to display a carriage return (boolean).  Optional;
-	//       if not specified, this function won't display a CR.
-	function displayCmdKeyFormatted(pKey, pDesc, pCR)
-	{
-		printf("\x01c\x01h%-13s\x01g: \x01n\x01c%s", pKey, pDesc);
-		if (pCR)
-			console.crlf();
-	}
-	// This function does the same, but outputs 2 on the same line.
-	function displayCmdKeyFormattedDouble(pKey, pDesc, pKey2, pDesc2, pCR)
-	{
-		var sepChar1 = ":";
-		var sepChar2 = ":";
-		if ((pKey.length == 0) && (pDesc.length == 0))
-			sepChar1 = " ";
-		if ((pKey2.length == 0) && (pDesc2.length == 0))
-			sepChar2 = " ";
-		printf("\x01c\x01h%-13s\x01g" + sepChar1 + " \x01n\x01c%-28s \x01k\x01h" + CP437_BOX_DRAWINGS_LIGHT_VERTICAL +
-		       " \x01c\x01h%-8s\x01g" + sepChar2 + " \x01n\x01c%s", pKey, pDesc, pKey2, pDesc2);
-		if (pCR)
-			console.crlf();
-	}
+	// Generate a text string with a horizontal line & help text specifying the list of
+	// hotkeys for use while displaying the scrolling help text
+	var keyHelpText = "\x01n\x01h\x01cUp\x01b, \x01cDn\x01b, \x01cPgUp\x01b, \x01cPgDn\x01b, \x01cHOME\x01b, \x01cEND\x01b, \x01cESC\x01n\x01c/\x01hQ\x01y=\x01bClose";
+	var padLen = Math.floor((console.screen_columns / 2) - (console.strlen(keyHelpText) / 2)) - 1;
+	var separatorLineColor = "\x01n\x01r";
+	var separatorLine = separatorLineColor;
+	for (var i = 0; i < padLen; ++i)
+		separatorLine += CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE;
+	separatorLine += CP437_BOX_DRAWINGS_VERTICAL_SINGLE_AND_LEFT_DOUBLE;
+	separatorLine += keyHelpText + separatorLineColor + CP437_BOX_DRAWINGS_VERTICAL_SINGLE_AND_RIGHT_DOUBLE;
+	var remainingLen = console.screen_columns - console.strlen(separatorLine);
+	for (var i = 0; i < remainingLen; ++i)
+		separatorLine += CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE;
+	console.gotoxy(1, scrollTopRow-1);
+	console.print(separatorLine);
 
+	// Display a bottom border on the last line of the screen
+	console.gotoxy(1, console.screen_rows);
+	console.print(separatorLineColor);
+	for (var i = 0; i < console.screen_columns-1; ++i)
+		console.print(CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE);
+
+	// Create the text string for the frame object
+	var txtLines = getCommandListHelpText(pCanCrossPost, pTxtReplacments, pUserSettings, pSpellCheck, pCanChangeColor, pCanChangeSubject);
+	var textStr = "";
+	for (var i = 0; i < txtLines.length; ++i)
+		textStr += format("%s\r\n", txtLines[i]);
+	// Create the frame object
+	var frameObj = new Frame(1, scrollTopRow, console.screen_columns, console.screen_rows-scrollTopRow, BG_BLACK);
+	frameObj.attr &=~ HIGH;
+	frameObj.v_scroll = true;
+	frameObj.h_scroll = false;
+	frameObj.scrollbars = true;
+	var scrollbarObj = new ScrollBar(frameObj, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
+	// Add the help text, then start the user input loop for the frame
+	frameObj.putmsg(textStr, "\x01n");
+
+	// Display the scrolling frame with help text
+	var lastUserInput = doFrameInputLoop(frameObj, scrollbarObj, textStr);
+}
+// Helper for displayCommandList(): Gets the command list help text.
+//
+// Parameters:
+//  pCanCrossPost: Whether or not cross-posting is enabled
+//  pTxtReplacments: Whether or not the text replacements feature is enabled
+//  pUserSettings: Whether or not the user settings feature is enabled
+//  pSpellCheck: Whether or not spell check is allowed
+//  pCanChangeColor: Whether or not changing text color is allowed
+//  pCanChangeSubject: Whether or not changing the subject is allowed
+//
+// Return value: An array of strings with the command list help
+function getCommandListHelpText(pCanCrossPost, pTxtReplacments, pUserSettings, pSpellCheck, pCanChangeColor, pCanChangeSubject)
+{
+	var txtLines = [];
 	// Help keys and slash commands
-	printf("\x01n\x01g%-44s  %-33s\r\n", "Help keys", "Slash commands (on blank line)");
-	printf("\x01k\x01h%-44s  %-33s\r\n", charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 9), charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 30));
-	//displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
-	displayCmdKeyFormattedDouble("Ctrl-G", "Input graphic character", "/A", "Abort", true);
-	displayCmdKeyFormattedDouble("Ctrl-L", "Command key list (this list)", "/S", "Save", true);
+	txtLines.push(format("\x01n\x01g%-44s  %-33s", "Help keys", "Slash commands (on blank line)"));
+	txtLines.push(format("\x01k\x01h%-44s  %-33s", charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 9), charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 30)));
+	//txtLines.push(getCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true));
+	txtLines.push(getCmdKeyFormattedDouble("Ctrl-G", "Input graphic character", "/A", "Abort"));
+	txtLines.push(getCmdKeyFormattedDouble("Ctrl-L", "Command key list (this list)", "/S", "Save"));
 	if (pTxtReplacments)
-		displayCmdKeyFormattedDouble("Ctrl-T", "List text replacements", "/T", "List text replacements", true);
-	displayCmdKeyFormattedDouble("", "", "/Q", "Quote message", true);
-	displayCmdKeyFormattedDouble("", "", "/M", "Add a meme", true);
+		txtLines.push(getCmdKeyFormattedDouble("Ctrl-T", "List text replacements", "/T", "List text replacements"));
+	txtLines.push(getCmdKeyFormattedDouble("", "", "/Q", "Quote message"));
+	txtLines.push(getCmdKeyFormattedDouble("", "", "/M", "Add a meme"));
 	if (pUserSettings)
-		displayCmdKeyFormattedDouble("", "", "/U", "Your user settings", true);
+		txtLines.push(getCmdKeyFormattedDouble("", "", "/U", "Your user settings"));
 	if (pCanCrossPost)
-		displayCmdKeyFormattedDouble("", "", "/C", "Cross-post selection", true);
-	displayCmdKeyFormattedDouble("", "", "/UPLOAD", "Upload a message", true);
-	printf(" \x01c\x01h%-7s\x01g  \x01n\x01c%s", "", "", "/?", "Show help");
-	console.crlf();
+		txtLines.push(getCmdKeyFormattedDouble("", "", "/C", "Cross-post selection"));
+	txtLines.push(getCmdKeyFormattedDouble("", "", "/UPLOAD", "Upload a message"));
+	txtLines.push(format(" \x01c\x01h%-7s\x01g  \x01n\x01c%s", "", "", "/?", "Show help"));
+	txtLines.push("");
 	// Command/edit keys
-	console.print("\x01n\x01gCommand/edit keys\r\n\x01k\x01h" + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 17) + "\r\n");
-	displayCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up", true);
-	displayCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down", true);
+	txtLines.push("\x01n\x01gCommand/edit keys\r\n\x01k\x01h" + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 17));
+	txtLines.push("");
+	txtLines.push(getCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up"));
+	txtLines.push(getCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down"));
 	const quoteHotkey = gUserSettings.ctrlQQuote ? "Ctrl-Q" : "Ctrl-Y";
-	displayCmdKeyFormattedDouble(quoteHotkey, "Quote message", "Ctrl-W", "Word/text search", true);
-	displayCmdKeyFormattedDouble("Insert/Ctrl-I", "Toggle insert/overwrite mode",
-	                             "Ctrl-D", "Delete line", true);
+	txtLines.push(getCmdKeyFormattedDouble(quoteHotkey, "Quote message", "Ctrl-W", "Word/text search"));
+	txtLines.push(getCmdKeyFormattedDouble("Insert/Ctrl-I", "Toggle insert/overwrite mode", "Ctrl-D", "Delete line"));
 	if (pCanChangeSubject)
-		displayCmdKeyFormattedDouble("Ctrl-S", "Change subject", "ESC", "Command menu", true);
+		txtLines.push(getCmdKeyFormattedDouble("Ctrl-S", "Change subject", "ESC", "Command menu"));
 	else
-		displayCmdKeyFormattedDouble("", "", "ESC", "Command menu", true);
+		txtLines.push(getCmdKeyFormattedDouble("", "", "ESC", "Command menu"));
 	// For the remaining hotkeys, build an array of them based on whether they're allowed or not.
 	// Then with the array, output each pair of hotkeys on the same line, and if there's only one
 	// left, display it by itself.
@@ -1161,18 +1249,33 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pTxtR
 			var desc1 = remainingHotkeysAndDescriptions[i].desc;
 			var hotkey2 = remainingHotkeysAndDescriptions[nextI].hotkey
 			var desc2 = remainingHotkeysAndDescriptions[nextI].desc;
-			displayCmdKeyFormattedDouble(hotkey1, desc1, hotkey2, desc2, true);
+			txtLines.push(getCmdKeyFormattedDouble(hotkey1, desc1, hotkey2, desc2));
 			i += 2;
 		}
 		else
 		{
-			displayCmdKeyFormatted(remainingHotkeysAndDescriptions[i].hotkey, remainingHotkeysAndDescriptions[i].desc, true);
+			var keyText = format("\x01c\x01h%-13s\x01g: \x01n\x01c%s", remainingHotkeysAndDescriptions[i].hotkey, remainingHotkeysAndDescriptions[i].desc);
+			txtLines.push(keyText);
 			++i;
 		}
 	}
 
-	if (pPause)
-		console.pause();
+	return txtLines;
+}
+// Helper for getCommandListHelpText(): Returns formatted text with 2 a keys
+// and their descriptions with formatting & colors, on the same line.
+function getCmdKeyFormattedDouble(pKey, pDesc, pKey2, pDesc2)
+{
+	var sepChar1 = ":";
+	var sepChar2 = ":";
+	if (pKey.length == 0 && pDesc.length == 0)
+		sepChar1 = " ";
+	if (pKey2.length == 0 && pDesc2.length == 0)
+		sepChar2 = " ";
+	var formatStr = "\x01c\x01h%-13s\x01g" + sepChar1 + " \x01n\x01c%-28s \x01k\x01h"
+	              + CP437_BOX_DRAWINGS_LIGHT_VERTICAL + " \x01c\x01h%-8s\x01g" + sepChar2
+	              + " \x01n\x01c%s";
+	return format(formatStr, pKey, pDesc, pKey2, pDesc2);
 }
 // Helper for displayCommandList(): Returns an object with 'hotkey' and 'desc' propeties with the hotkey & its description
 function makeHotkeyAndDescObj(pHotkey, pDescription)
@@ -1233,18 +1336,104 @@ function displayGeneralHelp(pDisplayHeader, pClear, pPause)
 function displayProgramInfo(pClear, pPause)
 {
 	if (pClear)
-		console.clear("\x01n");
+		console.clear("N");
 
 	// Print the program information
-	console.center("\x01n\x01h\x01c" + EDITOR_PROGRAM_NAME + "\x01n \x01cVersion \x01g" +
-	               EDITOR_VERSION + " \x01w\x01h(\x01b" + EDITOR_VER_DATE + "\x01w)");
-	console.center("\x01n\x01cby Eric Oulashin");
-	//console.crlf();
-	console.print("\x01n\x01cSlyEdit is a full-screen message editor for Synchronet that mimics the look &\r\n");
-	console.print("feel of IceEdit or DCT Edit.");
-	console.crlf();
+	var programInfoStrs = getProgramInfoText();
+	for (var i = 0; i < programInfoStrs.length; ++i)
+		printf("%s\r\n", programInfoStrs[i]);
 	if (pPause)
 		console.pause();
+}
+// Helper for displayProgramInfo(): Gets program information text
+function getProgramInfoText()
+{
+	var programInfoStrs = [];
+	var programNameAndDate = "\x01n\x01h\x01c" + EDITOR_PROGRAM_NAME + "\x01n \x01cVersion \x01g"
+	                       + EDITOR_VERSION + " \x01w\x01h(\x01b" + EDITOR_VER_DATE + "\x01w)";
+	programInfoStrs.push(getCenteredTextStr(programNameAndDate));
+	programInfoStrs.push(getCenteredTextStr("\x01n\x01cby Eric Oulashin"));
+	programInfoStrs.push("\x01n\x01cSlyEdit is a full-screen message editor for Synchronet that mimics the look &");
+	programInfoStrs.push("feel of IceEdit or DCT Edit.");
+	return programInfoStrs;
+}
+
+// Displays the program information followed by the command list in a scrollable box
+//
+// Parameters:
+//  pPause: Whether or not to pause at the end
+//  pCanCrossPost: Whether or not cross-posting is enabled
+//  pTxtReplacments: Whether or not the text replacements feature is enabled
+//  pUserSettings: Whether or not the user settings feature is enabled
+//  pSpellCheck: Whether or not spell check is allowed
+//  pCanChangeColor: Whether or not changing text color is allowed
+//  pCanChangeSubject: Whether or not changing the subject is allowed
+function displayProgramInfoAndCommandList(pPause, pCanCrossPost, pTxtReplacments,
+                                          pUserSettings, pSpellCheck, pCanChangeColor, pCanChangeSubject)
+{
+	console.line_counter = 0;
+	console.clear("\x01n");
+
+	// Get the program information.
+	// The first line will be the program name & date.
+	// If the user's terminal supports RIP, then display the program
+	// name & date as RIP instead of displaying the first line from
+	// the program info array.
+	var programInfoStrs = getProgramInfoText();
+	var infoStartIdx = 0;
+	var RIPHeightOffset = 0; // To get to the right place to display the 2nd+ info lines etc.
+	if (console.term_supports(USER_RIP))
+	{
+		++infoStartIdx; // We'll start at the next index in programInfoStrs after the RIP header
+
+		var headerText = format("%s Version %s (%s mode) (%s)", EDITOR_PROGRAM_NAME, EDITOR_VERSION,
+		                        EDITOR_STYLE == "DCT" ? "DCT" : "Ice", EDITOR_VER_DATE);
+		console.crlf(); // A new set of RIP commands needs to be on its own line
+		// RIP text color values:
+		/*
+		Value   Color
+		-------------------------------------------------------
+		00      Black (00 is always the background color)
+		01      Blue
+		02      Green
+		03      Cyan
+		04      Red
+		05      Magenta
+		06      Brown
+		07      Light Gray
+		08      Dark Gray
+		09      Light Blue
+		0A      Light Green
+		0B      Light Cyan
+		0C      Light Red
+		0D      Light Magenta
+		0E      Yellow
+		0F      White
+		*/
+		var rip = RIPTitleBar(
+			1,      // attribute slot
+			//7, 7,   // bar position
+			1, 1,   // bar position
+			1,      // line style
+			"0000", // pen
+			headerText,
+			"01",   // Text color (blue)
+			25, 9    // text position
+		);
+		rip = rip.replace(/~$/, "");
+		console.print(RIP_START_SEQ);
+		console.print(rip + "\r\n");
+		RIPHeightOffset = 3;
+	}
+	//console.print("\r\n\r\n\r\n");
+	for (var i = 0; i < RIPHeightOffset; ++i)
+		console.crlf();
+	for (var i = infoStartIdx; i < programInfoStrs.length; ++i)
+		printf("%s\r\n", programInfoStrs[i]);
+
+	// Display the command list
+	displayCommandList(false, pPause, pCanCrossPost, pTxtReplacments, pUserSettings,
+	                   pSpellCheck, pCanChangeColor, pCanChangeSubject, false, programInfoStrs.length+RIPHeightOffset);
 }
 
 // Displays the informational screen for the program exit.
@@ -5111,6 +5300,77 @@ function getPersonalMailInfoForUser()
 	return retObj;
 }
 
+// Displays a Frame object and handles the input loop for navigation until
+// the user presses Q, Enter, or ESC To quit the input loop
+//
+// Parameters:
+//  pFrame: The Frame object
+//  pScrollbar: The Scrollbar object for the Frame
+//  pFrameContentStr: The string content that was added to the Frame
+//  pAdditionalQuitKeys: Optional - A string containing additional keys to quit the
+//                       input loop.  This is case-sensitive.
+//
+// Return value: The last keypress/input from the user
+function doFrameInputLoop(pFrame, pScrollbar, pFrameContentStr, pAdditionalQuitKeys)
+{
+	var checkAdditionalQuitKeys = (typeof(pAdditionalQuitKeys) === "string" && pAdditionalQuitKeys.length > 0);
+
+	// Input loop for the frame to let the user scroll it
+	var frameContentTopYOffset = 0;
+	//var maxFrameYOffset = pFrameContentStr.split("\r\n").length - pFrame.height;
+	var maxFrameYOffset = countOccurrencesInStr(pFrameContentStr, "\r\n") - pFrame.height;
+	if (maxFrameYOffset < 0) maxFrameYOffset = 0;
+	var userInput = "";
+	var continueOn = true;
+	do
+	{
+		pFrame.scrollTo(0, frameContentTopYOffset);
+		pFrame.invalidate();
+		pScrollbar.cycle();
+		pFrame.cycle();
+		pFrame.draw();
+		// Note: getKeyWithESCChars() is defined in dd_lightbar_menu.js.
+		userInput = getKeyWithESCChars(K_NOECHO|K_NOSPIN|K_NOCRLF, 30000).toUpperCase();
+		if (userInput == KEY_UP)
+		{
+			if (frameContentTopYOffset > 0)
+				--frameContentTopYOffset;
+		}
+		else if (userInput == KEY_DOWN)
+		{
+			if (frameContentTopYOffset < maxFrameYOffset)
+				++frameContentTopYOffset;
+		}
+		else if (userInput == KEY_PAGEUP)
+		{
+			frameContentTopYOffset -= pFrame.height;
+			if (frameContentTopYOffset < 0)
+				frameContentTopYOffset = 0;
+		}
+		else if (userInput == KEY_PAGEDN)
+		{
+			frameContentTopYOffset += pFrame.height;
+			if (frameContentTopYOffset > maxFrameYOffset)
+				frameContentTopYOffset = maxFrameYOffset;
+		}
+		else if (userInput == KEY_HOME)
+			frameContentTopYOffset = 0;
+		else if (userInput == KEY_END)
+			frameContentTopYOffset = maxFrameYOffset;
+
+		// Check for whether to continue the input loop
+		continueOn = (userInput != "Q" && userInput != KEY_ENTER && userInput != KEY_ESC);
+		// If the additional quit keys does not contain the user's keypress, then continue
+		// the input loop.
+		// In other words, if the additional quit keys includes the user's keypress, then
+		// don't continue.
+		if (continueOn && checkAdditionalQuitKeys)
+			continueOn = (pAdditionalQuitKeys.indexOf(userInput) < 0);
+	} while (continueOn);
+
+	return userInput;
+}
+
 // This function displays debug text at a given location on the screen, then
 // moves the cursor back to a given location.
 //
@@ -5158,4 +5418,75 @@ function countOccurrencesInStr(pStr, pSubstr)
 		strIdx = pStr.indexOf(pSubstr, strIdx+1);
 	}
 	return count;
+}
+
+// Pads a string so that it can be displayed in the center of
+// the user's terminal width
+//
+// Parameters:
+//  pStr: The string to be centered
+//  pTrailingPadding: Optional - Whether or not to pad the end of the
+//                    string with spaces to fill the width (-1). Defaults
+//                    to false.
+//
+// Return value: The padded string
+function getCenteredTextStr(pStr, pTrailingPadding)
+{
+	var screenLen = console.strlen(pStr);
+	if (screenLen >= console.screen_columns - 1)
+		return pStr;
+
+	var padLen = Math.floor((console.screen_columns / 2) - (screenLen / 2)) - 1;
+	var padding = format("%*s", padLen, "");
+	var paddedStr = padding + pStr;
+
+	var trailingPadding = (typeof(pTrailingPadding) === "boolean" ? pTrailingPadding : false);
+	if (trailingPadding)
+		paddedStr += format("%*s", console.screen_columns - console.strlen(paddedStr) - 1, "");
+
+	return paddedStr;
+}
+
+// Returns a string to display a RIP 'title bar'.
+//
+// Parameters:
+//  pAttr: The attribute slot number (integer)
+//  pX: The bar's starting X coordinate
+//  pY: The bar's starting Y coordinate
+//  pPen: The pen/pattern value (4-digit string, i.e., "0000")
+//  pTitle: The text to display
+//  pTextColor: The 2-digit hex color (i.e., "0F")
+//  pTextX: The text cursor position X coordinate
+//  pTextY: The text cursor position Y coordinate
+//
+// Return value: The RIP string to represent the above
+function RIPTitleBar(pAttr, pX, pY, pLineStyle, pPen, pTitle, pTextColor, pTextX, pTextY)
+{
+	function pad2(n) {
+		return ("0" + n).slice(-2);
+	}
+
+	var rip = "!";
+	rip += "|" + pAttr + "U";
+	rip += pad2(pX) + pad2(pY);
+	rip += "H";
+	rip += "L" + pLineStyle;
+	rip += "P" + pPen;
+	rip += "|c" + pTextColor;   // Set drawing color for graphics text
+	rip += "|@" + pad2(pTextX) + pad2(pTextY) + pTitle.replace(/~/g, "\\~") + "~";   // RIP_TEXT_XY: draw text at (x,y)
+
+	// Older:
+	/*
+	var rip = "!";
+	rip += "|" + pAttr + "U";
+	rip += pad2(pX) + pad2(pY);
+	rip += "H";
+	rip += "L" + pLineStyle;
+	rip += "P" + pPen;
+	rip += "<>" + pTitle + "<>";
+	rip += "|c" + pTextColor;
+	rip += "|S" + pad2(pTextX) + pad2(pTextY);
+	*/
+
+	return rip;
 }

@@ -108,8 +108,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.92g";
-var EDITOR_VER_DATE = "2026-02-08";
+var EDITOR_VERSION = "1.93";
+var EDITOR_VER_DATE = "2026-02-11";
 
 
 // Program variables
@@ -1422,9 +1422,9 @@ function doEditLoop()
 				break;
 			case CMDLIST_HELP_KEY:
 			case CMDLIST_HELP_KEY_2:
-				displayCommandList(true, true, true, gCanCrossPost,
-				                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings,
-				                   gConfigSettings.allowSpellCheck, gConfigSettings.allowColorSelection, gCanChangeSubject);
+				displayCommandList(true, true, gCanCrossPost, gConfigSettings.enableTextReplacements,
+				                   gConfigSettings.allowUserSettings, gConfigSettings.allowSpellCheck,
+				                   gConfigSettings.allowColorSelection, gCanChangeSubject);
 				clearEditAreaBuffer();
 				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode,
 				               gUseQuotes, gUserSettings.ctrlQQuote, gEditLinesIndex-(curpos.y-gEditTop),
@@ -1814,10 +1814,9 @@ function doEditLoop()
 								console.gotoxy(curpos);
 								break;
 							case ENTER_ACTION_SHOW_HELP:
-								displayProgramInfo(true, false);
-								displayCommandList(false, false, true, gCanCrossPost,
-								                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings,
-								                   gConfigSettings.allowSpellCheck, gConfigSettings.allowColorSelection, gCanChangeSubject);
+								displayProgramInfoAndCommandList(false, gCanCrossPost, gConfigSettings.enableTextReplacements,
+								                                 gConfigSettings.allowUserSettings, gConfigSettings.allowSpellCheck,
+								                                 gConfigSettings.allowColorSelection, gCanChangeSubject);
 								clearEditAreaBuffer();
 								fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
 								               gInsertMode, gUseQuotes, gUserSettings.ctrlQQuote,
@@ -7193,75 +7192,4 @@ function doMemeInput()
 	}
 
 	return retObj;
-}
-
-// Displays a Frame object and handles the input loop for navigation until
-// the user presses Q, Enter, or ESC To quit the input loop
-//
-// Parameters:
-//  pFrame: The Frame object
-//  pScrollbar: The Scrollbar object for the Frame
-//  pFrameContentStr: The string content that was added to the Frame
-//  pAdditionalQuitKeys: Optional - A string containing additional keys to quit the
-//                       input loop.  This is case-sensitive.
-//
-// Return value: The last keypress/input from the user
-function doFrameInputLoop(pFrame, pScrollbar, pFrameContentStr, pAdditionalQuitKeys)
-{
-	var checkAdditionalQuitKeys = (typeof(pAdditionalQuitKeys) === "string" && pAdditionalQuitKeys.length > 0);
-
-	// Input loop for the frame to let the user scroll it
-	var frameContentTopYOffset = 0;
-	//var maxFrameYOffset = pFrameContentStr.split("\r\n").length - pFrame.height;
-	var maxFrameYOffset = countOccurrencesInStr(pFrameContentStr, "\r\n") - pFrame.height;
-	if (maxFrameYOffset < 0) maxFrameYOffset = 0;
-	var userInput = "";
-	var continueOn = true;
-	do
-	{
-		pFrame.scrollTo(0, frameContentTopYOffset);
-		pFrame.invalidate();
-		pScrollbar.cycle();
-		pFrame.cycle();
-		pFrame.draw();
-		// Note: getKeyWithESCChars() is defined in dd_lightbar_menu.js.
-		userInput = getKeyWithESCChars(K_NOECHO|K_NOSPIN|K_NOCRLF, 30000).toUpperCase();
-		if (userInput == KEY_UP)
-		{
-			if (frameContentTopYOffset > 0)
-				--frameContentTopYOffset;
-		}
-		else if (userInput == KEY_DOWN)
-		{
-			if (frameContentTopYOffset < maxFrameYOffset)
-				++frameContentTopYOffset;
-		}
-		else if (userInput == KEY_PAGEUP)
-		{
-			frameContentTopYOffset -= pFrame.height;
-			if (frameContentTopYOffset < 0)
-				frameContentTopYOffset = 0;
-		}
-		else if (userInput == KEY_PAGEDN)
-		{
-			frameContentTopYOffset += pFrame.height;
-			if (frameContentTopYOffset > maxFrameYOffset)
-				frameContentTopYOffset = maxFrameYOffset;
-		}
-		else if (userInput == KEY_HOME)
-			frameContentTopYOffset = 0;
-		else if (userInput == KEY_END)
-			frameContentTopYOffset = maxFrameYOffset;
-
-		// Check for whether to continue the input loop
-		continueOn = (userInput != "Q" && userInput != KEY_ENTER && userInput != KEY_ESC);
-		// If the additional quit keys does not contain the user's keypress, then continue
-		// the input loop.
-		// In other words, if the additional quit keys includes the user's keypress, then
-		// don't continue.
-		if (continueOn && checkAdditionalQuitKeys)
-			continueOn = (pAdditionalQuitKeys.indexOf(userInput) < 0);
-	} while (continueOn);
-
-	return userInput;
 }
