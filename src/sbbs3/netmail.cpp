@@ -115,6 +115,9 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	lookup_netuser(to);
 
 	if (!netmail_addr_is_supported(&cfg, to)) {
+		int usernum = finduserstr(useron.number, USER_NETMAIL, to);
+		if (usernum > 0)
+			return email(usernum, nullptr, subj, WM_NONE, &smb, remsg);
 		bprintf(text[InvalidNetMailAddr], to);
 		return false;
 	}
