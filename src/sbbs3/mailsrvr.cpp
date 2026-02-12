@@ -107,6 +107,7 @@ static trashCan*          ip_silent_can = nullptr;
 static trashCan*          host_can = nullptr;
 static filterFile*        host_exempt = nullptr;
 static filterFile*        spam_block = nullptr;
+static filterFile*        dnsbl_exempt = nullptr;
 
 static const char*        servprot_smtp = "SMTP";
 static const char*        servprot_submission = "SMTP";
@@ -1955,9 +1956,8 @@ static ulong dns_blacklisted(SOCKET sock, const char* prot, union xp_sockaddr *a
 	ulong found = 0;
 	char  ip[INET6_ADDRSTRLEN];
 
-	SAFEPRINTF(fname, "%sdnsbl_exempt.cfg", scfg.ctrl_dir);
 	inet_addrtop(addr, ip, sizeof(ip));
-	if (find2strs(ip, host_name, fname, NULL))
+	if (dnsbl_exempt->listed(ip, host_name))
 		return false;
 
 	SAFEPRINTF(fname, "%sdns_blacklist.cfg", scfg.ctrl_dir);
@@ -2065,8 +2065,7 @@ static bool email_addr_is_exempt(const char* addr)
 	if (*addr == 0 || strcmp(addr, "<>") == 0)
 		return false;
 	angle_bracket(netmail, sizeof(netmail), addr);
-	SAFEPRINTF(fname, "%sdnsbl_exempt.cfg", scfg.ctrl_dir);
-	if (findstr(netmail, fname))
+	if (dnsbl_exempt->listed(netmail, fname))
 		return true;
 	p = netmail + 1;
 	*lastchar(p) = '\0';
@@ -6126,6 +6125,7 @@ static void cleanup(int code)
 	delete ip_silent_can, ip_silent_can = nullptr;
 	delete host_can, host_can = nullptr;
 	delete host_exempt, host_exempt = nullptr;
+	delete dnsbl_exempt, dnsbl_exempt = nullptr;
 	delete spam_block, spam_block = nullptr;
 
 	mqtt_shutdown(&mqtt);
@@ -6420,6 +6420,7 @@ void mail_server(void* arg)
 		ip_silent_can = new trashCan(&scfg, "ip-silent", startup->sem_chk_freq);
 		host_can = new trashCan(&scfg, "host", startup->sem_chk_freq);
 		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile, startup->sem_chk_freq);
+		dnsbl_exempt = new filterFile(&scfg, "dnsbl_exempt.cfg", startup->sem_chk_freq);
 		spam_block = new filterFile(&scfg, "spamblock.cfg", startup->sem_chk_freq);
 
 		sem_init(&sendmail_wakeup_sem, 0, 0);
