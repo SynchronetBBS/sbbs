@@ -7272,8 +7272,8 @@ void format_log_line(char* buf, size_t buflen, const char* fmt, struct log_data*
 		{ (char*)"u", clf_str(ld->user) },
 		{ (char*)"r", clf_str(ld->request) },
 		{ (char*)"v", clf_str(ld->vhost) },
-		{ (char*)"{Referer}i", ld->referrer }, // sic
-		{ (char*)"{User-agent}i", ld->agent },
+		{ (char*)"{Referer}i", clf_str(ld->referrer) }, // sic
+		{ (char*)"{User-agent}i", clf_str(ld->agent) },
 		{ nullptr, nullptr }
 	};
 
