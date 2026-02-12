@@ -4594,6 +4594,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			SKIP_WHITESPACE(p);
 			SAFECOPY(rcpt_to, p);
 			SAFECOPY(str, p);
+			strip_char(str, str, '"');
 			p = strrchr(str, '<');
 			if (p == NULL)
 				p = str;
