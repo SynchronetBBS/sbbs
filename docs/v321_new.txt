@@ -72,6 +72,7 @@ o Wide (>80 column) terminal users using the built-in mail reading interface
 o Built-in detection and short-inactivity timeout of dumb terminal/bot logins
 o Send notification messages to recipients of files uploaded - issue #955
 o Allow search by author forward/backward for netmail messages - issue #484
+o Disallow sending netmail (Internet, FTN, or QWK) to our own/local addressses
 o Eliminate the "Start with number [n]:" prompt in initial email listing
 o Ctrl-O now temp-toggles pause on/off for users that have pause disabled
 o Improved log file concurrency (protection against corruption)
@@ -130,6 +131,8 @@ o New option to log all Virtual Hosts to one http access log file and include
 o New LoginInfoSave option (ARS) to specify which users login info should be
   saved upon logon/off (default is *all* users)
 o Log output improvements
+  - Apache-style custom HTTP access log format now supported
+  - Single/one HTTP access log for all Virtual Hosts now supported
   - Include client protocol (HTTP or HTTPS) and IP address in more log msgs
   - Include more detail (e.g. send byte count) in "ERROR sending" message
   - Lower severity of "Executing FastCGI" log message from Info to Debug
@@ -149,6 +152,7 @@ Mail server
 ~~~~~~~~~~~
 o New configurable request rate limiter (rate limited per client IP address)
 o Strip control chars from "B" mime-encoded words in incoming header fields
+o Support "quoted" local-part of RCPT TO: <mailbox> argument
 o New LoginInfoSave option (ARS) to specify which users login info should be
   saved upon logon/off (default is *all* users)
 o If SMTP-authenticated, fail subsequent AUTH commands with 503 response
@@ -384,6 +388,8 @@ SBBSecho
 ~~~~~~~~
 o Extracts/imports inbound bundles starting from 6 days ago, not always Sunday
 o Auto-enable "EchoList Only" areamgr mode when EchoList Keys are used
+o If origin line missing form incoming echomail, attempt to parse origin
+  address from the MSGID kludge, if it has one (issue #1066)
 o When netmail is forwarded to an external (e.g. email) address, notify user
 o UTF-8 encode Origin lines in exported messages when appropriate
 o Strip Ctrl-A codes from exported *NetMail* messages
