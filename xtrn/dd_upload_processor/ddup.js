@@ -33,7 +33,7 @@
  *                              Supports .example.cfg configuration filenames. Also allows
  *                              reading the configuration file from sbbs/mods or sbbs/ctrl.
  * 2026-02-05 Eric Oulashin     Version 1.08
- *                              More robust filename extension matching and refactor
+ *                              More robust filename extension matching
  */
 
 /* Command-line arguments:
@@ -308,18 +308,6 @@ function processFile(pFilename)
 			var errorStr = extractFileToDir(pFilename, workDir);
 			if (errorStr.length == 0)
 			{
-				// Temproary
-				if (user.is_sysop)
-				{
-					console.attributes = "N";
-					printf("Extracted to %s\r\n", workDir);
-					var filenames = directory(workDir + "/*");
-					printf("# files: %d\r\n", filenames.length);
-					for (var fileI = 0; fileI < filenames.length; ++fileI)
-						printf("%s\r\n", filenames[fileI]);
-					//console.pause();
-				}
-				// End Temporary
 				// Scan the files in the work directory.
 				printf(gStatusPrintfStr, "\x01r", "Scanning files inside the archive for viruses...");
 				var retObj = scanFilesInDir(workDir);
