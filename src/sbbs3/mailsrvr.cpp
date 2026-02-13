@@ -3010,7 +3010,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	client_t          client;
 	char              client_id[128];
 	union xp_sockaddr server_addr;
-	IN_ADDR           dnsbl_result;
+	IN_ADDR           dnsbl_result{};
 	int               mailproc_match;
 	JSRuntime*        js_runtime = NULL;
 	JSContext*        js_cx = NULL;
