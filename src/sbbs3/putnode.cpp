@@ -67,7 +67,7 @@ bool sbbs_t::putnodedat(uint number, node_t* node)
 				break;
 			wrerr = errno;    /* save write error */
 		}
-		FILE_RETRY_DELAY(attempts + 1);
+		FILE_RETRY_DELAY(attempts + 1, LOCK_RETRY_DELAY);
 	}
 	unlocknodedat(number);
 
@@ -153,7 +153,7 @@ bool sbbs_t::putnodeext(uint number, char *ext)
 			if (wr == 128)
 				break;
 		}
-		FILE_RETRY_DELAY(count + 1);
+		FILE_RETRY_DELAY(count + 1, LOCK_RETRY_DELAY);
 	}
 	close(node_ext);
 	node_ext = -1;

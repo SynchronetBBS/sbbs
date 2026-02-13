@@ -27,8 +27,9 @@
 #include "gen_defs.h"       /* bool */
 #include "dirwrap.h"        /* MAX_PATH */
 
-#define FNOPEN_BUF_SIZE     (2 * 1024)
+#define FNOPEN_BUF_SIZE     (64 * 1024)
 #define LOOP_NOPEN    100   /* Retries before file access denied			*/
+#define LOCK_RETRY_DELAY 100 // Milliseconds between retries on locked resource
 
 typedef struct {
 	int fd;

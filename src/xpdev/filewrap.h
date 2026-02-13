@@ -146,7 +146,7 @@
 
 // These errno values should trigger sopen() and lock() retries, within limits
 #define FILE_RETRY_ERRNO(x) ((x)==EACCES || (x)==EAGAIN || (x)==EDEADLOCK || (x)==EBUSY || (x)==EIO)
-#define FILE_RETRY_DELAY(x) SLEEP(((x / 10) * 50) + xp_random(100))
+#define FILE_RETRY_DELAY(x, y) SLEEP((((x) / 10) * ((y) / 2)) + xp_random((y) + 1))
 
 /**************/
 /* Prototypes */

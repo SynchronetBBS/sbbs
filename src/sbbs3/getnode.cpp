@@ -56,7 +56,7 @@ bool sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 #endif
 	for (count = 0; count < LOOP_NODEDAB; count++) {
 		if (count > 0)
-			FILE_RETRY_DELAY(count + 1);
+			FILE_RETRY_DELAY(count + 1, LOCK_RETRY_DELAY);
 		if (lockit && lock(nodefile, nodedatoffset(number), sizeof(node_t)) != 0) {
 			unlock(nodefile, nodedatoffset(number), sizeof(node_t));
 			continue;
@@ -287,7 +287,7 @@ bool sbbs_t::getnodeext(uint number, char *ext)
 	number--;   /* make zero based */
 	for (count = 0; count < LOOP_NODEDAB; count++) {
 		if (count > 0)
-			FILE_RETRY_DELAY(count + 1);
+			FILE_RETRY_DELAY(count + 1, LOCK_RETRY_DELAY);
 		if (lock(node_ext, (long)number * 128L, 128) != 0)
 			continue;
 		lseek(node_ext, (long)number * 128L, SEEK_SET);

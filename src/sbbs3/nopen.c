@@ -52,7 +52,7 @@ int nopen(const char* str, uint access)
 #endif
 	while (((file = sopen(str, access, share, DEFFILEMODE)) == -1)
 	       && FILE_RETRY_ERRNO(errno) && count++ < LOOP_NOPEN)
-		FILE_RETRY_DELAY(count);
+		FILE_RETRY_DELAY(count, LOCK_RETRY_DELAY);
 	return file;
 }
 

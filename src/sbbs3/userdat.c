@@ -339,7 +339,7 @@ bool lockuserdat(int file, int user_number)
 	unsigned attempt = 0;
 	while (attempt < LOOP_USERDAT && lock(file, offset, USER_RECORD_LINE_LEN) == -1) {
 		attempt++;
-		FILE_RETRY_DELAY(attempt);
+		FILE_RETRY_DELAY(attempt, LOCK_RETRY_DELAY);
 	}
 	return attempt < LOOP_USERDAT;
 }
@@ -1334,7 +1334,7 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, bool lockit, int* fdp)
 	if (filelength(file) >= (long)(number * sizeof(node_t))) {
 		for (count = 0; count < LOOP_NODEDAB; count++) {
 			if (count > 0)
-				FILE_RETRY_DELAY(count + 1);
+				FILE_RETRY_DELAY(count + 1, LOCK_RETRY_DELAY);
 			if (!seeknodedat(file, number)) {
 				result = USER_SEEK_ERROR;
 				continue;
@@ -1390,7 +1390,7 @@ int putnodedat(scfg_t* cfg, uint number, node_t* node, bool closeit, int file)
 			result = USER_SUCCESS;
 			break;
 		}
-		FILE_RETRY_DELAY(attempts + 1);
+		FILE_RETRY_DELAY(attempts + 1, LOCK_RETRY_DELAY);
 	}
 	unlock(file, nodedatoffset(number), sizeof(node_t));
 	if (closeit)
