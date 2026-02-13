@@ -585,10 +585,23 @@ char* ascii_str(uchar* str)
 	return (char*)str;
 }
 
+/****************************************************************************/
+// Replaces named variables in the source string with their values from the
+// provided lists of named variables. The replaced string is returned in the
+// provided buffer.
+// strlist_list is a NULL-terminated list of named_string_t* lists, which are
+// searched in order for variable matches. string_list and int_list termniated
+// by a named item with a NULL name. If a variable is found in more than one list,
+// the first match is used (search order is strlist_list, then string_list, then
+// int_list).
+// If an escape sequence is provided, it is used to skip variable replacement
+// If case_sensitive is false, variable names are matched case-insensitively.
+/****************************************************************************/
 char* replace_named_values(const char* src
                            , char* buf
                            , size_t buflen /* includes '\0' terminator */
                            , const char* escape_seq
+                           , named_string_t** strlist_list
                            , named_string_t* string_list
                            , named_long_t* int_list
                            , bool case_sensitive)
@@ -616,6 +629,24 @@ char* replace_named_values(const char* src
 				continue;
 			}
 			src += esc_len;  /* skip the escape seq */
+		}
+		if (strlist_list) {
+			for (i = 0; strlist_list[i] != NULL && strlist_list[i]->name != NULL /* terminator */; i++) {
+				name_len = strlen(strlist_list[i]->name);
+				if (cmp(src, strlist_list[i]->name, name_len) == 0) {
+					if (strlist_list[i]->value != NULL) {
+						value_len = strlen(strlist_list[i]->value);
+						if ((p - buf) + value_len > buflen - 1)  /* buffer overflow? */
+							value_len = (buflen - 1) - (p - buf); /* truncate value */
+						memcpy(p, strlist_list[i]->value, value_len);
+						p += value_len;
+					}
+					src += name_len;
+					break;
+				}
+			}
+			if (strlist_list[i] != NULL) /* variable match */
+				continue;
 		}
 		if (string_list) {
 			for (i = 0; string_list[i].name != NULL /* terminator */; i++) {

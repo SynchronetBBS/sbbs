@@ -40,9 +40,12 @@ DLLEXPORT char      ctrl_a_to_ascii_char(char code);
 DLLEXPORT char *    truncstr(char* str, const char* set);
 DLLEXPORT char *    truncated_str(char* str, const char* set);
 DLLEXPORT char *    ascii_str(uchar* str);
-DLLEXPORT char *    replace_named_values(const char* src, char* buf, size_t buflen,
-                                         const char* escape_seq, named_string_t* string_list,
-                                         named_long_t* int_list, bool case_sensitive);
+DLLEXPORT char *    replace_named_values(const char* src, char* buf, size_t buflen
+                                         , const char* escape_seq
+                                         , named_string_t** strlist_list
+                                         , named_string_t* string_list
+                                         , named_long_t* int_list
+                                         , bool case_sensitive);
 DLLEXPORT char *    replace_chars(char *str, char c1, char c2);
 DLLEXPORT char *    condense_whitespace(char* str);
 DLLEXPORT char      exascii_to_ascii_char(uchar ch);

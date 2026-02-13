@@ -21,6 +21,7 @@
 
 #include "sbbsdefs.h"
 #include "str_util.h"
+#include "readtext.h"
 #include "text_defaults.h"  /* text_defaults */
 
 int lprintf(int level, const char *fmt, ...);       /* log output */
@@ -28,7 +29,7 @@ int lprintf(int level, const char *fmt, ...);       /* log output */
 /* Reads special TEXT.DAT printf style text lines, splicing multiple lines, */
 /* replacing escaped characters, and allocating the memory					*/
 /****************************************************************************/
-char *readtext(int *line, FILE *stream, int dflt)
+char *readtext(int *line, FILE *stream, int dflt, named_string_t** substr_list)
 {
 	char buf[MAX_TEXTDAT_ITEM_LEN + 256], str[MAX_TEXTDAT_ITEM_LEN + 1], tmp[256], *p, *p2;
 	int  i, j, k;
@@ -133,11 +134,14 @@ char *readtext(int *line, FILE *stream, int dflt)
 		str[j] = buf[i++];
 	}
 	str[j] = 0;
-	if ((p = (char *)calloc(1, j + 2)) == NULL) { /* +1 for terminator, +1 for YNQX line */
+	if (substr_list)
+		replace_named_values(str, buf, sizeof buf, /* escape_seq */ NULL, substr_list, /* str_list: */NULL, /* int_list : */ NULL, /* case_sensitive: */ true);
+	else
+		SAFECOPY(buf, str);
+	if ((p = strdup(buf)) == NULL) {
 		lprintf(LOG_CRIT, "Error allocating %u bytes of memory from text.dat", j);
 		goto use_default;
 	}
-	strcpy(p, str);
 	return p;
 use_default:
 	if (dflt < TOTAL_TEXT) {

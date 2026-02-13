@@ -1510,7 +1510,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 
 		while (!feof(externalbatfp)) {
 			if (fgets(buf, sizeof(buf), externalbatfp) != NULL) {
-				replace_named_values(buf, bufout, sizeof(bufout), "$", externalbat_replacements,
+				replace_named_values(buf, bufout, sizeof(bufout), "$", NULL, externalbat_replacements,
 				                     externalbat_int_replacements, FALSE);
 				fprintf(dosemubatfp, "%s", bufout);
 			}
@@ -1604,7 +1604,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			{(char*)"NNUM", cfg.node_num },
 			{NULL}
 		};
-		replace_named_values(de_launch_cmd, fullcmdline, sizeof(fullcmdline), (char*)"$",
+		replace_named_values(de_launch_cmd, fullcmdline, sizeof(fullcmdline), (char*)"$", NULL,
 		                     de_ini_replacements, de_ini_int_replacements, FALSE);
 
 		/* Drum roll. */

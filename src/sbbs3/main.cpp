@@ -5922,6 +5922,7 @@ NO_SSH:
 						continue;
 					}
 				}
+				lprintf(LOG_INFO, "Node %d Loaded configuration files", cfg->node_num);
 				cfg->node_num = node_num; // correct the node number
 				if (node.misc & NODE_RRUN) {
 					if (sbbs->getnodedat(cfg->node_num, &node, true)) {

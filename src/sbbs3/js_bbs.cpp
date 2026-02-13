@@ -22,11 +22,12 @@
 #include "sbbs.h"
 #include "js_request.h"
 #include "filedat.h"
+#include "readtext.h"
 
 #ifdef JAVASCRIPT
 
 /*****************************/
-/* BBS Object Properites */
+/* BBS Object Properties     */
 /*****************************/
 enum {
 	  BBS_PROP_SYS_STATUS
@@ -1708,7 +1709,7 @@ js_load_text(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 	}
 	for (i = 0; i < TOTAL_TEXT && !feof(stream); i++) {
-		if ((sbbs->text[i] = readtext(NULL, stream, i)) == NULL) {
+		if ((sbbs->text[i] = readtext(NULL, stream, i, NULL)) == NULL) {
 			i--;
 			continue;
 		}

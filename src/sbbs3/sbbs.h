@@ -1654,8 +1654,6 @@ extern "C" {
 	int		close_socket(SOCKET);
 	in_addr_t resolve_ip(char *addr);
 
-	char *	readtext(int *line, FILE *stream, int dflt);
-
 	/* ver.cpp */
 	char*	socklib_version(char* str, size_t, const char* winsock_ver);
 

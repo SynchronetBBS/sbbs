@@ -26,6 +26,7 @@
 #include "datewrap.h"
 #include "xpdatetime.h"
 #include "text.h"   /* TOTAL_TEXT */
+#include "readtext.h"
 #include "ini_file.h"
 #if defined(SBBS) && defined(USE_CRYPTLIB)
 	#include "ssl.h"
@@ -34,9 +35,6 @@
 static void prep_cfg(scfg_t* cfg);
 
 int     lprintf(int level, const char *fmt, ...);   /* log output */
-
-/* readtext.c */
-char *  readtext(int *line, FILE *stream, long dflt);
 
 // Returns 0-based text string index
 int get_text_num(const char* id)
@@ -114,13 +112,26 @@ bool load_cfg(scfg_t* cfg, char* text[], size_t total_text, bool prep, bool req_
 		/* Free existing text if allocated */
 		free_text(text);
 
+		named_string_t** str_list = NULL;
+		named_string_t** substr_list = NULL;
+		SAFEPRINTF(str, "%stext.ini", cfg->ctrl_dir);
+		if ((fp = fnopen(NULL, str, O_RDONLY)) != NULL) {
+			str_list_t       ini = iniReadFile(fp);
+			fclose(fp);
+			str_list = iniGetNamedStringList(ini, ROOT_SECTION);
+			substr_list = iniGetNamedStringList(ini, "substr");
+			iniFreeStringList(ini);
+		}
+
 		SAFEPRINTF(str, "%stext.dat", cfg->ctrl_dir);
 		if ((fp = fnopen(NULL, str, O_RDONLY)) == NULL) {
 			safe_snprintf(error, maxerrlen, "%d opening %s", errno, str);
+			iniFreeNamedStringList(str_list);
+			iniFreeNamedStringList(substr_list);
 			return false;
 		}
 		for (i = 0; i < TOTAL_TEXT; i++)
-			if ((text[i] = readtext(&line, fp, i)) == NULL) {
+			if ((text[i] = readtext(&line, fp, i, substr_list)) == NULL) {
 				i--;
 				break;
 			}
@@ -130,28 +141,24 @@ bool load_cfg(scfg_t* cfg, char* text[], size_t total_text, bool prep, bool req_
 			safe_snprintf(error, maxerrlen, "line %d: Less than TOTAL_TEXT (%u) strings defined in %s."
 			              , i
 			              , TOTAL_TEXT, str);
+			iniFreeNamedStringList(str_list);
+			iniFreeNamedStringList(substr_list);
 			return false;
 		}
 
-		SAFEPRINTF(str, "%stext.ini", cfg->ctrl_dir);
-		if ((fp = fnopen(NULL, str, O_RDONLY)) != NULL) {
-			str_list_t       ini = iniReadFile(fp);
-			fclose(fp);
-			named_string_t** list = iniGetNamedStringList(ini, ROOT_SECTION);
-			for (i = 0; list != NULL && list[i] != NULL; ++i) {
-				int n = get_text_num(list[i]->name);
-				if (n >= TOTAL_TEXT) {
-					safe_snprintf(error, maxerrlen, "%s text ID (%s) not recognized"
-					              , str
-					              , list[i]->name);
-					continue;
-				}
-				free(text[n]);
-				text[n] = strdup(list[i]->value);
+		for (i = 0; str_list != NULL && str_list[i] != NULL; ++i) {
+			int n = get_text_num(str_list[i]->name);
+			if (n >= TOTAL_TEXT) {
+				safe_snprintf(error, maxerrlen, "%s text ID (%s) not recognized"
+					            , str
+					            , str_list[i]->name);
+				continue;
 			}
-			iniFreeNamedStringList(list);
-			iniFreeStringList(ini);
+			free(text[n]);
+			text[n] = strdup(str_list[i]->value);
 		}
+		iniFreeNamedStringList(str_list);
+		iniFreeNamedStringList(substr_list);
 
 		cfg->text = text;
 	}

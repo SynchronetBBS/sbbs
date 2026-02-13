@@ -23,6 +23,7 @@
 #include "cmdshell.h"
 #include "js_request.h"
 #include "js_rtpool.h"
+#include "readtext.h"
 
 char ** sbbs_t::getstrvar(csi_t *bin, uint32_t name)
 {
@@ -1301,7 +1302,7 @@ int sbbs_t::exec(csi_t *csi)
 							break;
 						}
 						for (i = 0; i < TOTAL_TEXT && !feof(stream); i++) {
-							if ((text[i] = readtext(NULL, stream, i)) == NULL) {
+							if ((text[i] = readtext(NULL, stream, i, NULL)) == NULL) {
 								i--;
 								continue;
 							}

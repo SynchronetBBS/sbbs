@@ -7284,7 +7284,7 @@ void format_log_line(char* buf, size_t buflen, const char* fmt, struct log_data*
 		{ nullptr },
 	};
 
-	replace_named_values(fmt, buf, buflen, "%", str_vars, int_vars, /* case-sensitive: */true);
+	replace_named_values(fmt, buf, buflen, "%", NULL, str_vars, int_vars, /* case-sensitive: */true);
 }
 
 void http_logging_thread(void* arg)
