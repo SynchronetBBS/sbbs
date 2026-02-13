@@ -8,7 +8,6 @@
 
 all : 	\
     ftp.bin \
-    getimlst.bin \
 	major.bin \
 	matrix.bin \
 	obv-2.bin \
