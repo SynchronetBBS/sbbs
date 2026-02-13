@@ -58,12 +58,18 @@ for(var i in dir_list) {
 		throw new Error(base.last_error);
 	if(options.offline) {
 		log(dir_code + ": Purging offline files");
+		var dirent = directory(dir.path + '*');
 		var list = base.get_names(/* sort: */false);
 		var removed = 0;
 		for(var j = 0; j < list.length; j++) {
 			var fname = list[j];
 			if(exclude.indexOf(fname.toUpperCase()) >= 0)
 				continue;
+			var di = dirent.indexOf(dir.path + fname);
+			if(di >= 0) {
+				dirent.splice(di, 1);
+				continue;
+			}
 			if(base.get_size(fname) < 0) {
 				var path;
 				try {
