@@ -656,6 +656,16 @@ function verify_terminal_service(service)
     return capture.capture();
 }
 
+function send_udp_requests(udp_socket, address, udp_services)
+{
+    for(var i in udp_services) {
+        var service = udp_services[i];
+        printf("Verifying %-10s UDP connection at %s\r\n", service, address);
+        if(!udp_socket.sendto("\r\n", address, standard_service_port[service]))
+            log(LOG_NOTICE,format("FAILED Send to %s UDP service at %s", service, address));
+    }
+}
+
 // Perform a limited TCP port scan to test for common "other services" on standard ports
 // Results are used for instant message list and other stuff
 // Terminal services (e.g. telnet, rlogin, ssh) are purposely excluded
@@ -680,12 +690,7 @@ function verify_services(address, timeout)
 
     var udp_socket = new Socket(SOCK_DGRAM);
 
-    for(i in udp_services) {
-        var service = udp_services[i];
-        printf("Verifying %-10s UDP connection at %s\r\n", service, address);
-        if(!udp_socket.sendto("\r\n", address, standard_service_port[service]))
-            log(LOG_NOTICE,format("FAILED Send to %s UDP service at %s", service, address));
-    }
+	send_udp_requests(udp_socket, address, udp_services);
 
     for(i in tcp_services) {
         if(js.terminated)
@@ -701,6 +706,10 @@ function verify_services(address, timeout)
             print("Failed");
     }
     print("Waiting for UDP replies");
+	if (!udp_socket.poll(3)) {
+		send_udp_requests(udp_socket, address, udp_services);
+		print("Waiting for UDP replies");
+	}
     while(verified.udp.length < udp_services.length && udp_socket.poll(3)) {
         if(js.terminated)
             break;
@@ -709,8 +718,10 @@ function verify_services(address, timeout)
             log(LOG_NOTICE, "FAILED (UDP recv)");
         else {
             log(LOG_DEBUG, format("UDP message (%u bytes) from %s port %u", msg.data.length, msg.ip_address, msg.port));
-            if(msg.ip_address != address)
+            if(msg.ip_address != address) {
+				log(LOG_NOTICE, "UDP reply from unexpected address: " + msg.ip_address);
                 continue;
+			}
             for(i in udp_services) {
                 var service = udp_services[i];
                 if(standard_service_port[service] == msg.port) {
