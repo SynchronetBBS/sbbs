@@ -7659,7 +7659,7 @@ void web_server(void* arg)
 		lprintf(LOG_INFO, "Web Server thread started");
 		mqtt_client_max(&mqtt, startup->max_clients);
 
-		char rate_limit_report[256]{};
+		char rate_limit_report[512]{};
 		time_t last_rate_limit_report = time(NULL);
 		while (!terminate_server) {
 			YIELD();

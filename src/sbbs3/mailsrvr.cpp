@@ -6450,7 +6450,7 @@ void mail_server(void* arg)
 		lprintf(LOG_INFO, "Mail Server thread started");
 		mqtt_client_max(&mqtt, startup->max_clients);
 
-		char rate_limit_report[256]{};
+		char rate_limit_report[512]{};
 		time_t last_rate_limit_report = time(NULL);
 		while (!terminated && !terminate_server) {
 			YIELD();

@@ -5371,7 +5371,7 @@ void ftp_server(void* arg)
 		lprintf(LOG_INFO, "FTP Server thread started");
 		mqtt_client_max(&mqtt, startup->max_clients);
 
-		char rate_limit_report[256]{};
+		char rate_limit_report[512]{};
 		time_t last_rate_limit_report = time(NULL);
 		while (ftp_set != NULL && !terminate_server) {
 			YIELD();
