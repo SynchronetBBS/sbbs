@@ -196,7 +196,6 @@ static struct init_field {
 #define BBS_OPT_XTRN_MINIMIZED      (1 << 1)  /* Run externals minimized			*/
 #define BBS_OPT_AUTO_LOGON          (1 << 2)  /* Auto-logon via IP				*/
 #define BBS_OPT_DEBUG_TELNET        (1 << 3)  /* Debug telnet commands			*/
-#define BBS_OPT_SYSOP_AVAILABLE     (1 << 4)  /* Available for chat - DEPRECATED (controlled via semfile) */
 #define BBS_OPT_ALLOW_RLOGIN        (1 << 5)  /* Allow logins via BSD RLogin		*/
 #define BBS_OPT_USE_2ND_RLOGIN      (1 << 6)  /* Use 2nd username in BSD RLogin - DEPRECATED (Always enabled)	*/
 #define BBS_OPT_NO_QWK_EVENTS       (1 << 7)  /* Don't run QWK-related events		*/
@@ -226,7 +225,6 @@ static ini_bitdesc_t bbs_options[] = {
 	{ BBS_OPT_XTRN_MINIMIZED, "XTRN_MINIMIZED"   },
 	{ BBS_OPT_AUTO_LOGON, "AUTO_LOGON"       },
 	{ BBS_OPT_DEBUG_TELNET, "DEBUG_TELNET"     },
-	{ BBS_OPT_SYSOP_AVAILABLE, "SYSOP_AVAILABLE"  },
 	{ BBS_OPT_ALLOW_RLOGIN, "ALLOW_RLOGIN"     },
 	{ BBS_OPT_NO_QWK_EVENTS, "NO_QWK_EVENTS"    },
 	{ BBS_OPT_NO_TELNET_GA, "NO_TELNET_GA"     },
