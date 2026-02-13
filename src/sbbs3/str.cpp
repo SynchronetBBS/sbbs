@@ -67,10 +67,24 @@ bool sbbs_t::replace_text(const char* path)
 	FILE* fp;
 
 	if ((fp = fnopen(NULL, path, O_RDONLY)) != NULL) {
+		char             buf[INI_MAX_VALUE_LEN];
 		bool             success = true;
 		str_list_t       ini = iniReadFile(fp);
 		fclose(fp);
-		named_string_t** list = iniGetNamedStringList(ini, ROOT_SECTION);
+
+		named_string_t** list = iniGetNamedStringList(ini, "substr");
+		for (size_t n = 0; list != NULL && n < TOTAL_TEXT; ++n) {
+			replace_named_values(text[n], buf, sizeof buf, /* escape_seq */ NULL,list, /* str_list: */NULL, /* int_list : */ NULL, /* case_sensitive: */ true);
+			if (strcmp(text[n], buf) == 0)
+				continue;
+			if (text[n] != text_sav[n] && text[n] != nulstr)
+				free(text[n]);
+			text[n] = strdup(buf);
+			text_replaced[n] = true;
+		}
+		iniFreeNamedStringList(list);
+
+		list = iniGetNamedStringList(ini, ROOT_SECTION);
 		for (size_t i = 0; list != NULL && list[i] != NULL; ++i) {
 			int n = get_text_num(list[i]->name);
 			if (n >= TOTAL_TEXT) {
