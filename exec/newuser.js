@@ -43,7 +43,7 @@ if(!qnet && (options.avatar || options.avatar_file)) {
 		avatar_lib.import_file(user.number, options.avatar_file, options.avatar_offset);
 	else
 		avatar_lib.update_localuser(user.number, options.avatar);
-}	
+}
 
 function chk_qwk_id(str)
 {
@@ -67,8 +67,8 @@ if(bbs.online && qnet) {
 	alias = user.alias.toUpperCase();
 	while(!chk_qwk_id(alias) && bbs.online) {
 		console.crlf();
-		printf("\1n\1g\1h o \1wYour logon name must match your BBS's QWK ID.\r\n");
-		printf("\1g o\1w Your logon name is currently \"\1y%s\1w\"\r\n\r\n"
+		printf("\1U o \1wYour logon name must match your BBS's QWK ID.\r\n");
+		printf("\1u o\1w Your logon name is currently \"\1y%s\1w\"\r\n\r\n"
 			,user.alias.toUpperCase());
 		printf("This is an invalid QWK ID. Your QWK ID MUST be ");
 		printf("between 2 and 8 characters in\r\n");

@@ -93,9 +93,9 @@ if(argi >= 0) { // Last few callers?
 	var count = -options.last_few_callers;
 	if(argi + 1 < argc)
 		count = -parseInt(argv[argi + 1], 10);
-	if(!this.print(options.last_few_callers_msg || "\x01n\x01g\x01hLast few callers:\x01n\r\n"
+	if(!this.print(options.last_few_callers_msg || "\x01ULast few callers:\x01n\r\n"
 		,count, options.last_few_days))
-		console.print(options.first_caller_msg || "\x01n\x01g\x01hYou are the first caller of the day!");
+		console.print(options.first_caller_msg || "\x01UYou are the first caller of the day!");
 	console.crlf();
 } else {
 	if(!this.print(format(options.logons_header_fmt || "\x01n\x01h\x01y\r\nLogons %s:\r\n", day)

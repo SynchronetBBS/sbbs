@@ -77,7 +77,7 @@ if (options.section_fmt === undefined)
 	options.section_fmt = bbs.text(SelectItemFmt);
 
 if (options.multicolumn_section_fmt === undefined)
-	options.multicolumn_section_fmt = "\x01g\x01h%3d: \x01n\x01g%-32.32s ";
+	options.multicolumn_section_fmt = "\x01U%3d: \x01u%-32.32s ";
 
 if (options.section_header_fmt === undefined)
 	options.section_header_fmt = bbs.text(SelectItemHdr);

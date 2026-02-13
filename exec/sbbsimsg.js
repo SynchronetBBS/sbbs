@@ -3,7 +3,7 @@
 // Synchronet inter-bbs instant message module
 
 /* History of this module/feature:
-  
+
    Original 2001: Queried systems using Finger (TCP port 79)
                   Sent message using SMTP-SOML (TCP port 25)
    Rev 1.11 2002: Queried system using both TCP and UDP-Finger (port 79)
@@ -69,7 +69,7 @@ if(this.argc) {
 
 function print_header(sys)
 {
-	printf("\x01n\x01c%-28.28s\x01h%-37.37s\x01h\x01gTime   Age Sex\r\n", sys.name, sys.host);
+	printf("\x01n\x01c%-28.28s\x01h%-37.37s\x01UTime   Age Sex\r\n", sys.name, sys.host);
 }
 
 function list_user(user, sys)
@@ -81,7 +81,7 @@ function list_user(user, sys)
 		action += " (P)";
 	else if(user.msg_waiting)
 		action += " (M)";
-	print(format("\x01h\x01y %-28.28s\x01n\x01g%-33.33s%9s %3s %3s"
+	print(format("\x01h\x01y %-28.28s\x01u%-33.33s%9s %3s %3s"
 		,user.name
 		,action
 		,system.secondstr(user.timeon)
@@ -118,7 +118,7 @@ function getmsg()
 	var msg="";
 	const max_lines = 5;
 
-	printf("\x01n\x01g\x01h%lu\x01n\x01g lines maximum (blank line sends, Ctrl-C to abort)\r\n",max_lines);
+	printf("\x01U%lu\x01u lines maximum (blank line sends, Ctrl-C to abort)\r\n",max_lines);
 	while(bbs.online && lines<max_lines) {
 		console.print("\x01n: \x01h");
 		mode=0;
@@ -156,7 +156,7 @@ function imsg_user_list()
 function get_default_dest(addr_list, last_send)
 {
 	var rx = userprops.get(lib.props_recv);
-	
+
 	if(rx && rx.localtime && (!last_send || new Date(rx.localtime) > new Date(last_send))) {
 		var sys = lib.sys_list[rx.ip_address];
 		if(sys)
@@ -181,7 +181,7 @@ function logon_callback(user, sys)
 function logoff_callback(user, sys)
 {
 	console.clearline();
-	print(format("\x01n\x01h\x01y%s \x01n\x01glogged-off \x01h\x01w%s\x01n", user.name, sys.name));
+	print(format("\x01n\x01h\x01y%s \x01ulogged-off \x01h\x01w%s\x01n", user.name, sys.name));
 	console.line_counter=0;	// defeat pause
 }
 

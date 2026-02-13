@@ -6,11 +6,11 @@ if(!options) {
     if(!options)
         options = {};
     if(!options.format)
-        options.format = "\x01n\x01h%3d  \x01n\x01g%s";
+        options.format = "\x01n\x01h%3d  \x01u%s";
     if(!options.username_prefix)
         options.username_prefix = '\x01h';
     if(!options.status_prefix)
-        options.status_prefix = '\x01n\x01g';	
+        options.status_prefix = '\x01u';
     if(!options.errors_prefix)
         options.errors_prefix = '\x01h\x01r';
     if(!options.web_inactivity)
