@@ -5268,7 +5268,6 @@ bool bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, bool immediate)
 
 		if (newmsg.from_ext != NULL) { /* Back to sender */
 			smb_hfield_str(&newmsg, RECIPIENTEXT, newmsg.from_ext);
-			newmsg.from_ext = NULL;   /* Clear the sender extension */
 		}
 
 		if ((newmsg.from_net.type == NET_QWK || newmsg.from_net.type == NET_INTERNET)
@@ -5279,6 +5278,7 @@ bool bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, bool immediate)
 	} else {
 		smb_hfield(&newmsg, RECIPIENTAGENT, sizeof(msg->from_agent), &msg->from_agent);
 	}
+	newmsg.from_ext = NULL;   /* Clear the sender extension */
 	newmsg.hdr.attr |= MSG_NOREPLY;
 	newmsg.hdr.attr &= ~MSG_READ;
 	if (scfg.sys_misc & SM_DELREADM)
