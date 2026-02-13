@@ -60,6 +60,7 @@ char* smb_lib_ver(void)
 int smb_open(smb_t* smb)
 {
 	int      i;
+	int      count = 0;
 	time_t   start = 0;
 	smbhdr_t hdr;
 
@@ -82,7 +83,8 @@ int smb_open(smb_t* smb)
 		else
 		if (time(NULL) - start >= (time_t)smb->retry_time)
 			return SMB_ERR_TIMEOUT;
-		SLEEP(smb->retry_delay);
+		++count;
+		FILE_RETRY_DELAY(count, smb->retry_delay);
 	}
 
 	if ((i = smb_open_fp(smb, &smb->shd_fp, SH_DENYNO)) != SMB_SUCCESS)
@@ -184,6 +186,7 @@ int smb_lock(smb_t* smb)
 {
 	char   path[MAX_PATH + 1];
 	int    file;
+	int    count = 0;
 	time_t start = 0;
 
 	smb_lockfname(smb, path, sizeof(path) - 1);
@@ -197,7 +200,8 @@ int smb_lock(smb_t* smb)
 			              , get_errno(), strerror(get_errno()), path);
 			return SMB_ERR_LOCK;
 		}
-		SLEEP(smb->retry_delay);
+		++count;
+		FILE_RETRY_DELAY(count, smb->retry_delay);
 	}
 	close(file);
 
@@ -246,6 +250,7 @@ bool smb_islocked(smb_t* smb)
 int smb_trunchdr(smb_t* smb)
 {
 	time_t start = 0;
+	int    count = 0;
 
 	if (smb->shd_fp == NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
@@ -263,14 +268,14 @@ int smb_trunchdr(smb_t* smb)
 		}
 		if (!start)
 			start = time(NULL);
-		else
-		if (time(NULL) - start >= (time_t)smb->retry_time) { /* Time-out */
+		else if (time(NULL) - start >= (time_t)smb->retry_time) { /* Time-out */
 			safe_snprintf(smb->last_error, sizeof(smb->last_error)
-			              , "%s timeout changing header file size (retry_time=%u)", __FUNCTION__
-			              , (uint)smb->retry_time);
+							, "%s timeout changing header file size (retry_time=%u)", __FUNCTION__
+							, (uint)smb->retry_time);
 			return SMB_ERR_TIMEOUT;
 		}
-		SLEEP(smb->retry_delay);
+		++count;
+		FILE_RETRY_DELAY(count, smb->retry_delay);
 	}
 	return SMB_SUCCESS;
 }
@@ -308,7 +313,7 @@ int smb_locksmbhdr(smb_t* smb)
 		if (time(NULL) - start >= (time_t)smb->retry_time)
 			break;
 		++count;
-		SLEEP((count / 10) * smb->retry_delay);
+		FILE_RETRY_DELAY(count, smb->retry_delay);
 	}
 	safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s timeout locking message base after %d seconds"
 	              , __FUNCTION__, (int)(time(NULL) - start));
@@ -414,6 +419,7 @@ bool smb_valid_hdr_offset(smb_t* smb, uint offset)
 int smb_lockmsghdr(smb_t* smb, smbmsg_t* msg)
 {
 	time_t start = 0;
+	int    count = 0;
 
 	if (smb->shd_fp == NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
@@ -430,9 +436,10 @@ int smb_lockmsghdr(smb_t* smb, smbmsg_t* msg)
 		else
 		if (time(NULL) - start >= (time_t)smb->retry_time)
 			break;
+		++count;
 		/* In case we've already locked it */
 		if (unlock(fileno(smb->shd_fp), msg->idx.offset, sizeof(msghdr_t)) != 0) {
-			SLEEP(smb->retry_delay);
+			FILE_RETRY_DELAY(count, smb->retry_delay);
 		}
 	}
 	safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s timeout locking header", __FUNCTION__);
@@ -1520,6 +1527,7 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 	uint      l;
 	uint32_t *buf;
 	time_t    start = 0;
+	int       count = 0;
 
 	if (!smb->status.max_crcs)
 		return SMB_SUCCESS;
@@ -1543,7 +1551,8 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 			              , str, (uint)smb->retry_time);
 			return SMB_ERR_TIMEOUT;
 		}
-		SLEEP(smb->retry_delay);
+		++count;
+		FILE_RETRY_DELAY(count, smb->retry_delay);
 	}
 
 	length = filelength(file);

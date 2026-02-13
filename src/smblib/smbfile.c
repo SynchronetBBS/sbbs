@@ -80,6 +80,7 @@ size_t smb_fread(smb_t* smb, void* buf, size_t bytes, FILE* fp)
 {
 	size_t ret;
 	time_t start = 0;
+	int    count = 0;
 
 	while (1) {
 		if ((ret = fread(buf, sizeof(char), bytes, fp)) == bytes)
@@ -91,7 +92,8 @@ size_t smb_fread(smb_t* smb, void* buf, size_t bytes, FILE* fp)
 		else
 		if (time(NULL) - start >= (time_t)smb->retry_time)
 			break;
-		SLEEP(smb->retry_delay);
+		++count;
+		FILE_RETRY_DELAY(count, smb->retry_delay);
 	}
 	return ret;
 }
@@ -116,6 +118,7 @@ int smb_open_fp(smb_t* smb, FILE** fp, int share)
 	char   path[MAX_PATH + 1];
 	char*  ext;
 	time_t start = 0;
+	int    count = 0;
 
 	if (fp == &smb->shd_fp)
 		ext = "shd";
@@ -159,7 +162,8 @@ int smb_open_fp(smb_t* smb, FILE** fp, int share)
 			              , path, get_errno(), (ulong)smb->retry_time);
 			return SMB_ERR_TIMEOUT;
 		}
-		SLEEP(smb->retry_delay);
+		++count;
+		FILE_RETRY_DELAY(count, smb->retry_delay);
 	}
 	if ((*fp = fdopen(file, "r+b")) == NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error)
@@ -168,7 +172,7 @@ int smb_open_fp(smb_t* smb, FILE** fp, int share)
 		close(file);
 		return SMB_ERR_OPEN;
 	}
-	setvbuf(*fp, NULL, _IOFBF, 2 * 1024);
+	setvbuf(*fp, NULL, _IOFBF, 64 * 1024);
 	return SMB_SUCCESS;
 }
 
