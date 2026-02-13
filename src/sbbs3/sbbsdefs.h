@@ -329,7 +329,9 @@ enum vdir_name {
 };
 
 enum {
-	  clr_mnehigh
+	  clr_userlow
+    , clr_userhigh
+	, clr_mnehigh
 	, clr_mnelow
 	, clr_mnecmd
 	, clr_inputline

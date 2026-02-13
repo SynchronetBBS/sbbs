@@ -1062,6 +1062,9 @@ void sbbs_t::ctrl_a(char x)
 		case '7':   /* White Background */
 			attr(atr | BG_LIGHTGRAY);
 			break;
+		case 'U':   /* User Theme */
+			attr(cfg.color[x == 'u' ? clr_userlow : clr_userhigh]);
+			break;
 		case 'X':   // Rainbow
 			if (rainbow[rainbow_index + 1] != 0)
 				++rainbow_index;

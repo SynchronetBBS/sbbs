@@ -493,6 +493,9 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 						case '7':
 							SAFECOPY(str, ansi.attrstr(BG_LIGHTGRAY));
 							break;
+						case 'U':
+							SAFECOPY(str, ansi.attrstr(cfg.color[ch == 'u' ? clr_userlow : clr_userhigh]));
+							break;
 					}
 					if (str[0])
 						size += fwrite(str, sizeof(char), strlen(str), qwk_fp);

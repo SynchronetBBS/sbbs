@@ -51,8 +51,8 @@ DLLEXPORT void  free_chat_cfg(scfg_t* cfg);
 
 DLLEXPORT uint32_t aftou32(const char *str);      /* Converts flag string to uint32_t */
 DLLEXPORT char* u32toaf(uint32_t t, char *str); /* Converts uint32_t to flag string */
-uint    strtoattr(const char *str, char** endptr);      /* Convert ATTR string into attribute int */
-void    parse_attr_str_list(uint*, int, const char*);
+uint    strtoattr(scfg_t*, const char *str, char** endptr);      /* Convert ATTR string into attribute int */
+void    parse_attr_str_list(scfg_t*, uint*, int, const char*);
 
 int     getdirnum(scfg_t*, const char* code);
 int     getlibnum(scfg_t*, const char* code);

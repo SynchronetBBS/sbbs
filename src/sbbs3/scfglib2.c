@@ -781,7 +781,7 @@ char *u32toaf(uint32_t l, char *str)
 /* Returns the actual attribute code from a string of ATTR characters       */
 /* Ignores any Ctrl-A characters in the string (as attrstr() used to)       */
 /****************************************************************************/
-uint strtoattr(const char *str, char** endptr)
+uint strtoattr(scfg_t* cfg, const char *str, char** endptr)
 {
 	int   atr;
 	ulong l = 0;
@@ -848,6 +848,9 @@ uint strtoattr(const char *str, char** endptr)
 			case '7':   /* White Background */
 				atr = (uchar)((atr & 0x8f) | BG_LIGHTGRAY);
 				break;
+			case 'U':	/* User Theme */
+				atr = cfg->color[str[l] == 'u' ? clr_userlow : clr_userhigh];
+				break;
 			default:
 				if (endptr != NULL)
 					*endptr = (char*)str + l;
@@ -860,11 +863,11 @@ uint strtoattr(const char *str, char** endptr)
 	return atr;
 }
 
-void parse_attr_str_list(uint* list, int max, const char* str)
+void parse_attr_str_list(scfg_t* cfg, uint* list, int max, const char* str)
 {
 	char* endptr = NULL;
 	for (int i = 0; i < max && *str != '\0'; ++i) {
-		list[i] = strtoattr(str, &endptr);
+		list[i] = strtoattr(cfg, str, &endptr);
 		if (*endptr == '\0')
 			break;
 		str = endptr + 1;

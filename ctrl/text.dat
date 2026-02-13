@@ -30,10 +30,10 @@
 "\1n\1?\1mPosting on \1h%s\1n\1m\1\\ %s\r\n"              019 Posting
 "\r\nNew file.\r\n"                                       020 NewFile
 "\1_\r\n\1y\1hSubject\1\\: "                              021 SubjectPrompt
-"\1n\1g\r\nEnter message now (\1h%d\1n\1g lines max). "\  022 EnterMsgNow
-	"\1\\Type \1h/?\1n\1g on a new line for menu.\r\n\1n"
-"\1n\1g\r\nRaw message input (\1h%u\1n\1g bytes max). "\  023 EnterMsgNowRaw
-	"\1hCtrl-Z\1n\1g to save, \1hCtrl-C\1n\1g to abort.\1n\r\n\r\n"
+"\1u\r\nEnter message now (\1U%d\1u lines max). "\        022 EnterMsgNow
+	"\1\\Type \1U/?\1u on a new line for menu.\r\n\1n"
+"\1u\r\nRaw message input (\1U%u\1u bytes max). "\  023 EnterMsgNowRaw
+	"\1UCtrl-Z\1u to save, \1UCtrl-C\1u to abort.\1n\r\n\r\n"
 "\1n\1h\1rLine limit (\1w%u\1r) reached.\1n\r\n"       	024 NoMoreLines
 "Only %u lines left.\r\n"                               025 OnlyNLinesLeft
 "\r\n\r\n\1n\1r\1h\1iOut of bytes.\1n\r\n"              026 OutOfBytes
@@ -48,7 +48,7 @@
 "\1n\r\nWriting Index @ELLIPSIS@"                              035 WritingIndx
 "\1[\1n\1mE-mail sent to \1h%s \1n\1m#%d.\1n\r\n"              036 Emailed
 "\1[\1n\1mPosted on \1h%s\1n\1m %s.\r\n"                      037 Posted
-"\7\1_\1w\1hNode %2d: \1g%s\1n\1g sent you E-mail.\r\n"       038 EmailNodeMsg
+"\7\1_\1w\1hNode %2d: \1U%s\1u sent you E-mail.\r\n"          038 EmailNodeMsg
 "\1n\r\nYou can't forward mail.\r\n"                     039 R_Forward
 "\1n\1mForwarded by \1h%s\1n\1m on "\                    040 ForwardedFrom
 	"\1h%s\1n\r\n"
@@ -57,8 +57,8 @@
 "\r\nAuto Message\1\\ ~Read, ~Write, or ~@Quit@: "       043 AutoMsg
 "\1n\r\nYou can't write to the auto-message.\r\n"        044 R_AutoMsg
 "\1n\r\nYou have no %s.\r\n"                           045 NoMailWaiting
-"\1_\r\n\1q\1g\1hMail Waiting (%s first):\r\n\r\n"     046 MailWaitingLstHdr
-"\1g\1h%4d \1n\1g%-25.25s \1h%c\1n\1g %s\r\n"              047 MailWaitingLstFmt
+"\1_\r\n\1q\1UMail Waiting (%s first):\r\n\r\n"        046 MailWaitingLstHdr
+"\1U%4d \1u%-25.25s \1U%c\1u %s\r\n"                047 MailWaitingLstFmt
 "\1_\r\n\1y\1hStart with number [\1w%u\1y]: \1w"             048 StartWithN
 "\r\n\1n\1c\xfe \1b\1hReading E-mail \1n\1c\xfe \1b\1h(\1w\1`?\1b=Menu)"\  049 ReadingMail
 	"\1\\ (\1w%u\1b of \1w%u\1b): \1n\1~"
@@ -77,7 +77,7 @@
 "Save/Append message to another file"                    057 SaveMsgToFile
 "\1_\1y\1hPath/Filename to write to\1\\: \1n"            058 FileToWriteTo
 "\1n\r\nYou have no sent messages pending.\r\n"          059 NoMailSent
-"\r\n\1q\1g\1hMail that you've sent still pending\1\\ (%s first):"\ 060 MailSentLstHdr
+"\r\n\1q\1UMail that you've sent still pending\1\\ (%s first):"\ 060 MailSentLstHdr
 	"\r\n\r\n\1n"
 "\1n\r\n\1c\xfe \1h\1bReading Sent E-mail \1n\1c\xfe \1h\1b"\		061 ReadingSentMail
 	"(\1w\1`?\1b=Menu)\1\\ (\1w%u\1b of \1w%u\1b): \1n\1~"
@@ -86,10 +86,10 @@
 "\1n\r\nNo mail on system.\r\n"                          063 NoMailOnSystem
 "\1n\r\n\1c\xfe \1h\1bReading All E-mail \1n\1c\xfe \1h\1b"\		064 ReadingAllMail
 	"(\1w%u \1bof \1w%u\1b): \1n"
-"\1_\r\n\1g\1h      From                   "\              065 MailOnSystemLstHdr
+"\1_\r\n\1U      From                   "\              065 MailOnSystemLstHdr
 	"To                     A Subject\r\n\1n"
-"\1g\1h%5d\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %s\r\n"     066 MailOnSystemLstFmt
-"\1-\r\n\1c%-15.15s \1y\1h%-44.44s "\                 067 NScanStatusFmt
+"\1U%5d\1u %-22.22s %-22.22s \1U%c\1u %s\r\n"           066 MailOnSystemLstFmt
+"\1-\r\n\1c%-15.15s \1y\1h%-44.44s "\                   067 NScanStatusFmt
 	"\1n\1cNew:\1h%5u \1n\1cof\1h %-u"
 "\1-\r\n\1c%-20s \1y\1h%-50s \1w%6u"             068 SearchSubFmt
 "\r\nNo messages have been posted on %s %s\r\n"         069 NoMsgsOnSub
@@ -106,7 +106,7 @@
 	"\1yPrivate Chat - \1rCtrl-C to Quit \1y- "\
 	"Time Left: \1g%-8s\1w"\
 	" \xc3\xc4\xc4\xc4\xc4[\1i\1b%c\1n\1h]\xc4\xc4\xc4\xc4\xc4"
-"\1g\1h%5u\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %s\r\n"    078 SubMsgLstFmt
+"\1U%5u\1u %-22.22s %-22.22s \1U%c\1u %s\r\n"           078 SubMsgLstFmt
 "\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4\xb4 "\                    079 SysopChatSeparator
 	"\1rSplit-Screen \1cSysop\1r Chat          \1y"\
 	"Time Left: \1g%-8s\1w"\
@@ -131,7 +131,7 @@
 "\r\nAre you sure"                                      096 AreYouSureQ
 "\r\n\r\nYou can't chat.\r\n"                           097 R_Chat
 "RE: Feedback\r\n\r\n"                                  098 ReFeedback
-"\r\n\1g\1hSystem Information:\r\n\r\n\1h"                 099 SiHdr
+"\r\n\1USystem Information:\r\n\r\n\1h"                 099 SiHdr
 "\1b\1hSystem          : \1c%s\r\n"                        100 SiSysName
 "\1bQWK ID          : \1c%s\r\n"                          101 SiSysID
 "\1bFidoNet Address : \1c%s\r\n"                          102 SiSysFaddr
@@ -156,32 +156,32 @@
 "\1n\1?\1mSending message to \1h%s\r\n"                121 SendingMessageToUser
 "\r\n\1r\1hNo other active nodes.\1n\r\n"                 122 NoOtherActiveNodes
 "\1?You can't use the external programs.\r\n"             123 R_ExternalPrograms
-"\r\n\1-\1gUsage Statistics for \1h%s #%d\1n\r\n\r\n"     124 UserStats
-"\1-\1gSub-boards of \1h%-60.60s \1n\1gMsgs"\             125 SubLstHdr
+"\r\n\1uUsage Statistics for \1U%s #%d\1n\r\n\r\n"        124 UserStats
+"\1uSub-boards of \1U%-60.60s \1uMsgs"\                   125 SubLstHdr
 	"\r\n\r\n\1h"
-"\1n\1g[\1h%u\1n\1g] %-60.60s %.0s\1h%11u\r\n"            126 SubLstFmt
-"\r\n\1q\1_\1g\1hMessage Groups\1n\1g          "\         127 GrpLstHdr
+"\1u[\1U%u\1u] %-60.60s %.0s\1U%11u\r\n"                  126 SubLstFmt
+"\r\n\1q\1UMessage Groups\1u          "\                  127 GrpLstHdr
 	"                                           "\
 	"Sub-boards\r\n\r\n\1h"
-"\1n\1g[\1h%u\1n\1g] %-60.60s %.0s\1h%8u\r\n"             128 GrpLstFmt
+"\1u[\1U%u\1u] %-60.60s %.0s\1U%8u\r\n"                   128 GrpLstFmt
 "\r\nGroup to configure new message scan or ~@Quit@: "    129 NScanCfgWhichGrp
 "\r\nGroup to configure your message scan or ~@Quit@: "   130 SScanCfgWhichGrp
-"\1l\1-\1gSub-boards of \1h%s:\r\n\r\n\1h"                131 CfgSubLstHdr
-"\1n\1g[\1h%d\1n\1g] %-40.40s  \1h%s\r\n"                 132 CfgSubLstFmt
-"\1l\1_\1g\1hMessage Groups:\r\n\r\n"                     133 CfgGrpLstHdr
-"\1n\1g[\1h%d\1n\1g] %s\1h\r\n"                           134 CfgGrpLstFmt
+"\1l\1uSub-boards of \1U%s:\r\n\r\n\1h"                   131 CfgSubLstHdr
+"\1u[\1U%d\1u] %-40.40s  \1U%s\r\n"                       132 CfgSubLstFmt
+"\1l\1UMessage Groups:\r\n\r\n"                           133 CfgGrpLstHdr
+"\1u[\1U%d\1u] %s\1U\r\n"                                 134 CfgGrpLstFmt
 "\r\nSub-board to toggle new message scan"\             135 NScanCfgWhichSub
 	", ~@All@, or ~@Quit@: "
 "\r\nSub-board to toggle your message scan"\            136 SScanCfgWhichSub
 	", ~@All@, or ~@Quit@: "
-"\1n\1g[\1h%d\1n\1g] %-40.40s  \1h\1c%s\r\n"                  137 SubPtrLstFmt
+"\1u[\1U%d\1u] %-40.40s  \1h\1c%s\r\n"                  137 SubPtrLstFmt
 "\r\nSet new-scan pointer for\1\\ @Which@, ~@All@, or ~@Quit@: "  138 WhichOrAll
 "\r\nRaw Input/Output Mode is now: @RAWIO@\1h"          139 RawMsgInputModeIsNow
 "OFF"                                                   140 Unused140 /* was OFF */
 "ON"                                                    141 Unused141 /* was ON */
 "\r\n\1n\1mPaging \1h%s #%u\1n\1m for private chat\r\n" 142 PagingUser
-"\r\n\1-\1gSystem Statistics:\r\n\r\n\1n"                  143 SystemStatsHdr
-"\r\n\1-\1gNode #%d Statistics:\r\n\r\n\1n"                144 NodeStatsHdr
+"\r\n\1uSystem Statistics:\r\n\r\n\1n"                  143 SystemStatsHdr
+"\r\n\1uNode #%d Statistics:\r\n\r\n\1n"                144 NodeStatsHdr
 "Total Logons    : %s\r\n"                              145 StatsTotalLogons
 "Logons Today    : %s\r\n"                              146 StatsLogonsToday
 "Total Time      : %s minutes\r\n"                      147 StatsTotalTime
@@ -200,9 +200,9 @@
 "\r\nClear critical error counters on all nodes"        160 ClearErrCounter
 "\r\nInvalid node.\r\n"                                 161 InvalidNode
 "\1n\1?\1mSending telegram to \1h%s #%u\1n\1m\r\n"\    162 SendingTelegramToUser
-	"(Maximum of 5 lines, Blank line ends, Ctrl-C to abort):\r\n\1g\1h" 
+	"(Maximum of 5 lines, Blank line ends, Ctrl-C to abort):\r\n\1U" 
 "Delete Guru file"                                      163 DeleteGuruLogQ
-"\1n\1g\7Telegram from \1n\1h%s\1n\1g on %s:\r\n\1h"    164 TelegramFmt
+"\1u\7Telegram from \1n\1h%s\1u on %s:\r\n\1h"          164 TelegramFmt
 "\1?You can't download.\r\n"                              165 R_Download
 "\1/\1w\1hSearching current library @ELLIPSIS@\r\n\1q"   166 SearchingAllDirs
 "\1w\1hSearching all libraries @ELLIPSIS@\r\n\1q"         167 SearchingAllLibs
@@ -218,14 +218,14 @@
 "SY: "                                                     176 SystemPassword
 "\1?No sysop directory is configured.\r\n"                 177 NoSysopDir
 "\1?You can't upload to the sysop.\r\n"                    178 CantUploadToSysop
-"\1-\1g\1h%-73.73s \1n\1gFiles\r\n\r\n\1h"                 179 DirLstHdr
-"\1n\1g(\1h%u\1n\1g) %-60.60s %.0s\1h%11u\r\n"             180 DirLstFmt
-"\r\n\1q\1_\1g\1hFile Libraries \1n\1g         "\          181 LibLstHdr
+"\1U%-73.73s \1uFiles\r\n\r\n\1h"                          179 DirLstHdr
+"\1u(\1U%u\1u) %-60.60s %.0s\1U%11u\r\n"                   180 DirLstFmt
+"\r\n\1q\1_\1UFile Libraries \1u         "\                181 LibLstHdr
 	"                                           "\
 	"Directories\r\n\r\n\1h"
-"\1n\1g(\1h%u\1n\1g) %-60.60s %.0s \1h%7u\r\n"             182 LibLstFmt
+"\1u(\1U%u\1u) %-60.60s %.0s \1U%7u\r\n"                   182 LibLstFmt
 "\1n\r\nInvalid NetMail address\1\\: \1h%s\1n\r\n"         183 InvalidNetMailAddr
-"\1_\r\n\1g\1h%s \1n\1gTransfer Policy\r\n\r\n\1n"         184 TransferPolicyHdr
+"\r\n\1U%s \1uTransfer Policy\r\n\r\n\1n"               184 TransferPolicyHdr
 "\1n\1h[\1y\1~%c\1w] \1b%-25s  "                        185 TransferProtLstFmt
 "Initial uploads are rewarded with %d%% of the "\       186 TpUpload
 	"credit value\r\n"
@@ -254,38 +254,38 @@
 "\r\n\1r\1h\1iThat file is already there!\1n\r\n"           207 FileAlreadyThere
 "That file is already on disk.\1\\ Add to data base"        208 FileOnDiskAddQ
 "\r\n\1r\1h\1iThat file is not on disk!\1n\r\n"             209 FileNotOnDisk
-"\r\n\1r\1h\1iPlease upload files with the following "\    210 TheseFileExtsOnly
+"\r\n\1r\1h\1iPlease upload files with the following "\     210 TheseFileExtsOnly
 	"extensions only:\1n\r\n\1w\1h"
 "\r\n\1n\1h%s\1r\1h\1i has already been uploaded to\1n\1c %s \1h%s\1n\r\n" 211 FileAlreadyOnline
-"\r\n\1w\1hHit [ENTER] after last destination "\          212 EnterAfterLastDestUser
+"\r\n\1w\1hHit [ENTER] after last destination "\            212 EnterAfterLastDestUser
 	"user.\r\n\r\n"
 "\1_\1y\1hSend file to (User name or number)\1\\: \1n"      213 SendFileToUser
 "\r\n\1r\1h\1iDuplicate user\1n\r\n\r\n"                    214 DuplicateUser
-"\7\r\n\1r\1h\1i%s wouldn't be able to "\                  215 UserWontBeAbleToDl
+"\7\r\n\1r\1h\1i%s wouldn't be able to "\                   215 UserWontBeAbleToDl
 	"download it!\1n\r\n\r\n"
 "\7\r\n\1r\1h\1iYou can't send yourself files.\1n\r\n\r\n"  216 CantSendYourselfFiles
-"\r\n\1-\1gAdded to destination user list\1\\: "\           217 UserAddedToDestList
+"\r\n\1uAdded to destination user list\1\\: "\               217 UserAddedToDestList
 	"\1w\1h%s #%s\r\n\r\n\1n"
-"\r\n\1-\1gHow do you rate the content of this file "\    218 RateThisFile
-	"(\1h\1wG\1n\1g, \1h\1wR\1n\1g, or \1h\1wX\1n\1g)\1\\: \1n"
-"[%c] "                                                 219 Rated
+"\r\n\1uHow do you rate the content of this file "\         218 RateThisFile
+	"(\1h\1wG\1u, \1h\1wR\1u, or \1h\1wX\1u)\1\\: \1n"
+"[%c] "                                                     219 Rated
 "Is this upload part of a set\1\\ (multiple files)"         220 MultipleDiskQ
 "\1_\1y\1hHow many files total: \1n"                        221 HowManyDisksTotal
 "\1_\1y\1hWhich file number is your upload: \1n"            222 NumberOfFile
-" [%2.2d/%2.2d]"                                        223 FileOneOfTen
-" [%d/%d]"                                              224 FileOneOfTwo
-"\r\n\1-\1gEnter a description now.\r\n: "                225 EnterDescNow
-"No description given."                                 226 NoDescription
-"\r\nProtocol or ~@Quit@: "                               227 ProtocolOrQuit
-"\r\nProtocol, ~Batch or ~@Quit@: "                       228 ProtocolBatchOrQuit
+" [%2.2d/%2.2d]"                                            223 FileOneOfTen
+" [%d/%d]"                                                  224 FileOneOfTwo
+"\r\n\1uEnter a description now.\r\n: "                     225 EnterDescNow
+"No description given."                                     226 NoDescription
+"\r\nProtocol or ~@Quit@: "                                 227 ProtocolOrQuit
+"\r\nProtocol, ~Batch or ~@Quit@: "                         228 ProtocolBatchOrQuit
 "\r\n\7\1r\1h\1iBatch upload queue is full.\1n\r\n"         229 BatchUlQueueIsFull
-"\r\n\1n\1m\1h%s \1n\1madded to batch upload queue"\         230 FileAddedToUlQueue
+"\r\n\1n\1m\1h%s \1n\1madded to batch upload queue"\        230 FileAddedToUlQueue
 	"\1c\1\\ - Files: \1h%u \1n\1c(\1h%u\1n\1c Max)\r\n"
-"\1n\1?\1g\1h%s\1y: \1w~B\1yatch download, "\              231 FileInfoEditPrompt
+"\1n\1?\1U%s\1y: \1w~B\1yatch download, "\                  231 FileInfoEditPrompt
 	"\1w~E\1ydit info/\1w~D\1yesc, "\
 	"\1w~V\1yiew file, "\
 	"\1w~Q\1yuit, \1w~P\1yrev or [~Next]: \1w"
-"\1n\1?\1g\1h%s\1y: \1w~B\1yatch download, "\              232 FileInfoPrompt
+"\1n\1?\1U%s\1y: \1w~B\1yatch download, "\                  232 FileInfoPrompt
 	"\1w~E\1yxtended info, "\
 	"\1w~V\1yiew file, "\
 	"\1w~Q\1yuit, \1w~P\1yrev or [~Next]: \1w"
@@ -308,7 +308,7 @@
 "\r\nUser not available.\r\n"                           248 UserNotFound
 "\1_\1y\1hCredits to remove from uploader (%s): \1n"    249 CreditsToRemove
 "\1_\1w\1h%s was removed.\r\n"\                            250 FileRemovedUserMsg
-	"\1n\1gYou lost %s credits.\r\n"
+	"\1uYou lost %s credits.\r\n"
 "\1_\1?\1y\1hFilename         : \1n"                        251 EditFilename
 "\r\n\1r\1h\1iError renaming %s to %s\1n\r\n"               252 CouldntRenameFile
 "%s renamed to %s\r\n"                                  253 FileRenamed
@@ -334,17 +334,17 @@
 "\r\nClear download queue"                              271 ClearDownloadQueueQ
 "\r\nDownload queue cleared.\r\n"                       272 DownloadQueueCleared
 "\r\nDownload queue is empty.\r\n"                      273 DownloadQueueIsEmpty
-"\r\n\1-\1g\1hUpload Queue:\1n\1g"\                          274 UploadQueueLstHdr
+"\r\n\1-\1UUpload Queue:\1u"\                           274 UploadQueueLstHdr
 	"                               Description\r\n\r\n\1n"
-"\1g\1h%2d: \1n\1g%-38s  %s\r\n"                          275 UploadQueueLstFmt
-"\r\n\1-\1g\1hDownload Queue:\1n\1g"\                        276 DownloadQueueLstHdr
+"\1U%2d: \1u%-38s  %s\r\n"                              275 UploadQueueLstFmt
+"\r\n\1-\1UDownload Queue:\1u"\                         276 DownloadQueueLstHdr
 	"                             Credits      Bytes        Time\r\n\r\n\1n"
-"\1g\1h%2d: \1n\1g%-35s %11.11s %11.11s     %s\r\n"       277 DownloadQueueLstFmt
-"\r\n\1w\1h                                "\	  	  278 DownloadQueueTotals
+"\1U%2d: \1u%-35s %11.11s %11.11s     %s\r\n"           277 DownloadQueueLstFmt
+"\r\n\1w\1h                                "\	  	    278 DownloadQueueTotals
 	"Totals: %11.11s %11.11s     %s\r\n"
-"\r\n\1-\1gRemove which file(s) from upload "\            279 RemoveWhichFromUlQueue
+"\r\n\1uRemove which file(s) from upload "\             279 RemoveWhichFromUlQueue
 	"queue (1-%d): \1n"
-"\r\n\1-\1gRemove which file(s) from download "\          280 RemoveWhichFromDlQueue
+"\r\n\1uRemove which file(s) from download "\           280 RemoveWhichFromDlQueue
 	"queue (1-%d): \1n"
 "\r\nUpload queue is empty.\r\n"                        281 UploadQueueIsEmpty
 "\r\nHang up after transfer"                            282 HangUpAfterXferQ
@@ -367,8 +367,8 @@
 "\1h\1yEnter (space-separated) Tags\1\\: "              298 TagFilePrompt
 "UNUSED299"                                             299 Unused299
 "\1_\1h\1w%s\1n\1c was %sdownloaded by \1h%s\r\n"       300 FreeDownloadUserMsg
-"\r\n\1n\1gAuthor      :\1h %s"                         301 FiAuthor
-"\r\n\1n\1gGroup       :\1h %s"                         302 FiGroup
+"\r\n\1uAuthor      :\1U %s"                            301 FiAuthor
+"\r\n\1uGroup       :\1U %s"                            302 FiGroup
 "\1w\1h\r\n%s is already in the queue.\r\n"             303 FileAlreadyInQueue
 "\1w\1h\1/File is not online.\r\n"                      304 FileIsNotOnline
 "\1n\r\n\1m\1h%s \1n\1madded to batch download queue\1\\ -\r\n"\ 305 FileAddedToBatDlQueue
@@ -382,23 +382,23 @@
 "\1_\1w\1h%s (%s bytes) received.\r\n"                     310 FileNBytesReceived
 "\1_\1w\1h%s (%s bytes) sent.\r\n"                         311 FileNBytesSent
 "\1_\1h\1w%s\1n\1c was %sdownloaded by \1h%s\r\n"\         312 DownloadUserMsg
-	"\1n\1gYou were awarded \1h%s\1n\1g credits.\r\n"
+	"\1uYou were awarded \1U%s\1u credits.\r\n"
 "partially "                                            313 Partially
-"\1l\1n\1gLibrary     :\1h (%u) %s"                   314 FiLib
-"\r\n\1n\1gDirectory   :\1h (%u) %s"                  315 FiDir
-"\r\n\1n\1gFilename    :\1h %s"                       316 FiFilename
-"\r\n\1n\1gSize        :\1h %s (%s) bytes"            317 FiFileSize
-"\r\n\1n\1gCredit cost :\1h %s"                       318 FiCredits
-"\r\n\1n\1gDescription :\1h %s"                       319 FiDescription
-"\r\n\1n\1gUploaded by :\1h %s"                       320 FiUploadedBy
-"\r\n\1n\1gFile date   :\1h %s"                       321 FiFileDate
-"\r\n\1n\1gUploaded on :\1h %s"                       322 FiDateUled
-"\r\n\1n\1gLast D/L    :\1h %s"                       323 FiDateDled
-"\r\n\1n\1gTimes D/Led :\1h %u"                       324 FiTimesDled
-"\r\n\1n\1gTime to D/L :\1h %s at %u cps"             325 FiTransferTime
-"\r\n\1n\1gTags        :\1h %s"                       326 FiTags
-"\r\n\1n\1gUploaded to :\1h %s"                       327 FiUploadedTo
-"\r\n\1n\1g%-6.6s      :\1h %s"                       328 FiChecksum
+"\1l\1uLibrary     :\1U (%u) %s"                   314 FiLib
+"\r\n\1uDirectory   :\1U (%u) %s"                  315 FiDir
+"\r\n\1uFilename    :\1U %s"                       316 FiFilename
+"\r\n\1uSize        :\1U %s (%s) bytes"            317 FiFileSize
+"\r\n\1uCredit cost :\1U %s"                       318 FiCredits
+"\r\n\1uDescription :\1U %s"                       319 FiDescription
+"\r\n\1uUploaded by :\1U %s"                       320 FiUploadedBy
+"\r\n\1uFile date   :\1U %s"                       321 FiFileDate
+"\r\n\1uUploaded on :\1U %s"                       322 FiDateUled
+"\r\n\1uLast D/L    :\1U %s"                       323 FiDateDled
+"\r\n\1uTimes D/Led :\1U %u"                       324 FiTimesDled
+"\r\n\1uTime to D/L :\1U %s at %u cps"             325 FiTransferTime
+"\r\n\1uTags        :\1U %s"                       326 FiTags
+"\r\n\1uUploaded to :\1U %s"                       327 FiUploadedTo
+"\r\n\1u%-6.6s      :\1U %s"                       328 FiChecksum
 "\7\7\r\n\1h\1rH\1ba\1gp\1yp\1cy \1mB\1wi\1rr\1gt\1bh\1cd\1ma\1yy "\  329 HappyBirthday
 	"\1wt\1ro \1gy\1bo\1cu\r\n\7\7\1mH\1ya\1wp\1rp\1gy "\
 	"\1bB\1ci\1mr\1yt\1wh\1rd\1ga\1by \1ct\1mo \1yy\1wo\1ru\1g.\1b.\1c.\r\n\r\n"
@@ -445,13 +445,13 @@
 "Use automatic terminal type \1\\detection"             365 AutoTerminalQ
 "Does your terminal support ANSI"                       366 AnsiTerminalQ
 "Does your terminal display colors"                     367 ColorTerminalQ
-"\1n\1gAre you using \1hRIPterm\1n\1g or a \1hRIPscrip "\     368 RipTerminalQ
-	"\1n\1gcompatible terminal program?\r\n"\
-	"\1h\1wIMPORTANT:\1n\1g If you are not absolutely "\
+"\1uAre you using \1URIPterm\1u or a \1URIPscrip "\     368 RipTerminalQ
+	"\1ucompatible terminal program?\r\n"\
+	"\1h\1wIMPORTANT:\1u If you are not absolutely "\
 	"sure, hit \1h\1w\1iN\1n\1b\1h"
 "Does your terminal support\1\\ IBM extended ASCII (CP437)"  369 ExAsciiTerminalQ
 "\1nYou can't use that name\1\\ (duplicate or invalid).\r\n" 370 YouCantUseThatName
-"\1l\1-\1gYour password is \1h%s\r\n"                       371 YourPasswordIs
+"\1l\1uYour password is \1U%s\r\n"                          371 YourPasswordIs
 "\r\n\1_\1w\1hDon't forget and keep it "\                   372 NewUserPasswordVerify
 	"confidential.\r\n\r\n\1y\1hEnter this password "\
 	"for verification\1\\: \1w"
@@ -614,22 +614,22 @@
 "Forward personal e-mail\1\\ to network mail address"       499 ForwardMailQ
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yNetwork mail address\1\\ "\      500 EnterNetMailAddress
 	"(Example: user@domain)\r\n : "
-"\1n\1l\1gSelect \1h%s\1n\1g:\r\n\r\n"                        501 SelectItemHdr
-"\1g\1h%3d: \1n\1g%s\r\n"                                   502 SelectItemFmt
+"\1n\1l\1uSelect \1U%s\1u:\r\n\r\n"                         501 SelectItemHdr
+"\1U%3d: \1u%s\r\n"                                         502 SelectItemFmt
 "\r\n@Which@, ~@Quit@ or [%u]: "                              503 SelectItemWhich
 "\1_\1w\1h\r\n\r\n%s is here...\r\n\r\n\1n"                 504 SysopIsHere
 "\r\n\1_\1w\1hEnd of chat.\r\n\r\n\1n"                      505 EndOfChat
 "\r\n\1_\1y\1hChat: \1n"                                    506 ChatPrompt
-"????"                                                  507 AnonUserChatHandle
-"\r\n\1n\1-\1gMultinode Chat - Type \1h/?\1n\1g for "\        508 WelcomeToMultiChat
+"????"                                                      507 AnonUserChatHandle
+"\r\n\1uMultinode Chat - Type \1U/?\1u for "\               508 WelcomeToMultiChat
 	"menu.\r\n"
-"\r\n\1w\1hWelcome to Channel %d (\1c%s\1w)\r\n\r\n\1n"      509 WelcomeToChannelN
-"\1_\1w\1h%3d  \1g%s\1n\1g in multinode chat "\               510 NodeInMultiChatLocally
+"\r\n\1w\1hWelcome to Channel %d (\1c%s\1w)\r\n\r\n\1n"     509 WelcomeToChannelN
+"\1_\1w\1h%3d  \1U%s\1u in multinode chat "\                510 NodeInMultiChatLocally
 	"channel %d locally.\r\n"
 "\r\n\1n\1m\1hYou're on the Air!\r\n\r\n\1n"                511 YoureOnTheAir
-"\1_\1w\1hNode %2d: \1g%s\1n\1g joined multinode chat "\      512 NodeJoinedMultiChat
+"\1_\1w\1hNode %2d: \1U%s\1u joined multinode chat "\       512 NodeJoinedMultiChat
 	"channel %u.\r\n\1n"
-"\1_\1w\1hNode %2d: \1g%s\1n\1g left multinode chat "\        513 NodeLeftMultiChat
+"\1_\1w\1hNode %2d: \1U%s\1u left multinode chat "\         513 NodeLeftMultiChat
 	"channel %u.\r\n"
 "\1_\1y\1hCommand: \1n"                                     514 MultiChatCommandPrompt
 "%s has password protected "\                           515 PasswordProtected
@@ -638,12 +638,12 @@
 "\1r\1h\r\nWrong password.\r\n"                           517 WrongPassword
 "Password protect this channel"                         518 PasswordProtectChanQ
 "\r\n\1_\1y\1hPassword: "                                  519 PasswordPrompt
-"\1_\1g\1h%-8.8s \1w%2d%c \1n\1g%s"                           520 ChatLineFmt
+"\1_\1U%-8.8s \1w%2d%c \1u%s"                           520 ChatLineFmt
 "\r\nSysop page is now %s\r\n"                          521 SysopPageIsNow
 "\r\n%s is not available.\r\n"                          522 SysopIsNotAvailable
 "Chat with %s instead"                                  523 ChatWithGuruInsteadQ
-"\r\n\1b\1hPrivate: \1g~T\1n\1gelegram, "\                   524 PrivateMsgPrompt
-	"\1h~M\1n\1gessage, \1h~C\1n\1ghat, or \1h~Q\1n\1guit: \1c\1h"
+"\r\n\1b\1hPrivate: \1U~T\1uelegram, "\                 524 PrivateMsgPrompt
+	"\1U~M\1uessage, \1U~C\1uhat, or \1U~Q\1uuit: \1c\1h"
 "\r\n\1h\1yNode, User name, \1w#\1yNumber, "\               525 NodeToPrivateChat
 	"\1w'\1yHandle,\1\\ or \1w^U\1yser list: \1w\1h"
 "\r\n\1_\1w\1hNode %d is in private chat with another "\   526 NodeNAlreadyInPChat
@@ -651,10 +651,10 @@
 "\r\n\1_\1w\1hNode %d is not in use.\r\n"                  527 NodeNIsNotInUse
 "\r\nThere's no need to page yourself.\r\n"             528 NoNeedToPageSelf
 "\r\n\1r\1h\1iDon't bug %s.\1n\r\n"                         529 CantPageNode
-"\7\1_\1w\1hNode %2d: \1g%s\1n\1g is paging you to chat.\r\n" 530 NodePageMsg
-"\7\1_\1w\1hNode %2d: \1g%s\1n\1g is paging all nodes "\      531 AllNodePageMsg
+"\7\1_\1w\1hNode %2d: \1U%s\1u is paging you to chat.\r\n" 530 NodePageMsg
+"\7\1_\1w\1hNode %2d: \1U%s\1u is paging all nodes "\      531 AllNodePageMsg
 	"to chat.\r\n"
-"\7\1_\1w\1hNode %2d: \1g%s\1n\1g is paging you for private"\ 532 NodePChatPageMsg
+"\7\1_\1w\1hNode %2d: \1U%s\1u is paging you for private"\ 532 NodePChatPageMsg
 	" chat.\r\n"
 "\r\nYou can't send messages.\r\n"                      533 R_SendMessages
 "\r\n\1h\1yNode, Name, \1w#\1yNumber, "\                    534 NodeToSendMsgTo
@@ -662,26 +662,26 @@
 "\r\nThere's no need to send a message to "\            535 NoNeedToSendMsgToSelf
 	"yourself.\r\n"
 "\1_\1y\1h\r\nMessage\1\\: "                                  536 NodeMsgPrompt
-"\7\1_\1w\1hNode %2d: \1g%s\1n\1g sent you a message:\r\n"\   537 NodeMsgFmt
+"\7\1_\1w\1hNode %2d: \1U%s\1u sent you a message:\r\n"\      537 NodeMsgFmt
 	"\1w\1h\x014%s\1n\r\n"
-"\7\1_\1w\1hNode %2d: \1g%s\1n\1g sent all nodes a "\         538 AllNodeMsgFmt
+"\7\1_\1w\1hNode %2d: \1U%s\1u sent all nodes a "\            538 AllNodeMsgFmt
 	"message:\r\n\1w\1h\x014%s\1n\r\n"
 "\r\nPaging %s..."                                      539 PagingGuru
 "\1n\r\n\1cWaiting for \1hNode %d \1n\1cto join private "\   540 WaitingForNodeInPChat
 	"chat. Hit \1h\1iCtrl-C\1n\1c to abort.\1n\r\n\r\n"
-"\1_\1w\1hNode %2d: \1g%s\1n\1g joined private chat.\1n\r\n"   541 NodeJoinedPrivateChat
-"\r\n\1_\1w\1hNode %2d: \1g%s\1n\1g left private chat.\1n\r\n" 542 NodeLeftPrivateChat
+"\1_\1w\1hNode %2d: \1U%s\1u joined private chat.\1n\r\n"     541 NodeJoinedPrivateChat
+"\r\n\1_\1w\1hNode %2d: \1U%s\1u left private chat.\1n\r\n"   542 NodeLeftPrivateChat
 "No one has logged on today.\r\n"                       543 NoOneHasLoggedOnToday
 "UNUSED544"                         			544 Unused544 /* Was LastFewCallers */
 "\r\n\1n\1h\1m%-2d \1n\1m%-6u \1w\1h%-25.25s \1m%-25.25s"\     545 LastFewCallersFmt
 	"\1n\1m%02u:%02u \1h%-8.8s \1n\1m%3d"
-"\r\n\1g\1hLogons Today:\1n\1g"                            546 CallersToday
+"\r\n\1ULogons Today:\1u"                                      546 CallersToday
 "Do you mean %s #%u "\                            547 DoYouMeanThisUserQ
 	"(~@Yes@, ~@No@, or ~@Quit@) ? "
 "UNKNOWN USER"                                          548 UNKNOWN_USER
 "\r\nTime's up.\r\n"                                    549 TimesUp
-"\1_\1w\1hNode %2d: \1g%s\1n\1g logged off\r\n\1n"             550 NodeLoggedOff
-"\1_\1w\1hNode %2d: \1g%s\1n\1g logged on via %s\r\n\1n"        551 NodeLoggedOnAtNbps
+"\1_\1w\1hNode %2d: \1U%s\1u logged off\r\n\1n"                 550 NodeLoggedOff
+"\1_\1w\1hNode %2d: \1U%s\1u logged on via %s\r\n\1n"           551 NodeLoggedOnAtNbps
 "\1n\1b\1h\r\n\r\nLogon Time      : \1c%s\r\n"                  552 TiLogon
 "\1bLocal Time      : \1c%s %s\r\n"                             553 TiNow
 "\1bTime Used       : \1c%s\r\n"                                554 TiTimeon
@@ -702,8 +702,8 @@
 "@EXEC:noyesbar@"                                       562 NoYesQuestion
 "\1_\1r\1h[Hit a key] "                                    563 Pause
 "Continue"                                              564 ContinueQ /* was Wait */
-"\1-\1g\r\nSystem Statistics Log:\r\n\r\n\1n"              565 SysStatsLogHdr
-"\1-\1g\r\nNode #%d Statistics Log:\r\n\r\n\1n"            566 NodeStatsLogHdr
+"\1u\r\nSystem Statistics Log:\r\n\r\n\1n"                 565 SysStatsLogHdr
+"\1u\r\nNode #%d Statistics Log:\r\n\r\n\1n"               566 NodeStatsLogHdr
 "\1_\1r\1hYour time has been reduced due to an "\          567 ReducedTime
 	"upcoming event on \1w%s\r\n\r\n"
 "\1n\r\nTimed Event - Node: %d   Time: %02d:%02d   "\    568 EventInfo
@@ -727,9 +727,9 @@
 "\r\n\1_\1h\1wCreating %s..."                              583 CreatingFileList
 "\1[\1bCreated %s\1>"                                      584 CreatedFileList
 "\1[\1bNo Files.\1>"                                       585 NoFiles
-"\r\nMessage pointers reset to initial values.\r\n"     586 MsgPtrsInitialized
-"\1-\r\n\1gThe current conversion rate is \1h%u "\         587 ConversionRate
-	"\1n\1gminutes for \1h100k\1n\1g credits.\r\n\r\n\1n"
+"\r\nMessage pointers reset to initial values.\r\n"        586 MsgPtrsInitialized
+"\r\n\1uThe current conversion rate is \1h%u "\            587 ConversionRate
+	"\1uminutes for \1U100k\1u credits.\r\n\r\n\1n"
 "\r\n\1_\1b\1hHow many \1w100k \1bcredit blocks to "\        588 CreditsToMin
 	"convert\1\\ to minutes (\1w%u Max\1b): \1n"
 "\1-\1r\1h\1iYou have too many minutes.\1n\r\n"              589 YouHaveTooManyMinutes
@@ -749,8 +749,8 @@
 "\r\n\1_\1w\1hUsing your real name @ELLIPSIS@\r\n"         599 UsingRealName
 "\r\n\1_\1w\1hPosting Privately @ELLIPSIS@\r\n"            600 PostingPrivately
 "\r\n\1_\1w\1hPosting anonymously @ELLIPSIS@\r\n"          601 PostingAnonymously
-"\r\nCan't delete posts on this sub-board.\r\n"         602 CantDeletePosts
-"\r\n\1h\1gSub-board Information:\r\n\r\n\1n"              603 SubInfoHdr
+"\r\nCan't delete posts on this sub-board.\r\n"            602 CantDeletePosts
+"\r\n\1USub-board Information:\r\n\r\n\1n"                 603 SubInfoHdr
 "\1n\1h\1bDescription \1n\1b:\1h \1c%s\r\n"                604 SubInfoLongName
 "\1n\1h\1bName        \1n\1b:\1h \1c%s\r\n"                605 SubInfoShortName
 "\1n\1h\1bQWK Name    \1n\1b:\1h \1c%s\r\n"                606 SubInfoQWKName
@@ -758,7 +758,7 @@
 "\1n\1h\1b\r\nQWK packet network conference using the tagline:\1n\r\n \254 %s\1n\r\n" 608 SubInfoTagLine
 "\1n\1h\1b\r\nFidoNet EchoMail conference using the origin line:\1n\r\n * Origin: %s (%s)\r\n"     609 SubInfoFidoNet
 ""                                                         610 SubInfoViewFileQ
-"\r\n\1g\1hDirectory Information:\r\n\r\n\1n"              611 DirInfoHdr
+"\r\n\1UDirectory Information:\r\n\r\n\1n"                 611 DirInfoHdr
 "\1n\1h\1bDescription \1n\1b:\1h \1c%s\r\n"                612 DirInfoLongName
 "\1n\1h\1bName        \1n\1b:\1h \1c%s\r\n"                613 DirInfoShortName
 "\1n\1h\1bFile Types  \1n\1b:\1h \1c%s\r\n"                614 DirInfoAllowedExts
@@ -777,8 +777,8 @@
 "\r\nDisplay Subjects Only"                             625 DisplaySubjectsOnlyQ
 "\r\nEcho is now %s \r\n"                               626 EchoIsNow
 "\r\n\1n\1y\1hPrivate Chat - \1bCtrl-C to Quit\1n\r\n\r\n"   627 WelcomeToPrivateChat
-"\r\n\1n\1gUploading \1h%s.REP\r\n"                        628 UploadingREP
-"\1n\1gReceived \1n\1h%s\1n\1g from \1h%s\1n\1g via QWK.\r\n"    629 ReceivedFileViaQWK
+"\r\n\1uUploading \1h%s.REP\r\n"                                 628 UploadingREP
+"\1uReceived \1v%s\1u from \1v%s\1u via QWK.\r\n"            629 ReceivedFileViaQWK
 "\1r\1h\1i\rQWK packet message limit reached.\1n\1h\r\n"     630 QWKmsgLimitReached
 "\r\n\1nPrivate posts not allowed on this sub.\r\n"      631 PrivatePostsNotAllowed
 "\1_\1w\1hLoading message pointers..\1i.\1n "            632 LoadingMsgPtrs
@@ -801,15 +801,15 @@
 "\1n\1y\1h%s\1n\1c sent you E-mail.\r\n"                   648 UserSentYouMail
 "\1n\1y\1h%s\1n\1c sent you a file: \1h%s\r\n"             649 UserSentYouFile
 "\1n\1y\1h%s\1n\1c read your E-mail on %s.\r\n"              650 UserReadYourMail
-"\1_\1w\1hNode %2d: \1g%s\1n\1g read your E-mail.\r\n"       651 UserReadYourMailNodeMsg
+"\1_\1w\1hNode %2d: \1U%s\1u read your E-mail.\r\n"         651 UserReadYourMailNodeMsg
 "\r\n@Which@, ~@Quit@, or [%u]: "                           652 JoinWhichGrp
 "\r\n@Which@, ~@Quit@, or [%u]: "                           653 JoinWhichSub
 "\r\n@Which@, ~@Quit@, or [%u]: "                           654 JoinWhichLib
 "\r\n@Which@, ~@Quit@, or [%u]: "                           655 JoinWhichDir
-"\1l\1-\1gDirectories of \1h%s:\r\n\r\n\1h"                  656 CfgDirLstHdr
-" \1n\1g(\1h%d\1n\1g) %s\1h\r\n"                              657 CfgDirLstFmt
-"\1l\1_\1g\1hFile Libraries:\r\n\r\n"                       658 CfgLibLstHdr
-"\1n\1g(\1h%d\1n\1g) %s\1h\r\n"                               659 CfgLibLstFmt
+"\1l\1uDirectories of \1U%s:\r\n\r\n\1h"                    656 CfgDirLstHdr
+" \1u(\1U%d\1u) %s\1U\r\n"                                  657 CfgDirLstFmt
+"\1l\1UFile Libraries:\r\n\r\n"                             658 CfgLibLstHdr
+"\1u(\1U%d\1u) %s\1U\r\n"                                   659 CfgLibLstFmt
 "\1_\1c\1hListing \1n\1c(\1h%u\1n\1c) %s "\                     660 BatchFlagPrompt
 	"(\1h%u\1n\1c) %s (\1h\1`?\1n\1c=Menu) (%5u\b\b\b\b\b\1h%u\1n\1c Files\1n\1c): \1n\1~"
 "\1n\1>\1q\1l\x014 \1h\1y[\1w\1~D\1y]ownload  \1h\1y[\1w\1~B\1y]atch  "\ 661 FileListBatchCommands
@@ -969,7 +969,7 @@
 "\1n\1c\1h%2u\1n\1c: "                  788 PollAnswerNumber
 "%-*.*s [%-4u %3.0f%%]"                 789 PollAnswerFmt
 " \251"                                 790 PollAnswerChecked
-"\1n\1l\1gBallot for \1h%s\r\n\r\n"     791 BallotHdr
+"\1n\1l\1uBallot for \1U%s\r\n\r\n"     791 BallotHdr
 "\1n\1c\1h%2u\1n\1c: %-*.*s \1h%s\r\n"  792 BallotAnswerFmt
 "\r\nToggle @Which@ vote (up to %u), ~@Quit@ or [Cast]: "           793 BallotVoteWhich
 "Only"									794 Only
@@ -1123,20 +1123,20 @@
 	"\1y~Q\1wuit: "
 "\1n"													   934 QWKEndOfMessage
 " %c \1g%.10s\1n %c %.127s%c"							   935 QWKTagLineFmt
-"\1n\r\n\1b\1hQWK Control [\1c%s\1b]: \1g%s\r\n"		   936 QWKControlCommand
+"\1n\r\n\1b\1hQWK Control [\1c%s\1b]: \1U%s\r\n"		   936 QWKControlCommand
 "Unrecognized Control Command!\1n\r\n"					   937 QWKBadControlCommand
 "You are limited to @MAXDL@ file downloads per day.\r\n"   938 NoMoreDownloads
 "Read your unread mail now\1\\"                            939 ReadYourUnreadMailNowQ
 "\1n\1c(\1h%s\1n\1c bytes in \1h%u\1n\1c files today)"     940 UserDownloadsToday
 "\1n\1h\1?Wide (> 80 column) output mode is now %s.\r\n"   941 WideModeIsNow
-"\1n\1hSeeking @ELLIPSIS@\1n"                              942 SeekingFile
-"\1n\1[\1>"                                                943 SeekingFileDone
+"\1+\1n\1hSeeking @ELLIPSIS@\1n"                           942 SeekingFile
+"\1n\1[\1-\1>"                                             943 SeekingFileDone
 "\1n\1r\1h%3d%% [\1wSeek: \1r"\                            944 SeekPrompt
 	"@~Home~\\x02@\1w/\1r"\
 	"@~End~\\x05@\1w/\1r"\
 	"@~PgUp~\\x10@\1w/\1r"\
 	"@~PgDn~\\x0e@\1w/\1r"\
 	"@~Up~\\x1e@\1w/\1r"\
-	"@~Dn~\\x0a@\1r] "
+	"@~Dn~\\x0a@\1r] \1>"
 "\1n\1b[\1h\1wG\1n\1b] \1hMIME-encoded Message Text    "\  945 QWKSettingsMIME
 	"\1n\1b: \1c%s\r\n"

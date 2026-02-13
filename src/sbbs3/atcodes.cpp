@@ -451,7 +451,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		else if (stricmp(sp, "off") == 0)
 			hot_attr = 0;
 		else
-			hot_attr = strtoattr(sp, /* endptr: */ NULL);
+			hot_attr = strtoattr(&cfg, sp, /* endptr: */ NULL);
 		return nulstr;
 	}
 	if (strcmp(sp, "CLEAR_HOT") == 0) {
@@ -461,12 +461,12 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if (strncmp(sp, "MNE:", 4) == 0) {   // Mnemonic attribute control
 		sp += 4;
-		mneattr_low = strtoattr(sp, &tp);
+		mneattr_low = strtoattr(&cfg, sp, &tp);
 		mneattr_high = mneattr_low ^ HIGH;
 		if (tp != NULL && *tp != '\0')
-			mneattr_high = strtoattr(tp + 1, &tp);
+			mneattr_high = strtoattr(&cfg, tp + 1, &tp);
 		if (tp != NULL && *tp != '\0')
-			mneattr_cmd = strtoattr(tp + 1, NULL);
+			mneattr_cmd = strtoattr(&cfg, tp + 1, NULL);
 		return nulstr;
 	}
 
@@ -486,7 +486,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			rainbow_index = sbbs_random(rainbow_len());
 		else if (strchr(sp + 8, ':') != NULL) {
 			memset(rainbow, 0, sizeof rainbow);
-			parse_attr_str_list(rainbow, LEN_RAINBOW, sp + 8);
+			parse_attr_str_list(&cfg, rainbow, LEN_RAINBOW, sp + 8);
 		}
 		else if (IS_DIGIT(*(sp + 8))) {
 			int idx = atoi(sp + 8);

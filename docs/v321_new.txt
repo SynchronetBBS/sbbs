@@ -87,6 +87,11 @@ o Disable Celerity "pipe code" parsing when displaying .rip files
 o Improved parsing of invalid @-codes (fixes text/menu/batchxfr.rip)
 o Add node interrupt flag checking to *nix external() execution of stdio progs
 o Support optional ctrl/<terminal-protocol>/text.ini file
+o Support text.dat substring replacements via text.ini [substr] section
+  - Replace words, Ctrl-A codes, whatever, in all text.dat strings
+o New "User" attributes controlled via attr.ini: 'userhigh' and 'userlow'
+  settings: whatever attributes the sysop places there will be used for
+  Ctrl-AU (userhigh) and Ctrl-Au (userlow)
 o Modified text and menu files can now be placed in mods/text/
 o Log more details during new user registration process
 o Separate global support for "extra attribute codes" from per sub-board opts
@@ -300,6 +305,9 @@ o Changed to accommodate bigger statistical values:
   - UserTimes
   - UserLogons
   - UserEmails
+o Changed to use (new) Ctrl-AU and Ctrl-Au codes for user-defined (sysop
+  defined)attributes instead of hard-coded high and low-intensity green:
+  - too many to list
 o Changed to accommodate bigger (60-char) group/lib/dir/sub descriptions:
   - SubLstHdr
   - SubLstFmt
@@ -363,7 +371,8 @@ o New option: System->Security->Demand High Quality Password
   (default: No)
 o New Option: System->Advanced->Statistics Interval (cache duration)
   (default: 5 seconds)
-o New Option: System->Advanced->Cache Filter Files (default: Yes)
+o New Option: System->Advanced->Cache Filter Files (file check interval)
+  (default: 5 seconds)
 o New Option: System->Servers->[Web|FTP|Mail] Servers->Limit Rate of Requests
 o New Option: Networks->QWK->Hubs... Include MIME-encoded Text (default: No)
   ... and Word-wrap Exported Messages (default: No)

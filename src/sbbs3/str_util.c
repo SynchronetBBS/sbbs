@@ -444,6 +444,7 @@ bool valid_ctrl_a_attr(char a)
 		case 'N':   /* normal       */
 		case 'R':   /* red      fg  */
 		case 'W':   /* white    fg  */
+		case 'U':   /* user theme */
 		/* "Rainbow" attribute is not valid for messages (no ANSI equivalent)
 				case 'X':	// rainbow
 		*/

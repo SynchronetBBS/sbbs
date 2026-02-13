@@ -471,31 +471,33 @@ bool read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	if (fp != NULL)
 		fclose(fp);
 
-	cfg->color[clr_mnehigh]         = strtoattr(iniGetString(ini, ROOT_SECTION, "mnehigh", "WH", value), /* endptr: */ NULL);
-	cfg->color[clr_mnelow]          = strtoattr(iniGetString(ini, ROOT_SECTION, "mnelow", "G", value), /* endptr: */ NULL);
-	cfg->color[clr_mnecmd]          = strtoattr(iniGetString(ini, ROOT_SECTION, "mnecmd", "WH", value), /* endptr: */ NULL);
-	cfg->color[clr_inputline]       = strtoattr(iniGetString(ini, ROOT_SECTION, "inputline", "WH4E", value), /* endptr: */ NULL);
-	cfg->color[clr_err]             = strtoattr(iniGetString(ini, ROOT_SECTION, "error", "RH", value), /* endptr: */ NULL);
-	cfg->color[clr_nodenum]         = strtoattr(iniGetString(ini, ROOT_SECTION, "nodenum", "WH", value), /* endptr: */ NULL);
-	cfg->color[clr_nodeuser]        = strtoattr(iniGetString(ini, ROOT_SECTION, "nodeuser", "GH", value), /* endptr: */ NULL);
-	cfg->color[clr_nodestatus]      = strtoattr(iniGetString(ini, ROOT_SECTION, "nodestatus", "G", value), /* endptr: */ NULL);
-	cfg->color[clr_filename]        = strtoattr(iniGetString(ini, ROOT_SECTION, "filename", "BH", value), /* endptr: */ NULL);
-	cfg->color[clr_filecdt]         = strtoattr(iniGetString(ini, ROOT_SECTION, "filecdt", "M", value), /* endptr: */ NULL);
-	cfg->color[clr_filedesc]        = strtoattr(iniGetString(ini, ROOT_SECTION, "filedesc", "W", value), /* endptr: */ NULL);
-	cfg->color[clr_filelsthdrbox]   = strtoattr(iniGetString(ini, ROOT_SECTION, "filelisthdrbox", "YH", value), /* endptr: */ NULL);
-	cfg->color[clr_filelstline]     = strtoattr(iniGetString(ini, ROOT_SECTION, "filelistline", "B", value), /* endptr: */ NULL);
-	cfg->color[clr_chatlocal]       = strtoattr(iniGetString(ini, ROOT_SECTION, "chatlocal", "GH", value), /* endptr: */ NULL);
-	cfg->color[clr_chatremote]      = strtoattr(iniGetString(ini, ROOT_SECTION, "chatremote", "G", value), /* endptr: */ NULL);
-	cfg->color[clr_multichat]       = strtoattr(iniGetString(ini, ROOT_SECTION, "multichat", "W", value), /* endptr: */ NULL);
-	cfg->color[clr_external]        = strtoattr(iniGetString(ini, ROOT_SECTION, "external", "WH", value), /* endptr: */ NULL);
-	cfg->color[clr_votes_full]      = strtoattr(iniGetString(ini, ROOT_SECTION, "votes_full", "WH5", value), /* endptr: */ NULL);
-	cfg->color[clr_votes_empty]     = strtoattr(iniGetString(ini, ROOT_SECTION, "votes_empty", "WH", value), /* endptr: */ NULL);
-	cfg->color[clr_progress_full]   = strtoattr(iniGetString(ini, ROOT_SECTION, "progress_full", "WH5", value), /* endptr: */ NULL);
-	cfg->color[clr_progress_empty]  = strtoattr(iniGetString(ini, ROOT_SECTION, "progress_empty", "WH", value), /* endptr: */ NULL);
+	cfg->color[clr_userlow]         = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "userlow", "G", value), /* endptr: */ NULL);
+	cfg->color[clr_userhigh]        = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "userhigh", "GH", value), /* endptr: */ NULL);
+	cfg->color[clr_mnehigh]         = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "mnehigh", "WH", value), /* endptr: */ NULL);
+	cfg->color[clr_mnelow]          = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "mnelow", "u", value), /* endptr: */ NULL);
+	cfg->color[clr_mnecmd]          = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "mnecmd", "WH", value), /* endptr: */ NULL);
+	cfg->color[clr_inputline]       = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "inputline", "WH4E", value), /* endptr: */ NULL);
+	cfg->color[clr_err]             = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "error", "RH", value), /* endptr: */ NULL);
+	cfg->color[clr_nodenum]         = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "nodenum", "WH", value), /* endptr: */ NULL);
+	cfg->color[clr_nodeuser]        = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "nodeuser", "GH", value), /* endptr: */ NULL);
+	cfg->color[clr_nodestatus]      = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "nodestatus", "G", value), /* endptr: */ NULL);
+	cfg->color[clr_filename]        = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "filename", "BH", value), /* endptr: */ NULL);
+	cfg->color[clr_filecdt]         = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "filecdt", "M", value), /* endptr: */ NULL);
+	cfg->color[clr_filedesc]        = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "filedesc", "W", value), /* endptr: */ NULL);
+	cfg->color[clr_filelsthdrbox]   = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "filelisthdrbox", "YH", value), /* endptr: */ NULL);
+	cfg->color[clr_filelstline]     = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "filelistline", "B", value), /* endptr: */ NULL);
+	cfg->color[clr_chatlocal]       = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "chatlocal", "GH", value), /* endptr: */ NULL);
+	cfg->color[clr_chatremote]      = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "chatremote", "G", value), /* endptr: */ NULL);
+	cfg->color[clr_multichat]       = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "multichat", "W", value), /* endptr: */ NULL);
+	cfg->color[clr_external]        = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "external", "WH", value), /* endptr: */ NULL);
+	cfg->color[clr_votes_full]      = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "votes_full", "WH5", value), /* endptr: */ NULL);
+	cfg->color[clr_votes_empty]     = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "votes_empty", "WH", value), /* endptr: */ NULL);
+	cfg->color[clr_progress_full]   = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "progress_full", "WH5", value), /* endptr: */ NULL);
+	cfg->color[clr_progress_empty]  = strtoattr(cfg, iniGetString(ini, ROOT_SECTION, "progress_empty", "WH", value), /* endptr: */ NULL);
 
 	iniGetString(ini, ROOT_SECTION, "rainbow", "WH,W,CH,C,MH,M,BH,B,YH,Y,GH,G,RH,R,KH", value);
 	memset(cfg->rainbow, 0, sizeof cfg->rainbow);
-	parse_attr_str_list(cfg->rainbow, LEN_RAINBOW, value);
+	parse_attr_str_list(cfg, cfg->rainbow, LEN_RAINBOW, value);
 	iniFreeStringList(ini);
 	return true;
 }
