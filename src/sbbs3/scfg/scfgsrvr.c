@@ -2059,6 +2059,11 @@ static void services_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Configuration File", startup.services_ini);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
+		if (startup.max_connects_per_period < 1 || startup.connect_rate_limit_period < 1)
+			SAFECOPY(str, strDisabled);
+		else
+			snprintf(str, sizeof str, "%u per %s", startup.max_connects_per_period, duration_to_vstr(startup.connect_rate_limit_period, tmp, sizeof tmp));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Limit Rate of Connections", str);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
@@ -2096,9 +2101,19 @@ static void services_cfg(void)
 				getar("Services Login", startup.login_ars);
 				break;
 			case 6:
-				js_startup_cfg(&startup.js);
+				SAFECOPY(str, maximum(startup.max_connects_per_period));
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Connections (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
+					startup.max_connects_per_period = atoi(str);
+				if (startup.max_connects_per_period < 1)
+					break;
+				duration_to_vstr(startup.connect_rate_limit_period, str, sizeof str);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Connection Rate Limit Period", str, 10, K_EDIT) > 0)
+					startup.connect_rate_limit_period = (uint)parse_duration(str);
 				break;
 			case 7:
+				js_startup_cfg(&startup.js);
+				break;
+			case 8:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:

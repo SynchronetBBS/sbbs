@@ -48,6 +48,8 @@ static const char* strMaxSFTPInactivity = "MaxSFTPInactivity";
 static const char* strMaxConConn = "MaxConcurrentConnections";
 static const char* strMaxRequestPerPeriod = "MaxRequestsPerPeriod";
 static const char* strRequestRateLimitPeriod = "RequestRateLimitPeriod";
+static const char* strMaxConnectsPerPeriod = "MaxConnectsPerPeriod";
+static const char* strConnectRateLimitPeriod = "ConnectRateLimitPeriod";
 static const char* strHostName = "HostName";
 static const char* strLogLevel = "LogLevel";
 static const char* strEventLogLevel = "EventLogLevel";
@@ -792,6 +794,9 @@ bool sbbs_read_ini(
 		    = iniGetBitField(list, section, strOptions, service_options
 		                     , BBS_OPT_NO_HOST_LOOKUP);
 
+		services->max_connects_per_period = iniGetUInteger(list, section, strMaxConnectsPerPeriod, 0);
+		services->connect_rate_limit_period = iniGetUInteger(list, section, strConnectRateLimitPeriod, 60 * 60);
+
 		services->bind_retry_count = iniGetInteger(list, section, strBindRetryCount, global->bind_retry_count);
 		services->bind_retry_delay = iniGetInteger(list, section, strBindRetryDelay, global->bind_retry_delay);
 		services->login_attempt = get_login_attempt_settings(list, section, global);
@@ -1406,6 +1411,11 @@ bool sbbs_write_ini(
 			if (services->bind_retry_delay == global->bind_retry_delay)
 				iniRemoveValue(lp, section, strBindRetryDelay);
 			else if (!iniSetInteger(lp, section, strBindRetryDelay, services->bind_retry_delay, &style))
+				break;
+
+			if (!iniSetUInteger(lp, section, strMaxConnectsPerPeriod, services->max_connects_per_period, &style))
+				break;
+			if (!iniSetUInteger(lp, section, strConnectRateLimitPeriod, services->connect_rate_limit_period, &style))
 				break;
 		}
 

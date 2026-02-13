@@ -48,6 +48,7 @@
 #include "multisock.h"
 #include "ssl.h"
 #include "filterfile.hpp"
+#include "ratelimit.hpp"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -70,6 +71,7 @@ static str_list_t          shutdown_semfiles;
 static protected_uint32_t  threads_pending_start;
 static struct mqtt         mqtt;
 
+static rateLimiter*        connect_rate_limiter = nullptr;
 static trashCan*           ip_can = nullptr;
 static trashCan*           ip_silent_can = nullptr;
 static trashCan*           host_can = nullptr;
@@ -1996,6 +1998,8 @@ void services_thread(void* arg)
 	startup->shutdown_now = false;
 	terminated = false;
 
+	connect_rate_limiter = new rateLimiter(startup->max_connects_per_period, startup->connect_rate_limit_period);
+
 	SetThreadName("sbbs/services");
 
 	do {
@@ -2145,6 +2149,9 @@ void services_thread(void* arg)
 			}
 		}
 
+		connect_rate_limiter->maxRequests = startup->max_connects_per_period;
+		connect_rate_limiter->timeWindowSeconds = startup->connect_rate_limit_period;
+
 		ip_can = new trashCan(&scfg, "ip");
 		ip_silent_can = new trashCan(&scfg, "ip-silent");
 		host_can = new trashCan(&scfg, "host");
@@ -2173,6 +2180,10 @@ void services_thread(void* arg)
 			return;
 		}
 #endif
+
+		char rate_limit_report[512]{};
+		time_t last_rate_limit_report = time(NULL);
+
 		/* Main Server Loop */
 		while (!terminated) {
 			YIELD();
@@ -2204,6 +2215,28 @@ void services_thread(void* arg)
 				SLEEP(startup->sem_chk_freq * 1000);
 				continue;
 			}
+
+			if (startup->max_connects_per_period > 0 && startup->connect_rate_limit_period > 0
+				&& time(NULL) - last_rate_limit_report >= startup->sem_chk_freq) {
+				last_rate_limit_report = time(NULL);
+				connect_rate_limiter->cleanup();
+				size_t most_active_count = 0;
+				std::string most_active = connect_rate_limiter->most_active(&most_active_count);
+				char str[sizeof rate_limit_report];
+				char tmp[128], tmp2[128];
+				snprintf(str, sizeof str, "Connect limiting current: clients=%zu, requests=%zu, most-active=%s (%zu), highest: %s (%u) on %s, limited: %u, last: %s on %s (repeat: %u)"
+					, connect_rate_limiter->client_count(), connect_rate_limiter->total(), most_active.c_str(), most_active_count
+					, connect_rate_limiter->currHighwater.client.c_str(), connect_rate_limiter->currHighwater.count
+					, timestr(&scfg, (time32_t)connect_rate_limiter->currHighwater.time, tmp)
+					, connect_rate_limiter->disallowed.load()
+					, connect_rate_limiter->lastLimited.client.c_str(), timestr(&scfg, (time32_t)connect_rate_limiter->lastLimited.time, tmp2)
+					, connect_rate_limiter->repeat.load());
+				if (strcmp(str, rate_limit_report) != 0) {
+					SAFECOPY(rate_limit_report, str);
+					lprintf(LOG_DEBUG, "%s", rate_limit_report);
+				}
+			}
+
 			/* signal caller that we've started up successfully */
 			set_state(SERVER_READY);
 
@@ -2369,7 +2402,7 @@ void services_thread(void* arg)
 							continue;
 						}
 
-						/* Set client address as default addres for send/recv */
+						/* Set client address as default address for send/recv */
 						if (connect(client_socket
 						            , (struct sockaddr *)&client_addr, client_addr_len) != 0) {
 							FREE_AND_NULL(udp_buf);
@@ -2400,10 +2433,12 @@ void services_thread(void* arg)
 						inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 					}
 
-					if (!host_exempt->listed(host_ip, nullptr) && ip_silent_can->listed(host_ip)) {
-						FREE_AND_NULL(udp_buf);
-						close_socket(client_socket);
-						continue;
+					if (!host_exempt->listed(host_ip, nullptr)) {
+						if (ip_silent_can->listed(host_ip) || !connect_rate_limiter->allowRequest(host_ip)) {
+							FREE_AND_NULL(udp_buf);
+							close_socket(client_socket);
+							continue;
+						}
 					}
 
 					union xp_sockaddr local_addr;
@@ -2555,4 +2590,6 @@ void services_thread(void* arg)
 		cleanup(0);
 
 	} while (!terminated);
+
+	delete connect_rate_limiter;
 }
