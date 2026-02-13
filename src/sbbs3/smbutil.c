@@ -1155,11 +1155,63 @@ void packmsgs(ulong packable)
 		       , n, n * SDT_BLOCK_LEN, m, m * SHD_BLOCK_LEN);
 	}
 
-	sprintf(fname, "%s.sd$", smb.file);
+	smb_close_fp(&smb.sdt_fp);
+	sprintf(fname, "%s.sdt", smb.file);
+	sprintf(tmpfname, "%s.sdt_", smb.file);
+	if (rename(fname, tmpfname) != 0) {
+		smb_unlocksmbhdr(&smb);
+		smb_close_ha(&smb);
+		smb_close_da(&smb);
+		fprintf(errfp, "\n%s!Error %d (%s) renaming %s to %s\n", beep, errno, strerror(errno), fname, tmpfname);
+		return;
+	}
+	if ((smb.sdt_fp = fopen(tmpfname, "rb")) == NULL) {
+		smb_unlocksmbhdr(&smb);
+		smb_close_ha(&smb);
+		smb_close_da(&smb);
+		fprintf(errfp, "\n%s!Error %d (%s) opening %s for reading\n", beep, errno, strerror(errno), tmpfname);
+		return;
+	}
+	smb_close_fp(&smb.shd_fp);
+	sprintf(fname, "%s.shd", smb.file);
+	sprintf(tmpfname, "%s.shd_", smb.file);
+	if (rename(fname, tmpfname) != 0) {
+		smb_unlocksmbhdr(&smb);
+		smb_close_ha(&smb);
+		smb_close_da(&smb);
+		fprintf(errfp, "\n%s!Error %d (%s) renaming %s to %s\n", beep, errno, strerror(errno), fname, tmpfname);
+		return;
+	}
+	if ((smb.shd_fp = fopen(tmpfname, "rb")) == NULL) {
+		smb_unlocksmbhdr(&smb);
+		smb_close_ha(&smb);
+		smb_close_da(&smb);
+		fprintf(errfp, "\n%s!Error %d (%s) opening %s for reading\n", beep, errno, strerror(errno), tmpfname);
+		return;
+	}
+	smb_close_fp(&smb.sid_fp);
+	sprintf(fname, "%s.sid", smb.file);
+	sprintf(tmpfname, "%s.sid_", smb.file);
+	if (rename(fname, tmpfname) != 0) {
+		smb_unlocksmbhdr(&smb);
+		smb_close_ha(&smb);
+		smb_close_da(&smb);
+		fprintf(errfp, "\n%s!Error %d (%s) renaming %s to %s\n", beep, errno, strerror(errno), fname, tmpfname);
+		return;
+	}
+	if ((smb.sid_fp = fopen(tmpfname, "rb")) == NULL) {
+		smb_unlocksmbhdr(&smb);
+		smb_close_ha(&smb);
+		smb_close_da(&smb);
+		fprintf(errfp, "\n%s!Error %d (%s) opening %s for reading\n", beep, errno, strerror(errno), tmpfname);
+		return;
+	}
+
+	sprintf(fname, "%s.sdt$", smb.file);
 	tmp_sdt = fopen(fname, "wb");
-	sprintf(fname, "%s.sh$", smb.file);
+	sprintf(fname, "%s.shd$", smb.file);
 	tmp_shd = fopen(fname, "wb");
-	sprintf(fname, "%s.si$", smb.file);
+	sprintf(fname, "%s.sid$", smb.file);
 	tmp_sid = fopen(fname, "wb");
 	if (!tmp_sdt || !tmp_shd || !tmp_sid) {
 		smb_unlocksmbhdr(&smb);
@@ -1239,7 +1291,7 @@ void packmsgs(ulong packable)
 			if (msg.hdr.offset == datoffset[m].old)
 				break;
 		if (m < datoffsets) {              /* another index pointed to this data */
-			printf("duplicate index\n");
+//			printf("duplicate data at offset %08" PRIx32 "\n", msg.hdr.offset);
 			msg.hdr.offset = datoffset[m].new;
 			smb_incmsgdat(&smb, datoffset[m].new, smb_getmsgdatlen(&msg), 1);
 		} else {
@@ -1332,46 +1384,47 @@ void packmsgs(ulong packable)
 		smb_close_da(&smb);
 	}
 
-	/* Change *.sh$ into *.shd */
+	/* Change *.shd$ into *.shd */
 	fclose(smb.shd_fp), smb.shd_fp = NULL;
 	fclose(tmp_shd);
-	sprintf(fname, "%s.shd", smb.file);
+	sprintf(fname, "%s.shd_", smb.file);
 	if (remove(fname) != 0) {
 		error = TRUE;
 		fprintf(errfp, "\n%s!Error %d removing %s\n", beep, errno, fname);
 	}
-	sprintf(tmpfname, "%s.sh$", smb.file);
+	*lastchar(fname) = '\0';
+	sprintf(tmpfname, "%s.shd$", smb.file);
 	if (!error && rename(tmpfname, fname) != 0) {
 		error = TRUE;
 		fprintf(errfp, "\n%s!Error %d renaming %s to %s\n", beep, errno, tmpfname, fname);
 	}
 
 
-	/* Change *.sd$ into *.sdt */
+	/* Change *.sdt$ into *.sdt */
 	fclose(smb.sdt_fp), smb.sdt_fp = NULL;
 	fclose(tmp_sdt);
-	sprintf(fname, "%s.sdt", smb.file);
+	sprintf(fname, "%s.sdt_", smb.file);
 	if (!error && remove(fname) != 0) {
 		error = TRUE;
 		fprintf(errfp, "\n%s!Error %d removing %s\n", beep, errno, fname);
 	}
-
-	sprintf(tmpfname, "%s.sd$", smb.file);
+	*lastchar(fname) = '\0';
+	sprintf(tmpfname, "%s.sdt$", smb.file);
 	if (!error && rename(tmpfname, fname) != 0) {
 		error = TRUE;
 		fprintf(errfp, "\n%s!Error %d renaming %s to %s\n", beep, errno, tmpfname, fname);
 	}
 
-	/* Change *.si$ into *.sid */
+	/* Change *.sid$ into *.sid */
 	fclose(smb.sid_fp), smb.sid_fp = NULL;
 	fclose(tmp_sid);
-	sprintf(fname, "%s.sid", smb.file);
+	sprintf(fname, "%s.sid_", smb.file);
 	if (!error && remove(fname) != 0) {
 		error = TRUE;
 		fprintf(errfp, "\n%s!Error %d removing %s\n", beep, errno, fname);
 	}
-
-	sprintf(tmpfname, "%s.si$", smb.file);
+	*lastchar(fname) = '\0';
+	sprintf(tmpfname, "%s.sid$", smb.file);
 	if (!error && rename(tmpfname, fname) != 0) {
 		error = TRUE;
 		fprintf(errfp, "\n%s!Error %d renaming %s to %s\n", beep, errno, tmpfname, fname);
