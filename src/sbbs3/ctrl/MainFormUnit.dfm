@@ -13792,7 +13792,7 @@ object MainForm: TMainForm
         end
         object BBSEditColors: TMenuItem
           Caption = 'Default Colors'
-          Hint = 'ATTR.CFG'
+          Hint = 'ATTR.INI'
           OnClick = CtrlMenuItemEditClick
         end
         object BBSEditNoNodesMessage: TMenuItem
@@ -13802,17 +13802,17 @@ object MainForm: TMainForm
         end
         object BBSEditAnswer: TMenuItem
           Caption = 'Answer Screen'
-          Hint = 'ANSWER.ASC'
+          Hint = 'ANSWER.MSG'
           OnClick = TextMenuItemEditClick
         end
         object BBSEditLogonMessage: TMenuItem
           Caption = 'Logon Message'
-          Hint = 'MENU/LOGON.ASC'
+          Hint = 'MENU/LOGON.MSG'
           OnClick = TextMenuItemEditClick
         end
         object LogoffMessage: TMenuItem
           Caption = 'Logoff Message'
-          Hint = 'MENU/LOGOFF.ASC'
+          Hint = 'MENU/LOGOFF.MSG'
           OnClick = TextMenuItemEditClick
         end
         object BBSEditAutoMsg: TMenuItem
