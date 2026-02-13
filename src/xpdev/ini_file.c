@@ -260,6 +260,7 @@ static char* key_name(char* p, char** vp, bool literals_supported)
 				*tp = 0;
 			}
 		}
+		c_unescape_str(p);
 		c_unescape_str(*vp);
 	} else
 		truncsp(*vp);       /* "key = value" - truncate all white-space chars */
