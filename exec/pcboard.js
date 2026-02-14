@@ -1,4 +1,4 @@
-//PCBoard v15.1 menu/command emulation
+// PCBoard v15.1 menu/command emulation
 
 // @format.tab-size 4, @format.use-tabs true
 
@@ -89,7 +89,7 @@ while(bbs.online && !js.terminated) {
 			bbs.scan_subs(SCAN_TOYOU);
 			continue;
 		case 'TS':
-			bbs.scan_subs(SCAN_FIND, /* all */true);
+			bbs.scan_subs(SCAN_FIND);
 			continue;
 		case 'QWK':
 			bbs.qwk_sec();
