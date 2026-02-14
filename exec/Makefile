@@ -12,7 +12,6 @@ all : 	\
 	matrix.bin \
 	obv-2.bin \
 	pcboard.bin \
-	ra_emu.bin \
 	renegade.bin \
 	sdos.bin \
 	simple.bin \
