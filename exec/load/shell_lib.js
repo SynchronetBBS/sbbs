@@ -124,7 +124,7 @@ function show_subs(grp)
 function select_msg_area()
 {
 	if(usrgrps < 1)
-		return;
+		return false;
 	while(bbs.online) {
 		var j=0;
 		if(usrgrps > 1) {
@@ -133,7 +133,7 @@ function select_msg_area()
 			j=console.getnum(usrgrps);
 			console.clear_hotspots();
 			if(j==-1)
-				return;
+				return false;
 			if(!j)
 				j=bbs.curgrp;
 			else
@@ -145,7 +145,7 @@ function select_msg_area()
 		console.clear_hotspots();
 		if(i==-1) {
 			if(usrgrps==1)
-				return;
+				return false;
 			continue;
 		}
 		if(!i)
@@ -154,9 +154,9 @@ function select_msg_area()
 			i--;
 		bbs.curgrp=j;
 		bbs.cursub=i;
-		return;
+		return true;
 	}
-	return;
+	return false;
 }
 
 // List File Libraries
@@ -203,7 +203,7 @@ function select_file_area()
 {
 	var usrlibs = file_area.lib_list.length;
 	if(usrlibs < 1)
-		return;
+		return false;
 	while(bbs.online) {
 		var j=0;
 		if(usrlibs > 1) {
@@ -212,7 +212,7 @@ function select_file_area()
 			j=console.getnum(usrlibs);
 			console.clear_hotspots();
 			if(j==-1)
-				return;
+				return false;
 			if(!j)
 				j=bbs.curlib;
 			else
@@ -224,7 +224,7 @@ function select_file_area()
 		console.clear_hotspots();
 		if(i==-1) {
 			if(usrlibs==1)
-				return;
+				return false;
 			continue;
 		}
 		if(!i)
@@ -233,9 +233,9 @@ function select_file_area()
 			i--;
 		bbs.curlib=j;
 		bbs.curdir=i;
-		return;
+		return true;
 	}
-	return;
+	return false;
 }
 
 function main_info()
@@ -498,7 +498,7 @@ function logoff(fast)
 		if(prompt.length) {
 			if(console.yesno(prompt)) {
 				bbs.batch_download();
-				return; // hang-up is handled in bbs.batch_download()
+				return false; // hang-up is handled in bbs.batch_download()
 			}
 			if(!console.noyes(bbs.text(bbs.text.ClearDownloadQueueQ)))
 				if(bbs.batch_clear(/* upload_queue */false))
@@ -507,10 +507,11 @@ function logoff(fast)
 					alert("Failed to clear batch download queue!");
 		}
 	}
-	if(fast)
+	if(fast) {
 		bbs.hangup();
-	else
-		bbs.logoff(/* prompt: */true);
+		return true;
+	}
+	return bbs.logoff(/* prompt: */true);
 }
 
 function upload_file()
