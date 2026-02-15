@@ -139,7 +139,7 @@ cmdkey D
 	end_cmd
 
 cmdkey E
-	exec_bin email_sec
+	email_section
 	end_cmd
 
 cmdkey F

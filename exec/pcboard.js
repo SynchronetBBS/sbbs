@@ -125,7 +125,7 @@ while(bbs.online && !js.terminated) {
 				shell.select_msg_area();
 			continue;
 		case 'M':
-			js.exec("email_sec.js", {});
+			bbs.email_sec();
 			continue;
 		case 'X':
 			user.settings ^= USER_EXPERT;

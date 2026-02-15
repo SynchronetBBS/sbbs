@@ -39,7 +39,7 @@ shell.main_menu = {
 			,msg: '\r\n\x01c\x01h' + gettext("Browse/New Message Scan") + '\r\n' },
 	 'C': { eval: 'bbs.chat_sec()' },
 	 'D': { eval: 'bbs.user_config(); exit()' },
-	 'E': { exec: 'email_sec.js' },
+	 'E': { eval: 'bbs.email_sec()' },
 	 'F': { eval: 'bbs.scan_subs(SCAN_FIND)'
 			,msg: '\r\n\x01c\x01h' + gettext("Find Text in Messages") + '\r\n' },
 	'/F': { eval: 'bbs.scan_subs(SCAN_FIND, /* all */true)' },
