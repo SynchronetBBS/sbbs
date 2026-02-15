@@ -11,7 +11,6 @@ all : 	\
 	major.bin \
 	matrix.bin \
 	obv-2.bin \
-	renegade.bin \
 	sdos.bin \
 	simple.bin \
 	wildcat.bin \
