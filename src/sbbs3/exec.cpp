@@ -991,6 +991,7 @@ void sbbs_t::skipto(csi_t *csi, uchar inst)
 					csi->ip++;
 					switch (*(csi->ip++)) {
 						case SHOW_VARS:
+						case EMAIL_SECTION:
 							continue;
 						case PRINT_VAR:
 						case DEFINE_STR_VAR:

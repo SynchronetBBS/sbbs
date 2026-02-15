@@ -607,6 +607,12 @@ void compile(char *src)
 			continue;
 		}
 
+		if (!stricmp(p, "EMAIL_SECTION")) {
+			fputc(CS_VAR_INSTRUCTION, out);
+			fputc(EMAIL_SECTION, out);
+			continue;
+		}
+
 		if (!stricmp(p, "COMPARE_ARS")) {
 			if (!(*arg))
 				break;

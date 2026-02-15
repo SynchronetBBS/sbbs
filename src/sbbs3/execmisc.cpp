@@ -1043,6 +1043,10 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					}
 					return 0;
 
+				case EMAIL_SECTION:
+					email_sec();
+					return 0;
+
 				default:
 					errormsg(WHERE, ERR_CHK, "var sub-instruction", *(csi->ip - 1));
 					return 0;

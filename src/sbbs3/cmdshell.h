@@ -451,6 +451,7 @@ enum {
 	, SHIFT_TO_FIRST_CHAR            /* Shift str var to first occurance of static char */
 	, SHIFT_TO_LAST_CHAR             /* Shift str var to last occurance of static char */
 	, MATCHUSER                      /* Set int var to user number of user name (str var) */
+	, EMAIL_SECTION                  /* E-mail section */
 };
 
 /* Preceded by CS_STR_FUNCTION */

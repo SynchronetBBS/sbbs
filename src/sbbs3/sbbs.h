@@ -890,6 +890,7 @@ public:
 	char*	msg_tmp_fname(int xedit, char* fname, size_t len);
 	bool	msgabort(bool clear = false);
 	void	clearabort();
+	void	email_sec();
 	bool	email(int usernumber, const char *top = NULL, const char *title = NULL
 				, int mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
 	bool	forwardmsg(smb_t*, smbmsg_t*, const char* to, const char* subject = NULL, const char* comment = NULL);

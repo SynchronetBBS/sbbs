@@ -331,3 +331,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	}
 	return true;
 }
+
+void sbbs_t::email_sec() {
+	exec_mod("email section", cfg.emailsec_mod);
+}

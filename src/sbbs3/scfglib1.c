@@ -297,6 +297,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->logout_mod = read_loadable_mod(cfg, section, "logout", "");
 	cfg->sync_mod = read_loadable_mod(cfg, section, "sync", "");
 	cfg->expire_mod = read_loadable_mod(cfg, section, "expire", "");
+	cfg->emailsec_mod = read_loadable_mod(cfg, section, "emailsec", "email_sec");
 	cfg->readmail_mod = read_loadable_mod(cfg, section, "readmail", "");
 	cfg->scanposts_mod = read_loadable_mod(cfg, section, "scanposts", "");
 	cfg->scansubs_mod = read_loadable_mod(cfg, section, "scansubs", "");

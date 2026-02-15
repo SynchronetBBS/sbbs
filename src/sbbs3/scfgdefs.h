@@ -631,6 +631,7 @@ typedef struct
 	struct loadable_module logout_mod;			/* Logout module */
 	struct loadable_module sync_mod;			/* Synchronization module */
 	struct loadable_module expire_mod;			/* User expiration module */
+	struct loadable_module emailsec_mod;
 	struct loadable_module textsec_mod;			/* Text section module */
 	struct loadable_module xtrnsec_mod;			/* External Program section module */
 	struct loadable_module chatsec_mod;			/* Chat section module */

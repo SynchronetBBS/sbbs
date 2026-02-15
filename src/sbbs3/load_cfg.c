@@ -384,6 +384,7 @@ void free_cfg(scfg_t* cfg)
 	free_loadable_module(&cfg->logout_mod);
 	free_loadable_module(&cfg->sync_mod);
 	free_loadable_module(&cfg->expire_mod);
+	free_loadable_module(&cfg->emailsec_mod);
 	free_loadable_module(&cfg->textsec_mod);
 	free_loadable_module(&cfg->xtrnsec_mod);
 	free_loadable_module(&cfg->chatsec_mod);

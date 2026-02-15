@@ -2190,6 +2190,24 @@ js_time_bank(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_email_sec(JSContext *cx, uintN argc, jsval *arglist)
+{
+	sbbs_t*    sbbs;
+	jsrefcount rc;
+
+	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	rc = JS_SUSPENDREQUEST(cx);
+	sbbs->email_sec();
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
+
+static JSBool
 js_text_sec(JSContext *cx, uintN argc, jsval *arglist)
 {
 	sbbs_t*    sbbs;
@@ -4880,6 +4898,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , JSDOCSTR("Enter the time banking system.")
 	 , 310
 	},
+	{"email_sec",       js_email_sec,       0,  JSTYPE_VOID,    JSDOCSTR("")
+	 , JSDOCSTR("Enter the E-Mail section.")
+	 , 321
+	},
 	{"qwk_sec",         js_qwk_sec,         0,  JSTYPE_VOID,    JSDOCSTR("")
 	 , JSDOCSTR("Enter the QWK message packet upload/download/config section.")
 	 , 310
@@ -5219,7 +5241,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , 310
 	},
 	{"private_message", js_private_message, 0,  JSTYPE_VOID,    JSDOCSTR("")
-	 , JSDOCSTR("Use the private inter-node message promp.t")
+	 , JSDOCSTR("Use the private inter-node message prompt.")
 	 , 310
 	},
 	{"private_chat",    js_private_chat,    0,  JSTYPE_VOID,    JSDOCSTR("[local=false]")

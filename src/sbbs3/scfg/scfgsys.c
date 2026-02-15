@@ -1064,7 +1064,7 @@ void security_cfg(void)
 								break;
 							case 5:
 								uifc.input(WIN_MID | WIN_SAV, 0, 0
-								           , "Lines Allowed Per Message (Post/E-mail)"
+								           , "Lines Allowed Per Message (Post/Email)"
 								           , ultoa(cfg.level_linespermsg[i], tmp, 10), 5
 								           , K_NUMBER | K_EDIT);
 								cfg.level_linespermsg[i] = atoi(tmp);
@@ -1674,7 +1674,7 @@ void newuser_qwk_opts(void)
 		"Note that while most of the options may be toggled between 2 states\n"
 		"(`Yes` and `No`), some options offer 3 states:\n"
 		"  `Include Ctrl-A Codes:` Yes, Expand (to ANSI), and No\n"
-		"  `Include E-mail Messages`: All, Unread (only), and No\n"
+		"  `Include Email Messages`: All, Unread (only), and No\n"
 	;
 	while (1) {
 		int i = 0;
@@ -1697,10 +1697,10 @@ void newuser_qwk_opts(void)
 		         , "Include Messages From Self"
 		         , (cfg.new_qwk & QWK_BYSELF) ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s %s"
-		         , "Include E-mail Messages"
+		         , "Include Email Messages"
 		         , (cfg.new_qwk & QWK_ALLMAIL) ? "All" : (cfg.new_qwk & QWK_EMAIL) ? "Unread" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s %s"
-		         , "Delete Downloaded E-mail"
+		         , "Delete Downloaded Email"
 		         , (cfg.new_qwk & QWK_DELMAIL) ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s %s"
 		         , "Include Index Files"
@@ -2606,10 +2606,10 @@ void sys_cfg(void)
 					         , "Force Unique Handle / Call Sign"
 					         , cfg.uq & UQ_DUPHAND ? "Yes":"No");
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
-					         , "E-mail/NetMail Address"
+					         , "Email/NetMail Address"
 					         , cfg.uq & UQ_NONETMAIL ? "No":"Yes");
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
-					         , "Force Unique E-mail/NetMail Address"
+					         , "Force Unique Email/NetMail Address"
 					         , cfg.uq & UQ_DUPNETMAIL ? "Yes":"No");
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s %-3.3s"
 					         , "Gender"
@@ -3207,6 +3207,7 @@ void sys_cfg(void)
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Expired User", strListCombine(cfg.expire_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Auto Message", strListCombine(cfg.automsg_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Send Feedback", strListCombine(cfg.feedback_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Email Section", strListCombine(cfg.emailsec_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Chat Section", strListCombine(cfg.chatsec_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Text Section", strListCombine(cfg.textsec_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Xtrn Section", strListCombine(cfg.xtrnsec_mod.cmd, str, sizeof str, list_sep));
@@ -3313,60 +3314,63 @@ void sys_cfg(void)
 							mods_changed |= cfg_loadable_modules("Send Feedback", &cfg.feedback_mod, mod_bar, 0);
 							break;
 						case 12:
-							mods_changed |= cfg_loadable_modules("Chat Section", &cfg.chatsec_mod, mod_bar, 1);
+							mods_changed |= cfg_loadable_modules("Email Section", &cfg.emailsec_mod, mod_bar, 1);
 							break;
 						case 13:
-							mods_changed |= cfg_loadable_modules("Text File Section", &cfg.textsec_mod, mod_bar, 1);
+							mods_changed |= cfg_loadable_modules("Chat Section", &cfg.chatsec_mod, mod_bar, 1);
 							break;
 						case 14:
-							mods_changed |= cfg_loadable_modules("External Program Section", &cfg.xtrnsec_mod, mod_bar, 1);
+							mods_changed |= cfg_loadable_modules("Text File Section", &cfg.textsec_mod, mod_bar, 1);
 							break;
 						case 15:
-							mods_changed |= cfg_loadable_modules("Pre External Program", &cfg.prextrn_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("External Program Section", &cfg.xtrnsec_mod, mod_bar, 1);
 							break;
 						case 16:
-							mods_changed |= cfg_loadable_modules("Post External Program", &cfg.postxtrn_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("Pre External Program", &cfg.prextrn_mod, mod_bar, 0);
 							break;
 						case 17:
-							mods_changed |= cfg_loadable_modules("Read Mail", &cfg.readmail_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("Post External Program", &cfg.postxtrn_mod, mod_bar, 0);
 							break;
 						case 18:
-							mods_changed |= cfg_loadable_modules("Scan Msgs", &cfg.scanposts_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("Read Mail", &cfg.readmail_mod, mod_bar, 0);
 							break;
 						case 19:
-							mods_changed |= cfg_loadable_modules("Scan Subs", &cfg.scansubs_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("Scan Msgs", &cfg.scanposts_mod, mod_bar, 0);
 							break;
 						case 20:
-							mods_changed |= cfg_loadable_modules("List Msgs", &cfg.listmsgs_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("Scan Subs", &cfg.scansubs_mod, mod_bar, 0);
 							break;
 						case 21:
-							mods_changed |= cfg_loadable_modules("List Logons", &cfg.logonlist_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("List Msgs", &cfg.listmsgs_mod, mod_bar, 0);
 							break;
 						case 22:
-							mods_changed |= cfg_loadable_modules("List Users", &cfg.userlist_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("List Logons", &cfg.logonlist_mod, mod_bar, 0);
 							break;
 						case 23:
-							mods_changed |= cfg_loadable_modules("List Nodes", &cfg.nodelist_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("List Users", &cfg.userlist_mod, mod_bar, 0);
 							break;
 						case 24:
-							mods_changed |= cfg_loadable_modules("Who's Online", &cfg.whosonline_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("List Nodes", &cfg.nodelist_mod, mod_bar, 0);
 							break;
 						case 25:
-							mods_changed |= cfg_loadable_modules("Private Message", &cfg.privatemsg_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("Who's Online", &cfg.whosonline_mod, mod_bar, 0);
 							break;
 						case 26:
-							mods_changed |= cfg_loadable_modules("Scan Dirs", &cfg.scandirs_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("Private Message", &cfg.privatemsg_mod, mod_bar, 0);
 							break;
 						case 27:
-							mods_changed |= cfg_loadable_modules("List Files", &cfg.listfiles_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("Scan Dirs", &cfg.scandirs_mod, mod_bar, 0);
 							break;
 						case 28:
-							mods_changed |= cfg_loadable_modules("View File Information", &cfg.fileinfo_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("List Files", &cfg.listfiles_mod, mod_bar, 0);
 							break;
 						case 29:
-							mods_changed |= cfg_loadable_modules("Batch File Transfer", &cfg.batxfer_mod, mod_bar, 0);
+							mods_changed |= cfg_loadable_modules("View File Information", &cfg.fileinfo_mod, mod_bar, 0);
 							break;
 						case 30:
+							mods_changed |= cfg_loadable_modules("Batch File Transfer", &cfg.batxfer_mod, mod_bar, 0);
+							break;
+						case 31:
 							mods_changed |= cfg_loadable_modules("Temporary File Transfer", &cfg.tempxfer_mod, mod_bar, 0);
 							break;
 					}

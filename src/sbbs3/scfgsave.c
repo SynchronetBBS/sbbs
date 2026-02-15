@@ -227,6 +227,7 @@ bool write_main_cfg(scfg_t* cfg)
 		write_loadable_module(&ini, "logout", cfg->logout_mod);
 		write_loadable_module(&ini, "sync", cfg->sync_mod);
 		write_loadable_module(&ini, "expire", cfg->expire_mod);
+		write_loadable_module(&ini, "emailsec", cfg->emailsec_mod);
 		write_loadable_module(&ini, "readmail", cfg->readmail_mod);
 		write_loadable_module(&ini, "scanposts", cfg->scanposts_mod);
 		write_loadable_module(&ini, "scansubs", cfg->scansubs_mod);
