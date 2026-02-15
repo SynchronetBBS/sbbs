@@ -1093,15 +1093,11 @@ function displayCommandList(pDisplayHeader, pPause, pCanCrossPost, pTxtReplacmen
 		if (console.term_supports(USER_RIP))
 		{
 			var headerText = format("%s Help (%s mode)", EDITOR_PROGRAM_NAME, EDITOR_STYLE == "DCT" ? "DCT" : "Ice");
-			console.crlf(); // A new set of RIP commands needs to be on its own line
-			var rip = "!" + RIPKillMouseFields();
-			rip += RIPFontStyleNumeric(8, 0, 2, 0);
-			rip += RIPWriteModeStr(0);
-			var btnFlags = 8|32|512|32768;
-			rip += RIPButtonStyleNumeric(640, 40, 2, btnFlags, 5, 1, 0, 15, 8, 7, 1, 0, 0, 0, 0);
-			rip += RIPButtonNumeric(0, 0, 640, 60, 0, 0, 0, [headerText], "");
-			console.crlf();
-			console.print(rip + "\r\n");
+			var txtColor = 1; // Blue
+			var innerBorderColor = 15;
+			var outerEdgeColor = 8;
+			var bkgColor = 7;
+			displayRIPHdr(headerText, txtColor, innerBorderColor, outerEdgeColor, bkgColor);
 			scrollTopRow += 4;
 		}
 		else
@@ -1361,14 +1357,11 @@ function displayProgramInfoAndCommandList(pPause, pCanCrossPost, pTxtReplacments
 
 		var headerText = format("%s Version %s (%s mode) (%s)", EDITOR_PROGRAM_NAME, EDITOR_VERSION,
 		                        EDITOR_STYLE == "DCT" ? "DCT" : "Ice", EDITOR_VER_DATE);
-		console.crlf(); // A new set of RIP commands needs to be on its own line
-		var rip = "!" + RIPKillMouseFields();
-		rip += RIPFontStyleNumeric(8, 0, 2, 0);
-		rip += RIPWriteModeStr(0);
-		var btnFlags = 8|32|512|32768;
-		rip += RIPButtonStyleNumeric(640, 40, 2, btnFlags, 5, 1, 0, 15, 8, 7, 1, 0, 0, 0, 0);
-		rip += RIPButtonNumeric(0, 0, 640, 60, 0, 0, 0, [headerText], "");
-		console.print(rip + "\r\n");
+		var txtColor = 1; // Blue
+		var innerBorderColor = 15;
+		var outerEdgeColor = 8;
+		var bkgColor = 7;
+		displayRIPHdr(headerText, txtColor, innerBorderColor, outerEdgeColor, bkgColor);
 		RIPHeightOffset = 3;
 	}
 	//console.print("\r\n\r\n\r\n");
@@ -5391,4 +5384,32 @@ function getCenteredTextStr(pStr, pTrailingPadding)
 		paddedStr += format("%*s", console.screen_columns - console.strlen(paddedStr) - 1, "");
 
 	return paddedStr;
+}
+
+// Displays a RIP header at the top of the screen
+//
+// Parameters:
+//  pText: The text to display
+//  pTextColorNum: The text color number
+//  pInnerBorderColorNum: The color number for the inner border
+//  pOuterEdgeColorNum: The color number for the outer edge
+//  pBkgColorNum: The color number for the background
+function displayRIPHdr(pText, pTextColorNum, pInnerBorderColorNum, pOuterEdgeColorNum, pBkgColorNum)
+{
+	var textColorNum = (typeof(pTextColorNum) === "number" ? pTextColorNum : 1);
+	var innerBorderColorNum = (typeof(pInnerBorderColorNum) === "number" ? pInnerBorderColorNum : 15);
+	var outerEdgeColorNum = (typeof(pOuterEdgeColorNum) === "number" ? pOuterEdgeColorNum : 8);
+	var bkgColorNum = (typeof(pBkgColorNum) === "number" ? pBkgColorNum : 7);
+
+	var btnFlags = RIP_BTN_STYLE_CHISEL_EFFECT|RIP_BTN_STYLE_DROPSHADOW_LBL|RIP_BTN_STYLE_BEVEL|RIP_BTN_STYLE_SUNKEN;
+
+	console.crlf(); // A new set of RIP commands needs to be on its own line
+	var rip = "!" + RIPKillMouseFields();
+	rip += RIPFontStyleNumeric(8, 0, 2, 0);
+	rip += RIPWriteMode(0);
+	rip += RIPButtonStyleNumeric(640, 40, 2, btnFlags, 5, textColorNum, 0, innerBorderColorNum,
+	                             outerEdgeColorNum, bkgColorNum, 1, 0, 0, 0, 0);
+	rip += RIPButtonNumeric(0, 0, 640, 60, 0, 0, 0, [pText], "");
+	console.crlf();
+	console.print(rip + "\r\n");
 }
