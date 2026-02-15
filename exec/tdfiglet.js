@@ -12,7 +12,7 @@ tdf.opt = {};
 function usage() {
 	writeln("usage: tdfiglet [options] input");
 	writeln("");
-	writeln("    -f [font] Specify font file to use");
+	writeln("    -f [font] Specify font file to use (see " + system.ctrl_dir + "tdfonts)");
 	writeln("    -j l|r|c  Justify left, right, or center (default: left)");
 	writeln("    -w n      Set screen width  (default: auto-detect or 80)");
 	writeln("    -m n      Set margin/offset (for left or right justification)");
