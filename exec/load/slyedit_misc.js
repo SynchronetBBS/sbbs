@@ -17,6 +17,7 @@ if (typeof(require) === "function")
 	require("cp437_defs.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
 	require("frame.js", "Frame");
 	require("scrollbar.js", "ScrollBar");
+	require("rip_lib.js", "RIPFontStyle");
 }
 else
 {
@@ -27,6 +28,7 @@ else
 	load("cp437_defs.js");
 	load("frame.js");
 	load("scrollbar.js");
+	load("rip_lib.js");
 }
 
 var COPYRIGHT_YEAR = 2026;
@@ -69,8 +71,6 @@ var ESC_MENU_LIST_TEXT_REPLACEMENTS = 11;
 var ESC_MENU_USER_SETTINGS = 12;
 var ESC_MENU_SPELL_CHECK = 13;
 var ESC_MENU_INSERT_MEME = 14;
-
-var RIP_START_SEQ = "!|R"; // RIP start sequence
 
 // Store the full path & filename of the Digital Distortion Message
 // Lister, since it will be used more than once.
@@ -1094,40 +1094,13 @@ function displayCommandList(pDisplayHeader, pPause, pCanCrossPost, pTxtReplacmen
 		{
 			var headerText = format("%s Help (%s mode)", EDITOR_PROGRAM_NAME, EDITOR_STYLE == "DCT" ? "DCT" : "Ice");
 			console.crlf(); // A new set of RIP commands needs to be on its own line
-			// RIP text color values:
-			/*
-			 Value   Color
-			 -------------------------------------------------------
-			 00      Black (00 is always the background color)
-			 01      Blue
-			 02      Green
-			 03      Cyan
-			 04      Red
-			 05      Magenta
-			 06      Brown
-			 07      Light Gray
-			 08      Dark Gray
-			 09      Light Blue
-			 0A      Light Green
-			 0B      Light Cyan
-			 0C      Light Red
-			 0D      Light Magenta
-			 0E      Yellow
-			 0F      White
-			 */
-			var rip = RIPTitleBar(
-				1,      // attribute slot
-				//7, 7,   // bar position
-				1, 1,   // bar position
-				1,      // line style
-				"0000", // pen
-				headerText,
-				"01",   // Text color (blue)
-				//7, 7,   // text position
-				60, 9    // text position
-			);
-			rip = rip.replace(/~$/, "");
-			console.print(RIP_START_SEQ);
+			var rip = "!" + RIPKillMouseFields();
+			rip += RIPFontStyleNumeric(8, 0, 2, 0);
+			rip += RIPWriteModeStr(0);
+			var btnFlags = 8|32|512|32768;
+			rip += RIPButtonStyleNumeric(640, 40, 2, btnFlags, 5, 1, 0, 15, 8, 7, 1, 0, 0, 0, 0);
+			rip += RIPButtonNumeric(0, 0, 640, 60, 0, 0, 0, [headerText], "");
+			console.crlf();
 			console.print(rip + "\r\n");
 			scrollTopRow += 4;
 		}
@@ -1389,39 +1362,12 @@ function displayProgramInfoAndCommandList(pPause, pCanCrossPost, pTxtReplacments
 		var headerText = format("%s Version %s (%s mode) (%s)", EDITOR_PROGRAM_NAME, EDITOR_VERSION,
 		                        EDITOR_STYLE == "DCT" ? "DCT" : "Ice", EDITOR_VER_DATE);
 		console.crlf(); // A new set of RIP commands needs to be on its own line
-		// RIP text color values:
-		/*
-		Value   Color
-		-------------------------------------------------------
-		00      Black (00 is always the background color)
-		01      Blue
-		02      Green
-		03      Cyan
-		04      Red
-		05      Magenta
-		06      Brown
-		07      Light Gray
-		08      Dark Gray
-		09      Light Blue
-		0A      Light Green
-		0B      Light Cyan
-		0C      Light Red
-		0D      Light Magenta
-		0E      Yellow
-		0F      White
-		*/
-		var rip = RIPTitleBar(
-			1,      // attribute slot
-			//7, 7,   // bar position
-			1, 1,   // bar position
-			1,      // line style
-			"0000", // pen
-			headerText,
-			"01",   // Text color (blue)
-			25, 9    // text position
-		);
-		rip = rip.replace(/~$/, "");
-		console.print(RIP_START_SEQ);
+		var rip = "!" + RIPKillMouseFields();
+		rip += RIPFontStyleNumeric(8, 0, 2, 0);
+		rip += RIPWriteModeStr(0);
+		var btnFlags = 8|32|512|32768;
+		rip += RIPButtonStyleNumeric(640, 40, 2, btnFlags, 5, 1, 0, 15, 8, 7, 1, 0, 0, 0, 0);
+		rip += RIPButtonNumeric(0, 0, 640, 60, 0, 0, 0, [headerText], "");
 		console.print(rip + "\r\n");
 		RIPHeightOffset = 3;
 	}
@@ -5445,48 +5391,4 @@ function getCenteredTextStr(pStr, pTrailingPadding)
 		paddedStr += format("%*s", console.screen_columns - console.strlen(paddedStr) - 1, "");
 
 	return paddedStr;
-}
-
-// Returns a string to display a RIP 'title bar'.
-//
-// Parameters:
-//  pAttr: The attribute slot number (integer)
-//  pX: The bar's starting X coordinate
-//  pY: The bar's starting Y coordinate
-//  pPen: The pen/pattern value (4-digit string, i.e., "0000")
-//  pTitle: The text to display
-//  pTextColor: The 2-digit hex color (i.e., "0F")
-//  pTextX: The text cursor position X coordinate
-//  pTextY: The text cursor position Y coordinate
-//
-// Return value: The RIP string to represent the above
-function RIPTitleBar(pAttr, pX, pY, pLineStyle, pPen, pTitle, pTextColor, pTextX, pTextY)
-{
-	function pad2(n) {
-		return ("0" + n).slice(-2);
-	}
-
-	var rip = "!";
-	rip += "|" + pAttr + "U";
-	rip += pad2(pX) + pad2(pY);
-	rip += "H";
-	rip += "L" + pLineStyle;
-	rip += "P" + pPen;
-	rip += "|c" + pTextColor;   // Set drawing color for graphics text
-	rip += "|@" + pad2(pTextX) + pad2(pTextY) + pTitle.replace(/~/g, "\\~") + "~";   // RIP_TEXT_XY: draw text at (x,y)
-
-	// Older:
-	/*
-	var rip = "!";
-	rip += "|" + pAttr + "U";
-	rip += pad2(pX) + pad2(pY);
-	rip += "H";
-	rip += "L" + pLineStyle;
-	rip += "P" + pPen;
-	rip += "<>" + pTitle + "<>";
-	rip += "|c" + pTextColor;
-	rip += "|S" + pad2(pTextX) + pad2(pTextY);
-	*/
-
-	return rip;
 }
