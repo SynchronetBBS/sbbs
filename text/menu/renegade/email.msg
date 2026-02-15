@@ -2,7 +2,7 @@
 N‹HR³4         WSynchronet Reneclone Email System Menu       0R³
 N‹HRÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ4Y@HOT@
 0R  4CÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
-0  4³ [YRC]ead Email       [YEC]nter Email      [YNC]etmail                          ³
-0  4³ [YVC]iew Outgoing    [YQC]uit to Main     [YGC]oodbye        [Y/GC]oodbye Fast!  ³
+0  4³ [YRC]ead Email       [YEC]nter Email      [YNC]etmail      [YFC]eedback to SysOp ³
+0  4³ [YVC]iew Outgoing    [YQC]uit to Main     [YGC]oodbye      [Y/GC]oodbye Fast!    ³
 0  4ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
 Z

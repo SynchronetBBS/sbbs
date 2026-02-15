@@ -4,6 +4,7 @@
 
 require("sbbsdefs.js", 'USER_EXPERT');
 require("nodedefs.js", 'NODE_CHAT');
+var shell = load({}, "shell_lib.js");
 
 // Over-ride these default values by creating/modifying the [chat] section in your ctrl/modopts.ini file
 var options = load("modopts.js", "chat");
@@ -139,9 +140,7 @@ while(bbs.online && !console.aborted) {
 			bbs.private_chat();
 			break;
 		case 'C':
-			if(!bbs.page_sysop()
-				&& !deny(format(bbs.text(bbs.text.ChatWithGuruInsteadQ), system.guru || "The Guru")))
-				bbs.page_guru();
+			shell.page_sysop();
 			break;
 		case 'T':
 			bbs.page_guru();

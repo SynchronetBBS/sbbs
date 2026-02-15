@@ -82,8 +82,7 @@ while(bbs.online && !js.terminated) {
 			bbs.temp_xfer();
 			continue;
 		case 'C':
-			bbs.email(/* user # */1, bbs.text(bbs.text.ReFeedback));
-			console.newline();
+			shell.send_feedback();
 			continue;
 		case 'Y':
 			bbs.scan_subs(SCAN_TOYOU);
