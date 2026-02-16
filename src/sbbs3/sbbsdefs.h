@@ -329,9 +329,7 @@ enum vdir_name {
 };
 
 enum {
-	  clr_userlow
-    , clr_userhigh
-	, clr_mnehigh
+	  clr_mnehigh
 	, clr_mnelow
 	, clr_mnecmd
 	, clr_inputline
@@ -352,6 +350,8 @@ enum {
 	, clr_votes_empty
 	, clr_progress_full
 	, clr_progress_empty
+	, clr_userlow
+	, clr_userhigh
 	, NUM_COLORS
 };
 
