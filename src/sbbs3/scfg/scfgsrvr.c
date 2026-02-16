@@ -1042,6 +1042,7 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Support...",  startup.options & WEB_OPT_NO_CGI ? strDisabled : startup.cgi_dir);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase Support...", startup.options & WEB_OPT_NO_FILEBASE ? strDisabled: startup.file_vpath_prefix);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Info Save", startup.login_info_save);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
@@ -1171,9 +1172,12 @@ static void websrvr_cfg(void)
 				getar("Web Server Login", startup.login_ars);
 				break;
 			case 21:
-				js_startup_cfg(&startup.js);
+				getar("Web Server Login Info Saved", startup.login_info_save);
 				break;
 			case 22:
+				js_startup_cfg(&startup.js);
+				break;
+			case 23:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
@@ -1279,6 +1283,7 @@ static void ftpsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Allow Bounce Transfers", startup.options & FTP_OPT_ALLOW_BOUNCE ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Info Save", startup.login_info_save);
 		strcpy(opt[i++], "Failed Login Attempts...");
 
 		opt[i][0] = '\0';
@@ -1396,6 +1401,9 @@ static void ftpsrvr_cfg(void)
 				getar("FTP Server Login", startup.login_ars);
 				break;
 			case 17:
+				getar("FTP Server Login Info Saved", startup.login_info_save);
+				break;
+			case 18:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
@@ -2059,6 +2067,7 @@ static void services_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Configuration File", startup.services_ini);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Info Save", startup.login_info_save);
 		if (startup.max_connects_per_period < 1 || startup.connect_rate_limit_period < 1)
 			SAFECOPY(str, strDisabled);
 		else
@@ -2101,6 +2110,9 @@ static void services_cfg(void)
 				getar("Services Login", startup.login_ars);
 				break;
 			case 6:
+				getar("Services Login Info Saved", startup.login_info_save);
+				break;
+			case 7:
 				SAFECOPY(str, maximum(startup.max_connects_per_period));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Connections (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
 					startup.max_connects_per_period = atoi(str);
@@ -2110,10 +2122,10 @@ static void services_cfg(void)
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Connection Rate Limit Period", str, 10, K_EDIT) > 0)
 					startup.connect_rate_limit_period = (uint)parse_duration(str);
 				break;
-			case 7:
+			case 8:
 				js_startup_cfg(&startup.js);
 				break;
-			case 8:
+			case 9:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
