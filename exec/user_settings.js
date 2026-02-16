@@ -11,9 +11,8 @@ require("gettext.js", 'gettext');
 var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js");
 var termdesc = bbs.mods.termdesc || load(bbs.mods.termdesc = {}, "termdesc.js");
 var lang = bbs.mods.lang || load(bbs.mods.lang = {}, "lang.js");
-var ssh_support = server.options & (1<< 12); // BBS_OPT_ALLOW_SSH
 
-prompts.operation = "user settings";
+prompts.operation = "";
 
 function on_or_off(on)
 {
@@ -164,12 +163,10 @@ function display_menu(thisuser)
 			,protname + ' '
 			,autohang));
 	}
-	if (bbs.text(bbs.text.UserDefaultsPassword).length
-		&& (system.settings & SYS_PWEDIT)
-		&& !(user_is_guest)) {
+	if (bbs.text(bbs.text.UserDefaultsPassword).length && !(user_is_guest)) {
 		keys += 'W';
 		console.add_hotspot('W');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsPassword), ssh_support ? ", SSH Keys" : ""));
+		console.putmsg(bbs.text(bbs.text.UserDefaultsPassword));
 	}
 	console.putmsg(bbs.text(bbs.text.UserDefaultsWhich), P_SAVEATR);
 	console.add_hotspot('Q');
@@ -184,8 +181,6 @@ var main_cfg = cfglib.read("main.ini");
 var thisuser = new User(argv[0] || user.number);
 var user_is_guest = (thisuser.security.restrictions & UFLAG_G);
 
-const userSigFilename = system.data_dir + "user/" + format("%04d.sig", thisuser.number);
-const userSSHKeysFilename = system.data_dir + "user/" + format("%04d.sshkeys", thisuser.number);
 const PETSCII_DELETE = '\x14';
 const PETSCII_UPPERLOWER = 0x1d;
 
@@ -407,61 +402,7 @@ while(bbs.online && !js.terminated) {
 				break;
 			break;
 		case 'W':
-			if (!console.noyes(bbs.text(bbs.text.NewPasswordQ))){
-				console.putmsg(bbs.text(bbs.text.CurrentPassword));
-				console.status |= CON_PASSWORD;
-				var str = console.getstr(LEN_PASS * 2, K_UPPER);
-				console.status &= ~CON_PASSWORD;
-				bbs.user_sync();
-				if (str !== thisuser.security.password) {
-					console.putmsg(bbs.text(bbs.text.WrongPassword));
-					break;
-				}
-				console.putmsg(format(bbs.text(bbs.text.NewPasswordPromptFmt)
-					,system.min_password_length, system.max_password_length));
-				str = console.getstr(LEN_PASS, K_UPPER | K_LINE | K_TRIM);
-				if (!bbs.good_password(str)) {
-					console.newline();
-					console.pause();
-					break;
-				}
-				console.putmsg(bbs.text(bbs.text.VerifyPassword));
-				console.status |= CON_PASSWORD;
-				var pw = console.getstr(LEN_PASS, K_UPPER | K_LINE | K_TRIM);
-				console.status &= ~CON_PASSWORD;
-				if (str !== pw) {
-					console.putmsg(bbs.text(bbs.text.WrongPassword));
-					break;
-				}
-				thisuser.security.password = str;
-				console.putmsg(bbs.text(bbs.text.PasswordChanged));
-				log(LOG_NOTICE,'changed password');
-			}
-			if (ssh_support) {
-				if (!file_exists(userSSHKeysFilename)) {
-					if (!console.noyes(gettext('Create SSH Keys')))
-						console.editfile(userSSHKeysFilename);
-				} else {
-					if (console.yesno(gettext('View SSH Keys')))
-						console.printfile(userSSHKeysFilename);
-					if (!console.noyes(gettext('Edit SSH Keys')))
-						console.editfile(userSSHKeysFilename);
-					else if (!console.noyes(gettext('Delete SSH Keys')))
-						file_remove(userSSHKeysFilename);
-				}
-			}
-			if (file_exists(userSigFilename)) {
-				if (console.yesno(bbs.text(bbs.text.ViewSignatureQ)))
-					console.printfile(userSigFilename);
-			}
-			if (!console.noyes(bbs.text(bbs.text.CreateEditSignatureQ)))
-				console.editfile(userSigFilename);
-			else if (!console.aborted) {
-				if (file_exists(userSigFilename)) {
-					if (!console.noyes(bbs.text(bbs.text.DeleteSignatureQ)))
-						file_remove(userSigFilename);
-				}
-			}
+			js.exec("user_personal.js", { user: thisuser });
 			break;
 		case 'X':
 			thisuser.settings ^= USER_EXPERT;
