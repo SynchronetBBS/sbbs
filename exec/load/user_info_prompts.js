@@ -570,7 +570,7 @@ function ssh_keys_filename(user)
 
 function change_ssh_keys(user)
 {
-	const userSSHKeysFilename = sshkeys_filename(user);
+	const userSSHKeysFilename = ssh_keys_filename(user);
 
 	if (!file_exists(userSSHKeysFilename)) {
 		if (!console.noyes(gettext('Create SSH Keys')))
