@@ -54,7 +54,7 @@ while(bbs.online && !js.terminated) {
 		console.newline();
 	}
 	if (options.location === true) {
-		var location = user.address;
+		var location = (system.newuser_questions & UQ_ADDRESS) ? user.address : "";
 		if (location) location += " ";
 		location += user.location;
 		console.print("\x01u[\x01UL\x01u] " + gettext("Location") + format(": \x01U%s", location));
