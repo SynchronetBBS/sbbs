@@ -27,7 +27,7 @@ while(bbs.online && !js.terminated) {
 	var keys = 'Q\r';
 	console.aborted = false;	
 	console.clear();
-	console.print("\x01U" + gettext("Personal Information") + " " + gettext("for \x01U") + user.alias + format(" #%u:", user.number));
+	console.print("\x01U" + gettext("Personal Information") + " " + gettext("for") + format(" \x01U%s #%u:", user.alias, user.number));
 	console.newline(2);
 	if (options.alias === true) {
 		console.print("\x01u[\x01UA\x01u] " + gettext("Alias") + format(": \x01U%s", user.alias));
@@ -82,7 +82,7 @@ while(bbs.online && !js.terminated) {
 		console.add_hotspot('S');
 		console.newline();	
 	}
-	console.print("\x01u[\x01UM\x01u] " + gettext("Message Signature")
+	console.print("\x01u[\x01UM\x01u] " + gettext("Sign-off")
 		+ format(" (%s: \x01U%s\x01u)", gettext("last changed"), system.datestr(file_date(prompts.sig_filename(user)))));
 	keys += 'M';
 	console.add_hotspot('M');
