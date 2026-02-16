@@ -1,35 +1,3 @@
-/*      Last 10 logins across all methods
-        completely created by Gemini with
-        direction from Nelgin.
-
-        To use, add it to a menu or a door program with the options
-        of your chosing. How to do this can be found on the
-        Synchronet Wiki at https://wiki.synchro.net
-
-        Given no options, the script will show you the last 10
-        logins.
-
-        -j      Create a JSON file will all user details. Can be
-                used in scripts to customize display
-
-        -g      Do not include guest in the results
-        -s      Do not include sysop in the results
-
-        -n xx   Return this numebr of results (10 is the default)
-        -o      Omit the header box
-
-        if the file /sbbs/text/last10callersheader.asc is present then
-        it will be displayed at the top of the output.
-
-        This script is generally unsupported but if you want to
-        suggest additions or fixes, feel free to open a gitlab
-        issue and assign it to "Nigel Reed".
-
-
-        the default is equivalent to using -u -d -n 10
-*/
-
-
 "use strict";
 
 load("sbbsdefs.js");
@@ -66,25 +34,29 @@ function displayLastLogins() {
         for (var i = 0; i < argv.length; i++) {
             var arg = argv[i];
             if (arg === "-h" || arg === "-?" || arg === "--help") {
-                writeln(C_HEAD + gettext("Usage: jsexec lastlogins.js [options]", "ll_help_usage"));
-                writeln(C_SUB + gettext("Options:", "ll_help_options_title"));
-                writeln("  -o     " + gettext("Hide ONLY the dynamic box header", "ll_help_opt_o"));
-                writeln("  -n X   " + gettext("Show X results (default 10)", "ll_help_opt_n"));
-                writeln("  -g     " + gettext("Omit GUEST accounts", "ll_help_opt_g"));
-                writeln("  -y/-s  " + gettext("Omit SYSOP accounts", "ll_help_opt_y"));
-                writeln("  -j     " + gettext("Save results to last10logins.json", "ll_help_opt_j") + C_RESET);
+                writeln(C_HEAD + "Usage: jsexec lastlogins.js [options]");
+		writeln(C_HEAD + "Usage: jsexec lastlogins.js [options]");
+		writeln(C_SUB + "Options:");
+		writeln("  -o     Hide ONLY the dynamic box header");
+		writeln("  -n x   Show x results (default 10)");
+		writeln("  -g     Omit GUEST accounts");
+		writeln("  -s     Omit SYSOP accounts");
+		writeln("  -j     Save results to last10logins.json" + C_RESET);
                 exit();
             }
             if (arg === "-o") noBox = true;
             if (arg === "-j") saveJson = true;
             if (arg === "-g") noGuest = true;
-            if (arg === "-y" || arg === "-s") noSysop = true;
+            if (arg === "-s") noSysop = true;
             if (arg === "-n" && argv[i+1]) limit = parseInt(argv[++i], 10) || 10;
         }
     }
 
     var logins = [];
-    for (var j = 1; j <= system.lastuser; j++) {
+    var lastUser = system.lastuser; // Local variable for speed
+    
+    // Collect full user objects with ARS filtering
+    for (var j = 1; j <= lastUser; j++) {
         var u = new User(j);
         if (!u || !u.alias || !u.stats.laston_date) continue;
         
@@ -94,22 +66,22 @@ function displayLastLogins() {
         logins.push(u);
     }
 
+    // Sort: Newest first
     logins.sort(function(a, b) { return b.stats.laston_date - a.stats.laston_date; });
     var finalResults = logins.slice(0, limit);
 
-    // Save to JSON
+    // Save to JSON using system.data_dir
     if (saveJson) {
-        var jsonFile = new File("/sbbs/data/last10logins.json");
+        var jsonFile = new File(system.data_dir + "last10logins.json");
         if (jsonFile.open("w")) {
             jsonFile.write(JSON.stringify(finalResults, null, 4));
             jsonFile.close();
         }
-        // If -j was the ONLY argument, exit now. Otherwise, proceed to print.
         if (argCount === 1) exit(); 
     }
 
     // --- DISPLAY LOGIC ---
-    var header_path = "/sbbs/text/last10loginsheader.asc";
+    var header_path = system.text_dir + "last10loginsheader.asc";
     if (file_exists(header_path)) {
         var f = new File(header_path);
         if (f.open("r")) {
@@ -130,8 +102,8 @@ function displayLastLogins() {
         writeln(C_HEAD + BOX.bl + BOX.hz.repeat(width) + BOX.br + C_RESET);
     }
 
-    var colHeader = gettext("  Rank  Date/Time            Username             Handle               Protocol", "ll_col_headers");
-    var separator = gettext("  ----  -------------------  -------------------- -------------------- --------", "ll_separator");
+    var colHeader = gettext("  Rank  Date                 Username             Handle               Protocol", "ll_col_headers");
+    var separator = gettext("  ----  ----------           -------------------- -------------------- --------", "ll_separator");
 
     writeln("");
     writeln(C_GRAY + colHeader);
@@ -139,7 +111,8 @@ function displayLastLogins() {
 
     for (var k = 0; k < finalResults.length; k++) {
         var l = finalResults[k];
-        var dateStr = strftime("%m/%d/%y %H:%M:%S", l.stats.laston_date);
+        // Using system.datestr for system-configured date format
+        var dateStr = system.datestr(l.stats.laston_date);
         
         writeln(
             "  " + C_RANK + (k + 1).toString().padEnd(4) + "  " +
