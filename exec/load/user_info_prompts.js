@@ -20,7 +20,7 @@ var operation = this.argc ? argv[0] : "";
 function confirm(text, yes)
 {
 	if (yes)
-		return console.yesno(text);
+		return console.yesno(text) && !console.aborted;
 	else
 		return !console.noyes(text);
 }
@@ -109,8 +109,14 @@ function get_color(user)
 			ask_to_cancel();
 			continue;
 		}
-		if (color)
+		if (color) {
 			user.settings |= USER_COLOR;
+			if (!(console.status & (CON_BLINK_FONT | CON_HBLINK_FONT))
+				&& confirm(bbs.text(bbs.text.IceColorTerminalQ), user.settings & USER_ICE_COLOR))
+				user.settings |= USER_ICE_COLOR;
+			else
+				user.settings &= ~USER_ICE_COLOR;
+		}
 		else
 			user.settings &= ~(USER_COLOR | USER_AUTOTERM);
 		console.term_updated();
@@ -139,25 +145,37 @@ function get_mouse(user)
 	}
 }
 
-function get_exascii(user)
+function get_charset(user)
 {
 	if (!user)
 		user = js.global.user;
-	if (!bbs.text(bbs.text.ExAsciiTerminalQ))
-		return;
-	while (bbs.online) {
-		var exascii = confirm(bbs.text(bbs.text.ExAsciiTerminalQ), !(user.settings & USER_NO_EXASCII));
-		if (console.aborted) {
-			ask_to_cancel();
-			continue;
+	if (!(user.settings & USER_AUTOTERM)) {
+		if (!console.noyes(bbs.text(bbs.text.Utf8TerminalQ)))
+			user.settings |= USER_UTF8;
+		else {
+			if (console.aborted)
+				return false;
+			user.settings &= ~USER_UTF8;
+			/***
+			if (!(user.settings & USER_UTF8)) {
+				user.settings &= ~(USER_ANSI | USER_COLOR | USER_ICE_COLOR);
+				if (!console.noyes(bbs.text(bbs.text.PetTerminalQ)))
+					user.settings |= USER_PETSCII | USER_COLOR;
+				else if (!console.aborted)
+					user.settings &= ~USER_PETSCII;
+			}
+			***/
 		}
-		if (exascii)
-			user.settings &= ~USER_NO_EXASCII;
-		else
-			user.settings |= USER_NO_EXASCII;
-		console.term_updated();
-		break;
 	}
+	if (console.aborted)
+		return false;
+	if (!(user.settings & USER_PETSCII)) {
+		if (!(user.settings & USER_UTF8) && !confirm(bbs.text(bbs.text.ExAsciiTerminalQ), !(user.settings & USER_NO_EXASCII)))
+			user.settings |= USER_NO_EXASCII;
+		else if (!console.aborted)
+			user.settings &= ~USER_NO_EXASCII;
+	}
+	return true;
 }
 
 function get_backspace(user)
@@ -166,19 +184,27 @@ function get_backspace(user)
 		user = js.global.user;
 	if (!bbs.text(bbs.text.HitYourBackspaceKey))
 		return;
-	while (!(user.settings & (USER_PETSCII | USER_SWAP_DELETE)) && bbs.online) {
+	while (bbs.online) {
 		console.putmsg(bbs.text(bbs.text.HitYourBackspaceKey));
+		user.settings &= ~USER_SWAP_DELETE; // defeat getkey() translating to BS automatically
+		if (user.number == js.global.user.number)
+			js.global.user.settings = user.settings;
 		var key = console.getkey(K_CTRLKEYS);
 		console.putmsg(format(bbs.text(bbs.text.CharacterReceivedFmt), key.charCodeAt(0), key.charCodeAt(0)));
 		if (key == '\b')
 			break;
 		if (key == KEY_DEL) {
-			if (!bbs.text(bbs.text.SwapDeleteKeyQ) || console.yesno(bbs.text(bbs.text.SwapDeleteKeyQ)))
+			if (console.yesno(bbs.text(bbs.text.SwapDeleteKeyQ)))
 				user.settings |= USER_SWAP_DELETE;
+			break;
 		}
-		else if (key == PETSCII_DELETE)
+		if (key == PETSCII_DELETE) {
 			user.settings |= (USER_PETSCII | USER_COLOR);
-		else if (bbs.online) {
+			break;
+		}
+		if (!operation)
+			break;
+		if (bbs.online) {
 			bbs.logline(LOG_NOTICE, "N!", format("Unsupported backspace key received: %02Xh", key));
 			ask_to_cancel(format(bbs.text(bbs.text.InvalidBackspaceKeyFmt), key, key));
 		}
@@ -188,14 +214,14 @@ function get_backspace(user)
 
 function get_terminal(user, options)
 {
-	if (options.lang === true)
-		get_lang();
 	if (console.autoterm && options.autoterm !== false)
 		get_autoterm();
-	if (options.backspace !== false)
-		get_backspace();
-	if (!(user.settings & (USER_AUTOTERM | USER_PETSCII)))
-		get_ansi();
+	if (!(user.settings & USER_PETSCII)) {
+		if (options.backspace !== false)
+			get_backspace();
+		if (!(user.settings & (USER_AUTOTERM | USER_PETSCII)))
+			get_ansi();
+	}
 	if (user.settings & USER_ANSI) {
 		user.rows = 0; // TERM_ROWS_AUTO
 		user.cols = 0; // TERM_COLS_AUTO
@@ -209,12 +235,46 @@ function get_terminal(user, options)
 		console.putbyte(PETSCII_UPPERLOWER);
 		console.putmsg(bbs.text(bbs.text.PetTerminalDetected));
 	} else if (!(user.settings & USER_UTF8)) {
-		if (options.exascii === false)
+		if (options.charset === false)
 			user.settings &= ~USER_NO_EXASCII;
 		else
-			get_exascii();
+			get_charset();
 	}
 	console.term_updated();
+}
+
+function get_columns(user)
+{
+	if (!user)
+		user = js.global.user;
+	console.putmsg(bbs.text(bbs.text.HowManyColumns));
+	var val = String(user.screen_columns || "");
+	val = console.getstr(val, 3, K_EDIT | K_AUTODEL);
+	if (val < 0)
+		return false;
+	user.screen_columns = val;
+	if (user.number === js.global.user.number) {
+		user.screen_columns = user.screen_columns;
+		console.getdimensions();
+	}
+	return true;
+}
+
+function get_rows(user)
+{
+	if (!user)
+		user = js.global.user;
+	console.putmsg(bbs.text(bbs.text.HowManyRows));
+	var val = String(user.screen_rows || "");
+	val = console.getstr(val, 3, K_EDIT | K_AUTODEL);
+	if (val < 0)
+		return false;
+	user.screen_rows = val;
+	if (user.number === js.global.user.number) {
+		user.screen_rows = user.screen_rows;
+		console.getdimensions();
+	}
+	return true;
 }
 
 function get_alias(user)
@@ -292,7 +352,8 @@ function get_handle(user)
 		return;
 	while (bbs.online) {
 		console.putmsg(bbs.text(bbs.text.EnterYourHandle), P_SAVEATR);
-		var handle = console.getstr(user.handle, LEN_HANDLE, kmode | K_LINE);
+		var handle = console.getstr(user.handle, LEN_HANDLE
+			, K_LINE | K_EDIT | K_AUTODEL | K_TRIM | (system.newuser_questions & UQ_NOEXASC)); // don't use kmode here
 		if (!operation && (handle == user.handle || console.aborted))
 			return false;
 		if (console.aborted) {
@@ -479,7 +540,8 @@ function get_netmail(user)
 		user = js.global.user;
 	while (bbs.online && bbs.text(bbs.text.EnterNetMailAddress)) {
 		console.putmsg(bbs.text(bbs.text.EnterNetMailAddress));
-		var netmail = console.getstr(user.netmail, LEN_NETMAIL, kmode | K_LINE);
+		var netmail = console.getstr(user.netmail, LEN_NETMAIL
+			, K_EDIT | K_AUTODEL | K_LINE | K_TRIM); // don't use kmode here
 		if (!operation && (netmail == user.netmail || console.aborted))
 			return false;
 		if (console.aborted) {

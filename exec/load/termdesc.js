@@ -65,19 +65,21 @@ function type(verbose, usr)
 		type = "RIP";
 	if(term & USER_ANSI)
 		type = "ANSI";
-	if(verbose !== true)
+	if(!verbose)
 		return type;
 
 	// Verbose
 	if(term & USER_PETSCII)
 		return ((usr.settings & USER_AUTOTERM) ? bbs.text(bbs.text.TerminalAutoDetect) : "") + "CBM/PETSCII";
-	return format("%s%s / %s %s%s%s"
-		,(usr.settings & USER_AUTOTERM) ? bbs.text(bbs.text.TerminalAutoDetect) : ""
-		,this.charset(term)
-		,type
-		,(term & USER_COLOR) ? (term & USER_ICE_COLOR ? bbs.text(bbs.text.TerminalIceColor) : bbs.text(bbs.text.TerminalColor)) : bbs.text(bbs.text.TerminalMonochrome)
-		,(term & USER_MOUSE) ? bbs.text(bbs.text.TerminalMouse) : ""
-		,(term & USER_SWAP_DELETE) ? "DEL=BS" : "").trimRight();
+	var result = format("%s%s / %s"
+		,(usr.settings & USER_AUTOTERM) ? bbs.text(bbs.text.TerminalAutoDetect) : "", this.charset(term), type);
+	if (verbose > 1)
+		result += format(" %s%s%s"
+			,(term & USER_COLOR) ? (term & USER_ICE_COLOR ? bbs.text(bbs.text.TerminalIceColor) : bbs.text(bbs.text.TerminalColor)) : bbs.text(bbs.text.TerminalMonochrome)
+			,(term & USER_MOUSE) ? bbs.text(bbs.text.TerminalMouse) : ""
+			,(term & USER_SWAP_DELETE) ? "DEL=BS" : "");
+
+	return result.trimRight();
 }
 
 this;

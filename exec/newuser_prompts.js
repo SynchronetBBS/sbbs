@@ -8,7 +8,7 @@
 //   autoterm=true
 //   backspace=true
 //   mouse=true
-//   exascii=true
+//   charset=true
 
 require("sbbsdefs.js", "UQ_ALIASES");
 require("gettext.js", "gettext");
@@ -23,6 +23,8 @@ if (!options)
 
 while(bbs.online && !js.terminated) {
 
+	if (options.lang)
+		prompts.get_lang();
 	prompts.get_terminal(user, options);
 	prompts.get_alias();
 	prompts.get_name();

@@ -42,133 +42,128 @@ function display_menu(thisuser)
 		}
 	}
 	console.clear();
-	console.putmsg(format(bbs.text(bbs.text.UserDefaultsHdr),thisuser.alias,thisuser.number));
+	console.aborted = false;
+	console.print(format(bbs.text(bbs.text.UserDefaultsHdr),thisuser.alias,thisuser.number));
 	if (bbs.text(bbs.text.UserDefaultsTerminal).length) {
 		keys += 'T';
 		console.add_hotspot('T');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsTerminal)
-			,termdesc.type(true, (bbs.sys_status & SS_USERON)
+		console.print(format(bbs.text(bbs.text.UserDefaultsTerminal)
+			,termdesc.type(/* verbosity: */2, (bbs.sys_status & SS_USERON)
 				&& (thisuser.number == user.number && !user_is_guest) ? undefined : thisuser)));
-	}
-	if (bbs.text(bbs.text.UserDefaultsRows).length) {
-		keys += 'L';
-		console.add_hotspot('L');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsRows)
-			,termdesc.columns(true,user), termdesc.rows(true,user)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsCommandSet).length
 		&& main_cfg.shell.length > 1) {
 		keys += 'K';
 		console.add_hotspot('K');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsCommandSet), cmdshell));
+		console.print(format(bbs.text(bbs.text.UserDefaultsCommandSet), cmdshell));
 	}
 	if (bbs.text(bbs.text.UserDefaultsLanguage).length && lang.count() > 1) {
-		keys += 'I';
-		console.add_hotspot('I');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsLanguage)
+		keys += 'L';
+		console.add_hotspot('L');
+		console.print(format(bbs.text(bbs.text.UserDefaultsLanguage)
 			,bbs.text(bbs.text.Language), bbs.text(bbs.text.LANG)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsXeditor).length
 		&& Object.getOwnPropertyNames(xtrn_area.editor).length > 0) {
 		keys += 'E';
 		console.add_hotspot('E');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsXeditor)
+		console.print(format(bbs.text(bbs.text.UserDefaultsXeditor)
 			,(thisuser.editor && xtrn_area.editor[thisuser.editor])
 				? xtrn_area.editor[thisuser.editor].name : bbs.text(bbs.text.None)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsArcType).length) {
 		keys += 'A';
 		console.add_hotspot('A');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsArcType)
+		console.print(format(bbs.text(bbs.text.UserDefaultsArcType)
 			,thisuser.temp_file_ext));
 	}
 	if (bbs.text(bbs.text.UserDefaultsMenuMode).length) {
 		keys += 'X';
 		console.add_hotspot('X');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsMenuMode)
+		console.print(format(bbs.text(bbs.text.UserDefaultsMenuMode)
 			,on_or_off(thisuser.settings & USER_EXPERT)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsPause).length) {
 		keys += 'P';
 		console.add_hotspot('P');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsPause)
+		console.print(format(bbs.text(bbs.text.UserDefaultsPause)
 			,on_or_off(thisuser.settings & USER_PAUSE)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsHotKey).length) {
 		keys += 'H';
 		console.add_hotspot('H');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsHotKey)
+		console.print(format(bbs.text(bbs.text.UserDefaultsHotKey)
 			,on_or_off(!(thisuser.settings & USER_COLDKEYS))));
 	}
 	if (bbs.text(bbs.text.UserDefaultsCursor).length) {
 		keys += 'S';
 		console.add_hotspot('S');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsCursor)
+		console.print(format(bbs.text(bbs.text.UserDefaultsCursor)
 			,curspin));
 	}
 	if (bbs.text(bbs.text.UserDefaultsCLS).length) {
 		keys += 'C';
 		console.add_hotspot('C');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsCLS)
+		console.print(format(bbs.text(bbs.text.UserDefaultsCLS)
 			,on_or_off(thisuser.settings & USER_CLRSCRN)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsAskNScan).length) {
 		keys += 'N';
 		console.add_hotspot('N');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsAskNScan)
+		console.print(format(bbs.text(bbs.text.UserDefaultsAskNScan)
 			,on_or_off(thisuser.settings & USER_ASK_NSCAN)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsAskSScan).length) {
 		keys += 'Y';
 		console.add_hotspot('Y');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsAskSScan)
+		console.print(format(bbs.text(bbs.text.UserDefaultsAskSScan)
 			,on_or_off(thisuser.settings & USER_ASK_SSCAN)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsANFS).length) {
 		keys += 'F';
 		console.add_hotspot('F');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsANFS)
+		console.print(format(bbs.text(bbs.text.UserDefaultsANFS)
 			,on_or_off(thisuser.settings & USER_ANFSCAN)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsRemember).length) {
 		keys += 'R';
 		console.add_hotspot('R');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsRemember)
+		console.print(format(bbs.text(bbs.text.UserDefaultsRemember)
 			,on_or_off(thisuser.settings & USER_CURSUB)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsBatFlag).length) {
 		keys += 'B';
 		console.add_hotspot('B');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsBatFlag)
+		console.print(format(bbs.text(bbs.text.UserDefaultsBatFlag)
 			,on_or_off(thisuser.settings & USER_BATCHFLAG)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsNetMail).length
 		&& (system.settings & SYS_FWDTONET)) {
 		keys += 'M';
 		console.add_hotspot('M');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsNetMail)
+		console.print(format(bbs.text(bbs.text.UserDefaultsNetMail)
 			,on_or_off(thisuser.settings & USER_NETMAIL), thisuser.netmail));
 	}
 	if (bbs.text(bbs.text.UserDefaultsQuiet).length
 		&& (thisuser.security.exemptions & UFLAG_Q)) {
 		keys += 'D';
 		console.add_hotspot('D');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsQuiet)
+		console.print(format(bbs.text(bbs.text.UserDefaultsQuiet)
 			,on_or_off(thisuser.settings & USER_QUIET)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsProtocol).length) {
 		keys += 'Z';
 		console.add_hotspot('Z');
-		console.putmsg(format(bbs.text(bbs.text.UserDefaultsProtocol)
+		console.print(format(bbs.text(bbs.text.UserDefaultsProtocol)
 			,protname + ' '
 			,autohang));
 	}
 	if (bbs.text(bbs.text.UserDefaultsPassword).length && !(user_is_guest)) {
 		keys += 'W';
 		console.add_hotspot('W');
-		console.putmsg(bbs.text(bbs.text.UserDefaultsPassword));
+		console.print(bbs.text(bbs.text.UserDefaultsPassword));
 	}
-	console.putmsg(bbs.text(bbs.text.UserDefaultsWhich), P_SAVEATR);
+	console.print(bbs.text(bbs.text.UserDefaultsWhich), P_ATCODES);
 	console.add_hotspot('Q');
 
 	return keys;
@@ -250,31 +245,9 @@ while(bbs.online && !js.terminated) {
 			if (thisuser.number === user.number && user_is_guest)
 				user.command_shell = thisuser.command_shell;
 			break;
-		case 'I': /* Language */
+		case 'L': /* Language */
 			lang.select(thisuser.number === user.number ? user : thisuser);
 			break;
-		case 'L':
-		{
-			console.putmsg(bbs.text(bbs.text.HowManyColumns));
-			var val = console.getnum(999,0);
-			if (val < 0)
-				break;
-			thisuser.screen_columns = val;
-			if (user.number === thisuser.number) {
-				user.screen_columns = thisuser.screen_columns;
-				console.getdimensions();
-			}
-			console.putmsg(bbs.text(bbs.text.HowManyRows));
-			val = console.getnum(999,0);
-			if (val < 0)
-				break;
-			thisuser.screen_rows = val;
-			if (user.number === thisuser.number) {
-				user.screen_rows = thisuser.screen_rows;
-				console.getdimensions();
-			}
-			break;
-		}
 		case 'M':
 			prompts.get_netmail(thisuser);
 			break;
@@ -297,109 +270,7 @@ while(bbs.online && !js.terminated) {
 			}
 			break;
 		case 'T':
-			if (console.yesno(bbs.text(bbs.text.AutoTerminalQ))) {
-				thisuser.settings |= USER_AUTOTERM;
-				thisuser.settings &=
-					~(USER_ANSI | USER_RIP | USER_WIP | USER_HTML | USER_PETSCII | USER_UTF8);
-				if (user.number === thisuser.number)
-					thisuser.settings |= console.autoterm;
-			}
-			else if (!console.aborted)
-				thisuser.settings &= ~USER_AUTOTERM;
-			if (console.aborted)
-				break;
-			if (!(thisuser.settings & USER_AUTOTERM)) {
-				if (!console.noyes(bbs.text(bbs.text.Utf8TerminalQ)))
-					thisuser.settings |= USER_UTF8;
-				else if (!console.aborted)
-					thisuser.settings &= ~USER_UTF8;
-				if (console.yesno(bbs.text(bbs.text.AnsiTerminalQ))) {
-					thisuser.settings |= USER_ANSI;
-					thisuser.settings &= ~USER_PETSCII;
-				} else if (!console.aborted && !(thisuser.settings & USER_UTF8)) {
-					thisuser.settings &= ~(USER_ANSI | USER_COLOR | USER_ICE_COLOR);
-					if (!console.noyes(bbs.text(bbs.text.PetTerminalQ)))
-						thisuser.settings |= USER_PETSCII|USER_COLOR;
-					else if (!console.aborted)
-						thisuser.settings &= ~USER_PETSCII;
-				}
-			}
-			if (console.aborted)
-				break;
-			var term = (user.number == thisuser.number) ?
-				console.term_supports() : thisuser.settings;
-
-			if (term&(USER_AUTOTERM|USER_ANSI) && !(term & USER_PETSCII)) {
-				thisuser.settings |= USER_COLOR;
-				thisuser.settings &= ~USER_ICE_COLOR;
-				if ((thisuser.settings & USER_AUTOTERM)
-					|| console.yesno(bbs.text(bbs.text.ColorTerminalQ))) {
-					if (!(console.status & (CON_BLINK_FONT|CON_HBLINK_FONT))
-						&& !console.noyes(bbs.text(bbs.text.IceColorTerminalQ)))
-						thisuser.settings |= USER_ICE_COLOR;
-				} else if (!console.aborted)
-					thisuser.settings &= ~USER_COLOR;
-			}
-			if (console.aborted)
-				break;
-			if (term & USER_ANSI) {
-				if (bbs.text(bbs.text.MouseTerminalQ).length) {
-					if(term & USER_MOUSE) {
-						if (!console.yesno(bbs.text(bbs.text.MouseTerminalQ)) && !console.aborted)
-							thisuser.settings &= ~USER_MOUSE;
-					} else {
-						if (!console.noyes(bbs.text(bbs.text.MouseTerminalQ)) && !console.aborted)
-							thisuser.settings |= USER_MOUSE;
-					}
-				} else if (!console.aborted)
-					thisuser.settings &= ~USER_MOUSE;
-			}
-			if (console.aborted)
-				break;
-			if (!(term & USER_PETSCII)) {
-				if (!(term & USER_UTF8) && !console.yesno(bbs.text(bbs.text.ExAsciiTerminalQ)))
-					thisuser.settings |= USER_NO_EXASCII;
-				else if (!console.aborted)
-					thisuser.settings &= ~USER_NO_EXASCII;
-				if (console.aborted)
-					break;
-				thisuser.settings &= ~USER_SWAP_DELETE;
-				while(bbs.text(bbs.text.HitYourBackspaceKey).length
-					&& !(thisuser.settings & (USER_PETSCII | USER_SWAP_DELETE))
-					&& bbs.online) {
-					console.putmsg(bbs.text(bbs.text.HitYourBackspaceKey));
-					console.status |= CON_RAW_IN;
-					var key = console.getkey(K_CTRLKEYS);
-					console.status &= ~CON_RAW_IN;
-					console.putmsg(format(bbs.text(bbs.text.CharacterReceivedFmt), ascii(key), ascii(key)));
-					if (key == '\b')
-						break;
-					if (key == '\x7f') {
-						if (bbs.text(bbs.text.SwapDeleteKeyQ).length || console.yesno(bbs.text(bbs.text.SwapDeleteKeyQ)))
-							thisuser.settings |= USER_SWAP_DELETE;
-					}
-					else if (key == PETSCII_DELETE) {
-						console.autoterm |= USER_PETSCII;
-						thisuser.settings |= USER_PETSCII;
-						console.putbyte(PETSCII_UPPERLOWER);
-						console.putmsg(bbs.text(bbs.text.PetTerminalDetected));
-					}
-					else
-						console.putmsg(format(bbs.text(bbs.text.InvalidBackspaceKeyFmt)
-							,ascii(key), ascii(key)));
-				}
-			}
-			if (console.aborted)
-				break;
-			if (!(thisuser.settings & USER_AUTOTERM)
-				&& (term&(USER_ANSI|USER_NO_EXASCII)) == USER_ANSI) {
-				if (!console.noyes(bbs.text(bbs.text.RipTerminalQ)))
-					thisuser.settings |= USER_RIP;
-				else
-					thisuser.settings &= ~USER_RIP;
-			}
-			if (console.aborted)
-				break;
+			js.exec("user_terminal.js", { user: thisuser });
 			break;
 		case 'W':
 			js.exec("user_personal.js", { user: thisuser });

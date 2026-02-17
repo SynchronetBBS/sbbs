@@ -1057,7 +1057,7 @@
 "Quit"                                                     869 Quit
 "Language"                                                 870 Language
 "English"                                                  871 LANG
-"\1n\1b[\1h\1wI\1n\1b] \1h%-29s\1n\1b\1\\: \1c%s\r\n"      872 UserDefaultsLanguage
+"\1n\1b[\1h\1wL\1n\1b] \1h%-29s\1n\1b\1\\: \1c%s\r\n"      872 UserDefaultsLanguage
 "*"                                                        873 PasswordChar
 " via sftp"                                                874 NodeConnectionSFTP
 "\1n\1b[\1h\1wW\1n\1b] \1hWord-wrap Message Text       \1n\1b: \1c%s\r\n"	875  QWKSettingsWrapText

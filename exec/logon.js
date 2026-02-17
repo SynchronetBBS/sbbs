@@ -77,6 +77,8 @@ if(user.security.restrictions&UFLAG_G) {
 		var guest_options = load("modopts.js", "logon:guest_prompts");
 		if(!guest_options)
 			guest_options = {};
+		if (guest_options.lang)
+			prompts.get_lang();
 		prompts.get_terminal(user, guest_options);
 	}
 	while(options.guest_name && bbs.online) {
