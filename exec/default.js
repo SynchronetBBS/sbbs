@@ -21,6 +21,7 @@ const time_code = user.security.exemptions & UFLAG_T ? "@TUSED@" : "@TLEFT@";
 
 shell.main_menu = {
 	file: "main",
+	cls: true,
 	eval: 'bbs.main_cmds++',
 	node_action: NODE_MAIN,
 	prompt: gettext("\x01-\x01c\xfe \x01b\x01h", "shell_prompt_begin")
@@ -104,6 +105,7 @@ shell.main_menu.nav[KEY_LEFT] = { eval: 'grp_down()' };
 
 shell.file_menu = {
 	file: "transfer",
+	cls: true,
 	eval: 'bbs.file_cmds++',
 	node_action: NODE_XFER,
 	prompt: gettext("\x01-\x01c\xfe \x01b\x01h", "shell_prompt_begin")
