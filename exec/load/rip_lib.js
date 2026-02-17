@@ -73,6 +73,7 @@ var RIP_BTN_STYLE_RECESSED              = (1<<4);  // Display Recessed special e
 var RIP_BTN_STYLE_DROPSHADOW_LBL        = (1<<5);  // Dropshadow the label (if any)
 var RIP_BTN_STYLE_AUTOSTAMP_IMG_CLIPBRD = (1<<6);  // Auto-stamp image onto clipboard
 var RIP_BTN_STYLE_ICON                  = (1<<7);  // Button is an "Icon Button"
+var RIP_BTN_STYLE_PLAIN                 = (1<<8);  // Button is a "Plain Button"
 var RIP_BTN_STYLE_BEVEL                 = (1<<9);  // Display Bevel special effect
 var RIP_BTN_STYLE_MOUSE                 = (1<<10); // Button is a Mouse Button
 var RIP_BTN_STYLE_UNDERLINE_HOTKEY      = (1<<11); // Underline hot-key in label
@@ -80,6 +81,43 @@ var RIP_BTN_STYLE_ICON_HOT_ICONS        = (1<<12); // Make icon button use hot i
 var RIP_BTN_STYLE_ADJ_VERT_CENTERING    = (1<<13); // Adjust vertical centering of label
 var RIP_BTN_STYLE_RADIO_GROUP           = (1<<14); // Button belongs to a radio group
 var RIP_BTN_STYLE_SUNKEN                = (1<<15); // Display Sunken special effect
+
+// RIP color definitions (decimal/base-10 values)
+//    16-Color RIP Palette     Master 64-Color EGA
+//        Color Code           Palette Color Code       Color
+//    ---------------------------------------------------------------
+//    00                     0  (00)                    Black
+//    01                     1  (01)                    Blue
+//    02                     2  (02)                    Green
+//    03                     3  (03)                    Cyan
+//    04                     4  (04)                    Red
+//    05                     5  (05)                    Magenta
+//    06                     7  (06)                    Brown
+//    07                     20 (0K)                    Light Gray
+//    08                     56 (1K)                    Dark Gray
+//    09                     57 (1L)                    Light Blue
+//    0A                     58 (1M)                    Light Green
+//    0B                     59 (1N)                    Light Cyan
+//    0C                     60 (1O)                    Light Red
+//    0D                     61 (1P)                    Light Magenta
+//    0E                     62 (1Q)                    Yellow
+//    0F                     63 (1R)                    White
+var RIP_COLOR_BLACK = 0;
+var RIP_COLOR_BLUE = 1;
+var RIP_COLOR_GREEN = 2;
+var RIP_COLOR_CYAN = 3;
+var RIP_COLOR_RED = 4;
+var RIP_COLOR_MAGENTA = 5;
+var RIP_COLOR_BROWN = 6;
+var RIP_COLOR_LT_GRAY = 7; // Light gray
+var RIP_COLOR_DK_GRAY = 8; // Dark gray
+var RIP_COLOR_LT_BLUE = 9;
+var RIP_COLOR_LT_GREEN = 10;
+var RIP_COLOR_LT_CYAN = 11;
+var RIP_COLOR_LT_RED = 12;
+var RIP_COLOR_LT_MAGENTA = 13;
+var RIP_COLOR_YELLOW = 14;
+var RIP_COLOR_WHITE = 15;
 
 
 ////////////////////////////////////////////////////
@@ -796,7 +834,7 @@ function RIPButtonNumeric(pX0, pY0, pX1, pY1, pHotkey, pFlags, pRes, pTextStrs, 
 	var y0 = (typeof(pY0) === "number" ? toMegaNum(pY0, 2) : "00");
 	var x1 = (typeof(pX1) === "number" ? toMegaNum(pX1, 2) : "00");
 	var y1 = (typeof(pY1) === "number" ? toMegaNum(pY1, 2) : "00");
-	var hotkey = (typeof(pHotkey) === "number" ? toMegaNum(pHotkey, 2) : "0W"); // Space
+	var hotkey = (typeof(pHotkey) === "number" ? toMegaNum(pHotkey, 2) : "00");
 	var flags = (typeof(pFlags) === "number" ? toMegaNum(pFlags, 1) : "0");
 	var res = (typeof(pRes) === "number" ? toMegaNum(pRes, 1) : "0");
 	return RIPButton(x0, y0, x1, y1, hotkey, flags, res, pTextStrs, pHostCmd);
