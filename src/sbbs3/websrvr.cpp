@@ -157,6 +157,7 @@ struct log_data {
 	off_t size;
 	struct tm completed;
 	client_t client;
+	uint16_t server_port;
 };
 
 enum auth_type {
@@ -1139,6 +1140,10 @@ static void close_request(http_session_t * session)
 	SetEvent(session->outbuf.highwater_event);
 
 	if (session->req.ld != NULL) {
+		union xp_sockaddr sockaddr;
+		socklen_t         socklen = sizeof(sockaddr);
+		if (getsockname(session->socket, &sockaddr.addr, &socklen) == 0)
+			session->req.ld->server_port = inet_addrport(&sockaddr);
 		now = time(NULL);
 		localtime_r(&now, &session->req.ld->completed);
 		session->req.ld->client = session->client;
@@ -7280,6 +7285,7 @@ void format_log_line(char* buf, size_t buflen, const char* fmt, struct log_data*
 	named_long_t int_vars[] = {
 		{ (char*)"B", (long)ld->size },
 		{ (char*)"s", (long)ld->status },
+		{ (char*)"p", (long)ld->server_port },
 		{ (char*)"{remote}p", ld->client.port },
 		{ nullptr },
 	};
