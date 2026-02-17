@@ -82,6 +82,43 @@ var RIP_BTN_STYLE_ADJ_VERT_CENTERING    = (1<<13); // Adjust vertical centering 
 var RIP_BTN_STYLE_RADIO_GROUP           = (1<<14); // Button belongs to a radio group
 var RIP_BTN_STYLE_SUNKEN                = (1<<15); // Display Sunken special effect
 
+// RIP color definitions (decimal/base-10 values)
+//    16-Color RIP Palette     Master 64-Color EGA
+//        Color Code           Palette Color Code       Color
+//    ---------------------------------------------------------------
+//    00                     0  (00)                    Black
+//    01                     1  (01)                    Blue
+//    02                     2  (02)                    Green
+//    03                     3  (03)                    Cyan
+//    04                     4  (04)                    Red
+//    05                     5  (05)                    Magenta
+//    06                     7  (06)                    Brown
+//    07                     20 (0K)                    Light Gray
+//    08                     56 (1K)                    Dark Gray
+//    09                     57 (1L)                    Light Blue
+//    0A                     58 (1M)                    Light Green
+//    0B                     59 (1N)                    Light Cyan
+//    0C                     60 (1O)                    Light Red
+//    0D                     61 (1P)                    Light Magenta
+//    0E                     62 (1Q)                    Yellow
+//    0F                     63 (1R)                    White
+var RIP_COLOR_BLACK = 0;
+var RIP_COLOR_BLUE = 1;
+var RIP_COLOR_GREEN = 2;
+var RIP_COLOR_CYAN = 3;
+var RIP_COLOR_RED = 4;
+var RIP_COLOR_MAGENTA = 5;
+var RIP_COLOR_BROWN = 6;
+var RIP_COLOR_LT_GRAY = 7; // Light gray
+var RIP_COLOR_DK_GRAY = 8; // Dark gray
+var RIP_COLOR_LT_BLUE = 9;
+var RIP_COLOR_LT_GREEN = 10;
+var RIP_COLOR_LT_CYAN = 11;
+var RIP_COLOR_LT_RED = 12;
+var RIP_COLOR_LT_MAGENTA = 13;
+var RIP_COLOR_YELLOW = 14;
+var RIP_COLOR_WHITE = 15;
+
 
 ////////////////////////////////////////////////////
 // RIP MegaNum stuff, commands, styles, colors, etc.
