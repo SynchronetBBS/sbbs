@@ -35,6 +35,8 @@ o Increased from 40 to 60 characters the maximum length of descriptions (long
 o The SCFG->Networks->Internet E-Mail and FidoNet "Allow Sending of ..."
   options now apply to sysops as well as users; sysops are not automatically
   exempt from this setting
+o WIP ARS keyword restored for run-time compatibility with old Baja modules
+  (e.g. matrix.bin)
 o User properties (data/user/####.ini) are now exposed to ARS and @-codes
   - New ARS Keyword PROP[:section]:key to check the truthiness of a property
   - New @-codes (YESNO and ONOFF) for checking Access Requirement Strings
@@ -92,6 +94,8 @@ o Support text.dat substring replacements via text.ini [substr] section
 o New "User" attributes controlled via attr.ini: 'userhigh' and 'userlow'
   settings: whatever attributes the sysop places there will be used for
   Ctrl-AU (userhigh) and Ctrl-Au (userlow)
+o Similar to above, Ctrl-AV (mnehigh) and Ctrl-Av (mnelow) can be used for
+  those sysop-configurable attributes
 o Modified text and menu files can now be placed in mods/text/
 o Log more details during new user registration process
 o Separate global support for "extra attribute codes" from per sub-board opts
@@ -158,6 +162,7 @@ Mail server
 o New configurable request rate limiter (rate limited per client IP address)
 o Strip control chars from "B" mime-encoded words in incoming header fields
 o Support "quoted" local-part of RCPT TO: <mailbox> argument
+o Fixed mismatched sender/from extension in created SMTP-bounce messages
 o New LoginInfoSave option (ARS) to specify which users login info should be
   saved upon logon/off (default is *all* users)
 o If SMTP-authenticated, fail subsequent AUTH commands with 503 response
@@ -277,7 +282,8 @@ o Newly added:
   - SeekingFile
   - SeekingFileDone
   - SeekPrompt
-o UserDefaultsPassword changed to include '%s' argument (for "or SSH Keys")
+o UserDefaultsPassword changed to broaden scope (personal/credentials)
+o UserDefaultsLanguage changed to reflect new command key (L)
 o RawMsgInputModeIsNow changed to include RAWIO @-code
 o Changed to accommodate 40 column terminals better (w/Cond-Linecont):
   - InternetMailReceived
@@ -426,6 +432,7 @@ o Add "maximum message age" in days option for AreaMgr %RESCAN use
 
 Services
 ~~~~~~~~
+o New configurable connect rate limiter (rate limited per client IP address)
 o Support for LoginInfoSave option (ARS) to specify which users login info
   should be saved upon logon/off (default is *all* users)
 o nntpservice.js
@@ -447,15 +454,22 @@ o chksetup.js improvements
   - Reports users whose passwords don't meet current requirements
 o default.js
   - New /M command to post a message in "meme format"
+o delfiles.js
+  - Speed up the -offline search by using the directory() output
 o email_sec.js
   - Use the user's chosen sort order for all mail reading modes,
     including sent mail and unread mail
+  - Now a configurable loadable module in SCFG->System->Loadable Modules->
+    Email Section
 o filelist.js
   - Allow the -utf8 option to work with the -json option
   - Better application of the -user=name argument
     Parse it before all other options (e.g. before -all)
 o fileman.js
   - When editing a file description that doesn't exist, pass a blank string
+o filescancfg.js
+  - User's default download protocol is now configurable from this menu
+  - Menu/prompt loops for non-expert users
 o fonts.js
   - Add 'wantblink' setting (enabled by default) to root section of fonts.ini
 o init-fidonet.js
@@ -485,6 +499,8 @@ o newuser_prompts.js
 o newuser_info.js
   - Replaces most of the "hard-coded" new user info/help screen display logic
   - Configured by default, in SCFG->System->Loadable Modules->New User Info
+o pcboard.js
+  - New port of the old PCBoard Clone shell written in Baja
 o postmeme.js
   - New meme-style message poster ("/M" command from default shell main menu)
 o postmsg.js
@@ -493,6 +509,8 @@ o printfile.js
   - Small wrapper for console.printfile(), to replace use of type[asc].js
 o purgefiles.js
   - Add support for -t (testing) and -v (verbose) options
+o renegade.js
+  - New port of the old Renegade Clone shell written in Baja
 o rlogin.js
   - Fix default mode value (should *not* be 10, i.e TG_NODESYNC|TG_CRLF)
   - Add '-h[pepper]' option to send a salted and hashed password to the server
@@ -517,7 +535,11 @@ o tdfiglet.js
 o type.js
   - Use P_CPM_EOF mode flag to stop printing at Ctrl-Z (CP/M and PC/MSDOS EOF)
 o user_settings.js
-  - Add ability to add/edit/delete SSH keys
+  - Add ability to add/edit/delete SSH keys and edit personal information
+    (see exec/user_personal.js)
+  - Terminal settings moved to exec/user_terminal.js
+  - Look/feel configurable via modopts/user_settings, user_personal,
+    and user_terminal
 o userlist.js
   - Cosmetic fix: user totals displayed were wrong when not sorting the list
 o viewimsgs.js
@@ -608,3 +630,10 @@ o Using poll() instead of select() on UNIX-like OSes now
 o Support for glob matching characters (e.g. "[]") in filenames on *nix
 o ZMODEM interoperability with Tera Term
   https://github.com/TeraTermProject/teraterm/issues/889
+
+SMBUTIL
+~~~~~~~
+o More resilient to concurrent opens (by other processes, even though locked)
+  while maintaining/packing a msg base
+o Fix index corruption resulting from packing an unmaintained msg base
+  and filebase corruption
