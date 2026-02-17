@@ -47,8 +47,14 @@ function display_menu(thisuser)
 		keys += 'T';
 		console.add_hotspot('T');
 		console.putmsg(format(bbs.text(bbs.text.UserDefaultsTerminal)
-			,termdesc.type(/* verbosity: */2, (bbs.sys_status & SS_USERON)
+			,termdesc.type(true, (bbs.sys_status & SS_USERON)
 				&& (thisuser.number == user.number && !user_is_guest) ? undefined : thisuser)));
+	}
+	if (bbs.text(bbs.text.UserDefaultsRows).length) {
+		keys += 'L';
+		console.add_hotspot('L');
+		console.putmsg(format(bbs.text(bbs.text.UserDefaultsRows)
+			,termdesc.columns(true,user), termdesc.rows(true,user)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsCommandSet).length
 		&& main_cfg.shell.length > 1) {
@@ -247,6 +253,28 @@ while(bbs.online && !js.terminated) {
 		case 'I': /* Language */
 			lang.select(thisuser.number === user.number ? user : thisuser);
 			break;
+		case 'L':
+		{
+			console.putmsg(bbs.text(bbs.text.HowManyColumns));
+			var val = console.getnum(999,0);
+			if (val < 0)
+				break;
+			thisuser.screen_columns = val;
+			if (user.number === thisuser.number) {
+				user.screen_columns = thisuser.screen_columns;
+				console.getdimensions();
+			}
+			console.putmsg(bbs.text(bbs.text.HowManyRows));
+			val = console.getnum(999,0);
+			if (val < 0)
+				break;
+			thisuser.screen_rows = val;
+			if (user.number === thisuser.number) {
+				user.screen_rows = thisuser.screen_rows;
+				console.getdimensions();
+			}
+			break;
+		}
 		case 'M':
 			prompts.get_netmail(thisuser);
 			break;
@@ -269,7 +297,109 @@ while(bbs.online && !js.terminated) {
 			}
 			break;
 		case 'T':
-			js.exec("user_terminal.js", { user: thisuser });
+			if (console.yesno(bbs.text(bbs.text.AutoTerminalQ))) {
+				thisuser.settings |= USER_AUTOTERM;
+				thisuser.settings &=
+					~(USER_ANSI | USER_RIP | USER_WIP | USER_HTML | USER_PETSCII | USER_UTF8);
+				if (user.number === thisuser.number)
+					thisuser.settings |= console.autoterm;
+			}
+			else if (!console.aborted)
+				thisuser.settings &= ~USER_AUTOTERM;
+			if (console.aborted)
+				break;
+			if (!(thisuser.settings & USER_AUTOTERM)) {
+				if (!console.noyes(bbs.text(bbs.text.Utf8TerminalQ)))
+					thisuser.settings |= USER_UTF8;
+				else if (!console.aborted)
+					thisuser.settings &= ~USER_UTF8;
+				if (console.yesno(bbs.text(bbs.text.AnsiTerminalQ))) {
+					thisuser.settings |= USER_ANSI;
+					thisuser.settings &= ~USER_PETSCII;
+				} else if (!console.aborted && !(thisuser.settings & USER_UTF8)) {
+					thisuser.settings &= ~(USER_ANSI | USER_COLOR | USER_ICE_COLOR);
+					if (!console.noyes(bbs.text(bbs.text.PetTerminalQ)))
+						thisuser.settings |= USER_PETSCII|USER_COLOR;
+					else if (!console.aborted)
+						thisuser.settings &= ~USER_PETSCII;
+				}
+			}
+			if (console.aborted)
+				break;
+			var term = (user.number == thisuser.number) ?
+				console.term_supports() : thisuser.settings;
+
+			if (term&(USER_AUTOTERM|USER_ANSI) && !(term & USER_PETSCII)) {
+				thisuser.settings |= USER_COLOR;
+				thisuser.settings &= ~USER_ICE_COLOR;
+				if ((thisuser.settings & USER_AUTOTERM)
+					|| console.yesno(bbs.text(bbs.text.ColorTerminalQ))) {
+					if (!(console.status & (CON_BLINK_FONT|CON_HBLINK_FONT))
+						&& !console.noyes(bbs.text(bbs.text.IceColorTerminalQ)))
+						thisuser.settings |= USER_ICE_COLOR;
+				} else if (!console.aborted)
+					thisuser.settings &= ~USER_COLOR;
+			}
+			if (console.aborted)
+				break;
+			if (term & USER_ANSI) {
+				if (bbs.text(bbs.text.MouseTerminalQ).length) {
+					if(term & USER_MOUSE) {
+						if (!console.yesno(bbs.text(bbs.text.MouseTerminalQ)) && !console.aborted)
+							thisuser.settings &= ~USER_MOUSE;
+					} else {
+						if (!console.noyes(bbs.text(bbs.text.MouseTerminalQ)) && !console.aborted)
+							thisuser.settings |= USER_MOUSE;
+					}
+				} else if (!console.aborted)
+					thisuser.settings &= ~USER_MOUSE;
+			}
+			if (console.aborted)
+				break;
+			if (!(term & USER_PETSCII)) {
+				if (!(term & USER_UTF8) && !console.yesno(bbs.text(bbs.text.ExAsciiTerminalQ)))
+					thisuser.settings |= USER_NO_EXASCII;
+				else if (!console.aborted)
+					thisuser.settings &= ~USER_NO_EXASCII;
+				if (console.aborted)
+					break;
+				thisuser.settings &= ~USER_SWAP_DELETE;
+				while(bbs.text(bbs.text.HitYourBackspaceKey).length
+					&& !(thisuser.settings & (USER_PETSCII | USER_SWAP_DELETE))
+					&& bbs.online) {
+					console.putmsg(bbs.text(bbs.text.HitYourBackspaceKey));
+					console.status |= CON_RAW_IN;
+					var key = console.getkey(K_CTRLKEYS);
+					console.status &= ~CON_RAW_IN;
+					console.putmsg(format(bbs.text(bbs.text.CharacterReceivedFmt), ascii(key), ascii(key)));
+					if (key == '\b')
+						break;
+					if (key == '\x7f') {
+						if (bbs.text(bbs.text.SwapDeleteKeyQ).length || console.yesno(bbs.text(bbs.text.SwapDeleteKeyQ)))
+							thisuser.settings |= USER_SWAP_DELETE;
+					}
+					else if (key == PETSCII_DELETE) {
+						console.autoterm |= USER_PETSCII;
+						thisuser.settings |= USER_PETSCII;
+						console.putbyte(PETSCII_UPPERLOWER);
+						console.putmsg(bbs.text(bbs.text.PetTerminalDetected));
+					}
+					else
+						console.putmsg(format(bbs.text(bbs.text.InvalidBackspaceKeyFmt)
+							,ascii(key), ascii(key)));
+				}
+			}
+			if (console.aborted)
+				break;
+			if (!(thisuser.settings & USER_AUTOTERM)
+				&& (term&(USER_ANSI|USER_NO_EXASCII)) == USER_ANSI) {
+				if (!console.noyes(bbs.text(bbs.text.RipTerminalQ)))
+					thisuser.settings |= USER_RIP;
+				else
+					thisuser.settings &= ~USER_RIP;
+			}
+			if (console.aborted)
+				break;
 			break;
 		case 'W':
 			js.exec("user_personal.js", { user: thisuser });
