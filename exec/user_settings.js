@@ -4,13 +4,16 @@
 "use strict";
 
 console.clear();
-require("sbbsdefs.js", 'BBS_OPT_AUTO_LOGON');
+require("sbbsdefs.js", 'SS_USERON');
 require("userdefs.js", 'USER_SPIN');
 require("nodedefs.js", 'NODE_DFLT');
 require("gettext.js", 'gettext');
 var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js");
 var termdesc = bbs.mods.termdesc || load(bbs.mods.termdesc = {}, "termdesc.js");
 var lang = bbs.mods.lang || load(bbs.mods.lang = {}, "lang.js");
+var options = load("modopts.js", "user_terminal");
+if (!options)
+	options = {};
 
 prompts.operation = "";
 
@@ -163,7 +166,7 @@ function display_menu(thisuser)
 		console.add_hotspot('W');
 		console.print(bbs.text(bbs.text.UserDefaultsPassword));
 	}
-	console.print(bbs.text(bbs.text.UserDefaultsWhich), P_ATCODES);
+	console.print(options.prompt || bbs.text(bbs.text.UserDefaultsWhich), P_ATCODES);
 	console.add_hotspot('Q');
 
 	return keys;
@@ -175,9 +178,6 @@ var main_cfg = cfglib.read("main.ini");
 
 var thisuser = new User(argv[0] || user.number);
 var user_is_guest = (thisuser.security.restrictions & UFLAG_G);
-
-const PETSCII_DELETE = '\x14';
-const PETSCII_UPPERLOWER = 0x1d;
 
 while(bbs.online && !js.terminated) {
 	bbs.node_action = NODE_DFLT;
@@ -227,7 +227,7 @@ while(bbs.online && !js.terminated) {
 			}
 			else {
 				if (!bbs.select_editor(thisuser)) {
-					console.print(gettext("Sorry, no external editors are available to you", "no_extrnal_editors"))
+					console.print(gettext("Sorry, no external editors are available to you", "no_external_editors"))
 					console.newline();
 				}
 			}
