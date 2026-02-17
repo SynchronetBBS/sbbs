@@ -73,6 +73,7 @@ var RIP_BTN_STYLE_RECESSED              = (1<<4);  // Display Recessed special e
 var RIP_BTN_STYLE_DROPSHADOW_LBL        = (1<<5);  // Dropshadow the label (if any)
 var RIP_BTN_STYLE_AUTOSTAMP_IMG_CLIPBRD = (1<<6);  // Auto-stamp image onto clipboard
 var RIP_BTN_STYLE_ICON                  = (1<<7);  // Button is an "Icon Button"
+var RIP_BTN_STYLE_PLAIN                 = (1<<8);  // Button is a "Plain Button"
 var RIP_BTN_STYLE_BEVEL                 = (1<<9);  // Display Bevel special effect
 var RIP_BTN_STYLE_MOUSE                 = (1<<10); // Button is a Mouse Button
 var RIP_BTN_STYLE_UNDERLINE_HOTKEY      = (1<<11); // Underline hot-key in label
@@ -796,7 +797,7 @@ function RIPButtonNumeric(pX0, pY0, pX1, pY1, pHotkey, pFlags, pRes, pTextStrs, 
 	var y0 = (typeof(pY0) === "number" ? toMegaNum(pY0, 2) : "00");
 	var x1 = (typeof(pX1) === "number" ? toMegaNum(pX1, 2) : "00");
 	var y1 = (typeof(pY1) === "number" ? toMegaNum(pY1, 2) : "00");
-	var hotkey = (typeof(pHotkey) === "number" ? toMegaNum(pHotkey, 2) : "0W"); // Space
+	var hotkey = (typeof(pHotkey) === "number" ? toMegaNum(pHotkey, 2) : "00");
 	var flags = (typeof(pFlags) === "number" ? toMegaNum(pFlags, 1) : "0");
 	var res = (typeof(pRes) === "number" ? toMegaNum(pRes, 1) : "0");
 	return RIPButton(x0, y0, x1, y1, hotkey, flags, res, pTextStrs, pHostCmd);
