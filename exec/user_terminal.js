@@ -14,9 +14,9 @@ var options = load("modopts.js", "user_terminal");
 if (!options)
 	options = {};
 if (!options.option_fmt)
-	options.option_fmt = "\x01u[\x01U%c\x01u] %s";
+	options.option_fmt = "\x01v[\x01V%c\x01v] %s";
 if (!options.option_with_val_fmt)
-	options.option_with_val_fmt = "\x01u[\x01U%c\x01u] %s: \x01U%s";
+	options.option_with_val_fmt = "\x01v[\x01V%c\x01v] %s: \x01V%s";
 
 const PETSCII_DELETE = '\x14';
 const PETSCII_UPPERLOWER = 0x1d;
@@ -52,9 +52,9 @@ while(bbs.online && !js.terminated) {
 		console.term_updated();
 	}
 	console.clear();
-	console.print((options.header_prefix || "\x01U")
+	console.print((options.header_prefix || "\x01v")
 		+ (options.header || (gettext("Terminal Settings") + " " + gettext("for")))
-		+ format(options.user_fmt || " \x01U%s #%u:", user.alias, user.number));
+		+ format(options.user_fmt || " \x01V%s #%u\x01v:", user.alias, user.number));
 	console.newline(2);
 	console.print(format(options.option_with_val_fmt, 'T', gettext("Type")
 				,termdesc.type(/* verbosity: */1, (bbs.sys_status & SS_USERON)
@@ -100,7 +100,7 @@ while(bbs.online && !js.terminated) {
 		console.newline();
 	}
 	console.newline();	
-	console.putmsg(options.prompt || "\x01n\x01h\x01u@Which@ or [\x01UQ\x01u] to @Quit@: \x01U", P_SAVEATR);
+	console.putmsg(options.prompt || "\x01v@Which@ or [\x01VQ\x01v] to @Quit@: \x01V", P_SAVEATR);
 	console.add_hotspot('Q');
 	
 	switch(console.getkeys(keys, K_UPPER)) {

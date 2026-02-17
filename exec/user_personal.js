@@ -37,9 +37,9 @@ var options = load("modopts.js", "user_personal");
 if (!options)
 	options = {};
 if (!options.option_with_val_fmt)
-	options.option_with_val_fmt = "\x01u[\x01U%c\x01u] %s: \x01U%s";
+	options.option_with_val_fmt = "\x01v[\x01V%c\x01v] %s: \x01V%s";
 if (!options.option_with_date_fmt)
-	options.option_with_date_fmt = "\x01u[\x01U%c\x01u] %-9s (%s: \x01U%s\x01u)";
+	options.option_with_date_fmt = "\x01v[\x01V%c\x01v] %-9s (%s: \x01V%s\x01v)";
 var ssh_support = server.options & (1<< 12); // BBS_OPT_ALLOW_SSH
 
 prompts.operation = "";
@@ -48,9 +48,9 @@ while(bbs.online && !js.terminated) {
 	var keys = 'Q\r';
 	console.aborted = false;	
 	console.clear();
-	console.print((options.header_prefix || "\x01U")
+	console.print((options.header_prefix || "\x01v")
 		+ (options.header || (gettext("Personal Information") + " " + gettext("for")))
-		+ format(options.user_fmt || " \x01U%s #%u:", user.alias, user.number));
+		+ format(options.user_fmt || " \x01V%s #%u\x01v:", user.alias, user.number));
 	console.newline(2);
 	if (options.alias === true) {
 		console.print(format(options.option_with_val_fmt, 'A', options.text_alias || gettext("Alias"), user.alias));
@@ -110,7 +110,7 @@ while(bbs.online && !js.terminated) {
 	keys += 'M';
 	console.add_hotspot('M');
 	console.newline(2);	
-	console.print(options.prompt || "\x01n\x01h\x01u@Which@ or [\x01UQ\x01u] to @Quit@: \x01U", P_ATCODES);
+	console.print(options.prompt || "\x01v@Which@ or [\x01VQ\x01v] to @Quit@: \x01V", P_ATCODES);
 	console.add_hotspot('Q');
 
 	switch(console.getkeys(keys, K_UPPER)) {
