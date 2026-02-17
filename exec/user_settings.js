@@ -39,7 +39,7 @@ function display_menu(thisuser)
 	for (var i = 0; i < file_cfg.protocol.length; i++) {
 		if (String(file_cfg.protocol[i].key) === String(thisuser.download_protocol)) {
 			protname = file_cfg.protocol[i].name;
-			if(thisuser.settings & USER_AUTOHANG)
+			if (thisuser.settings & USER_AUTOHANG)
 				autohang = gettext("(Auto-Hangup)");
 			break;
 		}
@@ -179,7 +179,7 @@ var main_cfg = cfglib.read("main.ini");
 var thisuser = new User(argv[0] || user.number);
 var user_is_guest = (thisuser.security.restrictions & UFLAG_G);
 
-while(bbs.online && !js.terminated) {
+while (bbs.online && !js.terminated) {
 	bbs.node_action = NODE_DFLT;
 	bbs.nodesync();
 	console.aborted = false;
@@ -200,13 +200,13 @@ while(bbs.online && !js.terminated) {
 			}
 
 			for (var i = 0; i < archivetypes.length; i++) {
-		                console.uselect(i
-					,bbs.text(bbs.text.ArchiveTypeHeading)
-					,archivetypes[i]);
+				console.uselect(i
+					, bbs.text(bbs.text.ArchiveTypeHeading)
+					, archivetypes[i]);
 				if (archivetypes[i] === thisuser.temp_file_ext)
 					defaultext = i;
 			}
-			if ((i=console.uselect(defaultext))>=0)
+			if ((i = console.uselect(defaultext)) >= 0)
 				thisuser.temp_file_ext = archivetypes[i];
 			break;
 		case 'B':
