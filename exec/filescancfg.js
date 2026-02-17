@@ -2,6 +2,7 @@
 
 require("sbbsdefs.js", "USER_EXPERT");
 require("gettext.js", "gettext");
+var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js");
 
 "use strict";
 
@@ -12,7 +13,7 @@ while(bbs.online && !js.terminated) {
 		bbs.menu(menufile);
 	bbs.nodesync();
 	console.print("\r\n\x01y\x01h" + gettext("Config") + ": \x01n");
-	var key = console.getkeys("?QBEP\r");
+	var key = console.getkeys("?QBEPZ\r");
 	bbs.log_key(key);
 
 	switch(key) {
@@ -37,6 +38,15 @@ while(bbs.online && !js.terminated) {
 			console.print(bbs.text((user.settings & USER_EXTDESC) ? bbs.text.On : bbs.text.Off));
 			console.crlf();
 			break;
+		case 'Z':
+			log("OK");		
+			prompts.get_protocol();
+			log("Wha?!?");			
+			break;
+		default:
+			exit();
+			
 	}
-	break;
+	if(user.settings & USER_EXPERT)
+		break;
 }

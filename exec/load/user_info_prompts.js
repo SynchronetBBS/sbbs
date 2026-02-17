@@ -646,4 +646,25 @@ function change_ssh_keys(user)
 	}
 }
 
+function get_protocol(user)
+{
+	if (!user)
+		user = js.global.user;
+	var keylist = console.quit_key;
+	console.newline();
+	console.print(gettext("Choose a default file transfer protocol (or [ENTER] for None):", "choose_protocol_or_none"));
+	console.newline(2);
+	keylist += bbs.xfer_prot_menu();
+	console.mnemonics(bbs.text(bbs.text.ProtocolOrQuit));
+	var kp = console.getkeys(keylist);
+	if (kp === console.quit_key || console.aborted)
+		return false;
+	user.download_protocol = kp;
+	if (kp && console.yesno(bbs.text(bbs.text.HangUpAfterXferQ)))
+		user.settings |= USER_AUTOHANG;
+	else if (!console.aborted)
+		user.settings &= ~USER_AUTOHANG;
+	return true;
+}
+
 this;
