@@ -59,19 +59,19 @@ while(bbs.online && !js.terminated) {
 		console.newline();
 	}
 	if (options.name === true) {
-		console.print(format(options.option_with_val_fmt, 'R', options.text_name ||gettext("Real Name"), user.name));
+		console.print(format(options.option_with_val_fmt, 'R', options.text_name || gettext("Real Name"), user.name));
 		keys += 'R';
 		console.add_hotspot('R');
 		console.newline();
 	}
 	if (options.handle === true) {
-		console.print(format(options.option_with_val_fmt, 'H', options.text_handle ||gettext("Handle"), user.handle));
+		console.print(format(options.option_with_val_fmt, 'H', options.text_handle || gettext("Handle"), user.handle));
 		keys += 'H';
 		console.add_hotspot('H');
 		console.newline();
 	}
 	if (options.phone === true) {
-		console.print(format(options.option_with_val_fmt, 'N', options.text_phone ||gettext("Phone Number"), user.phone));
+		console.print(format(options.option_with_val_fmt, 'N', options.text_phone || gettext("Phone Number"), user.phone));
 		keys += 'N';
 		console.add_hotspot('N');
 		console.newline();
@@ -110,7 +110,7 @@ while(bbs.online && !js.terminated) {
 	keys += 'M';
 	console.add_hotspot('M');
 	console.newline(2);	
-	console.putmsg(options.prompt || "\x01n\x01h\x01u@Which@ or [\x01UQ\x01u] to @Quit@: \x01U", P_SAVEATR);
+	console.print(options.prompt || "\x01n\x01h\x01u@Which@ or [\x01UQ\x01u] to @Quit@: \x01U", P_ATCODES);
 	console.add_hotspot('Q');
 
 	switch(console.getkeys(keys, K_UPPER)) {
