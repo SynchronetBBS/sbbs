@@ -460,9 +460,7 @@ bool iniRemoveSection(str_list_t* list, const char* section)
 			return false;
 		// Remove blank lines before this section
 		while (i > 0 && (*list)[i - 1] != NULL && *(*list)[i - 1] == '\0')
-			i--;
-		while ((*list)[i] != NULL && *(*list)[i] != INI_OPEN_SECTION_CHAR)
-			strListDelete(list, i);
+			strListDelete(list, --i);
 	}
 	do {
 		strListDelete(list, i);
