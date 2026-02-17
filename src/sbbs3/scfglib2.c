@@ -851,6 +851,9 @@ uint strtoattr(scfg_t* cfg, const char *str, char** endptr)
 			case 'U':	/* User Theme */
 				atr = cfg->color[str[l] == 'u' ? clr_userlow : clr_userhigh];
 				break;
+			case 'V':	/* Mnemonics */
+				atr = cfg->color[str[l] == 'v' ? clr_mnelow : clr_mnehigh];
+				break;
 			default:
 				if (endptr != NULL)
 					*endptr = (char*)str + l;

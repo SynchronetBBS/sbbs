@@ -1065,6 +1065,9 @@ void sbbs_t::ctrl_a(char x)
 		case 'U':   /* User Theme */
 			attr(cfg.color[x == 'u' ? clr_userlow : clr_userhigh]);
 			break;
+		case 'V':   /* Mnemonics */
+			attr(cfg.color[x == 'v' ? clr_mnelow : clr_mnehigh]);
+			break;
 		case 'X':   // Rainbow
 			if (rainbow[rainbow_index + 1] != 0)
 				++rainbow_index;
