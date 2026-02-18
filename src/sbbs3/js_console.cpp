@@ -1133,6 +1133,7 @@ js_mnemonics(JSContext *cx, uintN argc, jsval *arglist)
 	sbbs_t*    sbbs;
 	JSString*  js_str;
 	char*      cstr;
+	int        mode = K_NONE;
 	jsrefcount rc;
 
 	if ((sbbs = (sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
@@ -1142,12 +1143,17 @@ js_mnemonics(JSContext *cx, uintN argc, jsval *arglist)
 
 	if ((js_str = JS_ValueToString(cx, argv[0])) == NULL)
 		return JS_FALSE;
-
 	JSSTRING_TO_MSTRING(cx, js_str, cstr, NULL);
 	if (cstr == NULL)
 		return JS_FALSE;
+	if (argc > 1 && JSVAL_IS_NUMBER(argv[1])) {
+		if (!JS_ValueToInt32(cx, argv[1], &mode)) {
+			free(cstr);
+			return JS_FALSE;
+		}
+	}
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->mnemonics(cstr);
+	sbbs->mnemonics(cstr, mode);
 	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
@@ -2657,7 +2663,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	 , JSDOCSTR("NO/yes question - returns <tt>true</tt> if 'no' is selected")
 	 , 310
 	},
-	{"mnemonics",       js_mnemonics,       1, JSTYPE_VOID,     JSDOCSTR("text")
+	{"mnemonics",       js_mnemonics,       1, JSTYPE_VOID,     JSDOCSTR("text [,<i>number</i> p_mode=P_NONE]")
 	 , JSDOCSTR("Print a mnemonics string, command keys highlighted with tilde (~) characters")
 	 , 310
 	},

@@ -172,13 +172,13 @@ char sbbs_t::getkey(int mode)
 /****************************************************************************/
 /* Outputs a string highlighting characters preceded by a tilde             */
 /****************************************************************************/
-void sbbs_t::mnemonics(const char *instr)
+void sbbs_t::mnemonics(const char *instr, int mode)
 {
 	size_t l;
 
 	if (!strchr(instr, '~')) {
 		mnestr = instr;
-		bputs(instr);
+		bputs(instr, mode);
 		return;
 	}
 	bool ctrl_a_codes = contains_ctrl_a_attr(instr);
@@ -186,7 +186,7 @@ void sbbs_t::mnemonics(const char *instr)
 		const char* last = lastchar(instr);
 		if (instr[0] == '@' && *last == '@' && strchr(instr + 1, '@') == last && strchr(instr, ' ') == NULL) {
 			mnestr = instr;
-			bputs(instr);
+			bputs(instr, mode);
 			return;
 		}
 	}

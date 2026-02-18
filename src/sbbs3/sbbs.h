@@ -1011,7 +1011,7 @@ public:
 	bool	pause_inside = false;
 	bool	pause(bool set_abort = true);
 	const char*	mnestr = nullptr;
-	void	mnemonics(const char *str);
+	void	mnemonics(const char *str, int mode = 0);
 
 	/* inkey.cpp */
 	bool last_inkey_was_esc{false}; // Used by auto-ANSI detection
