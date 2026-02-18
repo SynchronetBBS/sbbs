@@ -1,5 +1,3 @@
-// $Id: logonlist_lib.js,v 1.2 2019/08/16 03:57:28 rswindell Exp $
-
 // Library for dealing with the "logon list" (data/logon.jsonl)
 
 "use strict";
@@ -11,6 +9,18 @@ function filename(days_ago)
 	return system.data_dir + "logon.jsonl";
 }
 
+const exclude_list = [
+	'limits',
+	'security',
+	'is_guest',
+	'is_sysop',
+	'batch_upload_list',
+	'batch_download_list',
+	'birthyear',
+	'birthmonth',
+	'birthday',
+];
+
 function add(obj)
 {
 	if(!obj)
@@ -21,8 +31,8 @@ function add(obj)
 		obj.protocol = client.protocol;
 	if(obj.user === undefined) {
 		obj.user = JSON.parse(JSON.stringify(user));
-		obj.user.limits = undefined;
-		obj.user.security = undefined;
+		for (var i in exclude_list)
+			obj.user[exclude_list[i]] = undefined;
 	}
 	if(js.global.bbs !== undefined) {
 		if(obj.node === undefined)
