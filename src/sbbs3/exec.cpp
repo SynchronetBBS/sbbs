@@ -2088,7 +2088,7 @@ bool sbbs_t::select_shell(user_t* user)
 	int i;
 
 	for (i = 0; i < cfg.total_shells; i++)
-		uselect(1, i, text[CommandShellHeading], cfg.shell[i]->name, user == &useron ? cfg.shell[i]->ar : nullptr);
+		uselect(1, i, text[CommandShellHeading], cfg.shell[i]->name, user->number == useron.number ? cfg.shell[i]->ar : nullptr);
 	if ((i = uselect(0, user->shell, 0, 0, 0)) >= 0) {
 		user->shell = i;
 		if (user->number > 0 && !user_is_guest(user))
@@ -2122,10 +2122,9 @@ bool sbbs_t::select_editor(user_t* user)
 {
 	int i;
 
-	uselect_count = 0;
 	for (i = 0; i < cfg.total_xedits; i++)
-		uselect(1, i, text[ExternalEditorHeading], cfg.xedit[i]->name, user == &useron ? cfg.xedit[i]->ar : nullptr);
-	if (uselect_count < 1)
+		uselect(1, i, text[ExternalEditorHeading], cfg.xedit[i]->name, user->number == useron.number ? cfg.xedit[i]->ar : nullptr);
+	if (uselect_items.size() < 1)
 		return false;
 	if ((i = uselect(0, user->xedit ? (user->xedit - 1):0, 0, 0, 0)) >= 0) {
 		user->xedit = i + 1;
