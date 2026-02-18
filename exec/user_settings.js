@@ -282,7 +282,7 @@ while (bbs.online && !js.terminated) {
 			thisuser.settings ^= USER_ASK_SSCAN;
 			break;
 		case 'Z':
-			prompts.get_protocol(thisuser);
+			prompts.get_protocol(thisuser, options);
 			break;
 		case 'Q':
 		case '\r':
