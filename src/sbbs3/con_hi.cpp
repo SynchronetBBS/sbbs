@@ -58,7 +58,7 @@ int sbbs_t::uselect(bool add, uint num, const char *title, const char *name, con
 		if (ar != nullptr && !chk_ar(ar, &useron, &client))
 			return 0;
 		uselect_item item = { name, num };
-		uselect_items.push_back(item);
+		uselect_items.emplace_back(item);
 		return 0;
 	}
 
