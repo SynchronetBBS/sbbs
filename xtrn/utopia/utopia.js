@@ -1242,7 +1242,8 @@ function spawnMerchant() {
 function spawnPirate() {
 	var ry = Math.floor(Math.random() * 20);
 //	debugLog("trying to spawn pirate at " + xy_str(0, ry));
-	if (cellIsWater(MAP_RIGHT_COL, ry)) { // What if cell is occupied by boat?
+	if (cellIsWater(MAP_RIGHT_COL, ry)
+		&& !cellIsOccupied(MAP_RIGHT_COL, ry)) {
 		state.pirate.push({
 			x: MAP_RIGHT_COL, y: ry,
 			gold: rules.pirate_gold,
@@ -1871,7 +1872,8 @@ function movePirate() {
 
 	if (state.pirate.length < rules.max_pirates) {
 		if (Math.random() < rules.pirate_spawn_potential)
-			spawnPirate();
+			if (!spawnPirate())
+				spawnPirate();
 	}
 }
 
