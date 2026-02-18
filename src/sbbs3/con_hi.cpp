@@ -47,53 +47,45 @@ void sbbs_t::redrwstr(char *strin, int i, int l, int mode)
 	}
 }
 
-int sbbs_t::uselect(bool add, uint n, const char *title, const char *item, const uchar *ar)
+int sbbs_t::uselect(bool add, uint num, const char *title, const char *name, const uchar *ar)
 {
-	char str[128];
-	int  i;
-	uint t, u;
-
-	if (uselect_count >= sizeof(uselect_num) / sizeof(uselect_num[0]))   /* out of bounds */
-		uselect_count = 0;
+	if (title != nullptr)
+		uselect_title = title;
 
 	if (add) {
-		if (item == nullptr)
+		if (name == nullptr)
 			return -1;
-		if (ar && !chk_ar(ar, &useron, &client))
+		if (ar != nullptr && !chk_ar(ar, &useron, &client))
 			return 0;
-		if (uselect_count < 1)
-			bprintf(text[SelectItemHdr], title);
-		uselect_num[uselect_count++] = n;
-		term->add_hotspot(uselect_count);
-		bprintf(text[SelectItemFmt], uselect_count, item);
+		uselect_item item = { name, num };
+		uselect_items.push_back(item);
 		return 0;
 	}
 
-	if (uselect_count < 1)
+	if (uselect_items.size() < 1)
 		return -1;
 
-	for (u = 0; u < uselect_count; u++)
-		if (uselect_num[u] == n)
-			break;
-	if (u == uselect_count)
-		u = 0;
-	snprintf(str, sizeof str, text[SelectItemWhich], u + 1);
-	mnemonics(str);
-	i = getnum(uselect_count);
-	t = uselect_count;
-	uselect_count = 0;
-	term->clear_hotspots();
-	if (i < 0)
-		return -1;
-	if (i == 0) {                    // User hit ENTER, use default
-		for (u = 0; u < t; u++)
-			if (uselect_num[u] == n)
-				return uselect_num[u];
-		if (n < t)
-			return uselect_num[n];
-		return -1;
+	bprintf(text[SelectItemHdr], uselect_title.c_str());
+	int dflt = 0;
+	for (auto u = 0; u < static_cast<int>(uselect_items.size()); ++u) {
+		bprintf(text[SelectItemFmt], u + 1, uselect_items[u].name.c_str());
+		term->add_hotspot(u + 1);
+		if (uselect_items[u].num == num)
+			dflt = u;
 	}
-	return uselect_num[i - 1];
+
+	char str[128];
+	snprintf(str, sizeof str, text[SelectItemWhich], dflt + 1);
+	mnemonics(str);
+	int i = getnum(uselect_items.size());
+	term->clear_hotspots();
+	int retval = -1;
+	if (i == 0)                    // User hit ENTER, use default
+		retval = num;
+	else if (i > 0 && i <= static_cast<int>(uselect_items.size()))
+		retval = uselect_items[i - 1].num;
+	uselect_items.clear();
+	return retval;
 }
 
 unsigned count_set_bits(long val)

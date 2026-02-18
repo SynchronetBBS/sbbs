@@ -214,7 +214,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val = sbbs->term->optimize_gotoxy;
 			break;
 		case CON_PROP_USELECT_COUNT:
-			val = sbbs->uselect_count;
+			val = sbbs->uselect_items.size();
 			break;
 
 		case CON_PROP_YES_KEY:
@@ -400,8 +400,8 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			sbbs->term->optimize_gotoxy = val;
 			break;
 		case CON_PROP_USELECT_COUNT:
-			if ((unsigned)val < sbbs->uselect_count)
-				sbbs->uselect_count = val;
+			if ((unsigned)val < sbbs->uselect_items.size())
+				sbbs->uselect_items.resize(val);
 			break;
 
 		default:

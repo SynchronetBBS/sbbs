@@ -406,6 +406,7 @@ typedef struct js_callback {
 
 #include <atomic>
 #include <string>
+#include <vector>
 #include <unordered_map>
 
 class Terminal;
@@ -1047,7 +1048,9 @@ public:
 	bool	menu_exists(const char *code, const char* ext=NULL, char* realpath=NULL);
 
 	int		uselect(bool add, uint n, const char *title, const char *item, const uchar *ar);
-	uint	uselect_count = 0, uselect_num[500]{};
+	struct uselect_item { std::string name; uint num; };
+	std::vector<uselect_item> uselect_items;
+	std::string uselect_title;
 
 	int		mselect(const char *title, str_list_t list, unsigned max_selections, const char* item_fmt, const char* selected_str, const char* unselected_str, const char* prompt_fmt);
 
