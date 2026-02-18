@@ -2993,7 +2993,7 @@ static JSBool uselect_items_getter(JSContext *cx, JSObject *obj, jsid id, jsval 
 
 		jsval val = OBJECT_TO_JSVAL(item);
 		if (!JS_SetElement(cx, array, i, &val))
-			return NULL;
+			return JS_FALSE;
 	}
 	*vp = OBJECT_TO_JSVAL(array);
 	return JS_TRUE;
