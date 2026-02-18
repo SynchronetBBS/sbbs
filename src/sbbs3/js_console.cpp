@@ -59,6 +59,7 @@ enum {
 	, CON_PROP_GETSTR_OFFSET
 	, CON_PROP_CTRLKEY_PASSTHRU
 	, CON_PROP_OPTIMIZE_GOTOXY
+	, CON_PROP_USELECT_TITLE
 	, CON_PROP_USELECT_COUNT
 	/* read only */
 	, CON_PROP_INBUF_LEVEL
@@ -212,6 +213,10 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case CON_PROP_OPTIMIZE_GOTOXY:
 			val = sbbs->term->optimize_gotoxy;
+			break;
+		case CON_PROP_USELECT_TITLE:
+			if ((js_str = JS_NewStringCopyZ(cx, sbbs->uselect_title.c_str())) == NULL)
+				return JS_FALSE;
 			break;
 		case CON_PROP_USELECT_COUNT:
 			val = sbbs->uselect_items.size();
@@ -399,6 +404,12 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 		case CON_PROP_OPTIMIZE_GOTOXY:
 			sbbs->term->optimize_gotoxy = val;
 			break;
+		case CON_PROP_USELECT_TITLE:
+			JSVALUE_TO_MSTRING(cx, *vp, sval, NULL);
+			if (sval == NULL)
+				break;
+			sbbs->uselect_title = sval;
+			break;
 		case CON_PROP_USELECT_COUNT:
 			if ((unsigned)val < sbbs->uselect_items.size())
 				sbbs->uselect_items.resize(val);
@@ -450,6 +461,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "getstr_offset", CON_PROP_GETSTR_OFFSET, CON_PROP_FLAGS, 311},
 	{   "ctrlkey_passthru", CON_PROP_CTRLKEY_PASSTHRU, CON_PROP_FLAGS, 310},
 	{   "optimize_gotoxy", CON_PROP_OPTIMIZE_GOTOXY, CON_PROP_FLAGS, 321},
+	{   "uselect_title", CON_PROP_USELECT_TITLE, CON_PROP_FLAGS, 321},
 	{   "uselect_count", CON_PROP_USELECT_COUNT, CON_PROP_FLAGS, 321},
 	{   "input_buffer_level", CON_PROP_INBUF_LEVEL, JSPROP_ENUMERATE | JSPROP_READONLY, 312},
 	{   "input_buffer_space", CON_PROP_INBUF_SPACE, JSPROP_ENUMERATE | JSPROP_READONLY, 312},
@@ -511,6 +523,7 @@ static const char*        con_prop_desc[] = {
 		"ex: <tt>console.ctrlkey_passthru=\"-UP+AB\"</tt> will clear CTRL-U and "
 		"CTRL-P and set CTRL-A and CTRL-B."
 	, "Set to <tt>true</tt> to avoid sending redundant cursor position changes to the terminal"
+	, "Title to display in user selection prompts (via <tt>uselect()</tt>)"
 	, "Number of items currently enqueued for a user selection prompt (via <tt>uselect()</tt>) - <small>Can be decreased only</small>"
 	, "Number of bytes currently in the input buffer (from the remote client) - <small>READ ONLY</small>"
 	, "Number of bytes available in the input buffer	- <small>READ ONLY</small>"
@@ -2772,7 +2785,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	},
 	{"uselect",         js_uselect,         0, JSTYPE_NUMBER,   JSDOCSTR("[<i>number</i> index, title, item] [,ars]")
 	 , JSDOCSTR("User selection menu: first call for each item, then finally with no arguments (or just the default item index number) to display a numbered-item selection menu/prompt.<br>"
-				"Returns the index of the selected item or a negative number (e.g. when aborted).  See also the <tt>uselect_count</tt> property.")
+				"Returns the index of the selected item or a negative number (e.g. when aborted).  See also the <tt>uselect_count</tt>, <tt>uselect_title</tt>, and <tt>uselect_items</tt> properties.")
 	 , 312
 	},
 	{"saveline",        js_saveline,        0, JSTYPE_BOOLEAN,  JSDOCSTR("")
@@ -2957,6 +2970,35 @@ static JSBool js_console_enumerate(JSContext *cx, JSObject *obj)
 	return js_console_resolve(cx, obj, JSID_VOID);
 }
 
+static JSBool uselect_items_getter(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
+{
+	sbbs_t*   sbbs;
+
+	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == nullptr)
+		return JS_FALSE;
+
+	JSObject* array;
+	if ((array = JS_NewArrayObject(cx, 0, NULL)) == nullptr)
+		return JS_FALSE;
+	for (size_t i = 0; i < sbbs->uselect_items.size(); ++i) {
+		JSObject* item = JS_NewObject(cx, NULL, NULL, array);
+		if (item == nullptr)
+			return JS_FALSE;
+
+		JSString* js_str = JS_NewStringCopyZ(cx, sbbs->uselect_items[i].name.c_str());
+		if (js_str == nullptr)
+			break;
+		JS_DefineProperty(cx, item, "name", STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, item, "num", INT_TO_JSVAL(sbbs->uselect_items[i].num), NULL, NULL, JSPROP_ENUMERATE);
+
+		jsval val = OBJECT_TO_JSVAL(item);
+		if (!JS_SetElement(cx, array, i, &val))
+			return NULL;
+	}
+	*vp = OBJECT_TO_JSVAL(array);
+	return JS_TRUE;
+}
+
 JSClass js_console_class = {
 	"Console"               /* name			*/
 	, JSCLASS_HAS_PRIVATE    /* flags		*/
@@ -2992,7 +3034,7 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 		return NULL;
 
 	if (!JS_DefineProperty(cx, obj, "color_list", OBJECT_TO_JSVAL(color_list)
-	                       , NULL, NULL, 0))
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return NULL;
 
 	for (uint i = 0; i < NUM_COLORS; i++) {
@@ -3001,6 +3043,14 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 		if (!JS_SetElement(cx, color_list, i, &val))
 			return NULL;
 	}
+
+	// Array to enable uselect loadable module functionality
+	JSObject* array;
+	if ((array = JS_NewArrayObject(cx, 0, NULL)) == NULL)
+		return NULL;
+	if (!JS_DefineProperty(cx, obj, "uselect_items", OBJECT_TO_JSVAL(array)
+	                       , uselect_items_getter, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
+		return NULL;
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Controls the remote terminal", 310);

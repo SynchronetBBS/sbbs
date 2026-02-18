@@ -319,6 +319,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->fileinfo_mod = read_loadable_mod(cfg, section, "fileinfo", "");
 	cfg->batxfer_mod = read_loadable_mod(cfg, section, "batxfer", "batchxfer");
 	cfg->tempxfer_mod = read_loadable_mod(cfg, section, "tempxfer", "tempxfer");
+	cfg->uselect_mod = read_loadable_mod(cfg, section, "uselect", "");
 
 	/*******************/
 	/* Validation Sets */

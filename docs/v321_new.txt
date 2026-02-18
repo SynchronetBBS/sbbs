@@ -135,8 +135,6 @@ o New Message Scan
 Web Server
 ~~~~~~~~~~
 o New configurable request rate limiter (rate limited per client IP address)
-o New option to log all Virtual Hosts to one http access log file and include
-  the vhost (in addition to the client ip/hostname) in the log messages
 o New LoginInfoSave option (ARS) to specify which users login info should be
   saved upon logon/off (default is *all* users)
 o Log output improvements

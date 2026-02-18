@@ -65,25 +65,29 @@ int sbbs_t::uselect(bool add, uint num, const char *title, const char *name, con
 	if (uselect_items.size() < 1)
 		return -1;
 
-	bprintf(text[SelectItemHdr], uselect_title.c_str());
-	int dflt = 0;
-	for (auto u = 0; u < static_cast<int>(uselect_items.size()); ++u) {
-		bprintf(text[SelectItemFmt], u + 1, uselect_items[u].name.c_str());
-		term->add_hotspot(u + 1);
-		if (uselect_items[u].num == num)
-			dflt = u;
-	}
+	bool invoked;
+	int retval = exec_mod("select item", cfg.uselect_mod, &invoked, "%u", num);
+	if (!invoked) {
+		bprintf(text[SelectItemHdr], uselect_title.c_str());
+		int dflt = 0;
+		for (auto u = 0; u < static_cast<int>(uselect_items.size()); ++u) {
+			bprintf(text[SelectItemFmt], u + 1, uselect_items[u].name.c_str());
+			term->add_hotspot(u + 1);
+			if (uselect_items[u].num == num)
+				dflt = u;
+		}
 
-	char str[128];
-	snprintf(str, sizeof str, text[SelectItemWhich], dflt + 1);
-	mnemonics(str);
-	int i = getnum(uselect_items.size());
-	term->clear_hotspots();
-	int retval = -1;
-	if (i == 0)                    // User hit ENTER, use default
-		retval = num;
-	else if (i > 0 && i <= static_cast<int>(uselect_items.size()))
-		retval = uselect_items[i - 1].num;
+		char str[128];
+		snprintf(str, sizeof str, text[SelectItemWhich], dflt + 1);
+		mnemonics(str);
+		int i = getnum(uselect_items.size());
+		term->clear_hotspots();
+		retval = -1;
+		if (i == 0)                    // User hit ENTER, use default
+			retval = num;
+		else if (i > 0 && i <= static_cast<int>(uselect_items.size()))
+			retval = uselect_items[i - 1].num;
+	}
 	uselect_items.clear();
 	return retval;
 }

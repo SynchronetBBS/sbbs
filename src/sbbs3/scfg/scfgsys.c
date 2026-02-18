@@ -3197,7 +3197,6 @@ void sys_cfg(void)
 					const char* list_sep = ", ";
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Login", strListCombine(cfg.login_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Logon", strListCombine(cfg.logon_mod.cmd, str, sizeof str, list_sep));
-					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Sync", strListCombine(cfg.sync_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Logoff", strListCombine(cfg.logoff_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Logout", strListCombine(cfg.logout_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "New User Prompts", strListCombine(cfg.newuser_prompts_mod.cmd, str, sizeof str, list_sep));
@@ -3227,6 +3226,8 @@ void sys_cfg(void)
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "View File Info", strListCombine(cfg.fileinfo_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Batch Transfer", strListCombine(cfg.batxfer_mod.cmd, str, sizeof str, list_sep));
 					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Temp Transfer", strListCombine(cfg.tempxfer_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Select Item", strListCombine(cfg.uselect_mod.cmd, str, sizeof str, list_sep));
+					snprintf(opt[i++], MAX_OPLN, "%-18.18s%s", "Sync", strListCombine(cfg.sync_mod.cmd, str, sizeof str, list_sep));
 					opt[i][0] = 0;
 					uifc.helpbuf =
 						"`Loadable Modules:`\n"
@@ -3237,7 +3238,6 @@ void sys_cfg(void)
 						"\n"
 						"`Login`            Required module for interactive terminal logins (auth)\n"
 						"`Logon`            Terminal logon procedure (post login/authentication)\n"
-						"`Sync`             Node is periodically synchronized (comm/disk I/O flush)\n"
 						"`Logoff`           Terminal logoff procedure, potentially user-interactive\n"
 						"`Logout`           Terminal logout procedure, off-line, post-logoff\n"
 						"`New User Prompts` New user registration prompts\n"
@@ -3247,7 +3247,8 @@ void sys_cfg(void)
 						"`Expired User`     User account expires (off-line)\n"
 						"`Auto Message`     User chooses to re-read or edit the auto-message\n"
 						"`Send Feedback`    User sending email to a sysop (return error to cancel)\n"
-						"`Chat Section`     User enters chat section/menu\n"
+						"`Email Section`    User email section/menu\n"
+						"`Chat Section`     User chat section/menu\n"
 						"`Text Section`     General text file (add/remove/viewing) section\n"
 						"`Xtrn Section`     External programs (doors) section\n"
 						"`Pre Xtrn`         Executed before external programs (doors) run\n"
@@ -3266,6 +3267,8 @@ void sys_cfg(void)
 						"`View File Info`   User views detailed information on files in a directory\n"
 						"`Batch Transfer`   Batch file transfer menu\n"
 						"`Temp Transfer`    Temporary/archive file transfer menu\n"
+						"`Select Item`      User selects a numbered item from a list of options\n"
+						"`Sync`             Node is periodically synchronized (comm/disk I/O flush)\n"
 						"\n"
 						"`Note:` JavaScript modules take precedence over Baja modules if both exist\n"
 						"      in your `exec` or `mods` directories.\n"
@@ -3284,94 +3287,97 @@ void sys_cfg(void)
 							mods_changed |= cfg_loadable_modules("Logon", &cfg.logon_mod, mod_bar, 0);
 							break;
 						case 2:
-							mods_changed |= cfg_loadable_modules("Synchronize", &cfg.sync_mod, mod_bar, 0);
-							break;
-						case 3:
 							mods_changed |= cfg_loadable_modules("Logoff", &cfg.logoff_mod, mod_bar, 0);
 							break;
-						case 4:
+						case 3:
 							mods_changed |= cfg_loadable_modules("Logout", &cfg.logout_mod, mod_bar, 0);
 							break;
-						case 5:
+						case 4:
 							mods_changed |= cfg_loadable_modules("New User Prompts", &cfg.newuser_prompts_mod, mod_bar, 1);
 							break;
-						case 6:
+						case 5:
 							mods_changed |= cfg_loadable_modules("New User Information", &cfg.newuser_info_mod, mod_bar, 0);
 							break;
-						case 7:
+						case 6:
 							mods_changed |= cfg_loadable_modules("New User Created", &cfg.newuser_mod, mod_bar, 0);
 							break;
-						case 8:
+						case 7:
 							mods_changed |= cfg_loadable_modules("User Configuration", &cfg.usercfg_mod, mod_bar, 1);
 							break;
-						case 9:
+						case 8:
 							mods_changed |= cfg_loadable_modules("Expired User", &cfg.expire_mod, mod_bar, 0);
 							break;
-						case 10:
+						case 9:
 							mods_changed |= cfg_loadable_modules("Auto Message", &cfg.automsg_mod, mod_bar, 0);
 							break;
-						case 11:
+						case 10:
 							mods_changed |= cfg_loadable_modules("Send Feedback", &cfg.feedback_mod, mod_bar, 0);
 							break;
-						case 12:
+						case 11:
 							mods_changed |= cfg_loadable_modules("Email Section", &cfg.emailsec_mod, mod_bar, 1);
 							break;
-						case 13:
+						case 12:
 							mods_changed |= cfg_loadable_modules("Chat Section", &cfg.chatsec_mod, mod_bar, 1);
 							break;
-						case 14:
+						case 13:
 							mods_changed |= cfg_loadable_modules("Text File Section", &cfg.textsec_mod, mod_bar, 1);
 							break;
-						case 15:
+						case 14:
 							mods_changed |= cfg_loadable_modules("External Program Section", &cfg.xtrnsec_mod, mod_bar, 1);
 							break;
-						case 16:
+						case 15:
 							mods_changed |= cfg_loadable_modules("Pre External Program", &cfg.prextrn_mod, mod_bar, 0);
 							break;
-						case 17:
+						case 16:
 							mods_changed |= cfg_loadable_modules("Post External Program", &cfg.postxtrn_mod, mod_bar, 0);
 							break;
-						case 18:
+						case 17:
 							mods_changed |= cfg_loadable_modules("Read Mail", &cfg.readmail_mod, mod_bar, 0);
 							break;
-						case 19:
+						case 18:
 							mods_changed |= cfg_loadable_modules("Scan Msgs", &cfg.scanposts_mod, mod_bar, 0);
 							break;
-						case 20:
+						case 19:
 							mods_changed |= cfg_loadable_modules("Scan Subs", &cfg.scansubs_mod, mod_bar, 0);
 							break;
-						case 21:
+						case 20:
 							mods_changed |= cfg_loadable_modules("List Msgs", &cfg.listmsgs_mod, mod_bar, 0);
 							break;
-						case 22:
+						case 21:
 							mods_changed |= cfg_loadable_modules("List Logons", &cfg.logonlist_mod, mod_bar, 0);
 							break;
-						case 23:
+						case 22:
 							mods_changed |= cfg_loadable_modules("List Users", &cfg.userlist_mod, mod_bar, 0);
 							break;
-						case 24:
+						case 23:
 							mods_changed |= cfg_loadable_modules("List Nodes", &cfg.nodelist_mod, mod_bar, 0);
 							break;
-						case 25:
+						case 24:
 							mods_changed |= cfg_loadable_modules("Who's Online", &cfg.whosonline_mod, mod_bar, 0);
 							break;
-						case 26:
+						case 25:
 							mods_changed |= cfg_loadable_modules("Private Message", &cfg.privatemsg_mod, mod_bar, 0);
 							break;
-						case 27:
+						case 26:
 							mods_changed |= cfg_loadable_modules("Scan Dirs", &cfg.scandirs_mod, mod_bar, 0);
 							break;
-						case 28:
+						case 27:
 							mods_changed |= cfg_loadable_modules("List Files", &cfg.listfiles_mod, mod_bar, 0);
 							break;
-						case 29:
+						case 28:
 							mods_changed |= cfg_loadable_modules("View File Information", &cfg.fileinfo_mod, mod_bar, 0);
 							break;
-						case 30:
+						case 29:
 							mods_changed |= cfg_loadable_modules("Batch File Transfer", &cfg.batxfer_mod, mod_bar, 0);
 							break;
-						case 31:
+						case 30:
 							mods_changed |= cfg_loadable_modules("Temporary File Transfer", &cfg.tempxfer_mod, mod_bar, 0);
+							break;
+						case 31:
+							mods_changed |= cfg_loadable_modules("Select Item", &cfg.uselect_mod, mod_bar, 0);
+							break;
+						case 32:
+							mods_changed |= cfg_loadable_modules("Synchronize", &cfg.sync_mod, mod_bar, 0);
 							break;
 					}
 				}
