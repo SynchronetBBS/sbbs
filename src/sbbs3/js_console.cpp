@@ -409,6 +409,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			if (sval == NULL)
 				break;
 			sbbs->uselect_title = sval;
+			free(sval);
 			break;
 		case CON_PROP_USELECT_COUNT:
 			if ((unsigned)val < sbbs->uselect_items.size())
