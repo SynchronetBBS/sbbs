@@ -21,7 +21,7 @@ for(var i = 0; i < items.length; ++i ) {
 	else
 		ch = ' ';
 	var hotspot = i + 1;
-	console.print(format("\x01V%c\x01v%*s(\x01V%d\x01v) \x01V%s"
+	console.print(format("\x01U%c\x01v%*s(\x01V%d\x01v) \x01U%s"
 		, ch
 		, digits(hotspot) - digits(items.length), ""
 		, hotspot, items[i].name));
