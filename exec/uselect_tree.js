@@ -4,6 +4,16 @@
 
 // Customizable via modopts/uselect_tree options:
 // - header_fmt
+// - hex_hotkey_threshold = 15
+// - alpha_hotkey_threshold = 26
+// - hex_item_fmt
+// - alpha_item_fmt
+// - item_fmt
+// - attr_fg
+// - attr_bg
+// - attr_lfg
+// - attr_lbg
+// - attr_kfg
 
 require("sbbsdefs.js", "SS_MOFF");
 load('frame.js');
@@ -11,7 +21,9 @@ load('tree.js');
 
 var dflt = Number(argv[0]);
 
-var options = load("modopts.js", "uselect");
+var options = load("modopts.js", "uselect_tree:" + console.uselect_title);
+if (!options)
+	options = load("modopts.js", "uselect_tree");
 if (!options)
 	options = {};
 
@@ -36,19 +48,19 @@ const tree = new Tree(tree_frame);
 
 frame.putmsg(header);
 
-tree.colors.fg = LIGHTGRAY;
-tree.colors.bg = BG_BLACK;
-tree.colors.lfg = WHITE;
-tree.colors.lbg = BG_CYAN;
-tree.colors.kfg = LIGHTCYAN;
+tree.colors.fg = eval(options.attr_fg || "LIGHTGRAY");
+tree.colors.bg = eval(options.attr_bg || "BG_BLACK");
+tree.colors.lfg = eval(options.attr_lfg || "WHITE");
+tree.colors.lbg = eval(options.attr_lbg || "BG_CYAN");
+tree.colors.kfg = eval(options.attr_kfg || "LIGHTCYAN");
 
 for(var i = 0; i < items.length; ++i ) {
-	if (items.length <= 15)
-		tree.addItem(format("|%X %s", i + 1, items[i].name), items[i].num);
-	else if (items.length <= 26)
-		tree.addItem(format("|%c %s", ascii('A') + i, items[i].name), items[i].num);
+	if (items.length <= options.hex_hotkey_threshold || 15)
+		tree.addItem(format(options.hex_item_fmt || "|%X %s", i + 1, items[i].name), items[i].num);
+	else if (items.length <= options.alpha_hotkey_threshold || 26)
+		tree.addItem(format(options.alpha_item_fmt || "|%c %s", ascii('A') + i, items[i].name), items[i].num);
 	else
-		tree.addItem("|" + items[i].name, items[i].num);
+		tree.addItem(format(options.item_fmt || "|%s", items[i].name), items[i].num);
 	if (items[i].num == dflt)
 		tree.index = i;
 }
