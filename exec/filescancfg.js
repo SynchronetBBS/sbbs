@@ -1,10 +1,13 @@
 // File Scan Configuration menu
 
+"use strict";
+
 require("sbbsdefs.js", "USER_EXPERT");
 require("gettext.js", "gettext");
 var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js");
-
-"use strict";
+var options = load("modopts.js", "filescancfg");
+if (!options)
+	options = {};
 
 const menufile = "xfercfg";
 
@@ -12,7 +15,7 @@ while(bbs.online && !js.terminated) {
 	if(!(user.settings & USER_EXPERT))
 		bbs.menu(menufile);
 	bbs.nodesync();
-	console.print("\r\n\x01y\x01h" + gettext("Config") + ": \x01n");
+	console.print(options.prompt || ("\r\n\x01y\x01h" + gettext("Config") + ": \x01n"));
 	var key = console.getkeys("?QBEPZ\r");
 	bbs.log_key(key);
 
@@ -28,18 +31,18 @@ while(bbs.online && !js.terminated) {
 			break;
 		case 'B':
 			user.settings ^= USER_BATCHFLAG;
-			console.print("\r\n" + gettext("Batch flagging in file listings is now") + ": \1h");
+			console.print("\r\n" + gettext("Batch flagging in file listings is now") + ": \x01h");
 			console.print(bbs.text((user.settings & USER_BATCHFLAG) ? bbs.text.On : bbs.text.Off));
 			console.crlf();
 			break;
 		case 'E':
 			user.settings ^= USER_EXTDESC;
-			console.print("\r\n" + gettext("Extended file description display is now") + ": \1h");
+			console.print("\r\n" + gettext("Extended file description display is now") + ": \x01h");
 			console.print(bbs.text((user.settings & USER_EXTDESC) ? bbs.text.On : bbs.text.Off));
 			console.crlf();
 			break;
 		case 'Z':
-			prompts.get_protocol();
+			prompts.get_protocol(user, options);
 			break;
 		default:
 			exit();
