@@ -226,6 +226,8 @@ while (bbs.online && !js.terminated) {
 				thisuser.editor = '';
 			}
 			else {
+				if (thisuser.editor == '')
+					thisuser.editor = system.newuser_editor;
 				if (!bbs.select_editor(thisuser)) {
 					console.print(gettext("Sorry, no external editors are available to you", "no_external_editors"))
 					console.newline();
