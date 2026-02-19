@@ -104,8 +104,8 @@ uses
 const
   EmulVTVersion      = 219;
   CopyRight : String = ' TEmulVT (c) 1996-2002 F. Piette V2.19 ';
-  MAX_ROW            = 50; 
-  MAX_COL            = 160;
+  MAX_ROW            = 512;
+  MAX_COL            = 512;
   NumPaletteEntries  = 16;
 
 type

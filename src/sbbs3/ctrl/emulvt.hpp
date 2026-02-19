@@ -70,8 +70,8 @@ class PASCALIMPLEMENTATION TLine : public System::TObject
 	typedef System::TObject inherited;
 	
 public:
-	char Txt[161];
-	Byte Att[161];
+	char Txt[513];
+	Byte Att[513];
 	__fastcall TLine(void);
 	void __fastcall Clear(Byte Attr);
 public:
@@ -206,8 +206,8 @@ class PASCALIMPLEMENTATION TCustomEmulVT : public Controls::TCustomControl
 	typedef Controls::TCustomControl inherited;
 	
 private:
-	int FCharPos[162];
-	int FLinePos[52];
+	int FCharPos[514];
+	int FLinePos[514];
 	TextFile FFileHandle;
 	bool FCursorVisible;
 	bool FCaretShown;
@@ -427,8 +427,8 @@ public:
 //-- var, const, procedure ---------------------------------------------------
 static const Byte EmulVTVersion = 0xdb;
 extern PACKAGE AnsiString CopyRight;
-static const Shortint MAX_ROW = 0x32;
-static const Byte MAX_COL = 0xa0;
+static const Word MAX_ROW = 0x200;
+static const Word MAX_COL = 0x200;
 static const Shortint NumPaletteEntries = 0x10;
 static const Shortint F_BLACK = 0x0;
 static const Shortint F_BLUE = 0x1;
