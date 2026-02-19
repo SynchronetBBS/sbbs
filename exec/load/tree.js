@@ -704,7 +704,7 @@ Tree.prototype.pageDown=function(count,distance) {
 				i = r;
 		}
 		if(i < distance && this.down() == this.__values__.NOT_HANDLED) {
-			return i;
+			break;
 		}
 	}
 	return this.__values__.HANDLED;
