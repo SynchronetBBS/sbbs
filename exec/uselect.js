@@ -8,7 +8,9 @@
 // - nondefault_item_fmt
 // - prompt_fmt
 
-var options = load("modopts.js", "uselect");
+var options = load("modopts.js", "uselect:" + console.uselect_title);
+if (!options)
+	options = load("modopts.js", "uselect");
 if (!options)
 	options = {};
 

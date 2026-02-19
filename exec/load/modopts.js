@@ -44,7 +44,7 @@ function get_mod_options(modname, optname, default_optval)
 		throw new Error("Module name specified is wrong type: " + typeof modname);
 	if(!modname)
 		throw new Error("No module name specified");
-	var ini_file = new File(system.ctrl_dir + "modopts/" + modname.replace(":", "-") + ".ini");
+	var ini_file = new File(system.ctrl_dir + "modopts/" + modname.toLowerCase().replace(":", "-").replace(" ", "_") + ".ini");
 	if(ini_file.open("r")) {
 		var obj = ini_file.iniGetObject(/* lowercase */false, /* blanks: */true);
 		var sections = ini_file.iniGetSections();
