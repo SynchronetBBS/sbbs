@@ -18,9 +18,6 @@ if (!options.option_fmt)
 if (!options.option_with_val_fmt)
 	options.option_with_val_fmt = "\x01v[\x01V%c\x01v] %s: \x01V%s";
 
-const PETSCII_DELETE = '\x14';
-const PETSCII_UPPERLOWER = 0x1d;
-
 prompts.operation = "";
 
 function on_or_off(on)
