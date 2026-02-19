@@ -4274,7 +4274,7 @@ void gen_psb(addrlist_t *seenbys, addrlist_t *paths, const char *inbuf, uint16_t
 				seenbys->addrs++;
 				++i;
 			}
-			p1 = strstr(p + 10, "\rSEEN-BY:");
+			p1 = (char*)strstr(p + 10, "\rSEEN-BY:");
 			if (!p1)
 				break;
 			p = p1;
@@ -4333,7 +4333,7 @@ void gen_psb(addrlist_t *seenbys, addrlist_t *paths, const char *inbuf, uint16_t
 				paths->addrs++;
 				++i;
 			}
-			if ((p1 = strstr(p + 7, "\1PATH:")) == NULL)
+			if ((p1 = (char*)strstr(p + 7, "\1PATH:")) == NULL)
 				break;
 			p = p1;
 		}
