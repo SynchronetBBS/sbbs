@@ -263,7 +263,7 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 				text = fpath;
 			}
 			else {
-				num = strchr(text, ':');
+				num = (char*)strchr(text, ':');
 				if (num) {
 					*num = 0;
 					num++;

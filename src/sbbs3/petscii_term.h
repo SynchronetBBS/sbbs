@@ -29,7 +29,7 @@ public:
 	virtual void carriage_return();
 	virtual void line_feed(unsigned count = 1);
 	virtual void backspace(unsigned int count = 1);
-	virtual void newline(unsigned count = 1);
+	virtual void newline(unsigned count = 1, bool no_bg_attr = false);
 	virtual void clearscreen();
 	virtual void cleartoeos();
 	virtual void cleartoeol();

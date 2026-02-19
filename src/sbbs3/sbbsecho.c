@@ -180,7 +180,7 @@ char* parse_control_line(const char* fmsgbuf, const char* kludge)
 	if (fmsgbuf == NULL)
 		return NULL;
 	SAFEPRINTF(str, "\1%s", kludge);
-	p = strstr(fmsgbuf, str);
+	p = (char*)strstr(fmsgbuf, str);
 	if (p == NULL)
 		return NULL;
 	if (p != fmsgbuf && *(p - 1) != '\r' && *(p - 1) != '\n')    /* Kludge must start new-line */
@@ -922,7 +922,7 @@ const char* fmsghdr_destaddr_str(const fmsghdr_t* hdr)
 
 bool parse_origin(const char* fmsgbuf, fmsghdr_t* hdr)
 {
-	char*      p;
+	const char* p;
 	fidoaddr_t origaddr;
 
 	if ((p = strstr(fmsgbuf, FIDO_ORIGIN_PREFIX)) == NULL)
@@ -4220,7 +4220,8 @@ off_t find_packet_terminator(FILE* stream)
 ******************************************************************************/
 void gen_psb(addrlist_t *seenbys, addrlist_t *paths, const char *inbuf, uint16_t zone)
 {
-	char        str[128], seenby[256], *p, *p1, *p2;
+	char        str[128], seenby[256], *p1, *p2;
+	const char* p;
 	int         i, j, len;
 	fidoaddr_t  addr;
 	const char* fbuf;
@@ -5919,7 +5920,7 @@ void pack_netmail(void)
 				const char* kfs = NULL;
 				if (flags != NULL) {
 					flags += 7;
-					char* cr = strchr(flags, '\r');
+					const char* cr = strchr(flags, '\r');
 					kfs = strstr(flags, "KFS");
 					if (kfs > cr)
 						kfs = NULL;

@@ -270,12 +270,17 @@ void PETSCII_Terminal::backspace(unsigned int count)
 		sbbs->term_out(PETSCII_DELETE);
 }
 
-void PETSCII_Terminal::newline(unsigned count)
+void PETSCII_Terminal::newline(unsigned count, bool no_bg_attr)
 {
+	int saved_attr = curatr;
+	if (no_bg_attr && (curatr & BG_LIGHTGRAY)) { // Don't allow background colors to bleed when scrolling
+		sbbs->attr(LIGHTGRAY);
+	}
 	for (unsigned i = 0; i < count; i++) {
 		sbbs->term_out('\r');
 		sbbs->check_pause();
 	}
+	sbbs->attr(saved_attr);
 }
 
 void PETSCII_Terminal::clearscreen()
