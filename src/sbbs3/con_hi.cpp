@@ -49,7 +49,7 @@ void sbbs_t::redrwstr(char *strin, int i, int l, int mode)
 
 int sbbs_t::uselect(bool add, uint num, const char *title, const char *name, const uchar *ar)
 {
-	if (title != nullptr)
+	if (title != nullptr && *title != '\0')
 		uselect_title = title;
 
 	if (add) {
@@ -89,6 +89,7 @@ int sbbs_t::uselect(bool add, uint num, const char *title, const char *name, con
 			retval = uselect_items[i - 1].num;
 	}
 	uselect_items.clear();
+	uselect_title = "";
 	return retval;
 }
 
