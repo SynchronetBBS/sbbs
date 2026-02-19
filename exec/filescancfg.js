@@ -39,9 +39,7 @@ while(bbs.online && !js.terminated) {
 			console.crlf();
 			break;
 		case 'Z':
-			log("OK");		
 			prompts.get_protocol();
-			log("Wha?!?");			
 			break;
 		default:
 			exit();
