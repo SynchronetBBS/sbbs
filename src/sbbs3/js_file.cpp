@@ -2982,7 +2982,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 	 , JSDOCSTR("Parse a key from a <tt>.ini</tt> file and return its value (format = '<tt>key = value</tt>'). "
 		        "To parse a key from the <i>root</i> section, pass <i>null</i> for <i>section</i>. "
 		        "Returns the specified <i>default</i> value if the key or value is missing or invalid.<br>"
-		        "Returns a <i>bool</i>, <i>number</i>, <i>string</i>, or an <i>array of strings</i> "
+		        "Returns a <i>bool</i>, <i>number</i>, <i>string</i>, <i>date</i>, or an <i>array of strings</i> "
 		        "determined by the type of <i>default</i> value specified. "
 		        "<br><b>Note:</b> To insure that any/all values are returned as a string (e.g. numeric passwords are <b>not</b> returned as a <i>number</i>), "
 		        "pass an empty string ('') for the <i>default</i> value." )
