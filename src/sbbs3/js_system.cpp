@@ -1962,6 +1962,37 @@ js_del_user(JSContext *cx, uintN argc, jsval *arglist)
 
 	return JS_TRUE;
 }
+
+static JSBool
+js_undel_user(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject *           obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *              argv = JS_ARGV(cx, arglist);
+	jsrefcount           rc;
+	int32                n;
+	user_t               user;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+
+	js_system_private_t* sys;
+	if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
+		return JS_FALSE;
+
+	if (!JS_ValueToInt32(cx, argv[0], &n))
+		return JS_FALSE;
+	user.number = n;
+	rc = JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);  /* fail, by default */
+	if (getuserdat(sys->cfg, &user) == USER_SUCCESS
+	    && undel_user(sys->cfg, &user) == USER_SUCCESS)
+		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);   /* success */
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
 #endif
 
 static JSBool
@@ -2511,6 +2542,9 @@ static jsSyncMethodSpec js_system_functions[] = {
 	{"del_user",        js_del_user,        1,  JSTYPE_BOOLEAN, JSDOCSTR("user_number")
 	 , JSDOCSTR("Delete the specified user account")
 	 , 316},
+	{"undel_user",      js_undel_user,      1,  JSTYPE_BOOLEAN, JSDOCSTR("user_number")
+	 , JSDOCSTR("Un-delete the specified user account")
+	 , 321},
 #endif
 	{"exec",            js_sys_exec,        0,  JSTYPE_NUMBER,  JSDOCSTR("command-line")
 	 , JSDOCSTR("Execute a native system/shell command-line, returns <i>0</i> on success")
