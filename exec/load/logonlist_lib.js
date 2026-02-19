@@ -14,6 +14,7 @@ const exclude_list = [
 	'security',
 	'is_guest',
 	'is_sysop',
+	'is_active',
 	'batch_upload_list',
 	'batch_download_list',
 	'birthyear',
