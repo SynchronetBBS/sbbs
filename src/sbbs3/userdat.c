@@ -2323,7 +2323,7 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 				#endif
 				break;
 			case AR_ACTIVE:
-				if (user == NULL || user->misc & (DELETED | INACTIVE))
+				if (user == NULL || !user_is_active(user))
 					result = not;
 				else
 					result = !not;
@@ -4054,6 +4054,16 @@ bool user_is_nobody(user_t* user)
 	if (user == NULL)
 		return true;
 	return user->number == 0;
+}
+
+/****************************************************************************/
+/* Determine if the specified user is an active account						*/
+/****************************************************************************/
+bool user_is_active(user_t* user)
+{
+	if (user == NULL)
+		return false;
+	return (user->misc & (DELETED | INACTIVE)) == 0;
 }
 
 /****************************************************************************/

@@ -154,6 +154,7 @@ enum {
 	, USER_PROP_CACHED
 	, USER_PROP_IS_SYSOP
 	, USER_PROP_IS_GUEST
+	, USER_PROP_IS_ACTIVE
 	, USER_PROP_BATUPLST
 	, USER_PROP_BATDNLST
 };
@@ -459,6 +460,11 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 		case USER_PROP_IS_GUEST:
 			*vp = BOOLEAN_TO_JSVAL(user_is_guest(p->user));
+			JS_RESUMEREQUEST(cx, rc);
+			return JS_TRUE;    /* intentional early return */
+
+		case USER_PROP_IS_ACTIVE:
+			*vp = BOOLEAN_TO_JSVAL(user_is_active(p->user));
 			JS_RESUMEREQUEST(cx, rc);
 			return JS_TRUE;    /* intentional early return */
 
@@ -911,6 +917,7 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{   "cached"             , USER_PROP_CACHED     , USER_PROP_FLAGS_RW , 314 },
 	{   "is_sysop"           , USER_PROP_IS_SYSOP   , USER_PROP_FLAGS_RO , 315 },
 	{   "is_guest"           , USER_PROP_IS_GUEST   , USER_PROP_FLAGS_RO , 321 },
+	{   "is_active"          , USER_PROP_IS_ACTIVE  , USER_PROP_FLAGS_RO , 321 },
 	{   "batch_upload_list"  , USER_PROP_BATUPLST   , USER_PROP_FLAGS_RO , 320 },
 	{   "batch_download_list", USER_PROP_BATDNLST   , USER_PROP_FLAGS_RO , 320 },
 	{0}
@@ -959,6 +966,7 @@ static const char*        user_prop_desc[] = {
 	, "Record is currently cached in memory"
 	, "User has a System Operator's security level"
 	, "User has the 'Guest' restrction"
+	, "User account is active, not deleted or marked inactive"
 	, "Batch upload list file path/name"
 	, "Batch download list file path/name"
 	, nullptr
