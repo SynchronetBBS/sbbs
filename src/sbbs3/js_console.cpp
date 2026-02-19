@@ -2784,9 +2784,9 @@ static jsSyncMethodSpec js_console_functions[] = {
 		"See <tt>sbbsdefs.js</tt> for possible <tt>WM_*</tt> mode flags.")
 	 , 310
 	},
-	{"uselect",         js_uselect,         0, JSTYPE_NUMBER,   JSDOCSTR("[<i>number</i> index, title, item] [,ars]")
+	{"uselect",         js_uselect,         0, JSTYPE_NUMBER,   JSDOCSTR("[<i>number</i> index, <i>string</i> title, <i>string</i> item] [,<i>string</i> ars]")
 	 , JSDOCSTR("User selection menu: first call for each item, then finally with no arguments (or just the default item index number) to display a numbered-item selection menu/prompt.<br>"
-				"Returns the index of the selected item or a negative number (e.g. when aborted).  See also the <tt>uselect_count</tt>, <tt>uselect_title</tt>, and <tt>uselect_items</tt> properties.")
+				"Returns the index of the selected item or a negative number (e.g. when aborted).  See also the <tt>uselect_count</tt>, <tt>uselect_title</tt>, and <tt>uselect_items</tt> properties (new in v3.21).")
 	 , 312
 	},
 	{"saveline",        js_saveline,        0, JSTYPE_BOOLEAN,  JSDOCSTR("")
