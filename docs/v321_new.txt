@@ -10,10 +10,8 @@ o Filter files (i.e. ip[-silent].can, host.can) and related config files
 o Hosts listed in ipfilter_exempt.cfg are now exempt from any filtering from
   ip[-silent].can and host.can
 o Better config (.ini) file read error detection and reporting
-o Synchronet console (sbbs[.exe]) can accept the ctrl directory as an argument
+o Synchronet Console (sbbs[.exe]) can accept the ctrl directory as an argument
   - Consistent with sbbsctrl.exe usage
-o Synchronet control panel (sbbsctrl.exe) can accept path to sbbs.ini argument
-  - Consistent with sbbs[.exe] usage
 o Store/reuse each server's client highwater mark for MQTT publishing
   - Issue #910
 o Add support to SMBLIB for "Fixed" format message text
@@ -49,6 +47,25 @@ o Increased max files per directory from 65535 to 4.2B (99999 via SCFG)
 o Track user bytes downloaded (in files) per day
   - Reflect these stats in drop files that support it:
     DOOR.SYS, CALLINFO.BBS, and SFDOORS.DAT
+
+Synchronet Control Panel (sbbsctrl.exe) for Windows
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+o Can now accept path to sbbs.ini argument - Consistent with sbbs[.exe] usage
+o Can now spy on clients with terminal dimensions > 160x50 without crashing
+o Resolved (silent) crashes during shutdown (server termination)
+o More resilient to running with a mismatched sbbs.dll version
+o Server start/pause/stop control states make more sense (e.g. the
+  "Start" button is disabled during server initialization)
+o Improved "Abort dialog" while waiting for graceful server termination(s)
+  - lists all the servers still running
+o Beautify the stats log output a bit
+o Updated BBS->Edit file links
+  attr.cfg -> attr.ini
+  answer.asc -> answer.msg
+  logon.asc -> logon.msg
+  logoff.asc -> logoff.msg
+o No more pop-up/exception messages about "Invalid pointer" or
+  "Index index" related to the upodated to the Clients dialog
 
 Terminal Server
 ~~~~~~~~~~~~~~~
@@ -377,6 +394,7 @@ o New Option: System->Advanced->Statistics Interval (cache duration)
   (default: 5 seconds)
 o New Option: System->Advanced->Cache Filter Files (file check interval)
   (default: 5 seconds)
+o New Option: SCFG->Servers->Terminal Server->Max Dumb Login Inactivity
 o New Option: System->Servers->[Web|FTP|Mail] Servers->Limit Rate of Requests
 o New Option: Networks->QWK->Hubs... Include MIME-encoded Text (default: No)
   ... and Word-wrap Exported Messages (default: No)
@@ -532,10 +550,19 @@ o tdfiglet.js
   - Supports ANSI or Ctrl-A encoded output
 o type.js
   - Use P_CPM_EOF mode flag to stop printing at Ctrl-Z (CP/M and PC/MSDOS EOF)
+o uselect.js
+  - A new configurable loadable module for SCFG->System->Loadable Modules->
+    Select Item
+  - Similar to look feel of built-in C++ method, but very customizable
+o uselect_tree.js
+  - A new configurable loadable module for SCFG->System->Loadable Modules->
+    Select Item
+  - Lightbar user interface
 o user_settings.js
   - Add ability to add/edit/delete SSH keys and edit personal information
     (see exec/user_personal.js)
   - Terminal settings moved to exec/user_terminal.js
+  - Use default/new-user external editor when switching from internal editor
   - Look/feel configurable via modopts/user_settings, user_personal,
     and user_terminal
 o userlist.js
@@ -561,6 +588,7 @@ o New console.inkey() mode flag: K_EXTKEYS can be used instead of K_CTRLKEYS to
   get all control key input, but *with* extended key translations (e.g. arrows,
   home, end, page-up/down, etc.) and without messing with (modifying/restoring)
   console.ctrlkey_passthru
+o console.mnemonics() method now accepts an optional p_mode parameter
 o console output methods that accept p_mode parameters now support
   P_CENTER and (new) P_80COLS mode flags
 o console.strlen() method now calculates display length more accurately when
@@ -568,9 +596,12 @@ o console.strlen() method now calculates display length more accurately when
   codes (e.g. PCBoard, Wildcat, etc.)
 o Returned to SBBS v3.19 bug-compatible console.attributes behavior of
   silently ignoring Ctrl-A characters in assigned strings
-o New 'console' property:
+o New 'console' properties:
   - optimize_gotoxy
   - uselect_count
+  - uselect_title
+  - uselect_items[].name and .num
+  - color_list (technically there before, but not enumerable)
 o msg_area.grp_list[] no longer includes groups with no sub-boards that the
   user can access - issue #905
 o New 'bbs' methods:
