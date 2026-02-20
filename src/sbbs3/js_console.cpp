@@ -483,7 +483,9 @@ static jsSyncPropertySpec js_console_properties[] = {
 
 #ifdef BUILD_JSDOCS
 static const char*        con_prop_desc[] = {
-	"Status bit-field (see <tt>CON_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
+	  "Array of text colors (in IBM CGA attribute format), as configured in the <tt>attr.ini</tt> file"
+	, "Array of items (each with a <tt>name</tt> and <tt>num</tt> property) enqueued via the <tt>uselect()</tt> method for user selection"
+	, "Status bit-field (see <tt>CON_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions)"
 	, "Mouse mode bit-field (see <tt>MOUSE_MODE_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions, "
 	"set to <tt>true</tt> for default enabled mode, <tt>false</tt> to disable)"
 	, "Current 0-based line counter (used for automatic screen pause)"
