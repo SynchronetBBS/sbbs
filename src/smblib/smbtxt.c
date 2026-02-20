@@ -45,6 +45,10 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 	uint32_t lzh_decoded;
 	int      l = 0, length;
 
+	if (smb->sdt_fp == NULL) {
+		safe_snprintf(smb->last_error, sizeof(smb->last_error), "%s msgbase not open", __FUNCTION__);
+		return NULL;
+	}
 	if ((buf = (char*)malloc(sizeof(char))) == NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error)
 		              , "%s malloc failure of %" XP_PRIsize_t "u bytes for buffer"
