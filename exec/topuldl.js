@@ -22,6 +22,11 @@
 	if the file /sbbs/text/topuldlheader.asc is present then
 	it will be displayed at the top of the output.
 
+	You can have a separate header for uploaders and downloaders
+	by creating /sbbs/text/topuldlupheader.asc and 
+	/sbbs/text/topuldldownheader.asc - We may change this since
+	it's getting a bit long :)
+
 	This script is generally unsupported but if you want to
 	suggest additions or fixes, feel free to open a gitlab
 	issue and assign it to "Nigel Reed".
@@ -53,6 +58,19 @@ var BOX = is_bbs ? {
 } : {
     tl: "\xE2\x94\x8C", tr: "\xE2\x94\x90", bl: "\xE2\x94\x94", br: "\xE2\x94\x98", hz: "\xE2\x94\x80", vt: "\xE2\x94\x82"
 };
+
+function printheader(fn) {
+    var header_path = system.text_dir + fn + ".asc"
+    if (file_exists(header_path)) {
+        var f = new File(header_path);
+        if (f.open("r")) {
+            writeln(f.read());
+            f.close();
+        }
+	return true;
+    }
+    return false;
+}
 
 function formatBytes(bytes) {
     bytes = parseFloat(bytes) || 0;
@@ -104,14 +122,7 @@ function displayTopStats() {
     var showUl = (filterUl || !filterDl);
     var showDl = (filterDl || !filterUl);
 
-    var header_path = system.text_dir + "topuldlheader.asc";
-    if (file_exists(header_path)) {
-        var f = new File(header_path);
-        if (f.open("r")) {
-            writeln(f.read());
-            f.close();
-        }
-    }
+    printheader("topuldlheader");
 
     if (!noBox) {
         var title = system.name.toUpperCase() + " " + gettext("TOP USER STATS", "box_title_text");
@@ -146,8 +157,10 @@ function displayTopStats() {
 
     if (showUl) {
         var ulData = userList.slice().filter(function(x) { return !hideZero || x.ul > 0; }).sort(function(a, b) { return b.ul - a.ul; });
-        writeln("");
-        writeln(C_SUB + " " + gettext("[ TOP UPLOADERS ]", "hdr_top_ul"));
+	if(!printheader("topuldlupheader")) {
+        	writeln("");
+        	writeln(C_SUB + " " + gettext("[ TOP UPLOADERS ]", "hdr_top_ul"));
+	}
         writeln(C_GRAY + colHeader);
         writeln(C_SUB + separator + C_RESET);
         for (var k = 0; k < Math.min(numResults, ulData.length); k++) {
@@ -161,8 +174,10 @@ function displayTopStats() {
 
     if (showDl) {
         var dlData = userList.slice().filter(function(x) { return !hideZero || x.dl > 0; }).sort(function(a, b) { return b.dl - a.dl; });
-        writeln("");
-        writeln(C_SUB + " " + gettext("[ TOP DOWNLOADERS ]", "hdr_top_dl"));
+	if(!printheader("topuldldownheader")) {
+        	writeln("");
+        	writeln(C_SUB + " " + gettext("[ TOP DOWNLOADERS ]", "hdr_top_dl"));
+	}
         writeln(C_GRAY + colHeader);
         writeln(C_SUB + separator + C_RESET);
         for (var l = 0; l < Math.min(numResults, dlData.length); l++) {
