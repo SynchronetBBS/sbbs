@@ -864,7 +864,7 @@ static void play_music(struct cterminal *cterm)
 					offset=0;
 				}
 				if(notenum==0) {
-					out=strchr(octave,note);
+					out=(char*)strchr(octave,note);
 					if(out==NULL) {
 						notenum=-1;
 						offset=1;

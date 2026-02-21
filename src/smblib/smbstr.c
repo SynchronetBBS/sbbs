@@ -275,7 +275,7 @@ char* smb_faddrtoa(const fidoaddr_t* addr, char* str)
 /****************************************************************************/
 fidoaddr_t smb_atofaddr(const fidoaddr_t* sys_addr, const char *str)
 {
-	char*       p;
+	const char* p;
 	const char* terminator;
 	fidoaddr_t  addr;
 	fidoaddr_t  tmp_addr = {1, 1, 1, 0}; /* Default system address: 1:1/1.0 */
@@ -383,7 +383,7 @@ enum smb_net_type smb_get_net_type_by_addr(const char* addr)
 	const char* p = addr;
 	const char* tp;
 
-	char* at = strchr(p, '@');
+	const char* at = strchr(p, '@');
 	if (at == p)
 		return NET_UNKNOWN;
 	if (at != NULL)

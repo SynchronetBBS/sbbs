@@ -257,7 +257,7 @@ bool backup(const char *fname, int backup_level, bool ren)
 {
 	char  oldname[MAX_PATH + 1];
 	char  newname[MAX_PATH + 1];
-	char* ext;
+	const char* ext;
 	int   i;
 	int   len;
 

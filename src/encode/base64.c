@@ -35,7 +35,7 @@ ssize_t b64_decode(char *target, size_t tlen, const char *source, size_t slen)
 	const char *inend;
 	int         bits = 0;
 	int         working = 0;
-	char *      i;
+	const char *i;
 
 	if (slen == 0)
 		slen = strlen(source);
