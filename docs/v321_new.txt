@@ -627,9 +627,11 @@ o New 'system' methods:
   - check_netmail_addr()
   - check_birthdate()
   - minutestr()
+  - undel_user()
 o system.secondstr() now accepts an optional 'verbose' argument, default: true
 o New User class properties:
   - is_guest
+  - is_active
   - stats.bytes_downloaded_today
   - stats.files_downloaded_today
   - limits.file_downloads_per_day
