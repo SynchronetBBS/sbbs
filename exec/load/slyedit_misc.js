@@ -1180,7 +1180,6 @@ function getCommandListHelpText(pCanCrossPost, pTxtReplacments, pUserSettings, p
 	txtLines.push("");
 	// Command/edit keys
 	txtLines.push("\x01n\x01gCommand/edit keys\r\n\x01k\x01h" + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, 17));
-	txtLines.push("");
 	txtLines.push(getCmdKeyFormattedDouble("Ctrl-A", "Abort message", "PageUp", "Page up"));
 	txtLines.push(getCmdKeyFormattedDouble("Ctrl-Z", "Save message", "PageDown", "Page down"));
 	const quoteHotkey = gUserSettings.ctrlQQuote ? "Ctrl-Q" : "Ctrl-Y";
