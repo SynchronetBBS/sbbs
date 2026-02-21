@@ -11,8 +11,6 @@ if(!userprops)
 	userprops = load(bbs.mods.userprops = {}, "userprops.js");
 const ini_section = "netmail sent";
 
-const NetmailAddressHistoryLength = 10;
-
 while(bbs.online) {
 	if(!(user.settings & USER_EXPERT))
 		bbs.menu("e-mail");
