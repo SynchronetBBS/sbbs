@@ -19,282 +19,6 @@
  * Date       Author            Description
  * 2014-09-13 Eric Oulashin     Started (based on my message lister script)
  * ... Comments trimmed ...
- * 2023-09-22 Eric Oulashin     Version 1.80 beta
- *                              Improved speed of new-to-you scans, and to an extent (hopefully) overall speed
- *                              Bug fix: Setting reverseListOrder to "ask" in the .cfg file works properly again.
- *                              Bug fix: When listing messages in reverse order, the selected menu index
- *                              (for lightbar mode) is now correct.
- *                              Bug fix: If the user is allowed to read deleted messages, then allow
- *                              the left & right arrow keys to to the next/previous message if it's deleted.
- *                              Small fixes for indexed scanning mode.
- *                              New: For personal email, unread emails will have an 'unread' message indicator
- *                              in the message list as a U between the message number and the 'from' name.
- *                              New user setting: "Quit from reader to message list": When enabled,
- *                              quitting from reader mode goes to the message list instead of exiting
- *                              out of DDMsgReader fully.
- *                              New user setting: Enter/selection from indexed mode menu shows message list
- *                              (instead of going into reader mode)
- *                              New user setting: List messages in reverse order
- * 2023-10-10 Eric Oulashin     Version 1.80
- *                              Releasing this version
- * 2023-10-11 Eric Oulashin     Version 1.81
- *                              Updated permission check functions (speed improvement)
- * 2023-10-18 Eric Oulashin     Version 1.82
- *                              Fix for # posts and missing dates in sub-board list when changing sub-board
- * 2023-10-25 Eric Oulashin     Version 1.83
- *                              Personal emails to the sysop received as "sysop" (or starting with "sysop")
- *                              are now correctly identified and marked as read when read
- * 2023-10-26 Eric Oulashin     Version 1.84
- *                              Fix in reader mode for refreshing the message area after
- *                              closing another window (necessary with recent changes to
- *                              substrWithAttrCodes())
- * 2023-11-01 Eric Oulashin     Version 1.85
- *                              Mark personal email as read if the user is just reading personal email
- * 2023-11-09 Eric Oulashin     Version 1.86
- *                              New feature: For indexed mode, when choosing a sub-board, the R key
- *                              can be used to mark all messages as read in the sub-board.
- *                              Fix: For continuous newscan or browse newscan (SCAN_BACK),
- *                              call the stock Synchronet behavior (DDMsgReader did this previously,
- *                              as DDMsgReader doesn't implement those yet).
- *                              Fix: In the message list, to-user alternate colors weren't being used
- *                              unless the message was read. The correct colors are used again.
- * 2023-11-09 Eric Oulashin     Version 1.87 Beta
- *                              Trying to speed things up by not getting vote headers all the time
- *                              when calling get_all_msg_headers(), unless the vote headers are needed
- *                              (when the sysop views who votes on a message when viewing tally info)
- *                              New: User setting to only show new messages in a newscan (defaults to true/enabled)
- *                              In the message list, there is now an additional space before the
- *                              'from' name, in case one of the status characters is a letter (this should
- *                              look better).
- *                              New: In lightbar mode, the indexed newscan menu can optionally 'snap' to
- *                              the next sub-board with new messages when showing/returning to the menu
- *                              Fix: When listing personal email, messages to the user were written
- *                              with the to-user color wuen unread. Now the regular colors are always
- *                              used (since all of a user's personal emails are 'to' them).
- *                              Fix: For indexed newscan, if there are no sub-boards selected for scan
- *                              in the user's newscan configuration, then output a message and return.
- *                              Otherwise, it would end up in an infinite loop.
- *                              Updated how user settings are loaded, to ensure that default user settings
- *                              from DDMsgReader.cfg actually get set properly in the user settings.
- * 2023-11-23 Eric Oulashin     Version 1.88
- *                              New user setting/configuration option to prompt the user whether or
- *                              not to delete a personal email after replying to it (defaults to false).
- *                              New: Displays whether a personal email has been replied to.
- *                              Fix: Now displaying message vote score in the default header again.
- *                              Fix: When viewing message headers (for the sysop), now correctly
- *                              shows the message attributes.
- * 2023-11-30 Eric Oulashin     Version 1.89
- *                              New: User option to toggle whether to display the email 'replied' indicator
- *                              (defaults to true).
- *                              Fix for setting colors for the key help lines so that the background
- *                              won't get un-done if the other help line colors have a N (normal) attribute.
- * 2023-12-02 Eric Oulashin     Version 1.90 Beta
-  *                             New: operator menu for read mode, with the option to add the author to the
- *                              twit list, etc.
- *                              Fix: When refreshing a rectangular area of a message, if it's a poll message,
- *                              the background color for the voted responses was used for the non-selected
- *                              responses.
- *                              Removed the setting useScrollingInterfaceForANSIMessages.
- * 2023-12-04 Eric Oulashin     Version 1.90
- *                              Releasing this version
- * 2023-12-12 Eric Oulashin     Version 1.90a
- *                              New configurable colors in the theme file for the indexed mode newscan menu:
- *                              indexMenuSeparatorLine (sub-board separator line) and indexMenuSeparatorText
- *                              (sub-board separator text)
- * 2023-12-15 Eric Oulashin     Version 1.90b
- *                              New configurable colors in the theme file for the indexed newscan menu
- *                              header text (indexMenuHeader), "NEW" indicator text (indexMenuNewIndicator),
- *                              and highlighted "NEW" indicator text (indexMenuNewIndicatorHighlight)
- * 2023-12-26 Eric Oulashin     Version 1.91
- *                              New sysop features while reading a message: Show message hex (with the X key)
- *                              and save message hex to a file (with Ctrl-X)
- * 2023-12-29 Eric Oulashin     Version 1.92
- *                              Indexed newscan: By default, if there are no new messages, it now shows
- *                              "No new messages." (578 QWKNoNewMessages from text.dat). There's a new user
- *                              setting to toggle whether to use the indexed newscan menu even if there are
- *                              no new messages. New configuration file option: displayIndexedModeMenuIfNoNewMessages,
- *                              which is a default for the user setting.
- * 2024-01-01 Eric Oulashin     Version 1.93
- *                              New user-toggleable behavior: Show indexed menu after reading all new messages.
- *                              Also, indexed reader mode (started with the -indexedMode command-line option)
- *                              now lists ALL sub-boards, rather than only sub-boards the user has enabled
- *                              for newscan. It also prompts the user to list sub-boards in the current group
- *                              or all.
- * 2024-01-04 Eric Oulashin     Version 1.93a Beta
- *                              Fix: For indexed read mode (not doing a newscan), when choosing a sub-board to
- *                              read, the correct (first unread) message is displayed. Also, the user's scan
- *                              pointer is also updated to the last_read pointer.
- * 2024-01-08 Eric Oulashin     Version 1.94
- *                              New operator option for read mode: Add author email to email.can.
- *                              New command-line option: -indexModeScope, which can specify the indexed
- *                              reader scope (group/all) without prompting the user.
- *                              User configuration options for newscan & email only shown when doing those actions
- * 2024-01-11 Eric Oulashin     Version 1.95
- *                              Removed user option to display indexed mode menu in newscan after all new messages are read.
- *                              Command-line option -indexedMode can now be specified with -search=new_msg_scan to make
- *                              it display the indexed mode menu, regardless of the user setting to use the indexed mode
- *                              menu for a newscan.
- *                              New command-line option: -newscanIndexMenuAfterReadAllNew - Continue to display the
- *                              indexed mode menu after the user has read all new messages during a newscan.
- *                              The following command-line can be used to do a newscan for all sub-boards and continue
- *                              displaying the index mode menu after the user has read all new messages:
- *                              DDMsgReader.js -search=new_msg_scan -indexedMode -indexModeScope=all -newscanIndexMenuAfterReadAllNew
- *                              New indexed mode newscan behavior: R (mark all read) moves to the next sub-board.
- *                              Ctrl-S in the indexed mode menu re-scans sub-boards (to detect more new messages, etc.)
- *                              New DDMsgReader.cfg option for user config default:
- *                              indexedModeMenuSnapToNextWithNewAftarMarkAllRead
- * 2024-01-23 Eric Oulashin     Version 1.95a
- *                              Bug fix: Abort when sub-board code isn't available when editing personal email
- * 2024-02-04 Eric Oulashin     Version 1.95b
- *                              Bug fix: Use the P_UTF8 mode bit when printing UTF-8 message header info (such as 'from' and 'to').
- *                              A dd_lightbar_menu.js update goes along with this.
- * 2024-      Eric Oulashin     Version 1.95c
- *                              The filename of quotes.txt is now in the correct case for the user's editor.
- *                              "terminalSupportsUTF8 not defined" error eliminated.
- * 2024-03-31 Eric Oulashin     Version 1.95d
- *                              Fix for checkmark refresh when selecting all/none in the message list
- * 2024-08-04 Eric Oulashin     Version 1.95e
- *                              Fix: Indexed newscan mode for new users now shows the number of new messages
- *                              in sub-boards like it's supposed to.
- * 2024-08-09 Eric Oulashin     Version 1.95f
- *                              New config option: msgSaveDir, which specifies the directory on the BBS PC
- *                              to save messages to. Can be empty, to use a full path inputted by the user.
- * 2024-08-12 Eric Oulashin     Version 1.95g
- *                              Updates to help with the newscan issues placing the user at the first message, etc.
- * 2024-09-03 Eric Oulashin     Version 1.95h
- *                              Fix for saving an ANSI message to the local BBS PC
- * 2024-10-16 Eric Oulashin     Version 1.96 Beta
- *                              Started working on sub-board sorting for changing sub-boards
- * 2024-10-24 Eric Oulashin     Updated for bbs.msg_number and bbs.smb_curmsg being writeable
- * 2024-10-25 Eric Oulashin     Message sub-board sort fixes
- * 2024-10-26 Eric Oulashin     User options for sub-board sorting when changing to another
- *                              sub-board, and whether to show sub-boards with new messages in
- *                              the indexed newscan.
- *                              Releasing this version (1.96).
- * 2024-11-02 Eric Oulashin     Version 1.96a
- *                              When changing to another sub-board, the user can now cycle
- *                              through the sort options with the [ and ] keys. Also,
- *                              updated the change sub-board help to show in a scrollable
- *                              window for users with ANSI terminals, rather than simply
- *                              displaying the help with a pause at the end. Other help
- *                              screens could potentially be shown this way too.
- *                              New theme configuration options: helpWinBorderColor and
- *                              scrollingWinHelpTextColor
- * 2024-11-03 Eric Oulashin     Version 1.96b
- *                              Bug fix: When displaying the new scrollable area change help
- *                              window, if there's an area change header in use, refresh it
- *                              and the header lines, since the scrollable help window would
- *                              display over them.
- * 2024-11-20 Eric Oulashin     Version 1.96c
- *                              Bug fix: When showing a poll vote from the user, it should
- *                              show people who've voted - ensure it only counts vote responses
- * 2024-11-25 Eric Oulashin     Version 1.96d
- *                              Bug fix: For the indexed-mode newscan, when showing only
- *                              sub-boards that have new messages, ensure the selected item
- *                              index is correct when re-populating the menu so that it doesn't
- *                              skip a sub-board.
- * 2024-11-26 Eric Oulashin     Version 1.96e
- *                              When showing a poll result message, for the user who posted the poll,
- *                              show the answers from the people who voted on it. This is to
- *                              basically mimic the fact that Synchronet shows who voted on your
- *                              poll and what they answered, but in the poll message itself.
- * 2024-12-04 Eric Oulashin     Version 1.96f
- *                              New user option & behavior: When selecting/toggling messages
- *                              in the message list, the user can now optionally have the cursor
- *                              go to the next message.
- * 2024-12-04 Eric Oulashin     Version 1.96g
- *                              Bug fix: For indexed newscan without snap-to-new, go back to
- *                              remembering the user's previously selected sub-board
- * 2024-12-18 Eric Oulashin     Version 1.96h
- *                              When reading messages with the scrolling interface, pay attention
- *                              to user input timeout via a check of the last user input.
- * 2024-12-22 Eric Oulashin     Version 1.96i
- *                              When doing an indexed newscan, display the progress percentage
- *                              when doing the newscan
- * 2025-01-25 Eric Oulashin     Version 1.96j
- *                              User timeout 'AreYouThere' message and disconnection are
- *                              more consistent with Synchronet's behavior. However, if the
- *                              scrollable reader or lightbar list interface is being used,
- *                              the 'AreYouThere' text will be set to a blank string for the
- *                              duration of this script's run due to how the text can interfere
- *                              with the screen and scrolling. The 'AreYouThere' sound will
- *                              still occur though, and the user will be disconnected if
- *                              they don't respond. getKeyWithESCChars() is no longer used
- *                              in favor of console.getkey().
- * 2025-02-08 Eric Oulashin     Version 1.96k
- *                              Input timeout alert improvement - Rather than just blanking out
- *                              the AreYouThere text (which still allows the alert sound), now
- *                              also writes a text string at the bottom row when the input
- *                              timeout warning occurs. The string is configurable via the new
- *                              areYouThere string in the theme file.
- *                              (Started: 2025-01-29)
- * 2025-02-08 Eric Oulashin     Version 1.96L
- *                              After replying to a message, when it shows the status & pauses
- *                              for input, a Q or Ctrl-C will now exit, and not be ignored.
- * 2025-03-28 Eric Oulashin     Version 1.96M
- *                              When reading messages, only mark it as read if it's to
- *                              the current user, including for personal email (i.e., when reading
- *                              sent mail, don't mark messages to others as read).
- * 2025-04-13 Eric Oulashin     Version 1.96N
- *                              Changes (fixes) for the bottom-row key help lines due to
- *                              Synchronet fix related to @-code parsing (Git commit
- *                              fccf1a5718fdcb9864bcbccf2eb6de7ee50d3dd3). Hopefully the
- *                              mouse clicks are still correct.
- * 2025-04-15 Eric Oulashin     Version 1.96o
- *                              Fix: For the sysop reading personal email addressed to
- *                              "sysop", mark the email as read
- * 2025-04-19 Eric Oulashin     Version 1.96p
- *                              When viewing tally/vote information for a message (a
- *                              sysop feature), DDMsgReader can now optionally show
- *                              users' specific answers (in addition to just showing
- *                              who voted on the message/poll),  via the new
- *                              configuration option showUserResponsesInTallyInfo
- * 2025-04-20 Eric Oulashin     Version 1.96q
- *                              If DDMsgReader.cfg doesn't exist, read DDMsgReader.example.cfg
- *                              (in the same directory as DDMsgreader.js) if it exists
- * 2025-05-10 Eric Oulashin     Version 1.96r
- *                              When getting a message body, return a print mode of P_UTF8
- *                              or P_AUTO_UTF8 to ensure messages with UTF-8 are printed
- *                              correctly
- * 2025-05-15 Eric Oulashin     Version 1.96s
- *                              Fix: After replying to a netmail, pressing Q at the
- *                              pause prompt would cause the email header not to be
- *                              displayed when showing the message again, due to
- *                              console.aborted
- * 2025-06-14 Eric Oulashin     Version 1.97 Beta
- *                              Now uses DDMsgAreaChooser for changing to another
- *                              sub-board. Built-in functionality (duplicated code)
- *                              has been removed.
- *                              New config option: DDMsgAreaChooser
- *                              Config options removed: areaChooserHdrFilenameBase,
- *                              areaChooserHdrMaxLines
- * 2025-06-18 Eric Oulashin     Version 1.97
- *                              Releasing this version.
- * 2025-06-20 Eric Oulashin     Version 1.97a
- *                              After displaying the indexed mode menu, don't display
- *                              the "Loading.." status again, which happened after
- *                              closing the user settings dialog
- * 2025-07-19 Eric Oulashin     Version 1.97b
- *                              Bug fix: When listing messages, get the correct message
- *                              to read (both when listing in reverse and normal order).
- *                              Bug when listing in reverse reported by m1ndsurf3r in
- *                              the #synchronet IRC channel.
- * 2025-07-23 Eric Oulashin     Version 1.97c
- *                              Bug fix: Get the correct message when choosing a personal
- *                              email when listing in reverse
- * 2025-08-27 Eric Oulashin     Version 1.97d Beta
- *                              Replaced arrow keys in the key help lines since
- *                              some terminals can't display them.
- * 2025-09-02 Eric Oulashin     Version 1.97d
- *                              Fix for "go to message" in lightbar mode (correctly
- *                              finding the message)
- * 2025-09-02 Eric Oulashin     Version 1.97e
- *                              Fix: When listing messages in lightbar mode in reverse
- *                              order, deleting (with DEL) and toggling messages (with
- *                              the spacebar) now work on the correct message.
- * 2025-10-28 Eric Oulashin     Version 1.97f
- *                              When reading a message, the sub-board information can
- *                              now be displayed by pressing S.
  * 2026-01-31 Eric Oulashin     Version 1.97g
  *                              Bug fix: this.msgAreaList_lastImportedMsg_showImportTime
  *                              was being used in some functions where it didn't exist
@@ -302,6 +26,9 @@
  * 2026-02-07 Eric Oulashin     Version 1.97h
  *                              Small refactoring in ReplyToMsg() related to the
  *                              MsgBase object; no functional change
+ * 2026-02-21 Eric Oulashin     Version 1.97i
+ *                              Improved message text translating (UTF-8, HTML, and nbsp)
+ *
  */
 
 "use strict";
@@ -411,8 +138,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.97h";
-var READER_DATE = "2026-02-07";
+var READER_VERSION = "1.97i";
+var READER_DATE = "2026-02-21";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -13659,6 +13386,21 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 			return retObj;
 		}
 	}
+
+	// Do some text translations to make the message body look good
+	// for the user's terminal (the next 9 lines of code copied/based
+	// on code from msglist.js)
+	if (pMsgHdr.is_utf8 && !console.term_supports(USER_UTF8))
+		msgBody = utf8_cp437(msgBody);
+	if ((pMsgHdr.text_subtype && pMsgHdr.text_subtype.toLowerCase() == 'html') || (pMsgHdr.content_type && pMsgHdr.content_type.toLowerCase().indexOf("text/html") == 0))
+	{
+		msgBody = html2asc(msgBody);
+		// remove excessive blank lines after HTML-translation
+		msgBody = msgBody.replace(/\r\n\r\n\r\n/g, '\r\n\r\n');
+	}
+	msgBody = msgBody.replace(/\xff/g, ' '); // Use a regular old space for nbsp
+
+	// Wrap the message body
 	retObj.msgText = word_wrap(msgBody, console.screen_columns - 1, true);
 
 	var msgTextAltered = retObj.msgText; // Will alter the message text, but not yet
