@@ -542,8 +542,12 @@ function get_netmail(user)
 		console.putmsg(bbs.text(bbs.text.EnterNetMailAddress));
 		var netmail = console.getstr(user.netmail, LEN_NETMAIL
 			, K_EDIT | K_AUTODEL | K_LINE | K_TRIM); // don't use kmode here
-		if (!operation && (netmail == user.netmail || console.aborted))
-			return false;
+		if (!operation) {
+			if (console.aborted)
+				return false;
+			 if (netmail == user.netmail)
+				break;
+		}
 		if (console.aborted) {
 			ask_to_cancel();
 			continue;
