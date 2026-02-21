@@ -103,6 +103,9 @@ shell.main_menu.nav[KEY_DOWN] = { eval: 'sub_down()' };
 shell.main_menu.nav[KEY_RIGHT] = { eval: 'grp_up()' };
 shell.main_menu.nav[KEY_LEFT] = { eval: 'grp_down()' };
 
+if (typeof bbs.email_sec != 'function')
+	shell.main_menu.command['E'] = { exec: 'email_sec.js' };
+
 shell.file_menu = {
 	file: "transfer",
 	cls: true,
