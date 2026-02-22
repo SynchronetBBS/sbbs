@@ -23,20 +23,19 @@ function usage() {
 	writeln("    -j l|r|c   Justify left, right, or center (default: left)");
 	writeln("    -w n       Set screen width  (default: auto-detect or 80)");
 	writeln("    -m n       Set margin/offset (for left or right justification)");
-	writeln("    -a         ANSI sequences (default: Synchronet Ctrl-A)");
-	writeln("    -u         characters as UTF-8 (default: CP437)");
-	writeln("    -x n       Font within file (default: 1) or 0 for random");
-	writeln("    -n         blank line between wrapped output lines");
-	writeln("    -W         word-wrap the output");
-	writeln("    -i         font details");
-	writeln("    -l         through the available fonts");
-	writeln("    -p         between fonts");
-	writeln("    -r         random font and/or index (if not specified with -x)");
+	writeln("    -a         Enable ANSI sequences (default: Synchronet Ctrl-A)");
+	writeln("    -u         Encode characters as UTF-8 (default: CP437)");
+	writeln("    -x n       Number of font within file (default: 1) or 0 for random");
+	writeln("    -n         No blank line between wrapped output lines");
+	writeln("    -W         Always word-wrap the output");
+	writeln("    -i         Print font details");
+	writeln("    -l         Loop through the available fonts");
+	writeln("    -p         Pause between fonts");
+	writeln("    -r         Use random font and/or index (if not specified with -x)");
 	writeln("    -R n       Use random font and auto-retry specified number of times");
 	writeln("               upon exception. (default: 3)");
-	writeln("    -h         usage");
+	writeln("    -h         Usage");
 	writeln("");
-	exit(1);
 }
 
 var fontfile = null;
