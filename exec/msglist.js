@@ -1089,17 +1089,11 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 							break;
 						case '\r':
 						case '\n':
-							if (reversed)
-								current++;
-							else
-								current--;
+							current++;
 							break;
 						case '\b':
 						case '-':
-							if (reversed)
-								current--;
-							else
-								current++;
+							current--;
 							break;
 						case CTRL_D:
 						case KEY_DEL:
@@ -1121,40 +1115,22 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 								list[current].columns++;
 							break;							
 						case '>':
-							if (reversed)
-								current = next_msg(list, current, 'subject');
-							else
-								current = prev_msg(list, current, 'subject');
+							current = next_msg(list, current, 'subject');
 							break;
 						case '<':
-							if (reversed)
-								current = prev_msg(list, current, 'subject');
-							else
-								current = next_msg(list, current, 'subject');
+							current = prev_msg(list, current, 'subject');
 							break;
 						case '}':
-							if (reversed)
-								current = next_msg(list, current, 'from');
-							else
-								current = prev_msg(list, current, 'from');
+							current = next_msg(list, current, 'from');
 							break;
 						case '{':
-							if (reversed)
-								current = prev_msg(list, current, 'from');
-							else
-								current = next_msg(list, current, 'from');
+							current = prev_msg(list, current, 'from');
 							break;
 						case ']':
-							if (reversed)
-								current = next_msg(list, current, 'to');
-							break;
-								current = prev_msg(list, current, 'to');
+							current = next_msg(list, current, 'to');
 							break;
 						case '[':
-							if (reversed)
-								current = prev_msg(list, current, 'to');
-							else
-								current = next_msg(list, current, 'to');
+							current = prev_msg(list, current, 'to');
 							break;
 						case 'A':
 						case 'R':
