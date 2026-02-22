@@ -1239,8 +1239,8 @@ bitmap_draw_from_vmem(int sx, int sy, int ex, int ey, bool locked)
 	int eo = vmem_cell_offset(vstat.vmem, ex - 1, ey - 1);
 	// Draw first chunk
 	if (eo < so) {
-		int rows = sy - vstat.vmem->top_row;
-		int ney = vstat.vmem->height - rows + 1;
+		int rows = vstat.vmem->top_row - sy + 1;
+		int ney = vstat.vmem->height - rows;
 		if (locked)
 			bitmap_draw_vmem_locked(sx, sy, ex, ney, &vstat.vmem->vmem[so]);
 		else

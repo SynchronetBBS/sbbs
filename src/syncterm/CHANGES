@@ -9,6 +9,7 @@ Add support for DECSCUSR
 Add support for explicit sort order
 Add default cursor style setting
 Fix Windows Default Connection Settings
+Fix crash associated with movetext() and custom fonts
 
 Version 1.7
 --------------
