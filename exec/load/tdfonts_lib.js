@@ -5,6 +5,8 @@
  * @format.tab-size 4, @format.use-tabs true
  */
 
+require("cga_defs.js", "LIGHTGRAY");
+
 // Constants (using var as requested)
 var OUTLN_FNT = 0;
 var BLOCK_FNT = 1;
@@ -112,8 +114,8 @@ function loadfont(fn_arg) {
         font.height = 0;
 
         // Check magic number and font type
-        if (map.substring(0, magic.length) !== magic || font.fonttype !== COLOR_FNT) {
-             log("Invalid font file or unsupported font type: " + fn);
+        if (map.substring(0, magic.length) !== magic) {
+             log("Invalid font file: " + fn);
              exit(1);
         }
 
@@ -125,6 +127,7 @@ function loadfont(fn_arg) {
     if (this.opt && opt.info) {
 		writeln("index: " + opt.index);
 		writeln("font: " + font.name);
+		writeln("type: " + font.fonttype);
 		write("char list: ");
     }
 
@@ -224,8 +227,7 @@ function readchar(i, font) { // glyph argument is no longer needed, we return th
                 log("Error reading color byte for char index " + i + " at offset " + (p-1));
                 break; // Prevent reading past data end
             }
-            var color = font.data.charCodeAt(p);
-            p++;
+            var color = font.fonttype == COLOR_FNT ? font.data.charCodeAt(p++) : LIGHTGRAY;
 
             if (ch < 0x20) { // Replace control characters with space (or '?')
                  ch = ' ';
