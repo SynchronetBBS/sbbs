@@ -1845,6 +1845,8 @@ bool cfg_loadable_modules(const char* name, struct loadable_module* mod, int top
 	int i;
 	int cur = 0, bar = 0;
 	bool changed = false;
+	static char save_cmd[LEN_CMD + 1] = "";
+	static char save_ars[LEN_ARSTR + 1] = "";
 
 	if (++top > (int)uifc.scrn_len - 10)
 		top = uifc.scrn_len - 10;
@@ -1856,14 +1858,17 @@ bool cfg_loadable_modules(const char* name, struct loadable_module* mod, int top
 		opt[i][0] = 0;
 		uifc_winmode_t wmode = WIN_RHT | WIN_SAV | WIN_ACT | WIN_INS | WIN_INSACT | WIN_XTR;
 		if (i > minimum_count)
-			wmode |= WIN_DEL;
+			wmode |= WIN_DEL | WIN_CUT | WIN_COPY;
+		if (save_cmd[0] != '\0')
+			wmode |= WIN_PASTE | WIN_PASTEXTR;
 		i = uifc.list(wmode, 2, top, 0, &cur, &bar, title, opt);
 		if (i == -1)
 			return changed;
 		char cmd[LEN_CMD + 1];
 		char ars[LEN_ARSTR + 1];
-		if ((i & MSK_ON) == MSK_INS) {
-			i &= MSK_OFF;
+		int msk = i & MSK_ON;
+		i &= MSK_OFF;
+		if (msk == MSK_INS) {
 			SAFECOPY(cmd, "modname");
 			*ars = '\0';
 			if (edit_loadable_module(name, cmd, ars)) {
@@ -1873,13 +1878,29 @@ bool cfg_loadable_modules(const char* name, struct loadable_module* mod, int top
 			}
 			continue;
 		}
-		if ((i & MSK_ON) == MSK_DEL) {
-			i &= MSK_OFF;
+		if (msk == MSK_DEL || msk == MSK_CUT) {
+			if (msk == MSK_CUT) {
+				SAFECOPY(save_cmd, mod->cmd[i]);
+				SAFECOPY(save_ars, mod->ars[i]);
+			}
 			strListFastDelete(mod->cmd, i, 1);
 			strListFastDelete(mod->ars, i, 1);
 			changed = true;
 			continue;
 		}
+		if (msk == MSK_COPY) {
+			SAFECOPY(save_cmd, mod->cmd[i]);
+			SAFECOPY(save_ars, mod->ars[i]);
+			continue;
+		}
+		if (msk == MSK_PASTE) {
+			strListInsert(&mod->cmd, save_cmd, i);
+			strListInsert(&mod->ars, save_ars, i);
+			uifc.changes = TRUE;
+			continue;
+		}
+		if (msk != 0)
+			continue;
 		SAFECOPY(cmd, mod->cmd[i]);
 		SAFECOPY(ars, mod->ars[i]);
 		if (edit_loadable_module(name, cmd, ars)) {
