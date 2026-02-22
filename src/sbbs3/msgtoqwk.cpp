@@ -269,7 +269,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 		} else
 			utf8_to_cp437_inplace(buf);
 	}
-	if (mode & QM_WORDWRAP) {
+	if ((mode & QM_WORDWRAP) && !(msg->hdr.auxattr & MSG_FIXED_FORMAT)) {
 		int   org_cols = msg->columns ? msg->columns : 80;
 		int   new_cols = useron.cols ? useron.cols : term->cols ? term->cols : 80;
 		char* wrapped = ::wordwrap(buf, new_cols - 1, org_cols - 1, /* handle_quotes */ true, is_utf8 ? P_UTF8 : 0);
