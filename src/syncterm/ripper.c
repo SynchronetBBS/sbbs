@@ -16268,6 +16268,13 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 						rip.state = RIP_STATE_LEVEL;
 						break;
 					}
+					if (buf[pos] == '#') {
+						handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_CMD);
+						rip.lchars = 0;
+						rip_start = pos + 1;
+						rip.state = RIP_STATE_BANG;
+						break;
+					}
 					rip.state = RIP_STATE_CMD;
 					break;
 				case RIP_STATE_LEVEL:
@@ -16281,14 +16288,6 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 					rip.state = RIP_STATE_CMD;
 					break;
 				case RIP_STATE_CMD:
-					if (pos > 1) {
-						if (buf[pos - 1] == '#' && buf[pos - 2] == '|') {
-							handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_CMD);
-							rip.lchars = 0;
-							rip_start = pos;
-							break;
-						}
-					}
 					if (buf[pos] == '\\') {
 						rip.state = RIP_STATE_BACKSLASH_CMD;
 						break;
