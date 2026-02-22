@@ -52,6 +52,72 @@ char* testable_files_help =
 extern char* native_help;
 extern char* native_opt;
 
+bool get_new_prot(prot_t* prot)
+{
+	char str[2];
+	memset(prot, 0, sizeof *prot);
+	prot->misc = PROT_NATIVE;
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Mnemonic (Command Key)"
+				, str, 1, K_UPPER) != 1)
+		return false;
+	prot->mnemonic = str[0];
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Protocol Name", prot->name, sizeof prot->name, K_TRIM) <= 0)
+		return false;
+	uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
+	return uifc.input(WIN_MID | WIN_SAV, 0, 0, "Upload Command Line", prot->ulcmd, sizeof(prot->ulcmd), K_TRIM) > 0
+		&& uifc.input(WIN_MID | WIN_SAV, 0, 0, "Download Command Line", prot->dlcmd, sizeof(prot->dlcmd), K_TRIM) > 0;
+}
+
+bool get_new_fextr(fextr_t* fextr)
+{
+	memset(fextr, 0, sizeof *fextr);
+	fextr->ex_mode = EX_NATIVE;
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. zip or *)", fextr->ext, MAX_FILEEXT_LEN, K_UPPER | K_TRIM) <= 0)
+		return false;
+	uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
+	return uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command Line", fextr->cmd, LEN_CMD, K_TRIM) > 0;
+}
+
+bool get_new_fview(fview_t* fview)
+{
+	memset(fview, 0, sizeof *fview);
+	fview->ex_mode = EX_NATIVE;
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. txt, zip or *)", fview->ext, MAX_FILEEXT_LEN, K_UPPER | K_TRIM) <= 0)
+		return false;
+	uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
+	return uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command Line", fview->cmd, LEN_CMD, K_TRIM) > 0;
+}
+
+bool get_new_ftest(ftest_t* ftest)
+{
+	memset(ftest, 0, sizeof *ftest);
+	ftest->ex_mode = EX_NATIVE;
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. zip or *)", ftest->ext, MAX_FILEEXT_LEN, K_UPPER | K_TRIM) < 1)
+		return false;
+	uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
+	return uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command Line", ftest->cmd, LEN_CMD, K_TRIM) > 0;
+}
+
+bool get_new_fcomp(fcomp_t* fcomp)
+{
+	memset(fcomp, 0, sizeof *fcomp);
+	fcomp->ex_mode = EX_NATIVE;
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. zip or *)", fcomp->ext, MAX_FILEEXT_LEN, K_UPPER | K_TRIM) < 1)
+		return false;
+	uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
+	return uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command Line", fcomp->cmd, LEN_CMD, K_TRIM) > 0;
+}
+
+bool get_new_dlevent(dlevent_t* dlevent)
+{
+	memset(dlevent, 0, sizeof *dlevent);
+	dlevent->ex_mode = EX_NATIVE;
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. zip or *)", dlevent->ext, MAX_FILEEXT_LEN, K_UPPER | K_TRIM) < 1)
+		return false;
+	uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
+	return uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command Line", dlevent->cmd, LEN_CMD, K_TRIM) > 0;
+}
+
 void xfer_opts()
 {
 	char             str[128], done;
@@ -368,7 +434,7 @@ void xfer_opts()
 					opt[i][0] = 0;
 					i = WIN_RHT | WIN_ACT | WIN_SAV;  /* save cause size can change */
 					if (cfg.total_fviews < MAX_OPTS)
-						i |= WIN_INS | WIN_XTR;
+						i |= WIN_INS | WIN_INSACT | WIN_XTR;
 					if (cfg.total_fviews)
 						i |= WIN_DEL | WIN_COPY | WIN_CUT;
 					if (savfview.cmd[0])
@@ -410,16 +476,16 @@ void xfer_opts()
 							bail(1);
 							continue;
 						}
+						fview_t new_fview;
+						if (!get_new_fview(&new_fview))
+							continue;
 						if (!cfg.total_fviews) {
 							if ((cfg.fview[0] = (fview_t *)malloc(
 									 sizeof(fview_t))) == NULL) {
 								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(fview_t));
 								continue;
 							}
-							memset(cfg.fview[0], 0, sizeof(fview_t));
-							SAFECOPY(cfg.fview[0]->ext, "*");
-							SAFECOPY(cfg.fview[0]->cmd, "?archive list %f");
-							cfg.fview[0]->ex_mode = EX_NATIVE;
+							*cfg.fview[0] = new_fview;
 						}
 						else {
 							for (j = cfg.total_fviews; j > i; j--)
@@ -429,11 +495,7 @@ void xfer_opts()
 								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(fview_t));
 								continue;
 							}
-							if (i >= cfg.total_fviews)
-								j = i - 1;
-							else
-								j = i + 1;
-							*cfg.fview[i] = *cfg.fview[j];
+							*cfg.fview[i] = new_fview;
 						}
 						cfg.total_fviews++;
 						uifc.changes = TRUE;
@@ -514,7 +576,7 @@ void xfer_opts()
 					opt[i][0] = 0;
 					i = WIN_RHT | WIN_ACT | WIN_SAV;  /* save cause size can change */
 					if (cfg.total_ftests < MAX_OPTS)
-						i |= WIN_INS | WIN_XTR;
+						i |= WIN_INS | WIN_INSACT | WIN_XTR;
 					if (cfg.total_ftests)
 						i |= WIN_DEL | WIN_COPY | WIN_CUT;
 					if (savftest.cmd[0])
@@ -545,17 +607,16 @@ void xfer_opts()
 							bail(1);
 							continue;
 						}
+						ftest_t new_ftest;
+						if (!get_new_ftest(&new_ftest))
+							continue;
 						if (!cfg.total_ftests) {
 							if ((cfg.ftest[0] = (ftest_t *)malloc(
 									 sizeof(ftest_t))) == NULL) {
 								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(ftest_t));
 								continue;
 							}
-							memset(cfg.ftest[0], 0, sizeof(ftest_t));
-							SAFECOPY(cfg.ftest[0]->ext, "ZIP");
-							SAFECOPY(cfg.ftest[0]->cmd, "%@unzip -tqq %f");
-							SAFECOPY(cfg.ftest[0]->workstr, "Testing ZIP Integrity...");
-							cfg.ftest[0]->ex_mode = EX_NATIVE;
+							*cfg.ftest[0] = new_ftest;
 						}
 						else {
 
@@ -566,11 +627,7 @@ void xfer_opts()
 								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(ftest_t));
 								continue;
 							}
-							if (i >= cfg.total_ftests)
-								j = i - 1;
-							else
-								j = i + 1;
-							*cfg.ftest[i] = *cfg.ftest[j];
+							*cfg.ftest[i] = new_ftest;
 						}
 						cfg.total_ftests++;
 						uifc.changes = TRUE;
@@ -659,7 +716,7 @@ void xfer_opts()
 					opt[i][0] = 0;
 					i = WIN_RHT | WIN_ACT | WIN_SAV;  /* save cause size can change */
 					if (cfg.total_dlevents < MAX_OPTS)
-						i |= WIN_INS | WIN_XTR;
+						i |= WIN_INS | WIN_INSACT | WIN_XTR;
 					if (cfg.total_dlevents)
 						i |= WIN_DEL | WIN_COPY | WIN_CUT;
 					if (savdlevent.cmd[0])
@@ -705,17 +762,16 @@ void xfer_opts()
 							bail(1);
 							continue;
 						}
+						dlevent_t new_dlevent;
+						if (!get_new_dlevent(&new_dlevent))
+							continue;
 						if (!cfg.total_dlevents) {
 							if ((cfg.dlevent[0] = (dlevent_t *)malloc(
 									 sizeof(dlevent_t))) == NULL) {
 								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(dlevent_t));
 								continue;
 							}
-							memset(cfg.dlevent[0], 0, sizeof(dlevent_t));
-							SAFECOPY(cfg.dlevent[0]->ext, "ZIP");
-							SAFECOPY(cfg.dlevent[0]->cmd, "%@zip -z %f < %zzipmsg.txt");
-							SAFECOPY(cfg.dlevent[0]->workstr, "Adding ZIP Comment...");
-							cfg.dlevent[0]->ex_mode = EX_NATIVE;
+							*cfg.dlevent[0] = new_dlevent;
 						}
 						else {
 
@@ -726,11 +782,7 @@ void xfer_opts()
 								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(dlevent_t));
 								continue;
 							}
-							if (i >= cfg.total_dlevents)
-								j = i - 1;
-							else
-								j = i + 1;
-							*cfg.dlevent[i] = *cfg.dlevent[j];
+							*cfg.dlevent[i] = new_dlevent;
 						}
 						cfg.total_dlevents++;
 						uifc.changes = TRUE;
@@ -819,7 +871,7 @@ void xfer_opts()
 					opt[i][0] = 0;
 					i = WIN_RHT | WIN_ACT | WIN_SAV;  /* save cause size can change */
 					if (cfg.total_fextrs < MAX_OPTS)
-						i |= WIN_INS | WIN_XTR;
+						i |= WIN_INS | WIN_INSACT | WIN_XTR;
 					if (cfg.total_fextrs)
 						i |= WIN_DEL | WIN_COPY | WIN_CUT;
 					if (savfextr.cmd[0])
@@ -858,16 +910,16 @@ void xfer_opts()
 							bail(1);
 							continue;
 						}
+						fextr_t new_fextr;
+						if (!get_new_fextr(&new_fextr))
+							continue;
 						if (!cfg.total_fextrs) {
 							if ((cfg.fextr[0] = (fextr_t *)malloc(
 									 sizeof(fextr_t))) == NULL) {
 								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(fextr_t));
 								continue;
 							}
-							memset(cfg.fextr[0], 0, sizeof(fextr_t));
-							SAFECOPY(cfg.fextr[0]->ext, "ZIP");
-							SAFECOPY(cfg.fextr[0]->cmd, "%@unzip -Cojqq %f %s -d %g");
-							cfg.fextr[0]->ex_mode = EX_NATIVE;
+							*cfg.fextr[0] = new_fextr;
 						}
 						else {
 
@@ -878,11 +930,7 @@ void xfer_opts()
 								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(fextr_t));
 								continue;
 							}
-							if (i >= cfg.total_fextrs)
-								j = i - 1;
-							else
-								j = i + 1;
-							*cfg.fextr[i] = *cfg.fextr[j];
+							*cfg.fextr[i] = new_fextr;
 						}
 						cfg.total_fextrs++;
 						uifc.changes = TRUE;
@@ -963,7 +1011,7 @@ void xfer_opts()
 					opt[i][0] = 0;
 					i = WIN_RHT | WIN_ACT | WIN_SAV;  /* save cause size can change */
 					if (cfg.total_fcomps < MAX_OPTS)
-						i |= WIN_INS | WIN_XTR;
+						i |= WIN_INS | WIN_INSACT | WIN_XTR;
 					if (cfg.total_fcomps)
 						i |= WIN_DEL | WIN_COPY | WIN_CUT;
 					if (savfcomp.cmd[0])
@@ -1002,16 +1050,16 @@ void xfer_opts()
 							bail(1);
 							continue;
 						}
+						fcomp_t new_fcomp;
+						if (!get_new_fcomp(&new_fcomp))
+							continue;
 						if (!cfg.total_fcomps) {
 							if ((cfg.fcomp[0] = (fcomp_t *)malloc(
 									 sizeof(fcomp_t))) == NULL) {
 								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(fcomp_t));
 								continue;
 							}
-							memset(cfg.fcomp[0], 0, sizeof(fcomp_t));
-							SAFECOPY(cfg.fcomp[0]->ext, "ZIP");
-							SAFECOPY(cfg.fcomp[0]->cmd, "%@zip -jD %f %s");
-							cfg.fcomp[0]->ex_mode = EX_NATIVE;
+							*cfg.fcomp[0] = new_fcomp;
 						}
 						else {
 							for (j = cfg.total_fcomps; j > i; j--)
@@ -1021,11 +1069,7 @@ void xfer_opts()
 								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(fcomp_t));
 								continue;
 							}
-							if (i >= cfg.total_fcomps)
-								j = i - 1;
-							else
-								j = i + 1;
-							*cfg.fcomp[i] = *cfg.fcomp[j];
+							*cfg.fcomp[i] = new_fcomp;
 						}
 						cfg.total_fcomps++;
 						uifc.changes = TRUE;
@@ -1107,7 +1151,7 @@ void xfer_opts()
 					opt[i][0] = 0;
 					uifc_winmode_t wmode = WIN_RHT | WIN_ACT | WIN_SAV; /* WIN_SAV because size can change */
 					if (cfg.total_prots < MAX_OPTS)
-						wmode |= WIN_INS | WIN_XTR;
+						wmode |= WIN_INS | WIN_INSACT | WIN_XTR;
 					if (cfg.total_prots)
 						wmode |= WIN_DEL | WIN_COPY | WIN_CUT;
 					if (savprot.mnemonic)
@@ -1151,15 +1195,16 @@ void xfer_opts()
 							bail(1);
 							continue;
 						}
+						prot_t new_prot;
+						if (!get_new_prot(&new_prot))
+							continue;
 						if (!cfg.total_prots) {
 							if ((cfg.prot[0] = (prot_t *)malloc(
 									 sizeof(prot_t))) == NULL) {
 								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(prot_t));
 								continue;
 							}
-							memset(cfg.prot[0], 0, sizeof(prot_t));
-							cfg.prot[0]->mnemonic = '?';
-							cfg.prot[0]->misc = PROT_NATIVE;
+							*cfg.prot[0] = new_prot;
 						} else {
 							for (j = cfg.total_prots; j > i; j--)
 								cfg.prot[j] = cfg.prot[j - 1];
@@ -1168,11 +1213,7 @@ void xfer_opts()
 								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(prot_t));
 								continue;
 							}
-							if (i >= cfg.total_prots)
-								j = i - 1;
-							else
-								j = i + 1;
-							*cfg.prot[i] = *cfg.prot[j];
+							*cfg.prot[i] = new_prot;
 						}
 						cfg.total_prots++;
 						uifc.changes = TRUE;
