@@ -594,7 +594,7 @@ function get_msg_lines(msgbase, msg, hdr, source, hex, wrap, chop)
 			console.clearline();
 			return [];
 		}
-		if(text.length <= options.large_msg_threshold)
+		if(!(msg.auxattr & MSG_FIXED_FORMAT) && text.length <= options.large_msg_threshold)
 			msg.wrapped = (wrap!==false && !hex);
 	}
 	if(hdr) {
