@@ -106,7 +106,7 @@ function displayTopStats() {
                 writeln("  -g     " + gettext("Hide Guest", "help_opt_g"));
                 writeln("  -s     " + gettext("Hide Sysop", "help_opt_s"));
                 writeln("  -z     " + gettext("Hide users with 0 bandwidth", "help_opt_z"));
-                writeln("  -o     " + gettext("Hide the buildt-in box header", "help_opt_o"));
+                writeln("  -o     " + gettext("Hide the built-in box header", "help_opt_o"));
                 writeln("  -n X   " + gettext("Show X results (default 10)", "help_opt_n") + C_RESET);
                 exit(); 
             }
