@@ -47,6 +47,8 @@ void sbbs_t::scansubs(int mode)
 	if (ch != all_key() && mode & (SCAN_FIND | SCAN_TOYOU)) {
 		if (text[DisplaySubjectsOnlyQ][0])
 			subj_only = yesno(text[DisplaySubjectsOnlyQ]);
+		if (sys_status & SS_ABORT)
+			return;
 		if ((mode & SCAN_TOYOU) && !(mode & SCAN_UNREAD)
 		    && text[DisplayUnreadMessagesOnlyQ][0] && yesno(text[DisplayUnreadMessagesOnlyQ]))
 			mode |= SCAN_UNREAD;
@@ -149,6 +151,8 @@ void sbbs_t::scanallsubs(int mode)
 	if (mode & (SCAN_FIND | SCAN_TOYOU)) {
 		if (text[DisplaySubjectsOnlyQ][0])
 			subj_only = yesno(text[DisplaySubjectsOnlyQ]);
+		if (sys_status & SS_ABORT)
+			return;
 		if ((mode & SCAN_TOYOU) && !(mode & SCAN_UNREAD)
 		    && text[DisplayUnreadMessagesOnlyQ][0] && yesno(text[DisplayUnreadMessagesOnlyQ]))
 			mode |= SCAN_UNREAD;
