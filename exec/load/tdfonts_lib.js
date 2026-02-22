@@ -178,6 +178,27 @@ function loadfont(fn_arg) {
     return font;
 }
 
+// based on table from https://www.roysac.com/blog/2014/04/thedraw-fonts-file-tdf-specifications/
+var outline_charmap = {
+	'A': 205,
+	'B': 196,
+	'C': 179,
+	'D': 186,
+	'E': 213,
+	'F': 187,
+	'G': 214,
+	'H': 191,
+	'I': 200,
+	'J': 190,
+	'K': 192,
+	'L': 189,
+	'M': 181,
+	'N': 199,
+	'O': 32,
+	'@': 32,
+	'&': 38,
+};
+
 function readchar(i, font) { // glyph argument is no longer needed, we return the glyph object
     var glyph_data_offset = font.charlist[i];
 
@@ -235,6 +256,8 @@ function readchar(i, font) { // glyph argument is no longer needed, we return th
 
             var cell_idx = row * width + col;
             if (cell_idx < glyph.cell.length) {
+				if (font.fonttype == OUTLN_FNT)
+					ch = outline_charmap[ascii(ch)];
                 if (this.opt && opt.utf8) {
                     try {
                          glyph.cell[cell_idx].utfchar = utf8_encode(String.fromCharCode(ch));
@@ -251,7 +274,7 @@ function readchar(i, font) { // glyph argument is no longer needed, we return th
 
                 col++;
             } else {
-                 log("Warning: Exceeded glyph cell bounds for char index " + i + " at row " + row + ", col " + col);
+//                 log("Warning: Exceeded glyph cell bounds for char index " + i + " at row " + row + ", col " + col);
                  // This might indicate a font file issue or parsing error.
             }
         }
