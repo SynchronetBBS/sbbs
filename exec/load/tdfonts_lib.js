@@ -236,7 +236,8 @@ function readchar(i, font) { // glyph argument is no longer needed, we return th
 				col++;
 			}
 			else {
-				// log("Warning: Exceeded glyph cell bounds for char index " + i + " at row " + row + ", col " + col);
+				if (font.fonttype != OUTLN_FNT)
+					log("Warning: Exceeded glyph cell bounds for char index " + i + " at row " + row + ", col " + col);
 				// This might indicate a font file issue or parsing error.
 			}
 		}
