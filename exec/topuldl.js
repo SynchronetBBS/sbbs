@@ -62,16 +62,9 @@ var BOX = is_bbs ? {
 };
 
 function printheader(fn) {
-    var header_path = system.text_dir + fn + ".asc"
-    if (file_exists(header_path)) {
-        var f = new File(header_path);
-        if (f.open("r")) {
-            writeln(f.read());
-            f.close();
-        }
-	return true;
-    }
-    return false;
+    if (js.global.bbs === undefined)
+	return false;
+    return bbs.menu("../" + fn, P_NOERROR);
 }
 
 function formatBytes(bytes) {
