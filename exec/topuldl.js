@@ -20,7 +20,9 @@
 	-z	Hide lines if users have 0 bytes downloaded
 
 	if the file /sbbs/text/topuldlheader.asc is present then
-	it will be displayed at the top of the output.
+	it will be displayed at the top of the output. Example
+	usage would be to have your BBS logo at the top of the
+	output.
 
 	You can have a separate header for uploaders and downloaders
 	by creating /sbbs/text/topuldlupheader.asc and 
@@ -104,7 +106,7 @@ function displayTopStats() {
                 writeln("  -g     " + gettext("Hide Guest", "help_opt_g"));
                 writeln("  -s     " + gettext("Hide Sysop", "help_opt_s"));
                 writeln("  -z     " + gettext("Hide users with 0 bandwidth", "help_opt_z"));
-                writeln("  -o     " + gettext("Hide ONLY the dynamic box header", "help_opt_o"));
+                writeln("  -o     " + gettext("Hide the buildt-in box header", "help_opt_o"));
                 writeln("  -n X   " + gettext("Show X results (default 10)", "help_opt_n") + C_RESET);
                 exit(); 
             }
@@ -145,14 +147,14 @@ function displayTopStats() {
         
         userList.push({
             name: u.alias,
-            handle: u.handle || u.alias,
+            location: u.location,
             ul: (u.stats && u.stats.bytes_uploaded) ? u.stats.bytes_uploaded : 0,
             dl: (u.stats && u.stats.bytes_downloaded) ? u.stats.bytes_downloaded : 0,
             last: (u.stats && u.stats.laston_date) ? strftime("%m/%d/%y", u.stats.laston_date) : gettext("Never", "stats_never")
         });
     }
 
-    var colHeader = gettext("  Rank  Username             Handle               Bandwidth    Last Seen", "table_col_headers");
+    var colHeader = gettext("  Rank  Username             Location             Bandwidth    Last Seen", "table_col_headers");
     var separator = gettext("  ----  -------------------- -------------------- -----------  ----------", "table_separator");
 
     if (showUl) {
@@ -166,7 +168,7 @@ function displayTopStats() {
         for (var k = 0; k < Math.min(numResults, ulData.length); k++) {
             writeln("  " + C_RANK + (k + 1).toString().padEnd(4) + "  " + C_RESET + 
                   ulData[k].name.substring(0, 20).padEnd(20) + " " + 
-                  C_GRAY + ulData[k].handle.substring(0, 20).padEnd(20) + " " + 
+                  C_GRAY + ulData[k].location.substring(0, 20).padEnd(20) + " " + 
                   C_DATA + formatBytes(ulData[k].ul).padStart(11) + "  " +
                   C_GRAY + ulData[k].last.padStart(10) + C_RESET);
         }
@@ -183,7 +185,7 @@ function displayTopStats() {
         for (var l = 0; l < Math.min(numResults, dlData.length); l++) {
             writeln("  " + C_RANK + (l + 1).toString().padEnd(4) + "  " + C_RESET + 
                   dlData[l].name.substring(0, 20).padEnd(20) + " " + 
-                  C_GRAY + dlData[l].handle.substring(0, 20).padEnd(20) + " " + 
+                  C_GRAY + dlData[l].location.substring(0, 20).padEnd(20) + " " + 
                   C_DATA2 + formatBytes(dlData[l].dl).padStart(11) + "  " +
                   C_GRAY + dlData[l].last.padStart(10) + C_RESET);
         }
