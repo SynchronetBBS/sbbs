@@ -102,7 +102,7 @@ static trashCan*          host_can = nullptr;
 static filterFile*        host_exempt = nullptr;
 
 #ifdef SOCKET_DEBUG
-static BYTE               socket_debug[0x10000] = {0};
+static BYTE               socket_debug[0x10000] {};
 
 	#define SOCKET_DEBUG_CTRL       (1 << 0)  /* 0x01 */
 	#define SOCKET_DEBUG_SEND       (1 << 1)  /* 0x02 */
@@ -4566,7 +4566,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if (delecmd && !user_is_dirop(&scfg, dir, &user, &client) && !(user.exempt & FLAG('R'))) {
-					file_t f = {0};
+					file_t f {};
 					if (filedat)
 						loadfile(&scfg, dir, p, &f, file_detail_normal, NULL);
 					if (stricmp(f.from, user.alias)) {
