@@ -109,7 +109,7 @@ function loadfont(fn_arg) {
 	if (this.opt && opt.info) {
 		writeln("index: " + opt.index);
 		writeln("font: " + font.name);
-		writeln("type: " + font.fonttype);
+		writeln("type: " + ["Outline", "Block", "Color"][font.fonttype] || format("Unknown: %d", font.fonttype));
 		write("char list: ");
 	}
 	// Determine overall font height and validate glyph addresses
