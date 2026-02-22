@@ -960,7 +960,7 @@ fip_bsearch_cmp(const void *key_ptr, const void *elem_ptr)
 	const ini_lv_string_t *key = key_ptr;
 
 	fip_last_visited = elem;
-	fip_last_ret = strnicmp(key->str, elem[0]->name, key->len);
+	fip_last_ret = key->len == 0 ? 0 : strnicmp(key->str, elem[0]->name, key->len);
 	if (fip_last_ret == 0) {
 		if (elem[0]->name[key->len])
 			fip_last_ret = 1;
