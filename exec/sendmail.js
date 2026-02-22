@@ -5,8 +5,8 @@
 // and/or                        /usr/bin/mail
 // and/or                        /usr/bin/mailx
 
-var log = new File(system.temp_dir + "sendmail.log");
-//log.open('a');
+var log = new File(system.data_dir + "sendmail.log");
+log.open('a');
 log.writeln(system.timestr() + ' ' + js.exec_file + ' argv=' + argv);
 
 load("sbbsdefs.js");
