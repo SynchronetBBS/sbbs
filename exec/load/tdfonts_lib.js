@@ -80,7 +80,8 @@ function loadfont(fn_arg) {
 			}
 			if (index !== -1)
 				map = map.slice(0, 20) + map.slice(index);
-		}
+		} else
+			opt.index = 0;
 		font.namelen = map.charCodeAt(24);
 		font.name = map.substring(25, 25 + font.namelen);
 		font.fonttype = map.charCodeAt(41);
@@ -106,11 +107,11 @@ function loadfont(fn_arg) {
 		log("Error parsing font file header: " + e);
 		exit(1);
 	}
+	var supported = "";
 	if (this.opt && opt.info) {
 		writeln("index: " + opt.index);
-		writeln("font: " + font.name);
+		writeln("name: " + font.name);
 		writeln("type: " + ["Outline", "Block", "Color"][font.fonttype] || format("Unknown: %d", font.fonttype));
-		write("char list: ");
 	}
 	// Determine overall font height and validate glyph addresses
 	for (var i = 0; i < NUM_CHARS; i++) {
@@ -122,7 +123,7 @@ function loadfont(fn_arg) {
 		// Check if the character exists in the font (not 0xffff)
 		if (glyph_data_offset !== 0xffff) {
 			if (this.opt && opt.info)
-				write(charlist[i]);
+				supported += charlist[i];
 			// Read glyph width and height from font.data
 			// The width is at glyph_data_offset, height at glyph_data_offset + 1
 			try {
@@ -138,8 +139,11 @@ function loadfont(fn_arg) {
 			}
 		}
 	}
-	if (this.opt && opt.info)
-		writeln("");
+	if (this.opt && opt.info) {
+		writeln("height: " + font.height);
+		writeln("spacing: " + font.spacing);
+		writeln("supported: " + supported);
+	}
 	// Read and store glyph data
 	font.glyphs = [];
 	for (var i = 0; i < NUM_CHARS; i++) {
