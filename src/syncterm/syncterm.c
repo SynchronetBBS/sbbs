@@ -974,6 +974,15 @@ ini_bitdesc_t audio_output_types[] = {
 	},
 };
 
+const char * const colour_names[18] = {"Black", "Blue", "Green", "Cyan", "Red", "Magenta", "Brown", "Light Gray",
+                                 "Dark Gray", "Light Blue", "Light Green", "Light Cyan", "Light Red", "Light Magenta", "Yellow",
+                                 "White", "Default", NULL};
+const char * const colour_enum[18] = {"Black", "Blue", "Green", "Cyan", "Red", "Magenta", "Brown", "LightGray",
+                                "DarkGray", "LightBlue", "LightGreen", "LightCyan", "LightRed", "LightMagenta", "Yellow",
+                                 "White", "Default", NULL};
+const char * const bg_colour_names[10] = {"Black", "Blue", "Green", "Cyan", "Red", "Magenta", "Brown", "Light Gray", "Default", NULL};
+const char * const bg_colour_enum[10] = {"Black", "Blue", "Green", "Cyan", "Red", "Magenta", "Brown", "LightGray", "Default", NULL};
+
 void
 set_default_cursor(void)
 {
@@ -1664,6 +1673,14 @@ load_settings(struct syncterm_settings *set)
 
 	/* KDF Parameters */
 	set->keyDerivationIterations = iniReadInteger(inifile, "SyncTERM", "KeyDerivationIterations", 50000);
+
+	/* UIFC Colours */
+	set->uifc_bclr = iniReadEnum(inifile, "UIFC", "BackgroundColour", (char **)bg_colour_enum, 8);
+	set->uifc_cclr = iniReadEnum(inifile, "UIFC", "InverseColour", (char **)bg_colour_enum, 8);
+	set->uifc_hclr = iniReadEnum(inifile, "UIFC", "FrameColour", (char **)colour_enum, 16);
+	set->uifc_lbclr = iniReadEnum(inifile, "UIFC", "LightbarColour", (char **)colour_enum, 16);
+	set->uifc_lbbclr = iniReadEnum(inifile, "UIFC", "LightbarBackgroundColour", (char **)colour_enum, 8);
+	set->uifc_lclr = iniReadEnum(inifile, "UIFC", "TextColour", (char **)colour_enum, 16);
 
 	if (inifile)
 		fclose(inifile);

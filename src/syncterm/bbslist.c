@@ -2740,19 +2740,117 @@ edit_audio_mode(str_list_t *inicontents)
 	}
 }
 
+static int
+pick_colour(int cur, const char *name, bool bg)
+{
+	return uifc.list(WIN_SAV | WIN_RHT | WIN_BOT, 0, 0, 0, &cur, NULL, name, (char**)(bg ? bg_colour_names : colour_names));
+}
+
+static void
+edit_uifc_colours(str_list_t *inicontents)
+{
+	const char *const opt[7] = {
+		"Frame Colour",
+		"Text Colour",
+		"Background Colour",
+		"Inverse Colour",
+		"Lightbar Colour",
+		"Lightbar Background Colour",
+		NULL
+	};
+	const char *const key[6] = {
+		"FrameColour",
+		"TextColour",
+		"BackgroundColour",
+		"InverseColour",
+		"LightbarColour",
+		"LightbarBackgroundColour",
+	};
+	unsigned *set[6] = {
+		&settings.uifc_hclr,
+		&settings.uifc_lclr,
+		&settings.uifc_bclr,
+		&settings.uifc_cclr,
+		&settings.uifc_lbclr,
+		&settings.uifc_lbbclr
+	};
+	unsigned char *uifcp[5] = {
+		&uifc.hclr,
+		&uifc.lclr,
+		&uifc.bclr,
+		&uifc.cclr,
+		&uifc.lbclr
+	};
+	unsigned char dflts[6] = {
+		YELLOW,
+		WHITE,
+		BLUE,
+		CYAN,
+		BLUE,
+		LIGHTGRAY,
+	};
+	int i = 0;
+	int j = 0;
+	int ret;
+
+	uifc.helpbuf = "`UIFC Colours`\n\n"
+		       "        Change UIFC Colours\n";
+
+	while (i != -1) {
+		bool bg;
+		switch (i = uifc.list(WIN_SAV | WIN_ACT, 0, 0, 0, &j, NULL, "UIFC Colours", (char**)opt)) {
+			case -1:
+				check_exit(false);
+				continue;
+			default:
+				bg = (i == 2 || i == 3 || i == 5);
+				ret = pick_colour(*set[i], opt[i], bg);
+				if (ret != -1) {
+					uifc.changes = 1;
+					unsigned v = ret;
+					if (bg) {
+						if (ret == 8)
+							v = dflts[i];
+					}
+					else {
+						if (ret == 16)
+							v = dflts[i];
+					}
+					iniSetEnum(inicontents, "UIFC", key[i], (char **)(bg ? bg_colour_enum : colour_enum), ret, &ini_style);
+					switch(i) {
+						default:
+							*set[i] = ret;
+							*uifcp[i] = v;
+							break;
+						case 4: // Lightbar
+							*set[i] = ret;
+							*uifcp[i] = (*uifcp[i] & 0x70) | (v);
+							break;
+						case 5: // Lightbar background
+							*set[i] = ret;
+							*uifcp[i - 1] = (*uifcp[i - 1] & 0x0f) | (v << 4);
+							break;
+					}
+				}
+				break;
+		}
+	}
+}
+
 static void
 change_settings(int connected)
 {
 	char inipath[MAX_PATH + 1];
 	FILE *inifile;
 	str_list_t inicontents;
-	char opts[17][1049];
-	char *opt[18];
+	char opts[18][1049];
+	char *opt[19];
 	char *subopts[10];
 	char audio_opts[1024];
 	int i, j, k, l;
 	char str[64];
 	int cur = 0;
+	int bar = 0;
 
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
 	if ((inifile = fopen(inipath, "r")) != NULL) {
@@ -2761,8 +2859,8 @@ change_settings(int connected)
 	}
 	else
 		inicontents = strListInit();
-
-	for (i = 0; i < sizeof(opts) / sizeof(opts[0]); i++)
+	const size_t opt_size = sizeof(opts) / sizeof(opts[0]);
+	for (i = 0; i < opt_size; i++)
 		opt[i] = opts[i];
 	opt[i] = NULL;
 
@@ -2798,6 +2896,8 @@ change_settings(int connected)
 		               "        Cycle scaling type.\n\n"
 		               "~ Key Derivation Iterations ~\n"
 		               "        Change the number of iterations in the Key Derivation Function.\n\n"
+		               "~ UIFC Colours ~\n"
+		               "        Configure the colours used by the UIFC interface.\n\n"
 		               "~ Custom Screen Mode ~\n"
 		               "        Configure the Custom screen mode.\n\n";
 		SAFEPRINTF(opts[0], "Confirm Program Exit    %s", settings.confirm_close ? "Yes" : "No");
@@ -2830,14 +2930,16 @@ change_settings(int connected)
 		sprintf(opts[13], "Scaling                 %s", scaling_names[settings_to_scale()]);
 		sprintf(opts[14], "Invert Mouse Wheel      %s", settings.invert_wheel ? "Yes" : "No");
 		sprintf(opts[15], "Key Derivation Iters.   %d", settings.keyDerivationIterations);
+		sprintf(opts[16], "UIFC Colours");
 		if (connected)
-			opt[16] = NULL;
+			opt[opt_size - 1] = NULL;
 		else {
-			sprintf(opts[16], "Custom Screen Mode");
-			opt[16] = opts[16];
+			sprintf(opts[opt_size - 1], "Custom Screen Mode");
+			opt[opt_size - 1] = opts[opt_size - 1];
 		}
-		opt[17] = NULL;
-		switch (uifc.list(WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &cur, NULL, "Program Settings", opt)) {
+		opt[opt_size] = NULL;
+fprintf(stderr, "cur: %d\n", cur);
+		switch (uifc.list(WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &cur, &bar, "Program Settings", opt)) {
 			case -1:
 				check_exit(false);
 				goto write_ini;
@@ -3180,6 +3282,11 @@ change_settings(int connected)
 				}
 				break;
 			case 16:
+				{
+					edit_uifc_colours(&inicontents);
+				}
+				break;
+			case 17:
 				uifc.helpbuf = "`Custom Screen Mode`\n\n"
 				               "~ Rows ~\n"
 				               "        Sets the number of rows in the custom screen mode\n"

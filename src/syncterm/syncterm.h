@@ -92,6 +92,12 @@ struct syncterm_settings {
 	bool                  webgetUserList;
 	int                   keyDerivationIterations;
 	enum CursorTypeEnum   defaultCursor;
+	unsigned              uifc_hclr;
+	unsigned              uifc_lclr;
+	unsigned              uifc_bclr;
+	unsigned              uifc_cclr;
+	unsigned              uifc_lbclr;
+	unsigned              uifc_lbbclr;
 };
 
 extern ini_bitdesc_t audio_output_bits[];
@@ -116,6 +122,11 @@ extern char                    *output_enum[];
 extern char                    *cursor_descrs[];
 extern char                    *cursor_enum[];
 extern int                      fake_mode;
+extern const char * const colour_names[18];
+extern const char * const colour_enum[18];
+extern const char * const bg_colour_names[10];
+extern const char * const bg_colour_enum[10];
+
 void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults);
 char *get_syncterm_filename(char *fn, int fnlen, int type, bool shared);
 void load_settings(struct syncterm_settings *set);
