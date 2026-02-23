@@ -1679,7 +1679,7 @@ load_settings(struct syncterm_settings *set)
 	set->uifc_cclr = iniReadEnum(inifile, "UIFC", "InverseColour", (char **)bg_colour_enum, 8);
 	set->uifc_hclr = iniReadEnum(inifile, "UIFC", "FrameColour", (char **)colour_enum, 16);
 	set->uifc_lbclr = iniReadEnum(inifile, "UIFC", "LightbarColour", (char **)colour_enum, 16);
-	set->uifc_lbbclr = iniReadEnum(inifile, "UIFC", "LightbarBackgroundColour", (char **)colour_enum, 8);
+	set->uifc_lbbclr = iniReadEnum(inifile, "UIFC", "LightbarBackgroundColour", (char **)bg_colour_enum, 8);
 	set->uifc_lclr = iniReadEnum(inifile, "UIFC", "TextColour", (char **)colour_enum, 16);
 
 	if (inifile)

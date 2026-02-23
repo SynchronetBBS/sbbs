@@ -2746,16 +2746,20 @@ pick_colour(int cur, const char *name, bool bg)
 	return uifc.list(WIN_SAV | WIN_RHT | WIN_BOT, 0, 0, 0, &cur, NULL, name, (char**)(bg ? bg_colour_names : colour_names));
 }
 
+/*
+ * TODO: This function is gross and I feel bad for writing it.
+ */
 static void
 edit_uifc_colours(str_list_t *inicontents)
 {
-	const char *const opt[7] = {
-		"Frame Colour",
-		"Text Colour",
-		"Background Colour",
-		"Inverse Colour",
-		"Lightbar Colour",
-		"Lightbar Background Colour",
+	char opts[6][64] = {0};
+	char *opt[7] = {
+		opts[0],
+		opts[1],
+		opts[2],
+		opts[3],
+		opts[4],
+		opts[5],
 		NULL
 	};
 	const char *const key[6] = {
@@ -2798,6 +2802,13 @@ edit_uifc_colours(str_list_t *inicontents)
 
 	while (i != -1) {
 		bool bg;
+		sprintf(opts[0], "Frame Colour               %s", colour_names[settings.uifc_hclr]);
+		sprintf(opts[1], "Text Colour                %s", colour_names[settings.uifc_lclr]);
+		sprintf(opts[2], "Background Colour          %s", bg_colour_names[settings.uifc_bclr]);
+		sprintf(opts[3], "Inverse Colour             %s", bg_colour_names[settings.uifc_cclr]);
+		sprintf(opts[4], "Lightbar Colour            %s", colour_names[settings.uifc_lbclr]);
+		sprintf(opts[5], "Lightbar Background Colour %s", bg_colour_names[settings.uifc_lbbclr]);
+
 		switch (i = uifc.list(WIN_SAV | WIN_ACT, 0, 0, 0, &j, NULL, "UIFC Colours", (char**)opt)) {
 			case -1:
 				check_exit(false);
@@ -2938,7 +2949,6 @@ change_settings(int connected)
 			opt[opt_size - 1] = opts[opt_size - 1];
 		}
 		opt[opt_size] = NULL;
-fprintf(stderr, "cur: %d\n", cur);
 		switch (uifc.list(WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &cur, &bar, "Program Settings", opt)) {
 			case -1:
 				check_exit(false);
