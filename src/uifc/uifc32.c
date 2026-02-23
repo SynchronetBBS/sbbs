@@ -47,6 +47,8 @@ static char*             helpfile = 0;
 static uint              helpline = 0;
 static size_t            blk_scrn_len;
 static struct vmem_cell *blk_scrn;
+static unsigned char     blk_scrn_attr = 0;
+static unsigned char     blk_scrn_ch = 0;
 static struct vmem_cell *tmp_buffer;
 static struct vmem_cell *tmp_buffer2;
 static win_t             sav[MAX_BUFS];
@@ -200,6 +202,24 @@ int inkey(void)
 	return c;
 }
 
+static void
+fill_blk_scrn(BOOL force)
+{
+	uchar attr = api->cclr | (api->bclr << 4);
+	if (!blk_scrn)
+		return;
+	if (force || blk_scrn_attr != attr || blk_scrn_ch != api->chars->background) {
+		for (int i = 0; i < blk_scrn_len; i++) {
+			blk_scrn[i].legacy_attr = attr;
+			blk_scrn[i].ch = api->chars->background;
+			blk_scrn[i].font = 0;
+			attr2palette(blk_scrn[i].legacy_attr, &blk_scrn[i].fg, &blk_scrn[i].bg);
+		}
+		blk_scrn_ch = api->chars->background;
+		blk_scrn_attr = attr;
+	}
+}
+
 int uifcini32(uifcapi_t* uifcapi)
 {
 	unsigned          i;
@@ -334,12 +354,7 @@ int uifcini32(uifcapi_t* uifcapi)
 		        , __LINE__, blk_scrn_len * sizeof(*blk_scrn));
 		return -1;
 	}
-	for (i = 0; i < blk_scrn_len; i++) {
-		blk_scrn[i].legacy_attr = api->cclr | (api->bclr << 4);
-		blk_scrn[i].ch = api->chars->background;
-		blk_scrn[i].font = 0;
-		attr2palette(blk_scrn[i].legacy_attr, &blk_scrn[i].fg, &blk_scrn[i].bg);
-	}
+	fill_blk_scrn(TRUE);
 
 	cursor = _NOCURSOR;
 	_setcursortype(cursor);
@@ -550,6 +565,7 @@ int uscrn(const char *str)
 	clreol();
 	gotoxy(3, 1);
 	cputs(str);
+	fill_blk_scrn(FALSE);
 	if (!vmem_puttext(1, 2, api->scrn_width, api->scrn_len, blk_scrn))
 		return -1;
 	gotoxy(1, api->scrn_len + 1);
@@ -875,16 +891,24 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 
 	if (!is_redraw) {
 		if (mode & WIN_ORG) { /* Clear around menu */
-			if (top)
+			if (top) {
+				fill_blk_scrn(FALSE);
 				vmem_puttext(1, 2, api->scrn_width, s_top + top - 1, blk_scrn);
-			if ((unsigned)(s_top + height + top) <= api->scrn_len)
+			}
+			if ((unsigned)(s_top + height + top) <= api->scrn_len) {
+				fill_blk_scrn(FALSE);
 				vmem_puttext(1, s_top + height + top, api->scrn_width, api->scrn_len, blk_scrn);
-			if (left)
+			}
+			if (left) {
+				fill_blk_scrn(FALSE);
 				vmem_puttext(1, s_top + top, s_left + left - 1, s_top + height + top
 				             , blk_scrn);
-			if (s_left + left + width <= s_right)
+			}
+			if (s_left + left + width <= s_right) {
+				fill_blk_scrn(FALSE);
 				vmem_puttext(s_left + left + width, s_top + top, /* s_right+2 */ api->scrn_width
 				             , s_top + height + top, blk_scrn);
+			}
 		}
 		ptr = tmp_buffer;
 		if (!(mode & WIN_NOBRDR)) {
@@ -1964,16 +1988,24 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *s
 		vmem_gettext(1, api->scrn_len + 1, api->scrn_width, api->scrn_len + 1, save_bottomline);
 	}
 	if (mode & WIN_ORG) { /* Clear around menu */
-		if (top)
+		if (top) {
+			fill_blk_scrn(FALSE);
 			vmem_puttext(1, 2, api->scrn_width, s_top + top - 1, blk_scrn);
-		if ((unsigned)(s_top + height + top) <= api->scrn_len)
+		}
+		if ((unsigned)(s_top + height + top) <= api->scrn_len) {
+			fill_blk_scrn(FALSE);
 			vmem_puttext(1, s_top + height + top, api->scrn_width, api->scrn_len, blk_scrn);
-		if (left)
+		}
+		if (left) {
+			fill_blk_scrn(FALSE);
 			vmem_puttext(1, s_top + top, s_left + left - 1, s_top + height + top
 			             , blk_scrn);
-		if (s_left + left + width <= s_right)
+		}
+		if (s_left + left + width <= s_right) {
+			fill_blk_scrn(FALSE);
 			vmem_puttext(s_left + left + width, s_top + top, /* s_right+2 */ api->scrn_width
 			             , s_top + height + top, blk_scrn);
+		}
 	}
 
 	iwidth = width - plen - slen;
