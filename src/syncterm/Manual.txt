@@ -890,6 +890,17 @@ will use 45° angles.  External will use hardware scaling if possible.
 The quality of External scaling varies wildly based on OS, device
 drivers, and output mode.
 
+Invert Mouse Wheel::
+Toggles the direction the mouse wheel moves.
+
+Key Derivation Iterations::
+This specifies the number of iterations to derive a key from a password.
+The higher this value, the more difficult brute forcing is, but the longer
+it takes to read the BBS list.
+
+UIFC Colours::
+Allows changing the colours for the User InterFaCe.
+
 [[custom_screen_mode]]
 Custom Screen Mode::
 Allows defining the Rows, Columns, Font Size, and
