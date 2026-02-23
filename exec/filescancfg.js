@@ -31,15 +31,19 @@ while(bbs.online && !js.terminated) {
 			break;
 		case 'B':
 			user.settings ^= USER_BATCHFLAG;
-			console.print("\r\n" + gettext("Batch flagging in file listings is now") + ": \x01h");
-			console.print(bbs.text((user.settings & USER_BATCHFLAG) ? bbs.text.On : bbs.text.Off));
-			console.crlf();
+			if (user.settings & USER_EXPERT) {
+				console.print("\r\n" + gettext("Batch flagging in file listings is now") + ": \x01h");
+				console.print(bbs.text((user.settings & USER_BATCHFLAG) ? bbs.text.On : bbs.text.Off));
+				console.newline();
+			}
 			break;
 		case 'E':
 			user.settings ^= USER_EXTDESC;
-			console.print("\r\n" + gettext("Extended file description display is now") + ": \x01h");
-			console.print(bbs.text((user.settings & USER_EXTDESC) ? bbs.text.On : bbs.text.Off));
-			console.crlf();
+			if (user.settings & USER_EXPERT) {
+				console.print("\r\n" + gettext("Extended file description display is now") + ": \x01h");
+				console.print(bbs.text((user.settings & USER_EXTDESC) ? bbs.text.On : bbs.text.Off));
+				console.newline();
+			}
 			break;
 		case 'Z':
 			prompts.get_protocol(user, options);
