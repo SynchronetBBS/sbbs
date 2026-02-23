@@ -20,68 +20,70 @@ var FONT_EXT = "tdf";
 var DEFAULT_FONT = "brndamgx";
 // Character list
 var charlist = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+const fonthdr_magic = "\x13TheDraw FONTS file\x1a"; // TheDraw font file magic number
+const newfont_sequence = "\x55\xaa\x00\xff";
 
-function loadfont(fn_arg) {
-	var font = {}; // Use object for font_t
-	var map = null; // Represents the font file data
+function readfont(fn_arg) {
 	var fn = null;
-	var magic = "\x13TheDraw FONTS file\x1a"; // TheDraw font file magic number
 	// Construct font file path
-	if (fn_arg.indexOf('/') === -1) {
-		if (file_getext(fn_arg)) {
+	if (file_getname(fn_arg) == fn_arg) {
+		if (file_getext(fn_arg))
 			fn = file_getcase(getdir() + fn_arg);
-		}
-		else {
+		else
 			fn = file_getcase(getdir() + fn_arg + "." + FONT_EXT);
-		}
 	}
-	else {
+	else
 		fn = file_getcase(fn_arg); // Assuming full path is provided
-	}
-	if (!fn || !file_exists(fn)) {
-		log("Error: Font file not found: " + fn_arg);
-		exit(1);
-	}
-	if (this.opt && opt.info) {
-		writeln("file: " + fn);
-	}
+	if (!fn || !file_exists(fn))
+		return "Error: Font file not found: " + fn_arg;
+	var font = { filename: fn };
 	// Read the font file content
 	var f = new File(fn);
-	if (!f.open("rb")) { // Open in binary read mode
-		log("Error: Unable to open font file: " + f.error);
-		exit(1);
-	}
+	if (!f.open("rb"))
+		return "Error: Unable to open font file: " + f.error;
 	var len = f.length;
-	map = f.read(len); // Read the whole file content
+	font.data = f.read(len);
 	f.close();
-	if (map.length !== len) {
-		log("Error: Failed to read complete font file.");
-		exit(1);
-	}
-	// Parse the font header (offsets based on C code)
-	// Synchronet JS provides byte access to file data strings/buffers.
-	// The provided C code uses a raw byte array (uint8_t *map).
-	// We'll treat the `map` variable (which is a string or Buffer in JS depending on Synchronet version)
-	// as a byte sequence. Accessing bytes can be done via charCodeAt(index) or similar depending on how read() returns data.
-	// For simplicity and assuming read() returns a string of bytes, we'll use charCodeAt.
-	// A more robust solution might involve using ArrayBuffer and DataView if available in Synchronet JS.
+	if (font.data.length !== len)
+		return "Error: reading " + len + " bytes from font file: " + f.error;
+	if (font.data.substring(0, fonthdr_magic.length) !== fonthdr_magic)
+		return "Invalid magic signature in font file: " + fn;
+	font.count = font.data.split(newfont_sequence).length - 1;
+	if (font.count < 1)
+		return "Invalid font count in: " + fn;
+	return font;
+}
+
+function getcount(fn_arg) {
+	var font = readfont(fn_arg);
+	if (typeof font !== 'object')
+		throw new Error(font);
+	return font.count;
+}
+
+function loadfont(fn_arg) {
+	var font = readfont(fn_arg);
+	if (typeof font !== 'object')
+		throw new Error(font);
 	try {
-		const sequence = "\x55\xaa\x00\xff";
-		if (this.opt && opt.random && opt.index === undefined)
-			opt.index = random(map.split(sequence).length);
-		if (this.opt && opt.index > 0) {
-			var index = 20;
+		font.index = opt.index;
+		if (opt.random && font.index === undefined)
+			font.index = random(font.count);
+		var map = font.data;
+		if (font.index > 0) {
+			var offset = 20;
 			var n = 0;
-			while (n < opt.index) {
-				index = map.indexOf(sequence, index + 1);
-				if (index === -1)
+			while (n < font.index) {
+				offset = map.indexOf(newfont_sequence, offset + 1);
+				if (offset === -1)
 					break;
 				n++;
 			}
-			if (index !== -1)
-				map = map.slice(0, 20) + map.slice(index);
+			font.index = n;
+			if (offset !== -1) // copies the header to the found font (weird)
+				map = map.slice(0, 20) + map.slice(offset);
 		} else
-			opt.index = 0;
+			font.index = 0;
 		font.namelen = map.charCodeAt(24);
 		font.name = map.substring(25, 25 + font.namelen);
 		font.fonttype = map.charCodeAt(41);
@@ -97,11 +99,6 @@ function loadfont(fn_arg) {
 		}
 		font.data = map.substring(233); // The rest of the data is glyph data
 		font.height = 0;
-		// Check magic number and font type
-		if (map.substring(0, magic.length) !== magic) {
-			log("Invalid font file: " + fn);
-			exit(1);
-		}
 	}
 	catch (e) {
 		log("Error parsing font file header: " + e);
@@ -109,7 +106,9 @@ function loadfont(fn_arg) {
 	}
 	var supported = "";
 	if (this.opt && opt.info) {
-		writeln("index: " + opt.index);
+		writeln("file: " + font.filename);
+		writeln("count: " + font.count);
+		writeln("index: " + font.index);
 		writeln("name: " + font.name);
 		writeln("type: " + ["Outline", "Block", "Color"][font.fonttype] || format("Unknown: %d", font.fonttype));
 	}

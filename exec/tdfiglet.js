@@ -108,7 +108,21 @@ if (loopfonts) {
 		if (pause && i > 0)
 			prompt("Hit enter");
 		try {
-			tdf.printstr(input_string, list[i]);
+			if (tdf.opt.index === undefined) {
+				var count = tdf.getcount(list[i]);
+				for (var fi = 0; fi < count; ++fi) {
+					tdf.opt.index = fi;
+					try {
+						tdf.printstr(input_string, list[i]);
+					} catch(e) {
+						if (tdf.opt.info)
+							print("exception: " + e);
+					}
+				}
+				tdf.opt.index = undefined;
+			} else {
+				tdf.printstr(input_string, list[i]);
+			}
 		} catch(e) {
 			if (tdf.opt.info)
 				print("exception: " + e);
