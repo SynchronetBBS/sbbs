@@ -29,10 +29,10 @@ function loadfont(fn_arg) {
 	// Construct font file path
 	if (fn_arg.indexOf('/') === -1) {
 		if (file_getext(fn_arg)) {
-			fn = file_getcase(FONT_DIR + fn_arg);
+			fn = file_getcase(getdir() + fn_arg);
 		}
 		else {
-			fn = file_getcase(FONT_DIR + fn_arg + "." + FONT_EXT);
+			fn = file_getcase(getdir() + fn_arg + "." + FONT_EXT);
 		}
 	}
 	else {
@@ -322,8 +322,13 @@ function reset_color() {
 	return "\x1b[0m";
 }
 
+function getdir() {
+	return backslash(opt.fontdir || FONT_DIR);
+}
+
 function getlist() {
-	return directory(FONT_DIR + "*." + FONT_EXT); // Get all .tdf files
+	var files = directory(getdir() + "*"); // Get all .tdf files
+	return files.filter(function(dirent) { return wildmatch(dirent, "*." + FONT_EXT); });
 }
 
 function output(str, font) {
@@ -332,10 +337,9 @@ function output(str, font) {
 		try {
 			if (!font) { // Random font file selection
 				var files = getlist();
-				if (files.length > 0) {
-					var randomIndex = random((files.length) + 1);
-					font = file_getname(files[randomIndex]);
-				}
+				if (files.length < 1)
+					throw new Error("No font files in " + getdir());
+				font = file_getname(files[random(files.length)]);
 			}
 			if (typeof font == "string")
 				font = loadfont(font);

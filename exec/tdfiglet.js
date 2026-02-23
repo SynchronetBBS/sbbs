@@ -12,7 +12,8 @@ tdf.opt = {};
 function usage() {
 	writeln("usage: tdfiglet [options] input");
 	writeln("");
-	writeln("    -f [font] Specify font file to use (see " + system.ctrl_dir + "tdfonts)");
+	writeln("    -f [font] Specify font file to use");
+	writeln("    -d <dir>  Specify directory to find font files (default: " + system.ctrl_dir + "tdfonts)");
 	writeln("    -j l|r|c  Justify left, right, or center (default: left)");
 	writeln("    -w n      Set screen width  (default: auto-detect or 80)");
 	writeln("    -m n      Set margin/offset (for left or right justification)");
@@ -40,6 +41,9 @@ for(i = 0; i < argv.length; ++i) {
 
 	if (arg === "-f" && i + 1 < argv.length) {
 		fontfile = argv[i + 1];
+		++i;
+	} else if (arg === "-d" && i + 1 < argv.length) {
+		tdf.opt.fontdir = argv[i + 1];
 		++i;
 	} else if (arg === "-j" && i + 1 < argv.length) {
 		switch (argv[i + 1]) {
