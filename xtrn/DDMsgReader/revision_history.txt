@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.97i    2026-02-23   Improved message text translating (UTF-8, HTML, and nbsp),
+                      as well as not word-wrapping message tails.
 1.97h    2026-02-07   Small refactoring in the ReplyToMsg() function related to
                       the MsgBase object; no functional change
 1.97g    2026-01-31   Bug fix: this.msgAreaList_lastImportedMsg_showImportTime
