@@ -781,7 +781,7 @@ int curs_kbhit(void)
 	FD_ZERO(&rfds);
 	FD_SET(fileno(stdin),&rfds);
 
-	return(select(fileno(stdin)+1,&rfds,NULL,NULL,&timeout));
+	return(select(fileno(stdin)+1,&rfds,NULL,NULL,&timeout) == 1);
 }
 
 void curs_gotoxy(int x, int y)
