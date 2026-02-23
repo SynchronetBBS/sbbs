@@ -2762,7 +2762,7 @@ change_settings(int connected)
 	else
 		inicontents = strListInit();
 
-	for (i = 0; i < 16; i++)
+	for (i = 0; i < sizeof(opts) / sizeof(opts[0]); i++)
 		opt[i] = opts[i];
 	opt[i] = NULL;
 
@@ -2796,10 +2796,10 @@ change_settings(int connected)
 		               "        The value to set the TERM envirnonment variable to goes here.\n\n"
 		               "~ Scaling ~\n"
 		               "        Cycle scaling type.\n\n"
-		               "~ Custom Screen Mode ~\n"
-		               "        Configure the Custom screen mode.\n\n"
 		               "~ Key Derivation Iterations ~\n"
-		               "        Change the number of iterations in the Key Derivation Function.\n\n";
+		               "        Change the number of iterations in the Key Derivation Function.\n\n"
+		               "~ Custom Screen Mode ~\n"
+		               "        Configure the Custom screen mode.\n\n";
 		SAFEPRINTF(opts[0], "Confirm Program Exit    %s", settings.confirm_close ? "Yes" : "No");
 		SAFEPRINTF(opts[1], "Prompt to Save          %s", settings.prompt_save ? "Yes" : "No");
 		SAFEPRINTF(opts[2], "Startup Screen Mode     %s", screen_modes[settings.startup_mode]);
@@ -2831,9 +2831,12 @@ change_settings(int connected)
 		sprintf(opts[14], "Invert Mouse Wheel      %s", settings.invert_wheel ? "Yes" : "No");
 		sprintf(opts[15], "Key Derivation Iters.   %d", settings.keyDerivationIterations);
 		if (connected)
-			opt[15] = NULL;
-		else
+			opt[16] = NULL;
+		else {
 			sprintf(opts[16], "Custom Screen Mode");
+			opt[16] = opts[16];
+		}
+		opt[17] = NULL;
 		switch (uifc.list(WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &cur, NULL, "Program Settings", opt)) {
 			case -1:
 				check_exit(false);
