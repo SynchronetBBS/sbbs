@@ -82,8 +82,10 @@ init_uifc(bool scrn, bool bottom)
 			uifc.cclr = settings.uifc_cclr;
 		if (settings.uifc_hclr != 16)
 			uifc.hclr = settings.uifc_hclr;
-		if (settings.uifc_lbclr != 16 && settings.uifc_lbbclr != 8)
-			uifc.lbclr = settings.uifc_lbclr | (settings.uifc_lbbclr << 4);
+		if (settings.uifc_lbclr != 16)
+			uifc.lbclr = (uifc.lbclr & 0xf0) | settings.uifc_lbclr;
+		if (settings.uifc_lbbclr != 8)
+			uifc.lbclr = (uifc.lbclr & 0x0f) | (settings.uifc_lbbclr << 4);
 		if (settings.uifc_lclr != 16)
 			uifc.lclr = settings.uifc_lclr;
 		bottomfunc = uifc.bottomline;
