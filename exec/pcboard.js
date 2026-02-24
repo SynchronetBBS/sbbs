@@ -125,7 +125,10 @@ while(bbs.online && !js.terminated) {
 				shell.select_msg_area();
 			continue;
 		case 'M':
-			bbs.email_sec();
+			if (typeof bbs.email_sec === 'function')
+				bbs.email_sec();
+			else
+				js.exec("email_sec.js", {});
 			continue;
 		case 'X':
 			user.settings ^= USER_EXPERT;
