@@ -308,7 +308,7 @@ void PETSCII_Terminal::cleartoeol()
 	unsigned c = column;
 	unsigned s;
 	s = column;
-	while (++s <= cols && sbbs->online)
+	while (++s < cols && sbbs->online)
 		sbbs->term_out(" ");
 	while (column > c)
 		cursor_left();
