@@ -408,6 +408,7 @@ o System->Loadable Modules now allows multiple modules to be configured per
   "Loadable Module" type, restricting access based on Access Requirements (ARS)
 o System->Short Date Format can be used to select a verbal or numeric date
   format (of many forms) for displaying short dates
+o New option: SCFG->External Programs->Fixed Events->New User ...
 o External Programs->Fixed Events now supports multiple events (i.e. commands)
   per event type
 o Remove external editor option: "Expand LF to CRLF" - no longer needed

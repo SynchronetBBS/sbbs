@@ -211,6 +211,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->cache_filter_files = iniGetUInteger(ini, ROOT_SECTION, "cache_filter_files", 5);
 
 	// fixed events
+	cfg->sys_newuser = read_fixed_event(cfg, ini, "newuser");
 	cfg->sys_logon = read_fixed_event(cfg, ini, "logon");
 	cfg->sys_logout = read_fixed_event(cfg, ini, "logout");
 	cfg->sys_daily = read_fixed_event(cfg, ini, "daily");

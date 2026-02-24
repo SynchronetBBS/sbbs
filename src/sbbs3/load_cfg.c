@@ -381,6 +381,7 @@ void free_cfg(scfg_t* cfg)
 	if (cfg->text != NULL)
 		free_text(cfg->text);
 
+	free_fixed_event(&cfg->sys_newuser);
 	free_fixed_event(&cfg->sys_logon);
 	free_fixed_event(&cfg->sys_logout);
 	free_fixed_event(&cfg->sys_daily);

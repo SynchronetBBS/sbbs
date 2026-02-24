@@ -467,6 +467,7 @@ void fevents_cfg()
 
 	while (1) {
 		i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "New User", first_fevent(cfg.sys_newuser));
 		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Logon", first_fevent(cfg.sys_logon));
 		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Logout", first_fevent(cfg.sys_logout));
 		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Daily", first_fevent(cfg.sys_daily));
@@ -476,27 +477,37 @@ void fevents_cfg()
 		uifc.helpbuf =
 			"`Fixed Events:`\n"
 			"\n"
-			"From this menu, you can configure non-interactive logon and logout\n"
-			"events of the Terminal Server and the system's daily, weekly and monthly\n"
-			"off-line events, executed at those intervals by the Terminal Server\n"
-			"Event Thread.\n"
+			"From this menu, you can add/configure non-interactive new user, user\n"
+			"logon and user logout events of the Terminal Server as well as the\n"
+			"system's daily, weekly and monthly off-line events, executed at those\n"
+			"intervals by the Terminal Server Event Thread.\n"
 			"\n"
-			"If you wish to add interactive logon or logoff events, you probably want\n"
-			"to use online external programs configured to run as logon or\n"
-			"logon events, respectively.\n"
+			"If you wish to add interactive new user, logon or logoff events, you\n"
+			"probably want to use \"online\" external programs configured to run as\n"
+			"new user, logon or logoff events, respectively.\n"
 			"\n"
-			"The commands configured for these events may invoke native executable,\n"
+			"The commands configured for these events may invoke native executables,\n"
 			"shell scripts, Baja or JavaScript modules, or any combination thereof.\n"
 			"If a command line requires the system command shell to execute (e.g.\n"
 			"uses pipes/redirection or invokes a Unix shell script or DOS/Windows\n"
-			"batch/command file), then set the `Use System Shell or New JavaScript\n"
-			"Context to Execute` option for that event to ~Yes~.\n"
+			"batch/command file), then set the `Use Shell or New Context` option\n"
+			"for that event to ~Yes~.\n"
 		;
 		switch (uifc.list(WIN_ACT | WIN_SAV | WIN_CHE | WIN_BOT | WIN_RHT, 0, 0, 0, &event_dflt, 0
 		                  , "Fixed Events", opt)) {
 			case -1:
 				return;
 			case 0:
+				cfg_fixed_events("New User", &cfg.sys_newuser,
+				           "`New User Event:`\n"
+				           "\n"
+				           "This is the command line for a program that will execute after a new\n"
+				           "user registration has completed.  The program cannot have user interaction.\n"
+				           SCFG_CMDLINE_PREFIX_HELP
+				           SCFG_CMDLINE_SPEC_HELP
+				           );
+				break;
+			case 1:
 				cfg_fixed_events("Logon", &cfg.sys_logon,
 				           "`Logon Event:`\n"
 				           "\n"
@@ -511,7 +522,7 @@ void fevents_cfg()
 				           SCFG_CMDLINE_SPEC_HELP
 				           );
 				break;
-			case 1:
+			case 2:
 				cfg_fixed_events("Logout", &cfg.sys_logout,
 				           "`Logout Event:`\n"
 				           "\n"
@@ -525,7 +536,7 @@ void fevents_cfg()
 				           SCFG_CMDLINE_SPEC_HELP
 				           );
 				break;
-			case 2:
+			case 3:
 				cfg_fixed_events("Daily", &cfg.sys_daily,
 				           "`Daily Event:`\n"
 				           "\n"
@@ -535,7 +546,7 @@ void fevents_cfg()
 				           SCFG_CMDLINE_SPEC_HELP
 				           );
 				break;
-			case 3:
+			case 4:
 				cfg_fixed_events("Weekly", &cfg.sys_weekly,
 				           "`Weekly Event:`\n"
 				           "\n"
@@ -546,7 +557,7 @@ void fevents_cfg()
 				           SCFG_CMDLINE_SPEC_HELP
 				           );
 				break;
-			case 4:
+			case 5:
 				cfg_fixed_events("Monthly", &cfg.sys_monthly,
 				           "`Monthly Event:`\n"
 				           "\n"

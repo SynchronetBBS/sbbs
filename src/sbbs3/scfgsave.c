@@ -225,47 +225,46 @@ bool write_main_cfg(scfg_t* cfg)
 		iniSetString(&ini, name, "logs", cfg->logs_dir, &ini_style);
 	}
 
+	write_fixed_event(&ini, "newuser", cfg->sys_newuser);
 	write_fixed_event(&ini, "logon", cfg->sys_logon);
 	write_fixed_event(&ini, "logout", cfg->sys_logout);
 	write_fixed_event(&ini, "daily", cfg->sys_daily);
 	write_fixed_event(&ini, "monthly", cfg->sys_monthly);
 	write_fixed_event(&ini, "weekly", cfg->sys_weekly);
 
-	{
-		write_loadable_module(&ini, "logon", cfg->logon_mod);
-		write_loadable_module(&ini, "logoff", cfg->logoff_mod);
-		write_loadable_module(&ini, "newuser_prompts", cfg->newuser_prompts_mod);
-		write_loadable_module(&ini, "newuser_info", cfg->newuser_info_mod);
-		write_loadable_module(&ini, "newuser", cfg->newuser_mod);
-		write_loadable_module(&ini, "usercfg", cfg->usercfg_mod);
-		write_loadable_module(&ini, "login", cfg->login_mod);
-		write_loadable_module(&ini, "logout", cfg->logout_mod);
-		write_loadable_module(&ini, "sync", cfg->sync_mod);
-		write_loadable_module(&ini, "expire", cfg->expire_mod);
-		write_loadable_module(&ini, "emailsec", cfg->emailsec_mod);
-		write_loadable_module(&ini, "readmail", cfg->readmail_mod);
-		write_loadable_module(&ini, "scanposts", cfg->scanposts_mod);
-		write_loadable_module(&ini, "scansubs", cfg->scansubs_mod);
-		write_loadable_module(&ini, "listmsgs", cfg->listmsgs_mod);
-		write_loadable_module(&ini, "textsec", cfg->textsec_mod);
-		write_loadable_module(&ini, "chatsec", cfg->chatsec_mod);
-		write_loadable_module(&ini, "automsg", cfg->automsg_mod);
-		write_loadable_module(&ini, "feedback", cfg->feedback_mod);
-		write_loadable_module(&ini, "userlist", cfg->userlist_mod);
-		write_loadable_module(&ini, "nodelist", cfg->nodelist_mod);
-		write_loadable_module(&ini, "whosonline", cfg->whosonline_mod);
-		write_loadable_module(&ini, "privatemsg", cfg->privatemsg_mod);
-		write_loadable_module(&ini, "logonlist", cfg->logonlist_mod);
-		write_loadable_module(&ini, "xtrnsec", cfg->xtrnsec_mod);
-		write_loadable_module(&ini, "prextrn", cfg->prextrn_mod);
-		write_loadable_module(&ini, "postxtrn", cfg->postxtrn_mod);
-		write_loadable_module(&ini, "scandirs", cfg->scandirs_mod);
-		write_loadable_module(&ini, "listfiles", cfg->listfiles_mod);
-		write_loadable_module(&ini, "fileinfo", cfg->fileinfo_mod);
-		write_loadable_module(&ini, "batxfer", cfg->batxfer_mod);
-		write_loadable_module(&ini, "tempxfer", cfg->tempxfer_mod);
-		write_loadable_module(&ini, "uselect", cfg->uselect_mod);
-	}
+	write_loadable_module(&ini, "logon", cfg->logon_mod);
+	write_loadable_module(&ini, "logoff", cfg->logoff_mod);
+	write_loadable_module(&ini, "newuser_prompts", cfg->newuser_prompts_mod);
+	write_loadable_module(&ini, "newuser_info", cfg->newuser_info_mod);
+	write_loadable_module(&ini, "newuser", cfg->newuser_mod);
+	write_loadable_module(&ini, "usercfg", cfg->usercfg_mod);
+	write_loadable_module(&ini, "login", cfg->login_mod);
+	write_loadable_module(&ini, "logout", cfg->logout_mod);
+	write_loadable_module(&ini, "sync", cfg->sync_mod);
+	write_loadable_module(&ini, "expire", cfg->expire_mod);
+	write_loadable_module(&ini, "emailsec", cfg->emailsec_mod);
+	write_loadable_module(&ini, "readmail", cfg->readmail_mod);
+	write_loadable_module(&ini, "scanposts", cfg->scanposts_mod);
+	write_loadable_module(&ini, "scansubs", cfg->scansubs_mod);
+	write_loadable_module(&ini, "listmsgs", cfg->listmsgs_mod);
+	write_loadable_module(&ini, "textsec", cfg->textsec_mod);
+	write_loadable_module(&ini, "chatsec", cfg->chatsec_mod);
+	write_loadable_module(&ini, "automsg", cfg->automsg_mod);
+	write_loadable_module(&ini, "feedback", cfg->feedback_mod);
+	write_loadable_module(&ini, "userlist", cfg->userlist_mod);
+	write_loadable_module(&ini, "nodelist", cfg->nodelist_mod);
+	write_loadable_module(&ini, "whosonline", cfg->whosonline_mod);
+	write_loadable_module(&ini, "privatemsg", cfg->privatemsg_mod);
+	write_loadable_module(&ini, "logonlist", cfg->logonlist_mod);
+	write_loadable_module(&ini, "xtrnsec", cfg->xtrnsec_mod);
+	write_loadable_module(&ini, "prextrn", cfg->prextrn_mod);
+	write_loadable_module(&ini, "postxtrn", cfg->postxtrn_mod);
+	write_loadable_module(&ini, "scandirs", cfg->scandirs_mod);
+	write_loadable_module(&ini, "listfiles", cfg->listfiles_mod);
+	write_loadable_module(&ini, "fileinfo", cfg->fileinfo_mod);
+	write_loadable_module(&ini, "batxfer", cfg->batxfer_mod);
+	write_loadable_module(&ini, "tempxfer", cfg->tempxfer_mod);
+	write_loadable_module(&ini, "uselect", cfg->uselect_mod);
 
 	/* Command Shells */
 	strListPush(&ini, "");
