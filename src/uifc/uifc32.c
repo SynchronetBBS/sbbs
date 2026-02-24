@@ -209,7 +209,7 @@ fill_blk_scrn(BOOL force)
 	if (!blk_scrn)
 		return;
 	if (force || blk_scrn_attr != attr || blk_scrn_ch != api->chars->background) {
-		for (int i = 0; i < blk_scrn_len; i++) {
+		for (size_t i = 0; i < blk_scrn_len; i++) {
 			blk_scrn[i].legacy_attr = attr;
 			blk_scrn[i].ch = api->chars->background;
 			blk_scrn[i].font = 0;
