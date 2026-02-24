@@ -2542,7 +2542,7 @@ function handleQuit() {
 	}
 
 	hideCursor();
-	var choice = console.getkey(K_UPPER);
+	var choice = console.getkey(K_UPPER | K_NOSPIN);
 	console.gotoxy(1, 24);
 	if (choice === 'S' && state.in_progress) {
 		console.putmsg("\r\x01n\x01hSee you next time, Governor!  Returning to " + system.name + " ...\x01n\x01>");
