@@ -130,6 +130,29 @@ void ProcessAttackPacket(struct AttackPacket *AttackPacket)
 {
 	struct AttackResult Result = {0};
 	int16_t LandGained, iTemp;
+	bool old = false;
+
+	// Validate the attack index against ReceiveIndex
+	// Don't allow the 256 indexes up to the current one
+	// This is signed and wraps, so be very careful
+	const int16_t ridx = IBBS.Data.Nodes[AttackPacket->BBSFromID - 1].Attack.ReceiveIndex;
+	if (ridx == AttackPacket->AttackIndex)
+		old = true;
+	else if (ridx >= (INT16_MIN + 255)) {
+		if ((AttackPacket->AttackIndex <= ridx) && (AttackPacket->AttackIndex >= (ridx - 255)))
+			old = true;
+	}
+	else if (AttackPacket->AttackIndex <= ridx)
+		old = true;
+	else if (AttackPacket->AttackIndex > (INT_MAX - (255 - (ridx + INT16_MAX))))
+		old = true;
+	if (old) {
+		LogDisplayStr("|04x |12Old Attack Index, Ignoring\n");
+		return;
+	}
+
+	// Update ReceiveIndex for the BBS
+	IBBS.Data.Nodes[AttackPacket->BBSFromID - 1].Attack.ReceiveIndex = AttackPacket->AttackIndex;
 
 	// initialize result beforehand
 	Result.InterBBS = true;
