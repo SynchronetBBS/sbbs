@@ -322,8 +322,8 @@ typedef struct {							/* Generic Timed Event */
 } event_t;
 
 typedef struct {							// Fixed event
-	char			cmd[LEN_CMD + 1];
-	uint32_t		misc;					// Settings flags
+	str_list_t		cmd;
+	uint32_t*		misc;					// Settings flags
 } fevent_t;
 
 typedef struct {							/* QWK Network Hub */
@@ -518,7 +518,8 @@ typedef struct
 
 	bool			create_self_signed_cert;
 
-	fevent_t		node_daily;			/* Node's daily event */
+	char			node_daily_cmd[LEN_CMD + 1]; // Node's daily event comamnd-line
+	uint32_t		node_daily_misc;	// Misc. bits for node's daily event
 	uint32_t		node_misc;			/* Misc bits for node setup */
 	bool			spinning_pause_prompt;
 	uint16_t		valuser;			/* User validation mail goes to */

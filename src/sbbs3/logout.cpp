@@ -75,9 +75,11 @@ void sbbs_t::logout()
 	}
 
 	if (!online) {       /* NOT re-login */
-		if (cfg.sys_logout.cmd[0] && !(cfg.sys_logout.misc & EVENT_DISABLED)) {      /* execute system logout event */
-			lprintf(LOG_DEBUG, "Executing logout event: %s", cfg.sys_logout.cmd);
-			external(cmdstr(cfg.sys_logout.cmd, nulstr, nulstr, NULL, cfg.sys_logout.misc), EX_OUTL | EX_OFFLINE | cfg.sys_logout.misc);
+		for (i = 0; cfg.sys_logout.cmd != nullptr && cfg.sys_logout.cmd[i] != nullptr; ++i) {
+			if (cfg.sys_logout.misc[i] & EVENT_DISABLED)
+				continue;
+			lprintf(LOG_DEBUG, "Executing logout event: %s", cfg.sys_logout.cmd[i]);
+			external(cmdstr(cfg.sys_logout.cmd[i], nulstr, nulstr, NULL, cfg.sys_logout.misc[i]), EX_OUTL | EX_OFFLINE | cfg.sys_logout.misc[i]);
 		}
 	}
 

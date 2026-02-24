@@ -360,6 +360,12 @@ static void free_loadable_module(struct loadable_module* mod)
 	strListFree(&mod->ars);
 }
 
+static void free_fixed_event(fevent_t* event)
+{
+	strListFree(&event->cmd);
+	FREE_AND_NULL(event->misc);
+}
+
 void free_cfg(scfg_t* cfg)
 {
 	if (cfg->prepped) {
@@ -374,6 +380,12 @@ void free_cfg(scfg_t* cfg)
 
 	if (cfg->text != NULL)
 		free_text(cfg->text);
+
+	free_fixed_event(&cfg->sys_logon);
+	free_fixed_event(&cfg->sys_logout);
+	free_fixed_event(&cfg->sys_daily);
+	free_fixed_event(&cfg->sys_weekly);
+	free_fixed_event(&cfg->sys_monthly);
 
 	free_loadable_module(&cfg->logon_mod);
 	free_loadable_module(&cfg->logoff_mod);

@@ -320,38 +320,137 @@ void xprogs_cfg()
 	}
 }
 
-void fevent_cfg(const char* name, fevent_t* event, const char* help)
+bool edit_fixed_event(const char* name, char* cmd, uint32_t* misc, const char* help)
 {
+	char title[128];
 	static int dflt;
 	int        i;
 
+	snprintf(title, sizeof title, "%s Event", name);
 	while (1) {
 		i = 0;
-		snprintf(opt[i++], MAX_OPLN, "%-27s%s", "Enabled", (event->misc & EVENT_DISABLED) ? "No" : "Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-27s%s", native_opt, (event->misc & EX_NATIVE) ? "Yes" : "No");
-		snprintf(opt[i++], MAX_OPLN, "%-27s%s", use_shell_opt, (event->misc & EX_SH) ? "Yes" : "No");
-		snprintf(opt[i++], MAX_OPLN, "%-27s%s", "Command Line", event->cmd);
+		snprintf(opt[i++], MAX_OPLN, "%-27s%s", "Enabled", (*misc & EVENT_DISABLED) ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-27s%s", native_opt, (*misc & EX_NATIVE) ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-27s%s", use_shell_opt, (*misc & EX_SH) ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-27s%s", "Command Line", cmd);
 		opt[i][0] = 0;
 		uifc.helpbuf = (char*)help;
-		switch (uifc.list(WIN_ACT | WIN_SAV | WIN_RHT, 0, 0, 0, &dflt, 0, name, opt)) {
+		switch (uifc.list(WIN_ACT | WIN_SAV | WIN_MID, 0, 0, 0, &dflt, 0, title, opt)) {
 			case -1:
-				return;
+				return *cmd != '\0';
 			case 0:
-				event->misc ^= EVENT_DISABLED;
+				*misc ^= EVENT_DISABLED;
 				uifc.changes = TRUE;
 				break;
 			case 1:
-				toggle_flag(native_opt, &event->misc, EX_NATIVE, false, native_help);
+				toggle_flag(native_opt, misc, EX_NATIVE, false, native_help);
 				break;
 			case 2:
-				toggle_flag(use_shell_prompt, &event->misc, EX_SH, false, use_shell_help);
+				toggle_flag(use_shell_prompt, misc, EX_SH, false, use_shell_help);
 				break;
 			case 3:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command"
-				           , event->cmd, sizeof event->cmd - 1, K_EDIT);
+				           , cmd, LEN_CMD, K_EDIT);
 				break;
 		}
 	}
+	return false;
+}
+
+void cfg_fixed_events(const char* name, fevent_t* event, const char* help)
+{
+	char title[128];
+	int i;
+	int cur = 0, bar = 0;
+	static char save_cmd[LEN_CMD + 1] = "";
+	static uint32_t save_misc = 0;
+
+	snprintf(title, sizeof title, "%s Events", name);
+	while (1) {
+		for (i = 0; event->cmd != NULL && event->cmd[i] != NULL; ++i)
+			snprintf(opt[i], MAX_OPLN, "%-32.32s", event->cmd[i]);
+		opt[i][0] = 0;
+		uifc_winmode_t wmode = WIN_RHT | WIN_SAV | WIN_ACT | WIN_INS | WIN_INSACT | WIN_XTR;
+		if (save_cmd[0] != '\0')
+			wmode |= WIN_PASTE | WIN_PASTEXTR;
+		if (i > 0)
+			wmode |= WIN_DEL | WIN_CUT | WIN_COPY;
+		i = uifc.list(wmode, 2, 0, 0, &cur, &bar, title, opt);
+		if (i == -1)
+			return;
+		char cmd[LEN_CMD + 1];
+		uint32_t misc = 0;
+		int msk = i & MSK_ON;
+		i &= MSK_OFF;
+		if (msk == MSK_INS) {
+			*cmd = '\0';
+			misc = EX_NATIVE;
+			if (edit_fixed_event(name, cmd, &misc, help)) {
+				int count = strListCount(event->cmd);
+				strListInsert(&event->cmd, cmd, i);
+				event->misc = realloc_or_free(event->misc, sizeof(*event->misc) * (count + 1));
+				if (event->misc == NULL) {
+					errormsg(WHERE, ERR_ALLOC, "fixed event misc", sizeof(*event->misc) * (count + 1));
+					strListFastDelete(event->cmd, i, 1);
+					continue;
+				}
+				memmove(&event->misc[i + 1], &event->misc[i], sizeof(*event->misc) * (count - i));
+				event->misc[i] = misc;
+				uifc.changes = TRUE;
+			}
+			continue;
+		}
+		if (msk == MSK_DEL || msk == MSK_CUT) {
+			if (msk == MSK_CUT) {
+				SAFECOPY(save_cmd, event->cmd[i]);
+				save_misc = event->misc[i];
+			}
+			if (event->misc != NULL) {
+				int count = strListCount(event->cmd);
+				memmove(&event->misc[i], &event->misc[i + 1], sizeof(*event->misc) * (count - i));
+			}
+			strListFastDelete(event->cmd, i, 1);
+			uifc.changes = TRUE;
+			continue;
+		}
+		if (msk == MSK_COPY) {
+			SAFECOPY(save_cmd, event->cmd[i]);
+			save_misc = event->misc[i];
+			continue;
+		}
+		if (msk == MSK_PASTE) {
+			int count = strListCount(event->cmd);
+			strListInsert(&event->cmd, save_cmd, i);
+			event->misc = realloc_or_free(event->misc, sizeof(*event->misc) * (count + 1));
+			if (event->misc == NULL) {
+				errormsg(WHERE, ERR_ALLOC, "fixed event misc", sizeof(*event->misc) * (count + 1));
+				strListFastDelete(event->cmd, i, 1);
+				continue;
+			}
+			memmove(&event->misc[i + 1], &event->misc[i], sizeof(*event->misc) * (count - i));
+			event->misc[i] = misc;
+			uifc.changes = TRUE;
+			continue;
+		}
+		if (msk != 0)
+			continue;
+		if (event->cmd == NULL || event->cmd[i] == NULL)
+			continue;
+		edit_fixed_event(name, event->cmd[i], &event->misc[i], help);
+	}
+}
+
+
+const char* first_fevent(fevent_t event)
+{
+	const char* result = "";
+	for (int i = 0; event.cmd != NULL && event.cmd[i] != NULL; ++i) {
+		if (event.misc[i] & EVENT_DISABLED)
+			result = "<DISABLED>";
+		else if (event.cmd[i][0] != '\0')
+			result = event.cmd[i];
+	}
+	return result;
 }
 
 void fevents_cfg()
@@ -361,24 +460,37 @@ void fevents_cfg()
 
 	while (1) {
 		i = 0;
-		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Logon", (cfg.sys_logon.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_logon.cmd);
-		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Logout", (cfg.sys_logout.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_logout.cmd);
-		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Daily", (cfg.sys_daily.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_daily.cmd);
-		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Weekly", (cfg.sys_weekly.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_weekly.cmd);
-		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Monthly", (cfg.sys_monthly.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_monthly.cmd);
+		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Logon", first_fevent(cfg.sys_logon));
+		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Logout", first_fevent(cfg.sys_logout));
+		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Daily", first_fevent(cfg.sys_daily));
+		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Weekly", first_fevent(cfg.sys_weekly));
+		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Monthly", first_fevent(cfg.sys_monthly));
 		opt[i][0] = 0;
 		uifc.helpbuf =
 			"`Fixed Events:`\n"
 			"\n"
-			"From this menu, you can configure the logon and logout events, and the\n"
-			"system daily and monthly (off-line) events.\n"
+			"From this menu, you can configure non-interactive logon and logout\n"
+			"events of the Terminal Server and the system's daily, weekly and monthly\n"
+			"off-line events, executed at those intervals by the Terminal Server\n"
+			"Event Thread.\n"
+			"\n"
+			"If you wish to add interactive logon or logoff events, you probably want\n"
+			"to use online external programs configured to run as logon or\n"
+			"logon events, respectively.\n"
+			"\n"
+			"The commands configured for these events may invoke native executable,\n"
+			"shell scripts, Baja or JavaScript modules, or any combination thereof.\n"
+			"If a command line requires the system command shell to execute (e.g.\n"
+			"uses pipes/redirection or invokes a Unix shell script or DOS/Windows\n"
+			"batch/command file), then set the `Use System Shell or New JavaScript\n"
+			"Context to Execute` option for that event to ~Yes~.\n"
 		;
 		switch (uifc.list(WIN_ACT | WIN_SAV | WIN_CHE | WIN_BOT | WIN_RHT, 0, 0, 0, &event_dflt, 0
 		                  , "Fixed Events", opt)) {
 			case -1:
 				return;
 			case 0:
-				fevent_cfg("Logon Event", &cfg.sys_logon,
+				cfg_fixed_events("Logon", &cfg.sys_logon,
 				           "`Logon Event:`\n"
 				           "\n"
 				           "This is the command line for a program that will execute during the\n"
@@ -393,7 +505,7 @@ void fevents_cfg()
 				           );
 				break;
 			case 1:
-				fevent_cfg("Logout Event", &cfg.sys_logout,
+				cfg_fixed_events("Logout", &cfg.sys_logout,
 				           "`Logout Event:`\n"
 				           "\n"
 				           "This is the command line for a program that will execute during the\n"
@@ -407,7 +519,7 @@ void fevents_cfg()
 				           );
 				break;
 			case 2:
-				fevent_cfg("Daily Event", &cfg.sys_daily,
+				cfg_fixed_events("Daily", &cfg.sys_daily,
 				           "`Daily Event:`\n"
 				           "\n"
 				           "This is the command line for a program that will run after the first\n"
@@ -417,7 +529,7 @@ void fevents_cfg()
 				           );
 				break;
 			case 3:
-				fevent_cfg("Weekly Event", &cfg.sys_weekly,
+				cfg_fixed_events("Weekly", &cfg.sys_weekly,
 				           "`Weekly Event:`\n"
 				           "\n"
 				           "Enter a command line for a program that will run once each new week.\n"
@@ -428,7 +540,7 @@ void fevents_cfg()
 				           );
 				break;
 			case 4:
-				fevent_cfg("Monthly Event", &cfg.sys_monthly,
+				cfg_fixed_events("Monthly", &cfg.sys_monthly,
 				           "`Monthly Event:`\n"
 				           "\n"
 				           "Enter a command line for a program that will run once each new month.\n"

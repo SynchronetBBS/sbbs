@@ -82,8 +82,8 @@ bool write_node_cfg(scfg_t* cfg)
 
 	str_list_t ini = strListInit();
 	iniSetString(&ini, ROOT_SECTION, "phone", cfg->node_phone, NULL);
-	iniSetString(&ini, ROOT_SECTION, "daily", cfg->node_daily.cmd, NULL);
-	iniSetHexInt(&ini, ROOT_SECTION, "daily_settings", cfg->node_daily.misc, NULL);
+	iniSetString(&ini, ROOT_SECTION, "daily", cfg->node_daily_cmd, NULL);
+	iniSetHexInt(&ini, ROOT_SECTION, "daily_settings", cfg->node_daily_misc, NULL);
 	iniSetString(&ini, ROOT_SECTION, "text_dir", cfg->text_dir, NULL);
 	iniSetString(&ini, ROOT_SECTION, "temp_dir", cfg->temp_dir, NULL);
 	iniSetString(&ini, ROOT_SECTION, "ars", cfg->node_arstr, NULL);
@@ -122,6 +122,26 @@ static void write_loadable_module(str_list_t* ini, const char* name, struct load
 		}
 		iniSetString(ini, section, cmd_key, mod.cmd[i], &ini_style);
 		iniSetString(ini, section, ars_key, ars_count > i ? mod.ars[i] : "", &ini_style);
+	}
+}
+
+/****************************************************************************/
+/****************************************************************************/
+static void write_fixed_event(str_list_t* ini, const char* name, fevent_t event)
+{
+	char section[INI_MAX_VALUE_LEN];
+	int i;
+
+	if (event.cmd == NULL)
+		return;
+
+	for (i = 0; event.cmd[i] != NULL; ++i) {
+		if (i < 1)
+			snprintf(section, sizeof section, "%s_event", name);
+		else
+			snprintf(section, sizeof section, "%s_event.%u", name, i);
+		iniSetString(ini, section, "cmd", event.cmd[i], &ini_style);
+		iniSetHexInt(ini, section, "settings", event.misc[i], &ini_style);
 	}
 }
 
@@ -205,16 +225,11 @@ bool write_main_cfg(scfg_t* cfg)
 		iniSetString(&ini, name, "logs", cfg->logs_dir, &ini_style);
 	}
 
-	iniSetString(&ini, "logon_event", "cmd", cfg->sys_logon.cmd, &ini_style);
-	iniSetHexInt(&ini, "logon_event", "settings", cfg->sys_logon.misc, &ini_style);
-	iniSetString(&ini, "logout_event", "cmd", cfg->sys_logout.cmd, &ini_style);
-	iniSetHexInt(&ini, "logout_event", "settings", cfg->sys_logout.misc, &ini_style);
-	iniSetString(&ini, "daily_event", "cmd", cfg->sys_daily.cmd, &ini_style);
-	iniSetHexInt(&ini, "daily_event", "settings", cfg->sys_daily.misc, &ini_style);
-	iniSetString(&ini, "monthly_event", "cmd", cfg->sys_monthly.cmd, &ini_style);
-	iniSetHexInt(&ini, "monthly_event", "settings", cfg->sys_monthly.misc, &ini_style);
-	iniSetString(&ini, "weekly_event", "cmd", cfg->sys_weekly.cmd, &ini_style);
-	iniSetHexInt(&ini, "weekly_event", "settings", cfg->sys_weekly.misc, &ini_style);
+	write_fixed_event(&ini, "logon", cfg->sys_logon);
+	write_fixed_event(&ini, "logout", cfg->sys_logout);
+	write_fixed_event(&ini, "daily", cfg->sys_daily);
+	write_fixed_event(&ini, "monthly", cfg->sys_monthly);
+	write_fixed_event(&ini, "weekly", cfg->sys_weekly);
 
 	{
 		write_loadable_module(&ini, "logon", cfg->logon_mod);

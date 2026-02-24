@@ -389,9 +389,11 @@ bool sbbs_t::logon_process()
 			errormsg(WHERE, ERR_WRITE, path, strlen(str));
 	}
 
-	if (cfg.sys_logon.cmd[0] && !(cfg.sys_logon.misc & EVENT_DISABLED)) {                /* execute system logon event */
-		lprintf(LOG_DEBUG, "Executing logon event: %s", cfg.sys_logon.cmd);
-		external(cmdstr(cfg.sys_logon.cmd, nulstr, nulstr, NULL, cfg.sys_logon.misc), EX_STDOUT | cfg.sys_logon.misc); /* EX_SH */
+	for (i = 0; cfg.sys_logon.cmd != nullptr && cfg.sys_logon.cmd[i] != nullptr; ++i) {
+		if (cfg.sys_logon.misc[i] & EVENT_DISABLED)
+			continue;
+		lprintf(LOG_DEBUG, "Executing logon event: %s", cfg.sys_logon.cmd[i]);
+		external(cmdstr(cfg.sys_logon.cmd[i], nulstr, nulstr, NULL, cfg.sys_logon.misc[i]), EX_STDOUT | cfg.sys_logon.misc[i]); /* EX_SH */
 		if (!online)
 			return false;
 	}

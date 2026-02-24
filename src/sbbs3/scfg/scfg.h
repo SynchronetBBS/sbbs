@@ -158,6 +158,7 @@ int edit_sys_newuser_policy(int page, int total);
 int edit_sys_alias_policy(int page, int total);
 int edit_sys_delmsg_policy(int page, int total);
 int edit_sys_newuser_fback_policy(int page, int total);
+bool edit_fixed_event(const char* name, char* cmd, uint32_t* misc, const char* help);
 void reencrypt_keys(const char* old_pass, const char* new_pass);
 bool code_ok(char *str);
 int  bits(long l);

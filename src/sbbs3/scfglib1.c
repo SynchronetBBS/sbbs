@@ -64,8 +64,8 @@ bool read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		result = true;
 
 	SAFECOPY(cfg->node_phone, iniGetString(ini, ROOT_SECTION, "phone", "", value));
-	SAFECOPY(cfg->node_daily.cmd, iniGetString(ini, ROOT_SECTION, "daily", "", value));
-	cfg->node_daily.misc = iniGetUInteger(ini, ROOT_SECTION, "daily_settings", 0);
+	SAFECOPY(cfg->node_daily_cmd, iniGetString(ini, ROOT_SECTION, "daily", "", value));
+	cfg->node_daily_misc = iniGetUInteger(ini, ROOT_SECTION, "daily_settings", 0);
 	SAFECOPY(cfg->text_dir, iniGetString(ini, ROOT_SECTION, "text_dir", "../text/", value));
 	SAFECOPY(cfg->temp_dir, iniGetString(ini, ROOT_SECTION, "temp_dir", "temp", value));
 	SAFECOPY(cfg->node_arstr, iniGetString(ini, ROOT_SECTION, "ars", "", value));
@@ -105,6 +105,33 @@ static struct loadable_module read_loadable_mod(scfg_t* cfg, str_list_t ini, con
 		++count;
 	}
 	return mod;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+static fevent_t read_fixed_event(scfg_t* cfg, str_list_t ini, const char* name)
+{
+	fevent_t event = {};
+	uint count = 0;
+	char* cmd;
+	char section[INI_MAX_VALUE_LEN];
+	char value[INI_MAX_VALUE_LEN];
+
+	while(1) {
+		if (count < 1)
+			snprintf(section, sizeof section, "%s_event", name);
+		else
+			snprintf(section, sizeof section, "%s_event.%u", name, count);
+		if ((cmd = iniGetString(ini, section, "cmd", NULL, value)) == NULL)
+			break;
+		strListPush(&event.cmd, cmd);
+		if ((event.misc = realloc_or_free(event.misc, (count + 1) * sizeof (*event.misc))) == NULL) {
+			break;
+		}
+		event.misc[count] = iniGetUInteger(ini, section, "settings", 0);
+		++count;
+	}
+	return event;
 }
 
 /****************************************************************************/
@@ -184,16 +211,11 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->cache_filter_files = iniGetUInteger(ini, ROOT_SECTION, "cache_filter_files", 5);
 
 	// fixed events
-	SAFECOPY(cfg->sys_logon.cmd, iniGetString(ini, "logon_event", "cmd", "", value));
-	cfg->sys_logon.misc = iniGetUInt32(ini, "logon_event", "settings", 0);
-	SAFECOPY(cfg->sys_logout.cmd, iniGetString(ini, "logout_event", "cmd", "", value));
-	cfg->sys_logout.misc = iniGetUInt32(ini, "logout_event", "settings", 0);
-	SAFECOPY(cfg->sys_daily.cmd, iniGetString(ini, "daily_event", "cmd", "", value));
-	cfg->sys_daily.misc = iniGetUInt32(ini, "daily_event", "settings", 0);
-	SAFECOPY(cfg->sys_monthly.cmd, iniGetString(ini, "monthly_event", "cmd", "", value));
-	cfg->sys_monthly.misc = iniGetUInt32(ini, "monthly_event", "settings", 0);
-	SAFECOPY(cfg->sys_weekly.cmd, iniGetString(ini, "weekly_event", "cmd", "", value));
-	cfg->sys_weekly.misc = iniGetUInt32(ini, "weekly_event", "settings", 0);
+	cfg->sys_logon = read_fixed_event(cfg, ini, "logon");
+	cfg->sys_logout = read_fixed_event(cfg, ini, "logout");
+	cfg->sys_daily = read_fixed_event(cfg, ini, "daily");
+	cfg->sys_monthly = read_fixed_event(cfg, ini, "monthly");
+	cfg->sys_weekly = read_fixed_event(cfg, ini, "weekly");
 
 	named_str_list_t** sections = iniParseSections(ini);
 
