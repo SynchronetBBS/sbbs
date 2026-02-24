@@ -3,12 +3,12 @@ Version 1.8b
 Support encrypted dialing directories
 Support web-based main dialing directory
 Allow specifying terminal type for each entry
-Fix RIP popups using current font
-Have |# flush RIP immediately
 Add support for DECSCUSR
 Add support for explicit sort order
 Add default cursor style setting
 Add support for modifying UIFC colours
+Have |# flush RIP immediately
+Fix RIP popups using current font
 Fix Windows Default Connection Settings
 Fix crash associated with movetext() and custom fonts
 Fix Windows GDI input hang when a key is held down
