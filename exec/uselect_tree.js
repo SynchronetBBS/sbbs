@@ -23,9 +23,7 @@ var dflt = Number(argv[0]);
 
 var options = load("modopts.js", "uselect_tree:" + console.uselect_title);
 if (!options)
-	options = load("modopts.js", "uselect_tree");
-if (!options)
-	options = {};
+	options = load("modopts.js", "uselect_tree", {});
 
 require("mouse_getkey.js", "mouse_getkey");
 

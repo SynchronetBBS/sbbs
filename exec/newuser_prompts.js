@@ -15,9 +15,7 @@ require("gettext.js", "gettext");
 
 var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js", "new user registration");
 
-var options = load("modopts.js", "newuser_prompts");
-if (!options)
-	options = {};
+var options = load("modopts.js", "newuser_prompts", {});
 
 "use strict";
 

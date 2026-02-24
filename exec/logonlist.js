@@ -44,9 +44,7 @@ if(!js.global.bbs) {
 
 if(!bbs.mods.logonlist_lib)
 	bbs.mods.logonlist_lib = load({}, 'logonlist_lib.js');
-var options = load("modopts.js", "logonlist");
-if(!options)
-	options = {};
+var options = load("modopts.js", "logonlist", {});
 if(options.last_few_callers === undefined)
 	options.last_few_callers = 4;
 if(options.backup_level === undefined)

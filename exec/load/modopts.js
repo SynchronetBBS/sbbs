@@ -59,7 +59,7 @@ function get_mod_options(modname, optname, default_optval)
 			}
 		}
 		ini_file.close();
-		if(optname)
+		if(typeof optname === 'string')
 			return (obj[optname] === undefined) ? default_optval : obj[optname];
 		return obj;
 	}
@@ -82,12 +82,12 @@ function get_mod_options(modname, optname, default_optval)
 	if(!section)
 		section = modname;
 	var val;
-	if(optname)	// Get a specific option value (optionally, with default value)
+	if(typeof optname === 'string')	// Get a specific option value (optionally, with default value)
 		val = ini_file.iniGetValue(section, optname, default_optval);
 	else // Get all options
 		val = ini_file.iniGetObject(section, /* lowercase */false, /* blanks: */true);
 	ini_file.close();
-	return val;
+	return val === null ? (typeof optname === 'object' ? optname : null) : val;
 }
 
 if(argv.length)

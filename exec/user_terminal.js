@@ -10,9 +10,7 @@ require("userdefs.js", 'USER_ANSI');
 require("gettext.js", 'gettext');
 var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js");
 var termdesc = bbs.mods.termdesc || load(bbs.mods.termdesc = {}, "termdesc.js");
-var options = load("modopts.js", "user_terminal");
-if (!options)
-	options = {};
+var options = load("modopts.js", "user_terminal", {});
 if (!options.option_fmt)
 	options.option_fmt = "\x01v[\x01V%c\x01v] %s";
 if (!options.option_with_val_fmt)

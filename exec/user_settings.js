@@ -11,9 +11,7 @@ require("gettext.js", 'gettext');
 var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js");
 var termdesc = bbs.mods.termdesc || load(bbs.mods.termdesc = {}, "termdesc.js");
 var lang = bbs.mods.lang || load(bbs.mods.lang = {}, "lang.js");
-var options = load("modopts.js", "user_settings");
-if (!options)
-	options = {};
+var options = load("modopts.js", "user_settings", {});
 
 prompts.operation = "";
 

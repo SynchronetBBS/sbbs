@@ -34,9 +34,7 @@
 require("sbbsdefs.js", 'SYS_PWEDIT');
 require("gettext.js", 'gettext');
 var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js");
-var options = load("modopts.js", "user_personal");
-if (!options)
-	options = {};
+var options = load("modopts.js", "user_personal", {});
 if (!options.option_with_val_fmt)
 	options.option_with_val_fmt = "\x01v[\x01V%c\x01v] %s: \x01V%s";
 if (!options.option_with_date_fmt)
