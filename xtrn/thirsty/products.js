@@ -55,7 +55,7 @@ var showProductInfo = function(product) {
 	inputFrame.gotoxy(1, 6);
 	inputFrame.putmsg("< Press any key >", LIGHTCYAN);
 	frame.cycle();
-	console.getkey(K_NONE);
+	console.getkey(K_NOSPIN);
 	inputFrame.bottom();
 }
 

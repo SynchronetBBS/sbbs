@@ -249,7 +249,7 @@ var promptFrame = function(showMe) {
 	showMe.top();
 	frame.cycle();
 	console.gotoxy(console.screen_columns, console.screen_rows);
-	console.getkey(K_NONE);
+	console.getkey(K_NOSPIN);
 	showMe.close();	
 }
 
@@ -284,7 +284,7 @@ var init = function() {
 		log(LOG_ERR, "Thirstyville failed to start.");
 		return false;
 	}
-	console.getkey();
+	console.getkey(K_NOSPIN);
 	splashFrame.close();
 	splashFrame.delete();
 	promptFrame(introFrame);
@@ -338,7 +338,7 @@ var playTurn = function() {
 	putNews("Play this turn? (Y/N)", LIGHTMAGENTA);
 	frame.cycle();
 	console.gotoxy(console.screen_columns, console.screen_rows);
-	if(console.getkey(K_NONE).toUpperCase() != "Y") {
+	if(console.getkey(K_NOSPIN).toUpperCase() != "Y") {
 		putNews("Turn canceled.", MAGENTA);
 		return false;
 	}
