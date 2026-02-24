@@ -436,7 +436,14 @@ void cfg_fixed_events(const char* name, fevent_t* event, const char* help)
 			continue;
 		if (event->cmd == NULL || event->cmd[i] == NULL)
 			continue;
-		edit_fixed_event(name, event->cmd[i], &event->misc[i], help);
+		SAFECOPY(cmd, event->cmd[i]);
+		if (edit_fixed_event(name, cmd, &event->misc[i], help)) {
+			if (strcmp(cmd, event->cmd[i]) != 0) {
+				free(event->cmd[i]);
+				event->cmd[i] = strdup(cmd);
+				uifc.changes = TRUE;
+			}
+		}
 	}
 }
 
