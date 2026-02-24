@@ -411,6 +411,10 @@ o System->Short Date Format can be used to select a verbal or numeric date
 o Remove external editor option: "Expand LF to CRLF" - no longer needed
 o Each configured sub-board can have each extra attribute type toggled on/off
 o Access Requirements editing menu updated to include terminal and user types
+o Creating new File Options->Viewable/Testable/Extractable/Compressible Files,
+  Download Events, or Transfer Protocols now prompts for the required fields
+  rather than copying values from an adjacent already configured item or (when
+  the list is empty) pre-populating with default values
 o Resolved issue of System menu detecting changes by the sysop
   (and prompting to Save Changes when exiting) when no changes were actually
   made, just that DST had been auto-enabled/disabled based on the date
