@@ -1200,7 +1200,7 @@ int main(int argc, char** argv)
 #endif
 
 #if defined(__aarch64__) && defined(__linux__)
-	personality(ADDR_COMPAT_LAYOUT);
+	personality(ADDR_COMPAT_LAYOUT | PER_LINUX);
 #endif
 
 #ifdef __QNX__
