@@ -420,7 +420,7 @@ bool PETSCII_Terminal::parse_output(char ch)
 			inc_row();
 			set_column();
 			if (curatr & 0xf0)
-				curatr = (curatr & ~0xff) | ((curatr & 0xf0) >> 4);
+				curatr = ((curatr & 0xf0) >> 4);
 			return true;
 		case 14: // Lower-case
 			return true;
