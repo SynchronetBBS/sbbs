@@ -363,7 +363,7 @@ void cfg_fixed_events(const char* name, fevent_t* event, const char* help)
 	int i;
 	int cur = 0, bar = 0;
 	static char save_cmd[LEN_CMD + 1] = "";
-	static uint32_t save_misc = 0;
+	static uint32_t save_misc;
 
 	snprintf(title, sizeof title, "%s Events", name);
 	while (1) {
@@ -428,7 +428,7 @@ void cfg_fixed_events(const char* name, fevent_t* event, const char* help)
 				continue;
 			}
 			memmove(&event->misc[i + 1], &event->misc[i], sizeof(*event->misc) * (count - i));
-			event->misc[i] = misc;
+			event->misc[i] = save_misc;
 			uifc.changes = TRUE;
 			continue;
 		}
