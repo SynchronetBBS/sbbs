@@ -1804,11 +1804,6 @@ bool edit_loadable_module(const char* name, char* cmd, char* ars)
 	char title[128];
 	int  i;
 	int  cur = 0, bar = 0;
-	char org_cmd[LEN_CMD + 1];
-	char org_ars[LEN_ARSTR + 1];
-
-	SAFECOPY(org_cmd, cmd);
-	SAFECOPY(org_ars, ars);
 	snprintf(title, sizeof title, "%s Module", name);
 	while (1) {
 		i = 0;
@@ -1825,16 +1820,7 @@ bool edit_loadable_module(const char* name, char* cmd, char* ars)
 			case 2:
 				return true;
 			default:
-				if (strcmp(org_cmd, cmd) != 0 || strcmp(org_ars, ars) != 0) {
-					switch(uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, 0, 0, "Save changes", uifcYesNoOpts)) {
-						case 0:
-							return true;
-						case 1:
-							return false;
-					}
-					break;
-				}
-				return false;
+				return *cmd != '\0';
 		}
 	}
 }
