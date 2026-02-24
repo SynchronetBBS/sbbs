@@ -51,8 +51,10 @@ while(bbs.online && !js.terminated) {
 		prompts.get_gender();
 	if (system.newuser_questions & UQ_BIRTH)
 		prompts.get_birthdate();
-	if (!(system.newuser_questions & UQ_NONETMAIL))
+	if (!(system.newuser_questions & UQ_NONETMAIL)) {
 		prompts.get_netmail();
+		prompts.get_netmail_forwarding();
+	}
 
 	if (!bbs.text(bbs.text.UserInfoCorrectQ) || console.yesno(bbs.text(bbs.text.UserInfoCorrectQ)))
 		break;

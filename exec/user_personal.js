@@ -5,6 +5,7 @@
 // alias = false
 // name = false
 // handle = false
+// netmail = true
 // phone = false
 // location = false
 // gender = false
@@ -70,6 +71,12 @@ while(bbs.online && !js.terminated) {
 		console.add_hotspot('H');
 		console.newline();
 	}
+	if (options.netmail !== false) {
+		console.print(format(options.option_with_val_fmt, 'E', options.text_netmail || gettext("NetMail Address"), user.netmail));
+		keys += 'E';
+		console.add_hotspot('E');
+		console.newline();
+	}
 	if (options.phone === true) {
 		console.print(format(options.option_with_val_fmt, 'N', options.text_phone || gettext("Phone Number"), user.phone));
 		keys += 'N';
@@ -122,6 +129,9 @@ while(bbs.online && !js.terminated) {
 			break;
 		case 'H':
 			prompts.get_handle(user);
+			break;
+		case 'E':
+			prompts.get_netmail(user);
 			break;
 		case 'L':
 			if (system.newuser_questions & UQ_ADDRESS)

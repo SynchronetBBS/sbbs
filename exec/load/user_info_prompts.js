@@ -534,6 +534,12 @@ function get_birthdate(user)
 	}
 }
 
+function netmail_supported(user)
+{
+	return ((system.settings & SYS_FWDTONET)
+		&& (typeof system.check_netmail_addr !== "function" || system.check_netmail_addr(user.netmail)));
+}
+
 function get_netmail(user)
 {
 	if (!user)
@@ -561,11 +567,25 @@ function get_netmail(user)
 			break;
 		}
 	}
-	user.settings &= ~USER_NETMAIL;
-	if ((system.settings & SYS_FWDTONET)
-		&& (typeof system.check_netmail_addr != "function" || system.check_netmail_addr(user.netmail))
-		&& bbs.text(bbs.text.ForwardMailQ) && console.yesno(bbs.text(bbs.text.ForwardMailQ)))
-		user.settings |= USER_NETMAIL;
+	if (!netmail_supported(user))
+		user.settings &= ~USER_NETMAIL;
+}
+
+function get_netmail_forwarding(user)
+{
+	if (!user)
+		user = js.global.user;
+
+	if (!netmail_supported(user)) {
+		user.settings &= ~USER_NETMAIL;
+		if (!operation)
+			console.print(format(bbs.text(bbs.text.InvalidNetMailAddr), user.netmail));
+	} else {
+		if (confirm(bbs.text(bbs.text.ForwardMailQ), user.settings & USER_NETMAIL))
+			user.settings |= USER_NETMAIL;
+		else if (!console.aborted)
+			user.settings &= ~USER_NETMAIL;
+	}
 }
 
 function change_password(user)

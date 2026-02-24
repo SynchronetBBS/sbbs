@@ -251,7 +251,7 @@ while (bbs.online && !js.terminated) {
 			lang.select(thisuser.number === user.number ? user : thisuser);
 			break;
 		case 'M':
-			prompts.get_netmail(thisuser);
+			prompts.get_netmail_forwarding(thisuser);
 			break;
 		case 'N':
 			thisuser.settings ^= USER_ASK_NSCAN;
