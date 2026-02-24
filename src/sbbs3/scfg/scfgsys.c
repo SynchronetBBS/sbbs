@@ -3291,8 +3291,15 @@ void sys_cfg(void)
 						"`Select Item`      User selects a numbered item from a list of options\n"
 						"`Sync`             Node is periodically synchronized (comm/disk I/O flush)\n"
 						"\n"
-						"`Note:` JavaScript modules take precedence over Baja modules if both exist\n"
-						"      in your `exec` or `mods` directories.\n"
+						"When multiple loadable modules are configured for the same operation,\n"
+						"the `first` module with Access Requirements that the user meets will be\n"
+						"executed.  If the user does not meet the Access Requirements for any of\n"
+						"the configured modules, then no module will be executed for that\n"
+						"operation and either an error message will be displayed/logged or a\n"
+						"built-in/fallback function will be executed instead.\n"
+						"\n"
+						"`Note:` JavaScript (.js) modules take precedence over Baja (.bin) modules\n"
+						"      if both exist in your `exec` or `mods` directories.\n"
 					;
 					switch (uifc.list(WIN_ACT | WIN_BOT | WIN_RHT | WIN_SAV, 0, 0, 0, &mod_dflt, &mod_bar
 					                  , "Loadable Modules", opt)) {
