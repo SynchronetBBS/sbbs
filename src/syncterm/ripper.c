@@ -16380,10 +16380,12 @@ parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
         	// We have some RIP, add to buffer...
 		normal_palette();
 		if (rip_start <= maxlen) {
-			buffer_rip(&buf[rip_start], blen - rip_start);
-			if (copy) {
-				memcpy(origbuf, buf, rip_start);
-				free(buf);
+			if (rip_start <= blen) {
+				buffer_rip(&buf[rip_start], blen - rip_start);
+				if (copy) {
+					memcpy(origbuf, buf, rip_start);
+					free(buf);
+				}
 			}
 			if (rip.text_disabled)
 				return ansi_only(origbuf, rip_start);
