@@ -404,8 +404,8 @@
 	"\1bB\1ci\1mr\1yt\1wh\1rd\1ga\1by \1ct\1mo \1yy\1wo\1ru\1g.\1b.\1c.\r\n\r\n"
 "\1w\1hYou haven't changed your password in more "\       330 TimeToChangePw
 	"than %d days.\r\n\r\n"
-"\r\nEnter a different password\1\\"                        331 NewPasswordQ
-"\1_\1?\1y\1hNew password (%u-%u chars)\1\\: "              332 NewPasswordPromptFmt
+"\r\nEnter a different password\1\\"                      331 NewPasswordQ
+"\1_\1?\1y\1hNew password (%u-%u characters)\1\\: "       332 NewPasswordPromptFmt
 "\1_\1y\1hVerify (enter again)\1\\: \1n"                  333 VerifyPassword
 "\7\1r\1hWrong!"                                          334 Wrong
 "\1w\1hPassword changed.\r\n"                             335 PasswordChanged
