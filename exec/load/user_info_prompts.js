@@ -578,8 +578,12 @@ function get_netmail_forwarding(user)
 
 	if (!netmail_supported(user)) {
 		user.settings &= ~USER_NETMAIL;
-		if (!operation)
+		if (!operation) {
 			console.print(format(bbs.text(bbs.text.InvalidNetMailAddr), user.netmail));
+			get_netmail(user);
+			if (netmail_supported(user))
+				user.settings |= USER_NETMAIL;
+		}
 	} else {
 		if (confirm(bbs.text(bbs.text.ForwardMailQ), user.settings & USER_NETMAIL))
 			user.settings |= USER_NETMAIL;
