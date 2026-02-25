@@ -535,9 +535,12 @@ function install()
 	if(!ini.open(file_exists(ini.name) ? 'r+':'w+'))
 		return ini.name + " open error " + ini.error;
 	printf("Updating %s\r\n", ini.name);
-	ini.iniSetValue("newuser", "avatar_file", "silhouettes.bin");
-	ini.iniSetValue("newuser", "avatar_offset", 0);
-	ini.iniSetValue("logon", "set_avatar", true);
+	if (ini.iniGetValue("newuser", "avatar_file") === undefined)
+		ini.iniSetValue("newuser", "avatar_file", "silhouettes.bin");
+	if (ini.iniGetValue("newuser", "avatar_offset") === undefined)
+		ini.iniSetValue("newuser", "avatar_offset", 0);
+	if (ini.iniGetValue("logon", "set_avatar") === undefined)
+		ini.iniSetValue("logon", "set_avatar", true);
 	ini.close();
 	return true;
 }
