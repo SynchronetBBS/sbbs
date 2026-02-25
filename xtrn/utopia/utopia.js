@@ -1207,7 +1207,7 @@ function handleRebels() {
 			var items = getArrayOfItems();
 			if (items.length) {
 				var target = items[random(items.length)];
-				if (cellIsLand(target)) {
+				if (cellIsLand(target) && itemAt(target) != ITEM_FORT) {
 					if (itemIsAdjacent(target, ITEM_FORT))
 						alert("\x01h\x01rATTEMPTED Rebel attack of " + item_list[itemAt(target)].name + " thwarted by Fort Defenses!");
 					else
@@ -2322,7 +2322,7 @@ function showHighScores(return_to) {
 	var s = json_lines.get(SCORE_FILE);
 	if(typeof s != 'object')
 		s = [];
-	s.sort(function(a, b) { return a.rules.localeCompare(b.rules) || b.score - a.score; });
+	s.sort(function(a, b) { return b.score - a.score; });
 	for (var i = 0; i < Math.min(s.length, 20); i++)
 		console.putmsg(format("\x01h\x01w#%-2d   \x01n%-25s %-12.12s %-9.9s \x01h\x01g%-8d \x01n%-6s %s\r\n"
 			, i + 1, s[i].name, s[i].rules, firstWord(s[i].map), s[i].score, abbrevNum(s[i].pop), system.datestr(s[i].date)));
