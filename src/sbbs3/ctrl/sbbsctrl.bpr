@@ -141,13 +141,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Rob Swindell
 FileDescription=Synchronet BBS Control Panel
-FileVersion=3.21.1.0
+FileVersion=3.21.2.0
 InternalName=
 LegalCopyright=(C) 2026 Rob Swindell
 LegalTrademarks=
 OriginalFilename=sbbsctrl.exe
 ProductName=Synchronet BBS
-ProductVersion=3.21b
+ProductVersion=3.21c
 Comments=
 
 [Excluded Packages]

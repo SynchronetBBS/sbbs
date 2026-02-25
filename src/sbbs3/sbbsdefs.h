@@ -35,7 +35,7 @@
 /*************/
 
 #define VERSION     "3.21"  // Version: Major.minor as 4-char string
-#define REVISION    'b'     // Revision: lowercase letter
+#define REVISION    'c'     // Revision: lowercase letter
 #define VERSION_INT ((DEC_CHAR_TO_INT(VERSION[0]) * 100) + (DEC_CHAR_TO_INT(VERSION[2]) * 10) + DEC_CHAR_TO_INT(VERSION[3]))  // Version as increasing 3-decimal-digit integer value
 #define VERSION_NUM (((VERSION_INT) * 100) + (tolower(REVISION) - 'a')) // Version and revision as a 5-decimal-digit integer value
 #define VERSION_HEX (((VERSION_INT / 100) * 0x10000)  + (((VERSION_INT % 100) / 10) * 0x1000) + ((VERSION_INT % 10) * 0x100) + (tolower(REVISION) - 'a'))
