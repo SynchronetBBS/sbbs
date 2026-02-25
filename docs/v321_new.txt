@@ -1,5 +1,5 @@
 ******************************************
-* What's New in Synchronet Version 3.21b *
+* What's New in Synchronet Version 3.21c *
 ******************************************
 
 General
