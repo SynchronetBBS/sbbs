@@ -103,7 +103,7 @@ if (!input_string)
 	usage();
 
 if (loopfonts) {
-	var list = tdf.getlist();
+	var list = fontfile ? [fontfile] : tdf.getlist();
 	for (var i in list) {
 		if (pause && i > 0)
 			prompt("Hit enter");
