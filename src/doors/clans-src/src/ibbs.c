@@ -291,7 +291,7 @@ static void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
 	assert(res == sizeof(pktBuf));
 	if (res != sizeof(pktBuf))
 		return;
-	IBBS_SendPacket(PT_SPYRESULT, sizeof(pktBuf), pktBuf,
+	IBBS_EnqueueOutPacket(PT_SPYRESULT, sizeof(pktBuf), pktBuf,
 					Spy->BBSFromID);
 }
 
@@ -339,6 +339,48 @@ static void IBBS_ProcessSpyResult(struct SpyResultPacket *SpyResult)
 		snprintf(szMessage, sizeof(szMessage), "Your spy attempt on %s failed.\n", SpyResult->szTargetName);
 
 		GenericMessage(szMessage, SpyResult->MasterID, Junk, "", false);
+	}
+}
+
+void IBBS_SendQueuedResults(void)
+{
+	FILE *fp = fopen("pkgqout.dat", "rb");
+	if (fp) {
+		for (;;) {
+			struct Packet Packet;
+			notEncryptRead_s(Packet, &Packet, fp, XOR_PACKET) {
+				LogStr("* End of packet file");
+				break;
+			}
+			char *PacketData = malloc((size_t)Packet.PacketLength);
+			if (PacketData) {
+				if(!EncryptRead(PacketData, (size_t)Packet.PacketLength, fp, XOR_PACKET)) {
+					free(PacketData);
+					continue;
+				}
+				IBBS_SendPacket(Packet.PacketType, (size_t)Packet.PacketLength, PacketData, Packet.BBSIDTo);
+				free(PacketData);
+			}
+		}
+		fclose(fp);
+	}
+}
+
+static void EnqueueInPacket(struct Packet *Packet, FILE *fp)
+{
+	FILE *qfp = fopen("pktqin.dat", "ab");
+	if (qfp) {
+		uint8_t *pbuf = malloc((size_t)Packet->PacketLength);
+		if (pbuf == NULL) {
+			LogStr("Unable to allocate queued packet size");
+		}
+		else {
+			EncryptWrite_s(Packet, Packet, qfp, XOR_PACKET);
+			fread(pbuf, (size_t)Packet->PacketLength, 1, fp);
+			fwrite(pbuf, (size_t)Packet->PacketLength, 1, qfp);
+			free(pbuf);
+		}
+		fclose(qfp);
 	}
 }
 
@@ -1886,6 +1928,7 @@ static void IBBS_SendPacketBuffer(int16_t DestID, char *PacketHeader, char *Pack
 	CheckedEncryptWrite(PacketHeader, BUF_SIZE_Packet, fp, XOR_PACKET);
 	if (PacketDataSize)
 		CheckedEncryptWrite(PacketData, PacketDataSize, fp, XOR_PACKET);
+	fclose(fp);
 }
 
 // ------------------------------------------------------------------------- //
@@ -2038,6 +2081,52 @@ void IBBS_SendPacket(int16_t PacketType, size_t PacketLength, void *PacketData,
 
 		fclose(fpBackupDat);
 	}
+}
+
+// ------------------------------------------------------------------------- //
+
+void IBBS_EnqueueOutPacket(int16_t PacketType, size_t PacketLength, void *PacketData,
+					 int16_t DestID)
+{
+	struct Packet Packet = {0};
+	FILE *fp;
+	char PacketHeader[BUF_SIZE_Packet];
+	if (IBBS.Initialized == false) {
+		System_Error("IBBS not initialized for call.\n");
+	}
+
+	if (DestID <= 0 || DestID > MAX_IBBSNODES ||
+			IBBS.Data.Nodes[DestID-1].Active == false) {
+		LogDisplayStr("IBBS_SendPacketBuffer() aborted:  Invalid ID\n");
+		return;
+	}
+
+	if (DestID <= 0 || DestID > MAX_IBBSNODES ||
+			IBBS.Data.Nodes[ DestID - 1].Active == false) {
+		LogDisplayStr("IBBS_SendPacket() aborted:  Invalid ID\n");
+		return;
+	}
+
+	if (PacketLength > INT32_MAX)
+		System_Error("Packet too long in IBBS_SendPacket()");
+
+	Packet.Active = true;
+
+	strlcpy(Packet.GameID, Game.Data.GameID, sizeof(Packet.GameID));
+	strlcpy(Packet.szDate, System.szTodaysDate, sizeof(Packet.szDate));
+	Packet.BBSIDFrom = IBBS.Data.BBSID;
+	Packet.BBSIDTo = DestID;
+	Packet.PacketType = PacketType;
+	Packet.PacketLength = (int32_t)PacketLength;
+
+	s_Packet_s(&Packet, PacketHeader, sizeof(PacketHeader));
+
+	/* see if can open that file */
+	fp = fopen("pktqout.dat", "ab");
+	CheckedEncryptWrite(PacketHeader, BUF_SIZE_Packet, fp, XOR_PACKET);
+	if (PacketLength)
+		CheckedEncryptWrite(PacketData, PacketLength, fp, XOR_PACKET);
+	fclose(fp);
 }
 
 // ------------------------------------------------------------------------- //
@@ -2753,6 +2842,57 @@ HandleSpyPacket(FILE* fp)
 	IBBS_ProcessSpy(&Spy);
 }
 
+void IBBS_HandleQueuedPackets(void)
+{
+	FILE *fp = fopen("pktqin.dat", "rb");
+	if (fp) {
+		// show processing it
+		LogDisplayStr("|07> |15Processing |14pktqin.dat\n");
+
+		/* read it in until end of file */
+		for (;;) {
+			struct Packet Packet;
+			notEncryptRead_s(Packet, &Packet, fp, XOR_PACKET) {
+				LogStr("* End of packet file");
+				break;
+			}
+
+			// if packet is old, ignore it
+			if (DaysBetween(Packet.szDate, System.szTodaysDate) > MAX_PACKETAGE) {
+				LogStr("* Packet too old, ignoring");
+				fseek(fp, Packet.PacketLength, SEEK_CUR);
+				continue;
+			}
+
+			// if gameId isn't of the current game, ignore
+			if (strcasecmp(Packet.GameID, Game.Data.GameID)) {
+				// GameIDs differ AND this isn't a reset packet, so we must ignore
+				// this packet completely
+				LogStr("* Packet from wrong game, ignoring");
+				fseek(fp, Packet.PacketLength, SEEK_CUR);
+				continue;
+			}
+
+			// Check that source ID is valid and active...
+			if (!CheckSourceID(Packet.BBSIDFrom)) {
+				LogStr("* Invalid source ID, ignoring");
+				continue;
+			}
+
+			if (Packet.PacketType == PT_SPY) {
+				LogDisplayStr("|08- |07spy\n");
+				HandleSpyPacket(fp);
+			}
+			else if (Packet.PacketType == PT_ATTACK) {
+				LogDisplayStr("|08- |07attack found\n");
+				HandleAttackPacket(fp);
+			}
+		}
+		fclose(fp);
+		unlink("pktqin.dat");
+	}
+}
+
 static void
 HandleSpyResultPacket(FILE* fp)
 {
@@ -2983,7 +3123,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 		}
 		else if (Packet.PacketType == PT_ATTACK) {
 			LogDisplayStr("|08- |07attack found\n");
-			HandleAttackPacket(fp);
+			EnqueueInPacket(&Packet, fp);
 		}
 		else if (Packet.PacketType == PT_ATTACKRESULT) {
 			LogDisplayStr("|08- |07attackresult found\n");
@@ -2991,7 +3131,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 		}
 		else if (Packet.PacketType == PT_SPY) {
 			LogDisplayStr("|08- |07spy\n");
-			HandleSpyPacket(fp);
+			EnqueueInPacket(&Packet, fp);
 		}
 		else if (Packet.PacketType == PT_SPYRESULT) {
 			LogDisplayStr("|08- |07spy result\n");

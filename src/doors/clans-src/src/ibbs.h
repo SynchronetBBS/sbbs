@@ -26,8 +26,13 @@ void IBBS_Maint(void);
 
 void IBBS_SendAttackPacket(struct empire *AttackingEmpire, struct Army *AttackingArmy,
 						   int16_t Goal, int16_t ExtentOfAttack, int16_t TargetType, int16_t ClanID[2], int16_t DestID);
+void IBBS_EnqueueOutPacket(int16_t PacketType, size_t PacketLength, void *PacketData,
+					 int16_t DestID);
 
 void IBBS_SendSpy(struct empire *Empire, int16_t DestID);
+
+void IBBS_SendQueuedResults(void);
+void IBBS_HandleQueuedPackets(void);
 
 void IBBS_ShowLeagueAscii(void);
 void IBBS_LeagueInfo(void);

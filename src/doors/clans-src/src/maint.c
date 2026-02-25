@@ -99,6 +99,9 @@ void Maintenance(void)
 
 	Alliance_Maint();
 
+	IBBS_SendQueuedResults();
+	IBBS_HandleQueuedPackets();
+
 	Game_Write();
 
 	LogDisplayStr("Done.\n");

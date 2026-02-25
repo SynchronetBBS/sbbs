@@ -122,7 +122,7 @@ static void SendResultPacket(struct AttackResult *Result, int16_t DestID)
 	assert(res == sizeof(pktBuf));
 	if (res != sizeof(pktBuf))
 		return;
-	IBBS_SendPacket(PT_ATTACKRESULT, sizeof(pktBuf), pktBuf,
+	IBBS_EnqueueOutPacket(PT_ATTACKRESULT, sizeof(pktBuf), pktBuf,
 					DestID);
 }
 
