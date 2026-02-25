@@ -25,7 +25,7 @@
  * Support the ident protocol... the standard log format supports it.
  *
  * Add in support to pass connections through to a different webserver...
- *      probobly in access.ars... with like a simplified mod_rewrite.
+ *      probobly in webctrl.ini... with like a simplified mod_rewrite.
  *      This would allow people to run apache and Synchronet as the same site.
  *
  * Add support for multipart/form-data
@@ -3922,7 +3922,7 @@ static bool check_request(http_session_t * session)
 			return false;
 		}
 
-		/* Walk up from root_dir checking for access.ars and webctrl.ini */
+		/* Walk up from root_dir checking for webctrl.ini */
 		SAFECOPY(curdir, path);
 		last_slash = curdir + strlen(root_dir) - 1;
 		/* Loop while there's more /s in path*/
@@ -3933,31 +3933,6 @@ static bool check_request(http_session_t * session)
 			p = last_slash;
 			/* Terminate the path after the slash */
 			*(last_slash + 1) = 0;
-			SAFEPRINTF(str, "%saccess.ars", curdir);
-			/* NEVER serve up an access.ars file */
-			if (!strcmp(path, str)) {
-				if (!stat(str, &sb)) {
-					lprintf(LOG_WARNING, "%04d !WARNING! access.ars support is deprecated and will be REMOVED very soon.", session->socket);
-					lprintf(LOG_WARNING, "%04d !WARNING! access.ars found at %s.", session->socket, str);
-				}
-				send_error(session, __LINE__, "403 Forbidden");
-				return false;
-			}
-			if (!stat(str, &sb)) {
-				/* Read access.ars file */
-				if ((file = fopen(str, "r")) != NULL) {
-					if (fgets(session->req.ars, sizeof(session->req.ars), file) == NULL)
-						SAFECOPY(session->req.ars, "LEVEL 90");
-					fclose(file);
-				}
-				else  {
-					/* If cannot open access.ars, only allow sysop access */
-					SAFECOPY(session->req.ars, "LEVEL 90");
-					break;
-				}
-				/* Truncate at \r or \n - can use last_slash since I'm done with it.*/
-				truncsp(session->req.ars);
-			}
 			SAFEPRINTF(str, "%swebctrl.ini", curdir);
 			/* NEVER serve up a webctrl.ini file */
 			if (!strcmp(path, str)) {
