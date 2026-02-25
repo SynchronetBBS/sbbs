@@ -288,10 +288,12 @@ if(!file_exists(system.data_dir + "sbbslist.json")) {
 		js.exec("sbbslist.js", {}, "install");
 }
 
-if(!xtrn_area.prog["avatchoo"] && !xtrn_area.event["avat-out"]) {
-	print("Installing Avatars feature");
-	if(!test)
-		js.exec("avatars.js", {}, "install");
+if (argv.indexOf("-noavatars") < 0) {
+	if(!xtrn_area.prog["avatchoo"] && !xtrn_area.event["avat-out"]) {
+		print("Installing Avatars feature");
+		if(!test)
+			js.exec("avatars.js", {}, "install");
+	}
 }
 
 var src = system.exec_dir + "jsexec.ini";
