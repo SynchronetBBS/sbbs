@@ -1,0 +1,13 @@
+{
+        "name": "Quick",
+		"max_turns": 200,
+		"initial_pop": 50,
+        "initial_gold": 1000,
+        "initial_food": 750,
+		"pop_change_interval": 4,
+		"pop_max_pct_increase": 4,
+		"merchant_spawn_potential": 0.07,
+		"merchant_dock_interval": 5,
+		"pirate_spawn_potential": 0.05,
+		"pirate_land_attack_interval": 5
+}
