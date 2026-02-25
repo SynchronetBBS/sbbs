@@ -86,7 +86,7 @@ Source: "s:\sbbs\exec\svdmansi.com";                          DestDir: "{app}\ex
 Source: "s:\sbbs\exec\dosxtrn.exe";                           DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "ctrl\text.dat";                                      DestDir: "{app}\ctrl";  Flags: ignoreversion
 Source: "exec\*";   DestDir: "{app}\exec";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "baja.js,menu.js,sbbsedit.js,jsdocs.js,testbuild.js,load\menulib.js"
-Source: "text\*";   DestDir: "{app}\text";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.0??.*,.gitignore"
+Source: "text\*";   DestDir: "{app}\text";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.0??.*,.gitignore,random*.msg"
 Source: "xtrn\*";   DestDir: "{app}\xtrn";  Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.obj,*.tds,*.o,*.d,smm,.gitignore,gcc.*,bcc.*"; Tasks: upgrade_xtrn
 Source: "docs\*";   DestDir: "{app}\docs";  Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "webv4\*";                                            DestDir: "{app}\webv4"; Flags: ignoreversion recursesubdirs createallsubdirs; Tasks: upgrade_webv4
