@@ -1,5 +1,5 @@
---- js-1.8.5/js/src/jsgcchunk.cpp.orig	2026-02-26 10:47:12.380202000 -0500
-+++ js-1.8.5/js/src/jsgcchunk.cpp	2026-02-26 10:47:52.154756000 -0500
+--- js-1.8.5/js/src/jsgcchunk.cpp.orig	2026-02-26 17:05:30.473945000 -0500
++++ js-1.8.5/js/src/jsgcchunk.cpp	2026-02-26 17:05:55.418836000 -0500
 @@ -331,6 +331,10 @@
  static void *
  MapPages(void *addr, size_t size)
@@ -16,7 +16,7 @@
      if (p == MAP_FAILED)
          return NULL;
 +#if defined(__aarch64__) && defined(__linux__)
-+    if (((uint64_t)addr & UINT64_C(0xffff800000000000)) || (addr != (void*)UINT64_C(0x0000700000000000) && p != addr)) {
++    if (((uint64_t)addr & UINT64_C(0xffff800000000000)) || (((uint64_t)addr + size - 1) & UINT64_C(0xffff800000000000)) || (addr != (void*)UINT64_C(0x0000700000000000) && p != addr)) {
 +#else
      if (addr && p != addr) {
 +#endif
