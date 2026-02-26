@@ -64,8 +64,8 @@ o Updated BBS->Edit file links
   answer.asc -> answer.msg
   logon.asc -> logon.msg
   logoff.asc -> logoff.msg
-o No more pop-up/exception messages about "Invalid pointer" or
-  "Index index" related to the upodated to the Clients dialog
+o No more pop-up/exception messages about "Invalid pointer" or "Invalid index"
+  upon server-updates to the Clients dialog
 
 Terminal Server
 ~~~~~~~~~~~~~~~
