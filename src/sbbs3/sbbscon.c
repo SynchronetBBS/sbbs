@@ -35,7 +35,6 @@
 #include <systemd/sd-daemon.h>
 #endif
 #if defined(__aarch64__) && defined(__linux__)
-#include <sys/mman.h>
 #include <sys/personality.h>
 #endif
 
@@ -1203,13 +1202,6 @@ int main(int argc, char** argv)
 #if defined(__aarch64__) && defined(__linux__)
 	// Use compatibility layout so allocations grow up rather than down
 	personality(ADDR_COMPAT_LAYOUT | PER_LINUX);
-
-	// Two other options one of which may help with issue 685
-	// Disable ASLR to prevent allocations above the 47-bit cap
-	// personality(ADDR_COMPAT_LAYOUT | ADDR_NO_RANDOMIZE | PER_LINUX);
-
-	// Map memory at 1<<47 to act as a fixed page to force future mmap()s below it
-        //void *hackPtr = mmap((void*)((1UL << 47) - 4096), 4096, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
 #endif
 
 #ifdef __QNX__
