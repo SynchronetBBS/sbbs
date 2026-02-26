@@ -69,7 +69,7 @@ $(JS_SRC): | $(3RDPSRCDIR)
 $(JS_IDIR): | $(3RDPODIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(JS_IDIR)
 
-$(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/dist/libffi.tgz $(3RDP_ROOT)/build/js_src_jsnativestack_cpp.patch $(3RDP_ROOT)/build/js-configure.patch $(3RDP_ROOT)/build/js-configure.in.patch $(3RDP_ROOT)/build/imacro-asm-fix.patch $(3RDP_ROOT)/build/js-volatile-outside-functions.patch $(3RDP_ROOT)/build/js-Wno-misleading-indentation.patch $(3RDP_ROOT)/build/js-allow-python3.patch $(3RDP_ROOT)/build/js-no-rwx-pages.patch $(3RDP_ROOT)/build/js-disable-shell.patch $(3RDP_ROOT)/build/js-darwin-configure.patch $(3RDP_ROOT)/build/js-keep-ffi-cache.patch $(3RDP_ROOT)/build/js-support-mingw-cross.patch $(3RDP_ROOT)/build/js-int-main-conf.patch $(3RDP_ROOT)/build/js-include-headers.patch $(3RDP_ROOT)/build/js-macos-configure.patch $(3RDP_ROOT)/build/js-isfinite.patch $(3RDP_ROOT)/build/js-libffi-prefix.patch $(3RDP_ROOT)/build/js-map-aligned.patch | $(JS_SRC) $(JS_IDIR)
+$(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/dist/libffi.tgz $(3RDP_ROOT)/build/js_src_jsnativestack_cpp.patch $(3RDP_ROOT)/build/js-configure.patch $(3RDP_ROOT)/build/js-configure.in.patch $(3RDP_ROOT)/build/imacro-asm-fix.patch $(3RDP_ROOT)/build/js-volatile-outside-functions.patch $(3RDP_ROOT)/build/js-Wno-misleading-indentation.patch $(3RDP_ROOT)/build/js-allow-python3.patch $(3RDP_ROOT)/build/js-no-rwx-pages.patch $(3RDP_ROOT)/build/js-disable-shell.patch $(3RDP_ROOT)/build/js-darwin-configure.patch $(3RDP_ROOT)/build/js-keep-ffi-cache.patch $(3RDP_ROOT)/build/js-support-mingw-cross.patch $(3RDP_ROOT)/build/js-int-main-conf.patch $(3RDP_ROOT)/build/js-include-headers.patch $(3RDP_ROOT)/build/js-macos-configure.patch $(3RDP_ROOT)/build/js-isfinite.patch $(3RDP_ROOT)/build/js-libffi-prefix.patch $(3RDP_ROOT)/build/js-map-aligned.patch $(3RDP_ROOT)/build/js-aarch64-47bit.patch | $(JS_SRC) $(JS_IDIR)
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(JS_SRC)/*
 	$(QUIET)tar -xzpC $(JS_SRC) -f $(3RDPDISTDIR)/libmozjs.tgz
@@ -98,6 +98,7 @@ $(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/dist/libffi.tgz $(3R
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-isfinite.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-libffi-prefix.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-map-aligned.patch
+	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-aarch64-47bit.patch
 	-$(QUIET)cd $(JS_SRC)/js-1.8.5/js/src && autoconf-2.13
 	-$(QUIET)cd $(JS_SRC)/js-1.8.5/js/src && autoconf2.13
 	$(QUIET)chmod 0755 $(JS_SRC)/js-1.8.5/js/src/build/hcc
