@@ -34,9 +34,6 @@
 #ifdef USE_SYSTEMD
 #include <systemd/sd-daemon.h>
 #endif
-#if defined(__aarch64__) && defined(__linux__)
-#include <sys/personality.h>
-#endif
 
 /* Synchronet-specific headers */
 #undef SBBS /* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
@@ -1171,21 +1168,6 @@ static const char* sbbscon_ver()
 	}
 	return str;
 }
-
-#if defined(__aarch64__) && defined(__linux__)
-void __attribute__((constructor)) addr_compat_layout_hack(int argc, char * const argv[]) {
-	int pers = personality(0xffffffff);
-	if (!(pers & ADDR_COMPAT_LAYOUT)) {
-		if (personality(pers | ADDR_COMPAT_LAYOUT) == -1) {
-			perror("personality() failed");
-			exit(EXIT_FAILURE);
-		}
-		execv("/proc/self/exe", argv);
-		perror("execv failed");
-		exit(EXIT_FAILURE);
-	}
-}
-#endif
 
 /****************************************************************************/
 /* Main Entry Point															*/
