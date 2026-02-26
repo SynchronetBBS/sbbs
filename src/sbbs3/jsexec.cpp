@@ -1242,10 +1242,6 @@ extern "C" int main(int argc, char **argv)
 	struct sigaction sa {};
 #endif
 
-#if defined(__aarch64__) && defined(__linux__)
-	personality(ADDR_COMPAT_LAYOUT);
-#endif
-
 	confp = stdout;
 	errfp = stderr;
 	if ((nulfp = fopen(_PATH_DEVNULL, "w+")) == NULL) {

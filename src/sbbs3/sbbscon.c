@@ -1213,11 +1213,6 @@ int main(int argc, char** argv)
 	size_t         conflen;
 #endif
 
-#if defined(__aarch64__) && defined(__linux__)
-	// Use compatibility layout so allocations grow up rather than down
-	personality(ADDR_COMPAT_LAYOUT | PER_LINUX);
-#endif
-
 #ifdef __QNX__
 	setlocale( LC_ALL, "C-TRADITIONAL" );
 #endif
