@@ -1199,6 +1199,21 @@ void get_ini_values(str_list_t ini, const char* section, js_callback_t* cb)
 }
 #endif
 
+#if defined(__aarch64__) && defined(__linux__)
+void __attribute__((constructor)) addr_compat_layout_hack(int argc, char * const argv[]) {
+	int pers = personality(0xffffffff);
+	if (!(pers & ADDR_COMPAT_LAYOUT)) {
+		if (personality(pers | ADDR_COMPAT_LAYOUT) == -1) {
+			perror("personality() failed");
+			exit(EXIT_FAILURE);
+		}
+		execv("/proc/self/exe", argv);
+		perror("execv failed");
+		exit(EXIT_FAILURE);
+	}
+}
+#endif
+
 /*********************/
 /* Entry point (duh) */
 /*********************/
