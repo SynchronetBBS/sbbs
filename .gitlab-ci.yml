@@ -137,7 +137,7 @@ include:
     - cd src/xpdev
     - make
     - cd ../../src/sbbs3
-    - .\release.bat -maxCpuCount:2
+    - .\release.bat -maxCpuCount:1
     - cd ctrl
     - .\build.bat
     - cd ../chat
