@@ -1126,7 +1126,7 @@ bool ANSI_Terminal::parse_input_sequence(char& ch, int mode) {
 		while (!done) {
 			int rc = sbbs->kbincom(100);
 			if (rc == NOINP) {	// Timed out
-				if (++timeouts >= 30)
+				if (++timeouts >= ((ansi.current_state() < ansiState_csi && !(mode & K_GETSTR)) ? 10U : 30U))
 					break;
 			}
 			else if (rc & (~0xff)) {
