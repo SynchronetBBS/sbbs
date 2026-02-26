@@ -419,7 +419,7 @@ function good_bye(what) {
 	lln("  `2You have had a `$'+what+' `2visit to the Olodrin's Orphans today.");
 	sln('');
 	lw('  You continue your on you way back to `4');
-	wait();
+	mswait(1000);
 	say_slow(' The Undermine!');
 	mswait(1000);
 	exit(0);
