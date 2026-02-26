@@ -51,8 +51,7 @@ include:
       has_gtk: "yes"
       has_valgrind: "yes"
       build_doors: "yes"
-    variables:
-      VALGRIND_PRE_EXEC: "setarch -L"
+      valgrind_pre_exec: "setarch -L"
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: "linux"
