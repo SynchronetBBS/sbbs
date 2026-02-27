@@ -1925,10 +1925,11 @@ static void IBBS_SendPacketBuffer(int16_t DestID, char *PacketHeader, char *Pack
 
 	/* see if can open that file */
 	fp = getPacketFP(DestID);
+	// This will cause an error if fp is NULL
 	CheckedEncryptWrite(PacketHeader, BUF_SIZE_Packet, fp, XOR_PACKET);
 	if (PacketDataSize)
 		CheckedEncryptWrite(PacketData, PacketDataSize, fp, XOR_PACKET);
-	fclose(fp);
+	// We don't close FP here because it's in a cached list...
 }
 
 // ------------------------------------------------------------------------- //
