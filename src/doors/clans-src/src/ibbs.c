@@ -363,6 +363,7 @@ void IBBS_SendQueuedResults(void)
 			}
 		}
 		fclose(fp);
+		unlink("pktqout.dat");
 	}
 }
 
