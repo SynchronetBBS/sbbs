@@ -344,7 +344,7 @@ static void IBBS_ProcessSpyResult(struct SpyResultPacket *SpyResult)
 
 void IBBS_SendQueuedResults(void)
 {
-	FILE *fp = fopen("pkgqout.dat", "rb");
+	FILE *fp = fopen("pktqout.dat", "rb");
 	if (fp) {
 		for (;;) {
 			struct Packet Packet;
