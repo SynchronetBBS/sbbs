@@ -1257,7 +1257,7 @@ extern "C" int main(int argc, char **argv)
 	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir(/* warn: */ false));
 	iniFileName(ini_fname, sizeof(ini_fname), scfg.ctrl_dir, "jsexec.ini");
 	if ((fp = iniOpenFile(ini_fname, /* for_modify: */ false)) != NULL) {
-		ini = iniReadFile(fp);
+		ini = iniReadFiles(fp, /* includes: */true);
 		iniCloseFile(fp);
 	} else if (fexist(ini_fname)) {
 		fprintf(stderr, "Error %d (%s) opening %s\n", errno, strerror(errno), ini_fname);

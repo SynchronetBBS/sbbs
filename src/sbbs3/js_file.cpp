@@ -833,7 +833,7 @@ js_iniGetValue(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	str_list_t ini = iniReadFile(p->fp);
+	str_list_t ini = iniReadFiles(p->fp, /* includes: */ true);
 	if (argc < 3 || dflt == JSVAL_VOID) {  /* unspecified default value */
 		rc = JS_SUSPENDREQUEST(cx);
 		cstr = iniGetString(ini, section, key, NULL, buf);
@@ -1202,7 +1202,7 @@ js_iniGetSections(JSContext *cx, uintN argc, jsval *arglist)
 	array = JS_NewArrayObject(cx, 0, NULL);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	str_list_t ini = iniReadFile(p->fp);
+	str_list_t ini = iniReadFiles(p->fp, /* includes: */ true);
 	list = iniGetSectionList(ini, prefix);
 	strListFree(&ini);
 	FREE_AND_NULL(prefix);
@@ -1250,7 +1250,7 @@ js_iniGetKeys(JSContext *cx, uintN argc, jsval *arglist)
 	array = JS_NewArrayObject(cx, 0, NULL);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	str_list_t ini = iniReadFile(p->fp);
+	str_list_t ini = iniReadFiles(p->fp, /* includes: */ true);
 	list = iniGetKeyList(ini, section);
 	strListFree(&ini);
 	FREE_AND_NULL(section);
@@ -1308,7 +1308,7 @@ js_iniGetObject(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	str_list_t ini = iniReadFile(p->fp);
+	str_list_t ini = iniReadFiles(p->fp, /* includes: */ true);
 	list = iniGetNamedStringList(ini, section);
 	strListFree(&ini);
 	FREE_AND_NULL(section);
@@ -1480,7 +1480,7 @@ js_iniGetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 	array = JS_NewArrayObject(cx, 0, NULL);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	ini = iniReadFile(p->fp);
+	ini = iniReadFiles(p->fp, /* includes: */ true);
 	sec_list = iniGetSectionList(ini, prefix);
 	JS_RESUMEREQUEST(cx, rc);
 	for (i = 0; sec_list && sec_list[i]; i++) {
@@ -1668,7 +1668,7 @@ js_iniReadAll(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	str_list_t list = iniReadFile(p->fp);
+	str_list_t list = iniReadFiles(p->fp, /* includes: */ true);
 	JS_RESUMEREQUEST(cx, rc);
 	for (size_t i = 0; list != NULL && list[i] != NULL; i++) {
 		JSString* js_str;

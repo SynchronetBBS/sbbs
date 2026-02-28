@@ -160,6 +160,7 @@ DLLEXPORT named_string_t** iniFreeNamedStringList(named_string_t** list);
 DLLEXPORT char* 		iniFileName(char* dest, size_t maxlen, const char* dir, const char* fname);
 DLLEXPORT FILE* 		iniOpenFile(const char* fname, bool for_modify);
 DLLEXPORT str_list_t 	iniReadFile(FILE*);
+DLLEXPORT str_list_t 	iniReadFiles(FILE*, bool includes);
 DLLEXPORT bool 			iniWriteFile(FILE*, const str_list_t);
 DLLEXPORT bool 			iniCloseFile(FILE*);
 

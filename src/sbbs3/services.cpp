@@ -1705,7 +1705,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 	}
 
 	lprintf(LOG_DEBUG, "Reading %s", services_ini);
-	list = iniReadFile(fp);
+	list = iniReadFiles(fp, /* includes: */ true);
 	fclose(fp);
 
 	/* Get default key values from "root" section */

@@ -116,7 +116,7 @@ bool load_cfg(scfg_t* cfg, char* text[], size_t total_text, bool prep, bool req_
 		named_string_t** substr_list = NULL;
 		SAFEPRINTF(str, "%stext.ini", cfg->ctrl_dir);
 		if ((fp = fnopen(NULL, str, O_RDONLY)) != NULL) {
-			str_list_t       ini = iniReadFile(fp);
+			str_list_t       ini = iniReadFiles(fp, /* includes: */ true);
 			fclose(fp);
 			str_list = iniGetNamedStringList(ini, ROOT_SECTION);
 			substr_list = iniGetNamedStringList(ini, "substr");
@@ -482,7 +482,7 @@ bool read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFEPRINTF(path, "%sattr.ini", cfg->ctrl_dir);
 	fp = fnopen(NULL, path, O_RDONLY);
 
-	ini = iniReadFile(fp);
+	ini = iniReadFiles(fp, /* includes: */ true);
 	if (fp != NULL)
 		fclose(fp);
 

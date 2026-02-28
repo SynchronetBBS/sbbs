@@ -244,7 +244,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 
 	if ((fp = iniOpenFile(cfg->cfgfile, /* for_modify: */ false)) == NULL)
 		return false;
-	ini = iniReadFile(fp);
+	ini = iniReadFiles(fp, /* includes: */ true);
 	iniCloseFile(fp);
 
 	/************************/

@@ -399,7 +399,7 @@ bool sbbs_read_ini(
 	              , services
 	              );
 
-	list = iniReadFile(fp);
+	list = iniReadFiles(fp, /* includes: */ true);
 
 	if (!get_ini_globals(list, global)) {
 		iniFreeStringList(list);

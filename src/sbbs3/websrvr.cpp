@@ -7570,7 +7570,7 @@ void web_server(void* arg)
 		/* Don't do this for *each* CGI request, just once here during [re]init */
 		iniFileName(cgi_env_ini, sizeof(cgi_env_ini), scfg.ctrl_dir, "cgi_env.ini");
 		if ((fp = iniOpenFile(cgi_env_ini, /* for_modify: */ false)) != NULL) {
-			cgi_env = iniReadFile(fp);
+			cgi_env = iniReadFiles(fp, /* includes: */ true);
 			iniCloseFile(fp);
 		}
 

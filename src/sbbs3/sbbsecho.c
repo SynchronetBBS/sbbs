@@ -6505,7 +6505,7 @@ void check_free_diskspace(const char* path)
 void read_areafile_ini(FILE* stream)
 {
 	char       value[INI_MAX_VALUE_LEN];
-	str_list_t ini = iniReadFile(stream);
+	str_list_t ini = iniReadFiles(stream, /* includes: */ true);
 	str_list_t areas = iniGetSectionListWithDupes(ini, /* prefix: */ NULL);
 
 	for (size_t u = 0; areas != NULL && areas[u] != NULL; ++u) {

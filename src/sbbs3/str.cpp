@@ -69,7 +69,7 @@ bool sbbs_t::replace_text(const char* path)
 	if ((fp = fnopen(NULL, path, O_RDONLY)) != NULL) {
 		char             buf[INI_MAX_VALUE_LEN];
 		bool             success = true;
-		str_list_t       ini = iniReadFile(fp);
+		str_list_t       ini = iniReadFiles(fp, /* includes: */ true);
 		fclose(fp);
 
 		named_string_t** list = iniGetNamedStringList(ini, "substr");
