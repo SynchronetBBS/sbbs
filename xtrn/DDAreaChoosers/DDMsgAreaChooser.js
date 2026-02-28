@@ -118,6 +118,12 @@
  *                            user switches between groups (toggaleable w/ a user setting)
  * 2025-12-31 Eric Oulashin   Version 1.48
  *                            Releasing this version
+ * 2026-02-27 Eric Oulashin   Version 1.49
+ *                            Fix: When a sub-board has 10,000+ messages, the description
+ *                            column color no longer extends into the # messages column.
+ *                            Use dynamic subBoardDescLen based on numMsgsLen for color regions.
+ *                            Fix: # items column now right-aligns correctly.  numItemsLen and
+ *                            numMsgsLen are now dynamic (consider sub-group counts).
  */
 
 /* Command-line arguments:
@@ -159,8 +165,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.48";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-12-31";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.49";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2026-02-27";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -345,6 +351,7 @@ function DDMsgAreaChooser()
 	// Function to build the sub-board printf information for a message
 	// group
 	this.BuildSubBoardPrintfInfoForGrp = DDMsgAreaChooser_BuildSubBoardPrintfInfoForGrp;
+	this.getMaxItemsCountInMsgHierarchy = DDMsgAreaChooser_getMaxItemsCountInMsgHierarchy;
 	this.DisplayAreaChgHdr = DDMsgAreaChooser_DisplayAreaChgHdr;
 	this.DisplayListHdrLines = DDMsgAreaChooser_DisplayListHdrLines;
 	this.WriteLightbarKeyHelpErrorMsg = DDMsgAreaChooser_WriteLightbarKeyHelpErrorMsg;
@@ -364,12 +371,21 @@ function DDMsgAreaChooser()
 	this.msgArea_list = getAreaHeirarchy(DDAC_MSG_AREAS, this.useSubCollapsing, this.subCollapseSeparator);
 	// Sort according to the user's configured sort option.
 	sortHeirarchyRecursive(this.msgArea_list, this.userSettings.areaChangeSorting);
+
+	// Make numItemsLen dynamic so the # column stays right-aligned when a group has 1000+ items
+	var maxItemsInAnyGrp = 0;
+	for (var i = 0; i < this.msgArea_list.length; ++i)
+	{
+		var grpMax = this.getMaxItemsCountInMsgHierarchy(this.msgArea_list[i]);
+		if (grpMax > maxItemsInAnyGrp)
+			maxItemsInAnyGrp = grpMax;
+	}
+	this.numItemsLen = Math.max(4, Math.max(1, maxItemsInAnyGrp.toString().length));
 	
 	// These variables store default lengths of the various columns displayed in
 	// the message group/sub-board lists.
 	// Sub-board info field lengths
 	this.areaNumLen = 4;
-	this.numItemsLen = 4;
 	this.dateLen = 10; // i.e., YYYY-MM-DD
 	this.timeLen = 8;  // i.e., HH:MM:SS
 	// Sub-board name length - This should be 47 for an 80-column display.
@@ -1559,11 +1575,15 @@ function DDMsgAreaChooser_GetColorIndexInfoForLightbarMenu(pMsgAreaHeirarchyObj,
 			}
 		}
 	}
-	var numMsgsLen = highestNumMsgs.toString().length;
+	var numMsgsLen = Math.max(1, highestNumMsgs.toString().length);
 
 	// Start & end indexes for the various items in each item list row
-	//var lengthsObj = this.GetSubNameLenAndNumMsgsLen(pGrpIdx); // TODO
-	//var nameLen = console.screen_columns - this.areaNumLen - numMsgsLen - this.dateLen - 14; // Was - 5
+	// subBoardDescLen: description column width for sub-board list, accounts for numMsgsLen
+	// (e.g. 5 digits for 10000+ messages) so the description color doesn't extend into the # column
+	var subBoardDescLen = console.screen_columns - areaNumLen - numMsgsLen - 5;
+	if (this.showDatesInSubBoardList)
+		subBoardDescLen -= (this.dateLen + this.timeLen + 2);
+	// nameLen used for non-lightbar mode
 	var nameLen = console.screen_columns - areaNumLen - numMsgsLen - this.dateLen - 14; // Was - 5
 	if (usingLightbarInterface)
 	{
@@ -1605,11 +1625,10 @@ function DDMsgAreaChooser_GetColorIndexInfoForLightbarMenu(pMsgAreaHeirarchyObj,
 	// Set numItemsEnd to -1 to let the whole rest of the lines be colored
 	retObj.msgGrpListIdxes.numItemsEnd = -1;
 	// Remainder of sub-board colors
-	// Note: this.areaChooser.subBoardNameLen and this.areaChooser.subBoardListPrintfInfo[grpIdx].nameLen
-	// for a message group are probably the same.
-	// Get the timestamp of the last message, if configured to do so
+	// Use subBoardDescLen (which accounts for numMsgsLen) so the description color
+	// doesn't extend into the # messages column when a sub-board has 10000+ messages
 	//retObj.subBoardListIdxes.descEnd = retObj.subBoardListIdxes.descStart + nameLen;
-	retObj.subBoardListIdxes.descEnd = retObj.subBoardListIdxes.descStart + (+this.subBoardNameLen);
+	retObj.subBoardListIdxes.descEnd = retObj.subBoardListIdxes.descStart + subBoardDescLen;
 	// For the sub-board list, if not using the lightbar interface, we still need
 	// to account for the length of the item numbers, which will be displayed by
 	// the menu object rather than by us
@@ -2099,9 +2118,17 @@ function DDMsgAreaChooser_BuildSubBoardPrintfInfoForGrp(pGrpIndex)
 	if (typeof(this.subBoardListPrintfInfo[pGrpIndex]) == "undefined")
 	{
 		var greatestNumMsgs = getGreatestNumMsgs(pGrpIndex);
+		// Also consider items.length for collapsed sub-groups (e.g. 1000+ sub-boards in a group)
+		// so the # column stays right-aligned
+		if (this.msgArea_list[pGrpIndex].hasOwnProperty("items"))
+		{
+			var maxFromHierarchy = this.getMaxItemsCountInMsgHierarchy(this.msgArea_list[pGrpIndex]);
+			if (maxFromHierarchy > greatestNumMsgs)
+				greatestNumMsgs = maxFromHierarchy;
+		}
 
 		this.subBoardListPrintfInfo[pGrpIndex] = {};
-		this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen = greatestNumMsgs.toString().length;
+		this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen = Math.max(1, greatestNumMsgs.toString().length);
 		var numMsgsLen = this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen;
 		// Sub-board name length: With a # items length of 4, this should be
 		// 47 for an 80-column display.
@@ -2761,6 +2788,28 @@ function calcPageNum(pTopIndex, pNumPerPage)
 // Returns the greatest number of messages of all sub-boards within
 // a message group.
 //
+// For the DDMsgAreaChooser class: Recursively finds the maximum items.length
+// in the message area hierarchy (for collapsed sub-groups).  Used so numMsgsLen
+// accommodates all displayed values for right-alignment.
+function DDMsgAreaChooser_getMaxItemsCountInMsgHierarchy(pNode)
+{
+	if (!pNode)
+		return 0;
+	var max = 0;
+	if (pNode.hasOwnProperty("items"))
+	{
+		if (pNode.items.length > max)
+			max = pNode.items.length;
+		for (var i = 0; i < pNode.items.length; ++i)
+		{
+			var subMax = this.getMaxItemsCountInMsgHierarchy(pNode.items[i]);
+			if (subMax > max)
+				max = subMax;
+		}
+	}
+	return max;
+}
+
 // Parameters:
 //  pGrpIndex: The index of the message group
 //
