@@ -269,7 +269,7 @@ dpkg: $(SYNCTERM) syncterm.1.gz dpkg-control dpkgdirs changelog.gz
 	${QUIET}${INSTALL_DATA} LICENCE dpkg${DESTDIR}${PREFIX}/share/doc/syncterm/copyright
 	${QUIET}${INSTALL_DATA} changelog.gz dpkg${DESTDIR}${PREFIX}/share/doc/syncterm
 	${QUIET}${INSTALL_DATA} dpkg-control dpkg/DEBIAN/control
-	${QUIET}dpkg-deb --root-owner-group -b dpkg syncterm_1.8b-${shell date -u +%Y%m%d}_${shell dpkg-architecture -q DEB_BUILD_ARCH}.deb
+	${QUIET}dpkg-deb --root-owner-group -b dpkg syncterm_1.8rc1-${shell date -u +%Y%m%d}_${shell dpkg-architecture -q DEB_BUILD_ARCH}.deb
 	${QUIET}rm -rf dpkg
 
 devel: tags cscope.out

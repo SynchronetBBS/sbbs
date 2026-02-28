@@ -3,3 +3,4 @@
 :set extended
 :set ruler
 :set showmatch
+:set tags=../tags

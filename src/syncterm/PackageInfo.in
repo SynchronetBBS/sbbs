@@ -1,5 +1,5 @@
 name		SyncTERM
-version		1.8~b-1
+version		1.8~rc1-1
 architecture	@ARCHITECTURE_TYPE@
 summary		"ANSI-BBS terminal for connecting to BBSs"
 description	"An ANSI-BBS terminal designed to connect to remote BBSs via telnet, rlogin, or SSH. Supports ANSI music and the IBM charset when possible. Will run from a console, under X11 using XLib, or using SDL."

@@ -103,7 +103,7 @@ enum {
 	#endif
 #endif
 
-const char *syncterm_version = "SyncTERM 1.8b"
+const char *syncterm_version = "SyncTERM 1.8rc1"
 
 #define ALPHA
 #ifdef _DEBUG
