@@ -36,7 +36,7 @@
 /* like fgets(), excepts discards all carriage-returns						*/
 /* and if cols is non-zero, stops reading when displayed width >= cols		*/
 /****************************************************************************/
-char* sbbs_t::fgetline(char* s, int size, int cols, FILE* stream)
+char* sbbs_t::fgetline(char* s, int size, int cols, FILE* stream, int mode)
 {
 	int len = 0;
 
@@ -51,7 +51,7 @@ char* sbbs_t::fgetline(char* s, int size, int cols, FILE* stream)
 		s[len++] = ch;
 		if (ch == '\n')
 			break;
-		if (cols && (int)term->bstrlen(s) >= cols) {
+		if (cols && (int)term->bstrlen(s, mode) >= cols) {
 			ch = fgetc(stream);
 			if (ch == '\r')
 				ch = fgetc(stream);
@@ -211,7 +211,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 		int cols = (mode & P_SEEK) ? term->cols : 0;
 		while (!feof(stream) && !msgabort()) {
 			off_t o = ftello(stream);
-			if (fgetline(buf, length + 1, cols, stream) == NULL)
+			if (fgetline(buf, length + 1, cols, stream, mode) == NULL)
 				break;
 			truncnl(buf);
 			if ((mode & P_SEEK) && line == lines) {
@@ -267,12 +267,12 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 							errormsg(WHERE, ERR_SEEK, fpath, static_cast<int>(offset[lines - 1]));
 							break;
 						}
-						if (fgetline(buf, length + 1, cols, stream) == NULL)
+						if (fgetline(buf, length + 1, cols, stream, mode) == NULL)
 							break;
 						size_t lastline = lines - 1;
 						while (!feof(stream) && !msgabort()) {
 							o = ftello(stream);
-							if (fgetline(buf, length + 1, cols, stream) == NULL)
+							if (fgetline(buf, length + 1, cols, stream, mode) == NULL)
 								break;
 							++lastline;
 							if (lastline >= lines) {
