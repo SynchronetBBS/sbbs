@@ -42,7 +42,7 @@ char* sbbs_t::fgetline(char* s, int size, int cols, FILE* stream, int mode)
 
 	memset(s, 0, size);
 
-	while(len < size) {
+	while (len < size) {
 		int ch = fgetc(stream);
 		if (ch == EOF)
 			break;
@@ -51,7 +51,7 @@ char* sbbs_t::fgetline(char* s, int size, int cols, FILE* stream, int mode)
 		s[len++] = ch;
 		if (ch == '\n')
 			break;
-		if (cols && (int)term->bstrlen(s, mode) >= cols) {
+		if (cols && len >= cols && (int)term->bstrlen(s, mode) >= cols) {
 			ch = fgetc(stream);
 			if (ch == '\r')
 				ch = fgetc(stream);
