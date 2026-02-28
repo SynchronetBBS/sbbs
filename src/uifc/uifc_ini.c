@@ -37,11 +37,11 @@ void read_uifc_ini(const char* path, uifcapi_t* uifc, int* ciolib_mode, enum tex
 	// No vstatlock around ciolib_initial_scaling because the lock shouldn't exist yet
 	/* coverity[missing_lock:SUPPRESS] */
 	ciolib_initial_scaling = iniReadFloat(fp, section, "scaling", ciolib_initial_scaling);
-	uifc->hclr = iniReadUInteger(fp, section, "FrameColour", uifc->hclr);
-	uifc->lclr = iniReadUInteger(fp, section, "TextColour", uifc->lclr);
-	uifc->bclr = iniReadUInteger(fp, section, "BackgroundColour", uifc->bclr);
-	uifc->cclr = iniReadUInteger(fp, section, "InverseColour", uifc->cclr);
-	uifc->lbclr = iniReadUInteger(fp, section, "LightbarColour", uifc->lbclr);
+	uifc->hclr = iniReadUInteger(fp, section, "FrameColor", uifc->hclr);
+	uifc->lclr = iniReadUInteger(fp, section, "TextColor", uifc->lclr);
+	uifc->bclr = iniReadUInteger(fp, section, "BackgroundColor", uifc->bclr);
+	uifc->cclr = iniReadUInteger(fp, section, "InverseColor", uifc->cclr);
+	uifc->lbclr = iniReadUInteger(fp, section, "LightbarColor", uifc->lbclr);
 
 	if (fp != NULL)
 		iniCloseFile(fp);
