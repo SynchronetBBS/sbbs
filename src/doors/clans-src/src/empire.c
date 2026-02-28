@@ -126,33 +126,43 @@ static void SendResultPacket(struct AttackResult *Result, int16_t DestID)
 					DestID);
 }
 
+static bool
+ValidateIndex(const int16_t fid, const int16_t iidx)
+{
+	bool old = false;
+
+	const int16_t ridx = IBBS.Data.Nodes[fid - 1].Attack.ReceiveIndex;
+	// Validate the attack index against ReceiveIndex
+	// Don't allow the 256 indexes up to the current one
+	// This is signed and wraps, so be very careful
+	if (ridx == iidx)
+		old = true;
+	else if (ridx >= (INT16_MIN + 255)) {
+		if ((iidx <= ridx) && (iidx >= (ridx - 255)))
+			old = true;
+	}
+	else if (iidx <= ridx)
+		old = true;
+	else if (iidx > (INT_MAX - (255 - (ridx + INT16_MAX))))
+		old = true;
+	if (old) {
+		LogDisplayStr("|04x |12Old Attack Index, Ignoring\n");
+		return false;
+	}
+
+	// Update ReceiveIndex for the BBS
+	IBBS.Data.Nodes[fid - 1].Attack.ReceiveIndex = iidx;
+
+	return true;
+}
+
 void ProcessAttackPacket(struct AttackPacket *AttackPacket)
 {
 	struct AttackResult Result = {0};
 	int16_t LandGained, iTemp;
-	bool old = false;
 
-	// Validate the attack index against ReceiveIndex
-	// Don't allow the 256 indexes up to the current one
-	// This is signed and wraps, so be very careful
-	const int16_t ridx = IBBS.Data.Nodes[AttackPacket->BBSFromID - 1].Attack.ReceiveIndex;
-	if (ridx == AttackPacket->AttackIndex)
-		old = true;
-	else if (ridx >= (INT16_MIN + 255)) {
-		if ((AttackPacket->AttackIndex <= ridx) && (AttackPacket->AttackIndex >= (ridx - 255)))
-			old = true;
-	}
-	else if (AttackPacket->AttackIndex <= ridx)
-		old = true;
-	else if (AttackPacket->AttackIndex > (INT_MAX - (255 - (ridx + INT16_MAX))))
-		old = true;
-	if (old) {
-		LogDisplayStr("|04x |12Old Attack Index, Ignoring\n");
+	if (!ValidateIndex(AttackPacket->BBSFromID, AttackPacket->AttackIndex))
 		return;
-	}
-
-	// Update ReceiveIndex for the BBS
-	IBBS.Data.Nodes[AttackPacket->BBSFromID - 1].Attack.ReceiveIndex = AttackPacket->AttackIndex;
 
 	// initialize result beforehand
 	Result.InterBBS = true;
@@ -249,192 +259,193 @@ void ProcessResultPacket(struct AttackResult *Result)
 	FILE *fpBackup;
 
 	WhichBBS = Result->BBSIDTo;
-
-	switch (Result->AttackerType) {
-		case EO_VILLAGE :
-			// update attack's army
-			Village.Data.Empire.Army.Footmen += Result->ReturningArmy.Footmen;
-			Village.Data.Empire.Army.Axemen  += Result->ReturningArmy.Axemen;
-			Village.Data.Empire.Army.Knights += Result->ReturningArmy.Knights;
-
-			// give attacker his land
-			Village.Data.Empire.Land         += Result->LandStolen;
-			Village.Data.Empire.VaultGold    += Result->GoldStolen;
-			strlcpy(szAttackerName, Village.Data.szName, sizeof(szAttackerName));
-			break;
-		case EO_CLAN :
-			if (GetClan(Result->AttackerID, &TmpClan)) {
-				TmpClan.Empire.Army.Footmen += Result->ReturningArmy.Footmen;
-				TmpClan.Empire.Army.Axemen  += Result->ReturningArmy.Axemen;
-				TmpClan.Empire.Army.Knights += Result->ReturningArmy.Knights;
+	if (ValidateIndex(WhichBBS, Result->ResultIndex)) {
+		switch (Result->AttackerType) {
+			case EO_VILLAGE :
+				// update attack's army
+				Village.Data.Empire.Army.Footmen += Result->ReturningArmy.Footmen;
+				Village.Data.Empire.Army.Axemen  += Result->ReturningArmy.Axemen;
+				Village.Data.Empire.Army.Knights += Result->ReturningArmy.Knights;
 
 				// give attacker his land
-				TmpClan.Empire.Land     += Result->LandStolen;
-				TmpClan.Empire.VaultGold  += Result->GoldStolen;
+				Village.Data.Empire.Land         += Result->LandStolen;
+				Village.Data.Empire.VaultGold    += Result->GoldStolen;
+				strlcpy(szAttackerName, Village.Data.szName, sizeof(szAttackerName));
+				break;
+			case EO_CLAN :
+				if (GetClan(Result->AttackerID, &TmpClan)) {
+					TmpClan.Empire.Army.Footmen += Result->ReturningArmy.Footmen;
+					TmpClan.Empire.Army.Axemen  += Result->ReturningArmy.Axemen;
+					TmpClan.Empire.Army.Knights += Result->ReturningArmy.Knights;
 
-				// give points for win, take away some for loss
-				if (Result->Success)
-					PClan.Points += 50;
-				else
-					PClan.Points -= 25;
+					// give attacker his land
+					TmpClan.Empire.Land     += Result->LandStolen;
+					TmpClan.Empire.VaultGold  += Result->GoldStolen;
 
-				strlcpy(szAttackerName, TmpClan.szName, sizeof(szAttackerName));
+					// give points for win, take away some for loss
+					if (Result->Success)
+						PClan.Points += 50;
+					else
+						PClan.Points -= 25;
 
-				Clan_Update(&TmpClan);
+					strlcpy(szAttackerName, TmpClan.szName, sizeof(szAttackerName));
+
+					Clan_Update(&TmpClan);
+				}
+				FreeClanMembers(&TmpClan);
+				break;
+		}
+
+		if (Result->DefenderType == EO_VILLAGE)
+			snprintf(szDefenderName, sizeof(szDefenderName), "the village of %s", Result->szDefenderName);
+		else
+			snprintf(szDefenderName, sizeof(szDefenderName), "the clan of %s", Result->szDefenderName);
+
+		// write to news
+		if (Result->NoTarget && Result->Goal == G_OUSTRULER) {
+			// snprintf(szNews, sizeof(szNews), ">> %s's army returns after finding no ruler to oust in %s\n",
+			snprintf(szNews, sizeof(szNews), ST_WNEWS5,
+					szAttackerName, VillageName(WhichBBS));
+			News_AddNews(szNews);
+
+			// strlcpy(szOutcome, "but found no ruler to oust!\n", sizeof(szOutcome));
+			strlcpy(szOutcome, ST_WNEWS6, sizeof(szOutcome));
+		}
+		else if (Result->NoTarget) {
+			// snprintf(szNews, sizeof(szNews), ">> %s's army returns after being unable to find the clan empire.\n",
+			snprintf(szNews, sizeof(szNews), ST_WNEWS7, szAttackerName);
+			News_AddNews(szNews);
+
+			// strlcpy(szOutcome, "but found no empire!\n", sizeof(szOutcome));
+			strlcpy(szOutcome, ST_WNEWS8, sizeof(szOutcome));
+		}
+		else if (Result->Success) {
+			// strlcpy(szOutcome, "and came out victorious!\n", sizeof(szOutcome));
+			strlcpy(szOutcome, ST_WNEWS9, sizeof(szOutcome));
+
+			switch (Result->Goal) {
+				case G_OUSTRULER :
+					// snprintf(szNews, sizeof(szNews), ">> %s's army returns after successfully ousting the ruler of %s\n\n",
+					snprintf(szNews, sizeof(szNews), ST_WNEWS10,
+							szAttackerName, VillageName(WhichBBS));
+					News_AddNews(szNews);
+					break;
+				case G_STEALLAND :
+					// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s looting %d land from %s.\n\n",
+					snprintf(szNews, sizeof(szNews), ST_WNEWS11,
+							szAttackerName,
+							VillageName(WhichBBS),
+							(int)Result->LandStolen, szDefenderName);
+					News_AddNews(szNews);
+					break;
+				case G_STEALGOLD :
+					// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s looting %d gold from %s.\n\n",
+					snprintf(szNews, sizeof(szNews), ST_WNEWS12,
+							szAttackerName,
+							VillageName(WhichBBS),
+							(long)Result->GoldStolen, szDefenderName);
+					News_AddNews(szNews);
+					break;
+				case G_DESTROY :
+					// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s destroying %s's buildings.\n\n",
+					snprintf(szNews, sizeof(szNews), ST_WNEWS13,
+							szAttackerName,
+							VillageName(WhichBBS), szDefenderName);
+					News_AddNews(szNews);
+					break;
 			}
-			FreeClanMembers(&TmpClan);
-			break;
-	}
-
-	if (Result->DefenderType == EO_VILLAGE)
-		snprintf(szDefenderName, sizeof(szDefenderName), "the village of %s", Result->szDefenderName);
-	else
-		snprintf(szDefenderName, sizeof(szDefenderName), "the clan of %s", Result->szDefenderName);
-
-	// write to news
-	if (Result->NoTarget && Result->Goal == G_OUSTRULER) {
-		// snprintf(szNews, sizeof(szNews), ">> %s's army returns after finding no ruler to oust in %s\n",
-		snprintf(szNews, sizeof(szNews), ST_WNEWS5,
-				szAttackerName, VillageName(WhichBBS));
-		News_AddNews(szNews);
-
-		// strlcpy(szOutcome, "but found no ruler to oust!\n", sizeof(szOutcome));
-		strlcpy(szOutcome, ST_WNEWS6, sizeof(szOutcome));
-	}
-	else if (Result->NoTarget) {
-		// snprintf(szNews, sizeof(szNews), ">> %s's army returns after being unable to find the clan empire.\n",
-		snprintf(szNews, sizeof(szNews), ST_WNEWS7, szAttackerName);
-		News_AddNews(szNews);
-
-		// strlcpy(szOutcome, "but found no empire!\n", sizeof(szOutcome));
-		strlcpy(szOutcome, ST_WNEWS8, sizeof(szOutcome));
-	}
-	else if (Result->Success) {
-		// strlcpy(szOutcome, "and came out victorious!\n", sizeof(szOutcome));
-		strlcpy(szOutcome, ST_WNEWS9, sizeof(szOutcome));
+		}
+		else {
+			// strlcpy(szOutcome, "and came out defeated.\n", sizeof(szOutcome));
+			strlcpy(szOutcome, ST_WNEWS14, sizeof(szOutcome));
+			// snprintf(szNews, sizeof(szNews), ">> %s's army returns unsuccessfully from %s after attacking %s.\n\n",
+			snprintf(szNews, sizeof(szNews), ST_WNEWS15,
+					szAttackerName,
+					VillageName(WhichBBS), szDefenderName);
+			News_AddNews(szNews);
+		}
 
 		switch (Result->Goal) {
 			case G_OUSTRULER :
-				// snprintf(szNews, sizeof(szNews), ">> %s's army returns after successfully ousting the ruler of %s\n\n",
-				snprintf(szNews, sizeof(szNews), ST_WNEWS10,
-						szAttackerName, VillageName(WhichBBS));
-				News_AddNews(szNews);
+				strlcpy(szGoal, "to oust the ruler", sizeof(szGoal));
 				break;
 			case G_STEALLAND :
-				// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s looting %d land from %s.\n\n",
-				snprintf(szNews, sizeof(szNews), ST_WNEWS11,
-						szAttackerName,
-						VillageName(WhichBBS),
-						(int)Result->LandStolen, szDefenderName);
-				News_AddNews(szNews);
+				strlcpy(szGoal, "to steal land", sizeof(szGoal));
 				break;
 			case G_STEALGOLD :
-				// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s looting %d gold from %s.\n\n",
-				snprintf(szNews, sizeof(szNews), ST_WNEWS12,
-						szAttackerName,
-						VillageName(WhichBBS),
-						(long)Result->GoldStolen, szDefenderName);
-				News_AddNews(szNews);
+				strlcpy(szGoal, "to steal gold", sizeof(szGoal));
 				break;
 			case G_DESTROY :
-				// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s destroying %s's buildings.\n\n",
-				snprintf(szNews, sizeof(szNews), ST_WNEWS13,
-						szAttackerName,
-						VillageName(WhichBBS), szDefenderName);
-				News_AddNews(szNews);
+				strlcpy(szGoal, "to destroy", sizeof(szGoal));
 				break;
 		}
-	}
-	else {
-		// strlcpy(szOutcome, "and came out defeated.\n", sizeof(szOutcome));
-		strlcpy(szOutcome, ST_WNEWS14, sizeof(szOutcome));
-		// snprintf(szNews, sizeof(szNews), ">> %s's army returns unsuccessfully from %s after attacking %s.\n\n",
-		snprintf(szNews, sizeof(szNews), ST_WNEWS15,
-				szAttackerName,
-				VillageName(WhichBBS), szDefenderName);
-		News_AddNews(szNews);
-	}
 
-	switch (Result->Goal) {
-		case G_OUSTRULER :
-			strlcpy(szGoal, "to oust the ruler", sizeof(szGoal));
-			break;
-		case G_STEALLAND :
-			strlcpy(szGoal, "to steal land", sizeof(szGoal));
-			break;
-		case G_STEALGOLD :
-			strlcpy(szGoal, "to steal gold", sizeof(szGoal));
-			break;
-		case G_DESTROY :
-			strlcpy(szGoal, "to destroy", sizeof(szGoal));
-			break;
-	}
+		// snprintf(szMessage, sizeof(szMessage), "Results of %s's attack on %s have returned.\n Your troops attempted %s %s.\n\nYou killed the following",
+		snprintf(szMessage, sizeof(szMessage), ST_WNEWS16,
+				Result->AttackerType == EO_VILLAGE ? "the town" : "your clan",
+				szDefenderName, szGoal, szOutcome);
 
-	// snprintf(szMessage, sizeof(szMessage), "Results of %s's attack on %s have returned.\n Your troops attempted %s %s.\n\nYou killed the following",
-	snprintf(szMessage, sizeof(szMessage), ST_WNEWS16,
-			Result->AttackerType == EO_VILLAGE ? "the town" : "your clan",
-			szDefenderName, szGoal, szOutcome);
-
-	// append what was lost and who you killed
-	//    snprintf(szString, sizeof(szString), " %ld Footmen\n %ld Axemen\n %ld Knights \n",
-	snprintf(szString, sizeof(szString), ST_WAR0,
-			(long)Result->DefendCasualties.Footmen,
-			(long)Result->DefendCasualties.Axemen,
-			(long)Result->DefendCasualties.Knights);
-	strlcat(szMessage, szString, sizeof(szMessage));
-	//    snprintf(szString, sizeof(szString), "You lost the following:\n %ld Footmen\n %ld Axemen\n %ld Knights \n",
-	snprintf(szString, sizeof(szString), ST_WAR1,
-			(long)Result->AttackCasualties.Footmen,
-			(long)Result->AttackCasualties.Axemen,
-			(long)Result->AttackCasualties.Knights);
-	strlcat(szMessage, szString, sizeof(szMessage));
-
-	// snprintf(szString, sizeof(szString), "The following have returned:\n %ld Footmen\n %ld Axemen\n %ld Knights \n",
-	snprintf(szString, sizeof(szString), ST_WNEWS17,
-			(long)Result->ReturningArmy.Footmen,
-			(long)Result->ReturningArmy.Axemen,
-			(long)Result->ReturningArmy.Knights);
-	strlcat(szMessage, szString, sizeof(szMessage));
-
-	switch (Result->Goal) {
-		case G_STEALLAND :
-			if (Result->LandStolen) {
-				// snprintf(szString, sizeof(szString), "You stole %ld land.\n", Result->LandStolen);
-				snprintf(szString, sizeof(szString), ST_WNEWS18, (int)Result->LandStolen);
-				strlcat(szMessage, szString, sizeof(szMessage));
-			}
-			else if (Result->Success)
-				// strlcat(szMessage, "You found no land to steal!\n", sizeof(szMessage));
-				strlcat(szMessage, ST_WNEWS19, sizeof(szMessage));
-			break;
-		case G_STEALGOLD :
-			if (Result->GoldStolen) {
-				// snprintf(szString, sizeof(szString), "You stole %ld gold.\n", Result->GoldStolen);
-				snprintf(szString, sizeof(szString), ST_WNEWS20, (long)Result->GoldStolen);
-				strlcat(szMessage, szString, sizeof(szMessage));
-			}
-			else if (Result->Success)
-				// strlcat(szMessage, "You found no gold to steal!\n", sizeof(szMessage));
-				strlcat(szMessage, ST_WNEWS21, sizeof(szMessage));
-			break;
-	}
-
-	ShowedOne = false;
-	for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
-		if (Result->BuildingsDestroyed[iTemp] == 0)
-			continue;
-
-		if (!ShowedOne) {
-			// strlcat(szMessage, "The following buildings were destroyed:\n", sizeof(szMessage));
-			strlcat(szMessage, ST_PAR2, sizeof(szMessage));
-			ShowedOne = true;
-		}
-		snprintf(szString, sizeof(szString), ST_WRESULTS10, (int)Result->BuildingsDestroyed[iTemp],
-				BuildingType[iTemp].szName);
+		// append what was lost and who you killed
+		//    snprintf(szString, sizeof(szString), " %ld Footmen\n %ld Axemen\n %ld Knights \n",
+		snprintf(szString, sizeof(szString), ST_WAR0,
+				(long)Result->DefendCasualties.Footmen,
+				(long)Result->DefendCasualties.Axemen,
+				(long)Result->DefendCasualties.Knights);
 		strlcat(szMessage, szString, sizeof(szMessage));
-	}
+		//    snprintf(szString, sizeof(szString), "You lost the following:\n %ld Footmen\n %ld Axemen\n %ld Knights \n",
+		snprintf(szString, sizeof(szString), ST_WAR1,
+				(long)Result->AttackCasualties.Footmen,
+				(long)Result->AttackCasualties.Axemen,
+				(long)Result->AttackCasualties.Knights);
+		strlcat(szMessage, szString, sizeof(szMessage));
 
-	GenericMessage(szMessage, Result->AttackerID, Junk, "", false);
+		// snprintf(szString, sizeof(szString), "The following have returned:\n %ld Footmen\n %ld Axemen\n %ld Knights \n",
+		snprintf(szString, sizeof(szString), ST_WNEWS17,
+				(long)Result->ReturningArmy.Footmen,
+				(long)Result->ReturningArmy.Axemen,
+				(long)Result->ReturningArmy.Knights);
+		strlcat(szMessage, szString, sizeof(szMessage));
+
+		switch (Result->Goal) {
+			case G_STEALLAND :
+				if (Result->LandStolen) {
+					// snprintf(szString, sizeof(szString), "You stole %ld land.\n", Result->LandStolen);
+					snprintf(szString, sizeof(szString), ST_WNEWS18, (int)Result->LandStolen);
+					strlcat(szMessage, szString, sizeof(szMessage));
+				}
+				else if (Result->Success)
+					// strlcat(szMessage, "You found no land to steal!\n", sizeof(szMessage));
+					strlcat(szMessage, ST_WNEWS19, sizeof(szMessage));
+				break;
+			case G_STEALGOLD :
+				if (Result->GoldStolen) {
+					// snprintf(szString, sizeof(szString), "You stole %ld gold.\n", Result->GoldStolen);
+					snprintf(szString, sizeof(szString), ST_WNEWS20, (long)Result->GoldStolen);
+					strlcat(szMessage, szString, sizeof(szMessage));
+				}
+				else if (Result->Success)
+					// strlcat(szMessage, "You found no gold to steal!\n", sizeof(szMessage));
+					strlcat(szMessage, ST_WNEWS21, sizeof(szMessage));
+				break;
+		}
+
+		ShowedOne = false;
+		for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
+			if (Result->BuildingsDestroyed[iTemp] == 0)
+				continue;
+
+			if (!ShowedOne) {
+				// strlcat(szMessage, "The following buildings were destroyed:\n", sizeof(szMessage));
+				strlcat(szMessage, ST_PAR2, sizeof(szMessage));
+				ShowedOne = true;
+			}
+			snprintf(szString, sizeof(szString), ST_WRESULTS10, (int)Result->BuildingsDestroyed[iTemp],
+					BuildingType[iTemp].szName);
+			strlcat(szMessage, szString, sizeof(szMessage));
+		}
+
+		GenericMessage(szMessage, Result->AttackerID, Junk, "", false);
+	}
 
 	// now, wipe out that packet from backup.dat
 	fpBackup = fopen("backup.dat", "r+b");
