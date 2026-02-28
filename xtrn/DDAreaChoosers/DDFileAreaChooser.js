@@ -112,10 +112,16 @@
  *                            user switches between libraries (toggaleable w/ a user setting)
  * 2025-12-31 Eric Oulashin   Version 1.48
  *                            Releasing this version
+ * 2026-02-27 Eric Oulashin   Version 1.49
+ *                            Fix: When a file directory has 10,000+ files, the description
+ *                            column color no longer extends into the # items column.  The
+ *                            per-library descFieldLen (which accounts for numFilesLen) is
+ *                            now used for color regions when displaying directories.
+ *                            Fix: # items column now right-aligns correctly.  numFilesLen and
+ *                            numDirsLen are now dynamic (consider subdir counts and lib dir counts).
  */
 
 // TODO: Failing silently when 1st argument is true
-// TODO: In the area list, the 10,000ths digit (for # items) is in a different color)
 
 /* Command-line arguments:
    1 (argv[0]): Boolean - Whether or not to choose a file library first (default).  If
@@ -158,8 +164,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.48";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-12-31";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.49";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2026-02-27";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -312,6 +318,7 @@ function DDFileAreaChooser()
 	this.WriteLightbarKeyHelpErrorMsg = DDFileAreaChooser_WriteLightbarKeyHelpErrorMsg;
 	this.FindFileAreaIdxFromText = DDFileAreaChooser_FindFileAreaIdxFromText;
 	this.GetGreatestNumFiles = DDFileAreaChooser_GetGreatestNumFiles;
+	this.getMaxItemsCountInHierarchy = DDFileAreaChooser_getMaxItemsCountInHierarchy;
 	this.DoUserSettings_Scrollable = DDFileAreaChooser_DoUserSettings_Scrollable;
 	this.DoUserSettings_Traditional = DDFileAreaChooser_DoUserSettings_Traditional;
 
@@ -326,6 +333,16 @@ function DDFileAreaChooser()
     // directory collapsing is to be used or not.
 	this.lib_list = getAreaHeirarchy(DDAC_FILE_AREAS, this.useDirCollapsing, this.dirCollapseSeparator);
 
+	// Make numDirsLen dynamic so the # column stays right-aligned when a library has 1000+ directories
+	var maxDirsInAnyLib = 0;
+	for (var i = 0; i < this.lib_list.length; ++i)
+	{
+		if (this.lib_list[i].hasOwnProperty("items") && this.lib_list[i].items.length > maxDirsInAnyLib)
+			maxDirsInAnyLib = this.lib_list[i].items.length;
+	}
+	this.numDirsLen = Math.max(4, Math.max(1, maxDirsInAnyLib.toString().length));
+	this.descFieldLen = console.screen_columns - this.areaNumLen - this.numDirsLen - 5;
+
 	// printf strings used for outputting the file libraries
 	this.fileLibPrintfStr = " " + this.colors.areaNum + "%" + this.areaNumLen + "d "
 	                      + this.colors.desc + "%-" + this.descFieldLen
@@ -333,7 +350,7 @@ function DDFileAreaChooser()
 	this.fileLibHighlightPrintfStr = "\x01n" + this.colors.bkgHighlight + " "
 	                               + this.colors.areaNumHighlight + "%" + this.areaNumLen + "d "
 	                               + this.colors.descHighlight + "%-" + this.descFieldLen
-	                               + "s " + this.colors.numItemsHighlight + "%4d";
+	                               + "s " + this.colors.numItemsHighlight + "%" + this.numDirsLen + "d";
 	this.fileLibListHdrPrintfStr = this.colors.header + " %5s %-"
 	                             + +(this.descFieldLen-2) + "s %6s";
 	this.fileDirHdrPrintfStr = this.colors.header + " %5s %-"
@@ -1041,12 +1058,26 @@ function DDFileAreaChooser_CreateLightbarMenu(pLibName, pDirHeirarchyObj, pHeira
 		numItemsWidth: 0
 	};
 
+	// Determine the correct desc width for color regions.  When showing directories
+	// within a library, use the per-library descFieldLen (which accounts for the
+	// library's numFilesLen - e.g. 5 digits for 10000+ files).  Using the global
+	// this.descFieldLen when a library has 10000+ files would make the description
+	// color extend into the # items column.
+	var descWidthForColors = this.descFieldLen;
+	if (pDirHeirarchyObj !== this.lib_list && Array.isArray(pDirHeirarchyObj) && pDirHeirarchyObj.length > 0
+	    && pDirHeirarchyObj[0].hasOwnProperty("topLevelIdx"))
+	{
+		var topLevelIdx = pDirHeirarchyObj[0].topLevelIdx;
+		if (typeof(this.fileDirListPrintfInfo[topLevelIdx]) !== "undefined"
+		    && this.fileDirListPrintfInfo[topLevelIdx].hasOwnProperty("descFieldLen"))
+			descWidthForColors = this.fileDirListPrintfInfo[topLevelIdx].descFieldLen;
+	}
 	// Get color index information for the menu
-	var colorIdxInfo = this.GetColorIndexInfoForLightbarMenu(pDirHeirarchyObj);
+	var colorIdxInfo = this.GetColorIndexInfoForLightbarMenu(pDirHeirarchyObj, null, descWidthForColors);
 	// Calculate column widths for the return object
 	retObj.itemNumWidth = colorIdxInfo.fileDirListIdxes.itemNumEnd - 1;
 	//retObj.descWidth = colorIdxInfo.fileDirListIdxes.descEnd - colorIdxInfo.fileDirListIdxes.descStart;
-	retObj.descWidth = this.descFieldLen;
+	retObj.descWidth = descWidthForColors;
 	retObj.numItemsWidth = console.screen_columns - colorIdxInfo.fileDirListIdxes.numItemsStart;
 	// Create and set up the menu
 	var fileDirMenuHeight = console.screen_rows - pMenuTopRow;
@@ -1121,7 +1152,7 @@ function DDFileAreaChooser_CreateLightbarMenu(pLibName, pDirHeirarchyObj, pHeira
 		};
 		fileDirMenu.numItemsLen = fileDirMenu.NumItems().toString().length;
 		// Replace the menu's GetItem() function to create & return an item for the menu
-		fileDirMenu.descFieldLen = this.descFieldLen; // Mainly for lightbar mode
+		fileDirMenu.descFieldLen = descWidthForColors; // Mainly for lightbar mode
 		if (!fileDirMenu.allowANSI)
 			fileDirMenu.descFieldLen += 3;
 		fileDirMenu.GetItem = function(pItemIdx) {
@@ -1157,7 +1188,7 @@ function DDFileAreaChooser_CreateLightbarMenu(pLibName, pDirHeirarchyObj, pHeira
 			if (this.allowANSI)
 			{
 				menuItemObj.text += format(this.areaChooser.fileDirListPrintfInfo[this.dirHeirarchyObj[pItemIdx].topLevelIdx].printfStr, pItemIdx+1,
-										   areaDesc.substr(0, this.areaChooser.descFieldLen), numItems);
+										   areaDesc.substr(0, this.descFieldLen), numItems);
 			}
 			else
 			{
@@ -1528,9 +1559,10 @@ function DDFileAreaChooser_buildFileDirPrintfInfoForLib(pLibIndex)
 		// and the greatest number of files and set up the according
 		// information in the file directory list object
 		var fileDirInfo = this.GetGreatestNumFiles(pLibIndex);
+		var greatestNum = 0;
 		if (fileDirInfo != null)
 		{
-			this.fileDirListPrintfInfo[pLibIndex].numFilesLen = fileDirInfo.greatestNumFiles.toString().length;
+			greatestNum = fileDirInfo.greatestNumFiles;
 			this.fileDirListPrintfInfo[pLibIndex].fileCounts = fileDirInfo.fileCounts.slice(0);
 			this.fileDirListPrintfInfo[pLibIndex].fileCountsByCode = fileDirInfo.fileCountsByCode;
 		}
@@ -1563,6 +1595,15 @@ function DDFileAreaChooser_buildFileDirPrintfInfoForLib(pLibIndex)
 					this.fileDirListPrintfInfo[pLibIndex].fileCounts[dirIdx] == 0;
 			}
 		}
+		// Also consider items.length for collapsed subdirs (e.g. 1000+ subdirs in a group)
+		// so the # column stays right-aligned
+		if (typeof(this.lib_list[pLibIndex]) !== "undefined" && this.lib_list[pLibIndex].hasOwnProperty("items"))
+		{
+			var maxFromHierarchy = this.getMaxItemsCountInHierarchy(this.lib_list[pLibIndex], fileDirInfo);
+			if (maxFromHierarchy > greatestNum)
+				greatestNum = maxFromHierarchy;
+		}
+		this.fileDirListPrintfInfo[pLibIndex].numFilesLen = Math.max(1, greatestNum.toString().length);
 
 		// Set the description field length and printf strings for
 		// this file library
@@ -1764,6 +1805,38 @@ function trimSpaces(pString, pLeading, pMultiple, pTrailing)
 function calcPageNum(pTopIndex, pNumPerPage)
 {
   return ((pTopIndex / pNumPerPage) + 1);
+}
+
+// For the DDFileAreaChooser class: Recursively finds the maximum count displayed
+// in the # column (items.length for groups, file count for dirs) in the hierarchy.
+// Used to ensure numFilesLen accommodates all displayed values for right-alignment.
+function DDFileAreaChooser_getMaxItemsCountInHierarchy(pNode, pFileDirInfo)
+{
+	if (!pNode)
+		return 0;
+	var max = 0;
+	if (pNode.hasOwnProperty("items"))
+	{
+		if (pNode.items.length > max)
+			max = pNode.items.length;
+		for (var i = 0; i < pNode.items.length; ++i)
+		{
+			var subMax = this.getMaxItemsCountInHierarchy(pNode.items[i], pFileDirInfo);
+			if (subMax > max)
+				max = subMax;
+		}
+	}
+	else if (pNode.hasOwnProperty("subItemObj") && pFileDirInfo != null && pFileDirInfo.fileCounts != null)
+	{
+		var dirIdx = pNode.subItemObj.index;
+		if (dirIdx >= 0 && dirIdx < pFileDirInfo.fileCounts.length)
+		{
+			var cnt = pFileDirInfo.fileCounts[dirIdx];
+			if (cnt > max)
+				max = cnt;
+		}
+	}
+	return max;
 }
 
 // For the DDFileAreaChooser class: For a given file library index, returns an
