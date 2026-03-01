@@ -217,6 +217,10 @@ function read(usernumber, username, netaddr, bbsid)
 		}
 	}
 	if (obj === undefined || obj == null) {
+		if (!username) {
+			var uobj = new User(usernum);
+			username = uobj.alias;
+		}
 		obj = {disabled: false, data: base64_encode(load({}, "identicon.js").identicon(username).BIN)};
 	}
 	cache_set(usernum >= 1 ? usernum : username, obj, netaddr);
