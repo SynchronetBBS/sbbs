@@ -216,6 +216,9 @@ function read(usernumber, username, netaddr, bbsid)
 				obj = read_netuser(namehash, bbsid);
 		}
 	}
+	if (obj === undefined || obj == null) {
+		obj = {disabled: false, data: base64_encode(load({}, "identicon.js").identicon(username).BIN)};
+	}
 	cache_set(usernum >= 1 ? usernum : username, obj, netaddr);
 	return obj;
 }
