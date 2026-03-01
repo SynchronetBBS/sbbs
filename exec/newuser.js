@@ -38,7 +38,7 @@ if(bbs.online && options.ask_qnet) {
 if(!qnet && (options.avatar || options.avatar_file || options.avatar_identicon)) {
 	var avatar_lib = load({}, 'avatar_lib.js');
 	if (options.avatar_identicon)
-		avatar_lib.update_localuser(user.number, base64_encode(load({}, "identicon.js").identicon(user.alias).BIN));
+		avatar_lib.set_identicon(user);
 	else if(options.avatar_file)
 		avatar_lib.import_file(user.number, options.avatar_file, options.avatar_offset);
 	else

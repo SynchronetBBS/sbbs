@@ -230,6 +230,11 @@ function update_localuser(usernum, data)
 	return write_localuser(usernum, obj);
 }
 
+function set_identicon(user)
+{
+	return update_localuser(user.number, base64_encode(load({}, "identicon.js").identicon(user.alias).BIN));
+}
+
 function import_file(usernum, filename, offset)
 {
 	sauce_lib = load({}, 'sauce_lib.js');

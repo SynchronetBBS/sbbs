@@ -764,7 +764,7 @@ function MainMenu(parent_frame) {
 			frames.parent.invalidate();
 		});
 		state.tree.addItem('Identicon as avatar', function () {
-			avatar_lib.update_localuser(user.number, base64_encode(load({}, "identicon.js").identicon(user.alias).BIN));
+			avatar_lib.set_identicon(user);
 		});
 		state.tree.addItem('Download your avatar', function () {
 			console.clear(WHITE);
