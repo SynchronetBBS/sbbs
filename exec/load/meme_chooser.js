@@ -16,7 +16,7 @@ var lib = load({}, "meme_lib.js");
 
 function choose(border)
 {
-	console.mnemonics(format("~Border, ~Color, ~Justify, ~@Quit@, or \x01\\[ENTER=Select]: "));
+	console.mnemonics(format("~Border, ~Color, ~Justify, ~@Quit@, or \x01\\[ENTER=Accept]: "));
 	var ch = console.getkeys("BCJ"
 		+ KEY_LEFT + KEY_RIGHT + KEY_UP + KEY_DOWN + KEY_HOME + KEY_END + "\r"
 		+ console.next_key + console.prev_key + console.quit_key, lib.BORDER_COUNT);
