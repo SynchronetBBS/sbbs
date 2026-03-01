@@ -2,6 +2,11 @@ require('graphic.js', 'Graphic');
 
 function identicon(value)
 {
+	if (value === null)
+		value = user.alias;
+	if (value === undefined)
+		value = ascii(1)+"<undefined>";
+
 	var hash = md5_calc(value, true);
 	var bits = 0;
 	var bv = 0;
