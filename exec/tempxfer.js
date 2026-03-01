@@ -90,7 +90,7 @@ while(bbs.online) {
 		bbs.menu("tempxfer");
 	console.putmsg(bbs.text(bbs.text.TempDirPrompt));
 	var keys = "ACDEFNILQRVX?";
-	switch(console.getkeys(keys, K_UPPER)) {
+	switch(console.getkeys(keys, 0, K_UPPER)) {
 		case 'A': // Add (legacy)
 		case 'C': // Create temp archive
 			if(!checktemp())

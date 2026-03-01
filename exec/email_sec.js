@@ -18,7 +18,7 @@ while(bbs.online) {
 	console.print("\r\n\x01_\x01y\x01hE-mail: \x01n");
 	var wm_mode = WM_NONE;
 	var cmdkeys = "LSARUFNKQ?\r";
-	var key = console.getkeys(cmdkeys,K_UPPER);
+	var key = console.getkeys(cmdkeys, 0, K_UPPER);
 	switch(key) {
 		case 'L':	// List/read your mail
 			bbs.exec("?msglist.js mail -preview");

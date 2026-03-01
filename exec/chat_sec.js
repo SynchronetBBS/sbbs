@@ -64,7 +64,7 @@ while(bbs.online && !console.aborted) {
 		keys += "R";
 	if(options.finger && (options.finger_requirements === undefined || user.compare_ars(options.finger_requirements)))
 		keys += "F";
-	switch(console.getkeys(keys, K_UPPER)) {
+	switch(console.getkeys(keys, 0, K_UPPER)) {
 		case "S":
 			var val = user.chat_settings ^= CHAT_SPLITP;
 			write("\x01n\r\nPrivate split-screen chat is now: \x01h");

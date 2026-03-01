@@ -19,7 +19,7 @@ while (bbs.online && !console.aborted) {
     console.printfile(msg, P_NOATCODES | P_AUTO_UTF8);
 	++displayed;
     console.mnemonics("\r\n~@Quit@, ~Recent, ~@Previous@ or [~@Next@]: ");
-    switch(console.getkeys("\b-+[]\x02\x1e\x0a\x1d\x06RPN\r" + console.quit_key)) {
+    switch(console.getkeys("\b-+[]\x02\x1e\x0a\x1d\x06RPN\r" + console.quit_key, 0)) {
         case 'R':
         case KEY_HOME:
             num = -1;

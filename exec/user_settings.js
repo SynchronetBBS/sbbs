@@ -187,7 +187,7 @@ while (bbs.online && !js.terminated) {
 	}
 	var keys = display_menu(thisuser);
 
-	switch(console.getkeys(keys, K_UPPER)) {
+	switch(console.getkeys(keys, 0, K_UPPER)) {
 		case 'A':
 			var defaultext = 0;
 			var archivetypes = Archive.supported_formats || [ "zip", "7z", "tgz" ];

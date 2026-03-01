@@ -98,7 +98,7 @@ while(bbs.online && !js.terminated) {
 	console.putmsg(options.prompt || "\x01v@Which@ or [\x01VQ\x01v] to @Quit@: \x01V", P_SAVEATR);
 	console.add_hotspot('Q');
 	
-	switch(console.getkeys(keys, K_UPPER)) {
+	switch(console.getkeys(keys, 0, K_UPPER)) {
 		case 'T':
 			console.newline();
 			if (confirm(bbs.text(bbs.text.AutoTerminalQ), user.settings & USER_AUTOTERM)) {

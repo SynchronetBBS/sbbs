@@ -245,7 +245,7 @@ function main_info()
 			bbs.menu("maininfo");
 		bbs.nodesync();
 		console.print("\r\n\x01y\x01h"+ gettext("Info") + ": \x01n");
-		var key = console.getkeys("?QISVY\r");
+		var key = console.getkeys("?QISVY\r", 0);
 		bbs.log_key(key);
 		switch(key) {
 		case '?':
@@ -294,7 +294,7 @@ function file_info()
 			bbs.menu("xferinfo");
 		bbs.nodesync();
 		console.print("\r\n\x01y\x01h" + gettext("Info") + ": \x01n");
-		key=console.getkeys("?TYDUQ\r");
+		key=console.getkeys("?TYDUQ\r", 0);
 		bbs.log_key(key);
 
 		switch(key) {
@@ -330,7 +330,7 @@ function list_users()
 {
 	console.print("\r\n\x01c\x01h" + "List Users" + "\r\n");
 	console.mnemonics("\r\n~" + gettext("Logons Today") + ", ~" + gettext("Yesterday") + ", ~" + gettext("Sub-board") + ", " + gettext("or") + " ~@All@: ");
-	switch(console.getkeys("LSY\r" + console.all_key)) {
+	switch(console.getkeys("LSY\r" + console.all_key, 0)) {
 	case 'L':
 		bbs.list_logons();
 		break;

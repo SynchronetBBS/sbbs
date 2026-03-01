@@ -118,7 +118,7 @@ while(bbs.online && !js.terminated) {
 	console.print(options.prompt || "\x01v@Which@ or [\x01VQ\x01v] to @Quit@: \x01V", P_ATCODES);
 	console.add_hotspot('Q');
 
-	switch(console.getkeys(keys, K_UPPER)) {
+	switch(console.getkeys(keys, 0, K_UPPER)) {
 		case 'A':
 			prompts.get_alias(user);
 			break;

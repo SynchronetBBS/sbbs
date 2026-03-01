@@ -16,7 +16,7 @@ while(bbs.online && !js.terminated) {
 		bbs.menu(menufile);
 	bbs.nodesync();
 	console.print(options.prompt || ("\r\n\x01y\x01h" + gettext("Config") + ": \x01n"), P_ATCODES);
-	var key = console.getkeys("?QBEPZ\r");
+	var key = console.getkeys("?QBEPZ\r", 0);
 	bbs.log_key(key);
 
 	switch(key) {
