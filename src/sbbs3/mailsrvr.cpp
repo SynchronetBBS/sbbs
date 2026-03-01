@@ -6091,13 +6091,13 @@ static void cleanup(int code)
 			sprintf(str + strlen(str), ", %lu exceeded max", stats.connections_exceeded);
 		if (stats.connections_refused)
 			sprintf(str + strlen(str), ", %lu refused", stats.connections_refused);
-		if (host_can->total_found)
+		if (host_can != nullptr && host_can->total_found)
 			sprintf(str + strlen(str), ", %u host-filtered", host_can->total_found.load());
-		if (ip_can->total_found)
+		if (ip_can != nullptr && ip_can->total_found)
 			sprintf(str + strlen(str), ", %u ip-filtered", ip_can->total_found.load());
-		if (ip_silent_can->total_found)
+		if (ip_silent_can != nullptr && ip_silent_can->total_found)
 			sprintf(str + strlen(str), ", %u ip-ignored", ip_silent_can->total_found.load());
-		if (spam_block->total_found)
+		if (spam_block != nullptr && spam_block->total_found)
 			sprintf(str + strlen(str), ", %u spam-blocked", spam_block->total_found.load());
 		if (stats.sessions_refused)
 			sprintf(str + strlen(str), ", %lu sessions refused", stats.sessions_refused);
@@ -6112,7 +6112,7 @@ static void cleanup(int code)
 			sprintf(str + strlen(str), ", %lu critical", stats.crit_errors);
 		if (client_highwater > 1)
 			sprintf(str + strlen(str), ", %u concurrent clients", client_highwater);
-		if (request_rate_limiter->disallowed)
+		if (request_rate_limiter != nullptr && request_rate_limiter->disallowed)
 			sprintf(str + strlen(str), ", %u rate-limited-requests", request_rate_limiter->disallowed.load());
 
 		lprintf(LOG_INFO, "#### Mail Server thread terminated (%s)", str);

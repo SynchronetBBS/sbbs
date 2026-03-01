@@ -1836,7 +1836,9 @@ static void cleanup(int code)
 	thread_down();
 	if (terminated || code) {
 		lprintf(LOG_INFO, "#### Services thread terminated (%lu clients served, %u concurrently, denied: %u due to IP address, %u due to hostname)"
-		        , served, client_highwater, ip_can->total_found.load() + ip_silent_can->total_found.load(), host_can->total_found.load());
+		        , served, client_highwater
+				, ip_can == nullptr || ip_silent_can == nullptr ? 0 : ip_can->total_found.load() + ip_silent_can->total_found.load()
+				, host_can == nullptr ? 0 : host_can->total_found.load());
 		set_state(SERVER_STOPPED);
 		if (startup != NULL && startup->terminated != NULL)
 			startup->terminated(startup->cbdata, code);

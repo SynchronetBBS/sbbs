@@ -5139,7 +5139,10 @@ static void cleanup(int code, int line)
 	thread_down();
 	if (terminate_server || code) {
 		lprintf(LOG_INFO, "#### FTP Server thread terminated (%lu clients served, %u concurrently, denied: %u due to rate limit, %u due to IP address, %u due to hostname)"
-		        , served, client_highwater, request_rate_limiter->disallowed.load(), ip_can->total_found.load() + ip_silent_can->total_found.load(), host_can->total_found.load());
+		        , served, client_highwater
+				, request_rate_limiter == nullptr ? 0 : request_rate_limiter->disallowed.load()
+				, ip_can == nullptr || ip_silent_can == nullptr ? 0 : ip_can->total_found.load() + ip_silent_can->total_found.load()
+				, host_can == nullptr ? 0 : host_can->total_found.load());
 		set_state(SERVER_STOPPED);
 		if (startup != NULL && startup->terminated != NULL)
 			startup->terminated(startup->cbdata, code);
