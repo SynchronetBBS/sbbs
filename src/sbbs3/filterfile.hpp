@@ -34,6 +34,7 @@ class filterFile {
 				snprintf(this->fname, sizeof this->fname, "%s%s", cfg->ctrl_dir, fname);
 			else
 				strlcpy(this->fname, fname, sizeof this->fname);
+			pthread_mutex_init(&mutex, nullptr);
 		}
 		filterFile() = default;
 		~filterFile() {
@@ -47,7 +48,7 @@ class filterFile {
 			bool result;
 			time_t now = time(nullptr);
 			if (fchk_interval) {
-				const std::lock_guard<std::mutex> lock(mutex);
+				pthread_mutex_lock(&mutex);
 				if ((now - lastftime_check) >= fchk_interval) {
 					lastftime_check = now;
 					time_t latest = fdate(fname);
@@ -59,6 +60,7 @@ class filterFile {
 					}
 				}
 				result = trash_in_list(str1, str2, list, details);
+				pthread_mutex_unlock(&mutex);
 			} else {
 				char str[FINDSTR_MAX_LINE_LEN + 1];
 				result = find2strs(str1, str2, fname, str);
@@ -75,7 +77,7 @@ class filterFile {
 		}
 	private:
 		str_list_t list{};
-		std::mutex mutex;
+		pthread_mutex_t mutex;
 		time_t lastftime_check{};
 		time_t timestamp{};
 
@@ -83,9 +85,8 @@ class filterFile {
 
 class trashCan : public filterFile {
 	public:
-		trashCan(scfg_t* cfg, const char* name) {
+		trashCan(scfg_t* cfg, const char* name) : filterFile(cfg, name)  {
 			trashcan_fname(cfg, name, filterFile::fname, sizeof filterFile::fname);
-			filterFile::fchk_interval = cfg->cache_filter_files;
 		}
 };
 
