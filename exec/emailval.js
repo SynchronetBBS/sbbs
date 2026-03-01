@@ -53,6 +53,8 @@ That's it!
 // Configure in ctrl/modopts/emailval.ini
 
 const module = "emailval";
+var prompts = bbs.mods.prompts || load(bbs.mods.prompts = {}, "user_info_prompts.js");
+var userprops = bbs.mods.userprops || load(bbs.mods.userprops = {}, "userprops.js");
 var options = load("modopts.js", module);
 if(!options)
 	options = {};
@@ -62,8 +64,7 @@ if(options.level_after_validation === undefined)
 	options.level_after_validation = 60;
 options.valid_chars = load("modopts.js", module, "valid_chars", 'ACDEFHJKLMNPQRTUVWXY23456789!@#$%&*');
 
-if(!bbs.mods.userprops)
-	bbs.mods.userprops = load({}, "userprops.js");
+prompts.operation = "";
 
 var cValCodeLen = options.code_length || 16;
 
@@ -71,7 +72,7 @@ require("sbbsdefs.js", 'NET_NONE');
 
 //gets the validation code in use, if any, otherwise sets/returns a new code.
 function GetValidationCode() {
-	var val = bbs.mods.userprops.get(module, "code");
+	var val = userprops.get(module, "code");
 	if (!val)
 		return SetValidationCode(); //return a new code.
 	
@@ -86,7 +87,7 @@ function SetValidationCode() {
 	for (var i=0;i<cValCodeLen;i++)
 		val+=options.valid_chars.substr(parseInt(Math.random() * options.valid_chars.length), 1);
 		
-	bbs.mods.userprops.set(module, "code", val);
+	userprops.set(module, "code", val);
 	return val;
 }
 
@@ -127,19 +128,19 @@ function SendValidationEmail() {
 
 	msgbase.close();
 	console.print("\1n \r\n\1h\1bValidation code sent to \1n\1h" + user.netmail + "\1h\1b.\1n \r\n");
-	bbs.mods.userprops.set(module, "sent", new Date());
-	bbs.mods.userprops.set(module, "to", user.netmail);
+	userprops.set(module, "sent", new Date());
+	userprops.set(module, "to", user.netmail);
 }
 
 function ChangeEmailAddress() {
 	var val = SetValidationCode(); //resets the last code used.
 
-	console.print("\1n \r\b\1h\1bEnter your email address below.\r\n\1n\1b:\1n ");
-	var netmail = console.getstr(user.netmail, LEN_NETMAIL, K_EDIT | K_LINE);
-	if(!system.check_netmail_addr(netmail))
+	while (bbs.online && !js.terminated) {
+		prompts.get_netmail(user);
+		if (system.check_netmail_addr(user.netmail))
+			break;
 		alert("Sorry, that is an unsupported netmail address");
-	else
-		user.netmail = netmail;
+	}
 }
 
 function EnterValidationCode() {
@@ -173,7 +174,7 @@ function EnterValidationCode() {
 		user.adjust_minutes(options.minutes_added_after_validation || 0);
 		
 		user.comment = "Email validated on " + (new Date());
-		bbs.mods.userprops.set(module, "validated", new Date());
+		userprops.set(module, "validated", new Date());
 	} else {
 		console.print(options.nomatch || "\r\n\1n \r\n\1h\1rCode doesn't match!\1n \r\n");
 	}
@@ -188,23 +189,33 @@ function HangupNow() {
 
 function CheckValidation() {
 	while (bbs.online
-		&& user.security.level == options.level_before_validation
-		&& !bbs.mods.userprops.get(module, "validated")) {
+		&& ((user.security.level == options.level_before_validation && !userprops.get(module, "validated"))
+			|| argv.indexOf("-test") >= 0)) {
 		console.clear();
 		
-		//NOTE: could use bbs.menu("FILENAME") to display an ansi here.
-		console.print("\1h\1bEmail validation for \1h\1w" + user.alias + " #" + user.number + "\r\n\r\n");
-		console.print("\1nYou have created an account with an email address that must be validated.\r\n")
-		console.print("\1n\1b[\1h\1wS\1n\1b] \1h\1bSend validation code to\1n\1c " + user.netmail + "\r\n");
-		console.print("\1n\1b[\1h\1wV\1n\1b] \1h\1bValidate your account\r\n");
+		var keys ="EH";
+		if (!bbs.menu("emailval", P_NOERROR)) {
+			console.print("\1h\1bEmail validation for \1h\1w" + user.alias + " #" + user.number + "\r\n\r\n");
+			console.print("\1nYou have created an account with an email address that must be validated.\r\n");
+		}
+		if (!system.check_netmail_addr(user.netmail)) {
+			console.print(format(bbs.text(bbs.text.InvalidNetMailAddr), user.netmail));
+			console.newline();
+		} else {
+			console.newline();
+			console.print("\1n\1b[\1h\1wS\1n\1b] \1h\1bSend validation code to\1n\1c " + user.netmail + "\r\n");
+			keys += "S";
+		}
+		if (userprops.get(module, "sent")) {
+			console.print("\1n\1b[\1h\1wV\1n\1b] \1h\1bValidate your account\r\n");
+			keys += "V";
+		}
 		console.print("\1n\1b[\1h\1wE\1n\1b] \1h\1bEdit/Update email address\r\n");
 		console.print("\1n\1b[\1h\1wH\1n\1b] \1h\1bHangup\r\n");
 		
 		console.newline();
 		console.print(options.prompt || "\1h\1yYour selection? \1w");
-		var o = console.getkeys("SVEH");
-		
-		switch (o) {
+		switch (console.getkeys(keys, 0)) {
 			case "S":
 				SendValidationEmail();
 				break;
