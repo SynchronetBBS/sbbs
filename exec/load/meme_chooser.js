@@ -16,8 +16,10 @@ var lib = load({}, "meme_lib.js");
 
 function choose(border)
 {
-	console.mnemonics(format("~Border, ~Color, ~Justify, ~@Quit@, or [Select]: "));
-	var ch = console.getkeys("BCJ" + KEY_LEFT + KEY_RIGHT + "\r" + console.next_key + console.prev_key + console.quit_key, lib.BORDER_COUNT);
+	console.mnemonics(format("~Border, ~Color, ~Justify, ~@Quit@, or \x01\\[ENTER=Select]: "));
+	var ch = console.getkeys("BCJ"
+		+ KEY_LEFT + KEY_RIGHT + KEY_UP + KEY_DOWN + KEY_HOME + KEY_END + "\r"
+		+ console.next_key + console.prev_key + console.quit_key, lib.BORDER_COUNT);
 	if (typeof ch == "number")
 		return ch - 1;
 	switch (ch) {
@@ -30,6 +32,10 @@ function choose(border)
 		case 'B':
 			return ch;
 		case KEY_UP:
+		case KEY_DOWN:
+		case KEY_HOME:
+		case KEY_END:
+			return ch;
 		case KEY_LEFT:
 		case console.prev_key:
 			return console.prev_key;
@@ -74,7 +80,13 @@ function main(text, options)
 			return msg;
 		if (typeof ch == "number")
 			border = ch;
-		else if (ch === 'C')
+		else if (ch === KEY_HOME)
+			color = 0;
+		else if (ch === KEY_END)
+			color = attr.length - 1;
+		else if (ch === KEY_UP && color > 0)
+			--color;
+		else if (ch === 'C' || ch === KEY_DOWN)
 			++color;
 		else if (ch === 'J')
 			++justify;
