@@ -40,7 +40,7 @@ function automsg()
 		bbs.nodesync();
 		if(user.is_sysop)
 			console.mnemonics(options.sysop_prompt
-				|| "\r\nAuto Message - ~Read, ~Write, ~Delete or ~Quit: ");
+				|| "\r\nAuto Message - ~Read, ~Write, ~Delete or \x01\\~Quit: ");
 		else
 			console.mnemonics(options.prompt || bbs.text(bbs.text.AutoMsg));
 		switch(console.getkeys("RWQD",0)) {
