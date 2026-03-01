@@ -216,7 +216,7 @@ function read(usernumber, username, netaddr, bbsid)
 				obj = read_netuser(namehash, bbsid);
 		}
 	}
-	if (obj === undefined || obj == null) {
+	if (obj === undefined || obj === null) {
 		if (!username) {
 			var uobj = new User(usernum);
 			username = uobj.alias;
