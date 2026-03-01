@@ -37,3 +37,5 @@ function identicon(value)
 	}
 	return g;
 }
+
+this;
