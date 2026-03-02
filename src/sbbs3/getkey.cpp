@@ -174,6 +174,7 @@ char sbbs_t::getkey(int mode)
 /****************************************************************************/
 void sbbs_t::mnemonics(const char *instr, int mode)
 {
+	char keys[128] = "";
 	size_t l;
 
 	if (!strchr(instr, '~')) {
@@ -209,6 +210,10 @@ void sbbs_t::mnemonics(const char *instr, int mode)
 			if (!(term->can_highlight()))
 				outchar('(');
 			l++;
+			if (strchr(keys, str[l]))
+				lprintf(LOG_WARNING, "Duplicate mnemonic key '%c' in string: %s", str[l], instr);
+			else if (strlen(keys) < sizeof keys - 1)
+				sprintf(keys + strlen(keys), "%c", str[l]);
 			if (!ctrl_a_codes)
 				attr(mneattr_high);
 			term->add_hotspot(str[l], /* hungry: */ true);
@@ -223,6 +228,10 @@ void sbbs_t::mnemonics(const char *instr, int mode)
 			if (!(term->can_highlight()))
 				outchar('[');
 			l++;
+			if (strchr(keys, str[l]))
+				lprintf(LOG_WARNING, "Duplicate mnemonic key '%c' in string: %s", str[l], instr);
+			else if (strlen(keys) < sizeof keys - 1)
+				sprintf(keys + strlen(keys), "%c", str[l]);
 			if (!ctrl_a_codes)
 				attr(mneattr_high);
 			term->add_hotspot(str[l], /* hungry: */ false);
