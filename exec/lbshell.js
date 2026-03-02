@@ -1587,7 +1587,7 @@ function show_filemenu()
 									for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
 										if(i==bbs.curdir)
 											continue;
-										if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_INFO))
+										if(bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FI_INFO))
 											break;
 									}
 									if(i<file_area.lib_list[bbs.curlib].dir_list.length)
@@ -1597,7 +1597,7 @@ function show_filemenu()
 										if(i==bbs.curlib)
 											continue;
 										for(j=0; j<file_area.lib_list[i].dir_list.length; j++) {
-											if(bbs.list_files(file_area.lib_list[i].dir_list[j].number, str, FI_INFO))
+											if(bbs.list_file_info(file_area.lib_list[i].dir_list[j].number, str, FI_INFO))
 											break libloop;
 										}
 									}
