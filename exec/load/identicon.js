@@ -29,7 +29,10 @@ function identicon(value)
 
 	var fg = get_bits(3);
 	var bg = 7 - fg;
-	var c = fg | (bg << 4) | 8;
+	var br = 8;
+	if (fg == 4)
+		br = 0;
+	var c = fg | (bg << 4) | br;
 	var g = new Graphic(10, 6, c);
 	const chars = [' ', '\xdb', '\xdc', '\xdb'];
 	var ch;
