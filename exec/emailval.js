@@ -62,7 +62,7 @@ if(options.level_before_validation === undefined)
 	options.level_before_validation = 50;
 if(options.level_after_validation === undefined)
 	options.level_after_validation = 60;
-options.valid_chars = load("modopts.js", module, "valid_chars", 'ACDEFHJKLMNPQRTUVWXY23456789!@#$%&*');
+options.valid_chars = load("modopts.js", module, "valid_chars", '') || 'ACDEFHJKLMNPQRTUVWXY23456789!@#$%&*';
 
 prompts.operation = "";
 
