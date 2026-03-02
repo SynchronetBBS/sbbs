@@ -143,7 +143,7 @@ ValidateIndex(const int16_t fid, const int16_t iidx)
 	}
 	else if (iidx <= ridx)
 		old = true;
-	else if (iidx > (INT_MAX - (255 - (ridx + INT16_MAX))))
+	else if (iidx > (INT16_MAX - (255 - (ridx + INT16_MAX))))
 		old = true;
 	if (old) {
 		LogDisplayStr("|04x |12Old Attack Index, Ignoring\n");
