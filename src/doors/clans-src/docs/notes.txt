@@ -237,7 +237,6 @@ categories:
 
 	*.HLP		--- Help files
 			ARMY.HLP
-			BUILD.HLP
 			BULLETIN.HLP
 			CITIZEN.HLP
 			CLANS.HLP
