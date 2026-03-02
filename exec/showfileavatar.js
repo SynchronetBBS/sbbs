@@ -1,8 +1,8 @@
-const FM_ANON			=(1<<1);
 require("userdefs.js", 'USER_ANSI');
+require("smbdefs.js", 'MSG_ANONYMOUS');
 
 // Avatar support here:
-if(!(bbs.file_attr&FM_ANON) && console.term_supports(USER_ANSI)) {
+if(!(bbs.file_attr & MSG_ANONYMOUS) && console.term_supports(USER_ANSI)) {
 	if(!bbs.mods.avatar_lib)
 		bbs.mods.avatar_lib = load({}, 'avatar_lib.js');
 	bbs.mods.avatar_lib.draw(null
