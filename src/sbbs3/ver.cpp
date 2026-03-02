@@ -83,13 +83,16 @@ void sbbs_t::ver(int pmode, bool verbose)
 
 	term->cond_blankline();
 	strcpy(str, VERSION_NOTICE);
+	if (verbose) {
 #if defined(_DEBUG)
-	strcat(str, "  Debug");
+		strcat(str, "  Debug");
 #endif
+	} else
+		sprintf(str + strlen(str), "%c", REVISION);
 	bputs(str, pmode);
-	term->cond_blankline();
 
 	if (verbose) {
+		term->cond_blankline();
 		DESCRIBE_COMPILER(compiler);
 
 		snprintf(str, sizeof str, "Revision %c%s %s  "
@@ -104,7 +107,8 @@ void sbbs_t::ver(int pmode, bool verbose)
 
 		bputs("https://gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH, pmode);
 		term->cond_blankline();
-	}
+	} else
+		term->newline();
 	snprintf(str, sizeof str, "%s - http://synchro.net", COPYRIGHT_NOTICE);
 	bputs(str, pmode);
 
