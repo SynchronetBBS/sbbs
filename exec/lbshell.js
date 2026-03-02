@@ -1487,7 +1487,7 @@ function show_filemenu()
 						str=bbs.get_filespec();
 						if(str==null)
 							break fileremove;
-						if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_REMOVE) && str != '*') {
+						if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_REMOVE)) {
 							var s=0;
 							console.putmsg(bbs.text(SearchingAllDirs));
 							for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
@@ -1582,7 +1582,7 @@ function show_filemenu()
 							console.putmsg("\r\nchView File Information\r\n");
 							str=bbs.get_filespec();
 							if(str!=null) {
-								if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_INFO)) {
+								if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_INFO) && str !== '*') {
 									console.putmsg(bbs.text(SearchingAllDirs));
 									for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
 										if(i==bbs.curdir)
