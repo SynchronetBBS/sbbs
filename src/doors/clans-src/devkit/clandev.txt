@@ -13,8 +13,6 @@ on what the utils included in the devkit do, see the appropriate .txt files.
 The Clans Development Kit v0.11 by Allen Ussher
 -------------------------------------------------------------------------------
 Clans web page: http://theclans.sourceforge.net
-email:          tigertigr@yahoo.ca
-
 
 
 

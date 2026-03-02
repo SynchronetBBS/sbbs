@@ -8,7 +8,6 @@ I haven't touched this code in ages, so I need some refreshing myself.  I'm prov
 this for people to tinker with and to perhaps create a new version if they wish to.
 
 Allen
-tigertigr@yahoo.ca
 
 > Some things to keep in mind:
 

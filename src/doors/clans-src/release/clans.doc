@@ -99,9 +99,7 @@ or that support will be offered.
 
 [0.3]  Registration
 -------------------------------------------------------------------------------
-Registration is no longer required for The Clans.  If you wish to donate any
-amount, contact me through email first at tigertigr@yahoo.ca.
-Thanks.
+Registration is no longer required for The Clans.
 
 
 [0.4]  No Multinode
@@ -711,9 +709,9 @@ InterBBS game, follow these instructions:
 
 [Problem]  You're game is awesome.  I have ideas that you can use, where
            do I go!?
-[Solution] Hey, that's not a problem.  But email me your ideas anyway:
+[Solution] Hey, that's not a problem.  But submit your ideas anyway:
 
-                tigertigr@yahoo.ca
+                https://sf.net/p/theclans/feature-requests/
 
            If it fits with the context of the game and is a good idea
            which can be implemented fairly easily, I'll probably put it in!
@@ -817,4 +815,4 @@ If you are using a version BELOW v0.95b4:
 If you are using v0.95b4 or higher and upgrading, no reset is required.
 
 ------------------------------------------------------------------------------
-Email me with bug reports please:  tigertigr@yahoo.ca
+File bug reports on SourceForge please:  https://sf.net/p/theclans/bugs/
