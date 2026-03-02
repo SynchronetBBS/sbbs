@@ -362,7 +362,7 @@ function view_file_info(mode)
 	var str=bbs.get_filespec();
 	if(!str)
 		return;
-	if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, mode)) {
+	if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, mode) && str != '*') {
 		var s=0;
 		console.putmsg(bbs.text(bbs.text.SearchingAllDirs));
 		for(var i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
@@ -397,7 +397,7 @@ function view_files()
 	var str=bbs.get_filespec();
 	if(!str)
 		return;
-	if(!bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FL_VIEW)) {
+	if(!bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FL_VIEW) && str != '*') {
 		console.putmsg(bbs.text(bbs.text.SearchingAllDirs));
 		for(var i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
 			if(i==bbs.curdir)
