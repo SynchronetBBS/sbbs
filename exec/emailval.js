@@ -72,7 +72,7 @@ require("sbbsdefs.js", 'NET_NONE');
 
 //gets the validation code in use, if any, otherwise sets/returns a new code.
 function GetValidationCode() {
-	var val = userprops.get(module, "code");
+	var val = userprops.get(module, "code", "");
 	if (!val)
 		return SetValidationCode(); //return a new code.
 	
