@@ -216,7 +216,7 @@ function read(usernumber, username, netaddr, bbsid)
 				obj = read_netuser(namehash, bbsid);
 		}
 	}
-	if (obj === undefined || obj === null || obj === false) {
+	if ((obj === undefined || obj === null || obj === false) && options.auto_identicon !== false) {
 		if (!username) {
 			var uobj = new User(usernum);
 			username = uobj.alias;
@@ -343,5 +343,6 @@ function show_bin(data)
 	return true;
 }
 
+var options = load({}, "modopts.js", "avatars", {});
 
 this;

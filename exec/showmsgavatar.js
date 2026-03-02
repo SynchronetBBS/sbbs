@@ -6,26 +6,19 @@
 // Use this script if you have/want a custom message header defined in
 // msghdr.asc, i.e. with @-codes (not using text.dat strings).
 
-if(!bbs.mods.smbdefs)
-	load(bbs.mods.smbdefs = {}, "smbdefs.js");
+require("smbdefs.js", "MSG_ANONYMOUS");
 
 function get_options()
 {
-	var options = bbs.mods.avatars_options;
-	if(!options) {
-		options = load({}, "modopts.js", "avatars");
-		if(!options)
-			options = { cached: true };
-		if(options.msghdr_draw_top === undefined)
-			options.msghdr_draw_top = true;
-		if(options.msghdr_draw_above === undefined)
-			options.msghdr_draw_above = true;
-		if(options.msghdr_draw_right === undefined)
-			options.msghdr_draw_right = true;
-		if(options.msghdr_max_columns === undefined)
-			options.msghdr_max_columns = 80;
-		bbs.mods.avatars_options = options;	// cache the options
-	}
+	var options = bbs.mods.avatar_lib.options;
+	if(options.msghdr_draw_top === undefined)
+		options.msghdr_draw_top = true;
+	if(options.msghdr_draw_above === undefined)
+		options.msghdr_draw_above = true;
+	if(options.msghdr_draw_right === undefined)
+		options.msghdr_draw_right = true;
+	if(options.msghdr_max_columns === undefined)
+		options.msghdr_max_columns = 80;
 	return options;
 }
 
@@ -45,7 +38,7 @@ function draw_default_avatar(sub)
 }
 
 // Avatar support here:
-if(!(bbs.msg_attr&bbs.mods.smbdefs.MSG_ANONYMOUS)) {
+if(!(bbs.msg_attr & MSG_ANONYMOUS)) {
 	if(!bbs.mods.avatar_lib)
 		bbs.mods.avatar_lib = load({}, 'avatar_lib.js');
 	var options = get_options();
