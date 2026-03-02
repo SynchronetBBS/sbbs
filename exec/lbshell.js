@@ -1487,7 +1487,7 @@ function show_filemenu()
 						str=bbs.get_filespec();
 						if(str==null)
 							break fileremove;
-						if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_REMOVE)) {
+						if(!bbs.list_file_info(file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number, str, FI_REMOVE) && str != '*') {
 							var s=0;
 							console.putmsg(bbs.text(SearchingAllDirs));
 							for(i=0; i<file_area.lib_list[bbs.curlib].dir_list.length; i++) {
