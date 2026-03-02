@@ -286,6 +286,8 @@ function is_enabled(obj)
 // Uses Graphic.draw() at an absolute screen coordinate
 function draw(usernum, username, netaddr, above, right, top, cols)
 {
+	if (options.enabled === false)
+		return false;
 	var avatar = this.read(usernum, username, netaddr, usernum);
 	if(!is_enabled(avatar))
 		return false;
@@ -294,6 +296,8 @@ function draw(usernum, username, netaddr, above, right, top, cols)
 
 function draw_bin(data, above, right, top, cols)
 {
+	if (options.enabled === false)
+		return false;
 	if(!cols || (cols > console.screen_columns))
 		cols = console.screen_columns;
 	load('graphic.js');
@@ -323,6 +327,8 @@ function draw_bin(data, above, right, top, cols)
 // Uses console.write() where-ever the cursor happens to be
 function show(usernum, username, netaddr)
 {
+	if (options.enabled === false)
+		return false;
 	var avatar = this.read(usernum, username, netaddr, usernum);
 	if(!is_enabled(avatar))
 		return false;
@@ -331,6 +337,8 @@ function show(usernum, username, netaddr)
 
 function show_bin(data)
 {
+	if (options.enabled === false)
+		return false;
 	load('graphic.js');
 	var graphic = new Graphic(this.defs.width, this.defs.height);
 	graphic.attr_mask = ~graphic.defs.BLINK;	// Disable blink attribute (consider iCE colors?)

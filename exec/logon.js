@@ -273,7 +273,8 @@ if(options.rlogin_xtrn_menu
 	bbs.hangup();
 } else if(!(user.security.restrictions&UFLAG_G)
 	&& console.term_supports(USER_ANSI) 
-	&& options.set_avatar == true) {
+	&& options.set_avatar == true
+	&& bbs.mods.avatar_lib.options.enabled !== false) {
 	var avatar = bbs.mods.avatar_lib.read(user.number);
 	if(!avatar || (!avatar.data && !avatar.disabled)) {
 		alert("You have not selected an avatar.");
