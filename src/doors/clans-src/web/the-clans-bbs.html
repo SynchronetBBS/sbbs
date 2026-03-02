@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — BBS Door Game</title>
+<link rel="stylesheet" href="clans.css">
+<style>
+  /* ── SCREEN FLICKER ── */
+  @keyframes crt-flicker {
+    0%, 95%, 100% { opacity: 1; }
+    96% { opacity: 0.92; }
+    97% { opacity: 1; }
+    98% { opacity: 0.95; }
+  }
+  .screen {
+    animation: crt-flicker 8s infinite;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  /* ── TITLE SCREEN ── */
+  .title-screen {
+    text-align: center;
+    border: 2px solid #444444;
+    box-shadow: var(--glow-strong), inset 0 0 60px rgba(0,255,65,0.04);
+    padding: 30px 20px;
+    margin-bottom: 30px;
+    position: relative;
+    background: var(--dark);
+  }
+  .title-screen::before {
+    content: '┌─ THE CLANS v0.97b1 ──────────────────────────────────────────────────── BY ALLEN USSHER ─┐';
+    display: block; color: var(--border); font-size: 12px;
+    margin-bottom: 20px; white-space: nowrap; overflow: hidden;
+  }
+  .title-screen-bottom {
+    color: var(--border); font-size: 12px;
+    margin-top: 20px; white-space: nowrap; overflow: hidden;
+  }
+  .logo-gif {
+    display: block;
+    margin: 0 auto 16px;
+    image-rendering: pixelated;
+  }
+  .tagline {
+    font-family: 'VT323', monospace; font-size: 22px; text-align: center;
+    color: #FF55FF; text-shadow: 0 0 10px #FF55FF, 0 0 30px #FF55FF66;
+    letter-spacing: 4px; margin-bottom: 8px;
+  }
+  .sub-tagline { text-align: center; color: var(--cyan-dim); font-size: 13px; letter-spacing: 3px; }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: flex; justify-content: space-between; border: 1px solid #333333;
+    padding: 8px 16px; margin-bottom: 30px; background: var(--dark);
+    font-size: 12px; flex-wrap: wrap; gap: 8px;
+  }
+  .stat-item { color: var(--cyan-dim); }
+  .stat-item span { color: var(--yellow); text-shadow: 0 0 6px var(--yellow); }
+
+  /* ── SECTIONS ── */
+  .section { margin-bottom: 30px; opacity: 0; transform: translateY(10px); animation: fade-up 0.6s ease forwards; }
+  .section:nth-child(1){animation-delay:0.2s} .section:nth-child(2){animation-delay:0.5s}
+  .section:nth-child(3){animation-delay:0.8s} .section:nth-child(4){animation-delay:1.1s}
+  .section:nth-child(5){animation-delay:1.4s} .section:nth-child(6){animation-delay:1.7s}
+
+  .section-header {
+    position: relative; font-family: 'VT323', monospace; font-size: 24px;
+    color: var(--yellow); text-shadow: 0 0 8px var(--yellow);
+    border-bottom: 1px solid #333333; padding-bottom: 4px;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 10px;
+  }
+  .section-header::before { content: '►'; color: var(--cyan); text-shadow: var(--glow); }
+
+  /* ── CLAN GRID ── */
+  .clan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .clan-card {
+    border: 1px solid #333333; padding: 14px; background: var(--dark);
+    cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+    min-height: 180px;
+  }
+  .clan-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(0,255,65,0.06) 0%, transparent 60%);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .clan-card:hover::before { opacity: 1; }
+  .clan-card:hover { border-color: var(--cyan); box-shadow: var(--glow), inset 0 0 20px rgba(0,255,65,0.05); }
+  .clan-name { font-family: 'VT323', monospace; font-size: 22px; color: #FFFF55; text-shadow: 0 0 6px #FFFF55; margin-bottom: 6px; }
+  .clan-symbol { font-size: 28px; margin-bottom: 6px; display: block; filter: drop-shadow(0 0 6px #55FFFF88); }
+  .clan-desc { font-size: 11px; color: var(--cyan-dim); line-height: 1.5; margin-bottom: 8px; }
+  .clan-stats { display: flex; gap: 10px; font-size: 11px; }
+  .clan-stat { color: var(--border); }
+  .clan-stat strong { color: #FFFF55; }
+
+  /* ── LEADERBOARD ── */
+  .leaderboard { border: 1px solid #333333; background: var(--dark); }
+  .lb-row {
+    display: grid; grid-template-columns: 40px 1fr 80px 80px 80px;
+    padding: 8px 14px; font-size: 12px; border-bottom: 1px solid var(--bg-panel);
+    transition: background 0.15s; align-items: center;
+  }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-row:hover { background: rgba(85,255,255,0.04); }
+  .lb-row.header {
+    color: #55FFFF; text-shadow: 0 0 6px #55FFFF; font-size: 11px;
+    letter-spacing: 1px; border-bottom: 1px solid #333333; background: rgba(85,255,255,0.06);
+  }
+  .rank-1 .lb-rank { color: #FFFF55; text-shadow: 0 0 8px var(--yellow); font-weight: bold; }
+  .rank-2 .lb-rank { color: #aaa; }
+  .rank-3 .lb-rank { color: #cd7f32; }
+  .lb-name { color: var(--cyan); }
+  .lb-clan { color: var(--border); font-size: 11px; }
+  .lb-val { text-align: right; color: var(--cyan-dim); }
+  .lb-val.highlight { color: #FFFF55; }
+
+  /* ── FEATURES GRID ── */
+  .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .feature-box {
+    border: 1px solid #333333; padding: 16px; background: var(--dark);
+    transition: all 0.2s; position: relative; overflow: hidden;
+  }
+  .feature-box::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(0,255,65,0.06) 0%, transparent 60%);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .feature-box:hover::before { opacity: 1; }
+  .feature-box:hover { border-color: var(--cyan); box-shadow: var(--glow), inset 0 0 20px rgba(0,255,65,0.05); }
+  .feature-title {
+    font-family: 'VT323', monospace; font-size: 20px; color: #FFFF55;
+    text-shadow: var(--glow); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+  }
+  .feature-body { font-size: 12px; color: var(--cyan-dim); line-height: 1.7; }
+
+  /* ── TERMINAL BOX ── */
+  .terminal-box {
+    border: 1px solid #333333; background: #050505;
+    padding: 16px 20px; font-size: 13px; line-height: 1.9; position: relative;
+  }
+  .terminal-box::before {
+    position: absolute; top: -1px; left: 20px; background: var(--darker);
+    padding: 0 8px; color: var(--yellow); font-size: 11px; letter-spacing: 2px;
+  }
+
+  /* ── CONNECT / DOWNLOAD ── */
+  .connect-box { border: 1px solid var(--cyan); background: var(--dark); padding: 20px; box-shadow: 0 0 12px #55FFFF33; text-align: center; }
+  .connect-title { font-family: 'VT323', monospace; font-size: 28px; color: #FF55FF; text-shadow: 0 0 10px #FF55FF; margin-bottom: 12px; }
+  .bbs-addr {
+    font-family: 'VT323', monospace; font-size: 32px; color: var(--cyan);
+    text-shadow: var(--glow-strong); letter-spacing: 4px; display: block;
+    margin: 10px 0; animation: text-flicker 4s ease-in-out infinite;
+  }
+  .modem-speed { font-size: 12px; color: var(--border); letter-spacing: 2px; margin-top: 10px; }
+  .connect-btn {
+    display: inline-block; margin-top: 16px; padding: 10px 30px;
+    border: 2px solid #55FFFF; color: #55FFFF; font-family: 'Share Tech Mono', monospace;
+    font-size: 14px; letter-spacing: 3px; text-decoration: none; text-transform: uppercase;
+    cursor: pointer; background: transparent; transition: all 0.2s; box-shadow: 0 0 8px #55FFFF;
+  }
+  .connect-btn:hover { background: rgba(85,255,255,0.1); box-shadow: var(--glow-strong); }
+
+  /* ── PROGRESS BARS ── */
+  /* ── TERRITORY MAP ── */
+  .territory-map {
+    border: 1px solid #333333; background: var(--dark); padding: 16px;
+    font-family: 'Courier New', Courier, monospace; font-size: 14px;
+    line-height: 1; white-space: pre; overflow-x: auto; color: var(--cyan-dim);
+    text-align: center;
+  }
+  .t-border { color: var(--border); }
+  .t-water  { color: #0055ff; text-shadow: 0 0 4px #0044cc; }
+  .t-land   { color: var(--cyan-dim); }
+  .t-castle { color: var(--yellow); text-shadow: 0 0 8px var(--yellow); }
+  .t-battle { color: #FF5555; text-shadow: 0 0 6px #FF555577; animation: blink 0.8s step-end infinite; }
+
+  /* ── FOOTER ── */
+  .footer { border-top: 1px solid #333333; padding-top: 16px; margin-top: 30px; font-size: 11px; color: var(--border); text-align: center; line-height: 2; }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="screen">
+
+  <!-- TITLE SCREEN -->
+  <header class="title-screen">
+    <img class="logo-gif" src="clanslogo.gif" alt="THE CLANS" width="633" height="131">
+    <div class="tagline">⚔ ADVENTURE • STRATEGY • INTER-BBS ⚔</div>
+    <div class="sub-tagline">A BBS DOOR GAME BY ALLEN USSHER · EST. 1997 · v0.97b1</div>
+    <div class="title-screen-bottom">└──────────────────────────────────────────────────────────────── OPEN SOURCE · GPL 2002 ─┘</div>
+  </header>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    <div class="stat-item">CREATED BY: <span>ALLEN USSHER</span></div>
+    <div class="stat-item">FIRST RELEASE: <span>1997</span></div>
+    <div class="stat-item">LATEST VERSION: <span>0.97b1</span></div>
+    <div class="stat-item">LICENSE: <span>OPEN SOURCE (GPL)</span></div>
+    <div class="stat-item">PLATFORM: <span>WIN32 / MACOS / LINUX / BSD</span></div>
+    <div class="stat-item">INTER-BBS: <span>SUPPORTED</span></div>
+    <div class="stat-item"><a href="the-clans-docs.html" style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);">📄 SYSOP DOCS »</a></div>
+    <div class="stat-item"><a href="the-clans-devkit.html" style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);">⚙ DEV KIT »</a></div>
+  </div>
+
+  <!-- WHAT IS THE CLANS -->
+  <section class="section">
+    <div class="section-header">ABOUT THE GAME</div>
+    <div class="terminal-box">
+      <span class="t-output"></span>
+      <span class="t-output">Welcome to <span class="t-hi">THE CLANS</span> — a BBS door game by Allen Ussher, first released in 1997.</span>
+      <span class="t-output">Open-sourced in 2002 and available on SourceForge. Now runs on Win32, macOS, Linux &amp; BSD.</span>
+      <span class="t-output"></span>
+      <span class="t-output">The Clans blends two classic BBS game styles into one:</span>
+      <span class="t-output"></span>
+      <span class="t-output">  ⚔  <span class="t-hi">ROLE-PLAYING</span> — like LORD, build a party of characters with unique</span>
+      <span class="t-output">         races, professions, and attributes. Fight monsters. Cast spells.</span>
+      <span class="t-output">         Wander from village to village seeking glory.</span>
+      <span class="t-output"></span>
+      <span class="t-output">  🏰  <span class="t-hi">STRATEGY</span> — like Falcon's Eye, manage an empire. Build structures,</span>
+      <span class="t-output">         develop land, amass an army, and dominate the village rankings.</span>
+      <span class="t-output"></span>
+      <span class="t-output">  🌐  <span class="t-hi">INTER-BBS PLAY</span> — the game's defining feature. Each BBS is a "village"</span>
+      <span class="t-output">         in a league. Travel your clan to other boards overnight and compete</span>
+      <span class="t-output">         against players across the entire network.</span>
+      <span class="t-output"></span>
+    </div>
+  </section>
+
+  <!-- BUILD YOUR CLAN -->
+  <section class="section">
+    <div class="section-header">BUILD YOUR CLAN</div>
+    <div class="clan-grid">
+      <div class="clan-card">
+        <span class="clan-symbol">🧝</span>
+        <div class="clan-name">CHOOSE RACES</div>
+        <div class="clan-desc">Each member of your clan belongs to a distinct race, granting unique stat bonuses and abilities. Mix and match for a balanced or specialized party.</div>
+        <div class="clan-stats">
+          <div class="clan-stat">Human</div>
+          <div class="clan-stat">Elf</div>
+          <div class="clan-stat">Dwarf</div>
+        </div>
+      </div>
+      <div class="clan-card">
+        <span class="clan-symbol">⚔️</span>
+        <div class="clan-name">PICK PROFESSIONS</div>
+        <div class="clan-desc">Assign each character a profession that defines their role in combat and adventure. Warriors tank, mages cast, thieves strike from the shadows.</div>
+        <div class="clan-stats">
+          <div class="clan-stat">Warrior</div>
+          <div class="clan-stat">Mage</div>
+          <div class="clan-stat">Thief</div>
+        </div>
+      </div>
+      <div class="clan-card">
+        <span class="clan-symbol">🐉</span>
+        <div class="clan-name">FIGHT MONSTERS</div>
+        <div class="clan-desc">Send your clan out to battle monsters in the wilderness around each village. Gain experience, level up your characters, and collect loot to fuel your empire.</div>
+        <div class="clan-stats">
+          <div class="clan-stat">XP Gain</div>
+          <div class="clan-stat">Loot</div>
+          <div class="clan-stat">Spells</div>
+        </div>
+      </div>
+      <div class="clan-card">
+        <span class="clan-symbol">🏗️</span>
+        <div class="clan-name">BUILD STRUCTURES</div>
+        <div class="clan-desc">Manage your empire's economy by constructing buildings, developing land, and growing your army. Dominate the local village rankings while your clan adventures.</div>
+        <div class="clan-stats">
+          <div class="clan-stat">Mines</div>
+          <div class="clan-stat">Barracks</div>
+          <div class="clan-stat">Land</div>
+        </div>
+      </div>
+      <div class="clan-card">
+        <span class="clan-symbol">🌐</span>
+        <div class="clan-name">TRAVEL VILLAGES</div>
+        <div class="clan-desc">The inter-BBS league connects multiple boards into one world. Choose to travel overnight — your clan data is transferred to the next BBS so you can play there tomorrow.</div>
+        <div class="clan-stats">
+          <div class="clan-stat">Multi-BBS</div>
+          <div class="clan-stat">League</div>
+          <div class="clan-stat">Villages</div>
+        </div>
+      </div>
+      <div class="clan-card">
+        <span class="clan-symbol">👑</span>
+        <div class="clan-name">CLAIM THE THRONE</div>
+        <div class="clan-desc">Each village has its own power struggles and a ruler position that changes hands constantly. Outperform rivals in both the RPG and strategy halves to seize control.</div>
+        <div class="clan-stats">
+          <div class="clan-stat">Rankings</div>
+          <div class="clan-stat">PvP</div>
+          <div class="clan-stat">Prestige</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTER-BBS VILLAGE LEAGUE -->
+  <section class="section">
+    <div class="section-header">INTER-BBS VILLAGE LEAGUE</div>
+    <div class="territory-map"><span class="t-border">╔══════════════════════════════════════════════════════════════════╗
+║         HOW THE INTER-BBS LEAGUE WORKS                           ║
+╠══════════════════════════════════════════════════════════════════╣
+║                                                                  ║
+║   </span><span class="t-castle">[ VILLAGE A ]</span><span class="t-land"> &lt;----  nightly data sync  ----&gt; </span><span class="t-castle">[ VILLAGE B ]</span><span class="t-land">    </span><span class="t-border">║
+║     </span><span class="t-land">Your BBS                                      Remote BBS     </span><span class="t-border">║
+║                                                                  ║
+║   </span><span class="t-land">Each BBS in the league is a "Village" in a shared world.       </span><span class="t-border">║
+║   </span><span class="t-land">Your clan competes locally for village ruler -- and can        </span><span class="t-border">║
+║   </span><span class="t-land">choose to </span><span class="t-hi">TRAVEL</span><span class="t-land"> to another village overnight. User data       </span><span class="t-border">║
+║   </span><span class="t-land">is sent during maintenance; log in to the new BBS next day.    </span><span class="t-border">║
+║                                                                  ║
+║   </span><span class="t-battle">[!!]</span><span class="t-land"> Each village has its own power struggles and ruler.       </span><span class="t-border">║
+║   </span><span class="t-battle">[!!]</span><span class="t-land"> Traveling players bring fresh competition to each board.  </span><span class="t-border">║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝</span>
+<span style="color:#444444; font-size:13px;">  The inter-BBS feature was designed to drive new callers to your BBS -- players follow the game!</span></div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section">
+    <div class="section-header">GAMEPLAY FEATURES</div>
+    <div class="features-grid">
+      <div class="feature-box">
+        <div class="feature-title">⚔ RPG COMBAT</div>
+        <div class="feature-body">Like Legend of the Red Dragon, the RPG side lets your party fight monsters, cast spells, and gain experience. Characters level up, learning new skills tied to their race and profession. Each fight is a tactical encounter with your hand-built party.</div>
+      </div>
+      <div class="feature-box">
+        <div class="feature-title">🏰 EMPIRE STRATEGY</div>
+        <div class="feature-body">Inspired by Falcon's Eye, manage your empire in parallel with your adventures. Build structures, develop land, raise armies, and compete for dominance in the village rankings. The strategy layer runs even while you're offline.</div>
+      </div>
+      <div class="feature-box">
+        <div class="feature-title">🌐 INTER-BBS TRAVEL</div>
+        <div class="feature-body">The Clans' signature feature. Each BBS is a village in a wider league. Choose to travel overnight — your clan data syncs to the destination BBS during maintenance so you can log in the next day and compete in an entirely new village.</div>
+      </div>
+      <div class="feature-box">
+        <div class="feature-title">🧝 CHARACTER CREATION</div>
+        <div class="feature-body">Build a full party of clan members, each with their own race, profession, and attributes. The combination of races and classes creates enormous variety in party composition and playstyle, giving each run a distinct character.</div>
+      </div>
+      <div class="feature-box">
+        <div class="feature-title">🗺 VILLAGE POLITICS</div>
+        <div class="feature-body">Every BBS hosts its own village with local power struggles. The ruler position changes hands constantly as clans compete on both the RPG and strategy fronts. Traveling players inject fresh competition from other boards into the mix.</div>
+      </div>
+      <div class="feature-box">
+        <div class="feature-title">💾 OPEN SOURCE</div>
+        <div class="feature-body">Originally written in Turbo C++ and released in 1997, The Clans went freeware in 1998 and was open-sourced under the GPL in 2002. It has since been ported to gcc and MSVC and runs on Win32, macOS, Linux, and FreeBSD. Available on SourceForge.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DOWNLOAD / LINKS -->
+  <section class="section">
+    <div class="connect-box">
+      <div class="connect-title">⚔ GET THE CLANS ⚔</div>
+      <div style="color:var(--cyan-dim); font-size:12px; letter-spacing:2px;">FREE · OPEN SOURCE · GPL LICENSED</div>
+      <span class="bbs-addr">v0.97b1</span>
+      <div class="ascii-divider">──────────────────────────────────────────────────────</div>
+      <div style="font-size:12px; color:var(--cyan-dim); margin-top:8px; line-height:2;">
+        Download (Win32): <span style="color:var(--cyan)"><a style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);" href="files/Clans-win64-amd64-0_97b1.zip">Clans-win64-amd64-0_97b1.zip</a></span><br>
+        Download (macOS): <span style="color:var(--cyan)"><a style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);" href="files/Clans-darwin-arm64-0_97b1.zip">Clans-darwin-arm64-0_97b1.zip</a></span><br>
+        Source Code: <span style="color:var(--cyan)"><a style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);" href="files/Clans-0_97b1-src.tgz">Clans-0_97b1-src.tgz</a></span><br>
+        Hosted at: <span style="color:var(--cyan)"><a style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);" href="https://sf.net/p/theclans">sourceforge.net/projects/theclans</a></span>
+      </div>
+      <div class="modem-speed">CREATED BY ALLEN USSHER · FIRST RELEASED 1997 · OPEN-SOURCED 2002</div>
+      <br>
+      <a class="connect-btn" href="https://sourceforge.net/projects/theclans/">▶ SOURCEFORGE PAGE</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="ascii-divider">═══════════════════════════════════════════════════════════════════</div>
+    THE CLANS v0.97b1 © 1997–2002 ALLEN USSHER · RELEASED UNDER THE GNU GPL<br>
+    A MIX OF ROLE-PLAYING AND STRATEGY · INTER-BBS VILLAGE LEAGUE SUPPORT<br>
+    <span style="color:var(--bg-panel)">Written in Turbo C++ · Ported to gcc &amp; MSVC · Runs on Win32 / macOS / Linux / FreeBSD</span>
+    <div class="ascii-divider" style="margin-top:6px;">═══════════════════════════════════════════════════════════════════</div>
+  </footer>
+
+</div>
+</body>
+</html>

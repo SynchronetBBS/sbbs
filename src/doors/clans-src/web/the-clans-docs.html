@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — Sysop Documentation</title>
+<link rel="stylesheet" href="clans.css">
+<style>
+  .wrapper { --sidebar-w: 220px; --max-w: 1100px; }
+
+  /* ── SYSOP QUICKSTART BOX ── */
+  .quickstart { border: 2px solid var(--yellow); background: var(--dark); padding: 20px 24px; box-shadow: 0 0 16px #FFFF5522; }
+  .quickstart h2 { color: var(--yellow); text-shadow: 0 0 10px var(--yellow); border-color: var(--yellow); }
+
+  /* ── NUMBERED STEPS ── */
+  ol.steps { list-style: none; counter-reset: step-counter; margin: 10px 0; }
+  ol.steps li {
+    display: flex;
+    counter-increment: step-counter; gap: 14px;
+    font-size: 13px; color: var(--cyan-dim); line-height: 1.8;
+    margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--bg-panel);
+  }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before {
+    content: counter(step-counter); flex-shrink: 0; width: 26px; height: 26px;
+    border: 1px solid #333333; display: flex; align-items: center; justify-content: center;
+    font-family: 'VT323', monospace; font-size: 18px; color: #55FFFF;
+    text-shadow: 0 0 6px #55FFFF; margin-top: 2px;
+  }
+
+  /* ── TERMS TABLE ── */
+  .terms { border: 1px solid #333333; width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+  .terms th { background: rgba(85,255,255,0.08); color: #55FFFF; text-shadow: 0 0 6px #55FFFF; padding: 8px 14px; text-align: left; border-bottom: 1px solid #333333; letter-spacing: 1px; }
+  .terms td { padding: 8px 14px; color: var(--cyan-dim); border-bottom: 1px solid var(--bg-panel); line-height: 1.7; vertical-align: top; }
+  .terms td:first-child { color: var(--cyan); white-space: nowrap; }
+  .terms tr:last-child td { border-bottom: none; }
+  .terms tr:hover td { background: rgba(85,255,255,0.06); }
+
+  /* ── TREE DIAGRAM ── */
+  .tree-diagram { font-family: 'Courier New', monospace; font-size: 13px; color: var(--cyan-dim); background: #050505; border: 1px solid #333333; padding: 16px 20px; line-height: 1.7; margin: 12px 0; white-space: pre; }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div>
+      <div class="header-title">⚔ THE CLANS — SYSOP DOCUMENTATION</div>
+      <div class="header-sub">v0.97b1 · Copyright © 1997–2002 Allen Ussher · http://theclans.sourceforge.net</div>
+    </div>
+    <div class="nav-links">
+      <a class="nav-link" href="the-clans-bbs.html">◄ MAIN PAGE</a>
+      <a class="nav-link" href="the-clans-devkit.html">⚙ DEV KIT</a>
+    </div>
+  </header>
+
+  <!-- SIDEBAR NAV -->
+  <nav>
+    <div class="nav-group-label">INTRODUCTION</div>
+    <a href="#desc"><span class="sec-id">0.1</span>Description</a>
+    <a href="#disclaimer"><span class="sec-id">0.2</span>Disclaimer</a>
+    <a href="#registration"><span class="sec-id">0.3</span>Registration</a>
+    <a href="#multinode"><span class="sec-id">0.4</span>No Multinode</a>
+    <a href="#lazy"><span class="sec-id">0.9</span>Lazy Sysop's Guide</a>
+
+    <div class="nav-group-label">SETUP</div>
+    <a href="#setup"><span class="sec-id">1.1</span>Setting Up</a>
+    <a href="#reset"><span class="sec-id">1.2</span>Resetting</a>
+    <a href="#maintenance"><span class="sec-id">1.3</span>Daily Maintenance</a>
+    <a href="#start-ibbs"><span class="sec-id">1.4</span>Starting InterBBS</a>
+    <a href="#join-ibbs"><span class="sec-id">1.5</span>Joining InterBBS</a>
+    <a href="#packets"><span class="sec-id">1.5b</span>Packet Handling</a>
+    <a href="#local-ibbs"><span class="sec-id">1.6</span>Local InterBBS</a>
+    <a href="#troubleshoot"><span class="sec-id">1.7</span>Troubleshooting</a>
+    <a href="#misc"><span class="sec-id">1.8</span>Miscellany</a>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main>
+
+    <!-- 0.1 DESCRIPTION -->
+    <div class="doc-section" id="desc">
+      <div class="section-id">[0.1]</div>
+      <h2>Description</h2>
+      <p>The Clans is a mix of role playing game and strategy war game for your BBS. The greatest feature of The Clans is its InterBBS support. The InterBBS feature should help increase the number of calls to your BBS from users who don't normally call — they may originally call to play the game but given time, they may choose to write messages and do other things as well.</p>
+
+      <h3>How InterBBS Works</h3>
+      <ol class="steps">
+        <li><div>Each BBS acts as a <strong style="color:var(--cyan)">"Village"</strong> in the league.</div></li>
+        <li><div>A player logging into Village A can choose the "travel to another village" option. If he chooses to travel to Village B, his user data will be sent over to Village B.</div></li>
+        <li><div>During maintenance, the data from BBS A is sent to BBS B and the player will be able to log into BBS B the next day to play there with his clan.</div></li>
+        <li><div>Each Village will have its own power struggles between clans and a ruler (which will change often). The ruler sets things like tax rates, so it's in the player's interest to visit each Village to find the best one for him.</div></li>
+        <li><div>Each village will be able to attack other villages in the league and steal supplies. Clans in that village can help supply the village's army with troops and other things.</div></li>
+      </ol>
+    </div>
+
+    <!-- 0.2 DISCLAIMER -->
+    <div class="doc-section" id="disclaimer">
+      <div class="section-id">[0.2]</div>
+      <h2>Disclaimer</h2>
+      <div class="callout warn">
+        <strong>NO WARRANTY</strong> is provided for this product. Allen Ussher, the author, is not liable for any damages incurred by use of The Clans. The Clans is provided "as is" and a warranty of any kind is neither expressed nor implied — all are hereby explicitly disclaimed. Any damage caused by The Clans directly or indirectly is not the responsibility of Allen Ussher. There is also no guarantee that this software will continue to be updated or that support will be offered.
+      </div>
+    </div>
+
+    <!-- 0.3 REGISTRATION -->
+    <div class="doc-section" id="registration">
+      <div class="section-id">[0.3]</div>
+      <h2>Registration</h2>
+      <p>Registration is no longer required for The Clans.</p>
+    </div>
+
+    <!-- 0.4 NO MULTINODE -->
+    <div class="doc-section" id="multinode">
+      <div class="section-id">[0.4]</div>
+      <h2>No Multinode</h2>
+      <p>Because of the complexity of the game and its strategic, somewhat turn-based nature, multinode play is not featured. However, The Clans will ensure no two users enter the game at the same time — it will alert a user trying to enter while someone is already on.</p>
+      <p>To do this, an <code>ONLINE.FLG</code> semaphore file is created in the Clans directory. If something causes the file to still exist after a user has exited the door, you may simply delete the file (otherwise, users will be told someone is online even though they are not). This file is also deleted during maintenance.</p>
+    </div>
+
+    <!-- 0.9 LAZY SYSOP -->
+    <div class="doc-section" id="lazy">
+      <div class="section-id">[0.9]</div>
+      <div class="quickstart">
+        <h2>⚡ Lazy Sysop's Guide</h2>
+        <p>To set up the game for <strong style="color:var(--yellow)">local play only</strong>, follow these steps. You MUST read the full docs to set up InterBBS.</p>
+        <ol class="steps">
+          <li><div>Run <code>CONFIG.EXE</code>. Configure your node data here.</div></li>
+          <li><div>Modify <code>RUNCLANS.BAT</code> to suit your BBS. Call it from your BBS as a door.</div></li>
+          <li><div>Run <code>RESET.EXE</code> from DOS.</div></li>
+          <li><div>Add <code>Clans /M</code> to your nightly maintenance.</div></li>
+        </ol>
+        <div class="callout">
+          <strong>NOTE:</strong> If you are planning on joining an InterBBS league, you MUST set up your BBS software to call the door with <strong>REAL NAMES ONLY</strong>. This standardizes the league and makes it easier for players to travel from board to board. Handles can change from board to board, but real names can't.
+        </div>
+      </div>
+    </div>
+
+    <!-- 1.1 SETUP -->
+    <div class="doc-section" id="setup">
+      <div class="section-id">[1.1]</div>
+      <h2>Setting Up The Clans</h2>
+      <p>First, run the setup program <code>CONFIG.EXE</code>. This program lets you specify which nodes you have on your BBS and their dropfile directories. The Clans doesn't need to know what type of dropfile to look for — it will detect this automatically.</p>
+      <p>You must create a batch file to run the game. How to set up a door varies by BBS software — refer to your BBS documentation. Your batch file should look like this:</p>
+
+      <pre><span class="code-label">RUNCLANS.BAT</span>
+cd \TheClans          &lt;-- Change this to your Clans directory
+Clans /N%1            &lt;-- %1 is the node you wish to run
+cd \bbsdirectory      &lt;-- Change this to your BBS directory</pre>
+
+      <p>To run from Node 1, use <code>RUNCLANS.BAT 1</code>. If you create your own batch file, remember: you <strong style="color:var(--yellow)">MUST change to the Clans directory</strong> and specify the node using <code>CLANS /Nx</code> where <code>x</code> is the node number.</p>
+
+      <div class="callout">
+        <strong>NOTE:</strong> If you are planning on joining an InterBBS league, you MUST set up your BBS software to call the door with <strong>REAL NAMES ONLY</strong>.
+      </div>
+    </div>
+
+    <!-- 1.2 RESET -->
+    <div class="doc-section" id="reset">
+      <div class="section-id">[1.2]</div>
+      <h2>Resetting The Clans</h2>
+      <p>To reset the game, run <code>RESET.EXE</code> from within the Clans directory. You will be given several options. After entering information, the game will reset and all data files from the previous game will be removed automatically.</p>
+      <div class="callout warn">
+        <strong>IMPORTANT:</strong> You MUST reset the game the first time it is installed.
+      </div>
+      <p>If you are in a league, you must also run <code>CLANS /I</code> after running <code>RESET.EXE</code>. Ensure all configurations are set up first — have your <code>WORLD.NDX</code> and <code>ROUTE.CFG</code> files created before running <code>CLANS /I</code>.</p>
+      <p>For a local IBBS league (on one BBS only), use <code>CLANS /LIBBS /I</code>.</p>
+    </div>
+
+    <!-- 1.3 MAINTENANCE -->
+    <div class="doc-section" id="maintenance">
+      <div class="section-id">[1.3]</div>
+      <h2>Daily Maintenance</h2>
+      <p>Add the following to your nightly BBS maintenance:</p>
+      <pre>cd \TheClans
+CLANS /M
+cd \bbsdirectory</pre>
+      <p>If maintenance is not run, The Clans will automatically run it the next time someone enters the game. However, it is <strong style="color:var(--yellow)">highly recommended</strong> to run maintenance daily to ensure stats are calculated properly — this is especially critical for InterBBS games.</p>
+    </div>
+
+    <!-- 1.4 STARTING IBBS -->
+    <div class="doc-section" id="start-ibbs">
+      <div class="section-id">[1.4]</div>
+      <h2>Starting an InterBBS Game</h2>
+
+      <h3>Key Terms</h3>
+      <table class="terms">
+        <tr><th>Term</th><th>Definition</th></tr>
+        <tr><td>League</td><td>The system of BBSes linked together to play The Clans. Also thought of as the "world" the game takes place in, as each BBS is a "Village."</td></tr>
+        <tr><td>LeagueID</td><td>A two-character alphanumeric identification code that differentiates one league from another (no special chars: <code>. ? * % / \</code> etc.).</td></tr>
+        <tr><td>League Coordinator (LC)</td><td>The sysop of the main BBS coordinating the game. That's you, if you're starting a new league. The LC's BBSID should be 1.</td></tr>
+        <tr><td>BBSID</td><td>A unique numerical ID for each BBS in the league. The main BBS is always ID 1.</td></tr>
+      </table>
+
+      <h3>Setup Steps</h3>
+      <ol class="steps">
+        <li>
+          <div>Create the <code>WORLD.NDX</code> file (see <code>WORLDNDX.SMP</code> for a sample). This file defines your league.
+          <br><br>
+          <strong style="color:var(--cyan)">A.</strong> Choose a LeagueID (2 alphanumeric chars, unique in your area).<br>
+          <strong style="color:var(--cyan)">B.</strong> Choose a World Name (the name of the "world" all villages exist in).<br>
+          <strong style="color:var(--cyan)">C.</strong> Create entries for each BBS using these keywords:
+          <pre>BBSId           1
+BBSName         Revolution Nine
+VillageName     The Village
+Address         1:1/1
+
+BBSId           2
+BBSName         Joe's BBS
+VillageName     Joe's City
+Address         1:1/2
+
+BBSId           3
+BBSName         Frank's BBS
+VillageName     Franktown
+Address         1:1/3</pre>
+          <strong style="color:var(--cyan)">D.</strong> Optionally, add an <code>Ascii</code> section for a coloured welcome message displayed to players:
+          <pre>Ascii  [ put stuff here ]
+Ascii  [ and here ]</pre></div>
+        </li>
+        <li><div>Send the completed <code>WORLD.NDX</code> to each BBS in the league. Tell them to copy it to their Clans directory and enable InterBBS in <code>CONFIG.EXE</code>. Give each sysop their BBS ID. Enable InterBBS on your own system (as BBS ID 1).</div></li>
+        <li><div>
+          Run the reset program and choose "Leaguewide reset", then run <code>CLANS /I</code> to send packets to each BBS in the league. Set the game start date a week ahead to give everyone time to get ready.
+          <pre>RESET
+CLANS /I</pre>
+        </div></li>
+        <li><div>Check the league coordinator log <code>LC.LOG</code> to confirm each BBS received the reset packet and replied with a receipt.</div></li>
+        <li><div>Optionally, add a <code>VillInfo</code> section to <code>WORLD.NDX</code> — this acts as an advertisement shown to players when they choose a village to travel to. Very useful for attracting callers to your board.</div></li>
+        <li><div>Choose a routing method if desired (see Routing Methods below).</div></li>
+      </ol>
+
+      <div class="callout warn">
+        <strong>IMPORTANT:</strong> As a league coordinator, you MUST remind all fellow sysops to use real names only when running the game. This prevents duplicate players and ensures players can travel from board to board seamlessly.
+      </div>
+      <div class="callout">
+        <strong>REMINDER:</strong> Be sure you toss your netmail right after packets from The Clans are created.
+      </div>
+
+      <h3>Adding a New Node Mid-Game</h3>
+      <ol class="steps">
+        <li><div>Modify <code>WORLD.NDX</code> to add a new BBS entry. If you use HOST routing, add the new node to one of the host BBSes. Tell the joining sysop what their BBS ID is.</div></li>
+        <li><div>Distribute the updated WORLD.NDX automatically using:
+          <pre>CLANS /NewNDX</pre>
+        </div></li>
+      </ol>
+
+      <h3>Routing Methods</h3>
+      <p>The Clans supports two routing methods that can be used together.</p>
+
+      <p><strong style="color:var(--cyan)">HOST METHOD</strong> — Set up BBSes that act as hubs for others via the <code>Host</code> keyword in <code>WORLD.NDX</code>. Example topology:</p>
+      <div class="tree-diagram">           1
+          / \
+         2   3 - 8
+       / |   | \
+     4   5   6  7
+    /
+  9
+
+BBS 1 hosts 2 and 3.  BBS 2 hosts 4 and 5.
+BBS 3 hosts 6, 7, and 8.  BBS 4 hosts 9.</div>
+
+      <pre>BBSId           1
+Host            2 3
+BBSName         Revolution Nine
+Address         3:2/1
+
+BBSId           2
+Host            4 5
+
+BBSId           3
+Host            6 7 8
+
+BBSId           4
+Host            9
+
+BBSId           5
+BBSId           6
+BBSId           7
+BBSId           8
+BBSId           9</pre>
+
+      <p><strong style="color:var(--cyan)">ROUTE.CFG METHOD</strong> — Allows individually specified routing per node. Contents of this file differ per system. Settings here supersede the Host method. See <code>ROUTE.CFG</code> for full reference.</p>
+
+      <p>For small local leagues with no long-distance connections, the simplest method is to route everything through the LC's BBS:</p>
+      <pre>ROUTE ALL 1</pre>
+      <div class="callout warn">
+        <strong>CRITICAL:</strong> The league coordinator's <code>ROUTE.CFG</code> must NOT contain <code>ROUTE ALL 1</code>. If it does, packets will loop back to the coordinator and never reach other BBSes. Only member nodes should use <code>ROUTE ALL 1</code>.
+      </div>
+    </div>
+
+    <!-- 1.5 JOINING -->
+    <div class="doc-section" id="join-ibbs">
+      <div class="section-id">[1.5]</div>
+      <h2>Joining an Existing InterBBS League</h2>
+      <ol class="steps">
+        <li><div>Find an existing Clans league to join. If none exist, start your own (see section 1.4).</div></li>
+        <li><div>Contact the league coordinator. Tell them your desired Village name. The LC will supply you with a <code>WORLD.NDX</code> file and routing instructions. Copy <code>WORLD.NDX</code> to your Clans directory. Run <code>CONFIG.EXE</code>, choose Setup InterBBS, and enter the BBS ID given to you. Also enter your netmail directory, inbound directory, and mailer type.</div></li>
+        <li><div>Set up your mailer to process packets by adding to your batch file:
+          <pre>cd \clans
+clans /I</pre>
+        </div></li>
+        <li><div>Run the reset program and choose "Join a league":
+          <pre>RESET
+CLANS /I</pre>
+          The game will reset and wait for a message from the main BBS telling it to start accepting local users.
+        </div></li>
+      </ol>
+      <div class="callout">
+        <strong>NOTE:</strong> You SHOULD already have <code>CLANS /M</code> in your nightly maintenance. If not, the game will automatically run maintenance the first chance it gets each day.
+      </div>
+      <div class="callout warn">
+        <strong>REMINDER:</strong> Be sure you toss your netmail right after packets from The Clans are created.
+      </div>
+    </div>
+
+    <!-- 1.5b PACKET HANDLING -->
+    <div class="doc-section" id="packets">
+      <div class="section-id">[1.5b]</div>
+      <h2>How InterBBS Packets Are Handled</h2>
+      <p>This section is for users who wish to set up an IBBS game without a mailer or mail network.</p>
+
+      <h3>Packet Naming</h3>
+      <pre>CLxxxyyy.ida
+
+xxx = BBS ID the packet is FROM
+yyy = BBS ID the packet is DESTINED FOR
+id  = league ID (2 chars)
+a   = arbitrary character (A–Z) used by the game</pre>
+
+      <p>Example: a packet from BBS #1 to BBS #9 in league "22" would be: <code>CL001009.22F</code></p>
+      <p>Outbound packets appear in the <code>OUTBOUND</code> directory. Inbound packets go in the <code>INBOUND</code> directory (named <code>CL???003.ida</code> for BBS #3).</p>
+
+      <h3>Without a Mailer</h3>
+      <p>If you cannot use a mailer, you must manually transfer packets between BBSes via terminal, script, or other means. When you receive a packet, put it in your inbound directory and run:</p>
+      <pre>CLANS /I</pre>
+    </div>
+
+    <!-- 1.6 LOCAL IBBS -->
+    <div class="doc-section" id="local-ibbs">
+      <div class="section-id">[1.6]</div>
+      <h2>Local InterBBS</h2>
+      <p>You can run several copies of The Clans on one machine, each acting as a separate village — no mailer required. This is how the InterBBS feature was originally tested.</p>
+      <ol class="steps">
+        <li><div>Install The Clans in a separate directory for each village:
+          <pre>C:\VILLAGE1    -- first Clans game
+C:\VILLAGE2    -- second game
+C:\VILLAGE3    -- third game</pre>
+        </div></li>
+        <li><div>Set up batch files for each game with the <code>/LIBBS</code> parameter:
+          <pre>CLANS /LIBBS /N1</pre>
+        </div></li>
+        <li><div>Set daily maintenance for each copy:
+          <pre>CLANS /LIBBS /M</pre>
+        </div></li>
+        <li><div>Set up <code>ROUTE.CFG</code> for each village:
+          <pre>NORMAL ALL</pre>
+        </div></li>
+        <li><div>Create a <code>WORLD.NDX</code> listing all villages. Addresses can be arbitrary since this is a local game:
+          <pre>village1  -- 99:1/1
+village2  -- 99:1/2
+village3  -- 99:1/3</pre>
+        </div></li>
+        <li><div>Copy <code>WORLD.NDX</code> to each village directory.</div></li>
+        <li><div>Modify each <code>clans.cfg</code> so each has a unique BBS ID. Set one as Main BBS (ID=1). Enable the InterBBS flag in <code>CONFIG.EXE</code> for each.</div></li>
+        <li><div>Create a shared outbound directory (e.g. <code>C:\CLANOUT</code>) and set each game's outbound AND mail directory to point to it.</div></li>
+        <li><div>Run RESET on all games. For the main village (BBSId=1) choose <em>Leaguewide reset</em>. For the others, choose <em>Join a league</em>.</div></li>
+        <li><div>Optionally process packets from the main village manually:
+          <pre>CLANS /LIBBS /I</pre>
+        </div></li>
+      </ol>
+    </div>
+
+    <!-- 1.7 TROUBLESHOOTING -->
+    <div class="doc-section" id="troubleshoot">
+      <div class="section-id">[1.7]</div>
+      <h2>Troubleshooting &amp; Q&amp;A</h2>
+
+      <div class="qa-block">
+        <div class="qa-problem">The game is rewriting my DOOR.SYS file and setting the username to all caps.</div>
+        <div class="qa-solution">Use another dropfile type such as <code>DORINFO1.DEF</code>. OpenDoors has issues with DOOR.SYS and rewrites it unexpectedly.</div>
+      </div>
+
+      <div class="qa-block">
+        <div class="qa-problem">It can't find the WORLD.NDX file.</div>
+        <div class="qa-solution">You only need this file for InterBBS play. If you're not in a league, turn OFF the InterBBS option in <code>CONFIG.EXE</code>. If you ARE in a league, get <code>WORLD.NDX</code> from the league coordinator. If you ARE the LC, read section 1.4 on how to create it.</div>
+      </div>
+
+      <div class="qa-block">
+        <div class="qa-problem">It can't find the WORLD.DAT file.</div>
+        <div class="qa-solution">You'll need to reset to create this file. Run <code>RESET</code>.</div>
+      </div>
+
+      <div class="qa-block">
+        <div class="qa-problem">Users from other boards always have to create new players — their data isn't transferred.</div>
+        <div class="qa-solution">Make sure you have set <strong>REAL NAMES ONLY</strong> for running your door, and that all other sysops have done the same. If that's not the issue, verify your routing is set up correctly.</div>
+      </div>
+
+      <div class="qa-block">
+        <div class="qa-problem">I added a new node but it hasn't received a reset packet.</div>
+        <div class="qa-solution">You likely set up WORLD.NDX incorrectly for host routing. Edit the new node out of WORLD.NDX (prefix its entry lines with <code>#</code>) and run <code>CLANS /I</code>. Then fix your host hierarchy, uncomment the new node, and The Clans will send a correct reset packet.</div>
+      </div>
+
+      <div class="qa-block">
+        <div class="qa-problem">It's been a couple days and nothing is received by other nodes. They're still awaiting the LC's ok.</div>
+        <div class="qa-solution">Check your <code>ROUTE.CFG</code>. If you use <code>ROUTE ALL 1</code> for the league, the LC's own <code>ROUTE.CFG</code> must NOT contain that line — it will create an infinite feedback loop. Also confirm your netmail is being tossed: whenever The Clans creates a netmail message it must be processed by your mail tosser.</div>
+      </div>
+
+      <div class="qa-block">
+        <div class="qa-problem">I don't seem to be getting any packets and the game isn't making any either.</div>
+        <div class="qa-solution">Use the <code>/Recon</code> parameter to test without affecting the game. To create a recon packet for BBS #9:
+          <pre>CLANS /Recon 9</pre>
+        </div>
+      </div>
+
+      <div class="qa-block">
+        <div class="qa-problem">Common WORLD.NDX config errors.</div>
+        <div class="qa-solution">
+          When using the Host method, every BBS must be linked into the hierarchy. A BBS with no Host parent and no one pointing to it is unreachable. Also verify each BBS's ID in <code>clans.cfg</code> exactly matches the ID listed in <code>WORLD.NDX</code>.
+        </div>
+      </div>
+    </div>
+
+    <!-- 1.8 MISC -->
+    <div class="doc-section" id="misc">
+      <div class="section-id">[1.8]</div>
+      <h2>Miscellany</h2>
+      <p>The Clans was first developed around the fall of 1996. Coding began around December of that year. The first beta appeared on the webpage on <strong style="color:var(--cyan)">March 25, 1997</strong>.</p>
+
+      <h3>Special Thanks</h3>
+      <p>
+        <strong style="color:var(--cyan)">Rev.Nine users</strong> — thanks for playing the game so rigorously and loving it!<br>
+        <strong style="color:var(--cyan)">Title Page Man</strong> — thanks for helping test out the InterBBS features!<br>
+        <strong style="color:var(--cyan)">All beta testers</strong> who emailed with bugs — thanks.<br>
+        <strong style="color:var(--cyan)">Phil205 Prof</strong> — thanks for an incredibly dull class which forced him to think up ideas for this game.<br>
+        <strong style="color:var(--cyan)">Music:</strong> My Bloody Valentine, Lush, Sloan, Blur, Teenage Fanclub, Stereolab, and The Beatles.
+      </p>
+
+      <h3>Upgrade Notes — v0.97b1</h3>
+      <div class="callout">
+        This version fixes too many code issues to list, but very few actualy gameplay changes.
+      </div>
+      <div class="callout warn">
+        <strong>If upgrading from BELOW v0.97b1:</strong> You must reset after upgrading. If you are in a league, get everybody to upgrade then have everybody reset — members choose "Join a league" while the LC does a leaguewide reset. Delete any packets of the form <code>CLxxxyyy.*</code> in your inbound directory before upgrading.
+        <br><br>
+        <strong>If upgrading from v0.97b1 or higher:</strong> No reset is required.
+      </div>
+
+      <p style="margin-top: 20px; color:var(--border);">File bug reports at: <a href="https://sf.net/p/theclans/bugs/">SourceForge</a> <span class="cursor"></span></p>
+    </di

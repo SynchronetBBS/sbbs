@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — Development Kit v0.11</title>
+<link rel="stylesheet" href="clans.css">
+<style>
+  .wrapper { --sidebar-w: 240px; --max-w: 1200px; }
+
+  /* ── COMMAND REFERENCE TABLE ── */
+  .cmd-ref { border: 1px solid #333333; width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+  .cmd-ref th { background: rgba(85,255,255,0.08); color: var(--yellow); text-shadow: 0 0 6px var(--yellow); padding: 8px 14px; text-align: left; border-bottom: 1px solid #333333; letter-spacing: 1px; }
+  .cmd-ref td { padding: 8px 14px; color: var(--cyan-dim); border-bottom: 1px solid var(--bg-panel); line-height: 1.7; vertical-align: top; }
+  .cmd-ref td:first-child { color: var(--cyan); white-space: nowrap; font-family: 'Courier New', monospace; font-size: 11px; }
+  .cmd-ref tr:last-child td { border-bottom: none; }
+  .cmd-ref tr:hover td { background: rgba(85,255,255,0.06); }
+
+  /* ── INDEX GRID ── */
+  .index-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; margin: 10px 0; }
+  .index-item { font-family: 'Courier New', monospace; font-size: 11px; color: var(--cyan-dim); padding: 4px 10px; border-left: 1px solid var(--bg-panel); }
+  .index-item .idx  { color: #FFFF55; margin-right: 8px; }
+  .index-item .name { color: #55FFFF; }
+
+  /* ── TOOL CARDS ── */
+  .tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin: 12px 0; }
+  .tool-card { border: 1px solid #333333; background: var(--dark); padding: 14px 16px; transition: border-color .2s; }
+  .tool-card:hover { border-color: var(--cyan); box-shadow: var(--glow); }
+  .tool-name  { font-family: 'VT323', monospace; font-size: 20px; color: #55FFFF; text-shadow: 0 0 6px #55FFFF; margin-bottom: 4px; }
+  .tool-usage { font-family: 'Courier New', monospace; font-size: 11px; color: #55FF55; margin-bottom: 8px; }
+  .tool-desc  { font-size: 11px; color: var(--cyan-dim); line-height: 1.7; }
+
+  /* ── AUTHOR'S NOTE ── */
+  .authors-note { border: 2px solid var(--yellow); background: var(--dark); padding: 18px 22px; box-shadow: 0 0 16px #FFFF5522; margin-bottom: 30px; }
+  .authors-note h2 { color: var(--yellow); text-shadow: 0 0 10px var(--yellow); border-color: var(--yellow); }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="wrapper">
+
+<!-- HEADER -->
+<header>
+  <div>
+    <div class="header-title">⚙ THE CLANS — DEVELOPMENT KIT v0.11</div>
+    <div class="header-sub">by Allen Ussher · http://theclans.sourceforge.net</div>
+  </div>
+  <div class="nav-links">
+    <a class="nav-link" href="the-clans-bbs.html">◄ MAIN PAGE</a>
+    <a class="nav-link" href="the-clans-docs.html">SYSOP DOCS</a>
+  </div>
+</header>
+
+<!-- SIDEBAR NAV -->
+<nav>
+  <div class="nav-group">INTRODUCTION</div>
+  <a href="#authornote">Author's Note</a>
+  <a href="#what"><span class="sid">0.1</span>What Can You Develop?</a>
+  <a href="#howworks"><span class="sid">0.2</span>How Does It Work?</a>
+
+  <div class="nav-group">EVENT FILES</div>
+  <a href="#ef-what"><span class="sid">1.1</span>What Are They?</a>
+  <a href="#ef-make"><span class="sid">1.2</span>Making Event Files</a>
+  <a href="#ef-ref"><span class="sid">1.3</span>Command Reference</a>
+  <a href="#ef-flags">Flags &amp; ACS</a>
+
+  <div class="nav-group">MONSTERS</div>
+  <a href="#mon-what"><span class="sid">2.1</span>What Are They?</a>
+  <a href="#mon-make"><span class="sid">2.2</span>Making Monsters</a>
+  <a href="#mon-ref"><span class="sid">2.3</span>Field Reference</a>
+
+  <div class="nav-group">NPCs</div>
+  <a href="#npc-what"><span class="sid">3.1</span>What Are They?</a>
+  <a href="#npc-make"><span class="sid">3.2</span>Making NPCs</a>
+  <a href="#npc-example"><span class="sid">3.3</span>Example NPC</a>
+  <a href="#npc-quotes"><span class="sid">3.4</span>Quote Files</a>
+  <a href="#npc-stats"><span class="sid">3.5</span>Monster Stats for NPCs</a>
+  <a href="#npc-ref"><span class="sid">3.6</span>NPC Field Reference</a>
+
+  <div class="nav-group">INSTALLING ADD-ONS</div>
+  <a href="#install-npcs"><span class="sid">4.1</span>NPCs</a>
+  <a href="#install-quests"><span class="sid">4.2</span>Quests</a>
+
+  <div class="nav-group">TOOLS</div>
+  <a href="#tools-overview">Tool Overview</a>
+  <a href="#makepak"><span class="sid">5.1</span>MAKEPAK &amp; PAKfiles</a>
+  <a href="#chew"><span class="sid">5.2</span>CHEW &amp; INSTALL</a>
+
+  <div class="nav-group">MISC</div>
+  <a href="#faq"><span class="sid">6.1</span>FAQ</a>
+  <a href="#distrib"><span class="sid">6.2</span>Distributing Add-Ons</a>
+  <a href="#spells"><span class="sid">6.3</span>Spell Index</a>
+  <a href="#items"><span class="sid">6.4</span>Item Index</a>
+  <a href="#monsters"><span class="sid">6.5</span>Monster Index</a>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main>
+
+<!-- AUTHOR NOTE -->
+<div class="doc-section" id="authornote">
+  <div class="authors-note">
+    <h2>📝 Author's Note</h2>
+    <p>This is still the same v0.11 Dev Kit that was released long ago. A couple of updates have been made, mainly to the webpage and email address. For more information on what the utilities included in the devkit do, see the appropriate tool documentation sections on this page.</p>
+    <p>The Dev Kit lets you create quests, NPCs, and monsters for The Clans. Work on a fresh install — you'll be resetting and running maintenance constantly during development.</p>
+  </div>
+</div>
+
+<!-- 0.1 WHAT CAN YOU DEVELOP -->
+<div class="doc-section" id="what">
+  <div class="sec-id">[0.1]</div>
+  <h2>What Can You Develop?</h2>
+  <p>At the moment, you are limited to developing <strong style="color:var(--cyan)">quests</strong>, <strong style="color:var(--cyan)">NPCs</strong>, and <strong style="color:var(--cyan)">monsters</strong> for The Clans. In the future, items, mine events, classes, races, and possibly game strings may be available — but a system must first exist to prevent cheat packs. It would be far too easy to hand out the item creator and have BBSes build up super items.</p>
+  <p><strong style="color:var(--yellow)">Quests</strong> are what players go on via the G option in the mines. They're event files (scripts) plus optional NPCs and monster files. Modify your <code>QUESTS.INI</code> and sometimes <code>CLANS.INI</code> and you're set.</p>
+  <p><strong style="color:var(--yellow)">NPCs</strong> are characters encountered on the street or in other locales. They're made up of stats (for joining clans) and quotes (for conversation).</p>
+</div>
+
+<!-- 0.2 HOW DOES IT WORK -->
+<div class="doc-section" id="howworks">
+  <div class="sec-id">[0.2]</div>
+  <h2>How Does The System Work?</h2>
+  <p>The Clans uses two INI files for add-on modules:</p>
+  <p><strong style="color:var(--cyan)">CLANS.INI</strong> — the general INI. Lets the sysop add NPCs, races, classes, items, and spells (only NPCs can be developed by 3rd parties). Also allows changing the language file.</p>
+  <p><strong style="color:var(--cyan)">QUESTS.INI</strong> — tells the game which quests are available and where to find them.</p>
+  <p>When distributing an add-on, you must provide installation instructions. Currently, lines must be added to the INI files manually. (An add-on installer may be created in a future version.)</p>
+  <div class="callout warn">
+    <strong>IMPORTANT:</strong> Always develop on a fresh copy of the game. You'll be resetting, running forced maintenance (<code>CLANS /M</code>), and logging in and out constantly. A slap upside the head is in order if you don't!
+  </div>
+</div>
+
+<!-- 1.1 WHAT ARE EVENT FILES -->
+<div class="doc-section" id="ef-what">
+  <div class="sec-id">[1.1]</div>
+  <h2>What Are Event Files?</h2>
+  <p>Event files are simple scripts used to construct "events" encountered through quests and mine events (e.g. meeting the spirit knights). They are small programs run by the game using its own compiled language.</p>
+  <p>Workflow: write a text script → compile it with <code>ECOMP.EXE</code> → test it in The Clans.</p>
+</div>
+
+<!-- 1.2 MAKING EVENT FILES -->
+<div class="doc-section" id="ef-make">
+  <div class="sec-id">[1.2]</div>
+  <h2>Making Event Files</h2>
+
+  <h3>Example 1 — Getting Started</h3>
+  <p>The simplest event file you'll ever see. Lines beginning with <code>#</code> are comments. <code>Event</code> starts a named block; <code>End</code> stops execution. <code>Text</code> outputs a string to the player's screen.</p>
+  <pre><span class="code-label">EVENT1.EVT</span><span class="c-comment"># Example Event File No.1</span>
+
+<span class="c-keyword">Event</span> <span class="c-label">SimpleEvent</span>
+  <span class="c-keyword">Text</span> <span class="c-string">"Hello World!</span>
+<span class="c-keyword">End</span></pre>
+  <p>Compile it:</p>
+  <pre>ECOMP EVENT1.EVT EVENT1.E</pre>
+  <p>Register it as a quest in <code>QUESTS.INI</code>:</p>
+  <pre>Name            Event1 Test
+File            EVENT1.E
+Index           SimpleEvent
+Known</pre>
+  <p>Go into the game and run the quest. After running it, you won't be able to run it again until you force maintenance with <code>CLANS /M</code>.</p>
+
+  <h3>Example 2 — Blocks &amp; Jumps</h3>
+  <p>A file can contain multiple blocks. <code>Event</code> blocks can be started directly as quests. <code>Result</code> blocks are jump targets — they're not started on their own. Use <code>Jump</code> to move between blocks. Multiple quests can share one file — just use different Index values.</p>
+  <pre><span class="code-label">EVENT2.EVT</span><span class="c-keyword">Event</span> <span class="c-label">FirstEvent</span>
+  <span class="c-keyword">Text</span> <span class="c-string">"This is the 1st event</span>
+  <span class="c-keyword">Jump</span> <span class="c-label">FirstEvent.Result</span>
+<span class="c-keyword">End</span>
+
+<span class="c-keyword">Result</span> <span class="c-label">FirstEvent.Result</span>
+  <span class="c-keyword">Text</span> <span class="c-string">"This is a result of the first event!</span>
+<span class="c-keyword">End</span>
+
+<span class="c-keyword">Event</span> <span class="c-label">SecondEvent</span>
+  <span class="c-keyword">Text</span> <span class="c-string">"This is the 2nd event!</span>
+<span class="c-keyword">End</span></pre>
+  <div class="callout tip">
+    <strong>TIP:</strong> Always use <code>End</code> at the end of each block. Without it, execution "falls through" into the next block — which you usually don't want.
+  </div>
+  <p>The <code>Known</code> keyword in QUESTS.INI makes a quest available without the player needing to be "told" about it by an NPC first.</p>
+
+  <h3>Example 3 — Getting Options</h3>
+  <p><code>Prompt</code> is like <code>Text</code> but without a newline at the end. <code>Option</code> captures a single keypress and jumps to a named block. <code>Input</code> captures a full-line response.</p>
+  <pre><span class="code-label">EVENT3.EVT</span><span class="c-keyword">Event</span> <span class="c-label">Block1</span>
+  <span class="c-keyword">Text</span> <span class="c-string">"This is example #3!</span>
+  <span class="c-keyword">Text</span>
+  <span class="c-keyword">Prompt</span> <span class="c-string">"Press A,B,C, or D ></span>
+  <span class="c-keyword">Option</span> A <span class="c-label">PressA</span>
+  <span class="c-keyword">Option</span> B <span class="c-label">ILikeB</span>
+  <span class="c-keyword">Option</span> C <span class="c-label">C</span>
+  <span class="c-keyword">Option</span> D <span class="c-label">NextLine</span>
+
+  <span class="c-keyword">Text</span> <span class="c-string">"You pressed D!</span>
+  <span class="c-keyword">Jump</span> <span class="c-label">Block2</span>
+<span class="c-keyword">End</span>
+
+<span class="c-keyword">Result</span> <span class="c-label">PressA</span>
+  <span class="c-keyword">Text</span> <span class="c-string">"You pressed A!</span>
+  <span class="c-keyword">Jump</span> <span class="c-label">Block2</span>
+<span class="c-keyword">End</span>
+
+<span class="c-keyword">Result</span> <span class="c-label">Block2</span>
+  <span class="c-keyword">Text</span> <span class="c-string">"Now let's chat:</span>
+  <span class="c-keyword">Input</span> <span class="c-label">TFC1</span>  1. This is Option 1
+  <span class="c-keyword">Input</span> <span class="c-label">TFC2</span>  2. This is Option 2
+  <span class="c-keyword">Input</span> <span class="c-label">TFC3</span>  3. This is Option 3
+<span class="c-keyword">End</span></pre>
+  <p><code>Option D NextLine</code> — using <code>NextLine</code> as the target causes execution to continue at the line immediately after all the <code>Option</code> keywords.</p>
+
+  <h3>Example 4 — Fighting</h3>
+  <p>Use <code>AddEnemy</code> to load monsters into the fight buffer, then <code>Fight</code> to trigger combat. <code>DoneQuest</code> marks the quest permanently completed for that player.</p>
+  <pre><span class="code-label">EVENT4.EVT</span><span class="c-keyword">Event</span> <span class="c-label">FightExample</span>
+  <span class="c-keyword">Text</span> <span class="c-string">"You will now experience a battle!</span>
+  <span class="c-keyword">Pause</span>
+
+  <span class="c-keyword">AddEnemy</span> /m/Output 1
+  <span class="c-keyword">AddEnemy</span> /m/Output 1
+  <span class="c-keyword">AddEnemy</span> /m/Output 1
+  <span class="c-keyword">AddEnemy</span> /m/Output 1
+  <span class="c-keyword">Fight</span> <span class="c-label">YouWin</span> <span class="c-label">YouLose</span> <span class="c-label">NextLine</span>
+
+  <span class="c-keyword">Text</span> <span class="c-string">"aw, you ran away!</span>
+<span class="c-keyword">End</span>
+
+<span class="c-keyword">Result</span> <span class="c-label">YouWin</span>
+  <span class="c-keyword">Text</span> <span class="c-string">"Good job, you won!</span>
+  <span class="c-keyword">DoneQuest</span>
+<span class="c-keyword">End</span>
+
+<span class="c-keyword">Result</span> <span class="c-label">YouLose</span>
+  <span class="c-keyword">Text</span> <span class="c-string">"You suck!  How could you lose!?</span>
+<span class="c-keyword">End</span></pre>
+  <p>Special <code>Fight</code> labels: <code>NextLine</code> continues after the Fight line, <code>STOP</code> halts execution, <code>NoRun</code> prevents the player from fleeing.</p>
+  <pre><span class="c-comment"># Most common usage pattern:</span>
+<span class="c-keyword">Fight</span> <span class="c-label">NextLine</span> <span class="c-label">STOP</span> <span class="c-label">NoRun</span></pre>
+
+  <h3>Example 5 — Flags &amp; ACS</h3>
+  <p id="ef-flags">Flags are boolean variables (TRUE/FALSE) used to track state across an event. They are tested using <code>{}</code> syntax before any command.</p>
+
+  <table class="cmd-ref">
+    <tr><th>Flag Type</th><th>Description</th></tr>
+    <tr><td>G0–G63</td><td>Global flags — shared by all users, never cleared</td></tr>
+    <tr><td>H0–H63</td><td>Daily global flags — cleared once a day during maintenance</td></tr>
+    <tr><td>D0–D63</td><td>Daily player flags — per-user, cleared each maintenance</td></tr>
+    <tr><td>P0–P63</td><td>Player flags — per-user, never cleared</td></tr>
+    <tr><td>T0–T63</td><td>Temporary flags — cleared each time an event or quote file runs</td></tr>
+  </table>
+
+  <pre><span class="code-label">EVENT5.EVT</span><span class="c-keyword">Event</span> <span class="c-label">FlagExample</span>
+  <span class="c-keyword">SetFlag</span> T1
+
+  <span class="c-comment"># executed only if T1 is set</span>
+  {T1}<span class="c-keyword">Text</span> <span class="c-string">"T1 was set!</span>
+
+  <span class="c-comment"># this line will NEVER execute</span>
+  {!T1}<span class="c-keyword">Text</span> <span class="c-string">"T1 was NOT set!</span>
+
+  <span class="c-keyword">SetFlag</span> T3
+  <span class="c-keyword">Jump</span> <span class="c-label">NextPart</span>
+<span class="c-keyword">End</span>
+
+<span class="c-keyword">Result</span> <span class="c-label">NextPart</span>
+  {T3}<span class="c-keyword">Text</span> <span class="c-string">"T3 is set!</span>
+  <span class="c-keyword">ClearFlag</span> T1
+  {!T1}<span class="c-keyword">Text</span> <span class="c-string">"T1 has been cleared.</span>
+  {!T1 &amp; T3}<span class="c-keyword">Text</span> <span class="c-string">"T3 was set but T1 was not.</span>
+
+  <span class="c-comment"># these three sometimes appear and sometimes don't</span>
+  {R50}<span class="c-keyword">Text</span> <span class="c-string">"Random display 1</span>
+
+  <span class="c-comment"># ^ = always TRUE, % = always FALSE</span>
+  {^}<span class="c-keyword">Text</span> <span class="c-string">"This should ALWAYS be seen</span>
+  {%}<span class="c-keyword">Text</span> <span class="c-string">"This should NEVER be seen</span>
+<span class="c-keyword">End</span></pre>
+
+  <p>ACS expressions support <code>&amp;</code> (AND), <code>|</code> (OR), <code>!</code> (NOT), and grouping with <code>( )</code>:</p>
+  <pre><span class="c-comment"># true if G12 AND T2 are set, OR if H9 is set AND D1 is NOT set:</span>
+{ (G12 &amp; T2) | (H9 &amp; !D1) }</pre>
+
+  <p>Additional ACS conditions:</p>
+  <table class="cmd-ref">
+    <tr><th>ACS</th><th>Meaning</th></tr>
+    <tr><td>$xxx</td><td>True if player has xxx gold or more in pocket</td></tr>
+    <tr><td>Qaa</td><td>True if player has completed quest #aa</td></tr>
+    <tr><td>^</td><td>Always true</td></tr>
+    <tr><td>%</td><td>Always false</td></tr>
+    <tr><td>Ryy</td><td>True if roll of 1–100 is ≥ yy (e.g. R50 = 50% chance)</td></tr>
+    <tr><td>Lyy</td><td>True if player is exactly at mine level yy</td></tr>
+    <tr><td>Kyy</td><td>True if player is at mine level yy or higher</td></tr>
+  </table>
+</div>
+
+<!-- 1.3 COMMAND REFERENCE -->
+<div class="doc-section" id="ef-ref">
+  <div class="sec-id">[1.3]</div>
+  <h2>Event File Command Reference</h2>
+
+  <table class="cmd-ref">
+    <tr><th>Command</th><th>Description</th></tr>
+    <tr><td>Event &lt;name&gt;</td><td>Start an event block. Can be referenced as a quest Index.</td></tr>
+    <tr><td>Result &lt;name&gt;</td><td>Start a result block. Used as a jump target; not started directly as a quest.</td></tr>
+    <tr><td>End</td><td>Stop execution of the current script. Always place at the end of each block.</td></tr>
+    <tr><td>Jump &lt;label&gt;</td><td>Jump to another Event or Result block.</td></tr>
+    <tr><td>Text "&lt;string&gt;</td><td>Display text to the player followed by a newline. <code>Text</code> alone outputs a blank line.</td></tr>
+    <tr><td>Prompt "&lt;string&gt;</td><td>Display text without a trailing newline (for prompts).</td></tr>
+    <tr><td>Pause</td><td>Display &lt;pause&gt; and wait for any keypress.</td></tr>
+    <tr><td>Option &lt;key&gt; &lt;label&gt;</td><td>Accept a single keypress. Groups of Options are scanned together. Use <code>NextLine</code> as label to continue after the Option group, or <code>STOP</code> to halt.</td></tr>
+    <tr><td>Input &lt;label&gt; &lt;text&gt;</td><td>Present a menu line and jump to label when selected.</td></tr>
+    <tr><td>AddEnemy &lt;file&gt; &lt;index&gt;</td><td>Add monster #index from a monster file to the fight queue. Monsters are 0-indexed.</td></tr>
+    <tr><td>Fight &lt;Win&gt; &lt;Lose&gt; &lt;Run&gt;</td><td>Trigger combat with queued enemies. Labels: block name, <code>NextLine</code>, <code>STOP</code>, or <code>NoRun</code> for Run.</td></tr>
+    <tr><td>Chat &lt;NPCIndex&gt;</td><td>Initiate a chat with the NPC matching NPCIndex.</td></tr>
+    <tr><td>TellQuest &lt;index&gt;</td><td>Inform the player about quest #index, making it accessible in their quest menu.</td></tr>
+    <tr><td>DoneQuest</td><td>Mark the quest as permanently completed for this player. They cannot replay it.</td></tr>
+    <tr><td>AddNews "&lt;string&gt;</td><td>Add a string to the news file.</td></tr>
+    <tr><td>Display "&lt;filename&gt;</td><td>Display an ANSI or ASCII file.</td></tr>
+    <tr><td>SetFlag @X</td><td>Set flag @X (e.g. <code>SetFlag T5</code>, <code>SetFlag G60</code>).</td></tr>
+    <tr><td>ClearFlag @X</td><td>Clear flag @X (e.g. <code>ClearFlag P13</code>).</td></tr>
+    <tr><td>Heal [SP]</td><td>Heal all living clan members. <code>Heal</code> restores HP; <code>Heal SP</code> restores skill points.</td></tr>
+    <tr><td>TakeGold &lt;amount&gt;</td><td>Remove gold from player's pocket. Does NOT check for negatives — use <code>{$xxx}</code> first.</td></tr>
+    <tr><td>GiveGold &lt;amount&gt;</td><td>Give the player gold. Recommended range: 300–1000.</td></tr>
+    <tr><td>GiveXP &lt;amount&gt;</td><td>Give XP to all living clan members. Recommended range: 1–10.</td></tr>
+    <tr><td>GiveItem &lt;name&gt;</td><td>Give an item to the clan. See Item Index for valid names.</td></tr>
+    <tr><td>GiveFight X</td><td>Give X additional monster fights to the clan.</td></tr>
+    <tr><td>GiveFollowers X</td><td>Give X additional followers to the clan.</td></tr>
+    <tr><td>GivePoints X</td><td>Give X points to the clan. Do not give more than 75 at a time.</td></tr>
+  </table>
+
+  <div class="callout tip">
+    <strong>FILE CONVENTIONS:</strong> Compiled event files typically use a <code>.E</code> extension. Inside PAKfiles, they're stored under a <code>/e/</code> path. Quote files use <code>.Q</code> or <code>/q/</code> in PAKfiles.
+  </div>
+
+  <h4>Multi-line Comments</h4>
+  <p>Use <code>&gt;&gt;</code> delimiters for block comments spanning multiple lines:</p>
+  <pre>&gt;&gt;
+ Everything in here is a comment.
+ Can span many lines.
+&gt;&gt;</pre>
+</div>
+
+<!-- 2.1-2.3 MONSTERS -->
+<div class="doc-section" id="mon-what">
+  <div class="sec-id">[2.1]</div>
+  <h2>Monsters</h2>
+  <p>Monsters are the creatures players fight in combat. They're created from a text file and compiled using <code>MCOMP.EXE</code>.</p>
+</div>
+
+<div class="doc-section" id="mon-make">
+  <div class="sec-id">[2.2]</div>
+  <h2>Making Monsters</h2>
+  <p>Create a text file (e.g. <code>MONSTERS.TXT</code> or <code>MYMON.TXT</code>) and compile it:</p>
+  <pre>MCOMP MONSTERS.TXT OUTPUT.MON
+MCOMP MYMON.TXT MYMON.MON</pre>
+  <p>See the included <code>MONSTERS.TXT</code> for a full example. The output file extension is just a convention — it can be any valid filename.</p>
+</div>
+
+<div class="doc-section" id="mon-ref">
+  <div class="sec-id">[2.3]</div>
+  <h2>Monster Field Reference</h2>
+  <table class="cmd-ref">
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Name</td><td>Monster name, max 19 characters</td></tr>
+    <tr><td>HP</td><td>Hit points</td></tr>
+    <tr><td>SP</td><td>Skill points</td></tr>
+    <tr><td>Difficulty</td><td>Monster level (1 = lowest)</td></tr>
+    <tr><td>Agility</td><td>Agility stat</td></tr>
+    <tr><td>Dexterity</td><td>Dexterity stat</td></tr>
+    <tr><td>Strength</td><td>Strength stat</td></tr>
+    <tr><td>Wisdom</td><td>Wisdom stat</td></tr>
+    <tr><td>ArmorStr</td><td>Armor strength</td></tr>
+    <tr><td>Spell</td><td>Spell known by monster (numeric index). Multiple Spell lines are allowed. See Spell Index for values.</td></tr>
+  </table>
+</div>
+
+<!-- 3.1-3.6 NPCs -->
+<div class="doc-section" id="npc-what">
+  <div class="sec-id">[3.1]</div>
+  <h2>NPCs</h2>
+  <p>NPCs are characters encountered by pressing <code>/</code> in game menus, in random mine encounters, and in quests. Players can chat with them and sometimes recruit them to join their clan.</p>
+</div>
+
+<div class="doc-section" id="npc-make">
+  <div class="sec-id">[3.2]</div>
+  <h2>Making NPCs</h2>
+  <p>Create a text file similar to <code>NPCS.TXT</code> and compile it using <code>MakeNPC</code>:</p>
+  <pre>MakeNPC infile.txt outfile.npc</pre>
+  <p>Add the NPC file to the game in <code>CLANS.INI</code>:</p>
+  <pre>NpcFile MYNPCS.NPC</pre>
+  <p>If using a PAKfile:</p>
+  <pre>NpcFile @MYPAK.PAK/npc/Mine</pre>
+  <div class="callout">
+    <strong>NAMING:</strong> Do NOT name your file <code>CLANS.NPC</code> — that's already used. Choose a unique name.
+  </div>
+</div>
+
+<div class="doc-section" id="npc-example">
+  <div class="sec-id">[3.3]</div>
+  <h2>Example NPC — The Knight</h2>
+  <p>Every NPC block starts with the <code>Index</code> line — a unique tagword used to reference the NPC in event files (via <code>Chat &lt;index&gt;</code>). It MUST come first and MUST be globally unique.</p>
+  <div class="callout">
+    <strong>NAMING CONVENTION:</strong> Use a prefix to prevent index conflicts with other add-ons. Allen Ussher uses underscores (<code>_Knight1</code>). Another option is your initials (<code>AUKnight</code>). Without a convention, two add-ons with the same index name will conflict.
+  </div>
+  <p>After Index, the order of remaining fields doesn't matter. Key fields:</p>
+  <ul style="list-style:none; margin: 10px 0 10px 16px;">
+    <li style="font-size:13px; color:var(--cyan-dim); line-height:2;">— <strong style="color:var(--cyan)">QuoteFile</strong>: the compiled quote file for this NPC's dialogue</li>
+    <li style="font-size:13px; color:var(--cyan-dim); line-height:2;">— <strong style="color:var(--cyan)">NPCDAT</strong>: which monster index in the MonFile holds the NPC's stats (0 = first)</li>
+    <li style="font-size:13px; color:var(--cyan-dim); line-height:2;">— <strong style="color:var(--cyan)">MonFile</strong>: the .MON file containing the NPC's stats</li>
+    <li style="font-size:13px; color:var(--cyan-dim); line-height:2;">— <strong style="color:var(--cyan)">Loyalty</strong>: 0–10. Higher = less likely to reveal clan info. 10 = never, 0 = always</li>
+    <li style="font-size:13px; color:var(--cyan-dim); line-height:2;">— <strong style="color:var(--cyan)">Topic</strong>: an unknown topic revealed via TellTopic in a quote file</li>
+    <li style="font-size:13px; color:var(--cyan-dim); line-height:2;">— <strong style="color:var(--cyan)">KnownTopic</strong>: a topic the player can chat about from the start</li>
+    <li style="font-size:13px; color:var(--cyan-dim); line-height:2;">— <strong style="color:var(--cyan)">IntroTopic</strong>: the first topic shown when the player starts chatting</li>
+  </ul>
+</div>
+
+<div class="doc-section" id="npc-quotes">
+  <div class="sec-id">[3.4]</div>
+  <h2>Quote Files</h2>
+  <p>Quote files (QFs) are compiled exactly like event files using <code>ECOMP.EXE</code>, but use the keyword <code>Topic</code> instead of <code>Event</code> or <code>Result</code>. Each topic corresponds to a topic listed in the NPC's data file.</p>
+  <p>Three extra commands are available in QFs:</p>
+  <table class="cmd-ref">
+    <tr><th>Command</th><th>Description</th></tr>
+    <tr><td>TellTopic &lt;name&gt;</td><td>Reveal a previously unknown topic to the player so they can select it in future chats.</td></tr>
+    <tr><td>EndChat</td><td>End the conversation and return the player to the chatting menu.</td></tr>
+    <tr><td>JoinClan</td><td>The NPC joins the player's clan using NPCDAT/MonFile stats. Declines if already in a clan.</td></tr>
+  </table>
+</div>
+
+<div class="doc-section" id="npc-stats">
+  <div class="sec-id">[3.5]</div>
+  <h2>Using Monster Files for NPC Stats</h2>
+  <p>Create a file similar to <code>NPC-MON.TXT</code> and compile it with <code>MCOMP.EXE</code> as you would a normal monster file. Reference it using the <code>MonFile</code> keyword and the specific monster within it using <code>NPCDAT</code>.</p>
+  <pre>MCOMP NPC-MON.TXT NPC.MON</pre>
+</div>
+
+<div class="doc-section" id="npc-ref">
+  <div class="sec-id">[3.6]</div>
+  <h2>NPC Field Reference</h2>
+  <div class="callout tip"><strong>NOTE:</strong> <code>Index</code> MUST always come first. All other fields can appear in any order.</div>
+  <table class="cmd-ref">
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Index</td><td>Unique tagword, one word, max 19 chars. Used with the Chat command. MUST be unique across all add-ons.</td></tr>
+    <tr><td>Name</td><td>Display name, max 19 chars</td></tr>
+    <tr><td>QuoteFile</td><td>Compiled quote filename, max 12 chars (e.g. <code>NPCQUOTE.Q</code>)</td></tr>
+    <tr><td>MonFile</td><td>The .MON file holding this NPC's stats. Do NOT use <code>NPC.MON</code> — that's taken. Use your own (e.g. <code>JOE.MON</code>).</td></tr>
+    <tr><td>NPCDat</td><td>Index of the monster in MonFile to use for stats. 0 = first monster.</td></tr>
+    <tr><td>Loyalty</td><td>0–10. How loyal the NPC is to their current clan when asked about it. 10 = never discloses.</td></tr>
+    <tr><td>OddsOfSeeing</td><td>0–100. Chance (%) the NPC appears in their wander location each day.</td></tr>
+    <tr><td>Wander</td><td>Where the NPC can be found. Valid values: <code>Street</code>, <code>Church</code>, <code>Market</code>, <code>Town Hall</code>, <code>Training Hall</code>, <code>Mine</code></td></tr>
+    <tr><td>IntroTopic</td><td>Name of the Topic shown first when a player starts chatting.</td></tr>
+    <tr><td>Topic [name] [display]</td><td>Add an unknown topic. Must be revealed via <code>TellTopic</code>.</td></tr>
+    <tr><td>KnownTopic [name] [display]</td><td>Add a topic already known to the player.</td></tr>
+    <tr><td>MaxTopics N</td><td>Optional. Maximum number of topics a user can chat about.</td></tr>
+    <tr><td>HereNews [string]</td><td>Optional. Adds a news entry when this NPC appears in the village that day.</td></tr>
+  </table>
+</div>
+
+<!-- 4.1-4.2 INSTALLING -->
+<div class="doc-section" id="install-npcs">
+  <div class="sec-id">[4.1]</div>
+  <h2>Installing Add-On NPCs</h2>
+  <p>Tell the sysop to add one line to <code>CLANS.INI</code>:</p>
+  <pre>NpcFile MYNPCS.NPC
+
+<span class="c-comment"># Or if using a PAKfile:</span>
+NpcFile @MYPAK.PAK/npc/Mine</pre>
+</div>
+
+<div class="doc-section" id="install-quests">
+  <div class="sec-id">[4.2]</div>
+  <h2>Installing Add-On Quests</h2>
+  <p>Ask the sysop to add entries like these to <code>QUESTS.INI</code>:</p>
+  <pre>Name            Bathtub o' Blood
+File            BLOOD.E
+Index           Blood
+Known
+
+<span class="c-comment"># Or with a PAKfile:</span>
+Name            Bathtub o' Blood
+File            @BOB.PAK/e/Bob
+Index           Blood
+Known</pre>
+  <p>To avoid the "Help not found!" message, also provide a quest description block for the sysop to append to <code>QUESTS.HLP</code>. Format:</p>
+  <pre>^Bathtub o' Blood
+|12Bathtub o' Blood
+|06----------------
+|04Go on a rampage killing everything in sight.
+
+|12Difficulty: Hard and BLOODY!
+^END</pre>
+  <p>The first line (with <code>^</code>) must exactly match the <code>Name</code> in QUESTS.INI. All text between that line and <code>^END</code> is displayed to the player.</p>
+</div>
+
+<!-- TOOLS OVERVIEW -->
+<div class="doc-section" id="tools-overview">
+  <h2>Tool Overview</h2>
+  <p>The devkit includes several command-line tools for compiling data files. Here's a quick reference — see the section on <code>genall.bat</code> below for how they all fit together.</p>
+
+  <div class="tool-grid">
+    <div class="tool-card">
+      <div class="tool-name">ECOMP.EXE</div>
+      <div class="tool-usage">ecomp source.txt dest.e</div>
+      <div class="tool-desc">Compiles event files (.evt or .txt) and quote files into binary .e or .q files used by the game. Required for all scripts.</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">MCOMP.EXE</div>
+      <div class="tool-usage">mcomp monsters.txt output.mon</div>
+      <div class="tool-desc">Compiles monster data text files into binary .mon files. Used for both combat monsters and NPC stat files.</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">MakeNPC</div>
+      <div class="tool-usage">makenpc npcs.txt clans.npc</div>
+      <div class="tool-desc">Compiles NPC data files into binary .npc files. Added to the game via CLANS.INI.</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">MCLASS.EXE</div>
+      <div class="tool-usage">mclass races.txt races.cls</div>
+      <div class="tool-desc">Generates player class and race data files from races.txt and classes.txt.</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">MITEMS.EXE</div>
+      <div class="tool-usage">mitems items.txt items.dat</div>
+      <div class="tool-desc">Generates item data files from items.txt.</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">LANGCOMP.EXE</div>
+      <div class="tool-usage">langcomp strings</div>
+      <div class="tool-desc">Compiles strings.txt into strings.xl — the language file used by the engine. 64,000 byte limit on output. The Clans uses strings.xl from CLANS.PAK.</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">MAKEPAK.EXE</div>
+      <div class="tool-usage">makepak clans.pak pak.lst</div>
+      <div class="tool-desc">Bundles multiple files into a single PAK archive. The game reads files from PAK archives transparently. See section 5.1 for full details.</div>
+    </div>
+    <div class="tool-card">
+      <div class="tool-name">CHEW.EXE</div>
+      <div class="tool-usage">chew archive.gum files.lst</div>
+      <div class="tool-desc">Creates .gum compressed archives for use with the INSTALL.EXE distribution system. See section 5.2 for details.</div>
+    </div>
+  </div>
+
+  <h3>genall.bat — Building Everything</h3>
+  <p>The included <code>genall.bat</code> shows how all tools are used together to regenerate all the game's data files from source. Useful as a starting template for your own build script.</p>
+  <pre><span class="code-label">GENALL.BAT</span>langcomp strings.txt > TMP.FIL
+mcomp eventmon.txt event.mon >> TMP.FIL
+mcomp monsters.txt output.mon >> TMP.FIL
+mspells spells.txt spells.dat >> TMP.FIL
+mitems items.txt items.dat >> TMP.FIL
+mclass classes.txt classes.cls >> TMP.FIL
+mclass races.txt races.cls >> TMP.FIL
+makenpc npcs.txt clans.npc >> TMP.FIL
+ecomp pray.evt pray.e >> TMP.FIL
+ecomp eva.txt eva.e >> TMP.FIL
+ecomp quests.evt quests.e >> TMP.FIL
+ecomp church.evt church.e >> TMP.FIL
+ecomp secret.evt secret.e >> TMP.FIL
+makepak clans.pak pak.lst >> TMP.FIL</pre>
+</div>
+
+<!-- 5.1 MAKEPAK -->
+<div class="doc-section" id="makepak">
+  <div class="sec-id">[5.1]</div>
+  <h2>MAKEPAK.EXE and PAKfiles</h2>
+  <p>PAKfiles bundle multiple files into one archive to reduce clutter when distributing an add-on. The game reads from PAK archives transparently.</p>
+
+  <h3>Creating a PAK File</h3>
+  <ol style="list-style:none; margin: 10px 0 10px 16px; counter-reset: stepc;">
+    <li style="font-size:13px; color:var(--cyan-dim); line-height:2; counter-increment:stepc; margin-bottom:12px;">
+      <strong style="color:var(--yellow)">Step 1.</strong> Create a file listing (e.g. <code>PAK.LST</code>) with two columns: the real filename on the left, the PAKfile internal name on the right. PAKfile names MUST begin with <code>/</code> and cannot exceed 29 characters.
+      <pre><span class="code-label">PAK.LST</span>menus.hlp       /hlp/menus
+combat.hlp      /hlp/combat
+items.dat       /dat/items
+spells.dat      /dat/spells
+strings.xl      /dat/Language
+dumbfile.txt    /dumbstuff/dumbfile.text
+important.doc   /This.Is.Important</pre>
+    </li>
+    <li style="font-size:13px; color:var(--cyan-dim); line-height:2; counter-increment:stepc; margin-bottom:12px;">
+      <strong style="color:var(--yellow)">Step 2.</strong> Run MAKEPAK:
+      <pre>MAKEPAK AI.PAK PAK.LST</pre>
+    </li>
+  </ol>
+
+  <h3>Accessing PAK Files</h3>
+  <p>Files inside PAKs are accessed using the <code>@</code> prefix and PAK filename:</p>
+  <pre><span class="c-comment"># Access /Event.E in ADDON.PAK:</span>
+@ADDON.PAK/Event.E
+
+<span class="c-comment"># Access /Event.E in CLANS.PAK (explicit):</span>
+@CLANS.PAK/Event.E
+
+<span class="c-comment"># Access /Event.E in CLANS.PAK (shorthand -- omitting @ uses CLANS.PAK by default):</span>
+/Event.E</pre>
+
+  <div class="callout warn">
+    <strong>CRITICAL:</strong> Always use the <code>@YOURPAK.PAK/filename</code> form when accessing files in your own PAK. If you omit the <code>@YOURPAK.PAK</code> prefix, the game searches <code>CLANS.PAK</code> instead and won't find your file.
+  </div>
+
+  <p>Example — if you PAK an ANSI into <code>DRAGON.PAK</code> as <code>/ans/Welcome</code>:</p>
+  <pre><span class="c-comment"># CORRECT:</span>
+Display "@DRAGON.PAK/ans/Welcome
+
+<span class="c-comment"># WRONG -- searches CLANS.PAK, not DRAGON.PAK:</span>
+Display "/ans/Welcome</pre>
+</div>
+
+<!-- 5.2 CHEW + INSTALL -->
+<div class="doc-section" id="chew">
+  <div class="sec-id">[5.2]</div>
+  <h2>CHEW.EXE and INSTALL.EXE</h2>
+  <p>For distributing add-ons, you can use the included installation system. Since every Clans installation already has <code>INSTALL.EXE</code>, you don't need to include it in your archive.</p>
+
+  <h3>Creating a .GUM Archive with CHEW</h3>
+  <p>A .GUM file is a compressed archive (similar to ZIP or ARJ). Create a file list called <code>FILES.LST</code> (one filename per line), then run CHEW:</p>
+  <pre><span class="code-label">FILES.LST</span>MYQUEST.TXT
+MYQUEST.PAK
+SYSOP.DOC</pre>
+  <pre>CHEW MYQUEST.GUM</pre>
+  <p>If no GUM filename is given, <code>ARCHIVE.GUM</code> is created by default. Compression uses the sixpack algorithm by Philip G. Gage.</p>
+  <div class="callout tip">
+    <strong>TIP:</strong> Use <code>chew [dest.gum] [file-list]</code> to specify both the GUM filename and a custom file list. You must provide either both parameters or neither.
+  </div>
+
+  <h3>The INI File</h3>
+  <p>INSTALL.EXE is driven by an INI file. See <code>EXAMPLE.INI</code> for a full template. Key sections:</p>
+  <pre><span class="code-label">EXAMPLE.INI (STRUCTURE)</span><span class="c-comment"># First line beginning with ! specifies the GUM file to use:</span>
+!MYQUEST.GUM
+
+<span class="c-comment"># Sections begin with : and end when the next : section starts.</span>
+<span class="c-comment"># :title is shown as a header, :goodbye on exit.</span>
+:title
+  |17 My Quest Installer |16
+
+:welcome
+  |15Welcome to My Quest!
+
+:install
+  |07This will install My Quest files.
+
+:install.files
+<span class="c-comment"># o = overwrite, s = skip if exists, q = query user</span>
+o MYQUEST.PAK
+o MYQUEST.DOC
+s readme.txt
+
+:installdone
+Done!  Please read MYQUEST.DOC.
+
+:upgrade
+  Upgrade message here.
+
+:upgrade.files
+o MYQUEST.PAK
+s readme.txt</pre>
+
+  <p>Run the installer using the INI filename (without extension):</p>
+  <pre>INSTALL MYQUEST</pre>
+
+  <div class="callout">
+    <strong>RULES:</strong> No blank lines may appear in the <code>:install.files</code> or <code>:upgrade.files</code> sections. The <code>|xx</code> codes are pipe colour codes for ANSI colouring.
+  </div>
+</div>
+
+<!-- 6.1 FAQ -->
+<div class="doc-section" id="faq">
+  <div class="sec-id">[6.1]</div>
+  <h2>Frequently Asked Questions</h2>
+  <div class="qa-block">
+    <div class="qa-q">Is it possible for NPCs to hold items?</div>
+    <div class="qa-a">Nope, not yet.</div>
+  </div>
+  <div class="qa-block">
+    <div class="qa-q">Can NPCs retain stats?</div>
+    <div class="qa-a">No.</div>
+  </div>
+  <div class="qa-block">
+    <div class="qa-q">What is the meaning of life?</div>
+    <div class="qa-a">Seek within.</div>
+  </div>
+</div>
+
+<!-- 6.2 DISTRIBUTING -->
+<div class="doc-section" id="distrib">
+  <div class="sec-id">[6.2]</div>
+  <h2>Distributing Add-Ons</h2>
+  <p>Once you've created an add-on, open a ticket on SourceForge first so it can be tested (though that's not strictly required any more). If you have a webpage with your add-ons, mention it and we'll link it from the project page.</p>
+  <p>Web: <code>http://theclans.sourceforge.net</code></p>
+</div>
+
+<!-- 6.3 SPELL INDEX -->
+<div class="doc-section" id="spells">
+  <div class="sec-id">[6.3]</div>
+  <h2>Spell Index</h2>
+  <p>Use these numeric values with the <code>Spell</code> field in monster files.</p>
+  <div class="index-grid">
+    <div class="index-item"><span class="idx">1.</span><span class="name">Partial Heal</span></div>
+    <div class="index-item"><span class="idx">2.</span><span class="name">Heal</span></div>
+    <div class="index-item"><span class="idx">3.</span><span class="name">Slow</span></div>
+    <div class="index-item"><span class="idx">4.</span><span class="name">Strength</span></div>
+    <div class="index-item"><span class="idx">5.</span><span class="name">Ropes</span></div>
+    <div class="index-item"><span class="idx">6.</span><span class="name">Raise Undead</span></div>
+    <div class="index-item"><span class="idx">7.</span><span class="name">Banish Undead</span></div>
+    <div class="index-item"><span class="idx">8.</span><span class="name">Mystic Fireball</span></div>
+    <div class="index-item"><span class="idx">9.</span><span class="name">Dragon's Uppercut</span></div>
+    <div class="index-item"><span class="idx">10.</span><span class="name">Summon Dead Warrior</span></div>
+    <div class="index-item"><span class="idx">11.</span><span class="name">Heavy Blow</span></div>
+    <div class="index-item"><span class="idx">12.</span><span class="name">Death and Decay</span></div>
+    <div class="index-item"><span class="idx">13.</span><span class="name">Mystic Bond</span></div>
+    <div class="index-item"><span class="idx">14.</span><span class="name">Holy Heal</span></div>
+    <div class="index-item"><span class="idx">15.</span><span class="name">Lightning Bolt</span></div>
+    <div class="index-item"><span class="idx">16.</span><span class="name">Backstab</span></div>
+    <div class="index-item"><span class="idx">17.</span><span class="name">FireBreath</span></div>
+    <div class="index-item"><span class="idx">18.</span><span class="name">Bloodlust</span></div>
+    <div class="index-item"><span class="idx">19.</span><span class="name">Fear</span></div>
+    <div class="index-item"><span class="idx">20.</span><span class="name">Light Blow</span></div>
+    <div class="index-item"><span class="idx">21.</span><span class="name">Hurricane Kick</span></div>
+    <div class="index-item"><span class="idx">22.</span><span class="name">Divine Warrior</span></div>
+    <div class="index-item"><span class="idx">23.</span><span class="name">Blind Eye</span></div>
+    <div class="index-item"><span class="idx">24.</span><span class="name">FireBreath</span></div>
+    <div class="index-item"><span class="idx">25.</span><span class="name">Rain of Terror</span></div>
+    <div class="index-item"><span class="idx">26.</span><span class="name">Summon Khaos</span></div>
+    <div class="index-item"><span class="idx">27.</span><span class="name">Summon Dragon</span></div>
+    <div class="index-item"><span class="idx">28.</span><span class="name">Ice Blast</span></div>
+  </div>
+</div>
+
+<!-- 6.4 ITEM INDEX -->
+<div class="doc-section" id="items">
+  <div class="sec-id">[6.4]</div>
+  <h2>Item Index</h2>
+  <p>Use these exact names with the <code>GiveItem</code> command in event files.</p>
+  <div class="index-grid">
+    <div class="index-item"><span class="name">Shortsword</span></div>
+    <div class="index-item"><span class="name">Broadsword</span></div>
+    <div class="index-item"><span class="name">Axe</span></div>
+    <div class="index-item"><span class="name">Mace</span></div>
+    <div class="index-item"><span class="name">Dagger</span></div>
+    <div class="index-item"><span class="name">Staff</span></div>
+    <div class="index-item"><span class="name">Wand</span></div>
+    <div class="index-item"><span class="name">Battle Axe</span></div>
+    <div class="index-item"><span class="name">Morning Star</span></div>
+    <div class="index-item"><span class="name">Scythe</span></div>
+    <div class="index-item"><span class="name">Boomerang</span></div>
+    <div class="index-item"><span class="name">Falcon's Sword</span></div>
+    <div class="index-item"><span class="name">Bloody Club</span></div>
+    <div class="index-item"><span class="name">Death Axe</span></div>
+    <div class="index-item"><span class="name">Spirit Blade</span></div>
+    <div class="index-item"><span class="name">Wizard's Staff</span></div>
+    <div class="index-item"><span class="name">Cloth Robe</span></div>
+    <div class="index-item"><span class="name">Leather Armor</span></div>
+    <div class="index-item"><span class="name">Chainmail Armor</span></div>
+    <div class="index-item"><span class="name">Platemail Armor</span></div>
+    <div class="index-item"><span class="name">Wooden Armor</span></div>
+    <div class="index-item"><span class="name">Cloth Tunic</span></div>
+    <div class="index-item"><span class="name">Kai Tunic</span></div>
+    <div class="index-item"><span class="name">Hero's Armor</span></div>
+    <div class="index-item"><span class="name">Rags</span></div>
+    <div class="index-item"><span class="name">Wooden Shield</span></div>
+    <div class="index-item"><span class="name">Iron Shield</span></div>
+    <div class="index-item"><span class="name">Platinum Shield</span></div>
+    <div class="index-item"><span class="name">Crystal Shield</span></div>
+    <div class="index-item"><span class="name">Hero's Shield</span></div>
+    <div class="index-item"><span class="name">Silver Mace</span></div>
+    <div class="index-item"><span class="name">Lion's Shield</span></div>
+    <div class="index-item"><span class="name">Flame Scroll</span></div>
+    <div class="index-item"><span class="name">Summon Scroll</span></div>
+    <div class="index-item"><span class="name">Banish Scroll</span></div>
+    <div class="index-item"><span class="name">Summon Khaos</span></div>
+    <div class="index-item"><span class="name">Summon Dragon</span></div>
+    <div class="index-item"><span class="name">Ice Blast</span></div>
+    <div class="index-item"><span class="name">Book of Stamina</span></div>
+    <div class="index-item"><span class="name">Book of Mana</span></div>
+    <div class="index-item"><span class="name">Book of Healing</span></div>
+    <div class="index-item"><span class="name">Book of Flames</span></div>
+    <div class="index-item"><span class="name">Book of the Dead I</span></div>
+    <div class="index-item"><span class="name">Book of the Dead II</span></div>
+    <div class="index-item"><span class="name">Book of Destruction</span></div>
+  </div>
+</div>
+
+<!-- 6.5 MONSTER INDEX -->
+<div class="doc-section" id="monsters">
+  <div class="sec-id">[6.5]</div>
+  <h2>Monster Index</h2>
+
+  <h3>Event Monsters — @CLANS.PAK/m/Eva</h3>
+  <p>Use these with <code>AddEnemy /m/Eva &lt;index&gt;</code> for quest encounters.</p>
+  <div class="index-grid">
+    <div class="index-item"><span class="idx">0.</span><span class="name">Ghoul</span></div>
+    <div class="index-item"><span class="idx">1.</span><span class="name">Ghoul</span></div>
+    <div class="index-item"><span class="idx">2.</span><span class="name">Mad Scientist</span></div>
+    <div class="index-item"><span class="idx">3.</span><span class="name">Mad Gardener</span></div>
+    <div class="index-item"><span class="idx">4.</span><span class="name">Orc</span></div>
+    <div class="index-item"><span class="idx">5.</span><span class="name">Small Gnome</span></div>
+    <div class="index-item"><span class="idx">6.</span><span class="name">Wolf Master</span></div>
+    <div class="index-item"><span class="idx">7.</span><span class="name">Wolf</span></div>
+    <div class="index-item"><span class="idx">8.</span><span class="name">Thief</span></div>
+    <div class="index-item"><span class="idx">9.</span><span class="name">Thief</span></div>
+    <div class="index-item"><span class="idx">10.</span><span class="name">Thief</span></div>
+    <div class="index-item"><span class="idx">11.</span><span class="name">Spirit Knight</span></div>
+    <div class="index-item"><span class="idx">12.</span><span class="name">Spirit Knight</span></div>
+    <div class="index-item"><span class="idx">13–18.</span><span class="name">Orc / Orc Guard</span></div>
+    <div class="index-item"><span class="idx">19–20.</span><span class="name">Man</span></div>
+    <div class="index-item"><span class="idx">21–22.</span><span class="name">Hellhound</span></div>
+    <div class="index-item"><span class="idx">23.</span><span class="name">Beast</span></div>
+    <div class="index-item"><span class="idx">24.</span><span class="name">Gardener</span></div>
+    <div class="index-item"><span class="idx">25–26.</span><span class="name">Guard</span></div>
+    <div class="index-item"><span class="idx">27.</span><span class="name">Businessman</span></div>
+    <div class="index-item"><span class="idx">28–30.</span><span class="name">Thief / Large Thief</span></div>
+    <div class="index-item"><span class="idx">31.</span><span class="name">Wyvern</span></div>
+    <div class="index-item"><span class="idx">32.</span><span class="name">Hellhound</span></div>
+    <div class="index-item"><span class="idx">33.</span><span class="name">Green Slyme</span></div>
+    <div class="index-item"><span class="idx">34.</span><span class="name">Skeletal Fiend</span></div>
+    <div class="index-item"><span class="idx">35.</span><span class="name">Golden Dragon</span></div>
+    <div class="index-item"><span class="idx">36.</span><span class="name">Ghoul</span></div>
+  </div>
+
+  <h3>Mine Monsters — @CLANS.PAK/m/Output</h3>
+  <p>Use these with <code>AddEnemy /m/Output &lt;index&gt;</code> for standard mine fights (0–183).</p>
+  <div class="index-grid">
+    <div class="index-item"><span class="idx">0.</span><span class="name">Mangy Dog</span></div>
+    <div class="index-item"><span class="idx">1.</span><span class="name">Cave Dweller</span></div>
+    <div class="index-item"><span class="idx">2.</span><span class="name">Witch</span></div>
+    <div class="index-item"><span class="idx">3.</span><span class="name">Giant Rat</span></div>
+    <div class="index-item"><span class="idx">4.</span><span class="name">Ogre</span></div>
+    <div class="index-item"><span class="idx">5.</span><span class="name">Zombie</span></div>
+    <div class="index-item"><span class="idx">6.</span><span class="name">Evil Wizard</span></div>
+    <div class="index-item"><span class="idx">7.</span><span class="name">Troll</span></div>
+    <div class="index-item"><span class="idx">8.</span><span class="name">Ratman</span></div>
+    <div class="index-item"><span class="idx">9.</span><span class="name">Rockman</span></div>
+    <div class="index-item"><span class="idx">10.</span><span class="name">Beast</span></div>
+    <div class="index-item"><span class="idx">11.</span><span class="name">Grue</span></div>
+    <div class="index-item"><span class="idx">12.</span><span class="name">Demon</span></div>
+    <div class="index-item"><span class="idx">13.</span><span class="name">Bad Boy</span></div>
+    <div class="index-item"><span class="idx">14.</span><span class="name">Evil Priest</span></div>
+    <div class="index-item"><span class="idx">15.</span><span class="name">Thief</span></div>
+    <div class="index-item"><span class="idx">16.</span><span class="name">Drunken Fool</span></div>
+    <div class="index-item"><span class="idx">17.</span><span class="name">Beggar</span></div>
+    <div class="index-item"><span class="idx">18.</span><span class="name">Orc</span></div>
+    <div class="index-item"><span class="idx">19.</span><span class="name">Warrior</span></div>
+    <div class="index-item"><span class="idx">20.</span><span class="name">Dark Elf</span></div>
+    <div class="index-item"><span class="idx">21.</span><span class="name">Goblin</span></div>
+    <div class="index-item"><span class="idx">22.</span><span class="name">Orc</span></div>
+    <div class="index-item"><span class="idx">23.</span><span class="name">Werewolf</span></div>
+    <div class="index-item"><span class="idx">24.</span><span class="name">Spirit</span></div>
+    <div class="index-item"><span class="idx">25.</span><span class="name">Serpent</span></div>
+    <div class="index-item"><span class="idx">26.</span><span class="name">Bum</span></div>
+    <div class="index-item"><span class="idx">27.</span><span class="name">Freak</span></div>
+    <div class="index-item"><span class="idx">28.</span><span class="name">Assassin</span></div>
+    <div class="index-item"><span class="idx">29.</span><span class="name">Nosferatu</span></div>
+    <div class="index-item"><span class="idx">30.</span><span class="name">Hellcat</span></div>
+    <div class="index-item"><span class="idx">31.</span><span class="name">Ugly Hag</span></div>
+    <div class="index-item"><span class="idx">32.</span><span class="name">Wolf</span></div>
+    <div class="index-item"><span class="idx">33.</span><span class="name">Death Knight</span></div>
+    <div class="index-item"><span class="idx">34.</span><span class="name">Shadowspawn</span></div>
+    <div class="index-item"><span class="idx">35.</span><span class="name">Hound</span></div>
+    <div class="index-item"><span class="idx">36.</span><span class="name">Hobgoblin</span></div>
+    <div class="index-item"><span class="idx">37.</span><span class="name">Lunatic</span></div>
+    <div class="index-item"><span class="idx">38.</span><span class="name">Giant Spider</span></div>
+    <div class="index-item"><span class="idx">39.</span><span class="name">Ghoul</span></div>
+    <div class="index-item"><span class="idx">40.</span><span class="name">Tarantula</span></div>
+    <div class="index-item"><span class="idx">41.</span><span class="name">Manticore</span></div>
+    <div class="index-item"><span class="idx">42.</span><span class="name">Wight</span></div>
+    <div class="index-item"><span class="idx">43.</span><span class="name">Giant Ant</span></div>
+    <div class="index-item"><span class="idx">44.</span><span class="name">Wildman</span></div>
+    <div class="index-item"><span class="idx">45.</span><span class="name">Old Hag</span></div>
+    <div class="index-item"><span class="idx">46.</span><span class="name">Ninja</span></div>
+    <div class="index-item"><span class="idx">47.</span><span class="name">Wildman</span></div>
+    <div class="index-item"><span class="idx">48.</span><span class="name">Dark Elf</span></div>
+    <div class="index-item"><span class="idx">49.</span><span class="name">Wing-Eye</span></div>
+    <div class="index-item"><span class="idx">50.</span><span class="name">Shadow Knight</span></div>
+    <div class="index-item"><span class="idx">51.</span><span class="name">Giant Maggot</span></div>
+    <div class="index-item"><span class="idx">52.</span><span class="name">Wraith</span></div>
+    <div class="index-item"><span class="idx">53.</span><span class="name">Skeleton</span></div>
+    <div class="index-item"><span class="idx">54.</span><span class="name">Fire Imp</span></div>
+    <div class="index-item"><span class="idx">55.</span><span class="name">Rock Grub</span></div>
+    <div class="index-item"><span class="idx">56.</span><span class="name">Dark Soldier</span></div>
+    <div class="index-item"><span class="idx">57.</span><span class="name">Lizardman</span></div>
+    <div class="index-item"><span class="idx">58.</span><span class="name">Vampire</span></div>
+    <div class="index-item"><span class="idx">59.</span><span class="name">Boulder Beast</span></div>
+    <div class="index-item"><span class="idx">60.</span><span class="name">Giant Centipede</span></div>
+    <div class="index-item"><span class="idx">61.</span><span class="name">Chaos Lord</span></div>
+    <div class="index-item"><span class="idx">62.</span><span class="name">Skeleton</span></div>
+    <div class="index-item"><span class="idx">63.</span><span class="name">Minotaur</span></div>
+    <div class="index-item"><span class="idx">64.</span><span class="name">Green Slyme</span></div>
+    <div class="index-item"><span class="idx">65.</span><span class="name">Blue Slyme</span></div>
+    <div class="index-item"><span class="idx">66.</span><span class="name">Red Slyme</span></div>
+    <div class="index-item"><span class="idx">67.</span><span class="name">Troglodyte</span></div>
+    <div class="index-item"><span class="idx">68.</span><span class="name">Serpent</span></div>
+    <div class="index-item"><span class="idx">69.</span><span class="name">Dark Mage</span></div>
+    <div class="index-item"><span class="idx">70.</span><span class="name">Ranger</span></div>
+    <div class="index-item"><span class="idx">71.</span><span class="name">Shadow</span></div>
+    <div class="index-item"><span class="idx">72.</span><span class="name">Shadow Wolf</span></div>
+    <div class="index-item"><span class="idx">73.</span><span class="name">Shadow Knight</span></div>
+    <div class="index-item"><span class="idx">74.</span><span class="name">Silver Knight</span></div>
+    <div class="index-item"><span class="idx">75.</span><span class="name">Hell Hound</span></div>
+    <div class="index-item"><span class="idx">76.</span><span class="name">Witch</span></div>
+    <div class="index-item"><span class="idx">77.</span><span class="name">Wyvern</span></div>
+    <div class="index-item"><span class="idx">78.</span><span class="name">Fimir</span></div>
+    <div class="index-item"><span class="idx">79.</span><span class="name">Demon</span></div>
+    <div class="index-item"><span class="idx">80.</span><span class="name">Orc</span></div>
+    <div class="index-item"><span class="idx">81.</span><span class="name">Goblin</span></div>
+    <div class="index-item"><span class="idx">82.</span><span class="name">Gargoyle</span></div>
+    <div class="index-item"><span class="idx">83.</span><span class="name">Martial Artist</span></div>
+    <div class="index-item"><span class="idx">84.</span><span class="name">Small Dragon</span></div>
+    <div class="index-item"><span class="idx">85–87.</span><span class="name">Ogre</span></div>
+    <div class="index-item"><span class="idx">88.</span><span class="name">Dark Knight</span></div>
+    <div class="index-item"><span class="idx">89.</span><span class="name">Wolf</span></div>
+    <div class="index-item"><span class="idx">90.</span><span class="name">Minotaur</span></div>
+    <div class="index-item"><span class="idx">91.</span><span class="name">Blood Fiend</span></div>
+    <div class="index-item"><span class="idx">92.</span><span class="name">Old Hag</span></div>
+    <div class="index-item"><span class="idx">93.</span><span class="name">Lunatic</span></div>
+    <div class="index-item"><span class="idx">94.</span><span class="name">Ogre</span></div>
+    <div class="index-item"><span class="idx">95.</span><span class="name">Boulder Beast</span></div>
+    <div class="index-item"><span class="idx">96.</span><span class="name">Dark Nun</span></div>
+    <div class="index-item"><span class="idx">97.</span><span class="name">Large Spider</span></div>
+    <div class="index-item"><span class="idx">98.</span><span class="name">Giant Ant</span></div>
+    <div class="index-item"><span class="idx">99.</span><span class="name">Dark Knight</span></div>
+    <div class="index-item"><span class="idx">100.</span><span class="name">Spirit</span></div>
+    <div class="index-item"><span class="idx">101.</span><span class="name">Gargoyle</span></div>
+    <div class="index-item"><span class="idx">102.</span><span class="name">Demon</span></div>
+    <div class="index-item"><span class="idx">103.</span><span class="name">Goblin</span></div>
+    <div class="index-item"><span class="idx">104.</span><span class="name">LizardMan</span></div>
+    <div class="index-item"><span class="idx">105.</span><span class="name">Red Devil</span></div>
+    <div class="index-item"><span class="idx">106.</span><span class="name">Satyr</span></div>
+    <div class="index-item"><span class="idx">107.</span><span class="name">Ghoul</span></div>
+    <div class="index-item"><span class="idx">108.</span><span class="name">Vampire</span></div>
+    <div class="index-item"><span class="idx">109.</span><span class="name">Centaur</span></div>
+    <div class="index-item"><span class="idx">110.</span><span class="name">Giant Millipede</span></div>
+    <div class="index-item"><span class="idx">111.</span><span class="name">Werewolf</span></div>
+    <div class="index-item"><span class="idx">112.</span><span class="name">Beast</span></div>
+    <div class="index-item"><span class="idx">113.</span><span class="name">Loomer</span></div>
+    <div class="index-item"><span class="idx">114.</span><span class="name">Black Goo</span></div>
+    <div class="index-item"><span class="idx">115.</span><span class="name">Golem</span></div>
+    <div class="index-item"><span class="idx">116.</span><span class="name">Minotaur</span></div>
+    <div class="index-item"><span class="idx">117.</span><span class="name">Cyclops</span></div>
+    <div class="index-item"><span class="idx">118.</span><span class="name">Evil Bard</span></div>
+    <div class="index-item"><span class="idx">119.</span><span class="name">Evil Farmer</span></div>
+    <div class="index-item"><span class="idx">120.</span><span class="name">Murderer</span></div>
+    <div class="index-item"><span class="idx">121.</span><span class="name">Giant</span></div>
+    <div class="index-item"><span class="idx">122.</span><span class="name">Sorcerer</span></div>
+    <div class="index-item"><span class="idx">123.</span><span class="name">Wyvern</span></div>
+    <div class="index-item"><span class="idx">124.</span><span class="name">Warrior</span></div>
+    <div class="index-item"><span class="idx">125.</span><span class="name">Black Moon Warrior</span></div>
+    <div class="index-item"><span class="idx">126.</span><span class="name">Goblin</span></div>
+    <div class="index-item"><span class="idx">127.</span><span class="name">Troll</span></div>
+    <div class="index-item"><span class="idx">128.</span><span class="name">Large Rat</span></div>
+    <div class="index-item"><span class="idx">129.</span><span class="name">Large Spider</span></div>
+    <div class="index-item"><span class="idx">130.</span><span class="name">Large Millipede</span></div>
+    <div class="index-item"><span class="idx">131.</span><span class="name">Dark Elf</span></div>
+    <div class="index-item"><span class="idx">132.</span><span class="name">Spiked Demon</span></div>
+    <div class="index-item"><span class="idx">133.</span><span class="name">Skeleton</span></div>
+    <div class="index-item"><span class="idx">134.</span><span class="name">Bats</span></div>
+    <div class="index-item"><span class="idx">135.</span><span class="name">Caveman</span></div>
+    <div class="index-item"><span class="idx">136.</span><span class="name">Mummy</span></div>
+    <div class="index-item"><span class="idx">137.</span><span class="name">Serpent</span></div>
+    <div class="index-item"><span class="idx">138.</span><span class="name">Rabid Dog</span></div>
+    <div class="index-item"><span class="idx">139.</span><span class="name">Ugly Man</span></div>
+    <div class="index-item"><span class="idx">140.</span><span class="name">Critter</span></div>
+    <div class="index-item"><span class="idx">141.</span><span class="name">Blue Jelly</span></div>
+    <div class="index-item"><span class="idx">142.</span><span class="name">Fire Elemental</span></div>
+    <div class="index-item"><span class="idx">143.</span><span class="name">Sprite</span></div>
+    <div class="index-item"><span class="idx">144.</span><span class="name">Slyme</span></div>
+    <div class="index-item"><span class="idx">145.</span><span class="name">Giant Maggot</span></div>
+    <div class="index-item"><span class="idx">146.</span><span class="name">Undead Warrior</span></div>
+    <div class="index-item"><span class="idx">147.</span><span class="name">Death Soldier</span></div>
+    <div class="index-item"><span class="idx">148.</span><span class="name">Undertaker</span></div>
+    <div class="index-item"><span class="idx">149.</span><span class="name">Wild Man</span></div>
+    <div class="index-item"><span class="idx">150.</span><span class="name">Dark Monk</span></div>
+    <div class="index-item"><span class="idx">151.</span><span class="name">Thief</span></div>
+    <div class="index-item"><span class="idx">152.</span><span class="name">Small Dragon</span></div>
+    <div class="index-item"><span class="idx">153.</span><span class="name">Sorcerer</span></div>
+    <div class="index-item"><span class="idx">154.</span><span class="name">Spirit</span></div>
+    <div class="index-item"><span class="idx">155.</span><span class="name">Evil Bard</span></div>
+    <div class="index-item"><span class="idx">156.</span><span class="name">Rock Beast</span></div>
+    <div class="index-item"><span class="idx">157.</span><span class="name">Brakarak</span></div>
+    <div class="index-item"><span class="idx">158.</span><span class="name">Emerald Wizard</span></div>
+    <div class="index-item"><span class="idx">159.</span><span class="name">Amundsen</span></div>
+    <div class="index-item"><span class="idx">160.</span><span class="name">Dark Demon</span></div>
+    <div class="index-item"><span class="idx">161.</span><span class="name">Diablo</span></div>
+    <div class="index-item"><span class="idx">162.</span><span class="name">Dark Wizard</span></div>
+    <div class="index-item"><span class="idx">163.</span><span class="name">Slyme</span></div>
+    <div class="index-item"><span class="idx">164.</span><span class="name">Casba Dragon</span></div>
+    <div class="index-item"><span class="idx">165.</span><span class="name">Caveman</span></div>
+    <div class="index-item"><span class="idx">166.</span><span class="name">Skeletal Fiend</span></div>
+    <div class="index-item"><span class="idx">167.</span><span class="name">Doom Ninja</span></div>
+    <div class="index-item"><span class="idx">168.</span><span class="name">Doom Wolf</span></div>
+    <div class="index-item"><span class="idx">169.</span><span class="name">Doom Knight</span></div>
+    <div class="index-item"><span class="idx">170.</span><span class="name">Doom Wizard</span></div>
+    <div class="index-item"><span class="idx">171.</span><span class="name">Orc Knight</span></div>
+    <div class="index-item"><span class="idx">172.</span><span class="name">Wild Dog</span></div>
+    <div class="index-item"><span class="idx">173.</span><span class="name">Fire Fiend</span></div>
+    <div class="index-item"><span class="idx">174.</span><span class="name">Green Demon</span></div>
+    <div class="index-item"><span class="idx">175.</span><span class="name">Orange Demon</span></div>
+    <div class="index-item"><span class="idx">176.</span><span class="name">Violet Demon</span></div>
+    <div class="index-item"><span class="idx">177.</span><span class="name">Red Demon</span></div>
+    <div class="index-item"><span class="idx">178.</span><span class="name">Doom Wolf</span></div>
+    <div class="index-item"><span class="idx">179.</span><span class="name">Doom Knight</span></div>
+    <div class="index-item"><span class="idx">180.</span><span class="name">Hell Hound</span></div>
+    <div class="index-item"><span class="idx">181.</span><span class="name">Hell Knight</span></div>
+    <div class="index-item"><span class="idx">182.</span><span class="name">Red Dragon</span></div>
+    <div class="index-item"><span class="idx">183.</span><span class="name">Green Dragon</span></div>
+  </div>
+
+  <p style="margin-top:16px; color:var(--cyan-dim); font-size:12px;">This document and its accompanying files are by no means complete. More work is required — feedback and emails are welcome. <span class="cursor"></span><
