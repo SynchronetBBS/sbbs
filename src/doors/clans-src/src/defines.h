@@ -3,7 +3,7 @@
 
 #include <assert.h>
 
-#define VERSION                 "v0.97b1"
+#define VERSION                 "v0.97b2"
 
 #define NTRUE           581                     // "True" used for reg info
 #define NFALSE          0
