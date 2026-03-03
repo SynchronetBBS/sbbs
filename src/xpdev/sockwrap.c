@@ -484,9 +484,13 @@ int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigne
 				result = 0;
 			}
 			else {
-				optlen = sizeof(result);
-				if (getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&result, &optlen) == SOCKET_ERROR)
-					result = SOCKET_ERRNO;
+				result = ETIMEDOUT;
+				int error = 0;
+				optlen = sizeof(error);
+				if (getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&error, &optlen) == SOCKET_ERROR)
+					error = SOCKET_ERRNO;
+				if (error != 0)
+					result = error;
 			}
 		}
 	}
