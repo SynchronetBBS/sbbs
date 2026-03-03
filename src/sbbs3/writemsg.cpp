@@ -1936,58 +1936,60 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 	return true;
 }
 
-ushort sbbs_t::chmsgattr(const smbmsg_t* msg)
+ushort sbbs_t::chmsgattr(const smbmsg_t* org_msg)
 {
 	int      ch;
-	uint16_t attr = msg->hdr.attr;
+	smbmsg_t msg = *org_msg;
 
 	while (online && !(sys_status & SS_ABORT)) {
 		term->newline();
-		show_msgattr(msg);
+		show_msgattr(&msg);
 		menu("msgattr");
 		ch = getkey(K_UPPER);
+		if (sys_status & SS_ABORT)
+			break;
 		if (ch)
 			bprintf("%c\r\n", ch);
 		switch (ch) {
 			case 'P':
-				attr ^= MSG_PRIVATE;
+				msg.hdr.attr ^= MSG_PRIVATE;
 				break;
 			case 'S':
-				attr ^= MSG_SPAM;
+				msg.hdr.attr ^= MSG_SPAM;
 				break;
 			case 'R':
-				attr ^= MSG_READ;
+				msg.hdr.attr ^= MSG_READ;
 				break;
 			case 'K':
-				attr ^= MSG_KILLREAD;
+				msg.hdr.attr ^= MSG_KILLREAD;
 				break;
 			case 'A':
-				attr ^= MSG_ANONYMOUS;
+				msg.hdr.attr ^= MSG_ANONYMOUS;
 				break;
 			case 'N':   /* Non-purgeable */
-				attr ^= MSG_PERMANENT;
+				msg.hdr.attr ^= MSG_PERMANENT;
 				break;
 			case 'M':
-				attr ^= MSG_MODERATED;
+				msg.hdr.attr ^= MSG_MODERATED;
 				break;
 			case 'V':
-				attr ^= MSG_VALIDATED;
+				msg.hdr.attr ^= MSG_VALIDATED;
 				break;
 			case 'D':
-				attr ^= MSG_DELETE;
+				msg.hdr.attr ^= MSG_DELETE;
 				break;
 			case 'L':
-				attr ^= MSG_LOCKED;
+				msg.hdr.attr ^= MSG_LOCKED;
 				break;
 			case 'C':
-				attr ^= MSG_NOREPLY;
+				msg.hdr.attr ^= MSG_NOREPLY;
 				break;
 			case 'E':
-				attr ^= MSG_REPLIED;
+				msg.hdr.attr ^= MSG_REPLIED;
 				break;
 			default:
-				return attr;
+				return msg.hdr.attr;
 		}
 	}
-	return attr;
+	return org_msg->hdr.attr;
 }
