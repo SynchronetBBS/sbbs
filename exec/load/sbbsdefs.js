@@ -223,7 +223,7 @@ var   P_WILDCAT     =(1<<27);   // Support Wildcat @xx@ color codes
 var   P_PCBOARD     =(1<<28);   // Support PCBoard @Xxx color codes
 var   P_WWIV        =(1<<29);   // Support WWIV (^C) color codes
 var   P_CELERITY    =(1<<30);   // Support Celerity (|x) color codes
-var   P_Renegade    =(1<<31);   // Support Renegade (|xx) color codes
+var   P_RENEGADE    =(1<<31);   // Support Renegade (|xx) color codes
 							    /********************************************/
 
     							/********************************************/
