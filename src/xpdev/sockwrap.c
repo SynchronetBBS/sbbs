@@ -473,7 +473,6 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigned timeout)
 {
 	int       result;
-	int       error = 0;
 	socklen_t optlen;
 
 	result = connect(sock, addr, size);
@@ -485,12 +484,11 @@ int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigne
 				result = 0;
 			}
 			else {
-				result = ETIMEDOUT;
-				optlen = sizeof(error);
-				if (getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&error, &optlen) == SOCKET_ERROR)
-					error = SOCKET_ERRNO;
-				if (error != 0)
-					result = error;
+				optlen = sizeof(result);
+				if (getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&result, &optlen) == SOCKET_ERROR)
+					result = SOCKET_ERRNO;
+				if (result == 0)
+					result = ETIMEDOUT;
 			}
 		}
 	}
