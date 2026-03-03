@@ -811,7 +811,12 @@ void xfer_cfg()
 					}
 					else if (k == DIRLIST_FIDO)
 						snprintf(str, sizeof str, "FILEGATE.ZXX");
-					if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Filename"
+					uifc.helpbuf =
+						"`List File:`\n"
+						"\n"
+						"This is the path and filename of the list file to export.\n"
+						;
+					if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "List File"
 					               , str, sizeof(str) - 1, K_EDIT | K_FIND) <= 0) {
 						break;
 					}
@@ -903,6 +908,11 @@ void xfer_cfg()
 						"This parent directory may be the same as the library's parent directory,\n"
 						"but it doesn't have to be.  If the imported list contains full paths\n"
 						"for the directories, then this parent path is not used.\n"
+						"\n"
+						"Although this parent path will be the default location of a list file\n"
+						"for import, you are not required to have the list file located in this\n"
+						"parent directory to import successfully.  You can specify any valid path\n"
+						"and filename for the list file when prompted.\n"
 					;
 					if (!get_parent(parent, /* required: */ true))
 						break;
@@ -931,8 +941,14 @@ void xfer_cfg()
 							break;
 						chk_dir_exist = false;
 					} else {
+						uifc.helpbuf =
+							"`List File:`\n"
+							"\n"
+							"This is the path and filename of the list file to import.  The format\n"
+							"of the list file must match the format selected in the previous menu.\n"
+							;
 						filename_prompt:
-						if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Filename", str, sizeof(str) - 1, K_EDIT) <= 0)
+						if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "List File", str, sizeof(str) - 1, K_EDIT) <= 0)
 							break;
 						if (!fexistcase(str)) {
 							if (k == DIRLIST_RAW) {
