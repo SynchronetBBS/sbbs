@@ -269,7 +269,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 			if (!show_msg(&smb, &msg, pmode))
 				errormsg(WHERE, "showing", "mail message", msg.hdr.number, smb.last_error);
 			download_msg_attachments(&smb, &msg, which == MAIL_YOUR);
-			if (which == MAIL_YOUR && !(msg.hdr.attr & MSG_READ)) {
+			if (which == MAIL_YOUR && !(msg.hdr.attr & MSG_READ) && !(sys_status & SS_ABORT)) {
 				mail[smb.curmsg].attr |= MSG_READ;
 				if (thisnode.status == NODE_INUSE)
 					telluser(&msg);

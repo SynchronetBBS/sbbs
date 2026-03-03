@@ -696,7 +696,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 			if ((!stricmp(msg.to, useron.name) || !stricmp(msg.to, useron.alias)
 			     || (useron.number == 1 && !stricmp(msg.to, "sysop")
 			         && !msg.from_net.type))
-			    && !(msg.hdr.attr & MSG_READ)) {
+			    && !(msg.hdr.attr & MSG_READ) && !(sys_status & SS_ABORT)) {
 				if (msg.total_hfields)
 					smb_freemsgmem(&msg);
 				msg.total_hfields = 0;
