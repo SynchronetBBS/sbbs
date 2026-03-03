@@ -891,6 +891,19 @@ void xfer_cfg()
 					char parent_buf[MAX_PATH + 1];
 					SAFECOPY(parent_buf, cfg.lib[libnum]->parent_path);
 					char* parent = parent_buf;
+					uifc.helpbuf =
+						"`Parent Directory:`\n"
+						"\n"
+						"This path will be used as the common physical \"parent\" of the\n"
+						"directories to be imported from a directory list.  This path will be\n"
+						"automatically prepended to each imported directory's `Actual File Path`\n"
+						"(when relative) to create a full/absolute physical storage path for\n"
+						"files in that directory.\n"
+						"\n"
+						"This parent directory may be the same as the library's parent directory,\n"
+						"but it doesn't have to be.  If the imported list contains full paths\n"
+						"for the directories, then this parent path is not used.\n"
+					;
 					if (!get_parent(parent, /* required: */ true))
 						break;
 					if (cfg.lib[libnum]->parent_path[0] == '\0'
