@@ -176,14 +176,35 @@
 
 				# Bits in 'mode' for PRINTFILE function
 !define P_NOABORT	.0	# Disallows abortion of a message
-!define P_SAVEATR	.1	# Save the new current attributres after
-				# msg has printed.
+!define P_SAVEATR	.1	# Save the new current attributres after msg has printed.
 !define P_NOATCODES	.2	# Don't allow @ codes
 !define P_OPENCLOSE	.3	# Open and close the file
 !define P_NOPAUSE	.4	# Disable screen pause
-!define P_HTML		.5	# Message is HTML
+!define P_SEEK		.5	# Support jumping around via Home/End/PgUp/Dn, etc.
 !define P_NOCRLF	.6	# Don't prepend a CRLF
 !define P_WORDWRAP	.7	# Word-wrap long lines for user's terminal
+!define P_CPM_EOF	.8	# Treat Ctrl-Z as End-of-file
+!define P_TRUNCATE	.9	# Truncate (don't display) long lines
+!define P_NOERROR	.10	# Don't report error if file doesn't exist
+!define P_PETSCII	.11	# Message is native PETSCII
+!define P_WRAP		.12	# Wrap/split long-lines, ungracefully
+!define P_UTF8		.13	# Message is UTF-8 encoded
+!define P_AUTO_UTF8	.14	# Message may be UTF-8, auto-detect
+!define P_NOXATTRS	.15	# No "Extra Attribute Codes" supported
+!define P_MARKUP	.16	# Support StyleCodes/Rich/StructuredText
+!define P_HIDEMARKS	.17	# Hide the mark-up tags
+!define P_REMOTE	.18	# Only print when online == ON_REMOTE
+!define P_INDENT	.19	# Indent lines to current cursor column
+!define P_ATCODES	.20	# Trusted @-codes in formatted string
+!define P_MODS      	.21	# Display from mods/text dir, if file is there
+!define P_CENTER    	.22	# Center the output based on widest line
+!define P_80COLS    	.23	# Format the output for 80-column display
+!define P_WILDCAT   	.27	# Support Wildcat @xx@ color codes
+!define P_PCBOARD   	.28	# Support PCBoard @Xxx color codes
+!define P_WWIV      	.29	# Support WWIV (^C) color codes
+!define P_CELERITY  	.30	# Support Celerity (|x) color codes
+!define P_RENEGADE  	.31	# Support Renegade (|xx) color codes
+
 
 				# Values for USER_EVENT function
 !define EVENT_NONE      0       # Only accessible by menu
@@ -191,7 +212,7 @@
 !define EVENT_NEWUSER	2	# Execute during newuser app.
 !define EVENT_BIRTHDAY	3	# Execute on birthday
 !define EVENT_LOGOFF	4	# Execute during normal logoff
-!define EVENT_POST		5	# Execute after message posted
+!define EVENT_POST	5	# Execute after message posted
 !define EVENT_UPLOAD	6	# Execute after file uploaded
 !define EVENT_DOWNLOAD	7	# Execute after file downloaded
 
