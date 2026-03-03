@@ -68,8 +68,10 @@ str_list_t getNameServerList(void)
 		FixedInfo = (FIXED_INFO*)malloc(FixedInfoLen);
 		if (FixedInfo != NULL && GetNetworkParams(FixedInfo, &FixedInfoLen) == ERROR_SUCCESS) {
 			ip = &FixedInfo->DnsServerList;
-			for (; ip != NULL; ip = ip->Next)
-				strListPush(&list, ip->IpAddress.String);
+			for (; ip != NULL; ip = ip->Next) {
+				if (ip->IpAddress.String[0] != '\0')
+					strListPush(&list, ip->IpAddress.String);
+			}
 		}
 		if (FixedInfo != NULL)
 			free(FixedInfo);
