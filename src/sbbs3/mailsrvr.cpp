@@ -1642,8 +1642,8 @@ static bool pop3_client_thread(pop3_t* pop3)
 				}
 				msg.hdr.number = mail[msgnum - 1].number;
 
-				lprintf(LOG_INFO, "%04d %-5s <%s> retrieving message #%u with command: %s"
-				        , socket, client.protocol, user.alias, msg.hdr.number, buf);
+				lprintf(LOG_INFO, "%04d %-5s <%s> retrieving message #%u (%" PRIu32 " of %" PRIu32 ") with command: %s"
+				        , socket, client.protocol, user.alias, msg.hdr.number, msgnum, msgs, buf);
 
 				if ((i = smb_getmsgidx(&smb, &msg)) != SMB_SUCCESS) {
 					errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d (%s) getting message index"
