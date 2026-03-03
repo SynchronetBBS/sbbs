@@ -175,9 +175,7 @@
 
 ^Voting Booth
  |0CThe voting booth allows you to vote for the clan which you think will rule
- best.  At the end of the day, a new ruler is chosen from the top votes.  Of
- course, if the town is under dictatorial rule, voting is disabled and the
- current ruler will continue to reign unless ousted through an empire war.
+ best.  At the end of the day, a new ruler is chosen from the top votes.
 ^END
 
 ^Default Action

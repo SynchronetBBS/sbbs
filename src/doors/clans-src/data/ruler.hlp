@@ -81,18 +81,9 @@
 
 ^END
 
-^Government System
- |0CThe government system used decides how the ruler is chosen each day.  If
- a Dictatorial system is used, the current ruler will continue to reign
- regardless of votes.  (Voting is actually disabled.)  If a Democratic system
- is used, voting decides who the ruler will be each day.
-
-^END
-
 ^Show Empire Stats
  |0CUse this feature to toggle whether or not users can see the village's
- empire stats.  This feature is extremely useful for a Dictator system of
- government as it helps keep the enemy in the dark.
+ empire stats.
 
 ^END
 
@@ -104,9 +95,7 @@
 
 ^Voting Booth
  |0CThe voting booth allows you to vote for the clan which you think will rule
- best.  At the end of the day, a new ruler is chosen from the top votes.  Of
- course, if the town is under dictatorial rule, voting is disabled and the
- current ruler will continue to reign unless ousted through an empire war.
+ best.  At the end of the day, a new ruler is chosen from the top votes.
 ^END
 
 ^Pawn Shop

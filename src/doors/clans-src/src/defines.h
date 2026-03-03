@@ -111,7 +111,6 @@
 
 // gov't system
 #define GS_DEMOCRACY    0
-#define GS_DICTATOR     1
 
 #define NUM_BUILDINGTYPES   10
 

@@ -1052,19 +1052,7 @@ int16_t TownHallMenu(void)
 			case 'P' :  // manage empire
 				Empire_Manage(&Village.Data.Empire);
 				break;
-				/*      case 'G' :  // system of gov't
-				          ChangeGovtSystem();
-				          break;
-				*/
 			case 'B' :  // voting booth
-				/*        if (Village.Data.GovtSystem == GS_DICTATOR)
-				          {
-				            // rputs("This town is under dictatorial rule.  Voting is disabled.\n");
-				            rputs(ST_TMENU21);
-				          }
-				          else
-				            VotingBooth();
-				*/
 				VotingBooth();
 				break;
 			case 'E' :  /* economics */
