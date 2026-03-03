@@ -186,7 +186,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 	} else if (which == MAIL_ALL) {
 		logline("S+", "read all mail");
 	} else {
-		logline("E", "read mail");
+		llprintf("E", "read %smail", lm_mode & LM_UNREAD ? "un-read " : "");
 	}
 	const char* menu_file = (which == MAIL_ALL ? "allmail" : which == MAIL_SENT ? "sentmail" : "mailread");
 	if (useron.misc & RIP)
