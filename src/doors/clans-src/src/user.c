@@ -90,7 +90,7 @@ static void AddToDisband(void)
 	// append user name to disband.dat
 	FILE *fp;
 
-	fp = _fsopen("disband.dat", "ab", _SH_DENYRW);
+	fp = fopen("disband.dat", "ab");
 	if (fp) {
 		CheckedEncryptWrite(od_control.user_name, 36, fp, XOR_DISBAND);
 		fclose(fp);
@@ -133,9 +133,9 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 	}
 
 	// go through PC file
-	fpOldPC = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYWR);
+	fpOldPC = fopen(ST_CLANSPCFILE, "rb");
 	if (fpOldPC) {
-		fpNewPC = _fsopen(ST_NEWPCFILE, "w+b", _SH_DENYWR);
+		fpNewPC = fopen(ST_NEWPCFILE, "w+b");
 		if (!fpNewPC) {
 			System_Error("Can't write to new.pc\n");
 			return;
@@ -207,9 +207,9 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 
 	// go through msg file, set all his mail (to/from him) as deleted
 
-	OldMessage = _fsopen("clans.msj", "rb", _SH_DENYRW);
+	OldMessage = fopen("clans.msj", "rb");
 	if (OldMessage) {   // MSJ file exists, so go on
-		NewMessage = _fsopen("clansmsj.new", "wb", _SH_DENYRW);
+		NewMessage = fopen("clansmsj.new", "wb");
 		if (!NewMessage) {
 			return;
 		}
@@ -255,7 +255,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 	// go through trades.dat, for each trade struct, see if trade is headed
 	// for him, if so, set trade as aborted, return goods to user sending
 
-	fpTradeFile = _fsopen("trades.dat", "r+b", _SH_DENYRW);
+	fpTradeFile = fopen("trades.dat", "r+b");
 
 	if (fpTradeFile) {
 		for (CurTradeData = 0;; CurTradeData++) {
@@ -1820,9 +1820,9 @@ static bool User_Create(void)
 	}
 
 	/* open player file for append */
-	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "r+b", _SH_DENYRW);
+	fpPlayerFile = fopen(ST_CLANSPCFILE, "r+b");
 	if (!fpPlayerFile) {
-		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "wb", _SH_DENYRW);
+		fpPlayerFile = fopen(ST_CLANSPCFILE, "wb");
 		if (!fpPlayerFile) {
 			rputs("!! Chkpt 1\n");
 			rputs(ST_ERRORPC);
@@ -1905,7 +1905,7 @@ static bool User_Read(void)
 	int16_t CurClan, CurMember, iTemp;
 	long Offset;
 
-	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYRW);
+	fpPlayerFile = fopen(ST_CLANSPCFILE, "rb");
 	if (!fpPlayerFile) {
 		/* file not found, so clan not found! */
 		return false;
@@ -2113,7 +2113,7 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 	// get list of all clan names from file, write to
 	NumClans = 0;
 	for (CurClan = 0; CurClan < 50; CurClan++) {
-		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYRW);
+		fpPlayerFile = fopen(ST_CLANSPCFILE, "rb");
 		if (!fpPlayerFile) {
 			/* !! */
 			rputs("!! Chkpt 3\n");
@@ -2228,7 +2228,7 @@ bool GetClanNameID(char *szName, size_t sz, int16_t ID[2])
 	for (;;) {
 		/* go through file till you find clan he wants */
 
-		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYRW);
+		fpPlayerFile = fopen(ST_CLANSPCFILE, "rb");
 		if (!fpPlayerFile) {
 			return false;  /* means failed to find clan */
 		}
@@ -2342,7 +2342,7 @@ void User_List(void)
 	fputs(ST_USERLISTH, stdout);
 
 	if (Game.Data.InterBBS == false) {
-		fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYWR);
+		fpPlayerFile = fopen(ST_CLANSPCFILE, "rb");
 		if (!fpPlayerFile) {
 			/* file not found, so clan not found! */
 			return;
@@ -2370,7 +2370,7 @@ void User_List(void)
 	}
 	else {
 		// list interbbs users using USERLIST.DAT
-		fpUserList = _fsopen("userlist.dat", "rb", _SH_DENYWR);
+		fpUserList = fopen("userlist.dat", "rb");
 		if (fpUserList) {
 			for (;;) {
 				notEncryptRead_s(UserInfo, &User, fpUserList, XOR_ULIST)
@@ -2409,9 +2409,9 @@ void User_Maint(void)
 			XPRequired[Level] += (((int32_t)iTemp - 1) * 75);
 	}
 
-	fpOldPC = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYRW);
+	fpOldPC = fopen(ST_CLANSPCFILE, "rb");
 	if (fpOldPC) {
-		fpNewPC = _fsopen(ST_NEWPCFILE, "w+b", _SH_DENYRW);
+		fpNewPC = fopen(ST_NEWPCFILE, "w+b");
 		if (!fpNewPC) {
 			System_Error("New.PC unopenable");
 		}

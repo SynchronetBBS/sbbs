@@ -1184,7 +1184,7 @@ static bool Village_Read(void)
 {
 	FILE *fp;
 
-	fp = _fsopen(ST_VILLAGEDATFILE, "rb", _SH_DENYWR);
+	fp = fopen(ST_VILLAGEDATFILE, "rb");
 	if (!fp)  return false;
 
 	notEncryptRead_s(village_data, &Village.Data, fp, XOR_VILLAGE)
@@ -1206,7 +1206,7 @@ static void Village_Write(void)
 		return;
 	}
 
-	fp = _fsopen(ST_VILLAGEDATFILE, "wb", _SH_DENYRW);
+	fp = fopen(ST_VILLAGEDATFILE, "wb");
 	if (fp) {
 		s_village_data_s(&Village.Data, serBuf, BUF_SIZE_village_data);
 		EncryptWrite(serBuf, BUF_SIZE_village_data, fp, XOR_VILLAGE);

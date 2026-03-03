@@ -712,7 +712,7 @@ void KillAlliance(int16_t WhichAlliance)
 	int CurClan, CurAlliance;
 	long Offset;
 
-	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "r+b", _SH_DENYRW);
+	fpPlayerFile = fopen(ST_CLANSPCFILE, "r+b");
 	if (!fpPlayerFile) {
 		rputs(ST_ERRORPC);
 		return;

@@ -75,7 +75,7 @@ bool Config_Init(uint16_t Node, struct NodeData *(*getNodeData)(int))
 	strlcpy(Config.szScoreFile[0], "scores.asc", sizeof(Config.szScoreFile[0]));
 	strlcpy(Config.szScoreFile[1], "scores.ans", sizeof(Config.szScoreFile[1]));
 
-	fpConfigFile = _fsopen(szConfigName, "rt", _SH_DENYWR);
+	fpConfigFile = fopen(szConfigName, "rt");
 	if (!fpConfigFile) {
 		/* file not found! error */
 		return false;

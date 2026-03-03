@@ -244,7 +244,7 @@ static bool Disbanded(void)
 	FILE *fp;
 	bool Found = false;
 
-	fp = _fsopen("disband.dat", "rb", _SH_DENYWR);
+	fp = fopen("disband.dat", "rb");
 
 	if (!fp)  return false;
 

@@ -53,7 +53,7 @@ static void PS_Init(struct item_data **PS_Items)
 		PS_Items[iTemp] = NULL;
 	}
 
-	fp = _fsopen("pawn.dat", "rb", _SH_DENYWR);
+	fp = fopen("pawn.dat", "rb");
 	if (!fp) {
 		return;
 	}
@@ -78,7 +78,7 @@ static void PS_Close(struct item_data **PS_Items)
 	int16_t CurItem;
 
 	// write to PAWN.DAT only those items which exist
-	fp = _fsopen("pawn.dat", "wb", _SH_DENYWR);
+	fp = fopen("pawn.dat", "wb");
 
 	if (fp) {
 		for (CurItem = 0; CurItem < MAX_PSITEMS; CurItem++) {

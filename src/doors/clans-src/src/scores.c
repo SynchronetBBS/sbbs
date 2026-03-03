@@ -217,11 +217,11 @@ void DisplayScores(bool MakeFile)
 	strlcpy(szFileName, ST_CLANSPCFILE, sizeof(szFileName));
 
 	if (MakeFile) {
-		fpScoreFile[0] = fopen(Config.szScoreFile[0], "w");
+		fpScoreFile[0] = _fsopen(Config.szScoreFile[0], "w", _SH_DENYRW);
 		if (!fpScoreFile[0])
 			return;
 
-		fpScoreFile[1] = fopen(Config.szScoreFile[1], "w");
+		fpScoreFile[1] = _fsopen(Config.szScoreFile[1], "w", _SH_DENYRW);
 		if (!fpScoreFile[1]) {
 			fclose(fpScoreFile[0]);
 			return;
@@ -232,7 +232,7 @@ void DisplayScores(bool MakeFile)
 		fputs(ST_SCORE0ANSI, fpScoreFile[1]);
 	}
 
-	fpPCFile = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYWR);
+	fpPCFile = fopen(ST_CLANSPCFILE, "rb");
 	if (!fpPCFile) {
 		NoPlayers = true;
 	}
@@ -543,7 +543,7 @@ void ProcessScoreData(struct UserScore **UserScores)
 	CheckMem(OldList);
 
 	// load up old list
-	fpOld = _fsopen("ipscores.dat", "rb", _SH_DENYRW);
+	fpOld = fopen("ipscores.dat", "rb");
 	if (fpOld) {
 		// skip date
 		fseek(fpOld, 11 * sizeof(char), SEEK_SET);
@@ -624,7 +624,7 @@ void ProcessScoreData(struct UserScore **UserScores)
 	}
 
 	// write new list to file
-	fpNew = _fsopen("ipscores.dat", "wb", _SH_DENYRW);
+	fpNew = fopen("ipscores.dat", "wb");
 	if (fpNew) {
 		// write date
 		CheckedEncryptWrite(System.szTodaysDate, 11, fpNew, XOR_IPS);
@@ -655,7 +655,7 @@ void LeagueScores(void)
 	char ScoreDate[11], szString[128], szPadding[21];
 	FILE *fp;
 
-	fp = _fsopen("ipscores.dat", "rb", _SH_DENYRW);
+	fp = fopen("ipscores.dat", "rb");
 
 	if (!fp) {
 		rputs(ST_LSCORES0);
@@ -731,7 +731,7 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 	char ScoreDate[11];
 	FILE *fp;
 
-	fp = _fsopen("ipscores.dat", "rb", _SH_DENYRW);
+	fp = fopen("ipscores.dat", "rb");
 
 	if (!fp) {
 		return;
@@ -762,7 +762,7 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 	}
 	fclose(fp);
 
-	fp = _fsopen("ipscores.dat", "wb", _SH_DENYRW);
+	fp = fopen("ipscores.dat", "wb");
 
 	// write date
 	CheckedEncryptWrite(ScoreDate, 11, fp, XOR_IPS);
@@ -791,7 +791,7 @@ void SendScoreList(void)
 	size_t ScoreBufferSize;
 	char *ScoreBuffer;
 
-	fp = _fsopen("ipscores.dat", "rb", _SH_DENYWR);
+	fp = fopen("ipscores.dat", "rb");
 
 	if (!fp) {
 		// no scorefile yet
@@ -868,7 +868,7 @@ void CreateScoreData(bool LocalOnly)
 	CheckMem(UserScores);
 
 	/* find guy in file */
-	fpPlayerFile = _fsopen(ST_CLANSPCFILE, "rb", _SH_DENYRW);
+	fpPlayerFile = fopen(ST_CLANSPCFILE, "rb");
 	if (!fpPlayerFile) {
 		free(UserScores);
 		return;

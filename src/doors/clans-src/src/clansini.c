@@ -71,7 +71,7 @@ void ClansIni_Init(void)
 
 	IniFile.pszLanguage = NULL;
 
-	fp = _fsopen("clans.ini", "r", _SH_DENYWR);
+	fp = fopen("clans.ini", "r");
 	if (!fp) {
 		System_Error("No clans.ini\n");
 	}

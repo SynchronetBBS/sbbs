@@ -595,7 +595,7 @@ static void LogToWhatever(const char *szString)
 		if (LogFD == NULL) {
 			char szFileName[16];
 			snprintf(szFileName, sizeof(szFileName), "clans%u.log", (unsigned)System.Node);
-			LogFD = fopen(szFileName, "a");
+			LogFD = _fsopen(szFileName, "a", _SH_DENYWR);
 			if (LogFD) {
 				fprintf(LogFD, "\n----------  %s %02d %s %02d, %s\n", wdays[tm->tm_wday],
 				    tm->tm_mday, aszShortMonthName[tm->tm_mon], tm->tm_year % 100, "The Clans");

@@ -85,7 +85,7 @@ static void GetUserNames(const char *apszUserNames[50], int16_t WhichVillage, in
 	*NumUsers = 0;
 
 	// open user file
-	fpUList = _fsopen("userlist.dat", "rb", _SH_DENYWR);
+	fpUList = fopen("userlist.dat", "rb");
 	if (!fpUList)    // no user list at all
 		return;
 
@@ -153,7 +153,7 @@ static void GenericReply(struct Message *Reply, char *szReply, bool AllowReply)
 	Message.Data.Offsets[1] = 0;
 
 	// save message
-	fp = _fsopen(ST_MSJFILE, "a+b", _SH_DENYRW);
+	fp = fopen(ST_MSJFILE, "a+b");
 	if (!fp) {
 		free(Message.Data.MsgTxt);
 		LogDisplayStr(ST_NOMSJFILE);
@@ -361,7 +361,7 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 
 	// if local post OR globalpost to ALL villages, do this
 	if ((GlobalPost && WhichVillage == -1) || GlobalPost == false) {
-		fp = _fsopen(ST_MSJFILE, "ab", _SH_DENYRW);
+		fp = fopen(ST_MSJFILE, "ab");
 		if (!fp) {
 			free(Message.Data.MsgTxt);
 			rputs(ST_NOMSJFILE);
@@ -816,7 +816,7 @@ static void Reply_Message(struct Message *Reply)
 
 	// save message
 	if ((GlobalPost && WhichVillage == -1) || GlobalPost == false) {
-		fp = _fsopen(ST_MSJFILE, "a+b", _SH_DENYRW);
+		fp = fopen(ST_MSJFILE, "a+b");
 		if (!fp) {
 			rputs(ST_NOMSJFILE);
 			free(Message.Data.MsgTxt);
@@ -849,7 +849,7 @@ bool Mail_Read(void)
 	CurOffset = 0;
 
 	for (;;) {
-		fp = _fsopen(ST_MSJFILE, "r+b", _SH_DENYWR);
+		fp = fopen(ST_MSJFILE, "r+b");
 		if (!fp) return false;
 
 		fseek(fp, CurOffset, SEEK_SET);
@@ -1022,7 +1022,7 @@ bool Mail_Read(void)
 			// delete message
 			Message.Flags |= MF_DELETED;
 
-			fp = _fsopen(ST_MSJFILE, "r+b", _SH_DENYWR);
+			fp = fopen(ST_MSJFILE, "r+b");
 			if (!fp) {
 				rputs(ST_NOMSJFILE);
 				free(Message.Data.MsgTxt);
@@ -1042,7 +1042,7 @@ bool Mail_Read(void)
 			// delete message
 			Message.Flags |= MF_DELETED;
 
-			fp = _fsopen(ST_MSJFILE, "r+b", _SH_DENYWR);
+			fp = fopen(ST_MSJFILE, "r+b");
 			if (!fp) {
 				rputs(ST_NOMSJFILE);
 				free(Message.Data.MsgTxt);
@@ -1418,7 +1418,7 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 
 	// if local post OR globalpost to ALL villages, do this
 	if ((GlobalPost && WhichVillage == ALL_VILLAGES) || GlobalPost == false) {
-		fp = _fsopen(ST_MSJFILE, "ab", _SH_DENYRW);
+		fp = fopen(ST_MSJFILE, "ab");
 		if (!fp) {
 			free(Message.Data.MsgTxt);
 			rputs(ST_NOMSJFILE);
@@ -1456,9 +1456,9 @@ void Mail_Maint(void)
 
 	LogDisplayStr("* Mail_Maint()\n");
 
-	OldMessage = _fsopen("clans.msj", "rb", _SH_DENYRW);
+	OldMessage = fopen("clans.msj", "rb");
 	if (OldMessage) {   // MSJ file exists, so go on
-		NewMessage = _fsopen("clansmsj.new", "wb", _SH_DENYRW);
+		NewMessage = fopen("clansmsj.new", "wb");
 		if (!NewMessage) {
 			LogDisplayStr("Error opening temp file\n");
 			sleep(3);

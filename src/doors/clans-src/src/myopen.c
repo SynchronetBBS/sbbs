@@ -79,7 +79,6 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 	// if file starts with / then it is in pakfile
 	if (szModFileName[0] == '/') {
 		// look for the file
-		// fp = _fsopen(szPakFileName, "rb", _SH_DENYWR);
 		fp = fopen(szPakFileName, "rb");
 
 		if (! fp)  {
@@ -115,7 +114,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 		}
 		else {
 			// open file from dos
-			fp = _fsopen(szModFileName, szMode, _SH_DENYWR);
+			fp = fopen(szModFileName, szMode);
 			if (!fp) return;
 
 			// read in file stats
@@ -134,7 +133,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 	}
 	else {
 		// open file from dos
-		fp = _fsopen(szModFileName, szMode, _SH_DENYWR);
+		fp = fopen(szModFileName, szMode);
 		if (!fp)
 			return;
 

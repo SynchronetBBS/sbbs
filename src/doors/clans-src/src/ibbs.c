@@ -89,7 +89,7 @@ static void IBBS_SendFileInPacket(int16_t DestID, int16_t PacketType, char *szFi
 		System_Error("IBBS not initialized for call.\n");
 	}
 
-	fp = _fsopen(szFileName, "rb", _SH_DENYRW);
+	fp = fopen(szFileName, "rb");
 	if (!fp)
 		return;
 
@@ -418,7 +418,7 @@ static bool ClanIDInList(const int16_t ClanID[2])
 	bool Found = false;
 	struct UserInfo User;
 
-	fpUList = _fsopen("userlist.dat", "rb", _SH_DENYWR);
+	fpUList = fopen("userlist.dat", "rb");
 	if (!fpUList) {
 		// no user list found, assume not in list then
 		return false;
@@ -459,11 +459,11 @@ void RemoveFromUList(const int16_t ClanID[2])
 		return;
 
 	// open user file
-	fpOldUList = _fsopen("userlist.dat", "rb", _SH_DENYWR);
+	fpOldUList = fopen("userlist.dat", "rb");
 	if (!fpOldUList)    // no user list at all
 		return;
 
-	fpNewUList = _fsopen("userlist.new", "wb", _SH_DENYRW);
+	fpNewUList = fopen("userlist.new", "wb");
 	if (!fpNewUList) {
 		LogStr("Unable to create userlist.new");
 		fclose(fpOldUList);
@@ -508,7 +508,7 @@ static void AddToUList(struct UserInfo *User)
 	//printf("Adding %s to file\n", User->szName);
 
 	// open user file
-	fpUList = _fsopen("userlist.dat", "ab", _SH_DENYWR);
+	fpUList = fopen("userlist.dat", "ab");
 	if (!fpUList)
 		return;
 
@@ -608,7 +608,7 @@ bool IBBS_InList(char *szName, bool ClanName)
 	bool Found = false;
 	struct UserInfo User;
 
-	fpUList = _fsopen("userlist.dat", "rb", _SH_DENYWR);
+	fpUList = fopen("userlist.dat", "rb");
 	if (!fpUList) {
 		// no user list found, assume not in list then
 		return false;
@@ -750,12 +750,12 @@ static void IBBS_BackupMaint(void)
 	struct AttackPacket AttackPacket;
 	struct pc TmpMember[6];
 
-	fpOld = _fsopen("backup.dat", "rb", _SH_DENYWR);
+	fpOld = fopen("backup.dat", "rb");
 	if (!fpOld) {
 		return;
 	}
 
-	fpNew = _fsopen("backup.new", "wb", _SH_DENYWR);
+	fpNew = fopen("backup.new", "wb");
 	if (!fpNew) {
 		LogDisplayStr("> Error writing BACKUP.DAT\n");
 		return;
@@ -847,7 +847,7 @@ static void AbortTrip(void)
 	int16_t CurEntry = -1;
 
 	/* open LEAVING.DAT */
-	fpLeavingDat = _fsopen("leaving.dat", "r+b", _SH_DENYRW);
+	fpLeavingDat = fopen("leaving.dat", "r+b");
 	if (!fpLeavingDat) {
 		return;
 	}
@@ -969,7 +969,7 @@ static void IBBS_TravelMaint(void)
 	char TravelBuffer[BUF_SIZE_clan + 6 * BUF_SIZE_pc];
 	size_t TravelBufferOffset;
 
-	fpLeavingDat = _fsopen("leaving.dat", "rb", _SH_DENYWR);
+	fpLeavingDat = fopen("leaving.dat", "rb");
 	if (!fpLeavingDat) {
 		return;
 	}
@@ -1133,7 +1133,7 @@ static bool IBBS_TravelToBBS(int16_t DestID)
 		LeavingData.Catapults = 0;
 		GetTroopsTraveling(&LeavingData);
 
-		fpLeavingDat = _fsopen("leaving.dat", "ab", _SH_DENYRW);
+		fpLeavingDat = fopen("leaving.dat", "ab");
 		if (!fpLeavingDat) {
 			//rputs("|04Couldn't open LEAVING.DAT file\n");
 			return false;
@@ -1299,7 +1299,7 @@ static void IBBS_Read(void)
 	FILE *fp;
 	int16_t CurBBS;
 
-	fp = _fsopen("ibbs.dat", "rb", _SH_DENYWR);
+	fp = fopen("ibbs.dat", "rb");
 	if (!fp) {
 		IBBS_Create();
 		return;
@@ -1339,7 +1339,7 @@ static void IBBS_Write(void)
 	struct ibbs_node_recon DummyRecon;
 	struct ibbs_node_reset DummyReset;
 
-	fp = _fsopen("ibbs.dat", "wb", _SH_DENYRW);
+	fp = fopen("ibbs.dat", "wb");
 	if (!fp) {
 		return;
 	}
@@ -1494,7 +1494,7 @@ static void IBBS_LoadNDX(void)
 		IBBS.Data.Nodes[iTemp].Active = false;
 
 	/* read in .NDX file */
-	fpWorld = _fsopen("world.ndx", "r", _SH_DENYWR);
+	fpWorld = fopen("world.ndx", "r");
 	if (!fpWorld) {
 		IBBS_Destroy();
 		System_Error(ST_NOWORLDNDX);
@@ -1711,7 +1711,7 @@ static void IBBS_ProcessRouteConfig(void)
 	int16_t iKeyWord, iTemp;
 	int TempInt, TempInt2;
 
-	fpRouteConfigFile = _fsopen("route.cfg", "rt", _SH_DENYWR);
+	fpRouteConfigFile = fopen("route.cfg", "rt");
 	if (!fpRouteConfigFile) {
 		return;
 	}
@@ -1890,7 +1890,7 @@ static FILE *getPacketFP(int16_t DestID)
 	IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex++;
 	if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex == 'z' + 1)
 		IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex = 'a';
-	FILE *fp = _fsopen(szFullFileName, "ab", _SH_DENYWR);
+	FILE *fp = _fsopen(szFullFileName, "ab", _SH_DENYRW);
 	if (fp == NULL)
 		System_Error("Failed to create packet file");
 
@@ -2011,7 +2011,7 @@ void IBBS_ShowLeagueAscii(void)
 	FILE *fp;
 	char szString[255], szToken[255];
 
-	fp = _fsopen("world.ndx", "r", _SH_DENYWR);
+	fp = fopen("world.ndx", "r");
 	if (!fp) {
 		return;
 	}
@@ -2072,7 +2072,7 @@ void IBBS_SendPacket(int16_t PacketType, size_t PacketLength, void *PacketData,
 
 	// write to backup.dat
 	if (PacketType == PT_ATTACK || PacketType == PT_CLANMOVE) {
-		FILE *fpBackupDat = _fsopen("backup.dat", "ab", _SH_DENYWR);
+		FILE *fpBackupDat = fopen("backup.dat", "ab");
 		if (!fpBackupDat)
 			return;
 
@@ -2348,7 +2348,7 @@ static void IBBS_RemoveFromBackup(int16_t ID[2])
 
 	/* find leaving packet in Backup.dat and set as inactive */
 
-	fpBackupDat = _fsopen("backup.dat", "r+b", _SH_DENYRW);
+	fpBackupDat = fopen("backup.dat", "r+b");
 	if (!fpBackupDat) {
 		/* no need for dataOk?!  Report as error for now */
 		LogDisplayStr("|12Error with backup.dat in RemoveFromBackup()\n");
@@ -2413,10 +2413,10 @@ static void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 	Clan->WorldStatus = WS_STAYING;
 	Clan->DestinationBBS = -1;
 
-	fpPC = _fsopen(ST_CLANSPCFILE, "r+b", _SH_DENYWR);
+	fpPC = fopen(ST_CLANSPCFILE, "r+b");
 	if (!fpPC) {
 		/* no file yet, append 'em onto end */
-		fpPC = _fsopen(ST_CLANSPCFILE, "ab", _SH_DENYRW);
+		fpPC = fopen(ST_CLANSPCFILE, "ab");
 
 		// fix alliances since they are not the same on each BBS
 		for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
@@ -2501,7 +2501,7 @@ static void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 		Clan->PublicMsgIndex = 0;
 		Clan->MadeAlliance = false;
 
-		fpPC = _fsopen(ST_CLANSPCFILE, "ab", _SH_DENYRW);
+		fpPC = fopen(ST_CLANSPCFILE, "ab");
 		EncryptWrite_s(clan, Clan, fpPC, XOR_USER);
 
 		/* write members */
@@ -2544,7 +2544,7 @@ static void ComeBack(int16_t ClanID[2], int16_t BBSID)
 	LeavingData.Axemen  =   TmpClan.Empire.Army.Axemen;
 	LeavingData.Knights =   TmpClan.Empire.Army.Knights;
 
-	fpLeavingDat = _fsopen("leaving.dat", "ab", _SH_DENYRW);
+	fpLeavingDat = fopen("leaving.dat", "ab");
 	if (!fpLeavingDat) {
 		FreeClanMembers(&TmpClan);
 		return;
@@ -2680,7 +2680,7 @@ HandleScoreListPacket(FILE* fp)
 	}
 
 	// write it all to the IPSCORES.DAT file
-	fpScores = _fsopen("ipscores.dat", "wb", _SH_DENYWR);
+	fpScores = fopen("ipscores.dat", "wb");
 	if (fpScores) {
 		CheckedEncryptWrite(ScoreDate, 11, fpScores, XOR_IPS);
 
@@ -2919,7 +2919,7 @@ HandleNewNDXPacket(struct Packet* Packet, FILE* fp)
 	EncryptRead(pcBuffer, (size_t)Packet->PacketLength, fp, XOR_PACKET);
 
 	// write to file
-	FILE *fpWorldNDX = _fsopen("world.ndx", "wb", _SH_DENYRW);
+	FILE *fpWorldNDX = fopen("world.ndx", "wb");
 	if (fpWorldNDX) {
 		fwrite(pcBuffer, (size_t)Packet->PacketLength, 1, fpWorldNDX);
 		fclose(fpWorldNDX);
@@ -2942,7 +2942,7 @@ HandleUserListPacket(struct Packet* Packet, FILE* fp)
 	EncryptRead(pcBuffer, (size_t)Packet->PacketLength, fp, XOR_PACKET);
 
 	// write to file
-	FILE *fpUserList = _fsopen("userlist.dat", "wb", _SH_DENYRW);
+	FILE *fpUserList = fopen("userlist.dat", "wb");
 	if (fpUserList) {
 		fwrite(pcBuffer, (size_t)Packet->PacketLength, 1, fpUserList);
 		fclose(fpUserList);
