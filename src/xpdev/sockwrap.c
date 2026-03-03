@@ -480,11 +480,12 @@ int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigne
 	if (result == SOCKET_ERROR) {
 		result = SOCKET_ERRNO;
 		if (result == EWOULDBLOCK || result == EINPROGRESS) {
+			optlen = sizeof(result);
 			if (socket_writable(sock, timeout * 1000)) {
-				result = 0;
+				if (getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&result, &optlen) == SOCKET_ERROR)
+					result = SOCKET_ERRNO;
 			}
 			else {
-				optlen = sizeof(result);
 				if (getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&result, &optlen) == SOCKET_ERROR)
 					result = SOCKET_ERRNO;
 				if (result == 0)
