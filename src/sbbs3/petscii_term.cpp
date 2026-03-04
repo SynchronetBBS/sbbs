@@ -260,8 +260,11 @@ void PETSCII_Terminal::carriage_return()
 void PETSCII_Terminal::line_feed(unsigned count)
 {
 	// Like cursor_down() but scrolls...
-	for (unsigned i = 0; i < count; i++)
+	for (unsigned i = 0; i < count; i++) {
 		sbbs->term_out(PETSCII_DOWN);
+		if (sbbs->line_delay)
+			SLEEP(sbbs->line_delay);
+	}
 }
 
 void PETSCII_Terminal::backspace(unsigned int count)

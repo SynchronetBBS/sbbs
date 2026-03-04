@@ -746,9 +746,6 @@ int sbbs_t::outchar(char ch)
 	if ((console & CON_PASSWORD) && (uchar)ch >= ' ')
 		ch = *text[PasswordChar];
 
-	if (ch == '\n' && line_delay)
-		SLEEP(line_delay);
-
 	/*
 	 * When line counter overflows, pause on the next pause-eligible line
 	 * and log a debug message
