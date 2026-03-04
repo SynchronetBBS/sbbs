@@ -86,8 +86,9 @@ static void Display(char *szFileName)
 			break;
 
 		// get rid of \n and \r
-		while (szString[ strlen(szString) - 1] == '\n' || szString[ strlen(szString) - 1] == '\r')
-			szString[ strlen(szString) - 1] = 0;
+		size_t len;
+		while ((len = strlen(szString) > 0) && (szString[ len - 1] == '\n' || szString[ len - 1] == '\r'))
+			szString[ len - 1] = 0;
 
 		if (szString[0] == ':' && strcasecmp(szFileName, &szString[1]) == 0) {
 			FileFound = true;
@@ -793,8 +794,10 @@ static void AddLFN(const char *name, int32_t size)
 		LFNHead = n;
 		LFNTail = n;
 	}
-	LFNTail->next = n;
-	LFNTail = n;
+	else {
+		LFNTail->next = n;
+		LFNTail = n;
+	}
 }
 
 static void FreeLFNs(void)

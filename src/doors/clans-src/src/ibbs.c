@@ -2125,6 +2125,9 @@ void IBBS_EnqueueOutPacket(int16_t PacketType, size_t PacketLength, void *Packet
 
 	/* see if can open that file */
 	fp = fopen("pktqout.dat", "ab");
+	if (fp == NULL) {
+		System_Error("Unable to open pktqout.dat");
+	}
 	CheckedEncryptWrite(PacketHeader, BUF_SIZE_Packet, fp, XOR_PACKET);
 	if (PacketLength)
 		CheckedEncryptWrite(PacketData, PacketLength, fp, XOR_PACKET);

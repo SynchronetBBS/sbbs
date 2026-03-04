@@ -663,6 +663,9 @@ static void RemoveFromIPScores(const int16_t ClanID[2])
 	fclose(fp);
 
 	fp = fopen(IPSCORES_DATAFILE, "wb");
+	if (fp == NULL) {
+		System_Error("Unable to open " IPSCORES_DATAFILE " for write");
+	}
 
 	// write date
 	CheckedEncryptWrite(ScoreDate, 11, fp, XOR_IPS);

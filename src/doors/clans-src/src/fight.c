@@ -90,7 +90,7 @@ static void Fight_GetBattleOrder(struct order *BattleOrder, struct clan *Team[2]
 				TempPC = Team[CurTeam]->Member[CurMember];
 
 				SortData[CurSortMember].AgiValue =
-					(int16_t)(GetStat(TempPC, stAgility) + ((int32_t)TempPC->HP * 10) / TempPC->MaxHP + my_random(2));
+					(int16_t)(GetStat(TempPC, stAgility) + (TempPC->MaxHP ? ((int32_t)TempPC->HP * 10) / TempPC->MaxHP : 0) + my_random(2));
 				SortData[CurSortMember].WhichTeam = CurTeam;
 				SortData[CurSortMember].WhichPlayer = CurMember;
 				SortData[CurSortMember].InList = false;
@@ -613,7 +613,7 @@ static bool CanRun(struct clan *RunningClan, struct clan *StayingClan)
 				RunningClan->Member[iTemp]->Undead == false)
 			TotalWisdom += GetStat(RunningClan->Member[iTemp], ATTR_WISDOM);
 	}
-	AvgWisdom = TotalWisdom / TotalMembers;
+	AvgWisdom = TotalMembers ? TotalWisdom / TotalMembers : 0;
 
 	RunningVariable = (int32_t)AllAgilities + AllDexterities + AvgWisdom + TotalMembers * 3
 					  + my_random(15);
@@ -639,7 +639,7 @@ static bool CanRun(struct clan *RunningClan, struct clan *StayingClan)
 				StayingClan->Member[iTemp]->Undead == false)
 			TotalWisdom += GetStat(StayingClan->Member[iTemp], ATTR_WISDOM);
 	}
-	AvgWisdom = TotalWisdom / TotalMembers;
+	AvgWisdom = TotalMembers ? TotalWisdom / TotalMembers : 0;
 
 	StayingVariable = (int32_t)AllAgilities + AllDexterities + AvgWisdom + TotalMembers * 3
 					  + my_random(15);
@@ -1483,6 +1483,8 @@ static void Fight_LoadMonsters(struct clan *Clan, int16_t Level, char *szFileNam
 		CurDiff += Clan->Member[CurMonster]->Difficulty;
 
 		CurMonster++;
+		if (CurMonster >= MAX_MEMBERS)
+			break;
 	}
 }
 
