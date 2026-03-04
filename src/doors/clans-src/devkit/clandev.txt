@@ -1,16 +1,4 @@
-Author's Note
--------------
-This is still the same v0.11 Dev Kit that I released long ago.  I've made a
-couple of updates, mainly to the webpage and email address.  For more information
-on what the utils included in the devkit do, see the appropriate .txt files.
-
-
-
-
-
-
-
-The Clans Development Kit v0.11 by Allen Ussher
+The Clans Development Kit v0.12 by Allen Ussher
 -------------------------------------------------------------------------------
 Clans web page: http://theclans.sourceforge.net
 

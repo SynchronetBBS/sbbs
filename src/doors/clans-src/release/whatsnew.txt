@@ -1,3 +1,12 @@
+What's new in v0.97v2 March 4th, 2026
+-------------------------------------
+Long gap in here, so I'll just hit the highlights.
+- Allen is no longer involved in day-to-day work
+- DOS is no longer supported
+- Updated for Windows and *nix
+- File formats changed
+- Mostly just cleanup from the OS changes
+
 What's new in v0.95b7 07-06-1999
 --------------------------------
 - WOW!  Almost a whole year since last update! :)  Just one day short.

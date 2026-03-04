@@ -1,13 +1,16 @@
-The Clans v0.95b7:  Upgrading
+The Clans v0.97b2:  Upgrading
 -----------------------------
 
-All this fixes is the clans.pak file (i.e. NPC not found error message is
-no longer encountered in mines)
+Changes in this release
+Some fixes to anti-cheat code
+Eliminate some very unlikely crashes
+Remove unused strings from clans.pak
+Remove references to obsolete features
 
 IMPORTANT:
 
 
-If you are using a version BELOW v0.95b4:
+If you are using a version BELOW v0.97b1:
 
 * You must reset after upgrading.
 
@@ -19,7 +22,7 @@ If you are using a version BELOW v0.95b4:
   all before upgrading!  They're easy to spot, just look for files of the
   form CLxxxyyy.* in your inbound directory
 
-If you are using v0.95b4 or higher and upgrading, no reset is required.
+If you are using v0.97b1 or higher and upgrading, no reset is required.
 
 ------------------------------------------------------------------------------
-Email me with bug reports please:  ussher@gpu.srv.ualberta.ca
+File bug reports please:  http://sf.net/p/theclans/bugs/
