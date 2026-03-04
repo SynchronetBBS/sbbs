@@ -1376,7 +1376,7 @@ int sbbs_t::exec(csi_t *csi)
 				mnemonics((char*)csi->ip);
 				break;
 			case CS_PRINT:
-				putmsg(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), P_SAVEATR | P_NOABORT);
+				putmsg(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), P_SAVEATR | P_NOABORT | ((cfg.sys_misc & SM_XATTR_SUPPORT) << P_XATTR_SHIFT));
 				break;
 			case CS_PRINT_LOCAL:
 				lputs(LOG_INFO, cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
@@ -1994,7 +1994,7 @@ int sbbs_t::exec(csi_t *csi)
 				outchar(csi->cmd & 0x7f);
 			return 0;
 		case CS_PRINTSTR:
-			putmsg(csi->str, P_SAVEATR | P_NOABORT | P_NOATCODES);
+			putmsg(csi->str, P_SAVEATR | P_NOABORT | P_NOATCODES | ((cfg.sys_misc & SM_XATTR_SUPPORT) << P_XATTR_SHIFT));
 			return 0;
 		case CS_CMD_HOME:
 			if (csi->cmdrets < MAX_CMDRETS)
