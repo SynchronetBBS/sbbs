@@ -38,7 +38,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "structs.h"
 #include "user.h"
 
-void GoQuest(void)
+static void
+GoQuest(void)
 {
 	int16_t iTemp, TotalQuests = 0, WhichQuest, NumQuestsDone, QuestIndex[64];
 	bool QuestDone, QuestKnown;
