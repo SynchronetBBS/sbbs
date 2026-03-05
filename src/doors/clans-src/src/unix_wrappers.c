@@ -141,8 +141,7 @@ char **FilesOrderedByDate(const char *path, const char *match, bool *error)
 	int globret = glob(Expanded, GLOB_NOSORT | GLOB_NOCHECK, NULL, &gl);
 	if (globret) {
 		free(Expanded);
-		if (globret != GLOB_NOMATCH)
-			*error = true;
+		*error = true;
 		return NULL;
 	}
 	free(Expanded);
@@ -153,11 +152,15 @@ char **FilesOrderedByDate(const char *path, const char *match, bool *error)
 
 	size_t sortlen = 0;
 	struct Sortable *sa = malloc(sizeof(struct Sortable) * gl.gl_pathc);
-	for (size_t match = 0; match < gl.gl_pathc; match++) {
-		if (!stat(gl.gl_pathv[match], &sa[sortlen].st)) {
+	if (!sa) {
+		globfree(&gl);
+		return NULL;
+	}
+	for (size_t matchp = 0; matchp < gl.gl_pathc; matchp++) {
+		if (!stat(gl.gl_pathv[matchp], &sa[sortlen].st)) {
 			if (S_ISDIR(sa[sortlen].st.st_mode))
 				continue;
-			sa[sortlen].p = gl.gl_pathv[match];
+			sa[sortlen].p = gl.gl_pathv[matchp];
 			sortlen++;
 		}
 	}
@@ -174,9 +177,9 @@ char **FilesOrderedByDate(const char *path, const char *match, bool *error)
 		globfree(&gl);
 		return NULL;
 	}
-	for (size_t match = 0; match < sortlen; match++) {
-		ret[match] = strdup(sa[match].p);
-		if (ret[match] == NULL) {
+	for (size_t matchp = 0; matchp < sortlen; matchp++) {
+		ret[matchp] = strdup(sa[matchp].p);
+		if (ret[matchp] == NULL) {
 			globfree(&gl);
 			free(sa);
 			FreeFileList(ret);

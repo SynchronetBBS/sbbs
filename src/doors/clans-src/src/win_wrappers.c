@@ -87,7 +87,7 @@ char **FilesOrderedByDate(const char *path, const char *match, bool *error)
 	size_t found = 0;
 	*error = false;
 
-	char *Backslashed = malloc(strlen(path) + strlen(match) + 2);
+	char *Backslashed = malloc((path ? strlen(path) : 0) + strlen(match) + 2);
 	if (Backslashed == NULL) {
 		*error = true;
 		return NULL;
@@ -127,10 +127,11 @@ char **FilesOrderedByDate(const char *path, const char *match, bool *error)
 	if (sh == -1) {
 		if (errno != ENOENT)
 			*error = true;
+		free(tmpstr);
 		return NULL;
 	}
 	int rval;
-	while (!(rval = _findnext(sh, &fd))) {
+	do {
 		if (fd.attrib & _A_SUBDIR)
 			continue;
 		struct Sortable *nsa = realloc(sa, sizeof(struct Sortable) * (found + 1));
@@ -138,6 +139,7 @@ char **FilesOrderedByDate(const char *path, const char *match, bool *error)
 			FreePartialSortableArray(sa, found);
 			_findclose(sh);
 			*error = true;
+			free(tmpstr);
 			return NULL;
 		}
 		sa = nsa;
@@ -147,19 +149,22 @@ char **FilesOrderedByDate(const char *path, const char *match, bool *error)
 			FreePartialSortableArray(sa, found);
 			_findclose(sh);
 			*error = true;
+			free(tmpstr);
 			return NULL;
 		}
 		sa[found].wt = fd.time_write;
 		found++;
-	}
+	} while (!(rval = _findnext(sh, &fd)));
 	if (errno != ENOENT) {
 		_findclose(sh);
 		FreePartialSortableArray(sa, found);
 		*error = true;
+		free(tmpstr);
 		return NULL;
 	}
 	_findclose(sh);
 	if (found == 0) {
+		free(tmpstr);
 		return NULL;
 	}
 	qsort(sa, found, sizeof(struct Sortable), scmp);
@@ -167,12 +172,14 @@ char **FilesOrderedByDate(const char *path, const char *match, bool *error)
 	if (ret == NULL) {
 		*error = true;
 		FreePartialSortableArray(sa, found);
+		free(tmpstr);
 		return NULL;
 	}
 	for (size_t match = 0; match < found; match++) {
 		ret[match] = sa[match].p;
 	}
 	free(sa);
+	free(tmpstr);
 	return ret;
 }
 
