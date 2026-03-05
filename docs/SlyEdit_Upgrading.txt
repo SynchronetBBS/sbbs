@@ -2,6 +2,36 @@ This file contains upgrade notes for sysops who are upgrading from earlier
 versions of SlyEdit.  Only versions with significant/noteworthy configuration
 changes, etc. are listed in this file, with the most recent version on top.
 
+Upgrading to version 2.00
+-------------------------
+SlyEdit 2.00 has a new user setting (in the user settings menu, opened with
+Ctrl-U), to specify which UI style to use (Ice/DCT/Random), and if the user
+hasn't chosen, SlyEdit will ask the user when SlyEdit starts. That way, there
+only needs to be one SlyEdit entry in the external editors.
+
+SlyEdit will still work as configured previously in Synchronet, but you may wish
+to edit their external editors in Synchronet  to have only one SlyEdit entry
+(and it can be just called "SlyEdit").
+For the SlyEdit entry that is deleted, users who were using that style of
+SlyEdit may find that their editor has been defaulted to another editor, so they
+may need to change their preferred editor to SlyEdit again.
+
+When removing the 2nd SlyEdit entry from your external editor configuration, you
+may want to change the internal code for your remaining SlyEdit entry to match
+(i.e., "SLYEDIT").
+
+NOTE: Before changing your Synchronet editor configuration to only have one
+SlyEdit, download the following JS script and run it (either on your BBS PC
+using jsexec or on the terminal); It will list users who currently appear to be
+using SlyEdit.  Note them down:
+
+http://digdist.synchro.net/usersUsingSlyedit.js
+
+After changing your Synchronet external editor configuration to just have one
+SlyEdit (and changing its internal code), you should go through and check the
+users listed by that script to ensure they have SlyEdit selected as their
+external editor.
+
 Upgrading to version 1.63
 -------------------------
 This version allows using the full width of the terminal for message text.

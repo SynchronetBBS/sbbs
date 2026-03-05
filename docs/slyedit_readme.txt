@@ -1,13 +1,13 @@
                          SlyEdit message editor
-                              Version 1.93
-                        Release date: 2026-02-11
+                              Version 1.94
+                        Release date: 2026-03-05
 
                                   by
 
                              Eric Oulashin
                      Sysop of Digital Distortion BBS
                BBS internet address: digitaldistortionbbs.com
-			         Alternate: digdist.synchro.net
+                     Alternate: digdist.synchro.net
                      Email: eric.oulashin@gmail.com
 
 
@@ -85,90 +85,77 @@ Thanks go out to the following people for testing:
 
 3. Installation & Setup
 =======================
+Starting with Synchronet version 3.16 (if I remember correctly), Synchronet
+included SlyEdit by default, so it should already be set up for you. However,
+these instructions can still be useful if you want to update SlyEdit to a
+newer version without waiting for the next version of Synchronet to be
+released.
 These are the steps for installation:
- 1. Extract the archive.  If you're viewing this file, then you've probably
-    already done this. :)
- 2. There are 2 ways SlyEdit's files can be copied onto your Synchronet system:
-    1. Copy the JavaScript files into your sbbs/exec directory and the .cfg files
-       into your sbbs/ctrl directory.  If you plan to customize your SlyEdit.cfg
-       or color theme files, it's recommended to also put the .cfg files in your
-       sbbs/mods directory so that your configuration won't be accidentally
-       overwritten when updating the files from the Synchronet CVS repository.
-       SlyEdit will first check the sbbs/mods directory for the configuration
-       files, then sbbs/ctrl, and then SlyEdit's own directory for the
-       configuration files.  In other words, the SlyEdit configuration files
-       in sbbs/mods take first precedence, sbbs/ctrl 2nd precedence, and
-       SlyEdit's own directory takes last precedence for the configuration
-       files.
-    2. Copy all files together into their own directory of your choice
- 3. Set up SlyEdit on your BBS with Synchronet's configration program (SCFG).
-
-SlyEdit can be set to mimic IceEdit or DCT Edit via a command-line parameter.
-The values for this parameter are as follows:
-  ICE: Mimic the IceEdit look & feel
-  DCT: Mimic the DCT Edit look & feel
-  RANDOM: Randomly select either the IceEdit or DCT Edit look & feel
+ 1. Get the SlyEdit files from the Synchronet repository. If you're running on
+    Linux, you probably have the Synchronet repository out on your machine. If
+    you don't have the Synchronet repository on your machine, you can get the
+    files via a web browser here (there should be download links for each
+    file):
+    - SlyEdit.js:
+    https://gitlab.synchro.net/main/sbbs/-/blob/master/exec/SlyEdit.js?ref_type=heads
+    - slyedit_dct_stuff.js, slyedit_ice_stuff.js, slyedit_misc.js from sbbs/exec/load:
+    https://gitlab.synchro.net/main/sbbs/-/blob/master/exec/load/slyedit_dct_stuff.js?ref_type=heads
+    https://gitlab.synchro.net/main/sbbs/-/blob/master/exec/load/slyedit_ice_stuff.js?ref_type=heads
+    https://gitlab.synchro.net/main/sbbs/-/blob/master/exec/load/slyedit_misc.js?ref_type=heads
+    - SlyEdit config files in sbbs/ctrl:
+    https://gitlab.synchro.net/main/sbbs/-/tree/master/ctrl?ref_type=heads
+    - SlyEdit documentation (slyedit_readme.txt & SlyEdit_Upgrading.txt) in sbbs/docs:
+    https://gitlab.synchro.net/main/sbbs/-/blob/master/docs/slyedit_readme.txt?ref_type=heads
+    https://gitlab.synchro.net/main/sbbs/-/blob/master/docs/SlyEdit_Upgrading.txt?ref_type=heads
+ 2. From the Synchronet repository in sbbs/exec, copy SlyEdit.js into your
+    sbbs/exec directory
+ 3. From the Synchronet repository, in sbbs/exec/load, copy
+    slyedit_dct_stuff.js, slyedit_ice_stuff.js, and slyedit_misc.js to your
+    sbbs/exec/load directory
+ 4. Copy the .cfg files into your sbbs/ctrl directory.  If you plan to
+    customize your SlyEdit configuration, copy SlyEdit.example.cfg to
+    SlyEdit.cfg and make your SlyEdit changes there. Your SlyEdit.cfg file
+    can be in the sbbs/ctrl directory or in the sbbs/mods directory. If you
+    want to modify the color scheme files (SlyIceColors*.cfg or
+    SlyDCTColors.cfg), you can copy those to sbbs/mods and edit them there,
+    or create your own color scheme files in sbbs/mods.
+ 5. Set up SlyEdit on your BBS with Synchronet's configration program (SCFG).
 
 To add SlyEdit to Synchronet's list of external editors, run Synchronet's
 configuration program (SCFG) and select "External Programs", and then
-"External Editors".  The following describes setting up SlyEdit using the
-ICE parameter for IceEdit emulation:
+"External Editors".  The following describes setting up SlyEdit:
  1. Scroll down to the empty slot in the editor list and press Enter to
     select it.
- 2. For the external editor name, enter "SlyEdit (Ice style)" (without the quotes)
-    (or similar, depending on your personal preference)
- 3. For the internal code, use SLYEDICE (or whatever you want, depending on your
-    personal preference)
+ 2. For the external editor name, enter "SlyEdit" (without the quotes)
+ 3. For the internal code, use SLYEDIT
  4. Press Enter to select and edit the new entry.  Asuming that the .js files
-    are in the sbbs/exect directory, the settings should be as follows (the
+    are in the sbbs/exec directory, the settings should be as follows (the
     wording and options shown may vary, depending on the version of Synchronet
     you have installed):
-      Command line: ?SlyEdit.js %f ICE
-      Access requirement string: ANSI
-      Intercept standard I/O: No
-      Native (32-bit) Executable: No
-      Use Shell to Execute: No
-      Record Terminal Width: Yes
-      Word-wrap Quoted Text: Your decision - Wrap to specific width, 80, or no
-      Automatically Quoted Text: All
-      Editor Information Files: QuickBBS MSGINF/MSGTMP
-      Expand Line Feeds to CRLF: Yes
-      Strip FidoNet Kludge Lines: No
-      BBS Drop File Type: None
-    After you've added SlyEdit, your Synchronet configuration window should look
-    like this:
-    +[�][?]--------------------------------------------------------------+
-    �                      SlyEdit (Ice style) Editor                    �
-    �--------------------------------------------------------------------�
-    � �Name                            SlyEdit  (Ice style)              �
-    � �Internal Code                   SLYEDICE                          �
-    � �Remote Command Line             ?SlyEdit.js %f ICE                �
-    � �Access Requirements             ANSI                              �
-    � �Intercept Standard I/O          No                                �
-    � �Native (32-bit) Executable      No                                �
-    � �Use Shell to Execute            No                                �
-    � �Record Terminal Width           Yes                               �
-    � �Word-wrap Quoted Text           Yes, for terminal width           �
-    � �Automatically Quoted Text       All                               �
-    � �Editor Information Files        QuickBBS MSGINF/MSGTMP            �
-    � �Expand Line Feeds to CRLF       Yes                               �
-    � �Strip FidoNet Kludge Lines      No                                �
-    � �BBS Drop File Type              None                              �
-    +--------------------------------------------------------------------+
-
-    For DCT Edit mode, use DCT in place of ICE on the command line.  For
-    random mode, use RANDOM in place of ICE.
-
-    Note that if you placed the files in a different directory, then the
-    command line should include the full path to SlyEdit.js.  For example,
-    if SlyEdit was placed in sbbs/xtrn/SlyEdit, then the command line would
-    be /BBS/sbbs/xtrn/DigDist/SlyEdit/SlyEdit.js %f ICE
+      Name                            SlyEdit
+      Internal Code                   SLYEDIT
+      Command line                    ?SlyEdit.js %f
+      Access requirements             ANSI AND COLS 80
+      Native Executable               No
+      I/O method                      FOSSIL or UART
+      Use Shell or New Context        No
+      Record Terminal Width           Yes
+      Word-wrap Quoted Text           Yes, for 79 columns
+      Retain Ctrl-A Codes in Quotes   Yes
+      Automatically Quoted Text       All
+      Editor Information Files        QuickBBS MSGINF/MSGTMP
+      Handle Soft CRs                 N/A
+      Strip FidoNet Kludges           No
+      Support UTF-8 Encoding          Yes
+      BBS Drop File Type              None
 
 
 4. Features
 ===========
-As mentioned earlier, SlyEdit is can mimic the look & feel of IceEdit or
-DCT Edit.  It also has the following features:
+SlyEdit is can mimic the look & feel of IceEdit or DCT Edit.  If the mode
+(ICE/DCT/RANDOM) is not specified on the command line, the user will be asked
+what UI mode they want upon first running SlyEdit.  SlyEdit also has the
+following features:
 - Message quoting: When replying to a message, users can select lines from the
   message to quote.  By default, SlyEdit puts the initials of the original
   author in front of the quote lines to indicate who originally wrote those
@@ -218,25 +205,25 @@ BBS machine):
 
 Help keys                                     Slash commands (on blank line)
 ---------                                     ------------------------------
-Ctrl-G       : Input graphic character      � /A      : Abort
-Ctrl-L       : Command key list (this list) � /S      : Save
-Ctrl-T       : List text replacements       � /T      : List text replacements
-                                            � /Q      : Quote message
-                                            � /M      : Add a meme
-                                            � /U      : Your user settings
-                                            � /C      : Cross-post selection
-                                            � /UPLOAD : Upload a message
+Ctrl-G       : Input graphic character      | /A      : Abort
+Ctrl-L       : Command key list (this list) | /S      : Save
+Ctrl-T       : List text replacements       | /T      : List text replacements
+                                            | /Q      : Quote message
+                                            | /M      : Add a meme
+                                            | /U      : Your user settings
+                                            | /C      : Cross-post selection
+                                            | /UPLOAD : Upload a message
 
 Command/edit keys
 -----------------
-Ctrl-A       : Abort message                � PageUp  : Page up
-Ctrl-Z       : Save message                 � PageDown: Page down
-Ctrl-Q       : Quote message                � Ctrl-W  : Word/text search
-Insert/Ctrl-I: Toggle insert/overwrite mode � Ctrl-D  : Delete line
-Ctrl-S       : Change subject               � ESC     : Command menu
-Ctrl-U       : Your user settings           � Ctrl-C  : Cross-post selection
-Ctrl-K       : Change text color            � Ctrl-R  : Spell checker
-Ctrl-O       : Import a file                � Ctrl-X  : Export to file
+Ctrl-A       : Abort message                | PageUp  : Page up
+Ctrl-Z       : Save message                 | PageDown: Page down
+Ctrl-Q       : Quote message                | Ctrl-W  : Word/text search
+Insert/Ctrl-I: Toggle insert/overwrite mode | Ctrl-D  : Delete line
+Ctrl-S       : Change subject               | ESC     : Command menu
+Ctrl-U       : Your user settings           | Ctrl-C  : Cross-post selection
+Ctrl-K       : Change text color            | Ctrl-R  : Spell checker
+Ctrl-O       : Import a file                | Ctrl-X  : Export to file
 
 
 A couple notes on the help screen:
@@ -1017,6 +1004,46 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+2.00     2026-03-05   SlyEdit has a new user setting (in the user settings menu,
+                      opened with Ctrl-U), to specify which UI style to use
+                      (Ice/DCT/Random), and if the user hasn't chosen, SlyEdit
+                      will ask the user when SlyEdit starts. That way, there
+                      only needs to be one SlyEdit entry in the external
+                      editors.
+                      SlyEdit will still work as configured previously in
+                      Synchronet, but you may wish to edit their external
+                      editors in Synchronet  to have only one SlyEdit entry
+                      (and it can be just called "SlyEdit").
+                      For the SlyEdit entry that is deleted, users who were
+                      using that style of SlyEdit may find that their editor
+                      has been defaulted to another editor, so they may need
+                      to change their preferred editor to SlyEdit again.
+
+                      When removing the 2nd SlyEdit entry from your external
+                      editor configuration, you may want to change the internal
+                      code for your remaining SlyEdit entry to match (i.e.,
+                      "SLYEDIT").
+
+                      NOTE: Before changing your Synchronet editor configuration
+                      to only have one SlyEdit, download the following JS script
+                      and run it (either on your BBS PC using jsexec or on the
+                      terminal); It will list users who currently appear to be
+                      using SlyEdit.  Note them down:
+                      http://digdist.synchro.net/usersUsingSlyedit.js
+
+                      After changing your Synchronet external editor
+                      configuration to just have one SlyEdit (and changing its
+                      internal code), you should go through and check the users
+                      listed by that script to ensure they have SlyEdit selected
+                      as their external editor.
+
+                      Internal: Message edit code has been refactored a bit to
+                      simplify the code, for development/maintenance purposes.
+                      There should be no change to behavior.
+                      I bumped the version up to 2.00 due to significant
+                      changes. Also, it was getting close to 2.00 anyway, and
+                      changing the version to 2.00 allows for plenty of version
+                      numbers within 2.xx for future changes.
 1.93     2026-02-11   Made the command key help screen use a scrolling window
                       (frame) so that the user can scroll it up & down. The
                       command key help screen can be shown with Ctrl-L. Also,
