@@ -2551,7 +2551,7 @@ bitmap_snap(bool grow, int maxwidth, int maxheight)
 	else {
 		mult = vstat.winheight / vstat.scrnheight;
 		cw = vstat.winheight;
-		cs = vstat.winwidth;
+		cs = vstat.scrnheight;
 	}
 	if (grow) {
 		mult++;
