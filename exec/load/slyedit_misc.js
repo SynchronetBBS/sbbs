@@ -3740,8 +3740,12 @@ function txtFileContainsLines(pFilename)
 // Return value: An object containing the user's settings as properties.
 function ReadUserSettingsFile(pSlyEdCfgObj)
 {
-	// Initialize the settings object with the default settings
+	// Initialize the settings object with the default settings.
+	// slyEditMode is new in version 2.00. For existing users of SlyEdit
+	// before this setting existed, leave it empty by default, so that
+	// SlyEdit can ask them what mode they want to use (Ice/DCT/Random)
 	var userSettingsObj = {
+		slyEditMode: "",
 		enableTaglines: pSlyEdCfgObj.enableTaglines,
 		promptSpellCheckOnSave: false,
 		wrapQuoteLines: pSlyEdCfgObj.reWrapQuoteLines,
@@ -3781,6 +3785,8 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 				userSettingsObj[propName] = behaviorSettings[propName];
 		}
 		// Other settings
+		if (behaviorSettings.hasOwnProperty("slyEditMode") && typeof(behaviorSettings.slyEditMode) === "string")
+			userSettingsObj.slyEditMode = behaviorSettings.slyEditMode.toUpperCase();
 		if (behaviorSettings.hasOwnProperty("dictionaryFilenames") && typeof(behaviorSettings.dictionaryFilenames) === "string")
 			userSettingsObj.dictionaryFilenames = parseDictionaryConfig(behaviorSettings.dictionaryFilenames, js.exec_dir);
 	}
@@ -3809,6 +3815,11 @@ function WriteUserSettingsFile(pUserSettingsObj)
 	var userSettingsFile = new File(gUserSettingsFilename);
 	if (userSettingsFile.open("w"))
 	{
+		userSettingsFile.writeln("[BEHAVIOR]");
+		// SlyEdit UI mode
+		if (pUserSettingsObj.hasOwnProperty("slyEditMode") && typeof(pUserSettingsObj.slyEditMode) === "string")
+			userSettingsFile.writeln("slyEditMode=" + pUserSettingsObj.slyEditMode);
+		// Boolean settings
 		const behaviorBoolSettingNames = ["enableTaglines",
 		                                  "promptSpellCheckOnSave",
 		                                  "wrapQuoteLines",
@@ -3820,7 +3831,6 @@ function WriteUserSettingsFile(pUserSettingsObj)
 		                                  "autoSignRealNameOnlyFirst",
 		                                  "autoSignEmailsRealName",
 		                                  "ctrlQQuote"];
-		userSettingsFile.writeln("[BEHAVIOR]");
 		for (var i = 0; i < behaviorBoolSettingNames.length; ++i)
 		{
 			if (pUserSettingsObj.hasOwnProperty(behaviorBoolSettingNames[i]))
