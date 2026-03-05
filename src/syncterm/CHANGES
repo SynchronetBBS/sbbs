@@ -12,6 +12,8 @@ Fix RIP popups using current font
 Fix Windows Default Connection Settings
 Fix crash associated with movetext() and custom fonts
 Fix Windows GDI input hang when a key is held down
+Fix black bar at bottom of 132x37 mode
+Fix snapping of height-controlled modes
 
 Version 1.7
 --------------
