@@ -688,14 +688,12 @@ static void News_AddNews(char *szString)
 	FILE *fpNewsFile;
 
 	/* open news file */
-
-	/* add to it */
-
 	fpNewsFile = _fsopen("today.asc", "at", _SH_DENYRW);
-
-	fputs(szString, fpNewsFile);
-
-	fclose(fpNewsFile);
+	if (fpNewsFile) {
+		/* add to it */
+		fputs(szString, fpNewsFile);
+		fclose(fpNewsFile);
+	}
 }
 
 void ClearFlags(uint8_t *Flags)

@@ -287,6 +287,7 @@ static void DeleteClan(int16_t ClanID[2])
 			// read in 6 members
 			for (iTemp = 0; iTemp < Game.Data.MaxPermanentMembers; iTemp++) {
 				TmpClan->Member[iTemp] = malloc(sizeof(struct pc));
+				CheckMem(TmpClan->Member[iTemp]);
 				EncryptRead_s(pc, TmpClan->Member[iTemp], fpOldPC, XOR_PC);
 			}
 

@@ -1030,6 +1030,10 @@ void Video_Init(void)
 		textattr(7);
 		// character then attribute
 		Video.VideoMem = calloc(2, (size_t)ScreenWidth * (size_t)ScreenLines);
+		if (!Video.VideoMem) {
+			fprintf(stderr, "Unable to allocate memory for screen buffer\n");
+			exit(1);
+		}
 		clrscr();
 #elif defined(__MSDOS__)
 		int16_t iTemp;

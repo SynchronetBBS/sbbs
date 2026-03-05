@@ -1,4 +1,10 @@
-What's new in v0.97v2 March 4th, 2026
+What's new in v0.97v2 Date TBD
+-------------------------------------
+- Fixed an issue where Windows would not see the first packet during maint
+- Fixed a handful of memory leaks
+- Fixed a handful of potential crashes
+
+What's new in v0.97v1 March 1st, 2026
 -------------------------------------
 Long gap in here, so I'll just hit the highlights.
 - Allen is no longer involved in day-to-day work

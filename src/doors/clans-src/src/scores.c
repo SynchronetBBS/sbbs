@@ -763,6 +763,9 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 	fclose(fp);
 
 	fp = fopen("ipscores.dat", "wb");
+	if (!fp) {
+		System_Error("Unable to create ipscores.dat file");
+	}
 
 	// write date
 	CheckedEncryptWrite(ScoreDate, 11, fp, XOR_IPS);

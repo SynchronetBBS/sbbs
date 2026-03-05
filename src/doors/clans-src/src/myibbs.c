@@ -89,7 +89,7 @@ static void GetMessageFilename(char *pszMessageDir, uint32_t lwMessageNum,
 {
 	char szFileName[FILENAME_CHARS + 1];
 
-	snprintf(szFileName, sizeof(szFileName), "%" PRId32 ".msg", (uint32_t)lwMessageNum);
+	snprintf(szFileName, sizeof(szFileName), "%" PRIu32 ".msg", lwMessageNum);
 	MakeFilename(pszMessageDir, szFileName, pszOut, sz);
 }
 

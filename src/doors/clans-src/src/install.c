@@ -229,6 +229,30 @@ static bool ReadFilename(FILE *fpGUM, char *szEncryptedName, size_t sz)
 	return true;
 }
 
+/*
+ * Seeks forward by offset.
+ * Since uint32_t may be the same size as a long, we need to be careful
+ * and can't just case to a long.
+ */
+static int
+fseekuc(FILE *fp, uint32_t offset)
+{
+#if LONG_MAX < UINT32_MAX
+	while (offset > LONG_MAX) {
+		int ret = fseek(fp, LONG_MAX, SEEK_CUR);
+		if (ret)
+			return ret;
+		offset -= LONG_MAX;
+	}
+#endif
+	if (offset) {
+		int ret = fseek(fp, offset, SEEK_CUR);
+		if (ret)
+			return ret;
+	}
+	return 0;
+}
+
 static int GetGUM(FILE *fpGUM)
 {
 	char szEncryptedName[PATH_SIZE], cInput;
@@ -306,7 +330,7 @@ static int GetGUM(FILE *fpGUM)
 	else if (WriteType(szFileName) == SKIP && FileExists(szFileName)) {
 		// skip file
 		zputs("|07- skipping (no update required)\n");
-		fseek(fpGUM, (long)lCompressSize, SEEK_CUR);
+		fseekuc(fpGUM, lCompressSize);
 		return 1;
 	}
 	// else, normal file, do normally
@@ -328,7 +352,7 @@ static int GetGUM(FILE *fpGUM)
 		else if (cInput == 'N') {
 			zputs("No\n");
 			// skip file
-			fseek(fpGUM, (long)lCompressSize, SEEK_CUR);
+			fseekuc(fpGUM, lCompressSize);
 			return 1;
 		}
 		else
@@ -349,7 +373,7 @@ static int GetGUM(FILE *fpGUM)
 
 	fclose(fpToFile);
 
-	snprintf(szString, sizeof(szString), "%" PRId32 "b ", lFileSize);
+	snprintf(szString, sizeof(szString), "%" PRIu32 "b ", lFileSize);
 	zputs(szString);
 	zputs("|15done.\n");
 
@@ -613,7 +637,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 	char szEncryptedName[PATH_SIZE], cInput;
 	char *pcFrom, *pcTo, szFileName[PATH_SIZE], szString[128];
 	FILE *fpToFile, *fpGUM;
-	int32_t lFileSize, lCompressSize;
+	uint32_t lFileSize, lCompressSize;
 	uint16_t date, time;
 
 	ClearAll();
@@ -650,14 +674,14 @@ static void Extract(char *szExtractFile, char *szNewName)
 				fclose(fpGUM);
 				return;
 			}
-			lFileSize = SWAP32S(lFileSize);
+			lFileSize = SWAP32(lFileSize);
 
 			if (fread(&lCompressSize, sizeof(lCompressSize), 1, fpGUM) != 1) {
 				zputs("|04Reading compressed size failed!\n");
 				fclose(fpGUM);
 				return;
 			}
-			lCompressSize = SWAP32S(lCompressSize);
+			lCompressSize = SWAP32(lCompressSize);
 
 			// get datestamp
 			if (fread(&date, sizeof(date), 1, fpGUM) != 1) {
@@ -686,7 +710,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 		}
 		else {
 			// skip it
-			if (fseek(fpGUM, lCompressSize, SEEK_CUR) != 1) {
+			if (fseekuc(fpGUM, lCompressSize) != 1) {
 				zputs("|04Seek failed!\n");
 				fclose(fpGUM);
 				return;
@@ -719,7 +743,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 		else if (cInput == 'N') {
 			zputs("No\n");
 			// skip file
-			if (fseek(fpGUM, lCompressSize, SEEK_CUR) != 1) {
+			if (fseekuc(fpGUM, lCompressSize) != 1) {
 				zputs("|04Seek failed!\n");
 				fclose(fpGUM);
 				return;
@@ -750,7 +774,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 	fclose(fpToFile);
 	fclose(fpGUM);
 
-	snprintf(szString, sizeof(szString), "(%" PRId32 " bytes) ", lFileSize);
+	snprintf(szString, sizeof(szString), "(%" PRIu32 " bytes) ", lFileSize);
 	zputs(szString);
 	zputs("|15Done.\n");
 }
@@ -770,14 +794,14 @@ static int CheckRow(int row, bool *Done)
 struct lfn {
 	struct lfn *next;
 	char *name;
-	int32_t size;
+	uint32_t size;
 };
 
 struct lfn *LFNHead = NULL;
 struct lfn *LFNTail = NULL;
 size_t LongestLFN = 0;
 
-static void AddLFN(const char *name, int32_t size)
+static void AddLFN(const char *name, uint32_t size)
 {
 	struct lfn *n = malloc(sizeof(struct lfn));
 	size_t len = strlen(name);
@@ -819,12 +843,12 @@ static void DisplayLFNs(int row, int column, size_t TotalBytes)
 	if (column)
 		zputs("\n");
 	for (struct lfn *fn = LFNHead; fn && !Done; fn = fn->next) {
-		if (fn->size == -1) {
+		if (fn->size == UINT32_MAX) {
 			snprintf(szString, sizeof(szString), "|15%*s  |06-- |07      directory\n",
 			    (int)LongestLFN, fn->name);
 		}
 		else {
-			snprintf(szString, sizeof(szString), "|15%*s  |06-- |07%9" PRId32 " bytes\n",
+			snprintf(szString, sizeof(szString), "|15%*s  |06-- |07%9" PRIu32 " bytes\n",
 			    (int)LongestLFN, fn->name, fn->size);
 			TotalBytes += (size_t)fn->size;
 		}
@@ -846,7 +870,7 @@ static void ListFiles(void)
 	char szEncryptedName[PATH_SIZE];
 	char *pcFrom, *pcTo, szFileName[PATH_SIZE], szString[128];
 	FILE *fpGUM;
-	int32_t lFileSize, lCompressSize;
+	uint32_t lFileSize, lCompressSize;
 	size_t TotalBytes = 0;
 	int FilesFound = 0;
 	uint16_t date, time;
@@ -881,7 +905,7 @@ static void ListFiles(void)
 
 		if (szFileName[0] == '/') {
 			if (strlen(szFileName) > 14) {
-				AddLFN(szFileName, -1);
+				AddLFN(szFileName, UINT32_MAX);
 				continue;
 			}
 			snprintf(szString, sizeof(szString), "|15%14s  |06-- |07      directory  ",
@@ -898,13 +922,13 @@ static void ListFiles(void)
 				System_Error("|04Failed to read file size!\n");
 				return;
 			}
-			lFileSize = SWAP32S(lFileSize);
+			lFileSize = SWAP32(lFileSize);
 			if (fread(&lCompressSize, sizeof(lCompressSize), 1, fpGUM) != 1) {
 				fclose(fpGUM);
 				System_Error("|04Failed to read compressed size!\n");
 				return;
 			}
-			lCompressSize = SWAP32S(lCompressSize);
+			lCompressSize = SWAP32(lCompressSize);
 			// get datestamp
 			if (fread(&date, sizeof(date), 1, fpGUM) != 1) {
 				fclose(fpGUM);
@@ -919,7 +943,7 @@ static void ListFiles(void)
 			}
 			time = SWAP16(time);
 			if (strcmp(szFileName, "UnixAttr.DAT") == 0) {
-				if (fseek(fpGUM, lCompressSize, SEEK_CUR)) {
+				if (fseekuc(fpGUM, lCompressSize)) {
 					fclose(fpGUM);
 					System_Error("|04Failed to skip UnixAttr.DAT!\n");
 					return;
@@ -928,7 +952,7 @@ static void ListFiles(void)
 			}
 			if (strlen(szFileName) > 14) {
 				AddLFN(szFileName, lFileSize);
-				if (fseek(fpGUM, lCompressSize, SEEK_CUR)) {
+				if (fseekuc(fpGUM, lCompressSize)) {
 					fclose(fpGUM);
 					System_Error("|04Failed to skip file contents!\n");
 					return;
@@ -937,7 +961,7 @@ static void ListFiles(void)
 			}
 
 			// show dir like DOS :)
-			snprintf(szString, sizeof(szString), "|15%14s  |06-- |07%9" PRId32 " bytes  ",
+			snprintf(szString, sizeof(szString), "|15%14s  |06-- |07%9" PRIu32 " bytes  ",
 					szFileName, lFileSize);
 			zputs(szString);
 		}
@@ -952,7 +976,7 @@ static void ListFiles(void)
 
 		row = CheckRow(row, &Done);
 
-		fseek(fpGUM, lCompressSize, SEEK_CUR);
+		fseekuc(fpGUM, lCompressSize);
 
 		TotalBytes += (size_t)lFileSize;
 	}

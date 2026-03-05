@@ -352,15 +352,18 @@ void IBBS_SendQueuedResults(void)
 				LogStr("* End of packet file");
 				break;
 			}
-			char *PacketData = malloc((size_t)Packet.PacketLength);
-			if (PacketData) {
-				if(!EncryptRead(PacketData, (size_t)Packet.PacketLength, fp, XOR_PACKET)) {
-					free(PacketData);
-					continue;
-				}
-				IBBS_SendPacket(Packet.PacketType, (size_t)Packet.PacketLength, PacketData, Packet.BBSIDTo);
-				free(PacketData);
+			if (Packet.PacketLength <= 0) {
+				fclose(fp);
+				System_Error("Invalid packet length in output queue");
 			}
+			char *PacketData = malloc((size_t)Packet.PacketLength);
+			CheckMem(PacketData);
+			if(!EncryptRead(PacketData, (size_t)Packet.PacketLength, fp, XOR_PACKET)) {
+				free(PacketData);
+				continue;
+			}
+			IBBS_SendPacket(Packet.PacketType, (size_t)Packet.PacketLength, PacketData, Packet.BBSIDTo);
+			free(PacketData);
 		}
 		fclose(fp);
 		unlink("pktqout.dat");
@@ -372,15 +375,11 @@ static void EnqueueInPacket(struct Packet *Packet, FILE *fp)
 	FILE *qfp = fopen("pktqin.dat", "ab");
 	if (qfp) {
 		uint8_t *pbuf = malloc((size_t)Packet->PacketLength);
-		if (pbuf == NULL) {
-			LogStr("Unable to allocate queued packet size");
-		}
-		else {
-			EncryptWrite_s(Packet, Packet, qfp, XOR_PACKET);
-			fread(pbuf, (size_t)Packet->PacketLength, 1, fp);
-			fwrite(pbuf, (size_t)Packet->PacketLength, 1, qfp);
-			free(pbuf);
-		}
+		CheckMem(pbuf);
+		EncryptWrite_s(Packet, Packet, qfp, XOR_PACKET);
+		fread(pbuf, (size_t)Packet->PacketLength, 1, fp);
+		fwrite(pbuf, (size_t)Packet->PacketLength, 1, qfp);
+		free(pbuf);
 		fclose(qfp);
 	}
 }
@@ -692,7 +691,7 @@ const char *BBSName(int16_t BBSID)
 */
 static void ReturnLostAttack(struct AttackPacket *AttackPacket)
 {
-	struct clan TmpClan;
+	struct clan TmpClan = {0};
 	char szMessage[300], szAttackerName[20];
 	int16_t Junk[2];
 
@@ -709,9 +708,9 @@ static void ReturnLostAttack(struct AttackPacket *AttackPacket)
 				TmpClan.Empire.Army.Footmen += AttackPacket->AttackingArmy.Footmen;
 				TmpClan.Empire.Army.Axemen  += AttackPacket->AttackingArmy.Axemen;
 				TmpClan.Empire.Army.Knights += AttackPacket->AttackingArmy.Knights;
+				Clan_Update(&TmpClan);
+				FreeClanMembers(&TmpClan);
 			}
-			Clan_Update(&TmpClan);
-			FreeClanMembers(&TmpClan);
 			break;
 	}
 
@@ -746,7 +745,7 @@ static void IBBS_BackupMaint(void)
 	struct Packet Packet;
 	char *cpBuffer;
 	int16_t iTemp;
-	struct clan TmpClan;
+	struct clan TmpClan = {0};
 	struct AttackPacket AttackPacket;
 	struct pc TmpMember[6];
 
@@ -782,7 +781,6 @@ static void IBBS_BackupMaint(void)
 					}
 
 					IBBS_AddToGame(&TmpClan, true);
-					FreeClanMembers(&TmpClan);
 
 					// tell other board to comeback in case of problems
 					// --> NO!!  SendComeBack(TmpClan->DestinationBBS, TmpClan);
@@ -1220,14 +1218,13 @@ static void IBBS_AddLCLog(char *szString)
 	FILE *fpLCLogFile;
 
 	/* open news file */
-
-	/* add to it */
-
 	fpLCLogFile = _fsopen("lc.log", "at", _SH_DENYWR);
 
-	fputs(szString, fpLCLogFile);
-
-	fclose(fpLCLogFile);
+	if (fpLCLogFile) {
+		/* add to it */
+		fputs(szString, fpLCLogFile);
+		fclose(fpLCLogFile);
+	}
 }
 
 // ------------------------------------------------------------------------- //
@@ -2420,6 +2417,9 @@ static void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 	if (!fpPC) {
 		/* no file yet, append 'em onto end */
 		fpPC = fopen(ST_CLANSPCFILE, "ab");
+		if (!fpPC) {
+			System_Error("Failed to create PC file");
+		}
 
 		// fix alliances since they are not the same on each BBS
 		for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
@@ -2505,6 +2505,9 @@ static void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 		Clan->MadeAlliance = false;
 
 		fpPC = fopen(ST_CLANSPCFILE, "ab");
+		if (!fpPC) {
+			System_Error("Failed to open PC file");
+		}
 		EncryptWrite_s(clan, Clan, fpPC, XOR_USER);
 
 		/* write members */
@@ -2618,6 +2621,7 @@ HandleMessagePacket(FILE* fp, const char *szFileName)
 		fclose(fp);
 		LogDisplayStr("|08- |20negative message length\n");
 		MoveToBad(szFileName);
+		return;
 	}
 
 	// allocate mem for text
@@ -2641,6 +2645,10 @@ HandleScoreDataPacket(FILE* fp)
 	int16_t iTemp, NumScores;
 
 	EncryptRead16(&NumScores, fp, XOR_PACKET);
+	if (NumScores > MAX_USERS)
+		NumScores = MAX_USERS;
+	if (NumScores < 0)
+		NumScores = 0;
 
 	// read the scores in
 	for (iTemp = 0; iTemp < NumScores; iTemp++) {
@@ -2668,6 +2676,10 @@ HandleScoreListPacket(FILE* fp)
 	FILE* fpScores;
 
 	EncryptRead16(&NumScores, fp, XOR_PACKET);
+	if (NumScores > MAX_USERS)
+		NumScores = MAX_USERS;
+	if (NumScores < 0)
+		NumScores = 0;
 
 	// read in date
 	EncryptRead(ScoreDate, 11, fp, XOR_PACKET);
@@ -2738,6 +2750,7 @@ HandleClanMovePacket(struct Packet *Packet, FILE* fp)
 	else {
 		LogStr("* Clan move without active game");
 	}
+	FreeClanMembers(&TmpClan);
 }
 
 static void
@@ -2881,6 +2894,7 @@ void IBBS_HandleQueuedPackets(void)
 			// Check that source ID is valid and active...
 			if (!CheckSourceID(Packet.BBSIDFrom)) {
 				LogStr("* Invalid source ID, ignoring");
+				fseek(fp, Packet.PacketLength, SEEK_CUR);
 				continue;
 			}
 
@@ -2891,6 +2905,10 @@ void IBBS_HandleQueuedPackets(void)
 			else if (Packet.PacketType == PT_ATTACK) {
 				LogDisplayStr("|08- |07attack found\n");
 				HandleAttackPacket(fp);
+			}
+			else {
+				LogDisplayStr("|08- |07Skipping unhandled packet in input queue\n");
+				fseek(fp, Packet.PacketLength, SEEK_CUR);
 			}
 		}
 		fclose(fp);
@@ -3007,16 +3025,19 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 		if (SrcID && IBBS.Data.StrictRouting && SrcID == IBBS.Data.Nodes[Packet.BBSIDTo - 1].Info.RouteThrough) {
 			snprintf(szString, sizeof(szString), "|08* |07Packet %s received from next hop\n", szFileName);
 			LogDisplayStr(szString);
+			fseek(fp, Packet.PacketLength, SEEK_CUR);
 			continue;
 		}
 
 		// Check that source and destination IDs are valid and active...
 		if (!CheckSourceID(Packet.BBSIDFrom)) {
 			LogStr("* Invalid source ID, ignoring");
+			fseek(fp, Packet.PacketLength, SEEK_CUR);
 			continue;
 		}
 		if (!CheckDestinationID(Packet.BBSIDTo)) {
 			LogStr("* Invalid destination ID, ignoring");
+			fseek(fp, Packet.PacketLength, SEEK_CUR);
 			continue;
 		}
 
@@ -3043,6 +3064,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 
 			LogStr("* forwarding to next hop");
 			IBBS_SendPacket(Packet.PacketType, (size_t)Packet.PacketLength, pcBuffer, Packet.BBSIDTo);
+			free(pcBuffer);
 
 			/* move onto next packet in file */
 			continue;

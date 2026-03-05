@@ -1599,6 +1599,7 @@ static void SendMsj(struct Message *Message, int16_t WhichVillage)
 			IBBS_SendPacket(PT_MSJ, BufferSize, MessageBuffer, CurBBS + 1);
 		}
 	}
+	free(MessageBuffer);
 }
 
 void PostMsj(struct Message *Message)
