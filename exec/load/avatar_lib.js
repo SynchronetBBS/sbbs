@@ -1,5 +1,7 @@
 // Library for dealing with user Avatars (ex-ASCII/ANSI block art)
 
+require("sbbsdefs.js", "U_NAME");
+
 const defs = {
 	width: 10,
 	height: 6,
@@ -203,8 +205,11 @@ function read(usernumber, username, netaddr, bbsid)
 		return obj;
 	if(usernum >= 1)
 		obj = read_localuser(usernum);
-	else if(!netaddr)
+	else if(!netaddr) {
 		obj = read_localuser(system.matchuser(username));
+		if (!obj)
+			obj = read_localuser(system.matchuserdata(U_NAME, username));
+	}
 	else {
 		obj = read_netuser(username, netaddr);
 		if(!obj && bbsid)
