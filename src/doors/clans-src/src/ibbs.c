@@ -3254,7 +3254,7 @@ MessageFileIterate(const char *pszFileName, tIBInfo *InterBBSInfo, int16_t Sourc
 							    || hdr.wOrigPoint != SrcNode.wPoint) {
 								Found = false;
 								char str[1024];
-								sprintf(str, "|08* |07Source node %d should be %d:%d/%d.%d, got %d:%d/%d.%d\n", SourceID, SrcNode.wZone, SrcNode.wNet, SrcNode.wNode, SrcNode.wPoint, hdr.wOrigZone, hdr.wOrigNet, hdr.wOrigNode, hdr.wOrigPoint);
+								snprintf(str, sizeof(str), "|08* |07Source node %d should be %d:%d/%d.%d, got %d:%d/%d.%d\n", SourceID, SrcNode.wZone, SrcNode.wNet, SrcNode.wNode, SrcNode.wPoint, hdr.wOrigZone, hdr.wOrigNet, hdr.wOrigNode, hdr.wOrigPoint);
 								LogDisplayStr(str);
 							}
 						}
