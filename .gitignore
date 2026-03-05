@@ -30,3 +30,5 @@ node4
 ctrl/recycle
 exec/*.bin
 exec/*.so
+src/tags
+src/syncterm/tags
