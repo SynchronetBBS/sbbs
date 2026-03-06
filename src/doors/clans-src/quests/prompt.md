@@ -34,15 +34,9 @@ A clan has members (warriors with individual stats), an army (followers who figh
 
 ---
 
-**Before generating any files, always conduct the world-building interview below.** Do not skip it or fill in generic defaults. The entire pack — NPC voices, place names, monster themes, quest stakes — must flow from the sysop's vision. Once that vision is established, keep it in mind for every line of dialogue, every quest hook, and every monster name you write.
-
-When generating files, treat all engine constraints as absolute law. Do not explain your output unless asked.
-
----
-
 ## WORLD-BUILDING INTERVIEW
 
-Conduct this interview before generating anything. Ask these questions conversationally — ask them one at a time and do not group them and do not skip any. Take detailed notes on the answers; every specific detail the sysop gives you is material for the pack.
+**Conduct this interview before generating any files.** Do not skip it or fill in generic defaults. Ask one question at a time; do not group them. Take detailed notes — every specific detail is material for the pack. The entire pack must flow from the sysop's vision: NPC voices, place names, monster themes, quest stakes, everything. When generating files, treat all engine constraints as absolute law. Do not explain your output unless asked.
 
 **1. The village**
 What is this place called, and what defines it? Is it a mining settlement, a trading crossroads, a frontier garrison, a fishing port, a religious community, something stranger? What does it feel like to walk its streets — busy and prosperous, grim and desperate, eccentric and hidden, something else?
@@ -62,7 +56,9 @@ Is this a dark grimdark setting, classic fantasy adventure, folk horror, politic
 **6. The sysop's vision**
 What do you most want players to discover, feel, or understand by the end of the campaign? A specific revelation, a character arc, a moral question, a twist, a moment of triumph? This is the north star for the entire pack.
 
-After the interview, **summarize the world back to the sysop in a short paragraph and ask for approval or corrections** before generating any files. If the sysop provides only a brief seed (e.g., "a Viking village fighting off a demon cult"), extrapolate a coherent world from it, present the interpretation for approval, then generate.
+**After the interview:** Summarize the world back to the sysop in a short paragraph and ask for approval or corrections before generating any files.
+
+**If the sysop gives only a brief seed** (e.g., "a Viking village fighting off a demon cult"), extrapolate a coherent world from it, present your interpretation for approval, then proceed to generation. Do not ask all six questions if a full world already exists in the sysop's mind — ask enough to fill the gaps.
 
 ---
 
@@ -83,7 +79,7 @@ After the interview, **summarize the world back to the sysop in a short paragrap
 ## SYNTAX RULES (violations cause parse failures):
 
 - All generated filenames must be lowercase (e.g. `quests.ini`, `quests.hlp`, `fallstatt.evt`). The game runs on case-sensitive Unix filesystems.
-- **String content limit: 254 characters maximum.** The compiled format stores string lengths as a single byte, so no string argument may exceed 254 characters. ecomp enforces this by truncating and printing a warning. Lines longer than 1023 characters are also truncated with a warning. The command keyword, whitespace separator, and leading quote are line overhead and do not count toward the 254-character string limit.
+- **String argument limit: 254 characters maximum.** String arguments (text after the command keyword and quote) may not exceed 254 characters, as the compiled binary format stores lengths as a single byte. ecomp enforces this and will error if exceeded.
 - **Terminal display width: 80 columns.** The output system does not word-wrap. Color codes (`|0C`, `|02`, etc.) consume source characters but zero display columns; all other characters consume one column each. Keep visible text per `Text` command to 78 characters or fewer. Long dialogue must be split across multiple `Text` commands.
 - Key Value format only. The first word is the Key; the rest of the line is the Value.
 - BRACKETS [] ARE FORBIDDEN in Keys. These are NOT Windows INI files. There are no `[Section]` headers and no `key=value` pairs anywhere. The format is always `Key Value` (space-separated, no equals sign) with blank lines between blocks.
@@ -205,9 +201,7 @@ All other commands are executable and may appear inside any block:
 
 ### quests.ini
 
-**This is NOT a Windows INI file.** Do not use `[Section]` headers or `key=value` syntax. The format is `Key Value` (space-separated) with blank lines between blocks.
-
-One block per quest, separated by blank lines. The zero-based block ordinal is the Qaa flag number for that quest.
+**NOT Windows INI format** — no `[Section]` headers, no `key=value`. One block per quest, separated by blank lines. The zero-based block ordinal is the Qaa flag number for that quest.
 
     Name [Display name shown in quest log — string, max ~80 chars]
     Index [The name of the Event block to run within the .evt file, AND the identifier used by TellQuest — no spaces, max ~30 chars]
@@ -396,7 +390,7 @@ Compiled using `ecomp <infile.txt> <outfile.evt>`. Event and Result blocks separ
 
 ### clans.ini
 
-**This is NOT a Windows INI file.** Do not use `[Section]` headers or `key=value` syntax. The format is `Key Value` (space-separated). Generate a **complete** clans.ini file, not just additions. The file must reproduce the following default content verbatim — do not omit, reorder, or alter any of these lines — and insert the pack's NpcFile entries in the marked position:
+**NOT Windows INI format** — no `[Section]` headers, no `key=value`. Generate a **complete** clans.ini file, not just additions. The file must reproduce the following default content verbatim — do not omit, reorder, or alter any of these lines — and insert the pack's NpcFile entries in the marked position:
 
     # Clans INI File -- used for modules mainly
     # -----------------------------------------------------------------------------
