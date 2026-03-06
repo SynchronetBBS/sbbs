@@ -1223,10 +1223,12 @@ extern "C" int main(int argc, char **argv)
 	struct sigaction sa {};
 #endif
 
-    if(bbs_ver_num() != VERSION_HEX) {
-        fprintf(stderr, "!Incorrect SBBS Library Version (%x, expected %x)\n", bbs_ver_num(), VERSION_HEX);
+#ifndef JSDOOR
+	if(bbs_ver_num() != VERSION_HEX) {
+		fprintf(stderr, "!Incorrect SBBS Library Version (%x, expected %x)\n", bbs_ver_num(), VERSION_HEX);
 		return EXIT_FAILURE;
 	}
+#endif
 
 	confp = stdout;
 	errfp = stderr;
