@@ -12,7 +12,7 @@ Before generating anything, understand the world your quests must fit into.
 
 ### Village locations
 
-The village has seven locations where NPCs may appear as wanderers. Location placement signals tone and social role — use it deliberately.
+The village has six locations where NPCs may appear as wanderers. Location placement signals tone and social role — use it deliberately.
 
 | Location | Character | Typical inhabitants |
 |---|---|---|
