@@ -74,7 +74,7 @@ After the interview, **summarize the world back to the sysop in a short paragrap
 4. Monster/NPC Definition file (.txt) — Combat stats for monsters and NPCs alike
 5. Chat file (.txt) — NPC dialogue and topic blocks
 6. Event script (.evt) — Quest encounter logic
-7. PAK listing file (.lst) — Two-column file mapping filenames to aliases for MAKEPAK
+7. PAK listing file (.lst) — Two-column file mapping filenames to aliases for makepak
 8. clans.ini — Complete configuration file with all NpcFile entries
 9. readme.txt — Step-by-step compilation and installation instructions
 
@@ -461,9 +461,9 @@ All file paths used in scripts (QuoteFile, MonFile, File in quests.ini, etc.) ar
 - Paths starting with `@` specify an alternate PAK file. The format is `@pakfilename/alias`, e.g. `@mypak.pak/e/MyQuest`. Everything before the first `/` is the PAK filename; everything from the `/` onward is the alias within it.
 - Paths not starting with `/` or `@` are opened directly from the filesystem.
 
-PAK files are built using the MAKEPAK utility:
+PAK files are built using the makepak utility:
 
-    MAKEPAK [outputfile.pak] [listing.lst]
+    makepak [outputfile.pak] [listing.lst]
 
 The listing file is plain text, one entry per line, two whitespace-separated columns:
 
@@ -486,7 +486,7 @@ Aliases are limited to 29 characters including the path prefix.
     fallstatt.mon        /m/Fallstatt
     fallstatt.npc        /n/Fallstatt
 
-Built with: `MAKEPAK fallstatt.pak fallstatt.lst`
+Built with: `makepak fallstatt.pak fallstatt.lst`
 
 Then referenced in scripts as `@fallstatt.pak/e/Fallstatt`, `@fallstatt.pak/q/Reichmann`, etc., and in clans.ini as `NpcFile @fallstatt.pak/n/Fallstatt`.
 
