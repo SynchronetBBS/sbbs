@@ -76,6 +76,7 @@ After the interview, **summarize the world back to the sysop in a short paragrap
 6. Event script (.evt) — Quest encounter logic
 7. PAK listing file (.lst) — Two-column file mapping filenames to aliases for MAKEPAK
 8. clans.ini — Complete configuration file with all NpcFile entries
+9. readme.txt — Step-by-step compilation and installation instructions
 
 ---
 
@@ -85,7 +86,7 @@ After the interview, **summarize the world back to the sysop in a short paragrap
 - **Source line length limit: 154 characters maximum.** ecomp reads lines with `fgets(..., 155, ...)` — any line longer than 154 characters is silently truncated at compile time with no error. Count every character: command keyword, space, quote, color codes, and text all count toward this limit.
 - **Terminal display width: 80 columns.** The output system does not word-wrap. Color codes (`|0C`, `|02`, etc.) consume source characters but zero display columns; all other characters consume one column each. Keep visible text per `Text` command to 78 characters or fewer. Long dialogue must be split across multiple `Text` commands.
 - Key Value format only. The first word is the Key; the rest of the line is the Value.
-- BRACKETS [] ARE FORBIDDEN in Keys.
+- BRACKETS [] ARE FORBIDDEN in Keys. These are NOT Windows INI files. There are no `[Section]` headers and no `key=value` pairs anywhere. The format is always `Key Value` (space-separated, no equals sign) with blank lines between blocks.
 - Blank line required between every data block.
 - Comments begin with # on their own line. Multi-line block comments use `>>` on a line by itself to open and another `>>` to close.
 - Text with no argument is valid and outputs a blank line. Text "[String] outputs the string followed by a newline. Both forms are valid.
@@ -94,7 +95,8 @@ After the interview, **summarize the world back to the sysop in a short paragrap
 - Index values in NPC Info files MUST NOT use _ prefix.
 - `Jump` is a one-way goto. Execution does NOT return after a Jump. There are no subroutines. Commands written after a Jump are unreachable dead code.
 - `Jump` requires a real block name. `STOP` and `NextLine` are NOT valid Jump targets — they are only recognised by `Option`, `Input`, and `Fight`. Using `Jump STOP` will cause a runtime crash.
-- Blocks do not fall through. When a block reaches `End`, execution stops entirely.
+- Every block (Event, Result, Topic) **must be explicitly closed with `End`.** There is no implicit termination. Without `End`, execution falls through into the bytecode of the following block — this is a silent bug, not a compile error. Every single block in every file must have `End` as its last command.
+- When `Fight`, `Option`, or `Input` uses `NextLine` for one of its paths, execution continues on the line immediately after that command, still within the same block. If that path should terminate the block, you must still write `End` after the `Fight`/`Option`/`Input`. Example: `Fight WonLabel LostLabel NextLine` followed immediately by `End` means a player who runs away gets a clean exit. Without that `End`, execution falls into whatever bytecode follows the block boundary.
 
 ---
 
@@ -201,6 +203,8 @@ All other commands are executable and may appear inside any block:
 
 ### quests.ini
 
+**This is NOT a Windows INI file.** Do not use `[Section]` headers or `key=value` syntax. The format is `Key Value` (space-separated) with blank lines between blocks.
+
 One block per quest, separated by blank lines. The zero-based block ordinal is the Qaa flag number for that quest.
 
     Name [Display name shown in quest log — string, max ~80 chars]
@@ -221,7 +225,7 @@ The `^` line must exactly match the `Name` field in quests.ini. Without this ent
 
 ### NPC Info File (.txt)
 
-Compiled to a binary .NPC file using `MakeNPC [infile.txt] [outfile.npc]`. Each new Index keyword starts a new NPC block.
+Compiled to a binary .NPC file using `makenpc [infile.txt] [outfile.npc]`. Each new Index keyword starts a new NPC block.
 
     Index [Unique global identifier — string, max 20 chars, no underscore prefix]
     Name [Display name shown to player — string, max 20 chars]
@@ -365,6 +369,8 @@ Always include `Undead` for undead monsters so they are removed after combat and
 
 Compiled using `ecomp <infile.txt> <outfile.q>`. Topic blocks separated by blank lines. Chat files are a superset of .evt — any command valid in an event script is also valid inside a Topic block.
 
+**Do not put quest logic in Topic blocks.** Fights, `DoneQuest`, and story-critical flag changes belong in Event blocks in .evt files. Topic blocks should reveal quests (`TellQuest`), react to completed quests (`{Qaa}` conditions on dialogue), expose lore, and open other topics (`TellTopic`). Anything else subverts the one-quest-per-day limit and bypasses the quest log.
+
     Topic [TopicName]
     Text "[Dialogue line]
     [Any valid commands]
@@ -388,7 +394,7 @@ Compiled using `ecomp <infile.txt> <outfile.evt>`. Event and Result blocks separ
 
 ### clans.ini
 
-Generate a **complete** clans.ini file, not just additions. The file must reproduce the following default content verbatim — do not omit, reorder, or alter any of these lines — and insert the pack's NpcFile entries in the marked position:
+**This is NOT a Windows INI file.** Do not use `[Section]` headers or `key=value` syntax. The format is `Key Value` (space-separated). Generate a **complete** clans.ini file, not just additions. The file must reproduce the following default content verbatim — do not omit, reorder, or alter any of these lines — and insert the pack's NpcFile entries in the marked position:
 
     # Clans INI File -- used for modules mainly
     # -----------------------------------------------------------------------------
@@ -410,6 +416,40 @@ Generate a **complete** clans.ini file, not just additions. The file must reprod
     # -----------------------------------------------------------------------------
 
 The pack's NpcFile lines go immediately after the existing `NpcFile /dat/Npc` line. Use the PAK alias format if the .npc file is inside a custom PAK archive (e.g. `NpcFile @mypak.pak/n/MyNPC`), or a plain filesystem path if it is a standalone file.
+
+---
+
+### readme.txt (installation instructions)
+
+Generate a plain text `readme.txt` the sysop can follow without consulting any other documentation. Use the actual filenames from this pack throughout — no placeholders. Structure it as follows:
+
+**1. Introduction** — one short paragraph naming the pack, summarising what it adds to the game, and how many quests and NPCs it contains.
+
+**2. Compilation** — one command per source file, in dependency order (compiled binaries must exist before the PAK can be built). All tools are in the game directory; prefix with `./` if needed.
+
+    # compile monster/NPC stats
+    ./mcomp packname.txt packname.mon
+
+    # compile NPC info
+    ./makenpc packname.npc.txt packname.npc
+
+    # compile chat file(s) -- one ecomp call per .q file
+    ./ecomp packname.q.txt packname.q
+
+    # compile event script(s) -- one ecomp call per .evt file
+    ./ecomp packname.evt.txt packname.evt
+
+    # build PAK archive
+    ./makepak packname.pak packname.lst
+
+**3. Installation** — copy these files to the game directory (the folder containing the `clans` binary). Files marked "replaces existing" will overwrite the current version; back them up first if needed.
+
+    packname.pak   →  [game directory]/
+    quests.ini     →  [game directory]/   (replaces existing)
+    quests.hlp     →  [game directory]/   (replaces existing)
+    clans.ini      →  [game directory]/   (replaces existing)
+
+**4. Verification** — tell the sysop what to look for to confirm a successful install: which NPC should appear and where, what the first quest in the log is named, and any known first-session interaction to confirm scripts are running.
 
 ---
 
@@ -547,7 +587,8 @@ Each revealed topic is written in the NPC's own voice. The lore keeper does not 
 ### Mechanics
 - Use {T0}–{T63} for within-session branching (e.g., tracking a player choice within one chat).
 - Use {D0}–{D63} for daily gating (e.g., "come back tomorrow for your reward").
-- Typical quest flow: NPC chat uses TellQuest → player runs the Event → DoneQuest on success → NPC chat checks {Qaa} to react.
+- **Quest logic belongs in Event blocks in .evt files, never in NPC chat Topics.** NPC chat should use `TellQuest` to reveal a quest and check `{Qaa}` flags to react to completion — that is all. Fights, `DoneQuest`, major rewards, and story-critical `SetFlag` calls must live in Event blocks. Putting quest logic inside a Topic block bypasses the game's one-quest-per-day limit, makes the quest invisible to the quest log, and breaks the intended campaign pacing.
+- Typical quest flow: NPC chat uses `TellQuest` to unlock the quest → player runs the Event from the quest log → `DoneQuest` on success → NPC chat checks `{Qaa}` to react with new dialogue.
 - Always place AddEnemy immediately before its corresponding Fight.
 - Do NOT use GiveXP — players earn XP naturally through combat in the quest. Use GivePoints, GiveGold, and occasionally GiveFollowers or GiveFight instead.
 - Use `Fight NextLine STOP NoRun` for boss fights the player cannot flee.
@@ -663,6 +704,7 @@ When generating a full campaign, produce files in this order:
 6. quests.hlp — complete file, one block per quest
 7. PAK listing file (.lst) — two-column file mapping filenames to aliases
 8. clans.ini — complete file with default content and pack's NpcFile entries
+9. readme.txt — compilation and installation instructions
 
 ---
 
