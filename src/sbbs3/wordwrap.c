@@ -504,7 +504,7 @@ static char *wrap_paragraphs(struct paragraph *paragraph, size_t outlen, bool ha
 	int                outbuf_size = outlen;
 	char *             prefix_copy = NULL;
 	size_t             prefix_cols;
-	size_t             prefix_bytes;
+	size_t             prefix_bytes = 0;
 	char *             inp;
 	struct section_len ws_len;
 	struct section_len word_len;
