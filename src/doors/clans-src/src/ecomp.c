@@ -53,13 +53,16 @@ static char *papszEvaKeyWords[MAX_EVA_WORDS] = {
 };
 
 #define CHECK_SZLEGAL() do { \
-	size_t TempLen = strlen(szLegal) + 1; \
-	if (TempLen > 255) { \
-		printf("String too long (%zu characters) for %s at %d\n", TempLen - 1, papszEvaKeyWords[(int)iKeyWord], CurLine); \
-		free(Buffer); \
-		fclose(fpOut); \
-		fclose(fpEvent); \
-		return EXIT_FAILURE; \
+	if (strlen(szLegal) > 254) { \
+		printf("Warning: legal string truncated to 254 characters for %s at line %d\n", papszEvaKeyWords[(int)iKeyWord], CurLine); \
+		szLegal[254] = '\0'; \
+	} \
+} while(0)
+
+#define TRUNCATE_STR(s) do { \
+	if (strlen(s) > 254) { \
+		printf("Warning: string truncated to 254 characters for %s at line %d\n", papszEvaKeyWords[(int)iKeyWord], CurLine); \
+		(s)[254] = '\0'; \
 	} \
 } while(0)
 
@@ -78,7 +81,7 @@ static char *papszEvaKeyWords[MAX_EVA_WORDS] = {
 int main(int argc, char *argv[])
 {
 	FILE *fpEvent, *fpOut;
-	char szLine[255], *pcCurrentPos, szString[255], *pcBrace, szLegal[255],
+	char szLine[1024], *pcCurrentPos, szString[255], *pcBrace, szLegal[255],
 	szLabel[30], szLabel1[30], szLabel2[30], szLabel3[30];
 	char szToken[MAX_TOKEN_CHARS + 1], *Buffer, cKey, cTemp;
 	char iKeyWord;
@@ -123,9 +126,18 @@ int main(int argc, char *argv[])
 	CommentOn = false;
 	for (;;) {
 		/* read in a line */
-		if (fgets(szLine, 155, fpEvent) == NULL) break;
+		if (fgets(szLine, sizeof(szLine), fpEvent) == NULL) break;
 
 		CurLine++;
+
+		/* Warn and drain if the line was too long to fit in szLine */
+		size_t len = strlen(szLine);
+		if (len == sizeof(szLine) - 1 && szLine[len - 1] != '\n') {
+			printf("Warning: line %d truncated at %zu characters\n", CurLine, len);
+			int c;
+			while ((c = fgetc(fpEvent)) != EOF && c != '\n')
+				;
+		}
 
 		/* Ignore all of line after comments or CR/LF char */
 		pcCurrentPos=(char *)szLine;
@@ -265,6 +277,7 @@ int main(int argc, char *argv[])
 						}
 						else {
 							/* must skip the " which starts the line */
+							TRUNCATE_STR(&pcCurrentPos[1]);
 							ADD_SIZE_BYTE(strlen(&pcCurrentPos[1]) + 1);
 							strlcpy(&Buffer[ BufferPtr ], &pcCurrentPos[1], MALLOC_SZ - BufferPtr);
 							BufferPtr += (strlen(&pcCurrentPos[1]) + 1);
@@ -353,6 +366,7 @@ int main(int argc, char *argv[])
 						strlcpy(&Buffer[BufferPtr], szLegal, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLegal) + 1);
 
+						TRUNCATE_STR(pcCurrentPos);
 						ADD_SIZE_BYTE(strlen(pcCurrentPos) + 1);
 						strlcpy(&Buffer[ BufferPtr ], pcCurrentPos, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(pcCurrentPos) + 1);

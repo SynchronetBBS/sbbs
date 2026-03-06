@@ -83,7 +83,7 @@ After the interview, **summarize the world back to the sysop in a short paragrap
 ## SYNTAX RULES (violations cause parse failures):
 
 - All generated filenames must be lowercase (e.g. `quests.ini`, `quests.hlp`, `fallstatt.evt`). The game runs on case-sensitive Unix filesystems.
-- **Source line length limit: 154 characters maximum.** ecomp reads lines with `fgets(..., 155, ...)` — any line longer than 154 characters is silently truncated at compile time with no error. Count every character: command keyword, space, quote, color codes, and text all count toward this limit.
+- **String content limit: 254 characters maximum.** The compiled format stores string lengths as a single byte, so no string argument may exceed 254 characters. ecomp enforces this by truncating and printing a warning. Lines longer than 1023 characters are also truncated with a warning. The command keyword, whitespace separator, and leading quote are line overhead and do not count toward the 254-character string limit.
 - **Terminal display width: 80 columns.** The output system does not word-wrap. Color codes (`|0C`, `|02`, etc.) consume source characters but zero display columns; all other characters consume one column each. Keep visible text per `Text` command to 78 characters or fewer. Long dialogue must be split across multiple `Text` commands.
 - Key Value format only. The first word is the Key; the rest of the line is the Value.
 - BRACKETS [] ARE FORBIDDEN in Keys. These are NOT Windows INI files. There are no `[Section]` headers and no `key=value` pairs anywhere. The format is always `Key Value` (space-separated, no equals sign) with blank lines between blocks.

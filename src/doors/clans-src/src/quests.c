@@ -540,7 +540,7 @@ static void TellQuest(char *pszQuestIndex)
 bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 			  struct NPCInfo *NPCInfo, char *szNPCIndex)
 {
-	char szString[256], szLegal[155], szLabel[32];
+	char szString[256], szLegal[255], szLabel[32];
 	char szLabel1[32], szLabel2[32], szLabel3[32], szClanName[25];
 	struct EventHeader EventHeader;
 	struct FileHeader FileHeader;
