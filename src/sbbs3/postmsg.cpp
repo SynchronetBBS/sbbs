@@ -371,7 +371,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	return true;
 }
 
-// When message body is UTF-8 encoded, insure header files are UTF-8 (not CP437) encoded too
+// When message body is UTF-8 encoded, insure header fields are UTF-8 (not CP437) encoded too
 extern "C" void normalize_msg_hfield_encoding(const char* charset, char* str, size_t size)
 {
 	char utf8_str[128];
