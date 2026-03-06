@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 	char iKeyWord;
 	int CurLine;
 	int iTemp;
-	bool EventInBuffer, NoMatch, CommentOn;
+	bool EventInBuffer, NoMatch, CommentOn, LastWasEnd;
 	int Errors = 0;
 	struct EventHeader EventHeader = {0};
 	uint8_t ehbuf[BUF_SIZE_EventHeader];
@@ -121,6 +121,7 @@ int main(int argc, char *argv[])
 	}
 	BufferPtr = 0;          // which element are we currently pointing to?
 	EventInBuffer = false;  // true if carrying event in our buffer
+	LastWasEnd = true;      // true if last command written was End
 
 	CurLine = 0;
 	CommentOn = false;
@@ -196,6 +197,8 @@ int main(int argc, char *argv[])
 				switch (iKeyWord) {
 					case 0 :    // Event
 						if (EventInBuffer) {
+							if (!LastWasEnd)
+								printf("Warning: block '%s' has no End (line %d)\n", EventHeader.szName, CurLine);
 							Buffer[BufferPtr++] = 26;
 							Buffer[BufferPtr++] = 0;    // no szLegal either
 							Buffer[BufferPtr++] = 0;
@@ -218,6 +221,7 @@ int main(int argc, char *argv[])
 
 						// initialize this new event
 						EventInBuffer = true;
+						LastWasEnd = false;
 
 						EventHeader.Event = true;
 						memset(EventHeader.szName, 0, sizeof(EventHeader.szName));
@@ -227,6 +231,8 @@ int main(int argc, char *argv[])
 					case 1 :    // Result
 					case 27:    // Topic
 						if (EventInBuffer) {
+							if (!LastWasEnd)
+								printf("Warning: block '%s' has no End (line %d)\n", EventHeader.szName, CurLine);
 							Buffer[BufferPtr++] = 26;
 							Buffer[BufferPtr++] = 0;    // no szLegal either
 							Buffer[BufferPtr++] = 0;
@@ -250,6 +256,7 @@ int main(int argc, char *argv[])
 
 						// initialize this new event
 						EventInBuffer = true;
+						LastWasEnd = false;
 
 						EventHeader.Event = false;
 						memset(EventHeader.szName, 0, sizeof(EventHeader.szName));
@@ -372,6 +379,8 @@ int main(int argc, char *argv[])
 						BufferPtr += (strlen(pcCurrentPos) + 1);
 						break;
 					case 4  :   // End
+						LastWasEnd = true;
+						/* fall through */
 					case 9  :   // DoneQuest
 					case 22 :   // Pause
 					case 29 :   // JoinClan
@@ -483,6 +492,8 @@ int main(int argc, char *argv[])
 
 	// if event in memory, flush it to file
 	if (EventInBuffer) {
+		if (!LastWasEnd)
+			printf("Warning: block '%s' has no End\n", EventHeader.szName);
 		Buffer[BufferPtr++] = 26;
 		Buffer[BufferPtr++] = 0;    // no szLegal either
 		Buffer[BufferPtr++] = 0;
