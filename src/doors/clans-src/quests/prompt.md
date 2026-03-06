@@ -152,12 +152,14 @@ There is no block-level if/then. To conditionally skip multiple commands, jump o
 
 ### Flag scope guide:
 
+**Every flag that is set must be read by at least one ACS condition somewhere.** A `SetFlag` with no corresponding `{Fnn}` check anywhere in the pack is dead weight consuming one of the 64 available slots for that flag type. Before assigning a flag number, confirm where it will be tested.
+
 | Flag | Scope | Reset | Use for |
 |------|-------|-------|---------|
 | T | Per session | Every new event or chat run | Branching logic within a single conversation or encounter, e.g. tracking whether the player has already made a choice this session |
 | P | Per clan | Never (permanent) | Permanent story progression that should never reset, e.g. the player has received a unique reward or unlocked a story branch |
 | D | Per clan | Each day | Per-player daily limits or cooldowns, e.g. an NPC will only give a hint once per day |
-| G | Global village | Only on full game reset | World-state changes that affect everyone, e.g. a seal has been broken or a location has been permanently unlocked |
+| G | Global village | Only on full game reset | World-state changes that affect everyone. **Shared across all clans** — the moment one player sets a G flag, every other player is affected. Always pair with `AddNews`. Always provide a way to clear it. See the Global flags section in QUEST DESIGN PATTERNS. |
 | H | Global village | Every night | Daily world events that any clan can trigger but should only happen once per day server-wide, e.g. the first clan to complete a task today gets a bonus |
 
 ---
@@ -593,11 +595,33 @@ Each revealed topic is written in the NPC's own voice. The lore keeper does not 
 - Do NOT use GiveXP — players earn XP naturally through combat in the quest. Use GivePoints, GiveGold, and occasionally GiveFollowers or GiveFight instead.
 - Use `Fight NextLine STOP NoRun` for boss fights the player cannot flee.
 
+### Global flags (G) and shared world state
+
+A `{Gnn}` flag is **shared across all clans in the village**. The moment one player sets it, every other player is affected — including being blocked by any gate that tests it. This makes G flags the most powerful tool for simulating a living shared world, but careless use can lock the majority of players out of content indefinitely.
+
+**Always broadcast with `AddNews` when a G flag is set or cleared.** Other players have no other way to know what changed or who changed it. The news item should name what happened in world terms: "|0CWord spreads through the village — the old mine passage has been sealed again." Without this, players encounter silently altered behaviour with no explanation.
+
+**Always provide a way to clear the flag.** If a quest or NPC topic sets `{Gnn}`, design a corresponding topic or event that clears it. Gate the clearing action appropriately (a different NPC, a follow-up quest, a daily cooldown) so it feels earned rather than trivial, but it must exist. A G flag with no clearing mechanism is a permanent one-way door.
+
+**The lore keeper must reflect every active G flag's current state.** Give the lore keeper a topic revealed when `{Gnn}` is set that describes the world-state change in-character and hints at how the situation can be reversed. A player returning after a week should be able to visit the lore keeper, learn what changed while they were away, and understand what they can do about it.
+
+**Avoid gating unique per-player rewards behind G flags.** If only the first clan to reach a gate can claim what lies beyond, all other players are permanently locked out. Use `{Pnn}` for rewards each clan should be able to earn independently; reserve G flags for world-state that genuinely should be shared.
+
+#### Good and poor uses
+
+| Good | Poor |
+|---|---|
+| A cave entrance is open or sealed — any clan can change it, news announces each change | A one-time reward sits behind `{Gnn}` so only the first clan can ever claim it |
+| A faction is angered or appeased — the village reacts differently for everyone until someone restores the balance | Setting `{Gnn}` with no clearing mechanism, permanently blocking content |
+| A ritual has been performed — the world is altered, any clan can attempt to undo it | Setting `{Gnn}` silently with no `AddNews`, leaving other players confused |
+
+Used well, G flags make the village feel like a shared world where clans leave visible marks on the environment and other players' actions have consequences. Used poorly, they punish players for not being the first to log in that day.
+
 ---
 
 ## CAMPAIGN DESIGN:
 
-A campaign is a set of multiple interrelated series of quests in a single quests.ini block and a single .evt file (with multiple Event blocks), tied together through NPC dialogue, {Q} flags, and P flags. A player can complete at most one Event quest per day, and the full set of all quests should progress from the lowest to the highest difficulty levels over around sixty days of play.
+A campaign is a set of multiple interrelated series of quests, each with its own block in quests.ini, sharing a single .evt file (with multiple Event blocks), tied together through NPC dialogue, {Q} flags, and P flags. A player can complete at most one Event quest per day, and the full set of all quests should progress from the lowest to the highest difficulty levels over around sixty days of play.
 
 ### NPC pacing and campaign length
 
@@ -650,7 +674,7 @@ Each phase's NPCs check `{Pnn}` set by the final quest of the previous phase bef
 
 Combat already provides gold: `Difficulty × (20–29) + 50–69` gold per kill (before village tax). Quest reward gold should be on top of that — treat it as the "bounty" for completing the job.
 
-Calibrate rewards to monster Difficulty. The `/m/Eva` event monsters are all Difficulty 1–5 (early game). Use `/m/Output` for harder quests.
+Calibrate rewards to monster Difficulty. Most quest encounters should use monsters from `/m/Output` — these are creatures players already recognise from the mine, which grounds the quest in the familiar world. Reserve custom monsters in the pack's own .mon file for bosses and named unique enemies where a specific identity matters.
 
 | Quest tier | Monster Difficulty | Fights | GivePoints | GiveGold | Other |
 |---|---|---|---|---|---|
