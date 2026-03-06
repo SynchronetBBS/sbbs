@@ -1207,6 +1207,11 @@ int main(int argc, char** argv)
 	printf("\nSynchronet Console for %s-%s  Version %s%c  %s\n\n"
 	       , PLATFORM_DESC, ARCHITECTURE_DESC, VERSION, REVISION, COPYRIGHT_NOTICE);
 
+    if(bbs_ver_num() != VERSION_HEX) {
+        fprintf(stderr, "!Incorrect SBBS Library Version (%x, expected %x)\n", bbs_ver_num(), VERSION_HEX);
+		return EXIT_FAILURE;
+	}
+
 	SetThreadName("sbbs");
 	listInit(&client_list, LINK_LIST_MUTEX);
 	loginAttemptListInit(&login_attempt_list);

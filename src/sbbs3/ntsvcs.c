@@ -1158,6 +1158,11 @@ int main(int argc, char** argv)
 	printf("\nSynchronet NT Services  Version %s%c  %s\n\n"
 	       , VERSION, REVISION, COPYRIGHT_NOTICE);
 
+    if(bbs_ver_num() != VERSION_HEX) {
+        fprintf(stderr, "!Incorrect SBBS Library Version (%x, expected %x)\n", bbs_ver_num(), VERSION_HEX);
+		return EXIT_FAILURE;
+	}
+
 	loginAttemptListInit(&login_attempt_list);
 
 	ctrl_dir = get_ctrl_dir(/* warn: */ TRUE);
