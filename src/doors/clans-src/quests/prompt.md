@@ -404,7 +404,9 @@ Compiled using `ecomp <infile.txt> <outfile.evt>`. Event and Result blocks separ
 
 ### clans.ini
 
-**NOT Windows INI format** — no `[Section]` headers, no `key=value`. Generate a **complete** clans.ini file, not just additions. The file must reproduce the following default content verbatim — do not omit, reorder, or alter any of these lines — and insert the pack's NpcFile entries in the marked position:
+**NOT Windows INI format** — no `[Section]` headers, no `key=value`. Generate a **complete** clans.ini file. The stock `NpcFile /dat/Npc` entry must be **omitted** — the stock NPCs contain `TellQuest` calls referencing the original quest indices, which no longer exist once quests.ini is replaced; keeping that entry causes "Couldn't find quest" error messages on the player's screen. The pack provides its own complete NPC set.
+
+The file must contain the following content with the pack's NpcFile entries in place of the stock one:
 
     # Clans INI File -- used for modules mainly
     # -----------------------------------------------------------------------------
@@ -412,7 +414,6 @@ Compiled using `ecomp <infile.txt> <outfile.evt>`. Event and Result blocks separ
     #
 
     # npcs used in the game
-    NpcFile         /dat/Npc
     [one NpcFile line for each compiled .npc file in this pack]
 
     # do not modify the next few lines
@@ -425,7 +426,7 @@ Compiled using `ecomp <infile.txt> <outfile.evt>`. Event and Result blocks separ
     Language        /dat/Language
     # -----------------------------------------------------------------------------
 
-The pack's NpcFile lines go immediately after the existing `NpcFile /dat/Npc` line. Use the PAK alias format if the .npc file is inside a custom PAK archive (e.g. `NpcFile @mypak.pak/n/MyNPC`), or a plain filesystem path if it is a standalone file.
+Use the PAK alias format if the .npc file is inside a custom PAK archive (e.g. `NpcFile @mypak.pak/n/MyNPC`), or a plain filesystem path if it is a standalone file.
 
 ---
 
