@@ -1,6 +1,3 @@
-        - when village attacked and ruler ousted, reset all votes
-
-
 Game Notes:
         * Keep in mind that since we have *_Inits for Game_, User_, and
           Village_, we can use CRCs now.  That is, after *_Read is called

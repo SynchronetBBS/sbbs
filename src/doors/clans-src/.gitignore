@@ -2,5 +2,6 @@ stage
 stagedk
 obj
 bin
+CLAUDE.md
 src/Win32_Debug
 src/Win32_Release

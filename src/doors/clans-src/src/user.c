@@ -99,6 +99,57 @@ static void AddToDisband(void)
 
 
 // ------------------------------------------------------------------------- //
+void User_ResetAllVotes(void)
+{
+	FILE *fpOldPC, *fpNewPC;
+	struct clan TmpClan = {0};
+	int16_t iTemp;
+
+	fpOldPC = fopen(ST_CLANSPCFILE, "rb");
+	if (!fpOldPC) {
+		System_Error("Can't open PC file.\n");
+	}
+
+	fpNewPC = fopen(ST_NEWPCFILE, "w+b");
+	if (!fpNewPC) {
+		fclose(fpOldPC);
+		System_Error("Can't open new.pc\n");
+	}
+
+	for (;;) {
+		notEncryptRead_s(clan, &TmpClan, fpOldPC, XOR_USER)
+			break;
+
+		for (iTemp = 0; iTemp < 6; iTemp++) {
+			TmpClan.Member[iTemp] = malloc(sizeof(struct pc));
+			CheckMem(TmpClan.Member[iTemp]);
+			EncryptRead_s(pc, TmpClan.Member[iTemp], fpOldPC, XOR_PC);
+		}
+
+		TmpClan.ClanRulerVote[0] = -1;
+		TmpClan.ClanRulerVote[1] = -1;
+
+		EncryptWrite_s(clan, &TmpClan, fpNewPC, XOR_USER);
+
+		for (iTemp = 0; iTemp < 6; iTemp++) {
+			EncryptWrite_s(pc, TmpClan.Member[iTemp], fpNewPC, XOR_PC);
+			free(TmpClan.Member[iTemp]);
+			TmpClan.Member[iTemp] = NULL;
+		}
+	}
+
+	fclose(fpOldPC);
+	fclose(fpNewPC);
+
+	unlink(ST_CLANSPCFILE);
+	rename(ST_NEWPCFILE, ST_CLANSPCFILE);
+
+	PClan.ClanRulerVote[0] = -1;
+	PClan.ClanRulerVote[1] = -1;
+}
+
+
+// ------------------------------------------------------------------------- //
 void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 {
 	FILE *fpOldPC, *fpNewPC, *OldMessage, *NewMessage;

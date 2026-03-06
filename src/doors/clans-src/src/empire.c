@@ -1855,6 +1855,9 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 				Village.Data.szRulingClan[0] = 0;
 				Village.Data.GovtSystem = GS_DEMOCRACY;
 				Village.Data.RulingDays = 0;
+
+				// reset all clans' votes since the slate is now clear
+				User_ResetAllVotes();
 				break;
 			case G_STEALLAND :  // steal land, figure out how much land stolen
 				// tell him in message how much was lost
