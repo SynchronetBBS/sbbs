@@ -210,9 +210,6 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 						else if (strcasecmp(pcCurrentPos, "Training Hall") == 0) {
 							NPCInfo->WhereWander = WN_THALL;
 						}
-						else if (strcasecmp(pcCurrentPos, "Rebel Menu") == 0) {
-							NPCInfo->WhereWander = WN_REBEL;
-						}
 						else if (strcasecmp(pcCurrentPos, "Mine") == 0) {
 							NPCInfo->WhereWander = WN_MINE;
 						}

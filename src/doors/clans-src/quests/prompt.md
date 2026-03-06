@@ -22,7 +22,6 @@ The village has seven locations where NPCs may appear as wanderers. Location pla
 | Town Hall | Civic and political life | Officials, administrators, petitioners, power brokers |
 | Training Hall | Combat preparation | Warriors, soldiers, martial instructors, veterans |
 | Mine | The combat zone; proximity to danger | Miners, prospectors, guards, scavengers, anything that shouldn't be there |
-| Rebel Menu | Outlaw refuge; only reachable by outlaw clans | Criminals, exiles, rebels, fences |
 
 ### The mine
 
@@ -242,7 +241,7 @@ Compiled to a binary .NPC file using `makenpc [infile.txt] [outfile.npc]`. Each 
     QuoteFile [Path to this NPC's chat file — max 13 chars, e.g. /q/MyNPC]
     NPCDAT [Zero-based ordinal index of this NPC's entry in the compiled .mon file specified by MonFile]
     MonFile [Path to the compiled .mon file containing this NPC's combat stats — max 13 chars]
-    Wander [Location where NPC appears as a wanderer — valid values: Street, Church, Market, Town Hall, Training Hall, Mine, Rebel Menu. Omit entirely for NPCs that only appear via the Chat command in scripts.]
+    Wander [Location where NPC appears as a wanderer — valid values: Street, Church, Market, Town Hall, Training Hall, Mine. Omit entirely for NPCs that only appear via the Chat command in scripts.]
     Loyalty [integer 0–10, default 5. Controls tendency to leave the player's clan. Higher = more loyal (10 = never leaves).]
     MaxTopics [integer — maximum topics the player may discuss in one sitting. Default -1 = no limit.]
     OddsOfSeeing [integer 0–100 — probability of NPC appearing on a given day. 0 = never appears; 100 = appears every day.]
