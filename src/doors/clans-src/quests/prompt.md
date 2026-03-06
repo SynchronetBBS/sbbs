@@ -733,50 +733,6 @@ Book of Stamina, Book of Mana, Book of Healing, Book of Flames, Book of the Dead
 
 When using AddEnemy, FileRef is the path to the .mon file and Index is the zero-based ordinal of the entry within it.
 
-### /m/Eva — Event monsters (eventmon.txt)
-
-These are purpose-built for scripted encounters and have stable, labeled indices. Prefer these for quest boss fights and scripted combat where precise control matters.
-
-| Index | Name |
-|-------|------|
-| 0 | Ghoul |
-| 1 | Ghoul |
-| 2 | Mad Scientist |
-| 3 | Mad Gardener |
-| 4 | Orc |
-| 5 | Small Gnome |
-| 6 | Wolf Master |
-| 7 | Wolf |
-| 8 | Thief |
-| 9 | Thief |
-| 10 | Thief |
-| 11 | Spirit Knight |
-| 12 | Spirit Knight |
-| 13 | Orc |
-| 14 | Orc |
-| 15 | Orc |
-| 16 | Orc |
-| 17 | Orc |
-| 18 | Orc Guard |
-| 19 | Man |
-| 20 | Man |
-| 21 | Hellhound |
-| 22 | Hellhound |
-| 23 | Beast |
-| 24 | Gardener |
-| 25 | Guard |
-| 26 | Guard |
-| 27 | Businessman |
-| 28 | Thief |
-| 29 | Thief |
-| 30 | Large Thief |
-| 31 | Wyvern |
-| 32 | Hellhound |
-| 33 | Green Slyme |
-| 34 | Skeletal Fiend |
-| 35 | Golden Dragon |
-| 36 | Ghoul |
-
 ### /m/Output — General mine monsters (monsters.txt)
 
 These are the standard mine encounter monsters selected by Difficulty during normal play. They can also be referenced by index in AddEnemy for scripted fights.
