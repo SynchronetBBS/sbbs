@@ -851,8 +851,8 @@ Text "Wealth, to me, is all the smiles that I see
 pause
 Text
 # stop if quest completed
-{Q19}Text "Thank you once again for finding my quill!
-{Q19}End
+#{Q19}Text "Thank you once again for finding my quill!
+#{Q19}End
 Prompt "Can you please give me 300 gold? [|12Y/N|02]: |13
 Option Y NextLine
 Option N Poet.2.1
