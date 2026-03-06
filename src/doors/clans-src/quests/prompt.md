@@ -87,6 +87,7 @@ What do you most want players to discover, feel, or understand by the end of the
 - Comments begin with # on their own line. Multi-line block comments use `>>` on a line by itself to open and another `>>` to close.
 - Text with no argument is valid and outputs a blank line. Text "[String] outputs the string followed by a newline. Both forms are valid.
 - An ACS condition gates exactly ONE command and MUST appear on the same line, immediately before the command keyword: `{D0}Jump MyLabel`. A `{condition}` on its own line is a compile error — the condition is silently discarded. There is no block-level if/then; to skip multiple commands conditionally, use a conditional Jump to leap over them.
+- **Never chain multiple ACS braces: `{Q1}{Q2}Command` is a compile error.** Combine conditions inside a single pair of braces using `&` (AND), `|` (OR), `!` (NOT), and `()` grouping: `{Q1&Q2}Command`.
 - AddEnemy MUST be called before every Fight.
 - Index values in NPC Info files MUST NOT use _ prefix.
 - `Jump` is a one-way goto. Execution does NOT return after a Jump. There are no subroutines. Commands written after a Jump are unreachable dead code.
@@ -98,20 +99,33 @@ What do you most want players to discover, feel, or understand by the end of the
 
 ## ACS CONDITIONS:
 
+An ACS expression is everything inside one pair of `{` `}` braces. **Multiple conditions must be combined inside a single `{...}` using logical operators — never chain separate `{cond1}{cond2}` prefixes.** `{Q25}{Q16}TellTopic foo` is a compile error; `{Q25&Q16}TellTopic foo` is correct.
+
+### Logical operators (inside `{...}`)
+
+| Operator | Meaning | Example |
+|----------|---------|---------|
+| `&` | AND — both sides must be true | `{Q3&P5}` |
+| `\|` | OR — either side may be true | `{P1\|P2}` |
+| `!` | NOT — negates the next condition | `{!Q3}` |
+| `(` `)` | Grouping | `{Q1&(P2\|P3)}` |
+
+### Atomic conditions
+
 | Syntax | Meaning |
 |--------|---------|
-| `{^}` | Always true |
-| `{%}` | Always false |
-| `{$NNN}` | Player has >= NNN gold |
-| `{Qaa}` | Quest #aa (one-based: Q1 = first quest in quests.ini) is complete |
-| `{Ryy}` | Random roll >= yy (1–100) |
-| `{Lyy}` | Mine level = yy |
-| `{Kyy}` | Mine level >= yy |
-| `{T0}`–`{T63}` | Temp flag (cleared each new event run) |
-| `{P0}`–`{P63}` | Persistent player flag |
-| `{D0}`–`{D63}` | Daily player flag (resets each day) |
-| `{G0}`–`{G63}` | Global village flag |
-| `{H0}`–`{H63}` | Daily global village flag (shared across all clans, reset each night) |
+| `^` | Always true |
+| `%` | Always false |
+| `$NNN` | Player has >= NNN gold |
+| `Qaa` | Quest #aa (one-based: Q1 = first quest in quests.ini) is complete |
+| `Ryy` | Random roll >= yy (1–100) |
+| `Lyy` | Mine level = yy |
+| `Kyy` | Mine level >= yy |
+| `T0`–`T63` | Temp flag (cleared each new event run) |
+| `P0`–`P63` | Persistent player flag |
+| `D0`–`D63` | Daily player flag (resets each day) |
+| `G0`–`G63` | Global village flag |
+| `H0`–`H63` | Daily global village flag (shared across all clans, reset each night) |
 
 ### ACS usage rules
 
