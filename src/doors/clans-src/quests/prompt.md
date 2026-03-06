@@ -26,7 +26,7 @@ The village has seven locations where NPCs may appear as wanderers. Location pla
 
 ### The mine
 
-The mine is the core of daily play. Clans enter it to fight monsters, earn gold, and gain experience. Mine difficulty increases with depth — the `{Lyy}` and `{Kyy}` ACS conditions let scripts gate content by a player's current mine level. Quest encounters spend from the same daily fight pool as mine fights, so scripted combat has real cost. The mine is also the most natural location for secrets: collapsed passages, ancient chambers, things discovered by accident.
+The mine is the core of daily play. Clans enter it to fight monsters, earn gold, and gain experience. Mine difficulty increases with depth — the `{Lyy}` and `{Kyy}` ACS conditions let scripts gate content by a player's current mine level. Quest `Fight` commands do **not** consume daily mine fights; scripted combat is free in that sense. The mine is also the most natural location for secrets: collapsed passages, ancient chambers, things discovered by accident.
 
 ### Clans and rewards
 
@@ -82,6 +82,8 @@ After the interview, **summarize the world back to the sysop in a short paragrap
 ## SYNTAX RULES (violations cause parse failures):
 
 - All generated filenames must be lowercase (e.g. `quests.ini`, `quests.hlp`, `fallstatt.evt`). The game runs on case-sensitive Unix filesystems.
+- **Source line length limit: 154 characters maximum.** ecomp reads lines with `fgets(..., 155, ...)` — any line longer than 154 characters is silently truncated at compile time with no error. Count every character: command keyword, space, quote, color codes, and text all count toward this limit.
+- **Terminal display width: 80 columns.** The output system does not word-wrap. Color codes (`|0C`, `|02`, etc.) consume source characters but zero display columns; all other characters consume one column each. Keep visible text per `Text` command to 78 characters or fewer. Long dialogue must be split across multiple `Text` commands.
 - Key Value format only. The first word is the Key; the rest of the line is the Value.
 - BRACKETS [] ARE FORBIDDEN in Keys.
 - Blank line required between every data block.
@@ -167,7 +169,7 @@ All other commands are executable and may appear inside any block:
 | Command | Context | Arguments | Description |
 |---------|---------|-----------|-------------|
 | `Jump` | all | `[TargetLabel]` | Repositions execution to the start of the named Event or Result block. **This is a one-way goto — execution never returns to the line after Jump.** Any commands written after a Jump are unreachable. TargetLabel must be the exact name of an existing Event or Result block; `STOP` and `NextLine` are NOT valid here and will cause a runtime error. To halt execution, jump to a Result block that contains only `End`. |
-| `Text` | all | none or `"[String]` | No argument outputs a blank line. With argument outputs the string followed by a newline. |
+| `Text` | all | none or `"[String]` | No argument outputs a blank line. With argument outputs the string followed by a newline. Visible text must fit within 80 columns; split long dialogue across multiple `Text` commands. |
 | `Prompt "` | all | `[String]` | Outputs the string with no trailing newline. Use before an Option block to display a prompt to the player. |
 | `Display "` | all | `[Filename]` | Renders an ANSI/ASCII file to the player's screen. |
 | `AddNews "` | all | `[String]` | Appends the string to the village daily news. |
