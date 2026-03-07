@@ -1496,15 +1496,19 @@ int zmodem_get_zfin(zmodem_t* zm)
 			break;
 	}
 
+	lprintf(zm, LOG_DEBUG, "%s result: %s (attempts=%d)", __FUNCTION__, frame_desc(type), attempts);
+
 	/*
 	 * these Os are formally required; but they don't do a thing
 	 * unfortunately many programs require them to exit
 	 * (both programs already sent a ZFIN so why bother ?)
 	 */
 
-	if (type == ZFIN) {
-		zmodem_send_raw(zm, 'O');
-		zmodem_send_raw(zm, 'O');
+	for (int i = 0; type == ZFIN && i < 2; ++i) {
+		if (zmodem_send_raw(zm, 'O') == SEND_SUCCESS)
+			lprintf(zm, LOG_DEBUG, "%s sent 'O'", __FUNCTION__);
+		else
+			lprintf(zm, LOG_WARNING, "%s failed to send 'O'", __FUNCTION__);
 	}
 
 	return type;
