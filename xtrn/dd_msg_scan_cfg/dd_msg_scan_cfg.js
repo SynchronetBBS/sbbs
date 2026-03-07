@@ -39,67 +39,12 @@ if (system.version_num < 31800)
 require("sbbsdefs.js", "K_UPPER");
 require("dd_lightbar_menu.js", "DDLightbarMenu");
 require("key_defs.js", "KEY_LEFT");
+require("cp437_defs.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
 
 
 // Version information
 var SCAN_CFG_VERSION = "1.00";
 var SCAN_CFG_DATE = "2025-09-23";
-
-
-// Characters for display
-// Box-drawing/border characters: Single-line
-var UPPER_LEFT_SINGLE = "\xDA";
-var HORIZONTAL_SINGLE = "\xC4";
-var UPPER_RIGHT_SINGLE = "\xBF";
-var VERTICAL_SINGLE = "\xB3";
-var LOWER_LEFT_SINGLE = "\xC0";
-var LOWER_RIGHT_SINGLE = "\xD9";
-var T_SINGLE = "\xC2";
-var LEFT_T_SINGLE = "\xC3";
-var RIGHT_T_SINGLE = "\xB4";
-var BOTTOM_T_SINGLE = "\xC1";
-var CROSS_SINGLE = "\xC5";
-// Box-drawing/border characters: Double-line
-var UPPER_LEFT_DOUBLE = "\xC9";
-var HORIZONTAL_DOUBLE = "\xCD";
-var UPPER_RIGHT_DOUBLE = "\xBB";
-var VERTICAL_DOUBLE = "\xBA";
-var LOWER_LEFT_DOUBLE = "\xC8";
-var LOWER_RIGHT_DOUBLE = "\xBC";
-var T_DOUBLE = "\xCB";
-var LEFT_T_DOUBLE = "\xCC";
-var RIGHT_T_DOUBLE = "\xB9";
-var BOTTOM_T_DOUBLE = "\xCA";
-var CROSS_DOUBLE = "\xCE";
-// Box-drawing/border characters: Vertical single-line with horizontal double-line
-var UPPER_LEFT_VSINGLE_HDOUBLE = "\xD5";
-var UPPER_RIGHT_VSINGLE_HDOUBLE = "\xB8";
-var LOWER_LEFT_VSINGLE_HDOUBLE = "\xD4";
-var LOWER_RIGHT_VSINGLE_HDOUBLE = "\xBE";
-// Other special characters
-var DOT_CHAR = "\xF9";
-var CHECK_CHAR = "\xFB";
-var THIN_RECTANGLE_LEFT = "\xDD";
-var THIN_RECTANGLE_RIGHT = "\xDE";
-
-var BLOCK1 = "\xB0"; // Dimmest block
-var BLOCK2 = "\xB1";
-var BLOCK3 = "\xB2";
-var BLOCK4 = "\xDB"; // Brightest block
-var MID_BLOCK = "\xDC";
-var TALL_UPPER_MID_BLOCK = "\xFE";
-var UPPER_CENTER_BLOCK = "\xDF";
-var LOWER_CENTER_BLOCK = "\xDC";
-
-var UP_ARROW = "\x18"; // ascii(24);
-var DOWN_ARROW = "\x19"; // ascii(25);
-var LEFT_ARROW = "\x11"; // ascii(17);
-var RIGHT_ARROW = "\x10"; // ascii(16);
-var UP_DOWN_ARROWS = "\x12"; // ascii(18);
-var LEFT_RIGHT_ARROWS = "\x1D"; // ascii(29);
-var RIGHT_POINTING_TRIANGLE = "\x10"; // ascii(16);
-
-
 
 // Sub-board sort options for changing to another sub-board.
 const SUB_BOARD_SORT_NONE = 0;
@@ -385,7 +330,7 @@ function showKeyHelpForChoosingMsgGrp(pScreenRow)
 		          + gConfig.colors.lightbarHelpLineGeneral + "ast, "
 		          + gConfig.colors.lightbarHelpLineHotkey + "#"
 		          + gConfig.colors.lightbarHelpLineGeneral + ", "
-		          + gConfig.colors.lightbarHelpLineHotkey + LOWER_LEFT_SINGLE + HORIZONTAL_SINGLE + RIGHT_POINTING_TRIANGLE
+				  + gConfig.colors.lightbarHelpLineHotkey + CP437_BLACK_LEFT_POINTING_POINTER + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE
 				  + gConfig.colors.lightbarHelpLineGeneral + " Select, "
 		          + gConfig.colors.lightbarHelpLineHotkey + "ESC"
 		          + gConfig.colors.lightbarHelpLineGeneral + "/"
@@ -827,7 +772,7 @@ function showKeyHelpForScanToggle(pScreenRow)
 		          + gConfig.colors.lightbarHelpLineGeneral + ", "
 		          + gConfig.colors.lightbarHelpLineHotkey + "END"
 		          + gConfig.colors.lightbarHelpLineGeneral + ", "
-		          + gConfig.colors.lightbarHelpLineHotkey + LOWER_LEFT_SINGLE + HORIZONTAL_SINGLE + RIGHT_POINTING_TRIANGLE
+		          + gConfig.colors.lightbarHelpLineHotkey + CP437_BLACK_LEFT_POINTING_POINTER + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE
 		          + gConfig.colors.lightbarHelpLineGeneral + " Toggle, "
 		          + gConfig.colors.lightbarHelpLineHotkey + "ESC"
 		          + gConfig.colors.lightbarHelpLineGeneral + "/"
@@ -1085,7 +1030,7 @@ function createSubBrdAndToggleMenus(pConfig, pGrpIdx, pSubBoardSorting, pListSta
 		var subCode = this.subCodes[pItemIndex];
 		var enabled = Boolean(msg_area.sub[subCode].scan_cfg & SCAN_CFG_NEW);
 		var menuItemObj = this.MakeItemWithRetval(subCode);
-		//menuItemObj.text = format(" [%s]  ", enabled ? CHECK_CHAR : " ");
+		//menuItemObj.text = format(" [%s]  ", enabled ? CP437_CHECK_MARK : " ");
 		menuItemObj.text = getToggleStr(enabled);
 		return menuItemObj;
 	};
@@ -1094,7 +1039,7 @@ function createSubBrdAndToggleMenus(pConfig, pGrpIdx, pSubBoardSorting, pListSta
 	for (var subIdx = 0; subIdx < msg_area.grp_list[pGrpIdx].sub_list.length; ++subIdx)
 	{
 		var enabled = Boolean(msg_area.grp_list[this.grpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_NEW);
-		unreadToggleMenu.Add(format(" [%s]  ", enabled ? CHECK_CHAR : " "), subIdx);
+		unreadToggleMenu.Add(format(" [%s]  ", enabled ? CP437_CHECK_MARK : " "), subIdx);
 	}
 	*/
 	// Additional exit keys
@@ -1132,7 +1077,7 @@ function createSubBrdAndToggleMenus(pConfig, pGrpIdx, pSubBoardSorting, pListSta
 		var subCode = this.subCodes[pItemIndex];
 		var enabled = Boolean(msg_area.sub[subCode].scan_cfg & SCAN_CFG_TOYOU);
 		var menuItemObj = this.MakeItemWithRetval(subCode);
-		menuItemObj.text = format(" [%s]  ", enabled ? CHECK_CHAR : " ");
+		menuItemObj.text = format(" [%s]  ", enabled ? CP437_CHECK_MARK : " ");
 		return menuItemObj;
 	};
 	
@@ -1141,7 +1086,7 @@ function createSubBrdAndToggleMenus(pConfig, pGrpIdx, pSubBoardSorting, pListSta
 	for (var subIdx = 0; subIdx < msg_area.grp_list[pGrpIdx].sub_list.length; ++subIdx)
 	{
 		var enabled = Boolean(msg_area.grp_list[pGrpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_TOYOU);
-		toYouToggleMenu.Add(format(" [%s]  ", enabled ? CHECK_CHAR : " "), subIdx);
+		toYouToggleMenu.Add(format(" [%s]  ", enabled ? CP437_CHECK_MARK : " "), subIdx);
 	}
 	*/
 	// Additional exit keys
@@ -1274,9 +1219,9 @@ function drawColoredBorder(pULX, pULY, pWidth, pHeight, pColors)
 	if (useLightbarInterface(gConfig))
 		console.gotoxy(pULX, pULY);
 	// Top border characters
-	console.print(colorCorner1 + UPPER_LEFT_SINGLE + colorCorner2 + HORIZONTAL_SINGLE + colorCorner3 + HORIZONTAL_SINGLE);
-	console.print(colorBorderNormal + charStr(HORIZONTAL_SINGLE, pWidth - 6));
-	console.print(colorCorner3 + HORIZONTAL_SINGLE + colorCorner2 + HORIZONTAL_SINGLE + colorCorner1 + UPPER_RIGHT_SINGLE);
+	console.print(colorCorner1 + CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE + colorCorner2 + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + colorCorner3 + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
+	console.print(colorBorderNormal + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, pWidth - 6));
+	console.print(colorCorner3 + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + colorCorner2 + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + colorCorner1 + CP437_BOX_DRAWINGS_UPPER_RIGHT_SINGLE);
 	// Side border characters
 	if (useLightbarInterface(gConfig))
 	{
@@ -1298,9 +1243,9 @@ function drawColoredBorder(pULX, pULY, pWidth, pHeight, pColors)
 				attrs = colorBorderNormal;
 			console.print(attrs);
 			console.gotoxy(pULX, screenRow);
-			console.print(VERTICAL_SINGLE);
+			console.print(CP437_BOX_DRAWINGS_LIGHT_VERTICAL);
 			console.gotoxy(rightmostCol, screenRow);
-			console.print(VERTICAL_SINGLE);
+			console.print(CP437_BOX_DRAWINGS_LIGHT_VERTICAL);
 		}
 		console.gotoxy(pULX, onePastLastRow);
 	}
@@ -1309,9 +1254,9 @@ function drawColoredBorder(pULX, pULY, pWidth, pHeight, pColors)
 		// TODO
 	}
 	// Bottom border characters
-	console.print(colorCorner1 + LOWER_LEFT_SINGLE + colorCorner2 + HORIZONTAL_SINGLE + colorCorner3 + HORIZONTAL_SINGLE);
-	console.print(colorBorderNormal + charStr(HORIZONTAL_SINGLE, pWidth - 6));
-	console.print(colorCorner3 + HORIZONTAL_SINGLE + colorCorner2 + HORIZONTAL_SINGLE + colorCorner1 + LOWER_RIGHT_SINGLE);
+	console.print(colorCorner1 + CP437_BOX_DRAWINGS_LOWER_LEFT_SINGLE + colorCorner2 + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + colorCorner3 + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE);
+	console.print(colorBorderNormal + charStr(CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE, pWidth - 6));
+	console.print(colorCorner3 + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + colorCorner2 + CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE + colorCorner1 + CP437_BOX_DRAWINGS_LOWER_RIGHT_SINGLE);
 }
 
 // Returns a string with a character repeated a given number of times
@@ -1492,7 +1437,7 @@ function attrCodeStr(pAttrCodeCharStr)
 // whether a scan option is enabled or not
 function getToggleStr(pEnabled)
 {
-	return format(" [%s]  ", pEnabled ? CHECK_CHAR : " ");
+	return format(" [%s]  ", pEnabled ? CP437_CHECK_MARK : " ");
 }
 
 // Returns some text centered in a field width.
@@ -1554,7 +1499,7 @@ function getTextWithLineBelow(pText, pCenter, pFieldWidth, pTextColor, pLineColo
 		theText += "\r\n";
 		theText += frontPadding + lineColor;
 		for (var i = 0; i < textLength; ++i)
-			theText += HORIZONTAL_SINGLE;
+			theText += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		theText += "\x01n";
 	}
 	else
@@ -1562,7 +1507,7 @@ function getTextWithLineBelow(pText, pCenter, pFieldWidth, pTextColor, pLineColo
 		theText = textColor + pText + "\x01n\r\n";
 		theText += lineColor;
 		for (var i = 0; i < textLength; ++i)
-			theText += HORIZONTAL_SINGLE;
+			theText += CP437_BOX_DRAWINGS_HORIZONTAL_SINGLE;
 		theText += "\x01n";
 	}
 	theText += "\r\n";
