@@ -60,13 +60,13 @@ static void getxy(int *x, int*y);
 #ifdef _WIN32
 static DWORD default_cursor_size = 1;
 static HANDLE std_handle;
-static void clans_putch(unsigned char ch);
+void clans_putch(unsigned char ch);
 uint8_t cur_attr;
 static void getxy(int *x, int*y);
 #endif
 
 #ifdef __unix__
-static void clans_putch(unsigned char ch);
+void clans_putch(unsigned char ch);
 static void getxy(int *x, int*y);
 int cio_getch(void);
 static short ansi_colours(short color);
@@ -273,7 +273,11 @@ void zputs(const char *string)
 	int i, j;
 	int x, y;
 	static uint8_t o_fg = 7, o_bg = 0;
-
+	static uint8_t saved_fg = 7;
+	static uint8_t saved_bg = 0;
+	//const uint8_t ColorScheme[] = { 1, 9, 3, 1, 11, 7, 3, 2, 10, 2, 5, 3, 9, 5, 13, 1, 9, 15, 7, 0, 0, 8, 4, 1, 1, 1 };
+	//const uint8_t ColorScheme[] = { 4, 12, 7, 8, 12, 14, 7, 4, 12, 4, 8, 7, 12, 9, 13, 7, 5, 13, 7, 0, 0, 8, 7 };
+	const uint8_t ColorScheme[] = { 2, 5, 2, 2, 3, 7, 11, 1, 9, 1, 2, 2, 10, 2, 5, 2, 10, 15, 2, 0, 0, 2, 10 };
 	if (!VideoInitialized)
 		Video_Init();
 
@@ -314,6 +318,25 @@ void zputs(const char *string)
 					cur_attrs = attr;
 				}
 				cur_char += 3;
+			}
+			else if (string[cur_char+1] == '0' && isalpha(string[cur_char+2])) {
+				foreground = ColorScheme[toupper(string[cur_char + 2]) - 'A'];
+				o_fg=foreground;
+				attr = o_fg | o_bg;
+				cur_attrs = attr;
+				cur_char += 3;
+			}
+			else if (string[cur_char+1] == 'S') {
+				saved_fg = o_fg;
+				saved_bg = o_bg;
+				cur_char += 2;
+			}
+			else if (string[cur_char+1] == 'R') {
+				o_bg = (uint8_t)(saved_bg);
+				o_fg = saved_fg;
+				attr = o_fg | o_bg;
+				cur_attrs = attr;
+				cur_char += 2;
 			}
 			else {
 				put_character(string[cur_char], cur_attrs, x, y);
@@ -769,31 +792,6 @@ void DisplayStr(const char *szString)
 		zputs(szString);
 }
 
-char get_answer(char *szAllowableChars)
-{
-	int cKey;
-	uint16_t iTemp;
-
-	for (;;) {
-		cKey = cio_getch();
-		if (cKey == 0 || cKey == 0xE0) {
-			cio_getch();
-			continue;
-		}
-
-		/* see if allowable */
-		for (iTemp = 0; iTemp < strlen(szAllowableChars); iTemp++) {
-			if (toupper(cKey) == toupper(szAllowableChars[iTemp]))
-				break;
-		}
-
-		if (iTemp < strlen(szAllowableChars))
-			break;  /* found allowable key */
-	}
-
-	return (char)(toupper(cKey));
-}
-
 long DosGetLong(const char *Prompt, long DefaultVal, long Maximum)
 {
 	char string[255], NumString[13], DefMax[40];
@@ -821,7 +819,7 @@ long DosGetLong(const char *Prompt, long DefaultVal, long Maximum)
 	/* now get input */
 	ShowTextCursor(true);
 	for (;;) {
-		InputChar = get_answer("0123456789><.,\r\n\b\x19");
+		InputChar = GetAnswer("0123456789><.,\r\n\b\x19");
 
 		if (isdigit(InputChar)) {
 			if (CurDigit < NumDigits) {
@@ -1226,7 +1224,7 @@ void textattr(uint8_t attrib)
 	SetConsoleTextAttribute(std_handle, (uint16_t)attrib);
 }
 
-static void clans_putch(unsigned char ch)
+void clans_putch(unsigned char ch)
 {
 	DWORD bytes_written;
 
@@ -1372,7 +1370,7 @@ static const char *const cp437_unicode_table[128] = {
 	"\xc2\xb0", "\xe2\x88\x99", "\xc2\xb7", "\xe2\x88\x9a", "\xe2\x81\xbf", "\xc2\xb2", "\xe2\x96\xa0", "\xc2\xa0"
 };
 
-static void clans_putch(unsigned char ch)
+void clans_putch(unsigned char ch)
 {
 	char *ptr = &Video.VideoMem[(CurrentY * ScreenWidth + CurrentX) * 2];
 	if (ch > 127)

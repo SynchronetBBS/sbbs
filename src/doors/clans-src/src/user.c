@@ -625,7 +625,7 @@ static int16_t GetClass(struct PClass *PClass[MAX_PCLASSES], char *szHelp)
 		/* get input -- this asks for Enter Choice */
 		rputs(ST_GETCLASS2);
 
-		Choice = od_get_answer(szKeys);
+		Choice = GetAnswer(szKeys);
 
 		if (Choice == '?') {
 			rputs("Help\n");
@@ -643,7 +643,7 @@ static int16_t GetClass(struct PClass *PClass[MAX_PCLASSES], char *szHelp)
 			/* show base stats */
 			ShowBaseStats(PClass[ClassChosen]);
 
-			if (YesNo(ST_CHOOSECLASS) == YES)
+			if (YesNo(ST_CHOOSECLASS))
 				break;
 		}
 	}
@@ -857,7 +857,7 @@ void ShowPlayerStats(struct pc *PC, bool AllowModify)
 		if (AllowModify) {
 			rputs(ST_P2STATS13);
 
-			cInput = toupper(od_get_key(true) & 0x7f) & 0x7f;
+			cInput = toupper(GetKey() & 0x7f) & 0x7f;
 
 			if (cInput == 'C') {
 				rputs("Change Default Acton\n\n");
@@ -984,7 +984,7 @@ static void ItemStats(void)
 	for (;;) {
 		rputs(ST_ISTATS0);
 
-		switch (od_get_answer("?XEDSLQ\r\n R")) {
+		switch (GetAnswer("?XEDSLQ\r\n R")) {
 			case 'R' :  // read book
 				rputs("Read book\n");
 				ReadBook();
@@ -1021,7 +1021,7 @@ static void ItemStats(void)
 				/* still wanna drop it? */
 				snprintf(szString, sizeof(szString), ST_ISTATS9, PClan.Items[ItemIndex].szName);
 
-				if (NoYes(szString) == YES) {
+				if (NoYes(szString)) {
 					/* drop it */
 					snprintf(szString, sizeof(szString), ST_ISTATS10, PClan.Items[ItemIndex].szName);
 					rputs(szString);
@@ -1126,7 +1126,7 @@ static void ItemStats(void)
 					snprintf(szString, sizeof(szString), ST_ISTATS24, PClan.Items[ItemIndex].szName);
 					rputs(szString);
 
-					WhoEquip = od_get_answer(szKeys);
+					WhoEquip = GetAnswer(szKeys);
 
 					if (WhoEquip == '\r' || WhoEquip == 'Q' || WhoEquip == '\n') {
 						rputs(ST_ABORTED);
@@ -1154,7 +1154,7 @@ static void ItemStats(void)
 							if (PClan.Member[WhoEquip]->Weapon) {
 								snprintf(szString, sizeof(szString), ST_ISTATS25,
 										PClan.Items[ PClan.Member[WhoEquip]->Weapon-1].szName);
-								if (YesNo(szString) == YES) {
+								if (YesNo(szString)) {
 									iTemp = PClan.Member[WhoEquip]->Weapon-1;
 									snprintf(szString, sizeof(szString), ST_ISTATS15,
 											PClan.Member[WhoEquip]->szName, PClan.Items[iTemp].szName);
@@ -1184,7 +1184,7 @@ static void ItemStats(void)
 							if (PClan.Member[WhoEquip]->Armor) {
 								snprintf(szString, sizeof(szString), ST_ISTATS27,
 										PClan.Items[ PClan.Member[WhoEquip]->Armor-1].szName);
-								if (YesNo(szString) == YES) {
+								if (YesNo(szString)) {
 									iTemp = PClan.Member[WhoEquip]->Armor-1;
 									snprintf(szString, sizeof(szString), ST_ISTATS15,
 											PClan.Member[WhoEquip]->szName, PClan.Items[iTemp].szName);
@@ -1213,7 +1213,7 @@ static void ItemStats(void)
 							if (PClan.Member[WhoEquip]->Shield) {
 								snprintf(szString, sizeof(szString), ST_ISTATS29,
 										PClan.Items[ PClan.Member[WhoEquip]->Shield-1].szName);
-								if (YesNo(szString) == YES) {
+								if (YesNo(szString)) {
 									iTemp = PClan.Member[WhoEquip]->Shield-1;
 									snprintf(szString, sizeof(szString), ST_ISTATS15,
 											PClan.Member[WhoEquip]->szName, PClan.Items[iTemp].szName);
@@ -1447,7 +1447,7 @@ void ClanStats(struct clan *Clan, bool AllowModify)
 		rputs(ST_LONGDIVIDER);
 		rputs(ST_CSTATS4);
 
-		switch (cKey = od_get_answer("123456I\r\nQASV E")) {
+		switch (cKey = GetAnswer("123456I\r\nQASV E")) {
 			case '1' :  // first member
 			case '2' :  // first member
 			case '3' :  // first member
@@ -1613,7 +1613,7 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 		ShowPlayerStats(PC, false);
 
 		/* are these ok? */
-		if (YesNo("|03Use these stats?") == YES)
+		if (YesNo("|03Use these stats?"))
 			break;
 	}
 
@@ -1717,7 +1717,7 @@ static bool ChooseClanName(char *szName)
 		else if (NameInUse(szName) == false) {
 			rputs("|0F");
 			rputs(szName);
-			if (YesNo("|16|0E : |0SUse this name?") == YES) {
+			if (YesNo("|16|0E : |0SUse this name?")) {
 				return true;
 			}
 			rputs("\n");
@@ -1762,8 +1762,7 @@ static bool User_Create(void)
 
 	Help("Welcome", ST_CLANSHLP);
 
-	// (YesNo("|0SDo you wish to join this game of clans?") == NO)
-	if (YesNo(ST_STUFF1) == NO) {
+	if (!YesNo(ST_STUFF1)) {
 		rputs(ST_ABORTED);
 		return false;
 	}

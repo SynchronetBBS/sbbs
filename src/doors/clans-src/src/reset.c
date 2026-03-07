@@ -47,8 +47,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 static void ResetMenu(void);
 
-static bool YesNo(char *Query, bool Current);
-
 static void EditOption(int16_t WhichOption);
 static void DosHelp(char *Topic, char *File);
 
@@ -262,7 +260,7 @@ static void ResetMenu(void)
 				screen_state = save_screen();
 				textattr(7);
 				clrscr();
-				if (!YesNo("|07Are you sure you wish to reset?", false)) {
+				if (!NoYes("|07Are you sure you wish to reset?")) {
 					restore_screen(screen_state);
 					break;
 				}
@@ -279,7 +277,7 @@ static void ResetMenu(void)
 				// ask one last time, are you sure?
 				textattr(7);
 				clrscr();
-				if (!YesNo("|07Are you sure you are joining a league?", false)) {
+				if (!NoYes("|07Are you sure you are joining a league?")) {
 					restore_screen(screen_state);
 					break;
 				}
@@ -298,7 +296,7 @@ static void ResetMenu(void)
 				// ask one last time, are you sure?
 				textattr(7);
 				clrscr();
-				if (!YesNo("|07Are you sure you wish to reset the league?", false)) {
+				if (!NoYes("|07Are you sure you wish to reset the league?")) {
 					restore_screen(screen_state);
 					break;
 				}
@@ -332,34 +330,6 @@ static void ResetMenu(void)
 	textattr(7);
 	gotoxy(0,3);
 	ShowTextCursor(true);
-}
-
-
-static bool YesNo(char *Query, bool Current)
-{
-	char Answer;
-	/* show query */
-	zputs(Query);
-
-	/* show Yes/no */
-	if (Current)
-		zputs(" |01(|15Yes|07/no|01) |11");
-	else
-		zputs(" |01(|07yes|15/No|01) |11");
-
-	/* get user input */
-	Answer = get_answer("YN\r\n");
-	if (Answer == 'N') {
-		/* user says NO */
-		zputs("No\n");
-		return false;
-	}
-	else if (Answer == 'Y') {  /* user says YES */
-		zputs("Yes\n");
-		return true;
-	}
-	zputs(Current ? "Yes\n" : "No\n");
-	return Current;
 }
 
 static void EditOption(int16_t WhichOption)
@@ -414,11 +384,11 @@ static void EditOption(int16_t WhichOption)
 			break;
 		case 3 :    /* elimination mode? */
 			gotoxy(0, 15);
-			ResetData.EliminationMode = YesNo("|07Setup elimination mode?", ResetData.EliminationMode);
+			ResetData.EliminationMode = ResetData.EliminationMode ? YesNo("|07Setup elimination mode?") : NoYes("|07Setup elimination mode?");
 			break;
 		case 4 :    /* clan travel? */
 			gotoxy(0, 15);
-			ResetData.ClanTravel = YesNo("|07Allow clans to travel?", ResetData.ClanTravel);
+			ResetData.ClanTravel = ResetData.ClanTravel ? YesNo("|07Allow clans to travel?") : NoYes("|07Allow clans to travel?");
 			break;
 		case 5 :    /* days before lost troops return */
 			gotoxy(0, 15);
@@ -426,7 +396,7 @@ static void EditOption(int16_t WhichOption)
 			break;
 		case 6 :    /* clan empires? */
 			gotoxy(0, 15);
-			ResetData.ClanEmpires = YesNo("|07Allow clans to create empires?", ResetData.ClanEmpires);
+			ResetData.ClanEmpires = ResetData.ClanEmpires ? YesNo("|07Allow clans to create empires?") : NoYes("|07Allow clans to create empires?");
 			break;
 		case 7 :    /* mine fights */
 			gotoxy(0, 15);

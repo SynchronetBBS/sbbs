@@ -546,7 +546,7 @@ static int16_t Fight_GetTarget(struct clan *MobClan, int16_t Default)
 		MemberNumber = Index[Default-1];
 	else
 		for (;;) {
-			cInput = toupper(od_get_key(true) & 0x7f) & 0x7f;
+			cInput = toupper(GetKey() & 0x7f) & 0x7f;
 
 			if (cInput == '?') {
 				rputs("List\n");
@@ -879,7 +879,7 @@ static int16_t GetTarget2(struct clan *Clan)
 	rputs("|0SUse on whom? (|0B?=List|0S): |0F");
 
 	for (;;) {
-		cInput = toupper(od_get_key(true) & 0x7F) & 0x7F;
+		cInput = toupper(GetKey() & 0x7F) & 0x7F;
 
 		if (cInput == '?') {
 			rputs("List\n");
@@ -1026,7 +1026,7 @@ static bool Fight_ChooseSpell(struct pc *PC, struct clan *VictimClan, struct mov
 
 		// if default spell chosen, do that instead
 		if (Move->SpellNum == -1)
-			Choice = od_get_answer(szKeys);
+			Choice = GetAnswer(szKeys);
 		else
 			Choice = (char)(Move->SpellNum + 'A');
 
@@ -1571,7 +1571,7 @@ static void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 	for (;;) {
 		rputs(ST_ISTATS0);
 
-		switch (od_get_answer("?XLQT\r\n ")) {
+		switch (GetAnswer("?XLQT\r\n ")) {
 			case '?' :
 				rputs("Help\n\n");
 				Help("Take Item Help", ST_MENUSHLP);

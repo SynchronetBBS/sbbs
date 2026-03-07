@@ -78,8 +78,8 @@ void News_ReadNews(bool Today)
 		/* pause if SCREEN_LENGTH-4 lines */
 		if (CurLine == (od_control.user_screen_length-4) && Door_AllowScreenPause()) {
 			rputs(ST_MORE);
-			od_sleep(0);
-			if (toupper(od_get_key(true)) == 'N') {
+			InputCallback();
+			if (toupper(GetKey()) == 'N') {
 				rputs("\r                       \r");
 				break;
 			}
@@ -91,7 +91,7 @@ void News_ReadNews(bool Today)
 			break;
 
 		/* see if key hit */
-		if (od_get_key(false))
+		if (GetKeyNoWait())
 			break;
 	}
 

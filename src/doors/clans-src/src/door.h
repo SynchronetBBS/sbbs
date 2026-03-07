@@ -46,6 +46,10 @@ void LogStr(const char *szString);
  * Logs a string
  */
 
+char GetKey(void);
+char GetKeyNoWait(void);
+char GetAnswer(const char *allowed);
+
 void door_pause(void);
 /*
  * Displays <pause> prompt.
@@ -56,11 +60,16 @@ void Display(char *FileName);
  * Displays the file given.
  */
 
-int16_t YesNo(char *Query);
-int16_t NoYes(char *Query);
+bool YesNo(char *Query);
+bool NoYes(char *Query);
 
 bool Door_AllowScreenPause(void);
 
 void Door_ShowTitle(void);
+void InputCallback(void);
+void PutCh(char ch);
+void rawputs(const char *str);
+int16_t GetHoursLeft(void);
+int16_t GetMinutesLeft(void);
 
 #endif

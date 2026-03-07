@@ -97,6 +97,13 @@ MITEMS_OBJS :=	$(OBJDIR)mitems.o $(OBJDIR)platform.o \
 MSPELLS_OBJS :=	$(OBJDIR)mspells.o $(OBJDIR)platform.o \
 		$(OBJDIR)serialize.o $(OBJDIR)tools.o
 
+QTEST_OBJS := $(OBJDIR)qtest.o $(OBJDIR)clansini.o $(OBJDIR)console.o \
+		$(OBJDIR)deserialize.o $(OBJDIR)help.o \
+		$(OBJDIR)input.o $(OBJDIR)language.o $(OBJDIR)misc.o \
+		$(OBJDIR)myopen.o $(OBJDIR)npc.o $(OBJDIR)parsing.o \
+		$(OBJDIR)platform.o $(OBJDIR)quests.o \
+		$(OBJDIR)serialize.o $(OBJDIR)video.o
+
 PCEDIT_OBJS :=	$(OBJDIR)pcedit.o $(OBJDIR)alliance.o \
 		$(OBJDIR)console.o $(OBJDIR)deserialize.o \
 		$(OBJDIR)myopen.o $(OBJDIR)platform.o \
@@ -223,6 +230,12 @@ $(BINDIR)mspells$(EXEFILE): $(MSPELLS_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)mspells$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)mspells$(EXEFILE)
+	cp $^ $@
+
+$(BINDIR)qtest$(EXEFILE): $(QTEST_OBJS) | $(BINDIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(QTEST_OBJS) -o $@ $(WRAPPER_LIBS)
+
+$(BINDIR)qtest$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)qtest$(EXEFILE)
 	cp $^ $@
 
 $(BINDIR)pcedit$(EXEFILE): $(PCEDIT_OBJS) | $(BINDIR)

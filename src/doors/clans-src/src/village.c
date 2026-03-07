@@ -192,7 +192,7 @@ static void ChangeFlagScheme(void)
 		rputs("|0GChoose one|0E> |15");
 
 		/* get option */
-		cInput = od_get_answer("123Q\r\n");
+		cInput = GetAnswer("123Q\r\n");
 
 		switch (cInput) {
 			case '1' :
@@ -221,7 +221,7 @@ static void ChangeFlagScheme(void)
 		/* act on option */
 	}
 
-	if (ChangesMade && NoYes("|0SAre you sure you wish to use this flag?") == NO) {
+	if (ChangesMade && !NoYes("|0SAre you sure you wish to use this flag?")) {
 		Village.Data.ColorScheme[23] = OldFlag[0];
 		Village.Data.ColorScheme[24] = OldFlag[1];
 		Village.Data.ColorScheme[25] = OldFlag[2];
@@ -374,7 +374,7 @@ static void ChangeColourScheme(void)
 		rputs(ST_SCHEMEMENU9);
 
 		/* get option */
-		cInput = od_get_answer("123456789ABCDEFGHIJMNQ\r\n!Z");
+		cInput = GetAnswer("123456789ABCDEFGHIJMNQ\r\n!Z");
 
 		switch (cInput) {
 			case 'Z' :  /* choose scheme */
@@ -391,7 +391,7 @@ static void ChangeColourScheme(void)
 				szKeys[iTemp] = 0;
 				strlcat(szKeys, "Q\r\n", sizeof(szKeys));
 				rputs("|01(|09Q|01) |07Quit\n\n|07Choose one|03> |11");
-				cInput = od_get_answer(szKeys);
+				cInput = GetAnswer(szKeys);
 
 				if (cInput == '\r' || cInput == 'Q' || cInput == '\n') {
 					rputs("Quit\n");
@@ -566,7 +566,7 @@ static void BuildMenu(void)
 						break;
 					}
 
-					if (YesNo(ST_BMENU39) == YES) {
+					if (YesNo(ST_BMENU39)) {
 						Village.Data.Empire.VaultGold -= PawnBuildCosts[0];
 						Village.Data.PawnLevel = 1;
 
@@ -593,7 +593,7 @@ static void BuildMenu(void)
 						break;
 					}
 
-					if (YesNo(ST_BMENU43) == YES) {
+					if (YesNo(ST_BMENU43)) {
 						Village.Data.Empire.VaultGold -= PawnBuildCosts[ Village.Data.PawnLevel ];
 						Village.Data.PawnLevel++;
 
@@ -624,7 +624,7 @@ static void BuildMenu(void)
 						break;
 					}
 
-					if (YesNo(ST_BMENU48) == YES) {
+					if (YesNo(ST_BMENU48)) {
 						Village.Data.Empire.VaultGold -= WizardBuildCosts[0];
 						Village.Data.WizardLevel = 1;
 
@@ -652,7 +652,7 @@ static void BuildMenu(void)
 						break;
 					}
 
-					if (YesNo(ST_BMENU52) == YES) {
+					if (YesNo(ST_BMENU52)) {
 						Village.Data.Empire.VaultGold -= WizardBuildCosts[ Village.Data.WizardLevel ];
 						Village.Data.WizardLevel++;
 
@@ -684,7 +684,7 @@ static void BuildMenu(void)
 						break;
 					}
 
-					if (YesNo(ST_BMENU13) == YES) {
+					if (YesNo(ST_BMENU13)) {
 						Village.Data.Empire.VaultGold -= ChurchBuildCosts[0];
 						Village.Data.ChurchLevel = 1;
 
@@ -710,7 +710,7 @@ static void BuildMenu(void)
 						break;
 					}
 
-					if (YesNo(ST_BMENU16) == YES) {
+					if (YesNo(ST_BMENU16)) {
 						Village.Data.Empire.VaultGold -= ChurchBuildCosts[ Village.Data.ChurchLevel ];
 						Village.Data.ChurchLevel++;
 
@@ -739,7 +739,7 @@ static void BuildMenu(void)
 						break;
 					}
 
-					if (YesNo(ST_BMENU20) == YES) {
+					if (YesNo(ST_BMENU20)) {
 						Village.Data.Empire.VaultGold -= THallBuildCosts[0];
 						Village.Data.TrainingHallLevel = 1;
 
@@ -765,7 +765,7 @@ static void BuildMenu(void)
 						break;
 					}
 
-					if (YesNo(ST_BMENU23) == YES) {
+					if (YesNo(ST_BMENU23)) {
 						Village.Data.Empire.VaultGold -= THallBuildCosts[ Village.Data.TrainingHallLevel ];
 						Village.Data.TrainingHallLevel++;
 
@@ -811,7 +811,7 @@ static void BuildMenu(void)
 					break;
 				}
 
-				if (YesNo(ST_TOWN4) == YES) {
+				if (YesNo(ST_TOWN4)) {
 					Village.Data.Empire.VaultGold -= TotalCost;
 					Village.Data.MarketLevel++;
 
@@ -1088,7 +1088,7 @@ int16_t TownHallMenu(void)
 				break;
 			case '!' :  /* abdicate */
 				/* ask if he wants to abdicate for sure */
-				if (NoYes(ST_TMENU15Q) == YES) {
+				if (NoYes(ST_TMENU15Q)) {
 					/* reset Village stats */
 					Village.Data.RulingClanId[0] = -1;
 					Village.Data.RulingClanId[1] = -1;

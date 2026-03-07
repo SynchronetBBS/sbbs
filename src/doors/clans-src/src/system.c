@@ -60,6 +60,31 @@ struct system System = {0};
 bool Verbose = false;
 
 // ------------------------------------------------------------------------- //
+
+void CheckMem(void *Test)
+/*
+ * Gives system error if the pointer is NULL.
+ */
+{
+	if (Test == NULL) {
+		System_Error("Checkmem Failed.  Please send a copy of this screen to\nthe author to help debug the game.\n");
+	}
+}
+
+// ------------------------------------------------------------------------- //
+
+char *DupeStr(const char *str)
+/*
+ * This returns a pointer to a malloc'd string of length length.
+ */
+{
+	char *pc = strdup(str);
+	CheckMem(pc);
+
+	return pc;
+}
+
+// ------------------------------------------------------------------------- //
 static bool System_LockedOut(void)
 {
 	FILE *fp;

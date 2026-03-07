@@ -68,7 +68,7 @@ static void RemoveFromAlliance(struct Alliance *Alliance)
 	}
 
 	// ask user if he's sure he wants to remove this guy
-	if (NoYes("Remove from alliance?") == NO)
+	if (!NoYes("Remove from alliance?"))
 		return;
 
 	// list all members of this alliance
@@ -211,7 +211,7 @@ static void DonationRoom(struct Alliance *Alliance)
 	for (;;) {
 		rputs(ST_ITEMROOM0);
 
-		switch (od_get_answer("?XDTLQ\r\n I*V")) {
+		switch (GetAnswer("?XDTLQ\r\n I*V")) {
 			case 'V' :  // clan stats
 				rputs("View Stats\n");
 				ClanStats(&PClan, true);
@@ -294,7 +294,7 @@ static void DonationRoom(struct Alliance *Alliance)
 				/* still wanna drop it? */
 				snprintf(szString, sizeof(szString), ST_ISTATS9, PClan.Items[ItemIndex].szName);
 
-				if (NoYes(szString) == YES) {
+				if (NoYes(szString)) {
 					/* drop it */
 					snprintf(szString, sizeof(szString), ST_ISTATS10, PClan.Items[ItemIndex].szName);
 					rputs(szString);
@@ -341,7 +341,7 @@ static void DonationRoom(struct Alliance *Alliance)
 				snprintf(szString, sizeof(szString), "|0SAre you sure you wish to destroy %s?",
 						Alliance->Items[ItemIndex].szName);
 
-				if (NoYes(szString) == YES) {
+				if (NoYes(szString)) {
 					/* destroy it */
 					snprintf(szString, sizeof(szString), "%s destroyed!\n\n",
 							Alliance->Items[ItemIndex].szName);
@@ -542,7 +542,7 @@ bool EnterAlliance(struct Alliance *Alliance)
 				}
 
 				// are you sure?
-				if (NoYes("Remove self?") == NO)
+				if (!NoYes("Remove self?"))
 					break;
 
 				// remove from member[] list
@@ -616,7 +616,7 @@ bool EnterAlliance(struct Alliance *Alliance)
 						break;
 					}
 				}
-				if (NoYes("|0SDestroy this alliance? |08(All will be lost!) |0S:") == YES) {
+				if (NoYes("|0SDestroy this alliance? |08(All will be lost!) |0S:")) {
 					return true;
 				}
 				break;

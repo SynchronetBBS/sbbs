@@ -86,7 +86,7 @@ GoQuest(void)
 		rputs(" |0GWhich quest? (Enter=abort)|0E> |0F");
 		/* get choice from user on which quest to complete */
 		for (;;) {
-			cInput = toupper(od_get_key(true));
+			cInput = toupper(GetKey());
 
 			if (cInput == '\r' || cInput == '\n') {
 				rputs(ST_ABORTED);
@@ -122,7 +122,7 @@ GoQuest(void)
 
 		// show help
 		Help(Quests[ QuestIndex[WhichQuest] ].pszQuestName, "quests.hlp");
-		if (YesNo("\n|0SGo on this quest?") == YES)
+		if (YesNo("\n|0SGo on this quest?"))
 			break;
 
 		rputs("\n");

@@ -123,7 +123,7 @@ static void MainGame(void)
 					rputs(szString);
 
 					rputs("\nIf you had trouble connecting to that BBS, you can call back your clan.\n");
-					if (NoYes("|0SCall back your clan to this BBS?") == YES) {
+					if (NoYes("|0SCall back your clan to this BBS?")) {
 						IBBS_SendComeBack(PClan.DestinationBBS, &PClan);
 						rputs("\n|0SYour clan will return tomorrow to this village.\n%P");
 					}

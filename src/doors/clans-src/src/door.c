@@ -329,8 +329,8 @@ void door_pause(void)
 		rputs(ST_PAUSE);
 
 		/* wait for user to hit key */
-		while (od_get_key(true) == false)
-			od_sleep(0);
+		while (GetKey() == false)
+			InputCallback();
 
 		od_putch('\r');
 		pc = ST_PAUSE;
@@ -607,6 +607,24 @@ static void LogToWhatever(const char *szString)
 	}
 }
 
+char
+GetKey(void)
+{
+	return od_get_key(true);
+}
+
+char
+GetKeyNoWait(void)
+{
+	return od_get_key(false);
+}
+
+char
+GetAnswer(const char *allowed)
+{
+	return od_get_answer(allowed);
+}
+
 void LogStr(const char *szString)
 {
 	if (od_control.od_logfile == INCLUDE_LOGFILE) {
@@ -767,8 +785,8 @@ void Display(char *FileName)
 		/* pause if od_control.user_screen_length-3 lines */
 		if (CurLine == (od_control.user_screen_length-3) && Door.AllowScreenPause) {
 			rputs(ST_MORE);
-			od_sleep(0);
-			if (toupper(od_get_key(true)) == 'N') {
+			InputCallback();
+			if (toupper(GetKey()) == 'N') {
 				rputs("\r                       \r");
 				break;
 			}
@@ -780,7 +798,7 @@ void Display(char *FileName)
 			break;
 
 		/* see if key hit */
-		if (od_get_key(false)) break;
+		if (GetKeyNoWait()) break;
 	}
 
 	fclose(FileHeader.fp);
@@ -788,7 +806,7 @@ void Display(char *FileName)
 
 // ------------------------------------------------------------------------- //
 
-int16_t YesNo(char *Query)
+bool YesNo(char *Query)
 {
 	/* show query */
 	DisplayStr(Query);
@@ -798,18 +816,18 @@ int16_t YesNo(char *Query)
 	DisplayStr(STR_YESNO);
 
 	/* get user input */
-	if (od_get_answer("YN\r\n") == 'N') {
+	if (GetAnswer("YN\r\n") == 'N') {
 		/* user says NO */
 		DisplayStr("No\n");
-		return NO;
+		return false;
 	}
 	else { /* user says YES */
 		DisplayStr("Yes\n");
-		return YES;
+		return true;
 	}
 }
 
-int16_t NoYes(char *Query)
+bool NoYes(char *Query)
 {
 	/* show query */
 	DisplayStr(Query);
@@ -819,14 +837,14 @@ int16_t NoYes(char *Query)
 	DisplayStr(STR_NOYES);
 
 	/* get user input */
-	if (od_get_answer("YN\r\n") == 'Y') {
+	if (GetAnswer("YN\r\n") == 'Y') {
 		/* user says YES */
 		DisplayStr("Yes\n");
-		return (YES);
+		return (true);
 	}
 	else { /* user says NO */
 		DisplayStr("No\n");
-		return (NO);
+		return (false);
 	}
 }
 
@@ -841,7 +859,7 @@ void Door_ShowTitle(void)
 	Help(szFileName, ST_MENUSHLP);
 	Door_SetScreenPause(true);
 	rputs("|16|07");
-	od_get_key(true);
+	GetKey();
 	od_clr_scr();
 }
 // ------------------------------------------------------------------------- //
@@ -931,4 +949,32 @@ void Door_Close(void)
 	}
 	if (Door.UserBooted == false)
 		RemoveSemaphor();
+}
+
+void
+InputCallback(void)
+{
+	od_sleep(0);
+}
+
+void PutCh(char ch)
+{
+	od_putch(ch);
+}
+
+void rawputs(const char *str)
+{
+	od_disp_str(str);
+}
+
+int16_t
+GetHoursLeft(void)
+{
+	return (int16_t)((od_control.user_timelimit - od_control.user_time_used) / 60);
+}
+
+int16_t
+GetMinutesLeft(void)
+{
+	return (int16_t)((od_control.user_timelimit - od_control.user_time_used) % 60);
 }

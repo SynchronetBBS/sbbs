@@ -425,7 +425,7 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 			}
 		}
 
-		ch = (unsigned char)od_get_key(true);
+		ch = (unsigned char)GetKey();
 		if (ch == '\b') {
 			if (cur_char>0) {
 				cur_char--;
@@ -458,11 +458,11 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 		else if (ch == '/' && cur_char == 0) {
 			rputs(ST_INPUTSTRCOMMAND);
 
-			key = toupper(od_get_answer("SACQLR?/\r\n")) & 0x7F;
+			key = toupper(GetAnswer("SACQLR?/\r\n")) & 0x7F;
 
 			if (key == '?') {
 				rputs(ST_INPUTSTRHELP2);
-				key = toupper(od_get_answer("SACQLR/\r\n")) & 0x7F;
+				key = toupper(GetAnswer("SACQLR/\r\n")) & 0x7F;
 			}
 
 			if (key == 'C' || key == '\r' || key == '\n') {
@@ -476,7 +476,7 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 				rputs(STR_NOYES);
 				rputs("|15");
 
-				if (od_get_answer("YN\r\n") == 'Y') {
+				if (GetAnswer("YN\r\n") == 'Y') {
 					rputs(ST_YES);
 					rputs("\n");
 					return -2;
@@ -490,7 +490,7 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 				rputs(STR_YESNO);
 				rputs("|15");
 
-				if (od_get_answer("YN\r\n") == 'N') {
+				if (GetAnswer("YN\r\n") == 'N') {
 					rputs(ST_LONGSPACES);
 					rputs(ST_MAILENTERCOLOR);
 					continue;
@@ -508,7 +508,7 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 				rputs(STR_NOYES);
 				rputs("|15");
 
-				if (od_get_answer("YN\r\n") == 'Y') {
+				if (GetAnswer("YN\r\n") == 'Y') {
 					rputs(ST_YES);
 					rputs("\n");
 					return -1;
@@ -566,7 +566,7 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 		else {
 			String[cur_char]=(char)ch;
 			cur_char++;
-			od_putch((char)ch);
+			PutCh((char)ch);
 		}
 	}
 
@@ -625,7 +625,7 @@ static void Reply_Message(struct Message *Reply)
 	}
 
 	// ask to quote
-	if (YesNo(ST_RMAILQUOTE) == YES) {
+	if (YesNo(ST_RMAILQUOTE)) {
 		rputs(ST_RMAILQFIRSTLINE);
 		od_input_str(string, 2, '0', '9');
 
@@ -945,8 +945,8 @@ bool Mail_Read(void)
 		for (CurLine = 0; CurLine < Message.Data.NumLines; CurLine++) {
 			if (CurLine == 17) {
 				rputs(ST_MORE);
-				od_sleep(0);
-				if (toupper(od_get_key(true)) == 'N') {
+				InputCallback();
+				if (toupper(GetKey()) == 'N') {
 					rputs(ST_RETURNSPACES);
 					break;
 				}
@@ -963,7 +963,7 @@ bool Mail_Read(void)
 			/* can't delete message */
 			rputs(ST_RMAILFOOTER1);
 
-			key = od_get_answer("QRS\r\n");
+			key = GetAnswer("QRS\r\n");
 			if (key == '\r' || key == '\n')
 				key = 'S';
 		}
@@ -975,7 +975,7 @@ bool Mail_Read(void)
 		else if (Message.Flags & MF_ALLYREQ) {
 			/* ally message, ask if he wants to ally */
 			WillAlly = NoYes(ST_RMAILALLYQ);
-			if (WillAlly == YES) {
+			if (WillAlly) {
 				/* ally here */
 				FormAlliance(Message.AllianceID);
 			}
@@ -993,13 +993,13 @@ bool Mail_Read(void)
 			/* regular message */
 			rputs(ST_RMAILFOOTER2);
 
-			key = od_get_answer("QRDS\r\n");
+			key = GetAnswer("QRDS\r\n");
 		}
 
 
 		// Act on user input
 		if ((!(Message.Flags & MF_ALLYREQ) && key == 'R') ||
-				((Message.Flags & MF_ALLYREQ) && ReplyingToAlly == YES)) {
+				((Message.Flags & MF_ALLYREQ) && ReplyingToAlly)) {
 			if ((Message.Flags & MF_ALLYREQ) == false)
 				rputs(ST_RMAILREPLY);
 
@@ -1013,7 +1013,7 @@ bool Mail_Read(void)
 			}
 
 			// ask if you want to delete it
-			if ((Message.Flags & MF_ALLYREQ) == false && YesNo(ST_RMAILDELETEQ) == NO) {
+			if ((Message.Flags & MF_ALLYREQ) == false && !YesNo(ST_RMAILDELETEQ)) {
 				// doesn't want to
 				free(Message.Data.MsgTxt);
 				continue;
@@ -1112,7 +1112,7 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 			}
 		}
 
-		ch = (unsigned char)od_get_key(false);
+		ch = (unsigned char)GetKeyNoWait();
 		if (ch=='\b') {
 			if (cur_char>0) {
 				cur_char--;
@@ -1151,11 +1151,11 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 		else if (ch == '/' && cur_char == 0) {
 			rputs(ST_INPUTSTRCOMMAND);
 
-			key = toupper(od_get_answer("SACLR?/\r\n") & 0x7f) & 0x7f;
+			key = toupper(GetAnswer("SACLR?/\r\n") & 0x7f) & 0x7f;
 
 			if (key == '?') {
 				rputs(ST_INPUTSTRHELP);
-				key = toupper(od_get_answer("SACLR/\r\n") & 0x7f) & 0x7f;
+				key = toupper(GetAnswer("SACLR/\r\n") & 0x7f) & 0x7f;
 			}
 
 			if (key == 'C' || key == '\r' || key == '\n') {
@@ -1169,7 +1169,7 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 				rputs(STR_NOYES);
 				rputs("|15");
 
-				if (od_get_answer("YN\r\n") == 'Y') {
+				if (GetAnswer("YN\r\n") == 'Y') {
 					rputs(ST_YES);
 					rputs("\n");
 					return -2;
@@ -1183,7 +1183,7 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 				rputs(STR_YESNO);
 				rputs("|15");
 
-				if (od_get_answer("YN\r\n") == 'N') {
+				if (GetAnswer("YN\r\n") == 'N') {
 					rputs(ST_LONGSPACES);
 					rputs(ST_MAILENTERCOLOR);
 					continue;
@@ -1201,7 +1201,7 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 				rputs(STR_NOYES);
 				rputs("|15");
 
-				if (od_get_answer("YN\r\n") == 'Y') {
+				if (GetAnswer("YN\r\n") == 'Y') {
 					rputs(ST_YES);
 					rputs("\n");
 					return -1;
@@ -1226,7 +1226,7 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 		else {
 			String[cur_char] = (char)ch;
 			cur_char++;
-			od_putch((char)ch);
+			PutCh((char)ch);
 		}
 	}
 
@@ -1524,7 +1524,7 @@ void Mail_RequestAlliance(struct Alliance *Alliance)
 	}
 
 	/* ask if he wants to invite this guy for sure */
-	if (NoYes(ST_ALLIANCESURE) == NO) {
+	if (!NoYes(ST_ALLIANCESURE)) {
 		rputs(ST_ABORTED);
 		return;
 	}
@@ -1664,7 +1664,7 @@ void GlobalMsgPost(void)
 
 	if (PostType == 0) {
 		// public
-		if (YesNo("|0SWrite to a specific village?  (No=All villages)") == YES) {
+		if (YesNo("|0SWrite to a specific village?  (No=All villages)")) {
 			// specific village, choose one
 			GetStringChoice(apszVillageNames, NumVillages,
 							"|0SEnter the name of the village\n|0G> |0F",

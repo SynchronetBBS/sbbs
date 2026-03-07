@@ -194,7 +194,7 @@ void Menus_ChatRoom(char *pszFileName)
 	//    GameInfo.NoPause = false;
 
 	/* ask if user wants to add some words */
-	if (NoYes(ST_CHATADDQ) == NO) {
+	if (!NoYes(ST_CHATADDQ)) {
 		/* no, leave now! */
 		rputs("\n");
 		return;
@@ -266,7 +266,7 @@ static int16_t MainMenu(void)
 
 		switch (GetChoice(szMainMenu, ST_ENTEROPTION, szTheOptions, "EQ?VMWCTPUH/N!1A2345", DefaultAction, true)) {
 			case '!' :    /* delete clan */
-				if (NoYes("|0SAre you sure you wish to delete your clan?!") == YES) {
+				if (NoYes("|0SAre you sure you wish to delete your clan?!")) {
 					DeleteClan(PClan.ClanID, PClan.szName, false);
 
 					// if interbbs, send packet to main BBS saying this guy
@@ -598,7 +598,7 @@ static void WizardShop(void)
 					rputs(ST_FMENUNOAFFORD);
 					break;
 				}
-				if (YesNo(ST_WIZ4) == YES) {
+				if (YesNo(ST_WIZ4)) {
 					Help(PClan.Items[ItemIndex].szName, ST_WIZHLP);
 					PClan.Empire.VaultGold -= ExamineCost;
 					door_pause();
@@ -714,7 +714,7 @@ static int16_t AlliancesMenu(void)
 	rputs(" ");
 	rputs(ST_ENTEROPTION);
 
-	cKey = od_get_answer(szChoices);
+	cKey = GetAnswer(szChoices);
 
 	if (cKey == 'Z') {
 		rputs(ST_CREATEALLIANCE);
@@ -722,8 +722,7 @@ static int16_t AlliancesMenu(void)
 			rputs("\n|07You have already created an alliance.\n");
 		else {
 			// ask user if he wants to build one
-			// if (NoYes("Create alliance?") == YES)
-			if (NoYes(ST_MAKEALLIANCEQ) == YES) {
+			if (NoYes(ST_MAKEALLIANCEQ)) {
 				if (NumAlliances == MAX_ALLIANCES) {
 					// rputs("|09You cannot create a new alliance, there are already too many\n");
 					rputs(ST_CANTBUILD);
@@ -768,7 +767,7 @@ static int16_t AlliancesMenu(void)
 			else {
 				// not in alliance
 				rputs("\n |0CYou are not in that alliance.\n");
-				if (YesNo(" |0SWrite a message to the alliance's creator?") == YES) {
+				if (YesNo(" |0SWrite a message to the alliance's creator?")) {
 					MyWriteMessage2(Alliances[WhichAlliance]->CreatorID, false, false, -1, "", false, -1);
 				}
 			}
@@ -1003,7 +1002,7 @@ void GameLoop(void)
 					snprintf(szString, sizeof(szString), ST_MAIN6, Village.Data.szName);
 					rputs(szString);
 
-					if (YesNo("|0SDoes your clan wish to rule the village?") == YES) {
+					if (YesNo("|0SDoes your clan wish to rule the village?")) {
 						Village_NewRuler();
 					}
 				}

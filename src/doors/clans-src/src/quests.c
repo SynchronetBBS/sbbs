@@ -894,7 +894,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 
 				// get input from user
 
-				cInput = toupper(od_get_answer(szKeys) & 0x7f) & 0x7f;
+				cInput = toupper(GetAnswer(szKeys) & 0x7f) & 0x7f;
 
 				if (OldCommType != 33) {
 					snprintf(szString, sizeof(szString), "%c\n\r", cInput);
@@ -1287,7 +1287,7 @@ void Quests_GoQuest(void)
 		rputs(" |0GWhich quest? (Enter=abort)|0E> |0F");
 		/* get choice from user on which quest to complete */
 		for (;;) {
-			cInput = toupper(od_get_key(true) & 0x7f) & 0x7f;
+			cInput = toupper(GetKey() & 0x7f) & 0x7f;
 
 			if (cInput == '\r' || cInput == '\n') {
 				rputs(ST_ABORTED);
@@ -1323,7 +1323,7 @@ void Quests_GoQuest(void)
 
 		// show help
 		Help(Quests[ QuestIndex[WhichQuest] ].pszQuestName, "quests.hlp");
-		if (YesNo("\n|0SGo on this quest?") == YES)
+		if (YesNo("\n|0SGo on this quest?"))
 			break;
 
 		rputs("\n");

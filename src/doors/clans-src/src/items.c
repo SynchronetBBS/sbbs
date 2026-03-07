@@ -248,7 +248,7 @@ void Items_FindTreasureChest(void)
 			snprintf(szString, sizeof(szString), ST_TREASURE0, Items.Data[ CurItem ]->szName);
 			strlcpy(szItemName, Items.Data[ CurItem ]->szName, sizeof(szItemName));
 			FoundItem = true;
-			if (YesNo(szString) == YES) {
+			if (YesNo(szString)) {
 				// give item reloads items!
 				Items_GiveItemData(Items.Data[CurItem]);
 			}
@@ -289,7 +289,7 @@ void ReadBook(void)
 	rputs("|0SWho will read it? |04[Enter=abort] |0F");
 
 	for (;;) {
-		cKey = toupper(od_get_key(true) & 0x7f) & 0x7f;
+		cKey = toupper(GetKey() & 0x7f) & 0x7f;
 
 		if (cKey == '\r' || cKey == '\n') {
 			rputs(ST_ABORTED);
@@ -840,7 +840,7 @@ void Item_BuyItem(signed char ItemType)
 		rputs(ST_LONGLINE);
 		rputs(ST_ITEMPROMPT);
 
-		Choice = od_get_answer(szKeys);
+		Choice = GetAnswer(szKeys);
 
 		rputs("\b\b\b\b\b     \b\b\b\b\b|15");
 
@@ -870,7 +870,7 @@ void Item_BuyItem(signed char ItemType)
 			rputs(szString);
 
 			/* ask if he still wants to buy it */
-			if (YesNo(ST_ITEMBUYTHIS) == YES) {
+			if (YesNo(ST_ITEMBUYTHIS)) {
 				rputs("\n");
 
 				/* bought.  see if user has room for item and can afford */
@@ -898,18 +898,18 @@ void Item_BuyItem(signed char ItemType)
 						rputs(ST_ITEMCHOOSEONE);
 
 						/* if chooses more expensive type, tell him that it costs x% more */
-						MaterialChoice = od_get_answer("AB\r ");
+						MaterialChoice = GetAnswer("AB\r ");
 
 						if (MaterialChoice == 'A' || MaterialChoice == '\r' || MaterialChoice == ' ') {
 							rputs("\b\b\b\b\b\b\b\b\b\b|15Polymetral\n");
 							Help("Polymetral", ST_ITEMHLP);
 
 							/* ask if he wants to use this */
-							if (YesNo("\n|0SUse this material?") == YES) {
+							if (YesNo("\n|0SUse this material?")) {
 								/* see if he can afford it */
 								if (PClan.Empire.VaultGold < ItemCosts[Choice - 'A']) {
 									rputs("|12You cannot afford this!\n");
-									if (NoYes("|0SUse Laconia instead?") == NO) {
+									if (!NoYes("|0SUse Laconia instead?")) {
 										Items_Close();
 										return;
 									}
@@ -930,13 +930,13 @@ void Item_BuyItem(signed char ItemType)
 							Help("Laconia", ST_ITEMHLP);
 
 							/* ask if he wants to use this */
-							if (YesNo("\n|0SUse this material?") == YES) {
+							if (YesNo("\n|0SUse this material?")) {
 								/* see if he can afford it under this type of */
 								//NewCost = ItemCosts[Choice - 'A'];
 
 								if (PClan.Empire.VaultGold < ItemCosts[Choice - 'A']) {
 									rputs("|12You cannot afford this!\n");
-									if (NoYes("|0SUse PolyMetral instead?") == NO) {
+									if (!NoYes("|0SUse PolyMetral instead?")) {
 										Items_Close();
 										return;
 									}
@@ -1044,7 +1044,7 @@ void Item_BuyItem(signed char ItemType)
 				ShowItemStats(&Item, NULL);
 
 				/* ask if user wants to buy still.  if so, give it to user, take rest of money */
-				if (YesNo("|0SBuy it?") == YES) {
+				if (YesNo("|0SBuy it?")) {
 					/* add to items list */
 					rputs("\n|0BYou take the item.\n");
 

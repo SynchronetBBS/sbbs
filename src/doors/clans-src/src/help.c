@@ -121,7 +121,7 @@ void Help(const char *Topic, char *File)
 		/* display it */
 		for (CurLine = 0; CurLine < NumLines; CurLine++) {
 			// break on input
-			if (od_get_key(false)) {
+			if (GetKeyNoWait()) {
 				rputs(ST_ABORTED);
 				break;
 			}
@@ -136,8 +136,8 @@ void Help(const char *Topic, char *File)
 		/* else pause normally if 22 lines */
 		else if (CurLine == 22 && Door_AllowScreenPause()) {
 			rputs(ST_MORE);
-			od_sleep(0);
-			if (toupper(od_get_key(true)) == 'N') {
+			InputCallback();
+			if (toupper(GetKey()) == 'N') {
 				rputs("\r                       \r");
 				break;
 			}

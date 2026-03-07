@@ -338,7 +338,7 @@ static int GetGUM(FILE *fpGUM)
 	else if (FileExists(szFileName) && Overwrite != ALWAYS) {
 		zputs("|03exists.  overwrite? (yes/no/rename/always) :");
 
-		cInput = get_answer("YNAR");
+		cInput = GetAnswer("YNAR");
 
 		if (cInput == 'A') {
 			zputs("Always\n");
@@ -395,7 +395,7 @@ static void install(void)
 
 	// make sure he wants to
 	zputs("\n|07Are you sure you wish to run the install now? (y/n):");
-	cInput = get_answer("YN");
+	cInput = GetAnswer("YN");
 
 	if (cInput == 'N') {
 		zputs("No\n|04Installation aborted.\n");
@@ -449,7 +449,7 @@ static void upgrade(void)
 
 	// make sure he wants to
 	zputs("\n|07Are you sure you wish to upgrade? (y/n):");
-	cInput = get_answer("YN");
+	cInput = GetAnswer("YN");
 
 	if (cInput == 'N') {
 		zputs("No\n|04Upgrade aborted.\n");
@@ -734,7 +734,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 	if (FileExists(szFileName)) {
 		zputs("|03exists.  overwrite? (yes/no/rename) :");
 
-		cInput = get_answer("YNR");
+		cInput = GetAnswer("YNR");
 
 		if (cInput == 'R') {
 			zputs("Rename\n|03enter new file name: ");

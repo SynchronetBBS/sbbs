@@ -265,8 +265,7 @@ void Trades_CheckTrades(void)
 				(PClan.Empire.Army.Footmen < TradeData.Asking.Footmen) ||
 				(PClan.Empire.Army.Axemen < TradeData.Asking.Axemen) ||
 				(PClan.Empire.Army.Knights < TradeData.Asking.Knights)) {
-			if (YesNo("\n|12You cannot currently accept the trade's requirements.\n\n|0SDo you wish to ignore this for now?")
-					== YES)
+			if (YesNo("\n|12You cannot currently accept the trade's requirements.\n\n|0SDo you wish to ignore this for now?"))
 				continue;
 
 			/* doesn't want to ignore it, delete it! */
@@ -281,8 +280,7 @@ void Trades_CheckTrades(void)
 				  PClan.Empire.Buildings[B_BARRACKS]*10) ||
 				 ((PClan.Empire.Army.Knights+TradeData.Giving.Knights) >
 				  PClan.Empire.Buildings[B_BARRACKS]*5)) {
-			if (YesNo("\n|12You cannot currently accept the trade's requirements.  You do\nnot have enough room in your barracks to hold the troops.\n\n|0SDo you wish to ignore this for now?")
-					== YES)
+			if (YesNo("\n|12You cannot currently accept the trade's requirements.  You do\nnot have enough room in your barracks to hold the troops.\n\n|0SDo you wish to ignore this for now?"))
 				continue;
 
 			/* doesn't want to ignore it, delete it! */
@@ -293,7 +291,7 @@ void Trades_CheckTrades(void)
 		}
 		else {
 			/* CAN trade */
-			if (NoYes("\n|0SDo you wish to make the trade?") == YES) {
+			if (NoYes("\n|0SDo you wish to make the trade?")) {
 				/* update both dudes' stats */
 
 				GetClan(TradeData.FromClanID, &TmpClan);
@@ -339,7 +337,7 @@ void Trades_CheckTrades(void)
 				fseek(fpTradeFile, OldOffset, SEEK_SET);
 				EncryptWrite_s(TradeData, &TradeData, fpTradeFile, XOR_TRADE);
 			}
-			else if (YesNo("\n|0SDo you wish to ignore this trade for now and decide on it later?") == YES) {
+			else if (YesNo("\n|0SDo you wish to ignore this trade for now and decide on it later?")) {
 				/* skip it */
 				continue;
 			}
@@ -475,7 +473,7 @@ void Trades_MakeTrade(void)
 	rputs("\n");
 
 	/* ask if he really wants to do this */
-	if (YesNo("|0SAre you sure you wish to trade the above?") == NO) {
+	if (!YesNo("|0SAre you sure you wish to trade the above?")) {
 		rputs(ST_ABORTED);
 		return;
 	}

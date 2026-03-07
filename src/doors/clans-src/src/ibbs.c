@@ -899,7 +899,7 @@ void IBBS_CurrentTravelInfo(void)
 				VillageName(PClan.DestinationBBS));
 		rputs(szString);
 
-		if (YesNo("|0SDo you wish to abort the trip?") == YES) {
+		if (YesNo("|0SDo you wish to abort the trip?")) {
 			AbortTrip();
 		}
 	}
@@ -1042,7 +1042,7 @@ static void GetTroopsTraveling(struct LeavingData *LeavingData)
 		rputs(ST_ENTEROPTION);
 		rputs("Done");
 
-		cInput = od_get_answer("ABCD0\r\n");
+		cInput = GetAnswer("ABCD0\r\n");
 
 		rputs("\b\b\b\b    \b\b\b\b|15");
 
@@ -1104,7 +1104,7 @@ static bool IBBS_TravelToBBS(int16_t DestID)
 				VillageName(PClan.DestinationBBS));
 		rputs(szString);
 
-		if (YesNo("|0SDo you wish to abort the trip?") == YES) {
+		if (YesNo("|0SDo you wish to abort the trip?")) {
 			AbortTrip();
 		}
 		else
@@ -1116,7 +1116,7 @@ static bool IBBS_TravelToBBS(int16_t DestID)
 	snprintf(szString, sizeof(szString), "|0SAre you sure you wish to travel to %s?",
 			VillageName(DestID));
 
-	if (YesNo(szString) == YES) {
+	if (YesNo(szString)) {
 		/* append LEAVING.DAT file */
 		LeavingData.DestID = DestID;
 		LeavingData.Active = true;
@@ -1142,7 +1142,7 @@ static bool IBBS_TravelToBBS(int16_t DestID)
 		PClan.WorldStatus = WS_LEAVING;
 		PClan.DestinationBBS = DestID;
 
-		if (YesNo("|0SDo you wish to exit the game now?") == YES) {
+		if (YesNo("|0SDo you wish to exit the game now?")) {
 			System_Close();
 		}
 	}
@@ -1201,7 +1201,7 @@ void IBBS_SeeVillages(bool Travel)
 		if (Travel) {
 			/* travel stuff here */
 			snprintf(szString, sizeof(szString), "|0STravel to %s?", pszBBSNames[(BBSIndex[WhichBBS]+0)]);
-			if (NoYes(szString) == YES) {
+			if (NoYes(szString)) {
 				/* travel stuff here */
 				if (IBBS_TravelToBBS(BBSIndex[WhichBBS]+1))
 					return;

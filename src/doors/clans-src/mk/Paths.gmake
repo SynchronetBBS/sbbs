@@ -41,6 +41,7 @@ DEVKIT_BINARIES	:=	$(BINDIR)chew$(EXEFILE) $(BINDIR)ecomp$(EXEFILE) \
 			$(BINDIR)mclass$(EXEFILE) \
 			$(BINDIR)mitems$(EXEFILE) \
 			$(BINDIR)mspells$(EXEFILE) \
+			$(BINDIR)qtest$(EXEFILE) \
 			$(BINDIR)chew$(WRAPEXT) $(BINDIR)ecomp$(WRAPEXT) \
 			$(BINDIR)langcomp$(WRAPEXT) \
 			$(BINDIR)makenpc$(WRAPEXT) \
@@ -48,7 +49,8 @@ DEVKIT_BINARIES	:=	$(BINDIR)chew$(EXEFILE) $(BINDIR)ecomp$(EXEFILE) \
 			$(BINDIR)mcomp$(WRAPEXT) \
 			$(BINDIR)mclass$(WRAPEXT) \
 			$(BINDIR)mitems$(WRAPEXT) \
-			$(BINDIR)mspells$(WRAPEXT)
+			$(BINDIR)mspells$(WRAPEXT) \
+			$(BINDIR)qtest$(WRAPEXT)
 
 INSTALL_BINARIES :=	$(BINDIR)install$(EXEFILE) \
 			$(BINDIR)install$(WRAPEXT)

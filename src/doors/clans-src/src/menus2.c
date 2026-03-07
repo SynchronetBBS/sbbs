@@ -99,7 +99,7 @@ void ResurrectDead(bool Unconscious)
 
 	rputs(ST_LONGLINE);
 	rputs(" |0AWhich to resurrect? [|0BEnter=Abort|0A] : |15");
-	cInput = toupper(od_get_key(true) & 0x7f) & 0x7f;
+	cInput = toupper(GetKey() & 0x7f) & 0x7f;
 
 	if (cInput == 'Q' || cInput == '\r' || cInput == '\n') {
 		rputs(ST_ABORTED);
@@ -146,7 +146,7 @@ void ResurrectDead(bool Unconscious)
 	snprintf(szString, sizeof(szString), "|0CAre you sure you wish to resurrect |0B%s|0C?",
 			PClan.Member[WhichOne]->szName);
 
-	if (NoYes(szString) == YES) {
+	if (NoYes(szString)) {
 		/* if so, revive stats et al */
 
 		PClan.Member[ WhichOne ]->HP = PClan.Member[ WhichOne ]->MaxHP;
@@ -202,7 +202,7 @@ void ReleaseMember(void)
 	rputs(" |0AWhich to release? [|0BEnter=abort|0A] : |0F");
 
 	for (;;) {
-		cInput = toupper(od_get_key(true) & 0x7f) & 0x7f;
+		cInput = toupper(GetKey() & 0x7f) & 0x7f;
 
 		if (cInput == 'Q' || cInput == '\r' || cInput == '\n') {
 			rputs(ST_ABORTED);
@@ -227,7 +227,7 @@ void ReleaseMember(void)
 	/* confirm it */
 	//snprintf(szString, sizeof(szString), "|0SAre you sure you wish to remove %s from the clan?",
 	snprintf(szString, sizeof(szString), ST_REMOVEMEM, PClan.Member[ WhichOne ]->szName);
-	if (NoYes(szString) == YES) {
+	if (NoYes(szString)) {
 		// %s removed from clan
 		snprintf(szString, sizeof(szString), ST_REMOVED,
 				PClan.Member[ WhichOne ]->szName);
@@ -328,7 +328,7 @@ void TrainMember(void)
 		rputs(" |0SWho to train? [|0BEnter=Return|0A] : |0F");
 
 		for (;;) {
-			cInput = toupper(od_get_key(true) & 0x7f) & 0x7f;
+			cInput = toupper(GetKey() & 0x7f) & 0x7f;
 
 			if (cInput == 'Q' || cInput == '\r' || cInput == '\n') {
 				DoneTraining = true;

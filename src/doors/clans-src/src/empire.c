@@ -1109,8 +1109,7 @@ static void Destroy_Menu(struct empire *Empire)
 					break;
 				}
 
-				// if (NoYes("Destroy this?") == NO) break;
-				if (NoYes(ST_MEMPIRE30) == NO) break;
+				if (!NoYes(ST_MEMPIRE30)) break;
 
 				// "destroy" it now
 				Empire->Land += BuildingType[ WhichBuilding ].LandUsed;
@@ -1224,8 +1223,7 @@ static void StructureMenu(struct empire *Empire)
 						Empire->VaultGold, Empire->Land, Empire->WorkerEnergy);
 				rputs(szString);
 
-				// if (YesNo("Build this?") == NO) break;
-				if (YesNo(ST_MEMPIRE21) == NO) break;
+				if (!YesNo(ST_MEMPIRE21)) break;
 
 				// "build" it now
 				Empire->Land -= BuildingType[ WhichBuilding ].LandUsed;
@@ -2272,7 +2270,7 @@ static void GetNumTroops(struct Army *OriginalArmy, struct Army *AttackingArmy)
 		rputs(ST_ENTEROPTION);
 		rputs("Done");
 
-		cInput = od_get_answer("ABC0\r\n][");
+		cInput = GetAnswer("ABC0\r\n][");
 
 		rputs("\b\b\b\b    \b\b\b\b|15");
 
@@ -2444,7 +2442,7 @@ static void StartEmpireWar(struct empire *Empire)
 
 			// ask user and show help
 			Help(apszGoals[Goal], ST_WARHLP);
-			if (YesNo(ST_WEMPIRE3) == YES)
+			if (YesNo(ST_WEMPIRE3))
 				break;
 		}
 
@@ -2614,7 +2612,7 @@ static void StartEmpireWar(struct empire *Empire)
 
 			// ask user and show help
 			Help(apszGoals[Goal], ST_WARHLP);
-			if (YesNo(ST_WEMPIRE3) == YES)
+			if (YesNo(ST_WEMPIRE3))
 				break;
 		}
 		Goal++;     // must add 1 since 0 is not used
@@ -2746,7 +2744,7 @@ static void StartEmpireWar(struct empire *Empire)
 
 			// ask user and show help
 			Help(apszGoals[Goal], ST_WARHLP);
-			if (YesNo(ST_WEMPIRE3) == YES)
+			if (YesNo(ST_WEMPIRE3))
 				break;
 		}
 		Goal++;     // must add 1 since 0 is not used
@@ -2980,7 +2978,7 @@ static void SpyMenu(struct empire *Empire)
 		}
 		// snprintf(szString, sizeof(szString), "It will cost you %ld gold to spy.  The empire has %ld gold.\nContinue?",
 		snprintf(szString, sizeof(szString), ST_SPY1, SPY_COST, (long)Empire->VaultGold);
-		if (YesNo(szString) == NO) {
+		if (!YesNo(szString)) {
 			return;
 		}
 		if (Empire->VaultGold < SPY_COST) {
@@ -3045,7 +3043,7 @@ static void SpyMenu(struct empire *Empire)
 
 		// snprintf(szString, sizeof(szString), "It will cost you %ld gold to spy.  The empire has %ld gold.\nContinue?",
 		snprintf(szString, sizeof(szString), ST_SPY1, SPY_COST, (long)Empire->VaultGold);
-		if (YesNo(szString) == NO) {
+		if (!YesNo(szString)) {
 			return;
 		}
 		if (Empire->VaultGold < SPY_COST) {
@@ -3083,7 +3081,7 @@ static void SpyMenu(struct empire *Empire)
 
 		// snprintf(szString, sizeof(szString), "It will cost you %ld gold to spy.  The empire has %ld gold.\nContinue?",
 		snprintf(szString, sizeof(szString), ST_SPY1, SPY_COST, (long)Empire->VaultGold);
-		if (YesNo(szString) == NO) {
+		if (!YesNo(szString)) {
 			return;
 		}
 		if (Empire->VaultGold < SPY_COST) {

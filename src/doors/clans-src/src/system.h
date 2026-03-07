@@ -35,4 +35,14 @@ void System_Maint(void);
 
 int my_random(int limit);
 
+void CheckMem(void *Test);
+/*
+ * Gives system error if the pointer is NULL.
+ */
+
+char *DupeStr(const char *Str);
+/*
+ * This returns a pointer to a malloc'd string of length length.
+ */
+
 #endif

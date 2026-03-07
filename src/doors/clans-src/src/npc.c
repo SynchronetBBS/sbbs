@@ -478,7 +478,7 @@ void ChatVillagers(int16_t WhichMenu)
 
 		// show them to player, allow him to choose one until [Q] Quit
 
-		cInput = od_get_answer(szKeys);
+		cInput = GetAnswer(szKeys);
 
 		if (cInput == 'Q' || cInput == '\r' || cInput == '\n') {
 			rputs("\n\n");

@@ -38,18 +38,6 @@ struct Language *Language;
 
 // ------------------------------------------------------------------------- //
 
-void CheckMem(void *Test)
-/*
- * Gives system error if the pointer is NULL.
- */
-{
-	if (Test == NULL) {
-		System_Error("Checkmem Failed.  Please send a copy of this screen to\nthe author to help debug the game.\n");
-	}
-}
-
-// ------------------------------------------------------------------------- //
-
 void LoadStrings(int16_t StartIndex, int16_t NumStrings, char *szStrings[])
 /*
  * This function loads NumStrings of strings from the language file.
@@ -65,19 +53,6 @@ void LoadStrings(int16_t StartIndex, int16_t NumStrings, char *szStrings[])
 	for (CurString = 0; CurString < NumStrings; CurString++) {
 		szStrings[CurString] = &Language->BigString[Language->StrOffsets[StartIndex + CurString]];
 	}
-}
-
-// ------------------------------------------------------------------------- //
-
-char *DupeStr(const char *str)
-/*
- * This returns a pointer to a malloc'd string of length length.
- */
-{
-	char *pc = strdup(str);
-	CheckMem(pc);
-
-	return pc;
 }
 
 // ------------------------------------------------------------------------- //
@@ -109,17 +84,14 @@ void Language_Init(char *szLangFile)
 
 	if (!FileHeader.fp) {
 		snprintf(szString, sizeof(szString), "File not found: %s\n", szLangFile);
-		zputs(szString);
-		System_Close();
+		System_Error(szString);
 	}
 	fread(serBuf, BUF_SIZE_Language, 1, FileHeader.fp);
 	s_Language_d(serBuf, sizeof(serBuf), Language);
 
 	Language->BigString = malloc(Language->NumBytes);
 	if (!Language->BigString) {
-		LogDisplayStr("|12Couldn't allocate enough memory to run!\n");
-		fclose(FileHeader.fp);
-		System_Close();
+		System_Error("|12Couldn't allocate enough memory to run!\n");
 	}
 
 	fread(Language->BigString, Language->NumBytes, 1, FileHeader.fp);

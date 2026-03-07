@@ -183,8 +183,8 @@ void GetStringChoice(const char **apszChoices, int16_t NumChoices, char *szPromp
 		for (;;) {
 			/* enter a char */
 			/* and update szString */
-			od_sleep(0);
-			Key = od_get_key(true);
+			InputCallback();
+			Key = GetKey();
 
 			if (Key == '?' && CurChar == 0) {
 				rputs(ST_DISPLAYTOPICS);
@@ -300,7 +300,7 @@ void GetStringChoice(const char **apszChoices, int16_t NumChoices, char *szPromp
 			}
 			/* else show char */
 			else if (!BackSpace)
-				od_putch(szUserInput[CurChar-1]);
+				PutCh(szUserInput[CurChar-1]);
 
 			LastTopicFound = TopicFound;
 		}
@@ -363,11 +363,11 @@ void GetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 
 	rputs(Spaces);
 	rputs(BackSpaces);
-	od_disp_str(InputStr);
+	rawputs(InputStr);
 
 	for (;;) {
-		od_sleep(0);
-		InputCh = od_get_key(true);
+		InputCallback();
+		InputCh = GetKey();
 
 		if (InputCh == '\b' || InputCh == 127) {
 			if (CurChar > 0) {
@@ -405,7 +405,7 @@ void GetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 				continue;
 			InputStr[CurChar++] = InputCh;
 			InputStr[CurChar] = 0;
-			od_putch(InputCh);
+			PutCh(InputCh);
 		}
 	}
 }
@@ -432,8 +432,8 @@ char GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, cha
 	char TimeStr[40];
 	int16_t HoursLeft, MinutesLeft;
 
-	HoursLeft = (int16_t)((od_control.user_timelimit - od_control.user_time_used) / 60);
-	MinutesLeft = (int16_t)((od_control.user_timelimit - od_control.user_time_used) % 60);
+	HoursLeft = GetHoursLeft();
+	MinutesLeft = GetMinutesLeft();
 
 	if (MinutesLeft < 0)
 		MinutesLeft = 0;
@@ -471,7 +471,7 @@ char GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, cha
 
 	/* make sure it's not the special key! */
 	do
-		Choice = od_get_answer(KeysAndEnter);
+		Choice = GetAnswer(KeysAndEnter);
 	while (Choice == '\xFF');
 
 	if (Choice == '\r' || Choice == DefChar || Choice == ' ' || Choice == '\n') {
@@ -486,8 +486,8 @@ char GetChoice(char *DisplayFile, char *Prompt, char *Options[], char *Keys, cha
 	/* display choice */
 	rputs("\r");
 
-	HoursLeft = (int16_t)((od_control.user_timelimit - od_control.user_time_used) / 60);
-	MinutesLeft = (int16_t)((od_control.user_timelimit - od_control.user_time_used) % 60);
+	HoursLeft = GetHoursLeft();
+	MinutesLeft = GetMinutesLeft();
 	snprintf(TimeStr, sizeof(TimeStr), " |0H[|0J%02d:%02d|0H] ", HoursLeft, MinutesLeft);
 
 	if (ShowTime)
@@ -536,13 +536,13 @@ long GetLong(const char *Prompt, long DefaultVal, long Maximum)
 
 	/* now get input */
 	for (;;) {
-		InputChar = od_get_answer("0123456789><.,\r\n\b\x19\x7f");
+		InputChar = GetAnswer("0123456789><.,\r\n\b\x19\x7f");
 
 		if (isdigit(InputChar)) {
 			if (CurDigit < NumDigits) {
 				NumString[CurDigit++] = InputChar;
 				NumString[CurDigit] = 0;
-				od_putch(InputChar);
+				PutCh(InputChar);
 			}
 
 		}

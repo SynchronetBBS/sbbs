@@ -193,7 +193,7 @@ static void PS_Buy(struct item_data *PS_Items[MAX_PSITEMS])
 
 				snprintf(szString, sizeof(szString), ST_PAWN4, (long)lCost);
 
-				if (YesNo(szString) == NO)
+				if (!YesNo(szString))
 					break;
 
 				// see if enough gold
@@ -316,7 +316,7 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 
 				snprintf(szString, sizeof(szString), ST_PAWN12, (long)lCost);
 
-				if (YesNo(szString) == NO) break;
+				if (!YesNo(szString)) break;
 
 				// give him gold
 				PClan.Empire.VaultGold += lCost;
@@ -360,7 +360,7 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 
 					snprintf(szString, sizeof(szString), ST_PAWN12, (long)lCost);
 
-					if (YesNo(szString) == NO) continue;
+					if (!YesNo(szString)) continue;
 
 					// give him gold
 					PClan.Empire.VaultGold += lCost;

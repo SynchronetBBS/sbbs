@@ -31,8 +31,6 @@
 
 #define STR_YESNO   " |0A(|0BYes|0C/no|0A) |0F"
 #define STR_NOYES   " |0A(|0Cyes/|0BNo|0A) |0F"
-#define YES         1
-#define NO          0
 
 #define MAX_PCLASSES    15
 
