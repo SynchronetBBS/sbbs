@@ -4744,6 +4744,7 @@ static void ctrl_thread(void* arg)
 				p = tp + 1;
 			}
 			int64_t freespace;
+			const char* destdir;
 			if (dir < 0) {
 				sprintf(str, "%s.rep", scfg.sys_id);
 				if (!(startup->options & FTP_OPT_ALLOW_QWK)
@@ -4757,7 +4758,7 @@ static void ctrl_thread(void* arg)
 				lprintf(LOG_INFO, "%04d <%s> uploading: %s in %s mode"
 				        , sock, user.alias, fname
 				        , mode);
-				freespace = getfreediskspace(scfg.data_dir, 1);
+				freespace = getfreediskspace(destdir = scfg.data_dir, 1);
 			} else {
 
 				append = (strnicmp(cmd, "APPE", 4) == 0);
@@ -4834,12 +4835,18 @@ static void ctrl_thread(void* arg)
 				        , genvpath(lib, dir, str) /* virtual path */
 				        , scfg.dir[dir]->path /* actual path */
 				        , mode);
-				freespace = getfreediskspace(scfg.dir[dir]->path, 1);
+				freespace = getfreediskspace(destdir = scfg.dir[dir]->path, 1);
 			}
 			if (freespace < scfg.min_dspace) {
-				lprintf(diskspace_error_reported ? LOG_WARNING : LOG_ERR, "%04d <%s> !Insufficient free disk space (%s bytes) to allow upload"
-				        , sock, user.alias, byte_estimate_to_str(freespace, str, sizeof(str), 1, 1));
-				sockprintf(sock, sess, "452 Insufficient free disk space, try again later");
+				if (!isdir(destdir)) {
+					lprintf(diskspace_error_reported ? LOG_WARNING : LOG_ERR, "%04d <%s> !Upload destination directory does not exist: %s"
+							, sock, user.alias, destdir);
+					sockprintf(sock, sess, "451 Upload destination directory does not exist.");
+				} else {
+					lprintf(diskspace_error_reported ? LOG_WARNING : LOG_ERR, "%04d <%s> !Insufficient free disk space (%s bytes) to allow upload to: %s"
+							, sock, user.alias, byte_estimate_to_str(freespace, str, sizeof(str), 1, 1), destdir);
+					sockprintf(sock, sess, "452 Insufficient free disk space, try again later");
+				}
 				diskspace_error_reported = true;
 				continue;
 			}
