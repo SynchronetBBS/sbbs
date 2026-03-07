@@ -1,0 +1,495 @@
+The Clans: AI Quest Pack Generator — User Guide
+-------------------------------------------------------------------------------
+
+
+
+
+[0.0]  Table of Contents
+-------------------------------------------------------------------------------
+
+Introduction
+============
+What Is This? ........................................................   0.1
+What Does It Produce? ................................................   0.2
+
+Choosing an LLM
+===============
+Context Window Size ..................................................   1.1
+Reasoning Mode .......................................................   1.2
+Recommended Models ...................................................   1.3
+
+Starting a Session
+==================
+Loading the Prompt ...................................................   2.1
+The World-Building Interview .........................................   2.2
+Skipping the Interview ...............................................   2.3
+
+Managing the Generation
+=======================
+Generation Takes Time ................................................   3.1
+Prompting the Model to Continue ......................................   3.2
+Output Order .........................................................   3.3
+
+Reviewing the Output
+====================
+What to Check Before Compiling ......................................   4.1
+Asking the LLM to Fix Mistakes .......................................   4.2
+Regenerating Individual Files ........................................   4.3
+
+Compiling and Installing
+========================
+The Readme the LLM Generates ........................................   5.1
+Build Scripts ........................................................   5.2
+Packaging for Distribution ...........................................   5.3
+
+Miscellaneous
+=============
+Frequently Asked Questions ...........................................   6.1
+
+
+
+Introduction
+===============================================================================
+
+[0.1]  What Is This?
+-------------------------------------------------------------------------------
+The file prompt.md in this directory is a ready-made prompt that you feed to
+a large language model (LLM) to have it generate a complete quest pack for
+your BBS.  The LLM acts as a collaborative quest designer: it interviews you
+about your BBS's identity, builds a coherent world around your answers, and
+then produces every source file the devkit tools need to compile into a
+running campaign.
+
+This document explains how to get the best results out of that process.
+It does not cover the devkit tools themselves -- see clandev.txt for that.
+
+
+[0.2]  What Does It Produce?
+-------------------------------------------------------------------------------
+The prompt instructs the LLM to generate eleven output files:
+
+        1.  quests.ini      Quest registry
+        2.  quests.hlp      In-game quest descriptions (one block per quest)
+        3.  NPC Info .txt   NPC metadata and topic list
+        4.  Monster .txt    Combat stats for monsters and NPCs
+        5.  Chat .txt       NPC dialogue and topic blocks
+        6.  Event .evt      Quest encounter logic
+        7.  Listing .lst    Two-column file mapping filenames to PAK aliases
+        8.  clans.ini       Complete configuration file with NpcFile entries
+        9.  readme.txt      Compilation and installation instructions
+        10. build.bat       Windows batch file for compilation
+        11. Makefile        Unix makefile for compilation
+
+Files 1-8 are everything needed to build and install the pack.  Files 9-11
+exist so you don't have to figure out the compilation order yourself.
+
+For a full 60-day campaign, this means approximately 30 quests across 7-8
+quest-giving NPCs, 20-40 ambient NPCs filling the village locations, a lore
+keeper, and all associated monsters, bosses, and scripted encounters.
+
+
+
+Choosing an LLM
+===============================================================================
+
+[1.1]  Context Window Size
+-------------------------------------------------------------------------------
+Context window size is the single most important variable.  A full campaign
+with 30+ quests, 40+ NPCs, and interlinked scripts will be tens of thousands
+of tokens of source material.  Models with small context windows will truncate
+their own output, lose track of flag assignments halfway through, and produce
+NPCs that reference events from a quest the model has already forgotten.
+
+As a rough guide:
+
+        10-15 quests, minimal ambient NPCs:   100K tokens may suffice
+        30 quests, full ambient NPC roster:   200K+ strongly preferred
+
+Use the largest context window available to you.  If a model offers both a
+standard and an extended context option, use the extended one.
+
+
+[1.2]  Reasoning Mode
+-------------------------------------------------------------------------------
+Most frontier LLMs offer a "reasoning" or "extended thinking" mode that causes
+the model to work through the problem at length internally before writing its
+response.  This makes a meaningful difference for quest generation.
+
+The prompt asks the model to design consistent cross-references between dozens
+of files, track flag assignments so no two flags serve the same purpose, and
+ensure every ACS condition in every chat file is actually tested by at least
+one command in an event script.  Reasoning mode makes these kinds of errors
+far less frequent.
+
+Enable it if the cost is acceptable to you.  If not, expect to spend more
+time on review and correction.
+
+
+[1.3]  Recommended Models
+-------------------------------------------------------------------------------
+Based on testing as of early 2026 (capabilities change; treat this as
+directional):
+
+Claude (claude.ai, Extended thinking)
+        Good results for full campaigns.  Expect to send 3-5 "Continue"
+        prompts.  A 60-day campaign took approximately one hour in testing
+        using Sonnet 4.6 Extended.
+
+GPT-4o and similar 128K models
+        Adequate for shorter campaigns (10-15 quests).  May lose coherence
+        or start hallucinating flag numbers for larger ones.
+
+Any model with less than 100K context
+        Not recommended for full campaigns.  Use only for short packs (5-8
+        quests, minimal NPCs) and review output carefully.
+
+Longer outputs and more complex campaigns consistently benefit from larger
+context and stronger reasoning ability.  If the budget allows, go bigger.
+
+
+
+Starting a Session
+===============================================================================
+
+[2.1]  Loading the Prompt
+-------------------------------------------------------------------------------
+The entire contents of prompt.md must reach the LLM before any conversation
+begins.  How you do this depends on your interface:
+
+  Claude.ai
+        Open a new conversation.  Paste the entire contents of prompt.md as
+        your first message, then send it.  Wait for the model to acknowledge
+        before continuing.
+
+  API-based interfaces (OpenAI, Anthropic API, etc.)
+        Place the contents of prompt.md in the system prompt field.  Leave the
+        first user message empty or use it to begin the interview.
+
+  Web interfaces with file upload
+        Upload prompt.md as an attachment and tell the model to read it before
+        responding.  Some models require explicit instruction to read attached
+        files; say so clearly.
+
+Before doing anything else, confirm the model received the prompt.  Ask it:
+
+        What files will you generate?
+
+It should list all eleven output files without hesitation.  If it lists fewer,
+re-paste the prompt or try a different interface.
+
+
+[2.2]  The World-Building Interview
+-------------------------------------------------------------------------------
+The prompt instructs the model to interview you before generating anything.
+It will ask six questions, one at a time:
+
+        1. The village -- what it is, what it feels like
+        2. History and hidden things -- what players can discover
+        3. Power and conflict -- factions in tension
+        4. The world beyond -- surrounding geography
+        5. Tone -- the register of dialogue and consequence
+        6. The sysop's vision -- what you most want players to feel
+
+Answer as specifically as you can.  Generic answers produce generic quests.
+The model needs concrete names, specific conflicts, and particular locations
+to produce content that feels like it belongs to your BBS rather than any BBS.
+
+After the interview, the model will summarise its understanding of your world
+and ask for approval or corrections before generating anything.  Read this
+summary carefully.  Any misunderstanding here will propagate through every
+generated file.  Correct it before you say yes.
+
+
+[2.3]  Skipping the Interview
+-------------------------------------------------------------------------------
+If you already have a clear world in mind, you can skip the interview by
+writing a world description up front.  Begin your first message (after loading
+the prompt) with something like:
+
+        I have prepared the following world description in place of the
+        interview.  Please take careful notes on every specific detail --
+        names, factions, locations, events -- and use it as the foundation
+        for the entire pack.  Do not proceed to generation until you have
+        confirmed your understanding.
+
+        [Your description here]
+
+Include all six interview topics in your description: village character,
+history and hidden things, factions in tension, surrounding geography, tone,
+and what you want players to feel by the end of the campaign.
+
+After you send it, the model should summarise its understanding and ask for
+confirmation.  If it skips straight to generation, stop it and insist on the
+confirmation step.  Mistakes caught at the summary stage cost nothing; the
+same mistakes discovered in a generated event script cost significant effort
+to fix.
+
+
+
+Managing the Generation
+===============================================================================
+
+[3.1]  Generation Takes Time
+-------------------------------------------------------------------------------
+A full 60-day campaign with 30+ quests and 40+ ambient NPCs is a large body
+of work.  Expect the LLM to take anywhere from 20 minutes to over an hour,
+depending on the model, output size, and server load.  This is normal.
+
+Do not close the session or interrupt the model unless it appears genuinely
+stuck -- repeating itself, generating obvious nonsense, or stopping mid-file
+with no apparent reason.  Interrupting a running generation usually means
+starting over.
+
+Most interfaces will show a spinner or progress indicator while the model is
+working.  If the spinner stops and the model has not finished, see section 3.2.
+
+
+[3.2]  Prompting the Model to Continue
+-------------------------------------------------------------------------------
+Chat interfaces typically cap individual response length.  The LLM will stop
+mid-generation and wait for input.  When it does, send a short message:
+
+        Continue.
+
+The model should resume from where it stopped without regenerating what it
+already produced.  If it seems confused about where it left off, tell it:
+
+        Continue with the chat file.
+
+or whatever file it was in the middle of.  You may need to do this 3-5 times
+for a large campaign.  After each continuation, glance at the output to
+confirm it picked up at the right point rather than jumping backward.
+
+
+[3.3]  Output Order
+-------------------------------------------------------------------------------
+The prompt specifies this generation order, and the model should follow it:
+
+        1.  Monster/NPC definition file (.txt)
+        2.  NPC Info file (.txt)
+        3.  Chat file (.txt)
+        4.  Event script (.evt)
+        5.  quests.ini
+        6.  quests.hlp
+        7.  PAK listing file (.lst)
+        8.  clans.ini
+        9.  readme.txt
+        10. build.bat
+        11. Makefile
+
+Later files depend on decisions made in earlier ones -- clans.ini references
+compiled .npc filenames; the listing file references all compiled output;
+the readme and build scripts reference all of the above.  If the model skips
+a file, prompt it to produce the missing one before continuing.
+
+
+
+Reviewing the Output
+===============================================================================
+
+[4.1]  What to Check Before Compiling
+-------------------------------------------------------------------------------
+Read through the generated source files before handing them to the devkit
+tools.  The ecomp compiler catches structural errors but not semantic mistakes.
+Here is what to look for:
+
+  Text line length
+        The engine does not word-wrap.  Each Text command's visible content
+        must be 78 characters or fewer.  Color codes (|0C, |02, etc.) take up
+        source characters but zero display columns -- only count the characters
+        that will actually appear on screen.
+
+  Chained ACS conditions
+        {Q1}{Q2}Command is a compile error.  The correct form is
+        {Q1&Q2}Command.  Conditions are combined inside a single pair of
+        braces using & (AND), | (OR), ! (NOT), and parentheses for grouping.
+
+  Condition on its own line
+        A {condition} written on a line by itself is silently discarded.
+        The condition and the command it gates must be on the same line.
+
+  Invalid Jump targets
+        Jump must point to a real Event or Result block label.  STOP and
+        NextLine are not valid Jump targets -- they are only recognized by
+        Fight, Option, and Input.  A Jump to STOP will cause a runtime crash.
+
+  Missing End
+        Every Event, Result, and Topic block must close with End.  Without
+        it, execution falls through into the next block.  ecomp will not
+        catch this.
+
+  Quest logic in Topic blocks
+        TellQuest and DoneQuest are fine in Topics.  Fights, major flag
+        changes, and story-critical rewards must live in Event or Result blocks
+        only.  Quest logic in a Topic block bypasses the one-quest-per-day
+        limit and breaks campaign pacing.
+
+  Flag number conflicts
+        Each flag number within a scope (P, D, G, T) should have exactly one
+        purpose.  If P3 is used as a story-progress flag in one file and a
+        daily cooldown in another, one of them will silently stomp the other.
+
+  String lengths and path lengths
+        Text/Prompt/AddNews arguments: 254 character maximum.
+        File path aliases: 29 character maximum.
+
+
+[4.2]  Asking the LLM to Fix Mistakes
+-------------------------------------------------------------------------------
+When ecomp reports an error, paste the error message back to the model:
+
+        ecomp reported this error when compiling the event file:
+
+        fallstatt.evt line 47: Error: unknown condition 'Q1Q2'
+
+        Please fix it and show me the corrected block.
+
+Models can usually diagnose and correct individual ecomp errors from the
+output alone.  Fix one issue at a time rather than pasting a long error log
+and asking for a bulk fix -- bulk fixes introduce new errors.
+
+Semantic mistakes (wrong flag number, a fight with no preceding AddEnemy,
+quest logic in a Topic block) usually need to be spotted by you and explained
+to the model.  Tell it what is wrong and what the correct behaviour should be.
+
+
+[4.3]  Regenerating Individual Files
+-------------------------------------------------------------------------------
+If a specific file needs significant revision -- a poorly designed quest, a
+chat file that does not match the established tone, flags that are inconsistent
+across files -- ask the model to regenerate just that file:
+
+        The chat file for the blacksmith NPC does not match the grim tone we
+        established in the interview.  Please regenerate just that NPC's Topic
+        blocks.  Keep all flag numbers and labels identical to what you already
+        generated.
+
+The instruction to keep flag numbers and labels identical is important.  If the
+model renumbers flags, cross-file references in other source files will break.
+
+If you need to change the world design significantly after generation (rename
+an NPC, move a quest to a different story beat, change a faction's role), make
+the change in the chat file and event script together, and ask the model to
+verify that all cross-references are still consistent before you compile.
+
+
+
+Compiling and Installing
+===============================================================================
+
+[5.1]  The Readme the LLM Generates
+-------------------------------------------------------------------------------
+The generated readme.txt lists the exact compilation commands for your pack
+in dependency order.  Follow it sequentially.  All devkit tools are in your
+game directory; the readme will prefix commands with ./ for Unix systems.
+
+A typical sequence for a pack named fallstatt looks like:
+
+        ./mcomp    fallstatt.mon.txt  fallstatt.mon
+        ./makenpc  fallstatt.npc.txt  fallstatt.npc
+        ./ecomp    fallstatt.q.txt    fallstatt.q
+        ./ecomp    fallstatt.evt.txt  fallstatt.evt
+        ./makepak  fallstatt.pak      fallstatt.lst
+
+Run these in order.  If any step fails, the error output will identify the
+problem.  See section 4.2 for how to ask the LLM to fix it.
+
+
+[5.2]  Build Scripts
+-------------------------------------------------------------------------------
+In addition to the readme, the LLM generates:
+
+  Makefile    A Unix makefile.  Run it with: make
+  build.bat   A Windows batch file.  Run it with: build.bat
+
+Both run the same compilation sequence as the readme, in the correct order.
+Use whichever matches your server's operating system.  If a step fails, the
+error output will name the tool and line that caused the failure.
+
+If the generated build script has wrong tool paths (e.g. the tools are in
+a subdirectory the script does not account for), ask the model to regenerate
+the build script with the correct path prefix.
+
+
+[5.3]  Packaging for Distribution
+-------------------------------------------------------------------------------
+Once the pack is compiled and tested, distribute the following files:
+
+        packname.pak    (compiled archive -- all scripts and NPC data)
+        quests.ini      (replaces existing -- back this up first)
+        quests.hlp      (replaces existing -- back this up first)
+        clans.ini       (replaces existing -- back this up first)
+        readme.txt      (installation instructions for the recipient)
+
+Do not include the source .txt files or devkit tools.  The .pak file contains
+everything the game engine needs.  The source files are only useful to someone
+who wants to modify the pack, which is a separate conversation.
+
+If you want to package everything into a zip file and have not yet done so,
+asking the LLM to generate a file list for your zip utility is easier than
+remembering every filename yourself.
+
+
+
+Miscellaneous
+===============================================================================
+
+[6.1]  Frequently Asked Questions
+-------------------------------------------------------------------------------
+[Q]  The model stopped partway through.  Now it is generating something it
+     already generated.  What do I do?
+
+[A]  Tell it exactly where to resume: "You have already generated the monster
+     file and the NPC info file.  Please continue from the chat file."  It
+     should skip what it has done and carry on from the right point.
+
+
+[Q]  The model did not conduct the interview.  It just started generating.
+
+[A]  Send your own world description using the format in section 2.3, and ask
+     the model to confirm its understanding before continuing.  Alternatively,
+     start a fresh session and begin your first message with: "Please conduct
+     the world-building interview described in the prompt before generating
+     any files."
+
+
+[Q]  The generated campaign only has 8 quests, not 30.
+
+[A]  After the model finishes, prompt it: "The prompt specifies a 60-day
+     campaign with approximately 30 quests across 7-8 NPCs.  Please extend
+     the campaign to meet this target, keeping all existing flag assignments
+     and cross-references intact."  A reasoning-mode model will expand the
+     existing design rather than start over.
+
+
+[Q]  ecomp says "condition on its own line" but I cannot find the problem.
+
+[A]  Search the source file for any line that contains nothing but a condition
+     in curly braces -- e.g. a line that reads {D0} with nothing after it.
+     The condition must be written on the same line as the command it gates.
+     Move it there and recompile.
+
+
+[Q]  ecomp says "Jump to invalid target: STOP".
+
+[A]  The model used Jump STOP somewhere.  STOP is only valid as a target for
+     Option and Fight -- not for Jump.  Replace it with a Jump to a Result
+     block that contains only End.
+
+
+[Q]  Can I add quests to an existing campaign rather than replacing it?
+
+[A]  Yes, but carefully.  Start a new session, give the model your existing
+     quests.ini so it can see the current Q flag numbering, and ask it to
+     extend rather than replace.  Stress that Q flag numbers must continue
+     from wherever the existing file ends, not restart from 1.
+
+
+[Q]  The ambient NPCs all sound the same.
+
+[A]  After generation, paste a few Topic blocks back to the model and ask:
+     "These NPCs should each have a distinct voice.  The cobbler is taciturn
+     and practical; the gossip is breathless and unreliable; the ex-soldier is
+     dry and fatalistic.  Please rewrite these blocks to reflect that."
+     Voice differentiation usually improves significantly with a targeted
+     correction prompt.
