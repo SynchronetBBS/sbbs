@@ -72,6 +72,8 @@ What do you most want players to discover, feel, or understand by the end of the
 7. PAK listing file (.lst) — Two-column file mapping filenames to aliases for makepak
 8. clans.ini — Complete configuration file with all NpcFile entries
 9. readme.txt — Step-by-step compilation and installation instructions
+10. build.bat — A windows batch file that generates the PAK file as described in readme.txt
+11. Makefile — A UNIX make file that generates the PAK file as described in readme.txt
 
 ---
 
@@ -594,6 +596,59 @@ Each revealed topic is written in the NPC's own voice. The lore keeper does not 
 
 **Implementation note:** The {Q} and {P} conditions in the Catchup topic must mirror exactly the flags set elsewhere in the quest scripts. Maintain a consistent flag assignment list as you write the pack and verify each condition against it before finalising.
 
+### Ambient NPCs
+
+A campaign with only quest-givers and a lore keeper feels like a waiting room. The village needs people who live in it — people with petty concerns, local opinions, professional worries, and no interest whatsoever in the player's quest log. **Design 20–40 ambient NPCs distributed across all six village locations.** Their purpose is world texture; they have no quest mechanics.
+
+**Design rules for ambient NPCs:**
+- No `TellQuest`, `DoneQuest`, or `Fight` commands. Ever.
+- `MaxTopics 3` to `7` — brief encounters, not extended conversations.
+- `OddsOfSeeing` between 1 and 30 — vary by character. Scarcity makes appearances feel like chance meetings rather than scheduled appointments.
+
+**Campaign awareness:** Every ambient NPC must have at least one piece of dialogue that shifts as {Q} flags advance or {G} flags change. The shift must feel organic. A cobbler does not say "I hear you cleared the old mine passage." A cobbler says "|0CBoots have been wearing out faster lately. All those clans tramping through the lower shafts, I expect." Use the same flag conditions as the quest scripts; the effect is the village noticing what the players have done without anyone acknowledging it directly.
+
+A useful pattern — the same topic block, two branches, one condition:
+
+    Topic cobbler_idle
+    {!Q3}Text "|0CFair bit of traffic through here lately. Mostly armed types heading for the mine.
+    {Q3}Text "|0CQuieter since that business with the Greyvault sealed up. I almost miss the foot traffic.
+    End
+
+Vary which flags each NPC reacts to. A market vendor might track economic consequences (`{G2}` — a trade route open or closed); a church regular tracks spiritual ones (`{Q7}` — a ritual performed or averted); a training hall sparring partner tracks military ones (`{P12}` — the player has raised an army). No single NPC needs to react to everything; collectively they should cover the whole campaign arc.
+
+**Location distribution:** Assign ambient NPCs to locations deliberately. Aim for 3–7 per location. Each location has its own social texture:
+
+| Location | Ambient NPC archetypes |
+|---|---|
+| Street | Gossips, beggars, travelling merchants, off-duty town watch, someone who is definitely following you |
+| Church | Penitents, skeptics, sick people waiting for healing, a priest's assistant with private doubts |
+| Market | Vendors with opinions about every transaction, a fence pretending to be legitimate, a buyer who never buys anything |
+| Town Hall | Bureaucrats with forms for everything, petitioners who have been waiting weeks, a functionary who knows where all the bodies are buried |
+| Training Hall | Veterans comparing old injuries, a terrified new recruit, a retired warrior who insists everything was better in their day |
+| Mine | A villager looking for adventure, the last survivor of another clan, a miner who talks to the walls, a prospector convinced there is a rich vein one level further down, a monster that has reformed and is trying to overcome their reputation |
+
+**The comic relief NPC:** Regardless of overall campaign tone, one ambient NPC must serve as consistent comic relief. This is a design requirement, not a style option. Dark campaigns especially need it — sustained tension without relief becomes numbness. The comic NPC can be a conspiracy theorist whose theories are absurdly wrong but accidentally graze the truth, an incompetent official insisting on procedure while the world burns, a drunk with more insight than they deserve, or a perfectly sincere character whose concerns are hilariously misaligned with actual events. This NPC must still reflect campaign progress — filtered through their comedic lens. If a G flag marks that the mine passage has been sealed, the conspiracy theorist is worried about something entirely unrelated but describes the exact same symptoms in completely the wrong terms.
+
+**Interlocking references:** Ambient NPCs should reference each other and the named story NPCs by name. The market vendor has opinions about the town official. The training hall veteran thinks the main quest-giver is a fool. The street gossip has an improbable story about the lore keeper. Cross-referencing is what turns a list of NPCs into a community.
+
+**Poitential Allies** Many of these ambient NPCs should be able to be convinced to join the player's clan (using `JoinClan` in their chat script). These should be ones that can be lured by the promise of adventure defending the mines, the treasures that can be obtained, or the renown that can be gained.
+
+**File organisation:** With 20–40 NPCs, individual chat files become unmanageable. Group ambient NPCs into shared .q files by location or social cluster, and use distinct TopicID prefixes per NPC to prevent collision:
+
+    # shared chat file for Street-location ambient NPCs
+    # cobbler's topics: cobbler_idle, cobbler_post_q3
+    # gossip's topics: gossip_idle, gossip_suspicious
+
+    Topic cobbler_idle
+    ...
+    End
+
+    Topic gossip_idle
+    ...
+    End
+
+In the NPC Info file, each NPC gets its own `Index` block with its own `QuoteFile` (pointing to the shared alias) and its own `KnownTopic` entries referencing only that NPC's TopicID prefixes. Because the NPC Info file controls which topics appear in the menu, two NPCs can share a compiled .q file without leaking each other's topics to the player.
+
 ### Mechanics
 - Use {T0}–{T63} for within-session branching (e.g., tracking a player choice within one chat).
 - Use {D0}–{D63} for daily gating (e.g., "come back tomorrow for your reward").
@@ -737,6 +792,8 @@ When generating a full campaign, produce files in this order:
 7. PAK listing file (.lst) — two-column file mapping filenames to aliases
 8. clans.ini — complete file with default content and pack's NpcFile entries
 9. readme.txt — compilation and installation instructions
+10. build.bat — compilation and PAK generation script for Windows
+11. Makefile — compilation and PAK generation file for UNIX
 
 ---
 
