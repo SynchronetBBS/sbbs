@@ -597,7 +597,7 @@ Each revealed topic is written in the NPC's own voice. The lore keeper does not 
 ### Mechanics
 - Use {T0}–{T63} for within-session branching (e.g., tracking a player choice within one chat).
 - Use {D0}–{D63} for daily gating (e.g., "come back tomorrow for your reward").
-- **Quest logic belongs in Event blocks in .evt files, never in NPC chat Topics.** NPC chat should use `TellQuest` to reveal a quest and check `{Qaa}` flags to react to completion — that is all. Fights, `DoneQuest`, major rewards, and story-critical `SetFlag` calls must live in Event blocks. Putting quest logic inside a Topic block bypasses the game's one-quest-per-day limit, makes the quest invisible to the quest log, and breaks the intended campaign pacing.
+- **Quest logic belongs in Event blocks in .evt files, never in NPC chat Topics.** NPC chat should use `TellQuest` to reveal a quest and check `{Qaa}` flags to react to completion — that is all. Fights, `DoneQuest`, major rewards, and story-critical `SetFlag` calls must live in Event blocks or Result blocks called from Event blocks. Putting quest logic inside a Topic block bypasses the game's one-quest-per-day limit, makes the quest invisible to the quest log, and breaks the intended campaign pacing.
 - Typical quest flow: NPC chat uses `TellQuest` to unlock the quest → player runs the Event from the quest log → `DoneQuest` on success → NPC chat checks `{Qaa}` to react with new dialogue.
 - Always place AddEnemy immediately before its corresponding Fight.
 - Do NOT use GiveXP — players earn XP naturally through combat in the quest. Use GivePoints, GiveGold, and occasionally GiveFollowers or GiveFight instead.
