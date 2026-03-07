@@ -82,8 +82,10 @@ bool sbbs_t::putnodedat(uint number, node_t* node)
 		return false;
 	}
 
-	if (utime(path, NULL) != 0)   /* Update mod time for NFS/smbfs compatibility */
+	if (utime(path, NULL) != 0) {  /* Update mod time for NFS/smbfs compatibility */
+		errormsg(WHERE, "updating timestamp", "nodefile", number);
 		return false;
+	}
 
 	// Write to node#/status.ini
 	if (number == cfg.node_num) {
@@ -102,11 +104,14 @@ bool sbbs_t::putnodedat(uint number, node_t* node)
 
 		snprintf(path, sizeof path, "%sstatus.ini", cfg.node_path[number - 1]);
 		FILE* fp = iniOpenFile(path, /* modify */ true);
-		if (fp == NULL)
+		if (fp == NULL) {
+			errormsg(WHERE, ERR_OPEN, path, number);
 			result = false;
-		else {
+		} else {
 			result = iniWriteFile(fp, ini);
 			iniCloseFile(fp);
+			if (!result)
+				errormsg(WHERE, ERR_WRITE, path, number);
 		}
 		strListFree(&ini);
 	}
