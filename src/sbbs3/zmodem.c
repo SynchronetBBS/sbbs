@@ -2403,7 +2403,7 @@ const char* zmodem_source(void)
 
 char* zmodem_ver(char *buf)
 {
-	return strcpy(buf, "2.1");
+	return strcpy(buf, "2.2");
 }
 
 void zmodem_init(zmodem_t* zm, void* cbdata

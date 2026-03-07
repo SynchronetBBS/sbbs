@@ -110,7 +110,7 @@ FILE*       errfp;
 FILE*       statfp;
 FILE*       logfp = NULL;
 
-const char* revision = "3.2";
+const char* revision = "3.3";
 
 SOCKET      sock = INVALID_SOCKET;
 
