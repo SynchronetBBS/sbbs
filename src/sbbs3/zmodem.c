@@ -1510,6 +1510,7 @@ int zmodem_get_zfin(zmodem_t* zm)
 		else
 			lprintf(zm, LOG_WARNING, "%s failed to send 'O'", __FUNCTION__);
 	}
+	zmodem_flush(zm);
 
 	return type;
 }
