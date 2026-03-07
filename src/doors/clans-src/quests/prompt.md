@@ -194,7 +194,7 @@ All other commands are executable and may appear inside any block:
 | `Fight` | all | `[WinLabel] [LossLabel] [RunLabel]` | Triggers combat against the enemy group assembled by preceding AddEnemy calls. Jumps to WinLabel on victory, LossLabel on defeat, RunLabel if the clan runs away. Special labels (valid here only): `NextLine` continues after Fight; `STOP` halts execution; `NoRun` as RunLabel prevents fleeing. |
 | `Chat` | all | `[NPCIndex]` | Opens the full chat interface for the NPC identified by the given Index string. |
 | `TellQuest` | all | `[QuestIndex]` | Marks the quest with the given Index string as known to the player, making it visible in the quest log. |
-| `DoneQuest` | all | none | Marks the current quest as completed, setting its Qaa flag true. |
+| `DoneQuest` | all | none | Marks the current quest as completed, setting its Qaa flag true. The engine permanently removes the quest from the player's quest menu — the `QuestsDone` bit is set with a bitwise OR and is never cleared by normal gameplay. A clan that has completed a quest cannot select it again; the engine filters completed quests out of the menu before the player can choose, with a second guard that refuses to run the event even if somehow selected. No script-level guard against re-entry is needed or possible. |
 | `Pause` | all | none | Halts execution and waits for the player to press a key. |
 | `SetFlag` | all | `[Flag]` | Sets the given flag, e.g. T0, P5, G12. |
 | `ClearFlag` | all | `[Flag]` | Clears the given flag. |
@@ -240,17 +240,19 @@ Compiled to a binary .NPC file using `makenpc [infile.txt] [outfile.npc]`. Each 
 
     Index [Unique global identifier — string, max 20 chars, no underscore prefix]
     Name [Display name shown to player — string, max 20 chars]
-    QuoteFile [Path to this NPC's chat file — max 13 chars, e.g. /q/MyNPC]
+    QuoteFile [Path to this NPC's chat file — max 12 chars, e.g. /q/MyNPC or @tv.pak/q/tv]
     NPCDAT [Zero-based ordinal index of this NPC's entry in the compiled .mon file specified by MonFile]
-    MonFile [Path to the compiled .mon file containing this NPC's combat stats — max 13 chars]
+    MonFile [Path to the compiled .mon file containing this NPC's combat stats — max 12 chars]
     Wander [Location where NPC appears as a wanderer — valid values: Street, Church, Market, Town Hall, Training Hall, Mine. Omit entirely for NPCs that only appear via the Chat command in scripts.]
     Loyalty [integer 0–10, default 5. Controls tendency to leave the player's clan. Higher = more loyal (10 = never leaves).]
     MaxTopics [integer — maximum topics the player may discuss in one sitting. Default -1 = no limit.]
-    OddsOfSeeing [integer 0–100 — probability of NPC appearing on a given day. 0 = never appears; 100 = appears every day.]
+    OddsOfSeeing [integer 0–100 — probability of NPC appearing on a given day. 0 = never appears; 100 = appears every day. Default when omitted: 0. For NPCs with no Wander field, the engine skips placement before reading this value, so OddsOfSeeing has no effect — set it to 0 explicitly to document intent.]
     IntroTopic [TopicID — optional topic that runs automatically when the NPC is first approached, before the topic menu appears]
     HereNews [string, max 70 chars — news item displayed when this NPC shows up]
     KnownTopic [TopicID] [Prompt text] — topic visible to the player from the start; repeatable
     Topic [TopicID] [Prompt text] — topic that starts hidden; must be revealed via TellTopic; repeatable
+
+**QuoteFile/MonFile PAK path constraint:** `szQuoteFile` and `szMonFile` are 13-byte C fields storing null-terminated strings, so the maximum path length is **12 characters**. A PAK path has the form `@pakname.pak/x/alias` (overhead: `@` + `.pak/x/` = 8 chars), leaving only `12 − 8 = 4 characters` for pakname and alias combined. A 2-character pack name allows a 2-character alias: `@tv.pak/q/tv` = 12 chars exactly. A 3-character pack name allows only a 1-character alias: `@abc.pak/q/x` = 12 chars. A 4-character pack name allows no alias at all — the path cannot be constructed. **Choose a PAK filename of 2–3 characters.** See the PAK FILE AND PATH CONVENTIONS section.
 
 The compiled .npc file is registered in clans.ini — see the clans.ini section below.
 
@@ -401,6 +403,33 @@ Compiled using `ecomp <infile.txt> <outfile.evt>`. Event and Result blocks separ
     [commands]
     End
 
+**Required flag assignment table:** The .evt source file must open with a `>>` block comment listing every P, G, D, and T flag used anywhere in the pack — in the .evt file, in all chat files, and in any ACS conditions in quests.ini. For each flag, record what sets it and what reads it. This table is the canonical reference that prevents flag number collisions and makes the lore keeper's Catchup topic verifiable. It is a required output, not an optional annotation.
+
+    >>
+    FLAG ASSIGNMENT TABLE
+    Every flag used in this pack. Update this table before writing any SetFlag or {Fnn} condition.
+
+    P flags (per-clan, permanent):
+      P1  Set: [ResultLabel] ([event that sets it])   Read: [TopicName] {P1&...}
+      P2  Set: ...                                    Read: ...
+
+    G flags (global village, permanent until cleared):
+      G0  Set: [label] ([what it marks])   Read: [label] / [TopicName]   Clear: [label]
+
+    D flags (per-clan, daily):
+      D0  Set: [label] ([daily limit])   Read: [label]
+
+    H flags (global village, daily — shared across all clans, reset each night):
+      H0  Set: [label] ([once-per-day world event])   Read: [label]   Clear: automatic (nightly)
+
+    T flags (per-session):
+      T0  Set: [label] ([branch tracking])   Read: [label]
+
+    (Omit flag types not used in this pack.)
+    >>
+
+The table must be exhaustive. Every `SetFlag` call in every file must have a row. Every `{Pnn}`, `{Gnn}`, `{Dnn}`, `{Hnn}`, or `{Tnn}` condition must reference a row. A flag that appears in the table but has no corresponding `SetFlag` anywhere, or a `SetFlag` with no corresponding condition anywhere, is a bug — resolve it before writing the final .lst.
+
 ---
 
 ### clans.ini
@@ -481,6 +510,8 @@ The listing file is plain text, one entry per line, two whitespace-separated col
 
     [real filename on disk]  [alias used in scripts]
 
+Lines whose first character is `#` are treated as comments and skipped. Blank lines are also skipped. Inline comments (text after the second column on a data line) are not parsed — only two tokens are consumed per line, so trailing text is silently ignored rather than explicitly recognised. Do not rely on inline comments; use whole-line `#` comments only.
+
 The alias is what you write in your scripts. By convention aliases use short Unix-style paths to organise content by type:
 
 - /e/ — event scripts (.evt)
@@ -490,19 +521,40 @@ The alias is what you write in your scripts. By convention aliases use short Uni
 
 Aliases are limited to 29 characters including the path prefix.
 
-**Example listing file** for a pack named `fallstatt.pak`:
+**PAK filename length — critical constraint for QuoteFile and MonFile:** `QuoteFile` and `MonFile` fields in NPC info are stored in 12-character C string fields. A PAK path takes the form `@pakname.pak/x/alias`, where the fixed overhead (`@`, `.pak`, `/x/`) consumes 8 characters, leaving only **4 characters for pakname and alias combined**. This is non-negotiable; paths that exceed 12 characters are silently truncated at runtime with no error.
 
-    fallstatt.evt        /e/Fallstatt
-    fallstatt.q          /q/Reichmann
-    fallstatt.q          /q/Edda
-    fallstatt.mon        /m/Fallstatt
-    fallstatt.npc        /n/Fallstatt
+| PAK name length | Alias length available | Example QuoteFile | Chars |
+|---|---|---|---|
+| 2 (`tv`) | 2 | `@tv.pak/q/tv` | 12 ✓ |
+| 3 (`abc`) | 1 | `@abc.pak/q/x` | 12 ✓ |
+| 4+ | 0 | impossible | — |
 
-Built with: `makepak fallstatt.pak fallstatt.lst`
+**Choose a PAK filename of 2–3 characters** (e.g. `tv.pak`, `fs.pak`). Because all NPCs in a pack typically share one compiled .q file and one compiled .mon file, a single short alias is all that is needed — individual NPCs are distinguished by their `NPCDAT` index and `IntroTopic`, not by separate files.
 
-Then referenced in scripts as `@fallstatt.pak/e/Fallstatt`, `@fallstatt.pak/q/Reichmann`, etc., and in clans.ini as `NpcFile @fallstatt.pak/n/Fallstatt`.
+**Example listing file** for a pack with short name `tv`:
+
+    tv.evt        /e/tv
+    tv.q          /q/tv
+    tv.mon        /m/tv
+    tv.npc        /n/tv
+
+Built with: `makepak tv.pak tv.lst`
+
+Then referenced in NPC info as `QuoteFile @tv.pak/q/tv` and `MonFile @tv.pak/m/tv` (12 chars each, exactly at the limit), and in clans.ini as `NpcFile @tv.pak/n/tv`. Event scripts and quests.ini use the 29-char alias limit so may use longer paths: `@tv.pak/e/tv`.
 
 **Note:** a single compiled file can have only one alias. If multiple NPCs share one .q chat file or one .mon monster file, that file appears once in the listing — scripts reference the same alias and use different Index/NPCDAT values to select the correct entry within it.
+
+**Required alias cross-reference check — perform before writing the .lst:**
+
+Before writing the listing file, collect every unique path value used in these three locations:
+
+- `QuoteFile` fields across every NPC block in the .npc.txt file
+- `MonFile` fields across every NPC block in the .npc.txt file
+- `File` fields across every quest block in quests.ini
+
+Each collected path must appear as an alias (the right-hand column) in the .lst **exactly once**. A path that does not appear in the .lst will cause a silent runtime failure — the engine will be unable to open the file and the NPC or quest will not function, with no useful error message. Any alias in the .lst that no collected path references is dead weight — remove it before finalising the file.
+
+Perform the check explicitly: list the collected paths, list the .lst aliases, compare them, and confirm the sets are identical. Do not write the final .lst until this check passes.
 
 ---
 
@@ -594,7 +646,7 @@ Each revealed topic is written in the NPC's own voice. The lore keeper does not 
 
 **Voice guidance:** The lore keeper sounds like someone who has been *watching*, not reporting. They speak with the quiet authority of someone who knows more than they let on. A good lore keeper line makes the player feel their actions have been noticed and that the world has continued moving — not that a database record has been updated. Every line should sound like it could be overheard in a tavern and believed.
 
-**Implementation note:** The {Q} and {P} conditions in the Catchup topic must mirror exactly the flags set elsewhere in the quest scripts. Maintain a consistent flag assignment list as you write the pack and verify each condition against it before finalising.
+**Implementation note:** The {Q} and {P} conditions in the Catchup topic must mirror exactly the flags set elsewhere in the quest scripts. Verify every condition in the Catchup topic against the flag assignment table at the top of the .evt file before finalising the chat file.
 
 ### Ambient NPCs
 
@@ -654,6 +706,7 @@ In the NPC Info file, each NPC gets its own `Index` block with its own `QuoteFil
 - Use {D0}–{D63} for daily gating (e.g., "come back tomorrow for your reward").
 - **Quest logic belongs in Event blocks in .evt files, never in NPC chat Topics.** NPC chat should use `TellQuest` to reveal a quest and check `{Qaa}` flags to react to completion — that is all. Fights, `DoneQuest`, major rewards, and story-critical `SetFlag` calls must live in Event blocks or Result blocks called from Event blocks. Putting quest logic inside a Topic block bypasses the game's one-quest-per-day limit, makes the quest invisible to the quest log, and breaks the intended campaign pacing.
 - Typical quest flow: NPC chat uses `TellQuest` to unlock the quest → player runs the Event from the quest log → `DoneQuest` on success → NPC chat checks `{Qaa}` to react with new dialogue.
+- Once `DoneQuest` is called the quest is permanently gone from that clan's menu. The engine enforces this — no `{Qaa}Jump AlreadyDone` guard at the top of an Event block is needed. Do not write one; it is dead code.
 - Always place AddEnemy immediately before its corresponding Fight.
 - Do NOT use GiveXP — players earn XP naturally through combat in the quest. Use GivePoints, GiveGold, and occasionally GiveFollowers or GiveFight instead.
 - Use `Fight NextLine STOP NoRun` for boss fights the player cannot flee.
@@ -789,7 +842,7 @@ When generating a full campaign, produce files in this order:
 4. Event script (.evt) — all quest logic
 5. quests.ini block(s) — quest registry entries
 6. quests.hlp — complete file, one block per quest
-7. PAK listing file (.lst) — two-column file mapping filenames to aliases
+7. PAK listing file (.lst) — **before writing:** enumerate every `QuoteFile`, `MonFile`, and quests.ini `File` path; confirm each appears as an alias in the .lst exactly once; remove any alias that nothing references
 8. clans.ini — complete file with default content and pack's NpcFile entries
 9. readme.txt — compilation and installation instructions
 10. build.bat — compilation and PAK generation script for Windows
