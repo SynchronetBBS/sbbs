@@ -1,6 +1,6 @@
                     Digital Distortion Archive Viewer
-                              Version 1.06
-                        Release date: 2025-08-17
+                              Version 1.07
+                        Release date: 2026-03-07
 
                                   by
 

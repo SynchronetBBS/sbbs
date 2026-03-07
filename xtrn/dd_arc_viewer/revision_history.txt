@@ -2,6 +2,7 @@ Revision History for Digital Distortion Archive Viewer
 ======================================================
 Version  Date         Description
 -------  ----         -----------
+1.07     2026-03-07   Fix for error about workDir variable not being declared
 1.06     2025-08-17   Now supports .example.cfg configuration filenames. Also
                       allows reading the configuration file from sbbs/mods or
                       sbbs/ctrl.
