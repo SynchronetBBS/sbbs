@@ -21,6 +21,7 @@ int16_t GetHoursLeft(void);
 int16_t GetMinutesLeft(void);
 void door_pause(void);
 bool Door_AllowScreenPause(void);
+void Door_ToggleScreenPause(void);
 char GetKeyNoWait(void);
 
 #endif

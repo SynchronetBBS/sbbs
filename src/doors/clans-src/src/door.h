@@ -64,6 +64,7 @@ bool YesNo(char *Query);
 bool NoYes(char *Query);
 
 bool Door_AllowScreenPause(void);
+void Door_ToggleScreenPause(void);
 
 void Door_ShowTitle(void);
 void InputCallback(void);

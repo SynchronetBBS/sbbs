@@ -300,7 +300,7 @@ static void TwoLiner(unsigned char which)
 
 // ------------------------------------------------------------------------- //
 
-static void Door_ToggleScreenPause(void)
+void Door_ToggleScreenPause(void)
 {
 	Door.AllowScreenPause = !Door.AllowScreenPause;
 }

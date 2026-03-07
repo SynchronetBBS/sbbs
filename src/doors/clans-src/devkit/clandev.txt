@@ -49,6 +49,7 @@ Installing Add-Ons
 ==================
 NPCs ..................................................................   4.1
 Quests ................................................................   4.2
+Testing Quest Packs with qtest ........................................   4.3
 
 Miscellaneous Tools
 ===================
@@ -949,6 +950,185 @@ appears in BOB.PAK and in the file named /e/Bob:
                 File            @BOB.PAK/e/Bob
                 Index           Blood
                 Known
+
+
+[4.3]  Testing Quest Packs with qtest
+-------------------------------------------------------------------------------
+qtest is a standalone debugger for quest packs and NPC scripts.  It runs all
+your quest event scripts and NPC chat files in a safe, sandboxed environment:
+no game data is read from or written to disk, all changes live only in memory
+for the duration of the session, and you can manipulate every flag and resource
+freely to drive your scripts into any state you want.
+
+Use qtest whenever you are developing a new quest pack or making changes to an
+existing one.  It lets you walk through every branch of your event scripts and
+NPC dialogues without touching a live game installation.
+
+
+Running qtest
+.............
+qtest resolves all file paths relative to the directory it is run from, the
+same way the main game binary does.  To test a pack without touching your live
+game directory, create a subdirectory inside the game directory, copy the
+required files into it, and run qtest from there:
+
+        mkdir mypack-test
+        cd mypack-test
+        ../qtest
+
+The following files must be present in the test subdirectory:
+
+  clans.pak    -- Base game data.  Required for the language strings (loaded
+                  via the Language entry in clans.ini) and for any AddEnemy
+                  commands that reference standard monsters such as /m/Eva.
+                  Copy or symlink this from the game directory.
+  clans.ini    -- Your pack's version, listing NpcFile entries that point to
+                  your compiled NPC files.
+  quests.ini   -- Your pack's quest registry.
+  mypak.pak    -- Your pack's compiled PAK file.  If you are not using a PAK
+                  archive, place the individual compiled files here instead:
+                  .npc, .evt, .q, and .mon files as referenced by clans.ini
+                  and quests.ini.
+
+quests.hlp is optional.  When present, the D) action in the Quest Runner lets
+you read a quest's description without running it.  If the file is absent or a
+quest has no matching entry, qtest prints a brief message and continues.
+
+qtest starts with a simulated clan called "DebugClan" and a village called
+"DebugVillage".  The clan has four level-1 members (Fighter, Mage, Cleric, and
+Thief), 5000 gold, and mine level 1.  All quests that are marked Known in
+quests.ini are automatically marked as known for the debug clan as well.
+
+No external tools need to be compiled or installed before using qtest; it links
+directly against the same quest and NPC code as the main game binary.
+
+
+The Main Screen
+...............
+The main screen shows the current state of all flag groups and quest flags,
+plus the debug clan's gold and mine level.  From here you can choose:
+
+        F) Edit Flags
+        G) Edit Gold / Mine Level
+        N) Chat with NPCs
+        Q) Run Quests
+        X) Exit
+
+
+F) Edit Flags
+.............
+Opens the flag editor.  Choose which flag group to modify:
+
+        G) Global village flags (G0-G63)     -- shared across all clans,
+                                                persists until full reset
+        H) Global daily flags (H0-H63)       -- shared across all clans,
+                                                reset each night
+        P) Player flags (P0-P63)             -- per-clan, permanent
+        D) Player daily flags (D0-D63)       -- per-clan, reset each day
+        T) Temp flags (T0-T63)               -- cleared on every new event
+                                                or chat run
+
+After choosing a group, select S)et or C)lear and enter the flag number (0 to
+63).  Use this to put the game into exactly the state your ACS conditions
+expect, so you can test every branch of your scripts.
+
+
+G) Edit Gold / Mine Level
+.........................
+Lets you change the debug clan's vault gold and mine level.  Press Enter to
+keep the current value.  Useful for testing gold-cost branches (TakeGold,
+$NNN conditions) and mine-level conditions (Lyy, Kyy).
+
+
+N) Chat with NPCs
+.................
+Lists all NPCs registered in clans.ini (NpcFile entries) with their wander
+location and odds of appearing.  Choose a number to open the full chat
+interface for that NPC, exactly as a player would see it in the game.
+
+Mock output:
+  - Display commands show the filename that would be rendered.
+  - AddNews commands show the news string that would be added.
+  - GiveItem commands show the item name that would be given.
+  - my_random prompts you to enter the result you want (0 to limit-1), so
+    you can test both the lucky and unlucky paths of any random branch.
+
+If no NPCs appear, check that your clans.ini NpcFile entries point to
+compiled .npc files (not the uncompiled .txt sources).
+
+
+Q) Run Quests
+.............
+Lists all active quests from quests.ini.  Each entry shows:
+
+        [ K D ]  where K = Known, D = Done.  "-" means the flag is not set.
+
+Choose a quest by number.  A sub-menu appears:
+
+        R) Run         -- Ask whether to force the quest K)nown, then execute
+                          its Event block as the game engine would.
+        D) Description -- Show the quest's entry from quests.hlp (if present).
+        B) Back        -- Return to the quest list without running anything.
+
+After R) runs and the event returns:
+  - If the event script called DoneQuest, the quest is marked Done and
+    Known for the rest of the session.
+  - The result is shown on screen before returning to the quest list.
+
+Mock output is the same as for NPC chat (Display, AddNews, GiveItem all print
+to screen rather than taking real action).  Fights are mocked: qtest asks you
+to choose W)in, L)ose, or R)un Away so you can test all three paths.
+
+Temp flags (T0-T63) are cleared automatically before each quest run, matching
+the behaviour of the real game engine.
+
+
+Testing workflow
+................
+Here is a suggested workflow for testing a new quest pack:
+
+1. Compile all source files (mcomp, makenpc, ecomp) and build your PAK file
+   with makepak.  See sections 1.2, 2.2, 3.2, and 5.1 for details.
+
+2. Create a test subdirectory inside the game directory.  Copy or symlink
+   clans.pak from the game directory into it, then copy your pack's clans.ini,
+   quests.ini, and compiled PAK file (or individual compiled files) into it.
+   Run qtest from that subdirectory:
+
+        mkdir mypack-test
+        cd mypack-test
+        cp ../clans.pak .          # or: ln -s ../clans.pak .
+        cp /path/to/mypak.pak .
+        cp /path/to/clans.ini .
+        cp /path/to/quests.ini .
+        ../qtest
+
+3. Use N) to run through each NPC's chat topics.  Check that:
+     - Known topics appear immediately.
+     - Hidden topics (Topic keyword) are not visible until TellTopic runs.
+     - IntroTopic fires on the first interaction.
+     - Quest reveal topics (TellQuest) correctly mark quests as known.
+     - Conditions ({Qaa}, {Pnn}, {Dnn}) gate dialogue correctly.
+
+4. Use Q) to run each quest event script.  For each quest:
+     a. Run it once without the Known flag to check that the guard condition
+        ({!Qaa} or first-time checks) works correctly.
+     b. Run it again with K forced to test the normal flow.
+     c. Use F) to set the flags your ACS conditions depend on, then re-run
+        to reach each branch.
+     d. Choose different fight outcomes (W/L/R) to verify all three paths
+        lead somewhere sensible.
+     e. After the quest completes, confirm the D flag appears in the quest
+        list and that any P or G flags you set with SetFlag are visible on
+        the main screen.
+
+5. Verify that G (global) flag changes are reflected across both the NPC and
+   quest screens, since global flags represent world state shared by all clans.
+
+6. When all branches work as expected in qtest, copy your pack files into the
+   live game directory (or into a configured test/ instance if you have one)
+   and do a final manual run using ./clans to confirm the compiled scripts
+   work correctly against a live game instance.
 
 
 Miscellaneous Tools

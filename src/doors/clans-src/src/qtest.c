@@ -15,6 +15,7 @@
 
 #include "clansini.h"
 #include "console.h"
+#include "help.h"
 #include "language.h"
 #include "myopen.h"
 #include "npc.h"
@@ -58,11 +59,27 @@ int16_t Fight_Fight(struct clan *Attacker, struct clan *Defender,
                     bool HumanEnemy, bool CanRun, bool AutoFight)
 {
 	(void)Attacker;
-	(void)Defender;
 	(void)HumanEnemy;
 	(void)AutoFight;
 
-	zputs("\n|0E[MOCK Fight] |07Choose fight result:\n");
+	char buf[128];
+	if (Defender->szName[0]) {
+		snprintf(buf, sizeof(buf), "\n|0E[MOCK Fight] |07vs |0B%s|07:\n",
+		         Defender->szName);
+	} else {
+		snprintf(buf, sizeof(buf), "\n|0E[MOCK Fight] |07vs enemies:\n");
+	}
+	zputs(buf);
+	for (int i = 0; i < MAX_MEMBERS; i++) {
+		if (!Defender->Member[i])
+			continue;
+		snprintf(buf, sizeof(buf), "  |0B%-20s|07 Difficulty: |0A%d|07\n",
+		         Defender->Member[i]->szName,
+		         (int)Defender->Member[i]->Difficulty);
+		zputs(buf);
+	}
+
+	zputs("Choose fight result:\n");
 	zputs("  |0AW|07) Win\n");
 	zputs("  |0AL|07) Lose\n");
 	if (CanRun)
@@ -78,7 +95,6 @@ int16_t Fight_Fight(struct clan *Attacker, struct clan *Defender,
 
 	char c = GetAnswer(keys);
 	c = (char)toupper((unsigned char)c);
-	char buf[4];
 	snprintf(buf, sizeof(buf), "%c\n", c);
 	zputs(buf);
 
@@ -188,7 +204,6 @@ int my_random(int limit)
 	zputs(prompt);
 	char numstr[8] = {0};
 	DosGetStr(numstr, 7, false);
-	zputs("\n");
 	int n = atoi(numstr);
 	if (n < 0)
 		return 0;
@@ -597,16 +612,16 @@ static void quest_submenu(void)
 
 			char buf[256];
 			snprintf(buf, sizeof(buf),
-			         "  |0A%2d|07) |0B%-30s|07 [%s%s]\n",
+			         "   |07[%s%s] |0A%2d|07) |0B%-30s\n",
+			         known ? "K" : "-",
+			         done  ? "D" : "-",
 			         j + 1,
 			         Quests[i].pszQuestName
-			             ? Quests[i].pszQuestName : "(unnamed)",
-			         known ? "K" : "-",
-			         done  ? "D" : "-");
+			             ? Quests[i].pszQuestName : "(unnamed)");
 			zputs(buf);
 		}
 
-		zputs("\n  Legend: |0AK|07=Known  |0AD|07=Done\n");
+		zputs("\n  |07Legend: |0AK|07=Known  |0AD|07=Done\n");
 		zputs("  |0A 0|07) Back\n|0E> |07");
 
 		char numstr[8] = {0};
@@ -621,28 +636,60 @@ static void quest_submenu(void)
 		}
 
 		int qi = qmap[choice - 1];
+		const char *qname = Quests[qi].pszQuestName
+		                    ? Quests[qi].pszQuestName : "(unnamed)";
 
-		zputs("Force quest |0AK|07)nown before running? (Y/N): ");
-		char c = GetAnswer("YN");
-		char buf[4];
-		snprintf(buf, sizeof(buf), "%c\n", c);
-		zputs(buf);
-		if (toupper((unsigned char)c) == 'Y')
-			PClan.QuestsKnown[qi / 8] |= (uint8_t)(1u << (qi % 8));
+		for (;;) {
+			char buf[256];
+			snprintf(buf, sizeof(buf),
+			         "\n|0B%s\n|07  |0AR|07) Run  |0AD|07) Description"
+			         "  |0AB|07) Back\n|0E> |07",
+			         qname);
+			zputs(buf);
 
-		ClearFlags(Quests_TFlags);
-		bool result = RunEvent(false,
-		                       Quests[qi].pszQuestFile,
-		                       Quests[qi].pszQuestIndex,
-		                       NULL, NULL);
+			char act = GetAnswer("RDB");
+			act = (char)toupper((unsigned char)act);
+			snprintf(buf, sizeof(buf), "%c\n", act);
+			zputs(buf);
 
-		if (result) {
-			PClan.QuestsDone[qi / 8]  |= (uint8_t)(1u << (qi % 8));
-			PClan.QuestsKnown[qi / 8] |= (uint8_t)(1u << (qi % 8));
-			zputs("\n|14Quest marked as completed.\n");
+			if (act == 'B')
+				break;
+
+			if (act == 'D') {
+				Help(qname, (char[]){ "quests.hlp" });
+				door_pause();
+				continue;
+			}
+
+			/* act == 'R': run the quest */
+			if (!(PClan.QuestsKnown[qi / 8] & (uint8_t)(1u << (qi % 8)))) {
+				zputs("Force quest |0AK|07)nown before running? (Y/N): ");
+				char c = GetAnswer("YN");
+				snprintf(buf, sizeof(buf), "%c\n", c);
+				zputs(buf);
+				if (toupper((unsigned char)c) == 'Y')
+					PClan.QuestsKnown[qi / 8] |= (uint8_t)(1u << (qi % 8));
+			}
+
+			ClearFlags(Quests_TFlags);
+			zputs("\n|0BDescription (from quests.hlp)\n|07=============================\n\n");
+			Help(qname, (char[]){ "quests.hlp" });
+			zputs("\n");
+			zputs("\n|0BQuest Begins Here\n|07=================\n\n");
+			bool result = RunEvent(false,
+			                       Quests[qi].pszQuestFile,
+			                       Quests[qi].pszQuestIndex,
+			                       NULL, NULL);
+
+			if (result) {
+				PClan.QuestsDone[qi / 8]  |= (uint8_t)(1u << (qi % 8));
+				PClan.QuestsKnown[qi / 8] |= (uint8_t)(1u << (qi % 8));
+				zputs("\n|14Quest marked as completed.\n");
+			}
+
+			door_pause();
+			break;
 		}
-
-		door_pause();
 	}
 }
 

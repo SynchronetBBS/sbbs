@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 #include "platform.h"
 
+#include "console.h"
 #include "defines.h"
 #include "door.h"
 #include "video.h"
@@ -340,8 +341,128 @@ void zputs(const char *string)
 			}
 			else {
 				put_character(string[cur_char], cur_attrs, x, y);
-
 				cur_char++;
+				x++;
+			}
+		}
+		else if (string[cur_char] == '%') {
+			if (string[cur_char + 1] == 'P') {
+				/* pause */
+				cur_char += 2;
+				door_pause();
+			}
+			else if (string[cur_char + 1] == 'C') {
+				/* cls */
+				clrscr();
+				cur_char += 2;
+				x = 0;
+				y = 0;
+			}
+			else if (string[cur_char + 1] == 'B') {
+				/* backspace */
+				if (x)
+					x--;
+				gotoxy(x, y);
+				cur_char += 2;
+			}
+			else if (string[cur_char + 1] == 'V') {
+				/* version */
+				zputs(VERSION);
+				cur_char += 2;
+				x += strlen(VERSION);
+			}
+			else if (string[cur_char + 1] == 'N') {
+				Door_ToggleScreenPause();
+				cur_char += 2;
+			}
+			else if (string[cur_char + 1] == 'T') {
+				/* send 24 CR/LF to "clear" line*/
+				for (i = 0; i < ScreenLines; i++) {
+					zputs("\n\r");
+					delay(10);
+				}
+				cur_char += 2;
+			}
+			else if (string[cur_char + 1] == 'Y') {
+				/* send 24 CR/LF to "clear" line*/
+				for (i = 0; i < ScreenLines; i++)
+					zputs("\n\r");
+				cur_char += 2;
+			}
+			else if (string[cur_char + 1] == 'Z') {
+				/* end line */
+				return;
+			}
+			else if (string[cur_char + 1] == 'D') {
+				/* delay 100 */
+				delay(100);
+				cur_char += 2;
+			}
+			else if (string[cur_char + 1] == 'R') {
+				/* \r */
+				zputs("\r");
+				cur_char += 2;
+			}
+			else if (string[cur_char + 1] == 'L') {
+				/* \r */
+				zputs("\n\r");
+				cur_char += 2;
+			}
+			else if (string[cur_char + 1] == 'F') {
+				/* fights remaining */
+				zputs("15");
+				cur_char += 2;
+			}
+			else if (string[cur_char + 1] == 'M') {
+				/* mine level */
+				zputs("5");
+				cur_char += 2;
+			}
+			else if (string[cur_char + 1] == 'S') {
+				/* spellcasting options */
+				switch (string[cur_char + 2]) {
+					case 'S' : /* source of cast */
+						zputs("<Clan Member>");
+						cur_char += 3;
+						break;
+					case 'D' : /* destination/target of cast */
+						zputs("<Enemy>");
+						cur_char += 3;
+						break;
+					case 'V' : /* value of cast */
+						zputs("10");
+						cur_char += 3;
+						break;
+					default :
+						cur_char++;
+						break;
+				}
+			}
+			else if (string[cur_char + 1] == '1') {
+				/* pawn level */
+				zputs("1");
+				cur_char += 2;
+			}
+			else if (string[cur_char + 1] == '2') {
+				/* wiz shop level */
+				zputs("2");
+				cur_char += 2;
+			}
+			else if (string[cur_char + 1] == 'X') {
+				/* market level */
+				zputs("3");
+				cur_char += 2;
+			}
+			else if (string[cur_char + 1] == 'Q') {
+				/* market quality level */
+				zputs("Good");
+				cur_char += 2;
+			}
+			else {
+				// od_emulate( *cur_char );
+				clans_putch((uint8_t)string[cur_char]);
+				cur_char++;
+				x++;
 			}
 		}
 		else if (string[cur_char] == '\n')  {

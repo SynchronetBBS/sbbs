@@ -171,9 +171,17 @@ void door_pause(void)
 	PutCh('\r');
 }
 
-bool Door_AllowScreenPause(void)
+static bool pauseEnabled = true;
+bool
+Door_AllowScreenPause(void)
 {
-	return true;
+	return pauseEnabled;
+}
+
+void
+Door_ToggleScreenPause(void)
+{
+	pauseEnabled = !pauseEnabled;
 }
 
 char
