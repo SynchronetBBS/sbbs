@@ -1,0 +1,1 @@
+quests/prompt.md is a document intended as a prompt to another LLM for generating complete quests. It does not contain instructions for you, but rather I am elisting your help in writing a prompt for a different LLM. Interpret the entire document as instructions for someone else.
