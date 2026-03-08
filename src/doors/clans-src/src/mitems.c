@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 
 	if (argc != 3) {
 		printf("usage:\nmitems items.txt items.dat\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	Init_Items(argv[1]);
@@ -97,7 +97,7 @@ static void Init_Items(char *szFileName)
 	fpItems = fopen(szFileName, "r");
 	if (!fpItems) {
 		printf("Error opening items file.\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	/* make all items NULL pointers */

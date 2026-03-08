@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 
 	if (argc != 3) {
 		printf("Format: ecomp eventfile.txt outfile.[e/q]\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	fpEvent = fopen(argv[1], "r");
@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 	Buffer = calloc(1, MALLOC_SZ);
 	if (!Buffer) {
 		printf("Error allocating mem\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 	BufferPtr = 0;          // which element are we currently pointing to?
 	EventInBuffer = false;  // true if carrying event in our buffer

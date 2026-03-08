@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 {
 	if (argc != 3) {
 		printf("\nformat:\n MakeNPC [infile.txt] [outfile.npc]\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	printf("NPC is %d bytes\n", BUF_SIZE_NPCInfo);

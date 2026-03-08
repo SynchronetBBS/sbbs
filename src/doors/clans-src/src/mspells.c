@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 
 	if (argc != 3) {
 		printf("Format:  mspells <spells.txt> <spells.dat>\n\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	Init_Spells(argv[1]);
@@ -168,7 +168,7 @@ static void Init_Spells(char *szFileName)
 	fpSpell = fopen(szFileName, "r");
 	if (!fpSpell) {
 		printf("\aError opening spells file %s.\n", szFileName);
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	/* make all spells NULL pointers */

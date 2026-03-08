@@ -76,19 +76,19 @@ int main(int argc, char *argv[])
 
 	if (argc != 3) {
 		printf("Format:  mcomp <monster.txt> <output.mon>\n\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	fpMonIn = fopen(argv[1], "r");
 	if (!fpMonIn) {
 		printf("Error opening %s.\n", argv[1]);
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	fpMonOut = fopen(argv[2], "w+b");
 	if (!fpMonOut) {
 		printf("Error opening %s.\n", argv[2]);
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	/* generate index while doing list */

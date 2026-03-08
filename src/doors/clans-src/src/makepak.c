@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 
 	if (argc != 3) {
 		printf("Format:  MAKEPAK [.PAK to produce] [PAKfile listing]\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 
@@ -45,14 +45,14 @@ int main(int argc, char *argv[])
 	fpPakFile = fopen(szPakName, "wb");
 	if (!fpPakFile) {
 		printf("can't open %s\n", szPakName);
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	fpList = fopen(szPakList, "r");
 	if (!fpList) {
 		printf("can't open %s\n", szPakList);
 		fclose(fpPakFile);
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	lPakSize = 0;
