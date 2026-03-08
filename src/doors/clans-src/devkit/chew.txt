@@ -42,7 +42,6 @@ that I actually used.
     quests.hlp
     reset.hlp
     clanad.ans
-    clans.cfj
     news.txt
     /Outbound
     route.smp
