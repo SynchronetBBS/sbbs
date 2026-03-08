@@ -1,0 +1,67 @@
+# Covers all TypeFlag values, all string fields, and all modifier keywords.
+
+# Damage spell
+Name		Fireball
+Flag		Damage
+Level		5
+SP              10
+Value		20
+Energy		50
+DamageStr	%SS launches a fireball at %SD!
+
+# Modify spell with WisdomCanReduce and StatusStr
+Name		Curse
+Flag		Modify
+Agility		-3
+Level		8
+SP              15
+NoTarget
+ModifyStr	%SS curses %SD!
+WearoffStr	The curse on %SD fades away.
+StatusStr	Cursed
+WisdomCanReduce
+
+# Friendly Modify spell with MultiAffect and StrengthCanReduce
+Name		War Blessing
+Flag		Modify
+Strength	+3
+Dexterity	+1
+Friendly
+Level		3
+SP              8
+MultiAffect
+ModifyStr	%SS blesses %SD with power!
+WearoffStr	The blessing on %SD has faded.
+StrengthCanReduce
+
+# Incapacitate spell
+Name		Stun
+Flag		Incapacitate
+Level		6
+SP              12
+OtherStr	%SS stuns %SD!
+
+# RaiseUndead spell
+Name		Raise Dead
+Flag		RaiseUndead
+Level		10
+SP              20
+UndeadName	Skeleton Warrior
+OtherStr	%SS raises a fallen warrior!
+
+# BanishUndead spell
+Name		Banish Evil
+Flag		BanishUndead
+Level		7
+SP              12
+Energy		30
+
+# Charisma-affecting spell covering Charisma attribute case
+Name		Demoralise
+Flag		Modify
+Charisma	-2
+Wisdom		-1
+Level		4
+SP              7
+ModifyStr	%SS demoralises %SD!
+WearoffStr	%SD recovers their composure.

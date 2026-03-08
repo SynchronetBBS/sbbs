@@ -1,0 +1,11 @@
+Name            Test Sword
+Type            Weapon
+Cost            500
+Strength        +5
+Agility         -1
+Requirements
+Strength        5
+DiffMaterials
+Energy          100
+Village         ALL
+RandLevel       5

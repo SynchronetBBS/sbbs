@@ -1,0 +1,28 @@
+# Two classes -- exercises the flush-on-next-Name path, MaxMP field,
+# and multiple Spell entries.
+
+Name            Mage
+Agility         2
+Dexterity       1
+Strength        -1
+Wisdom          5
+ArmorStr        0
+Charisma        0
+MaxHP           7
+MaxMP           15
+Gold            50
+Spell           1
+Spell           2
+Spell           3
+
+Name            Ranger
+Agility         5
+Dexterity       6
+Strength        3
+Wisdom          2
+ArmorStr        1
+Charisma        2
+MaxHP           9
+MaxMP           4
+Gold            200
+Spell           8

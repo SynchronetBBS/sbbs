@@ -1,0 +1,65 @@
+# Covers all item types, Special flag, all attribute sections,
+# HPAdd, SPAdd, Spell, Level (MarketLevel), Uses, Village, RandLevel.
+
+Name            Plate Mail
+Type            Armor
+Cost            800
+Stats
+ArmorStr        +4
+Agility         -2
+Requirements
+Strength        10
+Penalties
+Agility         2
+DiffMaterials
+Energy          200
+Village         ALL
+RandLevel       5
+
+Name            Tower Shield
+Type            Shield
+Cost            600
+ArmorStr        +3
+Agility         -1
+DiffMaterials
+Energy          150
+Village         ALL
+
+Name            Fireball Scroll
+Type            Scroll
+Cost            300
+Spell           5
+Uses            1
+Village         ALL
+
+Name            Healing Book
+Type            Book
+Cost            500
+Spell           1
+Uses            3
+Village         ALL
+
+Name            Lucky Charm
+Type            Other
+Cost            200
+HPAdd           5
+SPAdd           3
+Energy          999
+Village         ALL
+
+Name            Enchanted Blade
+Type            Weapon
+Cost            1200
+Strength        +8
+Agility         +1
+Charisma        +1
+Requirements
+Strength        12
+Agility         8
+Dexterity       6
+DiffMaterials
+Energy          500
+Village         ALL
+RandLevel       8
+Level           3
+Special

@@ -1,0 +1,4 @@
+Index   TestVillager
+Name    Test Villager
+Wander  Street
+OddsOfSeeing    50

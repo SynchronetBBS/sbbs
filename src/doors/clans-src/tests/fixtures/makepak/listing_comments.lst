@@ -1,0 +1,5 @@
+# This is a comment line -- skipped by makepak
+
+dummy.txt	/test/dummy
+
+file1.txt	/data/one

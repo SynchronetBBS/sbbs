@@ -1,0 +1,3 @@
+0001 ST_TEST_A First test string
+0002 ST_TEST_B Second test string
+0003 ST_TEST_C Third string

@@ -1,0 +1,10 @@
+Name            TestFighter
+Agility         3
+Dexterity       3
+Strength        4
+Wisdom          1
+ArmorStr        0
+Charisma        1
+MaxHP           8
+MaxMP           4
+Gold            100

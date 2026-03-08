@@ -1,0 +1,12 @@
+# Covers: GetKey with ~ (Enter), GetKey with letter, Input command
+
+Event KeyMenu
+  Text "Press a key or type your answer:
+  GetKey ~ DoneResult
+  GetKey A DoneResult
+  Input DoneResult What is your name?
+End
+
+Result DoneResult
+  Text "Thank you for your input.
+End

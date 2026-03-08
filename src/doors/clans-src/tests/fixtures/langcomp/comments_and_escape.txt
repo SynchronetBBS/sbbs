@@ -1,0 +1,11 @@
+# This comment line is skipped by langcomp
+ This space-prefixed line is also skipped
+0001 ST_FIRST First real string
+0002 ST_NEWLINE_EMBED Line ends with embedded newline@@
+0003 ST_ESCAPE Escape sequence: ^[7mhello^[0m
+0004 ST_BELL Bell character: ^G done
+0005 ST_CR Carriage return: ^N here
+0006 ST_BACKSPACE Backspace: ^H done
+0007 ST_NUL Embedded nul: ^- end
+0000 ST_ZERO Zero ID is always skipped by langcomp
+0008 ST_PLAIN String without a macro name

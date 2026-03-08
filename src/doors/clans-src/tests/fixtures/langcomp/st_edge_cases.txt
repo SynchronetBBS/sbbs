@@ -1,0 +1,2 @@
+0001 ST_VALID_1 Good macro - should appear in mstrings.h
+0002 ST_VALID_2 Another good macro - should appear in mstrings.h

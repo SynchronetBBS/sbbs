@@ -1,0 +1,9 @@
+# Covers: FalseFlag and ResetEnemies -- both are in the keyword list
+# but have no case in the switch; they are silently ignored (no-op).
+
+Event FalseFlagTest
+  Text "Before FalseFlag
+  FalseFlag
+  ResetEnemies
+  Text "After FalseFlag and ResetEnemies
+End

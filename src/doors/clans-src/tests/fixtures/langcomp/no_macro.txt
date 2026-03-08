@@ -1,0 +1,1 @@
+0001 Just a plain string without a macro name

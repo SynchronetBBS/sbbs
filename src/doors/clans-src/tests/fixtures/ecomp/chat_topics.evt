@@ -1,0 +1,17 @@
+# Covers: Chat, Topic, TellTopic, Display, AddNews, JoinClan, EndChat
+
+Event ChatEvent
+  Chat TownSmith
+End
+
+Topic TownSmith.Welcome
+  Text "Welcome to my shop, traveler!
+  TellTopic TownSmith.Services
+End
+
+Topic TownSmith.Services
+  Display weapons.asc
+  AddNews New weapons are available at the smithy!
+  JoinClan
+  EndChat
+End

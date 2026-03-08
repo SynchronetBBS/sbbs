@@ -1,0 +1,29 @@
+# Covers: Result, Option, Prompt, TellQuest, SetFlag, ClearFlag,
+#         GiveXP, GiveGold, GiveItem, TakeGold, AddNews,
+#         GiveFight, GiveFollowers, GivePoints, DoneQuest, Pause, Jump
+
+Event MainEvent
+  Prompt "Which path will you take?
+  Option A MainEvent.ChoiceA
+  Option B MainEvent.ChoiceB
+End
+
+Result MainEvent.ChoiceA
+  TellQuest MyQuest
+  SetFlag 5
+  GiveXP 100
+  GiveGold 50
+  GiveItem SomeSword
+  Pause
+  Jump MainEvent.ChoiceB
+End
+
+Result MainEvent.ChoiceB
+  ClearFlag 5
+  TakeGold 10
+  AddNews The quest has been completed!
+  GiveFight SomeMonster
+  GiveFollowers 3
+  GivePoints 10
+  DoneQuest
+End

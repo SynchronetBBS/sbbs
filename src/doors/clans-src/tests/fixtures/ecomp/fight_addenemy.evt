@@ -1,0 +1,9 @@
+# Covers: Fight (3 labels), Heal, AddEnemy (filename + count), EndQ
+
+Event FightScene
+  Text "You face enemies!
+  Fight NextLine STOP NoRun
+  Heal 5
+  AddEnemy monsters.mon 3
+  Text "The enemies are defeated!
+  EndQ

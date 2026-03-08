@@ -1,0 +1,26 @@
+# Two monsters -- exercises the flush-on-next-Name path,
+# and covers SP, Spell, Weapon, Shield, Armor, Undead fields.
+
+Name            Goblin
+HP              20
+Difficulty      2
+Agility         6
+Dexterity       5
+Strength        7
+Wisdom          1
+ArmorStr        0
+SP              5
+Spell           1
+Weapon          2
+
+Name            Skeleton Dragon
+HP              80
+Difficulty      5
+Agility         4
+Dexterity       3
+Strength        15
+Wisdom          5
+ArmorStr        3
+Shield          1
+Armor           3
+Undead

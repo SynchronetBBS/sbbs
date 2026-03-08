@@ -1,0 +1,23 @@
+# Covers: {legal} prefix, >> block comments, $ terminator
+
+Event VisibleA
+  {Q1}Text "Only shown when quest 1 is active
+  Text "Always shown
+End
+
+>> Block comment begins - everything until next >> is skipped
+
+Event HiddenEvent
+  Text "This event must NOT appear in the output
+End
+
+>> Block comment ends
+
+Event VisibleB
+  Text "Second visible event - after comment block
+End
+
+$
+Event NeverReached
+  Text "Past the dollar-sign terminator - never compiled
+End

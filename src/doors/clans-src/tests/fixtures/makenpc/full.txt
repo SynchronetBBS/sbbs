@@ -1,0 +1,22 @@
+# Two NPCs -- exercises the flush-on-next-Index path and all NPC fields.
+
+Index   Merchant
+Name    Elena the Merchant
+Wander  Market
+OddsOfSeeing    80
+Loyalty 7
+HereNews    The merchant is here today!
+QuoteFile   /q/NpcQuote
+IntroTopic  greeting
+Topic   greeting Greetings
+MaxTopics   3
+
+Index   Priest
+Name    Father Marcus
+Wander  Church
+OddsOfSeeing    60
+Loyalty 8
+NPCDAT  2
+MonFile /m/Npc
+KnownTopic  prayer Prayer
+Topic   bless Blessing

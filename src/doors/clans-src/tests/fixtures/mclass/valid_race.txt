@@ -1,0 +1,10 @@
+Name            TestHuman
+Agility         5
+Dexterity       5
+Strength        5
+Wisdom          4
+ArmorStr        0
+Charisma        4
+MaxHP           12
+MaxMP           4
+Gold            300

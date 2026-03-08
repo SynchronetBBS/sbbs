@@ -1,0 +1,1 @@
+Content of file two for multi-file pak test -- slightly longer than file one.
