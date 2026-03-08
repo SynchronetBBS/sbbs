@@ -6553,7 +6553,7 @@ int read_post_data(http_session_t * session)
 				else {
 					/* realloc() to new size */
 					/* FREE()d in close_request */
-					p = static_cast<char *>(realloc(session->req.post_data, s));
+					p = static_cast<char *>(realloc(session->req.post_data, s + 1));
 					if (p == NULL) {
 						errprintf(LOG_CRIT, WHERE, "%04d %-5s [%s] !ERROR Allocating %lu bytes of memory"
 							, session->socket, session->client.protocol, session->host_ip, (ulong)session->req.post_len);
