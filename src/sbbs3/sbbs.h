@@ -1383,9 +1383,11 @@ extern "C" {
 #endif
 
 	/* main.cpp */
+#ifdef SBBS
 	extern const char* nulstr;
 	extern const char* crlf;
 	extern int64_t uptime;
+#endif
 	DLLEXPORT int		sbbs_random(int);
 	DLLEXPORT void		sbbs_srand(void);
 	DLLEXPORT uint 		repeated_error(int line, const char* function);
