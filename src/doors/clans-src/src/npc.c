@@ -297,7 +297,7 @@ void NPC_ChatNPC(char *szIndex)
 
 	// run intro topic
 	if (NPCInfo->IntroTopic.Active) {
-		if (RunEvent(true, NPCInfo->szQuoteFile,
+		if (RunEvent(true, true, NPCInfo->szQuoteFile,
 					 NPCInfo->IntroTopic.szTopicLabel, NPCInfo, szIndex) == true) {
 			free(NPCInfo);
 			return;
@@ -362,7 +362,7 @@ void NPC_ChatNPC(char *szIndex)
 		}
 
 		// otherwise, "run" that quote in the NPCQUOTE.Q file
-		if (RunEvent(true, NPCInfo->szQuoteFile,
+		if (RunEvent(true, true, NPCInfo->szQuoteFile,
 					 NPCInfo->Topics[WhichTopic].szTopicLabel, NPCInfo, szIndex) == true) {
 			// player killed while fighting, quit
 			break;

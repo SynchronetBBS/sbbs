@@ -343,6 +343,9 @@ player flag 2, spent some gold, and healed the party:
         TFlags=
         Gold=4750
         MineLevel=1
+        Points=0
+        FightsLeft=10
+        Followers=0
         QuestsKnown=1
         QuestsDone=1
         Member0.Name=Fighter
@@ -372,8 +375,14 @@ are always reported (Member0 through Member3) even if unchanged.
   TFlags          Set Temp flag numbers, comma-separated.
   Gold            Vault gold (int32).
   MineLevel       Mine level.
+  Points          Clan prestige points (int32).
+  FightsLeft      Fights remaining today (int16).
+  Followers       Army followers (int32).
   QuestsKnown     1-based indices of quests currently marked known.
-  QuestsDone      1-based indices of quests currently marked done.
+  QuestsDone      1-based indices of quests currently marked done.  When
+                  using -e, qtest has no quest index (events are run
+                  directly, not looked up via quests.ini), so a successful
+                  DoneQuest always appears as index 1 in this field.
 
 For each member, N is the 0-based index (0 = Fighter, 1 = Mage,
 2 = Cleric, 3 = Thief):

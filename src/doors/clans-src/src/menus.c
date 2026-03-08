@@ -327,19 +327,19 @@ static int16_t MainMenu(void)
 				if (BannerShown != 2)
 					rputs(ST_SECRET2);
 				else
-					RunEvent(false, szSecret, "2", NULL, NULL);
+					RunEvent(false, true, szSecret, "2", NULL, NULL);
 				break;
 			case '3' :  // secret #3
-				RunEvent(false, szSecret, "3", NULL, NULL);
+				RunEvent(false, true, szSecret, "3", NULL, NULL);
 				break;
 			case '4' :  // secret #4
-				RunEvent(false, szSecret, "4", NULL, NULL);
+				RunEvent(false, true, szSecret, "4", NULL, NULL);
 				break;
 			case '5' :  // secret #5
 				if (BannerShown != 5)
 					rputs(ST_SECRET5);
 				else
-					RunEvent(false, szSecret, "5", NULL, NULL);
+					RunEvent(false, true, szSecret, "5", NULL, NULL);
 				break;
 		}
 	}
@@ -408,19 +408,19 @@ static int16_t MineMenu(void)
 						// run random event using file corresponding to
 						// level groupings
 						if (PClan.MineLevel == 0)
-							RunEvent(false, "/e/Eva", "", NULL, NULL);
+							RunEvent(false, true, "/e/Eva", "", NULL, NULL);
 						else if (PClan.MineLevel == 1)
-							RunEvent(false, "/e/Eva", "", NULL, NULL);
+							RunEvent(false, true, "/e/Eva", "", NULL, NULL);
 						else if (PClan.MineLevel == 2)
-							RunEvent(false, "/e/Eva", "", NULL, NULL);
+							RunEvent(false, true, "/e/Eva", "", NULL, NULL);
 						else if (PClan.MineLevel == 3)
-							RunEvent(false, "/e/Eva", "", NULL, NULL);
+							RunEvent(false, true, "/e/Eva", "", NULL, NULL);
 						else if (PClan.MineLevel == 4)
-							RunEvent(false, "/e/Eva", "", NULL, NULL);
+							RunEvent(false, true, "/e/Eva", "", NULL, NULL);
 						else if (PClan.MineLevel <= 10)
-							RunEvent(false, "/e/Eva", "", NULL, NULL);
+							RunEvent(false, true, "/e/Eva", "", NULL, NULL);
 						else
-							RunEvent(false, "/e/Eva", "", NULL, NULL);
+							RunEvent(false, true, "/e/Eva", "", NULL, NULL);
 						door_pause();
 					}
 					else {
@@ -822,7 +822,7 @@ static int16_t ChurchMenu(void)
 				}
 				PClan.AttendedMass = true;
 
-				RunEvent(false, "/e/Church", "", NULL, NULL);
+				RunEvent(false, true, "/e/Church", "", NULL, NULL);
 				door_pause();
 				break;
 			case 'P' :      /* pray */
@@ -832,7 +832,7 @@ static int16_t ChurchMenu(void)
 				}
 				PClan.Prayed = true;
 
-				RunEvent(false, "/e/Pray", "", NULL, NULL);
+				RunEvent(false, true, "/e/Pray", "", NULL, NULL);
 				door_pause();
 				break;
 			case 'B' :      /* ask for blessing */

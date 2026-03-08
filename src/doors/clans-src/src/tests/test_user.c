@@ -303,8 +303,8 @@ struct Quest    Quests[MAX_QUESTS];
 uint8_t         Quests_TFlags[8];
 
 void ClearFlags(uint8_t *f)                       { memset(f, 0, 8); }
-bool RunEvent(bool q, char *ef, char *en, struct NPCInfo *n, char *ni)
-	{ (void)q; (void)ef; (void)en; (void)n; (void)ni; return false; }
+bool RunEvent(bool q, bool reset_hp, char *ef, char *en, struct NPCInfo *n, char *ni)
+	{ (void)q; (void)reset_hp; (void)ef; (void)en; (void)n; (void)ni; return false; }
 void Quests_GoQuest(void)                         {}
 void Quests_Init(void)                            {}
 void Quests_Close(void)                           {}

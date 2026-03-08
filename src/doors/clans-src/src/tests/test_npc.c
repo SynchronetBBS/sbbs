@@ -184,8 +184,8 @@ void News_CreateTodayNews(void)       {}
  * does not.  Quests[] and Quests_TFlags are defined after source includes.
  * ------------------------------------------------------------------------- */
 void ClearFlags(uint8_t *f)           { (void)f; }
-bool RunEvent(bool q, char *ef, char *en, struct NPCInfo *ni, char *ni2)
-	{ (void)q; (void)ef; (void)en; (void)ni; (void)ni2; return false; }
+bool RunEvent(bool q, bool reset_hp, char *ef, char *en, struct NPCInfo *ni, char *ni2)
+	{ (void)q; (void)reset_hp; (void)ef; (void)en; (void)ni; (void)ni2; return false; }
 void Quests_GoQuest(void)             {}
 void Quests_Init(void)                {}
 void Quests_Close(void)               {}

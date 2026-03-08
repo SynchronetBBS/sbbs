@@ -537,7 +537,7 @@ static void TellQuest(char *pszQuestIndex)
 
 // ------------------------------------------------------------------------- //
 
-bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
+bool RunEvent(bool QuoteToggle, bool reset_hp, char *szEventFile, char *szEventName,
 			  struct NPCInfo *NPCInfo, char *szNPCIndex)
 {
 	char szString[256], szLegal[255], szLabel[32];
@@ -1218,11 +1218,13 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 	FreeClanMembers(&EnemyClan);
 
 	// reset health
-
 	for (iTemp = 0; iTemp < MAX_MEMBERS; iTemp++) {
 		if (PClan.Member[iTemp] && PClan.Member[iTemp]->Status == Here) {
-			PClan.Member[iTemp]->HP = PClan.Member[iTemp]->MaxHP;
-			PClan.Member[iTemp]->MaxSP = PClan.Member[iTemp]->MaxSP;
+			if (reset_hp)
+				PClan.Member[iTemp]->HP = PClan.Member[iTemp]->MaxHP;
+			/* SP is intentionally not reset here.  The original code had a
+			 * no-op (MaxSP = MaxSP) that was never corrected; leaving SP
+			 * unchanged after events has since become expected game behaviour. */
 		}
 	}
 
@@ -1332,7 +1334,7 @@ void Quests_GoQuest(void)
 	PClan.QuestToday = true;
 
 	/* if successful (returns true), set that quest bit to done */
-	if (RunEvent(false,
+	if (RunEvent(false, true,
 				 Quests[QuestIndex[WhichQuest]].pszQuestFile, Quests[QuestIndex[WhichQuest]].pszQuestIndex,
 				 NULL, NULL)) {
 		// set bit since quest completed

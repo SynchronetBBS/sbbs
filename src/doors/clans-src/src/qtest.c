@@ -576,8 +576,11 @@ static void print_state_summary(void)
 	fputs("DFlags=", stderr); print_flag_summary(PClan.DFlags);
 	fputs("TFlags=", stderr); print_flag_summary(Quests_TFlags);
 
-	fprintf(stderr, "Gold=%"PRId32"\n", PClan.Empire.VaultGold);
-	fprintf(stderr, "MineLevel=%d\n",   (int)PClan.MineLevel);
+	fprintf(stderr, "Gold=%"PRId32"\n",      PClan.Empire.VaultGold);
+	fprintf(stderr, "MineLevel=%d\n",        (int)PClan.MineLevel);
+	fprintf(stderr, "Points=%"PRId32"\n",    PClan.Points);
+	fprintf(stderr, "FightsLeft=%d\n",       (int)PClan.FightsLeft);
+	fprintf(stderr, "Followers=%"PRId32"\n", PClan.Empire.Army.Followers);
 
 	print_quest_summary("QuestsKnown", PClan.QuestsKnown);
 	print_quest_summary("QuestsDone",  PClan.QuestsDone);
@@ -961,7 +964,7 @@ static void quest_submenu(void)
 			Help(qname, (char[]){ "quests.hlp" });
 			zputs("\n");
 			zputs("\n|0BQuest Begins Here\n|07=================\n\n");
-			bool result = RunEvent(false,
+			bool result = RunEvent(false, true,
 			                       Quests[qi].pszQuestFile,
 			                       Quests[qi].pszQuestIndex,
 			                       NULL, NULL);
@@ -1125,7 +1128,13 @@ int main(int argc, char *argv[])
 			NPC_ChatNPC(npc_index);
 		} else {
 			ClearFlags(Quests_TFlags);
-			RunEvent(false, event_file, event_label, NULL, NULL);
+			if (RunEvent(false, false, event_file, event_label, NULL, NULL)) {
+				/* Script mode runs a single event block directly, not via
+				 * quests.ini, so there is no quest index to record.  Mirror
+				 * what Quests_GoQuest does and set bit 0 (1-based index 1)
+				 * so DoneQuest is visible in the state summary. */
+				PClan.QuestsDone[0] |= 1;
+			}
 		}
 
 		script_expect_end();

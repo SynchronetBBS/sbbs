@@ -11,10 +11,6 @@ Open Issues
 Charisma stat has no effect ...................................   1.1
 Clean up mstrings.h GNUmakefile dependencies ..................   1.2
 
-Testing Gaps
-============
-qtest script mode: untestable scripting commands ................  2.1
-
 
 
 Open Issues
@@ -38,44 +34,3 @@ data/GNUmakefile both grew organically to solve the chicken-and-egg problem of
 langcomp needing to exist before mstrings.h can be generated.  The current
 approach works but could be cleaner -- the NATIVEEXEFILE computation and the
 filter-out workaround for shared langcomp objects are worth revisiting.
-
-
-Testing Gaps
-===============================================================================
-
-[2.1]  qtest script mode: untestable scripting commands
--------------------------------------------------------------------------------
-The qtest -s state summary (printed to stderr on exit) covers GFlags, HFlags,
-PFlags, DFlags, TFlags, Gold, MineLevel, QuestsKnown, QuestsDone, and per-
-member Name/HP/MaxHP/SP/MaxSP/XP/Level.  Several scripting commands change
-state that is not included in this summary and therefore cannot be verified
-beyond "exits with code 0":
-
-Heal (HP restore)
-        RunEvent() resets every present member's HP to MaxHP unconditionally
-        at the end of every event (quests.c, after the command loop).  The
-        Heal command also sets HP=MaxHP, so there is no observable difference
-        between an event that calls Heal and one that does not.  A Heal HP
-        test can only assert exit code 0.
-
-GivePoints
-        PClan.Points is not included in the state summary.
-
-GiveFight
-        PClan.FightsLeft is not included in the state summary.
-
-GiveFollowers
-        PClan.Empire.Army.Followers is not included in the state summary.
-
-DoneQuest -> QuestsDone bit
-        In qtest script mode, RunEvent() is called directly.  Setting
-        QuestsDone is the caller's responsibility (Quests_GoQuest in the
-        real game does this after RunEvent returns true).  qtest's main()
-        does not set the bit when RunEvent returns true, so DoneQuest never
-        produces a QuestsDone=N line in the state summary.  The command can
-        still be tested for correct exit and stdout output
-        ("Quest successfully completed!").
-
-Options to improve coverage: extend the state summary in qtest.c to include
-Points, FightsLeft, Followers, and the RunEvent return value; or add a
---dump-all flag that prints the full PClan struct.

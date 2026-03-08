@@ -358,20 +358,24 @@ check_rc "GiveXP 100 exits zero" 0 "$_rc"
 assert_contains "GiveXP: Member0.XP=100" "$STATE" "Member0.XP=100"
 assert_contains "GiveXP: Member3.XP=100" "$STATE" "Member3.XP=100"
 
-# GivePoints / GiveFight / GiveFollowers: not in state summary; just exit 0
 _rc=0; run_qtest -e rewards.e GivePointsEv -s "$S/givepoints.script" || _rc=$?
 check_rc "GivePoints 50 exits zero" 0 "$_rc"
+assert_contains "GivePoints: Points=50" "$STATE" "Points=50"
 
+# GiveFight adds to FightsLeft (initial=10, +5=15)
 _rc=0; run_qtest -e rewards.e GiveFightEv -s "$S/givefight.script" || _rc=$?
 check_rc "GiveFight 5 exits zero" 0 "$_rc"
+assert_contains "GiveFight: FightsLeft=15" "$STATE" "FightsLeft=15"
 
 _rc=0; run_qtest -e rewards.e GiveFollowersEv -s "$S/givefollowers.script" || _rc=$?
 check_rc "GiveFollowers 10 exits zero" 0 "$_rc"
+assert_contains "GiveFollowers: Followers=10" "$STATE" "Followers=10"
 
 # =========================================================================
 # Heal SP
 # Members start at MaxSP/2 (Fighter: 5/10).  RunEvent does NOT reset SP.
-# Heal SP -> Fighter SP=10; Heal HP is not meaningfully testable (see todo.txt).
+# Members start at MaxHP/2 and MaxSP/2 (Fighter: HP=40/80, SP=5/10).
+# reset_hp=false in script mode so both Heal variants are observable.
 # =========================================================================
 
 _rc=0; run_qtest -e heal.e HealSPEv -s "$S/heal_sp.script" || _rc=$?
@@ -381,6 +385,8 @@ assert_contains "Heal SP: Member0.MaxSP=10" "$STATE" "Member0.MaxSP=10"
 
 _rc=0; run_qtest -e heal.e HealHPEv -s "$S/heal_hp.script" || _rc=$?
 check_rc "Heal HP exits zero" 0 "$_rc"
+assert_contains "Heal HP: Member0.HP=80" "$STATE" "Member0.HP=80"
+assert_contains "Heal HP: Member0.MaxHP=80" "$STATE" "Member0.MaxHP=80"
 
 # Fight reduces SP by 1 (Fighter: 5->4); Heal SP restores to MaxSP=10
 _rc=0; run_qtest -e heal.e HealAfterFightEv -s "$S/heal_after_fight.script" || _rc=$?
@@ -533,13 +539,15 @@ check_rc "GetKey B exits zero" 0 "$_rc"
 assert_contains "GetKey B: GFlags=1" "$STATE" "GFlags=1"
 
 # =========================================================================
-# DoneQuest: exits 0, prints completion message
-# QuestsDone is not set in script mode (see docs/todo.txt 2.1).
+# DoneQuest: exits 0, prints completion message, sets QuestsDone=1.
+# Script mode has no quest index (events run directly, not via quests.ini)
+# so qtest records the result as quest index 1.
 # =========================================================================
 
 _rc=0; run_qtest -e donequest.e DoneQuestEv -s "$S/donequest.script" || _rc=$?
 check_rc "DoneQuest exits zero" 0 "$_rc"
 assert_contains "DoneQuest: completion message" "$OUT" "Quest successfully completed"
+assert_contains "DoneQuest: QuestsDone=1" "$STATE" "QuestsDone=1"
 
 # =========================================================================
 # Input: text-based menu selection (Topic= hook)

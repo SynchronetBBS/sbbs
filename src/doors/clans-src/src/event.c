@@ -131,7 +131,7 @@ GoQuest(void)
 	PClan.QuestToday = true;
 
 	/* if successful (returns true), set that quest bit to done */
-	if (RunEvent(false,
+	if (RunEvent(false, true,
 				 Quests[QuestIndex[WhichQuest]].pszQuestFile, Quests[QuestIndex[WhichQuest]].pszQuestIndex,
 				 NULL, NULL)) {
 		// set bit since quest completed
