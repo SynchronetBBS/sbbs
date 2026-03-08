@@ -3681,8 +3681,7 @@ bool sbbs_t::init()
 		FILE_RETRY_DELAY(i + 1, LOCK_RETRY_DELAY);
 	}
 	if (cfg.node_misc & NM_CLOSENODEDAB) {
-		close(nodefile);
-		nodefile = -1;
+		CLOSE_OPEN_FILE(nodefile);
 	}
 	pthread_mutex_unlock(&nodefile_mutex);
 
@@ -3871,19 +3870,11 @@ sbbs_t::~sbbs_t()
 
 	/* Close all open files */
 	pthread_mutex_lock(&nodefile_mutex);
-	if (nodefile != -1) {
-		close(nodefile);
-		nodefile = -1;
-		pthread_mutex_unlock(&nodefile_mutex);
-	}
-	if (node_ext != -1) {
-		close(node_ext);
-		node_ext = -1;
-	}
-	if (logfile_fp != NULL) {
-		fclose(logfile_fp);
-		logfile_fp = NULL;
-	}
+	CLOSE_OPEN_FILE(nodefile);
+	pthread_mutex_unlock(&nodefile_mutex);
+	pthread_mutex_destroy(&nodefile_mutex);
+	CLOSE_OPEN_FILE(node_ext);
+	FCLOSE_OPEN_FILE(logfile_fp);
 
 	if (syspage_semfile[0])
 		fremove(WHERE, syspage_semfile);
