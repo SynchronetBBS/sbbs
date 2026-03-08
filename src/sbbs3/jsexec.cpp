@@ -871,7 +871,7 @@ static bool js_init(char** env)
 
 	/* Global Object */
 	if (!js_CreateCommonObjects(js_cx, &scfg, NULL, js_global_functions
-	                            , time(NULL), host_name, SOCKLIB_DESC /* system */
+	                            , xp_fast_timer64(), host_name, SOCKLIB_DESC /* system */
 	                            , &cb, &startup /* js */
 	                            , NULL /* user */
 	                            , NULL, INVALID_SOCKET, -1 /* client */
