@@ -5868,6 +5868,7 @@ NO_SSH:
 					if (corrected) // lprintf/lputs only after unlocking the node.dab
 						lprintf(LOG_CRIT, "%04d !Node %d status with invalid socket corrected (was %d)"
 								, client_socket, node_num, corrected);
+					break;
 				}
 				else
 					sbbs->unlocknodedat(node_num);
