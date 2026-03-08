@@ -134,6 +134,11 @@ all: default devkit
 native-exefile:
 	@echo NATIVE EXEFILE: $(EXEFILE)
 
+.PHONY: test
+test:
+	$(MAKE) -C tests test
+	$(MAKE) -C tests clean
+
 deepclean:
 	rm -rf $(OBJPREFIX)
 	rm -rf $(BINDIR)
