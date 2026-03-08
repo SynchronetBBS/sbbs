@@ -69,23 +69,20 @@ bool sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 				break;
 		}
 	}
-	if (!lockit && cfg.node_misc & NM_CLOSENODEDAB) {
-		close(nodefile);
-		nodefile = -1;
+	if (!lockit && (cfg.node_misc & NM_CLOSENODEDAB)) {
+		CLOSE_OPEN_FILE(nodefile);
 	}
 
 	if (count == LOOP_NODEDAB) {
-		if (nodefile != -1)
-			close(nodefile);
-		nodefile = -1;
+		CLOSE_OPEN_FILE(nodefile);
 		pthread_mutex_unlock(&nodefile_mutex);
-		errormsg(WHERE, rd == sizeof(node_t) ? ERR_LOCK : ERR_READ, "node.dab", number + 1);
+		errormsg(WHERE, rd == sizeof(node_t) ? ERR_LOCK : ERR_READ, "node.dab", number);
 		return false;
 	}
 	pthread_mutex_unlock(&nodefile_mutex);
 	if (count > (LOOP_NODEDAB / 2)) {
 		llprintf(LOG_WARNING, "!!", "NODE.DAB (node %d) COLLISION - Count: %d"
-		            , number + 1, count);
+		            , number, count);
 	}
 
 	return true;
