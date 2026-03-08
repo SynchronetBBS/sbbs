@@ -19,4 +19,15 @@
     <ClInclude Include="unix_wrappers.h" />
     <ClInclude Include="win_wrappers.h" />
   </ItemGroup>
+  <ItemGroup>
+    <UpToDateCheckInput Include="..\data\strings.txt" />
+    <UpToDateCheckOutput Include="mstrings.h" />
+    <UpToDateCheckOutput Include="..\data\strings.xl" />
+  </ItemGroup>
+  <Target Name="GenerateMstrings" AfterTargets="Build"
+          Inputs="$(TargetPath);..\data\strings.txt"
+          Outputs="mstrings.h;..\data\strings.xl">
+    <Message Text="Generating mstrings.h from strings.txt" Importance="High" />
+    <Exec Command="&quot;$(TargetPath)&quot; &quot;..\data\strings.txt&quot; &quot;..\data\strings.xl&quot; mstrings.h" />
+  </Target>
 </Project>
