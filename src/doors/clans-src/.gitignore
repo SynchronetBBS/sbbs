@@ -5,3 +5,4 @@ bin
 CLAUDE.md
 src/Win32_Debug
 src/Win32_Release
+src/mstrings.h
