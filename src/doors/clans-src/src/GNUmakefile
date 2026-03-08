@@ -3,6 +3,7 @@ SRC	?=	..
 
 include $(SRC)/mk/Platform.gmake
 include $(SRC)/mk/Paths.gmake
+NATIVEEXEFILE :=$(shell env - PATH="$(PATH)" $(MAKE) -C$(SRC)/mk native-exefile | awk '/^NATIVE EXEFILE:/ {print $$3}')
 
 ODOORS ?= $(SRC)odoors/
 override ODOORS := $(abspath $(ODOORS))/
@@ -124,8 +125,6 @@ $(OBJDIR)%.o: %.c | $(OBJDIR)
 
 # Pull in generated deps
 -include $(OBJDIR)*.d
-
-NATIVEEXEFILE := .$(os).$(mach).$(FLAVOUR)
 
 # When cross-compiling, build just the native langcomp using the host compiler.
 # env - strips the CC override from MAKEFLAGS so the sub-make uses native GCC.
