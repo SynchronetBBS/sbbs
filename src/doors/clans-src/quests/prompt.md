@@ -55,6 +55,9 @@ Is this a dark grimdark setting, classic fantasy adventure, folk horror, politic
 **6. The sysop's vision**
 What do you most want players to discover, feel, or understand by the end of the campaign? A specific revelation, a character arc, a moral question, a twist, a moment of triumph? This is the north star for the entire pack.
 
+**7. Presentation constraints**
+Are there any rules that should apply across all generated content? Naming conventions for places, people, or things? Terminology or phrases that should never appear? Specific language register (formal, archaic, colloquial)? Surface these now — they are far easier to apply consistently from the start than to correct retroactively across 40 NPCs and 30 quests.
+
 **After the interview:** Summarize the world back to the sysop in a short paragraph and ask for approval or corrections before generating any files.
 
 **If the sysop gives only a brief seed** (e.g., "a Viking village fighting off a demon cult"), extrapolate a coherent world from it, present your interpretation for approval, then proceed to generation. Do not ask all six questions if a full world already exists in the sysop's mind — ask enough to fill the gaps.
@@ -75,6 +78,10 @@ What do you most want players to discover, feel, or understand by the end of the
 10. build.bat — A windows batch file that generates the PAK file as described in readme.txt
 11. Makefile — A UNIX make file that generates the PAK file as described in readme.txt
 
+### Output size and incremental writing
+
+Large packs cannot be written in a single pass. The chat file for a pack with 8 or more NPCs (story + ambient) will typically exceed 30KB — attempting to write it as one block produces truncated output. Write large files incrementally: complete one NPC or one location cluster per pass, and explicitly note where each pass ends so the next can resume without overlap or gap. Files most likely to require multiple passes, in descending order of volume: the ambient NPC chat file, the story NPC chat file, the event script. The monster definition file, NPC info file, and quests.ini are typically small enough to write in a single pass.
+
 ---
 
 ## SYNTAX RULES (violations cause parse failures):
@@ -94,7 +101,45 @@ What do you most want players to discover, feel, or understand by the end of the
 - `Jump` is a one-way goto. Execution does NOT return after a Jump. There are no subroutines. Commands written after a Jump are unreachable dead code.
 - `Jump` requires a real block name. `STOP` and `NextLine` are NOT valid Jump targets — they are only recognised by `Option`, `Input`, and `Fight`. Using `Jump STOP` will cause a runtime crash.
 - Every block (Event, Result, Topic) **must be explicitly closed with `End`.** There is no implicit termination. Without `End`, execution falls through into the bytecode of the following block — this is a silent bug, not a compile error. Every single block in every file must have `End` as its last command.
-- When `Fight`, `Option`, or `Input` uses `NextLine` for one of its paths, execution continues on the line immediately after that command, still within the same block. If that path should terminate the block, you must still write `End` after the `Fight`/`Option`/`Input`. Example: `Fight WonLabel LostLabel NextLine` followed immediately by `End` means a player who runs away gets a clean exit. Without that `End`, execution falls into whatever bytecode follows the block boundary.
+- When `Fight`, `Option`, or `Input` uses `NextLine` for one of its paths, execution continues on the line immediately after that command (or after the last consecutive Option/Input in the menu), still within the same block. If that path should terminate the block, you must still write `End` after the `Fight`/`Option`/`Input` (or after any commands that follow it). The `End` closes the enclosing block — it is not specific to Fight or Option. Without it, execution falls through into the bytecode of the following block, which is a silent bug.
+
+  **Fight/NextLine example** — the run-away path executes commands then hits `End`:
+
+        Event BanditAmbush
+        Text "|0CA bandit leaps out!
+        AddEnemy /m/Output 15
+        Fight BanditWin BanditLoss NextLine
+        Text "|0CYou slip away before they can react.
+        End
+
+        Result BanditWin
+        Text "|0CThe bandit falls.
+        GiveGold 200
+        DoneQuest
+        End
+
+        Result BanditLoss
+        Text "|0CYou flee, wounded.
+        End
+
+  Win jumps to `BanditWin`; loss jumps to `BanditLoss`. The run-away path (`NextLine`) continues on the `Text` line and then hits `End`. Without that `End`, the run-away path falls into the bytecode of `BanditWin`.
+
+  **Option/NextLine example** — the declined path executes commands then hits `End`:
+
+        Event JobOffer
+        Text "|0CThe merchant has work for you.
+        Prompt "|0GDo you accept? |0A(|0BY|0A/|0BN|0A)
+        Option Y AcceptJob
+        Option N NextLine
+        Text "|0CThe merchant shrugs and walks away.
+        End
+
+        Result AcceptJob
+        Text "|0CHead to the docks at dawn.
+        SetFlag D0
+        End
+
+  Choosing Y jumps to `AcceptJob`. Choosing N continues on the `Text` line and then hits `End`. `Option` does not open a block — the `End` closes the `Event JobOffer` block.
 
 ---
 
@@ -185,16 +230,16 @@ All other commands are executable and may appear inside any block:
 |---------|---------|-----------|-------------|
 | `Jump` | all | `[TargetLabel]` | Repositions execution to the start of the named Event or Result block. **This is a one-way goto — execution never returns to the line after Jump.** Any commands written after a Jump are unreachable. TargetLabel must be the exact name of an existing Event or Result block; `STOP` and `NextLine` are NOT valid here and will cause a runtime error. To halt execution, jump to a Result block that contains only `End`. |
 | `Text` | all | none or `"[String]` | No argument outputs a blank line. With argument outputs the string followed by a newline. Visible text must fit within 80 columns; split long dialogue across multiple `Text` commands. |
-| `Prompt "` | all | `[String]` | Outputs the string with no trailing newline. Use before an Option block to display a prompt to the player. |
+| `Prompt "` | all | `[String]` | Outputs the string with no trailing newline. Use before a menu (consecutive Option or Input commands) to display a prompt to the player. Color codes set within the Prompt line persist into the player's input field — end the line with the desired input color (e.g. `\|0F`) to control how the player's typed response appears. |
 | `Display "` | all | `[Filename]` | Renders an ANSI/ASCII file to the player's screen. |
 | `AddNews "` | all | `[String]` | Appends the string to the village daily news. |
-| `Option` | all | `[Char] [TargetLabel]` | Defines one menu choice. Char is the key the player presses; TargetLabel is the block to jump to. Multiple consecutive Option commands build a menu. Special TargetLabels (valid here only): `NextLine` continues after the Option block; `STOP` halts execution. |
-| `Input` | all | `[TargetLabel] [Display text]` | Like Option but presents a numbered text menu item instead of a single-key choice. Multiple consecutive Input commands build a numbered list. The player selects by number; jumps to TargetLabel. Same special TargetLabels as Option. |
+| `Option` | all | `[Char] [TargetLabel]` | Defines one menu choice. Char is the key the player presses; TargetLabel is the block to jump to. Multiple consecutive Option commands build a menu. `Option` is a command, not a block delimiter — it does not open a block and does not require its own `End`. The enclosing Event, Result, or Topic block must still be closed with `End` after the menu. Special TargetLabels (valid here only): `NextLine` continues on the line immediately after the last consecutive Option command, still inside the enclosing block; `STOP` halts execution. |
+| `Input` | all | `[TargetLabel] [Display text]` | Like Option but presents a numbered text menu item instead of a single-key choice. Multiple consecutive Input commands build a numbered list. The player selects by number; jumps to TargetLabel. Same special TargetLabels as Option. `Input` is also a command, not a block delimiter. |
 | `AddEnemy` | all | `[FileRef] [Index]` | Loads one entry from a .mon file into the enemy group for the upcoming fight. FileRef is the path to the .mon file; Index is the zero-based ordinal of the entry within it. Call multiple times to build a group. Must always precede Fight. |
 | `Fight` | all | `[WinLabel] [LossLabel] [RunLabel]` | Triggers combat against the enemy group assembled by preceding AddEnemy calls. Jumps to WinLabel on victory, LossLabel on defeat, RunLabel if the clan runs away. Special labels (valid here only): `NextLine` continues after Fight; `STOP` halts execution; `NoRun` as RunLabel prevents fleeing. |
 | `Chat` | all | `[NPCIndex]` | Opens the full chat interface for the NPC identified by the given Index string. |
 | `TellQuest` | all | `[QuestIndex]` | Marks the quest with the given Index string as known to the player, making it visible in the quest log. |
-| `DoneQuest` | all | none | Marks the current quest as completed, setting its Qaa flag true. The engine permanently removes the quest from the player's quest menu — the `QuestsDone` bit is set with a bitwise OR and is never cleared by normal gameplay. A clan that has completed a quest cannot select it again; the engine filters completed quests out of the menu before the player can choose, with a second guard that refuses to run the event even if somehow selected. No script-level guard against re-entry is needed or possible. |
+| `DoneQuest` | all | none | Marks the current quest as completed, setting its Qaa flag true. The engine permanently removes the quest from the player's quest menu — the `QuestsDone` bit is set with a bitwise OR and is never cleared by normal gameplay. A clan that has completed a quest cannot select it again; the engine filters completed quests out of the menu before the player can choose, with a second guard that refuses to run the event even if somehow selected. No script-level guard against re-entry is needed or possible. `{Qnn}` flags are derived from the `QuestsDone` bitmask stored in each clan's persistent data file — the same file that stores P flags. They persist across sessions and server restarts and are reliable long-term gates for quest-chain progression in chat topics. |
 | `Pause` | all | none | Halts execution and waits for the player to press a key. |
 | `SetFlag` | all | `[Flag]` | Sets the given flag, e.g. T0, P5, G12. |
 | `ClearFlag` | all | `[Flag]` | Clears the given flag. |
@@ -236,7 +281,11 @@ The `^` line must exactly match the `Name` field in quests.ini. Without this ent
 
 ### NPC Info File (.txt)
 
-Compiled to a binary .NPC file using `makenpc [infile.txt] [outfile.npc]`. Each new Index keyword starts a new NPC block.
+Compiled to a binary .NPC file using `makenpc`. Each new Index keyword starts a new NPC block.
+
+    makenpc packname.npc.txt packname.npc
+
+Arguments: input source file first, output binary second. The output file extension must be `.npc`.
 
     Index [Unique global identifier — string, max 20 chars, no underscore prefix]
     Name [Display name shown to player — string, max 20 chars]
@@ -247,7 +296,7 @@ Compiled to a binary .NPC file using `makenpc [infile.txt] [outfile.npc]`. Each 
     Loyalty [integer 0–10, default 5. Controls tendency to leave the player's clan. Higher = more loyal (10 = never leaves).]
     MaxTopics [integer — maximum topics the player may discuss in one sitting. Default -1 = no limit.]
     OddsOfSeeing [integer 0–100 — probability of NPC appearing on a given day. 0 = never appears; 100 = appears every day. Default when omitted: 0. For NPCs with no Wander field, the engine skips placement before reading this value, so OddsOfSeeing has no effect — set it to 0 explicitly to document intent.]
-    IntroTopic [TopicID — optional topic that runs automatically when the NPC is first approached, before the topic menu appears]
+    IntroTopic [TopicID — optional topic that runs automatically when the NPC is first approached, before the topic menu appears. See The lore keeper in QUEST DESIGN PATTERNS for the recommended catchup implementation using IntroTopic.]
     HereNews [string, max 70 chars — news item displayed when this NPC shows up]
     KnownTopic [TopicID] [Prompt text] — topic visible to the player from the start; repeatable
     Topic [TopicID] [Prompt text] — topic that starts hidden; must be revealed via TellTopic; repeatable
@@ -430,6 +479,8 @@ Compiled using `ecomp <infile.txt> <outfile.evt>`. Event and Result blocks separ
 
 The table must be exhaustive. Every `SetFlag` call in every file must have a row. Every `{Pnn}`, `{Gnn}`, `{Dnn}`, `{Hnn}`, or `{Tnn}` condition must reference a row. A flag that appears in the table but has no corresponding `SetFlag` anywhere, or a `SetFlag` with no corresponding condition anywhere, is a bug — resolve it before writing the final .lst.
 
+**When to write the table:** Draft the flag assignment table *before* writing any chat or event content. The recommended generation order places chat files before the event script, but flag numbers used in chat files must not collide with those in the event script. Assign all flag numbers up front, then treat the table as a live document: update it as each file is written and verify it is complete and consistent before writing the final .lst.
+
 ---
 
 ### clans.ini
@@ -456,7 +507,7 @@ The file must contain the following content with the pack's NpcFile entries in p
     Language        /dat/Language
     # -----------------------------------------------------------------------------
 
-Use the PAK alias format if the .npc file is inside a custom PAK archive (e.g. `NpcFile @mypak.pak/n/MyNPC`), or a plain filesystem path if it is a standalone file.
+Use the PAK alias format if the .npc file is inside a custom PAK archive (e.g. `NpcFile @mypak.pak/n/MyNPC`), or a plain filesystem path if it is a standalone file. **Prefer the PAK archive for distribution packs** — it keeps the installation to a single .pak file (plus quests.ini, quests.hlp, and clans.ini) and avoids loose binary files in the game directory. Standalone .npc files are only preferable during local development where recompiling the PAK on every NPC edit is inconvenient.
 
 ---
 
@@ -598,6 +649,8 @@ Standard menu item pattern: `|0A(|0BX|0A) |0CDescription`
 
 Standard prompt pattern: `|0GLabel|0E> |0F`
 
+The trailing `|0F` is required: color codes set in a `Prompt` line persist into the player's input field, so the last color code before the cursor determines how typed text appears. Without `|0F`, the input inherits whatever color was active at the end of the prompt string.
+
 ### Save/restore color — `|S` and `|R`
 
 `|S` saves the current foreground and background. `|R` restores them.
@@ -650,6 +703,8 @@ Each revealed topic is written in the NPC's own voice. The lore keeper does not 
 
 ### Ambient NPCs
 
+**This is the largest content generation task in the pack.** A campaign with 20–40 ambient NPCs, each with 3–7 topics and campaign-awareness dialogue, will produce a chat file larger than the story NPC chat file and the event script combined. Write location by location across multiple passes; do not attempt to write all ambient NPC content in a single block.
+
 A campaign with only quest-givers and a lore keeper feels like a waiting room. The village needs people who live in it — people with petty concerns, local opinions, professional worries, and no interest whatsoever in the player's quest log. **Design 20–40 ambient NPCs distributed across all six village locations.** Their purpose is world texture; they have no quest mechanics.
 
 **Design rules for ambient NPCs:**
@@ -683,7 +738,7 @@ Vary which flags each NPC reacts to. A market vendor might track economic conseq
 
 **Interlocking references:** Ambient NPCs should reference each other and the named story NPCs by name. The market vendor has opinions about the town official. The training hall veteran thinks the main quest-giver is a fool. The street gossip has an improbable story about the lore keeper. Cross-referencing is what turns a list of NPCs into a community.
 
-**Poitential Allies** Many of these ambient NPCs should be able to be convinced to join the player's clan (using `JoinClan` in their chat script). These should be ones that can be lured by the promise of adventure defending the mines, the treasures that can be obtained, or the renown that can be gained.
+**Potential Allies:** Many of these ambient NPCs should be able to be convinced to join the player's clan. Use `JoinClan` directly in a topic block to make an NPC recruitable — note that `JoinClan` is chat-only and cannot be used in event scripts (see the command reference). These should be NPCs who can be lured by the promise of adventure, treasure, or renown.
 
 **File organisation:** With 20–40 NPCs, individual chat files become unmanageable. Group ambient NPCs into shared .q files by location or social cluster, and use distinct TopicID prefixes per NPC to prevent collision:
 
