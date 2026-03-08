@@ -1,336 +1,920 @@
-
->> Introduction
-
-Ok, here's the lowdown on this app.
-
-Please, if you have any questions about any of this, be specific with your queries.
-I haven't touched this code in ages, so I need some refreshing myself.  I'm providing 
-this for people to tinker with and to perhaps create a new version if they wish to.
-
-Allen
-
-> Some things to keep in mind:
-
-- You need the OpenDoors library.  Luckily for us, it is now open source.  Get it below:
-  http://www.attcanada.net/~pirie/oddownload.html
-  * You might need to recompile it for your system.  Brian doesn't provide binaries for
-    the open source version. (Why not!?)
-  * If you use the non-free version of OpenDoors, you'll get an annoying registration message.
-    I've left out the procedure to turn this off 'cause you need to validly register that.  If
-    you don't like it, mail brian Pririe (see like above).
-- Even though the registration system is no longer used, I've kept the code in there to give you
-  an idea of how easy it must've been to make a keygen for this thing. :-)
-- You need to run the tools to generate the data files.  See details wayy below.
-- Strings appear in the language file.
-- You'll need Turbo C++ 3.00 or higher to compile this stuff.  Sorry.  I'm sure you could
-  port it to gcc by going through the TCC-specific code.  Actually, the only TCC-specific
-  code I can think of right now is the asm {} code.  
-- If you want to port this to Linux, however, you'll have to change all the hardware-level
-  calls as I don't think Linux lets user-apps do that directly.  See convert.txt for a
-  more comprehensive list of things to change around.
-
-> How you can improve this all:
-
-- Write it to C++ (or even Java).  I was not yet fluent in C++ at the time, so I didn't 
-  bother coding it in that.  However, you can start to see that I use encapsulation
-  and other such techniques, so some things should easily be converted to C++.
-- Re-write the IBBS routines so that they 
-  1. Use a better packet system.  The current system is a bit buggy.
-  2. Use sockets to exchange packets on the Internet, instead of using Fidonet or 
-     older other messaging network technology.
-  3. Use private/public key encryption to encrypt the packets.  The current encryption scheme
-     is not secure AT ALL and can easily be hacked to cheat.  Once you see the code, I'm sure you
-     can come up with schemes.
-  I do not recommend releasing a new version of this game until these routines are written,
-  especially due to #3.  #2 makes it difficult to set up IBBS games.  And #1 just warrants
-  an overhaul.
-
-> Bad things:
-
-- there are a few points in the code where i use magic numbers.  Sorry.
-- sometimes i use string literals in code when i really should've used strings from 
-  the language file.  
-- compiles in Turbo C++ only
-- depends heavily on the OpenDoors library.  it should be fixed so that any door library
-  can be used in its place (swap it in seemlessly)
-
->> Installing
-
-So let's put this thing together, shall we?  
-
-0. Create a folder, say \clans, and move all the files there.
-1. Grab OpenDoors from http://www.attcanada.net/~pirie/oddownload.html.
-2. Create a folder \clans\extern.  Place odoorl.lib from the OpenDoors binary 
-   distribution into this folder.
-3. run make (make sure you have Turbo C++ in your path).
+The Clans Developer Notes v0.97b2
+-------------------------------------------------------------------------------
+Originally written by Allen Ussher, 1997-2002.  Open source since 2002.
+Modernized 2024 by open-source contributors.  License: GPL v2.
 
 
->> Misc
-
-> Random notes
-
-- clans.c contains the main() function.
-
-> Strings
-
-- strings are contained in a strings.xl, language file.
-- this file is generated with the language compiler.
 
 
-> Files:
+[0.0]  Table of Contents
+-------------------------------------------------------------------------------
 
-CLANS.C		-- contains main.c
-		-- code to start up the game (pre-game menu)
-CLANS.H		-- empty (for now)
-CLANSF.H	-- i have no idea what this is for
-ALLIANCE.C	-- code for alliances (duh)
-ALLIANCE.H
-CLANSINI.C	-- contains code for clans.ini file.
-CLANSINI.H
-CLASS.C		-- for player classes as well as races (knight, warrior, elf, etc.)
-CLASS.H
-CRC.C		-- used for the CRC checking code (to ensure the files sent over network
-		-- are ok (i think).
-CRC.H	
-DATA/		-- contains the data files used by the game (more on this later)
-DOC		-- text document for the game
-DOOR.C		-- "door" code.  this is for so-called "low-level" calls to OpenDoors.
-		-- this includes such things as outputting a string, creating semaphor
-		-- files, and more.
-		-- also, local game loading.
-		-- loading up of the OpenDoors system.
-		-- this is where you stick the registration key.
-		-- other stuff: chat, status bar stuff
-		-- pause prompt
-		-- file display
-DOOR.H		
-EMPIRE.C	-- for empires
-		-- also contains code for processing packets from other BBSes.  This is
-		-- REALLY UGLY CODE!  Good luck.  Even I don't get this shit now.
-EMPIRE.H
-EVENT.C		-- for "mine events" (i.e. like forest events in LORD)
-		-- executes the event files.
-		-- the files, however, must first be "compiled".
-		-- also contains code for quests, which are basically just longer events.
-EVENT.H
-EXTERN		-- files for OpenDoors lib go here.
-FIGHT.C		-- battle sequence algorithms.  Really nasty.
-		-- includes such things as what happens AFTER the fight (experience gained,
-		-- etc.)
-FIGHT.H
-GAME.C		-- "game" data.  what this refers to is the current incarnation of the
-		-- game running.  this contains data such as the date the game started,
-		-- whether or not it's InterBBS and other such info.  also has settings
-		-- such as max number of fights per day...
-GAME.H
-HELP.C		-- interactive help system.  also, for displaying "help" files.
-HELP.H
-IBBS.C		-- InterBBS interaction code.  This is the biggie.  Take your time
-		-- figuring this one out!  (Don't worry, I never understood it myself. :-)
-IBBS.H
-INPUT.C		-- for the cool input system, of which I'm proud.
-INPUT.H
-INTERBBS.H	-- more code for interbbs
-ITEMS.C		-- for handling user items.
-ITEMS.H
-K_CLANSI.H	-- clans INI keywords
-K_COMMAN.H	-- keywords for command-line
-K_CONFIG.H	-- configuration file keywords
-K_IBBS.H	-- IBBS settings keywords
-K_QUESTS.H	-- quest config keywords
-LANGCOMP.C      -- used to generate the language file (this copy may be out of date?)
-LANGUAGE.C	-- loading up of the language file
-LANGUAGE.H
-MAIL.C		-- for internal mail system
-MAIL.H
-MAINT.C		-- maintenance code
-MAINT.H
-MAKEFILE	-- do 'make' to create clans.exe
-MCOMP.C		-- app to generate monster files
-MENUS.C		-- code for menu systems.
-MENUS.H
-MENUS2.C	-- more menus since the first file was getting too large :-)
-MENUS2.H
-MISC.C		-- miscellaneous date code.
-MISC.H
-MSTRINGS.H	-- VERY IMPORTANT.  Contains definitions for macros used to cross-reference
-		-- the language file for strings.
-MYIBBS.C	-- more interbbs code.  i don't know just why i split it up into two files.
-		-- the name "MyIBBS" is misleading because this code is actually taken from
-		-- the author of OpenDoors.  He provided it freely in one of his demo
-		-- applications.  I don't recall which one.  Anyway, take heed of the misleading
-		-- name. :-)
-		-- THIS is really complex code.  I didn't fully understand it at the time and
-		-- I still don't.  If the system works, don't touch this.
-MYIBBS.H
-MYOPEN.C	-- VERY simple encryption for files.  this is really easy to hack, so future
-		-- versions of The Clans should probably have better encryption.
-		-- Again, take heed:  Everybody can download this code and cheat at the game
-		-- right now just by looking at this and then hacking their data files.
-		-- You have been warned.
-MYOPEN.H	
-NEWS.C		-- self-explanatory.  news file handling
-NEWS.H
-NPC.C		-- for computer players that you meet in the streets.  has NOTHING to do
-		-- with enemies you meet in the mines.
-NPC.H
-OPENDOOR.H	-- required to load.  from OpenDoors library.
-PACKET.H	-- some defines used for InterBBS packets
-PARSING.C	-- string parsing code.
-PARSING.H
-PAWN.C		-- pawn shop code.
-PAWN.H
-QUESTS.C	-- code for handling quests.
-QUESTS.H
-REG.C		-- registration code stuff.
-REG.H
-SCORES.C	-- for generating scores.
-SCORES.H
-SPELLS.C	-- for spells.
-SPELLS.H
-STRUCTS.H	-- almost all the useful structures.  Convert these to C++ in the future!
-SYSTEM.C	-- again, more "low-level" system calls.  the 'system' being the door.
-SYSTEM.H
-SYSTEMF.H	-- system function calls.  is this even used??
-TASKER.H	-- needed for multitasking os support.  (is this needed nowadays?? nope.)
-TEST/		-- where you test out new binaries.  copy clans.exe here and run it.
-TRADES.C	-- for trading stuff
-TRADES.H
-TSLICER.C	-- some code for multitasking os support.  no longer used.
-TSLICER.H
-USER.C		-- player data ADT.  players are called "users" by the game.
-USER.H
-VIDEO.C		-- code for outputting text nicely and for inputting text nicely.
-		-- THIS is very hardware-specific.  If you want to port this game to
-		-- another platform, change this first.
-VILLAGE.C	-- code for the village.
-VILLAGE.H
-VOTING.C	-- for voting for a new village leader.
-VOTING.H
+Introduction
+============
+Overview .......................................................   0.1
+License and History ............................................   0.2
 
-in the DATA/ directory:
+Getting Started
+===============
+Prerequisites ..................................................   1.1
+Building from Source ...........................................   1.2
+Running and Testing ............................................   1.3
 
-** If any of the files here are missing, be sure to download the Clans Dev. Kit
-from the site.
+Source Code Map
+===============
+Module Summary .................................................   2.1
+Core Game Engine ...............................................   2.2
+Inter-BBS Networking ...........................................   2.3
+Gameplay Systems ...............................................   2.4
+Data Serialization .............................................   2.5
+Platform Abstraction ...........................................   2.6
+Content and Strings ............................................   2.7
+Utility Modules ................................................   2.8
+Tools and Utilities ............................................   2.9
 
-LANGCOMP.EXE	-- use this to compile the STRINGS.TXT into STRINGS.XL, the language file.
-		-- after you make langcomp.exe in the main directory, copy it in here.
-GENALL.BAT	-- call this to generate all the data files and save it into the CLANS.PAK
-		-- file (yes, I was influenced by Quake).
-		-- DOESN'T WORK.  I need to find old copies of the executables for this.
-MAKEPAK.EXE	-- generates the .PAK file from a list of files.
-MCOMP.EXE	-- compiles monster data files.
-MITEMS.EXE	-- compiles item data files.
-MSPELLS.EXE	-- you guessed it, compiles spell data.
-MCLASS.EXE	-- for class compilation.
-MAKENPC.EXE	-- generate NPC data files.
-ECOMP.EXE	-- event file compiler.
-PAK.LST		-- list of files to add to the .PAK file and the internal filenames to use
-		-- within the .PAK file.
+Data Architecture
+=================
+Data Structures (structs.h) ....................................   3.1
+Serialization System ...........................................   3.2
+XOR Encryption Constants .......................................   3.3
+Language and String System .....................................   3.4
 
-To use any of these, just look at how i ran it in GENALL.BAT.  Paths may be wrong, though. :-)
+Inter-BBS System
+================
+Packet Types ...................................................   4.1
+Packet Filenames ...............................................   4.2
+League Structure and Roles .....................................   4.3
+Further Reading ................................................   4.4
 
-> Generating Data Files
+Content and the DevKit
+======================
+Data Files Overview ............................................   5.1
+Building Data Files ............................................   5.2
+Event Scripts ..................................................   5.3
+Help Files .....................................................   5.4
 
-In DATA/ you'll find data files used by The Clans.  Data files fall into these
-categories:
+Known Issues and Technical Debt
+================================
+Current Issues .................................................   6.1
+Suggested Improvements .........................................   6.2
 
-	*.HLP		--- Help files
-			ARMY.HLP
-			BULLETIN.HLP
-			CITIZEN.HLP
-			CLANS.HLP
-			COMBAT.HLP
-			EMPIRE.HLP
-			FORT.HLP
-			ITEMS.HLP
-			MENUS.HLP
-			NEWBIE.HLP
-			QUESTS.HLP
-			RACES.HLP
-			RESET.HLP
-			RULER.HLP
-			SPELLS.HLP
-			STATS.HLP
-			STRATEGY.HLP
-			VILLAGE.HLP
-			WAR.HLP
-			WIZARD.HLP
-	STRINGS.TXT	--- Language file
-	ITEMS.TXT	--- Items (Weapons, Armor, Shields, spell books, etc.)
-	MONSTERS.TXT	--- All the monsters you fight.
-	CLASSES.TXT	--- User classes
-	EVA.TXT		--- main event file??
-	EVENTMON.TXT	--- monsters you encounter in events
-	RACES.TXT	--- Races, work just like classes.
-	SCHEMES.TXT	--- Colour schemes for the village.
-	SPELLS.TXT	--- All the spells you and the computer can use.
-	NPC-PC.TXT	--- All the NPCs you meet on the streets, in mine events, etc.  (Can join your clan.)
-	NPCQUOTE.TXT	--- All the things NPCs say.
-	NPCS.TXT	--- "Script" for how topics (quotes) are exposed to the user.
-	*.EVT		--- Various event scripts.
-			CHURCH.EVT
-			EVENT1.EVT
-			EVENT2.EVT
-			EVENT3.EVT
-			EVENT4.EVT
-			EVENT5.EVT
-			PRAY.EVT
-			QUESTS.EVT
-			SECRET.EVT
-	PAK.LST		--- List of all files that will be added to CLANS.PAK and their internal filename.
-	*.ASC		--- Various ascii/colour-coded screens that are displayed in the game.
-			LIST.ASC
-			PG.ASC
-			PXNEWS.ASC
-			PXTIT.ASC
-	
-	
->> Help files
-
-more to come.
-
->> Classes
-
-Races + classes are based on the same thing, the PClass structure, see class.c file
-
->> Structs.h
-
->> Empire.C, Fight.C
-
-The code here is pretty bad.
-
->> MStrings.h
-
-This will tell you the linkages for strings in the language file.
-
->> MyOpen.C
-
-Specialized file calls.  See header file.
-
->> Packet.h
-
-If you wanna hack the packets sent by the Clans, go here. ;-)
+Creating a Release
+==================
+Build Targets ..................................................   7.1
+Release Artifacts ..............................................   7.2
 
 
->> Structs.h
+Introduction
+===============================================================================
 
-See this for just about every single structure.
+[0.1]  Overview
+-------------------------------------------------------------------------------
+The Clans is a multi-user fantasy RPG door game for BBS systems.  It
+features clan management, empire warfare, turn-based combat, and a
+unique Inter-BBS (IBBS) multiplayer system that links multiple BBSes
+into a shared game world.  The game was written in C (originally
+Turbo C++ for DOS), and has since been modernized to compile with GCC
+and C17, targeting FreeBSD, Linux, and Windows.
 
->> notes/
+Each BBS running the game acts as a "village" in a shared league.
+Players build clans, join empires, and fight for control of the
+village.  Through the IBBS system, clans can travel to -- and attack
+-- other villages over a Fidonet-style packet network.
 
-Just some various notes.
+This document is the developer and contributor reference.  For sysop
+installation and game setup, see release/clans.doc.  For quest and
+NPC development, see devkit/clandev.txt.
 
-> How to create a distribution.
 
-Maybe you can do it your own way, but this is how I did it:
+[0.2]  License and History
+-------------------------------------------------------------------------------
+The Clans was written by Allen Ussher from 1997 to 2002.  The game
+originally ran on DOS-based BBS systems, compiled with Turbo C++ and
+using the OpenDoors door library by Brian Pirie.  It was released as
+open source under the GPL v2 in 2002.
 
-1. use install.exe provided.
-2. modify the CLANS.CFJ if needed.
-3. update FILE_ID.DIZ.
-4. overwrite necessary files in release/
-5. run chew.exe on it all to make a .gum file
-6. um... :-)  i forget
+Modernization work includes:
 
-Please change the copyright notices to "originally copyright 1997 allen ussher, open source by
-whoever."
+- Compiler: GCC with C17 standard, replacing Turbo C++
+- Platforms: FreeBSD, Linux, and Windows (was DOS only)
+- Serialization: explicit pack/unpack macros replacing raw struct I/O
+- Platform abstraction: unix_wrappers.c / win_wrappers.c / platform.c
+- Build system: GNUmakefile (Unix) and Visual Studio solution (Windows)
+
+The OpenDoors library is still used for BBS door integration and is
+linked statically as libODoors.a.  For the GPL v2 license text, see
+docs/gpl.txt.
+
+
+Getting Started
+===============================================================================
+
+[1.1]  Prerequisites
+-------------------------------------------------------------------------------
+Unix (FreeBSD, Linux):
+- GCC with C17 support
+- GNU Make (invoke as `gmake` on BSD systems)
+- libODoors.a -- the OpenDoors library, compiled for your target
+  platform and placed where the linker can find it
+
+On FreeBSD, GCC and GNU Make can be installed via ports or pkg.  The
+OpenDoors library must be compiled from source.  Once libODoors.a is
+available, the build system will link it automatically.
+
+Windows:
+- Visual Studio 2022 (version 17) or later
+- The solution file src/clans.sln contains a project for every
+  binary.  Open it in Visual Studio and build the desired projects
+  or the entire solution.  libODoors.a must also be compiled and
+  available for the linker.  Alternatively, MinGW-w64 with GCC and
+  GNU Make can be used with the GNUmakefile path described below.
+
+
+[1.2]  Building from Source
+-------------------------------------------------------------------------------
+All source files are in src/.  Data source files are in data/.
+
+Unix / MinGW -- GNUmakefile at the project root:
+
+        gmake -j8             Build game binaries and data (PAK)
+        gmake -j8 game        Build game binaries only
+        gmake -j8 devkit      Build devkit tools only
+        gmake clean           Remove object files and local copies
+        gmake deepclean       Full clean, including bin/ directories
+        gmake DEBUG=1 game    Debug build with full warnings and -g
+
+Build output goes to bin/<os>.<arch>.<flavour>/ -- for example:
+
+        bin/freebsd.amd64.opt/      Release build on FreeBSD/amd64
+        bin/freebsd.amd64.debug/    Debug build
+
+The `game` target also copies binaries and clans.pak to the project
+root directory, which is where the test/ instance expects to find
+them.  The release build uses -Os -flto.  The debug build enables
+-Wall -Wextra -Wconversion -pedantic -g -O0.
+
+Windows -- Visual Studio 2022:
+Open src/clans.sln.  The solution contains one project per binary.
+Build individual projects or the full solution.  Output goes to the
+standard VS output directories (Debug/ or Release/ under each
+project).  Data files must still be built using the devkit tools.
+
+
+[1.3]  Running and Testing
+-------------------------------------------------------------------------------
+There are no automated tests.  The test/ directory contains a
+pre-configured game instance for manual verification:
+
+        cd test/
+        ./clans       Run the main game
+        ./reset       Run the maintenance reset
+        ./config      Run the configuration utility
+        ./pcedit      Edit player characters
+
+After `gmake game`, binaries and clans.pak are copied to the project
+root alongside test/.  The shell scripts in test/ expect the binaries
+in the parent directory (../clans, etc.).
+
+The devkit tool qtest allows testing a single quest event script
+outside of the full game -- useful when developing new quests.
+
+
+Source Code Map
+===============================================================================
+
+[2.1]  Module Summary
+-------------------------------------------------------------------------------
+All 61 source files live in src/.  They are organized as follows:
+
+  Core game engine      clans.c, game.c, empire.c, user.c,
+                        fight.c, village.c
+  Inter-BBS networking  ibbs.c, myibbs.c, packet.h, interbbs.h
+  Gameplay systems      alliance.c, alliancem.c, quests.c,
+                        spells.c, items.c, npc.c, class.c,
+                        trades.c, pawn.c, voting.c, news.c,
+                        mail.c, maint.c, help.c, scores.c,
+                        event.c, menus.c, menus2.c
+  Data serialization    serialize.c, deserialize.c, myopen.c
+  Platform abstraction  unix_wrappers.c, win_wrappers.c,
+                        platform.c, door.c
+  Content and strings   language.c, mstrings.h
+  Utilities             input.c, video.c, random.c, parsing.c,
+                        misc.c, tools.c, readcfg.c, clansini.c,
+                        semfile.c, system.c, console.c, reg.c
+  Game utilities        config.c, reset.c, pcedit.c
+  DevKit tools          ecomp.c, mcomp.c, mclass.c, mitems.c,
+                        mspells.c, makenpc.c, makepak.c,
+                        langcomp.c, chew.c, gum.c, qtest.c,
+                        install.c
+
+Compiled binaries:
+  DOOR_BINARIES   clans, config, pcedit, reset
+  DEVKIT_BINARIES chew, ecomp, langcomp, makenpc, makepak,
+                  mcomp, mclass, mitems, mspells, qtest
+
+
+[2.2]  Core Game Engine
+-------------------------------------------------------------------------------
+  clans.c    Entry point.  Command-line parsing, pre-game menu,
+             and daily maintenance gate.  main() lives here.
+
+  game.c     Game-state management.  Loads and saves GAME.DAT,
+             which records the active game instance: start date,
+             IBBS flag, next clan ID, and per-game settings.
+
+  empire.c   (~100KB)  Empire and domain management: buildings,
+             army raising, tribute, and inter-BBS packet dispatch.
+             This is the largest and most complex file in the
+             codebase.  Also processes incoming IBBS packets during
+             maintenance.
+
+  user.c     (~68KB)  Player and clan data management: file I/O,
+             user list maintenance, clan creation and deletion,
+             and travel state.
+
+  fight.c    (~50KB)  Combat engine: damage calculations, the
+             battle loop, and post-fight effects including
+             experience gain, loot, and casualties.
+
+  village.c  Village state management.  Loads and saves
+             VILLAGE.DAT; manages tax rates, market prices,
+             colour schemes, and village flags.
+
+
+[2.3]  Inter-BBS Networking
+-------------------------------------------------------------------------------
+  ibbs.c     (~101KB)  The IBBS subsystem.  Reads and writes
+             Fidonet-style packet files, processes all incoming
+             packet types from remote BBSes, and drives the IBBS
+             portion of daily maintenance.  See section 4 for
+             packet details; see docs/ibbs-notes.txt for the full
+             protocol.
+
+  myibbs.c   Low-level Fidonet netmail message creation.  Based on
+             OpenDoors sample code by Brian Pirie.  Constructs
+             outbound netmail messages with kludge lines and
+             INTL/FMPT/TOPT headers, with data files as
+             attachments.  Do not modify this file unless you have
+             a clear understanding of the Fidonet message format.
+
+  packet.h   Packet-type constants (PT_*).  See section 4.1.
+
+  interbbs.h Additional inter-BBS protocol definitions.
+
+
+[2.4]  Gameplay Systems
+-------------------------------------------------------------------------------
+  alliance.c     Alliance management ADT: create, join, and
+                 disband player alliances.
+  alliancem.c    Alliance menus and player-facing interaction.
+  quests.c       Quest system.  Loads QUESTS.INI, executes
+                 compiled .e event scripts, and tracks per-clan
+                 completion state.
+  spells.c       Spell system: casting, effects, and learning.
+  items.c        Item system: inventory, buying, and equipping.
+  npc.c          NPCs in town (streets, church, market, etc.).
+                 Loads NPC data from clans.pak.  These are not
+                 the monsters fought in the mines.
+  class.c        Player classes and races (PClass struct).
+  trades.c       Trade and commerce between clans.
+  pawn.c         Pawn shop: selling and buying used items.
+  voting.c       Village leader voting mechanics.
+  news.c         Village news bulletin system.
+  mail.c         Internal mail between clans.
+  maint.c        Daily maintenance: stat recalculation, IBBS
+                 sync, online flag cleanup, score tabulation.
+  help.c         Interactive help system; displays .hlp files.
+  scores.c       Score calculation and leaderboard generation.
+  event.c        Mine event system.  Runs compiled .e scripts
+                 for encounters within the mines.
+  menus.c        Main menu rendering and navigation.
+  menus2.c       Additional menus (split from menus.c when that
+                 file grew too large).
+
+
+[2.5]  Data Serialization
+-------------------------------------------------------------------------------
+  serialize.c    Serializes structs to byte buffers using pack_*
+                 macros.  All data written to disk passes through
+                 here.
+  deserialize.c  Deserializes byte buffers back into structs
+                 using unpack_* macros.  Mirrors serialize.c.
+  myopen.c       File I/O wrappers.  Applies XOR encryption when
+                 reading and writing, manages buffer allocation,
+                 and wraps fopen/fread/fwrite.
+  myopen.h       Declares all BUF_SIZE_* constants.  These MUST
+                 match the actual serialized byte size of each
+                 struct.  Update here when adding struct fields.
+
+See section 3.2 for serialization rules and the full BUF_SIZE list.
+
+
+[2.6]  Platform Abstraction
+-------------------------------------------------------------------------------
+  unix_wrappers.c  Unix-specific: _fsopen() with fcntl locking,
+                   delay() via nanosleep(), FindFileList() via
+                   glob().
+  win_wrappers.c   Windows-specific: Win32 file enumeration,
+                   error dialog helpers, FreeFileList().
+  platform.c       Platform detection and initialization.
+  door.c           BBS door interface (OpenDoors integration):
+                   string output, semaphore files, chat, status
+                   bar, file display, local-game loading.
+
+Conditional compilation uses #ifdef UNIXY for Unix-specific code
+and #ifdef WIN for Windows.  Platform detection is handled by
+mk/Platform.gmake, which sets UNIXY or WIN and selects the
+appropriate wrapper file.
+
+
+[2.7]  Content and Strings
+-------------------------------------------------------------------------------
+  language.c   Loads the compiled language file (strings.xl)
+               into memory.  Provides string lookup by index.
+
+  mstrings.h   CRITICAL.  Every user-visible string in the game
+               is referenced through a macro defined here.  The
+               macros expand to language file lookups by index.
+               Never call od_printf() or similar functions with
+               a string literal for user-visible text.  Add new
+               strings to data/strings.txt instead.
+
+See section 3.4 for the full strings workflow.
+
+
+[2.8]  Utility Modules
+-------------------------------------------------------------------------------
+  input.c      User input handling and key mapping.
+  video.c      Terminal output: ANSI colour codes, screen layout,
+               text input from the user.  Hardware-specific; see
+               section 6.1 before modifying.
+  random.c     Random number generation (my_random()).
+  parsing.c    String parsing utilities.
+  misc.c       Miscellaneous helpers (date calculations, etc.).
+  tools.c      General-purpose helper functions.
+  readcfg.c    INI/config file reader, used by clansini.c.
+  clansini.c   Loads and parses CLANS.INI: NPC file list, race
+               and class overrides, language file path, etc.
+  semfile.c    Semaphore file management (ONLINE.FLG).
+  system.c     Low-level system calls for the door environment.
+  console.c    Error output and console text cursor helpers.
+  reg.c        Legacy registration stub (no longer enforced;
+               registration was removed in the open-source
+               release).
+
+
+[2.9]  Tools and Utilities
+-------------------------------------------------------------------------------
+  config.c    CONFIG -- interactive setup for node and BBS
+              configuration.  Run once before the game.
+  reset.c     RESET -- initializes or resets all game data
+              files.  Must be run after CONFIG on first install.
+  pcedit.c    PCEDIT -- sysop tool for editing player character
+              data directly.
+  install.c   INSTALL -- installation helper (separate binary,
+              not part of DOOR_BINARIES or DEVKIT_BINARIES).
+
+DevKit tools (built by `gmake devkit`):
+
+  langcomp.c  Compiles strings.txt into strings.xl.
+  ecomp.c     Compiles .evt event scripts into binary .e files.
+  mcomp.c     Compiles monster data text files.
+  mclass.c    Compiles class and race data.
+  mitems.c    Compiles item data.
+  mspells.c   Compiles spell data.
+  makenpc.c   Compiles NPC definitions.
+  makepak.c   Bundles compiled data files into clans.pak.
+  chew.c      Creates .GUM compressed archives for distribution.
+  gum.c       GUM archive format implementation (used by chew).
+  qtest.c     Quest script tester: runs a single .e file outside
+              of the full game environment.
+
+Each devkit tool is documented in devkit/*.txt.  See especially
+devkit/clandev.txt for a comprehensive content-creation guide.
+
+
+Data Architecture
+===============================================================================
+
+[3.1]  Data Structures (structs.h)
+-------------------------------------------------------------------------------
+Almost all game data structures are defined in src/structs.h.  The
+42 structs are organized by function:
+
+Configuration and runtime system:
+  struct IniFile         File handles for all loaded data files.
+  struct NodeData        BBS node config: number, dropfile dir,
+                         FOSSIL address, IRQ.
+  struct config          Global sysop config: BBS name, IBBS
+                         settings, logging flags.
+  struct system          Runtime state: dates, working directory,
+                         node number, local-game flags.
+
+Core game state:
+  struct game_data       Active game instance: start date, IBBS
+                         flag, next clan ID, game settings.
+                         Persisted in GAME.DAT.
+  struct game            Wrapper for game_data with init flag.
+  struct village_data    Village state: name, taxes, markets,
+                         colour scheme, flags.  In VILLAGE.DAT.
+  struct village         Wrapper for village_data with init flag.
+  struct empire          Empire/domain: vault gold, land,
+                         buildings, alliance, spy data.
+  struct ResetData       Data written by RESET, read at startup.
+
+Player and combat:
+  struct pc              Player character: name, HP/SP, 6
+                         attributes, equipped items, race, class,
+                         XP, level, training points, spells.
+  struct clan            Clan: ID, username, clan name/symbol,
+                         quests completed, NPC members, items,
+                         empire link.
+  struct Army            Military unit: footmen, axemen, knights,
+                         followers, combat rating.
+  struct Strategy        Combat strategy: attack/defend length
+                         and intensity, loot level.
+  struct SpellsInEffect  Active spell on a combatant: spell ID
+                         and remaining energy.
+  struct AttackResult    Battle outcome: success flag, damage,
+                         casualties, gold and land captured.
+  struct PClass          Player class or race: name, attribute
+                         modifiers, starting HP/gold, spells.
+
+Items, spells, and content:
+  struct item_data       Item: name, type, attribute effects,
+                         market cost, village type restriction.
+  struct Spell           Spell: name, type flags, damage/heal
+                         text strings, SP cost.
+  struct BuildingType    Empire building: name, attack hit zones,
+                         land and energy use, construction cost.
+  struct Language        Loaded language file: string offsets
+                         and the full text pool.
+
+Social, NPCs, and alliances:
+  struct Alliance        Player alliance: ID, name, creator,
+                         member list, shared empire, items.
+  struct NPCInfo         NPC: name, topic list, loyalty score,
+                         wander type, village type restriction.
+  struct NPCNdx          NPC runtime: name, clan membership,
+                         current location.
+  struct Topic           Conversation topic: visibility flags,
+                         display name, script label.
+
+Trade and messages:
+  struct TradeList       Trade offer: gold, followers, troops.
+  struct TradeData       Trade request: offer/ask lists, clans.
+  struct Msg_Txt         Message body: text buffer, line offsets.
+  struct Message         Message header: to/from clan IDs and
+                         names, type, alliance, BBSID.
+
+Inter-BBS packets and nodes:
+  struct Packet          IBBS packet header: type, GameID, date,
+                         source/destination BBSID, payload length.
+  struct AttackPacket    Attack payload: armies, target empire,
+                         source/dest BBSIDs.
+  struct SpyAttemptPacket  Spy mission: spy stats, target BBSID.
+  struct SpyResultPacket   Spy result: success, empire data.
+  struct ibbs_node_info  Node: BBS name, village, Fidonet
+                         address, routing, mailer type.
+  struct ibbs_node_reset   Reset tracking per remote node.
+  struct ibbs_node_recon   Recon tracking per remote node.
+  struct ibbs_node_attack  Attack packet index per remote node.
+  struct ibbs             Top-level IBBS state: this BBS's ID,
+                         node array, flags.
+
+Other:
+  struct UserInfo        User record in userlist.dat: ClanID,
+                         name, deleted flag.
+  struct UserScore       Leaderboard entry: ClanID, symbol,
+                         name, score points.
+  struct LeavingData     Clan travel state: active, destination,
+                         troop counts.
+  struct Door            Door session state: initialized flag,
+                         pause-screen setting, colour mode.
+
+
+[3.2]  Serialization System
+-------------------------------------------------------------------------------
+Game data files are written and read using explicit serialization
+rather than raw struct dumps.  This ensures a stable on-disk format
+that is independent of compiler layout and padding decisions.
+
+The serialize.c / deserialize.c pair provides pack_* and unpack_*
+macros for each supported type:
+
+  pack_char / unpack_char         1-byte character
+  pack_int8 / unpack_int8         1-byte signed integer
+  pack_int16_t / unpack_int16_t   2-byte signed (little-endian)
+  pack_int32_t / unpack_int32_t   4-byte signed (little-endian)
+  pack_bool / unpack_bool         1-byte boolean
+  pack_int16_tArr                 Array of n int16_t values
+
+Both serialize and deserialize functions return SIZE_MAX on
+buffer overflow or underflow.
+
+XOR encryption is applied by myopen.c at the file I/O layer.
+Each data file type has its own constant (see section 3.3).
+
+Buffer sizes for every serialized struct are declared as BUF_SIZE_*
+constants in myopen.h.  The current values are:
+
+  BUF_SIZE_Alliance       2121    BUF_SIZE_Army              27
+  BUF_SIZE_AttackPacket    192    BUF_SIZE_AttackResult      263
+  BUF_SIZE_clan           2249    BUF_SIZE_empire            141
+  BUF_SIZE_game_data       105    BUF_SIZE_item_data          62
+  BUF_SIZE_Language       4032    BUF_SIZE_LeavingData        27
+  BUF_SIZE_Message         210    BUF_SIZE_MessageHeader     190
+  BUF_SIZE_Msg_Txt          84    BUF_SIZE_NPCInfo          1266
+  BUF_SIZE_NPCNdx           29    BUF_SIZE_Packet             38
+  BUF_SIZE_pc              140    BUF_SIZE_PClass             69
+  BUF_SIZE_Spell            39    BUF_SIZE_SpellsInEffect      4
+  BUF_SIZE_SpyAttemptPacket 88    BUF_SIZE_SpyResultPacket   186
+  BUF_SIZE_Strategy          5    BUF_SIZE_Topic              98
+  BUF_SIZE_TradeData        86    BUF_SIZE_TradeList          24
+  BUF_SIZE_UserInfo         65    BUF_SIZE_UserScore          61
+  BUF_SIZE_village_data    304
+
+IMPORTANT: When adding a field to any serialized struct, you must:
+  1. Add pack_*/unpack_* calls to serialize.c and deserialize.c.
+  2. Update the corresponding BUF_SIZE_* constant in myopen.h.
+  3. The CRC field must always be the last field serialized.
+
+Forgetting step 2 will cause silent data corruption or truncation.
+
+
+[3.3]  XOR Encryption Constants
+-------------------------------------------------------------------------------
+Data files are XOR-encrypted byte-by-byte with a fixed per-type key
+defined in src/defines.h.  This prevents casual editing of binary
+data files but is not a security mechanism.  A determined attacker
+with access to the source code can decode any file trivially.
+
+  Constant       Value   Used for
+  XOR_VILLAGE      9     village.dat
+  XOR_GAME         9     game.dat
+  XOR_USER         9     userlist.dat, per-clan files
+  XOR_PC           9     player character files
+  XOR_MSG         69     message files
+  XOR_ITEMS       23     item files
+  XOR_ALLIES    0xA3     alliance files
+  XOR_TRADE     0x2B     trade data files
+  XOR_IBBS      0x8A     IBBS state files
+  XOR_PACKET    0x47     outgoing packet files
+  XOR_IPS       0x94     IPS data
+  XOR_TRAVEL    0x3B     LeavingData / travel state files
+  XOR_ULIST     0xCE     user list broadcast packets
+  XOR_DISBAND   0x79     disband / removal packets
+
+
+[3.4]  Language and String System
+-------------------------------------------------------------------------------
+User-visible strings are not hardcoded in C source.  They live in
+data/strings.txt and are compiled into the binary language file
+data/strings.xl by the langcomp devkit tool.
+
+Workflow for adding or changing a string:
+  1. Add or edit the entry in data/strings.txt.
+  2. Run: langcomp strings.txt strings.xl
+  3. Run: makepak pak.lst clans.pak  (or copy strings.xl manually
+     to the game directory for quick testing).
+
+In C code, strings are referenced through macros in src/mstrings.h:
+
+        od_printf( STR_WELCOME );
+        od_printf( STR_CLAN_DISBANDED );
+
+Each macro expands to a lookup in the loaded Language struct by
+index.  The macros are the authoritative list of all user-visible
+strings.  Do not add string literals to source code for any text
+that a player will see.
+
+
+Inter-BBS System
+===============================================================================
+
+[4.1]  Packet Types
+-------------------------------------------------------------------------------
+Inter-BBS packets are identified by the PT_* constants in packet.h.
+
+  PT_CLANMOVE      0   Clan migrating to a remote BBS.  Carries
+                       up to 6 player character records.
+  PT_DATAOK        1   Acknowledgment of a received PT_CLANMOVE.
+  PT_RESET         2   Game reset with new game_data payload.
+  PT_GOTRESET      3   Acknowledgment of PT_RESET.
+  PT_RECON         4   Reconnaissance request.
+  PT_GOTRECON      5   Reconnaissance response.
+  PT_NEWUSER       6   New user registration.  Always sent to
+                       the League Controller (BBS ID 1) first.
+  PT_DELUSER       7   Delete user (system-generated, e.g.
+                       duplicate purge by the League Controller).
+  PT_ADDUSER       8   Add user.  Broadcast FROM the LC to all
+                       nodes after PT_NEWUSER deduplication.
+  PT_SUBUSER       9   Subtract user (player-initiated removal).
+  PT_COMEBACK     10   Clan returning from another BBS.
+  PT_MSJ          11   Message posted across BBSes.
+  PT_ATTACK       12   Inter-BBS military attack.
+  PT_ATTACKRESULT 13   Attack result from the defending BBS.
+  PT_SPY          14   Spy mission attempt.
+  PT_SPYRESULT    15   Spy result from the target BBS.
+  PT_SCOREDATA    16   Score data from one BBS.
+  PT_SCORELIST    17   Score list broadcast.
+  PT_NEWNDX       18   New node index (WORLD.NDX update).
+  PT_ULIST        19   Full user list broadcast from the LC.
+                       Overwrites records for remote users only;
+                       never clobbers the home node's own users.
+
+
+[4.2]  Packet Filenames
+-------------------------------------------------------------------------------
+Outgoing packet files follow the naming convention:
+
+        clFFFTTTDDI
+
+  FFF   3-digit zero-padded source BBS ID
+  TTT   3-digit zero-padded destination BBS ID
+  DD    2-character league ID
+  I     Sequence index (starts at 'a', increments per batch)
+
+Example: cl001002AAa is the first outbound packet from BBS 001 to
+BBS 002 in league "AA".
+
+Packets are written to the outbound/ directory and attached to
+outgoing Fidonet netmail messages by myibbs.c.
+
+BACKUP.DAT tracks all in-flight packets.  During maintenance, stale
+PT_CLANMOVE entries cause the clan to be re-added locally; stale
+PT_ATTACK entries return troops to the attacking side.
+
+
+[4.3]  League Structure and Roles
+-------------------------------------------------------------------------------
+Each BBS in the league is identified by a numeric BBSID.  BBS ID 1
+is the League Controller (LC), which is the authoritative node.
+
+New user registration flow:
+  1. User registers on BBS X.  BBS X sends PT_NEWUSER to the LC.
+  2. LC checks for duplicate names across all known users.
+  3. LC broadcasts PT_ADDUSER to every node in the league.
+  4. All nodes add the user to their local userlist on receipt.
+
+Periodically, the LC sends a full PT_ULIST to all nodes to
+re-synchronize the user list.  PT_ULIST updates only records for
+users whose home BBS is not the receiving node; local users are
+never overwritten.
+
+League topology is defined by two configuration files:
+  WORLD.NDX   Node list: BBSID, BBS name, village name, Fidonet
+              address, and routing.  See release/worldndx.smp.
+  ROUTE.CFG   Routing and forwarding rules.  See release/route.smp.
+
+The full IBBS protocol, including packet flow diagrams and edge
+case handling, is in docs/ibbs-notes.txt.
+
+
+[4.4]  Further Reading
+-------------------------------------------------------------------------------
+docs/ibbs-notes.txt is the authoritative IBBS protocol reference.
+It documents every packet type in detail, the BACKUP.DAT recovery
+mechanism, and the full sequence for common operations like clan
+migration, inter-BBS attacks, and league resets.
+
+
+Content and the DevKit
+===============================================================================
+
+[5.1]  Data Files Overview
+-------------------------------------------------------------------------------
+The game reads all content from clans.pak, a custom archive file
+similar in concept to a Quake PAK file.  The PAK is assembled from
+compiled binary data by the makepak devkit tool.
+
+Files inside clans.pak:
+
+  strings.xl       Compiled language strings
+  monsters.mon     Monster definitions
+  items.itm        Item definitions
+  classes.cls      Player class definitions
+  races.cls        Race definitions
+  spells.spl       Spell definitions
+  npcquote.q       NPC dialogue
+  clans.npc        NPC definitions
+  eventmon.mon     Event encounter monster definitions
+  *.e              Compiled event scripts
+  *.hlp            In-game help files
+  *.asc            ANSI/ASCII screen art
+
+The source text files for all of the above live in data/ and are
+compiled by devkit tools into their binary forms.  pak.lst in data/
+lists exactly which compiled files are included in the PAK and what
+internal path each one gets.
+
+
+[5.2]  Building Data Files
+-------------------------------------------------------------------------------
+All commands below are run from the data/ directory (or provide
+paths accordingly).  The tools must be on your PATH or invoked
+with their full path from bin/.
+
+  langcomp strings.txt strings.xl          Language file
+  mcomp monsters.txt monsters.mon          Monsters
+  mcomp eventmon.txt eventmon.mon          Event monsters
+  mcomp npc-pc.txt npc-pc.mon              NPC PC stats
+  mitems items.txt items.itm               Items
+  mspells spells.txt spells.spl            Spells
+  mclass classes.txt classes.cls           Classes
+  mclass races.txt races.cls               Races
+  makenpc npc-pc.mon npcquote.q clans.npc  NPC index
+  ecomp foo.evt foo.e                      Event script
+  makepak pak.lst clans.pak                Bundle into PAK
+
+After modifying any source data file, you must recompile it and
+rebuild clans.pak before the changes will appear in the game.
+
+The genall.bat script in data/ was the original batch runner for
+all of the above steps.  Under Unix, run the commands individually
+or write a shell script to automate them.
+
+Each tool is documented in devkit/*.txt.  See devkit/clandev.txt
+for a comprehensive guide to creating quests, NPCs, and monsters.
+
+
+[5.3]  Event Scripts
+-------------------------------------------------------------------------------
+Events are scripts for mine encounters and quests.  They are written
+in a simple compiled scripting language and processed by event.c and
+quests.c at runtime.
+
+Key scripting commands:
+
+  Event BlockName          Begin a named block.
+  End                      End the block (stop execution).
+  Text "message"           Display text to the player.
+  Input [Label] [text]     Numbered-choice menu; jumps to Label.
+  Option [Char] [Label]    Single-keystroke option.
+  Fight [monster] [...]    Initiate a combat encounter.
+  # comment                Line comment.
+
+Scripts are compiled from .evt (source) to .e (binary) using ecomp.
+The compiled .e files are what the game actually loads.
+
+Quests are registered in QUESTS.INI.  Required fields:
+
+  Name    <display name>   Shown to the player in the quest list.
+  File    <foo.e>          Path to the compiled .e script.
+  Index   <BlockName>      Entry-point block name in the script.
+  Known                    Quest is visible from the start.
+
+Quest descriptions shown in the help system live in QUESTS.HLP.
+Each entry follows this format:
+
+  ^Quest Name
+  Description text.
+  ^END
+
+See devkit/ecomp.txt for the full event command reference, and
+devkit/event1.evt through event5.evt for worked examples.  The
+QUESTS.INI and QUESTS.HLP in the release/ directory are the
+reference versions for the built-in quest set.
+
+
+[5.4]  Help Files
+-------------------------------------------------------------------------------
+The in-game F1/? help system loads plain ASCII .hlp files bundled
+in clans.pak.  Each file covers one topic area.  Current files:
+
+  army.hlp       bulletin.hlp   church.hlp     citizen.hlp
+  clans.hlp      combat.hlp     empire.hlp     items.hlp
+  menus.hlp      newbie.hlp     races.hlp      ruler.hlp
+  spells.hlp     stats.hlp      strategy.hlp   village.hlp
+  war.hlp        wizard.hlp
+
+To add a new help topic, create a .hlp file, add it to pak.lst,
+and register it in help.c.  Help files are plain text; ANSI
+colour codes are supported.
+
+
+Known Issues and Technical Debt
+===============================================================================
+
+[6.1]  Current Issues
+-------------------------------------------------------------------------------
+XOR encryption is trivially weak.
+  The per-file XOR keys in defines.h are visible in the source.
+  Anyone with the source can decode and modify any data file.
+  This has always been the case; the original author acknowledged
+  it explicitly.  Do not rely on it for security.  See section
+  6.2 for the recommended approach.
+
+video.c is hardware-specific.
+  The terminal output layer carries assumptions from the original
+  DOS/serial-port environment.  It works correctly on current
+  platforms but is fragile.  Review the full file before making
+  any changes to the terminal output layer.
+
+ibbs.c and empire.c are large and complex.
+  At ~100KB each, these files pre-date the current serialization
+  and platform abstraction layers and contain legacy patterns.
+  Changes here require extra care and thorough manual testing.
+
+Some user-visible strings are still hardcoded.
+  Despite the language system, a number of string literals remain
+  in the C source that should be in strings.txt.  Any such string
+  is a localization gap and a maintenance burden.
+
+No automated tests.
+  All verification is manual via the test/ directory.  A bug in
+  the IBBS path, for example, can only be caught by running
+  a two-node local league and exercising the specific code path.
+
+
+[6.2]  Suggested Improvements
+-------------------------------------------------------------------------------
+These are the original author's recommendations, still valid:
+
+1. Replace the Fidonet transport with TCP sockets.
+   The current IBBS system requires a configured Fidonet mailer
+   (Binkley or compatible) at every node.  This is the biggest
+   practical barrier to setting up an IBBS league.  A direct TCP
+   packet exchange between nodes would eliminate this dependency.
+
+2. Replace XOR encryption with real packet authentication.
+   Ideally, sign packets with a per-league private key so that
+   nodes can verify packet origin.  This would close the cheating
+   vector in competitive leagues.
+
+3. Harden the IBBS state machine.
+   The BACKUP.DAT recovery logic handles the common cases, but
+   desync between nodes is still possible in some edge cases
+   (e.g., a node missing a PT_ADDUSER and later receiving a
+   PT_ULIST that includes that user's data).
+
+Additional modernization ideas:
+
+4. Add an automated test harness.
+   The quest event interpreter (quests.c / event.c) is the
+   most tractable place to start; individual .evt scripts can
+   be tested in isolation with qtest.
+
+5. Move remaining hardcoded strings to data/strings.txt.
+   A grep for od_printf(" in the source will find them.
+
+6. Add CRC validation to all deserialization paths.
+   Currently, some deserialize functions check CRC and some do
+   not.  Consistent validation would catch file corruption much
+   earlier and make debugging easier.
+
+
+Creating a Release
+===============================================================================
+
+[7.1]  Build Targets
+-------------------------------------------------------------------------------
+  gmake game              Build game binaries and copy them, along
+                          with clans.pak and release config, to the
+                          project root directory.
+
+  gmake devkit            Build devkit tools and copy them, along
+                          with devkit/ documentation, to the project
+                          root directory.
+
+  gmake installer         Assemble a distribution .zip.  Builds all
+                          binaries and data, stages them in stage/,
+                          runs chew, and outputs:
+                          Clans-<os>-<arch>-0_97b1.zip
+
+  gmake devkit-installer  Assemble the devkit .zip:
+                          ClansDevKit-<os>-<arch>-0_12.zip
+
+  gmake install           Install to PREFIX.  Copies game binaries
+                          to $(INSTALLDIR) and data to the same.
+
+  gmake clean             Remove object files and local binary
+                          copies from the project root.
+
+  gmake deepclean         Full clean including the bin/ directory.
+
+
+[7.2]  Release Artifacts
+-------------------------------------------------------------------------------
+A complete game installation requires:
+
+  Binaries:   clans, config, pcedit, reset
+  Data:       clans.pak  (monsters, items, spells, events, strings,
+                          NPCs, help files, and screen art)
+  Config:     clans.ini, quests.ini
+  IBBS:       route.cfg, world.ndx  (league-specific; see samples
+                          in release/worldndx.smp and route.smp)
+  Windows:    runclans.bat (launcher; edit paths for your setup)
+  Docs:       release/clans.doc  (sysop reference)
+
+A devkit installation requires:
+
+  Binaries:   chew, ecomp, langcomp, makenpc, makepak,
+              mcomp, mclass, mitems, mspells, qtest
+  Docs:       devkit/*.txt  (tool reference documentation)
+  Examples:   devkit/event1.evt through event5.evt
+              devkit/example.ini
+
+For the copyright notice, use:
+  "Originally copyright 1997-2002 Allen Ussher.  Open source
+   contributors.  GPL v2."

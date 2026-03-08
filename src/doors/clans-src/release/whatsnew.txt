@@ -10,8 +10,17 @@ Long gap in here, so I'll just hit the highlights.
 - Allen is no longer involved in day-to-day work
 - DOS is no longer supported
 - Updated for Windows and *nix
-- File formats changed
+- File formats changed; overhauled file reading and writing
 - Mostly just cleanup from the OS changes
+
+What's new in v0.96v2
+----------------------
+- More Win32/FreeBSD fixes... should now actually work.
+
+What's new in v0.96b1
+----------------------
+- Many fixes, cleanups too numerous to mention
+- Now compiles on Win32 and FreeBSD
 
 What's new in v0.95b7 07-06-1999
 --------------------------------

@@ -1,30 +1,14 @@
 
 
 
-The Clans (InterBBS) v0.95
+The Clans (InterBBS) v0.97b2
 -------------------------------------------------------------------------------
-Copyright (C) 1997-2002 Allen Ussher
+Copyright (C) 1997-2026 Allen Ussher and contributors
 
 http://theclans.sourceforge.net
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Originally created by Allen Ussher.  Open source under the GNU General
+Public License v2.  See the source for contributor history.
 
 
 [0.0]  Table of Contents
@@ -34,17 +18,18 @@ Introduction to The Clans
 =========================
 Description ...........................................................   0.1
 Disclaimer ............................................................   0.2
-Registration ..........................................................   0.3
 No Multinode ..........................................................   0.4
 *** Lazy Sysop's Guide *** ............................................   0.9
 
 Setting up The Clans
 ====================
 Setting Up The Clans ..................................................   1.1
+Configuration File Reference ..........................................  1.1b
 Resetting The Clans ...................................................   1.2
 Daily Maintenance .....................................................   1.3
 Starting an InterBBS Game .............................................   1.4
 Joining an InterBBS Game ..............................................   1.5
+How InterBBS Packets Are Handled ......................................  1.5b
 Local InterBBS Games ..................................................   1.6
 Troubleshooting .......................................................   1.7
 
@@ -83,23 +68,17 @@ Here is a run down of some of The Clan's features:
   religiously each day. :)
 - Unique InterBBS gaming!
 
-
+The Clans runs on FreeBSD, Linux, and Windows.  It is free and open source
+software.  Source code is included with the DevKit distribution.
 
 
 [0.2]  Disclaimer
 -------------------------------------------------------------------------------
-*No warranty* is provided for this product.  Allen Ussher, the author, is
-not liable for any damages incurred by use of The Clans.  The Clans is
-provided "as is" and a warranty of any kind is neither expressed nor
-implied, all of are hereby explicitly disclaimed.  Any damage caused by The
-Clans directly or indirectly is not the responsibility of Allen Ussher.
-There is also no guarantee that this software will continue to be updated
-or that support will be offered.
-
-
-[0.3]  Registration
--------------------------------------------------------------------------------
-Registration is no longer required for The Clans.
+*No warranty* is provided for this product.  The authors are not liable for
+any damages incurred by use of The Clans.  The Clans is provided "as is"
+and a warranty of any kind is neither expressed nor implied, all of which
+are hereby explicitly disclaimed.  Any damage caused by The Clans directly
+or indirectly is not the responsibility of the authors.
 
 
 [0.4]  No Multinode
@@ -110,9 +89,10 @@ ensure no two users enter the game at the same time.  It will alert a user
 trying to enter while someone is on that the game is currently in use.  To
 do this, an ONLINE.FLG semaphore file is created in the Clans directory.  If
 something occurs which causes the file to still exist even after a user has
-exited the door, you may simply delete the file (otherwise, users entering the
-game will be told someone is online even though they are not).  This file is
-also deleted during maintenance.
+exited the door, you may run "clans /Exclusive" from the command line to
+remove it, or simply delete it manually (otherwise, users entering the game
+will be told someone is online even though they are not).  This file is also
+deleted during maintenance.
 
 
 [0.9]  Lazy Sysop's Guide
@@ -122,11 +102,12 @@ file (although I highly recommend you do anyway).  To set up the game
 (locally only -- you MUST read the docs to set up InterBBS) follow these
 simple steps:
 
-       1.  Run CONFIG.EXE.  Configure your node data here.
-       2.  Modify RUNCLANS.BAT to suit your BBS.  Call RUNCLANS.BAT from your
-           BBS as a door.*
-       3.  Run RESET.EXE from DOS.
-       4.  Add "Clans /M" to your nightly maintenance.
+       1.  Run "config" (config.exe on Windows) from your Clans directory.
+           Configure your node data here.
+       2.  Set up your BBS to run the "clans" program as a door, passing
+           the node number (e.g. clans /N1 for node 1).
+       3.  Run "reset" (reset.exe on Windows) from your Clans directory.
+       4.  Add "clans /M" to your nightly maintenance.
 
 That's it.  If you were lost anywhere above, you better read the regular
 setup guide below. ;)
@@ -145,33 +126,47 @@ Please refer to section 1.7 Troubleshooting if a problem occurs.
 
 [1.1]  Setting Up The Clans
 -------------------------------------------------------------------------------
-First, you must run the setup program, CONFIG.EXE.  This program allows you
-to specify which nodes you have on your BBS and their dropfile directories.
-The Clans doesn't need to know what type of dropfile it should look for.  It
-will do this automatically.
+The Clans runs on FreeBSD, Linux, and Windows.  The programs included are:
 
-To run the clans, you must create a batch file which runs the game.  How to
-set up a door on your BBS is not covered here as there are several types of
-BBS software, each of which has a different setup.  Please refer to your BBS
-documentation for information on how to set up a door.  You must set up the
-BBS so that it calls a batch file like the following (RUNCLANS.BAT):
+    clans       The main door game
+    config      Configuration editor (interactive, console-based)
+    reset       Game reset utility
+    pcedit      Player character editor (sysop debugging tool)
 
---[beginning of file]--                 [notes]
+On Unix-like systems these are plain executable files (no extension).  On
+Windows they are .exe files.
 
-cd \TheClans                            Change this to your Clans directory.
-Clans /N%1                              %1 is the node you wish to run.
-cd \bbsdirectory                        Change this to your BBS directory.
+First, run the "config" program from your Clans directory.  This lets you
+set your BBS name, sysop name, node drop-file directories, and InterBBS
+settings.  Config writes a plain-text file called CLANS.CFG which you may
+also edit directly with a text editor.  The CLANS.INI file (also in your
+Clans directory) specifies paths to game data files and should not normally
+need editing.
 
---[end of file]--------
+To run The Clans as a door, configure your BBS to call the "clans" binary
+from the Clans directory.  Specify the node number with the /N parameter:
 
-To run this batchfile, simply use "RUNCLANS.BAT [node]" where [node] is the
-node on the BBS from which you are calling from.  To run from Node 1, use
-"RUNCLANS.BAT 1".  If you wish, you may create your own batch file, but
-remember *YOU MUST CHANGE TO THE CLANS DIRECTORY* and *you must specify the
-node using "CLANS /Nx" where 'x' is the node*.
+        clans /N1                       (for node 1)
+        clans /N2                       (for node 2)
 
-Now that the game is setup for local play, you must reset it.  Please see
-the next section for information on resetting the game.
+The Clans locates its drop file (DOOR.SYS, DORINFO1.DEF, etc.) based on
+the DropDirectory setting for that node in CLANS.CFG.  Alternatively, use
+/D to specify the path on the command line:
+
+        clans /N1 /D/path/to/dropfiles/
+
+For BBS software that passes a socket handle instead of a drop file
+(e.g. Synchronet), use the /S parameter followed immediately by the socket
+handle number:
+
+        clans /S12345
+
+For local (sysop) testing without a BBS connection, use /L:
+
+        clans /L
+
+A sample Windows batch file (RUNCLANS.BAT) is included in this distribution
+for reference.
 
 *NOTE: If you are planning on joining an InterBBS league, YOU MUST set up
        your BBS software to call the door with REAL NAMES ONLY.  This
@@ -180,36 +175,81 @@ the next section for information on resetting the game.
        real names can't (or shouldn't).
 
 
+[1.1b]  Configuration File Reference
+-------------------------------------------------------------------------------
+The CLANS.CFG file is a plain-text file.  Lines beginning with # are
+comments.  The following keywords are recognized:
+
+Game settings:
+
+    SysopName       Your name (shown on the local login screen)
+    BBSName         Name of your BBS
+    UseLog          Yes or No -- enables clansN.log activity log
+    ScoreANSI       Filename for ANSI scores file (default: scores.ans)
+    ScoreASCII      Filename for ASCII scores file (default: scores.asc)
+
+InterBBS settings (all require InterBBS to be enabled):
+
+    InterBBS        Presence of this keyword enables InterBBS mode
+    BBSID           Your BBS ID number (1 = League Coordinator)
+    NetmailDir      Directory where outgoing netmail is written
+    InboundDir      Directory where incoming packets arrive
+    MailerType      Binkley, Attach, or None
+    OutputSemaphore Optional file the mailer watches to trigger tossing
+
+Per-node settings (one block per node):
+
+    Node            Node number
+    DropDirectory   Path to directory containing the BBS drop file
+    UseFOSSIL       Yes or No (Windows COM port FOSSIL driver support)
+    SerialPortAddr  Serial port base address in hex (Windows only)
+    SerialPortIRQ   Serial port IRQ number (Windows only)
+
+Example CLANS.CFG:
+
+        SysopName       Joe Sysop
+        BBSName         Joe's BBS
+        UseLog          Yes
+
+        InterBBS
+        BBSID           2
+        NetmailDir      /bbs/netmail/
+        InboundDir      /bbs/inbound/
+        MailerType      Binkley
+
+        Node            1
+        DropDirectory   /bbs/node1/
+
 
 [1.2]  Resetting The Clans
 -------------------------------------------------------------------------------
-To reset the game*, all you must do is run the reset program RESET.EXE
-within the Clans directory.
+To reset the game*, all you must do is run the "reset" program from your
+Clans directory (reset.exe on Windows):
+
+        reset
 
 You will be given several options for the reset of the game.  After you are
 done entering the information, the game will be reset (all data files from
 the previous game will be removed automatically).
 
-If you are in a league, you must also run CLANS /I after you run RESET.EXE.
+If you are in a league, you must also run "clans /I" after running reset.
 But be sure that all your configurations have been set up already before
 doing this!  Have your WORLD.NDX file and ROUTE.CFG files created before
-running CLANS /I.  If you have set up a local IBBS league (i.e. on one BBS
-only), you must run CLANS /LIBBS /I (note the /LIBBS option added).
+running "clans /I".  If you have set up a local IBBS league (i.e. on one
+BBS only), you must run "clans /LIBBS /I" (note the /LIBBS option added).
 
 * You MUST reset the game the first time it is installed.
 
 
-
 [1.3]  Daily Maintenance
 -------------------------------------------------------------------------------
-It is recommended that you run The Clans maintenace each day by adding this
-command line to your nightly BBS maintenance:
+It is recommended that you run The Clans maintenance each day by adding this
+command to your nightly BBS maintenance:
 
-        cd \TheClans
-        CLANS /M
-        cd \bbsdirectory
+        cd /path/to/clans
+        clans /M
 
-As with the previous batch file example, please modify it to suit your BBS.
+As with the previous example, modify the path to suit your installation.
 
 If you do not include this in your nightly maintenance or, for some reason,
 the maintenance is not run, The Clans will automatically run maintenance the
@@ -237,8 +277,8 @@ First of all, let me go over some terms:
                              to play The Clans.  The league can also be
                              thought of as the "world" which the game takes
                              place in as each BBS is considered a "Village."
-      LeagueID               This is a two-character identification code which
-                             differentiates one league from another.
+      LeagueID               This is a two-character identification code
+                             which differentiates one league from another.
       League Coordinator     This is the sysop of the main BBS which is
       (LC)                   coordinating the game (YOU, if you are starting
                              a new InterBBS league).
@@ -257,8 +297,8 @@ To set up an InterBBS game, follow these steps thoroughly:
       following steps:
 
        A.  Choose a LeagueID.  This is a two-character alphanumeric
-           identification code.  Basically, you can use any characters which
-           you can use to name files in DOS.  i.e: none of the following:
+           identification code.  You can use any characters which can
+           appear in a filename on your OS.  i.e: none of the following:
 
            . ? * % / \ etc.
 
@@ -271,8 +311,8 @@ To set up an InterBBS game, follow these steps thoroughly:
            creative.  You can use whatever name you want here (it doesn't
            matter if another league is using the name).
 
-       C.  Now you are ready to create the entries needed for each BBS in the
-           league.  Set up each BBS in the league using these keywords:
+       C.  Now you are ready to create the entries needed for each BBS in
+           the league.  Set up each BBS in the league using these keywords:
 
            BBSId        - The BBSId of the BBS in the league you are adding.
                           This is unique.  The first BBS has BBS ID of 1.
@@ -286,6 +326,10 @@ To set up an InterBBS game, follow these steps thoroughly:
                           in the league do NOT need to all belong in the
                           same network, as long as they are all connected
                           somehow.
+           Status       - Optional.  "Active" or "Inactive".  Inactive nodes
+                          are reserved and do not participate in the league.
+           NoMSG        - Optional flag.  Suppresses .MSG file creation for
+                          this node (useful for FTP-based mail exchange).
 
 
            Here is an example of the BBS entries in a WORLD.NDX file for a
@@ -307,37 +351,36 @@ To set up an InterBBS game, follow these steps thoroughly:
            VillageName     Franktown
            Address         1:1/3
 
-       D.  Optional, but pretty darn cool.  You can create an ASCII text file
-           using pipe codes for colours which is displayed whenever a user
-           plays on a board in the league.  See WORLDNDX.SMP for an example.
-           Basically, start all lines with an Ascii keyword and place
-           whatever you want after it:
+       D.  Optional, but pretty darn cool.  You can create an ASCII text
+           file using pipe codes for colours which is displayed whenever a
+           user plays on a board in the league.  See WORLDNDX.SMP for an
+           example.  Basically, start all lines with an Ascii keyword and
+           place whatever you want after it:
 
                 Ascii  [ put stuff here ]
                 Ascii  [ and here ]
                 Ascii  [ and optionally here ]
 
-   2. Now that your WORLD.NDX file has been created, you are ready to send it
-      out to each BBS in the league.  Tell the BBSes in your league to copy
-      this file to their Clans directory.  Next tell them to set the game
-      up for InterBBS by enabling the InterBBS option in the CONFIG.EXE
+   2. Now that your WORLD.NDX file has been created, you are ready to send
+      it out to each BBS in the league.  Tell the BBSes in your league to
+      copy this file to their Clans directory.  Next tell them to set the
+      game up for InterBBS by enabling the InterBBS option in the config
       program.  They should follow the Joining an InterBBS League steps
       outlined in the following section.  Be sure you give them the BBS Id
-      for their BBS.  YOU must also choose the InterBBS option in the
-      CONFIG.EXE program (enter the BBS ID as 1 since you are the head
-      BBS in the league).
+      for their BBS.  YOU must also choose the InterBBS option in the config
+      program (enter the BBS ID as 1 since you are the head BBS in the
+      league).
 
-   3. The game is almost ready to play.  Now run the reset program
-      from DOS:
+   3. The game is almost ready to play.  Now run the reset program:
 
-      RESET
+      reset
 
       Enter all the important information as you would a normal reset and
       choose "Leaguewide reset ..."  After doing this, you must run
-      CLANS /I from DOS so that Clans will create outbound packets telling
-      each BBS in the league to get ready to begin the game.  You should
-      have set the game start date to perhaps a week ahead of the day you
-      set up the league so that everyone can get ready.
+      "clans /I" so that Clans will create outbound packets telling each
+      BBS in the league to get ready to begin the game.  You should have
+      set the game start date to perhaps a week ahead of the day you set
+      up the league so that everyone can get ready.
 
    4. If everything is set up properly, the other BBSes should get a packet
       telling their game to reset for InterBBS.  Then Clans on their BBS
@@ -347,15 +390,14 @@ To set up an InterBBS game, follow these steps thoroughly:
 
    5. It is also a good idea to create a VillInfo section in your WORLD.NDX
       file.  See the WORLDNDX.SMP for an example.  Basically, this section
-      acts as a way of advertising the BBSes who are running The Clans in your
-      league.  Whenever a user chooses to travel to another BBS and chooses a
-      BBS, a small advertisment (from this file) will appear.  This is
-      extremely useful for attracting people to call your board and very
-      helpful in keeping a link to other boards (for people who don't do
-      messages).
+      acts as a way of advertising the BBSes who are running The Clans in
+      your league.  Whenever a user chooses to travel to another BBS and
+      chooses a BBS, a small advertisement (from this file) will appear.
+      This is extremely useful for attracting people to call your board and
+      very helpful in keeping a link to other boards.
 
-   6. You may also wish to choose a routing method (this may not be needed for
-      small leagues).  See the section below for information.
+   6. You may also wish to choose a routing method (this may not be needed
+      for small leagues).  See the section below for information.
 
 You're done.
 
@@ -372,7 +414,7 @@ Adding a new node while a game is in progress
 ---------------------------------------------
 It is easy to add a new node to your existing game.
 
-   1. Simply modify the WORLD.NDX to accomodate the new BBS.  Do this by
+   1. Simply modify the WORLD.NDX to accommodate the new BBS.  Do this by
       creating a new entry for the BBS in the file.  If you use the HOST
       routing method (see below) you may also need to add the new node
       to one of the host BBSes.
@@ -381,10 +423,10 @@ It is easy to add a new node to your existing game.
       the joining BBS what his BBS Id is.  He will need this information!
 
    2. Now, you must distribute the updated WORLD.NDX file.  To do this is
-      easy.  Run CLANS with the /NewNDX parameter and it'll send out the
+      easy.  Run clans with the /NewNDX parameter and it'll send out the
       NDX file to all boards in the league:
 
-                CLANS /NewNDX
+                clans /NewNDX
 
 
 That is all!
@@ -486,64 +528,65 @@ and HOLD keywords (see ROUTE.CFG for information).
 Note For Beginners
 ------------------
 If you are unsure about routing and the BBSes in the league you are creating
-are all local (i.e. no long distance), all are open 24 hours a day (or a
-close to it), and the league is a small one, you don't need any routing.
+are all local (i.e. no long distance), all are open 24 hours a day (or close
+to it), and the league is a small one, you don't need any routing.
 
-However, the simplest method of routing (if you desire one) is to send all data
-through the league coordinator's BBS (BBS #1) by using this keyword in the
-ROUTE.CFG file:
+However, the simplest method of routing (if you desire one) is to send all
+data through the league coordinator's BBS (BBS #1) by using this keyword in
+the ROUTE.CFG file:
 
         ROUTE ALL 1
 
-NOTE:  THE LEAGUE COORDINATOR'S ROUTE.CFG SHOULD NOT USE ANY ROUTING IF THIS IS
-       USED.  If the coordinator used ROUTE ALL 1, all his packets would be
-       sent to himself and would NOT be sent out to the other BBSes!  For the
-       league coordinator (if using this simplistic routing), all packets
+NOTE:  THE LEAGUE COORDINATOR'S ROUTE.CFG SHOULD NOT USE ANY ROUTING IF THIS
+       IS USED.  If the coordinator used ROUTE ALL 1, all his packets would
+       be sent to himself and would NOT be sent out to the other BBSes!  For
+       the league coordinator (if using this simplistic routing), all packets
        would be sent directly to their respective BBSes (i.e. NO routing).
 
-       To repeat, if using the "ROUTE ALL 1" for your league, everyone in the
-       league EXCEPT the league coordinator should use that setup.  The
+       To repeat, if using the "ROUTE ALL 1" for your league, everyone in
+       the league EXCEPT the league coordinator should use that setup.  The
        league coordinator would not use the "ROUTE ALL 1" line in his
        ROUTE.CFG!
 
 
 [1.5]  Joining an Existing InterBBS League
 -------------------------------------------------------------------------------
-   1. First, you must find an existing Clans league to join.  If you find none,
-      you may wish to start your own league (see the previous section).
+   1. First, you must find an existing Clans league to join.  If you find
+      none, you may wish to start your own league (see the previous section).
 
    2. Once you find a league to join, tell the league coordinator you would
       like to join and tell him what you would like to use as your Village
       name.  The LC will then supply you with a WORLD.NDX file and
       instructions on the ROUTE.CFG file.  Copy the WORLD.NDX file to your
       Clans directory.  The coordinator will tell you what your BBS Id is.
-      Remember this number!  Run CONFIG.EXE in your Clans directory and choose
-      the Setup InterBBS option.  Next choose the BBS Id option.  Enter the
-      BBS Id given to you by your league coordinator.
+      Remember this number!  Run the "config" program in your Clans directory
+      and choose the Setup InterBBS option.  Next choose the BBS Id option.
+      Enter the BBS Id given to you by your league coordinator.
 
       You should also enter your netmail directory, inbound directory, and
-      choose your mailer type while in the CONFIG.EXE program.
+      choose your mailer type while in the config program.
 
    3. Now you must set up your mailer to process packets for The Clans.
-      Add the following lines to the batch file or run a batch file after
-      getting any packets with your mailer:
+      Add the following to the script or batch file run after collecting
+      packets with your mailer:
 
-        cd \clans               (change this to your clans directory)
-        clans /I                (this processes packets coming in)
+        cd /path/to/clans           (change this to your clans directory)
+        clans /I                    (this processes packets coming in)
 
    4. Once everything is in place, run the reset program:
 
-        RESET
+        reset
 
       Choose the "Join a league" option and you're done.
       This will reset the game and have it "wait" for a message from the
       main BBS telling it to start its game (i.e. let local users on).
-      Finally, run CLANS /I to complete the reset process.
+      Finally, run "clans /I" to complete the reset process.
 
-   Your game is now ready for InterBBS warfare!  You don't need to add anything
-   to your BBS's nightly maintenance.  (You SHOULD already have "CLANS /M" in
-   the nightly maintenance, if it's not there, however, the game will
-   automatically run the maintenance the first chance it gets each day.)
+   Your game is now ready for InterBBS warfare!  You don't need to add
+   anything to your BBS's nightly maintenance.  (You SHOULD already have
+   "clans /M" in the nightly maintenance; if it's not there, however, the
+   game will automatically run the maintenance the first chance it gets
+   each day.)
 
 ****** Be sure you toss your netmail right after packets by The Clans are
        created.
@@ -561,65 +604,65 @@ are named in the following manner:
 
         CLxxxyyy.ida
 
-xxx = BBS ID the packet is from
-yyy = BBS ID the packet is destined for
-id  = league ID
-a   = arbitrary character used by the game to name packets (from 'A' to 'Z')
+xxx = BBS ID the packet is from (3 digits)
+yyy = BBS ID the packet is destined for (3 digits)
+id  = league ID (2 characters)
+a   = sequence counter used by the game to name packets (a through z)
 
-For instance, a packet from BBS #1 in the league to BBS #9 in league 22 might
-look like this:
+For instance, a packet from BBS #1 to BBS #9 in league MG might look like
+this:
 
-        CL001009.22F
+        cl001009.MGa
 
-The packets leaving BBS #1 appear in the OUTBOUND directory of the clans
-directory.
+Packets leaving your BBS appear in the "outbound" subdirectory of your
+Clans directory.
 
-The inbound directory is where the inbound packets go.  For BBS #3, the
-inbound packets would be named CL???003.ida.
+The inbound directory is where incoming packets arrive.  For BBS #3, the
+inbound packets would be named CL???003.id? (matching the wildcard).
 
 Send Packets
 ------------
 The main reason a mailer is used for InterBBS is because it will automatically
 send these packets to their respective BBSes.  If you do not or cannot use
 a mailer, you will need to be able to send these packets back and forth
-between the BBSes.  There are many ways you could do this, via a terminal and
-script or manually.  However, you will still need to set up the WORLD.NDX
-files and ROUTE.CFG files the same way.  For the addresses, you can put in any
+between the BBSes.  There are many ways you could do this, via a script or
+manually.  However, you will still need to set up the WORLD.NDX files and
+ROUTE.CFG files the same way.  For the addresses, you can put in any
 arbitrary addresses.
 
-When you receive a packet from another BBS, put it in a directory you chose
-for the inbound directory in the Clans configuration.  Then run CLANS /I
-to process it.  That's pretty much all you need to do.  Just get those packets
-sent back and forth properly somehow. :)
+When you receive a packet from another BBS, put it in the directory you chose
+for the inbound directory in the Clans configuration.  Then run "clans /I"
+to process it.  That's pretty much all you need to do.  Just get those
+packets sent back and forth properly somehow. :)
 
 
 [1.6]  Local InterBBS
 -------------------------------------------------------------------------------
 It is possible for you to set up several copies of the Clans and have each
-one act as a village right on your own computer.  In fact, this was how The
-Clans' InterBBS features were tested.  You do not require a mailer or anything,
-but you will have to set up a mail/outbound directory.  To set up a local
-InterBBS game, follow these instructions:
+one act as a village on your own computer.  In fact, this was how The
+Clans' InterBBS features were tested.  You do not require a mailer or
+anything, but you will need separate directories for each village.  To set
+up a local InterBBS game, follow these instructions:
 
    1.  Install The Clans in a directory corresponding to each Village.  For
        instance, if you want 3 villages, you might set it up like this:
 
-                C:\VILLAGE1             -- first Clans game goes here
-                C:\VILLAGE2             -- second game
-                C:\VILLAGE3             -- third game
+                /opt/village1           -- first Clans game goes here
+                /opt/village2           -- second game
+                /opt/village3           -- third game
 
-   2.  Next, set up the batch files to run each game as you would normally for
-       a local game but add on these parameters:
+   2.  Next, set up the commands to run each game as you would normally for
+       a local game but add on this parameter:
 
                 /LIBBS
 
        So you might have for node 1:
 
-                CLANS /LIBBS /N1
+                clans /LIBBS /N1
 
    3.  Have a daily maintenance run for each copy like so:
 
-                CLANS /LIBBS /M
+                clans /LIBBS /M
 
    4.  Set up the ROUTE.CFG for each like this:
 
@@ -628,8 +671,8 @@ InterBBS game, follow these instructions:
                 -- end of file --
 
    5.  Set up the WORLD.NDX file so each BBS is listed (as you normally
-       would).  For the addresses, you can use whatever numbers you want
-       since this is just a local game.  Here's an example set of addresses:
+       would).  For the addresses, you can use whatever you want since this
+       is just a local game.  Here's an example set of addresses:
 
                 village1        -- 99:1/1
                 village2        -- 99:1/2
@@ -640,117 +683,104 @@ InterBBS game, follow these instructions:
    7.  Modify each clans.cfg file for each board so that each has its own
        unique BBS Id.  You should make one of them the "Main BBS" by setting
        its BBS Id to 1.  Make sure each also has its InterBBS flag enabled
-       (use CONFIG.EXE).
+       (use the config program).
 
-   8.  Finally, make an outbound directory called CLANOUT and place it
-       anywhere you want.  You could have C:\CLANOUT for instance.  Then,
-       modify each game's config so that EACH ONE'S outbound directory is
-       CLANOUT and each one's mail directory CLANOUT as well.  This is where
-       the data is exchanged between the different games that you are
-       running.
+   8.  Create a single shared directory for packet exchange (e.g.
+       /opt/clanout/).  Set each game's InboundDir in clans.cfg to that
+       shared directory.  For local IBBS mode, packets are written to the
+       inbound directory rather than a separate outbound folder.
 
-   9.  Finally, run RESET on all games.  For the main village (BBSId=1)
-       choose Leaguewide reset.  For the other games, choose Join a league.
+   9.  Run "reset" in all game directories.  For the main village
+       (BBSId=1) choose Leaguewide reset.  For the other games, choose
+       Join a league.
 
-  10.  To process the packets created by the main Clans game (BBS Id=1) you
-       can optionally run each copy of The Clans in each directory with
-       the /I parameter:
+  10.  To process the packets created by the main Clans game (BBS Id=1)
+       run each copy of The Clans in each directory with the /I parameter:
 
-                CLANS /LIBBS /I
+                clans /LIBBS /I
 
        That should be it.  You're done.
-
 
 
 [1.7]  Troubleshooting (+ Q&A)
 -------------------------------------------------------------------------------
 
-[Problem]  The game is rewriting my DOOR.SYS file and setting the username ot
+[Problem]  The game is rewriting my DOOR.SYS file and setting the username to
            all caps and is changing the user time as well.
-[Solution] Use another dropfile type such as DORINFO1.DEF.  OpenDoors screws
-           up with DOOR.SYS for seem reason and chooses to write it again...
+[Solution] Use another dropfile type such as DORINFO1.DEF.  OpenDoors can
+           sometimes have issues with DOOR.SYS.
 
-[Problem]  Why is your IBBS so crappy?  Let's see some clan attacking and
-           better support for international leagues!  What the hell is this
-           crap?  Clan travelling?  What are you on?!
-[Solution] Play another game if you want those aspects.  Clans was meant to
-           be this way and whining and complaining will get you nowhere.  I
-           wanted something different and put that in, I didn't want the same
-           thing as other games.  Some other ideas people suggested (or
-           maybe I think they suggested) but I don't think fit the game:
+[Problem]  The game always shows "someone is already online" even when nobody
+           is playing.
+[Solution] Delete the ONLINE.FLG file from your Clans directory, or run:
 
-                - a tavern
-                - somebody to flirt with (yeah, right)
-                - healing (I think maybe somebody suggested this)
-                - put back the bank (I think it is pretty pointless)
+                clans /Exclusive
 
-[Problem]  Why's it taking so long for the next version to come out?
-[Solution] I'm university dammit, I've got lots of assignments and studying to
-           do, get off my back.
+           This removes the semaphore file.  Maintenance (clans /M) also
+           removes it automatically.
 
 [Problem]  It tells me it can't find the WORLD.NDX file.
 [Solution] You only need this file if you are in an InterBBS game.  If you
            aren't in an InterBBS league, make sure you turn OFF the InterBBS
-           option in the CONFIG.EXE program.  If you ARE in a league, be
-           sure to get the WORLD.NDX file from the league coordinator before
+           option in the config program.  If you ARE in a league, be sure
+           to get the WORLD.NDX file from the league coordinator before
            continuing.  If you ARE the LC, read the documentation on how to
            create a WORLD.NDX file.
 
 [Problem]  It tells me it can't find the WORLD.DAT file.
-[Solution] You'll need to reset to create this file.  Run RESET.
+[Solution] You'll need to reset to create this file.  Run "reset".
 
-[Problem]  Users on other boards and in the league come to my board to play
-           but they always have to make new players.  Their data isn't
-           transfered or what?!
+[Problem]  Users on other boards in the league come to my board to play but
+           they always have to make new players.  Their data isn't
+           transferred.
 [Solution] Make sure you have set REAL NAMES ONLY for running your door and
            that all other sysops have done the same.  If this isn't the
            problem, be sure your routing is working properly and is set
            right.
 
-[Problem]  You're game is awesome.  I have ideas that you can use, where
-           do I go!?
-[Solution] Hey, that's not a problem.  But submit your ideas anyway:
-
-                https://sf.net/p/theclans/feature-requests/
-
-           If it fits with the context of the game and is a good idea
-           which can be implemented fairly easily, I'll probably put it in!
-
-[Problem]  I added a new node to my Clans league but it hasn't received a reset
-           packet from me.  What's the problem!?
+[Problem]  I added a new node to my Clans league but it hasn't received a
+           reset packet from me.  What's the problem?
 [Solution] It's likely you set up the WORLD.NDX incorrectly.  If you were
            using the host routing method, stick with it!  That is, whenever
-           a new node is added, stick him into the hosting hierarchy somehow
-           or else the reset packet (directed to the new node) will be sent
-           to the wrong guy (it shouldn't cause him to reset though since
-           it's not FOR him).  To fix the problem, edit out the new node
-           from your WORLD.NDX file (put # chars in front of that node's
-           entry) and run The Clans with the /I parameter from DOS.  Then
-           fix up your hosting method and uncomment the new node (remove
-           the # chars).  The Clans should now send a reset packet once
-           more to the new node but this time do it correctly.
+           a new node is added, put him into the hosting hierarchy or else
+           the reset packet will be sent to the wrong place.  To fix the
+           problem, comment out the new node's entry from your WORLD.NDX
+           file (put # chars in front of that node's entry) and run
+           "clans /I" from the command line.  Then fix up your hosting
+           method and uncomment the new node (remove the # chars).  Clans
+           should now send a reset packet to the new node correctly.
 
 [Problem]  I've reset and everything and it's been a couple days now and
            nothing is being received by the other nodes.  It says that they
            are still awaiting the ok by the league coordinator.
 [Solution] Be sure that the ROUTE.CFG file (if used) is correct.  If you are
-           using a "ROUTE ALL 1" type config where everything is routed through
-           the LC's BBS, then be sure the LC's ROUTE.CFG DOES NOT have
-           "ROUTE ALL 1".  If it does, it'll create an infinite feedback loop
-           where LC's packets will go to itself and screw up everything.
+           using a "ROUTE ALL 1" type config where everything is routed
+           through the LC's BBS, then be sure the LC's ROUTE.CFG DOES NOT
+           have "ROUTE ALL 1".  If it does, it'll create an infinite loop
+           where LC's packets go to itself.
 
-           Another you must be sure of is that your netmail is being tossed.
-           Whenever The Clans creates a null-message (in netmail) the message
+           Another thing you must be sure of is that your netmail is being
+           tossed.  Whenever The Clans creates a netmail message the message
            must be tossed by your mail tosser.
 
-[Problem]  I don't seem to be getting any packets and the game doesn't seem to
-           be making any.  How can I check my setup to see if it is correct?
-[Solution] Use the /Recon parameter when running CLANS to see if a packet is
+[Problem]  I don't seem to be getting any packets and the game doesn't seem
+           to be making any.  How can I check my setup to see if it is
+           correct?
+[Solution] Use the /Recon parameter when running clans to see if a packet is
            created properly.  The game will create a recon packet (won't
            affect the game) directed towards the BBS you specify.  For
-           instance, to create a recon packet for BBS #9, use
+           instance, to create a recon packet for BBS #9, use:
 
-                CLANS /Recon 9
+                clans /Recon 9
+
+[Problem]  You've got ideas for improvements or new features.  Where do
+           you submit them?
+[Solution] Submit feature requests on SourceForge:
+
+                https://sf.net/p/theclans/feature-requests/
+
+           If it fits with the context of the game and is a good idea
+           which can be implemented fairly easily, it might just get in!
 
 Some common errors with configs (see if you did this if you have problems):
 
@@ -766,20 +796,23 @@ Some common errors with configs (see if you did this if you have problems):
 
                 BBSID   3
 
-                Here BBS #3 is not linked up to anyone, all BBSes must
+                Here BBS #3 is not linked up to anyone; all BBSes must
                 be linked up in the host hierarchy.
 
         CLANS.CFG --
 
-                BBS ID is incorrect.  Make sure your BBS Id is the as the
-                one listed in the WORLD.NDX file.  If it isn't, change it!
-
+                BBS ID is incorrect.  Make sure your BBS Id is the same as
+                the one listed in the WORLD.NDX file.  If it isn't, change
+                it!
 
 
 [1.8]  Miscellany
 -------------------------------------------------------------------------------
-The Clans was first developed around the fall of 1996.  Coding began, around
-December of that year.  First beta appeared on the webpage on March 25, 1997.
+The Clans was first developed around the fall of 1996.  Coding began around
+December of that year.  First beta appeared on the web on March 25, 1997.
+The game was open-sourced under the GPL v2 in 2002 after Allen Ussher left
+the project.  In 2024 the project was modernized for FreeBSD, Linux, and
+Windows by open-source contributors.  DOS support was dropped.
 
 Special thanks to:
 
@@ -789,18 +822,20 @@ All beta testers who emailed me with bugs -- thanks. :)
 Phil205 Prof    -- thanks for an incredibly dull class which forced me to
                    think up ideas for this game.
 The following bands for providing me with music in my CD player while I
-programmed in the wee ours of the night:  My Bloody Valentine, Lush, Sloan,
+programmed in the wee hours of the night:  My Bloody Valentine, Lush, Sloan,
 Blur, Teenage Fanclub, Stereolab and The Beatles. :-)
-The Clans v0.95b7:  Upgrading
------------------------------
 
-All this fixes is the clans.pak file (i.e. NPC not found error message is
-no longer encountered in mines)
+
+The Clans v0.97b2:  Upgrading
+------------------------------
+Changes since v0.97b1:
+- Fixed an issue where Windows would not see the first packet during maint
+- Fixed a handful of memory leaks
+- Fixed a handful of potential crashes
 
 IMPORTANT:
 
-
-If you are using a version BELOW v0.95b4:
+If you are using a version BELOW v0.97b1:
 
 * You must reset after upgrading.
 
@@ -808,11 +843,10 @@ If you are using a version BELOW v0.95b4:
   and choose the Join a league option while you (the LC) reset the whole
   league.
 
-* If you have any packets lying around from previous league games, delete them
-  all before upgrading!  They're easy to spot, just look for files of the
-  form CLxxxyyy.* in your inbound directory
+* If you have any packets lying around from previous league games, delete
+  them all before upgrading!  They're easy to spot; look for files of the
+  form CLxxxyyy.* in your inbound directory.
 
-If you are using v0.95b4 or higher and upgrading, no reset is required.
+If you are using v0.97b1 or higher and upgrading, no reset is required.
 
-------------------------------------------------------------------------------
 File bug reports on SourceForge please:  https://sf.net/p/theclans/bugs/

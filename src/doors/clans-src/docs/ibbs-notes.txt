@@ -1,129 +1,782 @@
-File names are clFFFTTT.DDI
-FFF - Is the BBS ID from world.ndx of the creator of the file
-TTT - Is the BBS ID from world.ndx of the destination of the file
-DD  - Is the League ID from world.ndx
-I   - Is the index... it starts as 'a' and is incremented for each file
-      (Note, each file per node or something... TODO)
+The Clans Inter-BBS Protocol Reference v0.97b2
+-------------------------------------------------------------------------------
+Maintained by open-source contributors.
 
-TTT is of the next hop, not necessarily the final destination
 
-Breaking down all the different IBBS stuff... remember that direct is
-the default.
 
-There's a BACKUP.DAT file that keeps track of "active" packets.
-If packets in there get "too old", specific action is taken.
-- PT_CLANMOVE - Clan gets re-added to the game
-	Via IBBS_AddToGame()
-- PT_ATTACK - Troops come back
-	Via ReturnLostAttack()
 
-Each packet strats with a struct Packet
+[0.0]  Table of Contents
+-------------------------------------------------------------------------------
 
-The packet has a Game ID, which must match except for PT_RESET packets,
-which start a new game with the specified struct game_data.
-This appears to be the time reset was ran in HH:MM:SS:00 format.
-The field is 16 bytes long, so allowing for a NUL, gives if 15 chars to
-play with... YYYYMMDDHHMMSS fits
+Introduction
+============
+Overview .......................................................   0.1
+Packet Header ..................................................   0.2
 
-The packet file has a sequence ID as the last character of the
-extension, so we can process in order from the same BBS
+Sending Packets
+===============
+Sending a Packet ...............................................   1.1
+Packet File Naming .............................................   1.2
+Packet File Contents ...........................................   1.3
+Fidonet Netmail Transport ......................................   1.4
 
-Processing in global order would require reading the struct Packet
+League Architecture
+===================
+League Topology ................................................   2.1
+BACKUP.DAT and In-Flight Packets ...............................   2.2
 
-PT_CLANMOVE		0
-	- Generated from leaving.data
-	- Contains a struct clan followed by six struct pc
-	- Sent to destination BBS
-	- Copy stored in backup
-	- On receipt, generates a PT_DATAOK packet
+User Management
+===============
+The Userlist (userlist.dat) ....................................   3.1
+New User Registration Flow .....................................   3.2
+PT_DELUSER versus PT_SUBUSER ...................................   3.3
 
-PT_DATAOK       1
-	- Generated in response to a PT_CLANMOVE
-	- Contains just the ClanID of the received clan
-	- When received, removes the PT_CLANMOVE from the backup via IBBS_RemoveFromBackup()
+Packet Reference
+================
+PT_CLANMOVE (0) -- Clan Migration ..............................   4.1
+PT_DATAOK (1) -- Migration Acknowledgment ......................   4.2
+PT_RESET (2) -- Game Reset .....................................   4.3
+PT_GOTRESET (3) -- Reset Acknowledgment ........................   4.4
+PT_RECON (4) -- Reconnaissance Request .........................   4.5
+PT_GOTRECON (5) -- Reconnaissance Response .....................   4.6
+PT_NEWUSER (6) -- New User Registration ........................   4.7
+PT_DELUSER (7) -- System User Deletion .........................   4.8
+PT_ADDUSER (8) -- User Addition Broadcast ......................   4.9
+PT_SUBUSER (9) -- Player-Initiated Removal .....................  4.10
+PT_COMEBACK (10) -- Returning Clan .............................  4.11
+PT_MSJ (11) -- Cross-BBS Message ...............................  4.12
+PT_ATTACK (12) -- Inter-BBS Attack .............................  4.13
+PT_ATTACKRESULT (13) -- Attack Result ..........................  4.14
+PT_SPY (14) -- Spy Mission .....................................  4.15
+PT_SPYRESULT (15) -- Spy Result ................................  4.16
+PT_SCOREDATA (16) -- Score Submission ..........................  4.17
+PT_SCORELIST (17) -- Score Broadcast ...........................  4.18
+PT_NEWNDX (18) -- Node Index Update ............................  4.19
+PT_ULIST (19) -- User List Broadcast ...........................  4.20
 
-PT_RESET        2
-	- Contains a struct game_data
-	- IBBS_Reset
-	- On receipt, a PT_GOTRESET is generated
+Attack Integrity
+================
+Replay Protection: AttackIndex and ResultIndex .................   5.1
 
-PT_GOTRESET     3
-	- Updates the node reset received flag
-	- No data after the header
 
-PT_RECON        4
-	- No data after the header
-	- On receipt, PT_GOTRECON is returned
+Introduction
+===============================================================================
 
-PT_GOTRECON     5
-	- No data after the header
+[0.1]  Overview
+-------------------------------------------------------------------------------
+The Inter-BBS (IBBS) system is the network layer that connects multiple
+BBSes running The Clans into a single shared game world called a league.
+Each BBS acts as a village.  Players on one BBS can travel to or attack
+other villages, scores are pooled across all nodes, and a shared user
+list ensures that player names are unique across the entire league.
 
-PT_NEWUSER      6
-	- Contains a struct UserInfo
-	- Generated from BBSIDs other than 1
-	- Only addressed to BBSID 1
-	- On receipt checks if the user already exists... if they do, sends back a PT_DELUSER for the new user
-		- "The User" in this case is the local user name on the BBS!!!
-	- Sends PT_ADDUSER to every BBS
-	- Adds to local user list
+Communication is handled through Fidonet-style packet files.  During
+daily maintenance, each BBS reads any incoming packet files from its
+Fidonet inbound directory, processes them, and delivers any outbound
+packet files to the Fidonet mailer by attaching them to netmail
+messages via myibbs.c.
+Because this depends on Fidonet mailer software (Binkley or compatible),
+the IBBS system requires a configured mailer at every participating node.
 
-PT_DELUSER      7
-	- Contains a struct UserInfo
-	- On receipt, the clan is deleted
+Direct routing between nodes is the default: every BBS sends packets
+directly to every other BBS.  ROUTE.CFG can configure indirect paths for
+cases where a direct Fidonet link does not exist between every pair.
 
-PT_ADDUSER      8
-	- Contains a struct UserInfo
-	- On receipt, added to user list
-	
-PT_SUBUSER      9           // subtract user, opposite of add user :)
-	- Sent to all systems when a clan commits suicide
-	- On receipt, user is deleted
-	
-PT_COMEBACK     10          // come back option
-	- Contains the Clan ID and the originating BBS ID
-	- On receipt, if the Clan is there, that clan and its army goes into the LeavingData
+Every league designates one node as the League Controller (BBS ID 1).
+The LC is the authoritative node for the user list, handles duplicate
+detection during registration, aggregates score data, and is the sole
+sender of PT_ADDUSER, PT_ULIST, and PT_SCORELIST broadcasts.
 
-PT_MSJ          11          // message posted
-	- Contains a struct Message followed by message text
-	- On receipt, posts message
 
-PT_ATTACK       12          // InterBBS attack -- yeah!
-	- Contains a struct AttackPacket
-	- Goes into backup.dat
-	- On receipt, battle is performed on the target and a PT_ATTACKRESULT is sent back
+[0.2]  Packet Header
+-------------------------------------------------------------------------------
+Every IBBS packet begins with a struct Packet header (see src/structs.h).
+Its fields are:
 
-PT_ATTACKRESULT 13
-	- Contains a struct AttackResult
-	- Processed and news generated etc.
+  active       Whether this slot is live in BACKUP.DAT.
+  GameID       16-byte field (15 usable characters, NUL-terminated)
+               containing the identifier for the current game instance.
+               Set when a game is reset; format is YYYYMMDDHHMMSS.
+               All incoming packets whose GameID does not match the
+               local GameID are silently discarded -- except PT_RESET,
+               which is the one packet type accepted regardless of
+               GameID, because it is the mechanism that starts a new
+               game on the receiving node.
+  date         Date the packet was created, used for staleness checks
+               in BACKUP.DAT.
+  BBSIDFrom    Source BBS ID.
+  BBSIDTo      Destination BBS ID.  In the default direct-routing
+               configuration this is the final destination.  When
+               indirect routing is active it is the next hop only.
+  PacketType   One of the PT_* constants.  See section 4.
+  PacketLength Length in bytes of the payload that follows the header.
 
-PT_SPY          14
-	- Contains a struct SpyAttemptPacket
-	- Generates a PT_SPYRESULT
+The payload immediately follows the header and is XOR-encrypted with
+XOR_PACKET (0x47).  Its structure is specific to each packet type and
+is described in the Packet Reference chapter.
 
-PT_SPYRESULT    15
-	- Contains a struct SpyResultPacket
 
-PT_SCOREDATA    16
-	- Has an int16_t count of scores, followed by that many struct UserScore
-	- Sent only to BBS 1
-	- Not send from BBS 1 (obviously)
-	- Processed by ProcessScoreData
-	- Merged with current ipscores.dat
+Sending Packets
+===============================================================================
 
-PT_SCORELIST    17
-	- Has an int16_t count of scores
-		- Then an 11 character score data
-		- Then a series of struct UserScore
-	- Gets written to ipscores.dat
-	- Sent by BBS ID 1 only to all other BBSs
+[1.1]  Sending a Packet
+-------------------------------------------------------------------------------
+All outbound packet creation in ibbs.c goes through one of two
+functions:
 
-PT_NEWNDX       18
-	- Contains a new world.ndx file
-	- Written as "world.ndx" so the world.id file would get ignored
-	- TODO: Write as the same filename as the source
-		- Not much point until the game is multinode though
+  IBBS_SendPacket(PacketType, dataSize, data, DestID)
 
-PT_ULIST        19
-	- Contains a complete userlist.dat
-	- Overwrites in place... likely clobbering new users that haven't made it to BBS 1 yet
-		- Actually that's fine, this is remote users only
+    The primary function.  Builds a struct Packet header with the
+    current GameID and type, then appends the serialized header and
+    payload to the outbound packet file for DestID (see section 1.3).
+    Used throughout the codebase for the majority of packet types.
+
+  IBBS_SendFileInPacket(DestID, PacketType, FileName)
+
+    Reads an existing on-disk file into a buffer and then calls
+    IBBS_SendPacket() to deliver it.  Used when the payload has already
+    been written to a file, such as when distributing a new world.ndx
+    via PT_NEWNDX.
+
+An earlier function, IBBS_SendPacketFile(), performed a similar role
+via a different file-based path.  It has been removed; all outbound
+packets now go through the two functions above.
+
+
+[1.2]  Packet File Naming
+-------------------------------------------------------------------------------
+Packet files are written to the outbound/ directory and follow the
+naming convention:
+
+        clFFFTTTDDI
+
+  FFF   3-digit zero-padded source BBS ID (from WORLD.NDX)
+  TTT   3-digit zero-padded destination BBS ID (next hop)
+  DD    2-character league ID (from WORLD.NDX)
+  I     Sequence index per routing next-hop, starting at 'a' and
+        incrementing each time a new outbound packet file is opened
+        for that hop; wraps from 'z' back to 'a'
+
+Example: cl001002AAa is the first outbound packet file from BBS 001
+to BBS 002 in league "AA".  It may contain one or more packets.
+
+The sequence index allows the receiving end to process packet files
+from a given source in the order they were produced.  Within a single
+file, packets are ordered by their position from the start of the
+file.
+
+Note that TTT encodes the next routing hop, not necessarily the final
+destination.  In the default direct-routing configuration every BBS
+communicates directly with every other BBS, so TTT is always the final
+destination.  ROUTE.CFG can define forwarding paths when a direct
+Fidonet link between two nodes does not exist.
+
+
+[1.3]  Packet File Contents
+-------------------------------------------------------------------------------
+A packet file is a sequential binary container, not a single record.
+One or more packets may be written to the same outbound file during a
+single maintenance run.  All packets addressed to the same destination
+are appended to the same file: IBBS_SendPacketBuffer() opens the file
+once per destination per run via a cached file handle (IBBS_PacketList)
+and each subsequent packet to that destination is appended to it.
+
+Each packet within the file consists of a serialized, XOR-encrypted
+struct Packet header immediately followed by its XOR-encrypted payload.
+There is no top-level file header or record count.  The reader loops,
+reading one struct Packet at a time, and stops when the read fails
+(indicating EOF or a truncated record).
+
+Two internal queue files use the same sequential packet format:
+
+  pktqin.dat    Holds PT_ATTACK and PT_SPY packets deferred from the
+                initial pass through incoming packet files.  Written
+                by EnqueueInPacket() during incoming-file processing;
+                read and executed by IBBS_HandleQueuedPackets() in a
+                later phase of the same maintenance run.  Deleted
+                afterwards.
+
+  pktqout.dat   Holds response packets (PT_ATTACKRESULT, PT_SPYRESULT)
+                generated during deferred processing.  Written by
+                IBBS_EnqueueOutPacket(); read and dispatched via
+                IBBS_SendPacket() by IBBS_SendQueuedResults() at the
+                end of the maintenance cycle.  Deleted afterwards.
+
+The two-stage design means every inter-BBS combat or espionage
+exchange spans at least two maintenance cycles: one cycle to receive
+and process the incoming action, and one for the result packet to
+travel back to the originating BBS.
+
+
+[1.4]  Fidonet Netmail Transport
+-------------------------------------------------------------------------------
+Outbound packet files are delivered to remote nodes by attaching them
+to Fidonet netmail messages.  IBSendFileAttach() in myibbs.c creates a
+netmail file in the directory named by Config.szNetmailDir.  These
+files are named <number>.msg (e.g. 1.msg, 42.msg); the function
+GetFirstUnusedMsgNum() scans for existing files and selects the lowest
+unused integer.
+
+Each .msg file consists of a serialized tMessageHeader followed by a
+NUL-terminated string of Fidonet kludge lines.  The packet file to be
+transferred is identified by the Subject field of the message header.
+
+Config.MailerType controls the format of the outbound message:
+
+  MAIL_NONE     IBSendFileAttach() returns immediately without writing
+                a .msg file.  Use this setting to disable IBBS delivery
+                or for stand-alone game testing.
+
+  MAIL_BINKLEY  The Subject field is prefixed with '^'.  Binkley-style
+                mailers interpret this as an instruction to delete the
+                attached file after it has been sent.  No \x01FLAGS KFS
+                kludge is added to the message body.
+
+  MAIL_OTHER    The Subject field contains the plain filename.  The
+                message body includes a \x01FLAGS KFS kludge line,
+                which instructs compatible mailers to delete the file
+                after delivery.
+
+Per-node delivery priority is configured in WORLD.NDX as MailType:
+
+  MT_NORMAL     Standard delivery.  No special message attributes.
+  MT_CRASH      Urgent delivery.  Sets ATTRIB_CRASH, requesting that
+                the mailer forward the message without delay.
+  MT_HOLD       Deferred pickup.  Sets ATTRIB_HOLD; the message waits
+                for the remote node to poll for it.
+
+Every outbound .msg carries ATTRIB_PRIVATE, ATTRIB_LOCAL, and
+ATTRIB_FILE_ATTACH.  ATTRIB_KILL_SENT is also set when bEraseOnSend
+is true (the default), so the .msg is removed after the mailer sends
+it.
+
+All kludge lines in the message body begin with a SOH byte (\x01):
+
+  INTL    Zone-qualified destination and origin addresses.  Always
+          included (the code has a FIXME that forces INTL even for
+          same-zone traffic).
+  MSGID   Unique message ID: origin address and a hex value derived
+          from the current time combined with a random number.
+  PID     Product identifier kludge naming the software as The Clans.
+  FMPT    Origin point address.  Present only when origin point != 0.
+  TOPT    Dest point address.  Present only when dest point != 0.
+
+If Config.szOutputSem is set, the game touches that path after writing
+all outbound messages for the run.  This semaphore file can be used to
+wake the mailer when new material is ready.
+
+If the NoMSG flag is set for a routing hop in WORLD.NDX,
+IBSendFileAttach() is skipped for that hop; the packet file is still
+written but no .msg is created.
+
+On the receive side, MessageFileIterate() in ibbs.c scans the netmail
+directory for *.msg files.  For each file it validates that the To and
+From names match the game program and that the Fidonet addresses
+correspond to the expected source node.  If the StrictMsgFile option
+is enabled, the origin Fidonet address is additionally verified against
+the WORLD.NDX entry for the source BBS.  The Subject field -- with any
+leading prefix characters from the set #^-~!@ stripped -- names the
+attached packet file.  After the packet file is read and processed the
+.msg is deleted.
+
+
+League Architecture
+===============================================================================
+
+[2.1]  League Topology
+-------------------------------------------------------------------------------
+A league is a set of BBSes linked through a shared WORLD.NDX file.
+Each entry in WORLD.NDX assigns one BBS a numeric ID, a BBS name, a
+village name, a Fidonet address, and routing information.  BBS IDs
+start at 1 and must be unique.  BBS ID 1 is always the League
+Controller.
+
+Outbound packet files are written to the outbound/ directory.
+The game calls myibbs.c to attach them to outgoing Fidonet netmail
+messages for delivery through the configured mailer.  On the receiving
+end, the mailer deposits arriving netmail into the game's inbound
+directory, where the next maintenance run picks them up.
+
+The League Controller holds the authoritative user list and is the only
+node authorized to send PT_ADDUSER, PT_ULIST, and PT_SCORELIST.  Any
+non-LC node that collects score data must send it to BBS ID 1 via
+PT_SCOREDATA; the LC merges all submissions and distributes the
+compiled leaderboard via PT_SCORELIST.
+
+League membership and routing are defined by two files:
+
+  WORLD.NDX   Node list: BBS ID, BBS name, village name, Fidonet
+              address, hosting method, and routing.
+              See release/worldndx.smp for a template.
+  ROUTE.CFG   Routing and forwarding rules for indirect paths.
+              See release/route.smp for a template.
+
+
+[2.2]  BACKUP.DAT and In-Flight Packets
+-------------------------------------------------------------------------------
+BACKUP.DAT is a flat array of struct Packet records, one entry per
+outbound packet that has not yet been acknowledged.  It serves as a
+crash-recovery mechanism: if maintenance runs and a packet in the
+backup is older than the staleness threshold, the game takes
+corrective action depending on the packet type.
+
+Currently two packet types have defined recovery behaviour:
+
+  PT_CLANMOVE   If the packet is stale and no PT_DATAOK acknowledgment
+                has arrived, the traveling clan is assumed lost in
+                transit.  The clan is re-added to the sending BBS via
+                IBBS_AddToGame(), restoring it to local play.
+
+  PT_ATTACK     If the packet is stale and no PT_ATTACKRESULT has
+                arrived, the attacking troops are assumed lost.  They
+                are returned to the originating empire via
+                ReturnLostAttack().
+
+Other packet types present in BACKUP.DAT are not individually
+recoverable; the league re-synchronizes through PT_ULIST (user list)
+and PT_RESET (game state) if those fall out of sync.
+
+A packet is removed from BACKUP.DAT when its expected acknowledgment
+is received -- PT_DATAOK for PT_CLANMOVE, PT_ATTACKRESULT for
+PT_ATTACK.  Removal is performed by IBBS_RemoveFromBackup().
+
+
+User Management
+===============================================================================
+
+[3.1]  The Userlist (userlist.dat)
+-------------------------------------------------------------------------------
+Each BBS maintains a local userlist.dat containing one struct UserInfo
+record per clan known to that node.  UserInfo holds the ClanID (a two-
+element int16_t array), the player's real name (the "master name"), the
+clan display name, the home BBSID, and a deleted flag.
+
+The League Controller holds the authoritative copy of this file.  To
+prevent permanent divergence, the LC periodically broadcasts its full
+userlist via PT_ULIST (see section 4.20).  On receipt, each node writes
+the incoming records over its local userlist.dat in place.
+
+PT_ULIST carries only remote users -- users whose home BBSID is not the
+LC's own BBSID.  This means a freshly registered local user that has not
+yet been propagated to the LC will never be clobbered by an incoming
+PT_ULIST.  See section 3.2 for the registration flow that produces this
+transient state.
+
+
+[3.2]  New User Registration Flow
+-------------------------------------------------------------------------------
+When a new player registers, IBBS_LeagueNewUser() is called on the
+player's home BBS.  The user is added to the local userlist.dat
+immediately via AddToUList() so the player can begin without waiting
+for network acknowledgment.  Network propagation then proceeds
+depending on whether the home BBS is the League Controller.
+
+If the registering BBS is NOT the LC:
+  1. A PT_NEWUSER packet carrying the new struct UserInfo is sent to
+     BBS ID 1 only.  It is never addressed to any other node.
+  2. The LC receives PT_NEWUSER and searches its userlist for any
+     clan with the same real name (master name).
+       - Duplicate found: the LC sends PT_DELUSER back to the
+         originating BBS.  The originating BBS removes the local
+         user record.  The player must register under a different
+         real name.
+       - No duplicate: the LC calls UpdateNodesOnNewUser(), which
+         broadcasts PT_ADDUSER to every other BBS in the league.
+         Each recipient adds the user to its local userlist via
+         AddToUList() and sends no acknowledgment.
+
+If the registering BBS IS the LC:
+  1. UpdateNodesOnNewUser() is called immediately, broadcasting
+     PT_ADDUSER to all other nodes without a PT_NEWUSER round-trip.
+
+In both paths the user is in the local userlist before the network
+exchange completes, allowing the player to log in right away.
+
+
+[3.3]  PT_DELUSER versus PT_SUBUSER
+-------------------------------------------------------------------------------
+Two packet types remove a user from the league.  They serve different
+purposes and must not be confused.
+
+PT_DELUSER (type 7) is system-generated.  It is sent by the League
+Controller to the originating BBS when a duplicate real name is
+detected during PT_NEWUSER processing.  It is never used for voluntary
+departures.  On receipt the matching clan is deleted from the local
+userlist.
+
+PT_SUBUSER (type 9) is player-initiated.  It is sent by the player's
+home BBS and broadcast to every node in the league when the player
+chooses to leave the game permanently (the "commit suicide" option).
+On receipt each BBS deletes the matching clan from its userlist.
+
+Both carry a struct UserInfo payload and produce the same local result
+-- the clan is deleted -- but the distinction matters for log auditing
+and any future error-recovery logic: PT_DELUSER indicates an unexpected
+duplicate, while PT_SUBUSER is a normal, intentional player action.
+
+
+Packet Reference
+===============================================================================
+
+[4.1]  PT_CLANMOVE (0) -- Clan Migration
+-------------------------------------------------------------------------------
+PT_CLANMOVE carries a traveling clan from its home BBS to a destination
+village.  It is generated from the data in leaving.dat when a player
+chooses to travel to another BBS during maintenance.
+
+Payload: one serialized struct clan followed by six serialized struct pc
+records (one per party slot, including NPC members).
+
+The packet is sent directly to the destination BBS and a copy is stored
+in BACKUP.DAT.  On successful receipt the destination BBS adds the clan
+to its local game and sends PT_DATAOK back.  If BACKUP.DAT later finds
+this entry stale -- because PT_DATAOK never arrived -- the clan is
+re-added to the originating BBS via IBBS_AddToGame() so it is not
+permanently lost.
+
+
+[4.2]  PT_DATAOK (1) -- Migration Acknowledgment
+-------------------------------------------------------------------------------
+PT_DATAOK is the positive acknowledgment for PT_CLANMOVE.  It is sent
+by the receiving BBS immediately after a traveling clan has been
+successfully accepted and written into the local game.
+
+Payload: the two-element int16_t ClanID of the received clan.
+
+On receipt at the originating BBS, the corresponding PT_CLANMOVE entry
+is removed from BACKUP.DAT via IBBS_RemoveFromBackup().  Receipt of
+PT_DATAOK is the normal completion of the clan migration handshake.
+
+
+[4.3]  PT_RESET (2) -- Game Reset
+-------------------------------------------------------------------------------
+PT_RESET signals that the sending node has started a new game.  It is
+the only packet type that is processed even when its GameID does not
+match the local GameID; this exception is what allows a league reset to
+propagate to nodes that are already running a different game instance.
+
+Payload: one serialized struct game_data defining the parameters of the
+new game (start date, InterBBS flags, next clan ID, settings, etc.).
+
+On receipt the local BBS calls IBBS_Reset(), which deletes all game
+data files (trades, messages, alliances, IBBS state, userlist, scores,
+etc.), creates a fresh ibbs.dat, and initialises the village for the
+new game using the incoming struct game_data.  After the reset completes
+a PT_GOTRESET acknowledgment is sent back to the originating BBS.
+
+
+[4.4]  PT_GOTRESET (3) -- Reset Acknowledgment
+-------------------------------------------------------------------------------
+PT_GOTRESET is the acknowledgment for PT_RESET.  It carries no payload
+beyond the standard struct Packet header.
+
+On receipt the originating BBS marks the ibbs_node_reset record for the
+acknowledging node as having successfully received the reset.  Tracking
+these acknowledgments lets the LC know which nodes are in sync with the
+new game and which may have missed the PT_RESET.
+
+
+[4.5]  PT_RECON (4) -- Reconnaissance Request
+-------------------------------------------------------------------------------
+PT_RECON is a ping-like packet used to verify that a remote BBS is
+reachable and responding to IBBS traffic.  It carries no payload beyond
+the struct Packet header.
+
+On receipt the remote BBS constructs and returns a PT_GOTRECON reply.
+PT_RECON is typically sent by the LC to all nodes at the start of the
+maintenance cycle to establish which nodes are currently online.
+
+
+[4.6]  PT_GOTRECON (5) -- Reconnaissance Response
+-------------------------------------------------------------------------------
+PT_GOTRECON is the reply to PT_RECON.  It carries no payload beyond the
+struct Packet header.
+
+On receipt the originating BBS updates the ibbs_node_recon record for
+the responding node, recording the time of the reply.  A node that
+responds to PT_RECON is considered reachable for the remainder of the
+maintenance run.
+
+
+[4.7]  PT_NEWUSER (6) -- New User Registration
+-------------------------------------------------------------------------------
+PT_NEWUSER is sent to the League Controller when a player registers on
+any non-LC BBS.  It is always addressed to BBS ID 1 only; it is never
+sent to any other node.
+
+Payload: one serialized struct UserInfo containing the new player's real
+name (master name), clan display name, and home BBSID.
+
+On receipt the LC searches its userlist for any clan with the same real
+name.  If a duplicate is found the LC sends PT_DELUSER back to the
+originating BBS to reject the registration.  If no duplicate is found
+the LC broadcasts PT_ADDUSER to every node in the league, adding the
+new user everywhere.  See section 3.2 for the complete flow.
+
+
+[4.8]  PT_DELUSER (7) -- System User Deletion
+-------------------------------------------------------------------------------
+PT_DELUSER is the League Controller's rejection response to PT_NEWUSER.
+It is sent by the LC to the originating BBS when a duplicate real name
+is detected.  It is a system-generated packet; players do not send it
+directly.
+
+Payload: one serialized struct UserInfo identifying the user to remove.
+
+On receipt the target BBS deletes the local user record for the
+matching clan.  This occurs only when two players on different BBSes
+register the same real name close enough in time that the first
+registration has not yet reached the LC.  The rejected player must
+choose a different real name and register again.
+
+
+[4.9]  PT_ADDUSER (8) -- User Addition Broadcast
+-------------------------------------------------------------------------------
+PT_ADDUSER is broadcast by the League Controller to every other BBS in
+the league after a PT_NEWUSER registration passes duplicate checking.
+It is the authoritative notification to all nodes that a new clan has
+joined the league.
+
+Payload: one serialized struct UserInfo with the new user's details.
+
+On receipt each node adds the user to its local userlist.dat via
+AddToUList().  No acknowledgment is returned.
+
+
+[4.10]  PT_SUBUSER (9) -- Player-Initiated Removal
+-------------------------------------------------------------------------------
+PT_SUBUSER is generated on the player's home BBS when the player
+chooses to leave the game permanently (the "commit suicide" option in
+the clan management menu).  It is broadcast to every BBS in the league.
+
+Payload: one serialized struct UserInfo identifying the departing clan.
+
+On receipt each BBS deletes the matching clan from its local userlist.
+Unlike PT_DELUSER this is a voluntary and expected player action, not
+an error condition.  See section 3.3 for the distinction between these
+two deletion types.
+
+
+[4.11]  PT_COMEBACK (10) -- Returning Clan
+-------------------------------------------------------------------------------
+PT_COMEBACK is sent to a remote BBS to retrieve a clan that was
+previously sent there via PT_CLANMOVE.  It is generated when a player
+chooses the "come back" option from the travel menu on their home BBS.
+
+Payload: the two-element int16_t ClanID followed by one int16_t
+containing the BBSID of the requesting BBS.
+
+On receipt, if the named clan is present on the remote BBS, that clan
+and its current army are loaded into LeavingData.  The next maintenance
+run on the remote BBS will then generate a PT_CLANMOVE addressed back
+to the requesting BBS, completing the return journey.
+
+
+[4.12]  PT_MSJ (11) -- Cross-BBS Message
+-------------------------------------------------------------------------------
+PT_MSJ carries an inter-BBS mail message from a player on one village
+to a clan on another.
+
+Payload: one serialized struct Message header followed by the raw
+message text.  The struct Message contains the sender and recipient
+clan IDs, the sender and recipient real names, the message type, an
+alliance ID if applicable, and the source and destination BBSIDs.
+
+On receipt the message is posted to the local mail system for the
+target clan to read on their next login.
+
+
+[4.13]  PT_ATTACK (12) -- Inter-BBS Attack
+-------------------------------------------------------------------------------
+PT_ATTACK carries a military strike from one village to another.
+
+Payload: one serialized struct AttackPacket, which contains the
+attacking empire's name and data, the attacking army composition, the
+target empire name, and the source and destination BBSIDs.
+
+On the sending side the packet is stored in BACKUP.DAT.  On receipt the
+target BBS does not process the attack inline; instead it calls
+EnqueueInPacket(), which appends the packet to pktqin.dat for deferred
+processing later in the same maintenance run (see section 1.3).  After
+the battle is resolved the defending BBS sends PT_ATTACKRESULT back.
+
+If the entry in BACKUP.DAT becomes stale before PT_ATTACKRESULT
+arrives, the attacking troops are returned to the originating empire
+via ReturnLostAttack().  See section 5.1 for the replay protection
+mechanism that uses AttackIndex to prevent duplicate processing.
+
+
+[4.14]  PT_ATTACKRESULT (13) -- Attack Result
+-------------------------------------------------------------------------------
+PT_ATTACKRESULT is the response to PT_ATTACK, sent by the defending BBS
+back to the attacker after the battle has been resolved.
+
+Payload: one serialized struct AttackResult, which contains a success
+flag, damage dealt, troop casualties on both sides, and the amount of
+gold and land captured (if the attack succeeded).
+
+On receipt the attacking BBS processes the result: news is posted to
+the village bulletin, loot is distributed to the attacking empire, and
+the original PT_ATTACK entry is removed from BACKUP.DAT via
+IBBS_RemoveFromBackup().  See section 5.1 for the ResultIndex replay
+protection scheme applied when the result is received.
+
+
+[4.15]  PT_SPY (14) -- Spy Mission
+-------------------------------------------------------------------------------
+PT_SPY sends a spy to gather intelligence on a remote empire.
+
+Payload: one serialized struct SpyAttemptPacket containing the spy's
+name, intelligence attribute value, the name of the target empire, and
+the BBSID of the requesting BBS.
+
+On receipt the target BBS does not process the mission inline; it calls
+EnqueueInPacket(), which appends the packet to pktqin.dat for deferred
+processing later in the same maintenance run (see section 1.3).  After
+the mission resolves the target BBS sends PT_SPYRESULT back.
+
+
+[4.16]  PT_SPYRESULT (15) -- Spy Result
+-------------------------------------------------------------------------------
+PT_SPYRESULT is the response to PT_SPY, sent by the target BBS back to
+the requesting BBS after the spy mission has been resolved.
+
+Payload: one serialized struct SpyResultPacket containing a success
+flag, the captured empire data (if the mission succeeded), the date of
+the attempt, and a CRC for integrity checking.
+
+On receipt the result is stored and presented to the player the next
+time they check their empire's intelligence reports.
+
+
+[4.17]  PT_SCOREDATA (16) -- Score Submission
+-------------------------------------------------------------------------------
+PT_SCOREDATA is sent by every non-LC BBS to BBS ID 1 at the end of the
+maintenance cycle.  It submits that node's current top-scoring clans
+for inclusion in the league-wide leaderboard.  The LC never sends
+PT_SCOREDATA to itself.
+
+Payload: one int16_t giving the number of score records, followed by
+that many serialized struct UserScore records.  Each UserScore contains
+the ClanID, clan symbol, player name, score value, and home BBSID.
+
+On receipt the LC merges the incoming scores with its own via
+ProcessScoreData() and updates ipscores.dat accordingly.  Once all
+nodes have submitted, the LC compiles the full league leaderboard and
+distributes it via PT_SCORELIST.
+
+
+[4.18]  PT_SCORELIST (17) -- Score Broadcast
+-------------------------------------------------------------------------------
+PT_SCORELIST is the compiled league leaderboard sent by BBS ID 1 to
+every other node.  It is produced after the LC has received and merged
+all PT_SCOREDATA submissions for the maintenance cycle.  Only the LC
+sends this packet.
+
+Payload: one int16_t giving the number of score records, followed by
+an 11-byte date string recording when the list was compiled, followed
+by that many serialized struct UserScore records representing the full
+league leaderboard.
+
+On receipt each BBS writes the payload to its local ipscores.dat,
+replacing any previous league-wide score data.
+
+
+[4.19]  PT_NEWNDX (18) -- Node Index Update
+-------------------------------------------------------------------------------
+PT_NEWNDX distributes an updated WORLD.NDX to all nodes when the
+League Controller adds or removes a BBS from the league.  The complete
+new WORLD.NDX file content is the payload.
+
+On receipt the content is written to world.ndx in the game directory,
+replacing the previous node index.  The game then uses the new node
+list for all subsequent routing and IBBS operations.
+
+Note: the current implementation always writes to the fixed filename
+"world.ndx" regardless of the source file's name.  This is a known
+limitation; it is of little practical consequence while every BBS runs
+only a single game node, but would need to be addressed to support
+multi-node configurations.
+
+
+[4.20]  PT_ULIST (19) -- User List Broadcast
+-------------------------------------------------------------------------------
+PT_ULIST carries the complete authoritative userlist from the League
+Controller to all other nodes.  It is sent periodically by the LC to
+re-synchronize user records across the league and repair any drift
+caused by missed PT_ADDUSER or PT_DELUSER packets.
+
+Payload: the full contents of the LC's userlist.dat, serialized as a
+sequence of struct UserInfo records.  Each record includes the home
+BBSID of the user it describes.
+
+On receipt each node writes the incoming records over its local
+userlist.dat in place.  Because the LC's userlist.dat contains only
+remote users (users whose home BBSID is not the LC's own BBSID), the
+in-place write never touches the receiving node's own local users.
+This means a player who has just registered on the receiving node but
+whose PT_NEWUSER has not yet been processed by the LC will not be
+erased by an incoming PT_ULIST.  See section 3.1 for the full
+userlist maintenance model.
+
+
+Attack Integrity
+===============================================================================
+
+[5.1]  Replay Protection: AttackIndex and ResultIndex
+-------------------------------------------------------------------------------
+PT_ATTACK and PT_ATTACKRESULT each carry a sequence index used to
+detect and discard replayed packets.  The mechanism is implemented in
+ValidateIndex() in empire.c and operates on per-BBS counters stored
+in ibbs.dat.
+
+Each node maintains, for every remote BBS:
+
+  SendIndex     The sequence number to assign to the next outbound
+                attack-class packet sent to that BBS.  Incremented
+                after each use.
+
+  ReceiveIndex  The sequence number of the last accepted inbound
+                attack-class packet from that BBS.
+
+AttackIndex in PT_ATTACK:
+
+  Before sending, the attacking BBS assigns:
+
+    AttackIndex = Nodes[DestID-1].Attack.SendIndex + 1
+
+  and increments SendIndex.  On receipt the defending BBS calls
+  ValidateIndex(BBSFromID, AttackIndex): any index falling within
+  the 256 most recently accepted values from that source is rejected
+  as a replay; otherwise ReceiveIndex is updated to the new index.
+
+ResultIndex in PT_ATTACKRESULT:
+
+  Before sending the result, the defending BBS assigns:
+
+    ResultIndex = Nodes[DestID-1].Attack.SendIndex + 1
+
+  using its own SendIndex for the attacking BBS and increments it.
+  On receipt the attacking BBS calls ValidateIndex(WhichBBS,
+  ResultIndex) with the same window logic.
+
+SendIndex and ReceiveIndex are shared between attack and result
+packets from a given sender: both AttackIndex (assigned when sending
+PT_ATTACK) and ResultIndex (assigned when sending PT_ATTACKRESULT)
+draw from the same per-BBS SendIndex counter.
+
+AttackIndex also serves a second purpose: the defending BBS copies
+the incoming AttackIndex into the outbound PT_ATTACKRESULT unchanged.
+When the attacking BBS receives the result, it scans BACKUP.DAT for
+a PT_ATTACK entry with a matching AttackIndex and marks that entry
+inactive, completing the reliable-delivery handshake (see section
+2.2).
+
+The window size of 256 provides tolerance for delayed or out-of-order
+delivery: any index more than 256 behind the last accepted value is
+treated as a replay.  Both SendIndex and ReceiveIndex are initialised
+to 0 on game reset and when a new node is loaded from WORLD.NDX.
+
+The spy packet types (PT_SPY, PT_SPYRESULT) do not use this mechanism.
+They rely on the payload CRC for integrity but have no replay
+protection.
