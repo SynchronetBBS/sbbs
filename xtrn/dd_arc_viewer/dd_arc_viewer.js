@@ -33,8 +33,8 @@ load(js.exec_dir + "dd_arc_viewer_cleanup.js");
 
 
 // Version information
-var gDDArcViewerVersion = "1.06";
-var gDDArcViewerVerDate = "2025-08-17";
+var gDDArcViewerVersion = "1.07";
+var gDDArcViewerVerDate = "2026-03-07";
 var gDDArcViewerProgName = "Digital Distortion Archive Viewer";
 
 
@@ -687,8 +687,8 @@ function viewFile(pFilename, pWorkDir)
 		if (fileList.length == 0 && !libarchiveRecognizesFile)
 		{
 			mainArchiveWorkDir = pWorkDir + justFilename + "_Temp/";
-			deltree(workDir);
-			var workDirExists = mkdir(workDir);
+			deltree(mainArchiveWorkDir);
+			var workDirExists = mkdir(mainArchiveWorkDir);
 			// If the work directory was created, then extract the archive and list
 			// its files.  Otherwise, fall back to the view command to view it.
 			if (workDirExists)
@@ -696,10 +696,10 @@ function viewFile(pFilename, pWorkDir)
 				// Extract the archive into the work directory.
 				console.print("\x01n\x01cExtracting " + justFilename + "\x01i...\x01n\r\n");
 				console.line_counter = 0; // To prevent pausing
-				var extractRet = extractArchive(pFilename, null, workDir);
+				var extractRet = extractArchive(pFilename, null, mainArchiveWorkDir);
 				if (extractRet.success)
 				{
-					var filesInDir = directory(workDir + "*");
+					var filesInDir = directory(mainArchiveWorkDir + "*");
 					for (var i = 0; i < filesInDir.length; ++i)
 					{
 						fileList.push({
@@ -731,7 +731,7 @@ function viewFile(pFilename, pWorkDir)
 					console.crlf();
 					console.pause();
 				}
-				deltree(workDir);
+				deltree(mainArchiveWorkDir);
 			}
 			else
 			{
