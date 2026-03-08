@@ -564,14 +564,13 @@ void NPC_AddNPCMember(char *szIndex)
 	uint8_t nBuf[BUF_SIZE_NPCInfo];
 	uint8_t pBuf[BUF_SIZE_pc];
 
-	// This function ASSUMES the user has an empty slot already!!
-
 	// find empty slot first
-	for (iTemp = Game.Data.MaxPermanentMembers; iTemp < 6; iTemp++)
+	for (iTemp = Game.Data.MaxPermanentMembers; iTemp < MAX_PARTY_SIZE; iTemp++)
 		if (PClan.Member[iTemp] == NULL)
 			break;
 
 	EmptySlot = iTemp;
+	if (EmptySlot >= MAX_PARTY_SIZE) return;
 
 	NPCInfo = malloc(sizeof(struct NPCInfo));
 	CheckMem(NPCInfo);

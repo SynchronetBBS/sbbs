@@ -733,7 +733,7 @@ static bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 				TmpClan->ClanID[1] == ClanID[1]) {
 			/* found it */
 			/* read in PCs */
-			for (iTemp = 0; iTemp < 6; iTemp++) {
+			for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++) {
 				TmpClan->Member[iTemp] = malloc(sizeof(struct pc));
 				CheckMem(TmpClan->Member[iTemp]);
 				EncryptRead_s(pc, TmpClan->Member[iTemp], fpPlayerFile, XOR_PC);
@@ -801,7 +801,7 @@ static void UpdateClan(struct clan *Clan)
 
 			// fwrite players
 			TmpPC->szName[0] = 0;
-			for (iTemp = 0; iTemp < 6; iTemp++) {
+			for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++) {
 				if (Clan->Member[iTemp] && Clan->Member[iTemp]->Undead == false)
 					EncryptWrite_s(pc, Clan->Member[iTemp], fpPlayerFile, XOR_PC);
 				else

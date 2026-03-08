@@ -2864,7 +2864,7 @@ static void StartEmpireWar(struct empire *Empire)
 		else
 			PClan.Points -= 25;
 	}
-
+	User_Write();
 	door_pause();
 }
 

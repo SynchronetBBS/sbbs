@@ -775,7 +775,7 @@ static void IBBS_BackupMaint(void)
 					EncryptRead_s(clan, &TmpClan, fpOld, XOR_PACKET);
 
 					// read members
-					for (iTemp = 0; iTemp < 6; iTemp++) {
+					for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++) {
 						TmpClan.Member[iTemp] = &TmpMember[iTemp];
 						EncryptRead_s(pc, TmpClan.Member[iTemp], fpOld, XOR_PACKET);
 					}
@@ -1000,7 +1000,7 @@ static void IBBS_TravelMaint(void)
 		TravelBufferOffset = 0;
 		TravelBufferOffset += s_clan_s(&TmpClan, &TravelBuffer[TravelBufferOffset], BUF_SIZE_clan);
 
-		for (iTemp = 0; iTemp < 6; iTemp++) {
+		for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++) {
 			TravelBufferOffset += s_pc_s(TmpClan.Member[iTemp] ? TmpClan.Member[iTemp] : &TmpPC,
 			    &TravelBuffer[TravelBufferOffset], BUF_SIZE_pc);
 		}

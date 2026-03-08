@@ -24,6 +24,7 @@
 
 #define MAX_TOKEN_CHARS         32
 #define MAX_MEMBERS             20
+#define MAX_PARTY_SIZE          6       // total active party slots (permanent + NPC)
 #define MAX_USERS               500
 #define MAX_TOPUSERS            20
 
