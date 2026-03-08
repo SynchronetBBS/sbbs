@@ -68,6 +68,9 @@ void gotoxy(int, int);
 void ColorArea(int xPos1, int yPos1, int xPos2, int yPos2, uint8_t Color);
 long DosGetLong(const char *Prompt, long DefaultVal, long Maximum);
 void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit);
+void Video_SetScriptMode(bool mode);
+void Video_SetDosGetStrHook(void (*hook)(char *InputStr, int16_t MaxChars, bool HiBit));
+void Video_SetDosGetLongHook(long (*hook)(const char *Prompt, long DefaultVal, long Maximum));
 #ifdef __unix__
 int cio_getch(void);
 #endif

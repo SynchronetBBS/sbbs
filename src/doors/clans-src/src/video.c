@@ -84,6 +84,9 @@ int ScreenWidth = 80;
 int ScreenLines = 24;
 
 static bool VideoInitialized;
+static bool script_mode = false;
+static void (*dos_get_str_hook)(char *InputStr, int16_t MaxChars, bool HiBit) = NULL;
+static long (*dos_get_long_hook)(const char *Prompt, long DefaultVal, long Maximum) = NULL;
 
 // ------------------------------------------------------------------------- //
 
@@ -97,6 +100,21 @@ static struct {
 int32_t Video_VideoType(void)
 {
 	return Video.VideoType;
+}
+
+void Video_SetScriptMode(bool mode)
+{
+	script_mode = mode;
+}
+
+void Video_SetDosGetStrHook(void (*hook)(char *InputStr, int16_t MaxChars, bool HiBit))
+{
+	dos_get_str_hook = hook;
+}
+
+void Video_SetDosGetLongHook(long (*hook)(const char *Prompt, long DefaultVal, long Maximum))
+{
+	dos_get_long_hook = hook;
 }
 
 // ------------------------------------------------------------------------- //
@@ -915,6 +933,9 @@ void DisplayStr(const char *szString)
 
 long DosGetLong(const char *Prompt, long DefaultVal, long Maximum)
 {
+	if (dos_get_long_hook)
+		return dos_get_long_hook(Prompt, DefaultVal, Maximum);
+
 	char string[255], NumString[13], DefMax[40];
 	char InputChar;
 	int16_t NumDigits, CurDigit = 0, cTemp;
@@ -1016,6 +1037,11 @@ long DosGetLong(const char *Prompt, long DefaultVal, long Maximum)
 
 void DosGetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 {
+	if (dos_get_str_hook) {
+		dos_get_str_hook(InputStr, MaxChars, HiBit);
+		return;
+	}
+
 	size_t CurChar;
 	int InputCh;
 	char Spaces[85] = "                                                                                     ";
@@ -1180,7 +1206,8 @@ void Video_Close(void)
 #elif defined(__unix__)
 		int x, y;
 		getxy(&x, &y);
-		fputs("\x1b[?7h\x1b[r", stdout);
+		if (!script_mode)
+			fputs("\x1b[?7h\x1b[r", stdout);
 		textattr(7);
 		ShowTextCursor(true);
 		CurrentX = -1;
@@ -1299,12 +1326,16 @@ void restore_screen(void *state)
 
 void ShowTextCursor(bool sh)
 {
+	if (script_mode)
+		return;
 	CONSOLE_CURSOR_INFO ci = {(DWORD)default_cursor_size, sh};
 	SetConsoleCursorInfo(std_handle, &ci);
 }
 
 void gotoxy(int x, int y)
 {
+	if (script_mode)
+		return;
 	COORD cursor_pos;
 
 	cursor_pos.X = (SHORT)x;
@@ -1317,6 +1348,8 @@ void gotoxy(int x, int y)
 
 void clrscr(void)
 {
+	if (script_mode)
+		return;
 	CONSOLE_SCREEN_BUFFER_INFO screen_buffer;
 	COORD top_left = { 0, 0 };
 	DWORD cells_written;
@@ -1342,11 +1375,17 @@ void clrscr(void)
 
 void textattr(uint8_t attrib)
 {
+	if (script_mode)
+		return;
 	SetConsoleTextAttribute(std_handle, (uint16_t)attrib);
 }
 
 void clans_putch(unsigned char ch)
 {
+	if (script_mode) {
+		fputc(ch, stdout);
+		return;
+	}
 	DWORD bytes_written;
 
 	WriteConsole(
@@ -1408,14 +1447,16 @@ void restore_screen(void *state)
 
 void ShowTextCursor(bool sh)
 {
-	fputs(sh ? "\x1b[?25h" : "\x1b[?25l", stdout);
+	if (!script_mode)
+		fputs(sh ? "\x1b[?25h" : "\x1b[?25l", stdout);
 }
 
 static void forced_gotoxy(int x, int y)
 {
 	CurrentX = x;
 	CurrentY = y;
-	printf("\x1b[%d;%dH", y + 1, x + 1);
+	if (!script_mode)
+		printf("\x1b[%d;%dH", y + 1, x + 1);
 }
 
 void gotoxy(int x, int y)
@@ -1452,7 +1493,8 @@ void clrscr(void)
 		}
 	}
 
-	fputs("\x1b[H\x1b[J", stdout);
+	if (!script_mode)
+		fputs("\x1b[H\x1b[J", stdout);
 	CurrentX = 0;
 	CurrentY = 0;
 }
@@ -1460,6 +1502,9 @@ void clrscr(void)
 void textattr(uint8_t attrib)
 {
 	if (attrib == CurrentAttr)
+		return;
+	CurrentAttr = attrib;
+	if (script_mode)
 		return;
 	char seq[23];
 	snprintf(seq, sizeof(seq), "\x1b[0;%d;%d", ansi_colours(attrib & 0x07), ansi_colours((attrib >> 4) & 0x07) + 10);
@@ -1469,7 +1514,6 @@ void textattr(uint8_t attrib)
 		strlcat(seq, ";5", sizeof(seq));
 	strlcat(seq, "m", sizeof(seq));
 	fputs(seq, stdout);
-	CurrentAttr = attrib;
 }
 
 static const char *const cp437_unicode_table[128] = {
@@ -1733,7 +1777,7 @@ static void getxy(int *x, int*y)
 	unsigned seqlen;
 	size_t span;
 
-	if (!IsTTY) {
+	if (!IsTTY || script_mode) {
 		*x = CurrentX;
 		*y = CurrentY;
 		return;

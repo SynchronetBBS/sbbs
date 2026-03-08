@@ -41,6 +41,19 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // ------------------------------------------------------------------------- //
 
+static int16_t (*get_string_choice_hook)(const char **apszChoices,
+                                         int16_t NumChoices,
+                                         bool AllowBlank) = NULL;
+
+void Input_SetGetStringChoiceHook(int16_t (*hook)(const char **apszChoices,
+                                                  int16_t NumChoices,
+                                                  bool AllowBlank))
+{
+	get_string_choice_hook = hook;
+}
+
+// ------------------------------------------------------------------------- //
+
 static int16_t Similar(const char *string, const char *word)
 /*
  * Returns true if the first N chars of string match the first N chars of
@@ -158,6 +171,11 @@ void GetStringChoice(const char **apszChoices, int16_t NumChoices, char *szPromp
  *          one of the options.
  */
 {
+	if (get_string_choice_hook) {
+		*UserChoice = get_string_choice_hook(apszChoices, NumChoices, AllowBlank);
+		return;
+	}
+
 	char szUserInput[40], Key;
 	bool ShowedTopic, WantsHelp, BackSpace, Inside;
 	int16_t iTemp, LastTopicFound = -1, CurChar = 0, TimesInStr = 0, TopicFound = 0;

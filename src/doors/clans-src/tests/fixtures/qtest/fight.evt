@@ -1,0 +1,7 @@
+# Fight event: triggers combat mock, then EndQ on win.
+# Win label = NextLine (continue), Lose label = Stop (abort), no running.
+# Used to verify that the Fight= hook fires and the mock outputs correctly.
+
+Event FightEv
+  Fight NextLine Stop NoRun
+  EndQ

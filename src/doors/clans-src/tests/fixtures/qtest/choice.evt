@@ -1,0 +1,17 @@
+# Prompt/Option event: two choices, each setting a different GFlag.
+# Choice=A -> GFlag 1.  Choice=B -> GFlag 2.
+# Used to verify that the Choice= hook fires correctly.
+
+Event ChoiceEv
+  Prompt "Choose A or B:
+  Option A ChoiceEv.PathA
+  Option B ChoiceEv.PathB
+End
+
+Result ChoiceEv.PathA
+  SetFlag G1
+  EndQ
+
+Result ChoiceEv.PathB
+  SetFlag G2
+  EndQ

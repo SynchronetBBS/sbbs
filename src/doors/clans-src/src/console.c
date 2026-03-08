@@ -7,6 +7,19 @@
 #include "defines.h"
 #include "video.h"
 
+static bool script_mode = false;
+static char (*get_answer_hook)(const char *szAllowableChars) = NULL;
+
+void Console_SetScriptMode(bool mode)
+{
+	script_mode = mode;
+}
+
+void Console_SetGetAnswerHook(char (*hook)(const char *szAllowableChars))
+{
+	get_answer_hook = hook;
+}
+
 bool Door_Initialized(void)
 {
 	return false;
@@ -62,6 +75,9 @@ char GetAnswer(const char *szAllowableChars)
 {
 	int cKey;
 	uint16_t iTemp;
+
+	if (get_answer_hook)
+		return get_answer_hook(szAllowableChars);
 
 	for (;;) {
 		cKey = cio_getch();
@@ -154,6 +170,9 @@ void door_pause(void)
  * TODO: Does not have "JustPaused" handling as in door.c
  */
 {
+	if (script_mode)
+		return;
+
 	const char *pc = "|S|0V<|0Wpaused|0V>|R";
 
 	rputs(pc);

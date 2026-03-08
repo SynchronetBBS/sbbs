@@ -12,6 +12,8 @@ void CheckMem(void *Test);
 noreturn void System_Error(char *szErrorMsg);
 void LogDisplayStr(const char *szString);
 char GetAnswer(const char *szAllowableChars);
+void Console_SetScriptMode(bool mode);
+void Console_SetGetAnswerHook(char (*hook)(const char *szAllowableChars));
 bool YesNo(char *Query);
 bool NoYes(char *Query);
 void InputCallback(void);

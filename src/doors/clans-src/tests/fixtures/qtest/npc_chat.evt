@@ -1,0 +1,7 @@
+# NPC chat topics for the Barkeep fixture NPC.
+# Barkeep.Greet is a KnownTopic with display name "Greetings".
+# EndChat causes RunEvent to return true -> NPC_ChatNPC exits the loop.
+
+Topic Barkeep.Greet
+  Text "Hello from the barkeep!
+  EndChat

@@ -1,0 +1,547 @@
+The Clans qtest Scripting Reference v0.1
+-------------------------------------------------------------------------------
+
+
+
+
+[0.0]  Table of Contents
+-------------------------------------------------------------------------------
+
+Introduction
+============
+Overview ....................................................   0.1
+How Script Mode Works .......................................   0.2
+
+Command-Line Reference
+======================
+State Arguments .............................................   1.1
+Target Arguments ............................................   1.2
+Script Argument .............................................   1.3
+Working Directory ...........................................   1.4
+
+Script File Format
+==================
+Format Overview .............................................   2.1
+Prompt Type Reference .......................................   2.2
+The End Marker ..............................................   2.3
+
+State Summary Output
+====================
+Output Format ...............................................   3.1
+Field Reference .............................................   3.2
+
+Exit Codes
+==========
+Exit Code Reference .........................................   4.1
+
+Examples
+========
+A Simple Quest Test .........................................   5.1
+An NPC Chat Test ............................................   5.2
+Testing Multiple Paths ......................................   5.3
+Testing Without a PAK File ..................................   5.4
+
+
+
+Introduction
+===============================================================================
+
+[0.1]  Overview
+-------------------------------------------------------------------------------
+Script mode allows qtest to be driven by a plain text file instead of the
+keyboard.  It is designed for automated regression testing of event scripts
+and NPC dialogue: a script file specifies every prompt that the event engine
+will present and the answer to give, and qtest verifies that the prompts
+arrive in the expected order.  On successful completion, qtest prints a full
+summary of all game state that the event may have modified, so the caller can
+validate side effects such as flag changes, gold transfers, and healed HP.
+
+Script mode does not replace interactive mode.  Use the interactive menus for
+exploratory testing while developing a script; switch to script mode once the
+paths are understood and you want to lock in regression coverage.
+
+State arguments (-G, -g, -m, etc.) work in both modes and let you pre-load
+the debug clan into a specific state before any event or chat runs.
+
+
+[0.2]  How Script Mode Works
+-------------------------------------------------------------------------------
+When -s is given, qtest:
+
+  1. Applies any state arguments to the debug clan and village before the
+     event or NPC chat runs.
+
+  2. Invokes the target directly -- either NPC_ChatNPC() for -n or
+     RunEvent() for -e -- bypassing the interactive menu system entirely.
+
+  3. For every prompt that the event engine raises (a random number choice,
+     a fight outcome, a yes/no or other single-key choice, a string entry,
+     a numeric entry, or an NPC topic selection), reads the next non-blank
+     line from the script file and checks that the line's type field matches
+     the prompt type.  If it does not match, qtest prints a diagnostic to
+     stderr and exits with code 2.
+
+  4. When the event or chat returns, reads the next non-blank script line.
+     If it is "End", qtest prints the state summary to stderr and exits
+     with code 0.  If it is anything else, qtest prints a diagnostic to
+     stderr and exits with code 3.
+
+door_pause() is suppressed in script mode; no script line is consumed for
+pauses.  Display, AddNews, and GiveItem commands are mocked and produce
+output on stdout but cause no state changes.
+
+
+Command-Line Reference
+===============================================================================
+
+[1.1]  State Arguments
+-------------------------------------------------------------------------------
+State arguments pre-load the debug clan and village before the event runs.
+They work in both interactive mode and script mode.
+
+  -G<list>    Set Global flags (G0-G63).  <list> is one or more flag
+              numbers separated by commas.  Example: -G0,5,10
+
+  -H<list>    Set Global Daily flags (H0-H63).  Example: -H3
+
+  -P<list>    Set Player flags (P0-P63).  Example: -P2,7
+
+  -D<list>    Set Player Daily flags (D0-D63).  Example: -D1
+
+  -T<list>    Set Temp flags (T0-T63).  Example: -T4
+
+  -g<n>       Set vault gold.  Example: -g10000
+
+  -m<n>       Set mine level.  Example: -m3
+
+  -q<list>    Mark quests as known.  <list> contains 1-based quest indices
+              matching the numbers shown in the interactive quest list.
+              Example: -q1,3
+
+  -Q<list>    Mark quests as done.  Example: -Q1
+
+Multiple state arguments may appear in any order.  Flag arguments accumulate:
+-G0 -G5 and -G0,5 are equivalent.  The -q and -Q arguments add to the
+set of known/done quests; any quest already marked Known in quests.ini
+remains known regardless.
+
+The debug clan starts with four members (Fighter, Mage, Cleric, Thief) at
+level 1, each at half their maximum HP and SP, 5000 vault gold, and mine
+level 1.  State arguments modify these defaults before any event runs.
+
+
+[1.2]  Target Arguments
+-------------------------------------------------------------------------------
+A target argument specifies what to run when -s is given.  In interactive
+mode, target arguments are accepted but only pre-apply state; the interactive
+menu still appears.  In script mode, exactly one target must be provided.
+
+  -n <index>          Run NPC_ChatNPC() for the NPC whose szIndex field
+                      matches <index> (case-insensitive).  The full chat
+                      sequence runs: intro topic (if present), then the
+                      topic-selection loop, then each chosen topic's event
+                      block.
+
+  -e <file> <label>   Run RunEvent() for the event block named <label> in
+                      <file>.  <file> may be a relative path, or a PAK
+                      archive reference in the form @pakfile/path/name.
+                      See "File lookup rules" below.
+
+File lookup rules for <file>
+
+  All file paths given to -e, and all paths in clans.ini (Language,
+  NpcFile), pass through the MyOpen internal file opener, which applies
+  the following rules:
+
+  Relative paths (not beginning with '/') are opened directly from the
+  filesystem, relative to qtest's working directory.  No PAK lookup is
+  performed.
+
+  Absolute paths (beginning with '/') are NOT treated as filesystem
+  paths.  They are treated as PAK-relative paths and looked up inside
+  clans.pak in the working directory.  If clans.pak is absent, qtest
+  exits with code 1.  Do not pass absolute filesystem paths to -e or
+  use absolute paths in clans.ini when clans.pak is not present.
+
+  The @pakfile/path form explicitly names both the PAK archive and the
+  entry within it.  The archive's own path is opened with fopen() and
+  may be absolute or relative.
+
+  The script file given to -s is opened with fopen() directly and is
+  not subject to these rules.  Its path may be absolute.
+
+Only one of -n or -e may be given.  Providing both is an error (exit 1).
+
+
+[1.3]  Script Argument
+-------------------------------------------------------------------------------
+  -s <file>     Read prompt responses from <file> instead of the keyboard.
+                Requires exactly one of -n or -e.  Without -s, qtest runs
+                interactively regardless of whether -n or -e are given;
+                state arguments still take effect.
+
+
+[1.4]  Working Directory and clans.ini
+-------------------------------------------------------------------------------
+qtest reads clans.ini from its working directory at startup.  If clans.ini
+is missing, or its Language entry cannot be opened, qtest exits with code 1.
+
+Minimum clans.ini for event testing:
+
+        Language   strings.xl
+
+Minimum clans.ini for NPC chat testing:
+
+        Language   strings.xl
+        NpcFile    barkeep.npc
+
+Both paths above are relative, so they are opened directly from the
+filesystem rather than through a PAK lookup (see section 1.2).
+
+quests.ini is optional.  If absent, quest-related event commands log a
+notice and continue without failing.
+
+Because all non-@ file paths are resolved relative to the working
+directory, run qtest from a directory that contains clans.ini and all
+event, NPC, and language files needed by the test.
+
+
+Script File Format
+===============================================================================
+
+[2.1]  Format Overview
+-------------------------------------------------------------------------------
+A script file is a sequence of Type=Value lines terminated by a mandatory
+End line:
+
+        Type=Value
+        Type=Value
+        ...
+        End
+
+Lines are consumed strictly in order.  Each time the event engine raises a
+prompt, qtest reads the next line, verifies the Type, and if it matches,
+delivers the Value to the engine.  Blank lines are skipped.  There is no
+comment syntax.
+
+The Value is everything after the first '=' on the line and may be empty
+(see Topic= in section 2.2).  Whitespace is not stripped from the Value,
+so do not add extra spaces around the '='.
+
+
+[2.2]  Prompt Type Reference
+-------------------------------------------------------------------------------
+Random=<n>
+
+        Consumed when an event script requests a random number.  <n> must
+        be an integer in the range 0 to limit-1, where limit is the value
+        the script passed to the random function.  qtest does not enforce
+        the range; an out-of-range value is passed through as given.
+
+        Example: Random=2
+
+Fight=<outcome>
+
+        Consumed when an event script triggers a combat encounter.
+        <outcome> must be W (win), L (lose), or R (run away).  Case is
+        insensitive.
+
+        Regardless of outcome, each party member who is present and alive
+        loses 1 HP and 1 SP.  This ensures that Heal commands produce a
+        visible change in the state summary.
+
+        Example: Fight=W
+
+Choice=<char>
+
+        Consumed when the event engine calls GetAnswer() for a single-
+        character selection (for example, a yes/no branch or a lettered
+        menu).  <char> must be one of the characters the prompt accepts.
+        Case is insensitive.
+
+        Example: Choice=Y
+
+String=<text>
+
+        Consumed when the event engine calls DosGetStr() for free-form
+        text input.  <text> is delivered verbatim and may be empty if
+        the prompt accepts a blank entry.
+
+        Example: String=Gregor the Bold
+
+Number=<n>
+
+        Consumed when the event engine calls DosGetLong() for a numeric
+        value.  <n> must be an integer.  If it exceeds the prompt's
+        maximum it is clamped to the maximum.
+
+        Example: Number=42
+
+Topic=<name>
+
+        Consumed when the NPC chat loop calls GetStringChoice() to select
+        a conversation topic.  <name> is matched case-insensitively
+        against the list of known topics for the current NPC.  An
+        unambiguous prefix is accepted as well as an exact match.
+
+        To end the NPC chat loop (equivalent to pressing Enter with no
+        input), use an empty value:
+
+                Topic=
+
+        An NPC chat session needs one Topic= per topic visited plus a
+        final Topic= (empty) to exit the loop.  Omitting the final
+        Topic= causes a type mismatch the next time the loop calls
+        GetStringChoice() after the last topic's event returns.
+
+        Example: Topic=Gossip Kings
+
+
+[2.3]  The End Marker
+-------------------------------------------------------------------------------
+The last non-blank line of every script must be:
+
+        End
+
+qtest reads this line after the event or NPC chat returns.  If it is End,
+qtest prints the state summary (see section 3) and exits with code 0.
+
+If qtest encounters End while a prompt is still expected -- meaning the
+script ran out of responses before the event finished -- it treats this as
+a type mismatch and exits with code 2, printing the line number and the
+expected prompt type.
+
+If the event returns and the next script line is not End, qtest exits with
+code 3, printing the line number and the unexpected content.
+
+
+State Summary Output
+===============================================================================
+
+[3.1]  Output Format
+-------------------------------------------------------------------------------
+On successful completion (exit code 0), qtest writes a state summary to
+stderr.  Event dialog and mock notifications go to stdout, so the two
+streams can be captured independently:
+
+        ./qtest -n Ansgar -s chat.txt >event.txt 2>state.txt
+
+In script mode the video subsystem suppresses all ANSI escape sequences
+-- colour codes, cursor positioning, and screen clears -- regardless of
+whether stdout is connected to a terminal.  The output is plain text
+with ordinary line endings, making assert_contains and grep checks
+straightforward.
+
+The summary uses the same Key=Value format as the script file, one field
+per line.  The following is representative output after a quest that set
+player flag 2, spent some gold, and healed the party:
+
+        GFlags=
+        HFlags=
+        PFlags=2
+        DFlags=
+        TFlags=
+        Gold=4750
+        MineLevel=1
+        QuestsKnown=1
+        QuestsDone=1
+        Member0.Name=Fighter
+        Member0.HP=45
+        Member0.MaxHP=80
+        Member0.SP=6
+        Member0.MaxSP=10
+        Member0.XP=0
+        Member0.Level=1
+        Member1.Name=Mage
+        Member1.HP=18
+        Member1.MaxHP=30
+        ...
+
+Flag groups list the numbers of all set flags, comma-separated; an empty
+value means no flags are set in that group.  Quest indices are 1-based,
+matching the -q and -Q argument convention.  All four debug clan members
+are always reported (Member0 through Member3) even if unchanged.
+
+
+[3.2]  Field Reference
+-------------------------------------------------------------------------------
+  GFlags          Set Global flag numbers (G0-G63), comma-separated.
+  HFlags          Set Global Daily flag numbers, comma-separated.
+  PFlags          Set Player flag numbers, comma-separated.
+  DFlags          Set Player Daily flag numbers, comma-separated.
+  TFlags          Set Temp flag numbers, comma-separated.
+  Gold            Vault gold (int32).
+  MineLevel       Mine level.
+  QuestsKnown     1-based indices of quests currently marked known.
+  QuestsDone      1-based indices of quests currently marked done.
+
+For each member, N is the 0-based index (0 = Fighter, 1 = Mage,
+2 = Cleric, 3 = Thief):
+
+  MemberN.Name    Character name.
+  MemberN.HP      Current hit points.
+  MemberN.MaxHP   Maximum hit points.
+  MemberN.SP      Current spell points.
+  MemberN.MaxSP   Maximum spell points.
+  MemberN.XP      Accumulated experience points.
+  MemberN.Level   Current level.
+
+Display, AddNews, and GiveItem commands are mocked and produce no state
+changes; they do not appear in the summary.
+
+
+Exit Codes
+===============================================================================
+
+[4.1]  Exit Code Reference
+-------------------------------------------------------------------------------
+  0    Success.  The event completed and the script ended with End.  The
+       state summary has been written to stderr.
+
+  1    Fatal error before the event ran.  Bad arguments, a missing or
+       unreadable file, an NPC index that does not exist, or another
+       startup failure.  A diagnostic is printed to stderr; no state
+       summary is written.
+
+  2    Prompt type mismatch.  The next script line's type did not match
+       the prompt the event engine raised, or the script reached End while
+       a prompt was still expected.  A diagnostic showing the line number,
+       the expected type, and the actual type is printed to stderr.
+
+  3    Script not fully consumed.  The event or NPC chat completed but the
+       next script line was not End.  A diagnostic showing the line number
+       and the unexpected content is printed to stderr.
+
+
+Examples
+===============================================================================
+
+[5.1]  A Simple Quest Test
+-------------------------------------------------------------------------------
+This example tests the AlmsLow event block.  The event asks whether the
+player wants to donate, then gives a random gold reward if they say yes.
+
+Script file -- tests/alms-yes.txt:
+
+        Choice=Y
+        Random=3
+        End
+
+Run:
+
+        ./qtest -e @fallstatt.pak/e/Fallstatt AlmsLow -s tests/alms-yes.txt
+
+The Choice=Y line answers the donation prompt.  The Random=3 line provides
+the random roll that determines the reward tier.  After the event returns,
+qtest reads End and writes the state summary to stderr.
+
+To test the refusal path, a second script needs only:
+
+        Choice=N
+        End
+
+Run both scripts and compare the Gold= field in their state summaries to
+confirm that the yes path increases gold and the no path does not.
+
+
+[5.2]  An NPC Chat Test
+-------------------------------------------------------------------------------
+This example tests two topics with the NPC whose szIndex is "Ansgar".
+
+Script file -- tests/ansgar-two-topics.txt:
+
+        Topic=Gossip Kings
+        Choice=Y
+        Topic=Missing Tithe
+        Topic=
+        End
+
+The first Topic= selects the "Gossip Kings" topic.  The Choice=Y answers
+a yes/no branch inside that topic's event block.  The second Topic= selects
+"Missing Tithe".  The final Topic= (empty value) presses Enter to exit the
+chat loop.  End signals the end of the script.
+
+Run:
+
+        ./qtest -n Ansgar -s tests/ansgar-two-topics.txt
+
+Combine with state arguments to test topics that depend on prior progress:
+
+        ./qtest -n Ansgar -P3 -q2 -s tests/ansgar-two-topics.txt
+
+
+[5.3]  Testing Multiple Paths
+-------------------------------------------------------------------------------
+Script mode runs one linear path through an event per invocation.  To test
+multiple branches, write one script file per path and run qtest once for
+each.  A shell loop can check all of them in sequence:
+
+        for script in tests/alms-*.txt; do
+            ./qtest -e @fallstatt.pak/e/Fallstatt AlmsLow -s "$script"
+            if [ $? -ne 0 ]; then
+                echo "FAIL: $script" >&2
+                exit 1
+            fi
+        done
+
+To validate state, capture stderr and inspect individual fields:
+
+        ./qtest -e @fallstatt.pak/e/Fallstatt AlmsLow \
+            -s tests/alms-yes.txt 2>state.txt
+        gold=$(grep '^Gold=' state.txt | cut -d= -f2)
+        if [ "$gold" -le 5000 ]; then
+            echo "FAIL: expected gold increase, got $gold" >&2
+            exit 1
+        fi
+
+The existing test harness in tests/test_harness.sh provides assert_contains
+and assert_not_contains helpers that work directly on the captured stderr
+output, making it straightforward to check for specific flag or stat values.
+
+
+[5.4]  Testing Without a PAK File
+-------------------------------------------------------------------------------
+When testing newly-written event files that are not yet packaged into a
+PAK archive, create a dedicated working directory containing all required
+files and use relative paths throughout.
+
+Directory layout:
+
+        workdir/
+            clans.ini
+            strings.xl          (symlink or copy of data/strings.xl)
+            simple.e            (compiled with: ecomp simple.evt simple.e)
+
+clans.ini:
+
+        Language   strings.xl
+
+Compile the event file:
+
+        ecomp simple.evt workdir/simple.e
+
+Run from the working directory so that all relative paths resolve:
+
+        cd workdir
+        qtest -e simple.e SimpleEv -s /path/to/simple.script 2>state.txt
+
+The -s path may be absolute because -s is opened with fopen(), not MyOpen
+(see section 1.2).  The -e path and all clans.ini entries must be relative
+when clans.pak is not present.
+
+A shell wrapper that sets the working directory explicitly is a cleaner
+approach for integration tests:
+
+        WORKDIR=/path/to/workdir
+        SCRIPTS=/path/to/scripts
+        OUT="$WORKDIR/out.txt"
+        STATE="$WORKDIR/state.txt"
+
+        run_qtest() {
+            sh -c "cd '$WORKDIR' && qtest $* >'$OUT' 2>'$STATE'"
+        }
+
+        run_qtest -e simple.e SimpleEv -s "$SCRIPTS/end.script"
+
+This keeps event and NPC file references short (relative to WORKDIR) while
+allowing the script file to be referenced from any absolute location.

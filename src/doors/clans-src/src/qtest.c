@@ -16,6 +16,7 @@
 #include "clansini.h"
 #include "console.h"
 #include "help.h"
+#include "input.h"
 #include "language.h"
 #include "myopen.h"
 #include "npc.h"
@@ -34,7 +35,7 @@ bool   Verbose = false;
 void Display(char *FileName)
 {
 	char buf[256];
-	snprintf(buf, sizeof(buf), "|0E[MOCK Display] |07file=\"%s\"\n", FileName);
+	snprintf(buf, sizeof(buf), "[MOCK Display] file=\"%s\"\n", FileName);
 	zputs(buf);
 }
 
@@ -52,17 +53,212 @@ char *DupeStr(const char *str)
 }
 
 /* =========================================================================
+ * Script engine
+ * ========================================================================= */
+
+static bool   script_mode = false;
+static FILE  *script      = NULL;
+static int    script_line = 0;
+
+static bool script_read_line(char *buf, size_t sz)
+{
+	while (fgets(buf, (int)sz, script)) {
+		script_line++;
+		size_t len = strlen(buf);
+		while (len > 0 && (buf[len - 1] == '\n' || buf[len - 1] == '\r'))
+			buf[--len] = '\0';
+		if (len > 0)
+			return true;
+	}
+	return false;
+}
+
+/*
+ * Reads the next script line and verifies it has the expected Type prefix.
+ * Returns a pointer to the value part (after '=').
+ * On mismatch or EOF, prints a diagnostic to stderr and exits with code 2.
+ */
+static const char *script_consume(const char *expected_type)
+{
+	static char line[512];
+
+	if (!script_read_line(line, sizeof(line))) {
+		fprintf(stderr, "qtest: line %d: script ended unexpectedly, "
+		        "expected %s\n", script_line + 1, expected_type);
+		exit(2);
+	}
+
+	if (strcmp(line, "End") == 0) {
+		fprintf(stderr, "qtest: line %d: script ended (End marker) while "
+		        "expecting %s\n", script_line, expected_type);
+		exit(2);
+	}
+
+	char *eq = strchr(line, '=');
+	if (!eq) {
+		fprintf(stderr, "qtest: line %d: malformed line (no '='): %s\n",
+		        script_line, line);
+		exit(2);
+	}
+
+	size_t tlen = strlen(expected_type);
+	size_t alen = (size_t)(eq - line);
+	if (alen != tlen || strncasecmp(line, expected_type, tlen) != 0) {
+		char actual[64] = "(unknown)";
+		if (alen < sizeof(actual)) {
+			memcpy(actual, line, alen);
+			actual[alen] = '\0';
+		}
+		fprintf(stderr, "qtest: line %d: type mismatch: "
+		        "expected %s, got %s\n",
+		        script_line, expected_type, actual);
+		exit(2);
+	}
+
+	return eq + 1;
+}
+
+/*
+ * Called after the event/NPC chat returns.  Reads the next script line,
+ * expects it to be "End".  If not, prints a diagnostic and exits with
+ * code 3.
+ */
+static void script_expect_end(void)
+{
+	char line[512];
+
+	if (!script_read_line(line, sizeof(line))) {
+		fprintf(stderr, "qtest: line %d: expected End but reached "
+		        "end of file\n", script_line + 1);
+		exit(3);
+	}
+	if (strcmp(line, "End") != 0) {
+		fprintf(stderr, "qtest: line %d: expected End, got: %s\n",
+		        script_line, line);
+		exit(3);
+	}
+}
+
+/* =========================================================================
+ * Hook callbacks (called by subsystems in script mode)
+ * ========================================================================= */
+
+static char hook_get_answer(const char *szAllowableChars)
+{
+	const char *val = script_consume("Choice");
+	if (val[0] == '\0') {
+		fprintf(stderr, "qtest: line %d: Choice= has no value\n",
+		        script_line);
+		exit(2);
+	}
+	char c = (char)toupper((unsigned char)val[0]);
+	/* validate — check both cases since allowable chars may be any case */
+	const char *p = szAllowableChars;
+	while (*p && toupper((unsigned char)*p) != c)
+		p++;
+	if (!*p) {
+		fprintf(stderr, "qtest: line %d: Choice='%c' not in "
+		        "allowable set \"%s\"\n",
+		        script_line, c, szAllowableChars);
+		exit(2);
+	}
+	return c;
+}
+
+static void hook_dos_get_str(char *InputStr, int16_t MaxChars, bool HiBit)
+{
+	(void)HiBit;
+	const char *val = script_consume("String");
+	strlcpy(InputStr, val, (size_t)MaxChars + 1);
+}
+
+static long hook_dos_get_long(const char *Prompt, long DefaultVal, long Maximum)
+{
+	(void)Prompt;
+	(void)DefaultVal;
+	const char *val = script_consume("Number");
+	long n = atol(val);
+	if (n > Maximum)
+		n = Maximum;
+	return n;
+}
+
+static int16_t hook_get_string_choice(const char **apszChoices,
+                                      int16_t NumChoices,
+                                      bool AllowBlank)
+{
+	const char *val = script_consume("Topic");
+
+	if (val[0] == '\0') {
+		if (!AllowBlank) {
+			fprintf(stderr, "qtest: line %d: empty Topic= but "
+			        "AllowBlank is false\n", script_line);
+			exit(2);
+		}
+		return -1;
+	}
+
+	/* exact match first, then unambiguous prefix */
+	for (int i = 0; i < NumChoices; i++) {
+		if (strcasecmp(val, apszChoices[i]) == 0)
+			return (int16_t)i;
+	}
+
+	size_t vlen = strlen(val);
+	int found  = -1;
+	int matches = 0;
+	for (int i = 0; i < NumChoices; i++) {
+		if (strncasecmp(val, apszChoices[i], vlen) == 0) {
+			found = i;
+			matches++;
+		}
+	}
+	if (matches == 0) {
+		fprintf(stderr, "qtest: line %d: Topic=\"%s\" not found\n",
+		        script_line, val);
+		exit(2);
+	}
+	if (matches > 1) {
+		fprintf(stderr, "qtest: line %d: Topic=\"%s\" is ambiguous\n",
+		        script_line, val);
+		exit(2);
+	}
+	return (int16_t)found;
+}
+
+/* =========================================================================
  * fight.h mocks
  * ========================================================================= */
 
 int16_t Fight_Fight(struct clan *Attacker, struct clan *Defender,
                     bool HumanEnemy, bool CanRun, bool AutoFight)
 {
-	(void)Attacker;
 	(void)HumanEnemy;
 	(void)AutoFight;
 
 	char buf[128];
+
+	if (script_mode) {
+		const char *val = script_consume("Fight");
+		char c = (char)toupper((unsigned char)val[0]);
+
+		/* each living attacker member loses 1 HP and 1 SP */
+		for (int i = 0; i < MAX_MEMBERS; i++) {
+			struct pc *m = Attacker->Member[i];
+			if (!m || m->HP <= 0)
+				continue;
+			if (m->HP > 0) m->HP--;
+			if (m->SP > 0) m->SP--;
+		}
+
+		snprintf(buf, sizeof(buf), "[MOCK Fight] outcome=%c\n", c);
+		zputs(buf);
+
+		if (c == 'W') return FT_WON;
+		if (c == 'L') return FT_LOST;
+		return FT_RAN;
+	}
+
 	if (Defender->szName[0]) {
 		snprintf(buf, sizeof(buf), "\n|0E[MOCK Fight] |07vs |0B%s|07:\n",
 		         Defender->szName);
@@ -131,7 +327,7 @@ void FreeClanMembers(struct clan *Clan)
 void News_AddNews(char *szString)
 {
 	char buf[350];
-	snprintf(buf, sizeof(buf), "|0E[MOCK News_AddNews] |07\"%s\"\n", szString);
+	snprintf(buf, sizeof(buf), "[MOCK News_AddNews] \"%s\"\n", szString);
 	zputs(buf);
 }
 
@@ -142,7 +338,8 @@ void News_AddNews(char *szString)
 void Items_GiveItem(char *szItemName)
 {
 	char buf[128];
-	snprintf(buf, sizeof(buf), "|0E[MOCK Items_GiveItem] |07item=\"%s\"\n", szItemName);
+	snprintf(buf, sizeof(buf), "[MOCK Items_GiveItem] item=\"%s\"\n",
+	         szItemName);
 	zputs(buf);
 }
 
@@ -190,17 +387,30 @@ void ClanStats(struct clan *Clan, bool AllowModify)
 /* =========================================================================
  * random.h mocks
  * ========================================================================= */
+
 int my_random(int limit)
 {
-	// Don't mess around with garbage
+	/* Don't mess around with garbage */
 	if (limit <= 0)
 		System_Error("Bad value passed to my_random()");
 	if (limit == 1)
 		return 0;
 	if (limit >= RAND_MAX)
 		System_Error("Broken Random (range too small)!");
+
+	if (script_mode) {
+		const char *val = script_consume("Random");
+		int n = atoi(val);
+		if (n < 0)
+			return 0;
+		if (n >= limit)
+			return limit - 1;
+		return n;
+	}
+
 	char prompt[128];
-	sprintf(prompt, "|0E[MOCK my_random] |07Random number 0 to %d: ", limit-1);
+	sprintf(prompt, "|0E[MOCK my_random] |07Random number 0 to %d: ",
+	        limit - 1);
 	zputs(prompt);
 	char numstr[8] = {0};
 	DosGetStr(numstr, 7, false);
@@ -252,9 +462,9 @@ static void setup_dummy_pclan(void)
 		m->Attributes[ATTR_ARMORSTR]  = g_archetypes[i].arm;
 		m->Attributes[ATTR_CHARISMA]  = g_archetypes[i].cha;
 		m->MaxHP      = g_archetypes[i].hp;
-		m->HP         = m->MaxHP;
+		m->HP         = m->MaxHP / 2;
 		m->MaxSP      = g_archetypes[i].sp;
-		m->SP         = m->MaxSP;
+		m->SP         = m->MaxSP / 2;
 		m->WhichClass = g_archetypes[i].cls;
 		m->Level      = 1;
 		m->Status     = Here;
@@ -278,7 +488,7 @@ static void setup_dummy_village(void)
 }
 
 /* =========================================================================
- * Flag display helpers
+ * Flag display helpers (interactive mode)
  * ========================================================================= */
 
 static void print_flags(const char *label, uint8_t flags[8])
@@ -324,7 +534,96 @@ static int count_active_quests(void)
 }
 
 /* =========================================================================
- * Main status screen
+ * State summary output (script mode)
+ * ========================================================================= */
+
+static void print_flag_summary(uint8_t flags[8])
+{
+	bool any = false;
+	for (int i = 0; i < 64; i++) {
+		if (flags[i / 8] & (uint8_t)(1u << (i % 8))) {
+			if (any)
+				fputc(',', stderr);
+			fprintf(stderr, "%d", i);
+			any = true;
+		}
+	}
+	fputc('\n', stderr);
+}
+
+static void print_quest_summary(const char *key, uint8_t flags[8])
+{
+	fprintf(stderr, "%s=", key);
+	bool any = false;
+	for (int i = 0; i < MAX_QUESTS; i++) {
+		if (!Quests[i].Active)
+			continue;
+		if (flags[i / 8] & (uint8_t)(1u << (i % 8))) {
+			if (any)
+				fputc(',', stderr);
+			fprintf(stderr, "%d", i + 1);
+			any = true;
+		}
+	}
+	fputc('\n', stderr);
+}
+
+static void print_state_summary(void)
+{
+	fputs("GFlags=", stderr); print_flag_summary(Village.Data.GFlags);
+	fputs("HFlags=", stderr); print_flag_summary(Village.Data.HFlags);
+	fputs("PFlags=", stderr); print_flag_summary(PClan.PFlags);
+	fputs("DFlags=", stderr); print_flag_summary(PClan.DFlags);
+	fputs("TFlags=", stderr); print_flag_summary(Quests_TFlags);
+
+	fprintf(stderr, "Gold=%"PRId32"\n", PClan.Empire.VaultGold);
+	fprintf(stderr, "MineLevel=%d\n",   (int)PClan.MineLevel);
+
+	print_quest_summary("QuestsKnown", PClan.QuestsKnown);
+	print_quest_summary("QuestsDone",  PClan.QuestsDone);
+
+	for (int i = 0; i < 4; i++) {
+		struct pc *m = PClan.Member[i];
+		if (!m)
+			continue;
+		fprintf(stderr, "Member%d.Name=%s\n",  i, m->szName);
+		fprintf(stderr, "Member%d.HP=%d\n",    i, (int)m->HP);
+		fprintf(stderr, "Member%d.MaxHP=%d\n", i, (int)m->MaxHP);
+		fprintf(stderr, "Member%d.SP=%d\n",    i, (int)m->SP);
+		fprintf(stderr, "Member%d.MaxSP=%d\n", i, (int)m->MaxSP);
+		fprintf(stderr, "Member%d.XP=%"PRId32"\n", i, m->Experience);
+		fprintf(stderr, "Member%d.Level=%d\n", i, (int)m->Level);
+	}
+}
+
+/* =========================================================================
+ * State argument helpers
+ * ========================================================================= */
+
+static void parse_flag_list(const char *list, uint8_t flags[8])
+{
+	char buf[256];
+	strlcpy(buf, list, sizeof(buf));
+	for (char *tok = strtok(buf, ","); tok; tok = strtok(NULL, ",")) {
+		int n = atoi(tok);
+		if (n >= 0 && n < 64)
+			flags[n / 8] |= (uint8_t)(1u << (n % 8));
+	}
+}
+
+static void parse_quest_list(const char *list, uint8_t qflags[8])
+{
+	char buf[256];
+	strlcpy(buf, list, sizeof(buf));
+	for (char *tok = strtok(buf, ","); tok; tok = strtok(NULL, ",")) {
+		int n = atoi(tok) - 1;  /* convert 1-based to 0-based */
+		if (n >= 0 && n < MAX_QUESTS)
+			qflags[n / 8] |= (uint8_t)(1u << (n % 8));
+	}
+}
+
+/* =========================================================================
+ * Main status screen (interactive mode)
  * ========================================================================= */
 
 static void show_main_screen(void)
@@ -334,11 +633,11 @@ static void show_main_screen(void)
 	zputs("|07================================\n\n");
 
 	zputs("|0EFlag Values:\n");
-	print_flags("G (Global)",  Village.Data.GFlags);
-	print_flags("H (Global Daily)",   Village.Data.HFlags);
-	print_flags("P (Player)",  PClan.PFlags);
+	print_flags("G (Global)",      Village.Data.GFlags);
+	print_flags("H (Global Daily)", Village.Data.HFlags);
+	print_flags("P (Player)",      PClan.PFlags);
 	print_flags("D (Player Daily)", PClan.DFlags);
-	print_flags("T (Temp)",    Quests_TFlags);
+	print_flags("T (Temp)",        Quests_TFlags);
 
 	int nq = count_active_quests();
 	zputs("\n|0EQuest Flags:\n");
@@ -363,7 +662,7 @@ static void show_main_screen(void)
 }
 
 /* =========================================================================
- * Flag editor
+ * Flag editor (interactive mode)
  * ========================================================================= */
 
 static void set_or_clear_flag(uint8_t flags[8], const char *label)
@@ -417,28 +716,12 @@ static void edit_flags_menu(void)
 		uint8_t   *flags = NULL;
 		const char *label = "";
 		switch (c) {
-			case 'G':
-				flags = Village.Data.GFlags;
-				label = "Global (G)";
-				break;
-			case 'H':
-				flags = Village.Data.HFlags;
-				label = "Global Daily (H)";
-				break;
-			case 'P':
-				flags = PClan.PFlags;
-				label = "Player (P)";
-				break;
-			case 'D':
-				flags = PClan.DFlags;
-				label = "Player Daily (D)";
-				break;
-			case 'T':
-				flags = Quests_TFlags;
-				label = "Temp (T)";
-				break;
-			default:
-				return;
+			case 'G': flags = Village.Data.GFlags; label = "Global (G)";      break;
+			case 'H': flags = Village.Data.HFlags; label = "Global Daily (H)"; break;
+			case 'P': flags = PClan.PFlags;        label = "Player (P)";      break;
+			case 'D': flags = PClan.DFlags;        label = "Player Daily (D)"; break;
+			case 'T': flags = Quests_TFlags;       label = "Temp (T)";        break;
+			default:  return;
 		}
 		set_or_clear_flag(flags, label);
 		door_pause();
@@ -446,7 +729,7 @@ static void edit_flags_menu(void)
 }
 
 /* =========================================================================
- * Gold / Mine Level editor
+ * Gold / Mine Level editor (interactive mode)
  * ========================================================================= */
 
 static void edit_gold_mine(void)
@@ -471,12 +754,12 @@ static void edit_gold_mine(void)
 }
 
 /* =========================================================================
- * NPC browser / chat sub-menu
+ * NPC browser / chat sub-menu (interactive mode)
  * ========================================================================= */
 
 struct DBGNPCEntry {
-	char   szName[20];
-	char   szIndex[20];
+	char    szName[20];
+	char    szIndex[20];
 	int16_t WhereWander;
 	int16_t OddsOfSeeing;
 };
@@ -504,8 +787,10 @@ static int collect_npcs(struct DBGNPCEntry *entries, int maxentries)
 				break;
 			s_NPCInfo_d(nbuf, sizeof(nbuf), info);
 
-			strlcpy(entries[n].szName,  info->szName,  sizeof(entries[n].szName));
-			strlcpy(entries[n].szIndex, info->szIndex, sizeof(entries[n].szIndex));
+			strlcpy(entries[n].szName,  info->szName,
+			        sizeof(entries[n].szName));
+			strlcpy(entries[n].szIndex, info->szIndex,
+			        sizeof(entries[n].szIndex));
 			entries[n].WhereWander  = info->WhereWander;
 			entries[n].OddsOfSeeing = info->OddsOfSeeing;
 			n++;
@@ -580,7 +865,7 @@ static void npc_submenu(void)
 }
 
 /* =========================================================================
- * Quest runner sub-menu
+ * Quest runner sub-menu (interactive mode)
  * ========================================================================= */
 
 static void quest_submenu(void)
@@ -725,11 +1010,132 @@ static void dbg_close(void)
 
 int main(int argc, char *argv[])
 {
-	(void)argc;
-	(void)argv;
+	/* ---- state arg accumulators ---- */
+	uint8_t gflags[8] = {0}, hflags[8] = {0};
+	uint8_t pflags[8] = {0}, dflags[8] = {0}, tflags[8] = {0};
+	uint8_t qknown[8] = {0}, qdone[8]  = {0};
+	long    arg_gold  = -1;
+	long    arg_mine  = -1;
 
+	/* ---- target / script ---- */
+	char npc_index[64]   = {0};
+	char event_file[256] = {0};
+	char event_label[64] = {0};
+	char script_path[256] = {0};
+	bool have_npc   = false;
+	bool have_event = false;
+
+	/* ---- argument parsing ---- */
+	for (int i = 1; i < argc; i++) {
+		const char *a = argv[i];
+		if (a[0] != '-' || a[1] == '\0') {
+			fprintf(stderr, "qtest: unexpected argument: %s\n", a);
+			return 1;
+		}
+		switch (a[1]) {
+			case 'G': parse_flag_list(a + 2, gflags); break;
+			case 'H': parse_flag_list(a + 2, hflags); break;
+			case 'P': parse_flag_list(a + 2, pflags); break;
+			case 'D': parse_flag_list(a + 2, dflags); break;
+			case 'T': parse_flag_list(a + 2, tflags); break;
+			case 'g': arg_gold = atol(a + 2); break;
+			case 'm': arg_mine = atol(a + 2); break;
+			case 'q': parse_quest_list(a + 2, qknown); break;
+			case 'Q': parse_quest_list(a + 2, qdone);  break;
+			case 'n':
+				if (i + 1 >= argc) {
+					fprintf(stderr, "qtest: -n requires an index\n");
+					return 1;
+				}
+				strlcpy(npc_index, argv[++i], sizeof(npc_index));
+				have_npc = true;
+				break;
+			case 'e':
+				if (i + 2 >= argc) {
+					fprintf(stderr,
+					        "qtest: -e requires a file and a label\n");
+					return 1;
+				}
+				strlcpy(event_file,  argv[++i], sizeof(event_file));
+				strlcpy(event_label, argv[++i], sizeof(event_label));
+				have_event = true;
+				break;
+			case 's':
+				if (i + 1 >= argc) {
+					fprintf(stderr, "qtest: -s requires a file\n");
+					return 1;
+				}
+				strlcpy(script_path, argv[++i], sizeof(script_path));
+				script_mode = true;
+				break;
+			default:
+				fprintf(stderr, "qtest: unknown option: %s\n", a);
+				return 1;
+		}
+	}
+
+	/* ---- validate script mode requirements ---- */
+	if (script_mode) {
+		if (have_npc && have_event) {
+			fprintf(stderr, "qtest: -n and -e are mutually exclusive\n");
+			return 1;
+		}
+		if (!have_npc && !have_event) {
+			fprintf(stderr,
+			        "qtest: -s requires exactly one of -n or -e\n");
+			return 1;
+		}
+
+		script = fopen(script_path, "r");
+		if (!script) {
+			fprintf(stderr, "qtest: cannot open script file \"%s\"\n",
+			        script_path);
+			return 1;
+		}
+
+		/* install hooks */
+		Console_SetScriptMode(true);
+		Console_SetGetAnswerHook(hook_get_answer);
+		Video_SetScriptMode(true);
+		Video_SetDosGetStrHook(hook_dos_get_str);
+		Video_SetDosGetLongHook(hook_dos_get_long);
+		Input_SetGetStringChoiceHook(hook_get_string_choice);
+	}
+
+	/* ---- initialise ---- */
 	dbg_init();
 
+	/* ---- apply state arguments ---- */
+	for (int i = 0; i < 8; i++) Village.Data.GFlags[i] |= gflags[i];
+	for (int i = 0; i < 8; i++) Village.Data.HFlags[i] |= hflags[i];
+	for (int i = 0; i < 8; i++) PClan.PFlags[i]        |= pflags[i];
+	for (int i = 0; i < 8; i++) PClan.DFlags[i]        |= dflags[i];
+	for (int i = 0; i < 8; i++) Quests_TFlags[i]       |= tflags[i];
+	if (arg_gold >= 0) PClan.Empire.VaultGold = (int32_t)arg_gold;
+	if (arg_mine >= 0) PClan.MineLevel        = (int16_t)arg_mine;
+	for (int i = 0; i < 8; i++) PClan.QuestsKnown[i] |= qknown[i];
+	for (int i = 0; i < 8; i++) {
+		PClan.QuestsDone[i]  |= qdone[i];
+		PClan.QuestsKnown[i] |= qdone[i];  /* done implies known */
+	}
+
+	/* ---- script mode: run target, check End, print summary, exit ---- */
+	if (script_mode) {
+		if (have_npc) {
+			NPC_ChatNPC(npc_index);
+		} else {
+			ClearFlags(Quests_TFlags);
+			RunEvent(false, event_file, event_label, NULL, NULL);
+		}
+
+		script_expect_end();
+		print_state_summary();
+		dbg_close();
+		fclose(script);
+		return 0;
+	}
+
+	/* ---- interactive mode ---- */
 	for (;;) {
 		show_main_screen();
 
@@ -738,10 +1144,10 @@ int main(int argc, char *argv[])
 		char buf[4]; snprintf(buf, sizeof(buf), "%c\n", c); zputs(buf);
 
 		switch (c) {
-			case 'F': edit_flags_menu();          break;
-			case 'G': edit_gold_mine();               break;
-			case 'N': npc_submenu();              break;
-			case 'Q': quest_submenu();            break;
+			case 'F': edit_flags_menu(); break;
+			case 'G': edit_gold_mine();  break;
+			case 'N': npc_submenu();     break;
+			case 'Q': quest_submenu();   break;
 			case 'X':
 				dbg_close();
 				return 0;

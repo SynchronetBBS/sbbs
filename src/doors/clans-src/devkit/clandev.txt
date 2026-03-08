@@ -1131,6 +1131,23 @@ Here is a suggested workflow for testing a new quest pack:
    work correctly against a live game instance.
 
 
+Script Mode
+...........
+qtest also supports a non-interactive script mode (-s) for automated
+regression testing.  In script mode, every prompt the event engine raises
+(choices, fight outcomes, NPC topics, numeric and string inputs) is
+answered by a line in a plain text script file rather than by keyboard
+input.  After the event or chat completes, qtest prints a full Key=Value
+state summary to stderr so you can assert exact flag, gold, and HP values
+from a shell test.
+
+Script mode is the recommended approach for building a repeatable test
+suite around a quest pack.  Full documentation, including all prompt types,
+file lookup rules, and worked examples, is in:
+
+        qtest-scripting.txt
+
+
 Miscellaneous Tools
 ===============================================================================
 

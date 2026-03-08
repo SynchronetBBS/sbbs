@@ -1,0 +1,8 @@
+# Minimal event: SetFlag G5, GiveGold 500, then EndQ.  No prompts.
+# Used to verify that basic event execution works and state changes
+# (GFlags, Gold) are reflected in the state summary.
+
+Event SimpleEv
+  SetFlag G5
+  GiveGold 500
+  EndQ

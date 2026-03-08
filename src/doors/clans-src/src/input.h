@@ -47,4 +47,8 @@ void GetStringChoice(const char **apszChoices, int16_t NumChoices, char *szPromp
  *          one of the options.
  */
 
+void Input_SetGetStringChoiceHook(int16_t (*hook)(const char **apszChoices,
+                                                  int16_t NumChoices,
+                                                  bool AllowBlank));
+
 #endif

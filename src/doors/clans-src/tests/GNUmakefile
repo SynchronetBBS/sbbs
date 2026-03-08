@@ -16,7 +16,8 @@ TESTS	:=	test_langcomp.sh \
 		test_mspells.sh \
 		test_mclass.sh \
 		test_makenpc.sh \
-		test_makepak.sh
+		test_makepak.sh \
+		test_qtest.sh
 
 .PHONY: all
 all: test

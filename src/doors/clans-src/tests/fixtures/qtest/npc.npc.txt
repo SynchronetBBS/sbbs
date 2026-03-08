@@ -1,0 +1,6 @@
+Index   Barkeep
+Name    The Barkeep
+Wander  Street
+OddsOfSeeing    100
+QuoteFile       barkeep.q
+KnownTopic      Barkeep.Greet Greetings
