@@ -5841,25 +5841,17 @@ NO_SSH:
 				node.status = NODE_INVALID_STATUS;
 				if (!sbbs->getnodedat(node_num, &node, true))
 					continue;
+				bool corrected = false;
 				switch (node.status) {
 					case NODE_LOGON:
 					case NODE_NEWUSER:
 					case NODE_INUSE:
 					case NODE_QUIET:
-						if (node_socket[node_num - 1] == INVALID_SOCKET) {
-							lprintf(LOG_CRIT, "%04d !Node %d status is %d, but the node socket is invalid, changing to WFC"
-							        , client_socket, node_num, node.status);
-							node.status = NODE_WFC;
-						}
+						node.status = NODE_WFC;
+						corrected = true;
 						break;
 				}
 				if (node.status == NODE_WFC) {
-					if (node_socket[node_num - 1] != INVALID_SOCKET) {
-						lprintf(LOG_CRIT, "%04d !Node %d status is WFC, but the node socket (%d) and thread are still in use!"
-						        , client_socket, node_num, node_socket[node_num - 1]);
-						sbbs->unlocknodedat(node_num);
-						continue;
-					}
 					node.status = NODE_LOGON;
 #ifdef USE_CRYPTLIB
 					if (ssh)
@@ -5873,9 +5865,12 @@ NO_SSH:
 
 					node_socket[node_num - 1] = client_socket;
 					sbbs->putnodedat(node_num, &node);
-					break;
+					if (corrected) // lprintf/lputs only after unlocking the node.dab
+						lprintf(LOG_CRIT, "%04d !Node %d status with invalid socket corrected (was %d)"
+								, client_socket, node_num);
 				}
-				sbbs->unlocknodedat(node_num);
+				else
+					sbbs->unlocknodedat(node_num);
 			}
 
 			if (node_num > last_node) {
