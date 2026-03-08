@@ -26,10 +26,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // embedded in strings.txt and writes an auto-generated C header.
 //
 // strings.txt line format:
-//   NNNN [ST_MACRONAME ]<string content>
+//   NNNN ST_MACRONAME <string content>
 //
-// The macro name is optional.  It is recognized when the token immediately
-// after the 4-digit ID matches ST_[A-Z0-9_]+ followed by a space.
+// Every non-skipped entry must have a macro name: a token immediately after
+// the 4-digit ID matching ST_[A-Z0-9_]+ followed by a space.  Entries
+// without a valid macro name are a compile error.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -144,10 +145,10 @@ int main(int argc, char *argv[])
 		CurString = atoi(TempString);
 		if (CurString == 0) continue;
 
-		// Check for optional macro name after the 4-digit ID.
-		// A macro name starts with "ST_" and contains only uppercase
-		// letters, digits, and underscores, followed by a space.
+		// Macro name is required after the 4-digit ID.
+		// It must match ST_[A-Z0-9_]+ followed by a space.
 		char *content = &TempString[5];
+		int macroFound = 0;
 		if (strncmp(content, "ST_", 3) == 0) {
 			size_t nameLen = 3;
 			while (content[nameLen] && content[nameLen] != ' ' &&
@@ -157,10 +158,16 @@ int main(int argc, char *argv[])
 				nameLen++;
 			}
 			if (content[nameLen] == ' ' && nameLen < MACRONAME_SZ) {
-				// Valid macro name found
 				strlcpy(MacroNames[CurString], content, nameLen + 1);
 				content = &content[nameLen + 1];
+				macroFound = 1;
 			}
+		}
+		if (!macroFound) {
+			printf("Error: string %04d is missing a valid ST_ macro name\n", CurString);
+			fclose(fFrom);
+			free(Language.BigString);
+			exit(EXIT_FAILURE);
 		}
 
 		// convert string's special language codes
