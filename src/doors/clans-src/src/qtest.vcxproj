@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{DFC3074C-DA50-6EA6-4205-5AEC6C6F6093}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="clans.props" />
+  <Import Project="clanslib.props" />
+  <ItemGroup>
+    <ClCompile Include="qtest.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <CInclude Include="ctype.h" />
+    <CInclude Include="inttypes.h" />
+    <CInclude Include="stdio.h" />
+    <CInclude Include="stdlib.h" />
+    <CInclude Include="string.h" />
+    <CInclude Include="platform.h" />
+    <CInclude Include="clansini.h" />
+    <CInclude Include="console.h" />
+    <CInclude Include="help.h" />
+    <CInclude Include="language.h" />
+    <CInclude Include="myopen.h" />
+    <CInclude Include="npc.h" />
+  </ItemGroup>
+</Project>
