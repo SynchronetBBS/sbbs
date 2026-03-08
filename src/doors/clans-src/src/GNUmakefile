@@ -13,12 +13,6 @@ ODOORS_LIB ?=	$(ODOORS)libs-$(OS)/libODoors.a
 CLANS_LIBS +=	$(ODOORS_LIB)
 LDFLAGS	+=	-L$(ODOORS)libs-$(OS)
 
-# Some platform-specific things...
-ifdef UNIXY
- # NetBSD and Darwin don't define this themselves
- CFLAGS	+=	-D__unix__
-endif
-
 ifdef WIN
  # We won't be using the DLL
  CFLAGS	+=	-DOD_WIN32_STATIC
@@ -27,22 +21,6 @@ ifdef WIN
 else
  CFLAGS	+=	-D_POSIX_C_SOURCE=200809L
 endif
-
-# Build types, debug and opt
-ifdef DEBUG
- CFLAGS	+=	-g -O0 -Wall -pedantic -Wconversion -Wextra -Wno-format-truncation
- LDFLAGS +=	-g
-else
- CFLAGS	+=	-Os -DNDEBUG -flto
- LDFLAGS +=	-Os -flto -fwhole-program
- ifeq ($(os),darwin)
-  LDFLAGS +=	-Wl,-x,-dead_strip
- else
-  LDFLAGS +=	-s
- endif
-endif
-
-CFLAGS	+=	-std=c17 -MMD -MP
 
 #
 # See convert.txt for more suggestions.
