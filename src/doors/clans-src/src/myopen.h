@@ -117,7 +117,7 @@ bool EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
 #define BUF_SIZE_Message 210
 #define BUF_SIZE_MessageHeader 190
 #define BUF_SIZE_Msg_Txt 84
-#define BUF_SIZE_NPCInfo 1228
+#define BUF_SIZE_NPCInfo 1266
 #define BUF_SIZE_NPCNdx 29
 #define BUF_SIZE_Packet 38
 #define BUF_SIZE_pc 140

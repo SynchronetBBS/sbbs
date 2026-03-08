@@ -240,9 +240,9 @@ Compiled to a binary .NPC file using `makenpc [infile.txt] [outfile.npc]`. Each 
 
     Index [Unique global identifier — string, max 20 chars, no underscore prefix]
     Name [Display name shown to player — string, max 20 chars]
-    QuoteFile [Path to this NPC's chat file — max 12 chars, e.g. /q/MyNPC or @tv.pak/q/tv]
+    QuoteFile [Path to this NPC's chat file — max 31 chars, e.g. /q/MyNPC or @tuneville.pak/q/smith]
     NPCDAT [Zero-based ordinal index of this NPC's entry in the compiled .mon file specified by MonFile]
-    MonFile [Path to the compiled .mon file containing this NPC's combat stats — max 12 chars]
+    MonFile [Path to the compiled .mon file containing this NPC's combat stats — max 31 chars]
     Wander [Location where NPC appears as a wanderer — valid values: Street, Church, Market, Town Hall, Training Hall, Mine. Omit entirely for NPCs that only appear via the Chat command in scripts.]
     Loyalty [integer 0–10, default 5. Controls tendency to leave the player's clan. Higher = more loyal (10 = never leaves).]
     MaxTopics [integer — maximum topics the player may discuss in one sitting. Default -1 = no limit.]
@@ -252,7 +252,7 @@ Compiled to a binary .NPC file using `makenpc [infile.txt] [outfile.npc]`. Each 
     KnownTopic [TopicID] [Prompt text] — topic visible to the player from the start; repeatable
     Topic [TopicID] [Prompt text] — topic that starts hidden; must be revealed via TellTopic; repeatable
 
-**QuoteFile/MonFile PAK path constraint:** `szQuoteFile` and `szMonFile` are 13-byte C fields storing null-terminated strings, so the maximum path length is **12 characters**. A PAK path has the form `@pakname.pak/x/alias` (overhead: `@` + `.pak/x/` = 8 chars), leaving only `12 − 8 = 4 characters` for pakname and alias combined. A 2-character pack name allows a 2-character alias: `@tv.pak/q/tv` = 12 chars exactly. A 3-character pack name allows only a 1-character alias: `@abc.pak/q/x` = 12 chars. A 4-character pack name allows no alias at all — the path cannot be constructed. **Choose a PAK filename of 2–3 characters.** See the PAK FILE AND PATH CONVENTIONS section.
+**QuoteFile/MonFile path limit:** `szQuoteFile` and `szMonFile` are 32-byte C fields, allowing paths up to **31 characters**. A PAK path has the form `@pakname.pak/x/alias` (fixed overhead: 8 chars), leaving **23 characters for pakname and alias combined**. Descriptive pack names such as `tuneville` or `blackhollow` are fully supported. See the PAK FILE AND PATH CONVENTIONS section for path construction rules.
 
 The compiled .npc file is registered in clans.ini — see the clans.ini section below.
 
@@ -521,26 +521,26 @@ The alias is what you write in your scripts. By convention aliases use short Uni
 
 Aliases are limited to 29 characters including the path prefix.
 
-**PAK filename length — critical constraint for QuoteFile and MonFile:** `QuoteFile` and `MonFile` fields in NPC info are stored in 12-character C string fields. A PAK path takes the form `@pakname.pak/x/alias`, where the fixed overhead (`@`, `.pak`, `/x/`) consumes 8 characters, leaving only **4 characters for pakname and alias combined**. This is non-negotiable; paths that exceed 12 characters are silently truncated at runtime with no error.
+**QuoteFile and MonFile path limit:** `QuoteFile` and `MonFile` fields store paths up to **31 characters**. A PAK path takes the form `@pakname.pak/x/alias`, where the fixed overhead (`@`, `.pak`, `/x/`) consumes 8 characters, leaving **23 characters for pakname and alias combined**. Paths that exceed 31 characters are silently truncated at runtime with no error.
 
-| PAK name length | Alias length available | Example QuoteFile | Chars |
+| PAK name | Alias | Example QuoteFile | Chars |
 |---|---|---|---|
-| 2 (`tv`) | 2 | `@tv.pak/q/tv` | 12 ✓ |
-| 3 (`abc`) | 1 | `@abc.pak/q/x` | 12 ✓ |
-| 4+ | 0 | impossible | — |
+| `tv` | `tv` | `@tv.pak/q/tv` | 12 |
+| `tuneville` | `smith` | `@tuneville.pak/q/smith` | 22 |
+| `blackhollow` | `crow` | `@blackhollow.pak/q/crow` | 23 |
 
-**Choose a PAK filename of 2–3 characters** (e.g. `tv.pak`, `fs.pak`). Because all NPCs in a pack typically share one compiled .q file and one compiled .mon file, a single short alias is all that is needed — individual NPCs are distinguished by their `NPCDAT` index and `IntroTopic`, not by separate files.
+Because all NPCs in a pack typically share one compiled .q file and one compiled .mon file, a single alias per file type is all that is needed — individual NPCs are distinguished by their `NPCDAT` index and `IntroTopic`, not by separate files.
 
-**Example listing file** for a pack with short name `tv`:
+**Example listing file** for a pack named `tuneville`:
 
-    tv.evt        /e/tv
-    tv.q          /q/tv
-    tv.mon        /m/tv
-    tv.npc        /n/tv
+    tuneville.evt        /e/tuneville
+    tuneville.q          /q/tuneville
+    tuneville.mon        /m/tuneville
+    tuneville.npc        /n/tuneville
 
-Built with: `makepak tv.pak tv.lst`
+Built with: `makepak tuneville.pak tuneville.lst`
 
-Then referenced in NPC info as `QuoteFile @tv.pak/q/tv` and `MonFile @tv.pak/m/tv` (12 chars each, exactly at the limit), and in clans.ini as `NpcFile @tv.pak/n/tv`. Event scripts and quests.ini use the 29-char alias limit so may use longer paths: `@tv.pak/e/tv`.
+Then referenced in NPC info as `QuoteFile @tuneville.pak/q/tuneville` and `MonFile @tuneville.pak/m/tuneville` (26 chars each), and in clans.ini as `NpcFile @tuneville.pak/n/tuneville`.
 
 **Note:** a single compiled file can have only one alias. If multiple NPCs share one .q chat file or one .mon monster file, that file appears once in the listing — scripts reference the same alias and use different Index/NPCDAT values to select the correct entry within it.
 

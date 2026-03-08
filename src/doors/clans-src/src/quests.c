@@ -544,7 +544,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 	char szLabel1[32], szLabel2[32], szLabel3[32], szClanName[25];
 	struct EventHeader EventHeader;
 	struct FileHeader FileHeader;
-	char szNPCFileName[25], *apszLabels[MAX_OPTIONS];
+	char szNPCFileName[64], *apszLabels[MAX_OPTIONS];
 	char szText[255];
 	unsigned char DataLength;
 	char CommandType, OldCommType = 0, cInput, *pcCurrentPos;
@@ -814,7 +814,7 @@ bool RunEvent(bool QuoteToggle, char *szEventFile, char *szEventName,
 							if (NPCInfo->Topics[iTemp].Active == false)
 								continue;
 
-							if (strcasecmp(NPCInfo->Topics[iTemp].szFileName,
+							if (strcasecmp(NPCInfo->Topics[iTemp].szTopicLabel,
 										szText) == 0) {
 								// found quote, set it to known
 								NPCInfo->Topics[iTemp].Known = true;

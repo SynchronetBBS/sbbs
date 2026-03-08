@@ -247,7 +247,7 @@ s_Topic_s(const struct Topic *s, void *bufptr, size_t bufsz)
 	pack_bool(s->Active);
 	pack_bool(s->ClanInfo);
 	pack_charSz(s->szName);
-	pack_charSz(s->szFileName);
+	pack_charSz(s->szTopicLabel);
 
 	return (size_t)(dst - (uint8_t *)bufptr);
 }

@@ -472,7 +472,7 @@ struct Topic {
 	bool ClanInfo;                /* if set to true, means gives info on clan
                                    he is in */
 	char szName[70];            /* name of topic as seen by user */
-	char szFileName[25];        /* name of topic in file */
+	char szTopicLabel[25];      /* block label within the NPC's chat file */
 };
 
 
@@ -489,8 +489,8 @@ struct NPCInfo {
 	int16_t OddsOfSeeing;    // good chance of seeing him or not
 	char szHereNews[70]; // news shown when guy shows up
 	// new additions
-	char szQuoteFile[13];   // what file to use for quotes?
-	char szMonFile[13];     // which .MON file is he in?
+	char szQuoteFile[32];   // what file to use for quotes?
+	char szMonFile[32];     // which .MON file is he in?
 	char szIndex[20];       // index of this NPC
 
 	int16_t VillageType;     // which villages is this allowed in?  0 == ALL

@@ -170,7 +170,7 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 						printf("KnownTopic = %s\n", pcCurrentPos);
 
 						// topic as it appears in the quote file
-						strlcpy(NPCInfo->Topics[TopicsKnown].szFileName, szString, sizeof(NPCInfo->Topics[TopicsKnown].szFileName));
+						strlcpy(NPCInfo->Topics[TopicsKnown].szTopicLabel, szString, sizeof(NPCInfo->Topics[TopicsKnown].szTopicLabel));
 
 						// topic name as it appears to user
 						strlcpy(NPCInfo->Topics[TopicsKnown].szName, pcCurrentPos, sizeof(NPCInfo->Topics[TopicsKnown].szName));
@@ -186,7 +186,7 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 						printf("Topic = %s\n", pcCurrentPos);
 
 						// topic as it appears in the quote file
-						strlcpy(NPCInfo->Topics[TopicsKnown].szFileName, szString, sizeof(NPCInfo->Topics[TopicsKnown].szFileName));
+						strlcpy(NPCInfo->Topics[TopicsKnown].szTopicLabel, szString, sizeof(NPCInfo->Topics[TopicsKnown].szTopicLabel));
 
 						// topic name as it appears to user
 						strlcpy(NPCInfo->Topics[TopicsKnown].szName, pcCurrentPos, sizeof(NPCInfo->Topics[TopicsKnown].szName));
@@ -247,7 +247,7 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 						NPCInfo->IntroTopic.ClanInfo = false;
 
 						// topic name as it appears to user
-						strlcpy(NPCInfo->IntroTopic.szFileName, pcCurrentPos, sizeof(NPCInfo->IntroTopic.szFileName));
+						strlcpy(NPCInfo->IntroTopic.szTopicLabel, pcCurrentPos, sizeof(NPCInfo->IntroTopic.szTopicLabel));
 						printf("Intro topic = %s\n", pcCurrentPos);
 						break;
 					case 9 :    // here news
