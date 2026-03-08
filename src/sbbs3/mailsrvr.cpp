@@ -89,7 +89,7 @@ static volatile bool      sendmail_running = false;
 static bool               terminate_server = false;
 static volatile bool      terminate_sendmail = false;
 static sem_t              sendmail_wakeup_sem;
-static volatile time_t    uptime;
+static int64_t            uptime;
 static str_list_t         pause_semfiles;
 static str_list_t         recycle_semfiles;
 static str_list_t         shutdown_semfiles;
@@ -6359,7 +6359,7 @@ void mail_server(void* arg)
 		}
 
 		if (uptime == 0)
-			uptime = time(NULL); /* this must be done *after* setting the timezone */
+			uptime = xp_fast_timer64();
 
 		if (startup->max_clients == 0) {
 			startup->max_clients = scfg.sys_nodes;

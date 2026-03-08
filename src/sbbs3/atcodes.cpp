@@ -624,11 +624,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return __TIME__;
 
 	if (code_match(sp, "UPTIME", &param)) {
-		extern volatile time_t uptime;
-		time_t                 up = 0;
-		if (uptime != 0 && time(&now) >= uptime)
-			up = now - uptime;
-		return duration((uint)up, str, maxlen, param, DURATION_MINIMAL_VERBAL);
+		return duration((uint)(xp_fast_timer64() - uptime), str, maxlen, param, DURATION_MINIMAL_VERBAL);
 	}
 
 	if (!strcmp(sp, "SERVED")) {

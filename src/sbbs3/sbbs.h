@@ -1385,6 +1385,7 @@ extern "C" {
 	/* main.cpp */
 	extern const char* nulstr;
 	extern const char* crlf;
+	extern int64_t uptime;
 	DLLEXPORT int		sbbs_random(int);
 	DLLEXPORT void		sbbs_srand(void);
 	DLLEXPORT uint 		repeated_error(int line, const char* function);
@@ -1480,7 +1481,7 @@ extern "C" {
 													,scfg_t* cfg				/* common */
 													,scfg_t* node_cfg			/* node-specific */
 													,jsSyncMethodSpec* methods	/* global */
-													,time_t uptime				/* system */
+													,int64_t uptime				/* system */
 													,const char* host_name		/* system */
 													,const char* socklib_desc	/* system */
 													,js_callback_t*				/* js */
@@ -1536,7 +1537,7 @@ extern "C" {
 
 	/* js_system.c */
 	DLLEXPORT JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
-													,scfg_t* cfg, time_t uptime
+													,scfg_t* cfg, int64_t uptime
 													,const char* host_name
 													,const char* socklib_desc
 													,struct mqtt*);

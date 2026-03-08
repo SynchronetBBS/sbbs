@@ -85,7 +85,7 @@ static struct xpms_set *  ftp_set = NULL;
 static protected_uint32_t active_clients;
 static protected_uint32_t thread_count;
 static volatile uint32_t  client_highwater = 0;
-static volatile time_t    uptime = 0;
+static int64_t            uptime = 0;
 static volatile ulong     served = 0;
 static bool               terminate_server = false;
 static bool               diskspace_error_reported = false;
@@ -2829,7 +2829,7 @@ static void ctrl_thread(void* arg)
 			continue;
 		}
 		if (!stricmp(cmd, "SITE UPTIME")) {
-			sockprintf(sock, sess, "211 %s (%lu served)", sectostr((uint)(time(NULL) - uptime), str), served);
+			sockprintf(sock, sess, "211 %s (%lu served)", sectostr((uint)(xp_fast_timer64() - uptime), str), served);
 			continue;
 		}
 		if (!stricmp(cmd, "SITE RECYCLE") && user_is_sysop(&user)) {
@@ -5303,7 +5303,7 @@ void ftp_server(void* arg)
 		}
 
 		if (uptime == 0)
-			uptime = time(NULL); /* this must be done *after* setting the timezone */
+			uptime = xp_fast_timer64();
 
 		if (startup->temp_dir[0])
 			SAFECOPY(scfg.temp_dir, startup->temp_dir);

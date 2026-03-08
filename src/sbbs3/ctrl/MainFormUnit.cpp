@@ -2678,8 +2678,8 @@ void __fastcall TMainForm::UpTimerTick(TObject *Sender)
 {
 	char    str[128];
     char    tmp[64];
-    static  time_t start;
-    ulong   up;
+    static  int64_t start = xp_fast_timer64();
+    int64_t up = xp_fast_timer64() - start;
     static  bool sysop_available;
 	static	bool sound_muted;
 
@@ -2697,10 +2697,6 @@ void __fastcall TMainForm::UpTimerTick(TObject *Sender)
 		loginAttemptListClear(&login_attempt_list);
 		clearLoginAttemptList = false;
 	}
-
-    if(!start)
-        start=time(NULL);
-    up=time(NULL)-start;
 
 	for(int i = 0; i <= STATUSBAR_LAST_PANEL; i++) {
 		switch(i) {

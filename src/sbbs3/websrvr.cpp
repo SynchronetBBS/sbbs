@@ -121,7 +121,7 @@ static char               error_dir[MAX_PATH + 1];
 static char               cgi_dir[MAX_PATH + 1];
 static char               cgi_env_ini[MAX_PATH + 1];
 static char               default_auth_list[MAX_PATH + 1];
-static volatile time_t    uptime = 0;
+static int64_t            uptime = 0;
 static volatile ulong     served = 0;
 static web_startup_t*     startup = NULL;
 static js_server_props_t  js_server_props;
@@ -7578,7 +7578,7 @@ void web_server(void* arg)
 		}
 
 		if (uptime == 0)
-			uptime = time(NULL); /* this must be done *after* setting the timezone */
+			uptime = xp_fast_timer64();
 
 		update_clients();
 
