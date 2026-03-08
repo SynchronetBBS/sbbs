@@ -52,12 +52,10 @@ bool sbbs_t::putnodedat(uint number, node_t* node)
 
 	snprintf(path, sizeof path, "%snode.dab", cfg.ctrl_dir);
 	pthread_mutex_lock(&nodefile_mutex);
-	if (nodefile == -1) {
-		if ((nodefile = nopen(path, O_CREAT | O_RDWR | O_DENYNONE)) == -1) {
-			pthread_mutex_unlock(&nodefile_mutex);
-			errormsg(WHERE, ERR_OPEN, path, O_CREAT | O_RDWR | O_DENYNONE);
-			return false;
-		}
+	if (nodefile < 0) {
+		pthread_mutex_unlock(&nodefile_mutex);
+		errormsg(WHERE, ERR_CHK, "nodefile", nodefile);
+		return false;
 	}
 
 	for (attempts = 0; attempts < 10; attempts++) {
@@ -78,12 +76,12 @@ bool sbbs_t::putnodedat(uint number, node_t* node)
 	}
 	if (wr != sizeof(node_t)) {
 		errno = wrerr;
-		errormsg(WHERE, ERR_WRITE, "nodefile", number);
+		errormsg(WHERE, ERR_WRITE, path, number);
 		return false;
 	}
 
 	if (utime(path, NULL) != 0) {  /* Update mod time for NFS/smbfs compatibility */
-		errormsg(WHERE, "updating timestamp", "nodefile", number);
+		errormsg(WHERE, "updating timestamp", path, number);
 		return false;
 	}
 
@@ -126,10 +124,14 @@ bool sbbs_t::unlocknodedat(uint number)
 		errormsg(WHERE, ERR_CHK, "node number", number);
 		return false;
 	}
+	if (nodefile < 0) {
+		pthread_mutex_unlock(&nodefile_mutex);
+		errormsg(WHERE, ERR_CHK, "nodefile", nodefile);
+		return false;
+	}
 	int result = unlock(nodefile, (number - 1) * sizeof(node_t), sizeof(node_t));
 	if (cfg.node_misc & NM_CLOSENODEDAB) {
-		close(nodefile);
-		nodefile = -1;
+		CLOSE_OPEN_FILE(nodefile);
 	}
 	pthread_mutex_unlock(&nodefile_mutex);
 	return result == 0;
