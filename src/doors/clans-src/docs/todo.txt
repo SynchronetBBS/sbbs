@@ -1,8 +1,23 @@
-Open issues
-===========
+The Clans -- Open Issues
+-------------------------------------------------------------------------------
 
-Charisma stat has no effect
-----------------------------
+
+
+[0.0]  Table of Contents
+-------------------------------------------------------------------------------
+
+Open Issues
+===========
+Charisma stat has no effect ...................................   1.1
+Clean up mstrings.h GNUmakefile dependencies ..................   1.2
+
+
+
+Open Issues
+===============================================================================
+
+[1.1]  Charisma stat has no effect
+-------------------------------------------------------------------------------
 struct pc carries a Charisma attribute that can be set by class definitions
 (mclass.c), items (mitems.c), and spells (mspells.c), and is shown in stat
 displays.  It is never read in fight.c or empire.c, so it contributes nothing
@@ -11,3 +26,11 @@ to combat or empire outcomes.  Noted in progress.log as "charisma is useless!"
 Options: give it a mechanical role (e.g. NPC loyalty, trading prices, odds of
 seeing wandering NPCs, recruitment cost), or remove it from the data files and
 display if there is no intention to use it.
+
+[1.2]  Clean up mstrings.h GNUmakefile dependencies
+-------------------------------------------------------------------------------
+The mstrings.h target in src/GNUmakefile and the native-devkit dependency in
+data/GNUmakefile both grew organically to solve the chicken-and-egg problem of
+langcomp needing to exist before mstrings.h can be generated.  The current
+approach works but could be cleaner -- the NATIVEEXEFILE computation and the
+filter-out workaround for shared langcomp objects are worth revisiting.

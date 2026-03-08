@@ -116,7 +116,7 @@ RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)alliance.o \
 		$(OBJDIR)serialize.o $(OBJDIR)video.o
 
 # Default target
-default: $(DOOR_BINARIES) $(INSTALL_BINARIES)
+default: mstrings.h $(DOOR_BINARIES) $(INSTALL_BINARIES)
 
 # Implicit rules
 $(OBJDIR)%.o: %.c | $(OBJDIR)
@@ -124,6 +124,28 @@ $(OBJDIR)%.o: %.c | $(OBJDIR)
 
 # Pull in generated deps
 -include $(OBJDIR)*.d
+
+NATIVEEXEFILE := .$(os).$(mach).$(FLAVOUR)
+
+# When cross-compiling, build just the native langcomp using the host compiler.
+# env - strips the CC override from MAKEFLAGS so the sub-make uses native GCC.
+ifndef NATIVE
+$(BINDIR)langcomp$(NATIVEEXEFILE): langcomp.c serialize.c platform.c
+	env - PATH="$(PATH)" $(MAKE) SRC=$(SRC) $(BINDIR)langcomp$(NATIVEEXEFILE)
+endif
+
+# Generate mstrings.h by calling the native langcomp directly.
+# Delegating to data/GNUmakefile caused a recursive-make cycle:
+#   src default → mstrings.h → data strings.xl → native-devkit → src devkit → loop.
+mstrings.h: $(DATADIR)strings.txt $(BINDIR)langcomp$(NATIVEEXEFILE)
+	$(BINDIR)langcomp$(NATIVEEXEFILE) $(DATADIR)strings.txt $(DATADIR)strings.xl $@
+
+# Ensure mstrings.h exists before compiling any source that uses it.
+# Objects shared with the langcomp build (serialize.o, platform.o) are
+# excluded via filter-out to avoid a circular dependency.
+$(filter-out $(LANGCOMP_OBJS), \
+    $(CLANS_OBJS) $(CONFIG_OBJS) $(PCEDIT_OBJS) \
+    $(RESET_OBJS) $(QTEST_OBJS) $(INSTALL_OBJS)): | mstrings.h
 
 .PHONY: devkit
 devkit: $(DEVKIT_BINARIES) $(INSTALL_BINARIES)

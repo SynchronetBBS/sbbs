@@ -5,6 +5,8 @@
 
 #define VERSION                 "v0.97b2"
 
+#define ERRORBASE       900     // base string ID for error messages
+
 #define NTRUE           581                     // "True" used for reg info
 #define NFALSE          0
 // results of fighting

@@ -38,6 +38,10 @@ $(BINDIR)makepak$(NATIVEEXEFILE): native-devkit
 %.q: %.txt $(BINDIR)ecomp $(BINDIR)ecomp$(NATIVEEXEFILE) | native-devkit
 	$(BINDIR)ecomp $< $@
 
+# strings.xl also regenerates the C header so game source stays in sync
+strings.xl: strings.txt $(BINDIR)langcomp $(BINDIR)langcomp$(NATIVEEXEFILE) | native-devkit
+	$(BINDIR)langcomp $< $@ $(SRC)src/mstrings.h
+
 %.xl: %.txt $(BINDIR)langcomp $(BINDIR)langcomp$(NATIVEEXEFILE) | native-devkit
 	$(BINDIR)langcomp $< $@
 
