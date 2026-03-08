@@ -5841,14 +5841,14 @@ NO_SSH:
 				node.status = NODE_INVALID_STATUS;
 				if (!sbbs->getnodedat(node_num, &node, true))
 					continue;
-				bool corrected = false;
+				int corrected = 0;
 				switch (node.status) {
 					case NODE_LOGON:
 					case NODE_NEWUSER:
 					case NODE_INUSE:
 					case NODE_QUIET:
+						corrected = node.status;
 						node.status = NODE_WFC;
-						corrected = true;
 						break;
 				}
 				if (node.status == NODE_WFC) {
@@ -5867,7 +5867,7 @@ NO_SSH:
 					sbbs->putnodedat(node_num, &node);
 					if (corrected) // lprintf/lputs only after unlocking the node.dab
 						lprintf(LOG_CRIT, "%04d !Node %d status with invalid socket corrected (was %d)"
-								, client_socket, node_num);
+								, client_socket, node_num, corrected);
 				}
 				else
 					sbbs->unlocknodedat(node_num);
