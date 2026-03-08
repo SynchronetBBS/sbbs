@@ -93,6 +93,7 @@ clean:
 
 .PHONY: deepclean
 deepclean:
+	$(MAKE) SRC=$(SRC) -C $(SRC)src/tests clean
 	$(MAKE) SRC=$(SRC) -C $(SRC)src deepclean
 	$(MAKE) SRC=$(SRC) -C $(SRC)data clean
 	for srcfile in $(DOOR_BINARIES); do rm -f ./$$(basename $${srcfile}); done
