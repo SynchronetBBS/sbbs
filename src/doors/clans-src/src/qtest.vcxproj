@@ -5,8 +5,16 @@
   </PropertyGroup>
   <Import Project="clans.props" />
   <Import Project="clanslib.props" />
+  <Import Project="..\..\..\odoors\odoors.props" />
   <ItemGroup>
     <ClCompile Include="qtest.c" />
+    <ClCompile Include="clansini.c" />
+    <ClCompile Include="help.c" />
+    <ClCompile Include="input.c" />
+    <ClCompile Include="language.c" />
+    <ClCompile Include="npc.c" />
+    <ClCompile Include="quests.c" />
+    <ClCompile Include="tools.c" />
   </ItemGroup>
   <ItemGroup>
     <CInclude Include="ctype.h" />
