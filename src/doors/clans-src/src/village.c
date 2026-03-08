@@ -279,6 +279,11 @@ static void LoadSchemes(struct Scheme *Scheme[128])
 		if (fgets(szLine, 128, FileHeader.fp) == NULL)
 			break;
 
+		if (CurScheme >= 128) {
+			LogStr("Too many colour schemes in pak\n");
+			break;
+		}
+
 		Scheme[CurScheme] = malloc(sizeof(struct Scheme));
 		CheckMem(Scheme[CurScheme]);
 
@@ -295,6 +300,22 @@ static void LoadSchemes(struct Scheme *Scheme[128])
 	}
 
 	fclose(FileHeader.fp);
+
+	if (CurScheme < 128) {
+		FILE *fp = fopen("schemes.txt", "r");
+		if (fp) {
+			if (fgets(szLine, sizeof(szLine), fp) != NULL) {
+				Scheme[CurScheme] = malloc(sizeof(struct Scheme));
+				CheckMem(Scheme[CurScheme]);
+				strlcpy(Scheme[CurScheme]->szName, "Custom",
+				    sizeof(Scheme[CurScheme]->szName));
+				pcCurrentPos = szLine;
+				GetToken(pcCurrentPos, szName);	/* skip keyword */
+				GetNums(Scheme[CurScheme]->ColorScheme, 23, pcCurrentPos);
+			}
+			fclose(fp);
+		}
+	}
 }
 
 static void AddScheme(void)
@@ -302,10 +323,10 @@ static void AddScheme(void)
 	FILE *fp;
 	int16_t iTemp;
 
-	fp = fopen("schemes.txt", "a");
+	fp = fopen("schemes.txt", "w");
 
 	if (fp) {
-		fprintf(fp, "\nScheme ");
+		fprintf(fp, "Custom ");
 		for (iTemp = 0; iTemp < 23; iTemp++)
 			fprintf(fp, "%d ", Village.Data.ColorScheme[iTemp]);
 
@@ -414,6 +435,29 @@ static void ChangeColourScheme(void)
 				}
 				rputs("\n");
 				AddScheme();
+				{
+					int16_t j, custom = -1;
+					for (j = 0; j < 128; j++) {
+						if (Scheme[j] == NULL)
+							break;
+						if (strcasecmp(Scheme[j]->szName, "Custom") == 0) {
+							custom = j;
+							break;
+						}
+					}
+					if (custom == -1 && j < 128) {
+						Scheme[j] = malloc(sizeof(struct Scheme));
+						CheckMem(Scheme[j]);
+						strlcpy(Scheme[j]->szName, "Custom",
+						    sizeof(Scheme[j]->szName));
+						custom = j;
+					}
+					if (custom != -1) {
+						for (j = 0; j < 23; j++)
+							Scheme[custom]->ColorScheme[j] =
+							    Village.Data.ColorScheme[j];
+					}
+				}
 				door_pause();
 				break;
 			case 'Q' :
