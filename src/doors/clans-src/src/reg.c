@@ -202,10 +202,10 @@ void Register(void)
 	bool InputCode;
 
 	clrscr();
-	dputs("‰ÄÀáÕö™”›†Õç’œ†‡”œš›");
+	dputs("\x89\xc4\xc0\xe1\x9d\x90\xd5\xf6\x99\x94\x9b\x86\xd5\xe7\x90\x92\x9c\x86\x81\x87\x94\x81\x9c\x9a\x9b");
 
 	zputs("\n");
-	dputs("‰ÅÂØØØØØØØØØØØØØØØØØØØØØØ");
+	dputs("\x89\xc5\xc2\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8\xd8");
 	zputs("\n");
 	zputs("\n");
 
@@ -221,7 +221,7 @@ void Register(void)
 
 	strlcpy(szString, "Chat mode ended.\n", sizeof(szString));
 	//    snprintf(szString, sizeof(szString), "|03BBS Name     : |14%s\n", Config.szBBSName);
-	dputs("‰ÅÆ÷÷æÕû”˜ÕÕÕÕÕÏÕ");
+	dputs("\x89\xc5\xc6\xf7\xf7\xe6\xd5\xfb\x94\x98\x90\xd5\xd5\xd5\xd5\xd5\xcf\xd5");
 	zputs("|11");
 	zputs(Config.szBBSName);
 	zputs("\n");
@@ -229,7 +229,7 @@ void Register(void)
 	//    zputs(szString);
 	//    snprintf(szString, sizeof(szString), "|03Sysop Name   : |14%s\n", Config.szSysopName);
 	//    zputs(szString);
-	dputs("‰ÅÆæŒ†š…Õû”˜ÕÕÕÏÕ");
+	dputs("\x89\xc5\xc6\xe6\x8c\x86\x9a\x85\xd5\xfb\x94\x98\x90\xd5\xd5\xd5\xcf\xd5");
 	zputs("|11");
 	strlcpy(szString, "No method of accessing serial port, cannot continue.\n", sizeof(szString));
 	zputs(Config.szSysopName);
@@ -240,18 +240,18 @@ void Register(void)
 
 	zputs("\n");
 	strlcpy(szString, "\nPress [ENTER]/[RETURN] to continue.", sizeof(szString));
-	dputs("‰ÄÇå™”†Õ›†€‡ÕÕ”—šƒÕœ›“š‡˜”œš›Õ˜”–†ÕÕœ›“š‡˜”œš›Õš›ÕŒš€‡");
+	dputs("\x89\xc4\xc7\xe5\x99\x90\x94\x86\x90\xd5\x90\x9b\x86\x80\x87\x90\xd5\x81\x9d\x90\xd5\x94\x97\x9a\x83\x90\xd5\x9c\x9b\x93\x9a\x87\x98\x94\x81\x9c\x9a\x9b\xd5\x98\x94\x81\x96\x9d\x90\x86\xd5\x81\x9d\x90\xd5\x9c\x9b\x93\x9a\x87\x98\x94\x81\x9c\x9a\x9b\xd5\x9a\x9b\xd5\x8c\x9a\x80\x87");
 	zputs("\n");
-	dputs("‡’œ†‡”œš›Õ–‡œ“œ–”Õğíôöá\xf9ìÛ");
+	dputs("\x87\x90\x92\x9c\x86\x81\x87\x94\x81\x9c\x9a\x9b\xd5\x96\x90\x87\x81\x9c\x93\x9c\x96\x94\x81\x90\xd5\xf0\xed\xf4\xf6\xe1\xf9\xec\xdb");
 	strlcpy(szString, "\n%lu.%u.%ul.%d.ON.OFF.", sizeof(szString));
 	zputs("\n");
 
 	/* register the game */
 	zputs("\n");
-	dputs("‰ÅÌğ›‡ÕÕ‡’œ†‡”œš›Õ–š‘Õ›š‚Û");
+	dputs("\x89\xc5\xcc\xf0\x9b\x81\x90\x87\xd5\x81\x9d\x90\xd5\x87\x90\x92\x9c\x86\x81\x87\x94\x81\x9c\x9a\x9b\xd5\x96\x9a\x91\x90\xd5\x9b\x9a\x82\xdb");
 	strlcpy(szString, "YELLOW.WHITE.BROWN.GREY.BRIGHT.FLASHING", sizeof(szString));
 	zputs("\n");
-	dputs("‰ÄÄË");
+	dputs("\x89\xc4\xc4\xcb");
 	//    zputs("|09Enter the registration code now.\n|11>");
 	strlcpy(szString, Config.szRegcode, sizeof(szString));
 	// gotoxy(1,9);
@@ -269,8 +269,8 @@ void Register(void)
 		zputs("\n");
 		strlcpy(szString, "BLACK.BLUE.GREEN.CYAN.RED.MAGENTA.", sizeof(szString));
 
-		dputs("‰ÄÀç’œ†‡”œš›Õ”……‡šƒ‘Ô");
-		strlcpy(szString, "œš‡…š”š”…‡", sizeof(szString));
+		dputs("\x89\xc4\xc0\xe7\x90\x92\x9c\x86\x81\x87\x94\x81\x9c\x9a\x9b\xd5\x94\x85\x85\x87\x9a\x83\x90\x91\xd4");
+		strlcpy(szString, "\x81\x9c\x9a\x87\x85\x9a\x94\x9a\x94\x85\x81\x87", sizeof(szString));
 		zputs("\n");
 		/* write it to end of file */
 
