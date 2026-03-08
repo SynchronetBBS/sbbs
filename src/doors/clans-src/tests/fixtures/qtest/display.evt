@@ -1,0 +1,5 @@
+# Display command fixture: qtest mocks Display() and writes to stdout.
+
+Event DisplayEv
+  Display "test.asc
+  EndQ

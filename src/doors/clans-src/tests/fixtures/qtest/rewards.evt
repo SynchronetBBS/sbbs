@@ -1,0 +1,30 @@
+# Reward command fixtures: GiveGold, TakeGold (flat and percent),
+# GiveXP, GivePoints, GiveFight, GiveFollowers.
+
+Event GiveGoldEv
+  GiveGold 1000
+  EndQ
+
+Event TakeGoldEv
+  TakeGold 200
+  EndQ
+
+Event TakeGoldPctEv
+  TakeGold %10
+  EndQ
+
+Event GiveXPEv
+  GiveXP 100
+  EndQ
+
+Event GivePointsEv
+  GivePoints 50
+  EndQ
+
+Event GiveFightEv
+  GiveFight 5
+  EndQ
+
+Event GiveFollowersEv
+  GiveFollowers 10
+  EndQ

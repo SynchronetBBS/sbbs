@@ -1,0 +1,16 @@
+# Input command fixture: text-based menu selection (GetStringChoice hook).
+# In script mode, Topic= matches against the display text of each Input line.
+# Syntax: Input <jump_label> <display_text>
+
+Event InputEv
+  Input InputEv.A Choice Alpha
+  Input InputEv.B Choice Beta
+End
+
+Result InputEv.A
+  SetFlag G0
+  EndQ
+
+Result InputEv.B
+  SetFlag G1
+  EndQ

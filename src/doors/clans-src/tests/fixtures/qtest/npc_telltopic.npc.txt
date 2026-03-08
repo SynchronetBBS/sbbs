@@ -1,0 +1,7 @@
+Index   Merchant
+Name    The Merchant
+Wander  Market
+OddsOfSeeing    100
+QuoteFile       merchant.q
+KnownTopic      Merchant.Greet Greetings
+Topic           Merchant.Secret Secret Info

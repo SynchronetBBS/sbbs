@@ -1,0 +1,6 @@
+# TellQuest fixture: marks a hidden quest as known.
+# Requires quests.ini with Index=TestQ1 (no Known keyword) in $T.
+
+Event TellQuestEv
+  TellQuest TestQ1
+  EndQ

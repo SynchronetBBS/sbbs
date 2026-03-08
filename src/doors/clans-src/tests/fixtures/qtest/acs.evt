@@ -1,0 +1,85 @@
+# ACS (Audience-Conditional String) condition fixtures.
+# Each event tests specific condition types.
+# Tests requiring pre-set state use the corresponding qtest arg (-G, -H, etc.).
+
+# ^ = always true, % = always false
+Event ACS_AlwaysTrue
+  {^}SetFlag G0
+  {%}SetFlag G1
+  EndQ
+
+# G flag: {G0} true when G0 set (-G0); {!G1} true when G1 not set
+Event ACS_GFlag
+  {G0}SetFlag P0
+  {!G1}SetFlag P1
+  EndQ
+
+# H flag: {H0} true when H0 pre-set via -H0
+Event ACS_HFlag
+  {H0}SetFlag P0
+  EndQ
+
+# P flag: {P0} true when P0 pre-set via -P0
+Event ACS_PFlag
+  {P0}SetFlag G0
+  EndQ
+
+# D flag: {D0} true when D0 pre-set via -D0
+Event ACS_DFlag
+  {D0}SetFlag P0
+  EndQ
+
+# Q flag: {Q1} true when quest 1 is done (pre-set via -Q1)
+Event ACS_QuestDone
+  {Q1}SetFlag P0
+  EndQ
+
+# T flag (TFlags cleared at RunEvent start; set T5 within event first)
+Event ACS_TFlag
+  SetFlag T5
+  {T5}SetFlag P0
+  {!T6}SetFlag P1
+  EndQ
+
+# Gold: default vault is 5000; {$4000} true, {!$9999} true (5000 < 9999)
+Event ACS_Gold
+  {$4000}SetFlag P0
+  {!$9999}SetFlag P1
+  EndQ
+
+# Mine level exact (L): default MineLevel=1; {L1} true, {!L2} true
+Event ACS_MineL
+  {L1}SetFlag P0
+  {!L2}SetFlag P1
+  EndQ
+
+# Mine level at-least (K): default MineLevel=1; {K1} true, {!K3} true
+Event ACS_MineK
+  {K1}SetFlag P0
+  {!K3}SetFlag P1
+  EndQ
+
+# AND operator: both G0 and G1 must be set
+Event ACS_And
+  {G0 & G1}SetFlag P0
+  EndQ
+
+# OR operator: G0 or G2 suffices
+Event ACS_Or
+  {G0 | G2}SetFlag P0
+  EndQ
+
+# Parentheses: (G0 & G1) | G2
+Event ACS_Paren
+  {(G0 & G1) | G2}SetFlag P0
+  EndQ
+
+# R100 = always true (my_random(100) >= 0 always); consumes one Random=
+Event ACS_RandomTrue
+  {R100}SetFlag P0
+  EndQ
+
+# R0 = always false (my_random(100) >= 100 never); consumes one Random=
+Event ACS_RandomFalse
+  {R0}SetFlag P0
+  EndQ

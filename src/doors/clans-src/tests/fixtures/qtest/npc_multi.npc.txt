@@ -1,0 +1,7 @@
+Index   Wizard
+Name    The Wizard
+Wander  Street
+OddsOfSeeing    100
+QuoteFile       wizard.q
+KnownTopic      Wizard.Greet Greetings
+KnownTopic      Wizard.Info  Information

@@ -1,0 +1,35 @@
+# Flag command fixtures: SetFlag and ClearFlag for all 5 flag types.
+# ClearFlag tests require the flag to be pre-set via state args (-G, -P, etc.).
+
+Event SetGFlag3
+  SetFlag G3
+  EndQ
+
+Event SetHFlag7
+  SetFlag H7
+  EndQ
+
+Event SetPFlag2
+  SetFlag P2
+  EndQ
+
+Event SetDFlag15
+  SetFlag D15
+  EndQ
+
+Event SetTFlag0
+  SetFlag T0
+  EndQ
+
+Event ClearGFlag0
+  ClearFlag G0
+  EndQ
+
+Event ClearPFlag2
+  ClearFlag P2
+  EndQ
+
+Event SetClearCombo
+  SetFlag G10
+  ClearFlag G0
+  EndQ

@@ -1,0 +1,17 @@
+# GetKey command fixture: same hook as Option (Choice=) but does not echo
+# the key back to the terminal.  Multiple consecutive GetKey lines form the
+# allowable set, just like Option.
+
+Event GetKeyEv
+  Text "Press A or B:
+  GetKey A GetKeyEv.A
+  GetKey B GetKeyEv.B
+End
+
+Result GetKeyEv.A
+  SetFlag G0
+  EndQ
+
+Result GetKeyEv.B
+  SetFlag G1
+  EndQ

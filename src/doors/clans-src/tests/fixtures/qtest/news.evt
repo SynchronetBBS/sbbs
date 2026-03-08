@@ -1,0 +1,5 @@
+# AddNews command fixture: qtest mocks News_AddNews() and writes to stdout.
+
+Event NewsEv
+  AddNews "Test news item
+  EndQ

@@ -5,3 +5,22 @@
 Event FightEv
   Fight NextLine Stop NoRun
   EndQ
+
+# Fight event with all three outcome labels (Win, Lose, Run).
+# Allows testing Fight=L (Lose) and Fight=R (Run) branches.
+
+Event FightCanRunEv
+  Fight FightCanRunEv.Win FightCanRunEv.Lose FightCanRunEv.Run
+End
+
+Result FightCanRunEv.Win
+  SetFlag G0
+  EndQ
+
+Result FightCanRunEv.Lose
+  SetFlag G1
+  EndQ
+
+Result FightCanRunEv.Run
+  SetFlag G2
+  EndQ

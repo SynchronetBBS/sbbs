@@ -1,0 +1,9 @@
+# Jump command fixture: unconditional branch to another block.
+
+Event JumpEv
+  Jump JumpEv.Target
+End
+
+Result JumpEv.Target
+  SetFlag G7
+  EndQ

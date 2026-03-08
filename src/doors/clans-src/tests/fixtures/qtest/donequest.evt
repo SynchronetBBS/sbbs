@@ -1,0 +1,6 @@
+# DoneQuest fixture: terminates event, prints completion message.
+# Note: QuestsDone bit is NOT set in qtest script mode (see docs/todo.txt 2.1).
+
+Event DoneQuestEv
+  DoneQuest
+  EndQ

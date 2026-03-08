@@ -1,0 +1,13 @@
+# Quote file for the Merchant NPC (compiled to merchant.q).
+# Greetings: calls TellTopic to reveal Secret Info, no EndChat (loop continues).
+# Secret Info: sets P7, then EndChat exits the loop.
+
+Topic Merchant.Greet
+  Text "Hello, traveller!
+  TellTopic Merchant.Secret
+End
+
+Topic Merchant.Secret
+  Text "Here is a secret!
+  SetFlag P7
+  EndChat

@@ -1,0 +1,11 @@
+# Miscellaneous opcode fixtures: GiveItem and Pause.
+# Pause is a no-op in qtest script mode (door_pause returns immediately).
+# GiveItem calls the Items_GiveItem mock which prints to stdout.
+
+Event GiveItemEv
+  GiveItem DragonScale
+  EndQ
+
+Event PauseEv
+  Pause
+  EndQ

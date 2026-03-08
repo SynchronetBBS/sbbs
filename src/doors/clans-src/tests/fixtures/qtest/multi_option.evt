@@ -1,0 +1,21 @@
+# Three-way Option fixture: tests that the correct branch is taken
+# for each of three choices (A, B, C).
+
+Event MultiOpt
+  Prompt "Choose A, B, or C:
+  Option A MultiOpt.A
+  Option B MultiOpt.B
+  Option C MultiOpt.C
+End
+
+Result MultiOpt.A
+  SetFlag G0
+  EndQ
+
+Result MultiOpt.B
+  SetFlag G1
+  EndQ
+
+Result MultiOpt.C
+  SetFlag G2
+  EndQ

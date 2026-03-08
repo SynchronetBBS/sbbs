@@ -1,0 +1,17 @@
+# Heal command fixtures.
+# Members start at MaxSP/2 (Fighter: SP=5, MaxSP=10).
+# RunEvent resets HP=MaxHP at end but does NOT reset SP.
+# So Heal SP produces a meaningful state change; Heal HP does not.
+
+Event HealSPEv
+  Heal SP
+  EndQ
+
+Event HealHPEv
+  Heal
+  EndQ
+
+Event HealAfterFightEv
+  Fight NextLine Stop NoRun
+  Heal SP
+  EndQ

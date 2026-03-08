@@ -1,0 +1,12 @@
+# Quote file for the Wizard NPC (compiled to wizard.q).
+# Two KnownTopics: Greetings (no EndChat, loop continues) and
+# Information (sets P3, then EndChat exits the loop).
+
+Topic Wizard.Greet
+  Text "Hello from the Wizard!
+End
+
+Topic Wizard.Info
+  Text "Some arcane knowledge!
+  SetFlag P3
+  EndChat
