@@ -1080,6 +1080,8 @@ static void receive_thread(void* arg)
 			smb_hfield_str(&f, SENDER, xfer.user->alias);
 
 			filedat = findfile(&scfg, xfer.dir, f.name, NULL);
+			if (filedat)
+				loadfile(&scfg, xfer.dir, f.name, &f, file_detail_normal, nullptr);
 			if (scfg.dir[f.dir]->misc & DIR_AONLY)  /* Forced anonymous */
 				f.hdr.attr |= MSG_ANONYMOUS;
 			off_t cdt = flength(xfer.filename);
@@ -3196,6 +3198,7 @@ static void ctrl_thread(void* arg)
 				filepos = 0;
 			sockprintf(sock, sess, "350 Restarting at %ld. Send STORE or RETRIEVE to initiate transfer."
 			           , filepos);
+			lprintf(LOG_NOTICE, "%04d <%s> Set file transfer restart offset to %ld", sock, user.alias, filepos);
 			continue;
 		}
 
@@ -4829,9 +4832,14 @@ static void ctrl_thread(void* arg)
 					}
 					smb_freefilemem(&f);
 				}
-				lprintf(LOG_INFO, "%04d <%s> uploading: %s to %s (%s) in %s mode"
+				if (filepos)
+					snprintf(tmp, sizeof tmp, " from offset %ld", filepos);
+				else
+					tmp[0] = 0;
+				lprintf(LOG_INFO, "%04d <%s> uploading: %s%s to %s (%s) in %s mode"
 				        , sock, user.alias
 				        , p                 /* filename */
+				        , tmp
 				        , genvpath(lib, dir, str) /* virtual path */
 				        , scfg.dir[dir]->path /* actual path */
 				        , mode);
