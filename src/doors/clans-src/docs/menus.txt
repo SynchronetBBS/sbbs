@@ -1,0 +1,1240 @@
+Menu Reference v0.97b2
+-------------------------------------------------------------------------------
+Copyright (C) 1997-2002 Allen Ussher.  Modernized 2024-2026.
+
+This file documents every interactive menu in The Clans BBS door game,
+cross-referenced against the help topics defined in the .hlp data files.
+It is intended as a developer reference for identifying missing help coverage.
+
+
+[0.0]  Table of Contents
+-------------------------------------------------------------------------------
+
+Pre-Game
+========
+Pre-Game (Main Title / Clan Title) menu ..................................  1.1
+Main Help menu ...........................................................  1.2
+
+In-Game (Main Loop)
+===================
+Main Menu ................................................................  2.1
+Mine Menu ................................................................  2.2
+Communications (Mail) Menu ...............................................  2.3
+Market Menu ..............................................................  2.4
+Wizard's Shop (in-game) ..................................................  2.5
+Wizard's Shop (ruler build) ..............................................  2.6
+World Travel Menu ........................................................  2.7
+Alliances Menu ...........................................................  2.8
+Church Menu ..............................................................  2.9
+Training Hall Menu ......................................................  2.10
+
+Town Hall
+=========
+Outsider Town Hall Menu ..................................................  3.1
+Ruler Town Hall Menu .....................................................  3.2
+Economics (Ruler sub-menu) ...............................................  3.3
+Build Structures (Ruler sub-menu) ........................................  3.4
+Flag Colour (Ruler sub-menu) .............................................  3.5
+Colour Scheme (Ruler sub-menu) ...........................................  3.6
+
+Empire
+======
+Empire Manage Menu .......................................................  4.1
+Army Manage Menu .........................................................  4.2
+Build Structures (Empire sub-menu) .......................................  4.3
+Destroy Structures (Empire sub-menu) .....................................  4.4
+Donate to Empire Menu ....................................................  4.5
+Send Troops (attack setup) ...............................................  4.6
+
+Pawn Shop
+=========
+Pawn Shop Menu ...........................................................  5.1
+Pawn Buy sub-menu ........................................................  5.2
+Pawn Sell sub-menu .......................................................  5.3
+
+Voting Booth
+============
+Voting Booth Menu ........................................................  6.1
+
+Combat
+======
+Combat (fight) menu ......................................................  7.1
+Choose Spell sub-menu ....................................................  7.2
+Take Items from Clan sub-menu ............................................  7.3
+
+Clan Stats / Items
+==================
+Clan Stats screen ........................................................  8.1
+Item Stats screen ........................................................  8.2
+Train Member screen ......................................................  8.3
+
+Alliance Item Room
+==================
+Alliance Item Room .......................................................  9.1
+
+Character Creation
+==================
+Class / Race selection menu .............................................  10.1
+
+
+===============================================================================
+
+Help File Map
+===============================================================================
+
+The following files hold help topics referenced from source code.
+File paths are relative to the data pak; ST_ macros expand to these paths.
+
+    ST_RULERHLP     /hlp/ruler        data/ruler.hlp
+    ST_NEWBIEHLP    /hlp/NEWBIE       data/newbie.hlp
+    ST_CLANSHLP     /hlp/general      data/clans.hlp
+    ST_MENUSHLP     /hlp/menus        data/menus.hlp
+    ST_RACESHLP     /hlp/races        data/races.hlp
+    ST_VILLHLP      /hlp/village      data/village.hlp
+    ST_ITEMHLP      /hlp/items        data/items.hlp
+    ST_BULLHLP      /hlp/bulletins    data/bulletin.hlp
+    ST_COMBATHLP    /hlp/combat       data/combat.hlp
+    ST_STATSHLP     /hlp/stats        data/stats.hlp
+    ST_STRATHLP     /hlp/strategy     data/strategy.hlp
+    ST_SPELLHLP     /hlp/spells       data/spells.hlp
+    ST_CITIZENHLP   /hlp/citizen      data/citizen.hlp
+    ST_WARHLP       /hlp/war          data/war.hlp
+    ST_EMPIREHLP    /hlp/empire       data/empire.hlp
+    ST_ARMYHLP      /hlp/army         data/army.hlp
+    ST_WIZHLP       /hlp/wizard       data/wizard.hlp
+
+
+===============================================================================
+
+Help System Patterns
+===============================================================================
+
+Three distinct help patterns appear across the game's menus.  The variation
+is organic -- different menus were written or revised at different times --
+not a deliberate architectural choice.  The patterns are not mutually
+exclusive; a single menu can use more than one.
+
+Pattern 0: First-visit tutorial  --  PClan.*Help flag + Help()
+---------------------------------------------------------------
+A PClan boolean flag (e.g. PClan.CommHelp, PClan.MineHelp, PClan.MarketHelp)
+is checked on each entry.  On the very first visit the flag is set and a
+Help() topic from newbie.hlp is shown.  On all subsequent visits nothing is
+shown.  The menu itself has no ? handler for help and no H key; after the
+first visit the player is entirely on their own.
+
+newbie.hlp functions as the game's tutorial layer.  Every Pattern 0 call in
+the codebase uses ST_NEWBIEHLP exclusively -- no other help file is used for
+first-visit delivery.  The file's design intent is to deliver contextual help
+in small chunks the first time a player encounters each area of the game, so
+the player can learn by doing rather than by reading a manual up front.  The
+Main Help Menu's "Newbie Help" entry (key N) gives returning players access
+to the same topics as a reference, but in normal play the topics fire once
+and are never seen again.
+
+This pattern is used for most navigation/destination menus: Communications,
+World Travel, Mine, Market, Alliances, Church, Training Hall, Wizard's Shop,
+and others.  Dynamic content in the menu display (e.g. live stats) is
+unrelated to whether this pattern is used -- Communications has no dynamic
+content at all and still uses only this pattern.
+
+Example: menus.c CommunicationsMenu().
+    if (!PClan.CommHelp) {
+        PClan.CommHelp = true;
+        Help("Communications", ST_NEWBIEHLP);
+    }
+    // no H key, no per-option Help() calls
+
+Pattern 1: Per-option inline help  --  Help(topic, file)
+---------------------------------------------------------
+When the player presses an action key the corresponding help topic is shown
+immediately, before any prompt or input is requested.  The player reads the
+topic and then the action proceeds.  This is automatic and contextual -- the
+player does not need to know to ask for help.  The ? key redraws the option
+list; it does NOT re-display the help topic.
+
+This pattern is used for "action" sub-menus where the player is about to do
+something with real consequences: Economics, Build Structures (village and
+empire), Army Manage, and others.
+
+Example: village.c EconomicsMenu().  Pressing T calls
+    Help("Tax Rate", ST_RULERHLP) then asks for the new tax rate.
+    Pressing D calls Help("Deposit into Vault", ST_RULERHLP) then
+    asks for an amount.
+
+Pattern 2: General help browser  --  H key + GeneralHelp(file)
+---------------------------------------------------------------
+A dedicated H key opens an interactive topic index for the help file.  All
+topics in the file are listed; the player picks one and reads it, then
+returns to the list.  Individual action keys show no help automatically.
+This pattern is typically found on top-level menus as a general reference.
+
+Example: village.c TownHallMenu().  Pressing H calls
+    GeneralHelp(ST_RULERHLP).  Pressing S (Build Structures) leads
+    directly to the build sub-menu with no help shown.
+
+In menus that use only this pattern, players who do not press H before
+acting receive no contextual guidance.  This is where most of the missing-
+coverage gaps identified in Appendix A originate.
+
+Combining patterns
+------------------
+Patterns are not mutually exclusive.  The Economics menu (3.3) combines
+Pattern 1 (per-option Help() on every action key) with Pattern 2 (an H key
+for GeneralHelp()).  The Build Structures menu (3.4) combines Pattern 0
+(first-visit flag) with Pattern 1 (per-option Help()).  A menu using all
+three patterns is theoretically possible though none currently does.
+
+The ? key
+---------
+In all menus, ? redraws the list of available option keys.  It never
+re-displays a help topic; that is always done via the action key (Pattern 1)
+or H (Pattern 2).
+
+
+===============================================================================
+
+[1.0]  Pre-Game Menus
+===============================================================================
+
+[1.1]  Pre-Game Menu (Main Title / Clan Title)
+-------------------------------------------------------------------------------
+Source file:  src/clans.c
+Function:     MainGame()
+GetChoice():  "ESTYHIQ?BVGL"
+Help file:    various (depends on option)
+
+The display title is drawn by Door_ShowTitle() before first display,
+showing one of "Title 0", "Title 1", or "Title 2" from menus.hlp.
+On entering the game for the first time the "Clan Title" banner is shown
+(one of "Main Menu1" through "Main Menu5" from menus.hlp).
+The "Disbanded" topic is shown from menus.hlp when the player is disbanded.
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    E    Enter game                           (none; "Disbanded" on disbanded)
+    S    See scores                           (none)
+    T    Today's News                         (none)
+    Y    Yesterday's News                     (none)
+    H    Help (MainHelp)                      (invokes MainHelp menu 1.2)
+    I    Instructions                         "Instructions" in clans.hlp
+    Q    Quit                                 (none)
+    ?    Redisplay options                    (none)
+    B    Bulletin / What's New               GeneralHelp(bulletin.hlp)
+    V    Village stats                        (none)
+    G    Game settings / League info          (none)
+    L    League scores                        (none)
+
+Missing help topics:
+    S, T, Y, Q, V, G, L - no help topics covering these pre-game options.
+
+
+[1.2]  Main Help Menu
+-------------------------------------------------------------------------------
+Source file:  src/help.c
+Function:     MainHelp()
+GetChoice():  "ACEGILNPRSTVWYZQ?"
+
+This menu is reached via H from the pre-game menu.  It presents a list of
+all help databases; the user chooses one and GeneralHelp() opens that file.
+Keys are the initial (or a prominent inner) letter of the topic name.
+
+    Key  Description                          Help file opened
+    ---  -----------                          ----------------
+    A    Attributes                           stats.hlp
+    C    Combat                               combat.hlp
+    E    Empire                               empire.hlp
+    G    General Help                         clans.hlp
+    I    Items                                items.hlp
+    L    Ruler  (ru-L-er)                     ruler.hlp
+    N    Newbie Help                          newbie.hlp
+    P    Spells  (s-P-ells)                   spells.hlp
+    R    Races and Classes                    races.hlp
+    S    Strategies                           strategy.hlp
+    T    Citizen  (ci-T-izen)                 citizen.hlp
+    V    Village Wars                         war.hlp
+    W    World Travel                         village.hlp
+    Y    Army  (arm-Y)                        army.hlp
+    Z    Wizard Shop  (wi-Z-ard)              wizard.hlp
+    Q    Quit                                 (none)
+    ?    Redisplay (no-op)                    (none)
+
+All 15 help files are covered; the user selects any topic within the
+opened file via GeneralHelp().
+
+
+===============================================================================
+
+[2.0]  In-Game Main Loop Menus
+===============================================================================
+
+[2.1]  Main Menu
+-------------------------------------------------------------------------------
+Source file:  src/menus.c
+Function:     MainMenu()
+GetChoice():  "EQ?VMWCTPUH/N!1A2345"
+Help file:    menus.hlp ("Main Title" topic shown once on first entry)
+              newbie.hlp (N option)
+
+The "Main Title" topic from menus.hlp is displayed once (first entry).
+Newbie help is available on N.  No general ? handler; ? redisplays menu.
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    E    Enter Mines                          (none; leads to 2.2)
+    Q    Quit                                 (none)
+    ?    Redisplay options                    (none)
+    V    View clan stats                      (none)
+    M    Market                               (none; leads to 2.4)
+    W    World Travel                         (none; leads to 2.7)
+    C    Communications                       (none; leads to 2.3)
+    T    Town Hall                            (none; leads to 3.1 or 3.2)
+    P    Empire Menu                          (none; leads to 4.1)
+    U    Church Menu                          (none; leads to 2.9)
+    H    Training Hall                        (none; leads to 2.10)
+    A    Alliance Menu                        (none; leads to 2.8)
+    /    Chat with villagers                  (none)
+    N    Newbie Help                          GeneralHelp(newbie.hlp)
+    !    Delete clan                          (none)
+    1    Secret banner action                 (none)
+    2    Secret banner action                 (none)
+    3    Secret banner action                 (none)
+    4    Secret banner action                 (none)
+    5    Secret banner action                 (none)
+
+Missing help topics:
+    E, Q, V, M, W, C, T, P, U, H, A, / - no per-option help topics.
+    The main menu options are described in menus.hlp "Main Menu1"-"Main Menu5"
+    banner topics but those are display banners, not per-option help.
+    Secrets (1-5) are intentionally undocumented.
+
+
+[2.2]  Mine Menu
+-------------------------------------------------------------------------------
+Source file:  src/menus.c
+Function:     MineMenu()
+GetChoice():  "LFQ?VCG/W"
+Help file:    newbie.hlp ("Mine Help" shown once), menus.hlp ("Mines" always)
+
+On first visit, "Mine Help" from newbie.hlp is shown.  Then "Mines" from
+menus.hlp is shown every time.  On first use of C, "Mine Level" is shown.
+On first fight, "Combat" is shown (see Fight_Monster()).
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    L    Go to mines (fight monster)          "Combat" newbie.hlp (first time)
+    F    Fight another clan                   (none)
+    Q    Return to previous menu              (none)
+    ?    Redisplay options                    (none)
+    V    View clan stats                      (none)
+    C    Change mine level                   "Mine Level" newbie.hlp (1st time)
+    G    Go on a quest                        (none)
+    /    Chat with villagers                  (none)
+    W    Who is here (scores)                 (none)
+
+Missing help topics:
+    F - clan fighting has no help topic.
+    G - quests have no help topic from this menu (quest topics are in
+        quests.hlp, loaded dynamically by quest name).
+    /, W - no help topics.
+
+
+[2.3]  Communications (Mail) Menu
+-------------------------------------------------------------------------------
+Source file:  src/menus.c
+Function:     CommunicationsMenu()
+GetChoice():  "CWPUQV?G"
+Help file:    newbie.hlp ("Communications" shown once on first entry)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    C    Check mail                           (none)
+    W    Write private mail                   (none)
+    P    Write public mail                    (none)
+    U    Update last-read pointer             (none)
+    Q    Return to previous menu              (none)
+    V    View clan stats                      (none)
+    ?    Redisplay options                    (none)
+    G    Post global message (IBBS)           (none)
+
+Missing help topics:
+    All options lack individual help topics.  "Communications" in newbie.hlp
+    covers the menu in general but has no per-option sub-topics.
+
+
+[2.4]  Market Menu
+-------------------------------------------------------------------------------
+Source file:  src/menus.c
+Function:     MarketMenu()
+GetChoice():  "WQ?VAST/PZ"
+Help file:    newbie.hlp ("Market" shown once on first entry)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    W    Buy weapon                           (none; item help in items.hlp)
+    Q    Return to previous menu              (none)
+    ?    Redisplay options                    (none)
+    V    View clan stats                      (none)
+    A    Buy armor                            (none)
+    S    Buy shield                           (none)
+    T    Trade items                          (none)
+    /    Chat with villagers                  (none)
+    P    Pawn Shop                            (none; leads to 5.1)
+    Z    Wizard's Shop                        (none; leads to 2.5)
+
+Missing help topics:
+    All options lack individual help topics.  "Market" in newbie.hlp
+    covers the menu in general.  Item names have topics in items.hlp
+    but those are shown from the item selection flow, not the market menu.
+
+
+[2.5]  Wizard's Shop (In-Game)
+-------------------------------------------------------------------------------
+Source file:  src/menus.c
+Function:     WizardShop()
+GetChoice():  "SBXQ?V"
+Help file:    newbie.hlp ("Wizard" shown once on first entry)
+              wizard.hlp (per item, via X examine path)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    S    Buy scrolls                          (none)
+    B    Buy books                            (none)
+    X    Examine item (shows help for it)     item name in wizard.hlp
+    Q    Quit                                 (none)
+    ?    Redisplay options                    (none)
+    V    View clan stats                      (none)
+
+Missing help topics:
+    S, B - no help topics for buying scrolls or books.
+    X shows the item's help topic from wizard.hlp only when the user
+    pays for an examination, not freely.
+
+
+[2.6]  Wizard's Shop (Ruler Build Menu option Z)
+-------------------------------------------------------------------------------
+Source file:  src/village.c
+Function:     BuildMenu() case 'Z'
+Help file:    ruler.hlp ("Wizard's Shop")
+
+When the ruler selects Z in the Build Menu, the topic "Wizard's Shop"
+from ruler.hlp is shown before any prompt.  This is a single Yes/No
+confirmation flow, not a looping menu.
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    (automatic) Build/upgrade wizard shop    "Wizard's Shop" ruler.hlp
+
+
+[2.7]  World Travel Menu
+-------------------------------------------------------------------------------
+Source file:  src/menus.c
+Function:     WorldMenu()
+GetChoice():  "OQ?VTHS"
+Help file:    newbie.hlp ("World Travel" shown once on first entry)
+              village.hlp (H option via GeneralHelp)
+              village.hlp ("Traveling" topic shown when travel is confirmed)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    O    See other villages (no travel)      (none; village list via world.ndx)
+    Q    Return to previous menu              (none)
+    ?    Redisplay options                    (none)
+    V    View clan stats                      (none)
+    T    Travel to other village              "Traveling" village.hlp (confirm)
+    H    Help                                 GeneralHelp(village.hlp)
+    S    Current trip info                    (none)
+
+village.hlp topics: "Why Travel?", "What ARE Other Villages?", "Traveling"
+
+Missing help topics:
+    O, S - no individual help topics.
+
+
+[2.8]  Alliances Menu
+-------------------------------------------------------------------------------
+Source file:  src/menus.c
+Function:     AlliancesMenu()
+Help file:    newbie.hlp ("Alliances" shown once on first entry)
+
+This menu uses GetAnswer() directly (not GetChoice()).  After listing
+alliances (A, B, C ...) it adds Q (quit) and Z (create new).
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    A-?  Enter a named alliance               (none)
+    Z    Create new alliance                  (none)
+    Q    Quit                                 (none)
+
+Missing help topics:
+    All options lack individual help topics.  "Alliances" in newbie.hlp
+    covers the concept but the menu itself has no ? handler.
+
+
+[2.9]  Church Menu
+-------------------------------------------------------------------------------
+Source file:  src/menus.c
+Function:     ChurchMenu()
+GetChoice():  "MBPDQ?VU/"
+Help file:    newbie.hlp ("Church Menu" shown once on first entry)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    M    Attend Mass                          (none)
+    B    Ask for Blessing                     (none)
+    P    Pray                                 (none)
+    D    Resurrect dead member               (none)
+    Q    Return to previous menu              (none)
+    ?    Redisplay options                    (none)
+    V    View clan stats                      (none)
+    U    Revive unconscious member            (none)
+    /    Chat with villagers                  (none)
+
+"Church Menu" in newbie.hlp covers the menu concept.
+"Church" in ruler.hlp covers the ruler's build option (see 3.4).
+
+Missing help topics:
+    M, B, P, D, U - no per-option help topics in the church menu.
+    "Church Menu" in newbie.hlp is a general overview only.
+
+
+[2.10]  Training Hall Menu
+-------------------------------------------------------------------------------
+Source file:  src/menus.c
+Function:     THallMenu()
+GetChoice():  "TALQ?V/"
+Help file:    newbie.hlp ("Training Hall Menu" shown once on first entry)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    T    Train a member                       (none; see 8.3)
+    A    Add a member                         (none)
+    L    Release a member                     (none)
+    Q    Return to previous menu              (none)
+    ?    Redisplay options                    (none)
+    V    View clan stats                      (none)
+    /    Chat with villagers                  (none)
+
+"Training Hall Menu" in newbie.hlp is a general overview.
+"Training Hall" in ruler.hlp covers the ruler's build option (see 3.4).
+
+Missing help topics:
+    T, A, L - no per-option help topics for training hall actions.
+
+
+===============================================================================
+
+[3.0]  Town Hall Menus
+===============================================================================
+
+[3.1]  Outsider Town Hall Menu
+-------------------------------------------------------------------------------
+Source file:  src/village.c
+Function:     OutsiderTownHallMenu()
+GetChoice():  "DWBVPH?Q/ES"
+Help file:    citizen.hlp (H option via GeneralHelp; D shows "Deposit")
+              newbie.hlp ("Town Hall" shown once on first entry)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    D    Deposit gold into village vault      "Deposit into Vault" citizen.hlp
+    W    Write to ruler                       (none)
+    B    Voting Booth                         (none; see 6.1)
+    V    View clan stats                      (none)
+    P    Public discussion (chat)             (none)
+    H    Help                                 GeneralHelp(citizen.hlp)
+    ?    Redisplay options                    (none)
+    Q    Return to previous menu              (none)
+    /    Chat with villagers                  (none)
+    E    Donate to empire                     (none; see 4.5)
+    S    View village empire stats            (none)
+
+citizen.hlp topics: "Deposit into Vault", "Voting Booth", "Write to Ruler",
+                    "Public Discussions"
+
+Missing help topics:
+    W - "Write to Ruler" topic exists in citizen.hlp but is NOT shown
+        when W is selected; H must be pressed.
+    B, V, P, E, S - no individual help shown for these options.
+
+
+[3.2]  Ruler Town Hall Menu
+-------------------------------------------------------------------------------
+Source file:  src/village.c
+Function:     TownHallMenu()
+GetChoice():  "SECLHMD!V?Q/BGPRT"
+Help file:    ruler.hlp (H option via GeneralHelp)
+              newbie.hlp ("Town Hall" shown once on first entry, in GameLoop)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    S    Structures (Build Menu)              (none; leads to 3.4)
+    E    Economics Menu                       (none; leads to 3.3)
+    C    Change Colour Scheme                 "Color Scheme" ruler.hlp (auto)
+    L    Change Flag Scheme                   "Flag" ruler.hlp (auto)
+    H    Help                                 GeneralHelp(ruler.hlp)
+    M    Make Announcement                    (none)
+    D    Public Discussion (chat)             (none)
+    !    Abdicate                             (none)
+    V    View clan stats                      (none)
+    ?    Redisplay options                    (none)
+    Q    Return to previous menu              (none)
+    /    Chat with villagers                  (none)
+    B    Voting Booth                         (none; see 6.1)
+    G    Manage Village Empire                (none; leads to 4.1)
+    P    Manage Village Empire (alias of G)   (none)
+    R    Conscription Rate                    "Conscription Rate" ruler.hlp
+    T    Toggle Show Empire Stats             (none)
+
+ruler.hlp topics: "Tax Rate", "GST", "Training Hall", "Church",
+    "Color Scheme", "Flag", "Vault", "Deposit into Vault",
+    "Withdraw from Vault", "Make Announcement", "Smithy",
+    "Show Empire Stats", "Conscription Rate", "Voting Booth",
+    "Pawn Shop", "Wizard's Shop"
+
+Missing help topics:
+    S, E, M, D, !, V, /, B, G, P, T - no individual help shown.
+    "Show Empire Stats" exists in ruler.hlp but T does not show it.
+    "Voting Booth" exists in ruler.hlp but B does not show it.
+    "Make Announcement" exists in ruler.hlp but M does not show it.
+
+
+[3.3]  Economics Menu (Ruler)
+-------------------------------------------------------------------------------
+Source file:  src/village.c
+Function:     EconomicsMenu()
+GetChoice():  "TGWDH?Q"
+Help file:    ruler.hlp (H option via GeneralHelp; per-option topics shown)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    T    Set Tax Rate                         "Tax Rate" ruler.hlp (auto)
+    G    Set GST                              "GST" ruler.hlp (auto)
+    W    Withdraw from vault                  "Withdraw from Vault" ruler.hlp
+    D    Deposit into vault                   "Deposit into Vault" ruler.hlp
+    H    Help                                 GeneralHelp(ruler.hlp)
+    ?    Redisplay options                    (none)
+    Q    Return to previous menu              (none)
+
+All interactive options show a help topic before the action prompt.
+Coverage is complete for this menu.
+
+
+[3.4]  Build Structures Menu (Ruler)
+-------------------------------------------------------------------------------
+Source file:  src/village.c
+Function:     BuildMenu()
+GetChoice():  "PZFCTH?QS"
+Help file:    ruler.hlp (H option via GeneralHelp; per-option topics shown)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    P    Build/upgrade Pawn Shop              "Pawn Shop" ruler.hlp (auto)
+    Z    Build/upgrade Wizard's Shop          "Wizard's Shop" ruler.hlp (auto)
+    F    (unused / no effect in current code) (none)
+    C    Build/upgrade Church                 "Church" ruler.hlp (auto)
+    T    Build/upgrade Training Hall          "Training Hall" ruler.hlp (auto)
+    H    Help                                 GeneralHelp(ruler.hlp)
+    ?    Redisplay options                    (none)
+    Q    Return to previous menu              (none)
+    S    Build/upgrade Smithy                 "Smithy" ruler.hlp (auto)
+
+All active build options show a help topic.  Coverage is complete for
+named actions; F has no action.
+
+
+[3.5]  Flag Colour Sub-Menu (Ruler)
+-------------------------------------------------------------------------------
+Source file:  src/village.c
+Function:     ChangeFlagScheme()
+GetAnswer():  "123Q\r\n"
+Help file:    ruler.hlp ("Flag" shown on entry; "Individual Colours" clans.hlp
+              shown when a bar colour is changed)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    1    Change left bar colour               "Individual Colours" clans.hlp
+    2    Change middle bar colour             "Individual Colours" clans.hlp
+    3    Change right bar colour              "Individual Colours" clans.hlp
+    Q    Quit                                 (none)
+
+"Flag" in ruler.hlp is shown on entry.  Coverage is complete.
+
+
+[3.6]  Colour Scheme Sub-Menu (Ruler)
+-------------------------------------------------------------------------------
+Source file:  src/village.c
+Function:     ChangeColourScheme()
+GetAnswer():  "123456789ABCDEFGHIJMNQ\r\n!Z"
+Help file:    ruler.hlp ("Color Scheme" shown on entry)
+              clans.hlp ("Individual Colours" shown when changing any colour)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    1-9  Change colours 1-9                   "Individual Colours" clans.hlp
+    A-N  Change colours 10-20 (mapped)        "Individual Colours" clans.hlp
+    Z    Choose from preset colour scheme     (none)
+    !    Save as custom scheme                (none)
+    Q    Quit                                 (none)
+
+"Color Scheme" in ruler.hlp is shown on entry.
+Individual colour selections show "Individual Colours" automatically.
+
+Missing help topics:
+    Z (choose preset), ! (save custom) - no help topics.
+
+
+===============================================================================
+
+[4.0]  Empire Menus
+===============================================================================
+
+[4.1]  Empire Manage Menu
+-------------------------------------------------------------------------------
+Source file:  src/empire.c
+Function:     Empire_Manage()
+GetChoice():  "BMAQ?SDLH"
+Help file:    empire.hlp (H option via GeneralHelp)
+              newbie.hlp ("Empire Help" shown once on first entry)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    B    Build structures                     (none; leads to 4.3)
+    M    Manage army                          (none; leads to 4.2)
+    A    Attack another empire                (none; leads to war flow)
+    Q    Return to previous menu              (none)
+    ?    Redisplay options                    (none)
+    S    Spy on empire                        "Spy Help" empire.hlp (auto)
+    D    Donate to empire                     (none; leads to 4.5)
+    L    Develop (buy) land                   "Development Help" newbie.hlp
+    H    Help                                 GeneralHelp(empire.hlp)
+
+empire.hlp topics: "Empire Overview", "Buildings", "Barracks", "Walls",
+    "Towers", "Steel Mill", "Stables", "Intell. Agencies",
+    "Security Centers", "Gymnasiums", "Developer's Halls", "Shops",
+    "Worker Energy", "Army", "Attacking", "Spy Help", "Donations",
+    "Developing Land"
+
+Missing help topics:
+    B, M, A, D - no help shown when these options are selected.
+    A (attack) shows war goal help (from war.hlp) at the goal selection
+    step; the attack option itself has no upfront help.
+
+
+[4.2]  Army Manage Menu
+-------------------------------------------------------------------------------
+Source file:  src/empire.c
+Function:     ManageArmy()
+GetChoice():  "123?QH"
+Help file:    army.hlp (H option via GeneralHelp; per-option topics)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    1    Train footmen                        "Footmen" army.hlp (auto)
+    2    Train axemen                         "Axemen" army.hlp (auto)
+    3    Train knights                        "Knights" army.hlp (auto)
+    ?    Redisplay options                    (none)
+    Q    Return to previous menu              (none)
+    H    Help                                 GeneralHelp(army.hlp)
+
+army.hlp topics: "Footmen", "Axemen", "Knights", "Army Rating",
+    "Speed", "Offense", "Defense", "Vitality"
+
+All training options show a help topic.  Coverage is complete.
+
+
+[4.3]  Build Structures Menu (Empire)
+-------------------------------------------------------------------------------
+Source file:  src/empire.c
+Function:     StructureMenu()
+GetChoice():  "Q?012345678*9V"
+Help file:    war.hlp (per building type, shown automatically on selection)
+
+Building numbers 0-9 correspond to building types defined in BuildingType[].
+Selecting a number shows that building's topic from war.hlp before prompting.
+Option * leads to Destroy_Menu (4.4).
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    0    Barracks                             building name in war.hlp
+    1    Walls                                building name in war.hlp
+    2    Towers                               building name in war.hlp
+    3    Steel Mill                           building name in war.hlp
+    4    Stables                              building name in war.hlp
+    5    Intelligence Agencies                building name in war.hlp
+    6    Security Centers                     building name in war.hlp
+    7    Gymnasiums                           building name in war.hlp
+    8    Developer's Halls                    building name in war.hlp
+    9    Shops                                building name in war.hlp
+    *    Destroy buildings                    (leads to 4.4)
+    Q    Return to previous menu              (none)
+    ?    Redisplay options                    (none)
+    V    View clan stats                      (none)
+
+war.hlp building topics: "Barracks", "Walls", "Towers", "Steel Mill",
+    "Stables", "Intell. Agencies", "Security Centers", "Gymnasiums",
+    "Developer's Halls", "Shops"
+
+All numbered building options have war.hlp coverage.
+
+
+[4.4]  Destroy Structures Menu (Empire)
+-------------------------------------------------------------------------------
+Source file:  src/empire.c
+Function:     Destroy_Menu()
+GetChoice():  "Q?0123456789V"
+Help file:    war.hlp (per building type, shown automatically on selection)
+
+Same building numbering as 4.3.  * is not present here.
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    0-9  Destroy building type N              building name in war.hlp
+    Q    Return to previous menu              (none)
+    ?    Redisplay options                    (none)
+    V    View clan stats                      (none)
+
+All numbered building options have war.hlp coverage.
+
+
+[4.5]  Donate to Empire Menu
+-------------------------------------------------------------------------------
+Source file:  src/empire.c
+Function:     DonateToEmpire()
+GetChoice():  "12346789Q?V50AB"
+Help file:    menus.hlp ("Donate To Empire1" or "Donate To Empire2" as banner)
+              (no per-option help is shown)
+
+The banner is determined by whether the empire is village-owned or clan-owned.
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    1    Donate followers                     (none)
+    2    Donate footmen                       (none)
+    3    Donate axemen                        (none)
+    4    Donate knights                       (none)
+    5    Donate land                          (none)
+    6    Withdraw followers                   (none)
+    7    Withdraw footmen                     (none)
+    8    Withdraw axemen                      (none)
+    9    Withdraw knights                     (none)
+    0    Take land                            (none)
+    A    Give gold                            (none)
+    B    Take gold                            (none)
+    Q    Return to previous menu              (none)
+    ?    Redisplay options                    (none)
+    V    View clan stats                      (none)
+
+"Donations" topic in empire.hlp exists but is not directly shown from
+this menu.  It is accessible via H in the Empire Manage Menu (4.1).
+
+Missing help topics:
+    All options lack individual help topics.
+
+
+[4.6]  Send Troops Setup (Attack)
+-------------------------------------------------------------------------------
+Source file:  src/empire.c
+Function:     GetNumTroops() (inline within StartEmpireWar())
+GetAnswer():  "ABC0\r\n]["
+Help file:    (none for this sub-screen)
+
+The war goal selection step uses GetStringChoice() and shows the goal's
+war.hlp topic (e.g. "0 Oust the Ruler of the Village") before confirming.
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    A    Set number of footmen                (none)
+    B    Set number of axemen                 (none)
+    C    Set number of knights                (none)
+    ]    Send all troops                      (none)
+    [    Send no troops                       (none)
+    0    Confirm (done choosing)              (none)
+
+War goal topics in war.hlp: "0 Oust the Ruler of the Village",
+    "1 Capture Land", "2 Capture Gold", "3 Destroy Buildings"
+
+Missing help topics:
+    Troop selection keys have no help.  Goal selection is covered by
+    war.hlp topics shown automatically before the confirm prompt.
+
+
+===============================================================================
+
+[5.0]  Pawn Shop Menus
+===============================================================================
+
+[5.1]  Pawn Shop Menu
+-------------------------------------------------------------------------------
+Source file:  src/pawn.c
+Function:     PawnShop()
+GetChoice():  "BSVQ?"
+Help file:    newbie.hlp ("Pawn Shop" shown once on first entry)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    B    Buy items                            (none; leads to 5.2)
+    S    Sell items                           (none; leads to 5.3)
+    V    View clan stats                      (none)
+    Q    Return to previous menu              (none)
+    ?    Redisplay options                    (none)
+
+"Pawn Shop" in newbie.hlp and "Pawn Shop" in ruler.hlp exist but are not
+shown from within this menu itself (they are shown on first entry/builder).
+
+Missing help topics:
+    B, S - no help topics for pawn shop actions.
+
+
+[5.2]  Pawn Buy Sub-Menu
+-------------------------------------------------------------------------------
+Source file:  src/pawn.c
+Function:     PS_Buy()
+GetChoice():  "LQBX?"
+Help file:    (none)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    L    List items for sale                  (none)
+    Q    Quit                                 (none)
+    B    Buy an item                          (none)
+    X    Examine an item                      (none)
+    ?    Redisplay options                    (none)
+
+Missing help topics:
+    All options lack help topics.
+
+
+[5.3]  Pawn Sell Sub-Menu
+-------------------------------------------------------------------------------
+Source file:  src/pawn.c
+Function:     PS_Sell()
+GetChoice():  "LQSX?A"
+Help file:    (none)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    L    List your items                      (none)
+    Q    Quit                                 (none)
+    S    Sell an item                         (none)
+    X    Examine an item                      (none)
+    ?    Redisplay options                    (none)
+    A    Sell all items                       (none)
+
+Missing help topics:
+    All options lack help topics.
+
+
+===============================================================================
+
+[6.0]  Voting Booth
+===============================================================================
+
+[6.1]  Voting Booth
+-------------------------------------------------------------------------------
+Source file:  src/voting.c
+Function:     VotingBooth()
+GetChoice():  "Q?VC"
+Help file:    newbie.hlp ("Voting Booth" shown once on first entry)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    Q    Quit                                 (none)
+    ?    Redisplay options                    (none)
+    V    View clan stats                      (none)
+    C    Change vote                          (none)
+
+"Voting Booth" in newbie.hlp covers the concept.
+"Voting Booth" in ruler.hlp covers the ruler's reference.
+
+Missing help topics:
+    C - no help topic shown when changing a vote.
+
+
+===============================================================================
+
+[7.0]  Combat Menus
+===============================================================================
+
+[7.1]  Combat (Fight) Menu
+-------------------------------------------------------------------------------
+Source file:  src/fight.c
+Function:     Fight_Fight() inner loop
+GetChoice():  "SAR123456789IPK?F#ED"
+Help file:    combat.hlp (? option via GeneralHelp)
+
+This menu appears once per active PC's turn during combat.
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    S    Attack specific enemy                (none)
+    A    Attack first enemy                   (none)
+    R    Run away                             (none)
+    1-9  Attack enemy number N               (none)
+    I    Parry (skip move)                    (none)
+    P    Show player stats                    (none)
+    K    Cast a spell                         (leads to 7.2)
+    ?    Help                                 GeneralHelp(combat.hlp)
+    F    Fight to death (auto)                (none)
+    #    Show enemy number hint               (none)
+    E    Read a scroll                        (none)
+    D    Perform default action               (none)
+
+combat.hlp topics: "Attack", "Attack Specific", "Experience Rewarded",
+    "Skip Move"
+
+Missing help topics:
+    R (Run) - no topic.  "Skip Move" covers I but name is "Parry" in-game.
+    K, F, #, E, D - no help topics.
+    "Attack" and "Attack Specific" in combat.hlp cover A and S/1-9.
+    P has no help topic.
+
+
+[7.2]  Choose Spell Sub-Menu
+-------------------------------------------------------------------------------
+Source file:  src/fight.c
+Function:     Fight_ChooseSpell()
+GetAnswer():  dynamic (spell letters + "?Q\r\n")
+Help file:    spells.hlp ("Spells" on ?, per-spell on selection)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    A-?  Cast spell N (letter varies)         spell name in spells.hlp (auto)
+    ?    General spells help                  "Spells" spells.hlp
+    Q    Abort                                (none)
+
+spells.hlp topics include all individual spell names.
+Coverage is complete for all spell selections.
+
+
+[7.3]  Take Items From Clan Sub-Menu
+-------------------------------------------------------------------------------
+Source file:  src/fight.c
+Function:     TakeItemsFromClan()
+GetAnswer():  "?XLQT\r\n "
+Help file:    menus.hlp ("Take Item Help" on ?)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    ?    Help                                 "Take Item Help" menus.hlp
+    X    Examine an item                      (none)
+    L    List items                           (none)
+    Q    Quit                                 (none)
+    T    Take an item                         (none)
+
+"Take Item Help" in menus.hlp covers this screen.
+
+Missing help topics:
+    X, L, T - no individual help topics.
+
+
+===============================================================================
+
+[8.0]  Clan Stats and Item Screens
+===============================================================================
+
+[8.1]  Clan Stats Screen
+-------------------------------------------------------------------------------
+Source file:  src/user.c
+Function:     ClanStats()
+GetAnswer():  "123456I\r\nQASV E"
+Help file:    (none for this screen directly)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    1-6  Show stats for member N              (none)
+    I    Inventory / Item Stats               (none; leads to 8.2)
+    Q    Quit                                 (none)
+    A    Show alliances                       (none)
+    S    Change clan symbol                   "Clan Symbol" clans.hlp (auto)
+    V    Show village stats                   (none)
+    E    Show empire stats                    (none)
+
+"Clan Symbol" in clans.hlp is shown automatically when S is first used
+and the clan has no symbol yet.
+
+Missing help topics:
+    1-6, I, A, V, E - no individual help topics.
+
+
+[8.2]  Item Stats Screen
+-------------------------------------------------------------------------------
+Source file:  src/user.c
+Function:     ItemStats()
+GetAnswer():  "?XEDSLQ\r\n R"
+Help file:    menus.hlp ("Item Help" on ?)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    ?    Help                                 "Item Help" menus.hlp
+    X    Examine item                         (none)
+    E    Equip item on a member               (none)
+    D    Drop item                            (none)
+    S    Unequip item from member             (none)
+    L    List items                           (none)
+    Q    Quit                                 (none)
+    R    Read a book                          (none)
+
+"Item Help" in menus.hlp covers this screen.
+
+Missing help topics:
+    X, E, D, S, L, R - no individual help topics.
+
+
+[8.3]  Train Member Screen
+-------------------------------------------------------------------------------
+Source file:  src/menus2.c
+Function:     TrainMember()
+GetChoice():  "12345678V?Q"
+Help file:    stats.hlp (? option via GeneralHelp)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    1    Improve Dexterity                    (none; see stats.hlp via ?)
+    2    Improve Agility                      (none)
+    3    Improve Strength                     (none)
+    4    Improve Wisdom                       (none)
+    5    Improve Armor Strength               (none)
+    6    Improve Charisma                     (none)
+    7    Improve Max HP                       (none)
+    8    Improve Max SP                       (none)
+    V    View member stats                    (none)
+    ?    Help                                 GeneralHelp(stats.hlp)
+    Q    Quit                                 (none)
+
+stats.hlp topics: "SP", "HP", "Attributes", "Dexterity", "Agility",
+    "Strength", "Wisdom", "Charisma", "Armor Strength"
+
+Missing help topics:
+    1-8 do not individually show stats.hlp topics.  The user must press ?
+    and then select from the GeneralHelp menu.
+
+
+===============================================================================
+
+[9.0]  Alliance Item Room
+===============================================================================
+
+[9.1]  Alliance Item Room
+-------------------------------------------------------------------------------
+Source file:  src/alliancem.c
+Function:     AllianceItemRoom() (or similar)
+GetAnswer():  "?XDTLQ\r\n I*V"
+Help file:    items.hlp ("Item Help" on ?)
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    ?    Help                                 "Item Help" items.hlp
+    X    Examine item                         (none)
+    D    Donate item to alliance              (none)
+    T    Take item from alliance              (none)
+    L    List items                           (none)
+    Q    Quit                                 (none)
+    I    List room items                      (none)
+    *    (additional action)                  (none)
+    V    View clan stats                      (none)
+
+"Item Help" in items.hlp covers this screen.
+
+Missing help topics:
+    X, D, T, L, I, * - no individual help topics.
+
+
+===============================================================================
+
+[10.0]  Character Creation
+===============================================================================
+
+[10.1]  Class and Race Selection Menu
+-------------------------------------------------------------------------------
+Source file:  src/user.c
+Function:     GetClass() / PC_Create()
+GetAnswer():  dynamic (class/race letter keys + "?")
+Help file:    races.hlp (? shows general "Races" or "Classes" topic;
+              selection shows named class/race topic automatically)
+
+This menu is used twice during PC creation: once for race, once for class.
+
+    Key  Description                          Help topic
+    ---  -----------                          ----------
+    A-?  Choose race or class N               race/class name in races.hlp
+    ?    General help                         "Races" or "Classes" races.hlp
+
+races.hlp class topics: "Classes", "Barbarian", "Warrior", "Knight",
+    "Martial Artist", "Assassin", "Healer", "Necromancer", "Sorcerer",
+    "Wizard", "Pirate", "Samurai"
+races.hlp race topics: "Races", "Human", "Dwarf", "Elf", "Half-Elf",
+    "Halfling", "Orc", "Muya", "Minotaur", "Demon"
+
+All choices show the corresponding help topic automatically.
+Coverage is complete for this menu.
+
+
+===============================================================================
+
+[A.0]  Summary of Missing Help Coverage
+===============================================================================
+
+The following menus or options lack help topic coverage.  This summary
+is useful for prioritizing help file additions.
+
+Pre-Game Menu (1.1)
+    S (scores), T (today's news), Y (yesterday's news), V (village stats),
+    G (game settings), L (league scores) -- general options not documented.
+
+Main Menu (2.1)
+    Most in-game navigation keys (E, M, W, C, T, P, U, H, A, /) lack
+    individual help.  The banner topics describe the menu generally.
+
+Mine Menu (2.2)
+    F (clan fight), G (quest), W (who's here), / (chat) have no help.
+
+Communications Menu (2.3)
+    All options (C, W, P, U, G) have no individual help topics.
+
+Market Menu (2.4)
+    All options (W, A, S, T, /) have no individual help topics.
+
+Wizard's Shop in-game (2.5)
+    S (buy scrolls), B (buy books) have no help.
+
+Alliances Menu (2.8)
+    No ? handler; individual alliance actions have no help.
+
+Church Menu (2.9)
+    M, B, P, D, U all lack per-option help topics.
+
+Training Hall Menu (2.10)
+    T, A, L all lack per-option help topics.
+
+Outsider Town Hall (3.1)
+    W, B, P, E, S lack individual help (W topic exists in citizen.hlp
+    but is not shown on selection).
+
+Ruler Town Hall (3.2)
+    S, E, M, D, !, B, G, P, T lack individual help.  Topics exist in
+    ruler.hlp for some (Show Empire Stats, Voting Booth, Make Announcement)
+    but are not shown automatically.
+
+Donate to Empire (4.5)
+    All 15 options lack individual help.
+
+Pawn Shop (5.1, 5.2, 5.3)
+    All pawn shop sub-menu options lack individual help.
+
+Voting Booth (6.1)
+    C (change vote) has no help topic.
+
+Combat Menu (7.1)
+    R, K, F, E, D, P, # have no help.  "Skip Move" covers I.
+
+Clan Stats Screen (8.1)
+    1-6, I, A, V, E have no individual help.
+
+Item Stats Screen (8.2)
+    X, E, D, S, L, R have no individual help topics.
+
+Train Member (8.3)
+    Individual attributes (1-8) have no direct help; user must use ?.
+
+Alliance Item Room (9.1)
+    X, D, T, L, I, * have no individual help topics.

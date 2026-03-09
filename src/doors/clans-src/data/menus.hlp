@@ -237,14 +237,14 @@ Menus
 
 ^Help Menu
 |0DÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ
-|0A (|0B1|0A) |0CItems
-|0A (|0B2|0A) |0CRaces & Classes
-|0A (|0B3|0A) |0CGeneral
-|0A (|0B4|0A) |0CCombat
-|0A (|0B5|0A) |0CStrategies
-|0A (|0B6|0A) |0CNewbie Help
-|0A (|0B7|0A) |0CAttributes
-|0A (|0BQ|0A) |0CQuit
+|0A (|0BA|0A) |0CAttributes                    |0A(|0BC|0A) |0CCombat
+|0A (|0BE|0A) |0CEmpire                        |0A(|0BG|0A) |0CGeneral
+|0A (|0BI|0A) |0CItems                         |0A(|0BL|0A) |0CRuler
+|0A (|0BN|0A) |0CNewbie Help                   |0A(|0BP|0A) |0CSpells
+|0A (|0BR|0A) |0CRaces & Classes               |0A(|0BS|0A) |0CStrategies
+|0A (|0BT|0A) |0CCitizen                       |0A(|0BV|0A) |0CVillage Wars
+|0A (|0BW|0A) |0CWorld Travel                  |0A(|0BY|0A) |0CArmy
+|0A (|0BZ|0A) |0CWizard Shop                   |0A(|0BQ|0A) |0CQuit
 |0DÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ
 ^END
 

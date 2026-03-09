@@ -245,43 +245,45 @@ void MainHelp(void)
  *
  */
 {
-	char *szAvailableTopics[9] = {
-		"Items",
-		"Races and Classes",
-		"General Help",
+	char *szAvailableTopics[17] = {
+		"Attributes",
 		"Combat",
-		"Strategy",
+		"Empire",
+		"General Help",
+		"Items",
+		"Ruler",
 		"Newbie Help",
-		"Stats Help",
+		"Spells",
+		"Races and Classes",
+		"Strategies",
+		"Citizen",
+		"Village Wars",
+		"World Travel",
+		"Army",
+		"Wizard Shop",
 		"Quit",
 		"Redisplay Menu"
 	};
-	char *szFiles[7];
-	int16_t iTemp;
-
-	szFiles[0] = ST_ITEMHLP;
-	szFiles[1] = ST_RACESHLP;
-	szFiles[2] = ST_CLANSHLP;
-	szFiles[3] = ST_COMBATHLP;
-	szFiles[4] = ST_STRATHLP;
-	szFiles[5] = ST_NEWBIEHLP;
-	szFiles[6] = ST_STATSHLP;
 
 	/* choose main topic */
 	for (;;)
-		switch (iTemp = GetChoice("Help Menu", "|0GChoose Help Topic|0E> |0F", szAvailableTopics, "1234567Q?", 'Q', true)) {
-			case '1' :
-			case '2' :
-			case '3' :
-			case '4' :
-			case '5' :
-			case '6' :
-			case '7' :
-				GeneralHelp(szFiles[ iTemp - '1' ]);
-				break;
-			case 'Q' :
-				return;
-			case '?' :
-				break;
+		switch (GetChoice("Help Menu", "|0GChoose Help Topic|0E> |0F", szAvailableTopics, "ACEGILNPRSTVWYZQ?", 'Q', true)) {
+			case 'A' : GeneralHelp(ST_STATSHLP);    break;
+			case 'C' : GeneralHelp(ST_COMBATHLP);   break;
+			case 'E' : GeneralHelp(ST_EMPIREHLP);   break;
+			case 'G' : GeneralHelp(ST_CLANSHLP);    break;
+			case 'I' : GeneralHelp(ST_ITEMHLP);     break;
+			case 'L' : GeneralHelp(ST_RULERHLP);    break;
+			case 'N' : GeneralHelp(ST_NEWBIEHLP);   break;
+			case 'P' : GeneralHelp(ST_SPELLHLP);    break;
+			case 'R' : GeneralHelp(ST_RACESHLP);    break;
+			case 'S' : GeneralHelp(ST_STRATHLP);    break;
+			case 'T' : GeneralHelp(ST_CITIZENHLP);  break;
+			case 'V' : GeneralHelp(ST_WARHLP);      break;
+			case 'W' : GeneralHelp(ST_VILLHLP);     break;
+			case 'Y' : GeneralHelp(ST_ARMYHLP);     break;
+			case 'Z' : GeneralHelp(ST_WIZHLP);      break;
+			case 'Q' : return;
+			case '?' : break;
 		}
 }
