@@ -1,0 +1,7 @@
+# Override parent .gitattributes for clans-src.
+# .asc files go through rputs() which handles its own \r; use native line endings.
+# Parent sets eol=crlf for *.asc; unset that here so native eol is used.
+*.asc   text !eol
+# .ans files are ANSI art and must be treated as binary.
+*.ans   -text !eol
+*.ANS   -text !eol

@@ -17,7 +17,7 @@ newbie.hlp Combat HP death thresholds incomplete .............   1.6
 ruler.hlp Vault mentions removed popularity mechanic .........   1.7
 clans.hlp Beta Note lists implemented features as coming soon    1.8
 bulletin.hlp contains stale content ..........................   1.9
-Clean up CRLF line endings in data files .....................   1.10
+Clean up CRLF line endings in data files [RESOLVED] ..........   1.10
 
 
 
@@ -131,20 +131,22 @@ It currently contains:
 The bulletin file is baked into clans.pak so sysops cannot easily customise
 it.  Consider replacing or trimming the stale content.
 
-[1.10]  Clean up CRLF line endings in data files
+[1.10]  Clean up CRLF line endings in data files  [RESOLVED]
 -------------------------------------------------------------------------------
-Several data files use CRLF where LF is correct.  The rule: LF is correct
-when the consumer strips or replaces line endings before output.  rputs()
-handles '\n' itself by calling od_putch('\n'); od_putch('\r'), so files
-passed through rputs() should use LF only.  With CRLF, fgets() on Unix
-(where text mode is a no-op) delivers "content\r\n"; rputs() then outputs
-"content\r" (via od_disp) followed by "\n\r", producing a spurious leading
-'\r' on every line.  On Windows, text mode strips the '\r' so CRLF files
-happen to work, but LF is still the correct canonical form.
+The rule: LF is correct when the consumer strips or replaces line endings
+before output.  rputs() handles '\n' itself by calling od_putch('\n');
+od_putch('\r'), so files passed through rputs() should use LF only.  With
+CRLF, fgets() on Unix (where text mode is a no-op) delivers "content\r\n";
+rputs() then outputs "content\r" (via od_disp) followed by "\n\r", producing
+a spurious leading '\r' on every line.  On Windows, text mode strips the '\r'
+so CRLF files happened to work, but LF is the correct canonical form.
 
-empire.hlp and menus.hlp have already been corrected.  All other .hlp files
-still have CRLF and need conversion: army.hlp, bulletin.hlp, citizen.hlp,
-clans.hlp, combat.hlp, items.hlp, newbie.hlp, races.hlp, ruler.hlp,
-spells.hlp, stats.hlp, strategy.hlp, village.hlp, war.hlp, wizard.hlp.
-Also audit other data file types (*.pak input files, quest .ini files) for
-the same issue.
+Files intentionally kept as CRLF:
+  data/genall.bat, devkit/genall.bat  -- Windows batch files
+  release/clanad.ans                  -- ANSI art; treat as binary format
+
+The installer (install.c) extracts all files in binary mode ("wb") with no
+line-ending translation, so it does not support a "text" file type.
+
+FILE_ID.DIZ: CRLF is the de facto DOS/BBS convention but is not explicitly
+mandated by the v1.9 spec.  Converted to LF as the project targets Unix.
