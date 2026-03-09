@@ -768,7 +768,7 @@ sequential order and the 0th monster being the first one in the file.  For
 this example, NPCDAT is followed by 0 meaning that the 0th monster is the one
 which has the stats for this character.  The next line is the MonFile line.
 This is the name of the monster file used for the data for NPCDAT.  Here,
-npc.mon is used so the first monster appearing there (the 0th one) will be
+npc-pc.mon is used so the first monster appearing there (the 0th one) will be
 used for the NPC's stats.
 
 What follows is the Loyalty line.  This is used to see if the NPC is loyal to
@@ -819,13 +819,13 @@ for PAKfiles.
 [3.5]  Using Monster Files for Stats
 -------------------------------------------------------------------------------
 (This section needs work.)
-Create a file similar to npc-mon.txt.  Compile using mcomp as you would a
+Create a file similar to npc-pc.txt.  Compile using mcomp as you would a
 normal monster file.  Reference the file using the MonFile keyword and the
 actual stats within the file using the NPCDAT keyword.
 
 [3.6]  NPC Field Reference
 -------------------------------------------------------------------------------
-Please see npcs.txt for examples.  npc-mon.txt is the uncompiled NPC "Monster
+Please see npcs.txt for examples.  npc-pc.txt is the uncompiled NPC "Monster
 file" which contains the NPCs' stats.
 
 
@@ -849,12 +849,12 @@ QuoteFile     [12 chars or less, quote filename, such as npcquote.q]
 MonFile       [12 chars or less, .MON file used to hold NPC monsters.
               NPC attributes such as Dexterity, Agility, etc. are held in
               files similar to the ones used for monster combat (.MON
-              files).  See npc-mon.txt for an example .MON file.
-              DO NOT USE npc.mon, that is the one used for my NPCs, use your
+              files).  See npc-pc.txt for an example .MON file.
+              DO NOT USE npc-pc.mon, that is the one used for my NPCs, use your
               own. :)  You might use JOE.MON for instance to hold YOUR NPC
               data.
 NPCDat        [Which monster is he in the .MON file?  0 means first monster,
-              and so on.  Again, see npc-mon.txt for an example.]
+              and so on.  Again, see npc-pc.txt for an example.]
 Loyalty       [How loyal is this NPC, 10 means most loyal and 0 means least.
               This is used to see if the NPC chats about his Clan if asked
               to join the clan but he is already in a clan]
