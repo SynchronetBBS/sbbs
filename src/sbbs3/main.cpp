@@ -4648,9 +4648,6 @@ void node_thread(void* arg)
 		node_socket[sbbs->cfg.node_num - 1] = INVALID_SOCKET;
 
 	{
-		/* crash here on Aug-4-2015:
-		node_thread_running already destroyed
-		bbs_thread() timed out waiting for 1 node thread(s) to terminate */
 		uint32_t remain = protected_uint32_adjust_fetch(&node_threads_running, -1);
 		lprintf(LOG_INFO, "Node %d thread terminated (%u node threads remain, %u clients served)"
 		        , sbbs->cfg.node_num, remain, served);
@@ -4660,28 +4657,6 @@ void node_thread(void* arg)
 	else
 		lprintf(LOG_WARNING, "Node %d !ORPHANED I/O THREAD(s)", sbbs->cfg.node_num);
 
-	/* crash here July-27-2018:
-	ntdll.dll!77282e19()	Unknown
-	[Frames below may be incorrect and/or missing, no symbols loaded for ntdll.dll]
-	[External Code]
-	sbbs.dll!pthread_mutex_lock(_RTL_CRITICAL_SECTION * mutex) Line 171	C
-	sbbs.dll!protected_uint32_adjust(protected_uint32_t * i, int adjustment) Line 244	C
-	sbbs.dll!update_clients() Line 185	C++
-	>	sbbs.dll!node_thread(void * arg) Line 4568	C++
-	[External Code]
-
-	node_threads_running	{value=0 mutex={DebugInfo=0x00000000 <NULL> LockCount=-6 RecursionCount=0 ...} }	protected_uint32_t
-
-	and again on July-10-2019:
-
-	ntdll.dll!RtlpWaitOnCriticalSection()	Unknown
-	ntdll.dll!RtlpEnterCriticalSectionContended()	Unknown
-	ntdll.dll!_RtlEnterCriticalSection@4()	Unknown
-	sbbs.dll!pthread_mutex_lock(_RTL_CRITICAL_SECTION * mutex) Line 171	C
-	sbbs.dll!protected_uint32_adjust(protected_uint32_t * i, int adjustment) Line 244	C
-	sbbs.dll!update_clients() Line 187	C++
-	>	sbbs.dll!node_thread(void * arg) Line 4668	C++
-	*/
 	update_clients();
 	thread_down();
 }
@@ -5844,6 +5819,7 @@ NO_SSH:
 				int corrected = 0;
 				switch (node.status) {
 					case NODE_LOGON:
+					case NODE_LOGOUT:
 					case NODE_NEWUSER:
 					case NODE_INUSE:
 					case NODE_QUIET:
