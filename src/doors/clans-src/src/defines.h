@@ -130,7 +130,7 @@
 #define MAX_QUESTS      64
 #define MAX_OPTIONS     16
 #define MAX_QUOTES      64
-#define MAX_TOPICS      10
+#define MAX_TOPICS      128
 
 
 #define NPCS_NOTHERE    0   // status of NPC, not here -- i.e. not in town

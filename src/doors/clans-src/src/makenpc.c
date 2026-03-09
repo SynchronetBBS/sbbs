@@ -162,6 +162,11 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 						NPCInfo->Loyalty = (int8_t)TempInt;
 						break;
 					case 2 :    // KnownTopic
+						if (TopicsKnown >= MAX_TOPICS) {
+							printf("Too many topics for NPC %s (max %d)\n",
+							       NPCInfo->szName, MAX_TOPICS);
+							exit(EXIT_FAILURE);
+						}
 						NPCInfo->Topics[TopicsKnown].Active = true;
 						NPCInfo->Topics[TopicsKnown].Known = true;
 						NPCInfo->Topics[TopicsKnown].ClanInfo = false;
@@ -178,6 +183,11 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 						TopicsKnown++;
 						break;
 					case 3 :    // Topic
+						if (TopicsKnown >= MAX_TOPICS) {
+							printf("Too many topics for NPC %s (max %d)\n",
+							       NPCInfo->szName, MAX_TOPICS);
+							exit(EXIT_FAILURE);
+						}
 						NPCInfo->Topics[TopicsKnown].Active = true;
 						NPCInfo->Topics[TopicsKnown].Known = false;
 						NPCInfo->Topics[TopicsKnown].ClanInfo = false;

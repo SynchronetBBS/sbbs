@@ -117,7 +117,7 @@ bool EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
 #define BUF_SIZE_Message 210
 #define BUF_SIZE_MessageHeader 190
 #define BUF_SIZE_Msg_Txt 84
-#define BUF_SIZE_NPCInfo 1266
+#define BUF_SIZE_NPCInfo 12830
 #define BUF_SIZE_NPCNdx 29
 #define BUF_SIZE_Packet 38
 #define BUF_SIZE_pc 140
@@ -133,6 +133,41 @@ bool EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
 #define BUF_SIZE_UserInfo 65
 #define BUF_SIZE_UserScore 61
 #define BUF_SIZE_village_data 304
-STATIC_ASSERT_GLOBAL(BUF_SIZE_Language <= sizeof(serBuf), "Shared buffer too small")
+// serBuf is the shared scratch buffer used by EncryptRead_s / EncryptWrite_s.
+// Every BUF_SIZE that might pass through those macros must fit.
+// NPCInfo is excluded: it uses local nbuf[] buffers, never serBuf.
+STATIC_ASSERT_GLOBAL(BUF_SIZE_Alliance         <= sizeof(serBuf), "serBuf too small for Alliance")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_Army             <= sizeof(serBuf), "serBuf too small for Army")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_AttackPacket     <= sizeof(serBuf), "serBuf too small for AttackPacket")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_AttackResult     <= sizeof(serBuf), "serBuf too small for AttackResult")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_clan             <= sizeof(serBuf), "serBuf too small for clan")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_empire           <= sizeof(serBuf), "serBuf too small for empire")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_EventHeader      <= sizeof(serBuf), "serBuf too small for EventHeader")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_FileHeader       <= sizeof(serBuf), "serBuf too small for FileHeader")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_game_data        <= sizeof(serBuf), "serBuf too small for game_data")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_ibbs_node_attack <= sizeof(serBuf), "serBuf too small for ibbs_node_attack")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_ibbs_node_recon  <= sizeof(serBuf), "serBuf too small for ibbs_node_recon")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_ibbs_node_reset  <= sizeof(serBuf), "serBuf too small for ibbs_node_reset")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_item_data        <= sizeof(serBuf), "serBuf too small for item_data")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_Language         <= sizeof(serBuf), "serBuf too small for Language")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_LeavingData      <= sizeof(serBuf), "serBuf too small for LeavingData")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_Message          <= sizeof(serBuf), "serBuf too small for Message")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_MessageHeader    <= sizeof(serBuf), "serBuf too small for MessageHeader")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_Msg_Txt          <= sizeof(serBuf), "serBuf too small for Msg_Txt")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_NPCNdx           <= sizeof(serBuf), "serBuf too small for NPCNdx")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_Packet           <= sizeof(serBuf), "serBuf too small for Packet")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_pc               <= sizeof(serBuf), "serBuf too small for pc")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_PClass           <= sizeof(serBuf), "serBuf too small for PClass")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_Spell            <= sizeof(serBuf), "serBuf too small for Spell")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_SpellsInEffect   <= sizeof(serBuf), "serBuf too small for SpellsInEffect")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_SpyAttemptPacket <= sizeof(serBuf), "serBuf too small for SpyAttemptPacket")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_SpyResultPacket  <= sizeof(serBuf), "serBuf too small for SpyResultPacket")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_Strategy         <= sizeof(serBuf), "serBuf too small for Strategy")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_Topic            <= sizeof(serBuf), "serBuf too small for Topic")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_TradeData        <= sizeof(serBuf), "serBuf too small for TradeData")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_TradeList        <= sizeof(serBuf), "serBuf too small for TradeList")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_UserInfo         <= sizeof(serBuf), "serBuf too small for UserInfo")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_UserScore        <= sizeof(serBuf), "serBuf too small for UserScore")
+STATIC_ASSERT_GLOBAL(BUF_SIZE_village_data     <= sizeof(serBuf), "serBuf too small for village_data")
 
 #endif
