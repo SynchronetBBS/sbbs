@@ -4793,9 +4793,9 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if (!allowed_filename(&scfg, p)) {
-					lprintf(LOG_WARNING, "%04d <%s> !UNALLOWED FILENAME ATTEMPT by %s [%s]: '%s'"
+					lprintf(LOG_WARNING, "%04d <%s> !DISALLOWED FILENAME ATTEMPT by %s [%s]: '%s'"
 					        , sock, user.alias, host_name, host_ip, p);
-					sockprintf(sock, sess, "553 Unallowed filename attempt");
+					sockprintf(sock, sess, "553 Disallowed filename attempt");
 					continue;
 				}
 				SAFEPRINTF2(fname, "%s%s", scfg.dir[dir]->path, p);
