@@ -118,11 +118,31 @@ files in `docs/`, `installer/`, `installerdk/`, `release/`.
 **`.gitattributes`** at the repo root overrides: `*.asc text !eol` (native line endings,
 overriding parent's `eol=crlf`); `*.ans -text !eol` (binary).
 
-### CP437 encoding
+### CP437 encoding — DO NOT READ OR WRITE THESE FILES AS UTF-8
 
-`data/menus.hlp` and some `.asc` files contain CP437 box-drawing characters (bytes
-`\x80-\xFF`). The Edit tool reads files as UTF-8 and will corrupt these bytes. Always
-use **Python binary mode** (`'rb'`/`'wb'`) when editing CP437 files.
+The following files contain raw CP437 bytes (`\x80-\xFF`: box-drawing characters,
+block elements, etc.).  The Read, Edit, and Write tools interpret files as UTF-8 and
+**will silently corrupt every CP437 byte** into U+FFFD (the 3-byte replacement
+character `\xEF\xBF\xBD`).  This has already caused data loss twice.
+
+**NEVER use the Read, Edit, or Write tools on these files.**  Always use Python
+binary mode (`open(path, 'rb')` / `open(path, 'wb')`) via the Bash tool instead.
+
+| File | CP437 lines | Content |
+|------|-------------|---------|
+| `data/menus.hlp` | 100 | Main menu screens, box-drawing art |
+| `data/strings.txt` | 74 | Language strings with dividers/bullets |
+| `data/clans.hlp` | 20 | General help, title ASCII art |
+| `data/npcquote.txt` | 14 | NPC quote data |
+| `data/pg.asc` | 9 | Page display art |
+| `data/pxtit.asc` | 9 | Title screen art |
+| `data/spells.txt` | 38 | Spell data with decorative chars |
+| `data/clans.txt` | 5 | Game description with bullet chars |
+| `installerdk/clandev.ini` | 13 | Devkit installer, ANSI art banner |
+| `devkit/example.ini` | 10 | Example config, box-drawing dividers |
+| `installer/install.ini` | 1 | Game installer, ANSI art line |
+| `release/clanad.ans` | 35 | ANSI advertisement (treat as binary) |
+| `data/orphans/*.e,*.mon,*.q` | many | Compiled binary data files |
 
 ### Finding CRLF files
 
