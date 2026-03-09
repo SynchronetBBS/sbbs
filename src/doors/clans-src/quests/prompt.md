@@ -31,6 +31,10 @@ The mine is the core of daily play. Clans enter it to fight monsters, earn gold,
 
 A clan has members (warriors with individual stats), an army (followers who fight in mass combat), and a vault (shared gold). Quest rewards feed directly into the competitive game: gold into the vault, followers into the army, points onto the scoreboard. Rewards are not cosmetic — design them with their strategic value in mind.
 
+### Daily limits
+
+Each clan has a fixed number of mine fights and **4 NPC chat sessions per day**. Each time a player initiates a conversation with a wandering NPC (via the village location menu), one chat slot is consumed — regardless of how the conversation ends. Once all 4 are spent, the player sees "You have chatted enough already today." This limit applies only to wanderer-initiated chats; `Chat` commands called from within event scripts or topic blocks do not consume a slot. Design NPC interactions knowing that each chat is a scarce daily resource — an `EndChat` that terminates a conversation early still costs the player a slot, and `MaxTopics` further constrains how much can happen within each session.
+
 ---
 
 ## WORLD-BUILDING INTERVIEW
@@ -74,7 +78,7 @@ Are there any rules that should apply across all generated content? Naming conve
 2. quests.hlp — In-game quest descriptions (one block per quest)
 3. NPC Info file (.txt) — NPC metadata and topic list
 4. Monster/NPC Definition file (.txt) — Combat stats for monsters and NPCs alike
-5. Chat file (.txt) — NPC dialogue and topic blocks
+5. Chat file(s) (.txt) — NPC dialogue and topic blocks (split into story and ambient files for packs with 8+ NPCs)
 6. Event script (.evt) — Quest encounter logic
 7. PAK listing file (.lst) — Two-column file mapping filenames to aliases for makepak
 8. clans.ini — Complete configuration file with all NpcFile entries
@@ -82,9 +86,16 @@ Are there any rules that should apply across all generated content? Naming conve
 10. build.bat — A windows batch file that generates the PAK file as described in readme.txt
 11. Makefile — A UNIX make file that generates the PAK file as described in readme.txt
 
-### Output size and incremental writing
+### Output size and file splitting
 
-Large packs cannot be written in a single pass. The chat file for a pack with 8 or more NPCs (story + ambient) will typically exceed 30KB — attempting to write it as one block produces truncated output. Write large files incrementally: complete one NPC or one location cluster per pass, and explicitly note where each pass ends so the next can resume without overlap or gap. Files most likely to require multiple passes, in descending order of volume: the ambient NPC chat file, the story NPC chat file, the event script. The monster definition file, NPC info file, and quests.ini are typically small enough to write in a single pass.
+Large packs cannot be written in a single pass. For packs with **8 or more NPCs** (story + ambient combined), split chat content into **separate source files** compiled to separate `.q` binaries with separate PAK aliases. The recommended split:
+
+- **Story NPC chat file** (`packname.story.q.txt` → `packname.story.q`) — quest-giving NPCs and the lore keeper.
+- **Ambient NPC chat file** (`packname.ambient.q.txt` → `packname.ambient.q`) — all wandering ambient NPCs.
+
+Each compiled `.q` file gets its own alias in the `.lst` and its own entry in the PAK. In the NPC Info file, set each NPC's `QuoteFile` to the alias of the `.q` file containing its topics. This split is cleaner than attempting one enormous chat file across incremental passes and avoids truncation.
+
+Within each file, write incrementally if the file is still large: complete one NPC or one location cluster per pass, and explicitly note where each pass ends so the next can resume without overlap or gap. The event script may also require multiple passes for large campaigns. The monster definition file, NPC info file, and quests.ini are typically small enough to write in a single pass.
 
 ### Generation rhythm
 
@@ -98,7 +109,7 @@ Once the sysop approves the world summary and generation begins, all subsequent 
 
 - All generated filenames must be lowercase (e.g. `quests.ini`, `quests.hlp`, `fallstatt.evt`). The game runs on case-sensitive Unix filesystems.
 - **String argument limit: 254 characters maximum.** String arguments (text after the command keyword and quote) may not exceed 254 characters, as the compiled binary format stores lengths as a single byte. ecomp enforces this and will error if exceeded. This applies to all string-argument commands including AddNews — keep AddNews items short regardless.
-- **Terminal display width: 80 columns.** The output system does not word-wrap. Color codes (`|0C`, `|02`, etc.) consume source characters but zero display columns; all other characters consume one column each. Keep visible text per `Text` command to 78 characters or fewer. Long dialogue must be split across multiple `Text` commands.
+- **Terminal display: 80 columns, 24 rows.** The output system does not word-wrap. Color codes (`|0C`, `|02`, etc.) consume source characters but zero display columns; all other characters consume one column each. Keep visible text per `Text` command to 78 characters or fewer. Long dialogue must be split across multiple `Text` commands. Display files (`.ans`, `.asc`) are paginated at 22 lines with a "more" prompt — ANSI art taller than 22 lines will be interrupted by the pager. Design Display art for **80x22 or smaller** to display as a single unbroken frame.
 - Key Value format only. The first word is the Key; the rest of the line is the Value.
 - BRACKETS [] ARE FORBIDDEN in Keys. These are NOT Windows INI files. There are no `[Section]` headers and no `key=value` pairs anywhere. The format is always `Key Value` (space-separated, no equals sign) with blank lines between blocks.
 - Blank line required between every data block.
@@ -247,36 +258,36 @@ There is no block-level if/then. To conditionally skip multiple commands, jump o
 
 Event, Result, Topic, and End are structural block delimiters, not executable commands. Event starts a named block in .evt files; every Event block must have a label. The label must exactly match the `Index` field in quests.ini — that is how the engine finds the entry point. Result starts a named result block in .evt files; result blocks are only reached via Jump or Fight, never directly by the engine. Topic starts a named chat topic block in chat files. End terminates the current block in all files.
 
-All other commands are executable and may appear inside any block:
+All other commands are executable and may appear inside any block. "Context: all" means Event blocks, Result blocks, **and** Topic blocks — the same command dispatch handles all three. "Context: chat only" means Topic blocks only (commands that reference the NPC chat session state).
 
 | Command | Context | Arguments | Description |
 |---------|---------|-----------|-------------|
 | `Jump` | all | `[TargetLabel]` | Repositions execution to the start of the named Event or Result block. **This is a one-way goto — execution never returns to the line after Jump.** Any commands written after a Jump are unreachable. TargetLabel must be the exact name of an existing Event or Result block; `STOP` and `NextLine` are NOT valid here and will cause a runtime error. To halt execution, jump to a Result block that contains only `End`. |
 | `Text` | all | none or `"[String]` | No argument outputs a blank line. With argument outputs the string followed by a newline. Visible text must fit within 80 columns; split long dialogue across multiple `Text` commands. |
 | `Prompt "` | all | `[String]` | Outputs the string with no trailing newline. Use before a menu (consecutive Option or Input commands) to display a prompt to the player. Color codes set within the Prompt line persist into the player's input field — end the line with the desired input color (e.g. `\|0F`) to control how the player's typed response appears. |
-| `Display "` | all | `[Filename]` | Renders an ANSI/ASCII file to the player's screen. |
-| `AddNews "` | all | `[String]` | Appends the string to the village daily news. |
+| `Display "` | all | `[Filename]` | Renders a file to the player's screen. The filename is resolved through `MyOpen()`, so PAK aliases work — a Display file can be packed into the PAK archive with its own alias (e.g. `/a/heartwood`). Files ending in `.ans` are rendered via ANSI terminal emulation; all other extensions are rendered via `rputs()` with pipe color codes. CP437 encoding throughout. If the file does not exist, Display returns silently with no output and no crash. For atmospheric scene-setting (entering a location, a dramatic reveal), include `.ans` or `.asc` files in the PAK and call Display from the event script. |
+| `AddNews "` | all | `[String]` | Appends the string to the village daily news. The engine automatically adds a double newline after each AddNews call, so each call produces a visually separated news entry. Multiple consecutive AddNews calls produce multiple separate entries, each separated by a blank line — they do **not** merge into a single block. To create a multi-line news entry from a single AddNews call, embed `%L` (the rputs newline code) within the string: `AddNews "|0CThe mine entrance collapsed.%L|0CSeveral miners are missing.` produces two lines in one entry. Color codes (pipe codes) work in AddNews strings. The 254-character string limit applies per call. |
 | `Option` | all | `[Char] [TargetLabel]` | Defines one menu choice. Char is a single printable character (letter or digit); matching is case-insensitive. TargetLabel is the block to jump to. Multiple consecutive Option commands build a menu. `Option` is a command, not a block delimiter — it does not open a block and does not require its own `End`. The enclosing Event, Result, or Topic block must still be closed with `End` after the menu. Special TargetLabels (valid here only): `NextLine` continues on the line immediately after the last consecutive Option command, still inside the enclosing block; `STOP` halts execution. |
 | `Input` | all | `[TargetLabel] [Display text]` | Like Option but presents a numbered text menu item instead of a single-key choice. Multiple consecutive Input commands build a numbered list. The player selects by number; jumps to TargetLabel. Same special TargetLabels as Option. `Input` is also a command, not a block delimiter. |
-| `AddEnemy` | all | `[FileRef] [Index]` | Loads one entry from a .mon file into the enemy group for the upcoming fight. FileRef is the path to the .mon file; Index is the zero-based ordinal of the entry within it. Call multiple times to build a group. Must always precede Fight. |
+| `AddEnemy` | all | `[FileRef] [Index]` | Loads one entry from a .mon file into the enemy group for the upcoming fight. FileRef is the path to the .mon file; Index is the zero-based ordinal of the entry within it. Call multiple times to build a group of up to 20 enemies. All enemies in the group fight **simultaneously** as a unified clan in turn-based combat — each enemy takes individual turns in speed order alongside the player's clan members. This is one big melee, not sequential one-on-one fights. Must always precede Fight. |
 | `Fight` | all | `[WinLabel] [LossLabel] [RunLabel]` | Triggers combat against the enemy group assembled by preceding AddEnemy calls. Jumps to WinLabel on victory, LossLabel on defeat, RunLabel if the clan runs away. Special labels (valid here only): `NextLine` continues after Fight; `STOP` halts execution; `NoRun` as RunLabel prevents fleeing. |
-| `Chat` | all | `[NPCIndex]` | Opens the full chat interface for the NPC identified by the given Index string. |
+| `Chat` | all | `[NPCIndex]` | Opens the full chat interface for the NPC identified by the given Index string. This call is recursive — the target NPC's IntroTopic runs, their full topic menu appears, and they can themselves call Chat on yet another NPC. There is no engine restriction on nesting depth, but deep chains are disorienting for the player. |
 | `TellQuest` | all | `[QuestIndex]` | Marks the quest with the given Index string as known to the player, making it visible in the quest log. |
 | `DoneQuest` | all | none | Marks the current quest as completed, setting its Qaa flag true. The engine permanently removes the quest from the player's quest menu — the `QuestsDone` bit is set with a bitwise OR and is never cleared by normal gameplay. A clan that has completed a quest cannot select it again; the engine filters completed quests out of the menu before the player can choose, with a second guard that refuses to run the event even if somehow selected. No script-level guard against re-entry is needed or possible. `{Qnn}` flags are derived from the `QuestsDone` bitmask stored in each clan's persistent data file — the same file that stores P flags. They persist across sessions and server restarts and are reliable long-term gates for quest-chain progression in chat topics. |
-| `Pause` | all | none | Halts execution and waits for the player to press a key. |
+| `Pause` | all | none | Halts execution and waits for the player to press a key. Works identically across all connection types and terminal emulators. Use it expressively — after emotionally significant lines, before a scene transition, or to let silence sit after a revelation. The engine also inserts an automatic Pause after each Topic block completes, so an explicit Pause at the end of a Topic is redundant; use it mid-block where pacing demands a beat. |
 | `SetFlag` | all | `[Flag]` | Sets the given flag, e.g. T0, P5, G12. |
 | `ClearFlag` | all | `[Flag]` | Clears the given flag. |
 | `Heal` | all | none or `SP` | No argument fully restores the clan's HP. SP fully restores SP instead. |
 | `TakeGold` | all | `[Number]` or `%[Number]` | Removes the specified amount of gold from the player. Prefix with `%` to remove a percentage of vault gold instead (e.g. `TakeGold %50` removes 50%). |
 | `GiveGold` | all | `[Number]` | Adds the specified amount of gold to the player. |
 | `GiveXP` | all | `[Number]` | Adds the specified amount of XP to the player's clan members. **Do not use in quest scripts** — see QUEST DESIGN PATTERNS. The engine executes GiveXP without error; this is a design guideline, not a compile or runtime restriction. |
-| `GiveItem` | all | `[ItemName]` | Adds the named item to the player's inventory. |
+| `GiveItem` | all | `[ItemName]` | Adds the named item to the player's inventory. The name must exactly match an entry in the game's item database (case-insensitive). **If the name does not match, the player sees "Item not found in file!" — no crash, but visible error text.** Only items listed in the ITEM REFERENCE section are valid. There is no mechanism for custom or narrative-only items; all items have combat stats. Use GiveItem for meaningful mechanical rewards, not story tokens. |
 | `GiveFight` | all | `[Number]` | Adds the specified number of daily fights to the player's allowance. |
 | `GiveFollowers` | all | `[Number]` | Adds the specified number of followers to the player's army. |
 | `GivePoints` | all | `[Number]` | Adds the specified number of score points to the player's clan. |
-| `TellTopic` | chat only | `[TopicID]` | Reveals a hidden topic in the current NPC's topic list by its internal topic ID. |
-| `EndChat` | chat only | none | Immediately exits the chat interface. |
-| `JoinClan` | chat only | none | Adds the current NPC to the player's clan roster. |
+| `TellTopic` | chat only | `[TopicID]` | Reveals a hidden topic in the current NPC's topic list by its internal topic ID. "Current NPC" means the NPC the player is chatting with — including when called from that NPC's own IntroTopic. Topics revealed during IntroTopic appear in the topic menu that immediately follows, so the Catchup pattern works: IntroTopic fires TellTopic calls based on flag state, and the newly revealed topics are available in that same conversation. |
+| `EndChat` | chat only | none | Terminates the current chat session. The engine automatically pauses for a keypress (giving the player a moment to read the final line), then returns the player to the village location menu. The player can re-initiate chat with the same NPC — but **each chat session costs one of 4 daily chat slots** (`ChatsToday`), so EndChat is a consequential pacing tool, not just a UI flourish. If that was the player's last chat for the day, they cannot talk to any NPC until tomorrow. IntroTopic runs normally on the next visit. Use EndChat for dramatic exits: the NPC says something final and the conversation closes, rather than returning to the topic menu. Combine with a P-flag so IntroTopic can acknowledge the previous exit on the next visit. |
+| `JoinClan` | chat only | none | Adds the current NPC to the player's clan as a combat member **for the rest of the current day only**. During nightly maintenance, all NPC members are unconditionally released — names blanked, items unequipped, slots cleared. The NPC reappears as a wanderer the next day if their `OddsOfSeeing` roll succeeds. This makes JoinClan a daily recruitment mechanic: the player can re-recruit the same NPC each day they appear. Design recruitable NPCs accordingly — they are temporary allies, not permanent party members. |
 
 ---
 
@@ -287,7 +298,7 @@ All other commands are executable and may appear inside any block:
 **NOT Windows INI format** — no `[Section]` headers, no `key=value`. One block per quest, separated by blank lines. The zero-based block ordinal is the Qaa flag number for that quest. **Maximum 64 quests** in a single quests.ini file.
 
     Name [Display name shown in quest log — string, max ~80 chars]
-    Index [The name of the Event block to run within the .evt file, AND the identifier used by TellQuest — no spaces, max ~30 chars]
+    Index [The name of the Event block to run within the .evt file, AND the identifier used by TellQuest — no spaces, max ~30 chars. **This must exactly match an Event block label in the compiled .evt file (case-insensitive). A mismatch causes a fatal crash** — the engine calls System_Error and terminates the game process. There is no graceful recovery. Double-check every Index value against its Event block name before compiling.]
     File [Path to the compiled .evt file for this quest — max 29 chars, e.g. /e/MyQuest]
     Known [no argument — presence alone makes the quest visible in the quest log from the start; omit entirely to keep it hidden until TellQuest is called]
 
@@ -312,7 +323,7 @@ Compiled to a binary .NPC file using `makenpc`. Each new Index keyword starts a 
 
     makenpc packname.npc.txt packname.npc
 
-Arguments: input source file first, output binary second. The output file extension must be `.npc`.
+Arguments: input source file first, output binary second. By convention the output file uses the `.npc` extension, but the tool does not enforce this — it writes to whatever filename is given.
 
     Index [Unique global identifier — string, max 20 chars, no underscore prefix]
     Name [Display name shown to player — string, max 20 chars]
@@ -320,17 +331,19 @@ Arguments: input source file first, output binary second. The output file extens
     NPCDAT [Zero-based ordinal index of this NPC's entry in the compiled .mon file specified by MonFile]
     MonFile [Path to the compiled .mon file containing this NPC's combat stats — max 31 chars]
     Wander [Location where NPC appears as a wanderer — valid values: Street, Church, Market, Town Hall, Training Hall, Mine. Omit entirely for NPCs that only appear via the Chat command in scripts.]
-    Loyalty [integer 0–10, default 5. Controls tendency to leave the player's clan. Higher = more loyal (10 = never leaves).]
+    Loyalty [integer 0–10, default 5. Controls whether the NPC can be poached from another clan. If an NPC is already recruited by clan A and clan B tries JoinClan, Loyalty 10 means "refuses to leave current clan"; any lower value allows the poach. Since all NPC members are released during nightly maintenance, this only matters within a single day when multiple clans compete for the same NPC.]
     MaxTopics [integer — maximum topics the player may discuss per conversation. Resets each time the player initiates a new chat with this NPC. Default -1 = no limit.]
     OddsOfSeeing [integer 0–100 — probability of NPC appearing on a given day. 0 = never appears; 100 = appears every day. Default when omitted: 0. For NPCs with no Wander field, the engine skips placement before reading this value, so OddsOfSeeing has no effect — set it to 0 explicitly to document intent.]
     IntroTopic [TopicID — optional topic that runs automatically at the start of every conversation with this NPC, before the topic menu appears. It runs on every visit, not just the first — the Catchup pattern in QUEST DESIGN PATTERNS relies on this behaviour. See The lore keeper in QUEST DESIGN PATTERNS for the recommended catchup implementation using IntroTopic.]
-    HereNews [string, max 70 chars — optional news item displayed when this NPC shows up; omit entirely if the NPC's appearance warrants no news]
+    HereNews [string, max 70 chars — optional news item added to the village daily news **every day** the NPC appears (not just the first time). This is a static string set at compile time — it does not support ACS conditions or vary by quest state. Write HereNews items as recurring observations, not one-time announcements — e.g., "A grizzled prospector is poking around the mine entrance." rather than "A new prospector has arrived in the village!" Omit entirely if the NPC's appearance warrants no news.]
     KnownTopic [TopicID] [Prompt text] — topic visible to the player from the start; repeatable
     Topic [TopicID] [Prompt text] — topic that starts hidden; must be revealed via TellTopic; repeatable
 
 **Topic limit:** Each NPC may have at most **128** topics total across all `KnownTopic` and `Topic` entries combined. `IntroTopic` is stored separately and does not count toward this limit. `makenpc` enforces this limit and exits with an error if exceeded.
 
 **NpcFile limit:** clans.ini may contain at most **32** `NpcFile` entries in total. This limits the number of compiled .npc files that can be loaded across all packs.
+
+**Cross-NpcFile flag scope:** All flag types ({Q}, {P}, {D}, {G}, {H}, {T}) are per-clan or per-village state, not per-NpcFile. An NPC in one `.npc` file can freely check `{Qnn}` flags set by quests triggered through NPCs in a different `.npc` file, and `TellQuest` references the global `quests.ini`. Splitting story NPCs and ambient NPCs into separate `.npc` files (so sysops can swap out the ambient set independently) works without restriction — all flag evaluation crosses NpcFile boundaries transparently.
 
 **QuoteFile/MonFile path limit:** `szQuoteFile` and `szMonFile` are 32-byte C fields, allowing paths up to **31 characters**. A PAK path has the form `@pakname.pak/x/alias` (fixed overhead: 8 chars), leaving **23 characters for pakname and alias combined**. Descriptive pack names such as `tuneville` or `blackhollow` are fully supported. See the PAK FILE AND PATH CONVENTIONS section for path construction rules.
 
@@ -500,6 +513,10 @@ Compiled using `ecomp <infile.txt> <outfile.evt>`. Event and Result blocks separ
 
     D flags (per-clan, daily):
       D0  Set: [label] ([daily limit])   Read: [label]
+      D1  Set: [IntroTopic] (greeting suppression)   Read: [IntroTopic]
+      # D flags serve two purposes: daily quest/reward limits (the common case)
+      # and greeting suppression in IntroTopic blocks (the pirate pattern).
+      # Both are legitimate uses. List each with its actual purpose.
 
     H flags (global village, daily — shared across all clans, reset each night):
       H0  Set: [label] ([once-per-day world event])   Read: [label]   Clear: automatic (nightly)
@@ -512,7 +529,7 @@ Compiled using `ecomp <infile.txt> <outfile.evt>`. Event and Result blocks separ
 
 The table must be exhaustive. Every `SetFlag` call in every file must have a row. Every `{Pnn}`, `{Gnn}`, `{Dnn}`, `{Hnn}`, or `{Tnn}` condition must reference a row. A flag that appears in the table but has no corresponding `SetFlag` anywhere, or a `SetFlag` with no corresponding condition anywhere, is a bug — resolve it before writing the final .lst.
 
-**When to write the table:** Write the complete flag assignment table as a standalone block at the top of the event script file *before writing any chat file*. If the event script does not yet exist, create it with only the flag table and the opening `>>` block comment, then write the chat files, then return to complete the event script content. The recommended generation order places chat files before the event script — this is why the table must be written first in a separate pass: chat files use flag numbers that must not collide with those in the event script, and the table is the mechanism that prevents collisions. Treat the table as a live document: update it as each file is written and verify it is complete and consistent before writing the final .lst.
+**When to write the table:** Write the complete flag assignment table as a standalone block at the top of the event script file *before writing any chat file*. This is step 3 in the recommended campaign output order — create the `.evt.txt` file as a stub containing only the flag table, then write the chat files (step 4), then return to fill in the Event and Result blocks (step 5). Chat files use flag numbers that must not collide with those in the event script, and the table is the mechanism that prevents collisions. Treat the table as a live document: update it as each file is written and verify it is complete and consistent before writing the final `.lst`.
 
 ---
 
@@ -559,7 +576,9 @@ Generate a plain text `readme.txt` the sysop can follow without consulting any o
     ./makenpc packname.npc.txt packname.npc
 
     # compile chat file(s) -- one ecomp call per .q file
-    ./ecomp packname.q.txt packname.q
+    # (for packs with 8+ NPCs, there will be separate story and ambient chat files)
+    ./ecomp packname.story.q.txt packname.story.q
+    ./ecomp packname.ambient.q.txt packname.ambient.q
 
     # compile event script(s) -- one ecomp call per .evt file
     ./ecomp packname.evt.txt packname.evt
@@ -590,7 +609,22 @@ PAK files are built using the makepak utility:
 
     makepak [outputfile.pak] [listing.lst]
 
-Note: makepak takes output before input — this is intentional and the reverse of most Unix tool conventions. Output file first, listing file second.
+Note: makepak takes output before input — this is intentional and the reverse of most Unix tool conventions. Output file first, listing file second. All other devkit tools take input before output (the normal convention). No tool enforces file extensions — the usage messages suggest conventions (`.npc`, `.mon`, `.q`, `.evt`) but the code writes to whatever filename is given.
+
+**Devkit tool argument order summary:**
+
+| Tool | Arguments | Example |
+|------|-----------|---------|
+| `mcomp` | `<input.txt> <output.mon>` | `mcomp pack.mon.txt pack.mon` |
+| `makenpc` | `<input.txt> <output.npc>` | `makenpc pack.npc.txt pack.npc` |
+| `ecomp` | `<input.txt> <output.evt\|.q>` | `ecomp pack.evt.txt pack.evt` |
+| `mitems` | `<input.txt> <output.dat>` | `mitems items.txt items.dat` |
+| `mspells` | `<input.txt> <output.dat>` | `mspells spells.txt spells.dat` |
+| `mclass` | `<input.txt> <output.cls>` | `mclass class.txt class.cls` |
+| `langcomp` | `<input.txt> [output.xl [header.h]]` | `langcomp strings.txt strings.xl mstrings.h` |
+| **`makepak`** | **`<output.pak> <input.lst>`** | `makepak pack.pak pack.lst` |
+
+Only `makepak` is reversed. When writing readme.txt, build.bat, and Makefile, double-check argument order for every tool invocation against this table.
 
 The listing file is plain text, one entry per line, two whitespace-separated columns:
 
@@ -606,6 +640,7 @@ The alias is what you write in your scripts. By convention aliases use short Uni
 - /q/ — chat/quote files
 - /m/ — monster/NPC definition files (.mon)
 - /n/ — NPC info files
+- /a/ — display art files (.ans, .asc) used by the Display command
 
 Aliases are limited to 29 characters including the path prefix.
 
@@ -617,18 +652,28 @@ Aliases are limited to 29 characters including the path prefix.
 | `tuneville` | `smith` | `@tuneville.pak/q/smith` | 22 |
 | `blackhollow` | `crow` | `@blackhollow.pak/q/crow` | 23 |
 
-Because all NPCs in a pack typically share one compiled .q file and one compiled .mon file, a single alias per file type is all that is needed — individual NPCs are distinguished by their `NPCDAT` index and `IntroTopic`, not by separate files.
+Individual NPCs are distinguished by their `NPCDAT` index and `IntroTopic`, not by separate files. For small packs (fewer than 8 NPCs), a single `.q` file per type suffices. For larger packs, split story and ambient chat into separate `.q` files — each gets its own alias.
 
-**Example listing file** for a pack named `tuneville`:
+**Example listing file** for a small pack named `tuneville` (single chat file):
 
     tuneville.evt        /e/tuneville
     tuneville.q          /q/tuneville
     tuneville.mon        /m/tuneville
     tuneville.npc        /n/tuneville
 
+**Example listing file** for a larger pack with split chat files:
+
+    tuneville.evt        /e/tuneville
+    tuneville.story.q    /q/tv-story
+    tuneville.ambient.q  /q/tv-ambient
+    tuneville.mon        /m/tuneville
+    tuneville.npc        /n/tuneville
+
+In the second example, story NPCs use `QuoteFile @tuneville.pak/q/tv-story` and ambient NPCs use `QuoteFile @tuneville.pak/q/tv-ambient`. Both share `MonFile @tuneville.pak/m/tuneville`.
+
 Built with: `makepak tuneville.pak tuneville.lst`
 
-Then referenced in NPC info as `QuoteFile @tuneville.pak/q/tuneville` and `MonFile @tuneville.pak/m/tuneville` (26 chars each), and in clans.ini as `NpcFile @tuneville.pak/n/tuneville`.
+Then referenced in clans.ini as `NpcFile @tuneville.pak/n/tuneville`.
 
 **Note:** a single compiled file can have only one alias. If multiple NPCs share one .q chat file or one .mon monster file, that file appears once in the listing — scripts reference the same alias and use different Index/NPCDAT values to select the correct entry within it.
 
@@ -694,9 +739,16 @@ The trailing `|0F` is required: color codes set in a `Prompt` line persist into 
 
 `|S` saves the current foreground and background. `|R` restores them.
 
-### Special sequences — `%P` and `%C`
+### Special sequences
 
-`%P` pauses and waits for a keypress. `%C` clears the screen.
+| Code | Effect |
+|------|--------|
+| `%P` | Pause — waits for a keypress. |
+| `%C` | Clears the screen. |
+| `%L` | Newline — outputs `\n\r`. Useful inside AddNews strings to create multi-line entries from a single call. |
+| `%R` | Carriage return — returns cursor to the start of the current line without advancing. |
+| `%D` | Delay — pauses output for 100ms (typewriter effect). |
+| `%B` | Backspace. |
 
 ---
 
@@ -815,9 +867,9 @@ A simple progressive revelation pattern:
 
 **Interlocking references:** Ambient NPCs should reference each other and the named story NPCs by name. The market vendor has opinions about the town official. The training hall veteran thinks the main quest-giver is a fool. The street gossip has an improbable story about the lore keeper. Cross-referencing is what turns a list of NPCs into a community.
 
-**Potential Allies:** Many of these ambient NPCs should be able to be convinced to join the player's clan. Use `JoinClan` directly in a topic block to make an NPC recruitable — note that `JoinClan` is chat-only and cannot be used in event scripts (see the command reference). These should be NPCs who can be lured by the promise of adventure, treasure, or renown.
+**Potential Allies:** Many of these ambient NPCs should be able to be convinced to join the player's clan. Use `JoinClan` directly in a topic block to make an NPC recruitable — note that `JoinClan` is chat-only and cannot be used in event scripts (see the command reference). These should be NPCs who can be lured by the promise of adventure, treasure, or renown. **JoinClan is daily** — the NPC fights alongside the player for the rest of that day but is released during nightly maintenance. They reappear as a wanderer the next day and can be re-recruited. This makes recruitable NPCs a repeating tactical resource, not a permanent party addition. Write their recruitment dialogue to feel natural on repeat encounters — an eager sellsword happy to sign on again, not a dramatic one-time commitment.
 
-**File organisation:** With 20–40 NPCs, individual chat files become unmanageable. Group ambient NPCs into shared .q files by location or social cluster, and use distinct TopicID prefixes per NPC to prevent collision:
+**File organisation:** With 20–40 NPCs, individual chat files become unmanageable. **Split ambient NPC chat into a separate source file** from story NPC chat — compile each to its own `.q` binary with its own PAK alias (see Output size and file splitting). Within the ambient chat file, use distinct TopicID prefixes per NPC to prevent collision:
 
     # shared chat file for Street-location ambient NPCs
     # cobbler's topics: cobbler_idle, cobbler_post_q3
@@ -970,15 +1022,16 @@ Use P flags for intermediate state that is not tied to quest completion: choices
 When generating a full campaign, produce files in this order:
 1. Monster/NPC Definition file (.txt) — all combat stats
 2. NPC Info file (.txt) — NPC metadata and topic list
-3. Chat file (.txt) — all NPC dialogue
-4. Event script (.evt) — all quest logic
-5. quests.ini block(s) — quest registry entries
-6. quests.hlp — complete file, one block per quest
-7. PAK listing file (.lst) — **before writing:** enumerate every `QuoteFile`, `MonFile`, and quests.ini `File` path; confirm each appears as an alias in the .lst exactly once; remove any alias that nothing references
-8. clans.ini — complete file with default content and pack's NpcFile entries
-9. readme.txt — compilation and installation instructions
-10. build.bat — compilation and PAK generation script for Windows
-11. Makefile — compilation and PAK generation file for UNIX
+3. **Flag assignment table** — create the event script file (`.evt.txt`) as a stub containing only the `>>` flag assignment table. This must exist before any chat file is written, because chat files use flag numbers that must not collide with those in the event script. The table is the mechanism that prevents collisions. See the "When to write the table" section under Event Script for details.
+4. Chat file(s) (.txt) — all NPC dialogue. For packs with 8+ NPCs, split into separate story and ambient chat files (see Output size and file splitting). Reference the flag assignment table when assigning flag numbers in ACS conditions or TellTopic chains.
+5. Event script (.evt) — return to the stub created in step 3 and write all Event and Result blocks. Update the flag assignment table to reflect any flags added during this step.
+6. quests.ini block(s) — quest registry entries. **Verify every `Index` value matches an `Event` block label in the .evt file exactly (case-insensitive).** A mismatch causes a fatal crash at runtime.
+7. quests.hlp — complete file, one block per quest
+8. PAK listing file (.lst) — **before writing:** enumerate every `QuoteFile`, `MonFile`, and quests.ini `File` path; confirm each appears as an alias in the .lst exactly once; remove any alias that nothing references
+9. clans.ini — complete file with default content and pack's NpcFile entries
+10. readme.txt — compilation and installation instructions
+11. build.bat — compilation and PAK generation script for Windows
+12. Makefile — compilation and PAK generation file for UNIX
 
 ---
 

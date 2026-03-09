@@ -65,7 +65,7 @@ void News_ReadNews(bool Today)
 	for (;;) {
 		/* get SCREEN_LENGTH-4 lines if possible */
 		for (cTemp = 0; cTemp < (od_control.user_screen_length-4); cTemp++) {
-			fgets(Lines[cTemp], 255, fp);
+			fgets(Lines[cTemp], 256, fp);
 			if (feof(fp))
 				break;
 		}
