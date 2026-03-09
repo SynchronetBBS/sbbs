@@ -150,7 +150,7 @@ void xfer_opts()
 
 	while (1) {
 		i = 0;
-		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Min Bytes Free Disk Space"
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s bytes", "Minimum Free Disk Space"
 		         , byte_count_to_str(cfg.min_dspace, str, sizeof(str)));
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u", "Max Files in Batch UL Queue"
 		         , cfg.max_batup);
