@@ -10,6 +10,13 @@ Open Issues
 ===========
 Charisma stat has no effect ...................................   1.1
 Clean up mstrings.h GNUmakefile dependencies ..................   1.2
+stats.hlp Charisma description outdated ......................   1.3
+ruler.hlp Show Empire Stats describes dead feature ...........   1.4
+newbie.hlp Town Hall mentions removed farms mechanic .........   1.5
+newbie.hlp Combat HP death thresholds incomplete .............   1.6
+ruler.hlp Vault mentions removed popularity mechanic .........   1.7
+clans.hlp Beta Note lists implemented features as coming soon    1.8
+bulletin.hlp contains stale content ..........................   1.9
 
 
 
@@ -34,3 +41,95 @@ data/GNUmakefile both grew organically to solve the chicken-and-egg problem of
 langcomp needing to exist before mstrings.h can be generated.  The current
 approach works but could be cleaner -- the NATIVEEXEFILE computation and the
 filter-out workaround for shared langcomp objects are worth revisiting.
+
+[1.3]  stats.hlp Charisma description outdated
+-------------------------------------------------------------------------------
+stats.hlp says Charisma is "currently only needed for speaking out for or
+against the ruler."  The speaking-out/approval system was removed in v0.89b.
+Charisma is tracked in struct pc and can be raised by training, items, and
+spells, but ATTR_CHARISMA is never read by any current gameplay code.
+
+The fix depends on the resolution of [1.1]: if Charisma gets a mechanical
+role, update the description accordingly; if it is removed, remove it from
+the help file and stat display.  In the interim, the false "speaking out"
+claim should be replaced with a note that the stat is defined but currently
+has no active effect.
+
+[1.4]  ruler.hlp Show Empire Stats describes dead feature
+-------------------------------------------------------------------------------
+ruler.hlp has a Show Empire Stats topic describing a toggle that lets the
+ruler control whether other clans can see the village empire stats.  The
+corresponding case 'T' branch (ToggleEmpireStats) in village.c is commented
+out and Village.Data.ShowEmpireStats is always initialised to false.  The
+option string for the ruler menu still includes "Toggle Empire Stats" at
+index 16 but it is unreachable.
+
+Either re-enable the feature or remove the topic from ruler.hlp and the dead
+string from the menu option array.
+
+[1.5]  newbie.hlp Town Hall mentions removed farms mechanic
+-------------------------------------------------------------------------------
+newbie.hlp Town Hall reads: "setting the tax rate, erecting buildings,
+buying farms, etc."  Farms were removed from the game in v0.89b when the
+empire system replaced the old business/farm model.  "Erecting buildings" is
+also misleading: the ruler upgrades Town structures (Training Hall, Church,
+Smithy, Pawn Shop, Wizard Shop) via the Economics sub-menu using vault gold,
+not generic "buildings."
+
+Fix: rewrite to accurately describe what the Town Hall provides.
+
+[1.6]  newbie.hlp Combat HP death thresholds incomplete
+-------------------------------------------------------------------------------
+newbie.hlp Combat states: "If your player dies (gets less than -15 hitpoints)
+he will no longer be useable (unless resurrected).  Those with less than 0
+hitpoints are simply deemed unconscious and can be used the next day."
+
+fight.c actually has three thresholds:
+  HP < -15  Dead (Status = Dead, cannot play until resurrected)
+  HP <  -5  Mortal wound (Status = Unconscious, MaxHP permanently reduced)
+  HP <   0  Knocked out (Status = Unconscious, recovers next day)
+
+The mortal-wound state (HP < -5) is omitted, which misleads players about
+the MaxHP-reduction penalty at that threshold.
+
+Fix: add a sentence about the mortal-wound intermediate state.
+
+[1.7]  ruler.hlp Vault mentions removed popularity mechanic
+-------------------------------------------------------------------------------
+ruler.hlp Vault says: "Doing with either one will either decrease or increase
+your popularity respectively."  The popularity/approval system was removed in
+v0.89b; no popularity stat is tracked today.
+
+Additionally, vault withdrawals are silently capped at 3 per day (enforced by
+PClan.VaultWithdrawals in village.c) but this limit is not documented anywhere
+in the help files.
+
+Fix: remove the popularity claim; add a note about the 3-withdrawal daily cap.
+
+[1.8]  clans.hlp Beta Note lists implemented features as coming soon
+-------------------------------------------------------------------------------
+clans.hlp Beta Note was written around v0.90 and lists several features as
+"coming very, very soon" that have since been implemented:
+  - inter-village wars (IBBS games)  -- implemented
+  - a village army                   -- implemented
+  - interbbs scores                  -- implemented
+Features that remain unimplemented (village scenarios, wandering NPCs) could
+stay, but the whole section is stale and confusing.  The URL listed
+(http://theclans.sourceforge.net) may also be defunct.
+
+Fix: remove or rewrite Beta Note to reflect current game state.
+
+[1.9]  bulletin.hlp contains stale content
+-------------------------------------------------------------------------------
+bulletin.hlp is shown to players via (B) Bulletins in the pre-game menu.
+It currently contains:
+  - v0.89b-v0.93 changelogs referencing DOS/Windows-era artefacts (SHARE.EXE,
+    LOCKOUT.TXT, CLANS.CFG, WORLD.NDX as a file, /U upgrade command)
+  - Revolution Nine: ad for Allen Ussher's BBS, explicitly marked "defunct"
+  - Ashrella, VHunt: ads for other door games with a dead URL
+    (http://www.ualberta.ca/~ussher/txds.htm)
+  - Coming Soon: partially overlaps with [1.8]; lists mixed implemented /
+    unimplemented features
+
+The bulletin file is baked into clans.pak so sysops cannot easily customise
+it.  Consider replacing or trimming the stale content.
