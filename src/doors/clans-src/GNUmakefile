@@ -28,6 +28,14 @@ game:	data binaries
 devkit: devkit-binaries
 	cp $(DEVKIT_BINARIES) .
 	cp $(SRC)devkit/* .
+	cp $(SRC)data/classes.txt .
+	cp $(SRC)data/items.txt .
+	cp $(SRC)data/monsters.txt .
+	cp $(SRC)data/npc-pc.txt .
+	cp $(SRC)data/npcquote.txt .
+	cp $(SRC)data/races.txt .
+	cp $(SRC)data/spells.txt .
+	cp $(SRC)data/clans.txt ./npcs.txt
 
 all: game installer devkit devkit-installer
 

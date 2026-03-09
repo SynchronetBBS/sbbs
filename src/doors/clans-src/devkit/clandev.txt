@@ -499,8 +499,7 @@ meanings:
                    * special <event name>'s:
 
                    NextLine - causes the commands immediately following
-                              the Option keywords to be executed (see
-                              quests.txt for help)
+                              the Option keywords to be executed
 
                    STOP -- causes execution of event block to stop.
 
@@ -663,11 +662,11 @@ explain that? :)  Hope not.
 [2.2]  How Do I Make Monsters?
 -------------------------------------------------------------------------------
 Monsters are made using a text file (like monsters.txt) and then compiling it
-into a data file (usually ends in .MON, but it doesn't matter).  So, make your
-monster file however you want (modify monsters.txt if you like) and compile it
-like so:
+into a data file (usually ends in .MON, but it doesn't matter).  Copy
+monsters.txt to your own filename and modify the copy, so the original stays
+as a reference.  Then compile it like so:
 
-	mcomp <monsters.txt> <output.mon>
+	mcomp <yourfile.txt> <output.mon>
 
 To make a monsters file called test.mon, use this
 
