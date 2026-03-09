@@ -746,6 +746,7 @@ A campaign with only quest-givers and a lore keeper feels like a waiting room. T
 
 **Design rules for ambient NPCs:**
 - No `TellQuest`, `DoneQuest`, or `Fight` commands. Ever.
+- `TellTopic` is not only allowed but encouraged — see Progressive revelation below.
 - `MaxTopics 3` to `7` — brief encounters, not extended conversations.
 - `OddsOfSeeing` between 1 and 30 — vary by character. Scarcity makes appearances feel like chance meetings rather than scheduled appointments.
 
@@ -759,6 +760,43 @@ A useful pattern — the same topic block, two branches, one condition:
     End
 
 Vary which flags each NPC reacts to. A market vendor might track economic consequences (`{G2}` — a trade route open or closed); a church regular tracks spiritual ones (`{Q7}` — a ritual performed or averted); a training hall sparring partner tracks military ones (`{P12}` — the player has raised an army). No single NPC needs to react to everything; collectively they should cover the whole campaign arc.
+
+**IntroTopic:** Ambient NPCs can and should use `IntroTopic`. The engine makes no distinction between wandering and non-wandering NPCs — both enter through the same `NPC_ChatNPC()` function, and IntroTopic runs on every visit for both. Use it for daily-varying greetings, campaign-aware opening lines, and anything the NPC should say before the player picks a topic. Gate lines with `{D}` flags for "already seen today" and `{Q}` or `{G}` flags for campaign awareness:
+
+    Topic pirate_intro
+    {D6}Text "|0CArr, it's you again . . .
+    {!D6}Text "|0CArr.  I be a pirate.
+    {!D6}Text
+    {!D6}Text "|06(You see a typical pirate.  Well, not so typical.  He's got two
+    {!D6}Text "eyepatches.  One on each eye!)
+    End
+
+**Progressive revelation:** Ambient NPCs can mix `KnownTopic` and hidden `Topic` entries freely. Use `TellTopic` inside any topic block to reveal the next hidden topic in a chain. This gives even non-quest NPCs conversational depth — the player earns new dialogue options by engaging with existing ones. The stock game's Pirate (a wandering Mine NPC) uses a 4-step `TellTopic` chain where asking about treasure leads through escalating refusals before he gives up and pays the player. The Useless Old Man (a wandering Street NPC with no IntroTopic at all) uses branching `TellTopic` chains from a single `KnownTopic` to reveal an entire conversation tree about his hometown. Neither NPC has any quest mechanics — their hidden topics exist purely for character texture.
+
+A simple progressive revelation pattern:
+
+    # NPC Info file — one KnownTopic, two hidden Topics
+    KnownTopic  smith_work His craft
+    Topic       smith_secret The old forge
+    Topic       smith_truth What really happened
+
+    # Chat file — each topic reveals the next
+    Topic smith_work
+    Text "|0CI've been smithing since before your clan was founded.
+    Text "|0CUsed to work at the old forge up on Ridgeback, before the trouble.
+    TellTopic smith_secret
+    End
+
+    Topic smith_secret
+    Text "|0CThat forge . . . it wasn't just a forge.  There were tunnels underneath.
+    Text "|0CDeep ones.  We weren't just making horseshoes up there.
+    TellTopic smith_truth
+    End
+
+    Topic smith_truth
+    Text "|0CThe Ironmasters had us smelting something they pulled out of the deep shafts.
+    Text "|0CI don't know what it was, but it sang when it cooled.  I still hear it sometimes.
+    End
 
 **Location distribution:** Assign ambient NPCs to locations deliberately. Aim for 3–7 per location. Each location has its own social texture:
 
@@ -791,7 +829,7 @@ Vary which flags each NPC reacts to. A market vendor might track economic conseq
     ...
     End
 
-In the NPC Info file, each NPC gets its own `Index` block with its own `QuoteFile` (pointing to the shared alias) and its own `KnownTopic` entries referencing only that NPC's TopicID prefixes. Because the NPC Info file controls which topics appear in the menu, two NPCs can share a compiled .q file without leaking each other's topics to the player.
+In the NPC Info file, each NPC gets its own `Index` block with its own `QuoteFile` (pointing to the shared alias) and its own `KnownTopic` and `Topic` entries referencing only that NPC's TopicID prefixes. Because the NPC Info file controls which topics appear in the menu, two NPCs can share a compiled .q file without leaking each other's topics to the player.
 
 ### Mechanics
 - Use {T0}–{T63} for within-session branching (e.g., tracking a player choice within one chat).
