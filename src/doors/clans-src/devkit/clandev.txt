@@ -54,7 +54,7 @@ Testing Quest Packs with qtest ........................................   4.3
 Miscellaneous Tools
 ===================
 makepak and PAK Files .................................................   5.1
-chew and install ......................................................   5.2
+chew and install (Distribution Packaging) .............................   5.2
 langcomp -- Language String Compiler ..................................   5.3
 mclass -- Class/Race Compiler .........................................   5.4
 mitems -- Item Compiler ...............................................   5.5
@@ -1241,79 +1241,153 @@ your own add-ons.  On Unix:
 
         gmake -f genall.mak
 
-[5.2]  chew and install
+[5.2]  chew and install (Distribution Packaging)
 -------------------------------------------------------------------------------
-When you wish to distribute your add-on, you may wish to use my installation
-program that is provided with The Clans.  Since everyone who has installed
-already has the install program in their Clans directory, you will not
-need to add it onto your archive.  Simply explain in a readme file within your
-archive that the sysop will need to unzip the contents of the file into the
-Clans directory.  This is necessary anyway since quests will go into that
-directory.
+When you wish to distribute your add-on, you can use the install program
+that ships with The Clans.  Every sysop who has installed the game already
+has the install program in their Clans directory, so you only need to
+provide a GUM archive and an INI file.  Explain in a readme that the
+sysop should unzip everything into the Clans directory and then run:
 
-To use the install program, you will need to create a GUM file.  A GUM file is
-a compressed file containing many files (similar to a ZIP file or an ARJ)
-file.  To create a GUM file, you'll first need to create a file containing a
-list of all the files that will go into the GUM file.  This file is named
-files.lst (you can't use any other name).  So create a text file called
-files.lst and in it, place the names of all the files that will go into the
-GUM archive, one file per line.  Here is an example of such a listing:
+        install myquest
 
-        MYQUEST.TXT
-        MYQUEST.PAK
-        SYSOP.DOC
+The .ini extension is optional -- if omitted, the installer appends
+".ini" (lowercase).  Name your INI files with a lowercase extension
+(e.g. myquest.ini) to avoid case-sensitivity issues on Unix.
 
-Then all you need to do is run chew with the name of the GUM file to
-create following it.  For instance, to create a GUM file called MYQUEST.GUM,
-you'd run it like this:
 
-        chew MYQUEST.GUM
+Creating a GUM Archive
+----------------------
+A GUM file is a compressed archive containing many files (similar to a
+ZIP file).  To create one, first make a file called files.lst containing
+the names of all files to include, one per line:
 
-(If you're wondering the significance of the terms of GUM and chew, there is
-none.  They sounded good, ok? ;-)  This will create the MYQUEST.GUM file
-containing all the files listed in files.lst.  If you do not specify a GUM
-file to create, archive.gum will be created by default.
+        myquest.pak
+        myquest.ini
+        readme.txt
+        UnixAttr.DAT
 
-Now that you have a GUM file, you'll need to make an INI file useable by the
-install program.  You can take a look at clandev.ini (the INI file used by the
-dev. kit) and install.ini (Clans's install INI file).  example.ini is provided
-as an example and template.
+Then run chew with the name of the GUM file to create:
 
-The first few lines of the INI file can simply be comments.
+        chew myquest.gum
 
-The line that begins with a ! is used to specify the name of the GUM file to
-use when extracting files.
+If you do not specify a name, archive.gum is created by default.  (If
+you are wondering the significance of the terms "GUM" and "chew", there
+is none.  They sounded good, ok? ;-)
 
-Lines beginning with a colon (:) are treated as displayable sections.  When
-the user types in "read whatsnew", the section which starts with :whatsnew is
-displayed.  The section ends when another section beginning with another colon
-begins (the lined sections are merely used for readability).
 
-The example.ini lays out all the sections and you are encouraged to try it out
-by typing install EXAMPLE in DOS.
+INI File Format
+---------------
+The INI file tells the installer what to display and which files to
+extract.  See example.ini for a working template; clandev.ini and
+install.ini are also useful references.
 
-The section :install.files is a listing of all the files that are in the
-archive and how to treat them if there is an existing file.  The first
-character is used to determine how the file is dealt with and the second
-parameter is the actual file name.  However, if any files are left out of the
-list but still exist in the GUM file, the user will queried if he wishes to
-extract them if a file with the same name exists.
+Every line in an INI file is one of four types:
 
-Note the following things in the file:
+        ! line     GUM archive filename (exactly one per file)
+        : line     Section label (starts a named section)
+        o/s/q      File manifest entry (only in .files sections)
+        (other)    Display text (supports pipe color codes)
 
-        * the :title section is displayed first and used as a header
-        * the :goodbye section is displayed when the program is exited
-        * :install is displayed before the user chooses to install
-        * :upgrade is displayed before the user chooses to upgrade
-        * NO BLANK LINES may be used in the :install.files and :upgrade.files
-          sections.
+Lines before the first : section are ignored by the installer.  Use
+them as comments.
 
-Remember, to use your install INI file, you'll need to use install and run
-it with the INI file name as the parameter.  For instance, if you created an
-INI file called MYQUEST.INI, you may install it using install MYQUEST (the
-.INI can be omitted).
 
-The compression code in chew is taken from SIXPACK.C by Philip G. Gage.
+Section Names
+-------------
+The installer recognises the following section names:
+
+        :title           Displayed on startup as a header
+        :welcome         Displayed after title; main prompt screen
+        :goodbye         Displayed on exit
+        :about           Displayed by the "about" command
+        :help            Displayed by the "help" command
+        :whatsnew        Displayed by "read whatsnew"
+        :install         Displayed before install confirmation
+        :installdone     Displayed after successful install
+        :install.files   File manifest for install
+        :upgrade         Displayed before upgrade confirmation
+        :upgradedone     Displayed after successful upgrade
+        :upgrade.files   File manifest for upgrade
+
+Any additional :sections are readable via "read <name>".
+
+
+File Manifest Format
+--------------------
+The :install.files and :upgrade.files sections list every file to
+extract from the GUM archive.  Each line begins with a prefix
+character that controls what happens when a file of the same name
+already exists on disk:
+
+        o filename.ext   Overwrite if file exists
+        s filename.ext   Skip if file exists
+        q filename.ext   Query the user
+
+Wildcards (* and ?) are supported, matched case-insensitively.
+A leading / creates a directory instead of extracting a file:
+
+        o /outbound      Create the outbound/ directory
+
+No blank lines are permitted in .files sections.  The section ends
+at the next : line.  Maximum 75 files per manifest; entries beyond
+the 75th are silently ignored.
+
+
+Display Text and Color Codes
+-----------------------------
+Body text in display sections supports pipe color codes (|NN).
+See clans.txt section 1.9 for the full color code reference.
+
+
+Unix File Permissions (UnixAttr.DAT)
+-------------------------------------
+The installer supports a special file called UnixAttr.DAT inside
+the GUM archive for setting Unix file permissions.  Each line
+contains an octal permission mode and a filename:
+
+        0755 clans
+        0755 reset
+
+On Unix, after extracting all files the installer reads
+UnixAttr.DAT, applies chmod() for each entry, and deletes the
+file.  On Windows, UnixAttr.DAT is extracted to disk but not
+processed or cleaned up -- it remains as a harmless leftover.
+UnixAttr.DAT is hidden from the "list" command on all platforms.
+
+Include UnixAttr.DAT in files.lst when running chew, but do NOT
+list it in the .files sections of the INI -- the installer handles
+it automatically.
+
+
+Long Filenames
+--------------
+The GUM archive and extraction logic support filenames of any
+length.  The "list" command displays short names (<= 14 chars) in
+a columnar layout and long names in a separate list below.
+
+When the user is prompted to rename a file during extraction
+(overwrite conflict), the new name is limited to 13 characters
+(the old DOS 8.3 convention).
+
+
+Size Limits
+-----------
+        GUM filename (! line)      24 characters
+        INI filename (argument)    24 characters
+        Files per manifest         75 entries
+        INI display line length    299 characters
+        User command input         45 characters
+
+The GUM filename and INI filename are silently truncated if they
+exceed 24 characters.  Manifest entries beyond the 75th are
+silently ignored.
+
+
+Compression Credit
+------------------
+The compression code in chew is taken from SIXPACK.C by
+Philip G. Gage.
 
 
 [5.3]  langcomp -- Language String Compiler
@@ -1470,10 +1544,12 @@ question like "Can I borrow 5 bucks?"  No, you can't.)
 
 [6.2]  Distributing Add-Ons
 -------------------------------------------------------------------------------
-Now that you've created an add-on, go and distribute it!  You should send it
-to me first so I can test it out but that's not really necessary any more.
-If you have a web page up with your add-ons, email me and I'll link it from my
-page.
+Once your add-on is ready, package it for distribution.  The recommended
+method is to create a GUM archive and INI file as described in [5.2] --
+sysops can then install it with a single command.  Alternatively, you
+can distribute a plain zip file with a readme explaining which files go
+where.  Either way, include a readme describing what the add-on does
+and any installation notes.
 
 
 [6.3]  Spell Index
