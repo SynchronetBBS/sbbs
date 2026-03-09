@@ -1,7 +1,264 @@
+^Empire Overview
+|0B Empires
+
+|0C Every clan, village, and alliance has an empire consisting of buildings,
+ an army, developed land, and a gold vault.  Use your empire to attack
+ and spy on rivals, steal their land and gold, or destroy their buildings.
+
+ Press |0B(P)|0C from the main menu to manage your clan's empire.  Villagers
+ may also donate to the village empire at the Town Hall.  Alliance members
+ may manage the alliance empire from the Alliance menu.
+
+ |14Build a Barracks before doing anything else -- you need one to train
+ troops or launch an attack.
+^END
+
+^Buildings
+|0B Buildings
+
+|0C Select |0B(B) Build Structure|0C from the Empire menu to erect buildings.
+ Each building consumes developed land, worker energy, and gold.  Worker
+ energy resets to 100% each day, so plan your construction carefully.
+
+ Select a building by number to see its stats before buying.  Press |0B(*)|0C
+ to demolish a building and recover its land and half its gold cost.
+
+ Available building types:
+   Barracks, Walls, Towers, Steel Mill, Stables, Intell. Agencies,
+   Security Centers, Gymnasiums, Developer's Halls, Shops (village only)
+^END
+
+^Barracks
+|0B Barracks
+
+|0C Barracks are required to train troops and to launch attacks.  Each
+ Barracks you build increases the maximum number of troops you may keep:
+
+   20 Footmen per Barracks
+   10 Axemen per Barracks  (also requires a Steel Mill)
+    5 Knights per Barracks  (also requires a Steel Mill and Stables)
+
+ Barracks are well-protected during attacks and are rarely the first
+ buildings destroyed.
+
+ Cost: 2500 gold, 15 land, 30% worker energy
+^END
+
+^Walls
+|0B Walls
+
+|0C Walls are your first line of defense.  During an attack they draw a
+ disproportionately large share of enemy fire, shielding your other
+ buildings from damage.  Because they absorb so many hits, they are
+ also among the first buildings destroyed in battle.
+
+ Walls are cheap and use very little land, so build as many as you can
+ afford.  Replacing lost walls quickly is a good defensive habit.
+
+ Cost: 1000 gold, 5 land, 7% worker energy
+^END
+
+^Towers
+|0B Towers
+
+|0C Towers complement your walls by killing off some attacking troops as
+ they advance.  Like walls, they are destroyed relatively easily during
+ an attack, but the troop losses they inflict can turn the tide of a
+ close battle.
+
+ Build towers after you have a solid wall of Walls in place.
+
+ Cost: 1500 gold, 8 land, 12% worker energy
+^END
+
+^Steel Mill
+|0B Steel Mill
+
+|0C A Steel Mill is required to produce the weapons and equipment used by
+ Axemen and Knights.  Without one, you are limited to training Footmen.
+
+ Only one Steel Mill is needed; building additional mills provides no
+ extra benefit.  The Steel Mill uses a large amount of land, so develop
+ enough land before attempting to build one.
+
+ Cost: 3000 gold, 20 land, 28% worker energy
+^END
+
+^Stables
+|0B Stables
+
+|0C Stables house the horses needed to field a cavalry of Knights.  A Steel
+ Mill must also be built before Knights can be trained.
+
+ Only one set of Stables is needed.  At 40% worker energy, Stables are
+ the most energy-intensive building to construct, so save up your daily
+ energy budget before attempting to build them.
+
+ Cost: 5000 gold, 20 land, 40% worker energy
+^END
+
+^Intell. Agencies
+|0B Intelligence Agencies
+
+|0C Intelligence Agencies train the spies you send against other empires.
+ You must have at least one before you can spy.  Each additional agency
+ raises the level of your spies, making it easier to penetrate targets
+ that have invested in Security Centers.
+
+ Build agencies steadily -- rivals will be building Security Centers to
+ counter you, so more agencies helps maintain your edge.
+
+ Cost: 1000 gold, 10 land, 25% worker energy
+^END
+
+^Security Centers
+|0B Security Centers
+
+|0C Security Centers prevent enemy spies from gathering information about
+ your empire.  Each additional center raises the spy level required to
+ successfully infiltrate you.
+
+ Security Centers directly counter the enemy's Intelligence Agencies.
+ If rivals are actively spying on you, build more Security Centers to
+ keep your empire's details hidden.
+
+ Cost: 1000 gold, 10 land, 25% worker energy
+^END
+
+^Gymnasiums
+|0B Gymnasiums
+
+|0C Gymnasiums keep your troops in peak fighting condition.  Each Gymnasium
+ raises your army rating by an additional 2% per day on top of the base
+ daily recovery.
+
+ Because army rating decays with every attack, Gymnasiums are a
+ long-term investment that pays off over many days of play.  They use
+ very little land for their cost, making them efficient to add once
+ your core military buildings are in place.
+
+ Cost: 4500 gold, 5 land, 20% worker energy
+^END
+
+^Developer's Halls
+|0B Developer's Halls
+
+|0C Developer's Halls train workers who convert raw land into usable
+ building plots.  Each hall reduces the cost of developing land by
+ 5 gold per unit, down to a minimum of 20 gold per unit (base: 100).
+
+ Because every building you construct requires developed land, Developer's
+ Halls pay for themselves quickly.  Build them as early as possible to
+ keep land development affordable throughout the game.
+
+ Cost: 3000 gold, 10 land, 15% worker energy
+^END
+
+^Shops
+|0B Shops
+
+|0C Shops can only be built by the village.  Each shop earns the village
+ approximately 1500 gold per day, providing a steady income stream.
+
+ The village begins with 10 shops at the start of the game.  Building
+ additional shops is one of the best ways to grow the village's treasury,
+ but they require significant land and energy to construct.
+
+ Cost: 5000 gold, 20 land, 30% worker energy
+^END
+
+^Worker Energy
+|0B Worker Energy
+
+|0C Worker energy represents your workforce's capacity to construct new
+ buildings.  Each building requires a percentage of your total energy
+ when built; energy is restored to 100% at the start of each day.
+
+ If you run out of energy you cannot build anything new until tomorrow.
+ Plan ahead -- build the most critical structures first each day.
+^END
+
+^Army
+|0B Army
+
+|0C Select |0B(M) Manage Army|0C to train troops from your pool of Followers.
+ A Barracks is required.  Each Barracks supports a fixed number of troops:
+
+   |0B(1)|0C Footmen    15 gold each  (20 per Barracks)
+   |0B(2)|0C Axemen     30 gold each  (10 per Barracks; requires Steel Mill)
+   |0B(3)|0C Knights    60 gold each  ( 5 per Barracks; requires Steel Mill
+                                    and Stables)
+
+ Press |0B(H)|0C inside the Manage Army menu for full troop statistics.
+
+|0B Army Rating
+
+|0C Army rating (shown as a percentage) reflects how well your troops fight.
+ A fresh army at 100% deals full damage; rating drops with each attack.
+ It recovers 5-10% per day, plus 2% per Gymnasium built.  Send small
+ forces to preserve your rating -- a huge army sent repeatedly will
+ degrade quickly.
+^END
+
+^Attacking
+|0B Attacking
+
+|0C Select |0B(A) Attack an Empire|0C to send your army against a target.  A
+ Barracks is required.  You will choose the target type (village,
+ alliance, or clan), then the specific target, then the troops to send,
+ then one of four goals:
+
+   |0B0|0C Oust the Ruler     Remove the current village ruler from power
+   |0B1|0C Capture Land       Loot up to 10% of the target's land
+   |0B2|0C Capture Gold       Loot up to 15% of the target's gold
+   |0B3|0C Destroy Buildings  Damage up to 15% of the target's buildings
+
+ Clans may launch up to 5 attacks per day.  The village army may attack
+ up to 2 times per day.  Results (casualties and loot) are returned via
+ the next daily reset.
+
+ |14Walls and Towers reduce damage taken -- build them to slow attackers.
+ |14Keep your attacking army small to protect your army rating.
+^END
+
 ^Spy Help
 |0C Use a spy to gain information on your enemy's empires.  If your spy is
  "caught", the enemy will be notified of your spying attempt.  You may spy
  up to 10 times a day.
+
+ An Intelligence Agency is required before you can spy.  Each spy attempt
+ costs 1000 gold.  The chance of success rises with the number of your
+ agencies and falls with the target's Security Centers.  Build more
+ Intelligence Agencies to improve your odds; build Security Centers to
+ protect yourself from rival spies.
 ^END
 
+^Donations
+|0B Donations
 
+|0C Clans may contribute resources to the village or alliance empire to
+ strengthen it for combat.  Donations are made at the Town Hall |0B(E)|0C or
+ from the Alliance menu |0B(P)|0C.
+
+ You can donate Followers, Footmen, Axemen, Knights, and Land.
+
+ Village rulers and alliance leaders may also use the Take options to
+ withdraw resources from their empire when they need troops or land.
+
+ |04Note: you cannot donate to your own clan's empire from the Empire menu.
+^END
+
+^Developing Land
+|0B Developing Land
+
+|0C Raw land must be developed before buildings can be erected.  Select
+ |0B(L) Develop Land|0C from the Empire menu and enter the number of units you
+ wish to convert.
+
+ The base cost is 100 gold per unit, reduced by 5 gold for each
+ Developer's Hall you have built, down to a minimum of 20 gold per unit.
+ Maximum total developed land is 3000 units.
+
+ |14Build Developer's Halls early -- they pay for themselves quickly by
+ cutting the cost of every unit of land you develop afterward.
+^END
