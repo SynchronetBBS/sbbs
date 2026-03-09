@@ -328,7 +328,7 @@ Arguments: input source file first, output binary second. The output file extens
     KnownTopic [TopicID] [Prompt text] — topic visible to the player from the start; repeatable
     Topic [TopicID] [Prompt text] — topic that starts hidden; must be revealed via TellTopic; repeatable
 
-**Topic limit:** Each NPC may have at most **10** topics total across all `KnownTopic` and `Topic` entries combined. `IntroTopic` is stored separately and does not count toward this limit.
+**Topic limit:** Each NPC may have at most **128** topics total across all `KnownTopic` and `Topic` entries combined. `IntroTopic` is stored separately and does not count toward this limit. `makenpc` enforces this limit and exits with an error if exceeded.
 
 **NpcFile limit:** clans.ini may contain at most **32** `NpcFile` entries in total. This limits the number of compiled .npc files that can be loaded across all packs.
 
@@ -597,6 +597,8 @@ The listing file is plain text, one entry per line, two whitespace-separated col
     [real filename on disk]  [alias used in scripts]
 
 Lines whose first character is `#` are treated as comments and skipped. Blank lines are also skipped. Inline comments (text after the second column on a data line) are not parsed — only two tokens are consumed per line, so trailing text is silently ignored rather than explicitly recognised. Do not rely on inline comments; use whole-line `#` comments only.
+
+**Aliases must start with `/`.** `makepak` enforces this and exits with an error otherwise. The alias is the path portion only — do not include the `@pakname.pak` prefix. For example, if clans.ini says `NpcFile @mypak.pak/n/MyNPC`, the alias in the .lst is `/n/MyNPC`, not `@mypak.pak/n/MyNPC`. The `@pakname.pak` prefix tells the engine which PAK file to open; the alias is what it searches for inside that file.
 
 The alias is what you write in your scripts. By convention aliases use short Unix-style paths to organise content by type:
 

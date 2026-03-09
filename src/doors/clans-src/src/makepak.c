@@ -73,6 +73,14 @@ int main(int argc, char *argv[])
 		if (szFileName[0] == 0 || szFileAlias[0] == 0)
 			break;
 
+		if (szFileAlias[0] != '/') {
+			printf("Bad alias '%s': must start with '/'\n"
+			       "  Example: /n/foo, not @pak/n/foo\n",
+			       szFileAlias);
+			fclose(fpPakFile);
+			fclose(fpList);
+			exit(EXIT_FAILURE);
+		}
 
 		AddToPak(szFileName, szFileAlias, fpPakFile);
 	}

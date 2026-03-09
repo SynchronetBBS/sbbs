@@ -1,0 +1,20 @@
+# timberhaul.lst — PAK listing file for makepak
+# Build: makepak timberhaul.pak timberhaul.lst
+#
+# Alias cross-reference verification (performed before writing this file):
+#   QuoteFile paths used:    @timberhaul.pak/q/story
+#                            @timberhaul.pak/q/ambient
+#   MonFile paths used:      @timberhaul.pak/m/timberhaul
+#   quests.ini File paths:   @timberhaul.pak/e/timberhaul
+#   clans.ini NpcFile path:  @timberhaul.pak/n/timberhaul
+#
+# Each path appears as an alias exactly once below. No orphaned aliases.
+#
+# Column 1: real filename on disk (compiled binary)
+# Column 2: alias used in scripts
+
+timberhaul.evt        /e/timberhaul
+timberhaul.story.q    /q/story
+timberhaul.ambient.q  /q/ambient
+timberhaul.mon        /m/timberhaul
+timberhaul.npc        /n/timberhaul
