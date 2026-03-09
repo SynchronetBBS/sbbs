@@ -210,6 +210,11 @@ static int16_t Init_PClasses(char *szFileName)
 						PClasses[CurPClass]->MaxSP = (int16_t)iTemp;
 						break;
 					case 10 :   /* spell */
+						if (LastSpellSlot >= MAX_SPELLS) {
+							printf("Too many spells for class %s (max %d)\n",
+							       PClasses[CurPClass]->szName, MAX_SPELLS);
+							exit(EXIT_FAILURE);
+						}
 						iTemp = atoi(pcCurrentPos);
 						if (iTemp < INT8_MIN || iTemp > INT8_MAX) {
 							printf("Invalid ability score %d\n", iTemp);

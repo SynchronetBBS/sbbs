@@ -144,6 +144,12 @@ int main(int argc, char *argv[])
 
 		CurString = atoi(TempString);
 		if (CurString == 0) continue;
+		if (CurString < 0 || CurString >= 2000) {
+			printf("String ID %d out of range (max 1999)\n", CurString);
+			fclose(fFrom);
+			free(Language.BigString);
+			exit(EXIT_FAILURE);
+		}
 
 		// Macro name is required after the 4-digit ID.
 		// It must match ST_[A-Z0-9_]+ followed by a space.

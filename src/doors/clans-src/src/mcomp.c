@@ -240,6 +240,11 @@ int main(int argc, char *argv[])
 						TmpMonster.SP = TmpMonster.MaxSP = ato16(pcCurrentPos, "SP");
 						break;
 					case 12 :   /* spell! */
+						if (LastSpellSlot >= MAX_SPELLS) {
+							printf("Too many spells for monster %s (max %d)\n",
+							       TmpMonster.szName, MAX_SPELLS);
+							exit(EXIT_FAILURE);
+						}
 						TmpMonster.SpellsKnown[LastSpellSlot] = ato8(pcCurrentPos, "Spell");
 						LastSpellSlot++;
 						break;
