@@ -62,6 +62,10 @@ Are there any rules that should apply across all generated content? Naming conve
 
 **If the sysop gives only a brief seed** (e.g., "a Viking village fighting off a demon cult"), extrapolate a coherent world from it, present your interpretation for approval, then proceed to generation. Do not ask all six questions if a full world already exists in the sysop's mind — ask enough to fill the gaps.
 
+**Before generating any file:** Run a directory check for existing pack files in the working directory. If prior output exists, explicitly list it and ask the sysop whether to resume from the existing files or start fresh. If resuming, read every existing file before writing anything new. Never assume the working directory is empty.
+
+**Commit to a pack name** before writing the first file — the base string used for all filenames, PAK paths, and aliases (e.g. `ketharv`). Review the 31-character path limit table in the PAK FILE AND PATH CONVENTIONS section and confirm the chosen name fits within the budget. State the pack name explicitly and wait for sysop approval before proceeding. Use it everywhere without deviation — a pack name that changes mid-generation creates collisions between files that reference different names.
+
 ---
 
 ## OUTPUT: You will generate ALL of the following files for each quest pack:
@@ -82,12 +86,18 @@ Are there any rules that should apply across all generated content? Naming conve
 
 Large packs cannot be written in a single pass. The chat file for a pack with 8 or more NPCs (story + ambient) will typically exceed 30KB — attempting to write it as one block produces truncated output. Write large files incrementally: complete one NPC or one location cluster per pass, and explicitly note where each pass ends so the next can resume without overlap or gap. Files most likely to require multiple passes, in descending order of volume: the ambient NPC chat file, the story NPC chat file, the event script. The monster definition file, NPC info file, and quests.ini are typically small enough to write in a single pass.
 
+### Generation rhythm
+
+After completing each pass, continue immediately to the next without waiting for confirmation. Only stop if you reach a decision point that genuinely requires sysop input — a missing world detail, an unresolvable ambiguity in the brief. Completion of a file segment is not such a point.
+
+Once the sysop approves the world summary and generation begins, all subsequent passes run to completion automatically. The only legitimate reason to stop mid-generation is an unresolvable ambiguity in the world brief — not file size, not pass boundaries, not completion of a chain. The interview gate exists because world details cannot be invented; the generation gate does not exist because file size is not a decision point.
+
 ---
 
 ## SYNTAX RULES (violations cause parse failures):
 
 - All generated filenames must be lowercase (e.g. `quests.ini`, `quests.hlp`, `fallstatt.evt`). The game runs on case-sensitive Unix filesystems.
-- **String argument limit: 254 characters maximum.** String arguments (text after the command keyword and quote) may not exceed 254 characters, as the compiled binary format stores lengths as a single byte. ecomp enforces this and will error if exceeded.
+- **String argument limit: 254 characters maximum.** String arguments (text after the command keyword and quote) may not exceed 254 characters, as the compiled binary format stores lengths as a single byte. ecomp enforces this and will error if exceeded. This applies to all string-argument commands including AddNews — keep AddNews items short regardless.
 - **Terminal display width: 80 columns.** The output system does not word-wrap. Color codes (`|0C`, `|02`, etc.) consume source characters but zero display columns; all other characters consume one column each. Keep visible text per `Text` command to 78 characters or fewer. Long dialogue must be split across multiple `Text` commands.
 - Key Value format only. The first word is the Key; the rest of the line is the Value.
 - BRACKETS [] ARE FORBIDDEN in Keys. These are NOT Windows INI files. There are no `[Section]` headers and no `key=value` pairs anywhere. The format is always `Key Value` (space-separated, no equals sign) with blank lines between blocks.
@@ -140,6 +150,19 @@ Large packs cannot be written in a single pass. The chat file for a pack with 8 
         End
 
   Choosing Y jumps to `AcceptJob`. Choosing N continues on the `Text` line and then hits `End`. `Option` does not open a block — the `End` closes the `Event JobOffer` block.
+
+  **NoRun and all-Option-jump blocks also require End.** A common error is omitting `End` after a `Fight` with `NoRun`, or after an `Option` menu where every option jumps to a named Result block. In both cases execution never reaches the line after the `Fight` or `Option` commands — but the enclosing block still requires `End` to be syntactically closed. The rule is unconditional: every Event and Result block ends with `End`, regardless of what the last command is.
+
+        Event BossRoom
+        AddEnemy /m/Output 99
+        Fight BossWin BossLoss NoRun
+        End
+
+        Event ChoiceRoom
+        Text "|0CChoose your path.
+        Option A PathA
+        Option B PathB
+        End
 
 ---
 
@@ -233,7 +256,7 @@ All other commands are executable and may appear inside any block:
 | `Prompt "` | all | `[String]` | Outputs the string with no trailing newline. Use before a menu (consecutive Option or Input commands) to display a prompt to the player. Color codes set within the Prompt line persist into the player's input field — end the line with the desired input color (e.g. `\|0F`) to control how the player's typed response appears. |
 | `Display "` | all | `[Filename]` | Renders an ANSI/ASCII file to the player's screen. |
 | `AddNews "` | all | `[String]` | Appends the string to the village daily news. |
-| `Option` | all | `[Char] [TargetLabel]` | Defines one menu choice. Char is the key the player presses; TargetLabel is the block to jump to. Multiple consecutive Option commands build a menu. `Option` is a command, not a block delimiter — it does not open a block and does not require its own `End`. The enclosing Event, Result, or Topic block must still be closed with `End` after the menu. Special TargetLabels (valid here only): `NextLine` continues on the line immediately after the last consecutive Option command, still inside the enclosing block; `STOP` halts execution. |
+| `Option` | all | `[Char] [TargetLabel]` | Defines one menu choice. Char is a single printable character (letter or digit); matching is case-insensitive. TargetLabel is the block to jump to. Multiple consecutive Option commands build a menu. `Option` is a command, not a block delimiter — it does not open a block and does not require its own `End`. The enclosing Event, Result, or Topic block must still be closed with `End` after the menu. Special TargetLabels (valid here only): `NextLine` continues on the line immediately after the last consecutive Option command, still inside the enclosing block; `STOP` halts execution. |
 | `Input` | all | `[TargetLabel] [Display text]` | Like Option but presents a numbered text menu item instead of a single-key choice. Multiple consecutive Input commands build a numbered list. The player selects by number; jumps to TargetLabel. Same special TargetLabels as Option. `Input` is also a command, not a block delimiter. |
 | `AddEnemy` | all | `[FileRef] [Index]` | Loads one entry from a .mon file into the enemy group for the upcoming fight. FileRef is the path to the .mon file; Index is the zero-based ordinal of the entry within it. Call multiple times to build a group. Must always precede Fight. |
 | `Fight` | all | `[WinLabel] [LossLabel] [RunLabel]` | Triggers combat against the enemy group assembled by preceding AddEnemy calls. Jumps to WinLabel on victory, LossLabel on defeat, RunLabel if the clan runs away. Special labels (valid here only): `NextLine` continues after Fight; `STOP` halts execution; `NoRun` as RunLabel prevents fleeing. |
@@ -246,7 +269,7 @@ All other commands are executable and may appear inside any block:
 | `Heal` | all | none or `SP` | No argument fully restores the clan's HP. SP fully restores SP instead. |
 | `TakeGold` | all | `[Number]` or `%[Number]` | Removes the specified amount of gold from the player. Prefix with `%` to remove a percentage of vault gold instead (e.g. `TakeGold %50` removes 50%). |
 | `GiveGold` | all | `[Number]` | Adds the specified amount of gold to the player. |
-| `GiveXP` | all | `[Number]` | Adds the specified amount of XP to the player's clan members. |
+| `GiveXP` | all | `[Number]` | Adds the specified amount of XP to the player's clan members. **Do not use in quest scripts** — see QUEST DESIGN PATTERNS. The engine executes GiveXP without error; this is a design guideline, not a compile or runtime restriction. |
 | `GiveItem` | all | `[ItemName]` | Adds the named item to the player's inventory. |
 | `GiveFight` | all | `[Number]` | Adds the specified number of daily fights to the player's allowance. |
 | `GiveFollowers` | all | `[Number]` | Adds the specified number of followers to the player's army. |
@@ -261,7 +284,7 @@ All other commands are executable and may appear inside any block:
 
 ### quests.ini
 
-**NOT Windows INI format** — no `[Section]` headers, no `key=value`. One block per quest, separated by blank lines. The zero-based block ordinal is the Qaa flag number for that quest.
+**NOT Windows INI format** — no `[Section]` headers, no `key=value`. One block per quest, separated by blank lines. The zero-based block ordinal is the Qaa flag number for that quest. **Maximum 64 quests** in a single quests.ini file.
 
     Name [Display name shown in quest log — string, max ~80 chars]
     Index [The name of the Event block to run within the .evt file, AND the identifier used by TellQuest — no spaces, max ~30 chars]
@@ -276,6 +299,10 @@ Quest descriptions (shown in-game when a player views quest details) are stored 
     ^END
 
 The `^` line must exactly match the `Name` field in quests.ini. Without this entry the player sees "Help not found!" when viewing quest details.
+
+**quests.hlp entries for hidden quests:** Include a .hlp block for every quest, including those that start hidden (no `Known` field). A hidden quest becomes visible in the player's log once `TellQuest` is called — and the player can then view its description. Omitting the .hlp entry for a hidden quest means the player sees "Help not found!" the first time they look it up.
+
+**Daily-repeatable quests:** Some quests are designed to be run repeatedly, gated by D-flags rather than permanently completed. These quests must use `Known` so they are visible in the log from the start — they cannot be revealed via `TellQuest` without the risk of being revealed multiple times. **Daily repeatables must never call `DoneQuest`.** Calling `DoneQuest` permanently removes the quest from the menu; a daily repeatable's D-flag guard is what limits it to once per day, not quest completion. The Event block for a daily repeatable should begin with a D-flag check that jumps to a "come back tomorrow" Result if the flag is already set, then sets the flag at the end of the encounter.
 
 ---
 
@@ -294,12 +321,16 @@ Arguments: input source file first, output binary second. The output file extens
     MonFile [Path to the compiled .mon file containing this NPC's combat stats — max 31 chars]
     Wander [Location where NPC appears as a wanderer — valid values: Street, Church, Market, Town Hall, Training Hall, Mine. Omit entirely for NPCs that only appear via the Chat command in scripts.]
     Loyalty [integer 0–10, default 5. Controls tendency to leave the player's clan. Higher = more loyal (10 = never leaves).]
-    MaxTopics [integer — maximum topics the player may discuss in one sitting. Default -1 = no limit.]
+    MaxTopics [integer — maximum topics the player may discuss per conversation. Resets each time the player initiates a new chat with this NPC. Default -1 = no limit.]
     OddsOfSeeing [integer 0–100 — probability of NPC appearing on a given day. 0 = never appears; 100 = appears every day. Default when omitted: 0. For NPCs with no Wander field, the engine skips placement before reading this value, so OddsOfSeeing has no effect — set it to 0 explicitly to document intent.]
-    IntroTopic [TopicID — optional topic that runs automatically when the NPC is first approached, before the topic menu appears. See The lore keeper in QUEST DESIGN PATTERNS for the recommended catchup implementation using IntroTopic.]
-    HereNews [string, max 70 chars — news item displayed when this NPC shows up]
+    IntroTopic [TopicID — optional topic that runs automatically at the start of every conversation with this NPC, before the topic menu appears. It runs on every visit, not just the first — the Catchup pattern in QUEST DESIGN PATTERNS relies on this behaviour. See The lore keeper in QUEST DESIGN PATTERNS for the recommended catchup implementation using IntroTopic.]
+    HereNews [string, max 70 chars — optional news item displayed when this NPC shows up; omit entirely if the NPC's appearance warrants no news]
     KnownTopic [TopicID] [Prompt text] — topic visible to the player from the start; repeatable
     Topic [TopicID] [Prompt text] — topic that starts hidden; must be revealed via TellTopic; repeatable
+
+**Topic limit:** Each NPC may have at most **10** topics total across all `KnownTopic` and `Topic` entries combined. `IntroTopic` is stored separately and does not count toward this limit.
+
+**NpcFile limit:** clans.ini may contain at most **32** `NpcFile` entries in total. This limits the number of compiled .npc files that can be loaded across all packs.
 
 **QuoteFile/MonFile path limit:** `szQuoteFile` and `szMonFile` are 32-byte C fields, allowing paths up to **31 characters**. A PAK path has the form `@pakname.pak/x/alias` (fixed overhead: 8 chars), leaving **23 characters for pakname and alias combined**. Descriptive pack names such as `tuneville` or `blackhollow` are fully supported. See the PAK FILE AND PATH CONVENTIONS section for path construction rules.
 
@@ -309,7 +340,7 @@ The compiled .npc file is registered in clans.ini — see the clans.ini section 
 
 ### Monster/NPC Definition File (.txt)
 
-Compiled to a .mon binary using `mcomp <infile.txt> <outfile.mon>`. Both monsters and recruitable NPCs use this identical format. Each new Name keyword starts a new entry. Comments begin with # on their own line and can appear freely throughout the file. The NPCDAT field in an NPC Info block is the zero-based ordinal of that NPC's entry in whichever .mon file MonFile points to. NPCs and monsters may share a single .mon file or use separate ones.
+Compiled to a .mon binary using `mcomp <infile.txt> <outfile.mon>`. Both monsters and recruitable NPCs use this identical format. Each new Name keyword starts a new entry. **Maximum 255 entries per .mon file.** Comments begin with # on their own line and can appear freely throughout the file. The NPCDAT field in an NPC Info block is the zero-based ordinal of that NPC's entry in whichever .mon file MonFile points to. NPCs and monsters may share a single .mon file or use separate ones.
 
     Name [name — string, max ~20 chars]
     HP [Hit points — integer, default 30, practical range 1–15000. Randomized ±20% at fight time.]
@@ -345,6 +376,8 @@ All numeric stats are **randomized ±20% at fight time**. Set base values about 
 | ArmorStr | Flat damage reduction subtracted from every melee and spell hit |
 
 #### Stat ranges by Difficulty (from monsters.txt)
+
+These ranges are **design guidelines** — what the built-in monsters.txt uses at each Difficulty level — not engine-enforced scaling. Difficulty does not change a monster's stats at fight time; all stats are set manually in the source file and randomized ±20% at fight time. Use these ranges as calibration targets when designing new monsters.
 
 | Difficulty | HP | Strength | Agility | Dexterity | Wisdom | ArmorStr |
 |---|---|---|---|---|---|---|
@@ -479,7 +512,7 @@ Compiled using `ecomp <infile.txt> <outfile.evt>`. Event and Result blocks separ
 
 The table must be exhaustive. Every `SetFlag` call in every file must have a row. Every `{Pnn}`, `{Gnn}`, `{Dnn}`, `{Hnn}`, or `{Tnn}` condition must reference a row. A flag that appears in the table but has no corresponding `SetFlag` anywhere, or a `SetFlag` with no corresponding condition anywhere, is a bug — resolve it before writing the final .lst.
 
-**When to write the table:** Draft the flag assignment table *before* writing any chat or event content. The recommended generation order places chat files before the event script, but flag numbers used in chat files must not collide with those in the event script. Assign all flag numbers up front, then treat the table as a live document: update it as each file is written and verify it is complete and consistent before writing the final .lst.
+**When to write the table:** Write the complete flag assignment table as a standalone block at the top of the event script file *before writing any chat file*. If the event script does not yet exist, create it with only the flag table and the opening `>>` block comment, then write the chat files, then return to complete the event script content. The recommended generation order places chat files before the event script — this is why the table must be written first in a separate pass: chat files use flag numbers that must not collide with those in the event script, and the table is the mechanism that prevents collisions. Treat the table as a live document: update it as each file is written and verify it is complete and consistent before writing the final .lst.
 
 ---
 
@@ -557,6 +590,8 @@ PAK files are built using the makepak utility:
 
     makepak [outputfile.pak] [listing.lst]
 
+Note: makepak takes output before input — this is intentional and the reverse of most Unix tool conventions. Output file first, listing file second.
+
 The listing file is plain text, one entry per line, two whitespace-separated columns:
 
     [real filename on disk]  [alias used in scripts]
@@ -612,6 +647,8 @@ Perform the check explicitly: list the collected paths, list the .lst aliases, c
 ## COLOR CODES AND SPECIAL SEQUENCES
 
 All string output in Text, Prompt, AddNews, and HereNews fields is rendered through the game's string output system, which interprets the following inline codes. Files rendered by Display use the same system. Strings are encoded in CP437 — use CP437 byte values for box-drawing characters, accented letters, and other extended characters.
+
+Color codes are valid **only in text output fields** (Text, Prompt, AddNews, HereNews). Do not use them in identifier fields (Index, Flag names in SetFlag/ClearFlag, TopicID in TellTopic/TellQuest/Chat, file paths in QuoteFile/MonFile/File, item names in GiveItem) — those fields are identifiers, not rendered strings.
 
 **Spacing caution:** color codes are invisible but surrounding spaces are not. A space before a code and a space after it both appear in the output, producing a double space. Write `word |0Cnext` (space before only) or `word|0C next` (space after only), never `word |0C next`.
 
