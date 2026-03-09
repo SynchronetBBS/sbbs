@@ -940,8 +940,9 @@ static void receive_thread(void* arg)
 	int64_t max_fsize = xfer.filepos + avail;
 	if (startup->max_fsize > 0 && startup->max_fsize < max_fsize)
 		max_fsize = startup->max_fsize;
-	if (startup->options & FTP_OPT_DEBUG_DATA)
-		lprintf(LOG_DEBUG, "%04d <%s> DATA Limiting uploaded file size to %" PRIu64 " (%s) bytes"
+	if ((startup->options & FTP_OPT_DEBUG_DATA) || max_fsize < startup->max_fsize)
+		lprintf(max_fsize < startup->max_fsize ? LOG_NOTICE : LOG_DEBUG
+			    , "%04d <%s> DATA Limiting uploaded file size to %" PRIu64 " (%s) bytes"
 		        , xfer.ctrl_sock, xfer.user->alias, max_fsize
 		        , byte_estimate_to_str(max_fsize, tmp, sizeof(tmp), 1, 1));
 
@@ -967,8 +968,8 @@ static void receive_thread(void* arg)
 		}
 		if (xfer.filepos + total > max_fsize) {
 			lprintf(LOG_WARNING, "%04d <%s> !DATA received %" PRIdOFF " bytes of %s exceeds maximum allowed (%" PRIu64 " bytes)"
-			        , xfer.ctrl_sock, xfer.user->alias, xfer.filepos + total, xfer.filename, startup->max_fsize);
-			sockprintf(xfer.ctrl_sock, xfer.ctrl_sess, "552 File size exceeds maximum allowed (%" PRIu64 " bytes)", startup->max_fsize);
+			        , xfer.ctrl_sock, xfer.user->alias, xfer.filepos + total, xfer.filename, max_fsize);
+			sockprintf(xfer.ctrl_sock, xfer.ctrl_sess, "552 File size exceeds maximum allowed (%" PRIu64 " bytes)", max_fsize);
 			error = TRUE;
 			break;
 		}
