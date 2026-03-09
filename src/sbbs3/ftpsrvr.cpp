@@ -4802,7 +4802,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				SAFEPRINTF2(fname, "%s%s", scfg.dir[dir]->path, p);
-				if ((!append && filepos == 0 && fexist(fname))
+				if ((!append && filepos == 0 && fexistcase(fname))
 				    || (startup->options & FTP_OPT_INDEX_FILE
 				        && !stricmp(p, startup->index_file_name))
 				    ) {
