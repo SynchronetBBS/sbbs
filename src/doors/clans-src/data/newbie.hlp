@@ -47,10 +47,10 @@
    mana (MP) is not restored but is restored automatically as combat
    progresses.
 
- |0BDying |0Cis very real in combat!  If your player dies (gets less than -15
-   hitpoints) he will no longer be useable (unless resurrected).  Those with
-   less than 0 hitpoints are simply deemed unconscious and can be used the
-   next day.
+ |0BDying |0Cis very real in combat!  There are three HP thresholds to know:
+   Below   0 HP: knocked out -- unconscious, recovers the next day.
+   Below  -5 HP: mortal wound -- unconscious and MaxHP is permanently reduced.
+   Below -15 HP: dead -- cannot play until resurrected.
 
 ^PAUSE
 ^END
@@ -101,8 +101,10 @@
 ^Town Hall
  |0BTown Hall|0C
 
- Town Hall is where the ruling clan deals with the village's duties such as
- setting the tax rate, erecting buildings, buying farms, etc.
+ Town Hall is where the ruling clan manages the village.  The ruler can set
+ the tax rate and GST, build and upgrade town structures (Training Hall,
+ Church, Smithy, Pawn Shop, Wizard's Shop) using gold from the village vault,
+ adjust the conscription rate, and make announcements.
 
  Other clans which are not currently ruling may do things to offset the ruler's
  position.  Public conversation on the state of the village can be discussed

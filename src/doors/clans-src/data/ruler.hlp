@@ -48,8 +48,8 @@
 ^Vault
  |0CThe vault is where the town's gold is stored.  This is the gold used for
  building or upgrading structures within the town (such as a church).
- You can withdraw and deposit into this vault.  Doing with either one
- will either decrease or increase your popularity respectively.
+ You can deposit gold into or withdraw gold from this vault.  Withdrawals
+ are limited to 3 per day.
 
 ^END
 
@@ -62,9 +62,9 @@
 ^END
 
 ^Withdraw from Vault
- |0CThis option allows you to withdraw gold from the town's vault.  Be careful
- when withdrawing gold.  Doing it too often or in excess *will* be noticed
- by other clans.  This may cause them to rebel and overthrow you.
+ |0CThis option allows you to withdraw gold from the town's vault.  Withdrawals
+ are limited to 3 per day.  Be careful: each withdrawal appears in the daily
+ news, so other clans will notice and may vote you out.
 
 ^END
 
