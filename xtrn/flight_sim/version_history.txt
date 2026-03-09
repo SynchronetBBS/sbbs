@@ -1,0 +1,7 @@
+This file lists all of the changes made for each release of Flight Simulator.
+
+Revision History (change log)
+=============================
+Version  Date         Description
+-------  ----         -----------
+1.00     2026-03-09   Initial version
