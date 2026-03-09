@@ -53,12 +53,12 @@ Testing Quest Packs with qtest ........................................   4.3
 
 Miscellaneous Tools
 ===================
-MAKEPAK.EXE and PAKfiles ..............................................   5.1
-CHEW.EXE and INSTALL.EXE ..............................................   5.2
-LANGCOMP — Language String Compiler ...................................   5.3
-MCLASS — Class/Race Compiler ..........................................   5.4
-MITEMS — Item Compiler ................................................   5.5
-MSPELLS — Spell Compiler ..............................................   5.6
+makepak and PAK Files .................................................   5.1
+chew and install ......................................................   5.2
+langcomp -- Language String Compiler ..................................   5.3
+mclass -- Class/Race Compiler .........................................   5.4
+mitems -- Item Compiler ...............................................   5.5
+mspells -- Spell Compiler .............................................   5.6
 
 Miscellaneous
 =============
@@ -86,7 +86,7 @@ in leagues build up super items. Therefore, add-ons are being limited.
 Ok, so you can make quests for the game.  Quests are what you go on in the
 mines (G option).  They are fairly easy to make.  Simply create an event
 file (a script) and perhaps an NPC or two and often a monster file or two.
-Modify your QUESTS.INI file and sometimes the CLANS.INI file (to add on NPCs)
+Modify your quests.ini file and sometimes the clans.ini file (to add on NPCs)
 and you're set.
 
 NPCs are the characters you encounter in the mines but usually on the street
@@ -99,12 +99,12 @@ conversing with them).
 -------------------------------------------------------------------------------
 The Clans uses two INI files to allow sysops to add on modules to the game.
 
-CLANS.INI is the general INI file and allows the sysop to add on NPCs, races,
+clans.ini is the general INI file and allows the sysop to add on NPCs, races,
 classes, items, and spells (however, only NPCs can be developed by 3rd
 parties).  It also allows one to change the language file (the strings) used
 by the engine.
 
-QUESTS.INI is the file that the game uses to figure out which quests are
+quests.ini is the file that the game uses to figure out which quests are
 available in the game and where to find them.
 
 When creating an add-on, you must specify instructions on how to install the
@@ -130,7 +130,7 @@ own compiled language.
 
 To create an event file, you'll need to edit a text file which will contain
 the script (the commands used).  Then you'll need to compile the script using
-ECOMP.EXE.  Finally, you'll probably need to test out the script by actually
+ecomp.  Finally, you'll probably need to test out the script by actually
 running it in The Clans itself.
 
 
@@ -138,7 +138,7 @@ running it in The Clans itself.
 -------------------------------------------------------------------------------
 Example 1: Getting Started
 --------------------------
-Simple.  Run your favourite text editor and load up EVENT1.EVT.  It is the
+Simple.  Run your favourite text editor and load up event1.evt.  It is the
 first example of event file you'll encounter through these docs.  It's the
 simplest one you'll ever see so you better savor the moment.
 
@@ -168,19 +168,19 @@ That is an EF command!  It means output the string Hello World! onto the user's
 screen.
 
 Ok, let's compile it now to see if it really works.  (Ooh, this is getting
-oh-so exciting.)  To compile an EF, you need to run ECOMP.EXE.  Run it now on
+oh-so exciting.)  To compile an EF, you need to run ecomp.  Run it now on
 its own in DOS without any parameters to see how it works.  As you might have
 already guessed, the first parameter is the EF in text form and the second
 parameter is the compiled form of the EF.  The compiled form is used by the
 game.  You CANNOT run an uncompiled EF!  Usually, compiled EFs are denoted
 with a .E extension.  So, let's compile our first example.  Run this in DOS:
 
-        ECOMP EVENT1.EVT EVENT1.E
+        ecomp event1.evt event1.e
 
 
 When done, you should see the following on screen:
 
-ECOMP (dk0.10) by Allen Ussher
+ecomp (dk0.10) by Allen Ussher
 
   4:  Found event SimpleEvent
 Done!
@@ -189,11 +189,11 @@ Done!
 
 What does the 4:... mean?  It means on line 4, an event was found.  Now, how
 do we run it?  Running it is a little tricky.  To test it, we must add it onto
-the game as a quest.  To do this, add the following line to your QUESTS.INI
+the game as a quest.  To do this, add the following line to your quests.ini
 file in your Clans directory:
 
                 Name            Event1 Test
-                File            EVENT1.E
+                File            event1.e
                 Index           SimpleEvent
                 Known
 
@@ -209,17 +209,17 @@ Now, go back into the game.  You should be able to run it again.
 
 Example 2: Blocks
 -----------------
-Ok, now let's try the second example, EVENT2.EVT.  Look at the file.  See how
+Ok, now let's try the second example, event2.evt.  Look at the file.  See how
 it is made up of three blocks of commands.  Compile it and run it the same way
-you did EVENT1.  Add the following to QUESTS.INI:
+you did event1.  Add the following to quests.ini:
 
                 Name            Event2 Test Part 1
-                File            EVENT2.E
+                File            event2.e
                 Index           FirstEvent
                 Known
 
                 Name            Event2 Test Part 2
-                File            EVENT2.E
+                File            event2.e
                 Index           SecondEvent
                 Known
 
@@ -231,7 +231,7 @@ can be made to regular Event blocks and not just Result blocks.  See also how
 to Jump command is used.  Pretty self-explanatory.  Now look at the 3rd block
 of code.  It is a totally different event.  What use is this?  If you ever
 create several quests, you can stuff 'em all in one file and distribute it
-all together as one!  Also notice how the Index used in the QUESTS.INI refers
+all together as one!  Also notice how the Index used in the quests.ini refers
 to the event block that is run.  And what is the Known keyword used for?  It
 makes it so that the player does not need to be "told" that the quest exists.
 You'll know what I mean if you've ever chatted with an NPC and "found out"
@@ -239,18 +239,18 @@ about a quest.  The Known keyword bypasses that requirement.
 
 Example 3: Getting Options
 --------------------------
-Ok, onto another example.  Compile and run EVENT3.EVT.  You should know how
-it's done by now.  This is how you add quests onto QUESTS.INI:
+Ok, onto another example.  Compile and run event3.evt.  You should know how
+it's done by now.  This is how you add quests onto quests.ini:
 
         Name    <put the name of the quest here -- you name it>
         File    <the event file containing the commands>
         Index   <name of the event block which starts off the quest>
         [Known] (use this if you want users to already "know" of the quest)
 
-In this case (EVENT3), the Index is called Block1 so put that in the Index
-field.  The File is EVENT3.E (the compiled event file).
+In this case (event3), the Index is called Block1 so put that in the Index
+field.  The File is event3.e (the compiled event file).
 
-Now EVENT3 is a bit more complex.  You should be used to seeing the blocks by
+Now event3 is a bit more complex.  You should be used to seeing the blocks by
 now.  The first new thing you might notice is the Text keyword without any
 parameters.  This means output a carriage return/line feed. The next thing you
 see is a Prompt command.  This is identical to the Text keyword except it
@@ -279,15 +279,15 @@ see it in action.  Look at the whole EF now and follow it.
 
 Example 4: Fighting
 -------------------
-Now, let's look at EVENT4.EVT.  It is an example of how to do battles in the
-game.  The Index used for the QUESTS.INI file is "FightExample".
+Now, let's look at event4.evt.  It is an example of how to do battles in the
+game.  The Index used for the quests.ini file is "FightExample".
 
 Run it first to test it out.  I'll leave the installation to you.  After you
 have tested it out, and won the battle, you'll see that you have "completed"
 the quest.  This means that even if you run maintenance, you will no longer
 be able to run the quest.  This is achieved using the new keyword DoneQuest.
 This will set the quest as "completed" by the user so that he will no longer
-be able to run it.  Look at the EVENT4.EVT file and see where it is located.
+be able to run it.  Look at the event4.evt file and see where it is located.
 
 How do you fight monsters using the event file?  First of all, you'll need to
 "load up" the monsters into the game's memory.  To do this, you need to use
@@ -298,7 +298,7 @@ the AddEnemy command:
 The monster file name is the file containing the monsters.  You'll learn how
 to create monsters in another section.  For now, we use the basic monsters in
 the game.  They are stored in the file called /m/Output.  The /m/Output file
-is contained in the CLANS.PAK.  (See the section on MAKEPAK.EXE and PAKfiles
+is contained in the clans.pak.  (See the section on makepak and PAKfiles
 for info.)  The second parameter for this command is the numeric index of
 the monster.  Monsters in the file are listed and referred to using a numeric
 index.  0 is the first monster in the file, 1 is the next, and so on.  Again,
@@ -354,7 +354,7 @@ FALSE.  The following categories of flags are available for use:
 There are 64 flags in all for each category.  The first G flag is called G0,
 the 2nd is G1, the 3rd is G2, and so on until G63.  The same applies to all
 the other categories.  Other examples of flags:  P53, D21, H16, T44.  Flags
-are tested using {}'s.  You'll have to look at EVENT5.EVT for an example.
+are tested using {}'s.  You'll have to look at event5.evt for an example.
 {}'s are used in the following manner:
 
         {acs goes here}<keyword goes here>
@@ -427,7 +427,7 @@ Some more ACS stuff:
         Kyy     -- user is at mine level yy or higher
 
 
-The rest is fairly self-explanatory.  Please peruse the EVENT5.EVT file for
+The rest is fairly self-explanatory.  Please peruse the event5.evt file for
 additional comments.
 
 * Useful Info
@@ -513,7 +513,7 @@ meanings:
 
                 -- This will cause the player to fight the queue of monsters
                    that were added using AddEnemy.  For instance, if in the
-                   data file Monsters.MON you had monster #9 as Large Flea
+                   data file monsters.mon you had monster #9 as Large Flea
                    and you wanted the player to fight 3 of these creatures,
                    you'd use this:
 
@@ -555,11 +555,11 @@ meanings:
         TellQuest QuestIndex
 
                 -- A player will normally not know of any quests (except
-                   those flagged as "Known" in QUESTS.INI so they have
+                   those flagged as "Known" in quests.ini so they have
                    to find out about them from someone.  You "tell" them
                    about a quest using this command.  After telling them
                    about quest QuestIndex, they'll be able to access the
-                   quest in the quest menu.  See my NPCQUOTE.TXT file to
+                   quest in the quest menu.  See my npcquote.txt file to
                    see it in action (even if it is a quote file and not
                    an event file).  It's easy to use.
 
@@ -662,29 +662,29 @@ explain that? :)  Hope not.
 
 [2.2]  How Do I Make Monsters?
 -------------------------------------------------------------------------------
-Monsters are made using a text file (like MONSTERS.TXT) and then compiling it
+Monsters are made using a text file (like monsters.txt) and then compiling it
 into a data file (usually ends in .MON, but it doesn't matter).  So, make your
-monster file however you want (modify MONSTERS.TXT if you like) and compile it
+monster file however you want (modify monsters.txt if you like) and compile it
 like so:
 
-	MCOMP <MONSTERS.TXT> <output.mon>
+	mcomp <monsters.txt> <output.mon>
 
 To make a monsters file called test.mon, use this
 
-	MCOMP monsters.txt test.mon
+	mcomp monsters.txt test.mon
 
-*See MONSTERS.TXT and the next section for info on making these files.  Of
+*See monsters.txt and the next section for info on making these files.  Of
 course, you can name the .TXT file anything.  If you made MYMON.TXT, compile
 it like this:
 
-        MCOMP MYMON.TXT MYMON.MON
+        mcomp MYMON.TXT MYMON.MON
 
 MYMON.MON can also be any valid filename.
 
 
 [2.3]  Monster Field Reference
 -------------------------------------------------------------------------------
-Please refer to MONSTERS.TXT for examples.
+Please refer to monsters.txt for examples.
 
 Name          [name of monster, max of 19 chars]
 HP            [hp of monster]
@@ -719,18 +719,18 @@ You will usually chat with them and sometimes have them join your clan.
 [3.2]  How Do I Make NPCs?
 -------------------------------------------------------------------------------
 NPCs are compiled usually to a file ending with the .NPC extension.  To
-make an NPC file, create a text file similar to NPCS.TXT and use MakeNPC
+make an NPC file, create a text file similar to npcs.txt and use makenpc
 to compile it:
 
-        MakeNPC [infile.txt] [outfile.npc]
+        makenpc [infile.txt] [outfile.npc]
 
-To add your new NPCs to the game, add this line to your CLANS.INI file:
+To add your new NPCs to the game, add this line to your clans.ini file:
 
         NpcFile [yourfile].npc
 
 *NPCs are those characters that you chat with in The Clans (/ option in
-menus).  They can also join your clan.  See NPCS.TXT for an example NPC
-file.  You should name your NPC files something unique (i.e. not CLANS.NPC)
+menus).  They can also join your clan.  See npcs.txt for an example NPC
+file.  You should name your NPC files something unique (i.e. not clans.npc)
 and end it with .NPC.  However, if using a PAKfile (see section 5.1) then
 remember to name it properly.  If you name the file /npc/MyGuys in your
 PAKfile called ADDON.PAK, use this:
@@ -740,8 +740,8 @@ PAKfile called ADDON.PAK, use this:
 
 [3.3]  Example NPC
 -------------------------------------------------------------------------------
-I'll go through one example in NPCS.TXT, The Knight.  As you can see from the
-example (open up NPCS.TXT and look at it if you're not already doing so) the
+I'll go through one example in npcs.txt, The Knight.  As you can see from the
+example (open up npcs.txt and look at it if you're not already doing so) the
 data for this NPC is comprised of several lines.  This is how NPCs are set up.
 The first line, the Index line, must always come first.  The Index is
 basically a tagword used for referencing this NPC in event files (using the
@@ -760,7 +760,7 @@ The next line contains the actual name of the NPC.
 
 Next is the QuoteFile's name.  See the next section on making
 QuoteFiles.  They contain all the quotes that the character can say.  They
-must be compiled like EFs and are actually compiled using ECOMP.EXE as well.
+must be compiled like EFs and are actually compiled using ecomp as well.
 
 The following line is the NPCDAT line.  This is used to reference the NPC's
 actual character data (used when the NPC joins clans).  The character data is
@@ -769,7 +769,7 @@ sequential order and the 0th monster being the first one in the file.  For
 this example, NPCDAT is followed by 0 meaning that the 0th monster is the one
 which has the stats for this character.  The next line is the MonFile line.
 This is the name of the monster file used for the data for NPCDAT.  Here,
-NPC.MON is used so the first monster appearing there (the 0th one) will be
+npc.mon is used so the first monster appearing there (the 0th one) will be
 used for the NPC's stats.
 
 What follows is the Loyalty line.  This is used to see if the NPC is loyal to
@@ -787,11 +787,11 @@ first quote shown to the user.
 
 [3.4]  Quote Files
 -------------------------------------------------------------------------------
-The example used for this section is NPCQUOTE.TXT.  It is an uncompiled
-QuoteFile (QF).  QFs must be compiled using ECOMP.EXE.  QFs are made the exact
+The example used for this section is npcquote.txt.  It is an uncompiled
+QuoteFile (QF).  QFs must be compiled using ecomp.  QFs are made the exact
 same way as EFs except that they use the keyword Topic instead of Event or
 Result.  Each topic corresponds to the listing of topics that appears in the
-raw NPC data file (ex: NPCS.TXT).
+raw NPC data file (ex: npcs.txt).
 
 There are three new commands in the QuoteFiles, however.
 
@@ -820,13 +820,13 @@ for PAKfiles.
 [3.5]  Using Monster Files for Stats
 -------------------------------------------------------------------------------
 (This section needs work.)
-Create a file similar to NPC-MON.TXT.  Compile using MCOMP.EXE as you would a
+Create a file similar to npc-mon.txt.  Compile using mcomp as you would a
 normal monster file.  Reference the file using the MonFile keyword and the
 actual stats within the file using the NPCDAT keyword.
 
 [3.6]  NPC Field Reference
 -------------------------------------------------------------------------------
-Please see NPCS.TXT for examples.  NPC-MON.TXT is the uncompiled NPC "Monster
+Please see npcs.txt for examples.  npc-mon.txt is the uncompiled NPC "Monster
 file" which contains the NPCs' stats.
 
 
@@ -846,16 +846,16 @@ Index         [index, ONE WHOLE WORD, 19 chars or less, MUST COME FIRST]
               have AUKnight.
 
 Name          [19 chars or less]
-QuoteFile     [12 chars or less, quote filename, such as NPCQUOTE.Q]
+QuoteFile     [12 chars or less, quote filename, such as npcquote.q]
 MonFile       [12 chars or less, .MON file used to hold NPC monsters.
               NPC attributes such as Dexterity, Agility, etc. are held in
               files similar to the ones used for monster combat (.MON
-              files).  See NPC-MON.TXT for an example .MON file.
-              DO NOT USE NPC.MON, that is the one used for my NPCs, use your
+              files).  See npc-mon.txt for an example .MON file.
+              DO NOT USE npc.mon, that is the one used for my NPCs, use your
               own. :)  You might use JOE.MON for instance to hold YOUR NPC
               data.
 NPCDat        [Which monster is he in the .MON file?  0 means first monster,
-              and so on.  Again, see NPC-MON.TXT for an example.]
+              and so on.  Again, see npc-mon.txt for an example.]
 Loyalty       [How loyal is this NPC, 10 means most loyal and 0 means least.
               This is used to see if the NPC chats about his Clan if asked
               to join the clan but he is already in a clan]
@@ -903,7 +903,7 @@ Installing Add-Ons
 [4.1]  NPCs
 -------------------------------------------------------------------------------
 Adding add-on NPCs to a pre-existing game is simple.  All you need to do is
-instruct the sysop to add one line to his CLANS.INI file:
+instruct the sysop to add one line to his clans.ini file:
 
         NpcFile MYNPCS.NPC
 
@@ -917,7 +917,7 @@ use this:
 [4.2]  Quests
 -------------------------------------------------------------------------------
 Adding quests is a bit more difficult but if the sysop knows how to cut and
-paste, it's really simple.  Ask the sysop to add on to their QUESTS.INI file
+paste, it's really simple.  Ask the sysop to add on to their quests.ini file
 lines such as the following:
 
                 Name            Bathtub o' Blood
@@ -941,13 +941,13 @@ example:
         |12Difficulty: Hard and BLOODY!
         ^END
 
-This section goes into the QUESTS.HLP file.  Again, you'll likely make it up,
+This section goes into the quests.hlp file.  Again, you'll likely make it up,
 place it in your installation docs and ask the sysop to cut and paste it into
-his QUESTS.HLP file.  The format is simple.  The first line with the ^ has the
-title of the quest (literally, the Name that is seen in QUESTS.INI).  And then
+his quests.hlp file.  The format is simple.  The first line with the ^ has the
+title of the quest (literally, the Name that is seen in quests.ini).  And then
 you simply place all the text you wish between that line and the ^END line.
 
-Here's another example for the QUESTS.INI but this one assumes the quest
+Here's another example for the quests.ini but this one assumes the quest
 appears in BOB.PAK and in the file named /e/Bob:
 
                 Name            Bathtub o' Blood
@@ -1155,13 +1155,13 @@ file lookup rules, and worked examples, is in:
 Miscellaneous Tools
 ===============================================================================
 
-[5.1]  MAKEPAK.EXE and PAKfiles
+[5.1]  makepak and PAK Files
 -------------------------------------------------------------------------------
 Before making a quest, you should be aware, that there may be a few files that
 must be created for the quest.  An NPC file, a monster file, and the actual
 compiled event file are what you'd normally find.  To help reduce clutter, a
 system was created to place several files in one large file called a PAKfile.
-MAKEPAK.EXE is used to create a PAKfile.
+makepak is used to create a PAKfile.
 
 When files are PAKed together, they are referenced differently in event files,
 NPC files, and INI files.  PAK files are created in the following manner:
@@ -1171,7 +1171,7 @@ NPC files, and INI files.  PAK files are created in the following manner:
            the files as they are named in DOS.  The second column contains the
            files as they are named in the PAKfile.  The PAKfile file names
            MUST begin with a forward slash (/).  For an example of a PAKfile
-           file listing, see PAK.LST.  As you can see, the file names on the
+           file listing, see pak.lst.  As you can see, the file names on the
            right side all begin with the / character and often are named using
            a directory-like hierarchy.  However, it matters not what you name
            the PAKfile file names (2nd column files).  For all that matters,
@@ -1181,17 +1181,17 @@ NPC files, and INI files.  PAK files are created in the following manner:
            names cannot exceed 29 characters in length!  And of course, the
            files on left column must be exist to be PAKed!
 
-        2. Next, you need to actually run MAKEPAK.EXE.  This is run in the
+        2. Next, you need to actually run makepak.  This is run in the
            following manner:
 
-                MAKEPAK [.pak file name] [PAK file list]
+                makepak [.pak file name] [PAK file list]
 
            So, to create a PAKfile called AI.PAK using the PAK file list
-           called PAK.LST:
+           called pak.lst:
 
-                MAKEPAK AI.PAK PAK.LST
+                makepak AI.PAK pak.lst
 
-           After the program is run, all the files listed in PAK.LST will
+           After the program is run, all the files listed in pak.lst will
            be PAKed into the file AI.PAK and be ready to be accessed by
            The Clans.
 
@@ -1199,75 +1199,84 @@ NPC files, and INI files.  PAK files are created in the following manner:
 Now that we have the PAK file, you need to know how to access the files in it!
 Remember that we needed to name PAK files with the / as the first character?
 This is important.  When files in The Clans are referenced with the /
-character, the CLANS.PAK file is searched and the file is found there.
+character, the clans.pak file is searched and the file is found there.
 However, we need a way to differentiate between a file named /Event.E that
-exists in CLANS.PAK from a file named /Event.E that exists in ADDON.PAK.  This
+exists in clans.pak from a file named /Event.E that exists in ADDON.PAK.  This
 is achieved through the @ character.  Yes, it's not used just for email
 addresses any more!  To access the file /Event.E that exists in ADDON.PAK,
 we'd use the following string:
 
         @ADDON.PAK/Event.E
 
-To access the file called /Event.E in CLANS.PAK, we do the same thing:
+To access the file called /Event.E in clans.pak, we do the same thing:
 
-        @CLANS.PAK/Event.E
+        @clans.pak/Event.E
 
 Actually, by default, if a PAKfile name is omitted, the game will use
-CLANS.PAK.  So, we could actually use the following to access /Event.E in
-CLANS.PAK:
+clans.pak.  So, we could actually use the following to access /Event.E in
+clans.pak:
 
         /Event.E
 
 So what does this all boil down to?  ** WHENEVER ACCESSING PAKfile FILES
 (these terms are getting confusing) ALWAYS USE THE @ CHARACTER UNLESS YOU
-REALLY WISH TO USE THE FILE IN CLANS.PAK!!! ***  So, if you PAK an ANSI into
+REALLY WISH TO USE THE FILE IN clans.pak!!! ***  So, if you PAK an ANSI into
 your PAKfile called DRAGON.PAK, and the ANSI is called /ans/Welcome, access it
 using this string:
 
         @DRAGON.PAK/ans/Welcome
 
 DO NOT use /ans/Welcome (without the @DRAGON.PAK) or else the game will search
-CLANS.PAK and come up empty handed.
+clans.pak and come up empty handed.
 
 If any of this is confusing, that's fine.  You can come back and read this
 over later when you need to make a PAKfile.
 
-[5.2]  CHEW.EXE and INSTALL.EXE
+genall.bat (Windows) and genall.mak (Unix) show the full
+data-compilation pipeline: they compile every default source file
+using the devkit tools (langcomp, mcomp, mspells, mitems, mclass,
+makenpc, ecomp) and then pack the results into clans.pak with
+makepak.  Use them as a template when automating PAK generation for
+your own add-ons.  On Unix:
+
+        gmake -f genall.mak
+
+[5.2]  chew and install
 -------------------------------------------------------------------------------
 When you wish to distribute your add-on, you may wish to use my installation
 program that is provided with The Clans.  Since everyone who has installed
-already has the INSTALL.EXE program in their Clans directory, you will not
+already has the install program in their Clans directory, you will not
 need to add it onto your archive.  Simply explain in a readme file within your
 archive that the sysop will need to unzip the contents of the file into the
 Clans directory.  This is necessary anyway since quests will go into that
 directory.
 
-To use the INSTALL program, you will need to create a GUM file.  A GUM file is
+To use the install program, you will need to create a GUM file.  A GUM file is
 a compressed file containing many files (similar to a ZIP file or an ARJ)
 file.  To create a GUM file, you'll first need to create a file containing a
 list of all the files that will go into the GUM file.  This file is named
-FILES.LST (you can't use any other name).  So create a text file called
-FILES.LST and in it, place the names of all the files that will go into the
+files.lst (you can't use any other name).  So create a text file called
+files.lst and in it, place the names of all the files that will go into the
 GUM archive, one file per line.  Here is an example of such a listing:
 
         MYQUEST.TXT
         MYQUEST.PAK
         SYSOP.DOC
 
-Then all you need to do is run CHEW.EXE with the name of the GUM file to
+Then all you need to do is run chew with the name of the GUM file to
 create following it.  For instance, to create a GUM file called MYQUEST.GUM,
 you'd run it like this:
 
-        CHEW MYQUEST.GUM
+        chew MYQUEST.GUM
 
-(If you're wondering the significance of the terms of GUM and CHEW, there is
+(If you're wondering the significance of the terms of GUM and chew, there is
 none.  They sounded good, ok? ;-)  This will create the MYQUEST.GUM file
-containing all the files listed in FILES.LST.  If you do not specify a GUM
-file to create, ARCHIVE.GUM will be created by default.
+containing all the files listed in files.lst.  If you do not specify a GUM
+file to create, archive.gum will be created by default.
 
 Now that you have a GUM file, you'll need to make an INI file useable by the
-INSTALL program.  You can take a look at CLANDEV.INI (the INI file used by the
-dev. kit) and INSTALL.INI (Clans's install INI file).  EXAMPLE.INI is provided
+install program.  You can take a look at clandev.ini (the INI file used by the
+dev. kit) and install.ini (Clans's install INI file).  example.ini is provided
 as an example and template.
 
 The first few lines of the INI file can simply be comments.
@@ -1280,8 +1289,8 @@ the user types in "read whatsnew", the section which starts with :whatsnew is
 displayed.  The section ends when another section beginning with another colon
 begins (the lined sections are merely used for readability).
 
-The EXAMPLE.INI lays out all the sections and you are encouraged to try it out
-by typing INSTALL EXAMPLE in DOS.
+The example.ini lays out all the sections and you are encouraged to try it out
+by typing install EXAMPLE in DOS.
 
 The section :install.files is a listing of all the files that are in the
 archive and how to treat them if there is an existing file.  The first
@@ -1299,58 +1308,146 @@ Note the following things in the file:
         * NO BLANK LINES may be used in the :install.files and :upgrade.files
           sections.
 
-Remember, to use your INSTALL INI file, you'll need to use INSTALL.EXE and run
+Remember, to use your install INI file, you'll need to use install and run
 it with the INI file name as the parameter.  For instance, if you created an
-INI file called MYQUEST.INI, you may install it using INSTALL MYQUEST (the
+INI file called MYQUEST.INI, you may install it using install MYQUEST (the
 .INI can be omitted).
 
-The compression code in CHEW is taken from SIXPACK.C by Philip G. Gage.
+The compression code in chew is taken from SIXPACK.C by Philip G. Gage.
 
 
-[5.3]  LANGCOMP -- Language String Compiler
+[5.3]  langcomp -- Language String Compiler
 -------------------------------------------------------------------------------
-LANGCOMP compiles the language strings file (STRINGS.TXT) into the binary
-format (STRINGS.XL) used by the game engine at run time.
+langcomp compiles the language strings file (strings.txt) into the binary
+format (strings.xl) used by the game engine at run time.
 
-        LANGCOMP <strings.txt> [strings.xl [mstrings.h]]
+        langcomp <strings.txt> [strings.xl [mstrings.h]]
 
-If only the first argument is given, LANGCOMP derives the output name by
-replacing the .TXT extension with .XL.  So running "langcomp strings" looks
-for STRINGS.TXT and produces STRINGS.XL.  The optional third argument causes
-LANGCOMP to also generate a C header file containing #define macros for each
+If only the first argument is given, langcomp derives the output name by
+replacing the .txt extension with .xl.  So running "langcomp strings" looks
+for strings.txt and produces strings.xl.  The optional third argument causes
+langcomp to also generate a C header file containing #define macros for each
 string index (used by the game source code).
 
 The compiled output has a hard limit of 64000 bytes.  The current string set
 uses roughly 28500 bytes, so there is ample room for additions.
 
 
-[5.4]  MCLASS -- Class/Race Compiler
+[5.4]  mclass -- Class/Race Compiler
 -------------------------------------------------------------------------------
-MCLASS compiles player class and race definition files.  The same tool is
+mclass compiles player class and race definition files.  The same tool is
 used for both; only the input data differs.
 
-        MCLASS <input.txt> <output.cls>
+        mclass <input.txt> <output.cls>
 
-The standard data files are CLASSES.TXT and RACES.TXT, compiled to
-CLASSES.CLS and RACES.CLS respectively.
+The standard data files are classes.txt and races.txt, compiled to
+classes.cls and races.cls respectively.  Up to 15 classes or races may be
+defined in a single file (MAX_PCLASSES).
+
+Please refer to classes.txt and races.txt for examples.
+
+Name          [class or race name, max 14 chars]
+Agility       [int8 modifier]
+Dexterity     [int8 modifier]
+Strength      [int8 modifier]
+Wisdom        [int8 modifier]
+ArmorStr      [int8 modifier]
+Charisma      [int8 modifier]
+MaxHP         [int16, starting hit points]
+MaxMP         [int16, starting spell points]
+Gold          [int16, starting gold]
+Spell         [spell index; repeatable, max 40 per class]
+
+For classes, attribute modifiers are adjustments from a baseline of zero
+(e.g. +3 Strength, -2 Wisdom).  For races, modifiers are absolute starting
+values where 5 is average (see comments in races.txt).
+
+Each Name keyword begins a new class or race definition.  Spell may appear
+multiple times to grant several spells; see the Spell Index (section 6.3)
+for valid spell numbers.
 
 
-[5.5]  MITEMS -- Item Compiler
+[5.5]  mitems -- Item Compiler
 -------------------------------------------------------------------------------
-MITEMS compiles item definitions from a text file into a binary data file.
+mitems compiles item definitions from a text file into a binary data file.
 
-        MITEMS <input.txt> <output.itm>
+        mitems <input.txt> <output.itm>
 
-The standard data file is ITEMS.TXT, compiled to ITEMS.ITM.
+The standard data file is items.txt, compiled to items.itm.  Up to 60 items
+may be defined in a single file (MAX_ITEMS).
+
+Please refer to items.txt for examples.
+
+Name          [item name, max 24 chars; starts a new item definition]
+Type          [Weapon, Armor, Shield, Scroll, Book, or Other]
+Special       [flag -- item cannot be bought or sold]
+Agility       [int8 bonus (or requirement/penalty, see below)]
+Dexterity     [int8 bonus]
+Strength      [int8 bonus]
+Wisdom        [int8 bonus]
+ArmorStr      [int8 bonus]
+Charisma      [int8 bonus]
+Stats         [switch to stat-bonus mode (default)]
+Requirements  [switch: following attributes are minimum requirements]
+Penalties     [switch: following attributes are penalties (reserved)]
+Cost          [int32, gold cost]
+DiffMaterials [flag -- item can be crafted from different materials]
+Energy        [int16, durability; default 300]
+Spell         [int16, spell index for scrolls and books]
+Level         [int16, market level at which this item appears]
+Village       [int16 village number, or ALL for every village]
+RandLevel     [int8, random stat variance 0-10; higher = more random]
+HPAdd         [int8, hit point bonus when equipped]
+SPAdd         [int8, spell point bonus when equipped]
+
+The Stats, Requirements, and Penalties keywords are mode switches.  When
+the parser is in Stats mode (the default), attribute keywords set the
+item's stat bonuses.  After a Requirements keyword, attribute keywords
+set the minimum attributes a character needs to equip the item.  After a
+Penalties keyword, attribute keywords set stat penalties (reserved for
+future use).
 
 
-[5.6]  MSPELLS -- Spell Compiler
+[5.6]  mspells -- Spell Compiler
 -------------------------------------------------------------------------------
-MSPELLS compiles spell definitions from a text file into a binary data file.
+mspells compiles spell definitions from a text file into a binary data file.
 
-        MSPELLS <input.txt> <output.spl>
+        mspells <input.txt> <output.spl>
 
-The standard data file is SPELLS.TXT, compiled to SPELLS.SPL.
+The standard data file is spells.txt, compiled to spells.spl.  Up to 40
+spells may be defined in a single file (MAX_SPELLS).
+
+Please refer to spells.txt for examples.
+
+Name          [spell name, max 19 chars; starts a new spell definition]
+Flag          [Heal, Damage, Modify, Incapacitate, RaiseUndead,
+              or BanishUndead; sets the spell's type]
+Friendly      [flag -- spell targets allies instead of enemies]
+NoTarget      [flag -- spell needs no target]
+MultiAffect   [flag -- spell hits multiple targets]
+Value         [int8, effect magnitude]
+Level         [int8, spell level]
+SP            [int16, spell-point cost; default 1]
+Energy        [int16, effect duration; default 40]
+Agility       [int8 attribute modifier]
+Dexterity     [int8 attribute modifier]
+Strength      [int8 attribute modifier]
+Wisdom        [int8 attribute modifier]
+ArmorStr      [int8 attribute modifier]
+Charisma      [int8 attribute modifier]
+HealStr       [string displayed when the spell heals]
+DamageStr     [string displayed when the spell deals damage]
+ModifyStr     [string displayed when the spell modifies stats]
+WearoffStr    [string displayed when the spell effect wears off]
+StatusStr     [string displayed as ongoing status text]
+OtherStr      [string for miscellaneous spell messages]
+UndeadName    [string, name of the undead creature summoned]
+
+Each Name keyword begins a new spell definition and resets all fields to
+their defaults.  The Flag keyword may be given multiple times to combine
+type flags (e.g. a spell that both heals and modifies stats).  Attribute
+keywords set modifiers that are applied to the target while the spell is
+active.
 
 
 Miscellaneous
@@ -1431,7 +1528,7 @@ useful if you wish to give item using the GiveItem command in an EF.
 [6.5]  Monster Index
 -------------------------------------------------------------------------------
 Here is a listing of all the monsters appearing in the file
-@CLANS.PAK/m/Eva (i.e. /m/Eva).  These are used for events and can be used by
+@clans.pak/m/Eva (i.e. /m/Eva).  These are used for events and can be used by
 you if you wish.
 
         0. Ghoul                        19. Man
