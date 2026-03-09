@@ -52,6 +52,7 @@ Data Files Overview ............................................   5.1
 Building Data Files ............................................   5.2
 Event Scripts ..................................................   5.3
 Help Files .....................................................   5.4
+Internal %-codes ...............................................   5.5
 
 Known Issues and Technical Debt
 ================================
@@ -82,8 +83,10 @@ village.  Through the IBBS system, clans can travel to -- and attack
 -- other villages over a Fidonet-style packet network.
 
 This document is the developer and contributor reference.  For sysop
-installation and game setup, see release/clans.doc.  For quest and
-NPC development, see devkit/clandev.txt.
+installation and game setup, see release/clans.txt.  For quest and
+NPC development, see devkit/clandev.txt.  docs/meta.md tells AI
+coding assistants to treat release/prompt.md as a prompt for a
+different LLM, not as instructions for the assistant itself.
 
 
 [0.2]  License and History
@@ -793,6 +796,31 @@ and register it in help.c.  Help files are plain text; ANSI
 colour codes are supported.
 
 
+[5.5]  Internal %-codes
+-------------------------------------------------------------------------------
+rputs() in door.c processes %-codes embedded in any displayed text.
+The general-purpose codes (%P, %C, %L, %R, %D, %B, %V) and the
+game-state codes (%F, %M, %1, %2, %X, %Q, %N, %T, %Y) are
+documented in clans.txt section 1.9.
+
+The following codes are used internally by strings.txt and the
+combat system.  They depend on transient state that is only valid
+during specific game routines and are not useful in quest packs or
+sysop-editable files:
+
+    %SS  Spell cast source name (Spells_szCastSource)
+    %SD  Spell cast destination name (Spells_szCastDestination)
+    %SV  Spell cast value (Spells_CastValue)
+    %Z   Truncate line -- returns from rputs() immediately
+
+%SS, %SD, and %SV are populated only during spell resolution in
+fight.c.  Outside that context, they contain stale or empty
+values.
+
+%Z silently discards the rest of the current rputs() call.  It
+has no practical use in content files.
+
+
 Known Issues and Technical Debt
 ===============================================================================
 
@@ -905,7 +933,9 @@ A complete game installation requires:
   IBBS:       route.cfg, world.ndx  (league-specific; see samples
                           in release/worldndx.smp and route.smp)
   Windows:    runclans.bat (launcher; edit paths for your setup)
-  Docs:       release/clans.doc  (sysop reference)
+  Docs:       release/clans.txt  (sysop reference)
+  AI quest:   release/questgen.txt  (LLM quest generation guide)
+              release/prompt.md  (prompt for the LLM)
 
 A devkit installation requires:
 

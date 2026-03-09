@@ -182,12 +182,26 @@ All C source files use **tabs** for indentation. When constructing `old_string` 
 - **OpenDoors library** (`libODoors.a`) — required for BBS door functionality, linked statically.
 - Unix builds require POSIX (`-D_POSIX_C_SOURCE=200809L`).
 
-## Sysop/Developer Documentation Format
+## Documentation Audiences
 
+Three audiences, each building on the previous:
+
+| Audience | Role | Main doc | Location |
+|----------|------|----------|----------|
+| Sysop | Install binary, run on BBS, join IBBS leagues, install quest packs | `release/clans.txt` | `release/` |
+| PAK developer | Use devkit to create/customize items, monsters, spells, events, quest packs for distribution | `devkit/clandev.txt` | `devkit/` |
+| Clans developer | Modify C source code for the game itself | `docs/notes.txt` | `docs/` |
+
+Each audience is expected to be familiar with the documentation for all prior audiences (PAK developers know the sysop docs; Clans developers know both).
+
+## Documentation Format
+
+All documentation files use the same format regardless of audience.
 Plain ASCII text files, ≤79 columns, no markdown, no UTF-8 characters.
-Use `--` (double hyphen) instead of em-dash.  Two canonical examples:
-- `release/clans.doc` — sysop documentation
-- `devkit/clandev.txt` — developer documentation
+Use `--` (double hyphen) instead of em-dash.  Canonical examples:
+- `release/clans.txt` — sysop documentation
+- `devkit/clandev.txt` — PAK developer documentation
+- `docs/notes.txt` — Clans developer documentation
 
 ### Structure
 

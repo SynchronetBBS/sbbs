@@ -770,6 +770,23 @@ The trailing `|0F` is required: color codes set in a `Prompt` line persist into 
 | `%R` | Carriage return — returns cursor to the start of the current line without advancing. |
 | `%D` | Delay — pauses output for 100ms (typewriter effect). |
 | `%B` | Backspace. |
+| `%V` | Print game version string. |
+
+### Game state substitution codes
+
+These expand to live game values during quest execution. All text displayed through `rputs()` supports them.
+
+| Code | Effect |
+|------|--------|
+| `%F` | Player's fights remaining (`PClan.FightsLeft`). |
+| `%M` | Player's mine level (`PClan.MineLevel`). |
+| `%1` | Village pawn shop level (`Village.Data.PawnLevel`). |
+| `%2` | Village wizard shop level (`Village.Data.WizardLevel`). |
+| `%X` | Village market level (`Village.Data.MarketLevel`). |
+| `%Q` | Village market quality (e.g. "Poor", "Good"). |
+| `%N` | Toggle screen pause (the "more" prompt). |
+| `%T` | Scroll-clear — line-by-line wipe with 10ms delay per line. |
+| `%Y` | Scroll-clear — instant (no delay). |
 
 ---
 

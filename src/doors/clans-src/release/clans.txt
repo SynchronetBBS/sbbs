@@ -32,6 +32,8 @@ Joining an InterBBS Game ..............................................   1.5
 How InterBBS Packets Are Handled ......................................  1.5b
 Local InterBBS Games ..................................................   1.6
 Troubleshooting .......................................................   1.7
+Miscellany ............................................................   1.8
+Color Codes and Text Formatting .......................................   1.9
 
 
 Introduction to The Clans
@@ -168,6 +170,23 @@ For local (sysop) testing without a BBS connection, use /L:
 A sample Windows batch file (RUNCLANS.BAT) is included in this distribution
 for reference.
 
+lockout.txt is an optional sysop lockout list.  Add one username per line
+to prevent that player from entering the door.  Blank lines and lines
+starting with # are ignored.  The check is case-insensitive and runs at
+login time, before any game logic.  If the file is missing, no lockout is
+applied.
+
+clanad.ans is an ANSI advertisement for the game that you may wish to
+display on your BBS to attract players.
+
+whatsnew.txt is a version history documenting bug fixes and new features in
+each release.  It is not used by the game.
+
+questgen.txt is a guide to generating a complete quest pack for
+your BBS using an LLM (large language model).  The companion
+file prompt.md is the ready-made prompt you feed to the LLM.
+See questgen.txt for full instructions.
+
 *NOTE: If you are planning on joining an InterBBS league, YOU MUST set up
        your BBS software to call the door with REAL NAMES ONLY.  This
        will "standardize" the league and make it easier for players to travel
@@ -219,6 +238,13 @@ Example CLANS.CFG:
 
         Node            1
         DropDirectory   /bbs/node1/
+
+news.txt is an optional bulletin file displayed every time a
+player starts the game, right after the title screen.  Edit
+it with any text editor to post announcements, league
+schedules, or house rules.  It supports pipe color codes and
+%-codes (see section 1.9).  If the file is missing or empty
+the game simply skips it.
 
 
 [1.2]  Resetting The Clans
@@ -509,6 +535,7 @@ individually set which BBSes you want to route your data through and whether
 or not you wish to CRASH or HOLD packets.  However, ROUTE.CFG will likely
 differ for each system as each one may have different BBSes which they wish
 to route through.  See ROUTE.CFG for more information on how to use the file.
+A sample file (route.smp) is included in the distribution.
 
 The ROUTE.CFG file (if used) may NOT be the same for each BBS in the league.
 Be sure to tell your nodes if you will use the ROUTE.CFG file or not.
@@ -825,6 +852,89 @@ The following bands for providing me with music in my CD player while I
 programmed in the wee hours of the night:  My Bloody Valentine, Lush, Sloan,
 Blur, Teenage Fanclub, Stereolab and The Beatles. :-)
 
+
+
+[1.9]  Color Codes and Text Formatting
+-------------------------------------------------------------------------------
+The Clans uses three kinds of color codes and a set of %-codes in its
+text files (.hlp, .asc, news.txt, quest files).  Color codes are
+invisible in output -- only the color change appears.
+
+Pipe color codes (|NN)
+----------------------
+| followed by two decimal digits.  00-15 set the foreground color;
+16-23 set the background (subtract 16 for the color index).
+
+    Foreground:
+
+    |00  Black              |08  Bright Black
+    |01  Blue               |09  Bright Blue
+    |02  Green              |10  Bright Green
+    |03  Cyan               |11  Bright Cyan
+    |04  Red                |12  Bright Red
+    |05  Magenta            |13  Bright Magenta
+    |06  Brown              |14  Yellow
+    |07  White              |15  Bright White
+
+    Background:
+
+    |16  Black              |20  Red
+    |17  Blue               |21  Magenta
+    |18  Green              |22  Brown
+    |19  Cyan               |23  White
+
+Backtick codes (`BF)
+---------------------
+A backtick followed by two hex digits (0-9, A-F).  The first digit
+is the background, the second is the foreground.  Example: `1F sets
+bright white on blue.
+
+Theme color codes (|0A through |0Z)
+------------------------------------
+|0 followed by an uppercase letter maps to the village's color scheme.
+Background is always set to black.  Preferred for sysop-editable
+files because they respect the player's chosen theme.
+
+Codes with a defined role in the game's UI:
+
+    |0A  Menu bracket / secondary accent
+    |0B  Menu key / highlighted value
+    |0C  Body text / narration
+    |0D  Secondary divider
+    |0E  Prompt arrow (the > character)
+    |0F  User input (color where the player types)
+    |0G  Prompt label ("Enter option", etc.)
+    |0K  Primary divider (heavy separator lines)
+    |0L  Stat label (left-hand side)
+    |0M  Stat value (right-hand side)
+    |0S  Question / yes-no prompt
+
+Save/restore (|S and |R)
+-------------------------
+|S saves the current foreground and background colors.  |R restores
+them.
+
+%-codes
+-------
+    %P  Pause (wait for keypress)
+    %C  Clear screen
+    %L  Newline
+    %R  Carriage return (no line advance)
+    %D  Delay (100ms)
+    %B  Backspace
+    %V  Print game version string
+
+Game state codes (valid in quest and sysop-editable files):
+
+    %F  Player's fights remaining
+    %M  Player's mine level
+    %1  Village pawn shop level
+    %2  Village wizard shop level
+    %X  Village market level
+    %Q  Village market quality (e.g. "Poor", "Good")
+    %N  Toggle screen pause (the "more" prompt)
+    %T  Scroll-clear (line-by-line wipe with 10ms delay)
+    %Y  Scroll-clear (instant, no delay)
 
 The Clans v0.97b2:  Upgrading
 ------------------------------
