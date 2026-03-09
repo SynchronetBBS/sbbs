@@ -162,7 +162,9 @@ ggrep -rlP '\r$' <dir>   # correct: \r appears at line-end before \n
 
 **NEVER run `git commit` without the user explicitly requesting it.**  Prepare
 changes, show a summary if helpful, and wait for the user to say "commit" or
-equivalent before running any `git commit` command.
+equivalent before running any `git commit` command.  The same rule applies to
+`git push`.  **Permission does NOT carry over between tasks** — each commit
+and each push requires its own explicit authorization in the current context.
 
 ## Code Style
 
@@ -182,7 +184,8 @@ All C source files use **tabs** for indentation. When constructing `old_string` 
 
 ## Sysop/Developer Documentation Format
 
-Plain ASCII text files, ≤79 columns, no markdown. Two canonical examples:
+Plain ASCII text files, ≤79 columns, no markdown, no UTF-8 characters.
+Use `--` (double hyphen) instead of em-dash.  Two canonical examples:
 - `release/clans.doc` — sysop documentation
 - `devkit/clandev.txt` — developer documentation
 
