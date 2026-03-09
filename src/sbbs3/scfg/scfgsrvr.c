@@ -1274,6 +1274,12 @@ static void ftpsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s bytes", "Min Uploaded File Size", byte_count_to_str(startup.min_fsize, tmp, sizeof tmp));
+		if (startup.max_fsize == 0)
+			SAFECOPY(str, "Unlimited");
+		else
+			snprintf(str, sizeof str, "%s bytes", byte_count_to_str(startup.max_fsize, tmp, sizeof tmp));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Uploaded File Size", str);
 		if (startup.max_requests_per_period < 1 || startup.request_rate_limit_period < 1)
 			SAFECOPY(str, strDisabled);
 		else
@@ -1379,6 +1385,16 @@ static void ftpsrvr_cfg(void)
 					startup.max_concurrent_connections = atoi(str);
 				break;
 			case 12:
+				byte_count_to_str(startup.min_fsize, str, sizeof str);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Minimum Uploaded File Size (in bytes)", str, 10, K_EDIT) >= 0)
+					startup.min_fsize = parse_byte_count(str, 1);
+				break;
+			case 13:
+				byte_count_to_str(startup.max_fsize, str, sizeof str);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Uploaded File Size (in bytes, 0 = Unlimited)", str, 10, K_EDIT) >= 0)
+					startup.max_fsize = parse_byte_count(str, 1);
+				break;
+			case 14:
 				SAFECOPY(str, maximum(startup.max_requests_per_period));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Requests (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
 					startup.max_requests_per_period = atoi(str);
@@ -1388,22 +1404,22 @@ static void ftpsrvr_cfg(void)
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Request Rate Limit Period", str, 10, K_EDIT) > 0)
 					startup.request_rate_limit_period = (uint)parse_duration(str);
 				break;
-			case 13:
+			case 15:
 				startup.options ^= FTP_OPT_NO_LOCAL_FSYS;
 				break;
-			case 14:
+			case 16:
 				startup.options ^= FTP_OPT_ALLOW_BOUNCE;
 				break;
-			case 15:
+			case 17:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 16:
+			case 18:
 				getar("FTP Server Login", startup.login_ars);
 				break;
-			case 17:
+			case 19:
 				getar("FTP Server Login Info Saved", startup.login_info_save);
 				break;
-			case 18:
+			case 20:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
