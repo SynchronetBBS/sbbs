@@ -6473,6 +6473,12 @@ bool post_to_file(http_session_t *session, FILE*fp, size_t ch_len)
 		k += bytes_read;
 		session->req.post_len += bytes_read;
 	}
+	buf[0] = 0;
+	// Terminating NUL (needed by something?)
+	if (fwrite(buf, 1, 1, fp) != 1) {
+		send_error(session, __LINE__, error_500);
+		return false;
+	}
 	return true;
 }
 
