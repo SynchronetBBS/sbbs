@@ -55,6 +55,10 @@ Miscellaneous Tools
 ===================
 MAKEPAK.EXE and PAKfiles ..............................................   5.1
 CHEW.EXE and INSTALL.EXE ..............................................   5.2
+LANGCOMP — Language String Compiler ...................................   5.3
+MCLASS — Class/Race Compiler ..........................................   5.4
+MITEMS — Item Compiler ................................................   5.5
+MSPELLS — Spell Compiler ..............................................   5.6
 
 Miscellaneous
 =============
@@ -1299,6 +1303,54 @@ Remember, to use your INSTALL INI file, you'll need to use INSTALL.EXE and run
 it with the INI file name as the parameter.  For instance, if you created an
 INI file called MYQUEST.INI, you may install it using INSTALL MYQUEST (the
 .INI can be omitted).
+
+The compression code in CHEW is taken from SIXPACK.C by Philip G. Gage.
+
+
+[5.3]  LANGCOMP -- Language String Compiler
+-------------------------------------------------------------------------------
+LANGCOMP compiles the language strings file (STRINGS.TXT) into the binary
+format (STRINGS.XL) used by the game engine at run time.
+
+        LANGCOMP <strings.txt> [strings.xl [mstrings.h]]
+
+If only the first argument is given, LANGCOMP derives the output name by
+replacing the .TXT extension with .XL.  So running "langcomp strings" looks
+for STRINGS.TXT and produces STRINGS.XL.  The optional third argument causes
+LANGCOMP to also generate a C header file containing #define macros for each
+string index (used by the game source code).
+
+The compiled output has a hard limit of 64000 bytes.  The current string set
+uses roughly 28500 bytes, so there is ample room for additions.
+
+
+[5.4]  MCLASS -- Class/Race Compiler
+-------------------------------------------------------------------------------
+MCLASS compiles player class and race definition files.  The same tool is
+used for both; only the input data differs.
+
+        MCLASS <input.txt> <output.cls>
+
+The standard data files are CLASSES.TXT and RACES.TXT, compiled to
+CLASSES.CLS and RACES.CLS respectively.
+
+
+[5.5]  MITEMS -- Item Compiler
+-------------------------------------------------------------------------------
+MITEMS compiles item definitions from a text file into a binary data file.
+
+        MITEMS <input.txt> <output.itm>
+
+The standard data file is ITEMS.TXT, compiled to ITEMS.ITM.
+
+
+[5.6]  MSPELLS -- Spell Compiler
+-------------------------------------------------------------------------------
+MSPELLS compiles spell definitions from a text file into a binary data file.
+
+        MSPELLS <input.txt> <output.spl>
+
+The standard data file is SPELLS.TXT, compiled to SPELLS.SPL.
 
 
 Miscellaneous

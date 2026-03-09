@@ -1,7 +1,0 @@
-
-Use this to generate player classes and races.  Data goes in the following
-two files:
-
-races.txt and classes.txt
-
-These are included.  To compile them, run mclass with the in and out names
