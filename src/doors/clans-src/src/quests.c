@@ -1022,7 +1022,7 @@ bool RunEvent(bool QuoteToggle, bool reset_hp, char *szEventFile, char *szEventN
 							rputs("|0BI am in your clan already.\n");
 							break;
 						}
-						if (NPCInfo->Loyalty == 10) {
+						if (my_random(10) < NPCInfo->Loyalty) {
 							rputs("|0BSorry, I am already in a clan and cannot join yours.\n");
 							break;
 						}

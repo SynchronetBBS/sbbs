@@ -33,7 +33,7 @@ A clan has members (warriors with individual stats), an army (followers who figh
 
 ### Daily limits
 
-Each clan has a fixed number of mine fights and **4 NPC chat sessions per day**. Each time a player initiates a conversation with a wandering NPC (via the village location menu), one chat slot is consumed — regardless of how the conversation ends. Once all 4 are spent, the player sees "You have chatted enough already today." This limit applies only to wanderer-initiated chats; `Chat` commands called from within event scripts or topic blocks do not consume a slot. Design NPC interactions knowing that each chat is a scarce daily resource — an `EndChat` that terminates a conversation early still costs the player a slot, and `MaxTopics` further constrains how much can happen within each session.
+Each clan has a fixed number of mine fights and **4 NPC chat sessions per day**. Each time a player initiates a conversation with a wandering NPC (via the village location menu), one chat slot is consumed — regardless of how the conversation ends. Once all 4 are spent, the player sees "You have chatted enough already today." This limit applies only to wanderer-initiated chats; `Chat` commands called from within event scripts or topic blocks do not consume a slot, regardless of the target NPC's wanderer status. Slot consumption is determined by how the session was initiated (village menu vs. script), not by the NPC being chatted with. Design NPC interactions knowing that each chat is a scarce daily resource — an `EndChat` that terminates a conversation early still costs the player a slot, and `MaxTopics` further constrains how much can happen within each session.
 
 ---
 
@@ -113,10 +113,16 @@ Once the sysop approves the world summary and generation begins, all subsequent 
 - Key Value format only. The first word is the Key; the rest of the line is the Value.
 - BRACKETS [] ARE FORBIDDEN in Keys. These are NOT Windows INI files. There are no `[Section]` headers and no `key=value` pairs anywhere. The format is always `Key Value` (space-separated, no equals sign) with blank lines between blocks.
 - Blank line required between every data block.
-- Comments begin with # on their own line. Multi-line block comments use `>>` on a line by itself to open and another `>>` to close.
+- Comments begin with # on their own line. Multi-line block comments use `>>` on a line by itself to open and another `>>` to close (the same delimiter for both):
+    ```
+    >>
+    This is a block comment.
+    Multiple lines are fine.
+    >>
+    ```
 - Text with no argument is valid and outputs a blank line. Text "[String] outputs the string followed by a newline. Both forms are valid.
 - An ACS condition gates exactly ONE command and MUST appear on the same line, immediately before the command keyword: `{D0}Jump MyLabel`. A `{condition}` on its own line is a compile error — the condition is silently discarded. There is no block-level if/then; to skip multiple commands conditionally, use a conditional Jump to leap over them.
-- **Never chain multiple ACS braces: `{Q1}{Q2}Command` is a compile error.** Combine conditions inside a single pair of braces using `&` (AND), `|` (OR), `!` (NOT), and `()` grouping: `{Q1&Q2}Command`.
+- **Never chain multiple ACS braces — this is a compile error regardless of operators used inside them.** `{Q1}{Q2}Command` is wrong; `{!P8}{!P9}Command` is equally wrong. Combine conditions inside a single pair of braces using `&` (AND), `|` (OR), `!` (NOT), and `()` grouping: `{Q1&Q2}Command`, `{!P8&!P9}Command`.
 - AddEnemy MUST be called before every Fight.
 - Index values in NPC Info files MUST NOT use _ prefix.
 - `Jump` is a one-way goto. Execution does NOT return after a Jump. There are no subroutines. Commands written after a Jump are unreachable dead code.
@@ -179,7 +185,7 @@ Once the sysop approves the world summary and generation begins, all subsequent 
 
 ## ACS CONDITIONS:
 
-An ACS expression is everything inside one pair of `{` `}` braces. **Multiple conditions must be combined inside a single `{...}` using logical operators — never chain separate `{cond1}{cond2}` prefixes.** `{Q25}{Q16}TellTopic foo` is a compile error; `{Q25&Q16}TellTopic foo` is correct.
+An ACS expression is everything inside one pair of `{` `}` braces. **Multiple conditions must be combined inside a single `{...}` using logical operators — never chain separate `{cond1}{cond2}` prefixes, even with `!` (NOT).** `{Q25}{Q16}TellTopic foo` is a compile error; so is `{!P8}{!P9}Text`. Write `{Q25&Q16}TellTopic foo` or `{!P8&!P9}Text`.
 
 ### Logical operators (inside `{...}`)
 
@@ -265,14 +271,14 @@ All other commands are executable and may appear inside any block. "Context: all
 | `Jump` | all | `[TargetLabel]` | Repositions execution to the start of the named Event or Result block. **This is a one-way goto — execution never returns to the line after Jump.** Any commands written after a Jump are unreachable. TargetLabel must be the exact name of an existing Event or Result block; `STOP` and `NextLine` are NOT valid here and will cause a runtime error. To halt execution, jump to a Result block that contains only `End`. |
 | `Text` | all | none or `"[String]` | No argument outputs a blank line. With argument outputs the string followed by a newline. Visible text must fit within 80 columns; split long dialogue across multiple `Text` commands. |
 | `Prompt "` | all | `[String]` | Outputs the string with no trailing newline. Use before a menu (consecutive Option or Input commands) to display a prompt to the player. Color codes set within the Prompt line persist into the player's input field — end the line with the desired input color (e.g. `\|0F`) to control how the player's typed response appears. |
-| `Display "` | all | `[Filename]` | Renders a file to the player's screen. The filename is resolved through `MyOpen()`, so PAK aliases work — a Display file can be packed into the PAK archive with its own alias (e.g. `/a/heartwood`). Files ending in `.ans` are rendered via ANSI terminal emulation; all other extensions are rendered via `rputs()` with pipe color codes. CP437 encoding throughout. If the file does not exist, Display returns silently with no output and no crash. For atmospheric scene-setting (entering a location, a dramatic reveal), include `.ans` or `.asc` files in the PAK and call Display from the event script. |
-| `AddNews "` | all | `[String]` | Appends the string to the village daily news. The engine automatically adds a double newline after each AddNews call, so each call produces a visually separated news entry. Multiple consecutive AddNews calls produce multiple separate entries, each separated by a blank line — they do **not** merge into a single block. To create a multi-line news entry from a single AddNews call, embed `%L` (the rputs newline code) within the string: `AddNews "|0CThe mine entrance collapsed.%L|0CSeveral miners are missing.` produces two lines in one entry. Color codes (pipe codes) work in AddNews strings. The 254-character string limit applies per call. |
+| `Display "` | all | `[Filename]` | Renders a file to the player's screen. The filename is resolved through `MyOpen()`, so PAK aliases work — a Display file can be packed into the PAK archive with its own alias (e.g. `/a/heartwood`). Files ending in `.ans` are rendered via ANSI terminal emulation; all other extensions are rendered via `rputs()` with pipe color codes. CP437 encoding throughout. If the file does not exist, Display returns silently with no output and no crash. For atmospheric scene-setting (entering a location, a dramatic reveal), include `.ans` or `.asc` files in the PAK and call Display from the event script. **ANSI art files:** If you can generate CP437 ANSI art (80x22 or smaller), do so. If not, ask the sysop during the interview whether they want to provide their own `.ans` files. If they do, reference placeholder filenames in Display calls, add descriptions of each file (where it appears, what it should depict) to readme.txt, and list the placeholders in the PAK `.lst` so the sysop knows what to create. If the sysop does not indicate they will provide art, omit Display calls for `.ans` files rather than referencing files that will not exist — Display silently does nothing on a missing file, but dead references clutter the pack. |
+| `AddNews "` | all | `[String]` | Appends the string to the village daily news. The engine automatically adds a double newline after each AddNews call, so each call produces a visually separated news entry. Multiple consecutive AddNews calls produce multiple separate entries, each separated by a blank line — they do **not** merge into a single block. **No deduplication:** if two clans both trigger the same AddNews on the same day, the identical entry appears twice in the news. This is by design — gate AddNews behind a `{G}` or `{H}` flag if an entry should appear at most once per day. To create a multi-line news entry from a single AddNews call, embed `%L` (the rputs newline code) within the string: `AddNews "|0CThe mine entrance collapsed.%L|0CSeveral miners are missing.` produces two lines in one entry. Color codes (pipe codes) work in AddNews strings. The 254-character string limit applies per call. |
 | `Option` | all | `[Char] [TargetLabel]` | Defines one menu choice. Char is a single printable character (letter or digit); matching is case-insensitive. TargetLabel is the block to jump to. Multiple consecutive Option commands build a menu. `Option` is a command, not a block delimiter — it does not open a block and does not require its own `End`. The enclosing Event, Result, or Topic block must still be closed with `End` after the menu. Special TargetLabels (valid here only): `NextLine` continues on the line immediately after the last consecutive Option command, still inside the enclosing block; `STOP` halts execution. |
 | `Input` | all | `[TargetLabel] [Display text]` | Like Option but presents a numbered text menu item instead of a single-key choice. Multiple consecutive Input commands build a numbered list. The player selects by number; jumps to TargetLabel. Same special TargetLabels as Option. `Input` is also a command, not a block delimiter. |
 | `AddEnemy` | all | `[FileRef] [Index]` | Loads one entry from a .mon file into the enemy group for the upcoming fight. FileRef is the path to the .mon file; Index is the zero-based ordinal of the entry within it. Call multiple times to build a group of up to 20 enemies. All enemies in the group fight **simultaneously** as a unified clan in turn-based combat — each enemy takes individual turns in speed order alongside the player's clan members. This is one big melee, not sequential one-on-one fights. Must always precede Fight. |
-| `Fight` | all | `[WinLabel] [LossLabel] [RunLabel]` | Triggers combat against the enemy group assembled by preceding AddEnemy calls. Jumps to WinLabel on victory, LossLabel on defeat, RunLabel if the clan runs away. Special labels (valid here only): `NextLine` continues after Fight; `STOP` halts execution; `NoRun` as RunLabel prevents fleeing. |
+| `Fight` | all | `[WinLabel] [LossLabel] [RunLabel]` | Triggers combat against the enemy group assembled by preceding AddEnemy calls. Jumps to WinLabel on victory, LossLabel on defeat, RunLabel if the clan runs away. Special labels (valid here only): `NextLine` continues after Fight; `STOP` halts execution; `NoRun` as RunLabel prevents fleeing. **On loss:** clan members whose HP dropped to 0 or below are left Unconscious (HP 0 to -5) or Dead (HP below -15), with Dead members losing 10-100% MaxHP permanently. However, when RunEvent finishes, **all surviving members (Status=Here) have their HP reset to MaxHP**. Dead and Unconscious members are NOT healed — they remain in that state until daily maintenance or healing. The Loss branch is the script's opportunity to describe the defeat narratively; the player's session continues normally afterward. |
 | `Chat` | all | `[NPCIndex]` | Opens the full chat interface for the NPC identified by the given Index string. This call is recursive — the target NPC's IntroTopic runs, their full topic menu appears, and they can themselves call Chat on yet another NPC. There is no engine restriction on nesting depth, but deep chains are disorienting for the player. |
-| `TellQuest` | all | `[QuestIndex]` | Marks the quest with the given Index string as known to the player, making it visible in the quest log. |
+| `TellQuest` | all | `[QuestIndex]` | Marks the quest with the given Index string as known to the player, making it visible in the quest log. **Idempotent:** if the player already knows the quest, this is a silent no-op — no message, no error, no side effects. Safe to call repeatedly in Catchup patterns without guarding against duplicates. |
 | `DoneQuest` | all | none | Marks the current quest as completed, setting its Qaa flag true. The engine permanently removes the quest from the player's quest menu — the `QuestsDone` bit is set with a bitwise OR and is never cleared by normal gameplay. A clan that has completed a quest cannot select it again; the engine filters completed quests out of the menu before the player can choose, with a second guard that refuses to run the event even if somehow selected. No script-level guard against re-entry is needed or possible. `{Qnn}` flags are derived from the `QuestsDone` bitmask stored in each clan's persistent data file — the same file that stores P flags. They persist across sessions and server restarts and are reliable long-term gates for quest-chain progression in chat topics. |
 | `Pause` | all | none | Halts execution and waits for the player to press a key. Works identically across all connection types and terminal emulators. Use it expressively — after emotionally significant lines, before a scene transition, or to let silence sit after a revelation. The engine also inserts an automatic Pause after each Topic block completes, so an explicit Pause at the end of a Topic is redundant; use it mid-block where pacing demands a beat. |
 | `SetFlag` | all | `[Flag]` | Sets the given flag, e.g. T0, P5, G12. |
@@ -281,7 +287,7 @@ All other commands are executable and may appear inside any block. "Context: all
 | `TakeGold` | all | `[Number]` or `%[Number]` | Removes the specified amount of gold from the player. Prefix with `%` to remove a percentage of vault gold instead (e.g. `TakeGold %50` removes 50%). |
 | `GiveGold` | all | `[Number]` | Adds the specified amount of gold to the player. |
 | `GiveXP` | all | `[Number]` | Adds the specified amount of XP to the player's clan members. **Do not use in quest scripts** — see QUEST DESIGN PATTERNS. The engine executes GiveXP without error; this is a design guideline, not a compile or runtime restriction. |
-| `GiveItem` | all | `[ItemName]` | Adds the named item to the player's inventory. The name must exactly match an entry in the game's item database (case-insensitive). **If the name does not match, the player sees "Item not found in file!" — no crash, but visible error text.** Only items listed in the ITEM REFERENCE section are valid. There is no mechanism for custom or narrative-only items; all items have combat stats. Use GiveItem for meaningful mechanical rewards, not story tokens. |
+| `GiveItem` | all | `[ItemName]` | Adds the named item to the player's inventory. The name must exactly match an entry in the game's item database (case-insensitive). **If the name does not match, the player sees "Item not found in file!" — no crash, but visible error text.** Inventory is limited to **30 items** per clan; if full, the player sees a "no more room" message and the item is silently not added — no crash, no error, the script continues normally. Only items listed in the ITEM REFERENCE section are valid. There is no mechanism for custom or narrative-only items; all items have combat stats. Use GiveItem for meaningful mechanical rewards, not story tokens. |
 | `GiveFight` | all | `[Number]` | Adds the specified number of daily fights to the player's allowance. |
 | `GiveFollowers` | all | `[Number]` | Adds the specified number of followers to the player's army. |
 | `GivePoints` | all | `[Number]` | Adds the specified number of score points to the player's clan. |
@@ -331,7 +337,7 @@ Arguments: input source file first, output binary second. By convention the outp
     NPCDAT [Zero-based ordinal index of this NPC's entry in the compiled .mon file specified by MonFile]
     MonFile [Path to the compiled .mon file containing this NPC's combat stats — max 31 chars]
     Wander [Location where NPC appears as a wanderer — valid values: Street, Church, Market, Town Hall, Training Hall, Mine. Omit entirely for NPCs that only appear via the Chat command in scripts.]
-    Loyalty [integer 0–10, default 5. Controls whether the NPC can be poached from another clan. If an NPC is already recruited by clan A and clan B tries JoinClan, Loyalty 10 means "refuses to leave current clan"; any lower value allows the poach. Since all NPC members are released during nightly maintenance, this only matters within a single day when multiple clans compete for the same NPC.]
+    Loyalty [integer 0–10, default 5. Controls the probability of poaching from another clan. When an NPC already recruited by clan A is targeted by clan B's JoinClan, the engine rolls `my_random(10)` (0–9) and compares against Loyalty: the NPC refuses if the roll is less than Loyalty. Loyalty 10 = always refuses (roll can never reach 10); Loyalty 5 = 50% chance of refusal; Loyalty 0 = never refuses. Since all NPC members are released during nightly maintenance, this only matters within a single day when multiple clans compete for the same NPC.]
     MaxTopics [integer — maximum topics the player may discuss per conversation. Resets each time the player initiates a new chat with this NPC. Default -1 = no limit.]
     OddsOfSeeing [integer 0–100 — probability of NPC appearing on a given day. 0 = never appears; 100 = appears every day. Default when omitted: 0. For NPCs with no Wander field, the engine skips placement before reading this value, so OddsOfSeeing has no effect — set it to 0 explicitly to document intent.]
     IntroTopic [TopicID — optional topic that runs automatically at the start of every conversation with this NPC, before the topic menu appears. It runs on every visit, not just the first — the Catchup pattern in QUEST DESIGN PATTERNS relies on this behaviour. See The lore keeper in QUEST DESIGN PATTERNS for the recommended catchup implementation using IntroTopic.]
@@ -520,6 +526,12 @@ Compiled using `ecomp <infile.txt> <outfile.evt>`. Event and Result blocks separ
 
     H flags (global village, daily — shared across all clans, reset each night):
       H0  Set: [label] ([once-per-day world event])   Read: [label]   Clear: automatic (nightly)
+      # H flags are for world events that should happen at most once per day
+      # across all clans.  Examples: a daily bonus for the first clan to reach
+      # a certain mine level; a village alarm that fires once then stays silent
+      # until tomorrow; an NPC who offers a single daily reward to whoever
+      # arrives first.  Use {!Hnn} to gate the action and SetFlag Hnn inside
+      # the gated block so the second clan to arrive finds the gate closed.
 
     T flags (per-session):
       T0  Set: [label] ([branch tracking])   Read: [label]
@@ -530,6 +542,8 @@ Compiled using `ecomp <infile.txt> <outfile.evt>`. Event and Result blocks separ
 The table must be exhaustive. Every `SetFlag` call in every file must have a row. Every `{Pnn}`, `{Gnn}`, `{Dnn}`, `{Hnn}`, or `{Tnn}` condition must reference a row. A flag that appears in the table but has no corresponding `SetFlag` anywhere, or a `SetFlag` with no corresponding condition anywhere, is a bug — resolve it before writing the final .lst.
 
 **When to write the table:** Write the complete flag assignment table as a standalone block at the top of the event script file *before writing any chat file*. This is step 3 in the recommended campaign output order — create the `.evt.txt` file as a stub containing only the flag table, then write the chat files (step 4), then return to fill in the Event and Result blocks (step 5). Chat files use flag numbers that must not collide with those in the event script, and the table is the mechanism that prevents collisions. Treat the table as a live document: update it as each file is written and verify it is complete and consistent before writing the final `.lst`.
+
+**Relationship to generation rhythm:** The "continue immediately to the next pass" rhythm applies *within* the output order sequence, not as a substitute for it. Write the stub (step 3) → continue immediately to chat files (step 4) → continue immediately to fill in the evt blocks (step 5) → and so on. The rhythm means "do not stop between steps to ask for confirmation"; the sequence means "follow the steps in order because later steps depend on earlier ones."
 
 ---
 
@@ -646,13 +660,17 @@ Aliases are limited to 29 characters including the path prefix.
 
 **QuoteFile and MonFile path limit:** `QuoteFile` and `MonFile` fields store paths up to **31 characters**. A PAK path takes the form `@pakname.pak/x/alias`, where the fixed overhead (`@`, `.pak`, `/x/`) consumes 8 characters, leaving **23 characters for pakname and alias combined**. Paths that exceed 31 characters are silently truncated at runtime with no error.
 
-| PAK name | Alias | Example QuoteFile | Chars |
-|---|---|---|---|
-| `tv` | `tv` | `@tv.pak/q/tv` | 12 |
-| `tuneville` | `smith` | `@tuneville.pak/q/smith` | 22 |
-| `blackhollow` | `crow` | `@blackhollow.pak/q/crow` | 23 |
+| PAK name | Alias | Example QuoteFile | Chars | Budget |
+|---|---|---|---|---|
+| `tv` | `tv` | `@tv.pak/q/tv` | 12 | 2+2=4 of 23 |
+| `tuneville` | `smith` | `@tuneville.pak/q/smith` | 22 | 9+5=14 of 23 |
+| `blackhollow` | `crow` | `@blackhollow.pak/q/crow` | 23 | 11+4=15 of 23 |
+| `parishes` | `par-ambient` | `@parishes.pak/q/par-ambient` | 27 | 8+11=19 of 23 |
+| `parishes` | `par-story` | `@parishes.pak/q/par-story` | 25 | 8+9=17 of 23 |
 
-Individual NPCs are distinguished by their `NPCDAT` index and `IntroTopic`, not by separate files. For small packs (fewer than 8 NPCs), a single `.q` file per type suffices. For larger packs, split story and ambient chat into separate `.q` files — each gets its own alias.
+The budget column shows `pakname_len + alias_len` against the 23-character limit.  Count both parts before committing to a pack name — long names eat into the space available for descriptive aliases.
+
+Individual NPCs are distinguished by their `NPCDAT` index and `IntroTopic`, not by separate files. When multiple NPCs share a `.q` file, the engine selects the correct entry point by matching the NPC's `IntroTopic.szTopicLabel` against block names in the compiled file (case-insensitive string comparison). Each NPC's `Topics[].szTopicLabel` fields work the same way — the label is looked up by name, not by position. There is no ambiguity as long as block names are unique within the file, which topic ID prefixes ensure. For small packs (fewer than 8 NPCs), a single `.q` file per type suffices. For larger packs, split story and ambient chat into separate `.q` files — each gets its own alias.
 
 **Example listing file** for a small pack named `tuneville` (single chat file):
 
@@ -917,6 +935,18 @@ A `{Gnn}` flag is **shared across all clans in the village**. The moment one pla
 
 Used well, G flags make the village feel like a shared world where clans leave visible marks on the environment and other players' actions have consequences. Used poorly, they punish players for not being the first to log in that day.
 
+#### H flags (daily global) vs G flags
+
+H flags are global like G flags but reset automatically every night. Use them for **once-per-day competitive events** — things that should happen at most once across all clans each day, then reset for tomorrow:
+
+| Pattern | Implementation |
+|---|---|
+| First-to-arrive daily bonus | `{!H0}SetFlag H0` + `{!H0}GiveGold 500` — first clan to trigger gets the gold; later clans find H0 already set |
+| Village alarm (one alert per day) | `{!H1}AddNews "The watchtower bell rings..."` + `{!H1}SetFlag H1` — news appears once, not per clan |
+| Daily NPC favour | NPC topic gated by `{!H2}` offers a special reward, sets H2; other clans that day see "I've already helped someone today" via `{H2}` branch |
+
+The key difference from G flags: **H flags need no manual clearing mechanism** — they reset every night automatically. This makes them ideal for daily competitive hooks that would be tedious to reset via script logic.
+
 ---
 
 ## CAMPAIGN DESIGN:
@@ -947,7 +977,7 @@ Give one NPC `OddsOfSeeing 100` and a set of daily-repeatable mini-quests (gated
 - Patrol for bandits: small fight, `GivePoints 25`
 - Fetch a report: no fight, `GiveGold 100`
 
-**MaxTopics:** Always set to `-1` (unlimited) for quest-giving NPCs. A session cap can block a player from reaching their next quest topic mid-chain.
+**MaxTopics:** `-1` (unlimited) is the default when omitted. Always set it explicitly to `-1` for quest-giving NPCs for readability — it signals intent, not a change from default behaviour. A session cap can block a player from reaching their next quest topic mid-chain.
 
 #### Sizing a campaign
 
