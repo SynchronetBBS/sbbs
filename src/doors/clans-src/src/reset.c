@@ -751,7 +751,7 @@ static void CreateVillageDat(struct ResetData *ResetData)
 	Village_Data.UpChurchToday = false;
 	Village_Data.UpPawnToday = false;
 	Village_Data.UpWizToday = false;
-	Village_Data.ShowEmpireStats = false;
+	Village_Data.ShowEmpireStats = true;
 
 	ClearFlags(Village_Data.HFlags);
 	ClearFlags(Village_Data.GFlags);

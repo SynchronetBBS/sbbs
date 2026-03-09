@@ -802,3 +802,7 @@
 1835 ST_SECRET5 |07The |15X |07warrior will let you in.^M%P
 
 1836 ST_IBBSONLY seineew era sremmargorp sbb
+
+1840 ST_TOGEMPSTATS_ON |14Village empire stats are now |0Bvisible|14 to all clans.^M^M
+1841 ST_TOGEMPSTATS_OFF |14Village empire stats are now |0Bhidden|14 from other clans.^M^M
+1842 ST_EMPSTATS_HIDDEN |07The ruler has chosen not to display village empire stats.^M%P

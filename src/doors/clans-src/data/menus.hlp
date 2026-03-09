@@ -277,11 +277,12 @@ Menus
 ^Town1
  |0A(|0BE|0A) |0CEconomics Menu              |0A(|0BC|0A) |0CChange Colour Scheme
  |0A(|0BL|0A) |0CChange Flag                 |0A(|0BS|0A) |0CStructures
- |0A(|0BR|0A) |0CConscription Rate           |0A(|0BM|0A) |0CMake Announcement
- |0A(|0BD|0A) |0CPublic Discussion           |0A(|0BP|0A) |0CVillage Empire
- |0A(|0BH|0A) |0CRuling Help                 |0A(|0BV|0A) |0CView Clan Stats
- |0A(|0B!|0A) |0CAbdicate                    |0A(|0BB|0A) |0CVoting Booth
- |0A(|0B/|0A) |0CChat w/Villagers            |0A(|0BQ|0A) |0CQuit
+ |0A(|0BR|0A) |0CConscription Rate           |0A(|0BT|0A) |0CToggle Empire Stats
+ |0A(|0BM|0A) |0CMake Announcement           |0A(|0BD|0A) |0CPublic Discussion
+ |0A(|0BP|0A) |0CVillage Empire              |0A(|0BH|0A) |0CRuling Help
+ |0A(|0BV|0A) |0CView Clan Stats             |0A(|0B!|0A) |0CAbdicate
+ |0A(|0BB|0A) |0CVoting Booth                |0A(|0B/|0A) |0CChat w/Villagers
+ |0A(|0BQ|0A) |0CQuit
 |0DÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÍÍÍ
 ^END
 

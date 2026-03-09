@@ -110,7 +110,10 @@ int16_t OutsiderTownHallMenu(void)
 
 		switch (GetChoice("Town2", ST_ENTEROPTION, szTheOptions, "DWBVPH?Q/ES", 'Q', true)) {
 			case 'S' :  // village empire stats
-				Empire_Stats(&Village.Data.Empire);
+				if (Village.Data.ShowEmpireStats)
+					Empire_Stats(&Village.Data.Empire);
+				else
+					rputs(ST_EMPSTATS_HIDDEN);
 				break;
 			case 'E' :  // donate to empire
 				DonateToEmpire(&Village.Data.Empire);
@@ -1031,6 +1034,14 @@ static void EconomicsMenu(void)
 
 // ------------------------------------------------------------------------- //
 
+static void ToggleEmpireStats(void)
+{
+	Village.Data.ShowEmpireStats = !Village.Data.ShowEmpireStats;
+	rputs(Village.Data.ShowEmpireStats ? ST_TOGEMPSTATS_ON : ST_TOGEMPSTATS_OFF);
+}
+
+// ------------------------------------------------------------------------- //
+
 int16_t TownHallMenu(void)
 {
 	char *szTheOptions[17];
@@ -1063,10 +1074,9 @@ int16_t TownHallMenu(void)
 		rputs(ST_LONGLINE);
 
 		switch (GetChoice("Town1", ST_ENTEROPTION, szTheOptions, "SECLHMD!V?Q/BGPRT", 'Q', true)) {
-				/*      case 'T' :
-				          ToggleEmpireStats();
-				          break;
-				*/
+			case 'T' :
+				ToggleEmpireStats();
+				break;
 			case 'R' :  // conscription rate
 				Help("Conscription Rate", ST_RULERHLP);
 
@@ -1283,7 +1293,7 @@ void Village_Reset(void)
 	Village.Data.UpChurchToday = false;
 	Village.Data.UpPawnToday = false;
 	Village.Data.UpWizToday = false;
-	Village.Data.ShowEmpireStats = false;
+	Village.Data.ShowEmpireStats = true;
 
 	ClearFlags(Village.Data.HFlags);
 	ClearFlags(Village.Data.GFlags);

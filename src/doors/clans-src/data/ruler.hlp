@@ -82,8 +82,13 @@
 ^END
 
 ^Show Empire Stats
- |0CUse this feature to toggle whether or not users can see the village's
- empire stats.
+ |0CThe ruler may toggle whether village empire stats are publicly visible.
+ When enabled, any clan may select |0B(S) See Village Empire Stats|0C from the
+ Town Hall menu to view gold, land, army strength, and buildings.  When
+ disabled, that option displays a message stating the stats are private.
+
+ Empire stats are visible by default at the start of each game.  Use
+ |0B(T) Toggle Empire Stats|0C from the ruler's Town Hall menu to change this.
 
 ^END
 
