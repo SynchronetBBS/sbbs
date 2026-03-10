@@ -232,22 +232,15 @@ char c_unescape_char_ptr(const char* str, char** endptr)
 char* c_unescape_str(char* str)
 {
 	char  ch;
-	char* buf;
-	char* src;
-	char* dst;
+	char* src = str;
+	char* dst = str;
 
-	if (str == NULL || (buf = strdup(str)) == NULL)
-		return NULL;
-
-	src = buf;
-	dst = str;
-	while ((ch = *(src++)) != 0) {
+	while ((ch = *(src++)) != '\0') {
 		if (ch == '\\')    /* escape */
 			ch = c_unescape_char_ptr(src, &src);
 		*(dst++) = ch;
 	}
-	*dst = 0;
-	free(buf);
+	*dst = '\0';
 	return str;
 }
 
