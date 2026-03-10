@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — AI Quest Pack Generator</title>
+<link rel="stylesheet" href="../clans.css">
+<style>
+  .wrapper { --sidebar-w: 220px; --max-w: 1100px; }
+
+  /* ── NUMBERED STEPS ── */
+  ol.steps { list-style: none; counter-reset: step-counter; margin: 10px 0; }
+  ol.steps li {
+    display: flex;
+    counter-increment: step-counter; gap: 14px;
+    font-size: 13px; color: var(--cyan-dim); line-height: 1.8;
+    margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--bg-panel);
+  }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before {
+    content: counter(step-counter); flex-shrink: 0; width: 26px; height: 26px;
+    border: 1px solid #333333; display: flex; align-items: center; justify-content: center;
+    font-family: 'VT323', monospace; font-size: 18px; color: #55FFFF;
+    text-shadow: 0 0 6px #55FFFF; margin-top: 2px;
+  }
+
+  /* ── TERMS TABLE ── */
+  .terms { border: 1px solid #333333; width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+  .terms th { background: rgba(85,255,255,0.08); color: #55FFFF; text-shadow: 0 0 6px #55FFFF; padding: 8px 14px; text-align: left; border-bottom: 1px solid #333333; letter-spacing: 1px; }
+  .terms td { padding: 8px 14px; color: var(--cyan-dim); border-bottom: 1px solid var(--bg-panel); line-height: 1.7; vertical-align: top; }
+  .terms td:first-child { color: var(--cyan); white-space: nowrap; }
+  .terms tr:last-child td { border-bottom: none; }
+  .terms tr:hover td { background: rgba(85,255,255,0.06); }
+
+  /* ── QA BLOCK ── */
+  .qa-block { border: 1px solid #333333; background: var(--dark); margin-bottom: 14px; }
+  .qa-q {
+    padding: 9px 14px; background: rgba(0,0,0,0.6);
+    border-bottom: 1px solid #333333; font-size: 12px; color: var(--yellow);
+  }
+  .qa-q::before { content: '[Q]  '; color: #00CCCC; }
+  .qa-a { padding: 10px 14px; font-size: 12px; color: var(--cyan-dim); line-height: 1.8; }
+  .qa-a::before { content: '[A]  '; color: #55FF55; }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="../index.html">&#9876; THE CLANS</a>
+  <div class="topnav-links">
+    <a href="../index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="../player/index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="../player/getting-started.html">Getting Started</a>
+        <a href="../player/pre-game.html">Pre-Game Menu</a>
+        <a href="../player/main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="../player/mines.html">The Mines</a>
+        <a href="../player/combat.html">Combat</a>
+        <a href="../player/stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="../player/market.html">The Market</a>
+        <a href="../player/items.html">Items &amp; Equipment</a>
+        <a href="../player/magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="../player/training.html">Training Hall</a>
+        <a href="../player/church.html">The Church</a>
+        <a href="../player/town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="../player/empires.html">Empires</a>
+        <a href="../player/alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="../player/communications.html">Communications</a>
+        <a href="../player/npcs.html">NPCs</a>
+        <a href="../player/travel.html">World Travel</a>
+        <a href="../player/scoring.html">Scoring</a>
+        <a href="../player/misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <a href="../sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label active">DevKit</span>
+      <div class="topnav-menu">
+        <a href="index.html">PAK Development</a>
+        <a href="questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <a href="../developer/index.html">Developer</a>
+    <a href="../whatsnew.html">What's New</a>
+  </div>
+</div>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div>
+      <div class="header-title">&#9881; AI QUEST PACK GENERATOR</div>
+      <div class="header-sub">v0.97b2 &middot; Using LLMs to Create Quest Packs</div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR NAV -->
+  <nav>
+    <div class="nav-group-label">INTRODUCTION</div>
+    <a href="#what-is-this"><span class="sec-id">0.1</span>What Is This?</a>
+    <a href="#what-produce"><span class="sec-id">0.2</span>What Does It Produce?</a>
+
+    <div class="nav-group-label">CHOOSING AN LLM</div>
+    <a href="#context-window"><span class="sec-id">1.1</span>Context Window Size</a>
+    <a href="#reasoning-mode"><span class="sec-id">1.2</span>Reasoning Mode</a>
+    <a href="#recommended-models"><span class="sec-id">1.3</span>Recommended Models</a>
+
+    <div class="nav-group-label">STARTING A SESSION</div>
+    <a href="#loading-prompt"><span class="sec-id">2.1</span>Loading the Prompt</a>
+    <a href="#interview"><span class="sec-id">2.2</span>World-Building Interview</a>
+    <a href="#skip-interview"><span class="sec-id">2.3</span>Skipping the Interview</a>
+
+    <div class="nav-group-label">MANAGING GENERATION</div>
+    <a href="#gen-time"><span class="sec-id">3.1</span>Generation Takes Time</a>
+    <a href="#continue"><span class="sec-id">3.2</span>Prompting to Continue</a>
+    <a href="#output-order"><span class="sec-id">3.3</span>Output Order</a>
+
+    <div class="nav-group-label">REVIEWING OUTPUT</div>
+    <a href="#what-to-check"><span class="sec-id">4.1</span>What to Check</a>
+    <a href="#fix-mistakes"><span class="sec-id">4.2</span>Fixing Mistakes</a>
+    <a href="#regen-files"><span class="sec-id">4.3</span>Regenerating Files</a>
+
+    <div class="nav-group-label">COMPILING &amp; INSTALLING</div>
+    <a href="#readme"><span class="sec-id">5.1</span>The Generated Readme</a>
+    <a href="#build-scripts"><span class="sec-id">5.2</span>Build Scripts</a>
+    <a href="#packaging"><span class="sec-id">5.3</span>Packaging</a>
+
+    <div class="nav-group-label">MISCELLANEOUS</div>
+    <a href="#faq"><span class="sec-id">6.1</span>FAQ</a>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main>
+
+    <!-- 0.1 WHAT IS THIS? -->
+    <div class="doc-section" id="what-is-this">
+      <div class="section-id">[0.1]</div>
+      <h2>What Is This?</h2>
+      <p>The file <code>prompt.md</code> in this directory is a ready-made prompt that you feed to a large language model (LLM) to have it generate a complete quest pack for your BBS. The LLM acts as a collaborative quest designer: it interviews you about your BBS's identity, builds a coherent world around your answers, and then produces every source file the devkit tools need to compile into a running campaign.</p>
+      <p>This document explains how to get the best results out of that process. It does not cover the devkit tools themselves -- see <a href="index.html">clandev.txt</a> for that.</p>
+    </div>
+
+    <!-- 0.2 WHAT DOES IT PRODUCE? -->
+    <div class="doc-section" id="what-produce">
+      <div class="section-id">[0.2]</div>
+      <h2>What Does It Produce?</h2>
+      <p>The prompt instructs the LLM to generate eleven output files:</p>
+      <ol class="steps">
+        <li><div><code>quests.ini</code> &mdash; Quest registry</div></li>
+        <li><div><code>quests.hlp</code> &mdash; In-game quest descriptions (one block per quest)</div></li>
+        <li><div>NPC Info <code>.txt</code> &mdash; NPC metadata and topic list</div></li>
+        <li><div>Monster <code>.txt</code> &mdash; Combat stats for monsters and NPCs</div></li>
+        <li><div>Chat <code>.txt</code> &mdash; NPC dialogue and topic blocks</div></li>
+        <li><div>Event <code>.evt</code> &mdash; Quest encounter logic</div></li>
+        <li><div>Listing <code>.lst</code> &mdash; Two-column file mapping filenames to PAK aliases</div></li>
+        <li><div><code>clans.ini</code> &mdash; Complete configuration file with NpcFile entries</div></li>
+        <li><div><code>readme.txt</code> &mdash; Compilation and installation instructions</div></li>
+        <li><div><code>build.bat</code> &mdash; Windows batch file for compilation</div></li>
+        <li><div><code>Makefile</code> &mdash; Unix makefile for compilation</div></li>
+      </ol>
+      <p>Files 1-8 are everything needed to build and install the pack. Files 9-11 exist so you don't have to figure out the compilation order yourself.</p>
+      <div class="callout">
+        <strong>NOTE:</strong> For a full 60-day campaign, this means approximately 30 quests across 7-8 quest-giving NPCs, 20-40 ambient NPCs filling the village locations, a lore keeper, and all associated monsters, bosses, and scripted encounters.
+      </div>
+    </div>
+
+    <!-- 1.1 CONTEXT WINDOW SIZE -->
+    <div class="doc-section" id="context-window">
+      <div class="section-id">[1.1]</div>
+      <h2>Context Window Size</h2>
+      <p>Context window size is the single most important variable. A full campaign with 30+ quests, 40+ NPCs, and interlinked scripts will be tens of thousands of tokens of source material. Models with small context windows will truncate their own output, lose track of flag assignments halfway through, and produce NPCs that reference events from a quest the model has already forgotten.</p>
+      <p>As a rough guide:</p>
+      <table class="terms">
+        <tr><th>Campaign Size</th><th>Minimum Context</th></tr>
+        <tr><td>10-15 quests, minimal ambient NPCs</td><td>100K tokens may suffice</td></tr>
+        <tr><td>30 quests, full ambient NPC roster</td><td>200K+ strongly preferred</td></tr>
+      </table>
+      <p>Use the largest context window available to you. If a model offers both a standard and an extended context option, use the extended one.</p>
+    </div>
+
+    <!-- 1.2 REASONING MODE -->
+    <div class="doc-section" id="reasoning-mode">
+      <div class="section-id">[1.2]</div>
+      <h2>Reasoning Mode</h2>
+      <p>Most frontier LLMs offer a "reasoning" or "extended thinking" mode that causes the model to work through the problem at length internally before writing its response. This makes a meaningful difference for quest generation.</p>
+      <p>The prompt asks the model to design consistent cross-references between dozens of files, track flag assignments so no two flags serve the same purpose, and ensure every ACS condition in every chat file is actually tested by at least one command in an event script. Reasoning mode makes these kinds of errors far less frequent.</p>
+      <div class="callout tip">
+        <strong>TIP:</strong> Enable reasoning mode if the cost is acceptable to you. If not, expect to spend more time on review and correction.
+      </div>
+    </div>
+
+    <!-- 1.3 RECOMMENDED MODELS -->
+    <div class="doc-section" id="recommended-models">
+      <div class="section-id">[1.3]</div>
+      <h2>Recommended Models</h2>
+      <p>Based on testing as of early 2026 (capabilities change; treat this as directional):</p>
+      <table class="terms">
+        <tr><th>Model</th><th>Assessment</th></tr>
+        <tr>
+          <td>Claude (claude.ai, Extended thinking)</td>
+          <td>Good results for full campaigns. Expect to send 3-5 "Continue" prompts. A 60-day campaign took approximately one hour in testing using Sonnet 4.6 Extended.</td>
+        </tr>
+        <tr>
+          <td>GPT-4o and similar 128K models</td>
+          <td>Adequate for shorter campaigns (10-15 quests). May lose coherence or start hallucinating flag numbers for larger ones.</td>
+        </tr>
+        <tr>
+          <td>Any model with less than 100K context</td>
+          <td>Not recommended for full campaigns. Use only for short packs (5-8 quests, minimal NPCs) and review output carefully.</td>
+        </tr>
+      </table>
+      <p>Longer outputs and more complex campaigns consistently benefit from larger context and stronger reasoning ability. If the budget allows, go bigger.</p>
+    </div>
+
+    <!-- 2.1 LOADING THE PROMPT -->
+    <div class="doc-section" id="loading-prompt">
+      <div class="section-id">[2.1]</div>
+      <h2>Loading the Prompt</h2>
+      <p>The entire contents of <code>prompt.md</code> must reach the LLM before any conversation begins. How you do this depends on your interface:</p>
+
+      <h3>Claude.ai</h3>
+      <p>Open a new conversation. Paste the entire contents of <code>prompt.md</code> as your first message, then send it. Wait for the model to acknowledge before continuing.</p>
+
+      <h3>API-based Interfaces (OpenAI, Anthropic API, etc.)</h3>
+      <p>Place the contents of <code>prompt.md</code> in the system prompt field. Leave the first user message empty or use it to begin the interview.</p>
+
+      <h3>Web Interfaces with File Upload</h3>
+      <p>Upload <code>prompt.md</code> as an attachment and tell the model to read it before responding. Some models require explicit instruction to read attached files; say so clearly.</p>
+
+      <div class="callout">
+        <strong>VERIFY:</strong> Before doing anything else, confirm the model received the prompt. Ask it:
+      </div>
+      <pre>What files will you generate?</pre>
+      <p>It should list all eleven output files without hesitation. If it lists fewer, re-paste the prompt or try a different interface.</p>
+    </div>
+
+    <!-- 2.2 THE WORLD-BUILDING INTERVIEW -->
+    <div class="doc-section" id="interview">
+      <div class="section-id">[2.2]</div>
+      <h2>The World-Building Interview</h2>
+      <p>The prompt instructs the model to interview you before generating anything. It will ask six questions, one at a time:</p>
+      <ol class="steps">
+        <li><div><strong style="color:var(--cyan)">The village</strong> &mdash; what it is, what it feels like</div></li>
+        <li><div><strong style="color:var(--cyan)">History and hidden things</strong> &mdash; what players can discover</div></li>
+        <li><div><strong style="color:var(--cyan)">Power and conflict</strong> &mdash; factions in tension</div></li>
+        <li><div><strong style="color:var(--cyan)">The world beyond</strong> &mdash; surrounding geography</div></li>
+        <li><div><strong style="color:var(--cyan)">Tone</strong> &mdash; the register of dialogue and consequence</div></li>
+        <li><div><strong style="color:var(--cyan)">The sysop's vision</strong> &mdash; what you most want players to feel</div></li>
+      </ol>
+      <p>Answer as specifically as you can. Generic answers produce generic quests. The model needs concrete names, specific conflicts, and particular locations to produce content that feels like it belongs to your BBS rather than any BBS.</p>
+      <div class="callout warn">
+        <strong>IMPORTANT:</strong> After the interview, the model will summarise its understanding of your world and ask for approval or corrections before generating anything. Read this summary carefully. Any misunderstanding here will propagate through every generated file. Correct it before you say yes.
+      </div>
+    </div>
+
+    <!-- 2.3 SKIPPING THE INTERVIEW -->
+    <div class="doc-section" id="skip-interview">
+      <div class="section-id">[2.3]</div>
+      <h2>Skipping the Interview</h2>
+      <p>If you already have a clear world in mind, you can skip the interview by writing a world description up front. Begin your first message (after loading the prompt) with something like:</p>
+      <pre>I have prepared the following world description in place of the
+interview.  Please take careful notes on every specific detail --
+names, factions, locations, events -- and use it as the foundation
+for the entire pack.  Do not proceed to generation until you have
+confirmed your understanding.
+
+[Your description here]</pre>
+      <p>Include all six interview topics in your description: village character, history and hidden things, factions in tension, surrounding geography, tone, and what you want players to feel by the end of the campaign.</p>
+      <div class="callout tip">
+        <strong>TIP:</strong> After you send it, the model should summarise its understanding and ask for confirmation. If it skips straight to generation, stop it and insist on the confirmation step. Mistakes caught at the summary stage cost nothing; the same mistakes discovered in a generated event script cost significant effort to fix.
+      </div>
+    </div>
+
+    <!-- 3.1 GENERATION TAKES TIME -->
+    <div class="doc-section" id="gen-time">
+      <div class="section-id">[3.1]</div>
+      <h2>Generation Takes Time</h2>
+      <p>A full 60-day campaign with 30+ quests and 40+ ambient NPCs is a large body of work. Expect the LLM to take anywhere from 20 minutes to over an hour, depending on the model, output size, and server load. This is normal.</p>
+      <div class="callout warn">
+        <strong>WARNING:</strong> Do not close the session or interrupt the model unless it appears genuinely stuck -- repeating itself, generating obvious nonsense, or stopping mid-file with no apparent reason. Interrupting a running generation usually means starting over.
+      </div>
+      <p>Most interfaces will show a spinner or progress indicator while the model is working. If the spinner stops and the model has not finished, see section 3.2.</p>
+    </div>
+
+    <!-- 3.2 PROMPTING THE MODEL TO CONTINUE -->
+    <div class="doc-section" id="continue">
+      <div class="section-id">[3.2]</div>
+      <h2>Prompting the Model to Continue</h2>
+      <p>Chat interfaces typically cap individual response length. The LLM will stop mid-generation and wait for input. When it does, send a short message:</p>
+      <pre>Continue.</pre>
+      <p>The model should resume from where it stopped without regenerating what it already produced. If it seems confused about where it left off, tell it:</p>
+      <pre>Continue with the chat file.</pre>
+      <p>or whatever file it was in the middle of. You may need to do this 3-5 times for a large campaign. After each continuation, glance at the output to confirm it picked up at the right point rather than jumping backward.</p>
+    </div>
+
+    <!-- 3.3 OUTPUT ORDER -->
+    <div class="doc-section" id="output-order">
+      <div class="section-id">[3.3]</div>
+      <h2>Output Order</h2>
+      <p>The prompt specifies this generation order, and the model should follow it:</p>
+      <ol class="steps">
+        <li><div>Monster/NPC definition file (<code>.txt</code>)</div></li>
+        <li><div>NPC Info file (<code>.txt</code>)</div></li>
+        <li><div>Chat file (<code>.txt</code>)</div></li>
+        <li><div>Event script (<code>.evt</code>)</div></li>
+        <li><div><code>quests.ini</code></div></li>
+        <li><div><code>quests.hlp</code></div></li>
+        <li><div>PAK listing file (<code>.lst</code>)</div></li>
+        <li><div><code>clans.ini</code></div></li>
+        <li><div><code>readme.txt</code></div></li>
+        <li><div><code>build.bat</code></div></li>
+        <li><div><code>Makefile</code></div></li>
+      </ol>
+      <p>Later files depend on decisions made in earlier ones -- <code>clans.ini</code> references compiled <code>.npc</code> filenames; the listing file references all compiled output; the readme and build scripts reference all of the above. If the model skips a file, prompt it to produce the missing one before continuing.</p>
+    </div>
+
+    <!-- 4.1 WHAT TO CHECK BEFORE COMPILING -->
+    <div class="doc-section" id="what-to-check">
+      <div class="section-id">[4.1]</div>
+      <h2>What to Check Before Compiling</h2>
+      <p>Read through the generated source files before handing them to the devkit tools. The ecomp compiler catches structural errors but not semantic mistakes. Here is what to look for:</p>
+
+      <h3>Text Line Length</h3>
+      <p>The engine does not word-wrap. Each <code>Text</code> command's visible content must be 78 characters or fewer. Color codes (<code>|0C</code>, <code>|02</code>, etc.) take up source characters but zero display columns -- only count the characters that will actually appear on screen.</p>
+
+      <h3>Chained ACS Conditions</h3>
+      <p><code>{Q1}{Q2}Command</code> is a compile error. The correct form is <code>{Q1&amp;Q2}Command</code>. Conditions are combined inside a single pair of braces using <code>&amp;</code> (AND), <code>|</code> (OR), <code>!</code> (NOT), and parentheses for grouping.</p>
+
+      <h3>Condition on Its Own Line</h3>
+      <p>A <code>{condition}</code> written on a line by itself is silently discarded. The condition and the command it gates must be on the same line.</p>
+
+      <h3>Invalid Jump Targets</h3>
+      <p><code>Jump</code> must point to a real <code>Event</code> or <code>Result</code> block label. <code>STOP</code> and <code>NextLine</code> are not valid Jump targets -- they are only recognized by <code>Fight</code>, <code>Option</code>, and <code>Input</code>. A Jump to STOP will cause a runtime crash.</p>
+
+      <h3>Missing End</h3>
+      <p>Every <code>Event</code>, <code>Result</code>, and <code>Topic</code> block must close with <code>End</code>. Without it, execution falls through into the next block. ecomp will not catch this.</p>
+
+      <h3>Quest Logic in Topic Blocks</h3>
+      <p><code>TellQuest</code> and <code>DoneQuest</code> are fine in Topics. Fights, major flag changes, and story-critical rewards must live in <code>Event</code> or <code>Result</code> blocks only. Quest logic in a Topic block bypasses the one-quest-per-day limit and breaks campaign pacing.</p>
+
+      <h3>Flag Number Conflicts</h3>
+      <p>Each flag number within a scope (P, D, G, T) should have exactly one purpose. If P3 is used as a story-progress flag in one file and a daily cooldown in another, one of them will silently stomp the other.</p>
+
+      <h3>String and Path Lengths</h3>
+      <p><code>Text</code>/<code>Prompt</code>/<code>AddNews</code> arguments: 254 character maximum. File path aliases: 29 character maximum.</p>
+    </div>
+
+    <!-- 4.2 ASKING THE LLM TO FIX MISTAKES -->
+    <div class="doc-section" id="fix-mistakes">
+      <div class="section-id">[4.2]</div>
+      <h2>Asking the LLM to Fix Mistakes</h2>
+      <p>When ecomp reports an error, paste the error message back to the model:</p>
+      <pre>ecomp reported this error when compiling the event file:
+
+fallstatt.evt line 47: Error: unknown condition 'Q1Q2'
+
+Please fix it and show me the corrected block.</pre>
+      <p>Models can usually diagnose and correct individual ecomp errors from the output alone. Fix one issue at a time rather than pasting a long error log and asking for a bulk fix -- bulk fixes introduce new errors.</p>
+      <div class="callout tip">
+        <strong>TIP:</strong> Semantic mistakes (wrong flag number, a fight with no preceding <code>AddEnemy</code>, quest logic in a Topic block) usually need to be spotted by you and explained to the model. Tell it what is wrong and what the correct behaviour should be.
+      </div>
+    </div>
+
+    <!-- 4.3 REGENERATING INDIVIDUAL FILES -->
+    <div class="doc-section" id="regen-files">
+      <div class="section-id">[4.3]</div>
+      <h2>Regenerating Individual Files</h2>
+      <p>If a specific file needs significant revision -- a poorly designed quest, a chat file that does not match the established tone, flags that are inconsistent across files -- ask the model to regenerate just that file:</p>
+      <pre>The chat file for the blacksmith NPC does not match the grim tone we
+established in the interview.  Please regenerate just that NPC's Topic
+blocks.  Keep all flag numbers and labels identical to what you already
+generated.</pre>
+      <div class="callout warn">
+        <strong>IMPORTANT:</strong> The instruction to keep flag numbers and labels identical is critical. If the model renumbers flags, cross-file references in other source files will break.
+      </div>
+      <p>If you need to change the world design significantly after generation (rename an NPC, move a quest to a different story beat, change a faction's role), make the change in the chat file and event script together, and ask the model to verify that all cross-references are still consistent before you compile.</p>
+    </div>
+
+    <!-- 5.1 THE README THE LLM GENERATES -->
+    <div class="doc-section" id="readme">
+      <div class="section-id">[5.1]</div>
+      <h2>The Readme the LLM Generates</h2>
+      <p>The generated <code>readme.txt</code> lists the exact compilation commands for your pack in dependency order. Follow it sequentially. All devkit tools are in your game directory; the readme will prefix commands with <code>./</code> for Unix systems.</p>
+      <p>A typical sequence for a pack named <code>fallstatt</code> looks like:</p>
+      <pre>./mcomp    fallstatt.mon.txt  fallstatt.mon
+./makenpc  fallstatt.npc.txt  fallstatt.npc
+./ecomp    fallstatt.q.txt    fallstatt.q
+./ecomp    fallstatt.evt.txt  fallstatt.evt
+./makepak  fallstatt.pak      fallstatt.lst</pre>
+      <p>Run these in order. If any step fails, the error output will identify the problem. See <a href="#fix-mistakes">section 4.2</a> for how to ask the LLM to fix it.</p>
+    </div>
+
+    <!-- 5.2 BUILD SCRIPTS -->
+    <div class="doc-section" id="build-scripts">
+      <div class="section-id">[5.2]</div>
+      <h2>Build Scripts</h2>
+      <p>In addition to the readme, the LLM generates:</p>
+      <table class="terms">
+        <tr><th>File</th><th>Usage</th></tr>
+        <tr><td><code>Makefile</code></td><td>A Unix makefile. Run it with: <code>make</code></td></tr>
+        <tr><td><code>build.bat</code></td><td>A Windows batch file. Run it with: <code>build.bat</code></td></tr>
+      </table>
+      <p>Both run the same compilation sequence as the readme, in the correct order. Use whichever matches your server's operating system. If a step fails, the error output will name the tool and line that caused the failure.</p>
+      <div class="callout">
+        <strong>NOTE:</strong> If the generated build script has wrong tool paths (e.g. the tools are in a subdirectory the script does not account for), ask the model to regenerate the build script with the correct path prefix.
+      </div>
+    </div>
+
+    <!-- 5.3 PACKAGING FOR DISTRIBUTION -->
+    <div class="doc-section" id="packaging">
+      <div class="section-id">[5.3]</div>
+      <h2>Packaging for Distribution</h2>
+      <p>Once the pack is compiled and tested, distribute the following files:</p>
+      <pre>packname.pak    (compiled archive -- all scripts and NPC data)
+quests.ini      (replaces existing -- back this up first)
+quests.hlp      (replaces existing -- back this up first)
+clans.ini       (replaces existing -- back this up first)
+readme.txt      (installation instructions for the recipient)</pre>
+      <div class="callout warn">
+        <strong>WARNING:</strong> Do not include the source <code>.txt</code> files or devkit tools. The <code>.pak</code> file contains everything the game engine needs. The source files are only useful to someone who wants to modify the pack, which is a separate conversation.
+      </div>
+      <div class="callout tip">
+        <strong>TIP:</strong> If you want to package everything into a zip file and have not yet done so, asking the LLM to generate a file list for your zip utility is easier than remembering every filename yourself.
+      </div>
+    </div>
+
+    <!-- 6.1 FREQUENTLY ASKED QUESTIONS -->
+    <div class="doc-section" id="faq">
+      <div class="section-id">[6.1]</div>
+      <h2>Frequently Asked Questions</h2>
+
+      <div class="qa-block">
+        <div class="qa-q">The model stopped partway through. Now it is generating something it already generated. What do I do?</div>
+        <div class="qa-a">Tell it exactly where to resume: "You have already generated the monster file and the NPC info file. Please continue from the chat file." It should skip what it has done and carry on from the right point.</div>
+      </div>
+
+      <div class="qa-block">
+        <div class="qa-q">The model did not conduct the interview. It just started generating.</div>
+        <div class="qa-a">Send your own world description using the format in <a href="#skip-interview">section 2.3</a>, and ask the model to confirm its understanding before continuing. Alternatively, start a fresh session and begin your first message with: "Please conduct the world-building interview described in the prompt before generating any files."</div>
+      </div>
+
+      <div class="qa-block">
+        <div class="qa-q">The generated campaign only has 8 quests, not 30.</div>
+        <div class="qa-a">After the model finishes, prompt it: "The prompt specifies a 60-day campaign with approximately 30 quests across 7-8 NPCs. Please extend the campaign to meet this target, keeping all existing flag assignments and cross-references intact." A reasoning-mode model will expand the existing design rather than start over.</div>
+      </div>
+
+      <div class="qa-block">
+        <div class="qa-q">ecomp says "condition on its own line" but I cannot find the problem.</div>
+        <div class="qa-a">Search the source file for any line that contains nothing but a condition in curly braces -- e.g. a line that reads <code>{D0}</code> with nothing after it. The condition must be written on the same line as the command it gates. Move it there and recompile.</div>
+      </div>
+
+      <div class="qa-block">
+        <div class="qa-q">ecomp says "Jump to invalid target: STOP".</div>
+        <div class="qa-a">The model used <code>Jump STOP</code> somewhere. STOP is only valid as a target for <code>Option</code> and <code>Fight</code> -- not for <code>Jump</code>. Replace it with a Jump to a <code>Result</code> block that contains only <code>End</code>.</div>
+      </div>
+
+      <div class="qa-block">
+        <div class="qa-q">Can I add quests to an existing campaign rather than replacing it?</div>
+        <div class="qa-a">Yes, but carefully. Start a new session, give the model your existing <code>quests.ini</code> so it can see the current Q flag numbering, and ask it to extend rather than replace. Stress that Q flag numbers must continue from wherever the existing file ends, not restart from 1.</div>
+      </div>
+
+      <div class="qa-block">
+        <div class="qa-q">The ambient NPCs all sound the same.</div>
+        <div class="qa-a">After generation, paste a few Topic blocks back to the model and ask: "These NPCs should each have a distinct voice. The cobbler is taciturn and practical; the gossip is breathless and unreliable; the ex-soldier is dry and fatalistic. Please rewrite these blocks to reflect that." Voice differentiation usually improves significantly with a targeted correction prompt.</div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <footer>
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 Allen Ussher and contributors &middot; Released under the GNU GPL
+  </footer>
+
+</div>
+</body>
+</html>

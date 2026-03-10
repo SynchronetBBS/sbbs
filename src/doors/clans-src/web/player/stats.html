@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — PLAYER GUIDE — CHARACTER STATS</title>
+<link rel="stylesheet" href="../clans.css">
+<style>
+  .wrapper { --sidebar-w: 220px; --max-w: 1100px; }
+  ol.steps { list-style: none; counter-reset: step-counter; margin: 10px 0; }
+  ol.steps li { display: flex; counter-increment: step-counter; gap: 14px; font-size: 13px; color: var(--cyan-dim); line-height: 1.8; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--bg-panel); }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before { content: counter(step-counter); flex-shrink: 0; width: 26px; height: 26px; border: 1px solid #333333; display: flex; align-items: center; justify-content: center; font-family: 'VT323', monospace; font-size: 18px; color: #55FFFF; text-shadow: 0 0 6px #55FFFF; margin-top: 2px; }
+  .terms { border: 1px solid #333333; width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+  .terms th { background: rgba(85,255,255,0.08); color: #55FFFF; text-shadow: 0 0 6px #55FFFF; padding: 8px 14px; text-align: left; border-bottom: 1px solid #333333; letter-spacing: 1px; }
+  .terms td { padding: 8px 14px; color: var(--cyan-dim); border-bottom: 1px solid var(--bg-panel); line-height: 1.7; vertical-align: top; }
+  .terms td:first-child { color: var(--cyan); white-space: nowrap; }
+  .terms tr:last-child td { border-bottom: none; }
+  .terms tr:hover td { background: rgba(85,255,255,0.06); }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="../index.html">⚔ THE CLANS</a>
+  <div class="topnav-links">
+    <a href="../index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label active">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="getting-started.html">Getting Started</a>
+        <a href="pre-game.html">Pre-Game Menu</a>
+        <a href="main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="mines.html">The Mines</a>
+        <a href="combat.html">Combat</a>
+        <a href="stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="market.html">The Market</a>
+        <a href="items.html">Items &amp; Equipment</a>
+        <a href="magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="training.html">Training Hall</a>
+        <a href="church.html">The Church</a>
+        <a href="town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="empires.html">Empires</a>
+        <a href="alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="communications.html">Communications</a>
+        <a href="npcs.html">NPCs</a>
+        <a href="travel.html">World Travel</a>
+        <a href="scoring.html">Scoring</a>
+        <a href="misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <a href="../sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">DevKit</span>
+      <div class="topnav-menu">
+        <a href="../devkit/index.html">PAK Development</a>
+        <a href="../devkit/questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <a href="../developer/index.html">Developer</a>
+    <a href="../whatsnew.html">What's New</a>
+  </div>
+</div>
+<div class="wrapper">
+  <header>
+    <div>
+      <div class="header-title">⚔ PLAYER GUIDE — CHARACTER STATS</div>
+      <div class="header-sub">v0.97b2 · The Clans Player Reference Manual</div>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-group-label">CHARACTER STATS</div>
+    <a href="#sec-6-1"><span class="sec-id">6.1</span>Attributes</a>
+    <a href="#sec-6-2"><span class="sec-id">6.2</span>Leveling Up</a>
+    <a href="#sec-6-3"><span class="sec-id">6.3</span>Status Effects</a>
+  </nav>
+
+  <main>
+
+    <!-- 6.1 ATTRIBUTES -->
+    <div class="doc-section" id="sec-6-1">
+      <div class="section-id">[6.1]</div>
+      <h2>Attributes</h2>
+      <p>Each member has six attributes:</p>
+      <table class="terms">
+        <tr><th>Attribute</th><th>Effect</th></tr>
+        <tr><td>Agility</td><td>Determines how quickly you act in combat and how well you dodge enemy attacks.</td></tr>
+        <tr><td>Dexterity</td><td>Affects your accuracy when striking an enemy.</td></tr>
+        <tr><td>Strength</td><td>Governs how much damage your attacks deal.</td></tr>
+        <tr><td>Wisdom</td><td>Influences your magical abilities and spell effectiveness.</td></tr>
+        <tr><td>Armor Strength</td><td>Reduces the damage you take from enemy attacks.</td></tr>
+        <tr><td>Charisma</td><td>Displayed in your stats but currently has no active effect in the game.</td></tr>
+      </table>
+      <p>All attributes range from 0 to 100. You improve them by spending training points at the training hall (see section 10.2).</p>
+    </div>
+
+    <!-- 6.2 LEVELING UP -->
+    <div class="doc-section" id="sec-6-2">
+      <div class="section-id">[6.2]</div>
+      <h2>Leveling Up</h2>
+      <p>As your members earn experience from combat, they will eventually level up. Each level requires more experience than the last. The maximum level is 100.</p>
+      <p>When a member levels up, they receive 10 to 13 training points which you can spend at the training hall to improve their attributes or increase their maximum hit points or spell points.</p>
+    </div>
+
+    <!-- 6.3 STATUS EFFECTS -->
+    <div class="doc-section" id="sec-6-3">
+      <div class="section-id">[6.3]</div>
+      <h2>Status Effects</h2>
+      <p>Members can have the following status conditions:</p>
+      <table class="terms">
+        <tr><th>Status</th><th>Description</th></tr>
+        <tr><td>Here</td><td>Healthy and ready for action.</td></tr>
+        <tr><td>Unconscious</td><td>Knocked out during combat. Cannot fight until revived at the church.</td></tr>
+        <tr><td>Dead</td><td>Killed in combat. Must be resurrected at the church. Suffers a permanent loss of some maximum hit points.</td></tr>
+        <tr><td>Ran Away</td><td>Fled from combat. Returns to normal after the battle.</td></tr>
+      </table>
+    </div>
+
+    <div class="page-nav">
+      <a class="prev" href="combat.html">Combat</a>
+      <a class="next" href="market.html">The Market</a>
+    </div>
+  </main>
+
+  <footer>
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 Allen Ussher and contributors &middot; Released under the GNU GPL
+  </footer>
+</div>
+</body>
+</html>

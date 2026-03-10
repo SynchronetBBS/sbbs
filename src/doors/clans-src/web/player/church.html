@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — PLAYER GUIDE — THE CHURCH</title>
+<link rel="stylesheet" href="../clans.css">
+<style>
+  .wrapper { --sidebar-w: 220px; --max-w: 1100px; }
+  ol.steps { list-style: none; counter-reset: step-counter; margin: 10px 0; }
+  ol.steps li { display: flex; counter-increment: step-counter; gap: 14px; font-size: 13px; color: var(--cyan-dim); line-height: 1.8; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--bg-panel); }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before { content: counter(step-counter); flex-shrink: 0; width: 26px; height: 26px; border: 1px solid #333333; display: flex; align-items: center; justify-content: center; font-family: 'VT323', monospace; font-size: 18px; color: #55FFFF; text-shadow: 0 0 6px #55FFFF; margin-top: 2px; }
+  .terms { border: 1px solid #333333; width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+  .terms th { background: rgba(85,255,255,0.08); color: #55FFFF; text-shadow: 0 0 6px #55FFFF; padding: 8px 14px; text-align: left; border-bottom: 1px solid #333333; letter-spacing: 1px; }
+  .terms td { padding: 8px 14px; color: var(--cyan-dim); border-bottom: 1px solid var(--bg-panel); line-height: 1.7; vertical-align: top; }
+  .terms td:first-child { color: var(--cyan); white-space: nowrap; }
+  .terms tr:last-child td { border-bottom: none; }
+  .terms tr:hover td { background: rgba(85,255,255,0.06); }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="../index.html">⚔ THE CLANS</a>
+  <div class="topnav-links">
+    <a href="../index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label active">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="getting-started.html">Getting Started</a>
+        <a href="pre-game.html">Pre-Game Menu</a>
+        <a href="main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="mines.html">The Mines</a>
+        <a href="combat.html">Combat</a>
+        <a href="stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="market.html">The Market</a>
+        <a href="items.html">Items &amp; Equipment</a>
+        <a href="magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="training.html">Training Hall</a>
+        <a href="church.html">The Church</a>
+        <a href="town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="empires.html">Empires</a>
+        <a href="alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="communications.html">Communications</a>
+        <a href="npcs.html">NPCs</a>
+        <a href="travel.html">World Travel</a>
+        <a href="scoring.html">Scoring</a>
+        <a href="misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <a href="../sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">DevKit</span>
+      <div class="topnav-menu">
+        <a href="../devkit/index.html">PAK Development</a>
+        <a href="../devkit/questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <a href="../developer/index.html">Developer</a>
+    <a href="../whatsnew.html">What's New</a>
+  </div>
+</div>
+<div class="wrapper">
+  <header>
+    <div>
+      <div class="header-title">⚔ PLAYER GUIDE — THE CHURCH</div>
+      <div class="header-sub">v0.97b2 · The Clans Player Reference Manual</div>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-group-label">THE CHURCH</div>
+    <a href="#sec-11-1"><span class="sec-id">11.1</span>Overview</a>
+    <a href="#sec-11-2"><span class="sec-id">11.2</span>Services</a>
+    <a href="#sec-11-3"><span class="sec-id">11.3</span>Resurrection Costs</a>
+  </nav>
+
+  <main>
+
+    <!-- 11.1 OVERVIEW -->
+    <div class="doc-section" id="sec-11-1">
+      <div class="section-id">[11.1]</div>
+      <h2>Overview</h2>
+      <p>The church provides healing and spiritual services. It is only available if the village has a church built. Higher church levels unlock more powerful services.</p>
+
+      <p>The commands are:</p>
+      <table class="terms">
+        <tr><th>Key</th><th>Action</th></tr>
+        <tr><td><code>M</code></td><td>Attend mass (once per day).</td></tr>
+        <tr><td><code>P</code></td><td>Pray (once per day).</td></tr>
+        <tr><td><code>B</code></td><td>Blessing -- fully restores your entire clan's SP (requires church level 2 or higher, once per day).</td></tr>
+        <tr><td><code>U</code></td><td>Revive unconscious -- resurrect unconscious members (requires church level 2 or higher).</td></tr>
+        <tr><td><code>D</code></td><td>Resurrect dead -- raise dead members (requires church level 3 or higher).</td></tr>
+        <tr><td><code>V</code></td><td>View stats.</td></tr>
+        <tr><td><code>/</code></td><td>Chat with villagers in the church.</td></tr>
+        <tr><td><code>Q</code></td><td>Return to the main menu.</td></tr>
+      </table>
+    </div>
+
+    <!-- 11.2 SERVICES -->
+    <div class="doc-section" id="sec-11-2">
+      <div class="section-id">[11.2]</div>
+      <h2>Services</h2>
+      <p>Attending mass and praying are daily rituals that may grant small blessings or bonuses. Each can be done once per day.</p>
+      <p>The blessing (<code>B</code>) fully restores all present members' spell points to their maximums. This is very useful when your clan has exhausted its SP during combat.</p>
+      <p>Reviving unconscious members (<code>U</code>) and resurrecting dead members (<code>D</code>) cost gold from your clan's vault. The cost depends on the member's level.</p>
+    </div>
+
+    <!-- 11.3 RESURRECTION COSTS -->
+    <div class="doc-section" id="sec-11-3">
+      <div class="section-id">[11.3]</div>
+      <h2>Resurrection Costs</h2>
+      <p>The cost to restore a fallen member depends on their level:</p>
+      <table class="terms">
+        <tr><th>Service</th><th>Cost</th></tr>
+        <tr><td>Revive Unconscious</td><td>(Level + 1) &times; 300 gold per member.</td></tr>
+        <tr><td>Resurrect Dead</td><td>(Level + 1) &times; 750 gold per member.</td></tr>
+      </table>
+      <div class="callout tip">
+        <strong>Example:</strong> Reviving a level-4 unconscious member costs 1,500 gold. Resurrecting a level-4 dead member costs 3,750 gold.
+      </div>
+      <p>The number of resurrections available per day depends on the church level. Build a higher-level church to restore more members each day.</p>
+    </div>
+
+    <div class="page-nav">
+      <a class="prev" href="training.html">Training Hall</a>
+      <a class="next" href="town-hall.html">Town Hall</a>
+    </div>
+  </main>
+
+  <footer>
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 Allen Ussher and contributors &middot; Released under the GNU GPL
+  </footer>
+</div>
+</body>
+</html>

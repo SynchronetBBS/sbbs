@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — Player Guide</title>
+<link rel="stylesheet" href="../clans.css">
+<style>
+  .screen {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .chapter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .chapter-card {
+    border: 1px solid #333333;
+    padding: 16px;
+    background: var(--dark);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    display: block;
+  }
+  .chapter-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(0,255,65,0.06) 0%, transparent 60%);
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .chapter-card:hover::before { opacity: 1; }
+  .chapter-card:hover {
+    border-color: var(--cyan);
+    box-shadow: 0 0 8px #55FFFF, 0 0 20px #00CCCC66;
+  }
+  .chapter-num {
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    color: #FF5555;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+  .chapter-title {
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    color: #FFFF55;
+    text-shadow: 0 0 6px #FFFF55;
+    margin-bottom: 6px;
+  }
+  .chapter-desc {
+    font-size: 11px;
+    color: var(--cyan-dim);
+    line-height: 1.6;
+  }
+  .group-header {
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    color: #FF55FF;
+    text-shadow: 0 0 6px #FF55FF;
+    letter-spacing: 3px;
+    margin: 24px 0 12px;
+    border-bottom: 1px solid #333333;
+    padding-bottom: 4px;
+  }
+  .group-header:first-child { margin-top: 0; }
+  .page-header {
+    text-align: center;
+    border: 2px solid #444444;
+    box-shadow: 0 0 12px #55FFFF, 0 0 40px #55FFFF22;
+    padding: 30px 20px;
+    margin-bottom: 30px;
+    background: var(--dark);
+  }
+  .page-header h1 {
+    font-family: 'VT323', monospace;
+    font-size: 36px;
+    color: var(--cyan);
+    text-shadow: 0 0 8px #55FFFF, 0 0 20px #00CCCC66;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+  .page-header .sub {
+    font-size: 13px;
+    color: var(--cyan-dim);
+    letter-spacing: 2px;
+  }
+  .footer {
+    border-top: 1px solid #333333;
+    padding-top: 16px;
+    margin-top: 30px;
+    font-size: 11px;
+    color: var(--border);
+    text-align: center;
+    line-height: 2;
+  }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="../index.html">⚔ THE CLANS</a>
+  <div class="topnav-links">
+    <a href="../index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label active">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="getting-started.html">Getting Started</a>
+        <a href="pre-game.html">Pre-Game Menu</a>
+        <a href="main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="mines.html">The Mines</a>
+        <a href="combat.html">Combat</a>
+        <a href="stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="market.html">The Market</a>
+        <a href="items.html">Items &amp; Equipment</a>
+        <a href="magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="training.html">Training Hall</a>
+        <a href="church.html">The Church</a>
+        <a href="town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="empires.html">Empires</a>
+        <a href="alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="communications.html">Communications</a>
+        <a href="npcs.html">NPCs</a>
+        <a href="travel.html">World Travel</a>
+        <a href="scoring.html">Scoring</a>
+        <a href="misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <a href="../sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">DevKit</span>
+      <div class="topnav-menu">
+        <a href="../devkit/index.html">PAK Development</a>
+        <a href="../devkit/questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <a href="../developer/index.html">Developer</a>
+    <a href="../whatsnew.html">What's New</a>
+  </div>
+</div>
+<div class="screen">
+
+  <div class="page-header">
+    <h1>⚔ PLAYER GUIDE</h1>
+    <div class="sub">THE CLANS v0.97b2 &middot; PLAYER REFERENCE MANUAL</div>
+  </div>
+
+  <div class="group-header">BASICS</div>
+  <div class="chapter-grid">
+    <a class="chapter-card" href="getting-started.html">
+      <div class="chapter-num">CHAPTER 1</div>
+      <div class="chapter-title">Getting Started</div>
+      <div class="chapter-desc">Overview, creating a clan, your first day, protection, game settings, and daily limits.</div>
+    </a>
+    <a class="chapter-card" href="pre-game.html">
+      <div class="chapter-num">CHAPTER 2</div>
+      <div class="chapter-title">Pre-Game Menu</div>
+      <div class="chapter-desc">Commands available before entering the game: status, settings, mail, scores, and more.</div>
+    </a>
+    <a class="chapter-card" href="main-game.html">
+      <div class="chapter-num">CHAPTER 3</div>
+      <div class="chapter-title">Main Game Menu</div>
+      <div class="chapter-desc">In-game commands: mines, market, empire, town hall, mail, and all other actions.</div>
+    </a>
+  </div>
+
+  <div class="group-header">ADVENTURE</div>
+  <div class="chapter-grid">
+    <a class="chapter-card" href="mines.html">
+      <div class="chapter-num">CHAPTER 4</div>
+      <div class="chapter-title">The Mines</div>
+      <div class="chapter-desc">Mine levels, fighting monsters, fighting other clans, and quests.</div>
+    </a>
+    <a class="chapter-card" href="combat.html">
+      <div class="chapter-num">CHAPTER 5</div>
+      <div class="chapter-title">Combat</div>
+      <div class="chapter-desc">Combat commands, turn order, spells, scrolls, default actions, and outcomes.</div>
+    </a>
+    <a class="chapter-card" href="stats.html">
+      <div class="chapter-num">CHAPTER 6</div>
+      <div class="chapter-title">Character Stats</div>
+      <div class="chapter-desc">Attributes, leveling up, and status effects.</div>
+    </a>
+  </div>
+
+  <div class="group-header">ECONOMY</div>
+  <div class="chapter-grid">
+    <a class="chapter-card" href="market.html">
+      <div class="chapter-num">CHAPTER 7</div>
+      <div class="chapter-title">The Market</div>
+      <div class="chapter-desc">Buying weapons, armor, shields, the pawn shop, wizard's shop, and trading.</div>
+    </a>
+    <a class="chapter-card" href="items.html">
+      <div class="chapter-num">CHAPTER 8</div>
+      <div class="chapter-title">Items &amp; Equipment</div>
+      <div class="chapter-desc">Item types, equipping items, and quality levels.</div>
+    </a>
+    <a class="chapter-card" href="magic.html">
+      <div class="chapter-num">CHAPTER 9</div>
+      <div class="chapter-title">Magic</div>
+      <div class="chapter-desc">Spell types, books, and scrolls.</div>
+    </a>
+  </div>
+
+  <div class="group-header">VILLAGE</div>
+  <div class="chapter-grid">
+    <a class="chapter-card" href="training.html">
+      <div class="chapter-num">CHAPTER 10</div>
+      <div class="chapter-title">Training Hall</div>
+      <div class="chapter-desc">Training attributes, adding and releasing clan members.</div>
+    </a>
+    <a class="chapter-card" href="church.html">
+      <div class="chapter-num">CHAPTER 11</div>
+      <div class="chapter-title">The Church</div>
+      <div class="chapter-desc">Services, blessings, resurrection, and costs.</div>
+    </a>
+    <a class="chapter-card" href="town-hall.html">
+      <div class="chapter-num">CHAPTER 12</div>
+      <div class="chapter-title">Town Hall</div>
+      <div class="chapter-desc">Citizen and ruler menus, structures, economics, voting, and abdication.</div>
+    </a>
+  </div>
+
+  <div class="group-header">STRATEGY</div>
+  <div class="chapter-grid">
+    <a class="chapter-card" href="empires.html">
+      <div class="chapter-num">CHAPTER 13</div>
+      <div class="chapter-title">Empires</div>
+      <div class="chapter-desc">Buildings, troops, strategy settings, attacking other empires, and spying.</div>
+    </a>
+    <a class="chapter-card" href="alliances.html">
+      <div class="chapter-num">CHAPTER 14</div>
+      <div class="chapter-title">Alliances</div>
+      <div class="chapter-desc">Creating and joining alliances with other clans.</div>
+    </a>
+  </div>
+
+  <div class="group-header">WORLD</div>
+  <div class="chapter-grid">
+    <a class="chapter-card" href="communications.html">
+      <div class="chapter-num">CHAPTER 15</div>
+      <div class="chapter-title">Communications</div>
+      <div class="chapter-desc">Mail, public messages, and chat.</div>
+    </a>
+    <a class="chapter-card" href="npcs.html">
+      <div class="chapter-num">CHAPTER 16</div>
+      <div class="chapter-title">NPCs</div>
+      <div class="chapter-desc">Non-player characters and talking to them.</div>
+    </a>
+    <a class="chapter-card" href="travel.html">
+      <div class="chapter-num">CHAPTER 17</div>
+      <div class="chapter-title">World Travel</div>
+      <div class="chapter-desc">Traveling between villages in the inter-BBS league.</div>
+    </a>
+    <a class="chapter-card" href="scoring.html">
+      <div class="chapter-num">CHAPTER 18</div>
+      <div class="chapter-title">Scoring</div>
+      <div class="chapter-desc">How points are awarded and the scoring system.</div>
+    </a>
+    <a class="chapter-card" href="misc.html">
+      <div class="chapter-num">CHAPTER 19</div>
+      <div class="chapter-title">Miscellaneous</div>
+      <div class="chapter-desc">Deleting your clan, disbanding, news, and viewing stats.</div>
+    </a>
+  </div>
+
+  <footer class="footer">
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 Allen Ussher and contributors &middot; Released under the GNU GPL
+  </footer>
+
+</div>
+</body>
+</html>

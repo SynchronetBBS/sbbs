@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — PLAYER GUIDE — TOWN HALL</title>
+<link rel="stylesheet" href="../clans.css">
+<style>
+  .wrapper { --sidebar-w: 220px; --max-w: 1100px; }
+  ol.steps { list-style: none; counter-reset: step-counter; margin: 10px 0; }
+  ol.steps li { display: flex; counter-increment: step-counter; gap: 14px; font-size: 13px; color: var(--cyan-dim); line-height: 1.8; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--bg-panel); }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before { content: counter(step-counter); flex-shrink: 0; width: 26px; height: 26px; border: 1px solid #333333; display: flex; align-items: center; justify-content: center; font-family: 'VT323', monospace; font-size: 18px; color: #55FFFF; text-shadow: 0 0 6px #55FFFF; margin-top: 2px; }
+  .terms { border: 1px solid #333333; width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+  .terms th { background: rgba(85,255,255,0.08); color: #55FFFF; text-shadow: 0 0 6px #55FFFF; padding: 8px 14px; text-align: left; border-bottom: 1px solid #333333; letter-spacing: 1px; }
+  .terms td { padding: 8px 14px; color: var(--cyan-dim); border-bottom: 1px solid var(--bg-panel); line-height: 1.7; vertical-align: top; }
+  .terms td:first-child { color: var(--cyan); white-space: nowrap; }
+  .terms tr:last-child td { border-bottom: none; }
+  .terms tr:hover td { background: rgba(85,255,255,0.06); }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="../index.html">⚔ THE CLANS</a>
+  <div class="topnav-links">
+    <a href="../index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label active">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="getting-started.html">Getting Started</a>
+        <a href="pre-game.html">Pre-Game Menu</a>
+        <a href="main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="mines.html">The Mines</a>
+        <a href="combat.html">Combat</a>
+        <a href="stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="market.html">The Market</a>
+        <a href="items.html">Items &amp; Equipment</a>
+        <a href="magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="training.html">Training Hall</a>
+        <a href="church.html">The Church</a>
+        <a href="town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="empires.html">Empires</a>
+        <a href="alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="communications.html">Communications</a>
+        <a href="npcs.html">NPCs</a>
+        <a href="travel.html">World Travel</a>
+        <a href="scoring.html">Scoring</a>
+        <a href="misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <a href="../sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">DevKit</span>
+      <div class="topnav-menu">
+        <a href="../devkit/index.html">PAK Development</a>
+        <a href="../devkit/questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <a href="../developer/index.html">Developer</a>
+    <a href="../whatsnew.html">What's New</a>
+  </div>
+</div>
+<div class="wrapper">
+  <header>
+    <div>
+      <div class="header-title">⚔ PLAYER GUIDE — TOWN HALL</div>
+      <div class="header-sub">v0.97b2 · The Clans Player Reference Manual</div>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-group-label">TOWN HALL</div>
+    <a href="#sec-12-1"><span class="sec-id">12.1</span>Overview</a>
+    <a href="#sec-12-2"><span class="sec-id">12.2</span>Citizen Menu</a>
+    <a href="#sec-12-3"><span class="sec-id">12.3</span>Ruler Menu</a>
+    <a href="#sec-12-4"><span class="sec-id">12.4</span>Structures</a>
+    <a href="#sec-12-5"><span class="sec-id">12.5</span>Economics</a>
+    <a href="#sec-12-6"><span class="sec-id">12.6</span>Voting</a>
+    <a href="#sec-12-7"><span class="sec-id">12.7</span>Abdication</a>
+  </nav>
+
+  <main>
+
+    <!-- 12.1 OVERVIEW -->
+    <div class="doc-section" id="sec-12-1">
+      <div class="section-id">[12.1]</div>
+      <h2>Overview</h2>
+      <p>The town hall is the center of village government. What you can do here depends on whether your clan rules the village or not. All players can vote, deposit gold, and view the village empire. The ruler has additional powers to build structures, set taxes, and manage the village.</p>
+    </div>
+
+    <!-- 12.2 CITIZEN MENU -->
+    <div class="doc-section" id="sec-12-2">
+      <div class="section-id">[12.2]</div>
+      <h2>Citizen Menu</h2>
+      <p>If you are not the ruler, the town hall commands are:</p>
+      <table class="terms">
+        <tr><th>Key</th><th>Action</th></tr>
+        <tr><td><code>D</code></td><td>Deposit gold into the village vault.</td></tr>
+        <tr><td><code>E</code></td><td>Donate resources to the village empire.</td></tr>
+        <tr><td><code>W</code></td><td>Write a message to the ruler.</td></tr>
+        <tr><td><code>B</code></td><td>Voting booth -- cast your vote for the next ruler.</td></tr>
+        <tr><td><code>S</code></td><td>Empire stats -- view the village empire's statistics.</td></tr>
+        <tr><td><code>P</code></td><td>Public discussion board.</td></tr>
+        <tr><td><code>H</code></td><td>Help for citizens.</td></tr>
+        <tr><td><code>V</code></td><td>View your clan stats.</td></tr>
+        <tr><td><code>/</code></td><td>Chat with villagers in the town hall.</td></tr>
+        <tr><td><code>Q</code></td><td>Return to the main menu.</td></tr>
+      </table>
+    </div>
+
+    <!-- 12.3 RULER MENU -->
+    <div class="doc-section" id="sec-12-3">
+      <div class="section-id">[12.3]</div>
+      <h2>Ruler Menu</h2>
+      <p>If your clan rules the village, you have these commands:</p>
+      <table class="terms">
+        <tr><th>Key</th><th>Action</th></tr>
+        <tr><td><code>S</code></td><td>Structures -- build and upgrade village buildings.</td></tr>
+        <tr><td><code>E</code></td><td>Economics -- set tax rates and manage the vault.</td></tr>
+        <tr><td><code>P</code></td><td>Manage empire -- edit the village empire (troops, buildings).</td></tr>
+        <tr><td><code>R</code></td><td>Conscription rate -- set the military draft rate (once per day, 0-20%).</td></tr>
+        <tr><td><code>C</code></td><td>Colors -- change the village's color scheme.</td></tr>
+        <tr><td><code>L</code></td><td>Flag -- customize the village flag colors.</td></tr>
+        <tr><td><code>M</code></td><td>Make announcement -- broadcast a message to all players.</td></tr>
+        <tr><td><code>B</code></td><td>Voting booth -- view current election standings.</td></tr>
+        <tr><td><code>D</code></td><td>Public discussion board.</td></tr>
+        <tr><td><code>T</code></td><td>Toggle empire stats -- show or hide empire info for citizens.</td></tr>
+        <tr><td><code>H</code></td><td>Help for rulers.</td></tr>
+        <tr><td><code>V</code></td><td>View your clan stats.</td></tr>
+        <tr><td><code>!</code></td><td>Abdicate -- give up rule of the village.</td></tr>
+        <tr><td><code>/</code></td><td>Chat with villagers in the town hall.</td></tr>
+        <tr><td><code>Q</code></td><td>Return to the main menu.</td></tr>
+      </table>
+    </div>
+
+    <!-- 12.4 STRUCTURES -->
+    <div class="doc-section" id="sec-12-4">
+      <div class="section-id">[12.4]</div>
+      <h2>Structures</h2>
+      <p>The ruler can build and upgrade village structures. Each structure unlocks or improves a service available to all players. Building costs gold from the village vault.</p>
+      <table class="terms">
+        <tr><th>Key</th><th>Structure</th><th>Purpose</th></tr>
+        <tr><td><code>C</code></td><td>Church</td><td>Healing, blessings, resurrections.</td></tr>
+        <tr><td><code>T</code></td><td>Training Hall</td><td>Member training and recruitment.</td></tr>
+        <tr><td><code>P</code></td><td>Pawn Shop</td><td>Used item trading.</td></tr>
+        <tr><td><code>Z</code></td><td>Wizard's Shop</td><td>Scrolls, books, and item identification.</td></tr>
+        <tr><td><code>F</code></td><td>Smithy</td><td>Improves weapon and armor quality at market.</td></tr>
+      </table>
+      <p>Each structure has multiple levels. Higher levels unlock better services and items. Check the vault (<code>S</code> in the build menu) to see how much gold is available before building.</p>
+    </div>
+
+    <!-- 12.5 ECONOMICS -->
+    <div class="doc-section" id="sec-12-5">
+      <div class="section-id">[12.5]</div>
+      <h2>Economics</h2>
+      <p>The ruler controls the village economy through the economics menu:</p>
+      <table class="terms">
+        <tr><th>Key</th><th>Action</th></tr>
+        <tr><td><code>T</code></td><td>Tax rate (0-50%, once per day). Income tax on player earnings.</td></tr>
+        <tr><td><code>G</code></td><td>GST (0-50%, once per day). Goods and sales tax on market purchases.</td></tr>
+        <tr><td><code>D</code></td><td>Deposit clan gold into the village vault.</td></tr>
+        <tr><td><code>W</code></td><td>Withdraw gold from the village vault (up to 3 times per day).</td></tr>
+      </table>
+      <p>Higher tax rates generate more revenue for the village but make the village less attractive to players. A wise ruler balances income with player satisfaction.</p>
+      <p>The village vault funds all building construction and other village expenses. Both the ruler and citizens can deposit gold, but only the ruler can withdraw.</p>
+    </div>
+
+    <!-- 12.6 VOTING -->
+    <div class="doc-section" id="sec-12-6">
+      <div class="section-id">[12.6]</div>
+      <h2>Voting</h2>
+      <p>All players can vote for who should rule the village. Press <code>B</code> in the town hall to enter the voting booth.</p>
+      <table class="terms">
+        <tr><th>Key</th><th>Action</th></tr>
+        <tr><td><code>C</code></td><td>Change your vote. Select a different clan as your choice for ruler.</td></tr>
+        <tr><td><code>V</code></td><td>View stats.</td></tr>
+        <tr><td><code>Q</code></td><td>Leave the voting booth.</td></tr>
+      </table>
+      <p>The voting booth displays the top 10 candidates and their vote counts. The clan with the most votes when the current ruler abdicates or is ousted becomes the new ruler.</p>
+    </div>
+
+    <!-- 12.7 ABDICATION -->
+    <div class="doc-section" id="sec-12-7">
+      <div class="section-id">[12.7]</div>
+      <h2>Abdication</h2>
+      <p>A ruler can voluntarily give up control of the village by pressing <code>!</code> in the town hall. This resets the village to having no ruler. The clan that abdicated loses 100 points.</p>
+      <div class="callout warn">
+        <strong>Warning:</strong> Abdication should not be taken lightly. You will lose 100 points and the village will be left without a ruler until a new one is elected.
+      </div>
+    </div>
+
+    <div class="page-nav">
+      <a class="prev" href="church.html">The Church</a>
+      <a class="next" href="empires.html">Empires</a>
+    </div>
+  </main>
+
+  <footer>
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 Allen Ussher and contributors &middot; Released under the GNU GPL
+  </footer>
+</div>
+</body>
+</html>

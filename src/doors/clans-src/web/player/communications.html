@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — PLAYER GUIDE — COMMUNICATIONS</title>
+<link rel="stylesheet" href="../clans.css">
+<style>
+  .wrapper { --sidebar-w: 220px; --max-w: 1100px; }
+  ol.steps { list-style: none; counter-reset: step-counter; margin: 10px 0; }
+  ol.steps li { display: flex; counter-increment: step-counter; gap: 14px; font-size: 13px; color: var(--cyan-dim); line-height: 1.8; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--bg-panel); }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before { content: counter(step-counter); flex-shrink: 0; width: 26px; height: 26px; border: 1px solid #333333; display: flex; align-items: center; justify-content: center; font-family: 'VT323', monospace; font-size: 18px; color: #55FFFF; text-shadow: 0 0 6px #55FFFF; margin-top: 2px; }
+  .terms { border: 1px solid #333333; width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+  .terms th { background: rgba(85,255,255,0.08); color: #55FFFF; text-shadow: 0 0 6px #55FFFF; padding: 8px 14px; text-align: left; border-bottom: 1px solid #333333; letter-spacing: 1px; }
+  .terms td { padding: 8px 14px; color: var(--cyan-dim); border-bottom: 1px solid var(--bg-panel); line-height: 1.7; vertical-align: top; }
+  .terms td:first-child { color: var(--cyan); white-space: nowrap; }
+  .terms tr:last-child td { border-bottom: none; }
+  .terms tr:hover td { background: rgba(85,255,255,0.06); }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="../index.html">⚔ THE CLANS</a>
+  <div class="topnav-links">
+    <a href="../index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label active">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="getting-started.html">Getting Started</a>
+        <a href="pre-game.html">Pre-Game Menu</a>
+        <a href="main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="mines.html">The Mines</a>
+        <a href="combat.html">Combat</a>
+        <a href="stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="market.html">The Market</a>
+        <a href="items.html">Items &amp; Equipment</a>
+        <a href="magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="training.html">Training Hall</a>
+        <a href="church.html">The Church</a>
+        <a href="town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="empires.html">Empires</a>
+        <a href="alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="communications.html">Communications</a>
+        <a href="npcs.html">NPCs</a>
+        <a href="travel.html">World Travel</a>
+        <a href="scoring.html">Scoring</a>
+        <a href="misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <a href="../sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">DevKit</span>
+      <div class="topnav-menu">
+        <a href="../devkit/index.html">PAK Development</a>
+        <a href="../devkit/questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <a href="../developer/index.html">Developer</a>
+    <a href="../whatsnew.html">What's New</a>
+  </div>
+</div>
+<div class="wrapper">
+  <header>
+    <div>
+      <div class="header-title">⚔ PLAYER GUIDE — COMMUNICATIONS</div>
+      <div class="header-sub">v0.97b2 · The Clans Player Reference Manual</div>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-group-label">COMMUNICATIONS</div>
+    <a href="#sec-15-1"><span class="sec-id">15.1</span>Overview</a>
+    <a href="#sec-15-2"><span class="sec-id">15.2</span>Mail</a>
+    <a href="#sec-15-3"><span class="sec-id">15.3</span>Public Messages and Chat</a>
+  </nav>
+
+  <main>
+
+    <!-- 15.1 OVERVIEW -->
+    <div class="doc-section" id="sec-15-1">
+      <div class="section-id">[15.1]</div>
+      <h2>Overview</h2>
+      <p>The communications menu lets you send and receive messages. Press <code>C</code> from the main menu to access it:</p>
+      <table class="terms">
+        <tr><th>Key</th><th>Action</th></tr>
+        <tr><td><code>C</code></td><td>Check mail. Read private messages sent to your clan.</td></tr>
+        <tr><td><code>W</code></td><td>Write mail. Send a private message to another clan.</td></tr>
+        <tr><td><code>P</code></td><td>Public mail. Post to the public message board.</td></tr>
+        <tr><td><code>U</code></td><td>Update last read. Set your last-read message pointer.</td></tr>
+        <tr><td><code>G</code></td><td>Global message. Post a message visible across all villages in the InterBBS league (only available if InterBBS is enabled).</td></tr>
+        <tr><td><code>V</code></td><td>View stats.</td></tr>
+        <tr><td><code>Q</code></td><td>Return to the main menu.</td></tr>
+      </table>
+    </div>
+
+    <!-- 15.2 MAIL -->
+    <div class="doc-section" id="sec-15-2">
+      <div class="section-id">[15.2]</div>
+      <h2>Mail</h2>
+      <p>Private mail is delivered between clans on the same village. Use "Write mail" to compose a message and choose a recipient from the clan list. Use "Check mail" to read messages others have sent you.</p>
+      <p>The "Update last read" option lets you mark all current messages as read so that only new messages appear next time.</p>
+    </div>
+
+    <!-- 15.3 PUBLIC MESSAGES AND CHAT -->
+    <div class="doc-section" id="sec-15-3">
+      <div class="section-id">[15.3]</div>
+      <h2>Public Messages and Chat</h2>
+      <p>Public mail is posted to a message board visible to all players in the village. Use this for announcements, challenges, or general discussion.</p>
+      <p>Chat (<code>/</code>) is available in most locations -- the street, mines, market, church, training hall, and town hall. Each location has its own chat room.</p>
+      <div class="callout">
+        <strong>Note:</strong> You can chat up to 4 times per day across all locations.
+      </div>
+    </div>
+
+    <div class="page-nav">
+      <a class="prev" href="alliances.html">Alliances</a>
+      <a class="next" href="npcs.html">NPCs</a>
+    </div>
+  </main>
+
+  <footer>
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 Allen Ussher and contributors &middot; Released under the GNU GPL
+  </footer>
+</div>
+</body>
+</html>

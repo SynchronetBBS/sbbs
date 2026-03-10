@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — PLAYER GUIDE — COMBAT</title>
+<link rel="stylesheet" href="../clans.css">
+<style>
+  .wrapper { --sidebar-w: 220px; --max-w: 1100px; }
+  ol.steps { list-style: none; counter-reset: step-counter; margin: 10px 0; }
+  ol.steps li { display: flex; counter-increment: step-counter; gap: 14px; font-size: 13px; color: var(--cyan-dim); line-height: 1.8; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--bg-panel); }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before { content: counter(step-counter); flex-shrink: 0; width: 26px; height: 26px; border: 1px solid #333333; display: flex; align-items: center; justify-content: center; font-family: 'VT323', monospace; font-size: 18px; color: #55FFFF; text-shadow: 0 0 6px #55FFFF; margin-top: 2px; }
+  .terms { border: 1px solid #333333; width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+  .terms th { background: rgba(85,255,255,0.08); color: #55FFFF; text-shadow: 0 0 6px #55FFFF; padding: 8px 14px; text-align: left; border-bottom: 1px solid #333333; letter-spacing: 1px; }
+  .terms td { padding: 8px 14px; color: var(--cyan-dim); border-bottom: 1px solid var(--bg-panel); line-height: 1.7; vertical-align: top; }
+  .terms td:first-child { color: var(--cyan); white-space: nowrap; }
+  .terms tr:last-child td { border-bottom: none; }
+  .terms tr:hover td { background: rgba(85,255,255,0.06); }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="../index.html">⚔ THE CLANS</a>
+  <div class="topnav-links">
+    <a href="../index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label active">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="getting-started.html">Getting Started</a>
+        <a href="pre-game.html">Pre-Game Menu</a>
+        <a href="main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="mines.html">The Mines</a>
+        <a href="combat.html">Combat</a>
+        <a href="stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="market.html">The Market</a>
+        <a href="items.html">Items &amp; Equipment</a>
+        <a href="magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="training.html">Training Hall</a>
+        <a href="church.html">The Church</a>
+        <a href="town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="empires.html">Empires</a>
+        <a href="alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="communications.html">Communications</a>
+        <a href="npcs.html">NPCs</a>
+        <a href="travel.html">World Travel</a>
+        <a href="scoring.html">Scoring</a>
+        <a href="misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <a href="../sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">DevKit</span>
+      <div class="topnav-menu">
+        <a href="../devkit/index.html">PAK Development</a>
+        <a href="../devkit/questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <a href="../developer/index.html">Developer</a>
+    <a href="../whatsnew.html">What's New</a>
+  </div>
+</div>
+<div class="wrapper">
+  <header>
+    <div>
+      <div class="header-title">⚔ PLAYER GUIDE — COMBAT</div>
+      <div class="header-sub">v0.97b2 · The Clans Player Reference Manual</div>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-group-label">COMBAT</div>
+    <a href="#sec-5-1"><span class="sec-id">5.1</span>Overview</a>
+    <a href="#sec-5-2"><span class="sec-id">5.2</span>Combat Commands</a>
+    <a href="#sec-5-3"><span class="sec-id">5.3</span>Turn Order</a>
+    <a href="#sec-5-4"><span class="sec-id">5.4</span>Spells in Combat</a>
+    <a href="#sec-5-5"><span class="sec-id">5.5</span>Scrolls</a>
+    <a href="#sec-5-6"><span class="sec-id">5.6</span>Default Actions</a>
+    <a href="#sec-5-7"><span class="sec-id">5.7</span>Combat Outcomes</a>
+  </nav>
+
+  <main>
+
+    <!-- 5.1 OVERVIEW -->
+    <div class="doc-section" id="sec-5-1">
+      <div class="section-id">[5.1]</div>
+      <h2>Overview</h2>
+      <p>Combat in The Clans is turn-based.  Your clan members and the enemy take turns in an order determined by their agility and current health.  Each round, every living combatant gets one action.  Combat continues until one side is defeated, someone runs away, or 50 rounds have passed.</p>
+    </div>
+
+    <!-- 5.2 COMBAT COMMANDS -->
+    <div class="doc-section" id="sec-5-2">
+      <div class="section-id">[5.2]</div>
+      <h2>Combat Commands</h2>
+      <p>During combat, when it is one of your members' turns, you choose an action:</p>
+      <table class="terms">
+        <tr><th>Key</th><th>Action</th></tr>
+        <tr><td><code>A</code></td><td>Attack.  Strike the first available enemy.</td></tr>
+        <tr><td><code>S</code></td><td>Specific attack.  Choose which enemy to target.</td></tr>
+        <tr><td><code>1-9</code></td><td>Attack the enemy at that position number.</td></tr>
+        <tr><td><code>K</code></td><td>Cast a spell.  Choose from your known spells and pick a target.</td></tr>
+        <tr><td><code>E</code></td><td>Read a scroll.  Use a scroll item from your inventory.</td></tr>
+        <tr><td><code>I</code></td><td>Parry.  Skip your turn and do nothing (sometimes called idle).</td></tr>
+        <tr><td><code>R</code></td><td>Run away.  Attempt to flee the battle.</td></tr>
+        <tr><td><code>P</code></td><td>Player stats.  Display the current member's full statistics.</td></tr>
+        <tr><td><code>F</code></td><td>Fight to the death.  Commit to the battle -- no more running.</td></tr>
+        <tr><td><code>D</code></td><td>Use default action.  Execute your preset action (see section 5.6).</td></tr>
+        <tr><td><code>?</code></td><td>Combat help.  Display the combat help screen.</td></tr>
+      </table>
+      <div class="callout tip">
+        If you do not choose an action, the default is to attack (<code>A</code>).
+      </div>
+    </div>
+
+    <!-- 5.3 TURN ORDER -->
+    <div class="doc-section" id="sec-5-3">
+      <div class="section-id">[5.3]</div>
+      <h2>Turn Order</h2>
+      <p>Each round, the game recalculates the order in which combatants act.  Characters with higher agility tend to act first.  Your current health also matters -- wounded characters slow down.  There is a small random factor so the order is not perfectly predictable.</p>
+    </div>
+
+    <!-- 5.4 SPELLS IN COMBAT -->
+    <div class="doc-section" id="sec-5-4">
+      <div class="section-id">[5.4]</div>
+      <h2>Spells in Combat</h2>
+      <p>Press <code>K</code> to cast a spell.  You will be shown your known spells and asked to choose one.  Each spell costs spell points (SP) to cast.  Some spells target enemies (damage, incapacitation), some target allies (healing, attribute modification), and some raise or banish undead creatures.</p>
+      <p>If you run out of SP, you cannot cast spells until your points are restored (via the church blessing, leveling up, or waiting for the next day's reset).</p>
+    </div>
+
+    <!-- 5.5 SCROLLS -->
+    <div class="doc-section" id="sec-5-5">
+      <div class="section-id">[5.5]</div>
+      <h2>Scrolls</h2>
+      <p>Scrolls are single-use items that contain a spell.  Press <code>E</code> during combat to read a scroll from your inventory.  The scroll is consumed after use.  Unlike casting a spell with <code>K</code>, reading a scroll does not cost any SP.</p>
+    </div>
+
+    <!-- 5.6 DEFAULT ACTIONS -->
+    <div class="doc-section" id="sec-5-6">
+      <div class="section-id">[5.6]</div>
+      <h2>Default Actions</h2>
+      <p>Each member can have a default action set.  This is the action taken when you press <code>D</code> during combat.  The default is a regular attack, but you can set it to cast a specific spell automatically.  This speeds up combat when you have a preferred tactic for each member.</p>
+    </div>
+
+    <!-- 5.7 COMBAT OUTCOMES -->
+    <div class="doc-section" id="sec-5-7">
+      <div class="section-id">[5.7]</div>
+      <h2>Combat Outcomes</h2>
+      <p>After combat ends, the results are tallied:</p>
+      <table class="terms">
+        <tr><th>Outcome</th><th>Details</th></tr>
+        <tr><td>Experience</td><td>Awarded based on the damage your members dealt and the enemies they defeated.  Knocking out or killing a stronger enemy awards more experience.</td></tr>
+        <tr><td>Gold</td><td>May be looted from defeated monsters.</td></tr>
+        <tr><td>Items</td><td>May be found on defeated enemies.</td></tr>
+        <tr><td>Clan points</td><td>Awarded or deducted (see section 18.1).</td></tr>
+      </table>
+      <div class="callout warn">
+        If all your members are knocked unconscious or killed, you lose the battle.  Dead members lose a small percentage of their maximum hit points permanently and must be resurrected at the church (see section 11.3).  Unconscious members recover after the battle but must also be revived at the church if you want them at full strength.
+      </div>
+    </div>
+
+    <div class="page-nav">
+      <a class="prev" href="mines.html">The Mines</a>
+      <a class="next" href="stats.html">Character Stats</a>
+    </div>
+  </main>
+
+  <footer>
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 Allen Ussher and contributors &middot; Released under the GNU GPL
+  </footer>
+</div>
+</body>
+</html>

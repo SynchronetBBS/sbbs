@@ -1,7 +1,7 @@
 /* ================================================================
    clans.css — shared styles for The Clans website
-   Used by: the-clans-bbs.html, the-clans-docs.html,
-            the-clans-devkit.html
+   Used by: all pages (landing, player guide, sysop, devkit,
+            developer, whatsnew, questgen)
    ================================================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Orbitron:wght@400;700;900&display=swap');
@@ -263,8 +263,128 @@ footer {
   padding: 12px 24px; font-size: 11px; color: var(--border); text-align: center; line-height: 2;
 }
 
+/* ================================================================
+   SITE-WIDE TOP NAV BAR
+   ================================================================ */
+.topnav {
+  display: flex; align-items: center; gap: 0;
+  background: var(--dark); border-bottom: 2px solid #444444;
+  padding: 0; font-size: 12px;
+  box-shadow: 0 2px 16px rgba(0,255,65,0.06);
+  position: relative; z-index: 100;
+  flex-wrap: wrap;
+}
+.topnav-brand {
+  font-family: 'VT323', monospace; font-size: 22px;
+  color: var(--cyan); text-shadow: var(--glow);
+  padding: 10px 20px; letter-spacing: 2px;
+  text-decoration: none; white-space: nowrap;
+}
+.topnav-links {
+  display: flex; align-items: stretch; gap: 0;
+  margin-left: auto; flex-wrap: wrap;
+}
+.topnav-links > a,
+.topnav-drop > .topnav-label {
+  display: flex; align-items: center;
+  padding: 12px 16px; color: var(--cyan-dim);
+  text-decoration: none; font-size: 12px;
+  letter-spacing: 1px; transition: all .15s;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; cursor: pointer;
+}
+.topnav-links > a:hover,
+.topnav-drop:hover > .topnav-label {
+  color: var(--yellow); text-shadow: 0 0 8px var(--yellow);
+  border-bottom-color: var(--yellow);
+  background: rgba(255,255,85,0.04);
+}
+.topnav-links > a.active {
+  color: var(--yellow); border-bottom-color: var(--yellow);
+  text-shadow: 0 0 6px var(--yellow);
+}
+
+/* ── DROPDOWN ── */
+.topnav-drop { position: relative; }
+.topnav-drop .topnav-label::after {
+  content: ' \25BE'; font-size: 10px; margin-left: 4px; color: var(--border);
+}
+.topnav-menu {
+  display: none; position: absolute; top: 100%; left: 0;
+  background: #0D0D0D; border: 1px solid #333333;
+  min-width: 220px; z-index: 200;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+.topnav-drop:hover .topnav-menu { display: block; }
+.topnav-menu a {
+  display: block; padding: 8px 16px; color: var(--cyan-dim);
+  text-decoration: none; font-size: 11px; letter-spacing: 1px;
+  border-left: 2px solid transparent; transition: all .15s;
+}
+.topnav-menu a:hover {
+  color: var(--cyan); background: rgba(85,255,255,0.04);
+  border-left-color: var(--cyan); text-shadow: var(--glow);
+}
+.topnav-menu .menu-group {
+  font-size: 9px; color: #FF55FF; letter-spacing: 2px;
+  padding: 8px 16px 4px; border-top: 1px solid #222222;
+  margin-top: 4px;
+}
+.topnav-menu .menu-group:first-child { border-top: none; margin-top: 0; }
+
+/* ── PREV / NEXT NAV ── */
+.page-nav {
+  display: flex; justify-content: space-between; align-items: center;
+  border-top: 1px solid #333333; margin-top: 40px; padding-top: 16px;
+}
+.page-nav a {
+  color: var(--yellow); text-decoration: none; font-size: 12px;
+  letter-spacing: 1px; text-shadow: 0 0 6px var(--yellow);
+  transition: text-shadow .2s;
+}
+.page-nav a:hover { text-shadow: 0 0 14px var(--yellow); }
+.page-nav .prev::before { content: '\25C4  '; }
+.page-nav .next::after  { content: '  \25BA'; }
+
+/* ── BULLET LISTS ── */
+ul.feature-list {
+  list-style: none; margin: 10px 0; padding: 0;
+}
+ul.feature-list li {
+  font-size: 13px; color: var(--cyan-dim); line-height: 1.8;
+  padding: 4px 0 4px 20px; position: relative;
+}
+ul.feature-list li::before {
+  content: '\25B8'; position: absolute; left: 0;
+  color: var(--cyan); text-shadow: var(--glow);
+}
+
+/* ── CHANGELOG ── */
+.changelog-version {
+  border: 1px solid #333333; background: var(--dark);
+  margin-bottom: 20px; padding: 16px 20px;
+}
+.changelog-version h3 {
+  margin: 0 0 10px; font-size: 18px;
+}
+.changelog-version ul {
+  list-style: none; margin: 0; padding: 0;
+}
+.changelog-version li {
+  font-size: 12px; color: var(--cyan-dim); line-height: 1.8;
+  padding: 2px 0 2px 16px; position: relative;
+}
+.changelog-version li::before {
+  content: '\2022'; position: absolute; left: 0; color: var(--cyan);
+}
+
 @media (max-width: 700px) {
   .wrapper { grid-template-columns: 1fr; }
   nav { position: static; height: auto; border-right: none; border-bottom: 1px solid #333333; }
   main { padding: 20px 16px; }
+  .topnav { flex-direction: column; align-items: stretch; }
+  .topnav-brand { text-align: center; }
+  .topnav-links { justify-content: center; }
+  .topnav-menu { position: static; border: none; box-shadow: none; }
+  .topnav-drop:hover .topnav-menu { display: block; }
 }

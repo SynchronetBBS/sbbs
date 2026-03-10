@@ -31,7 +31,7 @@
     background: var(--dark);
   }
   .title-screen::before {
-    content: '┌─ THE CLANS v0.97b1 ──────────────────────────────────────────────────── BY ALLEN USSHER ─┐';
+    content: '┌─ THE CLANS v0.97b2 ──────────────────────────────────────────────────── BY ALLEN USSHER ─┐';
     display: block; color: var(--border); font-size: 12px;
     margin-bottom: 20px; white-space: nowrap; overflow: hidden;
   }
@@ -78,7 +78,7 @@
   .clan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
   .clan-card {
     border: 1px solid #333333; padding: 14px; background: var(--dark);
-    cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+    transition: all 0.2s; position: relative; overflow: hidden;
     min-height: 180px;
   }
   .clan-card::before {
@@ -182,13 +182,60 @@
 </head>
 <body>
 <div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="index.html">⚔ THE CLANS</a>
+  <div class="topnav-links">
+    <a class="active" href="index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="player/index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="player/getting-started.html">Getting Started</a>
+        <a href="player/pre-game.html">Pre-Game Menu</a>
+        <a href="player/main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="player/mines.html">The Mines</a>
+        <a href="player/combat.html">Combat</a>
+        <a href="player/stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="player/market.html">The Market</a>
+        <a href="player/items.html">Items &amp; Equipment</a>
+        <a href="player/magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="player/training.html">Training Hall</a>
+        <a href="player/church.html">The Church</a>
+        <a href="player/town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="player/empires.html">Empires</a>
+        <a href="player/alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="player/communications.html">Communications</a>
+        <a href="player/npcs.html">NPCs</a>
+        <a href="player/travel.html">World Travel</a>
+        <a href="player/scoring.html">Scoring</a>
+        <a href="player/misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <a href="sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">DevKit</span>
+      <div class="topnav-menu">
+        <a href="devkit/index.html">PAK Development</a>
+        <a href="devkit/questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <a href="developer/index.html">Developer</a>
+    <a href="whatsnew.html">What's New</a>
+  </div>
+</div>
 <div class="screen">
 
   <!-- TITLE SCREEN -->
   <header class="title-screen">
     <img class="logo-gif" src="clanslogo.gif" alt="THE CLANS" width="633" height="131">
     <div class="tagline">⚔ ADVENTURE • STRATEGY • INTER-BBS ⚔</div>
-    <div class="sub-tagline">A BBS DOOR GAME BY ALLEN USSHER · EST. 1997 · v0.97b1</div>
+    <div class="sub-tagline">A BBS DOOR GAME BY ALLEN USSHER &middot; EST. 1997 &middot; v0.97b2</div>
     <div class="title-screen-bottom">└──────────────────────────────────────────────────────────────── OPEN SOURCE · GPL 2002 ─┘</div>
   </header>
 
@@ -196,12 +243,12 @@
   <div class="stats-bar">
     <div class="stat-item">CREATED BY: <span>ALLEN USSHER</span></div>
     <div class="stat-item">FIRST RELEASE: <span>1997</span></div>
-    <div class="stat-item">LATEST VERSION: <span>0.97b1</span></div>
+    <div class="stat-item">LATEST VERSION: <span>0.97b2</span></div>
     <div class="stat-item">LICENSE: <span>OPEN SOURCE (GPL)</span></div>
-    <div class="stat-item">PLATFORM: <span>WIN32 / MACOS / LINUX / BSD</span></div>
+    <div class="stat-item">PLATFORM: <span>WINDOWS / MACOS / LINUX / BSD</span></div>
     <div class="stat-item">INTER-BBS: <span>SUPPORTED</span></div>
-    <div class="stat-item"><a href="the-clans-docs.html" style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);">📄 SYSOP DOCS »</a></div>
-    <div class="stat-item"><a href="the-clans-devkit.html" style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);">⚙ DEV KIT »</a></div>
+    <div class="stat-item"><a href="player/index.html" style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);">📖 PLAYER GUIDE »</a></div>
+    <div class="stat-item"><a href="sysop/index.html" style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);">📄 SYSOP DOCS »</a></div>
   </div>
 
   <!-- WHAT IS THE CLANS -->
@@ -245,11 +292,11 @@
       <div class="clan-card">
         <span class="clan-symbol">⚔️</span>
         <div class="clan-name">PICK PROFESSIONS</div>
-        <div class="clan-desc">Assign each character a profession that defines their role in combat and adventure. Warriors tank, mages cast, thieves strike from the shadows.</div>
+        <div class="clan-desc">Assign each character a profession that defines their role in combat and adventure. Warriors charge in, sorcerers cast spells, assassins strike from the shadows.</div>
         <div class="clan-stats">
           <div class="clan-stat">Warrior</div>
-          <div class="clan-stat">Mage</div>
-          <div class="clan-stat">Thief</div>
+          <div class="clan-stat">Sorcerer</div>
+          <div class="clan-stat">Assassin</div>
         </div>
       </div>
       <div class="clan-card">
@@ -267,9 +314,9 @@
         <div class="clan-name">BUILD STRUCTURES</div>
         <div class="clan-desc">Manage your empire's economy by constructing buildings, developing land, and growing your army. Dominate the local village rankings while your clan adventures.</div>
         <div class="clan-stats">
-          <div class="clan-stat">Mines</div>
           <div class="clan-stat">Barracks</div>
-          <div class="clan-stat">Land</div>
+          <div class="clan-stat">Walls</div>
+          <div class="clan-stat">Towers</div>
         </div>
       </div>
       <div class="clan-card">
@@ -348,15 +395,38 @@
     </div>
   </section>
 
+  <!-- DOCUMENTATION -->
+  <section class="section">
+    <div class="section-header">DOCUMENTATION</div>
+    <div class="features-grid">
+      <div class="feature-box">
+        <div class="feature-title"><a href="player/index.html" style="color:#FFFF55; text-decoration:none;">📖 PLAYER GUIDE</a></div>
+        <div class="feature-body">Everything a player needs to know: creating a clan, combat, magic, the market, empires, village politics, inter-BBS travel, and more. Nineteen chapters covering all aspects of gameplay.</div>
+      </div>
+      <div class="feature-box">
+        <div class="feature-title"><a href="sysop/index.html" style="color:#FFFF55; text-decoration:none;">📄 SYSOP DOCS</a></div>
+        <div class="feature-body">Installation, configuration, daily maintenance, and InterBBS league setup. Everything a sysop needs to run The Clans on their BBS, including troubleshooting and packet handling.</div>
+      </div>
+      <div class="feature-box">
+        <div class="feature-title"><a href="devkit/index.html" style="color:#FFFF55; text-decoration:none;">⚙ DEVELOPMENT KIT</a></div>
+        <div class="feature-body">Create quests, NPCs, monsters, items, and spells using the PAK development tools. Includes event scripting reference, field guides, and an <a href="devkit/questgen.html" style="color:var(--cyan);">AI quest generator</a>.</div>
+      </div>
+      <div class="feature-box">
+        <div class="feature-title"><a href="developer/index.html" style="color:#FFFF55; text-decoration:none;">⚙ DEVELOPER NOTES</a></div>
+        <div class="feature-body">Source code reference for C developers: build instructions, module map, data architecture, serialization system, inter-BBS protocol, and known issues.</div>
+      </div>
+    </div>
+  </section>
+
   <!-- DOWNLOAD / LINKS -->
   <section class="section">
     <div class="connect-box">
       <div class="connect-title">⚔ GET THE CLANS ⚔</div>
       <div style="color:var(--cyan-dim); font-size:12px; letter-spacing:2px;">FREE · OPEN SOURCE · GPL LICENSED</div>
-      <span class="bbs-addr">v0.97b1</span>
+      <span class="bbs-addr">v0.97b2</span>
       <div class="ascii-divider">──────────────────────────────────────────────────────</div>
       <div style="font-size:12px; color:var(--cyan-dim); margin-top:8px; line-height:2;">
-        Download (Win32): <span style="color:var(--cyan)"><a style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);" href="files/Clans-win64-amd64-0_97b1.zip">Clans-win64-amd64-0_97b1.zip</a></span><br>
+        Download (Windows): <span style="color:var(--cyan)"><a style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);" href="files/Clans-win64-amd64-0_97b1.zip">Clans-win64-amd64-0_97b1.zip</a></span><br>
         Download (macOS): <span style="color:var(--cyan)"><a style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);" href="files/Clans-darwin-arm64-0_97b1.zip">Clans-darwin-arm64-0_97b1.zip</a></span><br>
         Source Code: <span style="color:var(--cyan)"><a style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);" href="files/Clans-0_97b1-src.tgz">Clans-0_97b1-src.tgz</a></span><br>
         Hosted at: <span style="color:var(--cyan)"><a style="color:var(--yellow); text-decoration:none; text-shadow: 0 0 6px var(--yellow);" href="https://sf.net/p/theclans">sourceforge.net/projects/theclans</a></span>
@@ -370,7 +440,7 @@
   <!-- FOOTER -->
   <footer class="footer">
     <div class="ascii-divider">═══════════════════════════════════════════════════════════════════</div>
-    THE CLANS v0.97b1 © 1997–2002 ALLEN USSHER · RELEASED UNDER THE GNU GPL<br>
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 ALLEN USSHER AND CONTRIBUTORS &middot; RELEASED UNDER THE GNU GPL<br>
     A MIX OF ROLE-PLAYING AND STRATEGY · INTER-BBS VILLAGE LEAGUE SUPPORT<br>
     <span style="color:var(--bg-panel)">Written in Turbo C++ · Ported to gcc &amp; MSVC · Runs on Win32 / macOS / Linux / FreeBSD</span>
     <div class="ascii-divider" style="margin-top:6px;">═══════════════════════════════════════════════════════════════════</div>

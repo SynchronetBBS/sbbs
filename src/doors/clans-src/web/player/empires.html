@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — PLAYER GUIDE — EMPIRES</title>
+<link rel="stylesheet" href="../clans.css">
+<style>
+  .wrapper { --sidebar-w: 220px; --max-w: 1100px; }
+  ol.steps { list-style: none; counter-reset: step-counter; margin: 10px 0; }
+  ol.steps li { display: flex; counter-increment: step-counter; gap: 14px; font-size: 13px; color: var(--cyan-dim); line-height: 1.8; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--bg-panel); }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before { content: counter(step-counter); flex-shrink: 0; width: 26px; height: 26px; border: 1px solid #333333; display: flex; align-items: center; justify-content: center; font-family: 'VT323', monospace; font-size: 18px; color: #55FFFF; text-shadow: 0 0 6px #55FFFF; margin-top: 2px; }
+  .terms { border: 1px solid #333333; width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+  .terms th { background: rgba(85,255,255,0.08); color: #55FFFF; text-shadow: 0 0 6px #55FFFF; padding: 8px 14px; text-align: left; border-bottom: 1px solid #333333; letter-spacing: 1px; }
+  .terms td { padding: 8px 14px; color: var(--cyan-dim); border-bottom: 1px solid var(--bg-panel); line-height: 1.7; vertical-align: top; }
+  .terms td:first-child { color: var(--cyan); white-space: nowrap; }
+  .terms tr:last-child td { border-bottom: none; }
+  .terms tr:hover td { background: rgba(85,255,255,0.06); }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="../index.html">⚔ THE CLANS</a>
+  <div class="topnav-links">
+    <a href="../index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label active">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="getting-started.html">Getting Started</a>
+        <a href="pre-game.html">Pre-Game Menu</a>
+        <a href="main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="mines.html">The Mines</a>
+        <a href="combat.html">Combat</a>
+        <a href="stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="market.html">The Market</a>
+        <a href="items.html">Items &amp; Equipment</a>
+        <a href="magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="training.html">Training Hall</a>
+        <a href="church.html">The Church</a>
+        <a href="town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="empires.html">Empires</a>
+        <a href="alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="communications.html">Communications</a>
+        <a href="npcs.html">NPCs</a>
+        <a href="travel.html">World Travel</a>
+        <a href="scoring.html">Scoring</a>
+        <a href="misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <a href="../sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">DevKit</span>
+      <div class="topnav-menu">
+        <a href="../devkit/index.html">PAK Development</a>
+        <a href="../devkit/questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <a href="../developer/index.html">Developer</a>
+    <a href="../whatsnew.html">What's New</a>
+  </div>
+</div>
+<div class="wrapper">
+  <header>
+    <div>
+      <div class="header-title">⚔ PLAYER GUIDE — EMPIRES</div>
+      <div class="header-sub">v0.97b2 · The Clans Player Reference Manual</div>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-group-label">EMPIRES</div>
+    <a href="#sec-13-1"><span class="sec-id">13.1</span>Overview</a>
+    <a href="#sec-13-2"><span class="sec-id">13.2</span>Buildings</a>
+    <a href="#sec-13-3"><span class="sec-id">13.3</span>Troops</a>
+    <a href="#sec-13-4"><span class="sec-id">13.4</span>Strategy</a>
+    <a href="#sec-13-5"><span class="sec-id">13.5</span>Attacking</a>
+    <a href="#sec-13-6"><span class="sec-id">13.6</span>Spying</a>
+  </nav>
+
+  <main>
+
+    <!-- 13.1 OVERVIEW -->
+    <div class="doc-section" id="sec-13-1">
+      <div class="section-id">[13.1]</div>
+      <h2>Overview</h2>
+      <p>Every clan has an empire consisting of land, buildings, and an army. The village itself also has an empire managed by the ruler. Through your empire, you develop land, construct buildings, train troops, and wage war against rival villages or clans.</p>
+    </div>
+
+    <!-- 13.2 BUILDINGS -->
+    <div class="doc-section" id="sec-13-2">
+      <div class="section-id">[13.2]</div>
+      <h2>Buildings</h2>
+      <p>There are 10 types of empire buildings:</p>
+      <table class="terms">
+        <tr><th>Building</th><th>Purpose</th><th>Cost</th></tr>
+        <tr><td>Barracks</td><td>House your troops. Each barracks supports 20 footmen, 10 axemen, or 5 knights.</td><td>2,500 gold</td></tr>
+        <tr><td>Walls</td><td>Strengthen your defenses against attacks.</td><td>1,000 gold</td></tr>
+        <tr><td>Towers</td><td>Provide ranged defense bonuses.</td><td>1,500 gold</td></tr>
+        <tr><td>Steel Mill</td><td>Required to train axemen and knights.</td><td>3,000 gold</td></tr>
+        <tr><td>Stables</td><td>Required (along with a steel mill) to train knights.</td><td>5,000 gold</td></tr>
+        <tr><td>Intelligence Agency</td><td>Allows you to spy on other empires. More agencies increase your success chance.</td><td>1,000 gold</td></tr>
+        <tr><td>Security Center</td><td>Defends against enemy spies. More centers increase your chance of catching spies.</td><td>1,000 gold</td></tr>
+        <tr><td>Gymnasium</td><td>Boosts your army's training and rating.</td><td>4,500 gold</td></tr>
+        <tr><td>Developer's Hall</td><td>Reduces the cost of developing new land.</td><td>3,000 gold</td></tr>
+        <tr><td>Shops</td><td>Generate income for your empire.</td><td>5,000 gold</td></tr>
+      </table>
+      <p>Each building uses land and energy. You must develop land before you can build on it.</p>
+    </div>
+
+    <!-- 13.3 TROOPS -->
+    <div class="doc-section" id="sec-13-3">
+      <div class="section-id">[13.3]</div>
+      <h2>Troops</h2>
+      <p>There are three types of troops, each with different strengths:</p>
+      <table class="terms">
+        <tr><th>Troop Type</th><th>Cost</th><th>Description</th></tr>
+        <tr><td>Footmen</td><td>15 gold each</td><td>Basic soldiers. Require only barracks. Well-rounded but not specialized.</td></tr>
+        <tr><td>Axemen</td><td>30 gold each</td><td>Stronger attackers. Require barracks and a steel mill. Hit harder than footmen.</td></tr>
+        <tr><td>Knights</td><td>60 gold each</td><td>Elite mounted warriors. Require barracks, a steel mill, and stables. The fastest and strongest offensive units.</td></tr>
+      </table>
+      <p>Your barracks capacity limits how many troops you can maintain. Each barracks supports 20 footmen, 10 axemen, or 5 knights (or any combination within capacity).</p>
+      <div class="callout tip">
+        <strong>Tip:</strong> Followers are civilians who join your empire after mine victories. They can be conscripted into your army based on the village conscription rate.
+      </div>
+    </div>
+
+    <!-- 13.4 STRATEGY -->
+    <div class="doc-section" id="sec-13-4">
+      <div class="section-id">[13.4]</div>
+      <h2>Strategy</h2>
+      <p>Your empire has a battle strategy that affects how your army fights:</p>
+      <table class="terms">
+        <tr><th>Setting</th><th>Description</th></tr>
+        <tr><td>Attack Length</td><td>How many rounds your army presses the attack (1-10).</td></tr>
+        <tr><td>Attack Intensity</td><td>How aggressively your troops fight: light, moderate, or heavy.</td></tr>
+        <tr><td>Loot Level</td><td>How much you try to steal: 10%, 20%, or 30%.</td></tr>
+        <tr><td>Defend Length</td><td>How long your army holds a defensive position (1-10).</td></tr>
+        <tr><td>Defend Intensity</td><td>How strongly your troops defend: light, moderate, or heavy.</td></tr>
+      </table>
+      <div class="callout">
+        <strong>Note:</strong> Higher intensity deals more damage but also makes your troops more vulnerable. Find a balance that suits your army composition.
+      </div>
+    </div>
+
+    <!-- 13.5 ATTACKING -->
+    <div class="doc-section" id="sec-13-5">
+      <div class="section-id">[13.5]</div>
+      <h2>Attacking</h2>
+      <p>You can launch attacks against other villages, alliances, or clans. When attacking, you choose:</p>
+      <ol class="steps">
+        <li><div>Your target.</div></li>
+        <li><div>Which troops to send (footmen, axemen, knights).</div></li>
+        <li><div>An attack goal (see below).</div></li>
+      </ol>
+
+      <table class="terms">
+        <tr><th>Goal</th><th>Description</th></tr>
+        <tr><td>Oust Ruler</td><td>Attempt to take control of the target village by removing its current ruler.</td></tr>
+        <tr><td>Steal Land</td><td>Seize a portion of the target's developed land.</td></tr>
+        <tr><td>Steal Gold</td><td>Raid the target's vault for gold.</td></tr>
+        <tr><td>Destroy</td><td>Damage the target's buildings and infrastructure.</td></tr>
+      </table>
+      <p>The outcome depends on the strength and composition of both armies, the buildings involved (walls and towers help defenders), and the strategies of both sides.</p>
+    </div>
+
+    <!-- 13.6 SPYING -->
+    <div class="doc-section" id="sec-13-6">
+      <div class="section-id">[13.6]</div>
+      <h2>Spying</h2>
+      <p>If you have built intelligence agencies, you can send spies to gather information about other empires. Each spy attempt costs 1,000 gold.</p>
+      <p>If the spy succeeds, you see the target's full empire statistics -- buildings, troops, gold, and strategy. If the spy fails, you learn nothing, and the target may be notified that they caught a spy from your clan.</p>
+      <div class="callout tip">
+        <strong>Tip:</strong> The more intelligence agencies you build, the higher your chance of success. The target's security centers work against you -- more security centers means a higher chance your spy is caught.
+      </div>
+    </div>
+
+    <div class="page-nav">
+      <a class="prev" href="town-hall.html">Town Hall</a>
+      <a class="next" href="alliances.html">Alliances</a>
+    </div>
+  </main>
+
+  <footer>
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 Allen Ussher and contributors &middot; Released under the GNU GPL
+  </footer>
+</div>
+</body>
+</html>

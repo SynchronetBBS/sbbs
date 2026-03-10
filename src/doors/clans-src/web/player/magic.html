@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — PLAYER GUIDE — MAGIC</title>
+<link rel="stylesheet" href="../clans.css">
+<style>
+  .wrapper { --sidebar-w: 220px; --max-w: 1100px; }
+  ol.steps { list-style: none; counter-reset: step-counter; margin: 10px 0; }
+  ol.steps li { display: flex; counter-increment: step-counter; gap: 14px; font-size: 13px; color: var(--cyan-dim); line-height: 1.8; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--bg-panel); }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before { content: counter(step-counter); flex-shrink: 0; width: 26px; height: 26px; border: 1px solid #333333; display: flex; align-items: center; justify-content: center; font-family: 'VT323', monospace; font-size: 18px; color: #55FFFF; text-shadow: 0 0 6px #55FFFF; margin-top: 2px; }
+  .terms { border: 1px solid #333333; width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+  .terms th { background: rgba(85,255,255,0.08); color: #55FFFF; text-shadow: 0 0 6px #55FFFF; padding: 8px 14px; text-align: left; border-bottom: 1px solid #333333; letter-spacing: 1px; }
+  .terms td { padding: 8px 14px; color: var(--cyan-dim); border-bottom: 1px solid var(--bg-panel); line-height: 1.7; vertical-align: top; }
+  .terms td:first-child { color: var(--cyan); white-space: nowrap; }
+  .terms tr:last-child td { border-bottom: none; }
+  .terms tr:hover td { background: rgba(85,255,255,0.06); }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="../index.html">⚔ THE CLANS</a>
+  <div class="topnav-links">
+    <a href="../index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label active">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="getting-started.html">Getting Started</a>
+        <a href="pre-game.html">Pre-Game Menu</a>
+        <a href="main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="mines.html">The Mines</a>
+        <a href="combat.html">Combat</a>
+        <a href="stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="market.html">The Market</a>
+        <a href="items.html">Items &amp; Equipment</a>
+        <a href="magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="training.html">Training Hall</a>
+        <a href="church.html">The Church</a>
+        <a href="town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="empires.html">Empires</a>
+        <a href="alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="communications.html">Communications</a>
+        <a href="npcs.html">NPCs</a>
+        <a href="travel.html">World Travel</a>
+        <a href="scoring.html">Scoring</a>
+        <a href="misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <a href="../sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">DevKit</span>
+      <div class="topnav-menu">
+        <a href="../devkit/index.html">PAK Development</a>
+        <a href="../devkit/questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <a href="../developer/index.html">Developer</a>
+    <a href="../whatsnew.html">What's New</a>
+  </div>
+</div>
+<div class="wrapper">
+  <header>
+    <div>
+      <div class="header-title">⚔ PLAYER GUIDE — MAGIC</div>
+      <div class="header-sub">v0.97b2 · The Clans Player Reference Manual</div>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-group-label">MAGIC</div>
+    <a href="#sec-9-1"><span class="sec-id">9.1</span>Overview</a>
+    <a href="#sec-9-2"><span class="sec-id">9.2</span>Spell Types</a>
+    <a href="#sec-9-3"><span class="sec-id">9.3</span>Books and Scrolls</a>
+  </nav>
+
+  <main>
+
+    <!-- 9.1 OVERVIEW -->
+    <div class="doc-section" id="sec-9-1">
+      <div class="section-id">[9.1]</div>
+      <h2>Overview</h2>
+      <p>Magic plays an important role in The Clans. Your members learn spells from their race and class at creation, and can learn additional spells by purchasing spell books from the wizard's shop. Casting a spell costs spell points (SP).</p>
+    </div>
+
+    <!-- 9.2 SPELL TYPES -->
+    <div class="doc-section" id="sec-9-2">
+      <div class="section-id">[9.2]</div>
+      <h2>Spell Types</h2>
+      <p>Spells fall into six categories:</p>
+      <table class="terms">
+        <tr><th>Category</th><th>Effect</th></tr>
+        <tr><td>Healing</td><td>Restores hit points to allies.</td></tr>
+        <tr><td>Damage</td><td>Deals damage to enemies.</td></tr>
+        <tr><td>Modification</td><td>Temporarily changes attributes or other effects.</td></tr>
+        <tr><td>Incapacitation</td><td>Prevents an enemy from acting on their next turn.</td></tr>
+        <tr><td>Raise Undead</td><td>Summons an undead creature to fight on your side.</td></tr>
+        <tr><td>Banish Undead</td><td>Destroys enemy undead creatures.</td></tr>
+      </table>
+      <p>Some spells can only target allies, some only enemies. The spell description tells you what it does and who it can target.</p>
+    </div>
+
+    <!-- 9.3 BOOKS AND SCROLLS -->
+    <div class="doc-section" id="sec-9-3">
+      <div class="section-id">[9.3]</div>
+      <h2>Books and Scrolls</h2>
+      <p>Spell books permanently teach one member a new spell. Once learned, the member can cast that spell any time they have enough SP.</p>
+      <p>Scrolls are single-use items. They can be read during combat (press <code>E</code>) without spending any SP. The scroll is consumed after one use. Scrolls are useful for casting spells your members have not learned or when you are low on SP.</p>
+    </div>
+
+    <div class="page-nav">
+      <a class="prev" href="items.html">Items &amp; Equipment</a>
+      <a class="next" href="training.html">Training Hall</a>
+    </div>
+  </main>
+
+  <footer>
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 Allen Ussher and contributors &middot; Released under the GNU GPL
+  </footer>
+</div>
+</body>
+</html>

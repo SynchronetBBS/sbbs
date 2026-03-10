@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — PLAYER GUIDE — GETTING STARTED</title>
+<link rel="stylesheet" href="../clans.css">
+<style>
+  .wrapper { --sidebar-w: 220px; --max-w: 1100px; }
+  ol.steps { list-style: none; counter-reset: step-counter; margin: 10px 0; }
+  ol.steps li { display: flex; counter-increment: step-counter; gap: 14px; font-size: 13px; color: var(--cyan-dim); line-height: 1.8; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--bg-panel); }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before { content: counter(step-counter); flex-shrink: 0; width: 26px; height: 26px; border: 1px solid #333333; display: flex; align-items: center; justify-content: center; font-family: 'VT323', monospace; font-size: 18px; color: #55FFFF; text-shadow: 0 0 6px #55FFFF; margin-top: 2px; }
+  .terms { border: 1px solid #333333; width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+  .terms th { background: rgba(85,255,255,0.08); color: #55FFFF; text-shadow: 0 0 6px #55FFFF; padding: 8px 14px; text-align: left; border-bottom: 1px solid #333333; letter-spacing: 1px; }
+  .terms td { padding: 8px 14px; color: var(--cyan-dim); border-bottom: 1px solid var(--bg-panel); line-height: 1.7; vertical-align: top; }
+  .terms td:first-child { color: var(--cyan); white-space: nowrap; }
+  .terms tr:last-child td { border-bottom: none; }
+  .terms tr:hover td { background: rgba(85,255,255,0.06); }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="../index.html">⚔ THE CLANS</a>
+  <div class="topnav-links">
+    <a href="../index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label active">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="getting-started.html">Getting Started</a>
+        <a href="pre-game.html">Pre-Game Menu</a>
+        <a href="main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="mines.html">The Mines</a>
+        <a href="combat.html">Combat</a>
+        <a href="stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="market.html">The Market</a>
+        <a href="items.html">Items &amp; Equipment</a>
+        <a href="magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="training.html">Training Hall</a>
+        <a href="church.html">The Church</a>
+        <a href="town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="empires.html">Empires</a>
+        <a href="alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="communications.html">Communications</a>
+        <a href="npcs.html">NPCs</a>
+        <a href="travel.html">World Travel</a>
+        <a href="scoring.html">Scoring</a>
+        <a href="misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <a href="../sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">DevKit</span>
+      <div class="topnav-menu">
+        <a href="../devkit/index.html">PAK Development</a>
+        <a href="../devkit/questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <a href="../developer/index.html">Developer</a>
+    <a href="../whatsnew.html">What's New</a>
+  </div>
+</div>
+<div class="wrapper">
+  <header>
+    <div>
+      <div class="header-title">⚔ PLAYER GUIDE — GETTING STARTED</div>
+      <div class="header-sub">v0.97b2 · The Clans Player Reference Manual</div>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-group-label">GETTING STARTED</div>
+    <a href="#sec-1-1"><span class="sec-id">1.1</span>Overview</a>
+    <a href="#sec-1-2"><span class="sec-id">1.2</span>Creating a Clan</a>
+    <a href="#sec-1-3"><span class="sec-id">1.3</span>Your First Day</a>
+    <a href="#sec-1-4"><span class="sec-id">1.4</span>Protection</a>
+    <a href="#sec-1-5"><span class="sec-id">1.5</span>Game Settings</a>
+    <a href="#sec-1-6"><span class="sec-id">1.6</span>Daily Limits</a>
+  </nav>
+
+  <main>
+
+    <!-- 1.1 OVERVIEW -->
+    <div class="doc-section" id="sec-1-1">
+      <div class="section-id">[1.1]</div>
+      <h2>Overview</h2>
+      <p>The Clans is a text-based fantasy role-playing game for bulletin board systems.  You lead a small clan of adventurers through a dangerous world of mines, monsters, rival clans, village politics, and empire warfare.</p>
+      <p>Each day you have a limited number of actions.  You fight monsters in the mines to earn gold and experience, train your members, buy equipment, manage an empire, and compete against other players for control of the village.</p>
+      <p>If your BBS participates in an InterBBS league, you can even travel to other villages on other BBSes and compete in a larger world.</p>
+    </div>
+
+    <!-- 1.2 CREATING A CLAN -->
+    <div class="doc-section" id="sec-1-2">
+      <div class="section-id">[1.2]</div>
+      <h2>Creating a Clan</h2>
+      <p>When you first enter the game, you will be asked whether you want to create a clan.  If you accept, you will:</p>
+      <ol class="steps">
+        <li><div>Choose a clan name (up to 24 characters, must be unique).</div></li>
+        <li><div>Create each member of your clan.  For every member you choose a race and a class.  Each combination produces different starting attributes, hit points, spell points, and known spells.</div></li>
+        <li><div>After reviewing each member's stats, you can accept them or reroll for a different result.</div></li>
+        <li><div>Name each member (up to 12 characters each).</div></li>
+      </ol>
+      <p>Your first member is the clan leader and receives slightly higher starting stats than the others.  All starting gold from your members is pooled into your clan vault.</p>
+    </div>
+
+    <!-- 1.3 YOUR FIRST DAY -->
+    <div class="doc-section" id="sec-1-3">
+      <div class="section-id">[1.3]</div>
+      <h2>Your First Day</h2>
+      <p>On your first day in the game, certain options are restricted.  You cannot travel to other villages or trade at the market.  Use this day to explore the mines, fight some monsters, and get familiar with the menus.</p>
+      <p>You start at mine level 0.  Fight monsters to earn experience and gold, then visit the market to equip your members with weapons, armor, and shields.  Check the training hall to spend any training points you have earned.</p>
+    </div>
+
+    <!-- 1.4 PROTECTION -->
+    <div class="doc-section" id="sec-1-4">
+      <div class="section-id">[1.4]</div>
+      <h2>Protection</h2>
+      <p>New clans receive a period of protection during which other players cannot attack your empire.  The number of protection days is set by the sysop.  Once protection expires, any player can target your empire.</p>
+    </div>
+
+    <!-- 1.5 GAME SETTINGS -->
+    <div class="doc-section" id="sec-1-5">
+      <div class="section-id">[1.5]</div>
+      <h2>Game Settings</h2>
+      <p>From the pre-game menu, press <code>G</code> to view the current game settings.  This shows the daily limits and other configuration values the sysop has chosen for this game, such as the number of mine fights and clan fights allowed per day.</p>
+    </div>
+
+    <!-- 1.6 DAILY LIMITS -->
+    <div class="doc-section" id="sec-1-6">
+      <div class="section-id">[1.6]</div>
+      <h2>Daily Limits</h2>
+      <p>Each day you receive a fresh allotment of actions:</p>
+      <table class="terms">
+        <tr><th>Limit</th><th>Description</th></tr>
+        <tr><td>Mine fights</td><td>The number of monster battles you can have.</td></tr>
+        <tr><td>Clan fights</td><td>The number of player-vs-player battles you can have.</td></tr>
+        <tr><td>Quest</td><td>You may go on one quest per day.</td></tr>
+        <tr><td>Chat</td><td>You may chat with villagers up to 4 times per day.</td></tr>
+        <tr><td>Church services</td><td>Mass, prayer, and blessing are each once per day.</td></tr>
+        <tr><td>Economic changes</td><td>The ruler may adjust each rate once per day.</td></tr>
+      </table>
+      <p>These limits reset during the daily maintenance cycle.</p>
+    </div>
+
+    <div class="page-nav">
+      <span></span>
+      <a class="next" href="pre-game.html">Pre-Game Menu</a>
+    </div>
+  </main>
+
+  <footer>
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 Allen Ussher and contributors &middot; Released under the GNU GPL
+  </footer>
+</div>
+</body>
+</html>

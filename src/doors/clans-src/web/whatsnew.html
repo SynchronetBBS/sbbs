@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — What's New</title>
+<link rel="stylesheet" href="clans.css">
+<style>
+  .wrapper { --sidebar-w: 200px; --max-w: 1100px; }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="index.html">⚔ THE CLANS</a>
+  <div class="topnav-links">
+    <a href="index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="player/index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="player/getting-started.html">Getting Started</a>
+        <a href="player/pre-game.html">Pre-Game Menu</a>
+        <a href="player/main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="player/mines.html">The Mines</a>
+        <a href="player/combat.html">Combat</a>
+        <a href="player/stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="player/market.html">The Market</a>
+        <a href="player/items.html">Items &amp; Equipment</a>
+        <a href="player/magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="player/training.html">Training Hall</a>
+        <a href="player/church.html">The Church</a>
+        <a href="player/town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="player/empires.html">Empires</a>
+        <a href="player/alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="player/communications.html">Communications</a>
+        <a href="player/npcs.html">NPCs</a>
+        <a href="player/travel.html">World Travel</a>
+        <a href="player/scoring.html">Scoring</a>
+        <a href="player/misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <a href="sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">DevKit</span>
+      <div class="topnav-menu">
+        <a href="devkit/index.html">PAK Development</a>
+        <a href="devkit/questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <a href="developer/index.html">Developer</a>
+    <a class="active" href="whatsnew.html">What's New</a>
+  </div>
+</div>
+<div class="wrapper">
+
+  <header>
+    <div>
+      <div class="header-title">⚔ THE CLANS — WHAT'S NEW</div>
+      <div class="header-sub">Version History and Changelog</div>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-group-label">VERSIONS</div>
+    <a href="#v097v2">v0.97v2</a>
+    <a href="#v097v1">v0.97v1</a>
+    <a href="#v096v2">v0.96v2</a>
+    <a href="#v096b1">v0.96b1</a>
+    <a href="#v095b7">v0.95b7</a>
+    <a href="#v095b6">v0.95b6</a>
+    <a href="#v095b5">v0.95b5</a>
+    <a href="#v095b4">v0.95b4</a>
+    <a href="#v095b3">v0.95b3</a>
+    <a href="#v095b2">v0.95b2</a>
+    <a href="#v095">v0.95</a>
+    <a href="#v093">v0.93</a>
+    <a href="#v092">v0.92</a>
+    <a href="#v091b2">v0.91b2</a>
+    <a href="#v091b1">v0.91b1</a>
+    <a href="#v090b2">v0.90b2</a>
+    <a href="#v090wb">v0.90WB</a>
+    <a href="#v089b5">v0.89b5</a>
+    <a href="#v089b4">v0.89b4</a>
+    <a href="#v089b3">v0.89b3</a>
+    <a href="#v089b2">v0.89b2</a>
+    <a href="#v089">v0.89</a>
+    <a href="#v087b3">v0.87b3</a>
+    <a href="#v087b2">v0.87b2</a>
+    <a href="#v087">v0.87</a>
+    <a href="#v086b2">v0.86b2</a>
+    <a href="#v086wb1">v0.86 WB1</a>
+    <a href="#v085b7">v0.85b7</a>
+    <a href="#v085b6">v0.85b6</a>
+    <a href="#v085b5">v0.85b5</a>
+    <a href="#v085b4">v0.85b4</a>
+    <a href="#v085b3">v0.85b3</a>
+    <a href="#v085b2">v0.85b2</a>
+    <a href="#v085b1">v0.85b1</a>
+  </nav>
+
+  <main>
+
+    <!-- v0.97v2 -->
+    <div class="changelog-version" id="v097v2">
+      <h3>v0.97v2 — Date TBD</h3>
+      <ul>
+        <li>Fixed an issue where Windows would not see the first packet during maint</li>
+        <li>Fixed a handful of memory leaks</li>
+        <li>Fixed a handful of potential crashes</li>
+      </ul>
+    </div>
+
+    <!-- v0.97v1 -->
+    <div class="changelog-version" id="v097v1">
+      <h3>v0.97v1 — March 1st, 2026</h3>
+      <ul>
+        <li>Long gap in here, so just the highlights:</li>
+        <li>Allen is no longer involved in day-to-day work</li>
+        <li>DOS is no longer supported</li>
+        <li>Updated for Windows and *nix</li>
+        <li>File formats changed; overhauled file reading and writing</li>
+        <li>Mostly just cleanup from the OS changes</li>
+      </ul>
+    </div>
+
+    <!-- v0.96v2 -->
+    <div class="changelog-version" id="v096v2">
+      <h3>v0.96v2</h3>
+      <ul>
+        <li>More Win32/FreeBSD fixes... should now actually work.</li>
+      </ul>
+    </div>
+
+    <!-- v0.96b1 -->
+    <div class="changelog-version" id="v096b1">
+      <h3>v0.96b1</h3>
+      <ul>
+        <li>Many fixes, cleanups too numerous to mention</li>
+        <li>Now compiles on Win32 and FreeBSD</li>
+      </ul>
+    </div>
+
+    <!-- v0.95b7 -->
+    <div class="changelog-version" id="v095b7">
+      <h3>v0.95b7 — 07-06-1999</h3>
+      <ul>
+        <li>WOW!  Almost a whole year since last update! :)  Just one day short.</li>
+        <li>One fix: NPC problem encountered in mines is gone (i.e. NPC file not found??)</li>
+        <li>NOTE: exe file has not changed since last time and hence retains its v0.95b6 name...</li>
+        <li>More to come...</li>
+      </ul>
+    </div>
+
+    <!-- v0.95b6 -->
+    <div class="changelog-version" id="v095b6">
+      <h3>v0.95b6 — 07-07-1998</h3>
+      <ul>
+        <li>Fixed bug: users would travel just before a reset and their clans would return after the reset.</li>
+        <li>Returning troops should now be updated properly (how did this get through!?)</li>
+        <li>Lost troops now return properly</li>
+        <li>Fixed problem with having packets routed incorrectly through certain BBSes if the league got larger than a certain number of boards.</li>
+        <li>Changed BBS and Alliance listing in empire attack to wide format</li>
+        <li>lastjoindate should work again (it was left out mistakenly!)</li>
+        <li>Fixed bug which would sometimes show clans as living even if all members were dead</li>
+        <li>User data updated more often -- right after battle.</li>
+        <li>There is a new version of Clan Dev Kit.  It fixes the monster compilation bug.</li>
+      </ul>
+    </div>
+
+    <!-- v0.95b5 -->
+    <div class="changelog-version" id="v095b5">
+      <h3>v0.95b5</h3>
+      <ul>
+        <li>Clans is now freeware!  For those who have registered, the game will continue to display your registration information so users know you did pay for the game.</li>
+        <li>Fixed bug with BBSInfo part of WORLD.NDX file which would not display properly had people used BBSIds such as 1,5,9,etc. instead of a normal 1,2,3,4,.. order</li>
+        <li>Set BBSId to default of 0 if in a local game</li>
+        <li>Whether a reset was received by a BBS is now properly saved</li>
+        <li>Added a pause for league info screen so if there are lots of boards in the league, you can see all of their stats</li>
+        <li>Game should now create a score file like versions did before v0.95</li>
+      </ul>
+    </div>
+
+    <!-- v0.95b4 -->
+    <div class="changelog-version" id="v095b4">
+      <h3>v0.95b4</h3>
+      <ul>
+        <li>This version may actually work on most people's systems!  Tried running it on another computer and was able to reproduce the bugs which caused the game to crash upon entry and also IBBS crashes, so keep your fingers crossed that this version works for you.</li>
+        <li>Changed IBBS structures slightly</li>
+        <li>Reduced max. number of BBSes in IBBS leagues to 50 from 100</li>
+        <li>Misc. internal changes to code (forgot them all, unfortunately)</li>
+        <li>Set stack to default size</li>
+      </ul>
+    </div>
+
+    <!-- v0.95b3 -->
+    <div class="changelog-version" id="v095b3">
+      <h3>v0.95b3</h3>
+      <ul>
+        <li>Added system errors caused by reading/writing/encrypt/decrypting 0 byte data</li>
+        <li>Fixed MAJOR bug in routing of packets -- it would cause the game to screw with memory and of course cause other major problems such as not allowing packets to be routed at all</li>
+        <li>Added /Verbose command line to help with debugging.  If your game returns a "CheckMem Failed." error run it with the /Verbose command line and give the screen output so the problem can be tracked down.</li>
+        <li>Increased the stack size (again -- forgot about this when recoded)</li>
+        <li>Added CheckMem to EncryptRead/Write</li>
+        <li>Added NoMSG option in WORLD.NDX files -- add it to a BBS's info and the game will not create .MSG file for that BBS when a packet is sent to it.</li>
+      </ul>
+    </div>
+
+    <!-- v0.95b2 -->
+    <div class="changelog-version" id="v095b2">
+      <h3>v0.95b2</h3>
+      <ul>
+        <li>Fixed minor bug in multihit spells which would screw memory in battle</li>
+        <li>Fixed minor bug which would give new players access to The Quest for Justice right away.</li>
+      </ul>
+    </div>
+
+    <!-- v0.95 -->
+    <div class="changelog-version" id="v095">
+      <h3>v0.95</h3>
+      <ul>
+        <li>Please forward all mail to ussher@gpu.srv.ualberta.ca -- getting rid of old freenet account (prisoner@...)</li>
+        <li>This new version has quite a few changes to data so you MUST RESET after upgrading.  If you are in a league, get everyone to upgrade and then reset!  Packets are handled differently as well.</li>
+        <li>Made a few corrections and updates to CLANS.DOC</li>
+        <li>Removed Event option from Mines Menu (was used for debugging)</li>
+        <li>Complete user list is sent every 4 days to ensure that if a user was deleted on his board, all boards are updated</li>
+        <li>Recoded initialization and de-initialization functions.  They are now somewhat foolproof.  Compared with old code which was highly unstructured and basically messy, the new code is a bit more object oriented (but it's still in C, not C++).  Not like anyone will notice. :)</li>
+        <li>Fixed a really dumb bug where if the user set the FOSSIL driver on, the game would not load the dropfile properly</li>
+        <li>Game no longer requires loads of xp (bug) if users get to level 49</li>
+        <li>Very basic data encryption implemented.</li>
+        <li>/UglyStatus taken out (pretty useless)...</li>
+        <li>The bug which caused first item to get corrupted has finally been fixed!</li>
+        <li>Fixed minor bug which would cause player who chooses "Fight To Death" option to NOT attack right away</li>
+        <li>When choosing a spell or item, enemy list is shown by default</li>
+        <li>Reset removed from CLANS.EXE and put in its own executable</li>
+        <li>IBBS will no longer process WORLD.NDX files it finds in the inbound directory.  They must now be named WORLD.id where id = the league's ID to be read in and used in place of the current WORLD.NDX file.</li>
+        <li>Local msg index is no longer updated for outgoing global posts which do not post to local message base (i.e. clans' message system)</li>
+        <li>Updated printing function so it doesn't redundantly update the colours (using ANSI codes) if the new colour used is the same as the old colour.  This makes it slightly faster than the old version.</li>
+        <li>A player disbanding on one BBS can no longer create a new clan that day on ANY BBS in the league.  Before it only applied to the BBS he was logged into last...</li>
+        <li>Fixed login ANSI to read KURANZU and not KURANSU</li>
+        <li>New packets are ALWAYS read in when logging into an IBBS game (no need to run CLANS /I even though that is still a command)</li>
+        <li>Took out CLANS /O command (useless)</li>
+        <li>Updated a bunch of old colours</li>
+        <li>PCEDIT.EXE was NOT included with this package.  A new player editor still has to be done.</li>
+        <li>Reset program and /SendReset work WAYYYY better now.</li>
+        <li>Added following commands to event files: GetKey (just like Option but doesn't echo input), Lxx (ACS: user is at level xx), Kxx (ACS: user is at level xx or higher)</li>
+        <li>Added a quality rating to markets...  The quality of the weapons will improve slightly on some days... on these days, STOCK UP on weapons 'cause they'll have lower requirements and higher stats!</li>
+      </ul>
+    </div>
+
+    <!-- v0.93 -->
+    <div class="changelog-version" id="v093">
+      <h3>v0.93</h3>
+      <ul>
+        <li>Remember: School comes first.  And right now, really busy with it... (carrying a full course load -- 6 courses -- 3 weekly assignments, 3 midterms done with 3 more on the way -- lots of stress -- lots of fatigue -- little time to program)</li>
+        <li>Fixed problem with game updating world.dat incorrectly</li>
+        <li>Nodefile should now be opened using _fsopen (SHARE.EXE used)</li>
+        <li>Fixed army rating truncating caused by too many gyms</li>
+        <li>Changed a couple prices of books and raised a couple of books up a level (so they require wizard shops of higher levels)</li>
+        <li>Created LOCKOUT.TXT file to lock out users</li>
+        <li>Fixed negative gold bug in empire wars</li>
+        <li>You can no longer attack your own alliance</li>
+      </ul>
+    </div>
+
+    <!-- v0.92 -->
+    <div class="changelog-version" id="v092">
+      <h3>v0.92</h3>
+      <ul>
+        <li>There will be more updates, it's just that there hasn't been time lately.  Still sorting stuff out and getting used to classes again...</li>
+        <li>Peasants now says "attack someone's empire" instead of "fort"</li>
+        <li>Removed dictatorship "feature"</li>
+        <li>Fixed bug which caused game to hang systems after user exited</li>
+        <li>Fixed bug which would cause some users to be "unchooseable" if they chose a certain name which was "invisible"</li>
+        <li>When player is deleted and he was ruler, Democracy put in place as gov't now</li>
+        <li>Added PCEDIT.EXE player deletion tool (not a true editor!)</li>
+        <li>VillInfo now integrated into WORLD.NDX file.  You MUST append the contents of your VILLINFO.TXT to the WORLD.NDX file if upgrading.</li>
+        <li>Improved buying of items.  No longer throws you back to market menu after buying or browsing an item</li>
+        <li>Updated help to reflect fact that -15 HP or below is required to have dead characters</li>
+        <li>Game will now ensure a max of 6 chars can be made when starting a new clan in IBBS</li>
+        <li>Reduced village attacks to 2 per day</li>
+        <li>Clans can no longer vote for themselves in government</li>
+        <li>Fixed "stat broder" spelling in scheme menu</li>
+        <li>Users traveling to other BBSes can now create alliances there (bug fix)</li>
+      </ul>
+    </div>
+
+    <!-- v0.91b2 -->
+    <div class="changelog-version" id="v091b2">
+      <h3>v0.91b2</h3>
+      <ul>
+        <li>Fixed up QUESTS.INI so it doesn't have temporary test quest "Stupid Quest" :)</li>
+        <li>Found bug in code where memory overlap occurred after combat -- LIKELY (90% chance) where the "garbage items" problem was coming from!  Fixed!!  Also looked at code more and found many instances of strings in the language file which COULD have exceeded the string length used in some functions -- awful, Awful, AWFUL!</li>
+        <li>Fixed bug where as soon as you hit F to fight to death it'll make your clan run away.  Has this EVER happened to anybody?  Only noticed it after a compile recently...</li>
+        <li>Fight to death no longer asks "Fight to death?" -- immediately does it now</li>
+        <li>Minor code changes: properly released mem if no monster with correct level found; ChooseDefaultAction() uses [41] for *szOptions[] now -- was [20]</li>
+        <li>Removed /U (Upgrade) from command line help</li>
+        <li>Fixed bug where /Tx would screw up</li>
+        <li>Game will now fix it so if item is screwed up and owned by a garbage user, it'll be set to no one in the maintenance</li>
+        <li>Owners of garbage items will have the offending items released from use as well</li>
+        <li>Users and alliances no longer allowed to use ? as the first character in their names.  If a user has this in their name as the first character already before the upgrade, it will be changed to a ! in the daily maintenance</li>
+        <li>Fixed bug of church and praying event files in new installs</li>
+        <li>Fixed bug with negative vitality in armies</li>
+        <li>Data changes: barbarian gets +1 str; made incapacitate spells slightly weaker; conscription can only go as high as 20% now</li>
+        <li>`ab colour codes now allow "a" to go from 0 to F (background)</li>
+        <li>Scorefile now displays clan symbols with COLOUR!</li>
+      </ul>
+    </div>
+
+    <!-- v0.91b1 -->
+    <div class="changelog-version" id="v091b1">
+      <h3>v0.91b1</h3>
+      <ul>
+        <li>*** Read UPGRADE.DOC PLEASE! ***</li>
+        <li>Japan was amazing.  Check out the details on the web page. :)</li>
+        <li>FINALLY added feature which automatically distributes WORLD.NDX files -- all the LC needs to do is type CLANS /NewNDX.  The file will be sent through CLANS's packet system.  It's a neat way of getting a message across too (just put some info in the "Ascii" section of the WORLD.NDX before sending it out).</li>
+        <li>Fixed bug in ECOMP.EXE which would cause it to hang on event files which had lines longer than 100 chars</li>
+        <li>Fixed problem with EComp.EXE which would prevent it from displaying pound (#) characters that appeared after a quotation mark (")</li>
+        <li>Fixed minor wording bug in army help that had "Offense" as title for "Defense" help</li>
+        <li>Fixed bug which would hang system if scorefile was not indicated in CLANS.CFG</li>
+        <li>"Cleaned up" initialization procedures -- more efficient and less prone to errors now</li>
+        <li>Because of the previous fixup, you can now use an external language file instead of the built-in one.  The language compiler may be released together with the language file... then again, probably in v1.00 since there may still be a few new strings to add...</li>
+        <li>Fixed bug in choosing which quest you want to do -- would screw up on certain occasions</li>
+        <li>Added a few new ANSIs (anime-like -- based on Shirow Masamune's work!)</li>
+        <li>Fixed bug where if you had over a certain amount of cash, it would not let you develop *any* land</li>
+        <li>Rewrote some NPC code to allow them to be added to PAK files.  Because of the new code, the /U upgrade feature for the Clans is no longer needed</li>
+        <li>Got rid of schemes.txt (now inside .pak file)</li>
+        <li>Made game update packet file names in maintenance so that even if a packet existed one day, the next day it would not be appended to (prevents "dead" packets from continually being appended to)</li>
+        <li>Added a pretty cool secret in the game but it's not finished yet.  Hint: What character in the Prisoner would change from week to week?  Or else what does the Japanese word "ni" mean in English?  (The really cool part is it's "coded" entirely in the event file language.  It's sort of a mini text adventure game.)</li>
+        <li>If user is online and using node #1, a CLANS /I, /O, or /FM will no longer cause their respective functions to be run (this is how it SHOULD have worked before but it didn't)</li>
+        <li>Players who are voted for and then delete themselves will no longer be listed in voting booth</li>
+        <li>Smithy is shown as level 5 now when at its max and not level 6</li>
+        <li>Resetting now removes the disband.dat file</li>
+        <li>Fixed bug which would not remove the colour codes from a string like "|12|16" properly</li>
+      </ul>
+    </div>
+
+    <!-- v0.90b2 -->
+    <div class="changelog-version" id="v090b2">
+      <h3>v0.90b2</h3>
+      <ul>
+        <li>Made game give less experience for the killing blow</li>
+        <li>Fixed big problem with packets which would cause them to reset a village's data (to all 0's)</li>
+        <li>Incorrect village empire war results fixed</li>
+        <li>Fixed bug where village empire attacks per day was not recorded if attacking another village</li>
+        <li>Fixed MAJOR bug which occurred when the user file was larger than 64k.  It would cause new users to corrupt the user file.  Fixed other parts of the program where the 64k limit was as well so it may solve other problems encountered.</li>
+        <li>Game no longer allows +3000 land for empires</li>
+        <li>Fixed bulletin files (see CLANS.CFG to configure them) so the display is cleaner</li>
+        <li>Added a bit of help on Protection for people who didn't quite understand what it did in the newbie help</li>
+        <li>Made it so long fights force the user to run away if fight to death is chosen to prevent endless battles</li>
+        <li>Fixed problem where alliances were not displayed properly (if none were found, the user would be displayed a blank line instead of "No Alliances")</li>
+        <li>Fixed bug where alliances were not all freed up from memory when reset was done</li>
+        <li>Recoded part of the fighting routines (no change in formulae, but more efficient and likely less buggy -- i.e. FightToDeath)</li>
+        <li>WORLD.NDX Asciis are no longer left-justified</li>
+        <li>Changed some structure energy-values</li>
+        <li>Pawn shop item listings now pauses after 60 items are shown</li>
+      </ul>
+    </div>
+
+    <!-- v0.90WB -->
+    <div class="changelog-version" id="v090wb">
+      <h3>v0.90WB</h3>
+      <ul>
+        <li>Note: the only way to fix the fight-to-death bug where the fight goes on endlessly is to reset your game -- the problem persists since the item stats are too out of whack (because of the market in the older versions).  A reset will fix it so users' items don't have such high stats and will make the fights shorter</li>
+        <li>Shops don't show up when building in empire</li>
+        <li>Fixed bug where it wouldn't show other user info (from VILLINFO.TXT)</li>
+        <li>Hero's armor should now be useable</li>
+        <li>Upgrade (/U) option will no longer give an error if no WORLD.NDX is found for local games</li>
+        <li>See SPECIAL.DOC for a special deal on registering doors.</li>
+        <li>Online credit card registration is now available!  See PLASTIC.DOC for info on how to register using your credit card.</li>
+        <li>Changed string so it says followers are "recruited" not "taken" away</li>
+        <li>Some new races and classes have been added...</li>
+        <li>Fixed memory bug caused in (V)iew Clan Stats/(A)lliances when in the alliances menu (what I would regard as a major bug)</li>
+        <li>Healing doesn't heal huge amounts any more (just because the user is at a high level)</li>
+      </ul>
+    </div>
+
+    <!-- v0.89b5 -->
+    <div class="changelog-version" id="v089b5">
+      <h3>v0.89b5</h3>
+      <ul>
+        <li>Fixed bug where game would give an "Out of memory" error for packets of 0 length</li>
+        <li>Max number of BBSes in a league reduced to 100 (was causing mem errors at 255)</li>
+        <li>Fixed bug where if user became ruler, abdicated, and then deleted himself from the game, the ruler would still be him</li>
+        <li>Finally figured out why game was sending to 0:0/0 addresses and creating junk packets like CL00?000.??? -- HUGE problem fixed!</li>
+        <li>Increased cost of upgrading some stuff</li>
+        <li>Removed /Debug option</li>
+        <li>Spells are de-hilited if you don't have enough SP to cast 'em</li>
+        <li>Removed Interest Rate from village stats</li>
+        <li>Items no longer give "bonus" stats if they weren't intended to have them (if an item was set with +0 STR originally, it ain't gettin' any more when you buy it from the shop)</li>
+        <li>Spells are successful a bit more</li>
+        <li>Made it easier to win empire wars</li>
+        <li>User stats was showing the wrong number of XP required...</li>
+        <li>Fixed "Out of Memory" error caused when attacking an empire with no buildings erected</li>
+        <li>Fixed bug where what you destroyed was not shown</li>
+        <li>Choosing extent of army attack is gone, let's see how people like it....</li>
+        <li>Super items harder to get</li>
+        <li>Level ups require more XP -- it was way out of hand in previous versions</li>
+        <li>Enemy will now attack member with lowest energy twice as often as previous versions.</li>
+        <li>Members not in the alliance are only ones listed when inviting them</li>
+        <li>Score listings now say "Dead" if clan has no living members</li>
+        <li>Made "smart input" have wider spaces for topic listings</li>
+        <li>Alliances are now maintained properly (worker energy replenished daily)</li>
+        <li>Game no longer replenishes skill points after clan combat (was a bug)</li>
+        <li>Upgrading (CLANS /U) should no longer remove members 5 and 6 if they are permanent members</li>
+        <li>Main menu used to say (B) Bank, now it's gone</li>
+        <li>Made monsters tougher</li>
+        <li>Game gives less gold now. :)</li>
+        <li>Removed memory leak caused by score generation (IBBS)</li>
+        <li>Fixed another memory leak caused when creating a new chatfile</li>
+        <li>Fixed memory leak caused by IBBS processing</li>
+        <li>Forgot to mention, IBBS.LOG is kept but fairly useless unless your name is Allen.</li>
+        <li>Decreased the stack size back to 8k..</li>
+      </ul>
+    </div>
+
+    <!-- v0.89b4 -->
+    <div class="changelog-version" id="v089b4">
+      <h3>v0.89b4</h3>
+      <ul>
+        <li>Added pirate class, more on the way, give class ideas and they'll get put in</li>
+        <li>Got rid of random event with salesman in mines</li>
+        <li>Being ruler should now give only 25 points per day</li>
+        <li>If xp &lt; 0, it will be set to what it should be at maintenance</li>
+        <li>Instead of saying what class/race a character is when equipping something, it'll say what he's already using</li>
+        <li>Who you're voting for now displayed</li>
+        <li>Removed (/) option in wizard's shop</li>
+        <li>Fixed memory leak introduced by random item finds in the mines</li>
+        <li>Increased the stack size again</li>
+        <li>When looking at another clan's stats, game should pause on each member now</li>
+        <li>Reduced cost of resurrections</li>
+        <li>Fixed bug with trading</li>
+        <li>Made Pirate and Useless Old Man not "seeable" each day (decreased OddsOfSeeing value from 100%)</li>
+        <li>Game gives more gold</li>
+        <li>Removed stupid and useless "Trust No One" event</li>
+        <li>Reduced items taken after combat to only 2 (one guy on my board was stealing all my stuff!)</li>
+      </ul>
+    </div>
+
+    <!-- v0.89b3 -->
+    <div class="changelog-version" id="v089b3">
+      <h3>v0.89b3</h3>
+      <ul>
+        <li>User scores are now integrated into the top league scores immediately, unlike before</li>
+        <li>Went with an overlaid executable this time to help decrease the memory usage and that dropped it by about 100k!</li>
+        <li>Reduced memory requirements by about +120k</li>
+        <li>Fixed minor problem when creating new chars and seeing garbage on screen when stats displayed.</li>
+        <li>Changed "archer" strings to "axemen" strings</li>
+        <li>Fixed problem with creating CL???000.??? packets by LC's BBS in IBBS games (happened when score list packets were created during maintenance)</li>
+        <li>Fixed bug where land developing would take the max gold even if you chose only a small amount</li>
+      </ul>
+    </div>
+
+    <!-- v0.89b2 -->
+    <div class="changelog-version" id="v089b2">
+      <h3>v0.89b2</h3>
+      <ul>
+        <li>Minor fix of user scores.  Upgrade ASAP (if you have v0.89b1 installed) because the score files changed somewhat.</li>
+      </ul>
+    </div>
+
+    <!-- v0.89 -->
+    <div class="changelog-version" id="v089">
+      <h3>v0.89</h3>
+      <ul>
+        <li>This release is one of several betas that will be released in the next few days to remove all the bugs.  Remember, this is a BETA.  There HAVE been lots of bugfixes since the last version so it is likely to run better in some situations but because of the new features (most notably in InterBBS games) there are likely to be a few new bugs that crop up.</li>
+        <li>See SPECIAL.DOC for a special deal on registering doors.</li>
+        <li>THIS IS NOT A WIDE BETA, do not distribute through networks and such but if you are in a league, be sure to have EVERYONE upgrade to this version</li>
+        <li>YOU MUST RESET YOUR CURRENT GAME TO USE THIS VERSION!  If you're in a league, the whole league must be reset and everyone in the league must use this version.</li>
+        <li>Nicer looking item statistics screen</li>
+        <li>Items are even more behaved in terms of stats</li>
+        <li>Fixed bug where game would crash if traveling to another village which had no info in VILLINFO.TXT</li>
+        <li>Fixed problem with reading .HLP files (which are within CLANS.PAK) -- it would freeze on some files</li>
+        <li>User clan member names can only be 12 chars long now (although monster names can still be up to 19 chars long)</li>
+        <li>Added Scrolls and Books</li>
+        <li>clans.ini should be fully useable now (except language file is always strings.xl, can't change this even though it's in there)</li>
+        <li>Item energy scrapped</li>
+        <li>Items can now be taken from another clan after combat.  A maximum of 4 items can be taken.</li>
+        <li>Upgrading of market brings in some new items now.</li>
+        <li>"View Combat Sta" -&gt; "View Combat Stats" in combat -- then later taken out ;)</li>
+        <li>Added a pawn shop to buy/sell used goods</li>
+        <li>Overhaul of event files and quote files (for 3rd time).  They are now compiled.  Get CDEV004.ZIP (Clan Dev Kit v0.04) and compile any event files you made before using ECOMP.EXE.  A lot faster when chatting with NPCs and going on quests, random events etc.  Also found bugs with old method of reading in event files so this may fix those problems as well</li>
+        <li>Items only use memory when they need to, unlike before where it was always loaded... this should free up more memory</li>
+        <li>INTL flag is now always used for mail packets (IBBS)</li>
+        <li>Maintenance should now be run right away when /I or /O is used</li>
+        <li>Random treasure chests encountered in the mines... they contain items..</li>
+        <li>10 to 13 training points given per level-up.  However, training halls require 10 tpoints per attribute minus level of training hall (so level 5 training halls only require 5 tpoints per attribute!)</li>
+        <li>Old alliance system abolished. :)  It was replaced with something similar to the clan halls (but without passwords).  Clan halls are gone too.</li>
+        <li>Elimination mode now sent through IBBS properly</li>
+        <li>Backing up a line in message entering is now allowed!</li>
+        <li>Disbanded clans cannot play until the next day (prevents cheating)</li>
+        <li>Cost fluctuations occur each day instead of each time you buy an item</li>
+        <li>Smithy sometimes makes super items. These are denoted with a + after the name; they have better stats but same requirements</li>
+        <li>Costs 25% of item cost to view its stats</li>
+        <li>Village info overhauled: removed useless "Population" stat, town guards, businesses/farms/mines (empires take their place), rebel menu, crime variable, approval (replaced with clan voting).  Added system of gov't: democracy (allow clan voting) or dictatorship (no voting).</li>
+        <li>No more bank, all gold is kept in the "empire" and can be stolen from other empires (increased competition)</li>
+        <li>Gold can no longer be stolen from an enemy clan in a regular fight</li>
+        <li>Fixed problem where game would not detect duplicate clan name when the first user entered the game</li>
+        <li>You can write messages from one village to another!!  Very nice and surprisingly easy to do...</li>
+        <li>Fixed bug where writing message and aborting would not free up memory used...</li>
+        <li>It now will say if the ruler lowered/raised the taxes and what they were before in the daily news</li>
+        <li>You can no longer toggle the InterBBS flag in the clans.cfg file and do the daily maintenance and switch back...</li>
+        <li>If WORLD.NDX file (or WORLD.id where id = league id) found in inbound directory, it will be used as the new WORLD.NDX file for the game.</li>
+        <li>Minor change made to AI in combat, spells are used by enemy slightly more often</li>
+        <li>Added new command to scripts, "Input", can be used to replace Option command</li>
+        <li>More options in reset</li>
+        <li>You can no longer release a perm. member, get an NPC and keep him.  (It's a bug fix.)</li>
+        <li>Protection is ALWAYS set now</li>
+        <li>Clan voting replaced the old approval system.  Each clan can choose who they think should be the leader and at the end of the day, the clan with the most votes gets to rule.  However, the ruler can switch to a dictatorship gov't so voting isn't allowed.  But they can be ousted through an empire attack..</li>
+        <li>Reg is $20CAN b/c that approximately equals $15US.</li>
+        <li>Maintenance is skipped if user online (done automatically later)</li>
+        <li>If a reset was not properly received by a BBS, you can now resend it using the /SendReset X command where X is the BBSID of the BBS you wish to send the reset to.</li>
+        <li>strings.xl now can contain up to 2000 strings (even the structure is allocated memory now)</li>
+        <li>A clan from another village is now shown as "Visiting" instead of "Here"</li>
+        <li>Item equipping is more intuitive.  If a member of the clan is equipping a new item and he is already equipped, the game will ask whether you wish to unequip the old item first.</li>
+        <li>Quests known and done are not carried over when traveling to another village now.  This way, you will know different sets of quests for each village.</li>
+        <li>Undead raised by higher up characters have more HP than those below them</li>
+        <li>Quests are displayed better now.  The first one is always (A) and the second is always (B), etc.</li>
+        <li>Fixed problem where all NPCs would appear each day for some reason.  They are supposed to appear randomly day to day.</li>
+        <li>You can no longer "trade" your troops so that you go over the limit of troops for the buildings you have (sneaky cheat)</li>
+        <li>Made a few cosmetic changes here and there</li>
+        <li>New feature: conscription -- needed for new empire system</li>
+        <li>Added "skip" feature in combat to pass a move (so a certain member can be given the killing blow xp)</li>
+        <li>Removed View Combat Stats from combat (did nothing)</li>
+        <li>Game now pauses after 20 lines when showing the top scores</li>
+        <li>Added ugly vanilla status line (use /UglyStatus) to see if BBSes which see negative time have a better time with it</li>
+        <li>Level of church now determines how many resurrections it will allow to each clan each day</li>
+        <li>New clans cannot trade until after the first day they play (prevents cheating)</li>
+        <li>Fixed a huge bug which was likely causing all the memory problems many have encountered.</li>
+        <li>Removed "AnnoyLord" option in clans.cfg (calm down, it did nothing!! &lt;grin&gt;)</li>
+        <li>You can now use Telegard style colour codes (`).  Use `XY where X is the background colour, Y is the foreground colour.  Both are in hexadecimal.  `4F for white on red...</li>
+        <li>Clan Symbols can be up to 20 chars long and have colour codes in them.</li>
+        <li>Less followers are given after battle</li>
+        <li>Followers are no longer given for regular clan vs. clan fights</li>
+        <li>Which monsters appear and how many has changed slightly</li>
+        <li>Gold rewarded is calculated differently</li>
+        <li>Items cost less</li>
+        <li>Fixed HUGE bug where a user would delete himself and the game was not deleting trades properly</li>
+        <li>Temporary members can no longer be released through the training hall</li>
+        <li>League scores are in place now and you can see the top 20 clans in the whole league</li>
+        <li>Added "default action" in stats so you can choose your favourite spell to be cast in combat whenever it is available...</li>
+        <li>"Whho to train?" fixed to "Who to train?"</li>
+      </ul>
+    </div>
+
+    <!-- v0.87b3 -->
+    <div class="changelog-version" id="v087b3">
+      <h3>v0.87b3</h3>
+      <ul>
+        <li>This is mainly a bugfix upgrade (no new features till v0.90)</li>
+        <li>If user enters nothing for hall name it won't say "Name in use" anymore</li>
+        <li>HP and SP increase in training hall increased a bit more</li>
+        <li>Fixed a major but hard to find bug which occurred during fighting (may have caused memory errors)</li>
+        <li>Gee, another bug found, traveling users may cause memory errors -- fixed.</li>
+        <li>If handgold is negative it is set to 0 during maint. (bank gold can be negative due to bank debts)</li>
+        <li>Fixed the max gold in bank bug but it wasn't compiled last version -- arghh! it's fixed now</li>
+      </ul>
+    </div>
+
+    <!-- v0.87b2 -->
+    <div class="changelog-version" id="v087b2">
+      <h3>v0.87b2</h3>
+      <ul>
+        <li>Level ups should come quicker (after 3 weeks, you should have level 15 characters and 50 is the maximum but impossible to attain)</li>
+        <li>Fixed slight problem with displaying several characters in combat (would put \n twice)</li>
+        <li>Made a few spells a bit stronger so they don't fail so often</li>
+        <li>Added Fear spell's description to help file.</li>
+        <li>Fixed problem with upgrading bank to level 5 (wouldn't use proper maxdeposits)</li>
+        <li>Caught a couple bugs which slipped through so releasing this one pretty quickly.</li>
+        <li>Use a large data file now instead of many files, you MUST overwrite your clans.ini with the new one</li>
+        <li>Changed all (R)eturns to (Q)uits in menus so it is consistent now</li>
+        <li>Fixed problem with halls -- wouldn't allow you to build one for new players</li>
+        <li>Players can no longer use items that they haven't the requirements to use.  Before they would simply incur penalties</li>
+      </ul>
+    </div>
+
+    <!-- v0.87 -->
+    <div class="changelog-version" id="v087">
+      <h3>v0.87</h3>
+      <ul>
+        <li>Fixed bug where new NPCs added would crash the game</li>
+        <li>Hopefully, netmail messages should be created properly now (without garbage in the message text) *** This MAY have been what was causing a bunch of InterBBS problems.</li>
+        <li>Made the approval rise less with construction of things...</li>
+        <li>Added /Recon X parameter.  Use this to test your InterBBS games to see if packets and netmails are made properly.</li>
+        <li>Fixed a bug where disbanding of clan would not appear on daily news</li>
+        <li>Updated the strings.xl file so it allows up to 1500 strings now</li>
+        <li>Halls are semi-implemented -- they aren't as complete as mentioned on the web page.  (I.e. you can't attack others with the troops here and Empires aren't yet implemented, but they provide a foundation for alliances)</li>
+        <li>Chat screens (like the ones in the halls) now allow 3 lines of input</li>
+        <li>Fixed bug which would crash system if more than 1 user was traveling from village to village</li>
+        <li>Negative followers FINALLY fixed.  Last beta didn't really fix it.</li>
+        <li>Made death and decay weaker and cost more</li>
+        <li>Made rain of terror require more SP to cast</li>
+        <li>install.exe can now handle creation of directories.  Outbound directory is now used when creating packets.</li>
+        <li>Item stats now show who can use an item without penalty (very helpful!).  Fixed it so if requirement is zero for an item, anybody can use it (even if charisma is -1 or whatever)</li>
+        <li>Modified stats are now used for regenerating of mana and seeing if clan can run (+ added a new weapon: wand)</li>
+        <li>Market level now displayed in market</li>
+        <li>Items created should have more "behaved" stats</li>
+      </ul>
+    </div>
+
+    <!-- v0.86b2 -->
+    <div class="changelog-version" id="v086b2">
+      <h3>v0.86b2</h3>
+      <ul>
+        <li>THIS IS NOT A WIDE BETA -- the next wide beta will offer more InterBBS features and a revamped fort system (eta: 2-3 weeks).</li>
+        <li>Game should no longer give negative followers</li>
+        <li>Smithy no longer costs negative amounts to upgrade (it also costs more)</li>
+        <li>Maintenance can no longer be forced (/FM) in InterBBS games and maintenance can only be run once per day (even if date is set back).</li>
+        <li>Packets should no longer be set as HOLD (hopefully).  Please tell me if this bug isn't fixed.</li>
+        <li>Game would take away clan's gold even if after choosing troops, user wasn't allowed to attack.  Fixed</li>
+        <li>Added "Come back!" feature which allows users to call back their clan if they left town but want them back without having to call the other BBS</li>
+        <li>Mortal wounds/death don't take off as much MaxHP</li>
+        <li>Changed msg saying "Inbound has no..." to "Outbound has no..." when using /O</li>
+        <li>Players no longer travel instantaneously but arrive on destination BBS at the end of the day.</li>
+        <li>Village approval is calculated a bit better</li>
+        <li>YOU MUST reset if using beta 3 or below.  Sorry to all those who didn't reset and had the game crash. :(  Changed the INSTALL.INI to reflect this.</li>
+        <li>Fixed "curch" in strings, fixed it to "training hall" as well</li>
+        <li>Decreased number of followers from combat</li>
+        <li>Decreased cost of fort attacks</li>
+        <li>Removed daily recon packet creation (now back to the normal 3-day packet attempts if no communication for 3 days)</li>
+        <li>Fixed wolf encounter to heal</li>
+      </ul>
+    </div>
+
+    <!-- v0.86 WB1 -->
+    <div class="changelog-version" id="v086wb1">
+      <h3>v0.86 wide beta 1</h3>
+      <ul>
+        <li>Expect wide beta 2 around April 19</li>
+        <li>Fixed it so if you hang up during combat, undead warriors will not be in the clan (you damn cheaters, you)</li>
+        <li>Increased cost of repairing fort, decreased strength of fort slightly (takes more damage in attacks now)</li>
+        <li>User who is being "used" for the current action in combat is now hilighted</li>
+        <li>Recon is created each day by each board during maintenance to ensure boards poll one another (if you don't like this feature, please notify me)</li>
+        <li>Features coming soon added on exit screen</li>
+        <li>Increased gold received from combat</li>
+        <li>Increased # of followers gained per combat</li>
+        <li>Updated the CLANAD.ANS file</li>
+      </ul>
+    </div>
+
+    <!-- v0.85b7 -->
+    <div class="changelog-version" id="v085b7">
+      <h3>v0.85b7</h3>
+      <ul>
+        <li>Next version will be 0.86 (widebeta 1)</li>
+        <li>Fixed make announcement in menu</li>
+        <li>Fixed garbage displayed in daily news when user is eliminated</li>
+        <li>Fixed different cost of bank upgrade in economics and structures menu</li>
+        <li>Decreased cost of resurrection</li>
+        <li>New spells: rain of terror (sorcerer), death and decay (not new, but attacks several enemies at once now), more on the way</li>
+        <li>Implemented multi-hit spells (damage only for now).  Multi-attribute spells affecting the whole clan may come later</li>
+        <li>Extended reg of $10 deadline to May 13, 1997</li>
+        <li>Less chance of encountering really high up monsters in the mines</li>
+        <li>Letters can be used in place of numbers when choosing target in combat</li>
+        <li>Fixed it so dead/banished characters are no longer displayed when in combat</li>
+        <li>Reduced energy depletion of items and increased their lifespan as well</li>
+        <li>Removed confess option in church</li>
+        <li>Geez, never noticed this bug, it would not allow a user to start over if he was eliminated from the game.  Fixed.</li>
+        <li>Fixed it so user doesn't start out with 2500 fort energy but 4000 as it is supposed to be (before it gave 2500/4000 energy for new players)</li>
+        <li>Reading of world.ndx was flipped with reading of route.cfg when /reset run, fixed it.</li>
+      </ul>
+    </div>
+
+    <!-- v0.85b6 -->
+    <div class="changelog-version" id="v085b6">
+      <h3>v0.85b6</h3>
+      <ul>
+        <li>Fixed problem introduced in beta5 which didn't detect dropfile directory properly</li>
+        <li>FIXED another big bug which occurred when banish undead was cast -- this was what caused a lot of errors in the past (it was hard to duplicate because you barely use banish undead)</li>
+        <li>Also made it so undead like Ghouls, Zombies, etc. who are encountered in the mines can be banished</li>
+        <li>Added CLANS.INI so that 3rd party NPC files can be added -- soon to include maybe user-defined classes and races</li>
+      </ul>
+    </div>
+
+    <!-- v0.85b5 -->
+    <div class="changelog-version" id="v085b5">
+      <h3>v0.85b5</h3>
+      <ul>
+        <li>Install program now updates the date and timestamps properly</li>
+        <li>Enabled timeslicing code -- wasn't enabled before</li>
+        <li>Game now does not allow sysop to reset local game if in a league (would cause problems with the user listings, etc.)</li>
+        <li>Fixed bug which was introduced in v0.85b4 -- wouldn't allow /Reset option to be used if InterBBS game was chosen and just beginning</li>
+        <li>Found a big memory leak which would allocate lots of mem and forget to release some of it.  This is most likely what was causing a whole bunch of unreproduceable bugs.</li>
+        <li>Enemy should cast heal more often (really needed for clan combat)</li>
+        <li>Only 5 clan combats per day now (used to be 50!!)</li>
+        <li>Level 2 of church should now allow reviving of unconscious player</li>
+        <li>Added reg string</li>
+        <li>Added Fight to Death option in combat</li>
+        <li>InterBBS packets are now read in from oldest to newest (before, the order was not taken into account, but that would cause problems later on)</li>
+        <li>Set starting fort strength to 4000 instead of 2500</li>
+        <li>Allowed users to run away during clan vs. clan combat</li>
+        <li>Traveling to another board would cause some user data to be carried over that shouldn't have been carried over (such as fort level, etc.)  Fixed.</li>
+        <li>Added xp required to character stats</li>
+      </ul>
+    </div>
+
+    <!-- v0.85b4 -->
+    <div class="changelog-version" id="v085b4">
+      <h3>v0.85b4</h3>
+      <ul>
+        <li>Fixed a *HUGE* bug which caused negative army attacks. (Went unnoticed under OS/2)</li>
+        <li>Took out protection for non-elimination games</li>
+        <li>Decided not to bother making lots of quests.  Completed a couple more and that will do it.  Since only 26 letters of the alphabet can be used for quest keys, if 20 were used up, only 6 new quests would have been allowed.  If more quests are made, they will be add-on modules.  Download CLANDEV*.ZIP to make your own quests.</li>
+        <li>Crime rate should no longer drop below 0</li>
+        <li>Took out "Status" keyword from WORLD.NDX -- useless!</li>
+        <li>Replaced cheap quests.txt file with better quests.ini file which allows external quests to be added a lot easier.  Running an event file or a quote file should take less memory (but it's slower)... it will allow infinite events in a file, however</li>
+        <li>Made troops + fort stronger</li>
+        <li>Fixed it so if there is no ruler he won't be ousted. :)</li>
+        <li>Forgot to put (/) Chat w/Villagers in Training Hall menu</li>
+        <li>Fixed bug which displayed wrong number of troops when marching into battle.</li>
+        <li>Default actions are improved -- if you fight and are killed in the mines, default action will be to return to town, then quit game</li>
+        <li>Improved a few strings</li>
+        <li>Fixed config.exe problem which would read in the wrong type of mailer program</li>
+        <li>Added news when ruler donates gold to vault</li>
+        <li>Reduced some ascii displays</li>
+        <li>Fixed it so mail allows highbit ascii</li>
+        <li>Changed protection to only 2 days instead of 3</li>
+        <li>Added info for Local InterBBS in CLANS.DOC</li>
+        <li>Took out the "Entrance Bonus", thought it was already out.</li>
+        <li>There are STILL some spots in the game where it's either using too much stack/mem or doing something else to cause minor mem errors, so fixed a couple things and there shouldn't be any more. :)  Hopefully.</li>
+      </ul>
+    </div>
+
+    <!-- v0.85b3 -->
+    <div class="changelog-version" id="v085b3">
+      <h3>v0.85b3</h3>
+      <ul>
+        <li>Cool new installation program. :)</li>
+        <li>Added /LIBBS for "local InterBBS" play -- used for local leagues set up by running different copy of The Clans in each directory</li>
+        <li>You can now list all users within the game and their ClanIDs (used internally by system only) with the /USERS parameter (this works with InterBBS games too -- all players in the league are listed)</li>
+        <li>Fixed a cheat where a user could keep depositing 10GP into the village vault to increase his approval by 1% each time!!</li>
+        <li>Tested InterBBS and found it works! :)  Dupe-checking works.  Resetting works.  Daily recon works.  Sending users to other boards works...  Encouraging others to try it out.</li>
+        <li>New users can no longer travel to another village in the same day</li>
+        <li>Asciis for worldtravel menu changed</li>
+        <li>village.hlp updated</li>
+        <li>Made monsters tougher</li>
+        <li>Finished a couple more quests</li>
+        <li>More info given when LeagueInfo displayed</li>
+        <li>Elimination mode has been implemented!  If it is set ON and a clan's fort is destroyed while the clan resides on that BBS, the clan will be eliminated from play!  This makes it really important to attack other nations and form alliances.</li>
+        <li>Adding new nodes to InterBBS games now works dynamically.  You can start a league with 2 BBSes and then add on lots more.  Just modify the WORLD.NDX file and distribute it.  The other boards will send recons automatically to the joining BBS and the Main BBS will send a reset packet to the new BBS telling it to reset for play in the league.</li>
+      </ul>
+    </div>
+
+    <!-- v0.85b2 -->
+    <div class="changelog-version" id="v085b2">
+      <h3>v0.85b2</h3>
+      <ul>
+        <li>You can now use hi-bit ASCII for Clan Symbols!</li>
+        <li>INTERBBS: recons no longer sent to all 255 BBSes ;).  They were sent before even if only 4 are in the league.</li>
+        <li>INTERBBS: if reset packet received and player enters while it is processed, CLANS would not allow user to enter the game even if "today" was the day to reset -- FIXED.</li>
+        <li>CLANS /RESET would hang under some (DOS) systems! -- fixed</li>
+        <li>Chatting with NPCs no longer hangs system or causes EMM error! (DOS)</li>
+        <li>Chatting with NPC and asking NPC to join clan would cause NPC to be invisible when hitting / again to chat with 'em. -- fixed</li>
+        <li>Events no longer hang either. :)  (DOS) (used a larger stack)</li>
+        <li>The Orcs -- Act II *was* completed already but forgot to remove some lines so users couldn't enter it -- they can now.</li>
+        <li>InterBBS now reads packets without searching for .MSGs from other BBSes.</li>
+        <li>InterBBS outbound packets are now stored in the CLANS directory (may change later so they are in their own outbound dir just to keep things tidy).</li>
+        <li>You only get 12 fights per day now (cut down on time spent fighting)</li>
+      </ul>
+    </div>
+
+    <!-- v0.85b1 -->
+    <div class="changelog-version" id="v085b1">
+      <h3>v0.85b1</h3>
+      <ul>
+        <li>Nothing. :)  This is the initial semi-private beta version.  Look to this file for updates, of course.</li>
+      </ul>
+    </div>
+
+  </main>
+
+  <footer>
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 Allen Ussher and contributors &middot; Released under the GNU GPL
+  </footer>
+
+</div>
+</body>
+</html>

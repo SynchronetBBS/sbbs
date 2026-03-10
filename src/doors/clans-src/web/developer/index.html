@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — Developer Notes</title>
+<link rel="stylesheet" href="../clans.css">
+<style>
+  .wrapper { --sidebar-w: 220px; --max-w: 1100px; }
+
+  /* ── TERMS TABLE ── */
+  .terms { border: 1px solid #333333; width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+  .terms th { background: rgba(85,255,255,0.08); color: #55FFFF; text-shadow: 0 0 6px #55FFFF; padding: 8px 14px; text-align: left; border-bottom: 1px solid #333333; letter-spacing: 1px; }
+  .terms td { padding: 8px 14px; color: var(--cyan-dim); border-bottom: 1px solid var(--bg-panel); line-height: 1.7; vertical-align: top; }
+  .terms td:first-child { color: var(--cyan); white-space: nowrap; }
+  .terms tr:last-child td { border-bottom: none; }
+  .terms tr:hover td { background: rgba(85,255,255,0.06); }
+
+  /* ── TREE DIAGRAM ── */
+  .tree-diagram { font-family: 'Courier New', monospace; font-size: 13px; color: var(--cyan-dim); background: #050505; border: 1px solid #333333; padding: 16px 20px; line-height: 1.7; margin: 12px 0; white-space: pre; }
+
+  /* ── NUMBERED STEPS ── */
+  ol.steps { list-style: none; counter-reset: step-counter; margin: 10px 0; }
+  ol.steps li {
+    display: flex;
+    counter-increment: step-counter; gap: 14px;
+    font-size: 13px; color: var(--cyan-dim); line-height: 1.8;
+    margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--bg-panel);
+  }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before {
+    content: counter(step-counter); flex-shrink: 0; width: 26px; height: 26px;
+    border: 1px solid #333333; display: flex; align-items: center; justify-content: center;
+    font-family: 'VT323', monospace; font-size: 18px; color: #55FFFF;
+    text-shadow: 0 0 6px #55FFFF; margin-top: 2px;
+  }
+
+  /* ── COMPACT TABLE (BUF_SIZE, XOR) ── */
+  .terms-compact td:first-child { font-family: 'Courier New', monospace; font-size: 12px; }
+  .terms-compact td:nth-child(2) { font-family: 'Courier New', monospace; font-size: 12px; text-align: right; }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="../index.html">&#x2694; THE CLANS</a>
+  <div class="topnav-links">
+    <a href="../index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="../player/index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="../player/getting-started.html">Getting Started</a>
+        <a href="../player/pre-game.html">Pre-Game Menu</a>
+        <a href="../player/main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="../player/mines.html">The Mines</a>
+        <a href="../player/combat.html">Combat</a>
+        <a href="../player/stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="../player/market.html">The Market</a>
+        <a href="../player/items.html">Items &amp; Equipment</a>
+        <a href="../player/magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="../player/training.html">Training Hall</a>
+        <a href="../player/church.html">The Church</a>
+        <a href="../player/town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="../player/empires.html">Empires</a>
+        <a href="../player/alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="../player/communications.html">Communications</a>
+        <a href="../player/npcs.html">NPCs</a>
+        <a href="../player/travel.html">World Travel</a>
+        <a href="../player/scoring.html">Scoring</a>
+        <a href="../player/misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <a href="../sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">DevKit</span>
+      <div class="topnav-menu">
+        <a href="../devkit/index.html">PAK Development</a>
+        <a href="../devkit/questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <a class="active" href="index.html">Developer</a>
+    <a href="../whatsnew.html">What's New</a>
+  </div>
+</div>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div>
+      <div class="header-title">&#x2699; THE CLANS &mdash; DEVELOPER NOTES</div>
+      <div class="header-sub">v0.97b2 &middot; Source Code Reference</div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR NAV -->
+  <nav>
+    <div class="nav-group-label">INTRODUCTION</div>
+    <a href="#overview"><span class="sec-id">0.1</span>Overview</a>
+    <a href="#license"><span class="sec-id">0.2</span>License &amp; History</a>
+
+    <div class="nav-group-label">GETTING STARTED</div>
+    <a href="#prereqs"><span class="sec-id">1.1</span>Prerequisites</a>
+    <a href="#building"><span class="sec-id">1.2</span>Building from Source</a>
+    <a href="#testing"><span class="sec-id">1.3</span>Running &amp; Testing</a>
+
+    <div class="nav-group-label">SOURCE CODE MAP</div>
+    <a href="#modules"><span class="sec-id">2.1</span>Module Summary</a>
+    <a href="#core-engine"><span class="sec-id">2.2</span>Core Game Engine</a>
+    <a href="#ibbs-net"><span class="sec-id">2.3</span>Inter-BBS Networking</a>
+    <a href="#gameplay"><span class="sec-id">2.4</span>Gameplay Systems</a>
+    <a href="#serialization-mod"><span class="sec-id">2.5</span>Data Serialization</a>
+    <a href="#platform"><span class="sec-id">2.6</span>Platform Abstraction</a>
+    <a href="#content-strings"><span class="sec-id">2.7</span>Content &amp; Strings</a>
+    <a href="#utilities"><span class="sec-id">2.8</span>Utility Modules</a>
+    <a href="#tools"><span class="sec-id">2.9</span>Tools &amp; Utilities</a>
+
+    <div class="nav-group-label">DATA ARCHITECTURE</div>
+    <a href="#structs"><span class="sec-id">3.1</span>Data Structures</a>
+    <a href="#serialization"><span class="sec-id">3.2</span>Serialization System</a>
+    <a href="#xor"><span class="sec-id">3.3</span>XOR Constants</a>
+    <a href="#lang-system"><span class="sec-id">3.4</span>Language System</a>
+
+    <div class="nav-group-label">INTER-BBS SYSTEM</div>
+    <a href="#packet-types"><span class="sec-id">4.1</span>Packet Types</a>
+    <a href="#packet-names"><span class="sec-id">4.2</span>Packet Filenames</a>
+    <a href="#league"><span class="sec-id">4.3</span>League Structure</a>
+    <a href="#further"><span class="sec-id">4.4</span>Further Reading</a>
+
+    <div class="nav-group-label">CONTENT &amp; DEVKIT</div>
+    <a href="#data-files"><span class="sec-id">5.1</span>Data Files Overview</a>
+    <a href="#building-data"><span class="sec-id">5.2</span>Building Data Files</a>
+    <a href="#event-scripts"><span class="sec-id">5.3</span>Event Scripts</a>
+    <a href="#help-files"><span class="sec-id">5.4</span>Help Files</a>
+    <a href="#pct-codes"><span class="sec-id">5.5</span>Internal %-codes</a>
+
+    <div class="nav-group-label">KNOWN ISSUES</div>
+    <a href="#issues"><span class="sec-id">6.1</span>Current Issues</a>
+    <a href="#improvements"><span class="sec-id">6.2</span>Improvements</a>
+
+    <div class="nav-group-label">RELEASE</div>
+    <a href="#build-targets"><span class="sec-id">7.1</span>Build Targets</a>
+    <a href="#artifacts"><span class="sec-id">7.2</span>Release Artifacts</a>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- INTRODUCTION                                                       -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- 0.1 OVERVIEW -->
+    <div class="doc-section" id="overview">
+      <div class="section-id">[0.1]</div>
+      <h2>Overview</h2>
+      <p>The Clans is a multi-user fantasy RPG door game for BBS systems. It features clan management, empire warfare, turn-based combat, and a unique Inter-BBS (IBBS) multiplayer system that links multiple BBSes into a shared game world. The game was written in C (originally Turbo C++ for DOS), and has since been modernized to compile with GCC and C17, targeting FreeBSD, Linux, and Windows.</p>
+      <p>Each BBS running the game acts as a "village" in a shared league. Players build clans, join empires, and fight for control of the village. Through the IBBS system, clans can travel to -- and attack -- other villages over a Fidonet-style packet network.</p>
+      <p>This document is the developer and contributor reference. For sysop installation and game setup, see <code>release/clans.txt</code>. For quest and NPC development, see <code>devkit/clandev.txt</code>.</p>
+    </div>
+
+    <!-- 0.2 LICENSE AND HISTORY -->
+    <div class="doc-section" id="license">
+      <div class="section-id">[0.2]</div>
+      <h2>License and History</h2>
+      <p>The Clans was written by Allen Ussher from 1997 to 2002. The game originally ran on DOS-based BBS systems, compiled with Turbo C++ and using the OpenDoors door library by Brian Pirie. It was released as open source under the GPL v2 in 2002.</p>
+      <p>Modernization work includes:</p>
+      <ul>
+        <li><strong style="color:var(--cyan)">Compiler:</strong> GCC with C17 standard, replacing Turbo C++</li>
+        <li><strong style="color:var(--cyan)">Platforms:</strong> FreeBSD, Linux, and Windows (was DOS only)</li>
+        <li><strong style="color:var(--cyan)">Serialization:</strong> Explicit pack/unpack macros replacing raw struct I/O</li>
+        <li><strong style="color:var(--cyan)">Platform abstraction:</strong> <code>unix_wrappers.c</code> / <code>win_wrappers.c</code> / <code>platform.c</code></li>
+        <li><strong style="color:var(--cyan)">Build system:</strong> GNUmakefile (Unix) and Visual Studio solution (Windows)</li>
+      </ul>
+      <p>The OpenDoors library is still used for BBS door integration and is linked statically as <code>libODoors.a</code>. For the GPL v2 license text, see <code>docs/gpl.txt</code>.</p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- GETTING STARTED                                                    -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- 1.1 PREREQUISITES -->
+    <div class="doc-section" id="prereqs">
+      <div class="section-id">[1.1]</div>
+      <h2>Prerequisites</h2>
+
+      <h3>Unix (FreeBSD, Linux)</h3>
+      <ul>
+        <li>GCC with C17 support</li>
+        <li>GNU Make (invoke as <code>gmake</code> on BSD systems)</li>
+        <li><code>libODoors.a</code> -- the OpenDoors library, compiled for your target platform and placed where the linker can find it</li>
+      </ul>
+      <p>On FreeBSD, GCC and GNU Make can be installed via ports or pkg. The OpenDoors library must be compiled from source. Once <code>libODoors.a</code> is available, the build system will link it automatically.</p>
+
+      <h3>Windows</h3>
+      <ul>
+        <li>Visual Studio 2022 (version 17) or later</li>
+        <li>The solution file <code>src/clans.sln</code> contains a project for every binary. Open it in Visual Studio and build the desired projects or the entire solution. <code>libODoors.a</code> must also be compiled and available for the linker. Alternatively, MinGW-w64 with GCC and GNU Make can be used with the GNUmakefile path described below.</li>
+      </ul>
+    </div>
+
+    <!-- 1.2 BUILDING FROM SOURCE -->
+    <div class="doc-section" id="building">
+      <div class="section-id">[1.2]</div>
+      <h2>Building from Source</h2>
+      <p>All source files are in <code>src/</code>. Data source files are in <code>data/</code>.</p>
+
+      <h3>Unix / MinGW -- GNUmakefile</h3>
+      <table class="terms">
+        <tr><th>Command</th><th>Description</th></tr>
+        <tr><td><code>gmake -j8</code></td><td>Build game binaries and data (PAK)</td></tr>
+        <tr><td><code>gmake -j8 game</code></td><td>Build game binaries only</td></tr>
+        <tr><td><code>gmake -j8 devkit</code></td><td>Build devkit tools only</td></tr>
+        <tr><td><code>gmake clean</code></td><td>Remove object files and local copies</td></tr>
+        <tr><td><code>gmake deepclean</code></td><td>Full clean, including bin/ directories</td></tr>
+        <tr><td><code>gmake DEBUG=1 game</code></td><td>Debug build with full warnings and <code>-g</code></td></tr>
+      </table>
+
+      <p>Build output goes to <code>bin/&lt;os&gt;.&lt;arch&gt;.&lt;flavour&gt;/</code> -- for example:</p>
+      <pre>bin/freebsd.amd64.opt/      Release build on FreeBSD/amd64
+bin/freebsd.amd64.debug/    Debug build</pre>
+
+      <p>The <code>game</code> target also copies binaries and <code>clans.pak</code> to the project root directory, which is where the <code>test/</code> instance expects to find them. The release build uses <code>-Os -flto</code>. The debug build enables <code>-Wall -Wextra -Wconversion -pedantic -g -O0</code>.</p>
+
+      <h3>Windows -- Visual Studio 2022</h3>
+      <p>Open <code>src/clans.sln</code>. The solution contains one project per binary. Build individual projects or the full solution. Output goes to the standard VS output directories (<code>Debug/</code> or <code>Release/</code> under each project). Data files must still be built using the devkit tools.</p>
+    </div>
+
+    <!-- 1.3 RUNNING AND TESTING -->
+    <div class="doc-section" id="testing">
+      <div class="section-id">[1.3]</div>
+      <h2>Running and Testing</h2>
+      <p>There are no automated tests. The <code>test/</code> directory contains a pre-configured game instance for manual verification:</p>
+      <pre>cd test/
+./clans       Run the main game
+./reset       Run the maintenance reset
+./config      Run the configuration utility
+./pcedit      Edit player characters</pre>
+
+      <p>After <code>gmake game</code>, binaries and <code>clans.pak</code> are copied to the project root alongside <code>test/</code>. The shell scripts in <code>test/</code> expect the binaries in the parent directory (<code>../clans</code>, etc.).</p>
+      <p>The devkit tool <code>qtest</code> allows testing a single quest event script outside of the full game -- useful when developing new quests.</p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- SOURCE CODE MAP                                                    -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- 2.1 MODULE SUMMARY -->
+    <div class="doc-section" id="modules">
+      <div class="section-id">[2.1]</div>
+      <h2>Module Summary</h2>
+      <p>All 61 source files live in <code>src/</code>. They are organized as follows:</p>
+
+      <table class="terms">
+        <tr><th>Category</th><th>Files</th></tr>
+        <tr><td>Core game engine</td><td><code>clans.c</code>, <code>game.c</code>, <code>empire.c</code>, <code>user.c</code>, <code>fight.c</code>, <code>village.c</code></td></tr>
+        <tr><td>Inter-BBS networking</td><td><code>ibbs.c</code>, <code>myibbs.c</code>, <code>packet.h</code>, <code>interbbs.h</code></td></tr>
+        <tr><td>Gameplay systems</td><td><code>alliance.c</code>, <code>alliancem.c</code>, <code>quests.c</code>, <code>spells.c</code>, <code>items.c</code>, <code>npc.c</code>, <code>class.c</code>, <code>trades.c</code>, <code>pawn.c</code>, <code>voting.c</code>, <code>news.c</code>, <code>mail.c</code>, <code>maint.c</code>, <code>help.c</code>, <code>scores.c</code>, <code>event.c</code>, <code>menus.c</code>, <code>menus2.c</code></td></tr>
+        <tr><td>Data serialization</td><td><code>serialize.c</code>, <code>deserialize.c</code>, <code>myopen.c</code></td></tr>
+        <tr><td>Platform abstraction</td><td><code>unix_wrappers.c</code>, <code>win_wrappers.c</code>, <code>platform.c</code>, <code>door.c</code></td></tr>
+        <tr><td>Content and strings</td><td><code>language.c</code>, <code>mstrings.h</code></td></tr>
+        <tr><td>Utilities</td><td><code>input.c</code>, <code>video.c</code>, <code>random.c</code>, <code>parsing.c</code>, <code>misc.c</code>, <code>tools.c</code>, <code>readcfg.c</code>, <code>clansini.c</code>, <code>semfile.c</code>, <code>system.c</code>, <code>console.c</code>, <code>reg.c</code></td></tr>
+        <tr><td>Game utilities</td><td><code>config.c</code>, <code>reset.c</code>, <code>pcedit.c</code></td></tr>
+        <tr><td>DevKit tools</td><td><code>ecomp.c</code>, <code>mcomp.c</code>, <code>mclass.c</code>, <code>mitems.c</code>, <code>mspells.c</code>, <code>makenpc.c</code>, <code>makepak.c</code>, <code>langcomp.c</code>, <code>chew.c</code>, <code>gum.c</code>, <code>qtest.c</code>, <code>install.c</code></td></tr>
+      </table>
+
+      <h3>Compiled Binaries</h3>
+      <table class="terms">
+        <tr><th>Target</th><th>Binaries</th></tr>
+        <tr><td>DOOR_BINARIES</td><td><code>clans</code>, <code>config</code>, <code>pcedit</code>, <code>reset</code></td></tr>
+        <tr><td>DEVKIT_BINARIES</td><td><code>chew</code>, <code>ecomp</code>, <code>langcomp</code>, <code>makenpc</code>, <code>makepak</code>, <code>mcomp</code>, <code>mclass</code>, <code>mitems</code>, <code>mspells</code>, <code>qtest</code></td></tr>
+      </table>
+    </div>
+
+    <!-- 2.2 CORE GAME ENGINE -->
+    <div class="doc-section" id="core-engine">
+      <div class="section-id">[2.2]</div>
+      <h2>Core Game Engine</h2>
+      <table class="terms">
+        <tr><th>File</th><th>Description</th></tr>
+        <tr><td><code>clans.c</code></td><td>Entry point. Command-line parsing, pre-game menu, and daily maintenance gate. <code>main()</code> lives here.</td></tr>
+        <tr><td><code>game.c</code></td><td>Game-state management. Loads and saves <code>GAME.DAT</code>, which records the active game instance: start date, IBBS flag, next clan ID, and per-game settings.</td></tr>
+        <tr><td><code>empire.c</code></td><td>(~100KB) Empire and domain management: buildings, army raising, tribute, and inter-BBS packet dispatch. This is the largest and most complex file in the codebase. Also processes incoming IBBS packets during maintenance.</td></tr>
+        <tr><td><code>user.c</code></td><td>(~68KB) Player and clan data management: file I/O, user list maintenance, clan creation and deletion, and travel state.</td></tr>
+        <tr><td><code>fight.c</code></td><td>(~50KB) Combat engine: damage calculations, the battle loop, and post-fight effects including experience gain, loot, and casualties.</td></tr>
+        <tr><td><code>village.c</code></td><td>Village state management. Loads and saves <code>VILLAGE.DAT</code>; manages tax rates, market prices, colour schemes, and village flags.</td></tr>
+      </table>
+    </div>
+
+    <!-- 2.3 INTER-BBS NETWORKING -->
+    <div class="doc-section" id="ibbs-net">
+      <div class="section-id">[2.3]</div>
+      <h2>Inter-BBS Networking</h2>
+      <table class="terms">
+        <tr><th>File</th><th>Description</th></tr>
+        <tr><td><code>ibbs.c</code></td><td>(~101KB) The IBBS subsystem. Reads and writes Fidonet-style packet files, processes all incoming packet types from remote BBSes, and drives the IBBS portion of daily maintenance. See <a href="#packet-types">section 4</a> for packet details; see <code>docs/ibbs-notes.txt</code> for the full protocol.</td></tr>
+        <tr><td><code>myibbs.c</code></td><td>Low-level Fidonet netmail message creation. Based on OpenDoors sample code by Brian Pirie. Constructs outbound netmail messages with kludge lines and INTL/FMPT/TOPT headers, with data files as attachments. Do not modify this file unless you have a clear understanding of the Fidonet message format.</td></tr>
+        <tr><td><code>packet.h</code></td><td>Packet-type constants (<code>PT_*</code>). See <a href="#packet-types">section 4.1</a>.</td></tr>
+        <tr><td><code>interbbs.h</code></td><td>Additional inter-BBS protocol definitions.</td></tr>
+      </table>
+    </div>
+
+    <!-- 2.4 GAMEPLAY SYSTEMS -->
+    <div class="doc-section" id="gameplay">
+      <div class="section-id">[2.4]</div>
+      <h2>Gameplay Systems</h2>
+      <table class="terms">
+        <tr><th>File</th><th>Description</th></tr>
+        <tr><td><code>alliance.c</code></td><td>Alliance management ADT: create, join, and disband player alliances.</td></tr>
+        <tr><td><code>alliancem.c</code></td><td>Alliance menus and player-facing interaction.</td></tr>
+        <tr><td><code>quests.c</code></td><td>Quest system. Loads <code>QUESTS.INI</code>, executes compiled <code>.e</code> event scripts, and tracks per-clan completion state.</td></tr>
+        <tr><td><code>spells.c</code></td><td>Spell system: casting, effects, and learning.</td></tr>
+        <tr><td><code>items.c</code></td><td>Item system: inventory, buying, and equipping.</td></tr>
+        <tr><td><code>npc.c</code></td><td>NPCs in town (streets, church, market, etc.). Loads NPC data from <code>clans.pak</code>. These are not the monsters fought in the mines.</td></tr>
+        <tr><td><code>class.c</code></td><td>Player classes and races (<code>PClass</code> struct).</td></tr>
+        <tr><td><code>trades.c</code></td><td>Trade and commerce between clans.</td></tr>
+        <tr><td><code>pawn.c</code></td><td>Pawn shop: selling and buying used items.</td></tr>
+        <tr><td><code>voting.c</code></td><td>Village leader voting mechanics.</td></tr>
+        <tr><td><code>news.c</code></td><td>Village news bulletin system.</td></tr>
+        <tr><td><code>mail.c</code></td><td>Internal mail between clans.</td></tr>
+        <tr><td><code>maint.c</code></td><td>Daily maintenance: stat recalculation, IBBS sync, online flag cleanup, score tabulation.</td></tr>
+        <tr><td><code>help.c</code></td><td>Interactive help system; displays <code>.hlp</code> files.</td></tr>
+        <tr><td><code>scores.c</code></td><td>Score calculation and leaderboard generation.</td></tr>
+        <tr><td><code>event.c</code></td><td>Mine event system. Runs compiled <code>.e</code> scripts for encounters within the mines.</td></tr>
+        <tr><td><code>menus.c</code></td><td>Main menu rendering and navigation.</td></tr>
+        <tr><td><code>menus2.c</code></td><td>Additional menus (split from <code>menus.c</code> when that file grew too large).</td></tr>
+      </table>
+    </div>
+
+    <!-- 2.5 DATA SERIALIZATION -->
+    <div class="doc-section" id="serialization-mod">
+      <div class="section-id">[2.5]</div>
+      <h2>Data Serialization</h2>
+      <table class="terms">
+        <tr><th>File</th><th>Description</th></tr>
+        <tr><td><code>serialize.c</code></td><td>Serializes structs to byte buffers using <code>pack_*</code> macros. All data written to disk passes through here.</td></tr>
+        <tr><td><code>deserialize.c</code></td><td>Deserializes byte buffers back into structs using <code>unpack_*</code> macros. Mirrors <code>serialize.c</code>.</td></tr>
+        <tr><td><code>myopen.c</code></td><td>File I/O wrappers. Applies XOR encryption when reading and writing, manages buffer allocation, and wraps <code>fopen</code>/<code>fread</code>/<code>fwrite</code>.</td></tr>
+        <tr><td><code>myopen.h</code></td><td>Declares all <code>BUF_SIZE_*</code> constants. These MUST match the actual serialized byte size of each struct. Update here when adding struct fields.</td></tr>
+      </table>
+      <p>See <a href="#serialization">section 3.2</a> for serialization rules and the full <code>BUF_SIZE</code> list.</p>
+    </div>
+
+    <!-- 2.6 PLATFORM ABSTRACTION -->
+    <div class="doc-section" id="platform">
+      <div class="section-id">[2.6]</div>
+      <h2>Platform Abstraction</h2>
+      <table class="terms">
+        <tr><th>File</th><th>Description</th></tr>
+        <tr><td><code>unix_wrappers.c</code></td><td>Unix-specific: <code>_fsopen()</code> with <code>fcntl</code> locking, <code>delay()</code> via <code>nanosleep()</code>, <code>FindFileList()</code> via <code>glob()</code>.</td></tr>
+        <tr><td><code>win_wrappers.c</code></td><td>Windows-specific: Win32 file enumeration, error dialog helpers, <code>FreeFileList()</code>.</td></tr>
+        <tr><td><code>platform.c</code></td><td>Platform detection and initialization.</td></tr>
+        <tr><td><code>door.c</code></td><td>BBS door interface (OpenDoors integration): string output, semaphore files, chat, status bar, file display, local-game loading.</td></tr>
+      </table>
+      <p>Conditional compilation uses <code>#ifdef UNIXY</code> for Unix-specific code and <code>#ifdef WIN</code> for Windows. Platform detection is handled by <code>mk/Platform.gmake</code>, which sets <code>UNIXY</code> or <code>WIN</code> and selects the appropriate wrapper file.</p>
+    </div>
+
+    <!-- 2.7 CONTENT AND STRINGS -->
+    <div class="doc-section" id="content-strings">
+      <div class="section-id">[2.7]</div>
+      <h2>Content and Strings</h2>
+      <table class="terms">
+        <tr><th>File</th><th>Description</th></tr>
+        <tr><td><code>language.c</code></td><td>Loads the compiled language file (<code>strings.xl</code>) into memory. Provides string lookup by index.</td></tr>
+        <tr><td><code>mstrings.h</code></td><td><strong style="color:var(--yellow)">CRITICAL.</strong> Every user-visible string in the game is referenced through a macro defined here. The macros expand to language file lookups by index. Never call <code>od_printf()</code> or similar functions with a string literal for user-visible text. Add new strings to <code>data/strings.txt</code> instead.</td></tr>
+      </table>
+      <p>See <a href="#lang-system">section 3.4</a> for the full strings workflow.</p>
+    </div>
+
+    <!-- 2.8 UTILITY MODULES -->
+    <div class="doc-section" id="utilities">
+      <div class="section-id">[2.8]</div>
+      <h2>Utility Modules</h2>
+      <table class="terms">
+        <tr><th>File</th><th>Description</th></tr>
+        <tr><td><code>input.c</code></td><td>User input handling and key mapping.</td></tr>
+        <tr><td><code>video.c</code></td><td>Terminal output: ANSI colour codes, screen layout, text input from the user. Hardware-specific; see <a href="#issues">section 6.1</a> before modifying.</td></tr>
+        <tr><td><code>random.c</code></td><td>Random number generation (<code>my_random()</code>).</td></tr>
+        <tr><td><code>parsing.c</code></td><td>String parsing utilities.</td></tr>
+        <tr><td><code>misc.c</code></td><td>Miscellaneous helpers (date calculations, etc.).</td></tr>
+        <tr><td><code>tools.c</code></td><td>General-purpose helper functions.</td></tr>
+        <tr><td><code>readcfg.c</code></td><td>INI/config file reader, used by <code>clansini.c</code>.</td></tr>
+        <tr><td><code>clansini.c</code></td><td>Loads and parses <code>CLANS.INI</code>: NPC file list, race and class overrides, language file path, etc.</td></tr>
+        <tr><td><code>semfile.c</code></td><td>Semaphore file management (<code>ONLINE.FLG</code>).</td></tr>
+        <tr><td><code>system.c</code></td><td>Low-level system calls for the door environment.</td></tr>
+        <tr><td><code>console.c</code></td><td>Error output and console text cursor helpers.</td></tr>
+        <tr><td><code>reg.c</code></td><td>Legacy registration stub (no longer enforced; registration was removed in the open-source release).</td></tr>
+      </table>
+    </div>
+
+    <!-- 2.9 TOOLS AND UTILITIES -->
+    <div class="doc-section" id="tools">
+      <div class="section-id">[2.9]</div>
+      <h2>Tools and Utilities</h2>
+
+      <h3>Game Utilities</h3>
+      <table class="terms">
+        <tr><th>File</th><th>Description</th></tr>
+        <tr><td><code>config.c</code></td><td>CONFIG -- interactive setup for node and BBS configuration. Run once before the game.</td></tr>
+        <tr><td><code>reset.c</code></td><td>RESET -- initializes or resets all game data files. Must be run after CONFIG on first install.</td></tr>
+        <tr><td><code>pcedit.c</code></td><td>PCEDIT -- sysop tool for editing player character data directly.</td></tr>
+        <tr><td><code>install.c</code></td><td>INSTALL -- installation helper (separate binary, not part of DOOR_BINARIES or DEVKIT_BINARIES).</td></tr>
+      </table>
+
+      <h3>DevKit Tools</h3>
+      <p>Built by <code>gmake devkit</code>:</p>
+      <table class="terms">
+        <tr><th>File</th><th>Description</th></tr>
+        <tr><td><code>langcomp.c</code></td><td>Compiles <code>strings.txt</code> into <code>strings.xl</code>.</td></tr>
+        <tr><td><code>ecomp.c</code></td><td>Compiles <code>.evt</code> event scripts into binary <code>.e</code> files.</td></tr>
+        <tr><td><code>mcomp.c</code></td><td>Compiles monster data text files.</td></tr>
+        <tr><td><code>mclass.c</code></td><td>Compiles class and race data.</td></tr>
+        <tr><td><code>mitems.c</code></td><td>Compiles item data.</td></tr>
+        <tr><td><code>mspells.c</code></td><td>Compiles spell data.</td></tr>
+        <tr><td><code>makenpc.c</code></td><td>Compiles NPC definitions.</td></tr>
+        <tr><td><code>makepak.c</code></td><td>Bundles compiled data files into <code>clans.pak</code>.</td></tr>
+        <tr><td><code>chew.c</code></td><td>Creates <code>.GUM</code> compressed archives for distribution.</td></tr>
+        <tr><td><code>gum.c</code></td><td>GUM archive format implementation (used by chew).</td></tr>
+        <tr><td><code>qtest.c</code></td><td>Quest script tester: runs a single <code>.e</code> file outside of the full game environment.</td></tr>
+      </table>
+      <p>Each devkit tool is documented in <code>devkit/*.txt</code>. See especially <code>devkit/clandev.txt</code> for a comprehensive content-creation guide.</p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- DATA ARCHITECTURE                                                  -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- 3.1 DATA STRUCTURES -->
+    <div class="doc-section" id="structs">
+      <div class="section-id">[3.1]</div>
+      <h2>Data Structures (structs.h)</h2>
+      <p>Almost all game data structures are defined in <code>src/structs.h</code>. The 42 structs are organized by function:</p>
+
+      <h3>Configuration and Runtime System</h3>
+      <table class="terms">
+        <tr><th>Struct</th><th>Description</th></tr>
+        <tr><td><code>struct IniFile</code></td><td>File handles for all loaded data files.</td></tr>
+        <tr><td><code>struct NodeData</code></td><td>BBS node config: number, dropfile dir, FOSSIL address, IRQ.</td></tr>
+        <tr><td><code>struct config</code></td><td>Global sysop config: BBS name, IBBS settings, logging flags.</td></tr>
+        <tr><td><code>struct system</code></td><td>Runtime state: dates, working directory, node number, local-game flags.</td></tr>
+      </table>
+
+      <h3>Core Game State</h3>
+      <table class="terms">
+        <tr><th>Struct</th><th>Description</th></tr>
+        <tr><td><code>struct game_data</code></td><td>Active game instance: start date, IBBS flag, next clan ID, game settings. Persisted in <code>GAME.DAT</code>.</td></tr>
+        <tr><td><code>struct game</code></td><td>Wrapper for <code>game_data</code> with init flag.</td></tr>
+        <tr><td><code>struct village_data</code></td><td>Village state: name, taxes, markets, colour scheme, flags. In <code>VILLAGE.DAT</code>.</td></tr>
+        <tr><td><code>struct village</code></td><td>Wrapper for <code>village_data</code> with init flag.</td></tr>
+        <tr><td><code>struct empire</code></td><td>Empire/domain: vault gold, land, buildings, alliance, spy data.</td></tr>
+        <tr><td><code>struct ResetData</code></td><td>Data written by RESET, read at startup.</td></tr>
+      </table>
+
+      <h3>Player and Combat</h3>
+      <table class="terms">
+        <tr><th>Struct</th><th>Description</th></tr>
+        <tr><td><code>struct pc</code></td><td>Player character: name, HP/SP, 6 attributes, equipped items, race, class, XP, level, training points, spells.</td></tr>
+        <tr><td><code>struct clan</code></td><td>Clan: ID, username, clan name/symbol, quests completed, NPC members, items, empire link.</td></tr>
+        <tr><td><code>struct Army</code></td><td>Military unit: footmen, axemen, knights, followers, combat rating.</td></tr>
+        <tr><td><code>struct Strategy</code></td><td>Combat strategy: attack/defend length and intensity, loot level.</td></tr>
+        <tr><td><code>struct SpellsInEffect</code></td><td>Active spell on a combatant: spell ID and remaining energy.</td></tr>
+        <tr><td><code>struct AttackResult</code></td><td>Battle outcome: success flag, damage, casualties, gold and land captured.</td></tr>
+        <tr><td><code>struct PClass</code></td><td>Player class or race: name, attribute modifiers, starting HP/gold, spells.</td></tr>
+      </table>
+
+      <h3>Items, Spells, and Content</h3>
+      <table class="terms">
+        <tr><th>Struct</th><th>Description</th></tr>
+        <tr><td><code>struct item_data</code></td><td>Item: name, type, attribute effects, market cost, village type restriction.</td></tr>
+        <tr><td><code>struct Spell</code></td><td>Spell: name, type flags, damage/heal text strings, SP cost.</td></tr>
+        <tr><td><code>struct BuildingType</code></td><td>Empire building: name, attack hit zones, land and energy use, construction cost.</td></tr>
+        <tr><td><code>struct Language</code></td><td>Loaded language file: string offsets and the full text pool.</td></tr>
+      </table>
+
+      <h3>Social, NPCs, and Alliances</h3>
+      <table class="terms">
+        <tr><th>Struct</th><th>Description</th></tr>
+        <tr><td><code>struct Alliance</code></td><td>Player alliance: ID, name, creator, member list, shared empire, items.</td></tr>
+        <tr><td><code>struct NPCInfo</code></td><td>NPC: name, topic list, loyalty score, wander type, village type restriction.</td></tr>
+        <tr><td><code>struct NPCNdx</code></td><td>NPC runtime: name, clan membership, current location.</td></tr>
+        <tr><td><code>struct Topic</code></td><td>Conversation topic: visibility flags, display name, script label.</td></tr>
+      </table>
+
+      <h3>Trade and Messages</h3>
+      <table class="terms">
+        <tr><th>Struct</th><th>Description</th></tr>
+        <tr><td><code>struct TradeList</code></td><td>Trade offer: gold, followers, troops.</td></tr>
+        <tr><td><code>struct TradeData</code></td><td>Trade request: offer/ask lists, clans.</td></tr>
+        <tr><td><code>struct Msg_Txt</code></td><td>Message body: text buffer, line offsets.</td></tr>
+        <tr><td><code>struct Message</code></td><td>Message header: to/from clan IDs and names, type, alliance, BBSID.</td></tr>
+      </table>
+
+      <h3>Inter-BBS Packets and Nodes</h3>
+      <table class="terms">
+        <tr><th>Struct</th><th>Description</th></tr>
+        <tr><td><code>struct Packet</code></td><td>IBBS packet header: type, GameID, date, source/destination BBSID, payload length.</td></tr>
+        <tr><td><code>struct AttackPacket</code></td><td>Attack payload: armies, target empire, source/dest BBSIDs.</td></tr>
+        <tr><td><code>struct SpyAttemptPacket</code></td><td>Spy mission: spy stats, target BBSID.</td></tr>
+        <tr><td><code>struct SpyResultPacket</code></td><td>Spy result: success, empire data.</td></tr>
+        <tr><td><code>struct ibbs_node_info</code></td><td>Node: BBS name, village, Fidonet address, routing, mailer type.</td></tr>
+        <tr><td><code>struct ibbs_node_reset</code></td><td>Reset tracking per remote node.</td></tr>
+        <tr><td><code>struct ibbs_node_recon</code></td><td>Recon tracking per remote node.</td></tr>
+        <tr><td><code>struct ibbs_node_attack</code></td><td>Attack packet index per remote node.</td></tr>
+        <tr><td><code>struct ibbs</code></td><td>Top-level IBBS state: this BBS's ID, node array, flags.</td></tr>
+      </table>
+
+      <h3>Other</h3>
+      <table class="terms">
+        <tr><th>Struct</th><th>Description</th></tr>
+        <tr><td><code>struct UserInfo</code></td><td>User record in <code>userlist.dat</code>: ClanID, name, deleted flag.</td></tr>
+        <tr><td><code>struct UserScore</code></td><td>Leaderboard entry: ClanID, symbol, name, score points.</td></tr>
+        <tr><td><code>struct LeavingData</code></td><td>Clan travel state: active, destination, troop counts.</td></tr>
+        <tr><td><code>struct Door</code></td><td>Door session state: initialized flag, pause-screen setting, colour mode.</td></tr>
+      </table>
+    </div>
+
+    <!-- 3.2 SERIALIZATION SYSTEM -->
+    <div class="doc-section" id="serialization">
+      <div class="section-id">[3.2]</div>
+      <h2>Serialization System</h2>
+      <p>Game data files are written and read using explicit serialization rather than raw struct dumps. This ensures a stable on-disk format that is independent of compiler layout and padding decisions.</p>
+      <p>The <code>serialize.c</code> / <code>deserialize.c</code> pair provides <code>pack_*</code> and <code>unpack_*</code> macros for each supported type:</p>
+
+      <table class="terms">
+        <tr><th>Pack / Unpack</th><th>Size</th><th>Description</th></tr>
+        <tr><td><code>pack_char</code> / <code>unpack_char</code></td><td>1 byte</td><td>Character</td></tr>
+        <tr><td><code>pack_int8</code> / <code>unpack_int8</code></td><td>1 byte</td><td>Signed integer</td></tr>
+        <tr><td><code>pack_int16_t</code> / <code>unpack_int16_t</code></td><td>2 bytes</td><td>Signed, little-endian</td></tr>
+        <tr><td><code>pack_int32_t</code> / <code>unpack_int32_t</code></td><td>4 bytes</td><td>Signed, little-endian</td></tr>
+        <tr><td><code>pack_bool</code> / <code>unpack_bool</code></td><td>1 byte</td><td>Boolean</td></tr>
+        <tr><td><code>pack_int16_tArr</code></td><td>n &times; 2 bytes</td><td>Array of <code>int16_t</code> values</td></tr>
+      </table>
+
+      <p>Both serialize and deserialize functions return <code>SIZE_MAX</code> on buffer overflow or underflow.</p>
+      <p>XOR encryption is applied by <code>myopen.c</code> at the file I/O layer. Each data file type has its own constant (see <a href="#xor">section 3.3</a>).</p>
+
+      <h3>Buffer Sizes (BUF_SIZE_* in myopen.h)</h3>
+      <p>Buffer sizes for every serialized struct are declared as <code>BUF_SIZE_*</code> constants in <code>myopen.h</code>. The current values are:</p>
+
+      <table class="terms terms-compact">
+        <tr><th>Constant</th><th>Size</th><th>Constant</th><th>Size</th></tr>
+        <tr><td><code>BUF_SIZE_Alliance</code></td><td>2121</td><td><code>BUF_SIZE_Army</code></td><td>27</td></tr>
+        <tr><td><code>BUF_SIZE_AttackPacket</code></td><td>192</td><td><code>BUF_SIZE_AttackResult</code></td><td>263</td></tr>
+        <tr><td><code>BUF_SIZE_clan</code></td><td>2249</td><td><code>BUF_SIZE_empire</code></td><td>141</td></tr>
+        <tr><td><code>BUF_SIZE_game_data</code></td><td>105</td><td><code>BUF_SIZE_item_data</code></td><td>62</td></tr>
+        <tr><td><code>BUF_SIZE_Language</code></td><td>4032</td><td><code>BUF_SIZE_LeavingData</code></td><td>27</td></tr>
+        <tr><td><code>BUF_SIZE_Message</code></td><td>210</td><td><code>BUF_SIZE_MessageHeader</code></td><td>190</td></tr>
+        <tr><td><code>BUF_SIZE_Msg_Txt</code></td><td>84</td><td><code>BUF_SIZE_NPCInfo</code></td><td>1266</td></tr>
+        <tr><td><code>BUF_SIZE_NPCNdx</code></td><td>29</td><td><code>BUF_SIZE_Packet</code></td><td>38</td></tr>
+        <tr><td><code>BUF_SIZE_pc</code></td><td>140</td><td><code>BUF_SIZE_PClass</code></td><td>69</td></tr>
+        <tr><td><code>BUF_SIZE_Spell</code></td><td>39</td><td><code>BUF_SIZE_SpellsInEffect</code></td><td>4</td></tr>
+        <tr><td><code>BUF_SIZE_SpyAttemptPacket</code></td><td>88</td><td><code>BUF_SIZE_SpyResultPacket</code></td><td>186</td></tr>
+        <tr><td><code>BUF_SIZE_Strategy</code></td><td>5</td><td><code>BUF_SIZE_Topic</code></td><td>98</td></tr>
+        <tr><td><code>BUF_SIZE_TradeData</code></td><td>86</td><td><code>BUF_SIZE_TradeList</code></td><td>24</td></tr>
+        <tr><td><code>BUF_SIZE_UserInfo</code></td><td>65</td><td><code>BUF_SIZE_UserScore</code></td><td>61</td></tr>
+        <tr><td><code>BUF_SIZE_village_data</code></td><td>304</td><td></td><td></td></tr>
+      </table>
+
+      <div class="callout warn">
+        <strong>IMPORTANT:</strong> When adding a field to any serialized struct, you must:
+        <ol class="steps">
+          <li><div>Add <code>pack_*</code>/<code>unpack_*</code> calls to <code>serialize.c</code> and <code>deserialize.c</code>.</div></li>
+          <li><div>Update the corresponding <code>BUF_SIZE_*</code> constant in <code>myopen.h</code>.</div></li>
+          <li><div>The CRC field must always be the last field serialized.</div></li>
+        </ol>
+        Forgetting step 2 will cause silent data corruption or truncation.
+      </div>
+    </div>
+
+    <!-- 3.3 XOR ENCRYPTION CONSTANTS -->
+    <div class="doc-section" id="xor">
+      <div class="section-id">[3.3]</div>
+      <h2>XOR Encryption Constants</h2>
+      <p>Data files are XOR-encrypted byte-by-byte with a fixed per-type key defined in <code>src/defines.h</code>. This prevents casual editing of binary data files but is not a security mechanism. A determined attacker with access to the source code can decode any file trivially.</p>
+
+      <table class="terms">
+        <tr><th>Constant</th><th>Value</th><th>Used For</th></tr>
+        <tr><td><code>XOR_VILLAGE</code></td><td><code>9</code></td><td><code>village.dat</code></td></tr>
+        <tr><td><code>XOR_GAME</code></td><td><code>9</code></td><td><code>game.dat</code></td></tr>
+        <tr><td><code>XOR_USER</code></td><td><code>9</code></td><td><code>userlist.dat</code>, per-clan files</td></tr>
+        <tr><td><code>XOR_PC</code></td><td><code>9</code></td><td>Player character files</td></tr>
+        <tr><td><code>XOR_MSG</code></td><td><code>69</code></td><td>Message files</td></tr>
+        <tr><td><code>XOR_ITEMS</code></td><td><code>23</code></td><td>Item files</td></tr>
+        <tr><td><code>XOR_ALLIES</code></td><td><code>0xA3</code></td><td>Alliance files</td></tr>
+        <tr><td><code>XOR_TRADE</code></td><td><code>0x2B</code></td><td>Trade data files</td></tr>
+        <tr><td><code>XOR_IBBS</code></td><td><code>0x8A</code></td><td>IBBS state files</td></tr>
+        <tr><td><code>XOR_PACKET</code></td><td><code>0x47</code></td><td>Outgoing packet files</td></tr>
+        <tr><td><code>XOR_IPS</code></td><td><code>0x94</code></td><td>IPS data</td></tr>
+        <tr><td><code>XOR_TRAVEL</code></td><td><code>0x3B</code></td><td><code>LeavingData</code> / travel state files</td></tr>
+        <tr><td><code>XOR_ULIST</code></td><td><code>0xCE</code></td><td>User list broadcast packets</td></tr>
+        <tr><td><code>XOR_DISBAND</code></td><td><code>0x79</code></td><td>Disband / removal packets</td></tr>
+      </table>
+    </div>
+
+    <!-- 3.4 LANGUAGE AND STRING SYSTEM -->
+    <div class="doc-section" id="lang-system">
+      <div class="section-id">[3.4]</div>
+      <h2>Language and String System</h2>
+      <p>User-visible strings are not hardcoded in C source. They live in <code>data/strings.txt</code> and are compiled into the binary language file <code>data/strings.xl</code> by the <code>langcomp</code> devkit tool.</p>
+
+      <h3>Workflow for Adding or Changing a String</h3>
+      <ol class="steps">
+        <li><div>Add or edit the entry in <code>data/strings.txt</code>.</div></li>
+        <li><div>Run: <code>langcomp strings.txt strings.xl</code></div></li>
+        <li><div>Run: <code>makepak pak.lst clans.pak</code> (or copy <code>strings.xl</code> manually to the game directory for quick testing).</div></li>
+      </ol>
+
+      <p>In C code, strings are referenced through macros in <code>src/mstrings.h</code>:</p>
+      <pre>od_printf( STR_WELCOME );
+od_printf( STR_CLAN_DISBANDED );</pre>
+
+      <p>Each macro expands to a lookup in the loaded <code>Language</code> struct by index. The macros are the authoritative list of all user-visible strings. Do not add string literals to source code for any text that a player will see.</p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- INTER-BBS SYSTEM                                                   -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- 4.1 PACKET TYPES -->
+    <div class="doc-section" id="packet-types">
+      <div class="section-id">[4.1]</div>
+      <h2>Packet Types</h2>
+      <p>Inter-BBS packets are identified by the <code>PT_*</code> constants in <code>packet.h</code>.</p>
+
+      <table class="terms">
+        <tr><th>Constant</th><th>Value</th><th>Description</th></tr>
+        <tr><td><code>PT_CLANMOVE</code></td><td>0</td><td>Clan migrating to a remote BBS. Carries up to 6 player character records.</td></tr>
+        <tr><td><code>PT_DATAOK</code></td><td>1</td><td>Acknowledgment of a received <code>PT_CLANMOVE</code>.</td></tr>
+        <tr><td><code>PT_RESET</code></td><td>2</td><td>Game reset with new <code>game_data</code> payload.</td></tr>
+        <tr><td><code>PT_GOTRESET</code></td><td>3</td><td>Acknowledgment of <code>PT_RESET</code>.</td></tr>
+        <tr><td><code>PT_RECON</code></td><td>4</td><td>Reconnaissance request.</td></tr>
+        <tr><td><code>PT_GOTRECON</code></td><td>5</td><td>Reconnaissance response.</td></tr>
+        <tr><td><code>PT_NEWUSER</code></td><td>6</td><td>New user registration. Always sent to the League Controller (BBS ID 1) first.</td></tr>
+        <tr><td><code>PT_DELUSER</code></td><td>7</td><td>Delete user (system-generated, e.g. duplicate purge by the League Controller).</td></tr>
+        <tr><td><code>PT_ADDUSER</code></td><td>8</td><td>Add user. Broadcast FROM the LC to all nodes after <code>PT_NEWUSER</code> deduplication.</td></tr>
+        <tr><td><code>PT_SUBUSER</code></td><td>9</td><td>Subtract user (player-initiated removal).</td></tr>
+        <tr><td><code>PT_COMEBACK</code></td><td>10</td><td>Clan returning from another BBS.</td></tr>
+        <tr><td><code>PT_MSJ</code></td><td>11</td><td>Message posted across BBSes.</td></tr>
+        <tr><td><code>PT_ATTACK</code></td><td>12</td><td>Inter-BBS military attack.</td></tr>
+        <tr><td><code>PT_ATTACKRESULT</code></td><td>13</td><td>Attack result from the defending BBS.</td></tr>
+        <tr><td><code>PT_SPY</code></td><td>14</td><td>Spy mission attempt.</td></tr>
+        <tr><td><code>PT_SPYRESULT</code></td><td>15</td><td>Spy result from the target BBS.</td></tr>
+        <tr><td><code>PT_SCOREDATA</code></td><td>16</td><td>Score data from one BBS.</td></tr>
+        <tr><td><code>PT_SCORELIST</code></td><td>17</td><td>Score list broadcast.</td></tr>
+        <tr><td><code>PT_NEWNDX</code></td><td>18</td><td>New node index (<code>WORLD.NDX</code> update).</td></tr>
+        <tr><td><code>PT_ULIST</code></td><td>19</td><td>Full user list broadcast from the LC. Overwrites records for remote users only; never clobbers the home node's own users.</td></tr>
+      </table>
+    </div>
+
+    <!-- 4.2 PACKET FILENAMES -->
+    <div class="doc-section" id="packet-names">
+      <div class="section-id">[4.2]</div>
+      <h2>Packet Filenames</h2>
+      <p>Outgoing packet files follow the naming convention:</p>
+      <pre>clFFFTTTDDI</pre>
+
+      <table class="terms">
+        <tr><th>Field</th><th>Description</th></tr>
+        <tr><td><code>FFF</code></td><td>3-digit zero-padded source BBS ID</td></tr>
+        <tr><td><code>TTT</code></td><td>3-digit zero-padded destination BBS ID</td></tr>
+        <tr><td><code>DD</code></td><td>2-character league ID</td></tr>
+        <tr><td><code>I</code></td><td>Sequence index (starts at <code>'a'</code>, increments per batch)</td></tr>
+      </table>
+
+      <p>Example: <code>cl001002AAa</code> is the first outbound packet from BBS 001 to BBS 002 in league "AA".</p>
+      <p>Packets are written to the <code>outbound/</code> directory and attached to outgoing Fidonet netmail messages by <code>myibbs.c</code>.</p>
+      <p><code>BACKUP.DAT</code> tracks all in-flight packets. During maintenance, stale <code>PT_CLANMOVE</code> entries cause the clan to be re-added locally; stale <code>PT_ATTACK</code> entries return troops to the attacking side.</p>
+    </div>
+
+    <!-- 4.3 LEAGUE STRUCTURE AND ROLES -->
+    <div class="doc-section" id="league">
+      <div class="section-id">[4.3]</div>
+      <h2>League Structure and Roles</h2>
+      <p>Each BBS in the league is identified by a numeric BBSID. BBS ID 1 is the League Controller (LC), which is the authoritative node.</p>
+
+      <h3>New User Registration Flow</h3>
+      <ol class="steps">
+        <li><div>User registers on BBS X. BBS X sends <code>PT_NEWUSER</code> to the LC.</div></li>
+        <li><div>LC checks for duplicate names across all known users.</div></li>
+        <li><div>LC broadcasts <code>PT_ADDUSER</code> to every node in the league.</div></li>
+        <li><div>All nodes add the user to their local userlist on receipt.</div></li>
+      </ol>
+
+      <p>Periodically, the LC sends a full <code>PT_ULIST</code> to all nodes to re-synchronize the user list. <code>PT_ULIST</code> updates only records for users whose home BBS is not the receiving node; local users are never overwritten.</p>
+
+      <h3>Configuration Files</h3>
+      <table class="terms">
+        <tr><th>File</th><th>Description</th></tr>
+        <tr><td><code>WORLD.NDX</code></td><td>Node list: BBSID, BBS name, village name, Fidonet address, and routing. See <code>release/worldndx.smp</code>.</td></tr>
+        <tr><td><code>ROUTE.CFG</code></td><td>Routing and forwarding rules. See <code>release/route.smp</code>.</td></tr>
+      </table>
+
+      <p>The full IBBS protocol, including packet flow diagrams and edge case handling, is in <code>docs/ibbs-notes.txt</code>.</p>
+    </div>
+
+    <!-- 4.4 FURTHER READING -->
+    <div class="doc-section" id="further">
+      <div class="section-id">[4.4]</div>
+      <h2>Further Reading</h2>
+      <p><code>docs/ibbs-notes.txt</code> is the authoritative IBBS protocol reference. It documents every packet type in detail, the <code>BACKUP.DAT</code> recovery mechanism, and the full sequence for common operations like clan migration, inter-BBS attacks, and league resets.</p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- CONTENT AND THE DEVKIT                                             -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- 5.1 DATA FILES OVERVIEW -->
+    <div class="doc-section" id="data-files">
+      <div class="section-id">[5.1]</div>
+      <h2>Data Files Overview</h2>
+      <p>The game reads all content from <code>clans.pak</code>, a custom archive file similar in concept to a Quake PAK file. The PAK is assembled from compiled binary data by the <code>makepak</code> devkit tool.</p>
+
+      <h3>Files Inside clans.pak</h3>
+      <table class="terms">
+        <tr><th>File</th><th>Contents</th></tr>
+        <tr><td><code>strings.xl</code></td><td>Compiled language strings</td></tr>
+        <tr><td><code>monsters.mon</code></td><td>Monster definitions</td></tr>
+        <tr><td><code>items.itm</code></td><td>Item definitions</td></tr>
+        <tr><td><code>classes.cls</code></td><td>Player class definitions</td></tr>
+        <tr><td><code>races.cls</code></td><td>Race definitions</td></tr>
+        <tr><td><code>spells.spl</code></td><td>Spell definitions</td></tr>
+        <tr><td><code>npcquote.q</code></td><td>NPC dialogue</td></tr>
+        <tr><td><code>clans.npc</code></td><td>NPC definitions</td></tr>
+        <tr><td><code>eventmon.mon</code></td><td>Event encounter monster definitions</td></tr>
+        <tr><td><code>*.e</code></td><td>Compiled event scripts</td></tr>
+        <tr><td><code>*.hlp</code></td><td>In-game help files</td></tr>
+        <tr><td><code>*.asc</code></td><td>ANSI/ASCII screen art</td></tr>
+      </table>
+
+      <p>The source text files for all of the above live in <code>data/</code> and are compiled by devkit tools into their binary forms. <code>pak.lst</code> in <code>data/</code> lists exactly which compiled files are included in the PAK and what internal path each one gets.</p>
+    </div>
+
+    <!-- 5.2 BUILDING DATA FILES -->
+    <div class="doc-section" id="building-data">
+      <div class="section-id">[5.2]</div>
+      <h2>Building Data Files</h2>
+      <p>All commands below are run from the <code>data/</code> directory (or provide paths accordingly). The tools must be on your PATH or invoked with their full path from <code>bin/</code>.</p>
+
+      <table class="terms">
+        <tr><th>Command</th><th>Output</th></tr>
+        <tr><td><code>langcomp strings.txt strings.xl</code></td><td>Language file</td></tr>
+        <tr><td><code>mcomp monsters.txt monsters.mon</code></td><td>Monsters</td></tr>
+        <tr><td><code>mcomp eventmon.txt eventmon.mon</code></td><td>Event monsters</td></tr>
+        <tr><td><code>mcomp npc-pc.txt npc-pc.mon</code></td><td>NPC PC stats</td></tr>
+        <tr><td><code>mitems items.txt items.itm</code></td><td>Items</td></tr>
+        <tr><td><code>mspells spells.txt spells.spl</code></td><td>Spells</td></tr>
+        <tr><td><code>mclass classes.txt classes.cls</code></td><td>Classes</td></tr>
+        <tr><td><code>mclass races.txt races.cls</code></td><td>Races</td></tr>
+        <tr><td><code>makenpc npc-pc.mon npcquote.q clans.npc</code></td><td>NPC index</td></tr>
+        <tr><td><code>ecomp foo.evt foo.e</code></td><td>Event script</td></tr>
+        <tr><td><code>makepak pak.lst clans.pak</code></td><td>Bundle into PAK</td></tr>
+      </table>
+
+      <p>After modifying any source data file, you must recompile it and rebuild <code>clans.pak</code> before the changes will appear in the game.</p>
+      <p>The <code>genall.bat</code> script in <code>data/</code> was the original batch runner for all of the above steps. Under Unix, run the commands individually or write a shell script to automate them.</p>
+      <p>Each tool is documented in <code>devkit/*.txt</code>. See <code>devkit/clandev.txt</code> for a comprehensive guide to creating quests, NPCs, and monsters.</p>
+    </div>
+
+    <!-- 5.3 EVENT SCRIPTS -->
+    <div class="doc-section" id="event-scripts">
+      <div class="section-id">[5.3]</div>
+      <h2>Event Scripts</h2>
+      <p>Events are scripts for mine encounters and quests. They are written in a simple compiled scripting language and processed by <code>event.c</code> and <code>quests.c</code> at runtime.</p>
+
+      <h3>Key Scripting Commands</h3>
+      <table class="terms">
+        <tr><th>Command</th><th>Description</th></tr>
+        <tr><td><code>Event BlockName</code></td><td>Begin a named block.</td></tr>
+        <tr><td><code>End</code></td><td>End the block (stop execution).</td></tr>
+        <tr><td><code>Text "message"</code></td><td>Display text to the player.</td></tr>
+        <tr><td><code>Input [Label] [text]</code></td><td>Numbered-choice menu; jumps to Label.</td></tr>
+        <tr><td><code>Option [Char] [Label]</code></td><td>Single-keystroke option.</td></tr>
+        <tr><td><code>Fight [monster] [...]</code></td><td>Initiate a combat encounter.</td></tr>
+        <tr><td><code># comment</code></td><td>Line comment.</td></tr>
+      </table>
+
+      <p>Scripts are compiled from <code>.evt</code> (source) to <code>.e</code> (binary) using <code>ecomp</code>. The compiled <code>.e</code> files are what the game actually loads.</p>
+
+      <h3>Registering Quests in QUESTS.INI</h3>
+      <table class="terms">
+        <tr><th>Field</th><th>Description</th></tr>
+        <tr><td><code>Name</code></td><td>Display name shown to the player in the quest list.</td></tr>
+        <tr><td><code>File</code></td><td>Path to the compiled <code>.e</code> script.</td></tr>
+        <tr><td><code>Index</code></td><td>Entry-point block name in the script.</td></tr>
+        <tr><td><code>Known</code></td><td>Quest is visible from the start.</td></tr>
+      </table>
+
+      <h3>Quest Help Entries (QUESTS.HLP)</h3>
+      <p>Quest descriptions shown in the help system live in <code>QUESTS.HLP</code>. Each entry follows this format:</p>
+      <pre>^Quest Name
+Description text.
+^END</pre>
+
+      <p>See <code>devkit/ecomp.txt</code> for the full event command reference, and <code>devkit/event1.evt</code> through <code>event5.evt</code> for worked examples. The <code>QUESTS.INI</code> and <code>QUESTS.HLP</code> in the <code>release/</code> directory are the reference versions for the built-in quest set.</p>
+    </div>
+
+    <!-- 5.4 HELP FILES -->
+    <div class="doc-section" id="help-files">
+      <div class="section-id">[5.4]</div>
+      <h2>Help Files</h2>
+      <p>The in-game F1/? help system loads plain ASCII <code>.hlp</code> files bundled in <code>clans.pak</code>. Each file covers one topic area. Current files:</p>
+
+      <table class="terms">
+        <tr>
+          <td><code>army.hlp</code></td>
+          <td><code>bulletin.hlp</code></td>
+          <td><code>church.hlp</code></td>
+          <td><code>citizen.hlp</code></td>
+        </tr>
+        <tr>
+          <td><code>clans.hlp</code></td>
+          <td><code>combat.hlp</code></td>
+          <td><code>empire.hlp</code></td>
+          <td><code>items.hlp</code></td>
+        </tr>
+        <tr>
+          <td><code>menus.hlp</code></td>
+          <td><code>newbie.hlp</code></td>
+          <td><code>races.hlp</code></td>
+          <td><code>ruler.hlp</code></td>
+        </tr>
+        <tr>
+          <td><code>spells.hlp</code></td>
+          <td><code>stats.hlp</code></td>
+          <td><code>strategy.hlp</code></td>
+          <td><code>village.hlp</code></td>
+        </tr>
+        <tr>
+          <td><code>war.hlp</code></td>
+          <td><code>wizard.hlp</code></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </table>
+
+      <p>To add a new help topic, create a <code>.hlp</code> file, add it to <code>pak.lst</code>, and register it in <code>help.c</code>. Help files are plain text; ANSI colour codes are supported.</p>
+    </div>
+
+    <!-- 5.5 INTERNAL %-CODES -->
+    <div class="doc-section" id="pct-codes">
+      <div class="section-id">[5.5]</div>
+      <h2>Internal %-codes</h2>
+      <p><code>rputs()</code> in <code>door.c</code> processes %-codes embedded in any displayed text. The general-purpose codes (<code>%P</code>, <code>%C</code>, <code>%L</code>, <code>%R</code>, <code>%D</code>, <code>%B</code>, <code>%V</code>) and the game-state codes (<code>%F</code>, <code>%M</code>, <code>%1</code>, <code>%2</code>, <code>%X</code>, <code>%Q</code>, <code>%N</code>, <code>%T</code>, <code>%Y</code>) are documented in <code>clans.txt</code> section 1.9.</p>
+
+      <p>The following codes are used internally by <code>strings.txt</code> and the combat system. They depend on transient state that is only valid during specific game routines and are not useful in quest packs or sysop-editable files:</p>
+
+      <table class="terms">
+        <tr><th>Code</th><th>Description</th></tr>
+        <tr><td><code>%SS</code></td><td>Spell cast source name (<code>Spells_szCastSource</code>)</td></tr>
+        <tr><td><code>%SD</code></td><td>Spell cast destination name (<code>Spells_szCastDestination</code>)</td></tr>
+        <tr><td><code>%SV</code></td><td>Spell cast value (<code>Spells_CastValue</code>)</td></tr>
+        <tr><td><code>%Z</code></td><td>Truncate line -- returns from <code>rputs()</code> immediately</td></tr>
+      </table>
+
+      <p><code>%SS</code>, <code>%SD</code>, and <code>%SV</code> are populated only during spell resolution in <code>fight.c</code>. Outside that context, they contain stale or empty values.</p>
+      <p><code>%Z</code> silently discards the rest of the current <code>rputs()</code> call. It has no practical use in content files.</p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- KNOWN ISSUES AND TECHNICAL DEBT                                    -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- 6.1 CURRENT ISSUES -->
+    <div class="doc-section" id="issues">
+      <div class="section-id">[6.1]</div>
+      <h2>Current Issues</h2>
+
+      <h3>XOR encryption is trivially weak</h3>
+      <p>The per-file XOR keys in <code>defines.h</code> are visible in the source. Anyone with the source can decode and modify any data file. This has always been the case; the original author acknowledged it explicitly. Do not rely on it for security. See <a href="#improvements">section 6.2</a> for the recommended approach.</p>
+
+      <h3>video.c is hardware-specific</h3>
+      <p>The terminal output layer carries assumptions from the original DOS/serial-port environment. It works correctly on current platforms but is fragile. Review the full file before making any changes to the terminal output layer.</p>
+
+      <h3>ibbs.c and empire.c are large and complex</h3>
+      <p>At ~100KB each, these files pre-date the current serialization and platform abstraction layers and contain legacy patterns. Changes here require extra care and thorough manual testing.</p>
+
+      <h3>Some user-visible strings are still hardcoded</h3>
+      <p>Despite the language system, a number of string literals remain in the C source that should be in <code>strings.txt</code>. Any such string is a localization gap and a maintenance burden.</p>
+
+      <h3>No automated tests</h3>
+      <p>All verification is manual via the <code>test/</code> directory. A bug in the IBBS path, for example, can only be caught by running a two-node local league and exercising the specific code path.</p>
+    </div>
+
+    <!-- 6.2 SUGGESTED IMPROVEMENTS -->
+    <div class="doc-section" id="improvements">
+      <div class="section-id">[6.2]</div>
+      <h2>Suggested Improvements</h2>
+      <p>These are the original author's recommendations, still valid:</p>
+
+      <h3>1. Replace the Fidonet transport with TCP sockets</h3>
+      <p>The current IBBS system requires a configured Fidonet mailer (Binkley or compatible) at every node. This is the biggest practical barrier to setting up an IBBS league. A direct TCP packet exchange between nodes would eliminate this dependency.</p>
+
+      <h3>2. Replace XOR encryption with real packet authentication</h3>
+      <p>Ideally, sign packets with a per-league private key so that nodes can verify packet origin. This would close the cheating vector in competitive leagues.</p>
+
+      <h3>3. Harden the IBBS state machine</h3>
+      <p>The <code>BACKUP.DAT</code> recovery logic handles the common cases, but desync between nodes is still possible in some edge cases (e.g., a node missing a <code>PT_ADDUSER</code> and later receiving a <code>PT_ULIST</code> that includes that user's data).</p>
+
+      <p style="margin-top:20px">Additional modernization ideas:</p>
+
+      <h3>4. Add an automated test harness</h3>
+      <p>The quest event interpreter (<code>quests.c</code> / <code>event.c</code>) is the most tractable place to start; individual <code>.evt</code> scripts can be tested in isolation with <code>qtest</code>.</p>
+
+      <h3>5. Move remaining hardcoded strings to data/strings.txt</h3>
+      <p>A grep for <code>od_printf("</code> in the source will find them.</p>
+
+      <h3>6. Add CRC validation to all deserialization paths</h3>
+      <p>Currently, some deserialize functions check CRC and some do not. Consistent validation would catch file corruption much earlier and make debugging easier.</p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- CREATING A RELEASE                                                 -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- 7.1 BUILD TARGETS -->
+    <div class="doc-section" id="build-targets">
+      <div class="section-id">[7.1]</div>
+      <h2>Build Targets</h2>
+
+      <table class="terms">
+        <tr><th>Target</th><th>Description</th></tr>
+        <tr><td><code>gmake game</code></td><td>Build game binaries and copy them, along with <code>clans.pak</code> and release config, to the project root directory.</td></tr>
+        <tr><td><code>gmake devkit</code></td><td>Build devkit tools and copy them, along with <code>devkit/</code> documentation, to the project root directory.</td></tr>
+        <tr><td><code>gmake installer</code></td><td>Assemble a distribution <code>.zip</code>. Builds all binaries and data, stages them in <code>stage/</code>, runs <code>chew</code>, and outputs: <code>Clans-&lt;os&gt;-&lt;arch&gt;-0_97b1.zip</code></td></tr>
+        <tr><td><code>gmake devkit-installer</code></td><td>Assemble the devkit <code>.zip</code>: <code>ClansDevKit-&lt;os&gt;-&lt;arch&gt;-0_12.zip</code></td></tr>
+        <tr><td><code>gmake install</code></td><td>Install to <code>PREFIX</code>. Copies game binaries to <code>$(INSTALLDIR)</code> and data to the same.</td></tr>
+        <tr><td><code>gmake clean</code></td><td>Remove object files and local binary copies from the project root.</td></tr>
+        <tr><td><code>gmake deepclean</code></td><td>Full clean including the <code>bin/</code> directory.</td></tr>
+      </table>
+    </div>
+
+    <!-- 7.2 RELEASE ARTIFACTS -->
+    <div class="doc-section" id="artifacts">
+      <div class="section-id">[7.2]</div>
+      <h2>Release Artifacts</h2>
+
+      <h3>Complete Game Installation</h3>
+      <table class="terms">
+        <tr><th>Category</th><th>Files</th></tr>
+        <tr><td>Binaries</td><td><code>clans</code>, <code>config</code>, <code>pcedit</code>, <code>reset</code></td></tr>
+        <tr><td>Data</td><td><code>clans.pak</code> (monsters, items, spells, events, strings, NPCs, help files, and screen art)</td></tr>
+        <tr><td>Config</td><td><code>clans.ini</code>, <code>quests.ini</code></td></tr>
+        <tr><td>IBBS</td><td><code>route.cfg</code>, <code>world.ndx</code> (league-specific; see samples in <code>release/worldndx.smp</code> and <code>route.smp</code>)</td></tr>
+        <tr><td>Windows</td><td><code>runclans.bat</code> (launcher; edit paths for your setup)</td></tr>
+        <tr><td>Docs</td><td><code>release/clans.txt</code> (sysop reference)</td></tr>
+        <tr><td>AI quest</td><td><code>release/questgen.txt</code> (LLM quest generation guide), <code>release/prompt.md</code> (prompt for the LLM)</td></tr>
+      </table>
+
+      <h3>DevKit Installation</h3>
+      <table class="terms">
+        <tr><th>Category</th><th>Files</th></tr>
+        <tr><td>Binaries</td><td><code>chew</code>, <code>ecomp</code>, <code>langcomp</code>, <code>makenpc</code>, <code>makepak</code>, <code>mcomp</code>, <code>mclass</code>, <code>mitems</code>, <code>mspells</code>, <code>qtest</code></td></tr>
+        <tr><td>Docs</td><td><code>devkit/*.txt</code> (tool reference documentation)</td></tr>
+        <tr><td>Examples</td><td><code>devkit/event1.evt</code> through <code>event5.evt</code>, <code>devkit/example.ini</code></td></tr>
+      </table>
+
+      <h3>Copyright Notice</h3>
+      <p>"Originally copyright 1997-2002 Allen Ussher. Open source contributors. GPL v2."</p>
+    </div>
+
+  </main>
+
+  <footer>
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 Allen Ussher and contributors &middot; Released under the GNU GPL
+  </footer>
+
+</div>
+</body>
+</html>

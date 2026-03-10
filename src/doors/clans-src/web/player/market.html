@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — PLAYER GUIDE — THE MARKET</title>
+<link rel="stylesheet" href="../clans.css">
+<style>
+  .wrapper { --sidebar-w: 220px; --max-w: 1100px; }
+  ol.steps { list-style: none; counter-reset: step-counter; margin: 10px 0; }
+  ol.steps li { display: flex; counter-increment: step-counter; gap: 14px; font-size: 13px; color: var(--cyan-dim); line-height: 1.8; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--bg-panel); }
+  ol.steps li:last-child { border-bottom: none; }
+  ol.steps li::before { content: counter(step-counter); flex-shrink: 0; width: 26px; height: 26px; border: 1px solid #333333; display: flex; align-items: center; justify-content: center; font-family: 'VT323', monospace; font-size: 18px; color: #55FFFF; text-shadow: 0 0 6px #55FFFF; margin-top: 2px; }
+  .terms { border: 1px solid #333333; width: 100%; border-collapse: collapse; font-size: 12px; margin: 12px 0; }
+  .terms th { background: rgba(85,255,255,0.08); color: #55FFFF; text-shadow: 0 0 6px #55FFFF; padding: 8px 14px; text-align: left; border-bottom: 1px solid #333333; letter-spacing: 1px; }
+  .terms td { padding: 8px 14px; color: var(--cyan-dim); border-bottom: 1px solid var(--bg-panel); line-height: 1.7; vertical-align: top; }
+  .terms td:first-child { color: var(--cyan); white-space: nowrap; }
+  .terms tr:last-child td { border-bottom: none; }
+  .terms tr:hover td { background: rgba(85,255,255,0.06); }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="../index.html">⚔ THE CLANS</a>
+  <div class="topnav-links">
+    <a href="../index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label active">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="getting-started.html">Getting Started</a>
+        <a href="pre-game.html">Pre-Game Menu</a>
+        <a href="main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="mines.html">The Mines</a>
+        <a href="combat.html">Combat</a>
+        <a href="stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="market.html">The Market</a>
+        <a href="items.html">Items &amp; Equipment</a>
+        <a href="magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="training.html">Training Hall</a>
+        <a href="church.html">The Church</a>
+        <a href="town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="empires.html">Empires</a>
+        <a href="alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="communications.html">Communications</a>
+        <a href="npcs.html">NPCs</a>
+        <a href="travel.html">World Travel</a>
+        <a href="scoring.html">Scoring</a>
+        <a href="misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <a href="../sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">DevKit</span>
+      <div class="topnav-menu">
+        <a href="../devkit/index.html">PAK Development</a>
+        <a href="../devkit/questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <a href="../developer/index.html">Developer</a>
+    <a href="../whatsnew.html">What's New</a>
+  </div>
+</div>
+<div class="wrapper">
+  <header>
+    <div>
+      <div class="header-title">⚔ PLAYER GUIDE — THE MARKET</div>
+      <div class="header-sub">v0.97b2 · The Clans Player Reference Manual</div>
+    </div>
+  </header>
+
+  <nav>
+    <div class="nav-group-label">THE MARKET</div>
+    <a href="#sec-7-1"><span class="sec-id">7.1</span>Overview</a>
+    <a href="#sec-7-2"><span class="sec-id">7.2</span>Weapons, Armor, and Shields</a>
+    <a href="#sec-7-3"><span class="sec-id">7.3</span>Pawn Shop</a>
+    <a href="#sec-7-4"><span class="sec-id">7.4</span>Wizard's Shop</a>
+    <a href="#sec-7-5"><span class="sec-id">7.5</span>Trading</a>
+  </nav>
+
+  <main>
+
+    <!-- 7.1 OVERVIEW -->
+    <div class="doc-section" id="sec-7-1">
+      <div class="section-id">[7.1]</div>
+      <h2>Overview</h2>
+      <p>The market is where you buy and sell equipment for your clan. The available commands are:</p>
+      <table class="terms">
+        <tr><th>Key</th><th>Action</th></tr>
+        <tr><td><code>W</code></td><td>Buy weapons.</td></tr>
+        <tr><td><code>A</code></td><td>Buy armor.</td></tr>
+        <tr><td><code>S</code></td><td>Buy shields.</td></tr>
+        <tr><td><code>T</code></td><td>Trading. Make trades with other clans (not available on your first day).</td></tr>
+        <tr><td><code>P</code></td><td>Pawn shop. Buy and sell used items.</td></tr>
+        <tr><td><code>Z</code></td><td>Wizard's shop. Buy scrolls and spell books.</td></tr>
+        <tr><td><code>V</code></td><td>View stats.</td></tr>
+        <tr><td><code>/</code></td><td>Chat with villagers in the market.</td></tr>
+        <tr><td><code>Q</code></td><td>Return to the main menu.</td></tr>
+      </table>
+    </div>
+
+    <!-- 7.2 WEAPONS, ARMOR, AND SHIELDS -->
+    <div class="doc-section" id="sec-7-2">
+      <div class="section-id">[7.2]</div>
+      <h2>Weapons, Armor, and Shields</h2>
+      <p>Press <code>W</code>, <code>A</code>, or <code>S</code> to browse the weapon, armor, or shield shops. You will see a list of available items with their stats and prices. Prices are affected by the village's goods and sales tax (GST) set by the ruler.</p>
+      <p>To equip a purchased item, go to the item in your inventory and assign it to a member. Each member can equip one weapon, one set of armor, and one shield.</p>
+    </div>
+
+    <!-- 7.3 PAWN SHOP -->
+    <div class="doc-section" id="sec-7-3">
+      <div class="section-id">[7.3]</div>
+      <h2>Pawn Shop</h2>
+      <p>The pawn shop lets you buy used items at reduced prices or sell items you no longer need. The pawn shop is only available if the village has one built (see section 12.4). Higher pawn shop levels offer a better selection.</p>
+    </div>
+
+    <!-- 7.4 WIZARD'S SHOP -->
+    <div class="doc-section" id="sec-7-4">
+      <div class="section-id">[7.4]</div>
+      <h2>Wizard's Shop</h2>
+      <p>The wizard's shop sells magical items. It is only available if the village has a wizard's shop built. The commands are:</p>
+      <table class="terms">
+        <tr><th>Key</th><th>Action</th></tr>
+        <tr><td><code>S</code></td><td>Buy scrolls. Single-use spell items for combat.</td></tr>
+        <tr><td><code>B</code></td><td>Buy spell books. Teach a permanent spell to one member.</td></tr>
+        <tr><td><code>X</code></td><td>Examine item. Identify an item in your inventory. This costs 25% of the item's value.</td></tr>
+        <tr><td><code>V</code></td><td>View stats.</td></tr>
+        <tr><td><code>Q</code></td><td>Return to the market.</td></tr>
+      </table>
+    </div>
+
+    <!-- 7.5 TRADING -->
+    <div class="doc-section" id="sec-7-5">
+      <div class="section-id">[7.5]</div>
+      <h2>Trading</h2>
+      <p>Press <code>T</code> at the market to trade with another clan. Trading is not available on your first day. You select a clan to trade with and propose an exchange of gold, followers, or troops.</p>
+    </div>
+
+    <div class="page-nav">
+      <a class="prev" href="stats.html">Character Stats</a>
+      <a class="next" href="items.html">Items &amp; Equipment</a>
+    </div>
+  </main>
+
+  <footer>
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 Allen Ussher and contributors &middot; Released under the GNU GPL
+  </footer>
+</div>
+</body>
+</html>
