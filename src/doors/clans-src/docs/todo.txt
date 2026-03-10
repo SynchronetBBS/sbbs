@@ -10,10 +10,12 @@ Open Issues
 ===========
 Charisma stat has no effect ...................................   1.1
 Clean up mstrings.h GNUmakefile dependencies ..................   1.2
-stats.hlp Charisma description outdated ......................   1.3
+stats.hlp Charisma description outdated .......................   1.3
 install: rename prompt limited to 13 characters ...............   1.4
 install: silent truncation of GUM and INI filenames ...........   1.5
 install: UnixAttr.DAT left on disk on Windows .................   1.6
+Village types defined but never assigned ......................   1.7
+Add Charisma ACS condition for events and NPC chat ............   1.8
 
 
 
@@ -74,3 +76,69 @@ never cleaned up -- the chmod/unlink logic is inside #ifdef __unix__.
 The file should be deleted after extraction on all platforms.
 Source: install.c lines 420-430 (install path) and 473-483 (upgrade
 path).
+
+[1.7]  Village types defined but never assigned
+-------------------------------------------------------------------------------
+defines.h declares three village types (V_WOODLAND=1, V_COASTAL=2,
+V_WASTELAND=3) and items can be tagged with a VillageType so they only
+appear in matching villages (items.c:798).  However, Village.Data.VillageType
+is never set -- not by readcfg.c, config.c, reset.c, village.c, or any
+other code path.  It stays at its struct-zero default (0 == V_ALL), so items
+with VillageType 1-3 can never appear in the market.  The separate
+village_data.TownType field is always hardcoded to -1 ("unknown for now").
+
+The type names "Woodland", "Coastal", "Wasteland" come only from the
+#define identifiers; they appear nowhere in any user-facing string, menu,
+or documentation.
+
+Options: (a) finish the feature by adding a VillageType config keyword
+(or per-BBS assignment in InterBBS setup) so sysops can designate village
+types and the item filtering becomes meaningful; (b) remove the dead
+defines, the struct field, and the items.c filter if the feature is not
+wanted.
+
+[1.8]  Add Charisma ACS condition for events and NPC chat
+-------------------------------------------------------------------------------
+This would give the Charisma attribute ([1.1]) a gameplay role without
+touching the combat or empire code.
+
+The ACS evaluator in quests.c legal() already supports conditions for
+flags (G/H/P/D/T), quest completion (Q), gold ($), mine level (L/K),
+and random chance (R).  Add a new condition letter -- for example C --
+that tests the clan leader's Charisma score:
+
+    {C20}   true if leader's Charisma >= 20
+    {!C50}  true if leader's Charisma < 50
+
+Implementation sketch:
+
+    case 'C' :  // leader Charisma >= N
+        pcCurrentPos++;
+        iTemp = 0;
+        while (isdigit(*pcCurrentPos))
+            szIndex[iTemp++] = *(pcCurrentPos++);
+        szIndex[iTemp] = 0;
+        UseCurrent = true;
+        iTemp = ato16(szIndex, "Charisma", __func__);
+        bCurrent =
+            (PClan.Member[0]->Attributes[ATTR_CHARISMA] >= iTemp);
+        break;
+
+This follows the same pattern as the existing K (min mine level) case.
+PClan.Member[0] is the clan leader; a NULL check should be added for
+safety.
+
+Beyond events, ChatVillagers() in npc.c could also use the leader's
+Charisma to influence NPC visibility -- e.g. an NPC only appears in the
+chat list when Charisma exceeds a threshold stored in NPCInfo.  This
+would make the stat meaningful in everyday play: higher Charisma means
+access to more NPCs and their topics.
+
+PAK developers would then be able to write quests and NPCs that reward
+investing in Charisma, resolving [1.1] without any combat formula
+changes.  The stats.hlp description ([1.3]) could be updated to say
+Charisma affects NPC encounters and quest outcomes.
+
+Affected files: quests.c (legal), npc.c (ChatVillagers), structs.h
+(NPCInfo if adding a Charisma threshold field), clandev.txt (document
+the new ACS letter), stats.hlp (update description).

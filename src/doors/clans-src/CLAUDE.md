@@ -177,6 +177,17 @@ All C source files use **tabs** for indentation. When constructing `old_string` 
 - **`video.c`** is highly hardware-specific (legacy BBS serial port / terminal control).
 - Game logic has no automated tests; only the devkit tools are covered by integration tests.
 
+### Dead / unfinished features
+
+Several features have infrastructure in the code (defines, struct fields, filtering
+logic) but are never activated at runtime.  **Do not document these as working
+features** — always verify gameplay claims against the source.  See `docs/todo.txt`
+for full details.
+
+- **Charisma attribute** (`ATTR_CHARISMA`): tracked in `struct pc`, settable by classes/items/spells, displayed in stats, and trainable — but never read by any gameplay code.  It has no effect on combat, empire, NPC, or trading outcomes.  (todo.txt [1.1], [1.3])
+- **Village types** (`V_WOODLAND`, `V_COASTAL`, `V_WASTELAND`): defined in `defines.h`; items can be tagged with a `VillageType` and `items.c` filters on it — but `Village.Data.VillageType` is never set, so it stays 0 (`V_ALL`) and type-restricted items never appear.  (todo.txt [1.7])
+- **Protection period**: `DaysOfProtection` only guards against **empire attacks** (`empire.c`); `Fight_Clan()` in `fight.c` has no protection check, so clan-to-clan combat is always allowed.
+
 ## Dependencies
 
 - **OpenDoors library** (`libODoors.a`) — required for BBS door functionality, linked statically.
@@ -184,15 +195,16 @@ All C source files use **tabs** for indentation. When constructing `old_string` 
 
 ## Documentation Audiences
 
-Three audiences, each building on the previous:
+Four audiences, each building on the previous:
 
 | Audience | Role | Main doc | Location |
 |----------|------|----------|----------|
+| Player | Play the game on a BBS | `release/player.txt` | `release/` |
 | Sysop | Install binary, run on BBS, join IBBS leagues, install quest packs | `release/clans.txt` | `release/` |
 | PAK developer | Use devkit to create/customize items, monsters, spells, events, quest packs for distribution | `devkit/clandev.txt` | `devkit/` |
 | Clans developer | Modify C source code for the game itself | `docs/notes.txt` | `docs/` |
 
-Each audience is expected to be familiar with the documentation for all prior audiences (PAK developers know the sysop docs; Clans developers know both).
+Each audience is expected to be familiar with the documentation for all prior audiences (sysops know the player docs; PAK developers know both; Clans developers know all three).
 
 ## Documentation Format
 
@@ -243,7 +255,7 @@ Subsection body.
 
 - **Separators**: `===============================================================================` (79 `=`) between major chapters; `-------------------------------------------------------------------------------` (79 `-`) under section headers and at file top.
 - **Section IDs**: `[X.Y]  Title` where X is chapter, Y is section; `.0` is always the TOC.
-- **TOC entries**: description padded with `.` to column ~60, section number right-aligned at ~63.
+- **TOC entries**: all lines the same length (77 chars in `clans.txt` and `player.txt`); description padded with `.`, then spaces + section number right-aligned at the final column.  Single-digit IDs (`1.1`) get 3 leading spaces; double-digit IDs (`10.1`) or suffixed IDs (`1.1b`) get 2 leading spaces — the trailing character always lands at the same column.
 - **TOC groups**: group name followed by `====` underline (equal to group name width).
 - **Indentation**: 4 or 8 spaces for examples/code blocks; no tabs in documentation files.
 - **File excerpts**: delimited with `--[beginning of file]--` / `--[end of file]--------`.

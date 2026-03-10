@@ -1,0 +1,1134 @@
+
+
+
+
+The Clans -- Player Reference Manual v0.97b2
+-------------------------------------------------------------------------------
+Copyright (C) 1997-2026 Allen Ussher and contributors
+
+http://theclans.sourceforge.net
+
+Originally created by Allen Ussher.  Open source under the GNU General
+Public License v2.  See the source for contributor history.
+
+
+[0.0]  Table of Contents
+-------------------------------------------------------------------------------
+
+Getting Started
+===============
+Overview ..............................................................   1.1
+Creating a Clan .......................................................   1.2
+Your First Day ........................................................   1.3
+Protection ............................................................   1.4
+Game Settings .........................................................   1.5
+Daily Limits ..........................................................   1.6
+
+Pre-Game Menu
+=============
+Pre-Game Commands .....................................................   2.1
+
+Main Game Menu
+==============
+In-Game Commands ......................................................   3.1
+
+The Mines
+=========
+Overview ..............................................................   4.1
+Mine Levels ...........................................................   4.2
+Fighting Monsters .....................................................   4.3
+Fighting Other Clans ..................................................   4.4
+Quests ................................................................   4.5
+
+Combat
+======
+Overview ..............................................................   5.1
+Combat Commands .......................................................   5.2
+Turn Order ............................................................   5.3
+Spells in Combat ......................................................   5.4
+Scrolls ...............................................................   5.5
+Default Actions .......................................................   5.6
+Combat Outcomes .......................................................   5.7
+
+Character Stats and Leveling
+============================
+Attributes ............................................................   6.1
+Leveling Up ...........................................................   6.2
+Status Effects ........................................................   6.3
+
+The Market
+==========
+Overview ..............................................................   7.1
+Weapons, Armor, and Shields ...........................................   7.2
+Pawn Shop .............................................................   7.3
+Wizard's Shop .........................................................   7.4
+Trading ...............................................................   7.5
+
+Items and Equipment
+===================
+Item Types ............................................................   8.1
+Equipping Items .......................................................   8.2
+Quality ...............................................................   8.3
+
+Magic
+=====
+Overview ..............................................................   9.1
+Spell Types ...........................................................   9.2
+Books and Scrolls .....................................................   9.3
+
+Training Hall
+=============
+Overview ..............................................................  10.1
+Training Attributes ...................................................  10.2
+Adding and Releasing Members ..........................................  10.3
+
+The Church
+==========
+Overview ..............................................................  11.1
+Services ..............................................................  11.2
+Resurrection Costs ....................................................  11.3
+
+Town Hall
+=========
+Overview ..............................................................  12.1
+Citizen Menu ..........................................................  12.2
+Ruler Menu ............................................................  12.3
+Structures ............................................................  12.4
+Economics .............................................................  12.5
+Voting ................................................................  12.6
+Abdication ............................................................  12.7
+
+Empires
+=======
+Overview ..............................................................  13.1
+Buildings .............................................................  13.2
+Troops ................................................................  13.3
+Strategy ..............................................................  13.4
+Attacking .............................................................  13.5
+Spying ................................................................  13.6
+
+Alliances
+=========
+Overview ..............................................................  14.1
+Creating and Joining ..................................................  14.2
+
+Communications
+==============
+Overview ..............................................................  15.1
+Mail ..................................................................  15.2
+Public Messages and Chat ..............................................  15.3
+
+NPCs
+====
+Overview ..............................................................  16.1
+Talking to NPCs .......................................................  16.2
+
+World Travel
+============
+Overview ..............................................................  17.1
+Traveling .............................................................  17.2
+
+Scoring
+=======
+Point Values ..........................................................  18.1
+
+Miscellaneous
+=============
+Deleting Your Clan ....................................................  19.1
+Disbanding ............................................................  19.2
+News ..................................................................  19.3
+Viewing Stats .........................................................  19.4
+
+
+Getting Started
+===============================================================================
+
+[1.1]  Overview
+-------------------------------------------------------------------------------
+The Clans is a text-based fantasy role-playing game for bulletin board
+systems.  You lead a small clan of adventurers through a dangerous world
+of mines, monsters, rival clans, village politics, and empire warfare.
+
+Each day you have a limited number of actions.  You fight monsters in the
+mines to earn gold and experience, train your members, buy equipment, manage
+an empire, and compete against other players for control of the village.
+
+If your BBS participates in an InterBBS league, you can even travel to
+other villages on other BBSes and compete in a larger world.
+
+
+[1.2]  Creating a Clan
+-------------------------------------------------------------------------------
+When you first enter the game, you will be asked whether you want to create
+a clan.  If you accept, you will:
+
+    1. Choose a clan name (up to 24 characters, must be unique).
+    2. Create each member of your clan.  For every member you choose a
+       race and a class.  Each combination produces different starting
+       attributes, hit points, spell points, and known spells.
+    3. After reviewing each member's stats, you can accept them or
+       reroll for a different result.
+    4. Name each member (up to 12 characters each).
+
+Your first member is the clan leader and receives slightly higher starting
+stats than the others.  All starting gold from your members is pooled into
+your clan vault.
+
+
+[1.3]  Your First Day
+-------------------------------------------------------------------------------
+On your first day in the game, certain options are restricted.  You cannot
+travel to other villages or trade at the market.  Use this day to explore
+the mines, fight some monsters, and get familiar with the menus.
+
+You start at mine level 0.  Fight monsters to earn experience and gold,
+then visit the market to equip your members with weapons, armor, and
+shields.  Check the training hall to spend any training points you have
+earned.
+
+
+[1.4]  Protection
+-------------------------------------------------------------------------------
+New clans receive a period of protection during which other players
+cannot attack your empire.  The number of protection days is set by
+the sysop.  Once protection expires, any player can target your empire.
+
+
+[1.5]  Game Settings
+-------------------------------------------------------------------------------
+From the pre-game menu, press G to view the current game settings.  This
+shows the daily limits and other configuration values the sysop has chosen
+for this game, such as the number of mine fights and clan fights allowed
+per day.
+
+
+[1.6]  Daily Limits
+-------------------------------------------------------------------------------
+Each day you receive a fresh allotment of actions:
+
+    - Mine fights:  the number of monster battles you can have.
+    - Clan fights:  the number of player-vs-player battles you can have.
+    - Quest:  you may go on one quest per day.
+    - Chat:  you may chat with villagers up to 4 times per day.
+    - Church services:  mass, prayer, and blessing are each once per day.
+    - Economic changes:  the ruler may adjust each rate once per day.
+
+These limits reset during the daily maintenance cycle.
+
+
+Pre-Game Menu
+===============================================================================
+
+[2.1]  Pre-Game Commands
+-------------------------------------------------------------------------------
+Before entering the game proper, you see the pre-game menu.  The available
+commands are:
+
+    E   Enter the game.  Takes you to the main game menu.
+    B   Read the bulletin.  Displays the sysop's bulletin board posting.
+    V   Village stats.  Shows information about the current village.
+    I   Instructions.  Displays the game help file.
+    T   Today's news.  Read the news from today's game events.
+    Y   Yesterday's news.  Read the news from the previous day.
+    S   See scores.  Displays the clan rankings for this village.
+    G   Game settings.  Shows the current game configuration.
+    L   League scores.  Displays rankings across all villages in the
+        InterBBS league (only available if InterBBS is enabled).
+    H   Help.  Displays the general help screen.
+    Q   Quit.  Exit The Clans and return to the BBS.
+
+
+Main Game Menu
+===============================================================================
+
+[3.1]  In-Game Commands
+-------------------------------------------------------------------------------
+Once you enter the game, the main menu gives you access to all areas:
+
+    E   Enter the Mines.  Go underground to fight monsters.
+    M   Market.  Buy and sell weapons, armor, shields, and scrolls.
+    C   Communications.  Read and write mail, post public messages.
+    W   World Travel.  Travel to other villages (InterBBS only).
+    T   Town Hall.  Visit the village government and voting booth.
+    P   Empire.  Manage your clan's empire -- buildings, troops, and
+        strategy.
+    U   Church.  Attend mass, pray, receive blessings, and resurrect
+        fallen members.
+    H   Training Hall.  Train your members' attributes and manage
+        your roster.
+    A   Alliances.  Join or create alliances with other clans.
+    V   View Stats.  Display your clan's current statistics.
+    /   Chat.  Chat with other villagers in the street.
+    N   Newbie Help.  Display beginner tips.
+    !   Delete Clan.  Permanently delete your clan (confirmation
+        required).
+    Q   Quit.  Return to the pre-game menu.
+
+The V (view stats), ? (redisplay menu), and Q (quit) commands are
+available in nearly every menu throughout the game.
+
+
+The Mines
+===============================================================================
+
+[4.1]  Overview
+-------------------------------------------------------------------------------
+The mines are where you spend most of your time.  You descend into the
+mines to fight monsters for experience and gold, challenge other player
+clans, and go on quests.
+
+Each visit to the mines costs one fight from your daily allotment.  Choose
+your mine level carefully -- deeper levels have tougher monsters but better
+rewards.
+
+The mine menu commands are:
+
+    L   Fight monsters at your current mine level.
+    F   Fight another player's clan.
+    C   Change your mine level.
+    G   Go on a quest (once per day).
+    W   Who's here -- view the scores of other clans.
+    V   View your clan's stats.
+    /   Chat with other villagers in the mines.
+    Q   Return to the main menu.
+
+
+[4.2]  Mine Levels
+-------------------------------------------------------------------------------
+You can set your mine level from 0 to 20.  Higher levels contain stronger
+monsters that give more experience and gold.  If your clan is struggling,
+drop to a lower level.  If fights are too easy, move deeper.
+
+Your mine level is saved between sessions.  When you first create a clan,
+you start at level 0.
+
+
+[4.3]  Fighting Monsters
+-------------------------------------------------------------------------------
+Press L in the mines to fight a group of monsters.  The monsters you
+encounter are randomly selected based on your mine level and your clan
+members' levels.  Deeper mine levels and higher character levels produce
+harder opponents.
+
+Defeating monsters earns experience for your members (see section 5.7),
+gold for your vault, and sometimes followers for your empire.  The number
+of followers gained increases at higher mine levels.  A portion of your
+new followers may be conscripted into your army based on the village's
+conscription rate.
+
+
+[4.4]  Fighting Other Clans
+-------------------------------------------------------------------------------
+Press F in the mines to challenge another player's clan.  You will be
+shown a list of clans currently in the village.  Clan fights use your
+clan fight allotment (separate from mine fights).
+
+The combat system is the same as monster fights (see chapter 5), but
+the stakes are higher -- winning earns more points and losing costs
+more (see section 18.1).
+
+
+[4.5]  Quests
+-------------------------------------------------------------------------------
+Press G in the mines to go on a quest.  You may go on one quest per day.
+Quests are scripted adventures that may involve choices, NPC conversations,
+special fights, and rewards.  The available quests depend on what quest
+packs the sysop has installed.
+
+
+Combat
+===============================================================================
+
+[5.1]  Overview
+-------------------------------------------------------------------------------
+Combat in The Clans is turn-based.  Your clan members and the enemy take
+turns in an order determined by their agility and current health.  Each
+round, every living combatant gets one action.  Combat continues until
+one side is defeated, someone runs away, or 50 rounds have passed.
+
+
+[5.2]  Combat Commands
+-------------------------------------------------------------------------------
+During combat, when it is one of your members' turns, you choose an
+action:
+
+    A   Attack.  Strike the first available enemy.
+    S   Specific attack.  Choose which enemy to target.
+   1-9  Attack the enemy at that position number.
+    K   Cast a spell.  Choose from your known spells and pick a target.
+    E   Read a scroll.  Use a scroll item from your inventory.
+    I   Parry.  Skip your turn and do nothing (sometimes called idle).
+    R   Run away.  Attempt to flee the battle.
+    P   Player stats.  Display the current member's full statistics.
+    F   Fight to the death.  Commit to the battle -- no more running.
+    D   Use default action.  Execute your preset action (see section
+        5.6).
+    ?   Combat help.  Display the combat help screen.
+
+If you do not choose an action, the default is to attack (A).
+
+
+[5.3]  Turn Order
+-------------------------------------------------------------------------------
+Each round, the game recalculates the order in which combatants act.
+Characters with higher agility tend to act first.  Your current health
+also matters -- wounded characters slow down.  There is a small random
+factor so the order is not perfectly predictable.
+
+
+[5.4]  Spells in Combat
+-------------------------------------------------------------------------------
+Press K to cast a spell.  You will be shown your known spells and asked
+to choose one.  Each spell costs spell points (SP) to cast.  Some spells
+target enemies (damage, incapacitation), some target allies (healing,
+attribute modification), and some raise or banish undead creatures.
+
+If you run out of SP, you cannot cast spells until your points are
+restored (via the church blessing, leveling up, or waiting for the next
+day's reset).
+
+
+[5.5]  Scrolls
+-------------------------------------------------------------------------------
+Scrolls are single-use items that contain a spell.  Press E during combat
+to read a scroll from your inventory.  The scroll is consumed after use.
+Unlike casting a spell with K, reading a scroll does not cost any SP.
+
+
+[5.6]  Default Actions
+-------------------------------------------------------------------------------
+Each member can have a default action set.  This is the action taken when
+you press D during combat.  The default is a regular attack, but you can
+set it to cast a specific spell automatically.  This speeds up combat
+when you have a preferred tactic for each member.
+
+
+[5.7]  Combat Outcomes
+-------------------------------------------------------------------------------
+After combat ends, the results are tallied:
+
+    - Experience is awarded based on the damage your members dealt and
+      the enemies they defeated.  Knocking out or killing a stronger
+      enemy awards more experience.
+    - Gold may be looted from defeated monsters.
+    - Items may be found on defeated enemies.
+    - Clan points are awarded or deducted (see section 18.1).
+
+If all your members are knocked unconscious or killed, you lose the
+battle.  Dead members lose a small percentage of their maximum hit
+points permanently and must be resurrected at the church (see section
+11.3).  Unconscious members recover after the battle but must also
+be revived at the church if you want them at full strength.
+
+
+Character Stats and Leveling
+===============================================================================
+
+[6.1]  Attributes
+-------------------------------------------------------------------------------
+Each member has six attributes:
+
+    Agility        Determines how quickly you act in combat and how
+                   well you dodge enemy attacks.
+    Dexterity      Affects your accuracy when striking an enemy.
+    Strength       Governs how much damage your attacks deal.
+    Wisdom         Influences your magical abilities and spell
+                   effectiveness.
+    Armor Strength Reduces the damage you take from enemy attacks.
+    Charisma       Displayed in your stats but currently has no
+                   active effect in the game.
+
+All attributes range from 0 to 100.  You improve them by spending
+training points at the training hall (see section 10.2).
+
+
+[6.2]  Leveling Up
+-------------------------------------------------------------------------------
+As your members earn experience from combat, they will eventually level
+up.  Each level requires more experience than the last.  The maximum
+level is 100.
+
+When a member levels up, they receive 10 to 13 training points which
+you can spend at the training hall to improve their attributes or
+increase their maximum hit points or spell points.
+
+
+[6.3]  Status Effects
+-------------------------------------------------------------------------------
+Members can have the following status conditions:
+
+    Here           Healthy and ready for action.
+    Unconscious    Knocked out during combat.  Cannot fight until
+                   revived at the church.
+    Dead           Killed in combat.  Must be resurrected at the
+                   church.  Suffers a permanent loss of some maximum
+                   hit points.
+    Ran Away       Fled from combat.  Returns to normal after the
+                   battle.
+
+
+The Market
+===============================================================================
+
+[7.1]  Overview
+-------------------------------------------------------------------------------
+The market is where you buy and sell equipment for your clan.  The
+available commands are:
+
+    W   Buy weapons.
+    A   Buy armor.
+    S   Buy shields.
+    T   Trading.  Make trades with other clans (not available on
+        your first day).
+    P   Pawn shop.  Buy and sell used items.
+    Z   Wizard's shop.  Buy scrolls and spell books.
+    V   View stats.
+    /   Chat with villagers in the market.
+    Q   Return to the main menu.
+
+
+[7.2]  Weapons, Armor, and Shields
+-------------------------------------------------------------------------------
+Press W, A, or S to browse the weapon, armor, or shield shops.  You
+will see a list of available items with their stats and prices.  Prices
+are affected by the village's goods and sales tax (GST) set by the
+ruler.
+
+To equip a purchased item, go to the item in your inventory and assign
+it to a member.  Each member can equip one weapon, one set of armor,
+and one shield.
+
+
+[7.3]  Pawn Shop
+-------------------------------------------------------------------------------
+The pawn shop lets you buy used items at reduced prices or sell items
+you no longer need.  The pawn shop is only available if the village has
+one built (see section 12.4).  Higher pawn shop levels offer a better
+selection.
+
+
+[7.4]  Wizard's Shop
+-------------------------------------------------------------------------------
+The wizard's shop sells magical items.  It is only available if the
+village has a wizard's shop built.  The commands are:
+
+    S   Buy scrolls.  Single-use spell items for combat.
+    B   Buy spell books.  Teach a permanent spell to one member.
+    X   Examine item.  Identify an item in your inventory.  This
+        costs 25% of the item's value.
+    V   View stats.
+    Q   Return to the market.
+
+
+[7.5]  Trading
+-------------------------------------------------------------------------------
+Press T at the market to trade with another clan.  Trading is not
+available on your first day.  You select a clan to trade with and
+propose an exchange of gold, followers, or troops.
+
+
+Items and Equipment
+===============================================================================
+
+[8.1]  Item Types
+-------------------------------------------------------------------------------
+Items in The Clans fall into several categories:
+
+    Weapons        Increase your attack damage.
+    Armor          Increase your defense.
+    Shields        Provide additional protection.
+    Scrolls        Single-use spells that can be read during combat.
+    Spell Books    Permanently teach a spell to one member.
+    Miscellaneous  Various other items with special properties.
+
+Your clan can hold up to 30 items total.
+
+
+[8.2]  Equipping Items
+-------------------------------------------------------------------------------
+After purchasing or finding items, you must equip them on your members
+for them to take effect.  Each member can have one weapon, one set of
+armor, and one shield equipped at a time.  Unequipped items remain in
+your clan's shared inventory.
+
+
+[8.3]  Quality
+-------------------------------------------------------------------------------
+The quality of items available at the market varies day to day.  Market
+quality fluctuates between average, good, very good, and excellent.
+Better quality means better stats on the items for sale, but also
+higher prices.
+
+
+Magic
+===============================================================================
+
+[9.1]  Overview
+-------------------------------------------------------------------------------
+Magic plays an important role in The Clans.  Your members learn spells
+from their race and class at creation, and can learn additional spells
+by purchasing spell books from the wizard's shop.  Casting a spell
+costs spell points (SP).
+
+
+[9.2]  Spell Types
+-------------------------------------------------------------------------------
+Spells fall into six categories:
+
+    Healing        Restores hit points to allies.
+    Damage         Deals damage to enemies.
+    Modification   Temporarily changes attributes or other effects.
+    Incapacitation Prevents an enemy from acting on their next turn.
+    Raise Undead   Summons an undead creature to fight on your side.
+    Banish Undead  Destroys enemy undead creatures.
+
+Some spells can only target allies, some only enemies.  The spell
+description tells you what it does and who it can target.
+
+
+[9.3]  Books and Scrolls
+-------------------------------------------------------------------------------
+Spell books permanently teach one member a new spell.  Once learned, the
+member can cast that spell any time they have enough SP.
+
+Scrolls are single-use items.  They can be read during combat (press E)
+without spending any SP.  The scroll is consumed after one use.  Scrolls
+are useful for casting spells your members have not learned or when you
+are low on SP.
+
+
+Training Hall
+===============================================================================
+
+[10.1]  Overview
+-------------------------------------------------------------------------------
+The training hall lets you improve your members' abilities and manage
+your clan roster.  It is only available if the village has a training
+hall built.  Higher training hall levels reduce training costs.
+
+The commands are:
+
+    T   Train a member.  Spend training points to improve attributes.
+    A   Add a new member to your clan.
+    L   Release a member from your clan.
+    V   View stats.
+    /   Chat with villagers in the training hall.
+    Q   Return to the main menu.
+
+
+[10.2]  Training Attributes
+-------------------------------------------------------------------------------
+When you train a member, you spend that member's training points to
+increase their attributes.  The base cost in training points for each
+attribute is:
+
+    1 - Agility ............. 10 points
+    2 - Dexterity ........... 10 points
+    3 - Strength ............ 20 points
+    4 - Wisdom .............. 10 points
+    5 - Armor Strength ...... 30 points
+    6 - Charisma ............ 40 points
+    7 - Max Hit Points ...... 10 points
+    8 - Max Spell Points .... 10 points
+
+Each level of the village training hall reduces these costs by 1 point
+(to a minimum of 1).  For example, at a level-3 training hall, training
+agility costs only 7 points instead of 10.
+
+Attributes are capped at 100.  Max HP and Max SP are capped at 15,000.
+Training Max HP adds 3 to 11 points per level, and training Max SP
+adds 2 to 6 points per level.
+
+
+[10.3]  Adding and Releasing Members
+-------------------------------------------------------------------------------
+Press A to recruit a new permanent member.  You choose their race and
+class just like during clan creation.  The maximum number of permanent
+members depends on the game's configuration (up to 6).
+
+Press L to release a member from your clan.  Released members are gone
+permanently -- their equipment is lost.  Use this with caution.
+
+
+The Church
+===============================================================================
+
+[11.1]  Overview
+-------------------------------------------------------------------------------
+The church provides healing and spiritual services.  It is only available
+if the village has a church built.  Higher church levels unlock more
+powerful services.
+
+The commands are:
+
+    M   Attend mass (once per day).
+    P   Pray (once per day).
+    B   Blessing -- fully restores your entire clan's SP (requires
+        church level 2 or higher, once per day).
+    U   Revive unconscious -- resurrect unconscious members (requires
+        church level 2 or higher).
+    D   Resurrect dead -- raise dead members (requires church level 3
+        or higher).
+    V   View stats.
+    /   Chat with villagers in the church.
+    Q   Return to the main menu.
+
+
+[11.2]  Services
+-------------------------------------------------------------------------------
+Attending mass and praying are daily rituals that may grant small
+blessings or bonuses.  Each can be done once per day.
+
+The blessing (B) fully restores all present members' spell points to
+their maximums.  This is very useful when your clan has exhausted its
+SP during combat.
+
+Reviving unconscious members (U) and resurrecting dead members (D)
+cost gold from your clan's vault.  The cost depends on the member's
+level.
+
+
+[11.3]  Resurrection Costs
+-------------------------------------------------------------------------------
+The cost to restore a fallen member depends on their level:
+
+    Revive Unconscious:  (Level + 1) x 300 gold per member.
+    Resurrect Dead:      (Level + 1) x 750 gold per member.
+
+For example, reviving a level-4 unconscious member costs 1,500 gold.
+Resurrecting a level-4 dead member costs 3,750 gold.
+
+The number of resurrections available per day depends on the church
+level.  Build a higher-level church to restore more members each day.
+
+
+Town Hall
+===============================================================================
+
+[12.1]  Overview
+-------------------------------------------------------------------------------
+The town hall is the center of village government.  What you can do here
+depends on whether your clan rules the village or not.  All players can
+vote, deposit gold, and view the village empire.  The ruler has additional
+powers to build structures, set taxes, and manage the village.
+
+
+[12.2]  Citizen Menu
+-------------------------------------------------------------------------------
+If you are not the ruler, the town hall commands are:
+
+    D   Deposit gold into the village vault.
+    E   Donate resources to the village empire.
+    W   Write a message to the ruler.
+    B   Voting booth -- cast your vote for the next ruler.
+    S   Empire stats -- view the village empire's statistics.
+    P   Public discussion board.
+    H   Help for citizens.
+    V   View your clan stats.
+    /   Chat with villagers in the town hall.
+    Q   Return to the main menu.
+
+
+[12.3]  Ruler Menu
+-------------------------------------------------------------------------------
+If your clan rules the village, you have these commands:
+
+    S   Structures -- build and upgrade village buildings.
+    E   Economics -- set tax rates and manage the vault.
+    P   Manage empire -- edit the village empire (troops, buildings).
+    R   Conscription rate -- set the military draft rate (once per
+        day, 0-20%).
+    C   Colors -- change the village's color scheme.
+    L   Flag -- customize the village flag colors.
+    M   Make announcement -- broadcast a message to all players.
+    B   Voting booth -- view current election standings.
+    D   Public discussion board.
+    T   Toggle empire stats -- show or hide empire info for citizens.
+    H   Help for rulers.
+    V   View your clan stats.
+    !   Abdicate -- give up rule of the village.
+    /   Chat with villagers in the town hall.
+    Q   Return to the main menu.
+
+
+[12.4]  Structures
+-------------------------------------------------------------------------------
+The ruler can build and upgrade village structures.  Each structure
+unlocks or improves a service available to all players.  Building costs
+gold from the village vault.
+
+    C   Church         Healing, blessings, resurrections.
+    T   Training Hall  Member training and recruitment.
+    P   Pawn Shop      Used item trading.
+    Z   Wizard's Shop  Scrolls, books, and item identification.
+    F   Smithy         Improves weapon and armor quality at market.
+
+Each structure has multiple levels.  Higher levels unlock better services
+and items.  Check the vault (S in the build menu) to see how much gold
+is available before building.
+
+
+[12.5]  Economics
+-------------------------------------------------------------------------------
+The ruler controls the village economy through the economics menu:
+
+    T   Tax rate (0-50%, once per day).  Income tax on player
+        earnings.
+    G   GST (0-50%, once per day).  Goods and sales tax on market
+        purchases.
+    D   Deposit clan gold into the village vault.
+    W   Withdraw gold from the village vault (up to 3 times per day).
+
+Higher tax rates generate more revenue for the village but make the
+village less attractive to players.  A wise ruler balances income with
+player satisfaction.
+
+The village vault funds all building construction and other village
+expenses.  Both the ruler and citizens can deposit gold, but only the
+ruler can withdraw.
+
+
+[12.6]  Voting
+-------------------------------------------------------------------------------
+All players can vote for who should rule the village.  Press B in the
+town hall to enter the voting booth.
+
+    C   Change your vote.  Select a different clan as your choice
+        for ruler.
+    V   View stats.
+    Q   Leave the voting booth.
+
+The voting booth displays the top 10 candidates and their vote counts.
+The clan with the most votes when the current ruler abdicates or is
+ousted becomes the new ruler.
+
+
+[12.7]  Abdication
+-------------------------------------------------------------------------------
+A ruler can voluntarily give up control of the village by pressing !
+in the town hall.  This resets the village to having no ruler.  The
+clan that abdicated loses 100 points.  Abdication should not be taken
+lightly.
+
+
+Empires
+===============================================================================
+
+[13.1]  Overview
+-------------------------------------------------------------------------------
+Every clan has an empire consisting of land, buildings, and an army.
+The village itself also has an empire managed by the ruler.  Through
+your empire, you develop land, construct buildings, train troops, and
+wage war against rival villages or clans.
+
+
+[13.2]  Buildings
+-------------------------------------------------------------------------------
+There are 10 types of empire buildings:
+
+    Barracks            House your troops.  Each barracks supports
+                        20 footmen, 10 axemen, or 5 knights.
+                        Cost: 2,500 gold.
+
+    Walls               Strengthen your defenses against attacks.
+                        Cost: 1,000 gold.
+
+    Towers              Provide ranged defense bonuses.
+                        Cost: 1,500 gold.
+
+    Steel Mill          Required to train axemen and knights.
+                        Cost: 3,000 gold.
+
+    Stables             Required (along with a steel mill) to train
+                        knights.  Cost: 5,000 gold.
+
+    Intelligence Agency Allows you to spy on other empires.  More
+                        agencies increase your success chance.
+                        Cost: 1,000 gold.
+
+    Security Center     Defends against enemy spies.  More centers
+                        increase your chance of catching spies.
+                        Cost: 1,000 gold.
+
+    Gymnasium           Boosts your army's training and rating.
+                        Cost: 4,500 gold.
+
+    Developer's Hall    Reduces the cost of developing new land.
+                        Cost: 3,000 gold.
+
+    Shops               Generate income for your empire.
+                        Cost: 5,000 gold.
+
+Each building uses land and energy.  You must develop land before you
+can build on it.
+
+
+[13.3]  Troops
+-------------------------------------------------------------------------------
+There are three types of troops, each with different strengths:
+
+    Footmen     15 gold each.  Basic soldiers.  Require only
+                barracks.  Well-rounded but not specialized.
+
+    Axemen      30 gold each.  Stronger attackers.  Require barracks
+                and a steel mill.  Hit harder than footmen.
+
+    Knights     60 gold each.  Elite mounted warriors.  Require
+                barracks, a steel mill, and stables.  The fastest
+                and strongest offensive units.
+
+Your barracks capacity limits how many troops you can maintain.  Each
+barracks supports 20 footmen, 10 axemen, or 5 knights (or any
+combination within capacity).
+
+Followers are civilians who join your empire after mine victories.
+They can be conscripted into your army based on the village
+conscription rate.
+
+
+[13.4]  Strategy
+-------------------------------------------------------------------------------
+Your empire has a battle strategy that affects how your army fights:
+
+    Attack Length      How many rounds your army presses the attack
+                       (1-10).
+    Attack Intensity   How aggressively your troops fight: light,
+                       moderate, or heavy.
+    Loot Level         How much you try to steal: 10%, 20%, or 30%.
+    Defend Length      How long your army holds a defensive position
+                       (1-10).
+    Defend Intensity   How strongly your troops defend: light,
+                       moderate, or heavy.
+
+Higher intensity deals more damage but also makes your troops more
+vulnerable.  Find a balance that suits your army composition.
+
+
+[13.5]  Attacking
+-------------------------------------------------------------------------------
+You can launch attacks against other villages, alliances, or clans.
+When attacking, you choose:
+
+    1. Your target.
+    2. Which troops to send (footmen, axemen, knights).
+    3. An attack goal:
+
+    Oust Ruler     Attempt to take control of the target village
+                   by removing its current ruler.
+    Steal Land     Seize a portion of the target's developed land.
+    Steal Gold     Raid the target's vault for gold.
+    Destroy        Damage the target's buildings and infrastructure.
+
+The outcome depends on the strength and composition of both armies,
+the buildings involved (walls and towers help defenders), and the
+strategies of both sides.
+
+
+[13.6]  Spying
+-------------------------------------------------------------------------------
+If you have built intelligence agencies, you can send spies to
+gather information about other empires.  Each spy attempt costs
+1,000 gold.
+
+If the spy succeeds, you see the target's full empire statistics --
+buildings, troops, gold, and strategy.  If the spy fails, you learn
+nothing, and the target may be notified that they caught a spy from
+your clan.
+
+The more intelligence agencies you build, the higher your chance of
+success.  The target's security centers work against you -- more
+security centers means a higher chance your spy is caught.
+
+
+Alliances
+===============================================================================
+
+[14.1]  Overview
+-------------------------------------------------------------------------------
+Alliances are groups of clans that band together for mutual benefit.
+Alliance members can coordinate their efforts in village politics and
+empire warfare.
+
+
+[14.2]  Creating and Joining
+-------------------------------------------------------------------------------
+Press A from the main menu to enter the alliance screen.  You will
+see a list of existing alliances.  Select one to view its members
+or request to join.
+
+Each clan can create one alliance and belong to up to 5 alliances
+total.  The game supports a maximum of 16 alliances.
+
+To create a new alliance, select the option to form one and give it
+a name.  Other players can then join your alliance through the
+alliance menu.
+
+
+Communications
+===============================================================================
+
+[15.1]  Overview
+-------------------------------------------------------------------------------
+The communications menu lets you send and receive messages.  Press C
+from the main menu to access it:
+
+    C   Check mail.  Read private messages sent to your clan.
+    W   Write mail.  Send a private message to another clan.
+    P   Public mail.  Post to the public message board.
+    U   Update last read.  Set your last-read message pointer.
+    G   Global message.  Post a message visible across all villages
+        in the InterBBS league (only available if InterBBS is
+        enabled).
+    V   View stats.
+    Q   Return to the main menu.
+
+
+[15.2]  Mail
+-------------------------------------------------------------------------------
+Private mail is delivered between clans on the same village.  Use
+"Write mail" to compose a message and choose a recipient from the
+clan list.  Use "Check mail" to read messages others have sent you.
+
+The "Update last read" option lets you mark all current messages as
+read so that only new messages appear next time.
+
+
+[15.3]  Public Messages and Chat
+-------------------------------------------------------------------------------
+Public mail is posted to a message board visible to all players in
+the village.  Use this for announcements, challenges, or general
+discussion.
+
+Chat (/) is available in most locations -- the street, mines, market,
+church, training hall, and town hall.  Each location has its own chat
+room.  You can chat up to 4 times per day across all locations.
+
+
+NPCs
+===============================================================================
+
+[16.1]  Overview
+-------------------------------------------------------------------------------
+Non-player characters (NPCs) wander through the village and can be
+found in various locations.  They may have useful information, offer
+quests, or simply provide flavor to the world.
+
+
+[16.2]  Talking to NPCs
+-------------------------------------------------------------------------------
+When you chat with villagers (press /) in any location, you may
+encounter NPCs.  You can talk to them about specific topics to learn
+things or trigger quest events.
+
+NPCs wander between six zones:  the church, the street, the market,
+the town hall, the training hall, and the mines.  Not every NPC is
+in every zone at all times -- they move around during maintenance.
+Check different locations if you are looking for a particular NPC.
+
+
+World Travel
+===============================================================================
+
+[17.1]  Overview
+-------------------------------------------------------------------------------
+If the sysop has enabled InterBBS mode, your village is part of a
+larger league of villages hosted on different BBSes.  World travel
+lets you move your clan between these villages.
+
+Press W from the main menu to access the world travel menu:
+
+    O   Other villages.  View the list of villages in the league.
+    T   Travel.  Choose a village to travel to (not available on
+        your first day).
+    S   Current trip info.  See your travel status.
+    H   Help.  Information about village travel.
+    V   View stats.
+    Q   Return to the main menu.
+
+
+[17.2]  Traveling
+-------------------------------------------------------------------------------
+To travel, press T and select a destination village.  Your clan data
+is packaged up and sent to the destination BBS during the next
+maintenance cycle.  You will be able to play at the new village the
+following day.
+
+While traveling, you cannot play at your current village.  Plan your
+travels carefully.
+
+Travel is not available on your first day in the game.  You must play
+at least one day locally before you can travel.
+
+
+Scoring
+===============================================================================
+
+[18.1]  Point Values
+-------------------------------------------------------------------------------
+Your clan earns or loses points based on your actions.  Points
+determine your ranking on the scoreboard.
+
+    Win a clan fight .................. +20 points
+    Lose a clan fight ................. -15 points
+    Run from a clan fight ............. -20 points
+    Win a monster fight ............... +10 points
+    Lose or run from a monster fight .. -10 points
+    Become village ruler .............. +20 points
+    Abdicate the throne .............. -100 points
+
+Running from a clan fight is penalized more harshly than losing.
+Standing your ground, even in defeat, costs you fewer points than
+fleeing.
+
+These point changes appear in the daily news, so all players can
+track the rise and fall of the clans.
+
+
+Miscellaneous
+===============================================================================
+
+[19.1]  Deleting Your Clan
+-------------------------------------------------------------------------------
+Press ! from the main menu to permanently delete your clan.  You will
+be asked to confirm this choice.  Once deleted, your clan, all its
+members, items, gold, empire, and alliance memberships are gone
+forever.  This cannot be undone.
+
+
+[19.2]  Disbanding
+-------------------------------------------------------------------------------
+If all your members are killed and you cannot afford to resurrect
+them, your clan may be effectively out of the game.  In this case,
+you may need to delete your clan and start over.
+
+A disbanded clan's name is recorded to prevent immediate re-creation
+with the same name.  If your BBS participates in an InterBBS league,
+deletion notifications are sent to all other villages.
+
+
+[19.3]  News
+-------------------------------------------------------------------------------
+The game keeps a daily news log of significant events:  clan fights,
+new clans, ruler changes, empire attacks, and more.  Access the news
+from the pre-game menu:
+
+    T   Today's news.
+    Y   Yesterday's news.
+
+Check the news regularly to keep up with village politics and see
+who has been fighting whom.
+
+
+[19.4]  Viewing Stats
+-------------------------------------------------------------------------------
+Press V from almost any menu to view your clan's current statistics.
+This shows:
+
+    - Your clan name, points, and ranking.
+    - Each member's name, level, HP, SP, status, and equipment.
+    - Your clan's gold.
+    - Your empire summary.
+    - Your alliance memberships.
+
+Use this often to keep track of your members' health, equipment, and
+training point balances.
