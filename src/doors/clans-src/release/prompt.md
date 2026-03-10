@@ -108,6 +108,8 @@ Follow the recommended campaign output order (see below) without pausing between
 
 Only stop if you reach a decision point that genuinely requires sysop input — a missing world detail, an unresolvable ambiguity in the brief. Completion of a file or a step is not such a point. The interview gate exists because world details cannot be invented; the generation gate does not exist because file boundaries are not decision points.
 
+**Quality over speed.** "Do not pause" means do not stop to ask permission at file boundaries — it does not mean rush or reuse template text. Every quest completion message, every lore keeper reflection, every NPC line must be narratively distinct. Templated repetition — the same sentence with only the quest name swapped — is a generation failure. If writing 30 unique quest outcomes requires thinking longer, think longer.
+
 ---
 
 ## SYNTAX RULES (violations cause parse failures):
@@ -155,6 +157,8 @@ Only stop if you reach a decision point that genuinely requires sysop input — 
         End
 
   Win jumps to `BanditWin`; loss jumps to `BanditLoss`. The run-away path (`NextLine`) continues on the `Text` line and then hits `End`. Without that `End`, the run-away path falls into the bytecode of `BanditWin`.
+
+  This example illustrates the `End` rule — it does not demonstrate the preferred quest layout. For quest design, use `NextLine` on the **win** path so the successful run reads straight down, and use named Result blocks for loss/run. See the worked quest example in QUEST DESIGN PATTERNS.
 
   **Option/NextLine example** — the declined path executes commands then hits `End`:
 
@@ -814,6 +818,28 @@ These expand to live game values during quest execution. All text displayed thro
 
 ## QUEST DESIGN PATTERNS:
 
+### Prose quality
+
+Quest narrative and NPC dialogue are the player's entire experience of the world. Flat, clipped prose makes a richly designed campaign feel like a technical readout.
+
+**Vary sentence length and structure.** Short sentences are powerful for impact — but a sequence of nothing but short declaratives reads like a bullet list, not a story. Mix long and short. Let some sentences carry a subordinate clause, a qualifying detail, a sensory impression. Reserve the short punch for moments that earn it.
+
+**WRONG** — staccato list disguised as narrative:
+
+    Text "|0CThe tunnel is dark. Water drips from the ceiling.
+    Text "|0CRats scatter ahead. The air is cold.
+    Text "|0CA door stands at the end. It is iron. It is locked.
+
+**RIGHT** — varied rhythm with the same information:
+
+    Text "|0CThe tunnel narrows where the ceiling sags, water
+    Text "|0Cbeading along the cracks and falling in fat drops that
+    Text "|0Cecho off the stone. Rats scatter at the sound of your
+    Text "|0Cboots. At the far end, an iron door — locked, and cold
+    Text "|0Cto the touch.
+
+The syntax examples throughout this prompt are intentionally terse to demonstrate commands clearly — they are not models for prose style. When generating actual pack content, write narrative text that is immersive and expressive: grounded in sensory detail, alive with rhythm, and specific to the scene. NPC dialogue should sound like speech; quest descriptions should read like fiction.
+
 ### Lore and world identity
 
 Every NPC, quest, and location should feel specific to *this* BBS's world. Generic names and stakes are a failure mode — "a mysterious stranger" is weaker than a named person with a known grudge and a plausible reason for being where they are.
@@ -855,6 +881,14 @@ Each revealed topic is written in the NPC's own voice. The lore keeper does not 
 ### Ambient NPCs
 
 **This is the largest content generation task in the pack.** A campaign with 20–40 ambient NPCs, each with 3–7 topics and campaign-awareness dialogue, will produce a chat file larger than the story NPC chat file and the event script combined. Write location by location across multiple passes; do not attempt to write all ambient NPC content in a single block.
+
+**Recommended ambient NPC generation sequence:**
+
+1. **Location roster pass:** For each of the 6 locations, list the NPC names, archetypes, OddsOfSeeing values, and which campaign flags each will react to. Write all entries in the NPC Info file. Do not write any dialogue yet.
+2. **Per-location dialogue passes:** Write one location's ambient NPC chat content at a time (all Topic blocks for all NPCs at that location). Complete one location before starting the next. At the end of each location pass, verify that every Topic referenced in the NPC Info file has a corresponding block in the chat file.
+3. **Campaign awareness pass:** Review all ambient NPC topics and confirm that each NPC has at least one `{Q}` or `{G}` conditional line that shifts based on campaign progress. Add missing conditionals.
+
+This is the largest file in the pack. Budget generation capacity accordingly — ambient NPC dialogue typically exceeds the event script and story NPC chat combined.
 
 A campaign with only quest-givers and a lore keeper feels like a waiting room. The village needs people who live in it — people with petty concerns, local opinions, professional worries, and no interest whatsoever in the player's quest log. **Design 20–40 ambient NPCs distributed across all six village locations.** Their purpose is world texture; they have no quest mechanics.
 
@@ -954,6 +988,7 @@ In the NPC Info file, each NPC gets its own `Index` block with its own `QuoteFil
 - Always place AddEnemy immediately before its corresponding Fight.
 - Do NOT use GiveXP — players earn XP naturally through combat in the quest. Use GivePoints, GiveGold, and occasionally GiveFollowers or GiveFight instead.
 - Use `Fight NextLine STOP NoRun` for boss fights the player cannot flee.
+- **Prefer `NextLine` for the win path of every Fight.** The successful run of a quest should read top-to-bottom without jumping between blocks — setup, fight, aftermath, next fight, victory. Use named Result blocks for loss and run paths only. This keeps the happy path linearly readable while isolating short defeat/retreat blocks at the end of the file. See the worked quest example in QUEST DESIGN PATTERNS.
 
 ### Global flags (G) and shared world state
 
@@ -1068,6 +1103,116 @@ Calibrate rewards to monster Difficulty. Most quest encounters should use monste
 
 **GiveItem:** Reserve for unique story moments (e.g. the player recovers a specific artifact). Don't use as routine quest completion filler.
 
+### Worked quest example
+
+The following Event demonstrates a Major-tier quest with three sequential fights, a mid-quest player choice, Pause for pacing, and AddNews for village impact. The win path of every Fight uses NextLine so the successful run reads top-to-bottom without jumping between blocks. Loss and run paths jump to short named Results grouped at the end.
+
+    Event BridgeAssault
+    Text "|0CThe bridge over the Ash Gorge is held by deserters.
+    Text "|0CThree positions: the near bank, the span, and the far tower.
+    Text "|0CYour clan approaches from the tree line.
+    Pause
+    Text "|0CThe near-bank sentries spot you.
+    AddEnemy /m/Output 28
+    AddEnemy /m/Output 15
+    Fight NextLine BridgeBank_Loss BridgeBank_Run
+    Text "|0CThe sentries go down quietly. The bridge span is ahead.
+    Text "|0CA civilian is crouched behind the railing — a courier,
+    Text "|0Ctrapped when the deserters took the crossing.
+    Text
+    Prompt "|0GSend the courier back or take them with you?|0E> |0F
+    Option B BridgeSendBack
+    Option F BridgeTakeForward
+    End
+
+    Result BridgeSendBack
+    Text "|0CThe courier runs. Smart.
+    Text "|0CYour clan pushes onto the span without a guide.
+    AddEnemy /m/Output 28
+    AddEnemy /m/Output 28
+    AddEnemy /m/Output 19
+    Fight NextLine BridgeSpan_Loss BridgeSpan_Run
+    Text "|0CThe span is clear. The far tower remains.
+    Text "|0CThe deserter captain is inside. He will not surrender.
+    Pause
+    AddEnemy @mypak.pak/m/mypak 5
+    Fight NextLine BridgeTower_Loss NoRun
+    Text "|0CThe captain falls. The bridge is yours.
+    Text "|0CFrom the tower roof the east road stretches clear for the
+    Text "|0Cfirst time in weeks. Trade can move again.
+    AddNews "|0CThe Ash Gorge bridge has been retaken. The east road is open.
+    SetFlag P6
+    GiveGold 1500
+    GivePoints 75
+    GiveFight 1
+    DoneQuest
+    End
+
+    Result BridgeTakeForward
+    Text "|0CThe courier stays low and follows.
+    Text "|0CKnowing the bridge layout, your clan flanks through the
+    Text "|0Cdrainage channel and catches the span guard off balance.
+    AddEnemy /m/Output 28
+    AddEnemy /m/Output 19
+    Fight NextLine BridgeSpan_Loss BridgeSpan_Run
+    Text "|0CThe span is clear. The far tower remains.
+    Text "|0CThe deserter captain is inside. He will not surrender.
+    Pause
+    AddEnemy @mypak.pak/m/mypak 5
+    Fight NextLine BridgeTower_Loss NoRun
+    Text "|0CThe captain falls. The bridge is yours.
+    Text "|0CFrom the tower roof the east road stretches clear for the
+    Text "|0Cfirst time in weeks. Trade can move again.
+    AddNews "|0CThe Ash Gorge bridge has been retaken. The east road is open.
+    SetFlag P6
+    GiveGold 1500
+    GivePoints 75
+    GiveFight 1
+    DoneQuest
+    End
+
+    Result BridgeBank_Loss
+    Text "|0CThe sentries were better armed than expected.
+    Text "|0CYour clan retreats into the tree line before the main
+    Text "|0Cforce is alerted.
+    End
+
+    Result BridgeBank_Run
+    Text "|0CYou pull back before the sentries raise the alarm.
+    End
+
+    Result BridgeSpan_Loss
+    Text "|0CThe span guard overwhelms your clan in the narrow crossing.
+    Text "|0CYou fall back across the near bank, bloodied.
+    End
+
+    Result BridgeSpan_Run
+    Text "|0CThe span fighters regroup. You withdraw across the near bank.
+    End
+
+    Result BridgeTower_Loss
+    Text "|0CThe captain's guard is too strong. Your clan falls back
+    Text "|0Cacross the span, leaving the tower in deserter hands.
+    End
+
+Key points:
+
+- **Win path uses NextLine** on every Fight. Each successful outcome reads straight down — setup, fight, aftermath, next fight — with no jumps. Pick either branch (BridgeSendBack or BridgeTakeForward) and read it top-to-bottom for the complete victorious run.
+- **Loss and run paths jump to named Results** grouped at the end of the file. These are short, self-contained blocks — one per failure point — with stage-specific defeat text.
+- **Mid-quest Option** after the first fight. The choice has a mechanical consequence: taking the courier reduces the second fight from 3 enemies to 2 (the flank advantage). Both branches share the same third fight and victory, so the tower sequence is written twice — this duplication is the cost of keeping each branch linearly readable, and it is worth paying.
+- **Three Fight commands per branch** (bank, span, tower). Fights 1 and 2 allow fleeing; fight 3 uses NoRun.
+- **Pause** before the first fight and again before the NoRun boss.
+- **AddNews** on victory because the bridge affects the whole village.
+
+Not every quest needs three fights. Use the reward guidelines to size each quest:
+
+- Simple (1 fight, may flee): short encounters for early-game or daily repeatables
+- Standard (2 fights, may flee): the backbone of the campaign
+- Major (3 fights, NoRun on the boss): turning points with real stakes
+- Epic / Finale (4–6 fights, NoRun): multi-stage setpieces
+
+At least half of all quest events should include an Option or Input choice. Choices work best mid-quest — after the player has committed but before the final fight — where they can affect the difficulty, the reward, or the narrative outcome.
+
 ### Multi-quest structure
 
 Multiple quests can share one .evt file by using distinct Event block names:
@@ -1106,6 +1251,162 @@ When generating a full campaign, produce files in this order:
 10. readme.txt — compilation and installation instructions
 11. build.bat — compilation and PAK generation script for Windows
 12. Makefile — compilation and PAK generation file for UNIX
+
+---
+
+## COMMON GENERATION FAILURES
+
+These failures have been observed in real LLM-generated packs. Each one ruins the player experience. Do not produce output that matches any of these patterns.
+
+### Template repetition
+
+**Every quest event must have unique narrative text.** Win, loss, and run-away outcomes must describe what happened in *this* quest — the specific enemy, the specific stakes, the specific consequence. A quest in a flooded ferry cache and a quest in a buried chapel cannot share outcome text.
+
+**WRONG** — the same sentence 30 times with the quest name swapped:
+
+    Result bri01_win
+    Text "|0CYou prevail in bri and the cracked charm and bring the result back.
+    GivePoints 50
+    DoneQuest
+    End
+
+    Result kade06_win
+    Text "|0CYou prevail in boot sector and bring the result back.
+    GivePoints 50
+    DoneQuest
+    End
+
+**RIGHT** — each outcome describes a specific scene:
+
+    Result bri01_win
+    Text "|0CThe charm is cracked along a line that once traced a human jaw.
+    Text "|0CBri turns it in her hands without speaking. She knows that face.
+    GivePoints 50
+    GiveGold 300
+    DoneQuest
+    End
+
+    Result kade06_win
+    Text "|0CThe core hums when you slot it home. Kade's hands shake as the
+    Text "|0CApple's screen flickers and steadies.
+    Text "|0C"It remembers," he says. "It remembers everything."
+    GivePoints 50
+    GiveGold 700
+    DoneQuest
+    End
+
+The same rule applies to loss and run-away Results. "Your clan is beaten back. The work remains unfinished." used 30 times is not acceptable. Each loss should describe a specific defeat: who overwhelmed the clan, what was lost, what the enemy did after the player fell.
+
+### Mechanical lore keeper
+
+The lore keeper's post-quest topics must reflect on what happened *in the world*, not echo the quest name. This is the single most important characterisation task in the pack.
+
+**WRONG** — mechanical acknowledgment with quest name:
+
+    Topic torl_r1
+    Text "|0CI have heard of bri and the cracked charm. TuneVille shifted a little
+    Text "|0Cwhen that was done.
+    End
+
+**RIGHT** — the NPC reflects in their own voice:
+
+    Topic torl_r1
+    Text "|0CBri brought back a cracked charm from the old gallery. Whoever wore
+    Text "|0Cit had a human jaw — or what used to be one.
+    Text "|0CShe has not spoken about it since. I would not press her.
+    End
+
+If you find yourself writing the same sentence structure for multiple lore keeper topics, stop and rewrite. Each topic is a window into how this NPC *thinks about* what happened. No two should read alike.
+
+### Staccato prose
+
+Narrative text and NPC dialogue must not read like a list of short declarative sentences. This failure is distinct from template repetition — the sentences may all be *different*, but if every line is the same length and structure, the prose is flat and the world feels lifeless.
+
+**WRONG** — every sentence short, same structure, no rhythm:
+
+    Text "|0CThe gate is open. Guards stand on either side.
+    Text "|0CThe courtyard is wide. A fountain sits in the center.
+    Text "|0CWater runs over the stone. Moss grows on the rim.
+
+**RIGHT** — varied rhythm, sensory grounding:
+
+    Text "|0CThe gate stands open, its guards watching you pass with
+    Text "|0Cthe flat patience of men who have stood here all morning.
+    Text "|0CBeyond them the courtyard opens wide — a fountain at its
+    Text "|0Ccenter, water sheeting over mossy stone in a sound like
+    Text "|0Csteady rain.
+
+See the Prose quality section under CAMPAIGN DESIGN for the full guideline. This applies to all generated text: quest Events, Result blocks, NPC Topics, and ambient chat.
+
+### Single-fight, no-choice quests
+
+Quests must not all follow the same structure of one Text line, one Fight, and a reward. Vary the encounter shape:
+
+- Add 2–3 fights for standard quests, 4–6 for epic quests (per the reward guidelines)
+- Use Option or Input to give the player decisions within the quest
+- Use ACS conditions to create branching paths based on flags or mine level
+- Use Pause for dramatic pacing between scenes
+- Use AddNews when a quest outcome affects the village
+
+A campaign where every quest is a single fight with no choices is a list of combat encounters, not a story.
+
+### Double End
+
+Every block needs exactly one `End`. Two `End` statements closing the same block is a bug. When all Fight paths jump to named blocks, no code after Fight is reachable — but the block still needs one `End`.
+
+**WRONG:**
+
+    Event bri01
+    Text "|0CFlavor text.
+    AddEnemy @tv.pak/m/tv 8
+    Fight bri01_win bri01_loss bri01_run
+    Text "|0CThis line never executes — all three paths are named jumps.
+    End
+    End
+
+**RIGHT:**
+
+    Event bri01
+    Text "|0CFlavor text.
+    AddEnemy @tv.pak/m/tv 8
+    Fight bri01_win bri01_loss bri01_run
+    End
+
+### Missing required elements
+
+Every pack must include ALL of the following. Omitting any one is a generation failure:
+
+- **Flag assignment table** at the top of the .evt file (step 3 of the output order)
+- **Ambient NPCs** — 20–40, distributed across all 6 village locations
+- **Daily-repeatable quests** — at least 3, gated by D flags, never calling DoneQuest
+- **Comic relief NPC** — exactly 1 ambient NPC serving this role
+- **build.bat** and **Makefile** — required outputs #10 and #11
+- **AddNews calls** for quest outcomes that affect the village
+- **G or H flags** for at least one shared world-state event
+- **Player choices** (Option or Input) in at least half of all quest events
+
+---
+
+## PRE-GENERATION CHECKLIST
+
+Verify every item before declaring the pack complete. This repeats the most frequently violated requirements from earlier sections.
+
+- [ ] Flag assignment table exists at the top of the .evt file and accounts for every flag
+- [ ] Every Event and Result block has exactly one `End`
+- [ ] Every quest win/loss/run Result has unique narrative text — no two share wording
+- [ ] Every lore keeper topic describes a specific world consequence in the NPC's voice
+- [ ] Narrative text varies sentence length and structure — no runs of short declaratives
+- [ ] At least 20 ambient NPCs exist, distributed across all 6 locations
+- [ ] At least 1 comic relief ambient NPC exists
+- [ ] At least 3 daily-repeatable quests exist (D-flag gated, no DoneQuest)
+- [ ] Standard+ quests have 2+ fights; epic/finale quests have 4+
+- [ ] At least half of quest events include an Option or Input player choice
+- [ ] AddNews is called for village-impacting events
+- [ ] At least one G or H flag is used for shared world state
+- [ ] All 11 output files are present (including build.bat and Makefile)
+- [ ] Every Index in quests.ini matches an Event block label in the .evt
+- [ ] Every .lst alias is referenced; every referenced path has an alias
+- [ ] No Text line exceeds 78 visible characters
 
 ---
 
