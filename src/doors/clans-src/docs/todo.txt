@@ -30,6 +30,13 @@ Options: give it a mechanical role in combat or empire (e.g. NPC loyalty,
 trading prices, recruitment cost), or accept that its role is limited to
 quest/dialogue gating via {C}.
 
+Suggestion: use Charisma to break vote ties for village ruler.  When
+ChooseNewLeader() in voting.c finds multiple candidates tied for the
+most votes, compare the clan leaders' Charisma scores instead of
+choosing at random.  If the leaders' Charisma values also tie, compare
+the next clan member, and so on down the roster.  Only fall back to
+my_random() if every member's Charisma matches across all tied clans.
+
 [1.2]  Clean up mstrings.h GNUmakefile dependencies
 -------------------------------------------------------------------------------
 The mstrings.h target in src/GNUmakefile and the native-devkit dependency in
