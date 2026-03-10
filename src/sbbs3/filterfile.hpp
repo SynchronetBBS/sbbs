@@ -39,6 +39,7 @@ class filterFile {
 		filterFile() = default;
 		~filterFile() {
 			strListFree(&list);
+			pthread_mutex_destroy(&mutex);
 		}
 		std::atomic<uint> fread_count{};
 		std::atomic<uint> total_found{};
