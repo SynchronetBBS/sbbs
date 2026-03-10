@@ -319,8 +319,14 @@ static int GetGUM(FILE *fpGUM)
 	}
 	time = SWAP16(time);
 
-	if (strcmp(szFileName, "UnixAttr.DAT") == 0)
+	if (strcmp(szFileName, "UnixAttr.DAT") == 0) {
+#ifdef __unix__
 		unlink(szFileName);
+#else
+		fseekuc(fpGUM, lCompressSize);
+		return 1;
+#endif
+	}
 
 	// get type of input depending on WriteType
 	if (FileExists(szFileName) && WriteType(szFileName) == OVERWRITE) {

@@ -1350,9 +1350,9 @@ contains an octal permission mode and a filename:
 
 On Unix, after extracting all files the installer reads
 UnixAttr.DAT, applies chmod() for each entry, and deletes the
-file.  On Windows, UnixAttr.DAT is extracted to disk but not
-processed or cleaned up -- it remains as a harmless leftover.
-UnixAttr.DAT is hidden from the "list" command on all platforms.
+file.  On Windows, UnixAttr.DAT is silently skipped during
+extraction.  UnixAttr.DAT is hidden from the "list" command on
+all platforms.
 
 Include UnixAttr.DAT in files.lst when running chew, but do NOT
 list it in the .files sections of the INI -- the installer handles
