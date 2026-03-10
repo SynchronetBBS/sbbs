@@ -4,4 +4,6 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.01     2026-03-10   More eye-catching startup/mode choosing screen for users
+                      whose terminal supports sixels and/or RIP
 1.00     2026-03-09   Initial version
