@@ -1760,7 +1760,7 @@ static bool User_Create(void)
 
 	strlcpy(PClan.szUserName, od_control.user_name, sizeof(PClan.szUserName));
 
-	Help("Welcome", ST_CLANSHLP);
+	Help("Welcome", ST_MENUSHLP);
 
 	if (!YesNo(ST_STUFF1)) {
 		rputs(ST_ABORTED);

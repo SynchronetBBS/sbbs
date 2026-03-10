@@ -13,6 +13,7 @@ Clean up mstrings.h GNUmakefile dependencies ..................   1.2
 install: rename prompt limited to 13 characters ...............   1.4
 install: silent truncation of GUM and INI filenames ...........   1.5
 Village types defined but never assigned ......................   1.7
+Dead and orphaned help-file topics ............................   1.8
 
 
 
@@ -79,3 +80,26 @@ Options: (a) finish the feature by adding a VillageType config keyword
 types and the item filtering becomes meaningful; (b) remove the dead
 defines, the struct field, and the items.c filter if the feature is not
 wanted.
+
+[1.8]  Dead and orphaned help-file topics
+-------------------------------------------------------------------------------
+Two topics in menus.hlp are never displayed -- no Help() or GetChoice() call
+references them, and menus.hlp has no GeneralHelp() path:
+
+    ^Eliminated     "You have been eliminated" screen; the game uses
+                    DeleteClan() and a news message instead.
+    ^Special        Promotional "door sale" copy from the original author;
+                    never referenced.
+
+Three topics in clans.hlp have no direct Help() call but remain browsable
+through the MainHelp > General Help menu (help.c GeneralHelp(ST_CLANSHLP)):
+
+    ^Newbies        Brief welcome message for new players.
+    ^Colours        Pipe-code colour instructions.
+    ^Beta Note      Bug-report URLs and feature wishlist; content is stale
+                    (dead URLs, features from the original roadmap).
+
+Options: (a) delete the two dead menus.hlp topics; (b) wire ^Eliminated
+into the elimination code path so it is actually shown; (c) update the
+stale clans.hlp topics or remove the ones that duplicate information
+available elsewhere.
