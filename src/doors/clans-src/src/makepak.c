@@ -10,6 +10,7 @@
 #include "myopen.h"
 #include "parsing.h"
 #include "structs.h"
+#include "u8cp437.h"
 
 #define MAX_TOKEN_CHARS 32
 
@@ -94,12 +95,10 @@ static void AddToPak(char *pszFileName, char *pszFileAlias, FILE *fpPakFile)
 {
 	struct FileHeader FileHeader;
 	FILE *fpInput;
-	size_t CurByte, NumBytes;
-	char FAR *Chunk;
 	uint8_t fhbuf[BUF_SIZE_FileHeader];
-	long lTemp;
 
-	fpInput = fopen(pszFileName, "rb");
+	int is_utf8;
+	fpInput = u8_fopen(pszFileName, "rb", &is_utf8);
 	if (!fpInput) {
 		printf("Couldn't read in %s\n", pszFileName);
 		return;
@@ -107,74 +106,130 @@ static void AddToPak(char *pszFileName, char *pszFileAlias, FILE *fpPakFile)
 
 	lPakSize += BUF_SIZE_FileHeader;
 
-	// get size of file
-	fseek(fpInput, 0, SEEK_END);
-	lTemp = ftell(fpInput);
-	if (lTemp < INT32_MIN || lTemp > INT32_MAX) {
-		printf("File size %ld unsupported\n", lTemp);
-		fclose(fpInput);
-		return;
-	}
-	FileHeader.lFileSize = (int32_t)lTemp;
-
-	// go back to start of file
-	if (fseek(fpInput, 0, SEEK_SET)) {
-		puts("Failed to seek to start");
-		fclose(fpInput);
-		return;
-	}
-
-	// get header info
-	strlcpy(FileHeader.szFileName, pszFileAlias, sizeof(FileHeader.szFileName));
-	FileHeader.lStart = lPakSize;
-	FileHeader.lEnd = lPakSize + FileHeader.lFileSize;
-	lPakSize += FileHeader.lFileSize;
-
-	// write header to pakfile
-	s_FileHeader_s(&FileHeader, fhbuf, sizeof(fhbuf));
-	fwrite(fhbuf, sizeof(fhbuf), 1, fpPakFile);
-
-	// read in file and transfer to pakfile
-	CurByte = 0;
-	NumBytes = (size_t)FileHeader.lFileSize;
-
-	Chunk = calloc(1, 64000);
-	if (!Chunk) {
-		fputs("out of memory!", stderr);
-		fflush(stderr);
-		fclose(fpInput);
-		exit(1);
-	}
-	while ((int32_t)CurByte != FileHeader.lFileSize) {
-		if (NumBytes > 64000) {
-			if (fread(Chunk, 64000, 1, fpInput) != 1) {
-				puts("Read error");
-				break;
-			}
-			if (fwrite(Chunk, 64000, 1, fpPakFile) != 1) {
-				puts("Write error");
-				break;
-			}
-
-			NumBytes -= 64000;
-			CurByte += 64000;
+	if (is_utf8) {
+		// UTF-8 text file: read line-by-line, convert to CP437,
+		// buffer the result, then write to pak.
+		char line[4096];
+		int lineno = 0;
+		size_t bufcap = 64000;
+		size_t buflen = 0;
+		char *buf = malloc(bufcap);
+		if (!buf) {
+			fputs("out of memory!", stderr);
+			fflush(stderr);
+			fclose(fpInput);
+			exit(1);
 		}
-		else {
-			if (fread(Chunk, NumBytes, 1, fpInput) != 1) {
-				puts("Read error");
-				break;
-			}
-			if (fwrite(Chunk, NumBytes, 1, fpPakFile) != 1) {
-				puts("Write error");
-				break;
-			}
 
-			CurByte += NumBytes;
-			NumBytes -= NumBytes;
+		while (u8_fgets(line, sizeof(line), fpInput, is_utf8,
+		                pszFileName, &lineno) != NULL) {
+			size_t n = strlen(line);
+			if (buflen + n > bufcap) {
+				bufcap = (buflen + n) * 2;
+				char *tmp = realloc(buf, bufcap);
+				if (!tmp) {
+					fputs("out of memory!", stderr);
+					fflush(stderr);
+					free(buf);
+					fclose(fpInput);
+					exit(1);
+				}
+				buf = tmp;
+			}
+			memcpy(buf + buflen, line, n);
+			buflen += n;
 		}
+
+		fclose(fpInput);
+
+		if (buflen > INT32_MAX) {
+			printf("Converted size %zu unsupported\n", buflen);
+			free(buf);
+			return;
+		}
+
+		FileHeader.lFileSize = (int32_t)buflen;
+		strlcpy(FileHeader.szFileName, pszFileAlias,
+		        sizeof(FileHeader.szFileName));
+		FileHeader.lStart = lPakSize;
+		FileHeader.lEnd = lPakSize + FileHeader.lFileSize;
+		lPakSize += FileHeader.lFileSize;
+
+		s_FileHeader_s(&FileHeader, fhbuf, sizeof(fhbuf));
+		fwrite(fhbuf, sizeof(fhbuf), 1, fpPakFile);
+		if (buflen > 0)
+			fwrite(buf, buflen, 1, fpPakFile);
+
+		free(buf);
 	}
+	else {
+		// Binary/CP437 file: copy verbatim in 64KB chunks.
+		long lTemp;
+		size_t CurByte, NumBytes;
+		char FAR *Chunk;
 
-	fclose(fpInput);
+		fseek(fpInput, 0, SEEK_END);
+		lTemp = ftell(fpInput);
+		if (lTemp < INT32_MIN || lTemp > INT32_MAX) {
+			printf("File size %ld unsupported\n", lTemp);
+			fclose(fpInput);
+			return;
+		}
+		FileHeader.lFileSize = (int32_t)lTemp;
 
-	free(Chunk);
+		if (fseek(fpInput, 0, SEEK_SET)) {
+			puts("Failed to seek to start");
+			fclose(fpInput);
+			return;
+		}
+
+		strlcpy(FileHeader.szFileName, pszFileAlias,
+		        sizeof(FileHeader.szFileName));
+		FileHeader.lStart = lPakSize;
+		FileHeader.lEnd = lPakSize + FileHeader.lFileSize;
+		lPakSize += FileHeader.lFileSize;
+
+		s_FileHeader_s(&FileHeader, fhbuf, sizeof(fhbuf));
+		fwrite(fhbuf, sizeof(fhbuf), 1, fpPakFile);
+
+		CurByte = 0;
+		NumBytes = (size_t)FileHeader.lFileSize;
+
+		Chunk = calloc(1, 64000);
+		if (!Chunk) {
+			fputs("out of memory!", stderr);
+			fflush(stderr);
+			fclose(fpInput);
+			exit(1);
+		}
+		while ((int32_t)CurByte != FileHeader.lFileSize) {
+			if (NumBytes > 64000) {
+				if (fread(Chunk, 64000, 1, fpInput) != 1) {
+					puts("Read error");
+					break;
+				}
+				if (fwrite(Chunk, 64000, 1, fpPakFile) != 1) {
+					puts("Write error");
+					break;
+				}
+				NumBytes -= 64000;
+				CurByte += 64000;
+			}
+			else {
+				if (fread(Chunk, NumBytes, 1, fpInput) != 1) {
+					puts("Read error");
+					break;
+				}
+				if (fwrite(Chunk, NumBytes, 1, fpPakFile) != 1) {
+					puts("Write error");
+					break;
+				}
+				CurByte += NumBytes;
+				NumBytes -= NumBytes;
+			}
+		}
+
+		fclose(fpInput);
+		free(Chunk);
+	}
 }

@@ -12,6 +12,7 @@
 #include "myopen.h"
 #include "serialize.h"
 #include "structs.h"
+#include "u8cp437.h"
 
 static struct PClass *PClasses[MAX_PCLASSES];
 
@@ -75,7 +76,8 @@ static int16_t Init_PClasses(char *szFileName)
 	int16_t CurPClass = -1;
 	int iTemp, /*OrigPClass,*/ LastSpellSlot=0;
 
-	fpPClass = fopen(szFileName, "r");
+	int is_utf8;
+	fpPClass = u8_fopen(szFileName, "r", &is_utf8);
 	if (!fpPClass) {
 		printf("Error opening classes file.\n");
 		exit(1);
@@ -85,9 +87,10 @@ static int16_t Init_PClasses(char *szFileName)
 	for (iTemp = 0; iTemp < MAX_PCLASSES; iTemp++)
 		PClasses[iTemp] = NULL;
 
+	int lineno = 0;
 	for (;;) {
 		/* read in a line */
-		if (fgets(szLine, 255, fpPClass) == NULL) break;
+		if (u8_fgets(szLine, 255, fpPClass, is_utf8, szFileName, &lineno) == NULL) break;
 
 		/* Ignore all of line after comments or CR/LF char */
 		pcCurrentPos=(char *)szLine;

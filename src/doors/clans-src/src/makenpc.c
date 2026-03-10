@@ -13,6 +13,7 @@
 #include "parsing.h"
 #include "serialize.h"
 #include "structs.h"
+#include "u8cp437.h"
 
 static void Init_NPCs(char *szInfile, char *szOutfile);
 
@@ -47,7 +48,8 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 	int16_t TopicsKnown = 0;
 	uint8_t nbuf[BUF_SIZE_NPCInfo];
 
-	fpNPC = fopen(szInfile, "r");
+	int is_utf8;
+	fpNPC = u8_fopen(szInfile, "r", &is_utf8);
 	if (!fpNPC) {
 		printf("Error reading %s\n", szInfile);
 		exit(EXIT_FAILURE);
@@ -64,9 +66,10 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 		exit(EXIT_FAILURE);
 	}
 
+	int lineno = 0;
 	for (;;) {
 		/* read in a line */
-		if (fgets(szLine, 255, fpNPC) == NULL) break;
+		if (u8_fgets(szLine, 255, fpNPC, is_utf8, szInfile, &lineno) == NULL) break;
 
 		/* Ignore all of line after comments or CR/LF char */
 		pcCurrentPos=(char *)szLine;

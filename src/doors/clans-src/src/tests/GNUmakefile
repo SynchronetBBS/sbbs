@@ -30,7 +30,8 @@ TEST_BINARIES := $(TESTS_BINDIR)test_tools$(EXEFILE) \
                  $(TESTS_BINDIR)test_spells$(EXEFILE) \
                  $(TESTS_BINDIR)test_items$(EXEFILE) \
                  $(TESTS_BINDIR)test_clansini$(EXEFILE) \
-                 $(TESTS_BINDIR)test_npc$(EXEFILE)
+                 $(TESTS_BINDIR)test_npc$(EXEFILE) \
+                 $(TESTS_BINDIR)test_u8cp437$(EXEFILE)
 
 .PHONY: all
 all: $(TEST_BINARIES)
@@ -124,6 +125,9 @@ $(TESTS_BINDIR)test_clansini$(EXEFILE): test_clansini.c test_harness.h | $(TESTS
 
 $(TESTS_BINDIR)test_npc$(EXEFILE): CFLAGS += -I$(SRC)odoors/
 $(TESTS_BINDIR)test_npc$(EXEFILE): test_npc.c test_harness.h ../mstrings.h | $(TESTS_BINDIR)
+	$(CC) $(CFLAGS) $< -o $@
+
+$(TESTS_BINDIR)test_u8cp437$(EXEFILE): test_u8cp437.c test_harness.h ../u8cp437.c ../u8cp437.h | $(TESTS_BINDIR)
 	$(CC) $(CFLAGS) $< -o $@
 
 .PHONY: clean

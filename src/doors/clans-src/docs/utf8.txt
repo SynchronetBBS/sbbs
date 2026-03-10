@@ -1,0 +1,388 @@
+UTF-8 Source File Support
+-------------------------------------------------------------------------------
+Reference for the CP437-to-Unicode mapping used by the devkit compilers'
+UTF-8 input mode.  See also: src/video.c cp437_unicode_table (line 1519).
+
+
+[0.0]  Table of Contents
+-------------------------------------------------------------------------------
+
+Reference
+=========
+Design decisions .................................................   1.1
+File naming convention ...........................................   1.2
+Which tools are affected .........................................   1.3
+CP437 bytes actually used in stock files .........................   1.4
+
+Mapping Tables
+==============
+Reverse mapping: Unicode -> CP437 ................................   2.1
+High-byte canonical table (128 entries) ..........................   2.2
+Control-character glyphs (32 entries) ............................   2.3
+Alternative codepoints accepted silently .........................   2.4
+Blocked codepoints (error) .......................................   2.5
+
+Implementation
+==============
+Conversion rules .................................................   3.1
+FreeBSD / tooling notes ..........................................   4.1
+
+
+Reference
+===============================================================================
+
+[1.1]  Design decisions
+-------------------------------------------------------------------------------
+- CP437 is the default encoding (backward compatible with all existing files).
+- UTF-8 is opt-in via a .u8. compound extension (e.g., strings.u8.txt).
+- Devkit compilers and makepak detect .u8. files and convert UTF-8 to CP437
+  at compile/pack time.  The game runtime is unchanged -- compiled output and
+  pak contents remain CP437.
+- Error on smart quotes and dashes (they break pipe/backtick colour codes).
+- Accept known alternative Unicode codepoints for ambiguous CP437 mappings.
+- Support the full CP437 codespace including control-character glyphs
+  (0x01-0x1F, 0x7F).
+
+
+[1.2]  File naming convention
+-------------------------------------------------------------------------------
+Given a source file foo.txt, the UTF-8 version is named foo.u8.txt.
+
+The tool is invoked with the original name (foo.txt).  The u8_fopen() helper
+probes for foo.u8.txt first; if found, it reads in UTF-8 mode.  If not found,
+it falls back to foo.txt in CP437 mode (no conversion).
+
+This applies to all extensions: .txt, .hlp, .asc, .ini, .evt.
+
+If both files exist, the .u8. variant takes priority.  The original CP437
+file can be kept as a reference or deleted.
+
+
+[1.3]  Which tools are affected
+-------------------------------------------------------------------------------
+Devkit compilers (read text source, produce binary output):
+
+    Tool        Source file     Input file(s)
+    --------    -----------     -------------------
+    langcomp    langcomp.c      strings.txt
+    mcomp       mcomp.c         monsters.txt
+    mitems      mitems.c        items.txt
+    mspells     mspells.c       spells.txt
+    mclass      mclass.c        classes.txt
+    ecomp       ecomp.c         *.evt event scripts
+    makenpc     makenpc.c       npcquote.txt
+
+Pak builder (copies text files verbatim into pak):
+
+    makepak     makepak.c       files listed in pak.lst
+
+Not affected:
+
+    chew        chew.c          Reads manifest + binary files only
+    install     install.c       Reads .ini; possible future extension
+    Game runtime                No changes; compiled output stays CP437
+
+
+[1.4]  CP437 bytes actually used in stock files
+-------------------------------------------------------------------------------
+Only 17 of 128 possible high bytes appear in the 10 stock CP437 text files.
+All are box-drawing, block elements, or symbols -- none of the ambiguous
+letter-like mappings (sharp-s/beta, micro/mu, phi/empty-set,
+epsilon/element-of) are used.
+
+    CP437   Unicode   Category
+    -----   -------   --------
+    0xAF    U+00BB    RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK
+    0xB0    U+2591    LIGHT SHADE
+    0xB1    U+2592    MEDIUM SHADE
+    0xB2    U+2593    DARK SHADE
+    0xB3    U+2502    BOX DRAWINGS LIGHT VERTICAL
+    0xC4    U+2500    BOX DRAWINGS LIGHT HORIZONTAL
+    0xC5    U+253C    BOX DRAWINGS LIGHT VERT AND HORIZONTAL
+    0xCD    U+2550    BOX DRAWINGS DOUBLE HORIZONTAL
+    0xDB    U+2588    FULL BLOCK
+    0xDC    U+2584    LOWER HALF BLOCK
+    0xDD    U+258C    LEFT HALF BLOCK
+    0xDE    U+2590    RIGHT HALF BLOCK
+    0xDF    U+2580    UPPER HALF BLOCK
+    0xFA    U+2219    BULLET OPERATOR
+    0xFC    U+207F    SUPERSCRIPT LATIN SMALL LETTER N
+    0xFD    U+00B2    SUPERSCRIPT TWO
+    0xFE    U+25A0    BLACK SQUARE
+
+
+Mapping Tables
+===============================================================================
+
+[2.1]  Reverse mapping: Unicode -> CP437
+-------------------------------------------------------------------------------
+The reverse mapping (Unicode codepoint -> CP437 byte) is used by
+u8_to_cp437() to convert UTF-8 text to CP437.
+
+Total: 168 canonical entries + 8 alternatives = 176 reverse table entries.
+
+Source for high-byte entries: cp437_unicode_table[128] in src/video.c
+(line 1519).  Source for control-character glyphs: standard CP437 chart.
+
+
+[2.2]  High-byte canonical table (128 entries, CP437 0x80-0xFF)
+-------------------------------------------------------------------------------
+    CP437   Unicode   Name
+    -----   -------   ----
+    0x80    U+00C7    LATIN CAPITAL LETTER C WITH CEDILLA
+    0x81    U+00FC    LATIN SMALL LETTER U WITH DIAERESIS
+    0x82    U+00E9    LATIN SMALL LETTER E WITH ACUTE
+    0x83    U+00E2    LATIN SMALL LETTER A WITH CIRCUMFLEX
+    0x84    U+00E4    LATIN SMALL LETTER A WITH DIAERESIS
+    0x85    U+00E0    LATIN SMALL LETTER A WITH GRAVE
+    0x86    U+00E5    LATIN SMALL LETTER A WITH RING ABOVE
+    0x87    U+00E7    LATIN SMALL LETTER C WITH CEDILLA
+    0x88    U+00EA    LATIN SMALL LETTER E WITH CIRCUMFLEX
+    0x89    U+00EB    LATIN SMALL LETTER E WITH DIAERESIS
+    0x8A    U+00E8    LATIN SMALL LETTER E WITH GRAVE
+    0x8B    U+00EF    LATIN SMALL LETTER I WITH DIAERESIS
+    0x8C    U+00EE    LATIN SMALL LETTER I WITH CIRCUMFLEX
+    0x8D    U+00EC    LATIN SMALL LETTER I WITH GRAVE
+    0x8E    U+00C4    LATIN CAPITAL LETTER A WITH DIAERESIS
+    0x8F    U+00C5    LATIN CAPITAL LETTER A WITH RING ABOVE
+    0x90    U+00C9    LATIN CAPITAL LETTER E WITH ACUTE
+    0x91    U+00E6    LATIN SMALL LETTER AE
+    0x92    U+00C6    LATIN CAPITAL LETTER AE
+    0x93    U+00F4    LATIN SMALL LETTER O WITH CIRCUMFLEX
+    0x94    U+00F6    LATIN SMALL LETTER O WITH DIAERESIS
+    0x95    U+00F2    LATIN SMALL LETTER O WITH GRAVE
+    0x96    U+00FB    LATIN SMALL LETTER U WITH CIRCUMFLEX
+    0x97    U+00F9    LATIN SMALL LETTER U WITH GRAVE
+    0x98    U+00FF    LATIN SMALL LETTER Y WITH DIAERESIS
+    0x99    U+00D6    LATIN CAPITAL LETTER O WITH DIAERESIS
+    0x9A    U+00DC    LATIN CAPITAL LETTER U WITH DIAERESIS
+    0x9B    U+00A2    CENT SIGN
+    0x9C    U+00A3    POUND SIGN
+    0x9D    U+00A5    YEN SIGN
+    0x9E    U+20A7    PESETA SIGN
+    0x9F    U+0192    LATIN SMALL LETTER F WITH HOOK
+    0xA0    U+00E1    LATIN SMALL LETTER A WITH ACUTE
+    0xA1    U+00ED    LATIN SMALL LETTER I WITH ACUTE
+    0xA2    U+00F3    LATIN SMALL LETTER O WITH ACUTE
+    0xA3    U+00FA    LATIN SMALL LETTER U WITH ACUTE
+    0xA4    U+00F1    LATIN SMALL LETTER N WITH TILDE
+    0xA5    U+00D1    LATIN CAPITAL LETTER N WITH TILDE
+    0xA6    U+00AA    FEMININE ORDINAL INDICATOR
+    0xA7    U+00BA    MASCULINE ORDINAL INDICATOR
+    0xA8    U+00BF    INVERTED QUESTION MARK
+    0xA9    U+2310    REVERSED NOT SIGN
+    0xAA    U+00AC    NOT SIGN
+    0xAB    U+00BD    VULGAR FRACTION ONE HALF
+    0xAC    U+00BC    VULGAR FRACTION ONE QUARTER
+    0xAD    U+00A1    INVERTED EXCLAMATION MARK
+    0xAE    U+00AB    LEFT-POINTING DOUBLE ANGLE QUOTATION MARK
+    0xAF    U+00BB    RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK
+    0xB0    U+2591    LIGHT SHADE
+    0xB1    U+2592    MEDIUM SHADE
+    0xB2    U+2593    DARK SHADE
+    0xB3    U+2502    BOX DRAWINGS LIGHT VERTICAL
+    0xB4    U+2524    BOX DRAWINGS LIGHT VERTICAL AND LEFT
+    0xB5    U+2561    BOX DRAWINGS VERT SINGLE AND LEFT DOUBLE
+    0xB6    U+2562    BOX DRAWINGS VERT DOUBLE AND LEFT SINGLE
+    0xB7    U+2556    BOX DRAWINGS DOWN DOUBLE AND LEFT SINGLE
+    0xB8    U+2555    BOX DRAWINGS DOWN SINGLE AND LEFT DOUBLE
+    0xB9    U+2563    BOX DRAWINGS DOUBLE VERTICAL AND LEFT
+    0xBA    U+2551    BOX DRAWINGS DOUBLE VERTICAL
+    0xBB    U+2557    BOX DRAWINGS DOUBLE DOWN AND LEFT
+    0xBC    U+255D    BOX DRAWINGS DOUBLE UP AND LEFT
+    0xBD    U+255C    BOX DRAWINGS UP DOUBLE AND LEFT SINGLE
+    0xBE    U+255B    BOX DRAWINGS UP SINGLE AND LEFT DOUBLE
+    0xBF    U+2510    BOX DRAWINGS LIGHT DOWN AND LEFT
+    0xC0    U+2514    BOX DRAWINGS LIGHT UP AND RIGHT
+    0xC1    U+2534    BOX DRAWINGS LIGHT UP AND HORIZONTAL
+    0xC2    U+252C    BOX DRAWINGS LIGHT DOWN AND HORIZONTAL
+    0xC3    U+251C    BOX DRAWINGS LIGHT VERTICAL AND RIGHT
+    0xC4    U+2500    BOX DRAWINGS LIGHT HORIZONTAL
+    0xC5    U+253C    BOX DRAWINGS LIGHT VERT AND HORIZONTAL
+    0xC6    U+255E    BOX DRAWINGS VERT SINGLE AND RIGHT DOUBLE
+    0xC7    U+255F    BOX DRAWINGS VERT DOUBLE AND RIGHT SINGLE
+    0xC8    U+255A    BOX DRAWINGS DOUBLE UP AND RIGHT
+    0xC9    U+2554    BOX DRAWINGS DOUBLE DOWN AND RIGHT
+    0xCA    U+2569    BOX DRAWINGS DOUBLE UP AND HORIZONTAL
+    0xCB    U+2566    BOX DRAWINGS DOUBLE DOWN AND HORIZONTAL
+    0xCC    U+2560    BOX DRAWINGS DOUBLE VERTICAL AND RIGHT
+    0xCD    U+2550    BOX DRAWINGS DOUBLE HORIZONTAL
+    0xCE    U+256C    BOX DRAWINGS DOUBLE VERT AND HORIZONTAL
+    0xCF    U+2567    BOX DRAWINGS UP SINGLE AND HORIZ DOUBLE
+    0xD0    U+2568    BOX DRAWINGS UP DOUBLE AND HORIZ SINGLE
+    0xD1    U+2564    BOX DRAWINGS DOWN SINGLE AND HORIZ DOUBLE
+    0xD2    U+2565    BOX DRAWINGS DOWN DOUBLE AND HORIZ SINGLE
+    0xD3    U+2559    BOX DRAWINGS UP DOUBLE AND RIGHT SINGLE
+    0xD4    U+2558    BOX DRAWINGS UP SINGLE AND RIGHT DOUBLE
+    0xD5    U+2552    BOX DRAWINGS DOWN SINGLE AND RIGHT DOUBLE
+    0xD6    U+2553    BOX DRAWINGS DOWN DOUBLE AND RIGHT SINGLE
+    0xD7    U+256B    BOX DRAWINGS VERT DOUBLE AND HORIZ SINGLE
+    0xD8    U+256A    BOX DRAWINGS VERT SINGLE AND HORIZ DOUBLE
+    0xD9    U+2518    BOX DRAWINGS LIGHT UP AND LEFT
+    0xDA    U+250C    BOX DRAWINGS LIGHT DOWN AND RIGHT
+    0xDB    U+2588    FULL BLOCK
+    0xDC    U+2584    LOWER HALF BLOCK
+    0xDD    U+258C    LEFT HALF BLOCK
+    0xDE    U+2590    RIGHT HALF BLOCK
+    0xDF    U+2580    UPPER HALF BLOCK
+    0xE0    U+03B1    GREEK SMALL LETTER ALPHA
+    0xE1    U+00DF    LATIN SMALL LETTER SHARP S
+    0xE2    U+0393    GREEK CAPITAL LETTER GAMMA
+    0xE3    U+03C0    GREEK SMALL LETTER PI
+    0xE4    U+03A3    GREEK CAPITAL LETTER SIGMA
+    0xE5    U+03C3    GREEK SMALL LETTER SIGMA
+    0xE6    U+00B5    MICRO SIGN
+    0xE7    U+03C4    GREEK SMALL LETTER TAU
+    0xE8    U+03A6    GREEK CAPITAL LETTER PHI
+    0xE9    U+0398    GREEK CAPITAL LETTER THETA
+    0xEA    U+03A9    GREEK CAPITAL LETTER OMEGA
+    0xEB    U+03B4    GREEK SMALL LETTER DELTA
+    0xEC    U+221E    INFINITY
+    0xED    U+03C6    GREEK SMALL LETTER PHI
+    0xEE    U+03B5    GREEK SMALL LETTER EPSILON
+    0xEF    U+2229    INTERSECTION
+    0xF0    U+2261    IDENTICAL TO
+    0xF1    U+00B1    PLUS-MINUS SIGN
+    0xF2    U+2265    GREATER-THAN OR EQUAL TO
+    0xF3    U+2264    LESS-THAN OR EQUAL TO
+    0xF4    U+2320    TOP HALF INTEGRAL
+    0xF5    U+2321    BOTTOM HALF INTEGRAL
+    0xF6    U+00F7    DIVISION SIGN
+    0xF7    U+2248    ALMOST EQUAL TO
+    0xF8    U+00B0    DEGREE SIGN
+    0xF9    U+2219    BULLET OPERATOR
+    0xFA    U+00B7    MIDDLE DOT
+    0xFB    U+221A    SQUARE ROOT
+    0xFC    U+207F    SUPERSCRIPT LATIN SMALL LETTER N
+    0xFD    U+00B2    SUPERSCRIPT TWO
+    0xFE    U+25A0    BLACK SQUARE
+    0xFF    U+00A0    NO-BREAK SPACE
+
+
+[2.3]  Control-character glyphs (32 entries, CP437 0x01-0x1F + 0x7F)
+-------------------------------------------------------------------------------
+In CP437, bytes 0x01-0x1F display as graphical glyphs rather than control
+characters.  In UTF-8 source files, these glyphs are represented by their
+Unicode equivalents.  rputs() does not intercept these bytes (only |, `, %,
+\n); od_disp() sends them raw to the terminal.
+
+    CP437   Unicode   Name
+    -----   -------   ----
+    0x01    U+263A    WHITE SMILING FACE
+    0x02    U+263B    BLACK SMILING FACE
+    0x03    U+2665    BLACK HEART SUIT
+    0x04    U+2666    BLACK DIAMOND SUIT
+    0x05    U+2663    BLACK CLUB SUIT
+    0x06    U+2660    BLACK SPADE SUIT
+    0x07    U+2022    BULLET
+    0x08    U+25D8    INVERSE BULLET
+    0x09    U+25CB    WHITE CIRCLE
+    0x0A    U+25D9    INVERSE WHITE CIRCLE
+    0x0B    U+2642    MALE SIGN
+    0x0C    U+2640    FEMALE SIGN
+    0x0D    U+266A    EIGHTH NOTE
+    0x0E    U+266B    BEAMED EIGHTH NOTES
+    0x0F    U+263C    WHITE SUN WITH RAYS
+    0x10    U+25BA    BLACK RIGHT-POINTING POINTER
+    0x11    U+25C4    BLACK LEFT-POINTING POINTER
+    0x12    U+2195    UP DOWN ARROW
+    0x13    U+203C    DOUBLE EXCLAMATION MARK
+    0x14    U+00B6    PILCROW SIGN
+    0x15    U+00A7    SECTION SIGN
+    0x16    U+25AC    BLACK RECTANGLE
+    0x17    U+21A8    UP DOWN ARROW WITH BASE
+    0x18    U+2191    UPWARDS ARROW
+    0x19    U+2193    DOWNWARDS ARROW
+    0x1A    U+2192    RIGHTWARDS ARROW
+    0x1B    U+2190    LEFTWARDS ARROW
+    0x1C    U+221F    RIGHT ANGLE
+    0x1D    U+2194    LEFT RIGHT ARROW
+    0x1E    U+25B2    BLACK UP-POINTING TRIANGLE
+    0x1F    U+25BC    BLACK DOWN-POINTING TRIANGLE
+    0x7F    U+2302    HOUSE
+
+Note: raw control bytes (0x01-0x1F, 0x7F) in a UTF-8 file pass through
+as-is.  Only the Unicode glyph equivalents listed above trigger conversion.
+This means 0x09 (tab), 0x0A (newline), 0x0D (carriage return) work normally
+in UTF-8 files -- they are NOT converted to white circle / inverse white
+circle / eighth note.
+
+
+[2.4]  Alternative codepoints accepted silently
+-------------------------------------------------------------------------------
+These Unicode codepoints are visual or semantic equivalents of existing
+CP437 mappings.  The converter accepts them without warning, mapping to the
+same CP437 byte as the canonical codepoint.
+
+    Alternative   Canonical   CP437   Note
+    -----------   ---------   -----   ----
+    U+03B2        U+00DF      0xE1    Greek beta -> sharp-s
+    U+03BC        U+00B5      0xE6    Greek mu -> micro sign
+    U+2205        U+03C6      0xED    Empty set -> phi
+    U+2208        U+03B5      0xEE    Element of -> epsilon
+    U+2126        U+03A9      0xEA    Ohm sign -> omega
+    U+00D8        U+03C6      0xED    O-stroke -> phi (visual similarity)
+    U+03D5        U+03C6      0xED    Phi symbol -> phi
+    U+2300        U+03C6      0xED    Diameter sign -> phi
+
+
+[2.5]  Blocked codepoints (error with helpful message)
+-------------------------------------------------------------------------------
+These Unicode codepoints could plausibly appear via copy-paste from word
+processors.  They are blocked because they would break the game's pipe-code
+(|XX) and backtick-code (`XY) colour formatting.
+
+    Codepoint   Error message
+    ---------   -------------
+    U+2018      use ASCII apostrophe ' instead
+    U+2019      use ASCII apostrophe ' instead
+    U+201C      use ASCII quotation mark " instead
+    U+201D      use ASCII quotation mark " instead
+    U+2014      use -- (double hyphen) instead
+    U+2013      use - (hyphen) instead
+
+
+Implementation
+===============================================================================
+
+[3.1]  Conversion rules
+-------------------------------------------------------------------------------
+When a .u8. file is detected, the converter processes each line after
+fgets():
+
+1. Bytes 0x00-0x7F: pass through unchanged (identical in ASCII/UTF-8/CP437).
+   This includes tabs (0x09), newlines (0x0A), and carriage returns (0x0D).
+
+2. Multi-byte UTF-8 sequences (leading byte 0xC0-0xF4): decode the Unicode
+   codepoint, look up in the reverse table.
+   - Found in canonical or alternative table -> emit single CP437 byte.
+   - Found in blocked table -> print error with suggestion, abort.
+   - Not found -> print error ("U+XXXX has no CP437 equivalent"), abort.
+
+3. Invalid UTF-8 (unexpected continuation byte 0x80-0xBF without a leading
+   byte, truncated sequence, overlong encoding, codepoints above U+10FFFF)
+   -> print error ("invalid UTF-8 at byte offset N"), abort.
+
+The conversion always shrinks or preserves buffer length (multi-byte UTF-8
+sequences become single CP437 bytes), so it can be done in-place.
+
+
+[4.1]  FreeBSD / tooling notes
+-------------------------------------------------------------------------------
+Commands and tools that work correctly on this platform:
+
+    LANG=C ggrep -cP '[\x80-\xFF]' <file>
+        Count lines containing CP437 high bytes.
+        MUST use LANG=C to prevent UTF-8 locale from masking matches.
+        MUST use ggrep (GNU grep), not system grep (BSD, lacks -P).
+
+    python3 -c "open('file','rb').read()"
+        Read/write CP437 files safely.  Always use 'rb'/'wb' mode.
+
+    NEVER use Claude Code Read/Edit/Write tools on CP437 files.
+        They interpret as UTF-8 and corrupt every byte >= 0x80 to U+FFFD
+        (3-byte sequence 0xEF 0xBF 0xBD).  This has caused data loss.
+
+    Claude Code Read tool strips UTF-8 BOM (0xEF 0xBB 0xBF).
+        BOM-based encoding detection is unreliable.  Use .u8. file
+        extension convention instead.
