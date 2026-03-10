@@ -27,10 +27,11 @@ Free and open source (GPL v2). Runs on FreeBSD, Linux, and Windows.
 
 ## Documentation
 
-The Clans has three tiers of documentation, each building on the previous:
+The Clans has four tiers of documentation, each building on the previous:
 
 | Audience | Description | Documentation |
 |----------|-------------|---------------|
+| **Player** | Learn the game -- commands, combat, classes, empires, quests, and world travel | [player.txt](release/player.txt) |
 | **Sysop** | Install the game, run it on your BBS, join InterBBS leagues, install quest packs | [clans.txt](release/clans.txt) |
 | **PAK Developer** | Use the devkit to create custom items, monsters, spells, events, and quest packs for distribution | [clandev.txt](devkit/clandev.txt) |
 | **Source Developer** | Modify the C source code for the game itself | [notes.txt](docs/notes.txt) |
