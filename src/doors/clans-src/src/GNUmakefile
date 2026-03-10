@@ -140,14 +140,14 @@ test:
 	$(MAKE) -C tests clean
 
 deepclean:
-	rm -rf $(OBJPREFIX)
-	rm -rf $(BINDIR)
+	-rm -rf $(OBJPREFIX)
+	-rm -rf $(BINDIR)
 
 clean:
-	rm -rf $(OBJDIR)
-	rm -f $(DOOR_BINARIES)
-	rm -f $(DEVKIT_BINARIES)
-	rm -f $(INSTALL_BINARIES)
+	-rm -rf $(OBJDIR)
+	-rm -f $(DOOR_BINARIES)
+	-rm -f $(DEVKIT_BINARIES)
+	-rm -f $(INSTALL_BINARIES)
 
 $(OBJDIR):
 	mkdir -p $@

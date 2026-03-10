@@ -1,7 +1,27 @@
+^New: Full Quest Campaign!
+|10New: Full Quest Campaign!
+|06-------------------------
+|1014 new quests|02 have been added, bringing the total to |1020|02.  The quests
+form a full campaign with branching paths, player choices, and a finale
+that will test even the strongest clans.
+
+|10How to start:|02  Talk to the villagers!  Many NPCs have stories to tell
+and favours to ask.  Some quests are available right away, while others
+unlock only after you have proven yourself.
+
+|10Hints:|02
+ |14*|02 Completing one quest often leads to the next.  Pay attention to
+   what the NPCs tell you after you return victorious.
+ |14*|02 A certain historian knows more than he lets on about ancient evils.
+ |14*|02 The orcs are not the only threat lurking in these mines . . .
+ |14*|02 The mightiest weapon in the game cannot be bought.  It must be
+   earned.
+^END
+
 ^What's New Since v0.93
-What's new in v0.94 to v0.97b2
--------------------------------
-The Clans has been modernized substantially since its original DOS/Windows
+|10What's new in v0.94 to v0.97b2
+|06-------------------------------
+|02The Clans has been modernized substantially since its original DOS/Windows
 release:
 
 - Ported to FreeBSD, Linux, and modern Windows (MinGW/MSVC); DOS-era

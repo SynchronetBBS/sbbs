@@ -10,7 +10,7 @@ End
 Topic           Knight.About.King
 Text    "I once served an excellent king, but he was killed.
 TellTopic       Knight.4
-#TellQuest Quest7
+{Q17}TellQuest Quest7
 End
 
 Topic           Knight.2
@@ -127,7 +127,7 @@ Text "There is a lost knight in an abandoned old keep to the north of town!
 Text "He is supposedly held captive by a creature which roams the keep!
 Text "That's all I know about it though so don't bother asking me anything else.
 TellTopic Vidiot.4
-#TellQuest Quest8
+TellQuest Quest8
 End
 
 Topic Vidiot.4
@@ -246,7 +246,7 @@ Text "face was pale.  That night he commited suicide.  They say her ghost still
 Text "wanders the cave in mourning.
 Text
 Text "Quite an interesting tale, isn't it?
-#TellQuest Quest10
+TellQuest Quest10
 End
 
 # -----------------------------------------------------------------------------
@@ -726,7 +726,7 @@ Topic OldMan.2
 Text "Supposedly, there is some treasure within these mines.  It is heavily guarded
 Text "by spirits, though.  I'm to weak to go after it myself.  Perhaps you could
 Text "get it?  There is supposedly about 3000 gold pieces in the treasure!
-#TellQuest Quest12
+TellQuest Quest12
 End
 
 # -----------------------------------------------------------------------------
@@ -754,8 +754,8 @@ Text "Lelaz, a pupil of mine, opened up a tear in the spirit world and caused a
 Text "great number of evil beings to come into this world.  He was then possessed
 Text "by one of the demons who called himself Diablo.  He now resides within the
 Text "depths of these mines.  What a fool!
-#TellTopic Psychic.4
-#TellQuest Quest13
+TellTopic Psychic.4
+TellQuest Quest13
 End
 
 Topic Psychic.4
@@ -851,8 +851,8 @@ Text "Wealth, to me, is all the smiles that I see
 pause
 Text
 # stop if quest completed
-#{Q19}Text "Thank you once again for finding my quill!
-#{Q19}End
+{Q19}Text "Thank you once again for finding my quill!
+{Q19}End
 Prompt "Can you please give me 300 gold? [|12Y/N|02]: |13
 Option Y NextLine
 Option N Poet.2.1
@@ -872,7 +872,7 @@ Text "was a gift that I received from my parents when I was a young lad.  It is
 Text "quite valuable in that it is from a rare golden bird from a place south
 Text "of these lands.  If you can find the time, please find it for me!
 Text
-#TellQuest Quest19
+TellQuest Quest19
 End
 
         Topic Poet.2.1
@@ -1014,7 +1014,7 @@ Text "A legendary sword was once endowed upon the king.  Unfortunately, the king
 Text "was locked up in a dungeon by The Dark One and the sword was discarded deep
 Text "in the mines so that no one could use it.  Only the pure of heart may wield
 Text "such a weapon.
-#TellQuest Quest18
+{Q7}TellQuest Quest18
 End
 
 Topic Paladin.5
@@ -1487,3 +1487,94 @@ Text "I cannot speak any more about myself.  I will only reveal information as y
 Text "need it.
 End
 
+
+# -----------------------------------------------------------------------------
+# Beggar 1 -- Quest for Vengeance (gated by Q1)
+# -----------------------------------------------------------------------------
+
+Topic Beggar1.6
+{!Q1}Text "I have nothing more to say.
+{Q1}Text "You took care of those orcs, eh?  I knew you had it in you.  Listen,
+{Q1}Text "there's a bandit captain who lurks in these mines.  He's the one who
+{Q1}Text "crippled me years ago.  If you could bring him to justice, I would
+{Q1}Text "be at peace.
+{Q1}TellQuest Quest9
+End
+
+# -----------------------------------------------------------------------------
+# Jester -- Orc Lord (gated by Q11)
+# -----------------------------------------------------------------------------
+
+Topic Jester.5
+{!Q11}Text "Those other orcs are still out there, so deal with them first!
+{Q11}Text "Now that both orc camps are destroyed, I must tell you something.
+{Q11}Text "I know I'm just a fool, but I overheard the orcs speak of a lord who
+{Q11}Text "commands all their clans from deep within the mines.  He is very
+{Q11}Text "powerful and will not stop sending more of his kind.  Someone has to
+{Q11}Text "find and destroy him -- I wish I were brave enough!
+{Q11}TellQuest Quest15
+End
+
+# -----------------------------------------------------------------------------
+# Acolyte -- Drakuul's Legacy
+# -----------------------------------------------------------------------------
+
+Topic Acolyte.8
+Text "There have been several unexplained deaths in the village lately and
+Text "the bodies were drained of blood.%D  I believe a vampire named Darkuul
+Text "is responsible and that he must be hiding in a crypt somewhere in the
+Text "mines.  Please, you must stop him before more innocents perish!
+TellQuest Quest6
+End
+
+# -----------------------------------------------------------------------------
+# Common Man -- Five Great Evils chain
+# -----------------------------------------------------------------------------
+
+Topic Common.3
+{!Q15}Text "Seek out the Orc Lord first, as he is the closest of the five.
+{Q15&!Q14}Text "You have defeated the Orc Lord, who was one of the Five Great Evils.
+{Q15&!Q14}Text "The Wyvern Lord is another, and he nests deep in the mines where the
+{Q15&!Q14}Text "tunnels grow steep.
+{Q15&!Q14}TellQuest Quest14
+{Q14}Text "Two of the Five Great Evils are destroyed.  Well done!
+End
+
+Topic Common.4
+{!Q14}Text "You must defeat the Wyvern Lord before I can guide you further.
+{Q14&!Q16}Text "The Dragon Lord is the third of the Five Great Evils.  He resides
+{Q14&!Q16}Text "in a volcanic cavern far below.
+{Q14&!Q16}TellQuest Quest16
+{Q16}Text "Three of the five are destroyed and the end draws near.
+End
+
+Topic Common.5
+{!Q16}Text "The Dragon Lord still lives and you must defeat him first.
+{Q16&!Q17}Text "The Demon Lord is the last of the four lesser evils.  He lurks
+{Q16&!Q17}Text "in a hellish pit at the very bottom of the mines.  Prepare yourself well.
+{Q16&!Q17}TellQuest Quest17
+{Q17}Text "All four lesser evils are destroyed!  Only The Dark One remains.
+End
+
+# -----------------------------------------------------------------------------
+# King Claudius (reached via Chat in Quest7 result)
+# -----------------------------------------------------------------------------
+
+Topic King.0
+Text "You have my deepest gratitude, brave warriors.  I had all but lost hope.
+TellTopic King.1
+TellTopic King.2
+End
+
+Topic King.1
+Text "The Dark One imprisoned me here long ago, and he is the fifth and
+Text "greatest of the Five Great Evils.  Only the Heavenly Sword can
+Text "truly defeat him, but the sword was taken from me and cast into
+Text "the deepest mines.  I charge you with recovering it.
+End
+
+Topic King.2
+Text "With the Heavenly Sword in hand, you will have the strength to
+Text "face The Dark One.  The fate of our realm depends upon your courage.
+TellQuest Quest20
+End

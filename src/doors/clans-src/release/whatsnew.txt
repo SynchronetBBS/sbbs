@@ -1,5 +1,42 @@
 What's new in v0.97v2 Date TBD
 -------------------------------------
+- Completed the full stock quest campaign!  The original game shipped with 6
+  quests out of a planned 20.  All 14 missing quests have been written,
+  forming a full campaign arc:
+
+  New standalone quests:
+    Drakuul's Legacy -- destroy a vampire in his crypt (Very Hard)
+    The Quest for the Lost Knight -- rescue a knight from an abandoned keep
+    The Quest for Vengeance -- track down a bandit captain for the beggar
+    The Spirits of Lovers -- enter the cave from the Lady's ghost story
+    The Lost Treasure -- claim the 3000 gold treasure the old man spoke of
+    The Poet's Quill -- recover the poet's stolen golden quill
+    The Spirit World -- light four candles and face the demon Diablo
+
+  Orc chain (Q1 -> Q11 -> Q15):
+    The Orc Lord -- assault the orc lord's fortress deep in the mines
+
+  Five Great Evils chain (Q15 -> Q14 -> Q16 -> Q17):
+    The Wyvern Lord -- one of the Five Great Evils
+    The Dragon Lord -- one of the Five Great Evils
+    The Demon Lord -- the last of the four lesser evils
+
+  Endgame chain (Q17 -> Q7 -> Q18 -> Q20):
+    The Quest for the Lost King -- rescue King Claudius from the dungeon
+    Sword of The Heavens -- recover the legendary Heavenly Sword
+    The Dark One -- the campaign finale; destroy the fifth Great Evil
+
+  New NPC content: King Claudius is now a full NPC you meet during the
+  Lost King quest.  The Common Man reveals the Five Great Evils chain.
+  The Beggar, Jester, and Acolyte have new quest-giving topics.  Existing
+  NPCs (Knight, Village Idiot, Lady, Old Man, Psychic, Paladin, Poet) now
+  reveal their quests as originally intended.
+
+  New item: the Heavenly Sword, the most powerful weapon in the game,
+  awarded by the Sword of The Heavens quest.
+
+  41 new monsters added for the quest encounters.
+
 - Fixed an issue where Windows would not see the first packet during maint
 - Fixed a handful of memory leaks
 - Fixed a handful of potential crashes

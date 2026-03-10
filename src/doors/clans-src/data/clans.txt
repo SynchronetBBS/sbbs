@@ -87,6 +87,7 @@ KnownTopic      Beggar1.2 The Flag
 Topic           Beggar1.3 The Black Sun
 KnownTopic      Beggar1.4 Your past
 KnownTopic      Beggar1.5 How to get rich...
+KnownTopic      Beggar1.6 Vengeance
 
 # 6
 # some guys to join clans
@@ -158,6 +159,7 @@ KnownTopic      Acolyte.4 Combat
 KnownTopic      Acolyte.5 Evil
 KnownTopic      Acolyte.6 The Church
 KnownTopic      Acolyte.7 Registration
+KnownTopic      Acolyte.8 Vampire
 
 # 11
 Index           _Bum
@@ -241,6 +243,7 @@ KnownTopic      Jester.1 The Orc's Plan
 Topic           Jester.2 Other Orcs
 KnownTopic      Jester.3 Joke
 KnownTopic      Jester.4 Old Kingdom
+Topic           Jester.5 The Orc Lord
 
 # 17
 Index           _Peasant2
@@ -287,6 +290,9 @@ Wander          Street
 KnownTopic      Common.0 Occupation
 Topic           Common.1 Research
 Topic           Common.2 Five Great Evils
+Topic           Common.3 The Five Evils
+Topic           Common.4 Dragon Lord
+Topic           Common.5 Demon Lord
 
 # 21
 Index           _Drunk
@@ -451,3 +457,13 @@ KnownTopic      OldMan2.8 Old Friends
 Topic           OldMan2.9 Did all your friends have dumb names?
 OddsOfSeeing    20
 Wander          Street
+
+# 36
+Index           _King
+MonFile         /m/Npc
+Name            King Claudius
+NPCDAT          15
+OddsOfSeeing    0
+IntroTopic      King.0
+Topic           King.1 The Heavenly Sword
+Topic           King.2 The Dark One

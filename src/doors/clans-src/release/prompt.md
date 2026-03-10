@@ -822,7 +822,13 @@ These expand to live game values during quest execution. All text displayed thro
 
 Quest narrative and NPC dialogue are the player's entire experience of the world. Flat, clipped prose makes a richly designed campaign feel like a technical readout.
 
+The syntax examples throughout this prompt are intentionally terse to demonstrate commands clearly — they are not models for prose style. When generating actual pack content, write narrative text that is immersive and expressive: grounded in sensory detail, alive with rhythm, and specific to the scene. NPC dialogue should sound like speech; quest descriptions should read like fiction.
+
+#### Sentence structure — narration
+
 **Vary sentence length and structure.** Short sentences are powerful for impact — but a sequence of nothing but short declaratives reads like a bullet list, not a story. Mix long and short. Let some sentences carry a subordinate clause, a qualifying detail, a sensory impression. Reserve the short punch for moments that earn it.
+
+Each sentence should express a complete thought. When two ideas are closely related, join them with a conjunction ("and," "but," "while," "as," "where," "who") or a dash rather than separating them into choppy independent sentences. Aim for roughly 40% of sentences to be compound (containing a conjunction that links two clauses). The remaining 60% should still vary in length — some long and descriptive, some short for impact.
 
 **WRONG** — staccato list disguised as narrative:
 
@@ -838,7 +844,43 @@ Quest narrative and NPC dialogue are the player's entire experience of the world
     Text "|0Cboots. At the far end, an iron door — locked, and cold
     Text "|0Cto the touch.
 
-The syntax examples throughout this prompt are intentionally terse to demonstrate commands clearly — they are not models for prose style. When generating actual pack content, write narrative text that is immersive and expressive: grounded in sensory detail, alive with rhythm, and specific to the scene. NPC dialogue should sound like speech; quest descriptions should read like fiction.
+**Deliberate pauses.** When a short sentence is intended as a dramatic beat — a moment where the reader should stop and absorb the weight of what was just said — use one or more `%D` delay codes (100ms each) after the period to make the pause explicit rather than leaving it ambiguous. A period followed by `%D%D` signals deliberate emphasis; a period followed by the next sentence signals normal flow. Without this distinction, the reader cannot tell whether a sequence of short sentences is intentional dramatic pacing or accidental choppiness.
+
+    Text "|0CThe coffin lid was open.%D%D  The body was gone.
+
+#### Sentence structure — NPC dialogue
+
+NPC dialogue is naturally shorter than narration, but the same principle applies: each sentence should be a complete thought. A sequence of clipped fragments sounds like a telegram, not a person speaking. Even brief dialogue benefits from the occasional conjunction or subordinate clause.
+
+**WRONG** — choppy, reads like an instruction manual:
+
+    Text "|0CThe orcs are still out there. Deal with them first!
+
+    Text "|0CSeek out the Orc Lord first. He is the closest of the five.
+
+    Text "|0CThree of the five are destroyed. The end draws near.
+
+**RIGHT** — same information, complete thoughts:
+
+    Text "|0CThe orcs are still out there, so deal with them first!
+
+    Text "|0CSeek out the Orc Lord first, as he is the closest of the five.
+
+    Text "|0CThree of the five are destroyed and the end draws near.
+
+When an NPC delivers multiple related ideas, join them into flowing speech rather than issuing a series of disconnected declarations. The distinction is between "a person explaining something" and "a bulleted list read aloud":
+
+**WRONG** — four declarative sentences, same length, same structure:
+
+    Text "|0CThere have been several unexplained deaths lately. The bodies
+    Text "|0Cwere drained of blood. I believe a vampire is responsible. He
+    Text "|0Cmust be hiding in the mines.
+
+**RIGHT** — compound sentences that flow as speech, with a deliberate pause for horror:
+
+    Text "|0CThere have been several unexplained deaths lately and the bodies
+    Text "|0Cwere drained of blood.%D  I believe a vampire is responsible and
+    Text "|0Cthat he must be hiding somewhere in the mines.
 
 ### Lore and world identity
 
@@ -1101,7 +1143,7 @@ Calibrate rewards to monster Difficulty. Most quest encounters should use monste
 
 **GiveFight:** Use sparingly — at most once per quest, to reward players who are fight-limited. Value of 1 is standard.
 
-**GiveItem:** Reserve for unique story moments (e.g. the player recovers a specific artifact). Don't use as routine quest completion filler.
+**GiveItem:** Reserve for unique story moments (e.g. the player recovers a specific artifact). Don't use as routine quest completion filler. Most items can also be found in shops or as mine treasure, so awarding them via quest is a convenience, not exclusivity. The one exception is the **Heavenly Sword** — it is the most powerful weapon in the game (base stats higher than any quality-boosted shop weapon) and it cannot appear in shops or mine treasure (`Special`, `RandLevel 0`). Since custom quest packs completely replace the stock campaign, every pack should award the Heavenly Sword in exactly one late-game quest so that players on customized BBSs are not disadvantaged against those running the stock campaign. Treat it as the campaign's signature reward — gate it behind your hardest or penultimate quest, not an early freebie.
 
 ### Worked quest example
 
@@ -1320,15 +1362,15 @@ If you find yourself writing the same sentence structure for multiple lore keepe
 
 ### Staccato prose
 
-Narrative text and NPC dialogue must not read like a list of short declarative sentences. This failure is distinct from template repetition — the sentences may all be *different*, but if every line is the same length and structure, the prose is flat and the world feels lifeless.
+Narrative text and NPC dialogue must not read like a list of short declarative sentences. This failure is distinct from template repetition — the sentences may all be *different*, but if every line is the same length and structure, the prose is flat and the world feels lifeless. This applies equally to quest narration and NPC speech — dialogue is naturally shorter, but even brief lines should express complete thoughts rather than issuing one clause per sentence.
 
-**WRONG** — every sentence short, same structure, no rhythm:
+**WRONG** — narration: every sentence short, same structure, no rhythm:
 
     Text "|0CThe gate is open. Guards stand on either side.
     Text "|0CThe courtyard is wide. A fountain sits in the center.
     Text "|0CWater runs over the stone. Moss grows on the rim.
 
-**RIGHT** — varied rhythm, sensory grounding:
+**RIGHT** — narration: varied rhythm, sensory grounding:
 
     Text "|0CThe gate stands open, its guards watching you pass with
     Text "|0Cthe flat patience of men who have stood here all morning.
@@ -1336,7 +1378,15 @@ Narrative text and NPC dialogue must not read like a list of short declarative s
     Text "|0Ccenter, water sheeting over mossy stone in a sound like
     Text "|0Csteady rain.
 
-See the Prose quality section under CAMPAIGN DESIGN for the full guideline. This applies to all generated text: quest Events, Result blocks, NPC Topics, and ambient chat.
+**WRONG** — dialogue: choppy declarations that read like chanting:
+
+    Text "|0CSeek out the Orc Lord first. He is the closest of the five.
+
+**RIGHT** — dialogue: the same idea as a complete thought:
+
+    Text "|0CSeek out the Orc Lord first, as he is the closest of the five.
+
+See the Prose quality section under QUEST DESIGN PATTERNS for the full guideline, including the `%D` pause technique for deliberate dramatic emphasis and the compound-sentence target for narration. This applies to all generated text: quest Events, Result blocks, NPC Topics, and ambient chat.
 
 ### Single-fight, no-choice quests
 
@@ -1415,7 +1465,7 @@ Verify every item before declaring the pack complete. This repeats the most freq
 Valid item names for GiveItem are listed below. Names are case-insensitive.
 
 ### Weapons
-Shortsword, Broadsword, Axe, Mace, Dagger, Staff, Wand, Battle Axe, Morning Star, Scythe, Boomerang, Falcon's Sword, Bloody Club, Death Axe, Spirit Blade, Wizard's Staff, Silver Mace
+Shortsword, Broadsword, Axe, Mace, Dagger, Staff, Wand, Battle Axe, Morning Star, Scythe, Boomerang, Falcon's Sword, Heavenly Sword, Bloody Club, Death Axe, Spirit Blade, Wizard's Staff, Silver Mace
 
 ### Armor
 Cloth Robe, Leather Armor, Chainmail Armor, Platemail Armor, Wooden Armor, Cloth Tunic, Kai Tunic, Hero's Armor, Rags

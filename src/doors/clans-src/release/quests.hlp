@@ -42,84 +42,136 @@ Attempt a rescue of Leonard.
 ^END
 
 ^Drakuul's Legacy
-|10Darkuul's Legacy
+|10Drakuul's Legacy
 |06----------------
 |02The vampire Darkuul has been causing several deaths and the townspeople have
-had enough of it.  They want him destroyed once and for all.
+had enough of it.  They want him destroyed once and for all.  Enter his crypt
+deep in the mines and put an end to his reign of terror.
 
 |12Difficulty: Very Hard
-|12WARNING: Quest not complete!
 ^END
 
 ^The Quest for the Lost King
-|10The Lost King
-|06-------------
+|10The Quest for the Lost King
+|06---------------------------
 |02The king of the old empire was kidnapped and imprisoned by The Dark One.
 Find the king and attempt a rescue mission.
 
 |12Difficulty: Hard
-|12WARNING: Quest not complete!
 ^END
 
 ^The Quest for the Lost Knight
-|10The Lost Knight
-|06-------------
+|10The Quest for the Lost Knight
+|06-----------------------------
+|02A knight is being held captive in an abandoned keep north of town by a
+mysterious creature.  Enter the keep and attempt a rescue.
+
 |12Difficulty: Moderate
-|12WARNING: Quest not complete!
 ^END
 
 ^The Quest for Vengeance
 |10The Quest for Vengeance
 |06-----------------------
+|02A crippled beggar asks you to bring the bandit captain who wounded him to
+justice.  Track the bandit down in the mines.
+
 |12Difficulty: Easy
-|12WARNING: Quest not complete!
 ^END
 
 ^The Spirits of Lovers
-|12WARNING: Quest not complete!
+|10The Spirits of Lovers
+|06---------------------
+|02A tale of two lovers who perished in a cave.  Their spirits have not found
+peace.  Enter the cave and discover the truth behind the legend.
+
+|12Difficulty: Moderate
 ^END
 
 ^The Orcs -- Act II
+|10The Orcs -- Act II
+|06------------------
 |02Search out the second orcish lair and destroy those within.
 
 |12Difficulty: Easy
 ^END
 
 ^The Lost Treasure
-|12WARNING: Quest not complete!
+|10The Lost Treasure
+|06-----------------
+|02An old man speaks of a treasure of 3000 gold pieces hidden deep within the
+mines, guarded by spirits.  Seek out the treasure and claim it.
+
+|12Difficulty: Moderate
 ^END
 
 ^The Spirit World
-|12WARNING: Quest not complete!
+|10The Spirit World
+|06----------------
+|02Light four candles hidden within the underground mine system to open a doorway
+into the spirit world.  There, the possessed sorcerer Diablo awaits.
+
+|12Difficulty: Very Hard
 ^END
 
 ^The Wyvern Lord
-|12WARNING: Quest not complete!
+|10The Wyvern Lord
+|06---------------
+|02One of the Five Great Evils.  The Wyvern Lord nests deep in the mines where
+the tunnels grow steep.  Track him down and destroy him.
+
+|12Difficulty: Hard
 ^END
 
 ^The Orc Lord
-|12WARNING: Quest not complete!
+|10The Orc Lord
+|06------------
+|02The lord who commands all the orc clans from deep within the mines.  Assault
+his fortress and put an end to the orcish threat once and for all.
+
+|12Difficulty: Hard
 ^END
 
 ^The Dragon Lord
-|12WARNING: Quest not complete!
+|10The Dragon Lord
+|06---------------
+|02One of the Five Great Evils.  The Dragon Lord lurks in a volcanic cavern far
+below the surface.  Enter his lair and defeat him.
+
+|12Difficulty: Hard
 ^END
 
 ^The Demon Lord
-|12WARNING: Quest not complete!
+|10The Demon Lord
+|06--------------
+|02The last of the four lesser evils.  The Demon Lord dwells in a hellish pit at
+the very bottom of the mines.  Steel yourself and destroy him.
+
+|12Difficulty: Very Hard
 ^END
 
 ^Sword of The Heavens
-|12WARNING: Quest not complete!
+|10Sword of The Heavens
+|06--------------------
+|02The legendary Heavenly Sword wielded by King Claudius was cast into the deepest
+mines by The Dark One.  Navigate a gauntlet of ancient guardians and claim the
+sword.
+
+|12Difficulty: Very Hard
 ^END
 
 ^The Poet's Quill
-|02Find the thieves and return the quill to the poet.
+|10The Poet's Quill
+|06----------------
+|02Find the thieves who stole the poet's golden quill and return it.
 
-|12Dfficulty: Moderate
-|12WARNING: Quest not complete!
+|12Difficulty: Moderate
 ^END
 
 ^The Dark One
-|12WARNING: Quest not complete!
+|10The Dark One
+|06-----------
+|02The fifth and greatest of the Five Great Evils.  The Dark One destroyed the
+Old Kingdom and imprisoned King Claudius.  Enter his domain and save the realm.
+
+|12Difficulty: Legendary
 ^END

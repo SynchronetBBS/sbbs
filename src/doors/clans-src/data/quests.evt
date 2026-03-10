@@ -1,3 +1,23 @@
+# =============================================================================
+# Flag assignments for the quest campaign
+# =============================================================================
+#
+# P flags (permanent, per-clan):
+#   P1  killed the beast (Quest2/Quest3 -- existing)
+#   P2  rescued King Claudius (Quest7)
+#   P3  retrieved Heavenly Sword (Quest18)
+#   P4  Orc Lord defeated (Quest15)
+#   P5  freed the lost knight (Quest8)
+#
+# G flags (global, never cleared):
+#   G0  The Dark One defeated (Quest20)
+#
+# D flags (daily, per-clan): D1-D10 in use by existing NPC topics
+#
+# T flags (per-session): reused freely within each quest event
+#
+# =============================================================================
+
 # -----------------------------------------------------------------------------
 # The Orcs -- Act I
 Event   Quest1
@@ -490,6 +510,444 @@ End
 
 
 # -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+# Drakuul's Legacy
+Event Quest6
+Text "%C
+Text "|10Drakuul's Legacy
+Text
+Text "|02Using the directions given to you by the acolyte, you find a hidden passage
+Text "in the mines that leads to an old crypt.  The air is cold, the smell of
+Text "death is overwhelming, and torches flicker weakly along the stone walls.
+pause
+Text
+Text "You descend a narrow staircase and find yourself in a dark corridor lined
+Text "with stone coffins.  Some of the lids have been pushed aside from within
+Text "and you hear a low growl from the darkness ahead . . .
+pause
+Text
+Text "Several ghouls emerge from the shadows!
+pause
+AddEnemy /m/Eva 0
+AddEnemy /m/Eva 0
+AddEnemy /m/Eva 1
+AddEnemy /m/Eva 1
+AddEnemy /m/Eva 36
+AddEnemy /m/Eva 36
+Fight NextLine STOP STOP
+Text
+Text "|02You push deeper into the crypt and the corridor opens into a large burial
+Text "chamber where several pale figures stand motionless among the coffins.
+Text "Their eyes glow red as they notice your presence.
+pause
+AddEnemy /m/Eva 54
+AddEnemy /m/Eva 54
+AddEnemy /m/Eva 54
+{R40}AddEnemy /m/Eva 54
+Fight NextLine STOP NoRun
+Text
+Text "|02After destroying the vampire spawns, you press forward through a heavy
+Text "iron door and find a chapel that has been desecrated.  Black candles burn
+Text "with an unnatural flame and two guards stand watch before a stone altar.
+pause
+AddEnemy /m/Eva 55
+AddEnemy /m/Eva 55
+Fight NextLine STOP NoRun
+Text
+Text "|02The guards are destroyed, but before you can catch your breath a deep
+Text "voice echoes through the chamber.
+Text
+Text "|10"You dare enter my domain?  No mortal has left this place alive!"
+pause
+Text
+Text "|02You notice the desecrated altar still glows with dark energy.  Perhaps you
+Text "could use it against the vampire somehow . . .
+Text
+Text " (|05D|02)estroy the altar before facing Darkuul
+Text " (|05F|02)ace Darkuul directly
+Text
+Prompt "[|12DF|02]: |13
+Option D Quest6.Altar
+Option F Quest6.Face
+End
+
+        Result Quest6.Altar
+        Text
+        Text "|02You overturn the altar and smash it to pieces.  The dark energy
+        Text "crackles wildly and dissipates.  A terrible shriek echoes from deeper
+        Text "in the crypt.  Without the altar's power sustaining him, Darkuul is
+        Text "weakened!
+        Text
+        Text "|02The vampire staggers into the chapel, his form flickering.
+        Text
+        Text "|10"What have you done?!" |02he hisses.
+        pause
+        AddEnemy /m/Eva 56
+        Fight Quest6.Win Quest6.Lose NoRun
+        End
+
+        Result Quest6.Face
+        Text
+        Text "|02A tall figure steps out from behind the altar.  His skin is pale as
+        Text "death and his eyes burn with a crimson fire.  A vampire spawn hisses
+        Text "from the shadows beside him.  Darkuul bares his fangs and both
+        Text "creatures lunge towards you!
+        pause
+        AddEnemy /m/Eva 54
+        AddEnemy /m/Eva 56
+        Fight Quest6.FaceWin Quest6.Lose NoRun
+        End
+
+        Result Quest6.FaceWin
+        Text
+        Text "|02You search the intact altar and find |10500 gold pieces |02hidden
+        Text "within a compartment in its base!
+        GiveGold 500
+        Jump Quest6.Win
+        End
+
+        Result Quest6.Win
+        Text
+        Text "|02Darkuul lets out a terrible shriek as he crumbles to dust before your
+        Text "eyes.  The black candles extinguish themselves and the crypt falls silent.
+        pause
+        Text
+        Text "You return to town to deliver the good news.  The townspeople celebrate
+        Text "and the acolyte thanks you personally.  |03(You gain 2500 gold and 75
+        Text "points!  You also gain 1 monster fight!)
+        GiveGold 2500
+        GivePoints 75
+        GiveFight 1
+        AddNews "|10 The vampire Darkuul has been destroyed!
+        DoneQuest
+        End
+
+        Result Quest6.Lose
+        Text "|02The last thing you see is Darkuul's terrible grin as the world
+        Text "goes dark . . .
+        End
+
+# -----------------------------------------------------------------------------
+# The Quest for the Lost King
+Event Quest7
+Text "%C
+Text "|10The Quest for the Lost King
+Text
+Text "|02Following the knight's directions, you descend into the deepest corridors
+Text "of the mines.  The walls change from rough stone to polished black marble
+Text "and you know you are nearing The Dark One's domain.
+pause
+Text
+Text "You come upon a large iron gate flanked by two guards in black armor who
+Text "draw their swords the moment they see you.
+pause
+AddEnemy /m/Eva 67
+AddEnemy /m/Eva 67
+AddEnemy /m/Eva 67
+{R30}AddEnemy /m/Eva 67
+Fight NextLine STOP STOP
+Text
+Text "|02Beyond the gate lies a dungeon.  You can hear moaning from cells deeper
+Text "within.  A side passage leads to what looks like a jailer's quarters.
+Text
+Text " (|05S|02)earch the jailer's quarters for keys
+Text " (|05P|02)ress on towards the cells immediately
+Text
+Prompt "[|12SP|02]: |13
+Option S Quest7.Search
+Option P Quest7.Press
+End
+
+        Result Quest7.Search
+        Text
+        Text "|02You enter the jailer's quarters and find a brutish man gnawing on
+        Text "a bone who sees you and rises with a snarl.
+        pause
+        AddEnemy /m/Eva 68
+        Fight NextLine STOP NoRun
+        Text
+        Text "|02You search his body and find a ring of keys.  |03(You also find 200
+        Text "gold pieces hidden under his mattress!)
+        GiveGold 200
+        Jump Quest7.Knight
+        End
+
+        Result Quest7.Press
+        Text
+        Text "|02You press deeper into the dungeon, stepping past empty cells.  You
+        Text "will need to find keys further in.
+        Jump Quest7.Knight
+        End
+
+        Result Quest7.Knight
+        Text
+        Text "|02As you move towards the deepest cells, a dark knight in armor that
+        Text "gleams with an unnatural sheen blocks your path.
+        Text
+        Text "|10"None shall free the king while I draw breath!" |02he bellows.
+        pause
+        AddEnemy /m/Eva 69
+        Fight NextLine Quest7.Lose NoRun
+        Text
+        Text "|02You defeat the dark knight and his armor shatters into pieces.  Using the
+        Text "keys, you begin checking the cells until you find an old man in tattered
+        Text "robes in the deepest cell.  Despite his condition, he carries himself with
+        Text "dignity.
+        pause
+        Text
+        Text "|10"I am King Claudius.  I have waited many years for this day." |02he says
+        Text "with a weary smile.
+        pause
+        Chat _King
+        Text
+        Text "|02You escort the king out of the dungeon and back to safety, and the
+        Text "townspeople are overjoyed at the news of his rescue.
+        Text "|03(You gain 2000 gold pieces and 75 points!)
+        GiveGold 2000
+        GivePoints 75
+        SetFlag P2
+        AddNews "|10 King Claudius has been rescued from the dungeon!
+        DoneQuest
+        End
+
+        Result Quest7.Lose
+        Text "|02The dark knight is too powerful.  You are dragged into one of the
+        Text "dungeon cells . . .
+        End
+
+# -----------------------------------------------------------------------------
+# The Quest for the Lost Knight
+Event Quest8
+Text "%C
+Text "|10The Quest for the Lost Knight
+Text
+Text "|02Following the village idiot's directions, you travel north of town to an
+Text "abandoned stone keep.  The building is crumbling and overgrown with vines,
+Text "and the front door hangs from one hinge.
+pause
+Text
+Text "You enter the keep and find it mostly empty, with broken furniture and old
+Text "weapons littering the floor.  You hear a faint voice calling for help from
+Text "somewhere below.
+Text
+Text " (|05S|02)earch for stairs leading down
+Text " (|05E|02)xplore the ground floor first
+Text
+Prompt "[|12SE|02]: |13
+Option S Quest8.Down
+Option E Quest8.Explore
+End
+
+        Result Quest8.Explore
+        Text
+        Text "|02You search the ground floor and find nothing of value except a few
+        Text "old coins totalling |10200 gold pieces|02.
+        GiveGold 200
+        pause
+        Text
+        Text "|02The clatter of your search echoes through the keep, but you find a
+        Text "staircase leading down.  At the bottom, three undead guards are already
+        Text "on their feet, alerted by the noise you made above!
+        pause
+        AddEnemy /m/Eva 41
+        AddEnemy /m/Eva 41
+        AddEnemy /m/Eva 41
+        {R40}AddEnemy /m/Eva 41
+        Fight NextLine STOP STOP
+        Jump Quest8.Creature
+        End
+
+        Result Quest8.Down
+        Text
+        Text "|02You find a staircase leading down into a cellar and the voice grows
+        Text "louder.  At the bottom you see two undead guards standing watch before
+        Text "a locked door, and they raise their rusted swords as you approach.
+        pause
+        AddEnemy /m/Eva 41
+        AddEnemy /m/Eva 41
+        {R40}AddEnemy /m/Eva 41
+        Fight NextLine STOP STOP
+        Jump Quest8.Creature
+        End
+
+        Result Quest8.Creature
+        Text
+        Text "|02Behind the locked door you find a long corridor that opens into a large
+        Text "chamber.  A knight in battered armor is chained to the far wall.  Between
+        Text "you and him paces a large creature, part beast and part shadow.  It turns
+        Text "and fixes its hollow eyes on you.
+        pause
+        AddEnemy /m/Eva 42
+        Fight NextLine Quest8.Lose NoRun
+        Text
+        Text "|02The creature dissolves into wisps of shadow and you break the knight's
+        Text "chains and help him to his feet.
+        Text
+        Text "|10"Thank you, brave warriors.  I have been imprisoned here for months.
+        Text "That creature was placed here by dark forces to guard me.  I am in your
+        Text "debt." |02he says.
+        Text
+        Text "|03(You gain 800 gold pieces and 50 points!)
+        GiveGold 800
+        GivePoints 50
+        SetFlag P5
+        DoneQuest
+        End
+
+        Result Quest8.Lose
+        Text "|02The creature is too powerful.  You retreat from the keep before it
+        Text "can finish you off . . .
+        End
+
+# -----------------------------------------------------------------------------
+# The Quest for Vengeance
+Event Quest9
+Text "%C
+Text "|10The Quest for Vengeance
+Text
+Text "|02Using the beggar's description, you search the mines for the bandit captain
+Text "who crippled him.  After an hour of searching, you spot a campfire flickering
+Text "in a side tunnel and can make out several figures sitting around it.
+Text
+Text " (|05A|02)mbush them while they're unaware
+Text " (|05C|02)hallenge the captain honorably
+Text
+Prompt "[|12AC|02]: |13
+Option A Quest9.Ambush
+Option C Quest9.Challenge
+End
+
+        Result Quest9.Ambush
+        Text
+        Text "|02You creep up on the bandits and strike before they can grab their
+        Text "weapons!  The element of surprise scatters most of the gang -- only the
+        Text "captain and one bandit stand their ground.
+        pause
+        AddEnemy /m/Eva 37
+        AddEnemy /m/Eva 38
+        Fight NextLine STOP STOP
+        Text
+        Text "|02The bandit captain lies defeated.  You find |10400 gold pieces |02among
+        Text "the stolen goods in their camp.  |03(You gain 50 points for avenging
+        Text "the beggar!)
+        GiveGold 400
+        GivePoints 50
+        DoneQuest
+        End
+
+        Result Quest9.Challenge
+        Text
+        Text "|02You step into the light and call out the captain by name.  The bandits
+        Text "scramble for their weapons while the captain stands slowly and grins.
+        Text
+        Text "|10"So the cripple sent someone after me, did he?  Very well.  Let's
+        Text "settle this!" |02he says as he draws his sword.
+        pause
+        AddEnemy /m/Eva 37
+        AddEnemy /m/Eva 37
+        AddEnemy /m/Eva 38
+        Fight NextLine STOP STOP
+        Text
+        Text "|02The bandit captain lies defeated and the rest of his men scatter into
+        Text "the mines.  You find |10400 gold pieces |02among the stolen goods in
+        Text "their camp.  |03(You gain 75 points for your honorable victory!  The
+        Text "beggar will be glad to hear of this.)
+        GiveGold 400
+        GivePoints 75
+        DoneQuest
+        End
+
+# -----------------------------------------------------------------------------
+# The Spirits of Lovers
+Event Quest10
+Text "%C
+Text "|10The Spirits of Lovers
+Text
+Text "|02You find the cave from the seamstress's story on the snowy hillside.  The
+Text "entrance is partially blocked by old snow, but you manage to squeeze through.
+Text "Inside, the air is freezing cold and you can see your breath.
+pause
+Text
+Text "You walk deeper into the cave.  The sound of dripping water echoes around
+Text "you.  Then you hear something else -- a faint sobbing.
+pause
+Text
+Text "A ghostly figure appears before you.  It is a woman in a tattered dress,
+Text "weeping silently.  She looks up and sees you.
+Text
+Text "|10"Please . . . I fell into this chasm long ago and my beloved took his
+Text "own life in grief.  I cannot rest until we are together again."
+Text
+Text "|02 (|05H|02)elp the spirit find peace
+Text " (|05T|02)ake the treasure you can see behind her
+Text
+Prompt "[|12HT|02]: |13
+Option H Quest10.Help
+Option T Quest10.Take
+End
+
+        Result Quest10.Help
+        Text
+        Text "|02You agree to help.  The ghost leads you deeper into the cave to a
+        Text "wide chasm.  A dark presence lurks at the bottom, preventing the lovers
+        Text "from reuniting.  You must destroy it.
+        pause
+        AddEnemy /m/Eva 43
+        AddEnemy /m/Eva 43
+        AddEnemy /m/Eva 43
+        Fight NextLine STOP STOP
+        Text
+        Text "|02You descend carefully into the chasm.  At the bottom, a swirling mass
+        Text "of darkness hovers over the woman's remains.  The dark presence turns
+        Text "towards you with malice.
+        pause
+        AddEnemy /m/Eva 44
+        Fight NextLine Quest10.Lose NoRun
+        Text
+        Text "|02The dark presence shatters and the cave fills with a warm light.  The
+        Text "spirit of the woman's beloved appears beside her and they embrace at
+        Text "last.  Together, they rise upward and fade into the light.
+        pause
+        Text
+        Text "A feeling of peace washes over the clan.  |03(Each clansman's skill points
+        Text "are restored!)
+        Heal SP
+        Text
+        Text "|02Among the remains you find |101000 gold pieces|02.  |03(You gain 75 points
+        Text "for helping the spirits find peace!)
+        GiveGold 1000
+        GivePoints 75
+        DoneQuest
+        End
+
+        Result Quest10.Take
+        Text
+        Text "|02You push past the ghost and grab at the treasure.  The spirit lets out
+        Text "a terrible wail!  The cave grows dark and cold as several ghosts
+        Text "materialize around you.
+        pause
+        AddEnemy /m/Eva 43
+        AddEnemy /m/Eva 43
+        AddEnemy /m/Eva 43
+        AddEnemy /m/Eva 43
+        AddEnemy /m/Eva 43
+        Fight NextLine STOP NoRun
+        Text
+        Text "|02The ghosts fade away reluctantly.  You grab what treasure you can find
+        Text "and make for the exit.  The sobbing resumes behind you as you leave.
+        Text "You can't help feeling a twinge of guilt.
+        Text "|03(You gain 1000 gold pieces and 50 points.)
+        GiveGold 1000
+        GivePoints 50
+        DoneQuest
+        End
+
+        Result Quest10.Lose
+        Text "|02The darkness overwhelms you.  You wake up outside the cave, shivering
+        Text "and confused . . .
+        End
+
+# -----------------------------------------------------------------------------
 Event Quest11
 Text "%C
 Text "|10The Orcs |02-- |14Act II
@@ -530,4 +988,723 @@ Text
 Text "You feel relieved after removing the orcish plague from the townspeople.
 DoneQuest
 End
+
+# -----------------------------------------------------------------------------
+# The Lost Treasure
+Event Quest12
+Text "%C
+Text "|10The Lost Treasure
+Text
+Text "|02Following the old man's directions, you head deep into the mines in search
+Text "of the hidden treasure.  The tunnels grow narrow and cold as you descend.
+Text "You can feel a strange chill in the air as if something is watching you.
+pause
+Text
+Text "You enter a large cavern and see several ghostly sentries patrolling the area.
+Text "They spot you immediately and drift towards you with weapons drawn.
+pause
+AddEnemy /m/Eva 45
+AddEnemy /m/Eva 45
+AddEnemy /m/Eva 45
+{R40}AddEnemy /m/Eva 45
+Fight NextLine STOP STOP
+Text
+Text "|02After dispatching the sentries, you continue forward.  The tunnel splits
+Text "into two paths.
+Text
+Text " (|05L|02)eft path -- dimly lit
+Text " (|05R|02)ight path -- total darkness
+Text
+Prompt "[|12LR|02]: |13
+Option L Quest12.Left
+Option R Quest12.Right
+End
+
+        Result Quest12.Left
+        Text
+        Text "|02You follow the left path and come to a dead end.  But as you turn to
+        Text "leave, the wall behind you crumbles to reveal a hidden passage!  Inside
+        Text "you find a small chest containing |10300 gold pieces|02!
+        GiveGold 300
+        pause
+        Text
+        Text "|02You press on through the passage and encounter spirit warriors who
+        Text "drift towards you with weapons raised.
+        pause
+        AddEnemy /m/Eva 46
+        AddEnemy /m/Eva 46
+        AddEnemy /m/Eva 46
+        {R30}AddEnemy /m/Eva 46
+        Fight NextLine STOP NoRun
+        Jump Quest12.Guardian
+        End
+
+        Result Quest12.Right
+        Text
+        Text "|02You stumble through the darkness for what feels like an eternity.
+        Text "Eventually your torches reveal a corridor guarded by spirit warriors who
+        Text "float silently in the darkness.
+        pause
+        AddEnemy /m/Eva 46
+        AddEnemy /m/Eva 46
+        {R30}AddEnemy /m/Eva 46
+        Fight NextLine STOP NoRun
+        Jump Quest12.Guardian
+        End
+
+        Result Quest12.Guardian
+        Text
+        Text "|02You press forward and find a massive door covered in ancient runes.  It
+        Text "swings open at your touch.  Inside is a treasure chamber, but standing
+        Text "before the gold is a towering spirit -- the treasure guardian.
+        Text
+        Text "|10"This gold belongs to the dead.  You shall join them!" |02it howls.
+        pause
+        AddEnemy /m/Eva 47
+        Fight NextLine Quest12.Lose NoRun
+        Text
+        Text "|02The guardian dissolves with a final shriek.  Before you lies a mountain
+        Text "of gold coins!  You quickly fill your sacks.
+        Text "|03(You gain 3000 gold pieces and 75 points!)
+        GiveGold 3000
+        GivePoints 75
+        DoneQuest
+        End
+
+        Result Quest12.Lose
+        Text "|02The treasure guardian is too powerful.  You are forced to flee empty
+        Text "handed . . .
+        End
+
+# -----------------------------------------------------------------------------
+# The Spirit World
+Event Quest13
+Text "%C
+Text "|10The Spirit World
+Text
+Text "|02Using the psychic's directions, you search the underground mine system for
+Text "the four candles that must be lit to open the doorway into the spirit world.
+pause
+Text
+Text "The first candle sits in a small alcove guarded by evil spirits, and you
+Text "ready your weapons as they rise to meet you.
+pause
+AddEnemy /m/Eva 64
+AddEnemy /m/Eva 64
+{R50}AddEnemy /m/Eva 64
+Fight NextLine STOP STOP
+Text
+Text "|02You light the first candle and it burns with an eerie blue flame.  You
+Text "press on through the winding tunnels to find the second candle.
+pause
+Text
+Text "The second candle is in a flooded chamber and more spirits guard it.
+pause
+AddEnemy /m/Eva 64
+AddEnemy /m/Eva 64
+AddEnemy /m/Eva 64
+Fight NextLine STOP NoRun
+Text
+Text "|02The second candle is lit and the blue flames seem to pulse with energy as
+Text "you search for the third candle.
+pause
+Text
+Text "The third candle sits atop a stone pedestal in a room filled with bones,
+Text "and a familiar figure stands before it -- Lelaz, the psychic's former
+Text "pupil, whose eyes glow with an unnatural light.
+Text
+Text "|10"You cannot stop what has already begun!" |02he shouts.
+pause
+AddEnemy /m/Eva 65
+AddEnemy /m/Eva 64
+AddEnemy /m/Eva 64
+Fight NextLine STOP NoRun
+Text
+Text "|02You defeat Lelaz and light the third candle, and the room trembles as you
+Text "hurry to find the fourth and final candle.
+pause
+Text
+Text "The fourth candle is in a large circular room.  As you light it, the floor
+Text "begins to shake violently and a door of light opens in the far wall.
+Text "A massive figure steps through -- the demon called Diablo.
+Text
+Text "|10"At last, a worthy soul to devour!" |02he bellows.
+pause
+AddEnemy /m/Eva 66
+Fight NextLine Quest13.Lose NoRun
+Text
+Text "|02Diablo lets out a terrible roar as he is pulled back through the door into
+Text "the spirit world.  The door slams shut and vanishes, and the four candles
+Text "extinguish themselves.  The spirit world is sealed once more.
+pause
+Text
+Text "|03(You gain 3000 gold pieces and 75 points!)
+GiveGold 3000
+GivePoints 75
+AddNews "|10 The sorcerer Diablo has been banished from the spirit world!
+DoneQuest
+End
+
+        Result Quest13.Lose
+        Text "|02Diablo's power overwhelms you.  The last thing you hear is his
+        Text "laughter echoing through the chamber . . .
+        End
+
+# -----------------------------------------------------------------------------
+# The Wyvern Lord
+Event Quest14
+Text "%C
+Text "|10The Wyvern Lord
+Text
+Text "|02Following the historian's directions, you descend into the steepest tunnels
+Text "of the mines.  The air grows thin and the walls are scarred with enormous
+Text "claw marks.  You are entering wyvern territory.
+pause
+Text
+Text "A pair of wyvern scouts swoops down from a ledge above!  Their shrieks echo
+Text "through the corridor as they attack.
+pause
+AddEnemy /m/Eva 51
+AddEnemy /m/Eva 51
+{R40}AddEnemy /m/Eva 51
+Fight NextLine STOP STOP
+Text
+Text "|02You press deeper into the tunnels.  The passage opens into a massive
+Text "cavern with a high ceiling.  Several wyverns nest on the rocky ledges above.
+Text "They dive at you with talons extended!
+pause
+AddEnemy /m/Eva 52
+AddEnemy /m/Eva 52
+AddEnemy /m/Eva 52
+{R30}AddEnemy /m/Eva 51
+Fight NextLine STOP NoRun
+Text
+Text "|02After the battle, you climb a narrow path leading to the highest point of
+Text "the cavern.  There, perched on a massive nest of bones and treasure, sits
+Text "the Wyvern Lord.  Its wingspan is enormous and its eyes burn with ancient
+Text "hatred.
+Text
+Text "|10"No mortal has ever reached my nest and lived to speak of it!" |02it roars.
+pause
+AddEnemy /m/Eva 53
+Fight NextLine Quest14.Lose NoRun
+Text
+Text "|02The Wyvern Lord crashes to the cavern floor, shaking the entire mountain.
+Text "Among the bones in its nest you find a great deal of gold.
+Text "|03(You gain 2000 gold pieces and 75 points!)
+GiveGold 2000
+GivePoints 75
+AddNews "|10 The Wyvern Lord has been slain!
+DoneQuest
+End
+
+        Result Quest14.Lose
+        Text "|02The Wyvern Lord is too powerful.  You are swept aside by its massive
+        Text "wings and barely escape with your lives . . .
+        End
+
+# -----------------------------------------------------------------------------
+# The Orc Lord
+Event Quest15
+Text "%C
+Text "|10The Orc Lord
+Text
+Text "|02The jester's information leads you deep into the mines to a massive iron
+Text "fortress built into the rock itself.  This is the stronghold of the Orc Lord,
+Text "the master of all the orc clans.
+pause
+Text
+Text "You approach the fortress gates.  Orc warriors stand guard on the walls above.
+Text "They spot you and sound a horn.  The gates burst open and several warriors
+Text "charge out to meet you!
+pause
+AddEnemy /m/Eva 48
+AddEnemy /m/Eva 48
+AddEnemy /m/Eva 48
+AddEnemy /m/Eva 48
+{R30}AddEnemy /m/Eva 48
+{R20}AddEnemy /m/Eva 48
+Fight NextLine STOP STOP
+Text
+Text "|02You fight your way through the gate and into the fortress courtyard.  The
+Text "main hall lies ahead, but you also notice a narrow side passage that could
+Text "let you flank the guards within.
+Text
+Text " (|05C|02)harge straight into the main hall
+Text " (|05F|02)lank through the side passage
+Text
+Prompt "[|12CF|02]: |13
+Option C Quest15.Charge
+Option F Quest15.Flank
+End
+
+        Result Quest15.Flank
+        Text
+        Text "|02You slip through the narrow passage and emerge behind the orc elite
+        Text "guard.  You catch several of them off guard before they can react!
+        Text "|03(You gain 300 bonus gold from a supply room along the way!)
+        GiveGold 300
+        pause
+        AddEnemy /m/Eva 49
+        AddEnemy /m/Eva 49
+        {R40}AddEnemy /m/Eva 49
+        Fight NextLine STOP NoRun
+        Jump Quest15.Throne
+        End
+
+        Result Quest15.Charge
+        Text
+        Text "|02You kick open the doors to the main hall.  The Orc Lord's elite guard
+        Text "awaits you inside.  These orcs are larger and better equipped than any
+        Text "you have faced before.
+        pause
+        AddEnemy /m/Eva 49
+        AddEnemy /m/Eva 49
+        AddEnemy /m/Eva 49
+        {R40}AddEnemy /m/Eva 49
+        Fight NextLine STOP NoRun
+        Text
+        Text "|02Among the carnage you find the Orc Lord's war chest.  |03(You gain 500
+        Text "bonus gold!)
+        GiveGold 500
+        Jump Quest15.Throne
+        End
+
+        Result Quest15.Throne
+        Text
+        Text "|02You cut through the last of the elite guard and kick open the throne
+        Text "room doors.  On a crude iron throne sits the Orc Lord himself.  He is
+        Text "massive, easily twice the size of a normal orc.  In one hand he holds
+        Text "a war hammer that crackles with dark energy.
+        Text
+        Text "|10"You have slaughtered my people.  Now I shall slaughter you!" |02he
+        Text "roars as he rises from his throne.
+        pause
+        AddEnemy /m/Eva 50
+        Fight NextLine Quest15.Lose NoRun
+        Text
+        Text "|02The Orc Lord falls with a tremendous crash.  The fortress begins to
+        Text "crumble around you.  You grab what gold you can and flee as the
+        Text "stronghold collapses into rubble.
+        pause
+        Text
+        Text "|02The orcish threat is ended once and for all.  |03(You gain 1500 gold
+        Text "pieces, 75 points, and 1 monster fight!)
+        GiveGold 1500
+        GivePoints 75
+        GiveFight 1
+        SetFlag P4
+        AddNews "|10 The Orc Lord's fortress has been destroyed!
+        DoneQuest
+        End
+
+        Result Quest15.Lose
+        Text "|02The Orc Lord's war hammer comes crashing down.  Everything goes
+        Text "dark . . .
+        End
+
+# -----------------------------------------------------------------------------
+# The Dragon Lord
+Event Quest16
+Text "%C
+Text "|10The Dragon Lord
+Text
+Text "|02The historian told you of a volcanic cavern deep below the surface.  As you
+Text "descend, the temperature rises steadily.  The walls glow red with heat and
+Text "the air shimmers.
+pause
+Text
+Text "You enter a tunnel filled with the stench of sulfur.  Two drakes emerge from
+Text "cracks in the walls, their scales glowing with inner fire!
+pause
+AddEnemy /m/Eva 57
+AddEnemy /m/Eva 57
+{R50}AddEnemy /m/Eva 57
+Fight NextLine STOP STOP
+Text
+Text "|02You press forward into the volcanic cavern.  Rivers of magma flow between
+Text "rocky platforms.  Fire elementals dance among the flames, and they do not
+Text "appreciate your intrusion.
+pause
+AddEnemy /m/Eva 58
+AddEnemy /m/Eva 58
+AddEnemy /m/Eva 57
+{R30}AddEnemy /m/Eva 58
+Fight NextLine STOP NoRun
+Text
+Text "|02You leap across the final platform and enter the Dragon Lord's lair.  The
+Text "cavern is enormous.  Mountains of melted gold line the walls.  In the center,
+Text "coiled around a pillar of obsidian, rests the Dragon Lord.  He is far larger
+Text "than the golden dragon you may have encountered before.  His scales are black
+Text "as coal and his breath is pure flame.
+Text
+Text "|10"Another fool who thinks he can slay a dragon!" |02he laughs, sending a
+Text "wave of heat across the cavern.
+pause
+AddEnemy /m/Eva 59
+Fight NextLine Quest16.Lose NoRun
+Text
+Text "|02The Dragon Lord thrashes wildly in his death throes, causing the cavern to
+Text "shake.  Magma bubbles up from cracks in the floor.  You grab what treasure
+Text "you can carry and run for the exit.
+pause
+Text
+Text "|02You make it out just as the cavern entrance collapses behind you.
+Text "|03(You gain 2500 gold pieces and 75 points!)
+GiveGold 2500
+GivePoints 75
+AddNews "|10 The Dragon Lord has been defeated!
+DoneQuest
+End
+
+        Result Quest16.Lose
+        Text "|02The Dragon Lord's flames engulf the clan.  You barely escape the
+        Text "cavern alive . . .
+        End
+
+# -----------------------------------------------------------------------------
+# The Demon Lord
+Event Quest17
+Text "%C
+Text "|10The Demon Lord
+Text
+Text "|02You descend into the very bottom of the mines where the stone is not
+Text "natural but twisted and blackened, as if burned from within.  The air is
+Text "thick with the smell of brimstone and you know you have entered the realm
+Text "of the Demon Lord.
+pause
+Text
+Text "Small imps scurry along the walls, cackling.  They notice you and attack in
+Text "a swarm!
+pause
+AddEnemy /m/Eva 60
+AddEnemy /m/Eva 60
+AddEnemy /m/Eva 60
+AddEnemy /m/Eva 60
+AddEnemy /m/Eva 60
+{R30}AddEnemy /m/Eva 60
+Fight NextLine STOP STOP
+Text
+Text "|02You wade through the swarm of imps and enter a corridor of black stone
+Text "where demons patrol the halls, their red skin glowing in the darkness.
+pause
+AddEnemy /m/Eva 61
+AddEnemy /m/Eva 61
+{R40}AddEnemy /m/Eva 61
+Fight NextLine STOP NoRun
+Text
+Text "|02Beyond the demons, you reach a massive gate made of bones where two demon
+Text "elites stand guard and draw their flaming swords.
+pause
+AddEnemy /m/Eva 62
+AddEnemy /m/Eva 62
+Fight NextLine STOP NoRun
+Text
+Text "|02The gates of bone swing open to reveal a throne room of pure obsidian.  On
+Text "a throne of skulls sits the Demon Lord, the last of the four lesser evils.
+Text "He is enormous, with great horns curving from his head and wings of shadow
+Text "stretching behind him.
+Text
+Text "|10"You have destroyed my brothers.  But I am the strongest of the four.
+Text "Your souls will fuel my power for eternity!" |02he bellows.
+pause
+AddEnemy /m/Eva 63
+Fight NextLine Quest17.Lose NoRun
+Text
+Text "|02The Demon Lord shrieks as his form crumbles to ash and the throne of skulls
+Text "shatters beneath him.  The realm of the demons begins to collapse, and you
+Text "run as fast as your legs can carry you, barely escaping as the corridor
+Text "seals itself behind you.
+pause
+Text
+Text "|02The four lesser evils are no more.  |03(You gain 3000 gold pieces and
+Text "75 points!)
+GiveGold 3000
+GivePoints 75
+AddNews "|10 The Demon Lord has been vanquished!
+DoneQuest
+End
+
+        Result Quest17.Lose
+        Text "|02The Demon Lord's power is overwhelming.  You are cast out of his
+        Text "realm, broken and defeated . . .
+        End
+
+# -----------------------------------------------------------------------------
+# Sword of The Heavens
+Event Quest18
+Text "%C
+Text "|10Sword of The Heavens
+Text
+Text "|02The paladin's directions lead you to an ancient staircase hidden deep within
+Text "the mines.  The steps are carved from white marble, untouched by the
+Text "corruption above.  You descend into a place that feels older than the world
+Text "itself.
+pause
+Text
+Text "At the bottom of the stairs, you enter a long corridor lined with statues of
+Text "ancient warriors.  As you pass, the statues begin to glow and several ancient
+Text "spirits materialize before you!
+pause
+AddEnemy /m/Eva 70
+AddEnemy /m/Eva 70
+AddEnemy /m/Eva 70
+{R40}AddEnemy /m/Eva 70
+Fight NextLine STOP STOP
+Text
+Text "|02You push past the spirits and enter a chamber of stone pillars.  Between
+Text "the pillars stand massive stone guardians.  They come to life as you enter,
+Text "their stone fists raised to strike.
+pause
+AddEnemy /m/Eva 71
+AddEnemy /m/Eva 71
+{R30}AddEnemy /m/Eva 71
+Fight NextLine STOP NoRun
+Text
+Text "|02Beyond the guardians lies a long bridge over a bottomless chasm.  On the
+Text "other side stands an ancient knight in gleaming armor.  He is a spirit, but
+Text "far more powerful than the others.
+Text
+Text "|10"Only the worthy may claim the Heavenly Sword.  Prove yourself!" |02he
+Text "commands.
+pause
+AddEnemy /m/Eva 72
+Fight NextLine STOP NoRun
+Text
+Text "|02You cross the bridge and enter the final chamber.  In the center, embedded
+Text "in a pedestal of white stone, is the Heavenly Sword.  Its blade glows with
+Text "a soft golden light.  But one last guardian blocks your path -- an enormous
+Text "armored figure who has protected the sword for ages untold.
+Text
+Text "|10"The sword chose its master long ago.  You are not he." |02the guardian
+Text "rumbles.
+pause
+AddEnemy /m/Eva 73
+Fight NextLine Quest18.Lose NoRun
+Text
+Text "|02The guardian falls to one knee, then fades away.
+Text
+Text "|10"Perhaps . . . I was wrong.  Take the sword.  The realm needs you."
+pause
+Text
+Text "|02You grasp the Heavenly Sword.  It feels warm in your hands, as if it has
+Text "been waiting for you.  The blade pulses with light as you lift it from the
+Text "pedestal.
+Text
+Text "|03(You gain the Heavenly Sword!  You also gain 3500 gold pieces
+Text "and 75 points!)
+GiveItem Heavenly Sword
+GiveGold 3500
+GivePoints 75
+SetFlag P3
+AddNews "|10 The Heavenly Sword has been recovered from the mines!
+DoneQuest
+End
+
+        Result Quest18.Lose
+        Text "|02The sword guardian is far too powerful.  You are not yet worthy of
+        Text "the Heavenly Sword . . .
+        End
+
+# -----------------------------------------------------------------------------
+# The Poet's Quill
+Event Quest19
+Text "%C
+Text "|10The Poet's Quill
+Text
+Text "|02Using the poet's description, you search the mines for the thieves who stole
+Text "his golden quill.  After some time, you spot a trail of dropped coins
+Text "leading down a side corridor and you follow it.
+pause
+Text
+Text "The trail leads to a makeshift camp where several thief scouts sit around
+Text "a fire.  They jump up as they notice you!
+pause
+AddEnemy /m/Eva 39
+AddEnemy /m/Eva 39
+AddEnemy /m/Eva 39
+{R40}AddEnemy /m/Eva 39
+Fight NextLine STOP STOP
+Text
+Text "|02You search the camp but find no quill, although one of the fallen thieves
+Text "mutters something about a hideout deeper in the mines.  You press forward.
+pause
+Text
+Text "You reach a dead end with a large wooden door and kick it in to find the
+Text "thief leader sitting at a desk, examining the golden quill.  He sees you
+Text "and draws his sword.
+Text
+Text "|10"That quill is worth a fortune!  You'll have to pry it from my cold dead
+Text "hands!" |02he snarls.
+Text
+Text " (|05F|02)ight him for the quill
+Text " (|05N|02)egotiate -- offer gold for its return
+Text
+Prompt "[|12FN|02]: |13
+Option F Quest19.Fight
+Option N Quest19.Negotiate
+End
+
+        Result Quest19.Fight
+        Text
+        Text "|02You draw your weapons and charge.
+        pause
+        AddEnemy /m/Eva 40
+        Fight NextLine STOP NoRun
+        Text
+        Text "|02The thief leader falls and you pick up the golden quill from the desk.
+        Text "It is beautiful, made from the feather of a rare golden bird, and you
+        Text "also find |10600 gold pieces |02stashed under the desk.
+        Text
+        Text "|02You return the quill to the grateful poet.  |03(You gain 600 gold pieces
+        Text "and 50 points!)
+        GiveGold 600
+        GivePoints 50
+        DoneQuest
+        End
+
+        Result Quest19.Negotiate
+        Text
+        Text "|02The thief leader eyes you suspiciously.
+        Text
+        {!$300}Text "|10"You don't even have enough gold to make it worth my while!" |02he
+        {!$300}Text "laughs.  |02Looks like you'll have to fight after all.
+        {!$300}pause
+        {!$300}Jump Quest19.Fight
+        {$300}Text "|10"300 gold and you can have the quill.  Deal?" |02he says.
+        {$300}Text
+        {$300}Prompt "|02Pay the 300 gold? [|12Y/N|02]: |13
+        {$300}Option Y Quest19.Pay
+        {$300}Option N Quest19.Fight
+        End
+
+        Result Quest19.Pay
+        Text
+        Text "|02You hand over 300 gold pieces.  The thief leader smirks and tosses you
+        Text "the quill.  |10"Pleasure doing business with ya!" |02he says.
+        TakeGold 300
+        Text
+        Text "|02You return the quill to the poet.  He is overjoyed that you resolved it
+        Text "without bloodshed and gives you a generous reward.
+        Text "|03(You gain 200 gold pieces and 75 points!)
+        GiveGold 200
+        GivePoints 75
+        DoneQuest
+        End
+
+# -----------------------------------------------------------------------------
+# The Dark One
+Event Quest20
+Text "%C
+Text "|10The Dark One
+Text
+Text "|02The time has come.  You descend into the deepest reaches of the mines,
+Text "beyond the ruins of the Orc Lord's fortress and the sealed realm of the
+Text "Demon Lord, to the domain of The Dark One himself -- the one who destroyed
+Text "the Old Kingdom and the fifth and greatest of the Five Great Evils.
+pause
+Text
+Text "The walls here are made of black obsidian that reflects no light, and the
+Text "only illumination comes from veins of red energy that pulse through the
+Text "stone like blood through veins.
+pause
+Text
+Text "You enter a wide corridor and are immediately set upon by dark minions!
+pause
+AddEnemy /m/Eva 74
+AddEnemy /m/Eva 74
+AddEnemy /m/Eva 74
+AddEnemy /m/Eva 74
+{R40}AddEnemy /m/Eva 74
+{R20}AddEnemy /m/Eva 74
+Fight NextLine STOP NoRun
+Text
+Text "|02You push through the minions and enter a great hall lit by black flames
+Text "where dark sorcerers chant in a circle, channeling energy towards a
+Text "massive door at the far end.
+pause
+AddEnemy /m/Eva 75
+AddEnemy /m/Eva 75
+{R40}AddEnemy /m/Eva 75
+Fight NextLine STOP NoRun
+Text
+Text "|02The sorcerers are silenced and their dark energy dissipates.  You approach
+Text "the massive door and push it open.
+pause
+Text
+Text "Beyond the door lies an arena of black stone where the dark champion, the
+Text "personal guard of The Dark One, stands in the center and draws a massive
+Text "black sword.
+Text
+Text "|10"My master awaits beyond.  But you shall not pass." |02he says coldly.
+pause
+AddEnemy /m/Eva 76
+Fight NextLine STOP NoRun
+Text
+Text "|02The champion falls and you step over his body into the final chamber.
+pause
+Text
+Text "|02The chamber is vast and empty except for a throne of black crystal at the
+Text "far end.  On the throne sits a figure cloaked in shadow who rises slowly,
+Text "and two red eyes peer out from beneath his hood.
+Text
+Text "|10"So . . . you are the one who destroyed my servants.  The Orc Lord.  The
+Text "Wyvern Lord.  The Dragon Lord.  The Demon Lord.  You even freed that fool
+Text "Claudius." |02he speaks, his voice like ice.
+pause
+{P3}Text
+{P3}Text "|02The Dark One's eyes narrow as he sees the Heavenly Sword in your hands.
+{P3}Text
+{P3}Text "|10"The Heavenly Sword!  Impossible!  No matter . . . I destroyed its master
+{P3}Text "once before.  I shall do so again!"
+{!P3}Text
+{!P3}Text "|10"You come to face me without even the Heavenly Sword?  Your courage is
+{!P3}Text "admirable, if foolish."
+pause
+Text
+Text "|02The Dark One throws off his cloak.  Beneath it is a being of pure shadow
+Text "and malice.  Dark energy crackles around his form as he draws a blade of
+Text "black flame.  The final battle begins!
+pause
+AddEnemy /m/Eva 77
+Fight Quest20.Win Quest20.Lose NoRun
+End
+
+        Result Quest20.Win
+        Text
+        Text "|02The Dark One staggers backwards, his form flickering like a dying flame.
+        Text
+        {P3}Text "|10"The sword . . . how can this be . . . I am eternal . . ."
+        {!P3}Text "|10"Impossible . . . no mortal could . . ."
+        Text
+        Text "|02His body dissolves into shadow and the shadow itself burns away in a
+        Text "flash of white light.  The chamber shakes violently as cracks appear in
+        Text "the black crystal throne and it shatters into a thousand pieces.
+        pause
+        Text
+        Text "|02The red veins of energy in the walls fade and die, and the black
+        Text "obsidian crumbles to ordinary stone.  The domain of The Dark One is no
+        Text "more.
+        pause
+        Text
+        Text "|02You make your way back to the surface and as you emerge from the mines
+        Text "the townspeople gather around you.  Word spreads quickly -- The Dark One
+        Text "is destroyed and the realm is saved.
+        pause
+        Text
+        Text "|03(You gain 5000 gold pieces, 75 points, and 1 monster fight!)
+        GiveGold 5000
+        GivePoints 75
+        GiveFight 1
+        SetFlag G0
+        AddNews "|10 The Dark One has been destroyed!  The realm is saved!
+        DoneQuest
+        End
+
+        Result Quest20.Lose
+        Text "|02The Dark One's power is unlike anything you have ever faced.  You
+        Text "are overwhelmed and cast out of his domain.
+        Text
+        Text "|10"Run, little mortals.  Tell them what awaits those who challenge me."
+        End
 

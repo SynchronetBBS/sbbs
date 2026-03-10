@@ -168,6 +168,18 @@ Dexterity       10
 Village         All
 RandLevel       1
 
+Name            Heavenly Sword
+Special
+Type            Weapon
+Cost            5000
+Strength        +22
+Dexterity       +2
+Charisma        +5
+Requirements
+Strength        10
+Dexterity       6
+RandLevel       0
+
 Name            Bloody Club
 Special
 Type            Weapon

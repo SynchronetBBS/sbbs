@@ -378,3 +378,454 @@ Agility         8
 Dexterity       6
 Strength        15
 Undead
+
+# 37 bandit (Quest for Vengeance)
+Name            Bandit
+HP              18
+Difficulty      1
+Agility         9
+Dexterity       8
+Strength        11
+Wisdom          3
+ArmorStr        0
+
+# 38 bandit captain (Quest for Vengeance)
+Name            Bandit Captain
+HP              30
+Difficulty      3
+Agility         11
+Dexterity       10
+Strength        14
+Wisdom          5
+ArmorStr        1
+
+# 39 thief scout (Poet's Quill)
+Name            Thief Scout
+HP              16
+Difficulty      1
+Agility         10
+Dexterity       9
+Strength        10
+Wisdom          3
+ArmorStr        0
+
+# 40 thief leader (Poet's Quill)
+Name            Thief Leader
+HP              35
+Difficulty      3
+Agility         12
+Dexterity       11
+Strength        15
+Wisdom          5
+ArmorStr        1
+
+# 41 undead guard (Lost Knight)
+Name            Undead Guard
+HP              20
+Difficulty      2
+Agility         9
+Dexterity       8
+Strength        12
+Wisdom          3
+ArmorStr        1
+Undead
+
+# 42 keep creature (Lost Knight)
+Name            Keep Creature
+HP              40
+Difficulty      4
+Agility         13
+Dexterity       12
+Strength        16
+Wisdom          8
+ArmorStr        2
+
+# 43 cave ghost (Spirits of Lovers)
+Name            Cave Ghost
+HP              18
+Difficulty      2
+Agility         10
+Dexterity       9
+Strength        10
+Wisdom          5
+ArmorStr        0
+Undead
+
+# 44 dark presence (Spirits of Lovers)
+Name            Dark Presence
+HP              45
+Difficulty      4
+Agility         14
+Dexterity       12
+Strength        17
+Wisdom          10
+ArmorStr        1
+Undead
+
+# 45 spirit sentry (Lost Treasure)
+Name            Spirit Sentry
+HP              22
+Difficulty      2
+Agility         10
+Dexterity       9
+Strength        12
+Wisdom          6
+ArmorStr        0
+Undead
+
+# 46 spirit warrior (Lost Treasure)
+Name            Spirit Warrior
+HP              28
+Difficulty      3
+Agility         12
+Dexterity       10
+Strength        14
+Wisdom          7
+ArmorStr        1
+Undead
+
+# 47 treasure guardian (Lost Treasure)
+Name            Treasure Guardian
+HP              50
+Difficulty      5
+Agility         14
+Dexterity       13
+Strength        18
+Wisdom          10
+ArmorStr        2
+Undead
+
+# 48 orc warrior (Orc Lord)
+Name            Orc Warrior
+HP              20
+Difficulty      2
+Agility         9
+Dexterity       10
+Strength        12
+Wisdom          3
+ArmorStr        1
+
+# 49 orc elite (Orc Lord)
+Name            Orc Elite
+HP              30
+Difficulty      3
+Agility         11
+Dexterity       11
+Strength        15
+Wisdom          5
+ArmorStr        1
+
+# 50 Orc Lord (Orc Lord)
+Name            Orc Lord
+HP              65
+Difficulty      5
+Agility         15
+Dexterity       14
+Strength        20
+Wisdom          10
+ArmorStr        2
+Spell           8
+
+# 51 wyvern scout (Wyvern Lord)
+Name            Wyvern Scout
+HP              25
+Difficulty      3
+Agility         13
+Dexterity       12
+Strength        14
+Wisdom          4
+ArmorStr        1
+
+# 52 wyvern (Wyvern Lord)
+Name            Wyvern
+HP              32
+Difficulty      4
+Agility         14
+Dexterity       13
+Strength        17
+Wisdom          5
+ArmorStr        1
+
+# 53 Wyvern Lord (Wyvern Lord)
+Name            Wyvern Lord
+HP              70
+Difficulty      5
+Agility         16
+Dexterity       15
+Strength        21
+Wisdom          10
+ArmorStr        2
+Spell           17
+
+# 54 vampire spawn (Drakuul's Legacy)
+Name            Vampire Spawn
+HP              25
+Difficulty      3
+Agility         12
+Dexterity       11
+Strength        14
+Wisdom          8
+ArmorStr        0
+Undead
+
+# 55 Darkuul's guard (Drakuul's Legacy)
+Name            Darkuul's Guard
+HP              30
+Difficulty      3
+Agility         13
+Dexterity       12
+Strength        16
+Wisdom          10
+ArmorStr        1
+Undead
+
+# 56 Darkuul (Drakuul's Legacy)
+Name            Darkuul
+HP              75
+Difficulty      5
+Agility         16
+Dexterity       15
+Strength        22
+Wisdom          12
+ArmorStr        2
+Undead
+Spell           11
+
+# 57 drake (Dragon Lord)
+Name            Drake
+HP              30
+Difficulty      3
+Agility         12
+Dexterity       11
+Strength        16
+Wisdom          5
+ArmorStr        1
+
+# 58 fire elemental (Dragon Lord)
+Name            Fire Elemental
+HP              28
+Difficulty      3
+Agility         11
+Dexterity       10
+Strength        14
+Wisdom          8
+ArmorStr        0
+Spell           17
+
+# 59 Dragon Lord (Dragon Lord)
+Name            Dragon Lord
+HP              80
+Difficulty      5
+Agility         17
+Dexterity       15
+Strength        23
+Wisdom          12
+ArmorStr        3
+Spell           17
+
+# 60 imp (Demon Lord)
+Name            Imp
+HP              18
+Difficulty      2
+Agility         12
+Dexterity       10
+Strength        10
+Wisdom          5
+ArmorStr        0
+Spell           8
+
+# 61 demon (Demon Lord)
+Name            Demon
+HP              35
+Difficulty      4
+Agility         14
+Dexterity       12
+Strength        18
+Wisdom          10
+ArmorStr        1
+Spell           11
+
+# 62 demon elite (Demon Lord)
+Name            Demon Elite
+HP              40
+Difficulty      4
+Agility         15
+Dexterity       13
+Strength        20
+Wisdom          12
+ArmorStr        2
+Spell           8
+Spell           11
+
+# 63 Demon Lord (Demon Lord)
+Name            Demon Lord
+HP              85
+Difficulty      5
+Agility         18
+Dexterity       16
+Strength        24
+Wisdom          14
+ArmorStr        3
+Spell           8
+Spell           11
+Spell           15
+
+# 64 evil spirit (Spirit World)
+Name            Evil Spirit
+HP              25
+Difficulty      3
+Agility         12
+Dexterity       10
+Strength        14
+Wisdom          8
+ArmorStr        0
+Undead
+
+# 65 Lelaz (Spirit World)
+Name            Lelaz
+HP              35
+Difficulty      4
+Agility         14
+Dexterity       13
+Strength        16
+Wisdom          15
+ArmorStr        1
+Spell           1
+Spell           5
+Spell           8
+
+# 66 Diablo (Spirit World)
+Name            Diablo
+HP              80
+Difficulty      5
+Agility         17
+Dexterity       15
+Strength        22
+Wisdom          15
+ArmorStr        2
+Undead
+Spell           1
+Spell           5
+Spell           8
+Spell           15
+
+# 67 dungeon guard (Lost King)
+Name            Dungeon Guard
+HP              25
+Difficulty      3
+Agility         11
+Dexterity       10
+Strength        14
+Wisdom          5
+ArmorStr        1
+
+# 68 jailer (Lost King)
+Name            Jailer
+HP              35
+Difficulty      4
+Agility         12
+Dexterity       12
+Strength        17
+Wisdom          5
+ArmorStr        2
+
+# 69 dark knight (Lost King)
+Name            Dark Knight
+HP              45
+Difficulty      4
+Agility         14
+Dexterity       13
+Strength        19
+Wisdom          8
+ArmorStr        2
+
+# 70 ancient spirit (Sword of Heavens)
+Name            Ancient Spirit
+HP              30
+Difficulty      3
+Agility         13
+Dexterity       12
+Strength        15
+Wisdom          10
+ArmorStr        1
+Undead
+
+# 71 stone guardian (Sword of Heavens)
+Name            Stone Guardian
+HP              40
+Difficulty      4
+Agility         10
+Dexterity       10
+Strength        20
+Wisdom          5
+ArmorStr        3
+
+# 72 ancient knight (Sword of Heavens)
+Name            Ancient Knight
+HP              50
+Difficulty      5
+Agility         15
+Dexterity       14
+Strength        21
+Wisdom          10
+ArmorStr        2
+Undead
+
+# 73 sword guardian (Sword of Heavens)
+Name            Sword Guardian
+HP              80
+Difficulty      5
+Agility         16
+Dexterity       15
+Strength        23
+Wisdom          12
+ArmorStr        3
+
+# 74 dark minion (The Dark One)
+Name            Dark Minion
+HP              30
+Difficulty      3
+Agility         12
+Dexterity       11
+Strength        15
+Wisdom          8
+ArmorStr        1
+
+# 75 dark sorcerer (The Dark One)
+Name            Dark Sorcerer
+HP              40
+Difficulty      4
+Agility         13
+Dexterity       12
+Strength        14
+Wisdom          15
+ArmorStr        1
+Spell           1
+Spell           5
+Spell           8
+Spell           15
+
+# 76 dark champion (The Dark One)
+Name            Dark Champion
+HP              55
+Difficulty      5
+Agility         16
+Dexterity       15
+Strength        22
+Wisdom          10
+ArmorStr        2
+
+# 77 The Dark One (The Dark One)
+Name            The Dark One
+HP              120
+Difficulty      5
+Agility         20
+Dexterity       18
+Strength        28
+Wisdom          18
+ArmorStr        4
+Spell           1
+Spell           5
+Spell           8
+Spell           11
+Spell           15

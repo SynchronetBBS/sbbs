@@ -169,3 +169,14 @@ Wisdom          9
 Charisma        5
 Armorstr        2
 
+# 15
+Name            King Claudius
+HP              30
+Difficulty      3
+Agility         10
+Dexterity       10
+Strength        14
+Wisdom          12
+Charisma        15
+Armorstr        1
+
