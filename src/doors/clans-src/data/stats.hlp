@@ -43,9 +43,9 @@
 ^END
 
 ^Charisma
- |0CCharisma is currently only needed for speaking out for or against the ruler.
- A high charisma will cause a larger amount of the population to notice than
- a lower one.
+ |0CCharisma affects quest events and NPC dialogue.  Some encounters may require
+ a minimum Charisma score from your clan leader.  It is the most expensive
+ attribute to train (40 points per +1).
 ^END
 
 ^Armor Strength

@@ -426,6 +426,8 @@ Some more ACS stuff:
 
         Kyy     -- user is at mine level yy or higher
 
+        Cyy     -- true if the clan leader's Charisma is yy or higher
+
 
 The rest is fairly self-explanatory.  Please peruse the event5.evt file for
 additional comments.

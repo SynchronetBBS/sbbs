@@ -212,6 +212,7 @@ An ACS expression is everything inside one pair of `{` `}` braces. **Multiple co
 | `Ryy` | Random roll >= yy (1–100) |
 | `Lyy` | Mine level = yy |
 | `Kyy` | Mine level >= yy |
+| `Cyy` | Clan leader's Charisma >= yy |
 | `T0`–`T63` | Temp flag (cleared each new event run) |
 | `P0`–`P63` | Persistent player flag |
 | `D0`–`D63` | Daily player flag (resets each day) |
@@ -262,6 +263,25 @@ There is no block-level if/then. To conditionally skip multiple commands, jump o
 | D | Per clan | Each day | Per-player daily limits or cooldowns, e.g. an NPC will only give a hint once per day |
 | G | Global village | Only on full game reset | World-state changes that affect everyone. **Shared across all clans** — the moment one player sets a G flag, every other player is affected. Always pair with `AddNews`. Always provide a way to clear it. See the Global flags section in QUEST DESIGN PATTERNS. |
 | H | Global village | Every night | Daily world events that any clan can trigger but should only happen once per day server-wide, e.g. the first clan to complete a task today gets a bonus |
+
+### Charisma condition (`{Cyy}`) design guidance
+
+`{Cyy}` tests the clan **leader's** (first member) Charisma attribute. It evaluates to true if the leader's Charisma is >= yy. Class starting Charisma ranges from -1 to 4; items grant +1 to +5; training costs 40 points per +1 (the most expensive attribute to train) and caps at 100. Realistic early-game values are 0–10; mid-game with some training investment 10–20; values above 30 require serious commitment.
+
+**Never require `{C}` to complete the main quest line.** Charisma gates are for optional side content, bonus dialogue, or alternate solutions — rewards for players who chose to invest in the stat, not barriers to progression. A player who put all their training into Strength should still be able to finish the campaign.
+
+**Suggested thresholds:**
+
+| Threshold | Audience | Use for |
+|-----------|----------|---------|
+| `{C5}` | Nearly all players | Flavour dialogue that most clans see by default |
+| `{C10}` | Light investment | Bonus lore, a friendlier NPC reaction, a small shortcut |
+| `{C15}`–`{C20}` | Deliberate training | Hidden dialogue branches, alternate quest solutions, recruitable NPCs who require charm |
+| `{C25}+` | Heavy commitment | Easter-egg secrets, a single exceptional reward |
+
+**Combine with other conditions:** `{C10&Q3}` gates content behind both Charisma 10+ and quest 3 completion — useful for rewards that require both story progress and stat investment.
+
+**Negation for low-Charisma flavour:** `{!C5}` is useful for dialogue that only appears when Charisma is low ("The merchant barely glances at you.") and disappears once the player trains up — giving Charisma investment a visible payoff.
 
 ---
 

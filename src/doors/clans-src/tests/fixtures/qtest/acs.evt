@@ -83,3 +83,17 @@ Event ACS_RandomTrue
 Event ACS_RandomFalse
   {R0}SetFlag P0
   EndQ
+
+# Charisma: default leader (Fighter) has Charisma=6
+# {C6} true (6 >= 6) -> P0 set; {!C10} true (6 < 10) -> P1 set
+Event ACS_Charisma
+  {C6}SetFlag P0
+  {!C10}SetFlag P1
+  EndQ
+
+# Charisma override: tests with -c20 (leader Charisma set to 20)
+# {C20} true (20 >= 20) -> P0 set; {C25} false (20 < 25) -> P1 NOT set
+Event ACS_CharismaOverride
+  {C20}SetFlag P0
+  {C25}SetFlag P1
+  EndQ

@@ -436,6 +436,22 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 				else
 					bCurrent = false;
 				break;
+			case 'C' :  // leader Charisma >= N
+				pcCurrentPos++;
+				iTemp = 0;
+				while (isdigit(*pcCurrentPos))
+					szIndex[iTemp++] = *(pcCurrentPos++);
+				szIndex[iTemp] = 0;
+
+				UseCurrent = true;
+				iTemp = ato16(szIndex, "Charisma", __func__);
+
+				if (PClan.Member[0] != NULL &&
+				    PClan.Member[0]->Attributes[ATTR_CHARISMA] >= iTemp)
+					bCurrent = true;
+				else
+					bCurrent = false;
+				break;
 			default:
 				pcCurrentPos++;
 		}

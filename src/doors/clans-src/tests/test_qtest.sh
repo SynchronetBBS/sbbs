@@ -18,7 +18,7 @@
 #   - Reward commands (GiveGold, TakeGold, GiveXP, GiveFight, GivePoints,
 #       GiveFollowers, GiveItem)
 #   - Heal SP, Pause
-#   - All ACS condition types (^, %, G, H, P, D, T, Q, $, L, K, R, &, |, ())
+#   - All ACS condition types (^, %, G, H, P, D, T, Q, $, L, K, R, C, &, |, ())
 #   - Jump, Display, AddNews
 #   - Multiple options (3-way), GetKey, Input, DoneQuest
 #   - Fight outcomes: Lose and Run
@@ -483,6 +483,19 @@ assert_contains "ACS R100: P0 set" "$STATE" "PFlags=0"
 _rc=0; run_qtest -e acs.e ACS_RandomFalse -s "$S/acs_random_false.script" || _rc=$?
 check_rc "ACS R0 exits zero" 0 "$_rc"
 assert_not_contains "ACS R0: P0 not set" "$STATE" "PFlags=0"
+
+# Charisma: default leader Charisma=6; {C6} true -> P0; {!C10} true -> P1
+_rc=0; run_qtest -e acs.e ACS_Charisma -s "$S/acs_charisma.script" || _rc=$?
+check_rc "ACS charisma C exits zero" 0 "$_rc"
+assert_contains "ACS {C6}: P0 set" "$STATE" "PFlags=0"
+assert_contains "ACS {!C10}: P1 set" "$STATE" "PFlags=0,1"
+
+# Charisma override: -c20 sets leader Charisma=20; {C20} true, {C25} false
+_rc=0; run_qtest -c20 -e acs.e ACS_CharismaOverride -s "$S/acs_charisma_override.script" || _rc=$?
+check_rc "ACS charisma override exits zero" 0 "$_rc"
+assert_contains "ACS -c20 {C20}: P0 set" "$STATE" "PFlags=0"
+assert_not_contains "ACS -c20 {C25}: P1 not set" "$STATE" "PFlags=0,1"
+assert_contains "ACS -c20: Cha=20" "$STATE" "Member0.Cha=20"
 
 # =========================================================================
 # Jump: unconditional branch to another block

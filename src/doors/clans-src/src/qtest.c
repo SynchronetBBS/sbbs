@@ -596,6 +596,7 @@ static void print_state_summary(void)
 		fprintf(stderr, "Member%d.MaxSP=%d\n", i, (int)m->MaxSP);
 		fprintf(stderr, "Member%d.XP=%"PRId32"\n", i, m->Experience);
 		fprintf(stderr, "Member%d.Level=%d\n", i, (int)m->Level);
+		fprintf(stderr, "Member%d.Cha=%d\n",   i, (int)m->Attributes[ATTR_CHARISMA]);
 	}
 }
 
@@ -1019,6 +1020,7 @@ int main(int argc, char *argv[])
 	uint8_t qknown[8] = {0}, qdone[8]  = {0};
 	long    arg_gold  = -1;
 	long    arg_mine  = -1;
+	long    arg_cha   = -1;
 
 	/* ---- target / script ---- */
 	char npc_index[64]   = {0};
@@ -1043,6 +1045,7 @@ int main(int argc, char *argv[])
 			case 'T': parse_flag_list(a + 2, tflags); break;
 			case 'g': arg_gold = atol(a + 2); break;
 			case 'm': arg_mine = atol(a + 2); break;
+			case 'c': arg_cha  = atol(a + 2); break;
 			case 'q': parse_quest_list(a + 2, qknown); break;
 			case 'Q': parse_quest_list(a + 2, qdone);  break;
 			case 'n':
@@ -1116,6 +1119,7 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < 8; i++) Quests_TFlags[i]       |= tflags[i];
 	if (arg_gold >= 0) PClan.Empire.VaultGold = (int32_t)arg_gold;
 	if (arg_mine >= 0) PClan.MineLevel        = (int16_t)arg_mine;
+	if (arg_cha  >= 0) PClan.Member[0]->Attributes[ATTR_CHARISMA] = (int8_t)arg_cha;
 	for (int i = 0; i < 8; i++) PClan.QuestsKnown[i] |= qknown[i];
 	for (int i = 0; i < 8; i++) {
 		PClan.QuestsDone[i]  |= qdone[i];
