@@ -1,6 +1,6 @@
-                              Flight Simulator
-                                 Version 1.00
-                           Release date: 2026-03-09
+                               Flight Simulator
+                                 Version 1.01
+                           Release date: 2026-03-10
 
                                    From:
 

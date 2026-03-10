@@ -16,13 +16,15 @@ require("sbbsdefs.js", "K_NOCRLF");
 require("key_defs.js", "KEY_UP");
 require("cp437_defs.js", "CP437_BOX_DRAWINGS_UPPER_LEFT_SINGLE");
 require("rip_lib.js", "RIPWindow");
+require("cterm_lib.js", "supports_sixel");
+require("dd_lightbar_menu.js", "DDLightbarMenu");
 
 // ═══════════════════════════════════════════════════════════
 //  Program name & version
 // ═══════════════════════════════════════════════════════════
 var gProgramName = "FlightSim";
-var gProgramVersion = "1.00";
-var gProgramDate = "2026-03-09";
+var gProgramVersion = "1.01";
+var gProgramDate = "2026-03-10";
 
 
 // ═══════════════════════════════════════════════════════════
@@ -96,6 +98,28 @@ var CARET_CHAR = "^";
 var cur_buf = [];
 var prv_buf = [];
 
+////////////////////////////////
+// RIP variables
+// I'd probably use RIP_FONT_TRIPLEX or RIP_FONT_BOLD.
+// Triplex: Font size 5
+// Bold: Font size 2
+var RIP_HDR_FONT = RIP_FONT_TRIPLEX;
+//var RIP_HDR_FONT_SIZE = 5;
+var RIP_HDR_FONT_SIZE = 2;
+//RIP_HDR_FONT = RIP_FONT_BOLD;
+//RIP_HDR_FONT_SIZE = 2;
+var RIP_HDR_TEXT_COLOR = RIP_COLOR_BLUE;
+var RIP_HDR_INNER_BORDER_COLOR = RIP_COLOR_WHITE;
+var RIP_HDR_OUTER_EDGE_COLOR = RIP_COLOR_DK_GRAY;
+var RIP_HDR_BKG_COLOR = RIP_COLOR_LT_GRAY;
+
+
+
+//////////////////////////////////////////////////////////////////
+// ═══════════════════════════════════════════════════════════
+//  Functions
+// ═══════════════════════════════════════════════════════════
+
 // Allocate (or reset) the double-buffered screen arrays.
 // cur_buf holds the frame being built; prv_buf holds the last rendered frame.
 // Every cell is a two-element array: [attribute-string, character].
@@ -127,12 +151,12 @@ function fillRect(r1, c1, r2, c2, attr, ch) {
 // Write a string into the current frame buffer, one character per cell.
 // All characters share the same attribute; col is 1-based.
 function writeStr(row, col, attr, str) {
-	for (var i = 0; i < str.length; i++) putCell(row, col+i, attr, str.charAt(i));
+	for (var i = 0; i < str.length; ++i) putCell(row, col+i, attr, str.charAt(i));
 }
 
 // Send only changed cells to terminal
 function renderFrame() {
-	for (var r = 0; r < ROWS; r++) {
+	for (var r = 0; r < ROWS; ++r) {
 		var rs = -1, rstr = "", rla = "";
 		for (var c = 0; c <= COLS; c++) {
 			var chg = false;
@@ -1226,7 +1250,7 @@ function runRIP() {
 			var wY     = pBy - 24;   // wing root row
 			var engY   = pBy - 28;   // engine nacelle centre
 			var finBY  = pBy - 14;   // fin base / fuselage top
-			var finTY  = pBy - 110;  // fin top
+			var finTY  = pBy - 72;   // fin top
 			var stY    = finTY + 6;  // stabiliser attachment row
 			var wDih   = 7;          // dihedral: tips rise above root (px)
 			var wSpan  = 140;        // wing half-span (fuselage edge to tip)
@@ -1357,61 +1381,157 @@ function runRIP() {
 // or Q (quit).  Returns the pressed key as a string.
 function showModeSelect() {
 	var hasRIP = console.term_supports(USER_RIP);
-	initBuffers();
-	fillRect(1, 1, ROWS, COLS, CN+BG0+CK, " ");
+	var hasSixel = supports_sixel();
 
-	// Starfield background
-	for (var i=0; i<60; i++)
-		putCell(Math.floor(Math.random()*(ROWS-2))+1,
-		        Math.floor(Math.random()*COLS)+1, A_STAR, CP437_BULLET_OPERATOR);
-
-	// ── Title ──
-	var title = CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE + CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE + CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE
-	          + "  " + gProgramName + " v" + gProgramVersion + " (" + gProgramDate + ")  " + CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE
-	          + CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE + CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE;
-	writeStr(2, Math.floor((COLS-title.length)/2)+1, CN+BG0+CH+CY, title);
-	writeStr(4, Math.floor((COLS-22)/2)+1, CN+BG0+CH+CW, "Choose your flight mode:");
-
-	// ── Option 1: Side-Scroll ──
-	var o1box = "  [1]  Side-Scroll Mode  ";
-	var o1des = "Classic horizontal view - side profile of the plane";
-	writeStr(6, Math.floor((COLS-o1box.length)/2)+1, CN+BG4+CH+CY, o1box);
-	writeStr(7, Math.floor((COLS-o1des.length)/2)+1, CN+BG0+CH+CW, o1des);
-	var p1x = Math.floor((COLS-11)/2)+1;
-	writeStr(8,  p1x, CN+BG0+CW,    "     /\\    ");
-	writeStr(9,  p1x, CN+BG0+CH+CW, "|====O====>");
-	writeStr(10, p1x, CN+BG0+CW,    "     \\/    ");
-
-	// ── Option 2: 3D Perspective ──
-	var o2box = "  [2]  3D Perspective Mode  ";
-	var o2des = "Forward view, banking horizon, biome scenery";
-	writeStr(12, Math.floor((COLS-o2box.length)/2)+1, CN+BG4+CH+CC, o2box);
-	writeStr(13, Math.floor((COLS-o2des.length)/2)+1, CN+BG0+CH+CW, o2des);
-	var p2x = Math.floor((COLS-11)/2)+1;
-	writeStr(14, p2x, CN+BG0+CH+CY, "    _|_    ");
-	writeStr(15, p2x, CN+BG0+CH+CW, "===/   \\===");
-	writeStr(16, p2x, CN+BG0+CH+CC, "   |(*)|   ");
-
-	// ── Option 3: RIP (conditional) ──
-	if (hasRIP) {
-		var o3box = "  [3]  RIP Vector Graphics Mode  ";
-		var o3des = "640x350 vector graphics - mountains, clouds & plane";
-		writeStr(18, Math.floor((COLS-o3box.length)/2)+1, CN+BG4+CH+CG, o3box);
-		writeStr(19, Math.floor((COLS-o3des.length)/2)+1, CN+BG0+CH+CW, o3des);
+	if (hasRIP || hasSixel)
+	{
+		console.line_counter = 0;
+		console.clear("N");
+	}
+	// Sixel or RIP background, depending on whether the user's terminal supports either (and prioritize sixel)
+	if (hasSixel)
+	{
+		sendFileContents(backslash(fullpath(js.exec_dir) + "images") + "Learjet.sixel");
+	}
+	else if (hasRIP)
+	{
+		sendFileContents(backslash(fullpath(js.exec_dir) + "images") + "PlaneOverMeadow.rip");
 	}
 
-	var pk = hasRIP ? "[ Press 1, 2 or 3" : "[ Press 1 or 2";
-	pk += " (Q=Quit) ]"
-	writeStr(ROWS-1, Math.floor((COLS-pk.length)/2)+1, CN+BG0+CH+CG, pk);
+	var catchySlogan = "The future of flight begins now.";
 
-	renderFrame();
-	while (bbs.online && !js.terminated) {
-		var k = console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, 60000);
-		if (k === "1" || k === "2") return k;
-		if (k === "3" && hasRIP) return k;
-		if (k.toUpperCase() === "Q") return "Q";
+	var retVal = "";
+	var usedDDLightbarMenu = false;
+	if (hasRIP)
+	{
+		var title = gProgramName + " v" + gProgramVersion + " (" + gProgramDate + ")";
+		const centerText = true;
+		var rip = RIPHdr(title, centerText, RIP_HDR_FONT, RIP_HDR_FONT_SIZE,
+		                 RIP_HDR_TEXT_COLOR, RIP_HDR_INNER_BORDER_COLOR, RIP_HDR_OUTER_EDGE_COLOR,
+		                 RIP_HDR_BKG_COLOR);
+		var RIPFont = RIP_FONT_TRIPLEX;
+		var fontSize = 3;
+		rip += RIPFontStyleNumeric(RIPFont, 0, fontSize, 0);
+		var textX = 0;
+		var textY = 70;
+		textX = 220;
+		textY = 240;
+		var RIPColor = (hasSixel ? RIP_COLOR_LT_CYAN : RIP_COLOR_BLACK);
+		rip += RIPColorNumeric(RIPColor) + RIPTextXYNumeric(textX, textY, catchySlogan);
+
+		console.crlf();
+		console.putmsg(rip + "\r\n");
+
+		console.line_counter = 0;
+
+		// Display the RIP menu of options
+		DisplayModeSelectCmdsForRIP(7, 283);
 	}
-	return "Q";
+	else
+	{
+		// ── Title ──
+		var title = CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE + CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE + CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE
+		          + "  " + gProgramName + " v" + gProgramVersion + " (" + gProgramDate + ")  " + CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE
+		          + CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE + CP437_BOX_DRAWINGS_HORIZONTAL_DOUBLE;
+		if (hasSixel)
+		{
+			// Plain ANSI mode with the sixel background as displayed earlier
+
+			console.gotoxy(1, 1);
+			console.attributes = "HY";
+			console.center(title);
+			console.gotoxy(1, 2);
+			console.attributes = "HC";
+			console.center(catchySlogan);
+
+			console.gotoxy(1, 20);
+			console.attributes = "N";
+			console.center("\x01c\x01hPlease select a mode \x01g(\x01cQ\x01g=\x01cQuit\x01g)\x01c:");
+			console.attributes = "N";
+			usedDDLightbarMenu = true;
+			var modeMenu = createMenuForModeSelect(30, 21);
+			var userChoice = modeMenu.GetVal();
+			if (userChoice == null)
+				retVal = "Q";
+			else
+			{
+				retVal = userChoice.toString();
+				if (retVal == "q")
+					retVal = "Q";
+			}
+		}
+		else
+		{
+			// ANSI mode, no sixel background: Show the ANSI-style screen with starfield background
+			initBuffers();
+			fillRect(1, 1, ROWS, COLS, CN+BG0+CK, " ");
+
+			// Starfield background
+			for (var i = 0; i < 60; ++i)
+			{
+				putCell(Math.floor(Math.random()*(ROWS-2))+1,
+						Math.floor(Math.random()*COLS)+1, A_STAR, CP437_BULLET_OPERATOR);
+			}
+
+			var screenRow = 2;
+			writeStr(screenRow++, Math.floor((COLS-title.length)/2)+1, CN+BG0+CH+CY, title);
+			writeStr(screenRow++, Math.floor((COLS-catchySlogan.length)/2)+1, CN+BG0+CH+CC, catchySlogan);
+			++screenRow;
+			writeStr(screenRow++, Math.floor((COLS-22)/2)+1, CN+BG0+CH+CW, "Choose your flight mode:");
+
+			// ── Option 1: Side-Scroll ──
+			var o1box = "  [1]  Side-Scroll Mode  ";
+			var o1des = "Classic horizontal view - side profile of the plane";
+			writeStr(screenRow++, Math.floor((COLS-o1box.length)/2)+1, CN+BG4+CH+CY, o1box);
+			writeStr(screenRow++, Math.floor((COLS-o1des.length)/2)+1, CN+BG0+CH+CW, o1des);
+			var p1x = Math.floor((COLS-11)/2)+1;
+			writeStr(screenRow++,  p1x, CN+BG0+CW,    "     /\\    ");
+			writeStr(screenRow++,  p1x, CN+BG0+CH+CW, "|====O====>");
+			writeStr(screenRow++, p1x, CN+BG0+CW,    "     \\/    ");
+
+			// ── Option 2: 3D Perspective ──
+			var o2box = "  [2]  3D Perspective Mode  ";
+			var o2des = "Forward view, banking horizon, biome scenery";
+			++screenRow;
+			writeStr(screenRow++, Math.floor((COLS-o2box.length)/2)+1, CN+BG4+CH+CC, o2box);
+			writeStr(screenRow++, Math.floor((COLS-o2des.length)/2)+1, CN+BG0+CH+CW, o2des);
+			var p2x = Math.floor((COLS-11)/2)+1;
+			writeStr(screenRow++, p2x, CN+BG0+CH+CY, "    _|_    ");
+			writeStr(screenRow++, p2x, CN+BG0+CH+CW, "===/   \\===");
+			writeStr(screenRow++, p2x, CN+BG0+CH+CC, "   |(*)|   ");
+
+			// ── Option 3: RIP (conditional) ──
+			if (hasRIP) {
+				var o3box = "  [3]  RIP Vector Graphics Mode  ";
+				var o3des = "640x350 vector graphics - mountains, clouds & plane";
+				screenRow += 2;
+				writeStr(screenRow++, Math.floor((COLS-o3box.length)/2)+1, CN+BG4+CH+CG, o3box);
+				writeStr(screenRow++, Math.floor((COLS-o3des.length)/2)+1, CN+BG0+CH+CW, o3des);
+			}
+
+			var pk = hasRIP ? "[ Press 1, 2 or 3" : "[ Press 1 or 2";
+			pk += " (Q=Quit) ]"
+			writeStr(ROWS-1, Math.floor((COLS-pk.length)/2)+1, CN+BG0+CH+CG, pk);
+
+			renderFrame();
+		}
+	}
+
+	// If we didn't use the DDLightbarMenu, then prompt & wait for user input now
+	if (!usedDDLightbarMenu)
+	{
+		while (bbs.online && !js.terminated && retVal.length == 0)
+		{
+			var k = console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, 60000);
+			if (k === "1" || k === "2") retVal = k;
+			else if (k === "3" && hasRIP) retVal = k;
+			else if (k.toUpperCase() === "Q") retVal = "Q";
+		}
+		if (retVal == "")
+			retVal = "Q";
+	}
+
+	return retVal;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1511,6 +1631,388 @@ function showFlightDebrief(result) {
 	renderFrame();
 	console.inkey(K_NOSPIN|K_NOCRLF|K_NOECHO, 60000);
 }
+
+
+
+// Opens, reads, and sends a file's contents to the client
+function sendFileContents(pFilename, pSendInitialCR, pMaxLineLen)
+{
+	var inFile = new File(pFilename);
+	if (inFile.open("r"))
+	{
+		var maxLineLen = (typeof(pMaxLineLen) === "number" && pMaxLineLen > 0 ? pMaxLineLen : 4096);
+		var contents = inFile.readAll(maxLineLen);
+		inFile.close();
+		if (Array.isArray(contents))
+		{
+			if (pSendInitialCR)
+				console.crlf();
+			for (var i = 0; i < contents.length; ++i)
+				console.write(contents[i] + "\r\n");
+		}
+	}
+}
+
+// Creates the DDLightbarMenu object for the initial mode select screen
+function createMenuForModeSelect(pX, pY)
+{
+	const menuWidth = 25;
+	const menuHeight = (console.term_supports(USER_RIP) ? 5 : 4);
+	var modeMenu = new DDLightbarMenu(pX, pY, menuWidth, menuHeight);
+	modeMenu.wrapNavigation = true;
+	modeMenu.scrollbarEnabled = false;
+	modeMenu.borderEnabled = true;
+	modeMenu.multiSelect = false;
+	modeMenu.ampersandHotkeysInItems = false;
+	modeMenu.wrapNavigation = true;
+	modeMenu.AddAdditionalQuitKeys("qQ");
+	modeMenu.colors.borderColor = "\x01b\x01h";
+	//modeMenu.colors.selectedItemColor = "\x017\x01b";
+	//modeMenu.colors.itemTextCharHighlightColor = "\x017\x01b\x01h";
+	modeMenu.Add("[1] Side-Scroll Mode", 1);
+	modeMenu.Add("[2] 3D Perspective Mode", 2);
+	if (console.term_supports(USER_RIP))
+		modeMenu.Add("[3] RIP Graphics Mode", 3);
+	modeMenu.SetItemHotkey(0, "1");
+	modeMenu.SetItemHotkey(1, "2");
+	modeMenu.SetItemHotkey(2, "3");
+
+	return modeMenu;
+}
+
+
+// Returns a string containing a RIP command to display a RIP header
+// at the top of the screen
+//
+// Parameters:
+//  pText: The text to display
+//  pRIPFontNum: The RIP font
+//  pFontSize: The RIP font size
+//  pTextColorNum: The text color number
+//  pInnerBorderColorNum: The color number for the inner border
+//  pOuterEdgeColorNum: The color number for the outer edge
+//  pBkgColorNum: The color number for the background
+//
+// Return value: A string containing the RIP command
+function RIPHdr(pText, pCenterText, pRIPFontNum, pFontSize, pTextColorNum, pInnerBorderColorNum, pOuterEdgeColorNum, pBkgColorNum)
+{
+	const centerText = (typeof(pCenterText) === "boolean" ? pCenterText : true);
+	const fontNum = (typeof(pRIPFontNum) === "number" && pRIPFontNum >= RIP_FONT_DEFAULT && pRIPFontNum <= RIP_FONT_BOLD ? pRIPFontNum : RIP_FONT_DEFAULT);
+	var fontSize = (typeof(pFontSize) === "number" && pFontSize > 0 ? pFontSize : 2);
+	const textColorNum = (typeof(pTextColorNum) === "number" ? pTextColorNum : 1);
+	const innerBorderColorNum = (typeof(pInnerBorderColorNum) === "number" ? pInnerBorderColorNum : 15);
+	const outerEdgeColorNum = (typeof(pOuterEdgeColorNum) === "number" ? pOuterEdgeColorNum : 8);
+	const bkgColorNum = (typeof(pBkgColorNum) === "number" ? pBkgColorNum : 7);
+
+	const btnFlags = RIP_BTN_STYLE_CHISEL_EFFECT|RIP_BTN_STYLE_DROPSHADOW_LBL|RIP_BTN_STYLE_BEVEL|RIP_BTN_STYLE_SUNKEN;
+	const XPos = 0;
+	const YPos = 0;
+
+	console.crlf(); // A new set of RIP commands needs to be on its own line
+	var rip = "!" + RIPKillMouseFields();
+	rip += RIPFontStyleNumeric(fontNum, 0, fontSize, 0);
+	rip += RIPWriteMode(0);
+	rip += RIPButtonStyleNumeric(640, 40, 2, btnFlags, 5, textColorNum, 0, innerBorderColorNum,
+								 outerEdgeColorNum, bkgColorNum, 1, 0, 0, 0, 0);
+	if (centerText)
+		rip += RIPButtonNumeric(XPos, YPos, 640, 60, 0, 0, 0, [pText], "");
+	else
+	{
+		rip += RIPButtonNumeric(XPos, YPos, 640, 60);
+		var textX = XPos+15
+		var textYModifier = 15;
+		//var textYModifierMultiplier = 2;
+		var textYModifierMultiplier = 6;
+		switch (fontNum)
+		{
+			case RIP_FONT_TRIPLEX:
+			default:
+				//textYModifier = 15 + (2-fontSize);
+				textYModifier = 15 + (textYModifierMultiplier*(2-fontSize));
+				break;
+			case RIP_FONT_SCRIPT:
+				textYModifier = 12 + (textYModifierMultiplier*(2-fontSize));
+				break;
+			case RIP_FONT_BOLD:
+				textYModifier = 12 + (12*(2-fontSize));
+				textYModifier = 2 * fontSize;
+				break;
+		}
+		var textY = YPos + textYModifier;
+		if (textY < 0) textY = 0;
+		rip += RIPColorNumeric(textColorNum) + RIPTextXYNumeric(textX, textY, pText);
+	}
+
+	return rip;
+}
+
+// Displays a RIP button box for the global commands
+function DisplayModeSelectCmdsForRIP(pX, pY)
+{
+	var btnBox = new RIPButtonBox(pX, pY);
+	btnBox.AddButton(new RIPButtonInfo(0, 0, 0, 0, "1", "1", "Side-scroll Mode", true));
+	btnBox.AddButton(new RIPButtonInfo(0, 0, 0, 0, "2", "2", "3D Perspective Mode", true));
+	btnBox.AddButton(new RIPButtonInfo(0, 0, 0, 0, "3", "3", "RIP Graphics Mode", true));
+	btnBox.AddButton(new RIPButtonInfo(0, 0, 0, 0, "Q", "Q", "Quit", true));
+	btnBox.Display();
+}
+
+
+// Constructor for RIPButtonInfo, to contain information about a RIP button (top-left & lower right X & Y,
+// button text, text to display near the button, & whether the text is to be beside the button (as opposed
+// to below the button)
+function RIPButtonInfo(pX1, pY1, pX2, pY2, pBtnText, pBtnCmdKey, pNearBtnText, pNearBtnTextBesideBtn)
+{
+	return {
+		x1: pX1,
+		y1: pY1,
+		x2: pX2,
+		y2: pY2,
+		btnText: pBtnText,
+		btnCmdKey: pBtnCmdKey,
+		nearBtnTxt: pNearBtnText,
+		nearBtnTextBesideBtn: pNearBtnTextBesideBtn
+	};
+}
+// Returns a RIP command string for a RIP button with some text next to/underneath it
+function RIPButtonWithText(pX0, pY0, pX1, pY1, pButtonText, pCommandStr, pNearBtnTxt, pNearBtnTextBesideBtn)
+{
+	// Button
+	var cmdKey = 0;
+	if (typeof(pCommandStr) === "string" && pCommandStr.length > 0)
+		cmdKey = ascii(pCommandStr.substring(0, 1));
+	var rip = RIPButtonNumeric(pX0, pY0, pX1, pY1, cmdKey, 0, 0, [pButtonText], pCommandStr);
+	// Text beside/below the button
+	var nearBtnTxtX = 0;
+	var nearBtnTxtY = 0;
+	if (pNearBtnTextBesideBtn)
+	{
+		nearBtnTxtX = pX1 + 12;
+		nearBtnTxtY = pY0 + 1;
+	}
+	else
+	{
+		// TODO: Make the near-button text positioning better
+		// for this scenario?
+		nearBtnTxtX = pX0;
+		if (pNearBtnTxt.length > 0)
+		{
+			var offset = Math.floor(pNearBtnTxt.length / 2) * 3;
+			nearBtnTxtX -= offset;
+		}
+		nearBtnTxtY = pY1 + 7;
+	}
+	// RIPTextXYNumeric(pX, pY, pText)
+	rip += RIPTextXYNumeric(nearBtnTxtX, nearBtnTxtY, pNearBtnTxt);
+	return rip;
+}
+
+// Helper for RIPButtonBox.CalcRIPCmdStr(): This function helps with calculating
+// RIP button spacing when creating them for the RIP button menu
+function calcRIPBtnSpacing(pBtnArr, pBoxX1, pMenuVert, pBtnWid, pBtnHt, pBtnHorzMrgn, pBtnVrtMargn, pBtnX, pBtnY, pRIPFont, pEstMaxPixels, pHorizButtonXPositions)
+{
+	var retObj = {
+		btnX: pBtnX,
+		btnY: pBtnY,
+		newRow: false
+	};
+	if (pMenuVert) // Vertical menu
+	{
+		retObj.btnY += pBtnHt + pBtnVrtMargn;
+		retObj.newRow = true;
+	}
+	else
+	{
+		var XPosFoundInArray = false;
+		if (Array.isArray(pHorizButtonXPositions) && pHorizButtonXPositions.length > 0)
+		{
+			// If the current X position isn't found in the array, then increment
+			// If the current X position is in the array and is below the last
+			// position in the array, then go to the next X position.  Otherwise,
+			// loop back to the first X position in the array on a new row.
+			var currentXPosIdx = pHorizButtonXPositions.indexOf(retObj.btnX);
+			XPosFoundInArray = (currentXPosIdx >= 0 && currentXPosIdx < pHorizButtonXPositions.length);
+			if (XPosFoundInArray)
+			{
+				if (currentXPosIdx < pHorizButtonXPositions.length-1)
+					retObj.btnX = pHorizButtonXPositions[currentXPosIdx+1];
+				else
+				{
+					retObj.btnX = pHorizButtonXPositions[0];
+					retObj.btnY += pBtnHt + pBtnVrtMargn;
+					retObj.newRow = true;
+				}
+			}
+		}
+		// If the X position wasn't found in the array, then increment it to the
+		// right via pixel position
+		if (!XPosFoundInArray)
+		{
+			var XOffset = pEstMaxPixels;
+			if (pRIPFont == RIP_FONT_DEFAULT)
+				XOffset = pBtnArr[pBtnArr.length-1].nearBtnTxt.length * 8;
+			retObj.btnX += pBtnWid + pBtnHorzMrgn + XOffset;
+			if (retObj.btnX >= 640 - pBtnWid - pBtnHorzMrgn - XOffset)
+			{
+				retObj.btnX = pBoxX1 + pBtnHorzMrgn;
+				retObj.btnY += pBtnHt + pBtnVrtMargn;
+				retObj.newRow = true;
+			}
+		}
+	}
+	return retObj;
+}
+
+// Constructor for RIPButtonBox, for displaying a set of RIP buttons in a box
+function RIPButtonBox(pX, pY)
+{
+	this.verticalRIPMenu = false;
+	this.RIPMenuX = pX;
+	this.RIPMenuY = pY;
+	this.RIPFont = RIP_FONT_DEFAULT; // Default 8x8 font
+	//this.RIPFont = RIP_FONT_SANS_SERIF;
+	// Font size1 for the normal default size, 2 for x2 magnification, 3
+	// for x3 magnification etc..
+	this.RIPFontSize = 1;
+	this.btnTextColor = RIP_COLOR_YELLOW;
+	this.btnBorderColor = RIP_COLOR_WHITE;
+	this.btnDarkVal = RIP_COLOR_DK_GRAY;
+	this.btnSurfaceColor = RIP_COLOR_LT_BLUE;
+	// An array of RIPButtonInfo objects defining RIP buttons
+	this.buttons = [];
+
+	// Functions (for some reason, the RIPButtonBox.prototype.xxx = function() {} syntax isn't working)
+	this.AddButton = RIPButtonBox_AddButton;
+	this.Display = RIPButtonBox_Display;
+}
+// For the RIPButtonBox class: Adds a button to its button array
+//RIPButtonBox.prototype.AddButton = function(pRIPButton)
+function RIPButtonBox_AddButton(pRIPButton)
+{
+	this.buttons.push(pRIPButton);
+}
+// For the RIPButtonBox class: Constructs the RIP command string & sends it to the client,
+// to display the RIP button box
+//RIPButtonBox.prototype.Display = function()
+function RIPButtonBox_Display()
+{
+	if (this.buttons.length == 0)
+		return;
+
+	// Set RIP styles & construct the RIP UI elements
+	var btnFlags = RIP_BTN_STYLE_SUNKEN|RIP_BTN_STYLE_MOUSE|RIP_BTN_STYLE_BEVEL|RIP_BTN_STYLE_PLAIN;
+	btnFlags |= RIP_BTN_STYLE_DROPSHADOW_LBL|RIP_BTN_STYLE_RECESSED|RIP_BTN_STYLE_RESET_AFTER_CLICK|RIP_BTN_STYLE_INVERTABLE;
+	var btnStyleStr = RIPButtonStyleNumeric(0, 0, 2, btnFlags, 1, this.btnTextColor, 0, this.btnBorderColor, this.btnDarkVal, this.btnSurfaceColor, 0, 0, 0, 0, 0);
+	var fontStyleStr = RIPFontStyleNumeric(this.RIPFont, 0, this.RIPFontSize, 0);
+	// horizBtnPositions will be an array of X pixel positions for the buttons
+	// when placed horizontally
+	var horizBtnXPositions = null;
+	// For the box surrounding the buttons, they're 7 pixels in
+	// from the left & right sides to make room for the bevels
+	var btnHorizMargin = 19;
+	var btnVertMargin = 14;
+	var btnWidth = 34;
+	var btnHeight = 10;
+	const SCREEN_LEFT = 0;
+	const SCREEN_RIGHT = 640;
+	// Coordinates & dimensions for the box to surround the buttons
+	var boxHeight = 0;
+	var boxWidth = 0;
+	var boxX1 = this.RIPMenuX;
+	var boxY1 = this.RIPMenuY;
+	var boxX2 = 0;
+	var boxY2 = 0;
+	// estMaxTextLenPixels is for extimated maximum text length in pixels
+	var estMaxTextLenPixels = 145;
+	if (this.verticalRIPMenu)
+	{
+		// Vertical menu
+		//boxHeight = (this.buttons.length*btnHeight) + (this.buttons.length*btnVertMargin);
+		boxHeight = (btnHeight + btnVertMargin) * this.buttons.length;
+		boxHeight += btnHeight + 5; // Fudge factor
+		boxWidth = btnWidth + (btnHorizMargin*2) + estMaxTextLenPixels;
+		boxX2 = boxX1 + boxWidth;
+		boxY2 = boxY1 + boxHeight;
+	}
+	else
+	{
+		// Horizontal menu: Use the width of the entire screen/viewport, and
+		// place the menu at the desired screen row (Y position).
+		// First, calculate the total width needed for the buttons & their text
+		var totalWidth = 0;
+
+		boxHeight = btnHeight + (btnVertMargin*2);
+		boxWidth = SCREEN_RIGHT - SCREEN_LEFT - 14; // 14 to account for bevels on the sides
+		boxX2 = SCREEN_RIGHT - 7; // To account for the bevel on the left
+		boxY2 = boxY1 + boxHeight;
+
+		// Horizontal button X positions
+		horizBtnXPositions = [boxX1 + btnHorizMargin];
+		for (var i = 1; i <= 2; ++i)
+			horizBtnXPositions.push(horizBtnXPositions[i-1] + btnWidth + btnHorizMargin + 150);
+	}
+
+	// We could set the RIP pallette (back) to default before
+	// displaying the menu, but that actually might not be a
+	// good idea because if there's .rip background displayed,
+	// it could use its own pallette, and changing the pallette
+	// here will change the background image on the screen.
+	// The theme configuration file could potentially specify
+	// different colors that could look better with the .rip screen.
+	/*
+	 * v ar RIPPallette*Cmd = RIPSetPaletteNumeric(RIP_COLOR_BLACK, RIP_COLOR_BLUE, RIP_COLOR_GREEN, RIP_COLOR_CYAN, RIP_COLOR_RED,
+	 * RIP_COLOR_MAGENTA, RIP_COLOR_BROWN, RIP_COLOR_LT_GRAY, RIP_COLOR_DK_GRAY,
+	 * RIP_COLOR_LT_BLUE, RIP_COLOR_LT_GREEN, RIP_COLOR_LT_CYAN, RIP_COLOR_LT_RED,
+	 * RIP_COLOR_LT_MAGENTA, RIP_COLOR_YELLOW, RIP_COLOR_WHITE);
+	 */
+
+	// Calculate the positions of the buttons
+	var btnX = boxX1 + btnHorizMargin;
+	var btnY = boxY1 + btnVertMargin;
+	this.buttons[0].x1 = btnX;
+	this.buttons[0].y1 = btnY;
+	this.buttons[0].x2 = btnX + btnWidth;
+	this.buttons[0].y2 = btnY + btnHeight;
+	for (var i = 1; i < this.buttons.length; ++i)
+	{
+		var spacing = calcRIPBtnSpacing(this.buttons, boxX1, this.verticalRIPMenu, btnWidth, btnHeight, btnHorizMargin, btnVertMargin, btnX, btnY, this.RIPFont, estMaxTextLenPixels, horizBtnXPositions);
+		btnX = spacing.btnX;
+		btnY = spacing.btnY;
+		if (!this.verticalRIPMenu && spacing.newRow)
+		{
+			boxY2 += btnHeight + btnVertMargin;
+		}
+		this.buttons[i].x1 = btnX;
+		this.buttons[i].y1 = btnY;
+		this.buttons[i].x2 = btnX + btnWidth;
+		this.buttons[i].y2 = btnY + btnHeight;
+	}
+
+	// Generate the RIP command strings & display them
+	// Create the box to show around the buttons
+	var textColorNum = RIP_COLOR_BLACK;
+	var innerBorderColorNum = RIP_COLOR_WHITE;
+	var outerEdgeColorNum = RIP_COLOR_DK_GRAY;
+	var bkgColorNum = RIP_COLOR_LT_GRAY;
+	btnFlags = RIP_BTN_STYLE_CHISEL_EFFECT|RIP_BTN_STYLE_DROPSHADOW_LBL|RIP_BTN_STYLE_BEVEL|RIP_BTN_STYLE_SUNKEN;
+	var btnSurroundingBoxStr = RIPButtonStyleNumeric(boxX2-boxX1, boxY2-boxY1, 2, btnFlags, 5, textColorNum, 0, innerBorderColorNum,
+													 outerEdgeColorNum, bkgColorNum, 1, 0, 0, 0, 0);
+	btnSurroundingBoxStr += RIPButtonNumeric(boxX1, boxY1, boxX2, boxY2);
+	console.crlf();
+	console.print("!" + RIPKillMouseFields() + RIPWriteMode(0) + RIPColor("00") + "\r\n");
+	console.print("!" + fontStyleStr + btnSurroundingBoxStr + "\r\n");
+	console.print("!" + btnStyleStr);
+	for (var i = 0; i < this.buttons.length; ++i)
+	{
+		var btnCmdStr = RIPButtonWithText(this.buttons[i].x1, this.buttons[i].y1, this.buttons[i].x2, this.buttons[i].y2, this.buttons[i].btnText,
+										  this.buttons[i].btnCmdKey, this.buttons[i].nearBtnTxt, this.buttons[i].nearBtnTextBesideBtn);
+		printf("\r\n!%s", btnCmdStr);
+	}
+	console.crlf();
+}
+
+
+
 
 // ═══════════════════════════════════════════════════════════
 //  MAIN
