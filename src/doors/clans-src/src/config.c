@@ -433,6 +433,10 @@ static void EditOption(int16_t WhichOption)
 		case 6 :    /* BBS ID */
 			gotoxy(40,8);
 			Config.BBSID = (int16_t)DosGetLong("", Config.BBSID, 32767);
+			if (Config.BBSID > MAX_IBBSNODES)
+				Config.BBSID = MAX_IBBSNODES;
+			if (Config.BBSID < 1)
+				Config.BBSID = 1;
 			break;
 		case 7 :    /* Netmail Dir */
 			gotoxy(40, 9);
