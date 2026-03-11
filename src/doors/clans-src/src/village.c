@@ -383,7 +383,7 @@ static void ChangeColourScheme(void)
 		rputs(ST_SCHEME9);
 		rputs(ST_SCHEME10);
 
-		rputs(ST_COLOR03);
+		rputs("|03");
 		rputs(ST_SCHEMEMENU1);
 		rputs(ST_SCHEMEMENU2);
 		rputs(ST_SCHEMEMENU3);

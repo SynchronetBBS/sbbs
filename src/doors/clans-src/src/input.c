@@ -275,9 +275,9 @@ void GetStringChoice(const char **apszChoices, int16_t NumChoices, char *szPromp
 			}
 
 			if (TimesInStr == 1)
-				rputs(ST_COLOR14);
+				rputs("|14");
 			else
-				rputs(ST_COLOR07);
+				rputs("|07");
 
 			if (ShowedTopic && TimesInStr == 1 && LastTopicFound == TopicFound) {
 				/* same topic, do nothing */

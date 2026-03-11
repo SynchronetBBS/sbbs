@@ -44,30 +44,65 @@
 # @@            At end of line: converted to \n (for multi-line strings)
 #
 #------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # Organization
 #------------------------------------------------------------------------------
 #
-# 0001-0100     Various strings
-#
-# 0050+         colors
-#
-# 0100-         Help functions
-#
-# 0300+         menus!
-#
-# 0200-         System specific
-# 0400-         Various Stats
-#
-#
-# 0800-         News messages
-#
-# 0900-1000     Various System strings
-#
-# 1000+, more junk!? :)
+# 0001-0022    Common UI
+# 0030-0043    New-clan setup and class selection
+# 0053-0057    Colors
+# 0100-0107    Help system
+# 0111-0138    Town hall (TMENU, TMENUSTAT)
+# 0150-0157    Alliance
+# 0170-0191    T2MENU (citizen view)
+# 0200-0214    Sysop / display
+# 0220-0230    LOCAL art
+# 0240-0265    Combat / fight
+# 0280-0287    Spell combat
+# 0301-0330    Empire menu (EMENU, base 300)
+# 0400-0410    Village stats (VSTATS, base 400)
+# 0423-0425    Smithy (TOWN3-5)
+# 0435         Shop / misc
+# 0460-0465    Clan stats (CSTATS)
+# 0480-0481    Score display
+# 0500-0530    Item stats (ISTATS, base 500)
+# 0570-0586    Troop management
+# 0600-0614    Market / items
+# 0700-0762    Mail / RMAIL / input strings
+# 0800-0866    News
+# 0880-0890    Main menu / system
+# 0901-0949    File refs, scores, reg messages
+# 1000-1018    Empire stats (ESTATS, base 1000)
+# 1030-1037    Alliance menus (AMENU)
+# 1090         Item room menu (ITEMROOM0)
+# 1110         New player (STUFF10)
+# 1150-1163    Help file paths (*HLP)
+# 1200-1219    Color scheme (SCHEME, base 1200)
+# 1303-1354    Build menu (BMENU3-24, 30-54, base 1300)
+# 1360-1364    War actions (WAR0-4)
+# 1400-1434    Manage empire menu (MEMPIRE, base 1400)
+# 1440-1445    Wizard shop (WIZ0-4, WIZHLP)
+# 1500-1523    Donate / empire display (DEMPIRE, base 1500)
+# 1530-1532    Develop land (DEVLAND)
+# 1550-1554    Attack params (PAR)
+# 1560-1566    War empire (WEMPIRE)
+# 1570-1576    Gather troops (GTROOPS)
+# 1600-1613    War results (WRESULTS, base 1600)
+# 1630-1637    Spy (SPY)
+# 1670         Treasure (TREASURE0)
+# 1700-1713    Pawn shop (PAWN, base 1700)
+# 1751-1754    Local news (NEWS1-4)
+# 1760-1767    Game settings (GSETTINGS)
+# 1780-1783    League scores (LSCORES)
+# 1792         Default action (DEFACTION2)
+# 1800-1814    Player stats page 2 (P2STATS, base 1800)
+# 1832-1842    Misc / secrets
+# 1900-1921    War news (WNEWS, base 1900)
 #------------------------------------------------------------------------------
 
+
 #------------------------------------------------------------------------------
-# Various Strings
+# Common UI (0001-0022)
 #------------------------------------------------------------------------------
 
 0001 ST_PAUSE |S|0V<|0Wpaused|0V>|R
@@ -75,61 +110,38 @@
 0004 ST_ABORTED |04Aborted^M
 0005 ST_ENTEROPTION |0GEnter option|0E> |0F
 0006 ST_YES Yes
-
 0008 ST_VILLNOAFFORD |15The village cannot afford it!^M%P
 0009 ST_QUIT Quit^M
-
 0010 ST_ATTRNAME0 Agility
 0011 ST_ATTRNAME1 Dexterity
 0012 ST_ATTRNAME2 Strength
 0013 ST_ATTRNAME3 Wisdom
 0014 ST_ATTRNAME4 Armor Strength
 0015 ST_ATTRNAME5 Charisma
-
 0020 ST_LONGDIVIDER |0K═══─────────────────────────────────────────────────────────────────────────═══^M
 0021 ST_LONGLINE |0D═══─────────────────────────────────────────────────────────────────────────═══^M
 0022 ST_INVALIDITEM |12Invalid item!^M
 
+#------------------------------------------------------------------------------
+# New-clan setup and class selection (0030-0043)
+#------------------------------------------------------------------------------
+
 0030 ST_SPELLSKNOWN  |0MSkills/Spells Known^M |0D═─────────────────═^M |0C
 0031 ST_STUFF1 |0SDo you wish to join this game of clans?
 0033 ST_STUFF3 ^M|0SWhat will you call your clan?^M|0E> |0F
-
 0035 ST_STUFF5 |13Creating clansman %d of %d^M^M
 0036 ST_STUFF6 |11Please choose a race for this character.^M
 0037 ST_STUFF7 |11Please choose a class for this character.^M
 0038 ST_STUFF8 |13Stats generated for this player^M
 0039 ST_STUFF9 ^M|0SEnter the name of this member^M|0E> |0F
-0040 ST_STUFF10 |10%s joins the clan.^M%%P
+0040 ST_GETCLASS0 |0A(|0B%c|0A) |0C%s^M
+0041 ST_GETCLASS1 |0A(|0B?|0A) |0CHelp^M
+0042 ST_GETCLASS2 |0GEnter choice|0E> |0F
+0043 ST_CHOOSECLASS |0SChoose this?
 
-0053 ST_COLOR03 |03
-
-0057 ST_COLOR07 |07
-
-0064 ST_COLOR14 |14
-
-# buildmenu
-0073 ST_BMENU3  |0A(|0BC|0A) |0CBuild a Church^M
-0074 ST_BMENU4  |0A(|0BC|0A) |0CUpgrade Church to Level     |0B%d^M
-0075 ST_BMENU5      |0CChurch Level                |0B%d^M
-0076 ST_BMENU6  |0A(|0BT|0A) |0CBuild a Training Hall^M
-0077 ST_BMENU7  |0A(|0BT|0A) |0CUpgrade T. Hall to Level    |0B%d^M
-0078 ST_BMENU8      |0CTraining Hall Level         |0B%d^M
-0079 ST_BMENU9  |0A(|0BH|0A) |0CRuling Help^M
-0080 ST_BMENU10  |0A(|0BQ|0A) |0CQuit^M
-0081 ST_BMENU11 |15The church is at its maximum level already.^M
-0082 ST_BMENU12 |0CIt will cost |0B%ld GP |0Cto build a church.^MThe village has |0B%ld |0CGP.^M^M
-0083 ST_BMENU13 |0SBuild the church?
-0084 ST_BMENU14 |15The village now has a church!^M%P
-0085 ST_BMENU15 |0CIt will cost %ld GP to upgrade the church to level %d.^MThe village has |0B%ld |0CGP.^M^M
-0086 ST_BMENU16 |0SUpgrade the church?
-0087 ST_BMENU17 |15The church has been upgraded to level %d!^M%%P
-0088 ST_BMENU18 |15The training hall is at its maximum level already.^M
-0089 ST_BMENU19 |0CIt will cost %ld GP to build a training hall.^MThe village has |0B%ld |0CGP.^M^M
-0090 ST_BMENU20 |0SBuild the training hall?
-0091 ST_BMENU21 |15The village now has a training hall!^M%P
-0092 ST_BMENU22 |0SIt will cost %ld GP to upgrade the training hall to level %d.^MThe village has |0B%ld |0CGP.^M^M
-0093 ST_BMENU23 |0SUpgrade the training hall?
-0094 ST_BMENU24 |15The training hall has been upgraded to level %d!^M%%P
+#------------------------------------------------------------------------------
+# Help system (0100-0107)
+#------------------------------------------------------------------------------
 
 0100 ST_NOHELP |12Help not found!^M
 0101 ST_NOHELPFILE |12Help data not found!^M
@@ -140,59 +152,58 @@
 0106 ST_HELPEND END
 0107 ST_HELPPAUSE PAUSE
 
-# alliance crap
-0120 ST_ALLIANCEATMAX |10You already have 5 alliances.  You cannot create any more.^M%P
-0121 ST_ALLIANCESURE ^M|0SAre you sure you wish to invite that clan into this alliance?
+#------------------------------------------------------------------------------
+# Town hall (TMENU, TMENUSTAT) (0111-0138)
+#------------------------------------------------------------------------------
 
-0123 ST_ALLIANCEALREADY |07That clan is already in the alliance!^M%P
-0124 ST_ALLIANCEOTHERMAX |07That clan is already in too many alliances.^M%P
-0125 ST_ALLIANCELETTER |10An alliance with that clan has been proposed.^M|02You may now send a letter to that clan.^MAborting the letter aborts the proposition for an alliance.^M
-0126 ST_NOALLIANCES |07No alliances.^M%P
-0127 ST_ALLIANCES |07Alliances^M|08═───────═^M
-
-# town hall stuff
+0111 ST_TMENU11 |0SEnter your announcement now.  It will go in the daily news.^M|0A> |0F
+0115 ST_TMENU15Q |0SAre you sure you wish to give up rule?
+0119 ST_TMENU19 |07You cannot set conscription rate more than once a day.^M%P
+0120 ST_TMENU20 |0SEnter conscription rate.
 0130 ST_TMENUSTAT0  |0CDays of Reign                   |0B%d^M
+0135 ST_TMENUSTAT5  |0CVillage Vault                   |0B%-ld GP^M
+0137 ST_TMENUSTAT7  |0CGold in Vaults                  |0B%ld^M
+0138 ST_TMENUSTAT8  |0CConscription Rate               |0B%d^M
 
-0140 ST_TMENUSTAT5  |0CVillage Vault                   |0B%-ld GP^M
+#------------------------------------------------------------------------------
+# Alliance (0150-0157)
+#------------------------------------------------------------------------------
 
-0152 ST_TMENU11 |0SEnter your announcement now.  It will go in the daily news.^M|0A> |0F
+0150 ST_ALLIANCEATMAX |10You already have 5 alliances.  You cannot create any more.^M%P
+0151 ST_ALLIANCESURE ^M|0SAre you sure you wish to invite that clan into this alliance?
+0153 ST_ALLIANCEALREADY |07That clan is already in the alliance!^M%P
+0154 ST_ALLIANCEOTHERMAX |07That clan is already in too many alliances.^M%P
+0155 ST_ALLIANCELETTER |10An alliance with that clan has been proposed.^M|02You may now send a letter to that clan.^MAborting the letter aborts the proposition for an alliance.^M
+0156 ST_NOALLIANCES |07No alliances.^M%P
+0157 ST_ALLIANCES |07Alliances^M|08═───────═^M
 
-0156 ST_TMENU15Q |0SAre you sure you wish to give up rule?
+#------------------------------------------------------------------------------
+# T2MENU (citizen view) (0170-0191)
+#------------------------------------------------------------------------------
 
-0160 ST_T2MENUSTAT0  |0CCurrent Ruling Clan             |0BNone^M^M
-0161 ST_T2MENUSTAT1  |0CCurrent Ruling Clan             |0B%s |0A[ruled for %d day(s)]^M^M
-0162 ST_T2MENUSTAT2  |0CTax Rate                        |0B%d%%^M
-0163 ST_T2MENUSTAT3  |0CInterest Rate                   |0B%d%%^M
+0170 ST_T2MENUSTAT0  |0CCurrent Ruling Clan             |0BNone^M^M
+0171 ST_T2MENUSTAT1  |0CCurrent Ruling Clan             |0B%s |0A[ruled for %d day(s)]^M^M
+0172 ST_T2MENUSTAT2  |0CTax Rate                        |0B%d%%^M
+0173 ST_T2MENUSTAT3  |0CInterest Rate                   |0B%d%%^M
+0174 ST_T2MENUSTAT4  |0CGoods and Services Tax          |0B%d%%^M
+0176 ST_T2MENUSTAT6  |0CVillage Vault                   |0B%ld GP^M
+0181 ST_T2MENU1Q |0SHow much do you wish to deposit into the village vault?
+0183 ST_T2MENU3 ^M|07There is currently no ruler.^M%P
+0191 ST_T2MENU1 |14%ld |07gold deposited into village vault.^M^M
 
-0164 ST_T2MENUSTAT4  |0CGoods and Services Tax          |0B%d%%^M
-
-0166 ST_T2MENUSTAT6  |0CVillage Vault                   |0B%ld GP^M
-0167 ST_T2MENU1Q |0SHow much do you wish to deposit into the village vault?
-0168 ST_T2MENU1 |14%ld |07gold deposited into village vault.^M^M
-
-0170 ST_T2MENU3 ^M|07There is currently no ruler.^M%P
-0171 ST_EMENU1  |0A(|0BT|0A) |0CTax Rate                    |0B%d%%^M
-
-0173 ST_EMENU3  |0A(|0BG|0A) |0CGoods and Services Tax      |0B%d%%^M
-# continued 185
-
-0175 ST_CHATADDQ |16|0SDo you wish to add on to the conversation?
-0176 ST_CHATENTERCOMMENT ^M|0SPlease enter your comment now (enter up to 3 lines; blank line to stop).^M
-
-# continued from 0174
-0187 ST_EMENU7  |0A(|0BW|0A) |0CWithdraw from Vault^M |0A(|0BD|0A) |0CDeposit into Vault^M
-0188 ST_EMENU8  |0A(|0BH|0A) |0CRuling Help^M
-0189 ST_EMENU9  |0A(|0BQ|0A) |0CQuit^M
-0190 ST_EMENU10 |07You may set the tax rate only once per day.^M%P
-0191 ST_EMENU11 |0SPlease enter the tax rate (0 to 50)
-
-0195 ST_EMENU15 |07You may set the GST once per day.^M%P
-0196 ST_EMENU16 |0SPlease enter the GST (0 to 50)
-# continued on 414
+#------------------------------------------------------------------------------
+# Sysop / display (0200-0214)
+#------------------------------------------------------------------------------
 
 0200 ST_BEFORECHAT ^M^M|S|04-|12:< |07Sysop chat begins |12>:|04-|R^M
 0201 ST_AFTERCHAT ^M|S|04-|12:< |07Sysop chat ends |12>:|04-|R^M
 0202 ST_4RETURNS ^M^M^M^M
+0205 ST_CHATADDQ |16|0SDo you wish to add on to the conversation?
+0206 ST_CHATENTERCOMMENT ^M|0SPlease enter your comment now (enter up to 3 lines; blank line to stop).^M
+
+#------------------------------------------------------------------------------
+# LOCAL art (0220-0230)
+#------------------------------------------------------------------------------
 
 0220 ST_LOCAL1  |01──────────────────────────────────────────────────────────────────────────────^M
 0221 ST_LOCAL2  |09█▀ |15███ |09▀▀▀▀ |15▀▀▀▀▀▀▀ |09▀▀▀██▀▀▀▀▀▀▀▀▀▀▀▀▀ |15▌▌|09▐ |14░|08████▌ |14░|08████ ▀▀|14░|08|22▓|16█████████  █████|00|23N6^M
@@ -206,7 +217,10 @@
 0229 ST_LOCAL10  |01███|09|17░|07|16 █▄▄▄▄ █▄▄▄▄ █▀▀▀█ █ |09|17▀|07|16 █ ▄▄▄▄█ |09|17▓▒|01|16█|09|17░|01|16▌|08▐████▌ ▄|22▓|16█▄ |07▀█|23  |15░|07|16█|23 |16██|23     |16██▌ |08|22▓|16██▓▒ ██^M
 0230 ST_LOCAL11  |01──────────────────────────────────────────────────────────────────────────────^M^M
 
-# combat stuff
+#------------------------------------------------------------------------------
+# Combat / fight (0240-0265)
+#------------------------------------------------------------------------------
+
 0240 ST_FIGHT0 ^M|15All members of your clan are either dead or unconscious!^M|07Come back tomorrow when able to do things again!^M%P
 0241 ST_FIGHTOVER1 ^M|05>> |02%ld people were impressed by your battles and join your following!^M   %ld were recruited by the government.^M
 0242 ST_FIGHTCLANALREADY |07You've already fought that clan today.^M%P
@@ -216,7 +230,6 @@
 0246 ST_FIGHTYOURCOLOR |14
 0247 ST_FIGHTENEMYCOLOR |04
 0248 ST_FIGHTMISS »»» |12%s missed!^M^M
-
 0250 ST_FIGHTATTACK »»» |04%s attacks %s for |12%d damage.
 0251 ST_FIGHTXP  [%ld]
 0252 ST_FIGHTKILLED »»» |14%s |12is killed!  |04[%d]^M^M
@@ -227,108 +240,143 @@
 0257 ST_FIGHTTARGET1 |0SWhich enemy to attack? (|0B?=List;|10Enter|0C=First enemy)^M> |0F
 0258 ST_FIGHTTARGETLIST1 |0A(|0B%c|0A) |0C%-20s %d/%d hp^M
 0259 ST_FIGHTTARGETLIST2 |0A(|0B%c|0A) |0C%s^M
-
 0262 ST_FIGHTDEFEAT ^M|12Your clan has been defeated!^M
 0263 ST_FIGHTRUNAWAY |10*** |02Your clan runs away!^M^M
 0264 ST_FIGHTNORUN |10*** |02Your clan tries running but fails!^M^M
 0265 ST_FIGHTNORUN2 |15You cannot run away whilst battling a fellow clan!^M^M
 
-# town stuff
-0273 ST_TOWN3 |02It will cost %ld GP to upgrade the smithy to level %d.^M|10The village has |15%ld |10GP.^M^M
-0274 ST_TOWN4 |0SUpgrade the smithy?
-0275 ST_TOWN5 |15The smithy has been upgraded to level %d!^M%%P
+#------------------------------------------------------------------------------
+# Spell combat (0280-0287)
+#------------------------------------------------------------------------------
 
-# spell stuff
 0280 ST_CSPELL0 ^M|07No skills are available for that character!^M^M
 0281 ST_CSPELL1 |0A(|0B%c|0A) %s%-20s (%2d sp)^M
 0282 ST_CSPELL2 |0A(|0B?|0A) |0CHelp^M|0A(|0BQ|0A) |0CAbort^M
 0283 ST_CSPELL3 |0SChoose Skill [|0BEnter=Abort|0S]: |0F
 0284 ST_CSPELL4 |04You do not have enough skill points.^M%P
-
 0286 ST_SPELLFAIL »»» |15%s |07attempts %s, but fails.^M^M
 0287 ST_SPELLNOUNDEAD »»» |14No undead to banish!  Spell does nothing.^M^M
 
-# Village stats                          .
+#------------------------------------------------------------------------------
+# Empire menu (EMENU, base 300) (0301-0330)
+#------------------------------------------------------------------------------
+
+0301 ST_EMENU1  |0A(|0BT|0A) |0CTax Rate                    |0B%d%%^M
+0303 ST_EMENU3  |0A(|0BG|0A) |0CGoods and Services Tax      |0B%d%%^M
+0307 ST_EMENU7  |0A(|0BW|0A) |0CWithdraw from Vault^M |0A(|0BD|0A) |0CDeposit into Vault^M
+0308 ST_EMENU8  |0A(|0BH|0A) |0CRuling Help^M
+0309 ST_EMENU9  |0A(|0BQ|0A) |0CQuit^M
+0310 ST_EMENU10 |07You may set the tax rate only once per day.^M%P
+0311 ST_EMENU11 |0SPlease enter the tax rate (0 to 50)
+0315 ST_EMENU15 |07You may set the GST once per day.^M%P
+0316 ST_EMENU16 |0SPlease enter the GST (0 to 50)
+0326 ST_EMENU26 |0SHow much do you wish to deposit into the village vault?
+0327 ST_EMENU27 |15%ld gold deposited into village vault.^M^M
+0328 ST_EMENU28 |07You may only withdraw 3 times a day!^M%P
+0329 ST_EMENU29 |0SHow much do you wish to withdraw from the village vault?
+0330 ST_EMENU30 |15%ld gold withdrawn from village vault.^M^M
+
+#------------------------------------------------------------------------------
+# Village stats (VSTATS, base 400) (0400-0410)
+#------------------------------------------------------------------------------
+
 0400 ST_VSTATHEADER  |0CStats for |0B%s |0X█|0Y█|0Z█|16^M
 0401 ST_VSTATS1  |0CClan Population         |0B%d clans          |0CRuling Clan    |0B%-s^M^M
 0402 ST_VSTATS2  |0CTax Rate                        |0B%d%%^M
-
 0404 ST_VSTATS4  |0CGoods and Services Tax          |0B%d%%^M
-
 0407 ST_VSTATS7  |0CVault Gold                      |0B%ld GP^M
 0408 ST_VSTATS8 ^M |0CGame in progress for |0B%ld |0Cday(s) (since |0N%s|0C)^M |0CElimination mode is |0B%s^M
 0409 ST_VSTATS9 ^M |0CGame will begin on |0B%s^M
 0410 ST_VSTATS10 ^M |0CThe game is currently not in progress^M
 
+#------------------------------------------------------------------------------
+# Smithy (TOWN3-5) (0423-0425)
+#------------------------------------------------------------------------------
+
+0423 ST_TOWN3 |02It will cost %ld GP to upgrade the smithy to level %d.^M|10The village has |15%ld |10GP.^M^M
+0424 ST_TOWN4 |0SUpgrade the smithy?
+0425 ST_TOWN5 |15The smithy has been upgraded to level %d!^M%%P
+
+#------------------------------------------------------------------------------
+# Shop / misc (0435)
+#------------------------------------------------------------------------------
+
 0435 ST_FMENUNOAFFORD |15You cannot afford it!^M%P
 
-0468 ST_ISTATS0 ^M|0P(|0QL|0P=List,|0Q?|0P=Help,|0REnter|0P=Quit)> |0R
-0469 ST_ISTATS1 Examine Item^M^M
-0470 ST_ISTATS2 |04No items found.^M
-0471 ST_ISTATS3 |0SWhich item to examine? |04(0=abort)
-0472 ST_ISTATS4 |04Item does not exist.^M
-0473 ST_ISTATS5 List Items^M^M
-0474 ST_ISTATS6 Drop Item^M^M
-0475 ST_ISTATS7 |0SWhich item to drop? |04(0=abort)
-0476 ST_ISTATS8 |04Item is still in use.  Stop using it first.^M
-0477 ST_ISTATS9 |0SAre you sure you wish to drop %s?
-0478 ST_ISTATS10 %s dropped!^M^M
-0479 ST_ISTATS11 Stop Using Item^M^M
-# continued on 530
+#------------------------------------------------------------------------------
+# Clan stats (CSTATS) (0460-0465)
+#------------------------------------------------------------------------------
+
+0460 ST_CSTATS0  |0LStats for |0M%s %s^M
+0461 ST_CSTATS1  |0LLast game played: |0M%s^M
+0462 ST_CSTATS2  |0LGold            : |0M%ld^M
+0463 ST_CSTATS3  |0LMine Level      : |0M%d^M^M
+0464 ST_CSTATS4  |0P(|0QI|0P)nventory (|0QA|0P)llies (|0QV|0P)illage Stats (|0QS|0P)ymbol (|0QE|0P)mpire |0Q(|0RQ|0Q)|0Puit : |0R
+0465 ST_CSTATS5  |0LUntrained Followers    |0M%ld^M
+
+#------------------------------------------------------------------------------
+# Score display (0480-0481)
+#------------------------------------------------------------------------------
 
 0480 ST_SCOREHEADER  |0BName                                         |0ASymbol  Score   Status^M
 0481 ST_SCORELINE |0K═══───────────────────────────────────────────────────────────────────────═══^M
 
-0490 ST_CSTATS0  |0LStats for |0M%s %s^M
-0491 ST_CSTATS1  |0LLast game played: |0M%s^M
-0492 ST_CSTATS2  |0LGold            : |0M%ld^M
-0493 ST_CSTATS3  |0LMine Level      : |0M%d^M^M
-0494 ST_CSTATS4  |0P(|0QI|0P)nventory (|0QA|0P)llies (|0QV|0P)illage Stats (|0QS|0P)ymbol (|0QE|0P)mpire |0Q(|0RQ|0Q)|0Puit : |0R
-0495 ST_CSTATS5  |0LUntrained Followers    |0M%ld^M
+#------------------------------------------------------------------------------
+# Item stats (ISTATS, base 500) (0500-0530)
+#------------------------------------------------------------------------------
 
-0520 ST_EMENU26 |0SHow much do you wish to deposit into the village vault?
-0521 ST_EMENU27 |15%ld gold deposited into village vault.^M^M
-0522 ST_EMENU28 |07You may only withdraw 3 times a day!^M%P
-0523 ST_EMENU29 |0SHow much do you wish to withdraw from the village vault?
-0524 ST_EMENU30 |15%ld gold withdrawn from village vault.^M^M
+0500 ST_ISTATS0 ^M|0P(|0QL|0P=List,|0Q?|0P=Help,|0REnter|0P=Quit)> |0R
+0501 ST_ISTATS1 Examine Item^M^M
+0502 ST_ISTATS2 |04No items found.^M
+0503 ST_ISTATS3 |0SWhich item to examine? |04(0=abort)
+0504 ST_ISTATS4 |04Item does not exist.^M
+0505 ST_ISTATS5 List Items^M^M
+0506 ST_ISTATS6 Drop Item^M^M
+0507 ST_ISTATS7 |0SWhich item to drop? |04(0=abort)
+0508 ST_ISTATS8 |04Item is still in use.  Stop using it first.^M
+0509 ST_ISTATS9 |0SAre you sure you wish to drop %s?
+0510 ST_ISTATS10 %s dropped!^M^M
+0511 ST_ISTATS11 Stop Using Item^M^M
+0512 ST_ISTATS12 |04Nothing equipped!^M
+0513 ST_ISTATS13 |0SWhich item to stop using? |04(0=abort) ^-
+0514 ST_ISTATS14 |04Item not in use!^M
+0515 ST_ISTATS15 ^M|0C%s unwields |0B%s^M
+0516 ST_ISTATS16 ^M|0C%s takes off |0B%s^M
+0517 ST_ISTATS17 ^M|0C%s stops using |0B%s^M
+0518 ST_ISTATS18 Equip^M^M
+0519 ST_ISTATS19 |04Everything already equipped!^M
+0520 ST_ISTATS20 |0SWhich item to equip?
+0522 ST_ISTATS22 |0A(|0B%c|0A) %s%-20s |0C%-s equipped^M
+0523 ST_ISTATS23 |0A(|0BQ|0A) |0CAbort^M^M
+0524 ST_ISTATS24 |0SWho will equip |0B%s|0S? |0F^-
+0525 ST_ISTATS25 |0SThat member is already wielding |0B%s|0S.  Unequip this first?
+0526 ST_ISTATS26 ^M|0C%s equips |0B%s!^M
+0527 ST_ISTATS27 |0SThat member is already wearing |0B%s|0S.  Unequip this first?
+0528 ST_ISTATS28 ^M|0C%s wears |0B%s!^M
+0529 ST_ISTATS29 |0SThat member is already using |0B%s|0S.  Unequip this first?
+0530 ST_ISTATS30 ^M|0C%s readies |0B%s!^M
 
-0530 ST_ISTATS12 |04Nothing equipped!^M
-0531 ST_ISTATS13 |0SWhich item to stop using? |04(0=abort) ^-
-0532 ST_ISTATS14 |04Item not in use!^M
-0533 ST_ISTATS15 ^M|0C%s unwields |0B%s^M
-0534 ST_ISTATS16 ^M|0C%s takes off |0B%s^M
-0535 ST_ISTATS17 ^M|0C%s stops using |0B%s^M
-0536 ST_ISTATS18 Equip^M^M
-0537 ST_ISTATS19 |04Everything already equipped!^M
-0538 ST_ISTATS20 |0SWhich item to equip?
+#------------------------------------------------------------------------------
+# Troop management (0570-0586)
+#------------------------------------------------------------------------------
 
-0540 ST_ISTATS22 |0A(|0B%c|0A) %s%-20s |0C%-s equipped^M
-0541 ST_ISTATS23 |0A(|0BQ|0A) |0CAbort^M^M
-0542 ST_ISTATS24 |0SWho will equip |0B%s|0S? |0F^-
-0543 ST_ISTATS25 |0SThat member is already wielding |0B%s|0S.  Unequip this first?
-0544 ST_ISTATS26 ^M|0C%s equips |0B%s!^M
-0545 ST_ISTATS27 |0SThat member is already wearing |0B%s|0S.  Unequip this first?
-0546 ST_ISTATS28 ^M|0C%s wears |0B%s!^M
-0547 ST_ISTATS29 |0SThat member is already using |0B%s|0S.  Unequip this first?
-0548 ST_ISTATS30 ^M|0C%s readies |0B%s!^M
-
-# manage troops
 0570 ST_MTROOPHEADER  |07    Soldier        Cost(GP)    Owned^M
 0571 ST_MTROOPCOST1  |0A(|0B1|0A) |0CFootmen            15       |0B%ld^M
 0572 ST_MTROOPCOST2  |0A(|0B2|0A) |0CAxeman             30       |0B%ld^M
 0573 ST_MTROOPCOST3  |0A(|0B3|0A) |0CKnights            60       |0B%ld^M
-
 0576 ST_MMENURETURN  |0A(|0BH|0A) |0CHelp on Troops^M |0A(|0BQ|0A) |0CQuit^M^M
 0577 ST_MMENUTROOPSTATUS |0CYou have |0B%ld |0Cfollowers and |0B%ld |0Cgold.^M
-0578 ST_MMENUTRAIN1 ^M|0SHow many Footmen to train?
-0579 ST_MMENUTRAIN2 ^M|0B%ld |0CFootmen trained!  %ld gold deducted^M^M
-0580 ST_MMENUTRAIN3 ^M|0SHow many axemen to train?
-0581 ST_MMENUTRAIN4 ^M|0B%ld |0Caxemen trained!  %ld gold deducted^M^M
+0581 ST_MMENUTRAIN1 ^M|0SHow many Footmen to train?
+0582 ST_MMENUTRAIN2 ^M|0B%ld |0CFootmen trained!  %ld gold deducted^M^M
+0583 ST_MMENUTRAIN3 ^M|0SHow many axemen to train?
+0584 ST_MMENUTRAIN4 ^M|0B%ld |0Caxemen trained!  %ld gold deducted^M^M
+0585 ST_MMENUTRAIN5 ^M|0SHow many knights to train?
+0586 ST_MMENUTRAIN6 ^M|0B%ld |0Cknights trained!  %ld gold deducted^M^M
 
-0583 ST_MMENUTRAIN5 ^M|0SHow many knights to train?
-0584 ST_MMENUTRAIN6 ^M|0B%ld |0Cknights trained!  %ld gold deducted^M^M
+#------------------------------------------------------------------------------
+# Market / items (0600-0614)
+#------------------------------------------------------------------------------
 
-# Market Menu stuff
 0600 ST_WEAPONSAVAILABLE ^M|0B  Weapons Available^M
 0601 ST_ARMORAVAILABLE ^M|0B  Armor Available^M
 0602 ST_SHIELDSAVAILABLE ^M|0B  Shields Available^M
@@ -345,36 +393,10 @@
 0613 ST_ITEMMATERIALS |0SMaterials available:^M |0A(|0BA|0A) |0CPolymetral^M |0A(|0BB|0A) |0CLaconia^M^M
 0614 ST_ITEMCHOOSEONE |0SPlease choose the material to use: |0FPolymetral
 
-# getclass stuff
-0650 ST_GETCLASS0 |0A(|0B%c|0A) |0C%s^M
-0651 ST_GETCLASS1 |0A(|0B?|0A) |0CHelp^M
-0652 ST_GETCLASS2 |0GEnter choice|0E> |0F
-0653 ST_CHOOSECLASS |0SChoose this?
+#------------------------------------------------------------------------------
+# Mail / RMAIL / input strings (0700-0762)
+#------------------------------------------------------------------------------
 
-# color scheme stuff
-0670 ST_SCHEMETITLE  |15Current Scheme Example:^M^M
-0671 ST_SCHEME1 |0D══────────────────────────────────────────══^M
-0672 ST_SCHEME2   |0A(|0BE|0A) |0CEnter the Mines^M
-0673 ST_SCHEME3   |0A(|0BV|0A) |0CView Your Stats^M
-0674 ST_SCHEME4 |0D══────────────────────────────────────────══^M
-0675 ST_SCHEME5  |0H[|0I12:13|0H] |0GEnter option|0E> |0F^M^M
-0676 ST_SCHEME6 |0K══───────────────────────────────────────────══^M
-0677 ST_SCHEME7 |0LStat         |0MStat Value    |0NMore Stats    |0O(More)^M
-0678 ST_SCHEME8 |0K══───────────────────────────────────────────══^M
-0679 ST_SCHEME9 |0Q(I)|0Pnventory, |0Q(C)|0Pharacters...|0Q(|0RQ|0Q)|0Puit^M^M
-0680 ST_SCHEME10 |0V<|0Wpause|0V>^M|0SQuestion?  |0A(|0CYes|0B/no|0A)^M
-
-0685 ST_SCHEMEMENU1 |071. () around hotkey      2. Hotkey                3. Option name^M
-0686 ST_SCHEMEMENU2 4. Line Divider          5. "Enter option" prompt 6. > after prompt^M
-0687 ST_SCHEMEMENU3 7. Prompt default choice 8. Time brackets         9. Time lit up^M
-0688 ST_SCHEMEMENU4 A. Time unlit            B. Stat line divider     C. Stat^M
-0689 ST_SCHEMEMENU5 D. Stat Value            E. More Stats            F. (More)^M
-0690 ST_SCHEMEMENU6 G. Stat option unlit     H. Stat option lit       I. Stat option hilight^M
-0691 ST_SCHEMEMENU7 J. Questions             M. Pause border          N. Pause prompt^M
-0692 ST_SCHEMEMENU8 |15Z. Choose scheme         |07Q. Quit^M^M
-0693 ST_SCHEMEMENU9 |0GPlease choose an option|0E> |15
-
-# mail stuff
 0700 ST_MAILHEADER ^M|0CEnter up to |0B40 |0Clines.  Wrap-around is detected.^MType |0B/S |0Con a blank line to save.  |0B/A |0Cto abort.  |0B/? |0Cfor help.^M
 0701 ST_MAILENTERCOLOR |0C|16
 0702 ST_MAILNOTEXT |12No text entered.  Can't save blank message.^M
@@ -384,7 +406,6 @@
 0706 ST_MAILNOTEXTYET |12No text has been entered yet!^M
 0707 ST_MAILLIST |13%d: |05%s|16
 0708 ST_MAIL40LINES |1040 |02lines entered, message being saved.^M%P
-
 0720 ST_RMAILCHECKING |14Checking mail.^M
 0721 ST_RMAILHEADER1 |0L From    : |0M%s^M|0L Date    : |0M%s ^-
 0722 ST_RMAILHEADER2 |0L Date    : |0M%s ^-
@@ -404,14 +425,12 @@
 0736 ST_RMAILDELETING |10Deleting message.^M
 0737 ST_RMAILSKIP Skip^M^M
 0738 ST_RMAILQUIT Quit^M^M
-
 0740 ST_INPUTSTRCOMMAND |16|06[|10Command? : ?=help|06] : ^-
 0741 ST_INPUTSTRHELP ^N|03(C)ontinue:(S)ave:(A)bort:(R)estart:(L)ist : [C] : ^-
 0742 ST_LONGSPACES ^N                                                                 ^N
 0743 ST_INPUTSTRSTARTOVER |0SReally start message over?
 0744 ST_INPUTSTRSAVE |0SReally save?
 0745 ST_INPUTSTRABORT |0SReally Abort?
-
 0750 ST_RMAILQUOTE |03Quote message?
 0751 ST_RMAILQFIRSTLINE |03Enter first line to quote |06[|10Enter=All|06]: |15
 0752 ST_RMAILQUOTEALL |10Quoting All of text...^M
@@ -419,14 +438,17 @@
 0754 ST_RMAILQUOTEBRACKET |05> ^-
 0755 ST_RMAILHEADER ^M|0CEnter up to |0B40 |0Clines.  Wrap-around is detected.^MType |0A/S |0Con a blank line to save.  |0A/A |0Cto abort.  |0A/Q |0Cto quote.  |0A/? |0Cfor help.^M
 0756 ST_MAILPUBLICQ |0SPost as a public message?
-0757 ST_INPUTSTRHELP2 ^N|03(C)ontinue:(S)ave:(A)bort:(R)estart:(Q)uote Line:(L)ist : [C] : ^-
 0758 ST_RMAILQUOTELIST ^M|10%02d: |02%s|16
 0759 ST_RMAILQUOTECHOOSE ^M|03Enter line to quote: |15
+0762 ST_INPUTSTRHELP2 ^N|03(C)ontinue:(S)ave:(A)bort:(R)estart:(Q)uote Line:(L)ist : [C] : ^-
+
+#------------------------------------------------------------------------------
+# News (0800-0866)
+#------------------------------------------------------------------------------
 
 0800 ST_NEWSNEWCLAN |0A »»» |0CA new clan is formed: |0B%s^M^M
 0801 ST_NEWSFOR |0CNews for |0B%s^M^M
 0802 ST_NEWSNEWRULER |0A »»» |0CThe village is now ruled by |0B%s^M^M
-
 0805 ST_NEWSRULERSPEECH |0A »»» |0CThe current rulers (|0B%s|0C) make an announcement:|0B^M^M     ^-
 0806 ST_NEWSNEWFLAG |0A »»» |0CThe government of |0B%s|0C has decided to use this flag: |%02d█|%02d█|%02d█^M^M
 0807 ST_NEWSNEWCHURCH |0A »»» |0COur ruler |0B%s |0Chave built a church for the village!^M^M
@@ -434,41 +456,41 @@
 0809 ST_NEWSNEWTHALL |0A »»» |0COur ruler |0B%s |0Chave built a training hall for the village!^M^M
 0810 ST_NEWSUPGRADETHALL |0A »»» |0CUnder the rule of |0B%s|0C, the training hall was upgraded to level %d!^M^M
 0811 ST_NEWSABDICATED |0A »»» |0B%s gave up their rule of this village!^M^M
-
 0815 ST_NEWSEMBEZZLE |0A »»» |0B%s embezzeled %ld gold |0Cfrom the village vault.^M^M
-0816 ST_NEWSTAX1 |0A »»» |0B%s |0C%s the tax rate from |0B%d%% to %d%%^M^M
-
-0818 ST_NEWSTAX3 |0A »»» |0B%s |0C%s the GST from |0B%d%% to %d%%^M^M
-0819 ST_NEWSFIGHT1 |0A »»» |0BClan Combat:  |0C%s was defeated by %s!^M^M
-0820 ST_NEWSFIGHT2 Your clan was attacked by %s in hand-to-hand combat.^M |12Unfortunately, you were defeated!
-0821 ST_NEWSFIGHT3 |0A »»» |0BClan Combat:  |0C%s attacked %s but lost!^M^M
-0822 ST_NEWSFIGHT4 Your clan was attacked by %s in hand-to-hand combat.^M |15However, you were victorious and fended them off well!
 0823 ST_NEWSSMITHY |0A »»» |0CUnder the rule of |0B%s|0C, the smithy was upgraded to level %d!^M^M
-
 0829 ST_NEWSLOCALRESET |0A »»» |0CThe game has been reset!^M^M
-
 0833 ST_NEWSCLANENTER |0A »»» |0B%s |0Chave entered town!^M^M
 0834 ST_NEWSCLANEXIT |0A »»» |0B%s |0Chave left town!^M^M
 0835 ST_USERLISTH   ID  Username              Clan Name^M----- --------------------  --------------------^M
-
 0837 ST_NEWSDONATED |0A »»» |0B%s donated %ld gold |0Cto the village vault.^M^M
-
 0839 ST_TOOMANYMEMBERS |07Your clan has the maximum number of permanent members already.^M%P
 0840 ST_REMOVEMEM |0SAre you sure you wish to remove %s from the clan?
 0841 ST_REMOVED |0B%s |0Chas been removed from the clan!^M
-0842 ST_NEWSFIGHT5 |0A »»» |0BClan Combat:  |0C%s attacked %s but then retreated!^M^M
-0843 ST_NEWSFIGHT6 Your clan was attacked by %s in hand-to-hand combat.^M |13However, they ran away!
+0851 ST_NEWSTAX1 |0A »»» |0B%s |0C%s the tax rate from |0B%d%% to %d%%^M^M
+0853 ST_NEWSTAX3 |0A »»» |0B%s |0C%s the GST from |0B%d%% to %d%%^M^M
+0861 ST_NEWSFIGHT1 |0A »»» |0BClan Combat:  |0C%s was defeated by %s!^M^M
+0862 ST_NEWSFIGHT2 Your clan was attacked by %s in hand-to-hand combat.^M |12Unfortunately, you were defeated!
+0863 ST_NEWSFIGHT3 |0A »»» |0BClan Combat:  |0C%s attacked %s but lost!^M^M
+0864 ST_NEWSFIGHT4 Your clan was attacked by %s in hand-to-hand combat.^M |15However, you were victorious and fended them off well!
+0865 ST_NEWSFIGHT5 |0A »»» |0BClan Combat:  |0C%s attacked %s but then retreated!^M^M
+0866 ST_NEWSFIGHT6 Your clan was attacked by %s in hand-to-hand combat.^M |13However, they ran away!
+
+#------------------------------------------------------------------------------
+# Main menu / system (0880-0890)
+#------------------------------------------------------------------------------
 
 0880 ST_MAIN0 |07Sorry, this game is currently taking in no new players.^M
 0881 ST_MAIN1 |02Your clan was last seen headed for |14%s |02(%s)!^MPlease call that BBS instead.^M^M
 0882 ST_MAIN2 |0CThis BBS = |0B%s|0C, |0B%s|0C.^M%%P%%C
-
 0884 ST_MAIN4 ^MSomeone is currently playing the game on another node.^MPlease return in a few minutes.^M%P
 0885 ST_MAIN5 |07World Travel is only permitted in InterBBS games.^M%P
 0886 ST_MAIN6 |07There is currently no ruler of %s^M
 0887 ST_NODOORFILE  |07A Canadian Product |04█|04|23♣|16|04█^M^M |07No dropfile (|15DOOR.SYS, DORINFOx.DEF, etc.|07) was found for that node.^M Please check the settings in your configuration.  If you wish to^M play locally, use |14CLANS /L |07as your command line.^M
-
 0890 ST_CHURCHOP0 Attend Mass
+
+#------------------------------------------------------------------------------
+# File refs, scores, reg messages (0901-0949)
+#------------------------------------------------------------------------------
 
 0901 ST_ERRORPC - Couldn't open PC file.^M
 0902 ST_CLANSPCFILE clans.pc
@@ -478,7 +500,6 @@
 0906 ST_RULERHLP /hlp/ruler
 0907 ST_NEWBIEHLP /hlp/NEWBIE
 0908 ST_CLANSHLP /hlp/general
-
 0912 ST_SCORE0ASCII  Scores for The Clans^M^M Name                                         Symbol  Score   Status^M═══───────────────────────────────────────────────────────────────────────═══^M
 0913 ST_SCORE0ANSI ^[[0m^[[2J^[[0;36m Scores for The Clans^M^M Name                                         Symbol  Score   Status^M^[[0;35m═══───────────────────────────────────────────────────────────────────────═══^M
 0914 ST_SCORE1ASCII No one has played The Clans yet^M
@@ -495,10 +516,7 @@
 0925 ST_SCORE6ASCII Eliminated
 0926 ST_SCORE6ANSI Eliminated
 0927 ST_NEWPCFILE new.pc
-
 0929 ST_NOWORLDNDX |12Could not find WORLD.NDX file.  If you are not in an InterBBS league,^Mturn off the InterBBS option in the CONFIG.EXE program.^M^M
-
-# reg messages
 0940 ST_REGMSG0 |01+---+---------------------------------------------------------------+---+^M
 0941 ST_REGMSG1    |09▒|01│ |11* unregistered * unregistered * unregistered * unregistered * |01│|09▒^M
 0942 ST_REGMSG2 |01+---+---------------------------------------------------------------+---+^M
@@ -510,25 +528,63 @@
 0948 ST_HELPPARM |02format:  |07CLANS |02[options]^M^M|02options:^M^M |10/Nx          |02-- |07use Node x^M |10/L           |02-- |07run game in local mode^M |10/Dx          |02-- |07read dropfile from path x^M |10/Sx          |02-- |07use already open socket descriptor x^M |10/I           |02-- |07process inbound packets now^M |10/M           |02-- |07run maintenance^M |10/Verbose     |02-- |07enable additional logging^M |10/Exclusive   |02-- |07ignore online flag^M |10/USERS       |02-- |07see userlist^M |10/Recon X     |02-- |07send recon to BBS with ID X^M |10/SendReset X |02-- |07send reset to BBS with ID X^M |10/NewNDX      |02-- |07send new WORLD.NDX file to all boards^M |10/LIBBS       |02-- |07Local InterBBS support^M^M
 0949 ST_NEEDREGISTER |07That is the highest upgrade allowed in the UNREGISTERED version of this game.^M%P
 
-1020 ST_AMENU0  |0BAlliances Menu^M
-1021 ST_AMENU1  |0A(|0B%c|0A) |0C%s^M
-1022 ST_AMENU2  |0A(|0BZ|0A) |0CCreate an Alliance^M |0A(|0BQ|0A) |0CQuit^M
-1023 ST_MAKEALLIANCEQ ^M|0SCreate an alliance?
-1024 ST_CANTBUILD |07You cannot create a new alliance, there are already too many.^M
+#------------------------------------------------------------------------------
+# Empire stats (ESTATS, base 1000) (1000-1018)
+#------------------------------------------------------------------------------
 
-1027 ST_CREATEALLIANCE Create Alliance^M
-1029 ST_AMENU4 |0SEnter a name for this alliance.^M|0E> |0F
+1000 ST_ESTATS0  |0LStats for the empire of |0M%s^M
+1001 ST_ESTATS1  |0LGold                            |0M%ld^M
+1002 ST_ESTATS2  |0LLand                            |0M%d units^M
+1003 ST_ESTATS3  |0LWorker Energy                   |0M%d%%^M
+1004 ST_ESTATS4  |0LArmy Statistics:  ^M
+1005 ST_ESTATS5  |0L- |0LFootmen: |0M%ld,
+1006 ST_ESTATS6  |0LAxemen: |0M%ld,
+1007 ST_ESTATS7  |0LKnights: |0M%ld,
+1008 ST_ESTATS8  |0LRating: |0M%d^M
+1009 ST_ESTATS9  |0L- |0LAvg. Speed: |0M%d,
+1010 ST_ESTATS10  |0LTotal Vitality: |0M%ld,
+1011 ST_ESTATS11  |0LOffense: |0M%ld,
+1012 ST_ESTATS12  |0LDefense: |0M%ld^M
+1013 ST_ESTATS13 ^M |0LBuildings:^M
+1014 ST_ESTATS14   |0MNone.^M
+1015 ST_ESTATS15  |0CSpeed: |0B%d, ^-
+1016 ST_ESTATS16 |0COffense: |0B%ld, ^-
+1017 ST_ESTATS17 |0CDefense: |0B%ld, ^-
+1018 ST_ESTATS18 |0CVitality: |0B%ld^M^M
 
-# troop donations
-1091 ST_ITEMROOM0 ^M|0P(|0QD|0P)rop item (|0QT|0P)ake item e(|0QX|0P)amine (|0QL|0P)ist own items^Ml(|0QI|0P)st room items (|0Q*|0P)destroy item (|0Q?|0P)Help |0Q(|0RQ|0Q)|0Puit : |0R
+#------------------------------------------------------------------------------
+# Alliance menus (AMENU) (1030-1037)
+#------------------------------------------------------------------------------
 
-# misc crap
+1030 ST_AMENU0  |0BAlliances Menu^M
+1031 ST_AMENU1  |0A(|0B%c|0A) |0C%s^M
+1032 ST_AMENU2  |0A(|0BZ|0A) |0CCreate an Alliance^M |0A(|0BQ|0A) |0CQuit^M
+1033 ST_MAKEALLIANCEQ ^M|0SCreate an alliance?
+1034 ST_AMENU4 |0SEnter a name for this alliance.^M|0E> |0F
+1035 ST_CANTBUILD |07You cannot create a new alliance, there are already too many.^M
+1037 ST_CREATEALLIANCE Create Alliance^M
+
+#------------------------------------------------------------------------------
+# Item room menu (ITEMROOM0) (1090)
+#------------------------------------------------------------------------------
+
+1090 ST_ITEMROOM0 ^M|0P(|0QD|0P)rop item (|0QT|0P)ake item e(|0QX|0P)amine (|0QL|0P)ist own items^Ml(|0QI|0P)st room items (|0Q*|0P)destroy item (|0Q?|0P)Help |0Q(|0RQ|0Q)|0Puit : |0R
+
+#------------------------------------------------------------------------------
+# New player (STUFF10) (1110)
+#------------------------------------------------------------------------------
+
+1110 ST_STUFF10 |10%s joins the clan.^M%%P
+
+#------------------------------------------------------------------------------
+# Help file paths (*HLP) (1150-1163)
+#------------------------------------------------------------------------------
+
 1150 ST_MENUSHLP /hlp/menus
 1151 ST_RACESHLP /hlp/races
 1152 ST_VILLHLP /hlp/village
 1153 ST_ITEMHLP /hlp/items
 1154 ST_BULLHLP /hlp/bulletins
-
 1156 ST_COMBATHLP /hlp/combat
 1157 ST_STATSHLP /hlp/stats
 1158 ST_STRATHLP /hlp/strategy
@@ -538,85 +594,146 @@
 1162 ST_EMPIREHLP /hlp/empire
 1163 ST_ARMYHLP /hlp/army
 
-# result of wars
-1354 ST_WAR0 |0B %ld |0CFootmen, |0B%ld |0CAxemen, |0B%ld |0CKnights ^M
-1355 ST_WAR1 ^M|0C You lost the following:^M  |0B%ld |0CFootmen, |0B%ld |0CAxemen, |0B%ld |0CKnights^M
-1356 ST_WAR2 |0SAttempt to loot how much steal land? (1-10%)
-1357 ST_WAR3 |0SAttempt to loot how much gold? (1-15%)
-1358 ST_WAR4 |0SAttempt how much damage? (1-15%)
+#------------------------------------------------------------------------------
+# Color scheme (SCHEME, base 1200) (1200-1219)
+#------------------------------------------------------------------------------
 
-1380 ST_BMENU30  |0A(|0BP|0A) |0CBuild a pawn shop^M
-1381 ST_BMENU31  |0A(|0BP|0A) |0CUpgrade pawn shop to level  |0B%d^M
-1382 ST_BMENU32      |0CPawn Level                  |0B%d^M
-1383 ST_BMENU33  |0A(|0BZ|0A) |0CBuild a Wizard shop^M
-1384 ST_BMENU34  |0A(|0BZ|0A) |0CUpgrade Wiz. shop to Level  |0B%d^M
-1385 ST_BMENU35      |0CWizard Level                |0B%d^M
-1386 ST_BMENU36  |0A(|0BS|0A) |0CUpgrade Smithy to Level     |0B%d^M
-1387 ST_BMENU37 Pawn shop is at max. level.^M
-1388 ST_BMENU38 |02It will cost |10%ld GP |02to build a pawn shop.^M|10The village has |15%ld |10GP.^M^M
-1389 ST_BMENU39 Build a pawn shop?
-1390 ST_BMENU40 The village now has a pawn shop!^M
-1391 ST_BMENU41 |0A »»» |0COur ruler |0B%s |0Chave built a pawn shop for the village!^M^M
-1392 ST_BMENU42 |02It will cost %ld GP to upgrade the pawn shop to level %d.^M|10The village has |15%ld |10GP.^M^M
-1393 ST_BMENU43 Upgrade the pawn shop?
-1394 ST_BMENU44 |0CThe pawn shop has been upgraded to level |0B%d^M
-1395 ST_BMENU45 |0A »»» |0C%s upgraded the pawn shop to level |0B%d^M^M
-1396 ST_BMENU46 Wizard shop is at max. level.^M
-1397 ST_BMENU47 |02It will cost |10%ld GP |02to build a wizard's shop.^M|10The village has |15%ld |10GP.^M^M
-1398 ST_BMENU48 Build a wizard's shop?
-1399 ST_BMENU49 The village now has a wizard's shop!^M
-1400 ST_BMENU50 |0A »»» |0COur ruler |0B%s |0Chave built a wizard's shop for the village!^M^M
-1401 ST_BMENU51 |02It will cost %ld GP to upgrade the wizard's shop to level %d.^M|10The village has |15%ld |10GP.^M^M
-1402 ST_BMENU52 |0SUpgrade the wizard's shop?
-1403 ST_BMENU53 The wizard's shop has been upgraded to level %d^M
-1404 ST_BMENU54 |0A »»» |0C%s upgraded the wizard's shop to level %d^M^M
+1200 ST_SCHEMETITLE  |15Current Scheme Example:^M^M
+1201 ST_SCHEME1 |0D══────────────────────────────────────────══^M
+1202 ST_SCHEME2   |0A(|0BE|0A) |0CEnter the Mines^M
+1203 ST_SCHEME3   |0A(|0BV|0A) |0CView Your Stats^M
+1204 ST_SCHEME4 |0D══────────────────────────────────────────══^M
+1205 ST_SCHEME5  |0H[|0I12:13|0H] |0GEnter option|0E> |0F^M^M
+1206 ST_SCHEME6 |0K══───────────────────────────────────────────══^M
+1207 ST_SCHEME7 |0LStat         |0MStat Value    |0NMore Stats    |0O(More)^M
+1208 ST_SCHEME8 |0K══───────────────────────────────────────────══^M
+1209 ST_SCHEME9 |0Q(I)|0Pnventory, |0Q(C)|0Pharacters...|0Q(|0RQ|0Q)|0Puit^M^M
+1210 ST_SCHEME10 |0V<|0Wpause|0V>^M|0SQuestion?  |0A(|0CYes|0B/no|0A)^M
+1211 ST_SCHEMEMENU1 |071. () around hotkey      2. Hotkey                3. Option name^M
+1212 ST_SCHEMEMENU2 4. Line Divider          5. "Enter option" prompt 6. > after prompt^M
+1213 ST_SCHEMEMENU3 7. Prompt default choice 8. Time brackets         9. Time lit up^M
+1214 ST_SCHEMEMENU4 A. Time unlit            B. Stat line divider     C. Stat^M
+1215 ST_SCHEMEMENU5 D. Stat Value            E. More Stats            F. (More)^M
+1216 ST_SCHEMEMENU6 G. Stat option unlit     H. Stat option lit       I. Stat option hilight^M
+1217 ST_SCHEMEMENU7 J. Questions             M. Pause border          N. Pause prompt^M
+1218 ST_SCHEMEMENU8 |15Z. Choose scheme         |07Q. Quit^M^M
+1219 ST_SCHEMEMENU9 |0GPlease choose an option|0E> |15
 
-# wizard's shop stuff
-1420 ST_WIZ0 ^M|07There is currently no wizard's shop in the village.^M%P
-1421 ST_WIZ1 |0SWhich item to examine? |04(0=abort)
-1422 ST_WIZ2 |07I only examine books and scrolls^M%P
-1423 ST_WIZ3 It will cost you %ld gold to examine that item.^MYou have %ld gold^M^M
-1424 ST_WIZ4 Examine it?
-1425 ST_WIZHLP /hlp/wizard
+#------------------------------------------------------------------------------
+# Build menu (BMENU3-24, 30-54, base 1300) (1303-1354)
+#------------------------------------------------------------------------------
 
-# managing empire stuff
-1440 ST_MEMPIRE0  |0BManaging Empire^M
-1441 ST_MEMPIRE1  |0CGold                   |0B%ld^M
-1442 ST_MEMPIRE2  |0CArmy Rating            |0B%d^M
-1443 ST_MEMPIRE3  |0CDeveloped Land         |0B%d units^M
-1444 ST_MEMPIRE4  |0CWorker Energy          |0B%d%%^M
-1445 ST_MEMPIRE5  |0CSecurity Level         |0B%d^M
-1446 ST_MEMPIRE6  |0CSpy Level              |0B%d^M
-1447 ST_MEMPIRE7 |07You may only donate to a village or an alliance's empire.^M%P
-1448 ST_MEMPIRE8 |07You need a barracks first!^M%P
-1449 ST_MEMPIRE9 |07You need an intelligence agency first!^M%P
+1303 ST_BMENU3  |0A(|0BC|0A) |0CBuild a Church^M
+1304 ST_BMENU4  |0A(|0BC|0A) |0CUpgrade Church to Level     |0B%d^M
+1305 ST_BMENU5      |0CChurch Level                |0B%d^M
+1306 ST_BMENU6  |0A(|0BT|0A) |0CBuild a Training Hall^M
+1307 ST_BMENU7  |0A(|0BT|0A) |0CUpgrade T. Hall to Level    |0B%d^M
+1308 ST_BMENU8      |0CTraining Hall Level         |0B%d^M
+1309 ST_BMENU9  |0A(|0BH|0A) |0CRuling Help^M
+1310 ST_BMENU10  |0A(|0BQ|0A) |0CQuit^M
+1311 ST_BMENU11 |15The church is at its maximum level already.^M
+1312 ST_BMENU12 |0CIt will cost |0B%ld GP |0Cto build a church.^MThe village has |0B%ld |0CGP.^M^M
+1313 ST_BMENU13 |0SBuild the church?
+1314 ST_BMENU14 |15The village now has a church!^M%P
+1315 ST_BMENU15 |0CIt will cost %ld GP to upgrade the church to level %d.^MThe village has |0B%ld |0CGP.^M^M
+1316 ST_BMENU16 |0SUpgrade the church?
+1317 ST_BMENU17 |15The church has been upgraded to level %d!^M%%P
+1318 ST_BMENU18 |15The training hall is at its maximum level already.^M
+1319 ST_BMENU19 |0CIt will cost %ld GP to build a training hall.^MThe village has |0B%ld |0CGP.^M^M
+1320 ST_BMENU20 |0SBuild the training hall?
+1321 ST_BMENU21 |15The village now has a training hall!^M%P
+1322 ST_BMENU22 |0SIt will cost %ld GP to upgrade the training hall to level %d.^MThe village has |0B%ld |0CGP.^M^M
+1323 ST_BMENU23 |0SUpgrade the training hall?
+1324 ST_BMENU24 |15The training hall has been upgraded to level %d!^M%%P
+1330 ST_BMENU30  |0A(|0BP|0A) |0CBuild a pawn shop^M
+1331 ST_BMENU31  |0A(|0BP|0A) |0CUpgrade pawn shop to level  |0B%d^M
+1332 ST_BMENU32      |0CPawn Level                  |0B%d^M
+1333 ST_BMENU33  |0A(|0BZ|0A) |0CBuild a Wizard shop^M
+1334 ST_BMENU34  |0A(|0BZ|0A) |0CUpgrade Wiz. shop to Level  |0B%d^M
+1335 ST_BMENU35      |0CWizard Level                |0B%d^M
+1336 ST_BMENU36  |0A(|0BS|0A) |0CUpgrade Smithy to Level     |0B%d^M
+1337 ST_BMENU37 Pawn shop is at max. level.^M
+1338 ST_BMENU38 |02It will cost |10%ld GP |02to build a pawn shop.^M|10The village has |15%ld |10GP.^M^M
+1339 ST_BMENU39 Build a pawn shop?
+1340 ST_BMENU40 The village now has a pawn shop!^M
+1341 ST_BMENU41 |0A »»» |0COur ruler |0B%s |0Chave built a pawn shop for the village!^M^M
+1342 ST_BMENU42 |02It will cost %ld GP to upgrade the pawn shop to level %d.^M|10The village has |15%ld |10GP.^M^M
+1343 ST_BMENU43 Upgrade the pawn shop?
+1344 ST_BMENU44 |0CThe pawn shop has been upgraded to level |0B%d^M
+1345 ST_BMENU45 |0A »»» |0C%s upgraded the pawn shop to level |0B%d^M^M
+1346 ST_BMENU46 Wizard shop is at max. level.^M
+1347 ST_BMENU47 |02It will cost |10%ld GP |02to build a wizard's shop.^M|10The village has |15%ld |10GP.^M^M
+1348 ST_BMENU48 Build a wizard's shop?
+1349 ST_BMENU49 The village now has a wizard's shop!^M
+1350 ST_BMENU50 |0A »»» |0COur ruler |0B%s |0Chave built a wizard's shop for the village!^M^M
+1351 ST_BMENU51 |02It will cost %ld GP to upgrade the wizard's shop to level %d.^M|10The village has |15%ld |10GP.^M^M
+1352 ST_BMENU52 |0SUpgrade the wizard's shop?
+1353 ST_BMENU53 The wizard's shop has been upgraded to level %d^M
+1354 ST_BMENU54 |0A »»» |0C%s upgraded the wizard's shop to level %d^M^M
 
-# more empire stuff
-1470 ST_MEMPIRE10  |0CDevelopers Level       |0B%d^M
-1471 ST_MEMPIRE11  |0CDeveloped Land         |0B%d units^M
-1472 ST_MEMPIRE12  |0CWorker Energy          |0B%d%%^M^M
-1473 ST_MEMPIRE13  |0A(|0B%c|0A) |0C%-20s    |0F%d^M
-1474 ST_MEMPIRE14  |0A(|0B*|0A) |0CDestroy Buildings^M |0A(|0BV|0A) |0CView Stats^M |0A(|0BQ|0A) |0CQuit^M
-1475 ST_MEMPIRE15  |0CBuilding Type          |0B%s^M
-1476 ST_MEMPIRE16  |0CWorker Energy Used     |0B%d%%^M
-1477 ST_MEMPIRE17  |0CLand Occupied          |0B%d^M
-1478 ST_MEMPIRE18  |0CCost                   |0B%ld^M^M
-1479 ST_MEMPIRE19 You need more land.^M%P
-1480 ST_MEMPIRE20 You need more worker energy.^M%P
-1481 ST_MEMPIRE21 |0SBuild this?
-1482 ST_MEMPIRE22 |0B%s |0Chas been built!^M
-1483 ST_MEMPIRE23  |0BManage Army^M
+#------------------------------------------------------------------------------
+# War actions (WAR0-4) (1360-1364)
+#------------------------------------------------------------------------------
 
-1485 ST_MEMPIRE25 |07A steel mill must first be built.^M%P
-1486 ST_MEMPIRE26 |07A steel mill and stables must first be built.^M%P
-1487 ST_MEMPIRE27  |0A(|0BV|0A) |0CView Stats^M |0A(|0BQ|0A) |0CQuit^M
-1488 ST_MEMPIRE28 |07Shops can only be built by the village.^M%P
-1489 ST_MEMPIRE29 |07You don't have any of that building to destroy.^M%P
-1490 ST_MEMPIRE30 Destroy this?
-1491 ST_MEMPIRE31 %s destroyed.  %d land and %ld gold gained.^M%%P
-1492 ST_MEMPIRE32 The village army can only handle 2 attacks per day.^M
-1493 ST_MEMPIRE33 You can only command 5 attacks per day.^M
-1494 ST_MEMPIRE34 |07You need more gold.^M%P
+1360 ST_WAR0 |0B %ld |0CFootmen, |0B%ld |0CAxemen, |0B%ld |0CKnights ^M
+1361 ST_WAR1 ^M|0C You lost the following:^M  |0B%ld |0CFootmen, |0B%ld |0CAxemen, |0B%ld |0CKnights^M
+1362 ST_WAR2 |0SAttempt to loot how much steal land? (1-10%)
+1363 ST_WAR3 |0SAttempt to loot how much gold? (1-15%)
+1364 ST_WAR4 |0SAttempt how much damage? (1-15%)
+
+#------------------------------------------------------------------------------
+# Manage empire menu (MEMPIRE, base 1400) (1400-1434)
+#------------------------------------------------------------------------------
+
+1400 ST_MEMPIRE0  |0BManaging Empire^M
+1401 ST_MEMPIRE1  |0CGold                   |0B%ld^M
+1402 ST_MEMPIRE2  |0CArmy Rating            |0B%d^M
+1403 ST_MEMPIRE3  |0CDeveloped Land         |0B%d units^M
+1404 ST_MEMPIRE4  |0CWorker Energy          |0B%d%%^M
+1405 ST_MEMPIRE5  |0CSecurity Level         |0B%d^M
+1406 ST_MEMPIRE6  |0CSpy Level              |0B%d^M
+1407 ST_MEMPIRE7 |07You may only donate to a village or an alliance's empire.^M%P
+1408 ST_MEMPIRE8 |07You need a barracks first!^M%P
+1409 ST_MEMPIRE9 |07You need an intelligence agency first!^M%P
+1410 ST_MEMPIRE10  |0CDevelopers Level       |0B%d^M
+1411 ST_MEMPIRE11  |0CDeveloped Land         |0B%d units^M
+1412 ST_MEMPIRE12  |0CWorker Energy          |0B%d%%^M^M
+1413 ST_MEMPIRE13  |0A(|0B%c|0A) |0C%-20s    |0F%d^M
+1414 ST_MEMPIRE14  |0A(|0B*|0A) |0CDestroy Buildings^M |0A(|0BV|0A) |0CView Stats^M |0A(|0BQ|0A) |0CQuit^M
+1415 ST_MEMPIRE15  |0CBuilding Type          |0B%s^M
+1416 ST_MEMPIRE16  |0CWorker Energy Used     |0B%d%%^M
+1417 ST_MEMPIRE17  |0CLand Occupied          |0B%d^M
+1418 ST_MEMPIRE18  |0CCost                   |0B%ld^M^M
+1419 ST_MEMPIRE19 You need more land.^M%P
+1420 ST_MEMPIRE20 You need more worker energy.^M%P
+1421 ST_MEMPIRE21 |0SBuild this?
+1422 ST_MEMPIRE22 |0B%s |0Chas been built!^M
+1423 ST_MEMPIRE23  |0BManage Army^M
+1425 ST_MEMPIRE25 |07A steel mill must first be built.^M%P
+1426 ST_MEMPIRE26 |07A steel mill and stables must first be built.^M%P
+1427 ST_MEMPIRE27  |0A(|0BV|0A) |0CView Stats^M |0A(|0BQ|0A) |0CQuit^M
+1428 ST_MEMPIRE28 |07Shops can only be built by the village.^M%P
+1429 ST_MEMPIRE29 |07You don't have any of that building to destroy.^M%P
+1430 ST_MEMPIRE30 Destroy this?
+1431 ST_MEMPIRE31 %s destroyed.  %d land and %ld gold gained.^M%%P
+1432 ST_MEMPIRE32 The village army can only handle 2 attacks per day.^M
+1433 ST_MEMPIRE33 You can only command 5 attacks per day.^M
+1434 ST_MEMPIRE34 |07You need more gold.^M%P
+
+#------------------------------------------------------------------------------
+# Wizard shop (WIZ0-4, WIZHLP) (1440-1445)
+#------------------------------------------------------------------------------
+
+1440 ST_WIZ0 ^M|07There is currently no wizard's shop in the village.^M%P
+1441 ST_WIZ1 |0SWhich item to examine? |04(0=abort)
+1442 ST_WIZ2 |07I only examine books and scrolls^M%P
+1443 ST_WIZ3 It will cost you %ld gold to examine that item.^MYou have %ld gold^M^M
+1444 ST_WIZ4 Examine it?
+1445 ST_WIZHLP /hlp/wizard
+
+#------------------------------------------------------------------------------
+# Donate / empire display (DEMPIRE, base 1500) (1500-1523)
+#------------------------------------------------------------------------------
 
 1500 ST_DEMPIRE0  |0CFollowers              |0B%ld^M
 1501 ST_DEMPIRE1  |0CFootmen                |0B%ld^M
@@ -643,9 +760,17 @@
 1522 ST_DEMPIRE22 |07A steel mill and stables must first be built.^M%P
 1523 ST_DEMPIRE23 |07Please use the economics menu.^M%P
 
+#------------------------------------------------------------------------------
+# Develop land (DEVLAND) (1530-1532)
+#------------------------------------------------------------------------------
+
 1530 ST_DEVLAND0 |0CIt will cost you |0B%ld |0Cgold per unit of land to develop.^M
 1531 ST_DEVLAND1 |0SHow much land to develop?
 1532 ST_DEVLAND2 |0CYou developed |0B%d |0Cunits of land for |0B%ld |0Cgold^M
+
+#------------------------------------------------------------------------------
+# Attack params (PAR) (1550-1554)
+#------------------------------------------------------------------------------
 
 1550 ST_PAR0 |0B%s |0Cattacked %s's empire!^M^M The enemy lost the following:^M ^-
 1551 ST_PAR1 ^M You were ousted from rule!^M
@@ -653,21 +778,33 @@
 1553 ST_PAR3  ^M They stole |0B%d |0Cland!^M
 1554 ST_PAR4  ^M They looted |0B%ld |0Cgold!^M
 
-1580 ST_WEMPIRE0 |0SWhat type of empire?^M|0A> |0F
-1581 ST_WEMPIRE1 |0SWhich village? (Enter=abort)^M|0A> |0F
-1582 ST_WEMPIRE2 |0SWhat is the goal? (Enter=abort).^M|0A> |0F
-1583 ST_WEMPIRE3 ^M|0SChoose this goal?
-1584 ST_WEMPIRE4 |04There is no ruler to oust.  The attack is aborted.^M
-1585 ST_WEMPIRE5 |04No alliances found!^M
-1586 ST_WEMPIRE6 |0SWhich alliance? |0F
+#------------------------------------------------------------------------------
+# War empire (WEMPIRE) (1560-1566)
+#------------------------------------------------------------------------------
 
-1590 ST_GTROOPS0  |0A(|0BA|0A) |0CFootmen   %5ld    |14%5ld^M
-1591 ST_GTROOPS1  |0A(|0BB|0A) |0CAxemen    %5ld    |14%5ld^M
-1592 ST_GTROOPS2  |0A(|0BC|0A) |0CKnights   %5ld    |14%5ld^M
-1593 ST_GTROOPS3  |0A(|0B]|0A) |0CSend All^M |0A(|0B[|0A) |0CSend None^M |0A(|0B0|0A) |0CDone^M
-1594 ST_GTROOPS4 |0SBring how many Footmen?
-1595 ST_GTROOPS5 |0SBring how many Axemen?
-1596 ST_GTROOPS6 |0SBring how many Knights?
+1560 ST_WEMPIRE0 |0SWhat type of empire?^M|0A> |0F
+1561 ST_WEMPIRE1 |0SWhich village? (Enter=abort)^M|0A> |0F
+1562 ST_WEMPIRE2 |0SWhat is the goal? (Enter=abort).^M|0A> |0F
+1563 ST_WEMPIRE3 ^M|0SChoose this goal?
+1564 ST_WEMPIRE4 |04There is no ruler to oust.  The attack is aborted.^M
+1565 ST_WEMPIRE5 |04No alliances found!^M
+1566 ST_WEMPIRE6 |0SWhich alliance? |0F
+
+#------------------------------------------------------------------------------
+# Gather troops (GTROOPS) (1570-1576)
+#------------------------------------------------------------------------------
+
+1570 ST_GTROOPS0  |0A(|0BA|0A) |0CFootmen   %5ld    |14%5ld^M
+1571 ST_GTROOPS1  |0A(|0BB|0A) |0CAxemen    %5ld    |14%5ld^M
+1572 ST_GTROOPS2  |0A(|0BC|0A) |0CKnights   %5ld    |14%5ld^M
+1573 ST_GTROOPS3  |0A(|0B]|0A) |0CSend All^M |0A(|0B[|0A) |0CSend None^M |0A(|0B0|0A) |0CDone^M
+1574 ST_GTROOPS4 |0SBring how many Footmen?
+1575 ST_GTROOPS5 |0SBring how many Axemen?
+1576 ST_GTROOPS6 |0SBring how many Knights?
+
+#------------------------------------------------------------------------------
+# War results (WRESULTS, base 1600) (1600-1613)
+#------------------------------------------------------------------------------
 
 1600 ST_WRESULTS0 ^M|0CYou lost |0B%ld |0CFootmen, |0B%ld |0CAxemen, and |0B%ld |0CKnights^M
 1601 ST_WRESULTS1 |0CYou killed |0B%ld |0CFootmen, |0B%ld |0CAxemen, and |0B%ld |0CKnights^M^M
@@ -684,6 +821,10 @@
 1612 ST_WRESULTS12  %2d %s^M
 1613 ST_WRESULTS13 |0CYour forces come out |0Bdefeated|0C!^M
 
+#------------------------------------------------------------------------------
+# Spy (SPY) (1630-1637)
+#------------------------------------------------------------------------------
+
 1630 ST_SPY0 |07You may only spy 10 times each day.^M%P
 1631 ST_SPY1 |0CIt will cost you |0B%ld |0Cgold to spy.  The empire has |0B%ld |0Cgold.^M|0SContinue?
 1632 ST_SPY2 |0CYour spy is |15successful!^M
@@ -693,76 +834,43 @@
 1636 ST_SPY6 A spying attempt by %s on your clan's empire failed.^M
 1637 ST_SPY7 Your spies sent to %s were successful and return with information:^M^MGold:  %ld^MLand:  %d^M^MTroops:  %ld footmen, %ld axemen, %ld knights^M^MArmy Speed: %d^MArmy Offense: %ld^MArmy Defense: %ld^MArmy Vitality: %ld^M^MBuildings:
 
-1650 ST_PAWN0 |0A(|0BL|0A)|0Cist |0A(|0BQ|0A)|0Cuit |0A(|0BB|0A)|0Cuy e|0A(|0BX|0A)|0Camine|0E> |0F
-1651 ST_PAWN1 |0SWhich item to examine? |04(0=abort)
-1652 ST_PAWN2 You have no more room in your inventory!^M
-1653 ST_PAWN3 |0SBuy which item? |04(0=abort)
-1654 ST_PAWN4 |0SBuy for |0B%ld |0Sgold?
-1655 ST_PAWN5 |07You cheapskate, you don't have the gold!^M
-1656 ST_PAWN6 |0B%2d. |0C%-20s  ^-
-1657 ST_PAWN7 |0A(|0BL|0A)|0Cist |0A(|0BQ|0A)|0Cuit |0A(|0BS|0A)|0Cell sell |0A(|0BA|0A)|0Cll e|0A(|0BX|0A)|0Camine|0E> |0F
-1658 ST_PAWN8 |0SWhich item to examine? |04(0=abort)
-1659 ST_PAWN9 |07I'm sorry, we cannot accept any more items.^M
-1660 ST_PAWN10 |0SWhich item to sell? |04(0=abort)
-1661 ST_PAWN11 |0BYou're still using it!^M
-1662 ST_PAWN12 |0SSell it for |0B%ld |0Sgold?
-1663 ST_PAWN13 |0CNo items for sale.^M
+#------------------------------------------------------------------------------
+# Treasure (TREASURE0) (1670)
+#------------------------------------------------------------------------------
 
-1675 ST_TREASURE0 |0CYou find |0B%s|0C. |0STake it?
+1670 ST_TREASURE0 |0CYou find |0B%s|0C. |0STake it?
 
-1680 ST_WNEWS0 |0A »»» |0C%s attacked %s and %s.^M     ^-
-1681 ST_WNEWS1 They ousted our rulers!^M
-1682 ST_WNEWS2 They looted land.^M
-1683 ST_WNEWS3 They looted some gold.^M
-1684 ST_WNEWS4 They caused much damage.^M
-1685 ST_WNEWS5 |0A »»» |0C%s's army returns after finding no ruler to oust in %s.^M^M
-1686 ST_WNEWS6 but found no ruler to oust!^M
-1687 ST_WNEWS7 |0A »»» |0C%s's army returns after being unable to find the clan empire.^M^M
-1688 ST_WNEWS8 but found no empire!^M
-1689 ST_WNEWS9 and came out victorious!^M
-1690 ST_WNEWS10 |0A »»» |0C%s's army returns after successfully^M     ousting the ruler of %s^M^M
-1691 ST_WNEWS11 |0A »»» |0C%s's army returns successfully from %s^M     looting %d land from %s.^M^M
-1692 ST_WNEWS12 |0A »»» |0C%s's army returns successfully from %s^M     looting %ld gold from %s.^M^M
-1693 ST_WNEWS13 |0A »»» |0C%s's army returns successfully from %s^M     destroying %s's buildings.^M^M
-1694 ST_WNEWS14 and came out defeated.^M
-1695 ST_WNEWS15 |0A »»» |0C%s's army returns unsuccessfully from %s^M     after attacking %s.^M^M
-1696 ST_WNEWS16 |0CResults of %s's attack on %s have returned.^M Your troops attempted %s %s^M^M You killed the following:^M ^-
-1697 ST_WNEWS17 ^M The following have returned:^M  |0B%ld |0CFootmen, |0B%ld |0CAxemen, |0B%ld |0CKnights^M
-1698 ST_WNEWS18 ^M You stole |0B%d |0Cland.^M
-1699 ST_WNEWS19 ^M You found no land to steal!^M
-1700 ST_WNEWS20 ^M You stole |0B%ld |0Cgold.^M
-1701 ST_WNEWS21 ^M You found no gold to steal!^M
+#------------------------------------------------------------------------------
+# Pawn shop (PAWN, base 1700) (1700-1713)
+#------------------------------------------------------------------------------
 
-1711 ST_NEWS1 |0A »»» |0B%s|0C is re-elected as the leader of town!^M^M
-1712 ST_NEWS2 |0A »»» |0B%s|0C is elected as the new leader of town!^M^M
-1713 ST_NEWS3 |0A »»» |0CShops brought in |0B%ld |0Cgold today!^M^M
-1714 ST_NEWS4 |0A »»» |0C%s %s the conscription rate from |0B%d%% |0Cto |0B%d%%^M^M
+1700 ST_PAWN0 |0A(|0BL|0A)|0Cist |0A(|0BQ|0A)|0Cuit |0A(|0BB|0A)|0Cuy e|0A(|0BX|0A)|0Camine|0E> |0F
+1701 ST_PAWN1 |0SWhich item to examine? |04(0=abort)
+1702 ST_PAWN2 You have no more room in your inventory!^M
+1703 ST_PAWN3 |0SBuy which item? |04(0=abort)
+1704 ST_PAWN4 |0SBuy for |0B%ld |0Sgold?
+1705 ST_PAWN5 |07You cheapskate, you don't have the gold!^M
+1706 ST_PAWN6 |0B%2d. |0C%-20s  ^-
+1707 ST_PAWN7 |0A(|0BL|0A)|0Cist |0A(|0BQ|0A)|0Cuit |0A(|0BS|0A)|0Cell sell |0A(|0BA|0A)|0Cll e|0A(|0BX|0A)|0Camine|0E> |0F
+1708 ST_PAWN8 |0SWhich item to examine? |04(0=abort)
+1709 ST_PAWN9 |07I'm sorry, we cannot accept any more items.^M
+1710 ST_PAWN10 |0SWhich item to sell? |04(0=abort)
+1711 ST_PAWN11 |0BYou're still using it!^M
+1712 ST_PAWN12 |0SSell it for |0B%ld |0Sgold?
+1713 ST_PAWN13 |0CNo items for sale.^M
 
-1715 ST_TMENUSTAT7  |0CGold in Vaults                  |0B%ld^M
-1716 ST_TMENUSTAT8  |0CConscription Rate               |0B%d^M
+#------------------------------------------------------------------------------
+# Local news (NEWS1-4) (1751-1754)
+#------------------------------------------------------------------------------
 
-1718 ST_TMENU19 |07You cannot set conscription rate more than once a day.^M%P
-1719 ST_TMENU20 |0SEnter conscription rate.
+1751 ST_NEWS1 |0A »»» |0B%s|0C is re-elected as the leader of town!^M^M
+1752 ST_NEWS2 |0A »»» |0B%s|0C is elected as the new leader of town!^M^M
+1753 ST_NEWS3 |0A »»» |0CShops brought in |0B%ld |0Cgold today!^M^M
+1754 ST_NEWS4 |0A »»» |0C%s %s the conscription rate from |0B%d%% |0Cto |0B%d%%^M^M
 
-1730 ST_ESTATS0  |0LStats for the empire of |0M%s^M
-1731 ST_ESTATS1  |0LGold                            |0M%ld^M
-1732 ST_ESTATS2  |0LLand                            |0M%d units^M
-1733 ST_ESTATS3  |0LWorker Energy                   |0M%d%%^M
-1734 ST_ESTATS4  |0LArmy Statistics:  ^M
-1735 ST_ESTATS5  |0L- |0LFootmen: |0M%ld,
-1736 ST_ESTATS6  |0LAxemen: |0M%ld,
-1737 ST_ESTATS7  |0LKnights: |0M%ld,
-1738 ST_ESTATS8  |0LRating: |0M%d^M
-1739 ST_ESTATS9  |0L- |0LAvg. Speed: |0M%d,
-1740 ST_ESTATS10  |0LTotal Vitality: |0M%ld,
-1741 ST_ESTATS11  |0LOffense: |0M%ld,
-1742 ST_ESTATS12  |0LDefense: |0M%ld^M
-1743 ST_ESTATS13 ^M |0LBuildings:^M
-1744 ST_ESTATS14   |0MNone.^M
-1745 ST_ESTATS15  |0CSpeed: |0B%d, ^-
-1746 ST_ESTATS16 |0COffense: |0B%ld, ^-
-1747 ST_ESTATS17 |0CDefense: |0B%ld, ^-
-1748 ST_ESTATS18 |0CVitality: |0B%ld^M^M
+#------------------------------------------------------------------------------
+# Game settings (GSETTINGS) (1760-1767)
+#------------------------------------------------------------------------------
 
 1760 ST_GSETTINGS0 |0CGame Start                 |0B%s^M
 1761 ST_GSETTINGS1 |0CElimination mode           |0B%s^M
@@ -773,14 +881,25 @@
 1766 ST_GSETTINGS6 |0CClan Fights per day        |0B%d^M
 1767 ST_GSETTINGS7 |0CDays of Protection         |0B%d^M
 
-1770 ST_LSCORES0 |07Scores have not been generated yet.^M
-1771 ST_LSCORES1 ^M |0BName                                    |0ASymbol Score  Village^M
-1772 ST_LSCORES2  |0CTop 20 Clans in the league. |0B(as of %s)^M
-1773 ST_LSCORES3 |0C %-25s %s%s`0F %-6ld |0C%-20s^M
+#------------------------------------------------------------------------------
+# League scores (LSCORES) (1780-1783)
+#------------------------------------------------------------------------------
 
-1782 ST_DEFACTION2 |0EChoose a default action to be done in combat^M|0G> |0F
+1780 ST_LSCORES0 |07Scores have not been generated yet.^M
+1781 ST_LSCORES1 ^M |0BName                                    |0ASymbol Score  Village^M
+1782 ST_LSCORES2  |0CTop 20 Clans in the league. |0B(as of %s)^M
+1783 ST_LSCORES3 |0C %-25s %s%s`0F %-6ld |0C%-20s^M
 
-#new stats lines
+#------------------------------------------------------------------------------
+# Default action (DEFACTION2) (1792)
+#------------------------------------------------------------------------------
+
+1792 ST_DEFACTION2 |0EChoose a default action to be done in combat^M|0G> |0F
+
+#------------------------------------------------------------------------------
+# Player stats page 2 (P2STATS, base 1800) (1800-1814)
+#------------------------------------------------------------------------------
+
 1800 ST_P2STATS0  |0L%s ^-
 1801 ST_P2STATS1 |0LEquipment^M|0D═══────────────────────────────────────── ────────────────────────────═══^M
 1802 ST_P2STATS2 |0L Level               |0M%d ^-
@@ -797,12 +916,40 @@
 1813 ST_P2STATS13  |0P[|0QC|0P]hange Default Action, |0Q[|0REnter|0Q]|0P=Quit> |0R^-
 1814 ST_P2STATS14 |0L Training Points     |0M%d^M
 
+#------------------------------------------------------------------------------
+# Misc / secrets (1832-1842)
+#------------------------------------------------------------------------------
+
 1832 ST_SECRET2 |07This secret only works on |12Japanese |07versions of this game.^M%P
-
 1835 ST_SECRET5 |07The |15X |07warrior will let you in.^M%P
-
 1836 ST_IBBSONLY seineew era sremmargorp sbb
-
 1840 ST_TOGEMPSTATS_ON |14Village empire stats are now |0Bvisible|14 to all clans.^M^M
 1841 ST_TOGEMPSTATS_OFF |14Village empire stats are now |0Bhidden|14 from other clans.^M^M
 1842 ST_EMPSTATS_HIDDEN |07The ruler has chosen not to display village empire stats.^M%P
+
+#------------------------------------------------------------------------------
+# War news (WNEWS, base 1900) (1900-1921)
+#------------------------------------------------------------------------------
+
+1900 ST_WNEWS0 |0A »»» |0C%s attacked %s and %s.^M     ^-
+1901 ST_WNEWS1 They ousted our rulers!^M
+1902 ST_WNEWS2 They looted land.^M
+1903 ST_WNEWS3 They looted some gold.^M
+1904 ST_WNEWS4 They caused much damage.^M
+1905 ST_WNEWS5 |0A »»» |0C%s's army returns after finding no ruler to oust in %s.^M^M
+1906 ST_WNEWS6 but found no ruler to oust!^M
+1907 ST_WNEWS7 |0A »»» |0C%s's army returns after being unable to find the clan empire.^M^M
+1908 ST_WNEWS8 but found no empire!^M
+1909 ST_WNEWS9 and came out victorious!^M
+1910 ST_WNEWS10 |0A »»» |0C%s's army returns after successfully^M     ousting the ruler of %s^M^M
+1911 ST_WNEWS11 |0A »»» |0C%s's army returns successfully from %s^M     looting %d land from %s.^M^M
+1912 ST_WNEWS12 |0A »»» |0C%s's army returns successfully from %s^M     looting %ld gold from %s.^M^M
+1913 ST_WNEWS13 |0A »»» |0C%s's army returns successfully from %s^M     destroying %s's buildings.^M^M
+1914 ST_WNEWS14 and came out defeated.^M
+1915 ST_WNEWS15 |0A »»» |0C%s's army returns unsuccessfully from %s^M     after attacking %s.^M^M
+1916 ST_WNEWS16 |0CResults of %s's attack on %s have returned.^M Your troops attempted %s %s^M^M You killed the following:^M ^-
+1917 ST_WNEWS17 ^M The following have returned:^M  |0B%ld |0CFootmen, |0B%ld |0CAxemen, |0B%ld |0CKnights^M
+1918 ST_WNEWS18 ^M You stole |0B%d |0Cland.^M
+1919 ST_WNEWS19 ^M You found no land to steal!^M
+1920 ST_WNEWS20 ^M You stole |0B%ld |0Cgold.^M
+1921 ST_WNEWS21 ^M You found no gold to steal!^M

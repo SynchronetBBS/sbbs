@@ -790,7 +790,6 @@ static int16_t ChurchMenu(void)
 	char szString[80];
 	int16_t iTemp;
 
-	// ST_CHURCHOP0
 	LoadStrings(890, 9, szTheOptions);
 
 	if (!PClan.ChurchHelp) {
