@@ -1825,13 +1825,9 @@ static bool pop3_client_thread(pop3_t* pop3)
 	listRemoveTaggedNode(&current_logins, socket, /* free_data */ true);
 	client_off(socket);
 
-	/* Must be last */
-	{
-		int32_t remain = thread_down();
-		if (startup->options & MAIL_OPT_DEBUG_POP3)
-			lprintf(LOG_DEBUG, "%04d %-5s [%s] Session thread terminated (%u threads remain, %lu clients served)"
-			        , socket, client.protocol, host_ip, remain, ++stats.pop3_served);
-	}
+	if (startup->options & MAIL_OPT_DEBUG_POP3)
+		lprintf(LOG_DEBUG, "%04d %-5s [%s] Session thread terminated (%u threads remain, %lu clients served)"
+		        , socket, client.protocol, host_ip, protected_uint32_value(thread_count) - 1, ++stats.pop3_served);
 	return true;
 }
 
@@ -1855,13 +1851,12 @@ static void pop3_thread(void* arg)
 	}
 	update_clients();
 
-	if (!pop3_client_thread(&pop3))
-		thread_down();
+	pop3_client_thread(&pop3);
 
 	(void)protected_uint32_adjust(&active_clients, -1);
 	update_clients();
-
 	mail_close_socket(&pop3.socket, &pop3.session);
+	thread_down();
 }
 
 static in_addr_t rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, const char* rbl_addr)
@@ -5161,12 +5156,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 			errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR %d in logoutuserdat", socket, client.protocol, relay_user.alias, i);
 		mqtt_user_logout(&mqtt, &client, client.time);
 	}
-	/* Must be last */
-	{
-		int32_t remain = thread_down();
-		lprintf(LOG_INFO, "%04d %-5s %s Session thread terminated (%u threads remain, %lu clients served)"
-		        , socket, client.protocol, client_id, remain, ++stats.smtp_served);
-	}
+	lprintf(LOG_INFO, "%04d %-5s %s Session thread terminated (%u threads remain, %lu clients served)"
+	        , socket, client.protocol, client_id, protected_uint32_value(thread_count) - 1, ++stats.smtp_served);
 	free(mailproc_to_match);
 	return true;
 }
@@ -5191,13 +5182,12 @@ static void smtp_thread(void* arg)
 	}
 	update_clients();
 
-	if (!smtp_client_thread(&smtp))
-		thread_down();
+	smtp_client_thread(&smtp);
 
 	(void)protected_uint32_adjust(&active_clients, -1);
 	update_clients();
-
 	mail_close_socket(&smtp.socket, &smtp.session);
+	thread_down();
 }
 
 bool bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, bool immediate)
@@ -6019,12 +6009,11 @@ static void sendmail_thread(void* arg)
 	if (active_sendmail != 0)
 		active_sendmail = 0, update_clients();
 
+	sendmail_running = false;
 	{
 		int32_t remain = thread_down();
 		lprintf(LOG_DEBUG, "0000 SendMail thread terminated (%u threads remain)", remain);
 	}
-
-	sendmail_running = false;
 }
 
 void mail_terminate(void)

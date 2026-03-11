@@ -36,7 +36,8 @@ class filterFile {
 				strlcpy(this->fname, fname, sizeof this->fname);
 			pthread_mutex_init(&mutex, nullptr);
 		}
-		filterFile() = default;
+		filterFile(const filterFile&) = delete;
+		filterFile& operator=(const filterFile&) = delete;
 		~filterFile() {
 			strListFree(&list);
 			pthread_mutex_destroy(&mutex);

@@ -5104,8 +5104,8 @@ static void ctrl_thread(void* arg)
 
 	{
 		int32_t clients = protected_uint32_adjust_fetch(&active_clients, -1);
-		int32_t threads = thread_down();
 		update_clients();
+		int32_t threads = thread_down();
 
 		lprintf(LOG_INFO, "%04d [%s] Session thread terminated (%d clients and %d threads remain, %lu served)"
 		        , sock, host_ip, clients, threads, served);

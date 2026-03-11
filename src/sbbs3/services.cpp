@@ -1321,15 +1321,14 @@ static void js_service_thread(void* arg)
 		PlaySound(startup->sound.hangup, NULL, SND_ASYNC | SND_FILENAME);
 #endif
 
-	thread_down();
-	if (service->log_level >= LOG_INFO)
-		lprintf(LOG_INFO, "%04d %s [%s] JavaScript service thread terminated (%lu clients remain, %lu total, %lu served)"
-		        , socket, service->protocol, client.addr, remain, active_clients(), service->served);
-
 	if (service_client.tls_sess != -1)
 		destroy_session(lprintf, service_client.tls_sess);
 	client_off(socket);
 	close_socket(socket);
+	thread_down();
+	if (service->log_level >= LOG_INFO)
+		lprintf(LOG_INFO, "%04d %s [%s] JavaScript service thread terminated (%lu clients remain, %lu total, %lu served)"
+		        , socket, service->protocol, client.addr, remain, active_clients(), service->served);
 }
 
 static void js_static_service_thread(void* arg)
@@ -1431,15 +1430,14 @@ static void js_static_service_thread(void* arg)
 		protected_uint32_set(service->clients, 0);
 	}
 
-	thread_down();
-	if (service->log_level >= LOG_INFO)
-		lprintf(LOG_INFO, "%s static JavaScript service thread terminated (%lu clients served)"
-		        , service->protocol, service->served);
-
 	xpms_destroy(service->set, close_socket_cb, service);
 	service->set = NULL;
 
 	service->running = false;
+	thread_down();
+	if (service->log_level >= LOG_INFO)
+		lprintf(LOG_INFO, "%s static JavaScript service thread terminated (%lu clients served)"
+		        , service->protocol, service->served);
 }
 
 struct native_service_instance {
@@ -1477,8 +1475,8 @@ static void native_static_service_thread(void* arg)
 		errprintf(LOG_ERR, WHERE, "%04d %s !ERROR %d duplicating socket descriptor"
 		          , inst.socket, inst.service->protocol, GetLastError());
 		close_socket(inst.socket);
-		thread_down();
 		inst.service->running--;
+		thread_down();
 		return;
 	}
 #else
@@ -1487,8 +1485,8 @@ static void native_static_service_thread(void* arg)
 		errprintf(LOG_ERR, WHERE, "%04d %s !ERROR %d duplicating socket descriptor"
 		          , inst.socket, inst.service->protocol, errno);
 		close_socket(inst.socket);
-		thread_down();
 		inst.service->running--;
+		thread_down();
 		return;
 	}
 #endif
@@ -1507,15 +1505,14 @@ static void native_static_service_thread(void* arg)
 			          , inst.socket, inst.service->protocol, fullcmd, result);
 	} while (!inst.service->terminated && inst.service->options & SERVICE_OPT_STATIC_LOOP);
 
-	thread_down();
-	if (inst.service->log_level >= LOG_INFO)
-		lprintf(LOG_INFO, "%04d %s static service thread terminated (%lu clients served)"
-		        , inst.socket, service->protocol, service->served);
-
 	close_socket(inst.socket);
 	closesocket(socket_dup);    /* close duplicate handle */
 
 	service->running--;
+	thread_down();
+	if (inst.service->log_level >= LOG_INFO)
+		lprintf(LOG_INFO, "%04d %s static service thread terminated (%lu clients served)"
+		        , inst.socket, service->protocol, service->served);
 }
 
 static void native_service_thread(void* arg)
@@ -1656,14 +1653,13 @@ static void native_service_thread(void* arg)
 		PlaySound(startup->sound.hangup, NULL, SND_ASYNC | SND_FILENAME);
 #endif
 
+	client_off(socket);
+	close_socket(socket);
+	closesocket(socket_dup);    /* close duplicate handle */
 	thread_down();
 	if (service->log_level >= LOG_INFO)
 		lprintf(LOG_INFO, "%04d %s service thread terminated (%lu clients remain, %lu total, %lu served)"
 		        , socket, service->protocol, remain, active_clients(), service->served);
-
-	client_off(socket);
-	close_socket(socket);
-	closesocket(socket_dup);    /* close duplicate handle */
 }
 
 

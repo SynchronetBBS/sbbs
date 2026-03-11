@@ -2531,10 +2531,9 @@ void passthru_thread(void* arg)
 		close_socket(sbbs->passthru_socket);
 		sbbs->passthru_socket = INVALID_SOCKET;
 	}
-	thread_down();
-
 	sbbs->passthru_thread_running = false;
 	sbbs->passthru_socket_active = false;
+	thread_down();
 	lprintf(LOG_DEBUG, "Node %d passthru thread terminated", sbbs->cfg.node_num);
 }
 
@@ -3523,9 +3522,9 @@ void event_thread(void* arg)
 
 	mqtt_pub_strval(&mqtt, TOPIC_HOST, "event", "thread stopped");
 
-	thread_down();
 	sbbs->lprintf(LOG_INFO, "BBS Events thread terminated");
 	FCLOSE_OPEN_FILE(sbbs->logfile_fp);
+	thread_down();
 }
 
 //****************************************************************************
