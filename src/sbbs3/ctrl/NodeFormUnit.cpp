@@ -171,7 +171,7 @@ void __fastcall TNodeForm::TimerTick(TObject *Sender)
             ListBox->Selected[n]=selected;      // restore
         }
     }
-    if(n!=MainForm->cfg.sys_nodes) {    /* read error or something */
+    if((MainForm->cfg.node_misc & NM_CLOSENODEDAB) || n!=MainForm->cfg.sys_nodes) {    /* read error or something */
         close(nodedab);
         nodedab=-1;
     }
