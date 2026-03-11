@@ -217,6 +217,8 @@ Four audiences, each building on the previous:
 
 Each audience is expected to be familiar with the documentation for all prior audiences (sysops know the player docs; PAK developers know both; Clans developers know all three).
 
+Markdown files (`.md`) are **not documentation** — they are LLM interaction files (prompts, project instructions, etc.). The sole exception is `README.md`, which is documentation.
+
 ## Documentation Format
 
 All documentation files use the same format regardless of audience.
