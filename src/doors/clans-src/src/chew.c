@@ -121,7 +121,6 @@ int main(int argc, char **argv)
 	fclose(fpGUM);
 	fclose(fpList);
 
-	//printf("output is %ld bytes\n", TotalBytes);
 	return(0);
 }
 
@@ -156,7 +155,6 @@ static void AddGUM(FILE *fpGUM, char *pszFileName)
 		pcTo++;
 	}
 	*pcTo = 0;
-	//printf("Encrypted name = %s\n", szEncryptedName);
 
 	/* write it to file */
 	if (strlen(pszFileName) < MAX_FILENAME_LEN)
@@ -200,7 +198,6 @@ static void AddGUM(FILE *fpGUM, char *pszFileName)
 
 	//=== encode here
 	encode(fpFromFile, fpGUM);
-	//printf("Packed from %ld bytes to %ld bytes\n",bytes_in,bytes_out);
 	TotalBytes += bytes_out;
 	//=== end here
 
@@ -245,7 +242,6 @@ static void AddDir(FILE *fpGUM, char *pszDirName)
 		pcTo++;
 	}
 	*pcTo = 0;
-	//printf("Encrypted name = %s\n", szEncryptedName);
 
 	// write dir name to file as is
 	fwrite(szEncryptedName, sizeof(szEncryptedName), 1, fpGUM);

@@ -14,6 +14,7 @@ install: rename prompt limited to 13 characters ...............   1.4
 install: silent truncation of GUM and INI filenames ...........   1.5
 Village types defined but never assigned ......................   1.7
 Create shared mock library files for unit tests ...............   1.9
+mail.c: Mail_Maint() -- expire messages by age .................  1.10
 
 
 
@@ -95,4 +96,10 @@ implementation of each frequently-stubbed function.  Test files then
 include the appropriate mock header instead of defining their own copy.
 Files that need non-trivial behaviour (e.g. longjmp on System_Error)
 continue to define their own override after the shared header.
+
+[1.10]  mail.c: Mail_Maint() -- expire messages by age
+-------------------------------------------------------------------------------
+Mail_Maint() discards MF_DELETED messages but never expires messages by age.
+A disabled condition: DaysBetween(Message.Date, GameInfo.TheDate) > 7 was
+removed; implementing it would prevent unbounded growth of the mail store.
 

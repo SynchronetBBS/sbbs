@@ -1082,7 +1082,6 @@ int16_t TownHallMenu(void)
 
 				/* if already set rate today, don't allow it again */
 				if (Village.Data.SetConToday)
-					// rputs("Can't set conscription rate more than once a day.\n%P");  // tell him he can't set it more than once per day
 					rputs(ST_TMENU19);  // tell him he can't set it more than once per day
 				else {
 					/* figure out lowest rate rate and highest rate */

@@ -48,7 +48,6 @@ void Help(const char *Topic, char *File)
 	struct FileHeader FileHeader;
 
 
-	// fp = fopen(File, "r");
 	MyOpen(File, "rt", &FileHeader);
 	if (!FileHeader.fp) {
 		rputs(ST_NOHELP);
@@ -77,7 +76,6 @@ void Help(const char *Topic, char *File)
 				string[ strlen(string) - 1] = 0;
 
 			/* see if topic is correct */
-			// if (strspn(&string[1], Topic) == strlen(Topic))
 			if (strcasecmp(&string[1], Topic) == 0) {
 				Found = true;
 			}
@@ -97,7 +95,6 @@ void Help(const char *Topic, char *File)
 
 			fgets(Lines[CurLine], MaxBytes, FileHeader.fp);
 
-			// Lines[CurLine][ MaxBytes - EXTRABYTES + 1] = 0;
 
 			if (Lines[CurLine][0] == '^') {
 				// get rid of \n
@@ -165,7 +162,6 @@ void GeneralHelp(char *pszFileName)
 	bool ShowInitially;
 
 	/* read the topics in */
-	// fpHelpFile = fopen(pszFileName, "rt");
 	MyOpen(pszFileName, "rt", &HelpFile);
 	if (!HelpFile.fp) {
 		rputs(ST_NOHELPFILE);
@@ -182,7 +178,6 @@ void GeneralHelp(char *pszFileName)
 			break;
 		}
 
-		// od_printf("%ld  %ld\n", ftell(HelpFile.fp), HelpFile.lEnd);
 
 		// get how many more bytes to read as max
 		MaxBytes = (int32_t)(HelpFile.lEnd - ftell(HelpFile.fp) + EXTRABYTES);
@@ -197,7 +192,6 @@ void GeneralHelp(char *pszFileName)
 			break;
 		}
 
-		// Line[ MaxBytes - EXTRABYTES + 1] = 0;
 
 		if (Line[0] == '^') {
 			/* get rid of \n */

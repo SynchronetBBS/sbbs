@@ -51,7 +51,7 @@ static void RemoveFromAlliance(struct Alliance *Alliance)
 {
 	int     iTemp, WhichMember = 0;
 	int16_t  ClanID[2];
-	char szName[40], /*cKey,*/ szString[128];
+	char szName[40], szString[128];
 	struct clan TmpClan = {0};
 
 	if (GetClanID(ClanID, false, false, Alliance->ID, true) == false) {
@@ -414,7 +414,6 @@ void CreateAlliance(struct Alliance *Alliance)
 	// get name of alliance
 	szName[0] = 0;
 	Alliance->szName[0] = 0;
-	// rputs("Enter a name for this alliance.\n");
 	while (! szName[0]) {
 		rputs(ST_AMENU4);
 		GetStr(szName, 29, true);

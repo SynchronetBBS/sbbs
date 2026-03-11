@@ -144,7 +144,6 @@ int main(int argc, char *argv[])
 		pcCurrentPos=(char *)szLine;
 		ParseLine(pcCurrentPos);
 
-		//printf("%3d:  Processing %s\n", CurLine, pcCurrentPos);
 
 		/* If no token was found, proceed to process the next line */
 		if (!*pcCurrentPos) continue;
@@ -162,8 +161,6 @@ int main(int argc, char *argv[])
 			// make "{xxx}yyy" into "yyy"
 			memmove(pcCurrentPos, pcBrace+1, strlen(pcBrace + 1) + 1);
 
-			//printf("legal is %s\nstring is %s\n", szLegal, pcCurrentPos);
-			// printf("%3d: {} used: %s\n", CurLine, szLegal);
 		}
 		else
 			szLegal[0] = 0;     // no legal string
@@ -314,7 +311,6 @@ int main(int argc, char *argv[])
 						strlcpy(&Buffer[ BufferPtr ], szLabel, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szLabel) + sizeof(char));
 
-						//printf("%3d:  option:  %c - %s\n", CurLine, cKey, szLabel);
 						break;
 					case 7  :   // Fight
 						// put command in buffer
@@ -418,7 +414,6 @@ int main(int argc, char *argv[])
 							return EXIT_FAILURE;
 						}
 						cTemp = (char)iTemp;
-						//printf("%3d:  addenemy %s %d\n", CurLine, szLabel, cTemp);
 
 						ADD_SIZE_BYTE(strlen(szLabel) + 2);
 						strlcpy(&Buffer[ BufferPtr ], szLabel, MALLOC_SZ - BufferPtr);
@@ -478,7 +473,6 @@ int main(int argc, char *argv[])
 						strlcpy(&Buffer[ BufferPtr ], szString, MALLOC_SZ - BufferPtr);
 						BufferPtr += (strlen(szString) + sizeof(char));
 
-						//printf("%3d:  option:  %c - %s\n", CurLine, cKey, szLabel);
 						break;
 				}
 				break;

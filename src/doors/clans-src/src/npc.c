@@ -190,7 +190,6 @@ void NPC_Maint(void)
 			if (NPCInfo->WhereWander == WN_NONE)
 				continue;   // no, not wanderer, skip him
 
-			// printf("Testing %s\n", NPCInfo->szName);
 
 			// prepare to write to NPX file
 			strlcpy(NPCNdx.szIndex, NPCInfo->szIndex, sizeof(NPCNdx.szIndex));
@@ -202,7 +201,6 @@ void NPC_Maint(void)
 
 			// yes, he is a wanderer, see if appears in town today
 			if (my_random(100) < NPCInfo->OddsOfSeeing) {
-				// printf("%s is in town\n", NPCInfo->szName);
 
 				// he appears in town today
 				NPCNdx.Status = NPCS_HERE;
@@ -627,7 +625,6 @@ void NPC_AddNPCMember(char *szIndex)
 
 	MyOpen(NPCInfo->szMonFile, "rb", &PCFile);
 	if (!PCFile.fp) {
-		//      rputs("Error finding NPC.\n");
 		free(NPCInfo);
 		return;
 	}

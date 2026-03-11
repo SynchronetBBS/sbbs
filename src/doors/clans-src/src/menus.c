@@ -210,7 +210,6 @@ void Menus_ChatRoom(char *pszFileName)
 		GetStr(szString, 77, true);
 
 		if (strlen(szString) < 2) {
-			// rputs(ST_ABORTED);
 			return;
 		}
 
@@ -686,7 +685,6 @@ static int16_t AlliancesMenu(void)
 		if (Alliances[iTemp] == NULL)
 			break;
 
-		// od_printf("(%c) %s\n\r", iTemp+'A', Alliances[iTemp]->szName);
 		snprintf(szString, sizeof(szString), ST_AMENU1, (char)(iTemp + 'A'), Alliances[iTemp]->szName);
 		rputs(szString);
 
@@ -724,7 +722,6 @@ static int16_t AlliancesMenu(void)
 			// ask user if he wants to build one
 			if (NoYes(ST_MAKEALLIANCEQ)) {
 				if (NumAlliances == MAX_ALLIANCES) {
-					// rputs("|09You cannot create a new alliance, there are already too many\n");
 					rputs(ST_CANTBUILD);
 				}
 				else if (NumUserAlliances == MAX_ALLIES) {
@@ -979,7 +976,6 @@ void GameLoop(void)
 					MenuNum = WorldMenu();
 				}
 				else {
-					// rputs("|07World Travel is only permitted in InterBBS games.\n%P");
 					rputs(ST_MAIN5);
 					rputs("\n\n");
 					MenuNum = MainMenu();
@@ -1005,8 +1001,6 @@ void GameLoop(void)
 						Village_NewRuler();
 					}
 				}
-				//MenuNum = 0;
-				//break;
 
 				if (Village.Data.RulingClanId[0] != PClan.ClanID[0] ||
 						Village.Data.RulingClanId[1] != PClan.ClanID[1]) {

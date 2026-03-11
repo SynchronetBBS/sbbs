@@ -374,7 +374,6 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 				else
 					bCurrent = false;
 
-				// od_printf("T%d is %s\n\r", atoi(szIndex), bCurrent ? "true" : "false");
 				break;
 			case 'P' :  // PFlag
 				// get flag num
@@ -1328,7 +1327,6 @@ void Quests_GoQuest(void)
 					 (Quests[QuestIndex[WhichQuest]].Known && Quests[QuestIndex[WhichQuest]].Active);
 		QuestDone  = PClan.QuestsDone[ QuestIndex[WhichQuest]/8 ] & (char)(1 << (QuestIndex[WhichQuest]%8));
 
-		//od_printf("Comparing with %d\n", (1 << (QuestIndex[WhichQuest]%8)));
 
 		if (QuestKnown == false || QuestDone || !Quests[QuestIndex[WhichQuest]].pszQuestName) {
 			rputs("\n|12Quest not found.\n%P");

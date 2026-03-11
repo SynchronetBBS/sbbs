@@ -279,7 +279,6 @@ static void Init_Spells(char *szFileName)
 						strlcpy(Spells[CurSpell]->szName, pcCurrentPos, sizeof(Spells[CurSpell]->szName));
 						Spells[CurSpell]->TypeFlag = 0;
 
-						//od_printf("SPELL: %s\n\r", Spells[CurSpell]->szName);
 						break;
 					case 1 :    /* Agility */
 					case 2 :    /* Dexterity */
@@ -293,38 +292,29 @@ static void Init_Spells(char *szFileName)
 					case 7 :    /* Value */
 						Spells[CurSpell]->Value = ato8(pcCurrentPos, "Value");
 
-						//printf("    - val: %+d\n", Spells[CurSpell]->Value);
 						break;
 					case 8 :    /* Flag */
 						if (strcasecmp(pcCurrentPos, "Heal") == 0) {
-							//printf("is heal ");
 							Spells[CurSpell]->TypeFlag |= SF_HEAL;
 						}
 						else if (strcasecmp(pcCurrentPos, "Damage") == 0) {
-							//printf("is damage ");
 							Spells[CurSpell]->TypeFlag |= SF_DAMAGE;
 						}
 						else if (strcasecmp(pcCurrentPos, "Modify") == 0) {
-							//printf("is modify ");
 							Spells[CurSpell]->TypeFlag |= SF_MODIFY;
 						}
 						else if (strcasecmp(pcCurrentPos, "Incapacitate") == 0) {
-							//printf("is incap ");
 							Spells[CurSpell]->TypeFlag |= SF_INCAPACITATE;
 						}
 						else if (strcasecmp(pcCurrentPos, "RaiseUndead") == 0) {
-							//printf("is raiseundead ");
 							Spells[CurSpell]->TypeFlag |= SF_RAISEUNDEAD;
 							printf("flag = %d\n", Spells[CurSpell]->TypeFlag);
 						}
 						else if (strcasecmp(pcCurrentPos, "BanishUndead") == 0) {
-							//printf("is banish ");
 							Spells[CurSpell]->TypeFlag |= SF_BANISHUNDEAD;
 						}
-						//printf("flag = %d\n", Spells[CurSpell]->TypeFlag);
 						break;
 					case 9 :    /* HealStr */
-						//od_printf("HealStr = %s\n\r", pcCurrentPos);
 						Spells[CurSpell]->pszHealStr = strdup(pcCurrentPos);
 						break;
 					case 10 :    /* DamageStr */
@@ -378,7 +368,6 @@ static void Init_Spells(char *szFileName)
 	/* since they started at -1 and not 0 */
 	CurSpell++;
 
-	//printf("%d spells found.\n%ld bytes used", CurSpell, (long) CurSpell*sizeof(struct Spell));
 
 	fclose(fpSpell);
 

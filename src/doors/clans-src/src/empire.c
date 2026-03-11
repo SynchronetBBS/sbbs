@@ -303,35 +303,28 @@ void ProcessResultPacket(struct AttackResult *Result)
 
 		// write to news
 		if (Result->NoTarget && Result->Goal == G_OUSTRULER) {
-			// snprintf(szNews, sizeof(szNews), ">> %s's army returns after finding no ruler to oust in %s\n",
 			snprintf(szNews, sizeof(szNews), ST_WNEWS5,
 					szAttackerName, VillageName(WhichBBS));
 			News_AddNews(szNews);
 
-			// strlcpy(szOutcome, "but found no ruler to oust!\n", sizeof(szOutcome));
 			strlcpy(szOutcome, ST_WNEWS6, sizeof(szOutcome));
 		}
 		else if (Result->NoTarget) {
-			// snprintf(szNews, sizeof(szNews), ">> %s's army returns after being unable to find the clan empire.\n",
 			snprintf(szNews, sizeof(szNews), ST_WNEWS7, szAttackerName);
 			News_AddNews(szNews);
 
-			// strlcpy(szOutcome, "but found no empire!\n", sizeof(szOutcome));
 			strlcpy(szOutcome, ST_WNEWS8, sizeof(szOutcome));
 		}
 		else if (Result->Success) {
-			// strlcpy(szOutcome, "and came out victorious!\n", sizeof(szOutcome));
 			strlcpy(szOutcome, ST_WNEWS9, sizeof(szOutcome));
 
 			switch (Result->Goal) {
 				case G_OUSTRULER :
-					// snprintf(szNews, sizeof(szNews), ">> %s's army returns after successfully ousting the ruler of %s\n\n",
 					snprintf(szNews, sizeof(szNews), ST_WNEWS10,
 							szAttackerName, VillageName(WhichBBS));
 					News_AddNews(szNews);
 					break;
 				case G_STEALLAND :
-					// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s looting %d land from %s.\n\n",
 					snprintf(szNews, sizeof(szNews), ST_WNEWS11,
 							szAttackerName,
 							VillageName(WhichBBS),
@@ -339,7 +332,6 @@ void ProcessResultPacket(struct AttackResult *Result)
 					News_AddNews(szNews);
 					break;
 				case G_STEALGOLD :
-					// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s looting %d gold from %s.\n\n",
 					snprintf(szNews, sizeof(szNews), ST_WNEWS12,
 							szAttackerName,
 							VillageName(WhichBBS),
@@ -347,7 +339,6 @@ void ProcessResultPacket(struct AttackResult *Result)
 					News_AddNews(szNews);
 					break;
 				case G_DESTROY :
-					// snprintf(szNews, sizeof(szNews), ">> %s's army returns successfully from %s destroying %s's buildings.\n\n",
 					snprintf(szNews, sizeof(szNews), ST_WNEWS13,
 							szAttackerName,
 							VillageName(WhichBBS), szDefenderName);
@@ -356,9 +347,7 @@ void ProcessResultPacket(struct AttackResult *Result)
 			}
 		}
 		else {
-			// strlcpy(szOutcome, "and came out defeated.\n", sizeof(szOutcome));
 			strlcpy(szOutcome, ST_WNEWS14, sizeof(szOutcome));
-			// snprintf(szNews, sizeof(szNews), ">> %s's army returns unsuccessfully from %s after attacking %s.\n\n",
 			snprintf(szNews, sizeof(szNews), ST_WNEWS15,
 					szAttackerName,
 					VillageName(WhichBBS), szDefenderName);
@@ -380,26 +369,22 @@ void ProcessResultPacket(struct AttackResult *Result)
 				break;
 		}
 
-		// snprintf(szMessage, sizeof(szMessage), "Results of %s's attack on %s have returned.\n Your troops attempted %s %s.\n\nYou killed the following",
 		snprintf(szMessage, sizeof(szMessage), ST_WNEWS16,
 				Result->AttackerType == EO_VILLAGE ? "the town" : "your clan",
 				szDefenderName, szGoal, szOutcome);
 
 		// append what was lost and who you killed
-		//    snprintf(szString, sizeof(szString), " %ld Footmen\n %ld Axemen\n %ld Knights \n",
 		snprintf(szString, sizeof(szString), ST_WAR0,
 				(long)Result->DefendCasualties.Footmen,
 				(long)Result->DefendCasualties.Axemen,
 				(long)Result->DefendCasualties.Knights);
 		strlcat(szMessage, szString, sizeof(szMessage));
-		//    snprintf(szString, sizeof(szString), "You lost the following:\n %ld Footmen\n %ld Axemen\n %ld Knights \n",
 		snprintf(szString, sizeof(szString), ST_WAR1,
 				(long)Result->AttackCasualties.Footmen,
 				(long)Result->AttackCasualties.Axemen,
 				(long)Result->AttackCasualties.Knights);
 		strlcat(szMessage, szString, sizeof(szMessage));
 
-		// snprintf(szString, sizeof(szString), "The following have returned:\n %ld Footmen\n %ld Axemen\n %ld Knights \n",
 		snprintf(szString, sizeof(szString), ST_WNEWS17,
 				(long)Result->ReturningArmy.Footmen,
 				(long)Result->ReturningArmy.Axemen,
@@ -409,22 +394,18 @@ void ProcessResultPacket(struct AttackResult *Result)
 		switch (Result->Goal) {
 			case G_STEALLAND :
 				if (Result->LandStolen) {
-					// snprintf(szString, sizeof(szString), "You stole %ld land.\n", Result->LandStolen);
 					snprintf(szString, sizeof(szString), ST_WNEWS18, (int)Result->LandStolen);
 					strlcat(szMessage, szString, sizeof(szMessage));
 				}
 				else if (Result->Success)
-					// strlcat(szMessage, "You found no land to steal!\n", sizeof(szMessage));
 					strlcat(szMessage, ST_WNEWS19, sizeof(szMessage));
 				break;
 			case G_STEALGOLD :
 				if (Result->GoldStolen) {
-					// snprintf(szString, sizeof(szString), "You stole %ld gold.\n", Result->GoldStolen);
 					snprintf(szString, sizeof(szString), ST_WNEWS20, (long)Result->GoldStolen);
 					strlcat(szMessage, szString, sizeof(szMessage));
 				}
 				else if (Result->Success)
-					// strlcat(szMessage, "You found no gold to steal!\n", sizeof(szMessage));
 					strlcat(szMessage, ST_WNEWS21, sizeof(szMessage));
 				break;
 		}
@@ -435,7 +416,6 @@ void ProcessResultPacket(struct AttackResult *Result)
 				continue;
 
 			if (!ShowedOne) {
-				// strlcat(szMessage, "The following buildings were destroyed:\n", sizeof(szMessage));
 				strlcat(szMessage, ST_PAR2, sizeof(szMessage));
 				ShowedOne = true;
 			}
@@ -556,7 +536,6 @@ void Empire_Maint(struct empire *Empire)
 			GoldMade += (1000 + my_random(500) + my_random(500));
 		}
 
-		// snprintf(szNews, sizeof(szNews), ">> Businesses brought in %ld gold today!\n\n",
 		snprintf(szNews, sizeof(szNews), ST_NEWS3, (long)GoldMade);
 		News_AddNews(szNews);
 		Empire->VaultGold += GoldMade;
@@ -1069,12 +1048,10 @@ static void Destroy_Menu(struct empire *Empire)
 
 		// show all buildings erected
 		for (iTemp = 0; iTemp < NUM_BUILDINGTYPES; iTemp++) {
-			// snprintf(szString, sizeof(szString), " |0A(|0B%c|0A) |0C%-20s    |0F%d\n\r", iTemp + '0', BuildingType[iTemp].szName,
 			snprintf(szString, sizeof(szString), ST_MEMPIRE13, (char)(iTemp + '0'), BuildingType[iTemp].szName,
 					(int)Empire->Buildings[iTemp]);
 			rputs(szString);
 		}
-		// rputs(" |0A(|0BQ|0A) |0CQuit\n |0A(|0BV|0A) |0CView Stats\n");
 		rputs(ST_MEMPIRE27);
 		rputs(ST_LONGLINE);
 
@@ -1104,7 +1081,6 @@ static void Destroy_Menu(struct empire *Empire)
 
 				if (Empire->Buildings[WhichBuilding] <= 0) {
 					Empire->Buildings[WhichBuilding] = 0;
-					// rputs("|07You don't have any of that building to destroy.\n%P");
 					rputs(ST_MEMPIRE29);
 					break;
 				}
@@ -1116,7 +1092,6 @@ static void Destroy_Menu(struct empire *Empire)
 				Empire->VaultGold += ((BuildingType[ WhichBuilding ].Cost*1)/2);
 				Empire->Buildings[WhichBuilding]--;
 
-				// snprintf(szString, sizeof(szString), "%s destroyed.  %d land and %d gold gained.\n",
 				snprintf(szString, sizeof(szString), ST_MEMPIRE31,
 						BuildingType[ WhichBuilding ].szName,
 						(int)BuildingType[ WhichBuilding ].LandUsed,
@@ -1159,12 +1134,10 @@ static void StructureMenu(struct empire *Empire)
 			if (iTemp == B_BUSINESS && Empire->OwnerType != EO_VILLAGE)
 				continue;
 
-			// snprintf(szString, sizeof(szString), " |0A(|0B%c|0A) |0C%-20s    |0F%d\n\r", iTemp + '0', BuildingType[iTemp].szName,
 			snprintf(szString, sizeof(szString), ST_MEMPIRE13, (char)(iTemp + '0'), BuildingType[iTemp].szName,
 					(int)Empire->Buildings[iTemp]);
 			rputs(szString);
 		}
-		// rputs(" |0A(|0BQ|0A) |0CQuit\n |0A(|0BV|0A) |0CView Stats\n");
 		rputs(ST_MEMPIRE14);
 		rputs(ST_LONGLINE);
 
@@ -1183,7 +1156,6 @@ static void StructureMenu(struct empire *Empire)
 				WhichBuilding = cKey - '0';
 
 				if (WhichBuilding == B_BUSINESS && Empire->OwnerType != EO_VILLAGE) {
-					// rputs("|07Businesses can only be built by the village.\n");
 					rputs(ST_MEMPIRE28);
 					break;
 				}
@@ -1202,18 +1174,15 @@ static void StructureMenu(struct empire *Empire)
 
 				// see if can't build this
 				if (BuildingType[ WhichBuilding ].LandUsed > Empire->Land) {
-					// od_printf("You need more worker land.\n\r");
 					rputs(ST_MEMPIRE19);
 					break;
 				}
 				// see if can't build this
 				else if (BuildingType[ WhichBuilding ].Cost > Empire->VaultGold) {
-					// od_printf("You need more gold.\n\r");
 					rputs(ST_MEMPIRE34);
 					break;
 				}
 				else if (BuildingType[ WhichBuilding ].EnergyUsed > Empire->WorkerEnergy) {
-					// od_printf("You need more worker energy.\n\r");
 					rputs(ST_MEMPIRE20);
 					break;
 				}
@@ -1231,7 +1200,6 @@ static void StructureMenu(struct empire *Empire)
 				Empire->WorkerEnergy -= BuildingType[ WhichBuilding ].EnergyUsed;
 				Empire->Buildings[WhichBuilding]++;
 
-				// snprintf(szString, sizeof(szString), "%s built!\n\r", BuildingType[ WhichBuilding ].szName);
 				snprintf(szString, sizeof(szString), ST_MEMPIRE22, BuildingType[ WhichBuilding ].szName);
 				rputs(szString);
 				break;
@@ -1448,7 +1416,6 @@ static void ArmyAttack(struct Army *Attacker, struct Army *Defender,
 	NumRounds = (int16_t)((Attacker->Strategy.AttackLength + Defender->Strategy.DefendLength) / 2);
 
 	Intensity = (int16_t)((Attacker->Strategy.AttackIntensity + Defender->Strategy.DefendIntensity) / 2);
-	//    od_printf("Intensity of battle is %d\n", Intensity);
 
 	// save original values
 	OrigAttacker = *Attacker;
@@ -1551,7 +1518,6 @@ static void ArmyAttack(struct Army *Attacker, struct Army *Defender,
 	AttackerLoss = (int16_t)(100 - (ArmyVitality(Attacker) * 100) / ArmyVitality(&OrigAttacker));
 	DefenderLoss = (int16_t)(100 - (ArmyVitality(Defender) * 100) / ArmyVitality(&OrigDefender));
 
-	//    od_printf("Attacker's loss = %d\n\rDefender's Loss = %d\n\r", AttackerLoss, DefenderLoss);
 
 	Result->PercentDamage = DefenderLoss;
 
@@ -1794,7 +1760,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 	}
 
 	// start off news reel
-	// snprintf(szNews, sizeof(szNews), ">> %s attacked %s and %s!\n   ", szAttacker, szDefender,
 	snprintf(szNews, sizeof(szNews), ST_WNEWS0, szAttacker, szDefender,
 			AttackResult->Success ? "won" : "lost");
 
@@ -1802,38 +1767,31 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 	switch (AttackResult->Goal) {
 		case G_OUSTRULER :
 			if (AttackResult->Success)
-				// strlcat(szNews, "They ousted our rulers!\n  ", sizeof(szNews));
 				strlcat(szNews, ST_WNEWS1, sizeof(szNews));
 			break;
 		case G_STEALLAND :
 			if (AttackResult->Success && AttackResult->LandStolen)
-				// strlcat(szNews, "They looted land.\n  ", sizeof(szNews));
 				strlcat(szNews, ST_WNEWS2, sizeof(szNews));
 			break;
 		case G_STEALGOLD :
 			if (AttackResult->Success && AttackResult->GoldStolen)
-				// strlcat(szNews, "They looted some gold.\n  ", sizeof(szNews));
 				strlcat(szNews, ST_WNEWS3, sizeof(szNews));
 			break;
 		case G_DESTROY :
 			if (AttackResult->Success)
-				// strlcat(szNews, "They caused much damage.\n  ", sizeof(szNews));
 				strlcat(szNews, ST_WNEWS4, sizeof(szNews));
 			break;
 	}
 
 	// start message off
-	// snprintf(szMessage, sizeof(szMessage), "%s attacked your %s's empire!\nYour army defeated the following:\n",
 	snprintf(szMessage, sizeof(szMessage), ST_PAR0, szAttacker, szDefender);
 
 	// append what was lost and who you killed
-	//    snprintf(szString, sizeof(szString), " %ld Footmen\n %ld Axemen\n %ld Knights \n",
 	snprintf(szString, sizeof(szString), ST_WAR0,
 			(long)AttackResult->AttackCasualties.Footmen,
 			(long)AttackResult->AttackCasualties.Axemen,
 			(long)AttackResult->AttackCasualties.Knights);
 	strlcat(szMessage, szString, sizeof(szMessage));
-	//    snprintf(szString, sizeof(szString), "You lost the following:\n %ld Footmen\n %ld Axemen\n %ld Knights \n",
 	snprintf(szString, sizeof(szString), ST_WAR1,
 			(long)AttackResult->DefendCasualties.Footmen,
 			(long)AttackResult->DefendCasualties.Axemen,
@@ -1844,7 +1802,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 	if (AttackResult->Success) {
 		switch (AttackResult->Goal) {
 			case G_OUSTRULER :  // ruler ousted!
-				// strlcat(szMessage, " You were ousted from rule!\n", sizeof(szMessage));
 				strlcat(szMessage, ST_PAR1, sizeof(szMessage));
 
 				// oust the ruler
@@ -1904,7 +1861,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						continue;
 
 					if (!ShowedOne) {
-						// strlcat(szMessage, "The following buildings were destroyed:\n", sizeof(szMessage));
 						strlcat(szMessage, ST_PAR2, sizeof(szMessage));
 						ShowedOne = true;
 					}
@@ -1912,7 +1868,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 							BuildingType[iTemp].szName);
 					strlcat(szMessage, szString, sizeof(szMessage));
 				}
-				// snprintf(szString, sizeof(szString), " They stole %d land!\n", AttackResult->LandStolen);
 				if (AttackResult->LandStolen) {
 					snprintf(szString, sizeof(szString), ST_PAR3, (int)AttackResult->LandStolen);
 					strlcat(szMessage, szString, sizeof(szMessage));
@@ -1946,7 +1901,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						}
 						break;
 				}
-				// snprintf(szString, sizeof(szString), " They stole %ld gold!\n", AttackResult->GoldStolen);
 				if (AttackResult->GoldStolen) {
 					snprintf(szString, sizeof(szString), ST_PAR4, (long)AttackResult->GoldStolen);
 					strlcat(szMessage, szString, sizeof(szMessage));
@@ -1988,7 +1942,6 @@ static void ProcessAttackResult(struct AttackResult *AttackResult)
 						continue;
 
 					if (!ShowedOne) {
-						//              strlcat(szMessage, "The following buildings were destroyed:\n", sizeof(szMessage));
 						strlcat(szMessage, ST_PAR2, sizeof(szMessage));
 						ShowedOne = true;
 					}
@@ -2017,7 +1970,6 @@ static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 	CurHit, TypeToHit, iTemp;
 	int32_t NumHits;
 
-	//    od_printf("\r\nBefore:  %d towers\r\n %d barracks\r\n %d walls\r\n",
 	//      NumBuildings[0], NumBuildings[1], NumBuildings[2]);
 
 	// initialize how many destroyed
@@ -2044,7 +1996,6 @@ static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 	CheckMem(WarZone);
 
 	TotalEnergy = CurChar;
-	//    od_printf("Total energy = %d\n\r", TotalEnergy);
 
 	// put buildings in there
 	CurChar = 0;
@@ -2067,7 +2018,6 @@ static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 		NumHits += LandUsed[CurType];
 	}
 	NumHits = (Percent*NumHits)/100;
-	//    od_printf("Num hits = %d\n\r", NumHits);
 
 	for (CurHit = 0; CurHit < NumHits;) {
 		WhichToHit = my_random(TotalEnergy);
@@ -2077,7 +2027,6 @@ static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 		if (LandUsed[TypeToHit] == 0)
 			continue;
 		else {
-			//        od_printf("hit %d\n\r", TypeToHit);
 			LandUsed[TypeToHit]--;
 			CurHit++;
 		}
@@ -2085,7 +2034,6 @@ static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 
 	// figure out what we have left
 	for (CurType = 0; CurType < NUM_BUILDINGTYPES; CurType++) {
-		//      od_printf("%d's energy: %d of %d\n\r",
 		//        CurType, LandUsed[CurType],
 		//        BuildingType[CurType].LandUsed*NumBuildings[CurType]);
 
@@ -2104,7 +2052,6 @@ static void DestroyBuildings(int16_t NumBuildings[MAX_BUILDINGS],
 		NumDestroyed[CurType] = NumBuildings[CurType] - NumRemaining[CurType];
 	}
 
-	//    od_printf("After:  %d towers\r\n %d barracks\r\n %d walls\r\n",
 	//      NumRemaining[0], NumRemaining[1], NumRemaining[2]);
 	//    door_pause();
 
@@ -2122,13 +2069,11 @@ static void ShowResults(struct AttackResult *Result)
 	char szString[128];
 
 	// reduce both armies
-	// snprintf(szString, sizeof(szString), "You lost %ld footmen, %ld axemen, and %ld knights\n\r",
 	snprintf(szString, sizeof(szString), ST_WRESULTS0,
 			(long)Result->AttackCasualties.Footmen,
 			(long)Result->AttackCasualties.Axemen,
 			(long)Result->AttackCasualties.Knights);
 	rputs(szString);
-	// snprintf(szString, sizeof(szString), "You killed %ld footmen, %ld axemen, and %ld knights\n\r",
 	snprintf(szString, sizeof(szString), ST_WRESULTS1,
 			(long)Result->DefendCasualties.Footmen,
 			(long)Result->DefendCasualties.Axemen,
@@ -2145,7 +2090,6 @@ static void ShowResults(struct AttackResult *Result)
 			(Result->DefendCasualties.Footmen ||
 			 Result->DefendCasualties.Axemen ||
 			 Result->DefendCasualties.Knights)) {
-		// rputs("You were unable to penetrate their walls!\n");
 		rputs(ST_WRESULTS2);
 	}
 
@@ -2164,7 +2108,6 @@ static void ShowResults(struct AttackResult *Result)
 					// od_printf("You stole %ld gold\n\r", Result->GoldStolen);
 					snprintf(szString, sizeof(szString), ST_WRESULTS5, (long)Result->GoldStolen);
 				else
-					// od_printf("You couldn't find any gold!\n\r");
 					strlcpy(szString, ST_WRESULTS6, sizeof(szString));
 				rputs(szString);
 				break;
@@ -2184,7 +2127,6 @@ static void ShowResults(struct AttackResult *Result)
 						continue;
 
 					if (!ShowedOne) {
-						// rputs("You destroyed the following buildings:\n");
 						rputs(ST_WRESULTS9);
 						ShowedOne = true;
 					}
@@ -2219,7 +2161,6 @@ static void ShowResults(struct AttackResult *Result)
 		}
 	}
 	else {
-		// rputs("|12You were defeated!\n");
 		rputs(ST_WRESULTS13);
 	}
 
@@ -2477,11 +2418,9 @@ static void StartEmpireWar(struct empire *Empire)
 			// amass village's troops corresponding to type of attack
 			// do attack now, tell user result, write changes
 
-			// rputs("Our village!\n");
 
 			// if no ruler, tell him
 			if (Village.Data.RulingClanId[0] == -1 && Goal == G_OUSTRULER) {
-				// rputs("There is no ruler to oust.  The attack is aborted.\n");
 				rputs(ST_WEMPIRE4);
 				return;
 			}
@@ -2565,7 +2504,6 @@ static void StartEmpireWar(struct empire *Empire)
 			System_Error("Alliances inconsistency!");
 
 		if (NumAlliances == 0) {
-			// rputs("No alliances found!\n");
 			rputs(ST_WEMPIRE5);
 			return;
 		}
@@ -2892,7 +2830,6 @@ static void SpyMenu(struct empire *Empire)
 	}
 
 	if (Empire->SpiesToday == MAX_SPIES) {
-		// rputs("You have spied too much already today.\n%P");
 		rputs(ST_SPY0);
 		return;
 	}
@@ -2976,7 +2913,6 @@ static void SpyMenu(struct empire *Empire)
 			rputs(ST_ABORTED);
 			return;
 		}
-		// snprintf(szString, sizeof(szString), "It will cost you %ld gold to spy.  The empire has %ld gold.\nContinue?",
 		snprintf(szString, sizeof(szString), ST_SPY1, SPY_COST, (long)Empire->VaultGold);
 		if (!YesNo(szString)) {
 			return;
@@ -2995,16 +2931,13 @@ static void SpyMenu(struct empire *Empire)
 			if ((Empire->Buildings[B_AGENCY]+my_random(5)) >
 					(Village.Data.Empire.Buildings[B_SECURITY]+my_random(3))) {
 				// success!
-				// rputs("Your spy is successful!\n");
 				rputs(ST_SPY2);
 				Empire_Stats(&Village.Data.Empire);
 			}
 			else {
-				// rputs("Your spy failed and was captured!\n");
 				rputs(ST_SPY3);
 
 				if (Village.Data.RulingClanId[0] != -1) {
-					// snprintf(szMessage, sizeof(szMessage), " You caught a spy attempting to gain info on the village's empire.\n The spy was from %s.\n",
 					snprintf(szMessage, sizeof(szMessage), ST_SPY4,
 							szSpierName);
 					GenericMessage(szMessage, Village.Data.RulingClanId, Junk, "", false);
@@ -3041,7 +2974,6 @@ static void SpyMenu(struct empire *Empire)
 			return;
 		}
 
-		// snprintf(szString, sizeof(szString), "It will cost you %ld gold to spy.  The empire has %ld gold.\nContinue?",
 		snprintf(szString, sizeof(szString), ST_SPY1, SPY_COST, (long)Empire->VaultGold);
 		if (!YesNo(szString)) {
 			return;
@@ -3059,12 +2991,10 @@ static void SpyMenu(struct empire *Empire)
 		if ((Empire->Buildings[B_AGENCY]+my_random(5)) >
 				(Alliances[WhichAlliance]->Empire.Buildings[B_SECURITY]+my_random(3))) {
 			// success!
-			// rputs("Your spy is successful!\n");
 			rputs(ST_SPY2);
 			Empire_Stats(&Alliances[WhichAlliance]->Empire);
 		}
 		else {
-			// rputs("Your spy failed and was captured!\n");
 			rputs(ST_SPY3);
 
 			snprintf(szMessage, sizeof(szMessage), ST_SPY5,
@@ -3079,7 +3009,6 @@ static void SpyMenu(struct empire *Empire)
 			return;
 		}
 
-		// snprintf(szString, sizeof(szString), "It will cost you %ld gold to spy.  The empire has %ld gold.\nContinue?",
 		snprintf(szString, sizeof(szString), ST_SPY1, SPY_COST, (long)Empire->VaultGold);
 		if (!YesNo(szString)) {
 			return;
@@ -3168,7 +3097,6 @@ void Empire_Manage(struct empire *Empire)
 				break;
 			case 'M' :  // manage army
 				if (Empire->Buildings[B_BARRACKS] == 0)
-					// rputs("You need a barracks first!\n");
 					rputs(ST_MEMPIRE8);
 				else
 					ManageArmy(Empire);
@@ -3186,7 +3114,6 @@ void Empire_Manage(struct empire *Empire)
 					// attacks per day"
 					if (Empire->OwnerType == EO_VILLAGE) {
 						if (Empire->AttacksToday == MAX_VILLAGEEMPIREATTACKS) {
-							// rputs("The village army can only handle 5 attacks per day.\n");
 							rputs(ST_MEMPIRE32);
 							break;
 						}
@@ -3194,7 +3121,6 @@ void Empire_Manage(struct empire *Empire)
 					}
 					else {
 						if (PClan.Empire.AttacksToday == MAX_EMPIREATTACKS) {
-							// rputs("You can only command 5 attacks per day.\n");
 							rputs(ST_MEMPIRE33);
 							break;
 						}
@@ -3204,7 +3130,6 @@ void Empire_Manage(struct empire *Empire)
 				break;
 			case 'S' :  // spy on empire
 				if (Empire->Buildings[B_AGENCY] == 0)
-					// rputs("You need an intelligence agency first!\n");
 					rputs(ST_MEMPIRE9);
 				else
 					SpyMenu(Empire);

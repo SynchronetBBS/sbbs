@@ -103,7 +103,6 @@ static int16_t InsideStr(const char *SubString, const char *FullString, int16_t 
 			return true;
 	}
 
-	//rputs("Returning false.");
 
 	return false;
 }
@@ -413,7 +412,6 @@ void GetStr(char *InputStr, int16_t MaxChars, bool HiBit)
 			continue;
 		else if (InputCh == 0)
 			continue;
-		//      else if (iscntrl(InputCh) && InputCh < 30 || HiBit == false)
 		else if (iscntrl(InputCh) && InputCh < 30)
 			continue;
 		else if (isalpha(InputCh) && CurChar && InputStr[CurChar - 1] == SPECIAL_CODE)

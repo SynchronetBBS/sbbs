@@ -890,7 +890,6 @@ void CreateScoreData(bool LocalOnly)
 	}
 	fclose(fpPlayerFile);
 
-	//printf("%d clans found.\n", NumClans);
 
 	// if not main BBS, write this data to file and send the packet
 	if (IBBS.Data.BBSID != 1 && LocalOnly == false) {

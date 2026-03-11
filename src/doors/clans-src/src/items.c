@@ -1051,7 +1051,6 @@ void Item_BuyItem(signed char ItemType)
 					PClan.Items[EmptySlot] = Item;
 				}
 				else {
-					// rputs("\n|0BYou are refunded half the cost.\n");
 					PClan.Empire.VaultGold += ((Item.lCost*75)/100);
 
 					/* get GST back from gov't */

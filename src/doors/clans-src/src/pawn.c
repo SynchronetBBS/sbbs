@@ -285,7 +285,6 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 				}
 
 				if (CurItem == 20*Village.Data.PawnLevel) {
-					//snprintf(szString, sizeof(szString), "I'm sorry, we cannot accept any more items.\n\r");
 					rputs(ST_PAWN9);
 					break;
 				}
@@ -346,7 +345,6 @@ static void PS_Sell(struct item_data *PS_Items[MAX_PSITEMS])
 					}
 
 					if (CurItem == 20*Village.Data.PawnLevel) {
-						// od_printf("I'm sorry, we cannot accept any more items.\n\r");
 						rputs(ST_PAWN9);
 						break;
 					}
