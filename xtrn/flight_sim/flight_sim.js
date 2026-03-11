@@ -1531,6 +1531,9 @@ function showModeSelect() {
 			retVal = "Q";
 	}
 
+	// Ensure there is no screen pause after choosing a mode
+	console.line_counter = 0;
+
 	return retVal;
 }
 
