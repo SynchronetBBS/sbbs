@@ -8,65 +8,26 @@
  * sufficient for ASSERT_FATAL.
  */
 
-#include <setjmp.h>
-#include <stdnoreturn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "../defines.h"
+#include "../structs.h"
 #include "../system.h"
 #include "../platform.h"
 #include "../video.h"
+#include "../language.h"
+#include "../quests.h"
 
 #include "test_harness.h"
-
-/* -------------------------------------------------------------------------
- * System_Error mock (real noreturn)
- *
- * Called by EncryptWrite/EncryptRead/cipher when given bad parameters.
- * ASSERT_FATAL arms g_fatal_jmp so the longjmp is caught.
- * ------------------------------------------------------------------------- */
-static jmp_buf g_fatal_jmp;
-
-noreturn void System_Error(char *szErrorMsg)
-{
-	(void)szErrorMsg;
-	longjmp(g_fatal_jmp, 1);
-}
-
-/* CheckMem is declared in system.h.  myopen.c does not call it, but the
- * linker needs a definition to resolve the symbol. */
-void CheckMem(void *ptr)
-{
-	if (!ptr) longjmp(g_fatal_jmp, 1);
-}
+#include "mocks_system.h"
+#include "mocks_video.h"
 
 #include "../platform.c"
 #include "../serialize.c"
 #include "../deserialize.c"
 #include "../myopen.c"
-
-/* -------------------------------------------------------------------------
- * External variable definitions required by included headers.
- * ------------------------------------------------------------------------- */
-struct system   System;
-bool            Verbose         = false;
-int             _argc           = 0;
-static char    *_argv_buf[]     = {NULL};
-char          **_argv           = _argv_buf;
-
-/* video.h declares ScreenWidth and ScreenLines. */
-int ScreenWidth  = 80;
-int ScreenLines  = 24;
-
-/* language.h (via include chain) declares extern Language. */
-static struct Language g_lang;
-struct Language       *Language = &g_lang;
-
-/* quests.h declares these externs. */
-struct Quest    Quests[MAX_QUESTS];
-uint8_t         Quests_TFlags[8];
 
 /* -------------------------------------------------------------------------
  * Tests: EncryptWrite -- invalid parameters trigger System_Error

@@ -23,9 +23,9 @@
 
 #include "test_harness.h"
 
-/* -------------------------------------------------------------------------
+/*
  * System_Error and CheckMem — forward-declared by system.h as noreturn.
- * ------------------------------------------------------------------------- */
+ */
 static jmp_buf g_fatal_jmp;
 
 noreturn void System_Error(char *szErrorMsg)
@@ -39,76 +39,20 @@ void CheckMem(void *ptr)
 	if (!ptr) longjmp(g_fatal_jmp, 1);
 }
 
-/* -------------------------------------------------------------------------
- * Other system.h stubs
- * ------------------------------------------------------------------------- */
-noreturn void System_Close(void)    { longjmp(g_fatal_jmp, 1); }
-void System_Close_AtExit(void)      {}
-void System_Init(void)              {}
-void System_Maint(void)             {}
-char *DupeStr(const char *s)        { return NULL; (void)s; }
-
-/* -------------------------------------------------------------------------
- * video.h stubs (declared but never called by myibbs.c or myopen.c)
- * ------------------------------------------------------------------------- */
-int ScreenWidth  = 80;
-int ScreenLines  = 24;
-void Video_Init(void)               {}
-void Video_Close(void)              {}
-void DisplayStr(const char *s)      { (void)s; }
-void zputs(const char *s)           { (void)s; }
-
-/* -------------------------------------------------------------------------
- * readcfg.h stubs — myibbs.c reads Config.MailerType; set MAIL_NONE so
- * IBSendFileAttach() returns early before touching the filesystem.
- * ------------------------------------------------------------------------- */
-struct config Config;   /* zero-init; Config.MailerType == 0 == MAIL_BINKLEY */
-void AddInboundDir(const char *d)                                 { (void)d; }
-bool Config_Init(uint16_t n, struct NodeData *(*f)(int))           { (void)n; (void)f; return false; }
-void Config_Close(void)                                            {}
-
-/* -------------------------------------------------------------------------
- * ibbs.h externs — declared there, defined here.
- * aszShortMonthName is used by IBSendFileAttach for the date header.
- * ------------------------------------------------------------------------- */
-struct ibbs IBBS;
-
-const char aszShortMonthName[12][4] = {
-	"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-};
-
-/* -------------------------------------------------------------------------
- * language.h extern (myopen.c includes language.h but never dereferences it)
- * ------------------------------------------------------------------------- */
-struct Language *Language = NULL;
-
-/* -------------------------------------------------------------------------
- * Include the source files under test.
- * platform.c brings in unix_wrappers.c (provides _fsopen, FilesOrderedByDate,
- * FileName, DirExists) and the POSIX string helpers.
- * serialize.c / deserialize.c / myopen.c are needed because myibbs.c
- * includes myopen.h and calls s_MessageHeader_s (serialize) inside
- * WriteMessage.
- * ------------------------------------------------------------------------- */
 #include "../platform.c"
 #include "../serialize.c"
 #include "../deserialize.c"
 #include "../myopen.c"
 #include "../myibbs.c"
 
-/* -------------------------------------------------------------------------
- * External variable definitions required by included headers.
- * ------------------------------------------------------------------------- */
-struct system   System;
-bool            Verbose         = false;
-int             _argc           = 0;
-static char    *_argv_buf[]     = {NULL};
-char          **_argv           = _argv_buf;
+/* Note: test_myibbs.c defines its own System_Error and CheckMem,
+ * so it does NOT include mocks_system.h (which would cause redefinition). */
 
-/* quests.h (pulled in via deserialize) declares these externs. */
-struct Quest    Quests[MAX_QUESTS];
-uint8_t         Quests_TFlags[8];
+#include "mocks_video.h"
+#include "mocks_readcfg.h"
+#include "mocks_ibbs.h"
+#include "mocks_language.h"
+#include "mocks_quests.h"
 
 /* -------------------------------------------------------------------------
  * Tests: ConvertStringToAddress

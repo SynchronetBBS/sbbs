@@ -14,12 +14,12 @@
 
 #include "test_harness.h"
 
-/* -------------------------------------------------------------------------
- * exit() mock
+/* =========================================================================
+ * exit() mock (Strategy A: macro interception)
  *
  * When tools.c calls exit(), we longjmp back to the test site instead of
  * terminating the process.  The jmp_buf is re-armed by each ASSERT_FATAL.
- * ------------------------------------------------------------------------- */
+ * ========================================================================= */
 static jmp_buf g_fatal_jmp;
 
 #define exit(code) longjmp(g_fatal_jmp, 1)   /* NOLINT */

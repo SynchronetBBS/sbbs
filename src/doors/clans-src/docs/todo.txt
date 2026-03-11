@@ -6,17 +6,19 @@ The Clans -- Open Issues
 [0.0]  Table of Contents
 -------------------------------------------------------------------------------
 
-Open Issues
-===========
+For Next Release
+================
 Charisma stat has no combat or empire effect ..................   1.1
+
+Unknown Future Release
+======================
 Clean up mstrings.h GNUmakefile dependencies ..................   1.2
 Village types defined but never assigned ......................   1.7
-Create shared mock library files for unit tests ...............   1.9
 mail.c: Mail_Maint() -- expire messages by age .................  1.10
 
 
 
-Open Issues
+For Next Release
 ===============================================================================
 
 [1.1]  Charisma stat has no combat or empire effect
@@ -36,6 +38,9 @@ most votes, compare the clan leaders' Charisma scores instead of
 choosing at random.  If the leaders' Charisma values also tie, compare
 the next clan member, and so on down the roster.  Only fall back to
 my_random() if every member's Charisma matches across all tied clans.
+
+Unknown Future Release
+===============================================================================
 
 [1.2]  Clean up mstrings.h GNUmakefile dependencies
 -------------------------------------------------------------------------------
@@ -64,21 +69,6 @@ Options: (a) finish the feature by adding a VillageType config keyword
 types and the item filtering becomes meaningful; (b) remove the dead
 defines, the struct field, and the items.c filter if the feature is not
 wanted.
-
-[1.9]  Create shared mock library files for unit tests
--------------------------------------------------------------------------------
-Null/stub implementations of functions such as System_Error, CheckMem,
-od_putch, and similar are duplicated across multiple files in src/tests/.
-Each test file that needs a stub defines its own copy, so changing the
-signature of a mocked function requires editing every test file that
-stubs it.
-
-Option: introduce one or more shared header files in src/tests/ (e.g.
-mocks_od.h, mocks_system.h) that provide a single canonical null
-implementation of each frequently-stubbed function.  Test files then
-include the appropriate mock header instead of defining their own copy.
-Files that need non-trivial behaviour (e.g. longjmp on System_Error)
-continue to define their own override after the shared header.
 
 [1.10]  mail.c: Mail_Maint() -- expire messages by age
 -------------------------------------------------------------------------------

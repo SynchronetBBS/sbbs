@@ -51,9 +51,9 @@ tODControl od_control;
 
 #include "test_harness.h"
 
-/* -------------------------------------------------------------------------
+/*
  * System stubs
- * ------------------------------------------------------------------------- */
+ */
 static jmp_buf g_fatal_jmp;
 
 noreturn void System_Error(char *szErrorMsg)
@@ -67,161 +67,7 @@ void CheckMem(void *ptr)
 	if (!ptr) longjmp(g_fatal_jmp, 1);
 }
 
-noreturn void System_Close(void)    { longjmp(g_fatal_jmp, 1); }
-void System_Close_AtExit(void)      {}
-void System_Init(void)              {}
-void System_Maint(void)             {}
-char *DupeStr(const char *s)        { return NULL; (void)s; }
 
-/* -------------------------------------------------------------------------
- * OpenDoor stub: od_clr_scr() is the only od_* symbol referenced from items.c
- * paths we might exercise.
- * ------------------------------------------------------------------------- */
-void od_clr_scr(void) {}
-
-/* -------------------------------------------------------------------------
- * door.h externs + stubs
- * ------------------------------------------------------------------------- */
-struct Door Door;
-
-void rputs(const char *s)             { (void)s; }
-void LogDisplayStr(const char *s)     { (void)s; }
-void LogStr(const char *s)            { (void)s; }
-char GetKey(void)                     { return 0; }
-char GetKeyNoWait(void)               { return 0; }
-char GetAnswer(const char *s)         { (void)s; return 0; }
-void door_pause(void)                 {}
-void Display(char *f)                 { (void)f; }
-bool YesNo(char *s)                   { (void)s; return false; }
-bool NoYes(char *s)                   { (void)s; return false; }
-bool Door_AllowScreenPause(void)      { return false; }
-void Door_ToggleScreenPause(void)     {}
-void Door_ShowTitle(void)             {}
-void InputCallback(void)              {}
-void PutCh(char c)                    { (void)c; }
-void rawputs(const char *s)           { (void)s; }
-int16_t GetHoursLeft(void)            { return 0; }
-int16_t GetMinutesLeft(void)          { return 0; }
-void Door_Init(bool local)            { (void)local; }
-void Door_Close(void)                 {}
-bool Door_Initialized(void)           { return false; }
-void Door_SetColorScheme(int8_t *s)   { (void)s; }
-
-/* -------------------------------------------------------------------------
- * language.h externs + stubs
- * ------------------------------------------------------------------------- */
-static struct Language g_lang;
-struct Language *Language = &g_lang;
-
-void Language_Init(char *f)           { (void)f; }
-void Language_Close(void)             {}
-void LoadStrings(int16_t s, int16_t n, char *arr[])
-{
-	for (int16_t i = 0; i < n; i++) arr[i] = "";
-	(void)s;
-}
-
-/* -------------------------------------------------------------------------
- * clansini.h externs + stubs
- * items.c includes clansini.h which declares extern struct IniFile IniFile.
- * clansini.c is NOT in the source chain, so we define IniFile here.
- * ------------------------------------------------------------------------- */
-struct IniFile IniFile;
-void ClansIni_Init(void)              {}
-void ClansIni_Close(void)             {}
-
-/* -------------------------------------------------------------------------
- * spells.h externs + stubs
- * items.c includes spells.h; the pure item functions we test do not call any
- * Spells_* code, but definitions are required to satisfy the linker.
- * ------------------------------------------------------------------------- */
-char     Spells_szCastDestination[25] = "";
-char     Spells_szCastSource[25]      = "";
-int      Spells_CastValue             = 0;
-struct Spell *Spells[MAX_SPELLS];  /* all NULL */
-
-void Spells_Init(void)                                               {}
-void Spells_Close(void)                                              {}
-void Spells_UpdatePCSpells(struct pc *p)                             { (void)p; }
-void Spells_ClearSpells(struct clan *c)                              { (void)c; }
-void Spells_CastSpell(struct pc *p, struct clan *e, int16_t t, int16_t n)
-	{ (void)p; (void)e; (void)t; (void)n; }
-
-/* -------------------------------------------------------------------------
- * village.h externs + stubs
- * ------------------------------------------------------------------------- */
-struct village Village;
-void Village_Init(void)                                              {}
-void Village_Close(void)                                             {}
-void Village_Maint(void)                                             {}
-void Village_NewRuler(void)                                          {}
-int16_t OutsiderTownHallMenu(void)                                   { return 0; }
-int16_t TownHallMenu(void)                                           { return 0; }
-void Village_Reset(void)                                             {}
-
-/* -------------------------------------------------------------------------
- * user.h externs + stubs
- * PClan is declared here; UnequipItemsFromPC operates on it.
- * ------------------------------------------------------------------------- */
-struct clan PClan;
-
-int8_t GetStat(struct pc *p, char s)  { (void)p; (void)s; return 0; }
-int16_t NumMembers(struct clan *c, bool h)
-	{ (void)c; (void)h; return 0; }
-
-void User_Maint(void)                                                {}
-bool User_Init(void)                                                 { return false; }
-void User_FirstTimeToday(void)                                       {}
-void User_Close(void)                                                {}
-void ClanStats(struct clan *c, bool b)                               { (void)c; (void)b; }
-bool GetClanID(int16_t id[2], bool a, bool b, int16_t c, bool d)
-	{ (void)id; (void)a; (void)b; (void)c; (void)d; return false; }
-void ShowPlayerStats(struct pc *p, bool b)                           { (void)p; (void)b; }
-void ListItems(struct clan *c)                                       { (void)c; }
-bool GetClanNameID(char *n, size_t s, int16_t id[2])
-	{ (void)n; (void)s; (void)id; return false; }
-bool GetClan(int16_t id[2], struct clan *c)                          { (void)id; (void)c; return false; }
-bool ClanExists(int16_t id[2])                                       { (void)id; return false; }
-void PC_Create(struct pc *p, bool b)                                 { (void)p; (void)b; }
-void Clan_Update(struct clan *c)                                     { (void)c; }
-void ShowVillageStats(void)                                          {}
-void User_List(void)                                                 {}
-void User_ResetAllVotes(void)                                        {}
-void DeleteClan(int16_t id[2], char *n)                              { (void)id; (void)n; }
-void User_Destroy(void)                                              {}
-void User_Write(void)                                                {}
-
-/* -------------------------------------------------------------------------
- * game.h externs + stubs
- * ------------------------------------------------------------------------- */
-struct game Game;
-void Game_Init(void)                                                 {}
-void Game_Close(void)                                                {}
-void Game_Settings(void)                                             {}
-void Game_Start(void)                                                {}
-void Game_Write(void)                                                {}
-
-/* -------------------------------------------------------------------------
- * help.h and input.h stubs
- * ------------------------------------------------------------------------- */
-void MainHelp(void)                                                  {}
-void Help(const char *t, char *f)                                    { (void)t; (void)f; }
-void GeneralHelp(char *f)                                            { (void)f; }
-char GetChoice(char *f, char *p, char *opts[], char *keys, char def, bool t)
-	{ (void)f; (void)p; (void)opts; (void)keys; (void)def; (void)t; return 0; }
-void GetStr(char *s, int16_t n, bool h)                              { (void)s; (void)n; (void)h; }
-long GetLong(const char *p, long d, long m)                          { (void)p; (void)d; (void)m; return 0; }
-void GetStringChoice(const char **a, int16_t n, char *p, int16_t *u, bool s,
-	int16_t t, bool b)
-	{ (void)a; (void)n; (void)p; (void)u; (void)s; (void)t; (void)b; }
-
-/* -------------------------------------------------------------------------
- * Include the source files under test.
- * platform.c provides string helpers and DaysSince1970 (called by PS_Sell);
- * random.c provides my_random (used by Items_FindTreasureChest);
- * serialize/deserialize/myopen provide the file I/O layer.
- * items.c is last — it defines the static Items struct and all Items_* fns.
- * ------------------------------------------------------------------------- */
 #include "../platform.c"
 #include "../random.c"
 #include "../serialize.c"
@@ -229,18 +75,21 @@ void GetStringChoice(const char **a, int16_t n, char *p, int16_t *u, bool s,
 #include "../myopen.c"
 #include "../items.c"
 
-/* -------------------------------------------------------------------------
- * External variable definitions
- * ------------------------------------------------------------------------- */
-struct system   System;
-bool            Verbose         = false;
-int             _argc           = 0;
-static char    *_argv_buf[]     = {NULL};
-char          **_argv           = _argv_buf;
+/* Note: test_items.c defines its own System_Error and CheckMem above,
+ * so it does NOT include mocks_system.h (which would cause redefinition).
+ * Other required externs are defined below. */
 
-/* quests.h externs (pulled in through the deserialize include chain) */
-struct Quest    Quests[MAX_QUESTS];
-uint8_t         Quests_TFlags[8];
+#include "mocks_od.h"
+#include "mocks_door.h"
+#include "mocks_language.h"
+#include "mocks_spells.h"
+#include "mocks_village.h"
+#include "mocks_user.h"
+#include "mocks_game.h"
+#include "mocks_help.h"
+#include "mocks_input.h"
+#include "mocks_quests.h"
+#include "mocks_clansini.h"
 
 /* -------------------------------------------------------------------------
  * Tests: GetOpenItemSlot

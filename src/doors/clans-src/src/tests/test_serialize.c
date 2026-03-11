@@ -15,32 +15,18 @@
  * deserialize.c, keeping both compatible.
  */
 #include <assert.h>
-#include <setjmp.h>
-#include <stdnoreturn.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "../defines.h"
+#include "../structs.h"
 #include "../system.h"
 #include "../platform.h"
+#include "../language.h"
+#include "../quests.h"
 
 #include "test_harness.h"
-
-/* -------------------------------------------------------------------------
- * System_Error mock
- *
- * deserialize.c forward-declares System_Error as noreturn.  We provide the
- * definition here so the linker is satisfied.  For these roundtrip tests the
- * function is never actually called (no CRC structs tested), but ASSERT_FATAL
- * arms g_fatal_jmp just in case.
- * ------------------------------------------------------------------------- */
-static jmp_buf g_fatal_jmp;
-
-noreturn void System_Error(char *szErrorMsg)
-{
-	(void)szErrorMsg;
-	longjmp(g_fatal_jmp, 1);
-}
+#include "mocks_system.h"
 
 #include "../platform.c"
 #include "../serialize.c"
@@ -48,23 +34,8 @@ noreturn void System_Error(char *szErrorMsg)
 
 /* -------------------------------------------------------------------------
  * External variable definitions required by included headers.
+ * myopen.h declares serBuf/erRet; myopen.c is not included here.
  * ------------------------------------------------------------------------- */
-struct system   System;
-bool            Verbose         = false;
-int             _argc           = 0;
-static char    *_argv_buf[]     = {NULL};
-char          **_argv           = _argv_buf;
-
-/* language.h (pulled in via the include chain) declares extern Language. */
-static struct Language g_lang;
-struct Language       *Language = &g_lang;
-
-/* quests.h declares these externs but they are never referenced by the
- * serialize/deserialize functions exercised below. */
-struct Quest    Quests[MAX_QUESTS];
-uint8_t         Quests_TFlags[8];
-
-/* myopen.h declares serBuf/erRet; myopen.c is not included here. */
 uint8_t         serBuf[4096];
 bool            erRet;
 

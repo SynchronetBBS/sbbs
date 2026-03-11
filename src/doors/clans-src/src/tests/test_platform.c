@@ -10,19 +10,14 @@
 #include <string.h>
 
 #include "../defines.h"
+#include "../structs.h"
 #include "../platform.h"
 
 #include "test_harness.h"
 
 #include "../platform.c"
 
-/* -------------------------------------------------------------------------
- * External variable definitions required by included headers.
- * defines.h declares extern int _argc and extern char **_argv.
- * ------------------------------------------------------------------------- */
-int             _argc           = 0;
-static char    *_argv_buf[]     = {NULL};
-char          **_argv           = _argv_buf;
+#include "mocks_system.h"
 
 /* -------------------------------------------------------------------------
  * Tests: strlcpy

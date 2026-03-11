@@ -21,18 +21,8 @@
 #include "../platform.c"
 #include "../parsing.c"
 
-/* -------------------------------------------------------------------------
- * External variable definitions required by included headers.
- * ------------------------------------------------------------------------- */
-struct system   System;
-bool            Verbose         = false;
-int             _argc           = 0;
-static char    *_argv_buf[]     = {NULL};
-char          **_argv           = _argv_buf;
-
-/* language.h declares extern struct Language *Language. */
-static struct Language g_lang;
-struct Language       *Language = &g_lang;
+#include "mocks_system.h"
+#include "mocks_language.h"
 
 /* -------------------------------------------------------------------------
  * Tests: ParseLine

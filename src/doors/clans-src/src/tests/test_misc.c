@@ -9,7 +9,6 @@
  */
 #include <errno.h>
 #include <limits.h>
-#include <stdnoreturn.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -19,21 +18,13 @@
 #include "../misc.h"
 
 #include "test_harness.h"
-
-static jmp_buf g_fatal_jmp;
+#include "mocks_system.h"
 
 #define System_Error(msg) longjmp(g_fatal_jmp, 1)   /* NOLINT */
 
 #include "../misc.c"
 
 #undef System_Error
-
-/* -------------------------------------------------------------------------
- * External variables required by system.h's extern declarations.
- * misc.c itself never reads them; they must exist to satisfy the linker.
- * ------------------------------------------------------------------------- */
-struct system System;
-bool Verbose = false;
 
 /* -------------------------------------------------------------------------
  * Tests: atoc  (char range)
