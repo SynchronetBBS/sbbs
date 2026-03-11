@@ -5542,8 +5542,12 @@ NO_SSH:
 			client_socket = xpms_accept(ts_set, &client_addr
 			                            , &client_addr_len, startup->sem_chk_freq * 1000, (startup->options & BBS_OPT_HAPROXY_PROTO) ? XPMS_ACCEPT_FLAG_HAPROXY : XPMS_FLAGS_NONE, &ts_cb);
 
-			if (terminate_server) /* terminated */
+			if (terminate_server) { /* terminated */
+				if (client_socket != INVALID_SOCKET)
+					close_socket(client_socket);
+				client_socket = INVALID_SOCKET;
 				break;
+			}
 
 			if ((p = semfile_list_check(&initialized, clear_attempts_semfiles)) != NULL) {
 				lprintf(LOG_INFO, "Clear Failed Login Attempts semaphore file (%s) detected", p);
