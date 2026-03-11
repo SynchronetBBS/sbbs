@@ -19,17 +19,11 @@ build:	data binaries devkit-binaries
 
 .PHONY: game
 game:	data binaries
-	cp $(DOOR_BINARIES) .
-	cp $(DATA_FILES) .
-	cp $(SRC)release/* .
-	mkdir -p outbound
 
 .PHONY: devkit
 devkit: devkit-binaries
-	cp $(DEVKIT_BINARIES) .
-	cp $(SRC)devkit/* .
 
-all: game installer devkit devkit-installer
+all: binaries data devkit-binaries installer devkit-installer
 
 .PHONY: binaries
 binaries:
@@ -56,7 +50,10 @@ native-devkit:
 installer: binaries data native-devkit
 	rm -rf $(SRC)stage
 	mkdir -p $(SRC)stage/gum
-	cd $(SRC)stage/gum && $(MAKE) SRC=$(SRC) -f $(SRC)/GNUmakefile game
+	cp $(DOOR_BINARIES) $(SRC)stage/gum/
+	cp $(DATA_FILES) $(SRC)stage/gum/
+	cp $(SRC)release/* $(SRC)stage/gum/
+	mkdir -p $(SRC)stage/gum/outbound
 	cd $(SRC)stage/gum && ls -p1 | grep -v /$ > ../files.lst
 	echo /outbound >> $(SRC)stage/files.lst
 	cd $(SRC)stage/gum && $(BINDIR)chew$(NATIVEEXEFILE) ../clans.gum ../files.lst
@@ -71,7 +68,8 @@ installer: binaries data native-devkit
 devkit-installer: devkit-binaries native-devkit
 	rm -rf $(SRC)stagedk
 	mkdir -p $(SRC)stagedk/gum
-	cd $(SRC)stagedk/gum && $(MAKE) SRC=$(SRC) -f $(SRC)/GNUmakefile devkit
+	cp $(DEVKIT_BINARIES) $(SRC)stagedk/gum/
+	cp $(SRC)devkit/* $(SRC)stagedk/gum/
 	cp $(SRC)data/classes.txt $(SRC)stagedk/gum/
 	cp $(SRC)data/items.txt $(SRC)stagedk/gum/
 	cp $(SRC)data/monsters.txt $(SRC)stagedk/gum/
@@ -93,12 +91,6 @@ devkit-installer: devkit-binaries native-devkit
 clean:
 	$(MAKE) SRC=$(SRC) -C $(SRC)src clean
 	$(MAKE) SRC=$(SRC) -C $(SRC)data clean
-	for srcfile in $(DOOR_BINARIES); do rm -f ./$$(basename $${srcfile}); done
-	for srcfile in $(DEVKIT_BINARIES); do rm -f ./$$(basename $${srcfile}); done
-	for srcfile in $(DATA_FILES); do rm -f ./$$(basename $${srcfile}); done
-	for srcfile in $(SRC)release/*; do rm -f ./$$(basename $${srcfile}); done
-	for srcfile in $(SRC)devkit/*; do rm -f ./$$(basename $${srcfile}); done
-	rm -rf outbound
 	rm -f ClansDevKit-$(os)-$(MACH)-0_12.zip
 	rm -f Clans-$(os)-$(MACH)-0_97b1.zip
 	rm -rf $(SRC)stage
@@ -110,12 +102,6 @@ deepclean:
 	$(MAKE) SRC=$(SRC) -C $(SRC)src/tests clean
 	$(MAKE) SRC=$(SRC) -C $(SRC)src deepclean
 	$(MAKE) SRC=$(SRC) -C $(SRC)tests clean
-	for srcfile in $(DOOR_BINARIES); do rm -f ./$$(basename $${srcfile}); done
-	for srcfile in $(DEVKIT_BINARIES); do rm -f ./$$(basename $${srcfile}); done
-	for srcfile in $(DATA_FILES); do rm -f ./$$(basename $${srcfile}); done
-	for srcfile in $(SRC)release/*; do rm -f ./$$(basename $${srcfile}); done
-	for srcfile in $(SRC)devkit/*; do rm -f ./$$(basename $${srcfile}); done
-	-rm -rf outbound
 	-rm -f ClansDevKit-$(os)-$(MACH)-0_12.zip
 	-rm -f Clans-$(os)-$(MACH)-0_97b1.zip
 	-rm -rf $(SRC)stage

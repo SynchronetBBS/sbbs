@@ -897,13 +897,9 @@ Creating a Release
 
 [7.1]  Build Targets
 -------------------------------------------------------------------------------
-  gmake game              Build game binaries and copy them, along
-                          with clans.pak and release config, to the
-                          project root directory.
+  gmake game              Compile game binaries and data.
 
-  gmake devkit            Build devkit tools and copy them, along
-                          with devkit/ documentation, to the project
-                          root directory.
+  gmake devkit            Compile devkit tools.
 
   gmake installer         Assemble a distribution .zip.  Builds all
                           binaries and data, stages them in stage/,
@@ -916,8 +912,8 @@ Creating a Release
   gmake install           Install to PREFIX.  Copies game binaries
                           to $(INSTALLDIR) and data to the same.
 
-  gmake clean             Remove object files and local binary
-                          copies from the project root.
+  gmake clean             Remove object files, compiled data, and
+                          installer .zip files.
 
   gmake deepclean         Full clean including the bin/ directory.
 
