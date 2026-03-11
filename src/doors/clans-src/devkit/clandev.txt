@@ -23,6 +23,7 @@ Introduction
 ============
 What Can You Develop? .................................................   0.1
 How Does the System Work? .............................................   0.2
+Writing Source Files in UTF-8 .........................................   0.3
 
 Event Files
 ===========
@@ -113,6 +114,111 @@ easier, but for now individual lines must be added to the INI files manually.
 (Instructions on what to add to the INI files come later.)
 
 
+[0.3]  Writing Source Files in UTF-8
+-------------------------------------------------------------------------------
+All devkit source files (event scripts, monster definitions, NPC quotes, spell
+and item data, etc.) have traditionally been written in CP437 encoding -- the
+IBM PC character set used by BBS terminals.  CP437 is the encoding the game
+uses internally for box-drawing characters, block elements, shading, and
+accented letters.
+
+If your text editor does not support CP437 (most modern editors default to
+UTF-8), you can write source files in UTF-8 instead.  The devkit compilers
+automatically detect UTF-8 files and convert them to CP437 at compile time.
+The compiled output is byte-identical to what a CP437 source file would
+produce.
+
+
+How to Use It
+-------------
+Name your source file with .u8. before the final extension:
+
+        myquest.u8.evt      instead of      myquest.evt
+        npcquote.u8.txt     instead of      npcquote.txt
+        spells.u8.txt       instead of      spells.txt
+
+Then compile as usual:
+
+        ecomp myquest.u8.evt myquest.e
+        makenpc npcquote.u8.txt npcquote.npc
+        mspells spells.u8.txt spells.spl
+
+The compiler detects the .u8. in the filename and converts each line from
+UTF-8 to CP437.  If the filename does not contain .u8., the file is read
+as raw CP437 with no conversion -- fully backward compatible.
+
+
+Commonly Used CP437 Graphics
+-----------------------------
+In a UTF-8 source file, type the Unicode equivalent of any CP437 character
+and the compiler will convert it.  Here are the most commonly used ones:
+
+    CP437   Unicode   Description
+    -----   -------   -----------
+    0xB0    U+2591    LIGHT SHADE
+    0xB1    U+2592    MEDIUM SHADE
+    0xB2    U+2593    DARK SHADE
+    0xB3    U+2502    BOX DRAWINGS LIGHT VERTICAL
+    0xC4    U+2500    BOX DRAWINGS LIGHT HORIZONTAL
+    0xC5    U+253C    BOX DRAWINGS LIGHT VERTICAL AND HORIZONTAL
+    0xCD    U+2550    BOX DRAWINGS DOUBLE HORIZONTAL
+    0xDB    U+2588    FULL BLOCK
+    0xDC    U+2584    LOWER HALF BLOCK
+    0xDD    U+258C    LEFT HALF BLOCK
+    0xDE    U+2590    RIGHT HALF BLOCK
+    0xDF    U+2580    UPPER HALF BLOCK
+    0xFE    U+25A0    BLACK SQUARE
+
+All 128 CP437 high bytes (0x80-0xFF) and 32 control-character glyphs
+(0x01-0x1F) are supported -- a total of 168 canonical mappings plus 8
+alternative Unicode codepoints.  For the complete table, see the reference
+document docs/utf8.txt in the source tree.
+
+
+Characters That Are Not Allowed
+-------------------------------
+Certain Unicode characters that look similar to ASCII punctuation are
+blocked because they would break the game's pipe-code (|NN) and
+backtick-code (`XY) colour formatting:
+
+    Character               Use instead
+    ---------               -----------
+    Smart single quotes     ASCII apostrophe '
+    Smart double quotes     ASCII quotation mark "
+    Em dash                 -- (double hyphen)
+    En dash                 - (hyphen)
+
+These typically appear when text is copied from word processors.  The
+compiler prints an error with the line number and a suggestion.
+
+Any Unicode character that has no CP437 equivalent also produces an error:
+the compiler prints the codepoint (e.g., U+1F600) along with the filename
+and line number.
+
+
+Which Tools Support It
+----------------------
+All devkit compilers and the PAK builder support UTF-8 input:
+
+    ecomp       Event compiler       (.evt -> .e/.q)
+    langcomp    Language strings      (.txt -> .xl)
+    mcomp       Monster compiler     (.txt -> .mon)
+    makenpc     NPC compiler         (.txt -> .npc)
+    mclass      Class/race compiler  (.txt -> .cls)
+    mitems      Item compiler        (.txt -> .itm)
+    mspells     Spell compiler       (.txt -> .spl)
+    makepak     PAK builder          (text files in pak.lst)
+
+For makepak, list the .u8. filename in pak.lst and leave the alias
+unchanged:
+
+        menus.u8.hlp    /n/menus.hlp
+
+makepak converts the UTF-8 content to CP437 before packing, so the PAK
+contents are identical regardless of whether the source was CP437 or
+UTF-8.
+
+
 Event Files
 ===============================================================================
 NOTE:  Because you'll be creating modules, you'll often need to reset the game,
@@ -177,6 +283,7 @@ with a .E extension.  So, let's compile our first example.  Run this in DOS:
 
         ecomp event1.evt event1.e
 
+UTF-8 source files are supported; see section 0.3.
 
 When done, you should see the following on screen:
 
@@ -680,6 +787,8 @@ it like this:
 
         mcomp MYMON.TXT MYMON.MON
 
+UTF-8 source files are supported; see section 0.3.
+
 MYMON.MON can also be any valid filename.
 
 
@@ -724,6 +833,8 @@ make an NPC file, create a text file similar to npcs.txt and use makenpc
 to compile it:
 
         makenpc [infile.txt] [outfile.npc]
+
+UTF-8 source files are supported; see section 0.3.
 
 To add your new NPCs to the game, add this line to your clans.ini file:
 
@@ -1196,6 +1307,9 @@ NPC files, and INI files.  PAK files are created in the following manner:
            be PAKed into the file AI.PAK and be ready to be accessed by
            The Clans.
 
+UTF-8 source files are supported; see section 0.3.  List the .u8. filename
+in the left column of pak.lst and leave the PAKfile alias unchanged.  makepak
+converts the UTF-8 content to CP437 before packing.
 
 Now that we have the PAK file, you need to know how to access the files in it!
 Remember that we needed to name PAK files with the / as the first character?
@@ -1398,6 +1512,8 @@ format (strings.xl) used by the game engine at run time.
 
         langcomp <strings.txt> [strings.xl [mstrings.h]]
 
+UTF-8 source files are supported; see section 0.3.
+
 If only the first argument is given, langcomp derives the output name by
 replacing the .txt extension with .xl.  So running "langcomp strings" looks
 for strings.txt and produces strings.xl.  The optional third argument causes
@@ -1414,6 +1530,8 @@ mclass compiles player class and race definition files.  The same tool is
 used for both; only the input data differs.
 
         mclass <input.txt> <output.cls>
+
+UTF-8 source files are supported; see section 0.3.
 
 The standard data files are classes.txt and races.txt, compiled to
 classes.cls and races.cls respectively.  Up to 15 classes or races may be
@@ -1447,6 +1565,8 @@ for valid spell numbers.
 mitems compiles item definitions from a text file into a binary data file.
 
         mitems <input.txt> <output.itm>
+
+UTF-8 source files are supported; see section 0.3.
 
 The standard data file is items.txt, compiled to items.itm.  Up to 60 items
 may be defined in a single file (MAX_ITEMS).
@@ -1488,6 +1608,8 @@ future use).
 mspells compiles spell definitions from a text file into a binary data file.
 
         mspells <input.txt> <output.spl>
+
+UTF-8 source files are supported; see section 0.3.
 
 The standard data file is spells.txt, compiled to spells.spl.  Up to 40
 spells may be defined in a single file (MAX_SPELLS).

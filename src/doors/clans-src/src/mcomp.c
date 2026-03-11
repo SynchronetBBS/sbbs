@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "defines.h"
 #include "serialize.h"
+#include "u8cp437.h"
 #include "structs.h"
 #include "tools.h"
 
@@ -79,7 +80,8 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	fpMonIn = fopen(argv[1], "r");
+	int is_utf8;
+	fpMonIn = u8_fopen(argv[1], "r", &is_utf8);
 	if (!fpMonIn) {
 		printf("Error opening %s.\n", argv[1]);
 		exit(EXIT_FAILURE);
@@ -99,9 +101,10 @@ int main(int argc, char *argv[])
 
 	fwrite(MonIndex, sizeof(MonIndex), 1, fpMonOut);
 
+	int lineno = 0;
 	for (;;) {
 		/* read in a line */
-		if (fgets(szLine, 255, fpMonIn) == NULL) break;
+		if (u8_fgets(szLine, 255, fpMonIn, is_utf8, argv[1], &lineno) == NULL) break;
 
 		/* Ignore all of line after comments or CR/LF char */
 		pcCurrentPos=(char *)szLine;

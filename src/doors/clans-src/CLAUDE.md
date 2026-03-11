@@ -130,9 +130,8 @@ binary mode (`open(path, 'rb')` / `open(path, 'wb')`) via the Bash tool instead.
 
 | File | CP437 lines | Content |
 |------|-------------|---------|
-| `data/menus.hlp` | 100 | Main menu screens, box-drawing art |
+| `data/menus.hlp` | 120 | Main menu screens, welcome art, box-drawing art |
 | `data/strings.txt` | 74 | Language strings with dividers/bullets |
-| `data/clans.hlp` | 20 | General help, title ASCII art |
 | `data/npcquote.txt` | 14 | NPC quote data |
 | `data/pg.asc` | 9 | Page display art |
 | `data/pxtit.asc` | 9 | Title screen art |

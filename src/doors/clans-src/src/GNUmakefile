@@ -49,32 +49,33 @@ CONFIG_OBJS :=	$(OBJDIR)config.o $(OBJDIR)console.o \
 		$(OBJDIR)readcfg.o $(OBJDIR)video.o
 
 ECOMP_OBJS :=	$(OBJDIR)ecomp.o $(OBJDIR)parsing.o $(OBJDIR)platform.o \
-		$(OBJDIR)serialize.o
+		$(OBJDIR)serialize.o $(OBJDIR)u8cp437.o
 
 INSTALL_OBJS :=	$(OBJDIR)install.o  $(OBJDIR)console.o \
 		$(OBJDIR)gum.o $(OBJDIR)parsing.o \
 		$(OBJDIR)platform.o $(OBJDIR)video.o
 
-LANGCOMP_OBJS := $(OBJDIR)langcomp.o $(OBJDIR)serialize.o \
-		$(OBJDIR)platform.o 
+LANGCOMP_OBJS := $(OBJDIR)langcomp.o $(OBJDIR)platform.o \
+		$(OBJDIR)serialize.o $(OBJDIR)u8cp437.o
 
 MAKENPC_OBJS :=	$(OBJDIR)makenpc.o $(OBJDIR)parsing.o \
 		$(OBJDIR)platform.o $(OBJDIR)serialize.o \
+		$(OBJDIR)u8cp437.o
 
 MAKEPAK_OBJS :=	$(OBJDIR)makepak.o $(OBJDIR)parsing.o \
-		$(OBJDIR)platform.o $(OBJDIR)serialize.o
+		$(OBJDIR)platform.o $(OBJDIR)serialize.o $(OBJDIR)u8cp437.o
 
 MCLASS_OBJS :=	$(OBJDIR)mclass.o $(OBJDIR)platform.o \
-		$(OBJDIR)serialize.o
+		$(OBJDIR)serialize.o $(OBJDIR)u8cp437.o
 
 MCOMP_OBJS :=	$(OBJDIR)mcomp.o $(OBJDIR)platform.o \
-		$(OBJDIR)serialize.o $(OBJDIR)tools.o 
+		$(OBJDIR)serialize.o $(OBJDIR)tools.o $(OBJDIR)u8cp437.o
 
 MITEMS_OBJS :=	$(OBJDIR)mitems.o $(OBJDIR)platform.o \
-		$(OBJDIR)serialize.o $(OBJDIR)tools.o
+		$(OBJDIR)serialize.o $(OBJDIR)tools.o $(OBJDIR)u8cp437.o
 
 MSPELLS_OBJS :=	$(OBJDIR)mspells.o $(OBJDIR)platform.o \
-		$(OBJDIR)serialize.o $(OBJDIR)tools.o
+		$(OBJDIR)serialize.o $(OBJDIR)tools.o $(OBJDIR)u8cp437.o
 
 QTEST_OBJS := $(OBJDIR)qtest.o $(OBJDIR)clansini.o $(OBJDIR)console.o \
 		$(OBJDIR)deserialize.o $(OBJDIR)help.o \
@@ -107,7 +108,7 @@ $(OBJDIR)%.o: %.c | $(OBJDIR)
 # When cross-compiling, build just the native langcomp using the host compiler.
 # env - strips the CC override from MAKEFLAGS so the sub-make uses native GCC.
 ifndef NATIVE
-$(BINDIR)langcomp$(NATIVEEXEFILE): langcomp.c serialize.c platform.c
+$(BINDIR)langcomp$(NATIVEEXEFILE): langcomp.c platform.c serialize.c u8cp437.c
 	env - PATH="$(PATH)" $(MAKE) SRC=$(SRC) $(BINDIR)langcomp$(NATIVEEXEFILE)
 endif
 

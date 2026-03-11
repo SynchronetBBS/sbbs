@@ -14,6 +14,7 @@
 #include "serialize.h"
 #include "structs.h"
 #include "tools.h"
+#include "u8cp437.h"
 
 static struct Spell *Spells[MAX_SPELLS];
 
@@ -165,7 +166,8 @@ static void Init_Spells(char *szFileName)
 	int16_t CurSpell = -1;
 	int iTemp;
 
-	fpSpell = fopen(szFileName, "r");
+	int is_utf8;
+	fpSpell = u8_fopen(szFileName, "r", &is_utf8);
 	if (!fpSpell) {
 		printf("\aError opening spells file %s.\n", szFileName);
 		exit(EXIT_FAILURE);
@@ -175,9 +177,10 @@ static void Init_Spells(char *szFileName)
 	for (iTemp = 0; iTemp < MAX_SPELLS; iTemp++)
 		Spells[iTemp] = NULL;
 
+	int lineno = 0;
 	for (;;) {
 		/* read in a line */
-		if (fgets(szLine, 255, fpSpell) == NULL) break;
+		if (u8_fgets(szLine, 255, fpSpell, is_utf8, szFileName, &lineno) == NULL) break;
 
 		/* Ignore all of line after comments or CR/LF char */
 		pcCurrentPos=(char *)szLine;

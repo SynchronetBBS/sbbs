@@ -14,6 +14,7 @@
 #include "serialize.h"
 #include "structs.h"
 #include "tools.h"
+#include "u8cp437.h"
 
 #define NPCS_NOTHERE    0   // status of NPC, not here -- i.e. not in town
 #define NPCS_HERE       1
@@ -94,7 +95,8 @@ static void Init_Items(char *szFileName)
 	int iTemp;
 	char TypeOfStat=0;
 
-	fpItems = fopen(szFileName, "r");
+	int is_utf8;
+	fpItems = u8_fopen(szFileName, "r", &is_utf8);
 	if (!fpItems) {
 		printf("Error opening items file.\n");
 		exit(EXIT_FAILURE);
@@ -104,9 +106,10 @@ static void Init_Items(char *szFileName)
 	for (iTemp = 0; iTemp < MAX_ITEMS; iTemp++)
 		Items[iTemp] = NULL;
 
+	int lineno = 0;
 	for (;;) {
 		/* read in a line */
-		if (fgets(szLine, 255, fpItems) == NULL) break;
+		if (u8_fgets(szLine, 255, fpItems, is_utf8, szFileName, &lineno) == NULL) break;
 
 		/* Ignore all of line after comments or CR/LF char */
 		pcCurrentPos=(char *)szLine;

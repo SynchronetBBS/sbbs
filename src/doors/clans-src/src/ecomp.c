@@ -11,6 +11,7 @@
 #include "parsing.h"
 #include "serialize.h"
 #include "structs.h"
+#include "u8cp437.h"
 
 #define MAX_TOKEN_CHARS     32
 #define MAX_EVA_WORDS       34
@@ -100,7 +101,8 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	fpEvent = fopen(argv[1], "r");
+	int is_utf8;
+	fpEvent = u8_fopen(argv[1], "r", &is_utf8);
 	if (!fpEvent) {
 		printf("Error opening file\n");
 		return(1);
@@ -127,9 +129,7 @@ int main(int argc, char *argv[])
 	CommentOn = false;
 	for (;;) {
 		/* read in a line */
-		if (fgets(szLine, sizeof(szLine), fpEvent) == NULL) break;
-
-		CurLine++;
+		if (u8_fgets(szLine, sizeof(szLine), fpEvent, is_utf8, argv[1], &CurLine) == NULL) break;
 
 		/* Warn and drain if the line was too long to fit in szLine */
 		size_t len = strlen(szLine);

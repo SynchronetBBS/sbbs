@@ -40,6 +40,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "platform.h"
 
 #include "serialize.h"
+#include "u8cp437.h"
 
 void Convert(char *Dest, char *From);
 
@@ -94,7 +95,8 @@ int main(int argc, char *argv[])
 		writeHeader = 1;
 	}
 
-	fFrom = fopen(FromFile, "r");
+	int is_utf8;
+	fFrom = u8_fopen(FromFile, "r", &is_utf8);
 	if (!fFrom) {
 		printf("Error opening %s\n", FromFile);
 		exit(EXIT_FAILURE);
@@ -120,8 +122,9 @@ int main(int argc, char *argv[])
 	Language.NumBytes = 1;
 
 	// read through line by line
+	int lineno = 0;
 	for (;;) {
-		if (!fgets(TempString, 800, fFrom)) break;
+		if (!u8_fgets(TempString, 800, fFrom, is_utf8, FromFile, &lineno)) break;
 
 		if (TempString[0] == '#')   continue;       // skip if comment line
 		if (TempString[0] == ' ')   continue;       // skip if comment line
