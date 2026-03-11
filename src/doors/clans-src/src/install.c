@@ -49,7 +49,7 @@ char far *VideoMem;
 long y_lookup[25];
 #endif /* __MSDOS__ */
 int Overwrite = false;
-char szGumName[25], szIniName[25];
+char szGumName[PATH_SIZE], szIniName[PATH_SIZE];
 static int ini_is_utf8;
 
 struct FileInfo {
@@ -589,7 +589,8 @@ static void InitFiles(char *szFileName)
 
 	// found file list, retrieve filenames and file types
 	CurFile = 0;
-	while (!Done && CurFile < MAX_FILES) {
+	int skipped = 0;
+	while (!Done) {
 		if (!u8_fgets(szString, 128, fpInput,
 			      ini_is_utf8, szIniName, &lineno))
 			break;
@@ -601,18 +602,30 @@ static void InitFiles(char *szFileName)
 		if (szString[0] == ':')
 			break;
 
-		// found another filename, copy it over
+		// found another filename
 		// x filename
 		// 0123456789...
-		FileInfo[CurFile].szFileName = strdup(&szString[2]);
-		FileInfo[CurFile].WriteType = QUERY;
+		if (CurFile < MAX_FILES) {
+			FileInfo[CurFile].szFileName = strdup(&szString[2]);
+			FileInfo[CurFile].WriteType = QUERY;
 
-		if (szString[0] == 'o')
-			FileInfo[CurFile].WriteType = OVERWRITE;
-		else if (szString[0] == 's')
-			FileInfo[CurFile].WriteType = SKIP;
+			if (szString[0] == 'o')
+				FileInfo[CurFile].WriteType = OVERWRITE;
+			else if (szString[0] == 's')
+				FileInfo[CurFile].WriteType = SKIP;
 
-		CurFile++;
+			CurFile++;
+		} else {
+			skipped++;
+		}
+	}
+
+	if (skipped > 0) {
+		char szWarn[80];
+		snprintf(szWarn, sizeof(szWarn),
+			 "|12Warning: %d manifest entr%s ignored (limit is %d).\n",
+			 skipped, skipped == 1 ? "y" : "ies", MAX_FILES);
+		zputs(szWarn);
 	}
 
 	fclose(fpInput);

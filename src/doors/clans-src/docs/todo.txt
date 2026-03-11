@@ -10,7 +10,6 @@ Open Issues
 ===========
 Charisma stat has no combat or empire effect ..................   1.1
 Clean up mstrings.h GNUmakefile dependencies ..................   1.2
-install: silent truncation of GUM and INI filenames ...........   1.5
 Village types defined but never assigned ......................   1.7
 Create shared mock library files for unit tests ...............   1.9
 mail.c: Mail_Maint() -- expire messages by age .................  1.10
@@ -45,14 +44,6 @@ data/GNUmakefile both grew organically to solve the chicken-and-egg problem of
 langcomp needing to exist before mstrings.h can be generated.  The current
 approach works but could be cleaner -- the NATIVEEXEFILE computation and the
 filter-out workaround for shared langcomp objects are worth revisiting.
-
-[1.5]  install: silent truncation of GUM and INI filenames
--------------------------------------------------------------------------------
-The GUM filename (! line) and INI filename (command argument) are stored
-in 25-byte buffers and silently truncated via strlcpy if they exceed 24
-characters.  Manifest entries beyond the 75th are also silently ignored.
-These should produce warnings.
-Source: install.c lines 51, 147, 1023.
 
 [1.7]  Village types defined but never assigned
 -------------------------------------------------------------------------------
