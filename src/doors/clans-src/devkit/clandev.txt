@@ -172,7 +172,7 @@ and the compiler will convert it.  Here are the most commonly used ones:
 All 128 CP437 high bytes (0x80-0xFF) and 32 control-character glyphs
 (0x01-0x1F) are supported -- a total of 168 canonical mappings plus 8
 alternative Unicode codepoints.  For the complete table, see the reference
-document docs/utf8.txt in the source tree.
+document utf8.txt (included with the devkit).
 
 
 Characters That Are Not Allowed
@@ -1394,8 +1394,8 @@ is none.  They sounded good, ok? ;-)
 INI File Format
 ---------------
 The INI file tells the installer what to display and which files to
-extract.  See example.u8.ini for a working template; clandev.u8.ini and
-install.u8.ini are also useful references.
+extract.  See example.ini for a working template; clandev.ini and
+install.ini are also useful references.
 
 Every line in an INI file is one of four types:
 
@@ -1406,6 +1406,16 @@ Every line in an INI file is one of four types:
 
 Lines before the first : section are ignored by the installer.  Use
 them as comments.
+
+If the very first line of the INI file is:
+
+        # encoding: utf-8
+
+the installer treats the file as UTF-8 and converts box-drawing
+characters, block elements, and other CP437-compatible glyphs to
+their single-byte CP437 equivalents before display.  Without the
+marker, the file is read as raw bytes (CP437).  See utf8.txt for
+the complete list of supported Unicode codepoints.
 
 
 Section Names

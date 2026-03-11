@@ -14,9 +14,6 @@ install: rename prompt limited to 13 characters ...............   1.4
 install: silent truncation of GUM and INI filenames ...........   1.5
 Village types defined but never assigned ......................   1.7
 Dead and orphaned help-file topics ............................   1.8
-UTF-8 source file support for devkit compilers ................   1.9
-Convert stock CP437 data files to UTF-8 .......................  1.10
-UTF-8 support for install.c ...................................  1.11
 
 
 
@@ -107,28 +104,3 @@ into the elimination code path so it is actually shown; (c) update the
 stale clans.hlp topics or remove the ones that duplicate information
 available elsewhere.
 
-[1.9]  UTF-8 source file support for devkit compilers
--------------------------------------------------------------------------------
-Add a shared u8cp437.c module with a reverse lookup table (Unicode -> CP437),
-u8_fopen() to probe for .u8. variant files, and u8_fgets() to convert UTF-8
-lines to CP437 on read.  Modify 7 devkit compilers (langcomp, mcomp, mitems,
-mspells, mclass, ecomp, makenpc) and makepak to auto-detect UTF-8 source
-files and convert to CP437 at compile/pack time.  Game runtime unchanged.
-Full design reference in docs/utf8.txt.
-
-[1.10]  Convert stock CP437 data files to UTF-8
--------------------------------------------------------------------------------
-Done.  All 10 stock CP437 text files converted to UTF-8 with .u8. naming.
-The 7 data/ files are wired into the build (data/GNUmakefile, data/pak.lst);
-the 3 installer .ini files are created but not wired in (see [1.11]).
-Binary output verified byte-identical (strings.xl, npcquote.q, spells.spl,
-clans.npc, clans.pak, mstrings.h).  Build system updated: data/GNUmakefile,
-data/pak.lst, root GNUmakefile devkit target, devkit/genall.mak,
-devkit/genall.bat.  Original CP437 files deleted (available in git history).
-
-[1.11]  UTF-8 support for install.c
--------------------------------------------------------------------------------
-Extend .u8. file detection to install.c, which reads .ini files containing
-CP437 (installer/install.u8.ini has 1 CP437 line, installerdk/clandev.u8.ini
-has 13).  Deferred from [1.9] because install is a standalone tool, not a devkit
-compiler.

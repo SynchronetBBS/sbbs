@@ -1,131 +1,87 @@
 UTF-8 Source File Support
 -------------------------------------------------------------------------------
-Reference for the CP437-to-Unicode mapping used by the devkit compilers'
-UTF-8 input mode.  See also: src/video.c cp437_unicode_table (line 1519).
+Complete reference for Unicode characters supported in UTF-8 source files.
+All devkit compilers, makepak, and the installer convert UTF-8 to CP437
+automatically -- the game always receives CP437 at runtime.
+
+For a quick introduction with examples, see clandev.txt section 0.3.
 
 
 [0.0]  Table of Contents
 -------------------------------------------------------------------------------
 
-Reference
-=========
-Design decisions .................................................   1.1
-File naming convention ...........................................   1.2
-Which tools are affected .........................................   1.3
-CP437 bytes actually used in stock files .........................   1.4
+Using UTF-8
+===========
+How to enable UTF-8 ...............................................   1.1
+Characters that are not allowed ...................................   1.2
 
-Mapping Tables
-==============
-Reverse mapping: Unicode -> CP437 ................................   2.1
-High-byte canonical table (128 entries) ..........................   2.2
-Control-character glyphs (32 entries) ............................   2.3
-Alternative codepoints accepted silently .........................   2.4
-Blocked codepoints (error) .......................................   2.5
-
-Implementation
-==============
-Conversion rules .................................................   3.1
-FreeBSD / tooling notes ..........................................   4.1
+Supported Characters
+====================
+High-byte table (128 entries, CP437 0x80-0xFF) ....................   2.1
+Control-character glyphs (32 entries, CP437 0x01-0x1F + 0x7F) .....   2.2
+Alternative codepoints accepted silently ..........................   2.3
 
 
-Reference
+Using UTF-8
 ===============================================================================
 
-[1.1]  Design decisions
+[1.1]  How to enable UTF-8
 -------------------------------------------------------------------------------
-- CP437 is the default encoding (backward compatible with all existing files).
-- UTF-8 is opt-in via a .u8. compound extension (e.g., strings.u8.txt).
-- Devkit compilers and makepak detect .u8. files and convert UTF-8 to CP437
-  at compile/pack time.  The game runtime is unchanged -- compiled output and
-  pak contents remain CP437.
-- Error on smart quotes and dashes (they break pipe/backtick colour codes).
-- Accept known alternative Unicode codepoints for ambiguous CP437 mappings.
-- Support the full CP437 codespace including control-character glyphs
-  (0x01-0x1F, 0x7F).
+There are two ways to tell the tools that a source file is UTF-8:
+
+1.  Name the file with .u8. before the final extension:
+
+        myquest.u8.evt      (instead of myquest.evt)
+        spells.u8.txt       (instead of spells.txt)
+
+    The compiler detects the .u8. in the filename and converts each
+    line from UTF-8 to CP437.  If the filename does not contain .u8.,
+    the file is read as raw CP437 with no conversion.  This method
+    works with all devkit compilers and makepak.
+
+2.  Add a marker comment as the very first line of the file:
+
+        # encoding: utf-8
+
+    This method is used by installer INI files.  The installer detects
+    the marker and converts UTF-8 to CP437 before display.
+
+In a UTF-8 source file, type the Unicode equivalent of any CP437
+character and the tool will convert it to the correct CP437 byte.
+ASCII characters (letters, digits, punctuation) pass through unchanged.
+
+The compiled output is always CP437 -- identical to what you would get
+from a hand-written CP437 source file.
 
 
-[1.2]  File naming convention
+[1.2]  Characters that are not allowed
 -------------------------------------------------------------------------------
-Given a source file foo.txt, the UTF-8 version is named foo.u8.txt.
+Certain Unicode characters that look similar to ASCII punctuation are
+blocked because they would break the game's pipe-code (|NN) and
+backtick-code (`XY) colour formatting.  The compiler will print an
+error with a suggested replacement:
 
-The tool is invoked with the original name (foo.txt).  The u8_fopen() helper
-probes for foo.u8.txt first; if found, it reads in UTF-8 mode.  If not found,
-it falls back to foo.txt in CP437 mode (no conversion).
+    Character               Use instead
+    ---------               -----------
+    U+2018  left single     ASCII apostrophe '
+    U+2019  right single    ASCII apostrophe '
+    U+201C  left double     ASCII quotation mark "
+    U+201D  right double    ASCII quotation mark "
+    U+2014  em-dash         -- (double hyphen)
+    U+2013  en-dash         - (hyphen)
 
-This applies to all extensions: .txt, .hlp, .asc, .ini, .evt.
+These characters often appear when pasting text from a word processor.
+Replace them with the ASCII equivalents shown above.
 
-If both files exist, the .u8. variant takes priority.  The original CP437
-file can be kept as a reference or deleted.
-
-
-[1.3]  Which tools are affected
--------------------------------------------------------------------------------
-Devkit compilers (read text source, produce binary output):
-
-    Tool        Source file     Input file(s)
-    --------    -----------     -------------------
-    langcomp    langcomp.c      strings.u8.txt
-    mcomp       mcomp.c         monsters.txt
-    mitems      mitems.c        items.txt
-    mspells     mspells.c       spells.u8.txt
-    mclass      mclass.c        classes.txt
-    ecomp       ecomp.c         *.evt event scripts
-    makenpc     makenpc.c       npcquote.u8.txt
-
-Pak builder (copies text files verbatim into pak):
-
-    makepak     makepak.c       files listed in pak.lst
-
-Not affected:
-
-    chew        chew.c          Reads manifest + binary files only
-    install     install.c       Reads .ini; possible future extension
-    Game runtime                No changes; compiled output stays CP437
+Any Unicode codepoint not listed in the tables below (and not in the
+blocked list above) will also produce an error:  "U+XXXX has no CP437
+equivalent".
 
 
-[1.4]  CP437 bytes actually used in stock files
--------------------------------------------------------------------------------
-Only 17 of 128 possible high bytes appear in the 10 stock CP437 text files.
-All are box-drawing, block elements, or symbols -- none of the ambiguous
-letter-like mappings (sharp-s/beta, micro/mu, phi/empty-set,
-epsilon/element-of) are used.
-
-    CP437   Unicode   Category
-    -----   -------   --------
-    0xAF    U+00BB    RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK
-    0xB0    U+2591    LIGHT SHADE
-    0xB1    U+2592    MEDIUM SHADE
-    0xB2    U+2593    DARK SHADE
-    0xB3    U+2502    BOX DRAWINGS LIGHT VERTICAL
-    0xC4    U+2500    BOX DRAWINGS LIGHT HORIZONTAL
-    0xC5    U+253C    BOX DRAWINGS LIGHT VERT AND HORIZONTAL
-    0xCD    U+2550    BOX DRAWINGS DOUBLE HORIZONTAL
-    0xDB    U+2588    FULL BLOCK
-    0xDC    U+2584    LOWER HALF BLOCK
-    0xDD    U+258C    LEFT HALF BLOCK
-    0xDE    U+2590    RIGHT HALF BLOCK
-    0xDF    U+2580    UPPER HALF BLOCK
-    0xFA    U+2219    BULLET OPERATOR
-    0xFC    U+207F    SUPERSCRIPT LATIN SMALL LETTER N
-    0xFD    U+00B2    SUPERSCRIPT TWO
-    0xFE    U+25A0    BLACK SQUARE
-
-
-Mapping Tables
+Supported Characters
 ===============================================================================
 
-[2.1]  Reverse mapping: Unicode -> CP437
--------------------------------------------------------------------------------
-The reverse mapping (Unicode codepoint -> CP437 byte) is used by
-u8_to_cp437() to convert UTF-8 text to CP437.
-
-Total: 168 canonical entries + 8 alternatives = 176 reverse table entries.
-
-Source for high-byte entries: cp437_unicode_table[128] in src/video.c
-(line 1519).  Source for control-character glyphs: standard CP437 chart.
-
-
-[2.2]  High-byte canonical table (128 entries, CP437 0x80-0xFF)
+[2.1]  High-byte table (128 entries, CP437 0x80-0xFF)
 -------------------------------------------------------------------------------
     CP437   Unicode   Name
     -----   -------   ----
@@ -259,12 +215,12 @@ Source for high-byte entries: cp437_unicode_table[128] in src/video.c
     0xFF    U+00A0    NO-BREAK SPACE
 
 
-[2.3]  Control-character glyphs (32 entries, CP437 0x01-0x1F + 0x7F)
+[2.2]  Control-character glyphs (32 entries, CP437 0x01-0x1F + 0x7F)
 -------------------------------------------------------------------------------
-In CP437, bytes 0x01-0x1F display as graphical glyphs rather than control
-characters.  In UTF-8 source files, these glyphs are represented by their
-Unicode equivalents.  rputs() does not intercept these bytes (only |, `, %,
-\n); od_disp() sends them raw to the terminal.
+In CP437, bytes 0x01-0x1F display as graphical glyphs rather than
+control characters.  In UTF-8 source files, use the Unicode equivalents
+listed below.  Tabs (0x09), newlines (0x0A), and carriage returns (0x0D)
+work normally in UTF-8 files -- they are not converted to glyphs.
 
     CP437   Unicode   Name
     -----   -------   ----
@@ -301,18 +257,12 @@ Unicode equivalents.  rputs() does not intercept these bytes (only |, `, %,
     0x1F    U+25BC    BLACK DOWN-POINTING TRIANGLE
     0x7F    U+2302    HOUSE
 
-Note: raw control bytes (0x01-0x1F, 0x7F) in a UTF-8 file pass through
-as-is.  Only the Unicode glyph equivalents listed above trigger conversion.
-This means 0x09 (tab), 0x0A (newline), 0x0D (carriage return) work normally
-in UTF-8 files -- they are NOT converted to white circle / inverse white
-circle / eighth note.
 
-
-[2.4]  Alternative codepoints accepted silently
+[2.3]  Alternative codepoints accepted silently
 -------------------------------------------------------------------------------
-These Unicode codepoints are visual or semantic equivalents of existing
-CP437 mappings.  The converter accepts them without warning, mapping to the
-same CP437 byte as the canonical codepoint.
+Some CP437 characters have more than one plausible Unicode equivalent.
+The converter accepts the alternatives listed below without warning,
+mapping them to the same CP437 byte as the canonical codepoint.
 
     Alternative   Canonical   CP437   Note
     -----------   ---------   -----   ----
@@ -324,65 +274,3 @@ same CP437 byte as the canonical codepoint.
     U+00D8        U+03C6      0xED    O-stroke -> phi (visual similarity)
     U+03D5        U+03C6      0xED    Phi symbol -> phi
     U+2300        U+03C6      0xED    Diameter sign -> phi
-
-
-[2.5]  Blocked codepoints (error with helpful message)
--------------------------------------------------------------------------------
-These Unicode codepoints could plausibly appear via copy-paste from word
-processors.  They are blocked because they would break the game's pipe-code
-(|XX) and backtick-code (`XY) colour formatting.
-
-    Codepoint   Error message
-    ---------   -------------
-    U+2018      use ASCII apostrophe ' instead
-    U+2019      use ASCII apostrophe ' instead
-    U+201C      use ASCII quotation mark " instead
-    U+201D      use ASCII quotation mark " instead
-    U+2014      use -- (double hyphen) instead
-    U+2013      use - (hyphen) instead
-
-
-Implementation
-===============================================================================
-
-[3.1]  Conversion rules
--------------------------------------------------------------------------------
-When a .u8. file is detected, the converter processes each line after
-fgets():
-
-1. Bytes 0x00-0x7F: pass through unchanged (identical in ASCII/UTF-8/CP437).
-   This includes tabs (0x09), newlines (0x0A), and carriage returns (0x0D).
-
-2. Multi-byte UTF-8 sequences (leading byte 0xC0-0xF4): decode the Unicode
-   codepoint, look up in the reverse table.
-   - Found in canonical or alternative table -> emit single CP437 byte.
-   - Found in blocked table -> print error with suggestion, abort.
-   - Not found -> print error ("U+XXXX has no CP437 equivalent"), abort.
-
-3. Invalid UTF-8 (unexpected continuation byte 0x80-0xBF without a leading
-   byte, truncated sequence, overlong encoding, codepoints above U+10FFFF)
-   -> print error ("invalid UTF-8 at byte offset N"), abort.
-
-The conversion always shrinks or preserves buffer length (multi-byte UTF-8
-sequences become single CP437 bytes), so it can be done in-place.
-
-
-[4.1]  FreeBSD / tooling notes
--------------------------------------------------------------------------------
-Commands and tools that work correctly on this platform:
-
-    LANG=C ggrep -cP '[\x80-\xFF]' <file>
-        Count lines containing CP437 high bytes.
-        MUST use LANG=C to prevent UTF-8 locale from masking matches.
-        MUST use ggrep (GNU grep), not system grep (BSD, lacks -P).
-
-    python3 -c "open('file','rb').read()"
-        Read/write CP437 files safely.  Always use 'rb'/'wb' mode.
-
-    NEVER use Claude Code Read/Edit/Write tools on CP437 files.
-        They interpret as UTF-8 and corrupt every byte >= 0x80 to U+FFFD
-        (3-byte sequence 0xEF 0xBF 0xBD).  This has caused data loss.
-
-    Claude Code Read tool strips UTF-8 BOM (0xEF 0xBB 0xBF).
-        BOM-based encoding detection is unreliable.  Use .u8. file
-        extension convention instead.

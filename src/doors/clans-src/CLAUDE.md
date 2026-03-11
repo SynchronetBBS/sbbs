@@ -120,7 +120,7 @@ overriding parent's `eol=crlf`); `*.ans -text !eol` (binary).
 
 ### CP437 encoding and UTF-8 equivalents
 
-Ten stock data files that formerly contained raw CP437 bytes have been
+Seven stock data files that formerly contained raw CP437 bytes have been
 converted to UTF-8 with `.u8.` in the filename (e.g., `data/menus.u8.hlp`).
 The original CP437 files have been deleted (available in git history).
 The build system compiles exclusively from the `.u8.` files.
@@ -136,9 +136,16 @@ These files are valid UTF-8 and safe with Read, Edit, and Write tools:
 | `data/pxtit.u8.asc` | Title screen art |
 | `data/spells.u8.txt` | Spell data with decorative chars |
 | `data/clans.u8.txt` | NPC definitions with bullet chars |
-| `installerdk/clandev.u8.ini` | Devkit installer, ANSI art banner |
-| `devkit/example.u8.ini` | Example config, box-drawing dividers |
-| `installer/install.u8.ini` | Game installer, ANSI art line |
+
+Three installer `.ini` files also contain UTF-8 but use a first-line
+`# encoding: utf-8` marker instead of the `.u8.` naming convention.
+install.c detects the marker and converts UTF-8→CP437 via `u8_fgets()`:
+
+| File | Content |
+|------|---------|
+| `installer/install.ini` | Game installer, ANSI art line |
+| `installerdk/clandev.ini` | Devkit installer, ANSI art banner |
+| `devkit/example.ini` | Example config, box-drawing dividers |
 
 The following files have **no UTF-8 equivalent** — always use Python binary mode:
 

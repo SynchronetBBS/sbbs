@@ -53,7 +53,7 @@ ECOMP_OBJS :=	$(OBJDIR)ecomp.o $(OBJDIR)parsing.o $(OBJDIR)platform.o \
 
 INSTALL_OBJS :=	$(OBJDIR)install.o  $(OBJDIR)console.o \
 		$(OBJDIR)gum.o $(OBJDIR)parsing.o \
-		$(OBJDIR)platform.o $(OBJDIR)video.o
+		$(OBJDIR)platform.o $(OBJDIR)u8cp437.o $(OBJDIR)video.o
 
 LANGCOMP_OBJS := $(OBJDIR)langcomp.o $(OBJDIR)platform.o \
 		$(OBJDIR)serialize.o $(OBJDIR)u8cp437.o

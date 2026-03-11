@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 // UTF-8 to CP437 conversion for devkit compilers.
-// See docs/utf8.txt for the full mapping reference.
+// See devkit/utf8.txt for the full mapping reference.
 
 #include <stdio.h>
 #include <stdlib.h>

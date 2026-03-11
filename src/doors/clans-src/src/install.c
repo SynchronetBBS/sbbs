@@ -13,6 +13,7 @@
 #include "defines.h"
 #include "gum.h"
 #include "parsing.h"
+#include "u8cp437.h"
 #include "video.h"
 
 #ifndef __MSDOS__
@@ -49,6 +50,7 @@ long y_lookup[25];
 #endif /* __MSDOS__ */
 int Overwrite = false;
 char szGumName[25], szIniName[25];
+static int ini_is_utf8;
 
 struct FileInfo {
 	char *szFileName;
@@ -75,14 +77,17 @@ static void Display(char *szFileName)
 	FILE *fpInput;
 	char szString[300];
 	bool FileFound = false, Done = false;
-	int CurLine;
+	int CurLine, lineno = 0;
+	int is_utf8 = ini_is_utf8;
+	const char *filename = szIniName;
 
 	fpInput = fopen(szIniName, "r");
 	if (!fpInput)   return;
 
 	// search for filename
 	for (;;) {
-		if (!fgets(szString, sizeof(szString), fpInput))
+		if (!u8_fgets(szString, sizeof(szString), fpInput,
+			      is_utf8, filename, &lineno))
 			break;
 
 		// get rid of \n and \r
@@ -105,11 +110,15 @@ static void Display(char *szFileName)
 			zputs("|04File to display not found\n");
 			return;
 		}
+		is_utf8 = 0;
+		filename = szFileName;
+		lineno = 0;
 	}
 	// print file
 	CurLine = 0;
 	while (!Done) {
-		if (!fgets(szString, sizeof(szString), fpInput))
+		if (!u8_fgets(szString, sizeof(szString), fpInput,
+			      is_utf8, filename, &lineno))
 			break;
 
 		if (szString[0] == ':')
@@ -128,6 +137,25 @@ static void Display(char *szFileName)
 	}
 
 	fclose(fpInput);
+}
+
+static void detect_utf8_marker(void)
+{
+	FILE *fp;
+	char line[32];
+
+	fp = fopen(szIniName, "r");
+	if (!fp)
+		return;
+
+	if (fgets(line, sizeof(line), fp)) {
+		size_t len = strlen(line);
+		while (len > 0 && (line[len-1] == '\n' || line[len-1] == '\r'))
+			line[--len] = '\0';
+		if (strcasecmp(line, "# encoding: utf-8") == 0)
+			ini_is_utf8 = 1;
+	}
+	fclose(fp);
 }
 
 static void SystemInit(void)
@@ -151,6 +179,7 @@ int main(int argc, char **argv)
 	}
 
 	SystemInit();
+	detect_utf8_marker();
 	clrscr();
 
 	gotoxy(0, 0);
@@ -522,7 +551,7 @@ static void InitFiles(char *szFileName)
 	FILE *fpInput;
 	char szString[PATH_SIZE + 2];
 	bool FileFound = false, Done = false;
-	int CurFile;
+	int CurFile, lineno = 0;
 
 	FreeFiles();
 
@@ -537,7 +566,8 @@ static void InitFiles(char *szFileName)
 
 	// search for filename
 	for (;;) {
-		if (!fgets(szString, sizeof(szString), fpInput))
+		if (!u8_fgets(szString, sizeof(szString), fpInput,
+			      ini_is_utf8, szIniName, &lineno))
 			break;
 
 		// get rid of \n and \r
@@ -558,7 +588,8 @@ static void InitFiles(char *szFileName)
 	// found file list, retrieve filenames and file types
 	CurFile = 0;
 	while (!Done && CurFile < MAX_FILES) {
-		if (!fgets(szString, 128, fpInput))
+		if (!u8_fgets(szString, 128, fpInput,
+			      ini_is_utf8, szIniName, &lineno))
 			break;
 
 		// get rid of \n and \r
@@ -999,6 +1030,7 @@ static void GetGumName(void)
 	// init files to be installed
 	FILE *fpInput;
 	char szString[PATH_SIZE + 1];
+	int lineno = 0;
 
 	FreeFiles();
 
@@ -1013,7 +1045,8 @@ static void GetGumName(void)
 
 	// search for filename
 	for (;;) {
-		if (!fgets(szString, sizeof(szString), fpInput)) {
+		if (!u8_fgets(szString, sizeof(szString), fpInput,
+			      ini_is_utf8, szIniName, &lineno)) {
 			zputs("\n|12Couldn't get GUM filename\n");
 			reset_attribute();
 			Video_Close();

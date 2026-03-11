@@ -943,7 +943,7 @@ A devkit installation requires:
               mcomp, mclass, mitems, mspells, qtest
   Docs:       devkit/*.txt  (tool reference documentation)
   Examples:   devkit/event1.evt through event5.evt
-              devkit/example.u8.ini
+              devkit/example.ini
 
 For the copyright notice, use:
   "Originally copyright 1997-2002 Allen Ussher.  Open source
