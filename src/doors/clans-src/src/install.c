@@ -91,9 +91,11 @@ static void Display(char *szFileName)
 			break;
 
 		// get rid of \n and \r
-		size_t len;
-		while ((len = strlen(szString) > 0) && (szString[ len - 1] == '\n' || szString[ len - 1] == '\r'))
+		size_t len = strlen(szString);
+		while (len > 0 && (szString[ len - 1] == '\n' || szString[ len - 1] == '\r')) {
 			szString[ len - 1] = 0;
+			len--;
+		}
 
 		if (szString[0] == ':' && strcasecmp(szFileName, &szString[1]) == 0) {
 			FileFound = true;
