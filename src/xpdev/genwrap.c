@@ -235,6 +235,9 @@ char* c_unescape_str(char* str)
 	char* src = str;
 	char* dst = str;
 
+	if (str == NULL)
+		return NULL;
+
 	while ((ch = *(src++)) != '\0') {
 		if (ch == '\\')    /* escape */
 			ch = c_unescape_char_ptr(src, &src);
