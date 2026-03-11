@@ -7,3 +7,4 @@ src/Win32_Release
 src/mstrings.h
 tests/tmp
 test
+.claude
