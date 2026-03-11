@@ -241,7 +241,7 @@ uint sbbs_t::gettimeleft(bool handle_out_of_time)
 					return timeleft;
 				}
 			}
-			if (cfg.sys_misc & SM_TIME_EXP && !(sys_status & SS_EVENT)
+			if (cfg.sys_misc & SM_TIME_EXP && (sys_status & (SS_EVENT | SS_USERON)) == SS_USERON
 			    && !(useron.exempt & FLAG('E'))) {
 				/* set to expired values */
 				bputs(text[AccountHasExpired]);
