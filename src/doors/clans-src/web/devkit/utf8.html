@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>THE CLANS — UTF-8 Source File Reference</title>
+<link rel="stylesheet" href="../clans.css">
+<style>
+  .wrapper { --sidebar-w: 240px; --max-w: 1200px; }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="topnav">
+  <a class="topnav-brand" href="../index.html">&#9876; THE CLANS</a>
+  <div class="topnav-links">
+    <a href="../index.html">Home</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">Player Guide</span>
+      <div class="topnav-menu">
+        <a href="../player/index.html">All Chapters</a>
+        <div class="menu-group">BASICS</div>
+        <a href="../player/getting-started.html">Getting Started</a>
+        <a href="../player/pre-game.html">Pre-Game Menu</a>
+        <a href="../player/main-game.html">Main Game Menu</a>
+        <div class="menu-group">ADVENTURE</div>
+        <a href="../player/mines.html">The Mines</a>
+        <a href="../player/combat.html">Combat</a>
+        <a href="../player/stats.html">Character Stats</a>
+        <div class="menu-group">ECONOMY</div>
+        <a href="../player/market.html">The Market</a>
+        <a href="../player/items.html">Items &amp; Equipment</a>
+        <a href="../player/magic.html">Magic</a>
+        <div class="menu-group">VILLAGE</div>
+        <a href="../player/training.html">Training Hall</a>
+        <a href="../player/church.html">The Church</a>
+        <a href="../player/town-hall.html">Town Hall</a>
+        <div class="menu-group">STRATEGY</div>
+        <a href="../player/empires.html">Empires</a>
+        <a href="../player/alliances.html">Alliances</a>
+        <div class="menu-group">WORLD</div>
+        <a href="../player/communications.html">Communications</a>
+        <a href="../player/npcs.html">NPCs</a>
+        <a href="../player/travel.html">World Travel</a>
+        <a href="../player/scoring.html">Scoring</a>
+        <a href="../player/misc.html">Miscellaneous</a>
+      </div>
+    </div>
+    <div class="topnav-drop">
+      <span class="topnav-label">Sysop Docs</span>
+      <div class="topnav-menu">
+        <a href="../sysop/index.html">Sysop Documentation</a>
+        <a href="questgen.html">Quest Generator</a>
+      </div>
+    </div>
+    <div class="topnav-drop">
+      <span class="topnav-label active">DevKit</span>
+      <div class="topnav-menu">
+        <a href="index.html">PAK Development</a>
+        <a href="questgen.html">Quest Generator</a>
+        <a href="utf8.html">UTF-8 Reference</a>
+      </div>
+    </div>
+    <a href="../developer/index.html">Developer</a>
+    <a href="../whatsnew.html">What's New</a>
+  </div>
+</div>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div>
+      <div class="header-title">&#9881; UTF-8 SOURCE FILE REFERENCE</div>
+      <div class="header-sub">v0.97b2 &middot; Unicode to CP437 mapping for devkit source files</div>
+    </div>
+  </header>
+
+  <!-- SIDEBAR NAV -->
+  <nav>
+    <div class="nav-group-label">USING UTF-8</div>
+    <a href="#enable"><span class="sec-id">1.1</span>How to Enable UTF-8</a>
+    <a href="#blocked"><span class="sec-id">1.2</span>Blocked Characters</a>
+
+    <div class="nav-group-label">SUPPORTED CHARACTERS</div>
+    <a href="#highbyte"><span class="sec-id">2.1</span>High-Byte Table (0x80&ndash;0xFF)</a>
+    <a href="#ctrlglyphs"><span class="sec-id">2.2</span>Control Glyphs (0x01&ndash;0x1F)</a>
+    <a href="#altcodes"><span class="sec-id">2.3</span>Alternative Codepoints</a>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main>
+
+    <!-- 1.1 HOW TO ENABLE UTF-8 -->
+    <div class="doc-section" id="enable">
+      <div class="section-id">[1.1]</div>
+      <h2>How to Enable UTF-8</h2>
+      <p>There are two ways to tell the devkit tools that a source file is UTF-8:</p>
+
+      <h3>Method 1: .u8. in the filename</h3>
+      <p>Name the file with <code>.u8.</code> before the final extension:</p>
+      <pre>myquest.u8.evt      (instead of myquest.evt)
+spells.u8.txt       (instead of spells.txt)</pre>
+      <p>The compiler detects the <code>.u8.</code> in the filename and converts each line from UTF-8 to CP437. If the filename does not contain <code>.u8.</code>, the file is read as raw CP437 with no conversion. This method works with all devkit compilers and <code>makepak</code>.</p>
+
+      <h3>Method 2: encoding marker comment</h3>
+      <p>Add a marker comment as the very first line of the file:</p>
+      <pre># encoding: utf-8</pre>
+      <p>This method is used by installer INI files. The installer detects the marker and converts UTF-8 to CP437 before display.</p>
+
+      <div class="callout">
+        <strong>NOTE:</strong> The compiled output is always CP437 &mdash; identical to what a CP437 source file would produce. ASCII characters (letters, digits, punctuation) pass through unchanged.
+      </div>
+    </div>
+
+    <!-- 1.2 CHARACTERS THAT ARE NOT ALLOWED -->
+    <div class="doc-section" id="blocked">
+      <div class="section-id">[1.2]</div>
+      <h2>Characters That Are Not Allowed</h2>
+      <p>Certain Unicode characters that look similar to ASCII punctuation are blocked because they would break the game's pipe-code (<code>|NN</code>) and backtick-code (<code>`XY</code>) colour formatting. The compiler will print an error with a suggested replacement.</p>
+      <table class="cmd-ref">
+        <tr><th>Character</th><th>Use instead</th></tr>
+        <tr><td>U+2018 left single quotation mark / U+2019 right single quotation mark</td><td>ASCII apostrophe <code>'</code></td></tr>
+        <tr><td>U+201C left double quotation mark / U+201D right double quotation mark</td><td>ASCII quotation mark <code>"</code></td></tr>
+        <tr><td>U+2014 em-dash</td><td><code>--</code> (double hyphen)</td></tr>
+        <tr><td>U+2013 en-dash</td><td><code>-</code> (hyphen)</td></tr>
+      </table>
+      <p>These characters often appear when pasting text from a word processor. Replace them with the ASCII equivalents shown above.</p>
+      <p>Any Unicode codepoint not listed in the tables below (and not in the blocked list above) will also produce an error: <code>U+XXXX has no CP437 equivalent</code>.</p>
+    </div>
+
+    <!-- 2.1 HIGH-BYTE TABLE -->
+    <div class="doc-section" id="highbyte">
+      <div class="section-id">[2.1]</div>
+      <h2>High-Byte Table (CP437 0x80&ndash;0xFF)</h2>
+      <p>The 128 high-byte entries of CP437 and their Unicode equivalents. Use the Unicode codepoint in UTF-8 source files; the converter maps it to the correct CP437 byte.</p>
+      <table class="cmd-ref">
+        <tr><th>CP437</th><th>Unicode</th><th>Name</th></tr>
+        <tr><td>0x80</td><td>U+00C7</td><td>LATIN CAPITAL LETTER C WITH CEDILLA</td></tr>
+        <tr><td>0x81</td><td>U+00FC</td><td>LATIN SMALL LETTER U WITH DIAERESIS</td></tr>
+        <tr><td>0x82</td><td>U+00E9</td><td>LATIN SMALL LETTER E WITH ACUTE</td></tr>
+        <tr><td>0x83</td><td>U+00E2</td><td>LATIN SMALL LETTER A WITH CIRCUMFLEX</td></tr>
+        <tr><td>0x84</td><td>U+00E4</td><td>LATIN SMALL LETTER A WITH DIAERESIS</td></tr>
+        <tr><td>0x85</td><td>U+00E0</td><td>LATIN SMALL LETTER A WITH GRAVE</td></tr>
+        <tr><td>0x86</td><td>U+00E5</td><td>LATIN SMALL LETTER A WITH RING ABOVE</td></tr>
+        <tr><td>0x87</td><td>U+00E7</td><td>LATIN SMALL LETTER C WITH CEDILLA</td></tr>
+        <tr><td>0x88</td><td>U+00EA</td><td>LATIN SMALL LETTER E WITH CIRCUMFLEX</td></tr>
+        <tr><td>0x89</td><td>U+00EB</td><td>LATIN SMALL LETTER E WITH DIAERESIS</td></tr>
+        <tr><td>0x8A</td><td>U+00E8</td><td>LATIN SMALL LETTER E WITH GRAVE</td></tr>
+        <tr><td>0x8B</td><td>U+00EF</td><td>LATIN SMALL LETTER I WITH DIAERESIS</td></tr>
+        <tr><td>0x8C</td><td>U+00EE</td><td>LATIN SMALL LETTER I WITH CIRCUMFLEX</td></tr>
+        <tr><td>0x8D</td><td>U+00EC</td><td>LATIN SMALL LETTER I WITH GRAVE</td></tr>
+        <tr><td>0x8E</td><td>U+00C4</td><td>LATIN CAPITAL LETTER A WITH DIAERESIS</td></tr>
+        <tr><td>0x8F</td><td>U+00C5</td><td>LATIN CAPITAL LETTER A WITH RING ABOVE</td></tr>
+        <tr><td>0x90</td><td>U+00C9</td><td>LATIN CAPITAL LETTER E WITH ACUTE</td></tr>
+        <tr><td>0x91</td><td>U+00E6</td><td>LATIN SMALL LETTER AE</td></tr>
+        <tr><td>0x92</td><td>U+00C6</td><td>LATIN CAPITAL LETTER AE</td></tr>
+        <tr><td>0x93</td><td>U+00F4</td><td>LATIN SMALL LETTER O WITH CIRCUMFLEX</td></tr>
+        <tr><td>0x94</td><td>U+00F6</td><td>LATIN SMALL LETTER O WITH DIAERESIS</td></tr>
+        <tr><td>0x95</td><td>U+00F2</td><td>LATIN SMALL LETTER O WITH GRAVE</td></tr>
+        <tr><td>0x96</td><td>U+00FB</td><td>LATIN SMALL LETTER U WITH CIRCUMFLEX</td></tr>
+        <tr><td>0x97</td><td>U+00F9</td><td>LATIN SMALL LETTER U WITH GRAVE</td></tr>
+        <tr><td>0x98</td><td>U+00FF</td><td>LATIN SMALL LETTER Y WITH DIAERESIS</td></tr>
+        <tr><td>0x99</td><td>U+00D6</td><td>LATIN CAPITAL LETTER O WITH DIAERESIS</td></tr>
+        <tr><td>0x9A</td><td>U+00DC</td><td>LATIN CAPITAL LETTER U WITH DIAERESIS</td></tr>
+        <tr><td>0x9B</td><td>U+00A2</td><td>CENT SIGN</td></tr>
+        <tr><td>0x9C</td><td>U+00A3</td><td>POUND SIGN</td></tr>
+        <tr><td>0x9D</td><td>U+00A5</td><td>YEN SIGN</td></tr>
+        <tr><td>0x9E</td><td>U+20A7</td><td>PESETA SIGN</td></tr>
+        <tr><td>0x9F</td><td>U+0192</td><td>LATIN SMALL LETTER F WITH HOOK</td></tr>
+        <tr><td>0xA0</td><td>U+00E1</td><td>LATIN SMALL LETTER A WITH ACUTE</td></tr>
+        <tr><td>0xA1</td><td>U+00ED</td><td>LATIN SMALL LETTER I WITH ACUTE</td></tr>
+        <tr><td>0xA2</td><td>U+00F3</td><td>LATIN SMALL LETTER O WITH ACUTE</td></tr>
+        <tr><td>0xA3</td><td>U+00FA</td><td>LATIN SMALL LETTER U WITH ACUTE</td></tr>
+        <tr><td>0xA4</td><td>U+00F1</td><td>LATIN SMALL LETTER N WITH TILDE</td></tr>
+        <tr><td>0xA5</td><td>U+00D1</td><td>LATIN CAPITAL LETTER N WITH TILDE</td></tr>
+        <tr><td>0xA6</td><td>U+00AA</td><td>FEMININE ORDINAL INDICATOR</td></tr>
+        <tr><td>0xA7</td><td>U+00BA</td><td>MASCULINE ORDINAL INDICATOR</td></tr>
+        <tr><td>0xA8</td><td>U+00BF</td><td>INVERTED QUESTION MARK</td></tr>
+        <tr><td>0xA9</td><td>U+2310</td><td>REVERSED NOT SIGN</td></tr>
+        <tr><td>0xAA</td><td>U+00AC</td><td>NOT SIGN</td></tr>
+        <tr><td>0xAB</td><td>U+00BD</td><td>VULGAR FRACTION ONE HALF</td></tr>
+        <tr><td>0xAC</td><td>U+00BC</td><td>VULGAR FRACTION ONE QUARTER</td></tr>
+        <tr><td>0xAD</td><td>U+00A1</td><td>INVERTED EXCLAMATION MARK</td></tr>
+        <tr><td>0xAE</td><td>U+00AB</td><td>LEFT-POINTING DOUBLE ANGLE QUOTATION MARK</td></tr>
+        <tr><td>0xAF</td><td>U+00BB</td><td>RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK</td></tr>
+        <tr><td>0xB0</td><td>U+2591</td><td>LIGHT SHADE</td></tr>
+        <tr><td>0xB1</td><td>U+2592</td><td>MEDIUM SHADE</td></tr>
+        <tr><td>0xB2</td><td>U+2593</td><td>DARK SHADE</td></tr>
+        <tr><td>0xB3</td><td>U+2502</td><td>BOX DRAWINGS LIGHT VERTICAL</td></tr>
+        <tr><td>0xB4</td><td>U+2524</td><td>BOX DRAWINGS LIGHT VERTICAL AND LEFT</td></tr>
+        <tr><td>0xB5</td><td>U+2561</td><td>BOX DRAWINGS VERT SINGLE AND LEFT DOUBLE</td></tr>
+        <tr><td>0xB6</td><td>U+2562</td><td>BOX DRAWINGS VERT DOUBLE AND LEFT SINGLE</td></tr>
+        <tr><td>0xB7</td><td>U+2556</td><td>BOX DRAWINGS DOWN DOUBLE AND LEFT SINGLE</td></tr>
+        <tr><td>0xB8</td><td>U+2555</td><td>BOX DRAWINGS DOWN SINGLE AND LEFT DOUBLE</td></tr>
+        <tr><td>0xB9</td><td>U+2563</td><td>BOX DRAWINGS DOUBLE VERTICAL AND LEFT</td></tr>
+        <tr><td>0xBA</td><td>U+2551</td><td>BOX DRAWINGS DOUBLE VERTICAL</td></tr>
+        <tr><td>0xBB</td><td>U+2557</td><td>BOX DRAWINGS DOUBLE DOWN AND LEFT</td></tr>
+        <tr><td>0xBC</td><td>U+255D</td><td>BOX DRAWINGS DOUBLE UP AND LEFT</td></tr>
+        <tr><td>0xBD</td><td>U+255C</td><td>BOX DRAWINGS UP DOUBLE AND LEFT SINGLE</td></tr>
+        <tr><td>0xBE</td><td>U+255B</td><td>BOX DRAWINGS UP SINGLE AND LEFT DOUBLE</td></tr>
+        <tr><td>0xBF</td><td>U+2510</td><td>BOX DRAWINGS LIGHT DOWN AND LEFT</td></tr>
+        <tr><td>0xC0</td><td>U+2514</td><td>BOX DRAWINGS LIGHT UP AND RIGHT</td></tr>
+        <tr><td>0xC1</td><td>U+2534</td><td>BOX DRAWINGS LIGHT UP AND HORIZONTAL</td></tr>
+        <tr><td>0xC2</td><td>U+252C</td><td>BOX DRAWINGS LIGHT DOWN AND HORIZONTAL</td></tr>
+        <tr><td>0xC3</td><td>U+251C</td><td>BOX DRAWINGS LIGHT VERTICAL AND RIGHT</td></tr>
+        <tr><td>0xC4</td><td>U+2500</td><td>BOX DRAWINGS LIGHT HORIZONTAL</td></tr>
+        <tr><td>0xC5</td><td>U+253C</td><td>BOX DRAWINGS LIGHT VERT AND HORIZONTAL</td></tr>
+        <tr><td>0xC6</td><td>U+255E</td><td>BOX DRAWINGS VERT SINGLE AND RIGHT DOUBLE</td></tr>
+        <tr><td>0xC7</td><td>U+255F</td><td>BOX DRAWINGS VERT DOUBLE AND RIGHT SINGLE</td></tr>
+        <tr><td>0xC8</td><td>U+255A</td><td>BOX DRAWINGS DOUBLE UP AND RIGHT</td></tr>
+        <tr><td>0xC9</td><td>U+2554</td><td>BOX DRAWINGS DOUBLE DOWN AND RIGHT</td></tr>
+        <tr><td>0xCA</td><td>U+2569</td><td>BOX DRAWINGS DOUBLE UP AND HORIZONTAL</td></tr>
+        <tr><td>0xCB</td><td>U+2566</td><td>BOX DRAWINGS DOUBLE DOWN AND HORIZONTAL</td></tr>
+        <tr><td>0xCC</td><td>U+2560</td><td>BOX DRAWINGS DOUBLE VERTICAL AND RIGHT</td></tr>
+        <tr><td>0xCD</td><td>U+2550</td><td>BOX DRAWINGS DOUBLE HORIZONTAL</td></tr>
+        <tr><td>0xCE</td><td>U+256C</td><td>BOX DRAWINGS DOUBLE VERT AND HORIZONTAL</td></tr>
+        <tr><td>0xCF</td><td>U+2567</td><td>BOX DRAWINGS UP SINGLE AND HORIZ DOUBLE</td></tr>
+        <tr><td>0xD0</td><td>U+2568</td><td>BOX DRAWINGS UP DOUBLE AND HORIZ SINGLE</td></tr>
+        <tr><td>0xD1</td><td>U+2564</td><td>BOX DRAWINGS DOWN SINGLE AND HORIZ DOUBLE</td></tr>
+        <tr><td>0xD2</td><td>U+2565</td><td>BOX DRAWINGS DOWN DOUBLE AND HORIZ SINGLE</td></tr>
+        <tr><td>0xD3</td><td>U+2559</td><td>BOX DRAWINGS UP DOUBLE AND RIGHT SINGLE</td></tr>
+        <tr><td>0xD4</td><td>U+2558</td><td>BOX DRAWINGS UP SINGLE AND RIGHT DOUBLE</td></tr>
+        <tr><td>0xD5</td><td>U+2552</td><td>BOX DRAWINGS DOWN SINGLE AND RIGHT DOUBLE</td></tr>
+        <tr><td>0xD6</td><td>U+2553</td><td>BOX DRAWINGS DOWN DOUBLE AND RIGHT SINGLE</td></tr>
+        <tr><td>0xD7</td><td>U+256B</td><td>BOX DRAWINGS VERT DOUBLE AND HORIZ SINGLE</td></tr>
+        <tr><td>0xD8</td><td>U+256A</td><td>BOX DRAWINGS VERT SINGLE AND HORIZ DOUBLE</td></tr>
+        <tr><td>0xD9</td><td>U+2518</td><td>BOX DRAWINGS LIGHT UP AND LEFT</td></tr>
+        <tr><td>0xDA</td><td>U+250C</td><td>BOX DRAWINGS LIGHT DOWN AND RIGHT</td></tr>
+        <tr><td>0xDB</td><td>U+2588</td><td>FULL BLOCK</td></tr>
+        <tr><td>0xDC</td><td>U+2584</td><td>LOWER HALF BLOCK</td></tr>
+        <tr><td>0xDD</td><td>U+258C</td><td>LEFT HALF BLOCK</td></tr>
+        <tr><td>0xDE</td><td>U+2590</td><td>RIGHT HALF BLOCK</td></tr>
+        <tr><td>0xDF</td><td>U+2580</td><td>UPPER HALF BLOCK</td></tr>
+        <tr><td>0xE0</td><td>U+03B1</td><td>GREEK SMALL LETTER ALPHA</td></tr>
+        <tr><td>0xE1</td><td>U+00DF</td><td>LATIN SMALL LETTER SHARP S</td></tr>
+        <tr><td>0xE2</td><td>U+0393</td><td>GREEK CAPITAL LETTER GAMMA</td></tr>
+        <tr><td>0xE3</td><td>U+03C0</td><td>GREEK SMALL LETTER PI</td></tr>
+        <tr><td>0xE4</td><td>U+03A3</td><td>GREEK CAPITAL LETTER SIGMA</td></tr>
+        <tr><td>0xE5</td><td>U+03C3</td><td>GREEK SMALL LETTER SIGMA</td></tr>
+        <tr><td>0xE6</td><td>U+00B5</td><td>MICRO SIGN</td></tr>
+        <tr><td>0xE7</td><td>U+03C4</td><td>GREEK SMALL LETTER TAU</td></tr>
+        <tr><td>0xE8</td><td>U+03A6</td><td>GREEK CAPITAL LETTER PHI</td></tr>
+        <tr><td>0xE9</td><td>U+0398</td><td>GREEK CAPITAL LETTER THETA</td></tr>
+        <tr><td>0xEA</td><td>U+03A9</td><td>GREEK CAPITAL LETTER OMEGA</td></tr>
+        <tr><td>0xEB</td><td>U+03B4</td><td>GREEK SMALL LETTER DELTA</td></tr>
+        <tr><td>0xEC</td><td>U+221E</td><td>INFINITY</td></tr>
+        <tr><td>0xED</td><td>U+03C6</td><td>GREEK SMALL LETTER PHI</td></tr>
+        <tr><td>0xEE</td><td>U+03B5</td><td>GREEK SMALL LETTER EPSILON</td></tr>
+        <tr><td>0xEF</td><td>U+2229</td><td>INTERSECTION</td></tr>
+        <tr><td>0xF0</td><td>U+2261</td><td>IDENTICAL TO</td></tr>
+        <tr><td>0xF1</td><td>U+00B1</td><td>PLUS-MINUS SIGN</td></tr>
+        <tr><td>0xF2</td><td>U+2265</td><td>GREATER-THAN OR EQUAL TO</td></tr>
+        <tr><td>0xF3</td><td>U+2264</td><td>LESS-THAN OR EQUAL TO</td></tr>
+        <tr><td>0xF4</td><td>U+2320</td><td>TOP HALF INTEGRAL</td></tr>
+        <tr><td>0xF5</td><td>U+2321</td><td>BOTTOM HALF INTEGRAL</td></tr>
+        <tr><td>0xF6</td><td>U+00F7</td><td>DIVISION SIGN</td></tr>
+        <tr><td>0xF7</td><td>U+2248</td><td>ALMOST EQUAL TO</td></tr>
+        <tr><td>0xF8</td><td>U+00B0</td><td>DEGREE SIGN</td></tr>
+        <tr><td>0xF9</td><td>U+2219</td><td>BULLET OPERATOR</td></tr>
+        <tr><td>0xFA</td><td>U+00B7</td><td>MIDDLE DOT</td></tr>
+        <tr><td>0xFB</td><td>U+221A</td><td>SQUARE ROOT</td></tr>
+        <tr><td>0xFC</td><td>U+207F</td><td>SUPERSCRIPT LATIN SMALL LETTER N</td></tr>
+        <tr><td>0xFD</td><td>U+00B2</td><td>SUPERSCRIPT TWO</td></tr>
+        <tr><td>0xFE</td><td>U+25A0</td><td>BLACK SQUARE</td></tr>
+        <tr><td>0xFF</td><td>U+00A0</td><td>NO-BREAK SPACE</td></tr>
+      </table>
+    </div>
+
+    <!-- 2.2 CONTROL-CHARACTER GLYPHS -->
+    <div class="doc-section" id="ctrlglyphs">
+      <div class="section-id">[2.2]</div>
+      <h2>Control-Character Glyphs (CP437 0x01&ndash;0x1F + 0x7F)</h2>
+      <p>In CP437, bytes 0x01&ndash;0x1F display as graphical glyphs rather than control characters. In UTF-8 source files, use the Unicode equivalents listed below. Tabs (0x09), newlines (0x0A), and carriage returns (0x0D) work normally in UTF-8 files &mdash; they are not converted to glyphs.</p>
+      <table class="cmd-ref">
+        <tr><th>CP437</th><th>Unicode</th><th>Name</th></tr>
+        <tr><td>0x01</td><td>U+263A</td><td>WHITE SMILING FACE</td></tr>
+        <tr><td>0x02</td><td>U+263B</td><td>BLACK SMILING FACE</td></tr>
+        <tr><td>0x03</td><td>U+2665</td><td>BLACK HEART SUIT</td></tr>
+        <tr><td>0x04</td><td>U+2666</td><td>BLACK DIAMOND SUIT</td></tr>
+        <tr><td>0x05</td><td>U+2663</td><td>BLACK CLUB SUIT</td></tr>
+        <tr><td>0x06</td><td>U+2660</td><td>BLACK SPADE SUIT</td></tr>
+        <tr><td>0x07</td><td>U+2022</td><td>BULLET</td></tr>
+        <tr><td>0x08</td><td>U+25D8</td><td>INVERSE BULLET</td></tr>
+        <tr><td>0x09</td><td>U+25CB</td><td>WHITE CIRCLE</td></tr>
+        <tr><td>0x0A</td><td>U+25D9</td><td>INVERSE WHITE CIRCLE</td></tr>
+        <tr><td>0x0B</td><td>U+2642</td><td>MALE SIGN</td></tr>
+        <tr><td>0x0C</td><td>U+2640</td><td>FEMALE SIGN</td></tr>
+        <tr><td>0x0D</td><td>U+266A</td><td>EIGHTH NOTE</td></tr>
+        <tr><td>0x0E</td><td>U+266B</td><td>BEAMED EIGHTH NOTES</td></tr>
+        <tr><td>0x0F</td><td>U+263C</td><td>WHITE SUN WITH RAYS</td></tr>
+        <tr><td>0x10</td><td>U+25BA</td><td>BLACK RIGHT-POINTING POINTER</td></tr>
+        <tr><td>0x11</td><td>U+25C4</td><td>BLACK LEFT-POINTING POINTER</td></tr>
+        <tr><td>0x12</td><td>U+2195</td><td>UP DOWN ARROW</td></tr>
+        <tr><td>0x13</td><td>U+203C</td><td>DOUBLE EXCLAMATION MARK</td></tr>
+        <tr><td>0x14</td><td>U+00B6</td><td>PILCROW SIGN</td></tr>
+        <tr><td>0x15</td><td>U+00A7</td><td>SECTION SIGN</td></tr>
+        <tr><td>0x16</td><td>U+25AC</td><td>BLACK RECTANGLE</td></tr>
+        <tr><td>0x17</td><td>U+21A8</td><td>UP DOWN ARROW WITH BASE</td></tr>
+        <tr><td>0x18</td><td>U+2191</td><td>UPWARDS ARROW</td></tr>
+        <tr><td>0x19</td><td>U+2193</td><td>DOWNWARDS ARROW</td></tr>
+        <tr><td>0x1A</td><td>U+2192</td><td>RIGHTWARDS ARROW</td></tr>
+        <tr><td>0x1B</td><td>U+2190</td><td>LEFTWARDS ARROW</td></tr>
+        <tr><td>0x1C</td><td>U+221F</td><td>RIGHT ANGLE</td></tr>
+        <tr><td>0x1D</td><td>U+2194</td><td>LEFT RIGHT ARROW</td></tr>
+        <tr><td>0x1E</td><td>U+25B2</td><td>BLACK UP-POINTING TRIANGLE</td></tr>
+        <tr><td>0x1F</td><td>U+25BC</td><td>BLACK DOWN-POINTING TRIANGLE</td></tr>
+        <tr><td>0x7F</td><td>U+2302</td><td>HOUSE</td></tr>
+      </table>
+    </div>
+
+    <!-- 2.3 ALTERNATIVE CODEPOINTS -->
+    <div class="doc-section" id="altcodes">
+      <div class="section-id">[2.3]</div>
+      <h2>Alternative Codepoints Accepted Silently</h2>
+      <p>Some CP437 characters have more than one plausible Unicode equivalent. The converter accepts the alternatives listed below without warning, mapping them to the same CP437 byte as the canonical codepoint.</p>
+      <table class="cmd-ref">
+        <tr><th>Alternative</th><th>Canonical</th><th>CP437</th><th>Note</th></tr>
+        <tr><td>U+03B2</td><td>U+00DF</td><td>0xE1</td><td>Greek beta &rarr; sharp-s</td></tr>
+        <tr><td>U+03BC</td><td>U+00B5</td><td>0xE6</td><td>Greek mu &rarr; micro sign</td></tr>
+        <tr><td>U+2205</td><td>U+03C6</td><td>0xED</td><td>Empty set &rarr; phi</td></tr>
+        <tr><td>U+2208</td><td>U+03B5</td><td>0xEE</td><td>Element of &rarr; epsilon</td></tr>
+        <tr><td>U+2126</td><td>U+03A9</td><td>0xEA</td><td>Ohm sign &rarr; omega</td></tr>
+        <tr><td>U+00D8</td><td>U+03C6</td><td>0xED</td><td>O-stroke &rarr; phi (visual similarity)</td></tr>
+        <tr><td>U+03D5</td><td>U+03C6</td><td>0xED</td><td>Phi symbol &rarr; phi</td></tr>
+        <tr><td>U+2300</td><td>U+03C6</td><td>0xED</td><td>Diameter sign &rarr; phi</td></tr>
+      </table>
+    </div>
+
+  </main>
+
+  <footer>
+    THE CLANS v0.97b2 &copy; 1997&ndash;2026 Allen Ussher and contributors &middot; Released under the GNU GPL
+  </footer>
+
+</div>
+</body>
+</html>

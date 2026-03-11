@@ -77,12 +77,19 @@
         <a href="../player/misc.html">Miscellaneous</a>
       </div>
     </div>
-    <a class="active" href="index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label active">Sysop Docs</span>
+      <div class="topnav-menu">
+        <a href="index.html">Sysop Documentation</a>
+        <a href="../devkit/questgen.html">Quest Generator</a>
+      </div>
+    </div>
     <div class="topnav-drop">
       <span class="topnav-label">DevKit</span>
       <div class="topnav-menu">
         <a href="../devkit/index.html">PAK Development</a>
         <a href="../devkit/questgen.html">Quest Generator</a>
+        <a href="../devkit/utf8.html">UTF-8 Reference</a>
       </div>
     </div>
     <a href="../developer/index.html">Developer</a>
@@ -104,12 +111,12 @@
     <div class="nav-group-label">INTRODUCTION</div>
     <a href="#desc"><span class="sec-id">0.1</span>Description</a>
     <a href="#disclaimer"><span class="sec-id">0.2</span>Disclaimer</a>
-    <a href="#registration"><span class="sec-id">0.3</span>Registration</a>
     <a href="#multinode"><span class="sec-id">0.4</span>No Multinode</a>
     <a href="#lazy"><span class="sec-id">0.9</span>Lazy Sysop's Guide</a>
 
     <div class="nav-group-label">SETUP</div>
     <a href="#setup"><span class="sec-id">1.1</span>Setting Up</a>
+    <a href="#config-ref"><span class="sec-id">1.1b</span>Config File Ref</a>
     <a href="#reset"><span class="sec-id">1.2</span>Resetting</a>
     <a href="#maintenance"><span class="sec-id">1.3</span>Daily Maintenance</a>
     <a href="#start-ibbs"><span class="sec-id">1.4</span>Starting InterBBS</a>
@@ -118,6 +125,7 @@
     <a href="#local-ibbs"><span class="sec-id">1.6</span>Local InterBBS</a>
     <a href="#troubleshoot"><span class="sec-id">1.7</span>Troubleshooting</a>
     <a href="#misc"><span class="sec-id">1.8</span>Miscellany</a>
+    <a href="#colors"><span class="sec-id">1.9</span>Color Codes</a>
   </nav>
 
   <!-- MAIN CONTENT -->
@@ -148,19 +156,12 @@
       </div>
     </div>
 
-    <!-- 0.3 REGISTRATION -->
-    <div class="doc-section" id="registration">
-      <div class="section-id">[0.3]</div>
-      <h2>Registration</h2>
-      <p>Registration is no longer required for The Clans.</p>
-    </div>
-
     <!-- 0.4 NO MULTINODE -->
     <div class="doc-section" id="multinode">
       <div class="section-id">[0.4]</div>
       <h2>No Multinode</h2>
       <p>Because of the complexity of the game and its strategic, somewhat turn-based nature, multinode play is not featured. However, The Clans will ensure no two users enter the game at the same time — it will alert a user trying to enter while someone is already on.</p>
-      <p>To do this, an <code>ONLINE.FLG</code> semaphore file is created in the Clans directory. If something causes the file to still exist after a user has exited the door, you may simply delete the file (otherwise, users will be told someone is online even though they are not). This file is also deleted during maintenance.</p>
+      <p>To do this, an <code>ONLINE.FLG</code> semaphore file is created in the Clans directory. If something causes the file to still exist after a user has exited the door, you may run <code>clans /Exclusive</code> from the command line to remove it, or simply delete it manually (otherwise, users will be told someone is online even though they are not). This file is also deleted during maintenance.</p>
     </div>
 
     <!-- 0.9 LAZY SYSOP -->
@@ -170,10 +171,10 @@
         <h2>⚡ Lazy Sysop's Guide</h2>
         <p>To set up the game for <strong style="color:var(--yellow)">local play only</strong>, follow these steps. You MUST read the full docs to set up InterBBS.</p>
         <ol class="steps">
-          <li><div>Run <code>CONFIG.EXE</code>. Configure your node data here.</div></li>
-          <li><div>Modify <code>RUNCLANS.BAT</code> to suit your BBS. Call it from your BBS as a door.</div></li>
-          <li><div>Run <code>RESET.EXE</code> from DOS.</div></li>
-          <li><div>Add <code>Clans /M</code> to your nightly maintenance.</div></li>
+          <li><div>Run <code>config</code> (config.exe on Windows). Configure your node data here.</div></li>
+          <li><div>Set up your BBS to run the <code>clans</code> binary as a door, passing the node number (e.g. <code>clans /N1</code> for node 1).</div></li>
+          <li><div>Run <code>reset</code> (reset.exe on Windows) from your Clans directory.</div></li>
+          <li><div>Add <code>clans /M</code> to your nightly maintenance.</div></li>
         </ol>
         <div class="callout">
           <strong>NOTE:</strong> If you are planning on joining an InterBBS league, you MUST set up your BBS software to call the door with <strong>REAL NAMES ONLY</strong>. This standardizes the league and makes it easier for players to travel from board to board. Handles can change from board to board, but real names can't.
@@ -185,30 +186,98 @@
     <div class="doc-section" id="setup">
       <div class="section-id">[1.1]</div>
       <h2>Setting Up The Clans</h2>
-      <p>First, run the setup program <code>CONFIG.EXE</code>. This program lets you specify which nodes you have on your BBS and their dropfile directories. The Clans doesn't need to know what type of dropfile to look for — it will detect this automatically.</p>
-      <p>You must create a batch file to run the game. How to set up a door varies by BBS software — refer to your BBS documentation. Your batch file should look like this:</p>
-
-      <pre><span class="code-label">RUNCLANS.BAT</span>
-cd \TheClans          &lt;-- Change this to your Clans directory
-Clans /N%1            &lt;-- %1 is the node you wish to run
-cd \bbsdirectory      &lt;-- Change this to your BBS directory</pre>
-
-      <p>To run from Node 1, use <code>RUNCLANS.BAT 1</code>. If you create your own batch file, remember: you <strong style="color:var(--yellow)">MUST change to the Clans directory</strong> and specify the node using <code>CLANS /Nx</code> where <code>x</code> is the node number.</p>
-
+      <p>The Clans runs on FreeBSD, Linux, and Windows. The programs included are:</p>
+      <table class="terms">
+        <tr><th>Program</th><th>Description</th></tr>
+        <tr><td><code>clans</code></td><td>The main door game</td></tr>
+        <tr><td><code>config</code></td><td>Configuration editor (interactive, console-based)</td></tr>
+        <tr><td><code>reset</code></td><td>Game reset utility</td></tr>
+        <tr><td><code>pcedit</code></td><td>Player character editor (sysop debugging tool)</td></tr>
+      </table>
+      <p>On Unix-like systems these are plain executable files (no extension). On Windows they are .exe files.</p>
+      <p>First, run the <code>config</code> program from your Clans directory. This lets you set your BBS name, sysop name, node drop-file directories, and InterBBS settings. Config writes a plain-text file called <code>CLANS.CFG</code> which you may also edit directly. The <code>CLANS.INI</code> file specifies paths to game data files and should not normally need editing.</p>
+      <p>To run The Clans as a door, configure your BBS to call the <code>clans</code> binary from the Clans directory. Specify the node number with the <code>/N</code> parameter:</p>
+      <pre>clans /N1                       (for node 1)
+clans /N2                       (for node 2)</pre>
+      <p>The Clans locates its drop file (DOOR.SYS, DORINFO1.DEF, etc.) based on the DropDirectory setting for that node in CLANS.CFG. Alternatively, use <code>/D</code> to specify the path on the command line:</p>
+      <pre>clans /N1 /D/path/to/dropfiles/</pre>
+      <p>For BBS software that passes a socket handle instead of a drop file (e.g. Synchronet), use the <code>/S</code> parameter followed immediately by the socket handle number:</p>
+      <pre>clans /S12345</pre>
+      <p>For local (sysop) testing without a BBS connection, use <code>/L</code>:</p>
+      <pre>clans /L</pre>
+      <p>A sample Windows batch file (<code>RUNCLANS.BAT</code>) is included for reference.</p>
+      <p><code>lockout.txt</code> is an optional sysop lockout list. Add one username per line to prevent that player from entering the door. Blank lines and lines starting with <code>#</code> are ignored. The check is case-insensitive. If the file is missing, no lockout is applied.</p>
+      <p><a href="../devkit/questgen.html"><code>questgen.txt</code></a> is a guide to generating a complete quest pack for your BBS using an LLM (large language model). The companion file <code>prompt.md</code> is the ready-made prompt you feed to the LLM. See <a href="../devkit/questgen.html"><code>questgen.txt</code></a> for full instructions.</p>
       <div class="callout">
         <strong>NOTE:</strong> If you are planning on joining an InterBBS league, you MUST set up your BBS software to call the door with <strong>REAL NAMES ONLY</strong>.
       </div>
+    </div>
+
+    <!-- 1.1b CONFIG FILE REFERENCE -->
+    <div class="doc-section" id="config-ref">
+      <div class="section-id">[1.1b]</div>
+      <h2>Configuration File Reference</h2>
+      <p>The <code>CLANS.CFG</code> file is a plain-text file. Lines beginning with <code>#</code> are comments. The following keywords are recognized:</p>
+
+      <h3>Game Settings</h3>
+      <table class="terms">
+        <tr><th>Keyword</th><th>Description</th></tr>
+        <tr><td><code>SysopName</code></td><td>Your name (shown on the local login screen)</td></tr>
+        <tr><td><code>BBSName</code></td><td>Name of your BBS</td></tr>
+        <tr><td><code>UseLog</code></td><td>Yes or No — enables clansN.log activity log</td></tr>
+        <tr><td><code>ScoreANSI</code></td><td>Filename for ANSI scores file (default: scores.ans)</td></tr>
+        <tr><td><code>ScoreASCII</code></td><td>Filename for ASCII scores file (default: scores.asc)</td></tr>
+      </table>
+
+      <h3>InterBBS Settings</h3>
+      <p>All require InterBBS to be enabled.</p>
+      <table class="terms">
+        <tr><th>Keyword</th><th>Description</th></tr>
+        <tr><td><code>InterBBS</code></td><td>Presence of this keyword enables InterBBS mode</td></tr>
+        <tr><td><code>BBSID</code></td><td>Your BBS ID number (1 = League Coordinator)</td></tr>
+        <tr><td><code>NetmailDir</code></td><td>Directory where outgoing netmail is written</td></tr>
+        <tr><td><code>InboundDir</code></td><td>Directory where incoming packets arrive</td></tr>
+        <tr><td><code>MailerType</code></td><td>Binkley, Attach, or None</td></tr>
+        <tr><td><code>OutputSemaphore</code></td><td>Optional file the mailer watches to trigger tossing</td></tr>
+      </table>
+
+      <h3>Per-Node Settings</h3>
+      <p>One block per node:</p>
+      <table class="terms">
+        <tr><th>Keyword</th><th>Description</th></tr>
+        <tr><td><code>Node</code></td><td>Node number</td></tr>
+        <tr><td><code>DropDirectory</code></td><td>Path to directory containing the BBS drop file</td></tr>
+        <tr><td><code>UseFOSSIL</code></td><td>Yes or No (Windows COM port FOSSIL driver support)</td></tr>
+        <tr><td><code>SerialPortAddr</code></td><td>Serial port base address in hex (Windows only)</td></tr>
+        <tr><td><code>SerialPortIRQ</code></td><td>Serial port IRQ number (Windows only)</td></tr>
+      </table>
+
+      <h3>Example CLANS.CFG</h3>
+      <pre>SysopName       Joe Sysop
+BBSName         Joe's BBS
+UseLog          Yes
+
+InterBBS
+BBSID           2
+NetmailDir      /bbs/netmail/
+InboundDir      /bbs/inbound/
+MailerType      Binkley
+
+Node            1
+DropDirectory   /bbs/node1/</pre>
+
+      <p><code>news.txt</code> is an optional bulletin file displayed every time a player starts the game, right after the title screen. Edit it with any text editor to post announcements, league schedules, or house rules. It supports pipe color codes and %-codes (see <a href="#colors">section 1.9</a>). If the file is missing or empty the game simply skips it.</p>
     </div>
 
     <!-- 1.2 RESET -->
     <div class="doc-section" id="reset">
       <div class="section-id">[1.2]</div>
       <h2>Resetting The Clans</h2>
-      <p>To reset the game, run <code>RESET.EXE</code> from within the Clans directory. You will be given several options. After entering information, the game will reset and all data files from the previous game will be removed automatically.</p>
+      <p>To reset the game*, run the <code>reset</code> program (reset.exe on Windows) from your Clans directory. You will be given several options. After entering information, the game will reset and all data files from the previous game will be removed automatically.</p>
       <div class="callout warn">
         <strong>IMPORTANT:</strong> You MUST reset the game the first time it is installed.
       </div>
-      <p>If you are in a league, you must also run <code>CLANS /I</code> after running <code>RESET.EXE</code>. Ensure all configurations are set up first — have your <code>WORLD.NDX</code> and <code>ROUTE.CFG</code> files created before running <code>CLANS /I</code>.</p>
+      <p>If you are in a league, you must also run <code>clans /I</code> after running <code>reset</code>. Ensure all configurations are set up first — have your <code>WORLD.NDX</code> and <code>ROUTE.CFG</code> files created before running <code>clans /I</code>.</p>
       <p>For a local IBBS league (on one BBS only), use <code>CLANS /LIBBS /I</code>.</p>
     </div>
 
@@ -217,9 +286,8 @@ cd \bbsdirectory      &lt;-- Change this to your BBS directory</pre>
       <div class="section-id">[1.3]</div>
       <h2>Daily Maintenance</h2>
       <p>Add the following to your nightly BBS maintenance:</p>
-      <pre>cd \TheClans
-CLANS /M
-cd \bbsdirectory</pre>
+      <pre>cd /path/to/clans
+clans /M</pre>
       <p>If maintenance is not run, The Clans will automatically run it the next time someone enters the game. However, it is <strong style="color:var(--yellow)">highly recommended</strong> to run maintenance daily to ensure stats are calculated properly — this is especially critical for InterBBS games.</p>
     </div>
 
@@ -259,6 +327,9 @@ BBSId           3
 BBSName         Frank's BBS
 VillageName     Franktown
 Address         1:1/3</pre>
+          Optional fields for each BBS entry:<br>
+          <code>Status</code> — "Active" or "Inactive". Inactive nodes are reserved and do not participate in the league.<br>
+          <code>NoMSG</code> — Suppresses .MSG file creation for this node (useful for FTP-based mail exchange).<br><br>
           <strong style="color:var(--cyan)">D.</strong> Optionally, add an <code>Ascii</code> section for a coloured welcome message displayed to players:
           <pre>Ascii  [ put stuff here ]
 Ascii  [ and here ]</pre></div>
@@ -338,15 +409,15 @@ BBSId           9</pre>
       <div class="section-id">[1.5]</div>
       <h2>Joining an Existing InterBBS League</h2>
       <ol class="steps">
-        <li><div>Find an existing Clans league to join. If none exist, start your own (see section 1.4).</div></li>
+        <li><div>Find an existing Clans league to join. If none exist, start your own (see <a href="#start-ibbs">section 1.4</a>).</div></li>
         <li><div>Contact the league coordinator. Tell them your desired Village name. The LC will supply you with a <code>WORLD.NDX</code> file and routing instructions. Copy <code>WORLD.NDX</code> to your Clans directory. Run <code>CONFIG.EXE</code>, choose Setup InterBBS, and enter the BBS ID given to you. Also enter your netmail directory, inbound directory, and mailer type.</div></li>
         <li><div>Set up your mailer to process packets by adding to your batch file:
-          <pre>cd \clans
+          <pre>cd /path/to/clans
 clans /I</pre>
         </div></li>
         <li><div>Run the reset program and choose "Join a league":
-          <pre>RESET
-CLANS /I</pre>
+          <pre>reset
+clans /I</pre>
           The game will reset and wait for a message from the main BBS telling it to start accepting local users.
         </div></li>
       </ol>
@@ -387,15 +458,15 @@ a   = arbitrary character (A–Z) used by the game</pre>
       <p>You can run several copies of The Clans on one machine, each acting as a separate village — no mailer required. This is how the InterBBS feature was originally tested.</p>
       <ol class="steps">
         <li><div>Install The Clans in a separate directory for each village:
-          <pre>C:\VILLAGE1    -- first Clans game
-C:\VILLAGE2    -- second game
-C:\VILLAGE3    -- third game</pre>
+          <pre>/opt/village1  -- first Clans game
+/opt/village2  -- second game
+/opt/village3  -- third game</pre>
         </div></li>
         <li><div>Set up batch files for each game with the <code>/LIBBS</code> parameter:
-          <pre>CLANS /LIBBS /N1</pre>
+          <pre>clans /LIBBS /N1</pre>
         </div></li>
         <li><div>Set daily maintenance for each copy:
-          <pre>CLANS /LIBBS /M</pre>
+          <pre>clans /LIBBS /M</pre>
         </div></li>
         <li><div>Set up <code>ROUTE.CFG</code> for each village:
           <pre>NORMAL ALL</pre>
@@ -407,10 +478,10 @@ village3  -- 99:1/3</pre>
         </div></li>
         <li><div>Copy <code>WORLD.NDX</code> to each village directory.</div></li>
         <li><div>Modify each <code>clans.cfg</code> so each has a unique BBS ID. Set one as Main BBS (ID=1). Enable the InterBBS flag in <code>CONFIG.EXE</code> for each.</div></li>
-        <li><div>Create a shared outbound directory (e.g. <code>C:\CLANOUT</code>) and set each game's outbound AND mail directory to point to it.</div></li>
+        <li><div>Create a single shared directory for packet exchange (e.g. <code>/opt/clanout/</code>). Set each game's <code>InboundDir</code> in clans.cfg to that shared directory. For local IBBS mode, packets are written to the inbound directory rather than a separate outbound folder.</div></li>
         <li><div>Run RESET on all games. For the main village (BBSId=1) choose <em>Leaguewide reset</em>. For the others, choose <em>Join a league</em>.</div></li>
         <li><div>Optionally process packets from the main village manually:
-          <pre>CLANS /LIBBS /I</pre>
+          <pre>clans /LIBBS /I</pre>
         </div></li>
       </ol>
     </div>
@@ -427,7 +498,7 @@ village3  -- 99:1/3</pre>
 
       <div class="qa-block">
         <div class="qa-problem">It can't find the WORLD.NDX file.</div>
-        <div class="qa-solution">You only need this file for InterBBS play. If you're not in a league, turn OFF the InterBBS option in <code>CONFIG.EXE</code>. If you ARE in a league, get <code>WORLD.NDX</code> from the league coordinator. If you ARE the LC, read section 1.4 on how to create it.</div>
+        <div class="qa-solution">You only need this file for InterBBS play. If you're not in a league, turn OFF the InterBBS option in <code>CONFIG.EXE</code>. If you ARE in a league, get <code>WORLD.NDX</code> from the league coordinator. If you ARE the LC, read <a href="#start-ibbs">section 1.4</a> on how to create it.</div>
       </div>
 
       <div class="qa-block">
@@ -480,9 +551,9 @@ village3  -- 99:1/3</pre>
         <strong style="color:var(--cyan)">Music:</strong> My Bloody Valentine, Lush, Sloan, Blur, Teenage Fanclub, Stereolab, and The Beatles.
       </p>
 
-      <h3>Upgrade Notes — v0.97b1</h3>
+      <h3>Upgrade Notes — v0.97b2</h3>
       <div class="callout">
-        This version fixes too many code issues to list, but very few actualy gameplay changes.
+        Changes since v0.97b1: fixed an issue where Windows would not see the first packet during maint; fixed a handful of memory leaks; fixed a handful of potential crashes.
       </div>
       <div class="callout warn">
         <strong>If upgrading from BELOW v0.97b1:</strong> You must reset after upgrading. If you are in a league, get everybody to upgrade then have everybody reset — members choose "Join a league" while the LC does a leaguewide reset. Delete any packets of the form <code>CLxxxyyy.*</code> in your inbound directory before upgrading.
@@ -491,6 +562,72 @@ village3  -- 99:1/3</pre>
       </div>
 
       <p style="margin-top: 20px; color:var(--border);">File bug reports at: <a href="https://sf.net/p/theclans/bugs/">SourceForge</a> <span class="cursor"></span></p>
+    </div>
+
+    <!-- 1.9 COLOR CODES -->
+    <div class="doc-section" id="colors">
+      <div class="section-id">[1.9]</div>
+      <h2>Color Codes and Text Formatting</h2>
+      <p>The Clans uses three kinds of color codes and a set of %-codes in its text files (.hlp, .asc, news.txt, quest files). Color codes are invisible in output — only the color change appears.</p>
+
+      <h3>Pipe Color Codes (|NN)</h3>
+      <p><code>|</code> followed by two decimal digits. 00–15 set the foreground color; 16–23 set the background (subtract 16 for the color index).</p>
+      <table class="terms">
+        <tr><th>Code</th><th>Color</th><th>Code</th><th>Color</th></tr>
+        <tr><td><code>|00</code></td><td>Black</td><td><code>|08</code></td><td>Bright Black</td></tr>
+        <tr><td><code>|01</code></td><td>Blue</td><td><code>|09</code></td><td>Bright Blue</td></tr>
+        <tr><td><code>|02</code></td><td>Green</td><td><code>|10</code></td><td>Bright Green</td></tr>
+        <tr><td><code>|03</code></td><td>Cyan</td><td><code>|11</code></td><td>Bright Cyan</td></tr>
+        <tr><td><code>|04</code></td><td>Red</td><td><code>|12</code></td><td>Bright Red</td></tr>
+        <tr><td><code>|05</code></td><td>Magenta</td><td><code>|13</code></td><td>Bright Magenta</td></tr>
+        <tr><td><code>|06</code></td><td>Brown</td><td><code>|14</code></td><td>Yellow</td></tr>
+        <tr><td><code>|07</code></td><td>White</td><td><code>|15</code></td><td>Bright White</td></tr>
+      </table>
+      <p>Background codes: <code>|16</code> Black, <code>|17</code> Blue, <code>|18</code> Green, <code>|19</code> Cyan, <code>|20</code> Red, <code>|21</code> Magenta, <code>|22</code> Brown, <code>|23</code> White.</p>
+
+      <h3>Backtick Codes (`BF)</h3>
+      <p>A backtick followed by two hex digits (0–9, A–F). The first digit is the background, the second is the foreground. Example: <code>`1F</code> sets bright white on blue.</p>
+
+      <h3>Theme Color Codes (|0A through |0Z)</h3>
+      <p><code>|0</code> followed by an uppercase letter maps to the village's color scheme. Background is always set to black. Preferred for sysop-editable files because they respect the player's chosen theme.</p>
+      <table class="terms">
+        <tr><th>Code</th><th>Role</th></tr>
+        <tr><td><code>|0A</code></td><td>Menu bracket / secondary accent</td></tr>
+        <tr><td><code>|0B</code></td><td>Menu key / highlighted value</td></tr>
+        <tr><td><code>|0C</code></td><td>Body text / narration</td></tr>
+        <tr><td><code>|0D</code></td><td>Secondary divider</td></tr>
+        <tr><td><code>|0E</code></td><td>Prompt arrow (the &gt; character)</td></tr>
+        <tr><td><code>|0F</code></td><td>User input (color where the player types)</td></tr>
+        <tr><td><code>|0G</code></td><td>Prompt label ("Enter option", etc.)</td></tr>
+        <tr><td><code>|0K</code></td><td>Primary divider (heavy separator lines)</td></tr>
+        <tr><td><code>|0L</code></td><td>Stat label (left-hand side)</td></tr>
+        <tr><td><code>|0M</code></td><td>Stat value (right-hand side)</td></tr>
+        <tr><td><code>|0S</code></td><td>Question / yes-no prompt</td></tr>
+      </table>
+
+      <h3>Save/Restore (|S and |R)</h3>
+      <p><code>|S</code> saves the current foreground and background colors. <code>|R</code> restores them.</p>
+
+      <h3>%-codes</h3>
+      <table class="terms">
+        <tr><th>Code</th><th>Description</th></tr>
+        <tr><td><code>%P</code></td><td>Pause (wait for keypress)</td></tr>
+        <tr><td><code>%C</code></td><td>Clear screen</td></tr>
+        <tr><td><code>%L</code></td><td>Newline</td></tr>
+        <tr><td><code>%R</code></td><td>Carriage return (no line advance)</td></tr>
+        <tr><td><code>%D</code></td><td>Delay (100ms)</td></tr>
+        <tr><td><code>%B</code></td><td>Backspace</td></tr>
+        <tr><td><code>%V</code></td><td>Print game version string</td></tr>
+        <tr><td><code>%F</code></td><td>Player's fights remaining</td></tr>
+        <tr><td><code>%M</code></td><td>Player's mine level</td></tr>
+        <tr><td><code>%1</code></td><td>Village pawn shop level</td></tr>
+        <tr><td><code>%2</code></td><td>Village wizard shop level</td></tr>
+        <tr><td><code>%X</code></td><td>Village market level</td></tr>
+        <tr><td><code>%Q</code></td><td>Village market quality (e.g. "Poor", "Good")</td></tr>
+        <tr><td><code>%N</code></td><td>Toggle screen pause (the "more" prompt)</td></tr>
+        <tr><td><code>%T</code></td><td>Scroll-clear (line-by-line wipe with 10ms delay)</td></tr>
+        <tr><td><code>%Y</code></td><td>Scroll-clear (instant, no delay)</td></tr>
+      </table>
     </div>
 
   </main>

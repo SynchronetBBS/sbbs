@@ -72,12 +72,19 @@
         <a href="../player/misc.html">Miscellaneous</a>
       </div>
     </div>
-    <a href="../sysop/index.html">Sysop Docs</a>
+    <div class="topnav-drop">
+      <span class="topnav-label">Sysop Docs</span>
+      <div class="topnav-menu">
+        <a href="../sysop/index.html">Sysop Documentation</a>
+        <a href="questgen.html">Quest Generator</a>
+      </div>
+    </div>
     <div class="topnav-drop">
       <span class="topnav-label active">DevKit</span>
       <div class="topnav-menu">
         <a href="index.html">PAK Development</a>
         <a href="questgen.html">Quest Generator</a>
+        <a href="utf8.html">UTF-8 Reference</a>
       </div>
     </div>
     <a href="../developer/index.html">Developer</a>
@@ -100,6 +107,7 @@
   <a href="#authornote">Author's Note</a>
   <a href="#what"><span class="sid">0.1</span>What Can You Develop?</a>
   <a href="#howworks"><span class="sid">0.2</span>How Does It Work?</a>
+  <a href="#utf8"><span class="sid">0.3</span>Writing in UTF-8</a>
 
   <div class="nav-group">EVENT FILES</div>
   <a href="#ef-what"><span class="sid">1.1</span>What Are They?</a>
@@ -123,6 +131,7 @@
   <div class="nav-group">INSTALLING ADD-ONS</div>
   <a href="#install-npcs"><span class="sid">4.1</span>NPCs</a>
   <a href="#install-quests"><span class="sid">4.2</span>Quests</a>
+  <a href="#qtest"><span class="sid">4.3</span>qtest Debugger</a>
 
   <div class="nav-group">TOOLS</div>
   <a href="#tools-overview">Tool Overview</a>
@@ -169,6 +178,74 @@
   <div class="callout warn">
     <strong>IMPORTANT:</strong> Always develop on a fresh copy of the game. You'll be resetting, running forced maintenance (<code>CLANS /M</code>), and logging in and out constantly. A slap upside the head is in order if you don't!
   </div>
+</div>
+
+<!-- 0.3 UTF-8 -->
+<div class="doc-section" id="utf8">
+  <div class="sec-id">[0.3]</div>
+  <h2>Writing Source Files in UTF-8</h2>
+  <p>All devkit source files (event scripts, monster definitions, NPC quotes, spell and item data, etc.) have traditionally been written in CP437 encoding — the IBM PC character set used by BBS terminals. CP437 is the encoding the game uses internally for box-drawing characters, block elements, shading, and accented letters.</p>
+  <p>If your text editor does not support CP437 (most modern editors default to UTF-8), you can write source files in UTF-8 instead. The devkit compilers automatically detect UTF-8 files and convert them to CP437 at compile time. The compiled output is byte-identical to what a CP437 source file would produce.</p>
+
+  <h3>How to Use It</h3>
+  <p>Name your source file with <code>.u8.</code> before the final extension:</p>
+  <pre>myquest.u8.evt      instead of      myquest.evt
+npcquote.u8.txt     instead of      npcquote.txt
+spells.u8.txt       instead of      spells.txt</pre>
+  <p>Then compile as usual:</p>
+  <pre>ecomp myquest.u8.evt myquest.e
+makenpc npcquote.u8.txt npcquote.npc
+mspells spells.u8.txt spells.spl</pre>
+  <p>The compiler detects the <code>.u8.</code> in the filename and converts each line from UTF-8 to CP437. If the filename does not contain <code>.u8.</code>, the file is read as raw CP437 with no conversion — fully backward compatible.</p>
+
+  <h3>Commonly Used CP437 Graphics</h3>
+  <p>In a UTF-8 source file, type the Unicode equivalent of any CP437 character and the compiler will convert it. Here are the most commonly used ones:</p>
+  <table class="cmd-ref">
+    <tr><th>CP437</th><th>Unicode</th><th>Description</th></tr>
+    <tr><td>0xB0</td><td>U+2591</td><td>LIGHT SHADE</td></tr>
+    <tr><td>0xB1</td><td>U+2592</td><td>MEDIUM SHADE</td></tr>
+    <tr><td>0xB2</td><td>U+2593</td><td>DARK SHADE</td></tr>
+    <tr><td>0xB3</td><td>U+2502</td><td>BOX DRAWINGS LIGHT VERTICAL</td></tr>
+    <tr><td>0xC4</td><td>U+2500</td><td>BOX DRAWINGS LIGHT HORIZONTAL</td></tr>
+    <tr><td>0xC5</td><td>U+253C</td><td>BOX DRAWINGS LIGHT VERTICAL AND HORIZONTAL</td></tr>
+    <tr><td>0xCD</td><td>U+2550</td><td>BOX DRAWINGS DOUBLE HORIZONTAL</td></tr>
+    <tr><td>0xDB</td><td>U+2588</td><td>FULL BLOCK</td></tr>
+    <tr><td>0xDC</td><td>U+2584</td><td>LOWER HALF BLOCK</td></tr>
+    <tr><td>0xDD</td><td>U+258C</td><td>LEFT HALF BLOCK</td></tr>
+    <tr><td>0xDE</td><td>U+2590</td><td>RIGHT HALF BLOCK</td></tr>
+    <tr><td>0xDF</td><td>U+2580</td><td>UPPER HALF BLOCK</td></tr>
+    <tr><td>0xFE</td><td>U+25A0</td><td>BLACK SQUARE</td></tr>
+  </table>
+  <p>All 128 CP437 high bytes (0x80–0xFF) and 32 control-character glyphs (0x01–0x1F) are supported — a total of 168 canonical mappings plus 8 alternative Unicode codepoints. For the complete table, see <a href="utf8.html"><code>utf8.txt</code></a> (included with the devkit).</p>
+
+  <h3>Characters That Are Not Allowed</h3>
+  <p>Certain Unicode characters that look similar to ASCII punctuation are blocked because they would break the game's pipe-code (<code>|NN</code>) and backtick-code (<code>`XY</code>) colour formatting:</p>
+  <table class="cmd-ref">
+    <tr><th>Character</th><th>Use instead</th></tr>
+    <tr><td>Smart single quotes</td><td>ASCII apostrophe <code>'</code></td></tr>
+    <tr><td>Smart double quotes</td><td>ASCII quotation mark <code>"</code></td></tr>
+    <tr><td>Em dash</td><td><code>--</code> (double hyphen)</td></tr>
+    <tr><td>En dash</td><td><code>-</code> (hyphen)</td></tr>
+  </table>
+  <p>These typically appear when text is copied from word processors. The compiler prints an error with the line number and a suggestion.</p>
+  <p>Any Unicode character that has no CP437 equivalent also produces an error: the compiler prints the codepoint (e.g., U+1F600) along with the filename and line number.</p>
+
+  <h3>Which Tools Support It</h3>
+  <p>All devkit compilers and the PAK builder support UTF-8 input:</p>
+  <table class="cmd-ref">
+    <tr><th>Tool</th><th>Purpose</th></tr>
+    <tr><td><code>ecomp</code></td><td>Event compiler (.evt -&gt; .e/.q)</td></tr>
+    <tr><td><code>langcomp</code></td><td>Language strings (.txt -&gt; .xl)</td></tr>
+    <tr><td><code>mcomp</code></td><td>Monster compiler (.txt -&gt; .mon)</td></tr>
+    <tr><td><code>makenpc</code></td><td>NPC compiler (.txt -&gt; .npc)</td></tr>
+    <tr><td><code>mclass</code></td><td>Class/race compiler (.txt -&gt; .cls)</td></tr>
+    <tr><td><code>mitems</code></td><td>Item compiler (.txt -&gt; .itm)</td></tr>
+    <tr><td><code>mspells</code></td><td>Spell compiler (.txt -&gt; .spl)</td></tr>
+    <tr><td><code>makepak</code></td><td>PAK builder (text files in pak.lst)</td></tr>
+  </table>
+  <p>For <code>makepak</code>, list the <code>.u8.</code> filename in <code>pak.lst</code> and leave the alias unchanged:</p>
+  <pre>menus.u8.hlp    /n/menus.hlp</pre>
+  <p><code>makepak</code> converts the UTF-8 content to CP437 before packing, so the PAK contents are identical regardless of whether the source was CP437 or UTF-8.</p>
 </div>
 
 <!-- 1.1 WHAT ARE EVENT FILES -->
@@ -327,6 +404,7 @@ Known</pre>
     <tr><td>Ryy</td><td>True if roll of 1–100 is ≥ yy (e.g. R50 = 50% chance)</td></tr>
     <tr><td>Lyy</td><td>True if player is exactly at mine level yy</td></tr>
     <tr><td>Kyy</td><td>True if player is at mine level yy or higher</td></tr>
+    <tr><td>Cyy</td><td>True if the clan leader's Charisma is yy or higher</td></tr>
   </table>
 </div>
 
@@ -529,6 +607,54 @@ Known</pre>
   <p>The first line (with <code>^</code>) must exactly match the <code>Name</code> in QUESTS.INI. All text between that line and <code>^END</code> is displayed to the player.</p>
 </div>
 
+<!-- 4.3 QTEST -->
+<div class="doc-section" id="qtest">
+  <div class="sec-id">[4.3]</div>
+  <h2>Testing Quest Packs with qtest</h2>
+  <p><code>qtest</code> is a standalone debugger for quest packs and NPC scripts. It runs all your quest event scripts and NPC chat files in a safe, sandboxed environment: no game data is read from or written to disk, all changes live only in memory for the duration of the session, and you can manipulate every flag and resource freely to drive your scripts into any state you want.</p>
+  <p>Use qtest whenever you are developing a new quest pack or making changes to an existing one. It lets you walk through every branch of your event scripts and NPC dialogues without touching a live game installation.</p>
+
+  <h3>Running qtest</h3>
+  <p><code>qtest</code> resolves all file paths relative to the directory it is run from. To test a pack without touching your live game directory, create a subdirectory inside the game directory, copy the required files into it, and run qtest from there:</p>
+  <pre>mkdir mypack-test
+cd mypack-test
+../qtest</pre>
+  <p>The following files must be present in the test subdirectory:</p>
+  <table class="cmd-ref">
+    <tr><th>File</th><th>Description</th></tr>
+    <tr><td><code>clans.pak</code></td><td>Base game data. Required for language strings and for AddEnemy commands referencing standard monsters. Copy or symlink from the game directory.</td></tr>
+    <tr><td><code>clans.ini</code></td><td>Your pack's version, listing NpcFile entries pointing to your compiled NPC files.</td></tr>
+    <tr><td><code>quests.ini</code></td><td>Your pack's quest registry.</td></tr>
+    <tr><td><code>mypak.pak</code></td><td>Your pack's compiled PAK file. If not using a PAK, place individual compiled files (.npc, .evt, .q, .mon) here instead.</td></tr>
+  </table>
+  <p><code>quests.hlp</code> is optional. When present, the D) action in the Quest Runner lets you read a quest's description without running it.</p>
+  <p>qtest starts with a simulated clan called "DebugClan" with four level-1 members, 5000 gold, and mine level 1. All quests marked Known in quests.ini are automatically known for the debug clan.</p>
+
+  <h3>The Main Screen</h3>
+  <p>From the main screen you can choose:</p>
+  <table class="cmd-ref">
+    <tr><th>Option</th><th>Description</th></tr>
+    <tr><td>F) Edit Flags</td><td>Open the flag editor to set/clear any flag group</td></tr>
+    <tr><td>G) Edit Gold / Mine Level</td><td>Change the debug clan's gold and mine level</td></tr>
+    <tr><td>N) Chat with NPCs</td><td>Open the full chat interface for any registered NPC</td></tr>
+    <tr><td>Q) Run Quests</td><td>Browse and run quest event scripts</td></tr>
+    <tr><td>X) Exit</td><td>Quit qtest</td></tr>
+  </table>
+
+  <h3>Testing Workflow</h3>
+  <pre>mkdir mypack-test
+cd mypack-test
+cp ../clans.pak .          # or: ln -s ../clans.pak .
+cp /path/to/mypak.pak .
+cp /path/to/clans.ini .
+cp /path/to/quests.ini .
+../qtest</pre>
+
+  <h3>Script Mode</h3>
+  <p>qtest also supports a non-interactive script mode (<code>-s</code>) for automated regression testing. In script mode, every prompt the event engine raises (choices, fight outcomes, NPC topics, numeric and string inputs) is answered by a line in a plain text script file rather than by keyboard input. After the event or chat completes, qtest prints a full Key=Value state summary to stderr so you can assert exact flag, gold, and HP values from a shell test.</p>
+  <p>Script mode is the recommended approach for building a repeatable test suite around a quest pack. Full documentation is in <code>qtest-scripting.txt</code> (included with the devkit).</p>
+</div>
+
 <!-- TOOLS OVERVIEW -->
 <div class="doc-section" id="tools-overview">
   <h2>Tool Overview</h2>
@@ -568,12 +694,12 @@ Known</pre>
     <div class="tool-card">
       <div class="tool-name">MAKEPAK.EXE</div>
       <div class="tool-usage">makepak clans.pak pak.lst</div>
-      <div class="tool-desc">Bundles multiple files into a single PAK archive. The game reads files from PAK archives transparently. See section 5.1 for full details.</div>
+      <div class="tool-desc">Bundles multiple files into a single PAK archive. The game reads files from PAK archives transparently. See <a href="#makepak">section 5.1</a> for full details.</div>
     </div>
     <div class="tool-card">
       <div class="tool-name">CHEW.EXE</div>
       <div class="tool-usage">chew archive.gum files.lst</div>
-      <div class="tool-desc">Creates .gum compressed archives for use with the INSTALL.EXE distribution system. See section 5.2 for details.</div>
+      <div class="tool-desc">Creates .gum compressed archives for use with the INSTALL.EXE distribution system. See <a href="#chew">section 5.2</a> for details.</div>
     </div>
   </div>
 

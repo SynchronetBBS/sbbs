@@ -299,7 +299,8 @@ footer {
   border-bottom-color: var(--yellow);
   background: rgba(255,255,85,0.04);
 }
-.topnav-links > a.active {
+.topnav-links > a.active,
+.topnav-drop > .topnav-label.active {
   color: var(--yellow); border-bottom-color: var(--yellow);
   text-shadow: 0 0 6px var(--yellow);
 }
