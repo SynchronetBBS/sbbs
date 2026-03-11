@@ -348,7 +348,7 @@ static void EditOption(int16_t WhichOption)
 	clrscr();
 
 	/* show help */
-	DosHelp(aszHelp[WhichOption], "reset.hlp");
+	DosHelp(aszHelp[WhichOption], "/hlp/reset");
 
 
 	switch (WhichOption) {
@@ -413,7 +413,8 @@ static void DosHelp(char *Topic, char *File)
 {
 	char *Lines[22], string[155];
 	int16_t cTemp, Found = false, CurLine, NumLines;
-	FILE *fp;
+	int32_t MaxBytes;
+	struct FileHeader FileHeader;
 	bool EndOfTopic = false;
 
 	qputs("|15", 0, 0);
@@ -422,8 +423,8 @@ static void DosHelp(char *Topic, char *File)
 
 	qputs("|01--------------------------------------------------------------------------- |09-",0,12);
 
-	fp = fopen(File, "r");
-	if (!fp) {
+	MyOpen(File, "rt", &FileHeader);
+	if (!FileHeader.fp) {
 		qputs("|12Game help not found!\n", 0, 2);
 		return;
 	}
@@ -433,8 +434,12 @@ static void DosHelp(char *Topic, char *File)
 
 	/* search for topic */
 	while (!Found) {
-		if (fgets(string, 155, fp) == NULL) {
-			fclose(fp);
+		MaxBytes = (int32_t)(FileHeader.lEnd - ftell(FileHeader.fp) + EXTRABYTES);
+		if (MaxBytes > 154)
+			MaxBytes = 154;
+
+		if (fgets(string, MaxBytes, FileHeader.fp) == NULL) {
+			fclose(FileHeader.fp);
 			qputs("|12Game help not found!\n", 0, 2);
 			for (cTemp = 0; cTemp < 22; cTemp++)
 				free(Lines[cTemp]);
@@ -442,8 +447,14 @@ static void DosHelp(char *Topic, char *File)
 		}
 
 		if (string[0] == '^') {
+			/* get rid of \n */
+			if (string[ strlen(string) - 1] == '\n')
+				string[ strlen(string) - 1] = 0;
+			if (string[ strlen(string) - 1] == '\r')
+				string[ strlen(string) - 1] = 0;
+
 			/* see if topic is correct */
-			if (strspn(&string[1], Topic) == strlen(Topic)) {
+			if (strcasecmp(&string[1], Topic) == 0) {
 				Found = true;
 			}
 		}
@@ -452,10 +463,24 @@ static void DosHelp(char *Topic, char *File)
 	while (EndOfTopic == false) {
 		/* read in up to 22 lines */
 		for (CurLine = 0; CurLine < 22; CurLine++) {
-			fgets(Lines[CurLine], 255, fp);
+			MaxBytes = (int32_t)(FileHeader.lEnd - ftell(FileHeader.fp) + EXTRABYTES);
+
+			if (MaxBytes > 254)
+				MaxBytes = 254;
+
+			if (MaxBytes == 1)
+				break;
+
+			fgets(Lines[CurLine], MaxBytes, FileHeader.fp);
 
 			if (Lines[CurLine][0] == '^') {
-				if (strspn(&Lines[CurLine][1], "END") == 3) {
+				/* get rid of \n */
+				if (Lines[CurLine][ strlen(Lines[CurLine]) - 1] == '\n')
+					Lines[CurLine][ strlen(Lines[CurLine]) - 1] = 0;
+				if (Lines[CurLine][ strlen(Lines[CurLine]) - 1] == '\r')
+					Lines[CurLine][ strlen(Lines[CurLine]) - 1] = 0;
+
+				if (strcasecmp(&Lines[CurLine][1], "END") == 0) {
 					EndOfTopic = true;
 					break;
 				}
@@ -469,7 +494,7 @@ static void DosHelp(char *Topic, char *File)
 		}
 	}
 
-	fclose(fp);
+	fclose(FileHeader.fp);
 
 	for (cTemp = 0; cTemp < 22; cTemp++)
 		free(Lines[cTemp]);
