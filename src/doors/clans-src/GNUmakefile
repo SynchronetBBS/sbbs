@@ -51,6 +51,11 @@ devkit-binaries:
 data:
 	$(MAKE) SRC=$(SRC) -C $(SRC)data all
 
+.PHONY: test
+test:
+	$(MAKE) SRC=$(SRC) -C $(SRC)src/tests test
+	$(MAKE) SRC=$(SRC) -C $(SRC)tests test
+
 .PHONY: native-devkit
 native-devkit:
 	env - PATH="$(PATH)" $(MAKE) -C $(SRC)src devkit
