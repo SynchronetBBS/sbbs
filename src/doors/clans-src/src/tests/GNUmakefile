@@ -6,6 +6,10 @@ include $(SRC)mk/Paths.gmake
 
 TESTS_BINDIR := $(SRC)bin/tests/
 
+# Auto-generate mstrings.h if missing (required by 10 test binaries)
+../mstrings.h:
+	$(MAKE) -C $(SRC)src mstrings.h
+
 
 TEST_BINARIES := $(TESTS_BINDIR)test_tools$(EXEFILE) \
                  $(TESTS_BINDIR)test_semfile$(EXEFILE) \

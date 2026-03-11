@@ -23,8 +23,12 @@ TESTS	:=	test_langcomp.sh \
 .PHONY: all
 all: test
 
+.PHONY: devkit
+devkit:
+	$(MAKE) -C $(SRC) devkit
+
 .PHONY: test
-test:
+test: | devkit
 	@mkdir -p $(CLANS_TMPDIR)
 	@ret=0; \
 	for t in $(TESTS); do \
