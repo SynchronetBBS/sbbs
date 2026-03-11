@@ -1909,6 +1909,25 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
     else
 		FtpLogFile=true;
 
+	if(Registry->ValueExists("TelnetFormVisible"))
+		ViewTelnet->Checked = Registry->ReadBool("TelnetFormVisible");
+	if(Registry->ValueExists("EventsFormVisible"))
+		ViewEvents->Checked = Registry->ReadBool("EventsFormVisible");
+	if(Registry->ValueExists("ServicesFormVisible"))
+		ViewServices->Checked = Registry->ReadBool("ServicesFormVisible");
+	if(Registry->ValueExists("NodeFormVisible"))
+		ViewNodes->Checked = Registry->ReadBool("NodeFormVisible");
+	if(Registry->ValueExists("StatsFormVisible"))
+		ViewStats->Checked = Registry->ReadBool("StatsFormVisible");
+	if(Registry->ValueExists("ClientFormVisible"))
+		ViewClients->Checked = Registry->ReadBool("ClientFormVisible");
+	if(Registry->ValueExists("FtpFormVisible"))
+		ViewFtpServer->Checked = Registry->ReadBool("FtpFormVisible");
+	if(Registry->ValueExists("WebFormVisible"))
+		ViewWebServer->Checked = Registry->ReadBool("WebFormVisible");
+	if(Registry->ValueExists("MailFormVisible"))
+		ViewMailServer->Checked = Registry->ReadBool("MailFormVisible");
+
 	Registry->CloseKey();
     delete Registry;
 
@@ -2019,15 +2038,24 @@ void __fastcall TMainForm::DisplayMainPanels(TObject* Sender)
 	else
 		ChatToggle->Checked=false;
 
-    NodeForm->Show();
-    ClientForm->Show();
-    StatsForm->Show();
-    TelnetForm->Show();
-    EventsForm->Show();
-    FtpForm->Show();
-    WebForm->Show();
-    MailForm->Show();
-    ServicesForm->Show();
+	if(ViewNodes->Checked)
+		NodeForm->Show();
+	if(ViewClients->Checked)
+		ClientForm->Show();
+	if(ViewStats->Checked)
+		StatsForm->Show();
+	if(ViewTelnet->Checked)
+		TelnetForm->Show();
+	if(ViewEvents->Checked)
+		EventsForm->Show();
+	if(ViewFtpServer->Checked)
+		FtpForm->Show();
+	if(ViewWebServer->Checked)
+		WebForm->Show();
+	if(ViewMailServer->Checked)
+		MailForm->Show();
+	if(ViewServices->Checked)
+		ServicesForm->Show();
 
 	UpperLeftPageControl->Visible=true;
 	UpperRightPageControl->Visible=true;
@@ -2036,25 +2064,6 @@ void __fastcall TMainForm::DisplayMainPanels(TObject* Sender)
 	TopPanel->Visible=true;
 	HorizontalSplitter->Visible=true;
 	BottomPanel->Visible=true;
-
-    // Work-around for CB5 PageControl anomaly
-    int i;
-
-    for(i=1;i<UpperLeftPageControl->PageCount;i++)
-        UpperLeftPageControl->ActivePageIndex=i;
-    UpperLeftPageControl->ActivePageIndex=0;
-
-    for(i=1;i<UpperRightPageControl->PageCount;i++)
-        UpperRightPageControl->ActivePageIndex=i;
-    UpperRightPageControl->ActivePageIndex=0;
-
-    for(i=1;i<LowerRightPageControl->PageCount;i++)
-        LowerRightPageControl->ActivePageIndex=i;
-    LowerRightPageControl->ActivePageIndex=0;
-
-    for(i=1;i<LowerLeftPageControl->PageCount;i++)
-        LowerLeftPageControl->ActivePageIndex=i;
-    LowerLeftPageControl->ActivePageIndex=0;
 
     /* Open Log Mailslots */
     LogTimerTick(Sender);
