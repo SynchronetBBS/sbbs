@@ -38,7 +38,7 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 {
 	struct NPCInfo *NPCInfo;
 	FILE *fpNPC, *fpNPCDat;
-	char szLine[255], *pcCurrentPos, szString[255];
+	char szLine[1024], *pcCurrentPos, szString[1024];
 	char szToken[MAX_TOKEN_CHARS + 1]/*, *pcAt*/;
 	size_t uCount;
 	int iKeyWord;
@@ -69,7 +69,7 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 	int lineno = 0;
 	for (;;) {
 		/* read in a line */
-		if (u8_fgets(szLine, 255, fpNPC, is_utf8, szInfile, &lineno) == NULL) break;
+		if (u8_fgets(szLine, sizeof(szLine), fpNPC, is_utf8, szInfile, &lineno) == NULL) break;
 
 		/* Ignore all of line after comments or CR/LF char */
 		pcCurrentPos=(char *)szLine;

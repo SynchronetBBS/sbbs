@@ -311,13 +311,15 @@ int u8_to_cp437(unsigned char *buf, size_t len,
                 const char *filename, int lineno)
 {
 	const unsigned char *src = buf;
-	const unsigned char *end = buf + len;
+	const unsigned char * const end = buf + len;
 	unsigned char *dst = buf;
+	size_t coff = 0;
 
 	while (src < end) {
 		// ASCII bytes pass through unchanged
 		if (*src < 0x80) {
 			*dst++ = *src++;
+			coff++;
 			continue;
 		}
 
@@ -325,8 +327,8 @@ int u8_to_cp437(unsigned char *buf, size_t len,
 		uint32_t cp;
 		int seqlen = decode_utf8(src, (size_t)(end - src), &cp);
 		if (seqlen < 0) {
-			fprintf(stderr, "%s:%d: invalid UTF-8 at byte offset %zu\n",
-			        filename, lineno, (size_t)(src - buf));
+			fprintf(stderr, "%s:%d: invalid UTF-8 at codepoint offset %zu (\\x%02x)\n",
+			        filename, lineno, coff, *src);
 			return -1;
 		}
 
@@ -338,6 +340,7 @@ int u8_to_cp437(unsigned char *buf, size_t len,
 		if (found) {
 			*dst++ = found->cp437;
 			src += seqlen;
+			coff++;
 			continue;
 		}
 

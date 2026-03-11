@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 	FILE *fFrom, *fTo;
 	int CurString;
 	size_t iTemp;
-	char TempString[800], String[800], FromFile[PATH_SIZE], ToFile[PATH_SIZE];
+	char TempString[2048], String[2048], FromFile[PATH_SIZE], ToFile[PATH_SIZE];
 	char HeaderFile[PATH_SIZE];
 	int writeHeader = 0;
 
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 	// read through line by line
 	int lineno = 0;
 	for (;;) {
-		if (!u8_fgets(TempString, 800, fFrom, is_utf8, FromFile, &lineno)) break;
+		if (!u8_fgets(TempString, sizeof(TempString), fFrom, is_utf8, FromFile, &lineno)) break;
 
 		if (TempString[0] == '#')   continue;       // skip if comment line
 		if (TempString[0] == ' ')   continue;       // skip if comment line

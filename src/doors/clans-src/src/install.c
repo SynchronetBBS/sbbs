@@ -75,7 +75,7 @@ static void reset_attribute(void)
 static void Display(char *szFileName)
 {
 	FILE *fpInput;
-	char szString[300];
+	char szString[1024];
 	bool FileFound = false, Done = false;
 	int CurLine, lineno = 0;
 	int is_utf8 = ini_is_utf8;

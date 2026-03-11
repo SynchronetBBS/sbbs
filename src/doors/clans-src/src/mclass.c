@@ -69,7 +69,7 @@ static void Deinit_PClasses(void)
 static int16_t Init_PClasses(char *szFileName)
 {
 	FILE *fpPClass;
-	char szLine[255], *pcCurrentPos/*, szString[255]*/;
+	char szLine[1024], *pcCurrentPos/*, szString[255]*/;
 	char szToken[MAX_TOKEN_CHARS + 1]/*, *pcAt*/;
 	size_t uCount;
 	int iKeyWord;
@@ -90,7 +90,7 @@ static int16_t Init_PClasses(char *szFileName)
 	int lineno = 0;
 	for (;;) {
 		/* read in a line */
-		if (u8_fgets(szLine, 255, fpPClass, is_utf8, szFileName, &lineno) == NULL) break;
+		if (u8_fgets(szLine, sizeof(szLine), fpPClass, is_utf8, szFileName, &lineno) == NULL) break;
 
 		/* Ignore all of line after comments or CR/LF char */
 		pcCurrentPos=(char *)szLine;

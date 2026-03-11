@@ -159,7 +159,7 @@ static void Deinit_Spells(void)
 static void Init_Spells(char *szFileName)
 {
 	FILE *fpSpell;
-	char szLine[255], *pcCurrentPos;
+	char szLine[1024], *pcCurrentPos;
 	char szToken[MAX_TOKEN_CHARS + 1];
 	size_t uCount;
 	int iKeyWord;
@@ -180,7 +180,7 @@ static void Init_Spells(char *szFileName)
 	int lineno = 0;
 	for (;;) {
 		/* read in a line */
-		if (u8_fgets(szLine, 255, fpSpell, is_utf8, szFileName, &lineno) == NULL) break;
+		if (u8_fgets(szLine, sizeof(szLine), fpSpell, is_utf8, szFileName, &lineno) == NULL) break;
 
 		/* Ignore all of line after comments or CR/LF char */
 		pcCurrentPos=(char *)szLine;

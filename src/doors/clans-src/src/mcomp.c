@@ -62,14 +62,11 @@ static struct pc TmpMonster;
 int main(int argc, char *argv[])
 {
 	FILE *fpMonIn, *fpMonOut;
-	char szLine[255], *pcCurrentPos;
-//  char szString[255];
+	char szLine[1024], *pcCurrentPos;
 	char szToken[MAX_TOKEN_CHARS + 1];
-//  char *pcAt;
 	size_t uCount;
 	int16_t iKeyWord;
 	int16_t iTemp;
-//  int16_t OrigMonIn;
 	int16_t MonIndex[MAX_MONSTERS];  /* difficulties of all monsters,
                                     0 means no monster */
 	int16_t CurMonster = -1, LastSpellSlot = 0;
@@ -104,7 +101,7 @@ int main(int argc, char *argv[])
 	int lineno = 0;
 	for (;;) {
 		/* read in a line */
-		if (u8_fgets(szLine, 255, fpMonIn, is_utf8, argv[1], &lineno) == NULL) break;
+		if (u8_fgets(szLine, sizeof(szLine), fpMonIn, is_utf8, argv[1], &lineno) == NULL) break;
 
 		/* Ignore all of line after comments or CR/LF char */
 		pcCurrentPos=(char *)szLine;
