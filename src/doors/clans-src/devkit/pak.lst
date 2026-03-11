@@ -15,6 +15,7 @@ strategy.hlp    /hlp/strategy
 village.hlp     /hlp/village
 war.hlp         /hlp/war
 wizard.hlp      /hlp/wizard
+reset.hlp       /hlp/reset
 items.dat       /dat/items
 spells.dat      /dat/spells
 races.dat       /dat/races
