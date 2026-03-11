@@ -217,7 +217,7 @@ void Clan_Update(struct clan *c)                                     { (void)c; 
 void ShowVillageStats(void)                                          {}
 void User_List(void)                                                 {}
 void User_ResetAllVotes(void)                                        {}
-void DeleteClan(int16_t id[2], char *n, bool e)                      { (void)id; (void)n; (void)e; }
+void DeleteClan(int16_t id[2], char *n)                              { (void)id; (void)n; }
 void User_Destroy(void)                                              {}
 void User_Write(void)                                                {}
 

@@ -186,7 +186,6 @@ void DisplayScores(bool MakeFile)
 		char Symbol[21], PlainSymbol[21];
 		int16_t WorldStatus;
 		bool UsedInList;
-		bool Eliminated;
 		int16_t VillageID;
 		bool Living;
 	} *SortData[128];
@@ -285,11 +284,6 @@ void DisplayScores(bool MakeFile)
 			else
 				SortData[CurClan]->IsRuler = false;
 
-			if (TmpClan.Eliminated)
-				SortData[CurClan]->Eliminated = true;
-			else
-				SortData[CurClan]->Eliminated = false;
-
 			strlcpy(SortData[CurClan]->Symbol, TmpClan.Symbol, sizeof(SortData[CurClan]->Symbol));
 			RemovePipes(TmpClan.Symbol, SortData[CurClan]->PlainSymbol);
 
@@ -369,9 +363,7 @@ void DisplayScores(bool MakeFile)
 						szPadding, SortData[ SortList[CurClan] ]->PlainSymbol,
 						(long)SortData[ SortList[CurClan] ]->Points);
 
-				if (SortData[ SortList[CurClan] ]->Eliminated)
-					strlcat(szString, ST_SCORE6ASCII, sizeof(szString));
-				else if (SortData[ SortList[CurClan] ]->WorldStatus == WS_GONE) {
+				if (SortData[ SortList[CurClan] ]->WorldStatus == WS_GONE) {
 					strlcat(szString, ST_SCORE3ASCII, sizeof(szString));
 				}
 				else {
@@ -405,9 +397,7 @@ void DisplayScores(bool MakeFile)
 						szPadding, AnsiSymbol,
 						(long)SortData[ SortList[CurClan] ]->Points);
 
-				if (SortData[ SortList[CurClan] ]->Eliminated)
-					strlcat(szString, ST_SCORE6ANSI, sizeof(szString));
-				else if (SortData[ SortList[CurClan] ]->WorldStatus == WS_GONE) {
+				if (SortData[ SortList[CurClan] ]->WorldStatus == WS_GONE) {
 					strlcat(szString, ST_SCORE3ANSI, sizeof(szString));
 				}
 				else {
@@ -444,9 +434,7 @@ void DisplayScores(bool MakeFile)
 					szPadding, SortData[ SortList[CurClan] ]->Symbol,
 					SortData[ SortList[CurClan] ]->Points);
 
-			if (SortData[ SortList[CurClan] ]->Eliminated)
-				strlcat(szString, "|04Eliminated", sizeof(szString));
-			else if (SortData[ SortList[CurClan] ]->WorldStatus == WS_GONE)
+			if (SortData[ SortList[CurClan] ]->WorldStatus == WS_GONE)
 				strlcat(szString, "|0BAway", sizeof(szString));
 			else {
 				if (SortData[ SortList[CurClan] ]->Living == false)

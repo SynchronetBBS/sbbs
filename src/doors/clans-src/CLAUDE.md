@@ -168,6 +168,13 @@ ggrep -rlP '\r$' <dir>   # correct: \r appears at line-end before \n
 - Use `ggrep` when you need `-P`, `--include`, or other GNU-specific flags.
 - When searching for raw non-ASCII bytes (e.g., `[\x80-\xFF]`), prefix the entire command with `LANG=C` to prevent locale/UTF-8 interpretation from masking matches: `LANG=C find ... -exec ggrep -lP '[\x80-\xFF]' {} \;`. Do **not** use `LANG=C` for ordinary text searches — it is only needed when the pattern itself matches raw byte values.
 
+## Task Tracking
+
+When the user asks to add an item to the todo list, append it to `docs/todo.txt`
+using the documentation format (plain ASCII, ≤79 columns, section `[X.Y]` style).
+Do **not** use the TaskCreate tool for project todos — that storage is session-only
+and is lost when the conversation ends.
+
 ## Git Workflow
 
 **NEVER run `git commit`, `git commit --amend`, or `git push` without the

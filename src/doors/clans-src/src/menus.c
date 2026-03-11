@@ -267,7 +267,7 @@ static int16_t MainMenu(void)
 		switch (GetChoice(szMainMenu, ST_ENTEROPTION, szTheOptions, "EQ?VMWCTPUH/N!1A2345", DefaultAction, true)) {
 			case '!' :    /* delete clan */
 				if (NoYes("|0SAre you sure you wish to delete your clan?!")) {
-					DeleteClan(PClan.ClanID, PClan.szName, false);
+					DeleteClan(PClan.ClanID, PClan.szName);
 
 					// if interbbs, send packet to main BBS saying this guy
 					// was deleted and that he should be removed from the userlist

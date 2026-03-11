@@ -890,7 +890,7 @@ s_clan_s(const struct clan *s, void *bufptr, size_t bufsz)
 	*dst = 0;
 	*dst |= ((s->Protection & 0x03U) << 6);
 	*dst |= (s->FirstDay ? 0x20U : 0U);
-	*dst |= (s->Eliminated ? 0x10U : 0U);
+	*dst |= (s->SpareBit ? 0x10U : 0U);
 	*dst |= (s->QuestToday ? 0x08U : 0U);
 	*dst |= (s->AttendedMass ? 0x04U : 0U);
 	*dst |= (s->GotBlessing ? 0x02U : 0U);

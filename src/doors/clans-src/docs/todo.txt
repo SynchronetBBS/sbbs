@@ -13,7 +13,7 @@ Clean up mstrings.h GNUmakefile dependencies ..................   1.2
 install: rename prompt limited to 13 characters ...............   1.4
 install: silent truncation of GUM and INI filenames ...........   1.5
 Village types defined but never assigned ......................   1.7
-Dead and orphaned help-file topics ............................   1.8
+Create shared mock library files for unit tests ...............   1.9
 
 
 
@@ -81,26 +81,18 @@ types and the item filtering becomes meaningful; (b) remove the dead
 defines, the struct field, and the items.c filter if the feature is not
 wanted.
 
-[1.8]  Dead and orphaned help-file topics
+[1.9]  Create shared mock library files for unit tests
 -------------------------------------------------------------------------------
-Two topics in menus.u8.hlp are never displayed -- no Help() or GetChoice()
-call references them, and menus.u8.hlp has no GeneralHelp() path:
+Null/stub implementations of functions such as System_Error, CheckMem,
+od_putch, and similar are duplicated across multiple files in src/tests/.
+Each test file that needs a stub defines its own copy, so changing the
+signature of a mocked function requires editing every test file that
+stubs it.
 
-    ^Eliminated     "You have been eliminated" screen; the game uses
-                    DeleteClan() and a news message instead.
-    ^Special        Promotional "door sale" copy from the original author;
-                    never referenced.
-
-Three topics in clans.hlp have no direct Help() call but remain browsable
-through the MainHelp > General Help menu (help.c GeneralHelp(ST_CLANSHLP)):
-
-    ^Newbies        Brief welcome message for new players.
-    ^Colours        Pipe-code colour instructions.
-    ^Beta Note      Bug-report URLs and feature wishlist; content is stale
-                    (dead URLs, features from the original roadmap).
-
-Options: (a) delete the two dead menus.u8.hlp topics; (b) wire ^Eliminated
-into the elimination code path so it is actually shown; (c) update the
-stale clans.hlp topics or remove the ones that duplicate information
-available elsewhere.
+Option: introduce one or more shared header files in src/tests/ (e.g.
+mocks_od.h, mocks_system.h) that provide a single canonical null
+implementation of each frequently-stubbed function.  Test files then
+include the appropriate mock header instead of defining their own copy.
+Files that need non-trivial behaviour (e.g. longjmp on System_Error)
+continue to define their own override after the shared header.
 

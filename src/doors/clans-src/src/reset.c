@@ -34,7 +34,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "structs.h"
 #include "video.h"
 
-#define MAX_OPTION      14
+#define MAX_OPTION      13
 
 /* reset types */
 #define RESET_LOCAL     1   // normal reset -- local, NO ibbs junk
@@ -108,24 +108,23 @@ static void ResetMenu(void)
 	xputs(" Game start date", 0, 2);
 	xputs(" Last date to join game", 0, 3);
 	xputs(" Village Name", 0, 4);
-	xputs(" Elimination mode", 0, 5);
 
-	xputs(" Allow interBBS clan travel", 0, 6);
-	xputs(" Days before lost troops/clans return", 0, 7);
-	xputs(" Allow clan empires", 0, 8);
-	xputs(" Mine fights per day", 0, 9);
-	xputs(" Clan fights per day", 0, 10);
+	xputs(" Allow interBBS clan travel", 0, 5);
+	xputs(" Days before lost troops/clans return", 0, 6);
+	xputs(" Allow clan empires", 0, 7);
+	xputs(" Mine fights per day", 0, 8);
+	xputs(" Clan fights per day", 0, 9);
 
-	xputs(" Max. Permanent Clan Members", 0, 11);
-	xputs(" Days of Protection for new users", 0, 12);
+	xputs(" Max. Permanent Clan Members", 0, 10);
+	xputs(" Days of Protection for new users", 0, 11);
 
-	xputs(" Reset local game with these settings", 0, 13);
-	xputs(" Join a league", 0, 14);
-	xputs(" Leaguewide reset with these settings", 0, 15);
-	xputs(" Abort reset", 0, 16);
-	qputs("|01--------------------------------------------------------------------------- |09-",0,17);
+	xputs(" Reset local game with these settings", 0, 12);
+	xputs(" Join a league", 0, 13);
+	xputs(" Leaguewide reset with these settings", 0, 14);
+	xputs(" Abort reset", 0, 15);
+	qputs("|01--------------------------------------------------------------------------- |09-",0,16);
 
-	qputs("|09 Press the up and down keys to navigate.", 0, 18);
+	qputs("|09 Press the up and down keys to navigate.", 0, 17);
 
 	/* init defaults */
 	strlcpy(ResetData.szDateGameStart, szTodaysDate, sizeof(ResetData.szDateGameStart));
@@ -134,7 +133,6 @@ static void ResetMenu(void)
 	ResetData.InterBBSGame = Config.InterBBS;
 	ResetData.LeagueWide = false;
 	ResetData.InProgress = false;
-	ResetData.EliminationMode = false;
 	ResetData.ClanTravel = true;
 	ResetData.LostDays = 3;
 	ResetData.ClanEmpires = true;
@@ -147,25 +145,22 @@ static void ResetMenu(void)
 	gotoxy(2, CurOption+3);
 
 	/* dehilight all options */
-	ColorArea(39,2, 76, 16, 15);    // choices on the right side
+	ColorArea(39,2, 76, 15, 15);    // choices on the right side
 
 	ColorArea(0, 2, 39, MAX_OPTION+2, 7);
 
 	/* dehilight options which can't be activated */
 	if (!Config.InterBBS) {
-		/*          ColorArea(0,2, 39, 13, 7); */
-		ColorArea(0,14, 76, 15,  8);
+		ColorArea(0,13, 76, 14,  8);
 	}
 	else if (Config.BBSID != 1) {
 		// not LC, can't use leaguewide reset option
-		/*          ColorArea(0,2, 39, 16, 7); */
-		ColorArea(0,15, 76, 15, 8);
-		ColorArea(0,13, 39, 13, 8);
+		ColorArea(0,14, 76, 14, 8);
+		ColorArea(0,12, 39, 12, 8);
 	}
 	else {
 		// LC's BBS AND IBBS set
-		/*                  ColorArea(0,2, 39, 16, 7); */
-		ColorArea(0,13, 39, 14, 8);
+		ColorArea(0,12, 39, 13, 8);
 	}
 
 	textattr(15);
@@ -180,7 +175,6 @@ static void ResetMenu(void)
 	UpdateOption(7);
 	UpdateOption(8);
 	UpdateOption(9);
-	UpdateOption(10);
 
 	while (!Quit) {
 		if (OldOption != CurOption) {
@@ -334,11 +328,10 @@ static void ResetMenu(void)
 
 static void EditOption(int16_t WhichOption)
 {
-	char *aszHelp[11] = {
+	char *aszHelp[10] = {
 		"Date Game Starts",
 		"Last Join Date",
 		"Village Name",
-		"Elimination Mode",
 		"Clan Travel",
 		"Lost Troops",
 		"Clan Empires",
@@ -382,37 +375,33 @@ static void EditOption(int16_t WhichOption)
 			zputs("|07Please enter the village name|08> |15");
 			DosGetStr(ResetData.szVillageName, 29, false);
 			break;
-		case 3 :    /* elimination mode? */
-			gotoxy(0, 15);
-			ResetData.EliminationMode = ResetData.EliminationMode ? YesNo("|07Setup elimination mode?") : NoYes("|07Setup elimination mode?");
-			break;
-		case 4 :    /* clan travel? */
+		case 3 :    /* clan travel? */
 			gotoxy(0, 15);
 			ResetData.ClanTravel = ResetData.ClanTravel ? YesNo("|07Allow clans to travel?") : NoYes("|07Allow clans to travel?");
 			break;
-		case 5 :    /* days before lost troops return */
+		case 4 :    /* days before lost troops return */
 			gotoxy(0, 15);
 			ResetData.LostDays = (int16_t)DosGetLong("|07Days before lost troops/clans returned?", ResetData.LostDays, 14);
 			break;
-		case 6 :    /* clan empires? */
+		case 5 :    /* clan empires? */
 			gotoxy(0, 15);
 			ResetData.ClanEmpires = ResetData.ClanEmpires ? YesNo("|07Allow clans to create empires?") : NoYes("|07Allow clans to create empires?");
 			break;
-		case 7 :    /* mine fights */
+		case 6 :    /* mine fights */
 			gotoxy(0, 15);
 			ResetData.MineFights = (int16_t)DosGetLong("|07How many mine fights per day?", ResetData.MineFights, 50);
 			break;
-		case 8 :    /* clan combat */
+		case 7 :    /* clan combat */
 			gotoxy(0, 15);
 			ResetData.ClanFights = (int16_t)DosGetLong("|07How many clan fights per day?", ResetData.ClanFights, MAX_CLANCOMBAT);
 			break;
-		case 9 :    /* max permanent clan members */
+		case 8 :    /* max permanent clan members */
 			gotoxy(0, 15);
 			ResetData.MaxPermanentMembers = (int16_t)DosGetLong("|07How many members?", ResetData.MaxPermanentMembers, 6);
 			if (ResetData.MaxPermanentMembers == 0)
 				ResetData.MaxPermanentMembers = 1;
 			break;
-		case 10:    /* days of protection */
+		case 9:     /* days of protection */
 			gotoxy(0, 15);
 			ResetData.DaysOfProtection = (int16_t)DosGetLong("|07How many days?", ResetData.DaysOfProtection, 16);
 			break;
@@ -795,42 +784,36 @@ static void UpdateOption(int16_t Option)
 			xputs(ResetData.szVillageName, 40, 4);
 			break;
 		case 3:
-			if (ResetData.EliminationMode)
+			if (ResetData.ClanTravel)
 				xputs("Yes", 40, 5);
 			else
 				xputs("No ", 40, 5);
 			break;
 		case 4:
-			if (ResetData.ClanTravel)
-				xputs("Yes", 40, 6);
-			else
-				xputs("No ", 40, 6);
+			snprintf(szString, sizeof(szString), "%-2d ", ResetData.LostDays);
+			xputs(szString, 40, 6);
 			break;
 		case 5:
-			snprintf(szString, sizeof(szString), "%-2d ", ResetData.LostDays);
-			xputs(szString, 40, 7);
+			if (ResetData.ClanEmpires)
+				xputs("Yes", 40, 7);
+			else
+				xputs("No ", 40, 7);
 			break;
 		case 6:
-			if (ResetData.ClanEmpires)
-				xputs("Yes", 40, 8);
-			else
-				xputs("No ", 40, 8);
+			snprintf(szString, sizeof(szString), "%-2d ", ResetData.MineFights);
+			xputs(szString, 40, 8);
 			break;
 		case 7:
-			snprintf(szString, sizeof(szString), "%-2d ", ResetData.MineFights);
+			snprintf(szString, sizeof(szString), "%-2d ", ResetData.ClanFights);
 			xputs(szString, 40, 9);
 			break;
 		case 8:
-			snprintf(szString, sizeof(szString), "%-2d ", ResetData.ClanFights);
+			snprintf(szString, sizeof(szString), "%-2d ", ResetData.MaxPermanentMembers);
 			xputs(szString, 40, 10);
 			break;
 		case 9:
-			snprintf(szString, sizeof(szString), "%-2d ", ResetData.MaxPermanentMembers);
-			xputs(szString, 40, 11);
-			break;
-		case 10:
 			snprintf(szString, sizeof(szString), "%-2d ", ResetData.DaysOfProtection);
-			xputs(szString, 40, 12);
+			xputs(szString, 40, 11);
 			break;
 	}
 }

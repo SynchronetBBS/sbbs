@@ -296,16 +296,6 @@ Menus
 |0D═══─────────────────────────────────────────────────────────────────────────═══
 ^END
 
-^Eliminated
-
- |02You have been eliminated from play by another clan!  You may wish to see
- the daily news for information on who caused your destruction.
-
- |10After you exit the door, you may enter it again and start over.
-
-%P
-^END
-
 ^Item Help
 
 |0A(|0BL|0A)|0Cist items                -- list items in inventory

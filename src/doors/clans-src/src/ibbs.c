@@ -2224,11 +2224,6 @@ void IBBS_LeagueInfo(void)
 		rputs("A game is currently in progress.\n");
 		snprintf(szString, sizeof(szString), "Days in progress |07%" PRId32 "|06\n", DaysBetween(Game.Data.szDateGameStart, System.szTodaysDate));
 		rputs(szString);
-		/*
-		            snprintf(szString, sizeof(szString), "Elimination mode is |14%s|06\n",
-		                World.EliminationMode ? "ON" : "OFF");
-		            rputs(szString);
-		*/
 	}
 	else if (Game.Data.GameState == 2) {
 		rputs("The game is waiting for the main BBS's OK.\n");
@@ -2469,7 +2464,7 @@ static void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 			Clan->Empire.Army.Knights   += TmpClan.Empire.Army.Knights;
 			Clan->PublicMsgIndex         = TmpClan.PublicMsgIndex;
 			Clan->MadeAlliance           = TmpClan.MadeAlliance;
-			Clan->Eliminated             = false;
+			Clan->SpareBit               = false;
 
 			// make it so no quests known are same
 			for (iTemp = 0; iTemp < MAX_QUESTS/8; iTemp++) {
@@ -2806,7 +2801,7 @@ HandleDelUserPacket(FILE* fp)
 	snprintf(szString, sizeof(szString), "deleting %s\n", User.szName);
 	LogDisplayStr(szString);
 
-	DeleteClan(User.ClanID, User.szName, false);
+	DeleteClan(User.ClanID, User.szName);
 }
 
 static void
@@ -2822,7 +2817,7 @@ HandleSubUserPacket(FILE* fp)
 	LogDisplayStr(szString);
 
 	// remove him from clan data AND userlist (done in DeleteClan)
-	DeleteClan(User.ClanID, User.szName, false);
+	DeleteClan(User.ClanID, User.szName);
 }
 
 static void

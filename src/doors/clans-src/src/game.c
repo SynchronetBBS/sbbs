@@ -86,10 +86,6 @@ void Game_Settings(void)
 
 	snprintf(szString, sizeof(szString), ST_GSETTINGS0, Game.Data.szDateGameStart);
 	rputs(szString);
-	/* REP:
-	snprintf(szString, sizeof(szString), ST_GSETTINGS1, Game.Data.EliminationMode ? "On" : "Off");
-	rputs(szString);
-	*/
 	snprintf(szString, sizeof(szString), ST_GSETTINGS2, (int)Game.Data.MaxPermanentMembers);
 	rputs(szString);
 

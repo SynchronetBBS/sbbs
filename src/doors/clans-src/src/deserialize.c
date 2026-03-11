@@ -909,7 +909,7 @@ s_clan_d(const void *bufptr, size_t bufsz, struct clan *s)
 	if (!remain)
 		return SIZE_MAX;
 	s->FirstDay = (*src & 0x20 ? 1U : 0U);
-	s->Eliminated = (*src & 0x10 ? 1U : 0U);
+	s->SpareBit = (*src & 0x10 ? 1U : 0U);
 	s->QuestToday = (*src & 0x08 ? 1U : 0U);
 	s->AttendedMass = (*src & 0x04 ? 1U : 0U);
 	s->GotBlessing = (*src & 0x02 ? 1U : 0U);

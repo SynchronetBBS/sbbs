@@ -150,7 +150,7 @@ void User_ResetAllVotes(void)
 
 
 // ------------------------------------------------------------------------- //
-void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
+void DeleteClan(int16_t ClanID[2], char *szClanName)
 {
 	FILE *fpOldPC, *fpNewPC, *OldMessage, *NewMessage;
 	FILE *fpTradeFile;
@@ -203,19 +203,10 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 			if (TmpClan.ClanID[0] == ClanID[0] && TmpClan.ClanID[1] == ClanID[1]) {
 				FoundInPCFile = true;
 
-				if (Eliminate == false) {
-					// skip the guy since we're deleting him
-					// skip 6 members
-					fseek(fpOldPC, 6L * BUF_SIZE_pc, SEEK_CUR);
-					continue;
-				}
-				else {
-					//==== eliminated, might as well get rid of his allies
-					// to clean things up
-					// see if this clan is allied with him, if so, remove from allies list
-					for (iTemp = 0; iTemp < MAX_ALLIES; iTemp++)
-						TmpClan.Alliances[iTemp] = -1;
-				}
+				// skip the guy since we're deleting him
+				// skip 6 members
+				fseek(fpOldPC, 6L * BUF_SIZE_pc, SEEK_CUR);
+				continue;
 			}
 
 			// read in 6 members
@@ -347,14 +338,8 @@ void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate)
 
 
 	// add message to news
-	if (*szClanName && FoundInPCFile && Eliminate == false &&
-			PClan.Eliminated == false) {
+	if (*szClanName && FoundInPCFile) {
 		snprintf(szString, sizeof(szString), "|0A \xaf\xaf\xaf |0CThe clan of |0D%s |0Chas disbanded!\n\n",
-				szClanName);
-		News_AddNews(szString);
-	}
-	else if (*szClanName && FoundInPCFile && Eliminate) {
-		snprintf(szString, sizeof(szString), "|0A \xaf\xaf\xaf |0CThe clan of |0D%s |0Chas been eliminated!\n\n",
 				szClanName);
 		News_AddNews(szString);
 	}
@@ -1805,7 +1790,7 @@ static bool User_Create(void)
 	PClan.MineLevel = 1;
 	PClan.PublicMsgIndex = 0;
 	PClan.MadeAlliance = false;
-	PClan.Eliminated = false;
+	PClan.SpareBit = false;
 	PClan.WasRulerToday = false;
 	PClan.FirstDay = true;
 	PClan.Protection = (unsigned)(Game.Data.DaysOfProtection & 0x0F);

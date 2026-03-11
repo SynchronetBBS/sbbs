@@ -64,7 +64,7 @@ void User_List(void);
 
 void User_ResetAllVotes(void);
 
-void DeleteClan(int16_t ClanID[2], char *szClanName, bool Eliminate);
+void DeleteClan(int16_t ClanID[2], char *szClanName);
 
 void User_Destroy(void);
 

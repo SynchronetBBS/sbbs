@@ -350,7 +350,7 @@ struct clan {
 	MadeAlliance  : 1,
 	Protection    : 4,
 	FirstDay      : 1,
-	Eliminated    : 1,
+	SpareBit      : 1,
 	QuestToday    : 1,
 	AttendedMass  : 1,
 	GotBlessing   : 1,
@@ -651,7 +651,6 @@ struct ResetData {
 	bool InterBBSGame;
 	bool LeagueWide;
 	bool InProgress;
-	bool EliminationMode;
 
 	bool ClanTravel;
 	int16_t LostDays;
