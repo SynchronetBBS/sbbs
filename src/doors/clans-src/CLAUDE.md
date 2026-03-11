@@ -83,7 +83,7 @@ Binary files use explicit XOR encryption constants (e.g., `XOR_VILLAGE = 9`, `XO
 
 ### Language/String System
 
-User-visible strings are compiled from `strings.txt` → `strings.xl` using the `langcomp` devkit tool. Strings are accessed via macros in `mstrings.h`. Do not hardcode new user-visible strings; add them to `strings.txt` and recompile. `src/mstrings.h` is auto-generated — do not hand-edit it. To rebuild: `gmake -C data/ strings.xl` (regenerates both `data/strings.xl` and `src/mstrings.h`).
+User-visible strings are compiled from `strings.u8.txt` → `strings.xl` using the `langcomp` devkit tool. Strings are accessed via macros in `mstrings.h`. Do not hardcode new user-visible strings; add them to `data/strings.u8.txt` and recompile. `src/mstrings.h` is auto-generated — do not hand-edit it. To rebuild: `gmake -C data/ strings.xl` (regenerates both `data/strings.xl` and `src/mstrings.h`).
 
 ### Inter-BBS (IBBS) System
 
@@ -118,30 +118,39 @@ files in `docs/`, `installer/`, `installerdk/`, `release/`.
 **`.gitattributes`** at the repo root overrides: `*.asc text !eol` (native line endings,
 overriding parent's `eol=crlf`); `*.ans -text !eol` (binary).
 
-### CP437 encoding — DO NOT READ OR WRITE THESE FILES AS UTF-8
+### CP437 encoding and UTF-8 equivalents
 
-The following files contain raw CP437 bytes (`\x80-\xFF`: box-drawing characters,
-block elements, etc.).  The Read, Edit, and Write tools interpret files as UTF-8 and
-**will silently corrupt every CP437 byte** into U+FFFD (the 3-byte replacement
-character `\xEF\xBF\xBD`).  This has already caused data loss twice.
+Ten stock data files contain raw CP437 bytes (`\x80-\xFF`: box-drawing
+characters, block elements, etc.).  Each now has a **UTF-8 equivalent** with
+`.u8.` in the filename (e.g., `data/menus.u8.hlp`).  The build system
+compiles from the `.u8.` files; the original CP437 files are kept for
+reference.
 
-**NEVER use the Read, Edit, or Write tools on these files.**  Always use Python
-binary mode (`open(path, 'rb')` / `open(path, 'wb')`) via the Bash tool instead.
+**Edit the `.u8.` files** — they are valid UTF-8 and safe with Read, Edit,
+and Write tools.  **NEVER use Read, Edit, or Write on the original CP437
+files** listed below; those tools corrupt every CP437 byte into U+FFFD.
+Use Python binary mode (`open(path, 'rb')`) via Bash if you need to inspect
+an original.
 
-| File | CP437 lines | Content |
-|------|-------------|---------|
-| `data/menus.hlp` | 120 | Main menu screens, welcome art, box-drawing art |
-| `data/strings.txt` | 74 | Language strings with dividers/bullets |
-| `data/npcquote.txt` | 14 | NPC quote data |
-| `data/pg.asc` | 9 | Page display art |
-| `data/pxtit.asc` | 9 | Title screen art |
-| `data/spells.txt` | 38 | Spell data with decorative chars |
-| `data/clans.txt` | 5 | Game description with bullet chars |
-| `installerdk/clandev.ini` | 13 | Devkit installer, ANSI art banner |
-| `devkit/example.ini` | 10 | Example config, box-drawing dividers |
-| `installer/install.ini` | 1 | Game installer, ANSI art line |
-| `release/clanad.ans` | 35 | ANSI advertisement (treat as binary) |
-| `data/orphans/*.e,*.mon,*.q` | many | Compiled binary data files |
+| CP437 original | UTF-8 equivalent | Content |
+|----------------|------------------|---------|
+| `data/menus.hlp` | `data/menus.u8.hlp` | Main menu screens, box-drawing art |
+| `data/strings.txt` | `data/strings.u8.txt` | Language strings with dividers/bullets |
+| `data/npcquote.txt` | `data/npcquote.u8.txt` | NPC quote data |
+| `data/pg.asc` | `data/pg.u8.asc` | Page display art |
+| `data/pxtit.asc` | `data/pxtit.u8.asc` | Title screen art |
+| `data/spells.txt` | `data/spells.u8.txt` | Spell data with decorative chars |
+| `data/clans.txt` | `data/clans.u8.txt` | NPC definitions with bullet chars |
+| `installerdk/clandev.ini` | `installerdk/clandev.u8.ini` | Devkit installer, ANSI art banner |
+| `devkit/example.ini` | `devkit/example.u8.ini` | Example config, box-drawing dividers |
+| `installer/install.ini` | `installer/install.u8.ini` | Game installer, ANSI art line |
+
+The following files have **no UTF-8 equivalent** — always use Python binary mode:
+
+| File | Content |
+|------|---------|
+| `release/clanad.ans` | ANSI advertisement (treat as binary) |
+| `data/orphans/*.e,*.mon,*.q` | Compiled binary data files |
 
 ### Finding CRLF files
 

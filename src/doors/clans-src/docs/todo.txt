@@ -118,12 +118,13 @@ Full design reference in docs/utf8.txt.
 
 [1.10]  Convert stock CP437 data files to UTF-8
 -------------------------------------------------------------------------------
-After [1.9] is complete, convert the 10 stock CP437 text files to UTF-8
-using the .u8. naming convention (e.g., strings.u8.txt).  Verify identical
-binary output by comparing before/after .xl/.pak files.  Keep original
-CP437 files as reference until verified.  Files: strings.txt, menus.hlp,
-npcquote.txt, pg.asc, pxtit.asc, spells.txt, clans.txt, clandev.ini,
-example.ini, install.ini.
+Done.  All 10 stock CP437 text files converted to UTF-8 with .u8. naming.
+The 7 data/ files are wired into the build (data/GNUmakefile, data/pak.lst);
+the 3 installer .ini files are created but not wired in (see [1.11]).
+Binary output verified byte-identical (strings.xl, npcquote.q, spells.spl,
+clans.npc, clans.pak, mstrings.h).  Build system updated: data/GNUmakefile,
+data/pak.lst, root GNUmakefile devkit target, devkit/genall.mak,
+devkit/genall.bat.  Original CP437 files kept in repo for reference.
 
 [1.11]  UTF-8 support for install.c
 -------------------------------------------------------------------------------

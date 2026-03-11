@@ -20,8 +20,8 @@ LOG = TMP.FIL
 
 all: clans.pak
 
-strings.xl: strings.txt
-	$(LANGCOMP) strings.txt > $(LOG)
+strings.xl: strings.u8.txt
+	$(LANGCOMP) strings.u8.txt > $(LOG)
 
 event.mon: eventmon.txt
 	$(MCOMP) eventmon.txt event.mon >> $(LOG)
@@ -29,8 +29,8 @@ event.mon: eventmon.txt
 output.mon: monsters.txt
 	$(MCOMP) monsters.txt output.mon >> $(LOG)
 
-spells.dat: spells.txt
-	$(MSPELLS) spells.txt spells.dat >> $(LOG)
+spells.dat: spells.u8.txt
+	$(MSPELLS) spells.u8.txt spells.dat >> $(LOG)
 
 items.dat: items.txt
 	$(MITEMS) items.txt items.dat >> $(LOG)
@@ -41,8 +41,8 @@ classes.cls: classes.txt
 races.cls: races.txt
 	$(MCLASS) races.txt races.cls >> $(LOG)
 
-clans.npc: npcs.txt
-	$(MAKENPC) npcs.txt clans.npc >> $(LOG)
+clans.npc: npcs.u8.txt
+	$(MAKENPC) npcs.u8.txt clans.npc >> $(LOG)
 
 pray.e: pray.evt
 	$(ECOMP) pray.evt pray.e >> $(LOG)

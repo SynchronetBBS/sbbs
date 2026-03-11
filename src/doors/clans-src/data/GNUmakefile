@@ -38,8 +38,12 @@ $(BINDIR)makepak$(NATIVEEXEFILE): native-devkit
 %.q: %.txt $(BINDIR)ecomp $(BINDIR)ecomp$(NATIVEEXEFILE) | native-devkit
 	$(BINDIR)ecomp $< $@
 
+# Stock data files: compile from UTF-8 source
+npcquote.q: npcquote.u8.txt $(BINDIR)ecomp $(BINDIR)ecomp$(NATIVEEXEFILE) | native-devkit
+	$(BINDIR)ecomp $< $@
+
 # strings.xl also regenerates the C header so game source stays in sync
-strings.xl: strings.txt $(BINDIR)langcomp $(BINDIR)langcomp$(NATIVEEXEFILE) | native-devkit
+strings.xl: strings.u8.txt $(BINDIR)langcomp $(BINDIR)langcomp$(NATIVEEXEFILE) | native-devkit
 	$(BINDIR)langcomp $< $@ $(SRC)src/mstrings.h
 
 %.xl: %.txt $(BINDIR)langcomp $(BINDIR)langcomp$(NATIVEEXEFILE) | native-devkit
@@ -51,6 +55,9 @@ strings.xl: strings.txt $(BINDIR)langcomp $(BINDIR)langcomp$(NATIVEEXEFILE) | na
 %.spl: %.txt $(BINDIR)mspells $(BINDIR)mspells$(NATIVEEXEFILE) | native-devkit
 	$(BINDIR)mspells $< $@
 
+spells.spl: spells.u8.txt $(BINDIR)mspells $(BINDIR)mspells$(NATIVEEXEFILE) | native-devkit
+	$(BINDIR)mspells $< $@
+
 %.itm: %.txt $(BINDIR)mitems $(BINDIR)mitems$(NATIVEEXEFILE) | native-devkit
 	$(BINDIR)mitems $< $@
 
@@ -58,6 +65,9 @@ strings.xl: strings.txt $(BINDIR)langcomp $(BINDIR)langcomp$(NATIVEEXEFILE) | na
 	$(BINDIR)mclass $< $@
 
 %.npc: %.txt $(BINDIR)makenpc $(BINDIR)makenpc$(NATIVEEXEFILE) | native-devkit
+	$(BINDIR)makenpc $< $@
+
+clans.npc: clans.u8.txt $(BINDIR)makenpc $(BINDIR)makenpc$(NATIVEEXEFILE) | native-devkit
 	$(BINDIR)makenpc $< $@
 
 clans.pak: pak.lst $(PAKFILES) $(BINDIR)makepak$(NATIVEEXEFILE)

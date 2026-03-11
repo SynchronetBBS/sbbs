@@ -1,4 +1,4 @@
-menus.hlp       /hlp/menus
+menus.u8.hlp    /hlp/menus
 bulletin.hlp    /hlp/bulletins
 citizen.hlp     /hlp/citizen
 clans.hlp       /hlp/general
@@ -32,6 +32,6 @@ classes.cls     /dat/classes
 schemes.txt     /d/Schemes
 strings.xl      /dat/Language
 list.asc        /px/List
-pxtit.asc       /px/Title
-pg.asc          /px/Pg
+pxtit.u8.asc    /px/Title
+pg.u8.asc       /px/Pg
 pxnews.asc      /px/News

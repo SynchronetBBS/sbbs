@@ -32,10 +32,10 @@ devkit: devkit-binaries
 	cp $(SRC)data/items.txt .
 	cp $(SRC)data/monsters.txt .
 	cp $(SRC)data/npc-pc.txt .
-	cp $(SRC)data/npcquote.txt .
+	cp $(SRC)data/npcquote.u8.txt .
 	cp $(SRC)data/races.txt .
-	cp $(SRC)data/spells.txt .
-	cp $(SRC)data/clans.txt ./npcs.txt
+	cp $(SRC)data/spells.u8.txt .
+	cp $(SRC)data/clans.u8.txt ./npcs.u8.txt
 
 all: game installer devkit devkit-installer
 
