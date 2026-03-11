@@ -15,6 +15,7 @@ strategy.hlp    /hlp/strategy
 village.hlp     /hlp/village
 war.hlp         /hlp/war
 wizard.hlp      /hlp/wizard
+reset.hlp       /hlp/reset
 quests.e        /e/MyQuests
 eva.e           /e/Eva
 church.e        /e/Church

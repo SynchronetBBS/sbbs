@@ -188,6 +188,9 @@ static tODKeySequence ODaKeySequences[] =
    {"\033OH", ANSI_KEY_HOME},
    {"\033OK", ANSI_KEY_END},
 
+   /* Microsoft Console Virtual Terminal and old SCO terminals */
+   {"\033[F", ANSI_KEY_END},
+
    /* Terminator */
    {"",0}
 };

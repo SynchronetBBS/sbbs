@@ -30,13 +30,22 @@ Build output goes to `bin/<platform>/` (e.g., `bin/freebsd.amd64.opt/`,
 
 ## Testing
 
-### Integration tests (devkit tools)
-
-Shell-based integration tests live in `tests/`. Each devkit tool has a corresponding script. Run them all with:
+Run all tests (unit + integration) from the project root:
 
 ```sh
-gmake -C tests/ test
+gmake test
 ```
+
+This runs both the unit tests (`src/tests/`) and integration tests (`tests/`), in that order. Individual suites can also be run separately:
+
+```sh
+gmake -C src/tests/ test   # unit tests only
+gmake -C tests/ test       # integration tests (devkit tools) only
+```
+
+### Integration tests (devkit tools)
+
+Shell-based integration tests live in `tests/`. Each devkit tool has a corresponding script.
 
 The GNUmakefile in `tests/` includes `mk/Platform.gmake` and `mk/Paths.gmake` to resolve the correct platform-suffixed binary names, and exports `BINDIR`, `EXEFILE`, `FIXTURE_DIR`, and `CLANS_TMPDIR` to the scripts. Fixtures live in `tests/fixtures/<tool>/`. Temporary output goes to `tests/tmp/` (created automatically, cleaned by `gmake -C tests/ clean`).
 
