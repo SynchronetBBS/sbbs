@@ -170,11 +170,12 @@ ggrep -rlP '\r$' <dir>   # correct: \r appears at line-end before \n
 
 ## Git Workflow
 
-**NEVER run `git commit` without the user explicitly requesting it.**  Prepare
-changes, show a summary if helpful, and wait for the user to say "commit" or
-equivalent before running any `git commit` command.  The same rule applies to
-`git push`.  **Permission does NOT carry over between tasks** — each commit
-and each push requires its own explicit authorization in the current context.
+**NEVER run `git commit`, `git commit --amend`, or `git push` without the
+user explicitly requesting it.**  Prepare changes, show a summary if helpful,
+and wait for the user to say "commit", "amend", "push", or equivalent before
+running any of these commands.  **Permission does NOT carry over between
+tasks** — each commit, amend, and push requires its own explicit authorization
+in the current context.
 
 ## Code Style
 
