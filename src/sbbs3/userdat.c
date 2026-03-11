@@ -3882,8 +3882,6 @@ bool user_can_post(scfg_t* cfg, int subnum, user_t* user, client_t* client, uint
 /****************************************************************************/
 bool user_can_access_lib(scfg_t* cfg, int libnum, user_t* user, client_t* client)
 {
-	uint count = 0;
-
 	for (int dirnum = 0; dirnum < cfg->total_dirs; dirnum++) {
 		if (cfg->dir[dirnum]->lib != libnum)
 			continue;
