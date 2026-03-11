@@ -28,14 +28,6 @@ game:	data binaries
 devkit: devkit-binaries
 	cp $(DEVKIT_BINARIES) .
 	cp $(SRC)devkit/* .
-	cp $(SRC)data/classes.txt .
-	cp $(SRC)data/items.txt .
-	cp $(SRC)data/monsters.txt .
-	cp $(SRC)data/npc-pc.txt .
-	cp $(SRC)data/npcquote.u8.txt .
-	cp $(SRC)data/races.txt .
-	cp $(SRC)data/spells.u8.txt .
-	cp $(SRC)data/clans.u8.txt ./npcs.u8.txt
 
 all: game installer devkit devkit-installer
 
@@ -80,6 +72,14 @@ devkit-installer: devkit-binaries native-devkit
 	rm -rf $(SRC)stagedk
 	mkdir -p $(SRC)stagedk/gum
 	cd $(SRC)stagedk/gum && $(MAKE) SRC=$(SRC) -f $(SRC)/GNUmakefile devkit
+	cp $(SRC)data/classes.txt $(SRC)stagedk/gum/
+	cp $(SRC)data/items.txt $(SRC)stagedk/gum/
+	cp $(SRC)data/monsters.txt $(SRC)stagedk/gum/
+	cp $(SRC)data/npc-pc.txt $(SRC)stagedk/gum/
+	cp $(SRC)data/npcquote.u8.txt $(SRC)stagedk/gum/
+	cp $(SRC)data/races.txt $(SRC)stagedk/gum/
+	cp $(SRC)data/spells.u8.txt $(SRC)stagedk/gum/
+	cp $(SRC)data/clans.u8.txt $(SRC)stagedk/gum/npcs.u8.txt
 	cd $(SRC)stagedk/gum && ls -p1 | grep -v /$ > ../files.lst
 	cd $(SRC)stagedk/gum && $(BINDIR)chew$(NATIVEEXEFILE) ../clandev.gum ../files.lst
 	rm -rf $(SRC)stagedk/gum
