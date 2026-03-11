@@ -40,7 +40,11 @@ link_list_t* listInit(link_list_t* list, int flags)
 
 #if defined(LINK_LIST_THREADSAFE)
 	if (list->flags & LINK_LIST_MUTEX) {
+#ifdef _WIN32
+		pthread_mutex_init(&list->mutex, NULL);
+#else
 		list->mutex = pthread_mutex_initializer_np(/* recursive: */ true);
+#endif
 	}
 
 	if (list->flags & LINK_LIST_SEMAPHORE)
