@@ -6010,10 +6010,9 @@ static void sendmail_thread(void* arg)
 		active_sendmail = 0, update_clients();
 
 	sendmail_running = false;
-	{
-		int32_t remain = thread_down();
-		lprintf(LOG_DEBUG, "0000 SendMail thread terminated (%u threads remain)", remain);
-	}
+	lprintf(LOG_DEBUG, "0000 SendMail thread terminated (%u threads remain)"
+	        , protected_uint32_value(thread_count) - 1);
+	thread_down();
 }
 
 void mail_terminate(void)

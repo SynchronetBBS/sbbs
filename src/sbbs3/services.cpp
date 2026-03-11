@@ -1325,10 +1325,10 @@ static void js_service_thread(void* arg)
 		destroy_session(lprintf, service_client.tls_sess);
 	client_off(socket);
 	close_socket(socket);
-	thread_down();
 	if (service->log_level >= LOG_INFO)
 		lprintf(LOG_INFO, "%04d %s [%s] JavaScript service thread terminated (%lu clients remain, %lu total, %lu served)"
 		        , socket, service->protocol, client.addr, remain, active_clients(), service->served);
+	thread_down();
 }
 
 static void js_static_service_thread(void* arg)
@@ -1434,10 +1434,10 @@ static void js_static_service_thread(void* arg)
 	service->set = NULL;
 
 	service->running = false;
-	thread_down();
 	if (service->log_level >= LOG_INFO)
 		lprintf(LOG_INFO, "%s static JavaScript service thread terminated (%lu clients served)"
 		        , service->protocol, service->served);
+	thread_down();
 }
 
 struct native_service_instance {
@@ -1509,10 +1509,10 @@ static void native_static_service_thread(void* arg)
 	closesocket(socket_dup);    /* close duplicate handle */
 
 	service->running--;
-	thread_down();
 	if (inst.service->log_level >= LOG_INFO)
 		lprintf(LOG_INFO, "%04d %s static service thread terminated (%lu clients served)"
 		        , inst.socket, service->protocol, service->served);
+	thread_down();
 }
 
 static void native_service_thread(void* arg)
@@ -1656,10 +1656,10 @@ static void native_service_thread(void* arg)
 	client_off(socket);
 	close_socket(socket);
 	closesocket(socket_dup);    /* close duplicate handle */
-	thread_down();
 	if (service->log_level >= LOG_INFO)
 		lprintf(LOG_INFO, "%04d %s service thread terminated (%lu clients remain, %lu total, %lu served)"
 		        , socket, service->protocol, remain, active_clients(), service->served);
+	thread_down();
 }
 
 

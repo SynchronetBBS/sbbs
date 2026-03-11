@@ -2420,9 +2420,9 @@ void input_thread(void *arg)
 	if (node_socket[sbbs->cfg.node_num - 1] == INVALID_SOCKET)   // Shutdown locally
 		sbbs->terminated = true;    // Signal JS to stop execution
 
-	thread_down();
 	lprintf(LOG_DEBUG, "Node %d input thread terminated (received %" PRIu64 " bytes in %u blocks)"
 	        , sbbs->cfg.node_num, total_recv, total_pkts);
+	thread_down();
 }
 
 // Flush the duplicate client_socket when activating the passthru socket
@@ -2533,8 +2533,8 @@ void passthru_thread(void* arg)
 	}
 	sbbs->passthru_thread_running = false;
 	sbbs->passthru_socket_active = false;
-	thread_down();
 	lprintf(LOG_DEBUG, "Node %d passthru thread terminated", sbbs->cfg.node_num);
+	thread_down();
 }
 
 void output_thread(void* arg)
@@ -2787,8 +2787,8 @@ void output_thread(void* arg)
 	else
 		stats[0] = 0;
 
-	thread_down();
 	lprintf(LOG_DEBUG, "%s output thread terminated %s", node, stats);
+	thread_down();
 }
 
 static bool is_day_to_run(const struct tm* now, uint8_t days, uint16_t months = 0, uint32_t mdays = 0)

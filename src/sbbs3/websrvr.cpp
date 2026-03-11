@@ -7135,14 +7135,13 @@ void http_session_thread(void* arg)
 	update_clients();
 	client_off(socket);
 
-	uint32_t threads_remain = thread_down();
-
 	if (startup->index_file_name == NULL || startup->cgi_ext == NULL)
 		lprintf(LOG_DEBUG, "%04d !!! ALL YOUR BASE ARE BELONG TO US !!!", socket);
 
 	lprintf(LOG_INFO, "%04d %-5s [%s] Session thread terminated after %u requests (%u clients and %u threads remain, %lu served, %u concurrently)"
-	        , socket, session.client.protocol, session.host_ip, session.requests, clients_remain, threads_remain, ++served, client_highwater);
-
+	        , socket, session.client.protocol, session.host_ip, session.requests
+	        , clients_remain, protected_uint32_value(thread_count) - 1, ++served, client_highwater);
+	thread_down();
 }
 
 void web_terminate(void)
