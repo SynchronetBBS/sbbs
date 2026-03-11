@@ -398,15 +398,6 @@ e|0A(|0BX|0A)|0Camine item              -- see an item's statistics
 |0D═══─────────────────────────────────────────────────────────────────────────═══
 ^END
 
-^Special
-%C|13 Special Deals on Allen Ussher's Doors
-
-|07 I am having a door sale!  See the (B)ulletins for info in the pre-game
- menu of The Clans.
-
-^PAUSE
-^END
-
 ^Welcome
 %C%N
 `00`0B `05█▀▀▀▀▀▀▀█▄███▀████████████▄██▀███████▄██`5D░`05██`5E▒`05███▄ `03▄▄`0B
