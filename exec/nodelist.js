@@ -80,13 +80,13 @@ do {
 		}
 		else if(clear)
 			console.clear();
-		write(bbs.text(NodeLstHdr));
+		console.putmsg(bbs.text(NodeLstHdr));
 	}
 	var output = presence.nodelist(/* print: */true, active, listself, is_sysop, options);
 	for(var i in output)
 		writeln(output[i]);
 	if(js.global.bbs && active && !output)
-		write(bbs.text(NoOtherActiveNodes));
+		console.putmsg(bbs.text(NoOtherActiveNodes));
 	if(!loop)
 		break;
 	if(js.global.console) {
