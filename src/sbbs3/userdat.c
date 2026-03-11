@@ -3810,15 +3810,13 @@ size_t user_field_len(enum user_field fnum)
 /****************************************************************************/
 bool user_can_access_grp(scfg_t* cfg, int grpnum, user_t* user, client_t* client)
 {
-	uint count = 0;
-
 	for (int subnum = 0; subnum < cfg->total_subs; ++subnum) {
 		if (cfg->sub[subnum]->grp != grpnum)
 			continue;
 		if (user_can_access_sub(cfg, subnum, user, client)) // checks grp's AR already
-			count++;
+			return true;
 	}
-	return count >= 1; // User has access to one or more sub-boards of group
+	return false; // User does not have access to any sub-boards of group
 }
 
 /****************************************************************************/
@@ -3890,9 +3888,9 @@ bool user_can_access_lib(scfg_t* cfg, int libnum, user_t* user, client_t* client
 		if (cfg->dir[dirnum]->lib != libnum)
 			continue;
 		if (user_can_access_dir(cfg, dirnum, user, client)) // checks lib's AR already
-			count++;
+			return true;
 	}
-	return count >= 1; // User has access to one or more directories of library
+	return false; // User does not have access to any directories of library
 }
 
 /****************************************************************************/
