@@ -64,7 +64,6 @@ static void MainGame(void)
 		// tell user if game in progress, etc.
 		switch (Game.Data.GameState) {
 			case 0 :  // Game in progress
-				// rputs("The game is currently in progress\n");
 				break;
 			case 1 :  // Game is waiting for day to start
 				rputs("\n|0CThe game will begin on ");
@@ -104,7 +103,6 @@ static void MainGame(void)
 
 				/* see if past end of game, if so, disallow user */
 				if (DaysBetween(Game.Data.szLastJoinDate, System.szTodaysDate) > 0) {
-					// rputs("|07Sorry, this game is currently taking in no new players.\n");
 					rputs(ST_MAIN0);
 					break;
 				}
@@ -116,7 +114,6 @@ static void MainGame(void)
 				/* if not on this BBS, tell him */
 				if (PClan.WorldStatus == WS_GONE) {
 					// tell him
-					// snprintf(szString, sizeof(szString), "|02Your clan was last seen headed for |14%s |02(%s)!\nPlease call that BBS instead.\n\n",
 					snprintf(szString, sizeof(szString), ST_MAIN1,
 							VillageName(PClan.DestinationBBS),
 							BBSName(PClan.DestinationBBS));

@@ -11,7 +11,6 @@
  * CheckMem -- so ASSERT_FATAL works for both.
  */
 #include <ctype.h>
-#include <stdnoreturn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,11 +30,9 @@ static jmp_buf g_fatal_jmp;
 
 #undef exit
 
-/* -------------------------------------------------------------------------
- * External variable definitions required by included headers.
- * video.h:   extern int ScreenWidth, ScreenLines
- * defines.h: extern int _argc; extern char **_argv
- * ------------------------------------------------------------------------- */
+/* =========================================================================
+ * External variable definitions: video.h and defines.h externs
+ * ========================================================================= */
 int   ScreenWidth       = 80;
 int   ScreenLines       = 24;
 int   _argc             = 0;

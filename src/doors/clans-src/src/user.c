@@ -394,7 +394,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName)
 bool ClanExists(int16_t ClanID[2])
 {
 	FILE *fpPlayerFile;
-	int16_t CurClan/*, iTemp*/;
+	int16_t CurClan;
 	long Offset;
 	struct clan TmpClan = {0};
 	bool FoundClan = false;
@@ -1493,7 +1493,6 @@ void ClanStats(struct clan *Clan, bool AllowModify)
 				}
 				else {
 					rputs("Clan Symbol\n\n");
-					// snprintf(szString, sizeof(szString), "|0SYour current symbol is |%02d%s\n\n", Clan->Color, Clan->Symbol);
 					snprintf(szString, sizeof(szString), "|0SYour current symbol is %s\n\n", Clan->Symbol);
 					rputs(szString);
 				}
@@ -1523,10 +1522,8 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 	int16_t iTemp, LastSpellSlot;
 
 	for (;;) {
-		// rputs("|11Please choose a race for this character.\n");
 		rputs(ST_STUFF6);
 		PC->WhichRace = GetClass(Races, "Races");
-		// rputs("|11Please choose a class for this character.\n");
 		rputs(ST_STUFF7);
 		PC->WhichClass = GetClass(PClasses, "Classes");
 
@@ -1586,7 +1583,6 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 		PC->DefaultAction = 0;
 
 		/* show stats */
-		// rputs("|13Stats generated for this player\n");
 		rputs(ST_STUFF8);
 
 		strlcpy(PC->szName, "New Player", sizeof(PC->szName));
@@ -1604,7 +1600,6 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 
 	/* ask for name */
 	for (;;) {
-		// rputs("\n|02Enter the name of this member\n|10> |07");
 		rputs(ST_STUFF9);
 
 		szString[0] = 0;
@@ -1623,7 +1618,6 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 	PC->Undead = false;
 	PC->DefaultAction = 0;
 
-	// snprintf(szString, sizeof(szString), |10%s joins the clan.\n%%P, PC->szName);
 	snprintf(szString, sizeof(szString), ST_STUFF10, PC->szName);
 	rputs(szString);
 }
@@ -1681,7 +1675,6 @@ static bool ChooseClanName(char *szName)
 	char szString[30];
 
 	for (;;) {
-		// rputs("\n|02What will you call your clan?\n|10> |07");
 		rputs(ST_STUFF3);
 		szString[0] = 0;
 		GetStr(szString, 24, false);
@@ -2370,7 +2363,7 @@ void User_List(void)
 
 	FILE *fpPlayerFile, *fpUserList;
 	struct clan TmpClan = {0};
-	int16_t CurClan/*, CurMember, iTemp*/;
+	int16_t CurClan;
 	struct UserInfo User;
 	long Offset;
 
@@ -2539,7 +2532,6 @@ void User_Maint(void)
 			for (iTemp = Game.Data.MaxPermanentMembers; iTemp < 6; iTemp++)
 				if (TmpClan.Member[iTemp]->szName[0]) {
 					// is a npc-player
-					//printf("releasing %s\n", TmpClan.Member[iTemp]->szName);
 
 					UnequipItemsFromPC(iTemp);
 

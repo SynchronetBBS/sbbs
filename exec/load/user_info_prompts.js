@@ -254,7 +254,7 @@ function get_columns(user)
 		return false;
 	user.screen_columns = val;
 	if (user.number === js.global.user.number) {
-		user.screen_columns = user.screen_columns;
+		js.global.user.screen_columns = user.screen_columns;
 		console.getdimensions();
 	}
 	return true;
@@ -271,7 +271,7 @@ function get_rows(user)
 		return false;
 	user.screen_rows = val;
 	if (user.number === js.global.user.number) {
-		user.screen_rows = user.screen_rows;
+		js.global.user.screen_rows = user.screen_rows;
 		console.getdimensions();
 	}
 	return true;

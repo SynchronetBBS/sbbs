@@ -18,13 +18,13 @@
 
 #include "test_harness.h"
 
-/* -------------------------------------------------------------------------
+/*
  * sleep() mock
  *
  * WaitSemaphor calls sleep(1) while spinning.  We replace it with a hook
  * so tests can simulate "another process released the lock" without
  * actually blocking.
- * ------------------------------------------------------------------------- */
+ */
 static void (*g_sleep_hook)(void) = NULL;
 
 #define sleep(x) (g_sleep_hook ? (g_sleep_hook(), 0) : 0)   /* NOLINT */
@@ -33,16 +33,15 @@ static void (*g_sleep_hook)(void) = NULL;
 
 #undef sleep
 
-/* -------------------------------------------------------------------------
- * Stubs for external symbols referenced by semfile.c
- * ------------------------------------------------------------------------- */
-
-/* LogDisplayStr is declared in door.h and called from WaitSemaphor. */
+/*
+ * Custom LogDisplayStr with call counter
+ * (prevent redefinition from mocks_door.h)
+ */
 static int g_log_calls = 0;
 void LogDisplayStr(const char *s) { (void)s; g_log_calls++; }
 
-/* door.h declares "extern struct Door Door;" -- provide the storage. */
-struct Door Door;
+#define MOCKS_DOOR_SKIP_LOG_DISPLAY_STR
+#include "mocks_door.h"
 
 /* -------------------------------------------------------------------------
  * Per-test setup / teardown: run each test inside a fresh temp directory.

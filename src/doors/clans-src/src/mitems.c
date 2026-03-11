@@ -87,7 +87,7 @@ static void Deinit_Items(void)
 static void Init_Items(char *szFileName)
 {
 	FILE *fpItems;
-	char szLine[255], *pcCurrentPos;
+	char szLine[1024], *pcCurrentPos;
 	char szToken[MAX_TOKEN_CHARS + 1];
 	size_t uCount;
 	int iKeyWord;
@@ -109,7 +109,7 @@ static void Init_Items(char *szFileName)
 	int lineno = 0;
 	for (;;) {
 		/* read in a line */
-		if (u8_fgets(szLine, 255, fpItems, is_utf8, szFileName, &lineno) == NULL) break;
+		if (u8_fgets(szLine, sizeof(szLine), fpItems, is_utf8, szFileName, &lineno) == NULL) break;
 
 		/* Ignore all of line after comments or CR/LF char */
 		pcCurrentPos=(char *)szLine;

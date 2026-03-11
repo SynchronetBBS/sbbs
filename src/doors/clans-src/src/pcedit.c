@@ -475,11 +475,6 @@ static void DeleteClan(int16_t ClanID[2])
 static void InitVillage(void)
 {
 	FILE *fpVillage;
-	/*    char ColorScheme[23] = {
-	            6,14, 7, 5, 13,7, 5, 8, 3, 8,     5, 14,6, 4, 12,   4,12,3,
-	            6,0,0,  1, 9};
-	    char FlagScheme[3] = { 12, 15, 9 }; */
-	/*  int16_t iTemp;*/
 
 	/* try opening it for share */
 	fpVillage = fopen(VILLAGE_DATAFILE, "rb");
@@ -578,11 +573,9 @@ static void RemoveFromUList(const int16_t ClanID[2])
 		// for each user in file, see if same as ClanID
 		if (User.ClanID[0] == ClanID[0] && User.ClanID[1] == ClanID[1]) {
 			//printf("skipping over %s\n", User.szName);
-			// same, skip over him
 			continue;
 		}
 
-		// otherwise, don't skip him, write him to new file
 		EncryptWrite_s(UserInfo, &User, fpNewUList, XOR_USER);
 	}
 
@@ -757,7 +750,6 @@ static bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 static void UpdateClan(struct clan *Clan)
 {
 	FILE *fpPlayerFile;
-	/*    char szFileName[PATH_SIZE];*/
 	int16_t CurClan, iTemp;
 	long OldOffset, Offset;
 	struct clan *TmpClan;

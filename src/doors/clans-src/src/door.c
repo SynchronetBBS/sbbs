@@ -542,7 +542,6 @@ void rputs(const char *string)
 				pCurChar += 2;
 			}
 			else {
-				// od_emulate( *pCurChar );
 				od_putch(*pCurChar);
 				pCurChar++;
 			}
@@ -575,7 +574,6 @@ void rputs(const char *string)
 			pCurChar++;
 		}
 		else {
-			//od_emulate( *pCurChar );
 			od_putch(*pCurChar);
 			pCurChar++;
 		}
@@ -812,7 +810,6 @@ bool YesNo(char *Query)
 	DisplayStr(Query);
 
 	/* show Yes/no */
-	// rputs(" |01[|09Yes|01/no]: ");
 	DisplayStr(STR_YESNO);
 
 	/* get user input */
@@ -833,7 +830,6 @@ bool NoYes(char *Query)
 	DisplayStr(Query);
 
 	/* show Yes/no */
-	// rputs(" |01[yes/|09No|01]: ");
 	DisplayStr(STR_NOYES);
 
 	/* get user input */
@@ -879,7 +875,6 @@ void Door_Init(bool Local)
 	od_control.od_nocopyright = true;
 	od_control.od_node = System.Node;
 	od_control.od_before_exit = System_Close_AtExit;
-	//    od_registration_key = YOUR_KEY;
 
 	/* If local, intialize user data before od_init is run */
 	if (Local) {

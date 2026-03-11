@@ -49,7 +49,7 @@ char far *VideoMem;
 long y_lookup[25];
 #endif /* __MSDOS__ */
 int Overwrite = false;
-char szGumName[25], szIniName[25];
+char szGumName[PATH_SIZE], szIniName[PATH_SIZE];
 static int ini_is_utf8;
 
 struct FileInfo {
@@ -75,7 +75,7 @@ static void reset_attribute(void)
 static void Display(char *szFileName)
 {
 	FILE *fpInput;
-	char szString[300];
+	char szString[1024];
 	bool FileFound = false, Done = false;
 	int CurLine, lineno = 0;
 	int is_utf8 = ini_is_utf8;
@@ -91,9 +91,11 @@ static void Display(char *szFileName)
 			break;
 
 		// get rid of \n and \r
-		size_t len;
-		while ((len = strlen(szString) > 0) && (szString[ len - 1] == '\n' || szString[ len - 1] == '\r'))
+		size_t len = strlen(szString);
+		while (len > 0 && (szString[ len - 1] == '\n' || szString[ len - 1] == '\r')) {
 			szString[ len - 1] = 0;
+			len--;
+		}
 
 		if (szString[0] == ':' && strcasecmp(szFileName, &szString[1]) == 0) {
 			FileFound = true;
@@ -381,7 +383,7 @@ static int GetGUM(FILE *fpGUM)
 		}
 		else if (cInput == 'R') {
 			zputs("Rename\n|03enter new file name: ");
-			DosGetStr(szFileName, MAX_FILENAME_LEN, false);
+			DosGetStr(szFileName, PATH_CHARS, false);
 			zputs("\n");
 		}
 		else if (cInput == 'N') {
@@ -475,7 +477,7 @@ static void upgrade(void)
 #ifdef __unix__
 	FILE *fpAttr;
 	mode_t  tMode;
-	char szFileName[MAX_FILENAME_LEN];
+	char szFileName[PATH_SIZE];
 	unsigned tmp;
 #endif
 	char cInput;
@@ -587,7 +589,8 @@ static void InitFiles(char *szFileName)
 
 	// found file list, retrieve filenames and file types
 	CurFile = 0;
-	while (!Done && CurFile < MAX_FILES) {
+	int skipped = 0;
+	while (!Done) {
 		if (!u8_fgets(szString, 128, fpInput,
 			      ini_is_utf8, szIniName, &lineno))
 			break;
@@ -599,18 +602,30 @@ static void InitFiles(char *szFileName)
 		if (szString[0] == ':')
 			break;
 
-		// found another filename, copy it over
+		// found another filename
 		// x filename
 		// 0123456789...
-		FileInfo[CurFile].szFileName = strdup(&szString[2]);
-		FileInfo[CurFile].WriteType = QUERY;
+		if (CurFile < MAX_FILES) {
+			FileInfo[CurFile].szFileName = strdup(&szString[2]);
+			FileInfo[CurFile].WriteType = QUERY;
 
-		if (szString[0] == 'o')
-			FileInfo[CurFile].WriteType = OVERWRITE;
-		else if (szString[0] == 's')
-			FileInfo[CurFile].WriteType = SKIP;
+			if (szString[0] == 'o')
+				FileInfo[CurFile].WriteType = OVERWRITE;
+			else if (szString[0] == 's')
+				FileInfo[CurFile].WriteType = SKIP;
 
-		CurFile++;
+			CurFile++;
+		} else {
+			skipped++;
+		}
+	}
+
+	if (skipped > 0) {
+		char szWarn[80];
+		snprintf(szWarn, sizeof(szWarn),
+			 "|12Warning: %d manifest entr%s ignored (limit is %d).\n",
+			 skipped, skipped == 1 ? "y" : "ies", MAX_FILES);
+		zputs(szWarn);
 	}
 
 	fclose(fpInput);
@@ -775,7 +790,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 
 		if (cInput == 'R') {
 			zputs("Rename\n|03enter new file name: ");
-			DosGetStr(szFileName, MAX_FILENAME_LEN, false);
+			DosGetStr(szFileName, PATH_CHARS, false);
 		}
 		else if (cInput == 'N') {
 			zputs("No\n");

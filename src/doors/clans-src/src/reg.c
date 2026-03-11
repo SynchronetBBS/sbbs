@@ -220,15 +220,11 @@ void Register(void)
 	Config_Init();
 
 	strlcpy(szString, "Chat mode ended.\n", sizeof(szString));
-	//    snprintf(szString, sizeof(szString), "|03BBS Name     : |14%s\n", Config.szBBSName);
 	dputs("\x89\xc5\xc6\xf7\xf7\xe6\xd5\xfb\x94\x98\x90\xd5\xd5\xd5\xd5\xd5\xcf\xd5");
 	zputs("|11");
 	zputs(Config.szBBSName);
 	zputs("\n");
 	strlcpy(szString, "Unable to access serial port, cannot continue.\n", sizeof(szString));
-	//    zputs(szString);
-	//    snprintf(szString, sizeof(szString), "|03Sysop Name   : |14%s\n", Config.szSysopName);
-	//    zputs(szString);
 	dputs("\x89\xc5\xc6\xe6\x8c\x86\x9a\x85\xd5\xfb\x94\x98\x90\xd5\xd5\xd5\xcf\xd5");
 	zputs("|11");
 	strlcpy(szString, "No method of accessing serial port, cannot continue.\n", sizeof(szString));

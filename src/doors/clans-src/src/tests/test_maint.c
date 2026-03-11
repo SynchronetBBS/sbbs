@@ -11,18 +11,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../defines.h"
+#include "../structs.h"   /* needed for System struct definition */
 #include "../system.h"
 
 #include "test_harness.h"
 
-/* -------------------------------------------------------------------------
- * System_Error() mock
- *
- * maint.c calls System_Error() when maintenance has already been run in an
- * IBBS game.  We longjmp back to the test site instead of terminating.
- * The jmp_buf is re-armed by each ASSERT_FATAL.
- * ------------------------------------------------------------------------- */
+/* Define jmp_buf and base externs needed for System_Error macro */
 static jmp_buf g_fatal_jmp;
+struct system System;
+struct game Game;
+bool Verbose = false;
+int _argc = 0;
+static char *_argv_buf[] = {NULL};
+char **_argv = _argv_buf;
 
 #define System_Error(msg) longjmp(g_fatal_jmp, 1)   /* NOLINT */
 
@@ -30,16 +32,7 @@ static jmp_buf g_fatal_jmp;
 
 #undef System_Error
 
-/* -------------------------------------------------------------------------
- * Global instances required by maint.c
- *
- * These are declared extern in the project headers included by maint.c;
- * the test binary is a single translation unit so we provide the storage
- * here.
- * ------------------------------------------------------------------------- */
-struct game   Game;
-struct system System;
-struct Door   Door;   /* extern in door.h */
+/* Note: test_maint.c defines its own stubs with call counters, not using mocks. */
 
 /* -------------------------------------------------------------------------
  * Call-counter state

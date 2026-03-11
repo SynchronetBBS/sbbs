@@ -5545,7 +5545,6 @@ NO_SSH:
 			if (terminate_server) { /* terminated */
 				if (client_socket != INVALID_SOCKET)
 					close_socket(client_socket);
-				client_socket = INVALID_SOCKET;
 				break;
 			}
 

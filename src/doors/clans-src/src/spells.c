@@ -243,7 +243,6 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 	/* see if spell cast was successful, if not, return */
 
 	/* do stuff according to type of spell it is */
-	// od_printf("Spell chosen was %d\n\r", SpellNum);
 
 	/* set up global vars */
 	strlcpy(Spells_szCastSource, PC->szName, sizeof(Spells_szCastSource));
@@ -361,7 +360,6 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 		else
 			NumUndead = Spells[SpellNum]->Value;
 
-		//od_printf("Tried raising %d undead\n\r", NumUndead);
 
 		if (NumUndead > 4)
 			NumUndead = 4;
@@ -380,7 +378,6 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 				return;
 			}
 
-			//od_printf("Using %d as slot\n\r", CurSlot);
 
 			/* found slot, fill it up */
 			PC->MyClan->Member[CurSlot] = (struct pc *) malloc(sizeof(struct pc));
@@ -594,8 +591,6 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 			Spells_CastValue = Damage;
 
 			if (Damage <= 0) {
-				//rputs(Spells[SpellNum]->pszDamageStr);
-				//rputs("\n");
 
 				snprintf(szString, sizeof(szString), ST_SPELLFAIL, PC->szName,
 						Spells[SpellNum]->szName);

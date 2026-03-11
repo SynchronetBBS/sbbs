@@ -121,7 +121,6 @@ static void IBBS_SendFileInPacket(int16_t DestID, int16_t PacketType, char *szFi
 */
 static void IBBS_SendUserList(int16_t DestID)
 {
-	//printf("Sending userlist to %d\n", DestID);
 	if (IBBS.Data.Nodes[DestID-1].Active)
 		IBBS_SendFileInPacket(DestID, PT_ULIST, "userlist.dat");
 }
@@ -274,12 +273,10 @@ static void IBBS_ProcessSpy(struct SpyAttemptPacket *Spy)
 		SpyResult.Success = false;
 
 		if (Spy->TargetType == EO_VILLAGE) {
-			// snprintf(szMessage, sizeof(szMessage), " You caught a spy attempting to gain info on the village's empire.\n The spy was from %s.\n",
 			snprintf(szMessage, sizeof(szMessage), ST_SPY4, Spy->szSpierName);
 			GenericMessage(szMessage, Village.Data.RulingClanId, Junk, "", false);
 		}
 		else if (Spy->TargetType == EO_CLAN && NoTarget == false) {
-			// snprintf(szMessage, sizeof(szMessage), " You caught a spy attempting to gain info on the village's empire.\n The spy was from %s.\n",
 			snprintf(szMessage, sizeof(szMessage), ST_SPY6, Spy->szSpierName);
 			GenericMessage(szMessage, TmpClan.ClanID, Junk, "", false);
 		}
@@ -312,7 +309,6 @@ static void IBBS_ProcessSpyResult(struct SpyResultPacket *SpyResult)
 	int16_t Junk[2], iTemp;
 
 	if (SpyResult->Success) {
-		// snprintf(szMessage, sizeof(szMessage), "Your spies sent to %s were successful and return with information:\n\nGold:  %ld\nLand:  %d\n\nTroops:  %ld footmen, %ld axemen, %ld knights\n\nBuildings:",
 		snprintf(szMessage, sizeof(szMessage), ST_SPY7, SpyResult->Empire.szName,
 				(long)SpyResult->Empire.VaultGold,
 				(int)SpyResult->Empire.Land, (long)SpyResult->Empire.Army.Footmen,
@@ -475,7 +471,6 @@ void RemoveFromUList(const int16_t ClanID[2])
 
 		// for each user in file, see if same as ClanID
 		if (User.ClanID[0] == ClanID[0] && User.ClanID[1] == ClanID[1]) {
-			//printf("skipping over %s\n", User.szName);
 			// same, skip over him
 			continue;
 		}
@@ -504,7 +499,6 @@ static void AddToUList(struct UserInfo *User)
 	if (ClanIDInList(User->ClanID))
 		return;
 
-	//printf("Adding %s to file\n", User->szName);
 
 	// open user file
 	fpUList = fopen("userlist.dat", "ab");
@@ -783,7 +777,6 @@ static void IBBS_BackupMaint(void)
 					IBBS_AddToGame(&TmpClan, true);
 
 					// tell other board to comeback in case of problems
-					// --> NO!!  SendComeBack(TmpClan->DestinationBBS, TmpClan);
 					continue;
 				}
 				else if (Packet.PacketType == PT_ATTACK) {
@@ -801,14 +794,12 @@ static void IBBS_BackupMaint(void)
 				}
 			}
 
-			//printf("Packet type is %d\n", Packet.PacketType);
 
 			/* write it to file */
 			EncryptWrite_s(Packet, &Packet, fpNew, XOR_PACKET);
 
 			/* write buffer if any */
 			if (Packet.PacketLength > 0) {
-				//printf("length found\n");
 				cpBuffer = malloc((size_t)Packet.PacketLength);
 				CheckMem(cpBuffer);
 				EncryptRead(cpBuffer, (size_t)Packet.PacketLength, fpOld, XOR_PACKET);
@@ -855,7 +846,6 @@ static void AbortTrip(void)
 	for (;;) {
 		CurEntry++;
 		notEncryptRead_s(LeavingData, &LeavingData, fpLeavingDat, XOR_TRAVEL) {
-			//rputs("|04Couldn't find data in LEAVING.DAT file\n");
 			break;
 		}
 
@@ -1133,7 +1123,6 @@ static bool IBBS_TravelToBBS(int16_t DestID)
 
 		fpLeavingDat = fopen("leaving.dat", "ab");
 		if (!fpLeavingDat) {
-			//rputs("|04Couldn't open LEAVING.DAT file\n");
 			return false;
 		}
 		EncryptWrite_s(LeavingData, &LeavingData, fpLeavingDat, XOR_TRAVEL);
@@ -1420,7 +1409,6 @@ static void FindPoint(int16_t Destination, int16_t Source, int16_t BasePoint)
 		if (StartingPoint == -1)
 			StartingPoint = Source;
 
-		//printf("Found %d.  Starting point was %d\n", Source+1, StartingPoint+1);
 		FoundPoint = true;
 		Level--;
 		return;
@@ -1435,10 +1423,8 @@ static void FindPoint(int16_t Destination, int16_t Source, int16_t BasePoint)
 
 			if (Level == 1) {
 				StartingPoint = Points[Source]->ForwardLinks[CurLink];
-				//printf("Trying %d\n", StartingPoint);
 			}
 
-			//printf("Trying [%d][%d]\n", Source, CurLink);
 
 			/* found a link, try it */
 			FindPoint(Destination, Points[Source]->ForwardLinks[CurLink], Source);
@@ -1615,14 +1601,10 @@ static void IBBS_LoadNDX(void)
 								System_Error("Invalid Host value");
 							cTemp = (signed char)iTemp;
 
-							// REP: delete later
-							//printf("Linking %d through %d\n", iTemp, CurBBS+1);
-							//getch();
 
 							/* Node "iTemp" is a node of this host */
 
 							if (Points[cTemp-1] == NULL) {
-								//printf("Initializing node %d\n", iTemp);
 								Points[cTemp-1] = (struct Point *) malloc(sizeof(struct Point));
 								CheckMem(Points[cTemp-1]);
 
@@ -1678,19 +1660,16 @@ static void IBBS_LoadNDX(void)
 			if (IBBS.Data.Nodes[iTemp].Active == false)
 				continue;
 
-			//printf("searching for %d\n", iTemp+1);
 			FoundPoint = false;
 			StartingPoint = -1;
 			FindPoint((int16_t)iTemp, IBBS.Data.BBSID-1, IBBS.Data.BBSID-1);
 
 			IBBS.Data.Nodes[iTemp].Info.RouteThrough = StartingPoint+1;
-			//printf("%d routed through %d\n", iTemp+1, IBBS.Data.Nodes[iTemp].Info.RouteThrough);
 		}
 
 	/* get rid of Point memory */
 	for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++)
 		if (Points[iTemp]) {
-			//printf("Removing point %d from memory\n", iTemp+1);
 			free(Points[iTemp]);
 		}
 
@@ -1739,10 +1718,7 @@ static void IBBS_ProcessRouteConfig(void)
 						GetToken(pcCurrentPos, szFirstToken);
 						GetToken(pcCurrentPos, szSecondToken);
 
-						//printf("Token1 = [%s]\nToken2 = [%s]\n", szFirstToken, szSecondToken);
 						if (strcasecmp(szFirstToken, "ALL") == 0) {
-							//printf("all mail being routed through %d\n", atoi(szSecondToken));
-							/* route all through somewhere else */
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 								if (IBBS.Data.Nodes[iTemp].Active == false)
 									continue;
@@ -1761,15 +1737,12 @@ static void IBBS_ProcessRouteConfig(void)
 							if (TempInt2 < 1 || TempInt2 > MAX_IBBSNODES)
 								System_Error("Invalid Next BBS in route.cfg");
 							IBBS.Data.Nodes[ TempInt2 ].Info.RouteThrough = (int16_t)TempInt;
-							//printf("Mail to %d being routed through %d\n", atoi(szFirstToken), atoi(szSecondToken));
 						}
 						break;
 					case 1 :    /* crash */
 						GetToken(pcCurrentPos, szFirstToken);
 
-						//printf("Token1 = %s\n", szFirstToken);
 						if (strcasecmp(szFirstToken, "ALL") == 0) {
-							//printf("all mail being crashed\n");
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 								if (IBBS.Data.Nodes[iTemp].Active == false)
 									continue;
@@ -1779,15 +1752,12 @@ static void IBBS_ProcessRouteConfig(void)
 						}
 						else {
 							IBBS.Data.Nodes[ atoi(szFirstToken)-1 ].Info.MailType = MT_CRASH;
-							//printf("Mail to %d being crashed\n", atoi(szFirstToken));
 						}
 						break;
 					case 2 :    /* hold */
 						GetToken(pcCurrentPos, szFirstToken);
 
-						//printf("Token1 = %s\n", szFirstToken);
 						if (strcasecmp(szFirstToken, "ALL") == 0) {
-							//printf("all mail being held\n");
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 								if (IBBS.Data.Nodes[iTemp].Active == false)
 									continue;
@@ -1797,15 +1767,12 @@ static void IBBS_ProcessRouteConfig(void)
 						}
 						else {
 							IBBS.Data.Nodes[ atoi(szFirstToken)-1 ].Info.MailType = MT_HOLD;
-							//printf("Mail to %d being held\n", atoi(szFirstToken));
 						}
 						break;
 					case 3 :    /* normal */
 						GetToken(pcCurrentPos, szFirstToken);
 
-						//printf("Token1 = %s\n", szFirstToken);
 						if (strcasecmp(szFirstToken, "ALL") == 0) {
-							//printf("all mail set to normal\n");
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 								if (IBBS.Data.Nodes[iTemp].Active == false)
 									continue;
@@ -1815,7 +1782,6 @@ static void IBBS_ProcessRouteConfig(void)
 						}
 						else {
 							IBBS.Data.Nodes[ atoi(szFirstToken)-1 ].Info.MailType = MT_NORMAL;
-							//printf("Mail to %d set to normal\n", atoi(szFirstToken));
 						}
 						break;
 				}
@@ -2031,7 +1997,6 @@ void IBBS_ShowLeagueAscii(void)
 
 	fclose(fp);
 
-	// snprintf(szString, sizeof(szString), "|02You are entering the village of |10%s |02in the world of |14%s|02.\n",
 	snprintf(szString, sizeof(szString), ST_MAIN2,
 			VillageName(IBBS.Data.BBSID), Game.Data.szWorldName);
 	rputs(szString);
@@ -2197,7 +2162,6 @@ void IBBS_UpdateReset(void)
 		if (IBBS.Data.Nodes[CurBBS].Active && (CurBBS+1) != IBBS.Data.BBSID) {
 			if (IBBS.Data.Nodes[CurBBS].Reset.Received == false &&
 					IBBS.Data.Nodes[CurBBS].Reset.LastSent < DaysSince1970(System.szTodaysDate)) {
-				//printf("Sending reset to BBS #%d\n", CurBBS+1);
 				IBBS_SendReset(CurBBS+1);
 				IBBS.Data.Nodes[CurBBS].Reset.LastSent = DaysSince1970(System.szTodaysDate);
 			}

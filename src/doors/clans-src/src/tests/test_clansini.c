@@ -29,9 +29,9 @@
 
 #include "test_harness.h"
 
-/* -------------------------------------------------------------------------
+/*
  * System stubs
- * ------------------------------------------------------------------------- */
+ */
 static jmp_buf g_fatal_jmp;
 
 noreturn void System_Error(char *szErrorMsg)
@@ -45,77 +45,21 @@ void CheckMem(void *ptr)
 	if (!ptr) longjmp(g_fatal_jmp, 1);
 }
 
-noreturn void System_Close(void)    { longjmp(g_fatal_jmp, 1); }
-void System_Close_AtExit(void)      {}
-void System_Init(void)              {}
-void System_Maint(void)             {}
-char *DupeStr(const char *s)        { return NULL; (void)s; }
-
-/* -------------------------------------------------------------------------
- * door.h externs + stubs
- * ------------------------------------------------------------------------- */
-struct Door Door;
-
-void rputs(const char *s)             { (void)s; }
-void LogDisplayStr(const char *s)     { (void)s; }
-void LogStr(const char *s)            { (void)s; }
-char GetKey(void)                     { return 0; }
-char GetKeyNoWait(void)               { return 0; }
-char GetAnswer(const char *s)         { (void)s; return 0; }
-void door_pause(void)                 {}
-void Display(char *f)                 { (void)f; }
-bool YesNo(char *s)                   { (void)s; return false; }
-bool NoYes(char *s)                   { (void)s; return false; }
-bool Door_AllowScreenPause(void)      { return false; }
-void Door_ToggleScreenPause(void)     {}
-void Door_ShowTitle(void)             {}
-void InputCallback(void)              {}
-void PutCh(char c)                    { (void)c; }
-void rawputs(const char *s)           { (void)s; }
-int16_t GetHoursLeft(void)            { return 0; }
-int16_t GetMinutesLeft(void)          { return 0; }
-void Door_Init(bool local)            { (void)local; }
-void Door_Close(void)                 {}
-bool Door_Initialized(void)           { return false; }
-void Door_SetColorScheme(int8_t *s)   { (void)s; }
-
-/* -------------------------------------------------------------------------
- * video.h externs + stubs
- * clansini.c includes video.h; ClansIni_Close itself does not call any video
- * functions, but they must be defined to satisfy the linker.
- * ------------------------------------------------------------------------- */
-int ScreenWidth  = 80;
-int ScreenLines  = 24;
-void DisplayStr(const char *s)        { (void)s; }
-void zputs(const char *s)             { (void)s; }
-
-/* -------------------------------------------------------------------------
- * language.h externs + stubs
- * ------------------------------------------------------------------------- */
-static struct Language g_lang;
-struct Language *Language = &g_lang;
-
-void Language_Init(char *f)           { (void)f; }
-void Language_Close(void)             {}
-void LoadStrings(int16_t s, int16_t n, char *arr[])
-{
-	for (int16_t i = 0; i < n; i++) arr[i] = "";
-	(void)s;
-}
-
-/* -------------------------------------------------------------------------
- * Include the source files under test.
- * platform.c provides string helpers; serialize/deserialize/myopen provide
- * the file I/O layer used by ClansIni_Init.  parsing.c provides ParseLine
- * and GetToken used by ClansIni_Init.  clansini.c is last — it defines
- * struct IniFile IniFile.
- * ------------------------------------------------------------------------- */
 #include "../platform.c"
 #include "../serialize.c"
 #include "../deserialize.c"
 #include "../parsing.c"
 #include "../myopen.c"
 #include "../clansini.c"
+
+/* Note: test_clansini.c defines its own System_Error and CheckMem above,
+ * plus its own System, Verbose, _argc, _argv below, so it does NOT include
+ * mocks_system.h (which would cause redefinition). */
+
+#include "mocks_door.h"
+#include "mocks_video.h"
+#include "mocks_language.h"
+#include "mocks_quests.h"
 
 /* -------------------------------------------------------------------------
  * External variable definitions

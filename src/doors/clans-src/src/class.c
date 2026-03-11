@@ -88,7 +88,6 @@ static void Load_PClasses(struct PClass *PClass[MAX_PCLASSES], bool GetPClasses)
 			fread(sBuf, sizeof(sBuf), 1, ClassFile.fp);
 			s_PClass_d(sBuf, sizeof(sBuf), PClass[CurClass]);
 
-			//printf("%s\n\r", PClass[CurClass]->szName);
 
 			CurClass++;
 			if (CurClass == MAX_PCLASSES) break;

@@ -281,7 +281,6 @@ tIBResult IBSendFileAttach(tIBInfo *pInfo, char *pszDestNode, const char *pszFil
 	/* Construct to, from and subject information */
 	strlcpy(MessageHeader.szFromUserName, pInfo->szProgName, sizeof(MessageHeader.szFromUserName));
 	strlcpy(MessageHeader.szToUserName, pInfo->szProgName, sizeof(MessageHeader.szToUserName));
-	// strlcpy(MessageHeader.szSubject, MESSAGE_SUBJECT, sizeof(MessageHeader.szSubject));
 
 	/* file attach addition */
 

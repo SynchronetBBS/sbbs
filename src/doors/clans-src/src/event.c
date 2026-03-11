@@ -109,7 +109,6 @@ GoQuest(void)
 					 (Quests[QuestIndex[WhichQuest]].Known && Quests[QuestIndex[WhichQuest]].Active);
 		QuestDone  = PClan.QuestsDone[ QuestIndex[WhichQuest]/8 ] & (char)(1 << (QuestIndex[WhichQuest]%8));
 
-		//od_printf("Comparing with %d\n", (1 << (QuestIndex[WhichQuest]%8)));
 
 		if (QuestKnown == false || QuestDone || !Quests[QuestIndex[WhichQuest]].pszQuestName) {
 			rputs("\n|12Quest not found.\n%P");

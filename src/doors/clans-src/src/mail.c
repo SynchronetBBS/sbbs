@@ -263,8 +263,6 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 		result = InputStr(Line1, Line2, &JustLen, NumLines);
 
 		// if no swearing allowed, convert it :)
-		//if (GameInfo.NoSwearing)
-		//    RemoveSwear(Line1);
 
 		if (result == 1) {  // save
 			if (NumLines == 0) {
@@ -708,8 +706,6 @@ static void Reply_Message(struct Message *Reply)
 		result = QInputStr(Line1, Line2, &JustLen, Reply, NumLines);
 
 		// if no swearing allowed, convert it :)
-		// if (GameInfo.NoSwearing)
-		//     RemoveSwear(Line1);
 
 		if (result == 1) {  // save
 			if (NumLines == 0) {
@@ -1317,8 +1313,6 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 		result = InputStr(Line1, Line2, &JustLen, NumLines);
 
 		// if no swearing allowed, convert it :)
-		//if (GameInfo.NoSwearing)
-		//    RemoveSwear(Line1);
 
 		if (result == 1) {  // save
 			if (NumLines == 0) {
@@ -1472,7 +1466,6 @@ void Mail_Maint(void)
 				System_Error("Negative message in Mail_Maint()");
 
 			if (Message.Flags & MF_DELETED)
-				//FIXME:      DaysBetween(Message.Date, GameInfo.TheDate) > 7)
 			{
 				// deleted or else a week old, so skip it
 				fseek(OldMessage, Message.Data.Length, SEEK_CUR);

@@ -63,7 +63,6 @@ static struct ResetData ResetData;
 
 static char szTodaysDate[11];
 
-//extern unsigned _stklen = 32U*(1024U);
 
 int main(void)
 {
@@ -95,7 +94,6 @@ static void ResetMenu(void)
 	int  cInput;
 	int8_t OldOption = -1;
 	bool Quit = false, DidReset = false, InterBBS = false;
-//  int16_t iTemp;
 
 	/* clear all */
 	textattr(7);

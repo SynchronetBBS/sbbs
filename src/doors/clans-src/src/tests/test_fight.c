@@ -23,12 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* OpenDoor.h is found via -I$(SRC)odoors/ in the makefile rule. */
-#include <OpenDoor.h>
-
-/* Provide the storage for the single extern OpenDoors global. */
-tODControl od_control;
-
 #include "../defines.h"
 #include "../structs.h"
 #include "../system.h"
@@ -49,9 +43,9 @@ tODControl od_control;
 
 #include "test_harness.h"
 
-/* -------------------------------------------------------------------------
+/*
  * System_Error and CheckMem — forward-declared as noreturn in system.h.
- * ------------------------------------------------------------------------- */
+ */
 static jmp_buf g_fatal_jmp;
 
 noreturn void System_Error(char *szErrorMsg)
@@ -65,149 +59,16 @@ void CheckMem(void *ptr)
 	if (!ptr) longjmp(g_fatal_jmp, 1);
 }
 
-noreturn void System_Close(void)    { longjmp(g_fatal_jmp, 1); }
-void System_Close_AtExit(void)      {}
-void System_Init(void)              {}
-void System_Maint(void)             {}
-char *DupeStr(const char *s)        { return NULL; (void)s; }
+#include "../platform.c"
+#include "../random.c"
+#include "../serialize.c"
+#include "../deserialize.c"
+#include "../myopen.c"
+#include "../fight.c"
 
-/* -------------------------------------------------------------------------
- * OpenDoor.h stub: od_clr_scr() is the only od_* symbol called directly
- * by fight.c (in Fight_Monster, which we don't exercise in these tests).
- * ------------------------------------------------------------------------- */
-void od_clr_scr(void) {}
-
-/* -------------------------------------------------------------------------
- * door.h stubs
- * ------------------------------------------------------------------------- */
-void rputs(const char *s)             { (void)s; }
-void LogDisplayStr(const char *s)     { (void)s; }
-void LogStr(const char *s)            { (void)s; }
-char GetKey(void)                     { return 0; }
-char GetKeyNoWait(void)               { return 0; }
-char GetAnswer(const char *s)         { (void)s; return 0; }
-void door_pause(void)                 {}
-void Display(char *f)                 { (void)f; }
-bool YesNo(char *s)                   { (void)s; return false; }
-bool NoYes(char *s)                   { (void)s; return false; }
-bool Door_AllowScreenPause(void)      { return false; }
-void Door_ToggleScreenPause(void)     {}
-void Door_ShowTitle(void)             {}
-void InputCallback(void)              {}
-void PutCh(char c)                    { (void)c; }
-void rawputs(const char *s)           { (void)s; }
-int16_t GetHoursLeft(void)            { return 0; }
-int16_t GetMinutesLeft(void)          { return 0; }
-void Door_Init(bool local)            { (void)local; }
-void Door_Close(void)                 {}
-bool Door_Initialized(void)           { return false; }
-void Door_SetColorScheme(int8_t *s)   { (void)s; }
-
-/* -------------------------------------------------------------------------
- * video.h externs
- * ------------------------------------------------------------------------- */
-int ScreenWidth  = 80;
-int ScreenLines  = 24;
-
-/* -------------------------------------------------------------------------
- * language.h stubs
- * ------------------------------------------------------------------------- */
-static struct Language g_lang;
-struct Language *Language = &g_lang;
-
-void Language_Init(char *f)           { (void)f; }
-void Language_Close(void)             {}
-void LoadStrings(int16_t s, int16_t n, char *arr[])
-{
-	for (int16_t i = 0; i < n; i++) arr[i] = "";
-}
-
-/* -------------------------------------------------------------------------
- * spells.h externs + stubs
- * The Spells[] array is all-NULL (no spells loaded); code in Fight_Dead,
- * Fight_Heal, etc. never indexes it for the test cases below.
- * ------------------------------------------------------------------------- */
-char     Spells_szCastDestination[25] = "";
-char     Spells_szCastSource[25]      = "";
-int      Spells_CastValue             = 0;
-struct Spell *Spells[MAX_SPELLS];  /* all NULL */
-
-void Spells_Init(void)                              {}
-void Spells_Close(void)                             {}
-void Spells_UpdatePCSpells(struct pc *p)            { (void)p; }
-void Spells_ClearSpells(struct clan *c)             { (void)c; }
-void Spells_CastSpell(struct pc *p, struct clan *e, int16_t t, int16_t n)
-	{ (void)p; (void)e; (void)t; (void)n; }
-
-/* -------------------------------------------------------------------------
- * items.h stubs
- * ------------------------------------------------------------------------- */
-void    Items_Close(void)                         {}
-bool    ItemPenalty(struct pc *p, struct item_data *i)
-	{ (void)p; (void)i; return false; }
-void    Items_GiveItem(char *s)                   { (void)s; }
-void    Items_ReadScroll(struct pc *p, struct clan *c, int16_t t, int16_t n)
-	{ (void)p; (void)c; (void)t; (void)n; }
-void    Item_BuyItem(signed char t)               { (void)t; }
-void    ShowItemStats(struct item_data *i, struct clan *c) { (void)i; (void)c; }
-void    Items_FindTreasureChest(void)             {}
-void    ReadBook(void)                            {}
-int16_t GetOpenItemSlot(struct clan *c)           { (void)c; return -1; }
-int16_t ChooseItem(const char *p, struct clan *c, int16_t t, int f)
-	{ (void)p; (void)c; (void)t; (void)f; return ITEM_NO_MATCH; }
-void    UnequipItemsFromPC(int16_t n)             { (void)n; }
-
-/* -------------------------------------------------------------------------
- * help.h, input.h, mail.h, news.h stubs
- * ------------------------------------------------------------------------- */
-void MainHelp(void)                               {}
-void Help(const char *t, char *f)                 { (void)t; (void)f; }
-void GeneralHelp(char *f)                         { (void)f; }
-char GetChoice(char *f, char *p, char *opts[], char *keys, char def, bool t)
-	{ (void)f; (void)p; (void)opts; (void)keys; (void)def; (void)t; return 0; }
-void GetStr(char *s, int16_t n, bool h)           { (void)s; (void)n; (void)h; }
-long GetLong(const char *p, long d, long m)       { (void)p; (void)d; (void)m; return 0; }
-void GetStringChoice(const char **a, int16_t n, char *p, int16_t *u, bool s,
-	int16_t t, bool b)
-	{ (void)a; (void)n; (void)p; (void)u; (void)s; (void)t; (void)b; }
-
-bool    Mail_Read(void)                           { return false; }
-void    Mail_Write(int16_t t)                     { (void)t; }
-void    Mail_RequestAlliance(struct Alliance *a)  { (void)a; }
-void    Mail_WriteToAllies(struct Alliance *a)    { (void)a; }
-void    GenericMessage(char *s, int16_t to[2], int16_t from[2], char *f, bool r)
-	{ (void)s; (void)to; (void)from; (void)f; (void)r; }
-void    MyWriteMessage2(int16_t id[2], bool a, bool req, int16_t aid,
-	char *an, bool g, int16_t wv)
-	{ (void)id; (void)a; (void)req; (void)aid; (void)an; (void)g; (void)wv; }
-void    PostMsj(struct Message *m)                { (void)m; }
-void    Mail_Maint(void)                          {}
-void    GlobalMsgPost(void)                       {}
-
-void News_AddNews(char *s)                        { (void)s; }
-void News_ReadNews(bool t)                        { (void)t; }
-void News_CreateTodayNews(void)                   {}
-
-/* -------------------------------------------------------------------------
- * village.h externs + stubs
- * fight.c reads Village.Data.ConscriptionRate and Village.Data.TaxRate in
- * Fight_GiveFollowers and Fight_BattleAttack; we zero-init Village so both
- * are 0 (no conscription, no tax).
- * ------------------------------------------------------------------------- */
-struct village Village;
-void Village_Init(void)                           {}
-void Village_Close(void)                          {}
-void Village_Maint(void)                          {}
-void Village_NewRuler(void)                       {}
-int16_t OutsiderTownHallMenu(void)                { return 0; }
-int16_t TownHallMenu(void)                        { return 0; }
-void Village_Reset(void)                          {}
-
-/* -------------------------------------------------------------------------
- * user.h externs + stubs
- * PClan is defined here; GetStat and NumMembers are provided as real
- * implementations because they are called from functions under test.
- * ------------------------------------------------------------------------- */
+/*
+ * Custom implementations of GetStat and NumMembers (for functions under test)
+ */
 struct clan PClan;
 
 int8_t GetStat(struct pc *PC, char Stat)
@@ -248,59 +109,25 @@ void DeleteClan(int16_t id[2], char *n)           { (void)id; (void)n; }
 void User_Destroy(void)                           {}
 void User_Write(void)                             {}
 
-/* -------------------------------------------------------------------------
- * readcfg.h stubs
- * ------------------------------------------------------------------------- */
-struct config Config;
-void AddInboundDir(const char *d)                  { (void)d; }
-bool Config_Init(uint16_t n, struct NodeData *(*f)(int))
-	{ (void)n; (void)f; return false; }
-void Config_Close(void)                            {}
+/* Note: test_fight.c defines its own System_Error and CheckMem above,
+ * so it does NOT include mocks_system.h (which would cause redefinition).
+ * Other required externs are defined in the test file itself. */
 
-/* -------------------------------------------------------------------------
- * game.h stubs
- * ------------------------------------------------------------------------- */
-struct game Game;
-void Game_Init(void)                               {}
-void Game_Close(void)                              {}
-void Game_Settings(void)                           {}
-void Game_Start(void)                              {}
-void Game_Write(void)                              {}
-
-/* -------------------------------------------------------------------------
- * ibbs.h externs + stubs (fight.c includes ibbs.h but never calls IBBS_*)
- * ------------------------------------------------------------------------- */
-struct ibbs IBBS;
-const char aszShortMonthName[12][4] = {
-	"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-};
-
-/* -------------------------------------------------------------------------
- * Include the source files under test.
- * platform.c brings unix_wrappers.c; random.c provides my_random.
- * serialize.c/deserialize.c/myopen.c provide the file I/O layer used by
- * fight.c (Fight_GetMonster etc.).  fight.c is last.
- * ------------------------------------------------------------------------- */
-#include "../platform.c"
-#include "../random.c"
-#include "../serialize.c"
-#include "../deserialize.c"
-#include "../myopen.c"
-#include "../fight.c"
-
-/* -------------------------------------------------------------------------
- * External variable definitions
- * ------------------------------------------------------------------------- */
-struct system   System;
-bool            Verbose         = false;
-int             _argc           = 0;
-static char    *_argv_buf[]     = {NULL};
-char          **_argv           = _argv_buf;
-
-/* quests.h externs (pulled in through the deserialize include chain) */
-struct Quest    Quests[MAX_QUESTS];
-uint8_t         Quests_TFlags[8];
+#include "mocks_od.h"
+#include "mocks_door.h"
+#include "mocks_video.h"
+#include "mocks_language.h"
+#include "mocks_spells.h"
+#include "mocks_items.h"
+#include "mocks_help.h"
+#include "mocks_input.h"
+#include "mocks_mail.h"
+#include "mocks_news.h"
+#include "mocks_village.h"
+#include "mocks_readcfg.h"
+#include "mocks_game.h"
+#include "mocks_ibbs.h"
+#include "mocks_quests.h"
 
 /* -------------------------------------------------------------------------
  * Helper: allocate and initialise a minimal struct pc.

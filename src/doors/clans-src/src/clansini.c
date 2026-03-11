@@ -132,8 +132,6 @@ void ClansIni_Init(void)
 						IniFile.pszItems[ CurItemFile ] =
 							DupeStr(pcCurrentPos);
 
-						// printf("itemfile = %d. %s\n", CurItemFile,
-						//    IniFile.pszItems[ CurItemFile ]);
 						break;
 					case 3 :  // races files
 						if (CurRaceFile == MAX_RACEFILES)
@@ -144,8 +142,6 @@ void ClansIni_Init(void)
 						IniFile.pszRaces[ CurRaceFile ] =
 							DupeStr(pcCurrentPos);
 
-						// printf("race = %d. %s\n", CurRaceFile,
-						//     IniFile.pszRaces[ CurRaceFile ]);
 						break;
 					case 4 :  // class files
 						if (CurClassFile == MAX_CLASSFILES)
@@ -156,8 +152,6 @@ void ClansIni_Init(void)
 						IniFile.pszClasses[ CurClassFile ] =
 							DupeStr(pcCurrentPos);
 
-						// printf("class = %d. %s\n", CurClassFile,
-						//     IniFile.pszClasses[ CurClassFile ]);
 						break;
 					case 5 :  // spell files
 						if (CurSpellFile == MAX_SPELLFILES)
@@ -168,8 +162,6 @@ void ClansIni_Init(void)
 						IniFile.pszSpells[ CurSpellFile ] =
 							DupeStr(pcCurrentPos);
 
-						// printf("spellfile = %d. %s\n", CurSpellFile,
-						//     IniFile.pszSpells[ CurSpellFile ]);
 						break;
 				}
 			}

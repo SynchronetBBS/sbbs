@@ -10,7 +10,6 @@
  */
 #include <limits.h>
 #include <stdbool.h>
-#include <stdnoreturn.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -20,13 +19,13 @@
 
 #include "test_harness.h"
 
-/* -------------------------------------------------------------------------
- * System_Error() mock
+/*
+ * System_Error() mock (Strategy B: macro interception)
  *
  * random.c calls System_Error() for invalid arguments.  We longjmp back to
  * the test site instead of terminating.  The jmp_buf is re-armed by each
  * ASSERT_FATAL.
- * ------------------------------------------------------------------------- */
+ */
 static jmp_buf g_fatal_jmp;
 
 #define System_Error(msg) longjmp(g_fatal_jmp, 1)   /* NOLINT */
@@ -34,6 +33,8 @@ static jmp_buf g_fatal_jmp;
 #include "../random.c"
 
 #undef System_Error
+
+#include "mocks_video.h"
 
 /* -------------------------------------------------------------------------
  * Tests: invalid arguments trigger System_Error

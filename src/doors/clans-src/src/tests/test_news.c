@@ -27,51 +27,37 @@
 
 #include "../news.c"
 
-/* -------------------------------------------------------------------------
- * External instances required by news.c
- * ------------------------------------------------------------------------- */
+/*
+ * Custom rputs with call counter
+ */
+static int g_rputs_calls;
+void rputs(const char *s) { (void)s; g_rputs_calls++; }
 
-/* od_control is declared extern in OpenDoor.h; provide the storage. */
-tODControl od_control;
-
-/* system.h declares extern struct system System. */
-struct system System;
-
-/* language.h declares extern struct Language *Language. */
-static char            g_bigstring[1024];
-static struct Language g_lang;
-struct Language       *Language = &g_lang;
-
-/* -------------------------------------------------------------------------
- * Stubs for functions called by news.c
- *
- * _fsopen is the Unix locking-fopen wrapper from unix_wrappers.h.
- * For testing we ignore the sharing flags and fall through to fopen.
- *
- * The remaining stubs cover the interactive path in News_ReadNews; all
- * are compiled into the binary even for tests that don't exercise that
- * path, so every external reference must be satisfied.
- * ------------------------------------------------------------------------- */
-static int  g_rputs_calls;
-
+/*
+ * Other stubs
+ */
 FILE *_fsopen(const char *pathname, const char *mode, int flags)
 {
 	(void)flags;
 	return fopen(pathname, mode);
 }
 
-void rputs(const char *s)             { (void)s; g_rputs_calls++; }
-void door_pause(void)                 {}
-char GetKey(void)                     { return 0; }
-char GetKeyNoWait(void)               { return 0; }
-bool Door_AllowScreenPause(void)      { return false; }
-void InputCallback(void)              {}
+void door_pause(void) {}
+char GetKey(void) { return 0; }
+char GetKeyNoWait(void) { return 0; }
+bool Door_AllowScreenPause(void) { return false; }
+void InputCallback(void) {}
+
+#include "mocks_od.h"
+#include "mocks_language.h"
+#include "mocks_system.h"
 
 /* -------------------------------------------------------------------------
  * Per-test setup / teardown: run each test in a fresh temp directory.
  * ------------------------------------------------------------------------- */
 static char g_origdir[PATH_MAX];
 static char g_tmpdir[PATH_MAX];
+static char g_bigstring[1024];
 
 static void setup(void)
 {

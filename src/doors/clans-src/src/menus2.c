@@ -225,7 +225,6 @@ void ReleaseMember(void)
 	}
 
 	/* confirm it */
-	//snprintf(szString, sizeof(szString), "|0SAre you sure you wish to remove %s from the clan?",
 	snprintf(szString, sizeof(szString), ST_REMOVEMEM, PClan.Member[ WhichOne ]->szName);
 	if (NoYes(szString)) {
 		// %s removed from clan
@@ -256,7 +255,6 @@ void AddMember(void)
 
 	/* see if too many members already */
 	if (NumMembers >= Game.Data.MaxPermanentMembers) {
-		// rputs("|07Your clan has the maximum number of permanent members already.\n%P");
 		rputs(ST_TOOMANYMEMBERS);
 		return;
 	}

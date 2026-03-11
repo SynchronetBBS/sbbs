@@ -9,8 +9,6 @@
  */
 
 #include <limits.h>
-#include <setjmp.h>
-#include <stdnoreturn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,46 +21,13 @@
 #include "../readcfg.h"
 
 #include "test_harness.h"
-
-/* -------------------------------------------------------------------------
- * System_Error and CheckMem mocks (real functions)
- *
- * readcfg.c declares:
- *   void CheckMem(void *Test);
- *   noreturn void System_Error(char *szErrorMsg);
- * We define both before including the .c files so the forward declarations
- * inside readcfg.c are compatible redeclarations.
- * ------------------------------------------------------------------------- */
-static jmp_buf g_fatal_jmp;
-
-noreturn void System_Error(char *szErrorMsg)
-{
-	(void)szErrorMsg;
-	longjmp(g_fatal_jmp, 1);
-}
-
-void CheckMem(void *ptr)
-{
-	if (!ptr) longjmp(g_fatal_jmp, 1);
-}
+#include "mocks_system.h"
+#include "mocks_language.h"
 
 #include "../platform.c"
 #include "../misc.c"
 #include "../parsing.c"
 #include "../readcfg.c"
-
-/* -------------------------------------------------------------------------
- * External variable definitions required by included headers.
- * ------------------------------------------------------------------------- */
-struct system   System;
-bool            Verbose         = false;
-int             _argc           = 0;
-static char    *_argv_buf[]     = {NULL};
-char          **_argv           = _argv_buf;
-
-/* language.h declares extern struct Language *Language. */
-static struct Language g_lang;
-struct Language       *Language = &g_lang;
 
 /* -------------------------------------------------------------------------
  * Per-test setup / teardown

@@ -294,8 +294,6 @@ void zputs(const char *string)
 	static uint8_t o_fg = 7, o_bg = 0;
 	static uint8_t saved_fg = 7;
 	static uint8_t saved_bg = 0;
-	//const uint8_t ColorScheme[] = { 1, 9, 3, 1, 11, 7, 3, 2, 10, 2, 5, 3, 9, 5, 13, 1, 9, 15, 7, 0, 0, 8, 4, 1, 1, 1 };
-	//const uint8_t ColorScheme[] = { 4, 12, 7, 8, 12, 14, 7, 4, 12, 4, 8, 7, 12, 9, 13, 7, 5, 13, 7, 0, 0, 8, 7 };
 	const uint8_t ColorScheme[] = { 2, 5, 2, 2, 3, 7, 11, 1, 9, 1, 2, 2, 10, 2, 5, 2, 10, 15, 2, 0, 0, 2, 10 };
 	if (!VideoInitialized)
 		Video_Init();

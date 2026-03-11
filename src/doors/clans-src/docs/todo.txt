@@ -6,18 +6,19 @@ The Clans -- Open Issues
 [0.0]  Table of Contents
 -------------------------------------------------------------------------------
 
-Open Issues
-===========
+For Next Release
+================
 Charisma stat has no combat or empire effect ..................   1.1
+
+Unknown Future Release
+======================
 Clean up mstrings.h GNUmakefile dependencies ..................   1.2
-install: rename prompt limited to 13 characters ...............   1.4
-install: silent truncation of GUM and INI filenames ...........   1.5
 Village types defined but never assigned ......................   1.7
-Create shared mock library files for unit tests ...............   1.9
+mail.c: Mail_Maint() -- expire messages by age .................  1.10
 
 
 
-Open Issues
+For Next Release
 ===============================================================================
 
 [1.1]  Charisma stat has no combat or empire effect
@@ -38,6 +39,9 @@ choosing at random.  If the leaders' Charisma values also tie, compare
 the next clan member, and so on down the roster.  Only fall back to
 my_random() if every member's Charisma matches across all tied clans.
 
+Unknown Future Release
+===============================================================================
+
 [1.2]  Clean up mstrings.h GNUmakefile dependencies
 -------------------------------------------------------------------------------
 The mstrings.h target in src/GNUmakefile and the native-devkit dependency in
@@ -45,21 +49,6 @@ data/GNUmakefile both grew organically to solve the chicken-and-egg problem of
 langcomp needing to exist before mstrings.h can be generated.  The current
 approach works but could be cleaner -- the NATIVEEXEFILE computation and the
 filter-out workaround for shared langcomp objects are worth revisiting.
-
-[1.4]  install: rename prompt limited to 13 characters
--------------------------------------------------------------------------------
-When the user chooses "Rename" during an overwrite conflict, DosGetStr
-limits the new name to 13 characters (MAX_FILENAME_LEN) -- the old DOS
-8.3 convention.  This prevents renaming to any long filename.
-Source: install.c lines 349, 741.
-
-[1.5]  install: silent truncation of GUM and INI filenames
--------------------------------------------------------------------------------
-The GUM filename (! line) and INI filename (command argument) are stored
-in 25-byte buffers and silently truncated via strlcpy if they exceed 24
-characters.  Manifest entries beyond the 75th are also silently ignored.
-These should produce warnings.
-Source: install.c lines 51, 147, 1023.
 
 [1.7]  Village types defined but never assigned
 -------------------------------------------------------------------------------
@@ -81,18 +70,9 @@ types and the item filtering becomes meaningful; (b) remove the dead
 defines, the struct field, and the items.c filter if the feature is not
 wanted.
 
-[1.9]  Create shared mock library files for unit tests
+[1.10]  mail.c: Mail_Maint() -- expire messages by age
 -------------------------------------------------------------------------------
-Null/stub implementations of functions such as System_Error, CheckMem,
-od_putch, and similar are duplicated across multiple files in src/tests/.
-Each test file that needs a stub defines its own copy, so changing the
-signature of a mocked function requires editing every test file that
-stubs it.
-
-Option: introduce one or more shared header files in src/tests/ (e.g.
-mocks_od.h, mocks_system.h) that provide a single canonical null
-implementation of each frequently-stubbed function.  Test files then
-include the appropriate mock header instead of defining their own copy.
-Files that need non-trivial behaviour (e.g. longjmp on System_Error)
-continue to define their own override after the shared header.
+Mail_Maint() discards MF_DELETED messages but never expires messages by age.
+A disabled condition: DaysBetween(Message.Date, GameInfo.TheDate) > 7 was
+removed; implementing it would prevent unbounded growth of the mail store.
 

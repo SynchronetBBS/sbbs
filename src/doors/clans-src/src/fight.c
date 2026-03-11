@@ -293,7 +293,6 @@ static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct mo
 
 
 	/* this is used to see if he should run or not */
-	// EnergyPercentage = (NPC->HP * 100)/NPC->MaxHP;
 
 	/* see if any spells available */
 	if (NPC->SpellsKnown[0] != 0) {
@@ -324,7 +323,6 @@ static void Fight_GetNPCAction(struct pc *NPC, struct clan *EnemyClan, struct mo
 			Move->Target = WhoNeedsHeal;
 			Move->SpellNum = HealSpellNum;
 
-			//rputs("|15Enemy casts HEAL!\n");
 
 			return;
 		}
@@ -476,7 +474,6 @@ static void Fight_Stats(struct clan *PlayerClan, struct clan *MobClan, struct pc
 	MembersShown = 0;
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++)
 		if (MobClan->Member[CurMember] && MobClan->Member[CurMember]->Status != RanAway)
-			//MobClan->Member[CurMember]->HP > 0)
 		{
 			if (MobClan->Member[CurMember]->HP <= 0)
 				continue;   // skip him
