@@ -383,7 +383,7 @@ static int GetGUM(FILE *fpGUM)
 		}
 		else if (cInput == 'R') {
 			zputs("Rename\n|03enter new file name: ");
-			DosGetStr(szFileName, MAX_FILENAME_LEN, false);
+			DosGetStr(szFileName, PATH_CHARS, false);
 			zputs("\n");
 		}
 		else if (cInput == 'N') {
@@ -477,7 +477,7 @@ static void upgrade(void)
 #ifdef __unix__
 	FILE *fpAttr;
 	mode_t  tMode;
-	char szFileName[MAX_FILENAME_LEN];
+	char szFileName[PATH_SIZE];
 	unsigned tmp;
 #endif
 	char cInput;
@@ -777,7 +777,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 
 		if (cInput == 'R') {
 			zputs("Rename\n|03enter new file name: ");
-			DosGetStr(szFileName, MAX_FILENAME_LEN, false);
+			DosGetStr(szFileName, PATH_CHARS, false);
 		}
 		else if (cInput == 'N') {
 			zputs("No\n");

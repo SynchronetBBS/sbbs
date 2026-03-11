@@ -10,7 +10,6 @@ Open Issues
 ===========
 Charisma stat has no combat or empire effect ..................   1.1
 Clean up mstrings.h GNUmakefile dependencies ..................   1.2
-install: rename prompt limited to 13 characters ...............   1.4
 install: silent truncation of GUM and INI filenames ...........   1.5
 Village types defined but never assigned ......................   1.7
 Create shared mock library files for unit tests ...............   1.9
@@ -46,13 +45,6 @@ data/GNUmakefile both grew organically to solve the chicken-and-egg problem of
 langcomp needing to exist before mstrings.h can be generated.  The current
 approach works but could be cleaner -- the NATIVEEXEFILE computation and the
 filter-out workaround for shared langcomp objects are worth revisiting.
-
-[1.4]  install: rename prompt limited to 13 characters
--------------------------------------------------------------------------------
-When the user chooses "Rename" during an overwrite conflict, DosGetStr
-limits the new name to 13 characters (MAX_FILENAME_LEN) -- the old DOS
-8.3 convention.  This prevents renaming to any long filename.
-Source: install.c lines 349, 741.
 
 [1.5]  install: silent truncation of GUM and INI filenames
 -------------------------------------------------------------------------------
