@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # Integration tests for langcomp.
-# Input:  strings.txt  (NNNN [ST_MACRO ]text lines)
+# Input:  strings.u8.txt  (NNNN [ST_MACRO ]text lines)
 # Output: strings.xl   (binary language file)
 #         mstrings.h   (optional generated C header)
 

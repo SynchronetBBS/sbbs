@@ -2,8 +2,8 @@
 #
 # Regression tests for the stock quest campaign.
 #
-# Compiles the real data files (quests.evt, eventmon.txt, npcquote.txt,
-# clans.txt) and runs every quest through qtest in script mode.  Each
+# Compiles the real data files (quests.evt, eventmon.txt, npcquote.u8.txt,
+# clans.u8.txt) and runs every quest through qtest in script mode.  Each
 # quest path is tested for correct exit code, gold, flags, and rewards.
 #
 
@@ -39,9 +39,9 @@ if [ ! -f "$LANGFILE" ]; then
 fi
 
 "$ECOMP"   "$D/quests.evt"   "$T/quests.e"    >/dev/null 2>&1
-"$ECOMP"   "$D/npcquote.txt" "$T/npcquote.q"  >/dev/null 2>&1
-"$MCOMP"   "$D/eventmon.txt" "$T/eventmon.mon" >/dev/null 2>&1
-"$MAKENPC" "$D/clans.txt"    "$T/clans.npc"    >/dev/null 2>&1
+"$ECOMP"   "$D/npcquote.u8.txt" "$T/npcquote.q"  >/dev/null 2>&1
+"$MCOMP"   "$D/eventmon.txt"   "$T/eventmon.mon" >/dev/null 2>&1
+"$MAKENPC" "$D/clans.u8.txt"   "$T/clans.npc"    >/dev/null 2>&1
 
 for _f in "$T/quests.e" "$T/npcquote.q" "$T/eventmon.mon" "$T/clans.npc"; do
 	if [ ! -s "$_f" ]; then

@@ -86,8 +86,8 @@ wanted.
 
 [1.8]  Dead and orphaned help-file topics
 -------------------------------------------------------------------------------
-Two topics in menus.hlp are never displayed -- no Help() or GetChoice() call
-references them, and menus.hlp has no GeneralHelp() path:
+Two topics in menus.u8.hlp are never displayed -- no Help() or GetChoice()
+call references them, and menus.u8.hlp has no GeneralHelp() path:
 
     ^Eliminated     "You have been eliminated" screen; the game uses
                     DeleteClan() and a news message instead.
@@ -102,7 +102,7 @@ through the MainHelp > General Help menu (help.c GeneralHelp(ST_CLANSHLP)):
     ^Beta Note      Bug-report URLs and feature wishlist; content is stale
                     (dead URLs, features from the original roadmap).
 
-Options: (a) delete the two dead menus.hlp topics; (b) wire ^Eliminated
+Options: (a) delete the two dead menus.u8.hlp topics; (b) wire ^Eliminated
 into the elimination code path so it is actually shown; (c) update the
 stale clans.hlp topics or remove the ones that duplicate information
 available elsewhere.
@@ -124,11 +124,11 @@ the 3 installer .ini files are created but not wired in (see [1.11]).
 Binary output verified byte-identical (strings.xl, npcquote.q, spells.spl,
 clans.npc, clans.pak, mstrings.h).  Build system updated: data/GNUmakefile,
 data/pak.lst, root GNUmakefile devkit target, devkit/genall.mak,
-devkit/genall.bat.  Original CP437 files kept in repo for reference.
+devkit/genall.bat.  Original CP437 files deleted (available in git history).
 
 [1.11]  UTF-8 support for install.c
 -------------------------------------------------------------------------------
 Extend .u8. file detection to install.c, which reads .ini files containing
-CP437 (installer/install.ini has 1 CP437 line, installerdk/clandev.ini has
-13).  Deferred from [1.9] because install is a standalone tool, not a devkit
+CP437 (installer/install.u8.ini has 1 CP437 line, installerdk/clandev.u8.ini
+has 13).  Deferred from [1.9] because install is a standalone tool, not a devkit
 compiler.

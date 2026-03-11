@@ -702,9 +702,9 @@ Note: makepak takes output before input — this is intentional and the reverse 
 | `makenpc` | `<input.txt> <output.npc>` | `makenpc pack.npc.txt pack.npc` |
 | `ecomp` | `<input.txt> <output.evt\|.q>` | `ecomp pack.evt.txt pack.evt` |
 | `mitems` | `<input.txt> <output.dat>` | `mitems items.txt items.dat` |
-| `mspells` | `<input.txt> <output.dat>` | `mspells spells.txt spells.dat` |
+| `mspells` | `<input.txt> <output.dat>` | `mspells spells.u8.txt spells.dat` |
 | `mclass` | `<input.txt> <output.cls>` | `mclass class.txt class.cls` |
-| `langcomp` | `<input.txt> [output.xl [header.h]]` | `langcomp strings.txt strings.xl mstrings.h` |
+| `langcomp` | `<input.txt> [output.xl [header.h]]` | `langcomp strings.u8.txt strings.xl mstrings.h` |
 | **`makepak`** | **`<output.pak> <input.lst>`** | `makepak pack.pak pack.lst` |
 
 Only `makepak` is reversed. When writing readme.txt, build.bat, and Makefile, double-check argument order for every tool invocation against this table.

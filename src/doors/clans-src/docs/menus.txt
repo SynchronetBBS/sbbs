@@ -88,7 +88,7 @@ File paths are relative to the data pak; ST_ macros expand to these paths.
     ST_RULERHLP     /hlp/ruler        data/ruler.hlp
     ST_NEWBIEHLP    /hlp/NEWBIE       data/newbie.hlp
     ST_CLANSHLP     /hlp/general      data/clans.hlp
-    ST_MENUSHLP     /hlp/menus        data/menus.hlp
+    ST_MENUSHLP     /hlp/menus        data/menus.u8.hlp
     ST_RACESHLP     /hlp/races        data/races.hlp
     ST_VILLHLP      /hlp/village      data/village.hlp
     ST_ITEMHLP      /hlp/items        data/items.hlp

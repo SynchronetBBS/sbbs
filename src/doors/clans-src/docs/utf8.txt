@@ -64,13 +64,13 @@ Devkit compilers (read text source, produce binary output):
 
     Tool        Source file     Input file(s)
     --------    -----------     -------------------
-    langcomp    langcomp.c      strings.txt
+    langcomp    langcomp.c      strings.u8.txt
     mcomp       mcomp.c         monsters.txt
     mitems      mitems.c        items.txt
-    mspells     mspells.c       spells.txt
+    mspells     mspells.c       spells.u8.txt
     mclass      mclass.c        classes.txt
     ecomp       ecomp.c         *.evt event scripts
-    makenpc     makenpc.c       npcquote.txt
+    makenpc     makenpc.c       npcquote.u8.txt
 
 Pak builder (copies text files verbatim into pak):
 

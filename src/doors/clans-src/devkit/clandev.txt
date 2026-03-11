@@ -667,7 +667,7 @@ meanings:
                    to find out about them from someone.  You "tell" them
                    about a quest using this command.  After telling them
                    about quest QuestIndex, they'll be able to access the
-                   quest in the quest menu.  See my npcquote.txt file to
+                   quest in the quest menu.  See my npcquote.u8.txt file to
                    see it in action (even if it is a quote file and not
                    an event file).  It's easy to use.
 
@@ -899,11 +899,11 @@ first quote shown to the user.
 
 [3.4]  Quote Files
 -------------------------------------------------------------------------------
-The example used for this section is npcquote.txt.  It is an uncompiled
+The example used for this section is npcquote.u8.txt.  It is an uncompiled
 QuoteFile (QF).  QFs must be compiled using ecomp.  QFs are made the exact
 same way as EFs except that they use the keyword Topic instead of Event or
 Result.  Each topic corresponds to the listing of topics that appears in the
-raw NPC data file (ex: npcs.txt).
+raw NPC data file (ex: npcs.u8.txt).
 
 There are three new commands in the QuoteFiles, however.
 
@@ -1394,8 +1394,8 @@ is none.  They sounded good, ok? ;-)
 INI File Format
 ---------------
 The INI file tells the installer what to display and which files to
-extract.  See example.ini for a working template; clandev.ini and
-install.ini are also useful references.
+extract.  See example.u8.ini for a working template; clandev.u8.ini and
+install.u8.ini are also useful references.
 
 Every line in an INI file is one of four types:
 
@@ -1507,16 +1507,16 @@ Philip G. Gage.
 
 [5.3]  langcomp -- Language String Compiler
 -------------------------------------------------------------------------------
-langcomp compiles the language strings file (strings.txt) into the binary
+langcomp compiles the language strings file (strings.u8.txt) into the binary
 format (strings.xl) used by the game engine at run time.
 
-        langcomp <strings.txt> [strings.xl [mstrings.h]]
+        langcomp <strings.u8.txt> [strings.xl [mstrings.h]]
 
 UTF-8 source files are supported; see section 0.3.
 
 If only the first argument is given, langcomp derives the output name by
 replacing the .txt extension with .xl.  So running "langcomp strings" looks
-for strings.txt and produces strings.xl.  The optional third argument causes
+for strings.u8.txt and produces strings.xl.  The optional third argument causes
 langcomp to also generate a C header file containing #define macros for each
 string index (used by the game source code).
 
@@ -1611,10 +1611,10 @@ mspells compiles spell definitions from a text file into a binary data file.
 
 UTF-8 source files are supported; see section 0.3.
 
-The standard data file is spells.txt, compiled to spells.spl.  Up to 40
+The standard data file is spells.u8.txt, compiled to spells.spl.  Up to 40
 spells may be defined in a single file (MAX_SPELLS).
 
-Please refer to spells.txt for examples.
+Please refer to spells.u8.txt for examples.
 
 Name          [spell name, max 19 chars; starts a new spell definition]
 Flag          [Heal, Damage, Modify, Incapacitate, RaiseUndead,

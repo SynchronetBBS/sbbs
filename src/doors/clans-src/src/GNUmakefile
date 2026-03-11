@@ -115,8 +115,8 @@ endif
 # Generate mstrings.h by calling the native langcomp directly.
 # Delegating to data/GNUmakefile caused a recursive-make cycle:
 #   src default → mstrings.h → data strings.xl → native-devkit → src devkit → loop.
-mstrings.h: $(DATADIR)strings.txt $(BINDIR)langcomp$(NATIVEEXEFILE)
-	$(BINDIR)langcomp$(NATIVEEXEFILE) $(DATADIR)strings.txt $(DATADIR)strings.xl $@
+mstrings.h: $(DATADIR)strings.u8.txt $(BINDIR)langcomp$(NATIVEEXEFILE)
+	$(BINDIR)langcomp$(NATIVEEXEFILE) $(DATADIR)strings.u8.txt $(DATADIR)strings.xl $@
 
 # Ensure mstrings.h exists before compiling any source that uses it.
 # Objects shared with the langcomp build (serialize.o, platform.o) are

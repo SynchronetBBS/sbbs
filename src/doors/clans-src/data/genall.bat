@@ -1,10 +1,10 @@
-..\tools\langcomp strings.txt > TMP.FIL
+..\tools\langcomp strings.u8.txt > TMP.FIL
 ..\tools\mcomp eventmon.txt event.mon >> TMP.FIL
 ..\tools\mcomp monsters.txt output.mon >> TMP.FIL
-..\tools\mspells spells.txt spells.dat >> TMP.FIL
+..\tools\mspells spells.u8.txt spells.dat >> TMP.FIL
 ..\tools\mitems items.txt items.dat >> TMP.FIL
 ..\tools\mclass >>TMP.FIL
-..\tools\makenpc npcs.txt clans.npc >>TMP.FIL
+..\tools\makenpc npcs.u8.txt clans.npc >>TMP.FIL
 ..\tools\ecomp pray.evt pray.e >>TMP.FIL
 ..\tools\ecomp eva.txt eva.e >> TMP.FIL
 ..\tools\ecomp quests.evt quests.e >> TMP.FIL

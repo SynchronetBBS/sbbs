@@ -120,30 +120,25 @@ overriding parent's `eol=crlf`); `*.ans -text !eol` (binary).
 
 ### CP437 encoding and UTF-8 equivalents
 
-Ten stock data files contain raw CP437 bytes (`\x80-\xFF`: box-drawing
-characters, block elements, etc.).  Each now has a **UTF-8 equivalent** with
-`.u8.` in the filename (e.g., `data/menus.u8.hlp`).  The build system
-compiles from the `.u8.` files; the original CP437 files are kept for
-reference.
+Ten stock data files that formerly contained raw CP437 bytes have been
+converted to UTF-8 with `.u8.` in the filename (e.g., `data/menus.u8.hlp`).
+The original CP437 files have been deleted (available in git history).
+The build system compiles exclusively from the `.u8.` files.
 
-**Edit the `.u8.` files** — they are valid UTF-8 and safe with Read, Edit,
-and Write tools.  **NEVER use Read, Edit, or Write on the original CP437
-files** listed below; those tools corrupt every CP437 byte into U+FFFD.
-Use Python binary mode (`open(path, 'rb')`) via Bash if you need to inspect
-an original.
+These files are valid UTF-8 and safe with Read, Edit, and Write tools:
 
-| CP437 original | UTF-8 equivalent | Content |
-|----------------|------------------|---------|
-| `data/menus.hlp` | `data/menus.u8.hlp` | Main menu screens, box-drawing art |
-| `data/strings.txt` | `data/strings.u8.txt` | Language strings with dividers/bullets |
-| `data/npcquote.txt` | `data/npcquote.u8.txt` | NPC quote data |
-| `data/pg.asc` | `data/pg.u8.asc` | Page display art |
-| `data/pxtit.asc` | `data/pxtit.u8.asc` | Title screen art |
-| `data/spells.txt` | `data/spells.u8.txt` | Spell data with decorative chars |
-| `data/clans.txt` | `data/clans.u8.txt` | NPC definitions with bullet chars |
-| `installerdk/clandev.ini` | `installerdk/clandev.u8.ini` | Devkit installer, ANSI art banner |
-| `devkit/example.ini` | `devkit/example.u8.ini` | Example config, box-drawing dividers |
-| `installer/install.ini` | `installer/install.u8.ini` | Game installer, ANSI art line |
+| File | Content |
+|------|---------|
+| `data/menus.u8.hlp` | Main menu screens, box-drawing art |
+| `data/strings.u8.txt` | Language strings with dividers/bullets |
+| `data/npcquote.u8.txt` | NPC quote data |
+| `data/pg.u8.asc` | Page display art |
+| `data/pxtit.u8.asc` | Title screen art |
+| `data/spells.u8.txt` | Spell data with decorative chars |
+| `data/clans.u8.txt` | NPC definitions with bullet chars |
+| `installerdk/clandev.u8.ini` | Devkit installer, ANSI art banner |
+| `devkit/example.u8.ini` | Example config, box-drawing dividers |
+| `installer/install.u8.ini` | Game installer, ANSI art line |
 
 The following files have **no UTF-8 equivalent** — always use Python binary mode:
 

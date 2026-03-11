@@ -340,7 +340,7 @@ appropriate wrapper file.
                macros expand to language file lookups by index.
                Never call od_printf() or similar functions with
                a string literal for user-visible text.  Add new
-               strings to data/strings.txt instead.
+               strings to data/strings.u8.txt instead.
 
 See section 3.4 for the full strings workflow.
 
@@ -379,7 +379,7 @@ See section 3.4 for the full strings workflow.
 
 DevKit tools (built by `gmake devkit`):
 
-  langcomp.c  Compiles strings.txt into strings.xl.
+  langcomp.c  Compiles strings.u8.txt into strings.xl.
   ecomp.c     Compiles .evt event scripts into binary .e files.
   mcomp.c     Compiles monster data text files.
   mclass.c    Compiles class and race data.
@@ -572,12 +572,12 @@ with access to the source code can decode any file trivially.
 [3.4]  Language and String System
 -------------------------------------------------------------------------------
 User-visible strings are not hardcoded in C source.  They live in
-data/strings.txt and are compiled into the binary language file
+data/strings.u8.txt and are compiled into the binary language file
 data/strings.xl by the langcomp devkit tool.
 
 Workflow for adding or changing a string:
-  1. Add or edit the entry in data/strings.txt.
-  2. Run: langcomp strings.txt strings.xl
+  1. Add or edit the entry in data/strings.u8.txt.
+  2. Run: langcomp strings.u8.txt strings.xl
   3. Run: makepak pak.lst clans.pak  (or copy strings.xl manually
      to the game directory for quick testing).
 
@@ -718,12 +718,12 @@ All commands below are run from the data/ directory (or provide
 paths accordingly).  The tools must be on your PATH or invoked
 with their full path from bin/.
 
-  langcomp strings.txt strings.xl          Language file
+  langcomp strings.u8.txt strings.xl       Language file
   mcomp monsters.txt monsters.mon          Monsters
   mcomp eventmon.txt eventmon.mon          Event monsters
   mcomp npc-pc.txt npc-pc.mon              NPC PC stats
   mitems items.txt items.itm               Items
-  mspells spells.txt spells.spl            Spells
+  mspells spells.u8.txt spells.spl         Spells
   mclass classes.txt classes.cls           Classes
   mclass races.txt races.cls               Races
   makenpc npc-pc.mon npcquote.q clans.npc  NPC index
@@ -787,7 +787,7 @@ in clans.pak.  Each file covers one topic area.  Current files:
 
   army.hlp       bulletin.hlp   church.hlp     citizen.hlp
   clans.hlp      combat.hlp     empire.hlp     items.hlp
-  menus.hlp      newbie.hlp     races.hlp      ruler.hlp
+  menus.u8.hlp   newbie.hlp     races.hlp      ruler.hlp
   spells.hlp     stats.hlp      strategy.hlp   village.hlp
   war.hlp        wizard.hlp
 
@@ -803,7 +803,7 @@ The general-purpose codes (%P, %C, %L, %R, %D, %B, %V) and the
 game-state codes (%F, %M, %1, %2, %X, %Q, %N, %T, %Y) are
 documented in clans.txt section 1.9.
 
-The following codes are used internally by strings.txt and the
+The following codes are used internally by strings.u8.txt and the
 combat system.  They depend on transient state that is only valid
 during specific game routines and are not useful in quest packs or
 sysop-editable files:
@@ -846,7 +846,7 @@ ibbs.c and empire.c are large and complex.
 
 Some user-visible strings are still hardcoded.
   Despite the language system, a number of string literals remain
-  in the C source that should be in strings.txt.  Any such string
+  in the C source that should be in strings.u8.txt.  Any such string
   is a localization gap and a maintenance burden.
 
 No automated tests.
@@ -883,7 +883,7 @@ Additional modernization ideas:
    most tractable place to start; individual .evt scripts can
    be tested in isolation with qtest.
 
-5. Move remaining hardcoded strings to data/strings.txt.
+5. Move remaining hardcoded strings to data/strings.u8.txt.
    A grep for od_printf(" in the source will find them.
 
 6. Add CRC validation to all deserialization paths.
@@ -943,7 +943,7 @@ A devkit installation requires:
               mcomp, mclass, mitems, mspells, qtest
   Docs:       devkit/*.txt  (tool reference documentation)
   Examples:   devkit/event1.evt through event5.evt
-              devkit/example.ini
+              devkit/example.u8.ini
 
 For the copyright notice, use:
   "Originally copyright 1997-2002 Allen Ussher.  Open source
