@@ -446,7 +446,7 @@ static bool legal(char *pszAcs, int16_t *iCharsRead)
 				iTemp = ato16(szIndex, "Charisma", __func__);
 
 				if (PClan.Member[0] != NULL &&
-				    PClan.Member[0]->Attributes[ATTR_CHARISMA] >= iTemp)
+				    GetStat(PClan.Member[0], ATTR_CHARISMA) >= iTemp)
 					bCurrent = true;
 				else
 					bCurrent = false;
