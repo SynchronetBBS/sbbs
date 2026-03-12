@@ -4408,10 +4408,10 @@ function readConfigFile()
 					settingsObj.headerFilename = themeSettingsObj.headerFilenameBase + ".rip";
 				else if (console.term_supports(USER_ANSI) && file_exists(themeSettingsObj.headerFilenameBase + ".ans"))
 					settingsObj.headerFilename = themeSettingsObj.headerFilenameBase + ".ans";
-				else if (file_exists(themeSettingsObj.headerFilenameBase + ".asc"))
-					settingsObj.headerFilename = themeSettingsObj.headerFilenameBase + ".asc";
 				else if (file_exists(themeSettingsObj.headerFilenameBase + ".msg"))
 					settingsObj.headerFilename = themeSettingsObj.headerFilenameBase + ".msg";
+				else if (file_exists(themeSettingsObj.headerFilenameBase + ".asc"))
+					settingsObj.headerFilename = themeSettingsObj.headerFilenameBase + ".asc";
 				// If not found, look for the filename in the same directory as the this file lister mod/script
 				if (settingsObj.headerFilename.length == 0)
 				{
@@ -4420,10 +4420,10 @@ function readConfigFile()
 						settingsObj.headerFilename = filenameBase + ".rip";
 					else if (console.term_supports(USER_ANSI) && file_exists(filenameBase + ".ans"))
 						settingsObj.headerFilename = filenameBase + ".ans";
-					else if (file_exists(filenameBase + ".asc"))
-						settingsObj.headerFilename = filenameBase + ".asc";
 					else if (file_exists(filenameBase + ".msg"))
 						settingsObj.headerFilename = filenameBase + ".msg";
+					else if (file_exists(filenameBase + ".asc"))
+						settingsObj.headerFilename = filenameBase + ".asc";
 				}
 			}
 			if (themeSettingsObj.hasOwnProperty("headerMaxLines") && typeof(themeSettingsObj.headerMaxLines) === "number" && themeSettingsObj.headerMaxLines > 0)

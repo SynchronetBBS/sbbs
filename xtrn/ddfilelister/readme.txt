@@ -311,7 +311,7 @@ Theme configuration file
 ------------------------
 The theme configuration file has a couple options for an optional custom header
 file that can be displayed above the file list. A custom header file for this
-purpose can be an .ans, .asc, .msg, or .rip file. If the user's terminal
+purpose can be an .ans, .msg, .asc,  or .rip file. If the user's terminal
 supports RIP & the .rip file exists, the .rip file will be used; otherwise, if
 the user's terminal supports ANSI and the .ans file exists, the .ans file will
 be used; otherwise, an .asc or .msg file will be used if they exist. An .asc or
