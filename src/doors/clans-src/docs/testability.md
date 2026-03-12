@@ -113,7 +113,7 @@ This document tracks which functions directly perform I/O or access global varia
 | FileName |  |  |  |  |  |  |  |
 | FreeFileList |  |  |  |  |  |  |  |
 | FilesOrderedByDate |  | Y |  |  |  |  |  |
-| fullpath |  |  |  |  |  |  |  |
+| fullpath |  | Y |  |  |  |  |  |
 
 ---
 
@@ -749,7 +749,7 @@ These are safest to test and least likely to have side effects:
 | User_FirstTimeToday |  |  |  |  |  | Y | Y |
 | NumMembers |  |  |  |  |  | Y |  |
 | GetClanID | Y | Y | Y | Y | Y | Y | Y |
-| GetClanNameID |  |  |  |  |  |  |  |
+| GetClanNameID |  | Y |  |  |  |  |  |
 | GetClan | Y | Y |  | Y |  | Y | Y |
 | User_List |  | Y |  | Y |  | Y |  |
 | User_Maint | Y | Y |  | Y |  | Y | Y |

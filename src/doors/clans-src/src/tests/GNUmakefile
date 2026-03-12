@@ -35,7 +35,11 @@ TEST_BINARIES := $(TESTS_BINDIR)test_tools$(EXEFILE) \
                  $(TESTS_BINDIR)test_items$(EXEFILE) \
                  $(TESTS_BINDIR)test_clansini$(EXEFILE) \
                  $(TESTS_BINDIR)test_npc$(EXEFILE) \
-                 $(TESTS_BINDIR)test_u8cp437$(EXEFILE)
+                 $(TESTS_BINDIR)test_u8cp437$(EXEFILE) \
+                 $(TESTS_BINDIR)test_quests$(EXEFILE) \
+                 $(TESTS_BINDIR)test_reset$(EXEFILE) \
+                 $(TESTS_BINDIR)test_reg$(EXEFILE) \
+                 $(TESTS_BINDIR)test_config$(EXEFILE)
 
 .PHONY: all
 all: $(TEST_BINARIES)
@@ -132,6 +136,20 @@ $(TESTS_BINDIR)test_npc$(EXEFILE): test_npc.c test_harness.h ../mstrings.h | $(T
 	$(CC) $(CFLAGS) $< -o $@
 
 $(TESTS_BINDIR)test_u8cp437$(EXEFILE): test_u8cp437.c test_harness.h ../u8cp437.c ../u8cp437.h | $(TESTS_BINDIR)
+	$(CC) $(CFLAGS) $< -o $@
+
+$(TESTS_BINDIR)test_quests$(EXEFILE): CFLAGS += -I$(SRC)odoors/
+$(TESTS_BINDIR)test_quests$(EXEFILE): test_quests.c test_harness.h ../mstrings.h | $(TESTS_BINDIR)
+	$(CC) $(CFLAGS) $< -o $@
+
+$(TESTS_BINDIR)test_reset$(EXEFILE): test_reset.c test_harness.h | $(TESTS_BINDIR)
+	$(CC) $(CFLAGS) $< -o $@
+
+$(TESTS_BINDIR)test_reg$(EXEFILE): CFLAGS += -I$(SRC)odoors/
+$(TESTS_BINDIR)test_reg$(EXEFILE): test_reg.c test_harness.h ../mstrings.h | $(TESTS_BINDIR)
+	$(CC) $(CFLAGS) $< -o $@
+
+$(TESTS_BINDIR)test_config$(EXEFILE): test_config.c test_harness.h | $(TESTS_BINDIR)
 	$(CC) $(CFLAGS) $< -o $@
 
 .PHONY: clean

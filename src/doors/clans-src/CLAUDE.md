@@ -184,6 +184,19 @@ using the documentation format (plain ASCII, ≤79 columns, section `[X.Y]` styl
 Do **not** use the TaskCreate tool for project todos — that storage is session-only
 and is lost when the conversation ends.
 
+## Bug Handling During Tasks
+
+When a potential bug or unexpected behaviour is discovered while working on a
+task, pause and ask the user which of the following options to take:
+
+- **Ignore** — note it mentally and continue immediately without any action.
+- **ToDo** — append an item to `docs/todo.txt` (documentation format, ≤79
+  columns, `[X.Y]` style) and then continue.
+- **Chat** — discuss the bug; only resume the original task when the user
+  explicitly asks to continue.
+
+In all cases the original task will resume at some point.
+
 ## Git Workflow
 
 **NEVER run `git commit`, `git commit --amend`, or `git push` without the
