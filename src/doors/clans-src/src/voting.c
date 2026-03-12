@@ -265,17 +265,56 @@ void ChooseNewLeader(void)
 		if (TopVotes[iTemp] < MostVotes)
 			break;
 
-	// where we stopped is the amount of votes tied for first place
-	NumTied = iTemp-1;
+	// iTemp is now the count of candidates tied for first place
+	NumTied = iTemp;
 
 	if (NumTied <= 1) {
-		// only one guy at the top, make him the new ruler
+		// only one candidate at the top, make him the new ruler
 		NewRulerID[0] = TopCandidates[0][0];
 		NewRulerID[1] = TopCandidates[0][1];
 	}
 	else {
-		// choose one at random
-		iTemp = (int16_t)my_random(NumTied);
+		// break tie by comparing effective Charisma member-slot by
+		// member-slot (leader first), falling back to random only when
+		// all remaining tied clans are identical at every slot
+		int TiedIdx[50];
+		int NumWorking = NumTied;
+		for (int t = 0; t < NumTied; t++)
+			TiedIdx[t] = t;
+
+		for (int slot = 0; slot < MAX_PARTY_SIZE && NumWorking > 1; slot++) {
+			int8_t ChaAtSlot[50];
+			for (int t = 0; t < NumWorking; t++) {
+				struct clan TmpClan = {0};
+				ChaAtSlot[t] = 0;
+				if (GetClan(TopCandidates[TiedIdx[t]], &TmpClan)) {
+					if (TmpClan.Member[slot] != NULL)
+						ChaAtSlot[t] = GetStat(TmpClan.Member[slot],
+						                       ATTR_CHARISMA);
+					for (int m = 0; m < MAX_MEMBERS; m++) {
+						if (TmpClan.Member[m] != NULL) {
+							free(TmpClan.Member[m]);
+							TmpClan.Member[m] = NULL;
+						}
+					}
+				}
+			}
+			// keep only those clans with the highest charisma at this slot
+			int8_t MaxCha = ChaAtSlot[0];
+			for (int t = 1; t < NumWorking; t++)
+				if (ChaAtSlot[t] > MaxCha)
+					MaxCha = ChaAtSlot[t];
+			int NewCount = 0;
+			for (int t = 0; t < NumWorking; t++)
+				if (ChaAtSlot[t] >= MaxCha)
+					TiedIdx[NewCount++] = TiedIdx[t];
+			NumWorking = NewCount;
+		}
+
+		if (NumWorking == 1)
+			iTemp = (int16_t)TiedIdx[0];
+		else
+			iTemp = (int16_t)TiedIdx[my_random(NumWorking)];
 
 		NewRulerID[0] = TopCandidates[iTemp][0];
 		NewRulerID[1] = TopCandidates[iTemp][1];

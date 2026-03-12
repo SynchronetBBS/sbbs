@@ -437,6 +437,8 @@ Each member has six attributes:
     Armor Strength Reduces the damage you take from enemy attacks.
     Charisma       Affects quest events and NPC dialogue.  Some
                    encounters may require a minimum Charisma score.
+                   Also breaks tied elections: the clan whose members
+                   have the highest Charisma (leader first) wins.
 
 All attributes range from 0 to 100.  You improve them by spending
 training points at the training hall (see section 10.2).
@@ -800,7 +802,11 @@ town hall to enter the voting booth.
 
 The voting booth displays the top 10 candidates and their vote counts.
 The clan with the most votes when the current ruler abdicates or is
-ousted becomes the new ruler.
+ousted becomes the new ruler.  If two or more clans tie, the winner is
+determined by comparing each clan's member Charisma starting from the
+leader -- the clan whose members have the highest Charisma wins.  If
+all tied clans have identical Charisma at every slot, the winner is
+chosen at random.
 
 
 [12.7]  Abdication

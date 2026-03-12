@@ -294,6 +294,8 @@ There is no block-level if/then. To conditionally skip multiple commands, jump o
 
 **Negation for low-Charisma flavour:** `{!C5}` is useful for dialogue that only appears when Charisma is low ("The merchant barely glances at you.") and disappears once the player trains up — giving Charisma investment a visible payoff.
 
+**Gameplay note:** Charisma also breaks tied elections -- when two or more clans share the top vote count, the game compares member Charisma slot by slot (leader first) to pick the winner, falling back to random only when all tied clans are identical at every slot.  Quests that reward Charisma training points or items with Charisma bonuses therefore carry a tangible benefit even for players who do not engage with dialogue gating.
+
 ---
 
 ## COMMAND REFERENCE:
