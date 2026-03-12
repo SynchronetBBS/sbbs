@@ -6297,7 +6297,7 @@ function loadTextFileIntoArray(pFilename, pMaxNumLines, pMaxLineLen)
 				var fileLine = inFile.readln(maxLineLen);
 				// fileLine should be a string, but I've seen some cases
 				// where it isn't, so check its type.
-				if (typeof(fileLine) !== "string" || fileLine.length == 0)
+				if (typeof(fileLine) !== "string")
 					continue;
 				fileLines.push(fileLine);
 			}
