@@ -6113,6 +6113,8 @@ static void cleanup(int code)
 	ip_silent_can.reset();
 	host_can.reset();
 	host_exempt.reset();
+	dnsbl_exempt.reset();
+	spam_block.reset();
 
 	mqtt_shutdown(&mqtt);
 }
