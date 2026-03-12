@@ -223,27 +223,29 @@
 
 0240 ST_FIGHT0 ^M|15All members of your clan are either dead or unconscious!^M|07Come back tomorrow when able to do things again!^M%P
 0241 ST_FIGHTOVER1 ^M|05>> |02%ld people were impressed by your battles and join your following!^M   %ld were recruited by the government.^M
-0242 ST_FIGHTCLANALREADY |07You've already fought that clan today.^M%P
-0243 ST_FIGHTVSHEADER ^M^M|03** |14%s |03vs. |11%s |03**^M^M
-0244 ST_FIGHTPSTATS |07%-13s |10%d/%d HP   %d/%d SP^M
-0245 ST_FIGHTOPTIONS |0C(|0Ba|0C)ttack (f)ight to death s(k)ills (s)pecific attack^Mattack(#) r(e)ad scroll sk(i)p move (r)un (p)layer stats (?)help^M^M
-0246 ST_FIGHTYOURCOLOR |14
-0247 ST_FIGHTENEMYCOLOR |04
-0248 ST_FIGHTMISS »»» |12%s missed!^M^M
-0250 ST_FIGHTATTACK »»» |04%s attacks %s for |12%d damage.
-0251 ST_FIGHTXP  [%ld]
-0252 ST_FIGHTKILLED »»» |14%s |12is killed!  |04[%d]^M^M
-0253 ST_FIGHTMORTALWOUND »»» |14%s |12is mortally wounded!  |04[%d]^M^M
-0254 ST_FIGHTKNOCKEDOUT »»» |14%s |12is knocked unconscious!  |04[%d]^M^M
-0255 ST_FIGHTGETGOLD |02You receive |10%ld gold|02!^M
-0256 ST_FIGHTTAXEDGOLD |12%ld gold |02was lost to taxes.^M^M
-0257 ST_FIGHTTARGET1 |0SWhich enemy to attack? (|0B?=List;|10Enter|0C=First enemy)^M> |0F
-0258 ST_FIGHTTARGETLIST1 |0A(|0B%c|0A) |0C%-20s %d/%d hp^M
-0259 ST_FIGHTTARGETLIST2 |0A(|0B%c|0A) |0C%s^M
-0262 ST_FIGHTDEFEAT ^M|12Your clan has been defeated!^M
-0263 ST_FIGHTRUNAWAY |10*** |02Your clan runs away!^M^M
-0264 ST_FIGHTNORUN |10*** |02Your clan tries running but fails!^M^M
-0265 ST_FIGHTNORUN2 |15You cannot run away whilst battling a fellow clan!^M^M
+0242 ST_FIGHTCHABONUS |05>> |02Your leader's charisma inspires |10%ld|02 extra followers to join!^M
+0243 ST_FIGHTCHAPENALTY |04>> |04Your leader's poor charisma drives away |12%ld|04 followers.^M
+0244 ST_FIGHTCLANALREADY |07You've already fought that clan today.^M%P
+0245 ST_FIGHTVSHEADER ^M^M|03** |14%s |03vs. |11%s |03**^M^M
+0246 ST_FIGHTPSTATS |07%-13s |10%d/%d HP   %d/%d SP^M
+0247 ST_FIGHTOPTIONS |0C(|0Ba|0C)ttack (f)ight to death s(k)ills (s)pecific attack^Mattack(#) r(e)ad scroll sk(i)p move (r)un (p)layer stats (?)help^M^M
+0248 ST_FIGHTYOURCOLOR |14
+0249 ST_FIGHTENEMYCOLOR |04
+0250 ST_FIGHTMISS »»» |12%s missed!^M^M
+0252 ST_FIGHTATTACK »»» |04%s attacks %s for |12%d damage.
+0253 ST_FIGHTXP  [%ld]
+0254 ST_FIGHTKILLED »»» |14%s |12is killed!  |04[%d]^M^M
+0255 ST_FIGHTMORTALWOUND »»» |14%s |12is mortally wounded!  |04[%d]^M^M
+0256 ST_FIGHTKNOCKEDOUT »»» |14%s |12is knocked unconscious!  |04[%d]^M^M
+0257 ST_FIGHTGETGOLD |02You receive |10%ld gold|02!^M
+0258 ST_FIGHTTAXEDGOLD |12%ld gold |02was lost to taxes.^M^M
+0259 ST_FIGHTTARGET1 |0SWhich enemy to attack? (|0B?=List;|10Enter|0C=First enemy)^M> |0F
+0260 ST_FIGHTTARGETLIST1 |0A(|0B%c|0A) |0C%-20s %d/%d hp^M
+0261 ST_FIGHTTARGETLIST2 |0A(|0B%c|0A) |0C%s^M
+0264 ST_FIGHTDEFEAT ^M|12Your clan has been defeated!^M
+0265 ST_FIGHTRUNAWAY |10*** |02Your clan runs away!^M^M
+0266 ST_FIGHTNORUN |10*** |02Your clan tries running but fails!^M^M
+0267 ST_FIGHTNORUN2 |15You cannot run away whilst battling a fellow clan!^M^M
 
 #------------------------------------------------------------------------------
 # Spell combat (0280-0287)

@@ -438,7 +438,9 @@ Each member has six attributes:
     Charisma       Affects quest events and NPC dialogue.  Some
                    encounters may require a minimum Charisma score.
                    Also breaks tied elections: the clan whose members
-                   have the highest Charisma (leader first) wins.
+                   have the highest Charisma (leader first) wins.  A
+                   leader's Charisma also helps attract followers after
+                   mine raids.
 
 All attributes range from 0 to 100.  You improve them by spending
 training points at the training hall (see section 10.2).
