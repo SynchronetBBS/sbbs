@@ -12,6 +12,15 @@
  */
 int my_random(int limit)
 {
+	// Validate arguments before any arithmetic on limit.
+	// Computing (unsigned)(limit - 1) when limit == INT_MIN is signed overflow.
+	if (limit <= 0)
+		System_Error("Bad value passed to my_random()");
+	if (limit == 1)
+		return 0;
+	if (limit >= RAND_MAX)
+		System_Error("Broken Random (range too small)!");
+
 	unsigned ulimit = (unsigned)(limit - 1);
 	// -1 for the sign bit, -1 because it's base 0
 	unsigned maxbit = sizeof(int) * CHAR_BIT - 2;
@@ -19,14 +28,6 @@ int my_random(int limit)
 	unsigned val;
 	int found = 0;
 	int shift;
-
-	// Don't mess around with garbage
-	if (limit <= 0)
-		System_Error("Bad value passed to my_random()");
-	if (limit == 1)
-		return 0;
-	if (limit >= RAND_MAX)
-		System_Error("Broken Random (range too small)!");
 
 	/*
 	 * Walk through all the bits from highest to lowest.

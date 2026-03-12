@@ -5,7 +5,7 @@
 
 int8_t ato8(const char *str, const char *desc)
 {
-	int ret = atoi(str);
+	long long ret = strtoll(str, NULL, 10);
 
 	if (ret < INT8_MIN || ret > INT8_MAX) {
 		printf("%s out of range\n", desc);
@@ -16,7 +16,7 @@ int8_t ato8(const char *str, const char *desc)
 
 char atoc(const char *str, const char *desc)
 {
-	int ret = atoi(str);
+	long long ret = strtoll(str, NULL, 10);
 
 	if (ret < CHAR_MIN || ret > CHAR_MAX) {
 		printf("%s out of range\n", desc);
@@ -27,7 +27,7 @@ char atoc(const char *str, const char *desc)
 
 int16_t ato16(const char *str, const char *desc)
 {
-	int ret = atoi(str);
+	long long ret = strtoll(str, NULL, 10);
 
 	if (ret < INT16_MIN || ret > INT16_MAX) {
 		printf("%s out of range\n", desc);
@@ -38,7 +38,7 @@ int16_t ato16(const char *str, const char *desc)
 
 int32_t ato32(const char *str, const char *desc)
 {
-	long ret = atol(str);
+	long long ret = strtoll(str, NULL, 10);
 
 	if (ret < INT32_MIN || ret > INT32_MAX) {
 		printf("%s out of range\n", desc);
