@@ -184,7 +184,7 @@ void Spells_UpdatePCSpells(struct pc *PC)
 	strlcpy(Spells_szCastDestination, PC->szName, sizeof(Spells_szCastDestination));
 
 	/* reduce each spell in effect accordingly */
-	for (iTemp = 0; iTemp < 10; iTemp++) {
+	for (iTemp = 0; iTemp < MAX_SPELLS_IN_EFFECT; iTemp++) {
 		/* skip if no spell in that slot */
 		if (PC->SpellsInEffect[iTemp].SpellNum == -1)
 			continue;
@@ -224,7 +224,7 @@ void Spells_ClearSpells(struct clan *Clan)
 
 	for (CurMember = 0; CurMember < MAX_MEMBERS; CurMember++) {
 		if (Clan->Member[CurMember])
-			for (iTemp = 0; iTemp < 10; iTemp++)
+			for (iTemp = 0; iTemp < MAX_SPELLS_IN_EFFECT; iTemp++)
 				Clan->Member[CurMember]->SpellsInEffect[iTemp].SpellNum = -1;
 	}
 }
@@ -500,7 +500,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 		/* put in SpellsInEffect */
 
 		/* see if spell in effect already, if so, just add onto energy */
-		for (iTemp = 0; iTemp < 10; iTemp++) {
+		for (iTemp = 0; iTemp < MAX_SPELLS_IN_EFFECT; iTemp++) {
 			if (TargetPC->SpellsInEffect[iTemp].SpellNum == SpellNum) {
 				/* found one which is same as this */
 				break;
@@ -513,7 +513,7 @@ void Spells_CastSpell(struct pc *PC, struct clan *EnemyClan, int16_t Target, int
 		}
 		else {
 			/* find empty slot, if none found just use #9*/
-			for (iTemp = 0; iTemp < 10; iTemp++) {
+			for (iTemp = 0; iTemp < MAX_SPELLS_IN_EFFECT; iTemp++) {
 				if (TargetPC->SpellsInEffect[iTemp].SpellNum == -1)
 					break;
 			}

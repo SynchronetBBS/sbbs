@@ -954,7 +954,7 @@ static void IBBS_TravelMaint(void)
 	struct clan TmpClan = {0};
 	struct pc TmpPC = {0};
 	int16_t iTemp;
-	char TravelBuffer[BUF_SIZE_clan + 6 * BUF_SIZE_pc];
+	char TravelBuffer[BUF_SIZE_clan + MAX_PARTY_SIZE * BUF_SIZE_pc];
 	size_t TravelBufferOffset;
 
 	fpLeavingDat = fopen("leaving.dat", "rb");
@@ -1694,7 +1694,7 @@ static void IBBS_ProcessRouteConfig(void)
 
 	for (;;) {
 		/* read in a line */
-		if (fgets(szRouteConfigLine, 255, fpRouteConfigFile) == NULL) break;
+		if (fgets(szRouteConfigLine, sizeof(szRouteConfigLine), fpRouteConfigFile) == NULL) break;
 
 		/* Ignore all of line after comments or CR/LF char */
 		pcCurrentPos=(char *)szRouteConfigLine;
@@ -1980,7 +1980,7 @@ void IBBS_ShowLeagueAscii(void)
 	}
 
 	for (;;) {
-		if (fgets(szString, 255, fp) == 0)
+		if (fgets(szString, sizeof(szString), fp) == 0)
 			break;
 
 		strlcpy(szToken, szString, sizeof(szToken));
@@ -2395,7 +2395,7 @@ static void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 		EncryptWrite_s(clan, Clan, fpPC, XOR_USER);
 
 		/* write members */
-		for (iTemp = 0; iTemp < 6; iTemp++)
+		for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++)
 			EncryptWrite_s(pc, Clan->Member[iTemp], fpPC, XOR_PC);
 
 		fclose(fpPC);
@@ -2407,7 +2407,7 @@ static void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 	CurClan = 0;
 	for (;;) {
 		/* seek to current clan */
-		fseek(fpPC, (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET);
+		fseek(fpPC, (long)CurClan * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc), SEEK_SET);
 
 		/* read in tmp clan */
 		notEncryptRead_s(clan, &TmpClan, fpPC, XOR_USER)
@@ -2437,12 +2437,12 @@ static void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 			}
 
 			/* seek to that spot and write the merged info to file */
-			fseek(fpPC, (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET);
+			fseek(fpPC, (long)CurClan * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc), SEEK_SET);
 
 			EncryptWrite_s(clan, Clan, fpPC, XOR_USER);
 
 			/* write members */
-			for (iTemp = 0; iTemp < 6; iTemp++)
+			for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++)
 				EncryptWrite_s(pc, Clan->Member[iTemp], fpPC, XOR_PC);
 
 			FoundMatch = true;
@@ -2470,7 +2470,7 @@ static void IBBS_AddToGame(struct clan *Clan, bool WasLost)
 		EncryptWrite_s(clan, Clan, fpPC, XOR_USER);
 
 		/* write members */
-		for (iTemp = 0; iTemp < 6; iTemp++)
+		for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++)
 			EncryptWrite_s(pc, Clan->Member[iTemp], fpPC, XOR_PC);
 
 		fclose(fpPC);
@@ -2692,7 +2692,7 @@ HandleClanMovePacket(struct Packet *Packet, FILE* fp)
 	}
 
 	/* read in each PC */
-	for (iTemp = 0; iTemp < 6; iTemp++) {
+	for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++) {
 		TmpClan.Member[iTemp] = malloc(sizeof(struct pc));
 		CheckMem(TmpClan.Member[iTemp]);
 		EncryptRead_s(pc, TmpClan.Member[iTemp], fp, XOR_PACKET);

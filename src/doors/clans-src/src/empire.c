@@ -87,6 +87,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define VIT_AXEMEN      7
 #define VIT_KNIGHTS     6
 
+// barracks capacity multipliers
+#define FOOTMEN_PER_BARRACKS    20
+#define AXEMEN_PER_BARRACKS     10
+#define KNIGHTS_PER_BARRACKS    5
+
 const struct BuildingType BuildingType[NUM_BUILDINGTYPES] = {
 	{"Barracks",            5, 15,  30,  2500 },
 	{"Walls",              15, 5,    7,  1000 },
@@ -284,9 +289,9 @@ void ProcessResultPacket(struct AttackResult *Result)
 
 					// give points for win, take away some for loss
 					if (Result->Success)
-						PClan.Points += 50;
+						PClan.Points += POINTS_EMPIRE_WIN;
 					else
-						PClan.Points -= 25;
+						PClan.Points -= POINTS_EMPIRE_LOSS;
 
 					strlcpy(szAttackerName, TmpClan.szName, sizeof(szAttackerName));
 
@@ -2798,9 +2803,9 @@ static void StartEmpireWar(struct empire *Empire)
 	// give points for win, take away some for loss
 	if (Empire->OwnerType == EO_CLAN) {
 		if (Result.Success)
-			PClan.Points += 50;
+			PClan.Points += POINTS_EMPIRE_WIN;
 		else
-			PClan.Points -= 25;
+			PClan.Points -= POINTS_EMPIRE_LOSS;
 	}
 	User_Write();
 	door_pause();

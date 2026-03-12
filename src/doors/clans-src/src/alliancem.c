@@ -719,7 +719,7 @@ void KillAlliance(int16_t WhichAlliance)
 
 	// get list of all clan names from file, write to
 	for (CurClan = 0;; CurClan++) {
-		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
+		Offset = (long)CurClan * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc);
 		if (fseek(fpPlayerFile, Offset, SEEK_SET)) {
 			break;  /* couldn't fseek, so exit */
 		}
@@ -745,7 +745,7 @@ void KillAlliance(int16_t WhichAlliance)
 		// in alliance, update his info and write to file
 		TmpClan.Alliances[CurAlliance] = -1;
 
-		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
+		Offset = (long)CurClan * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc);
 		fseek(fpPlayerFile, Offset, SEEK_SET);
 		EncryptWrite_s(clan, &TmpClan, fpPlayerFile, XOR_USER);
 	}

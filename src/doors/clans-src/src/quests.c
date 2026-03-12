@@ -965,7 +965,7 @@ bool RunEvent(bool QuoteToggle, bool reset_hp, char *szEventFile, char *szEventN
 					if (PClan.Member[CurMember] == NULL)
 						continue;
 
-					for (iTemp = 0; iTemp < 10; iTemp++)
+					for (iTemp = 0; iTemp < MAX_SPELLS_IN_EFFECT; iTemp++)
 						PClan.Member[CurMember]->SpellsInEffect[iTemp].SpellNum = -1;
 				}
 

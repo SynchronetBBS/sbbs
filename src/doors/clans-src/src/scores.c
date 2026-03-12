@@ -188,9 +188,9 @@ void DisplayScores(bool MakeFile)
 		bool UsedInList;
 		int16_t VillageID;
 		bool Living;
-	} *SortData[128];
+	} *SortData[MAX_SCORE_CLANS];
 	char AnsiSymbol[190];
-	int16_t SortList[128];
+	int16_t SortList[MAX_SCORE_CLANS];
 	int16_t CurClan = 0, iTemp, NumClans, CurMember;
 	long Offset;
 	int32_t MostPoints;
@@ -238,7 +238,7 @@ void DisplayScores(bool MakeFile)
 	else {
 		/* read 'em in */
 		for (CurClan = 0;; CurClan++) {
-			Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
+			Offset = (long)CurClan * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc);
 			if (fseek(fpPCFile, Offset, SEEK_SET)) {
 				break;  /* couldn't fseek, so exit */
 			}
@@ -534,7 +534,7 @@ void ProcessScoreData(struct UserScore **UserScores)
 	fpOld = fopen("ipscores.dat", "rb");
 	if (fpOld) {
 		// skip date
-		fseek(fpOld, 11 * sizeof(char), SEEK_SET);
+		fseek(fpOld, DATE_STR_SIZE * sizeof(char), SEEK_SET);
 		for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
 			OldList[iTemp] = malloc(sizeof(struct UserScore));
 			CheckMem(OldList[iTemp]);
@@ -615,7 +615,7 @@ void ProcessScoreData(struct UserScore **UserScores)
 	fpNew = fopen("ipscores.dat", "wb");
 	if (fpNew) {
 		// write date
-		CheckedEncryptWrite(System.szTodaysDate, 11, fpNew, XOR_IPS);
+		CheckedEncryptWrite(System.szTodaysDate, DATE_STR_SIZE, fpNew, XOR_IPS);
 
 		for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
 			if (NewList[iTemp])
@@ -640,7 +640,7 @@ void LeagueScores(void)
 	struct UserScore **ScoreList;
 	size_t Padding;
 	int16_t iTemp, UsersFound;
-	char ScoreDate[11], szString[128], szPadding[21];
+	char ScoreDate[11], szString[MAX_SCORE_CLANS], szPadding[21];
 	FILE *fp;
 
 	fp = fopen("ipscores.dat", "rb");
@@ -654,7 +654,7 @@ void LeagueScores(void)
 	ScoreList = calloc(MAX_USERS, sizeof(struct UserScore *));
 	CheckMem(ScoreList);
 
-	EncryptRead(ScoreDate, 11, fp, XOR_IPS);
+	EncryptRead(ScoreDate, DATE_STR_SIZE, fp, XOR_IPS);
 
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
 		ScoreList[iTemp] = malloc(sizeof(struct UserScore));
@@ -730,7 +730,7 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 	CheckMem(ScoreList);
 
 	// read date
-	EncryptRead(ScoreDate, 11, fp, XOR_IPS);
+	EncryptRead(ScoreDate, DATE_STR_SIZE, fp, XOR_IPS);
 
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
 		ScoreList[iTemp] = malloc(sizeof(struct UserScore));
@@ -756,7 +756,7 @@ void RemoveFromIPScores(const int16_t ClanID[2])
 	}
 
 	// write date
-	CheckedEncryptWrite(ScoreDate, 11, fp, XOR_IPS);
+	CheckedEncryptWrite(ScoreDate, DATE_STR_SIZE, fp, XOR_IPS);
 
 	// write them to file now and free them at the same time
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
@@ -793,7 +793,7 @@ void SendScoreList(void)
 	ScoreList = calloc(MAX_USERS, sizeof(struct UserScore *));
 	CheckMem(ScoreList);
 
-	EncryptRead(ScoreDate, 11, fp, XOR_IPS);
+	EncryptRead(ScoreDate, DATE_STR_SIZE, fp, XOR_IPS);
 
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
 		ScoreList[iTemp] = malloc(sizeof(struct UserScore));
@@ -825,7 +825,7 @@ void SendScoreList(void)
 	NumScores16 = SWAP16(NumScores16);
 	memcpy(&ScoreBuffer[Offset], &NumScores16, sizeof(int16_t));
 	Offset += sizeof(int16_t);
-	memcpy(&ScoreBuffer[Offset], ScoreDate, 11);
+	memcpy(&ScoreBuffer[Offset], ScoreDate, DATE_STR_SIZE);
 	Offset += 11;
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
 		if (ScoreList[iTemp])
@@ -867,7 +867,7 @@ void CreateScoreData(bool LocalOnly)
 
 	NumClans = 0;
 	for (ClanNum = 0;; ClanNum++) {
-		if (fseek(fpPlayerFile, (long)ClanNum * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET))
+		if (fseek(fpPlayerFile, (long)ClanNum * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc), SEEK_SET))
 			break;
 
 		notEncryptRead_s(clan, &TmpClan, fpPlayerFile, XOR_USER)

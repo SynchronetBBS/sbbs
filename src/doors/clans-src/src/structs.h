@@ -385,11 +385,10 @@ struct Spell {
 struct Language {
 	char Signature[30];         // "The Clans Language File v1.0"
 
-	uint16_t StrOffsets[2000];       // offsets for up to 1100 strings
+	uint16_t StrOffsets[MAX_LANG_STRINGS];  // offsets for up to 2000 strings
 	uint16_t NumBytes;               // how big is the bigstring!?
 
-	char *BigString;        // All 500 strings jumbled together into
-	// one
+	char *BigString;        // All strings jumbled together
 };
 
 struct BuildingType {

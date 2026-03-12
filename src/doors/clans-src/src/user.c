@@ -92,7 +92,7 @@ static void AddToDisband(void)
 
 	fp = fopen("disband.dat", "ab");
 	if (fp) {
-		CheckedEncryptWrite(od_control.user_name, 36, fp, XOR_DISBAND);
+		CheckedEncryptWrite(od_control.user_name, sizeof(od_control.user_name), fp, XOR_DISBAND);
 		fclose(fp);
 	}
 }
@@ -120,7 +120,7 @@ void User_ResetAllVotes(void)
 		notEncryptRead_s(clan, &TmpClan, fpOldPC, XOR_USER)
 			break;
 
-		for (iTemp = 0; iTemp < 6; iTemp++) {
+		for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++) {
 			TmpClan.Member[iTemp] = malloc(sizeof(struct pc));
 			CheckMem(TmpClan.Member[iTemp]);
 			EncryptRead_s(pc, TmpClan.Member[iTemp], fpOldPC, XOR_PC);
@@ -131,7 +131,7 @@ void User_ResetAllVotes(void)
 
 		EncryptWrite_s(clan, &TmpClan, fpNewPC, XOR_USER);
 
-		for (iTemp = 0; iTemp < 6; iTemp++) {
+		for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++) {
 			EncryptWrite_s(pc, TmpClan.Member[iTemp], fpNewPC, XOR_PC);
 			free(TmpClan.Member[iTemp]);
 			TmpClan.Member[iTemp] = NULL;
@@ -205,12 +205,12 @@ void DeleteClan(int16_t ClanID[2], char *szClanName)
 
 				// skip the guy since we're deleting him
 				// skip 6 members
-				fseek(fpOldPC, 6L * BUF_SIZE_pc, SEEK_CUR);
+				fseek(fpOldPC, (long)MAX_PARTY_SIZE * BUF_SIZE_pc, SEEK_CUR);
 				continue;
 			}
 
 			// read in 6 members
-			for (iTemp = 0; iTemp < 6; iTemp++) {
+			for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++) {
 				TmpClan.Member[iTemp] = malloc(sizeof(struct pc));
 				CheckMem(TmpClan.Member[iTemp]);
 				EncryptRead_s(pc, TmpClan.Member[iTemp], fpOldPC, XOR_PC);
@@ -232,7 +232,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName)
 			/* write new stuff to new file */
 			EncryptWrite_s(clan, &TmpClan, fpNewPC, XOR_USER);
 
-			for (iTemp = 0; iTemp < 6; iTemp++) {
+			for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++) {
 				EncryptWrite_s(pc, TmpClan.Member[iTemp], fpNewPC, XOR_PC);
 				free(TmpClan.Member[iTemp]);
 				TmpClan.Member[iTemp] = NULL;
@@ -406,7 +406,7 @@ bool ClanExists(int16_t ClanID[2])
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
 
-		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
+		Offset = (long)CurClan * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc);
 		if (fseek(fpPlayerFile, Offset, SEEK_SET))
 			break;  /* couldn't fseek, so exit */
 
@@ -454,7 +454,7 @@ int8_t GetStat(struct pc *PC, char Stat)
 		StatValue += PC->MyClan->Items[ PC->Armor - 1 ].Attributes[Stat + 0];
 
 	/* add on spell modifiers here */
-	for (iTemp = 0; iTemp < 10; iTemp++) {
+	for (iTemp = 0; iTemp < MAX_SPELLS_IN_EFFECT; iTemp++) {
 		/* skip if no spell in that slot */
 		if (PC->SpellsInEffect[iTemp].SpellNum == -1)
 			continue;
@@ -1248,7 +1248,7 @@ static int16_t NumClansInVillage(void)
 			NumClans++;
 
 		/* skip his 6 PCs */
-		fseek(fp, 6 * BUF_SIZE_pc, SEEK_CUR);
+		fseek(fp, MAX_PARTY_SIZE * BUF_SIZE_pc, SEEK_CUR);
 	}
 
 
@@ -1588,7 +1588,7 @@ void PC_Create(struct pc *PC, bool ClanLeader)
 		strlcpy(PC->szName, "New Player", sizeof(PC->szName));
 
 		/* set all spells to 0 */
-		for (iTemp = 0; iTemp < 10; iTemp++)
+		for (iTemp = 0; iTemp < MAX_SPELLS_IN_EFFECT; iTemp++)
 			PC->SpellsInEffect[iTemp].SpellNum = -1;
 
 		ShowPlayerStats(PC, false);
@@ -1637,7 +1637,7 @@ static bool NameInUse(char *szName)
 	if (fpPCFile) {
 		/* go through list */
 		for (CurClan = 0;; CurClan++) {
-			Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
+			Offset = (long)CurClan * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc);
 			if (fseek(fpPCFile, Offset, SEEK_SET))
 				break;  /* couldn't fseek, so exit */
 
@@ -1941,7 +1941,7 @@ static bool User_Read(void)
 
 	for (CurClan = 0;; CurClan++) {
 		/* seek to the current player */
-		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
+		Offset = (long)CurClan * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc);
 
 		if (fseek(fpPlayerFile, Offset, SEEK_SET))
 			break;  /* couldn't fseek, so exit */
@@ -1972,7 +1972,7 @@ static bool User_Read(void)
 					PClan.Member[CurMember]->MyClan = &PClan;
 
 					/* set all spells to 0 */
-					for (iTemp = 0; iTemp < 10; iTemp++)
+					for (iTemp = 0; iTemp < MAX_SPELLS_IN_EFFECT; iTemp++)
 						PClan.Member[CurMember]->SpellsInEffect[iTemp].SpellNum = -1;
 
 				}
@@ -2016,7 +2016,7 @@ void Clan_Update(struct clan *Clan)
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
 
-		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
+		Offset = (long)CurClan * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc);
 		if (fseek(fpPlayerFile, Offset, SEEK_SET))
 			break;  /* couldn't fseek, so exit */
 
@@ -2041,7 +2041,7 @@ void Clan_Update(struct clan *Clan)
 			// fwrite players
 			TmpPC.szName[0] = 0;
 			TmpPC.Status = Dead;
-			for (iTemp = 0; iTemp < 6; iTemp++) {
+			for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++) {
 				if (Clan->Member[iTemp] && Clan->Member[iTemp]->Undead == false) {
 					s_pc_s(Clan->Member[iTemp], serBuf, BUF_SIZE_pc);
 					if (!EncryptWrite(serBuf, BUF_SIZE_pc, fpPlayerFile, XOR_PC))
@@ -2148,7 +2148,7 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 			rputs(ST_ERRORPC);
 			break;
 		}
-		if (fseek(fpPlayerFile, (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET)) {
+		if (fseek(fpPlayerFile, (long)CurClan * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc), SEEK_SET)) {
 			fclose(fpPlayerFile);
 			break;  /* couldn't fseek, so exit */
 		}
@@ -2161,7 +2161,7 @@ bool GetClanID(int16_t ID[2], bool OnlyLiving, bool IncludeSelf,
 		// see if any of the members are alive
 		if (OnlyLiving) {
 			AtLeastOneLiving = false;
-			for (iTemp = 0; iTemp < 6; iTemp++) {
+			for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++) {
 				EncryptRead_s(pc, &TmpPC, fpPlayerFile, XOR_PC);
 
 				if (TmpPC.szName[0] && TmpPC.Status == Here) {
@@ -2260,7 +2260,7 @@ bool GetClanNameID(char *szName, size_t sz, int16_t ID[2])
 		if (!fpPlayerFile) {
 			return false;  /* means failed to find clan */
 		}
-		if (fseek(fpPlayerFile, (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET)) {
+		if (fseek(fpPlayerFile, (long)CurClan * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc), SEEK_SET)) {
 			fclose(fpPlayerFile);
 			break;  /* couldn't fseek, so exit */
 		}
@@ -2309,7 +2309,7 @@ bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 	}
 
 	for (ClanNum = 0;; ClanNum++) {
-		if (fseek(fpPlayerFile, (long)ClanNum * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET)) {
+		if (fseek(fpPlayerFile, (long)ClanNum * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc), SEEK_SET)) {
 			// couldn't find clan in file
 			fclose(fpPlayerFile);
 			return false;
@@ -2331,7 +2331,7 @@ bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 			FoundClan = true;
 
 			/* read in PCs */
-			for (iTemp = 0; iTemp < 6; iTemp++) {
+			for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++) {
 				TmpClan->Member[iTemp] = malloc(sizeof(struct pc));
 				CheckMem(TmpClan->Member[iTemp]);
 				EncryptRead_s(pc, TmpClan->Member[iTemp], fpPlayerFile, XOR_PC);
@@ -2381,7 +2381,7 @@ void User_List(void)
 		// list local players
 		for (CurClan = 0;; CurClan++) {
 			/* seek to the current player */
-			Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
+			Offset = (long)CurClan * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc);
 			if (fseek(fpPlayerFile, Offset, SEEK_SET))
 				break;  /* couldn't fseek, so exit */
 
@@ -2501,7 +2501,7 @@ void User_Maint(void)
 			}
 
 			// read in 6 members
-			for (iTemp = 0; iTemp < 6; iTemp++) {
+			for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++) {
 				TmpClan.Member[iTemp] = malloc(sizeof(struct pc));
 				CheckMem(TmpClan.Member[iTemp]);
 				EncryptRead_s(pc, TmpClan.Member[iTemp], fpOldPC, XOR_PC);
@@ -2569,7 +2569,7 @@ void User_Maint(void)
 			/* write new stuff to new file */
 			EncryptWrite_s(clan, &TmpClan, fpNewPC, XOR_USER);
 
-			for (iTemp = 0; iTemp < 6; iTemp++) {
+			for (iTemp = 0; iTemp < MAX_PARTY_SIZE; iTemp++) {
 				EncryptWrite_s(pc, TmpClan.Member[iTemp], fpNewPC, XOR_USER);
 				free(TmpClan.Member[iTemp]);
 				TmpClan.Member[iTemp] = NULL;

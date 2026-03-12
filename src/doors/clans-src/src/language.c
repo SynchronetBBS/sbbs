@@ -77,7 +77,7 @@ void Language_Init(char *szLangFile)
 	CheckMem(Language);
 	Language->BigString = NULL;
 
-	for (iTemp = 0; iTemp < 2000; iTemp++)
+	for (iTemp = 0; iTemp < MAX_LANG_STRINGS; iTemp++)
 		Language->StrOffsets[iTemp] = 0;
 
 	MyOpen(szLangFile, "rb", &FileHeader);

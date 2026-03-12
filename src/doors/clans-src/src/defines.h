@@ -174,6 +174,39 @@
 #define MQ_VERYGOOD     2
 #define MQ_EXCELLENT    3
 
+/* Game data structures and serialization */
+#define DATE_STR_SIZE           11  /* "YYYY-MM-DD\0" */
+#define MAX_SPELLS_IN_EFFECT    10  /* spells active on one PC */
+#define MAX_SCORE_CLANS         128 /* max clans in top-scores sort buffer */
+#define MAX_LANG_STRINGS        2000 /* language string table capacity */
+
+/* Gameplay limits */
+#define MAX_VAULT_WITHDRAWALS   3   /* withdrawals per day */
+#define MAX_TAX_RATE            50  /* percent */
+#define MAX_GST_RATE            50  /* percent */
+#define MAX_CONSCRIPTION_RATE   20  /* percent */
+
+/* PC stat caps (training hall) */
+#define TRAIN_MAX_HP            15000
+#define TRAIN_MAX_SP            15000
+
+/* PC stat caps (item bonuses can exceed training) */
+#define ITEM_MAX_HP             20000
+#define ITEM_MAX_SP             20000
+
+/* PC attribute cap (Str, Agi, Dex, Wis, ArmorStr) */
+#define MAX_ATTRIBUTE_VALUE     100
+
+/* Combat / scoring */
+#define ATTACK_INDEX_WINDOW     255 /* replay-protection window */
+#define POINTS_CLAN_WIN         20
+#define POINTS_CLAN_LOSS        -15
+#define POINTS_CLAN_RAN         -20
+#define POINTS_MONSTER_WIN      10
+#define POINTS_MONSTER_LOSS     -10
+#define POINTS_EMPIRE_WIN       50
+#define POINTS_EMPIRE_LOSS      -25
+
 #if __STDC_VERSION__ >= 199901L
 #include <inttypes.h>
 #include <stdbool.h>

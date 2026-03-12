@@ -59,7 +59,7 @@ bool EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
 
 #define EncryptWrite16(d, fp, xv) do {                                                                        \
 	((int16_t*)serBuf)[0] = SWAP16S(*d);                                                                   \
-	if (!EncryptWrite(serBuf, 2, fp, xv)) {                                                                 \
+	if (!EncryptWrite(serBuf, sizeof(int16_t), fp, xv)) {                                                   \
 		char szErrorStr[1024];                                                                           \
 		snprintf(szErrorStr, sizeof(szErrorStr), "EncryptWrite_s() failed at %s:%d", __func__, __LINE__); \
 		System_Error(szErrorStr);                                                                          \
@@ -80,7 +80,7 @@ bool EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue);
 } while(0)
 
 #define EncryptRead16(d, fp, xv) do {                                                                     \
-	bool ret = EncryptRead(serBuf, 2, fp, xv);                                                         \
+	bool ret = EncryptRead(serBuf, sizeof(int16_t), fp, xv);                                            \
 	assert(ret);                                                                                        \
 	if (ret)                                                                                             \
 		*(d) = SWAP16S(((int16_t*)serBuf)[0]);                                                        \

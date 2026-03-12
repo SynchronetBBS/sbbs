@@ -928,7 +928,7 @@ static void EconomicsMenu(void)
 					rputs(ST_EMENU10);  // tell him he can't set it more than once per day
 				else {
 					/* figure out lowest tax rate and highest tax rate */
-					iTemp = (int16_t)GetLong(ST_EMENU11, Village.Data.TaxRate, 50);
+					iTemp = (int16_t)GetLong(ST_EMENU11, Village.Data.TaxRate, MAX_TAX_RATE);
 
 					/* if no change, do nothing */
 					if (iTemp == Village.Data.TaxRate)
@@ -958,7 +958,7 @@ static void EconomicsMenu(void)
 				if (Village.Data.SetGSTToday)
 					rputs(ST_EMENU15);
 				else {
-					iTemp = (int16_t)GetLong(ST_EMENU16, Village.Data.GST, 50);
+					iTemp = (int16_t)GetLong(ST_EMENU16, Village.Data.GST, MAX_TAX_RATE);
 
 					/* if no change, do nothing */
 					if (iTemp == Village.Data.GST)
@@ -1000,7 +1000,7 @@ static void EconomicsMenu(void)
 			case 'W' :  /* withdraw from vault */
 				Help("Withdraw from Vault", ST_RULERHLP);
 
-				if (PClan.VaultWithdrawals == 3) {
+				if (PClan.VaultWithdrawals == MAX_VAULT_WITHDRAWALS) {
 					/* can only do 3 withdrawals a day */
 					rputs(ST_EMENU28);
 					break;
@@ -1085,7 +1085,7 @@ int16_t TownHallMenu(void)
 					rputs(ST_TMENU19);  // tell him he can't set it more than once per day
 				else {
 					/* figure out lowest rate rate and highest rate */
-					iTemp = (int16_t)GetLong(ST_TMENU20, Village.Data.ConscriptionRate, 20);
+					iTemp = (int16_t)GetLong(ST_TMENU20, Village.Data.ConscriptionRate, MAX_CONSCRIPTION_RATE);
 
 					/* if no change, do nothing */
 					if (iTemp == Village.Data.ConscriptionRate)

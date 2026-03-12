@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
 
 						for (iTemp = 0; iTemp < MAX_SPELLS; iTemp++)
 							TmpMonster.SpellsKnown[iTemp] = 0;
-						for (iTemp = 0; iTemp < 10; iTemp++)
+						for (iTemp = 0; iTemp < MAX_SPELLS_IN_EFFECT; iTemp++)
 							TmpMonster.SpellsInEffect[iTemp].SpellNum = -1;
 						LastSpellSlot = 0;
 

@@ -72,7 +72,7 @@ static int16_t GetVotes(int16_t TopCandidates[50][2], int16_t TopVotes[50], bool
 	for (CurClan = 0;; CurClan++) {
 		/* go through file till you find clan he wants */
 
-		Offset = (long)CurClan * (BUF_SIZE_clan + 6L * BUF_SIZE_pc);
+		Offset = (long)CurClan * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc);
 		if (fseek(fpPlayerFile, Offset, SEEK_SET)) {
 			break;  /* couldn't fseek, so exit */
 		}
@@ -182,7 +182,7 @@ void VotingBooth(void)
 		Undecided = GetVotes(TopCandidates, TopVotes, true);
 
 		// get top 10 names
-		for (iTemp = 0; iTemp < 10; iTemp++) {
+		for (iTemp = 0; iTemp < MAX_SPELLS_IN_EFFECT; iTemp++) {
 			if (TopCandidates[iTemp][0] == -1)
 				break;
 
@@ -194,7 +194,7 @@ void VotingBooth(void)
 		rputs(ST_LONGLINE);
 		rputs(" |07Rank Clan              Votes\n");
 
-		for (iTemp = 0; iTemp < 10; iTemp++) {
+		for (iTemp = 0; iTemp < MAX_SPELLS_IN_EFFECT; iTemp++) {
 			if (TopCandidates[iTemp][0] == -1)
 				break;
 

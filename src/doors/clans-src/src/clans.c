@@ -246,8 +246,8 @@ static bool Disbanded(void)
 	if (!fp)  return false;
 
 	for (;;) {
-		if (!EncryptRead(szUserName, 36, fp, XOR_DISBAND)) break;
-		if (memchr(szUserName, 0, 36) == NULL)
+		if (!EncryptRead(szUserName, sizeof(szUserName), fp, XOR_DISBAND)) break;
+		if (memchr(szUserName, 0, sizeof(szUserName)) == NULL)
 			System_Error("Unterminated username in disband.dat");
 
 		if (strcasecmp(szUserName, od_control.user_name) == 0) {

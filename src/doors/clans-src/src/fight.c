@@ -50,6 +50,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define PLAYERTEAM          0
 
+#define DEATH_THRESHOLD         -15  /* HP below this → dead */
+#define MORTAL_WOUND_THRESHOLD  -5   /* HP below this → mortal wound */
+#define DEFAULT_SPELL_OFFSET    10   /* DefaultAction >= this encodes a spell */
+
 struct move {
 	int16_t Action, Target, SpellNum, ScrollNum;
 };
@@ -162,7 +166,7 @@ static bool Fight_IsIncapacitated(struct pc *PC)
 
 	/* scan spellsineffect */
 
-	for (iTemp = 0; iTemp < 10; iTemp++) {
+	for (iTemp = 0; iTemp < MAX_SPELLS_IN_EFFECT; iTemp++) {
 		if (PC->SpellsInEffect[iTemp].SpellNum == -1)
 			continue;
 
@@ -1472,7 +1476,7 @@ static void Fight_LoadMonsters(struct clan *Clan, int16_t Level, char *szFileNam
 		}
 
 		/* set its spells to -1 */
-		for (iTemp = 0; iTemp < 10; iTemp++)
+		for (iTemp = 0; iTemp < MAX_SPELLS_IN_EFFECT; iTemp++)
 			Clan->Member[CurMonster]->SpellsInEffect[iTemp].SpellNum = -1;
 
 		Clan->Member[CurMonster]->MyClan = Clan;
@@ -1783,7 +1787,7 @@ void Fight_Clan(void)
 		GenericMessage(szMessage, EnemyClan.ClanID, PClan.ClanID, PClan.szName, false);
 
 		/* give points for win in battle */
-		PClan.Points += 20;
+		PClan.Points += POINTS_CLAN_WIN;
 	}
 	else if (FightResult == FT_LOST) {
 		/* put in news you lost */
@@ -1794,7 +1798,7 @@ void Fight_Clan(void)
 		snprintf(szMessage, sizeof(szMessage), ST_NEWSFIGHT4, PClan.szName);
 		GenericMessage(szMessage, EnemyClan.ClanID, PClan.ClanID, PClan.szName, false);
 
-		PClan.Points -= 15;
+		PClan.Points -= POINTS_CLAN_LOSS;
 	}
 	else {
 		// ran away
@@ -1806,7 +1810,7 @@ void Fight_Clan(void)
 		snprintf(szString, sizeof(szString), ST_NEWSFIGHT6, PClan.szName);
 		GenericMessage(szString, EnemyClan.ClanID, PClan.ClanID, PClan.szName, false);
 
-		PClan.Points -= 20;
+		PClan.Points -= POINTS_CLAN_RAN;
 	}
 
 	Clan_Update(&EnemyClan);
@@ -1860,11 +1864,11 @@ void Fight_Monster(int16_t Level, char *szFileName)
 	if (FightResult == FT_WON) {
 		Fight_GiveFollowers(Level);
 
-		PClan.Points += 10;
+		PClan.Points += POINTS_MONSTER_WIN;
 	}
 	else {
 		// lose points -- same for running AND losing
-		PClan.Points -= 10;
+		PClan.Points -= POINTS_MONSTER_LOSS;
 	}
 
 	// fix up status so players aren't set as running away

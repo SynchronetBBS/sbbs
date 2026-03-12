@@ -636,7 +636,7 @@ static void RemoveFromIPScores(const int16_t ClanID[2])
 	CheckMem(ScoreList);
 
 	// read date
-	EncryptRead(ScoreDate, 11, fp, XOR_IPS);
+	EncryptRead(ScoreDate, DATE_STR_SIZE, fp, XOR_IPS);
 
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++) {
 		ScoreList[iTemp] = malloc(sizeof(struct UserScore));
@@ -662,7 +662,7 @@ static void RemoveFromIPScores(const int16_t ClanID[2])
 	}
 
 	// write date
-	CheckedEncryptWrite(ScoreDate, 11, fp, XOR_IPS);
+	CheckedEncryptWrite(ScoreDate, DATE_STR_SIZE, fp, XOR_IPS);
 
 	// write them to file now and free them at the same time
 	for (iTemp = 0; iTemp < MAX_USERS; iTemp++)
@@ -708,7 +708,7 @@ static bool GetClan(int16_t ClanID[2], struct clan *TmpClan)
 	}
 
 	for (ClanNum = 0;; ClanNum++) {
-		if (fseek(fpPlayerFile, (long)ClanNum * (BUF_SIZE_clan + 6L * BUF_SIZE_pc), SEEK_SET)) {
+		if (fseek(fpPlayerFile, (long)ClanNum * (BUF_SIZE_clan + (long)MAX_PARTY_SIZE * BUF_SIZE_pc), SEEK_SET)) {
 			// couldn't find clan in file
 			fclose(fpPlayerFile);
 			return false;
