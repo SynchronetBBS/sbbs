@@ -1535,14 +1535,53 @@ static int32_t MineFollowersGained(int16_t Level)
 
 static void Fight_GiveFollowers(int16_t Level)
 {
-	int32_t NumConscripted, NumFollowers;
+	int32_t NumConscripted, NumFollowers, ChaBonus;
 	char szString[128];
 
 	NumFollowers = MineFollowersGained(Level);
+
+	/* Charisma recruitment modifier: cap = |cha| * (N+10) / 100.
+	 * The +10 offset gives early-game visibility independent of mine
+	 * level.  A triangle roll (sum of two uniform draws over
+	 * [0, cap/2-1]) adds natural variance.  cap 1-3 give a guaranteed
+	 * ±1 to avoid the my_random(0/1) dead zone.  Negative Charisma
+	 * (possible via items/spells) reduces followers by the same
+	 * formula.  GetStat includes item/spell modifiers; widening
+	 * int8_t→int32_t before negation avoids UB for cha = -128. */
+	{
+		int32_t cha     = (PClan.Member[0] != NULL)
+						? GetStat(PClan.Member[0], ATTR_CHARISMA)
+						: 0;
+		int32_t abs_cha = (cha >= 0) ? cha : -cha;
+		int32_t sign    = (cha >= 0) ? 1 : -1;
+		int32_t cap     = abs_cha * (NumFollowers + 10) / 100;
+
+		if (cap >= 4)
+			ChaBonus = sign * (my_random(cap / 2) + my_random(cap / 2));
+		else if (cap >= 1)
+			ChaBonus = sign;
+		else
+			ChaBonus = 0;
+	}
+	if (ChaBonus > 0) {
+		NumFollowers += ChaBonus;
+		snprintf(szString, sizeof(szString), ST_FIGHTCHABONUS,
+				 (long)ChaBonus);
+		rputs(szString);
+	} else if (ChaBonus < 0) {
+		NumFollowers += ChaBonus;
+		if (NumFollowers < 0)
+			NumFollowers = 0;           /* clamp before conscription */
+		snprintf(szString, sizeof(szString), ST_FIGHTCHAPENALTY,
+				 (long)-ChaBonus);
+		rputs(szString);
+	}
+
 	NumConscripted = (NumFollowers * Village.Data.ConscriptionRate) / 100;
 
 	if (NumFollowers || NumConscripted) {
-		snprintf(szString, sizeof(szString), ST_FIGHTOVER1, (long)NumFollowers, (long)NumConscripted);
+		snprintf(szString, sizeof(szString), ST_FIGHTOVER1,
+				 (long)NumFollowers, (long)NumConscripted);
 		rputs(szString);
 	}
 
@@ -1551,8 +1590,7 @@ static void Fight_GiveFollowers(int16_t Level)
 		NumFollowers = 0;
 
 	Village.Data.Empire.Army.Followers += NumConscripted;
-	PClan.Empire.Army.Followers += NumFollowers;
-
+	PClan.Empire.Army.Followers        += NumFollowers;
 }
 
 static void TakeItemsFromClan(struct clan *Clan, char *szMsg)

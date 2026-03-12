@@ -291,7 +291,7 @@ void TrainMember(void)
 	char *szTheOptions[11];
 
 	/* cost to upgrade stat */
-	int16_t TCost[8] = { 10, 10, 20, 10, 30, 40, 10, 10 };
+	int16_t TCost[8] = { 10, 10, 20, 10, 30, 15, 10, 10 };
 	int16_t IncreaseAmount;
 
 	for (iTemp = 0; iTemp < 8; iTemp++) {

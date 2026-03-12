@@ -44,8 +44,8 @@
 
 ^Charisma
  |0CCharisma affects quest events and NPC dialogue.  Some encounters may require
- a minimum Charisma score from your clan leader.  It is the most expensive
- attribute to train (40 points per +1).
+ a minimum Charisma score from your clan leader.  Additionally, a leader's
+ charisma helps attract more followers after successful mine raids.
 ^END
 
 ^Armor Strength

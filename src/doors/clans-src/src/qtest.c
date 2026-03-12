@@ -384,6 +384,28 @@ void ClanStats(struct clan *Clan, bool AllowModify)
 	zputs(buf);
 }
 
+int8_t GetStat(struct pc *PC, char Stat)
+{
+	if (!PC)
+		return 0;
+	switch (Stat) {
+	case ATTR_AGILITY:
+		return PC->Attributes[ATTR_AGILITY];
+	case ATTR_DEXTERITY:
+		return PC->Attributes[ATTR_DEXTERITY];
+	case ATTR_STRENGTH:
+		return PC->Attributes[ATTR_STRENGTH];
+	case ATTR_WISDOM:
+		return PC->Attributes[ATTR_WISDOM];
+	case ATTR_ARMORSTR:
+		return PC->Attributes[ATTR_ARMORSTR];
+	case ATTR_CHARISMA:
+		return PC->Attributes[ATTR_CHARISMA];
+	default:
+		return 0;
+	}
+}
+
 /* =========================================================================
  * random.h mocks
  * ========================================================================= */
