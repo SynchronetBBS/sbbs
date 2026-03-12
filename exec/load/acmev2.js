@@ -188,6 +188,9 @@ ACMEv2.prototype.finalize_order = function(order, csr)
 
 	if (order === undefined)
 		throw new Error("Missing order");
+	var loc = order.Location;
+	if (loc === undefined)
+		throw new Error("No order location!");
 	if (csr === undefined)
 		throw new Error("Missing csr");
 	if (typeof(csr) != 'object' || csr.export_cert === undefined)
@@ -201,7 +204,9 @@ ACMEv2.prototype.finalize_order = function(order, csr)
 		throw new Error("finalize_order returned "+this.ua.response_code.toSource()+", not 200");
 	}
 
-	return JSON.parse(ret);
+	ret = JSON.parse(ret);
+	ret.Location = loc;
+	return (ret);
 };
 
 ACMEv2.prototype.poll_order = function(order)
