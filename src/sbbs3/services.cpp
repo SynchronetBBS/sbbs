@@ -72,10 +72,10 @@ static protected_uint32_t  threads_pending_start;
 static struct mqtt         mqtt;
 
 static rateLimiter*        connect_rate_limiter = nullptr;
-static trashCan*           ip_can = nullptr;
-static trashCan*           ip_silent_can = nullptr;
-static trashCan*           host_can = nullptr;
-static filterFile*         host_exempt = nullptr;
+static trashCan            ip_can;
+static trashCan            ip_silent_can;
+static trashCan            host_can;
+static filterFile          host_exempt;
 
 struct service_t {
 	/* These are sysop-configurable */
@@ -1137,13 +1137,13 @@ static void js_service_thread(void* arg)
 			        , socket, service->protocol, client.addr, host_name);
 	}
 
-	if (!host_exempt->listed(host_name, nullptr)) {
+	if (!host_exempt.listed(host_name, nullptr)) {
 		struct trash trash;
-		if (host_can->listed(host_name, nullptr, &trash)) {
+		if (host_can.listed(host_name, nullptr, &trash)) {
 			if (!trash.quiet && service->log_level >= LOG_NOTICE) {
 				char details[128];
 				lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s: %s %s"
-						, socket, service->protocol, client.addr, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
+						, socket, service->protocol, client.addr, host_can.fname, host_name, trash_details(&trash, details, sizeof details));
 			}
 			close_socket(socket);
 			protected_uint32_adjust(service->clients, -1);
@@ -1557,13 +1557,13 @@ static void native_service_thread(void* arg)
 #endif
 	}
 
-	if (!host_exempt->listed(host_name, nullptr)) {
+	if (!host_exempt.listed(host_name, nullptr)) {
 		struct trash trash;
-		if (host_can->listed(host_name, nullptr, &trash)) {
+		if (host_can.listed(host_name, nullptr, &trash)) {
 			if (!trash.quiet) {
 				char details[128];
 				lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s: %s %s"
-						, socket, service->protocol, client.addr, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
+						, socket, service->protocol, client.addr, host_can.fname, host_name, trash_details(&trash, details, sizeof details));
 			}
 			close_socket(socket);
 			protected_uint32_adjust(service->clients, -1);
@@ -1833,17 +1833,12 @@ static void cleanup(int code)
 	if (terminated || code) {
 		lprintf(LOG_INFO, "#### Services thread terminated (%lu clients served, %u concurrently, denied: %u due to IP address, %u due to hostname)"
 		        , served, client_highwater
-				, ip_can == nullptr || ip_silent_can == nullptr ? 0 : ip_can->total_found.load() + ip_silent_can->total_found.load()
-				, host_can == nullptr ? 0 : host_can->total_found.load());
+				, ip_can.total_found.load() + ip_silent_can.total_found.load()
+				, host_can.total_found.load());
 		set_state(SERVER_STOPPED);
 		if (startup != NULL && startup->terminated != NULL)
 			startup->terminated(startup->cbdata, code);
 	}
-
-	delete ip_can, ip_can = nullptr;
-	delete ip_silent_can, ip_silent_can = nullptr;
-	delete host_can, host_can = nullptr;
-	delete host_exempt, host_exempt = nullptr;
 
 	mqtt_shutdown(&mqtt);
 }
@@ -2150,10 +2145,10 @@ void services_thread(void* arg)
 		connect_rate_limiter->maxRequests = startup->max_connects_per_period;
 		connect_rate_limiter->timeWindowSeconds = startup->connect_rate_limit_period;
 
-		ip_can = new trashCan(&scfg, "ip");
-		ip_silent_can = new trashCan(&scfg, "ip-silent");
-		host_can = new trashCan(&scfg, "host");
-		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile);
+		ip_can.init(&scfg, "ip");
+		ip_silent_can.init(&scfg, "ip-silent");
+		host_can.init(&scfg, "host");
+		host_exempt.init(&scfg, strIpFilterExemptConfigFile);
 
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles = semfile_list_init(scfg.ctrl_dir, "shutdown", "services");
@@ -2431,8 +2426,8 @@ void services_thread(void* arg)
 						inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 					}
 
-					if (!host_exempt->listed(host_ip, nullptr)) {
-						if (ip_silent_can->listed(host_ip) || !connect_rate_limiter->allowRequest(host_ip)) {
+					if (!host_exempt.listed(host_ip, nullptr)) {
+						if (ip_silent_can.listed(host_ip) || !connect_rate_limiter->allowRequest(host_ip)) {
 							FREE_AND_NULL(udp_buf);
 							close_socket(client_socket);
 							continue;
@@ -2469,7 +2464,7 @@ void services_thread(void* arg)
 						continue;
 					}
 
-					if (!host_exempt->listed(host_ip, nullptr)) {
+					if (!host_exempt.listed(host_ip, nullptr)) {
 						login_attempt_t attempted;
 						ulong           banned = loginBanned(&scfg, startup->login_attempt_list, client_socket, /* host_name: */ NULL, startup->login_attempt, &attempted);
 						if (banned) {
@@ -2482,11 +2477,11 @@ void services_thread(void* arg)
 							continue;
 						}
 						struct trash trash;
-						if (ip_can->listed(host_ip, nullptr, &trash)) {
+						if (ip_can.listed(host_ip, nullptr, &trash)) {
 							if (!trash.quiet) {
 								char details[128];
 								lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s %s"
-										, client_socket, service[i].protocol, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
+										, client_socket, service[i].protocol, host_ip, ip_can.fname, trash_details(&trash, details, sizeof details));
 							}
 							FREE_AND_NULL(udp_buf);
 							close_socket(client_socket);

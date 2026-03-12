@@ -102,12 +102,12 @@ static pthread_mutex_t    savemsg_mutex;
 static struct mqtt        mqtt;
 
 static rateLimiter*       request_rate_limiter = nullptr;
-static trashCan*          ip_can = nullptr;
-static trashCan*          ip_silent_can = nullptr;
-static trashCan*          host_can = nullptr;
-static filterFile*        host_exempt = nullptr;
-static filterFile*        spam_block = nullptr;
-static filterFile*        dnsbl_exempt = nullptr;
+static trashCan           ip_can;
+static trashCan           ip_silent_can;
+static trashCan           host_can;
+static filterFile         host_exempt;
+static filterFile         spam_block;
+static filterFile         dnsbl_exempt;
 
 static const char*        servprot_smtp = "SMTP";
 static const char*        servprot_submission = "SMTP";
@@ -1187,7 +1187,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 		}
 	}
 
-	if (!host_exempt->listed(host_ip, host_name)) {
+	if (!host_exempt.listed(host_ip, host_name)) {
 		ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, host_name, startup->login_attempt, &attempted);
 		if (banned) {
 			char ban_duration[128];
@@ -1198,19 +1198,19 @@ static bool pop3_client_thread(pop3_t* pop3)
 			return false;
 		}
 		struct trash trash;
-		if (ip_can->listed(host_ip, nullptr, &trash)) {
+		if (ip_can.listed(host_ip, nullptr, &trash)) {
 			if (!trash.quiet) {
 				char details[128];
-				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s %s", socket, client.protocol, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s %s", socket, client.protocol, host_ip, ip_can.fname, trash_details(&trash, details, sizeof details));
 			}
 			sockprintf(socket, client.protocol, session, "-ERR Access denied.");
 			return false;
 		}
-		if (host_can->listed(host_name, nullptr, &trash)) {
+		if (host_can.listed(host_name, nullptr, &trash)) {
 			if (!trash.quiet) {
 				char details[128];
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s: %s %s"
-						, socket, client.protocol, host_ip, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
+						, socket, client.protocol, host_ip, host_can.fname, host_name, trash_details(&trash, details, sizeof details));
 			}
 			sockprintf(socket, client.protocol, session, "-ERR Access denied.");
 			return false;
@@ -1469,7 +1469,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 			truncsp(buf);
 			if (startup->options & MAIL_OPT_DEBUG_POP3)
 				lprintf(LOG_DEBUG, "%04d %-5s RX: %s", socket, client.protocol, buf);
-			if (!host_exempt->listed(host_ip, host_name) && request_rate_limiter->allowRequest(host_ip) == false) {
+			if (!host_exempt.listed(host_ip, host_name) && request_rate_limiter->allowRequest(host_ip) == false) {
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> Too many requests per rate limit (%u over %us)"
 					, socket, client.protocol, host_ip, user.alias, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds);
 				sockprintf(socket, client.protocol, session, "-ERR too many requests, try again later");
@@ -1952,7 +1952,7 @@ static ulong dns_blacklisted(SOCKET sock, const char* prot, union xp_sockaddr *a
 	char  ip[INET6_ADDRSTRLEN];
 
 	inet_addrtop(addr, ip, sizeof(ip));
-	if (dnsbl_exempt->listed(ip, host_name))
+	if (dnsbl_exempt.listed(ip, host_name))
 		return false;
 
 	SAFEPRINTF(fname, "%sdns_blacklist.cfg", scfg.ctrl_dir);
@@ -2060,7 +2060,7 @@ static bool email_addr_is_exempt(const char* addr)
 	if (*addr == 0 || strcmp(addr, "<>") == 0)
 		return false;
 	angle_bracket(netmail, sizeof(netmail), addr);
-	if (dnsbl_exempt->listed(netmail, fname))
+	if (dnsbl_exempt.listed(netmail, fname))
 		return true;
 	p = netmail + 1;
 	*lastchar(p) = '\0';
@@ -3119,7 +3119,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	if (strcmp(server_ip, host_ip) == 0) {
 		/* local connection */
 		dnsbl_result.s_addr = 0;
-	} else if (!host_exempt->listed(host_ip, host_name)) {
+	} else if (!host_exempt.listed(host_ip, host_name)) {
 		ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, host_name, startup->login_attempt, &attempted);
 		if (banned) {
 			char ban_duration[128];
@@ -3130,27 +3130,27 @@ static bool smtp_client_thread(smtp_t* smtp)
 		}
 
 		spam_block_exempt = find2strs(host_ip, host_name, spam_block_exemptions, NULL);
-		if (!spam_block_exempt && spam_block->listed(host_ip)) {
+		if (!spam_block_exempt && spam_block.listed(host_ip)) {
 			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s (%u total)"
-			        , socket, client.protocol, host_ip, spam_block->fname, spam_block->total_found.load());
+			        , socket, client.protocol, host_ip, spam_block.fname, spam_block.total_found.load());
 			sockprintf(socket, client.protocol, session, "550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
 			return false;
 		}
 		struct trash trash;
-		if (ip_can->listed(host_ip, nullptr, &trash)) {
+		if (ip_can.listed(host_ip, nullptr, &trash)) {
 			if (!trash.quiet) {
 				char details[128];
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s %s (%u total)"
-						, socket, client.protocol, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details), ip_can->total_found.load());
+						, socket, client.protocol, host_ip, ip_can.fname, trash_details(&trash, details, sizeof details), ip_can.total_found.load());
 			}
 			sockprintf(socket, client.protocol, session, "550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
 			return false;
 		}
-		if (host_can->listed(host_name, nullptr, &trash)) {
+		if (host_can.listed(host_name, nullptr, &trash)) {
 			if (!trash.quiet) {
 				char details[128];
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s: %s %s (%u total)"
-						, socket, client.protocol, host_ip, host_can->fname, host_name, trash_details(&trash, details, sizeof details), host_can->total_found.load());
+						, socket, client.protocol, host_ip, host_can.fname, host_name, trash_details(&trash, details, sizeof details), host_can.total_found.load());
 			}
 			sockprintf(socket, client.protocol, session, "550 CLIENT HOSTNAME BLOCKED: %s", host_name);
 			return false;
@@ -4164,7 +4164,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			hdr_lines++;
 			continue;
 		}
-		if (!host_exempt->listed(host_ip, host_name) && request_rate_limiter->allowRequest(host_ip) == false) {
+		if (!host_exempt.listed(host_ip, host_name) && request_rate_limiter->allowRequest(host_ip) == false) {
 			lprintf(LOG_NOTICE, "%04d %-5s %s Too many requests per rate limit (%u over %us)"
 				, socket, client.protocol, client_id, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds);
 			sockprintf(socket, client.protocol, session, "421 too many requests, try again later");
@@ -4665,8 +4665,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 					strcpy(tmp, "IGNORED");
 					if (dnsbl_result.s_addr == 0                       /* Don't double-filter */
 					    && !spam_block_exempt)  {
-						lprintf(LOG_NOTICE, "%04d %-5s !BLOCKING IP ADDRESS: %s in %s", socket, client.protocol, client_id, spam_block->fname);
-						filter_ip(&scfg, client.protocol, reason, host_name, host_ip, reverse_path, spam_block->fname, startup->spam_block_duration);
+						lprintf(LOG_NOTICE, "%04d %-5s !BLOCKING IP ADDRESS: %s in %s", socket, client.protocol, client_id, spam_block.fname);
+						filter_ip(&scfg, client.protocol, reason, host_name, host_ip, reverse_path, spam_block.fname, startup->spam_block_duration);
 						strcat(tmp, " and BLOCKED");
 					}
 					spamlog(&scfg, &mqtt, client.protocol, tmp, "Attempted recipient in SPAM BAIT list"
@@ -6079,14 +6079,14 @@ static void cleanup(int code)
 			sprintf(str + strlen(str), ", %lu exceeded max", stats.connections_exceeded);
 		if (stats.connections_refused)
 			sprintf(str + strlen(str), ", %lu refused", stats.connections_refused);
-		if (host_can != nullptr && host_can->total_found)
-			sprintf(str + strlen(str), ", %u host-filtered", host_can->total_found.load());
-		if (ip_can != nullptr && ip_can->total_found)
-			sprintf(str + strlen(str), ", %u ip-filtered", ip_can->total_found.load());
-		if (ip_silent_can != nullptr && ip_silent_can->total_found)
-			sprintf(str + strlen(str), ", %u ip-ignored", ip_silent_can->total_found.load());
-		if (spam_block != nullptr && spam_block->total_found)
-			sprintf(str + strlen(str), ", %u spam-blocked", spam_block->total_found.load());
+		if (host_can.total_found)
+			sprintf(str + strlen(str), ", %u host-filtered", host_can.total_found.load());
+		if (ip_can.total_found)
+			sprintf(str + strlen(str), ", %u ip-filtered", ip_can.total_found.load());
+		if (ip_silent_can.total_found)
+			sprintf(str + strlen(str), ", %u ip-ignored", ip_silent_can.total_found.load());
+		if (spam_block.total_found)
+			sprintf(str + strlen(str), ", %u spam-blocked", spam_block.total_found.load());
 		if (stats.sessions_refused)
 			sprintf(str + strlen(str), ", %lu sessions refused", stats.sessions_refused);
 		sprintf(str + strlen(str), ", %lu messages received", stats.msgs_received);
@@ -6108,13 +6108,6 @@ static void cleanup(int code)
 		if (startup != NULL && startup->terminated != NULL)
 			startup->terminated(startup->cbdata, code);
 	}
-
-	delete ip_can, ip_can = nullptr;
-	delete ip_silent_can, ip_silent_can = nullptr;
-	delete host_can, host_can = nullptr;
-	delete host_exempt, host_exempt = nullptr;
-	delete dnsbl_exempt, dnsbl_exempt = nullptr;
-	delete spam_block, spam_block = nullptr;
 
 	mqtt_shutdown(&mqtt);
 }
@@ -6404,12 +6397,12 @@ void mail_server(void* arg)
 		request_rate_limiter->maxRequests = startup->max_requests_per_period;
 		request_rate_limiter->timeWindowSeconds = startup->request_rate_limit_period;
 
-		ip_can = new trashCan(&scfg, "ip");
-		ip_silent_can = new trashCan(&scfg, "ip-silent");
-		host_can = new trashCan(&scfg, "host");
-		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile);
-		dnsbl_exempt = new filterFile(&scfg, "dnsbl_exempt.cfg");
-		spam_block = new filterFile(&scfg, "spamblock.cfg");
+		ip_can.init(&scfg, "ip");
+		ip_silent_can.init(&scfg, "ip-silent");
+		host_can.init(&scfg, "host");
+		host_exempt.init(&scfg, strIpFilterExemptConfigFile);
+		dnsbl_exempt.init(&scfg, "dnsbl_exempt.cfg");
+		spam_block.init(&scfg, "spamblock.cfg");
 
 		sem_init(&sendmail_wakeup_sem, 0, 0);
 
@@ -6503,7 +6496,7 @@ void mail_server(void* arg)
 
 				inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 
-				if (!host_exempt->listed(host_ip, nullptr)) {
+				if (!host_exempt.listed(host_ip, nullptr)) {
 
 					if (startup->max_concurrent_connections > 0) {
 						int ip_len = strlen(host_ip) + 1;
@@ -6519,7 +6512,7 @@ void mail_server(void* arg)
 						}
 					}
 
-					if (ip_silent_can->listed(host_ip)) {
+					if (ip_silent_can.listed(host_ip)) {
 						mail_close_socket(&client_socket, &session);
 						continue;
 					}

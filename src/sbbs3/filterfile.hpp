@@ -28,13 +28,18 @@
 
 class filterFile {
 	public:
-		filterFile(scfg_t* cfg, const char* fname)
-			: fchk_interval(cfg->cache_filter_files) {
+		filterFile() {
+			pthread_mutex_init(&mutex, nullptr);
+		}
+		filterFile(scfg_t* cfg, const char* fname) : filterFile() {
+			init(cfg, fname);
+		}
+		void init(scfg_t* cfg, const char* fname) {
+			fchk_interval = cfg->cache_filter_files;
 			if (getfname(fname) == fname)
 				snprintf(this->fname, sizeof this->fname, "%s%s", cfg->ctrl_dir, fname);
 			else
 				strlcpy(this->fname, fname, sizeof this->fname);
-			pthread_mutex_init(&mutex, nullptr);
 		}
 		filterFile(const filterFile&) = delete;
 		filterFile& operator=(const filterFile&) = delete;
@@ -44,8 +49,8 @@ class filterFile {
 		}
 		std::atomic<uint> fread_count{};
 		std::atomic<uint> total_found{};
-		time_t fchk_interval; // seconds
-		char fname[MAX_PATH + 1];
+		time_t fchk_interval{}; // seconds
+		char fname[MAX_PATH + 1]{};
 		bool listed(const char* str1, const char* str2 = nullptr, struct trash* details = nullptr) {
 			bool result;
 			time_t now = time(nullptr);
@@ -79,7 +84,7 @@ class filterFile {
 		}
 	private:
 		str_list_t list{};
-		pthread_mutex_t mutex;
+		pthread_mutex_t mutex{};
 		time_t lastftime_check{};
 		time_t timestamp{};
 
@@ -87,8 +92,13 @@ class filterFile {
 
 class trashCan : public filterFile {
 	public:
-		trashCan(scfg_t* cfg, const char* name) : filterFile(cfg, name)  {
-			trashcan_fname(cfg, name, filterFile::fname, sizeof filterFile::fname);
+		trashCan() : filterFile() {}
+		trashCan(scfg_t* cfg, const char* name) : filterFile(cfg, name) {
+			init(cfg, name);
+		}
+		void init(scfg_t* cfg, const char* name) {
+			char path[MAX_PATH + 1];
+			filterFile::init(cfg, trashcan_fname(cfg, name, path, sizeof path));
 		}
 };
 

@@ -96,10 +96,10 @@ static str_list_t         shutdown_semfiles;
 static link_list_t        current_connections;
 
 static rateLimiter*       request_rate_limiter = nullptr;
-static trashCan*          ip_can = nullptr;
-static trashCan*          ip_silent_can = nullptr;
-static trashCan*          host_can = nullptr;
-static filterFile*        host_exempt = nullptr;
+static trashCan           ip_can;
+static trashCan           ip_silent_can;
+static trashCan           host_can;
+static filterFile         host_exempt;
 
 #ifdef SOCKET_DEBUG
 static BYTE               socket_debug[0x10000] {};
@@ -2316,7 +2316,7 @@ static void ctrl_thread(void* arg)
 		lprintf(LOG_INFO, "%04d [%s] Hostname: %s", sock, host_ip, host_name);
 	}
 
-	if (!host_exempt->listed(host_ip, host_name)) {
+	if (!host_exempt.listed(host_ip, host_name)) {
 		ulong banned = loginBanned(&scfg, startup->login_attempt_list, sock, host_name, startup->login_attempt, &attempted);
 		if (banned) {
 			char ban_duration[128];
@@ -2330,20 +2330,20 @@ static void ctrl_thread(void* arg)
 		}
 
 		struct trash trash;
-		if (ip_can->listed(host_ip, nullptr, &trash)) {
+		if (ip_can.listed(host_ip, nullptr, &trash)) {
 			if (!trash.quiet) {
 				char details[128];
-				lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in %s %s", sock, host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
+				lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in %s %s", sock, host_ip, ip_can.fname, trash_details(&trash, details, sizeof details));
 			}
 			sockprintf(sock, sess, "550 Access denied.");
 			ftp_close_socket(&sock, &sess, __LINE__);
 			thread_down();
 			return;
 		}
-		if (host_can->listed(host_name, nullptr, &trash)) {
+		if (host_can.listed(host_name, nullptr, &trash)) {
 			if (!trash.quiet) {
 				char details[128];
-				lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in %s: %s %s", sock, host_ip, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
+				lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in %s: %s %s", sock, host_ip, host_can.fname, host_name, trash_details(&trash, details, sizeof details));
 			}
 			sockprintf(sock, sess, "550 Access denied.");
 			ftp_close_socket(&sock, &sess, __LINE__);
@@ -2774,7 +2774,7 @@ static void ctrl_thread(void* arg)
 		}
 
 		// FTP is a chatty protocol, so check rate limit after the initial login sequence (after USER/PASS)
-		if (!host_exempt->listed(host_ip, host_name) && request_rate_limiter->allowRequest(host_ip) == false) {
+		if (!host_exempt.listed(host_ip, host_name) && request_rate_limiter->allowRequest(host_ip) == false) {
 			lprintf(LOG_NOTICE, "%04d <%s> Too many requests per rate limit (%u over %us)"
 				, sock, user.number ? user.alias : host_ip, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds);
 			sockprintf(sock, sess, "421 Too many requests, try again later.");
@@ -5157,17 +5157,12 @@ static void cleanup(int code, int line)
 		lprintf(LOG_INFO, "#### FTP Server thread terminated (%lu clients served, %u concurrently, denied: %u due to rate limit, %u due to IP address, %u due to hostname)"
 		        , served, client_highwater
 				, request_rate_limiter == nullptr ? 0 : request_rate_limiter->disallowed.load()
-				, ip_can == nullptr || ip_silent_can == nullptr ? 0 : ip_can->total_found.load() + ip_silent_can->total_found.load()
-				, host_can == nullptr ? 0 : host_can->total_found.load());
+				, ip_can.total_found.load() + ip_silent_can.total_found.load()
+				, host_can.total_found.load());
 		set_state(SERVER_STOPPED);
 		if (startup != NULL && startup->terminated != NULL)
 			startup->terminated(startup->cbdata, code);
 	}
-
-	delete ip_can, ip_can = nullptr;
-	delete ip_silent_can, ip_silent_can = nullptr;
-	delete host_can, host_can = nullptr;
-	delete host_exempt, host_exempt = nullptr;
 
 	mqtt_shutdown(&mqtt);
 }
@@ -5370,10 +5365,10 @@ void ftp_server(void* arg)
 		request_rate_limiter->maxRequests = startup->max_requests_per_period;
 		request_rate_limiter->timeWindowSeconds = startup->request_rate_limit_period;
 
-		ip_can = new trashCan(&scfg, "ip");
-		ip_silent_can = new trashCan(&scfg, "ip-silent");
-		host_can = new trashCan(&scfg, "host");
-		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile);
+		ip_can.init(&scfg, "ip");
+		ip_silent_can.init(&scfg, "ip-silent");
+		host_can.init(&scfg, "host");
+		host_exempt.init(&scfg, strIpFilterExemptConfigFile);
 
 		/* Setup recycle/shutdown semaphore file lists */
 		shutdown_semfiles = semfile_list_init(scfg.ctrl_dir, "shutdown", server_abbrev);
@@ -5458,7 +5453,7 @@ void ftp_server(void* arg)
 
 			inet_addrtop(&client_addr, client_ip, sizeof(client_ip));
 
-			if (!host_exempt->listed(client_ip)) {
+			if (!host_exempt.listed(client_ip)) {
 
 				if (startup->max_concurrent_connections > 0) {
 					int  ip_len = strlen(client_ip) + 1;
@@ -5472,7 +5467,7 @@ void ftp_server(void* arg)
 					}
 				}
 
-				if (ip_silent_can->listed(client_ip)) {
+				if (ip_silent_can.listed(client_ip)) {
 					ftp_close_socket(&client_socket, &none, __LINE__);
 					continue;
 				}

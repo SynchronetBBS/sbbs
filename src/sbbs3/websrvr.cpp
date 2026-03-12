@@ -138,10 +138,10 @@ static named_string_t**   xjs_handlers;
 static named_string_t**   alias_list; // request path aliases
 
 static rateLimiter*       request_rate_limiter = nullptr;
-static trashCan*          ip_can = nullptr;
-static trashCan*          ip_silent_can = nullptr;
-static trashCan*          host_can = nullptr;
-static filterFile*        host_exempt = nullptr;
+static trashCan           ip_can;
+static trashCan           ip_silent_can;
+static trashCan           host_can;
+static filterFile         host_exempt;
 
 /* Logging stuff */
 link_list_t               log_list;
@@ -3539,7 +3539,7 @@ static bool get_req(http_session_t * session, char *request_line)
 				send_error(session, __LINE__, "400 Bad Request");
 				return false;
 			}
-			if (!host_exempt->listed(session->host_ip, session->host_name) && request_rate_limiter->allowRequest(session->host_ip) == false) {
+			if (!host_exempt.listed(session->host_ip, session->host_name) && request_rate_limiter->allowRequest(session->host_ip) == false) {
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] Too many requests per rate limit (%u over %us)"
 					, session->socket, session->client.protocol, session->host_ip, request_rate_limiter->maxRequests, request_rate_limiter->timeWindowSeconds);
 				send_error(session, __LINE__, error_429);
@@ -6909,11 +6909,11 @@ void http_session_thread(void* arg)
 		     && host->h_aliases[i] != NULL; i++)
 			lprintf(LOG_INFO, "%04d HostAlias: %s", session.socket, host->h_aliases[i]);
 #endif
-		if (host_name[0] && !host_exempt->listed(host_name, nullptr) && host_can->listed(host_name, nullptr, &trash)) {
+		if (host_name[0] && !host_exempt.listed(host_name, nullptr) && host_can.listed(host_name, nullptr, &trash)) {
 			if (!trash.quiet) {
 				char details[128];
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s: %s %s"
-						, session.socket, session.client.protocol, session.host_ip, host_can->fname, host_name, trash_details(&trash, details, sizeof details));
+						, session.socket, session.client.protocol, session.host_ip, host_can.fname, host_name, trash_details(&trash, details, sizeof details));
 			}
 			close_session_socket(&session);
 			sem_wait(&session.output_thread_terminated);
@@ -6930,12 +6930,12 @@ void http_session_thread(void* arg)
 		SAFECOPY(host_name, STR_NO_HOSTNAME);
 	}
 
-	if (!host_exempt->listed(session.host_ip, session.host_name)) {
+	if (!host_exempt.listed(session.host_ip, session.host_name)) {
 		login_attempt_t attempted;
 		ulong           banned = loginBanned(&scfg, startup->login_attempt_list, session.socket, host_name, startup->login_attempt, &attempted);
 
 		/* host_ip wasn't defined in http_session_thread */
-		if (banned || ip_can->listed(session.host_ip, nullptr, &trash)) {
+		if (banned || ip_can.listed(session.host_ip, nullptr, &trash)) {
 			if (banned) {
 				char ban_duration[128];
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
@@ -6945,7 +6945,7 @@ void http_session_thread(void* arg)
 			} else if (!trash.quiet) {
 				char details[128];
 				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s %s"
-						, session.socket, session.client.protocol, session.host_ip, ip_can->fname, trash_details(&trash, details, sizeof details));
+						, session.socket, session.client.protocol, session.host_ip, ip_can.fname, trash_details(&trash, details, sizeof details));
 			}
 			close_session_socket(&session);
 			sem_wait(&session.output_thread_terminated);
@@ -6995,7 +6995,7 @@ void http_session_thread(void* arg)
 	} else {
 		uint connections = listCountMatches(&current_connections, session.host_ip, strlen(session.host_ip) + 1);
 		if (startup->max_concurrent_connections > 0 && connections > startup->max_concurrent_connections
-		    && !host_exempt->listed(session.host_ip, nullptr)) {
+		    && !host_exempt.listed(session.host_ip, nullptr)) {
 			lprintf(LOG_NOTICE, "%04d %-5s [%s] !Maximum concurrent connections (%u) exceeded"
 			        , socket, session.client.protocol, session.host_ip, startup->max_concurrent_connections);
 			send_error(&session, __LINE__, error_429);
@@ -7204,17 +7204,12 @@ static void cleanup(int code)
 		lprintf(LOG_INFO, "#### Web Server thread terminated (%lu clients served, %u concurrently, denied: %u due to rate limit, %u due to IP address, %u due to hostname)"
 		        , served, client_highwater
 				, request_rate_limiter == nullptr ? 0 : request_rate_limiter->disallowed.load()
-				, ip_can == nullptr || ip_silent_can == nullptr ? 0 : ip_can->total_found.load() + ip_silent_can->total_found.load()
-				, host_can == nullptr ? 0 : host_can->total_found.load());
+				, ip_can.total_found.load() + ip_silent_can.total_found.load()
+				, host_can.total_found.load());
 		set_state(SERVER_STOPPED);
 		if (startup != NULL && startup->terminated != NULL)
 			startup->terminated(startup->cbdata, code);
 	}
-
-	delete ip_can, ip_can = nullptr;
-	delete ip_silent_can, ip_silent_can = nullptr;
-	delete host_can, host_can = nullptr;
-	delete host_exempt, host_exempt = nullptr;
 
 	mqtt_shutdown(&mqtt);
 }
@@ -7613,10 +7608,10 @@ void web_server(void* arg)
 		request_rate_limiter->maxRequests = startup->max_requests_per_period;
 		request_rate_limiter->timeWindowSeconds = startup->request_rate_limit_period;
 
-		ip_can = new trashCan(&scfg, "ip");
-		ip_silent_can = new trashCan(&scfg, "ip-silent");
-		host_can = new trashCan(&scfg, "host");
-		host_exempt = new filterFile(&scfg, strIpFilterExemptConfigFile);
+		ip_can.init(&scfg, "ip");
+		ip_silent_can.init(&scfg, "ip-silent");
+		host_can.init(&scfg, "host");
+		host_exempt.init(&scfg, strIpFilterExemptConfigFile);
 
 		listInit(&log_list, /* flags */ LINK_LIST_MUTEX | LINK_LIST_SEMAPHORE);
 		if (startup->options & WEB_OPT_HTTP_LOGGING) {
@@ -7751,7 +7746,7 @@ void web_server(void* arg)
 
 			inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 
-			if (!host_exempt->listed(host_ip, nullptr)) {
+			if (!host_exempt.listed(host_ip, nullptr)) {
 
 				if (session->is_tls == false && startup->max_concurrent_connections > 0) {
 					int ip_len = strlen(host_ip) + 1;
@@ -7768,7 +7763,7 @@ void web_server(void* arg)
 					}
 				}
 
-				if (ip_silent_can->listed(host_ip)) {
+				if (ip_silent_can.listed(host_ip)) {
 					close_socket(&client_socket);
 					continue;
 				}
