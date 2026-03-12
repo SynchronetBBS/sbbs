@@ -3379,7 +3379,7 @@ void IBBS_PacketIn(void)
 	// if not found, go for WORLD.ID
 	if (System.LocalIBBS == false) {
 		// try world.ID
-		snprintf(szFileName, sizeof(szFileName2), "WORLD.%-2s", Game.Data.LeagueID);
+		snprintf(szFileName, sizeof(szFileName), "WORLD.%-2s", Game.Data.LeagueID);
 		for (nInbound = 0; nInbound < Config.NumInboundDirs; nInbound++) {
 			bool err;
 			char **fnames = FilesOrderedByDate(Config.szInboundDirs[nInbound], szFileName, &err);
