@@ -41,7 +41,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "user.h"
 #include "village.h"
 
-static void GetColourString(char *szColourString, int16_t Colour, bool Clear)
+static void GetColourString(char *szColourString, size_t n, int16_t Colour, bool Clear)
 {
 	int16_t TempColour;
 	char *szFgColours[8] = {
@@ -65,10 +65,10 @@ static void GetColourString(char *szColourString, int16_t Colour, bool Clear)
 		"47m"
 	};
 
-	strlcpy(szColourString, "\x1B[", sizeof(szColourString));
+	strlcpy(szColourString, "\x1B[", n);
 
 	if (Clear)
-		strlcat(szColourString, "0;", sizeof(szColourString));
+		strlcat(szColourString, "0;", n);
 
 	if (Colour >= 24) {
 		// background flashing
@@ -78,32 +78,32 @@ static void GetColourString(char *szColourString, int16_t Colour, bool Clear)
 		if (TempColour >= 8)
 			TempColour = 0;
 
-		strlcat(szColourString, "5;", sizeof(szColourString));
-		strlcat(szColourString, szBgColours[ TempColour ], sizeof(szColourString));
+		strlcat(szColourString, "5;", n);
+		strlcat(szColourString, szBgColours[ TempColour ], n);
 	}
 	else if (Colour >= 16) {
 		// background
 
 		TempColour = Colour - 16;
 
-		strlcat(szColourString, szBgColours[ TempColour ], sizeof(szColourString));
+		strlcat(szColourString, szBgColours[ TempColour ], n);
 	}
 	else if (Colour >= 8) {
 		// foreground bright
 		TempColour = Colour - 8;
 
-		strlcat(szColourString, "1;", sizeof(szColourString));
-		strlcat(szColourString, szFgColours[ TempColour ], sizeof(szColourString));
+		strlcat(szColourString, "1;", n);
+		strlcat(szColourString, szFgColours[ TempColour ], n);
 	}
 	else {
 		// regular colour
 		TempColour = Colour;
 
-		strlcat(szColourString, szFgColours[ TempColour ], sizeof(szColourString));
+		strlcat(szColourString, szFgColours[ TempColour ], n);
 	}
 }
 
-static void PipeToAnsi(char *szOut, char *szIn)
+static void PipeToAnsi(char *szOut, size_t n, char *szIn)
 {
 	char *pcOut, *pcIn;
 	char Colour, Bg, Fg, szDigits[3],
@@ -127,8 +127,8 @@ static void PipeToAnsi(char *szOut, char *szIn)
 
 			// must add this to use GetColourString properly
 			Bg += 16;
-			GetColourString(szColourString, Bg, true);
-			strlcat(pcOut, szColourString, sizeof(pcOut));
+			GetColourString(szColourString, sizeof(szColourString), Bg, true);
+			strlcat(szOut, szColourString, n);
 			pcOut = strchr(szOut, 0);
 
 			pcIn++;
@@ -138,8 +138,8 @@ static void PipeToAnsi(char *szOut, char *szIn)
 				Fg = *pcIn - '0';
 			else
 				Fg = *pcIn - 'A' + 10;
-			GetColourString(szColourString, Fg, false);
-			strlcat(pcOut, szColourString, sizeof(pcOut));
+			GetColourString(szColourString, sizeof(szColourString), Fg, false);
+			strlcat(szOut, szColourString, n);
 			pcOut = strchr(szOut, 0);
 
 			pcIn++;
@@ -151,9 +151,9 @@ static void PipeToAnsi(char *szOut, char *szIn)
 
 			Colour = ato8(szDigits, "Colour", __func__);
 
-			GetColourString(szColourString, Colour, true);
+			GetColourString(szColourString, sizeof(szColourString), Colour, true);
 
-			strlcat(pcOut, szColourString, sizeof(pcOut));
+			strlcat(szOut, szColourString, n);
 
 			pcOut = strchr(szOut, 0);
 
@@ -390,7 +390,7 @@ void DisplayScores(bool MakeFile)
 
 			// for ANSI
 			if (fpScoreFile[1]) {
-				PipeToAnsi(AnsiSymbol, SortData[ SortList[CurClan] ]->Symbol);
+				PipeToAnsi(AnsiSymbol, sizeof(AnsiSymbol), SortData[ SortList[CurClan] ]->Symbol);
 
 				snprintf(szString, sizeof(szString), ST_SCORE2ANSI,
 						SortData[ SortList[CurClan] ]->szName,

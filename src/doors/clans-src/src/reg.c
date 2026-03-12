@@ -56,7 +56,7 @@ static void dputs(char *string);
 static void AddRegToCfg(char *szString);
 #endif
 
-static void Jumble(char *szString)
+static void Jumble(char *szString, size_t n)
 {
 	char CurChar, MidChar, StrLength;
 	char *pcCurrentPos, szJumbled[MAX_CHARS+1];
@@ -86,7 +86,7 @@ static void Jumble(char *szString)
 	}
 	*(pcCurrentPos + strlen(szString)) = 0;
 
-	strlcpy(szString, szJumbled, sizeof(szString));
+	strlcpy(szString, szJumbled, n);
 }
 
 
@@ -101,7 +101,7 @@ int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 	uint16_t c2;
 
 	// jumble user code once so a memory scan does nothing
-	Jumble(szUserCode);
+	Jumble(szUserCode, sizeof(szUserCode));
 
 	if (!strlen(szSysopName))
 		return NFALSE;
@@ -174,12 +174,12 @@ int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 	snprintf(szRealCode, sizeof(szRealCode), "%" PRIx32 "%" PRIx32, chksum, chksum2);
 
 	// finally, jumble it all up 11 times ;)
-	Jumble(szRealCode);
-	Jumble(szRealCode);
-	Jumble(szRealCode);
-	Jumble(szRealCode);
-	Jumble(szRealCode);
-	Jumble(szRealCode);
+	Jumble(szRealCode, sizeof(szRealCode));
+	Jumble(szRealCode, sizeof(szRealCode));
+	Jumble(szRealCode, sizeof(szRealCode));
+	Jumble(szRealCode, sizeof(szRealCode));
+	Jumble(szRealCode, sizeof(szRealCode));
+	Jumble(szRealCode, sizeof(szRealCode));
 
 	/* further encrypt 'em */
 	pc = szRealCode;

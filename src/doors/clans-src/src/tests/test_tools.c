@@ -95,18 +95,13 @@ static void test_ato32_valid(void)
 	ASSERT_EQ(ato32("1000",        "t"),       1000);
 }
 
-/*
- * ato32 uses atol() to parse; out-of-int32 values are only representable
- * (and thus detectable) when long is wider than 32 bits.  On ILP32
- * platforms the inputs below would cause UB in atol(), so skip the test.
- */
-#if LONG_MAX > INT32_MAX
 static void test_ato32_overflow(void)
 {
+	/* ato32 now uses strtoll(), which is 64-bit on all platforms.
+	   Overflow detection is defined and works everywhere. */
 	ASSERT_FATAL(ato32("2147483648",  "t"));
 	ASSERT_FATAL(ato32("-2147483649", "t"));
 }
-#endif
 
 /* -------------------------------------------------------------------------
  * main
@@ -120,9 +115,7 @@ int main(void)
 	RUN(ato16_valid);
 	RUN(ato16_overflow);
 	RUN(ato32_valid);
-#if LONG_MAX > INT32_MAX
 	RUN(ato32_overflow);
-#endif
 
 	printf("\n%d/%d passed\n", g_tests_run - g_tests_failed, g_tests_run);
 	return g_tests_failed ? 1 : 0;

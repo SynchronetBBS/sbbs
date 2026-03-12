@@ -67,7 +67,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #define MSGTXT_SZ	4000
 
-static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t CurLine);
+/* InputStr: n is the size of both String and NextString buffers (must be equal) */
+static int16_t InputStr(char *String, char *NextString, size_t n, char *JustLen, int16_t CurLine);
 static void SendMsj(struct Message *Message, int16_t WhichVillage);
 
 // ------------------------------------------------------------------------- //
@@ -260,7 +261,8 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 	OldLine[0] = 0;
 	for (;;) {
 		rputs(ST_MAILENTERCOLOR);
-		result = InputStr(Line1, Line2, &JustLen, NumLines);
+		/* sizeof(Line1) applies to both Line1 and Line2 (both char[128]) */
+		result = InputStr(Line1, Line2, sizeof(Line1), &JustLen, NumLines);
 
 		// if no swearing allowed, convert it :)
 
@@ -380,8 +382,9 @@ void MyWriteMessage2(int16_t ClanID[2], bool ToAll,
 
 
 // ------------------------------------------------------------------------- //
-static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct Message *Reply,
-				 int CurLine)
+/* QInputStr: n is the size of both String and NextString buffers (must be equal) */
+static int16_t QInputStr(char *String, char *NextString, size_t n, char *JustLen,
+			 struct Message *Reply, int CurLine)
 {
 	size_t cur_char = 0;
 	int FirstLine, i;
@@ -407,7 +410,7 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 			}
 
 			if (i > ((*JustLen) / 2)) {
-				strlcpy(NextString, &String[i], sizeof(NextString));
+				strlcpy(NextString, &String[i], n);
 				String[i] = 0;
 
 				for (; i < (int)cur_char; i++)
@@ -537,12 +540,12 @@ static int16_t QInputStr(char *String, char *NextString, char *JustLen, struct M
 					continue;
 				}
 
-				strlcpy(String, &Reply->Data.MsgTxt[ Reply->Data.Offsets[ FirstLine-1 ] ], sizeof(String));
+				strlcpy(String, &Reply->Data.MsgTxt[ Reply->Data.Offsets[ FirstLine-1 ] ], n);
 
 				strlcpy(string, ST_RMAILQUOTEBRACKET, sizeof(string));
 				strlcat(string, &Reply->Data.MsgTxt[ Reply->Data.Offsets[ FirstLine-1 ]], sizeof(string));
 				string[78] = 0;
-				strlcpy(String, string, sizeof(String));
+				strlcpy(String, string, n);
 
 				rputs(ST_LONGSPACES);
 				rputs("|09");
@@ -703,7 +706,8 @@ static void Reply_Message(struct Message *Reply)
 	rputs(ST_MAILENTERCOLOR);
 
 	for (;;) {
-		result = QInputStr(Line1, Line2, &JustLen, Reply, NumLines);
+		/* sizeof(Line1) applies to both Line1 and Line2 (both char[128]) */
+		result = QInputStr(Line1, Line2, sizeof(Line1), &JustLen, Reply, NumLines);
 
 		// if no swearing allowed, convert it :)
 
@@ -1067,7 +1071,8 @@ bool Mail_Read(void)
 
 }
 
-static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t CurLine)
+/* InputStr: n is the size of both String and NextString buffers (must be equal) */
+static int16_t InputStr(char *String, char *NextString, size_t n, char *JustLen, int16_t CurLine)
 {
 	size_t cur_char = 0;
 	int i;
@@ -1092,7 +1097,7 @@ static int16_t InputStr(char *String, char *NextString, char *JustLen, int16_t C
 			}
 
 			if (i > ((*JustLen) / 2)) {
-				strlcpy(NextString, &String[i], sizeof(NextString));
+				strlcpy(NextString, &String[i], n);
 				String[i] = 0;
 
 				for (; i < (int)cur_char; i++)
@@ -1310,7 +1315,8 @@ static void Msg_Create(int16_t ToClanID[2], int16_t MessageType, bool AllyReq, i
 	OldLine[0] = 0;
 	for (;;) {
 		rputs(ST_MAILENTERCOLOR);
-		result = InputStr(Line1, Line2, &JustLen, NumLines);
+		/* sizeof(Line1) applies to both Line1 and Line2 (both char[128]) */
+		result = InputStr(Line1, Line2, sizeof(Line1), &JustLen, NumLines);
 
 		// if no swearing allowed, convert it :)
 

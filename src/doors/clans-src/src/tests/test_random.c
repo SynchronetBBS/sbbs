@@ -52,6 +52,7 @@ static void test_negative_limit(void)
 {
 	ASSERT_FATAL(my_random(-1));
 	ASSERT_FATAL(my_random(-100));
+	ASSERT_FATAL(my_random(INT_MIN));  /* previously UB before guard; now safe */
 }
 
 static void test_rand_max_limit(void)

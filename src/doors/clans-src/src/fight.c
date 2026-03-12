@@ -1593,7 +1593,7 @@ static void Fight_GiveFollowers(int16_t Level)
 	PClan.Empire.Army.Followers        += NumFollowers;
 }
 
-static void TakeItemsFromClan(struct clan *Clan, char *szMsg)
+static void TakeItemsFromClan(struct clan *Clan, char *szMsg, size_t n)
 {
 	int16_t ItemIndex, EmptySlot;
 	int16_t ItemsTaken = 0;
@@ -1668,12 +1668,12 @@ static void TakeItemsFromClan(struct clan *Clan, char *szMsg)
 				if (SomethingTaken == false) {
 					// nothing was taken before this item, means there is no
 					// header yet for szMsg
-					strlcat(szMsg, "\n\n The following items were taken:\n\n", sizeof(szMsg));
+					strlcat(szMsg, "\n\n The following items were taken:\n\n", n);
 				}
 
 				SomethingTaken = true;
 				snprintf(szString, sizeof(szString), " %s\n", Clan->Items[ItemIndex].szName);
-				strlcat(szMsg, szString, sizeof(szMsg));
+				strlcat(szMsg, szString, n);
 				break;
 			case 'X' :  /* examine item */
 				rputs(ST_ISTATS1);
@@ -1778,7 +1778,7 @@ void Fight_Clan(void)
 		snprintf(szMessage, sizeof(szMessage), ST_NEWSFIGHT2, PClan.szName);
 
 		// allow user to take an item
-		TakeItemsFromClan(&EnemyClan, szMessage);
+		TakeItemsFromClan(&EnemyClan, szMessage, sizeof(szMessage));
 
 		GenericMessage(szMessage, EnemyClan.ClanID, PClan.ClanID, PClan.szName, false);
 
