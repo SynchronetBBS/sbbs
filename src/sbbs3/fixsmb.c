@@ -46,6 +46,7 @@ BOOL WINAPI ControlHandler(unsigned long CtrlType)
 	return true;
 }
 #elif defined __unix__
+#include <signal.h>
 void sighandler_quit(int sig)
 {
 	terminated = true;
