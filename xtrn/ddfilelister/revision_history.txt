@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.33     2026-03-11   Added the ability to have a custom header file to display
+                      above the file list. New settings supported in the theme
+                      configuration file: headerFilenameBase and headerMaxLines
 2.32     2025-12-26   Now removes control characters from file descriptions,
                       which could cause problems when displaying them.
 2.31     2025-09-30   When doing a file search, don't display "There are no
