@@ -47,6 +47,12 @@ class filterFile {
 			strListFree(&list);
 			pthread_mutex_destroy(&mutex);
 		}
+		void reset() {
+			fread_count = 0;
+			total_found = 0;
+			timestamp = 0;
+			lastftime_check = 0;
+		}
 		std::atomic<uint> fread_count{};
 		std::atomic<uint> total_found{};
 		time_t fchk_interval{}; // seconds

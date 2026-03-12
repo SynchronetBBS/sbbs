@@ -5164,6 +5164,11 @@ static void cleanup(int code, int line)
 			startup->terminated(startup->cbdata, code);
 	}
 
+	ip_can.reset();
+	ip_silent_can.reset();
+	host_can.reset();
+	host_exempt.reset();
+
 	mqtt_shutdown(&mqtt);
 }
 
