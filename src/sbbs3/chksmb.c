@@ -125,7 +125,6 @@ void print_hash(hash_t* hash)
 char *usage = "\nusage: chksmb [-opts] <path/to/base[.shd]> [...]\n"
               "\n"
               " opts:\n"
-              "       l - lock message/file base\n"
               "       b - beep on error\n"
               "       s - stop after errored message/file base\n"
               "       p - pause after errored message/file base\n"
