@@ -37,6 +37,21 @@ BOOL  rehash = FALSE;
 BOOL  fixnums = FALSE;
 BOOL  smb_undelete = FALSE;
 char* usage = "usage: fixsmb [-renumber] [-undelete] [-fixnums] [-rehash] <smb_file> [[smb_file] [...]]";
+bool  terminated = false;
+
+#if defined _WIN32
+BOOL WINAPI ControlHandler(unsigned long CtrlType)
+{
+	terminated = true;
+	return true;
+}
+#elif defined __unix__
+void sighandler_quit(int sig)
+{
+	terminated = true;
+}
+#endif
+
 
 int compare_index(const idxrec_t* idx1, const idxrec_t* idx2)
 {
@@ -354,9 +369,16 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	/* Install Ctrl-C/Break signal handler here */
+#if defined _WIN32
+	SetConsoleCtrlHandler(ControlHandler, /* Add */ true);
+#elif defined __unix__
+	signal(SIGINT, sighandler_quit);
+#endif
+
 	atexit(close_msgbase);
 
-	for (i = 0; list[i] != NULL && retval == EXIT_SUCCESS; i++)
+	for (i = 0; list[i] != NULL && retval == EXIT_SUCCESS && !terminated; i++)
 		retval = fixsmb(list[i]);
 
 	return retval;

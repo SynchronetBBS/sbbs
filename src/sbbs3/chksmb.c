@@ -36,6 +36,28 @@
 #include "filewrap.h"   /* filelength */
 #include "smblib.h"
 
+smb_t smb;
+
+bool terminated = false;
+
+void close_msgbase(void)
+{
+	smb_close(&smb); // and unlock
+}
+
+#if defined _WIN32
+BOOL WINAPI ControlHandler(unsigned long CtrlType)
+{
+	terminated = true;
+	return true;
+}
+#elif defined __unix__
+void sighandler_quit(int sig)
+{
+	terminated = true;
+}
+#endif
+
 /****************************************************************************/
 /* Returns in 'string' a character representation of the number in l with   */
 /* commas.																	*/
@@ -172,7 +194,6 @@ int main(int argc, char **argv)
 	ulong         largest = 0;
 	ulong         largest_msgnum = 0;
 	ulong         msgids = 0;
-	smb_t         smb;
 	idxrec_t      idx;
 	idxrec_t*     idxrec = NULL;
 	fileidxrec_t* fidxrec = NULL;
@@ -188,9 +209,17 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	/* Install Ctrl-C/Break signal handler here */
+#if defined _WIN32
+	SetConsoleCtrlHandler(ControlHandler, /* Add */ true);
+#elif defined __unix__
+	signal(SIGINT, sighandler_quit);
+#endif
 	errlast = errors = 0;
 	for (x = 1; x < argc; x++) {
 		if (stop_on_error && errors)
+			break;
+		if (terminated)
 			break;
 		if (pause_on_error && errlast != errors) {
 			fprintf(stderr, "%s\nHit any key to continue...", beep);
@@ -268,6 +297,7 @@ int main(int argc, char **argv)
 			errors++;
 			continue;
 		}
+		atexit(close_msgbase);
 		const char* base_type = (smb.status.attr & SMB_FILE_DIRECTORY) ? "File" : "Message";
 
 		/* File size sanity checks here: */
@@ -380,6 +410,8 @@ int main(int argc, char **argv)
 		largest_msgnum = 0;
 
 		for (l = smb.status.header_offset; l < (uint32_t)shd_length; l += size) {
+			if (terminated)
+				break;
 			size = SHD_BLOCK_LEN;
 			fprintf(stderr, "\r%2lu%%  ", (long)(100.0 / ((float)shd_length / l)));
 			fflush(stderr);
@@ -423,6 +455,8 @@ int main(int argc, char **argv)
 			fprintf(stderr, "#%-5" PRIu32 " (%06lX) %-25.25s ", msg.hdr.number, l, from);
 
 			for (n = 0; n < smb.status.total_msgs; n++) {
+				if (terminated)
+					break;
 				idxrec_t* idx;
 				if (idxreclen == sizeof(*fidxrec))
 					idx = &fidxrec[n].idx;
@@ -504,6 +538,8 @@ int main(int argc, char **argv)
 				    && (i = smb_findhash(&smb, hashes, NULL, SMB_HASH_SOURCE_DUPE, /* mark */ TRUE ))
 				    != SMB_SUCCESS) {
 					for (h = 0; hashes[h] != NULL; h++) {
+						if (terminated)
+							break;
 						if (hashes[h]->flags & SMB_HASH_MARKED)
 							continue;
 						fprintf(stderr, "%sFailed to find %s hash\n"
@@ -692,6 +728,8 @@ int main(int argc, char **argv)
 				}
 				if (chkxlat) {  /* Check translation strings */
 					for (i = 0; i < msg.hdr.total_dfields; i++) {
+						if (terminated)
+							break;
 						fseek(smb.sdt_fp, msg.hdr.offset + msg.dfield[i].offset, SEEK_SET);
 						if (!fread(&xlat, 2, 1, smb.sdt_fp))
 							xlat = 0xffff;
@@ -729,6 +767,8 @@ int main(int argc, char **argv)
 			if (chkalloc && !(smb.status.attr & SMB_HYPERALLOC)) {
 				fseek(smb.sha_fp, (l - smb.status.header_offset) / SHD_BLOCK_LEN, SEEK_SET);
 				for (m = 0; m < size; m += SHD_BLOCK_LEN) {
+					if (terminated)
+						break;
 					/***
 					            if(msg.hdr.attr&MSG_DELETE && (i=fgetc(smb.sha_fp))!=0) {
 					                fprintf(stderr,"%sDeleted Header Block %lu marked %02X\n"
@@ -752,6 +792,8 @@ int main(int argc, char **argv)
 				if (!(msg.hdr.attr & MSG_DELETE)) {
 					acthdrblocks += (size / SHD_BLOCK_LEN);
 					for (n = 0; n < msg.hdr.total_dfields; n++) {
+						if (terminated)
+							break;
 						if (msg.dfield[n].offset & 0x80000000UL) {
 							msgerr = TRUE;
 							if (extinfo)
@@ -770,6 +812,8 @@ int main(int argc, char **argv)
 						      , ((msg.hdr.offset + msg.dfield[n].offset) / SDT_BLOCK_LEN) * 2
 						      , SEEK_SET);
 						for (m = 0; m < msg.dfield[n].length; m += SDT_BLOCK_LEN) {
+							if (terminated)
+								break;
 							/* TODO: LE Only */
 							i = 0;
 							if (!fread(&i, 2, 1, smb.sda_fp) || !i) {
@@ -821,6 +865,8 @@ int main(int argc, char **argv)
 
 			fseek(smb.sda_fp, 0L, SEEK_SET);
 			for (l = 0; l < (ulong)sda_length; l += 2) {
+				if (terminated)
+					break;
 				if ((l % 10) == 0)
 					fprintf(stderr, "\r%2lu%%  ", l ? (long)(100.0 / ((float)sda_length / l)) : 0);
 				/* TODO: LE Only */
@@ -855,6 +901,8 @@ int main(int argc, char **argv)
 			}
 
 			for (l = 0; l < total; l++) {
+				if (terminated)
+					break;
 				fseek(smb.sid_fp, l * smb_idxreclen(&smb), SEEK_SET);
 				fprintf(stderr, "\r%2lu%%  %5lu ", l ? (long)(100.0 / ((float)total / l)) : 0, l);
 				if (!fread(&idx, sizeof(idx), 1, smb.sid_fp))
@@ -865,18 +913,24 @@ int main(int argc, char **argv)
 					/* fprintf(stderr,"%sMarked for deletion\n",beep); */
 					delidx++;
 				}
-				for (m = 0; m < l; m++)
+				for (m = 0; m < l; m++) {
+					if (terminated)
+						break;
 					if (number[m] == idx.number) {
 						fprintf(stderr, "%sDuplicate %s number\n", beep, base_type);
 						dupenum++;
 						break;
 					}
-				for (m = 0; m < l; m++)
+				}
+				for (m = 0; m < l; m++) {
+					if (terminated)
+						break;
 					if (offset[m] == idx.offset) {
 						fprintf(stderr, "%sDuplicate offset: %" PRIu32 "\n", beep, idx.offset);
 						dupeoff++;
 						break;
 					}
+				}
 				if (idx.offset < smb.status.header_offset) {
 					fprintf(stderr, "%sInvalid offset\n", beep);
 					idxofferr++;
@@ -896,13 +950,15 @@ int main(int argc, char **argv)
 				offset[l] = idx.offset;
 			}
 
-			if (l < total) {
+			if (l < total && !terminated) {
 				fprintf(stderr, "%sError reading index record\n", beep);
 				idxerr = 1;
 			}
 			else {
 				fprintf(stderr, "\r%79s\r", "");
 				for (m = 0; m < total; m++) {
+					if (terminated)
+						break;
 					fprintf(stderr, "\r%2lu%%  %5" PRIu32 " ", m ? (long)(100.0 / ((float)total / m)) : 0, m);
 					fprintf(stderr, "#%-5lu (%06lX) 2nd Pass ", number[m], offset[m]);
 					for (n = 0; n < m; n++)
@@ -929,6 +985,8 @@ int main(int argc, char **argv)
 
 			fseek(smb.hash_fp, 0L, SEEK_SET);
 			for (l = 0; l < (ulong)hash_length; l += sizeof(hash_t)) {
+				if (terminated)
+					break;
 				if (((l / sizeof(hash_t)) % 10) == 0)
 					fprintf(stderr, "\r%2lu%%  ", l ? (long)(100.0 / ((float)hash_length / l)) : 0);
 				if (!fread(&hash, sizeof(hash), 1, smb.hash_fp))
@@ -948,6 +1006,8 @@ int main(int argc, char **argv)
 			fprintf(stderr, "\r%79s\r100%%\n", "");
 		}
 
+		if (terminated)
+			break;
 
 		totalmsgs += smb.status.total_msgs;
 		totalmsgbytes += (acthdrblocks * SHD_BLOCK_LEN) + (actdatblocks * SDT_BLOCK_LEN);
