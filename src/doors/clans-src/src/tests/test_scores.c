@@ -110,7 +110,7 @@ static void test_colour_regular(void)
 {
 	/* Colour 0, Clear=false → ESC[30m */
 	char buf[20];
-	GetColourString(buf, 0, false);
+	GetColourString(buf, sizeof(buf), 0, false);
 	ASSERT_EQ(strcmp(buf, "\x1B[30m"), 0);
 }
 
@@ -118,7 +118,7 @@ static void test_colour_regular_clear(void)
 {
 	/* Colour 7 (white), Clear=true → ESC[0;37m */
 	char buf[20];
-	GetColourString(buf, 7, true);
+	GetColourString(buf, sizeof(buf), 7, true);
 	ASSERT_EQ(strcmp(buf, "\x1B[0;37m"), 0);
 }
 
@@ -126,7 +126,7 @@ static void test_colour_bright(void)
 {
 	/* Colour 8 (bright black), Clear=false → ESC[1;30m */
 	char buf[20];
-	GetColourString(buf, 8, false);
+	GetColourString(buf, sizeof(buf), 8, false);
 	ASSERT_EQ(strcmp(buf, "\x1B[1;30m"), 0);
 }
 
@@ -134,7 +134,7 @@ static void test_colour_background(void)
 {
 	/* Colour 16 (bg black), Clear=false → ESC[40m */
 	char buf[20];
-	GetColourString(buf, 16, false);
+	GetColourString(buf, sizeof(buf), 16, false);
 	ASSERT_EQ(strcmp(buf, "\x1B[40m"), 0);
 }
 
@@ -142,49 +142,43 @@ static void test_colour_background_flash(void)
 {
 	/* Colour 24 (bg black + flash), Clear=false → ESC[5;40m */
 	char buf[20];
-	GetColourString(buf, 24, false);
+	GetColourString(buf, sizeof(buf), 24, false);
 	ASSERT_EQ(strcmp(buf, "\x1B[5;40m"), 0);
 }
 
 /* -------------------------------------------------------------------------
  * Tests: PipeToAnsi
- *
- * NOTE: PipeToAnsi contains a known bug: it passes sizeof(pcOut) (= 8 on
- * 64-bit) as the size to strlcat where pcOut is a char*.  This limits each
- * ANSI escape chunk to ≤ 7 bytes.  The tests below only verify the
- * well-defined, non-truncated cases.
- * ------------------------------------------------------------------------- */
+ * -------------------------------------------------------------------------
+ */
 static void test_pipe_plain_text(void)
 {
 	/* No colour codes — text passes through unchanged. */
 	char out[64];
-	PipeToAnsi(out, "hello world");
+	PipeToAnsi(out, sizeof(out), "hello world");
 	ASSERT_EQ(strcmp(out, "hello world"), 0);
 }
 
 static void test_pipe_empty(void)
 {
 	char out[64];
-	PipeToAnsi(out, "");
+	PipeToAnsi(out, sizeof(out), "");
 	ASSERT_EQ(out[0], '\0');
 }
 
 static void test_pipe_text_after_code(void)
 {
-	/* |07 is white-on-default with clear; output must end with "hi". */
+	/* |07 is white-on-default with clear; should produce ESC[0;37m followed by "hi". */
 	char out[64];
-	PipeToAnsi(out, "|07hi");
-	/* Verify the plain-text tail. */
-	size_t len = strlen(out);
-	ASSERT_EQ(len >= 2, 1);
-	ASSERT_EQ(strcmp(out + len - 2, "hi"), 0);
+	PipeToAnsi(out, sizeof(out), "|07hi");
+	/* Verify the full output: ANSI clear + white foreground + plain text. */
+	ASSERT_EQ(strcmp(out, "\x1B[0;37mhi"), 0);
 }
 
 static void test_pipe_no_code_preserved(void)
 {
 	/* A lone '|' not followed by two digits is passed through literally. */
 	char out[64];
-	PipeToAnsi(out, "a|b");
+	PipeToAnsi(out, sizeof(out), "a|b");
 	ASSERT_EQ(strcmp(out, "a|b"), 0);
 }
 
