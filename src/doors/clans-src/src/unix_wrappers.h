@@ -31,10 +31,6 @@
 #define _SH_DENYRW   2
 
 FILE * _fsopen(const char *pathname, const char *mode, int flags);
-
-void FreeFileList(char **fl);
-char **FilesOrderedByDate(const char *path, const char *match, bool *error);
-const char *FileName(const char *path);
 char * fullpath(char *target, const char *path, size_t size);
 
 #endif

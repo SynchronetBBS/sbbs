@@ -33,9 +33,6 @@
 #define cio_getch() _getch()
 
 void display_win32_error();
-void FreeFileList(char **fl);
-char **FilesOrderedByDate(const char *path, const char *match, bool *error);
-const char *FileName(const char *path);
 
 #else
 #include <utime.h>

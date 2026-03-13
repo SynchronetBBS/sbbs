@@ -36,5 +36,8 @@ int32_t DaysBetween(char szFirstDate[], char szLastDate[]);
 int32_t DaysSince1970(char szTheDate[]);
 bool plat_DeleteFile(const char *fname);
 void plat_Delay(unsigned msec);
+void FreeFileList(char **fl);
+char **FilesOrderedByDate(const char *path, const char *match, bool *error);
+const char *FileName(const char *path);
 
 #endif
