@@ -97,6 +97,7 @@ Structures ............................................................  12.4
 Economics .............................................................  12.5
 Voting ................................................................  12.6
 Abdication ............................................................  12.7
+Claiming Rule Without an Election .............................  12.8
 
 Empires
 =======
@@ -716,6 +717,10 @@ depends on whether your clan rules the village or not.  All players can
 vote, deposit gold, and view the village empire.  The ruler has additional
 powers to build structures, set taxes, and manage the village.
 
+When the village has no ruler, any clan can claim rule immediately by
+accepting the prompt to govern (see section 12.8 for details).  This
+bypasses the voting process entirely.
+
 
 [12.2]  Citizen Menu
 -------------------------------------------------------------------------------
@@ -803,12 +808,15 @@ town hall to enter the voting booth.
     Q   Leave the voting booth.
 
 The voting booth displays the top 10 candidates and their vote counts.
-The clan with the most votes when the current ruler abdicates or is
-ousted becomes the new ruler.  If two or more clans tie, the winner is
-determined by comparing each clan's member Charisma starting from the
-leader -- the clan whose members have the highest Charisma wins.  If
-all tied clans have identical Charisma at every slot, the winner is
-chosen at random.
+The clan with the most votes when the current ruler abdicates becomes the
+new ruler.  If two or more clans tie, the winner is determined by comparing
+each clan's member Charisma starting from the leader -- the clan whose
+members have the highest Charisma wins.  If all tied clans have identical
+Charisma at every slot, the winner is chosen at random.
+
+Important: If the ruler is ousted by military attack rather than
+abdication, the voting process is bypassed entirely.  Any clan can claim
+rule immediately by visiting the town hall (see section 12.8).
 
 
 [12.7]  Abdication
@@ -817,6 +825,35 @@ A ruler can voluntarily give up control of the village by pressing !
 in the town hall.  This resets the village to having no ruler.  The
 clan that abdicated loses 100 points.  Abdication should not be taken
 lightly.
+
+After you abdicate, you cannot claim rule again until the next day.  This
+prevents rapid cycling of power.  Note: This restriction only applies to
+voluntary abdication.  If your clan is ousted by a military attack, you
+may claim rule again immediately (see section 12.8).
+
+
+[12.8]  Claiming Rule Without an Election
+-------------------------------------------------------------------------------
+When the village has no ruler, any clan can claim rule immediately by
+visiting the town hall.  The game will prompt you: "Does your clan wish to
+rule the village?"  If you answer yes, you become the ruler instantly
+without waiting for an election.  This grants you 20 points and all ruler
+powers.
+
+A village has no ruler in these situations:
+
+    1. A previous ruler abdicated voluntarily.
+    2. A previous ruler was ousted by a successful military attack.
+    3. The village is brand new.
+
+This claim mechanic bypasses the normal voting process (see section 12.6).
+Unlike voting, there is no time delay or Charisma tiebreaker -- the first
+clan to accept the town hall's offer becomes ruler.
+
+Restriction: If your clan was the previous ruler and abdicated, you cannot
+claim rule again until the next day.  This prevents rapid cycling of power.
+However, if your clan was ousted by military attack instead, you may claim
+rule immediately if you reach the town hall first.
 
 
 Empires
