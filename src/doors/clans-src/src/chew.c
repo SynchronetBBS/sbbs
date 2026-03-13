@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 #ifdef __unix__
 	fclose(fpAttr);
 	AddGUM(fpGUM, "UnixAttr.DAT");
-	unlink("UnixAttr.DAT");
+	plat_DeleteFile("UnixAttr.DAT");
 #endif
 
 	fclose(fpGUM);

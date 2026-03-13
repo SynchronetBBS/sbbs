@@ -1,5 +1,6 @@
 #ifdef _WIN32
 
+#include <fileapi.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +8,11 @@
 #include <io.h>
 
 #include "win_wrappers.h"
+
+bool plat_DeleteFile(const char *fname)
+{
+	return DeleteFileA((LPCSTR)fname);
+}
 
 void display_win32_error(void)
 {

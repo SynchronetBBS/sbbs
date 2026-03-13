@@ -27,7 +27,6 @@
 #ifndef __MINGW32__
 #define strcasecmp(x, y) _stricmp(x, y)
 #endif
-#define unlink(x) _unlink(x)
 #define fileno(x) _fileno(x)
 #define strdup(x) _strdup(x)
 #define mkdir(x) _mkdir(x)

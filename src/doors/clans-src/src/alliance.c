@@ -147,7 +147,7 @@ void KillAlliances(void)
 	for (iTemp = 0; iTemp < MAX_ALLIANCES; iTemp++) {
 		if (Alliances[iTemp]) {
 			snprintf(szFileName, sizeof(szFileName), "hall%02d.txt", Alliances[iTemp]->ID);
-			unlink(szFileName);
+			plat_DeleteFile(szFileName);
 		}
 	}
 
@@ -155,5 +155,5 @@ void KillAlliances(void)
 	FreeAlliances();
 
 	// called to destroy ALLY.DAT and remove those pesky HALLxxyy.TXT files
-	unlink("ally.dat");
+	plat_DeleteFile("ally.dat");
 }

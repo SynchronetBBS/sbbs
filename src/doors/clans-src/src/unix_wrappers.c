@@ -13,6 +13,12 @@
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
 
+bool plat_DeleteFile(const char *fname)
+{
+	rc = unlink(fname);
+	return (rc == 0);
+}
+
 FILE *
 _fsopen(const char *pathname, const char *mode, int shflag)
 {

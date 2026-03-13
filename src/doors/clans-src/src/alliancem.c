@@ -688,7 +688,7 @@ void KillAlliance(int16_t WhichAlliance)
 
 	// remove chatfile first
 	snprintf(szFileName, sizeof(szFileName), "hall%02" PRId16 ".txt", Alliances[WhichAlliance]->ID);
-	unlink(szFileName);
+	plat_DeleteFile(szFileName);
 
 	// only if he is the ORIGINAL creator will he have flag set
 	if (Alliances[WhichAlliance]->OriginalCreatorID[0] == PClan.ClanID[0] &&

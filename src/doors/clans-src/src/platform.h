@@ -34,5 +34,6 @@ void RemovePipes(char *pszSrc, char *pszDest);
 bool iscodechar(char c);
 int32_t DaysBetween(char szFirstDate[], char szLastDate[]);
 int32_t DaysSince1970(char szTheDate[]);
+bool plat_DeleteFile(const char *fname);
 
 #endif

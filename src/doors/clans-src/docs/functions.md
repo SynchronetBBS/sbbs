@@ -254,6 +254,482 @@ This document lists all functions defined in the Clans source files, their proto
 
 ---
 
+## serialize.c
+
+### s_ibbs_node_attack_s
+**Prototype:** `size_t s_ibbs_node_attack_s(const struct ibbs_node_attack *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes an IBBS node attack structure (ReceiveIndex, SendIndex) into a binary buffer.
+**Calls:** None
+
+### s_MessageHeader_s
+**Prototype:** `size_t s_MessageHeader_s(const struct MessageHeader *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes a message header structure (from/to usernames, subject, metadata, routing info) into binary format.
+**Calls:** None
+
+### s_ibbs_node_reset_s
+**Prototype:** `size_t s_ibbs_node_reset_s(const struct ibbs_node_reset *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes IBBS node reset data (Received count, LastSent timestamp).
+**Calls:** None
+
+### s_ibbs_node_recon_s
+**Prototype:** `size_t s_ibbs_node_recon_s(const struct ibbs_node_recon *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes IBBS node reconnection data (LastReceived, LastSent, PacketIndex).
+**Calls:** None
+
+### s_Msg_Txt_s
+**Prototype:** `size_t s_Msg_Txt_s(const struct Msg_Txt *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes message text structure (offsets array, length, number of lines, text pointer).
+**Calls:** None
+
+### s_Message_s
+**Prototype:** `size_t s_Message_s(const struct Message *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes a complete message (clan IDs, sender/date info, alliance name, message type, indices).
+**Calls:** s_Msg_Txt_s
+
+### s_Topic_s
+**Prototype:** `size_t s_Topic_s(const struct Topic *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes a topic structure (Known, Active, ClanInfo bools, name and label).
+**Calls:** None
+
+### s_LeavingData_s
+**Prototype:** `size_t s_LeavingData_s(const struct LeavingData *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes clan leaving data (active flag, destination ID, clan IDs, troop counts).
+**Calls:** None
+
+### s_PClass_s
+**Prototype:** `size_t s_PClass_s(const struct PClass *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes player class data (name, attributes array, HP/SP limits, gold, spells known, village type).
+**Calls:** None
+
+### s_SpellsInEffect_s
+**Prototype:** `size_t s_SpellsInEffect_s(const struct SpellsInEffect *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes an active spell effect (spell number, energy remaining).
+**Calls:** None
+
+### s_SpyAttemptPacket_s
+**Prototype:** `size_t s_SpyAttemptPacket_s(const struct SpyAttemptPacket *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes a spy attempt packet (spier name, intelligence level, target type, clan/master IDs, BBS IDs).
+**Calls:** None
+
+### s_SpyResultPacket_s
+**Prototype:** `size_t s_SpyResultPacket_s(const struct SpyResultPacket *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes spy attempt results (BBS IDs, master ID, target name, success flag, empire state, date).
+**Calls:** s_empire_s
+
+### s_TradeData_s
+**Prototype:** `size_t s_TradeData_s(const struct TradeData *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes trade offer data (giving/asking lists, active flag, clan IDs, clan names, trade code).
+**Calls:** s_TradeList_s
+
+### s_TradeList_s
+**Prototype:** `size_t s_TradeList_s(const struct TradeList *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes a trade list (gold, follower and troop counts).
+**Calls:** None
+
+### s_UserInfo_s
+**Prototype:** `size_t s_UserInfo_s(const struct UserInfo *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes user info (clan ID, deleted flag, master/character names).
+**Calls:** None
+
+### s_UserScore_s
+**Prototype:** `size_t s_UserScore_s(const struct UserScore *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes user score entry (clan ID, symbol, name, points, BBS ID).
+**Calls:** None
+
+### s_Spell_s
+**Prototype:** `size_t s_Spell_s(const struct Spell *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes spell data (name, type, attributes, effect strings, SP cost, multiaffect bitfield).
+**Calls:** None
+
+### s_pc_s
+**Prototype:** `size_t s_pc_s(const struct pc *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes player character data (name, stats, attributes, equipment, spells, status, CRC).
+**Calls:** CRCValue
+
+### s_Packet_s
+**Prototype:** `size_t s_Packet_s(const struct Packet *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes IBBS packet header (active, game ID, date, BBS IDs, packet type and length).
+**Calls:** None
+
+### s_NPCInfo_s
+**Prototype:** `size_t s_NPCInfo_s(const struct NPCInfo *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes NPC information (name, topics, loyalty, wandering info, stats, file references).
+**Calls:** s_Topic_s
+
+### s_NPCNdx_s
+**Prototype:** `size_t s_NPCNdx_s(const struct NPCNdx *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes NPC index entry (file index, clan membership, wandering location, status).
+**Calls:** None
+
+### s_Language_s
+**Prototype:** `size_t s_Language_s(const struct Language *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes language data (signature, string offset table, byte count, string blob pointer).
+**Calls:** None
+
+### s_Alliance_s
+**Prototype:** `size_t s_Alliance_s(const struct Alliance *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes alliance data (ID, name, creator IDs, members, empire, items).
+**Calls:** s_empire_s, s_item_data_s
+
+### s_game_data_s
+**Prototype:** `size_t s_game_data_s(const struct game_data *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes global game state (game state, inter-BBS flag, dates, clan/alliance IDs, settings, CRC).
+**Calls:** CRCValue
+
+### s_village_data_s
+**Prototype:** `size_t s_village_data_s(const struct village_data *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes village data (color scheme, name, governance, tax/interest rates, building levels, flags, empire, CRC).
+**Calls:** CRCValue, s_empire_s
+
+### s_EventHeader_s
+**Prototype:** `size_t s_EventHeader_s(const struct EventHeader *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes event header (name, event size, event flag).
+**Calls:** None
+
+### s_FileHeader_s
+**Prototype:** `size_t s_FileHeader_s(const struct FileHeader *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes file header (file pointer, name, start/end positions, file size).
+**Calls:** None
+
+### s_Army_s
+**Prototype:** `size_t s_Army_s(const struct Army *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes army data (troop counts, rating, level, strategy, CRC).
+**Calls:** CRCValue, s_Strategy_s
+
+### s_Strategy_s
+**Prototype:** `size_t s_Strategy_s(const struct Strategy *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes combat strategy (attack length/intensity, loot level, defend length/intensity).
+**Calls:** None
+
+### s_AttackPacket_s
+**Prototype:** `size_t s_AttackPacket_s(const struct AttackPacket *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes attack packet (BBS IDs, attacking empire/army, goal, extent, target, clan/originator IDs, CRC).
+**Calls:** CRCValue, s_empire_s, s_Army_s
+
+### s_AttackResult_s
+**Prototype:** `size_t s_AttackResult_s(const struct AttackResult *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes attack result (success/target flags, armies, attacker/defender info, damage, casualties, loot, CRC).
+**Calls:** CRCValue, s_Army_s
+
+### s_item_data_s
+**Prototype:** `size_t s_item_data_s(const struct item_data *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes item data (available, used-by, name, type, attributes, cost, energy, market level, village type, HP/SP bonuses).
+**Calls:** None
+
+### s_empire_s
+**Prototype:** `size_t s_empire_s(const struct empire *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes empire data (name, owner type, vault gold, land, buildings, alliance ID, worker energy, development/spy/attack counters, points, army, CRC).
+**Calls:** CRCValue, s_Army_s
+
+### s_clan_s
+**Prototype:** `size_t s_clan_s(const struct clan *s, void *bufptr, size_t bufsz)`
+**Description:** Serializes clan data (clan ID, names, symbol, quest/flag arrays, daily counters, votes, points, dates, combat stats, members, items, empire, help flags, CRC).
+**Calls:** CRCValue, s_empire_s, s_item_data_s
+
+---
+
+## deserialize.c
+
+### s_ibbs_node_attack_d
+**Prototype:** `size_t s_ibbs_node_attack_d(const void *bufptr, size_t bufsz, struct ibbs_node_attack *s)`
+**Description:** Deserializes IBBS node attack structure from binary buffer.
+**Calls:** None
+
+### s_MessageHeader_d
+**Prototype:** `size_t s_MessageHeader_d(const void *bufptr, size_t bufsz, struct MessageHeader *s)`
+**Description:** Deserializes message header from binary format.
+**Calls:** None
+
+### s_ibbs_node_reset_d
+**Prototype:** `size_t s_ibbs_node_reset_d(const void *bufptr, size_t bufsz, struct ibbs_node_reset *s)`
+**Description:** Deserializes IBBS node reset data from buffer.
+**Calls:** None
+
+### s_ibbs_node_recon_d
+**Prototype:** `size_t s_ibbs_node_recon_d(const void *bufptr, size_t bufsz, struct ibbs_node_recon *s)`
+**Description:** Deserializes IBBS node reconnection data.
+**Calls:** None
+
+### s_Msg_Txt_d
+**Prototype:** `size_t s_Msg_Txt_d(const void *bufptr, size_t bufsz, struct Msg_Txt *s)`
+**Description:** Deserializes message text structure.
+**Calls:** None
+
+### s_Message_d
+**Prototype:** `size_t s_Message_d(const void *bufptr, size_t bufsz, struct Message *s)`
+**Description:** Deserializes a complete message structure.
+**Calls:** s_Msg_Txt_d
+
+### s_Topic_d
+**Prototype:** `size_t s_Topic_d(const void *bufptr, size_t bufsz, struct Topic *s)`
+**Description:** Deserializes a topic structure.
+**Calls:** None
+
+### s_LeavingData_d
+**Prototype:** `size_t s_LeavingData_d(const void *bufptr, size_t bufsz, struct LeavingData *s)`
+**Description:** Deserializes clan leaving data.
+**Calls:** None
+
+### s_PClass_d
+**Prototype:** `size_t s_PClass_d(const void *bufptr, size_t bufsz, struct PClass *s)`
+**Description:** Deserializes player class data.
+**Calls:** None
+
+### s_SpellsInEffect_d
+**Prototype:** `size_t s_SpellsInEffect_d(const void *bufptr, size_t bufsz, struct SpellsInEffect *s)`
+**Description:** Deserializes an active spell effect.
+**Calls:** None
+
+### s_SpyAttemptPacket_d
+**Prototype:** `size_t s_SpyAttemptPacket_d(const void *bufptr, size_t bufsz, struct SpyAttemptPacket *s)`
+**Description:** Deserializes a spy attempt packet.
+**Calls:** None
+
+### s_SpyResultPacket_d
+**Prototype:** `size_t s_SpyResultPacket_d(const void *bufptr, size_t bufsz, struct SpyResultPacket *s)`
+**Description:** Deserializes spy attempt results.
+**Calls:** s_empire_d
+
+### s_TradeData_d
+**Prototype:** `size_t s_TradeData_d(const void *bufptr, size_t bufsz, struct TradeData *s)`
+**Description:** Deserializes trade offer data.
+**Calls:** s_TradeList_d
+
+### s_TradeList_d
+**Prototype:** `size_t s_TradeList_d(const void *bufptr, size_t bufsz, struct TradeList *s)`
+**Description:** Deserializes a trade list.
+**Calls:** None
+
+### s_UserInfo_d
+**Prototype:** `size_t s_UserInfo_d(const void *bufptr, size_t bufsz, struct UserInfo *s)`
+**Description:** Deserializes user info.
+**Calls:** None
+
+### s_UserScore_d
+**Prototype:** `size_t s_UserScore_d(const void *bufptr, size_t bufsz, struct UserScore *s)`
+**Description:** Deserializes user score entry.
+**Calls:** None
+
+### s_Spell_d
+**Prototype:** `size_t s_Spell_d(const void *bufptr, size_t bufsz, struct Spell *s)`
+**Description:** Deserializes spell data and reconstructs MultiAffect bitfield.
+**Calls:** None
+
+### s_pc_d
+**Prototype:** `size_t s_pc_d(const void *bufptr, size_t bufsz, struct pc *s)`
+**Description:** Deserializes player character and verifies CRC, calls System_Error if corrupt.
+**Calls:** CRCValue, System_Error
+
+### s_Packet_d
+**Prototype:** `size_t s_Packet_d(const void *bufptr, size_t bufsz, struct Packet *s)`
+**Description:** Deserializes IBBS packet header.
+**Calls:** None
+
+### s_NPCInfo_d
+**Prototype:** `size_t s_NPCInfo_d(const void *bufptr, size_t bufsz, struct NPCInfo *s)`
+**Description:** Deserializes NPC information.
+**Calls:** s_Topic_d
+
+### s_NPCNdx_d
+**Prototype:** `size_t s_NPCNdx_d(const void *bufptr, size_t bufsz, struct NPCNdx *s)`
+**Description:** Deserializes NPC index entry.
+**Calls:** None
+
+### s_Language_d
+**Prototype:** `size_t s_Language_d(const void *bufptr, size_t bufsz, struct Language *s)`
+**Description:** Deserializes language data.
+**Calls:** None
+
+### s_Alliance_d
+**Prototype:** `size_t s_Alliance_d(const void *bufptr, size_t bufsz, struct Alliance *s)`
+**Description:** Deserializes alliance data.
+**Calls:** s_empire_d, s_item_data_d
+
+### s_game_data_d
+**Prototype:** `size_t s_game_data_d(const void *bufptr, size_t bufsz, struct game_data *s)`
+**Description:** Deserializes global game state and verifies CRC, calls System_Error if corrupt.
+**Calls:** CRCValue, System_Error
+
+### s_village_data_d
+**Prototype:** `size_t s_village_data_d(const void *bufptr, size_t bufsz, struct village_data *s)`
+**Description:** Deserializes village data and verifies CRC, reconstructs bitfields, calls System_Error if corrupt.
+**Calls:** CRCValue, System_Error, s_empire_d
+
+### s_EventHeader_d
+**Prototype:** `size_t s_EventHeader_d(const void *bufptr, size_t bufsz, struct EventHeader *s)`
+**Description:** Deserializes event header.
+**Calls:** None
+
+### s_FileHeader_d
+**Prototype:** `size_t s_FileHeader_d(const void *bufptr, size_t bufsz, struct FileHeader *s)`
+**Description:** Deserializes file header.
+**Calls:** None
+
+### s_Army_d
+**Prototype:** `size_t s_Army_d(const void *bufptr, size_t bufsz, struct Army *s)`
+**Description:** Deserializes army data and verifies CRC, calls System_Error if corrupt.
+**Calls:** CRCValue, System_Error, s_Strategy_d
+
+### s_Strategy_d
+**Prototype:** `size_t s_Strategy_d(const void *bufptr, size_t bufsz, struct Strategy *s)`
+**Description:** Deserializes combat strategy.
+**Calls:** None
+
+### s_AttackPacket_d
+**Prototype:** `size_t s_AttackPacket_d(const void *bufptr, size_t bufsz, struct AttackPacket *s)`
+**Description:** Deserializes attack packet and verifies CRC, calls System_Error if corrupt.
+**Calls:** CRCValue, System_Error, s_empire_d, s_Army_d
+
+### s_AttackResult_d
+**Prototype:** `size_t s_AttackResult_d(const void *bufptr, size_t bufsz, struct AttackResult *s)`
+**Description:** Deserializes attack result and verifies CRC, calls System_Error if corrupt.
+**Calls:** CRCValue, System_Error, s_Army_d
+
+### s_item_data_d
+**Prototype:** `size_t s_item_data_d(const void *bufptr, size_t bufsz, struct item_data *s)`
+**Description:** Deserializes item data.
+**Calls:** None
+
+### s_empire_d
+**Prototype:** `size_t s_empire_d(const void *bufptr, size_t bufsz, struct empire *s)`
+**Description:** Deserializes empire data and verifies CRC, calls System_Error if corrupt.
+**Calls:** CRCValue, System_Error, s_Army_d
+
+### s_clan_d
+**Prototype:** `size_t s_clan_d(const void *bufptr, size_t bufsz, struct clan *s)`
+**Description:** Deserializes clan data, reconstructs bitfields from packed bytes, verifies CRC, calls System_Error if corrupt.
+**Calls:** CRCValue, System_Error, s_empire_d, s_item_data_d
+
+---
+
+## items.c
+
+### GetOpenItemSlot
+**Prototype:** `int16_t GetOpenItemSlot(struct clan *Clan)`
+**Description:** Finds first empty inventory slot in clan's items array.
+**Calls:** None
+
+### GetUnusedItem
+**Prototype:** `static int16_t GetUnusedItem(struct clan *Clan, int16_t type)`
+**Description:** Finds first unequipped item of specified type in clan inventory.
+**Calls:** None
+
+### GetUsedItem
+**Prototype:** `static int16_t GetUsedItem(struct clan *Clan, int16_t type)`
+**Description:** Finds first equipped item of specified type, or returns status flag if none equipped or none exist.
+**Calls:** None
+
+### GetEquippableItem
+**Prototype:** `static int16_t GetEquippableItem(struct clan *Clan, int16_t type)`
+**Description:** Finds first unequipped item of specified type that can be equipped, or returns status flag.
+**Calls:** None
+
+### GetFirstItem
+**Prototype:** `static int16_t GetFirstItem(struct clan *Clan, int16_t type)`
+**Description:** Finds first available item of specified type in clan inventory.
+**Calls:** None
+
+### ChooseItem
+**Prototype:** `int16_t ChooseItem(const char *prompt, struct clan *Clan, int16_t type, int filter)`
+**Description:** Prompts user to select an item from clan inventory with filtering (any, used, unused, equippable).
+**Calls:** GetFirstItem, GetUsedItem, GetUnusedItem, GetEquippableItem, rputs, GetLong
+
+### UnequipItemsFromPC
+**Prototype:** `void UnequipItemsFromPC(int16_t PC)`
+**Description:** Unequips all items from a specific player character in PClan.
+**Calls:** None
+
+### Items_FindTreasureChest
+**Prototype:** `void Items_FindTreasureChest(void)`
+**Description:** Randomly selects and offers a treasure item from the items database to player.
+**Calls:** Items_Init, my_random, YesNo, Items_GiveItemData, Items_Close, LogDisplayStr
+
+### ReadBook
+**Prototype:** `void ReadBook(void)`
+**Description:** Allows player to select a book and choose a clan member to read it, granting spells/HP/SP bonuses.
+**Calls:** ChooseItem, ShowItemStats, GetKey, ItemPenalty, rputs, toupper, snprintf, strlcpy
+
+### ItemPenalty
+**Prototype:** `bool ItemPenalty(struct pc *PC, struct item_data *Item)`
+**Description:** Checks if player character has required attributes to use an item.
+**Calls:** None
+
+### ItemUseableBy
+**Prototype:** `static void ItemUseableBy(struct item_data *Item)`
+**Description:** Displays list of clan members who can use an item without penalty.
+**Calls:** ItemPenalty, rputs, snprintf, strlcpy
+
+### ShowItemStats
+**Prototype:** `void ShowItemStats(struct item_data *Item, struct clan *Clan)`
+**Description:** Displays detailed item statistics, modifiers, requirements, and who is using it.
+**Calls:** LoadStrings, rputs, snprintf, strlcpy, strlcat, ItemUseableBy
+
+### Items_Read
+**Prototype:** `static void Items_Read(void)`
+**Description:** Loads all items from data files into memory.
+**Calls:** MyOpen, CheckMem, s_item_data_d, malloc, fread, fclose, SWAP16S
+
+### Items_Destroy
+**Prototype:** `static void Items_Destroy(void)`
+**Description:** Frees all loaded item data from memory.
+**Calls:** free
+
+### Items_GiveItemData
+**Prototype:** `static void Items_GiveItemData(struct item_data *Item)`
+**Description:** Adds an item to player clan's inventory if there's room.
+**Calls:** GetOpenItemSlot, rputs
+
+### Items_GiveItem
+**Prototype:** `void Items_GiveItem(char *szItemName)`
+**Description:** Locates and gives a named item to player clan from loaded items database.
+**Calls:** Items_Init, strcasecmp, Items_Close, rputs
+
+### Items_Init
+**Prototype:** `static void Items_Init(void)`
+**Description:** Loads item data into memory if not already loaded.
+**Calls:** Items_Read
+
+### Items_Close
+**Prototype:** `void Items_Close(void)`
+**Description:** Unloads items from memory.
+**Calls:** Items_Destroy
+
+### Items_ReadScroll
+**Prototype:** `void Items_ReadScroll(struct pc *PC, struct clan *TargetClan, int16_t Target, int16_t ScrollNum)`
+**Description:** Uses a scroll, casts its spell on target, reduces charges, and removes if depleted.
+**Calls:** snprintf, rputs, Spells_CastSpell
+
+### Item_BuyItem
+**Prototype:** `void Item_BuyItem(signed char ItemType)`
+**Description:** Market interface allowing player to purchase items, choose materials, and apply magical/quality enhancements.
+**Calls:** Items_Init, MyOpen, Items_Close, rputs, snprintf, GetAnswer, Help, YesNo, NoYes, GetOpenItemSlot, my_random, strlcpy, strlcat, LoadStrings, ShowItemStats
+
+---
+
+## myopen.c
+
+### cipher
+**Prototype:** `static void cipher(void *dest, void *src, size_t len, unsigned char xor_val)`
+**Description:** XOR cipher implementation that applies XOR key to bytes from source to destination.
+**Calls:** System_Error
+
+### MyOpen
+**Prototype:** `void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)`
+**Description:** Opens a file from either clans.pak archive or filesystem; supports alternate PAK files; returns FileHeader with file pointer and metadata.
+**Calls:** strlcpy, fopen, fread, s_FileHeader_d, strcasecmp, fseek, fclose, ftell, System_Error
+
+### EncryptWrite
+**Prototype:** `bool EncryptWrite(void *Data, size_t DataSize, FILE *fp, char XorValue)`
+**Description:** Encrypts data using XOR cipher and writes to file, then decrypts buffer back to original.
+**Calls:** System_Error, cipher, fwrite
+
+### EncryptRead
+**Prototype:** `bool EncryptRead(void *Data, size_t DataSize, FILE *fp, char XorValue)`
+**Description:** Reads encrypted data from file and decrypts using XOR cipher.
+**Calls:** System_Error, fread, cipher
+
+---
+
 ## u8cp437.c
 
 ### u8_to_cp437
