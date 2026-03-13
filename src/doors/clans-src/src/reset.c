@@ -515,24 +515,24 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 	struct game_data Game_Data = {0};
 
 	// Delete unwanted files here
-	unlink("clans.msj");
-	unlink("clans.pc");
-	unlink("disband.dat");
-	unlink("trades.dat");
-	unlink("public.txt");
-	unlink("pawn.dat");
-	unlink("clans.npx");
+	plat_DeleteFile("clans.msj");
+	plat_DeleteFile("clans.pc");
+	plat_DeleteFile("disband.dat");
+	plat_DeleteFile("trades.dat");
+	plat_DeleteFile("public.txt");
+	plat_DeleteFile("pawn.dat");
+	plat_DeleteFile("clans.npx");
 
 	KillAlliances();
 
-	unlink("ally.dat");
+	plat_DeleteFile("ally.dat");
 
 	// delete IBBS files
-	unlink("ibbs.dat");
-	unlink("ipscores.dat");
-	unlink("userlist.dat");
-	unlink("backup.dat");
-	unlink("leaving.dat");
+	plat_DeleteFile("ibbs.dat");
+	plat_DeleteFile("ipscores.dat");
+	plat_DeleteFile("userlist.dat");
+	plat_DeleteFile("backup.dat");
+	plat_DeleteFile("leaving.dat");
 
 	if (Option == RESET_LOCAL) {
 		/*
@@ -565,7 +565,7 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 		fclose(fp);
 
 		// update news
-		unlink("yest.asc");
+		plat_DeleteFile("yest.asc");
 		rename("today.asc", "yest.asc");
 		News_CreateTodayNews();
 		News_AddNews("|0A \xaf\xaf\xaf |0CThe game has been reset!\n\n");
@@ -601,7 +601,7 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 		fclose(fp);
 
 		// update news
-		unlink("yest.asc");
+		plat_DeleteFile("yest.asc");
 		rename("today.asc", "yest.asc");
 		News_CreateTodayNews();
 		News_AddNews("|0A \xaf\xaf\xaf |0CThe game is waiting for LC OK.\n\n");
@@ -642,7 +642,7 @@ static void GoReset(struct ResetData *ResetData, int16_t Option)
 		fclose(fp);
 
 		// update news
-		unlink("yest.asc");
+		plat_DeleteFile("yest.asc");
 		rename("today.asc", "yest.asc");
 		News_CreateTodayNews();
 		News_AddNews("|0A \xaf\xaf\xaf |0CThe game has been reset!\n\n");

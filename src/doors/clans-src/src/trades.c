@@ -532,7 +532,7 @@ void Trades_Maint(void)
 		fclose(fpTradeFile);
 		fclose(fpNewTradeFile);
 
-		unlink("trades.dat");
+		plat_DeleteFile("trades.dat");
 		rename("trades.new", "trades.dat");
 	}
 

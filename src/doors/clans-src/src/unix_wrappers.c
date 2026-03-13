@@ -15,7 +15,7 @@
 
 bool plat_DeleteFile(const char *fname)
 {
-	rc = unlink(fname);
+	const int rc = unlink(fname);
 	return (rc == 0);
 }
 

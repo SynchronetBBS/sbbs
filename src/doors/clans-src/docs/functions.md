@@ -959,7 +959,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### Maintenance
 **Prototype:** `void Maintenance(void)`
 **Description:** Performs daily maintenance tasks including date updates, game reset checks, and calls to subsystem maintenance routines; prevents duplicate runs on IBBS games.
-**Calls:** `LogDisplayStr`, `DaysBetween`, `System_Error`, `strlcpy`, `System_Maint`, `Village_Maint`, `IBBS_Maint`, `User_Maint`, `Mail_Maint`, `NPC_Maint`, `Trades_Maint`, `PS_Maint`, `unlink`, `Alliance_Maint`, `IBBS_SendQueuedResults`, `IBBS_HandleQueuedPackets`, `Game_Write`
+**Calls:** `LogDisplayStr`, `DaysBetween`, `System_Error`, `strlcpy`, `System_Maint`, `Village_Maint`, `IBBS_Maint`, `User_Maint`, `Mail_Maint`, `NPC_Maint`, `Trades_Maint`, `PS_Maint`, `plat_DeleteFile`, `Alliance_Maint`, `IBBS_SendQueuedResults`, `IBBS_HandleQueuedPackets`, `Game_Write`
 
 ---
 
@@ -1297,7 +1297,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### Trades_Maint
 **Prototype:** `void Trades_Maint(void)`
 **Description:** Performs trades maintenance by removing inactive trade records from the trades.dat file.
-**Calls:** `fopen`, `notEncryptRead_s`, `EncryptWrite_s`, `fclose`, `unlink`, `rename`
+**Calls:** `fopen`, `notEncryptRead_s`, `EncryptWrite_s`, `fclose`, `plat_DeleteFile`, `rename`
 
 ---
 
@@ -1557,7 +1557,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### Mail_Maint
 **Prototype:** `void Mail_Maint(void)`
 **Description:** Performs mail maintenance by removing deleted messages from the message file, compacting it into a temporary file and replacing the original.
-**Calls:** `fopen`, `fclose`, `notEncryptRead_s`, `fseek`, `malloc`, `free`, `EncryptRead`, `EncryptWrite_s`, `unlink`, `rename`, `LogDisplayStr`
+**Calls:** `fopen`, `fclose`, `notEncryptRead_s`, `fseek`, `malloc`, `free`, `EncryptRead`, `EncryptWrite_s`, `plat_DeleteFile`, `rename`, `LogDisplayStr`
 
 ---
 
@@ -1615,7 +1615,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### KillAlliances
 **Prototype:** `void KillAlliances(void)`
 **Description:** Destroys all alliances by deleting their associated hall files and the ally.dat file, used during game reset.
-**Calls:** `Alliances_Init`, `snprintf`, `unlink`, `FreeAlliances`
+**Calls:** `Alliances_Init`, `snprintf`, `plat_DeleteFile`, `FreeAlliances`
 
 ---
 
@@ -1680,7 +1680,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### KillAlliance
 **Prototype:** `void KillAlliance(int16_t WhichAlliance)`
 **Description:** Destroys an alliance by removing all clan references, deleting the alliance chat file, and updating all player files to remove alliance linkage.
-**Calls:** `snprintf`, `unlink`, `fopen`, `rputs`, `fseek`, `notEncryptRead_s`, `EncryptWrite_s`, `fclose`, `DeleteAlliance`
+**Calls:** `snprintf`, `plat_DeleteFile`, `fopen`, `rputs`, `fseek`, `notEncryptRead_s`, `EncryptWrite_s`, `fclose`, `DeleteAlliance`
 
 ---
 
@@ -1842,7 +1842,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### DeleteClan
 **Prototype:** `static void DeleteClan(int16_t ClanID[2])`
 **Description:** Removes a clan from all game files (players, messages, trades, alliances) and updates associated data structures to maintain referential integrity.
-**Calls:** `UpdateVillage`, `fopen`, `fclose`, `EncryptRead_s`, `notEncryptRead_s`, `EncryptWrite_s`, `unlink`, `rename`, `malloc`, `free`, `CheckMem`, `Alliances_Init`, `DeleteAlliance`, `Alliances_Close`, `RemoveFromUList`, `RemoveFromIPScores`
+**Calls:** `UpdateVillage`, `fopen`, `fclose`, `EncryptRead_s`, `notEncryptRead_s`, `EncryptWrite_s`, `plat_DeleteFile`, `rename`, `malloc`, `free`, `CheckMem`, `Alliances_Init`, `DeleteAlliance`, `Alliances_Close`, `RemoveFromUList`, `RemoveFromIPScores`
 
 ---
 
@@ -1870,7 +1870,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### RemoveFromUList
 **Prototype:** `static void RemoveFromUList(const int16_t ClanID[2])`
 **Description:** Removes a clan from the userlist.dat file by reading all records and writing back all except the matching clan.
-**Calls:** `ClanIDInList`, `fopen`, `fclose`, `notEncryptRead_s`, `EncryptWrite_s`, `unlink`, `rename`
+**Calls:** `ClanIDInList`, `fopen`, `fclose`, `notEncryptRead_s`, `EncryptWrite_s`, `plat_DeleteFile`, `rename`
 
 ---
 
@@ -1977,7 +1977,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### System_Maint
 **Prototype:** `void System_Maint(void)`
 **Description:** Performs daily system maintenance including news rotation and creation of today's news file.
-**Calls:** `LogDisplayStr`, `unlink`, `rename`, `News_CreateTodayNews`
+**Calls:** `LogDisplayStr`, `plat_DeleteFile`, `rename`, `News_CreateTodayNews`
 
 ---
 
@@ -2051,7 +2051,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### main
 **Prototype:** `int main(int argc, char **argv)`
 **Description:** Entry point for the chew utility; creates compressed GUM archive from a file list with optional Unix attribute preservation.
-**Calls:** `strlcpy`, `fopen`, `fgets`, `GetToken`, `AddDir`, `AddGUM`, `unlink`, `fclose`
+**Calls:** `strlcpy`, `fopen`, `fgets`, `GetToken`, `AddDir`, `AddGUM`, `plat_DeleteFile`, `fclose`
 
 ---
 
@@ -2123,7 +2123,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### IBBS_SendQueuedResults
 **Prototype:** `void IBBS_SendQueuedResults(void)`
 **Description:** Reads pktqout.dat file, deserializes queued packets, and resends them to their destinations; deletes file on completion.
-**Calls:** `fopen`, `notEncryptRead_s`, `EncryptRead`, `malloc`, `CheckMem`, `IBBS_SendPacket`, `free`, `fclose`, `unlink`, `System_Error`, `LogStr`
+**Calls:** `fopen`, `notEncryptRead_s`, `EncryptRead`, `malloc`, `CheckMem`, `IBBS_SendPacket`, `free`, `fclose`, `plat_DeleteFile`, `System_Error`, `LogStr`
 
 ---
 
@@ -2151,7 +2151,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### RemoveFromUList
 **Prototype:** `void RemoveFromUList(const int16_t ClanID[2])`
 **Description:** Removes a clan from userlist.dat by reading, filtering, and rewriting the file; called by inter-BBS packet handlers.
-**Calls:** `ClanIDInList`, `fopen`, `notEncryptRead_s`, `EncryptWrite_s`, `fclose`, `LogStr`, `unlink`, `rename`
+**Calls:** `ClanIDInList`, `fopen`, `notEncryptRead_s`, `EncryptWrite_s`, `fclose`, `LogStr`, `plat_DeleteFile`, `rename`
 
 ---
 
@@ -2214,7 +2214,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### IBBS_BackupMaint
 **Prototype:** `static void IBBS_BackupMaint(void)`
 **Description:** Reads backup.dat; restores stale packets (>LostDays old): PT_CLANMOVE re-adds clan, PT_ATTACK returns troops; rewrites active packets only.
-**Calls:** `fopen`, `notEncryptRead_s`, `DaysBetween`, `EncryptRead_s`, `EncryptRead`, `IBBS_AddToGame`, `ReturnLostAttack`, `fseek`, `malloc`, `CheckMem`, `CheckedEncryptWrite`, `free`, `fclose`, `LogDisplayStr`, `unlink`, `rename`
+**Calls:** `fopen`, `notEncryptRead_s`, `DaysBetween`, `EncryptRead_s`, `EncryptRead`, `IBBS_AddToGame`, `ReturnLostAttack`, `fseek`, `malloc`, `CheckMem`, `CheckedEncryptWrite`, `free`, `fclose`, `LogDisplayStr`, `plat_DeleteFile`, `rename`
 
 ---
 
@@ -2242,7 +2242,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### IBBS_TravelMaint
 **Prototype:** `static void IBBS_TravelMaint(void)`
 **Description:** Reads leaving.dat and processes active inter-BBS travel; sends PT_CLANMOVE packets for travelers arriving at destination BBSes.
-**Calls:** `fopen`, `notEncryptRead_s`, `GetClan`, `FreeClanMembers`, `InitClan`, `IBBS_UpdateLeavingClan`, `s_clan_s`, `s_pc_s`, `IBBS_SendPacket`, `unlink`
+**Calls:** `fopen`, `notEncryptRead_s`, `GetClan`, `FreeClanMembers`, `InitClan`, `IBBS_UpdateLeavingClan`, `s_clan_s`, `s_pc_s`, `IBBS_SendPacket`, `plat_DeleteFile`
 
 ---
 
@@ -3010,7 +3010,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### User_Maint
 **Prototype:** `void User_Maint(void)`
 **Description:** Performs daily maintenance on all clans: resets daily flags, revives unconscious members, validates experience, removes NPC members, fixes item ownership, and writes updated data.
-**Calls:** `LogDisplayStr`, `fopen`, `fclose`, `System_Error`, `notEncryptRead_s`, `EncryptRead_s`, `malloc`, `CheckMem`, `ClearFlags`, `Empire_Maint`, `UnequipItemsFromPC`, `EncryptWrite_s`, `free`, `unlink`, `rename`
+**Calls:** `LogDisplayStr`, `fopen`, `fclose`, `System_Error`, `notEncryptRead_s`, `EncryptRead_s`, `malloc`, `CheckMem`, `ClearFlags`, `Empire_Maint`, `UnequipItemsFromPC`, `EncryptWrite_s`, `free`, `plat_DeleteFile`, `rename`
 
 ---
 
@@ -3408,7 +3408,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### Reset
 **Prototype:** `static void Reset(void)`
 **Description:** Clears all game session files (clans, trades, NPC data), reinitializes IBBS, resets village state, and updates news with reset notification.
-**Calls:** `unlink`, `KillAlliances`, `IBBS_Create`, `IBBS_UpdateRecon`, `Village_Reset`, `rename`, `News_CreateTodayNews`, `News_AddNews`
+**Calls:** `plat_DeleteFile`, `KillAlliances`, `IBBS_Create`, `IBBS_UpdateRecon`, `Village_Reset`, `rename`, `News_CreateTodayNews`, `News_AddNews`
 
 ---
 
@@ -3548,7 +3548,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### IBBS_HandleQueuedPackets
 **Prototype:** `void IBBS_HandleQueuedPackets(void)`
 **Description:** Processes pktqin.dat containing queued inbound packets; validates age and game ID, routes based on packet type, and deletes file on completion.
-**Calls:** `fopen`, `fclose`, `unlink`, `notEncryptRead_s`, `fseek`, `DaysBetween`, `strcasecmp`, `CheckSourceID`, `LogStr`, `LogDisplayStr`, `HandleSpyPacket`, `HandleAttackPacket`
+**Calls:** `fopen`, `fclose`, `plat_DeleteFile`, `notEncryptRead_s`, `fseek`, `DaysBetween`, `strcasecmp`, `CheckSourceID`, `LogStr`, `LogDisplayStr`, `HandleSpyPacket`, `HandleAttackPacket`
 
 ---
 
@@ -3611,7 +3611,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### DeleteFound
 **Prototype:** `static void DeleteFound(const char *fname, void *cbdata)`
 **Description:** Callback that deletes a found message file from netmail directory.
-**Calls:** `unlink`, `LogDisplayStr`, `snprintf`, `FileName`
+**Calls:** `plat_DeleteFile`, `LogDisplayStr`, `snprintf`, `FileName`
 
 ---
 
@@ -3625,14 +3625,14 @@ This document lists all functions defined in the Clans source files, their proto
 ### MoveToBad
 **Prototype:** `static void MoveToBad(const char *szOldFilename)`
 **Description:** Renames a file by appending .bad extension for quarantine; deletes any existing .bad file first.
-**Calls:** `snprintf`, `unlink`, `rename`
+**Calls:** `snprintf`, `plat_DeleteFile`, `rename`
 
 ---
 
 ### IBBS_PacketIn
 **Prototype:** `void IBBS_PacketIn(void)`
 **Description:** Main inbound packet processor: scans inbound directories for CLxxx*.IDy packet files, validates routing and message files, processes or quarantines them, and handles world.ndx updates.
-**Calls:** `LogDisplayStr`, `strlcpy`, `snprintf`, `FilesOrderedByDate`, `System_Error`, `FreeFileList`, `atoi`, `CheckSourceID`, `IBBS_ProcessPacket`, `unlink`, `DeleteMessageWithFile`, `MoveToBad`, `_fsopen`, `fclose`, `rename`, `DisplayStr`, `FileName`
+**Calls:** `LogDisplayStr`, `strlcpy`, `snprintf`, `FilesOrderedByDate`, `System_Error`, `FreeFileList`, `atoi`, `CheckSourceID`, `IBBS_ProcessPacket`, `plat_DeleteFile`, `DeleteMessageWithFile`, `MoveToBad`, `_fsopen`, `fclose`, `rename`, `DisplayStr`, `FileName`
 
 ---
 

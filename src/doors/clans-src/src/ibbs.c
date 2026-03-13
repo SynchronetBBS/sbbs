@@ -362,7 +362,7 @@ void IBBS_SendQueuedResults(void)
 			free(PacketData);
 		}
 		fclose(fp);
-		unlink("pktqout.dat");
+		plat_DeleteFile("pktqout.dat");
 	}
 }
 
@@ -484,7 +484,7 @@ void RemoveFromUList(const int16_t ClanID[2])
 	fclose(fpNewUList);
 
 	// rename file
-	unlink("userlist.dat");
+	plat_DeleteFile("userlist.dat");
 	rename("userlist.new", "userlist.dat");
 }
 /* Function Procedure:
@@ -818,7 +818,7 @@ static void IBBS_BackupMaint(void)
 	fclose(fpNew);
 	fclose(fpOld);
 
-	unlink("backup.dat");
+	plat_DeleteFile("backup.dat");
 	rename("backup.new", "backup.dat");
 }
 
@@ -1001,7 +1001,7 @@ static void IBBS_TravelMaint(void)
 		InitClan(&TmpClan);
 	}
 	fclose(fpLeavingDat);
-	unlink("leaving.dat");
+	plat_DeleteFile("leaving.dat");
 }
 
 
@@ -2233,24 +2233,24 @@ void IBBS_LeagueInfo(void)
 static void Reset(void)
 {
 	// Delete unwanted files here
-	unlink("clans.msj");
-	unlink("clans.pc");
-	unlink("disband.dat");
-	unlink("trades.dat");
-	unlink("public.dat");
-	unlink("pawn.dat");
-	unlink("clans.npx");
+	plat_DeleteFile("clans.msj");
+	plat_DeleteFile("clans.pc");
+	plat_DeleteFile("disband.dat");
+	plat_DeleteFile("trades.dat");
+	plat_DeleteFile("public.dat");
+	plat_DeleteFile("pawn.dat");
+	plat_DeleteFile("clans.npx");
 
 	KillAlliances();
 
-	unlink("ally.dat");
+	plat_DeleteFile("ally.dat");
 
 	// delete IBBS files
-	unlink("ibbs.dat");
-	unlink("ipscores.dat");
-	unlink("userlist.dat");
-	unlink("backup.dat");
-	unlink("leaving.dat");
+	plat_DeleteFile("ibbs.dat");
+	plat_DeleteFile("ipscores.dat");
+	plat_DeleteFile("userlist.dat");
+	plat_DeleteFile("backup.dat");
+	plat_DeleteFile("leaving.dat");
 
 	// create a new IBBS.DAT file and then send recons
 	IBBS_Create();
@@ -2260,7 +2260,7 @@ static void Reset(void)
 	Village_Reset();
 
 	// update news
-	unlink("yest.asc");
+	plat_DeleteFile("yest.asc");
 	rename("today.asc", "yest.asc");
 	News_CreateTodayNews();
 	News_AddNews("|0A \xaf\xaf\xaf |0CReset received from LC!\n\n");
@@ -2871,7 +2871,7 @@ void IBBS_HandleQueuedPackets(void)
 			}
 		}
 		fclose(fp);
-		unlink("pktqin.dat");
+		plat_DeleteFile("pktqin.dat");
 	}
 }
 
@@ -3270,7 +3270,7 @@ static void DeleteFound(const char *fname, void *cbdata)
 	char msg[256];
 	snprintf(msg, sizeof(msg), "|08* |07Deleting %s from netmail directory\n", FileName(fname));
 	LogDisplayStr(msg);
-	unlink(fname);
+	plat_DeleteFile(fname);
 }
 
 static void DeleteMessageWithFile(const char *pszFileName, tIBInfo *InterBBSInfo)
@@ -3283,7 +3283,7 @@ static void MoveToBad(const char *szOldFilename)
 	char szNewFileName[PATH_SIZE + 4];
 
 	snprintf(szNewFileName, sizeof(szNewFileName), "%s.bad", szOldFilename);
-	unlink(szNewFileName);
+	plat_DeleteFile(szNewFileName);
 	rename(szOldFilename, szNewFileName);
 }
 
@@ -3362,7 +3362,7 @@ void IBBS_PacketIn(void)
 					}
 					else {
 						/* delete it */
-						unlink(*fp);
+						plat_DeleteFile(*fp);
 						/* And try to delete *.msg files that had it attached */
 						DeleteMessageWithFile(*fp, &InterBBSInfo);
 					}
@@ -3397,7 +3397,7 @@ void IBBS_PacketIn(void)
 				if (IBBS.Data.StrictMsgFile && !CheckMessageFile(*fpath, &InterBBSInfo, AllowedSourceID)) {
 					snprintf(szString, sizeof(szString), "|08x |12No valid msg file packet %s, renaming to world.bad\n", fn);
 					LogDisplayStr(szString);
-					unlink("world.bad");
+					plat_DeleteFile("world.bad");
 					rename(*fpath, "world.bad");
 				}
 				else {
@@ -3406,7 +3406,7 @@ void IBBS_PacketIn(void)
 						LogDisplayStr("|08- |07new world.ndx found.\n");
 						// found it
 						fclose(fp);
-						unlink("world.ndx");
+						plat_DeleteFile("world.ndx");
 						rename(*fpath, "world.ndx");
 					}
 				}

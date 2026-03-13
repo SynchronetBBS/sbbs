@@ -95,7 +95,7 @@ void Maintenance(void)
 	PS_Maint();
 
 	// remove disbanding user names
-	unlink("disband.dat");
+	plat_DeleteFile("disband.dat");
 
 	Alliance_Maint();
 

@@ -343,7 +343,7 @@ void System_Maint(void)
 	LogDisplayStr("* System_Maint()\n");
 
 	// Update News
-	unlink("yest.asc");
+	plat_DeleteFile("yest.asc");
 	rename("today.asc", "yest.asc");
 	News_CreateTodayNews();
 

@@ -28,18 +28,18 @@ bool CreateSemaphor(uint16_t Node)
 	fprintf(fp, "Node: %" PRIu16 "\n", Node);
 	fclose(fp);
 	if (link(fname, "online.flg") == 0) {
-		unlink(fname);
+		plat_DeleteFile(fname);
 		return true;
 	}
 	if (stat(fname, &st)) {
-		unlink(fname);
+		plat_DeleteFile(fname);
 		return false;
 	}
 	if (st.st_nlink == 2) {
-		unlink(fname);
+		plat_DeleteFile(fname);
 		return true;
 	}
-	unlink(fname);
+	plat_DeleteFile(fname);
 	return false;
 #else
 	fp = fopen("online.flg", "w+x");
@@ -65,5 +65,5 @@ void WaitSemaphor(uint16_t Node)
 
 void RemoveSemaphor(void)
 {
-	unlink("online.flg");
+	plat_DeleteFile("online.flg");
 }

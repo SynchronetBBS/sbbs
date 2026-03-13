@@ -38,8 +38,8 @@ This document tracks which functions directly (D) or transitively (T) perform I/
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
 | CreateSemaphor | D | D |  |  |  |  |  | Y |
-| WaitSemaphor | T | T |  | T |  |  |  | Y |
-| RemoveSemaphor | D |  |  |  |  |  |  | Y |
+| WaitSemaphor | T | T |  | T |  |  |  |  |
+| RemoveSemaphor | D |  |  |  |  |  |  |  |
 
 ---
 
@@ -242,12 +242,12 @@ This document tracks which functions directly (D) or transitively (T) perform I/
 
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
-| _fsopen | D | D |  |  |  |  |  | Y |
-| delay |  |  |  |  |  |  |  | Y |
+| _fsopen | D | D |  |  |  |  |  |  |
+| delay |  |  |  |  |  |  |  |  |
 | FileName |  |  |  |  |  |  |  |  |
 | FreeFileList |  |  |  |  |  |  |  |  |
-| FilesOrderedByDate |  | D |  |  |  |  |  | Y |
-| fullpath |  | D |  |  |  |  |  | Y |
+| FilesOrderedByDate |  | D |  |  |  |  |  |  |
+| fullpath |  | D |  |  |  |  |  |  |
 
 ---
 
@@ -255,10 +255,10 @@ This document tracks which functions directly (D) or transitively (T) perform I/
 
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
-| display_win32_error |  |  |  | D |  |  |  | Y |
+| display_win32_error |  |  |  | D |  |  |  |  |
 | FileName |  |  |  |  |  |  |  |  |
 | FreeFileList |  |  |  |  |  |  |  |  |
-| FilesOrderedByDate |  | D |  |  |  |  |  | Y |
+| FilesOrderedByDate |  | D |  |  |  |  |  |  |
 
 ---
 
@@ -324,8 +324,8 @@ These are safest to test and least likely to have side effects:
 
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
-| News_AddNews |  |  |  | T |  | T | T |  |
-| News_ReadNews | T | T | T | T | T | T | T |  |
+| News_AddNews |  |  |  | T |  | T | T | Y |
+| News_ReadNews | T | T | T | T | T | T | T | Y |
 | News_CreateTodayNews | T |  |  | T |  | T | T |  |
 
 ---
@@ -334,7 +334,7 @@ These are safest to test and least likely to have side effects:
 
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
-| Maintenance | T | T | T | T | T | T | T | Y |
+| Maintenance | T | T | T | T | T | T | T |  |
 
 ---
 
@@ -436,7 +436,7 @@ These are safest to test and least likely to have side effects:
 | RejectTrade | T | T |  | T |  | T | T |  |
 | Trades_CheckTrades | T | T | T | T | T | T | T |  |
 | Trades_MakeTrade | T | T | T | T | T | T | T |  |
-| Trades_Maint | T | T |  |  |  |  |  | Y |
+| Trades_Maint | T | T |  |  |  |  |  |  |
 
 ---
 
@@ -533,7 +533,7 @@ These are safest to test and least likely to have side effects:
 | Alliances_Init | T | T |  | T |  | T | T |  |
 | Alliances_Close | T |  |  |  |  |  | D |  |
 | DeleteAlliance | T | T |  | T |  | T | T |  |
-| KillAlliances | T | T |  | T |  | T | T | Y |
+| KillAlliances | T | T |  | T |  | T | T |  |
 
 ---
 
@@ -549,7 +549,7 @@ These are safest to test and least likely to have side effects:
 | ShowAlliances |  |  | T | T | T | T | T |  |
 | EnterAlliance | T | T | T | T | T | T | T |  |
 | FormAlliance |  |  |  | T | T | T | T |  |
-| KillAlliance | T | T |  | T | T | T | T | Y |
+| KillAlliance | T | T |  | T | T | T | T |  |
 | Alliance_Maint |  |  |  |  |  | D |  |  |
 
 ---
@@ -569,11 +569,11 @@ These are safest to test and least likely to have side effects:
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
 | main | T | T |  | T |  | T | T |  |
-| DeleteClan | T | T |  | T |  | T | T | Y |
+| DeleteClan | T | T |  | T |  | T | T |  |
 | InitVillage | T | T |  | T |  | T | T |  |
 | UpdateVillage | T | T |  | T |  | T | T |  |
 | RejectTrade | T | T |  | T |  | T | T |  |
-| RemoveFromUList | T | T |  | T |  | T |  | Y |
+| RemoveFromUList | T | T |  | T |  | T |  |  |
 | ClanIDInList |  | D |  |  |  | D |  |  |
 | RemoveFromIPScores | T | T |  | T |  | T | T |  |
 | FreeClan |  |  |  |  |  |  |  |  |
@@ -620,7 +620,7 @@ These are safest to test and least likely to have side effects:
 |---|---|---|---|---|---|---|---|---|
 | GetColourString |  |  |  |  |  |  |  |  |
 | PipeToAnsi |  |  |  |  |  |  |  |  |
-| DisplayScores | T | T |  | T |  | T |  |  |
+| DisplayScores | T | T |  | T |  | T |  | Y |
 | SendScoreData |  |  |  |  |  |  | D |  |
 | ProcessScoreData | T | T |  |  |  |  | D |  |
 | LeagueScores |  | D |  | D |  | D |  |  |
@@ -639,9 +639,9 @@ These are safest to test and least likely to have side effects:
 | EditOption | T | T | T | T |  | T | T |  |
 | DosHelp |  | D |  | D |  |  |  |  |
 | GenerateGameID |  |  |  |  |  |  |  |  |
-| GoReset | D |  |  | D |  | D | D | Y |
+| GoReset | D |  |  | D |  | D | D |  |
 | News_CreateTodayNews | D |  |  | D |  | D | D |  |
-| News_AddNews |  |  |  | D |  | D | D |  |
+| News_AddNews |  |  |  | D |  | D | D | Y |
 | ClearFlags |  |  |  |  |  |  |  |  |
 | InitEmpire |  |  |  |  |  |  |  |  |
 | CreateVillageDat | D |  |  |  | D |  |  |  |
@@ -660,7 +660,7 @@ These are safest to test and least likely to have side effects:
 | ShowHelp |  |  |  | D |  | D | D |  |
 | ODCmdLineHandler | T | T |  | T |  | T | T |  |
 | ODCmdLineFlagHandler | T | T | T | T | T | T | T |  |
-| System_Maint | T |  |  | T |  | T | T | Y |
+| System_Maint | T |  |  | T |  | T | T |  |
 | System_Close_AtExit | T | T |  | T |  | T | T |  |
 | System_Close | T | T |  | T |  | T | T |  |
 | System_Init | T | T | T | T | T | T | T |  |
@@ -712,7 +712,7 @@ These are safest to test and least likely to have side effects:
 | Door_AllowScreenPause |  |  |  |  |  | D |  |  |
 | door_pause |  |  | D | D |  | D | D |  |
 | rputs |  |  |  | D | T | D | D |  |
-| LogToWhatever | D |  |  | D |  | D |  |  |
+| LogToWhatever | D |  |  | D |  | D |  | Y |
 | GetKey |  |  | D |  |  |  |  |  |
 | GetKeyNoWait |  |  | D |  |  |  |  |  |
 | GetAnswer |  |  | D |  |  |  |  |  |
@@ -740,7 +740,7 @@ These are safest to test and least likely to have side effects:
 | MyWriteMessage2 | T | T | T | T | T | T | T |  |
 | Mail_Read | T | T | T | T | T | T | T |  |
 | Mail_Write |  |  | T | T |  | T | T |  |
-| Mail_Maint | T | T |  | T |  | T |  | Y |
+| Mail_Maint | T | T |  | T |  | T |  |  |
 | Mail_RequestAlliance | T | T | T | T | T | T | T |  |
 | Mail_WriteToAllies | T | T | T | T | T | T | T |  |
 | PostMsj | D |  |  |  |  | D | D |  |
@@ -754,7 +754,7 @@ These are safest to test and least likely to have side effects:
 |---|---|---|---|---|---|---|---|---|
 | NPC_GetNPCNdx |  | D |  |  |  |  |  |  |
 | NPC_UpdateNPCNdx | D | D |  | T |  |  |  |  |
-| NPC_Maint | D | D |  | T |  | T | T | Y |
+| NPC_Maint | D | D |  | T |  | T | T |  |
 | NPC_ChatNPC | T | T | T | T |  | T | T |  |
 | ChatVillagers | T | T | T | T |  | T | T |  |
 | NPC_ResetNPCClan |  |  |  |  |  |  |  |  |
@@ -780,10 +780,10 @@ These are safest to test and least likely to have side effects:
 
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
-| main | T | T |  | T |  | T | T | Y |
-| AddGUM | T | T |  | T |  |  | D | Y |
+| main | T | T |  | T |  | T | T |  |
+| AddGUM | T | T |  | T |  |  | D |  |
 | AddDir | D |  |  | D |  |  |  |  |
-| _dos_getftime |  |  |  |  |  |  |  | Y |
+| _dos_getftime |  |  |  |  |  |  |  |  |
 
 ---
 
@@ -797,11 +797,11 @@ These are safest to test and least likely to have side effects:
 | LeagueKillUser | T | D |  | T |  | T | T |  |
 | IBBS_ProcessSpy | T | T |  | T | D | T | T |  |
 | IBBS_ProcessSpyResult | T |  |  | T |  | T |  |  |
-| IBBS_SendQueuedResults | D | D |  | T |  | T | T | Y |
+| IBBS_SendQueuedResults | D | D |  | T |  | T | T |  |
 | EnqueueInPacket | D | D |  |  |  | T |  |  |
 | IBBS_SendDelUser | T | D |  | T |  | T | T |  |
 | ClanIDInList |  | D |  |  |  | D |  |  |
-| RemoveFromUList | D | D |  | T |  | T |  | Y |
+| RemoveFromUList | D | D |  | T |  | T |  |  |
 | AddToUList | D | T |  |  |  | T |  |  |
 | UpdateNodesOnNewUser | T | D |  | T |  | T | T |  |
 | IBBS_LeagueNewUser | T | T |  | T |  | T | T |  |
@@ -810,15 +810,15 @@ These are safest to test and least likely to have side effects:
 | VillageName |  |  |  |  |  | D |  |  |
 | BBSName |  |  |  |  |  | D |  |  |
 | ReturnLostAttack | T | T |  | T |  | T | T |  |
-| IBBS_BackupMaint | D | D |  | T |  | T | T | Y |
+| IBBS_BackupMaint | D | D |  | T |  | T | T |  |
 | AbortTrip | D | D |  | T | D | T | T |  |
 | IBBS_CurrentTravelInfo | T | T | T | T | D | T | T |  |
 | IBBS_UpdateLeavingClan | T | D |  | T |  | T | T |  |
-| IBBS_TravelMaint | T | D |  | T |  | T | T | Y |
+| IBBS_TravelMaint | T | D |  | T |  | T | T |  |
 | GetTroopsTraveling |  |  | T | T | T | T | T |  |
 | IBBS_TravelToBBS | D | D | T | T | T | T | T |  |
 | IBBS_SeeVillages | T | T | T | T | T | T | T |  |
-| IBBS_AddLCLog | D | D |  |  |  | D |  |  |
+| IBBS_AddLCLog | D | D |  |  |  | D |  | Y |
 | IBBS_Destroy |  |  |  |  |  | D | D |  |
 | IBBS_LoginStats |  |  |  | T |  | T | T |  |
 | IBBS_Create |  |  |  |  |  |  | D |  |
@@ -861,7 +861,7 @@ These are safest to test and least likely to have side effects:
 |---|---|---|---|---|---|---|---|---|
 | ConvertStringToAddress |  |  |  |  |  |  |  |  |
 | WriteMessage | D | D |  |  |  |  |  | Y |
-| IBSendFileAttach | T |  |  |  |  | D |  | Y |
+| IBSendFileAttach | T |  |  |  |  | D |  |  |
 
 ---
 
@@ -902,7 +902,7 @@ These are safest to test and least likely to have side effects:
 | GetClanNameID |  | D |  |  |  |  |  |  |
 | GetClan |  | D |  | T |  | T | T |  |
 | User_List |  | D |  | T |  | D |  |  |
-| User_Maint | D | D |  | T |  | T | T | Y |
+| User_Maint | D | D |  | T |  | T | T |  |
 | User_Init | T | T | T | T | T | T | T |  |
 | User_Close | T |  |  |  |  | D | D |  |
 
@@ -1054,9 +1054,9 @@ These are safest to test and least likely to have side effects:
 | main | D | D | T | T |  | T | T |  |
 | ReadFilename |  | D |  |  |  |  |  |  |
 | fseekuc |  | D |  |  |  |  |  |  |
-| GetGUM | D | D |  | T |  | T | T | Y |
-| install | D | D | T | T |  | T | T | Y |
-| upgrade | D | D | T | T |  | T | T | Y |
+| GetGUM | D | D |  | T |  | T | T |  |
+| install | D | D | T | T |  | T | T |  |
+| upgrade | D | D | T | T |  | T | T |  |
 | FileExists |  | D |  |  |  |  |  |  |
 | FreeFiles |  |  |  |  |  |  |  |  |
 | InitFiles |  | D |  | T |  | T | T |  |
@@ -1094,7 +1094,7 @@ These are safest to test and least likely to have side effects:
 
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
-| getPacketFP | D |  |  |  |  | D | T |  |
+| getPacketFP | D |  |  |  |  | D | T | Y |
 | IBBS_SendPacketBuffer | T |  |  | T |  | T | T |  |
 | IBBS_SendSpy | T |  |  | T |  | T | T |  |
 | IBBS_SendAttackPacket | T |  |  |  |  | T | T |  |
@@ -1106,8 +1106,8 @@ These are safest to test and least likely to have side effects:
 | IBBS_UpdateRecon | T |  |  |  |  | T | T |  |
 | IBBS_UpdateReset | T |  |  |  |  | T | T |  |
 | IBBS_LeagueInfo |  |  |  | T | T | T | T |  |
-| Reset | T | T | T | T | T | T | T | Y |
-| IBBS_Reset | T | T | T | T | T | T | T | Y |
+| Reset | T | T | T | T | T | T | T |  |
+| IBBS_Reset | T | T | T | T | T | T | T |  |
 | IBBS_RemoveFromBackup | T | T |  | T |  | T | T |  |
 | IBBS_AddToGame | T | T |  | T |  | T | T |  |
 | ComeBack | T | T |  | T |  | T | T |  |
@@ -1126,18 +1126,18 @@ These are safest to test and least likely to have side effects:
 | HandleAttackPacket |  | D |  |  |  |  |  |  |
 | HandleAttackResultPacket |  | D |  |  |  |  |  |  |
 | HandleSpyPacket | T | T | T | T | T | T | T |  |
-| IBBS_HandleQueuedPackets | T | T | T | T | T | T | T | Y |
+| IBBS_HandleQueuedPackets | T | T | T | T | T | T | T |  |
 | HandleSpyResultPacket | T | T |  | T |  | T |  |  |
 | HandleNewNDXPacket | T | T |  | T |  | T | T |  |
 | HandleUserListPacket | T | T |  | T |  | T | T |  |
-| IBBS_ProcessPacket | T | T | T | T | T | T | T |  |
+| IBBS_ProcessPacket | T | T | T | T | T | T | T | Y |
 | MessageFileIterate | T | T |  | T |  | T | T |  |
 | SkipAfterFound |  |  |  |  |  | D |  |  |
 | SetSkip |  |  |  |  |  |  | D |  |
 | CheckMessageFile | T | T |  | T |  | T | T |  |
-| DeleteFound | D |  |  | T |  | D |  | Y |
+| DeleteFound | D |  |  | T |  | D |  |  |
 | DeleteMessageWithFile | T | T |  | T |  | T | T |  |
-| MoveToBad | D |  |  |  |  |  |  | Y |
+| MoveToBad | D |  |  |  |  |  |  |  |
 | IBBS_PacketIn | D | D |  | T |  | T | T | Y |
 | IBBS_Init | T | T |  | T |  | T | T |  |
 | IBBS_Close | T |  |  |  |  | T | T |  |

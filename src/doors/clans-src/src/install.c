@@ -352,7 +352,7 @@ static int GetGUM(FILE *fpGUM)
 
 	if (strcmp(szFileName, "UnixAttr.DAT") == 0) {
 #ifdef __unix__
-		unlink(szFileName);
+		plat_DeleteFile(szFileName);
 #else
 		fseekuc(fpGUM, lCompressSize);
 		return 1;
@@ -462,7 +462,7 @@ static void install(void)
 			chmod(szFileName, tMode);
 		}
 		fclose(fpAttr);
-		unlink("UnixAttr.DAT");
+		plat_DeleteFile("UnixAttr.DAT");
 	}
 #endif
 
@@ -515,7 +515,7 @@ static void upgrade(void)
 			chmod(szFileName, tMode);
 		}
 		fclose(fpAttr);
-		unlink("UnixAttr.DAT");
+		plat_DeleteFile("UnixAttr.DAT");
 	}
 #endif
 

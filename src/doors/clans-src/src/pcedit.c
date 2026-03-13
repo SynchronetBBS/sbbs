@@ -320,7 +320,7 @@ static void DeleteClan(int16_t ClanID[2])
 		fclose(fpNewPC);
 
 		/* delete old file, rename new one */
-		unlink(PLAYER_DATAFILE);
+		plat_DeleteFile(PLAYER_DATAFILE);
 		rename(NEW_PLAYER_DATAFILE, PLAYER_DATAFILE);
 	}
 
@@ -344,7 +344,7 @@ static void DeleteClan(int16_t ClanID[2])
 				puts("Negative Message Length\n");
 				fclose(OldMessage);
 				fclose(NewMessage);
-				unlink(TEMP_FILENAME);
+				plat_DeleteFile(TEMP_FILENAME);
 				exit(EXIT_FAILURE);
 			}
 			if ((Message.FromClanID[0] == ClanID[0] &&
@@ -372,7 +372,7 @@ static void DeleteClan(int16_t ClanID[2])
 		fclose(OldMessage);
 
 		// delete old, and rename new
-		unlink(szFileName);
+		plat_DeleteFile(szFileName);
 		rename(TEMP_FILENAME, szFileName);
 	}
 
@@ -584,7 +584,7 @@ static void RemoveFromUList(const int16_t ClanID[2])
 	fclose(fpNewUList);
 
 	// rename file
-	unlink(USERLIST_DATAFILE);
+	plat_DeleteFile(USERLIST_DATAFILE);
 	rename(TEMP_FILENAME, USERLIST_DATAFILE);
 }
 

@@ -1495,7 +1495,7 @@ void Mail_Maint(void)
 		fclose(OldMessage);
 
 		// delete old, and rename new
-		unlink("clans.msj");
+		plat_DeleteFile("clans.msj");
 		rename("clansmsj.new", "clans.msj");
 	}
 }

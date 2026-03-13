@@ -123,7 +123,7 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 	if (fwrite(hbuf, sizeof(hbuf), 1, hFile) != 1) {
 		/* On failure, close file, erase file, and return false */
 		fclose(hFile);
-		unlink(szFileName);
+		plat_DeleteFile(szFileName);
 		return(false);
 	}
 
@@ -134,7 +134,7 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 	if (fwrite(pszText, nTextSize, 1, hFile) != 1) {
 		/* On failure, close file, erase file, and return false */
 		fclose(hFile);
-		unlink(szFileName);
+		plat_DeleteFile(szFileName);
 		return(false);
 	}
 

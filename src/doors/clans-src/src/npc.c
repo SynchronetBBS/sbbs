@@ -162,7 +162,7 @@ void NPC_Maint(void)
 	CheckMem(NPCInfo);
 
 	// delete old CLANS.NPX file
-	unlink(szClansNPX);
+	plat_DeleteFile(szClansNPX);
 
 	fpNPX = fopen(szClansNPX, "wb");
 	if (!fpNPX) {

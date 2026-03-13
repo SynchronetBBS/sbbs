@@ -141,7 +141,7 @@ void User_ResetAllVotes(void)
 	fclose(fpOldPC);
 	fclose(fpNewPC);
 
-	unlink(ST_CLANSPCFILE);
+	plat_DeleteFile(ST_CLANSPCFILE);
 	rename(ST_NEWPCFILE, ST_CLANSPCFILE);
 
 	PClan.ClanRulerVote[0] = -1;
@@ -243,7 +243,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName)
 		fclose(fpNewPC);
 
 		/* delete old file, rename new one */
-		unlink(ST_CLANSPCFILE);
+		plat_DeleteFile(ST_CLANSPCFILE);
 		rename(ST_NEWPCFILE, ST_CLANSPCFILE);
 	}
 
@@ -262,7 +262,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName)
 
 			if (Message.Data.Length < 0) {
 				fclose(NewMessage);
-				unlink("clansmsj.new");
+				plat_DeleteFile("clansmsj.new");
 				System_Error("Message with negative length in DeleteClan()");
 			}
 			if ((Message.FromClanID[0] == ClanID[0] &&
@@ -290,7 +290,7 @@ void DeleteClan(int16_t ClanID[2], char *szClanName)
 		fclose(OldMessage);
 
 		// delete old, and rename new
-		unlink("clans.msj");
+		plat_DeleteFile("clans.msj");
 		rename("clansmsj.new", "clans.msj");
 	}
 
@@ -2580,7 +2580,7 @@ void User_Maint(void)
 		fclose(fpNewPC);
 
 		/* delete old file, rename new one */
-		unlink(ST_CLANSPCFILE);
+		plat_DeleteFile(ST_CLANSPCFILE);
 		rename(ST_NEWPCFILE, ST_CLANSPCFILE);
 	}
 }
