@@ -1,0 +1,183 @@
+Building and Installing The Clans
+===============================================================================
+
+
+QUICK START
+===============================================================================
+
+  make -j8
+  make install
+
+  Optional: install devkit tools for content creation:
+
+    make install-devkit
+
+  Note: On BSD systems (FreeBSD, OpenBSD, NetBSD, etc.), substitute 'gmake'
+  for 'make' in all commands below.
+
+  By default, installation goes to /opt/clans/.  To install to a different
+  directory (e.g., for a Synchronet BBS):
+
+    make install INSTALLDIR=/sbbs/xtrn/clans
+
+
+PREREQUISITES
+===============================================================================
+
+  Required:
+    - C17 compiler (GCC or Clang)
+    - GNU make
+    - POSIX-compatible system (FreeBSD, Linux, macOS, Windows with MinGW)
+
+  Optional (for devkit):
+    - Unix shell environment (for integration tests)
+
+
+BUILDING
+===============================================================================
+
+  Build the game only:
+
+    make -j8
+
+  Build the devkit tools only:
+
+    make -j8 devkit
+
+  Build both game and devkit:
+
+    make -j8 all
+
+  Debug build (with symbols and compiler warnings):
+
+    make -j8 DEBUG=1
+
+  Windows (native build):
+    Open src/clans.sln in Visual Studio and build.
+
+  Windows (cross-compilation from Linux/FreeBSD, from src/ directory):
+
+    make -j8 CC=x86_64-w64-mingw32-gcc         # Win64
+    make -j8 CC=i686-w64-mingw32-gcc           # Win32
+
+  Test the build:
+
+    make test
+
+
+INSTALLING
+===============================================================================
+
+  Install the game to a staging directory (for packaging):
+
+    make install DESTDIR=/tmp/staging PREFIX=/opt
+
+  This installs to:  /tmp/staging/opt/clans/
+
+  Install directly to system (requires privilege):
+
+    make install PREFIX=/opt
+
+  This installs to:  /opt/clans/
+
+
+DEVKIT INSTALLATION
+===============================================================================
+
+  The devkit (quest compiler tools) is optional.  Install it separately:
+
+    make install-devkit DESTDIR=/tmp/staging PREFIX=/opt
+
+  Installs to:  /tmp/staging/opt/clans/
+
+
+UNINSTALLING
+===============================================================================
+
+  Remove the game:
+
+    make uninstall PREFIX=/opt
+
+  Remove the devkit:
+
+    make uninstall-devkit PREFIX=/opt
+
+
+INSTALL OPTIONS
+===============================================================================
+
+  INSTALLDIR      Installation directory (default: /opt/clans/)
+                  Simplest option for end users:
+
+                    make install INSTALLDIR=/usr/local/clans/
+
+  PREFIX          Parent directory (default: /opt)
+                  Game installs to: $(PREFIX)/clans/
+
+  DESTDIR         Staging root for packagers (default: empty)
+                  Used with PREFIX: $(DESTDIR)$(PREFIX)/clans/
+
+  Example (packager build):
+
+    make install DESTDIR=/tmp/buildroot PREFIX=/usr/games
+    # Installs to: /tmp/buildroot/usr/games/clans/
+
+
+DIRECTORY STRUCTURE
+===============================================================================
+
+  The installation creates clans/ containing:
+
+    Game binaries and wrappers:
+      clans, reset, config, pcedit (wrapper scripts/executables)
+      clans.<os>.<machine>.<flavour>, reset.<os>.<machine>.<flavour>, etc.
+      install (wrapper script/executable)
+
+    Game data:
+      clans.pak (compiled game data)
+      outbound/ (game data directory)
+
+    Game documentation and configuration:
+      clans.txt, player.txt, whatsnew.txt, questgen.txt, prompt.md
+      quests.ini, quests.hlp, clans.ini, route.smp, worldndx.smp
+      clanad.ans, lockout.txt, news.txt, runclans.bat
+
+  With devkit, additional tools and files are installed:
+
+    Devkit tool wrappers and binaries:
+      chew, langcomp, mcomp, mitems, mspells, mclass, makenpc
+      ecomp, makepak, qtest (wrapper scripts/executables)
+      chew.<os>.<machine>.<flavour>, langcomp.<os>.<machine>.<flavour>, etc.
+
+    Devkit documentation and example files:
+      clandev.txt, utf8.txt, qtest-scripting.txt, example.ini
+      pak.lst, genall.mak, genall.bat
+      event1.evt, event2.evt, event3.evt, event4.evt, event5.evt
+
+
+PLATFORM NOTES
+===============================================================================
+
+  POSIX systems (Linux, FreeBSD, macOS, OpenBSD, NetBSD, etc.):
+    Standard POSIX build.  GCC or Clang both work.
+    On BSD systems, use 'gmake' instead of 'make' in all commands.
+
+  Windows:
+    Native build: Open src/clans.sln in Visual Studio.
+    Cross-compile from Linux/FreeBSD: Use MinGW64 with make.
+    Installation uses make (not supported natively on Windows).
+
+
+TROUBLESHOOTING
+===============================================================================
+
+  Build fails with "make: not found":
+    Install GNU make (FreeBSD: pkg install gmake, Linux: apt install make)
+
+  Build fails with compiler error about stdint.h:
+    Ensure C17 or later compiler (gcc -std=c17, clang -std=c17)
+
+  Install fails with permission denied:
+    Use DESTDIR for staging: make install DESTDIR=/tmp/staging
+
+  For detailed build information, consult docs/notes.txt
