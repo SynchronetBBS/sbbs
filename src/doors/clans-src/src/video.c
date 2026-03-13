@@ -180,7 +180,7 @@ void ScrollUp(void)
 	scroll_rect.Top = (SHORT)(ScrollTop + 1);
 	scroll_rect.Left = 0;
 	scroll_rect.Bottom = (SHORT)bottom;
-	scroll_rect.Right = screen_buffer.dwSize.X;
+	scroll_rect.Right = (SHORT)(screen_buffer.dwSize.X - 1);
 
 	char_info.Attributes = screen_buffer.wAttributes;
 	char_info.Char.UnicodeChar = (TCHAR)' ';
@@ -889,9 +889,11 @@ void ClearArea(int x1, int y1,  int x2, int y2, uint8_t attr)
 	DWORD written = 0;
 	COORD pos = {
 		.X = (SHORT)x1,
+		.Y = (SHORT)y1,
 	};
 
 	for (; y1 <= y2; y1++) {
+		pos.Y = (SHORT)y1;
 		FillConsoleOutputCharacter(std_handle, ' ', len, pos, &written);
 		FillConsoleOutputAttribute(std_handle, attr, len, pos, &written);
 	}
@@ -1282,8 +1284,8 @@ void * save_screen(void)
 
 	rect_rw.Top = 0;
 	rect_rw.Left = 0;
-	rect_rw.Right = screen_buffer.dwSize.X;
-	rect_rw.Bottom = screen_buffer.dwSize.Y;
+	rect_rw.Right = (SHORT)(screen_buffer.dwSize.X - 1);
+	rect_rw.Bottom = (SHORT)(screen_buffer.dwSize.Y - 1);
 
 	ReadConsoleOutput(
 		std_handle,
@@ -1309,8 +1311,8 @@ void restore_screen(void *state)
 
 	rect_write.Top = 0;
 	rect_write.Left = 0;
-	rect_write.Bottom = screen_buffer.dwSize.Y;
-	rect_write.Right = screen_buffer.dwSize.X;
+	rect_write.Bottom = (SHORT)(screen_buffer.dwSize.Y - 1);
+	rect_write.Right = (SHORT)(screen_buffer.dwSize.X - 1);
 
 	WriteConsoleOutput(
 		std_handle,
