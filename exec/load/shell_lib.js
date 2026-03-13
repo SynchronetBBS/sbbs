@@ -671,7 +671,7 @@ function menu_loop()
 			last_str_cmd = cmd;
 			continue;
 		}
-		if(cmd == '/') {
+		if(cmd == '/' && typeof menu.slash_num_input == "function") {
 			cmd = console.getkey(K_UPPER);
 			console.print(cmd);
 			if(cmd >= '1' && cmd <= '9') {
@@ -680,7 +680,7 @@ function menu_loop()
 			}
 			cmd = '/' + cmd;
 		}
-		if(cmd >= '1' && cmd <= '9') {
+		if(cmd >= '1' && cmd <= '9' && typeof menu.num_input == "function") {
 			menu.num_input(cmd);
 			continue;
 		}
