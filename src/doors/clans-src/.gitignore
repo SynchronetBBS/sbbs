@@ -8,5 +8,6 @@ src/mstrings.h
 tests/tmp
 test
 .claude
+Clans-*.tar.gz
 Clans-*.zip
 ClansDevKit-*.zip

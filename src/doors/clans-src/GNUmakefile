@@ -91,14 +91,14 @@ devkit-installer: devkit-binaries native-devkit
 
 .PHONY: dist
 dist:
-	rm -rf clans-0.97b2
-	mkdir clans-0.97b2
-	git archive HEAD -- . | (cd clans-0.97b2 && tar -xf -)
-	rm clans-0.97b2/odoors
-	(cd ../.. && git archive HEAD -- odoors) | (cd clans-0.97b2 && tar -xf -)
-	tar -cf clans-0.97b2.tar clans-0.97b2
-	gzip clans-0.97b2.tar
-	rm -rf clans-0.97b2
+	rm -rf Clans-0.97b2
+	mkdir Clans-0.97b2
+	git archive HEAD -- . | (cd Clans-0.97b2 && tar -xf -)
+	rm Clans-0.97b2/odoors
+	(cd ../.. && git archive HEAD -- odoors) | (cd Clans-0.97b2 && tar -xf -)
+	tar -cf Clans-0.97b2.tar Clans-0.97b2
+	gzip Clans-0.97b2.tar
+	rm -rf Clans-0.97b2
 
 .PHONY: clean
 clean:
