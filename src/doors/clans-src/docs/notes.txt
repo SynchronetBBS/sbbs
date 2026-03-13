@@ -106,7 +106,7 @@ Modernization work includes:
 
 The OpenDoors library is still used for BBS door integration and is
 linked statically as libODoors.a.  For the GPL v2 license text, see
-docs/gpl.txt.
+LICENSE.
 
 
 Getting Started

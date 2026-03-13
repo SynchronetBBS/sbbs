@@ -53,6 +53,7 @@ installer: binaries data native-devkit
 	cp $(DOOR_BINARIES) $(SRC)stage/gum/
 	cp $(DATA_FILES) $(SRC)stage/gum/
 	cp $(SRC)release/* $(SRC)stage/gum/
+	cp $(SRC)LICENSE $(SRC)stage/gum/
 	mkdir -p $(SRC)stage/gum/outbound
 	cd $(SRC)stage/gum && ls -p1 | grep -v /$ > ../files.lst
 	echo /outbound >> $(SRC)stage/files.lst
@@ -78,6 +79,7 @@ devkit-installer: devkit-binaries native-devkit
 	cp $(SRC)data/races.txt $(SRC)stagedk/gum/
 	cp $(SRC)data/spells.u8.txt $(SRC)stagedk/gum/
 	cp $(SRC)data/clans.u8.txt $(SRC)stagedk/gum/npcs.u8.txt
+	cp $(SRC)LICENSE $(SRC)stagedk/gum/
 	cd $(SRC)stagedk/gum && ls -p1 | grep -v /$ > ../files.lst
 	cd $(SRC)stagedk/gum && $(BINDIR)chew$(NATIVEEXEFILE) ../clandev.gum ../files.lst
 	rm -rf $(SRC)stagedk/gum
