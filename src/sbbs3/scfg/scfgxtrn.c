@@ -477,14 +477,15 @@ void fevents_cfg()
 		uifc.helpbuf =
 			"`Fixed Events:`\n"
 			"\n"
-			"From this menu, you can add/configure non-interactive new user, user\n"
-			"logon and user logout events of the Terminal Server as well as the\n"
-			"system's daily, weekly and monthly off-line events, executed at those\n"
-			"intervals by the Terminal Server Event Thread.\n"
+			"From this menu, you can add/configure new user, user logon, and user\n"
+			"logout events of the Terminal Server as well as the system's daily,\n"
+			"weekly and monthly off-line events, executed at those intervals by the\n"
+			"Terminal Server `Event Thread`.\n"
 			"\n"
-			"If you wish to add interactive new user, logon or logoff events, you\n"
+			"If you wish to add `interactive` new user, logon or logoff external\n"
+			"`programs` (e.g. doors, not in-process modules/scripts) as events, you\n"
 			"probably want to use \"online\" external programs configured to run as\n"
-			"new user, logon or logoff events, respectively.\n"
+			"new user, logon or logoff events, respectively, instead.\n"
 			"\n"
 			"The commands configured for these events may invoke native executables,\n"
 			"shell scripts, Baja or JavaScript modules, or any combination thereof.\n"
@@ -502,7 +503,7 @@ void fevents_cfg()
 				           "`New User Event:`\n"
 				           "\n"
 				           "This is the command line for a program that will execute after a new\n"
-				           "user registration has completed.  The program cannot have user interaction.\n"
+				           "user registration has completed.\n"
 				           SCFG_CMDLINE_PREFIX_HELP
 				           SCFG_CMDLINE_SPEC_HELP
 				           );
@@ -512,12 +513,13 @@ void fevents_cfg()
 				           "`Logon Event:`\n"
 				           "\n"
 				           "This is the command line for a program that will execute during the\n"
-				           "logon sequence of every user.  The program cannot have user interaction.\n"
-				           "The program will be executed after the LOGON message is displayed and\n"
+				           "logon sequence of every user.\n"
+				           "\n"
+				           "The program will be executed after the LOGON messages are displayed and\n"
 				           "before the logon user list is displayed.  If you wish to place a program\n"
-				           "in the logon sequence of users that includes interaction or requires\n"
-				           "account information, you probably want to use an online external\n"
-				           "program configured to run as a logon event.\n"
+				           "(e.g. door) in the logon sequence of users that includes interaction or\n"
+				           "requires account information (e.g. drop files), you probably want to use\n"
+						   "an `Online External Program` configured to run as a logon event, instead.\n"
 				           SCFG_CMDLINE_PREFIX_HELP
 				           SCFG_CMDLINE_SPEC_HELP
 				           );
@@ -528,10 +530,10 @@ void fevents_cfg()
 				           "\n"
 				           "This is the command line for a program that will execute during the\n"
 				           "logout sequence of every user.  This program cannot have user\n"
-				           "interaction because it is executed after carrier is dropped.  If you\n"
+				           "interaction because it is executed after user disconnection.  If you\n"
 				           "wish to have a program execute before carrier is dropped, you probably\n"
 				           "want to use an `Online External Program` configured to run as a logoff\n"
-				           "event.\n"
+				           "event, instead.\n"
 				           SCFG_CMDLINE_PREFIX_HELP
 				           SCFG_CMDLINE_SPEC_HELP
 				           );
