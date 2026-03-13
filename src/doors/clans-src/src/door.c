@@ -183,7 +183,7 @@ static void NoDoorFileHandler(void)
 		/* show title ascii */
 
 		zputs(ST_NODOORFILE);
-		delay(2500);
+		plat_Delay(2500);
 		System_Close();
 	}
 }
@@ -454,7 +454,7 @@ void rputs(const char *string)
 				/* send 24 CR/LF to "clear" line*/
 				for (i = 0; i < od_control.user_screen_length; i++) {
 					od_disp_str("\n\r");
-					delay(10);
+					plat_Delay(10);
 				}
 				pCurChar += 2;
 			}
@@ -470,7 +470,7 @@ void rputs(const char *string)
 			}
 			else if (*(pCurChar+1) == 'D') {
 				/* delay 100 */
-				delay(100);
+				plat_Delay(100);
 				pCurChar += 2;
 			}
 			else if (*(pCurChar+1) == 'R') {
@@ -868,7 +868,7 @@ void Door_Init(bool Local)
 {
 	if (Verbose) {
 		LogDisplayStr("> Door_Init()\n");
-		delay(500);
+		plat_Delay(500);
 	}
 
 	/* force opendoors to NOT show copyright message */

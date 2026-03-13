@@ -140,7 +140,7 @@ noreturn void System_Error(char *szErrorMsg)
 #else
 	DisplayStr("|12System Error: |07");
 	LogDisplayStr(szErrorMsg);
-	delay(1000);
+	plat_Delay(1000);
 #endif
 	System_Close();
 }
@@ -225,7 +225,7 @@ static BOOL ODCmdLineFlagHandler(const char *flag)
 		}
 		else if (strcasecmp(&flag[1], "?") == 0 || strcasecmp(&flag[1], "Help") == 0) {
 			ShowHelp();
-			delay(3000);
+			plat_Delay(3000);
 			System_Close();
 		}
 		else if (strcasecmp(&flag[1], "T") == 0) {
@@ -329,7 +329,7 @@ static BOOL ODCmdLineFlagHandler(const char *flag)
 	}
 	snprintf(szString, sizeof(szString), "|06Invalid parameter \"%s\" |07type |14CLANS /? |07for help\n", flag);
 	zputs(szString);
-	delay(3000);
+	plat_Delay(3000);
 	System_Close();
 	// We shouldn't be able to get here...
 	return true;
@@ -526,7 +526,7 @@ void System_Init(void)
 
 	if (Verbose) {
 		LogDisplayStr("> Config_Init()\n");
-		delay(500);
+		plat_Delay(500);
 	}
 
 	if (!Config_Init(System.Node, NULL))

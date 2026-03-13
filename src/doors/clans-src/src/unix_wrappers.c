@@ -60,7 +60,7 @@ _fsopen(const char *pathname, const char *mode, int shflag)
 }
 
 void
-delay(unsigned msec)
+plat_Delay(unsigned msec)
 {
 	struct timespec ts = {
 		.tv_sec = msec/1000,

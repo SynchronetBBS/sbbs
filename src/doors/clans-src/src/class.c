@@ -124,7 +124,7 @@ void PClass_Init(void)
 {
 	if (Verbose) {
 		LogDisplayStr("> PClass_Init()\n");
-		delay(500);
+		plat_Delay(500);
 	}
 
 	Load_PClasses(Races, false);

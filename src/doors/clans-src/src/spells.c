@@ -77,7 +77,7 @@ void Spells_Init(void)
 
 	if (Verbose) {
 		LogDisplayStr("> Spells_Init()\n");
-		delay(500);
+		plat_Delay(500);
 	}
 
 	SpellsInitialized = true;
@@ -132,7 +132,7 @@ void Spells_Init(void)
 
 	if (Verbose) {
 		LogDisplayStr("> Spells_Init done()\n");
-		delay(500);
+		plat_Delay(500);
 	}
 
 }

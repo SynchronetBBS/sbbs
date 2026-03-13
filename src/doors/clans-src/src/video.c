@@ -395,7 +395,7 @@ void zputs(const char *string)
 				/* send 24 CR/LF to "clear" line*/
 				for (i = 0; i < ScreenLines; i++) {
 					zputs("\n\r");
-					delay(10);
+					plat_Delay(10);
 				}
 				cur_char += 2;
 			}
@@ -411,7 +411,7 @@ void zputs(const char *string)
 			}
 			else if (string[cur_char + 1] == 'D') {
 				/* delay 100 */
-				delay(100);
+				plat_Delay(100);
 				cur_char += 2;
 			}
 			else if (string[cur_char + 1] == 'R') {

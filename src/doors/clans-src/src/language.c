@@ -69,7 +69,7 @@ void Language_Init(char *szLangFile)
 
 	if (Verbose) {
 		LogDisplayStr("> Language_Init()\n");
-		delay(500);
+		plat_Delay(500);
 	}
 
 	/* Read in Language File */

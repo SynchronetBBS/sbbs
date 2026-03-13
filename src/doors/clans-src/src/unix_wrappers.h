@@ -32,8 +32,6 @@
 
 FILE * _fsopen(const char *pathname, const char *mode, int flags);
 
-void delay(unsigned msec);
-
 void FreeFileList(char **fl);
 char **FilesOrderedByDate(const char *path, const char *match, bool *error);
 const char *FileName(const char *path);

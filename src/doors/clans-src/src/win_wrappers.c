@@ -9,6 +9,11 @@
 
 #include "win_wrappers.h"
 
+void plat_Delay(unsigned msec)
+{
+	Sleep(msec);
+}
+
 bool plat_DeleteFile(const char *fname)
 {
 	return DeleteFileA((LPCSTR)fname);

@@ -3427,7 +3427,7 @@ void IBBS_Init(void)
 {
 	if (Verbose) {
 		LogDisplayStr("> IBBS_Init()\n");
-		delay(500);
+		plat_Delay(500);
 	}
 
 	IBBS.Initialized = true;

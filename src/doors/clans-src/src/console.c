@@ -60,7 +60,7 @@ noreturn void System_Error(char *szErrorMsg)
 {
 	zputs("\n|12Error: |07");
 	zputs(szErrorMsg);
-	delay(1000);
+	plat_Delay(1000);
 	ShowTextCursor(true);
 	Video_Close();
 	exit(EXIT_FAILURE);

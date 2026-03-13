@@ -50,7 +50,7 @@ void ClansIni_Init(void)
 
 	if (Verbose) {
 		LogDisplayStr("> ClansIni_Init()\n");
-		delay(500);
+		plat_Delay(500);
 	}
 
 

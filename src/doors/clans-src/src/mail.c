@@ -1461,7 +1461,7 @@ void Mail_Maint(void)
 		NewMessage = fopen("clansmsj.new", "wb");
 		if (!NewMessage) {
 			LogDisplayStr("Error opening temp file\n");
-			sleep(3);
+			plat_Delay(3000);
 			return;
 		}
 

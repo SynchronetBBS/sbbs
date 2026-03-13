@@ -59,7 +59,7 @@ void WaitSemaphor(uint16_t Node)
 			LogDisplayStr("Waiting for online flag to clear\n");
 		if (count == 60)
 			count = 0;
-		sleep(1);
+		plat_Delay(1000);
 	}
 }
 

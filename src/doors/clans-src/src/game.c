@@ -133,7 +133,7 @@ void Game_Init(void)
 {
 	if (Verbose) {
 		LogDisplayStr("> Game_Init()\n");
-		delay(500);
+		plat_Delay(500);
 	}
 
 	Game.Initialized = true;

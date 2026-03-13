@@ -1387,7 +1387,7 @@ void Village_Init(void)
 {
 	if (Verbose) {
 		LogDisplayStr("> Village_Init()\n");
-		delay(500);
+		plat_Delay(500);
 	}
 
 	Village.Initialized = true;
@@ -1407,7 +1407,7 @@ void Village_Init(void)
 
 	if (Verbose) {
 		LogDisplayStr("> Village_Init done()\n");
-		delay(500);
+		plat_Delay(500);
 	}
 
 }
