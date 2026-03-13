@@ -318,6 +318,7 @@ writeln('<p>');
 writeln(format("Download a %s compatible list file %s"
 	,"SyncTERM".link("http://syncterm.net")
 	,"here".link("http://synchro.net/syncterm.lst")));
+writeln("or " + ("Jump to statistics".link("#stats")));
 writeln('<p>');
 writeln('</caption>');
 writeln('<thead>');
@@ -332,11 +333,136 @@ writeln('<th>Networks</th>');
 writeln('<th style="width:1%;">Verification Results</th>');
 writeln('</thead>');
 writeln('<tbody>');
+
+var stats = {
+    version: {},
+    os: {},
+	network: {}
+};
+
 var i;
-for(i in list)
-    bbs_table_entry(i, list[i]);
+for(i in list) {
+	var bbs = list[i];
+	if (bbs.entry
+		&& bbs.entry.autoverify
+		&& bbs.entry.autoverify.last_success
+		&& bbs.entry.autoverify.last_success.result) {
+		ver = bbs.entry.autoverify.last_success.result;
+		var x = ver.indexOf("Version ");
+		if (x > 0) {
+			var num = ver.substring(x + 8);
+			stats.version[num] = (stats.version[num] || 0) + 1;
+		}
+		const prefix = "Synchronet BBS for ";
+		x = ver.indexOf(prefix);
+		if (x == 0) {
+			var os = ver.substring(prefix.length);
+			x = os.indexOf(' ');
+			if (x > 0) {
+				os = os.slice(0, x);
+				stats.os[os] = (stats.os[os] || 0) + 1;
+			}
+		}
+	}
+	for (var n = 0; n < bbs.network.length; ++n) {
+		var net = bbs.network[n].name.replace('-','').replace('_','').toUpperCase();
+		stats.network[net] = (stats.network[net] || 0) + 1;
+	}
+    bbs_table_entry(i, bbs);
+}
+
+function getProcessedStats(dataObj, percentThreshold) {
+    var total = 0;
+    var rawArray = [];
+
+    // Calculate total and convert to array for sorting
+    for (var key in dataObj) {
+        total += dataObj[key];
+        rawArray.push({ label: key, value: dataObj[key] });
+    }
+
+    // Sort descending by value
+    rawArray.sort(function (a, b) { return b.value - a.value });
+
+    var processed = { labels: [], values: [] };
+    var otherCount = 0;
+
+    rawArray.forEach(function(item) {
+        if ((item.value / total) < percentThreshold) {
+            otherCount += item.value;
+        } else {
+            processed.labels.push(item.label);
+            processed.values.push(item.value);
+        }
+    });
+
+    if (otherCount > 0) {
+        processed.labels.push("Other");
+        processed.values.push(otherCount);
+    }
+
+    return processed;
+}
+
+stats.version = getProcessedStats(stats.version, 0.00);
+stats.os = getProcessedStats(stats.os, 0.00);
+stats.network = getProcessedStats(stats.network, 0.01);
+
 writeln('</tbody>');
 writeln('</table>');
+writeln('<hr>');
+writeln('<h1 id="stats" align="center">Statistics</h1>');
+
+writeln('<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>');
+writeln('<div style="display: flex; flex-wrap: wrap; justify-content: space-around;">');
+writeln('  <div style="width: 400px;"><div align="center"><h2><i>Synchronet Versions</i></div><canvas id="verChart"></canvas></div>');
+writeln('  <div style="width: 400px;"><div align="center"><h2><i>Operating Systems</i></div><canvas id="osChart"></canvas></div>');
+writeln('  <div style="width: 400px;"><div align="center"><h2><i>Message Networks</i></div><canvas id="netChart"></canvas></div>');
+writeln('</div>');
+writeln('<script>');
+writeln('const vData = ' + JSON.stringify(stats.version) + ';');
+writeln('const oData = ' + JSON.stringify(stats.os) + ';');
+writeln('const nData = ' + JSON.stringify(stats.network) + ';');
+
+// Helper to render pie charts
+writeln('function renderPie(id, title, processed) {');
+writeln('    const ctx = document.getElementById(id).getContext("2d");');
+writeln('    const colors = processed.labels.map((l, i) => ');
+writeln('        l === "Other" ? "#999999" : "hsl(" + (i * (360 / processed.labels.length)) + ", 70%, 60%)"');
+writeln('    );');
+writeln('    new Chart(ctx, {');
+writeln('        type: "doughnut",');
+writeln('        data: {');
+writeln('            labels: processed.labels,');
+writeln('            datasets: [{');
+writeln('                data: processed.values,');
+writeln('                backgroundColor: colors');
+writeln('            }]');
+writeln('        },');
+writeln('        options: {');
+writeln('            responsive: true,');
+writeln('            plugins: {');
+//writeln('                title: { display: true, text: title },');
+writeln('                tooltip: {');
+writeln('                    callbacks: {');
+writeln('                        label: function(ctx) {');
+writeln('                            let val = ctx.raw;');
+writeln('                            let sum = ctx.dataset.data.reduce((a, b) => a + b, 0);');
+writeln('                            let perc = ((val / sum) * 100).toFixed(1) + "%";');
+writeln('                            return title.split(" ").pop() + ": " + val + " (" + perc + ")";');
+writeln('                        }');
+writeln('                    }');
+writeln('                }');
+writeln('            }');
+writeln('        }');
+writeln('    });');
+writeln('}');
+
+writeln('renderPie("verChart", "Synchronet Versions", vData);');
+writeln('renderPie("osChart", "Operating Systems", oData);');
+writeln('renderPie("netChart", "Message Network Nodes", nData);');
+
+writeln('</script>');
 
 writeln('<hr>');
 writeln('<p style="font-size:smaller;">Generated in ' + system.secondstr(time()-start) + ' by ' + system.version_notice);
