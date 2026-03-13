@@ -904,10 +904,10 @@ Creating a Release
   gmake installer         Assemble a distribution .zip.  Builds all
                           binaries and data, stages them in stage/,
                           runs chew, and outputs:
-                          Clans-<os>-<arch>-0_97b1.zip
+                          Clans-<os>-<arch>-0_97b2.zip
 
   gmake devkit-installer  Assemble the devkit .zip:
-                          ClansDevKit-<os>-<arch>-0_12.zip
+                          ClansDevKit-<os>-<arch>-0_97b2.zip
 
   gmake install           Install to PREFIX.  Copies game binaries
                           to $(INSTALLDIR) and data to the same.

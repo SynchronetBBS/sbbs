@@ -29,6 +29,10 @@ PREREQUISITES
     - GNU make
     - POSIX-compatible system (FreeBSD, Linux, macOS, Windows with MinGW)
 
+  The OpenDoors library is included in this distribution and statically
+  linked into the binaries, so no separate installation or configuration
+  is required.
+
   Optional (for devkit):
     - Unix shell environment (for integration tests)
 

@@ -63,7 +63,7 @@ installer: binaries data native-devkit
 	cp $(SRC)installer/* $(SRC)stage/
 	cp $(BINDIR)install$(EXEFILE) $(SRC)stage/
 	cp $(BINDIR)install$(WRAPEXT) $(SRC)stage/
-	zip -j Clans-$(os)-$(MACH)-0_97b1.zip $(SRC)stage/*
+	zip -j Clans-$(os)-$(MACH)-0_97b2.zip $(SRC)stage/*
 
 .PHONY: devkit-installer
 devkit-installer: devkit-binaries native-devkit
@@ -87,14 +87,25 @@ devkit-installer: devkit-binaries native-devkit
 	cp $(SRC)installerdk/* $(SRC)stagedk/
 	cp $(BINDIR)install$(EXEFILE) $(SRC)stagedk/
 	cp $(BINDIR)install$(WRAPEXT) $(SRC)stagedk/
-	zip -j ClansDevKit-$(os)-$(MACH)-0_12.zip $(SRC)stagedk/*
+	zip -j ClansDevKit-$(os)-$(MACH)-0_97b2.zip $(SRC)stagedk/*
+
+.PHONY: dist
+dist:
+	rm -rf clans-0.97b2
+	mkdir clans-0.97b2
+	git archive HEAD -- . | (cd clans-0.97b2 && tar -xf -)
+	rm clans-0.97b2/odoors
+	(cd ../.. && git archive HEAD -- odoors) | (cd clans-0.97b2 && tar -xf -)
+	tar -cf clans-0.97b2.tar clans-0.97b2
+	gzip clans-0.97b2.tar
+	rm -rf clans-0.97b2
 
 .PHONY: clean
 clean:
 	$(MAKE) SRC=$(SRC) -C $(SRC)src clean
 	$(MAKE) SRC=$(SRC) -C $(SRC)data clean
-	rm -f ClansDevKit-$(os)-$(MACH)-0_12.zip
-	rm -f Clans-$(os)-$(MACH)-0_97b1.zip
+	rm -f ClansDevKit-$(os)-$(MACH)-0_97b2.zip
+	rm -f Clans-$(os)-$(MACH)-0_97b2.zip
 	rm -rf $(SRC)stage
 	rm -rf $(SRC)stagedk
 
@@ -104,8 +115,10 @@ deepclean:
 	$(MAKE) SRC=$(SRC) -C $(SRC)src/tests clean
 	$(MAKE) SRC=$(SRC) -C $(SRC)src deepclean
 	$(MAKE) SRC=$(SRC) -C $(SRC)tests clean
-	-rm -f ClansDevKit-$(os)-$(MACH)-0_12.zip
-	-rm -f Clans-$(os)-$(MACH)-0_97b1.zip
+	-rm -f ClansDevKit-$(os)-$(MACH)-0_97b2.zip
+	-rm -f Clans-$(os)-$(MACH)-0_97b2.zip
+	-rm -f clans-0.97b2.tar.gz
+	-rm -f clans-0.97b2.tar
 	-rm -rf $(SRC)stage
 	-rm -rf $(SRC)stagedk
 
