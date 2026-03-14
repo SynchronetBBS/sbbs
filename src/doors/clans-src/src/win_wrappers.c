@@ -194,4 +194,55 @@ char **FilesOrderedByDate(const char *path, const char *match, bool *error)
 	return ret;
 }
 
+bool plat_getftime(FILE *fd, uint16_t *datep, uint16_t *timep)
+{
+	struct stat file_stats;
+	struct tm *file_datetime;
+	struct tm file_dt;
+	int handle = _fileno(fd);
+
+	if (fstat(handle, &file_stats) != 0) {
+		*datep = (1 << 5) | 1;
+		*timep = 0;
+		return false;
+	}
+
+	file_datetime = localtime(&file_stats.st_mtime);
+	if (!file_datetime)
+		return false;
+	memcpy(&file_dt, file_datetime, sizeof(struct tm));
+
+	*datep = 0;
+	*datep = ((file_dt.tm_mday) & 0x1f);
+	*datep |= ((file_dt.tm_mon + 1) & 0x0f) << 5;
+	*datep |= (uint16_t)(((file_dt.tm_year - 80) & 0x7f) << 9);
+
+	*timep = 0;
+	*timep = (((file_dt.tm_sec + 2) / 2) & 0x1f);
+	*timep |= ((file_dt.tm_min) & 0x3f) << 5;
+	*timep |= (uint16_t)(((file_dt.tm_hour) & 0x1f) << 11);
+
+	return 0;
+}
+
+bool plat_setftime(FILE *fd, unsigned short date, unsigned short time)
+{
+	struct tm dos_dt;
+	time_t file_dt;
+	struct _utimbuf tm_buf;
+	int handle = _fileno(fd);
+
+	memset(&dos_dt, 0, sizeof(struct tm));
+	dos_dt.tm_year = ((date & 0xfe00) >> 9) + 80;
+	dos_dt.tm_mon  = ((date & 0x01e0) >> 5) + 1;
+	dos_dt.tm_mday = (date & 0x001f);
+	dos_dt.tm_hour = (time & 0xf800) >> 11;
+	dos_dt.tm_min  = (time & 0x07e0) >> 5;
+	dos_dt.tm_sec  = (time & 0x001f) * 2;
+
+	file_dt = mktime(&dos_dt);
+
+	tm_buf.actime = tm_buf.modtime = file_dt;
+	return (_futime(handle, &tm_buf) == 0);
+}
 #endif

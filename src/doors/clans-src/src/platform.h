@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #ifndef __unix__
 # include <dos.h>
@@ -39,5 +40,7 @@ void plat_Delay(unsigned msec);
 void FreeFileList(char **fl);
 char **FilesOrderedByDate(const char *path, const char *match, bool *error);
 const char *FileName(const char *path);
+bool plat_getftime(FILE *fp, uint16_t *date, uint16_t *time);
+bool plat_setftime(FILE *fp, uint16_t date, uint16_t time);
 
 #endif

@@ -63,10 +63,6 @@ struct FileInfo {
 #define MKDIR(dir)              mkdir(dir)
 #endif
 
-#ifndef __MSDOS__
-static int _dos_setftime(int handle, unsigned short date, unsigned short time);
-#endif /* !__MSDOS__ */
-
 static void reset_attribute(void)
 {
 	textattr(7);
@@ -406,7 +402,7 @@ static int GetGUM(FILE *fpGUM)
 
 	// === decode here
 	decode(fpGUM, fpToFile, zputs);
-	_dos_setftime(fileno(fpToFile), date, time);
+	plat_setftime(fpToFile, date, time);
 
 	fclose(fpToFile);
 
@@ -822,7 +818,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 	//== decode it here
 	decode(fpGUM, fpToFile, zputs);
 
-	_dos_setftime(fileno(fpToFile), date, time);
+	plat_setftime(fpToFile, date, time);
 	fclose(fpToFile);
 	fclose(fpGUM);
 
@@ -1081,39 +1077,3 @@ static void GetGumName(void)
 
 	fclose(fpInput);
 }
-
-#ifndef __MSDOS__
-static int _dos_setftime(int handle, unsigned short date, unsigned short time)
-{
-	struct tm dos_dt;
-	time_t file_dt;
-#ifdef _WIN32
-	struct _utimbuf tm_buf;
-#elif defined(__unix__)
-	struct timespec tmv_buf[2];
-#endif
-
-	memset(&dos_dt, 0, sizeof(struct tm));
-	dos_dt.tm_year = ((date & 0xfe00) >> 9) + 80;
-	dos_dt.tm_mon  = ((date & 0x01e0) >> 5) + 1;
-	dos_dt.tm_mday = (date & 0x001f);
-	dos_dt.tm_hour = (time & 0xf800) >> 11;
-	dos_dt.tm_min  = (time & 0x07e0) >> 5;
-	dos_dt.tm_sec  = (time & 0x001f) * 2;
-
-	file_dt = mktime(&dos_dt);
-
-#ifdef _WIN32
-	tm_buf.actime = tm_buf.modtime = file_dt;
-	return (_futime(handle, &tm_buf));
-#elif defined(__unix__)
-	tmv_buf[0].tv_sec = file_dt;
-	tmv_buf[0].tv_nsec = file_dt * 1000000;
-	tmv_buf[1].tv_sec = file_dt;
-	tmv_buf[1].tv_nsec = file_dt * 1000000;
-	return (futimens(handle, tmv_buf));
-#else
-#error "_dos_setftime needs a setting function, compilation aborted"
-#endif
-}
-#endif

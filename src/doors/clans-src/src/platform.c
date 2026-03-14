@@ -4,6 +4,7 @@
 
 #include <ctype.h>
 #include <sys/stat.h>
+#include <time.h>
 #include "platform.h"
 
 #ifdef _WIN32

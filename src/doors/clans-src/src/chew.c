@@ -29,9 +29,6 @@
 
 #define MAX_FILENAME_LEN 13
 
-#ifndef __MSDOS__
-static unsigned _dos_getftime(int, uint16_t *, uint16_t *);
-#endif
 static void AddGUM(FILE *fpGUM, char *pszFileName);
 static void AddDir(FILE *fpGUM, char *pszDirName);
 
@@ -190,7 +187,7 @@ static void AddGUM(FILE *fpGUM, char *pszFileName)
 	fwrite(&tmp32, sizeof(tmp32), 1, fpGUM);
 
 	// write datestamp
-	_dos_getftime(fileno(fpFromFile), &date, &time);
+	plat_getftime(fpFromFile, &date, &time);
 	tmp16 = SWAP16(date);
 	fwrite(&tmp16, sizeof(tmp16), 1, fpGUM);
 	tmp16 = SWAP16(time);
@@ -246,41 +243,3 @@ static void AddDir(FILE *fpGUM, char *pszDirName)
 	// write dir name to file as is
 	fwrite(szEncryptedName, sizeof(szEncryptedName), 1, fpGUM);
 }
-
-#ifndef __MSDOS__
-static unsigned _dos_getftime(int handle, uint16_t *datep, uint16_t *timep)
-{
-	struct stat file_stats;
-	struct tm *file_datetime;
-	struct tm file_dt;
-
-	if (fstat(handle, &file_stats) != 0) {
-		*datep = (1 << 5) | 1;
-		*timep = 0;
-		return EBADF;
-		fputs("fstat failed", stderr);
-		fflush(stderr);
-		exit(1);
-	}
-
-	file_datetime = localtime(&file_stats.st_mtime);
-	if (!file_datetime) {
-		fputs("localtime failed", stderr);
-		fflush(stderr);
-		exit(1);
-	}
-	memcpy(&file_dt, file_datetime, sizeof(struct tm));
-
-	*datep = 0;
-	*datep = ((file_dt.tm_mday) & 0x1f);
-	*datep |= ((file_dt.tm_mon + 1) & 0x0f) << 5;
-	*datep |= (uint16_t)(((file_dt.tm_year - 80) & 0x7f) << 9);
-
-	*timep = 0;
-	*timep = (((file_dt.tm_sec + 2) / 2) & 0x1f);
-	*timep |= ((file_dt.tm_min) & 0x3f) << 5;
-	*timep |= (uint16_t)(((file_dt.tm_hour) & 0x1f) << 11);
-
-	return 0;
-}
-#endif /* !__MSDOS__ */
