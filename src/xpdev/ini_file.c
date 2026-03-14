@@ -3569,8 +3569,10 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 	if (fp != NULL)
 		rewind(fp);
 
-	if (fgets(str, sizeof(str), fp) == NULL)
+	if (fgets(str, sizeof(str), fp) == NULL) {
+		ret = strListInit();
 		goto done;
+	}
 
 	if (strncmp(str, encryptedHeaderPrefix, sizeof(encryptedHeaderPrefix) - 1)) {
 		ret = iniReadFile(fp);
