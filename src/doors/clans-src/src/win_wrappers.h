@@ -29,7 +29,6 @@
 #endif
 #define strdup(x) _strdup(x)
 #define mkdir(x) _mkdir(x)
-#define cio_getch() _getch()
 
 void display_win32_error();
 

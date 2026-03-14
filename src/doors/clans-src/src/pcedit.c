@@ -47,11 +47,6 @@ static bool GetClan(int16_t ID[2], struct clan *TmpClan);
 static void DeleteClan(int16_t ID[2]);
 static void UpdateClan(struct clan *Clan);
 static void InitGame(void);
-#ifdef __unix__
-static int pce_getch(void);
-#else
-#define pce_getch() _getch()
-#endif
 
 
 #define true_ENTRY_SIZE(x) \
@@ -74,28 +69,25 @@ int main(void)
 	FILE *fpPC;
 	long FileSize;
 	int16_t NumClans, CurClan;
-	int cKey;
+	char cKey;
 	struct clan Clan;
+	char buf[256];
 
-	system("stty raw");
-	system("stty opost onlcr");
-	printf(".PC (Player Clans) Editor for The Clans.  v0.10\n");
-	printf("\nThis PC editor should only be used on local games and only when\n");
-	printf("no one is currently playing.\n\n");
-	printf("Continue? [Yes]: ");
-	fflush(stdout);
+	Video_Init();
+	rputs(".PC (Player Clans) Editor for The Clans.  v0.10\n");
+	rputs("\nThis PC editor should only be used on local games and only when\n");
+	rputs("no one is currently playing.\n\n");
+	rputs("Continue? [Yes]: ");
 
-	do {
-		cKey = toupper(pce_getch()) & 0x7f;
-	}
-	while (!strchr("YN\n\r", cKey));
+	cKey = GetAnswer("YN\n");
 
 	if (cKey == 'N') {
-		printf("No\n\nProgram Aborted\n");
+		rputs("No\n\nProgram Aborted\n");
+		Video_Close();
 		exit(0);
 	}
 	else
-		printf("Yes\n\n");
+		rputs("Yes\n\n");
 
 	// WARNING:  Do not use while player is online!!
 
@@ -104,7 +96,8 @@ int main(void)
 	fpPC = fopen(PLAYER_DATAFILE,"rb");
 
 	if (!fpPC) {
-		printf("No " PLAYER_DATAFILE " file!\n");
+		rputs("No " PLAYER_DATAFILE " file!\n");
+		Video_Close();
 		exit(EXIT_FAILURE);
 	}
 
@@ -120,7 +113,7 @@ int main(void)
 	fseek(fpPC, 0, SEEK_END);
 	FileSize = ftell(fpPC);
 	if (FileSize / (long)entry_size > INT16_MAX) {
-		puts(PLAYER_DATAFILE " too large");
+		rputs(PLAYER_DATAFILE " too large\n");
 		fclose(fpPC);
 		return(EXIT_FAILURE);
 	}
@@ -130,37 +123,37 @@ int main(void)
 
 	for (;;) {
 		if (fseek(fpPC, CurClan * (long)entry_size, SEEK_SET)) {
-			printf("fseek error\n");
+			rputs("fseek error\n");
 			break;
 		}
 
 		// get curuser from file
 		notEncryptRead_s(clan, &Clan, fpPC, XOR_USER) {
-			printf("Couldn't read any players\n");
+			rputs("Couldn't read any players\n");
 			break;
 		}
 
 		// display user stats
-		printf("ClanID  : %02d|%02d\n", Clan.ClanID[0], Clan.ClanID[1]);
-		printf("Clan    : %s\n", Clan.szName);
-		printf("User    : %s\n", Clan.szUserName);
-		printf("LastPlay: %s\n", Clan.szDateOfLastGame);
+		snprintf(buf, sizeof(buf), "ClanID  : %02d|%02d\n", Clan.ClanID[0], Clan.ClanID[1]);
+		rawputs(buf);
+		snprintf(buf, sizeof(buf), "Clan    : %s\n", Clan.szName);
+		rawputs(buf);
+		snprintf(buf, sizeof(buf), "User    : %s\n", Clan.szUserName);
+		rawputs(buf);
+		snprintf(buf, sizeof(buf), "LastPlay: %s\n", Clan.szDateOfLastGame);
+		rawputs(buf);
 
-		printf("\n\n ] next\n [ previous\n ! delete clan\n Q quit\n---------------------\n# ");
-		fflush(stdout);
+		rputs("\n\n ] next\n [ previous\n ! delete clan\n Q quit\n---------------------\n# ");
 
 		// get key
-		do {
-			cKey = pce_getch();
-		}
-		while (!strchr("[]q!", cKey));
+		cKey = GetAnswer("[]q!");
 
-		if (cKey == 'q') {
-			printf("Quit\n\n");
+		if (cKey == 'Q') {
+			rputs("Quit\n\n");
 			break;
 		}
 		else if (cKey == '[') {
-			printf("Previous Clan\n\n");
+			rputs("Previous Clan\n\n");
 
 			if (CurClan > 0)
 				CurClan--;
@@ -169,7 +162,7 @@ int main(void)
 			}
 		}
 		else if (cKey == ']') {
-			printf("Next Clan\n\n");
+			rputs("Next Clan\n\n");
 
 			if (CurClan < NumClans-1)
 				CurClan++;
@@ -177,18 +170,20 @@ int main(void)
 				CurClan = 0;
 		}
 		else if (cKey == '!') {
-			printf("Delete Clan\n\n");
+			rputs("Delete Clan\n\n");
 
 			fclose(fpPC);
 
-			printf("Deleting %s\n", Clan.szName);
+			snprintf(buf, sizeof(buf), "Deleting %s\n", Clan.szName);
+			rawputs(buf);
 
 			DeleteClan(Clan.ClanID);
 
 			fpPC = fopen("clans.pc","r+b");
 
 			if (!fpPC) {
-				printf("No CLANS.PC file!\n");
+				rputs("No CLANS.PC file!\n");
+				Video_Close();
 				exit(EXIT_FAILURE);
 			}
 
@@ -198,7 +193,7 @@ int main(void)
 			NumClans = (int16_t)(FileSize / (long)entry_size);
 
 			if (NumClans == 0) {
-				printf("All players deleted\n");
+				rputs("All players deleted\n");
 				break;
 			}
 
@@ -229,6 +224,7 @@ int main(void)
 	// Update Village Data
 	UpdateVillage();
 
+	Video_Close();
 	return 0;
 }
 
@@ -262,7 +258,8 @@ static void DeleteClan(int16_t ClanID[2])
 	if (fpOldPC) {
 		fpNewPC = fopen(NEW_PLAYER_DATAFILE, "w+b");
 		if (!fpNewPC) {
-			printf("Can't write to " NEW_PLAYER_DATAFILE "!\n");
+			rputs("Can't write to " NEW_PLAYER_DATAFILE "!\n");
+			Video_Close();
 			exit(EXIT_FAILURE);
 		}
 
@@ -341,10 +338,11 @@ static void DeleteClan(int16_t ClanID[2])
 				break;
 
 			if (Message.Data.Length < 0) {
-				puts("Negative Message Length\n");
+				rputs("Negative Message Length\n");
 				fclose(OldMessage);
 				fclose(NewMessage);
 				plat_DeleteFile(TEMP_FILENAME);
+				Video_Close();
 				exit(EXIT_FAILURE);
 			}
 			if ((Message.FromClanID[0] == ClanID[0] &&
@@ -479,7 +477,8 @@ static void InitVillage(void)
 	/* try opening it for share */
 	fpVillage = fopen(VILLAGE_DATAFILE, "rb");
 	if (!fpVillage) {
-		printf("Error opening " VILLAGE_DATAFILE "!\n");
+		rputs("Error opening " VILLAGE_DATAFILE "!\n");
+		Video_Close();
 		exit(EXIT_FAILURE);
 	}
 	else
@@ -500,7 +499,8 @@ static void UpdateVillage(void)
 	/* try opening it for share */
 	fpVillage = fopen(VILLAGE_DATAFILE, "wb");
 	if (!fpVillage) {
-		printf("Error opening " VILLAGE_DATAFILE "!\n");
+		rputs("Error opening " VILLAGE_DATAFILE "!\n");
+		Video_Close();
 		exit(EXIT_FAILURE);
 	}
 
@@ -534,7 +534,7 @@ static void RejectTrade(struct TradeData *TradeData)
 		FreeClan(&TmpClan);
 	}
 	else {
-		puts("Failed to reject trade, couldn't load the clan");
+		rputs("Failed to reject trade, couldn't load the clan\n");
 	}
 }
 
@@ -559,8 +559,11 @@ static void RemoveFromUList(const int16_t ClanID[2])
 
 	fpNewUList = fopen(TEMP_FILENAME, "wb");
 	if (!fpNewUList) {
-		printf("Failed to create %s\n", TEMP_FILENAME);
+		char buf[256];
+		snprintf(buf, sizeof(buf), "Failed to create %s\n", TEMP_FILENAME);
+		rputs(buf);
 		fclose(fpOldUList);
+		Video_Close();
 		exit(EXIT_FAILURE);
 	}
 
@@ -762,7 +765,7 @@ static void UpdateClan(struct clan *Clan)
 
 	fpPlayerFile = fopen(PLAYER_DATAFILE, "r+b");
 	if (!fpPlayerFile) {
-		printf("Couldn't open " PLAYER_DATAFILE "\n");
+		rputs("Couldn't open " PLAYER_DATAFILE "\n");
 		free(TmpClan);
 		free(TmpPC);
 		return;  /* failed to find clan */
@@ -824,15 +827,3 @@ static void InitGame(void)
 	fclose(fpGame);
 }
 
-#ifdef __unix__
-static int
-pce_getch(void)
-{
-	fd_set fds;
-	FD_ZERO(&fds);
-	FD_SET(fileno(stdin),&fds);
-
-	select(fileno(stdin)+1, &fds, NULL, NULL, NULL);
-	return getchar();
-}
-#endif

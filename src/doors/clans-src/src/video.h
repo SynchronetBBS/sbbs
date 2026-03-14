@@ -74,6 +74,9 @@ void Video_SetDosGetLongHook(long (*hook)(const char *Prompt, long DefaultVal, l
 #ifdef __unix__
 int cio_getch(void);
 #endif
+#ifdef _WIN32
+#define cio_getch() _getch()
+#endif
 void clans_putch(unsigned char ch);
 
 #endif
