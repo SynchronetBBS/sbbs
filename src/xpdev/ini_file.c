@@ -3935,20 +3935,9 @@ iniCryptGetAlgoFromName(const char *n)
 str_list_t
 iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_t *sz), int KDFiterations, enum iniCryptAlgo *algoPtr, int *ks, char *saltBuf, size_t *saltsz, void *cbdata)
 {
-	char str[INI_MAX_LINE_LEN + 1];
-
-	if (fp == NULL)
-		return NULL;
-
-	rewind(fp);
-
-	if (fgets(str, sizeof(str), fp) == NULL)
-		return NULL;
-
-	if (strncmp(str, encryptedHeaderPrefix, sizeof(encryptedHeaderPrefix) - 1)) {
-		return iniReadFile(fp);
-	}
-	return NULL;
+	if (algoPtr)
+		*algoPtr = INI_CRYPT_ALGO_NONE;
+	return iniReadFile(fp);
 }
 
 bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, int KDFiterations, const char *key, char *salt)
