@@ -180,6 +180,10 @@ sftpc_end(sftpc_state_t state)
 		return;
 	pthread_mutex_lock(&state->mtx);
 	assert(state->terminating);
+	free_sftp_str(state->err_lang);
+	state->err_lang = NULL;
+	free_sftp_str(state->err_msg);
+	state->err_msg = NULL;
 	pthread_mutex_unlock(&state->mtx);
 	pthread_mutex_destroy(&state->mtx);
 	free(state);
