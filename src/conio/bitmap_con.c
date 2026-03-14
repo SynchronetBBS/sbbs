@@ -94,7 +94,6 @@ static __inline void both_screens(int blink, struct bitmap_screen** current, str
 static int update_from_vmem(int force);
 static uint32_t color_value(uint32_t col);
 void bitmap_drv_free_rect(struct rectlist *rect);
-static void bitmap_draw_vmem(int sx, int sy, int ex, int ey, struct vmem_cell *fill);
 
 /**************************************************************/
 /* These functions get called from the driver and ciolib only */
@@ -986,14 +985,6 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 	}
 }
 
-static void
-bitmap_draw_vmem(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
-{
-	assert_pthread_mutex_lock(&screenlock);
-	bitmap_draw_vmem_locked(sx, sy, ex, ey, fill);
-	assert_pthread_mutex_unlock(&screenlock);
-}
-
 /***********************************************************/
 /* These functions get called from the blinker thread only */
 /***********************************************************/
@@ -1238,22 +1229,20 @@ bitmap_draw_from_vmem(int sx, int sy, int ex, int ey, bool locked)
 	int so = vmem_cell_offset(vstat.vmem, sx - 1, sy - 1);
 	int eo = vmem_cell_offset(vstat.vmem, ex - 1, ey - 1);
 	// Draw first chunk
+	if (!locked)
+		assert_pthread_mutex_lock(&screenlock);
 	if (eo < so) {
 		int rows = vstat.vmem->top_row - sy + 1;
 		int ney = ey - rows;
-		if (locked)
-			bitmap_draw_vmem_locked(sx, sy, ex, ney, &vstat.vmem->vmem[so]);
-		else
-			bitmap_draw_vmem(sx, sy, ex, ney, &vstat.vmem->vmem[so]);
+		bitmap_draw_vmem_locked(sx, sy, ex, ney, &vstat.vmem->vmem[so]);
 		so = 0;
 		sy += rows;
 	}
 
 	// Draw last chunk
-	if (locked)
-		bitmap_draw_vmem_locked(sx, sy, ex, ey, &vstat.vmem->vmem[so]);
-	else
-		bitmap_draw_vmem(sx, sy, ex, ey, &vstat.vmem->vmem[so]);
+	bitmap_draw_vmem_locked(sx, sy, ex, ey, &vstat.vmem->vmem[so]);
+	if (!locked)
+		assert_pthread_mutex_unlock(&screenlock);
 }
 
 /*
