@@ -3689,6 +3689,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								      (seq->param_int[5] + cterm->x - 1)*vparams[vmode].charwidth - 1,
 								      (seq->param_int[4] + cterm->y - 1)*vparams[vmode].charheight - 1, true)) != NULL) {
 									crc = crc16((void *)pix->pixels, sizeof(pix->pixels[0])*pix->width*pix->height);
+									crc = icrc16(crc, (void *)pix->pixelsb, sizeof(pix->pixelsb[0])*pix->width*pix->height);
 									good = 1;
 									freepixels(pix);
 								}
