@@ -15,6 +15,7 @@ Fix Windows GDI input hang when a key is held down
 Fix black bar at bottom of 132x37 mode
 Fix snapping of height-controlled modes
 Fix delay at end of ZModem transfer
+Fix "Failed to decrypt BBS list" for empty list files
 
 Version 1.7
 --------------
