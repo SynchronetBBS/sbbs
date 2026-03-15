@@ -631,7 +631,7 @@ DLLEXPORT int xp_inet_pton(int af, const char *src, void *dst)
 	if (getaddrinfo(src, NULL, &hints, &res))
 		return -1;
 
-	for (cur = res; cur; cur++) {
+	for (cur = res; cur; cur = cur->ai_next) {
 		if (cur->ai_addr->sa_family == af)
 			break;
 	}
