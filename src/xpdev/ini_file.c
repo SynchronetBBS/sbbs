@@ -1404,7 +1404,7 @@ static str_list_t ini_get_section_list(str_list_t list, const char* prefix, bool
 			if (strnicmp(p, prefix, prefixLen) != 0)
 				continue;
 		}
-		if (include_dupes && strListFind(lp, p, /* case_sensitive */ false) >= 0)
+		if (!include_dupes && strListFind(lp, p, /* case_sensitive */ false) >= 0)
 			continue;
 		if (strListAppend(&lp, p, items++) == NULL)
 			break;
