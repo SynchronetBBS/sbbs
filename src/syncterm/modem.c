@@ -166,7 +166,8 @@ modem_connect(struct bbslist *bbs)
 		init_uifc(true, true);
 
 	if ((bbs->conn_type == CONN_TYPE_SERIAL) || (bbs->conn_type == CONN_TYPE_SERIAL_NORTS)) {
-		if ((com = comOpen(bbs->addr)) == COM_HANDLE_INVALID) {
+		com = comOpen(bbs->addr);
+		if (com == COM_HANDLE_INVALID) {
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Open Port", "`Cannot Open Port`\n\n"
 				    "Cannot open the specified serial device.\n");
@@ -219,7 +220,8 @@ modem_connect(struct bbslist *bbs)
 		}
 	}
 	else {
-		if ((com = comOpen(settings.mdm.device_name)) == COM_HANDLE_INVALID) {
+		com = comOpen(settings.mdm.device_name);
+		if (com == COM_HANDLE_INVALID) {
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Open Modem", "`Cannot Open Modem`\n\n"
 				    "Cannot open the specified modem device.\n");
