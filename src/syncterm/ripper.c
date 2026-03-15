@@ -13759,7 +13759,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (!get_cache_fn_subdir(rip.bbs, cache_path,
 							    sizeof(cache_path), "RIP"))
 								break;
-							strcat(cache_path, &args[6]);
+							strlcat(cache_path, &args[6], sizeof(cache_path));
 							fexistcase(cache_path);
 							struct stat st;
 							char        str[1024];
@@ -13956,9 +13956,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								printf("TODO: Support paste mode %d\n", arg1);
 								break;
 							}
-							strcat(cache_path, &args[9]);
+							strlcat(cache_path, &args[9], sizeof(cache_path));
 							if (strchr(&args[9], '.') == NULL)
-								strcat(cache_path, ".ICN");
+								strlcat(cache_path, ".ICN", sizeof(cache_path));
 							fexistcase(cache_path);
 							icn = fopen(cache_path, "rb");
 							if (icn != NULL) {
@@ -14748,7 +14748,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (!get_cache_fn_subdir(rip.bbs, cache_path,
 							    sizeof(cache_path), "RIP"))
 								break;
-							strcat(cache_path, &args[1]);
+							strlcat(cache_path, &args[1], sizeof(cache_path));
 							icn = fopen(cache_path, "wb");
 							if (icn != NULL) {
 								uint16_t tmp = rip.clipboard->width - 1;
