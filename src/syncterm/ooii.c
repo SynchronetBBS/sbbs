@@ -380,15 +380,20 @@ readInText(unsigned char *codeStr)
 }
 
 static void
-getBlock(unsigned char **codeStr, char *menuBlock)
+getBlock(unsigned char **codeStr, char *menuBlock, size_t maxlen)
 {
+	size_t pos = 0;
+
 	menuBlock[0] = 0;
 	if (**codeStr == '_')
 		(*codeStr)++;
-	while (**codeStr && **codeStr != '_' && **codeStr != '|') {
-		*(menuBlock++) = *((*codeStr)++);
-		*menuBlock = 0;
+	while (**codeStr && **codeStr != '_' && **codeStr != '|'
+	    && pos < maxlen - 1) {
+		menuBlock[pos++] = *((*codeStr)++);
+		menuBlock[pos] = 0;
 	}
+	while (**codeStr && **codeStr != '_' && **codeStr != '|')
+		(*codeStr)++;
 }
 
 static void
@@ -502,13 +507,13 @@ readSmallMenu(unsigned char *codeStr)
 			term_setattr(WHITE);
 
 			cterm_write(cterm, "Crystals in Savings : ", -1, NULL, 0, NULL);
-			getBlock(&codeStr, menuBlock);
-			strcat(menuBlock, "\r\n");
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
+			strlcat(menuBlock, "\r\n", sizeof(menuBlock));
 			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 
 			cterm_write(cterm, "Crystals on Loan    : ", -1, NULL, 0, NULL);
-			getBlock(&codeStr, menuBlock);
-			strcat(menuBlock, "\r\n");
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
+			strlcat(menuBlock, "\r\n", sizeof(menuBlock));
 			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 
 			cterm_write(cterm, "\r\n", -1, NULL, 0, NULL);
@@ -519,7 +524,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "-[L]  Make a Loan\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "-[P]  Pay off Loan\r\n", -1, NULL, 0, NULL);
 
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			zz = atoi(menuBlock);
 			if (zz > 0)
 				cterm_write(cterm, "-[S]  Squadron Account\r\n", -1, NULL, 0, NULL);
@@ -527,7 +532,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "-[T]  Transfer Crystals\r\n\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "-[*]  Exit to Chambers\r\n\r\n", -1, NULL, 0, NULL);
 
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			term_setattr(WHITE);
 
 			cterm_write(cterm, "You have ", -1, NULL, 0, NULL);
@@ -555,7 +560,7 @@ readSmallMenu(unsigned char *codeStr)
 			    NULL);
 
 			term_setattr(WHITE);
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			cterm_write(cterm, "Games Left :[ ", -1, NULL, 0, NULL);
 			term_setattr(LIGHTCYAN);
 			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
@@ -583,7 +588,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTCYAN);
 
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			yy = atoi(menuBlock);
 			if (yy > 0) {
 				cterm_write(cterm, "-[O]  Offer Guard Items\r\n\r\n", -1, NULL, 0, NULL);
@@ -608,7 +613,7 @@ readSmallMenu(unsigned char *codeStr)
 			term_setattr(LIGHTGRAY);
 			cterm_write(cterm, "~~~~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
 
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 
 			if (menuBlock[0] > 48) {
 				term_setattr(YELLOW);
@@ -649,7 +654,7 @@ readSmallMenu(unsigned char *codeStr)
 			term_setattr(LIGHTGREEN);
 
 			cterm_write(cterm, "Radiation   :[ ", -1, NULL, 0, NULL);
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			zz = atoi(menuBlock);
 			if (zz < 44)
 				term_setattr(WHITE);
@@ -660,7 +665,7 @@ readSmallMenu(unsigned char *codeStr)
 
 			term_setattr(LIGHTGREEN);
 			cterm_write(cterm, "Hit Points  :[ ", -1, NULL, 0, NULL);
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			zz = atoi(menuBlock);
 			if (zz > 5)
 				term_setattr(WHITE);
@@ -668,15 +673,17 @@ readSmallMenu(unsigned char *codeStr)
 				term_setattr(LIGHTRED);
 
 			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			cterm_write(cterm, " (", -1, NULL, 0, NULL);
 			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 			cterm_write(cterm, ")\r\n", -1, NULL, 0, NULL);
 
 			term_setattr(LIGHTGREEN);
 			cterm_write(cterm, "Infectious  :[ ", -1, NULL, 0, NULL);
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			zz = atoi(menuBlock);
+			if (zz < 0 || zz >= 11)
+				break;
 			term_setattr(WHITE);
 
 			cterm_write(cterm, diseases[zz], -1, NULL, 0, NULL);
@@ -722,11 +729,13 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "~~~~~~~~~~~~\r\n", -1, NULL, 0, NULL);
 			term_setattr(WHITE);
 
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			zz = atoi(menuBlock);
+			if (zz < 0 || zz >= 13)
+				break;
 			cterm_write(cterm, armors[zz], -1, NULL, 0, NULL);
 			cterm_write(cterm, " / ", -1, NULL, 0, NULL);
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 			cterm_write(cterm, " Hits\r\n\r\n", -1, NULL, 0, NULL);
 
@@ -740,7 +749,7 @@ readSmallMenu(unsigned char *codeStr)
 
 		case 'l':
 			codeStr++;
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 
 			term_setattr(LIGHTBLUE);
 			cterm_write(cterm, "Armor Types           Hits     Crystals\r\n", -1, NULL, 0, NULL);
@@ -802,7 +811,7 @@ readSmallMenu(unsigned char *codeStr)
 
 		case 'n':
 			codeStr++;
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 
 			term_setattr(LIGHTBLUE);
 			cterm_write(cterm, "Equipment                 Crystals\r\n", -1, NULL, 0, NULL);
@@ -834,8 +843,10 @@ readSmallMenu(unsigned char *codeStr)
 
 		case 'o':
 			codeStr++;
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			zz = atoi(menuBlock);
+			if (zz < 0 || zz >= 4)
+				break;
 
 			term_setattr(LIGHTGREEN);
 			cterm_write(cterm, "Supply Suits\r\n", -1, NULL, 0, NULL);
@@ -855,7 +866,7 @@ readSmallMenu(unsigned char *codeStr)
 
 		case 'p':
 			codeStr++;
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 
 			term_setattr(LIGHTBLUE);
 			cterm_write(cterm, "Suits/Outfits               Crystals\r\n", -1, NULL, 0, NULL);
@@ -889,15 +900,17 @@ readSmallMenu(unsigned char *codeStr)
 			term_setattr(WHITE);
 
 			for (yy = 1; yy < 3; yy++) {
-				getBlock(&codeStr, menuBlock);
+				getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 				zz = atoi(menuBlock);
-				cterm_write(cterm, weapons[zz], -1, NULL, 0, NULL);
+				if (zz >= 0 && zz < 27)
+					cterm_write(cterm, weapons[zz], -1, NULL, 0, NULL);
 				cterm_write(cterm, " / ", -1, NULL, 0, NULL);
-				getBlock(&codeStr, menuBlock);
+				getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 				zz = atoi(menuBlock);
-				cterm_write(cterm, ammos[zz], -1, NULL, 0, NULL);
+				if (zz >= 0 && zz < 6)
+					cterm_write(cterm, ammos[zz], -1, NULL, 0, NULL);
 				cterm_write(cterm, " / ", -1, NULL, 0, NULL);
-				getBlock(&codeStr, menuBlock);
+				getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 				cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 				cterm_write(cterm, " Rds\r\n", -1, NULL, 0, NULL);
 			}
@@ -912,7 +925,7 @@ readSmallMenu(unsigned char *codeStr)
 
 		case 'r':
 			codeStr++;
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 
 			term_setattr(LIGHTBLUE);
 			cterm_write(cterm, "Hand-to-Hand Weapons        Crystals\r\n", -1, NULL, 0, NULL);
@@ -963,7 +976,7 @@ readSmallMenu(unsigned char *codeStr)
 
 		case 's':
 			codeStr++;
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			zz = atoi(menuBlock);
 
 			term_setattr(LIGHTGREEN);
@@ -996,7 +1009,7 @@ readSmallMenu(unsigned char *codeStr)
 
 		case 't':
 			codeStr++;
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 
 			term_setattr(WHITE);
 			cterm_write(cterm, "Sighting : ", -1, NULL, 0, NULL);
@@ -1012,7 +1025,7 @@ readSmallMenu(unsigned char *codeStr)
 			term_setattr(CYAN);
 			cterm_write(cterm, "Hand-to-Hand Combat\r\n", -1, NULL, 0, NULL);
 
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			zz = atoi(menuBlock);
 
 			if (!zz) {
@@ -1040,7 +1053,7 @@ readSmallMenu(unsigned char *codeStr)
 
 		case 'u':
 			codeStr++;
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			strcpy(tempBlock, menuBlock);
 
 			term_setattr(WHITE);
@@ -1056,14 +1069,14 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "\r\n", -1, NULL, 0, NULL);
 
 			term_setattr(CYAN);
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			zz = atoi(menuBlock);
 			if (zz > 0)
 				cterm_write(cterm, "-[A]  Attack recruit\r\n", -1, NULL, 0, NULL);
 
 			cterm_write(cterm, "-[L]  Leave a message\r\n\r\n", -1, NULL, 0, NULL);
 
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			zz = atoi(menuBlock);
 			if (!zz)
 				cterm_write(cterm, "-[B]  Borrow camper's items\r\n", -1, NULL, 0, NULL);
@@ -1087,34 +1100,34 @@ readSmallMenu(unsigned char *codeStr)
 			term_setattr(LIGHTGREEN);
 			cterm_write(cterm, "Hit Points   :[ ", -1, NULL, 0, NULL);
 			term_setattr(WHITE);
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 			cterm_write(cterm, " ", -1, NULL, 0, NULL);
 
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			sprintf(buf, "(%s)\r\n", menuBlock);
 			cterm_write(cterm, buf, -1, NULL, 0, NULL);
 
 			term_setattr(LIGHTGREEN);
 			cterm_write(cterm, "Applications :[ ", -1, NULL, 0, NULL);
 			term_setattr(WHITE);
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			sprintf(buf, "%s current, ", menuBlock);
 			cterm_write(cterm, buf, -1, NULL, 0, NULL);
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			sprintf(buf, "%s total\r\n", menuBlock);
 			cterm_write(cterm, buf, -1, NULL, 0, NULL);
 
 			term_setattr(LIGHTGREEN);
 			cterm_write(cterm, "Radiation    :[ ", -1, NULL, 0, NULL);
 			term_setattr(WHITE);
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 			cterm_write(cterm, "%\r\n\r\n", -1, NULL, 0, NULL);
 
 			term_setattr(WHITE);
 			cterm_write(cterm, "Also, you are ", -1, NULL, 0, NULL);
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			zz = atoi(menuBlock);
 			switch (zz) {
 				case 0:
@@ -1141,7 +1154,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "\r\n-[Q]  Quick Heal\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "-[U]  Use an Application\r\n", -1, NULL, 0, NULL);
 
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			zz = atoi(menuBlock);
 			if (zz == 1)
 				cterm_write(cterm, "-[R]  Use Rations\r\n", -1, NULL, 0, NULL);
@@ -1177,7 +1190,7 @@ incomingCheckStatus(unsigned char *codeStr)
 	term_gotoxy(1, 1);
 
 	codeStr++;
-	getBlock(&codeStr, menuBlock);
+	getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 	who = atoi(menuBlock);
 
 	term_setattr(who);
@@ -1594,6 +1607,8 @@ incomingMapScanner(unsigned char *codeStr)
 
 		case 'M':
 			codeStr++;
+			if (!*codeStr)
+				break;
 
 			if (codeStr[0] == 'A')
 				where = 4;  // AFB
@@ -1601,6 +1616,8 @@ incomingMapScanner(unsigned char *codeStr)
 				where = 1;  // wasteland
 
 			codeStr++;
+			if (!*codeStr)
+				break;
 
 			if (codeStr[0] == 'T')
 				miniTrik = 1;
@@ -1610,7 +1627,7 @@ incomingMapScanner(unsigned char *codeStr)
 			codeStr++;
 
 			for (scanPtr = 0; scanPtr < 9; scanPtr++) {
-				getBlock(&codeStr, menuBlock);
+				getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 				scanVals[scanPtr] = atoi(menuBlock);
 			}
 
@@ -1678,41 +1695,41 @@ incomingMapScanner(unsigned char *codeStr)
 					case 1:
 						term_gotoxy(20, 5);
 						term_setattr(14);
-						getBlock(&codeStr, menuBlock);
-						strcat(menuBlock, ",");
+						getBlock(&codeStr, menuBlock, sizeof(menuBlock));
+						strlcat(menuBlock, ",", sizeof(menuBlock));
 						cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 						break;
 
 					case 2:
-						getBlock(&codeStr, menuBlock);
-						strcat(menuBlock, ",");
+						getBlock(&codeStr, menuBlock, sizeof(menuBlock));
+						strlcat(menuBlock, ",", sizeof(menuBlock));
 						cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 						break;
 
 					case 3:
-						getBlock(&codeStr, menuBlock);
-						strcat(menuBlock, " ");
+						getBlock(&codeStr, menuBlock, sizeof(menuBlock));
+						strlcat(menuBlock, " ", sizeof(menuBlock));
 						cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 						break;
 
 					case 4:
 						term_gotoxy(26, 7);
 						term_setattr(15);
-						getBlock(&codeStr, menuBlock);
-						strcat(menuBlock, " ");
+						getBlock(&codeStr, menuBlock, sizeof(menuBlock));
+						strlcat(menuBlock, " ", sizeof(menuBlock));
 						cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 						break;
 
 					case 5:
 						term_gotoxy(66, 5);
 						term_setattr(14);
-						getBlock(&codeStr, menuBlock);
-						strcat(menuBlock, " ");
+						getBlock(&codeStr, menuBlock, sizeof(menuBlock));
+						strlcat(menuBlock, " ", sizeof(menuBlock));
 						cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 						break;
 
 					case 6:
-						getBlock(&codeStr, menuBlock);
+						getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 						cterm_write(cterm, "(", 1, NULL, 0, NULL);
 						cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 						cterm_write(cterm, ")", 1, NULL, 0, NULL);
@@ -1720,20 +1737,20 @@ incomingMapScanner(unsigned char *codeStr)
 
 					case 7:
 						term_gotoxy(66, 6);
-						getBlock(&codeStr, menuBlock);
+						getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 						yy = atoi(menuBlock);
 						if (yy >= 40)
 							term_setattr(12);
 						else
 							term_setattr(14);
-						strcat(menuBlock, "% ");
+						strlcat(menuBlock, "% ", sizeof(menuBlock));
 						cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 						break;
 
 					case 8:
 						term_gotoxy(66, 7);
 						term_setattr(14);
-						getBlock(&codeStr, menuBlock);
+						getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 						yy = atoi(menuBlock);
 
 						switch (yy) {
@@ -1759,8 +1776,12 @@ incomingMapScanner(unsigned char *codeStr)
 				}
 			}
 
+			if (!*codeStr)
+				break;
 			codeStr++;
 			if (codeStr[0] == 'I') {
+				if (!*codeStr)
+					break;
 				codeStr++;
 				term_gotoxy(34, 5);
 
@@ -1772,11 +1793,17 @@ incomingMapScanner(unsigned char *codeStr)
 					cterm_write(cterm, "\xfb", -1, NULL, 0, NULL);
 				}
 
+				if (!*codeStr)
+					break;
 				codeStr++;
+				if (!*codeStr)
+					break;
 				codeStr++;
 			}
 
 			if (codeStr[0] == 'C') {
+				if (!*codeStr)
+					break;
 				codeStr++;
 				term_gotoxy(34, 6);
 
@@ -1788,11 +1815,17 @@ incomingMapScanner(unsigned char *codeStr)
 					cterm_write(cterm, "\xfb", -1, NULL, 0, NULL);
 				}
 
+				if (!*codeStr)
+					break;
 				codeStr++;
+				if (!*codeStr)
+					break;
 				codeStr++;
 			}
 
 			if (codeStr[0] == 'B') {
+				if (!*codeStr)
+					break;
 				codeStr++;
 				term_gotoxy(34, 7);
 
@@ -1803,16 +1836,20 @@ incomingMapScanner(unsigned char *codeStr)
 					term_setattr(12);
 					cterm_write(cterm, "\xfb", -1, NULL, 0, NULL);
 
+					if (!*codeStr)
+						break;
 					codeStr++;
+					if (!*codeStr)
+						break;
 					codeStr++;
 
-					getBlock(&codeStr, menuBlock);
+					getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 					yy = atoi(menuBlock);
 					term_gotoxy(1, yy + 1);
 
-					getBlock(&codeStr, menuBlock);
+					getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 					term_setattr(14);
-					strcat(menuBlock, " is stationed nearby.");
+					strlcat(menuBlock, " is stationed nearby.", sizeof(menuBlock));
 					cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 				}
 			}
@@ -1820,7 +1857,7 @@ incomingMapScanner(unsigned char *codeStr)
 
 		case 'D':
 			codeStr++;
-			getBlock(&codeStr, menuBlock);
+			getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 			zz = atoi(menuBlock);
 			term_gotoxy(3, 10);
 			cterm_write(cterm,
@@ -2216,7 +2253,7 @@ handle_ooii_code(unsigned char *codeStr, int *ooii_mode, unsigned char *retbuf, 
 					break;
 				case '?':
 					if (retbuf != NULL) {
-						getBlock(&codeStr, menuBlock);
+						getBlock(&codeStr, menuBlock, sizeof(menuBlock));
 						zz = atoi(menuBlock);
 
                                                 /* Highest we support is two */
