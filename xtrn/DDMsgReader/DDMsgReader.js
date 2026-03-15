@@ -29,7 +29,19 @@
  * 2026-02-23 Eric Oulashin     Version 1.97i
  *                              Improved message text translating (UTF-8, HTML, and nbsp),
  *                              as well as not word-wrapping message tails.
- *
+ * 2026-02-27 Eric Oulashin     Version 1.97j Beta
+ *                              Bug fix: Newscans sometimes start early in a sub-board
+ *                              even when the user has read most of the messages (with
+ *                              the help of Cursor AI)
+ * 2026-03-01                   Bug fixex: Messages appearing more than once in a newscan
+ *                              or new-to-you scan (with help from Cursor AI). Message scan
+ *                              pointer(s) going back to the beginning or early in a sub-board
+ *                              (should at least be improved, if not totally fixed).
+ * 2026-03-09                   Bug fix: msg_area.sub object undefined when viewing sub-board
+ *                              information (shouldn't happen, but a check was added just in case).
+ *                              Reported by Keyop.
+ * 2026-03-14                   Version 1.97j
+ *                              Releasing this version
  */
 
 "use strict";
@@ -139,8 +151,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.97i";
-var READER_DATE = "2026-02-21";
+var READER_VERSION = "1.97j";
+var READER_DATE = "2026-03-14";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -2666,14 +2678,34 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 						{
 							bbs.curgrp = grpIndex;
 							bbs.cursub = subIndex;
+
+							// New (March 2026) to try to fix newscan pointer issues
+							// Populate headers before computing start index so that GetMsgIdx returns
+							// the correct index into the filtered hdrsForCurrentSubBoard (rather than
+							// the raw message base offset from absMsgNumToIdx, which doesn't match
+							// when the array excludes votes/deleted/twitlisted messages).
+							msgbase.close();
+							msgbase = null;
+							this.PopulateHdrsForCurrentSubBoard();
+							// End New (March 2026) to try to fix newscan pointer issues
+
 							// For a newscan, start at index 0 if the user wants to only show new messages
-							// during a newscan; otherwise, start at the scan pointer message (the sub-board
-							// will have to be populated with all messages)
+							// during a newscan; otherwise, start at the scan pointer message
 							var startMsgIdx = 0;
 							if (!this.userSettings.newscanOnlyShowNewMsgs)
 							{
-								// Start at the scan pointer
-								startMsgIdx = scanPtrMsgIdx;
+								// Old:
+								//startMsgIdx = scanPtrMsgIdx;
+
+								// New (March 2026) to try to fix newscan pointer issues
+								// Start at the scan pointer (use GetMsgIdx now that headers are populated)
+								startMsgIdx = this.GetMsgIdx(GetScanPtrOrLastMsgNum(this.subBoardCode));
+								if (startMsgIdx < 0)
+									startMsgIdx = 0;
+								else if (startMsgIdx >= this.NumMessages())
+									startMsgIdx = this.NumMessages() - 1;
+								// End New (March 2026) to try to fix newscan pointer issues
+
 								// If the message has already been read, then start at the next message
 								var tmpMsgHdr = this.GetMsgHdrByIdx(startMsgIdx);
 								if ((tmpMsgHdr != null) && (msg_area.sub[this.subBoardCode].last_read == tmpMsgHdr.number) && (startMsgIdx < this.NumMessages() - 1))
@@ -2980,7 +3012,7 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 	while (continueOn && (msgIndex >= 0) && (msgIndex < this.NumMessages()))
 	{
 		/*
-		// Temporary (scan/last-read pointer debugging)
+		// Temporary (scan/last-read pointer debugging): 2026-02-22
 		if (user.is_sysop)
 		{
 			// See if the last_msg or scan pointer is below 10% of the number
@@ -3003,6 +3035,7 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 		}
 		// End Temporary
 		*/
+
 		// Display the message with the enhanced read method
 		readMsgRetObj = this.ReadMessageEnhanced(msgIndex, allowChgMsgArea);
 		retObj.lastUserInput = readMsgRetObj.lastKeypress;
@@ -5997,7 +6030,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				var voteRetObj = this.VoteOnMessage(msgHeader, true);
 				if (voteRetObj.BBSHasVoteFunction)
 				{
-					var msgIsPollVote = ((typeof(MSG_TYPE_POLL) != "undefined") && (msgHeader.type & MSG_TYPE_POLL) == MSG_TYPE_POLL);
+					var msgIsPollVote = ((typeof(MSG_TYPE_POLL) != "undefined") && Boolean(msgHeader.type & MSG_TYPE_POLL));
 					if (!voteRetObj.userQuit)
 					{
 						// If the message is a poll vote, then output any error
@@ -6095,7 +6128,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				var originalCurPos = console.getxy();
 				var pollCloseMsg = "";
 				// If this message is a poll, then allow closing it.
-				if ((typeof(MSG_TYPE_POLL) != "undefined") && (msgHeader.type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+				if ((typeof(MSG_TYPE_POLL) != "undefined") && Boolean(msgHeader.type & MSG_TYPE_POLL))
 				{
 					if ((msgHeader.auxattr & POLL_CLOSED) == 0)
 					{
@@ -7571,7 +7604,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					// If this message is a poll, then exit out of the reader
 					// and come back to read the same message again so that the
 					// voting results are re-loaded and displayed on the screen.
-					if ((typeof(MSG_TYPE_POLL) != "undefined") && (msgHeader.type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+					if ((typeof(MSG_TYPE_POLL) != "undefined") && Boolean(msgHeader.type & MSG_TYPE_POLL))
 					{
 						retObj.newMsgOffset = pOffset;
 						retObj.nextAction = ACTION_GO_SPECIFIC_MSG;
@@ -7608,7 +7641,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				console.attributes = "N";
 				console.crlf();
 				// If this message is a poll, then allow closing it.
-				if ((typeof(MSG_TYPE_POLL) != "undefined") && (msgHeader.type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+				if ((typeof(MSG_TYPE_POLL) != "undefined") && Boolean(msgHeader.type & MSG_TYPE_POLL))
 				{
 					if ((msgHeader.auxattr & POLL_CLOSED) == 0)
 					{
@@ -7767,11 +7800,19 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 			case this.enhReaderKeys.subBoardInfo: // Show sub-board information
 				console.attributes = "N";
 				console.print(bbs.text(SubInfoHdr));
-				printf(bbs.text(SubInfoLongName), msg_area.sub[this.subBoardCode].description);
-				printf(bbs.text(SubInfoShortName), msg_area.sub[this.subBoardCode].name);
-				printf(bbs.text(SubInfoQWKName), msg_area.sub[this.subBoardCode].qwk_name);
-				printf(bbs.text(SubInfoMaxMsgs), msg_area.sub[this.subBoardCode].max_msgs);
-				printf(bbs.text(SubInfoTagLine), msg_area.sub[this.subBoardCode].qwknet_tagline);
+				if (msg_area.sub[this.subBoardCode] != undefined && typeof(msg_area.sub[this.subBoardCode]) === "object")
+				{
+					if (msg_area.sub[this.subBoardCode].hasOwnProperty("description"))
+						printf(bbs.text(SubInfoLongName), msg_area.sub[this.subBoardCode].description);
+					if (msg_area.sub[this.subBoardCode].hasOwnProperty("name"))
+						printf(bbs.text(SubInfoShortName), msg_area.sub[this.subBoardCode].name);
+					if (msg_area.sub[this.subBoardCode].hasOwnProperty("qwk_name"))
+						printf(bbs.text(SubInfoQWKName), msg_area.sub[this.subBoardCode].qwk_name);
+					if (msg_area.sub[this.subBoardCode].hasOwnProperty("max_msgs"))
+						printf(bbs.text(SubInfoMaxMsgs), msg_area.sub[this.subBoardCode].max_msgs);
+					if (msg_area.sub[this.subBoardCode].hasOwnProperty("qwknet_tagline"))
+						printf(bbs.text(SubInfoTagLine), msg_area.sub[this.subBoardCode].qwknet_tagline);
+				}
 				console.attributes = "N";
 				console.pause();
 				writeMessage = true;
@@ -8098,11 +8139,19 @@ function DigDistMsgReader_ShowSubBoardInfo_Scrollable(msgAreaWidth, msgAreaHeigh
 	// Create an array containing the sub-board information lines and then
 	// allow the user to scroll through them.
 	var subBoardInfoText = "\x01n" + bbs.text(SubInfoHdr);
-	subBoardInfoText += format(bbs.text(SubInfoLongName), msg_area.sub[this.subBoardCode].description);
-	subBoardInfoText += format(bbs.text(SubInfoShortName), msg_area.sub[this.subBoardCode].name);
-	subBoardInfoText += format(bbs.text(SubInfoQWKName), msg_area.sub[this.subBoardCode].qwk_name);
-	subBoardInfoText += format(bbs.text(SubInfoMaxMsgs), msg_area.sub[this.subBoardCode].max_msgs);
-	subBoardInfoText += format(bbs.text(SubInfoTagLine), msg_area.sub[this.subBoardCode].qwknet_tagline);
+	if (msg_area.sub[this.subBoardCode] != undefined && typeof(msg_area.sub[this.subBoardCode]) === "object")
+	{
+		if (msg_area.sub[this.subBoardCode].hasOwnProperty("description"))
+			subBoardInfoText += format(bbs.text(SubInfoLongName), msg_area.sub[this.subBoardCode].description);
+		if (msg_area.sub[this.subBoardCode].hasOwnProperty("name"))
+			subBoardInfoText += format(bbs.text(SubInfoShortName), msg_area.sub[this.subBoardCode].name);
+		if (msg_area.sub[this.subBoardCode].hasOwnProperty("qwk_name"))
+			subBoardInfoText += format(bbs.text(SubInfoQWKName), msg_area.sub[this.subBoardCode].qwk_name);
+		if (msg_area.sub[this.subBoardCode].hasOwnProperty("max_msgs"))
+			subBoardInfoText += format(bbs.text(SubInfoMaxMsgs), msg_area.sub[this.subBoardCode].max_msgs);
+		if (msg_area.sub[this.subBoardCode].hasOwnProperty("qwknet_tagline"))
+			subBoardInfoText += format(bbs.text(SubInfoTagLine), msg_area.sub[this.subBoardCode].qwknet_tagline);
+	}
 	var subBoardInfoLines = lfexpand(word_wrap(subBoardInfoText, console.screen_columns-1, null, true)).split("\r\n");
 	// Remove any blank lines from the start of the array
 	while (subBoardInfoLines.length > 0 && console.strlen(subBoardInfoLines[0]) == 0)
@@ -13490,10 +13539,13 @@ function DigDistMsgReader_GetMsgInfoForEnhancedReader(pMsgHdr, pWordWrap, pDeter
 	//msgTextAltered = msgTextAltered.replace(new RegExp("[\x81\x8D\x8F\x90\x9D]", "g"), "");
 
 	// If we didn't get the message body here & the caller wants to get message tails,
-	// get & append message tails without word wrapping them. Note that the tail text
-	// is added to retObj.msgText and not msgTextAltered.
+	// and this message isn't a poll, then get & append message tails without word
+	// wrapping them. Note that the tail text is added to retObj.msgText and not
+	// msgTextAltered.
+	// We check for not a poll here because it seems that tails for a poll have the
+	// poll comments, which would already be included at the top of the message body.
 	var msgTail = null;
-	if (!gotMsgBodyHere && getMsgTails)
+	if (getMsgTails && !gotMsgBodyHere && !Boolean(pMsgHdr.attr & MSG_POLL))
 	{
 		var msgbase = new MsgBase(this.subBoardCode);
 		if (msgbase.open())
@@ -15554,6 +15606,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 	{
 		// Count the number of items that we'll add to the menu
 		var numItems = 0;
+		var seenSubCodesForNumItems = {}; // Deduplicate: same sub can appear in multiple groups
 		for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
 		{
 			// If scanning the user's current group or sub-board and this is the wrong group, then skip this group.
@@ -15563,8 +15616,11 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 			var grpNameItemAddedToMenu = false;
 			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
 			{
+				var subCodeForNumItems = msg_area.grp_list[grpIdx].sub_list[subIdx].code;
+				if (seenSubCodesForNumItems[subCodeForNumItems])
+					continue;
 				// Skip sub-boards that the user can't read or doesn't have configured for newscans
-				if (!userCanAccessSub(msg_area.grp_list[grpIdx].sub_list[subIdx].code, "read"))
+				if (!userCanAccessSub(subCodeForNumItems, "read"))
 					continue;
 				if (!Boolean(msg_area.grp_list[grpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_NEW))
 					continue;
@@ -15572,6 +15628,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 				// skip this sub-board (the other groups should have been skipped in the outer loop).
 				if (scanScope == SCAN_SCOPE_SUB_BOARD && bbs.cursub != subIdx)
 					continue;
+				seenSubCodesForNumItems[subCodeForNumItems] = true;
 				// Count the item for the group separator (if not added), as well as the item itself
 				if (!grpNameItemAddedToMenu)
 				{
@@ -15640,6 +15697,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 		DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = 0;
 	var numSubBoards = 0;
 	var totalNewMsgs = 0;
+	//var seenSubCodesInIndexedMenu = {}; // Deduplicate: same sub can appear in multiple groups
 	// Load the menu
 	for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
 	{
@@ -15650,8 +15708,12 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 		var grpNameItemAddedToMenu = false;
 		for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
 		{
+			var subCode = msg_area.grp_list[grpIdx].sub_list[subIdx].code;
+			// Skip if we've already added this sub-board (can appear in multiple groups)
+			//if (seenSubCodesInIndexedMenu[subCode])
+			//	continue;
 			// Skip sub-boards that the user can't read or doesn't have configured for newscans
-			if (!userCanAccessSub(msg_area.grp_list[grpIdx].sub_list[subIdx].code, "read"))
+			if (!userCanAccessSub(subCode, "read"))
 				continue;
 			if (newScanOnly && !Boolean(msg_area.grp_list[grpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_NEW))
 				continue;
@@ -15660,6 +15722,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 			if (scanScope == SCAN_SCOPE_SUB_BOARD && bbs.cursub != subIdx)
 				continue;
 
+			//seenSubCodesInIndexedMenu[subCode] = true;
 			++numSubBoards;
 
 			if (writeStatusText)
@@ -15670,7 +15733,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 					printf("\rLoading: %0.2f%%  ", progressPercentage);
 			}
 
-			var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(msg_area.grp_list[grpIdx].sub_list[subIdx].code);
+			var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(subCode);
 			// If configured to only show sub-boards with new messages and this sub-board
 			// does'nt have any new messages, then skip it
 			if (this.userSettings.indexedModeNewscanOnlyShowSubsWithNewMsgs && itemInfo.numNewMsgs == 0)
@@ -15697,9 +15760,8 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWr
 				grpNameItemAddedToMenu = true;
 			}
 
-			//var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(msg_area.grp_list[grpIdx].sub_list[subIdx].code);
 			this.indexedModeMenu.Add(itemInfo.itemText, {
-				subCode: msg_area.grp_list[grpIdx].sub_list[subIdx].code,
+				subCode: subCode,
 				numNewMsgs: itemInfo.numNewMsgs
 			});
 
@@ -16233,7 +16295,8 @@ function findWidestNumMsgsAndNumNewMsgs(pScanScope, pForNewscanOnly, pLastImport
 
 		for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
 		{
-			if (!userCanAccessSub(msg_area.grp_list[grpIdx].sub_list[subIdx].code, "read"))
+			var subCode = msg_area.grp_list[grpIdx].sub_list[subIdx].code;
+			if (!userCanAccessSub(subCode, "read"))
 				continue;
 			if (onlyNewscanCfg && !Boolean(msg_area.grp_list[grpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_NEW))
 				continue;
@@ -16247,7 +16310,7 @@ function findWidestNumMsgsAndNumNewMsgs(pScanScope, pForNewscanOnly, pLastImport
 			var totalNumMsgsInSubLen = totalNumMsgsInSub.toString().length;
 			if (totalNumMsgsInSubLen > retObj.widestNumMsgs)
 				retObj.widestNumMsgs = totalNumMsgsInSubLen;
-			var latestPostInfo = getLatestPostTimestampAndNumNewMsgs(msg_area.grp_list[grpIdx].sub_list[subIdx].code, pLastImportedMsgShowImportTime, null);
+			var latestPostInfo = getLatestPostTimestampAndNumNewMsgs(subCode, pLastImportedMsgShowImportTime, null);
 			var numNewMessagesInSubLen = latestPostInfo.numNewMsgs.toString().length;
 			if (numNewMessagesInSubLen > retObj.widestNumNewMsgs)
 				retObj.widestNumNewMsgs = numNewMessagesInSubLen;
@@ -17717,7 +17780,7 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr, pGetMsgTails)
 
 	retObj.pmode = msg_pmode(msgbase, pMsgHdr);
 
-	if ((typeof(MSG_TYPE_POLL) != "undefined") && (pMsgHdr.type & MSG_TYPE_POLL) == MSG_TYPE_POLL)
+	if ((typeof(MSG_TYPE_POLL) != "undefined") && Boolean(pMsgHdr.type & MSG_TYPE_POLL))
 	{
 		// A poll is intended to be parsed (and displayed) using on the header data. The
 		// (optional) comments are stored in the hdr.field_list[] with type values of
@@ -17809,7 +17872,7 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr, pGetMsgTails)
 			// If the current logged-in user created this poll, then show the
 			// users who have voted on it so far.
 			var msgFromUpper = pMsgHdr.from.toUpperCase();
-			if ((msgFromUpper == user.name.toUpperCase()) || (msgFromUpper == user.handle.toUpperCase()))
+			if (msgFromUpper == user.name.toUpperCase() || msgFromUpper == user.handle.toUpperCase())
 			{
 				// Check all the messages in the messagebase after the current one
 				// to find ballots for this poll. For ballots, append the 'user voted'
@@ -22423,6 +22486,43 @@ function sortMessageHdrsByDateTime(msgHdrA, msgHdrB)
 // Return value: An array of internal sub-board codes for sub-boards to scan
 function getSubBoardsToScanArray(pScanScopeChar)
 {
+	// New (March 2026) after asking AI to try to fix scan pointer issue:
+	/*
+	var subBoardsToScan = [];
+	var seenSubCodes = {}; // Deduplicate: same sub can appear in multiple groups
+	if (pScanScopeChar == "A") // All sub-board scan
+	{
+		for (var grpIndex = 0; grpIndex < msg_area.grp_list.length; ++grpIndex)
+		{
+			for (var subIndex = 0; subIndex < msg_area.grp_list[grpIndex].sub_list.length; ++subIndex)
+			{
+				var subCode = msg_area.grp_list[grpIndex].sub_list[subIndex].code;
+				if (!seenSubCodes[subCode])
+				{
+					seenSubCodes[subCode] = true;
+					subBoardsToScan.push(subCode);
+				}
+			}
+		}
+	}
+	else if (pScanScopeChar == "G") // Group scan
+	{
+		for (var subIndex = 0; subIndex < msg_area.grp_list[bbs.curgrp].sub_list.length; ++subIndex)
+		{
+			var subCode = msg_area.grp_list[bbs.curgrp].sub_list[subIndex].code;
+			if (!seenSubCodes[subCode])
+			{
+				seenSubCodes[subCode] = true;
+				subBoardsToScan.push(subCode);
+			}
+		}
+	}
+	else if (pScanScopeChar == "S") // Current sub-board scan
+		subBoardsToScan.push(bbs.cursub_code);
+	return subBoardsToScan;
+	*/
+
+	// Older:
 	var subBoardsToScan = [];
 	if (pScanScopeChar == "A") // All sub-board scan
 	{
