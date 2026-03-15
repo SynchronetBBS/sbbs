@@ -195,7 +195,7 @@ mousedrag(struct vmem_cell *scrollback)
 	struct vmem_cell     *screen;
 	unsigned char        *tscreen;
 	struct vmem_cell     *sbuffer;
-	int                   sbufsize;
+	size_t                sbufsize;
 	int                   pos, startpos, endpos, lines;
 	int                   outpos;
 	char                 *copybuf = NULL;
@@ -203,10 +203,16 @@ mousedrag(struct vmem_cell *scrollback)
 	int                   lastchar;
 	struct ciolib_screen *savscrn;
 
-	sbufsize = term.width * sizeof(*screen) * term.height;
+	sbufsize = (size_t)term.width * sizeof(*screen) * term.height;
 	screen = malloc(sbufsize);
 	sbuffer = malloc(sbufsize);
-	tscreen = malloc(term.width * 2 * term.height);
+	tscreen = malloc((size_t)term.width * 2 * term.height);
+	if (screen == NULL || sbuffer == NULL || tscreen == NULL) {
+		free(screen);
+		free(sbuffer);
+		free(tscreen);
+		return;
+	}
 	vmem_gettext(term.x - 1, term.y - 1, term.x + term.width - 2, term.y + term.height - 2, screen);
 	gettext(term.x - 1, term.y - 1, term.x + term.width - 2, term.y + term.height - 2, tscreen);
 	savscrn = savescreen();
@@ -4398,7 +4404,7 @@ apc_handler(char *strbuf, size_t slen, char *retbuf, size_t retsize, void *apcd)
 			p = "*";
 		else
 			p = strbuf + 13;
-		strcat(fn, p);
+		strlcat(fn, p, sizeof(fn));
 		conn_send("\x1b_SyncTERM:C;L\n", 15, 0);
 		rc = glob(fn, GLOB_MARK, NULL, &gl);
 		if (rc != 0) {
@@ -4443,7 +4449,7 @@ apc_handler(char *strbuf, size_t slen, char *retbuf, size_t retsize, void *apcd)
 		if (*p != ';')
 			return;
 		p++;
-		strcat(fn, p);
+		strlcat(fn, p, sizeof(fn));
 		if (!clean_path(fn, sizeof(fn)))
 			return;
 		if (!fexist(fn))
