@@ -7534,6 +7534,8 @@ bicmp(const void *str, const void *vd)
 {
 	int   ret;
 	char *tmpstr = strdup(str);
+	if (tmpstr == NULL)
+		return -1;
 	char *openparen = strchr(tmpstr, '(');
 
 	if (openparen != NULL)
@@ -8564,8 +8566,8 @@ draw_pixel(int x, int y)
 		if (pix == NULL)
 			return;
 		if (pix->pixels[0] & 0x40000000) {
-			return;
 			freepixels(pix);
+			return;
 		}
 		rip_setpixel(rip.viewport.sx + x, rip.viewport.sy + y, pixel2color(pix->pixels[0]) ^ rip.color);
 		freepixels(pix);
@@ -9119,6 +9121,8 @@ set_line(int x1, int y1, int x2, int y2, uint32_t color, uint16_t pat, int width
 				ly = map_rip_y(y);
 
 				struct ciolib_pixels *pixels = getpixels(lx, ly, lx, ly, false);
+				if (pixels == NULL)
+					continue;
 
 				set_pixel(x, y, pixels->pixels[0] | 0x40000000);
 				freepixels(pixels);
@@ -9907,6 +9911,10 @@ do_popup(const char * const str)
 	width = 29 + 29 + (maxwidth * 8);
 	if (width < 29 + 29 + (strlen(question) * 8))
 		width = 29 + 29 + (strlen(question) * 8);
+	if (height > rip.y_dim)
+		height = rip.y_dim;
+	if (width > rip.x_dim)
+		width = rip.x_dim;
 
         // TODO: Scale to actual screen...
 	x1 = (rip.x_dim - width) / 2;
@@ -10105,8 +10113,13 @@ handle_command_str(const char *incmd)
 	char        str[2];
 	char *indup;
 
+	static int depth = 0;
+
 	if (incmd == NULL)
 		return;
+	if (depth > 64)
+		return;
+	depth++;
 	indup = strdup(incmd);
 
 	for (p = indup; *p; p++) {
@@ -10166,6 +10179,7 @@ handle_command_str(const char *incmd)
 		ripbufpos = 0;
 	}
 	free(indup);
+	depth--;
 }
 
 static void
@@ -10308,46 +10322,47 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	fh_change = fy != vstat.charheight;
 	rows = vstat.scrnheight / fy;
 	if ((font != vstat.forced_font) || (fx != vstat.charwidth) || (fy != vstat.charheight)) {
-		vstat.forced_font = font;
-		vstat.charwidth = fx;
-		vstat.charheight = fy;
-		vstat.cols = cols;
-		vstat.rows = rows;
-		if (fh_change) {
-			if (fy > 8)
-				vstat.default_curs_start = vstat.charheight - 2;
-			else
-				vstat.default_curs_start = vstat.charheight - 1;
-			vstat.default_curs_end = vstat.charheight - 1;
-			vstat.curs_start = vstat.default_curs_start;
-			vstat.curs_end = vstat.default_curs_end;
+		nvmem = realloc(vstat.vmem->vmem,
+		    cols * rows * sizeof(vstat.vmem->vmem[0]));
+		if (nvmem == NULL) {
+			cols = vstat.cols;
+			rows = vstat.rows;
 		}
+		else {
+			vstat.forced_font = font;
+			vstat.charwidth = fx;
+			vstat.charheight = fy;
+			vstat.cols = cols;
+			vstat.rows = rows;
+			if (fh_change) {
+				if (fy > 8)
+					vstat.default_curs_start = vstat.charheight - 2;
+				else
+					vstat.default_curs_start = vstat.charheight - 1;
+				vstat.default_curs_end = vstat.charheight - 1;
+				vstat.curs_start = vstat.default_curs_start;
+				vstat.curs_end = vstat.default_curs_end;
+			}
 
-                // We need to update gettextinfo() results as well...
-		cio_textinfo.screenwidth = cols;
-		cio_textinfo.screenheight = rows;
+			cio_textinfo.screenwidth = cols;
+			cio_textinfo.screenheight = rows;
 
-                // And this crappy thing.
-		term.width = cols;
-		term.height = rows;
+			term.width = cols;
+			term.height = rows;
 
-                // Now, make the vmem array large enough for the new bits...
-                // TODO: Handle failures!
-                vstat.vmem->changed = true;
-		nvmem = realloc(vstat.vmem->vmem, vstat.cols * vstat.rows * sizeof(vstat.vmem->vmem[0]));
-
-                // And use it.
-		vstat.vmem->top_row = 0;
-		vstat.vmem->width = cols;
-		vstat.vmem->height = rows;
-		vstat.vmem->count = cols * rows;
-		vstat.vmem->vmem = nvmem;
-		for (size_t off = 0; off < vstat.vmem->count; off++) {
-			vstat.vmem->vmem[off].bg = 0x04000000;
-			vstat.vmem->vmem[off].fg = 0x04000000;
-			vstat.vmem->vmem[off].ch = ' ';
-			vstat.vmem->vmem[off].font = 0;
-			vstat.vmem->vmem[off].legacy_attr = 7;
+			vstat.vmem->changed = true;
+			vstat.vmem->top_row = 0;
+			vstat.vmem->width = cols;
+			vstat.vmem->height = rows;
+			vstat.vmem->count = cols * rows;
+			vstat.vmem->vmem = nvmem;
+			for (size_t off = 0; off < vstat.vmem->count; off++) {
+				vstat.vmem->vmem[off].bg = 0x04000000;
+				vstat.vmem->vmem[off].fg = 0x04000000;
+				vstat.vmem->vmem[off].ch = ' ';
+				vstat.vmem->vmem[off].font = 0;
+				vstat.vmem->vmem[off].legacy_attr = 7;
+			}
 		}
 	}
 	assert_rwlock_unlock(&vstatlock);
@@ -10849,6 +10864,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 	int      ex, ey;
 
 	args = parse_string(rawargs);
+	if (args == NULL)
+		return;
 
 // SLEEP(100);
 // printf("Level: %d, Sublevel: %d, Cmd: '%c', args: '%s'\n", level, sublevel, cmd, args);
@@ -11179,6 +11196,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							        rip.viewport.ex,
 							        arg2,
 							        false);
+							if (pix == NULL)
+								break;
 
 #if 0 // This slow draw is useful for debugging flood fill
                                                         // issues...
@@ -11802,10 +11821,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							arg2 = parse_mega(&args[10], 2);
 							arg3 = parse_mega(&args[12], 1);
 							arg4 = parse_mega(&args[13], 4);
-							x1 = map_rip_x(x1 + rip.viewport.sx);
-							x2 = map_rip_x(x2 + rip.viewport.sy);
-							y1 = map_rip_y(y1 + rip.viewport.sx);
-							y2 = map_rip_y(y2 + rip.viewport.sy);
+							x1 = map_rip_x(x1);
+							x2 = map_rip_x(x2);
+							y1 = map_rip_y(y1);
+							y2 = map_rip_y(y2);
 
                                                         // Step 1, choose the biggest font that fits...
                                                         // we have 8x16, 8x14, 8x8, 7x14, and 7x8 to pick from...
@@ -11946,6 +11965,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 						case 'f': // RIP_SET_WORLD_FRAME (v2.A0)
 							handled = true;
 							GET_XY();
+							if (x1 < 1 || y1 < 1)
+								break;
 							rip.x_dim = x1;
 							rip.y_dim = y1;
 							assert_rwlock_rdlock(&vstatlock);
@@ -12222,7 +12243,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							struct point *argv = malloc(sizeof(struct point) * arg1);
 							x1 = rip.x_dim - 1;
-							y1 = rip.x_dim - 1;
+							y1 = rip.y_dim - 1;
 							x2 = 0;
 							y2 = 0;
 
@@ -12434,7 +12455,18 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							GET_XY2();
 
-                                                        // TODO: Range check...
+							if (x1 == 0 && y1 == 0
+							    && x2 == 0 && y2 == 0) {
+								/* Disable viewport */
+							}
+							else {
+								if (x2 >= rip.x_dim)
+									x2 = rip.x_dim - 1;
+								if (y2 >= rip.y_dim)
+									y2 = rip.y_dim - 1;
+								if (x1 >= x2 || y1 >= y2)
+									break;
+							}
 							rip.viewport.sx = x1;
 							rip.viewport.sy = y1;
 							rip.viewport.ex = x2;
@@ -13774,13 +13806,13 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									break;
 								case 1:
 									if (access(cache_path, R_OK))
-										conn_send("0\r\n", 2, 1000);
+										conn_send("0\r\n", 3, 1000);
 									else
-										conn_send("1\r\n", 2, 1000);
+										conn_send("1\r\n", 3, 1000);
 									break;
 								case 2:
 									if (stat(cache_path, &st)) {
-										conn_send("0\r\n", 2, 1000);
+										conn_send("0\r\n", 3, 1000);
 									}
 									else {
 										sprintf(str,
@@ -13791,7 +13823,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									break;
 								case 3:
 									if (stat(cache_path, &st)) {
-										conn_send("0\r\n", 2, 1000);
+										conn_send("0\r\n", 3, 1000);
 									}
 									else {
 										localtime_r(&st.st_mtime, &tm);
@@ -13808,7 +13840,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									break;
 								case 4:
 									if (stat(cache_path, &st)) {
-										conn_send("0\r\n", 2, 1000);
+										conn_send("0\r\n", 3, 1000);
 									}
 									else {
 										localtime_r(&st.st_mtime, &tm);
@@ -13816,7 +13848,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 										    sizeof(dstr),
 										    "%m/%d/%y.%H:%M:%S",
 										    &tm);
-										sprintf(str,
+										snprintf(str,
+										    sizeof(str),
 										    "1.%s.%" PRIdOFF ".%s\r\n",
 										    &args[6],
 										    st.st_size,
@@ -13946,6 +13979,12 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          */
 							handled = true;
 #ifndef SYNCVIEW
+							if (strstr(&args[9], ".."))
+								break;
+							if (strchr(&args[9], '/'))
+								break;
+							if (strchr(&args[9], '\\'))
+								break;
 							if (!get_cache_fn_subdir(rip.bbs, cache_path,
 							    sizeof(cache_path), "RIP"))
 								break;
@@ -13989,6 +14028,14 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								    > rip.viewport.ex)
 								    || (y1 + rip.viewport.sy + pix->height - 1
 								    > rip.viewport.ey)) {
+									free(pix);
+									fclose(icn);
+									break;
+								}
+								if ((size_t)pix->height != 0
+								    && (size_t)pix->width
+								    > SIZE_MAX / sizeof(*pix->pixels)
+								    / pix->height) {
 									free(pix);
 									fclose(icn);
 									break;
@@ -14175,7 +14222,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								mf->data.hot->box.x1 = x1 + rip.viewport.sx;
 								mf->data.hot->box.x2 = x2 + rip.viewport.sx;
 								mf->data.hot->box.y1 = y1 + rip.viewport.sy;
-								mf->data.hot->box.y2 = y2 + rip.viewport.sx;
+								mf->data.hot->box.y2 = y2 + rip.viewport.sy;
 								mf->data.hot->invertable = arg1;
 								mf->data.hot->resetafter = arg2;
 								mf->data.hot->command = strdup(&args[17]);
@@ -14745,6 +14792,12 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (rip.clipboard == NULL)
 								break;
 #ifndef SYNCVIEW
+							if (strstr(&args[1], ".."))
+								break;
+							if (strchr(&args[1], '/'))
+								break;
+							if (strchr(&args[1], '\\'))
+								break;
 							if (!get_cache_fn_subdir(rip.bbs, cache_path,
 							    sizeof(cache_path), "RIP"))
 								break;
@@ -14926,6 +14979,12 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if ((arg2 < 0) || (arg2 == 4) || (arg2 > 7))
 								break;
 							if ((arg3 < 0) || (arg3 == 0) || (arg3 == 5))
+								break;
+							if (strstr(&args[8], ".."))
+								break;
+							if (strchr(&args[8], '/'))
+								break;
+							if (strchr(&args[8], '\\'))
 								break;
 #ifndef SYNCVIEW
 							if (!get_cache_fn_subdir(rip.bbs, cache_path,
@@ -15419,15 +15478,22 @@ do_skypix(char *buf, size_t len)
 			*p = 0;
 	}
 
-        // TODO: Verify number of arguments.
+	if (argc < 1) {
+		free(argv);
+		return;
+	}
 // printf("do_skypix(\"%s\")\n", &buf[2]);
 	switch (argv[0]) {
 		case 1: // Set Pixel
+			if (argc < 3)
+				break;
 			rip.x = argv[1];
 			rip.y = argv[2];
 			scale_setpixel(rip.x, rip.y, cterm->fg_color);
 			break;
 		case 2: // Draw line
+			if (argc < 3)
+				break;
 			set_line(rip.x, rip.y, argv[1], argv[2], cterm->fg_color, 0xffff, 1);
 			rip.x = argv[1];
 			rip.y = argv[2];
@@ -15436,12 +15502,16 @@ do_skypix(char *buf, size_t len)
 			printf("TODO: SkyPix Flood Fill mode %ld\n", argv[0]);
 			break;
 		case 4: // Rectangle Fill...
+			if (argc < 5)
+				break;
 			for (y = argv[2]; y <= argv[4]; y++) {
 				for (x = argv[1]; x <= argv[3]; x++)
 					scale_setpixel(x, y, cterm->fg_color);
 			}
 			break;
 		case 5: // Draw ellipse
+			if (argc < 5)
+				break;
 			for (ang = 0; ang < 360; ang++) {
 				set_line(argv[1] + (argv[3] * cos(ang * (M_PI / 180.0))),
 				    argv[2] - (argv[4] * sin(ang * (M_PI / 180.0))),
@@ -15451,11 +15521,15 @@ do_skypix(char *buf, size_t len)
 			}
 			break;
 		case 6: // Copy
+			if (argc < 5)
+				break;
 			freepixels(rip.clipboard);
 			rip.clipboard =
 			    getpixels(argv[1], argv[2], argv[1] + argv[3] - 1, argv[2] + argv[4] - 1, false);
 			break;
 		case 7: // Paste
+			if (argc < 7)
+				break;
                         // TODO: MINTERM and MASK not currently supported...
 			setpixels(argv[3],
 			    argv[4],
@@ -15467,6 +15541,8 @@ do_skypix(char *buf, size_t len)
 			    NULL);
 			break;
 		case 8: // Move pen
+			if (argc < 3)
+				break;
 			rip.x = argv[1];
 			rip.y = argv[2];
 			break;
@@ -15475,6 +15551,8 @@ do_skypix(char *buf, size_t len)
 			printf("TODO: SkySound\n");
 			break;
 		case 10: // Set Font...
+			if (argc < 2)
+				break;
 #if 0
 			if (amiga_font == NULL) {
                                 // Set amiga_x/y from text position
@@ -15509,12 +15587,15 @@ do_skypix(char *buf, size_t len)
 			amiga_font = NULL;
 
                         // cterm->font_render = NULL;
+			if (strstr(sarg, ".."))
+				break;
 			if (strchr(sarg, '/'))
 				break;
 			if (strchr(sarg, '\\'))
 				break;
 			strlwr(sarg);
 			off_t flen = flength(sarg);
+			size_t nchars;
 			if (flen < 0) {
 				printf("TODO: Unable to allocate %" PRIdOFF " bytes for font %s.\n", flen, sarg);
 				break;
@@ -15589,9 +15670,24 @@ do_skypix(char *buf, size_t len)
 			amiga_font->charlocOffset = htonl(amiga_font->charlocOffset);
 			amiga_font->fontSpaceOffset = htonl(amiga_font->fontSpaceOffset);
 			amiga_font->kernOffset = htonl(amiga_font->kernOffset);
+			nchars = amiga_font->last - amiga_font->first + 1;
+			if (amiga_font->first > amiga_font->last
+			    || (size_t)flen < sizeof(struct FontHeader)
+			    || 0x20 + amiga_font->charlocOffset + nchars * 4 > (size_t)flen
+			    || (amiga_font->fontSpaceOffset != 0
+			        && 0x20 + amiga_font->fontSpaceOffset + nchars * 2 > (size_t)flen)
+			    || (amiga_font->kernOffset != 0
+			        && 0x20 + amiga_font->kernOffset + nchars * 2 > (size_t)flen)
+			    || 0x20 + amiga_font->dataOffset + (size_t)amiga_font->height * amiga_font->modulo > (size_t)flen) {
+				free(amiga_font);
+				amiga_font = NULL;
+				break;
+			}
 			cterm->font_render = amiga_cputs;
 			break;
 		case 11: // Set palette...
+			if (argc < 17)
+				break;
 			for (i = 0; i < 16; i++) {
 				attr2palette(i, &fg, NULL);
 				setpalette(fg
@@ -15942,6 +16038,7 @@ ansi_only(BYTE *buf, unsigned count)
 					rip.ansi_state = ANSI_STATE_NONE;
 					break;
 				}
+				break;
 			case ANSI_STATE_GOT_ESC_IN_LIMITED_STRING:
 				*(out++) = buf[i];
 				rip.ansi_state = ANSI_STATE_NONE;
@@ -16426,6 +16523,16 @@ init_rip_ver(int ripver)
 {
 #ifdef HAS_VSTAT
 	if (cio_api.options & CONIO_OPT_SET_PIXEL) {
+		kill_mouse_fields();
+		kill_saved_mouse_fields();
+		if (rip.clipboard) {
+			freepixels(rip.clipboard);
+			rip.clipboard = NULL;
+		}
+		if (rip.scb.pix) {
+			freepixels(rip.scb.pix);
+			rip.scb.pix = NULL;
+		}
 		FREE_AND_NULL(rip.xmap);
 		FREE_AND_NULL(rip.ymap);
 		FREE_AND_NULL(rip.xunmap);
