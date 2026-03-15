@@ -3686,9 +3686,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								vmode = find_vmode(ti.currmode);
 								if (vmode != -1 &&
 								    (seq->param_int[3] < vparams[vmode].charwidth*cterm->width) &&
-								    (seq->param_int[2] < vparams[vmode].charwidth*cterm->width) &&
+								    (seq->param_int[2] < vparams[vmode].charheight*cterm->height) &&
 								    (seq->param_int[5] < vparams[vmode].charwidth*cterm->width) &&
-								    (seq->param_int[4] < vparams[vmode].charwidth*cterm->width) &&
+								    (seq->param_int[4] < vparams[vmode].charheight*cterm->height) &&
 								    (pix = getpixels(
 								      (seq->param_int[3] - 1 + cterm->x - 1)*vparams[vmode].charwidth,
 								      (seq->param_int[2] - 1 + cterm->y - 1)*vparams[vmode].charheight,
@@ -5926,8 +5926,10 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 						play_music(cterm);
 					}
 					else {
-						if(strchr(musicchars,ch[0])!=NULL)
-							ustrcat(cterm->musicbuf,ch);
+						if(strchr(musicchars,ch[0])!=NULL) {
+							if (strlen((char *)cterm->musicbuf) < sizeof(cterm->musicbuf) - 2)
+								ustrcat(cterm->musicbuf,ch);
+						}
 						else {
 							/* Kill non-music strings */
 							cterm->music=0;
