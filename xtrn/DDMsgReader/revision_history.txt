@@ -5,6 +5,14 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.97j    2026-03-14   Bug fixex: Messages appearing more than once in a newscan
+                      or new-to-you scan (with help from Cursor AI). Message
+                      scan pointer(s) going back to the beginning or early in a
+                      sub-board (should at least be improved, if not totally
+                      fixed).
+                      Bug fix: msg_area.sub object undefined when viewing sub-
+                      board information (shouldn't happen, but a check was added
+                      just in case). Reported by Keyop.
 1.97i    2026-02-23   Improved message text translating (UTF-8, HTML, and nbsp),
                       as well as not word-wrapping message tails.
 1.97h    2026-02-07   Small refactoring in the ReplyToMsg() function related to
