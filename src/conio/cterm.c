@@ -5962,14 +5962,14 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 									CURR_XY(&x, &y);
 									x--;
 									if(x < CURR_MINX)
-										y = CURR_MINX;
+										x = CURR_MINX;
 									gotoxy(x, y);
 									break;
 								case 31:	/* Right (TODO: Wraps around to same line?) */
 									CURR_XY(&x, &y);
 									x++;
 									if(x > CURR_MAXX)
-										y = CURR_MAXX;
+										x = CURR_MAXX;
 									gotoxy(x, y);
 									break;
 								case 125:	/* Clear Screen */
@@ -5983,7 +5983,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 										y--;
 										if (y < CURR_MINY)
 											break;
-										y = CURR_MAXY;
+										x = CURR_MAXX;
 									}
 									gotoxy(x, y);
 									putch(32);
