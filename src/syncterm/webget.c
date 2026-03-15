@@ -402,7 +402,7 @@ recv_line(struct http_session *sess, int timeout, size_t *len)
 
 error_return:
 	if (len)
-		len = 0;
+		*len = 0;
 special_return:
 	free(ret);
 	return NULL;
