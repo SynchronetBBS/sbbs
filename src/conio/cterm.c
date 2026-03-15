@@ -2969,6 +2969,12 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											sprintf(tmp, "\x1b[=3;%u;%un", vparams[vmode].charheight, vparams[vmode].charwidth);
 										break;
 									}
+									case 4: /* Query LCF mode status */
+										sprintf(tmp, "\x1b[=4;%dn", (cterm->last_column_flag & CTERM_LCF_ENABLED) ? 1 : 0);
+										break;
+									case 5: /* Query LCF forced status */
+										sprintf(tmp, "\x1b[=5;%dn", (cterm->last_column_flag & CTERM_LCF_FORCED) ? 1 : 0);
+										break;
 								}
 								if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
 									strcat(retbuf, tmp);
@@ -4529,7 +4535,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											break;
 										case 's':
 											if (cterm->strbuf[3] == 0) {
-												sprintf(tmp, "\x1bP1$r%d;%dr\x1b\\", cterm->left_margin, cterm->right_margin);
+												sprintf(tmp, "\x1bP1$r%d;%ds\x1b\\", cterm->left_margin, cterm->right_margin);
 												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
 													strcat(retbuf, tmp);
 											}
@@ -4832,7 +4838,7 @@ cterm_reset(struct cterminal *cterm)
 
 struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
 {
-	char	*revision="$Revision: 1.324 $";
+	char	*revision="$Revision: 1.325 $";
 	char *in;
 	char	*out;
 	struct cterminal *cterm;
