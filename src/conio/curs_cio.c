@@ -1051,12 +1051,12 @@ int curs_getch(void)
 				break;
 
 			case KEY_F(11):			/* Function Key */
-				curs_nextgetch=0x57;
+				curs_nextgetch=0x85;
 				ch=0;
 				break;
 
 			case KEY_F(12):			/* Function Key */
-				curs_nextgetch=0x58;
+				curs_nextgetch=0x86;
 				ch=0;
 				break;
 
