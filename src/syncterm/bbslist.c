@@ -1315,17 +1315,17 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 		optmap[i] = BBSLIST_FIELD_ADDR;
 		switch (item->conn_type) {
 			case CONN_TYPE_MODEM:
-				sprintf(opt[i++], "Phone Number      %s", item->addr);
+				snprintf(opt[i++], sizeof(opt[0]), "Phone Number      %s", item->addr);
 				break;
 			case CONN_TYPE_SERIAL:
 			case CONN_TYPE_SERIAL_NORTS:
-				sprintf(opt[i++], "Device Name       %s", item->addr);
+				snprintf(opt[i++], sizeof(opt[0]), "Device Name       %s", item->addr);
 				break;
 			case CONN_TYPE_SHELL:
-				sprintf(opt[i++], "Command           %s", item->addr);
+				snprintf(opt[i++], sizeof(opt[0]), "Command           %s", item->addr);
 				break;
 			default:
-				sprintf(opt[i++], "Address           %s", item->addr);
+				snprintf(opt[i++], sizeof(opt[0]), "Address           %s", item->addr);
 				break;
 		}
 	}
@@ -1360,7 +1360,7 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 		printf_trunc(opt[i], sizeof(opt[i]), "Username          %s", item->user);
 		i++;
 		optmap[i] = BBSLIST_FIELD_PASSWORD;
-		sprintf(opt[i++], "GHost Program     %s", item->password);
+		snprintf(opt[i++], sizeof(opt[0]), "GHost Program     %s", item->password);
 		optmap[i] = BBSLIST_FIELD_SYSPASS;
 		sprintf(opt[i++], "System Password   %s", item->syspass[0] ? "********" : "<none>");
 	}
@@ -1369,7 +1369,7 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 		printf_trunc(opt[i], sizeof(opt[i]), "SSH Username      %s", item->user);
 		i++;
 		optmap[i] = BBSLIST_FIELD_PASSWORD;
-		sprintf(opt[i++], "BBS Username      %s", item->password);
+		snprintf(opt[i++], sizeof(opt[0]), "BBS Username      %s", item->password);
 		optmap[i] = BBSLIST_FIELD_SYSPASS;
 		sprintf(opt[i++], "BBS Password      %s", item->syspass[0] ? "********" : "<none>");
 	}
@@ -1404,7 +1404,7 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 		sprintf(opt[i++], "Terminal Type     %s", item->term_name[0] ? item->term_name : "<Automatic>");
 	}
 	optmap[i] = BBSLIST_FIELD_FONT;
-	sprintf(opt[i++], "Font              %s", item->font);
+	snprintf(opt[i++], sizeof(opt[0]), "Font              %s", item->font);
 	if (get_emulation(item) != CTERM_EMULATION_ANSI_BBS)
 		is_ansi = false;
 	if (is_ansi) {
