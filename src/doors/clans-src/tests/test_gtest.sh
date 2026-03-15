@@ -33,9 +33,9 @@ ln -sf "$LANGFILE" "$T/strings.xl"
 ln -sf "$PAKFILE"  "$T/clans.pak"
 cat > "$T/clans.ini" << 'INI'
 Language   strings.xl
-SpellFile  spells
-ClassFile  class
-RaceFile   races
+Spells     /dat/Spells
+Classes    /dat/Classes
+Races      /dat/Races
 INI
 
 OUT="$T/out.txt"
@@ -114,6 +114,42 @@ assert_contains "level 5 has result" "$STATE" "FightResult="
 assert_succeeds "autofight with -g exits zero" \
 	run_gtest autofight -l 1 -r 1 -g9999
 assert_not_contains "gold not default" "$STATE" "Gold=5000"
+
+# =========================================================================
+# Autofight — loss/run at high level
+# =========================================================================
+
+assert_succeeds "autofight level 20 -r 0" \
+	run_gtest autofight -l 20 -r 0
+assert_not_contains "high level not won" "$STATE" "FightResult=WON"
+assert_contains "not-won loses points"   "$STATE" "Points=-3"
+
+# =========================================================================
+# Autofight — XP gained on win
+# =========================================================================
+
+assert_succeeds "autofight XP check" \
+	run_gtest autofight -l 1 -r 1
+assert_not_contains "fighter gained XP" "$STATE" "Member0.XP=0"
+assert_not_contains "mage gained XP"    "$STATE" "Member1.XP=0"
+
+# =========================================================================
+# Autofight — gold increases on win
+# =========================================================================
+
+assert_succeeds "autofight gold check" \
+	run_gtest autofight -l 1 -r 1
+assert_not_contains "gold increased"    "$STATE" "Gold=5000"
+assert_contains "win earns points"      "$STATE" "Points=5"
+
+# =========================================================================
+# Autofight — fight result always present
+# =========================================================================
+
+assert_succeeds "autofight level 10 runs" \
+	run_gtest autofight -l 10 -r 1
+assert_contains "level 10 has result"   "$STATE" "FightResult="
+assert_contains "level 10 has HP"       "$STATE" "Member0.HP="
 
 # =========================================================================
 # Level-up

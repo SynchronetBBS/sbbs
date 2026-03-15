@@ -246,7 +246,16 @@ static void setup_dummy_pclan(void)
 		m->MyClan = &PClan;
 		for (int j = 0; j < MAX_SPELLS_IN_EFFECT; j++)
 			m->SpellsInEffect[j].SpellNum = -1;
+		for (int j = 0; j < MAX_SPELLS; j++)
+			m->SpellsKnown[j] = 0;
 	}
+
+	/* Give Mage (1) a damage spell and Cleric (2) a heal spell.
+	   SpellsKnown is 1-based (0 = no spell, 1 = Spells[0]). */
+	if (Spells[0])
+		PClan.Member[1]->SpellsKnown[0] = 1;
+	if (Spells[1])
+		PClan.Member[2]->SpellsKnown[0] = 2;
 }
 
 static void setup_dummy_village(void)
