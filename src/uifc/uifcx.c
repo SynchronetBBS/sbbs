@@ -61,7 +61,7 @@ static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
 	int     i;
 
 	va_start(argptr, fmat);
-	vsprintf(str, fmat, argptr);
+	vsnprintf(str, sizeof(str), fmat, argptr);
 	va_end(argptr);
 	i = printf("%s", str);
 	return i;
