@@ -73,6 +73,8 @@ static int outstanding_rects;
 static protected_int32_t videoflags;
 static int real_screenwidth = 80;
 static bool have_blink; // true if there's any blinking characters on the screen
+static pthread_mutex_t vstat_chlock;
+static pthread_mutex_t prestel_hack_lock;
 
 /* Exported globals */
 
@@ -268,7 +270,9 @@ bitmap_vmem_puttext_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fil
 		return(0);
 	}
 
+	assert_pthread_mutex_lock(&vstat_chlock);
 	vstat.vmem->changed = true;
+	assert_pthread_mutex_unlock(&vstat_chlock);
 	for(y=sy-1;y<ey;y++) {
 		vc = vmem_cell_ptr(vstat.vmem, sx - 1, y);
 		for(x=sx-1;x<ex;x++) {
@@ -303,7 +307,9 @@ set_vmem_cell(size_t x, size_t y, uint16_t cell, uint32_t fg, uint32_t bg)
 	int		altfont;
 	int		font;
 
+	assert_pthread_mutex_lock(&vstat_chlock);
 	vstat.vmem->changed = true;
+	assert_pthread_mutex_unlock(&vstat_chlock);
 	bitmap_attr2palette_locked(cell>>8, fg == 0xffffff ? &fg : NULL, bg == 0xffffff ? &bg : NULL);
 
 	altfont = (cell>>11 & 0x01) | ((cell>>14) & 0x02);
@@ -1204,10 +1210,16 @@ same_cell(struct vmem_cell *bitmap_cell, struct vmem_cell *c2)
 	// Handles reveal/unreveal updates, modifies vmem
 	if (vstat.mode == PRESTEL_40X25 && (c2->bg & CIOLIB_BG_PRESTEL)) {
 		if (c2->legacy_attr & 0x08) {
+			// This is an ugly hack to patch things up later...
+			// This mutex is only for this specific function since
+			// all other calls hold the vstatlock for write and this
+			// will at least hold it for read.
+			assert_pthread_mutex_lock(&prestel_hack_lock);
 			if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
 				c2->bg |= CIOLIB_BG_REVEAL;
 			else
 				c2->bg &= ~CIOLIB_BG_REVEAL;
+			assert_pthread_mutex_unlock(&prestel_hack_lock);
 		}
 	}
 	if (bitmap_cell->bg & CIOLIB_BG_DIRTY)	// Dirty.
@@ -1236,7 +1248,7 @@ bitmap_draw_from_vmem(int sx, int sy, int ex, int ey, bool locked)
 		int ney = ey - rows;
 		bitmap_draw_vmem_locked(sx, sy, ex, ney, &vstat.vmem->vmem[so]);
 		so = 0;
-		sy += rows;
+		sy = ney + 1;
 	}
 
 	// Draw last chunk
@@ -1300,11 +1312,14 @@ static int update_from_vmem(int force)
 		return -1;
 	}
 
-	if(!vstat.vmem->changed) {
+	assert_pthread_mutex_lock(&vstat_chlock);
+	if(!(force || vstat.vmem->changed)) {
+		assert_pthread_mutex_unlock(&vstat_chlock);
 		assert_rwlock_unlock(&vstatlock);
 		return 0;
 	}
 	vstat.vmem->changed = false;
+	assert_pthread_mutex_unlock(&vstat_chlock);
 
 	/* If we change window size, redraw everything */
 	if(bitmap_drawn == NULL || vs.cols!=vstat.cols || vs.rows != vstat.rows) {
@@ -1717,7 +1732,7 @@ int bitmap_loadfont(const char *filename)
 }
 
 static void
-bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height, int width)
+bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height, int width, int scroll_shift)
 {
 	int32_t sdestoffset;
 	ssize_t ssourcepos;
@@ -1730,40 +1745,18 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 	int ptox = (tox - 1) * vstat.charwidth;
 	int px = (x - 1) * vstat.charwidth;
 	assert_pthread_mutex_lock(&screenlock);
-	if (width == vstat.cols && (height > vstat.rows / 2) && toy == 1) {
-		screena.toprow += (y - toy) * vstat.charheight;
+	if (scroll_shift != 0) {
+		int pixel_shift = scroll_shift * vstat.charheight;
+		screena.toprow += pixel_shift;
 		if (screena.toprow >= screena.screenheight)
 			screena.toprow -= screena.screenheight;
 		if (screena.toprow < 0)
 			screena.toprow += screena.screenheight;
-		screenb.toprow += (y - toy) * vstat.charheight;
+		screenb.toprow += pixel_shift;
 		if (screenb.toprow >= screenb.screenheight)
 			screenb.toprow -= screenb.screenheight;
-		if (screena.toprow < 0)
-			screena.toprow += screena.screenheight;
-
-		int yoff = toy - y;
-		height = vstat.rows - height;
-		toy = vstat.rows - (height - 1);
-		// Fill the bits with impossible data so they're redrawn
-		int bdoff = vmem_cell_offset(vstat.vmem, 0, toy - 1);
-		for (int vy = 0; vy < height; vy++) {
-			if (bitmap_drawn)
-				memset(&bitmap_drawn[bdoff], 0x04, sizeof(*bitmap_drawn) * vstat.cols);
-			bdoff = vmem_next_row_offset(vstat.vmem, bdoff);
-		}
-		if (vstat.charheight * vstat.rows == screena.screenheight) {
-			assert_pthread_mutex_unlock(&screenlock);
-			return;
-		}
-		// Move stuff below the bottom row of text back
-		pheight = screena.screenheight - (vstat.charheight * vstat.rows);
-		ptoy = screena.screenheight - pheight;
-		py = ptoy + (yoff * vstat.charheight);
-		if (py < 0)
-			py += screena.screenheight;
-		if (py >= screena.screenheight)
-			py -= screena.screenheight;
+		if (screenb.toprow < 0)
+			screenb.toprow += screenb.screenheight;
 	}
 
 	int maxpos = screena.screenwidth * screena.screenheight;
@@ -1779,6 +1772,7 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 	if (ssourcepos >= maxpos)
 		ssourcepos -= maxpos;
 	step = direction * vstat.scrnwidth;
+	const size_t mvsz = sizeof(screena.rect->data[0])*width*vstat.charwidth;
 	for(screeny=0; screeny < pheight; screeny++) {
 		if (ssourcepos >= maxpos)
 			ssourcepos -= maxpos;
@@ -1789,8 +1783,8 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 			dest -= maxpos;
 		if (dest < 0)
 			dest += maxpos;
-		memmove(&(screena.rect->data[dest]), &(screena.rect->data[ssourcepos]), sizeof(screena.rect->data[0])*width*vstat.charwidth);
-		memmove(&(screenb.rect->data[dest]), &(screenb.rect->data[ssourcepos]), sizeof(screenb.rect->data[0])*width*vstat.charwidth);
+		memmove(&(screena.rect->data[dest]), &(screena.rect->data[ssourcepos]), mvsz);
+		memmove(&(screenb.rect->data[dest]), &(screenb.rect->data[ssourcepos]), mvsz);
 		ssourcepos += step;
 	}
 	screena.update_pixels = 1;
@@ -1829,25 +1823,25 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 
 	if(toy > y)
 		scrolldown = true;
-	int otoy = toy;
-	int oy = y;
-	int oheight = height;
-	bool oscrolldown = scrolldown;
+	int scroll_shift = 0;
 
 	assert_rwlock_wrlock(&vstatlock);
+	assert_pthread_mutex_lock(&vstat_chlock);
 	vstat.vmem->changed = true;
+	assert_pthread_mutex_unlock(&vstat_chlock);
 	if (width == vstat.cols && height > vstat.rows / 2 && toy == 1) {
-		vstat.vmem->top_row += (y - toy);
+		scroll_shift = y - toy;
+		vstat.vmem->top_row += scroll_shift;
 		if (vstat.vmem->top_row >= vstat.vmem->height)
 			vstat.vmem->top_row -= vstat.vmem->height;
 		if (vstat.vmem->top_row < 0)
 			vstat.vmem->top_row += vstat.vmem->height;
 
-		// Set up the move back down...
+		// Set up the correction copy
 		scrolldown = !scrolldown;
-		height = vstat.rows - height - 1;
-		toy = vstat.rows - (height - 1);
-		y = vstat.rows - height;
+		height = scroll_shift;
+		y = ey;
+		toy = vstat.rows - height + 1;
 	}
 	if (scrolldown) {
 		soff = vmem_cell_offset(vstat.vmem, x - 1, y + height - 2);
@@ -1877,7 +1871,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 			memset(bitmap_drawn, 0x04, sizeof(struct vmem_cell) * vstat.cols * vstat.rows);
 	}
 	else
-		bitmap_movetext_screen(x, oy, tox, otoy, oscrolldown ? -1 : 1, oheight, width);
+		bitmap_movetext_screen(x, y, tox, toy, scrolldown ? -1 : 1, height, width, scroll_shift);
 	assert_rwlock_unlock(&vstatlock);
 
 	return(1);
@@ -2023,11 +2017,12 @@ int bitmap_attr2palette(uint8_t attr, uint32_t *fgp, uint32_t *bgp)
 
 int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 {
+	assert_rwlock_wrlock(&vstatlock);
 	int xchar = x / vstat.charwidth;
 	int ychar = y / vstat.charheight;
-
-	assert_rwlock_wrlock(&vstatlock);
+	assert_pthread_mutex_lock(&vstat_chlock);
 	vstat.vmem->changed = true;
+	assert_pthread_mutex_unlock(&vstat_chlock);
 	assert_pthread_mutex_lock(&screenlock);
 	if (screena.rect == NULL || screenb.rect == NULL || x >= screena.screenwidth || y >= screena.screenheight) {
 		assert_pthread_mutex_unlock(&screenlock);
@@ -2103,7 +2098,9 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	}
 
 	assert_rwlock_wrlock(&vstatlock);
+	assert_pthread_mutex_lock(&vstat_chlock);
 	vstat.vmem->changed = true;
+	assert_pthread_mutex_unlock(&vstat_chlock);
 	assert_pthread_mutex_lock(&screenlock);
 	if (ex > screena.screenwidth || ey > screena.screenheight) {
 		assert_pthread_mutex_unlock(&screenlock);
@@ -2707,7 +2704,9 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 	os = ((int64_t)vstat.winwidth * vstat.winwidth) + ((int64_t)vstat.winheight * vstat.winheight);
 
 	/* Initialize video memory with black background, white foreground */
+	assert_pthread_mutex_lock(&vstat_chlock);
 	vstat.vmem->changed = true;
+	assert_pthread_mutex_unlock(&vstat_chlock);
 	for (i = 0; i < vstat.cols*vstat.rows; ++i) {
 		if (i > 0)
 			vstat.vmem->vmem[i] = vstat.vmem->vmem[0];
@@ -2799,6 +2798,8 @@ int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 	assert_pthread_mutex_init(&callbacks.lock, NULL);
 	assert_rwlock_init(&vstatlock);
 	assert_pthread_mutex_init(&screenlock, NULL);
+	assert_pthread_mutex_init(&vstat_chlock, NULL);
+	assert_pthread_mutex_init(&prestel_hack_lock, NULL);
 	assert_pthread_mutex_init(&free_rect_lock, NULL);
 	assert_rwlock_wrlock(&vstatlock);
 	vstat.flags = VIDMODES_FLAG_PALETTE_VMEM;
