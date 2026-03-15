@@ -160,6 +160,12 @@ telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
 		if ((inbuf[i] == TELNET_IAC) || telnet_cmdlen) {
 			if (telnet_cmdlen < sizeof(telnet_cmd))
 				telnet_cmd[telnet_cmdlen++] = inbuf[i];
+			else {
+				/* Buffer full (long SB): slide last two bytes
+				 * so IAC SE detection still works */
+				telnet_cmd[sizeof(telnet_cmd) - 2] = telnet_cmd[sizeof(telnet_cmd) - 1];
+				telnet_cmd[sizeof(telnet_cmd) - 1] = inbuf[i];
+			}
 
 			command = telnet_cmd[1];
 			option = telnet_cmd[2];
