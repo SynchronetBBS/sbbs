@@ -12,7 +12,7 @@
 #include "syncterm.h"
 #include "uifcinit.h"
 
-static COM_HANDLE com = COM_HANDLE_INVALID;
+static _Atomic(COM_HANDLE) com = COM_HANDLE_INVALID;
 static bool seven_bits = false;
 
 void
@@ -438,7 +438,7 @@ modem_close(void)
 	oldcom = com;
 	com = COM_HANDLE_INVALID;
 	while (xp_fast_timer64() - start <= 10) {
-		if ((comGetModemStatus(com) & COM_DCD) == 0)
+		if ((comGetModemStatus(oldcom) & COM_DCD) == 0)
 			goto CLOSEIT;
 		SLEEP(1000);
 	}
