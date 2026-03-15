@@ -1028,9 +1028,18 @@ ssh_connect(struct bbslist *bbs)
 
 	create_conn_buf(&conn_inbuf, BUFFER_SIZE);
 	create_conn_buf(&conn_outbuf, BUFFER_SIZE);
-	conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE);
+	if (!(conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
+		conn_api.terminate = true;
+		free(pubkey);
+		return -1;
+	}
 	conn_api.rd_buf_size = BUFFER_SIZE;
-	conn_api.wr_buf = (unsigned char *)malloc(BUFFER_SIZE);
+	if (!(conn_api.wr_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
+		FREE_AND_NULL(conn_api.rd_buf);
+		conn_api.terminate = true;
+		free(pubkey);
+		return -1;
+	}
 	conn_api.wr_buf_size = BUFFER_SIZE;
 
 	_beginthread(ssh_output_thread, 0, NULL);
