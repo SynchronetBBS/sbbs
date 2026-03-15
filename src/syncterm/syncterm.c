@@ -1432,6 +1432,8 @@ get_xdg_path(enum xdg_paths type, char *buf, size_t bufsz)
 	// Add "syncterm" to the end
 	if (type != XDG_NONE) {
 		backslash(buf);
+		if (strlen(buf) + strlen("syncterm") >= bufsz)
+			return NULL;
 		strcat(buf, "syncterm");
 	}
 
@@ -1744,8 +1746,8 @@ update_webget_progress(struct webget_request *reqs, size_t items, bool leaveup)
 						int added = snprintf(&helpbuf[pos], sz - pos, "%9s/%-9s ", received, total);
 						pos += added;
 						if (sz > pos) {
-							int pct = reqs[i].received_size * 100 / reqs[i].remote_size;
-							int added = snprintf(&helpbuf[pos], sz - pos, "~%.*s~%.*s\r\n", pct, "", 10 - pct, "");
+							int pct = reqs[i].received_size * 10 / reqs[i].remote_size;
+							int added = snprintf(&helpbuf[pos], sz - pos, "~%*s~%*s\r\n", pct, "", 10 - pct, "");
 							pos += added;
 						}
 					}
@@ -2270,35 +2272,37 @@ main(int argc, char **argv)
 			else
 				items = 0;
 			struct webget_request *reqs = calloc(items + settings.webgetUserList, sizeof(struct webget_request));
-			sem_init(&download_complete_sem, 0, 0);
-			if (settings.webgetUserList) {
-				if (init_webget_req(&reqs[0], cache_path, "System List", settings.list_path)) {
-					reqs[0].cb_data = 0;
-					_beginthread(download_thread, 0, &reqs[0]);
-					started++;
+			if (reqs != NULL) {
+				sem_init(&download_complete_sem, 0, 0);
+				if (settings.webgetUserList) {
+					if (init_webget_req(&reqs[0], cache_path, "System List", settings.list_path)) {
+						reqs[0].cb_data = 0;
+						_beginthread(download_thread, 0, &reqs[0]);
+						started++;
+					}
+					else {
+						reqs[0].cb_data = UINT64_C(0x8000000000000000);
+					}
 				}
-				else {
-					reqs[0].cb_data = UINT64_C(0x8000000000000000);
+				for (size_t i = settings.webgetUserList; i < items + settings.webgetUserList; i++) {
+					if (init_webget_req(&reqs[i], cache_path, settings.webgets[i - settings.webgetUserList]->name, settings.webgets[i - settings.webgetUserList]->value)) {
+						reqs[i].cb_data = i;
+						_beginthread(download_thread, 0, &reqs[i]);
+						started++;
+					}
+					else {
+						reqs[i].cb_data = UINT64_C(0x8000000000000000) | i;
+					}
 				}
+				while (started > 0) {
+					if (sem_trywait_block(&download_complete_sem, 200) == 0) {
+						started--;
+					}
+					update_webget_progress(reqs, items, false);
+				}
+				sem_destroy(&download_complete_sem);
+				update_webget_progress(reqs, items, true);
 			}
-			for (size_t i = settings.webgetUserList; i < items + settings.webgetUserList; i++) {
-				if (init_webget_req(&reqs[i], cache_path, settings.webgets[i - settings.webgetUserList]->name, settings.webgets[i - settings.webgetUserList]->value)) {
-					reqs[i].cb_data = i;
-					_beginthread(download_thread, 0, &reqs[i]);
-					started++;
-				}
-				else {
-					reqs[i].cb_data = UINT64_C(0x8000000000000000) | i;
-				}
-			}
-			while (started > 0) {
-				if (sem_trywait_block(&download_complete_sem, 200) == 0) {
-					started--;
-				}
-				update_webget_progress(reqs, items, false);
-			}
-			sem_destroy(&download_complete_sem);
-			update_webget_progress(reqs, items, true);
 		}
 		uifcbail();
 	}
