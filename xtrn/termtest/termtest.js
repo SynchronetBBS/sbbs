@@ -1950,6 +1950,21 @@ var tests = [
 			return false;
 		return true;
 	}},
+	{'name':'LCFDSR', 'func':function() {
+		// Test what DSR 6n reports when LCF is set.
+		// LCF is set when a printable char advances cursor to right margin.
+		var w = console.screen_columns;
+		console.write("\x1b[=4h");
+		console.gotoxy(w - 1, 1);
+		// Write 2 chars: first fills col w-1, second fills col w and sets LCF
+		console.write("AB");
+		var pos = fast_getxy();
+		console.write("\x1b[=4l");
+		// The cursor should report the last column, not last+1
+		if (pos.x !== w || pos.y !== 1)
+			return false;
+		return true;
+	}},
 	{'name':'Regressions', 'func':function() {
 		// Fixed by 3dfa12a6cac
 		// Deleting lines could move rows that are off the screen
