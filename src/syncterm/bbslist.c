@@ -854,6 +854,8 @@ read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsna
 
 	entry->bpsrate = iniGetInteger(section, NULL, "BPSRate", 0);
 	entry->music = iniGetInteger(section, NULL, "ANSIMusic", CTERM_MUSIC_BANSI);
+	if (entry->music < CTERM_MUSIC_SYNCTERM || entry->music > CTERM_MUSIC_ENABLED)
+		entry->music = CTERM_MUSIC_BANSI;
 	entry->address_family = iniGetEnum(section, NULL, "AddressFamily", address_families, ADDRESS_FAMILY_UNSPEC);
 	iniGetSString(section, NULL, "Font", "Codepage 437 English", entry->font, sizeof(entry->font));
 	iniGetSString(section, NULL, "Comment", "", entry->comment, sizeof(entry->comment));
