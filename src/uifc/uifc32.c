@@ -1512,7 +1512,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							(*bar) = optheight - vbrdrsize - 1;
 						vmem_gettext(s_left + lbrdrwidth + 2 + left, s_top + y
 						             , s_left + left + width - rbrdrwidth - 1, s_top + y, line);
-						for (i = 0; i < 74; i++)
+						for (i = 0; i < width; i++)
 							set_vmem_attr(&line[i], lbclr);
 						vmem_puttext(s_left + lbrdrwidth + 2 + left, s_top + y
 						             , s_left + left + width - rbrdrwidth - 1, s_top + y, line);
@@ -2595,7 +2595,7 @@ static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
 	int              i;
 
 	va_start(argptr, fmat);
-	vsprintf(str, fmat, argptr);
+	vsnprintf(str, sizeof(str), fmat, argptr);
 	va_end(argptr);
 	for (i = 0; str[i]; i++)
 		set_vmem(&buf[i], str[i], attr, 0);
