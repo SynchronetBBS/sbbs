@@ -1197,7 +1197,7 @@ BOOL zmodem_recv_bin32_header(zmodem_t* zm)
 	for (n = 0; n < HDRLEN; n++) {
 		c = zmodem_rx(zm);
 		if (c < 0)
-			return TRUE;
+			return FALSE;
 		crc = ucrc32(c, crc);
 		zm->rxd_header[n] = c;
 	}
