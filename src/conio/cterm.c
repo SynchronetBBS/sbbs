@@ -3665,7 +3665,13 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							    seq->param_int[2] != UINT64_MAX &&
 							    seq->param_int[3] != UINT64_MAX &&
 							    seq->param_int[4] != UINT64_MAX &&
-							    seq->param_int[5] != UINT64_MAX) {
+							    seq->param_int[5] != UINT64_MAX &&
+							    seq->param_int[2] <= seq->param_int[4] &&
+							    seq->param_int[3] <= seq->param_int[5] &&
+							    seq->param_int[2] > 0 &&
+							    seq->param_int[3] > 0 &&
+							    seq->param_int[4] > 0 &&
+							    seq->param_int[5] > 0) {
 								struct ciolib_pixels *pix;
 								uint16_t crc;
 								int good = 0;
@@ -3673,28 +3679,38 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								gettextinfo(&ti);
 								vmode = find_vmode(ti.currmode);
 								if (vmode != -1 &&
-								    (seq->param_int[3] > 0 && seq->param_int[3] < vparams[vmode].charwidth*cterm->width) &&
-								    (seq->param_int[2] > 0 && seq->param_int[2] < vparams[vmode].charwidth*cterm->width) &&
-								    (seq->param_int[5] > 0 && seq->param_int[5] < vparams[vmode].charwidth*cterm->width) &&
-								    (seq->param_int[4] > 0 && seq->param_int[4] < vparams[vmode].charwidth*cterm->width) &&
-								    (seq->param_int[2] <= seq->param_int[4]) &&
-								    (seq->param_int[3] <= seq->param_int[5]) &&
+								    (seq->param_int[3] < vparams[vmode].charwidth*cterm->width) &&
+								    (seq->param_int[2] < vparams[vmode].charwidth*cterm->width) &&
+								    (seq->param_int[5] < vparams[vmode].charwidth*cterm->width) &&
+								    (seq->param_int[4] < vparams[vmode].charwidth*cterm->width) &&
 								    (pix = getpixels(
 								      (seq->param_int[3] - 1 + cterm->x - 1)*vparams[vmode].charwidth,
 								      (seq->param_int[2] - 1 + cterm->y - 1)*vparams[vmode].charheight,
 								      (seq->param_int[5] + cterm->x - 1)*vparams[vmode].charwidth - 1,
 								      (seq->param_int[4] + cterm->y - 1)*vparams[vmode].charheight - 1, true)) != NULL) {
 									crc = crc16((void *)pix->pixels, sizeof(pix->pixels[0])*pix->width*pix->height);
+									crc = icrc16(crc, (void *)pix->pixelsb, sizeof(pix->pixelsb[0])*pix->width*pix->height);
 									good = 1;
 									freepixels(pix);
 								}
 								else {
-									size_t sz = sizeof(struct vmem_cell) * (seq->param_int[2] - seq->param_int[4] + 1) * (seq->param_int[3] - seq->param_int[5] + 1);
-									struct vmem_cell *vm = malloc(sz);
+									size_t cnt = (seq->param_int[4] - seq->param_int[2] + 1) * (seq->param_int[5] - seq->param_int[3] + 1);
+									struct vmem_cell *vm = calloc(sizeof(struct vmem_cell), cnt);
 									if (vm != NULL) {
-										vmem_gettext(seq->param_int[3], seq->param_int[2], seq->param_int[5], seq->param_int[4], vm);
-										crc = crc16((void *)vm, sz);
-										good = 1;
+										if (vmem_gettext(seq->param_int[3], seq->param_int[2], seq->param_int[5], seq->param_int[4], vm)) {
+											/* Zero the padding... */
+											for (size_t cell = 0; cell < cnt; cell++) {
+												struct vmem_cell vmc = vm[cell];
+												memset(&vm[cell], 0, sizeof(vm[cell]));
+												memcpy(&vm[cell].legacy_attr, &vmc.legacy_attr, sizeof(vmc.legacy_attr));
+												memcpy(&vm[cell].ch, &vmc.ch, sizeof(vmc.ch));
+												memcpy(&vm[cell].font, &vmc.font, sizeof(vmc.font));
+												memcpy(&vm[cell].fg, &vmc.fg, sizeof(vmc.fg));
+												memcpy(&vm[cell].bg, &vmc.bg, sizeof(vmc.bg));
+											}
+											crc = crc16((void *)vm, sizeof(struct vmem_cell) * cnt);
+											good = 1;
+										}
 									}
 								}
 								if (good) {
