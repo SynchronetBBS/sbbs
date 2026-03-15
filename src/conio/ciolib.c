@@ -2192,8 +2192,8 @@ CIOLIBEXPORT enum ciolib_codepage ciolib_getcodepage(void)
 
 CIOLIBEXPORT enum ciolib_scaling ciolib_getscaling_type(void)
 {
-	if (cio_api.getscaling != NULL)
-		return cio_api.getscaling();
+	if (cio_api.getscaling_type != NULL)
+		return cio_api.getscaling_type();
 	return CIOLIB_SCALING_INTERNAL;
 }
 
