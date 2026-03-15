@@ -28,18 +28,18 @@ get_utf8_span(const uint8_t *b, size_t sz)
 			b++;
 		}
 		else if ((*b & 0xe0) == 0xc0) {
-			b+= 2;
-			if ((b + 1) <= (last))
+			b += 2;
+			if ((b - 1) <= last)
 				ret += 2;
 		}
 		else if ((*b & 0xf0) == 0xe0) {
-			b+= 3;
-			if ((b + 2) <= (last))
+			b += 3;
+			if ((b - 1) <= last)
 				ret += 3;
 		}
 		else if ((*b & 0xf8) == 0xf0) {
-			b+= 4;
-			if ((b + 3) <= (last))
+			b += 4;
+			if ((b - 1) <= last)
 				ret += 4;
 		}
 		else
