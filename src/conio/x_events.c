@@ -295,7 +295,7 @@ static struct {
     {	0x5000, 0x3200, 0x9100, 0xa000 }, /* key 80 - cursor down */
     {	0x5100, 0x3300, 0x7600, 0xffff }, /* key 81 - page down */
     {	CIO_KEY_IC, CIO_KEY_SHIFT_IC, CIO_KEY_CTRL_IC, CIO_KEY_ALT_IC}, /* key 82 - insert */
-    {	CIO_KEY_DC, CIO_KEY_SHIFT_DC, CIO_KEY_CTRL_DC, CIO_KEY_ALT_IC}, /* key 83 - delete */
+    {	CIO_KEY_DC, CIO_KEY_SHIFT_DC, CIO_KEY_CTRL_DC, CIO_KEY_ALT_DC}, /* key 83 - delete */
     {	0xffff, 0xffff, 0xffff, 0xffff }, /* key 84 - sys key */
     {	0xffff, 0xffff, 0xffff, 0xffff }, /* key 85 */
     {	0xffff, 0xffff, 0xffff, 0xffff }, /* key 86 */
@@ -1084,7 +1084,6 @@ static int init_window()
 	if (tmp_icon) {
 		for (size_t pos = 0; pos < ciolib_initial_icon_width * ciolib_initial_icon_width; pos++)
 			tmp_icon[pos+2] = ((uint32_t*)ciolib_initial_icon)[pos];
-		memcpy(&tmp_icon[2], ciolib_initial_icon, ciolib_initial_icon_width * ciolib_initial_icon_width * 4);
 		tmp_icon[0] = ciolib_initial_icon_width;
 		tmp_icon[1] = ciolib_initial_icon_width;
 		set_win_property(ATOM__NET_WM_ICON, XA_CARDINAL, 32, PropModeReplace, tmp_icon, ciolib_initial_icon_width * ciolib_initial_icon_width + 2);

@@ -498,9 +498,7 @@ void ciolib_mouse_thread(void *data)
 						case MOUSE_QUADPRESSED:
 							state.button_state[but-1]=MOUSE_NOSTATE;
 							add_outevent(CIOLIB_BUTTON_QUAD_CLICK(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
-							state.timeout[but-1]=0;
-							if(state.timeout[but-1]==0)
-								state.timeout[but-1]=1;
+							state.timeout[but-1]=1;
 							break;
 						case MOUSE_DRAGSTARTED:
 							add_outevent(CIOLIB_BUTTON_DRAG_END(but),in->x,in->y, in->x_res, in->y_res);
