@@ -1949,7 +1949,10 @@ characters.
 .Currently supported values of pt:
 [%autowidth]
 |===
-|`pt` |Request SGR parameters
+|`pt` |Description
+
+|m
+|Request SGR parameters
 
 |r
 |Request top and bottom margins
@@ -2017,9 +2020,23 @@ is "104" (ie: no `Ps` present), resets all colours.  Otherwise, only each index
 separated by a semicolon is reset.
 SOURCE: <<XTerm>>
 
+=== `OSC 10 ; ? ST` Query Default Foreground Color (`OSC 10`)
+Queries the default foreground color. +
+CTerm responds with `OSC 10;rgb:RR/GG/BB ST` where `RR`, `GG`, and `BB`
+are two hex digit color values.
+
+SOURCE: <<XTerm>>
+
+=== `OSC 11 ; ? ST` Query Default Background Color (`OSC 11`)
+Queries the default background color. +
+CTerm responds with `OSC 11;rgb:RR/GG/BB ST` where `RR`, `GG`, and `BB`
+are two hex digit color values.
+
+SOURCE: <<XTerm>>
+
 == Application Program Commands
 
-An Operating System Command Begins with an `APC` and ends with a `ST`
+An Application Program Command begins with an `APC` and ends with a `ST`
 SyncTERM implements the following APC commands:
 
 === `APC SyncTERM:VER ST` Get SyncTERM Version (`CTSV`)
