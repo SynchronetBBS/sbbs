@@ -162,6 +162,8 @@ rlogin_connect(struct bbslist *bbs)
 
 		idx = 0;
 		while (socket_readable(rlogin_sock, 1000)) {
+			if (idx >= sizeof(rbuf) - 1)
+				return -1;
 			ret = recv(rlogin_sock, rbuf + idx, 1, 0);
 			if (ret <= 0)
 				break;
@@ -170,10 +172,6 @@ rlogin_connect(struct bbslist *bbs)
                         /* It says ERROR, but this is a good response to PING. */
 			if (strstr(rbuf, "ERROR\r\n"))
 				break;
-
-                        /* We didn't receive the desired response in time, so bail. */
-			if (idx >= sizeof(rbuf))
-				return -1;
 		}
 
 		if (ret < 1)
@@ -190,6 +188,8 @@ rlogin_connect(struct bbslist *bbs)
 
 		idx = 0;
 		while (socket_readable(rlogin_sock, 1000)) {
+			if (idx >= sizeof(rbuf) - 1)
+				return -1;
 			ret = recv(rlogin_sock, rbuf + idx, 1, 0);
 			if (ret <= 0)
 				break;
@@ -198,10 +198,6 @@ rlogin_connect(struct bbslist *bbs)
                         /* GHost says it's launching the program, so pass terminal to user. */
 			if (strstr(rbuf, "OK\r\n"))
 				break;
-
-                        /* We didn't receive the desired response in time, so bail. */
-			if (idx >= sizeof(rbuf))
-				return -1;
 		}
 
 		if (ret < 1)
