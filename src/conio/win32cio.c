@@ -23,10 +23,6 @@
 #include <stdio.h>		/* stdin */
 #include <stdlib.h>		/* atexit */
 
-#if defined(_WIN32)
- #include <malloc.h>	/* alloca() on Win32 */
-#endif
-
 #include "ciolib.h"
 #include "vidmodes.h"
 #include "win32cio.h"
@@ -254,7 +250,7 @@ handle_bios_key(uint32_t *bios_key, bool *bios_key_parsing, bool *zero_first, vo
 		if (*zero_first) {
 			// Unicode character
 			ch = cpchar_from_unicode_cpoint(getcodepage(), *bios_key, 0);
-			if (ch != 0)
+			if (ch == 0)
 				MessageBeep(MB_ICONWARNING);
 			else {
 				accept_key(ch);
@@ -648,12 +644,8 @@ int win32_initciolib(int inmode)
 		unsigned screenheight = sbuff.srWindow.Bottom - sbuff.srWindow.Top + 1;
 		if (screenwidth > 0xff)
 			screenwidth = 0xff;
-		else
-			screenwidth = screenwidth;
 		if (screenheight > 0xff)
 			screenheight = 0xff;
-		else
-			screenheight = screenheight;
 
 		if(screenwidth>=132) {
 			if(screenheight<25)
@@ -894,14 +886,18 @@ int win32_gettext(int left, int top, int right, int bottom, void* buf)
 	bu=buf;
 	bs.X=right-left+1;
 	bs.Y=bottom-top+1;
+	if(bs.X<1 || bs.Y<1 || left<1 || top<1)
+		return 0; // failure
 	bc.X=0;
 	bc.Y=0;
 	reg.Left=left-1;
 	reg.Right=right-1;
 	reg.Top=top-1;
 	reg.Bottom=bottom-1;
-	ci=(CHAR_INFO *)alloca(sizeof(CHAR_INFO)*(bs.X*bs.Y));
 	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) == INVALID_HANDLE_VALUE)
+		return 0; // failure
+	ci=(CHAR_INFO *)malloc(sizeof(CHAR_INFO)*(bs.X*bs.Y));
+	if(ci==NULL)
 		return 0; // failure
 	ReadConsoleOutputA(h,ci,bs,bc,&reg);
 	for(y=0;y<=(bottom-top);y++) {
@@ -910,6 +906,7 @@ int win32_gettext(int left, int top, int right, int bottom, void* buf)
 			bu[(((y*bs.X)+x)*2)+1]=WintoDOSAttr(ci[(y*bs.X)+x].Attributes);
 		}
 	}
+	free(ci);
 	return 1;
 }
 
@@ -953,7 +950,13 @@ int win32_puttext(int left, int top, int right, int bottom, void* buf)
 	reg.Right=right-1;
 	reg.Top=top-1;
 	reg.Bottom=bottom-1;
-	ci=(CHAR_INFO *)alloca(sizeof(CHAR_INFO)*(bs.X*bs.Y));
+	if(bs.X<1 || bs.Y<1 || left<1 || top<1
+			|| left-1+bs.X > cio_textinfo.screenwidth
+			|| top-1+bs.Y > cio_textinfo.screenheight)
+		return 0; // failure
+	ci=(CHAR_INFO *)malloc(sizeof(CHAR_INFO)*(bs.X*bs.Y));
+	if(ci==NULL)
+		return 0; // failure
 	for(y=0;y<bs.Y;y++) {
 		if (buf != win32cio_buffer)
 			memcpy(&win32cio_buffer[(cio_textinfo.screenwidth * ((top-1) + y) + (left-1)) * 2], &bu[y*bs.X*2], bs.X*2);
@@ -964,6 +967,7 @@ int win32_puttext(int left, int top, int right, int bottom, void* buf)
 	}
 	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		WriteConsoleOutputA(h,ci,bs,bc,&reg);
+	free(ci);
 	return 1;
 }
 
@@ -1065,7 +1069,7 @@ void win32_getcustomcursor(int *s, int *e, int *r, int *b, int *v)
 	CONSOLE_CURSOR_INFO	ci;
 	HANDLE				h;
 
-	if((h=GetStdHandle(STD_INPUT_HANDLE)) == INVALID_HANDLE_VALUE)
+	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) == INVALID_HANDLE_VALUE)
 		return;
 
 	GetConsoleCursorInfo(h, &ci);
@@ -1086,10 +1090,11 @@ void win32_setcustomcursor(int s, int e, int r, int b, int v)
 	CONSOLE_CURSOR_INFO	ci;
 	HANDLE				h;
 
-	if((h=GetStdHandle(STD_INPUT_HANDLE)) == INVALID_HANDLE_VALUE)
+	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) == INVALID_HANDLE_VALUE)
 		return;
 
 	ci.bVisible=v;
+	ci.dwSize=1;
 	if(e>s)
 		ci.bVisible=0;
 	else {
@@ -1098,6 +1103,7 @@ void win32_setcustomcursor(int s, int e, int r, int b, int v)
 		else
 			ci.dwSize=100;
 	}
+	SetConsoleCursorInfo(h, &ci);
 }
 
 int win32_getvideoflags(void)
