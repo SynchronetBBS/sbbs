@@ -443,15 +443,16 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 		if(ansiy < ti.screenheight) {
 #if notyet
 			if(ansiy > ti.screenheight-4) {
-				ansi_sendstr("\n\n\n\n\n",ti.screenheight-ansiy-2);
+				ansi_sendstr("\n\n\n\n\n",ti.screenheight-ansiy);
 			}
 			else
 #endif
 			{
-				sprintf(str,"\033[%dB",ti.screenheight-ansiy-2);
+				sprintf(str,"\033[%dB",ti.screenheight-ansiy);
 				ansi_sendstr(str,-1);
 			}
 		}
+		ansiy=ti.screenheight;
 		ansi_sendstr("\n",1);
 		memcpy(ansivmem,buf,ti.screenwidth*(ti.screenheight-1)*2);
 		for(x=0;x<ti.screenwidth;x++)
@@ -467,16 +468,17 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 		if(ansiy < ti.screenheight) {
 #if notyet
 			if(ansiy > ti.screenheight-4) {
-				ansi_sendstr("\n\n\n\n\n",ti.screenheight-ansiy-2);
+				ansi_sendstr("\n\n\n\n\n",ti.screenheight-ansiy);
 			}
 			else
 #endif
 			{
 				char str[16];
-				sprintf(str,"\033[%dB",ti.screenheight-ansiy-2);
+				sprintf(str,"\033[%dB",ti.screenheight-ansiy);
 				ansi_sendstr(str,-1);
 			}
 		}
+		ansiy=ti.screenheight;
 		ansi_sendstr("\r\n",2);
 		ansix = 1;
 		memcpy(ansivmem,buf,ti.screenwidth*(ti.screenheight-1)*2);
@@ -997,7 +999,7 @@ int ansi_initio_cb(void)
 	fflush(stdout);
 	fflush(stdin);
 	_setmode(_fileno(stderr),_O_BINARY);
-	setvbuf(stdout, NULL, _IONBF, 0);
+	setvbuf(stderr, NULL, _IONBF, 0);
 	_setmode(_fileno(stdout),_O_BINARY);
 	setvbuf(stdout, NULL, _IONBF, 0);
 	_setmode(_fileno(stdin),_O_BINARY);
@@ -1069,6 +1071,8 @@ int ansi_initciolib(int inmode)
 			cio_textinfo.screenwidth=ansi_got_col;
 	}
 	ansivmem=(WORD *)malloc(cio_textinfo.screenheight*cio_textinfo.screenwidth*sizeof(WORD));
+	if(ansivmem==NULL)
+		return(0);
 	for(i=0;i<cio_textinfo.screenheight*cio_textinfo.screenwidth;i++)
 		ansivmem[i]=0x0720;
 	/* drain all the semaphores */
