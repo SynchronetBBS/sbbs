@@ -38,7 +38,7 @@ namedStrListInsert(named_string_t ***list, const char *name, const char *value, 
 		(*list)[index]->name = strdup(name);
 		(*list)[index]->value = strdup(value);
 	}
-	return (*list)[count];
+	return (*list)[index];
 }
 
 bool
