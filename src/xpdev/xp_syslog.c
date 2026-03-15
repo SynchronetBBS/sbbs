@@ -149,8 +149,8 @@ void xp_vsyslog(int priority, const char *message, va_list va)
 	else if (log_opts & LOG_CONS)
 		puts(msg_to_send);
 	if (log_opts & LOG_PERROR) {
-		fputs(stderr, msg_to_send);
-		fputs(stderr, "\n");
+		fputs(msg_to_send, stderr);
+		fputs("\n", stderr);
 	}
 }
 
@@ -159,6 +159,6 @@ void xp_syslog(int priority, const char *message, ...)
 	va_list va;
 
 	va_start(va, message);
-	vsyslog(priority, message, va);
+	xp_vsyslog(priority, message, va);
 	va_end(va);
 }
