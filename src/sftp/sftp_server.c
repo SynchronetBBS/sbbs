@@ -586,19 +586,19 @@ sftps_send_name(sftps_state_t state, uint32_t count, str_list_t fnames, str_list
 		return false;
 	for (uint32_t idx = 0; idx < count; idx++) {
 		if (fnames[idx] == NULL) {
-			lprintf(state, SSH_FX_FAILURE, "Reached fnames terminator at position %" PRIu32 " of " PRIu32, idx, count);
+			lprintf(state, SSH_FX_FAILURE, "Reached fnames terminator at position %" PRIu32 " of %" PRIu32, idx, count);
 			return false;
 		}
 		if (!appendcstring(state, fnames[idx]))
 			return false;
 		if (lnames[idx] == NULL) {
-			lprintf(state, SSH_FX_FAILURE, "Reached lnames terminator at position %" PRIu32 " of " PRIu32, idx, count);
+			lprintf(state, SSH_FX_FAILURE, "Reached lnames terminator at position %" PRIu32 " of %" PRIu32, idx, count);
 			return false;
 		}
 		if (!appendcstring(state, lnames[idx]))
 			return false;
 		if (attrs[idx] == NULL) {
-			lprintf(state, SSH_FX_FAILURE, "Reached attrs terminator at position %" PRIu32 " of " PRIu32, idx, count);
+			lprintf(state, SSH_FX_FAILURE, "Reached attrs terminator at position %" PRIu32 " of %" PRIu32, idx, count);
 			return false;
 		}
 		if (!appendfattr(state, attrs[idx]))
