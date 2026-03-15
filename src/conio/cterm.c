@@ -5944,47 +5944,43 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								case 27:	/* ESC */
 									cterm->attr=1;
 									break;
-								case 28:	/* Up (TODO: Wraps??) */
+								case 28:	/* Up - wraps to bottom of same column */
 									CURR_XY(&x, &y);
 									y--;
 									if(y < CURR_MINY)
-										y = CURR_MINY;
-									gotoxy(x, y);
-									break;
-								case 29:	/* Down (TODO: Wraps??) */
-									CURR_XY(&x, &y);
-									y++;
-									if(y > CURR_MAXY)
 										y = CURR_MAXY;
 									gotoxy(x, y);
 									break;
-								case 30:	/* Left (TODO: Wraps around to same line?) */
+								case 29:	/* Down - wraps to top of same column */
+									CURR_XY(&x, &y);
+									y++;
+									if(y > CURR_MAXY)
+										y = CURR_MINY;
+									gotoxy(x, y);
+									break;
+								case 30:	/* Left - wraps to right side of same row */
 									CURR_XY(&x, &y);
 									x--;
 									if(x < CURR_MINX)
-										x = CURR_MINX;
+										x = CURR_MAXX;
 									gotoxy(x, y);
 									break;
-								case 31:	/* Right (TODO: Wraps around to same line?) */
+								case 31:	/* Right - wraps to left side of same row */
 									CURR_XY(&x, &y);
 									x++;
 									if(x > CURR_MAXX)
-										x = CURR_MAXX;
+										x = CURR_MINX;
 									gotoxy(x, y);
 									break;
 								case 125:	/* Clear Screen */
 									cterm_clearscreen(cterm, cterm->attr);
 									break;
-								case 126:	/* Backspace (TODO: Wraps around to previous line?) */
+								case 126:	/* Backspace - no wrap, sticks at left margin */
 											/* DOES NOT delete char, merely erases */
 									CURR_XY(&x, &y);
 									x--;
-									if (x < CURR_MINX) {
-										y--;
-										if (y < CURR_MINY)
-											break;
-										x = CURR_MAXX;
-									}
+									if (x < CURR_MINX)
+										break;
 									gotoxy(x, y);
 									putch(32);
 									gotoxy(x, y);
