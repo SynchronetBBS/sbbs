@@ -61,7 +61,9 @@ char *DupeStr(const char *s)        { return NULL; (void)s; }
  * ------------------------------------------------------------------------- */
 struct Door Door;
 
-void rputs(const char *s)             { (void)s; }
+static char g_rputs_buf[1024];
+static size_t g_rputs_len;
+void rputs(const char *s)             { size_t n = strlen(s); if (g_rputs_len + n < sizeof(g_rputs_buf)) { memcpy(g_rputs_buf + g_rputs_len, s, n); g_rputs_len += n; } g_rputs_buf[g_rputs_len] = '\0'; }
 void LogDisplayStr(const char *s)     { (void)s; }
 void LogStr(const char *s)            { (void)s; }
 char GetKey(void)                     { return 0; }
@@ -125,7 +127,7 @@ void ClansIni_Close(void)             {}
  * ------------------------------------------------------------------------- */
 struct clan PClan;
 
-int8_t GetStat(struct pc *p, char s)  { (void)p; (void)s; return 0; }
+int8_t GetStat(struct pc *p, char s)  { return p->Attributes[(int)s]; }
 int16_t NumMembers(struct clan *c, bool h)
 	{ (void)c; (void)h; return 0; }
 
@@ -272,6 +274,197 @@ static void test_clearspells_null_member_slots_skipped(void)
 }
 
 /* -------------------------------------------------------------------------
+ * Helper: create a minimal Spell struct for testing.
+ * Caller must free() the returned pointer.
+ * ------------------------------------------------------------------------- */
+static struct Spell *make_spell(bool friendly, bool str_reduce, bool wis_reduce,
+	const char *wearoff)
+{
+	struct Spell *sp = calloc(1, sizeof(*sp));
+	sp->Friendly = friendly;
+	sp->StrengthCanReduce = str_reduce;
+	sp->WisdomCanReduce = wis_reduce;
+	sp->pszWearoffStr = (char *)wearoff;
+	return sp;
+}
+
+/* -------------------------------------------------------------------------
+ * Setup/teardown for Spells_UpdatePCSpells tests
+ * ------------------------------------------------------------------------- */
+static void spells_update_setup(void)
+{
+	g_rputs_buf[0] = '\0';
+	g_rputs_len = 0;
+	for (int i = 0; i < MAX_SPELLS; i++)
+		Spells[i] = NULL;
+}
+
+static void spells_update_teardown(void)
+{
+	for (int i = 0; i < MAX_SPELLS; i++) {
+		free(Spells[i]);
+		Spells[i] = NULL;
+	}
+}
+
+/* -------------------------------------------------------------------------
+ * Tests: Spells_UpdatePCSpells
+ *
+ * For each active spell slot (SpellNum != -1):
+ *   - Reduces Energy by 10
+ *   - If hostile + StrengthCanReduce: also reduces by Strength/2
+ *   - If hostile + WisdomCanReduce: also reduces by Wisdom/2
+ *   - If Energy <= 0: outputs wearoff string, sets SpellNum = -1
+ * Also sets Spells_szCastDestination to PC name.
+ * ------------------------------------------------------------------------- */
+static void test_updatespells_reduces_energy(void)
+{
+	Spells[0] = make_spell(true, false, false, "worn off");
+	struct pc p = {0};
+	strlcpy(p.szName, "TestPC", sizeof(p.szName));
+	p.SpellsInEffect[0].SpellNum = 0;
+	p.SpellsInEffect[0].Energy = 100;
+	/* Mark remaining slots inactive */
+	for (int i = 1; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+
+	Spells_UpdatePCSpells(&p);
+
+	/* Friendly spell, no stat reduction: Energy -= 10 only */
+	ASSERT_EQ(p.SpellsInEffect[0].Energy, 90);
+	ASSERT_EQ(p.SpellsInEffect[0].SpellNum, 0);  /* still active */
+	/* Verify destination name was set */
+	ASSERT_EQ(strcmp(Spells_szCastDestination, "TestPC"), 0);
+}
+
+static void test_updatespells_strength_reduces_hostile(void)
+{
+	Spells[2] = make_spell(false, true, false, "str wore off");
+	struct pc p = {0};
+	strlcpy(p.szName, "Warrior", sizeof(p.szName));
+	p.Attributes[ATTR_STRENGTH] = 20;  /* reduces by 20/2 = 10 */
+	p.SpellsInEffect[0].SpellNum = 2;
+	p.SpellsInEffect[0].Energy = 100;
+	for (int i = 1; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+
+	Spells_UpdatePCSpells(&p);
+
+	/* Energy: 100 - 10 (base) - 10 (str/2) = 80 */
+	ASSERT_EQ(p.SpellsInEffect[0].Energy, 80);
+}
+
+static void test_updatespells_wisdom_reduces_hostile(void)
+{
+	Spells[3] = make_spell(false, false, true, "wis wore off");
+	struct pc p = {0};
+	strlcpy(p.szName, "Mage", sizeof(p.szName));
+	p.Attributes[ATTR_WISDOM] = 30;  /* reduces by 30/2 = 15 */
+	p.SpellsInEffect[0].SpellNum = 3;
+	p.SpellsInEffect[0].Energy = 100;
+	for (int i = 1; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+
+	Spells_UpdatePCSpells(&p);
+
+	/* Energy: 100 - 10 (base) - 15 (wis/2) = 75 */
+	ASSERT_EQ(p.SpellsInEffect[0].Energy, 75);
+}
+
+static void test_updatespells_both_reduce(void)
+{
+	Spells[4] = make_spell(false, true, true, "both wore off");
+	struct pc p = {0};
+	strlcpy(p.szName, "Paladin", sizeof(p.szName));
+	p.Attributes[ATTR_STRENGTH] = 10;  /* 10/2 = 5 */
+	p.Attributes[ATTR_WISDOM]   = 10;  /* 10/2 = 5 */
+	p.SpellsInEffect[0].SpellNum = 4;
+	p.SpellsInEffect[0].Energy = 100;
+	for (int i = 1; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+
+	Spells_UpdatePCSpells(&p);
+
+	/* Energy: 100 - 10 - 5 - 5 = 80 */
+	ASSERT_EQ(p.SpellsInEffect[0].Energy, 80);
+}
+
+static void test_updatespells_friendly_no_stat_reduce(void)
+{
+	/* Friendly spells never get stat reduction even if flags are set */
+	Spells[5] = make_spell(true, true, true, "friendly off");
+	struct pc p = {0};
+	strlcpy(p.szName, "Cleric", sizeof(p.szName));
+	p.Attributes[ATTR_STRENGTH] = 50;
+	p.Attributes[ATTR_WISDOM]   = 50;
+	p.SpellsInEffect[0].SpellNum = 5;
+	p.SpellsInEffect[0].Energy = 100;
+	for (int i = 1; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+
+	Spells_UpdatePCSpells(&p);
+
+	/* Friendly: only base 10 reduction, no stat effects */
+	ASSERT_EQ(p.SpellsInEffect[0].Energy, 90);
+}
+
+static void test_updatespells_wearoff(void)
+{
+	Spells[1] = make_spell(true, false, false, "[WORN]");
+	struct pc p = {0};
+	strlcpy(p.szName, "Fading", sizeof(p.szName));
+	p.SpellsInEffect[0].SpellNum = 1;
+	p.SpellsInEffect[0].Energy = 10;  /* exactly 10 → goes to 0 */
+	for (int i = 1; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+
+	Spells_UpdatePCSpells(&p);
+
+	/* Spell should be deactivated */
+	ASSERT_EQ(p.SpellsInEffect[0].SpellNum, -1);
+	ASSERT_EQ(p.SpellsInEffect[0].Energy, 0);
+	/* Wearoff string should have been output */
+	ASSERT_EQ(strstr(g_rputs_buf, "[WORN]") != NULL, 1);
+}
+
+static void test_updatespells_skips_inactive_slots(void)
+{
+	Spells[0] = make_spell(true, false, false, "worn");
+	struct pc p = {0};
+	strlcpy(p.szName, "Skip", sizeof(p.szName));
+	/* All slots inactive */
+	for (int i = 0; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+
+	Spells_UpdatePCSpells(&p);
+
+	/* Nothing should change, no crash */
+	for (int i = 0; i < MAX_SPELLS_IN_EFFECT; i++)
+		ASSERT_EQ(p.SpellsInEffect[i].SpellNum, -1);
+}
+
+static void test_updatespells_multiple_spells(void)
+{
+	Spells[0] = make_spell(true, false, false, "[WORN0]");
+	Spells[1] = make_spell(true, false, false, "[WORN1]");
+	struct pc p = {0};
+	strlcpy(p.szName, "Multi", sizeof(p.szName));
+	p.SpellsInEffect[0].SpellNum = 0;
+	p.SpellsInEffect[0].Energy = 5;   /* will wear off (5-10 <= 0) */
+	p.SpellsInEffect[1].SpellNum = 1;
+	p.SpellsInEffect[1].Energy = 50;  /* stays active */
+	for (int i = 2; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+
+	Spells_UpdatePCSpells(&p);
+
+	ASSERT_EQ(p.SpellsInEffect[0].SpellNum, -1);   /* wore off */
+	ASSERT_EQ(p.SpellsInEffect[1].SpellNum, 1);     /* still active */
+	ASSERT_EQ(p.SpellsInEffect[1].Energy, 40);      /* 50 - 10 */
+	ASSERT_EQ(strstr(g_rputs_buf, "[WORN0]") != NULL, 1);
+}
+
+/* -------------------------------------------------------------------------
  * main
  * ------------------------------------------------------------------------- */
 int main(void)
@@ -280,6 +473,17 @@ int main(void)
 	RUN(clearspells_one_member);
 	RUN(clearspells_multiple_members);
 	RUN(clearspells_null_member_slots_skipped);
+
+	g_test_setup = spells_update_setup;
+	g_test_teardown = spells_update_teardown;
+	RUN(updatespells_reduces_energy);
+	RUN(updatespells_strength_reduces_hostile);
+	RUN(updatespells_wisdom_reduces_hostile);
+	RUN(updatespells_both_reduce);
+	RUN(updatespells_friendly_no_stat_reduce);
+	RUN(updatespells_wearoff);
+	RUN(updatespells_skips_inactive_slots);
+	RUN(updatespells_multiple_spells);
 
 	printf("\n%d/%d passed\n", g_tests_run - g_tests_failed, g_tests_run);
 	return g_tests_failed ? 1 : 0;

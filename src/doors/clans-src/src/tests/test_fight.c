@@ -364,6 +364,335 @@ static void test_difficulty_level25(void)
 }
 
 /* -------------------------------------------------------------------------
+ * Tests: FirstAvailable  (static — accessible via #include pattern)
+ *
+ * Returns the index of the first clan member with Status==Here.
+ * Returns -1 if no such member exists.
+ * ------------------------------------------------------------------------- */
+static void test_firstavailable_empty(void)
+{
+	struct clan c;
+	InitClan(&c);
+	ASSERT_EQ(FirstAvailable(&c), -1);
+}
+
+static void test_firstavailable_first(void)
+{
+	struct clan c;
+	InitClan(&c);
+	c.Member[0] = make_pc(50, 100, Here, false, &c);
+	ASSERT_EQ(FirstAvailable(&c), 0);
+	FreeClanMembers(&c);
+}
+
+static void test_firstavailable_skips_dead(void)
+{
+	struct clan c;
+	InitClan(&c);
+	c.Member[0] = make_pc(0, 100, Dead, false, &c);
+	c.Member[1] = make_pc(0, 100, Unconscious, false, &c);
+	c.Member[2] = make_pc(50, 100, Here, false, &c);
+	ASSERT_EQ(FirstAvailable(&c), 2);
+	FreeClanMembers(&c);
+}
+
+static void test_firstavailable_last_slot(void)
+{
+	struct clan c;
+	InitClan(&c);
+	c.Member[MAX_MEMBERS - 1] = make_pc(50, 100, Here, false, &c);
+	ASSERT_EQ(FirstAvailable(&c), MAX_MEMBERS - 1);
+	FreeClanMembers(&c);
+}
+
+/* -------------------------------------------------------------------------
+ * Tests: CanRun  (static — accessible via #include pattern)
+ *
+ * Computes a "run score" for each clan:
+ *   sum(agility) + sum(dexterity) + avg(wisdom) + members*3 + random(15)
+ * Undead members are excluded from stat sums.
+ * Returns true if RunningClan's score > StayingClan's score.
+ *
+ * To test deterministically, set stats so the gap exceeds the maximum
+ * random contribution (2 * 14 = 28 in the worst case).
+ * ------------------------------------------------------------------------- */
+static void test_canrun_strong_runner(void)
+{
+	/* Runner has high stats, stayer has low — runner always escapes */
+	struct clan runner, stayer;
+	InitClan(&runner);
+	InitClan(&stayer);
+
+	struct pc *r0 = make_pc(100, 100, Here, false, &runner);
+	r0->Attributes[ATTR_AGILITY]   = 50;
+	r0->Attributes[ATTR_DEXTERITY] = 50;
+	r0->Attributes[ATTR_WISDOM]    = 50;
+	runner.Member[0] = r0;
+
+	struct pc *s0 = make_pc(100, 100, Here, false, &stayer);
+	s0->Attributes[ATTR_AGILITY]   = 1;
+	s0->Attributes[ATTR_DEXTERITY] = 1;
+	s0->Attributes[ATTR_WISDOM]    = 1;
+	stayer.Member[0] = s0;
+
+	/* Runner: 50+50+50+3+rand(15) = [153,167]
+	 * Stayer: 1+1+1+3+rand(15) = [6,20]
+	 * Gap >= 133, always true */
+	ASSERT_EQ(CanRun(&runner, &stayer), true);
+
+	FreeClanMembers(&runner);
+	FreeClanMembers(&stayer);
+}
+
+static void test_canrun_weak_runner(void)
+{
+	/* Runner has low stats, stayer has high — runner never escapes */
+	struct clan runner, stayer;
+	InitClan(&runner);
+	InitClan(&stayer);
+
+	struct pc *r0 = make_pc(100, 100, Here, false, &runner);
+	r0->Attributes[ATTR_AGILITY]   = 1;
+	r0->Attributes[ATTR_DEXTERITY] = 1;
+	r0->Attributes[ATTR_WISDOM]    = 1;
+	runner.Member[0] = r0;
+
+	struct pc *s0 = make_pc(100, 100, Here, false, &stayer);
+	s0->Attributes[ATTR_AGILITY]   = 50;
+	s0->Attributes[ATTR_DEXTERITY] = 50;
+	s0->Attributes[ATTR_WISDOM]    = 50;
+	stayer.Member[0] = s0;
+
+	/* Runner: [6,20], Stayer: [153,167] — always false */
+	ASSERT_EQ(CanRun(&runner, &stayer), false);
+
+	FreeClanMembers(&runner);
+	FreeClanMembers(&stayer);
+}
+
+static void test_canrun_undead_excluded(void)
+{
+	/* Undead members should not contribute to stat sums.
+	 * Runner: one weak living member + one strong undead member.
+	 * Stayer: one moderately strong living member.
+	 * The undead's stats should NOT help the runner. */
+	struct clan runner, stayer;
+	InitClan(&runner);
+	InitClan(&stayer);
+
+	struct pc *r0 = make_pc(100, 100, Here, false, &runner);
+	r0->Attributes[ATTR_AGILITY]   = 1;
+	r0->Attributes[ATTR_DEXTERITY] = 1;
+	r0->Attributes[ATTR_WISDOM]    = 1;
+	runner.Member[0] = r0;
+
+	struct pc *r1 = make_pc(100, 100, Here, true, &runner);  /* undead */
+	r1->Attributes[ATTR_AGILITY]   = 100;
+	r1->Attributes[ATTR_DEXTERITY] = 100;
+	r1->Attributes[ATTR_WISDOM]    = 100;
+	runner.Member[1] = r1;
+
+	struct pc *s0 = make_pc(100, 100, Here, false, &stayer);
+	s0->Attributes[ATTR_AGILITY]   = 50;
+	s0->Attributes[ATTR_DEXTERITY] = 50;
+	s0->Attributes[ATTR_WISDOM]    = 50;
+	stayer.Member[0] = s0;
+
+	/* Runner: living stats=1+1+1, members=2(Here), avg_wisdom=1/2=0,
+	 *         variable = 1+1+0+2*3+rand(15) = [8,22]
+	 * Stayer: 50+50+50+1*3+rand(15) = [153,167]
+	 * Runner can never escape */
+	ASSERT_EQ(CanRun(&runner, &stayer), false);
+
+	FreeClanMembers(&runner);
+	FreeClanMembers(&stayer);
+}
+
+/* -------------------------------------------------------------------------
+ * Tests: RemoveUndead  (static — accessible via #include pattern)
+ *
+ * Frees and NULLs all undead members.  Non-undead members are untouched.
+ * ------------------------------------------------------------------------- */
+static void test_removeundead_none(void)
+{
+	struct clan c;
+	InitClan(&c);
+	c.Member[0] = make_pc(50, 100, Here, false, &c);
+	RemoveUndead(&c);
+	ASSERT_EQ(c.Member[0] != NULL, 1);  /* living member untouched */
+	FreeClanMembers(&c);
+}
+
+static void test_removeundead_all(void)
+{
+	struct clan c;
+	InitClan(&c);
+	c.Member[0] = make_pc(50, 100, Here, true, &c);
+	c.Member[1] = make_pc(30, 80, Here, true, &c);
+	RemoveUndead(&c);
+	ASSERT_EQ((long long)(uintptr_t)c.Member[0], 0LL);
+	ASSERT_EQ((long long)(uintptr_t)c.Member[1], 0LL);
+}
+
+static void test_removeundead_mixed(void)
+{
+	struct clan c;
+	InitClan(&c);
+	c.Member[0] = make_pc(50, 100, Here, false, &c);  /* living */
+	c.Member[1] = make_pc(30, 80, Here, true, &c);    /* undead */
+	c.Member[2] = make_pc(20, 60, Here, false, &c);   /* living */
+	RemoveUndead(&c);
+	ASSERT_EQ(c.Member[0] != NULL, 1);
+	ASSERT_EQ((long long)(uintptr_t)c.Member[1], 0LL);
+	ASSERT_EQ(c.Member[2] != NULL, 1);
+	FreeClanMembers(&c);
+}
+
+/* -------------------------------------------------------------------------
+ * Tests: Fight_IsIncapacitated  (static — accessible via #include pattern)
+ *
+ * Checks if any active spell on the PC has SF_INCAPACITATE flag set.
+ * Reads from the Spells[] global array (provided by mocks_spells.h).
+ * Outputs status string via rputs when incapacitated.
+ * ------------------------------------------------------------------------- */
+static struct Spell g_test_spell;
+
+static void test_isincapacitated_no_spells(void)
+{
+	struct pc p = {0};
+	for (int i = 0; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+	ASSERT_EQ(Fight_IsIncapacitated(&p), false);
+}
+
+static void test_isincapacitated_normal_spell(void)
+{
+	/* Spell with no incapacitate flag */
+	memset(&g_test_spell, 0, sizeof(g_test_spell));
+	g_test_spell.TypeFlag = SF_DAMAGE;
+	g_test_spell.pszStatusStr = "damaged";
+	Spells[0] = &g_test_spell;
+
+	struct pc p = {0};
+	p.SpellsInEffect[0].SpellNum = 0;
+	p.SpellsInEffect[0].Energy = 50;
+	for (int i = 1; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+
+	ASSERT_EQ(Fight_IsIncapacitated(&p), false);
+	Spells[0] = NULL;
+}
+
+static void test_isincapacitated_yes(void)
+{
+	memset(&g_test_spell, 0, sizeof(g_test_spell));
+	g_test_spell.TypeFlag = SF_INCAPACITATE;
+	g_test_spell.pszStatusStr = "stunned!";
+	Spells[0] = &g_test_spell;
+
+	struct pc p = {0};
+	p.SpellsInEffect[0].SpellNum = 0;
+	p.SpellsInEffect[0].Energy = 50;
+	for (int i = 1; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+
+	ASSERT_EQ(Fight_IsIncapacitated(&p), true);
+	Spells[0] = NULL;
+}
+
+static void test_isincapacitated_combined_flags(void)
+{
+	/* Spell has INCAPACITATE combined with other flags */
+	memset(&g_test_spell, 0, sizeof(g_test_spell));
+	g_test_spell.TypeFlag = SF_DAMAGE | SF_INCAPACITATE;
+	g_test_spell.pszStatusStr = "paralyzed!";
+	Spells[0] = &g_test_spell;
+
+	struct pc p = {0};
+	p.SpellsInEffect[0].SpellNum = 0;
+	p.SpellsInEffect[0].Energy = 50;
+	for (int i = 1; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+
+	ASSERT_EQ(Fight_IsIncapacitated(&p), true);
+	Spells[0] = NULL;
+}
+
+/* -------------------------------------------------------------------------
+ * Tests: Fight_ManaRegenerate  (static — accessible via #include pattern)
+ *
+ * Regenerates SP based on wisdom: SP += (Wisdom * rand(15)+5) / 150 + 1
+ * Caps at MaxSP.  Does nothing if already at max.
+ * Since my_random is involved, test boundaries rather than exact values.
+ * ------------------------------------------------------------------------- */
+static void test_manaregen_already_max(void)
+{
+	struct pc p = {0};
+	p.SP = 100; p.MaxSP = 100;
+	Fight_ManaRegenerate(&p);
+	ASSERT_EQ(p.SP, 100);  /* no change */
+}
+
+static void test_manaregen_increases(void)
+{
+	struct pc p = {0};
+	p.SP = 10; p.MaxSP = 200;
+	p.Attributes[ATTR_WISDOM] = 30;
+	for (int i = 0; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+
+	Fight_ManaRegenerate(&p);
+
+	/* SP must have increased (minimum regen is 1) */
+	ASSERT_EQ(p.SP > 10, 1);
+	ASSERT_EQ(p.SP <= p.MaxSP, 1);
+}
+
+static void test_manaregen_caps_at_max(void)
+{
+	struct pc p = {0};
+	p.SP = 99; p.MaxSP = 100;
+	p.Attributes[ATTR_WISDOM] = 127;  /* high wisdom → big regen */
+	for (int i = 0; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+
+	Fight_ManaRegenerate(&p);
+
+	ASSERT_EQ(p.SP, 100);  /* capped at MaxSP */
+}
+
+static void test_manaregen_zero_wisdom(void)
+{
+	struct pc p = {0};
+	p.SP = 50; p.MaxSP = 200;
+	p.Attributes[ATTR_WISDOM] = 0;
+	for (int i = 0; i < MAX_SPELLS_IN_EFFECT; i++)
+		p.SpellsInEffect[i].SpellNum = -1;
+
+	Fight_ManaRegenerate(&p);
+
+	/* Formula: (0 * X) / 150 + 1 = 1, so SP should be 51 */
+	ASSERT_EQ(p.SP, 51);
+}
+
+/* -------------------------------------------------------------------------
+ * Tests: CanRun
+ * ------------------------------------------------------------------------- */
+static void test_canrun_empty_clans(void)
+{
+	/* Both clans empty — equal zero scores + random.
+	 * Score = 0+0+0+0*3+rand(15).  With equal stats the result
+	 * depends on the two random draws; just verify no crash. */
+	struct clan runner, stayer;
+	InitClan(&runner);
+	InitClan(&stayer);
+
+	/* Call should not crash — result is random so we just test bool range */
+	bool result = CanRun(&runner, &stayer);
+	ASSERT_EQ(result == true || result == false, 1);
+}
+
+/* -------------------------------------------------------------------------
  * main
  * ------------------------------------------------------------------------- */
 int main(void)
@@ -390,6 +719,25 @@ int main(void)
 	RUN(difficulty_level15);
 	RUN(difficulty_level20);
 	RUN(difficulty_level25);
+	RUN(removeundead_none);
+	RUN(removeundead_all);
+	RUN(removeundead_mixed);
+	RUN(isincapacitated_no_spells);
+	RUN(isincapacitated_normal_spell);
+	RUN(isincapacitated_yes);
+	RUN(isincapacitated_combined_flags);
+	RUN(manaregen_already_max);
+	RUN(manaregen_increases);
+	RUN(manaregen_caps_at_max);
+	RUN(manaregen_zero_wisdom);
+	RUN(firstavailable_empty);
+	RUN(firstavailable_first);
+	RUN(firstavailable_skips_dead);
+	RUN(firstavailable_last_slot);
+	RUN(canrun_strong_runner);
+	RUN(canrun_weak_runner);
+	RUN(canrun_undead_excluded);
+	RUN(canrun_empty_clans);
 
 	printf("\n%d/%d passed\n", g_tests_run - g_tests_failed, g_tests_run);
 	return g_tests_failed ? 1 : 0;

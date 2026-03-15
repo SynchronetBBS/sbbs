@@ -268,6 +268,100 @@ static void test_itempenalty_zero_requirements(void)
 }
 
 /* -------------------------------------------------------------------------
+ * Tests: GetEquippableItem (static — accessible via #include pattern)
+ *
+ * Returns index of first available, non-book/scroll item of given type
+ * that is NOT currently equipped (UsedBy==0).
+ * ITEM_NOTHING_EQUIPPABLE if items exist but all are equipped.
+ * ITEM_NO_MATCH if no items of given type at all.
+ * ------------------------------------------------------------------------- */
+static void test_getequippableitem_none(void)
+{
+	struct clan c = {0};
+	ASSERT_EQ(GetEquippableItem(&c, I_WEAPON), ITEM_NO_MATCH);
+}
+
+static void test_getequippableitem_finds_unequipped(void)
+{
+	struct clan c = {0};
+	/* Slot 0: equipped; slot 1: not equipped */
+	c.Items[0].Available = true; c.Items[0].cType = I_WEAPON; c.Items[0].UsedBy = 1;
+	c.Items[1].Available = true; c.Items[1].cType = I_WEAPON; c.Items[1].UsedBy = 0;
+	ASSERT_EQ(GetEquippableItem(&c, I_WEAPON), 1);
+}
+
+static void test_getequippableitem_all_equipped(void)
+{
+	struct clan c = {0};
+	c.Items[0].Available = true; c.Items[0].cType = I_ARMOR; c.Items[0].UsedBy = 1;
+	c.Items[1].Available = true; c.Items[1].cType = I_ARMOR; c.Items[1].UsedBy = 2;
+	ASSERT_EQ(GetEquippableItem(&c, I_ARMOR), ITEM_NOTHING_EQUIPPABLE);
+}
+
+static void test_getequippableitem_skips_books_scrolls(void)
+{
+	struct clan c = {0};
+	c.Items[0].Available = true; c.Items[0].cType = I_BOOK;   c.Items[0].UsedBy = 0;
+	c.Items[1].Available = true; c.Items[1].cType = I_SCROLL; c.Items[1].UsedBy = 0;
+	/* Books and scrolls can't be "equipped" — should not match */
+	ASSERT_EQ(GetEquippableItem(&c, I_ITEM), ITEM_NO_MATCH);
+}
+
+static void test_getequippableitem_type_filter(void)
+{
+	struct clan c = {0};
+	c.Items[0].Available = true; c.Items[0].cType = I_ARMOR;  c.Items[0].UsedBy = 0;
+	c.Items[1].Available = true; c.Items[1].cType = I_WEAPON; c.Items[1].UsedBy = 0;
+	/* Searching for I_WEAPON skips slot 0 (armor) */
+	ASSERT_EQ(GetEquippableItem(&c, I_WEAPON), 1);
+}
+
+/* -------------------------------------------------------------------------
+ * Tests: UnequipItemsFromPC
+ *
+ * Unequips all items from a given PC index (0-based) by clearing
+ * UsedBy on matching items in the PClan global.  UsedBy stores the
+ * 1-based PC index (PC index + 1).
+ * ------------------------------------------------------------------------- */
+static void test_unequip_items_from_pc(void)
+{
+	memset(&PClan, 0, sizeof(PClan));
+	/* PC index 2 → UsedBy = 3 */
+	PClan.Items[0].Available = true; PClan.Items[0].UsedBy = 3;
+	PClan.Items[1].Available = true; PClan.Items[1].UsedBy = 1;  /* different PC */
+	PClan.Items[2].Available = true; PClan.Items[2].UsedBy = 3;
+
+	UnequipItemsFromPC(2);  /* unequip PC index 2 */
+
+	ASSERT_EQ(PClan.Items[0].UsedBy, 0);  /* was 3, now cleared */
+	ASSERT_EQ(PClan.Items[1].UsedBy, 1);  /* different PC, untouched */
+	ASSERT_EQ(PClan.Items[2].UsedBy, 0);  /* was 3, now cleared */
+}
+
+static void test_unequip_items_skips_unavailable(void)
+{
+	memset(&PClan, 0, sizeof(PClan));
+	/* Item has matching UsedBy but is not Available */
+	PClan.Items[0].Available = false; PClan.Items[0].UsedBy = 1;
+
+	UnequipItemsFromPC(0);  /* PC index 0 → UsedBy = 1 */
+
+	ASSERT_EQ(PClan.Items[0].UsedBy, 1);  /* not cleared because !Available */
+}
+
+static void test_unequip_items_no_match(void)
+{
+	memset(&PClan, 0, sizeof(PClan));
+	PClan.Items[0].Available = true; PClan.Items[0].UsedBy = 2;
+	PClan.Items[1].Available = true; PClan.Items[1].UsedBy = 3;
+
+	UnequipItemsFromPC(0);  /* PC index 0 → UsedBy = 1; no items match */
+
+	ASSERT_EQ(PClan.Items[0].UsedBy, 2);
+	ASSERT_EQ(PClan.Items[1].UsedBy, 3);
+}
+
+/* -------------------------------------------------------------------------
  * main
  * ------------------------------------------------------------------------- */
 int main(void)
@@ -289,6 +383,14 @@ int main(void)
 	RUN(itempenalty_no_penalty);
 	RUN(itempenalty_has_penalty);
 	RUN(itempenalty_zero_requirements);
+	RUN(getequippableitem_none);
+	RUN(getequippableitem_finds_unequipped);
+	RUN(getequippableitem_all_equipped);
+	RUN(getequippableitem_skips_books_scrolls);
+	RUN(getequippableitem_type_filter);
+	RUN(unequip_items_from_pc);
+	RUN(unequip_items_skips_unavailable);
+	RUN(unequip_items_no_match);
 
 	printf("\n%d/%d passed\n", g_tests_run - g_tests_failed, g_tests_run);
 	return g_tests_failed ? 1 : 0;
