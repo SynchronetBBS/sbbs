@@ -2041,13 +2041,13 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint64_t* bytes_re
 			if (fexist(fpath)) {
 				l = flength(fpath);
 				lprintf(zm, LOG_WARNING, "%s already exists (%" PRId64 " bytes)", fpath, l);
-				if (l >= (int32_t)bytes) {
+				if (l >= bytes) {
 					lprintf(zm, LOG_WARNING, "Local file size >= remote file size (%" PRId64 ")"
 					        , bytes);
 					if (zm->duplicate_filename == NULL)
 						break;
 					else {
-						if (l > (int32_t)bytes) {
+						if (l > bytes) {
 							if (zm->duplicate_filename(zm->cbdata, zm)) {
 								loop = TRUE;
 								continue;
@@ -2088,7 +2088,7 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint64_t* bytes_re
 					}
 					break;
 				}
-				if (l == (int32_t)bytes) {
+				if (l == bytes) {
 					lprintf(zm, LOG_INFO, "CRC, length, and filename match.");
 					break;
 				}
