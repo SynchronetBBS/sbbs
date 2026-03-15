@@ -1567,6 +1567,12 @@ static void Fight_GiveFollowers(int16_t Level)
 		else
 			ChaBonus = 0;
 	}
+	if (NumFollowers || ChaBonus) {
+		snprintf(szString, sizeof(szString), ST_FIGHTOVER1,
+				 (long)NumFollowers);
+		rputs(szString);
+	}
+
 	if (ChaBonus > 0) {
 		NumFollowers += ChaBonus;
 		snprintf(szString, sizeof(szString), ST_FIGHTCHABONUS,
@@ -1583,9 +1589,9 @@ static void Fight_GiveFollowers(int16_t Level)
 
 	NumConscripted = (NumFollowers * Village.Data.ConscriptionRate) / 100;
 
-	if (NumFollowers || NumConscripted) {
-		snprintf(szString, sizeof(szString), ST_FIGHTOVER1,
-				 (long)NumFollowers, (long)NumConscripted);
+	if (NumConscripted > 0) {
+		snprintf(szString, sizeof(szString), ST_FIGHTCONSCRIPT,
+				 (long)NumConscripted);
 		rputs(szString);
 	}
 

@@ -222,9 +222,9 @@
 #------------------------------------------------------------------------------
 
 0240 ST_FIGHT0 ^M|15All members of your clan are either dead or unconscious!^M|07Come back tomorrow when able to do things again!^M%P
-0241 ST_FIGHTOVER1 ^M|05>> |02%ld people were impressed by your battles and join your following!^M   %ld were recruited by the government.^M
-0242 ST_FIGHTCHABONUS |05>> |02Your leader's charisma inspires |10%ld|02 extra followers to join!^M
-0243 ST_FIGHTCHAPENALTY |04>> |04Your leader's poor charisma drives away |12%ld|04 followers.^M
+0241 ST_FIGHTOVER1 ^M|05>> |02%ld people were impressed by your battles and join your following!^M
+0242 ST_FIGHTCHABONUS    |02Your leader's charisma inspires |10%ld|02 extra followers to join!^M
+0243 ST_FIGHTCHAPENALTY    |04Your leader's poor charisma drives away |12%ld|04 followers.^M
 0244 ST_FIGHTCLANALREADY |07You've already fought that clan today.^M%P
 0245 ST_FIGHTVSHEADER ^M^M|03** |14%s |03vs. |11%s |03**^M^M
 0246 ST_FIGHTPSTATS |07%-13s |10%d/%d HP   %d/%d SP^M
@@ -232,6 +232,7 @@
 0248 ST_FIGHTYOURCOLOR |14
 0249 ST_FIGHTENEMYCOLOR |04
 0250 ST_FIGHTMISS »»» |12%s missed!^M^M
+0251 ST_FIGHTCONSCRIPT    %ld were recruited by the government.^M
 0252 ST_FIGHTATTACK »»» |04%s attacks %s for |12%d damage.
 0253 ST_FIGHTXP  [%ld]
 0254 ST_FIGHTKILLED »»» |14%s |12is killed!  |04[%d]^M^M
