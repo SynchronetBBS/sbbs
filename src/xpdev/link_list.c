@@ -429,9 +429,11 @@ int listNodeIndex(link_list_t* list, list_node_t* find_node)
 
 	listLock(list);
 
-	for (node = list->first; node != NULL; node = node->next)
+	for (node = list->first; node != NULL; node = node->next) {
 		if (node == find_node)
 			break;
+		i++;
+	}
 
 	listUnlock(list);
 
