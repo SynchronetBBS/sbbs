@@ -218,7 +218,7 @@ sftp_get32(sftp_rx_pkt_t pkt)
 	return BE_INT32(ret);
 }
 
-uint32_t
+uint64_t
 sftp_get64(sftp_rx_pkt_t pkt)
 {
 	uint64_t ret;

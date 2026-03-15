@@ -216,7 +216,7 @@ uint8_t sftp_pkt_type(sftp_rx_pkt_t pkt);
 bool sftp_have_full_pkt(sftp_rx_pkt_t pkt);
 void sftp_remove_packet(sftp_rx_pkt_t pkt);
 uint32_t sftp_get32(sftp_rx_pkt_t pkt);
-uint32_t sftp_get64(sftp_rx_pkt_t pkt);
+uint64_t sftp_get64(sftp_rx_pkt_t pkt);
 sftp_str_t sftp_getstring(sftp_rx_pkt_t pkt);
 bool sftp_rx_pkt_append(sftp_rx_pkt_t *pkt, uint8_t *inbuf, uint32_t len);
 bool sftp_tx_pkt_reset(sftp_tx_pkt_t *pktp);
