@@ -82,12 +82,19 @@ QTEST_OBJS := $(OBJDIR)qtest.o $(OBJDIR)clansini.o $(OBJDIR)console.o \
 		$(OBJDIR)input.o $(OBJDIR)language.o $(OBJDIR)misc.o \
 		$(OBJDIR)myopen.o $(OBJDIR)npc.o $(OBJDIR)parsing.o \
 		$(OBJDIR)platform.o $(OBJDIR)quests.o \
-		$(OBJDIR)serialize.o $(OBJDIR)video.o
+		$(OBJDIR)scripteng.o $(OBJDIR)serialize.o $(OBJDIR)video.o
 
 PCEDIT_OBJS :=	$(OBJDIR)pcedit.o $(OBJDIR)alliance.o \
 		$(OBJDIR)console.o $(OBJDIR)deserialize.o \
 		$(OBJDIR)myopen.o $(OBJDIR)platform.o \
 		$(OBJDIR)serialize.o $(OBJDIR)video.o
+
+GTEST_OBJS := $(OBJDIR)gtest.o $(OBJDIR)class.o $(OBJDIR)clansini.o \
+		$(OBJDIR)console.o $(OBJDIR)deserialize.o $(OBJDIR)fight.o \
+		$(OBJDIR)help.o $(OBJDIR)input.o $(OBJDIR)items.o \
+		$(OBJDIR)language.o $(OBJDIR)misc.o $(OBJDIR)myopen.o \
+		$(OBJDIR)parsing.o $(OBJDIR)platform.o $(OBJDIR)scripteng.o \
+		$(OBJDIR)serialize.o $(OBJDIR)spells.o $(OBJDIR)video.o
 
 RESET_OBJS :=	$(OBJDIR)reset.o $(OBJDIR)alliance.o \
 		$(OBJDIR)console.o $(OBJDIR)deserialize.o \
@@ -123,13 +130,13 @@ mstrings.h: $(DATADIR)strings.u8.txt $(BINDIR)langcomp$(NATIVEEXEFILE)
 # excluded via filter-out to avoid a circular dependency.
 $(filter-out $(LANGCOMP_OBJS), \
     $(CLANS_OBJS) $(CONFIG_OBJS) $(PCEDIT_OBJS) \
-    $(RESET_OBJS) $(QTEST_OBJS) $(INSTALL_OBJS)): | mstrings.h
+    $(RESET_OBJS) $(QTEST_OBJS) $(GTEST_OBJS) $(INSTALL_OBJS)): | mstrings.h
 
 .PHONY: devkit
 devkit: $(DEVKIT_BINARIES) $(INSTALL_BINARIES)
 
 .PHONY: all
-all: default devkit
+all: default devkit $(TEST_BINARIES)
 
 .PHONY: native-exefile
 native-exefile:
@@ -242,6 +249,9 @@ $(BINDIR)qtest$(EXEFILE): $(QTEST_OBJS) | $(BINDIR)
 
 $(BINDIR)qtest$(WRAPEXT): wrapper$(WRAPEXT) | $(BINDIR)qtest$(EXEFILE)
 	cp $^ $@
+
+$(BINDIR)gtest$(EXEFILE): $(GTEST_OBJS) | $(BINDIR)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(GTEST_OBJS) -o $@ $(WRAPPER_LIBS)
 
 $(BINDIR)pcedit$(EXEFILE): $(PCEDIT_OBJS) | $(BINDIR)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@ $(WRAPPER_LIBS)

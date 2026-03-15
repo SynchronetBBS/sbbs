@@ -20,6 +20,7 @@
 #include "language.h"
 #include "myopen.h"
 #include "npc.h"
+#include "scripteng.h"
 
 /* =========================================================================
  * Globals required by quests.c / npc.c / video.c
@@ -53,180 +54,6 @@ char *DupeStr(const char *str)
 }
 
 /* =========================================================================
- * Script engine
- * ========================================================================= */
-
-static bool   script_mode = false;
-static FILE  *script      = NULL;
-static int    script_line = 0;
-
-static bool script_read_line(char *buf, size_t sz)
-{
-	while (fgets(buf, (int)sz, script)) {
-		script_line++;
-		size_t len = strlen(buf);
-		while (len > 0 && (buf[len - 1] == '\n' || buf[len - 1] == '\r'))
-			buf[--len] = '\0';
-		if (len > 0)
-			return true;
-	}
-	return false;
-}
-
-/*
- * Reads the next script line and verifies it has the expected Type prefix.
- * Returns a pointer to the value part (after '=').
- * On mismatch or EOF, prints a diagnostic to stderr and exits with code 2.
- */
-static const char *script_consume(const char *expected_type)
-{
-	static char line[512];
-
-	if (!script_read_line(line, sizeof(line))) {
-		fprintf(stderr, "qtest: line %d: script ended unexpectedly, "
-		        "expected %s\n", script_line + 1, expected_type);
-		exit(2);
-	}
-
-	if (strcmp(line, "End") == 0) {
-		fprintf(stderr, "qtest: line %d: script ended (End marker) while "
-		        "expecting %s\n", script_line, expected_type);
-		exit(2);
-	}
-
-	char *eq = strchr(line, '=');
-	if (!eq) {
-		fprintf(stderr, "qtest: line %d: malformed line (no '='): %s\n",
-		        script_line, line);
-		exit(2);
-	}
-
-	size_t tlen = strlen(expected_type);
-	size_t alen = (size_t)(eq - line);
-	if (alen != tlen || strncasecmp(line, expected_type, tlen) != 0) {
-		char actual[64] = "(unknown)";
-		if (alen < sizeof(actual)) {
-			memcpy(actual, line, alen);
-			actual[alen] = '\0';
-		}
-		fprintf(stderr, "qtest: line %d: type mismatch: "
-		        "expected %s, got %s\n",
-		        script_line, expected_type, actual);
-		exit(2);
-	}
-
-	return eq + 1;
-}
-
-/*
- * Called after the event/NPC chat returns.  Reads the next script line,
- * expects it to be "End".  If not, prints a diagnostic and exits with
- * code 3.
- */
-static void script_expect_end(void)
-{
-	char line[512];
-
-	if (!script_read_line(line, sizeof(line))) {
-		fprintf(stderr, "qtest: line %d: expected End but reached "
-		        "end of file\n", script_line + 1);
-		exit(3);
-	}
-	if (strcmp(line, "End") != 0) {
-		fprintf(stderr, "qtest: line %d: expected End, got: %s\n",
-		        script_line, line);
-		exit(3);
-	}
-}
-
-/* =========================================================================
- * Hook callbacks (called by subsystems in script mode)
- * ========================================================================= */
-
-static char hook_get_answer(const char *szAllowableChars)
-{
-	const char *val = script_consume("Choice");
-	if (val[0] == '\0') {
-		fprintf(stderr, "qtest: line %d: Choice= has no value\n",
-		        script_line);
-		exit(2);
-	}
-	char c = (char)toupper((unsigned char)val[0]);
-	/* validate — check both cases since allowable chars may be any case */
-	const char *p = szAllowableChars;
-	while (*p && toupper((unsigned char)*p) != c)
-		p++;
-	if (!*p) {
-		fprintf(stderr, "qtest: line %d: Choice='%c' not in "
-		        "allowable set \"%s\"\n",
-		        script_line, c, szAllowableChars);
-		exit(2);
-	}
-	return c;
-}
-
-static void hook_dos_get_str(char *InputStr, int16_t MaxChars, bool HiBit)
-{
-	(void)HiBit;
-	const char *val = script_consume("String");
-	strlcpy(InputStr, val, (size_t)MaxChars + 1);
-}
-
-static long hook_dos_get_long(const char *Prompt, long DefaultVal, long Maximum)
-{
-	(void)Prompt;
-	(void)DefaultVal;
-	const char *val = script_consume("Number");
-	long n = atol(val);
-	if (n > Maximum)
-		n = Maximum;
-	return n;
-}
-
-static int16_t hook_get_string_choice(const char **apszChoices,
-                                      int16_t NumChoices,
-                                      bool AllowBlank)
-{
-	const char *val = script_consume("Topic");
-
-	if (val[0] == '\0') {
-		if (!AllowBlank) {
-			fprintf(stderr, "qtest: line %d: empty Topic= but "
-			        "AllowBlank is false\n", script_line);
-			exit(2);
-		}
-		return -1;
-	}
-
-	/* exact match first, then unambiguous prefix */
-	for (int i = 0; i < NumChoices; i++) {
-		if (plat_stricmp(val, apszChoices[i]) == 0)
-			return (int16_t)i;
-	}
-
-	size_t vlen = strlen(val);
-	int found  = -1;
-	int matches = 0;
-	for (int i = 0; i < NumChoices; i++) {
-		if (strncasecmp(val, apszChoices[i], vlen) == 0) {
-			found = i;
-			matches++;
-		}
-	}
-	if (matches == 0) {
-		fprintf(stderr, "qtest: line %d: Topic=\"%s\" not found\n",
-		        script_line, val);
-		exit(2);
-	}
-	if (matches > 1) {
-		fprintf(stderr, "qtest: line %d: Topic=\"%s\" is ambiguous\n",
-		        script_line, val);
-		exit(2);
-	}
-	return (int16_t)found;
-}
-
-/* =========================================================================
  * fight.h mocks
  * ========================================================================= */
 
@@ -238,7 +65,7 @@ int16_t Fight_Fight(struct clan *Attacker, struct clan *Defender,
 
 	char buf[128];
 
-	if (script_mode) {
+	if (script_is_active()) {
 		const char *val = script_consume("Fight");
 		char c = (char)toupper((unsigned char)val[0]);
 
@@ -420,7 +247,7 @@ int my_random(int limit)
 	if (limit >= RAND_MAX)
 		System_Error("Broken Random (range too small)!");
 
-	if (script_mode) {
+	if (script_is_active()) {
 		const char *val = script_consume("Random");
 		int n = atoi(val);
 		if (n < 0)
@@ -1094,7 +921,6 @@ int main(int argc, char *argv[])
 					return 1;
 				}
 				strlcpy(script_path, argv[++i], sizeof(script_path));
-				script_mode = true;
 				break;
 			default:
 				fprintf(stderr, "qtest: unknown option: %s\n", a);
@@ -1103,7 +929,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* ---- validate script mode requirements ---- */
-	if (script_mode) {
+	if (script_path[0]) {
 		if (have_npc && have_event) {
 			fprintf(stderr, "qtest: -n and -e are mutually exclusive\n");
 			return 1;
@@ -1114,20 +940,13 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		script = fopen(script_path, "r");
-		if (!script) {
+		if (!script_open(script_path)) {
 			fprintf(stderr, "qtest: cannot open script file \"%s\"\n",
 			        script_path);
 			return 1;
 		}
-
-		/* install hooks */
-		Console_SetScriptMode(true);
-		Console_SetGetAnswerHook(hook_get_answer);
-		Video_SetScriptMode(true);
-		Video_SetDosGetStrHook(hook_dos_get_str);
-		Video_SetDosGetLongHook(hook_dos_get_long);
-		Input_SetGetStringChoiceHook(hook_get_string_choice);
+		script_set_tool_name("qtest");
+		script_install_hooks();
 	}
 
 	/* ---- initialise ---- */
@@ -1149,7 +968,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* ---- script mode: run target, check End, print summary, exit ---- */
-	if (script_mode) {
+	if (script_is_active()) {
 		if (have_npc) {
 			NPC_ChatNPC(npc_index);
 		} else {
@@ -1166,7 +985,7 @@ int main(int argc, char *argv[])
 		script_expect_end();
 		print_state_summary();
 		dbg_close();
-		fclose(script);
+		script_close();
 		return 0;
 	}
 

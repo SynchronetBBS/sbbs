@@ -52,6 +52,8 @@ DEVKIT_BINARIES	:=	$(BINDIR)chew$(EXEFILE) $(BINDIR)ecomp$(EXEFILE) \
 			$(BINDIR)mspells$(WRAPEXT) \
 			$(BINDIR)qtest$(WRAPEXT)
 
+TEST_BINARIES	:=	$(BINDIR)gtest$(EXEFILE)
+
 INSTALL_BINARIES :=	$(BINDIR)install$(EXEFILE) \
 			$(BINDIR)install$(WRAPEXT)
 

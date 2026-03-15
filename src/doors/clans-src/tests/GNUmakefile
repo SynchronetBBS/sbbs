@@ -18,6 +18,7 @@ TESTS	:=	test_langcomp.sh \
 		test_makenpc.sh \
 		test_makepak.sh \
 		test_qtest.sh \
+		test_gtest.sh \
 		test_stock_quests.sh
 
 .PHONY: all
@@ -27,8 +28,12 @@ all: test
 devkit:
 	$(MAKE) -C $(SRC) devkit
 
+.PHONY: test-binaries
+test-binaries:
+	$(MAKE) -C $(SRC) test-binaries
+
 .PHONY: test
-test: | devkit
+test: | devkit test-binaries
 	@mkdir -p $(CLANS_TMPDIR)
 	@ret=0; \
 	for t in $(TESTS); do \

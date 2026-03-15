@@ -9,6 +9,7 @@
 
 static bool script_mode = false;
 static char (*get_answer_hook)(const char *szAllowableChars) = NULL;
+static char (*get_key_hook)(void) = NULL;
 
 void Console_SetScriptMode(bool mode)
 {
@@ -18,6 +19,11 @@ void Console_SetScriptMode(bool mode)
 void Console_SetGetAnswerHook(char (*hook)(const char *szAllowableChars))
 {
 	get_answer_hook = hook;
+}
+
+void Console_SetGetKeyHook(char (*hook)(void))
+{
+	get_key_hook = hook;
 }
 
 bool Door_Initialized(void)
@@ -32,6 +38,8 @@ void rputs(const char *str)
 
 char GetKey(void)
 {
+	if (get_key_hook)
+		return get_key_hook();
 	int ret = cio_getch();
 	if (ret < 0)
 		return 0;

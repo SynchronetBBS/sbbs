@@ -23,7 +23,7 @@ game:	data binaries
 .PHONY: devkit
 devkit: devkit-binaries
 
-all: binaries data devkit-binaries installer devkit-installer
+all: binaries data devkit-binaries test-binaries installer devkit-installer
 
 .PHONY: binaries
 binaries:
@@ -32,6 +32,10 @@ binaries:
 .PHONY: devkit-binaries
 devkit-binaries:
 	$(MAKE) SRC=$(SRC) -C $(SRC)src devkit
+
+.PHONY: test-binaries
+test-binaries:
+	$(MAKE) SRC=$(SRC) -C $(SRC)src $(TEST_BINARIES)
 
 .PHONY: data
 data:

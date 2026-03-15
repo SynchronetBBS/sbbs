@@ -1,0 +1,292 @@
+gtest -- Game Test Tool
+-------------------------------------------------------------------------------
+Developer tool for script-driven integration testing of game combat and
+other game systems.  Not shipped with the game or devkit.
+
+
+[0.0]  Table of Contents
+-------------------------------------------------------------------------------
+
+Overview
+========
+What is gtest? ................................................   1.1
+Relationship to qtest .........................................   1.2
+
+Usage
+=====
+Commands ......................................................   2.1
+Random Control ................................................   2.2
+State Arguments ...............................................   2.3
+
+Output
+======
+State Summary .................................................   3.1
+Interpreting Results ..........................................   3.2
+
+Script Engine
+=============
+Script Format .................................................   4.1
+Script Types ..................................................   4.2
+Error Codes ...................................................   4.3
+
+Architecture
+============
+What Gets Linked ..............................................   5.1
+What Gets Mocked ..............................................   5.2
+Adding New Commands ...........................................   5.3
+
+
+Overview
+===============================================================================
+
+[1.1]  What is gtest?
+-------------------------------------------------------------------------------
+gtest is a standalone binary that exercises the game's combat engine
+(fight.c) and related systems without a BBS connection, without any
+game data files on disk (beyond clans.pak and strings.xl), and without
+interactive user input.
+
+It works by linking the real combat code against a set of mock
+functions that replace the parts of the game that are not under test
+(mail, IBBS, user file I/O, etc.).  Input is controlled either by a
+fixed random value, a seeded PRNG, or a script file.
+
+gtest is a developer-only tool.  It is not part of the devkit and is
+not shipped to sysops or PAK developers.
+
+
+[1.2]  Relationship to qtest
+-------------------------------------------------------------------------------
+qtest tests the quest/event system (quests.c, npc.c).  gtest tests the
+combat system (fight.c, spells.c, items.c).  Both share the same script
+engine (scripteng.c) and the same hook architecture for intercepting
+user input.
+
+The script format is identical.  A script written for qtest's Choice=,
+String=, Number=, and Topic= types works the same way in gtest.  gtest
+adds the Key= type for raw keystroke input.
+
+
+Usage
+===============================================================================
+
+[2.1]  Commands
+-------------------------------------------------------------------------------
+gtest requires a -c flag to select a command:
+
+        gtest -c autofight [-l LEVEL] [-r VALUE | -R SEED] [-g GOLD]
+        gtest -c levelup
+
+autofight
+    Creates a test clan (Fighter, Mage, Cleric, Thief) and a single
+    enemy (Goblin scaled to the mine level).  Runs Fight_Fight with
+    AutoFight=true so the AI controls all combat decisions.  After
+    combat, applies points and runs Fight_CheckLevelUp.
+
+    -l LEVEL    Mine level (default: 1).  Higher levels produce a
+                tougher goblin.
+
+levelup
+    Sets all test clan members to 1000 XP and runs Fight_CheckLevelUp.
+    Useful for verifying level-up thresholds and training point awards.
+
+
+[2.2]  Random Control
+-------------------------------------------------------------------------------
+Combat relies heavily on my_random().  gtest provides three modes:
+
+        gtest -c autofight -r 1      Fixed return value
+        gtest -c autofight -R 42     Seeded PRNG
+        gtest -c autofight           Unseeded PRNG (default)
+
+-r VALUE
+    Every call to my_random(limit) returns VALUE % limit.  Fully
+    deterministic, no PRNG involved, identical results on every
+    platform.  Use this for tests that assert exact outcomes.
+
+-R SEED
+    Calls srand(SEED) before combat.  Results are deterministic for a
+    given platform and libc but may differ across systems.  Use this
+    when you want varied-but-reproducible combat for exploratory
+    testing.
+
+(neither)
+    Uses rand() without calling srand().  Most libcs default to seed 1,
+    so results are usually deterministic but this is not guaranteed.
+
+When a script file is active (-s), my_random consumes Random=N lines
+from the script instead, regardless of -r or -R.
+
+
+[2.3]  State Arguments
+-------------------------------------------------------------------------------
+
+        -g GOLD     Set starting vault gold (default: 5000)
+        -m LEVEL    Set starting mine level (default: 1)
+        -s SCRIPT   Script file for input hooks
+
+
+Output
+===============================================================================
+
+[3.1]  State Summary
+-------------------------------------------------------------------------------
+After execution, gtest prints a machine-readable state summary to
+stderr.  Each line is Key=Value.  Tests parse this with grep.
+
+        FightResult=WON
+        Gold=5057
+        MineLevel=1
+        Points=5
+        FightsLeft=9
+        Followers=0
+        Member0.Name=Fighter
+        Member0.HP=80
+        Member0.MaxHP=80
+        Member0.SP=10
+        Member0.MaxSP=10
+        Member0.XP=6
+        Member0.Level=1
+        Member1.Name=Mage
+        ...
+
+FightResult is WON, LOST, RAN, or NONE (for non-combat commands like
+levelup).
+
+
+[3.2]  Interpreting Results
+-------------------------------------------------------------------------------
+Combat output (round-by-round battle text, damage messages) goes to
+stdout.  The state summary goes to stderr.  Tests typically redirect:
+
+        gtest -c autofight -r 1 >/dev/null 2>state.txt
+        grep "FightResult=WON" state.txt
+
+The stdout output contains ANSI color codes from the game's display
+system.  This is normal -- gtest uses the real video.c with
+script_mode=true, which suppresses terminal manipulation but still
+emits color codes in the output stream.
+
+
+Script Engine
+===============================================================================
+
+[4.1]  Script Format
+-------------------------------------------------------------------------------
+Scripts are plain text files with one directive per line.  Each line
+has the format Type=value.  Lines are consumed in order as the game
+code requests input.  The file must end with "End" on its own line.
+
+        Choice=A
+        Random=3
+        Key=S
+        End
+
+Blank lines are skipped.  There are no comments.
+
+
+[4.2]  Script Types
+-------------------------------------------------------------------------------
+
+        Choice=X       GetAnswer hook.  Single character from the
+                       allowable set.  Case-insensitive.
+
+        Key=X          GetKey hook.  Single character.  Special names:
+                       ENTER (or CR), BS, SPACE.
+
+        String=text    DosGetStr hook.  Free-form text input.
+
+        Number=N       DosGetLong hook.  Numeric input.  Clamped to
+                       the function's maximum.
+
+        Topic=word     GetStringChoice hook.  Exact or unambiguous
+                       prefix match against the choice list.
+
+        Random=N       my_random mock.  Returns N, clamped to
+                       [0, limit).  Only consumed when a script file
+                       is active.
+
+        End            End-of-script marker.  Must appear after all
+                       input is consumed.
+
+
+[4.3]  Error Codes
+-------------------------------------------------------------------------------
+
+        0    Success.
+        1    Argument validation error or file open failure.
+        2    Script format error: type mismatch, invalid value,
+             premature End, malformed line.
+        3    Script structure error: extra unconsumed lines after
+             the game function returns, or EOF before End marker.
+
+
+Architecture
+===============================================================================
+
+[5.1]  What Gets Linked
+-------------------------------------------------------------------------------
+gtest links the following real game modules:
+
+        fight.o        Combat engine (the primary test target)
+        spells.o       Spell casting, spell effects
+        class.o        Player class/race loading
+        items.o        Item loading, scroll usage in combat
+        console.o      I/O layer (rputs, GetKey, GetAnswer)
+        video.o        Display (zputs, DosGetStr, DosGetLong)
+        input.o        Input (GetChoice, GetStr, GetStringChoice)
+        scripteng.o    Shared script engine
+        help.o         Help file display
+        language.o     String loading from strings.xl
+        clansini.o     Configuration (clans.ini parsing)
+        myopen.o       PAK file access
+        serialize.o    Binary serialization
+        deserialize.o  Binary deserialization
+        misc.o         Utility functions
+        parsing.o      Config file parsing
+        platform.o     Platform abstraction
+
+
+[5.2]  What Gets Mocked
+-------------------------------------------------------------------------------
+gtest provides stub implementations for functions that fight.c
+references but that would pull in the entire game if linked:
+
+        From user.c     NumMembers, GetStat (with full item/spell
+                        modifiers), ShowPlayerStats, ListItems,
+                        ClanStats, GetClanNameID, GetClan,
+                        GetClanID, ClanExists, Clan_Update,
+                        User_Write, ShowVillageStats
+
+        From news.c     News_AddNews (prints to stdout)
+        From mail.c     GenericMessage (no-op)
+        From ibbs.c     VillageName, BBSName
+        From random.c   my_random (fixed, seeded, or scripted)
+        From door.c     Display, LogStr, DupeStr
+        OpenDoors       od_clr_scr (no-op)
+
+The test clan (Fighter/Mage/Cleric/Thief) and village are set up in
+gtest.c with hardcoded values.  No game data files are read for clan
+or village state.
+
+
+[5.3]  Adding New Commands
+-------------------------------------------------------------------------------
+To add a new command (e.g., to test empire combat or menu navigation):
+
+1.  Add a new string to the command dispatch in main():
+
+                else if (plat_stricmp(command, "newcmd") == 0) {
+                        /* setup and call game function */
+                }
+
+2.  Add any new mocks needed by the linked game code.  Check for
+    undefined symbol errors at link time.
+
+3.  Update the state summary (print_state_summary) if the new command
+    modifies state that tests need to assert on.
+
+4.  Add tests to tests/test_gtest.sh.
+
+5.  If the new command needs interactive input, use script mode (-s)
+    with the appropriate Type=value lines.
