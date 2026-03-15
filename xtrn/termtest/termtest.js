@@ -1193,6 +1193,763 @@ var tests = [
 		return true;
 		// TODO: Interactive...
 	}},
+	{'name':'CTELCF', 'func':function() {
+		// Enable LCF mode: cursor should stick at last column
+		console.write("\x1b[=4h");
+		console.gotoxy(console.screen_columns, 1);
+		console.write("X");
+		// In LCF mode, cursor should stick at last column
+		if (!check_xy(console.screen_columns, 1)) {
+			console.write("\x1b[=4l");
+			return false;
+		}
+		// Writing another char should wrap then advance past it
+		console.write("Y");
+		if (!check_xy(2, 2)) {
+			console.write("\x1b[=4l");
+			return false;
+		}
+		console.write("\x1b[=4l");
+		return true;
+	}},
+	{'name':'CTDLCF', 'func':function() {
+		// Default mode (LCF off): writing to last col wraps immediately
+		console.write("\x1b[=4l");
+		console.gotoxy(console.screen_columns, 1);
+		console.write("X");
+		// Without LCF, cursor wraps to next line immediately
+		if (!check_xy(1, 2))
+			return false;
+		return true;
+	}},
+	{'name':'OriginMode', 'func':function() {
+		// Set scroll region to rows 5-10, enable origin mode
+		// DSR 6n reports relative to scroll region in origin mode
+		console.write("\x1b[5;10r");
+		console.write("\x1b[?6h");
+		// CUP 1;1 should report as (1,1) relative to region
+		console.write("\x1b[1;1H");
+		var pos = fast_getxy();
+		if (pos.x !== 1 || pos.y !== 1) {
+			console.write("\x1b[?6l\x1b[r");
+			return false;
+		}
+		// CUP to row 3, col 5 -> relative (5, 3)
+		console.write("\x1b[3;5H");
+		pos = fast_getxy();
+		if (pos.x !== 5 || pos.y !== 3) {
+			console.write("\x1b[?6l\x1b[r");
+			return false;
+		}
+		// Cursor should be clamped to bottom of region (row 6 relative)
+		console.write("\x1b[20;1H");
+		pos = fast_getxy();
+		if (pos.y !== 6) {
+			console.write("\x1b[?6l\x1b[r");
+			return false;
+		}
+		console.write("\x1b[?6l\x1b[r");
+		return true;
+	}},
+	{'name':'CUUClamp', 'func':function() {
+		// CUU should clamp at row 1
+		console.gotoxy(5, 3);
+		console.write("\x1b[99A");
+		return check_xy(5, 1);
+	}},
+	{'name':'CUDClamp', 'func':function() {
+		// CUD should clamp at bottom row
+		console.gotoxy(5, 1);
+		console.write(format("\x1b[%dB", console.screen_rows + 10));
+		return check_xy(5, console.screen_rows);
+	}},
+	{'name':'CUFClamp', 'func':function() {
+		// CUF should clamp at last column
+		console.gotoxy(1, 1);
+		console.write(format("\x1b[%dC", console.screen_columns + 10));
+		return check_xy(console.screen_columns, 1);
+	}},
+	{'name':'CUBClamp', 'func':function() {
+		// CUB should clamp at column 1
+		console.gotoxy(5, 1);
+		console.write("\x1b[99D");
+		return check_xy(1, 1);
+	}},
+	{'name':'HPBClamp', 'func':function() {
+		// HPB should clamp at column 1
+		console.gotoxy(5, 1);
+		console.write("\x1b[99j");
+		return check_xy(1, 1);
+	}},
+	{'name':'VPBClamp', 'func':function() {
+		// VPB should clamp at row 1
+		console.gotoxy(5, 3);
+		console.write("\x1b[99k");
+		return check_xy(5, 1);
+	}},
+	{'name':'DECRQSS_m', 'func':function() {
+		// Query SGR state after setting red foreground
+		console.write("\x1b[0;31m");
+		console.write("\x1bP$qm\x1b\\");
+		var seq = read_ansi_string(500);
+		console.write("\x1b[0m");
+		if (seq === null)
+			return false;
+		// Response: DCS 1 $ r <SGR params> m ST
+		if (seq.search(/^\x1bP1\$r.*m\x1b\\$/) === -1)
+			return false;
+		// Should contain 31 (red fg) somewhere in the params
+		if (seq.search(/31/) === -1)
+			return false;
+		return true;
+	}},
+	{'name':'DECRQSS_r', 'func':function() {
+		// Query top/bottom margins
+		console.write("\x1b[5;15r");
+		console.write("\x1bP$qr\x1b\\");
+		var seq = read_ansi_string(500);
+		console.write("\x1b[r");
+		if (seq === null)
+			return false;
+		// Response: DCS 1 $ r 5;15 r ST
+		if (seq.search(/^\x1bP1\$r5;15r\x1b\\$/) === -1)
+			return false;
+		return true;
+	}},
+	{'name':'DECRQSS_s', 'func':function() {
+		// Query left/right margins
+		console.write("\x1b[?69h");
+		console.write("\x1b[5;75s");
+		console.write("\x1bP$qs\x1b\\");
+		var seq = read_ansi_string(500);
+		console.write("\x1b[s\x1b[?69l");
+		if (seq === null)
+			return false;
+		// Response: DCS 1 $ r 5;75 s ST
+		if (seq.search(/^\x1bP1\$r5;75s\x1b\\$/) === -1)
+			return false;
+		return true;
+	}},
+	{'name':'CTSMRR_4', 'func':function() {
+		// Query LCF mode status - should be 0 (disabled) by default
+		console.write("\x1b[=4l");
+		console.write("\x1b[=4n");
+		var seq = read_ansi_seq(500);
+		if (seq === null)
+			return false;
+		if (seq.search(/^\x1b\[=4;0n$/) === -1)
+			return false;
+		// Enable LCF, query again
+		console.write("\x1b[=4h");
+		console.write("\x1b[=4n");
+		seq = read_ansi_seq(500);
+		console.write("\x1b[=4l");
+		if (seq === null)
+			return false;
+		if (seq.search(/^\x1b\[=4;1n$/) === -1)
+			return false;
+		return true;
+	}},
+	{'name':'CTSMRR_5', 'func':function() {
+		// Query LCF forced status - should be 0 by default
+		console.write("\x1b[=5n");
+		var seq = read_ansi_seq(500);
+		if (seq === null)
+			return false;
+		if (seq.search(/^\x1b\[=5;[01]n$/) === -1)
+			return false;
+		return true;
+	}},
+	{'name':'CTSV', 'func':function() {
+		// Query SyncTERM version via APC
+		console.write("\x1b_SyncTERM:VER\x1b\\");
+		var seq = read_ansi_string(500);
+		if (seq === null)
+			return false;
+		// Response: APC SyncTERM:VER;SyncTERM <version> ST
+		if (seq.search(/^\x1b_SyncTERM:VER;SyncTERM /) === -1)
+			return false;
+		return true;
+	}},
+	{'name':'CTQJS', 'func':function() {
+		// Query JXL support
+		console.write("\x1b_SyncTERM:Q;JXL\x1b\\");
+		var seq = read_ansi_seq(500);
+		if (seq === null)
+			return false;
+		// Response: CSI = 1 ; pR - n  (pR is 0 or 1, note '-' intermediate)
+		if (seq.search(/^\x1b\[=1;[01]-n$/) === -1)
+			return false;
+		return true;
+	}},
+	{'name':'SGR256FG', 'func':function() {
+		// Test 256-color palette foreground (SGR 38;5;N)
+		if (!has_cksum)
+			return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[0m#");
+		var cs1 = get_cs(1, 1, 1, 1);
+		console.gotoxy(1, 1);
+		console.write("\x1b[38;5;196m#");
+		var cs2 = get_cs(1, 1, 1, 1);
+		console.write("\x1b[0m");
+		if (cs1 === null || cs2 === null)
+			return null;
+		if (cs1 === cs2)
+			return false;
+		return true;
+	}},
+	{'name':'SGR256BG', 'func':function() {
+		// Test 256-color palette background (SGR 48;5;N)
+		if (!has_cksum)
+			return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[0m ");
+		var cs1 = get_cs(1, 1, 1, 1);
+		console.gotoxy(1, 1);
+		console.write("\x1b[48;5;21m ");
+		var cs2 = get_cs(1, 1, 1, 1);
+		console.write("\x1b[0m");
+		if (cs1 === null || cs2 === null)
+			return null;
+		if (cs1 === cs2)
+			return false;
+		return true;
+	}},
+	{'name':'SGRRGBFG', 'func':function() {
+		// Test 24-bit direct color foreground (SGR 38;2;R;G;B)
+		if (!has_cksum)
+			return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[0m#");
+		var cs1 = get_cs(1, 1, 1, 1);
+		console.gotoxy(1, 1);
+		console.write("\x1b[38;2;255;128;0m#");
+		var cs2 = get_cs(1, 1, 1, 1);
+		console.write("\x1b[0m");
+		if (cs1 === null || cs2 === null)
+			return null;
+		if (cs1 === cs2)
+			return false;
+		return true;
+	}},
+	{'name':'SGRRGBBG', 'func':function() {
+		// Test 24-bit direct color background (SGR 48;2;R;G;B)
+		if (!has_cksum)
+			return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[0m ");
+		var cs1 = get_cs(1, 1, 1, 1);
+		console.gotoxy(1, 1);
+		console.write("\x1b[48;2;0;255;128m ");
+		var cs2 = get_cs(1, 1, 1, 1);
+		console.write("\x1b[0m");
+		if (cs1 === null || cs2 === null)
+			return null;
+		if (cs1 === cs2)
+			return false;
+		return true;
+	}},
+	{'name':'SGRBright', 'func':function() {
+		// Test bright foreground colors 91-97 and bright background 100-107
+		// Per spec, 100-107 require bright bg enabled (DECSET ?33)
+		if (!has_cksum)
+			return null;
+		console.clear();
+		// Normal red vs bright red foreground
+		console.gotoxy(1, 1);
+		console.write("\x1b[31m#");
+		var cs_norm = get_cs(1, 1, 1, 1);
+		console.gotoxy(1, 1);
+		console.write("\x1b[91m#");
+		var cs_bright = get_cs(1, 1, 1, 1);
+		if (cs_norm === null || cs_bright === null) {
+			console.write("\x1b[0m");
+			return null;
+		}
+		if (cs_norm === cs_bright) {
+			console.write("\x1b[0m");
+			return false;
+		}
+		// Normal red vs bright red background (needs DECSET ?33)
+		console.write("\x1b[?33h");
+		console.gotoxy(1, 1);
+		console.write("\x1b[41m ");
+		cs_norm = get_cs(1, 1, 1, 1);
+		console.gotoxy(1, 1);
+		console.write("\x1b[101m ");
+		cs_bright = get_cs(1, 1, 1, 1);
+		console.write("\x1b[?33l\x1b[0m");
+		if (cs_norm === null || cs_bright === null)
+			return null;
+		if (cs_norm === cs_bright)
+			return false;
+		return true;
+	}},
+	{'name':'SGRNeg', 'func':function() {
+		// Test negative image (SGR 7) and positive image (SGR 27) roundtrip
+		if (!has_cksum)
+			return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;37;40m#");
+		var cs_normal = get_cs(1, 1, 1, 1);
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;37;40;7m#");
+		var cs_neg = get_cs(1, 1, 1, 1);
+		// Negative image should look different
+		if (cs_normal === null || cs_neg === null) {
+			console.write("\x1b[0m");
+			return null;
+		}
+		if (cs_normal === cs_neg) {
+			console.write("\x1b[0m");
+			return false;
+		}
+		// Positive image (27) should restore
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;37;40;7;27m#");
+		var cs_pos = get_cs(1, 1, 1, 1);
+		console.write("\x1b[0m");
+		if (cs_pos === null)
+			return null;
+		if (cs_pos !== cs_normal)
+			return false;
+		return true;
+	}},
+	{'name':'SGRConceal', 'func':function() {
+		// Test concealed text (SGR 8) - fg set to bg color
+		if (!has_cksum)
+			return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[0m#");
+		var cs_visible = get_cs(1, 1, 1, 1);
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;8m#");
+		var cs_hidden = get_cs(1, 1, 1, 1);
+		console.write("\x1b[0m");
+		if (cs_visible === null || cs_hidden === null)
+			return null;
+		// Concealed should look different (fg becomes bg)
+		if (cs_visible === cs_hidden)
+			return false;
+		return true;
+	}},
+	{'name':'OSC4', 'func':function() {
+		// Test palette redefinition and reset
+		// DECRQCRA checksums attribute indices, not rendered colors,
+		// so palette changes are invisible to it. Use interactive.
+		if (!interactive)
+			return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;31m################\x1b[0m  <-- This should be RED");
+		console.gotoxy(1, 3);
+		var ret = console.yesno("Is the text above red");
+		if (!ret)
+			return false;
+		// Redefine palette entry 1 (red) to green
+		console.write("\x1b]4;1;rgb:00/FF/00\x1b\\");
+		console.gotoxy(1, 3);
+		console.cleartoeol();
+		ret = console.yesno("Did the text above change to green");
+		if (!ret) {
+			console.write("\x1b]104;1\x1b\\");
+			return false;
+		}
+		// Reset palette
+		console.write("\x1b]104;1\x1b\\");
+		console.gotoxy(1, 3);
+		console.cleartoeol();
+		ret = console.yesno("Did the text above change back to red");
+		if (!ret)
+			return false;
+		console.write("\x1b[0m");
+		return true;
+	}},
+	{'name':'OSC104All', 'func':function() {
+		// Test OSC 104 with no args resets all palette entries
+		if (!interactive)
+			return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;34m################\x1b[0m  <-- This should be BLUE");
+		// Redefine blue to yellow
+		console.write("\x1b]4;4;rgb:FF/FF/00\x1b\\");
+		console.gotoxy(1, 3);
+		var ret = console.yesno("Did the text above change to yellow");
+		if (!ret) {
+			console.write("\x1b]104\x1b\\");
+			return false;
+		}
+		// Reset ALL palette entries
+		console.write("\x1b]104\x1b\\");
+		console.gotoxy(1, 3);
+		console.cleartoeol();
+		ret = console.yesno("Did the text above change back to blue");
+		if (!ret)
+			return false;
+		console.write("\x1b[0m");
+		return true;
+	}},
+	{'name':'DECSCUSR', 'func':function() {
+		if (!interactive)
+			return null;
+		console.clear();
+		console.gotoxy(1, 2);
+		console.write("\x1b[1 q");
+		console.write("Blinking block cursor");
+		console.gotoxy(1, 3);
+		var ret = console.yesno("Is the cursor a blinking block");
+		if (!ret)
+			return false;
+		console.gotoxy(1, 2);
+		console.cleartoeol();
+		console.write("\x1b[4 q");
+		console.write("Steady underline cursor");
+		console.gotoxy(1, 3);
+		ret = console.yesno("Is the cursor a steady underline");
+		console.write("\x1b[1 q");
+		if (!ret)
+			return false;
+		return true;
+	}},
+	{'name':'AutoWrap', 'func':function() {
+		// Test that autowrap disabled (CSI ?7l) prevents wrapping
+		console.write("\x1b[?7l");
+		console.gotoxy(console.screen_columns, 1);
+		console.write("ABCDEF");
+		// Should still be at last column
+		if (!check_xy(console.screen_columns, 1)) {
+			console.write("\x1b[?7h");
+			return false;
+		}
+		// Re-enable autowrap
+		console.write("\x1b[?7h");
+		// Verify it works: write to last column, should wrap
+		console.gotoxy(console.screen_columns, 1);
+		console.write("AB");
+		// With default (non-LCF) mode, first char wraps, second advances
+		var pos = fast_getxy();
+		if (pos.y < 2) {
+			return false;
+		}
+		return true;
+	}},
+	{'name':'RIScroll', 'func':function() {
+		// RI at top of scroll region should scroll down
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("TopLine");
+		console.gotoxy(1, 1);
+		console.write("\x1bM");
+		// Cursor should still be at row 1
+		if (!check_xy(1, 1))
+			return false;
+		// "TopLine" should have moved to row 2
+		return interactive_or_string("TopLine", 1, 2);
+	}},
+	{'name':'LFScroll', 'func':function() {
+		// LF at bottom should scroll up
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("ScrollMe");
+		console.gotoxy(1, console.screen_rows);
+		console.write("\n");
+		// "ScrollMe" should have moved up (now on row 0, gone)
+		// But we can verify cursor is still at bottom
+		var pos = fast_getxy();
+		if (pos.y !== console.screen_rows)
+			return false;
+		return true;
+	}},
+	{'name':'DECSETBlinkBG', 'func':function() {
+		// DECSET ?33: blink bit controls background intensity
+		if (!has_cksum)
+			return null;
+		console.clear();
+		// Normal blink
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;5;41m ");
+		var cs_blink = get_cs(1, 1, 1, 1);
+		// Enable blink-to-bright-bg mode
+		console.write("\x1b[?33h");
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;5;41m ");
+		var cs_brightbg = get_cs(1, 1, 1, 1);
+		console.write("\x1b[?33l\x1b[0m");
+		if (cs_blink === null || cs_brightbg === null)
+			return null;
+		// With blink-to-bright-bg, the appearance should differ
+		if (cs_blink === cs_brightbg)
+			return false;
+		return true;
+	}},
+	{'name':'CopyPaste', 'func':function() {
+		// Test Copy screen region + Paste it elsewhere
+		// Copy/Paste operates on the pixel framebuffer, not the text
+		// cell buffer, so DECRQCRA can't verify it. Use interactive.
+		if (!interactive)
+			return null;
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("\x1b[0;1;33mCopyTest123\x1b[0m");
+		// Copy entire screen to buffer
+		console.write("\x1b_SyncTERM:P;Copy\x1b\\");
+		// Clear and paste at an offset
+		console.clear();
+		console.write("\x1b_SyncTERM:P;Paste\x1b\\");
+		mswait(200);
+		console.gotoxy(1, 3);
+		return console.yesno("Do you see 'CopyTest123' on the first line");
+	}},
+	{'name':'DECDMAC', 'func':function() {
+		// Define a macro that moves cursor to 3,3
+		// Hex-encoded: 1B 5B 33 3B 33 48 -> "ESC [ 3 ; 3 H"
+		// Note: ASCII-mode (p3=0) cannot contain ESC (not in 0x20-0x7e),
+		// so only hex-mode (p3=1) can encode escape sequences.
+		console.write("\x1bP2;0;1!z1B5B333B3348\x1b\\");
+		console.gotoxy(1, 1);
+		// Invoke macro 2
+		console.write("\x1b[2*z");
+		var pos = fast_getxy();
+		if (!check_xy(3, 3))
+			return false;
+		// Define a second macro (hex) that moves to 5,5
+		// Hex-encoded: 1B 5B 35 3B 35 48 -> "ESC [ 5 ; 5 H"
+		console.write("\x1bP3;0;1!z1B5B353B3548\x1b\\");
+		console.gotoxy(1, 1);
+		console.write("\x1b[3*z");
+		pos = fast_getxy();
+		if (!check_xy(5, 5))
+			return false;
+		return true;
+	}},
+	{'name':'DECMSR', 'func':function() {
+		// DECDSR ?62: Macro Space Report
+		console.write("\x1b[?62n");
+		var seq = read_ansi_seq(500);
+		if (seq === null)
+			return false;
+		// Response: CSI 32767 * {
+		if (seq.search(/^\x1b\[[0-9]+\*\{$/) === -1)
+			return false;
+		return true;
+	}},
+	{'name':'DECCKSR', 'func':function() {
+		// DECDSR ?63: Macro Checksum Report
+		console.write("\x1b[?63;1n");
+		var seq = read_ansi_string(500);
+		if (seq === null)
+			return false;
+		// Response: DCS 1 ! ~ xxxx ST
+		if (seq.search(/^\x1bP1!~[A-Z0-9]{4}\x1b\\$/) === -1)
+			return false;
+		return true;
+	}},
+	{'name':'DECSTBMScroll', 'func':function() {
+		// Test that scrolling is confined to the scroll region
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write("StayHere");
+		// Set scroll region to rows 3-6
+		console.write("\x1b[3;6r");
+		console.gotoxy(1, 3);
+		console.write("Line3\r\nLine4\r\nLine5\r\nLine6");
+		// One more LF should scroll within the region
+		console.write("\r\n");
+		// "StayHere" on row 1 should be unaffected
+		var ret = interactive_or_string("StayHere", 1, 1);
+		console.write("\x1b[r");
+		if (!ret)
+			return ret;
+		// Line3 should have scrolled off, Line4 now at row 3
+		ret = interactive_or_string("Line4", 1, 3);
+		console.write("\x1b[r");
+		return ret;
+	}},
+	{'name':'DECSLRMScroll', 'func':function() {
+		// Test left/right margin scrolling
+		console.write("\x1b[?69h");
+		console.write("\x1b[5;15s");
+		console.clear();
+		console.gotoxy(5, 1);
+		console.write("LeftRight!");
+		// ICH inside margins should shift within them
+		console.gotoxy(5, 1);
+		console.write("\x1b[@");
+		var ret = interactive_or_string(" LeftRight", 5, 1);
+		console.write("\x1b[s\x1b[?69l");
+		return ret;
+	}},
+	{'name':'SGRDim', 'func':function() {
+		// SGR 2 (dim) clears the bold/bright bit in PC text mode.
+		// There is no separate "dim" attribute — it just means "not bright".
+		// Verify that SGR 2 clears a previously set SGR 1 (bright).
+		console.write("\x1b[0;1;2m");
+		console.write("\x1bP$qm\x1b\\");
+		var seq = read_ansi_string(500);
+		console.write("\x1b[0m");
+		if (seq === null)
+			return false;
+		// Response should be a valid DECRQSS response
+		if (seq.search(/^\x1bP1\$r/) === -1)
+			return false;
+		// SGR 1 (bold) should NOT be present — dim cleared it
+		if (seq.search(/;1[;m]/) !== -1)
+			return false;
+		return true;
+	}},
+	{'name':'CR', 'func':function() {
+		// CR moves cursor to column 1 of the current line
+		console.gotoxy(10, 5);
+		console.write("\r");
+		if (!check_xy(1, 5))
+			return false;
+		// Already at column 1, should stay
+		console.write("\r");
+		if (!check_xy(1, 5))
+			return false;
+		return true;
+	}},
+	{'name':'LF', 'func':function() {
+		// LF moves cursor to same column of the next row
+		console.gotoxy(5, 3);
+		console.write("\n");
+		if (!check_xy(5, 4))
+			return false;
+		// LF on last row should scroll and stay on last row
+		console.gotoxy(5, console.screen_rows);
+		console.write("\n");
+		if (!check_xy(5, console.screen_rows))
+			return false;
+		return true;
+	}},
+	{'name':'BS', 'func':function() {
+		// BS is non-destructive backspace; moves left unless at column 1
+		console.gotoxy(5, 1);
+		console.write("\x08");
+		if (!check_xy(4, 1))
+			return false;
+		// At column 1, BS should not move
+		console.gotoxy(1, 1);
+		console.write("\x08");
+		if (!check_xy(1, 1))
+			return false;
+		return true;
+	}},
+	{'name':'HT', 'func':function() {
+		// HT moves to next horizontal tab stop without overwriting
+		// Default tab stops are at every 8th column (9, 17, 25, ...)
+		console.gotoxy(1, 1);
+		console.write("\t");
+		if (!check_xy(9, 1))
+			return false;
+		console.write("\t");
+		if (!check_xy(17, 1))
+			return false;
+		return true;
+	}},
+	{'name':'NEL', 'func':function() {
+		// ESC E (Next Line) = same as CR + LF
+		console.gotoxy(10, 3);
+		console.write("\x1bE");
+		if (!check_xy(1, 4))
+			return false;
+		return true;
+	}},
+	{'name':'RI', 'func':function() {
+		// ESC M (Reverse Index) moves up one line
+		console.gotoxy(5, 5);
+		console.write("\x1bM");
+		if (!check_xy(5, 4))
+			return false;
+		return true;
+	}},
+	{'name':'HVP', 'func':function() {
+		// CSI Pn1 ; Pn2 f — same as CUP but with 'f' final byte
+		console.write("\x1b[5;10f");
+		if (!check_xy(10, 5))
+			return false;
+		// Defaults: Pn1=1, Pn2=1
+		console.write("\x1b[f");
+		if (!check_xy(1, 1))
+			return false;
+		return true;
+	}},
+	{'name':'HTS', 'func':function() {
+		// ESC H sets a tab stop at the current column
+		// Clear all tab stops first
+		console.write("\x1b[3g");
+		// Set a tab stop at column 5
+		console.gotoxy(5, 1);
+		console.write("\x1bH");
+		// Set a tab stop at column 20
+		console.gotoxy(20, 1);
+		console.write("\x1bH");
+		// Verify via DECTABSR
+		console.write("\x1b[2$w");
+		var seq = read_ansi_string(500);
+		if (seq === null)
+			return false;
+		// Response should list stops at 5 and 20
+		if (seq.search(/^\x1bP2\$u5\/20\x1b\\$/) === -1)
+			return false;
+		// Restore default tab stops (set every 8 columns)
+		console.write("\x1b[3g");
+		for (var i = 9; i <= console.screen_columns; i += 8) {
+			console.gotoxy(i, 1);
+			console.write("\x1bH");
+		}
+		return true;
+	}},
+	{'name':'LCFFullLine', 'func':function() {
+		// Write a full line (screen_columns chars) followed by CRLF.
+		// In LCF mode, cursor sticks at last column, so CR goes to
+		// col 1 of same row, LF goes to next row — no blank line.
+		// In default mode, writing the last char wraps immediately
+		// to the next row, so CR+LF advances one more — blank line.
+		var w = console.screen_columns;
+		var line = "";
+		for (var i = 0; i < w; i++)
+			line += "A";
+
+		// Test with LCF enabled — should end up on the row right after
+		console.write("\x1b[=4h");
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write(line);
+		// Cursor should be stuck at last column of row 1
+		if (!check_xy(w, 1)) {
+			console.write("\x1b[=4l");
+			return false;
+		}
+		console.write("\r\n");
+		// Should be at col 1, row 2 (no blank line)
+		if (!check_xy(1, 2)) {
+			console.write("\x1b[=4l");
+			return false;
+		}
+		console.write("\x1b[=4l");
+
+		// Test with LCF disabled (default) — should skip a line
+		console.clear();
+		console.gotoxy(1, 1);
+		console.write(line);
+		// Last char wraps immediately, cursor is at col 1, row 2
+		if (!check_xy(1, 2))
+			return false;
+		console.write("\r\n");
+		// CR is no-op (already col 1), LF goes to row 3 — blank line
+		if (!check_xy(1, 3))
+			return false;
+		return true;
+	}},
 	{'name':'Regressions', 'func':function() {
 		// Fixed by 3dfa12a6cac
 		// Deleting lines could move rows that are off the screen
