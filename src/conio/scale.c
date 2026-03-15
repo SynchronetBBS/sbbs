@@ -145,7 +145,7 @@ aspect_reverse(int *x, int *y, int scrnwidth, int scrnheight, int aspect_width, 
 		width = scrnwidth * (*x / scrnwidth);
 		if (width < scrnwidth)
 			width = scrnwidth;
-		height = scrnheight * (*x / scrnheight);
+		height = scrnheight * (*y / scrnheight);
 		if (height < scrnheight)
 			height = scrnheight;
 		return;
@@ -167,7 +167,7 @@ aspect_reverse(int *x, int *y, int scrnwidth, int scrnheight, int aspect_width, 
 	}
 	else if (cheight > height) {
 		// Height controls
-		height = scrnheight * (*x / scrnheight);
+		height = scrnheight * (*y / scrnheight);
 		if (height < scrnheight)
 			height = scrnheight;
 
