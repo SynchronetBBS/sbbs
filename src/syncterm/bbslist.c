@@ -1066,6 +1066,10 @@ printf_trunc(char *dst, size_t dstsz, char *fmt, char *path)
 	size_t full_len = fmt_len + strlen(path);
 
 	if (full_len >= dstsz) {
+		if (remain_len < 5) {
+			sprintf(dst, fmt, "...");
+			return;
+		}
 		mangled = strdup(path);
 		if (mangled) {
 			mangled[remain_len - 1] = '\0';
@@ -3748,7 +3752,7 @@ edit_web_lists(void)
 				}
 				else {
 					if (count == 0)
-						strlcpy(tmpv, "http://syncterm.bbsdev.net/syncterm.lst", sizeof(tmpn));
+						strlcpy(tmpv, "http://syncterm.bbsdev.net/syncterm.lst", sizeof(tmpv));
 					else
 						tmpv[0] = 0;
 					if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Web List URI", tmpv, sizeof(tmpv) - 1, K_EDIT) != -1
@@ -4279,6 +4283,12 @@ show_bbslist(char *current, int connected)
 							list[listcount] = list[listcount - 1];
 							list[listcount
 							     - 1] = (struct bbslist *)malloc(sizeof(struct bbslist));
+							if (list[listcount - 1] == NULL) {
+								list[listcount - 1] = list[listcount];
+								list[listcount] = NULL;
+								listcount--;
+								break;
+							}
 							memcpy(list[listcount - 1], &defaults, sizeof(struct bbslist));
 							list[listcount - 1]->id = listcount - 1;
 							strcpy(list[listcount - 1]->name, tmp);
@@ -4740,15 +4750,18 @@ show_bbslist(char *current, int connected)
 						         default_download,
 						         cache_path,
 						         keys_path);
-						uifc.showbuf(WIN_MID | WIN_SAV | WIN_HLP,
-						             0,
-						             0,
-						             78,
-						             20,
-						             "File Locations",
-						             p,
-						             NULL,
-						             NULL);
+						if (p != NULL) {
+							uifc.showbuf(WIN_MID | WIN_SAV | WIN_HLP,
+							             0,
+							             0,
+							             78,
+							             20,
+							             "File Locations",
+							             p,
+							             NULL,
+							             NULL);
+							free(p);
+						}
 						break;
 					case 6: // Build Options
 						asprintf(&p,
@@ -4846,15 +4859,18 @@ show_bbslist(char *current, int connected)
 						         "[ ]"
 #endif
 						        );
-						uifc.showbuf(WIN_MID | WIN_SAV | WIN_HLP,
-						             0,
-						             0,
-						             60,
-						             21,
-						             "Build Options",
-						             p,
-						             NULL,
-						             NULL);
+						if (p != NULL) {
+							uifc.showbuf(WIN_MID | WIN_SAV | WIN_HLP,
+							             0,
+							             0,
+							             60,
+							             21,
+							             "Build Options",
+							             p,
+							             NULL,
+							             NULL);
+							free(p);
+						}
 						break;
 #if (defined(WITH_CRYPTLIB) && !defined(WITHOUT_CRYPTLIB))
 					case 7:	// Encryption!
