@@ -83,9 +83,9 @@ char* os_version(char *str, size_t size)
 	              , winflavor
 	              , winver.dwMajorVersion, winver.dwMinorVersion);
 	if (winver.dwBuildNumber)
-		sprintf(str + strlen(str), " (Build %lu)", winver.dwBuildNumber);
+		safe_snprintf(str + strlen(str), size - strlen(str), " (Build %lu)", winver.dwBuildNumber);
 	if (winver.szCSDVersion[0])
-		sprintf(str + strlen(str), " %s", winver.szCSDVersion);
+		safe_snprintf(str + strlen(str), size - strlen(str), " %s", winver.szCSDVersion);
 
 #elif defined(__unix__)
 	FILE* fp = fopen("/etc/os-release", "r");
