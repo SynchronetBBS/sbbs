@@ -137,7 +137,7 @@ struct in6_addr parseIPv6Address(const char* value)
 	if (getaddrinfo(value, NULL, &hints, &res))
 		return ret;
 
-	for (cur = res; cur; cur++) {
+	for (cur = res; cur; cur = cur->ai_next) {
 		if (cur->ai_addr->sa_family == AF_INET6)
 			break;
 	}
