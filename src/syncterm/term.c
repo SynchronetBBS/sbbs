@@ -1267,6 +1267,8 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 	size_t max_len = ti.screenwidth * ti.screenheight;
 	size_t sz = offsetof(struct cet_ts_block, data) + max_len;
 	struct cet_ts_block *ret = malloc(sz);
+	if (ret == NULL)
+		return NULL;
 	ret->sz = sz;
 	ret->length = 0;
 	ret->frame = 'A';
@@ -3533,7 +3535,7 @@ b64_decode_alloc(const char *strbuf, size_t slen, size_t *outlen)
 	int    ol;
 	size_t sz;
 
-	sz = slen * 3 + 3 / 4 + 1;
+	sz = (slen + 3) / 4 * 3 + 1;
 	ret = malloc(sz);
 	if (!ret)
 		return NULL;
@@ -4349,7 +4351,9 @@ apc_handler(char *strbuf, size_t slen, char *retbuf, size_t retsize, void *apcd)
 		p = strchr(strbuf + 13, ';');
 		if (p == NULL)
 			return;
-		strncat(fn, strbuf + 13, p - strbuf - 13);
+		*p = '\0';
+		strlcat(fn, strbuf + 13, sizeof(fn));
+		*p = ';';
 		if (!clean_path(fn, sizeof(fn)))
 			return;
 		p++;
