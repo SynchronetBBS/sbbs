@@ -112,7 +112,7 @@ read_font_files(int *count)
 		(*count)++;
 		tmp = (struct font_files *)realloc(ret, sizeof(struct font_files) * (*count + 1));
 		if (tmp == NULL) {
-			count--;
+			(*count)--;
 			free(fontid);
 			continue;
 		}
