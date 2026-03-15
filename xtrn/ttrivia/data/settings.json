@@ -1,0 +1,10 @@
+{
+  "maxClues": 3,
+  "questionFrequency": 50,
+  "listSysops": true,
+  "playerTimeout": 300,
+  "questionFiles": [
+    "database.enc",
+    "custom.txt"
+  ]
+}

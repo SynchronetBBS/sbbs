@@ -1,0 +1,10 @@
+Who created the BBS transfer protocol Zmodem?
+Chuck Forsberg
+Who was the original programmer of the WWIV BBS software?
+Wayne Bell
+What does the BBS term "FOSSIL" stand for?
+Fido-Opus-Seadog Standard Interface Layer
+What does the "DOVE" in DOVE-Net stand for?
+Domain Vertrauen
+What phrase does the word "modem" stand for?
+Modulator-Demodulator
