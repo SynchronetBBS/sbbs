@@ -338,7 +338,10 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 int uinput(uifc_winmode_t mode, int left, int top, const char *prompt, char *outstr,
            int max, int kmode)
 {
-	char str[256];
+	char *str;
+
+	if ((str = malloc(max + 1)) == NULL)
+		return 0;
 
 	while (1) {
 		printf("%s (maxlen=%u): ", prompt, max);
@@ -354,6 +357,7 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *prompt, char *out
 	if (kmode & K_UPPER)   /* convert to uppercase? */
 		strupr(str);
 	strcpy(outstr, str);
+	free(str);
 	return strlen(outstr);
 }
 
@@ -482,7 +486,7 @@ void help()
 				if (fread(&line, 2, 1, fp) != 1)
 					break;
 				if (stricmp(str, p) || line != helpline) {
-					if (fseek(fp, 4, SEEK_CUR) == 0)
+					if (fseek(fp, 4, SEEK_CUR) != 0)
 						break;
 					continue;
 				}

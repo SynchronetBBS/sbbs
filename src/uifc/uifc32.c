@@ -865,8 +865,9 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 			}
 			else {
 				/* Find something available... */
-				while (sav[api->savnum].buf != NULL)
+				while (sav[api->savnum].buf != NULL && api->savnum < MAX_BUFS - 1)
 					api->savnum++;
+				FREE_AND_NULL(sav[api->savnum].buf);
 			}
 		}
 		else {
@@ -3193,7 +3194,7 @@ static void help(void)
 				if (fread(&line, 2, 1, fp) != 1)
 					break;
 				if (stricmp(str, p) || line != helpline) {
-					if (fseek(fp, 4, SEEK_CUR) == 0)
+					if (fseek(fp, 4, SEEK_CUR) != 0)
 						break;
 					continue;
 				}
