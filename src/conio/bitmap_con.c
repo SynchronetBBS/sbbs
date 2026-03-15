@@ -1937,7 +1937,7 @@ void bitmap_setcustomcursor(int s, int e, int r, int b, int v)
 	if(r==0)
 		ratio=1;
 	else
-		ratio=vstat.charheight/r;
+		ratio=(double)vstat.charheight/r;
 	if(s>=0)
 		vstat.curs_start=s*ratio;
 	if(e>=0)
