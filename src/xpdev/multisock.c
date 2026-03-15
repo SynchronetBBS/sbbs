@@ -465,7 +465,7 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 							}
 							*p = 0;
 							if (inet_pton(addr->addr.sa_family, tok, vp) != 1) {
-								xpms_set->lprintf(LOG_ERR, "%04d * HAPROXY Unable to parse %s address [%s]", addr->addr.sa_family == AF_INET ? "IPv4" : "IPv6", tok);
+								xpms_set->lprintf(LOG_ERR, "%04d * HAPROXY Unable to parse %s address [%s]", ret, addr->addr.sa_family == AF_INET ? "IPv4" : "IPv6", tok);
 								closesocket(ret);
 								goto error_return;
 							}
