@@ -614,14 +614,14 @@ bool IBBS_InList(char *szName, bool ClanName)
 
 		// see if this user's name is same as one we're looking for
 		if (ClanName) {
-			if (strcasecmp(User.szName, szName) == 0) {
+			if (plat_stricmp(User.szName, szName) == 0) {
 				Found = true;
 				break;
 			}
 		}
 		else {
 			// compare with player's name
-			if (strcasecmp(User.szMasterName, szName) == 0) {
+			if (plat_stricmp(User.szMasterName, szName) == 0) {
 				Found = true;
 				break;
 			}
@@ -1207,7 +1207,7 @@ static void IBBS_AddLCLog(char *szString)
 	FILE *fpLCLogFile;
 
 	/* open news file */
-	fpLCLogFile = _fsopen("lc.log", "at", _SH_DENYWR);
+	fpLCLogFile = plat_fsopen("lc.log", "at", PLAT_SH_DENYWR);
 
 	if (fpLCLogFile) {
 		/* add to it */
@@ -1513,7 +1513,7 @@ static void IBBS_LoadNDX(void)
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_NDX_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (strcasecmp(szToken, papszNdxKeyWords[iKeyWord]) == 0) {
+			if (plat_stricmp(szToken, papszNdxKeyWords[iKeyWord]) == 0) {
 				int TempInt;
 				/* Process token */
 				switch (iKeyWord) {
@@ -1572,7 +1572,7 @@ static void IBBS_LoadNDX(void)
 					case 6 :    /* Status */
 						if (CurBBS == -1)
 							System_Error("Status outside of BBSId section!\n");
-						if (strcasecmp(pcCurrentPos, "inactive") == 0)
+						if (plat_stricmp(pcCurrentPos, "inactive") == 0)
 							IBBS.Data.Nodes[CurBBS].Active = false;
 						else
 							IBBS.Data.Nodes[CurBBS].Active = true;
@@ -1711,14 +1711,14 @@ static void IBBS_ProcessRouteConfig(void)
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_RT_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (strcasecmp(szToken, papszRouteKeyWords[iKeyWord]) == 0) {
+			if (plat_stricmp(szToken, papszRouteKeyWords[iKeyWord]) == 0) {
 				/* Process config token */
 				switch (iKeyWord) {
 					case 0 :    /* route */
 						GetToken(pcCurrentPos, szFirstToken);
 						GetToken(pcCurrentPos, szSecondToken);
 
-						if (strcasecmp(szFirstToken, "ALL") == 0) {
+						if (plat_stricmp(szFirstToken, "ALL") == 0) {
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 								if (IBBS.Data.Nodes[iTemp].Active == false)
 									continue;
@@ -1742,7 +1742,7 @@ static void IBBS_ProcessRouteConfig(void)
 					case 1 :    /* crash */
 						GetToken(pcCurrentPos, szFirstToken);
 
-						if (strcasecmp(szFirstToken, "ALL") == 0) {
+						if (plat_stricmp(szFirstToken, "ALL") == 0) {
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 								if (IBBS.Data.Nodes[iTemp].Active == false)
 									continue;
@@ -1757,7 +1757,7 @@ static void IBBS_ProcessRouteConfig(void)
 					case 2 :    /* hold */
 						GetToken(pcCurrentPos, szFirstToken);
 
-						if (strcasecmp(szFirstToken, "ALL") == 0) {
+						if (plat_stricmp(szFirstToken, "ALL") == 0) {
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 								if (IBBS.Data.Nodes[iTemp].Active == false)
 									continue;
@@ -1772,7 +1772,7 @@ static void IBBS_ProcessRouteConfig(void)
 					case 3 :    /* normal */
 						GetToken(pcCurrentPos, szFirstToken);
 
-						if (strcasecmp(szFirstToken, "ALL") == 0) {
+						if (plat_stricmp(szFirstToken, "ALL") == 0) {
 							for (iTemp = 0; iTemp < MAX_IBBSNODES; iTemp++) {
 								if (IBBS.Data.Nodes[iTemp].Active == false)
 									continue;
@@ -1853,7 +1853,7 @@ static FILE *getPacketFP(int16_t DestID)
 	IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex++;
 	if (IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex == 'z' + 1)
 		IBBS.Data.Nodes[ IBBS.Data.Nodes[DestID-1].Info.RouteThrough-1 ].Recon.PacketIndex = 'a';
-	FILE *fp = _fsopen(szFullFileName, "ab", _SH_DENYRW);
+	FILE *fp = plat_fsopen(szFullFileName, "ab", PLAT_SH_DENYRW);
 	if (fp == NULL)
 		System_Error("Failed to create packet file");
 
@@ -1986,7 +1986,7 @@ void IBBS_ShowLeagueAscii(void)
 		strlcpy(szToken, szString, sizeof(szToken));
 		szToken[5] = 0;
 
-		if (strcasecmp(szToken, "Ascii") == 0) {
+		if (plat_stricmp(szToken, "Ascii") == 0) {
 			// point out to screen
 			if (szString[6])
 				rputs(&szString[6]);
@@ -2274,7 +2274,7 @@ static void IBBS_Reset(struct game_data *GameData)
  */
 {
 	// if reset is same as last game's, don't run this
-	if (strcasecmp(GameData->GameID, Game.Data.GameID) == 0) {
+	if (plat_stricmp(GameData->GameID, Game.Data.GameID) == 0) {
 		LogDisplayStr("|08* |07dupe reset skipped.\n");
 		return;
 	}
@@ -2842,7 +2842,7 @@ void IBBS_HandleQueuedPackets(void)
 			}
 
 			// if gameId isn't of the current game, ignore
-			if (strcasecmp(Packet.GameID, Game.Data.GameID)) {
+			if (plat_stricmp(Packet.GameID, Game.Data.GameID)) {
 				// GameIDs differ AND this isn't a reset packet, so we must ignore
 				// this packet completely
 				LogStr("* Packet from wrong game, ignoring");
@@ -2941,7 +2941,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 	char* pcBuffer;
 
 	/* open it */
-	fp = _fsopen(szFileName, "rb", _SH_DENYWR);
+	fp = plat_fsopen(szFileName, "rb", PLAT_SH_DENYWR);
 	if (!fp) {
 		snprintf(szString, sizeof(szString), "Can't read in %s\n", szFileName);
 		LogDisplayStr(szString);
@@ -2967,7 +2967,7 @@ static bool IBBS_ProcessPacket(char *szFileName, int16_t SrcID)
 		}
 
 		// if gameId is of the current game, update recon stuff
-		if (strcasecmp(Packet.GameID, Game.Data.GameID) == 0) {
+		if (plat_stricmp(Packet.GameID, Game.Data.GameID) == 0) {
 			IBBS.Data.Nodes[ Packet.BBSIDFrom - 1 ].Recon.LastReceived =
 				DaysSince1970(Game.Data.szTodaysDate);
 		}
@@ -3401,7 +3401,7 @@ void IBBS_PacketIn(void)
 					rename(*fpath, "world.bad");
 				}
 				else {
-					fp = _fsopen(*fpath, "r", _SH_DENYWR);
+					fp = plat_fsopen(*fpath, "r", PLAT_SH_DENYWR);
 					if (fp) {
 						LogDisplayStr("|08- |07new world.ndx found.\n");
 						// found it

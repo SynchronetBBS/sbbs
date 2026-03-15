@@ -4,8 +4,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <ctype.h>
 #include "platform.h"
 
@@ -57,11 +55,6 @@ struct FileInfo {
 	int WriteType;
 } FileInfo[MAX_FILES];
 
-#ifdef __unix__
-#define MKDIR(dir)              mkdir(dir,0777)
-#else
-#define MKDIR(dir)              mkdir(dir)
-#endif
 
 static void reset_attribute(void)
 {
@@ -93,7 +86,7 @@ static void Display(char *szFileName)
 			len--;
 		}
 
-		if (szString[0] == ':' && strcasecmp(szFileName, &szString[1]) == 0) {
+		if (szString[0] == ':' && plat_stricmp(szFileName, &szString[1]) == 0) {
 			FileFound = true;
 			break;
 		}
@@ -150,7 +143,7 @@ static void detect_utf8_marker(void)
 		size_t len = strlen(line);
 		while (len > 0 && (line[len-1] == '\n' || line[len-1] == '\r'))
 			line[--len] = '\0';
-		if (strcasecmp(line, "# encoding: utf-8") == 0)
+		if (plat_stricmp(line, "# encoding: utf-8") == 0)
 			ini_is_utf8 = 1;
 	}
 	fclose(fp);
@@ -199,27 +192,27 @@ int main(int argc, char **argv)
 		if (szToken[0] == 0)
 			continue;
 
-		if (strcasecmp(szToken, "quit") == 0 || strcasecmp(szToken, "q") == 0)
+		if (plat_stricmp(szToken, "quit") == 0 || plat_stricmp(szToken, "q") == 0)
 			break;
-		else if (strcasecmp(szToken, "install") == 0)
+		else if (plat_stricmp(szToken, "install") == 0)
 			install();
-		else if (strcasecmp(szToken, "upgrade") == 0)
+		else if (plat_stricmp(szToken, "upgrade") == 0)
 			upgrade();
-		else if (strcasecmp(szToken, "read") == 0)
+		else if (plat_stricmp(szToken, "read") == 0)
 			Display(szInput);
-		else if (strcasecmp(szToken, "list") == 0)
+		else if (plat_stricmp(szToken, "list") == 0)
 			ListFiles();
-		else if (strcasecmp(szToken, "about") == 0)
+		else if (plat_stricmp(szToken, "about") == 0)
 			Display("About");
-		else if (strcasecmp(szToken, "extract") == 0) {
+		else if (plat_stricmp(szToken, "extract") == 0) {
 			GetToken(szInput, szToken2);
 			Extract(szToken2, szInput);
 		}
-		else if (strcasecmp(szToken, "cls") == 0) {
+		else if (plat_stricmp(szToken, "cls") == 0) {
 			ClearScrollRegion();
 			gotoxy(0, STARTROW);
 		}
-		else if (szToken[0] == '?' || strcasecmp(szToken, "help") == 0)
+		else if (szToken[0] == '?' || plat_stricmp(szToken, "help") == 0)
 			Display("Help");
 		else {
 			snprintf(szString, sizeof(szString), "|04%s not a valid command!\n", szToken);
@@ -311,9 +304,7 @@ static int GetGUM(FILE *fpGUM)
 		snprintf(szString, sizeof(szString), "dir |14%-*s\n", MAX_FILENAME_LEN, szFileName);
 		zputs(szString);
 
-		MKDIR(&szFileName[1]
-
-			 );
+		plat_mkdir(&szFileName[1]);
 		return true;
 	}
 
@@ -345,15 +336,6 @@ static int GetGUM(FILE *fpGUM)
 		return -1;
 	}
 	time = SWAP16(time);
-
-	if (strcmp(szFileName, "UnixAttr.DAT") == 0) {
-#ifdef __unix__
-		plat_DeleteFile(szFileName);
-#else
-		fseekuc(fpGUM, lCompressSize);
-		return 1;
-#endif
-	}
 
 	// get type of input depending on WriteType
 	if (FileExists(szFileName) && WriteType(szFileName) == OVERWRITE) {
@@ -413,15 +395,24 @@ static int GetGUM(FILE *fpGUM)
 	return true;
 }
 
+static void RestoreUnixAttrs(void)
+{
+	FILE *fpAttr;
+	char szFileName[PATH_SIZE];
+	unsigned mode;
+
+	fpAttr = fopen("UnixAttr.DAT", "r");
+	if (fpAttr) {
+		while (fscanf(fpAttr, "%o %s\n", &mode, szFileName) != EOF)
+			plat_chmod(szFileName, mode);
+		fclose(fpAttr);
+		plat_DeleteFile("UnixAttr.DAT");
+	}
+}
+
 static void install(void)
 {
 	FILE *fpGUM;
-#ifdef __unix__
-	FILE *fpAttr;
-	mode_t  tMode;
-	char szFileName[PATH_SIZE];
-	unsigned tmp;
-#endif
 	char cInput;
 
 	Display("Install");
@@ -450,17 +441,7 @@ static void install(void)
 	while (GetGUM(fpGUM))
 		;
 
-#ifdef __unix__
-	fpAttr = fopen("UnixAttr.DAT", "r");
-	if (fpAttr) {
-		while (fscanf(fpAttr, "%o %s\n", &tmp, szFileName) != EOF) {
-			tMode = (mode_t)tmp;
-			chmod(szFileName, tMode);
-		}
-		fclose(fpAttr);
-		plat_DeleteFile("UnixAttr.DAT");
-	}
-#endif
+	RestoreUnixAttrs();
 
 	fclose(fpGUM);
 
@@ -470,12 +451,6 @@ static void install(void)
 static void upgrade(void)
 {
 	FILE *fpGUM;
-#ifdef __unix__
-	FILE *fpAttr;
-	mode_t  tMode;
-	char szFileName[PATH_SIZE];
-	unsigned tmp;
-#endif
 	char cInput;
 
 	Display("Upgrade");
@@ -503,17 +478,7 @@ static void upgrade(void)
 	while (GetGUM(fpGUM))
 		;
 
-#ifdef __unix__
-	fpAttr = fopen("UnixAttr.DAT", "r");
-	if (fpAttr) {
-		while (fscanf(fpAttr, "%o %s\n", &tmp, szFileName) != EOF) {
-			tMode = (mode_t)tmp;
-			chmod(szFileName, tMode);
-		}
-		fclose(fpAttr);
-		plat_DeleteFile("UnixAttr.DAT");
-	}
-#endif
+	RestoreUnixAttrs();
 
 	fclose(fpGUM);
 
@@ -572,7 +537,7 @@ static void InitFiles(char *szFileName)
 		while (szString[ strlen(szString) - 1] == '\n' || szString[ strlen(szString) - 1] == '\r')
 			szString[ strlen(szString) - 1] = 0;
 
-		if (szString[0] == ':' && strcasecmp(szFileName, &szString[1]) == 0) {
+		if (szString[0] == ':' && plat_stricmp(szFileName, &szString[1]) == 0) {
 			FileFound = true;
 			break;
 		}
@@ -753,7 +718,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 		}
 
 		// same file? -- if so, keep going, if not, skip
-		if (strcasecmp(szExtractFile, szFileName) == 0) {
+		if (plat_stricmp(szExtractFile, szFileName) == 0) {
 			break;
 		}
 		else {
@@ -774,7 +739,7 @@ static void Extract(char *szExtractFile, char *szNewName)
 		snprintf(szString, sizeof(szString), "|14%-*s\n", MAX_FILENAME_LEN, szFileName);
 		zputs(szString);
 
-		MKDIR(&szFileName[1]);
+		plat_mkdir(&szFileName[1]);
 		fclose(fpGUM);
 		return;
 	}

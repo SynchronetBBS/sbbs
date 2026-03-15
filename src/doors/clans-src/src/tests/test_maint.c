@@ -28,6 +28,7 @@ char **_argv = _argv_buf;
 
 #define System_Error(msg) longjmp(g_fatal_jmp, 1)   /* NOLINT */
 
+#include "mocks_platform.h"
 #include "../maint.c"
 
 #undef System_Error

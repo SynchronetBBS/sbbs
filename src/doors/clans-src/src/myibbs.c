@@ -3,12 +3,9 @@
  * This code is taken from the OpenDoors sample IBBS code by Brian Pirie.
  */
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -107,7 +104,7 @@ static tBool WriteMessage(char *pszMessageDir, uint32_t lwMessageNum,
 		GetMessageFilename(pszMessageDir, lwMessageNum, szFileName, sizeof(szFileName));
 
 		/* Open message file */
-		hFile = _fsopen(szFileName, "wbx", _SH_DENYRW);
+		hFile = plat_fsopen(szFileName, "wbx", PLAT_SH_DENYRW);
 
 		/* If open failed, return false */
 		if (!hFile) {
@@ -179,7 +176,7 @@ static uint32_t GetFirstUnusedMsgNum(char *pszMessageDir)
 			char *endptr;
 			errno = 0;
 			unsigned long val = strtoul(fn, &endptr, 10);
-			if (errno || strcasecmp(endptr, ".msg") != 0) {
+			if (errno || plat_stricmp(endptr, ".msg") != 0) {
 				free(*fp);
 				*fp = 0;
 			}

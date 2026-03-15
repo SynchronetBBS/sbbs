@@ -13,14 +13,122 @@
 #include "unix_wrappers.h"
 #include "win_wrappers.h"
 
+bool DirExists(const char *pszDirName)
+{
+	struct stat file_stats;
+
+	if (pszDirName == NULL)
+		return false;
+
+	char *copy = strdup(pszDirName);
+	size_t len = strlen(copy);
+
+	/* Remove trailing slash */
+	if (len > 0 && (copy[len - 1] == '/' || copy[len - 1] == '\\'))
+		copy[len - 1] = '\0';
+
+	bool result = false;
+	if (stat(copy, &file_stats) == 0)
+		result = S_ISDIR(file_stats.st_mode);
+
+	free(copy);
+	return result;
+}
+
+bool plat_getmode(const char *filename, unsigned *mode)
+{
+	struct stat st;
+	if (stat(filename, &st)) {
+		*mode = 0;
+		return false;
+	}
+	*mode = st.st_mode & 0777;
+	return true;
+}
+
+bool plat_chmod(const char *filename, unsigned mode)
+{
+	return (chmod(filename, (mode_t)mode) == 0);
+}
+
+bool plat_mkdir(const char *dir)
+{
+	return (mkdir(dir, 0777) == 0);
+}
+
+void plat_GetExePath(const char *argv0, char *buf, size_t bufsz)
+{
+	/* Copy argv[0], strip to directory, then resolve to absolute path. */
+	strlcpy(buf, argv0, bufsz);
+	size_t len = strlen(buf);
+	while (len > 0 && buf[len] != '/')
+		len--;
+	if (len > 0)
+		len++;
+	buf[len] = 0;
+
+	char *resolved = fullpath(NULL, buf, bufsz);
+	if (resolved) {
+		strlcpy(buf, resolved, bufsz);
+		free(resolved);
+	} else {
+		buf[0] = 0;
+	}
+}
+
+int plat_stricmp(const char *s1, const char *s2)
+{
+	return strcasecmp(s1, s2);
+}
+
 bool plat_DeleteFile(const char *fname)
 {
 	const int rc = unlink(fname);
 	return (rc == 0);
 }
 
+bool plat_CreateSemfile(const char *filename, const char *content)
+{
+	/*
+	 * Classic O_EXCL|O_CREAT dance for NFS: create a temp file with a
+	 * unique name, then hard-link it to the target.  If link() succeeds
+	 * the file didn't exist.  If it fails, check st_nlink == 2 as a
+	 * fallback for NFS servers that don't return link() errors properly.
+	 */
+	char hostname[256];
+	char fname[sizeof(hostname) + 32];
+	pid_t pid;
+	struct stat st;
+	FILE *fp;
+
+	pid = getpid();
+	if (gethostname(hostname, sizeof(hostname)))
+		return false;
+	snprintf(fname, sizeof(fname), "%s.%s.%" PRIuMAX, filename,
+	    hostname, (uintmax_t)pid);
+	fp = fopen(fname, "w+x");
+	if (!fp)
+		return false;
+	fputs(content, fp);
+	fclose(fp);
+	if (link(fname, filename) == 0) {
+		plat_DeleteFile(fname);
+		return true;
+	}
+	if (stat(fname, &st)) {
+		plat_DeleteFile(fname);
+		return false;
+	}
+	if (st.st_nlink == 2) {
+		plat_DeleteFile(fname);
+		return true;
+	}
+	plat_DeleteFile(fname);
+	return false;
+}
+
 FILE *
-_fsopen(const char *pathname, const char *mode, int shflag)
+plat_fsopen(const char *pathname, const char *mode, int shflag)
 {
 	FILE *thefile;
 	bool isRead = strchr(mode, 'r');
@@ -35,19 +143,19 @@ _fsopen(const char *pathname, const char *mode, int shflag)
 	thefile = fopen(pathname, mode);
 	if (thefile != NULL) {
 		// Fix up share type...
-		if (shflag == _SH_DENYWR) {
+		if (shflag == PLAT_SH_DENYWR) {
 			if (!isRead) {
-				shflag = _SH_DENYRW;
+				shflag = PLAT_SH_DENYRW;
 			}
 		}
-		if (shflag == _SH_DENYRW) {
+		if (shflag == PLAT_SH_DENYRW) {
 			if (!isWrite) {
-				shflag = _SH_DENYWR;
+				shflag = PLAT_SH_DENYWR;
 			}
 		}
-		if ((shflag == _SH_DENYRW) || (shflag == _SH_DENYWR)) {
+		if ((shflag == PLAT_SH_DENYRW) || (shflag == PLAT_SH_DENYWR)) {
 			struct flock f = {
-				.l_type = shflag & _SH_DENYWR ? F_RDLCK : F_WRLCK,
+				.l_type = shflag & PLAT_SH_DENYWR ? F_RDLCK : F_WRLCK,
 				.l_whence = SEEK_SET
 			};
 			if (fcntl(fileno(thefile), F_SETLKW, &f) == -1) {

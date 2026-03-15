@@ -92,7 +92,7 @@ void MyOpen(char *szFileName, char *szMode, struct FileHeader *FileHeader)
 			s_FileHeader_d(fhBuf, sizeof(fhBuf), FileHeader);
 
 
-			if (strcasecmp(FileHeader->szFileName, szModFileName) == 0) {
+			if (plat_stricmp(FileHeader->szFileName, szModFileName) == 0) {
 				FoundFile = true;
 				break;
 			}

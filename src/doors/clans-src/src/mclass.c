@@ -147,7 +147,7 @@ static int16_t Init_PClasses(char *szFileName)
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_PCLASS_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (strcasecmp(szToken, papszPClassKeyWords[iKeyWord]) == 0) {
+			if (plat_stricmp(szToken, papszPClassKeyWords[iKeyWord]) == 0) {
 				/* Process token */
 				switch (iKeyWord) {
 					case 0 :    /* NAME of class */
@@ -159,9 +159,10 @@ static int16_t Init_PClasses(char *szFileName)
 
 						/* allocate mem for this room */
 						PClasses[CurPClass] = calloc(1, sizeof(struct PClass));
-#ifdef NOTYET
-						CheckMem(PClasses[CurPClass]);
-#endif
+						if (!PClasses[CurPClass]) {
+							printf("Out of memory\n");
+							exit(1);
+						}
 
 						PClasses[CurPClass]->MaxHP = 10;
 						PClasses[CurPClass]->MaxSP = 10;

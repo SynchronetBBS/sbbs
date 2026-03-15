@@ -27,10 +27,6 @@
 #define MAXDIR  PATH_MAX
 #define MAXPATH PATH_MAX
 
-#define _SH_DENYWR   1
-#define _SH_DENYRW   2
-
-FILE * _fsopen(const char *pathname, const char *mode, int flags);
 char * fullpath(char *target, const char *path, size_t size);
 
 #endif

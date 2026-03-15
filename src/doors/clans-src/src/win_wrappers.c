@@ -9,6 +9,92 @@
 
 #include "win_wrappers.h"
 
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
+char *strdup(const char *s)
+{
+	return _strdup(s);
+}
+#endif
+
+bool plat_CreateSemfile(const char *filename, const char *content)
+{
+	FILE *fp = fopen(filename, "w+x");
+	if (!fp)
+		return false;
+	fputs(content, fp);
+	fclose(fp);
+	return true;
+}
+
+FILE *plat_fsopen(const char *pathname, const char *mode, int shflag)
+{
+	int winflag = 0;
+	if (shflag & PLAT_SH_DENYWR)
+		winflag |= _SH_DENYWR;
+	if (shflag & PLAT_SH_DENYRW)
+		winflag |= _SH_DENYRW;
+	return _fsopen(pathname, mode, winflag);
+}
+
+bool DirExists(const char *pszDirName)
+{
+	struct stat file_stats;
+
+	if (pszDirName == NULL)
+		return false;
+
+	char *copy = _strdup(pszDirName);
+	size_t len = strlen(copy);
+
+	/* Remove trailing slash */
+	if (len > 0 && (copy[len - 1] == '/' || copy[len - 1] == '\\'))
+		copy[len - 1] = '\0';
+
+	bool result = false;
+	if (stat(copy, &file_stats) == 0)
+		result = S_ISDIR(file_stats.st_mode);
+
+	free(copy);
+	return result;
+}
+
+bool plat_getmode(const char *filename, unsigned *mode)
+{
+	(void)filename;
+	*mode = 0;
+	return false;
+}
+
+bool plat_chmod(const char *filename, unsigned mode)
+{
+	(void)filename;
+	(void)mode;
+	return true;
+}
+
+bool plat_mkdir(const char *dir)
+{
+	return (_mkdir(dir) == 0);
+}
+
+void plat_GetExePath(const char *argv0, char *buf, size_t bufsz)
+{
+	(void)argv0;
+	GetModuleFileName(NULL, buf, (DWORD)bufsz);
+	/* Strip to directory */
+	size_t len = strlen(buf);
+	while (len > 0 && buf[len] != '\\' && buf[len] != '/')
+		len--;
+	if (len > 0)
+		len++;
+	buf[len] = 0;
+}
+
+int plat_stricmp(const char *s1, const char *s2)
+{
+	return _stricmp(s1, s2);
+}
+
 void plat_Delay(unsigned msec)
 {
 	Sleep(msec);

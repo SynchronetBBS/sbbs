@@ -216,11 +216,11 @@ void DisplayScores(bool MakeFile)
 	strlcpy(szFileName, ST_CLANSPCFILE, sizeof(szFileName));
 
 	if (MakeFile) {
-		fpScoreFile[0] = _fsopen(Config.szScoreFile[0], "w", _SH_DENYRW);
+		fpScoreFile[0] = plat_fsopen(Config.szScoreFile[0], "w", PLAT_SH_DENYRW);
 		if (!fpScoreFile[0])
 			return;
 
-		fpScoreFile[1] = _fsopen(Config.szScoreFile[1], "w", _SH_DENYRW);
+		fpScoreFile[1] = plat_fsopen(Config.szScoreFile[1], "w", PLAT_SH_DENYRW);
 		if (!fpScoreFile[1]) {
 			fclose(fpScoreFile[0]);
 			return;

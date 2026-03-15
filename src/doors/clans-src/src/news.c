@@ -37,7 +37,7 @@ void News_AddNews(char *szString)
 	FILE *fpNewsFile;
 
 	/* open news file */
-	fpNewsFile = _fsopen("today.asc", "at", _SH_DENYRW);
+	fpNewsFile = plat_fsopen("today.asc", "at", PLAT_SH_DENYRW);
 	if (fpNewsFile) {
 		/* add to it */
 		fputs(szString, fpNewsFile);
@@ -54,9 +54,9 @@ void News_ReadNews(bool Today)
 	/* now display it according to the type of file it is */
 
 	if (Today)
-		fp = _fsopen("today.asc", "r", _SH_DENYWR);
+		fp = plat_fsopen("today.asc", "r", PLAT_SH_DENYWR);
 	else
-		fp = _fsopen("yest.asc", "r", _SH_DENYWR);
+		fp = plat_fsopen("yest.asc", "r", PLAT_SH_DENYWR);
 	if (!fp) {
 		rputs("No news to report.\n\n%P");
 		return;

@@ -5,7 +5,7 @@
 #ifndef THE_CLANS__VIDEO___H
 #define THE_CLANS__VIDEO___H
 
-#ifndef __unix__
+#if defined(_WIN32) || defined(__MSDOS__)
 # include <conio.h>
 #endif
 

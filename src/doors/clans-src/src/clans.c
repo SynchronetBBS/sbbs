@@ -127,7 +127,7 @@ static void MainGame(void)
 					break;
 				}
 
-				if (strcasecmp(PClan.szDateOfLastGame, System.szTodaysDate) != 0)
+				if (plat_stricmp(PClan.szDateOfLastGame, System.szTodaysDate) != 0)
 					User_FirstTimeToday();
 
 				News_ReadNews(true);
@@ -250,7 +250,7 @@ static bool Disbanded(void)
 		if (memchr(szUserName, 0, sizeof(szUserName)) == NULL)
 			System_Error("Unterminated username in disband.dat");
 
-		if (strcasecmp(szUserName, od_control.user_name) == 0) {
+		if (plat_stricmp(szUserName, od_control.user_name) == 0) {
 			Found = true;
 			break;
 		}

@@ -1646,7 +1646,7 @@ static bool NameInUse(char *szName)
 
 			/* see if this player has same name as user online */
 			/* strip names */
-			if (strcasecmp(szName, TmpClan.szName) == 0) {
+			if (plat_stricmp(szName, TmpClan.szName) == 0) {
 				/* are the same, found another player with name, close file */
 				fclose(fpPCFile);
 				return true;
@@ -1950,7 +1950,7 @@ static bool User_Read(void)
 			break;  /* stop reading if no more players found */
 
 		/* see if this player has same name as user online */
-		if (strcasecmp(od_control.user_name, TmpClan.szUserName) == 0) {
+		if (plat_stricmp(od_control.user_name, TmpClan.szUserName) == 0) {
 
 			/* are the same, found player, copy it, return true */
 			PClan = TmpClan;

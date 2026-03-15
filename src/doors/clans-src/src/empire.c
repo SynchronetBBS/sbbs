@@ -2521,7 +2521,7 @@ static void StartEmpireWar(struct empire *Empire)
 			return;
 		}
 
-		if (strcasecmp(Empire->szName, Alliances[WhichAlliance]->szName) == 0) {
+		if (plat_stricmp(Empire->szName, Alliances[WhichAlliance]->szName) == 0) {
 			rputs("You cannot attack your own alliance!\n%P");
 			return;
 		}

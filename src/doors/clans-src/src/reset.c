@@ -454,7 +454,7 @@ static void DosHelp(char *Topic, char *File)
 				string[ strlen(string) - 1] = 0;
 
 			/* see if topic is correct */
-			if (strcasecmp(&string[1], Topic) == 0) {
+			if (plat_stricmp(&string[1], Topic) == 0) {
 				Found = true;
 			}
 		}
@@ -480,7 +480,7 @@ static void DosHelp(char *Topic, char *File)
 				if (Lines[CurLine][ strlen(Lines[CurLine]) - 1] == '\r')
 					Lines[CurLine][ strlen(Lines[CurLine]) - 1] = 0;
 
-				if (strcasecmp(&Lines[CurLine][1], "END") == 0) {
+				if (plat_stricmp(&Lines[CurLine][1], "END") == 0) {
 					EndOfTopic = true;
 					break;
 				}
@@ -670,7 +670,7 @@ static void News_AddNews(char *szString)
 	FILE *fpNewsFile;
 
 	/* open news file */
-	fpNewsFile = _fsopen("today.asc", "at", _SH_DENYRW);
+	fpNewsFile = plat_fsopen("today.asc", "at", PLAT_SH_DENYRW);
 	if (fpNewsFile) {
 		/* add to it */
 		fputs(szString, fpNewsFile);

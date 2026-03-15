@@ -26,6 +26,7 @@ static jmp_buf g_fatal_jmp;
 
 #define exit(code) longjmp(g_fatal_jmp, 1)   /* NOLINT */
 
+#include "mocks_platform.h"
 #include "../console.c"
 
 #undef exit

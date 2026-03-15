@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
 		NoMatch = true;
 		for (iKeyWord = 0; iKeyWord < MAX_EVA_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (strcasecmp(szToken, papszEvaKeyWords[(int)iKeyWord]) == 0) {
+			if (plat_stricmp(szToken, papszEvaKeyWords[(int)iKeyWord]) == 0) {
 				NoMatch = false;
 				/* Process token */
 				switch (iKeyWord) {

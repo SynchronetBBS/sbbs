@@ -9,7 +9,7 @@
 
 #ifdef _WIN32
 # include "win_wrappers.c"
-#else
+#elif defined(__unix__)
 # include "unix_wrappers.c"
 #endif
 
@@ -101,45 +101,17 @@ bool SameFile(const char *f1, const char *f2)
 	 *       mean getting a canonical directory name from the OS
 	 *       and comparing that, but I can't be bothered.
 	 */
-	if (strcasecmp(f1, f2) == 0)
+	if (plat_stricmp(f1, f2) == 0)
 		return true;
 	if (isRelative(f1) || isRelative(f2)) {
 		const char *n1 = FileName(f1);
 		const char *n2 = FileName(f2);
-		if (strcasecmp(n1, n2) == 0)
+		if (plat_stricmp(n1, n2) == 0)
 			return true;
 	}
 	return false;
 }
 
-bool DirExists(const char *pszDirName)
-{
-	if (pszDirName == NULL)
-		return false;
-	char *szDirFileName = strdup(pszDirName);
-#if !defined(_WIN32) & !defined(__unix__)
-	struct ffblk DirEntry;
-#else
-	struct stat file_stats;
-#endif
-
-	/* Remove any trailing backslash from directory name */
-	if (szDirFileName[strlen(szDirFileName) - 1] == '/' || szDirFileName[strlen(szDirFileName) - 1] == '\\') {
-		szDirFileName[strlen(szDirFileName) - 1] = '\0';
-	}
-
-	/* Return true if file exists and it is a directory */
-#if !defined(_WIN32) & !defined(__unix__)
-	return(findfirst(szDirFileName, &DirEntry, FA_ARCH|FA_DIREC) == 0 &&
-		   (DirEntry.ff_attrib & FA_DIREC));
-#else
-	if (stat(szDirFileName, &file_stats) == 0)
-		if (S_ISDIR(file_stats.st_mode))
-			return true;
-
-	return false;
-#endif
-}
 
 void Strip(char *szString)
 /*

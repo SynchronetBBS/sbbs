@@ -237,18 +237,10 @@
 
 // uncomment for Turbo C++
 // typedef char bool;
-#ifdef __unix__
-# define FAR
-#elif defined(_MSC_VER)
-# ifndef FAR
-#  define FAR
-# endif
-#elif defined(__MINGW32__)
-# ifndef FAR
-#  define FAR
-# endif
-#else
+#ifdef __MSDOS__
 # define FAR far
+#elif !defined(FAR)
+# define FAR
 #endif
 
 #ifdef _WIN32

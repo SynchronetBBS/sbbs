@@ -9,6 +9,7 @@
  */
 #include <inttypes.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,19 +20,45 @@
 #include "test_harness.h"
 
 /*
- * sleep() mock
+ * plat_Delay() mock
  *
- * WaitSemaphor calls sleep(1) while spinning.  We replace it with a hook
- * so tests can simulate "another process released the lock" without
+ * WaitSemaphor calls plat_Delay(1000) while spinning.  We replace it with
+ * a hook so tests can simulate "another process released the lock" without
  * actually blocking.
  */
 static void (*g_sleep_hook)(void) = NULL;
 
-#define sleep(x) (g_sleep_hook ? (g_sleep_hook(), 0) : 0)   /* NOLINT */
+/* Override the default no-op plat_Delay before including mocks_platform.h */
+#define MOCK_PLAT_DELAY_DEFINED
+void plat_Delay(unsigned msec)
+{
+	(void)msec;
+	if (g_sleep_hook)
+		g_sleep_hook();
+}
 
+/*
+ * plat_CreateSemfile() mock
+ *
+ * Controls return value via g_semfile_result.  Tracks calls via
+ * g_semfile_calls and records last arguments for assertions.
+ */
+static bool g_semfile_result = true;
+static int g_semfile_calls = 0;
+static char g_semfile_filename[256];
+static char g_semfile_content[256];
+
+#define MOCK_PLAT_CREATESEMFILE_DEFINED
+bool plat_CreateSemfile(const char *filename, const char *content)
+{
+	g_semfile_calls++;
+	strlcpy(g_semfile_filename, filename, sizeof(g_semfile_filename));
+	strlcpy(g_semfile_content, content, sizeof(g_semfile_content));
+	return g_semfile_result;
+}
+
+#include "mocks_platform.h"
 #include "../semfile.c"
-
-#undef sleep
 
 /*
  * Custom LogDisplayStr with call counter
@@ -44,53 +71,16 @@ void LogDisplayStr(const char *s) { (void)s; g_log_calls++; }
 #include "mocks_door.h"
 
 /* -------------------------------------------------------------------------
- * Per-test setup / teardown: run each test inside a fresh temp directory.
+ * Per-test setup / teardown
  * ------------------------------------------------------------------------- */
-static char g_origdir[PATH_MAX];
-static char g_tmpdir[PATH_MAX];
-
 static void setup(void)
 {
-	char template[sizeof("/tmp/test_semfile_XXXXXX")];
-
-	g_log_calls  = 0;
-	g_sleep_hook = NULL;
-	if (!getcwd(g_origdir, sizeof(g_origdir))) {
-		perror("getcwd");
-		exit(1);
-	}
-	strcpy(template, "/tmp/test_semfile_XXXXXX");
-	if (!mkdtemp(template)) {
-		perror("mkdtemp");
-		exit(1);
-	}
-	strcpy(g_tmpdir, template);
-	if (chdir(g_tmpdir) != 0) {
-		perror("chdir into tmpdir");
-		exit(1);
-	}
-}
-
-static void teardown(void)
-{
-	/* Remove any leftover semaphore file (no-op if already gone). */
-	(void)unlink("online.flg");
-	if (chdir(g_origdir) != 0) {
-		perror("chdir back");
-		exit(1);
-	}
-	/* Temp directory should now be empty. */
-	if (rmdir(g_tmpdir) != 0)
-		perror("rmdir");
-}
-
-/* -------------------------------------------------------------------------
- * Helper
- * ------------------------------------------------------------------------- */
-static int file_exists(const char *path)
-{
-	struct stat st;
-	return stat(path, &st) == 0;
+	g_log_calls      = 0;
+	g_sleep_hook     = NULL;
+	g_semfile_result = true;
+	g_semfile_calls  = 0;
+	g_semfile_filename[0] = 0;
+	g_semfile_content[0]  = 0;
 }
 
 /* -------------------------------------------------------------------------
@@ -98,17 +88,19 @@ static int file_exists(const char *path)
  * ------------------------------------------------------------------------- */
 static void test_create_success(void)
 {
+	g_semfile_result = true;
 	ASSERT_EQ(CreateSemaphor(1), true);
-	ASSERT_EQ(file_exists("online.flg"), 1);
-	RemoveSemaphor();
+	ASSERT_EQ(g_semfile_calls, 1);
+	ASSERT_EQ(strcmp(g_semfile_filename, "online.flg"), 0);
+	ASSERT_EQ(strstr(g_semfile_content, "Node: 1") != NULL, true);
 }
 
 static void test_create_exclusive(void)
 {
-	/* A second call while the flag is held must fail. */
-	ASSERT_EQ(CreateSemaphor(1), true);
+	/* When plat_CreateSemfile returns false, CreateSemaphor must too. */
+	g_semfile_result = false;
 	ASSERT_EQ(CreateSemaphor(2), false);
-	RemoveSemaphor();
+	ASSERT_EQ(g_semfile_calls, 1);
 }
 
 /* -------------------------------------------------------------------------
@@ -116,18 +108,21 @@ static void test_create_exclusive(void)
  * ------------------------------------------------------------------------- */
 static void test_remove_clears_flag(void)
 {
-	ASSERT_EQ(CreateSemaphor(1), true);
+	/* RemoveSemaphor calls plat_DeleteFile("online.flg").
+	 * The mock plat_DeleteFile does a real unlink, but there's no
+	 * file to delete — just verify it doesn't crash. */
 	RemoveSemaphor();
-	ASSERT_EQ(file_exists("online.flg"), 0);
 }
 
 static void test_create_after_remove(void)
 {
-	/* Flag can be re-acquired after release. */
+	/* Verify CreateSemaphor works after a RemoveSemaphor cycle. */
+	g_semfile_result = true;
 	ASSERT_EQ(CreateSemaphor(1), true);
 	RemoveSemaphor();
+	g_semfile_calls = 0;
 	ASSERT_EQ(CreateSemaphor(1), true);
-	RemoveSemaphor();
+	ASSERT_EQ(g_semfile_calls, 1);
 }
 
 /* -------------------------------------------------------------------------
@@ -135,40 +130,33 @@ static void test_create_after_remove(void)
  * ------------------------------------------------------------------------- */
 static void test_wait_no_contention(void)
 {
-	/* No existing flag; WaitSemaphor must return immediately. */
+	/* plat_CreateSemfile succeeds immediately; no spinning. */
+	g_semfile_result = true;
 	WaitSemaphor(1);
-	ASSERT_EQ(file_exists("online.flg"), 1);
-	ASSERT_EQ(g_log_calls, 0);   /* no "Waiting..." message when uncontested */
-	RemoveSemaphor();
+	ASSERT_EQ(g_semfile_calls, 1);
+	ASSERT_EQ(g_log_calls, 0);
 }
 
 /*
- * Sleep hook: clear the flag so the next CreateSemaphor call inside
- * WaitSemaphor will succeed on the following iteration.
+ * Sleep hook: flip the mock to succeed so WaitSemaphor breaks out.
  */
-static void clear_flag_hook(void)
+static void succeed_on_retry_hook(void)
 {
-	(void)unlink("online.flg");
+	g_semfile_result = true;
 }
 
 static void test_wait_spins_until_cleared(void)
 {
-	FILE *fp;
-
-	/* Occupy the flag without going through CreateSemaphor. */
-	fp = fopen("online.flg", "w");
-	if (!fp) { g_tests_failed++; return; }
-	fclose(fp);
-
-	g_sleep_hook = clear_flag_hook;
+	/* First call fails, sleep hook flips result, second call succeeds. */
+	g_semfile_result = false;
+	g_sleep_hook = succeed_on_retry_hook;
 	WaitSemaphor(1);
 	g_sleep_hook = NULL;
 
-	/* WaitSemaphor must have acquired the flag. */
-	ASSERT_EQ(file_exists("online.flg"), 1);
+	/* Must have called plat_CreateSemfile at least twice. */
+	ASSERT_EQ(g_semfile_calls >= 2, true);
 	/* The "Waiting..." message must have been emitted exactly once. */
 	ASSERT_EQ(g_log_calls, 1);
-	RemoveSemaphor();
 }
 
 /* -------------------------------------------------------------------------
@@ -177,7 +165,7 @@ static void test_wait_spins_until_cleared(void)
 int main(void)
 {
 	g_test_setup    = setup;
-	g_test_teardown = teardown;
+	g_test_teardown = NULL;
 
 	RUN(create_success);
 	RUN(create_exclusive);

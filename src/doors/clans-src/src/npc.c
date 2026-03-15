@@ -68,7 +68,7 @@ void NPC_GetNPCNdx(struct NPCInfo *NPCInfo, struct NPCNdx *NPCNdx)
 			s_NPCNdx_d(iBuf, sizeof(iBuf), NPCNdx);
 
 			// found it!
-			if (strcasecmp(NPCNdx->szIndex, NPCInfo->szIndex) == 0) {
+			if (plat_stricmp(NPCNdx->szIndex, NPCInfo->szIndex) == 0) {
 				Found = true;
 				break;
 			}
@@ -125,7 +125,7 @@ void NPC_UpdateNPCNdx(char *szIndex, struct NPCNdx *NPCNdx)
 			s_NPCNdx_d(iBuf, sizeof(iBuf), &TmpNdx);
 
 			// found it!
-			if (strcasecmp(TmpNdx.szIndex, szIndex) == 0) {
+			if (plat_stricmp(TmpNdx.szIndex, szIndex) == 0) {
 				if (fseek(fpNPX, Offset, SEEK_SET)) {
 					fclose(fpNPX);
 					System_Error("|04Error seeking clans.npx!\n");
@@ -273,7 +273,7 @@ void NPC_ChatNPC(char *szIndex)
 			s_NPCInfo_d(nBuf, sizeof(nBuf), NPCInfo);
 
 			// one we want?
-			if (strcasecmp(NPCInfo->szIndex, szIndex) == 0) {
+			if (plat_stricmp(NPCInfo->szIndex, szIndex) == 0) {
 				// yes
 				FoundNPC = true;
 				break;
@@ -598,7 +598,7 @@ void NPC_AddNPCMember(char *szIndex)
 			s_NPCInfo_d(nBuf, sizeof(nBuf), NPCInfo);
 
 			// one we want?
-			if (strcasecmp(NPCInfo->szIndex, szIndex) == 0) {
+			if (plat_stricmp(NPCInfo->szIndex, szIndex) == 0) {
 				// yes
 				FoundNPC = true;
 				break;

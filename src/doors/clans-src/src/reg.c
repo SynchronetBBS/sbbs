@@ -189,7 +189,7 @@ int16_t IsRegged(char *szSysopName, char *szBBSName, char *szRegCode)
 		pc++;
 	}
 
-	if (strcasecmp(szUserCode, szRealCode) == 0)
+	if (plat_stricmp(szUserCode, szRealCode) == 0)
 		return NTRUE;
 	else
 		return NFALSE;
@@ -253,7 +253,7 @@ void Register(void)
 	// gotoxy(1,9);
 	Input(szString, 27);
 
-	if (strcasecmp(Config.szRegcode, szString) != 0)
+	if (plat_stricmp(Config.szRegcode, szString) != 0)
 		InputCode = true;
 
 	if (IsRegged(Config.szSysopName, Config.szBBSName, szString) == NTRUE) {

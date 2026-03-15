@@ -258,7 +258,7 @@ void GetStringChoice(const char **apszChoices, int16_t NumChoices, char *szPromp
 			/* Display the szString as is IF at least 2 szStrings have the subszString */
 			TimesInStr = 0;
 			for (iTemp = 0; iTemp < NumChoices; iTemp++) {
-				if (strcasecmp(szUserInput, apszChoices[iTemp]) == 0) {
+				if (plat_stricmp(szUserInput, apszChoices[iTemp]) == 0) {
 					TopicFound = iTemp;
 					TimesInStr = 1;
 					break;

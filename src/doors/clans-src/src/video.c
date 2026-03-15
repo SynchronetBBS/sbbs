@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifdef __unix__
 # include <sys/select.h>
 # include <termios.h>
-#else
+#elif defined(_WIN32) || defined(__MSDOS__)
 # include <conio.h>
 #endif
 #include "platform.h"

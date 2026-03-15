@@ -115,7 +115,7 @@ void Quests_Init(void)
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_QUEST_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (strcasecmp(szToken, papszQuestKeyWords[iKeyWord]) == 0) {
+			if (plat_stricmp(szToken, papszQuestKeyWords[iKeyWord]) == 0) {
 				/* Process config token */
 				switch (iKeyWord) {
 					case 0 :  /* name of quest */
@@ -505,7 +505,7 @@ static void JumpToEvent(const char *szLabel, struct FileHeader *FileHeader)
 		fread(hBuf, sizeof(hBuf), 1, FileHeader->fp);
 		s_EventHeader_d(hBuf, sizeof(hBuf), &EventHeader);
 
-		if (strcasecmp(EventHeader.szName, szLabel) == 0)
+		if (plat_stricmp(EventHeader.szName, szLabel) == 0)
 			break;
 		else {
 			// see start of next event
@@ -524,7 +524,7 @@ static void TellQuest(char *pszQuestIndex)
 	QuestNum = -1;
 	for (CurQuest = 0; CurQuest < MAX_QUESTS; CurQuest++) {
 		if (Quests[CurQuest].Active &&
-			strcasecmp(pszQuestIndex, Quests[CurQuest].pszQuestIndex) == 0) {
+			plat_stricmp(pszQuestIndex, Quests[CurQuest].pszQuestIndex) == 0) {
 			// found match
 			QuestNum = CurQuest;
 			break;
@@ -775,7 +775,7 @@ bool RunEvent(bool QuoteToggle, bool reset_hp, char *szEventFile, char *szEventN
 										PClan.Member[iTemp]->HP =
 											PClan.Member[iTemp]->MaxHP;
 								}
-								else if (strcasecmp(szText, "SP") == 0) {
+								else if (plat_stricmp(szText, "SP") == 0) {
 									if (PClan.Member[iTemp]->Status == Here)
 										PClan.Member[iTemp]->SP =
 											PClan.Member[iTemp]->MaxSP;
@@ -829,7 +829,7 @@ bool RunEvent(bool QuoteToggle, bool reset_hp, char *szEventFile, char *szEventN
 							if (NPCInfo->Topics[iTemp].Active == false)
 								continue;
 
-							if (strcasecmp(NPCInfo->Topics[iTemp].szTopicLabel,
+							if (plat_stricmp(NPCInfo->Topics[iTemp].szTopicLabel,
 										szText) == 0) {
 								// found quote, set it to known
 								NPCInfo->Topics[iTemp].Known = true;
@@ -926,13 +926,13 @@ bool RunEvent(bool QuoteToggle, bool reset_hp, char *szEventFile, char *szEventN
 
 				/* if that option has nextline to "jump" to, keep
 				   going in same block of data */
-				if (strcasecmp(pszOptionNames[CurOption], "NextLine") == 0) {
+				if (plat_stricmp(pszOptionNames[CurOption], "NextLine") == 0) {
 					fseek(FileHeader.fp, OldOffset, SEEK_SET);
 					break;
 				}
 
 				/* if that option has "STOP" to "jump" to, stop */
-				else if (strcasecmp(pszOptionNames[CurOption], "Stop") == 0) {
+				else if (plat_stricmp(pszOptionNames[CurOption], "Stop") == 0) {
 					Done = true;
 					break;
 				}
@@ -955,7 +955,7 @@ bool RunEvent(bool QuoteToggle, bool reset_hp, char *szEventFile, char *szEventN
 				fread(&DataLength, sizeof(char), 1, FileHeader.fp);
 				fread(szLabel3, DataLength, 1, FileHeader.fp);
 
-				if (strcasecmp(szLabel3, "NoRun") == 0)
+				if (plat_stricmp(szLabel3, "NoRun") == 0)
 					FightResult = Fight_Fight(&PClan, &EnemyClan, false, false, false);
 				else  // can run
 					FightResult = Fight_Fight(&PClan, &EnemyClan, false, true, false);
@@ -993,17 +993,17 @@ bool RunEvent(bool QuoteToggle, bool reset_hp, char *szEventFile, char *szEventN
 				else if (FightResult == FT_RAN) {
 					// ran away
 
-					if (strcasecmp(szLabel3, "NoRun") == 0)
+					if (plat_stricmp(szLabel3, "NoRun") == 0)
 						break;
 					else
 						strlcpy(szString, szLabel3, sizeof(szString));
 				}
 
 				// if label is "nextline", stay here
-				if (strcasecmp(szString, "nextline") == 0)
+				if (plat_stricmp(szString, "nextline") == 0)
 					break;
 				// if label is "stop", end scrpt
-				else if (strcasecmp(szString, "Stop") == 0) {
+				else if (plat_stricmp(szString, "Stop") == 0) {
 					Done = true;
 					break;
 				}
@@ -1187,13 +1187,13 @@ bool RunEvent(bool QuoteToggle, bool reset_hp, char *szEventFile, char *szEventN
 
 				/* if that option has nextline to "jump" to, keep
 				   going in same block of data */
-				if (strcasecmp(apszLabels[WhichOption], "NextLine") == 0) {
+				if (plat_stricmp(apszLabels[WhichOption], "NextLine") == 0) {
 					fseek(FileHeader.fp, OldOffset, SEEK_SET);
 					break;
 				}
 
 				/* if that option has "STOP" to "jump" to, stop */
-				else if (strcasecmp(apszLabels[WhichOption], "Stop") == 0) {
+				else if (plat_stricmp(apszLabels[WhichOption], "Stop") == 0) {
 					Done = true;
 					break;
 				}

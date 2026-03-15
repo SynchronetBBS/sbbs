@@ -9,8 +9,6 @@
  *
  */
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,10 +36,8 @@ int main(int argc, char **argv)
 {
 	FILE *fpGUM;
 	FILE *fpList;
-#ifdef __unix__
 	FILE *fpAttr;
-	struct stat tStat;
-#endif
+	unsigned filemode;
 	char szLine[255], szFileName[PATH_SIZE], szGumName[PATH_SIZE], szFileList[PATH_SIZE];
 
 	if (argc == 3) {
@@ -70,7 +66,6 @@ int main(int argc, char **argv)
 		return(1);
 	}
 
-#ifdef __unix__
 	fpAttr = fopen("UnixAttr.DAT", "wbx");
 	if (!fpAttr) {
 		fclose(fpList);
@@ -78,7 +73,6 @@ int main(int argc, char **argv)
 		printf("Couldn't create UnixAttr.DAT file\n");
 		return(1);
 	}
-#endif
 
 	for (;;) {
 		if (fgets(szLine, 255, fpList) == NULL)
@@ -92,28 +86,21 @@ int main(int argc, char **argv)
 		if (szFileName[0] == '/') {
 			// directory to create
 			AddDir(fpGUM, szFileName);
-#ifdef __unix__
-			if (stat(szFileName, &tStat))
-				tStat.st_mode = 0755;
-			tStat.st_mode&=511;
-			fprintf(fpAttr, "%o %s\n", tStat.st_mode, szFileName+1);
-#endif
+			if (!plat_getmode(szFileName, &filemode))
+				filemode = 0755;
+			fprintf(fpAttr, "%o %s\n", filemode, szFileName+1);
 		}
 		else {
 			AddGUM(fpGUM, szFileName);
-#ifdef __unix__
-			stat(szFileName, &tStat);
-			tStat.st_mode&=511;
-			fprintf(fpAttr, "%o %s\n", tStat.st_mode, szFileName);
-#endif
+			if (!plat_getmode(szFileName, &filemode))
+				filemode = 0644;
+			fprintf(fpAttr, "%o %s\n", filemode, szFileName);
 		}
 	}
 
-#ifdef __unix__
 	fclose(fpAttr);
 	AddGUM(fpGUM, "UnixAttr.DAT");
 	plat_DeleteFile("UnixAttr.DAT");
-#endif
 
 	fclose(fpGUM);
 	fclose(fpList);

@@ -3,8 +3,14 @@
 This document tracks which functions directly (D) or transitively (T) perform I/O or access global variables, for the purpose of understanding testability and identifying which functions need mocking for unit tests.
 
 **Legend:**
-- **D:** Direct call (the function itself invokes the operation)
-- **T:** Transitive call (the function reaches the operation through a callee)
+- **D:** Direct call (the function itself directly invokes an operation listed below)
+- **T:** Transitive call (the function reaches the operation only through a callee)
+
+**Marking rules:** A function gets **D** only if its own body contains a call to
+one of the listed primitives.  Calling a wrapper (e.g. `rputs` → `zputs` →
+`fputs(stdout)`) is **T**, not D, because the function itself never invokes the
+primitive.  Macros that expand to a function call (e.g. `EncryptRead_s` →
+`EncryptRead()`) count as calling that function, not as inlining the primitive.
 - **Disk Write:** fwrite, fputs(fp), fprintf(fp), fputc(fp), fclose, unlink, rename, link, _fsopen with write modes, od_log_write
 - **Disk Read:** fread, fgets, feof, ftell, fseek, fopen with read modes, _fsopen with read modes
 - **User Input:** od_get_key, od_get_answer, od_sleep, cio_getch, read(STDIN_FILENO,...)
@@ -12,7 +18,9 @@ This document tracks which functions directly (D) or transitively (T) perform I/
 - **my_random:** direct calls to my_random()
 - **Read Global:** any read access to System, Config, Game, PClan, Village, IBBS, Language, Alliances[], NumAlliances, Alliances_Initialized, Quests[], Quests_TFlags[], Spells[], Spells_szCast*, Spells_CastValue, IniFile, PClasses[], Races[], BuildingType[], Door, serBuf[], erRet, ScreenWidth, ScreenLines, IsTTY, _argc, _argv
 - **Write Global:** any write access to the same global variables
-- **Non-C17:** Uses functions outside the C17 standard (POSIX, Win32, OpenDoors, etc.)
+- **Non-C17:** Directly calls functions outside the C17 standard (POSIX, Win32 APIs,
+  MSVC extensions like `_fsopen`).  Calling a linked C library (e.g. OpenDoors `od_*`)
+  does not count — those are normal C function calls.
 
 ## tools.c
 
@@ -37,7 +45,7 @@ This document tracks which functions directly (D) or transitively (T) perform I/
 
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
-| CreateSemaphor | D | D |  |  |  |  |  | Y |
+| CreateSemaphor | D | D |  |  |  |  |  |  |
 | WaitSemaphor | T | T |  | T |  |  |  |  |
 | RemoveSemaphor | D |  |  |  |  |  |  |  |
 
@@ -76,7 +84,7 @@ This document tracks which functions directly (D) or transitively (T) perform I/
 | CRCValue |  |  |  |  |  |  |  |  |
 | isRelative |  |  |  |  |  |  |  |  |
 | SameFile |  |  |  |  |  |  |  |  |
-| DirExists |  | D |  |  |  |  |  | Y |
+| DirExists |  | D |  |  |  |  |  |  |
 | Strip |  |  |  |  |  |  |  |  |
 | iscodechar |  |  |  |  |  |  |  |  |
 | RemovePipes |  |  |  |  |  |  |  |  |
@@ -242,12 +250,15 @@ This document tracks which functions directly (D) or transitively (T) perform I/
 
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
-| _fsopen | D | D |  |  |  |  |  |  |
-| delay |  |  |  |  |  |  |  |  |
+| plat_DeleteFile | D |  |  |  |  |  |  | Y |
+| plat_fsopen | D | D |  |  |  |  |  | Y |
+| plat_Delay |  |  |  |  |  |  |  | Y |
 | FileName |  |  |  |  |  |  |  |  |
 | FreeFileList |  |  |  |  |  |  |  |  |
-| FilesOrderedByDate |  | D |  |  |  |  |  |  |
-| fullpath |  | D |  |  |  |  |  |  |
+| FilesOrderedByDate |  | D |  |  |  |  |  | Y |
+| fullpath |  | D |  |  |  |  |  | Y |
+| plat_getftime |  | D |  |  |  |  |  | Y |
+| plat_setftime | D |  |  |  |  |  |  | Y |
 
 ---
 
@@ -255,10 +266,14 @@ This document tracks which functions directly (D) or transitively (T) perform I/
 
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
-| display_win32_error |  |  |  | D |  |  |  |  |
+| display_win32_error |  |  |  | D |  |  |  | Y |
 | FileName |  |  |  |  |  |  |  |  |
 | FreeFileList |  |  |  |  |  |  |  |  |
-| FilesOrderedByDate |  | D |  |  |  |  |  |  |
+| FilesOrderedByDate |  | D |  |  |  |  |  | Y |
+| plat_DeleteFile | D |  |  |  |  |  |  | Y |
+| plat_Delay |  |  |  |  |  |  |  | Y |
+| plat_getftime |  | D |  |  |  |  |  | Y |
+| plat_setftime | D |  |  |  |  |  |  | Y |
 
 ---
 
@@ -324,8 +339,8 @@ These are safest to test and least likely to have side effects:
 
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
-| News_AddNews |  |  |  | T |  | T | T | Y |
-| News_ReadNews | T | T | T | T | T | T | T | Y |
+| News_AddNews |  |  |  | T |  | T | T |  |
+| News_ReadNews | T | T | T | T | T | T | T |  |
 | News_CreateTodayNews | T |  |  | T |  | T | T |  |
 
 ---
@@ -526,6 +541,26 @@ These are safest to test and least likely to have side effects:
 
 ---
 
+## fight.c (lines 951+)
+
+| Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
+|---|---|---|---|---|---|---|---|---|
+| Fight_Fight | T | T | T | T | T | T | T |  |
+| Fight_CheckLevelUp |  |  | T | T | D | D | D |  |
+| GetDifficulty |  |  |  |  | D |  |  |  |
+| Fight_GetMonster |  | T |  | T |  | D | D |  |
+| Fight_LoadMonsters |  | T |  | T | D | D | D |  |
+| RemoveUndead |  |  |  |  |  |  | D |  |
+| FreeClanMembers |  |  |  |  |  |  |  |  |
+| FreeClan |  |  |  |  |  |  |  |  |
+| MineFollowersGained |  |  |  |  | D |  |  |  |
+| Fight_GiveFollowers |  |  |  | T | D | D | D |  |
+| TakeItemsFromClan |  |  | T | T |  | D | D |  |
+| Fight_Monster | T | T | T | T | T | T | T |  |
+| InitClan |  |  |  |  |  |  |  |  |
+
+---
+
 ## alliance.c
 
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
@@ -568,19 +603,18 @@ These are safest to test and least likely to have side effects:
 
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
-| main | T | T |  | T |  | T | T |  |
-| DeleteClan | T | T |  | T |  | T | T |  |
-| InitVillage | T | T |  | T |  | T | T |  |
-| UpdateVillage | T | T |  | T |  | T | T |  |
-| RejectTrade | T | T |  | T |  | T | T |  |
-| RemoveFromUList | T | T |  | T |  | T |  |  |
-| ClanIDInList |  | D |  |  |  | D |  |  |
-| RemoveFromIPScores | T | T |  | T |  | T | T |  |
+| main | D | D | T | T |  | D |  |  |
+| DeleteClan | D | D |  | T |  | D | D |  |
+| InitVillage | D | D |  | T |  |  | D |  |
+| UpdateVillage | D |  |  | T |  | D |  |  |
+| RejectTrade | T | T |  | T |  |  |  |  |
+| RemoveFromUList | D | D |  | T |  |  |  |  |
+| ClanIDInList | D | D |  |  |  |  |  |  |
+| RemoveFromIPScores | D | D |  | T |  |  |  |  |
 | FreeClan |  |  |  |  |  |  |  |  |
-| GetClan | T | T |  | T |  | T | T |  |
-| UpdateClan | T | T |  | T |  | T | T |  |
-| InitGame | T | T |  | T |  | T | T |  |
-| pce_getch |  |  | D |  |  |  |  |  |
+| GetClan | D | D |  |  |  | D |  |  |
+| UpdateClan | D | D |  | T |  | D |  |  |
+| InitGame | D | D |  | T |  |  | D |  |
 
 ---
 
@@ -620,7 +654,7 @@ These are safest to test and least likely to have side effects:
 |---|---|---|---|---|---|---|---|---|
 | GetColourString |  |  |  |  |  |  |  |  |
 | PipeToAnsi |  |  |  |  |  |  |  |  |
-| DisplayScores | T | T |  | T |  | T |  | Y |
+| DisplayScores | T | T |  | T |  | T |  |  |
 | SendScoreData |  |  |  |  |  |  | D |  |
 | ProcessScoreData | T | T |  |  |  |  | D |  |
 | LeagueScores |  | D |  | D |  | D |  |  |
@@ -641,7 +675,7 @@ These are safest to test and least likely to have side effects:
 | GenerateGameID |  |  |  |  |  |  |  |  |
 | GoReset | D |  |  | D |  | D | D |  |
 | News_CreateTodayNews | D |  |  | D |  | D | D |  |
-| News_AddNews |  |  |  | D |  | D | D | Y |
+| News_AddNews |  |  |  | D |  | D | D |  |
 | ClearFlags |  |  |  |  |  |  |  |  |
 | InitEmpire |  |  |  |  |  |  |  |  |
 | CreateVillageDat | D |  |  |  | D |  |  |  |
@@ -656,7 +690,7 @@ These are safest to test and least likely to have side effects:
 | CheckMem | T | T |  | T |  | T | T |  |
 | DupeStr | T | T |  | T |  | T | T |  |
 | System_LockedOut |  | D |  |  |  |  |  |  |
-| System_Error | T | T |  | T |  | T | T |  |
+| System_Error | T | T |  | T |  | T | T | Y |
 | ShowHelp |  |  |  | D |  | D | D |  |
 | ODCmdLineHandler | T | T |  | T |  | T | T |  |
 | ODCmdLineFlagHandler | T | T | T | T | T | T | T |  |
@@ -671,27 +705,27 @@ These are safest to test and least likely to have side effects:
 
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
-| Console_SetScriptMode |  |  |  |  |  |  | D |  |
-| Console_SetGetAnswerHook |  |  |  |  |  |  | D |  |
-| Door_Initialized |  |  |  |  |  | D |  |  |
-| rputs |  |  |  | T | T | D | D |  |
-| GetKey |  |  | D |  |  |  |  |  |
-| CheckMem | T | T |  | T |  | T | T |  |
-| System_Error | T | T |  | T |  | T | T |  |
-| LogDisplayStr |  |  |  | T |  | D |  |  |
-| GetAnswer |  |  | D |  |  |  |  |  |
-| yesNoQ |  |  | D |  |  |  |  |  |
-| YesNo |  |  | D |  |  | D |  |  |
-| NoYes |  |  | D |  |  | D |  |  |
+| Console_SetScriptMode |  |  |  |  |  |  |  |  |
+| Console_SetGetAnswerHook |  |  |  |  |  |  |  |  |
+| Door_Initialized |  |  |  |  |  |  |  |  |
+| rputs |  |  |  | T |  | T | T |  |
+| GetKey |  |  | T |  |  |  |  |  |
+| CheckMem |  |  |  | D |  |  |  |  |
+| System_Error |  |  |  | T |  | T | T |  |
+| LogDisplayStr |  |  |  | T |  | T | T |  |
+| GetAnswer |  |  | T |  |  |  |  |  |
+| yesNoQ |  |  | T | T |  | T | T |  |
+| YesNo |  |  | T | T |  | T | T |  |
+| NoYes |  |  | T | T |  | T | T |  |
 | InputCallback |  |  |  |  |  |  |  |  |
-| PutCh |  |  |  | T |  |  |  |  |
-| rawputs |  |  |  | T |  |  |  |  |
-| GetHoursLeft |  |  |  |  |  | D |  |  |
-| GetMinutesLeft |  |  |  |  |  | D |  |  |
-| door_pause |  |  | D | D |  | D | D |  |
-| Door_AllowScreenPause |  |  |  |  |  | D |  |  |
-| Door_ToggleScreenPause |  |  |  |  |  |  | D |  |
-| GetKeyNoWait |  |  | D |  |  |  |  |  |
+| PutCh |  |  |  | T |  | T | T |  |
+| rawputs |  |  |  | T |  | T | T |  |
+| GetHoursLeft |  |  |  |  |  |  |  |  |
+| GetMinutesLeft |  |  |  |  |  |  |  |  |
+| door_pause |  |  | T | T |  | T | T |  |
+| Door_AllowScreenPause |  |  |  |  |  |  |  |  |
+| Door_ToggleScreenPause |  |  |  |  |  |  |  |  |
+| GetKeyNoWait |  |  |  |  |  |  |  |  |
 
 ---
 
@@ -712,7 +746,7 @@ These are safest to test and least likely to have side effects:
 | Door_AllowScreenPause |  |  |  |  |  | D |  |  |
 | door_pause |  |  | D | D |  | D | D |  |
 | rputs |  |  |  | D | T | D | D |  |
-| LogToWhatever | D |  |  | D |  | D |  | Y |
+| LogToWhatever | D |  |  | D |  | D |  |  |
 | GetKey |  |  | D |  |  |  |  |  |
 | GetKeyNoWait |  |  | D |  |  |  |  |  |
 | GetAnswer |  |  | D |  |  |  |  |  |
@@ -818,7 +852,7 @@ These are safest to test and least likely to have side effects:
 | GetTroopsTraveling |  |  | T | T | T | T | T |  |
 | IBBS_TravelToBBS | D | D | T | T | T | T | T |  |
 | IBBS_SeeVillages | T | T | T | T | T | T | T |  |
-| IBBS_AddLCLog | D | D |  |  |  | D |  | Y |
+| IBBS_AddLCLog | D | D |  |  |  | D |  |  |
 | IBBS_Destroy |  |  |  |  |  | D | D |  |
 | IBBS_LoginStats |  |  |  | T |  | T | T |  |
 | IBBS_Create |  |  |  |  |  |  | D |  |
@@ -860,7 +894,7 @@ These are safest to test and least likely to have side effects:
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
 | ConvertStringToAddress |  |  |  |  |  |  |  |  |
-| WriteMessage | D | D |  |  |  |  |  | Y |
+| WriteMessage | D | D |  |  |  |  |  |  |
 | IBSendFileAttach | T |  |  |  |  | D |  |  |
 
 ---
@@ -880,6 +914,29 @@ These are safest to test and least likely to have side effects:
 | TellQuest |  |  |  | T |  | D | D |  |
 | RunEvent | T | D | T | T | D | T | T |  |
 | Quests_GoQuest |  |  | T | T | T | T | T |  |
+
+---
+
+## user.c (lines 1–1320)
+
+| Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
+|---|---|---|---|---|---|---|---|---|
+| PadString |  |  |  |  |  |  |  |  |
+| AddToDisband | D |  |  |  |  | D |  |  |
+| User_ResetAllVotes | D | D |  | T |  | D | D |  |
+| DeleteClan | D | D |  | T |  | T | T |  |
+| ClanExists |  | D |  |  |  | D |  |  |
+| GetStat |  |  |  |  |  | D |  |  |
+| ShowBaseStats |  |  |  | T |  | D |  |  |
+| GetClass |  |  | T | T |  | D |  |  |
+| ChooseDefaultAction |  |  | T | T |  | D |  |  |
+| ShowPlayerStats |  |  | T | T |  | D | D |  |
+| ListItems |  |  |  | T |  | D |  |  |
+| ItemEquipResults |  |  |  | T |  | D |  |  |
+| ItemStats |  |  | T | T |  | D | D |  |
+| NumClansInVillage |  | D |  |  |  | D |  |  |
+| ShowVillageStats |  | T | T | T |  | D | D |  |
+| ClanStats | T | T | T | T |  | T | T |  |
 
 ---
 
@@ -905,6 +962,32 @@ These are safest to test and least likely to have side effects:
 | User_Maint | D | D |  | T |  | T | T |  |
 | User_Init | T | T | T | T | T | T | T |  |
 | User_Close | T |  |  |  |  | D | D |  |
+
+---
+
+## empire.c (lines 1–1575)
+
+| Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
+|---|---|---|---|---|---|---|---|---|
+| SendResultPacket | T |  |  |  |  | T | T |  |
+| ValidateIndex |  |  |  | T |  | D | D |  |
+| ProcessAttackPacket | T | T |  | T |  | T | T |  |
+| ProcessResultPacket | T | T |  | T |  | T | T |  |
+| Empire_Create |  |  |  |  |  |  |  |  |
+| Empire_Maint |  |  |  | T | D | D | D |  |
+| ArmySpeed |  |  |  |  |  |  |  |  |
+| ArmyOffense |  |  |  |  |  |  |  |  |
+| ArmyDefense |  |  |  |  |  |  |  |  |
+| ArmyVitality |  |  |  |  |  |  |  |  |
+| Empire_Stats |  |  | T | T |  | D | D |  |
+| DevelopLand |  |  | T | T |  | T | T |  |
+| DonateToEmpire |  |  | T | T |  | T | T |  |
+| Destroy_Menu |  |  | T | T |  | T | T |  |
+| StructureMenu |  |  | T | T |  | T | T |  |
+| ManageArmy |  |  | T | T |  | T | T |  |
+| ArmyAttack |  |  |  |  |  |  |  |  |
+| EmpireAttack |  |  |  |  | T |  |  |  |
+| ProcessAttackResult |  |  |  |  |  |  |  |  |
 
 ---
 
@@ -1094,7 +1177,7 @@ These are safest to test and least likely to have side effects:
 
 | Function | Disk Write | Disk Read | User Input | User Output | my_random | Read Global | Write Global | Non-C17 |
 |---|---|---|---|---|---|---|---|---|
-| getPacketFP | D |  |  |  |  | D | T | Y |
+| getPacketFP | D |  |  |  |  | D | T |  |
 | IBBS_SendPacketBuffer | T |  |  | T |  | T | T |  |
 | IBBS_SendSpy | T |  |  | T |  | T | T |  |
 | IBBS_SendAttackPacket | T |  |  |  |  | T | T |  |
@@ -1130,7 +1213,7 @@ These are safest to test and least likely to have side effects:
 | HandleSpyResultPacket | T | T |  | T |  | T |  |  |
 | HandleNewNDXPacket | T | T |  | T |  | T | T |  |
 | HandleUserListPacket | T | T |  | T |  | T | T |  |
-| IBBS_ProcessPacket | T | T | T | T | T | T | T | Y |
+| IBBS_ProcessPacket | T | T | T | T | T | T | T |  |
 | MessageFileIterate | T | T |  | T |  | T | T |  |
 | SkipAfterFound |  |  |  |  |  | D |  |  |
 | SetSkip |  |  |  |  |  |  | D |  |
@@ -1138,7 +1221,7 @@ These are safest to test and least likely to have side effects:
 | DeleteFound | D |  |  | T |  | D |  |  |
 | DeleteMessageWithFile | T | T |  | T |  | T | T |  |
 | MoveToBad | D |  |  |  |  |  |  |  |
-| IBBS_PacketIn | D | D |  | T |  | T | T | Y |
+| IBBS_PacketIn | D | D |  | T |  | T | T |  |
 | IBBS_Init | T | T |  | T |  | T | T |  |
 | IBBS_Close | T |  |  |  |  | T | T |  |
 | IBBS_Maint | T | T |  | T |  | T | T |  |

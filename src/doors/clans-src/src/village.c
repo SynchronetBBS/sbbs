@@ -443,7 +443,7 @@ static void ChangeColourScheme(void)
 					for (j = 0; j < 128; j++) {
 						if (Scheme[j] == NULL)
 							break;
-						if (strcasecmp(Scheme[j]->szName, "Custom") == 0) {
+						if (plat_stricmp(Scheme[j]->szName, "Custom") == 0) {
 							custom = j;
 							break;
 						}

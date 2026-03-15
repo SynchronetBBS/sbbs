@@ -24,6 +24,7 @@
 #include "../system.h"
 
 #include "test_harness.h"
+#include "mocks_platform.h"
 
 #include "../news.c"
 

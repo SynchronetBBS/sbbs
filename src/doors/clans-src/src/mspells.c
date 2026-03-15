@@ -237,7 +237,7 @@ static void Init_Spells(char *szFileName)
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_SPELL_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (strcasecmp(szToken, papszSpellKeyWords[iKeyWord]) == 0) {
+			if (plat_stricmp(szToken, papszSpellKeyWords[iKeyWord]) == 0) {
 				/* Process token */
 				switch (iKeyWord) {
 					case 0 :    /* NAME of spell */
@@ -255,9 +255,10 @@ static void Init_Spells(char *szFileName)
 
 						/* allocate mem for this room */
 						Spells[CurSpell] = calloc(1, sizeof(struct Spell));
-#ifdef NOTYET
-						CheckMem(Spells[CurSpell]);
-#endif
+						if (!Spells[CurSpell]) {
+							printf("Out of memory\n");
+							exit(1);
+						}
 
 						Spells[CurSpell]->Level = 0;    /* 0 == doesn't matter */
 						Spells[CurSpell]->Value = 0;
@@ -294,23 +295,23 @@ static void Init_Spells(char *szFileName)
 
 						break;
 					case 8 :    /* Flag */
-						if (strcasecmp(pcCurrentPos, "Heal") == 0) {
+						if (plat_stricmp(pcCurrentPos, "Heal") == 0) {
 							Spells[CurSpell]->TypeFlag |= SF_HEAL;
 						}
-						else if (strcasecmp(pcCurrentPos, "Damage") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "Damage") == 0) {
 							Spells[CurSpell]->TypeFlag |= SF_DAMAGE;
 						}
-						else if (strcasecmp(pcCurrentPos, "Modify") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "Modify") == 0) {
 							Spells[CurSpell]->TypeFlag |= SF_MODIFY;
 						}
-						else if (strcasecmp(pcCurrentPos, "Incapacitate") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "Incapacitate") == 0) {
 							Spells[CurSpell]->TypeFlag |= SF_INCAPACITATE;
 						}
-						else if (strcasecmp(pcCurrentPos, "RaiseUndead") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "RaiseUndead") == 0) {
 							Spells[CurSpell]->TypeFlag |= SF_RAISEUNDEAD;
 							printf("flag = %d\n", Spells[CurSpell]->TypeFlag);
 						}
-						else if (strcasecmp(pcCurrentPos, "BanishUndead") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "BanishUndead") == 0) {
 							Spells[CurSpell]->TypeFlag |= SF_BANISHUNDEAD;
 						}
 						break;

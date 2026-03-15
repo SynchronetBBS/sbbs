@@ -24,11 +24,9 @@
 #endif
 
 // These are extensions that Microsoft (correctly) added a leading underscore to...
-#ifndef __MINGW32__
-#define strcasecmp(x, y) _stricmp(x, y)
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
+char *strdup(const char *s);
 #endif
-#define strdup(x) _strdup(x)
-#define mkdir(x) _mkdir(x)
 
 void display_win32_error();
 

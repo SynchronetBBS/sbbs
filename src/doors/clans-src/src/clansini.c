@@ -102,7 +102,7 @@ void ClansIni_Init(void)
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_INI_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (strcasecmp(szToken, papszIniKeyWords[iKeyWord]) == 0) {
+			if (plat_stricmp(szToken, papszIniKeyWords[iKeyWord]) == 0) {
 				/* Process config token */
 				switch (iKeyWord) {
 					case 0 :  /* npcfile */

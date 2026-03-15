@@ -189,7 +189,7 @@ static void NoDoorFileHandler(void)
 }
 
 // ------------------------------------------------------------------------- //
-#ifndef __unix__
+#if defined(_WIN32) || defined(__MSDOS__)
 static bool StatusOn = true;
 
 static void NoStatus(void)
@@ -222,7 +222,7 @@ static void TwoLiner(unsigned char which)
  * Two line status line function.
  */
 {
-#ifndef __unix__
+#if defined(_WIN32) || defined(__MSDOS__)
 	char szString[128];
 	static char Status[2][155];
 
@@ -593,7 +593,7 @@ static void LogToWhatever(const char *szString)
 		if (LogFD == NULL) {
 			char szFileName[16];
 			snprintf(szFileName, sizeof(szFileName), "clans%u.log", (unsigned)System.Node);
-			LogFD = _fsopen(szFileName, "a", _SH_DENYWR);
+			LogFD = plat_fsopen(szFileName, "a", PLAT_SH_DENYWR);
 			if (LogFD) {
 				fprintf(LogFD, "\n----------  %s %02d %s %02d, %s\n", wdays[tm->tm_wday],
 				    tm->tm_mday, aszShortMonthName[tm->tm_mon], tm->tm_year % 100, "The Clans");

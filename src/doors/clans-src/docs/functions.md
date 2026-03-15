@@ -762,8 +762,15 @@ This document lists all functions defined in the Clans source files, their proto
 
 ---
 
-### delay
-**Prototype:** `void delay(unsigned msec)`
+### plat_DeleteFile
+**Prototype:** `bool plat_DeleteFile(const char *fname)`
+**Description:** Deletes a file by name using unlink(); returns true on success.
+**Calls:** None
+
+---
+
+### plat_Delay
+**Prototype:** `void plat_Delay(unsigned msec)`
 **Description:** Sleeps for the specified number of milliseconds using nanosleep, handling EINTR interruptions.
 **Calls:** None
 
@@ -797,6 +804,20 @@ This document lists all functions defined in the Clans source files, their proto
 
 ---
 
+### plat_getftime
+**Prototype:** `bool plat_getftime(FILE *fd, uint16_t *datep, uint16_t *timep)`
+**Description:** Retrieves DOS-format date/time from an open file using fstat and localtime; returns false on failure.
+**Calls:** None
+
+---
+
+### plat_setftime
+**Prototype:** `bool plat_setftime(FILE *fd, unsigned short date, unsigned short time)`
+**Description:** Sets DOS-format date/time on an open file by converting to struct tm and calling futimens.
+**Calls:** None
+
+---
+
 ## win_wrappers.c
 
 ### display_win32_error
@@ -823,6 +844,34 @@ This document lists all functions defined in the Clans source files, their proto
 ### FilesOrderedByDate
 **Prototype:** `char **FilesOrderedByDate(const char *path, const char *match, bool *error)`
 **Description:** Returns a dynamically allocated NULL-terminated array of file paths matching a pattern on Windows using _findfirst/_findnext, sorted by modification time; sets error flag on failure.
+**Calls:** None
+
+---
+
+### plat_DeleteFile
+**Prototype:** `bool plat_DeleteFile(const char *fname)`
+**Description:** Deletes a file by name on Windows; returns true on success.
+**Calls:** None
+
+---
+
+### plat_Delay
+**Prototype:** `void plat_Delay(unsigned msec)`
+**Description:** Sleeps for the specified number of milliseconds using Windows Sleep().
+**Calls:** None
+
+---
+
+### plat_getftime
+**Prototype:** `bool plat_getftime(FILE *fd, uint16_t *datep, uint16_t *timep)`
+**Description:** Retrieves DOS-format date/time from an open file on Windows.
+**Calls:** None
+
+---
+
+### plat_setftime
+**Prototype:** `bool plat_setftime(FILE *fd, unsigned short date, unsigned short time)`
+**Description:** Sets DOS-format date/time on an open file on Windows.
 **Calls:** None
 
 ---
@@ -1524,6 +1573,99 @@ This document lists all functions defined in the Clans source files, their proto
 
 ---
 
+## fight.c (lines 951+)
+
+### Fight_Fight
+**Prototype:** `int16_t Fight_Fight(struct clan *Attacker, struct clan *Defender, bool HumanEnemy, bool CanRun, bool AutoFight)`
+**Description:** Core combat engine orchestrating multi-round battles between two clans; handles player input for human teams, NPC decision-making for monsters, HP/mana regeneration, spell effects, and round-by-round updates; returns FT_WON or FT_LOST.
+**Calls:** `Fight_GetBattleOrder`, `Fight_Stats`, `Fight_ManaRegenerate`, `Spells_UpdatePCSpells`, `Fight_IsIncapacitated`, `Fight_GetNPCAction`, `Fight_ChooseVictim`, `Fight_GetTarget`, `GetTarget2`, `Fight_ReadyScroll`, `Fight_DoMove`, `Fight_Dead`, `Fight_BattleAttack`, `RemoveUndead`, `rputs`, `snprintf`, `GetKey`, `GetChoice`, `my_random`, `NumMembers`, `GetStat`
+
+---
+
+### Fight_CheckLevelUp
+**Prototype:** `void Fight_CheckLevelUp(void)`
+**Description:** Evaluates each clan member's XP against level progression thresholds and promotes members who have enough XP; grants 10-13 training points per level-up.
+**Calls:** `my_random`, `rputs`, `snprintf`, `Help`
+
+---
+
+### GetDifficulty
+**Prototype:** `static int16_t GetDifficulty(int16_t Level)`
+**Description:** Calculates mine combat difficulty (total enemy power) based on mine level with random variance.
+**Calls:** `my_random`
+
+---
+
+### Fight_GetMonster
+**Prototype:** `static int16_t Fight_GetMonster(struct pc *Monster, int16_t MinDifficulty, int16_t MaxDifficulty, char *szFileName)`
+**Description:** Reads a single monster from a monster data file, filters by difficulty range, and initializes it as a combat participant; returns index of selected monster or -1 on error.
+**Calls:** `MyOpen`, `snprintf`, `rputs`, `System_Error`, `fread`, `fseek`, `ftell`, `s_pc_d`, `fclose`
+
+---
+
+### Fight_LoadMonsters
+**Prototype:** `static void Fight_LoadMonsters(struct clan *Clan, int16_t Level, char *szFileName)`
+**Description:** Populates a clan struct with monster combatants from a file until total difficulty is reached using iterative loading within min/max difficulty bounds.
+**Calls:** `GetDifficulty`, `my_random`, `malloc`, `CheckMem`, `Fight_GetMonster`, `memset`
+
+---
+
+### RemoveUndead
+**Prototype:** `static void RemoveUndead(struct clan *Clan)`
+**Description:** Deallocates and removes all undead members from a clan after combat (summoned creatures that expire post-battle).
+**Calls:** `free`
+
+---
+
+### FreeClanMembers
+**Prototype:** `void FreeClanMembers(struct clan *Clan)`
+**Description:** Deallocates all dynamically allocated member structs within a clan; called after combat to clean up temporary combatants.
+**Calls:** `free`
+
+---
+
+### FreeClan
+**Prototype:** `void FreeClan(struct clan *Clan)`
+**Description:** Deallocates an entire clan struct including all members; calls FreeClanMembers first, then frees the clan struct itself.
+**Calls:** `FreeClanMembers`, `free`
+
+---
+
+### MineFollowersGained
+**Prototype:** `static int32_t MineFollowersGained(int16_t Level)`
+**Description:** Calculates base follower count gained from a mine combat win based on level, scaling from 4-6 for levels 1-5 up to 14-16 for levels 16-20.
+**Calls:** `my_random`
+
+---
+
+### Fight_GiveFollowers
+**Prototype:** `static void Fight_GiveFollowers(int16_t Level)`
+**Description:** Awards followers to player clan after mine victory; applies charisma bonus/penalty, then calculates village conscription (troops taken for empire army); only shows conscription message if non-zero.
+**Calls:** `MineFollowersGained`, `GetStat`, `rputs`, `snprintf`, `my_random`
+
+---
+
+### TakeItemsFromClan
+**Prototype:** `static void TakeItemsFromClan(struct clan *Clan, char *szMsg, size_t n)`
+**Description:** Interactive menu allowing player to take items from a defeated clan's inventory; limits to MAX_ITEMSTAKEN items; supports help, examine, take, list, and quit actions.
+**Calls:** `snprintf`, `rputs`, `GetAnswer`, `Help`, `ListItems`, `GetOpenItemSlot`, `ChooseItem`, `strlcat`
+
+---
+
+### Fight_Monster
+**Prototype:** `void Fight_Monster(int16_t Level, char *szFileName)`
+**Description:** Fights monsters in the mines; loads monsters into an enemy clan, initiates combat, handles healing and cleanup, awards/deducts points based on outcome, and levels up the player clan if applicable.
+**Calls:** `Help`, `Fight_LoadMonsters`, `od_clr_scr`, `Fight_Fight`, `Fight_Heal`, `Spells_ClearSpells`, `RemoveUndead`, `FreeClanMembers`, `Fight_GiveFollowers`, `Fight_CheckLevelUp`
+
+---
+
+### InitClan
+**Prototype:** `void InitClan(struct clan *Clan)`
+**Description:** NULL-initializes a clan structure using memset.
+**Calls:** None
+
+---
+
 ## mail.c
 
 ### GenericMessage
@@ -1834,43 +1976,43 @@ This document lists all functions defined in the Clans source files, their proto
 
 ### main
 **Prototype:** `int main(void)`
-**Description:** PC editor entry point; displays player clans in sequence with navigation and deletion options; maintains game data consistency across clan lists.
-**Calls:** `InitVillage`, `InitGame`, `notEncryptRead_s`, `DeleteClan`, `UpdateVillage`, `fopen`, `fseek`, `ftell`, `fclose`
+**Description:** PC editor entry point; initializes video and console subsystems, displays player clans in sequence with navigation and deletion options; maintains game data consistency across clan lists.
+**Calls:** `Video_Init`, `rputs`, `GetAnswer`, `rawputs`, `Video_Close`, `InitVillage`, `InitGame`, `notEncryptRead_s`, `DeleteClan`, `UpdateVillage`, `fopen`, `fseek`, `ftell`, `fclose`
 
 ---
 
 ### DeleteClan
 **Prototype:** `static void DeleteClan(int16_t ClanID[2])`
 **Description:** Removes a clan from all game files (players, messages, trades, alliances) and updates associated data structures to maintain referential integrity.
-**Calls:** `UpdateVillage`, `fopen`, `fclose`, `EncryptRead_s`, `notEncryptRead_s`, `EncryptWrite_s`, `plat_DeleteFile`, `rename`, `malloc`, `free`, `CheckMem`, `Alliances_Init`, `DeleteAlliance`, `Alliances_Close`, `RemoveFromUList`, `RemoveFromIPScores`
+**Calls:** `UpdateVillage`, `rputs`, `fopen`, `fclose`, `EncryptRead_s`, `notEncryptRead_s`, `EncryptWrite_s`, `plat_DeleteFile`, `rename`, `malloc`, `free`, `CheckMem`, `strlcpy`, `Alliances_Init`, `DeleteAlliance`, `Alliances_Close`, `RemoveFromUList`, `RemoveFromIPScores`
 
 ---
 
 ### InitVillage
 **Prototype:** `static void InitVillage(void)`
-**Description:** Loads village data from village.dat into the global Village struct.
-**Calls:** `fopen`, `fclose`, `EncryptRead_s`, `System_Error`
+**Description:** Loads village data from village.dat into the global Village struct; exits on failure.
+**Calls:** `fopen`, `fclose`, `EncryptRead_s`, `rputs`, `Video_Close`, `exit`
 
 ---
 
 ### UpdateVillage
 **Prototype:** `static void UpdateVillage(void)`
-**Description:** Writes village data from the global Village struct to village.dat file.
-**Calls:** `fopen`, `fclose`, `EncryptWrite_s`, `System_Error`
+**Description:** Writes village data from the global Village struct to village.dat file; exits on failure.
+**Calls:** `fopen`, `fclose`, `EncryptWrite_s`, `rputs`, `Video_Close`, `exit`
 
 ---
 
 ### RejectTrade
 **Prototype:** `static void RejectTrade(struct TradeData *TradeData)`
 **Description:** Marks a trade as inactive and returns offered resources (gold, followers, troops) to the originating clan.
-**Calls:** `GetClan`, `UpdateClan`, `FreeClan`
+**Calls:** `GetClan`, `UpdateClan`, `FreeClan`, `rputs`
 
 ---
 
 ### RemoveFromUList
 **Prototype:** `static void RemoveFromUList(const int16_t ClanID[2])`
-**Description:** Removes a clan from the userlist.dat file by reading all records and writing back all except the matching clan.
-**Calls:** `ClanIDInList`, `fopen`, `fclose`, `notEncryptRead_s`, `EncryptWrite_s`, `plat_DeleteFile`, `rename`
+**Description:** Removes a clan from the userlist.dat file by reading all records and writing back all except the matching clan; exits on file open failure.
+**Calls:** `ClanIDInList`, `fopen`, `fclose`, `notEncryptRead_s`, `EncryptWrite_s`, `plat_DeleteFile`, `rename`, `rputs`, `snprintf`, `Video_Close`, `exit`
 
 ---
 
@@ -1884,7 +2026,7 @@ This document lists all functions defined in the Clans source files, their proto
 ### RemoveFromIPScores
 **Prototype:** `static void RemoveFromIPScores(const int16_t ClanID[2])`
 **Description:** Removes a clan from the ipscores.dat file by reading all scores, excluding the matching clan, and rewriting the file.
-**Calls:** `fopen`, `fclose`, `malloc`, `calloc`, `free`, `CheckMem`, `EncryptRead`, `notEncryptRead_s`, `EncryptWrite_s`, `System_Error`, `CheckedEncryptWrite`
+**Calls:** `fopen`, `fclose`, `malloc`, `calloc`, `free`, `CheckMem`, `EncryptRead`, `notEncryptRead_s`, `EncryptWrite_s`, `CheckedEncryptWrite`, `System_Error`
 
 ---
 
@@ -1898,14 +2040,14 @@ This document lists all functions defined in the Clans source files, their proto
 ### GetClan
 **Prototype:** `static bool GetClan(int16_t ClanID[2], struct clan *TmpClan)`
 **Description:** Retrieves a clan's data from clans.pc file; loads clan header and all member records; returns false if clan not found.
-**Calls:** `fopen`, `fclose`, `fseek`, `notEncryptRead_s`, `EncryptRead_s`, `malloc`, `CheckMem`
+**Calls:** `strlcpy`, `fopen`, `fclose`, `fseek`, `notEncryptRead_s`, `EncryptRead_s`, `malloc`, `free`, `CheckMem`
 
 ---
 
 ### UpdateClan
 **Prototype:** `static void UpdateClan(struct clan *Clan)`
 **Description:** Updates an existing clan's data in clans.pc file by finding the clan by ID and writing clan header and member records.
-**Calls:** `fopen`, `fclose`, `fseek`, `ftell`, `notEncryptRead_s`, `EncryptWrite_s`, `malloc`, `free`, `CheckMem`
+**Calls:** `fopen`, `fclose`, `fseek`, `ftell`, `notEncryptRead_s`, `EncryptWrite_s`, `malloc`, `free`, `CheckMem`, `rputs`
 
 ---
 
@@ -1913,13 +2055,6 @@ This document lists all functions defined in the Clans source files, their proto
 **Prototype:** `static void InitGame(void)`
 **Description:** Loads game configuration data from game.dat into the global Game struct.
 **Calls:** `fopen`, `fclose`, `notEncryptRead_s`, `System_Error`
-
----
-
-### pce_getch
-**Prototype:** `static int pce_getch(void)`
-**Description:** (Unix only) Reads a single character from stdin using select() to wait for input availability.
-**Calls:** None
 
 ---
 
@@ -2856,6 +2991,141 @@ This document lists all functions defined in the Clans source files, their proto
 
 ---
 
+## empire.c (lines 1–1575)
+
+### SendResultPacket
+**Prototype:** `static void SendResultPacket(struct AttackResult *Result, int16_t DestID)`
+**Description:** Serializes an attack result structure and enqueues it as an inter-BBS network packet to a destination BBS.
+**Calls:** `s_AttackResult_s`, `IBBS_EnqueueOutPacket`
+
+---
+
+### ValidateIndex
+**Prototype:** `static bool ValidateIndex(const int16_t fid, const int16_t iidx)`
+**Description:** Validates that an incoming attack packet's index is not a duplicate or stale, tracking against a 256-packet window with signed integer wraparound handling.
+**Calls:** `LogDisplayStr`
+
+---
+
+### ProcessAttackPacket
+**Prototype:** `void ProcessAttackPacket(struct AttackPacket *AttackPacket)`
+**Description:** Processes an incoming inter-BBS attack packet: validates it, executes empire attack logic, updates casualty/resource totals, and sends the result back to the originating BBS.
+**Calls:** `ValidateIndex`, `GetClanNameID`, `ClanExists`, `EmpireAttack`, `ProcessAttackResult`, `SendResultPacket`
+
+---
+
+### ProcessResultPacket
+**Prototype:** `void ProcessResultPacket(struct AttackResult *Result)`
+**Description:** Processes an incoming attack result packet on the attacking side: updates attacker's army/resources, adds news, sends a generic message, and marks the original attack as inactive in backup.dat.
+**Calls:** `ValidateIndex`, `GetClan`, `Clan_Update`, `FreeClanMembers`, `VillageName`, `News_AddNews`, `GenericMessage`, `notEncryptRead_s`, `EncryptRead_s`, `EncryptWrite_s`
+
+---
+
+### Empire_Create
+**Prototype:** `void Empire_Create(struct empire *Empire, bool UserEmpire)`
+**Description:** Initializes an empire structure with default starting values: land, buildings, army, workers, and strategy settings.
+**Calls:** None
+
+---
+
+### Empire_Maint
+**Prototype:** `void Empire_Maint(struct empire *Empire)`
+**Description:** Performs daily empire maintenance: resets worker energy and daily action counters, adjusts army rating, generates gold for village empires, and converts excess troops to followers.
+**Calls:** `my_random`, `News_AddNews`
+
+---
+
+### ArmySpeed
+**Prototype:** `int16_t ArmySpeed(struct Army *Army)`
+**Description:** Calculates the weighted average speed of an army based on troop composition.
+**Calls:** None
+
+---
+
+### ArmyOffense
+**Prototype:** `int64_t ArmyOffense(struct Army *Army)`
+**Description:** Calculates the total offensive power of an army by summing individual troop offense values.
+**Calls:** None
+
+---
+
+### ArmyDefense
+**Prototype:** `int64_t ArmyDefense(struct Army *Army)`
+**Description:** Calculates the total defensive power of an army by summing individual troop defense values.
+**Calls:** None
+
+---
+
+### ArmyVitality
+**Prototype:** `int64_t ArmyVitality(struct Army *Army)`
+**Description:** Calculates the total vitality (health pool) of an army by summing troop vitality values and doubling the result.
+**Calls:** None
+
+---
+
+### Empire_Stats
+**Prototype:** `void Empire_Stats(struct empire *Empire)`
+**Description:** Displays a formatted screen of empire statistics: vault gold, land, worker energy, army composition and stats, and buildings.
+**Calls:** `od_clr_scr`, `rputs`, `ArmySpeed`, `ArmyVitality`, `ArmyOffense`, `ArmyDefense`, `door_pause`
+
+---
+
+### DevelopLand
+**Prototype:** `static void DevelopLand(struct empire *Empire)`
+**Description:** Allows a player to develop new land for their empire with cost based on developer buildings.
+**Calls:** `Help`, `rputs`, `GetLong`
+
+---
+
+### DonateToEmpire
+**Prototype:** `void DonateToEmpire(struct empire *Empire)`
+**Description:** Interactive menu for donation/transfer of empire resources (followers, troops, land, gold) between player clan and target empire.
+**Calls:** `LoadStrings`, `rputs`, `GetChoice`, `GetLong`, `ClanStats`
+
+---
+
+### Destroy_Menu
+**Prototype:** `static void Destroy_Menu(struct empire *Empire)`
+**Description:** Interactive menu for destroying empire buildings to recover land and half cost in gold.
+**Calls:** `LoadStrings`, `rputs`, `GetChoice`, `Help`, `NoYes`, `ClanStats`
+
+---
+
+### StructureMenu
+**Prototype:** `static void StructureMenu(struct empire *Empire)`
+**Description:** Interactive menu for constructing empire buildings with cost, land usage, and worker energy validation.
+**Calls:** `LoadStrings`, `rputs`, `GetChoice`, `Help`, `YesNo`, `Destroy_Menu`, `ClanStats`
+
+---
+
+### ManageArmy
+**Prototype:** `static void ManageArmy(struct empire *Empire)`
+**Description:** Interactive menu for training and managing military troops (footmen, axemen, knights) based on barracks capacity and resources.
+**Calls:** `LoadStrings`, `rputs`, `ArmySpeed`, `ArmyOffense`, `ArmyDefense`, `ArmyVitality`, `GetChoice`, `Help`, `GeneralHelp`, `GetLong`
+
+---
+
+### ArmyAttack
+**Prototype:** `static void ArmyAttack(struct Army *Attacker, struct Army *Defender, struct AttackResult *Result)`
+**Description:** Simulates multi-round combat between two armies, calculating damage based on offense/defense/speed/rating and tracking casualties.
+**Calls:** `ArmySpeed`, `ArmyOffense`, `ArmyDefense`, `ArmyVitality`
+
+---
+
+### EmpireAttack
+**Prototype:** `static void EmpireAttack(struct empire *AttackingEmpire, struct Army *AttackingArmy, struct empire *DefendingEmpire, struct AttackResult *Result, int16_t Goal, int16_t ExtentOfAttack)`
+**Description:** Orchestrates a full empire attack including tower/wall defenses, army combat via ArmyAttack(), and calculation of stolen resources and destroyed buildings.
+**Calls:** `ArmyAttack`, `DestroyBuildings`
+
+---
+
+### ProcessAttackResult
+**Prototype:** `static void ProcessAttackResult(struct empire *AttackingEmpire, struct Army *AttackingArmy, struct empire *DefendingEmpire, struct AttackResult *Result)`
+**Description:** Applies attack result to defending empire: transfers stolen gold/land, returns surviving troops to attacker's army.
+**Calls:** None
+
+---
+
 ## empire.c (lines 1576–3149)
 
 ### DestroyBuildings
@@ -2897,6 +3167,120 @@ This document lists all functions defined in the Clans source files, their proto
 **Prototype:** `void Empire_Manage(struct empire *Empire)`
 **Description:** Main empire management menu presenting options for developing land, donating gold, building structures, managing army, attacking rivals, or spying on targets; loops until user exits.
 **Calls:** `LoadStrings`, `rputs`, `snprintf`, `GetChoice`, `Help`, `GeneralHelp`, `DevelopLand`, `DonateToEmpire`, `StructureMenu`, `ManageArmy`, `StartEmpireWar`, `SpyMenu`
+
+---
+
+## user.c (lines 1–1320)
+
+### PadString
+**Prototype:** `static void PadString(char *szString, int16_t PadLength)`
+**Description:** Pads a string with spaces to a specified length, accounting for pipe color codes.
+**Calls:** `RemovePipes`
+
+---
+
+### AddToDisband
+**Prototype:** `static void AddToDisband(void)`
+**Description:** Appends the current user's name to disband.dat when a clan is disbanded.
+**Calls:** `CheckedEncryptWrite`
+
+---
+
+### User_ResetAllVotes
+**Prototype:** `void User_ResetAllVotes(void)`
+**Description:** Resets all clan ruler votes to -1 by rewriting the PC file.
+**Calls:** `System_Error`, `CheckMem`, `plat_DeleteFile`
+
+---
+
+### DeleteClan
+**Prototype:** `void DeleteClan(int16_t ClanID[2], char *szClanName)`
+**Description:** Permanently removes a clan from the game, cleaning up PC records, messages, trades, news, and alliance memberships.
+**Calls:** `AddToDisband`, `RemoveFromUList`, `RemoveFromIPScores`, `System_Error`, `CheckMem`, `RejectTrade`, `News_AddNews`, `DeleteAlliance`
+
+---
+
+### ClanExists
+**Prototype:** `bool ClanExists(int16_t ClanID[2])`
+**Description:** Checks if a clan with the specified IDs exists in the PC file.
+**Calls:** None (file I/O only)
+
+---
+
+### GetStat
+**Prototype:** `int8_t GetStat(struct pc *PC, char Stat)`
+**Description:** Returns the value of a specified attribute for a player character, accounting for modifiers from equipped items and active spells.
+**Calls:** None
+
+---
+
+### ShowBaseStats
+**Prototype:** `static void ShowBaseStats(struct PClass *PClass)`
+**Description:** Displays base statistics for a player class during character creation.
+**Calls:** `LoadStrings`, `rputs`
+
+---
+
+### GetClass
+**Prototype:** `static int16_t GetClass(struct PClass *PClass[MAX_PCLASSES], char *szHelp)`
+**Description:** Prompts the user to choose a player class during character creation, displaying class information.
+**Calls:** `GetAnswer`, `Help`, `door_pause`, `ShowBaseStats`, `YesNo`
+
+---
+
+### ChooseDefaultAction
+**Prototype:** `static void ChooseDefaultAction(struct pc *PC)`
+**Description:** Allows the user to set a default combat action (attack or spell) for a player character.
+**Calls:** `Help`, `GetStringChoice`
+
+---
+
+### ShowPlayerStats
+**Prototype:** `void ShowPlayerStats(struct pc *PC, bool AllowModify)`
+**Description:** Displays comprehensive statistics for a player character including name, level, equipment, attributes, spells, and HP/SP; allows modifying the default action.
+**Calls:** `LoadStrings`, `od_clr_scr`, `PadString`, `rputs`, `GetKey`, `ChooseDefaultAction`
+
+---
+
+### ListItems
+**Prototype:** `void ListItems(struct clan *Clan)`
+**Description:** Displays a two-column formatted list of items in a clan's inventory with item numbers, names, and user assignments.
+**Calls:** `rputs`
+
+---
+
+### ItemEquipResults
+**Prototype:** `static void ItemEquipResults(struct item_data *Item, bool Equipping)`
+**Description:** Outputs the stat changes resulting from equipping or unequipping an item.
+**Calls:** `LoadStrings`, `rputs`
+
+---
+
+### ItemStats
+**Prototype:** `static void ItemStats(void)`
+**Description:** Menu system for examining, listing, dropping, unequipping, and equipping items in the player's clan inventory.
+**Calls:** `GetAnswer`, `ReadBook`, `Help`, `ChooseItem`, `ShowItemStats`, `ListItems`, `NoYes`, `ItemPenalty`, `ItemEquipResults`, `YesNo`, `rputs`
+
+---
+
+### NumClansInVillage
+**Prototype:** `static int16_t NumClansInVillage(void)`
+**Description:** Counts the total number of active clans currently in the village by reading the PC file.
+**Calls:** None
+
+---
+
+### ShowVillageStats
+**Prototype:** `void ShowVillageStats(void)`
+**Description:** Displays comprehensive village statistics including number of clans, ruling clan, tax rate, vault gold, and game state.
+**Calls:** `od_clr_scr`, `VillageName`, `rputs`, `NumClansInVillage`, `DaysBetween`, `door_pause`
+
+---
+
+### ClanStats
+**Prototype:** `void ClanStats(struct clan *Clan, bool AllowModify)`
+**Description:** Shows detailed statistics for a clan with options to modify items, view members, empire, and alliances.
+**Calls:** `LoadStrings`, `rputs`, `GetChoice`, `Help`, `ShowPlayerStats`, `ItemStats`, `Empire_Stats`, `ShowAlliances`, `EnterAlliance`, `ClanStats`
 
 ---
 

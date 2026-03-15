@@ -162,7 +162,7 @@ static void Init_Items(char *szFileName)
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_IM_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (strcasecmp(szToken, papszItemKeyWords[iKeyWord]) == 0) {
+			if (plat_stricmp(szToken, papszItemKeyWords[iKeyWord]) == 0) {
 				/* Process token */
 				switch (iKeyWord) {
 					case 0 :    /* NAME of item */
@@ -174,9 +174,10 @@ static void Init_Items(char *szFileName)
 
 						/* allocate mem for this room */
 						Items[CurItem] = calloc(1, sizeof(struct item_data));
-#ifdef NOTYET
-						CheckMem(Items[CurItem]);
-#endif
+						if (!Items[CurItem]) {
+							printf("Out of memory\n");
+							exit(1);
+						}
 
 						TypeOfStat = ITM_STAT;
 
@@ -207,22 +208,22 @@ static void Init_Items(char *szFileName)
 
 						break;
 					case 1 :    /* Type */
-						if (strcasecmp(pcCurrentPos, "Weapon") == 0) {
+						if (plat_stricmp(pcCurrentPos, "Weapon") == 0) {
 							Items[CurItem]->cType = I_WEAPON;
 						}
-						else if (strcasecmp(pcCurrentPos, "Armor") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "Armor") == 0) {
 							Items[CurItem]->cType = I_ARMOR;
 						}
-						else if (strcasecmp(pcCurrentPos, "Shield") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "Shield") == 0) {
 							Items[CurItem]->cType = I_SHIELD;
 						}
-						else if (strcasecmp(pcCurrentPos, "Scroll") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "Scroll") == 0) {
 							Items[CurItem]->cType = I_SCROLL;
 						}
-						else if (strcasecmp(pcCurrentPos, "Book") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "Book") == 0) {
 							Items[CurItem]->cType = I_BOOK;
 						}
-						else if (strcasecmp(pcCurrentPos, "Other") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "Other") == 0) {
 							Items[CurItem]->cType = I_OTHER;
 						}
 						break;
@@ -271,7 +272,7 @@ static void Init_Items(char *szFileName)
 						Items[CurItem]->MarketLevel = ato16(pcCurrentPos, "Market Level");
 						break;
 					case 18 :   // villagetypes
-						if (!strcasecmp(pcCurrentPos, "ALL"))
+						if (!plat_stricmp(pcCurrentPos, "ALL"))
 							Items[CurItem]->VillageType = V_ALL;
 						else
 							Items[CurItem]->VillageType = ato16(pcCurrentPos, "Village Types");

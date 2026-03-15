@@ -200,7 +200,7 @@ static int16_t hook_get_string_choice(const char **apszChoices,
 
 	/* exact match first, then unambiguous prefix */
 	for (int i = 0; i < NumChoices; i++) {
-		if (strcasecmp(val, apszChoices[i]) == 0)
+		if (plat_stricmp(val, apszChoices[i]) == 0)
 			return (int16_t)i;
 	}
 

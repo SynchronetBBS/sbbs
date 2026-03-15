@@ -113,7 +113,7 @@ static bool System_LockedOut(void)
 
 
 		// else, compare names
-		if (strcasecmp(pcCurrentPos, od_control.user_name) == 0) {
+		if (plat_stricmp(pcCurrentPos, od_control.user_name) == 0) {
 			fclose(fp);
 			return true;
 		}
@@ -163,7 +163,7 @@ static void ODCmdLineHandler(char *flag, char *val)
 
 	bool primitive = !Config.Initialized;
 	if (flag[0] == '-' || flag[0] == '/') {
-		if (strcasecmp(&flag[1], "Recon") == 0) {
+		if (plat_stricmp(&flag[1], "Recon") == 0) {
 			if (!primitive) {
 				if (Game.Data.InterBBS) {
 					if (IBBS.Data.BBSID != ato16(val, "Recon", __func__) &&
@@ -179,7 +179,7 @@ static void ODCmdLineHandler(char *flag, char *val)
 			}
 			return;
 		}
-		else if (strcasecmp(&flag[1], "SendReset") == 0) {
+		else if (plat_stricmp(&flag[1], "SendReset") == 0) {
 			if (!primitive) {
 				if (Game.Data.InterBBS) {
 					if (IBBS.Data.BBSID != 1) {
@@ -211,28 +211,28 @@ static BOOL ODCmdLineFlagHandler(const char *flag)
 	bool primitive = !Config.Initialized;
 
 	if (flag[0] == '-' || flag[0] == '/') {
-		if (strcasecmp(&flag[1], "L") == 0 || strcasecmp(&flag[1], "Local") == 0) {
+		if (plat_stricmp(&flag[1], "L") == 0 || plat_stricmp(&flag[1], "Local") == 0) {
 			if (!primitive)
 				System.Local = true;
 			return TRUE;
 		}
-		else if (strcasecmp(&flag[1], "M") == 0) {
+		else if (plat_stricmp(&flag[1], "M") == 0) {
 			if (!primitive) {
 				Maintenance();
 				System_Close();
 			}
 			return TRUE;
 		}
-		else if (strcasecmp(&flag[1], "?") == 0 || strcasecmp(&flag[1], "Help") == 0) {
+		else if (plat_stricmp(&flag[1], "?") == 0 || plat_stricmp(&flag[1], "Help") == 0) {
 			ShowHelp();
 			plat_Delay(3000);
 			System_Close();
 		}
-		else if (strcasecmp(&flag[1], "T") == 0) {
+		else if (plat_stricmp(&flag[1], "T") == 0) {
 			// No longer available, backward compatibility.
 			return TRUE;
 		}
-		else if (strcasecmp(&flag[1], "LIBBS") == 0) {
+		else if (plat_stricmp(&flag[1], "LIBBS") == 0) {
 			if (primitive)
 				System.LocalIBBS = true;
 			else {
@@ -243,14 +243,14 @@ static BOOL ODCmdLineFlagHandler(const char *flag)
 			}
 			return TRUE;
 		}
-		else if (strcasecmp(&flag[1], "Users") == 0) {
+		else if (plat_stricmp(&flag[1], "Users") == 0) {
 			if (!primitive) {
 				User_List();
 				System_Close();
 			}
 			return TRUE;
 		}
-		else if (strcasecmp(&flag[1], "NewNDX") == 0) {
+		else if (plat_stricmp(&flag[1], "NewNDX") == 0) {
 			if (!primitive) {
 				if (Game.Data.InterBBS) {
 					if (IBBS.Data.BBSID != 1) {
@@ -265,7 +265,7 @@ static BOOL ODCmdLineFlagHandler(const char *flag)
 			}
 			return TRUE;
 		}
-		else if (strcasecmp(&flag[1], "I") == 0) {
+		else if (plat_stricmp(&flag[1], "I") == 0) {
 			if (!primitive) {
 				// read in packets waiting
 				IBBS_PacketIn();
@@ -277,34 +277,34 @@ static BOOL ODCmdLineFlagHandler(const char *flag)
 			}
 			return TRUE;
 		}
-		else if (strcasecmp(&flag[1], "Recon") == 0) {
+		else if (plat_stricmp(&flag[1], "Recon") == 0) {
 			// Requires an argument
 			return FALSE;
 		}
-		else if (strcasecmp(&flag[1], "SendReset") == 0) {
+		else if (plat_stricmp(&flag[1], "SendReset") == 0) {
 			// Requires an argument
 			return FALSE;
 		}
-		else if (strcasecmp(&flag[1], "Reset") == 0) {
+		else if (plat_stricmp(&flag[1], "Reset") == 0) {
 			if (primitive)
 				System_Error("To reset the game, please run RESET.EXE.\n");
 			return TRUE;
 		}
-		else if (strcasecmp(&flag[1], "Verbose") == 0) {
+		else if (plat_stricmp(&flag[1], "Verbose") == 0) {
 			if (primitive) {
 				LogDisplayStr("|07Verbose |14ON\n");
 				Verbose = true;
 			}
 			return TRUE;
 		}
-		else if (strcasecmp(&flag[1], "Slop") == 0) {
+		else if (plat_stricmp(&flag[1], "Slop") == 0) {
 			if (primitive) {
 				Register();
 				System_Close();
 			}
 			return TRUE;
 		}
-		else if (strcasecmp(&flag[1], "Exclusive") == 0) {
+		else if (plat_stricmp(&flag[1], "Exclusive") == 0) {
 			if (primitive)
 				RemoveSemaphor();
 			return TRUE;
@@ -457,35 +457,12 @@ void System_Init(void)
 {
 	time_t now = time(NULL);
 	struct tm tm = *localtime(&now);
-	size_t iTemp;
-#ifdef __unix__
-	char *pszResolvedPath;
-#endif
-
 	atexit(System_Close_AtExit);
 	System.Initialized = true;
 	System.LocalIBBS = false;
 
 	// Get directory from commandline
-#ifdef _WIN32
-	GetModuleFileName(NULL, System.szMainDir, sizeof(System.szMainDir));
-#else
-	strlcpy(System.szMainDir, _argv[0], sizeof(System.szMainDir));
-#endif
-	for (iTemp = strlen(System.szMainDir); iTemp > 0; iTemp--) {
-		if (System.szMainDir[iTemp] == '\\' || System.szMainDir[iTemp] == '/')
-			break;
-	}
-	++iTemp;
-	System.szMainDir[iTemp] = 0;
-#ifdef __unix__
-	pszResolvedPath=fullpath(NULL,System.szMainDir,sizeof(System.szMainDir));
-	if (pszResolvedPath)
-		strlcpy(System.szMainDir, pszResolvedPath, sizeof(System.szMainDir));
-	else
-		System.szMainDir[0] = 0;
-	free(pszResolvedPath);
-#endif
+	plat_GetExePath(_argv[0], System.szMainDir, sizeof(System.szMainDir));
 
 	// 12/23/2001 [au] getting rid of time-slicer support
 	// Time slicer init

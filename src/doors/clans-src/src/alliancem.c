@@ -432,7 +432,7 @@ void CreateAlliance(struct Alliance *Alliance)
 			if (Alliances[iTemp] == NULL)
 				continue;
 
-			if (strcasecmp(szName, Alliances[iTemp]->szName) == 0) {
+			if (plat_stricmp(szName, Alliances[iTemp]->szName) == 0) {
 				AllianceNameInUse = true;
 				break;
 			}

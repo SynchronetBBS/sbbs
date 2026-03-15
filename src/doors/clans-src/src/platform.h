@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#ifndef __unix__
+#if defined(_WIN32) || defined(__MSDOS__)
 # include <dos.h>
 # include <share.h>
 #endif
@@ -35,6 +35,16 @@ void RemovePipes(char *pszSrc, char *pszDest);
 bool iscodechar(char c);
 int32_t DaysBetween(char szFirstDate[], char szLastDate[]);
 int32_t DaysSince1970(char szTheDate[]);
+#define PLAT_SH_DENYWR   1
+#define PLAT_SH_DENYRW   2
+
+bool plat_CreateSemfile(const char *filename, const char *content);
+bool plat_getmode(const char *filename, unsigned *mode);
+bool plat_chmod(const char *filename, unsigned mode);
+bool plat_mkdir(const char *dir);
+void plat_GetExePath(const char *argv0, char *buf, size_t bufsz);
+FILE *plat_fsopen(const char *pathname, const char *mode, int shflag);
+int plat_stricmp(const char *s1, const char *s2);
 bool plat_DeleteFile(const char *fname);
 void plat_Delay(unsigned msec);
 void FreeFileList(char **fl);

@@ -122,7 +122,7 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 		/* Loop through list of keywords */
 		for (iKeyWord = 0; iKeyWord < MAX_NPC_WORDS; ++iKeyWord) {
 			/* If keyword matches */
-			if (strcasecmp(szToken, papszNPCKeyWords[iKeyWord]) == 0) {
+			if (plat_stricmp(szToken, papszNPCKeyWords[iKeyWord]) == 0) {
 				/* Process token */
 				switch (iKeyWord) {
 					case 12 :   /* Index of NPC */
@@ -208,22 +208,22 @@ static void Init_NPCs(char *szInfile, char *szOutfile)
 						break;
 					case 4 :    // where does he wander.
 						// leave it for now
-						if (strcasecmp(pcCurrentPos, "Church") == 0) {
+						if (plat_stricmp(pcCurrentPos, "Church") == 0) {
 							NPCInfo->WhereWander = WN_CHURCH;
 						}
-						else if (strcasecmp(pcCurrentPos, "Street") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "Street") == 0) {
 							NPCInfo->WhereWander = WN_STREET;
 						}
-						else if (strcasecmp(pcCurrentPos, "Market") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "Market") == 0) {
 							NPCInfo->WhereWander = WN_MARKET;
 						}
-						else if (strcasecmp(pcCurrentPos, "Town Hall") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "Town Hall") == 0) {
 							NPCInfo->WhereWander = WN_TOWNHALL;
 						}
-						else if (strcasecmp(pcCurrentPos, "Training Hall") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "Training Hall") == 0) {
 							NPCInfo->WhereWander = WN_THALL;
 						}
-						else if (strcasecmp(pcCurrentPos, "Mine") == 0) {
+						else if (plat_stricmp(pcCurrentPos, "Mine") == 0) {
 							NPCInfo->WhereWander = WN_MINE;
 						}
 						else
