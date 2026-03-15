@@ -767,6 +767,11 @@ parse_uri(struct http_session *sess)
 	}
 	p += 3;
 	sess->hostname = strdup(p);
+	if (sess->hostname == NULL) {
+		set_msg_locked(sess->req, "strdup() failure");
+		assert_pthread_mutex_unlock(&sess->req->mtx);
+		goto error_return;
+	}
 	size_t copied = strlcpy(sess->hacky_list_entry.name, sess->req->name, sizeof(sess->hacky_list_entry.name));
 	assert(copied <= LIST_NAME_MAX);
 	assert_pthread_mutex_unlock(&sess->req->mtx);
@@ -1285,9 +1290,9 @@ destroy_webget_req(struct webget_request *req)
 	free((void *)req->uri);
 	req->uri = NULL;
 	free((void *)req->msg);
-	req->uri = NULL;
+	req->msg = NULL;
 	free((void *)req->state);
-	req->uri = NULL;
+	req->state = NULL;
 	pthread_mutex_destroy(&req->mtx);
 }
 
