@@ -106,7 +106,7 @@ int xp_lockfile(int fd, off_t pos, off_t len, bool block)
 		alock.l_type = F_WRLCK; /* set write lock to prevent all access */
 	alock.l_whence = L_SET;     /* SEEK_SET */
 	alock.l_start = pos;
-	alock.l_len = (int)len;
+	alock.l_len = len;
 
 	int result = fcntl(fd, block ? F_SETLKW : F_SETLK, &alock);
 	if (result == -1 && errno != EINVAL)
@@ -132,7 +132,7 @@ int unlock(int fd, off_t pos, off_t len)
 	alock.l_type = F_UNLCK;   /* remove the lock */
 	alock.l_whence = L_SET;
 	alock.l_start = pos;
-	alock.l_len = (int)len;
+	alock.l_len = len;
 	int result = fcntl(fd, F_SETLK, &alock);
 	if (result == -1 && errno != EINVAL)
 		return -1;
