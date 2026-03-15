@@ -1265,7 +1265,7 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 	struct text_info ti;
 	gettextinfo(&ti);
 	size_t max_len = ti.screenwidth * ti.screenheight;
-	size_t sz = offsetof(struct cet_ts_block, data) + max_len;
+	size_t sz = offsetof(struct cet_ts_block, data) + max_len + 1;
 	struct cet_ts_block *ret = malloc(sz);
 	if (ret == NULL)
 		return NULL;
@@ -1770,12 +1770,13 @@ cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer, size_t *bufl
 			break;
 		}
 		if (!frames_remaining) {
-			lprintf(LOG_ERR, "End of file detected with %u frames remaining.", frames_remaining);
+			lprintf(LOG_WARNING, "Frame count exhausted without end-of-file marker.");
+			frames_remaining = 999;
 		}
 		free(blk);
 		blk = NULL;
 	}
-	success = st.aborted;
+	success = !st.aborted;
 
 failure:
 	free(blk);
@@ -3063,6 +3064,8 @@ get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz)
 {
 	get_syncterm_filename(fn, fnsz, SYNCTERM_PATH_CACHE, false);
 	backslash(fn);
+	if (strlen(fn) + strlen(bbs->name) >= fnsz)
+		return 0;
 	strcat(fn, bbs->name);
 	backslash(fn);
 	if (!isdir(fn)) {
@@ -3082,6 +3085,8 @@ get_cache_fn_subdir(struct bbslist *bbs, char *fn, size_t fnsz, const char *subd
 	ret = get_cache_fn_base(bbs, fn, fnsz);
 	if (ret == 0)
 		return ret;
+	if (strlen(fn) + strlen(subdir) >= fnsz)
+		return 0;
 	strcat(fn, subdir);
 	backslash(fn);
 	if (!isdir(fn)) {
