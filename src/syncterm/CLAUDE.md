@@ -25,6 +25,13 @@ cmake ..
 cmake --build . -j8
 ```
 
+## Architecture
+
+See `HACKING.md` for a comprehensive architecture guide covering SyncTERM
+and all its libraries: source tree layout, rendering pipeline, connection
+providers, terminal emulation, display backends, threading model, and
+compile-time options.
+
 ## Code Style
 
 - Tabs for indentation
