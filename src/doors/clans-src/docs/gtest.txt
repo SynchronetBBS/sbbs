@@ -75,6 +75,8 @@ Usage
 gtest requires a -c flag to select a command:
 
         gtest -c autofight [-l LEVEL] [-r VALUE | -R SEED] [-g GOLD]
+        gtest -c fight [-l LEVEL] [-r VALUE] -a ACTION
+        gtest -c fight [-l LEVEL] -s SCRIPT
         gtest -c levelup
 
 autofight
@@ -85,6 +87,22 @@ autofight
 
     -l LEVEL    Mine level (default: 1).  Higher levels produce a
                 tougher goblin.
+
+fight
+    Same enemy setup as autofight, but runs Fight_Fight with
+    AutoFight=false.  Player input must come from either -a (fixed
+    action) or -s (script file).
+
+    -a ACTION   Every combat prompt uses this action:
+                  A = attack first target
+                  R = run away
+                  I = parry (skip turn)
+                When -a is combined with -r, the fight is fully
+                deterministic with no script file needed.
+
+    -s SCRIPT   Script file providing Choice= and Key= lines for
+                each combat decision.  Use with -r to avoid needing
+                Random= lines.
 
 levelup
     Sets all test clan members to 1000 XP and runs Fight_CheckLevelUp.

@@ -152,6 +152,41 @@ assert_contains "level 10 has result"   "$STATE" "FightResult="
 assert_contains "level 10 has HP"       "$STATE" "Member0.HP="
 
 # =========================================================================
+# Manual fight — attack
+# =========================================================================
+
+assert_succeeds "fight -a A wins" \
+	run_gtest fight -l 1 -r 1 -a A
+assert_contains "fight attack wins"     "$STATE" "FightResult=WON"
+assert_contains "fight attack points"   "$STATE" "Points=5"
+assert_not_contains "fight attack XP"   "$STATE" "Member0.XP=0"
+
+# =========================================================================
+# Manual fight — run
+# =========================================================================
+
+assert_succeeds "fight -a R runs" \
+	run_gtest fight -l 1 -r 1 -a R
+assert_contains "fight run result"      "$STATE" "FightResult=RAN"
+assert_contains "fight run loses pts"   "$STATE" "Points=-3"
+
+# =========================================================================
+# Manual fight — deterministic
+# =========================================================================
+
+assert_succeeds "fight -a A -r 1 first" \
+	run_gtest fight -l 1 -r 1 -a A
+cp "$STATE" "$T/fight1.txt"
+
+assert_succeeds "fight -a A -r 1 second" \
+	run_gtest fight -l 1 -r 1 -a A
+if diff -q "$T/fight1.txt" "$STATE" >/dev/null 2>&1; then
+	pass_test "manual fight deterministic"
+else
+	fail_test "manual fight deterministic"
+fi
+
+# =========================================================================
 # Level-up
 # =========================================================================
 

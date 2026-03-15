@@ -181,6 +181,8 @@ int my_random(int limit)
 {
 	if (limit <= 0) return 0;
 	if (limit == 1) return 0;
+	if (g_fixed_rand_set)
+		return g_fixed_rand % limit;
 	if (script_is_active()) {
 		const char *val = script_consume("Random");
 		int n = atoi(val);
@@ -188,8 +190,6 @@ int my_random(int limit)
 		if (n >= limit) n = limit - 1;
 		return n;
 	}
-	if (g_fixed_rand_set)
-		return g_fixed_rand % limit;
 	return rand() % limit;
 }
 
@@ -344,13 +344,16 @@ static void usage(void)
 	        "Usage: gtest -c COMMAND [options]\n"
 	        "\n"
 	        "Commands:\n"
-	        "  -c autofight   Run Fight_Monster with AI control (no input)\n"
+	        "Commands:\n"
+	        "  -c autofight   Run Fight_Fight with AI control (no input)\n"
+	        "  -c fight       Run Fight_Fight with player input\n"
 	        "  -c levelup     Run Fight_CheckLevelUp\n"
 	        "\n"
 	        "Options:\n"
-	        "  -l LEVEL       Mine level for autofight (default: 1)\n"
+	        "  -l LEVEL       Mine level (default: 1)\n"
 	        "  -R SEED        Seed the PRNG for deterministic results\n"
 	        "  -r VALUE       Fixed return value for my_random (mod limit)\n"
+	        "  -a ACTION      Default combat action for fight (A/R/I)\n"
 	        "  -g GOLD        Set starting gold\n"
 	        "  -m LEVEL       Set starting mine level\n"
 	        "  -s SCRIPT      Script file for input\n"
@@ -360,6 +363,23 @@ static void usage(void)
 /* =========================================================================
  * main
  * ========================================================================= */
+
+static char g_fixed_action = 0;
+
+static char hook_fixed_action(const char *szAllowableChars)
+{
+	char c = (char)toupper((unsigned char)g_fixed_action);
+	for (const char *p = szAllowableChars; *p; p++) {
+		if (toupper((unsigned char)*p) == c)
+			return c;
+	}
+	/* Action not in allowable set — try Enter (default) */
+	for (const char *p = szAllowableChars; *p; p++) {
+		if (*p == '\r' || *p == '\n')
+			return *p;
+	}
+	return szAllowableChars[0];
+}
 
 int main(int argc, char *argv[])
 {
@@ -406,6 +426,13 @@ int main(int argc, char *argv[])
 			g_fixed_rand_set = true;
 			g_fixed_rand = atoi(argv[++i]);
 			break;
+		case 'a':
+			if (i + 1 >= argc) {
+				fprintf(stderr, "gtest: -a requires an action\n");
+				return 1;
+			}
+			g_fixed_action = argv[++i][0];
+			break;
 		case 'g':
 			arg_gold = atol(a + 2);
 			break;
@@ -445,6 +472,10 @@ int main(int argc, char *argv[])
 		script_install_hooks();
 	}
 
+	/* ---- fixed action hook (overrides script GetAnswer hook) ---- */
+	if (g_fixed_action)
+		Console_SetGetAnswerHook(hook_fixed_action);
+
 	/* ---- initialise ---- */
 	gtest_init();
 
@@ -476,6 +507,37 @@ int main(int argc, char *argv[])
 
 		PClan.FightsLeft = Game.Data.MineFights;
 		fight_result = Fight_Fight(&PClan, &EnemyClan, false, true, true);
+		Fight_Heal(&PClan);
+		Spells_ClearSpells(&PClan);
+		FreeClanMembers(&EnemyClan);
+		if (fight_result == FT_WON)
+			PClan.Points += 5;
+		else
+			PClan.Points -= 3;
+		PClan.FightsLeft--;
+		Fight_CheckLevelUp();
+	}
+	else if (plat_stricmp(command, "fight") == 0) {
+		/* Same as autofight but with AutoFight=false — player input
+		   comes from the script via Choice=/Key= hooks. */
+		struct clan EnemyClan = {0};
+		struct pc *enemy = calloc(1, sizeof(struct pc));
+		strlcpy(EnemyClan.szName, "Monsters", sizeof(EnemyClan.szName));
+		EnemyClan.Member[0] = enemy;
+		strlcpy(enemy->szName, "Goblin", sizeof(enemy->szName));
+		enemy->HP = enemy->MaxHP = (int16_t)(20 + mine_level * 5);
+		enemy->SP = enemy->MaxSP = 0;
+		enemy->Status = Here;
+		enemy->Attributes[ATTR_STRENGTH]  = (int8_t)(3 + mine_level);
+		enemy->Attributes[ATTR_DEXTERITY] = (int8_t)(3 + mine_level);
+		enemy->Attributes[ATTR_AGILITY]   = (int8_t)(3 + mine_level);
+		enemy->Attributes[ATTR_WISDOM]    = 1;
+		enemy->MyClan = &EnemyClan;
+		for (int j = 0; j < MAX_SPELLS_IN_EFFECT; j++)
+			enemy->SpellsInEffect[j].SpellNum = -1;
+
+		PClan.FightsLeft = Game.Data.MineFights;
+		fight_result = Fight_Fight(&PClan, &EnemyClan, false, true, false);
 		Fight_Heal(&PClan);
 		Spells_ClearSpells(&PClan);
 		FreeClanMembers(&EnemyClan);
