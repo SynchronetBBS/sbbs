@@ -1095,7 +1095,8 @@ supported:
 | 
 
 |2
-|Dim intensity
+|Dim intensity (clears the bright attribute; equivalent to SGR 22
+in PC text mode since there is no distinct dim state)
 | 
 |√
 | 
@@ -1502,10 +1503,10 @@ TF indicates that the Tru Colour foreground is changed.
 TB indicates that the Tru Colour background is changed.
 
 NOTE: For 90-97, there is no effect unless bright foreground colours
-are enabled.
+are enabled (i.e., DECSET mode 32 is not set, which is the default).
 
 NOTE: For 100-107, there is no effect unless bright background colours
-are enabled.
+are enabled via DECSET mode 33.
 
 NOTE: For 38 and 48, two additional formats are supported, a palette
 selection and a direct colour selection.
@@ -1548,7 +1549,10 @@ CTerm will always reply with CSI 0 n indicating
 
 CTerm will reply with CSI y ; x R where y is the current line
 and x is
-the current row.
+the current row.  When origin mode (`CSI ? 6 h`) is enabled,
+the reported position is relative to the scroll region, not
+the screen.  When the Last Column Flag is set, the reported
+column is the last column (not last column + 1).
 
 |255
 |NON-STANDARD EXTENSION (BCDSR)
@@ -1978,8 +1982,10 @@ macro is set.  If the macro is zero length, only the delete action is
 stored, you can't store a zero-length macro.
 
 If `p3` is zero, the macro is defined using ASCII characters
-(0x20 - 0x7e and 0xa0 - 0xff only) if `p3` is one, the macro
-is defined using hex pairs.
+(0x20 - 0x7e and 0xa0 - 0xff only).  Note that since ESC (0x1b)
+is not in this range, ASCII-mode macros cannot contain escape
+sequences; use hex-mode (`p3` = 1) instead.
+If `p3` is one, the macro is defined using hex pairs.
 
 When the macro is defined using hex pairs, a repeat
 sequence may be included in the format of `! Pn ; D..D ;`
@@ -2018,7 +2024,8 @@ SyncTERM implements the following APC commands:
 
 === `APC SyncTERM:VER ST` Get SyncTERM Version (`CTSV`)
 SyncTERM responds with
-an `APC` string with the full version string of SyncTERM, either
+an `APC` string of the form `APC SyncTERM:VER;version ST` where
+`version` is the full version string of SyncTERM, either
 `SyncTERM 1.7rc1` for release builds or `SyncTERM 1.7b Debug (Sep 27 2025)`
 for debug builds
 
@@ -2197,8 +2204,9 @@ Loads a JPEG XL to a buffer.  Ps0 is the filename
 Loads a PBM to a buffer.  Ps0 is the filename
 
 === `APC SyncTERM:P;Copy Ps... ST` Copy Screen into Buffer (`CTCSIB`)
-Copies a portion of the screen into an internal buffer for use with the
-Paste function.  Defaults to copying the entire screen.
+Copies a portion of the screen into an internal pixel buffer for use with the
+Paste function.  Defaults to copying the entire screen.  All coordinates
+and dimensions are in pixels.
 
 .Currently Supported Ps Arguments:
 [%autowidth]
@@ -2220,9 +2228,10 @@ Paste function.  Defaults to copying the entire screen.
 |Sets the height to copy. Default = Screen height - X.
 |===
 
-=== `APC SyncTERM:P,Paste Ps... ST` Paste Buffer to Screen (`CTPBTS`)
-Pastes from the copied buffer.  Supports the same options as the Cache
+=== `APC SyncTERM:P;Paste Ps... ST` Paste Buffer to Screen (`CTPBTS`)
+Pastes from the copied pixel buffer.  Supports the same options as the Cache
 DrawPPM command except for the filename, and adds the B= option.
+All coordinates and dimensions are in pixels.
 
 .Currently Supported Ps Arguments:
 [%autowidth]
