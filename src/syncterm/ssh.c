@@ -1026,9 +1026,20 @@ ssh_connect(struct bbslist *bbs)
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);
 
-	create_conn_buf(&conn_inbuf, BUFFER_SIZE);
-	create_conn_buf(&conn_outbuf, BUFFER_SIZE);
+	if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
+		conn_api.terminate = true;
+		free(pubkey);
+		return -1;
+	}
+	if (!create_conn_buf(&conn_outbuf, BUFFER_SIZE)) {
+		destroy_conn_buf(&conn_inbuf);
+		conn_api.terminate = true;
+		free(pubkey);
+		return -1;
+	}
 	if (!(conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
+		destroy_conn_buf(&conn_inbuf);
+		destroy_conn_buf(&conn_outbuf);
 		conn_api.terminate = true;
 		free(pubkey);
 		return -1;
@@ -1036,6 +1047,8 @@ ssh_connect(struct bbslist *bbs)
 	conn_api.rd_buf_size = BUFFER_SIZE;
 	if (!(conn_api.wr_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
 		FREE_AND_NULL(conn_api.rd_buf);
+		destroy_conn_buf(&conn_inbuf);
+		destroy_conn_buf(&conn_outbuf);
 		conn_api.terminate = true;
 		free(pubkey);
 		return -1;
