@@ -87,8 +87,7 @@ telnets_input_thread(void *args)
 			}
 		}
 		if (bufsz) {
-			buffered = 0;
-			while (buffered < rd) {
+			while (bufsz > 0 && !conn_api.terminate) {
 				assert_pthread_mutex_lock(&(conn_inbuf.mutex));
 				conn_buf_wait_free(&conn_inbuf, 1, 1000);
 				buffered = conn_buf_put(&conn_inbuf, conn_api.rd_buf, bufsz);
@@ -231,9 +230,15 @@ telnets_connect(struct bbslist *bbs)
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);
 
-	create_conn_buf(&conn_inbuf, BUFFER_SIZE);
-	create_conn_buf(&conn_outbuf, BUFFER_SIZE);
+	if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE))
+		return -1;
+	if (!create_conn_buf(&conn_outbuf, BUFFER_SIZE)) {
+		destroy_conn_buf(&conn_inbuf);
+		return -1;
+	}
 	if (!(conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
+		destroy_conn_buf(&conn_inbuf);
+		destroy_conn_buf(&conn_outbuf);
 		conn_api.terminate = true;
 		return -1;
 	}
