@@ -41,7 +41,7 @@ static char* csvEncode(char* field)
 	char* nl;
 	bool  enclose;
 
-	if ((buf = malloc(strlen(field) * 2)) == NULL)
+	if ((buf = malloc(strlen(field) * 2 + 3)) == NULL)
 		return NULL;
 
 	nl = strchr(field, '\n');
