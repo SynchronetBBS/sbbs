@@ -1213,7 +1213,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 
 	// If the user's terminal doesn't support ANSI, then append a newline to
 	// the end of the format string (we won't be able to move the cursor).
-	if (!canDoHighASCIIAndANSI())
+	if (!console.term_supports(USER_ANSI))
 	{
 		this.sMsgInfoFormatStr += "\r\n";
 		this.sMsgInfoToUserFormatStr += "\r\n";
@@ -2026,7 +2026,7 @@ function DigDistMsgReader_SearchMsgScan(pSearchModeStr, pTxtToSearch, pSubCode)
 function DigDistMsgReader_ClearSearchData()
 {
    this.searchType = SEARCH_NONE;
-   this.searchString == "";
+   this.searchString = "";
    if (this.msgSearchHdrs != null)
    {
 		for (var subCode in this.msgSearchHdrs)
@@ -3365,7 +3365,7 @@ function DigDistMsgReader_ListMessages(pSubBoardCode, pAllowChgSubBoard)
 
 	// List the messages using the lightbar or traditional interface, depending on
 	// what this.msgListUseLightbarListInterface is set to.  The lightbar interface requires ANSI.
-	if (this.msgListUseLightbarListInterface && canDoHighASCIIAndANSI())
+	if (this.msgListUseLightbarListInterface && console.term_supports(USER_ANSI))
 		retObj = this.ListMessages_Lightbar(pAllowChgSubBoard);
 	else
 		retObj = this.ListMessages_Traditional(pAllowChgSubBoard);
@@ -3439,7 +3439,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 	// If the user's terminal doesn't support ANSI, then re-calculate
 	// this.tradMsgListNumLines - we won't be keeping the headers at the top of the
 	// screen.
-	if (!canDoHighASCIIAndANSI()) // Could also be !console.term_supports(USER_ANSI)
+	if (!console.term_supports(USER_ANSI))
 		this.tradMsgListNumLines = console.screen_rows - 2;
 
 	this.RecalcMsgListWidthsAndFormatStrs();
@@ -3820,7 +3820,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 
 	// This method is only supported if the user's terminal supports
 	// ANSI.
-	if (!canDoHighASCIIAndANSI()) // Could also be !console.term_supports(USER_ANSI)
+	if (!console.term_supports(USER_ANSI))
 	{
 		console.print("\r\n\x01h\x01ySorry, an ANSI terminal is required for this operation.\x01n\x01w\r\n");
 		console.pause();
@@ -8824,7 +8824,7 @@ function DigDistMsgReader_WriteMsgListScreenTopHeader()
 	// If we will be displaying the message group and sub-board in the
 	// header at the top of the screen (an additional 2 lines), then
 	// update nMaxLines and nListStartLine to account for this.
-	if (this.displayBoardInfoInHeader && canDoHighASCIIAndANSI()) // console.term_supports(USER_ANSI)
+	if (this.displayBoardInfoInHeader && console.term_supports(USER_ANSI))
 	{
 		var curpos = console.getxy();
 		// Figure out the message group name & sub-board name
@@ -14486,7 +14486,7 @@ function DigDistMsgReader_CalcMsgListScreenIdxVarsFromMsgNum(pMsgNum)
 {
 	// Calculate the message list variables
 	var numItemsPerPage = this.tradMsgListNumLines;
-	if (this.msgListUseLightbarListInterface && canDoHighASCIIAndANSI())
+	if (this.msgListUseLightbarListInterface && console.term_supports(USER_ANSI))
 		numItemsPerPage = this.lightbarMsgListNumLines;
 	var newPageNum = findPageNumOfItemNum(pMsgNum, numItemsPerPage, this.NumMessages(), this.userSettings.listMessagesInReverse);
 	this.CalcTraditionalMsgListTopIdx(newPageNum);
@@ -14684,7 +14684,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 		userTwitListChanged: false
 	};
 
-	if (!canDoHighASCIIAndANSI())
+	if (!console.term_supports(USER_ANSI))
 	{
 		this.DoUserSettings_Traditional();
 		return retObj;
@@ -18234,7 +18234,7 @@ function DigDistMsgReader_RecalcMsgListWidthsAndFormatStrs(pMsgNumLen)
 
 	// If the user's terminal doesn't support ANSI, then append a newline to
 	// the end of the header format string (we won't be able to move the cursor).
-	if (!canDoHighASCIIAndANSI())
+	if (!console.term_supports(USER_ANSI))
 		this.sMsgListHdrFormatStr += "\r\n";
 }
 
@@ -19498,14 +19498,6 @@ function readerModeStrToVal(pModeStr)
    else if ((modeStr == "list") || (modeStr == "lister"))
       readerModeInt = READER_MODE_LIST;
    return readerModeInt;
-}
-
-// This function returns a boolean to signify whether or not the user's
-// terminal supports both high-ASCII characters and ANSI codes.
-function canDoHighASCIIAndANSI()
-{
-	//return (console.term_supports(USER_ANSI) && (user.settings & USER_NO_EXASCII == 0));
-	return (console.term_supports(USER_ANSI));
 }
 
 // Searches a given range in an open message base and returns an object with arrays
