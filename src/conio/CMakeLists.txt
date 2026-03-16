@@ -4,6 +4,7 @@ project (ConIOLib C)
 
 set(WITHOUT_GDI OFF CACHE BOOL "Disable GDI video support")
 set(WITHOUT_SDL OFF CACHE BOOL "Disable SDL video support")
+set(WITHOUT_WAYLAND OFF CACHE BOOL "Disable Wayland video support")
 set(WITHOUT_X11 OFF CACHE BOOL "Disable X11 video support")
 set(WITHOUT_XRANDR OFF CACHE BOOL "Disable X11 video support")
 set(WITHOUT_XRENDER OFF CACHE BOOL "Disable X11 video support")
@@ -29,6 +30,9 @@ if(NOT WITHOUT_SDL)
 	else()
 		find_package(SDL2 CONFIG PATHS /Library/Frameworks)
 	endif()
+endif()
+if(NOT WITHOUT_WAYLAND)
+	pkg_check_modules(WAYLAND_CLIENT wayland-client)
 endif()
 if(NOT WITHOUT_X11)
 	if(NOT WITHOUT_XRENDER)
@@ -91,6 +95,20 @@ else()
 		if(NOT WIN32)
 			message(FATAL_ERROR "No wide-capable curses found")
 		endif()
+	endif()
+endif()
+
+if(NOT WITHOUT_WAYLAND)
+	if(WAYLAND_CLIENT_FOUND)
+		list(APPEND SOURCE
+			wl_dynload.c
+			wl_cio.c
+			wl_events.c
+			wl_proto.c
+		)
+		set(NEED_BITMAP TRUE)
+		set(NEED_SCALE TRUE)
+		set(WL_FOUND TRUE)
 	endif()
 endif()
 
@@ -159,6 +177,11 @@ else()
 		target_compile_definitions(ciolib PUBLIC DISABLE_X11=1)
 		set(WITHOUT_X11 ON CACHE BOOL "Disable X11 video support" FORCE)
 	endif()
+endif()
+
+if(WL_FOUND)
+	target_compile_definitions(ciolib PUBLIC WITH_WAYLAND)
+	target_include_directories(ciolib PRIVATE ${WAYLAND_CLIENT_INCLUDE_DIRS})
 endif()
 
 if(NOT WITHOUT_SDL)

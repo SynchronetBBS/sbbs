@@ -50,6 +50,9 @@
 #ifdef _WIN32
  #include "win32cio.h"
 #else
+ #ifdef WITH_WAYLAND
+  #include "wl_cio.h"
+ #endif
  #ifndef NO_X
   #include "x_cio.h"
  #endif
@@ -267,6 +270,66 @@ static int try_sdl_init(int mode)
 		cio_api.mousepointer=sdl_mousepointer;
 		cio_api.setscaling_type=sdl_setscaling_type;
 		cio_api.getscaling_type=sdl_getscaling_type;
+		return(1);
+	}
+	return(0);
+}
+#endif
+
+#ifdef WITH_WAYLAND
+static int try_wayland_init(int mode)
+{
+#if defined(WITH_SDL)
+	if (sdl_video_initialized) {
+		sdl.QuitSubSystem(SDL_INIT_VIDEO);
+	}
+#endif
+
+	if(!wl_initciolib(mode)) {
+		cio_api.mode=CIOLIB_MODE_WAYLAND;
+		cio_api.mouse=1;
+		cio_api.puttext=bitmap_puttext;
+		cio_api.vmem_puttext=bitmap_vmem_puttext;
+		cio_api.vmem_gettext=bitmap_vmem_gettext;
+		cio_api.gotoxy=bitmap_gotoxy;
+		cio_api.setcursortype=bitmap_setcursortype;
+		cio_api.setfont=bitmap_setfont;
+		cio_api.getfont=bitmap_getfont;
+		cio_api.loadfont=bitmap_loadfont;
+		cio_api.beep=wl_beep;
+		cio_api.movetext=bitmap_movetext;
+		cio_api.clreol=bitmap_clreol;
+		cio_api.clrscr=bitmap_clrscr;
+		cio_api.getcustomcursor=bitmap_getcustomcursor;
+		cio_api.setcustomcursor=bitmap_setcustomcursor;
+		cio_api.getvideoflags=bitmap_getvideoflags;
+		cio_api.setvideoflags=bitmap_setvideoflags;
+
+		cio_api.kbhit=wl_kbhit;
+		cio_api.kbwait=wl_kbwait;
+		cio_api.getch=wl_getch;
+		cio_api.textmode=wl_textmode;
+		cio_api.settitle=wl_settitle;
+		cio_api.setname=wl_setname;
+		cio_api.seticon=wl_seticon;
+		if (wl_has_clipboard()) {
+			cio_api.copytext=wl_copytext;
+			cio_api.getcliptext=wl_getcliptext;
+		}
+		cio_api.mousepointer=wl_mousepointer;
+		cio_api.setscaling=wl_setscaling;
+		cio_api.getscaling=wl_getscaling;
+		cio_api.setscaling_type=wl_setscaling_type;
+		cio_api.getscaling_type=wl_getscaling_type;
+		cio_api.setpalette=bitmap_setpalette;
+		cio_api.attr2palette=bitmap_attr2palette;
+		cio_api.setpixel=bitmap_setpixel;
+		cio_api.getpixels=bitmap_getpixels;
+		cio_api.setpixels=bitmap_setpixels;
+		cio_api.get_modepalette=bitmap_get_modepalette;
+		cio_api.set_modepalette=bitmap_set_modepalette;
+		cio_api.map_rgb = bitmap_map_rgb;
+		cio_api.replace_font = bitmap_replace_font;
 		return(1);
 	}
 	return(0);
@@ -532,6 +595,9 @@ CIOLIBEXPORT int initciolib(int mode)
 #endif
 	switch(mode) {
 		case CIOLIB_MODE_AUTO:
+#ifdef WITH_WAYLAND
+			if(!try_wayland_init(mode))
+#endif
 #ifndef NO_X
 			if(!try_x_init(mode))
 #endif
@@ -562,6 +628,13 @@ CIOLIBEXPORT int initciolib(int mode)
 		case CIOLIB_MODE_CURSES_ASCII:
 			try_curses_init(mode);
 			break;
+
+#ifdef WITH_WAYLAND
+		case CIOLIB_MODE_WAYLAND:
+		case CIOLIB_MODE_WAYLAND_FULLSCREEN:
+			try_wayland_init(mode);
+			break;
+#endif
 
 		case CIOLIB_MODE_X:
 		case CIOLIB_MODE_X_FULLSCREEN:

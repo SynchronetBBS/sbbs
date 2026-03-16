@@ -91,8 +91,20 @@ modes, so is usually only used as a fallback.
 		This uses libX11 to communicate with an X server.
 		Historically, the GUI for most \*nix systems were
 		provided via an X server.  While Linux
-		distributions are moving to Wayland, evne Wayland still
-		support libX11 applications.
+		distributions are moving to Wayland, even Wayland still
+		supports libX11 applications via XWayland.
+
+		Wayland mode:::
+		This is a native Wayland backend that communicates
+		directly with a Wayland compositor.  It uses runtime
+		dynamic loading (dlopen) for libwayland-client,
+		libwayland-cursor, and libxkbcommon, so no link-time
+		dependencies are introduced.  If the compositor does not
+		support optional protocols such as clipboard or
+		server-side decorations, those features degrade
+		gracefully.  When server-side decorations are not
+		available, holding kbd:[Alt] and dragging with the left
+		mouse button can be used to move the window.
 
 		GDI mode:::
 		This directly uses the Win32 Graphics Display Interface

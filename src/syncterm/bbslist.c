@@ -4775,7 +4775,8 @@ show_bbslist(char *current, int connected)
 						         "        %s Xinerama\n"
 						         "        %s XRandR\n"
 						         "        %s XRender\n"
-						         "    %s GDI\n\n"
+						         "    %s GDI\n"
+						         "    %s Wayland\n\n"
 						         "Audio\n"
 						         "    %s OSS\n"
 						         "    %s SDL\n"
@@ -4824,6 +4825,11 @@ show_bbslist(char *current, int connected)
 						         "[ ]",
 #endif
 #ifdef WITH_GDI
+						         "[`\xFB`]",
+#else
+						         "[ ]",
+#endif
+#ifdef WITH_WAYLAND
 						         "[`\xFB`]",
 #else
 						         "[ ]",
