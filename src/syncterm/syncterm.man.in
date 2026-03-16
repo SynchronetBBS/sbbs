@@ -37,7 +37,8 @@ Specify the interface to use.
 Depending on compile options and library availability, not all interfaces will
 be available for all installations.
 If \fI\-i\fP is not specified, SyncTERM will choose the "best" mode in the
-following order: Wayland, X11, GDI, SDL, Win32 Console, curses, ANSI.
+following order: Quartz (macOS), Wayland, X11, GDI, SDL, Win32 Console,
+curses, ANSI.
 The SDL mode specifically can fail in ways that the automatic fallback can
 not properly detect (most notably with libGGI when it is enabled in SDL.)
 When this occurs, a specific mode will need to be forced.
@@ -72,6 +73,9 @@ This requires SDL support to have been compiled in, and the library
 ``libSDL.so'' to be in the library search path.
 .IP \fBW\fP
 Run in Windows Console mode.
+.IP \fBQ\fP[\fIF|W\fP]
+Require SyncTERM to run in Quartz mode. macOS only. Uses the native
+AppKit/Core Graphics framework. The default on macOS.
 .IP \fBX\fP[\fIF|W\fP]
 Require SyncTERM to run in X11 mode. This requires X11 support to have been
 compiled in, and the library ``libX11.so'' to be in the library search path.
@@ -106,6 +110,8 @@ For some features, such as SDL, X11, and Wayland support,
 run-time linking is employed using dlopen().
 Using this, it is possible to build a version which will use SDL,
 X11, and Wayland if they are present, but not fail to run if they are not.
+The macOS Quartz backend links directly against AppKit/Core Graphics
+frameworks and does not use run-time linking.
 .SH TEXT MODE CAVAETS
 When running in one of the text modes such as curses or ANSI, many of the
 control functions are modified since there is no reliable way to use extra

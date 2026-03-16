@@ -96,6 +96,15 @@ ifndef NO_X
  endif
 endif
 
+ifndef WITHOUT_QUARTZ
+ ifeq ($(os),darwin)
+  WITH_QUARTZ := 1
+  CIOLIB-MT_CFLAGS += -DWITH_QUARTZ
+  CIOLIB-MT_LIBS += -framework Cocoa -framework Carbon
+  NEED_BITMAP := 1
+ endif
+endif
+
 ifndef WITHOUT_WAYLAND
  ifndef win
   ifeq ($(shell pkg-config wayland-client --exists 2>/dev/null && echo YES), YES)
@@ -103,6 +112,13 @@ ifndef WITHOUT_WAYLAND
    CIOLIB-MT_CFLAGS += -DWITH_WAYLAND
    CIOLIB-MT_CFLAGS += $(shell pkg-config wayland-client --cflags-only-I)
   endif
+ endif
+endif
+
+# Quartz and SDL are mutually exclusive on macOS (both need the main thread)
+ifdef WITH_QUARTZ
+ ifdef USE_SDL
+  $(error WITH_QUARTZ and USE_SDL cannot both be enabled on macOS)
  endif
 endif
 
@@ -207,6 +223,11 @@ else
   ifdef WITH_WAYLAND
    CIOLIB_CFLAGS += -DHAS_VSTAT
    CIOLIB-MT_CFLAGS += -DHAS_VSTAT
+  else
+   ifdef WITH_QUARTZ
+    CIOLIB_CFLAGS += -DHAS_VSTAT
+    CIOLIB-MT_CFLAGS += -DHAS_VSTAT
+   endif
   endif
  endif
 endif

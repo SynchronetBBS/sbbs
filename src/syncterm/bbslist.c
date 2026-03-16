@@ -4776,14 +4776,16 @@ show_bbslist(char *current, int connected)
 						         "        %s XRandR\n"
 						         "        %s XRender\n"
 						         "    %s GDI\n"
-						         "    %s Wayland\n\n"
+						         "    %s Wayland\n"
+						         "    %s Quartz\n\n"
 						         "Audio\n"
 						         "    %s OSS\n"
 						         "    %s SDL\n"
 						         "    %s ALSA\n"
 						         "    %s WaveOut\n"
 						         "    %s PortAudio\n"
-						         "    %s PulseAudio\n",
+						         "    %s PulseAudio\n"
+						         "    %s Core Audio\n",
 #if (defined(WITHOUT_CRYPTLIB) || !defined(WITH_CRYPTLIB))
 						         "[ ]",
 #else
@@ -4834,6 +4836,11 @@ show_bbslist(char *current, int connected)
 #else
 						         "[ ]",
 #endif
+#ifdef WITH_QUARTZ
+						         "[`\xFB`]",
+#else
+						         "[ ]",
+#endif
 #if (defined SOUNDCARD_H_IN) && (SOUNDCARD_H_IN > 0) && (defined AFMT_U8)
 						         "[`\xFB`]",
 #else
@@ -4860,6 +4867,11 @@ show_bbslist(char *current, int connected)
 						         "[ ]",
 #endif
 #ifdef WITH_PULSEAUDIO
+						         "[`\xFB`]",
+#else
+						         "[ ]",
+#endif
+#ifdef WITH_COREAUDIO
 						         "[`\xFB`]"
 #else
 						         "[ ]"

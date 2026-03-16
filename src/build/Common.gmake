@@ -493,12 +493,19 @@ HASH_SRC 	:=	$(SRC_ROOT)$(DIRSEP)hash
 3RDP_BUILD	:=	$(3RDP_ROOT)$(DIRSEP)build
 SFTP_SRC	:=	$(SRC_ROOT)$(DIRSEP)sftp
 
-# SDL ciolib enabled by default for the moment.
+# SDL ciolib enabled by default, except on macOS where the native
+# Quartz backend is preferred (and Core Audio replaces SDL audio).
 ifndef WITHOUT_SDL
- USE_SDL	:=	1
  ifeq ($(os),darwin)
-  USE_SDL_AUDIO := 1
-  STATIC_SDL := 1
+  ifndef WITHOUT_QUARTZ
+   WITHOUT_SDL := 1
+  else
+   USE_SDL	:=	1
+   USE_SDL_AUDIO := 1
+   STATIC_SDL := 1
+  endif
+ else
+  USE_SDL	:=	1
  endif
 endif
 

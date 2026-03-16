@@ -53,6 +53,9 @@
  #ifdef WITH_WAYLAND
   #include "wl_cio.h"
  #endif
+ #ifdef WITH_QUARTZ
+  #include "cg_cio.h"
+ #endif
  #ifndef NO_X
   #include "x_cio.h"
  #endif
@@ -336,6 +339,67 @@ static int try_wayland_init(int mode)
 }
 #endif
 
+#ifdef WITH_QUARTZ
+static int try_quartz_init(int mode)
+{
+#if defined(WITH_SDL)
+	if (sdl_video_initialized) {
+		sdl.QuitSubSystem(SDL_INIT_VIDEO);
+	}
+#endif
+
+	if(!cg_initciolib(mode)) {
+		cio_api.mode=CIOLIB_MODE_QUARTZ;
+		cio_api.mouse=1;
+		cio_api.puttext=bitmap_puttext;
+		cio_api.vmem_puttext=bitmap_vmem_puttext;
+		cio_api.vmem_gettext=bitmap_vmem_gettext;
+		cio_api.gotoxy=bitmap_gotoxy;
+		cio_api.setcursortype=bitmap_setcursortype;
+		cio_api.setfont=bitmap_setfont;
+		cio_api.getfont=bitmap_getfont;
+		cio_api.loadfont=bitmap_loadfont;
+		cio_api.beep=cg_beep;
+		cio_api.movetext=bitmap_movetext;
+		cio_api.clreol=bitmap_clreol;
+		cio_api.clrscr=bitmap_clrscr;
+		cio_api.getcustomcursor=bitmap_getcustomcursor;
+		cio_api.setcustomcursor=bitmap_setcustomcursor;
+		cio_api.getvideoflags=bitmap_getvideoflags;
+		cio_api.setvideoflags=bitmap_setvideoflags;
+
+		cio_api.kbhit=cg_kbhit;
+		cio_api.kbwait=cg_kbwait;
+		cio_api.getch=cg_getch;
+		cio_api.textmode=cg_textmode;
+		cio_api.settitle=cg_settitle;
+		cio_api.setname=cg_setname;
+		cio_api.seticon=cg_seticon;
+		cio_api.copytext=cg_copytext;
+		cio_api.getcliptext=cg_getcliptext;
+		cio_api.get_window_info=cg_get_window_info;
+		cio_api.mousepointer=cg_mousepointer;
+		cio_api.setscaling=cg_setscaling;
+		cio_api.getscaling=cg_getscaling;
+		cio_api.setwinsize=cg_setwinsize;
+		cio_api.setwinposition=cg_setwinposition;
+		cio_api.setscaling_type=cg_setscaling_type;
+		cio_api.getscaling_type=cg_getscaling_type;
+		cio_api.setpalette=bitmap_setpalette;
+		cio_api.attr2palette=bitmap_attr2palette;
+		cio_api.setpixel=bitmap_setpixel;
+		cio_api.getpixels=bitmap_getpixels;
+		cio_api.setpixels=bitmap_setpixels;
+		cio_api.get_modepalette=bitmap_get_modepalette;
+		cio_api.set_modepalette=bitmap_set_modepalette;
+		cio_api.map_rgb = bitmap_map_rgb;
+		cio_api.replace_font = bitmap_replace_font;
+		return(1);
+	}
+	return(0);
+}
+#endif
+
 #ifndef NO_X
 static int try_x_init(int mode)
 {
@@ -595,6 +659,9 @@ CIOLIBEXPORT int initciolib(int mode)
 #endif
 	switch(mode) {
 		case CIOLIB_MODE_AUTO:
+#ifdef WITH_QUARTZ
+			if(!try_quartz_init(mode))
+#endif
 #ifdef WITH_WAYLAND
 			if(!try_wayland_init(mode))
 #endif
@@ -633,6 +700,13 @@ CIOLIBEXPORT int initciolib(int mode)
 		case CIOLIB_MODE_WAYLAND:
 		case CIOLIB_MODE_WAYLAND_FULLSCREEN:
 			try_wayland_init(mode);
+			break;
+#endif
+
+#ifdef WITH_QUARTZ
+		case CIOLIB_MODE_QUARTZ:
+		case CIOLIB_MODE_QUARTZ_FULLSCREEN:
+			try_quartz_init(mode);
 			break;
 #endif
 
@@ -2327,6 +2401,26 @@ int main(int argc, char **argv)
 	}
 	sem_wait(&main_sem);
 	return ma.ret;
+}
+#endif
+
+#if defined(WITH_QUARTZ) && defined(__DARWIN__)
+#ifdef main
+#undef main
+#endif
+
+#include "cg_cio.h"
+
+int main(int argc, char **argv)
+{
+	/*
+	 * macOS requires the NSApplication event loop on the main thread.
+	 * Spawn the real app logic (CIOLIB_main) in a background thread,
+	 * then enter the Cocoa event loop here.  cg_run_event_loop() calls
+	 * [NSApp run], which doesn't return until the app terminates.
+	 * cg_start_app_thread() returns the app's exit code.
+	 */
+	return cg_start_app_thread(argc, argv);
 }
 #endif
 

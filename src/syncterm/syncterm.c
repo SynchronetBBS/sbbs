@@ -796,7 +796,7 @@ char *output_types[] = {
 	/* coverity[missing_comma:SUPPRESS] */
 	"Autodetect"
 #ifdef __unix__
-	" (Wayland, X11, SDL, Curses, ANSI)"
+	" (Quartz, Wayland, X11, SDL, Curses, ANSI)"
 #elif defined(_WIN32)
 	" (GDI, SDL, Console, ANSI)"
 #endif
@@ -825,6 +825,10 @@ char *output_types[] = {
 #if defined(WITH_WAYLAND)
 	, "Wayland"
 	, "Wayland Fullscreen"
+#endif
+#if defined(WITH_QUARTZ)
+	, "Quartz"
+	, "Quartz Fullscreen"
 #endif
 	, NULL
 };
@@ -856,6 +860,10 @@ int   output_map[] = {
 	, CIOLIB_MODE_WAYLAND
 	, CIOLIB_MODE_WAYLAND_FULLSCREEN
 #endif
+#ifdef WITH_QUARTZ
+	, CIOLIB_MODE_QUARTZ
+	, CIOLIB_MODE_QUARTZ_FULLSCREEN
+#endif
 	, 0
 };
 char *output_descrs[] = {
@@ -875,6 +883,8 @@ char *output_descrs[] = {
 	"Retro",
 	"Wayland",
 	"Wayland Fullscreen",
+	"Quartz",
+	"Quartz Fullscreen",
 	NULL
 };
 
@@ -895,6 +905,8 @@ char *output_enum[] = {
 	"Retro",
 	"Wayland",
 	"WaylandFullscreen",
+	"Quartz",
+	"QuartzFullscreen",
 	NULL
 };
 
@@ -2146,6 +2158,17 @@ main(int argc, char **argv)
 									break;
 								case 'F':
 									ciolib_mode = CIOLIB_MODE_WAYLAND_FULLSCREEN;
+									break;
+							}
+							break;
+						case 'Q':
+							switch (toupper(argv[i][3])) {
+								case 0:
+								case 'W':
+									ciolib_mode = CIOLIB_MODE_QUARTZ;
+									break;
+								case 'F':
+									ciolib_mode = CIOLIB_MODE_QUARTZ_FULLSCREEN;
 									break;
 							}
 							break;

@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 3.5)
 set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the build type")
-project (SyncTERM C)
+if(APPLE)
+	project (SyncTERM C OBJC)
+else()
+	project (SyncTERM C)
+endif()
+
+# On macOS, the native Quartz backend replaces SDL (video and audio).
+# Quartz and SDL are mutually exclusive (both need the main thread).
+if(APPLE AND NOT WITHOUT_QUARTZ)
+	set(WITHOUT_SDL ON CACHE BOOL "Disable SDL video support" FORCE)
+	set(WITHOUT_SDL_AUDIO ON CACHE BOOL "Disable SDL Audio" FORCE)
+	message(STATUS "macOS: Quartz backend enabled, SDL disabled")
+endif()
 
 set(WITHOUT_CRYPTLIB OFF CACHE BOOL "Disable cryptlib (ssh and telnet over TLS")
 set(WITHOUT_OOII OFF CACHE BOOL "Disable Operation Overkill ][ Terminal")
