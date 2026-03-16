@@ -273,8 +273,14 @@ modem_connect(struct bbslist *bbs)
 		}
 
                 /* drain keyboard input to avoid accidental cancel */
-		while (kbhit())
-			getch();
+		while (kbhit()) {
+			int ch = getch();
+			if (ch == 0 || ch == 0xe0) {
+				ch |= (getch() << 8);
+				if (ch == CIO_KEY_QUIT)
+					break;
+			}
+		}
 
 		/* Drain modem output buffer */
 		while (comReadByte(com, (uchar*)respbuf))

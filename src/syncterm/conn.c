@@ -531,8 +531,14 @@ conn_socket_connect(struct bbslist *bbs, bool can_cancel)
 
 	if (can_cancel) {
 		/* Drain the input buffer to avoid accidental cancel */
-		while (kbhit())
-			getch();
+		while (kbhit()) {
+			int ch = getch();
+			if (ch == 0 || ch == 0xe0) {
+				ch |= (getch() << 8);
+				if (ch == CIO_KEY_QUIT)
+					break;
+			}
+		}
 	}
 
 	for (cur = res; cur && sock == INVALID_SOCKET && failcode == FAILURE_WHAT_FAILURE; cur = cur->ai_next) {

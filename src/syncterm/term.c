@@ -543,13 +543,14 @@ zmodem_check_abort(void *vp)
 					if (key == CIO_KEY_MOUSE)
 						getmouse(NULL);
 					if (key == CIO_KEY_QUIT) {
-						if (check_exit(false)) {
-							zm->cancelled = true;
-							zm->local_abort = true;
-						}
+						check_exit(false);
+						zm->cancelled = true;
+						zm->local_abort = true;
 					}
 					break;
 			}
+			if (zm->cancelled)
+				break;
 		}
 	}
 	return zm->cancelled;
@@ -1299,11 +1300,13 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 					if (key == CIO_KEY_MOUSE)
 						getmouse(NULL);
 					if (key == CIO_KEY_QUIT) {
-						if (check_exit(false))
-							sp->aborted = true;
+						check_exit(false);
+						sp->aborted = true;
 					}
 					break;
 			}
+			if (sp->aborted)
+				break;
 		}
 		if (sp->aborted) {
 			free(ret);
@@ -2122,11 +2125,13 @@ xmodem_check_abort(void *vp)
 					if (key == CIO_KEY_MOUSE)
 						getmouse(NULL);
 					if (key == CIO_KEY_QUIT) {
-						if (check_exit(false))
-							xm->cancelled = true;
+						check_exit(false);
+						xm->cancelled = true;
 					}
 					break;
 			}
+			if (xm->cancelled)
+				break;
 		}
 	}
 	return xm->cancelled;
