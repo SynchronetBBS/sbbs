@@ -27,7 +27,6 @@
 
 #include <threadwrap.h>
 #include <genwrap.h>
-#include <xpbeep.h>
 
 #if (defined CIOLIB_IMPORTS)
  #undef CIOLIB_IMPORTS
@@ -38,6 +37,9 @@
 
 #define BITMAP_CIOLIB_DRIVER
 #include "ciolib.h"
+
+#undef BOOL
+#import <AppKit/NSGraphics.h>
 #include "cg_cio.h"
 
 #include "bitmap_con.h"
@@ -199,8 +201,7 @@ void cg_setname(const char *name)
 
 void cg_beep(void)
 {
-	/* Use the system beep — no dependency on SDL audio */
-	xpbeep(440.0, 250);
+	NSBeep();
 }
 
 void cg_seticon(const void *icon, unsigned long size)

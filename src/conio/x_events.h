@@ -52,6 +52,7 @@ struct x11 {
 	int		(*XFlush)		(Display*);
 	int		(*XSync)		(Display*, Bool);
 	int		(*XBell)		(Display*, int);
+	Bool		(*XkbBell)		(Display*, Window, int, Atom);
 	int		(*XLookupString)(XKeyEvent*, char*, int, KeySym*, XComposeStatus*);
 	int		(*XNextEvent)	(Display*, XEvent *);
 	XSizeHints*	(*XAllocSizeHints)(void);

@@ -1683,8 +1683,12 @@ handle_bios_key(uint32_t *bios_key, bool *bios_key_parsing, bool *zero_first)
 		if (*zero_first) {
 			// Unicode character
 			ch = cpchar_from_unicode_cpoint(getcodepage(), *bios_key, 0);
-			if (ch == 0)
-				x11.XBell(dpy, 100);
+			if (ch == 0) {
+				if (x11.XkbBell)
+					x11.XkbBell(dpy, win, 100, None);
+				else
+					x11.XBell(dpy, 100);
+			}
 			else {
 				IGNORE_RESULT(write(key_pipe[1], &ch, 1));
 				if (ch == 0xe0)
@@ -2492,7 +2496,10 @@ void x11_event_thread(void *args)
 							}
 							break;
 						case X11_LOCAL_BEEP:
-							x11.XBell(dpy, 100);
+							if (x11.XkbBell)
+								x11.XkbBell(dpy, win, 100, None);
+							else
+								x11.XBell(dpy, 100);
 							break;
 						case X11_LOCAL_SETICON: {
 							// TODO: set_icon() is obsolete... delete

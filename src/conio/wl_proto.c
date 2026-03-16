@@ -779,3 +779,22 @@ WL_PRIVATE const struct wl_interface xdg_toplevel_icon_v1_interface = {
 	3, xdg_toplevel_icon_v1_requests,
 	0, NULL,
 };
+
+/*
+ * xdg-system-bell-v1 protocol
+ */
+
+static const struct wl_interface *xdg_system_bell_v1_types[] = {
+	&wl_surface_interface,
+};
+
+static const struct wl_message xdg_system_bell_v1_requests[] = {
+	{ "destroy", "", xdg_system_bell_v1_types + 0 },
+	{ "ring", "?o", xdg_system_bell_v1_types + 0 },
+};
+
+WL_PRIVATE const struct wl_interface xdg_system_bell_v1_interface = {
+	"xdg_system_bell_v1", 1,
+	2, xdg_system_bell_v1_requests,
+	0, NULL,
+};

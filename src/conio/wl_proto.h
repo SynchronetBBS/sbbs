@@ -10047,6 +10047,76 @@ xdg_toplevel_icon_v1_add_buffer(struct xdg_toplevel_icon_v1 *xdg_toplevel_icon_v
 			 XDG_TOPLEVEL_ICON_V1_ADD_BUFFER, NULL, wl_proxy_get_version((struct wl_proxy *) xdg_toplevel_icon_v1), 0, buffer, scale);
 }
 
+/*
+ * xdg-system-bell-v1 protocol
+ */
+
+struct xdg_system_bell_v1;
+
+#ifndef XDG_SYSTEM_BELL_V1_INTERFACE
+#define XDG_SYSTEM_BELL_V1_INTERFACE
+/**
+ * @page page_iface_xdg_system_bell_v1 xdg_system_bell_v1
+ * @section page_iface_xdg_system_bell_v1_desc Description
+ *
+ * This global interface enables clients to ring the system bell.
+ */
+extern const struct wl_interface xdg_system_bell_v1_interface;
+#endif
+
+#define XDG_SYSTEM_BELL_V1_DESTROY 0
+#define XDG_SYSTEM_BELL_V1_RING 1
+
+#define XDG_SYSTEM_BELL_V1_DESTROY_SINCE_VERSION 1
+#define XDG_SYSTEM_BELL_V1_RING_SINCE_VERSION 1
+
+/** @ingroup iface_xdg_system_bell_v1 */
+static inline void
+xdg_system_bell_v1_set_user_data(struct xdg_system_bell_v1 *xdg_system_bell_v1, void *user_data)
+{
+	wl_proxy_set_user_data((struct wl_proxy *) xdg_system_bell_v1, user_data);
+}
+
+/** @ingroup iface_xdg_system_bell_v1 */
+static inline void *
+xdg_system_bell_v1_get_user_data(struct xdg_system_bell_v1 *xdg_system_bell_v1)
+{
+	return wl_proxy_get_user_data((struct wl_proxy *) xdg_system_bell_v1);
+}
+
+static inline uint32_t
+xdg_system_bell_v1_get_version(struct xdg_system_bell_v1 *xdg_system_bell_v1)
+{
+	return wl_proxy_get_version((struct wl_proxy *) xdg_system_bell_v1);
+}
+
+/**
+ * @ingroup iface_xdg_system_bell_v1
+ *
+ * Notify that the object will no longer be used.
+ */
+static inline void
+xdg_system_bell_v1_destroy(struct xdg_system_bell_v1 *xdg_system_bell_v1)
+{
+	wl_proxy_marshal_flags((struct wl_proxy *) xdg_system_bell_v1,
+			 XDG_SYSTEM_BELL_V1_DESTROY, NULL, wl_proxy_get_version((struct wl_proxy *) xdg_system_bell_v1), WL_MARSHAL_FLAG_DESTROY);
+}
+
+/**
+ * @ingroup iface_xdg_system_bell_v1
+ *
+ * This requests rings the system bell on behalf of a client. How ringing
+ * the bell is implemented is up to the compositor. It may be an audible
+ * sound, a visual feedback of some kind, or any other thing including
+ * nothing.
+ */
+static inline void
+xdg_system_bell_v1_ring(struct xdg_system_bell_v1 *xdg_system_bell_v1, struct wl_surface *surface)
+{
+	wl_proxy_marshal_flags((struct wl_proxy *) xdg_system_bell_v1,
+			 XDG_SYSTEM_BELL_V1_RING, NULL, wl_proxy_get_version((struct wl_proxy *) xdg_system_bell_v1), 0, surface);
+}
+
 
 #ifdef  __cplusplus
 }
