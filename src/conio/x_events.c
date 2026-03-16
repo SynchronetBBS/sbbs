@@ -894,13 +894,24 @@ set_icon(const void *data, size_t width, XWMHints *hints)
 		.foreground = black | 0xff000000,
 		.background = white
 	};
-	int x,y,i;
+	int x,y;
 	GC igc, imgc;
 	bool fail = false;
 	unsigned short tmp;
 	XColor fg;
 	bool sethints = (hints == NULL);
 	unsigned long lasti = ULONG_MAX, lastim = ULONG_MAX;
+	/*
+	 * Some old WMs only use the XWMHints pixmap icon and expect
+	 * 32x32.  If the source icon is larger, downsample it with
+	 * nearest-neighbor so the pixmap fits.
+	 */
+	size_t icon_w = width;
+	size_t scale = 1;
+	if (icon_w > 32) {
+		scale = icon_w / 32;
+		icon_w = 32;
+	}
 
 	// This is literally the wost possible way to create a pixmap. :)
 	/*
@@ -911,14 +922,17 @@ set_icon(const void *data, size_t width, XWMHints *hints)
 	 * Leaving this here though since it is marginally "better" aside
 	 * from the insane method to create a Pixmap.
 	 */
-	icn = x11.XCreatePixmap(dpy, root, width, width, depth);
+	icn = x11.XCreatePixmap(dpy, root, icon_w, icon_w, depth);
 	igc = x11.XCreateGC(dpy, icn, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
-	icn_mask = x11.XCreatePixmap(dpy, root, width, width, 1);
+	icn_mask = x11.XCreatePixmap(dpy, root, icon_w, icon_w, 1);
 	imgc = x11.XCreateGC(dpy, icn_mask, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
 	fail = (!icn) || (!icn_mask);
 	if (!fail) {
-		for (x = 0, i = 0; x < width; x++) {
-			for (y = 0; y < width; y++) {
+		for (x = 0; x < icon_w; x++) {
+			for (y = 0; y < icon_w; y++) {
+				size_t sx = x * scale;
+				size_t sy = y * scale + (scale > 1 ? 1 : 0);
+				int i = sx * width + sy;
 				if (idata[i] & 0xff000000) {
 					if (VisualIsRGB8)
 						fg.pixel = idata[i] & 0xffffff;
@@ -953,7 +967,6 @@ set_icon(const void *data, size_t width, XWMHints *hints)
 					}
 					x11.XDrawPoint(dpy, icn_mask, imgc, y, x);
 				}
-				i++;
 			}
 			if (fail)
 				break;
@@ -2502,7 +2515,7 @@ void x11_event_thread(void *args)
 								x11.XBell(dpy, 100);
 							break;
 						case X11_LOCAL_SETICON: {
-							// TODO: set_icon() is obsolete... delete
+							// XWMHints pixmap icon for old WMs that don't support _NET_WM_ICON
 							set_icon(&lev.data.icon_data[2], lev.data.icon_data[0], NULL);
 							set_win_property(ATOM__NET_WM_ICON, XA_CARDINAL, 32, PropModeReplace, lev.data.icon_data, lev.data.icon_data[0] * lev.data.icon_data[1] + 2);
 							x11.XFlush(dpy);
