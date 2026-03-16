@@ -796,6 +796,38 @@ double x_getscaling(void)
 	return ret;
 }
 
+void x_setwinsize(int w, int h)
+{
+	double s = bitmap_double_mult_inside(w, h);
+	x_setscaling(s);
+}
+
+void x_setwinposition(int x, int y)
+{
+	struct x11_local_event ev = {0};
+
+	ev.type = X11_LOCAL_SETWINPOSITION;
+	ev.data.winpos.x = x;
+	ev.data.winpos.y = y;
+	if (x11_initialized)
+		write_event(&ev);
+}
+
+int x_get_window_info(int *width, int *height, int *xpos, int *ypos)
+{
+	assert_rwlock_rdlock(&vstatlock);
+	if (width)
+		*width = vstat.winwidth;
+	if (height)
+		*height = vstat.winheight;
+	assert_rwlock_unlock(&vstatlock);
+	if (xpos)
+		*xpos = 0;
+	if (ypos)
+		*ypos = 0;
+	return 1;
+}
+
 int x_mousepointer(enum ciolib_mouse_ptr type)
 {
 	struct x11_local_event ev = {0};

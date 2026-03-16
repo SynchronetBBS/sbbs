@@ -2534,6 +2534,9 @@ void x11_event_thread(void *args)
 							x_internal_scaling = (lev.data.st == CIOLIB_SCALING_INTERNAL);
 							resize_xim();
 							break;
+						case X11_LOCAL_SETWINPOSITION:
+							x11.XMoveWindow(dpy, win, lev.data.winpos.x, lev.data.winpos.y);
+							break;
 					}
 				}
 		}

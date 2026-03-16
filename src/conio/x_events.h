@@ -28,6 +28,7 @@ enum x11_local_events {
 	,X11_LOCAL_SETICON
 	,X11_LOCAL_MOUSEPOINTER
 	,X11_LOCAL_SETSCALING_TYPE
+	,X11_LOCAL_SETWINPOSITION
 };
 
 struct x11_local_event {
@@ -40,6 +41,7 @@ struct x11_local_event {
 		unsigned long   *icon_data;
 		enum ciolib_mouse_ptr ptr;
                 enum ciolib_scaling st;
+		struct { int x, y; } winpos;
 	} data;
 };
 

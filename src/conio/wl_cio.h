@@ -50,6 +50,7 @@ double wl_getscaling(void);
 void wl_setscaling(double newval);
 enum ciolib_scaling wl_getscaling_type(void);
 void wl_setscaling_type(enum ciolib_scaling newval);
+void wl_setwinsize(int w, int h);
 void wl_copytext(const char *text, size_t buflen);
 char *wl_getcliptext(void);
 int wl_mousepointer(enum ciolib_mouse_ptr type);
