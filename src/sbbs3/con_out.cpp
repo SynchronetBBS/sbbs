@@ -401,12 +401,18 @@ size_t sbbs_t::cp437_out(int ich)
 			term->cursor_left();
 			return 1;
 		case '\t':	// TAB
-			if (term->column < (term->cols - 1)) {
-                                term_out(' ');
-                                while ((term->column < (term->cols - 1)) && (term->column % term->tabstop))
-                                        term_out(' ');
-                        }
-                        return 1;
+		{
+			int col = term->column;
+			if (col < (term->cols - 1) && term->tabstop > 0) {
+				int target = col + 1;
+				target += (term->tabstop - (target % term->tabstop)) % term->tabstop;
+				if (target >= term->cols)
+					target = term->cols - 1;
+				for (int i = col; i < target; i++)
+					term_out(' ');
+			}
+			return 1;
+		}
 
 		case '\n':	// LF
 			term->line_feed();
