@@ -225,6 +225,12 @@ void wl_setscaling_type(enum ciolib_scaling newval)
 	}
 }
 
+void wl_setwinsize(int w, int h)
+{
+	double s = bitmap_double_mult_inside(w, h);
+	wl_setscaling(s);
+}
+
 void wl_copytext(const char *text, size_t buflen)
 {
 	struct wl_local_event ev = {0};

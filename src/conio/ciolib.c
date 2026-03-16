@@ -197,6 +197,7 @@ static int try_gdi_init(int mode)
 		cio_api.getch=gdi_getch;
 		cio_api.textmode=gdi_textmode;
 		cio_api.seticon=gdi_seticon;
+		cio_api.setname=gdi_settitle;
 		cio_api.settitle=gdi_settitle;
 		cio_api.copytext=gdi_copytext;
 		cio_api.getcliptext=gdi_getcliptext;
@@ -333,6 +334,7 @@ static int try_wayland_init(int mode)
 		cio_api.set_modepalette=bitmap_set_modepalette;
 		cio_api.map_rgb = bitmap_map_rgb;
 		cio_api.replace_font = bitmap_replace_font;
+		cio_api.setwinsize=wl_setwinsize;
 		return(1);
 	}
 	return(0);
@@ -452,6 +454,9 @@ static int try_x_init(int mode)
 		cio_api.mousepointer=x_mousepointer;
 		cio_api.setscaling_type=x_setscaling_type;
 		cio_api.getscaling_type=x_getscaling_type;
+		cio_api.setwinsize=x_setwinsize;
+		cio_api.setwinposition=x_setwinposition;
+		cio_api.get_window_info=x_get_window_info;
 		return(1);
 	}
 	return(0);
