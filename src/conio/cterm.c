@@ -1068,7 +1068,7 @@ dellines(struct cterminal * cterm, int lines)
 	if (x < TERM_MINX || x > TERM_MAXX || y < TERM_MINY || y > TERM_MAXY)
 		return;
 	SCR_XY(&sx, &sy);
-	if ((sy + lines - 1) > maxy) // Delete all the lines... ie: clear screen...
+	if (lines > maxy - sy + 1) // Delete all the lines... ie: clear screen...
 		lines = maxy - sy + 1;
 	if (sy + lines <= maxy)
 		movetext(minx, sy + lines, maxx, maxy, minx, sy);
