@@ -87,8 +87,9 @@ search path.
 .IP \fB\-l\fIlines\fR
 Sets the number of screen lines to \fIlines\fR.
 Only specific values are allowed for \fIlines\fR and they are:
-14, 21, 25, 28, 43, 50, and 60.
-If any other value is chosen, a value of 50 is used.
+14, 21, 25, 28, 30, 43, 50, and 60.
+If any other value is chosen, a value of 43 or 50 is used depending on
+the current font size.
 .IP \fB\-n\fIconfig\fR
 Specify an alternative INI file
 .IP \fB\-q\fP
