@@ -30,6 +30,12 @@ ifdef WITH_WAYLAND
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)wl_proto$(OFILE)
 endif
 
+ifdef WITH_QUARTZ
+ NEED_BITMAP := 1
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)cg_cio$(OFILE)
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)cg_events$(OFILE)
+endif
+
 ifdef WITH_SDL
  NEED_BITMAP := 1
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)

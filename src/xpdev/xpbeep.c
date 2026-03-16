@@ -60,6 +60,11 @@
 #include "sdlfuncs.h"
 #endif
 
+#ifdef WITH_COREAUDIO
+#include <AudioToolbox/AudioToolbox.h>
+#include "semwrap.h"
+#endif
+
 #include "genwrap.h"
 #include "xpbeep.h"
 
@@ -96,6 +101,9 @@ static bool portaudio_device_open_failed = false;
 #ifdef WITH_PULSEAUDIO
 static bool pulseaudio_device_open_failed = false;
 #endif
+#ifdef WITH_COREAUDIO
+static bool coreaudio_device_open_failed = false;
+#endif
 
 enum {
 	SOUND_DEVICE_CLOSED
@@ -105,6 +113,7 @@ enum {
 	, SOUND_DEVICE_SDL
 	, SOUND_DEVICE_PORTAUDIO
 	, SOUND_DEVICE_PULSEAUDIO
+	, SOUND_DEVICE_COREAUDIO
 };
 
 static int handle_type = SOUND_DEVICE_CLOSED;
@@ -174,6 +183,22 @@ static int                   curr_wh;
 #ifdef USE_ALSA_SOUND
 static snd_pcm_t *           playback_handle;
 static snd_pcm_hw_params_t * hw_params = NULL;
+#endif
+
+#ifdef WITH_COREAUDIO
+#define CA_NUM_BUFS 3
+#define CA_BUF_SIZE 4096
+static AudioQueueRef         ca_queue;
+static AudioQueueBufferRef   ca_bufs[CA_NUM_BUFS];
+static sem_t                 ca_buf_sem;
+static bool                  ca_initialized = false;
+
+static void
+ca_output_callback(void *userdata, AudioQueueRef queue, AudioQueueBufferRef buf)
+{
+	buf->mAudioDataByteSize = 0;
+	sem_post(&ca_buf_sem);
+}
 #endif
 
 #ifdef AFMT_U8
@@ -407,6 +432,53 @@ xptone_open_locked(void)
 		handle_rc++;
 		return true;
 	}
+
+#ifdef WITH_COREAUDIO
+	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_COREAUDIO) {
+		if (!coreaudio_device_open_failed) {
+			AudioStreamBasicDescription fmt = {0};
+			fmt.mSampleRate = S_RATE;
+			fmt.mFormatID = kAudioFormatLinearPCM;
+			fmt.mFormatFlags = 0;
+			fmt.mBytesPerPacket = 1;
+			fmt.mFramesPerPacket = 1;
+			fmt.mBytesPerFrame = 1;
+			fmt.mChannelsPerFrame = 1;
+			fmt.mBitsPerChannel = 8;
+
+			if (!ca_initialized) {
+				sem_init(&ca_buf_sem, 0, CA_NUM_BUFS);
+				ca_initialized = true;
+			}
+			if (AudioQueueNewOutput(&fmt, ca_output_callback, NULL,
+			    NULL, NULL, 0, &ca_queue) == noErr) {
+				for (int i = 0; i < CA_NUM_BUFS; i++) {
+					if (AudioQueueAllocateBuffer(ca_queue,
+					    CA_BUF_SIZE, &ca_bufs[i]) != noErr) {
+						coreaudio_device_open_failed = true;
+						AudioQueueDispose(ca_queue, true);
+						ca_queue = NULL;
+						break;
+					}
+					ca_bufs[i]->mAudioDataByteSize = 0;
+				}
+				if (!coreaudio_device_open_failed) {
+					if (AudioQueueStart(ca_queue, NULL) == noErr) {
+						handle_type = SOUND_DEVICE_COREAUDIO;
+						handle_rc++;
+						return true;
+					}
+					coreaudio_device_open_failed = true;
+					AudioQueueDispose(ca_queue, true);
+					ca_queue = NULL;
+				}
+			}
+			else {
+				coreaudio_device_open_failed = true;
+			}
+		}
+	}
+#endif
 
 #ifdef WITH_PULSEAUDIO
 	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_PULSEAUDIO) {
@@ -698,6 +770,15 @@ xptone_complete_locked(void)
 		return;
 	}
 
+#ifdef WITH_COREAUDIO
+	if (handle_type == SOUND_DEVICE_COREAUDIO) {
+		for (int i = 0; i < CA_NUM_BUFS; i++)
+			sem_wait(&ca_buf_sem);
+		for (int i = 0; i < CA_NUM_BUFS; i++)
+			sem_post(&ca_buf_sem);
+	}
+#endif
+
 #ifdef WITH_PULSEAUDIO
 	else if (handle_type == SOUND_DEVICE_PULSEAUDIO) {
 		int err;
@@ -774,6 +855,14 @@ bool xptone_close_locked(void)
 	if (--handle_rc)
 		return true;
 
+#ifdef WITH_COREAUDIO
+	if (handle_type == SOUND_DEVICE_COREAUDIO) {
+		AudioQueueStop(ca_queue, true);
+		AudioQueueDispose(ca_queue, true);
+		ca_queue = NULL;
+	}
+#endif
+
 #ifdef WITH_PORTAUDIO
 	if (handle_type == SOUND_DEVICE_PORTAUDIO) {
 		pa_api->close(portaudio_stream);
@@ -826,6 +915,9 @@ bool xptone_close_locked(void)
 #endif
 #ifdef WITH_PULSEAUDIO
 	pulseaudio_device_open_failed = false;
+#endif
+#ifdef WITH_COREAUDIO
+	coreaudio_device_open_failed = false;
 #endif
 
 	return true;
@@ -892,6 +984,34 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 	if (freed)
 		*freed = 0;
 	samp = sampo;
+#endif
+
+#ifdef WITH_COREAUDIO
+	if (handle_type == SOUND_DEVICE_COREAUDIO) {
+		size_t offset = 0;
+		while (offset < sz) {
+			sem_wait(&ca_buf_sem);
+			AudioQueueBufferRef buf = NULL;
+			for (int i = 0; i < CA_NUM_BUFS; i++) {
+				if (ca_bufs[i]->mAudioDataByteSize == 0) {
+					buf = ca_bufs[i];
+					break;
+				}
+			}
+			if (!buf) {
+				sem_post(&ca_buf_sem);
+				continue;
+			}
+			size_t chunk = sz - offset;
+			if (chunk > CA_BUF_SIZE)
+				chunk = CA_BUF_SIZE;
+			memcpy(buf->mAudioData, samp + offset, chunk);
+			buf->mAudioDataByteSize = chunk;
+			AudioQueueEnqueueBuffer(ca_queue, buf, 0, NULL);
+			offset += chunk;
+		}
+		return true;
+	}
 #endif
 
 #ifdef WITH_PULSEAUDIO

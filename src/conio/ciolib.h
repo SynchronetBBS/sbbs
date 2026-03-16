@@ -70,6 +70,8 @@ enum {
 	,CIOLIB_MODE_RETRO
 	,CIOLIB_MODE_WAYLAND
 	,CIOLIB_MODE_WAYLAND_FULLSCREEN
+	,CIOLIB_MODE_QUARTZ
+	,CIOLIB_MODE_QUARTZ_FULLSCREEN
 };
 
 enum ciolib_mouse_ptr {
@@ -648,6 +650,15 @@ CIOLIBEXPORT void ansi_ciolib_setdoorway(int enable);
 
 #ifdef WITH_GDI
 #if defined(_WIN32) || defined(__DARWIN__)
+	#ifdef main
+		#undef main
+	#endif
+	#define main	CIOLIB_main
+#endif
+#endif
+
+#ifdef WITH_QUARTZ
+#if defined(__DARWIN__)
 	#ifdef main
 		#undef main
 	#endif

@@ -1,5 +1,6 @@
 Version 1.8b
 ------------
+Add native macOS backend (Quartz display, CoreAudio sound)
 Add Wayland backend
 Support encrypted dialing directories
 Support web-based main dialing directory

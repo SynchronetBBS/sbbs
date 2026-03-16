@@ -82,7 +82,8 @@ SyncTERM can use SDL for both graphics and sound. X11 and Wayland can
 also be used for graphics, and OSS, ALSA, or Portaudio can also provide
 sound. These use run-time linking, so at compile time, only the headers
 are needed. Static linking with SDL is also supported.  SDL2 is required
-for macOS and Haiku at the present time.
+for Haiku at the present time. On macOS, the native Quartz backend and
+CoreAudio are used by default and SDL is not required.
 
 For SSH, a copy of Peter Gutmann's
 https://cryptlib.com/security-software/about-cryptlib[Cryptlib] is
@@ -171,6 +172,12 @@ on all platforms. Legal values are:
 	W:::
 	Windows console mode. Windows only mode which uses the system
 	console APIs for output.
+
+	Q[WF]:::
+	Quartz output mode. macOS only mode which uses the native
+	AppKit/Core Graphics framework for drawing. The default on
+	macOS. Additionally, a 'W' or 'F' can be specified to force
+	windowed or full-screen mode respectively.
 
 	X[WF]:::
 	X11 output mode. UNIX only mode which directly uses the X11

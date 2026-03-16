@@ -104,6 +104,16 @@ ifeq ($(os),freebsd)
  XPDEV-MT_CFLAGS+=	-DUSE_SNPRINTF
 endif
 
+# Core Audio (macOS)
+ifndef WITHOUT_COREAUDIO
+ ifeq ($(os),darwin)
+  XPDEV-MT_CFLAGS += -DWITH_COREAUDIO
+  XPDEV_CFLAGS += -DWITH_COREAUDIO
+  XPDEV-MT_LIBS += -framework AudioToolbox
+  XPDEV_LIBS += -framework AudioToolbox
+ endif
+endif
+
 # Find SDL headers!
 ifdef USE_SDL_AUDIO
  ifdef SDL_CONFIG

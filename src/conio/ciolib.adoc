@@ -17,7 +17,7 @@ ciolib, and not SyncTERM.
 == Output Modes
 
 An output mode specifies the manner in which ciolib displays the content
-to the user. There are twelve ciolib output modes that can be broadly
+to the user. There are thirteen ciolib output modes that can be broadly
 grouped into two categories:
 
 	Text Output Modes::
@@ -105,6 +105,15 @@ modes, so is usually only used as a fallback.
 		gracefully.  When server-side decorations are not
 		available, holding kbd:[Alt] and dragging with the left
 		mouse button can be used to move the window.
+
+		Quartz mode:::
+		This is the native macOS backend, using AppKit for window
+		management and Core Graphics for rendering.  It is the
+		default on macOS.  Audio uses CoreAudio via the AudioQueue
+		API.  No SDL dependency is required.  Supports internal
+		scaling (xBR) with 1:1 backing pixel mapping on Retina
+		displays, and external scaling via Core Graphics
+		interpolation.
 
 		GDI mode:::
 		This directly uses the Win32 Graphics Display Interface
