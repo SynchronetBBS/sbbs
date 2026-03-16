@@ -121,6 +121,78 @@ function read_ansi_string(timeout)
 	return null;
 }
 
+function read_input_seq(timeout)
+{
+	var seq = '';
+	var ch;
+
+	ch = console.inkey(0, timeout);
+	if (ch === '' || ch === null || ch === undefined)
+		return null;
+	seq += ch;
+
+	// Single non-ESC byte (e.g. Backspace 0x08 or 0x7f)
+	if (ch !== '\x1b')
+		return seq;
+
+	// ESC received — read continuation bytes
+	for (;;) {
+		ch = console.inkey(0, 200);
+		if (ch === '' || ch === null || ch === undefined)
+			break;
+		seq += ch;
+
+		// CSI sequence: ESC [ ... final_byte
+		if (seq.length >= 3 && seq.charAt(1) === '[') {
+			var last = seq.charCodeAt(seq.length - 1);
+			// Final byte is 0x40-0x7E (@-~) but not in parameter range
+			if (last >= 0x40 && last <= 0x7E)
+				return seq;
+			continue;
+		}
+
+		// SS3 sequence: ESC O <final>
+		if (seq.length >= 3 && seq.charAt(1) === 'O') {
+			var last = seq.charCodeAt(seq.length - 1);
+			if (last >= 0x40 && last <= 0x7E)
+				return seq;
+			continue;
+		}
+
+		// VT-52 style: ESC <letter>
+		if (seq.length === 2) {
+			var c2 = seq.charCodeAt(1);
+			// If it's [ or O, keep reading (CSI/SS3 introducer)
+			if (c2 === 0x5B || c2 === 0x4F)
+				continue;
+			// Otherwise it's a 2-byte VT-52 sequence
+			if (c2 >= 0x40 && c2 <= 0x7E)
+				return seq;
+			continue;
+		}
+	}
+
+	// Drain any remaining bytes
+	while (console.inkey(100));
+	// Bare ESC (user pressed ESC to skip)
+	if (seq.length === 1)
+		return seq;
+	return seq;
+}
+
+function seq_to_hex(seq)
+{
+	var parts = [];
+	for (var i = 0; i < seq.length; i++) {
+		var c = seq.charCodeAt(i);
+		if (c >= 0x20 && c < 0x7f)
+			parts.push(seq.charAt(i));
+		else
+			parts.push('\\x' + ('0' + c.toString(16)).slice(-2));
+	}
+	return parts.join('');
+}
+
 function fast_getxy()
 {
 	console.write("\x1b[6n");
@@ -1978,6 +2050,89 @@ var tests = [
 	}},
 ];
 
+var input_keys = [
+	{name: 'Up Arrow',    key: 'Up',    seqs: ['\x1b[A', '\x1bOA', '\x1bA']},
+	{name: 'Down Arrow',  key: 'Down',  seqs: ['\x1b[B', '\x1bOB', '\x1bB']},
+	{name: 'Right Arrow', key: 'Right', seqs: ['\x1b[C', '\x1bOC', '\x1bC']},
+	{name: 'Left Arrow',  key: 'Left',  seqs: ['\x1b[D', '\x1bOD', '\x1bD']},
+	{name: 'Home',        key: 'Home',  seqs: ['\x1b[H', '\x1bOH', '\x1b[1~', '\x1b[L', '\x1bH']},
+	{name: 'End',         key: 'End',   seqs: ['\x1b[K', '\x1b[F', '\x1bOK', '\x1b[4~', '\x1bK']},
+	{name: 'Page Up',     key: 'PgUp',  seqs: ['\x1b[V', '\x1b[5~']},
+	{name: 'Page Down',   key: 'PgDn',  seqs: ['\x1b[U', '\x1b[6~']},
+	{name: 'Insert',      key: 'Ins',   seqs: ['\x1b[@', '\x1b[2~']},
+	{name: 'Delete',      key: 'Del',   seqs: ['\x7f', '\x1b[3~']},
+	{name: 'Backspace',   key: 'BkSp',  seqs: ['\x08', '\x7f']},
+	{name: 'Backtab',     key: 'S-Tab', seqs: ['\x1b[Z']},
+	{name: 'F1',          key: 'F1',    seqs: ['\x1b[11~', '\x1bOP']},
+	{name: 'F2',          key: 'F2',    seqs: ['\x1b[12~', '\x1bOQ']},
+	{name: 'F3',          key: 'F3',    seqs: ['\x1b[13~', '\x1bOR']},
+	{name: 'F4',          key: 'F4',    seqs: ['\x1b[14~', '\x1bOS']},
+	{name: 'F5',          key: 'F5',    seqs: ['\x1b[15~']},
+	{name: 'F6',          key: 'F6',    seqs: ['\x1b[17~']},
+	{name: 'F7',          key: 'F7',    seqs: ['\x1b[18~']},
+	{name: 'F8',          key: 'F8',    seqs: ['\x1b[19~']},
+	{name: 'F9',          key: 'F9',    seqs: ['\x1b[20~']},
+	{name: 'F10',         key: 'F10',   seqs: ['\x1b[21~']},
+	{name: 'F11',         key: 'F11',   seqs: ['\x1b[23~']},
+	{name: 'F12',         key: 'F12',   seqs: ['\x1b[24~']},
+	{name: 'Shift+F1',    key: 'S-F1',  seqs: ['\x1b[11;2~']},
+	{name: 'Shift+F2',    key: 'S-F2',  seqs: ['\x1b[12;2~']},
+	{name: 'Shift+F3',    key: 'S-F3',  seqs: ['\x1b[13;2~']},
+	{name: 'Shift+F4',    key: 'S-F4',  seqs: ['\x1b[14;2~']},
+	{name: 'Shift+F5',    key: 'S-F5',  seqs: ['\x1b[15;2~']},
+	{name: 'Shift+F6',    key: 'S-F6',  seqs: ['\x1b[17;2~']},
+	{name: 'Shift+F7',    key: 'S-F7',  seqs: ['\x1b[18;2~']},
+	{name: 'Shift+F8',    key: 'S-F8',  seqs: ['\x1b[19;2~']},
+	{name: 'Shift+F9',    key: 'S-F9',  seqs: ['\x1b[20;2~']},
+	{name: 'Shift+F10',   key: 'S-F10', seqs: ['\x1b[21;2~']},
+	{name: 'Shift+F11',   key: 'S-F11', seqs: ['\x1b[23;2~']},
+	{name: 'Shift+F12',   key: 'S-F12', seqs: ['\x1b[24;2~']},
+	{name: 'Ctrl+F1',     key: 'C-F1',  seqs: ['\x1b[11;5~']},
+	{name: 'Ctrl+F2',     key: 'C-F2',  seqs: ['\x1b[12;5~']},
+	{name: 'Ctrl+F3',     key: 'C-F3',  seqs: ['\x1b[13;5~']},
+	{name: 'Ctrl+F4',     key: 'C-F4',  seqs: ['\x1b[14;5~']},
+	{name: 'Ctrl+F5',     key: 'C-F5',  seqs: ['\x1b[15;5~']},
+	{name: 'Ctrl+F6',     key: 'C-F6',  seqs: ['\x1b[17;5~']},
+	{name: 'Ctrl+F7',     key: 'C-F7',  seqs: ['\x1b[18;5~']},
+	{name: 'Ctrl+F8',     key: 'C-F8',  seqs: ['\x1b[19;5~']},
+	{name: 'Ctrl+F9',     key: 'C-F9',  seqs: ['\x1b[20;5~']},
+	{name: 'Ctrl+F10',    key: 'C-F10', seqs: ['\x1b[21;5~']},
+	{name: 'Ctrl+F11',    key: 'C-F11', seqs: ['\x1b[23;5~']},
+	{name: 'Ctrl+F12',    key: 'C-F12', seqs: ['\x1b[24;5~']},
+	{name: 'Alt+F1',      key: 'A-F1',  seqs: ['\x1b[11;3~']},
+	{name: 'Alt+F2',      key: 'A-F2',  seqs: ['\x1b[12;3~']},
+	{name: 'Alt+F3',      key: 'A-F3',  seqs: ['\x1b[13;3~']},
+	// Alt+F4 skipped — OS intercepts on Windows
+	{name: 'Alt+F5',      key: 'A-F5',  seqs: ['\x1b[15;3~']},
+	{name: 'Alt+F6',      key: 'A-F6',  seqs: ['\x1b[17;3~']},
+	{name: 'Alt+F7',      key: 'A-F7',  seqs: ['\x1b[18;3~']},
+	{name: 'Alt+F8',      key: 'A-F8',  seqs: ['\x1b[19;3~']},
+	{name: 'Alt+F9',      key: 'A-F9',  seqs: ['\x1b[20;3~']},
+	{name: 'Alt+F10',     key: 'A-F10', seqs: ['\x1b[21;3~']},
+	{name: 'Alt+F11',     key: 'A-F11', seqs: ['\x1b[23;3~']},
+	{name: 'Alt+F12',     key: 'A-F12', seqs: ['\x1b[24;3~']},
+];
+
+input_keys.forEach(function(k) {
+	tests.push({name: 'IN:' + k.key, func: function() {
+		if (!run_input) return null;
+		console.clear();
+		console.write("Press " + k.name + " (Enter to skip): ");
+		var seq = read_input_seq(15000);
+		if (seq === null) return false;        // timeout
+		if (seq === '\r' || seq === '\n') return null;  // user skipped
+		for (var i = 0; i < k.seqs.length; i++) {
+			if (seq === k.seqs[i]) return true;
+		}
+		// Unrecognized sequence — show it for debugging
+		console.write("\r\nGot: " + seq_to_hex(seq) + " ");
+		console.write("\r\nPress Enter to continue...");
+		while (console.inkey(0, 15000) !== '\r');
+		return false;
+	}});
+});
+
+
 function main()
 {
 	var results = [];
@@ -2008,13 +2163,20 @@ function main()
 	}
 
 	tests.forEach(function(tst, idx) {
-		results.push(tst.func());
+		if (!run_output && tst.name.substring(0, 3) !== 'IN:')
+			results.push(null);
+		else
+			results.push(tst.func());
 	});
 
 	return results;
 }
 
-var interactive = console.yesno("Run interactive tests");
+console.mnemonics("Run which tests: ~Non-interactive, ~Interactive, In~put, ~All\r\n");
+var menu_key = console.getkeys("NIPA");
+var interactive = (menu_key === 'I' || menu_key === 'A');
+var run_input = (menu_key === 'P' || menu_key === 'A');
+var run_output = (menu_key !== 'P');
 var oldpt = console.ctrlkey_passthru;
 console.ctrlkey_passthru = 0x7FFFFFFF;
 console.write("\x1b[1;1;1;1;1;1*y");
