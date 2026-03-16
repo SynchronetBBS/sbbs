@@ -4,7 +4,6 @@
 #include "dirwrap.h"
 #undef BOOL
 
-#if 1 // TODO: Make this conditional on min version...
 #import <Foundation/Foundation.h>
 
 char *
@@ -69,75 +68,3 @@ get_OSX_filename(char *fn, int fnlen, int type, int shared)
 
 	return fn;
 }
-
-#else
-#include <CoreServices/CoreServices.h> // FSFindFolder() and friends
-
-char *
-get_OSX_filename(char *fn, int fnlen, int type, int shared)
-{
-	FSRef ref;
-	char *ret = fn;
-	if (fnlen > 0)
-		fn[0] = 0;
-
-        /* First, get the path */
-	switch (type) {
-		case SYNCTERM_PATH_INI:
-		case SYNCTERM_PATH_LIST:
-		case SYNCTERM_PATH_KEYS:
-			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kPreferencesFolderType, kCreateFolder,
-			    &ref) != noErr)
-				ret = NULL;
-			if (FSRefMakePath(&ref, (unsigned char *)fn, fnlen) != noErr)
-				ret = NULL;
-			backslash(fn);
-			strncat(fn, "SyncTERM", fnlen - strlen(fn) - 1);
-			backslash(fn);
-			if (!isdir(fn)) {
-				if (MKDIR(fn))
-					ret = NULL;
-			}
-			break;
-
-		case SYNCTERM_DEFAULT_TRANSFER_PATH:
-                        /* I'd love to use the "right" setting here, but don't know how */
-			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kDownloadsFolderType, kCreateFolder,
-			    &ref) != noErr)
-				ret = NULL;
-			if (FSRefMakePath(&ref, (unsigned char *)fn, fnlen) != noErr)
-				ret = NULL;
-			backslash(fn);
-			if (!isdir(fn)) {
-				if (MKDIR(fn))
-					ret = NULL;
-			}
-			break;
-		case SYNCTERM_PATH_CACHE:
-			if (FSFindFolder(shared ? kLocalDomain : kUserDomain, kCachedDataFolderType, kCreateFolder,
-			    &ref) != noErr)
-				ret = NULL;
-			if (FSRefMakePath(&ref, (unsigned char *)fn, fnlen) != noErr)
-				ret = NULL;
-			backslash(fn);
-			break;
-	}
-
-	switch (type) {
-		case SYNCTERM_PATH_INI:
-			strncat(fn, "SyncTERM.ini", fnlen - strlen(fn) - 1);
-			break;
-		case SYNCTERM_PATH_LIST:
-			strncat(fn, "SyncTERM.lst", fnlen - strlen(fn) - 1);
-			break;
-		case SYNCTERM_PATH_KEYS:
-			strncat(fn, "SyncTERM.ssh", fnlen - strlen(fn) - 1);
-			break;
-		case SYNCTERM_PATH_CACHE:
-			strncat(fn, "SyncTERM/", fnlen - strlen(fn) - 1);
-			break;
-	}
-	return ret;
-}
-
-#endif
