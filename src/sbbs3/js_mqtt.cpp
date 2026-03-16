@@ -738,31 +738,30 @@ static JSBool js_mqtt_constructor(JSContext* cx, uintN argc, jsval *arglist)
 		HANDLE_PENDING(cx, client_id);
 	}
 
-	if ((p = (private_t*)malloc(sizeof(private_t))) == NULL) {
+	if ((p = new private_t) == NULL) {
 		JS_ReportError(cx, "malloc failed");
 		free(client_id);
 		return JS_FALSE;
 	}
-	*p = {};
 	msgQueueInit(&p->q, /* flags: */ 0);
 	p->cfg = scfg->mqtt;
 	p->handle = mosquitto_new(client_id, /* clean_session: */ true, /* userdata: */ p);
 	free(client_id);
 	if (p->handle == NULL) {
 		JS_ReportError(cx, "mosquitto_new failure (errno=%d)", errno);
-		free(p);
+		delete p;
 		return JS_FALSE;
 	}
 	if (!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx, "JS_SetPrivate failed");
-		free(p);
+		delete p;
 		return JS_FALSE;
 	}
 	mosquitto_message_callback_set(p->handle, mqtt_message_received);
 	int result = mosquitto_loop_start(p->handle);
 	if (result != MOSQ_ERR_SUCCESS) {
 		JS_ReportError(cx, "mosquitto_loop_start error %d", result);
-		free(p);
+		delete p;
 		return JS_FALSE;
 	}
 
