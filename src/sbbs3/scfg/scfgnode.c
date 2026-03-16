@@ -230,7 +230,7 @@ void node_cfg()
 				break;
 			case __COUNTER__:
 				sprintf(str, "Node %u Login", cfg.node_num);
-				getar(str, cfg.node_arstr);
+				getar(str, cfg.node_arstr, /* helpbuf: */ NULL);
 				break;
 			case __COUNTER__:
 				i = cfg.node_misc & NM_CLOSENODEDAB ? 1:0;

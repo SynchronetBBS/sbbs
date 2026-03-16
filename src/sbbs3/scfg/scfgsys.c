@@ -1815,7 +1815,7 @@ bool edit_loadable_module(const char* name, char* cmd, char* ars)
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Module Name/Command-line", cmd, LEN_CMD, K_EDIT);
 				break;
 			case 1:
-				getar(title, ars);
+				getar(title, ars, /* helpbuf: */ NULL);
 				break;
 			case 2:
 				return true;
@@ -3014,7 +3014,7 @@ void sys_cfg(void)
 							           , LEN_PHONE, K_UPPER | K_EDIT);
 							break;
 						case 13:
-							getar("Sysop Chat Override", cfg.sys_chat_arstr);
+							getar("Sysop Chat Override", cfg.sys_chat_arstr, /* helpbuf: */ NULL);
 							break;
 						case 14:
 							uifc.helpbuf =

@@ -280,7 +280,7 @@ static void global_cfg(void)
 					startup.sem_chk_freq = (uint16_t)parse_duration(str);
 				break;
 			case 7:
-				getar("Global Server Login", startup.login_ars);
+				getar("Global Server Login", startup.login_ars, /* helpbuf: */ NULL);
 				break;
 			case 8:
 				js_startup_cfg(&startup.js);
@@ -745,7 +745,7 @@ static void termsrvr_cfg(void)
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			case 19:
-				getar("Terminal Server Login", startup.login_ars);
+				getar("Terminal Server Login", startup.login_ars, /* helpbuf: */ NULL);
 				break;
 			case 20:
 				js_startup_cfg(&startup.js);
@@ -1169,10 +1169,10 @@ static void websrvr_cfg(void)
 				websrvr_filebase_cfg(&startup);
 				break;
 			case 20:
-				getar("Web Server Login", startup.login_ars);
+				getar("Web Server Login", startup.login_ars, /* helpbuf: */ NULL);
 				break;
 			case 21:
-				getar("Web Server Login Info Saved", startup.login_info_save);
+				getar("Web Server Login Info Saved", startup.login_info_save, /* helpbuf: */ NULL);
 				break;
 			case 22:
 				js_startup_cfg(&startup.js);
@@ -1414,10 +1414,10 @@ static void ftpsrvr_cfg(void)
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			case 18:
-				getar("FTP Server Login", startup.login_ars);
+				getar("FTP Server Login", startup.login_ars, /* helpbuf: */ NULL);
 				break;
 			case 19:
-				getar("FTP Server Login Info Saved", startup.login_info_save);
+				getar("FTP Server Login Info Saved", startup.login_info_save, /* helpbuf: */ NULL);
 				break;
 			case 20:
 				login_attempt_cfg(&startup.login_attempt);
@@ -1985,10 +1985,10 @@ static void mailsrvr_cfg(void)
 				sendmail_cfg(&startup);
 				break;
 			case 30:
-				getar("Mail Server Login", startup.login_ars);
+				getar("Mail Server Login", startup.login_ars, /* helpbuf: */ NULL);
 				break;
 			case 31:
-				getar("Mail Archive", startup.archive_ars);
+				getar("Mail Archive", startup.archive_ars, /* helpbuf: */ NULL);
 				break;
 			case 32:
 				js_startup_cfg(&startup.js);
@@ -2123,10 +2123,10 @@ static void services_cfg(void)
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Services Configuration File", startup.services_ini, sizeof(startup.services_ini) - 1, K_EDIT);
 				break;
 			case 5:
-				getar("Services Login", startup.login_ars);
+				getar("Services Login", startup.login_ars, /* helpbuf: */ NULL);
 				break;
 			case 6:
-				getar("Services Login Info Saved", startup.login_info_save);
+				getar("Services Login Info Saved", startup.login_info_save, /* helpbuf: */ NULL);
 				break;
 			case 7:
 				SAFECOPY(str, maximum(startup.max_connects_per_period));

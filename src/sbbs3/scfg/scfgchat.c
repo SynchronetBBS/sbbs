@@ -158,7 +158,7 @@ void page_cfg()
 						SAFECOPY(cfg.page[i]->cmd, str);
 					break;
 				case 1:
-					getar(str, cfg.page[i]->arstr);
+					getar(str, cfg.page[i]->arstr, /* helpbuf: */ NULL);
 					break;
 				case 2:
 					toggle_flag(native_opt, &cfg.page[i]->misc, XTRN_NATIVE, false, native_help);
@@ -369,7 +369,7 @@ void chan_cfg()
 					break;
 				case 3:
 					sprintf(str, "%s Chat Channel", cfg.chan[i]->name);
-					getar(str, cfg.chan[i]->arstr);
+					getar(str, cfg.chan[i]->arstr, /* helpbuf: */ NULL);
 					break;
 				case 4:
 					k = 1;
@@ -748,7 +748,7 @@ void guru_cfg()
 					}
 					break;
 				case 2:
-					getar(cfg.guru[i]->name, cfg.guru[i]->arstr);
+					getar(cfg.guru[i]->name, cfg.guru[i]->arstr, /* helpbuf: */ NULL);
 					break;
 			}
 		}

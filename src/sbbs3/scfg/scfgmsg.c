@@ -672,7 +672,7 @@ void msgs_cfg()
 				}
 				case __COUNTER__:
 					SAFEPRINTF(str, "%s Group", cfg.grp[grpnum]->sname);
-					getar(str, cfg.grp[grpnum]->arstr);
+					getar(str, cfg.grp[grpnum]->arstr, /* helpbuf: */ NULL);
 					break;
 				case __COUNTER__:
 					uifc.helpbuf = "`Sort Group By Sub-board:`\n"

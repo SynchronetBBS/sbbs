@@ -1477,11 +1477,11 @@ void xtrn_cfg(int section)
 					break;
 				case __COUNTER__:
 					sprintf(str, "%s Access", cfg.xtrn[i]->name);
-					getar(str, cfg.xtrn[i]->arstr);
+					getar(str, cfg.xtrn[i]->arstr, /* helpbuf: */ NULL);
 					break;
 				case __COUNTER__:
 					sprintf(str, "%s Execution", cfg.xtrn[i]->name);
-					getar(str, cfg.xtrn[i]->run_arstr);
+					getar(str, cfg.xtrn[i]->run_arstr, /* helpbuf: */ NULL);
 					break;
 				case __COUNTER__:
 					toggle_flag("Supports Multiple Users", &cfg.xtrn[i]->misc, MULTIUSER, false,
@@ -2046,7 +2046,7 @@ void xedit_cfg()
 					break;
 				case 3:
 					sprintf(str, "%s Message Editor", cfg.xedit[i]->name);
-					getar(str, cfg.xedit[i]->arstr);
+					getar(str, cfg.xedit[i]->arstr, /* helpbuf: */ NULL);
 					break;
 				case 4:
 					toggle_flag(native_opt, &cfg.xedit[i]->misc, XTRN_NATIVE, false, native_help);
@@ -2594,7 +2594,7 @@ void xtrnsec_cfg()
 					}
 					break;
 				case 2:
-					getar(cfg.xtrnsec[i]->name, cfg.xtrnsec[i]->arstr);
+					getar(cfg.xtrnsec[i]->name, cfg.xtrnsec[i]->arstr, /* helpbuf: */ NULL);
 					break;
 				case 3:
 					xtrn_cfg(i);

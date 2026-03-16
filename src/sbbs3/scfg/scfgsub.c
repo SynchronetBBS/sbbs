@@ -505,23 +505,33 @@ void sub_cfg(int grpnum)
 					break;
 				case 6:
 					sprintf(str, "%s Access", cfg.sub[i]->sname);
-					getar(str, cfg.sub[i]->arstr);
+					getar(str, cfg.sub[i]->arstr, /* helpbuf: */ NULL);
 					break;
 				case 7:
 					sprintf(str, "%s Reading", cfg.sub[i]->sname);
-					getar(str, cfg.sub[i]->read_arstr);
+					getar(str, cfg.sub[i]->read_arstr, /* helpbuf: */ NULL);
 					break;
 				case 8:
 					sprintf(str, "%s Posting", cfg.sub[i]->sname);
-					getar(str, cfg.sub[i]->post_arstr);
+					getar(str, cfg.sub[i]->post_arstr, /* helpbuf: */ NULL);
 					break;
 				case 9:
 					sprintf(str, "%s Operator", cfg.sub[i]->sname);
-					getar(str, cfg.sub[i]->op_arstr);
+					getar(str, cfg.sub[i]->op_arstr, /* helpbuf: */ NULL);
 					break;
 				case 10:
 					sprintf(str, "%s Moderated Posting User", cfg.sub[i]->sname);
-					getar(str, cfg.sub[i]->mod_arstr);
+					getar(str, cfg.sub[i]->mod_arstr,
+						"`Moderated Posting User Requirements`\n"
+						"\n"
+						"Do not set this option unless you wish to have the messages posted to\n"
+						"this sub-board by `some` users of your BBS require operator review and\n"
+						"validation before other users are able to see/read the messages or the\n"
+						"messages are exported to any message networks.\n"
+						"\n"
+						"For details about how this feature works when used, see\n"
+						"`https://wiki.synchro.net/howto:moderation`"
+					);
 					break;
 				case 11:
 					sprintf(str, "%" PRIu32, cfg.sub[i]->maxmsgs);

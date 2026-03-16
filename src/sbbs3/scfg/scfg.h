@@ -162,7 +162,7 @@ bool edit_fixed_event(const char* name, char* cmd, uint32_t* misc, const char* h
 void reencrypt_keys(const char* old_pass, const char* new_pass);
 bool code_ok(char *str);
 int  bits(long l);
-void getar(const char *desc, char *ar);
+void getar(const char *desc, char *ar, const char* helpbuf);
 void* new_item(void* list, size_t size, int index, int* total);
 bool new_sub(int new_subnum, int group_num, sub_t* pasted_sub, long misc);
 bool new_qhub_sub(qhub_t*, int qsubnum, sub_t*, unsigned confnum);

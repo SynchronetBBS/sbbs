@@ -695,23 +695,23 @@ void xfer_cfg()
 					break;
 				case __COUNTER__:
 					sprintf(str, "%s Library Access", cfg.lib[libnum]->sname);
-					getar(str, cfg.lib[libnum]->arstr);
+					getar(str, cfg.lib[libnum]->arstr, /* helpbuf: */ NULL);
 					break;
 				case __COUNTER__:
 					sprintf(str, "%s Library Upload", cfg.lib[libnum]->sname);
-					getar(str, cfg.lib[libnum]->ul_arstr);
+					getar(str, cfg.lib[libnum]->ul_arstr, /* helpbuf: */ NULL);
 					break;
 				case __COUNTER__:
 					sprintf(str, "%s Library Download", cfg.lib[libnum]->sname);
-					getar(str, cfg.lib[libnum]->dl_arstr);
+					getar(str, cfg.lib[libnum]->dl_arstr, /* helpbuf: */ NULL);
 					break;
 				case __COUNTER__:
 					sprintf(str, "%s Library Operator", cfg.lib[libnum]->sname);
-					getar(str, cfg.lib[libnum]->op_arstr);
+					getar(str, cfg.lib[libnum]->op_arstr, /* helpbuf: */ NULL);
 					break;
 				case __COUNTER__:
 					sprintf(str, "%s Library Exemption", cfg.lib[libnum]->sname);
-					getar(str, cfg.lib[libnum]->ex_arstr);
+					getar(str, cfg.lib[libnum]->ex_arstr, /* helpbuf: */ NULL);
 					break;
 				case __COUNTER__:
 					uifc.helpbuf =
@@ -2153,23 +2153,23 @@ void dir_cfg(int libnum)
 					break;
 				case 5:
 					sprintf(str, "%s Access", cfg.dir[i]->sname);
-					getar(str, cfg.dir[i]->arstr);
+					getar(str, cfg.dir[i]->arstr, /* helpbuf: */ NULL);
 					break;
 				case 6:
 					sprintf(str, "%s Upload", cfg.dir[i]->sname);
-					getar(str, cfg.dir[i]->ul_arstr);
+					getar(str, cfg.dir[i]->ul_arstr, /* helpbuf: */ NULL);
 					break;
 				case 7:
 					sprintf(str, "%s Download", cfg.dir[i]->sname);
-					getar(str, cfg.dir[i]->dl_arstr);
+					getar(str, cfg.dir[i]->dl_arstr, /* helpbuf: */ NULL);
 					break;
 				case 8:
 					sprintf(str, "%s Operator", cfg.dir[i]->sname);
-					getar(str, cfg.dir[i]->op_arstr);
+					getar(str, cfg.dir[i]->op_arstr, /* helpbuf: */ NULL);
 					break;
 				case 9:
 					sprintf(str, "%s Exemption", cfg.dir[i]->sname);
-					getar(str, cfg.dir[i]->ex_arstr);
+					getar(str, cfg.dir[i]->ex_arstr, /* helpbuf: */ NULL);
 					break;
 				case 10:
 					uifc.helpbuf = dir_actual_path_help;

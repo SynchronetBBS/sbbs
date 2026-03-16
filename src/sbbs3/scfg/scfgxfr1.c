@@ -563,7 +563,7 @@ void xfer_opts()
 								break;
 							case 3:
 								snprintf(str, sizeof str, "Viewable File Type %s", cfg.fview[i]->ext);
-								getar(str, cfg.fview[i]->arstr);
+								getar(str, cfg.fview[i]->arstr, /* helpbuf: */ NULL);
 								break;
 						}
 					}
@@ -703,7 +703,7 @@ void xfer_opts()
 								break;
 							case 4:
 								snprintf(str, sizeof str, "Testable File Type %s", cfg.ftest[i]->ext);
-								getar(str, cfg.ftest[i]->arstr);
+								getar(str, cfg.ftest[i]->arstr, /* helpbuf: */ NULL);
 								break;
 						}
 					}
@@ -857,7 +857,7 @@ void xfer_opts()
 								break;
 							case 4:
 								snprintf(str, sizeof str, "Download Event %s", cfg.dlevent[i]->ext);
-								getar(str, cfg.dlevent[i]->arstr);
+								getar(str, cfg.dlevent[i]->arstr, /* helpbuf: */ NULL);
 								break;
 						}
 					}
@@ -998,7 +998,7 @@ void xfer_opts()
 								break;
 							case 3:
 								snprintf(str, sizeof str, "Extractable File Type %s", cfg.fextr[i]->ext);
-								getar(str, cfg.fextr[i]->arstr);
+								getar(str, cfg.fextr[i]->arstr, /* helpbuf: */ NULL);
 								break;
 						}
 					}
@@ -1137,7 +1137,7 @@ void xfer_opts()
 								break;
 							case 3:
 								snprintf(str, sizeof str, "Compressible File Type %s", cfg.fcomp[i]->ext);
-								getar(str, cfg.fcomp[i]->arstr);
+								getar(str, cfg.fcomp[i]->arstr, /* helpbuf: */ NULL);
 								break;
 						}
 					}
@@ -1293,7 +1293,7 @@ void xfer_opts()
 								break;
 							case 2:
 								snprintf(str, sizeof str, "Protocol %s", cfg.prot[i]->name);
-								getar(str, cfg.prot[i]->arstr);
+								getar(str, cfg.prot[i]->arstr, /* helpbuf: */ NULL);
 								break;
 							case 3:
 								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;

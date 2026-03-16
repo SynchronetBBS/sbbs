@@ -1354,7 +1354,7 @@ void txt_cfg()
 					break;
 				case 2:
 					sprintf(str, "%s Text Section", cfg.txtsec[i]->name);
-					getar(str, cfg.txtsec[i]->arstr);
+					getar(str, cfg.txtsec[i]->arstr, /* helpbuf: */ NULL);
 					break;
 			}
 		}
@@ -1584,7 +1584,7 @@ void shell_cfg()
 					break;
 				case 2:
 					SAFEPRINTF(str, "%s Command Shell", cfg.shell[i]->name);
-					getar(str, cfg.shell[i]->arstr);
+					getar(str, cfg.shell[i]->arstr, /* helpbuf: */ NULL);
 					break;
 			}
 		}
@@ -1644,7 +1644,7 @@ int whichcond(void)
 }
 
 
-void getar(const char *desc, char *inar)
+void getar(const char *desc, char *inar, const char* helpbuf)
 {
 	static int curar;
 	char       str[128], ar[128];
@@ -1886,14 +1886,17 @@ void getar(const char *desc, char *inar)
 		strcpy(opt[i++], "Set Required User Number");
 		strcpy(opt[i++], "Set Required Time Remaining");
 		opt[i][0] = 0;
-		uifc.helpbuf =
-			"`Access Requirements:`\n"
-			"\n"
-			"This menu allows you to edit the access requirement string for the\n"
-			"selected feature/section of your BBS. You can edit the string\n"
-			"directly (see documentation for details) or use the `Set Required...`\n"
-			"options from this menu to automatically fill in the string for you.\n"
-		;
+		if (helpbuf == NULL)
+			uifc.helpbuf =
+				"`Access Requirements:`\n"
+				"\n"
+				"This menu allows you to edit the access requirement string for the\n"
+				"selected feature/section of your BBS. You can edit the string\n"
+				"directly (see documentation for details) or use the `Set Required...`\n"
+				"options from this menu to automatically fill in the string for you.\n"
+			;
+		else
+			uifc.helpbuf = (char*)helpbuf;
 		sprintf(str, "%s Requirements", desc);
 		i = uifc.list(WIN_ACT | WIN_MID | WIN_SAV, 0, 0, 60, &curar, 0, str, opt);
 		if (i > 1 && strlen(ar) >= (LEN_ARSTR - 10)) {
