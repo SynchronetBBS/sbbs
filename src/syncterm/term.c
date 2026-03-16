@@ -5863,7 +5863,7 @@ doterm(struct bbslist *bbs)
 						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
 							conn_send("\x7f", 1, 0);
 						else
-							conn_send("\x1b[3~", 1, 0);
+							conn_send("\x1b[3~", 4, 0);
 						break;
 					case '\b':
 						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
@@ -5907,7 +5907,7 @@ doterm(struct bbslist *bbs)
 						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
 							conn_send("\x7f", 1, 0);
 						else
-							conn_send("\x1b[3~", 1, 0);
+							conn_send("\x1b[3~", 4, 0);
 						break;
 					case CIO_KEY_NPAGE: /* Page down */
 						conn_send("\033[U", 3, 0);
@@ -5916,19 +5916,19 @@ doterm(struct bbslist *bbs)
 						conn_send("\033[V", 3, 0);
 						break;
 					case CIO_KEY_F(1):
-						conn_send("\033[11~", 3, 0);
+						conn_send("\033[11~", 5, 0);
 						break;
 					case CIO_KEY_F(2):
-						conn_send("\033[12~", 3, 0);
+						conn_send("\033[12~", 5, 0);
 						break;
 					case CIO_KEY_F(3):
-						conn_send("\033[13~", 3, 0);
+						conn_send("\033[13~", 5, 0);
 						break;
 					case CIO_KEY_F(4):
-						conn_send("\033[14~", 3, 0);
+						conn_send("\033[14~", 5, 0);
 						break;
 					case CIO_KEY_F(5):
-						conn_send("\033[15~", 3, 0);
+						conn_send("\033[15~", 5, 0);
 						break;
 					case CIO_KEY_F(6):
 						conn_send("\033[17~", 5, 0);
@@ -5952,112 +5952,112 @@ doterm(struct bbslist *bbs)
 						conn_send("\033[24~", 5, 0);
 						break;
 					case CIO_KEY_SHIFT_F(1):
-						conn_send("\033[11;2~", 3, 0);
+						conn_send("\033[11;2~", 7, 0);
 						break;
 					case CIO_KEY_SHIFT_F(2):
-						conn_send("\033[12;2~", 3, 0);
+						conn_send("\033[12;2~", 7, 0);
 						break;
 					case CIO_KEY_SHIFT_F(3):
-						conn_send("\033[13;2~", 3, 0);
+						conn_send("\033[13;2~", 7, 0);
 						break;
 					case CIO_KEY_SHIFT_F(4):
-						conn_send("\033[14;2~", 3, 0);
+						conn_send("\033[14;2~", 7, 0);
 						break;
 					case CIO_KEY_SHIFT_F(5):
-						conn_send("\033[15;2~", 3, 0);
+						conn_send("\033[15;2~", 7, 0);
 						break;
 					case CIO_KEY_SHIFT_F(6):
-						conn_send("\033[17;2~", 5, 0);
+						conn_send("\033[17;2~", 7, 0);
 						break;
 					case CIO_KEY_SHIFT_F(7):
-						conn_send("\033[18;2~", 5, 0);
+						conn_send("\033[18;2~", 7, 0);
 						break;
 					case CIO_KEY_SHIFT_F(8):
-						conn_send("\033[19;2~", 5, 0);
+						conn_send("\033[19;2~", 7, 0);
 						break;
 					case CIO_KEY_SHIFT_F(9):
-						conn_send("\033[20;2~", 5, 0);
+						conn_send("\033[20;2~", 7, 0);
 						break;
 					case CIO_KEY_SHIFT_F(10):
-						conn_send("\033[21;2~", 5, 0);
+						conn_send("\033[21;2~", 7, 0);
 						break;
 					case CIO_KEY_SHIFT_F(11):
-						conn_send("\033[23;2~", 5, 0);
+						conn_send("\033[23;2~", 7, 0);
 						break;
 					case CIO_KEY_SHIFT_F(12):
-						conn_send("\033[24;2~", 5, 0);
+						conn_send("\033[24;2~", 7, 0);
 						break;
 					case CIO_KEY_CTRL_F(1):
-						conn_send("\033[11;5~", 3, 0);
+						conn_send("\033[11;5~", 7, 0);
 						break;
 					case CIO_KEY_CTRL_F(2):
-						conn_send("\033[12;5~", 3, 0);
+						conn_send("\033[12;5~", 7, 0);
 						break;
 					case CIO_KEY_CTRL_F(3):
-						conn_send("\033[13;5~", 3, 0);
+						conn_send("\033[13;5~", 7, 0);
 						break;
 					case CIO_KEY_CTRL_F(4):
-						conn_send("\033[14;5~", 3, 0);
+						conn_send("\033[14;5~", 7, 0);
 						break;
 					case CIO_KEY_CTRL_F(5):
-						conn_send("\033[15;5~", 3, 0);
+						conn_send("\033[15;5~", 7, 0);
 						break;
 					case CIO_KEY_CTRL_F(6):
-						conn_send("\033[17;5~", 5, 0);
+						conn_send("\033[17;5~", 7, 0);
 						break;
 					case CIO_KEY_CTRL_F(7):
-						conn_send("\033[18;5~", 5, 0);
+						conn_send("\033[18;5~", 7, 0);
 						break;
 					case CIO_KEY_CTRL_F(8):
-						conn_send("\033[19;5~", 5, 0);
+						conn_send("\033[19;5~", 7, 0);
 						break;
 					case CIO_KEY_CTRL_F(9):
-						conn_send("\033[20;5~", 5, 0);
+						conn_send("\033[20;5~", 7, 0);
 						break;
 					case CIO_KEY_CTRL_F(10):
-						conn_send("\033[21;5~", 5, 0);
+						conn_send("\033[21;5~", 7, 0);
 						break;
 					case CIO_KEY_CTRL_F(11):
-						conn_send("\033[23;5~", 5, 0);
+						conn_send("\033[23;5~", 7, 0);
 						break;
 					case CIO_KEY_CTRL_F(12):
-						conn_send("\033[24;5~", 5, 0);
+						conn_send("\033[24;5~", 7, 0);
 						break;
 					case CIO_KEY_ALT_F(1):
-						conn_send("\033[11;3~", 3, 0);
+						conn_send("\033[11;3~", 7, 0);
 						break;
 					case CIO_KEY_ALT_F(2):
-						conn_send("\033[12;3~", 3, 0);
+						conn_send("\033[12;3~", 7, 0);
 						break;
 					case CIO_KEY_ALT_F(3):
-						conn_send("\033[13;3~", 3, 0);
+						conn_send("\033[13;3~", 7, 0);
 						break;
 					case CIO_KEY_ALT_F(4):
-						conn_send("\033[14;3~", 3, 0);
+						conn_send("\033[14;3~", 7, 0);
 						break;
 					case CIO_KEY_ALT_F(5):
-						conn_send("\033[15;3~", 3, 0);
+						conn_send("\033[15;3~", 7, 0);
 						break;
 					case CIO_KEY_ALT_F(6):
-						conn_send("\033[17;3~", 5, 0);
+						conn_send("\033[17;3~", 7, 0);
 						break;
 					case CIO_KEY_ALT_F(7):
-						conn_send("\033[18;3~", 5, 0);
+						conn_send("\033[18;3~", 7, 0);
 						break;
 					case CIO_KEY_ALT_F(8):
-						conn_send("\033[19;3~", 5, 0);
+						conn_send("\033[19;3~", 7, 0);
 						break;
 					case CIO_KEY_ALT_F(9):
-						conn_send("\033[20;3~", 5, 0);
+						conn_send("\033[20;3~", 7, 0);
 						break;
 					case CIO_KEY_ALT_F(10):
-						conn_send("\033[21;3~", 5, 0);
+						conn_send("\033[21;3~", 7, 0);
 						break;
 					case CIO_KEY_ALT_F(11):
-						conn_send("\033[23;3~", 5, 0);
+						conn_send("\033[23;3~", 7, 0);
 						break;
 					case CIO_KEY_ALT_F(12):
-						conn_send("\033[24;3~", 5, 0);
+						conn_send("\033[24;3~", 7, 0);
 						break;
 					case CIO_KEY_IC:
 						conn_send("\033[@", 3, 0);
