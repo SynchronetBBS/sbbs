@@ -2485,8 +2485,11 @@ for people who want to maintain compatibility.
 |Select
 |"\033[K" (Same as End due to termcap weirdness)
 
+|Backspace
+|"\b" when DECBKM is set (default), "\x7f" when reset
+
 |Delete
-|"\x7f"
+|"\x7f" when DECBKM is set (default), "\033[3~" when reset
 
 |Page Down
 |"\033[U"
