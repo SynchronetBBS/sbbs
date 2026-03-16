@@ -52,6 +52,7 @@ class filterFile {
 			total_found = 0;
 			timestamp = 0;
 			lastftime_check = 0;
+			// strListFree(&list); // This triggers MSVC debug-heap assertion, see Issue #1099 for details
 		}
 		std::atomic<uint> fread_count{};
 		std::atomic<uint> total_found{};
