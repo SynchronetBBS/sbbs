@@ -195,8 +195,8 @@ Refer to the <<_output_modes>> section for more details.
 
 -L##::
 Specifies the number of lines on the "screen". Supported values are:
-14, 21, 25 (default), 28, 43, 50, and 60. If an unsupported value
-is used, it will default use 50.
+14, 21, 25 (default), 28, 30, 43, 50, and 60. If an unsupported value
+is used, it will default to 43/50.
 
 -pns_*::
 Only "supported" on macOS.  Ignored.
@@ -548,7 +548,16 @@ port number value will be updated as well.
 
 Flow Control (Modem, Serial, and 3-wire)::
 The type of flow control
-to use. RTC/CTS, XON/XOFF, Both, or None
+to use. RTS/CTS, XON/XOFF, Both, or None
+
+Stop Bits (Modem, Serial, and 3-wire)::
+The number of stop bits to use.
+
+Data Bits (Modem, Serial, and 3-wire)::
+The number of data bits to use.
+
+Parity (Modem, Serial, and 3-wire)::
+The parity setting to use.  Options are None, Even, Odd, Mark, and Space.
 
 TCP Port:: The TCP port to connect to.
 
@@ -577,10 +586,17 @@ System Password::
 An additional password that can be sent after the
 first kbd:[Alt+L] using successive kbd:[Alt+L]s.
 
-Binmode Broken::
+Binmode Broken (Telnet and TelnetS)::
 Telnet binary mode is broken on the remote system, do not enable it when
 connecting.  This option is to work around a bug in CTRL-C checking in
 older Synchronet versions.
+
+Defer Negotiate (Telnet and TelnetS)::
+Some systems have a mailer or other program running on the initial
+connection, and will either disconnect or just ignore telnet negotiations
+at the start of the session.  When this option is enabled, SyncTERM will
+wait until it receives a telnet command from the remote before starting
+telnet negotiation.
 
 Screen Mode::
 Selects the format of the window when connected.
@@ -647,9 +663,13 @@ Append Log File::: If set you Yes, the log file retains old information
 	and will keep growing.  If set to No, the log file is emptied
 	for each new connection.
 
-Comm Rate::
-For networked modes, specifies the sharacter pacing speed.
-For serial and modem types, specifies the speed to open the port at.
+Comm Rate (Modem, Serial, and 3-wire)::
+Specifies the speed to open the serial port at.
+
+Fake Comm Rate (network connections)::
+Specifies the character pacing display speed for network connections.
+This controls the simulated baud rate shown in the status line and
+the character output pacing.
 
 ANSI Music::
 There are three options in this sub-menu.
@@ -864,6 +884,11 @@ Video Output Mode::
 The method of displaying SyncTERM output.  The options
 will vary by OS, compile-time options, and installed libraries.  See
 the -I option to SyncTERM for details on the various modes.
+
+Default Cursor Style::
+The cursor style used by default.  Options are "Default (set by video
+mode)", "Blinking Underline", "Solid Underline", "Blinking Block", and
+"Solid Block".  The remote system may override this using DECSCUSR.
 
 Audio Output Mode::
 Allows disabling different output methods.  SyncTERM attempts to
