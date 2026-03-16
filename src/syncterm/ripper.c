@@ -10391,6 +10391,8 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	cterm->backpos = oldcterm.backpos;
 	cterm->backwidth = oldcterm.backwidth;
 	cterm->attr = oldcterm.attr;
+	cterm->has_palette_override = oldcterm.has_palette_override;
+	memcpy(cterm->palette_override, oldcterm.palette_override, sizeof(cterm->palette_override));
 	cterm->started = 0;
 	cterm->bg_color = oldcterm.bg_color - 16;
 	cterm->fg_color = oldcterm.fg_color - 16;
