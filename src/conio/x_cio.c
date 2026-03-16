@@ -269,6 +269,7 @@ int x_initciolib(int mode)
 		xp_dlclose(dl);
 		return(-1);
 	}
+	x11.XkbBell=xp_dlsym(dl,XkbBell);
 	if((x11.XLookupString=xp_dlsym(dl,XLookupString))==NULL) {
 		xp_dlclose(dl);
 		return(-1);

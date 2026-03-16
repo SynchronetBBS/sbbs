@@ -41,6 +41,7 @@
 #define BITMAP_CIOLIB_DRIVER
 #include "ciolib.h"
 #include "bitmap_con.h"
+#include "xpbeep.h"
 #include "wl_events.h"
 
 /*
@@ -259,6 +260,7 @@ static struct zxdg_decoration_manager_v1 *wl_deco_mgr;
 static struct zxdg_toplevel_decoration_v1 *wl_deco;
 static bool have_server_decorations;
 static struct xdg_toplevel_icon_manager_v1 *wl_icon_mgr;
+static struct xdg_system_bell_v1 *wl_bell;
 static struct wl_data_device_manager *wl_ddm;
 static struct wl_data_device *wl_ddev;
 static struct wl_data_source *wl_copy_source;
@@ -1270,6 +1272,9 @@ registry_global(void *data, struct wl_registry *registry,
 	else if (strcmp(interface, xdg_toplevel_icon_manager_v1_interface.name) == 0)
 		wl_icon_mgr = wl_registry_bind(registry, name,
 		    &xdg_toplevel_icon_manager_v1_interface, 1);
+	else if (strcmp(interface, xdg_system_bell_v1_interface.name) == 0)
+		wl_bell = wl_registry_bind(registry, name,
+		    &xdg_system_bell_v1_interface, 1);
 	else if (strcmp(interface, wl_data_device_manager_interface.name) == 0)
 		wl_ddm = wl_registry_bind(registry, name,
 		    &wl_data_device_manager_interface, 3);
@@ -1735,7 +1740,10 @@ wl_event_thread(void *args)
 				wl_display_flush(wl_dpy);
 				break;
 			case WL_LOCAL_BEEP:
-				/* Wayland has no bell protocol; xdg-system-bell is staging */
+				if (wl_bell)
+					xdg_system_bell_v1_ring(wl_bell, wl_surf);
+				else
+					xpbeep(440.0, 100);
 				break;
 			case WL_LOCAL_SETICON:
 				set_toplevel_icon(lev.data.icon.pixels,
@@ -1879,6 +1887,8 @@ wl_event_thread(void *args)
 		wl_data_device_destroy(wl_ddev);
 	if (wl_icon_mgr)
 		xdg_toplevel_icon_manager_v1_destroy(wl_icon_mgr);
+	if (wl_bell)
+		xdg_system_bell_v1_destroy(wl_bell);
 	if (xdg_base)
 		xdg_wm_base_destroy(xdg_base);
 	xkb_cleanup();
