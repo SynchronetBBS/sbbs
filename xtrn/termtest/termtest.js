@@ -2133,6 +2133,340 @@ input_keys.forEach(function(k) {
 });
 
 
+// --- ANSI Fuzz Testing ---
+
+var fuzz_categories = [
+	{name: 'CSI',       weight: 40, generate: gen_malformed_csi},
+	{name: 'Interrupt', weight: 25, generate: gen_interrupted},
+	{name: 'String',    weight: 20, generate: gen_string_seq},
+	{name: 'Boundary',  weight: 10, generate: gen_boundary},
+	{name: 'Random',    weight:  5, generate: gen_random_bytes},
+];
+
+function pick_weighted_category()
+{
+	var total = 0;
+	for (var i = 0; i < fuzz_categories.length; i++)
+		total += fuzz_categories[i].weight;
+	var r = Math.floor(Math.random() * total);
+	for (var i = 0; i < fuzz_categories.length; i++) {
+		r -= fuzz_categories[i].weight;
+		if (r < 0)
+			return fuzz_categories[i];
+	}
+	return fuzz_categories[0];
+}
+
+function rand_int(lo, hi)
+{
+	return lo + Math.floor(Math.random() * (hi - lo));
+}
+
+function rand_chars(len, lo, hi)
+{
+	var s = '';
+	for (var i = 0; i < len; i++)
+		s += String.fromCharCode(rand_int(lo, hi));
+	return s;
+}
+
+function gen_malformed_csi()
+{
+	var sub = Math.floor(Math.random() * 6);
+	switch (sub) {
+		case 0: {
+			// Long parameter string
+			var len = rand_int(100, 1500);
+			var params = '';
+			for (var i = 0; i < len; i++)
+				params += String.fromCharCode(0x30 + Math.floor(Math.random() * 10));
+			return {desc: 'CSI ' + len + ' param digits + H', data: '\x1b[' + params + 'H'};
+		}
+		case 1: {
+			// Many semicolons
+			var count = rand_int(50, 500);
+			var s = '';
+			for (var i = 0; i < count; i++)
+				s += ';';
+			return {desc: 'CSI ' + count + ' semicolons + m', data: '\x1b[' + s + 'm'};
+		}
+		case 2: {
+			// Huge parameter values
+			var vals = ['999999999', '4294967295', '2147483647', '65536', '2147483648'];
+			var v = vals[Math.floor(Math.random() * vals.length)];
+			var finals = 'ABCDHJKLMPSTXZm';
+			var f = finals.charAt(Math.floor(Math.random() * finals.length));
+			return {desc: 'CSI huge param ' + v + f, data: '\x1b[' + v + f};
+		}
+		case 3: {
+			// Invalid intermediate bytes
+			var inter = ' !"#$%&\'()*+,-./';
+			var c1 = inter.charAt(Math.floor(Math.random() * inter.length));
+			var c2 = inter.charAt(Math.floor(Math.random() * inter.length));
+			var p = String(rand_int(0, 100));
+			return {desc: 'CSI invalid intermediates ' + c1 + c2, data: '\x1b[' + p + c1 + c2 + 'm'};
+		}
+		case 4: {
+			// Random final byte in full range with random params
+			var final_byte = String.fromCharCode(rand_int(0x40, 0x7F));
+			var nparams = rand_int(0, 10);
+			var params = '';
+			for (var i = 0; i < nparams; i++) {
+				if (i > 0)
+					params += ';';
+				params += String(rand_int(0, 999));
+			}
+			return {desc: 'CSI params=' + nparams + ' final=0x' + final_byte.charCodeAt(0).toString(16), data: '\x1b[' + params + final_byte};
+		}
+		case 5: {
+			// Private-mode prefix with garbage params
+			var prefix = '?>=!';
+			var p = prefix.charAt(Math.floor(Math.random() * prefix.length));
+			var val = String(rand_int(0, 99999));
+			var finals = 'hlsmJK';
+			var f = finals.charAt(Math.floor(Math.random() * finals.length));
+			return {desc: 'CSI ' + p + val + f, data: '\x1b[' + p + val + f};
+		}
+	}
+	return {desc: 'CSI fallback', data: '\x1b[m'};
+}
+
+function gen_interrupted()
+{
+	var sub = Math.floor(Math.random() * 5);
+	switch (sub) {
+		case 0:
+			// ESC inside CSI
+			return {desc: 'ESC inside CSI', data: '\x1b[1;2\x1b[3;4H'};
+		case 1: {
+			// CAN/SUB mid-sequence
+			var cancel = (Math.random() < 0.5) ? '\x18' : '\x1a';
+			var cname = (cancel === '\x18') ? 'CAN' : 'SUB';
+			return {desc: cname + ' mid-CSI', data: '\x1b[12;34' + cancel + 'Hello'};
+		}
+		case 2: {
+			// Multiple ESCs in a row
+			var count = rand_int(2, 10);
+			var escs = '';
+			for (var i = 0; i < count; i++)
+				escs += '\x1b';
+			return {desc: count + ' bare ESCs then [H', data: escs + '[H'};
+		}
+		case 3:
+			// Bare ESC followed by text
+			return {desc: 'bare ESC + text', data: '\x1bHello World'};
+		case 4:
+			// CSI interrupted by DCS
+			return {desc: 'CSI interrupted by DCS', data: '\x1b[1;2\x1bPsome data\x1b\\'};
+	}
+	return {desc: 'interrupt fallback', data: '\x1b[m'};
+}
+
+function gen_string_seq()
+{
+	var sub = Math.floor(Math.random() * 5);
+	var starters = ['\x1bP', '\x1b]', '\x1b_', '\x1b^', '\x1bX'];
+	var snames = ['DCS', 'OSC', 'APC', 'PM', 'SOS'];
+	var si = Math.floor(Math.random() * starters.length);
+	switch (sub) {
+		case 0: {
+			// Unterminated string
+			var len = rand_int(100, 2000);
+			var body = rand_chars(len, 0x20, 0x7F);
+			return {desc: snames[si] + ' unterminated ' + len + ' bytes', data: starters[si] + body};
+		}
+		case 1: {
+			// Very long properly-terminated string
+			var len = rand_int(500, 4096);
+			var body = rand_chars(len, 0x20, 0x7F);
+			return {desc: snames[si] + ' terminated ' + len + ' bytes', data: starters[si] + body + '\x1b\\'};
+		}
+		case 2:
+			// ST at wrong time
+			return {desc: 'spurious ST', data: '\x1b\\' + 'Normal text' + '\x1b\\'};
+		case 3: {
+			// Nested string initiators
+			var si2 = Math.floor(Math.random() * starters.length);
+			return {desc: snames[si] + ' nested ' + snames[si2], data: starters[si] + 'outer' + starters[si2] + 'inner' + '\x1b\\'};
+		}
+		case 4: {
+			// String body with control characters
+			var len = rand_int(50, 200);
+			var body = '';
+			for (var i = 0; i < len; i++) {
+				if (Math.random() < 0.2)
+					body += String.fromCharCode(rand_int(0x00, 0x1F));
+				else
+					body += String.fromCharCode(rand_int(0x20, 0x7F));
+			}
+			return {desc: snames[si] + ' with controls ' + len + ' bytes', data: starters[si] + body + '\x1b\\'};
+		}
+	}
+	return {desc: 'string fallback', data: '\x1b[m'};
+}
+
+function gen_boundary()
+{
+	var sub = Math.floor(Math.random() * 5);
+	switch (sub) {
+		case 0:
+			// Cursor to extreme position
+			return {desc: 'CUP 99999;99999', data: '\x1b[99999;99999H'};
+		case 1: {
+			// Inverted/bad scroll region
+			var subs = [
+				{d: 'inverted 20;5', s: '\x1b[20;5r'},
+				{d: 'zero-size 10;10', s: '\x1b[10;10r'},
+				{d: 'off-screen 9999;99999', s: '\x1b[9999;99999r'},
+				{d: 'zero bounds 0;0', s: '\x1b[0;0r'},
+			];
+			var s = subs[Math.floor(Math.random() * subs.length)];
+			return {desc: 'DECSTBM ' + s.d, data: s.s + '\x1b[r'};
+		}
+		case 2: {
+			// Huge count for ED/EL/ICH/DCH
+			var ops = [
+				{d: 'ED 99999', s: '\x1b[99999J'},
+				{d: 'EL 99999', s: '\x1b[99999K'},
+				{d: 'ICH 99999', s: '\x1b[99999@'},
+				{d: 'DCH 99999', s: '\x1b[99999P'},
+			];
+			var o = ops[Math.floor(Math.random() * ops.length)];
+			return {desc: o.d, data: o.s};
+		}
+		case 3: {
+			// Tab stops at extreme positions
+			return {desc: 'HTS at col 9999', data: '\x1b[9999G\x1bH\x1b[1G'};
+		}
+		case 4: {
+			// Rapid scroll operations
+			var count = rand_int(20, 100);
+			var data = '';
+			for (var i = 0; i < count; i++)
+				data += (Math.random() < 0.5) ? '\x1b[S' : '\x1b[T';
+			return {desc: count + ' rapid scrolls', data: data};
+		}
+	}
+	return {desc: 'boundary fallback', data: '\x1b[m'};
+}
+
+function gen_random_bytes()
+{
+	var sub = Math.floor(Math.random() * 3);
+	switch (sub) {
+		case 0: {
+			// Pure random bytes
+			var len = rand_int(50, 500);
+			return {desc: 'random ' + len + ' bytes', data: rand_chars(len, 0x00, 0x100)};
+		}
+		case 1: {
+			// Random bytes interspersed with valid resets
+			var len = rand_int(50, 200);
+			var data = '';
+			for (var i = 0; i < len; i++) {
+				data += String.fromCharCode(rand_int(0x00, 0x100));
+				if (i % 20 === 19)
+					data += '\x1b[0m\x1b[H';
+			}
+			return {desc: 'random ' + len + ' bytes + resets', data: data};
+		}
+		case 2: {
+			// Alternating valid/invalid
+			var count = rand_int(10, 50);
+			var data = '';
+			for (var i = 0; i < count; i++) {
+				if (Math.random() < 0.5)
+					data += '\x1b[' + rand_int(0, 100) + 'm';
+				else
+					data += rand_chars(rand_int(1, 20), 0x00, 0x100);
+			}
+			return {desc: count + ' alternating valid/invalid', data: data};
+		}
+	}
+	return {desc: 'random fallback', data: rand_chars(100, 0x00, 0x100)};
+}
+
+function fuzz_alive_check()
+{
+	console.write("\x1b[6n");
+	// Use a hard deadline instead of read_ansi_seq, which can be kept alive
+	// indefinitely by a stream of partial-match bytes from a spinning terminal
+	var deadline = system.timer + 3;
+	var seq = '';
+	while (system.timer < deadline && bbs.online && !js.terminated) {
+		var ch = console.inkey(0, 500);
+		if (ch === '' || ch === null || ch === undefined)
+			break;
+		seq += ch;
+		if (seq.search(/\x1b\[[0-9]+;[0-9]+R/) >= 0)
+			return true;
+	}
+	// Drain any remaining junk
+	var drained = 0;
+	while (bbs.online && !js.terminated && console.inkey(100) !== '') {
+		drained++;
+		if (drained % 16384 === 0)
+			log(LOG_WARNING, "FUZZ alive check still draining, " + drained + " bytes so far");
+	}
+	if (drained > 0)
+		log(LOG_DEBUG, "FUZZ alive check drained " + drained + " bytes total");
+	return false;
+}
+
+function fuzz_log_data(iteration, data)
+{
+	var hex = seq_to_hex(data);
+	var maxlen = 512;
+	for (var off = 0; off < hex.length; off += maxlen) {
+		var chunk = hex.substring(off, off + maxlen);
+		if (off === 0)
+			log(LOG_DEBUG, "FUZZ #" + iteration + " data=" + chunk);
+		else
+			log(LOG_DEBUG, "FUZZ #" + iteration + " data(cont)=" + chunk);
+	}
+}
+
+function run_fuzz_loop()
+{
+	// Drain any residual input before starting
+	while (bbs.online && !js.terminated && console.inkey(200) !== '');
+	var iteration = 0;
+	while (bbs.online && !js.terminated) {
+		// Check for user abort (key press)
+		var abort = console.inkey(0, 0);
+		if (typeof abort === 'string' && abort.length > 0)
+			break;
+		var cat = pick_weighted_category();
+		var tc = cat.generate();
+		log(LOG_DEBUG, "FUZZ #" + iteration + " [" + cat.name + "] " + tc.desc);
+		fuzz_log_data(iteration, tc.data);
+		console.write(tc.data);
+		// Reset terminal state after each test case
+		// ST (ESC \) terminates any open string sequence (DCS/OSC/APC/PM/SOS)
+		// Send it twice: first to close SOS (which buffers ESC), second as actual ST
+		console.write("\x1b\\\x1b\\");
+		console.write("\x1b[0m");
+		console.write("\x1b[r");
+		console.write("\x1b[?25h");
+		// Liveness check
+		log(LOG_DEBUG, "FUZZ #" + iteration + " alive check...");
+		if (!fuzz_alive_check()) {
+			log(LOG_WARNING, "FUZZ #" + iteration + " — terminal stopped responding after [" + cat.name + "] " + tc.desc);
+			fuzz_log_data(iteration, tc.data);
+			break;
+		}
+		log(LOG_DEBUG, "FUZZ #" + iteration + " alive OK");
+		// Status display
+		console.gotoxy(1, 4);
+		console.write("Iteration: " + iteration + "  Category: " + cat.name + "     ");
+		iteration++;
+		mswait(50);
+	}
+	// Drain any queued input
+	while (bbs.online && !js.terminated && console.inkey(100));
+	log(LOG_INFO, "FUZZ completed after " + iteration + " iterations");
+}
+
 function main()
 {
 	var results = [];
@@ -2172,50 +2506,70 @@ function main()
 	return results;
 }
 
-console.mnemonics("Run which tests: ~Non-interactive, ~Interactive, In~put, ~All\r\n");
-var menu_key = console.getkeys("NIPA");
+console.mnemonics("Run which tests: ~Non-interactive, ~Interactive, In~put, ~Fuzz, ~All\r\n");
+var menu_key = console.getkeys("NIPFA");
 var interactive = (menu_key === 'I' || menu_key === 'A');
 var run_input = (menu_key === 'P' || menu_key === 'A');
-var run_output = (menu_key !== 'P');
+var run_output = (menu_key !== 'P' && menu_key !== 'F');
+var run_fuzz = (menu_key === 'F');
 var oldpt = console.ctrlkey_passthru;
 console.ctrlkey_passthru = 0x7FFFFFFF;
-console.write("\x1b[1;1;1;1;1;1*y");
-var ras = read_ansi_string(500);
-if (ras !== null && ras.search(/^\x1bP1!~[A-Z0-9]{4}\x1b\\$/) !== -1)
-	has_cksum = true;
-console.write("\x1bc");
-var res = main();
-console.write("\x1bc");
-console.ctrlkey_passthru = oldpt;
-var longest = 0;
-var i;
-var col = 0;
-tests.forEach(function(tst) {
-	if (tst.name.length > longest)
-		longest = tst.name.length;
-});
-var cols = Math.floor(console.screen_columns / (longest + 1 + 7 + 2));
-console.clear();
-res.forEach(function(r, idx) {
-	console.print(tests[idx].name);
-	for (i=tests[idx].name.length; i<longest; i++)
-		console.print('.');
-	console.print('.');
-	if (r === null)
-		console.print("Skipped\x01N");
-	else if (r)
-		console.print(".\x01GPassed\x01N");
-	else
-		console.print(".\x01RFailed\x01N");
-	col++;
-	if (col >= cols) {
-		console.print("\r\n");
-		col = 0;
+
+if (run_fuzz) {
+	console.clear();
+	console.print("\x01R\x01HWARNING:\x01N ANSI fuzzing may crash your terminal.\r\n");
+	console.print("All test cases are logged to the BBS log.\r\n");
+	console.print("Press any key to begin (or Enter to skip)...\r\n");
+	var ch = console.getkey();
+	if (ch !== '\r' && ch !== '\n') {
+		run_fuzz_loop();
 	}
-	else
-		console.print("  ");
-});
-if (col > 0)
-	console.print("\r\n");
-console.print("Press any key to return to BBS. ");
-console.getkey();
+	console.write("\x1bc");
+	console.ctrlkey_passthru = oldpt;
+	if (bbs.online && !js.terminated) {
+		console.print("Fuzz testing complete. Press any key to return to BBS. ");
+		console.getkey();
+	}
+}
+else {
+	console.write("\x1b[1;1;1;1;1;1*y");
+	var ras = read_ansi_string(500);
+	if (ras !== null && ras.search(/^\x1bP1!~[A-Z0-9]{4}\x1b\\$/) !== -1)
+		has_cksum = true;
+	console.write("\x1bc");
+	var res = main();
+	console.write("\x1bc");
+	console.ctrlkey_passthru = oldpt;
+	var longest = 0;
+	var i;
+	var col = 0;
+	tests.forEach(function(tst) {
+		if (tst.name.length > longest)
+			longest = tst.name.length;
+	});
+	var cols = Math.floor(console.screen_columns / (longest + 1 + 7 + 2));
+	console.clear();
+	res.forEach(function(r, idx) {
+		console.print(tests[idx].name);
+		for (i=tests[idx].name.length; i<longest; i++)
+			console.print('.');
+		console.print('.');
+		if (r === null)
+			console.print("Skipped\x01N");
+		else if (r)
+			console.print(".\x01GPassed\x01N");
+		else
+			console.print(".\x01RFailed\x01N");
+		col++;
+		if (col >= cols) {
+			console.print("\r\n");
+			col = 0;
+		}
+		else
+			console.print("  ");
+	});
+	if (col > 0)
+		console.print("\r\n");
+	console.print("Press any key to return to BBS. ");
+	console.getkey();
+}
