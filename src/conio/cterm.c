@@ -3844,7 +3844,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							seq_default(seq, 0, 1);
 							if (seq->param_int[0] < 1)
 								break;
-							for (i = 0; i < seq->param_int[0]; i++)
+							i = seq->param_int[0];
+							if (i > cterm->width * cterm->height)
+								i = cterm->width * cterm->height;
+							for (j = 0; j < i; j++)
 								do_tab(cterm);
 							break;
 						case 'J':	/* Erase In Page */
@@ -4009,7 +4012,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							seq_default(seq, 0, 1);
 							if (seq->param_int[0] < 1)
 								break;
-							for (i = 0; i < seq->param_int[0]; i++)
+							i = seq->param_int[0];
+							if (i > cterm->width * cterm->height)
+								i = cterm->width * cterm->height;
+							for (j = 0; j < i; j++)
 								do_backtab(cterm);
 							break;
 						case '[':	/* TODO? Start Reversed String */
