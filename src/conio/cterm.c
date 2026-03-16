@@ -3459,6 +3459,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, &max_row);
 						seq_default(seq, 0, 1);
 						i = seq->param_int[0];
+						if(i < 1)
+							break;
 						if(i > TERM_MAXX)
 							i = TERM_MAXX;
 						movetext(col + i, row, max_col, max_row, col, row);
@@ -3487,6 +3489,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &max_col, &max_row);
 						seq_default(seq, 0, 1);
 						i = seq->param_int[0];
+						if(i < 1)
+							break;
 						if(i > cterm->width)
 							i = cterm->width;
 						movetext(col, row, max_col - i, max_row, col + i, row);
@@ -3757,8 +3761,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							seq_default(seq, 0, 1);
 							if(seq->param_int[0] < 1)
 								seq->param_int[0] = 1;
-							if(seq->param_int[0] > cterm->width - j)
-								seq->param_int[0] = cterm->width - j;
+							if(seq->param_int[0] > TERM_MAXX - i + 1)
+								seq->param_int[0] = TERM_MAXX - i + 1;
 							movetext(col, row, max_col - seq->param_int[0], row, col + seq->param_int[0], row);
 							for(l=0; l < seq->param_int[0]; l++)
 								putch(' ');
@@ -3902,6 +3906,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								break;
 							seq_default(seq, 0, 1);
 							i = seq->param_int[0];
+							if(i < 1)
+								break;
 							if(i > TERM_MAXY - row)
 								i = TERM_MAXY - row;
 							col2 = TERM_MINX;
@@ -3946,6 +3952,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							if (col < TERM_MINX || col > TERM_MAXX || row < TERM_MINY || row > TERM_MAXY)
 								break;
 							i = seq->param_int[0];
+							if(i < 1)
+								break;
 							if(i > TERM_MAXX - col + 1)
 								i = TERM_MAXX - col + 1;
 							max_col = TERM_MAXX;
@@ -3988,6 +3996,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							clear_lcf(cterm);
 							seq_default(seq, 0, 1);
 							i=seq->param_int[0];
+							if(i < 1)
+								break;
 							CURR_XY(&col, &row);
 							if(i > CURR_MAXX - col)
 								i=CURR_MAXX - col;
