@@ -403,10 +403,10 @@ size_t sbbs_t::cp437_out(int ich)
 		case '\t':	// TAB
 		{
 			int col = term->column;
-			if (col < (term->cols - 1) && term->tabstop > 0) {
+			if (col < (int)(term->cols - 1) && term->tabstop > 0) {
 				int target = col + 1;
 				target += (term->tabstop - (target % term->tabstop)) % term->tabstop;
-				if (target >= term->cols)
+				if (target >= (int)term->cols)
 					target = term->cols - 1;
 				for (int i = col; i < target; i++)
 					term_out(' ');
