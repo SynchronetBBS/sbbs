@@ -1065,9 +1065,6 @@ ssh_connect(struct bbslist *bbs)
 		free(pubkey);
 	}
 
-	if (!bbs->hidepopups)
-		uifc.pop(NULL); // TODO: Why is this called twice?
-
 	return 0;
 }
 

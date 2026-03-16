@@ -177,9 +177,6 @@ telnets_connect(struct bbslist *bbs)
 	if (setsockopt(telnets_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off)))
 		fprintf(stderr, "%s:%d: Error %d calling setsockopt()\n", __FILE__, __LINE__, errno);
 
-	if (!bbs->hidepopups)
-		uifc.pop(NULL);
-
         /* Pass socket to cryptlib */
 	status = cryptSetAttribute(telnets_session, CRYPT_SESSINFO_NETWORKSOCKET, telnets_sock);
 	if (cryptStatusError(status)) {
@@ -212,8 +209,6 @@ telnets_connect(struct bbslist *bbs)
 	}
 
 	if (!bbs->hidepopups) {
-                /* Clear ownership */
-		uifc.pop(NULL); // TODO: Why is this called twice?
 		uifc.pop(NULL);
 		uifc.pop("Clearing Ownership");
 	}
@@ -255,9 +250,6 @@ telnets_connect(struct bbslist *bbs)
 	telnet_deferred =  bbs->defer_telnet_negotiation;
 	_beginthread(telnets_output_thread, 0, NULL);
 	_beginthread(telnets_input_thread, 0, NULL);
-
-	if (!bbs->hidepopups)
-		uifc.pop(NULL); // TODO: Why is this called twice?
 
 	if (!telnet_deferred)
 		send_initial_state();
