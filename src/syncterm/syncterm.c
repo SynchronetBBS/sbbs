@@ -796,7 +796,7 @@ char *output_types[] = {
 	/* coverity[missing_comma:SUPPRESS] */
 	"Autodetect"
 #ifdef __unix__
-	" (X11, SDL, Curses, ANSI)"
+	" (Wayland, X11, SDL, Curses, ANSI)"
 #elif defined(_WIN32)
 	" (GDI, SDL, Console, ANSI)"
 #endif
@@ -821,6 +821,10 @@ char *output_types[] = {
 #if defined(WITH_GDI)
 	, "GDI"
 	, "GDI Fullscreen"
+#endif
+#if defined(WITH_WAYLAND)
+	, "Wayland"
+	, "Wayland Fullscreen"
 #endif
 	, NULL
 };
@@ -848,6 +852,10 @@ int   output_map[] = {
 	, CIOLIB_MODE_GDI
 	, CIOLIB_MODE_GDI_FULLSCREEN
 #endif
+#ifdef WITH_WAYLAND
+	, CIOLIB_MODE_WAYLAND
+	, CIOLIB_MODE_WAYLAND_FULLSCREEN
+#endif
 	, 0
 };
 char *output_descrs[] = {
@@ -864,6 +872,9 @@ char *output_descrs[] = {
 	"SDL Fullscreen",
 	"GDI",
 	"GDI Fullscreen",
+	"Retro",
+	"Wayland",
+	"Wayland Fullscreen",
 	NULL
 };
 
@@ -881,6 +892,9 @@ char *output_enum[] = {
 	"SDLFullscreen",
 	"GDI",
 	"GDIFullscreen",
+	"Retro",
+	"Wayland",
+	"WaylandFullscreen",
 	NULL
 };
 
@@ -2121,6 +2135,17 @@ main(int argc, char **argv)
 									break;
 								case 'F':
 									ciolib_mode = CIOLIB_MODE_SDL_FULLSCREEN;
+									break;
+							}
+							break;
+						case 'Y':
+							switch (toupper(argv[i][3])) {
+								case 0:
+								case 'W':
+									ciolib_mode = CIOLIB_MODE_WAYLAND;
+									break;
+								case 'F':
+									ciolib_mode = CIOLIB_MODE_WAYLAND_FULLSCREEN;
 									break;
 							}
 							break;

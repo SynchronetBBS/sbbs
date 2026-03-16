@@ -1,5 +1,6 @@
 Version 1.8rc1
 ------------
+Add Wayland backend
 Support encrypted dialing directories
 Support web-based main dialing directory
 Allow specifying terminal type for each entry

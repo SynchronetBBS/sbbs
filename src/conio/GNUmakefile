@@ -22,6 +22,14 @@ ifndef NO_X
  NEED_BITMAP := 1
 endif
 
+ifdef WITH_WAYLAND
+ NEED_BITMAP := 1
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)wl_dynload$(OFILE)
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)wl_cio$(OFILE)
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)wl_events$(OFILE)
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)wl_proto$(OFILE)
+endif
+
 ifdef WITH_SDL
  NEED_BITMAP := 1
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)

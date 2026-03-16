@@ -96,6 +96,16 @@ ifndef NO_X
  endif
 endif
 
+ifndef WITHOUT_WAYLAND
+ ifndef win
+  ifeq ($(shell pkg-config wayland-client --exists 2>/dev/null && echo YES), YES)
+   WITH_WAYLAND := 1
+   CIOLIB-MT_CFLAGS += -DWITH_WAYLAND
+   CIOLIB-MT_CFLAGS += $(shell pkg-config wayland-client --cflags-only-I)
+  endif
+ endif
+endif
+
 # Find SDL headers!
 ifdef USE_SDL
  ifdef SDL_CONFIG
@@ -193,6 +203,11 @@ else
  ifdef WITH_SDL
   CIOLIB_CFLAGS += -DHAS_VSTAT
   CIOLIB-MT_CFLAGS += -DHAS_VSTAT
+ else
+  ifdef WITH_WAYLAND
+   CIOLIB_CFLAGS += -DHAS_VSTAT
+   CIOLIB-MT_CFLAGS += -DHAS_VSTAT
+  endif
  endif
 endif
 

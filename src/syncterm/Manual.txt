@@ -78,11 +78,11 @@ supported with good compression rather than the uncompressed PPM that is
 the only format otherwise.
 
 The biggest (usually) optional dependency is http://libsdl.org[SDL 2].
-SyncTERM can use SDL for both graphics and sound. X11 can also be used
-for graphics, and OSS, ALSA, or Portaudio can also provide sound. These
-use run-time linking, so at compile time, only the headers are needed.
-Static linking with SDL is also supported.  SDL2 is required for macOS
-and Haiku at the present time.
+SyncTERM can use SDL for both graphics and sound. X11 and Wayland can
+also be used for graphics, and OSS, ALSA, or Portaudio can also provide
+sound. These use run-time linking, so at compile time, only the headers
+are needed. Static linking with SDL is also supported.  SDL2 is required
+for macOS and Haiku at the present time.
 
 For SSH, a copy of Peter Gutmann's
 https://cryptlib.com/security-software/about-cryptlib[Cryptlib] is
@@ -174,9 +174,14 @@ on all platforms. Legal values are:
 
 	X[WF]:::
 	X11 output mode. UNIX only mode which directly uses the X11
-	libraries for drawing. The default where supported. Additionally,
-	a 'W' or 'F' can be specified to force windowed or full-screen
-	mode respectively.
+	libraries for drawing. Additionally, a 'W' or 'F' can be
+	specified to force windowed or full-screen mode respectively.
+
+	Y[WF]:::
+	Wayland output mode. UNIX only mode which uses the native
+	Wayland protocol for drawing. The default where supported.
+	Additionally, a 'W' or 'F' can be specified to force windowed
+	or full-screen mode respectively.
 --
 +
 Refer to the <<_output_modes>> section for more details.
@@ -241,6 +246,12 @@ Keyboard Controls::
 
 	kbd:[Alt+Home]:::
 	Centre window on the screen
+
+	kbd:[Alt]+drag:::
+	Hold kbd:[Alt] and drag the window with the left mouse button
+	to move it on the desktop. Available in the Wayland output
+	mode when the compositor does not provide server-side
+	decorations (i.e. there is no title bar to drag).
 
 In addition, you can directly enter characters either by their "codepage"
 value or their unicode value.  A "codepage" value is an 8-bit value that
