@@ -35,7 +35,7 @@ typedef struct {
 	link_list_t in;
 	link_list_t out;
 	pthread_t owner_thread_id;          /* reads from in, writes to out */
-	int refs;
+	protected_int32_t refs;
 	unsigned int flags;                /* private use flags */
 	void* private_data;
 } msg_queue_t;
