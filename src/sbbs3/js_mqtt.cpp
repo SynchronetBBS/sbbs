@@ -743,7 +743,7 @@ static JSBool js_mqtt_constructor(JSContext* cx, uintN argc, jsval *arglist)
 		free(client_id);
 		return JS_FALSE;
 	}
-	memset(p, 0, sizeof *p);
+	*p = {};
 	msgQueueInit(&p->q, /* flags: */ 0);
 	p->cfg = scfg->mqtt;
 	p->handle = mosquitto_new(client_id, /* clean_session: */ true, /* userdata: */ p);
