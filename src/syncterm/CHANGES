@@ -18,6 +18,7 @@ Fix delay at end of ZModem transfer
 Fix "Failed to decrypt BBS list" for empty list files
 Fix compatibility with "SSH-2.0-Go"
 Fix curses mode stdio drop detection
+Full code audit by Claude Opus, many fixes
 
 Version 1.7
 --------------
