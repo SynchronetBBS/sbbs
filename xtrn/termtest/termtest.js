@@ -2433,9 +2433,21 @@ function run_fuzz_loop()
 	var iteration = 0;
 	while (bbs.online && !js.terminated) {
 		// Check for user abort (key press)
+		// If we get ESC, it's likely a terminal response to a fuzzed sequence
+		// (e.g. DSR response), not a user keypress — drain and continue
 		var abort = console.inkey(0, 0);
-		if (typeof abort === 'string' && abort.length > 0)
-			break;
+		if (typeof abort === 'string' && abort.length > 0) {
+			if (abort === '\x1b') {
+				while (bbs.online && !js.terminated) {
+					var ch = console.inkey(0, 100);
+					if (ch === '' || ch === null || ch === undefined)
+						break;
+				}
+			}
+			else {
+				break;
+			}
+		}
 		var cat = pick_weighted_category();
 		var tc = cat.generate();
 		log(LOG_DEBUG, "FUZZ #" + iteration + " [" + cat.name + "] " + tc.desc);
