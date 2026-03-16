@@ -3961,12 +3961,18 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							break;
 						case 'S':	/* Scroll Up */
 							seq_default(seq, 0, 1);
-							for(j=0; j<seq->param_int[0]; j++)
+							row = seq->param_int[0];
+							if (row > TERM_MAXY)
+								row = TERM_MAXY;
+							for(j=0; j<row; j++)
 								cterm_scrollup(cterm);
 							break;
 						case 'T':	/* Scroll Down */
 							seq_default(seq, 0, 1);
-							for(j=0; j<seq->param_int[0]; j++)
+							row = seq->param_int[0];
+							if (row > TERM_MAXY)
+								row = TERM_MAXY;
+							for(j=0; j<row; j++)
 								scrolldown(cterm);
 							break;
 						case 'U':	/* TODO? Next Page */
