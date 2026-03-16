@@ -9467,8 +9467,8 @@ draw_button(struct rip_button_style *but, bool inverted)
 
 	ox = but->box.x1;
 	oy = but->box.y1;
-	width = but->box.x2 - but->box.x1 + 1;
-	height = but->box.y2 - but->box.y1 + 1;
+	width = but->box.x2 - but->box.x1;
+	height = but->box.y2 - but->box.y1;
 	if (but->flags.recessed && !inverted) {
 		width += 4;
 		height += 4;
@@ -9529,14 +9529,14 @@ draw_button(struct rip_button_style *but, bool inverted)
 			set_pixel(x, y, su);
 	}
 	if (but->flags.sunken) {
-		set_line(but->box.x1, but->box.y1, but->box.x2, but->box.y1, cs, 0xffff, 1);
-		set_line(but->box.x1, but->box.y1, but->box.x1, but->box.y2, cs, 0xffff, 1);
-		set_line(but->box.x2, but->box.y2, but->box.x2, but->box.y1, ch, 0xffff, 1);
-		set_line(but->box.x2, but->box.y2, but->box.x1, but->box.y2, ch, 0xffff, 1);
+		set_line(but->box.x1, but->box.y1, but->box.x2 - 1, but->box.y1, cs, 0xffff, 1);
+		set_line(but->box.x1, but->box.y1, but->box.x1, but->box.y2 - 1, cs, 0xffff, 1);
+		set_line(but->box.x2 - 1, but->box.y2 - 1, but->box.x2 - 1, but->box.y1, ch, 0xffff, 1);
+		set_line(but->box.x2 - 1, but->box.y2 - 1, but->box.x1, but->box.y2 - 1, ch, 0xffff, 1);
 		set_pixel(but->box.x1, but->box.y1, cc);
-		set_pixel(but->box.x2, but->box.y1, cc);
-		set_pixel(but->box.x2, but->box.y2, cc);
-		set_pixel(but->box.x1, but->box.y2, cc);
+		set_pixel(but->box.x2 - 1, but->box.y1, cc);
+		set_pixel(but->box.x2 - 1, but->box.y2 - 1, cc);
+		set_pixel(but->box.x1, but->box.y2 - 1, cc);
 	}
 	if (but->flags.chisel) {
 		chisel_inset(but->box.y2 - but->box.y1 + 1, &xinset, &yinset);
