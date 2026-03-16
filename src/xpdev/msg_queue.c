@@ -37,7 +37,7 @@ msg_queue_t* msgQueueInit(msg_queue_t* q, int flags)
 	memset(q, 0, sizeof(msg_queue_t));
 
 	q->flags = flags;
-	q->refs = 1;
+	protected_uint32_init(&q->refs, 1);
 	q->owner_thread_id = pthread_self();
 
 	if (q->flags & MSG_QUEUE_BIDIR)
@@ -62,6 +62,7 @@ bool msgQueueFree(msg_queue_t* q)
 
 	listFree(&q->in);
 	listFree(&q->out);
+	protected_int32_destroy(q->refs);
 
 	if (q->flags & MSG_QUEUE_MALLOC)
 		free(q);
@@ -74,22 +75,20 @@ int msgQueueAttach(msg_queue_t* q)
 	if (q == NULL)
 		return -1;
 
-	q->refs++;
-
-	return q->refs;
+	return protected_int32_adjust_fetch(&q->refs, 1);
 }
 
 int msgQueueDetach(msg_queue_t* q)
 {
 	int refs;
 
-	if (q == NULL || q->refs < 1)
+	if (q == NULL || protected_int32_value(q->refs) < 1)
 		return -1;
 
 	if (msgQueueOwner(q))
 		q->flags |= MSG_QUEUE_ORPHAN;
 
-	if ((refs = --q->refs) == 0)
+	if ((refs = protected_int32_adjust_fetch(&q->refs, -1)) == 0)
 		msgQueueFree(q);
 
 	return refs;
