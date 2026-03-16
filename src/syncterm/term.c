@@ -4958,10 +4958,8 @@ doterm(struct bbslist *bbs)
 					}
 					break;
 			}
-			/*
-			 * TODO: Doing it this way won't last through a cterm_reset(), which
-			 *       can be triggered from ANSI.
-			 */
+			memcpy(cterm->palette_override, np, sizeof(np));
+			cterm->has_palette_override = true;
 			for (i = 0; i < 16; i++) {
 				uint32_t op[16];
 				get_modepalette(op);

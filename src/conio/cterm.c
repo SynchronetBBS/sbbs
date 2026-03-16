@@ -4841,6 +4841,17 @@ cterm_reset(struct cterminal *cterm)
 	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE) {
 		for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
 			cterm_setpalette(cterm, i + 16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
+		if (cterm->has_palette_override) {
+			uint32_t op[16];
+			get_modepalette(op);
+			for (i = 0; i < 16; i++) {
+				uint32_t c = cterm->palette_override[i];
+				cterm_setpalette(cterm, op[i] + 16,
+					((c & 0x00FF0000) >> 8) | ((c & 0x00FF0000) >> 16),
+					((c & 0x0000FF00)) | ((c & 0x0000FF00) >> 8),
+					((c & 0x000000FF) << 8) | ((c & 0x000000FF)));
+			}
+		}
 	}
 
 	/* Reset mouse state */

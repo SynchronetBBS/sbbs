@@ -241,6 +241,10 @@ struct cterminal {
 	int skypix;
 	uint8_t prestel_last_mosaic;
 
+	/* Per-entry palette override (survives cterm_reset) */
+	bool				has_palette_override;
+	uint32_t			palette_override[16];	// 0x00RRGGBB
+
 	/* Prestel data */
 	char prestel_data[PRESTEL_MEM_SLOTS][PRESTEL_MEM_SLOT_SIZE];
 	enum prestel_prog_states prestel_prog_state;
