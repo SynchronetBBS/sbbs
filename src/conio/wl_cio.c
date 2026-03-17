@@ -238,9 +238,10 @@ void wl_copytext(const char *text, size_t buflen)
 	assert_pthread_mutex_lock(&wl_copybuf_mutex);
 	FREE_AND_NULL(wl_copybuf);
 	wl_copybuf = strdup(text);
+	int ok = (wl_copybuf != NULL);
 	assert_pthread_mutex_unlock(&wl_copybuf_mutex);
 
-	if (wl_copybuf) {
+	if (ok) {
 		ev.type = WL_LOCAL_COPY;
 		write_event(&ev);
 	}
