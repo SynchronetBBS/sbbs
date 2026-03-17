@@ -243,6 +243,8 @@ mousedrag(struct vmem_cell *scrollback)
 					startpos = pos;
 				}
 				switch (mevent.event) {
+					case CIOLIB_MOUSE_MOVE:
+						break;
 					case CIOLIB_BUTTON_1_DRAG_MOVE:
 						memcpy(sbuffer, screen, sbufsize);
 						for (pos = startpos; pos <= endpos; pos++) {
@@ -481,6 +483,165 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	}
 	vmem_puttext(term.x - 1, term.y + term.height - 1, term.x + term.width - 2, term.y + term.height - 1
 	    , status_bar);
+}
+
+static bool
+is_url_char(uint8_t ch)
+{
+	if (ch >= 'A' && ch <= 'Z')
+		return true;
+	if (ch >= 'a' && ch <= 'z')
+		return true;
+	if (ch >= '0' && ch <= '9')
+		return true;
+	return strchr("._~:/?#@!$&'()*+,;=%-[]", ch) != NULL;
+}
+
+char *
+detect_url_at(struct vmem_cell *cells, int width, int total_rows,
+              int click_col, int click_row)
+{
+	char buf[2048];
+	int start, end, pos, len;
+	int total_cells = width * total_rows;
+	int click_pos = click_row * width + click_col;
+	int open_parens, open_brackets;
+	char *scheme;
+
+	if (click_pos < 0 || click_pos >= total_cells)
+		return NULL;
+	if (!is_url_char(cells[click_pos].ch))
+		return NULL;
+
+	/* Scan left */
+	start = click_pos;
+	while (start > 0) {
+		int prev = start - 1;
+		int cur_col = start % width;
+		if (cur_col == 0) {
+			/* At column 0 — continue to previous row only if
+			 * previous row ended at the right margin */
+			if (prev % width != width - 1)
+				break;
+		}
+		if (!is_url_char(cells[prev].ch))
+			break;
+		start = prev;
+		if (click_pos - start >= (int)sizeof(buf) - 1)
+			break;
+	}
+
+	/* Scan right */
+	end = click_pos;
+	while (end < total_cells - 1) {
+		int next = end + 1;
+		int cur_col = end % width;
+		if (cur_col == width - 1) {
+			/* At right margin — continue to next row only if
+			 * next row starts with a URL char */
+			if (next >= total_cells || !is_url_char(cells[next].ch))
+				break;
+		}
+		if (!is_url_char(cells[next].ch))
+			break;
+		end = next;
+		if (end - start >= (int)sizeof(buf) - 1)
+			break;
+	}
+
+	/* Extract characters into buf */
+	len = 0;
+	for (pos = start; pos <= end && len < (int)sizeof(buf) - 1; pos++)
+		buf[len++] = cells[pos].ch;
+	buf[len] = '\0';
+
+	/* Find scheme prefix containing click position */
+	int click_off = click_pos - start;
+	scheme = NULL;
+	for (char *p = buf; p < buf + len; ) {
+		char *found = NULL;
+		if (strnicmp(p, "https://", 8) == 0)
+			found = p;
+		else if (strnicmp(p, "http://", 7) == 0)
+			found = p;
+		else if (strnicmp(p, "ftps://", 7) == 0)
+			found = p;
+		else if (strnicmp(p, "ftp://", 6) == 0)
+			found = p;
+		else if (strnicmp(p, "www.", 4) == 0)
+			found = p;
+
+		if (found) {
+			/* Check if click position falls within this URL */
+			int url_start = found - buf;
+			if (click_off >= url_start) {
+				scheme = found;
+				break;
+			}
+		}
+		p++;
+	}
+
+	if (scheme == NULL)
+		return NULL;
+
+	/* Trim buf to start at scheme */
+	int scheme_off = scheme - buf;
+	len -= scheme_off;
+	memmove(buf, scheme, len + 1);
+
+	/* Strip trailing punctuation with paren/bracket balancing */
+	while (len > 0) {
+		char last = buf[len - 1];
+		if (last == '.' || last == ',' || last == ';'
+		    || last == ':' || last == '>') {
+			len--;
+			buf[len] = '\0';
+			continue;
+		}
+		if (last == ')') {
+			open_parens = 0;
+			for (int i = 0; i < len; i++) {
+				if (buf[i] == '(')
+					open_parens++;
+				else if (buf[i] == ')')
+					open_parens--;
+			}
+			if (open_parens < 0) {
+				len--;
+				buf[len] = '\0';
+				continue;
+			}
+		}
+		if (last == ']') {
+			open_brackets = 0;
+			for (int i = 0; i < len; i++) {
+				if (buf[i] == '[')
+					open_brackets++;
+				else if (buf[i] == ']')
+					open_brackets--;
+			}
+			if (open_brackets < 0) {
+				len--;
+				buf[len] = '\0';
+				continue;
+			}
+		}
+		break;
+	}
+
+	/* Verify click is still within the URL after trimming */
+	if (click_off - scheme_off >= len)
+		return NULL;
+
+	/* Prepend https:// for bare www. */
+	if (strnicmp(buf, "www.", 4) == 0) {
+		char tmp[2048 + 8];
+		snprintf(tmp, sizeof(tmp), "https://%s", buf);
+		return strdup(tmp);
+	}
+
+	return strdup(buf);
 }
 
 void
@@ -5279,6 +5440,33 @@ doterm(struct bbslist *bbs)
 								}
 								break;
 							}
+							if ((mevent.kbmodifiers & CIOLIB_KMOD_CTRL)
+							    && !mevent.hyperlink_id
+							    && ms.mode != MM_OFF) {
+								struct vmem_cell *scrbuf;
+								scrbuf = malloc(term.width * term.height * sizeof(*scrbuf));
+								if (scrbuf) {
+									if (vmem_gettext(term.x - 1, term.y - 1,
+									    term.x + term.width - 2,
+									    term.y + term.height - 2, scrbuf)) {
+										char *url = detect_url_at(scrbuf,
+										    term.width, term.height,
+										    mevent.startx - 1,
+										    mevent.starty - 1);
+										if (url) {
+											if (!cio_api.openurl
+											    || !cio_api.openurl(url)) {
+												copytext(url, strlen(url));
+												uifcmsg("URL copied to clipboard",
+												    url);
+											}
+											free(url);
+										}
+									}
+									free(scrbuf);
+								}
+								break;
+							}
 							/* FALLTHROUGH */
 						case CIOLIB_BUTTON_1_CLICK:
 							if (ms.mode == MM_OFF) {
@@ -5290,6 +5478,31 @@ doterm(struct bbslist *bbs)
 											uifcmsg("URL copied to clipboard", url);
 											free(url);
 										}
+									}
+									break;
+								}
+								if (mevent.kbmodifiers & CIOLIB_KMOD_CTRL) {
+									struct vmem_cell *scrbuf;
+									scrbuf = malloc(term.width * term.height * sizeof(*scrbuf));
+									if (scrbuf) {
+										if (vmem_gettext(term.x - 1, term.y - 1,
+										    term.x + term.width - 2,
+										    term.y + term.height - 2, scrbuf)) {
+											char *url = detect_url_at(scrbuf,
+											    term.width, term.height,
+											    mevent.startx - 1,
+											    mevent.starty - 1);
+											if (url) {
+												if (!cio_api.openurl
+												    || !cio_api.openurl(url)) {
+													copytext(url, strlen(url));
+													uifcmsg("URL copied to clipboard",
+													    url);
+												}
+												free(url);
+											}
+										}
+										free(scrbuf);
 									}
 								}
 								break;

@@ -88,6 +88,7 @@ viewscroll(void)
 							case CIOLIB_BUTTON_1_CLICK:
 							{
 								int cell = (top + mevent.starty - 1) * term.width + (mevent.startx - 1);
+								int vis_rows = sblines + term.height - top;
 								if (cell >= 0 && cell < (sblines + term.height) * term.width
 								    && scrollback[cell].hyperlink_id) {
 									if (!ciolib_open_hyperlink(scrollback[cell].hyperlink_id)) {
@@ -97,6 +98,22 @@ viewscroll(void)
 											uifcmsg("URL copied to clipboard", url);
 											free(url);
 										}
+									}
+								}
+								else {
+									char *url = detect_url_at(
+									    scrollback + top * term.width,
+									    term.width, vis_rows,
+									    mevent.startx - 1,
+									    mevent.starty - 1);
+									if (url) {
+										if (!cio_api.openurl
+										    || !cio_api.openurl(url)) {
+											copytext(url, strlen(url));
+											uifcmsg("URL copied to clipboard",
+											    url);
+										}
+										free(url);
 									}
 								}
 								break;

@@ -1,6 +1,7 @@
 Version 1.8b
 ------------
 Add OSC 8 hyperlink support (clickable URLs)
+Ctrl+click detects plain-text URLs in terminal output
 Add native macOS backend (Quartz display, CoreAudio sound)
 Add Wayland backend
 Support encrypted dialing directories

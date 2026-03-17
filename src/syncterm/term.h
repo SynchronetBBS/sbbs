@@ -41,6 +41,7 @@ extern struct terminal   term;
 extern struct cterminal *cterm;
 extern int               log_level;
 void show_status_url(const char *url);
+char *detect_url_at(struct vmem_cell *cells, int width, int total_rows, int click_col, int click_row);
 void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path);
 void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch);
 void xmodem_download(struct bbslist *bbs, long mode, char *path);

@@ -21,6 +21,8 @@ int      orig_vidflags;
 int      orig_x;
 int      orig_y;
 uint32_t orig_palette[16];
+uint64_t orig_mouse_events;
+static uint64_t uifc_mouse_events;
 bool reveal;
 
 static void
@@ -62,12 +64,14 @@ init_uifc(bool scrn, bool bottom)
 		setvideoflags(orig_vidflags & (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT));
 		uifc.chars = NULL;
 		get_modepalette(orig_palette);
+		orig_mouse_events = ciomouse_getevents();
 		set_modepalette(palettes[COLOUR_PALETTE]);
 		if ((i = uifcini32(&uifc)) != 0) {
 			set_modepalette(orig_palette);
 			fprintf(stderr, "uifc library init returned error %d\n", i);
 			return -1;
 		}
+		uifc_mouse_events = ciomouse_getevents();
 		if ((cio_api.options & (CONIO_OPT_EXTENDED_PALETTE | CONIO_OPT_PALETTE_SETTING))
 		    == (CONIO_OPT_EXTENDED_PALETTE | CONIO_OPT_PALETTE_SETTING)) {
 			uifc.bclr = BLUE;
@@ -90,6 +94,10 @@ init_uifc(bool scrn, bool bottom)
 			uifc.lclr = settings.uifc_lclr;
 		bottomfunc = uifc.bottomline;
 		uifc_initialized = UIFC_INIT;
+	}
+	else {
+		orig_mouse_events = ciomouse_getevents();
+		ciomouse_setevents(uifc_mouse_events);
 	}
 
 	if (scrn) {
@@ -127,6 +135,7 @@ uifcbail(void)
 		uifc.bail();
 		set_modepalette(orig_palette);
 		setvideoflags(orig_vidflags);
+		ciomouse_setevents(orig_mouse_events);
 		loadfont(NULL);
 		gotoxy(orig_x, orig_y);
 		if (!reveal)
