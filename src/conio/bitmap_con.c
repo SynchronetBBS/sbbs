@@ -76,6 +76,11 @@ static bool have_blink; // true if there's any blinking characters on the screen
 static pthread_mutex_t vstat_chlock;
 static pthread_mutex_t prestel_hack_lock;
 
+struct prestel_row_state {
+	bool top;
+	bool bottom;
+};
+
 /* Exported globals */
 
 rwlock_t		vstatlock;
@@ -607,7 +612,7 @@ can_cheat(struct blockstate *bs, struct vmem_cell *vc)
 }
 
 static void
-calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs, int xpos, int ypos)
+calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs, int xpos, int ypos, struct prestel_row_state *prs)
 {
 	bool not_hidden = true;
 	cs->slow = bs->font_data_width != 8;
@@ -675,32 +680,39 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 		bool top = false;
 		bool bottom = false;
 		unsigned char lattr;
+		struct vmem_cell *pvc;
 
 		cs->slow = true;
 		if (vc->bg & CIOLIB_BG_SEPARATED && vc->ch >= 160)
 			cs->sep = true;
-		// Start at the first cell...
-		struct vmem_cell *pvc = vmem_cell_ptr(vstat.vmem, 0, 0);
-		// And check all the rows including this one.
-		for (int y = 0; y < ypos; y++) {
-			// If the previous line was a top line, this one is a bottom.
-			if (top) {
-				bottom = true;
-				top = false;
-			}
-			else {
-				// If the previous line was a bottom, this is not a bottom
-				if (bottom)
-					bottom = false;
-				// Check for any of these being tops...
-				pvc = vmem_cell_ptr(vstat.vmem, 0, y);
-				for (int x = 0; x < vstat.cols; x++) {
-					// If there's at least one top, this is a top row
-					if (pvc->bg & CIOLIB_BG_DOUBLE_HEIGHT) {
-						top = true;
-						break;
+		if (prs) {
+			top = prs[ypos - 1].top;
+			bottom = prs[ypos - 1].bottom;
+		}
+		else {
+			// Start at the first cell...
+			pvc = vmem_cell_ptr(vstat.vmem, 0, 0);
+			// And check all the rows including this one.
+			for (int y = 0; y < ypos; y++) {
+				// If the previous line was a top line, this one is a bottom.
+				if (top) {
+					bottom = true;
+					top = false;
+				}
+				else {
+					// If the previous line was a bottom, this is not a bottom
+					if (bottom)
+						bottom = false;
+					// Check for any of these being tops...
+					pvc = vmem_cell_ptr(vstat.vmem, 0, y);
+					for (int x = 0; x < vstat.cols; x++) {
+						// If there's at least one top, this is a top row
+						if (pvc->bg & CIOLIB_BG_DOUBLE_HEIGHT) {
+							top = true;
+							break;
+						}
+						pvc = vmem_next_ptr(vstat.vmem, pvc);
 					}
-					pvc = vmem_next_ptr(vstat.vmem, pvc);
 				}
 			}
 		}
@@ -878,7 +890,7 @@ draw_char_row_slow(struct blockstate *bs, struct charstate *cs, uint32_t y)
 }
 
 static void
-bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
+bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill, struct prestel_row_state *prs)
 {
 	assert(sx <= ex);
 	assert(sy <= ey);
@@ -966,7 +978,7 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 				if (bitmap_drawn)
 					bitmap_drawn[coff] = fill[foff++];
 				coff = vmem_next_offset(vstat.vmem, coff);
-				calc_charstate(&bs, &fill[vy * vwidth + vx], &charstate[vx], sx + vx, sy + vy);
+				calc_charstate(&bs, &fill[vy * vwidth + vx], &charstate[vx], sx + vx, sy + vy, prs);
 				if (charstate[vx].slow == false)
 					didfast = true;
 			}
@@ -1236,7 +1248,7 @@ same_cell(struct vmem_cell *bitmap_cell, struct vmem_cell *c2)
 }
 
 static void
-bitmap_draw_from_vmem(int sx, int sy, int ex, int ey, bool locked)
+bitmap_draw_from_vmem(int sx, int sy, int ex, int ey, bool locked, struct prestel_row_state *prs)
 {
 	int so = vmem_cell_offset(vstat.vmem, sx - 1, sy - 1);
 	int eo = vmem_cell_offset(vstat.vmem, ex - 1, ey - 1);
@@ -1246,13 +1258,13 @@ bitmap_draw_from_vmem(int sx, int sy, int ex, int ey, bool locked)
 	if (eo < so) {
 		int rows = vstat.vmem->top_row - sy + 1;
 		int ney = ey - rows;
-		bitmap_draw_vmem_locked(sx, sy, ex, ney, &vstat.vmem->vmem[so]);
+		bitmap_draw_vmem_locked(sx, sy, ex, ney, &vstat.vmem->vmem[so], prs);
 		so = 0;
 		sy = ney + 1;
 	}
 
 	// Draw last chunk
-	bitmap_draw_vmem_locked(sx, sy, ex, ey, &vstat.vmem->vmem[so]);
+	bitmap_draw_vmem_locked(sx, sy, ex, ey, &vstat.vmem->vmem[so], prs);
 	if (!locked)
 		assert_pthread_mutex_unlock(&screenlock);
 }
@@ -1340,8 +1352,37 @@ static int update_from_vmem(int force)
 	height=vstat.rows;
 
 	check_blink_locked();
+
+	// Pre-compute Prestel double-height row states once per frame.
+	struct prestel_row_state prestel_rows[256];
+	struct prestel_row_state *prs = NULL;
+	if (vstat.mode == PRESTEL_40X25) {
+		bool top = false, bottom = false;
+		for (int y = 0; y < height; y++) {
+			if (top) {
+				bottom = true;
+				top = false;
+			}
+			else {
+				if (bottom)
+					bottom = false;
+				struct vmem_cell *pvc = vmem_cell_ptr(vstat.vmem, 0, y);
+				for (int x = 0; x < vstat.cols; x++) {
+					if (pvc->bg & CIOLIB_BG_DOUBLE_HEIGHT) {
+						top = true;
+						break;
+					}
+					pvc = vmem_next_ptr(vstat.vmem, pvc);
+				}
+			}
+			prestel_rows[y].top = top;
+			prestel_rows[y].bottom = bottom;
+		}
+		prs = prestel_rows;
+	}
+
 	if (force || bitmap_drawn == NULL) {
-		bitmap_draw_from_vmem(1, 1, width, height, false);
+		bitmap_draw_from_vmem(1, 1, width, height, false, prs);
 	}
 	else {
 		unsigned int pos = vmem_cell_offset(vstat.vmem, 0, 0);
@@ -1383,14 +1424,14 @@ static int update_from_vmem(int force)
 				}
 				else {
 					if (sx) {
-						bitmap_draw_from_vmem(sx, y + 1, ex, y + 1, false);
+						bitmap_draw_from_vmem(sx, y + 1, ex, y + 1, false, prs);
 						sx = ex = 0;
 					}
 				}
 				pos = vmem_next_offset(vstat.vmem, pos);
 			}
 			if (sx) {
-				bitmap_draw_from_vmem(sx, y + 1, ex, y + 1, false);
+				bitmap_draw_from_vmem(sx, y + 1, ex, y + 1, false, prs);
 				sx = ex = 0;
 			}
 		}
@@ -2032,7 +2073,7 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 	if (xchar < vstat.cols && ychar < vstat.rows) {
 		int off = vmem_cell_offset(vstat.vmem, xchar, ychar);
 		if (bitmap_drawn == NULL || !same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
-			bitmap_draw_from_vmem(xchar + 1, ychar + 1, xchar + 1, ychar + 1, true);
+			bitmap_draw_from_vmem(xchar + 1, ychar + 1, xchar + 1, ychar + 1, true, NULL);
 		}
 		vstat.vmem->vmem[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
 		if (bitmap_drawn)
@@ -2133,7 +2174,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 					if (!yupdated) {
 						if (!xupdated) {
 							if (bitmap_drawn == NULL || !same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
-								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1, true);
+								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1, true, NULL);
 							}
 							if (vstat.vmem && vstat.vmem->vmem) {
 								vstat.vmem->vmem[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
@@ -2180,7 +2221,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 					if (!yupdated) {
 						if (!xupdated) {
 							if (bitmap_drawn == NULL || !same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
-								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1, true);
+								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1, true, NULL);
 							}
 							if (vstat.vmem && vstat.vmem->vmem) {
 								vstat.vmem->vmem[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
