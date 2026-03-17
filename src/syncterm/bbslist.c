@@ -578,7 +578,10 @@ viewofflinescroll(void)
 						               "~ J ~ or ~ Up Arrow ~   Scrolls up one line\n"
 						               "~ K ~ or ~ Down Arrow ~ Scrolls down one line\n"
 						               "~ H ~ or ~ Page Up ~    Scrolls up one screen\n"
-						               "~ L ~ or ~ Page Down ~  Scrolls down one screen\n";
+						               "~ L ~ or ~ Page Down ~  Scrolls down one screen\n"
+						               "~ Mouse Wheel ~         Scrolls up/down one line\n"
+						               "~ Click ~               Opens hyperlink or URL\n"
+						               "~ ESC ~                 Returns to directory\n";
 						uifc.showhelp();
 						uifcbail();
 						drawwin();
@@ -1071,7 +1074,7 @@ edit_sort_profiles(struct bbslist **list, int *listcount, int *ocur, int *obar)
 		    "Select a sort profile and press ~ENTER~ to edit its sort fields.\n\n"
 		    "Use ~INSERT~ to create a new profile, ~DELETE~ to remove one.\n"
 		    "Use ~F2~ (Edit) to rename a profile.\n"
-		    "Use ~F5~ to copy, ~Shift-Del~ to cut, ~F6~ to paste.\n\n"
+		    "Use ~F5~ to copy, ~CTRL-X~ to cut, ~F6~ to paste.\n\n"
 		    "Use ~<~ and ~>~ in the directory listing to cycle through profiles.";
 		ret = uifc.list(WIN_XTR | WIN_DEL | WIN_INS | WIN_INSACT | WIN_ACT | WIN_SAV
 		                | WIN_EDIT | WIN_COPY | WIN_CUT
@@ -4523,7 +4526,11 @@ show_bbslist(char *current, int connected)
 					               "~ CTRL-S ~ to manage sort profiles\n"
 					               "~ < ~ / ~ > ~ to cycle through sort profiles\n"
 					               "~ TAB ~ to modify the selected entry comment or SyncTERM Settings\n"
-					               "~ ENTER ~ to edit to the selected entry"
+					               "~ ENTER ~ to edit the selected entry\n"
+					               "~ INSERT ~ to add a new entry\n"
+					               "~ DELETE ~ to remove the selected entry\n"
+					               "~ F5 ~ to copy the selected entry\n"
+					               "~ F6 ~ to paste a copied entry\n\n"
 					               "`Conio Keys` (may not work in some modes)\n\n"
 					               "~ " ALT_KEY_NAMEP
 					               "-Left ~ Snap window size to next smaller horizontal size\n"
@@ -4543,7 +4550,11 @@ show_bbslist(char *current, int connected)
 					               "~ < ~ / ~ > ~ to cycle through sort profiles\n"
 					               "~ " ALT_KEY_NAMEP "-B ~ View scrollback of last session\n"
 					               "~ TAB ~ to modify the selected entry comment or SyncTERM Settings\n"
-					               "~ ENTER ~ to connect to the selected entry\n\n"
+					               "~ ENTER ~ to connect to the selected entry\n"
+					               "~ INSERT ~ to add a new entry\n"
+					               "~ DELETE ~ to remove the selected entry\n"
+					               "~ F5 ~ to copy the selected entry\n"
+					               "~ F6 ~ to paste a copied entry\n\n"
 					               "`Conio Keys` (may not work in some modes)\n\n"
 					               "~ " ALT_KEY_NAMEP
 					               "-Left ~ Snap window size to next smaller horizontal size\n"
