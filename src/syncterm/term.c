@@ -483,7 +483,7 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	    , status_bar);
 }
 
-static void
+void
 show_status_url(const char *url)
 {
 	size_t i;

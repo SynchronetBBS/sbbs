@@ -40,6 +40,7 @@ struct mouse_state {
 extern struct terminal   term;
 extern struct cterminal *cterm;
 extern int               log_level;
+void show_status_url(const char *url);
 void zmodem_upload(struct bbslist *bbs, FILE *fp, char *path);
 void xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch);
 void xmodem_download(struct bbslist *bbs, long mode, char *path);
