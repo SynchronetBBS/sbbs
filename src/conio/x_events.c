@@ -1975,7 +1975,10 @@ x11_event(XEvent *ev)
 					me->x=x_cvstat.cols;
 				if(me->y>x_cvstat.rows+1)
 					me->y=x_cvstat.rows+1;
-				ciomouse_gotevent(CIOLIB_MOUSE_MOVE,me->x,me->y, x_res, y_res);
+				ciomouse_gotevent(CIOLIB_MOUSE_MOVE,me->x,me->y, x_res, y_res,
+				((me->state & ShiftMask) ? CIOLIB_KMOD_SHIFT : 0) |
+				((me->state & ControlMask) ? CIOLIB_KMOD_CTRL : 0) |
+				((me->state & Mod1Mask) ? CIOLIB_KMOD_ALT : 0));
 			}
 			break;
 		case ButtonRelease:
@@ -1999,7 +2002,10 @@ x11_event(XEvent *ev)
 				if(be->y>x_cvstat.rows+1)
 					be->y=x_cvstat.rows+1;
 				if (be->button <= 3) {
-					ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(be->button),be->x,be->y, x_res, y_res);
+					ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(be->button),be->x,be->y, x_res, y_res,
+					((be->state & ShiftMask) ? CIOLIB_KMOD_SHIFT : 0) |
+					((be->state & ControlMask) ? CIOLIB_KMOD_CTRL : 0) |
+					((be->state & Mod1Mask) ? CIOLIB_KMOD_ALT : 0));
 				}
 			}
 			break;
@@ -2024,7 +2030,10 @@ x11_event(XEvent *ev)
 				if(be->y>x_cvstat.rows+1)
 					be->y=x_cvstat.rows+1;
 				if (be->button <= 5) {
-					ciomouse_gotevent(CIOLIB_BUTTON_PRESS(be->button),be->x,be->y, x_res, y_res);
+					ciomouse_gotevent(CIOLIB_BUTTON_PRESS(be->button),be->x,be->y, x_res, y_res,
+					((be->state & ShiftMask) ? CIOLIB_KMOD_SHIFT : 0) |
+					((be->state & ControlMask) ? CIOLIB_KMOD_CTRL : 0) |
+					((be->state & Mod1Mask) ? CIOLIB_KMOD_ALT : 0));
 				}
 			}
 			break;

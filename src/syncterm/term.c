@@ -122,6 +122,7 @@ setup_mouse_events(struct mouse_state *ms)
 				ciomouse_addevent(CIOLIB_BUTTON_3_PRESS);
 				ciomouse_addevent(CIOLIB_BUTTON_3_RELEASE);
 				ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
+				ciomouse_addevent(CIOLIB_MOUSE_MOVE);
 				mousepointer(CIOLIB_MOUSEPTR_ARROW);
 				return;
 			case MM_X10:
@@ -144,6 +145,7 @@ setup_mouse_events(struct mouse_state *ms)
 				ciomouse_addevent(CIOLIB_BUTTON_3_RELEASE);
 				ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
 				ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
+				ciomouse_addevent(CIOLIB_MOUSE_MOVE);
 				mousepointer(CIOLIB_MOUSEPTR_ARROW);
 				return;
 			case MM_BUTTON_EVENT_TRACKING:
@@ -174,12 +176,14 @@ setup_mouse_events(struct mouse_state *ms)
 				break;
 		}
 	}
+	ciomouse_addevent(CIOLIB_BUTTON_1_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_START);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_MOVE);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_END);
 	ciomouse_addevent(CIOLIB_BUTTON_2_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_3_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
+	ciomouse_addevent(CIOLIB_MOUSE_MOVE);
 	mousepointer(CIOLIB_MOUSEPTR_BAR);
 }
 
@@ -329,6 +333,7 @@ cleanup:
 static struct vmem_cell *status_bar;
 size_t status_bar_sz;
 bool force_status_update = false;
+static uint16_t hover_hyperlink_id;
 
 struct ciolib_screen *
 cp437_savescrn(void)
@@ -476,6 +481,41 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	}
 	vmem_puttext(term.x - 1, term.y + term.height - 1, term.x + term.width - 2, term.y + term.height - 1
 	    , status_bar);
+}
+
+static void
+show_status_url(const char *url)
+{
+	size_t i;
+
+	if (term.nostatus)
+		return;
+	if (status_bar == NULL || status_bar_sz == 0)
+		return;
+
+	size_t len = strlen(url);
+	size_t avail = status_bar_sz > 2 ? status_bar_sz - 2 : 0;
+	size_t start;
+	bool truncated = false;
+
+	if (len > avail) {
+		len = avail;
+		truncated = true;
+	}
+	start = 1 + (avail - len) / 2;
+	for (i = 1; i < status_bar_sz - 1; i++) {
+		if (i >= start && i < start + len)
+			status_bar[i].ch = url[i - start];
+		else
+			status_bar[i].ch = ' ';
+	}
+	if (truncated && avail >= 3) {
+		for (i = start + len - 3; i < start + len; i++) {
+			status_bar[i].ch = '.';
+		}
+	}
+	vmem_puttext(term.x - 1, term.y + term.height - 1,
+	    term.x + term.width - 2, term.y + term.height - 1, status_bar);
 }
 
 #if defined(_WIN32) && defined(_DEBUG) && defined(DUMP)
@@ -5007,7 +5047,7 @@ doterm(struct bbslist *bbs)
 	for (; !quitting;) {
 		hold_update = true;
 		sleep = true;
-		if (!term.nostatus) {
+		if (!term.nostatus && !hover_hyperlink_id) {
 			update_status(bbs,
 			    (bbs->conn_type == CONN_TYPE_SERIAL || bbs->conn_type == CONN_TYPE_SERIAL_NORTS) ? bbs->bpsrate : speed,
 			    ooii_mode, atascii_inverse);
@@ -5227,15 +5267,62 @@ doterm(struct bbslist *bbs)
 					getmouse(&mevent);
 					switch (mevent.event) {
 						case CIOLIB_BUTTON_1_PRESS:
+							if (mevent.hyperlink_id
+							    && (mevent.kbmodifiers & CIOLIB_KMOD_CTRL)) {
+								if (!ciolib_open_hyperlink(mevent.hyperlink_id)) {
+									char *url = ciolib_get_hyperlink_url(mevent.hyperlink_id);
+									if (url) {
+										copytext(url, strlen(url));
+										uifcmsg("URL copied to clipboard", url);
+										free(url);
+									}
+								}
+								break;
+							}
+							/* FALLTHROUGH */
+						case CIOLIB_BUTTON_1_CLICK:
+							if (ms.mode == MM_OFF) {
+								if (mevent.hyperlink_id) {
+									if (!ciolib_open_hyperlink(mevent.hyperlink_id)) {
+										char *url = ciolib_get_hyperlink_url(mevent.hyperlink_id);
+										if (url) {
+											copytext(url, strlen(url));
+											uifcmsg("URL copied to clipboard", url);
+											free(url);
+										}
+									}
+								}
+								break;
+							}
+							/* FALLTHROUGH */
 						case CIOLIB_BUTTON_1_RELEASE:
 						case CIOLIB_BUTTON_2_PRESS:
 						case CIOLIB_BUTTON_2_RELEASE:
 						case CIOLIB_BUTTON_3_PRESS:
 						case CIOLIB_BUTTON_3_RELEASE:
-						case CIOLIB_MOUSE_MOVE:
-						case CIOLIB_BUTTON_1_CLICK:
 							conn_send(mouse_buf,
 							    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
+							break;
+						case CIOLIB_MOUSE_MOVE:
+							if (ms.mode == MM_BUTTON_EVENT_TRACKING
+							    || ms.mode == MM_ANY_EVENT_TRACKING)
+								conn_send(mouse_buf,
+								    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
+							if (mevent.hyperlink_id != hover_hyperlink_id) {
+								hover_hyperlink_id = mevent.hyperlink_id;
+								if (hover_hyperlink_id) {
+									char *url = ciolib_get_hyperlink_url(hover_hyperlink_id);
+									if (url) {
+										show_status_url(url);
+										free(url);
+									}
+									else
+										force_status_update = true;
+								}
+								else {
+									force_status_update = true;
+								}
+							}
 							break;
 						case CIOLIB_BUTTON_4_PRESS:
 						case CIOLIB_BUTTON_5_PRESS:

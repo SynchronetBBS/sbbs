@@ -955,6 +955,16 @@ Aspect Ratio of the "Custom" screen mode.
 When you are connected to a system, there are a number of controls
 available that are not sent to the remote.
 
+=== Hyperlinks
+SyncTERM supports OSC 8 hyperlinks. When a BBS sends text with an
+embedded hyperlink, clicking on the linked text will open the URL
+in your default browser. When the BBS has mouse capture enabled,
+use kbd:[Ctrl+Click] instead. Hovering over a hyperlinked region
+displays the URL in the status bar.
+
+On platforms where opening a browser is not possible, the URL is
+copied to the clipboard instead.
+
 For Curses and ANSI modes, only two controls are avilable, and they
 are not available in other modes.  This is because these two modes
 don't have access to keys that could not potentially be sent to the

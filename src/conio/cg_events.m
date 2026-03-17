@@ -596,7 +596,16 @@ cg_handle_mouse(NSEvent *event, int evtype)
 	if (cx > cols) cx = cols;
 	if (cy > rows + 1) cy = rows + 1;
 
-	ciomouse_gotevent(evtype, cx, cy, x, y);
+	int mods = 0;
+	NSUInteger flags = event.modifierFlags;
+	if (flags & NSEventModifierFlagShift)
+		mods |= CIOLIB_KMOD_SHIFT;
+	if (flags & NSEventModifierFlagControl)
+		mods |= CIOLIB_KMOD_CTRL;
+	if (flags & NSEventModifierFlagOption)
+		mods |= CIOLIB_KMOD_ALT;
+
+	ciomouse_gotevent(evtype, cx, cy, x, y, mods);
 }
 
 - (void)mouseDown:(NSEvent *)event

@@ -23,6 +23,7 @@ char *cg_getcliptext(void);
 int cg_get_window_info(int *width, int *height, int *xpos, int *ypos);
 void cg_drawrect(struct rectlist *data);
 void cg_flush(void);
+bool cg_openurl(const char *url);
 int cg_mousepointer(enum ciolib_mouse_ptr type);
 void cg_setwinposition(int x, int y);
 void cg_setwinsize(int w, int h);

@@ -1170,7 +1170,7 @@ int curs_getch(void)
 							evnt=CIOLIB_MOUSE_MOVE;
 							break;
 					}
-					ciomouse_gotevent(evnt, mevnt.x+1, mevnt.y+1, -1, -1);
+					ciomouse_gotevent(evnt, mevnt.x+1, mevnt.y+1, -1, -1, 0);
 				}
 				break;
 #endif

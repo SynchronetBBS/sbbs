@@ -518,13 +518,21 @@ win_to_pos(LPARAM lParam, struct gdi_mouse_pos *p)
 	return ret;
 }
 
+static int
+gdi_kbmodifiers(void)
+{
+	return ((GetKeyState(VK_SHIFT) < 0) ? CIOLIB_KMOD_SHIFT : 0)
+	     | ((GetKeyState(VK_CONTROL) < 0) ? CIOLIB_KMOD_CTRL : 0)
+	     | ((GetKeyState(VK_MENU) < 0) ? CIOLIB_KMOD_ALT : 0);
+}
+
 static LRESULT
 gdi_handle_mouse_button(LPARAM lParam, int event)
 {
 	struct gdi_mouse_pos p;
 
 	if (win_to_pos(lParam, &p))
-		ciomouse_gotevent(event, p.tx, p.ty, p.px, p.py);
+		ciomouse_gotevent(event, p.tx, p.ty, p.px, p.py, gdi_kbmodifiers());
 	return 0;
 }
 
@@ -532,9 +540,9 @@ static LRESULT
 gdi_handle_mouse_wheel(int16_t distance, LPARAM lParam)
 {
 	if (distance > 0) // Forward
-		ciomouse_gotevent(CIOLIB_BUTTON_PRESS(4), -1, -1 ,-1 ,-1);
+		ciomouse_gotevent(CIOLIB_BUTTON_PRESS(4), -1, -1 ,-1 ,-1, gdi_kbmodifiers());
 	else
-		ciomouse_gotevent(CIOLIB_BUTTON_PRESS(5), -1, -1 ,-1 ,-1);
+		ciomouse_gotevent(CIOLIB_BUTTON_PRESS(5), -1, -1 ,-1 ,-1, gdi_kbmodifiers());
 	return 0;
 }
 

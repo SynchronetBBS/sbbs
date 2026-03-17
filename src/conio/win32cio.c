@@ -443,31 +443,39 @@ static int win32_keyboardio(int isgetch)
 				break;
 			case MOUSE_EVENT:
 				if(domouse) {
+					int mods = 0;
+					DWORD ks = input.Event.MouseEvent.dwControlKeyState;
+					if (ks & SHIFT_PRESSED)
+						mods |= CIOLIB_KMOD_SHIFT;
+					if (ks & (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED))
+						mods |= CIOLIB_KMOD_CTRL;
+					if (ks & (LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED))
+						mods |= CIOLIB_KMOD_ALT;
 					if(input.Event.MouseEvent.dwMousePosition.X+1 != LastX || input.Event.MouseEvent.dwMousePosition.Y+1 != LastY) {
 						LastX=input.Event.MouseEvent.dwMousePosition.X+1;
 						LastY=input.Event.MouseEvent.dwMousePosition.Y+1;
-						ciomouse_gotevent(CIOLIB_MOUSE_MOVE,LastX,LastY, -1, -1);
+						ciomouse_gotevent(CIOLIB_MOUSE_MOVE,LastX,LastY, -1, -1, mods);
 					}
 					if (input.Event.MouseEvent.dwEventFlags == 0) {
 						if(last_state != input.Event.MouseEvent.dwButtonState) {
 							switch(input.Event.MouseEvent.dwButtonState ^ last_state) {
 								case FROM_LEFT_1ST_BUTTON_PRESSED:
 									if(input.Event.MouseEvent.dwButtonState & FROM_LEFT_1ST_BUTTON_PRESSED)
-										ciomouse_gotevent(CIOLIB_BUTTON_1_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+										ciomouse_gotevent(CIOLIB_BUTTON_1_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1, mods);
 									else
-										ciomouse_gotevent(CIOLIB_BUTTON_1_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+										ciomouse_gotevent(CIOLIB_BUTTON_1_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1, mods);
 									break;
 								case FROM_LEFT_2ND_BUTTON_PRESSED:
 									if(input.Event.MouseEvent.dwButtonState & FROM_LEFT_2ND_BUTTON_PRESSED)
-										ciomouse_gotevent(CIOLIB_BUTTON_2_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+										ciomouse_gotevent(CIOLIB_BUTTON_2_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1, mods);
 									else
-										ciomouse_gotevent(CIOLIB_BUTTON_2_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+										ciomouse_gotevent(CIOLIB_BUTTON_2_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1, mods);
 									break;
 								case RIGHTMOST_BUTTON_PRESSED:
 									if(input.Event.MouseEvent.dwButtonState & RIGHTMOST_BUTTON_PRESSED)
-										ciomouse_gotevent(CIOLIB_BUTTON_3_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+										ciomouse_gotevent(CIOLIB_BUTTON_3_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1, mods);
 									else
-										ciomouse_gotevent(CIOLIB_BUTTON_3_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+										ciomouse_gotevent(CIOLIB_BUTTON_3_RELEASE,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1, mods);
 									break;
 							}
 							last_state=input.Event.MouseEvent.dwButtonState;
@@ -476,10 +484,10 @@ static int win32_keyboardio(int isgetch)
 					else if (input.Event.MouseEvent.dwEventFlags == MOUSE_WHEELED) {
 						// If the high word of the dwButtonState member contains a positive value... ARGH!
 						if (input.Event.MouseEvent.dwButtonState & 0x80000000) {
-							ciomouse_gotevent(CIOLIB_BUTTON_5_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+							ciomouse_gotevent(CIOLIB_BUTTON_5_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1, mods);
 						}
 						else {
-							ciomouse_gotevent(CIOLIB_BUTTON_4_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1);
+							ciomouse_gotevent(CIOLIB_BUTTON_4_PRESS,input.Event.MouseEvent.dwMousePosition.X+1,input.Event.MouseEvent.dwMousePosition.Y+1, -1, -1, mods);
 						}
 					}
 				}

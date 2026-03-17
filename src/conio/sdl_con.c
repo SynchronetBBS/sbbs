@@ -986,6 +986,8 @@ void sdl_video_event_thread(void *data)
 	uint32_t bios_key = 0;
 	bool bios_key_parsing = false;
 	bool zero_first = false;
+	int mods;
+	SDL_Keymod km;
 
 	while(1) {
 		if(sdl.WaitEventTimeout(&ev, 1)!=1)
@@ -1102,24 +1104,36 @@ void sdl_video_event_thread(void *data)
 					block_text = 0;
 				break;
 			case SDL_MOUSEMOTION:
+				km = sdl.GetModState();
+				mods = ((km & KMOD_SHIFT) ? CIOLIB_KMOD_SHIFT : 0) |
+					((km & KMOD_CTRL) ? CIOLIB_KMOD_CTRL : 0) |
+					((km & KMOD_ALT) ? CIOLIB_KMOD_ALT : 0);
 				pthread_once(&ciolib_mouse_initialized, init_mouse);
-				ciomouse_gotevent(CIOLIB_MOUSE_MOVE,win_to_text_xpos(ev.motion.x, &cvstat),win_to_text_ypos(ev.motion.y, &cvstat), win_to_res_xpos(ev.motion.x, &cvstat), win_to_res_ypos(ev.motion.y, &cvstat));
+				ciomouse_gotevent(CIOLIB_MOUSE_MOVE,win_to_text_xpos(ev.motion.x, &cvstat),win_to_text_ypos(ev.motion.y, &cvstat), win_to_res_xpos(ev.motion.x, &cvstat), win_to_res_ypos(ev.motion.y, &cvstat), mods);
 				break;
 			case SDL_MOUSEBUTTONDOWN:
+				km = sdl.GetModState();
+				mods = ((km & KMOD_SHIFT) ? CIOLIB_KMOD_SHIFT : 0) |
+					((km & KMOD_CTRL) ? CIOLIB_KMOD_CTRL : 0) |
+					((km & KMOD_ALT) ? CIOLIB_KMOD_ALT : 0);
 				pthread_once(&ciolib_mouse_initialized, init_mouse);
 				switch(ev.button.button) {
 					case SDL_BUTTON_LEFT:
-						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat));
+						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(1),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat), mods);
 						break;
 					case SDL_BUTTON_MIDDLE:
-						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat));
+						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(2),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat), mods);
 						break;
 					case SDL_BUTTON_RIGHT:
-						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat));
+						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(3),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat), mods);
 						break;
 				}
 				break;
 			case SDL_MOUSEWHEEL:
+				km = sdl.GetModState();
+				mods = ((km & KMOD_SHIFT) ? CIOLIB_KMOD_SHIFT : 0) |
+					((km & KMOD_CTRL) ? CIOLIB_KMOD_CTRL : 0) |
+					((km & KMOD_ALT) ? CIOLIB_KMOD_ALT : 0);
 				pthread_once(&ciolib_mouse_initialized, init_mouse);
 				if (ev.wheel.y) {
 #if (SDL_MINOR_VERSION > 0) || (SDL_PATCHLEVEL > 3)
@@ -1127,22 +1141,26 @@ void sdl_video_event_thread(void *data)
 						ev.wheel.y = 0 - ev.wheel.y;
 #endif
 					if (ev.wheel.y > 0)
-						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(4), -1, -1, -1, -1);
+						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(4), -1, -1, -1, -1, mods);
 					if (ev.wheel.y < 0)
-						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(5), -1, -1, -1, -1);
+						ciomouse_gotevent(CIOLIB_BUTTON_PRESS(5), -1, -1, -1, -1, mods);
 				}
 				break;
 			case SDL_MOUSEBUTTONUP:
+				km = sdl.GetModState();
+				mods = ((km & KMOD_SHIFT) ? CIOLIB_KMOD_SHIFT : 0) |
+					((km & KMOD_CTRL) ? CIOLIB_KMOD_CTRL : 0) |
+					((km & KMOD_ALT) ? CIOLIB_KMOD_ALT : 0);
 				pthread_once(&ciolib_mouse_initialized, init_mouse);
 				switch(ev.button.button) {
 					case SDL_BUTTON_LEFT:
-						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat));
+						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(1),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat), mods);
 						break;
 					case SDL_BUTTON_MIDDLE:
-						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat));
+						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(2),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat), mods);
 						break;
 					case SDL_BUTTON_RIGHT:
-						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat));
+						ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(3),win_to_text_xpos(ev.button.x, &cvstat),win_to_text_ypos(ev.button.y, &cvstat), win_to_res_xpos(ev.button.x, &cvstat), win_to_res_ypos(ev.button.y, &cvstat), mods);
 						break;
 				}
 				break;

@@ -614,7 +614,13 @@ creation waits for `applicationDidFinishLaunching:` before proceeding.
 #### Key Abstractions
 
 - **vmem**: Virtual memory — circular buffer of `vmem_cell` structs
-  (character, legacy attribute, 32-bit fg/bg colors, font index)
+  (character, legacy attribute, 32-bit fg/bg colors, font index,
+  hyperlink_id)
+- **Hyperlink table**: 4096-entry table in ciolib.c mapping
+  `hyperlink_id` → URI. Populated via OSC 8 sequences parsed by
+  cterm. GC scans visible screen when table is full. APIs:
+  `ciolib_add_hyperlink()`, `ciolib_get_hyperlink_url()`,
+  `ciolib_open_hyperlink()`, `ciolib_set_current_hyperlink()`
 - **text_info**: Current window state (coordinates, cursor, mode, attribute)
 - **Screen save/restore**: Captures full state including vmem, pixels,
   fonts, palette, and video flags
