@@ -3441,7 +3441,9 @@ change_settings(int connected)
 		SAFEPRINTF(opts[1], "Prompt to Save          %s", settings.prompt_save ? "Yes" : "No");
 		SAFEPRINTF(opts[2], "Startup Screen Mode     %s", screen_modes[settings.startup_mode]);
 		SAFEPRINTF(opts[3], "Video Output Mode       %s", output_descrs[settings.output_mode]);
-		SAFEPRINTF(opts[4], "Default Cursor Style    %s", cursor_descrs[settings.defaultCursor]);
+		SAFEPRINTF(opts[4], "Default Cursor Style    %s",
+		    cursor_descrs[(settings.defaultCursor >= 0 && settings.defaultCursor <= ST_CT_SOLID_BLK)
+		        ? settings.defaultCursor : ST_CT_DEFAULT]);
 		audio_opts[0] = 0;
 		for (j = 0; audio_output_types[j].name != NULL; j++) {
 			if (xpbeep_sound_devices_enabled & audio_output_types[j].bit) {

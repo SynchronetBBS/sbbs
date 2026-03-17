@@ -1242,6 +1242,10 @@ void sdl_video_event_thread(void *data)
 									if (internal_scaling) {
 										struct graphics_buffer *gb;
 										gb = do_scale(list, dst.w, dst.h);
+										if (gb == NULL) {
+											bitmap_drv_free_rect(list);
+											break;
+										}
 										src.x = 0;
 										src.y = 0;
 										src.w = gb->w;
