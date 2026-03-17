@@ -48,6 +48,7 @@
  #include "sdlfuncs.h"
 #endif
 #ifdef _WIN32
+ #include <shellapi.h>
  #include "win32cio.h"
 #else
  #ifdef WITH_WAYLAND
@@ -260,6 +261,14 @@ ciolib_openurl_unix(const char *url)
 	if (WIFEXITED(status) && WEXITSTATUS(status) == 127)
 		return false;
 	return true;
+}
+#endif
+
+#ifdef _WIN32
+static bool
+ciolib_openurl_win32(const char *url)
+{
+	return (INT_PTR)ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOWNORMAL) > 32;
 }
 #endif
 
@@ -716,12 +725,6 @@ static int try_ansi_init(int mode)
 }
 
 #ifdef _WIN32
-static bool
-ciolib_openurl_win32(const char *url)
-{
-	return (INT_PTR)ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOWNORMAL) > 32;
-}
-
 #if defined(__BORLANDC__)
         #pragma argsused
 #endif
