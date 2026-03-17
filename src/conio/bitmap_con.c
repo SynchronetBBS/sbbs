@@ -1147,8 +1147,11 @@ static void blinker_thread(void *data)
 			continue;
 		}
 		assert_pthread_mutex_unlock(&screenlock);
-		if (curs_changed || blink_changed || lfc)
+		if (curs_changed || blink_changed || lfc) {
+			assert_pthread_mutex_lock(&vstat_chlock);
 			vstat.vmem->changed = true;
+			assert_pthread_mutex_unlock(&vstat_chlock);
+		}
 		assert_rwlock_unlock(&vstatlock);
 
 		if (check_redraw()) {
