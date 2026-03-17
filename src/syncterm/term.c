@@ -5308,7 +5308,7 @@ doterm(struct bbslist *bbs)
 							    || ms.mode == MM_ANY_EVENT_TRACKING)
 								conn_send(mouse_buf,
 								    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent, &ms), 0);
-							if (mevent.hyperlink_id != hover_hyperlink_id) {
+							if (!term.nostatus && mevent.hyperlink_id != hover_hyperlink_id) {
 								hover_hyperlink_id = mevent.hyperlink_id;
 								if (hover_hyperlink_id) {
 									char *url = ciolib_get_hyperlink_url(hover_hyperlink_id);
