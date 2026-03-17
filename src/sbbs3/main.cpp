@@ -1183,6 +1183,7 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 	if (sbbs->online != ON_REMOTE)
 		sbbs->lputs(LOG_WARNING, cstr);
 	else {
+		sbbs->term->cond_newline();
 		sbbs->attr(sbbs->cfg.color[clr_err]);
 		sbbs->bputs(cstr);
 		sbbs->attr(LIGHTGRAY);
