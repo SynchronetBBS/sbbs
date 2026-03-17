@@ -172,7 +172,10 @@ viewscroll(void)
 						    "~ J ~ or ~ Up Arrow ~   Scrolls up one line\n"
 						    "~ K ~ or ~ Down Arrow ~ Scrolls down one line\n"
 						    "~ H ~ or ~ Page Up ~    Scrolls up one screen\n"
-						    "~ L ~ or ~ Page Down ~  Scrolls down one screen\n";
+						    "~ L ~ or ~ Page Down ~  Scrolls down one screen\n"
+						    "~ Mouse Wheel ~         Scrolls up/down one line\n"
+						    "~ Click ~               Opens hyperlink or URL\n"
+						    "~ ESC ~                 Returns to terminal\n";
 						uifc.showhelp();
 						check_exit(false);
 						uifcbail();
@@ -321,7 +324,7 @@ syncmenu(struct bbslist *bbs, int *speed)
 				break;
 			case 6: /* Change log level (temporarily) */
 				j = log_level;
-				uifc.helpbuf = "`Log Level\n\n"
+				uifc.helpbuf = "`Log Level`\n\n"
 				    "The log level changes the verbosity of messages shown in the transfer\n"
 				    "window.  For the selected log level, messages of that level and those above\n"
 				    "it will be displayed.";
