@@ -55,6 +55,10 @@ struct sort_order_info {
 #define SORT_ORDER_STRING (1 << 1)
 #define DEFAULT_SORT_ORDER_VALUE (0)
 
+#define EDIT_CHANGED   1
+#define EDIT_NAV_PREV  2
+#define EDIT_NAV_NEXT  4
+
 static struct sort_order_info sort_order[] = {
 	{
 		NULL,
@@ -716,9 +720,10 @@ sort_list(struct bbslist **list, int *listcount, int *cur, int *bar, char *curre
  * terminated by an entry whose abs() maps to a NULL name.
  * Does NOT do any I/O — the caller handles persistence.
  */
-static void
-edit_sort_fields(int *order)
+static int
+edit_sort_fields(int *order, const char *profile_name)
 {
+	char title[48];
 	char opt[sizeof(sort_order) / sizeof(struct sort_order_info)][80];
 	char *opts[sizeof(sort_order) / sizeof(struct sort_order_info) + 1];
 	char sopt[sizeof(sort_order) / sizeof(struct sort_order_info)][80];
@@ -728,6 +733,7 @@ edit_sort_fields(int *order)
 	int ret, sret;
 	int i, j;
 	int nfields = sizeof(sort_order) / sizeof(struct sort_order_info);
+	int nav = 0;
 
 	for (i = 0; i < nfields; i++)
 		opts[i] = opt[i];
@@ -753,9 +759,23 @@ edit_sort_fields(int *order)
 		               "to add a new field before and press ~INSERT~.  Choose\n"
 		               "a field from the list and it will be inserted.\n\n"
 		               "To remove a field, use ~DELETE~.\n\n"
-		               "To reverse a field, highlight it and press enter";
-		ret = uifc.list(WIN_XTR | WIN_DEL | WIN_INS | WIN_INSACT | WIN_ACT | WIN_SAV,
-		                0, 0, 0, &curr, &bar, "Sort Fields", opts);
+		               "To reverse a field, highlight it and press enter\n\n"
+		               "~ [ ~ / ~ ] ~ to edit previous/next profile's fields";
+		if (profile_name)
+			snprintf(title, sizeof(title), "Sort Fields: %s", profile_name);
+		else
+			strlcpy(title, "Sort Fields", sizeof(title));
+		ret = uifc.list(WIN_XTR | WIN_DEL | WIN_INS | WIN_INSACT | WIN_ACT | WIN_SAV
+		                | WIN_EXTKEYS,
+		                0, 0, 0, &curr, &bar, title, opts);
+		if (ret == -2 - '[') {
+			nav = EDIT_NAV_PREV;
+			break;
+		}
+		if (ret == -2 - ']') {
+			nav = EDIT_NAV_NEXT;
+			break;
+		}
 		if (ret == -1) {
 			if (uifc.exit_flags & UIFC_XF_QUIT) {
 				if (!check_exit(false))
@@ -763,6 +783,8 @@ edit_sort_fields(int *order)
 			}
 			break;
 		}
+		if (ret < -1)
+			continue;
 		if (ret & MSK_INS) { /* Insert field */
 			j = 0;
 			for (i = 0; i < nfields; i++) {
@@ -810,6 +832,7 @@ edit_sort_fields(int *order)
 		else
 			order[ret & MSK_OFF] = 0 - order[ret & MSK_OFF];
 	}
+	return nav;
 }
 
 /*
@@ -1092,7 +1115,7 @@ edit_sort_profiles(struct bbslist **list, int *listcount, int *ocur, int *obar)
 				/* Parse the new profile's value for editing */
 				int tmporder[sizeof(sortorder) / sizeof(sortorder[0])];
 				parse_sort_value("1", tmporder, sizeof(tmporder) / sizeof(tmporder[0]));
-				edit_sort_fields(tmporder);
+				edit_sort_fields(tmporder, name);
 				/* Serialize back */
 				char *val = serialize_sort_order(tmporder);
 				if (val) {
@@ -1194,20 +1217,29 @@ edit_sort_profiles(struct bbslist **list, int *listcount, int *ocur, int *obar)
 		}
 		else if (ret >= 0 && ret < (int)count) {
 			/* Enter — edit sort fields */
-			int tmporder[sizeof(sortorder) / sizeof(sortorder[0])];
-			parse_sort_value(sort_profiles[ret]->value, tmporder,
-			                 sizeof(tmporder) / sizeof(tmporder[0]));
-			edit_sort_fields(tmporder);
-			char *val = serialize_sort_order(tmporder);
-			if (val) {
-				if (strcmp(val, sort_profiles[ret]->value) != 0) {
-					free(sort_profiles[ret]->value);
-					sort_profiles[ret]->value = val;
-					changed = true;
+			int nav;
+			do {
+				int tmporder[sizeof(sortorder) / sizeof(sortorder[0])];
+				parse_sort_value(sort_profiles[ret]->value, tmporder,
+				                 sizeof(tmporder) / sizeof(tmporder[0]));
+				nav = edit_sort_fields(tmporder, sort_profiles[ret]->name);
+				char *val = serialize_sort_order(tmporder);
+				if (val) {
+					if (strcmp(val, sort_profiles[ret]->value) != 0) {
+						free(sort_profiles[ret]->value);
+						sort_profiles[ret]->value = val;
+						changed = true;
+					}
+					else
+						free(val);
 				}
-				else
-					free(val);
-			}
+				if (nav & EDIT_NAV_PREV)
+					ret = (ret + (int)count - 1) % (int)count;
+				else if (nav & EDIT_NAV_NEXT)
+					ret = (ret + 1) % (int)count;
+				cur = ret;
+				bar = ret;
+			} while (nav & (EDIT_NAV_PREV | EDIT_NAV_NEXT));
 		}
 	}
 
@@ -1937,7 +1969,7 @@ build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 	if (isdefault)
 		hblen = strlcpy(helpbuf, "`Edit Default Connection`\n\n", hbsz);
 	else
-		hblen = strlcpy(helpbuf, "`Edit Directory Entry`\n\n~ CTRL-S ~ To Edit Explicit Sort Index\n\n", hbsz);
+		hblen = strlcpy(helpbuf, "`Edit Directory Entry`\n\n~ CTRL-S ~ To Edit Explicit Sort Index\n~ [ ~ / ~ ] ~ Edit previous/next entry\n\n", hbsz);
 
 	hblen += strlcat(helpbuf + hblen, "Select item to edit.\n\n", hbsz - hblen);
 
@@ -2396,7 +2428,8 @@ edit_sort_order(str_list_t inifile, char *itemname, struct bbslist *item)
 }
 
 int
-edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault)
+edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault,
+          int *init_copt, int *init_bar)
 {
 #define EDIT_LIST_MAX 41
 	char opt[EDIT_LIST_MAX + 1][69]; /* EDIT_LIST_MAX=Holds number of menu items, 69=Number of columns */
@@ -2405,8 +2438,8 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 #undef EDIT_LIST_MAX
 	char *opts[(sizeof(opt) / sizeof(opt[0])) + 1];
 	int changed = 0;
-	int copt = 0, i, j;
-	int bar = 0;
+	int copt = (init_copt ? *init_copt : 0), i, j;
+	int bar = (init_bar ? *init_bar : 0);
 	char str[64];
 	FILE *listfile;
 	str_list_t inifile;
@@ -2451,6 +2484,21 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		if (i == -2 - CTRL_S && !isdefault) {
 			if (edit_sort_order(inifile, itemname, item))
 				changed = 1;
+		}
+		if ((i == -2 - '[' || i == -2 - ']') && !isdefault) {
+			int nav = (i == -2 - '[') ? EDIT_NAV_PREV : EDIT_NAV_NEXT;
+			if (!safe_mode) {
+				if ((listfile = fopen(listpath, "wb")) != NULL) {
+					iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+					fclose(listfile);
+				}
+			}
+			strListFree(&inifile);
+			if (init_copt)
+				*init_copt = copt;
+			if (init_bar)
+				*init_bar = bar;
+			return nav | (changed ? EDIT_CHANGED : 0);
 		}
 		if (i < -1)
 			continue;
@@ -4935,19 +4983,30 @@ show_bbslist(char *current, int connected)
 								check_exit(false);
 								break;
 							}
-							if (edit_list(list, list[opt], settings.list_path, false)) {
-								load_bbslist(list,
-								             BBSLIST_SIZE,
-								             &defaults,
-								             settings.list_path,
-								             sizeof(settings.list_path),
-								             shared_list,
-								             sizeof(shared_list),
-								             &listcount,
-								             &opt,
-								             &bar,
-								             strdup(list[opt]->name));
-								oldopt = -1;
+							{
+								int enav;
+								int ecopt = 0, ebar = 0;
+								do {
+									enav = edit_list(list, list[opt], settings.list_path, false, &ecopt, &ebar);
+									if (enav & EDIT_CHANGED) {
+										load_bbslist(list,
+										             BBSLIST_SIZE,
+										             &defaults,
+										             settings.list_path,
+										             sizeof(settings.list_path),
+										             shared_list,
+										             sizeof(shared_list),
+										             &listcount,
+										             &opt,
+										             &bar,
+										             strdup(list[opt]->name));
+										oldopt = -1;
+									}
+									if (enav & EDIT_NAV_PREV)
+										opt = (opt + listcount - 1) % listcount;
+									else if (enav & EDIT_NAV_NEXT)
+										opt = (opt + 1) % listcount;
+								} while (enav & (EDIT_NAV_PREV | EDIT_NAV_NEXT));
 							}
 							break;
 						case MSK_COPY:
@@ -4996,7 +5055,7 @@ show_bbslist(char *current, int connected)
 									break;
 							}
 							add_bbs(settings.list_path, copied, true);
-							edit_list(list, copied, settings.list_path, false);
+							edit_list(list, copied, settings.list_path, false, NULL, NULL);
 							load_bbslist(list,
 							             BBSLIST_SIZE,
 							             &defaults,
@@ -5023,19 +5082,30 @@ show_bbslist(char *current, int connected)
 							uifc.msg("Cannot edit list in safe mode");
 							check_exit(false);
 						}
-						else if (edit_list(list, list[opt], settings.list_path, false)) {
-							load_bbslist(list,
-							             BBSLIST_SIZE,
-							             &defaults,
-							             settings.list_path,
-							             sizeof(settings.list_path),
-							             shared_list,
-							             sizeof(shared_list),
-							             &listcount,
-							             &opt,
-							             &bar,
-							             strdup(list[opt]->name));
-							oldopt = -1;
+						else {
+							int enav;
+							int ecopt = 0, ebar = 0;
+							do {
+								enav = edit_list(list, list[opt], settings.list_path, false, &ecopt, &ebar);
+								if (enav & EDIT_CHANGED) {
+									load_bbslist(list,
+									             BBSLIST_SIZE,
+									             &defaults,
+									             settings.list_path,
+									             sizeof(settings.list_path),
+									             shared_list,
+									             sizeof(shared_list),
+									             &listcount,
+									             &opt,
+									             &bar,
+									             strdup(list[opt]->name));
+									oldopt = -1;
+								}
+								if (enav & EDIT_NAV_PREV)
+									opt = (opt + listcount - 1) % listcount;
+								else if (enav & EDIT_NAV_NEXT)
+									opt = (opt + 1) % listcount;
+							} while (enav & (EDIT_NAV_PREV | EDIT_NAV_NEXT));
 						}
 					}
 					else {
@@ -5144,7 +5214,7 @@ show_bbslist(char *current, int connected)
 							    sizeof(shared_list), &listcount, &opt, &bar, current ? strdup(current) : NULL);
 						break;
 					case 1: /* Edit default connection settings */
-						edit_list(NULL, &defaults, settings.list_path, true);
+						edit_list(NULL, &defaults, settings.list_path, true, NULL, NULL);
 						break;
 					case 2: { /* Screen Mode */
 						struct text_info ti;

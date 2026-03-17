@@ -334,14 +334,16 @@ font_management(void)
 			    "`8x8`  Used for screen modes with 35 or more lines and all C64/C128 modes\n"
 			    "`8x14` Used for screen modes with 28 and 34 lines\n"
 			    "`8x16` Used for screen modes with 30 lines or fewer than 28 lines.\n"
-			    "`12x20` Used for Prestel mode.";
+			    "`12x20` Used for Prestel mode.\n\n"
+			    "~ [ ~ / ~ ] ~ to edit previous/next font";
 			sprintf(opts[0], "Name: %.50s", fonts[cur].name ? fonts[cur].name : "<undefined>");
 			sprintf(opts[1], "8x8   %.50s", fonts[cur].path8x8 ? fonts[cur].path8x8 : "<undefined>");
 			sprintf(opts[2], "8x14  %.50s", fonts[cur].path8x14 ? fonts[cur].path8x14 : "<undefined>");
 			sprintf(opts[3], "8x16  %.50s", fonts[cur].path8x16 ? fonts[cur].path8x16 : "<undefined>");
 			sprintf(opts[4], "12x20 %.50s", fonts[cur].path12x20 ? fonts[cur].path12x20 : "<undefined>");
 			opts[5][0] = 0;
-			i = uifc.list(WIN_SAV | WIN_ACT | WIN_INS | WIN_INSACT | WIN_DEL | WIN_RHT | WIN_BOT,
+			i = uifc.list(WIN_SAV | WIN_ACT | WIN_INS | WIN_INSACT | WIN_DEL | WIN_RHT | WIN_BOT
+			        | WIN_EXTKEYS,
 			        0,
 			        0,
 			        0,
@@ -349,10 +351,20 @@ font_management(void)
 			        &fbar,
 			        "Font Details",
 			        opt);
+			if (i == -2 - '[' || i == -2 - ']') {
+				if (i == -2 - '[')
+					cur = (cur + count - 1) % count;
+				else
+					cur = (cur + 1) % count;
+				i = 0;
+				continue;
+			}
 			if (i == -1) {
 				check_exit(false);
 				break;
 			}
+			if (i < -1)
+				continue;
 			switch (i) {
 				case 0:
 					SAFECOPY(str, fonts[cur].name);
