@@ -2282,7 +2282,6 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	return 1;
 }
 
-// TODO: Do we ever need to force anymore?
 struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force)
 {
 	struct ciolib_pixels *pixels;
