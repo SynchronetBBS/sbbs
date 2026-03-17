@@ -143,6 +143,11 @@ void mousestate_res(int *x, int *y, uint8_t *buttons)
 	return;
 }
 
+uint64_t ciomouse_getevents(void)
+{
+	return mouse_events;
+}
+
 uint64_t ciomouse_setevents(uint64_t events)
 {
 	mouse_events=events;

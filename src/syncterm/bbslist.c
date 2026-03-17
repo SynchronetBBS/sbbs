@@ -471,6 +471,7 @@ viewofflinescroll(void)
 								int xoff = (sbtxtinfo.screenwidth - scrollback_cols) / 2;
 								int col = mevent.startx - 1 - xoff;
 								int row = top + mevent.starty - 1;
+								int vis_rows = scrollback_lines - top;
 								if (col >= 0 && col < scrollback_cols
 								    && row >= 0 && row < scrollback_lines) {
 									int cell = row * scrollback_cols + col;
@@ -482,6 +483,21 @@ viewofflinescroll(void)
 												uifcmsg("URL copied to clipboard", url);
 												free(url);
 											}
+										}
+									}
+									else {
+										char *url = detect_url_at(
+										    scrollback_buf + top * scrollback_cols,
+										    scrollback_cols, vis_rows,
+										    col, mevent.starty - 1);
+										if (url) {
+											if (!cio_api.openurl
+											    || !cio_api.openurl(url)) {
+												copytext(url, strlen(url));
+												uifcmsg("URL copied to clipboard",
+												    url);
+											}
+											free(url);
 										}
 									}
 								}

@@ -767,6 +767,7 @@ CIOLIBEXPORT void init_mouse(void);
 CIOLIBEXPORT int ciolib_getmouse(struct mouse_event *mevent);
 CIOLIBEXPORT int ciolib_ungetmouse(struct mouse_event *mevent);
 CIOLIBEXPORT void ciolib_mouse_thread(void *data);
+CIOLIBEXPORT uint64_t ciomouse_getevents(void);
 CIOLIBEXPORT uint64_t ciomouse_setevents(uint64_t events);
 CIOLIBEXPORT uint64_t ciomouse_addevents(uint64_t events);
 CIOLIBEXPORT uint64_t ciomouse_delevents(uint64_t events);
