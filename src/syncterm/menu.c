@@ -22,6 +22,7 @@ viewscroll(void)
 	struct vmem_cell     *scrollback;
 	struct  text_info     txtinfo;
 	int                   x, y;
+	uint16_t              vs_hover_id = 0;
 	struct mouse_event    mevent;
 	struct ciolib_screen *savscrn;
 
@@ -55,11 +56,13 @@ viewscroll(void)
 	set_modepalette(palettes[COLOUR_PALETTE]);
 	gotoxy(1, 1);
 	textattr(uifc.hclr | (uifc.bclr << 4) | BLINK);
+	ciomouse_addevent(CIOLIB_BUTTON_1_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_START);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_MOVE);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_END);
 	ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
 	ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
+	ciomouse_addevent(CIOLIB_MOUSE_MOVE);
 	for (i = 0; (!i) && (!quitting);) {
 		if (top < 0)
 			top = 0;
@@ -82,6 +85,45 @@ viewscroll(void)
 					case CIO_KEY_MOUSE:
 						getmouse(&mevent);
 						switch (mevent.event) {
+							case CIOLIB_BUTTON_1_CLICK:
+							{
+								int cell = (top + mevent.starty - 1) * term.width + (mevent.startx - 1);
+								if (cell >= 0 && cell < (sblines + term.height) * term.width
+								    && scrollback[cell].hyperlink_id) {
+									if (!ciolib_open_hyperlink(scrollback[cell].hyperlink_id)) {
+										char *url = ciolib_get_hyperlink_url(scrollback[cell].hyperlink_id);
+										if (url) {
+											copytext(url, strlen(url));
+											uifcmsg("URL copied to clipboard", url);
+											free(url);
+										}
+									}
+								}
+								break;
+							}
+							case CIOLIB_MOUSE_MOVE:
+							{
+								int cell = (top + mevent.starty - 1) * term.width + (mevent.startx - 1);
+								uint16_t hid = 0;
+								if (cell >= 0 && cell < (sblines + term.height) * term.width)
+									hid = scrollback[cell].hyperlink_id;
+								if (hid != vs_hover_id) {
+									vs_hover_id = hid;
+									if (vs_hover_id) {
+										char *url = ciolib_get_hyperlink_url(vs_hover_id);
+										if (url) {
+											show_status_url(url);
+											free(url);
+										}
+										mousepointer(CIOLIB_MOUSEPTR_ARROW);
+									}
+									else {
+										show_status_url("");
+										mousepointer(CIOLIB_MOUSEPTR_BAR);
+									}
+								}
+								break;
+							}
 							case CIOLIB_BUTTON_1_DRAG_START:
 								mousedrag(scrollback);
 								break;

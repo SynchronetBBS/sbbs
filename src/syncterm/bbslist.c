@@ -389,6 +389,7 @@ viewofflinescroll(void)
 	struct text_info sbtxtinfo;
 	struct mouse_event mevent;
 	int scrollback_pos;
+	uint16_t ol_hover_id = 0;
 
 	if (scrollback_buf == NULL)
 		return;
@@ -430,11 +431,13 @@ viewofflinescroll(void)
 	gettextinfo(&sbtxtinfo);
 	scrollback_pos = scrollback_lines - sbtxtinfo.screenheight;
 	top = scrollback_pos;
+	ciomouse_addevent(CIOLIB_BUTTON_1_CLICK);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_START);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_MOVE);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_END);
 	ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
 	ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
+	ciomouse_addevent(CIOLIB_MOUSE_MOVE);
 	showmouse();
 
 	for (i = 0; !i && !quitting;) {
@@ -463,6 +466,53 @@ viewofflinescroll(void)
 					case CIO_KEY_MOUSE:
 						getmouse(&mevent);
 						switch (mevent.event) {
+							case CIOLIB_BUTTON_1_CLICK:
+							{
+								int xoff = (sbtxtinfo.screenwidth - scrollback_cols) / 2;
+								int col = mevent.startx - 1 - xoff;
+								int row = top + mevent.starty - 1;
+								if (col >= 0 && col < scrollback_cols
+								    && row >= 0 && row < scrollback_lines) {
+									int cell = row * scrollback_cols + col;
+									if (scrollback_buf[cell].hyperlink_id) {
+										if (!ciolib_open_hyperlink(scrollback_buf[cell].hyperlink_id)) {
+											char *url = ciolib_get_hyperlink_url(scrollback_buf[cell].hyperlink_id);
+											if (url) {
+												copytext(url, strlen(url));
+												uifcmsg("URL copied to clipboard", url);
+												free(url);
+											}
+										}
+									}
+								}
+								break;
+							}
+							case CIOLIB_MOUSE_MOVE:
+							{
+								int xoff = (sbtxtinfo.screenwidth - scrollback_cols) / 2;
+								int col = mevent.startx - 1 - xoff;
+								int row = top + mevent.starty - 1;
+								uint16_t hid = 0;
+								if (col >= 0 && col < scrollback_cols
+								    && row >= 0 && row < scrollback_lines)
+									hid = scrollback_buf[row * scrollback_cols + col].hyperlink_id;
+								if (hid != ol_hover_id) {
+									ol_hover_id = hid;
+									if (ol_hover_id) {
+										char *url = ciolib_get_hyperlink_url(ol_hover_id);
+										if (url) {
+											show_status_url(url);
+											free(url);
+										}
+										mousepointer(CIOLIB_MOUSEPTR_ARROW);
+									}
+									else {
+										show_status_url("");
+										mousepointer(CIOLIB_MOUSEPTR_BAR);
+									}
+								}
+								break;
+							}
 							case CIOLIB_BUTTON_1_DRAG_START:
 								mousedrag(scrollback_buf);
 								break;
