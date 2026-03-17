@@ -249,7 +249,7 @@ function get_columns(user)
 		user = js.global.user;
 	console.putmsg(bbs.text(bbs.text.HowManyColumns));
 	var val = String(user.screen_columns || "");
-	val = console.getstr(val, 3, K_EDIT | K_AUTODEL);
+	val = console.getstr(val, 3, K_EDIT | K_AUTODEL | K_NUMBER);
 	if (val < 0)
 		return false;
 	user.screen_columns = val;
@@ -266,7 +266,7 @@ function get_rows(user)
 		user = js.global.user;
 	console.putmsg(bbs.text(bbs.text.HowManyRows));
 	var val = String(user.screen_rows || "");
-	val = console.getstr(val, 3, K_EDIT | K_AUTODEL);
+	val = console.getstr(val, 3, K_EDIT | K_AUTODEL | K_NUMBER);
 	if (val < 0)
 		return false;
 	user.screen_rows = val;
