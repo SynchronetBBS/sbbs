@@ -15466,6 +15466,8 @@ do_skypix(char *buf, size_t len)
 		argc++;
 	}
 	argv = malloc(sizeof(*argv) * argc);
+	if (argv == NULL)
+		return;
 	for (i = 0, p = &buf[2]; i < argc; i++) {
 		argv[i] = strtol(p, &p, 10);
 		if (*p == ';')
@@ -15478,11 +15480,6 @@ do_skypix(char *buf, size_t len)
 		p = strchr(sarg, '!');
 		if (p)
 			*p = 0;
-	}
-
-	if (argc < 1) {
-		free(argv);
-		return;
 	}
 // printf("do_skypix(\"%s\")\n", &buf[2]);
 	switch (argv[0]) {
