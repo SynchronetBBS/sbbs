@@ -1,9 +1,9 @@
 resource app_version
 {
-	major = ,
-	middle = ,
+	major = 1,
+	middle = 8,
 	variety = B_APPV_GAMMA,
-	internal = 2,
+	internal = 1,
 	short_info = "SyncTERM BBS Terminal",
 	long_info = "SyncTERM - ANSI-BBS terminal for connecting to BBS"
 };
