@@ -182,6 +182,7 @@ extern char list_password[1024];
 extern enum iniCryptAlgo list_algo;
 extern int list_keysize;
 
+void init_sort_profiles(FILE *inifile);
 void read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsname, int id, int type);
 void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type);
 void free_list(struct bbslist **list, int listcount);

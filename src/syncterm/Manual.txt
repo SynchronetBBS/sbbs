@@ -433,7 +433,11 @@ kbd:[Ctrl+E]::
 Edit the selected entry (Alias for kbd:[F2])
 
 kbd:[Ctrl+S]::
-<<_modifying_the_sort_order,Modify the sort order>>
+<<_managing_sort_profiles,Manage sort profiles>>
+
+kbd:[<] / kbd:[>]::
+Cycle through sort profiles (previous / next).
+The current profile name is shown in the directory title bar.
 
 kbd:[Alt+B]::
 View the scrollback of the last session
@@ -753,20 +757,50 @@ repeated to fill all 16 palette slots. This allows for example, the use
 16 colour Amiga VT-52 mode.
 
 
-==== Modifying the Sort Order
+==== Managing Sort Profiles
 
-You can change the order that entries appear in the Directory via the
-kbd:[Ctrl+S] key.  This brings up a menu where you can add entries by either
-pressing Insert to add before the current item, or by pressing Return on
-the enpty line at the end.  This will bring up a list of fields that can
-be sorted on.
+SyncTERM supports named sort profiles that control the order entries
+appear in the Directory.  Press kbd:[<] or kbd:[>] in the directory
+listing to cycle through profiles.  The current profile name is shown
+in the title bar.
 
-Pressing enter on a field will toggle if it's reversed (highest to
-lowest) or not.
+Four default profiles are provided: Name, Last Connected, Most Called,
+and Date Added.  You can manage profiles by pressing kbd:[Ctrl+S] to
+open the Sort Profiles manager.
+
+In the Sort Profiles manager:
+
+kbd:[Enter]::
+Edit the sort fields for the selected profile.  In the sort field editor,
+press Insert to add a field, Delete to remove one, and Enter to toggle
+between normal and reversed order.
+
+kbd:[F2]::
+Rename the selected profile (max 19 characters, must be unique).
+
+kbd:[Insert]::
+Create a new profile.
+
+kbd:[Delete]::
+Delete the selected profile.  Deleting the last profile reloads the
+defaults.
+
+kbd:[F5] / kbd:[Ctrl+Insert]::
+Copy a profile to the clipboard.
+
+kbd:[Shift+Delete]::
+Cut a profile (remove and place on clipboard).
+
+kbd:[F6] / kbd:[Shift+Insert]::
+Paste the clipboard at the current position.  If the name already
+exists, you will be prompted for a new unique name.
+
+Sort profiles are stored in the `[SortProfiles]` section of the
+SyncTERM INI file.
 
 The Explicit Sort Value exists to manually control the position of entries
-in the list, and can be accessed using :[Ctrl+D]: in the Edit Directory Entry
-menu.
+in the list, and can be accessed using kbd:[Ctrl+S] in the Edit Directory
+Entry menu.
 
 
 ==== Viewing the Scrollback
