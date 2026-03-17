@@ -15657,7 +15657,12 @@ do_skypix(char *buf, size_t len)
 				fclose(font);
 				break;
 			}
-			fread(amiga_font, 1, flen, font);
+			if (fread(amiga_font, 1, flen, font) != flen) {
+				free(amiga_font);
+				amiga_font = NULL;
+				fclose(font);
+				break;
+			}
 			fclose(font);
 			amiga_font->height = htons(amiga_font->height);
 			amiga_font->xsize = htons(amiga_font->xsize);
