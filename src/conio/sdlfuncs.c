@@ -314,16 +314,20 @@ int init_sdl_video(void)
 	 * displaying on the local framebuffer... a definate no-no.
 	 * This ugly hack attempts to prevent this... of course, remote X11
 	 * connections must still be allowed.
+	 *
+	 * If SDL_VIDEODRIVER is explicitly set, trust it (e.g. "offscreen"
+	 * for headless testing).
 	 */
-	if(getenv("DISPLAY") != NULL || (getenv("REMOTEHOST") == NULL && getenv("SSH_CLIENT") == NULL)) {
+	if(getenv("SDL_VIDEODRIVER") != NULL || getenv("DISPLAY") != NULL || (getenv("REMOTEHOST") == NULL && getenv("SSH_CLIENT") == NULL)) {
 		if(sdl.Init(SDL_INIT_VIDEO)==0) {
 			sdl_video_initialized=TRUE;
 		}
 	}
 #endif
 	if(sdl_video_initialized && (drivername = sdl.GetCurrentVideoDriver())!=NULL) {
-		/* Unacceptable drivers */
-		if((!strcmp(drivername, "offscreen")) || (!strcmp(drivername, "caca")) || (!strcmp(drivername,"aalib")) || (!strcmp(drivername,"dummy"))) {
+		/* Reject unusable drivers, unless explicitly requested */
+		if(getenv("SDL_VIDEODRIVER") == NULL
+		    && ((!strcmp(drivername, "offscreen")) || (!strcmp(drivername, "caca")) || (!strcmp(drivername,"aalib")) || (!strcmp(drivername,"dummy")))) {
 			sdl.Quit();
 			sdl_video_initialized=FALSE;
 		}
