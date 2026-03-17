@@ -187,7 +187,7 @@ void read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *
 void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type);
 void free_list(struct bbslist **list, int listcount);
 void add_bbs(char *listpath, struct bbslist *bbs, bool isnew);
-int edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault);
+int edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault, int *init_copt, int *init_bar);
 int get_rate_num(int rate);
 cterm_emulation_t get_emulation(struct bbslist *bbs);
 const char *get_emulation_str(struct bbslist *bbs);

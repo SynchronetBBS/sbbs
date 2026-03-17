@@ -134,6 +134,10 @@ screen. For some display sizes, unpredictable results may occur.
 In the dialing directory, press \fB<\fP or \fB>\fP to cycle through
 named sort profiles.  Press \fBCtrl-S\fP to manage sort profiles
 (create, rename, delete, edit sort fields, reorder via cut/paste).
+.PP
+In edit submenus (Edit Directory Entry, Font Management, Sort Profiles),
+press \fB[\fP or \fB]\fP to navigate to the previous or next item
+without returning to the parent list.
 .SH FILES
 .IP \fI%%DESTDIR%%%%PREFIX%%/etc/syncterm.lst\fR
 The system wide dialing directory.

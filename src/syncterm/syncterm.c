@@ -2503,7 +2503,7 @@ main(int argc, char **argv)
 							switch (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL,
 							    "Save this directory entry?", YesNo)) {
 								case 0: /* Yes */
-									edit_list(NULL, bbs, settings.list_path, false);
+									edit_list(NULL, bbs, settings.list_path, false, NULL, NULL);
 									add_bbs(settings.list_path, bbs, false);
 									last_bbs = strdup(bbs->name);
 									break;
