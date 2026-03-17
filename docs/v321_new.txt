@@ -675,3 +675,130 @@ o More resilient to concurrent opens (by other processes, even though locked)
   while maintaining/packing a msg base
 o Fix index corruption resulting from packing an unmaintained msg base
   and filebase corruption
+
+******************************************
+* What's New in Synchronet Version 3.21e *
+******************************************
+
+General
+~~~~~~~
+o Fix !include'd .ini files getting merged (e.g. with modopts.ini), issue #1088
+o Add configurable colors to uifc.ini (and related .ini files, e.g. scfg.ini)
+o Fix non-blocking TCP connects (Mail Server SendMail and Telnet/Rlogin Gate)
+o Fix crashes with cached filter files and using an older MSVC++ runtime
+  (MSVCP140.dll)
+o Fix linked-list mutual exclusion protection on Windows
+  - all mutex-protected linked-lists shared the same critical section handle
+
+Terminal Server
+~~~~~~~~~~~~~~~
+o Return to the 1-second ESC key delay of Synchronet v3.20 and earlier
+o printfile(..., P_SEEK) now accounts for extended color codes in print columns
+o Display changed attributes in change message attribute function
+o When reading un-read mail, log msg "read un-read mail" instead of "read mail"
+o Don't set the "read" message attribute flag if message display was aborted
+o Fix the LINEDELAY @-code behavior (delaying between output lines)
+o Do not apply the "Expire when out of time" feature to user not logged-in
+  Resolve errors reported by plt via IRC when SCFG->System->Security->
+  User Expires When Out-of-time is set to "Yes" and a client runs out of time
+  before being able to successfully login. Example:
+    term Node 1 !ERROR in data_ovl.cpp line 150 (sbbs_t::putuserdec32) writing
+    "user.tab" access=-100
+o When executing .bin modules, enable globally-supported
+  (SCFG->System->Advanced) extra attribute codes in PRINT function calls
+  Fix issue #1091
+
+SCFG
+~~~~
+o Add help text for the "Parent Directory" prompt when importing a dir list
+  This prompt could be confusing, so explain how/why it's being prompted for
+o Add help text for the List File prompts when import/exporting directory list
+o Re-word the "Min bytes Free Disk Space" option to be a little clearer
+o Make the FTP server's minimum/maximum uploaded file sizes configurable here
+o Add special help text for the "Moderated Posting User" requirements settings
+o Update help text for fixed events, clarifying that some can be interactive
+
+Synchronet Console (sbbs.exe for Windows)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+o Graceful detection and reporting of sbbs library version mismatch
+o Accidentally named sbbscon.exe, back to the normal/expected name: sbbs.exe
+o Add support for (re)starting stopped servers from prompt
+o Make the prompt for which server to (T)erminate, (S)hutdown/Start, or
+ (R)ecycle re-display when there new log messages appear
+
+JSexec
+~~~~~~
+o Graceful detection and reporting of sbbs library version mismatch
+
+Synchronet Control Panel (sbbsctrl.exe) for Windows
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+o Fix uptime jump (forward or backward) upon Daylight Saving Time
+  Fix issue #1093
+o Close node.dab file between refreshes if first node is so-configured in SCFG
+o Restore form "View states" - don't always restore all forms as visible
+
+Web Server
+~~~~~~~~~~
+o Fix long standing heap corruption causing libmozjs crash triggered via POST
+  Issue #1094
+
+Mail Server
+~~~~~~~~~~~
+o Log the message relative number (and total msgs waiting) for POP3 retrievals
+  giving some indication of progress towards the last message waiting for the
+  user
+
+FTP Server
+~~~~~~~~~~
+o Log better errors/warnings when upload directory doesn't exist
+  or doesn't have enough free space
+o Load file data from filebase when updating (uploading) an existing file
+  Fix !DATA ERROR -101 updating file (filename) in database
+o Log the restart offset both when the client sets it (with the "REST" command)
+  and in the "uploading" log message, helpful in debugging unique upload issues
+o More accurate log/response messages about maximum file size allowed
+  The max file size allowed for upload can change based on available disk space
+  and the sysop-configured minimum amount of free disk space. Report the
+  correct numbers
+
+Modules
+~~~~~~~
+o <several>
+  - Fix wide-spread misuse of console.getkeys()
+o automsg.js
+  - More friendly to 40-column terminal users
+o emailval.js
+  - Usability improvements
+  - Don't allow a blank valid_chars options to break this module:
+    the default ctrl/modopts/emailval.ini has the key 'valid_chars' set to
+    nothing, just as an example/documentation, but that had the effect of
+	setting the valid chars to a blank string (no valid code chars). Now fixed
+o email_sec.js
+  - prompt is now configurable via modopts [email_sec] prompt
+o avatars.js
+  - install() no longer overwrites existing keys/values in modopts.ini
+  - identicons are now supported
+    Set modopts.ini [avatars] auto_identicon = false if you don't want them
+  - Add 'enabled' option (default true) to modopts [avatars]
+    The nuclear option to disable avatar display everywhere
+o avatar_chooser.js
+  - Add "Identicon as avatar" option
+o meme_chooser.js
+  - Usability improvements
+o mqtt_spy.js
+  - Output the MQTT spy banner earlier
+o newuser.js
+  - Add identicon avatar option, set modopts [newuser] avatar_identicon = true
+o nodelist.js
+  - Use console.putmsg() instead of write() where @-codes might be wanted
+o update.js
+  - '-noavatars' option now supported
+
+chksmb/fixsmb/smbutil
+~~~~~~~~~~~~~~~~~~~~~
+o Gracefully terminate (e.g. unlock msgbase) when aborted with Ctrl-C/break
+
+Text Strings
+~~~~~~~~~~~~
+o FileInfoEditPrompt - Shortened so it doesn't wrap (for 80col terminals)
+  when spinning cursor is enabled
