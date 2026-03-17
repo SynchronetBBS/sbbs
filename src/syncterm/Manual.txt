@@ -964,9 +964,8 @@ displays the URL in the status bar.
 
 Even without OSC 8 markup, kbd:[Ctrl+Click] on plain-text URLs
 (starting with `http://`, `https://`, `ftp://`, `ftps://`, or
-`www.`) will detect the URL, show it in an edit box for
-verification, and open it on Enter. This also works in the
-scrollback viewer.
+`www.`) will detect and open the URL directly. This also works
+in the scrollback viewer.
 
 On platforms where opening a browser is not possible, the URL is
 copied to the clipboard instead.
