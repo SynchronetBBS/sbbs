@@ -2387,7 +2387,7 @@ main(int argc, char **argv)
 		}
 		if (addr_family != ADDRESS_FAMILY_UNSPEC)
 			bbs->address_family = addr_family;
-		if (bbs->port == 0)
+		if (bbs->port == 0 && IS_NETWORK_CONN(bbs->conn_type))
 			goto USAGE;
 	}
 
