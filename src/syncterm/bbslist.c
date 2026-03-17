@@ -246,6 +246,22 @@ static struct sort_order_info sort_order[] = {
 
 int sortorder[sizeof(sort_order) / sizeof(struct sort_order_info)];
 
+#define SORT_PROFILE_NAME_MAX 19
+
+static named_string_t **sort_profiles = NULL;
+static int              active_profile = 0;
+
+static const struct {
+	const char *name;
+	const char *value;
+} default_sort_profiles[] = {
+	{ "Name",           "1" },
+	{ "Last Connected", "3,1" },
+	{ "Most Called",    "4,1" },
+	{ "Date Added",     "2,1" },
+};
+#define NUM_DEFAULT_SORT_PROFILES (sizeof(default_sort_profiles) / sizeof(default_sort_profiles[0]))
+
 static char *screen_modes[] = {
 	"Current", "80x25", "LCD 80x25", "80x28", "80x30", "80x43", "80x50", "80x60", "132x37 (16:9)", "132x52 (5:4)",
 	"132x25", "132x28", "132x30", "132x34", "132x43", "132x50", "132x60", "C64", "C128 (40col)", "C128 (80col)",
@@ -604,14 +620,13 @@ get_rate_num(int rate)
 }
 
 static int
-is_sorting(int chk)
+is_sorting_in(const int *order, int chk)
 {
 	int i;
 
 	for (i = 0; i < sizeof(sort_order) / sizeof(struct sort_order_info); i++)
-		if ((abs(sortorder[i])) == chk)
+		if ((abs(order[i])) == chk)
 			return 1;
-
 
 	return 0;
 }
@@ -669,9 +684,12 @@ listcmp(const void *aptr, const void *bptr)
 			}
 		}
 		else
-			return ret;
+			break;
 	}
-	return 0;
+	/* Unconditional name tiebreaker for stable sort (qsort is not stable) */
+	if (ret == 0)
+		ret = stricmp(a + sort_order[1].offset, b + sort_order[1].offset);
+	return ret;
 }
 
 static void
@@ -692,41 +710,14 @@ sort_list(struct bbslist **list, int *listcount, int *cur, int *bar, char *curre
 	}
 }
 
+/*
+ * Edit an array of sort field indices in-place.
+ * order[] uses the same format as sortorder[]: signed indices into sort_order[],
+ * terminated by an entry whose abs() maps to a NULL name.
+ * Does NOT do any I/O — the caller handles persistence.
+ */
 static void
-write_sortorder(void)
-{
-	char inipath[MAX_PATH + 1];
-	FILE *inifile;
-	str_list_t inicontents;
-	str_list_t sortorders;
-	char str[64];
-	int i;
-
-	sortorders = strListInit();
-	for (i = 0; sort_order[abs(sortorder[i])].name != NULL; i++) {
-		sprintf(str, "%d", sortorder[i]);
-		strListPush(&sortorders, str);
-	}
-
-	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
-	if ((inifile = fopen(inipath, "r")) != NULL) {
-		inicontents = iniReadFile(inifile);
-		fclose(inifile);
-	}
-	else
-		inicontents = strListInit();
-
-	iniSetStringList(&inicontents, "SyncTERM", "SortOrder", ",", sortorders, &ini_style);
-	if ((inifile = fopen(inipath, "w")) != NULL) {
-		iniWriteFile(inifile, inicontents);
-		fclose(inifile);
-	}
-	strListFree(&sortorders);
-	strListFree(&inicontents);
-}
-
-static void
-edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, char *current)
+edit_sort_fields(int *order)
 {
 	char opt[sizeof(sort_order) / sizeof(struct sort_order_info)][80];
 	char *opts[sizeof(sort_order) / sizeof(struct sort_order_info) + 1];
@@ -736,35 +727,35 @@ edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, char *
 	int scurr = 0, sbar = 0;
 	int ret, sret;
 	int i, j;
+	int nfields = sizeof(sort_order) / sizeof(struct sort_order_info);
 
-	for (i = 0; i < sizeof(sort_order) / sizeof(struct sort_order_info); i++)
+	for (i = 0; i < nfields; i++)
 		opts[i] = opt[i];
 	opts[i] = NULL;
-	for (i = 0; i < sizeof(sort_order) / sizeof(struct sort_order_info); i++)
+	for (i = 0; i < nfields; i++)
 		sopts[i] = sopt[i];
 	sopts[i] = NULL;
 
 	for (; !quitting;) {
-		/* Build ordered list of sort order */
-		for (i = 0; i < sizeof(sort_order) / sizeof(struct sort_order_info); i++) {
-			if (sort_order[abs(sortorder[i])].name) {
-				SAFECOPY(opt[i], sort_order[abs(sortorder[i])].name);
-				if (((sortorder[i]
-				      < 0) ? 1 : 0)
-				    ^ ((sort_order[abs(sortorder[i])].flags & SORT_ORDER_REVERSED) ? 1 : 0))
+		/* Build ordered list of sort fields */
+		for (i = 0; i < nfields; i++) {
+			if (sort_order[abs(order[i])].name) {
+				SAFECOPY(opt[i], sort_order[abs(order[i])].name);
+				if (((order[i] < 0) ? 1 : 0)
+				    ^ ((sort_order[abs(order[i])].flags & SORT_ORDER_REVERSED) ? 1 : 0))
 					strcat(opt[i], " (reversed)");
 			}
 			else
 				opt[i][0] = 0;
 		}
-		uifc.helpbuf = "`Sort Order`\n\n"
+		uifc.helpbuf = "`Sort Fields`\n\n"
 		               "Move the highlight bar to the position you would like\n"
-		               "to add a new ordering before and press ~INSERT~.  Choose\n"
+		               "to add a new field before and press ~INSERT~.  Choose\n"
 		               "a field from the list and it will be inserted.\n\n"
-		               "To remove a sort order, use ~DELETE~.\n\n"
-		               "To reverse a sort order, highlight it and press enter";
+		               "To remove a field, use ~DELETE~.\n\n"
+		               "To reverse a field, highlight it and press enter";
 		ret = uifc.list(WIN_XTR | WIN_DEL | WIN_INS | WIN_INSACT | WIN_ACT | WIN_SAV,
-		                0, 0, 0, &curr, &bar, "Sort Order", opts);
+		                0, 0, 0, &curr, &bar, "Sort Fields", opts);
 		if (ret == -1) {
 			if (uifc.exit_flags & UIFC_XF_QUIT) {
 				if (!check_exit(false))
@@ -772,34 +763,33 @@ edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, char *
 			}
 			break;
 		}
-		if (ret & MSK_INS) { /* Insert sorting */
+		if (ret & MSK_INS) { /* Insert field */
 			j = 0;
-			for (i = 0; i < sizeof(sort_order) / sizeof(struct sort_order_info); i++) {
-				if (!is_sorting(i) && sort_order[i].name) {
+			for (i = 0; i < nfields; i++) {
+				if (!is_sorting_in(order, i) && sort_order[i].name) {
 					SAFECOPY(sopt[j], sort_order[i].name);
 					j++;
 				}
 			}
 			if (j == 0) {
-				uifc.helpbuf = "All sort orders are present in the list.";
-				uifc.msg("No more sort orders.");
+				uifc.helpbuf = "All sort fields are present in the list.";
+				uifc.msg("No more sort fields.");
 				if (check_exit(false))
 					break;
 			}
 			else {
 				sopt[j][0] = 0;
-				uifc.helpbuf = "Select a sort order to add and press enter";
+				uifc.helpbuf = "Select a sort field to add and press enter";
 				sret = uifc.list(WIN_SAV | WIN_BOT | WIN_RHT,
 				                 0, 0, 0, &scurr, &sbar, "Sort Field", sopts);
 				if (sret >= 0) {
-					/* Insert into array */
-					memmove(&(sortorder[ret & MSK_OFF]) + 1, &(sortorder[(ret & MSK_OFF)]),
+					memmove(&(order[ret & MSK_OFF]) + 1, &(order[(ret & MSK_OFF)]),
 					        sizeof(sortorder) - sizeof(sortorder[0]) * ((ret & MSK_OFF) + 1));
 					j = 0;
-					for (i = 0; i < sizeof(sort_order) / sizeof(struct sort_order_info); i++) {
-						if (!is_sorting(i) && sort_order[i].name) {
+					for (i = 0; i < nfields; i++) {
+						if (!is_sorting_in(order, i) && sort_order[i].name) {
 							if (j == sret) {
-								sortorder[ret & MSK_OFF] = i;
+								order[ret & MSK_OFF] = i;
 								break;
 							}
 							j++;
@@ -812,18 +802,431 @@ edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, char *
 				}
 			}
 		}
-		else if (ret & MSK_DEL) { /* Delete criteria */
-			memmove(&(sortorder[ret & MSK_OFF]),
-			        &(sortorder[(ret & MSK_OFF)]) + 1,
+		else if (ret & MSK_DEL) { /* Delete field */
+			memmove(&(order[ret & MSK_OFF]),
+			        &(order[(ret & MSK_OFF)]) + 1,
 			        sizeof(sortorder) - sizeof(sortorder[0]) * ((ret & MSK_OFF) + 1));
 		}
 		else
-			sortorder[ret & MSK_OFF] = 0 - sortorder[ret & MSK_OFF];
+			order[ret & MSK_OFF] = 0 - order[ret & MSK_OFF];
+	}
+}
+
+/*
+ * Parse a comma-separated string of signed integers into an order array.
+ */
+static void
+parse_sort_value(const char *value, int *order, int maxfields)
+{
+	str_list_t parts;
+	int i = 0;
+
+	memset(order, 0, sizeof(int) * maxfields);
+	parts = strListSplitCopy(NULL, value, ",");
+	if (parts) {
+		char *s;
+		while ((s = strListRemove(&parts, 0)) != NULL && i < maxfields - 1) {
+			order[i++] = atoi(s);
+			free(s);
+		}
+		strListFree(&parts);
+	}
+}
+
+/*
+ * Serialize an order array back to a comma-separated string.
+ * Returns a malloc'd string; caller must free().
+ */
+static char *
+serialize_sort_order(const int *order)
+{
+	str_list_t parts;
+	char num[16];
+	char buf[256];
+	int i;
+
+	parts = strListInit();
+	for (i = 0; sort_order[abs(order[i])].name != NULL; i++) {
+		sprintf(num, "%d", order[i]);
+		strListPush(&parts, num);
+	}
+	strListJoin(parts, buf, sizeof(buf), ",");
+	strListFree(&parts);
+	return strdup(buf);
+}
+
+/*
+ * Load default sort profiles into sort_profiles.
+ */
+static void
+load_default_sort_profiles(void)
+{
+	size_t i;
+
+	iniFreeNamedStringList(sort_profiles);
+	sort_profiles = NULL;
+	for (i = 0; i < NUM_DEFAULT_SORT_PROFILES; i++)
+		namedStrListInsert(&sort_profiles, default_sort_profiles[i].name,
+		                   default_sort_profiles[i].value, i);
+	active_profile = 0;
+}
+
+/*
+ * Write sort profiles, active profile name, and current SortOrder to INI.
+ * Does a single read-modify-write cycle to avoid inconsistent state.
+ */
+static void
+write_sort_profiles(void)
+{
+	char inipath[MAX_PATH + 1];
+	FILE *fp;
+	str_list_t inicontents;
+	str_list_t sortorders;
+	char str[64];
+	int i;
+
+	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
+	if ((fp = fopen(inipath, "r")) != NULL) {
+		inicontents = iniReadFile(fp);
+		fclose(fp);
+	}
+	else
+		inicontents = strListInit();
+
+	/* Write [SortProfiles] section */
+	iniRemoveSection(&inicontents, "SortProfiles");
+	iniAppendSectionWithNamedStrings(&inicontents, "SortProfiles",
+	                                 (const named_string_t **)sort_profiles, &ini_style);
+
+	/* Write ActiveSortProfile and SortOrder in [SyncTERM] */
+	if (sort_profiles && sort_profiles[active_profile])
+		iniSetString(&inicontents, "SyncTERM", "ActiveSortProfile",
+		             sort_profiles[active_profile]->name, &ini_style);
+
+	sortorders = strListInit();
+	for (i = 0; sort_order[abs(sortorder[i])].name != NULL; i++) {
+		sprintf(str, "%d", sortorder[i]);
+		strListPush(&sortorders, str);
+	}
+	iniSetStringList(&inicontents, "SyncTERM", "SortOrder", ",", sortorders, &ini_style);
+	strListFree(&sortorders);
+
+	if ((fp = fopen(inipath, "w")) != NULL) {
+		iniWriteFile(fp, inicontents);
+		fclose(fp);
+	}
+	strListFree(&inicontents);
+}
+
+/*
+ * Apply the currently active sort profile: parse its value into sortorder[],
+ * re-sort the list, and persist the active profile name.
+ */
+static void
+apply_active_profile(struct bbslist **list, int *listcount, int *cur, int *bar)
+{
+	char *current = NULL;
+
+	if (sort_profiles == NULL || sort_profiles[active_profile] == NULL)
+		return;
+
+	if (list && cur && *cur >= 0 && *cur < *listcount && list[*cur])
+		current = list[*cur]->name;
+
+	parse_sort_value(sort_profiles[active_profile]->value,
+	                 sortorder, sizeof(sortorder) / sizeof(sortorder[0]));
+
+	write_sort_profiles();
+	sort_list(list, listcount, cur, bar, current);
+}
+
+/*
+ * Find a profile by name, returning its index or -1.
+ */
+static int
+find_profile_by_name(const char *name)
+{
+	size_t i;
+
+	if (sort_profiles == NULL || name == NULL)
+		return -1;
+	for (i = 0; sort_profiles[i] != NULL; i++) {
+		if (stricmp(sort_profiles[i]->name, name) == 0)
+			return (int)i;
+	}
+	return -1;
+}
+
+/*
+ * Initialize sort profiles from INI, with migration from old SortOrder.
+ * Called from syncterm.c after loading settings.
+ */
+void
+init_sort_profiles(FILE *inifile)
+{
+	if (sort_profiles)
+		iniFreeNamedStringList(sort_profiles);
+
+	sort_profiles = iniReadNamedStringList(inifile, "SortProfiles");
+
+	if (sort_profiles == NULL || sort_profiles[0] == NULL) {
+		/* No [SortProfiles] section — first run or upgrade */
+		load_default_sort_profiles();
+
+		/* Check if existing SortOrder matches a default */
+		char *old_order = serialize_sort_order(sortorder);
+		if (old_order) {
+			int match = -1;
+			size_t count;
+			COUNT_LIST_ITEMS(sort_profiles, count);
+			for (size_t i = 0; i < count; i++) {
+				if (strcmp(sort_profiles[i]->value, old_order) == 0) {
+					match = (int)i;
+					break;
+				}
+			}
+			if (match >= 0)
+				active_profile = match;
+			else if (old_order[0] && strcmp(old_order, "0") != 0)
+				namedStrListInsert(&sort_profiles, "Custom", old_order, count);
+			free(old_order);
+		}
+		return;
 	}
 
-	/* Write back to the .ini file */
-	write_sortorder();
-	sort_list(list, listcount, ocur, obar, current);
+	/* Load active profile by name */
+	{
+		char active_buf[SORT_PROFILE_NAME_MAX + 1];
+		if (iniReadString(inifile, "SyncTERM", "ActiveSortProfile", "", active_buf)) {
+			int idx = find_profile_by_name(active_buf);
+			if (idx >= 0)
+				active_profile = idx;
+			else
+				active_profile = 0;
+		}
+		else
+			active_profile = 0;
+	}
+}
+
+/*
+ * Sort profile manager — Ctrl+S handler.
+ * Manages the list of named sort profiles (CRUD + cut/copy/paste).
+ */
+static void
+edit_sort_profiles(struct bbslist **list, int *listcount, int *ocur, int *obar)
+{
+	int cur, bar;
+	int ret;
+	size_t count;
+	char **opts = NULL;
+	size_t alloced = 0;
+	bool changed = false;
+	named_string_t *clipboard = NULL;
+
+	cur = active_profile;
+	bar = active_profile;
+
+	while (!quitting) {
+		COUNT_LIST_ITEMS(sort_profiles, count);
+
+		if ((count + 2) > alloced) {
+			char **newlist = realloc(opts, (count + 2) * sizeof(char *));
+			if (newlist == NULL) {
+				free(opts);
+				return;
+			}
+			opts = newlist;
+			alloced = count + 2;
+		}
+		for (size_t i = 0; i < count; i++)
+			opts[i] = sort_profiles[i]->name;
+		opts[count] = "";
+		opts[count + 1] = NULL;
+
+		uifc.helpbuf = "`Sort Profiles`\n\n"
+		    "Select a sort profile and press ~ENTER~ to edit its sort fields.\n\n"
+		    "Use ~INSERT~ to create a new profile, ~DELETE~ to remove one.\n"
+		    "Use ~F2~ (Edit) to rename a profile.\n"
+		    "Use ~F5~ to copy, ~Shift-Del~ to cut, ~F6~ to paste.\n\n"
+		    "Use ~<~ and ~>~ in the directory listing to cycle through profiles.";
+		ret = uifc.list(WIN_XTR | WIN_DEL | WIN_INS | WIN_INSACT | WIN_ACT | WIN_SAV
+		                | WIN_EDIT | WIN_COPY | WIN_CUT
+		                | (clipboard ? WIN_PASTE : 0),
+		                0, 0, 0, &cur, &bar, "Sort Profiles", opts);
+
+		if (ret == -1) {
+			if (uifc.exit_flags & UIFC_XF_QUIT) {
+				if (!check_exit(false))
+					continue;
+			}
+			break;
+		}
+
+		if (ret & MSK_DEL) {
+			int idx = ret & MSK_OFF;
+			namedStrListDelete(&sort_profiles, idx);
+			COUNT_LIST_ITEMS(sort_profiles, count);
+			if (count == 0) {
+				load_default_sort_profiles();
+				COUNT_LIST_ITEMS(sort_profiles, count);
+			}
+			if (active_profile >= (int)count)
+				active_profile = (int)count - 1;
+			if (active_profile < 0)
+				active_profile = 0;
+			changed = true;
+		}
+		else if (ret & MSK_INS) {
+			char name[SORT_PROFILE_NAME_MAX + 1] = "";
+			int idx = ret & MSK_OFF;
+
+			uifc.helpbuf = "Enter a unique name for the new sort profile.";
+			while (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Profile Name",
+			                  name, SORT_PROFILE_NAME_MAX, K_EDIT) != -1 && name[0]) {
+				if (namedStrListFindName(sort_profiles, name)) {
+					uifc.msg("Duplicate Name");
+					continue;
+				}
+				namedStrListInsert(&sort_profiles, name, "1", idx);
+				/* Parse the new profile's value for editing */
+				int tmporder[sizeof(sortorder) / sizeof(sortorder[0])];
+				parse_sort_value("1", tmporder, sizeof(tmporder) / sizeof(tmporder[0]));
+				edit_sort_fields(tmporder);
+				/* Serialize back */
+				char *val = serialize_sort_order(tmporder);
+				if (val) {
+					free(sort_profiles[idx]->value);
+					sort_profiles[idx]->value = val;
+				}
+				changed = true;
+				break;
+			}
+		}
+		else if (ret & MSK_EDIT) {
+			int idx = ret & MSK_OFF;
+			if (idx < (int)count) {
+				char name[SORT_PROFILE_NAME_MAX + 1];
+				strlcpy(name, sort_profiles[idx]->name, sizeof(name));
+				uifc.helpbuf = "Enter a new name for this sort profile.";
+				if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Profile Name",
+				               name, SORT_PROFILE_NAME_MAX, K_EDIT) != -1 && name[0]) {
+					if (stricmp(name, sort_profiles[idx]->name) != 0) {
+						if (namedStrListFindName(sort_profiles, name)) {
+							uifc.msg("Duplicate Name");
+						}
+						else {
+							free(sort_profiles[idx]->name);
+							sort_profiles[idx]->name = strdup(name);
+							changed = true;
+						}
+					}
+				}
+				else
+					check_exit(false);
+			}
+		}
+		else if (ret & MSK_COPY) {
+			int idx = ret & MSK_OFF;
+			if (idx < (int)count) {
+				if (clipboard) {
+					free(clipboard->name);
+					free(clipboard->value);
+					free(clipboard);
+				}
+				clipboard = malloc(sizeof(named_string_t));
+				if (clipboard) {
+					clipboard->name = strdup(sort_profiles[idx]->name);
+					clipboard->value = strdup(sort_profiles[idx]->value);
+				}
+			}
+		}
+		else if (ret & MSK_CUT) {
+			int idx = ret & MSK_OFF;
+			if (idx < (int)count) {
+				if (clipboard) {
+					free(clipboard->name);
+					free(clipboard->value);
+					free(clipboard);
+				}
+				clipboard = malloc(sizeof(named_string_t));
+				if (clipboard) {
+					clipboard->name = strdup(sort_profiles[idx]->name);
+					clipboard->value = strdup(sort_profiles[idx]->value);
+				}
+				namedStrListDelete(&sort_profiles, idx);
+				COUNT_LIST_ITEMS(sort_profiles, count);
+				if (count == 0) {
+					load_default_sort_profiles();
+					COUNT_LIST_ITEMS(sort_profiles, count);
+				}
+				if (active_profile >= (int)count)
+					active_profile = (int)count - 1;
+				if (active_profile < 0)
+					active_profile = 0;
+				changed = true;
+			}
+		}
+		else if (ret & MSK_PASTE) {
+			if (clipboard) {
+				int idx = ret & MSK_OFF;
+				char name[SORT_PROFILE_NAME_MAX + 1];
+				strlcpy(name, clipboard->name, sizeof(name));
+
+				if (namedStrListFindName(sort_profiles, name)) {
+					/* Name already in list — prompt for a new one */
+					uifc.helpbuf = "The clipboard profile name is already in use.\n"
+					    "Enter a unique name for the pasted profile.";
+					while (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Profile Name",
+					                  name, SORT_PROFILE_NAME_MAX, K_EDIT) != -1 && name[0]) {
+						if (namedStrListFindName(sort_profiles, name)) {
+							uifc.msg("Duplicate Name");
+							continue;
+						}
+						break;
+					}
+					if (!name[0])
+						continue;
+				}
+				namedStrListInsert(&sort_profiles, name, clipboard->value, idx);
+				changed = true;
+			}
+		}
+		else if (ret >= 0 && ret < (int)count) {
+			/* Enter — edit sort fields */
+			int tmporder[sizeof(sortorder) / sizeof(sortorder[0])];
+			parse_sort_value(sort_profiles[ret]->value, tmporder,
+			                 sizeof(tmporder) / sizeof(tmporder[0]));
+			edit_sort_fields(tmporder);
+			char *val = serialize_sort_order(tmporder);
+			if (val) {
+				if (strcmp(val, sort_profiles[ret]->value) != 0) {
+					free(sort_profiles[ret]->value);
+					sort_profiles[ret]->value = val;
+					changed = true;
+				}
+				else
+					free(val);
+			}
+		}
+	}
+
+	if (clipboard) {
+		free(clipboard->name);
+		free(clipboard->value);
+		free(clipboard);
+	}
+	free(opts);
+
+	if (changed) {
+		char *current = NULL;
+		if (list && ocur && *ocur >= 0 && *ocur < *listcount && list[*ocur])
+			current = list[*ocur]->name;
+		parse_sort_value(sort_profiles[active_profile]->value,
+		                 sortorder, sizeof(sortorder) / sizeof(sortorder[0]));
+		write_sort_profiles();
+		sort_list(list, listcount, ocur, obar, current);
+	}
 }
 
 void
@@ -4015,7 +4418,7 @@ show_bbslist(char *current, int connected)
 	char default_download[MAX_PATH + 1];
 	char cache_path[MAX_PATH + 1];
 	char keys_path[MAX_PATH + 1];
-	char list_title[30];
+	char list_title[32];
 	int redraw = 0;
 	bool nowait = true;
 	int last_mode;
@@ -4051,7 +4454,11 @@ show_bbslist(char *current, int connected)
 		}
 		if (!at_settings) {
 			for (; !at_settings;) {
-				sprintf(list_title, "Directory (%d items)", listcount);
+				if (sort_profiles && sort_profiles[active_profile])
+					snprintf(list_title, sizeof(list_title), "Directory: %s",
+					         sort_profiles[active_profile]->name);
+				else
+					snprintf(list_title, sizeof(list_title), "Directory (%d items)", listcount);
 				if (quitting) {
 					free(list);
 					free(copied);
@@ -4065,7 +4472,8 @@ show_bbslist(char *current, int connected)
 					uifc.helpbuf = "`SyncTERM Directory`\n\n"
 					               "Commands:\n\n"
 					               "~ CTRL-E ~ to edit the selected entry\n"
-					               "~ CTRL-S ~ to modify the sort order\n"
+					               "~ CTRL-S ~ to manage sort profiles\n"
+					               "~ < ~ / ~ > ~ to cycle through sort profiles\n"
 					               "~ TAB ~ to modify the selected entry comment or SyncTERM Settings\n"
 					               "~ ENTER ~ to edit to the selected entry"
 					               "`Conio Keys` (may not work in some modes)\n\n"
@@ -4083,7 +4491,8 @@ show_bbslist(char *current, int connected)
 					               "Commands:\n\n"
 					               "~ CTRL-D ~ Quick-connect to a URL\n"
 					               "~ CTRL-E ~ to edit the selected entry\n"
-					               "~ CTRL-S ~ to modify the sort order\n"
+					               "~ CTRL-S ~ to manage sort profiles\n"
+					               "~ < ~ / ~ > ~ to cycle through sort profiles\n"
 					               "~ " ALT_KEY_NAMEP "-B ~ View scrollback of last session\n"
 					               "~ TAB ~ to modify the selected entry comment or SyncTERM Settings\n"
 					               "~ ENTER ~ to connect to the selected entry\n\n"
@@ -4158,7 +4567,7 @@ show_bbslist(char *current, int connected)
 				draw_comment(list[opt]);
 				if (val < 0) {
 					switch (val) {
-						case -2 - 0x13: /* CTRL-S - Sort */
+						case -2 - 0x13: /* CTRL-S - Sort Profiles */
 							uifc.list((listcount < MAX_OPTS ? WIN_XTR : 0)
 							          | WIN_ACT | WIN_INSACT | WIN_DELACT | WIN_SAV | WIN_ESC
 							          | WIN_INS | WIN_DEL | WIN_EDIT | WIN_EXTKEYS | WIN_DYN
@@ -4171,12 +4580,34 @@ show_bbslist(char *current, int connected)
 							          &bar,
 							          list_title,
 							          (char **)list);
-							edit_sorting(list,
-							             &listcount,
-							             &opt,
-							             &bar,
-							             list[opt] ? list[opt]->name : NULL);
+							edit_sort_profiles(list, &listcount, &opt, &bar);
 							break;
+						case -2 - '>': /* Next sort profile */
+						case -2 - '<': /* Previous sort profile */
+						{
+							size_t pcount;
+							COUNT_LIST_ITEMS(sort_profiles, pcount);
+							if (pcount > 0) {
+								uifc.list((listcount < MAX_OPTS ? WIN_XTR : 0)
+								          | WIN_ACT | WIN_INSACT | WIN_DELACT | WIN_SAV | WIN_ESC
+								          | WIN_INS | WIN_DEL | WIN_EDIT | WIN_EXTKEYS | WIN_DYN
+								          | WIN_SEL | WIN_FIXEDHEIGHT
+								          ,
+								          0,
+								          (uifc.scrn_len - (uifc.list_height) + 1) / 2 - 4,
+								          0,
+								          &opt,
+								          &bar,
+								          list_title,
+								          (char **)list);
+								if (val == -2 - '>')
+									active_profile = (active_profile + 1) % (int)pcount;
+								else
+									active_profile = (active_profile + (int)pcount - 1) % (int)pcount;
+								apply_active_profile(list, &listcount, &opt, &bar);
+							}
+							break;
+						}
 						case -2 - 0x3000: /* ALT-B - Scrollback */
 							if (!connected) {
 								viewofflinescroll();

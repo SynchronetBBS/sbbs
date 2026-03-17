@@ -349,7 +349,17 @@ Two list types: `USER_BBSLIST` (personal, read-write) and
 
 `show_bbslist()` provides the main directory with sort, search,
 add/edit/delete. `edit_list()` is a ~1000-line property editor with
-sub-menus for all fields. Custom sort order via `sortorder[]` array.
+sub-menus for all fields.
+
+Named sort profiles (`named_string_t**`) control the directory sort order.
+Each profile maps a display name to a comma-separated list of signed field
+indices into the `sort_order[]` table. Profiles are stored in the
+`[SortProfiles]` INI section; the active profile name in `[SyncTERM]
+ActiveSortProfile`. Users cycle profiles with `<`/`>` keys in the
+directory listing and manage them via `edit_sort_profiles()` (Ctrl+S).
+The active profile's value is parsed into `sortorder[]` for `listcmp()`
+which is the qsort comparator. `listcmp()` unconditionally falls back to
+name comparison for stable ordering.
 
 ### Terminal Loop (term.c)
 

@@ -1690,6 +1690,9 @@ load_settings(struct syncterm_settings *set)
 	}
 	strListFree(&sortby);
 
+	/* Sort profiles */
+	init_sort_profiles(inifile);
+
         /* Shell TERM settings */
 	iniReadSString(inifile, "SyncTERM", "TERM", "syncterm", set->TERM, sizeof(set->TERM));
 
