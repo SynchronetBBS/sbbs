@@ -533,7 +533,7 @@ most of the options are the same or silimar.
 kbd:[Ctrl+S]::
 Edit the Explicit Sort Value.
 
-kbd:[\[] / kbd:[\]]::
+kbd:[[] / kbd:[\]]::
 Navigate to the previous/next entry in the directory without returning
 to the directory listing.  This also works in Font Management and
 Sort Profile field editors.
