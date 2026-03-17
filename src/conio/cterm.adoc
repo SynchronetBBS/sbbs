@@ -1622,6 +1622,11 @@ When `Ps` is 5, CTerm will respond with a Mode Report of the form
 `CSI = 5 ; pF n`
 Where pF is 1 if LCF mode is forced, and 0 if it is not.
 
+When `Ps` is 6, CTerm will respond with a Mode Report of the form
+`CSI = 6 ; pA n`
+Where `pA` is 1 if OSC 8 hyperlink support is available, and 0 if
+it is not.
+
 === `CSI ? Ps [ ; Pn ] n` Device Status Report (`DECDSR`)
 When `Ps` is 62 (`DECMSR`) and there is no `Pn`, CTerm will respond
 with a Mode Report of the form
@@ -2033,6 +2038,29 @@ CTerm responds with `OSC 11;rgb:RR/GG/BB ST` where `RR`, `GG`, and `BB`
 are two hex digit color values.
 
 SOURCE: <<XTerm>>
+
+=== `OSC 8 ; params ; uri ST` Hyperlink (`OSC 8`)
+Sets a hyperlink on subsequent text output. Text printed after this
+sequence will be associated with the given URI. An empty URI ends the
+hyperlink region.
+
+The `params` field is a colon-separated list of `key=value` pairs.
+The `id=` parameter allows non-contiguous text runs to share the same
+hyperlink.
+
+Only `http`, `https`, `ftp`, and `ftps` URIs are supported. Other
+schemes are silently ignored.
+
+Users can open hyperlinks by clicking when BBS mouse capture is off,
+or by Ctrl+clicking when mouse capture is active.
+
+.Examples
+----
+ESC ] 8 ; ; https://example.com ST Click here ESC ] 8 ; ; ST
+ESC ] 8 ; id=link1 ; https://example.com ST part1 ESC ] 8 ; ; ST ... ESC ] 8 ; id=link1 ; https://example.com ST part2 ESC ] 8 ; ; ST
+----
+
+SOURCE: https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda
 
 == Application Program Commands
 

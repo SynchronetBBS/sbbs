@@ -40,6 +40,7 @@
 
 #undef BOOL
 #import <AppKit/NSGraphics.h>
+#import <AppKit/NSWorkspace.h>
 #include "cg_cio.h"
 
 #include "bitmap_con.h"
@@ -258,6 +259,19 @@ char *cg_getcliptext(void)
 int cg_get_window_info(int *width, int *height, int *xpos, int *ypos)
 {
 	return cg_events_get_window_info(width, height, xpos, ypos);
+}
+
+bool cg_openurl(const char *url)
+{
+	@autoreleasepool {
+		NSString *str = [NSString stringWithUTF8String:url];
+		if (!str)
+			return false;
+		NSURL *nsurl = [NSURL URLWithString:str];
+		if (!nsurl)
+			return false;
+		return [[NSWorkspace sharedWorkspace] openURL:nsurl];
+	}
 }
 
 int cg_mousepointer(enum ciolib_mouse_ptr type)

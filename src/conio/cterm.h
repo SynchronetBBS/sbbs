@@ -249,6 +249,7 @@ struct cterminal {
 	char prestel_data[PRESTEL_MEM_SLOTS][PRESTEL_MEM_SLOT_SIZE];
 	enum prestel_prog_states prestel_prog_state;
 	uint8_t prestel_mem;
+
 };
 
 #ifdef __cplusplus

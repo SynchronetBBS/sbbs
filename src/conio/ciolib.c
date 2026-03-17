@@ -97,11 +97,171 @@ CIOLIBEXPORT size_t ciolib_initial_icon_width = SYNCICON64_WIDTH;
 CIOLIBEXPORT const char *ciolib_initial_program_name = "CIOLIB";
 CIOLIBEXPORT const char *ciolib_initial_program_class = "CIOLIB";
 CIOLIBEXPORT bool ciolib_swap_mouse_butt45 = false;
+static uint16_t ciolib_current_hyperlink_id;
 
 static _Atomic int initialized=0;
 static pthread_once_t init_initialized = PTHREAD_ONCE_INIT;
 static pthread_mutex_t init_mutex;
 static pthread_mutex_t unget_mutex;
+
+/*
+ * Hyperlink table — stores URIs referenced by vmem_cell.hyperlink_id.
+ * External IDs are 1-based (0 = no hyperlink); internally indexed
+ * as table[id - 1].  Free and used entries are threaded through
+ * intrusive linked lists via the `next` field (also 1-based, 0 = end).
+ */
+#define HYPERLINK_TABLE_SIZE 4096
+
+struct ciolib_hyperlink {
+	char     *uri;
+	char     *id_param;
+	uint16_t  next;    /* next in free or used list (0 = end) */
+	bool      live;    /* GC mark bit */
+};
+
+static struct ciolib_hyperlink hyperlink_table[HYPERLINK_TABLE_SIZE];
+static uint16_t hyperlink_free_head;
+static uint16_t hyperlink_used_head;
+static int      hyperlink_used_count;
+static pthread_mutex_t hyperlink_mutex;
+static pthread_once_t hyperlink_once = PTHREAD_ONCE_INIT;
+static ciolib_hyperlink_gc_cb hyperlink_gc_callback;
+static void *hyperlink_gc_cbdata;
+
+static void
+hyperlink_init_once(void)
+{
+	pthread_mutex_init(&hyperlink_mutex, NULL);
+	for (uint16_t i = 1; i <= HYPERLINK_TABLE_SIZE; i++) {
+		hyperlink_table[i - 1].next = (i < HYPERLINK_TABLE_SIZE) ? i + 1 : 0;
+	}
+	hyperlink_free_head = 1;
+	hyperlink_used_head = 0;
+	hyperlink_used_count = 0;
+}
+
+static void
+hyperlink_init(void)
+{
+	pthread_once(&hyperlink_once, hyperlink_init_once);
+}
+
+static bool
+hyperlink_mark_live(uint16_t id)
+{
+	if (id > 0 && id <= HYPERLINK_TABLE_SIZE && !hyperlink_table[id - 1].live) {
+		hyperlink_table[id - 1].live = true;
+		return true;
+	}
+	return false;
+}
+
+static void
+hyperlink_gc(void)
+{
+	if (!cio_api.vmem_gettext)
+		return;
+
+	/* Clear all live marks */
+	uint16_t id = hyperlink_used_head;
+	while (id) {
+		hyperlink_table[id - 1].live = false;
+		id = hyperlink_table[id - 1].next;
+	}
+
+	/* Scan visible screen — mark referenced IDs as live */
+	int screen_live = 0;
+#ifdef HAS_VSTAT
+	if (cio_api.vmem_gettext == bitmap_vmem_gettext) {
+		assert_rwlock_rdlock(&vstatlock);
+		struct vstat_vmem *vm = get_vmem(&vstat);
+		assert_rwlock_unlock(&vstatlock);
+		if (vm) {
+			for (size_t i = 0; i < vm->count; i++) {
+				if (hyperlink_mark_live(vm->vmem[i].hyperlink_id))
+					screen_live++;
+			}
+			release_vmem(vm);
+		}
+	}
+	else
+#endif
+	{
+		struct text_info ti;
+		ciolib_gettextinfo(&ti);
+		int cells = ti.screenwidth * ti.screenheight;
+		struct vmem_cell *buf = malloc(cells * sizeof(*buf));
+		if (buf) {
+			if (cio_api.vmem_gettext(1, 1, ti.screenwidth, ti.screenheight, buf)) {
+				for (int i = 0; i < cells; i++) {
+					if (hyperlink_mark_live(buf[i].hyperlink_id))
+						screen_live++;
+				}
+			}
+			free(buf);
+		}
+	}
+
+	/* Let the caller (e.g. cterm) mark scrollback IDs as live */
+	if (hyperlink_gc_callback) {
+		int max_live = HYPERLINK_TABLE_SIZE / 2 - screen_live;
+		if (max_live > 0)
+			hyperlink_gc_callback(hyperlink_mark_live, max_live, hyperlink_gc_cbdata);
+	}
+
+	/* Sweep: move dead entries from used list to free list */
+	uint16_t *prev = &hyperlink_used_head;
+	id = hyperlink_used_head;
+	while (id) {
+		uint16_t nxt = hyperlink_table[id - 1].next;
+		if (!hyperlink_table[id - 1].live) {
+			free(hyperlink_table[id - 1].uri);
+			free(hyperlink_table[id - 1].id_param);
+			hyperlink_table[id - 1].uri = NULL;
+			hyperlink_table[id - 1].id_param = NULL;
+			*prev = nxt;
+			hyperlink_table[id - 1].next = hyperlink_free_head;
+			hyperlink_free_head = id;
+			hyperlink_used_count--;
+		}
+		else {
+			prev = &hyperlink_table[id - 1].next;
+		}
+		id = nxt;
+	}
+}
+
+/*
+ * Unix URL opener — fork + closefrom + xdg-open.
+ * Only available on platforms with closefrom().
+ */
+#if !defined(_WIN32) && !defined(__APPLE__) && (defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__) || (defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 34))))
+#include <sys/wait.h>
+#include <unistd.h>
+#define HAVE_CLOSEFROM_OPENURL
+static bool
+ciolib_openurl_unix(const char *url)
+{
+	/*
+	 * Single fork — xdg-open/open launch the browser and exit
+	 * quickly, so waitpid won't block the UI noticeably.
+	 * closefrom(3) prevents leaking fds to the browser.
+	 */
+	pid_t child = fork();
+	if (child < 0)
+		return false;
+	if (child == 0) {
+		closefrom(0);
+		execlp("xdg-open", "xdg-open", url, (char *)NULL);
+		_exit(127);
+	}
+	int status;
+	waitpid(child, &status, 0);
+	if (WIFEXITED(status) && WEXITSTATUS(status) == 127)
+		return false;
+	return true;
+}
+#endif
 
 CIOLIBEXPORT int ciolib_movetext(int sx, int sy, int ex, int ey, int dx, int dy);
 CIOLIBEXPORT char * ciolib_cgets(char *str);
@@ -219,6 +379,7 @@ static int try_gdi_init(int mode)
 		cio_api.mousepointer=gdi_mousepointer;
 		cio_api.setscaling_type=gdi_setscaling_type;
 		cio_api.getscaling_type=gdi_getscaling_type;
+		cio_api.openurl=ciolib_openurl_win32;
 		return(1);
 	}
 	return(0);
@@ -274,6 +435,9 @@ static int try_sdl_init(int mode)
 		cio_api.mousepointer=sdl_mousepointer;
 		cio_api.setscaling_type=sdl_setscaling_type;
 		cio_api.getscaling_type=sdl_getscaling_type;
+#ifdef HAVE_CLOSEFROM_OPENURL
+		cio_api.openurl=ciolib_openurl_unix;
+#endif
 		return(1);
 	}
 	return(0);
@@ -335,6 +499,9 @@ static int try_wayland_init(int mode)
 		cio_api.map_rgb = bitmap_map_rgb;
 		cio_api.replace_font = bitmap_replace_font;
 		cio_api.setwinsize=wl_setwinsize;
+#ifdef HAVE_CLOSEFROM_OPENURL
+		cio_api.openurl=ciolib_openurl_unix;
+#endif
 		return(1);
 	}
 	return(0);
@@ -396,11 +563,12 @@ static int try_quartz_init(int mode)
 		cio_api.set_modepalette=bitmap_set_modepalette;
 		cio_api.map_rgb = bitmap_map_rgb;
 		cio_api.replace_font = bitmap_replace_font;
+		cio_api.openurl=cg_openurl;
 		return(1);
 	}
 	return(0);
 }
-#endif
+#endif /* WITH_QUARTZ */
 
 #ifndef NO_X
 static int try_x_init(int mode)
@@ -457,6 +625,9 @@ static int try_x_init(int mode)
 		cio_api.setwinsize=x_setwinsize;
 		cio_api.setwinposition=x_setwinposition;
 		cio_api.get_window_info=x_get_window_info;
+#ifdef HAVE_CLOSEFROM_OPENURL
+		cio_api.openurl=ciolib_openurl_unix;
+#endif
 		return(1);
 	}
 	return(0);
@@ -505,6 +676,9 @@ static int try_curses_init(int mode)
 		cio_api.get_modepalette = curs_get_modepalette;
 		cio_api.set_modepalette = curs_set_modepalette;
 		cio_api.attr2palette = curs_attr2palette;
+#ifdef HAVE_CLOSEFROM_OPENURL
+		cio_api.openurl=ciolib_openurl_unix;
+#endif
 		return(1);
 	}
 	return(0);
@@ -533,12 +707,21 @@ static int try_ansi_init(int mode)
 		cio_api.escdelay=&CIOLIB_ANSI_TIMEOUT;
 		cio_api.beep=ansi_beep;
 		cio_api.suspend=ansi_suspend;
+#ifdef HAVE_CLOSEFROM_OPENURL
+		cio_api.openurl=ciolib_openurl_unix;
+#endif
 		return(1);
 	}
 	return(0);
 }
 
 #ifdef _WIN32
+static bool
+ciolib_openurl_win32(const char *url)
+{
+	return (INT_PTR)ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOWNORMAL) > 32;
+}
+
 #if defined(__BORLANDC__)
         #pragma argsused
 #endif
@@ -576,6 +759,7 @@ static int try_conio_init(int mode)
 		cio_api.setcustomcursor=win32_setcustomcursor;
 		cio_api.getvideoflags=win32_getvideoflags;
 		cio_api.setpalette=win32_setpalette;
+		cio_api.openurl=ciolib_openurl_win32;
 		return(1);
 	}
 	return(0);
@@ -1302,7 +1486,7 @@ CIOLIBEXPORT void ciolib_clreol(void)
 
 	width=cio_textinfo.winright-cio_textinfo.winleft+1-cio_textinfo.curx+1;
 	height=1;
-	buf=malloc(width*height*sizeof(*buf));
+	buf=calloc(width*height, sizeof(*buf));
 	if (!buf)
 		return;
 	for(i=0;i<width*height;i++) {
@@ -1341,7 +1525,7 @@ CIOLIBEXPORT void ciolib_clrscr(void)
 
 	width=cio_textinfo.winright-cio_textinfo.winleft+1;
 	height=cio_textinfo.winbottom-cio_textinfo.wintop+1;
-	buf=malloc(width*height*sizeof(*buf));
+	buf=calloc(width*height, sizeof(*buf));
 	if(!buf)
 		return;
 	for(i=0;i<width*height;i++) {
@@ -1709,6 +1893,7 @@ CIOLIBEXPORT int ciolib_putch(int ch)
 	buf.fg = ciolib_fg;
 	buf.bg = ciolib_bg;
 	buf.font = ciolib_attrfont(cio_textinfo.attribute);
+	buf.hyperlink_id = ciolib_current_hyperlink_id;
 
 	switch(a1) {
 		case '\r':
@@ -2532,4 +2717,141 @@ CIOLIBEXPORT uint8_t ciolib_rgb_to_legacyattr(uint32_t fg, uint32_t bg)
 	}
 
 	return (bestb << 4) | bestf;
+}
+
+/* Hyperlink API */
+
+CIOLIBEXPORT uint16_t
+ciolib_add_hyperlink(const char *uri, const char *id_param)
+{
+	hyperlink_init();
+
+	if (uri == NULL || uri[0] == '\0')
+		return 0;
+
+	pthread_mutex_lock(&hyperlink_mutex);
+
+	/* Check for existing entry with matching id_param + uri */
+	if (id_param && id_param[0]) {
+		uint16_t id = hyperlink_used_head;
+		while (id) {
+			if (hyperlink_table[id - 1].id_param
+			    && strcmp(hyperlink_table[id - 1].id_param, id_param) == 0
+			    && strcmp(hyperlink_table[id - 1].uri, uri) == 0) {
+				pthread_mutex_unlock(&hyperlink_mutex);
+				return id;
+			}
+			id = hyperlink_table[id - 1].next;
+		}
+	}
+
+	/* Run GC if free list is empty */
+	if (hyperlink_free_head == 0)
+		hyperlink_gc();
+
+	/* Still empty after GC — table is full */
+	if (hyperlink_free_head == 0) {
+		pthread_mutex_unlock(&hyperlink_mutex);
+		return 0;
+	}
+
+	/* Allocate from free list */
+	uint16_t slot = hyperlink_free_head;
+	hyperlink_free_head = hyperlink_table[slot - 1].next;
+
+	hyperlink_table[slot - 1].uri = strdup(uri);
+	hyperlink_table[slot - 1].id_param = (id_param && id_param[0]) ? strdup(id_param) : NULL;
+	hyperlink_table[slot - 1].live = true;
+	hyperlink_table[slot - 1].next = hyperlink_used_head;
+	hyperlink_used_head = slot;
+	hyperlink_used_count++;
+
+	pthread_mutex_unlock(&hyperlink_mutex);
+	return slot;
+}
+
+CIOLIBEXPORT char *
+ciolib_get_hyperlink_url(uint16_t id)
+{
+	hyperlink_init();
+
+	if (id == 0 || id > HYPERLINK_TABLE_SIZE)
+		return NULL;
+
+	pthread_mutex_lock(&hyperlink_mutex);
+	char *url = NULL;
+	if (hyperlink_table[id - 1].uri)
+		url = strdup(hyperlink_table[id - 1].uri);
+	pthread_mutex_unlock(&hyperlink_mutex);
+	return url;
+}
+
+static bool
+hyperlink_scheme_ok(const char *uri)
+{
+	if (strnicmp(uri, "https://", 8) == 0)
+		return true;
+	if (strnicmp(uri, "http://", 7) == 0)
+		return true;
+	if (strnicmp(uri, "ftps://", 7) == 0)
+		return true;
+	if (strnicmp(uri, "ftp://", 6) == 0)
+		return true;
+	return false;
+}
+
+CIOLIBEXPORT bool
+ciolib_open_hyperlink(uint16_t hyperlink_id)
+{
+	hyperlink_init();
+	CIOLIB_INIT();
+
+	if (hyperlink_id == 0 || hyperlink_id > HYPERLINK_TABLE_SIZE)
+		return false;
+
+	pthread_mutex_lock(&hyperlink_mutex);
+	const char *uri = hyperlink_table[hyperlink_id - 1].uri;
+	if (uri == NULL) {
+		pthread_mutex_unlock(&hyperlink_mutex);
+		return false;
+	}
+
+	if (!hyperlink_scheme_ok(uri)) {
+		pthread_mutex_unlock(&hyperlink_mutex);
+		return false;
+	}
+
+	/* Copy URI while holding lock, then release before calling backend */
+	char *uri_copy = strdup(uri);
+	pthread_mutex_unlock(&hyperlink_mutex);
+
+	if (uri_copy == NULL)
+		return false;
+
+	bool opened = false;
+	if (cio_api.openurl)
+		opened = cio_api.openurl(uri_copy);
+
+	free(uri_copy);
+	return opened;
+}
+
+CIOLIBEXPORT void
+ciolib_set_current_hyperlink(uint16_t id)
+{
+	ciolib_current_hyperlink_id = id;
+}
+
+CIOLIBEXPORT uint16_t
+ciolib_get_current_hyperlink(void)
+{
+	return ciolib_current_hyperlink_id;
+}
+
+CIOLIBEXPORT void
+ciolib_set_hyperlink_gc_callback(ciolib_hyperlink_gc_cb cb, void *cbdata)
+{
+	hyperlink_init();
+	hyperlink_gc_callback = cb;
+	hyperlink_gc_cbdata = cbdata;
 }

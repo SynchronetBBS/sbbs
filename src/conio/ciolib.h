@@ -247,10 +247,16 @@ struct text_info {
 	unsigned char cury;           /* y-coordinate in current window */
 };
 
+#define CIOLIB_KMOD_SHIFT  0x01
+#define CIOLIB_KMOD_CTRL   0x02
+#define CIOLIB_KMOD_ALT    0x04
+
 struct mouse_event {
 	int event;
 	int bstate;
 	int kbsm;
+	int kbmodifiers;
+	uint16_t hyperlink_id;
 	int startx;
 	int starty;
 	int endx;
@@ -316,6 +322,7 @@ struct vmem_cell {
 #define CIOLIB_BG_DIRTY 0x10000000
 #define CIOLIB_BG_SEPARATED 0x20000000
 #define CIOLIB_BG_PRESTEL_TERMINAL 0x40000000
+	uint16_t hyperlink_id;	/* 0 = no hyperlink, >0 = index into hyperlink table */
 };
 
 struct ciolib_screen {
@@ -426,6 +433,7 @@ typedef struct {
 	void	(*setscaling_type)	(enum ciolib_scaling);
 	uint8_t (*rgb_to_legacyattr)	(uint32_t fg, uint32_t bg);
 	enum ciolib_scaling (*getscaling_type)	(void);
+	bool	(*openurl)		(const char *url);
 } cioapi_t;
 
 #define _conio_kbhit()		kbhit()
@@ -537,6 +545,14 @@ CIOLIBEXPORT enum ciolib_codepage ciolib_getcodepage(void);
 CIOLIBEXPORT void ciolib_setscaling_type(enum ciolib_scaling);
 CIOLIBEXPORT enum ciolib_scaling ciolib_getscaling_type(void);
 CIOLIBEXPORT uint8_t ciolib_rgb_to_legacyattr(uint32_t fg, uint32_t bg);
+CIOLIBEXPORT uint16_t ciolib_add_hyperlink(const char *uri, const char *id_param);
+CIOLIBEXPORT char *ciolib_get_hyperlink_url(uint16_t id);
+CIOLIBEXPORT bool ciolib_open_hyperlink(uint16_t hyperlink_id);
+CIOLIBEXPORT void ciolib_set_current_hyperlink(uint16_t id);
+CIOLIBEXPORT uint16_t ciolib_get_current_hyperlink(void);
+typedef bool (*ciolib_hyperlink_mark_fn)(uint16_t id);
+typedef void (*ciolib_hyperlink_gc_cb)(ciolib_hyperlink_mark_fn mark_live, int max_live, void *cbdata);
+CIOLIBEXPORT void ciolib_set_hyperlink_gc_callback(ciolib_hyperlink_gc_cb cb, void *cbdata);
 
 /* DoorWay specific stuff that's only applicable to ANSI mode. */
 CIOLIBEXPORT void ansi_ciolib_setdoorway(int enable);
@@ -743,7 +759,7 @@ extern pthread_once_t ciolib_mouse_initialized;
 #ifdef __cplusplus
 extern "C" {
 #endif
-CIOLIBEXPORT void ciomouse_gotevent(int event, int x, int y, int x_res, int y_res);
+CIOLIBEXPORT void ciomouse_gotevent(int event, int x, int y, int x_res, int y_res, int kbmodifiers);
 CIOLIBEXPORT int mouse_trywait(void);
 CIOLIBEXPORT int mouse_wait(void);
 CIOLIBEXPORT int mouse_pending(void);

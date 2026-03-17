@@ -981,7 +981,10 @@ ptr_motion(void *data, struct wl_pointer *pointer,
 	if (cy < 1) cy = 1;
 	if (cx > wl_cvstat.cols) cx = wl_cvstat.cols;
 	if (cy > wl_cvstat.rows + 1) cy = wl_cvstat.rows + 1;
-	ciomouse_gotevent(CIOLIB_MOUSE_MOVE, cx, cy, x, y);
+	ciomouse_gotevent(CIOLIB_MOUSE_MOVE, cx, cy, x, y,
+		(shift_held ? CIOLIB_KMOD_SHIFT : 0) |
+		(ctrl_held ? CIOLIB_KMOD_CTRL : 0) |
+		(alt_held ? CIOLIB_KMOD_ALT : 0));
 }
 
 static void
@@ -990,14 +993,14 @@ ptr_button(void *data, struct wl_pointer *pointer,
 {
 	int x, y, cx, cy;
 	int btn;
+	int mods;
 
 	last_input_serial = serial;
 
 	/*
 	 * Alt+left-click initiates interactive window move when the
 	 * compositor hasn't provided server-side decorations.
-	 * The ciolib mouse API doesn't expose keyboard modifiers,
-	 * so applications can never see Alt+click — this is safe.
+	 * This consumes the event before it reaches the application.
 	 */
 	if (!have_server_decorations
 	    && alt_held
@@ -1030,10 +1033,13 @@ ptr_button(void *data, struct wl_pointer *pointer,
 	default: return;
 	}
 
+	mods = (shift_held ? CIOLIB_KMOD_SHIFT : 0) |
+		(ctrl_held ? CIOLIB_KMOD_CTRL : 0) |
+		(alt_held ? CIOLIB_KMOD_ALT : 0);
 	if (state == WL_POINTER_BUTTON_STATE_PRESSED)
-		ciomouse_gotevent(CIOLIB_BUTTON_PRESS(btn), cx, cy, x, y);
+		ciomouse_gotevent(CIOLIB_BUTTON_PRESS(btn), cx, cy, x, y, mods);
 	else
-		ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(btn), cx, cy, x, y);
+		ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(btn), cx, cy, x, y, mods);
 }
 
 static void
@@ -1041,6 +1047,7 @@ ptr_axis(void *data, struct wl_pointer *pointer,
     uint32_t time, uint32_t axis, wl_fixed_t value)
 {
 	int x, y, cx, cy;
+	int mods;
 
 	if (axis != WL_POINTER_AXIS_VERTICAL_SCROLL)
 		return;
@@ -1057,10 +1064,13 @@ ptr_axis(void *data, struct wl_pointer *pointer,
 	if (cx > wl_cvstat.cols) cx = wl_cvstat.cols;
 	if (cy > wl_cvstat.rows + 1) cy = wl_cvstat.rows + 1;
 
+	mods = (shift_held ? CIOLIB_KMOD_SHIFT : 0) |
+		(ctrl_held ? CIOLIB_KMOD_CTRL : 0) |
+		(alt_held ? CIOLIB_KMOD_ALT : 0);
 	if (wl_fixed_to_double(value) < 0)
-		ciomouse_gotevent(CIOLIB_BUTTON_PRESS(4), cx, cy, x, y);
+		ciomouse_gotevent(CIOLIB_BUTTON_PRESS(4), cx, cy, x, y, mods);
 	else
-		ciomouse_gotevent(CIOLIB_BUTTON_PRESS(5), cx, cy, x, y);
+		ciomouse_gotevent(CIOLIB_BUTTON_PRESS(5), cx, cy, x, y, mods);
 }
 
 static void ptr_frame(void *data, struct wl_pointer *pointer) {}

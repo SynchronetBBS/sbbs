@@ -53,6 +53,8 @@ struct in_mouse_event {
 	int	y;
 	int	x_res;
 	int	y_res;
+	int	kbmodifiers;
+	uint16_t hyperlink_id;
 	long long ts;
 	void	*nextevent;
 };
@@ -61,6 +63,8 @@ struct out_mouse_event {
 	int event;
 	int bstate;
 	int kbsm;		/* Known button state mask */
+	int kbmodifiers;
+	uint16_t hyperlink_id;
 	int startx;
 	int starty;
 	int endx;
@@ -82,11 +86,15 @@ struct mouse_state {
 	int	button_y[5];
 	int	button_x_res[5];			/* Start X/Y position of the current state */
 	int	button_y_res[5];
+	int	button_kbmodifiers[5];	/* Keyboard modifiers at press time */
+	uint16_t button_hyperlink_id[5]; /* Hyperlink ID at press time */
 	long long timeout[5];	/* Button event timeouts (timespecs ie: time of expiry) */
 	int	curx;					/* Current X position */
 	int	cury;					/* Current Y position */
 	int	curx_res;					/* Current X position */
 	int	cury_res;					/* Current Y position */
+	int	cur_kbmodifiers;		/* Current keyboard modifiers */
+	uint16_t cur_hyperlink_id;	/* Current hyperlink ID */
 	int	events;					/* Currently enabled events */
 	int	click_timeout;			/* Timeout between press and release events for a click (ms) */
 	int	multi_timeout;			/* Timeout after a click for detection of multi clicks (ms) */
@@ -165,7 +173,7 @@ uint64_t ciomouse_delevent(uint64_t event)
 	return mouse_events;
 }
 
-void ciomouse_gotevent(int event, int x, int y, int x_res, int y_res)
+void ciomouse_gotevent(int event, int x, int y, int x_res, int y_res, int kbmodifiers)
 {
 	struct in_mouse_event *ime;
 
@@ -178,6 +186,13 @@ void ciomouse_gotevent(int event, int x, int y, int x_res, int y_res)
 		ime->y=y;
 		ime->x_res=x_res;
 		ime->y_res=y_res;
+		ime->kbmodifiers=kbmodifiers;
+		ime->hyperlink_id=0;
+		if (x >= 1 && y >= 1) {
+			struct vmem_cell cell;
+			if (ciolib_vmem_gettext(x, y, x, y, &cell))
+				ime->hyperlink_id = cell.hyperlink_id;
+		}
 		ime->nextevent=NULL;
 
 		listPushNode(&state.input,ime);
@@ -198,6 +213,8 @@ void add_outevent(int event, int x, int y, int xres, int yres)
 		ome->event=event;
 		ome->bstate=state.buttonstate;
 		ome->kbsm=state.knownbuttonstatemask;
+		ome->kbmodifiers=but ? state.button_kbmodifiers[but-1] : state.cur_kbmodifiers;
+		ome->hyperlink_id=but ? state.button_hyperlink_id[but-1] : state.cur_hyperlink_id;
 		ome->startx=but?state.button_x[but-1]:state.curx;
 		ome->starty=but?state.button_y[but-1]:state.cury;
 		ome->endx=x;
@@ -426,6 +443,8 @@ void ciolib_mouse_thread(void *data)
 							state.button_y[but-1]=in->y;
 							state.button_x_res[but-1]=in->x_res;
 							state.button_y_res[but-1]=in->y_res;
+							state.button_kbmodifiers[but-1]=in->kbmodifiers;
+							state.button_hyperlink_id[but-1]=in->hyperlink_id;
 							state.timeout[but-1]=MSEC_CLOCK()+state.click_timeout;
 							if(state.timeout[but-1]==0)
 								state.timeout[but-1]=1;
@@ -509,6 +528,8 @@ void ciolib_mouse_thread(void *data)
 			state.cury=in->y;
 			state.curx_res=in->x_res;
 			state.cury_res=in->y_res;
+			state.cur_kbmodifiers=in->kbmodifiers;
+			state.cur_hyperlink_id=in->hyperlink_id;
 
 			free(in);
 		}
@@ -586,6 +607,8 @@ int ciolib_getmouse(struct mouse_event *mevent)
 			mevent->event=out->event;
 			mevent->bstate=out->bstate;
 			mevent->kbsm=out->kbsm;
+			mevent->kbmodifiers=out->kbmodifiers;
+			mevent->hyperlink_id=out->hyperlink_id;
 			mevent->startx=out->startx;
 			mevent->starty=out->starty;
 			mevent->endx=out->endx;

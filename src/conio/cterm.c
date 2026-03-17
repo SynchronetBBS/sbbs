@@ -186,6 +186,35 @@ struct note_params {
 static void ctputs(struct cterminal *cterm, char *buf);
 static void cterm_reset(struct cterminal *cterm);
 
+static void
+cterm_hyperlink_gc(ciolib_hyperlink_mark_fn mark_live, int max_live, void *cbdata)
+{
+	struct cterminal *cterm = cbdata;
+	int marked = 0;
+
+	if (cterm->scrollback == NULL || cterm->backfilled == 0)
+		return;
+
+	uint64_t start = xp_timer64();
+	int line = cterm->backpos;
+	for (int row = 0; row < cterm->backfilled; row++) {
+		line--;
+		if (line < 0)
+			line = cterm->backlines - 1;
+		struct vmem_cell *cells = &cterm->scrollback[line * cterm->backwidth];
+		for (int col = 0; col < cterm->backwidth; col++) {
+			if (cells[col].hyperlink_id) {
+				if (mark_live(cells[col].hyperlink_id))
+					marked++;
+				if (marked >= max_live)
+					return;
+			}
+		}
+		if (xp_timer64() - start > 3)
+			return;
+	}
+}
+
 enum cterm_coordinates {
 	CTERM_COORD_SCREEN,
 	CTERM_COORD_ABSTERM,
@@ -930,7 +959,7 @@ cterm_clreol(struct cterminal *cterm)
 	width = rm - x + 1;
 	if (width < 1)
 		return;
-	buf = malloc(width * sizeof(*buf));
+	buf = calloc(width, sizeof(*buf));
 	if (!buf)
 		return;
 	for (i = 0; i < width; i++) {
@@ -957,7 +986,7 @@ cterm_clrblk(struct cterminal *cterm, int sx, int sy, int ex, int ey)
 	struct vmem_cell *buf;
 	int chars = (ex - sx + 1) * (ey - sy + 1);
 
-	buf = malloc(chars * sizeof(*buf));
+	buf = calloc(chars, sizeof(*buf));
 	if (!buf)
 		return;
 	for (i = 0; i < chars ; i++) {
@@ -1088,7 +1117,7 @@ clear2bol(struct cterminal * cterm)
 	int minx = CURR_MINX;
 
 	CURR_XY(&x, &y);
-	buf = malloc(x * sizeof(*buf));
+	buf = calloc(x, sizeof(*buf));
 	if (buf) {
 		for(i = 0; i < x; i++) {
 			if (i > 0)
@@ -2975,6 +3004,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									case 5: /* Query LCF forced status */
 										sprintf(tmp, "\x1b[=5;%dn", (cterm->last_column_flag & CTERM_LCF_FORCED) ? 1 : 0);
 										break;
+									case 6: /* Query OSC 8 hyperlink support */
+										sprintf(tmp, "\x1b[=6;%dn", cio_api.vmem_gettext ? 1 : 0);
+										break;
 								}
 								if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
 									strcat(retbuf, tmp);
@@ -4688,6 +4720,29 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										strcat(retbuf, tmp);
 								}
 							}
+							else if (cterm->strbuf[0] == '8' && cterm->strbuf[1] == ';') {
+								/* OSC 8 — hyperlink */
+								char *params = &cterm->strbuf[2];
+								char *uri = strchr(params, ';');
+								if (uri) {
+									*uri++ = '\0';
+									if (*uri) {
+										char *id_param = NULL;
+										char *ptmp = params;
+										char *tok;
+										char *savelast;
+										while ((tok = strtok_r(ptmp, ":", &savelast)) != NULL) {
+											ptmp = NULL;
+											if (strnicmp(tok, "id=", 3) == 0)
+												id_param = tok + 3;
+										}
+										ciolib_set_current_hyperlink(ciolib_add_hyperlink(uri, id_param));
+									}
+									else {
+										ciolib_set_current_hyperlink(0);
+									}
+								}
+							}
 							break;
 					}
 				}
@@ -4825,6 +4880,7 @@ cterm_reset(struct cterminal *cterm)
 	cterm->sx_width = 0;
 	cterm->sx_height = 0;
 	FREE_AND_NULL(cterm->sx_mask);
+	ciolib_set_current_hyperlink(0);
 	for (i = 0; i < (sizeof(cterm->macros) / sizeof(cterm->macros[0])); i++) {
 		FREE_AND_NULL(cterm->macros[i]);
 		cterm->macro_lens[i] = 0;
@@ -4892,8 +4948,10 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 	cterm->emulation=emulation;
 	cterm->last_column_flag = 0;
 	cterm_reset(cterm);
-	if(cterm->scrollback!=NULL)
+	if(cterm->scrollback!=NULL) {
 		memset(cterm->scrollback, 0, cterm->backwidth * cterm->backlines * sizeof(*cterm->scrollback));
+		ciolib_set_hyperlink_gc_callback(cterm_hyperlink_gc, cterm);
+	}
 	strcpy(cterm->DA,"\x1b[=67;84;101;114;109;");
 	out=strchr(cterm->DA, 0);
 	if(out != NULL) {
@@ -5506,7 +5564,7 @@ prestel_send_memory(struct cterminal *cterm, uint8_t mem, char *retbuf, size_t r
 static void
 prestel_handle_escaped(struct cterminal *cterm, uint8_t ctrl)
 {
-	struct vmem_cell tmpvc[1];
+	struct vmem_cell tmpvc[1] = {0};
 	int sx, sy, x, y;
 
 	if (ctrl < 0x40 || ctrl > 0x5f) {
@@ -5534,6 +5592,7 @@ prestel_handle_escaped(struct cterminal *cterm, uint8_t ctrl)
 	}
 	tmpvc[0].legacy_attr=cterm->attr;
 	tmpvc[0].font = ciolib_attrfont(cterm->attr);
+	tmpvc[0].hyperlink_id = ciolib_get_current_hyperlink();
 	SCR_XY(&sx, &sy);
 	CURR_XY(&x, &y);
 	vmem_puttext(sx, sy, sx, sy, tmpvc);
@@ -5558,7 +5617,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 	int oldptnm;
 	uint32_t palette[16];
 	int mpalette;
-	struct vmem_cell tmpvc[1];
+	struct vmem_cell tmpvc[1] = {0};
 	int orig_fonts[4];
 	char lastch = 0;
  	int palette_offset = 0;
@@ -6723,6 +6782,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 							tmpvc[0].fg = cterm->fg_color;
 							tmpvc[0].bg = cterm->bg_color;
 							tmpvc[0].font = ciolib_attrfont(cterm->attr);
+							tmpvc[0].hyperlink_id = ciolib_get_current_hyperlink();
 							SCR_XY(&sx, &sy);
 							vmem_puttext(sx, sy, sx, sy, tmpvc);
 							ch[1]=0;
