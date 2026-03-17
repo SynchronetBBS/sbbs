@@ -1456,9 +1456,11 @@ readev(struct wl_local_event *lev)
 	char *buf = (char *)lev;
 
 	while (got < sizeof(*lev)) {
-		int rv = read(wl_local_pipe[0], buf + got, sizeof(*lev) - got);
+		ssize_t rv = read(wl_local_pipe[0], buf + got, sizeof(*lev) - got);
 		if (rv > 0)
 			got += rv;
+		else if (rv == 0 || (rv == -1 && errno != EINTR))
+			break;
 	}
 }
 
