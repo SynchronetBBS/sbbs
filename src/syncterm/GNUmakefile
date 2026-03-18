@@ -272,6 +272,18 @@ dpkg: $(SYNCTERM) syncterm.1.gz dpkg-control dpkgdirs changelog.gz
 	${QUIET}dpkg-deb --root-owner-group -b dpkg syncterm_1.8rc2-${shell date -u +%Y%m%d}_${shell dpkg-architecture -q DEB_BUILD_ARCH}.deb
 	${QUIET}rm -rf dpkg
 
+TERMTEST = $(EXEODIR)$(DIRSEP)termtest
+
+$(TERMTEST): termtest.c | $(EXEODIR)
+	@echo Compiling termtest
+	${QUIET}$(CC) -o $@ $<
+
+.PHONY: termtest test
+termtest: $(TERMTEST)
+
+test: $(SYNCTERM) $(TERMTEST)
+	./run_termtest.sh $(SYNCTERM) $(TERMTEST)
+
 devel: tags cscope.out
 
 cscope.out: cscope.files

@@ -173,6 +173,14 @@ if(NOT WITHOUT_RETRO)
 	target_compile_definitions(syncterm PUBLIC WITH_RETRO)
 endif()
 
+enable_testing()
+if(UNIX)
+	add_executable(termtest termtest.c)
+	add_test(NAME termtest
+		COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/run_termtest.sh
+			$<TARGET_FILE:syncterm> $<TARGET_FILE:termtest>)
+endif()
+
 install(TARGETS syncterm DESTINATION bin)
 if(UNIX)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/syncterm.man TYPE MAN)
