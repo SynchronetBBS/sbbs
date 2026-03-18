@@ -4701,6 +4701,25 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 													strcat(retbuf, tmp);
 											}
 											break;
+										case ' ':
+											if (cterm->strbuf[3] == 'q' && cterm->strbuf[4] == 0) {
+												int style;
+												int cs, ce, cr, cb, cv;
+												if (cio_api.options & CONIO_OPT_CUSTOM_CURSOR) {
+													getcustomcursor(&cs, &ce, &cr, &cb, &cv);
+													if (cterm->cursor == _SOLIDCURSOR)
+														style = cb ? 1 : 2;
+													else
+														style = cb ? 3 : 4;
+												}
+												else {
+													style = (cterm->cursor == _SOLIDCURSOR) ? 2 : 4;
+												}
+												sprintf(tmp, "\x1bP1$r%d q\x1b\\", style);
+												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
+													strcat(retbuf, tmp);
+											}
+											break;
 										default:
 											if(retbuf!=NULL) {
 												strcpy(tmp,"\x1b[0n");
@@ -4732,44 +4751,53 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											break;
 									}
 									else {
-
-										if (strncmp(p, "rgb:", 4))
-											break;
-										char *p3;
-										char *p4;
-										char *collast;
-										uint16_t rgb[3];
-										int ccount = 0;
-										bool broken=false;
-
-										p4 = &p[4];
-										while (ccount < 3 && (p3 = strtok_r(p4, "/", &collast))!=NULL) {
-											p4 = NULL;
-											unsigned long v;
-											v = strtoul(p3, NULL, 16);
-											if (v > UINT16_MAX)
-												break;
-											switch(strlen(p3)) {
-												case 1:	// 4-bit colour
-													rgb[ccount] = v | (v<<4) | (v<<8) | (v<<12);
-													break;
-												case 2:	// 8-bit colour
-													rgb[ccount] = v | (v<<8);
-													break;
-												case 3:	// 12-bit colour
-													rgb[ccount] = (v & 0x0f) | (v<<4);
-													break;
-												case 4:
-													rgb[ccount] = v;
-													break;
-												default:
-													broken = true;
-													break;
+										if (p[0] == '?' && p[1] == 0) {
+											uint8_t qr, qg, qb;
+											if (retbuf && getpalette(index + palette_offset, &qr, &qg, &qb)) {
+												snprintf(tmp, sizeof(tmp), "\033]4;%lu;rgb:%02x/%02x/%02x\033\\", index, qr, qg, qb);
+												if (strlen(retbuf) + strlen(tmp) < retsize)
+													strcat(retbuf, tmp);
 											}
-											ccount++;
 										}
-										if (ccount == 3 && !broken)
-											cterm_setpalette(cterm, index + palette_offset, rgb[0], rgb[1], rgb[2]);
+										else if (strncmp(p, "rgb:", 4) == 0) {
+											char *p3;
+											char *p4;
+											char *collast;
+											uint16_t rgb[3];
+											int ccount = 0;
+											bool broken=false;
+
+											p4 = &p[4];
+											while (ccount < 3 && (p3 = strtok_r(p4, "/", &collast))!=NULL) {
+												p4 = NULL;
+												unsigned long v;
+												v = strtoul(p3, NULL, 16);
+												if (v > UINT16_MAX)
+													break;
+												switch(strlen(p3)) {
+													case 1:	// 4-bit colour
+														rgb[ccount] = v | (v<<4) | (v<<8) | (v<<12);
+														break;
+													case 2:	// 8-bit colour
+														rgb[ccount] = v | (v<<8);
+														break;
+													case 3:	// 12-bit colour
+														rgb[ccount] = (v & 0x0f) | (v<<4);
+														break;
+													case 4:
+														rgb[ccount] = v;
+														break;
+													default:
+														broken = true;
+														break;
+												}
+												ccount++;
+											}
+											if (ccount == 3 && !broken)
+												cterm_setpalette(cterm, index + palette_offset, rgb[0], rgb[1], rgb[2]);
+										}
+										else
+											break;
 										index = ULONG_MAX;
 									}
 								}

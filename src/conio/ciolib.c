@@ -314,6 +314,7 @@ CIOLIBEXPORT int ciolib_get_window_info(int *width, int *height, int *xpos, int 
 CIOLIBEXPORT void ciolib_setscaling(double new_value);
 CIOLIBEXPORT double ciolib_getscaling(void);
 CIOLIBEXPORT int ciolib_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
+CIOLIBEXPORT int ciolib_getpalette(uint32_t entry, uint8_t *r, uint8_t *g, uint8_t *b);
 CIOLIBEXPORT int ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg);
 CIOLIBEXPORT int ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour);
 CIOLIBEXPORT struct ciolib_pixels * ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force);
@@ -376,6 +377,7 @@ static int try_gdi_init(int mode)
 		cio_api.setwinsize=gdi_setwinsize;
 		cio_api.setwinposition=gdi_setwinposition;
 		cio_api.setpalette=bitmap_setpalette;
+		cio_api.getpalette=bitmap_getpalette;
 		cio_api.attr2palette=bitmap_attr2palette;
 		cio_api.setpixel=bitmap_setpixel;
 		cio_api.getpixels=bitmap_getpixels;
@@ -432,6 +434,7 @@ static int try_sdl_init(int mode)
 		cio_api.setwinsize=sdl_setwinsize;
 		cio_api.setwinposition=sdl_setwinposition;
 		cio_api.setpalette=bitmap_setpalette;
+		cio_api.getpalette=bitmap_getpalette;
 		cio_api.attr2palette=bitmap_attr2palette;
 		cio_api.setpixel=bitmap_setpixel;
 		cio_api.getpixels=bitmap_getpixels;
@@ -499,6 +502,7 @@ static int try_wayland_init(int mode)
 		cio_api.setscaling_type=wl_setscaling_type;
 		cio_api.getscaling_type=wl_getscaling_type;
 		cio_api.setpalette=bitmap_setpalette;
+		cio_api.getpalette=bitmap_getpalette;
 		cio_api.attr2palette=bitmap_attr2palette;
 		cio_api.setpixel=bitmap_setpixel;
 		cio_api.getpixels=bitmap_getpixels;
@@ -564,6 +568,7 @@ static int try_quartz_init(int mode)
 		cio_api.setscaling_type=cg_setscaling_type;
 		cio_api.getscaling_type=cg_getscaling_type;
 		cio_api.setpalette=bitmap_setpalette;
+		cio_api.getpalette=bitmap_getpalette;
 		cio_api.attr2palette=bitmap_attr2palette;
 		cio_api.setpixel=bitmap_setpixel;
 		cio_api.getpixels=bitmap_getpixels;
@@ -620,6 +625,7 @@ static int try_x_init(int mode)
 		cio_api.getscaling=x_getscaling;
 		cio_api.seticon=x_seticon;
 		cio_api.setpalette=bitmap_setpalette;
+		cio_api.getpalette=bitmap_getpalette;
 		cio_api.attr2palette=bitmap_attr2palette;
 		cio_api.setpixel=bitmap_setpixel;
 		cio_api.getpixels=bitmap_getpixels;
@@ -795,6 +801,7 @@ static int try_retro_init(int mode)
 	cio_api.getch=retro_getch;
 	cio_api.textmode=retro_textmode;
 	cio_api.setpalette=bitmap_setpalette;
+	cio_api.getpalette=bitmap_getpalette;
 	cio_api.attr2palette=bitmap_attr2palette;
 	cio_api.setpixel=bitmap_setpixel;
 	cio_api.getpixels=bitmap_getpixels;
@@ -2192,6 +2199,15 @@ CIOLIBEXPORT int ciolib_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint1
 
 	if(cio_api.setpalette)
 		return(cio_api.setpalette(entry, r, g, b));
+	return(0);
+}
+
+CIOLIBEXPORT int ciolib_getpalette(uint32_t entry, uint8_t *r, uint8_t *g, uint8_t *b)
+{
+	CIOLIB_INIT();
+
+	if(cio_api.getpalette)
+		return(cio_api.getpalette(entry, r, g, b));
 	return(0);
 }
 

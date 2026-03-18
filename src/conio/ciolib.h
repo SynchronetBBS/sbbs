@@ -418,6 +418,7 @@ typedef struct {
 	double		(*getscaling)	(void);
 	int		*escdelay;
 	int		(*setpalette)	(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
+	int		(*getpalette)	(uint32_t entry, uint8_t *r, uint8_t *g, uint8_t *b);
 	int		(*attr2palette)	(uint8_t attr, uint32_t *fg, uint32_t *bg);
 	int		(*setpixel)	(uint32_t x, uint32_t y, uint32_t colour);
 	struct ciolib_pixels *(*getpixels)(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force);
@@ -520,6 +521,7 @@ CIOLIBEXPORT int ciolib_getvideoflags(void);
 CIOLIBEXPORT void ciolib_setscaling(double flags);
 CIOLIBEXPORT double ciolib_getscaling(void);
 CIOLIBEXPORT int ciolib_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
+CIOLIBEXPORT int ciolib_getpalette(uint32_t entry, uint8_t *r, uint8_t *g, uint8_t *b);
 CIOLIBEXPORT int ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg);
 CIOLIBEXPORT int ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour);
 CIOLIBEXPORT struct ciolib_pixels * ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force);
@@ -619,6 +621,7 @@ CIOLIBEXPORT void ansi_ciolib_setdoorway(int enable);
 	#define setscaling(a)			ciolib_setscaling(a)
 	#define getscaling()			ciolib_getscaling()
 	#define setpalette(e,r,g,b)		ciolib_setpalette(e,r,g,b)
+	#define getpalette(e,r,g,b)		ciolib_getpalette(e,r,g,b)
 	#define attr2palette(a,b,c)		ciolib_attr2palette(a,b,c)
 	#define setpixel(a,b,c)			ciolib_setpixel(a,b,c)
 	#define getpixels(a,b,c,d, e)		ciolib_getpixels(a,b,c,d, e)

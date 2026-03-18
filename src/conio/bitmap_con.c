@@ -2415,6 +2415,23 @@ int bitmap_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
 	return 1;
 }
 
+int bitmap_getpalette(uint32_t index, uint8_t *r, uint8_t *g, uint8_t *b)
+{
+	if (index > 65535)
+		return 0;
+
+	assert_pthread_mutex_lock(&screenlock);
+	uint32_t c = palette[index];
+	assert_pthread_mutex_unlock(&screenlock);
+	if (r)
+		*r = (c >> 16) & 0xff;
+	if (g)
+		*g = (c >> 8) & 0xff;
+	if (b)
+		*b = c & 0xff;
+	return 1;
+}
+
 // Called with vstatlock
 static int init_screens(int *width, int *height)
 {
