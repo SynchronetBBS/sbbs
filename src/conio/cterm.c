@@ -745,6 +745,39 @@ delete_vtabstop(struct cterminal *cterm, int line)
 	}
 }
 
+/*
+ * Fill a rectangular area with a character using current attributes.
+ * Coordinates are in SCREEN space.  Caller must validate and clamp.
+ */
+static void
+fill_rect(struct cterminal *cterm, int left, int top, int right, int bottom, uint8_t ch)
+{
+	int width = right - left + 1;
+	int height = bottom - top + 1;
+	int total = width * height;
+	struct vmem_cell *buf;
+	int i, r;
+
+	if (width <= 0 || height <= 0)
+		return;
+	buf = calloc(width, sizeof(*buf));
+	if (buf == NULL)
+		return;
+	/* Initialize one row of cells with current attributes, no hyperlink */
+	buf[0].ch = ch;
+	buf[0].legacy_attr = cterm->attr;
+	buf[0].fg = cterm->fg_color;
+	buf[0].bg = cterm->bg_color;
+	buf[0].font = ciolib_attrfont(cterm->attr);
+	buf[0].hyperlink_id = 0;
+	for (i = 1; i < width; i++)
+		buf[i] = buf[0];
+	/* Write row by row */
+	for (r = top; r <= bottom; r++)
+		vmem_puttext(left, r, right, r, buf);
+	free(buf);
+}
+
 static void tone_or_beep(double freq, int duration, int device_open)
 {
 	if(device_open)
@@ -4221,6 +4254,183 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									cterm->in_macro |= (UINT64_C(1)<<seq->param_int[0]);
 									cterm_write(cterm, cterm->macros[seq->param_int[0]], cterm->macro_lens[seq->param_int[0]], NULL, 0, speed);
 									cterm->in_macro &= ~(UINT64_C(1)<<seq->param_int[0]);
+								}
+							}
+						}
+					}
+					// DECERA — Erase Rectangular Area (CSI Pt;Pl;Pb;Pr $ z)
+					else if (strcmp(seq->ctrl_func, "$z") == 0 && parse_parameters(seq)) {
+						int t, l, b, r;
+						seq_default(seq, 0, 1);
+						seq_default(seq, 1, 1);
+						seq_default(seq, 2, cterm->height);
+						seq_default(seq, 3, cterm->width);
+						t = seq->param_int[0];
+						l = seq->param_int[1];
+						b = seq->param_int[2];
+						r = seq->param_int[3];
+						if (t > b || l > r)
+							break;
+						/* Clamp to screen */
+						if (t < CURR_MINY) t = CURR_MINY;
+						if (l < CURR_MINX) l = CURR_MINX;
+						if (b > CURR_MAXY) b = CURR_MAXY;
+						if (r > CURR_MAXX) r = CURR_MAXX;
+						/* Convert to screen coords */
+						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &l, &t);
+						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &r, &b);
+						fill_rect(cterm, l, t, r, b, ' ');
+					}
+					// DECFRA — Fill Rectangular Area (CSI Pch;Pt;Pl;Pb;Pr $ x)
+					else if (strcmp(seq->ctrl_func, "$x") == 0 && parse_parameters(seq)) {
+						int t, l, b, r;
+						uint8_t ch;
+						seq_default(seq, 0, 0);
+						ch = seq->param_int[0];
+						/* Allow any character except C0 (0x00-0x1F) and DEL (0x7F) */
+						if (ch < 0x20 || ch == 0x7F)
+							break;
+						seq_default(seq, 1, 1);
+						seq_default(seq, 2, 1);
+						seq_default(seq, 3, cterm->height);
+						seq_default(seq, 4, cterm->width);
+						t = seq->param_int[1];
+						l = seq->param_int[2];
+						b = seq->param_int[3];
+						r = seq->param_int[4];
+						if (t > b || l > r)
+							break;
+						if (t < CURR_MINY) t = CURR_MINY;
+						if (l < CURR_MINX) l = CURR_MINX;
+						if (b > CURR_MAXY) b = CURR_MAXY;
+						if (r > CURR_MAXX) r = CURR_MAXX;
+						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &l, &t);
+						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &r, &b);
+						fill_rect(cterm, l, t, r, b, ch);
+					}
+					// DECCRA — Copy Rectangular Area (CSI Pts;Pls;Pbs;Prs;Pps;Ptd;Pld;Ppd $ v)
+					else if (strcmp(seq->ctrl_func, "$v") == 0 && parse_parameters(seq)) {
+						int st, sl, sb, sr, dt, dl;
+						int sw, sh;
+						struct vmem_cell *buf;
+						seq_default(seq, 0, 1);
+						seq_default(seq, 1, 1);
+						seq_default(seq, 2, cterm->height);
+						seq_default(seq, 3, cterm->width);
+						/* Pps (param 4) = source page, ignore */
+						seq_default(seq, 5, 1);
+						seq_default(seq, 6, 1);
+						/* Ppd (param 7) = dest page, ignore */
+						st = seq->param_int[0];
+						sl = seq->param_int[1];
+						sb = seq->param_int[2];
+						sr = seq->param_int[3];
+						dt = seq->param_int[5];
+						dl = seq->param_int[6];
+						if (st > sb || sl > sr)
+							break;
+						/* Clamp source */
+						if (st < CURR_MINY) st = CURR_MINY;
+						if (sl < CURR_MINX) sl = CURR_MINX;
+						if (sb > CURR_MAXY) sb = CURR_MAXY;
+						if (sr > CURR_MAXX) sr = CURR_MAXX;
+						/* Clamp destination */
+						if (dt < CURR_MINY) dt = CURR_MINY;
+						if (dl < CURR_MINX) dl = CURR_MINX;
+						sw = sr - sl + 1;
+						sh = sb - st + 1;
+						/* Clip dest to screen */
+						if (dt + sh - 1 > CURR_MAXY) sh = CURR_MAXY - dt + 1;
+						if (dl + sw - 1 > CURR_MAXX) sw = CURR_MAXX - dl + 1;
+						if (sw <= 0 || sh <= 0)
+							break;
+						/* Convert to screen coords */
+						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &sl, &st);
+						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &dl, &dt);
+						buf = calloc(sw, sizeof(*buf));
+						if (buf) {
+							for (i = 0; i < sh; i++) {
+								vmem_gettext(sl, st + i, sl + sw - 1, st + i, buf);
+								vmem_puttext(dl, dt + i, dl + sw - 1, dt + i, buf);
+							}
+							free(buf);
+						}
+					}
+					// DECIC — Insert Column (CSI Pn ' })
+					else if (strcmp(seq->ctrl_func, "'}") == 0 && parse_parameters(seq)) {
+						int cx, cy;
+						seq_default(seq, 0, 1);
+						TERM_XY(&cx, &cy);
+						if (cx < TERM_MINX || cx > TERM_MAXX || cy < TERM_MINY || cy > TERM_MAXY)
+							break;
+						{
+							int n = seq->param_int[0];
+							int scx = cx, scy = TERM_MINY;
+							int srx = TERM_MAXX, sry = TERM_MAXY;
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &scx, &scy);
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &srx, &sry);
+							int width = srx - scx + 1;
+							if (n >= width) {
+								/* Fill entire region with blanks */
+								fill_rect(cterm, scx, scy, srx, sry, ' ');
+							}
+							else {
+								int keep = width - n;
+								struct vmem_cell *rowbuf = calloc(width, sizeof(*rowbuf));
+								if (rowbuf) {
+									struct vmem_cell blank = {0};
+									blank.ch = ' ';
+									blank.legacy_attr = cterm->attr;
+									blank.fg = cterm->fg_color;
+									blank.bg = cterm->bg_color;
+									blank.font = ciolib_attrfont(cterm->attr);
+									for (int r = scy; r <= sry; r++) {
+										vmem_gettext(scx, r, srx, r, rowbuf);
+										memmove(&rowbuf[n], &rowbuf[0], keep * sizeof(*rowbuf));
+										for (int c = 0; c < n; c++)
+											rowbuf[c] = blank;
+										vmem_puttext(scx, r, srx, r, rowbuf);
+									}
+									free(rowbuf);
+								}
+							}
+						}
+					}
+					// DECDC — Delete Column (CSI Pn ' ~)
+					else if (strcmp(seq->ctrl_func, "'~") == 0 && parse_parameters(seq)) {
+						int cx, cy;
+						seq_default(seq, 0, 1);
+						TERM_XY(&cx, &cy);
+						if (cx < TERM_MINX || cx > TERM_MAXX || cy < TERM_MINY || cy > TERM_MAXY)
+							break;
+						{
+							int n = seq->param_int[0];
+							int scx = cx, scy = TERM_MINY;
+							int srx = TERM_MAXX, sry = TERM_MAXY;
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &scx, &scy);
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &srx, &sry);
+							int width = srx - scx + 1;
+							if (n >= width) {
+								fill_rect(cterm, scx, scy, srx, sry, ' ');
+							}
+							else {
+								int keep = width - n;
+								struct vmem_cell *rowbuf = calloc(width, sizeof(*rowbuf));
+								if (rowbuf) {
+									struct vmem_cell blank = {0};
+									blank.ch = ' ';
+									blank.legacy_attr = cterm->attr;
+									blank.fg = cterm->fg_color;
+									blank.bg = cterm->bg_color;
+									blank.font = ciolib_attrfont(cterm->attr);
+									for (int r = scy; r <= sry; r++) {
+										vmem_gettext(scx, r, srx, r, rowbuf);
+										memmove(&rowbuf[0], &rowbuf[n], keep * sizeof(*rowbuf));
+										for (int c = keep; c < width; c++)
+											rowbuf[c] = blank;
+										vmem_puttext(scx, r, srx, r, rowbuf);
+									}
+									free(rowbuf);
 								}
 							}
 						}
