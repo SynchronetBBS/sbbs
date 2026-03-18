@@ -1085,6 +1085,7 @@ cterm_clreol(struct cterminal *cterm)
 			buf[i].fg = cterm->fg_color;
 			buf[i].bg = cterm->bg_color;
 			buf[i].font = ciolib_attrfont(cterm->attr);
+			buf[i].hyperlink_id = 0;
 		}
 	}
 	coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &x, &y);
@@ -1112,6 +1113,7 @@ cterm_clrblk(struct cterminal *cterm, int sx, int sy, int ex, int ey)
 			buf[i].fg = cterm->fg_color;
 			buf[i].bg = cterm->bg_color;
 			buf[i].font = ciolib_attrfont(cterm->attr);
+			buf[i].hyperlink_id = 0;
 		}
 	}
 	vmem_puttext(sx, sy, ex, ey, buf);
@@ -1242,6 +1244,7 @@ clear2bol(struct cterminal * cterm)
 				buf[i].fg = cterm->fg_color;
 				buf[i].bg = cterm->bg_color;
 				buf[i].font = ciolib_attrfont(cterm->attr);
+				buf[i].hyperlink_id = 0;
 			}
 		}
 		coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &x, &y);
@@ -3950,6 +3953,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								vc[k].fg=cterm->fg_color;
 								vc[k].bg=cterm->bg_color;
 								vc[k].font = ciolib_attrfont(cterm->attr);
+								vc[k].hyperlink_id = 0;
 							}
 							vmem_puttext(max_col - i + 1, row, max_col, max_row, vc);
 							free(vc);
@@ -3980,6 +3984,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								vc[k].fg=cterm->fg_color;
 								vc[k].bg=cterm->bg_color;
 								vc[k].font = ciolib_attrfont(cterm->attr);
+								vc[k].hyperlink_id = 0;
 							}
 							vmem_puttext(col, row, col + i - 1, max_row, vc);
 							free(vc);
@@ -4384,6 +4389,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									blank.fg = cterm->fg_color;
 									blank.bg = cterm->bg_color;
 									blank.font = ciolib_attrfont(cterm->attr);
+									blank.hyperlink_id = 0;
 									for (int r = scy; r <= sry; r++) {
 										vmem_gettext(scx, r, srx, r, rowbuf);
 										memmove(&rowbuf[n], &rowbuf[0], keep * sizeof(*rowbuf));
@@ -4423,6 +4429,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									blank.fg = cterm->fg_color;
 									blank.bg = cterm->bg_color;
 									blank.font = ciolib_attrfont(cterm->attr);
+									blank.hyperlink_id = 0;
 									for (int r = scy; r <= sry; r++) {
 										vmem_gettext(scx, r, srx, r, rowbuf);
 										memmove(&rowbuf[0], &rowbuf[n], keep * sizeof(*rowbuf));
@@ -4708,6 +4715,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								vc[k].fg=cterm->fg_color;
 								vc[k].bg=cterm->bg_color;
 								vc[k].font = ciolib_attrfont(cterm->attr);
+								vc[k].hyperlink_id = 0;
 							}
 							col2 = col;
 							row2 = row;

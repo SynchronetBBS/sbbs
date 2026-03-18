@@ -365,6 +365,7 @@ set_vmem_cell(size_t x, size_t y, uint16_t cell, uint32_t fg, uint32_t bg)
 	}
 	vc->bg = bg;
 	vc->font = font;
+	vc->hyperlink_id = 0;
 	return vc;
 }
 
