@@ -2805,6 +2805,22 @@ ciolib_get_hyperlink_url(uint16_t id)
 	return url;
 }
 
+CIOLIBEXPORT char *
+ciolib_get_hyperlink_params(uint16_t id)
+{
+	hyperlink_init();
+
+	if (id == 0 || id > HYPERLINK_TABLE_SIZE)
+		return NULL;
+
+	pthread_mutex_lock(&hyperlink_mutex);
+	char *params = NULL;
+	if (hyperlink_table[id - 1].id_param)
+		params = strdup(hyperlink_table[id - 1].id_param);
+	pthread_mutex_unlock(&hyperlink_mutex);
+	return params;
+}
+
 static bool
 hyperlink_scheme_ok(const char *uri)
 {

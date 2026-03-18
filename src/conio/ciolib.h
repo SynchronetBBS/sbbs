@@ -549,6 +549,7 @@ CIOLIBEXPORT enum ciolib_scaling ciolib_getscaling_type(void);
 CIOLIBEXPORT uint8_t ciolib_rgb_to_legacyattr(uint32_t fg, uint32_t bg);
 CIOLIBEXPORT uint16_t ciolib_add_hyperlink(const char *uri, const char *id_param);
 CIOLIBEXPORT char *ciolib_get_hyperlink_url(uint16_t id);
+CIOLIBEXPORT char *ciolib_get_hyperlink_params(uint16_t id);
 CIOLIBEXPORT bool ciolib_open_hyperlink(uint16_t hyperlink_id);
 CIOLIBEXPORT void ciolib_set_current_hyperlink(uint16_t id);
 CIOLIBEXPORT uint16_t ciolib_get_current_hyperlink(void);

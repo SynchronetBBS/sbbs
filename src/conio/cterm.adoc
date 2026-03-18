@@ -128,6 +128,34 @@ Moves to the line home position of the next line.
 
 SOURCE: <<ECMA-48>>
 
+=== `ESC F` Start of Selected Area (`SSA`)
+Marks the active presentation position as the first character position
+of a selected area.  The content from SSA to ESA (or to the cursor
+position, depending on TTM) is eligible for transmission when STS is
+received.
+
+SSA and ESA are cleared by changes to scroll margins (DECSTBM, DECSLRM),
+origin mode (DECOM), or RIS.
+
+Scrolling does not invalidate SSA — it marks a position in the
+presentation component, not the content at that position.  When STS
+triggers, the terminal reads whatever content is currently at the
+marked positions.
+
+SOURCE: <<ECMA-48>> (Section 8.3.138)
+
+=== `ESC G` End of Selected Area (`ESA`)
+Marks the active presentation position as the last character position
+(inclusive) of a selected area begun by SSA.
+
+ESA is required when TTM is set to ALL (`CSI 16 h`).  When TTM is
+CURSOR (the default), the cursor position defines the end instead.
+
+If no ESA has been issued, the selected area extends to the last cell
+of the viewport.
+
+SOURCE: <<ECMA-48>> (Section 8.3.47)
+
 === `ESC H` Set Tab (`HTS`)
 Sets a tab stop at the current column
 
@@ -146,10 +174,43 @@ Introduces <<Device Control Strings>>
 
 SOURCE: <<ECMA-48>>
 
+=== `ESC S` Set Transmit State (`STS`)
+Triggers transmission of the selected area content established by SSA
+(and optionally ESA) back to the host.
+
+The response is framed as `SOS CTerm:STS:<N>: <content> ST` where
+`<N>` is 0 for FETM=INSERT (attributed) or 1 for FETM=EXCLUDE
+(text only).
+
+**With TTM=CURSOR (default, `CSI 16 l`):** Content from SSA up to but
+excluding the cursor position is transmitted.
+
+**With TTM=ALL (`CSI 16 h`):** Content from SSA through ESA (inclusive)
+is transmitted regardless of cursor position.
+
+**With FETM=INSERT (default, `CSI 14 l`):** Characters are transmitted
+with SGR sequences for attribute changes, doorway mode encoding for C0
+control characters in cells, and OSC 8 for hyperlink changes.  The
+stream is valid ECMA-48 that can be replayed to reproduce the region.
+
+**With FETM=EXCLUDE (`CSI 14 h`):** Only graphic characters are
+transmitted.  C0 and DEL bytes in cells are replaced with SPACE.
+
+The transmitted stream is a linear sequence of character positions in
+presentation order (left to right, top to bottom).  No line boundary
+markers are emitted — the host slices by the known screen width.
+
+If no SSA has been issued, or the eligible area is empty, an empty
+response is returned: `SOS CTerm:STS:<N>: ST`
+
+STS automatically clears the transmit state after transmission
+completes.
+
+SOURCE: <<ECMA-48>> (Section 8.3.145)
+
 === `ESC X` Start Of String (`SOS`)
 As the above strings, but may contain any characters except
 a Start Of String sequence or a String Terminator sequence.
-The string is currently ignored.
 
 SOURCE: <<ECMA-48>>
 
@@ -736,6 +797,33 @@ Deletes tab stops according to the values of `Ps`:
 |5
 |Deletes all tab stops.
 |===
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Ps... h` Set Mode (`SM`)
+Sets one or more ANSI modes.  The following modes are supported:
+
+[%autowidth,cols="1,2"]
+|===
+|14
+|FORMAT EFFECTOR TRANSFER MODE (FETM) = EXCLUDE.
+When set, transmitted data (via STS) contains only graphic characters.
+C0/DEL bytes in cells are replaced with SPACE.  SGR, positioning, and
+other formator functions are excluded.
+
+|16
+|TRANSFER TERMINATION MODE (TTM) = ALL.
+When set, the complete selected area from SSA to ESA is transmitted
+regardless of cursor position.  When reset (default), only content
+preceding the cursor is transmitted (cursor position excluded).
+|===
+
+SOURCE: <<ECMA-48>> (Sections 7.2.6, 7.2.18)
+
+=== `CSI Ps... l` Reset Mode (`RM`)
+Resets ANSI modes.  Same parameter values as SM above.  Resetting
+mode 14 restores FETM=INSERT (attributed transmission).  Resetting
+mode 16 restores TTM=CURSOR (cursor-exclusive termination).
 
 SOURCE: <<ECMA-48>>
 
@@ -1828,10 +1916,24 @@ SOURCE: <<VT320>>
 
 === `CSI Ps $ p` Request Mode — ANSI (`DECRQM`)
 Requests the current state of ANSI mode `Ps`.  The terminal responds
-with `CSI Ps ; Pm $ y`.  No ANSI modes are currently implemented, so
-`Pm` is always 0 (not recognized).
+with `CSI Ps ; Pm $ y` (DECRPM).
 
-SOURCE: <<VT320>>
+The following ANSI modes can be queried:
+
+[%autowidth,cols="1,2"]
+|===
+|1  |GATM — permanently reset (Pm=4)
+|14 |FETM — changeable (Pm=1 when set, Pm=2 when reset)
+|15 |MATM — permanently reset (Pm=4)
+|16 |TTM — changeable (Pm=1 when set, Pm=2 when reset)
+|17 |SATM — permanently reset (Pm=4)
+|===
+
+Modes 1, 15, and 17 returning Pm=4 (permanently reset) indicates
+support for ECMA-48 selected area transmission (SSA/STS).
+Any unrecognized mode returns Pm=0.
+
+SOURCE: <<VT320>>, <<ECMA-48>>
 
 === `CSI = Ps $ p` Request Mode — CTerm Extension
 NON-STANDARD EXTENSION +

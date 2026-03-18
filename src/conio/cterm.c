@@ -186,6 +186,52 @@ struct note_params {
 static void ctputs(struct cterminal *cterm, char *buf);
 static void cterm_reset(struct cterminal *cterm);
 
+/*
+ * Send a response to the host.
+ * If response_cb is set, calls it directly (unbounded size).
+ * Otherwise appends to _retbuf (bounded by _retsize).
+ */
+static void
+cterm_respond(struct cterminal *cterm, const char *data, size_t len)
+{
+	if (cterm->response_cb) {
+		cterm->response_cb(data, len, cterm->response_cbdata);
+		return;
+	}
+	if (cterm->response_buf && cterm->response_buf_size > 0) {
+		size_t used = strlen(cterm->response_buf);
+		size_t avail = cterm->response_buf_size - used - 1;
+		if (len > avail)
+			len = avail;
+		if (len > 0) {
+			memcpy(cterm->response_buf + used, data, len);
+			cterm->response_buf[used + len] = '\0';
+		}
+	}
+}
+
+/* Printf-style wrapper for cterm_respond */
+static void
+cterm_respond_printf(struct cterminal *cterm, const char *fmt, ...)
+{
+	char tmp[1024];
+	va_list ap;
+	va_start(ap, fmt);
+	int n = vsnprintf(tmp, sizeof(tmp), fmt, ap);
+	va_end(ap);
+	if (n > 0)
+		cterm_respond(cterm, tmp, n);
+}
+
+static inline void
+cterm_clear_selection(struct cterminal *cterm)
+{
+	cterm->ssa_row = 0;
+	cterm->ssa_col = 0;
+	cterm->esa_row = 0;
+	cterm->esa_col = 0;
+}
+
 static void
 cterm_hyperlink_gc(ciolib_hyperlink_mark_fn mark_live, int max_live, void *cbdata)
 {
@@ -2618,6 +2664,235 @@ do_st_vt_52(struct cterminal *cterm, char *retbuf, size_t retsize)
 	cterm->sequence=0;
 }
 
+/*
+ * Emit the minimal SGR sequence to transition from prev to next cell attributes.
+ * Legacy SGR first, then extended colors if needed.
+ */
+static void
+sgr_diff(struct cterminal *cterm, const struct vmem_cell *prev, const struct vmem_cell *next)
+{
+	static const int cga2ansi[] = {0,4,2,6,1,5,3,7};
+	int need_reset = 0;
+	uint8_t pa = prev->legacy_attr;
+	uint8_t na = next->legacy_attr;
+
+	/* Check if we need a reset — if any attribute was ON in prev but OFF in next */
+	if ((pa & 0x08) && !(na & 0x08))	/* bold off */
+		need_reset = 1;
+	if ((pa & 0x80) && !(na & 0x80))	/* blink off */
+		need_reset = 1;
+
+	if (need_reset) {
+		cterm_respond_printf(cterm, "\033[0");
+		if (na & 0x08)
+			cterm_respond_printf(cterm, ";1");
+		if (na & 0x80)
+			cterm_respond_printf(cterm, ";5");
+		cterm_respond_printf(cterm, ";%d", 30 + cga2ansi[na & 0x07]);
+		cterm_respond_printf(cterm, ";%d", 40 + cga2ansi[(na >> 4) & 0x07]);
+		cterm_respond_printf(cterm, "m");
+	}
+	else {
+		int params = 0;
+		char sgrbuf[128];
+		sgrbuf[0] = '\0';
+
+		if ((na & 0x08) && !(pa & 0x08)) {
+			strcat(sgrbuf, params++ ? ";1" : "1");
+		}
+		if ((na & 0x80) && !(pa & 0x80)) {
+			strcat(sgrbuf, params++ ? ";5" : "5");
+		}
+		if ((na & 0x07) != (pa & 0x07)) {
+			char tmp[8];
+			snprintf(tmp, sizeof(tmp), "%s%d", params++ ? ";" : "", 30 + cga2ansi[na & 0x07]);
+			strcat(sgrbuf, tmp);
+		}
+		if (((na >> 4) & 0x07) != ((pa >> 4) & 0x07)) {
+			char tmp[8];
+			snprintf(tmp, sizeof(tmp), "%s%d", params++ ? ";" : "", 40 + cga2ansi[(na >> 4) & 0x07]);
+			strcat(sgrbuf, tmp);
+		}
+		if (params > 0)
+			cterm_respond_printf(cterm, "\033[%sm", sgrbuf);
+	}
+
+	if (next->fg != prev->fg) {
+		if (next->fg & 0x80000000)
+			cterm_respond_printf(cterm, "\033[38;2;%d;%d;%dm",
+			    (next->fg >> 16) & 0xff, (next->fg >> 8) & 0xff, next->fg & 0xff);
+		else if (next->fg >= 16)
+			cterm_respond_printf(cterm, "\033[38;5;%dm", next->fg & 0xffff);
+	}
+
+	if (next->bg != prev->bg) {
+		if (next->bg & 0x80000000)
+			cterm_respond_printf(cterm, "\033[48;2;%d;%d;%dm",
+			    (next->bg >> 16) & 0xff, (next->bg >> 8) & 0xff, next->bg & 0xff);
+		else if (next->bg >= 16)
+			cterm_respond_printf(cterm, "\033[48;5;%dm", next->bg & 0xffff);
+	}
+
+	if (next->font != prev->font)
+		cterm_respond_printf(cterm, "\033[0;%d D", next->font);
+}
+
+/*
+ * STS — Transmit selected area content.
+ * Framed as: SOS CTerm:STS:<N>: <content> ST
+ */
+static void
+cterm_transmit_selected(struct cterminal *cterm)
+{
+	int start_row, start_col, end_row, end_col;
+	int cur_row, cur_col;
+	struct text_info ti;
+	struct vmem_cell *cells;
+	int total_cells, i;
+	int screen_width;
+
+	/* Emit SOS with prefix */
+	cterm_respond_printf(cterm, "\033XCTerm:STS:%d:", cterm->fetm);
+
+	/* No SSA — empty response */
+	if (cterm->ssa_row == 0)
+		goto done;
+
+	gettextinfo(&ti);
+	screen_width = ti.screenwidth;
+	start_row = cterm->ssa_row;
+	start_col = cterm->ssa_col;
+
+	/* Get cursor position in screen coords */
+	{
+		int cx, cy;
+		CURR_XY(&cx, &cy);
+		coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &cx, &cy);
+		cur_row = cy;
+		cur_col = cx;
+	}
+
+	/* Determine end position */
+	if (cterm->ttm) {
+		/* TTM=ALL: use ESA, or default to last cell of viewport */
+		if (cterm->esa_row != 0) {
+			end_row = cterm->esa_row;
+			end_col = cterm->esa_col;
+		}
+		else {
+			/* Default ESA: last cell of screen (or scroll region if origin mode) */
+			end_row = cterm->y + cterm->height - 1;
+			end_col = cterm->x + cterm->width - 1;
+		}
+	}
+	else {
+		/* TTM=CURSOR: end is one before cursor position (cursor excluded) */
+		end_row = cur_row;
+		end_col = cur_col - 1;
+		if (end_col < 1) {
+			end_row--;
+			end_col = screen_width;
+		}
+		/* If cursor is at or before SSA, nothing eligible */
+		if (end_row < start_row || (end_row == start_row && end_col < start_col))
+			goto done;
+	}
+
+	/* Validate range */
+	if (end_row < start_row || (end_row == start_row && end_col < start_col))
+		goto done;
+
+	/* Calculate total cells and read them all via vmem_gettext */
+	/* Convert to a linear cell range */
+	int start_linear = (start_row - 1) * screen_width + (start_col - 1);
+	int end_linear = (end_row - 1) * screen_width + (end_col - 1);
+	total_cells = end_linear - start_linear + 1;
+
+	if (total_cells <= 0)
+		goto done;
+
+	/* Read cells row by row */
+	cells = calloc(total_cells, sizeof(struct vmem_cell));
+	if (cells == NULL)
+		goto done;
+
+	/* Read cells — by row for efficiency */
+	{
+		int pos = 0;
+		int r = start_row;
+		int c = start_col;
+		while (pos < total_cells) {
+			int row_end = (r == end_row) ? end_col : screen_width;
+			int count = row_end - c + 1;
+			if (pos + count > total_cells)
+				count = total_cells - pos;
+			vmem_gettext(c, r, c + count - 1, r, &cells[pos]);
+			pos += count;
+			r++;
+			c = 1;
+		}
+	}
+
+	if (cterm->fetm) {
+		/* FETM=EXCLUDE: text only, C0/DEL → SPACE */
+		for (i = 0; i < total_cells; i++) {
+			uint8_t ch = cells[i].ch;
+			if (ch < 0x20 || ch == 0x7f)
+				ch = ' ';
+			cterm_respond(cterm, (char *)&ch, 1);
+		}
+	}
+	else {
+		/* FETM=INSERT: characters with SGR diffs, hyperlinks, doorway encoding */
+		struct vmem_cell prev = {
+			.legacy_attr = 7,
+			.ch = ' ',
+			.font = 0,
+			.fg = 7,
+			.bg = 0,
+			.hyperlink_id = 0,
+		};
+
+		for (i = 0; i < total_cells; i++) {
+			/* Emit SGR diff */
+			sgr_diff(cterm, &prev, &cells[i]);
+
+			/* Emit hyperlink change */
+			if (cells[i].hyperlink_id != prev.hyperlink_id) {
+				if (cells[i].hyperlink_id == 0) {
+					cterm_respond_printf(cterm, "\033]8;;\033\\");
+				}
+				else {
+					char *url = ciolib_get_hyperlink_url(cells[i].hyperlink_id);
+					char *params = ciolib_get_hyperlink_params(cells[i].hyperlink_id);
+					cterm_respond_printf(cterm, "\033]8;%s;%s\033\\",
+					    params ? params : "", url ? url : "");
+					free(url);
+					free(params);
+				}
+			}
+
+			uint8_t ch = cells[i].ch;
+			if (ch < 0x20 || ch == 0x7f) {
+				/* Doorway encode C0/DEL */
+				char doorway[] = "\033[=255h\x00X\033[=255l";
+				doorway[8] = ch;
+				cterm_respond(cterm, doorway, sizeof(doorway) - 1);
+			}
+			else {
+				cterm_respond(cterm, (char *)&ch, 1);
+			}
+			prev = cells[i];
+		}
+	}
+
+	free(cells);
+
+done:
+	/* Always emit ST to close the SOS */
+	cterm_respond(cterm, "\033\\", 2);
+}
+
 static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed, char last)
 {
 	char	*p;
@@ -2719,6 +2994,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										case 6:
 											clear_lcf(cterm);
 											cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
+											cterm_clear_selection(cterm);
 											setwindow(cterm);
 											break;
 										case 7:
@@ -2825,6 +3101,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										case 6:
 											clear_lcf(cterm);
 											cterm->extattr &= ~CTERM_EXTATTR_ORIGINMODE;
+											cterm_clear_selection(cterm);
 											setwindow(cterm);
 											break;
 										case 7:
@@ -3695,6 +3972,29 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							// Note XTerm has 5 and 6 as extensions.
 						}
 					}
+					// DECRQM for non-private modes (CSI Ps $ p)
+					else if (strcmp(seq->ctrl_func, "$p") == 0) {
+						if (retbuf && parse_parameters(seq) && seq->param_count == 1) {
+							int pm = 0;
+							seq_default(seq, 0, 0);
+							switch (seq->param_int[0]) {
+								case 1:		/* GATM — permanently GUARD */
+								case 15:	/* MATM — permanently SINGLE */
+								case 17:	/* SATM — permanently SELECT */
+									pm = 4;
+									break;
+								case 14:	/* FETM — changeable */
+									pm = cterm->fetm ? 1 : 2;
+									break;
+								case 16:	/* TTM — changeable */
+									pm = cterm->ttm ? 1 : 2;
+									break;
+							}
+							snprintf(tmp, sizeof(tmp), "\x1b[%u;%d$y", (unsigned)seq->param_int[0], pm);
+							if (strlen(retbuf) + strlen(tmp) < retsize)
+								strcat(retbuf, tmp);
+						}
+					}
 					// Tab report
 					else if (strcmp(seq->ctrl_func, "$w") == 0) {
 						seq_default(seq, 0, 0);
@@ -4197,13 +4497,39 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 							}
 							break;
-						case 'h':	/* TODO? Set Mode */
+						case 'h':	/* Set Mode (SM) — ANSI modes */
+							if (parse_parameters(seq)) {
+								for (i = 0; i < seq->param_count; i++) {
+									seq_default(seq, i, 0);
+									switch (seq->param_int[i]) {
+										case 14:	/* FETM = EXCLUDE */
+											cterm->fetm = 1;
+											break;
+										case 16:	/* TTM = ALL */
+											cterm->ttm = 1;
+											break;
+									}
+								}
+							}
 							break;
 						case 'i':	/* ToDo?  Media Copy (Printing) */
 							break;
 						// for case 'j': see case 'D':
 						// for case 'k': see case 'A':
-						case 'l':	/* TODO? Reset Mode */
+						case 'l':	/* Reset Mode (RM) — ANSI modes */
+							if (parse_parameters(seq)) {
+								for (i = 0; i < seq->param_count; i++) {
+									seq_default(seq, i, 0);
+									switch (seq->param_int[i]) {
+										case 14:	/* FETM = INSERT */
+											cterm->fetm = 0;
+											break;
+										case 16:	/* TTM = CURSOR */
+											cterm->ttm = 0;
+											break;
+									}
+								}
+							}
 							break;
 						case 'm':	/* Select Graphic Rendition */
 							gettextinfo(&ti);
@@ -4421,16 +4747,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						 * END OF STANDARD CONTROL FUNCTIONS
 						 * AFTER THIS IS ALL PRIVATE EXTENSIONS
 						 */
-						case 'p':
-							if (retbuf && strcmp(seq->ctrl_func, "$p") == 0 && parse_parameters(seq) && seq->param_count == 1) {
-								/* DECRQM for ANSI modes — none currently implemented,
-								 * so always report 0 (not recognized). */
-								seq_default(seq, 0, 0);
-								snprintf(tmp, sizeof(tmp), "\x1b[%u;0$y", (unsigned)seq->param_int[0]);
-								if (strlen(retbuf) + strlen(tmp) < retsize)
-									strcat(retbuf, tmp);
-							}
-							/* else: ANSI keyboard reassignment, pointer mode — not implemented */
+						case 'p': /* ANSI keyboard reassignment, pointer mode */
+							/* DECRQM ($p) handled in the ctrl_func else-if chain above */
 							break;
 						case 'q': /* ToDo?  VT100 keyboard lights, cursor style, protection */
 							break;
@@ -4443,6 +4761,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							if(row >= ABS_MINY && max_row > row && max_row <= ABS_MAXY) {
 								cterm->top_margin = row;
 								cterm->bottom_margin = max_row;
+								cterm_clear_selection(cterm);
 								setwindow(cterm);
 								gotoxy(CURR_MINX, CURR_MINY);
 							}
@@ -4460,6 +4779,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								if(col >= ABS_MINX && max_col > col && max_col <= ABS_MAXX) {
 									cterm->left_margin = col;
 									cterm->right_margin = max_col;
+									cterm_clear_selection(cterm);
 									setwindow(cterm);
 									gotoxy(CURR_MINX, CURR_MINY);
 								}
@@ -4522,6 +4842,25 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 				clear_lcf(cterm);
 				adjust_currpos(cterm, INT_MIN, 1, 1);
 				break;
+			case 'F':	// SSA — Start of Selected Area (ECMA-48 8.3.138)
+			{
+				/* Store absolute screen position */
+				int sx, sy;
+				CURR_XY(&sx, &sy);
+				coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &sx, &sy);
+				cterm->ssa_col = sx;
+				cterm->ssa_row = sy;
+				break;
+			}
+			case 'G':	// ESA — End of Selected Area (ECMA-48 8.3.47)
+			{
+				int sx, sy;
+				CURR_XY(&sx, &sy);
+				coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &sx, &sy);
+				cterm->esa_col = sx;
+				cterm->esa_row = sy;
+				break;
+			}
 			case 'H':
 				insert_tabstop(cterm, wherex());
 				break;
@@ -4537,6 +4876,18 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 				cterm->strbuf = malloc(1024);
 				cterm->strbufsize = 1024;
 				cterm->strbuflen = 0;
+				break;
+			case 'S':	// STS — Set Transmit State (ECMA-48 8.3.145)
+				/* Flush any pending retbuf content before transmitting,
+				 * to preserve ordering when response_cb is set. */
+				if (cterm->response_cb && cterm->response_buf) {
+					size_t pending = strlen(cterm->response_buf);
+					if (pending > 0) {
+						cterm->response_cb(cterm->response_buf, pending, cterm->response_cbdata);
+						cterm->response_buf[0] = '\0';
+					}
+				}
+				cterm_transmit_selected(cterm);
 				break;
 			case 'X':	// Start Of String - SOS
 				cterm->string = CTERM_STRING_SOS;
@@ -4920,6 +5271,12 @@ cterm_reset(struct cterminal *cterm)
 	cterm->right_margin=cterm->width;
 	cterm->save_xpos=0;
 	cterm->save_ypos=0;
+	cterm->ssa_row = 0;
+	cterm->ssa_col = 0;
+	cterm->esa_row = 0;
+	cterm->esa_col = 0;
+	cterm->fetm = 0;
+	cterm->ttm = 0;
 	cterm->escbuf[0]=0;
 	cterm->sequence=0;
 	cterm->string = 0;
@@ -5738,6 +6095,15 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 
 	if(!cterm->started)
 		cterm_start(cterm);
+
+	/* Store retbuf on struct so cterm_respond can use it.
+	 * Save/restore for re-entrant calls (macro invocation). */
+	char *saved_response_buf = cterm->response_buf;
+	size_t saved_response_buf_size = cterm->response_buf_size;
+	cterm->response_buf = retbuf;
+	cterm->response_buf_size = retsize;
+	if (retbuf)
+		retbuf[0] = '\0';
 
 	/* Now rejigger the current modes palette... */
 	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE)
@@ -6976,6 +7342,9 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 	setfont(orig_fonts[1], FALSE, 2);
 	setfont(orig_fonts[2], FALSE, 3);
 	setfont(orig_fonts[3], FALSE, 4);
+
+	cterm->response_buf = saved_response_buf;
+	cterm->response_buf_size = saved_response_buf_size;
 
 	if (retbuf && retbuf[0])
 		return strlen(retbuf);
