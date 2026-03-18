@@ -3763,6 +3763,13 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 		dictionaryFilenames: pSlyEdCfgObj.dictionaryFilenames
 	};
 
+	// If the current logged-in user is a G-restricted user (guest), then don't load user
+	// settings, just return the default user settings.  One important thing is that the
+	/// default user settings includes an empty slyEditMode, so guest users will always be
+	// prompeted for which SlyEdit mode to use.
+	if (user.is_guest)
+		return userSettingsObj;
+
 	// Open the user settings file
 	var userSettingsFile = new File(gUserSettingsFilename);
 	if (userSettingsFile.open("r"))
@@ -3810,6 +3817,11 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 // Return value: Boolean - Whether or not this function succeeded in writing the file.
 function WriteUserSettingsFile(pUserSettingsObj)
 {
+	// If the current logged-in user is a G-restricted user (guest), then don't
+	// save the user settings, just return true (faux success).
+	if (user.is_guest)
+		return true;
+
 	var writeSucceeded = false;
 
 	var userSettingsFile = new File(gUserSettingsFilename);
