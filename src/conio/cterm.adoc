@@ -57,13 +57,17 @@ first, in which case no operation is performed.
 
 SOURCE: <<ECMA-48>>
 
-=== `0x09` Horizontal Tab (`HT`)
-Moves to the next horizontal tab stop.  Does not overwrite
-any characters in between.  If there are no tab stops left
-in the line, moves to the first position of the next line.
+=== `0x09` Character Tabulation (`HT`)
+Moves to the next character tabulation stop.  Does not overwrite
+any characters in between.  If there are no character tabulation stops
+left in the line, moves to the first position of the next line.
 If the starting position is on the last line, will perform
 a scroll, filling the new line at bottom with the current
 attribute.
+
+NOTE: `0x0B` (VT) is NOT treated as a line tabulation control character.
+It is displayed as the CP437 glyph (♂).  Use CVT (`CSI Pn Y`) for
+line tabulation.
 
 SOURCE: <<ECMA-48>>
 
@@ -169,8 +173,18 @@ of the viewport.
 
 SOURCE: <<ECMA-48>> (Section 8.3.47)
 
-=== `ESC H` Set Tab (`HTS`)
-Sets a tab stop at the current column
+=== `ESC H` Character Tabulation Set (`HTS`)
+Sets a character tabulation stop at the current column.
+
+SOURCE: <<ECMA-48>>
+
+=== `ESC J` Line Tabulation Set (`VTS`)
+Sets a line tabulation stop at the current line.  Line tabulation stops
+are used by CVT (`CSI Pn Y`) and can be cleared by TBC with parameter
+values 1, 4, or 5.
+
+Line tabulation stops are at fixed row numbers and are not affected by
+scrolling.  No default line tabulation stops are set.
 
 SOURCE: <<ECMA-48>>
 
@@ -705,7 +719,12 @@ SOURCE: <<ECMA-48>>
 
 === `CSI Pn Y` Cursor Line Tabulation (`CVT`)
 Defaults: `Pn` = 1 +
-Move the cursor to the `Pn`-th next line tab stop.
+Moves the cursor to the corresponding character position (same column)
+of the line corresponding to the `Pn`-th following line tabulation stop.
+Line tabulation stops are set by VTS (`ESC J`).
+
+If there is no next line tabulation stop, the screen scrolls up one line
+and the cursor moves to the last row, preserving the current column.
 
 SOURCE: <<ECMA-48>>
 
@@ -806,18 +825,24 @@ SOURCE: <<ECMA-48>>
 
 === `CSI Ps g` Tabulation Clear (`TBC`)
 Defaults: `Ps` = 0 +
-Deletes tab stops according to the values of `Ps`:
+Clears tabulation stops according to the value of `Ps`:
 
 [%autowidth,cols="1,2"]
 |===
 |0
-|Deletes tab stop at current position.
+|Clears the character tabulation stop at the current position.
+
+|1
+|Clears the line tabulation stop at the current line.
 
 |3
-|Deletes all tab stops.
+|Clears all character tabulation stops.
+
+|4
+|Clears all line tabulation stops.
 
 |5
-|Deletes all tab stops.
+|Clears all tabulation stops (both character and line).
 |===
 
 SOURCE: <<ECMA-48>>
@@ -1945,14 +1970,30 @@ The following ANSI modes can be queried:
 [%autowidth,cols="1,2"]
 |===
 |1  |GATM — permanently reset (Pm=4)
+|2  |KAM — permanently reset (Pm=4)
+|3  |CRM — permanently reset (Pm=4)
+|4  |IRM — permanently reset (Pm=4)
+|5  |SRTM — permanently reset (Pm=4)
+|6  |ERM — permanently reset (Pm=4)
+|7  |VEM — permanently reset (Pm=4)
+|8  |BDSM — permanently reset (Pm=4)
+|9  |DCSM — permanently reset (Pm=4)
+|10 |HEM — permanently reset (Pm=4)
+|11 |PUM — permanently reset (Pm=4)
+|12 |SRM — permanently reset (Pm=4)
+|13 |FEAM — permanently reset (Pm=4)
 |14 |FETM — changeable (Pm=1 when set, Pm=2 when reset)
 |15 |MATM — permanently reset (Pm=4)
 |16 |TTM — changeable (Pm=1 when set, Pm=2 when reset)
 |17 |SATM — permanently reset (Pm=4)
+|18 |TSM — permanently reset (Pm=4)
+|21 |GRCM — permanently set (Pm=3)
+|22 |ZDM — permanently set (Pm=3)
 |===
 
-Modes 1, 15, and 17 returning Pm=4 (permanently reset) indicates
-support for ECMA-48 selected area transmission (SSA/STS).
+All ECMA-48 standard modes are reported.  Modes 14 and 16 are
+changeable; modes 21 and 22 are permanently set; all others are
+permanently reset.
 Any unrecognized mode returns Pm=0.
 
 SOURCE: <<VT320>>, <<ECMA-48>>

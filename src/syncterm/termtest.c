@@ -397,6 +397,131 @@ clear_screen(void)
 	term_write("\033[2J\033[H");
 }
 
+/*
+ * Read a plain-text string from screen position (x,y) of length len.
+ * Returns 1 on success, 0 on failure.  Requires has_sts.
+ */
+static int
+read_text_at(int x, int y, int len, char *out, size_t outsz)
+{
+	char buf[4096];
+	int n = read_screen_at(x, y, len, 0, buf, sizeof(buf));
+	if (n == 0)
+		return 0;
+	if (n > (int)(outsz - 1))
+		n = outsz - 1;
+	memcpy(out, buf, n);
+	out[n] = '\0';
+	return 1;
+}
+
+/*
+ * Verify a scroll occurred within a region.
+ *
+ * Before the scroll-triggering operation:
+ *   - Call scroll_witness_setup() to write markers
+ * After the operation:
+ *   - Call scroll_witness_check_up() to verify upward scroll
+ *
+ * For scroll-up: marker on 'mark_row' should move to 'mark_row - n',
+ * and 'mark_row' should now be blank (or filled with current attr).
+ *
+ * If outside_row > 0, verifies that row was NOT affected by the scroll.
+ *
+ * Returns 1=pass, 0=fail, -1=skip (no STS).
+ */
+static void
+scroll_witness_setup(int mark_row, int outside_row)
+{
+	cursor_to(1, mark_row);
+	term_write("SCROLLMARK");
+	if (outside_row > 0) {
+		cursor_to(1, outside_row);
+		term_write("NOSCROLL");
+	}
+}
+
+static int
+scroll_witness_check_up(int mark_row, int scroll_n, int outside_row)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Marker should have moved up by scroll_n rows */
+	int new_row = mark_row - scroll_n;
+	if (new_row >= 1) {
+		if (!read_text_at(1, new_row, 10, buf, sizeof(buf)))
+			return -1;
+		if (strncmp(buf, "SCROLLMARK", 10) != 0) {
+			fprintf(result_fp, "    scroll witness: expected 'SCROLLMARK' at row %d, got '%.10s'\n",
+			    new_row, buf);
+			return 0;
+		}
+	}
+	/* Original row should be blank */
+	if (!read_text_at(1, mark_row, 10, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "          ", 10) == 0 || strncmp(buf, "SCROLLMARK", 10) != 0) {
+		/* OK — either blank or different content */
+	}
+	else {
+		fprintf(result_fp, "    scroll witness: row %d not scrolled, still '%.10s'\n",
+		    mark_row, buf);
+		return 0;
+	}
+	/* If outside_row set, verify it wasn't affected */
+	if (outside_row > 0) {
+		if (!read_text_at(1, outside_row, 8, buf, sizeof(buf)))
+			return -1;
+		if (strncmp(buf, "NOSCROLL", 8) != 0) {
+			fprintf(result_fp, "    scroll witness: outside row %d changed to '%.8s'\n",
+			    outside_row, buf);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+static int
+scroll_witness_check_down(int mark_row, int scroll_n, int outside_row)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Marker should have moved down by scroll_n rows */
+	int new_row = mark_row + scroll_n;
+	if (new_row <= 24) {
+		if (!read_text_at(1, new_row, 10, buf, sizeof(buf)))
+			return -1;
+		if (strncmp(buf, "SCROLLMARK", 10) != 0) {
+			fprintf(result_fp, "    scroll witness: expected 'SCROLLMARK' at row %d, got '%.10s'\n",
+			    new_row, buf);
+			return 0;
+		}
+	}
+	/* Original row should be blank */
+	if (!read_text_at(1, mark_row, 10, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "SCROLLMARK", 10) == 0) {
+		fprintf(result_fp, "    scroll witness: row %d not scrolled, still '%.10s'\n",
+		    mark_row, buf);
+		return 0;
+	}
+	/* If outside_row set, verify it wasn't affected */
+	if (outside_row > 0) {
+		if (!read_text_at(1, outside_row, 8, buf, sizeof(buf)))
+			return -1;
+		if (strncmp(buf, "NOSCROLL", 8) != 0) {
+			fprintf(result_fp, "    scroll witness: outside row %d changed to '%.8s'\n",
+			    outside_row, buf);
+			return 0;
+		}
+	}
+	return 1;
+}
+
 /* Log and run a test */
 typedef int (*test_fn)(void);
 
@@ -663,19 +788,35 @@ test_decrqcra(void)
 static int
 test_su(void)
 {
-	/* Scroll up — cursor should not move */
+	int ret;
+
+	/* Scroll up 2 — cursor should not move, content shifts up */
+	scroll_witness_setup(12, 0);
 	cursor_to(5, 5);
 	term_write("\033[2S");
-	return check_xy(5, 5);
+	if (!check_xy(5, 5))
+		return 0;
+	ret = scroll_witness_check_up(12, 2, 0);
+	if (ret <= 0)
+		return ret;
+	return 1;
 }
 
 static int
 test_sd(void)
 {
-	/* Scroll down — cursor should not move */
+	int ret;
+
+	/* Scroll down 2 — cursor should not move, content shifts down */
+	scroll_witness_setup(12, 0);
 	cursor_to(5, 5);
 	term_write("\033[2T");
-	return check_xy(5, 5);
+	if (!check_xy(5, 5))
+		return 0;
+	ret = scroll_witness_check_down(12, 2, 0);
+	if (ret <= 0)
+		return ret;
+	return 1;
 }
 
 static int
@@ -1221,31 +1362,59 @@ test_tbc(void)
 static int
 test_decstbm_scroll(void)
 {
-	int x, y;
+	int x, y, ret;
 
-	/* Set region rows 10-11, position at row 10 */
-	term_write("\033[10;11r");
+	/* Set region rows 10-15, write markers inside and outside */
+	cursor_to(1, 5);
+	term_write("OUTSIDE_ABOVE");
+	cursor_to(1, 12);
+	term_write("SCROLLMARK");
+	cursor_to(1, 20);
+	term_write("OUTSIDE_BELOW");
+
+	term_write("\033[10;15r");
 	if (!check_xy(1, 1))
 		return 0;
-	cursor_to(10, 10);
-	/* Three LFs should scroll within the region, clamping at row 11 */
-	term_write("\r\n\r\n\r\n");
+
+	/* Scroll region up via LF at bottom of region */
+	cursor_to(1, 15);
+	term_write("\r\n");
 	if (!get_cursor_pos(&x, &y))
 		return 0;
-	if (y != 11) {
-		fprintf(result_fp, "    scroll clamp: expected row 11 got %d\n", y);
+	if (y != 15) {
+		fprintf(result_fp, "    scroll clamp: expected row 15 got %d\n", y);
 		term_write("\033[r");
 		return 0;
 	}
-	/* CUU 5 from row 11 should clamp at top of region (row 10) */
-	term_write("\033[5A");
-	if (!get_cursor_pos(&x, &y))
-		return 0;
-	if (y != 10) {
-		fprintf(result_fp, "    CUU clamp: expected row 10 got %d\n", y);
-		term_write("\033[r");
-		return 0;
+
+	/* Verify content inside region scrolled up */
+	if (has_sts) {
+		char buf[64];
+		/* SCROLLMARK was at row 12, should now be at row 11 */
+		if (read_text_at(1, 11, 10, buf, sizeof(buf))) {
+			if (strncmp(buf, "SCROLLMARK", 10) != 0) {
+				fprintf(result_fp, "    inside not scrolled: row 11 = '%.10s'\n", buf);
+				term_write("\033[r");
+				return 0;
+			}
+		}
+		/* Content outside margins should not have moved */
+		if (read_text_at(1, 5, 13, buf, sizeof(buf))) {
+			if (strncmp(buf, "OUTSIDE_ABOVE", 13) != 0) {
+				fprintf(result_fp, "    above margin moved: '%.13s'\n", buf);
+				term_write("\033[r");
+				return 0;
+			}
+		}
+		if (read_text_at(1, 20, 13, buf, sizeof(buf))) {
+			if (strncmp(buf, "OUTSIDE_BELOW", 13) != 0) {
+				fprintf(result_fp, "    below margin moved: '%.13s'\n", buf);
+				term_write("\033[r");
+				return 0;
+			}
+		}
 	}
+
 	term_write("\033[r");
 	return 1;
 }
@@ -1516,22 +1685,37 @@ test_sgr_conceal(void)
 static int
 test_ri_scroll(void)
 {
-	/* RI at row 1 should scroll down */
+	int ret;
+
+	/* RI at row 1 should scroll down, content shifts down */
+	scroll_witness_setup(5, 0);
 	cursor_to(5, 1);
 	term_write("\033M");
-	return check_xy(5, 1);
+	if (!check_xy(5, 1))
+		return 0;
+	ret = scroll_witness_check_down(5, 1, 0);
+	if (ret <= 0)
+		return ret;
+	return 1;
 }
 
 static int
 test_lf_scroll(void)
 {
+	int x, y, ret;
+
 	/* LF at bottom row should scroll up, cursor stays on last row */
-	int x, y;
+	scroll_witness_setup(23, 0);
 	cursor_to(5, 24);
 	term_write("\n");
 	if (!get_cursor_pos(&x, &y))
 		return 0;
-	return (x == 5 && y == 24);
+	if (x != 5 || y != 24)
+		return 0;
+	ret = scroll_witness_check_up(23, 1, 0);
+	if (ret <= 0)
+		return ret;
+	return 1;
 }
 
 static int
@@ -1772,6 +1956,48 @@ test_decrqm_ansi_modes(void)
 		return 0;
 	if (sscanf(buf, "\033[%d;%d$y", &ps, &pm) != 2 || ps != 14 || pm != 2)
 		return 0;
+
+	/* TSM (18) should be permanently reset (Pm=4) */
+	term_printf("\033[18$p");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[%d;%d$y", &ps, &pm) != 2 || ps != 18 || pm != 4)
+		return 0;
+
+	/* Verify all other permanently-reset modes (2-13) */
+	{
+		static const int perm_reset[] = {2,3,4,5,6,7,8,9,10,11,12,13};
+		int m;
+		for (m = 0; m < 12; m++) {
+			term_printf("\033[%d$p", perm_reset[m]);
+			if (read_csi_response(buf, sizeof(buf), 500) == 0)
+				return 0;
+			if (sscanf(buf, "\033[%d;%d$y", &ps, &pm) != 2 ||
+			    ps != perm_reset[m] || pm != 4) {
+				fprintf(result_fp, "    mode %d: expected pm=4, got %s\n",
+				    perm_reset[m], buf);
+				return 0;
+			}
+		}
+	}
+
+	/* GRCM (21) should be permanently set (Pm=3) */
+	term_printf("\033[21$p");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[%d;%d$y", &ps, &pm) != 2 || ps != 21 || pm != 3) {
+		fprintf(result_fp, "    GRCM: expected 21;3, got %s\n", buf);
+		return 0;
+	}
+
+	/* ZDM (22) should be permanently set (Pm=3) */
+	term_printf("\033[22$p");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[%d;%d$y", &ps, &pm) != 2 || ps != 22 || pm != 3) {
+		fprintf(result_fp, "    ZDM: expected 22;3, got %s\n", buf);
+		return 0;
+	}
 
 	return 1;
 }
@@ -2277,19 +2503,233 @@ test_sr(void)
 	return 1;
 }
 
+/* --- SU/SD/SL/SR with margins --- */
+
+static int
+test_su_margins(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Set top/bottom margins 5-20, write markers inside and outside */
+	cursor_to(1, 3);
+	term_write("ABOVE");
+	cursor_to(1, 10);
+	term_write("INSIDE");
+	cursor_to(1, 22);
+	term_write("BELOW");
+	term_write("\033[5;20r");
+	/* SU 1 — scroll up within margin region */
+	term_write("\033[1S");
+	/* Inside marker (was row 10) should move to row 9 */
+	if (!read_text_at(1, 9, 6, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "INSIDE", 6) != 0) {
+		fprintf(result_fp, "    inside not scrolled: row 9 = '%.6s'\n", buf);
+		term_write("\033[r");
+		return 0;
+	}
+	/* Outside markers should be unchanged */
+	if (!read_text_at(1, 3, 5, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "ABOVE", 5) != 0) {
+		fprintf(result_fp, "    above margin moved: '%.5s'\n", buf);
+		term_write("\033[r");
+		return 0;
+	}
+	if (!read_text_at(1, 22, 5, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "BELOW", 5) != 0) {
+		fprintf(result_fp, "    below margin moved: '%.5s'\n", buf);
+		term_write("\033[r");
+		return 0;
+	}
+	term_write("\033[r");
+	return 1;
+}
+
+static int
+test_sd_margins(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	cursor_to(1, 3);
+	term_write("ABOVE");
+	cursor_to(1, 10);
+	term_write("INSIDE");
+	cursor_to(1, 22);
+	term_write("BELOW");
+	term_write("\033[5;20r");
+	/* SD 1 — scroll down within margin region */
+	term_write("\033[1T");
+	/* Inside marker (was row 10) should move to row 11 */
+	if (!read_text_at(1, 11, 6, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "INSIDE", 6) != 0) {
+		fprintf(result_fp, "    inside not scrolled: row 11 = '%.6s'\n", buf);
+		term_write("\033[r");
+		return 0;
+	}
+	/* Outside markers unchanged */
+	if (!read_text_at(1, 3, 5, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "ABOVE", 5) != 0) {
+		fprintf(result_fp, "    above margin moved: '%.5s'\n", buf);
+		term_write("\033[r");
+		return 0;
+	}
+	if (!read_text_at(1, 22, 5, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "BELOW", 5) != 0) {
+		fprintf(result_fp, "    below margin moved: '%.5s'\n", buf);
+		term_write("\033[r");
+		return 0;
+	}
+	term_write("\033[r");
+	return 1;
+}
+
+static int
+test_sl_margins(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Set left/right margins 10-70 */
+	term_write("\033[?69h");
+	term_write("\033[10;70s");
+	/* Write markers inside and outside the margins */
+	cursor_to(5, 1);
+	term_write("LEFT");
+	cursor_to(15, 1);
+	term_write("INSIDE");
+	cursor_to(75, 1);
+	term_write("RIGHT");
+	/* SL 1 — scroll left within margins */
+	term_write("\033[1 @");
+	/* INSIDE (was at col 15) should shift to col 14 */
+	if (!read_text_at(14, 1, 6, buf, sizeof(buf)))
+		goto skip;
+	if (strncmp(buf, "INSIDE", 6) != 0) {
+		fprintf(result_fp, "    inside not shifted: col 14 = '%.6s'\n", buf);
+		goto fail;
+	}
+	/* LEFT outside left margin should be unchanged */
+	if (!read_text_at(5, 1, 4, buf, sizeof(buf)))
+		goto skip;
+	if (strncmp(buf, "LEFT", 4) != 0) {
+		fprintf(result_fp, "    left of margin moved: '%.4s'\n", buf);
+		goto fail;
+	}
+	/* RIGHT outside right margin should be unchanged */
+	if (!read_text_at(75, 1, 5, buf, sizeof(buf)))
+		goto skip;
+	if (strncmp(buf, "RIGHT", 5) != 0) {
+		fprintf(result_fp, "    right of margin moved: '%.5s'\n", buf);
+		goto fail;
+	}
+	term_write("\033[s\033[?69l");
+	return 1;
+fail:
+	term_write("\033[s\033[?69l");
+	return 0;
+skip:
+	term_write("\033[s\033[?69l");
+	return -1;
+}
+
+static int
+test_sr_margins(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Set left/right margins 10-70 */
+	term_write("\033[?69h");
+	term_write("\033[10;70s");
+	/* Write markers inside and outside the margins */
+	cursor_to(5, 1);
+	term_write("LEFT");
+	cursor_to(15, 1);
+	term_write("INSIDE");
+	cursor_to(75, 1);
+	term_write("RIGHT");
+	/* SR 1 — scroll right within margins */
+	term_write("\033[1 A");
+	/* INSIDE (was at col 15) should shift to col 16 */
+	if (!read_text_at(16, 1, 6, buf, sizeof(buf)))
+		goto skip;
+	if (strncmp(buf, "INSIDE", 6) != 0) {
+		fprintf(result_fp, "    inside not shifted: col 16 = '%.6s'\n", buf);
+		goto fail;
+	}
+	/* LEFT outside left margin unchanged */
+	if (!read_text_at(5, 1, 4, buf, sizeof(buf)))
+		goto skip;
+	if (strncmp(buf, "LEFT", 4) != 0) {
+		fprintf(result_fp, "    left of margin moved: '%.4s'\n", buf);
+		goto fail;
+	}
+	/* RIGHT outside right margin unchanged */
+	if (!read_text_at(75, 1, 5, buf, sizeof(buf)))
+		goto skip;
+	if (strncmp(buf, "RIGHT", 5) != 0) {
+		fprintf(result_fp, "    right of margin moved: '%.5s'\n", buf);
+		goto fail;
+	}
+	term_write("\033[s\033[?69l");
+	return 1;
+fail:
+	term_write("\033[s\033[?69l");
+	return 0;
+skip:
+	term_write("\033[s\033[?69l");
+	return -1;
+}
+
 /* --- CVT (Cursor Line Tabulation) --- */
 
 static int
 test_cvt(void)
 {
-	int x, y;
+	int x, y, ret;
 
-	/* cterm.adoc: "same as sending TAB Pn times" */
-	cursor_to(1, 1);
+	/* CVT is vertical line tabulation.  With no line tab stops set,
+	 * it should scroll up one and move to the last row. */
+	scroll_witness_setup(23, 0);
+	cursor_to(5, 1);
 	term_write("\033[Y");
 	if (!get_cursor_pos(&x, &y))
 		return 0;
-	return (x > 1 && y == 1);
+	if (x != 5 || y != 24) {
+		fprintf(result_fp, "    no stops: expected (5,24) got (%d,%d)\n", x, y);
+		return 0;
+	}
+	/* Verify scroll actually happened */
+	ret = scroll_witness_check_up(23, 1, 0);
+	if (ret <= 0)
+		return ret;
+	/* Now set a line tab at row 10 via VTS, verify CVT advances to it */
+	clear_screen();
+	cursor_to(3, 10);
+	term_write("\033J");       /* VTS — set line tab at row 10 */
+	cursor_to(5, 1);
+	term_write("\033[Y");      /* CVT — advance to next line tab */
+	if (!get_cursor_pos(&x, &y))
+		return 0;
+	if (x != 5 || y != 10) {
+		fprintf(result_fp, "    with stop at 10: expected (5,10) got (%d,%d)\n", x, y);
+		term_write("\033[4g");
+		return 0;
+	}
+	/* Clear line tab stops */
+	term_write("\033[4g");
+	return 1;
 }
 
 /* --- TSR (Tab Stop Remove) --- */
@@ -3187,6 +3627,10 @@ static struct test_entry tests[] = {
 	{"EL_all",         test_el_all},
 	{"SL",             test_sl},
 	{"SR",             test_sr},
+	{"SU_margins",     test_su_margins},
+	{"SD_margins",     test_sd_margins},
+	{"SL_margins",     test_sl_margins},
+	{"SR_margins",     test_sr_margins},
 	/* Cursor extended */
 	{"CVT",            test_cvt},
 	/* Tabs extended */
