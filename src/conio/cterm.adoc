@@ -2041,6 +2041,9 @@ characters.
 |Request width in columns
 |*\|
 |Request height in lines
+|` q` (space + q)
+|Request cursor style (`DECSCUSR`).  The response contains the
+current cursor style number (0–4) as set by `CSI Ps SP q`.
 |===
 
 SOURCE: <<VT420>>
@@ -2078,13 +2081,18 @@ SOURCE: <<VT420>>
 An Operating System Command Begins with an `OSC` and ends with a `ST`
 The following commands are supported:
 
-=== `OSC 4;(pX;pY)... ST` Palette Redefinition (`OSC 4`)
-Specifies one or more palette redefinitions. +
+=== `OSC 4;(pX;pY)... ST` Palette Redefinition/Query (`OSC 4`)
+Specifies one or more palette redefinitions or queries. +
 `pX` is the palette index, and `pY` is the colour definition +
 Color format: `rgb:R/G/B`::
 	Where `R`, `G`, and `B` are a sequence of one to four
 	hex digits representing the value of the
 	red, green, and blue channels respectively.
+
+If `pY` is `?`, CTerm responds with the current colour for palette
+index `pX` in the form `OSC 4;pX;rgb:RR/GG/BB ST` where
+`RR`, `GG`, and `BB` are two hex digit colour values reflecting
+the 8-bit-per-channel storage precision.
 
 SOURCE: <<XTerm>>
 

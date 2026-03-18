@@ -62,6 +62,7 @@ int bitmap_set_modepalette(uint32_t p[16]);
 uint32_t bitmap_map_rgb(uint16_t r, uint16_t g, uint16_t b);
 void bitmap_replace_font(uint8_t id, char *name, void *data, size_t size);
 int bitmap_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b);
+int bitmap_getpalette(uint32_t index, uint8_t *r, uint8_t *g, uint8_t *b);
 #endif
 
 #endif
