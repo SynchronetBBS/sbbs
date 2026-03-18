@@ -272,6 +272,7 @@ dpkg: $(SYNCTERM) syncterm.1.gz dpkg-control dpkgdirs changelog.gz
 	${QUIET}dpkg-deb --root-owner-group -b dpkg syncterm_1.8b-${shell date -u +%Y%m%d}_${shell dpkg-architecture -q DEB_BUILD_ARCH}.deb
 	${QUIET}rm -rf dpkg
 
+ifndef WITHOUT_SDL
 TERMTEST = $(EXEODIR)$(DIRSEP)termtest
 
 $(TERMTEST): termtest.c | $(EXEODIR)
@@ -283,6 +284,13 @@ termtest: $(TERMTEST)
 
 test: $(SYNCTERM) $(TERMTEST)
 	./run_termtest.sh $(SYNCTERM) $(TERMTEST)
+else
+.PHONY: termtest test
+termtest:
+	@echo "termtest requires SDL (skipped)"
+test:
+	@echo "termtest requires SDL (skipped)"
+endif
 
 devel: tags cscope.out
 

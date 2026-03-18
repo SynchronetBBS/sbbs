@@ -174,7 +174,7 @@ if(NOT WITHOUT_RETRO)
 endif()
 
 enable_testing()
-if(UNIX)
+if(UNIX AND NOT WITHOUT_SDL)
 	add_executable(termtest termtest.c)
 	add_test(NAME termtest
 		COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/run_termtest.sh
