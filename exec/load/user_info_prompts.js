@@ -32,7 +32,7 @@ function ask_to_cancel(msg)
 		console.print(msg);
 		console.cond_newline();
 	}
-	if (operation && !console.yesno(gettext("Continue " + operation + "\x01\\")))
+	if (operation && !console.yesno(gettext("Continue") + " " + gettext(operation) + "\x01\\"))
 		exit(1);
 }
 
@@ -44,7 +44,7 @@ function get_lang(user)
 		return;
 	var lang = bbs.mods.lang || load(bbs.mods.lang = {}, "lang.js");
 	while (bbs.online) {
-		if (lang.count() && !console.noyes(gettext("Choose an alternate" + " " + bbs.text(bbs.text.Language).toLowerCase() + "\x01\\")))
+		if (lang.count() && !console.noyes(gettext("Choose an alternate") + " " + bbs.text(bbs.text.Language).toLowerCase() + "\x01\\"))
 			lang.select();
 		if (console.aborted) {
 			ask_to_cancel();
