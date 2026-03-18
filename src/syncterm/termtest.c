@@ -3380,6 +3380,169 @@ test_apc_jxl_query(void)
 	return (len >= 3 && buf[len - 1] == 'n');
 }
 
+/* --- Rectangular area operations --- */
+
+static int
+test_decera(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Write text, erase a rectangle, verify it's blank */
+	cursor_to(1, 1);
+	term_write("ABCDEFGHIJ");
+	cursor_to(1, 2);
+	term_write("KLMNOPQRST");
+	/* DECERA: erase cols 3-8, rows 1-2 */
+	term_write("\033[1;3;2;8$z");
+	/* Row 1 cols 1-2 should be "AB", cols 3-8 blank, cols 9-10 "IJ" */
+	if (!read_text_at(1, 1, 10, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "AB      IJ", 10) != 0) {
+		fprintf(result_fp, "    row 1: expected 'AB      IJ', got '%.10s'\n", buf);
+		return 0;
+	}
+	/* Row 2 cols 1-2 should be "KL", cols 3-8 blank, cols 9-10 "ST" */
+	if (!read_text_at(1, 2, 10, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "KL      ST", 10) != 0) {
+		fprintf(result_fp, "    row 2: expected 'KL      ST', got '%.10s'\n", buf);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_decfra(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* DECFRA: fill cols 3-7, rows 1-2 with '#' (decimal 35) */
+	cursor_to(1, 1);
+	term_write("ABCDEFGHIJ");
+	cursor_to(1, 2);
+	term_write("KLMNOPQRST");
+	term_write("\033[35;1;3;2;7$x");
+	if (!read_text_at(1, 1, 10, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "AB#####HIJ", 10) != 0) {
+		fprintf(result_fp, "    row 1: expected 'AB#####HIJ', got '%.10s'\n", buf);
+		return 0;
+	}
+	if (!read_text_at(1, 2, 10, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "KL#####RST", 10) != 0) {
+		fprintf(result_fp, "    row 2: expected 'KL#####RST', got '%.10s'\n", buf);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_deccra(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Write source text, copy rectangle to another location */
+	cursor_to(1, 1);
+	term_write("HELLO");
+	cursor_to(1, 2);
+	term_write("WORLD");
+	/* DECCRA: copy rows 1-2, cols 1-5 to row 5, col 10 */
+	/* Format: CSI Pts;Pls;Pbs;Prs;Pps;Ptd;Pld;Ppd $ v */
+	term_write("\033[1;1;2;5;1;5;10;1$v");
+	/* Verify destination */
+	if (!read_text_at(10, 5, 5, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "HELLO", 5) != 0) {
+		fprintf(result_fp, "    dest row 5: expected 'HELLO', got '%.5s'\n", buf);
+		return 0;
+	}
+	if (!read_text_at(10, 6, 5, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "WORLD", 5) != 0) {
+		fprintf(result_fp, "    dest row 6: expected 'WORLD', got '%.5s'\n", buf);
+		return 0;
+	}
+	/* Source should still be intact */
+	if (!read_text_at(1, 1, 5, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "HELLO", 5) != 0) {
+		fprintf(result_fp, "    source row 1: expected 'HELLO', got '%.5s'\n", buf);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_decic(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Enable left/right margins, write text, insert column */
+	term_write("\033[?69h");
+	term_write("\033[1;20s");
+	cursor_to(1, 1);
+	term_write("ABCDEFGHIJ");
+	/* Position cursor at column 3, insert 2 columns */
+	cursor_to(3, 1);
+	term_write("\033[2'}");
+	if (!read_text_at(1, 1, 12, buf, sizeof(buf)))
+		goto skip;
+	/* AB should stay, 2 blanks inserted at col 3, CDEFGH shifted right */
+	if (strncmp(buf, "AB  CDEFGH", 10) != 0) {
+		fprintf(result_fp, "    expected 'AB  CDEFGH', got '%.12s'\n", buf);
+		goto fail;
+	}
+	term_write("\033[s\033[?69l");
+	return 1;
+fail:
+	term_write("\033[s\033[?69l");
+	return 0;
+skip:
+	term_write("\033[s\033[?69l");
+	return -1;
+}
+
+static int
+test_decdc(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Enable left/right margins, write text, delete column */
+	term_write("\033[?69h");
+	term_write("\033[1;20s");
+	cursor_to(1, 1);
+	term_write("ABCDEFGHIJ");
+	/* Position cursor at column 3, delete 2 columns */
+	cursor_to(3, 1);
+	term_write("\033[2'~");
+	if (!read_text_at(1, 1, 10, buf, sizeof(buf)))
+		goto skip;
+	/* AB stays, CD deleted, EFGHIJ shifts left, 2 blanks at right */
+	if (strncmp(buf, "ABEFGHIJ  ", 10) != 0) {
+		fprintf(result_fp, "    expected 'ABEFGHIJ  ', got '%.10s'\n", buf);
+		goto fail;
+	}
+	term_write("\033[s\033[?69l");
+	return 1;
+fail:
+	term_write("\033[s\033[?69l");
+	return 0;
+skip:
+	term_write("\033[s\033[?69l");
+	return -1;
+}
+
 /* --- NUL in doorway mode --- */
 
 static int
@@ -3680,6 +3843,12 @@ static struct test_entry tests[] = {
 	{"SM_TTM",         test_sm_ttm},
 	/* SyncTERM extensions */
 	{"APC_JXL_query",  test_apc_jxl_query},
+	/* Rectangular area operations */
+	{"DECERA",         test_decera},
+	{"DECFRA",         test_decfra},
+	{"DECCRA",         test_deccra},
+	{"DECIC",          test_decic},
+	{"DECDC",          test_decdc},
 	/* NUL in doorway mode + doorway readback encoding */
 	{"NUL_doorway",    test_nul_doorway},
 	/* Regression: response ordering when APC + CSI in same cterm_write */
