@@ -1779,6 +1779,75 @@ has been saved, the cursor is not moved.
 
 SOURCE: <<ANSISYS>>
 
+=== `CSI ? Ps $ p` Request Mode — Private (`DECRQM`)
+Requests the current state of private mode `Ps`.  The terminal responds
+with a mode report of the form `CSI ? Ps ; Pm $ y` (DECRPM) where `Pm`
+indicates the mode state:
+
+[%autowidth,cols="1,2"]
+|===
+|0
+|Mode not recognized
+
+|1
+|Set
+
+|2
+|Reset
+
+|3
+|Permanently set
+
+|4
+|Permanently reset
+|===
+
+The following private modes can be queried:
+
+[%autowidth,cols="1,2"]
+|===
+|6  |Origin mode (DECOM)
+|7  |Auto-wrap mode (DECAWM)
+|9  |X10 mouse reporting
+|25 |Cursor visible (DECTCEM)
+|31 |Alternate character set
+|32 |No bright foreground
+|33 |Bright background
+|34 |Blink = alternate character set
+|35 |No blink
+|67 |Backarrow key mode (DECBKM)
+|69 |Left/right margin mode (DECLRMM)
+|80 |Sixel scrolling
+|1000–1007, 1015 |Mouse tracking modes
+|2004 |Bracketed paste mode
+|===
+
+Any unrecognized mode returns `Pm` = 0.
+
+SOURCE: <<VT320>>
+
+=== `CSI Ps $ p` Request Mode — ANSI (`DECRQM`)
+Requests the current state of ANSI mode `Ps`.  The terminal responds
+with `CSI Ps ; Pm $ y`.  No ANSI modes are currently implemented, so
+`Pm` is always 0 (not recognized).
+
+SOURCE: <<VT320>>
+
+=== `CSI = Ps $ p` Request Mode — CTerm Extension
+NON-STANDARD EXTENSION +
+Requests the current state of CTerm private mode `Ps`.  The terminal
+responds with `CSI = Ps ; Pm $ y` using the same `Pm` values as
+DECRQM above.
+
+The following CTerm modes can be queried:
+
+[%autowidth,cols="1,2"]
+|===
+|4  |Last Column Flag mode (CTELCF)
+|5  |Forced Last Column Flag (CTFLCF) — reports 3 (permanently set) when forced
+|255|DoorWay mode
+|===
+
 === `CSI 2 $ w` Request Tab Stop Report (`DECTABSR`)
 Requests a list of tab stops.
 The list is in the form:

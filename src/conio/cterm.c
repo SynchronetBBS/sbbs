@@ -3476,6 +3476,83 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								}
 							}
 							break;
+						case 'p': /* DECRQM — Request Mode */
+							if (retbuf && strcmp(seq->ctrl_func, "$p") == 0 && parse_parameters(seq) && seq->param_count == 1) {
+								int pm = 0; /* 0=not recognized, 1=set, 2=reset, 3=permanently set, 4=permanently reset */
+								char prefix = seq->param_str[0];
+								seq_default(seq, 0, 0);
+								if (prefix == '?') {
+									int vidflags = getvideoflags();
+									switch (seq->param_int[0]) {
+										case 6:
+											pm = (cterm->extattr & CTERM_EXTATTR_ORIGINMODE) ? 1 : 2;
+											break;
+										case 7:
+											pm = (cterm->extattr & CTERM_EXTATTR_AUTOWRAP) ? 1 : 2;
+											break;
+										case 25:
+											pm = (cterm->cursor == _NORMALCURSOR) ? 1 : 2;
+											break;
+										case 31:
+											pm = (vidflags & CIOLIB_VIDEO_ALTCHARS) ? 1 : 2;
+											break;
+										case 32:
+											pm = (vidflags & CIOLIB_VIDEO_NOBRIGHT) ? 1 : 2;
+											break;
+										case 33:
+											pm = (vidflags & CIOLIB_VIDEO_BGBRIGHT) ? 1 : 2;
+											break;
+										case 34:
+											pm = (vidflags & CIOLIB_VIDEO_BLINKALTCHARS) ? 1 : 2;
+											break;
+										case 35:
+											pm = (vidflags & CIOLIB_VIDEO_NOBLINK) ? 1 : 2;
+											break;
+										case 67:
+											pm = (cterm->extattr & CTERM_EXTATTR_DECBKM) ? 1 : 2;
+											break;
+										case 69:
+											pm = (cterm->extattr & CTERM_EXTATTR_DECLRMM) ? 1 : 2;
+											break;
+										case 80:
+											pm = (cterm->extattr & CTERM_EXTATTR_SXSCROLL) ? 1 : 2;
+											break;
+										case 2004:
+											pm = (cterm->extattr & CTERM_EXTATTR_BRACKETPASTE) ? 1 : 2;
+											break;
+										case 9:
+										case 1000:
+										case 1001:
+										case 1002:
+										case 1003:
+										case 1004:
+										case 1005:
+										case 1006:
+										case 1007:
+										case 1015:
+											if (cterm->mouse_state_query)
+												pm = cterm->mouse_state_query(seq->param_int[0], cterm->mouse_state_query_cbdata) ? 1 : 2;
+											break;
+									}
+								}
+								else if (prefix == '=') {
+									switch (seq->param_int[0]) {
+										case 4:
+											pm = (cterm->last_column_flag & CTERM_LCF_ENABLED) ? 1 : 2;
+											break;
+										case 5:
+											pm = (cterm->last_column_flag & CTERM_LCF_FORCED) ? 3 : 2;
+											break;
+										case 255:
+											pm = cterm->doorway_mode ? 1 : 2;
+											break;
+									}
+								}
+								snprintf(tmp, sizeof(tmp), "\x1b[%c%u;%d$y", prefix, (unsigned)seq->param_int[0], pm);
+								if (strlen(retbuf) + strlen(tmp) < retsize)
+									strcat(retbuf, tmp);
+							}
+							break;
 					}
 					break;
 				}
@@ -4344,7 +4421,16 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						 * END OF STANDARD CONTROL FUNCTIONS
 						 * AFTER THIS IS ALL PRIVATE EXTENSIONS
 						 */
-						case 'p': /* ToDo?  ANSI keyboard reassignment, pointer mode */
+						case 'p':
+							if (retbuf && strcmp(seq->ctrl_func, "$p") == 0 && parse_parameters(seq) && seq->param_count == 1) {
+								/* DECRQM for ANSI modes — none currently implemented,
+								 * so always report 0 (not recognized). */
+								seq_default(seq, 0, 0);
+								snprintf(tmp, sizeof(tmp), "\x1b[%u;0$y", (unsigned)seq->param_int[0]);
+								if (strlen(retbuf) + strlen(tmp) < retsize)
+									strcat(retbuf, tmp);
+							}
+							/* else: ANSI keyboard reassignment, pointer mode — not implemented */
 							break;
 						case 'q': /* ToDo?  VT100 keyboard lights, cursor style, protection */
 							break;
