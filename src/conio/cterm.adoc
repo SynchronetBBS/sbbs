@@ -106,6 +106,19 @@ SOURCE: <<ECMA-35>>
 
 Legal combinations not handled are silently dropped.
 
+=== `ESC :` Escaped String Terminator (`ESCST`)
+Reserved for use within STS transmitted content (FETM=INSERT mode).
+OSC 8 hyperlink sequences inside an SOS-framed STS response cannot use
+bare ST (`ESC \`) as their terminator because it would prematurely close
+the SOS frame.  Instead, `ESC : \` (0x1B 0x3A 0x5C) is used as a
+substitute terminator.
+
+`ESC :` is an unassigned Fp private-use escape sequence (per <<ECMA-35>>).
+A conformant parser that encounters `ESC :` outside of STS content
+silently drops it (per the rule above).  Within STS FETM=INSERT content,
+the host parser recognizes the three-byte sequence `ESC : \` as "escaped
+ST" and converts it to `ESC \` before replay.
+
 === `ESC 7` Save Cursor (`DECSC`)
 Saves the current cursor position same as `CSI s`
 
@@ -191,7 +204,17 @@ is transmitted regardless of cursor position.
 **With FETM=INSERT (default, `CSI 14 l`):** Characters are transmitted
 with SGR sequences for attribute changes, doorway mode encoding for C0
 control characters in cells, and OSC 8 for hyperlink changes.  The
-stream is valid ECMA-48 that can be replayed to reproduce the region.
+stream is valid ECMA-48 that can be replayed to reproduce the region
+(after escaped-ST expansion; see below).
+
+**Escaped ST in attributed content:** OSC 8 sequences require ST (`ESC \`)
+as their terminator, but bare ST would prematurely close the SOS frame.
+Within STS FETM=INSERT content, OSC 8 sequences are terminated with
+`ESC : \` (0x1B 0x3A 0x5C) instead of `ESC \` (0x1B 0x5C).
+`ESC :` is an unassigned Fp private-use escape sequence (per ECMA-35)
+that any conformant parser silently drops.  The host parser recognizes
+`ESC : \` within STS content as "escaped ST" and converts it to `ESC \`
+before replay.
 
 **With FETM=EXCLUDE (`CSI 14 h`):** Only graphic characters are
 transmitted.  C0 and DEL bytes in cells are replaced with SPACE.
@@ -682,8 +705,7 @@ SOURCE: <<ECMA-48>>
 
 === `CSI Pn Y` Cursor Line Tabulation (`CVT`)
 Defaults: `Pn` = 1 +
-Move the cursor to the `Pn`-th next tab stop.
-Basically the same as sending TAB `Pn` times.
+Move the cursor to the `Pn`-th next line tab stop.
 
 SOURCE: <<ECMA-48>>
 

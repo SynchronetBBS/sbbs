@@ -2858,15 +2858,21 @@ cterm_transmit_selected(struct cterminal *cterm)
 			/* Emit SGR diff */
 			sgr_diff(cterm, &prev, &cells[i]);
 
-			/* Emit hyperlink change */
+			/* Emit hyperlink change.
+			 * OSC 8 normally ends with ST (ESC \), but ST would
+			 * prematurely close the SOS frame.  Use ESC : \ instead
+			 * — ESC : is an unassigned Fp private-use escape that
+			 * any conformant parser silently drops.  The host parser
+			 * recognizes ESC : \ as "escaped ST" within STS content
+			 * and converts it back to ESC \ for replay. */
 			if (cells[i].hyperlink_id != prev.hyperlink_id) {
 				if (cells[i].hyperlink_id == 0) {
-					cterm_respond_printf(cterm, "\033]8;;\033\\");
+					cterm_respond_printf(cterm, "\033]8;;\033:\\");
 				}
 				else {
 					char *url = ciolib_get_hyperlink_url(cells[i].hyperlink_id);
 					char *params = ciolib_get_hyperlink_params(cells[i].hyperlink_id);
-					cterm_respond_printf(cterm, "\033]8;%s;%s\033\\",
+					cterm_respond_printf(cterm, "\033]8;%s;%s\033:\\",
 					    params ? params : "", url ? url : "");
 					free(url);
 					free(params);
@@ -2950,9 +2956,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									gettextinfo(&ti);
 									vmode = find_vmode(ti.currmode);
 									if (vmode != -1)
-										sprintf(tmp, "\x1b[?2;0;%u;%uS", vparams[vmode].charwidth*cterm->width, vparams[vmode].charheight*cterm->height);
-									if(retbuf && *tmp && strlen(retbuf) + strlen(tmp) < retsize)
-										strcat(retbuf, tmp);
+										cterm_respond_printf(cterm, "\x1b[?2;0;%u;%uS", vparams[vmode].charwidth*cterm->width, vparams[vmode].charheight*cterm->height);
 								}
 							}
 							break;
@@ -2980,8 +2984,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											strcat(tmp, ";7");
 										strcat(tmp, "c");
 								}
-								if(retbuf && *tmp && strlen(retbuf) + strlen(tmp) < retsize)
-									strcat(retbuf, tmp);
+								if (*tmp)
+									cterm_respond(cterm, tmp, strlen(tmp));
 							}
 							break;
 						case 'h':
@@ -3200,8 +3204,6 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							if (seq->param_str[0] == '=' && parse_parameters(seq)) {
 								int vidflags;
 
-								if(retbuf == NULL)
-									break;
 								tmp[0] = 0;
 								if (seq->param_count > 1)
 									break;
@@ -3286,12 +3288,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										sprintf(tmp, "\x1b[=6;%dn", cio_api.vmem_gettext ? 1 : 0);
 										break;
 								}
-								if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
-									strcat(retbuf, tmp);
+								if (*tmp)
+									cterm_respond(cterm, tmp, strlen(tmp));
 							}
 							else if (seq->param_str[0] == '?' && parse_parameters(seq)) {
-								if(retbuf == NULL)
-									break;
 								seq_default(seq, 0, 1);
 								tmp[0] = 0;
 								switch(seq->param_int[0]) {
@@ -3322,8 +3322,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										break;
 									}
 								}
-								if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
-									strcat(retbuf, tmp);
+								if (*tmp)
+									cterm_respond(cterm, tmp, strlen(tmp));
 							}
 							break;
 						case 's':
@@ -3755,7 +3755,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							}
 							break;
 						case 'p': /* DECRQM — Request Mode */
-							if (retbuf && strcmp(seq->ctrl_func, "$p") == 0 && parse_parameters(seq) && seq->param_count == 1) {
+							if (strcmp(seq->ctrl_func, "$p") == 0 && parse_parameters(seq) && seq->param_count == 1) {
 								int pm = 0; /* 0=not recognized, 1=set, 2=reset, 3=permanently set, 4=permanently reset */
 								char prefix = seq->param_str[0];
 								seq_default(seq, 0, 0);
@@ -3826,9 +3826,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											break;
 									}
 								}
-								snprintf(tmp, sizeof(tmp), "\x1b[%c%u;%d$y", prefix, (unsigned)seq->param_int[0], pm);
-								if (strlen(retbuf) + strlen(tmp) < retsize)
-									strcat(retbuf, tmp);
+								cterm_respond_printf(cterm, "\x1b[%c%u;%d$y", prefix, (unsigned)seq->param_int[0], pm);
 							}
 							break;
 					}
@@ -3975,7 +3973,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					}
 					// DECRQM for non-private modes (CSI Ps $ p)
 					else if (strcmp(seq->ctrl_func, "$p") == 0) {
-						if (retbuf && parse_parameters(seq) && seq->param_count == 1) {
+						if (parse_parameters(seq) && seq->param_count == 1) {
 							int pm = 0;
 							seq_default(seq, 0, 0);
 							switch (seq->param_int[0]) {
@@ -3991,9 +3989,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									pm = cterm->ttm ? 1 : 2;
 									break;
 							}
-							snprintf(tmp, sizeof(tmp), "\x1b[%u;%d$y", (unsigned)seq->param_int[0], pm);
-							if (strlen(retbuf) + strlen(tmp) < retsize)
-								strcat(retbuf, tmp);
+							cterm_respond_printf(cterm, "\x1b[%u;%d$y", (unsigned)seq->param_int[0], pm);
 						}
 					}
 					// Tab report
@@ -4008,8 +4004,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								p2 += sprintf(p2, "%d", cterm->tabs[i]);
 							}
 							strcat(p2, "\x1b\\");
-							if(retbuf && *tmp && strlen(retbuf) + strlen(tmp) < retsize)
-								strcat(retbuf, tmp);
+							if (*tmp)
+								cterm_respond(cterm, tmp, strlen(tmp));
 						}
 					}
 					// Communication speed
@@ -4135,9 +4131,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								}
 								if (good) {
 									*tmp = 0;
-									snprintf(tmp, sizeof(tmp), "\x1bP%u!~%04X\x1b\\", (unsigned)seq->param_int[0], crc);
-									if(retbuf && *tmp && strlen(retbuf) + strlen(tmp) < retsize)
-										strcat(retbuf, tmp);
+									cterm_respond_printf(cterm, "\x1bP%u!~%04X\x1b\\", (unsigned)seq->param_int[0], crc);
 								}
 							}
 						}
@@ -4149,7 +4143,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									cterm->escbuf[0]=0;
 									cterm->sequence=0;
 									cterm->in_macro |= (UINT64_C(1)<<seq->param_int[0]);
-									cterm_write(cterm, cterm->macros[seq->param_int[0]], cterm->macro_lens[seq->param_int[0]], retbuf ? retbuf + strlen(retbuf) : retbuf, retsize - (retbuf ? strlen(retbuf) : 0), speed);
+									cterm_write(cterm, cterm->macros[seq->param_int[0]], cterm->macro_lens[seq->param_int[0]], NULL, 0, speed);
 									cterm->in_macro &= ~(UINT64_C(1)<<seq->param_int[0]);
 								}
 							}
@@ -4468,10 +4462,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						case 'c':	/* Device Attributes */
 							seq_default(seq, 0, 0);
 							if(!seq->param_int[0]) {
-								if(retbuf!=NULL) {
-									if(strlen(retbuf) + strlen(cterm->DA)  < retsize)
-										strcat(retbuf,cterm->DA);
-								}
+								cterm_respond(cterm, cterm->DA, strlen(cterm->DA));
 							}
 							break;
 						case 'd':	/* Line Position Absolute */
@@ -4718,27 +4709,14 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							seq_default(seq, 0, 0);
 							switch(seq->param_int[0]) {
 								case 5:
-									if(retbuf!=NULL) {
-										strcpy(tmp,"\x1b[0n");
-										if(strlen(retbuf)+strlen(tmp) < retsize)
-											strcat(retbuf,tmp);
-									}
+									cterm_respond(cterm, "\x1b[0n", 4);
 									break;
 								case 6:
-									if(retbuf!=NULL) {
-										CURR_XY(&col, &row);
-										sprintf(tmp,"\x1b[%d;%dR",row,col);
-										if(strlen(retbuf)+strlen(tmp) < retsize)
-											strcat(retbuf,tmp);
-									}
+									CURR_XY(&col, &row);
+									cterm_respond_printf(cterm, "\x1b[%d;%dR", row, col);
 									break;
 								case 255:
-									if (retbuf != NULL) {
-										sprintf(tmp, "\x1b[%d;%dR", CURR_MAXY, CURR_MAXX);
-										if (strlen(retbuf) + strlen(tmp) < retsize) {
-											strcat(retbuf, tmp);
-										}
-									}
+									cterm_respond_printf(cterm, "\x1b[%d;%dR", CURR_MAXY, CURR_MAXX);
 									break;
 							}
 							break;
@@ -5014,43 +4992,43 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 													strcat(tmp, cterm->bg_tc_str);
 												}
 												strcat(tmp, "m\x1b\\");
-												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
+												if (*tmp)
+													cterm_respond(cterm, tmp, strlen(tmp));
 											}
 											break;
 										case 'r':
 											if (cterm->strbuf[3] == 0) {
 												sprintf(tmp, "\x1bP1$r%d;%dr\x1b\\", cterm->top_margin, cterm->bottom_margin);
-												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
+												if (*tmp)
+													cterm_respond(cterm, tmp, strlen(tmp));
 											}
 											break;
 										case 's':
 											if (cterm->strbuf[3] == 0) {
 												sprintf(tmp, "\x1bP1$r%d;%ds\x1b\\", cterm->left_margin, cterm->right_margin);
-												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
+												if (*tmp)
+													cterm_respond(cterm, tmp, strlen(tmp));
 											}
 											break;
 										case 't':
 											if (cterm->strbuf[3] == 0) {
 												sprintf(tmp, "\x1bP1$r%dt\x1b\\", cterm->height);
-												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
+												if (*tmp)
+													cterm_respond(cterm, tmp, strlen(tmp));
 											}
 											break;
 										case '$':
 											if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
 												sprintf(tmp, "\x1bP1$r%d$|\x1b\\", cterm->width);
-												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
+												if (*tmp)
+													cterm_respond(cterm, tmp, strlen(tmp));
 											}
 											break;
 										case '*':
 											if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
 												sprintf(tmp, "\x1bP1$r%d$|\x1b\\", cterm->height);
-												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
+												if (*tmp)
+													cterm_respond(cterm, tmp, strlen(tmp));
 											}
 											break;
 										case ' ':
@@ -5068,21 +5046,14 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 													style = (cterm->cursor == _SOLIDCURSOR) ? 2 : 4;
 												}
 												sprintf(tmp, "\x1bP1$r%d q\x1b\\", style);
-												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
+												if (*tmp)
+													cterm_respond(cterm, tmp, strlen(tmp));
 											}
 											break;
 										default:
-											if(retbuf!=NULL) {
-												strcpy(tmp,"\x1b[0n");
-												// TODO: If the string is too long, this is likely terrible.
-												if (strlen(retbuf)+5 < retsize)
-													strcat(retbuf, "\x1bP0$r");
-												if (strlen(retbuf)+strlen(&cterm->strbuf[2]) < retsize)
-													strcat(retbuf, &cterm->strbuf[2]);
-												if (strlen(retbuf)+2 < retsize)
-													strcat(retbuf, "\x1b_");
-											}
+											cterm_respond(cterm, "\x1bP0$r", 5);
+											cterm_respond(cterm, &cterm->strbuf[2], strlen(&cterm->strbuf[2]));
+											cterm_respond(cterm, "\x1b_", 2);
 									}
 								}
 							}
@@ -5105,11 +5076,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									else {
 										if (p[0] == '?' && p[1] == 0) {
 											uint8_t qr, qg, qb;
-											if (retbuf && getpalette(index + palette_offset, &qr, &qg, &qb)) {
-												snprintf(tmp, sizeof(tmp), "\033]4;%lu;rgb:%02x/%02x/%02x\033\\", index, qr, qg, qb);
-												if (strlen(retbuf) + strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
-											}
+											if (getpalette(index + palette_offset, &qr, &qg, &qb))
+												cterm_respond_printf(cterm, "\033]4;%lu;rgb:%02x/%02x/%02x\033\\", index, qr, qg, qb);
 										}
 										else if (strncmp(p, "rgb:", 4) == 0) {
 											char *p3;
@@ -5178,12 +5146,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							    && cterm->strbuf[2] == ';'
 							    && cterm->strbuf[3] == '?'
 							    && cterm->strbuf[4] == 0) {
-								if (retbuf != NULL) {
+								{
 									uint32_t colour = cterm->strbuf[1] == '0' ? cterm->default_fg_palette : cterm->default_bg_palette;
 
-									snprintf(tmp, sizeof(tmp), "\x1b]1%c;rgb:%02x/%02x/%02x\x1b\\", cterm->strbuf[1], colour >> 16 & 0xff, colour >> 8 & 0xff, colour & 0xff);
-									if (strlen(retbuf) + strlen(tmp) < retsize)
-										strcat(retbuf, tmp);
+									cterm_respond_printf(cterm, "\x1b]1%c;rgb:%02x/%02x/%02x\x1b\\", cterm->strbuf[1], colour >> 16 & 0xff, colour >> 8 & 0xff, colour & 0xff);
 								}
 							}
 							else if (cterm->strbuf[0] == '8' && cterm->strbuf[1] == ';') {
@@ -6027,8 +5993,7 @@ prestel_send_memory(struct cterminal *cterm, uint8_t mem, char *retbuf, size_t r
 	for (int x = 0; x < PRESTEL_MEM_SLOT_SIZE; x++) {
 		if (cterm->prestel_data[mem][x] != '?') {
 			app[0] = cterm->prestel_data[mem][x];
-			if(retbuf && strlen(retbuf) + 1 < retsize)
-				strcat(retbuf, app);
+			cterm_respond(cterm, app, 1);
 		}
 	}
 }
@@ -6239,10 +6204,8 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								cterm->string = 0;
 								FREE_AND_NULL(cterm->strbuf);
 								cterm->strbuflen = cterm->strbufsize = 0;
-								if (retbuf) {
-									cterm_write(cterm, "\x1b", 1, retbuf+strlen(retbuf), retsize-strlen(retbuf), speed);
-									cterm_write(cterm, &ch[0], 1, retbuf+strlen(retbuf), retsize-strlen(retbuf), speed);
-								}
+								cterm_write(cterm, "\x1b", 1, NULL, 0, speed);
+								cterm_write(cterm, &ch[0], 1, NULL, 0, speed);
 							}
 							else {
 								if (cterm->strbuf == NULL) {
