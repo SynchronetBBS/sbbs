@@ -250,6 +250,25 @@ struct cterminal {
 	enum prestel_prog_states prestel_prog_state;
 	uint8_t prestel_mem;
 
+	/* Response callback — sends terminal responses (DSR, DECRQM, STS, etc.)
+	 * directly to the host.  If NULL, responses use the retbuf passed to
+	 * cterm_write (legacy behavior). */
+	void (*response_cb)(const char *buf, size_t len, void *cbdata);
+	void *response_cbdata;
+
+	/* Internal: retbuf/retsize from current cterm_write call, for legacy mode */
+	char				*response_buf;
+	size_t				response_buf_size;
+
+	/* ECMA-48 selected area (SSA/ESA) for screen readback */
+	int					ssa_row;	// SSA position (1-based, screen coords), 0 = not set
+	int					ssa_col;
+	int					esa_row;	// ESA position (1-based, screen coords), 0 = not set
+	int					esa_col;
+
+	/* ECMA-48 transmission modes */
+	int					fetm;		// Format Effector Transfer Mode: 0=INSERT (default), 1=EXCLUDE
+	int					ttm;		// Transfer Termination Mode: 0=CURSOR (default), 1=ALL
 };
 
 #ifdef __cplusplus

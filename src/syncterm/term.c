@@ -4816,6 +4816,14 @@ mouse_state_query(int type, void *pms)
 	return type == ms->mode;
 }
 
+static void
+term_response_cb(const char *buf, size_t len, void *cbdata)
+{
+	(void)cbdata;
+	if (len > 0)
+		conn_send(buf, len, 0);
+}
+
 /* Win32 doesn't have ffs()... just use this everywhere. */
 static int
 my_ffs(int mask)
@@ -5180,6 +5188,8 @@ doterm(struct bbslist *bbs)
 		cterm->last_column_flag = (CTERM_LCF_FORCED | CTERM_LCF_ENABLED);
 	cterm->apc_handler = apc_handler;
 	cterm->apc_handler_data = bbs;
+	cterm->response_cb = term_response_cb;
+	cterm->response_cbdata = NULL;
 	cterm->mouse_state_change = mouse_state_change;
 	cterm->mouse_state_change_cbdata = &ms;
 	cterm->mouse_state_query = mouse_state_query;
