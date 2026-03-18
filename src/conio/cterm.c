@@ -32,6 +32,7 @@
  */
 
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #if defined(_WIN32)
