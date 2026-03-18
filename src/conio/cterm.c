@@ -711,6 +711,40 @@ delete_tabstop(struct cterminal *cterm, int pos)
 	return;
 }
 
+static void
+insert_vtabstop(struct cterminal *cterm, int line)
+{
+	int i;
+	int *new_stops;
+
+	for (i = 0; i < cterm->vtab_count && cterm->vtabs[i] < line; i++);
+	if (i < cterm->vtab_count && cterm->vtabs[i] == line)
+		return;
+
+	new_stops = realloc(cterm->vtabs, (cterm->vtab_count + 1) * sizeof(cterm->vtabs[0]));
+	if (new_stops == NULL)
+		return;
+	cterm->vtabs = new_stops;
+	if (i < cterm->vtab_count)
+		memmove(&cterm->vtabs[i + 1], &cterm->vtabs[i], (cterm->vtab_count - i) * sizeof(cterm->vtabs[0]));
+	cterm->vtabs[i] = line;
+	cterm->vtab_count++;
+}
+
+static void
+delete_vtabstop(struct cterminal *cterm, int line)
+{
+	int i;
+
+	for (i = 0; i < cterm->vtab_count && cterm->vtabs[i] <= line; i++) {
+		if (cterm->vtabs[i] == line) {
+			memmove(&cterm->vtabs[i], &cterm->vtabs[i+1], (cterm->vtab_count - i - 1) * sizeof(cterm->vtabs[0]));
+			cterm->vtab_count--;
+			return;
+		}
+	}
+}
+
 static void tone_or_beep(double freq, int duration, int device_open)
 {
 	if(device_open)
@@ -2298,6 +2332,31 @@ do_backtab(struct cterminal *cterm)
 	}
 	if (ox >= lm && cx < lm)
 		cx = lm;
+	gotoxy(cx, cy);
+}
+
+static void
+do_vtab(struct cterminal *cterm)
+{
+	int i;
+	int cx, cy;
+	int bm;
+
+	bm = TERM_MAXY;
+	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, NULL, &bm);
+
+	CURR_XY(&cx, &cy);
+	for (i = 0; i < cterm->vtab_count; i++) {
+		if (cterm->vtabs[i] > cy) {
+			cy = cterm->vtabs[i];
+			break;
+		}
+	}
+	if (i == cterm->vtab_count) {
+		/* No next line tab stop — scroll up one, cursor on last row */
+		cond_scrollup(cterm);
+		cy = bm;
+	}
 	gotoxy(cx, cy);
 }
 
@@ -3978,8 +4037,21 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							seq_default(seq, 0, 0);
 							switch (seq->param_int[0]) {
 								case 1:		/* GATM — permanently GUARD */
+								case 2:		/* KAM — permanently ENABLED */
+								case 3:		/* CRM — permanently CONTROL */
+								case 4:		/* IRM — permanently REPLACE */
+								case 5:		/* SRTM — permanently NORMAL */
+								case 6:		/* ERM — permanently PROTECT */
+								case 7:		/* VEM — permanently FOLLOWING */
+								case 8:		/* BDSM — permanently EXPLICIT */
+								case 9:		/* DCSM — permanently PRESENTATION */
+								case 10:	/* HEM — permanently FOLLOWING */
+								case 11:	/* PUM — permanently CHARACTER */
+								case 12:	/* SRM — permanently MONITOR */
+								case 13:	/* FEAM — permanently EXECUTE */
 								case 15:	/* MATM — permanently SINGLE */
 								case 17:	/* SATM — permanently SELECT */
+								case 18:	/* TSM — permanently MULTIPLE */
 									pm = 4;
 									break;
 								case 14:	/* FETM — changeable */
@@ -3987,6 +4059,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									break;
 								case 16:	/* TTM — changeable */
 									pm = cterm->ttm ? 1 : 2;
+									break;
+								case 21:	/* GRCM — permanently CUMULATIVE */
+								case 22:	/* ZDM — permanently DEFAULT */
+									pm = 3;
 									break;
 							}
 							cterm_respond_printf(cterm, "\x1b[%u;%d$y", (unsigned)seq->param_int[0], pm);
@@ -4247,7 +4323,6 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							gotoxy(col, row);
 							break;
 						case 'I':	/* Cursor Forward Tabulation */
-						case 'Y':	/* Cursor Line Tabulation */
 							clear_lcf(cterm);
 							seq_default(seq, 0, 1);
 							if (seq->param_int[0] < 1)
@@ -4257,6 +4332,17 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								i = cterm->width * cterm->height;
 							for (j = 0; j < i; j++)
 								do_tab(cterm);
+							break;
+						case 'Y':	/* Cursor Line Tabulation */
+							clear_lcf(cterm);
+							seq_default(seq, 0, 1);
+							if (seq->param_int[0] < 1)
+								break;
+							i = seq->param_int[0];
+							if (i > cterm->height)
+								i = cterm->height;
+							for (j = 0; j < i; j++)
+								do_vtab(cterm);
 							break;
 						case 'J':	/* Erase In Page */
 							clear_lcf(cterm);
@@ -4483,9 +4569,18 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								case 0:
 									delete_tabstop(cterm, wherex());
 									break;
+								case 1:
+									delete_vtabstop(cterm, wherey());
+									break;
 								case 3:
+									cterm->tab_count = 0;
+									break;
+								case 4:
+									cterm->vtab_count = 0;
+									break;
 								case 5:
 									cterm->tab_count = 0;
+									cterm->vtab_count = 0;
 									break;
 							}
 							break;
@@ -4842,6 +4937,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 			}
 			case 'H':
 				insert_tabstop(cterm, wherex());
+				break;
+			case 'J':	/* Line Tabulation Set (VTS) */
+				insert_vtabstop(cterm, wherey());
 				break;
 			case 'M':	// Previous line
 				clear_lcf(cterm);
@@ -5273,6 +5371,8 @@ cterm_reset(struct cterminal *cterm)
 	}
 	else
 		cterm->tab_count = 0;
+	FREE_AND_NULL(cterm->vtabs);
+	cterm->vtab_count = 0;
 	cterm->setfont_result = CTERM_NO_SETFONT_REQUESTED;
 	cterm->saved_mode = 0;
 	cterm->saved_mode_mask = 0;
@@ -7366,6 +7466,7 @@ void cterm_end(struct cterminal *cterm, int free_fonts)
 
 		FREE_AND_NULL(cterm->strbuf);
 		FREE_AND_NULL(cterm->tabs);
+		FREE_AND_NULL(cterm->vtabs);
 		FREE_AND_NULL(cterm->fg_tc_str);
 		FREE_AND_NULL(cterm->bg_tc_str);
 		FREE_AND_NULL(cterm->sx_pixels);

@@ -180,6 +180,8 @@ struct cterminal {
 	char				*bg_tc_str;
 	int					*tabs;
 	int					tab_count;
+	int					*vtabs;
+	int					vtab_count;
 	uint32_t last_column_flag;
 #define CTERM_LCF_SET 1
 #define CTERM_LCF_ENABLED 2
