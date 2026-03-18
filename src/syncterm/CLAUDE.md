@@ -32,6 +32,30 @@ and all its libraries: source tree layout, rendering pipeline, connection
 providers, terminal emulation, display backends, threading model, and
 compile-time options.
 
+## Testing
+
+Automated tests require SDL (for headless offscreen rendering).
+
+**GNU Make:**
+```sh
+gmake test          # build and run all tests
+gmake termtest      # build just the test binary
+```
+
+**CMake:**
+```sh
+cd build && cmake .. && cmake --build . -j8
+ctest -V            # verbose output
+```
+
+The test harness (`termtest.c`) runs as a child process of SyncTERM via
+`shell:` URL over PTY. It sends escape sequences and verifies responses.
+`run_termtest.sh` handles headless SDL setup and result checking.
+
+Tests use DSR (cursor position), DECRQCRA (checksums), DECRQM (mode state),
+DECRQSS (settings), OSC 4 (palette), and STS (screen content readback)
+for verification.
+
 ## Code Style
 
 - Tabs for indentation

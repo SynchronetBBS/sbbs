@@ -1139,6 +1139,77 @@ SyncTERM uses multiple threads with carefully structured communication:
 - Read-write locks (vstatlock in bitmap_con.c)
 - Atomics (C11 `_Atomic` with fallback)
 
+## Testing
+
+### Automated Test Suite
+
+`syncterm/termtest.c` is a standalone C test program (~2400 lines) that runs
+as the child process of a SyncTERM `shell:` connection via PTY.  It sends
+escape sequences to SyncTERM (via stdout) and reads terminal responses (via
+stdin) to verify correct behavior.
+
+The test harness runs headless using SDL's offscreen video driver.  SDL must
+be compiled in for tests to work.
+
+**Running tests:**
+
+```sh
+# GNU Make:
+gmake test
+
+# CMake:
+cd build && cmake .. && cmake --build . -j8 && ctest -V
+```
+
+`run_termtest.sh` handles the SDL headless environment setup
+(`SDL_VIDEODRIVER=offscreen`, `SDL_RENDER_DRIVER=software`,
+`SDL_VIDEO_EGL_DRIVER=none`) and result verification.
+
+### Verification Methods
+
+Tests use several terminal query mechanisms:
+
+- **DSR** (`CSI 6 n`): Cursor position verification — most tests use this
+- **DECRQCRA** (`CSI Pid;1;Pt;Pl;Pb;Pr *y`): Rectangular area checksums —
+  detects content and attribute changes (checksums pixels/cells, not just
+  characters)
+- **STS** (`ESC S`): Screen content readback — reads actual cell content
+  from the presentation component as an ECMA-48 data stream.  Configured
+  by SSA (`ESC F`) for start position, ESA (`ESC G`) for end position,
+  FETM (SM/RM mode 14) for text-only vs attributed, and TTM (SM/RM mode 16)
+  for cursor-exclusive vs inclusive end
+- **DECRQM** (`CSI Ps $ p`): Mode state queries — verifies DECSET/DECRST
+  and ANSI mode changes
+- **DECRQSS** (`DCS $ q ... ST`): Setting queries — SGR state, margins,
+  cursor style
+- **OSC 4** with `?`: Palette readback
+
+### Adding Tests
+
+Tests are simple C functions returning 1 (pass), 0 (fail), or -1 (skip):
+
+```c
+static int
+test_example(void)
+{
+    cursor_to(1, 1);
+    term_write("\033[2J");       /* clear screen */
+    term_write("Hello");
+    return check_xy(6, 1);      /* verify cursor at col 6, row 1 */
+}
+```
+
+Add the function and an entry to the `tests[]` array at the bottom of
+`termtest.c`.  The test framework calls `clear_screen()` and `term_drain()`
+between tests automatically.
+
+### Cross-Terminal Validation
+
+The test program can also run under other terminals (e.g., xterm) for
+cross-validation.  SyncTERM-specific tests (DECDMAC, DECINVM, CTSV,
+doorway mode, CTSMRR) will fail on other terminals — these failures are
+expected and documented.
+
 ## Coding Conventions
 
 - **Indentation**: Tabs
