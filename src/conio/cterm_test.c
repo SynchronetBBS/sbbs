@@ -197,7 +197,7 @@ ct_cursor(int *col, int *row)
  * Get a single pixel value at pixel coordinates (px, py).
  * Returns ARGB uint32_t, or 0 on failure.
  */
-static uint32_t
+static uint32_t __attribute__((unused))
 get_pixel(int px, int py)
 {
 	struct ciolib_pixels *pix = getpixels(px, py, px, py, 1);
@@ -1038,11 +1038,14 @@ static int test_ansi_su_margins(void)
 	ct_printf("\033[5;10H");
 	ct_puts("MARK_SU");
 	ct_printf("\033[1S");       /* SU within margins */
-	if (!expect_text(10, 5, "MARK_SU") == 0) {
-		/* MARK_SU should have scrolled — row 5 should now be blank or have row 6 content */
+	/* MARK_SU was at row 5; after SU it should have scrolled up within region */
+	if (expect_text(10, 5, "MARK_SU")) {
+		/* Text didn't move — SU didn't scroll within margins */
+		ct_printf("\033[r\033[s\033[?69l");
+		return 0;
 	}
 	ct_printf("\033[r\033[s\033[?69l");  /* reset */
-	return 1;  /* basic smoke test — just verify no crash */
+	return 1;
 }
 
 static int test_ansi_sd_margins(void)
@@ -2486,8 +2489,6 @@ static int test_atascii_encoding_boundaries(void)
 static int test_petscii_font_switch(void)
 {
 	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
-	/* Default should be upper case font (32) */
-	int orig = cterm->altfont[0];
 	ct_write("\x0e", 1);	/* 14 = Lower case font */
 	if (cterm->altfont[0] != 33) {
 		fprintf(result_fp, "    C64 lowercase: font=%d, expected 33\n",
@@ -3157,8 +3158,6 @@ test_vt52_esc_pq(void)
 static int
 test_vt52_esc_vw(void)
 {
-	int col, row;
-
 	setup_cterm(ATARIST_80X25, CTERM_EMULATION_ATARIST_VT52);
 	/* Autowrap should be off by default */
 	if (cterm->extattr & CTERM_EXTATTR_AUTOWRAP) {
@@ -3770,7 +3769,6 @@ test_pet_cursor_left_clamp(void)
 static int
 test_pet_delete(void)
 {
-	struct vmem_cell cells[5];
 	int col, row;
 
 	setup_cterm(C64_40X25, CTERM_EMULATION_PETASCII);
@@ -3960,7 +3958,6 @@ test_pet_ignored_controls(void)
 static int
 test_pet_return_scroll(void)
 {
-	struct vmem_cell cells[1];
 	int col, row;
 
 	/* Write on row 1, move to last row, return to scroll, verify row 1 moved up */
@@ -4649,7 +4646,6 @@ static int
 test_beeb_apd_scroll(void)
 {
 	int col, row;
-	struct vmem_cell cells[5];
 
 	/* BEEB APD at bottom should scroll, not wrap */
 	setup_cterm(PRESTEL_40X25, CTERM_EMULATION_BEEB);
