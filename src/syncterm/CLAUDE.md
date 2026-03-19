@@ -34,18 +34,24 @@ compile-time options.
 
 ## Testing
 
-Two test suites exist:
+Three test suites exist:
 
-- **termtest** (syncterm/termtest.c) — 165 ANSI-BBS integration tests using
-  headless SDL + PTY.  Tests use STS readback and DECRQCRA checksums.
+- **cterm_test** (conio/cterm_test.c) — 275 unit tests for all emulation modes
+  (ANSI-BBS, VT52, ATASCII, PETSCII, Prestel, BEEB).  Uses SDL offscreen with
+  direct cterm_init/cterm_write/vmem_gettext/getpixels.  Includes response
+  capture via callback, retbuf leak detection, and packet-split edge cases.
+  Sets `SDL_VIDEO_EGL_DRIVER=none` internally to avoid NVIDIA EGL crashes.
+  CMake: `cmake --build . --target cterm_test` then `build/ciolib/cterm_test`
+  gmake: `cd conio && gmake cterm_test` then `./cterm_test`
+
+- **termtest** (syncterm/termtest.c) — 67 ANSI-BBS integration tests using
+  headless SDL + PTY.  Tests that require the full SyncTERM process: device
+  queries, STS readback, SyncTERM extensions, doorway mode.
   Run via: `bash run_termtest.sh build/syncterm build/termtest`
 
-- **cterm_test** (conio/cterm_test.c) — 122 unit tests for non-ANSI emulation
-  modes (VT52, ATASCII, PETSCII, Prestel, BEEB).  Uses SDL offscreen with
-  direct cterm_init/cterm_write/vmem_gettext.  Sets `SDL_VIDEO_EGL_DRIVER=none`
-  internally to avoid NVIDIA EGL crashes.
-  Build: `cmake --build . --target cterm_test`
-  Run: `ciolib/cterm_test [filter]`
+- **termtest.js** (xtrn/termtest/termtest.js) — 148 BBS-side interactive tests.
+  Runs as a Synchronet external program for visual verification on real
+  terminal connections.  Includes ANSI fuzz testing mode.
 
 ## Code Style
 
