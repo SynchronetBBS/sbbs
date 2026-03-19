@@ -3064,6 +3064,267 @@ for people who want to maintain compatibility.
 |"\033[Z"
 |===
 
+== Prestel and BBC Micro (Mode 7) Emulation
+
+CTerm implements two related Videotex/Teletext display modes: Prestel
+(the UK viewdata terminal standard) and BBC Micro Mode 7 (the BBC
+Microcomputer's teletext display mode).  Both use the same 40×25
+character grid with the same mosaic graphics and serial attribute
+system, but differ in their C0 control character handling and cursor
+movement behavior.
+
+Both modes use the `PRESTEL_40X25` video mode: 40 columns × 25 rows,
+12×20 character cells, with the Prestel 8-color palette (black, red,
+green, yellow, blue, magenta, cyan, white).  Bright backgrounds and
+no-blink are NOT enabled in this mode (unlike the Commodore and Atari
+modes).
+
+=== Serial Attributes
+
+Unlike conventional terminals where attributes are invisible state
+changes, Prestel/Mode 7 uses _serial attributes_.  Control codes in
+the range 0x40–0x5F (accessed via ESC + character in Prestel mode, or
+raw bytes 0x80–0x9F as C1 controls, or via ESC in BEEB mode) occupy a
+character cell position on screen.  The control code cell is displayed
+as either a space or a held mosaic character.
+
+Serial attributes apply to all subsequent cells on the same row until
+changed by another control code.  At the start of each new row, all
+attributes reset to their defaults: white alphanumeric text, black
+background, no flash, no conceal, no hold, contiguous mosaics, normal
+height.
+
+Control code effects are split into _before_ and _after_ phases:
+
+- **Before** effects apply to the control code's own cell position
+  (steady, normal height, conceal, contiguous/separated mosaics, black
+  background, new background, hold mosaics)
+- **After** effects apply to cells following the control code
+  (alphanumeric colors, mosaic colors, flash, double height, release
+  mosaics)
+
+=== Serial Attribute Codes
+
+These are the decoded control values (0x40–0x5F range after ESC, or
+0x80–0x9F as raw C1 bytes minus 0x40):
+
+.After-effect controls
+[cols="1,1,3"]
+|===
+| Code | Name | Action
+
+| 0x41 | Alpha Red | Set foreground to red, switch to alphanumeric mode
+| 0x42 | Alpha Green | Set foreground to green, switch to alphanumeric mode
+| 0x43 | Alpha Yellow | Set foreground to yellow, switch to alphanumeric mode
+| 0x44 | Alpha Blue | Set foreground to blue, switch to alphanumeric mode
+| 0x45 | Alpha Magenta | Set foreground to magenta, switch to alphanumeric mode
+| 0x46 | Alpha Cyan | Set foreground to cyan, switch to alphanumeric mode
+| 0x47 | Alpha White | Set foreground to white, switch to alphanumeric mode
+| 0x48 | Flash | Enable flashing (blink attribute)
+| 0x4D | Double Height | Enable double-height for this row (see below)
+| 0x51 | Mosaic Red | Set foreground to red, switch to mosaic mode
+| 0x52 | Mosaic Green | Set foreground to green, switch to mosaic mode
+| 0x53 | Mosaic Yellow | Set foreground to yellow, switch to mosaic mode
+| 0x54 | Mosaic Blue | Set foreground to blue, switch to mosaic mode
+| 0x55 | Mosaic Magenta | Set foreground to magenta, switch to mosaic mode
+| 0x56 | Mosaic Cyan | Set foreground to cyan, switch to mosaic mode
+| 0x57 | Mosaic White | Set foreground to white, switch to mosaic mode
+| 0x5F | Release Mosaics | Clear held mosaic, disable hold mode
+|===
+
+.Before-effect controls
+[cols="1,1,3"]
+|===
+| Code | Name | Action
+
+| 0x49 | Steady | Disable flashing (clear blink attribute)
+| 0x4C | Normal Height | Disable double-height, clear hold and held mosaic
+| 0x58 | Conceal | Enable concealed display (hidden until revealed)
+| 0x59 | Contiguous Mosaics | Switch to contiguous (solid) mosaic rendering
+| 0x5A | Separated Mosaics | Switch to separated (gapped) mosaic rendering
+| 0x5C | Black Background | Set background to black
+| 0x5D | New Background | Set background to current foreground color
+| 0x5E | Hold Mosaics | Enable hold mode (see below)
+|===
+
+=== Alphanumeric vs Mosaic Mode
+
+The alphanumeric color codes (0x41–0x47) switch to the G0 character
+set where bytes 0x20–0x7F display as normal text characters.
+
+The mosaic color codes (0x51–0x57) switch to the G1 character set.
+In mosaic mode, characters in the ranges 0x20–0x3F and 0x60–0x7F are
+displayed as 2×3 block mosaic graphics (with bit 7 set in the stored
+character value).  Characters 0x40–0x5F remain alphanumeric even in
+mosaic mode.
+
+=== Hold Mosaics
+
+When a mosaic color change occurs, the control code cell would
+normally display as a space.  With _hold mosaics_ enabled (code 0x5E),
+the control code cell instead displays the last mosaic character that
+was output, preserving visual continuity across color changes.
+
+Hold mode is cleared by: alphanumeric color codes, normal height,
+double height, and release mosaics.
+
+=== Double Height
+
+Double-height mode (code 0x4D) causes characters on the current row
+to be rendered at twice their normal height, spanning two physical
+screen rows.  The top half is rendered on the row containing the
+double-height code, and the bottom half on the row below.
+
+Double-height tracking is complex:
+
+- A row containing any double-height code becomes a "top" row
+- The row immediately below a "top" row becomes a "bottom" row
+- Bottom rows in Prestel terminal mode copy attributes and characters
+  from the corresponding top row cell
+- Bottom rows in BEEB mode display the bottom half of the same cell
+- The last screen row cannot be a top row
+- Double-height codes also clear hold mode and the held mosaic
+
+=== Concealed Display
+
+Code 0x58 enables concealed mode.  Concealed characters are stored
+normally but rendered with the foreground hidden (displayed as
+background color).  The user can toggle reveal mode (in SyncTERM, via
+Alt-V) to show concealed content.
+
+Concealment is cleared by any alphanumeric or mosaic color code.
+
+=== Character Translation (BEEB only)
+
+In BBC Micro mode, three characters are translated to match the
+Mode 7 SAA5050 character set:
+
+- `#` (0x23) becomes `_` (0x5F) — pound sign position
+- `_` (0x5F) becomes `` ` `` (0x60)
+- `` ` `` (0x60) becomes `#` (0x23)
+
+=== C0 Control Characters — Prestel
+
+[cols="1,1,3"]
+|===
+| Byte | Name | Action
+
+| 0x00 | NUL | Time filling — no action (flushes print buffer)
+| 0x05 | ENQ | Send memory slot 0 contents (Prestel identity)
+| 0x08 | APB | Active Position Backward — move cursor left one position (wraps to end of previous row; top row wraps to bottom)
+| 0x09 | APF | Active Position Forward — move cursor right one position (wraps to start of next row; bottom row wraps to top)
+| 0x0A | APD | Active Position Down — move cursor down one row (wraps to top row)
+| 0x0B | APU | Active Position Up — move cursor up one row (wraps to bottom row)
+| 0x0C | CS | Clear Screen — home cursor and clear page memory, reset reveal mode
+| 0x0D | APR | Active Position Return — move cursor to first position of current row
+| 0x11 | CON | Cursor On — make cursor visible
+| 0x14 | COF | Cursor Off — make cursor invisible
+| 0x1B | ESC | Escape — prefix for serial attribute codes and programming sequences
+| 0x1E | APH | Active Position Home — move cursor to first position of top row
+|===
+
+Per the specification, "for all cursor movements the first character of
+each row is regarded as contiguous with the last character of the
+previous row, and the top row is regarded as the row following the
+bottom row."  This means all cursor movement wraps around the screen
+in Prestel mode.
+
+Bytes 0x20–0x7F are printable (with mosaic translation as described
+above).  Bytes 0x80–0x9F are treated as raw C1 serial attribute
+controls (value minus 0x40).  Other undefined C0 bytes are ignored
+(section 2.6: "shall take no action on their receipt").
+
+=== C0 Control Characters — BEEB (BBC Micro Mode 7)
+
+[cols="1,1,3"]
+|===
+| Byte | Name | Action
+
+| 0x00 | NUL | No-op (flushes print buffer)
+| 0x07 | BEL | Audible bell
+| 0x08 | APB | Active Position Backward — move cursor left (wraps to previous row; scrolls down at top)
+| 0x09 | APF | Active Position Forward — move cursor right (wraps to next row; scrolls up at bottom)
+| 0x0A | APD | Active Position Down — move cursor down one row (scrolls up at bottom)
+| 0x0B | APU | Active Position Up — move cursor up one row (scrolls down at top)
+| 0x0C | CS | Clear Screen — home cursor and clear screen, reset reveal mode
+| 0x0D | APR | Active Position Return — move cursor to first position of current row (via ctputs CR handling)
+| 0x17 | VDU 23 | Start 9-byte VDU 23 sequence (cursor control only)
+| 0x1C | APS | Active Position Set — followed by 2 bytes: column (minus 0x20), row (minus 0x20), both 0-based
+| 0x1E | APH | Active Position Home — move cursor to first position of top row
+| 0x7F | DEL | Destructive backspace — move left, write space, move left
+|===
+
+NOTE: LF (0x0A) in BEEB mode is handled by the explicit APD case
+before reaching ctputs, so it functions as cursor-down with scroll,
+not as a ctputs line feed.
+
+Unlike Prestel, BEEB mode scrolls the screen when cursor movement
+reaches the edges rather than wrapping around.
+
+=== Cursor Movement Differences
+
+The key behavioral difference between Prestel and BEEB modes is cursor
+wrapping at screen edges:
+
+- **Prestel:** Cursor wraps around the screen. Moving up from the top
+  row wraps to the bottom row.  Moving down from the bottom row wraps
+  to the top row.
+- **BEEB:** Cursor scrolls the screen. Moving up from the top row
+  scrolls content down.  Moving down from the bottom row scrolls
+  content up.
+
+Left/right wrapping to adjacent rows is the same in both modes.
+
+=== ESC Sequences — Prestel
+
+In Prestel mode, ESC is followed by a character that is interpreted
+as a serial attribute code (the character value is used directly as
+the control code, range 0x40–0x5F for valid codes).
+
+Additionally, Prestel supports a _programming_ protocol for memory
+slot management:
+
+- `ESC 1 ESC 2` — Begin memory query/program sequence
+- `ENQ` (0x05) within programming — send current memory slot
+- `ESC 3` — advance to next memory slot
+- `ESC 4` — begin programming current memory slot (followed by 16
+  data bytes using digits 0–9, `:`, `;`, `?`)
+- 7 memory slots of 16 bytes each are available
+
+=== ESC/VDU Sequences — BEEB
+
+In BEEB mode, ESC is followed by a character interpreted as a serial
+attribute code, the same as Prestel.
+
+Additionally, two multi-byte sequences are supported:
+
+- **VDU 23,1,N;0;0;0;** (byte 23 + 9 data bytes): Cursor control.
+  N=0 hides cursor, N=1 shows cursor.  All other bytes in the sequence
+  must be zero.
+- **APS** (byte 28 + 2 bytes): Direct cursor addressing.  First byte
+  is column (minus 0x20), second is row (minus 0x20), both 0-based.
+
+=== Bitmap Rendering
+
+Prestel/Mode 7 rendering is handled specially in the bitmap driver
+(`bitmap_con.c`) because it requires features not available in the
+standard text rendering path:
+
+- **Separated mosaics:** Mosaic characters are rendered with gaps
+  between the 2×3 blocks, using the `CIOLIB_BG_SEPARATED` flag
+- **Double-height rendering:** Characters are stretched vertically
+  across two physical rows, with top/bottom half tracking per row
+- **Concealed display:** The `CIOLIB_BG_PRESTEL` flag enables special
+  concealment rendering where foreground pixels are suppressed unless
+  `CONIO_OPT_PRESTEL_REVEAL` is set
+- **Row state caching:** Double-height row states (top/bottom) are
+  pre-computed to avoid O(rows²) scanning during rendering
+
+The `CIOLIB_BG_PRESTEL_TERMINAL` flag distinguishes Prestel terminal
+mode from BEEB mode for double-height bottom-row handling: Prestel
+copies attributes from the row above, while BEEB uses the cell's own
+attributes.
+
 == PETSCII Emulation
 
 CTerm's PETSCII mode emulates the Commodore 64 and Commodore 128
