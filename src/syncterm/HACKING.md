@@ -544,17 +544,29 @@ modes (?h/?l), SyncTERM extensions (=h/=l), device queries (c/n/t/S).
 
 #### Emulation-Specific Handling
 
-- **ATASCII**: Control codes for cursor movement (28-31), screen clear
-  (125), tabs. Screen code translation between ATASCII and display.
-  Attribute byte used as mode flag (7=normal, 1=inverse).
-- **PETSCII**: C64/C128 color codes, reverse mode, screen code
-  translation. Different palettes for C64 40-col and C128 80-col modes.
-- **Prestel/Viewdata**: Control characters with split before/after
-  semantics for attribute application. Mosaic graphics (2x3 grid per
-  cell), hold mode, double-height, conceal/reveal, programming mode.
-- **BBC Micro (BEEB)**: VDU command parsing with fixed-length
-  multi-byte sequences.
-- **Atari ST VT52**: VT52-style escape sequences.
+All non-ANSI emulation modes are documented in `conio/cterm.adoc`.
+
+- **Atari ST VT52**: Standard VT52 escape sequences plus GEMDOS/TOS
+  extensions (16-color, insert/delete line, cursor save/restore,
+  reverse video, autowrap control). Three screen modes: 40×25 (16
+  colors), 80×25 (4 colors), 80×25 mono (2 colors).
+- **ATASCII**: Atari 8-bit control codes for cursor movement (28-31
+  with wrapping), screen clear (125), destructive backspace (126),
+  tabs (127). ESC toggles inverse mode with screen code translation.
+  Two screen modes: 40×24, XEP80 80×25.
+- **PETSCII**: C64/C128 color codes, reverse mode. Different color
+  palettes for C64/C128-40 (VIC-II) and C128-80 (CGA). Some control
+  codes differ between C64 and C128 hardware (documented in cterm.adoc).
+- **Prestel/Viewdata**: Serial attributes with split before/after
+  semantics — control codes occupy character cells. Mosaic graphics
+  (2×3 grid per cell), hold mode, double-height (requires bitmap
+  rendering in bitmap_con.c), conceal/reveal, separated/contiguous
+  mosaics, remote programming protocol. Cursor wraps around screen
+  (no scrolling).
+- **BBC Micro (BEEB)**: Same serial attribute system as Prestel but
+  cursor scrolls instead of wrapping. VDU 23 for cursor control, APS
+  (byte 28) for direct addressing. Character translation (#/\_/\`).
+  Serial attributes delivered via raw C1 bytes, not ESC.
 
 #### Sixel Graphics
 
@@ -1138,6 +1150,48 @@ SyncTERM uses multiple threads with carefully structured communication:
 - Semaphores (sem_t / Win32 semaphore)
 - Read-write locks (vstatlock in bitmap_con.c)
 - Atomics (C11 `_Atomic` with fallback)
+
+## Testing
+
+Two automated test suites cover the terminal emulation layer:
+
+### termtest (syncterm/termtest.c) — ANSI-BBS Integration Tests
+
+165 tests for the ANSI-BBS emulation mode.  Uses a headless SDL
+offscreen SyncTERM instance connected to the test binary via PTY.
+Tests exercise CSI sequences, cursor movement, scrolling, SGR
+attributes, mode queries (DECRQM, DECRQSS), screen readback (STS
+via SSA/ESA), rectangular area operations (DECERA, DECFRA, DECCRA,
+DECCARA, DECRARA), and other ECMA-48/DEC/CTerm features.
+
+Run with: `bash run_termtest.sh build/syncterm build/termtest`
+
+### cterm_test (conio/cterm_test.c) — Non-ANSI Unit Tests
+
+122 tests for the five non-ANSI emulation modes.  Initializes ciolib
+with SDL offscreen, creates cterm instances directly via `cterm_init()`,
+writes test data via `cterm_write()`, and verifies screen state via
+`vmem_gettext()`.  No PTY or SyncTERM process needed.
+
+- **Atari ST VT52** (38 tests): C0 controls, cursor movement, ESC
+  sequences (standard VT52 + GEMDOS/TOS extensions), scrolling,
+  wrapping, colors, reverse video
+- **ATASCII** (19 tests): cursor wrapping, clear screen, backspace,
+  ESC inverse mode, insert/delete line/char, tabs, screen codes
+- **PETSCII** (28 tests): all 3 screen modes (C64, C128-40, C128-80),
+  colors per mode, reverse video, cursor movement with wrapping,
+  delete/insert, C64/C128 control code differences
+- **Prestel** (26 tests): C0 controls, cursor wrapping (no scroll),
+  serial attributes (alpha/mosaic color, flash, conceal, hold,
+  double height, background, separated), raw C1 controls
+- **BEEB** (11 tests): character translation, BEL, scroll behavior,
+  DEL, APS addressing, VDU 23 cursor, C1 serial attributes
+
+Build: `cmake --build . --target cterm_test`
+Run: `ciolib/cterm_test [filter]`
+
+The test binary sets `SDL_VIDEO_EGL_DRIVER=none` internally to prevent
+NVIDIA EGL crashes on FreeBSD during SDL shutdown.
 
 ## Coding Conventions
 

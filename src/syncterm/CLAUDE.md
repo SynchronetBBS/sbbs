@@ -32,6 +32,21 @@ and all its libraries: source tree layout, rendering pipeline, connection
 providers, terminal emulation, display backends, threading model, and
 compile-time options.
 
+## Testing
+
+Two test suites exist:
+
+- **termtest** (syncterm/termtest.c) — 165 ANSI-BBS integration tests using
+  headless SDL + PTY.  Tests use STS readback and DECRQCRA checksums.
+  Run via: `bash run_termtest.sh build/syncterm build/termtest`
+
+- **cterm_test** (conio/cterm_test.c) — 122 unit tests for non-ANSI emulation
+  modes (VT52, ATASCII, PETSCII, Prestel, BEEB).  Uses SDL offscreen with
+  direct cterm_init/cterm_write/vmem_gettext.  Sets `SDL_VIDEO_EGL_DRIVER=none`
+  internally to avoid NVIDIA EGL crashes.
+  Build: `cmake --build . --target cterm_test`
+  Run: `ciolib/cterm_test [filter]`
+
 ## Code Style
 
 - Tabs for indentation
