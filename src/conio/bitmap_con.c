@@ -93,7 +93,6 @@ static int bitmap_attr2palette_locked(uint8_t attr, uint32_t *fgp, uint32_t *bgp
 static void	cb_drawrect(struct rectlist *data);
 static void request_redraw_locked(void);
 static void request_redraw(void);
-static void memset_u32(void *buf, uint32_t u, size_t len);
 static void cb_flush(void);
 static int check_redraw(void);
 static void blinker_thread(void *data);
@@ -560,17 +559,6 @@ static struct rectlist *get_full_rectangle_locked(struct bitmap_screen *screen)
 		return rect;
 	}
 	return NULL;
-}
-
-static void memset_u32(void *buf, uint32_t u, size_t len)
-{
-	size_t i;
-	char *cbuf = buf;
-
-	for (i = 0; i < len; i++) {
-		memcpy(cbuf, &u, sizeof(uint32_t));
-		cbuf += sizeof(uint32_t);
-	}
 }
 
 /* The read lock must be held here. */
@@ -1777,7 +1765,7 @@ int bitmap_loadfont(const char *filename)
 }
 
 static void
-bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height, int width, int scroll_shift)
+bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height, int width, int scroll_shift, int clear_sy, int clear_rows, uint32_t clear_color)
 {
 	int32_t sdestoffset;
 	ssize_t ssourcepos;
@@ -1832,12 +1820,47 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 		memmove(&(screenb.rect->data[dest]), &(screenb.rect->data[ssourcepos]), mvsz);
 		ssourcepos += step;
 	}
+	/* Clear exposed pixel rows from fast scroll (ticket 228) */
+	if (clear_rows > 0) {
+		int clear_pheight = clear_rows * vstat.charheight;
+		int clear_py = (clear_sy - 1) * vstat.charheight;
+		ssize_t pos = clear_py * vstat.scrnwidth + screena.toprow * screena.screenwidth;
+		if (pos >= maxpos)
+			pos -= maxpos;
+		for (screeny = 0; screeny < clear_pheight; screeny++) {
+			if (pos >= maxpos)
+				pos -= maxpos;
+			for (int px = 0; px < vstat.scrnwidth; px++) {
+				screena.rect->data[pos + px] = clear_color;
+				screenb.rect->data[pos + px] = clear_color;
+			}
+			pos += vstat.scrnwidth;
+		}
+	}
 	screena.update_pixels = 1;
 	screenb.update_pixels = 1;
 	assert_pthread_mutex_unlock(&screenlock);
 }
 
-int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
+/*
+ * Fill a rectangle in vmem and bitmap_drawn with a cell.
+ * Caller must hold vstatlock for writing.
+ */
+static void
+vmem_fill_rect(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
+{
+	for (int row = sy; row <= ey; row++) {
+		int off = vmem_cell_offset(vstat.vmem, sx - 1, row - 1);
+		for (int col = sx; col <= ex; col++) {
+			vstat.vmem->vmem[off] = *fill;
+			if (bitmap_drawn)
+				bitmap_drawn[off] = *fill;
+			off = vmem_next_offset(vstat.vmem, off);
+		}
+	}
+}
+
+int bitmap_movetext_clear(int x, int y, int ex, int ey, int tox, int toy, struct vmem_cell *fill)
 {
 	bool scrolldown = false;
 	int	cy;
@@ -1845,6 +1868,16 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	int height=ey-y+1;
 	int soff;
 	int doff;
+	/* Save originals before fast scroll modifies locals */
+	const int orig_x = x;
+	const int orig_y = y;
+	const int orig_ex = ex;
+	const int orig_ey = ey;
+	const int orig_tox = tox;
+	const int orig_toy = toy;
+	int pixel_clear_sy = 0;
+	int pixel_clear_rows = 0;
+	uint32_t pixel_clear_color = 0;
 
 	if(		   x<1
 			|| y<1
@@ -1876,6 +1909,14 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	assert_pthread_mutex_unlock(&vstat_chlock);
 	if (width == vstat.cols && height > vstat.rows / 2 && toy == 1) {
 		scroll_shift = y - toy;
+
+		/* Compute pixel clear area before fast scroll modifies params */
+		if (fill) {
+			pixel_clear_sy = orig_ey - scroll_shift + 1;
+			pixel_clear_rows = scroll_shift;
+			pixel_clear_color = color_value(fill->bg);
+		}
+
 		vstat.vmem->top_row += scroll_shift;
 		if (vstat.vmem->top_row >= vstat.vmem->height)
 			vstat.vmem->top_row -= vstat.vmem->height;
@@ -1910,16 +1951,60 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 		}
 	}
 
+	/*
+	 * Fill the non-overlapping source area in vmem.
+	 *
+	 * Source rect: (orig_x, orig_y) - (orig_ex, orig_ey)
+	 * Dest rect:   (orig_tox, orig_toy) - (orig_tox+w-1, orig_toy+h-1)
+	 * Overlap:     (max(sx,dx), max(sy,dy)) - (min(sex,dex), min(sey,dey))
+	 *
+	 * Non-overlapping source = up to two rectangles:
+	 *   1) Horizontal strip (full width, rows exposed by vertical shift)
+	 *   2) Vertical strip (remaining columns, rows that overlap vertically)
+	 */
+	if (fill) {
+		int dx = orig_tox - orig_x;
+		int dy = orig_toy - orig_y;
+
+		/* Horizontal strip: rows exposed by vertical shift */
+		if (dy < 0) {
+			/* Moved up: bottom rows exposed */
+			vmem_fill_rect(orig_x, orig_ey + dy + 1, orig_ex, orig_ey, fill);
+		}
+		else if (dy > 0) {
+			/* Moved down: top rows exposed */
+			vmem_fill_rect(orig_x, orig_y, orig_ex, orig_y + dy - 1, fill);
+		}
+
+		/* Vertical strip: columns exposed by horizontal shift */
+		/* Only the rows NOT already filled by the horizontal strip */
+		if (dx != 0) {
+			int vsy = orig_y + (dy > 0 ? dy : 0);
+			int vey = orig_ey + (dy < 0 ? dy : 0);
+			if (vsy <= vey) {
+				if (dx < 0)
+					vmem_fill_rect(orig_ex + dx + 1, vsy, orig_ex, vey, fill);
+				else
+					vmem_fill_rect(orig_x, vsy, orig_x + dx - 1, vey, fill);
+			}
+		}
+	}
+
 	// Make the whole thing redraw
 	if (vstat.mode == PRESTEL_40X25) {
 		if (bitmap_drawn)
 			memset(bitmap_drawn, 0x04, sizeof(struct vmem_cell) * vstat.cols * vstat.rows);
 	}
 	else
-		bitmap_movetext_screen(x, y, tox, toy, scrolldown ? -1 : 1, height, width, scroll_shift);
+		bitmap_movetext_screen(x, y, tox, toy, scrolldown ? -1 : 1, height, width, scroll_shift, pixel_clear_sy, pixel_clear_rows, pixel_clear_color);
 	assert_rwlock_unlock(&vstatlock);
 
 	return(1);
+}
+
+int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
+{
+	return bitmap_movetext_clear(x, y, ex, ey, tox, toy, NULL);
 }
 
 void bitmap_clreol(void)
@@ -2463,8 +2548,12 @@ static int init_screens(int *width, int *height)
 		return(-1);
 	}
 	screenb.toprow = 0;
-	memset_u32(screena.rect->data, color_value(vstat.palette[0]), screena.rect->rect.width * screena.rect->rect.height);
-	memset_u32(screenb.rect->data, color_value(vstat.palette[0]), screenb.rect->rect.width * screenb.rect->rect.height);
+	uint32_t cv = color_value(vstat.palette[0]);
+	size_t sz = screena.rect->rect.width * screena.rect->rect.height;
+	for (size_t i = 0; i < sz; i++) {
+		screena.rect->data[i] = cv;
+		screenb.rect->data[i] = cv;
+	}
 	assert_pthread_mutex_unlock(&screenlock);
 	return(0);
 }

@@ -47,6 +47,7 @@ int bitmap_setfont(int font, int force, int font_no);
 int bitmap_getfont(int fnum);
 int bitmap_loadfont(const char *filename);
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy);
+int bitmap_movetext_clear(int x, int y, int ex, int ey, int tox, int toy, struct vmem_cell *fill);
 void bitmap_clreol(void);
 void bitmap_clrscr(void);
 void bitmap_getcustomcursor(int *s, int *e, int *r, int *b, int *v);

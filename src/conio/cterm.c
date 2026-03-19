@@ -1127,12 +1127,18 @@ scrolldown(struct cterminal *cterm)
 	int maxx = TERM_MAXX;
 	int maxy = TERM_MAXY;
 	int x,y;
+	struct vmem_cell fill = {
+		.ch = ' ',
+		.legacy_attr = cterm->attr,
+		.fg = cterm->fg_color,
+		.bg = cterm->bg_color,
+		.font = ciolib_attrfont(cterm->attr),
+	};
 
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &minx, &miny);
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &maxx, &maxy);
-	movetext(minx, miny, maxx, maxy - 1, minx, miny + 1);
 	CURR_XY(&x, &y);
-	cterm_clrblk(cterm, minx, miny, minx + TERM_MAXX - 1, miny);
+	movetext_clear(minx, miny, maxx, maxy - 1, minx, miny + 1, &fill);
 	gotoxy(x, y);
 }
 
@@ -1171,13 +1177,19 @@ cterm_scrollup(struct cterminal *cterm)
 	int maxx = TERM_MAXX;
 	int maxy = TERM_MAXY;
 	int x,y;
+	struct vmem_cell fill = {
+		.ch = ' ',
+		.legacy_attr = cterm->attr,
+		.fg = cterm->fg_color,
+		.bg = cterm->bg_color,
+		.font = ciolib_attrfont(cterm->attr),
+	};
 
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &minx, &miny);
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &maxx, &maxy);
 	cterm_line_to_scrollback(cterm, miny);
-	movetext(minx, miny + 1, maxx, maxy, minx, miny);
 	CURR_XY(&x, &y);
-	cterm_clrblk(cterm, minx, maxy, minx + TERM_MAXX - 1, maxy);
+	movetext_clear(minx, miny + 1, maxx, maxy, minx, miny, &fill);
 	gotoxy(x, y);
 }
 
