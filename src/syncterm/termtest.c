@@ -162,7 +162,7 @@ read_dcs_response(char *buf, size_t bufsz, int timeout_ms)
 	char ch;
 
 	while (pos < bufsz - 1) {
-		if (term_read(&ch, 1, pos == 0 ? timeout_ms : 200) != 1)
+		if (term_read(&ch, 1, pos == 0 ? timeout_ms : 500) != 1)
 			break;
 		buf[pos++] = ch;
 		/* DCS string ends with ESC \ (ST) */
@@ -268,20 +268,29 @@ read_screen_at(int x, int y, int len, int attributed, char *buf, size_t bufsz)
 		term_write("\033[14l");     /* FETM=INSERT */
 	term_write("\033[16l");         /* TTM=CURSOR */
 
-	int n = read_sos_response(buf, bufsz, 1000);
+	int n = read_sos_response(buf, bufsz, 2000);
 	if (n == 0)
 		return 0;
 
-	/* Find content after prefix */
+	/* Find content after prefix — use memmem since content
+	 * may contain NUL bytes (doorway-encoded C0 cells). */
 	char *prefix = attributed ? "CTerm:STS:0:" : "CTerm:STS:1:";
-	char *content = strstr(buf, prefix);
+	int prefix_len = strlen(prefix);
+	char *content = NULL;
+	int i;
+	for (i = 0; i <= n - prefix_len; i++) {
+		if (memcmp(buf + i, prefix, prefix_len) == 0) {
+			content = buf + i + prefix_len;
+			break;
+		}
+	}
 	if (content == NULL)
 		return 0;
-	content += strlen(prefix);
 
 	/* Shift content to start of buf */
-	int content_len = strlen(content);
-	memmove(buf, content, content_len + 1);
+	int content_len = n - (content - buf);
+	memmove(buf, content, content_len);
+	buf[content_len] = '\0';
 	return content_len;
 }
 
@@ -307,11 +316,15 @@ extract_text(const char *stream, char *text, size_t textsz)
 				if (*p) p++;
 			}
 			else if (*p == ']') {
-				/* OSC — skip to ST (ESC \) */
+				/* OSC — skip to ST (ESC \) or escaped ST (ESC : \) */
 				p++;
 				while (*p) {
 					if (*p == 0x1b && *(p+1) == '\\') {
 						p += 2;
+						break;
+					}
+					if (*p == 0x1b && *(p+1) == ':' && *(p+2) == '\\') {
+						p += 3;
 						break;
 					}
 					p++;
@@ -382,6 +395,131 @@ static void
 clear_screen(void)
 {
 	term_write("\033[2J\033[H");
+}
+
+/*
+ * Read a plain-text string from screen position (x,y) of length len.
+ * Returns 1 on success, 0 on failure.  Requires has_sts.
+ */
+static int
+read_text_at(int x, int y, int len, char *out, size_t outsz)
+{
+	char buf[4096];
+	int n = read_screen_at(x, y, len, 0, buf, sizeof(buf));
+	if (n == 0)
+		return 0;
+	if (n > (int)(outsz - 1))
+		n = outsz - 1;
+	memcpy(out, buf, n);
+	out[n] = '\0';
+	return 1;
+}
+
+/*
+ * Verify a scroll occurred within a region.
+ *
+ * Before the scroll-triggering operation:
+ *   - Call scroll_witness_setup() to write markers
+ * After the operation:
+ *   - Call scroll_witness_check_up() to verify upward scroll
+ *
+ * For scroll-up: marker on 'mark_row' should move to 'mark_row - n',
+ * and 'mark_row' should now be blank (or filled with current attr).
+ *
+ * If outside_row > 0, verifies that row was NOT affected by the scroll.
+ *
+ * Returns 1=pass, 0=fail, -1=skip (no STS).
+ */
+static void
+scroll_witness_setup(int mark_row, int outside_row)
+{
+	cursor_to(1, mark_row);
+	term_write("SCROLLMARK");
+	if (outside_row > 0) {
+		cursor_to(1, outside_row);
+		term_write("NOSCROLL");
+	}
+}
+
+static int
+scroll_witness_check_up(int mark_row, int scroll_n, int outside_row)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Marker should have moved up by scroll_n rows */
+	int new_row = mark_row - scroll_n;
+	if (new_row >= 1) {
+		if (!read_text_at(1, new_row, 10, buf, sizeof(buf)))
+			return -1;
+		if (strncmp(buf, "SCROLLMARK", 10) != 0) {
+			fprintf(result_fp, "    scroll witness: expected 'SCROLLMARK' at row %d, got '%.10s'\n",
+			    new_row, buf);
+			return 0;
+		}
+	}
+	/* Original row should be blank */
+	if (!read_text_at(1, mark_row, 10, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "          ", 10) == 0 || strncmp(buf, "SCROLLMARK", 10) != 0) {
+		/* OK — either blank or different content */
+	}
+	else {
+		fprintf(result_fp, "    scroll witness: row %d not scrolled, still '%.10s'\n",
+		    mark_row, buf);
+		return 0;
+	}
+	/* If outside_row set, verify it wasn't affected */
+	if (outside_row > 0) {
+		if (!read_text_at(1, outside_row, 8, buf, sizeof(buf)))
+			return -1;
+		if (strncmp(buf, "NOSCROLL", 8) != 0) {
+			fprintf(result_fp, "    scroll witness: outside row %d changed to '%.8s'\n",
+			    outside_row, buf);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+static int
+scroll_witness_check_down(int mark_row, int scroll_n, int outside_row)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Marker should have moved down by scroll_n rows */
+	int new_row = mark_row + scroll_n;
+	if (new_row <= 24) {
+		if (!read_text_at(1, new_row, 10, buf, sizeof(buf)))
+			return -1;
+		if (strncmp(buf, "SCROLLMARK", 10) != 0) {
+			fprintf(result_fp, "    scroll witness: expected 'SCROLLMARK' at row %d, got '%.10s'\n",
+			    new_row, buf);
+			return 0;
+		}
+	}
+	/* Original row should be blank */
+	if (!read_text_at(1, mark_row, 10, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "SCROLLMARK", 10) == 0) {
+		fprintf(result_fp, "    scroll witness: row %d not scrolled, still '%.10s'\n",
+		    mark_row, buf);
+		return 0;
+	}
+	/* If outside_row set, verify it wasn't affected */
+	if (outside_row > 0) {
+		if (!read_text_at(1, outside_row, 8, buf, sizeof(buf)))
+			return -1;
+		if (strncmp(buf, "NOSCROLL", 8) != 0) {
+			fprintf(result_fp, "    scroll witness: outside row %d changed to '%.8s'\n",
+			    outside_row, buf);
+			return 0;
+		}
+	}
+	return 1;
 }
 
 /* Log and run a test */
@@ -650,19 +788,35 @@ test_decrqcra(void)
 static int
 test_su(void)
 {
-	/* Scroll up — cursor should not move */
+	int ret;
+
+	/* Scroll up 2 — cursor should not move, content shifts up */
+	scroll_witness_setup(12, 0);
 	cursor_to(5, 5);
 	term_write("\033[2S");
-	return check_xy(5, 5);
+	if (!check_xy(5, 5))
+		return 0;
+	ret = scroll_witness_check_up(12, 2, 0);
+	if (ret <= 0)
+		return ret;
+	return 1;
 }
 
 static int
 test_sd(void)
 {
-	/* Scroll down — cursor should not move */
+	int ret;
+
+	/* Scroll down 2 — cursor should not move, content shifts down */
+	scroll_witness_setup(12, 0);
 	cursor_to(5, 5);
 	term_write("\033[2T");
-	return check_xy(5, 5);
+	if (!check_xy(5, 5))
+		return 0;
+	ret = scroll_witness_check_down(12, 2, 0);
+	if (ret <= 0)
+		return ret;
+	return 1;
 }
 
 static int
@@ -1208,31 +1362,59 @@ test_tbc(void)
 static int
 test_decstbm_scroll(void)
 {
-	int x, y;
+	int x, y, ret;
 
-	/* Set region rows 10-11, position at row 10 */
-	term_write("\033[10;11r");
+	/* Set region rows 10-15, write markers inside and outside */
+	cursor_to(1, 5);
+	term_write("OUTSIDE_ABOVE");
+	cursor_to(1, 12);
+	term_write("SCROLLMARK");
+	cursor_to(1, 20);
+	term_write("OUTSIDE_BELOW");
+
+	term_write("\033[10;15r");
 	if (!check_xy(1, 1))
 		return 0;
-	cursor_to(10, 10);
-	/* Three LFs should scroll within the region, clamping at row 11 */
-	term_write("\r\n\r\n\r\n");
+
+	/* Scroll region up via LF at bottom of region */
+	cursor_to(1, 15);
+	term_write("\r\n");
 	if (!get_cursor_pos(&x, &y))
 		return 0;
-	if (y != 11) {
-		fprintf(result_fp, "    scroll clamp: expected row 11 got %d\n", y);
+	if (y != 15) {
+		fprintf(result_fp, "    scroll clamp: expected row 15 got %d\n", y);
 		term_write("\033[r");
 		return 0;
 	}
-	/* CUU 5 from row 11 should clamp at top of region (row 10) */
-	term_write("\033[5A");
-	if (!get_cursor_pos(&x, &y))
-		return 0;
-	if (y != 10) {
-		fprintf(result_fp, "    CUU clamp: expected row 10 got %d\n", y);
-		term_write("\033[r");
-		return 0;
+
+	/* Verify content inside region scrolled up */
+	if (has_sts) {
+		char buf[64];
+		/* SCROLLMARK was at row 12, should now be at row 11 */
+		if (read_text_at(1, 11, 10, buf, sizeof(buf))) {
+			if (strncmp(buf, "SCROLLMARK", 10) != 0) {
+				fprintf(result_fp, "    inside not scrolled: row 11 = '%.10s'\n", buf);
+				term_write("\033[r");
+				return 0;
+			}
+		}
+		/* Content outside margins should not have moved */
+		if (read_text_at(1, 5, 13, buf, sizeof(buf))) {
+			if (strncmp(buf, "OUTSIDE_ABOVE", 13) != 0) {
+				fprintf(result_fp, "    above margin moved: '%.13s'\n", buf);
+				term_write("\033[r");
+				return 0;
+			}
+		}
+		if (read_text_at(1, 20, 13, buf, sizeof(buf))) {
+			if (strncmp(buf, "OUTSIDE_BELOW", 13) != 0) {
+				fprintf(result_fp, "    below margin moved: '%.13s'\n", buf);
+				term_write("\033[r");
+				return 0;
+			}
+		}
 	}
+
 	term_write("\033[r");
 	return 1;
 }
@@ -1503,22 +1685,37 @@ test_sgr_conceal(void)
 static int
 test_ri_scroll(void)
 {
-	/* RI at row 1 should scroll down */
+	int ret;
+
+	/* RI at row 1 should scroll down, content shifts down */
+	scroll_witness_setup(5, 0);
 	cursor_to(5, 1);
 	term_write("\033M");
-	return check_xy(5, 1);
+	if (!check_xy(5, 1))
+		return 0;
+	ret = scroll_witness_check_down(5, 1, 0);
+	if (ret <= 0)
+		return ret;
+	return 1;
 }
 
 static int
 test_lf_scroll(void)
 {
+	int x, y, ret;
+
 	/* LF at bottom row should scroll up, cursor stays on last row */
-	int x, y;
+	scroll_witness_setup(23, 0);
 	cursor_to(5, 24);
 	term_write("\n");
 	if (!get_cursor_pos(&x, &y))
 		return 0;
-	return (x == 5 && y == 24);
+	if (x != 5 || y != 24)
+		return 0;
+	ret = scroll_witness_check_up(23, 1, 0);
+	if (ret <= 0)
+		return ret;
+	return 1;
 }
 
 static int
@@ -1759,6 +1956,48 @@ test_decrqm_ansi_modes(void)
 		return 0;
 	if (sscanf(buf, "\033[%d;%d$y", &ps, &pm) != 2 || ps != 14 || pm != 2)
 		return 0;
+
+	/* TSM (18) should be permanently reset (Pm=4) */
+	term_printf("\033[18$p");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[%d;%d$y", &ps, &pm) != 2 || ps != 18 || pm != 4)
+		return 0;
+
+	/* Verify all other permanently-reset modes (2-13) */
+	{
+		static const int perm_reset[] = {2,3,4,5,6,7,8,9,10,11,12,13};
+		int m;
+		for (m = 0; m < 12; m++) {
+			term_printf("\033[%d$p", perm_reset[m]);
+			if (read_csi_response(buf, sizeof(buf), 500) == 0)
+				return 0;
+			if (sscanf(buf, "\033[%d;%d$y", &ps, &pm) != 2 ||
+			    ps != perm_reset[m] || pm != 4) {
+				fprintf(result_fp, "    mode %d: expected pm=4, got %s\n",
+				    perm_reset[m], buf);
+				return 0;
+			}
+		}
+	}
+
+	/* GRCM (21) should be permanently set (Pm=3) */
+	term_printf("\033[21$p");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[%d;%d$y", &ps, &pm) != 2 || ps != 21 || pm != 3) {
+		fprintf(result_fp, "    GRCM: expected 21;3, got %s\n", buf);
+		return 0;
+	}
+
+	/* ZDM (22) should be permanently set (Pm=3) */
+	term_printf("\033[22$p");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[%d;%d$y", &ps, &pm) != 2 || ps != 22 || pm != 3) {
+		fprintf(result_fp, "    ZDM: expected 22;3, got %s\n", buf);
+		return 0;
+	}
 
 	return 1;
 }
@@ -2128,6 +2367,1299 @@ test_decrqss_cursor_style(void)
 	return 1;
 }
 
+/* --- ED extended tests (modes 1, 2) --- */
+
+static int
+test_ed_above(void)
+{
+	char buf[4096];
+
+	if (!has_sts)
+		return -1;
+	cursor_to(1, 1);
+	term_write("XYZZY");
+	cursor_to(3, 1);
+	term_write("\033[1J");
+	if (!check_xy(3, 1))
+		return 0;
+	int n = read_screen_at(1, 1, 5, 0, buf, sizeof(buf));
+	if (n == 0)
+		return -1;
+	if (buf[0] != ' ' || buf[1] != ' ' || buf[2] != ' ') {
+		fprintf(result_fp, "    erased area not blank: '%.5s'\n", buf);
+		return 0;
+	}
+	if (buf[3] != 'Z' || buf[4] != 'Y') {
+		fprintf(result_fp, "    preserved area wrong: '%.5s'\n", buf);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_ed_all(void)
+{
+	/* ED mode 2: erase entire screen AND home cursor (per cterm.adoc) */
+	cursor_to(5, 5);
+	term_write("\033[2J");
+	return check_xy(1, 1);
+}
+
+/* --- EL extended tests (modes 1, 2) --- */
+
+static int
+test_el_left(void)
+{
+	char buf[4096];
+
+	if (!has_sts)
+		return -1;
+	cursor_to(1, 1);
+	term_write("ABCDE");
+	cursor_to(3, 1);
+	term_write("\033[1K");
+	if (!check_xy(3, 1))
+		return 0;
+	int n = read_screen_at(1, 1, 5, 0, buf, sizeof(buf));
+	if (n == 0)
+		return -1;
+	if (buf[0] != ' ' || buf[1] != ' ' || buf[2] != ' ') {
+		fprintf(result_fp, "    erased area: '%.5s'\n", buf);
+		return 0;
+	}
+	if (buf[3] != 'D' || buf[4] != 'E') {
+		fprintf(result_fp, "    preserved: '%.5s'\n", buf);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_el_all(void)
+{
+	char buf[4096];
+	int i;
+
+	if (!has_sts)
+		return -1;
+	cursor_to(1, 1);
+	term_write("ABCDE");
+	cursor_to(3, 1);
+	term_write("\033[2K");
+	if (!check_xy(3, 1))
+		return 0;
+	int n = read_screen_at(1, 1, 5, 0, buf, sizeof(buf));
+	if (n == 0)
+		return -1;
+	for (i = 0; i < 5; i++) {
+		if (buf[i] != ' ') {
+			fprintf(result_fp, "    pos %d not blank: '%c'\n",
+			    i + 1, buf[i]);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+/* --- Scroll Left/Right --- */
+
+static int
+test_sl(void)
+{
+	char buf[4096];
+
+	if (!has_sts)
+		return -1;
+	cursor_to(1, 1);
+	term_write("ABCDE");
+	term_write("\033[1 @");
+	int n = read_screen_at(1, 1, 5, 0, buf, sizeof(buf));
+	if (n == 0)
+		return -1;
+	if (strncmp(buf, "BCDE ", 5) != 0) {
+		fprintf(result_fp, "    expected 'BCDE ', got '%.5s'\n", buf);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_sr(void)
+{
+	char buf[4096];
+
+	if (!has_sts)
+		return -1;
+	cursor_to(1, 1);
+	term_write("ABCDE");
+	term_write("\033[1 A");
+	int n = read_screen_at(1, 1, 6, 0, buf, sizeof(buf));
+	if (n == 0)
+		return -1;
+	if (strncmp(buf, " ABCDE", 6) != 0) {
+		fprintf(result_fp, "    expected ' ABCDE', got '%.6s'\n", buf);
+		return 0;
+	}
+	return 1;
+}
+
+/* --- SU/SD/SL/SR with margins --- */
+
+static int
+test_su_margins(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Set top/bottom margins 5-20, write markers inside and outside */
+	cursor_to(1, 3);
+	term_write("ABOVE");
+	cursor_to(1, 10);
+	term_write("INSIDE");
+	cursor_to(1, 22);
+	term_write("BELOW");
+	term_write("\033[5;20r");
+	/* SU 1 — scroll up within margin region */
+	term_write("\033[1S");
+	/* Inside marker (was row 10) should move to row 9 */
+	if (!read_text_at(1, 9, 6, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "INSIDE", 6) != 0) {
+		fprintf(result_fp, "    inside not scrolled: row 9 = '%.6s'\n", buf);
+		term_write("\033[r");
+		return 0;
+	}
+	/* Outside markers should be unchanged */
+	if (!read_text_at(1, 3, 5, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "ABOVE", 5) != 0) {
+		fprintf(result_fp, "    above margin moved: '%.5s'\n", buf);
+		term_write("\033[r");
+		return 0;
+	}
+	if (!read_text_at(1, 22, 5, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "BELOW", 5) != 0) {
+		fprintf(result_fp, "    below margin moved: '%.5s'\n", buf);
+		term_write("\033[r");
+		return 0;
+	}
+	term_write("\033[r");
+	return 1;
+}
+
+static int
+test_sd_margins(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	cursor_to(1, 3);
+	term_write("ABOVE");
+	cursor_to(1, 10);
+	term_write("INSIDE");
+	cursor_to(1, 22);
+	term_write("BELOW");
+	term_write("\033[5;20r");
+	/* SD 1 — scroll down within margin region */
+	term_write("\033[1T");
+	/* Inside marker (was row 10) should move to row 11 */
+	if (!read_text_at(1, 11, 6, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "INSIDE", 6) != 0) {
+		fprintf(result_fp, "    inside not scrolled: row 11 = '%.6s'\n", buf);
+		term_write("\033[r");
+		return 0;
+	}
+	/* Outside markers unchanged */
+	if (!read_text_at(1, 3, 5, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "ABOVE", 5) != 0) {
+		fprintf(result_fp, "    above margin moved: '%.5s'\n", buf);
+		term_write("\033[r");
+		return 0;
+	}
+	if (!read_text_at(1, 22, 5, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "BELOW", 5) != 0) {
+		fprintf(result_fp, "    below margin moved: '%.5s'\n", buf);
+		term_write("\033[r");
+		return 0;
+	}
+	term_write("\033[r");
+	return 1;
+}
+
+static int
+test_sl_margins(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Set left/right margins 10-70 */
+	term_write("\033[?69h");
+	term_write("\033[10;70s");
+	/* Write markers inside and outside the margins */
+	cursor_to(5, 1);
+	term_write("LEFT");
+	cursor_to(15, 1);
+	term_write("INSIDE");
+	cursor_to(75, 1);
+	term_write("RIGHT");
+	/* SL 1 — scroll left within margins */
+	term_write("\033[1 @");
+	/* INSIDE (was at col 15) should shift to col 14 */
+	if (!read_text_at(14, 1, 6, buf, sizeof(buf)))
+		goto skip;
+	if (strncmp(buf, "INSIDE", 6) != 0) {
+		fprintf(result_fp, "    inside not shifted: col 14 = '%.6s'\n", buf);
+		goto fail;
+	}
+	/* LEFT outside left margin should be unchanged */
+	if (!read_text_at(5, 1, 4, buf, sizeof(buf)))
+		goto skip;
+	if (strncmp(buf, "LEFT", 4) != 0) {
+		fprintf(result_fp, "    left of margin moved: '%.4s'\n", buf);
+		goto fail;
+	}
+	/* RIGHT outside right margin should be unchanged */
+	if (!read_text_at(75, 1, 5, buf, sizeof(buf)))
+		goto skip;
+	if (strncmp(buf, "RIGHT", 5) != 0) {
+		fprintf(result_fp, "    right of margin moved: '%.5s'\n", buf);
+		goto fail;
+	}
+	term_write("\033[s\033[?69l");
+	return 1;
+fail:
+	term_write("\033[s\033[?69l");
+	return 0;
+skip:
+	term_write("\033[s\033[?69l");
+	return -1;
+}
+
+static int
+test_sr_margins(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Set left/right margins 10-70 */
+	term_write("\033[?69h");
+	term_write("\033[10;70s");
+	/* Write markers inside and outside the margins */
+	cursor_to(5, 1);
+	term_write("LEFT");
+	cursor_to(15, 1);
+	term_write("INSIDE");
+	cursor_to(75, 1);
+	term_write("RIGHT");
+	/* SR 1 — scroll right within margins */
+	term_write("\033[1 A");
+	/* INSIDE (was at col 15) should shift to col 16 */
+	if (!read_text_at(16, 1, 6, buf, sizeof(buf)))
+		goto skip;
+	if (strncmp(buf, "INSIDE", 6) != 0) {
+		fprintf(result_fp, "    inside not shifted: col 16 = '%.6s'\n", buf);
+		goto fail;
+	}
+	/* LEFT outside left margin unchanged */
+	if (!read_text_at(5, 1, 4, buf, sizeof(buf)))
+		goto skip;
+	if (strncmp(buf, "LEFT", 4) != 0) {
+		fprintf(result_fp, "    left of margin moved: '%.4s'\n", buf);
+		goto fail;
+	}
+	/* RIGHT outside right margin unchanged */
+	if (!read_text_at(75, 1, 5, buf, sizeof(buf)))
+		goto skip;
+	if (strncmp(buf, "RIGHT", 5) != 0) {
+		fprintf(result_fp, "    right of margin moved: '%.5s'\n", buf);
+		goto fail;
+	}
+	term_write("\033[s\033[?69l");
+	return 1;
+fail:
+	term_write("\033[s\033[?69l");
+	return 0;
+skip:
+	term_write("\033[s\033[?69l");
+	return -1;
+}
+
+/* --- CVT (Cursor Line Tabulation) --- */
+
+static int
+test_cvt(void)
+{
+	int x, y, ret;
+
+	/* CVT is vertical line tabulation.  With no line tab stops set,
+	 * it should scroll up one and move to the last row. */
+	scroll_witness_setup(23, 0);
+	cursor_to(5, 1);
+	term_write("\033[Y");
+	if (!get_cursor_pos(&x, &y))
+		return 0;
+	if (x != 5 || y != 24) {
+		fprintf(result_fp, "    no stops: expected (5,24) got (%d,%d)\n", x, y);
+		return 0;
+	}
+	/* Verify scroll actually happened */
+	ret = scroll_witness_check_up(23, 1, 0);
+	if (ret <= 0)
+		return ret;
+	/* Now set a line tab at row 10 via VTS, verify CVT advances to it */
+	clear_screen();
+	cursor_to(3, 10);
+	term_write("\033J");       /* VTS — set line tab at row 10 */
+	cursor_to(5, 1);
+	term_write("\033[Y");      /* CVT — advance to next line tab */
+	if (!get_cursor_pos(&x, &y))
+		return 0;
+	if (x != 5 || y != 10) {
+		fprintf(result_fp, "    with stop at 10: expected (5,10) got (%d,%d)\n", x, y);
+		term_write("\033[4g");
+		return 0;
+	}
+	/* Clear line tab stops */
+	term_write("\033[4g");
+	return 1;
+}
+
+/* --- TSR (Tab Stop Remove) --- */
+
+static int
+test_tsr(void)
+{
+	int x, y;
+
+	cursor_to(5, 1);
+	term_write("\033H");
+	cursor_to(1, 1);
+	term_write("\t");
+	if (!check_xy(5, 1)) {
+		term_write("\033c");
+		usleep(100000);
+		term_drain();
+		return 0;
+	}
+	/* Remove tab at column 5 using TSR (CSI Pn SP d) */
+	term_write("\033[5 d");
+	cursor_to(1, 1);
+	term_write("\t");
+	if (!get_cursor_pos(&x, &y)) {
+		term_write("\033c");
+		usleep(100000);
+		term_drain();
+		return 0;
+	}
+	if (x == 5) {
+		fprintf(result_fp, "    tab at 5 not removed\n");
+		term_write("\033c");
+		usleep(100000);
+		term_drain();
+		return 0;
+	}
+	term_write("\033c");
+	usleep(100000);
+	term_drain();
+	return 1;
+}
+
+/* --- Device query extensions --- */
+
+static int
+test_ctda(void)
+{
+	char buf[128];
+
+	/* CSI < 0 c — CTerm Device Attributes */
+	term_write("\033[<0c");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	int len = strlen(buf);
+	return (len >= 3 && buf[len - 1] == 'c');
+}
+
+static int
+test_bcdsr(void)
+{
+	char buf[64];
+	int row, col;
+
+	/* CSI 255 n — terminal size as position report */
+	term_write("\033[255n");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[%d;%dR", &row, &col) != 2)
+		return 0;
+	return (col == 80 && row == 24);
+}
+
+static int
+test_xtsrga(void)
+{
+	char buf[128];
+	int px, py;
+
+	/* CSI ? 2 ; 1 S — graphics screen info */
+	term_write("\033[?2;1S");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[?2;0;%d;%dS", &px, &py) != 2) {
+		fprintf(result_fp, "    format: %s\n", buf);
+		return 0;
+	}
+	return (px > 0 && py > 0);
+}
+
+static int
+test_deccksr(void)
+{
+	char buf[64];
+
+	/* CSI ? 63 n — macro checksum */
+	term_write("\033[?63n");
+	if (read_dcs_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	return (strlen(buf) >= 4);
+}
+
+/* --- CTSMRR (State/Mode Request/Report) --- */
+
+static int
+test_ctsmrr_font(void)
+{
+	char buf[128];
+
+	/* CSI = 1 n — Font State Report */
+	term_write("\033[=1n");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	int len = strlen(buf);
+	return (len >= 3 && buf[len - 1] == 'n' && strstr(buf, "=1;") != NULL);
+}
+
+static int
+test_ctsmrr_mode(void)
+{
+	char buf[128];
+
+	/* CSI = 2 n — Mode Report */
+	term_write("\033[=2n");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	int len = strlen(buf);
+	return (len >= 3 && buf[len - 1] == 'n' && strstr(buf, "=2") != NULL);
+}
+
+static int
+test_ctsmrr_cellsize(void)
+{
+	char buf[128];
+	int ph, pw;
+
+	/* CSI = 3 n — Cell Size: CSI = 3 ; pH ; pW n */
+	term_write("\033[=3n");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[=3;%d;%dn", &ph, &pw) != 2) {
+		fprintf(result_fp, "    format: %s\n", buf);
+		return 0;
+	}
+	return (ph > 0 && pw > 0 && ph <= 64 && pw <= 64);
+}
+
+static int
+test_ctsmrr_lcf_state(void)
+{
+	char buf[128];
+	int pf;
+
+	/* CSI = 4 n — verify response format and toggle */
+	term_write("\033[=4n");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[=4;%dn", &pf) != 1)
+		return 0;
+	if (pf != 0 && pf != 1)
+		return 0;
+	/* Check if forced — if so, CSI = 4 l is blocked per spec */
+	int forced = 0;
+	term_write("\033[=5n");
+	if (read_csi_response(buf, sizeof(buf), 500) > 0) {
+		int ff;
+		if (sscanf(buf, "\033[=5;%dn", &ff) == 1)
+			forced = ff;
+	}
+	if (forced) {
+		/* Can't toggle when forced — just verify format was valid */
+		return 1;
+	}
+	/* Toggle and verify the report changes */
+	int orig = pf;
+	if (orig)
+		term_write("\033[=4l");
+	else
+		term_write("\033[=4h");
+	term_write("\033[=4n");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[=4;%dn", &pf) != 1)
+		return 0;
+	/* Restore */
+	if (orig)
+		term_write("\033[=4h");
+	else
+		term_write("\033[=4l");
+	return (pf != orig);
+}
+
+static int
+test_ctsmrr_lcf_forced_state(void)
+{
+	char buf[128];
+	int pf;
+
+	/* CSI = 5 n — verify response format (pF is 0 or 1) */
+	term_write("\033[=5n");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[=5;%dn", &pf) != 1)
+		return 0;
+	return (pf == 0 || pf == 1);
+}
+
+static int
+test_ctsmrr_osc8(void)
+{
+	char buf[128];
+	int pa;
+
+	/* CSI = 6 n — OSC 8 hyperlink support */
+	term_write("\033[=6n");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[=6;%dn", &pa) != 1)
+		return 0;
+	return (pa == 0 || pa == 1);
+}
+
+/* --- Save/Restore mode (CTSMS/CTRMS) --- */
+
+static int
+test_save_restore_mode(void)
+{
+	int pm;
+
+	/* Save autowrap (should be set), change, restore */
+	term_write("\033[?7h");
+	term_write("\033[?7s");
+	term_write("\033[?7l");
+	pm = query_decrqm(7);
+	if (pm != 2) {
+		fprintf(result_fp, "    after reset: expected 2 got %d\n", pm);
+		term_write("\033[?7h");
+		return 0;
+	}
+	term_write("\033[?7u");
+	pm = query_decrqm(7);
+	if (pm != 1) {
+		fprintf(result_fp, "    after restore: expected 1 got %d\n", pm);
+		term_write("\033[?7h");
+		return 0;
+	}
+	return 1;
+}
+
+/* --- CT24BC (24-bit color via non-standard CSI t) --- */
+
+static int
+test_ct24bc(void)
+{
+	char before[16], after[16];
+
+	if (!has_cksum)
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[0m#");
+	if (!get_checksum(1, 1, 1, 1, before, sizeof(before)))
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[1;255;128;0t#");
+	if (!get_checksum(1, 1, 1, 1, after, sizeof(after)))
+		return -1;
+	term_write("\033[0m");
+	return strcmp(before, after) != 0;
+}
+
+/* --- OSC 10/11 queries --- */
+
+static int
+test_osc10_query(void)
+{
+	char buf[128];
+
+	term_write("\033]10;?\033\\");
+	if (read_dcs_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	return (strstr(buf, "10;rgb:") != NULL);
+}
+
+static int
+test_osc11_query(void)
+{
+	char buf[128];
+
+	term_write("\033]11;?\033\\");
+	if (read_dcs_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	return (strstr(buf, "11;rgb:") != NULL);
+}
+
+/* --- OSC 8 hyperlink readback --- */
+
+static int
+test_osc8_readback(void)
+{
+	char buf[4096];
+
+	if (!has_sts)
+		return -1;
+	clear_screen();
+	cursor_to(1, 1);
+	term_write("\033]8;;https://example.com\033\\Link\033]8;;\033\\");
+	usleep(50000);
+	/* Read back with FETM=INSERT (attributed) */
+	int n = read_screen_at(1, 1, 4, 1, buf, sizeof(buf));
+	if (n == 0)
+		return -1;
+	/* Attributed stream should contain:
+	 * - SGR sequence(s) for the initial attributes
+	 * - OSC 8 with the hyperlink URI, terminated by ESC : \
+	 *   (escaped ST to avoid premature SOS closure)
+	 * - The literal text "Link"
+	 * - OSC 8 closing (empty URI), also with ESC : \ */
+	if (strstr(buf, "example.com") == NULL) {
+		fprintf(result_fp, "    no hyperlink URI in readback\n");
+		return 0;
+	}
+	/* Verify escaped ST (ESC : \) is used instead of bare ST */
+	if (strstr(buf, "\033:\\") == NULL) {
+		fprintf(result_fp, "    no escaped ST in readback\n");
+		return 0;
+	}
+	/* Extract text — should recover "Link" */
+	char text[256];
+	extract_text(buf, text, sizeof(text));
+	if (strncmp(text, "Link", 4) != 0) {
+		fprintf(result_fp, "    expected 'Link', got '%.10s'\n", text);
+		return 0;
+	}
+	return 1;
+}
+
+/* --- DECRPM for additional DEC private modes --- */
+
+static int
+test_decrpm_toggle(int mode, int default_set)
+{
+	int pm, expect;
+
+	expect = default_set ? 1 : 2;
+	pm = query_decrqm(mode);
+	if (pm != expect) {
+		fprintf(result_fp, "    mode %d default: expected %d got %d\n",
+		    mode, expect, pm);
+		return 0;
+	}
+	if (default_set)
+		term_printf("\033[?%dl", mode);
+	else
+		term_printf("\033[?%dh", mode);
+	pm = query_decrqm(mode);
+	if (pm != (default_set ? 2 : 1)) {
+		fprintf(result_fp, "    mode %d toggle: expected %d got %d\n",
+		    mode, default_set ? 2 : 1, pm);
+		if (default_set)
+			term_printf("\033[?%dh", mode);
+		else
+			term_printf("\033[?%dl", mode);
+		return 0;
+	}
+	if (default_set)
+		term_printf("\033[?%dh", mode);
+	else
+		term_printf("\033[?%dl", mode);
+	return 1;
+}
+
+static int test_decrpm_mode31(void) { return test_decrpm_toggle(31, 0); }
+static int test_decrpm_mode32(void) { return test_decrpm_toggle(32, 0); }
+static int test_decrpm_mode33(void) { return test_decrpm_toggle(33, 0); }
+static int test_decrpm_mode34(void) { return test_decrpm_toggle(34, 0); }
+static int test_decrpm_mode35(void) { return test_decrpm_toggle(35, 0); }
+static int test_decrpm_mode67(void) { return test_decrpm_toggle(67, 1); }
+static int test_decrpm_mode80(void) { return test_decrpm_toggle(80, 1); }
+
+static int
+test_decrpm_mouse_modes(void)
+{
+	static const int modes[] = {9, 1000, 1002, 1003, 1006};
+	int i, pm;
+
+	for (i = 0; i < 5; i++) {
+		pm = query_decrqm(modes[i]);
+		if (pm != 2) {
+			fprintf(result_fp, "    mode %d default: expected 2 got %d\n",
+			    modes[i], pm);
+			return 0;
+		}
+		term_printf("\033[?%dh", modes[i]);
+		pm = query_decrqm(modes[i]);
+		if (pm != 1) {
+			fprintf(result_fp, "    mode %d set: expected 1 got %d\n",
+			    modes[i], pm);
+			term_printf("\033[?%dl", modes[i]);
+			return 0;
+		}
+		term_printf("\033[?%dl", modes[i]);
+	}
+	return 1;
+}
+
+/* --- SM/RM ANSI modes (functional set/reset) --- */
+
+static int
+test_sm_fetm(void)
+{
+	char buf[64];
+	int ps, pm;
+
+	term_write("\033[14h");
+	term_printf("\033[14$p");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[%d;%d$y", &ps, &pm) != 2 || ps != 14 || pm != 1) {
+		fprintf(result_fp, "    14h: expected set, got pm=%d\n", pm);
+		term_write("\033[14l");
+		return 0;
+	}
+	term_write("\033[14l");
+	term_printf("\033[14$p");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[%d;%d$y", &ps, &pm) != 2 || ps != 14 || pm != 2) {
+		fprintf(result_fp, "    14l: expected reset, got pm=%d\n", pm);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_sm_ttm(void)
+{
+	char buf[64];
+	int ps, pm;
+
+	term_write("\033[16h");
+	term_printf("\033[16$p");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[%d;%d$y", &ps, &pm) != 2 || ps != 16 || pm != 1) {
+		fprintf(result_fp, "    16h: expected set, got pm=%d\n", pm);
+		term_write("\033[16l");
+		return 0;
+	}
+	term_write("\033[16l");
+	term_printf("\033[16$p");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	if (sscanf(buf, "\033[%d;%d$y", &ps, &pm) != 2 || ps != 16 || pm != 2) {
+		fprintf(result_fp, "    16l: expected reset, got pm=%d\n", pm);
+		return 0;
+	}
+	return 1;
+}
+
+/* --- SGR extended attribute tests --- */
+
+static int
+test_sgr_dim(void)
+{
+	char cs_bright[16], cs_dim[16];
+
+	if (!has_cksum)
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[0;1m#");
+	if (!get_checksum(1, 1, 1, 1, cs_bright, sizeof(cs_bright)))
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[0;2m#");
+	if (!get_checksum(1, 1, 1, 1, cs_dim, sizeof(cs_dim)))
+		return -1;
+	term_write("\033[0m");
+	return strcmp(cs_bright, cs_dim) != 0;
+}
+
+static int
+test_sgr_blink(void)
+{
+	char cs_noblink[16], cs_blink[16];
+
+	if (!has_cksum)
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[0m#");
+	if (!get_checksum(1, 1, 1, 1, cs_noblink, sizeof(cs_noblink)))
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[0;5m#");
+	if (!get_checksum(1, 1, 1, 1, cs_blink, sizeof(cs_blink)))
+		return -1;
+	term_write("\033[0m");
+	return strcmp(cs_noblink, cs_blink) != 0;
+}
+
+static int
+test_sgr_noblink(void)
+{
+	char cs_normal[16], cs_unblink[16];
+
+	if (!has_cksum)
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[0m#");
+	if (!get_checksum(1, 1, 1, 1, cs_normal, sizeof(cs_normal)))
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[0;5;25m#");
+	if (!get_checksum(1, 1, 1, 1, cs_unblink, sizeof(cs_unblink)))
+		return -1;
+	term_write("\033[0m");
+	return strcmp(cs_normal, cs_unblink) == 0;
+}
+
+static int
+test_sgr_normal_intensity(void)
+{
+	char cs_normal[16], cs_reset[16];
+
+	if (!has_cksum)
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[0m#");
+	if (!get_checksum(1, 1, 1, 1, cs_normal, sizeof(cs_normal)))
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[0;1;22m#");
+	if (!get_checksum(1, 1, 1, 1, cs_reset, sizeof(cs_reset)))
+		return -1;
+	term_write("\033[0m");
+	return strcmp(cs_normal, cs_reset) == 0;
+}
+
+static int
+test_sgr_default_fg(void)
+{
+	char cs_white[16], cs_default[16];
+
+	if (!has_cksum)
+		return -1;
+	/* SGR 39 = default foreground (same as white per cterm.adoc) */
+	cursor_to(1, 1);
+	term_write("\033[0;37m#");
+	if (!get_checksum(1, 1, 1, 1, cs_white, sizeof(cs_white)))
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[0;39m#");
+	if (!get_checksum(1, 1, 1, 1, cs_default, sizeof(cs_default)))
+		return -1;
+	term_write("\033[0m");
+	return strcmp(cs_white, cs_default) == 0;
+}
+
+static int
+test_sgr_default_bg(void)
+{
+	char cs_black[16], cs_default[16];
+
+	if (!has_cksum)
+		return -1;
+	/* SGR 49 = default background (same as black per cterm.adoc) */
+	cursor_to(1, 1);
+	term_write("\033[0;40m ");
+	if (!get_checksum(1, 1, 1, 1, cs_black, sizeof(cs_black)))
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[0;49m ");
+	if (!get_checksum(1, 1, 1, 1, cs_default, sizeof(cs_default)))
+		return -1;
+	term_write("\033[0m");
+	return strcmp(cs_black, cs_default) == 0;
+}
+
+static int
+test_sgr_bright_bg(void)
+{
+	char cs_norm[16], cs_bright[16];
+
+	if (!has_cksum)
+		return -1;
+	/* Bright backgrounds (100-107) require mode 33 */
+	term_write("\033[?33h");
+	cursor_to(1, 1);
+	term_write("\033[0;41m ");
+	if (!get_checksum(1, 1, 1, 1, cs_norm, sizeof(cs_norm)))
+		return -1;
+	cursor_to(1, 1);
+	term_write("\033[0;101m ");
+	if (!get_checksum(1, 1, 1, 1, cs_bright, sizeof(cs_bright)))
+		return -1;
+	term_write("\033[0m\033[?33l");
+	return strcmp(cs_norm, cs_bright) != 0;
+}
+
+/* --- DECRQSS extensions --- */
+
+static int
+test_decrqss_t(void)
+{
+	char buf[64];
+
+	/* DECRQSS for height in lines */
+	term_write("\033P$qt\033\\");
+	if (read_dcs_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	return (strstr(buf, "1$r") != NULL);
+}
+
+static int
+test_decrqss_dollarpipe(void)
+{
+	char buf[64];
+
+	/* DECRQSS for width in columns ($|) */
+	term_write("\033P$q$|\033\\");
+	if (read_dcs_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	return (strstr(buf, "1$r") != NULL);
+}
+
+static int
+test_decrqss_starpipe(void)
+{
+	char buf[64];
+
+	/* DECRQSS for height in lines (*|) */
+	term_write("\033P$q*|\033\\");
+	if (read_dcs_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	return (strstr(buf, "1$r") != NULL);
+}
+
+/* --- APC JXL query --- */
+
+static int
+test_apc_jxl_query(void)
+{
+	char buf[128];
+
+	/* APC SyncTERM:Q;JXL ST — query JXL support */
+	term_write("\033_SyncTERM:Q;JXL\033\\");
+	if (read_csi_response(buf, sizeof(buf), 500) == 0)
+		return 0;
+	int len = strlen(buf);
+	return (len >= 3 && buf[len - 1] == 'n');
+}
+
+/* --- Rectangular area operations --- */
+
+static int
+test_decera(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Write text, erase a rectangle, verify it's blank */
+	cursor_to(1, 1);
+	term_write("ABCDEFGHIJ");
+	cursor_to(1, 2);
+	term_write("KLMNOPQRST");
+	/* DECERA: erase cols 3-8, rows 1-2 */
+	term_write("\033[1;3;2;8$z");
+	/* Row 1 cols 1-2 should be "AB", cols 3-8 blank, cols 9-10 "IJ" */
+	if (!read_text_at(1, 1, 10, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "AB      IJ", 10) != 0) {
+		fprintf(result_fp, "    row 1: expected 'AB      IJ', got '%.10s'\n", buf);
+		return 0;
+	}
+	/* Row 2 cols 1-2 should be "KL", cols 3-8 blank, cols 9-10 "ST" */
+	if (!read_text_at(1, 2, 10, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "KL      ST", 10) != 0) {
+		fprintf(result_fp, "    row 2: expected 'KL      ST', got '%.10s'\n", buf);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_decfra(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* DECFRA: fill cols 3-7, rows 1-2 with '#' (decimal 35) */
+	cursor_to(1, 1);
+	term_write("ABCDEFGHIJ");
+	cursor_to(1, 2);
+	term_write("KLMNOPQRST");
+	term_write("\033[35;1;3;2;7$x");
+	if (!read_text_at(1, 1, 10, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "AB#####HIJ", 10) != 0) {
+		fprintf(result_fp, "    row 1: expected 'AB#####HIJ', got '%.10s'\n", buf);
+		return 0;
+	}
+	if (!read_text_at(1, 2, 10, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "KL#####RST", 10) != 0) {
+		fprintf(result_fp, "    row 2: expected 'KL#####RST', got '%.10s'\n", buf);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_deccra(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Write source text, copy rectangle to another location */
+	cursor_to(1, 1);
+	term_write("HELLO");
+	cursor_to(1, 2);
+	term_write("WORLD");
+	/* DECCRA: copy rows 1-2, cols 1-5 to row 5, col 10 */
+	/* Format: CSI Pts;Pls;Pbs;Prs;Pps;Ptd;Pld;Ppd $ v */
+	term_write("\033[1;1;2;5;1;5;10;1$v");
+	/* Verify destination */
+	if (!read_text_at(10, 5, 5, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "HELLO", 5) != 0) {
+		fprintf(result_fp, "    dest row 5: expected 'HELLO', got '%.5s'\n", buf);
+		return 0;
+	}
+	if (!read_text_at(10, 6, 5, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "WORLD", 5) != 0) {
+		fprintf(result_fp, "    dest row 6: expected 'WORLD', got '%.5s'\n", buf);
+		return 0;
+	}
+	/* Source should still be intact */
+	if (!read_text_at(1, 1, 5, buf, sizeof(buf)))
+		return -1;
+	if (strncmp(buf, "HELLO", 5) != 0) {
+		fprintf(result_fp, "    source row 1: expected 'HELLO', got '%.5s'\n", buf);
+		return 0;
+	}
+	return 1;
+}
+
+static int
+test_decic(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Enable left/right margins, write text, insert column */
+	term_write("\033[?69h");
+	term_write("\033[1;20s");
+	cursor_to(1, 1);
+	term_write("ABCDEFGHIJ");
+	/* Position cursor at column 3, insert 2 columns */
+	cursor_to(3, 1);
+	term_write("\033[2'}");
+	if (!read_text_at(1, 1, 12, buf, sizeof(buf)))
+		goto skip;
+	/* AB should stay, 2 blanks inserted at col 3, CDEFGH shifted right */
+	if (strncmp(buf, "AB  CDEFGH", 10) != 0) {
+		fprintf(result_fp, "    expected 'AB  CDEFGH', got '%.12s'\n", buf);
+		goto fail;
+	}
+	term_write("\033[s\033[?69l");
+	return 1;
+fail:
+	term_write("\033[s\033[?69l");
+	return 0;
+skip:
+	term_write("\033[s\033[?69l");
+	return -1;
+}
+
+static int
+test_decdc(void)
+{
+	char buf[64];
+
+	if (!has_sts)
+		return -1;
+	/* Enable left/right margins, write text, delete column */
+	term_write("\033[?69h");
+	term_write("\033[1;20s");
+	cursor_to(1, 1);
+	term_write("ABCDEFGHIJ");
+	/* Position cursor at column 3, delete 2 columns */
+	cursor_to(3, 1);
+	term_write("\033[2'~");
+	if (!read_text_at(1, 1, 10, buf, sizeof(buf)))
+		goto skip;
+	/* AB stays, CD deleted, EFGHIJ shifts left, 2 blanks at right */
+	if (strncmp(buf, "ABEFGHIJ  ", 10) != 0) {
+		fprintf(result_fp, "    expected 'ABEFGHIJ  ', got '%.10s'\n", buf);
+		goto fail;
+	}
+	term_write("\033[s\033[?69l");
+	return 1;
+fail:
+	term_write("\033[s\033[?69l");
+	return 0;
+skip:
+	term_write("\033[s\033[?69l");
+	return -1;
+}
+
+/* --- NUL in doorway mode --- */
+
+static int
+test_nul_doorway(void)
+{
+	char buf[4096];
+
+	if (!has_sts)
+		return -1;
+	/* Enter doorway mode, send NUL + ESC (0x1B).
+	 * NUL means "next byte is literal CP437 character".
+	 * ESC (0x1B) should be placed in the cell as a literal,
+	 * not interpreted as a control character. */
+	cursor_to(1, 1);
+	term_write("\033[=255h");
+	{
+		char seq[2] = {0x00, 0x1B};
+		write(STDOUT_FILENO, seq, 2);
+	}
+	term_write("\033[=255l");
+	/* Queries work again — verify via FETM=EXCLUDE (text only).
+	 * C0 bytes in cells become SPACE in text-only mode. */
+	int n = read_screen_at(1, 1, 1, 0, buf, sizeof(buf));
+	if (n == 0)
+		return -1;
+	if (buf[0] != ' ') {
+		fprintf(result_fp, "    FETM=EXCLUDE: expected SPACE, got 0x%02x\n",
+		    (unsigned char)buf[0]);
+		return 0;
+	}
+	/* Verify via FETM=INSERT (attributed).  The cell contains 0x1B
+	 * which must be doorway-encoded in the stream:
+	 * ESC[=255h NUL 0x1B ESC[=255l
+	 * Use memcmp scanning since content contains NUL bytes. */
+	n = read_screen_at(1, 1, 1, 1, buf, sizeof(buf));
+	if (n == 0)
+		return -1;
+	/* Find doorway open sequence in binary content */
+	char *dw = NULL;
+	int di;
+	for (di = 0; di <= n - 7; di++) {
+		if (memcmp(buf + di, "\033[=255h", 7) == 0) {
+			dw = buf + di;
+			break;
+		}
+	}
+	if (dw == NULL) {
+		fprintf(result_fp, "    FETM=INSERT: no doorway encoding\n");
+		return 0;
+	}
+	/* The literal 0x1B should follow after NUL prefix */
+	dw += 7; /* skip "ESC[=255h" */
+	if (dw[0] != 0x00 || dw[1] != 0x1B) {
+		fprintf(result_fp, "    doorway payload: %02x %02x (expected 00 1b)\n",
+		    (unsigned char)dw[0], (unsigned char)dw[1]);
+		return 0;
+	}
+	return 1;
+}
+
+/* --- Response ordering regression test --- */
+
+static int
+test_response_ordering(void)
+{
+	char buf[4096];
+	char *ver_pos, *dsr_pos, *p;
+
+	/* Send APC VER query + DSR in a single write() so they land in
+	 * one cterm_write call.  The VER response must arrive before
+	 * the DSR response — if responses go through two different
+	 * paths (retbuf vs callback), the DSR arrives first. */
+	char cmd[] = "\033_SyncTERM:VER\033\\\033[6n";
+	write(STDOUT_FILENO, cmd, sizeof(cmd) - 1);
+
+	/* Read all responses */
+	usleep(100000);
+	int n = term_read(buf, sizeof(buf) - 1, 1000);
+	if (n <= 0) {
+		fprintf(result_fp, "    no response data\n");
+		return 0;
+	}
+	buf[n] = '\0';
+
+	/* Find VER response (APC: ESC _ SyncTERM:VER;...) */
+	ver_pos = strstr(buf, "SyncTERM:VER;");
+	if (ver_pos == NULL) {
+		fprintf(result_fp, "    no VER response\n");
+		return 0;
+	}
+
+	/* Find DSR response (CSI row ; col R) */
+	dsr_pos = NULL;
+	for (p = buf; p < buf + n - 2; p++) {
+		if (p[0] == '\033' && p[1] == '[') {
+			char *end = p + 2;
+			while (*end && ((*end >= '0' && *end <= '9') || *end == ';'))
+				end++;
+			if (*end == 'R') {
+				dsr_pos = p;
+				break;
+			}
+		}
+	}
+	if (dsr_pos == NULL) {
+		fprintf(result_fp, "    no DSR response\n");
+		return 0;
+	}
+
+	/* VER (APC) was sent first, so its response must arrive first */
+	if (ver_pos > dsr_pos) {
+		fprintf(result_fp, "    VER response after DSR (response ordering bug)\n");
+		return 0;
+	}
+	return 1;
+}
+
 /* ================================================================ */
 
 struct test_entry {
@@ -2234,7 +3766,6 @@ static struct test_entry tests[] = {
 	{"DECRQM_unrecognized", test_decrpm_unrecognized},
 	{"DECRQM_bracketpaste", test_decrpm_bracketpaste},
 	{"DECRQM_LCF",          test_decrqm_lcf},
-	{"DECRQM_LCF_forced",   test_decrqm_lcf_forced},
 	{"DECRQM_doorway",      test_decrqm_doorway},
 	{"DECRQM_eq_unrecognized", test_decrqm_eq_unrecognized},
 	/* Palette queries */
@@ -2252,6 +3783,79 @@ static struct test_entry tests[] = {
 	{"DECDMAC",       test_decdmac},
 	{"DECINVM",       test_decinvm},
 	{"CTSV",          test_ctsv},
+	/* Editing extended */
+	{"ED_above",       test_ed_above},
+	{"ED_all",         test_ed_all},
+	{"EL_left",        test_el_left},
+	{"EL_all",         test_el_all},
+	{"SL",             test_sl},
+	{"SR",             test_sr},
+	{"SU_margins",     test_su_margins},
+	{"SD_margins",     test_sd_margins},
+	{"SL_margins",     test_sl_margins},
+	{"SR_margins",     test_sr_margins},
+	/* Cursor extended */
+	{"CVT",            test_cvt},
+	/* Tabs extended */
+	{"TSR",            test_tsr},
+	/* Device queries extended */
+	{"CTDA",           test_ctda},
+	{"BCDSR",          test_bcdsr},
+	{"XTSRGA",         test_xtsrga},
+	{"DECCKSR",        test_deccksr},
+	{"CTSMRR_font",    test_ctsmrr_font},
+	{"CTSMRR_mode",    test_ctsmrr_mode},
+	{"CTSMRR_cellsize", test_ctsmrr_cellsize},
+	{"CTSMRR_LCF",     test_ctsmrr_lcf_state},
+	{"CTSMRR_OSC8",    test_ctsmrr_osc8},
+	/* DECRQSS extended */
+	{"DECRQSS_t",      test_decrqss_t},
+	{"DECRQSS_dollarpipe", test_decrqss_dollarpipe},
+	{"DECRQSS_starpipe", test_decrqss_starpipe},
+	/* Save/restore modes */
+	{"CTSMS_CTRMS",    test_save_restore_mode},
+	/* SGR extended */
+	{"SGR_dim",        test_sgr_dim},
+	{"SGR_blink",      test_sgr_blink},
+	{"SGR_noblink",    test_sgr_noblink},
+	{"SGR_normal_int", test_sgr_normal_intensity},
+	{"SGR_default_fg", test_sgr_default_fg},
+	{"SGR_default_bg", test_sgr_default_bg},
+	{"SGR_bright_bg",  test_sgr_bright_bg},
+	/* 24-bit color extension */
+	{"CT24BC",         test_ct24bc},
+	/* OSC queries */
+	{"OSC10_query",    test_osc10_query},
+	{"OSC11_query",    test_osc11_query},
+	/* OSC 8 hyperlink */
+	{"OSC8_readback",  test_osc8_readback},
+	/* DECRPM additional modes */
+	{"DECRPM_mode31",  test_decrpm_mode31},
+	{"DECRPM_mode32",  test_decrpm_mode32},
+	{"DECRPM_mode33",  test_decrpm_mode33},
+	{"DECRPM_mode34",  test_decrpm_mode34},
+	{"DECRPM_mode35",  test_decrpm_mode35},
+	{"DECRPM_mode67",  test_decrpm_mode67},
+	{"DECRPM_mode80",  test_decrpm_mode80},
+	{"DECRPM_mouse",   test_decrpm_mouse_modes},
+	/* SM/RM ANSI modes */
+	{"SM_FETM",        test_sm_fetm},
+	{"SM_TTM",         test_sm_ttm},
+	/* SyncTERM extensions */
+	{"APC_JXL_query",  test_apc_jxl_query},
+	/* Rectangular area operations */
+	{"DECERA",         test_decera},
+	{"DECFRA",         test_decfra},
+	{"DECCRA",         test_deccra},
+	{"DECIC",          test_decic},
+	{"DECDC",          test_decdc},
+	/* NUL in doorway mode + doorway readback encoding */
+	{"NUL_doorway",    test_nul_doorway},
+	/* Regression: response ordering when APC + CSI in same cterm_write */
+	{"response_ordering", test_response_ordering},
+	/* Forced LCF must be last — it cannot be cleared and poisons state */
+	{"DECRQM_LCF_forced",   test_decrqm_lcf_forced},
+	{"CTSMRR_LCF_forced", test_ctsmrr_lcf_forced_state},
 	{NULL, NULL}
 };
 
@@ -2306,15 +3910,22 @@ main(int argc, char **argv)
 		has_cksum = get_checksum(1, 1, 1, 1, cksum, sizeof(cksum));
 	}
 
-	/* Probe for STS screen readback support — check ANSI mode SATM (17) */
+	/* Probe for STS screen readback support — try a direct STS */
 	{
-		char buf[64];
-		int ps, pm;
-		term_printf("\033[17$p");
-		if (read_csi_response(buf, sizeof(buf), 500) > 0 &&
-		    sscanf(buf, "\033[%d;%d$y", &ps, &pm) == 2 &&
-		    ps == 17 && pm == 4)
+		char buf[4096];
+		cursor_to(1, 1);
+		term_write("X");
+		cursor_to(1, 1);
+		term_write("\033F");       /* SSA */
+		cursor_to(2, 1);
+		term_write("\033[14h");    /* FETM=EXCLUDE */
+		term_write("\033S");       /* STS */
+		term_write("\033[14l");
+		int n = read_sos_response(buf, sizeof(buf), 1000);
+		if (n > 0 && strstr(buf, "CTerm:STS:") != NULL)
 			has_sts = 1;
+		clear_screen();
+		term_drain();
 	}
 
 	fprintf(result_fp, "# termtest results\n");

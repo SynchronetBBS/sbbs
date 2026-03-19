@@ -3258,10 +3258,8 @@ capture_control(struct bbslist *bbs)
 
 #define WRITE_OUTBUF() \
 	if (outbuf_size > 0) { \
-		size_t retbuf_len = cterm_write(cterm, outbuf, outbuf_size, (char *)ansi_replybuf, sizeof(ansi_replybuf), &speed); \
+		cterm_write(cterm, outbuf, outbuf_size, NULL, 0, &speed); \
 		outbuf_size = 0; \
-		if (retbuf_len) \
-			conn_send(ansi_replybuf, retbuf_len, 0); \
 		updated = true; \
 	}
 
@@ -4550,9 +4548,9 @@ apc_handler(char *strbuf, size_t slen, char *retbuf, size_t retsize, void *apcd)
 	BYTE            digest[MD5_DIGEST_SIZE];
 	unsigned long   slot;
 
-	if (ansi_replybuf[0])
-		conn_send(ansi_replybuf, strlen((char *)ansi_replybuf), 0);
-	ansi_replybuf[0] = 0;
+	/* Responses go through conn_send directly, not retbuf */
+	(void)retbuf;
+	(void)retsize;
 	if (get_cache_fn_base(bbs, fn_root, sizeof(fn_root)) == 0)
 		return;
 	strcpy(fn, fn_root);
@@ -4742,35 +4740,30 @@ apc_handler(char *strbuf, size_t slen, char *retbuf, size_t retsize, void *apcd)
 		paste_pixmap(strbuf, slen, fn, apcd);
 	}
 	else if (strncmp(strbuf, "SyncTERM:Q;JXL", 14) == 0) {
-		size_t rlen = strlen(retbuf);
-
-		if (rlen + 9 < retsize) {
 #ifdef WITH_JPEG_XL
-			if (cio_api.options & CONIO_OPT_SET_PIXEL) {
-				switch(Jxl.status) {
-					case JXL_STATUS_OK:
-					case JXL_STATUS_NOTHREADS:
-						memcpy(&retbuf[rlen], "\x1b[=1;1-n", 9);
-						break;
-					default:
-						memcpy(&retbuf[rlen], "\x1b[=1;0-n", 9);
-						break;
-				}
+		if (cio_api.options & CONIO_OPT_SET_PIXEL) {
+			switch(Jxl.status) {
+				case JXL_STATUS_OK:
+				case JXL_STATUS_NOTHREADS:
+					conn_send("\x1b[=1;1-n", 8, 0);
+					break;
+				default:
+					conn_send("\x1b[=1;0-n", 8, 0);
+					break;
 			}
-			else
-				memcpy(&retbuf[rlen], "\x1b[=1;0-n", 9);
-#else
-			memcpy(&retbuf[rlen], "\x1b[=1;0-n", 9);
-#endif
 		}
+		else
+			conn_send("\x1b[=1;0-n", 8, 0);
+#else
+		conn_send("\x1b[=1;0-n", 8, 0);
+#endif
 	}
 	else if(strcmp(strbuf, "SyncTERM:VER") == 0) {
-		size_t rlen = strlen(retbuf);
-		size_t addon = 2 + 13 + strlen(syncterm_version) + 2 + 1;
-
-		if (rlen + addon + 1< retsize) {
-			sprintf(&retbuf[rlen], "\x1b_SyncTERM:VER;%s\x1b\\", syncterm_version);
-		}
+		char verbuf[256];
+		int vlen = snprintf(verbuf, sizeof(verbuf),
+		    "\x1b_SyncTERM:VER;%s\x1b\\", syncterm_version);
+		if (vlen > 0)
+			conn_send(verbuf, vlen, 0);
 	}
 
 	// TODO: Copy PBM mask to memory

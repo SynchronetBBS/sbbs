@@ -71,10 +71,12 @@ function encode_word(word)
 	var output = "=?utf-8?q?";
 	for(var i in word) {
 		var ch = word[i];
-		if(ascii(ch) < 0x80 && ch != '=')
-			output += ch;
-		else
-			output += format("=%02X", ascii(ch));
+		try {
+			if(ascii(ch) < 0x80 && ch != '=')
+				output += ch;
+			else
+				output += format("=%02X", ascii(ch));
+		} catch(e) {}
 	}
 	return output + "?=";
 }

@@ -57,13 +57,17 @@ first, in which case no operation is performed.
 
 SOURCE: <<ECMA-48>>
 
-=== `0x09` Horizontal Tab (`HT`)
-Moves to the next horizontal tab stop.  Does not overwrite
-any characters in between.  If there are no tab stops left
-in the line, moves to the first position of the next line.
+=== `0x09` Character Tabulation (`HT`)
+Moves to the next character tabulation stop.  Does not overwrite
+any characters in between.  If there are no character tabulation stops
+left in the line, moves to the first position of the next line.
 If the starting position is on the last line, will perform
 a scroll, filling the new line at bottom with the current
 attribute.
+
+NOTE: `0x0B` (VT) is NOT treated as a line tabulation control character.
+It is displayed as the CP437 glyph (♂).  Use CVT (`CSI Pn Y`) for
+line tabulation.
 
 SOURCE: <<ECMA-48>>
 
@@ -105,6 +109,19 @@ Private control functions are in the following format: +
 SOURCE: <<ECMA-35>>
 
 Legal combinations not handled are silently dropped.
+
+=== `ESC :` Escaped String Terminator (`ESCST`)
+Reserved for use within STS transmitted content (FETM=INSERT mode).
+OSC 8 hyperlink sequences inside an SOS-framed STS response cannot use
+bare ST (`ESC \`) as their terminator because it would prematurely close
+the SOS frame.  Instead, `ESC : \` (0x1B 0x3A 0x5C) is used as a
+substitute terminator.
+
+`ESC :` is an unassigned Fp private-use escape sequence (per <<ECMA-35>>).
+A conformant parser that encounters `ESC :` outside of STS content
+silently drops it (per the rule above).  Within STS FETM=INSERT content,
+the host parser recognizes the three-byte sequence `ESC : \` as "escaped
+ST" and converts it to `ESC \` before replay.
 
 === `ESC 7` Save Cursor (`DECSC`)
 Saves the current cursor position same as `CSI s`
@@ -156,8 +173,18 @@ of the viewport.
 
 SOURCE: <<ECMA-48>> (Section 8.3.47)
 
-=== `ESC H` Set Tab (`HTS`)
-Sets a tab stop at the current column
+=== `ESC H` Character Tabulation Set (`HTS`)
+Sets a character tabulation stop at the current column.
+
+SOURCE: <<ECMA-48>>
+
+=== `ESC J` Line Tabulation Set (`VTS`)
+Sets a line tabulation stop at the current line.  Line tabulation stops
+are used by CVT (`CSI Pn Y`) and can be cleared by TBC with parameter
+values 1, 4, or 5.
+
+Line tabulation stops are at fixed row numbers and are not affected by
+scrolling.  No default line tabulation stops are set.
 
 SOURCE: <<ECMA-48>>
 
@@ -191,7 +218,17 @@ is transmitted regardless of cursor position.
 **With FETM=INSERT (default, `CSI 14 l`):** Characters are transmitted
 with SGR sequences for attribute changes, doorway mode encoding for C0
 control characters in cells, and OSC 8 for hyperlink changes.  The
-stream is valid ECMA-48 that can be replayed to reproduce the region.
+stream is valid ECMA-48 that can be replayed to reproduce the region
+(after escaped-ST expansion; see below).
+
+**Escaped ST in attributed content:** OSC 8 sequences require ST (`ESC \`)
+as their terminator, but bare ST would prematurely close the SOS frame.
+Within STS FETM=INSERT content, OSC 8 sequences are terminated with
+`ESC : \` (0x1B 0x3A 0x5C) instead of `ESC \` (0x1B 0x5C).
+`ESC :` is an unassigned Fp private-use escape sequence (per ECMA-35)
+that any conformant parser silently drops.  The host parser recognizes
+`ESC : \` within STS content as "escaped ST" and converts it to `ESC \`
+before replay.
 
 **With FETM=EXCLUDE (`CSI 14 h`):** Only graphic characters are
 transmitted.  C0 and DEL bytes in cells are replaced with SPACE.
@@ -682,8 +719,12 @@ SOURCE: <<ECMA-48>>
 
 === `CSI Pn Y` Cursor Line Tabulation (`CVT`)
 Defaults: `Pn` = 1 +
-Move the cursor to the `Pn`-th next tab stop.
-Basically the same as sending TAB `Pn` times.
+Moves the cursor to the corresponding character position (same column)
+of the line corresponding to the `Pn`-th following line tabulation stop.
+Line tabulation stops are set by VTS (`ESC J`).
+
+If there is no next line tabulation stop, the screen scrolls up one line
+and the cursor moves to the last row, preserving the current column.
 
 SOURCE: <<ECMA-48>>
 
@@ -784,18 +825,24 @@ SOURCE: <<ECMA-48>>
 
 === `CSI Ps g` Tabulation Clear (`TBC`)
 Defaults: `Ps` = 0 +
-Deletes tab stops according to the values of `Ps`:
+Clears tabulation stops according to the value of `Ps`:
 
 [%autowidth,cols="1,2"]
 |===
 |0
-|Deletes tab stop at current position.
+|Clears the character tabulation stop at the current position.
+
+|1
+|Clears the line tabulation stop at the current line.
 
 |3
-|Deletes all tab stops.
+|Clears all character tabulation stops.
+
+|4
+|Clears all line tabulation stops.
 
 |5
-|Deletes all tab stops.
+|Clears all tabulation stops (both character and line).
 |===
 
 SOURCE: <<ECMA-48>>
@@ -819,13 +866,6 @@ preceding the cursor is transmitted (cursor position excluded).
 |===
 
 SOURCE: <<ECMA-48>> (Sections 7.2.6, 7.2.18)
-
-=== `CSI Ps... l` Reset Mode (`RM`)
-Resets ANSI modes.  Same parameter values as SM above.  Resetting
-mode 14 restores FETM=INSERT (attributed transmission).  Resetting
-mode 16 restores TTM=CURSOR (cursor-exclusive termination).
-
-SOURCE: <<ECMA-48>>
 
 === `CSI = 255 h` (`BCSET`)
 NON-STANDARD EXTENSION +
@@ -1016,6 +1056,13 @@ Defaults: `Pn` = 1
 Moves the cursor position up `Pn` lines from the current position.
 Attempting to move past the screen boundaries stops the cursor
 at the screen boundary.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Ps... l` Reset Mode (`RM`)
+Resets ANSI modes.  Same parameter values as SM above.  Resetting
+mode 14 restores FETM=INSERT (attributed transmission).  Resetting
+mode 16 restores TTM=CURSOR (cursor-exclusive termination).
 
 SOURCE: <<ECMA-48>>
 
@@ -1731,6 +1778,105 @@ Where xxxx is the hex checksum.
 
 SOURCE: <<VT420>>
 
+=== `CSI Ps $ p` Request Mode — ANSI (`DECRQM`)
+Requests the current state of ANSI mode `Ps`.  The terminal responds
+with `CSI Ps ; Pm $ y` (DECRPM).
+
+The following ANSI modes can be queried:
+
+[%autowidth,cols="1,2"]
+|===
+|1  |GATM — permanently reset (Pm=4)
+|2  |KAM — permanently reset (Pm=4)
+|3  |CRM — permanently reset (Pm=4)
+|4  |IRM — permanently reset (Pm=4)
+|5  |SRTM — permanently reset (Pm=4)
+|6  |ERM — permanently reset (Pm=4)
+|7  |VEM — permanently reset (Pm=4)
+|8  |BDSM — permanently reset (Pm=4)
+|9  |DCSM — permanently reset (Pm=4)
+|10 |HEM — permanently reset (Pm=4)
+|11 |PUM — permanently reset (Pm=4)
+|12 |SRM — permanently reset (Pm=4)
+|13 |FEAM — permanently reset (Pm=4)
+|14 |FETM — changeable (Pm=1 when set, Pm=2 when reset)
+|15 |MATM — permanently reset (Pm=4)
+|16 |TTM — changeable (Pm=1 when set, Pm=2 when reset)
+|17 |SATM — permanently reset (Pm=4)
+|18 |TSM — permanently reset (Pm=4)
+|21 |GRCM — permanently set (Pm=3)
+|22 |ZDM — permanently set (Pm=3)
+|===
+
+All ECMA-48 standard modes are reported.  Modes 14 and 16 are
+changeable; modes 21 and 22 are permanently set; all others are
+permanently reset.
+Any unrecognized mode returns Pm=0.
+
+SOURCE: <<VT320>>, <<ECMA-48>>
+
+=== `CSI = Ps $ p` Request Mode — CTerm Extension
+NON-STANDARD EXTENSION +
+Requests the current state of CTerm private mode `Ps`.  The terminal
+responds with `CSI = Ps ; Pm $ y` using the same `Pm` values as
+DECRQM above.
+
+The following CTerm modes can be queried:
+
+[%autowidth,cols="1,2"]
+|===
+|4  |Last Column Flag mode (CTELCF)
+|5  |Forced Last Column Flag (CTFLCF) — reports 3 (permanently set) when forced
+|255|DoorWay mode
+|===
+
+=== `CSI ? Ps $ p` Request Mode — Private (`DECRQM`)
+Requests the current state of private mode `Ps`.  The terminal responds
+with a mode report of the form `CSI ? Ps ; Pm $ y` (DECRPM) where `Pm`
+indicates the mode state:
+
+[%autowidth,cols="1,2"]
+|===
+|0
+|Mode not recognized
+
+|1
+|Set
+
+|2
+|Reset
+
+|3
+|Permanently set
+
+|4
+|Permanently reset
+|===
+
+The following private modes can be queried:
+
+[%autowidth,cols="1,2"]
+|===
+|6  |Origin mode (DECOM)
+|7  |Auto-wrap mode (DECAWM)
+|9  |X10 mouse reporting
+|25 |Cursor visible (DECTCEM)
+|31 |Alternate character set
+|32 |No bright foreground
+|33 |Bright background
+|34 |Blink = alternate character set
+|35 |No blink
+|67 |Backarrow key mode (DECBKM)
+|69 |Left/right margin mode (DECLRMM)
+|80 |Sixel scrolling
+|1000–1007, 1015 |Mouse tracking modes
+|2004 |Bracketed paste mode
+|===
+
+Any unrecognized mode returns `Pm` = 0.
+
+SOURCE: <<VT320>>
+
 === `CSI Ps SP q` Set Cursor Style (`DECSCUSR`)
 Defaults: `Ps` = 1
 Sets the cursor style
@@ -1816,12 +1962,6 @@ The value of `Ps2` sets the output speed emulation as follows:
 
 SOURCE: <<VT420>>
 
-=== `CSI ? Ps... s` Save Mode Setting (`CTSMS`)
-NON-STANDARD EXTENSION +
-Saves the current mode states as specified by `CSI ? l` and `CSI ? h`.  If
-`Ps1` is omitted, saves all such states.  If one or more values of `Ps` is
-included, saves only the specified states (arguments to `CSI ? l`/`h`).
-
 === `CSI Pn1 ; Pn2 s` Set Left and Right Margins (`DECSLRM`)
 (Only when DEC Left Right Margin Mode  - 69 - is enabled)
 
@@ -1842,6 +1982,12 @@ that any terminal program MUST implement it.
 
 SOURCE: <<ANSISYS>>
 
+=== `CSI ? Ps... s` Save Mode Setting (`CTSMS`)
+NON-STANDARD EXTENSION +
+Saves the current mode states as specified by `CSI ? l` and `CSI ? h`.  If
+`Ps1` is omitted, saves all such states.  If one or more values of `Ps` is
+included, saves only the specified states (arguments to `CSI ? l`/`h`).
+
 === `CSI Ps ; Pn1 ; Pn2 ; Pn3 t` Select a 24-bit colour (`CT24BC`)
 NON-STANDARD EXTENSION
 
@@ -1854,6 +2000,12 @@ enough for all cells in a 132x60 screen to have unique foreground
 and background colours though, so the current screen should always
 be as expected.
 
+=== `CSI u` Restore Cursor Position (`SCORC`)
+Move the cursor to the last position saved by `CSI s`.  If no position
+has been saved, the cursor is not moved.
+
+SOURCE: <<ANSISYS>>
+
 === `CSI ? Ps...  u` Restore Mode Setting (`CTRMS`)
 NON-STANDARD EXTENSION
 
@@ -1861,94 +2013,25 @@ Restores the mode states as saved via `CSI ? s`.  If `Ps` is omitted,
 restores all such states.  If one or more values of `Ps` is included,
 restores all the specified states (arguments to `CSI ? l`/`h`)
 
-=== `CSI u` Restore Cursor Position (`SCORC`)
-Move the cursor to the last position saved by `CSI s`.  If no position
-has been saved, the cursor is not moved.
+=== `CSI Pts ; Pls ; Pbs ; Prs ; Pps ; Ptd ; Pld ; Ppd $ v` Copy Rectangular Area (`DECCRA`)
+Copies a rectangular area of characters from one location to another.
+The copied text retains its character values, attributes, and hyperlinks.
 
-SOURCE: <<ANSISYS>>
+`Pts`, `Pls`, `Pbs`, `Prs` define the source rectangle (top, left,
+bottom, right).  `Pps` is the source page (ignored — single page).
+`Ptd`, `Pld` define the destination top-left corner.  `Ppd` is the
+destination page (ignored).
 
-=== `CSI ? Ps $ p` Request Mode — Private (`DECRQM`)
-Requests the current state of private mode `Ps`.  The terminal responds
-with a mode report of the form `CSI ? Ps ; Pm $ y` (DECRPM) where `Pm`
-indicates the mode state:
+Defaults: `Pts` = 1, `Pls` = 1, `Pbs` = last line, `Prs` = last column,
+`Ptd` = 1, `Pld` = 1.
 
-[%autowidth,cols="1,2"]
-|===
-|0
-|Mode not recognized
+If `Pbs` < `Pts` or `Prs` < `Pls`, DECCRA is ignored.
+Coordinates are affected by origin mode (DECOM) but not by margins.
+Values exceeding page dimensions are clamped.  The cursor does not move.
+If the destination area extends past the screen, the off-screen portion
+is clipped.
 
-|1
-|Set
-
-|2
-|Reset
-
-|3
-|Permanently set
-
-|4
-|Permanently reset
-|===
-
-The following private modes can be queried:
-
-[%autowidth,cols="1,2"]
-|===
-|6  |Origin mode (DECOM)
-|7  |Auto-wrap mode (DECAWM)
-|9  |X10 mouse reporting
-|25 |Cursor visible (DECTCEM)
-|31 |Alternate character set
-|32 |No bright foreground
-|33 |Bright background
-|34 |Blink = alternate character set
-|35 |No blink
-|67 |Backarrow key mode (DECBKM)
-|69 |Left/right margin mode (DECLRMM)
-|80 |Sixel scrolling
-|1000–1007, 1015 |Mouse tracking modes
-|2004 |Bracketed paste mode
-|===
-
-Any unrecognized mode returns `Pm` = 0.
-
-SOURCE: <<VT320>>
-
-=== `CSI Ps $ p` Request Mode — ANSI (`DECRQM`)
-Requests the current state of ANSI mode `Ps`.  The terminal responds
-with `CSI Ps ; Pm $ y` (DECRPM).
-
-The following ANSI modes can be queried:
-
-[%autowidth,cols="1,2"]
-|===
-|1  |GATM — permanently reset (Pm=4)
-|14 |FETM — changeable (Pm=1 when set, Pm=2 when reset)
-|15 |MATM — permanently reset (Pm=4)
-|16 |TTM — changeable (Pm=1 when set, Pm=2 when reset)
-|17 |SATM — permanently reset (Pm=4)
-|===
-
-Modes 1, 15, and 17 returning Pm=4 (permanently reset) indicates
-support for ECMA-48 selected area transmission (SSA/STS).
-Any unrecognized mode returns Pm=0.
-
-SOURCE: <<VT320>>, <<ECMA-48>>
-
-=== `CSI = Ps $ p` Request Mode — CTerm Extension
-NON-STANDARD EXTENSION +
-Requests the current state of CTerm private mode `Ps`.  The terminal
-responds with `CSI = Ps ; Pm $ y` using the same `Pm` values as
-DECRQM above.
-
-The following CTerm modes can be queried:
-
-[%autowidth,cols="1,2"]
-|===
-|4  |Last Column Flag mode (CTELCF)
-|5  |Forced Last Column Flag (CTFLCF) — reports 3 (permanently set) when forced
-|255|DoorWay mode
-|===
+SOURCE: <<VT420>>
 
 === `CSI 2 $ w` Request Tab Stop Report (`DECTABSR`)
 Requests a list of tab stops.
@@ -1958,6 +2041,24 @@ The list is in the form:
 The string `Pt` is a list of tab stops separated by `/`s.
 
 SOURCE: <<VT320>>
+
+=== `CSI Pch ; Pt ; Pl ; Pb ; Pr $ x` Fill Rectangular Area (`DECFRA`)
+Fills a rectangular area with the character specified by `Pch`.
+The fill character uses the visual attributes set by the most recent
+SGR command.  Hyperlinks are cleared on filled cells.
+
+`Pch` is the decimal value of the fill character.  Any value from
+0x20 to 0x7E or 0x80 to 0xFF is accepted.  If `Pch` is in the C0
+range (0x00–0x1F) or is DEL (0x7F), the command is ignored.
+
+`Pt`, `Pl`, `Pb`, `Pr` define the rectangle (top, left, bottom, right).
+Defaults: `Pt` = 1, `Pl` = 1, `Pb` = last line, `Pr` = last column.
+
+If `Pb` < `Pt` or `Pr` < `Pl`, DECFRA is ignored.
+Coordinates are affected by origin mode (DECOM) but not by margins.
+Values exceeding page dimensions are clamped.  The cursor does not move.
+
+SOURCE: <<VT420>>
 
 === `CSI Pn1 ; Ps ; Pn2 ; Pn3 ; Pn4 ; Pn5 * y` Request Checksum of Rectangular Area (`DECRQCRA`)
 Returns a checksum for the specified rectangular area.
@@ -1971,6 +2072,20 @@ The return value is in the format of `DCS Pn1 ! ~ xxxx ST`
 Where xxxx is the hex value of the checksum.
 
 Source: <<VT420>>
+
+=== `CSI Pt ; Pl ; Pb ; Pr $ z` Erase Rectangular Area (`DECERA`)
+Erases all character positions in the specified rectangular area.
+Erased positions are set to SPACE with the visual attributes from the
+most recent SGR command.  Hyperlinks are cleared on erased cells.
+
+`Pt`, `Pl`, `Pb`, `Pr` define the rectangle (top, left, bottom, right).
+Defaults: `Pt` = 1, `Pl` = 1, `Pb` = last line, `Pr` = last column.
+
+If `Pb` < `Pt` or `Pr` < `Pl`, DECERA is ignored.
+Coordinates are affected by origin mode (DECOM) but not by margins.
+Values exceeding page dimensions are clamped.  The cursor does not move.
+
+SOURCE: <<VT420>>
 
 === `CSI Pn * z` Invoke Macro (`DECINVM`)
 Invokes a macro.
@@ -2001,6 +2116,32 @@ following table:
 |===
 
 The DCS font string should be used instead as of CTerm 1.213
+
+=== `CSI Pn ' }` Insert Column (`DECIC`)
+Defaults: `Pn` = 1 +
+Inserts `Pn` blank columns into the scrolling region, starting at
+the column that has the cursor.  Columns between the cursor and the
+right margin shift to the right.  Columns shifted past the right
+margin are lost.  The inserted columns are filled with SPACE using
+the current SGR attributes.  Hyperlinks are cleared on inserted cells.
+
+DECIC has no effect if the cursor is outside the scrolling margins.
+The cursor does not move.
+
+SOURCE: <<VT420>>
+
+=== `CSI Pn ' ~` Delete Column (`DECDC`)
+Defaults: `Pn` = 1 +
+Deletes `Pn` columns from the scrolling region, starting at the column
+that has the cursor.  The remaining columns between the cursor and the
+right margin shift to the left.  Blank columns are added at the right
+margin, filled with SPACE using the current SGR attributes.  Hyperlinks
+are cleared on the new blank cells.
+
+DECDC has no effect if the cursor is outside the scrolling margins.
+The cursor does not move.
+
+SOURCE: <<VT420>>
 
 == Device Control Strings
 

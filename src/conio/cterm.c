@@ -711,6 +711,73 @@ delete_tabstop(struct cterminal *cterm, int pos)
 	return;
 }
 
+static void
+insert_vtabstop(struct cterminal *cterm, int line)
+{
+	int i;
+	int *new_stops;
+
+	for (i = 0; i < cterm->vtab_count && cterm->vtabs[i] < line; i++);
+	if (i < cterm->vtab_count && cterm->vtabs[i] == line)
+		return;
+
+	new_stops = realloc(cterm->vtabs, (cterm->vtab_count + 1) * sizeof(cterm->vtabs[0]));
+	if (new_stops == NULL)
+		return;
+	cterm->vtabs = new_stops;
+	if (i < cterm->vtab_count)
+		memmove(&cterm->vtabs[i + 1], &cterm->vtabs[i], (cterm->vtab_count - i) * sizeof(cterm->vtabs[0]));
+	cterm->vtabs[i] = line;
+	cterm->vtab_count++;
+}
+
+static void
+delete_vtabstop(struct cterminal *cterm, int line)
+{
+	int i;
+
+	for (i = 0; i < cterm->vtab_count && cterm->vtabs[i] <= line; i++) {
+		if (cterm->vtabs[i] == line) {
+			memmove(&cterm->vtabs[i], &cterm->vtabs[i+1], (cterm->vtab_count - i - 1) * sizeof(cterm->vtabs[0]));
+			cterm->vtab_count--;
+			return;
+		}
+	}
+}
+
+/*
+ * Fill a rectangular area with a character using current attributes.
+ * Coordinates are in SCREEN space.  Caller must validate and clamp.
+ */
+static void
+fill_rect(struct cterminal *cterm, int left, int top, int right, int bottom, uint8_t ch)
+{
+	int width = right - left + 1;
+	int height = bottom - top + 1;
+	int total = width * height;
+	struct vmem_cell *buf;
+	int i, r;
+
+	if (width <= 0 || height <= 0)
+		return;
+	buf = calloc(width, sizeof(*buf));
+	if (buf == NULL)
+		return;
+	/* Initialize one row of cells with current attributes, no hyperlink */
+	buf[0].ch = ch;
+	buf[0].legacy_attr = cterm->attr;
+	buf[0].fg = cterm->fg_color;
+	buf[0].bg = cterm->bg_color;
+	buf[0].font = ciolib_attrfont(cterm->attr);
+	buf[0].hyperlink_id = 0;
+	for (i = 1; i < width; i++)
+		buf[i] = buf[0];
+	/* Write row by row */
+	for (r = top; r <= bottom; r++)
+		vmem_puttext(left, r, right, r, buf);
+	free(buf);
+}
+
 static void tone_or_beep(double freq, int duration, int device_open)
 {
 	if(device_open)
@@ -1018,6 +1085,7 @@ cterm_clreol(struct cterminal *cterm)
 			buf[i].fg = cterm->fg_color;
 			buf[i].bg = cterm->bg_color;
 			buf[i].font = ciolib_attrfont(cterm->attr);
+			buf[i].hyperlink_id = 0;
 		}
 	}
 	coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &x, &y);
@@ -1045,6 +1113,7 @@ cterm_clrblk(struct cterminal *cterm, int sx, int sy, int ex, int ey)
 			buf[i].fg = cterm->fg_color;
 			buf[i].bg = cterm->bg_color;
 			buf[i].font = ciolib_attrfont(cterm->attr);
+			buf[i].hyperlink_id = 0;
 		}
 	}
 	vmem_puttext(sx, sy, ex, ey, buf);
@@ -1175,6 +1244,7 @@ clear2bol(struct cterminal * cterm)
 				buf[i].fg = cterm->fg_color;
 				buf[i].bg = cterm->bg_color;
 				buf[i].font = ciolib_attrfont(cterm->attr);
+				buf[i].hyperlink_id = 0;
 			}
 		}
 		coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &x, &y);
@@ -2302,6 +2372,31 @@ do_backtab(struct cterminal *cterm)
 }
 
 static void
+do_vtab(struct cterminal *cterm)
+{
+	int i;
+	int cx, cy;
+	int bm;
+
+	bm = TERM_MAXY;
+	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, NULL, &bm);
+
+	CURR_XY(&cx, &cy);
+	for (i = 0; i < cterm->vtab_count; i++) {
+		if (cterm->vtabs[i] > cy) {
+			cy = cterm->vtabs[i];
+			break;
+		}
+	}
+	if (i == cterm->vtab_count) {
+		/* No next line tab stop — scroll up one, cursor on last row */
+		cond_scrollup(cterm);
+		cy = bm;
+	}
+	gotoxy(cx, cy);
+}
+
+static void
 adjust_currpos(struct cterminal *cterm, int xadj, int yadj, int scroll)
 {
 	int x, y;
@@ -2858,15 +2953,21 @@ cterm_transmit_selected(struct cterminal *cterm)
 			/* Emit SGR diff */
 			sgr_diff(cterm, &prev, &cells[i]);
 
-			/* Emit hyperlink change */
+			/* Emit hyperlink change.
+			 * OSC 8 normally ends with ST (ESC \), but ST would
+			 * prematurely close the SOS frame.  Use ESC : \ instead
+			 * — ESC : is an unassigned Fp private-use escape that
+			 * any conformant parser silently drops.  The host parser
+			 * recognizes ESC : \ as "escaped ST" within STS content
+			 * and converts it back to ESC \ for replay. */
 			if (cells[i].hyperlink_id != prev.hyperlink_id) {
 				if (cells[i].hyperlink_id == 0) {
-					cterm_respond_printf(cterm, "\033]8;;\033\\");
+					cterm_respond_printf(cterm, "\033]8;;\033:\\");
 				}
 				else {
 					char *url = ciolib_get_hyperlink_url(cells[i].hyperlink_id);
 					char *params = ciolib_get_hyperlink_params(cells[i].hyperlink_id);
-					cterm_respond_printf(cterm, "\033]8;%s;%s\033\\",
+					cterm_respond_printf(cterm, "\033]8;%s;%s\033:\\",
 					    params ? params : "", url ? url : "");
 					free(url);
 					free(params);
@@ -2950,9 +3051,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									gettextinfo(&ti);
 									vmode = find_vmode(ti.currmode);
 									if (vmode != -1)
-										sprintf(tmp, "\x1b[?2;0;%u;%uS", vparams[vmode].charwidth*cterm->width, vparams[vmode].charheight*cterm->height);
-									if(retbuf && *tmp && strlen(retbuf) + strlen(tmp) < retsize)
-										strcat(retbuf, tmp);
+										cterm_respond_printf(cterm, "\x1b[?2;0;%u;%uS", vparams[vmode].charwidth*cterm->width, vparams[vmode].charheight*cterm->height);
 								}
 							}
 							break;
@@ -2980,8 +3079,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											strcat(tmp, ";7");
 										strcat(tmp, "c");
 								}
-								if(retbuf && *tmp && strlen(retbuf) + strlen(tmp) < retsize)
-									strcat(retbuf, tmp);
+								if (*tmp)
+									cterm_respond(cterm, tmp, strlen(tmp));
 							}
 							break;
 						case 'h':
@@ -3200,8 +3299,6 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							if (seq->param_str[0] == '=' && parse_parameters(seq)) {
 								int vidflags;
 
-								if(retbuf == NULL)
-									break;
 								tmp[0] = 0;
 								if (seq->param_count > 1)
 									break;
@@ -3286,12 +3383,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										sprintf(tmp, "\x1b[=6;%dn", cio_api.vmem_gettext ? 1 : 0);
 										break;
 								}
-								if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
-									strcat(retbuf, tmp);
+								if (*tmp)
+									cterm_respond(cterm, tmp, strlen(tmp));
 							}
 							else if (seq->param_str[0] == '?' && parse_parameters(seq)) {
-								if(retbuf == NULL)
-									break;
 								seq_default(seq, 0, 1);
 								tmp[0] = 0;
 								switch(seq->param_int[0]) {
@@ -3322,8 +3417,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										break;
 									}
 								}
-								if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
-									strcat(retbuf, tmp);
+								if (*tmp)
+									cterm_respond(cterm, tmp, strlen(tmp));
 							}
 							break;
 						case 's':
@@ -3755,7 +3850,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							}
 							break;
 						case 'p': /* DECRQM — Request Mode */
-							if (retbuf && strcmp(seq->ctrl_func, "$p") == 0 && parse_parameters(seq) && seq->param_count == 1) {
+							if (strcmp(seq->ctrl_func, "$p") == 0 && parse_parameters(seq) && seq->param_count == 1) {
 								int pm = 0; /* 0=not recognized, 1=set, 2=reset, 3=permanently set, 4=permanently reset */
 								char prefix = seq->param_str[0];
 								seq_default(seq, 0, 0);
@@ -3826,9 +3921,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											break;
 									}
 								}
-								snprintf(tmp, sizeof(tmp), "\x1b[%c%u;%d$y", prefix, (unsigned)seq->param_int[0], pm);
-								if (strlen(retbuf) + strlen(tmp) < retsize)
-									strcat(retbuf, tmp);
+								cterm_respond_printf(cterm, "\x1b[%c%u;%d$y", prefix, (unsigned)seq->param_int[0], pm);
 							}
 							break;
 					}
@@ -3860,6 +3953,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								vc[k].fg=cterm->fg_color;
 								vc[k].bg=cterm->bg_color;
 								vc[k].font = ciolib_attrfont(cterm->attr);
+								vc[k].hyperlink_id = 0;
 							}
 							vmem_puttext(max_col - i + 1, row, max_col, max_row, vc);
 							free(vc);
@@ -3890,6 +3984,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								vc[k].fg=cterm->fg_color;
 								vc[k].bg=cterm->bg_color;
 								vc[k].font = ciolib_attrfont(cterm->attr);
+								vc[k].hyperlink_id = 0;
 							}
 							vmem_puttext(col, row, col + i - 1, max_row, vc);
 							free(vc);
@@ -3975,13 +4070,26 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					}
 					// DECRQM for non-private modes (CSI Ps $ p)
 					else if (strcmp(seq->ctrl_func, "$p") == 0) {
-						if (retbuf && parse_parameters(seq) && seq->param_count == 1) {
+						if (parse_parameters(seq) && seq->param_count == 1) {
 							int pm = 0;
 							seq_default(seq, 0, 0);
 							switch (seq->param_int[0]) {
 								case 1:		/* GATM — permanently GUARD */
+								case 2:		/* KAM — permanently ENABLED */
+								case 3:		/* CRM — permanently CONTROL */
+								case 4:		/* IRM — permanently REPLACE */
+								case 5:		/* SRTM — permanently NORMAL */
+								case 6:		/* ERM — permanently PROTECT */
+								case 7:		/* VEM — permanently FOLLOWING */
+								case 8:		/* BDSM — permanently EXPLICIT */
+								case 9:		/* DCSM — permanently PRESENTATION */
+								case 10:	/* HEM — permanently FOLLOWING */
+								case 11:	/* PUM — permanently CHARACTER */
+								case 12:	/* SRM — permanently MONITOR */
+								case 13:	/* FEAM — permanently EXECUTE */
 								case 15:	/* MATM — permanently SINGLE */
 								case 17:	/* SATM — permanently SELECT */
+								case 18:	/* TSM — permanently MULTIPLE */
 									pm = 4;
 									break;
 								case 14:	/* FETM — changeable */
@@ -3990,10 +4098,12 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								case 16:	/* TTM — changeable */
 									pm = cterm->ttm ? 1 : 2;
 									break;
+								case 21:	/* GRCM — permanently CUMULATIVE */
+								case 22:	/* ZDM — permanently DEFAULT */
+									pm = 3;
+									break;
 							}
-							snprintf(tmp, sizeof(tmp), "\x1b[%u;%d$y", (unsigned)seq->param_int[0], pm);
-							if (strlen(retbuf) + strlen(tmp) < retsize)
-								strcat(retbuf, tmp);
+							cterm_respond_printf(cterm, "\x1b[%u;%d$y", (unsigned)seq->param_int[0], pm);
 						}
 					}
 					// Tab report
@@ -4008,8 +4118,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								p2 += sprintf(p2, "%d", cterm->tabs[i]);
 							}
 							strcat(p2, "\x1b\\");
-							if(retbuf && *tmp && strlen(retbuf) + strlen(tmp) < retsize)
-								strcat(retbuf, tmp);
+							if (*tmp)
+								cterm_respond(cterm, tmp, strlen(tmp));
 						}
 					}
 					// Communication speed
@@ -4135,9 +4245,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								}
 								if (good) {
 									*tmp = 0;
-									snprintf(tmp, sizeof(tmp), "\x1bP%u!~%04X\x1b\\", (unsigned)seq->param_int[0], crc);
-									if(retbuf && *tmp && strlen(retbuf) + strlen(tmp) < retsize)
-										strcat(retbuf, tmp);
+									cterm_respond_printf(cterm, "\x1bP%u!~%04X\x1b\\", (unsigned)seq->param_int[0], crc);
 								}
 							}
 						}
@@ -4149,8 +4257,187 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									cterm->escbuf[0]=0;
 									cterm->sequence=0;
 									cterm->in_macro |= (UINT64_C(1)<<seq->param_int[0]);
-									cterm_write(cterm, cterm->macros[seq->param_int[0]], cterm->macro_lens[seq->param_int[0]], retbuf ? retbuf + strlen(retbuf) : retbuf, retsize - (retbuf ? strlen(retbuf) : 0), speed);
+									cterm_write(cterm, cterm->macros[seq->param_int[0]], cterm->macro_lens[seq->param_int[0]], NULL, 0, speed);
 									cterm->in_macro &= ~(UINT64_C(1)<<seq->param_int[0]);
+								}
+							}
+						}
+					}
+					// DECERA — Erase Rectangular Area (CSI Pt;Pl;Pb;Pr $ z)
+					else if (strcmp(seq->ctrl_func, "$z") == 0 && parse_parameters(seq)) {
+						int t, l, b, r;
+						seq_default(seq, 0, 1);
+						seq_default(seq, 1, 1);
+						seq_default(seq, 2, cterm->height);
+						seq_default(seq, 3, cterm->width);
+						t = seq->param_int[0];
+						l = seq->param_int[1];
+						b = seq->param_int[2];
+						r = seq->param_int[3];
+						if (t > b || l > r)
+							break;
+						/* Clamp to screen */
+						if (t < CURR_MINY) t = CURR_MINY;
+						if (l < CURR_MINX) l = CURR_MINX;
+						if (b > CURR_MAXY) b = CURR_MAXY;
+						if (r > CURR_MAXX) r = CURR_MAXX;
+						/* Convert to screen coords */
+						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &l, &t);
+						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &r, &b);
+						fill_rect(cterm, l, t, r, b, ' ');
+					}
+					// DECFRA — Fill Rectangular Area (CSI Pch;Pt;Pl;Pb;Pr $ x)
+					else if (strcmp(seq->ctrl_func, "$x") == 0 && parse_parameters(seq)) {
+						int t, l, b, r;
+						uint8_t ch;
+						seq_default(seq, 0, 0);
+						ch = seq->param_int[0];
+						/* Allow any character except C0 (0x00-0x1F) and DEL (0x7F) */
+						if (ch < 0x20 || ch == 0x7F)
+							break;
+						seq_default(seq, 1, 1);
+						seq_default(seq, 2, 1);
+						seq_default(seq, 3, cterm->height);
+						seq_default(seq, 4, cterm->width);
+						t = seq->param_int[1];
+						l = seq->param_int[2];
+						b = seq->param_int[3];
+						r = seq->param_int[4];
+						if (t > b || l > r)
+							break;
+						if (t < CURR_MINY) t = CURR_MINY;
+						if (l < CURR_MINX) l = CURR_MINX;
+						if (b > CURR_MAXY) b = CURR_MAXY;
+						if (r > CURR_MAXX) r = CURR_MAXX;
+						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &l, &t);
+						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &r, &b);
+						fill_rect(cterm, l, t, r, b, ch);
+					}
+					// DECCRA — Copy Rectangular Area (CSI Pts;Pls;Pbs;Prs;Pps;Ptd;Pld;Ppd $ v)
+					else if (strcmp(seq->ctrl_func, "$v") == 0 && parse_parameters(seq)) {
+						int st, sl, sb, sr, dt, dl;
+						int sw, sh;
+						struct vmem_cell *buf;
+						seq_default(seq, 0, 1);
+						seq_default(seq, 1, 1);
+						seq_default(seq, 2, cterm->height);
+						seq_default(seq, 3, cterm->width);
+						/* Pps (param 4) = source page, ignore */
+						seq_default(seq, 5, 1);
+						seq_default(seq, 6, 1);
+						/* Ppd (param 7) = dest page, ignore */
+						st = seq->param_int[0];
+						sl = seq->param_int[1];
+						sb = seq->param_int[2];
+						sr = seq->param_int[3];
+						dt = seq->param_int[5];
+						dl = seq->param_int[6];
+						if (st > sb || sl > sr)
+							break;
+						/* Clamp source */
+						if (st < CURR_MINY) st = CURR_MINY;
+						if (sl < CURR_MINX) sl = CURR_MINX;
+						if (sb > CURR_MAXY) sb = CURR_MAXY;
+						if (sr > CURR_MAXX) sr = CURR_MAXX;
+						/* Clamp destination */
+						if (dt < CURR_MINY) dt = CURR_MINY;
+						if (dl < CURR_MINX) dl = CURR_MINX;
+						sw = sr - sl + 1;
+						sh = sb - st + 1;
+						/* Clip dest to screen */
+						if (dt + sh - 1 > CURR_MAXY) sh = CURR_MAXY - dt + 1;
+						if (dl + sw - 1 > CURR_MAXX) sw = CURR_MAXX - dl + 1;
+						if (sw <= 0 || sh <= 0)
+							break;
+						/* Convert to screen coords */
+						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &sl, &st);
+						coord_conv_xy(cterm, CTERM_COORD_CURR, CTERM_COORD_SCREEN, &dl, &dt);
+						buf = calloc(sw, sizeof(*buf));
+						if (buf) {
+							for (i = 0; i < sh; i++) {
+								vmem_gettext(sl, st + i, sl + sw - 1, st + i, buf);
+								vmem_puttext(dl, dt + i, dl + sw - 1, dt + i, buf);
+							}
+							free(buf);
+						}
+					}
+					// DECIC — Insert Column (CSI Pn ' })
+					else if (strcmp(seq->ctrl_func, "'}") == 0 && parse_parameters(seq)) {
+						int cx, cy;
+						seq_default(seq, 0, 1);
+						TERM_XY(&cx, &cy);
+						if (cx < TERM_MINX || cx > TERM_MAXX || cy < TERM_MINY || cy > TERM_MAXY)
+							break;
+						{
+							int n = seq->param_int[0];
+							int scx = cx, scy = TERM_MINY;
+							int srx = TERM_MAXX, sry = TERM_MAXY;
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &scx, &scy);
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &srx, &sry);
+							int width = srx - scx + 1;
+							if (n >= width) {
+								/* Fill entire region with blanks */
+								fill_rect(cterm, scx, scy, srx, sry, ' ');
+							}
+							else {
+								int keep = width - n;
+								struct vmem_cell *rowbuf = calloc(width, sizeof(*rowbuf));
+								if (rowbuf) {
+									struct vmem_cell blank = {0};
+									blank.ch = ' ';
+									blank.legacy_attr = cterm->attr;
+									blank.fg = cterm->fg_color;
+									blank.bg = cterm->bg_color;
+									blank.font = ciolib_attrfont(cterm->attr);
+									blank.hyperlink_id = 0;
+									for (int r = scy; r <= sry; r++) {
+										vmem_gettext(scx, r, srx, r, rowbuf);
+										memmove(&rowbuf[n], &rowbuf[0], keep * sizeof(*rowbuf));
+										for (int c = 0; c < n; c++)
+											rowbuf[c] = blank;
+										vmem_puttext(scx, r, srx, r, rowbuf);
+									}
+									free(rowbuf);
+								}
+							}
+						}
+					}
+					// DECDC — Delete Column (CSI Pn ' ~)
+					else if (strcmp(seq->ctrl_func, "'~") == 0 && parse_parameters(seq)) {
+						int cx, cy;
+						seq_default(seq, 0, 1);
+						TERM_XY(&cx, &cy);
+						if (cx < TERM_MINX || cx > TERM_MAXX || cy < TERM_MINY || cy > TERM_MAXY)
+							break;
+						{
+							int n = seq->param_int[0];
+							int scx = cx, scy = TERM_MINY;
+							int srx = TERM_MAXX, sry = TERM_MAXY;
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &scx, &scy);
+							coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &srx, &sry);
+							int width = srx - scx + 1;
+							if (n >= width) {
+								fill_rect(cterm, scx, scy, srx, sry, ' ');
+							}
+							else {
+								int keep = width - n;
+								struct vmem_cell *rowbuf = calloc(width, sizeof(*rowbuf));
+								if (rowbuf) {
+									struct vmem_cell blank = {0};
+									blank.ch = ' ';
+									blank.legacy_attr = cterm->attr;
+									blank.fg = cterm->fg_color;
+									blank.bg = cterm->bg_color;
+									blank.font = ciolib_attrfont(cterm->attr);
+									blank.hyperlink_id = 0;
+									for (int r = scy; r <= sry; r++) {
+										vmem_gettext(scx, r, srx, r, rowbuf);
+										memmove(&rowbuf[0], &rowbuf[n], keep * sizeof(*rowbuf));
+										for (int c = keep; c < width; c++)
+											rowbuf[c] = blank;
+										vmem_puttext(scx, r, srx, r, rowbuf);
+									}
+									free(rowbuf);
 								}
 							}
 						}
@@ -4253,7 +4540,6 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							gotoxy(col, row);
 							break;
 						case 'I':	/* Cursor Forward Tabulation */
-						case 'Y':	/* Cursor Line Tabulation */
 							clear_lcf(cterm);
 							seq_default(seq, 0, 1);
 							if (seq->param_int[0] < 1)
@@ -4263,6 +4549,17 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								i = cterm->width * cterm->height;
 							for (j = 0; j < i; j++)
 								do_tab(cterm);
+							break;
+						case 'Y':	/* Cursor Line Tabulation */
+							clear_lcf(cterm);
+							seq_default(seq, 0, 1);
+							if (seq->param_int[0] < 1)
+								break;
+							i = seq->param_int[0];
+							if (i > cterm->height)
+								i = cterm->height;
+							for (j = 0; j < i; j++)
+								do_vtab(cterm);
 							break;
 						case 'J':	/* Erase In Page */
 							clear_lcf(cterm);
@@ -4418,6 +4715,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								vc[k].fg=cterm->fg_color;
 								vc[k].bg=cterm->bg_color;
 								vc[k].font = ciolib_attrfont(cterm->attr);
+								vc[k].hyperlink_id = 0;
 							}
 							col2 = col;
 							row2 = row;
@@ -4468,10 +4766,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						case 'c':	/* Device Attributes */
 							seq_default(seq, 0, 0);
 							if(!seq->param_int[0]) {
-								if(retbuf!=NULL) {
-									if(strlen(retbuf) + strlen(cterm->DA)  < retsize)
-										strcat(retbuf,cterm->DA);
-								}
+								cterm_respond(cterm, cterm->DA, strlen(cterm->DA));
 							}
 							break;
 						case 'd':	/* Line Position Absolute */
@@ -4492,9 +4787,18 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								case 0:
 									delete_tabstop(cterm, wherex());
 									break;
+								case 1:
+									delete_vtabstop(cterm, wherey());
+									break;
 								case 3:
+									cterm->tab_count = 0;
+									break;
+								case 4:
+									cterm->vtab_count = 0;
+									break;
 								case 5:
 									cterm->tab_count = 0;
+									cterm->vtab_count = 0;
 									break;
 							}
 							break;
@@ -4718,27 +5022,14 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							seq_default(seq, 0, 0);
 							switch(seq->param_int[0]) {
 								case 5:
-									if(retbuf!=NULL) {
-										strcpy(tmp,"\x1b[0n");
-										if(strlen(retbuf)+strlen(tmp) < retsize)
-											strcat(retbuf,tmp);
-									}
+									cterm_respond(cterm, "\x1b[0n", 4);
 									break;
 								case 6:
-									if(retbuf!=NULL) {
-										CURR_XY(&col, &row);
-										sprintf(tmp,"\x1b[%d;%dR",row,col);
-										if(strlen(retbuf)+strlen(tmp) < retsize)
-											strcat(retbuf,tmp);
-									}
+									CURR_XY(&col, &row);
+									cterm_respond_printf(cterm, "\x1b[%d;%dR", row, col);
 									break;
 								case 255:
-									if (retbuf != NULL) {
-										sprintf(tmp, "\x1b[%d;%dR", CURR_MAXY, CURR_MAXX);
-										if (strlen(retbuf) + strlen(tmp) < retsize) {
-											strcat(retbuf, tmp);
-										}
-									}
+									cterm_respond_printf(cterm, "\x1b[%d;%dR", CURR_MAXY, CURR_MAXX);
 									break;
 							}
 							break;
@@ -4864,6 +5155,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 			}
 			case 'H':
 				insert_tabstop(cterm, wherex());
+				break;
+			case 'J':	/* Line Tabulation Set (VTS) */
+				insert_vtabstop(cterm, wherey());
 				break;
 			case 'M':	// Previous line
 				clear_lcf(cterm);
@@ -5014,43 +5308,43 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 													strcat(tmp, cterm->bg_tc_str);
 												}
 												strcat(tmp, "m\x1b\\");
-												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
+												if (*tmp)
+													cterm_respond(cterm, tmp, strlen(tmp));
 											}
 											break;
 										case 'r':
 											if (cterm->strbuf[3] == 0) {
 												sprintf(tmp, "\x1bP1$r%d;%dr\x1b\\", cterm->top_margin, cterm->bottom_margin);
-												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
+												if (*tmp)
+													cterm_respond(cterm, tmp, strlen(tmp));
 											}
 											break;
 										case 's':
 											if (cterm->strbuf[3] == 0) {
 												sprintf(tmp, "\x1bP1$r%d;%ds\x1b\\", cterm->left_margin, cterm->right_margin);
-												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
+												if (*tmp)
+													cterm_respond(cterm, tmp, strlen(tmp));
 											}
 											break;
 										case 't':
 											if (cterm->strbuf[3] == 0) {
 												sprintf(tmp, "\x1bP1$r%dt\x1b\\", cterm->height);
-												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
+												if (*tmp)
+													cterm_respond(cterm, tmp, strlen(tmp));
 											}
 											break;
 										case '$':
 											if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
 												sprintf(tmp, "\x1bP1$r%d$|\x1b\\", cterm->width);
-												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
+												if (*tmp)
+													cterm_respond(cterm, tmp, strlen(tmp));
 											}
 											break;
 										case '*':
 											if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
 												sprintf(tmp, "\x1bP1$r%d$|\x1b\\", cterm->height);
-												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
+												if (*tmp)
+													cterm_respond(cterm, tmp, strlen(tmp));
 											}
 											break;
 										case ' ':
@@ -5068,21 +5362,14 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 													style = (cterm->cursor == _SOLIDCURSOR) ? 2 : 4;
 												}
 												sprintf(tmp, "\x1bP1$r%d q\x1b\\", style);
-												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
+												if (*tmp)
+													cterm_respond(cterm, tmp, strlen(tmp));
 											}
 											break;
 										default:
-											if(retbuf!=NULL) {
-												strcpy(tmp,"\x1b[0n");
-												// TODO: If the string is too long, this is likely terrible.
-												if (strlen(retbuf)+5 < retsize)
-													strcat(retbuf, "\x1bP0$r");
-												if (strlen(retbuf)+strlen(&cterm->strbuf[2]) < retsize)
-													strcat(retbuf, &cterm->strbuf[2]);
-												if (strlen(retbuf)+2 < retsize)
-													strcat(retbuf, "\x1b_");
-											}
+											cterm_respond(cterm, "\x1bP0$r", 5);
+											cterm_respond(cterm, &cterm->strbuf[2], strlen(&cterm->strbuf[2]));
+											cterm_respond(cterm, "\x1b_", 2);
 									}
 								}
 							}
@@ -5105,11 +5392,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									else {
 										if (p[0] == '?' && p[1] == 0) {
 											uint8_t qr, qg, qb;
-											if (retbuf && getpalette(index + palette_offset, &qr, &qg, &qb)) {
-												snprintf(tmp, sizeof(tmp), "\033]4;%lu;rgb:%02x/%02x/%02x\033\\", index, qr, qg, qb);
-												if (strlen(retbuf) + strlen(tmp) < retsize)
-													strcat(retbuf, tmp);
-											}
+											if (getpalette(index + palette_offset, &qr, &qg, &qb))
+												cterm_respond_printf(cterm, "\033]4;%lu;rgb:%02x/%02x/%02x\033\\", index, qr, qg, qb);
 										}
 										else if (strncmp(p, "rgb:", 4) == 0) {
 											char *p3;
@@ -5178,12 +5462,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							    && cterm->strbuf[2] == ';'
 							    && cterm->strbuf[3] == '?'
 							    && cterm->strbuf[4] == 0) {
-								if (retbuf != NULL) {
+								{
 									uint32_t colour = cterm->strbuf[1] == '0' ? cterm->default_fg_palette : cterm->default_bg_palette;
 
-									snprintf(tmp, sizeof(tmp), "\x1b]1%c;rgb:%02x/%02x/%02x\x1b\\", cterm->strbuf[1], colour >> 16 & 0xff, colour >> 8 & 0xff, colour & 0xff);
-									if (strlen(retbuf) + strlen(tmp) < retsize)
-										strcat(retbuf, tmp);
+									cterm_respond_printf(cterm, "\x1b]1%c;rgb:%02x/%02x/%02x\x1b\\", cterm->strbuf[1], colour >> 16 & 0xff, colour >> 8 & 0xff, colour & 0xff);
 								}
 							}
 							else if (cterm->strbuf[0] == '8' && cterm->strbuf[1] == ';') {
@@ -5307,6 +5589,8 @@ cterm_reset(struct cterminal *cterm)
 	}
 	else
 		cterm->tab_count = 0;
+	FREE_AND_NULL(cterm->vtabs);
+	cterm->vtab_count = 0;
 	cterm->setfont_result = CTERM_NO_SETFONT_REQUESTED;
 	cterm->saved_mode = 0;
 	cterm->saved_mode_mask = 0;
@@ -6027,8 +6311,7 @@ prestel_send_memory(struct cterminal *cterm, uint8_t mem, char *retbuf, size_t r
 	for (int x = 0; x < PRESTEL_MEM_SLOT_SIZE; x++) {
 		if (cterm->prestel_data[mem][x] != '?') {
 			app[0] = cterm->prestel_data[mem][x];
-			if(retbuf && strlen(retbuf) + 1 < retsize)
-				strcat(retbuf, app);
+			cterm_respond(cterm, app, 1);
 		}
 	}
 }
@@ -6239,10 +6522,8 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								cterm->string = 0;
 								FREE_AND_NULL(cterm->strbuf);
 								cterm->strbuflen = cterm->strbufsize = 0;
-								if (retbuf) {
-									cterm_write(cterm, "\x1b", 1, retbuf+strlen(retbuf), retsize-strlen(retbuf), speed);
-									cterm_write(cterm, &ch[0], 1, retbuf+strlen(retbuf), retsize-strlen(retbuf), speed);
-								}
+								cterm_write(cterm, "\x1b", 1, NULL, 0, speed);
+								cterm_write(cterm, &ch[0], 1, NULL, 0, speed);
 							}
 							else {
 								if (cterm->strbuf == NULL) {
@@ -7403,6 +7684,7 @@ void cterm_end(struct cterminal *cterm, int free_fonts)
 
 		FREE_AND_NULL(cterm->strbuf);
 		FREE_AND_NULL(cterm->tabs);
+		FREE_AND_NULL(cterm->vtabs);
 		FREE_AND_NULL(cterm->fg_tc_str);
 		FREE_AND_NULL(cterm->bg_tc_str);
 		FREE_AND_NULL(cterm->sx_pixels);
