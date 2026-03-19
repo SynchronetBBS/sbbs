@@ -3293,10 +3293,13 @@ slot management:
 
 === ESC/VDU Sequences — BEEB
 
-In BEEB mode, ESC is followed by a character interpreted as a serial
-attribute code, the same as Prestel.
+In BEEB mode, ESC does NOT trigger serial attribute codes (unlike
+Prestel).  Serial attributes in BEEB mode are delivered as raw C1
+bytes (0x80–0x9F) which are translated to attribute codes by
+subtracting 0x40.
 
-Additionally, two multi-byte sequences are supported:
+ESC in BEEB mode introduces VDU control sequences.  Two multi-byte
+sequences are supported:
 
 - **VDU 23,1,N;0;0;0;** (byte 23 + 9 data bytes): Cursor control.
   N=0 hides cursor, N=1 shows cursor.  All other bytes in the sequence
