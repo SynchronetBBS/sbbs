@@ -7,7 +7,12 @@ Add Wayland backend
 Support encrypted dialing directories
 Support web-based main dialing directory
 Allow specifying terminal type for each entry
+Add ECMA-48 screen content readback (SSA/ESA/STS)
+Add DEC rectangular area operations (DECERA, DECFRA, DECCRA, DECIC, DECDC)
 Add DECCARA, DECRARA, DECSACE (change/reverse attributes in rectangular areas)
+Add vertical line tabulation (VTS, CVT)
+Add DECRQM reporting for all ECMA-48 standard modes
+Add DECRQSS queries for communication speed and DECSACE
 Add support for DECSCUSR
 Add [ and ] keys to navigate between items in edit submenus
 Add named sort profiles with < and > keys to cycle through them
@@ -25,6 +30,9 @@ Fix delay at end of ZModem transfer
 Fix "Failed to decrypt BBS list" for empty list files
 Fix compatibility with "SSH-2.0-Go"
 Fix curses mode stdio drop detection
+Fix curses CPU spin when PTY is deleted (e.g., ttyd disconnect)
+Fix hyperlink IDs not cleared on erase/scroll operations
+Fix 9 terminfo entry bugs, add 5 missing capabilities
 Fix custom entry palette lost on terminal reset
 Full code audit by Claude Opus, many fixes
 
