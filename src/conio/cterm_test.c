@@ -109,6 +109,7 @@ setup_cterm(int mode, int emulation)
 	}
 	cterm->response_cb = response_cb;
 	cterm->response_cbdata = NULL;
+	cterm->quiet = 1;	/* suppress BEL audio during tests */
 	response_clear();
 	retbuf_leaked = 0;
 	cterm_start(cterm);
